@@ -47,6 +47,9 @@ const NAST_PANELY = [
    * matici zobrazení: časy zakázek a čísla provozu se nepřidělují (rozhodnutí
    * 17. 8. 2026), takže by řádek v matici jen sváděl k omylu. */
   { id: 'analytika', nazev: 'Analytika', jenAdmin: true, telo: () => nastAnalytika() },
+  /* Controlling (#447, C2) — JEN administrátor (rozhodnutí J. V. 20. 10. 2026,
+   * J7), natvrdo jako Analytika; hranici drží /api/controlling. */
+  { id: 'controlling', nazev: 'Controlling', jenAdmin: true, telo: () => nastControlling() },
 ];
 function nastPanelSmi(x) {
   if (x.jenAdmin && !(typeof jeAdmin === 'function' && jeAdmin())) return false;
@@ -342,7 +345,7 @@ function nastStandard() {
     <div class="sec-title">Můstek mezi budovou a OCK</div>
     <div class="note" style="margin-top:0">Platí pro <b>venkovní i vnitřní</b> šachtu — limity jsou
       společné, proto stojí mimo obě tabulky (rozhodnutí J. V. 17. 9. 2026). Hlídá se jen tehdy,
-      když je můstek v zadání šachty zaškrtnutý.</div>
+      když má zakázka v zadání šachty aspoň jeden můstek (pole Můstky mezi budovou a OCK).</div>
     <div class="row"><label>Hloubka max <span class="note">(mezi budovou a OCK)</span></label>
       <input type="number" step="10" style="width:100px" value="${esc(s.mustek.hloubkaMaxMm)}"
         onchange="stdSet('mustek.hloubkaMaxMm', +this.value)"><span class="u">mm</span></div>
@@ -389,9 +392,100 @@ function nastDatabaze() {
   /* Ukázková data se kreslí jen na testovacím webu — karta se na ostrém
    * vrátí prázdná (testDataKarta se ptá serveru na PROSTREDI). */
   const testdata = (typeof testDataKarta === 'function') ? testDataKarta() : '';
+  const pripony = (typeof priponyKarta === 'function') ? priponyKarta() : '';
   return `<div class="note" style="margin-top:0">Spojení s databází, ukládání a zálohy.
       Zakázku samotnou ukládá tlačítko <b>Uložit zakázku</b> v liště nad kalkulací —
-      tady je jen to, co se nastavuje jednou.</div>${online}${slozka}${prenos}${testdata}`;
+      tady je jen to, co se nastavuje jednou.</div>${online}${slozka}${prenos}${testdata}${pripony}`;
+}
+
+/* ---------- kontrola přípony první varianty (K13-P1, 25. 9. 2026) ----------
+ *
+ * J. V. k postupu „stáhnout zálohu, spustit skript, poslat výpis": „jak to
+ * mám udělat? nemůžeš to provést ty?" Skript nad zálohou potřeboval Node
+ * a příkazovou řádku; tahle karta dělá totéž v aplikaci. Kontrola jen čte.
+ * Oprava ukládá běžnou cestou (server hlídá zámky i razítko verze) a jen
+ * u neodeslaných variant; odeslanou nejdřív administrátor odemkne. */
+const PRIPONY = { bezi: false, hotovo: false, nalezy: [], zprava: '', prohledano: 0 };
+
+function priponyKarta() {
+  if (!(typeof jeAdminOnline === 'function' && jeAdminOnline())) return '';
+  const radky = PRIPONY.nalezy.map(n => `<tr><td>${esc(n.cislo)}</td><td>${esc(n.nazev)}</td>
+      <td>.${n.pripona}</td><td>${n.opraveno ? '<b class="ok">✓ opraveno</b>'
+        : n.zamcena ? 'odeslaná — v zakázce ji odemkněte, pak znovu Opravit a nabídku znovu vytiskněte'
+        : n.holeZabrane ? 'holé číslo má jiná varianta — rozhodnout ručně'
+        : n.chyba ? '<span style="color:#b00">' + esc(n.chyba) + '</span>' : 'lze opravit'}</td></tr>`).join('');
+  const lze = PRIPONY.nalezy.filter(n => !n.opraveno && !n.zamcena && !n.holeZabrane).length;
+  return `<div class="card"><h2 style="cursor:default">Kontrola čísla první varianty (K13-P1)</h2><div class="body">
+    <div class="note" style="margin-top:0">Zakázky uložené před 24. 9. 2026 můžou mít u první varianty
+      příponu (např. „…555.3") místo holého čísla, které je na odeslaném papíře. Kontrola projde
+      všechny uložené zakázky a <b>nic nemění</b>. Oprava vrátí první variantě holé číslo — jen
+      u neodeslaných variant, ukládá se běžnou cestou (server hlídá zámky).</div>
+    <div class="btns" style="margin:6px 0">
+      <button onclick="priponyKontrola()" ${PRIPONY.bezi ? 'disabled' : ''}>Zkontrolovat zakázky</button>
+      ${lze ? `<button class="primary" onclick="priponyOprav()" ${PRIPONY.bezi ? 'disabled' : ''}>Opravit neodeslané (${lze})</button>` : ''}
+    </div>
+    ${PRIPONY.zprava ? `<div class="note">${esc(PRIPONY.zprava)}</div>` : ''}
+    ${radky ? `<table class="ceniktbl"><tr><th>Zakázka</th><th>Varianta</th><th>Přípona</th><th>Stav</th></tr>${radky}</table>` : ''}
+  </div></div>`;
+}
+
+async function priponyNactiZakazku(soubor) {
+  const o = await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(soubor));
+  let z = o && o.zakazka;
+  if (typeof z === 'string') z = JSON.parse(z);
+  return z;
+}
+
+async function priponyKontrola() {
+  if (PRIPONY.bezi || typeof priponaPrvniNalez !== 'function') return;
+  Object.assign(PRIPONY, { bezi: true, hotovo: false, nalezy: [], zprava: 'Načítám seznam zakázek…', prohledano: 0 });
+  nastRefresh();
+  try {
+    const o = await onlineApi('/api/zakazky');
+    const seznam = ((o && o.rejstrik && o.rejstrik.zakazky) || []).map(r => r.soubor).filter(Boolean);
+    for (let i = 0; i < seznam.length; i += 8) {
+      const davka = await Promise.all(seznam.slice(i, i + 8).map(soubor =>
+        priponyNactiZakazku(soubor).then(z => [soubor, z], () => [soubor, null])));
+      davka.forEach(([soubor, z]) => {
+        PRIPONY.prohledano++;
+        const n = z && priponaPrvniNalez(z);
+        if (n) PRIPONY.nalezy.push(Object.assign({ soubor, cislo: String(z.cislo || soubor) }, n));
+      });
+      PRIPONY.zprava = 'Prohledáno ' + PRIPONY.prohledano + ' z ' + seznam.length + ' zakázek…';
+      nastRefresh();
+    }
+    PRIPONY.zprava = 'Prohledáno ' + PRIPONY.prohledano + ' zakázek, první varianta s příponou: '
+      + PRIPONY.nalezy.length + '.';
+  } catch (e) { PRIPONY.zprava = 'Kontrola selhala: ' + e.message; }
+  PRIPONY.bezi = false; PRIPONY.hotovo = true;
+  nastRefresh();
+}
+
+async function priponyOprav() {
+  if (PRIPONY.bezi) return;
+  const k = PRIPONY.nalezy.filter(n => !n.opraveno && !n.zamcena && !n.holeZabrane);
+  if (!k.length) return;
+  if (!await potvrd('Vrátit první variantě holé číslo u ' + k.length + ' zakázek?\n\n'
+    + k.map(n => n.cislo + ' (.' + n.pripona + ')').join('\n'))) return;
+  PRIPONY.bezi = true; nastRefresh();
+  let ok = 0;
+  for (const n of k) {
+    try {
+      /* Otevřená zakázka by po opravě na serveru měla v prohlížeči zastaralé
+       * razítko a další uložení by hlásilo kolizi — tu vynechat. */
+      if (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.soubor === n.soubor) {
+        n.chyba = 'zakázka je právě otevřená — zavřete ji a opravte znovu'; continue;
+      }
+      const z = await priponyNactiZakazku(n.soubor);
+      const r = priponaPrvniOprav(z);
+      if (!r.opraveno) { n.chyba = r.duvod; continue; }
+      await onlineApi('/api/zakazky', { zakazka: z,
+        ocekavaneRazitko: (typeof uloRazitko === 'function') ? uloRazitko(z) : String(z.uloRazitko || '') });
+      n.opraveno = true; delete n.chyba; ok++;
+    } catch (e) { n.chyba = 'neuloženo: ' + e.message; }
+  }
+  PRIPONY.zprava = 'Opraveno ' + ok + ' z ' + k.length + ' zakázek.';
+  PRIPONY.bezi = false; nastRefresh();
 }
 
 /* ---------- vnitřní záložka: Obecné ---------- */
@@ -638,7 +732,7 @@ function sablonaChybejiciCsv(typ, lang) {
   const stat = {};
   docxPrelozSablonu(s.data.slice(0), lang, stat).then(async () => {
     const csv = '﻿' + ['český text;překlad (' + lang.toUpperCase() + ')']
-      .concat(stat.chybi.map(t => '"' + t.replace(/"/g, '""') + '";')).join('\r\n');
+      .concat(stat.chybi.map(t => csvBunka(t) + ';')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     a.download = 'sablona_' + typ + '_nepreloz_' + lang + '.csv';
@@ -709,45 +803,95 @@ async function sablonyRezimUI(rezim) {
  * z téhle záložky udělalo nepřehlednou zeď a hledá se v nich jednou za rok. */
 function nastKapitolyNabidky() {
   const f = NAST.firma || (NAST.firma = firmaDefault());
-  const JAZ = [['', 'česky'], ['En', 'anglicky'], ['De', 'německy']];
+  const JAZ = [['', 'česky'], ['En', 'anglicky'], ['De', 'německy'], ['Fr', 'francouzsky']];   // FR od #367 fáze 2b (výchozí FR texty)
   const blok = kap => {
     const pola = JAZ.map(([suf, jmeno]) => {
       const id = kap.base + suf;
       const hodnota = f[id] == null ? '' : String(f[id]);
       const pocet = hodnota.split('\n').filter(r => r.trim()).length;
+      /* „Doplnit výchozí text" jen tam, kde výchozí text existuje (ne FR)
+       * a pole ho už nemá (dávka O3). */
+      const maVychozi = typeof FIRMA_KAP_VYCHOZI_KLICE !== 'undefined' && FIRMA_KAP_VYCHOZI_KLICE.indexOf(id) >= 0
+        && typeof DEFAULT_FIRMA !== 'undefined' && f[id] !== DEFAULT_FIRMA[id];
       return `<div class="row" style="align-items:flex-start">
         <label style="flex:none;width:86px;padding-top:6px">${esc(jmeno)}</label>
         <textarea rows="${Math.min(14, Math.max(4, pocet + 1))}" style="flex:1;min-width:0;font-family:inherit"
           onchange="firmaSet('${escJs(id)}', this.value)">${esc(hodnota)}</textarea>
         <span class="note" style="flex:none;width:150px;font-size:11.5px;padding-top:6px">
           <code>{{${esc('FIRMA_NAB_' + kap.base.replace(/^kap/, '').toUpperCase() + (suf ? '_' + suf.toUpperCase() : ''))}}}</code><br>
-          ${pocet ? pocet + ' odrážek' : '<span class="pill mut">nevyplněno</span>'}</span></div>`;
+          ${pocet ? pocet + ' odrážek' : '<span class="pill mut">nevyplněno</span>'}
+          ${maVychozi ? `<br><button class="mini" style="margin-top:4px" onclick="firmaKapitolaVychozi('${escJs(id)}')">↺ Doplnit výchozí text</button>` : ''}</span></div>`;
     }).join('');
     return `<details style="margin:6px 0;border:1px solid var(--line);border-radius:6px;padding:6px 10px">
       <summary style="cursor:pointer;font-weight:600">${esc((kap.cislo ? kap.cislo + ' ' : '') + kap.nadpis)}</summary>
       ${pola}</details>`;
   };
-  return `<div class="sec-title">Kapitoly nabídky III.–VI.</div>
+  /* Varování nahoře (23. 9. 2026, K9-N32): prázdná česká kapitola se
+   * z nabídky tiše vypustí — tady je to vidět dřív, než odejde nabídka. */
+  const prazdneCz = (typeof firmaKapitolyPrazdne === 'function') ? firmaKapitolyPrazdne(f, 'cz') : [];
+  const varovani = prazdneCz.length
+    ? `<div class="cenik-stari kapitoly-chybi" style="margin:4px 0 8px">⚠ Česky nevyplněno: ${
+        esc(prazdneCz.map(k => k.popis).join(', '))}. Nabídka tyto kapitoly <b>vypustí</b> i s nadpisem
+        (Word jen se šablonou CN v13 a novější, starší nechá nadpis a prázdný rámeček) —
+        zákazník je nedostane. Vyplňte je níž.</div>` : '';
+  return `<div class="sec-title">Kapitoly nabídky III.–VI.</div>${varovani}
     <div class="note" style="margin-top:0">Texty, které se tisknou pod cenou v <b>každé</b> nabídce.
       <b>Jeden řádek = jedna odrážka</b>, prázdné řádky se přeskočí.
       <b>Kapitola III. Platební podmínky se tady nevyplňuje</b> — skládá se ze zálohy, splatnosti
       a platnosti nabídky z krycího listu, aby se dvě místa nemohla rozejít.
       Každý jazyk má vlastní pole: smluvní podmínky se <b>nepřekládají strojově</b>. Jazyk, který
-      necháte prázdný, nabídka <b>vypustí i s nadpisem</b>; francouzština se zatím neřeší a vytiskne
-      češtinu s upozorněním. Značka <code>{FIRMA}</code> se nahradí názvem firmy.</div>
-    ${(typeof FIRMA_KAPITOLY !== 'undefined' ? FIRMA_KAPITOLY : []).map(blok).join('')}`;
+      necháte prázdný, nabídka <b>vypustí i s nadpisem</b> (Word od šablony CN v13); prázdná francouzština vytiskne
+      češtinu s upozorněním (výchozí FR texty ke kontrole: podklady/367_PREKLADY_KONTROLA.md). Značka <code>{FIRMA}</code> se nahradí názvem firmy, značka
+      <code>{TERMIN}</code> (kapitola V.) termínem dodání ze zakázky — z krycího listu, u atypické
+      zakázky i s prodloužením; s ní nabídka samostatnou odrážku „Termín dodání“ nepřidává.
+      Firma uložená dřív, než kapitoly existovaly, dostane při načtení <b>výchozí texty</b>
+      (česky, anglicky, německy, francouzsky); pole, které <b>vymažete</b>, zůstane prázdné — to je vědomé
+      vypuštění kapitoly.</div>
+    ${(typeof FIRMA_KAPITOLY !== 'undefined' ? FIRMA_KAPITOLY : []).map(blok).join('')}
+    <div class="btns" style="margin-top:6px"><button class="mini" onclick="firmaKapitolyVychozi()">↺ Doplnit všechny prázdné</button>
+      <span class="note">doplní výchozí znění do prázdných kapitol ve všech jazycích; vlastní texty
+      nemění</span></div>`;
+}
+
+/* Ruční doplnění výchozích textů kapitol (dávka O3, 19. 10. 2026) — jen
+ * administrátor. „Doplnit všechny prázdné" vlastní texty nepřepíše; tlačítko
+ * u jednoho pole se před přepsáním vlastního textu zeptá. Značku ukázkových
+ * dat to nesundává: výchozí text kapitol z firmy skutečnou nedělá. Zveřejnění
+ * online: tlačítko „Zveřejnit změny online" nahoře na téže záložce (U1). */
+function firmaKapitolyVychozi() {
+  if (!jeAdmin()) return hlaska('Firemní údaje smí měnit jen administrátor.');
+  if (!NAST.firma) NAST.firma = firmaDefault();
+  const zmeneno = firmaDoplnVychoziTexty(NAST.firma, true);
+  hlaska(zmeneno.length ? 'Doplněno výchozích textů: ' + zmeneno.length + '. '
+      + (typeof onlineFirmaKdeZverejnit === 'function' ? onlineFirmaKdeZverejnit() : '')
+    : 'Žádná kapitola (česky, anglicky, německy, francouzsky) není prázdná.');
+  nastRefresh();
+}
+async function firmaKapitolaVychozi(id) {
+  if (!jeAdmin()) return hlaska('Firemní údaje smí měnit jen administrátor.');
+  if (!NAST.firma) NAST.firma = firmaDefault();
+  if (String(NAST.firma[id] == null ? '' : NAST.firma[id]).trim()
+    && !await potvrd('Přepsat vlastní text této kapitoly výchozím zněním?')) return;
+  firmaDoplnVychoziText(NAST.firma, id);
+  nastRefresh();
 }
 
 function nastSmluvniStandardy() {
   const f = NAST.firma || (NAST.firma = firmaDefault());
-  const pole = FIRMA_POLE.filter(p => p.sekce === 'Smluvní standardy');
+  /* #367 fáze 2 (19. 10. 2026): platnost nabídky je ve společném bloku nad
+   * přepínačem OCK | PROJ, způsob fakturace PROJ na kartě PROJ, ostatní
+   * smluvní standardy patří k OCK. */
+  const cast = typeof podmCast === 'function' ? podmCast() : 'ock';
+  const PROJ_STD = ['zpusobFakturaceProj'];
+  const pole = FIRMA_POLE.filter(p => p.sekce === 'Smluvní standardy' && p.id !== 'platnostNabidky'
+    && (cast === 'proj') === (PROJ_STD.indexOf(p.id) >= 0));
   /* Prázdné pole neznamená „nic" — krycí list má pro ten případ záložní větu
    * napsanou v kódu. Do 20. 8. 2026 to nebylo nikde vidět, takže formulář
    * vypadal jako nevyplněný duplikát krycího listu (dotaz J. V.). Teď se
    * záložní věta ukazuje jako nápověda v poli i pod ním. */
   const ZALOHA = {
     platnostNabidky: '2 měsíce',
-    zpusobFakturaceOck: 'Náš standard / měsíční',
+    zpusobFakturaceOck: 'Po milnících',
     zpusobFakturaceProj: 'po dokončení jednotlivých stupňů dokumentace',
     rozsahDefinice: 'je definován přílohou ke smlouvě (specifikace)',
   };
@@ -760,7 +904,9 @@ function nastSmluvniStandardy() {
       <span class="note" style="flex:none;width:210px;font-size:11.5px"><code>{{${p.symbol}}}</code>${
         prazdne ? ' <span class="pill mut">platí záložní věta</span>' : ''}</span></div>`;
   };
-  return `<div class="sec-title">Smluvní standardy</div>
+  const hlava = typeof nastPodminkyHlava === 'function' ? nastPodminkyHlava() : '';
+  const podminky = typeof nastPodminkyOck !== 'function' ? '' : (cast === 'proj' ? nastPodminkyProj() : nastPodminkyOck());
+  return `${hlava}${podminky}<div class="sec-title">Smluvní standardy${cast === 'proj' ? ' PROJ' : ' OCK'}</div>
     <div class="note" style="margin-top:0">Věty, které platí pro celou firmu a propisují se do
       <b>každé</b> nabídky, smlouvy i krycího listu. Mění se jednou za čas a pro všechny naráz —
       proto tady, a ne v každé zakázce zvlášť. <b>Nejsou to duplicitní pole ke krycímu listu:</b>
@@ -769,7 +915,9 @@ function nastSmluvniStandardy() {
       <b>záložní věta napsaná v kódu</b> — je vidět jako šedá nápověda v poli.</div>
     ${pole.map(radek).join('')}
 
-    ${nastKapitolyNabidky()}
+    ${cast === 'proj' && typeof nastPlanPlatebProj === 'function' ? nastPlanPlatebProj() : ''}
+
+    ${cast === 'ock' ? nastKapitolyNabidky() : ''}
 
     <div class="sec-title">Logo firmy</div>
     <div data-vlozobrazek="logo" title="logo jde vložit i klávesami Ctrl+V ze schránky"
@@ -784,6 +932,15 @@ function nastSmluvniStandardy() {
       aby se přeneslo spolu s ostatním nastavením. Logo se zobrazuje v hlavičce tiskových náhledů.</div>`;
 }
 
+/* Popisek filtru šablon podle přepínače OCK | PROJ (#367) + volba „všechny". */
+function nastSablonyFiltr() {
+  if (typeof podmCast !== 'function') return '';
+  const vse = !!NAST.sablonyVse;
+  return `<span style="text-transform:none;letter-spacing:0;font-weight:400">— ${vse ? 'všechny'
+    : 'jen ' + podmCast().toUpperCase()} <label style="margin-left:8px"><input type="checkbox" ${vse ? 'checked' : ''}
+    onchange="podmSablonyVse(this.checked)"> všechny šablony</label></span>`;
+}
+
 function nastSablony() {
   /* Řádek platné serverové verze daného typu (#139). Ukazuje se každému
    * přihlášenému — obchodník má vědět, ze které verze se tiskne. */
@@ -793,12 +950,19 @@ function nastSablony() {
       const m = (typeof onlineSablonaMeta === 'function') ? onlineSablonaMeta(t) : null;
       if (!m) return null;
       const j = t === typ ? '' : ' ' + t.slice(-2).toUpperCase();
-      return `verze ${m.verze}${j} (${esc(m.nazev)}, zveřejnil ${esc(m.zverejnil)} ${esc((m.kdy || '').slice(0, 10))})`;
+      /* Mutace starší než česká šablona (#334) — tisk z ní v přísném režimu
+       * neprojde, tak ať to administrátor vidí dřív než obchodník. */
+      const zastarala = t !== typ && typeof sablonaMutaceZastarala === 'function'
+        && sablonaMutaceZastarala(onlineSablonaMeta(typ), m);
+      return `verze ${m.verze}${j} (${esc(m.nazev)}, zveřejnil ${esc(m.zverejnil)} ${esc((m.kdy || '').slice(0, 10))})`
+        + (zastarala ? ' <b class="sablona-zastarala" style="color:#b45309">⚠ zastaralá — starší než česká šablona, přegenerujte a zveřejněte</b>' : '');
     }).filter(Boolean);
     return `<div class="note" style="margin-top:6px">☁ Na serveru: ${kusy.length
       ? kusy.join(' · ') : '<b>žádná šablona zatím zveřejněná</b>'}</div>`;
   };
   const radek = (typ, label, pozn) => {
+    /* filtr přepínačem OCK | PROJ (#367) */
+    if (typeof podmSablonaViditelna === 'function' && !podmSablonaViditelna(typ)) return '';
     const s = SABLONY[typ];
     const mutace = ['en', 'de', 'fr'].map(l => {
       const m = SABLONY[typ + '_' + l];
@@ -846,9 +1010,19 @@ function nastSablony() {
         ${r.rezimZmenil ? `Naposledy přepnul ${esc(r.rezimZmenil)} ${esc((r.rezimKdy || '').slice(0, 10))}.` : ''}</div>
       <div id="sablOnlineStav" class="note" style="margin-top:6px"></div></div>`;
   };
+  /* Přihlášený online: nová správa šablon (#349, sablony_sprava_ui.js).
+   * Stará obrazovka níž zůstává pro práci bez serveru. */
+  if (sablonyOnlineAktivni() && typeof sablonySpravaHtml === 'function')
+    return `${nastSmluvniStandardy()}
+    <div class="sec-title">Šablony dokumentů ${nastSablonyFiltr()}</div>
+    <div class="note">Platí to, co je zveřejněné na serveru — z toho tisknou všichni přihlášení. Česká šablona je zdroj,
+      ze kterého se vyrábějí jazykové verze; každá jazyková verze ví, ze které české verze vznikla.
+      ${jeAdmin() ? 'Klikněte na dokument v tabulce: dole se ukáže jeho detail, jazykové verze a historie.' : ''}</div>
+    ${sablonySpravaHtml()}
+    ${rezimBlok()}`;
   return `${nastSmluvniStandardy()}
 
-    <div class="sec-title">Šablony dokumentů</div>
+    <div class="sec-title">Šablony dokumentů ${nastSablonyFiltr()}</div>
     <div class="note">Šablony <b>.docx</b> se od 13. 8. 2026 řídí <b>centrálně</b> (#139): administrátor je zveřejní
     na serveru a všichni přihlášení z nich automaticky tisknou — nikdo nemůže omylem použít starou verzi. Nahrání
     souboru níže je příprava (a nouzová cesta pro práci bez serveru); teprve <b>„Zveřejnit online"</b> ji učiní platnou
@@ -1012,6 +1186,19 @@ async function slovDoplnitVse() {
   const n = slovnikAplikuj(zm, prekladNastav);
   slovPrepocti('Doplněno ' + n + ' překladů.');
 }
+/* Hromadné převzetí odlišného znění (12. 10. 2026, zadání J. V.). Do té doby
+ * tu tlačítko schválně nebylo (převzetí řádek po řádku, aby se rozhodovalo
+ * u každého hesla). J. V. si ale tabulku kontroluje mimo aplikaci a pak chce
+ * převzít celou — u 44 řádků bylo klikání po jednom zbytečná dřina. Jedno
+ * potvrzení s počtem stačí: kdo tabulce nevěří, převezme po řádcích. */
+async function slovPrevzitVse() {
+  if (!jeAdmin() || !SLOV_STAV) return;
+  const zm = SLOV_STAV.rozdil.rozdilne;
+  if (!zm.length) return;
+  if (!await potvrd('Převzít všech ' + zm.length + ' odlišných znění z tabulky?\n\nU každého řádku bloku „Odlišné znění“ se překlad v aplikaci nahradí zněním z tabulky.')) return;
+  const n = slovnikAplikuj(zm.slice(), prekladNastav);
+  slovPrepocti('Převzato z tabulky ' + n + ' odlišných znění. Pro všechny a natrvalo je uložíte tlačítkem „Zveřejnit slovník“.');
+}
 function slovVezmi(kategorie, i) {
   if (!jeAdmin() || !SLOV_STAV) return;
   const z = (SLOV_STAV.rozdil[kategorie] || [])[i];
@@ -1083,13 +1270,48 @@ function slovTabulka(rows, kategorie, tlacitko) {
     ${telo}</table>${zbytek}`;
 }
 
+/* Platný slovník online (#401, 12. 10. 2026): kdo, kdy a kterou verzi
+ * zveřejnil, kolik změn v relaci ještě zveřejněných není, tlačítko
+ * „Zveřejnit slovník" a krátká historie verzí. Bez přihlášení jen pravda
+ * o tom, kam se změny dají uložit. */
+function nastSlovnikOnline() {
+  const ON = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV : null;
+  const ram = (obsah) => `<div style="margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:8px">
+      <div class="sec-title">Platný slovník (online)</div>${obsah}</div>`;
+  if (!ON || !ON.ja) return ram(`<div class="note" id="slovOnlineInfo">Nejste přihlášen k online databázi.
+      Převzaté změny teď platí v této relaci; trvale je uložíte <b>zveřejněním slovníku</b> po přihlášení
+      (jako ceník: verze, datum, autor a poznámka). Bez online databáze je přenese export konfigurace
+      (záložka <b>Konfigurace</b>) nebo připojená složka.</div>`);
+  const p = ON.slovnik && ON.slovnik.platny;
+  const datum = (x) => { const d = new Date(x); return isNaN(d) ? esc(x || '') : esc(d.toLocaleString('cs-CZ')); };
+  const nezv = (typeof onlineSlovnikNezverejneno === 'function') ? onlineSlovnikNezverejneno() : 0;
+  const info = p
+    ? `Platný slovník: <b>verze ${esc(p.verze)}</b>, zveřejněno ${datum(p.kdy)}, ${esc(p.kdo || '')}
+       — ${esc(p.pocet != null ? p.pocet : Object.keys(p.hesla || {}).length)} hesel odlišných od slovníku zabudovaného v aplikaci.
+       ${p.poznamka ? `<br>Poznámka: ${esc(p.poznamka)}` : ''}`
+    : `Zatím není zveřejněná žádná verze — všichni překládají slovníkem zabudovaným v aplikaci.`;
+  const hist = (ON.slovnik && Array.isArray(ON.slovnik.historie) ? ON.slovnik.historie : []).slice(0, 5);
+  const histHtml = hist.length ? `<div class="note" style="margin-top:6px">Starší verze: ${hist.map(h =>
+      `v${esc(h.verze)} (${datum(h.kdy)}, ${esc(h.kdo || '')}${h.poznamka ? ' — ' + esc(h.poznamka) : ''})`).join(' · ')}</div>` : '';
+  const admin = (typeof jeAdminOnline === 'function') && jeAdminOnline();
+  return ram(`<div class="note" id="slovOnlineInfo">${info}</div>${histHtml}
+    <div class="note" id="slovNezverejneno" style="margin-top:6px">${nezv
+      ? `V této relaci je <b>${nezv}</b> ${nezv === 1 ? 'heslo změněné' : 'hesel změněných'} proti platné verzi — ostatním
+         se projeví až po zveřejnění.`
+      : 'Slovník v této relaci odpovídá platné verzi.'}</div>
+    ${admin ? `<div class="btns" style="margin-top:8px"><button class="primary" id="slovZverejnit"
+      onclick="onlineZverejniSlovnik()" ${nezv ? '' : 'disabled'}>⤒ Zveřejnit slovník</button></div>` : ''}`);
+}
+
 function nastSlovnik() {
   if (!jeAdmin()) return `<div class="note">Porovnání slovníku s tabulkou Vocabulary je dostupné <b>jen administrátorovi</b>.</div>`;
   const uvod = `<div class="note">Slovník aplikace (<code>PREKLAD</code>) a tabulka
       <code>EngineersCZ_Vocabulary_*.xlsx</code> se časem rozejdou. Vyberte soubor a aplikace ukáže, kde se liší.
       <b>Nic se nezapíše samo</b> – doplnění i převzetí odlišného znění je vždy vaše kliknutí. Soubor zůstává
-      ve vašem počítači, nikam se neodesílá. Trvale se změny uloží až exportem konfigurace
-      (záložka <b>Konfigurace</b>), jinak platí jen pro tuto relaci.</div>
+      ve vašem počítači, nikam se neodesílá. Převzaté změny platí hned v této relaci; <b>pro všechny
+      a natrvalo</b> je uložíte tlačítkem <b>Zveřejnit slovník</b> níž — stejně jako ceník vznikne verze
+      s datem, autorem a poznámkou a každý přihlášený ji dostane po přihlášení.</div>
+    ${nastSlovnikOnline()}
     <div class="btns"><button class="primary" onclick="slovNacti()">⤒ Vybrat tabulku Vocabulary (.xlsx)</button>
       <button onclick="slovXlsxExport()">⤓ Stáhnout celý slovník (.xlsx)</button>
       ${SLOV_STAV ? `<button onclick="slovCsvJenVApp()">⤓ Hesla jen v aplikaci (CSV pro překladatele)</button>` : ''}</div>
@@ -1115,8 +1337,10 @@ function nastSlovnik() {
         + `<div class="btns" style="margin-top:8px"><button class="primary" onclick="slovDoplnitVse()">Doplnit všech ${s.doplnit}</button></div>`) : '')
     + (s.rozdilne ? blok(`Odlišné znění (${s.rozdilne})`,
         `Obě strany překlad mají a neshodují se. <b>Tady rozhodujete vy</b> – aplikace nemusí být pozadu,
-         někdo mohl znění vědomě upravit. Hromadné tlačítko tu schválně není.`,
-        slovTabulka(d.rozdilne, 'rozdilne', true)) : '')
+         někdo mohl znění vědomě upravit. Převzít jde po řádcích, nebo – máte-li tabulku zkontrolovanou –
+         všechno najednou tlačítkem pod tabulkou.`,
+        slovTabulka(d.rozdilne, 'rozdilne', true)
+        + `<div class="btns" style="margin-top:8px"><button class="primary" id="slovPrevzitVse" onclick="slovPrevzitVse()">Převzít všech ${esc(s.rozdilne)} z tabulky</button></div>`) : '')
     + (s.nove ? blok(`Hesla jen v tabulce (${s.nove})`,
         `Aplikace je zatím nezná. Přidat je můžete, ale slovník tím poroste i o výrazy, které se nikde nepoužijí.`,
         `<div class="note">${d.nove.slice(0, 40).map(x => esc(x.cz)).join(' · ')}${d.nove.length > 40 ? ' …' : ''}</div>

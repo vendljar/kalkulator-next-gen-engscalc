@@ -159,7 +159,7 @@ test('staré heslo už neplatí', (await post(prihlaseni, 'http://x/api/prihlase
 test('novým heslem se přihlásí', (await (await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@priklad.cz', heslo: 'NoveHeslo123' })).json()).ok === true);
 /* administrátorský reset zpátky (bez znalosti starého — to je jeho role) */
 test('administrátor resetuje heslo bez znalosti starého',
-  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1' }, cookie)).json()).ok === true);
+  (await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'heslo', email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1', hesloSpravce: 'Docasne.Heslo.123' }, cookie)).json()).ok === true);
 const poResetu = await post(prihlaseni, 'http://x/api/prihlaseni', { email: 'obchodnik@priklad.cz', heslo: 'ObchodHeslo1' });
 test('po resetu platí heslo od administrátora', (await poResetu.clone().json()).ok === true);
 cookieObch = (poResetu.headers.get('set-cookie') || '').split(';')[0] || cookieObch;   // reset odhlásil starou relaci (B6)
@@ -199,18 +199,69 @@ test('obchodník si firmu přečte', fCteni.ok && fCteni.firma.udaje.nazev === S
 test('zveřejněná firma nese, kdo a kdy',
   fCteni.firma.kdo === ADMIN_EMAIL && /^\d{4}-\d{2}-\d{2}T/.test(fCteni.firma.kdy));
 test('zveřejněná firma nenese značku ukázkových dat', fCteni.firma.udaje.ukazkove === undefined);
+/* Etapa B platebních podmínek (30. 9. 2026): firemní plán plateb projekce
+ * jde se zveřejněním na server a zpět k obchodníkovi; vadný tvar server
+ * odmítne toutéž kontrolou jako prohlížeč (plan_plateb.js). Do té doby
+ * kopie pro server nesla jen textová pole a logo. */
+{
+  const PPm = require('../src/plan_plateb.js');
+  const plan = JSON.parse(JSON.stringify(PPm.PLAN_PROJ_VYCHOZI)); plan.vychozi = 'zaloha'; plan.zalohaPct = 70;
+  const sPlanem = Object.assign(JSON.parse(JSON.stringify(SKUT)), { planPlatebProj: plan });
+  const rP = await (await post(firma, 'http://x/api/firma', { udaje: sPlanem }, cookie)).json();
+  const cP = await (await get(firma, 'http://x/api/firma', cookieObch)).json();
+  const pP = (cP.firma && cP.firma.udaje && cP.firma.udaje.planPlatebProj) || {};
+  test('plán plateb projekce se zveřejní a obchodník ho přečte', rP.ok === true && pP.vychozi === 'zaloha' && pP.zalohaPct === 70
+    && Array.isArray(pP.milniky) && pP.milniky.length === plan.milniky.length, pP);
+  const vadny = Object.assign(JSON.parse(JSON.stringify(SKUT)), { planPlatebProj: Object.assign({}, plan, { standard: { dpz: [{ p: 90, m: 'podpis' }] } }) });
+  const rV = await post(firma, 'http://x/api/firma', { udaje: vadny }, cookie);
+  test('vadný plán plateb projekce server odmítne (400) a řekne proč', rV.status === 400 && /plán plateb/i.test((await rV.json()).chyba || ''));
+  await post(firma, 'http://x/api/firma', { udaje: SKUT }, cookie);
+}
+
+/* #367 fáze 2 (19. 10. 2026): platební podmínky firmy OCK / PROJ jdou se
+ * zveřejněním na server a zpět k obchodníkovi jako čistá kopie; součet
+ * splátek OCK ≠ 100 % a vadný tvar server odmítne toutéž kontrolou jako
+ * prohlížeč (podminky.js), obchodník zveřejnit nesmí vůbec. */
+{
+  const podm = { v: 1, ock: { splatnostDni: 21, zarukaMesicu: 36 }, proj: { splatnostDni: 30 }, cizi: 'pryč' };
+  const sPodm = Object.assign(JSON.parse(JSON.stringify(SKUT)), { podminky: podm });
+  const rP = await (await post(firma, 'http://x/api/firma', { udaje: sPodm }, cookie)).json();
+  const cP = await (await get(firma, 'http://x/api/firma', cookieObch)).json();
+  const pP = (cP.firma && cP.firma.udaje && cP.firma.udaje.podminky) || {};
+  test('platební podmínky firmy se zveřejní a obchodník je přečte (bez cizích klíčů)', rP.ok === true
+    && pP.ock && pP.ock.splatnostDni === 21 && pP.proj && pP.proj.splatnostDni === 30 && !('cizi' in pP), pP);
+  const soucet = Object.assign(JSON.parse(JSON.stringify(SKUT)), { podminky: { ock: { faktura2Proc: 45 } } });
+  const rS = await post(firma, 'http://x/api/firma', { udaje: soucet }, cookie);
+  test('součet splátek OCK 105 % server odmítne (400) a řekne proč', rS.status === 400 && /100 %/.test((await rS.json()).chyba || ''));
+  const tvar = Object.assign(JSON.parse(JSON.stringify(SKUT)), { podminky: { proj: { splatnostDni: 'zítra' } } });
+  const rT = await post(firma, 'http://x/api/firma', { udaje: tvar }, cookie);
+  test('vadná splatnost PROJ server odmítne (400)', rT.status === 400 && /splatnost/.test((await rT.json()).chyba || ''));
+  test('obchodník platební podmínky zveřejnit nesmí (403)',
+    (await post(firma, 'http://x/api/firma', { udaje: sPodm }, cookieObch)).status === 403);
+  await post(firma, 'http://x/api/firma', { udaje: SKUT }, cookie);
+}
 
 /* 5) zakázky: uložení, rejstřík, načtení, ochrana zámku */
 Object.assign(globalThis, require('../src/format.js'), require('../src/engine.js'), require('../src/engine_proj.js'), require('../src/techspec.js'), require('../src/sleva.js'), require('../src/zaokrouhleni.js'), require('../src/zamek.js'));
 const zm = require('../src/zamek.js');
+/* Zámek jako v aplikaci (zamek_ui.js): nese číslo z papíru. Od 23. 9. 2026
+ * (nález B61) server nový zámek bez něj odmítne. Výslovně zadané `cislo`
+ * v testu přebije výchozí. */
+const zamkniJakoAplikace = (z, v, info) => zm.zamkniVariantu(v,
+  Object.assign({ cislo: zm.variantaCislo(z, v) }, info || {}));
+
 const zak = zk.novaZakazka(); zak.cislo = '2026 - OPR - CN - 0777'; zak.nazevAkce = 'Online test';
+/* Zakázka jako z aplikace se zveřejněným ceníkem a vyplněnou šachtou — nový
+ * zámek z ceníku bez cen nebo za 0 Kč server obchodníkovi odmítne (#395 V3). */
+zak.varianty[0].data.cenik = ZC.zkusebniCenik(); zak.varianty[0].data.proj.cenik = ZC.zkusebniCenikProj();
+Object.assign(zak.varianty[0].data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
 const ul1 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zak }, cookieObch)).json();
 test('zakázka se uloží online', ul1.ok === true && !!ul1.soubor, JSON.stringify(ul1));
 const rej = await (await get(zakazky, 'http://x/api/zakazky', cookieObch)).json();
 test('rejstřík zakázku eviduje', rej.ok && rej.rejstrik.zakazky.length === 1 && rej.rejstrik.zakazky[0].soubor === ul1.soubor);
 const nact = await (await get(zakazky, 'http://x/api/zakazky?soubor=' + encodeURIComponent(ul1.soubor), cookieObch)).json();
 test('zakázka se načte zpět beze změny čísla', nact.ok && nact.zakazka.cislo === zak.cislo);
-zm.zamkniVariantu(zak.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Test' });
+zamkniJakoAplikace(zak, zak.varianty[0], { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Test' });
 await post(zakazky, 'http://x/api/zakazky', { zakazka: zak }, cookieObch);   // uložit se zámkem
 const zakUtok = JSON.parse(JSON.stringify(zak));
 zakUtok.varianty[0].data.ock.zadani.sirka = 9.99;                            // pokus změnit odeslanou nabídku
@@ -250,7 +301,9 @@ test('vynucená záloha jen pro administrátora',
 test('seznam otisků jen pro administrátora',
   (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', cookieObch)).status === 403);
 const vyn = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}, cookie)).json();
-test('administrátor vynutí otisk', vyn.ok === true && vyn.den === new Date().toISOString().slice(0, 10), JSON.stringify(vyn));
+/* #151 N1 (19. 10. 2026): vynucený otisk do vlastního slotu s časem, ne přes noční. */
+test('administrátor vynutí otisk', vyn.ok === true && vyn.den.startsWith(new Date().toISOString().slice(0, 10) + 'T')
+  && vyn.den.endsWith('-rucne'), JSON.stringify(vyn));
 test('vynucený otisk hlásí, kolik zakázek uložil', vyn.pocetZakazek === 1, JSON.stringify(vyn));
 const vynOtisk = await (await globalThis.__TEST_ULOZISTE('zalohy')).cti(vyn.den);
 test('vynucený otisk nese celou databázi', !!vynOtisk && vynOtisk.program.platny.verze === 2
@@ -332,15 +385,24 @@ test('prohlížeč hlavní účet nepoznává podle e-mailu, ale podle příznak
  * krok tiše selhal, obchodník by tiskl ze staré šablony a nikdo by to
  * nepoznal — přesně to, kvůli čemu centrální šablony vznikly. */
 const sablonyFn = (await import('./functions/sablony.mjs')).default;
-const DOCX1 = 'UEsDBBQABgAIAAAAIQ' + 'A'.repeat(400);   // „soubor" verze 1 (ZIP hlavička)
-const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný otisk
+/* Skutečný minimální .docx ze zdejšího generátoru (B99, 29. 9. 2026): server
+ * od té doby šablonu rozbalí a zkontroluje obsah — pouhá hlavička „UEsDB"
+ * s výplní by neprošla. Jiný text = jiná data = jiný otisk. */
+const DG_B99 = require('../src/docxgen.js');
+const docxB64 = async (t) => Buffer.from(await DG_B99.docxDokumentBlob('Šablona ' + t + ' {{FIRMA_NAZEV}}', []).arrayBuffer()).toString('base64');
+const DOCX1 = await docxB64('verze 1');   // „soubor" verze 1
+const DOCX2 = await docxB64('verze 2');   // jiná data = jiný otisk
 
 {
   const cObch2 = cookieObch;   // relace z r2 už po změnách hesla neplatí (B6)
 
-  test('šablony: PDF se odmítne už při zveřejnění',
-    (await post(sablonyFn, 'http://x/api/sablony',
-      { akce: 'zverejnit', typ: 'nabidka', nazev: 'x.pdf', data: 'JVBERi0xLjQK' }, cookie)).status === 400);
+  /* Hláška se hlídá doslova (29. 9. 2026): od B99 by PDF odmítla i kontrola
+   * obsahu šablony („nejde rozbalit"), takže samotný stav 400 by nepoznal,
+   * že zmizela první pojistka „není .docx" (mutace „přijme i ne-Word"). */
+  const pdfOdp = await post(sablonyFn, 'http://x/api/sablony',
+      { akce: 'zverejnit', typ: 'nabidka', nazev: 'x.pdf', data: 'JVBERi0xLjQK' }, cookie);
+  test('šablony: PDF se odmítne už při zveřejnění (hláška „není .docx")',
+    pdfOdp.status === 400 && /není \.docx/.test((await pdfOdp.json()).chyba || ''));
   test('šablony: neznámý typ se odmítne',
     (await post(sablonyFn, 'http://x/api/sablony',
       { akce: 'zverejnit', typ: 'faktura', nazev: 'x.docx', data: DOCX1 }, cookie)).status === 400);
@@ -419,7 +481,7 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
   const den1 = { kliky: { 'kalk|BUTTON|nabidkaWord(…)': 2 }, zdrz: { 'kalk|INPUT|sirka': 30 },
                  zalozky: { kalk: 5 }, pocty: { zakazky: 1, kalkulace: 0, tiskyWord: 2, tiskyNahled: 0, prihlaseni: 1, chyby: 0 } };
   await post(analytika, 'http://x/api/analytika', { akce: 'udalosti', den: den1,
-    casy: { '2026-OPR-CN-0001': { ock: 120, proj: 30 } } }, cookieObch);
+    casy: { '2026-OPR-CN-0777': { ock: 120, proj: 30 } } }, cookieObch);
   await post(analytika, 'http://x/api/analytika', { akce: 'udalosti', den: den1 }, cookieObch);
   const ulozeny = await uloz.cti('den/' + dnes);
   test('analytika: dávky se PŘIČÍTAJÍ do denního agregátu (žádné záznamy po lidech)',
@@ -439,16 +501,39 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
 
   /* čas zakázky se akumuluje pod číslem zakázky */
   await post(analytika, 'http://x/api/analytika', { akce: 'udalosti',
-    casy: { '2026-OPR-CN-0001': { ock: 60, proj: 0 } } }, cookieObch);
-  const cas = await uloz.cti('cas/2026-OPR-CN-0001');
+    casy: { '2026-OPR-CN-0777': { ock: 60, proj: 0 } } }, cookieObch);
+  const cas = await uloz.cti('cas/2026-OPR-CN-0777');
   test('analytika: čas zakázky se akumuluje odděleně OCK / PROJ',
     cas && cas.ock === 180 && cas.proj === 30);
+
+  /* B35 (13. 10. 2026, J. V. „Ano"): klíč cas/ jen pro zakázku, která
+   * v databázi existuje (rejstřík). Číslo jde poslat tak, jak ho nese
+   * hlavička (s mezerami), i ve tvaru jména souboru. Smyšlené číslo klíč
+   * nezaloží. */
+  await post(analytika, 'http://x/api/analytika', { akce: 'udalosti',
+    casy: { '2026 - OPR - CN - 0777': { ock: 7 }, '2026-OPR-CN-9991': { ock: 9 }, 'B35-SMYSLENA': { proj: 4 } } }, cookieObch);
+  test('B35: čas k existující zakázce (číslo s mezerami jako v hlavičce) se zapíše',
+    ((await uloz.cti('cas/2026 - OPR - CN - 0777')) || {}).ock === 7, await uloz.cti('cas/2026 - OPR - CN - 0777'));
+  test('B35: smyšlené číslo zakázky klíč cas/ nezaloží',
+    !(await uloz.cti('cas/2026-OPR-CN-9991')) && !(await uloz.cti('cas/B35-SMYSLENA')),
+    (await uloz.seznam('cas/')).join(','));
+  /* B151 (audit 15. 10. 2026): jiný zápis TÉHOŽ čísla (jiné mezery,
+   * zdvojené pomlčky, mezera místo pomlčky) dřív prošel převodem na jméno
+   * souboru — jedna skutečná zakázka tak dala desítky tisíc klíčů cas/
+   * a jeden účet zaplnil strop. Platí jen číslo z rejstříku a jméno souboru. */
+  await post(analytika, 'http://x/api/analytika', { akce: 'udalosti',
+    casy: { '2026 -OPR- CN - 0777': { ock: 1 }, '2026--OPR--CN--0777': { ock: 1 }, '2026 OPR CN 0777': { ock: 1 },
+      '2026-OPR-CN-0777.': { ock: 1 } } }, cookieObch);
+  test('B151: jiný zápis čísla existující zakázky klíč cas/ nezaloží',
+    (await uloz.seznam('cas/')).filter(k => /0777/.test(k)).sort().join() === 'cas/2026 - OPR - CN - 0777,cas/2026-OPR-CN-0777',
+    (await uloz.seznam('cas/')).join(','));
+  await uloz.smaz('cas/2026 - OPR - CN - 0777');
 
   /* souhrn pro administrátora */
   const preh = await (await get(analytika, 'http://x/api/analytika?od=2020-01-01&do=2099-12-31', cookie)).json();
   test('analytika: souhrn nese celkové počty i řadu po měsících',
     preh.celkem.pocty.zakazky === 2 && preh.poMesicich[dnes.slice(0, 7)].pocty.zakazky === 2);
-  test('analytika: souhrn nese časy zakázek', preh.casy['2026-OPR-CN-0001'].ock === 180);
+  test('analytika: souhrn nese časy zakázek', preh.casy['2026-OPR-CN-0777'].ock === 180);
 
   /* retence: den starší 24 měsíců zmizí při dalším zápisu */
   await uloz.zapis('den/2023-01-15', den1);
@@ -472,6 +557,35 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
   test('analytika: záloha ke stažení analytiku NEVOZÍ', zalA.zaloha.analytika === undefined);
   const kodZaloh = kodSouboru.get('functions/zaloha.mjs') + kodSouboru.get('lib/zalohovani.mjs');
   test('analytika: zálohovací kód úložiště analytiky vůbec nezná', !kodZaloh.includes('analytika'));
+  /* B35 (13. 10. 2026): strop počtu klíčů cas/ — nad ním se nové zakázky
+   * nezakládají, existující se přičítají dál. Před opravou: neomezeně. */
+  {
+    const strop = globalThis.ANALYTIKA_MAX_CASU;
+    test('B35: strop počtu zakázek s časem je v jádru', typeof strop === 'number' && strop > 0, strop);
+    const N = typeof strop === 'number' ? strop : 5000;
+    const mame = (await uloz.seznam('cas/')).length;
+    for (let i = mame; i < N; i++) await uloz.zapis('cas/B35-' + i, { ock: 1, proj: 0 });
+    /* Nová zakázka musí existovat — jinak by test hlídal B35-rejstřík,
+     * ne strop. Uloží se jako z aplikace (administrátor, bez zámku). */
+    const zS = zk.novaZakazka(); zS.cislo = '2026 - OPR - CN - 0935'; zS.nazevAkce = 'Strop B35';
+    const ulS = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zS }, cookie)).json();
+    test('B35: zakázka pro zkoušku stropu se uložila', ulS.ok === true, JSON.stringify(ulS).slice(0, 160));
+    const ex = (await uloz.seznam('cas/B35-'))[0].slice(4);
+    const exPred = +((await uloz.cti('cas/' + ex)) || {}).ock || 0;
+    await post(analytika, 'http://x/api/analytika', { akce: 'udalosti',
+      casy: { '2026 - OPR - CN - 0935': { ock: 5 }, [ex]: { ock: 2 } } }, cookieObch);
+    test('B35: nad stropem ani existující nová zakázka klíč cas/ nezaloží', !(await uloz.cti('cas/2026 - OPR - CN - 0935')), (await uloz.seznam('cas/')).length);
+    test('B35: existující zakázka se přičítá dál', ((await uloz.cti('cas/' + ex)) || {}).ock === exPred + 2, await uloz.cti('cas/' + ex));
+    for (const k of await uloz.seznam('cas/B35-')) await uloz.smaz(k);
+    /* pod stropem už klíč vznikne — strop je opravdu jen druhá pojistka */
+    await post(analytika, 'http://x/api/analytika', { akce: 'udalosti',
+      casy: { '2026 - OPR - CN - 0935': { ock: 5 } } }, cookieObch);
+    test('B35: pod stropem existující zakázka klíč cas/ dostane',
+      ((await uloz.cti('cas/2026 - OPR - CN - 0935')) || {}).ock === 5);
+    await uloz.smaz('cas/2026 - OPR - CN - 0935');
+    await zakazky(new Request('http://x/api/zakazky?soubor=' + encodeURIComponent(ulS.soubor || ''),
+      { method: 'DELETE', headers: { cookie } }));
+  }
 }
 
 /* 5b) ZNAČKY UKÁZKOVÉHO A PRÁZDNÉHO CENÍKU (P2, nálezy N2/N3, 21. 9. 2026)
@@ -489,7 +603,9 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
   zn.cislo = '2026 - OPR - CN - 0778'; zn.nazevAkce = 'Značky ceníku';
   const d0 = zn.varianty[0].data;
   d0.cenik = Object.assign({}, d0.cenik, { montazHodKc: 850, dph: 21 });
-  const ulZ = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn }, cookieObch)).json();
+  /* Ukládá administrátor: vlastní cenu v ceníku varianty (montazHodKc 850)
+   * obchodník od B112 (29. 9. 2026) neuloží. Očista značek na roli nezávisí. */
+  const ulZ = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn }, cookie)).json();
   const naZ = await (await get(zakazky, 'http://x/api/zakazky?soubor='
     + encodeURIComponent(ulZ.soubor), cookieObch)).json();
   const cZ = naZ.zakazka.varianty[0].data.cenik;
@@ -502,7 +618,7 @@ const DOCX2 = 'UEsDBBQABgAIAAAAIQ' + 'B'.repeat(400);   // jiná data = jiný ot
   const zn2 = JSON.parse(JSON.stringify(naZ.zakazka));
   zn2.varianty[0].data.cenik.ukazkove = true;
   zn2.varianty[0].data.cenik.prazdny = true;
-  const ul2 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn2 }, cookieObch)).json();
+  const ul2 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zn2 }, cookie)).json();
   const na2 = await (await get(zakazky, 'http://x/api/zakazky?soubor='
     + encodeURIComponent(ul2.soubor || ulZ.soubor), cookieObch)).json();
   const c2 = na2.zakazka.varianty[0].data.cenik;

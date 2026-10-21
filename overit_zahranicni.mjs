@@ -91,7 +91,9 @@ await page.evaluate(() => {
 await page.evaluate(() => { window.__dlgTexty = []; });
 await page.evaluate(() => cenikRadaPrepniUI('zahr'));
 await page.waitForTimeout(300);
-posledniDialog = await dlgPosledni(page);
+/* Od P6 (K19-N114) po přepnutí následuje dotaz na „jen realizace" —
+ * dialog s dopadem je proto první, ne poslední. */
+posledniDialog = await page.evaluate(() => (window.__dlgTexty || []).find(t => /Dotkne se to/.test(t)) || '');
 test('přepnutí se nejdřív zeptá a vypíše dopad',
   /Dotkne se to \d+ ceníkových položek/.test(posledniDialog), posledniDialog.slice(0, 80));
 test('řada se přepnula',
@@ -192,6 +194,98 @@ await page.evaluate(() => {
 });
 await page.waitForTimeout(300);
 
+/* ---------- 6d) sazba DPH pro zahraniční řadu (nález N18, 22. 9. 2026) ----
+ * Pozorování z 8. kola: po přepnutí na zahraniční ceník naskočila zahraniční
+ * přirážka, ale sazba DPH zůstala tuzemská. Mechanismus existoval, chybělo
+ * POLE — sloupec „Cena Zahraničí" se kreslí u řádků tabulky a DPH v tabulce
+ * není, je to hodnota hlavičky.
+ *
+ * Nula je platná hodnota (přenesená daňová povinnost) a nesmí se splést
+ * s prázdným polem. Proto se tu zkouší právě nula, ne nějakých 19 %. */
+test('u sazby DPH je v ceníku pole pro zahraničí',
+  await page.evaluate(() => {
+    NAST.jeAdmin = true; prepniTab('cenik'); render();
+    return /SAZBA DPH.*pro ZAHRANIČÍ/s.test((document.getElementById('page-cenik') || {}).innerHTML || '');
+  }));
+const dph = await page.evaluate(() => {
+  cenikZahrSet('C.dph', 0);
+  prepniTab('kalk');
+  const v = aktivniVarianta(ZAK);
+  DEFAULT_CENIK.dph = 0.21;
+  v.data.cenik.dph = 0.21;
+  if (v.data.cenikRucni) delete v.data.cenikRucni['C.dph'];
+  render();
+  return { odchylka: CENIK_ZAHR.ceny['C.dph'], typ: typeof CENIK_ZAHR.ceny['C.dph'],
+           pred: v.data.cenik.dph };
+});
+test('nula se do odchylek uloží jako nula, ne jako prázdno',
+  dph.odchylka === 0 && dph.typ === 'number', dph);
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+test('přepnutí na zahraničí sazbu DPH vymění',
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph === 0),
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph));
+await page.evaluate(() => cenikRadaPrepniUI('cr'));
+await page.waitForTimeout(300);
+test('návratem se vrátí tuzemská sazba',
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph === 0.21),
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph));
+/* Úklid, ať další oddíly nepočítají s nulovou DPH. */
+await page.evaluate(() => {
+  cenikZahrSet('C.dph', '');
+  const v = aktivniVarianta(ZAK);
+  if (v.data.cenikRucni) delete v.data.cenikRucni['C.dph'];
+});
+await page.waitForTimeout(200);
+
+/* ---------- 6e) VÝCHOZÍ NULA: sazba DPH bez zahraniční odchylky (22. 9. 2026 večer) ----
+ *
+ * Přesně stav ze snímku J. V.: zahraniční ceník má odchylku u přirážky, u DPH
+ * nic — a po přepnutí svítila v hlavičce „12 % snížená". „To by bylo
+ * optimální" znamenalo 0 %. Zkouší se na tom, co obchodník vidí: hodnota
+ * v datech i vybraná volba v hlavičce, tam i zpátky. */
+const vychoziDph = await page.evaluate(() => {
+  const v = aktivniVarianta(ZAK);
+  DEFAULT_CENIK.dph = 0.12;
+  v.data.cenik.dph = 0.12;
+  if (v.data.cenikRucni) delete v.data.cenikRucni['C.dph'];
+  prepniTab('kalk'); render();
+  return { odchylka: Object.prototype.hasOwnProperty.call(CENIK_ZAHR.ceny, 'C.dph'), pred: v.data.cenik.dph };
+});
+test('výchozí stav: ceník zahraniční sazbu DPH nemá', vychoziDph.odchylka === false && vychoziDph.pred === 0.12,
+  vychoziDph);
+await page.evaluate(() => { window.__dlgTexty = []; });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+test('dialog přepnutí vypíše i sazbu DPH', /Sazba DPH/.test(await dlgPosledni(page)) || await page.evaluate(() =>
+  (window.__dlgTexty || []).some(x => /Sazba DPH/.test(x))), (await dlgPosledni(page)).slice(0, 200));
+test('po přepnutí na zahraničí je sazba DPH 0 %',
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph === 0),
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph));
+test('a hlavička ji tak i ukazuje',
+  await page.evaluate(() => [...document.querySelectorAll('#page-kalk select')]
+    .some(s => s.selectedOptions[0] && /^0 %/.test(s.selectedOptions[0].textContent.trim()))),
+  await page.evaluate(() => [...document.querySelectorAll('#page-kalk select')]
+    .map(s => s.selectedOptions[0] && s.selectedOptions[0].textContent.trim()).filter(x => /%/.test(x || ''))));
+await page.evaluate(() => cenikRadaPrepniUI('cr'));
+await page.waitForTimeout(300);
+test('návratem do tuzemska je zpátky tuzemská sazba',
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph === 0.12),
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph));
+/* Ruční volba obchodníka má přednost i před výchozí nulou (#177). */
+await page.evaluate(() => { set('C.dph', 0.12); });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+test('ručně vybranou sazbu výchozí nula nepřepíše',
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph === 0.12),
+  await page.evaluate(() => aktivniVarianta(ZAK).data.cenik.dph));
+await page.evaluate(() => {
+  cenikRadaPrepniUI('cr');
+  const v = aktivniVarianta(ZAK);
+  if (v.data.cenikRucni) delete v.data.cenikRucni['C.dph'];
+});
+await page.waitForTimeout(200);
+
 /* ---------- 6c) zahraniční přirážka i v ceníku projekce (3. 9. 2026) ---------- */
 test('u globální přirážky PROJ je také pole pro zahraničí',
   await page.evaluate(() => {
@@ -219,6 +313,106 @@ test('a návrat vrátí tuzemskou přirážku projekce',
   await page.evaluate(() => aktivniVarianta(ZAK).data.proj.cenik.marze === 0.55),
   await page.evaluate(() => aktivniVarianta(ZAK).data.proj.cenik.marze));
 await page.evaluate(() => { cenikZahrSet('PC.marze', ''); });
+
+/* ---------- P6 (K19-N114, 2. 10. 2026; D6f 13. 10. 2026): „jen realizace" ----------
+ * Zakázka s číslem OPR (tvar K22-Z02) má PROJ vyřazenou už podle čísla —
+ * dialog se jí nenabídne. Zahraniční zakázka BEZ čísla ano. Stub potvrd
+ * odpovídá Ano. */
+await page.evaluate(() => { cenikRadaPrepniUI('cr'); });
+await page.waitForTimeout(200);
+await page.evaluate(() => { ZAK.jenOck = false; ZAK.jenProj = false; ZAK.cislo = '2026 - OPR - CN - 9901'; render(); window.__dlgTexty = []; });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+const p6z = await page.evaluate(() => ({ jenOck: ZAK.jenOck, texty: window.__dlgTexty.slice(),
+  projZahr: (kontrolyStavAkt().kody || []).includes('projZahranici') }));
+test('P6 (i): zakázka s číslem OPR se na „jen realizace" neptá a projZahranici mlčí (PROJ vyřazená číslem)',
+  !p6z.texty.some(t => /Zakázka jen realizace/.test(t)) && p6z.jenOck === false && !p6z.projZahr, JSON.stringify(p6z));
+await page.evaluate(() => { cenikRadaPrepniUI('cr'); });
+await page.waitForTimeout(200);
+await page.evaluate(() => { ZAK.cislo = ZAK_CISLO_PREDLOHA; render(); window.__dlgTexty = []; });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+const p6a = await page.evaluate(() => ({ jenOck: ZAK.jenOck, texty: window.__dlgTexty.slice() }));
+test('P6: zakázka bez čísla se po přepnutí na zahraniční ceník zeptá na „jen realizace"',
+  p6a.texty.some(t => /Zakázka jen realizace/.test(t) && /celou zakázku/.test(t)), p6a.texty.map(t => t.slice(0, 40)).join(' | '));
+test('P6: v textu dialogu už není tlačítko „Počítat i tuhle stranu"',
+  p6a.texty.some(t => /Zakázka jen realizace/.test(t)) && !p6a.texty.some(t => /Počítat i tuhle stranu/.test(t)));
+test('P6: odpověď Ano nastaví zakázku jen jako realizaci (strana PROJ zešedne)',
+  p6a.jenOck === true && await page.evaluate(() => stranaZamcena(ZAK, 'proj')));
+await page.evaluate(() => { window.__dlgTexty = []; });
+await page.evaluate(() => cenikRadaPrepniUI('cr'));
+await page.waitForTimeout(300);
+const p6b = await page.evaluate(() => ({ jenOck: ZAK.jenOck, texty: window.__dlgTexty.slice() }));
+test('P6: návrat do tuzemska nabídne zase počítat projekci a Ano „jen realizace" zruší',
+  p6b.texty.some(t => /Počítat zase i projekci/.test(t)) && p6b.jenOck === false, JSON.stringify(p6b.jenOck));
+/* Odpověď Ne: zakázka zůstane, jak byla. */
+await page.evaluate(() => { window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(!/Zakázka jen realizace/.test(String(t))); }; });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+test('P6: odpověď Ne projekci ponechá', await page.evaluate(() => ZAK.jenOck === false && cenikRadaVarianty(aktivniVarianta(ZAK).data) === 'zahr'));
+await page.evaluate(() => cenikRadaPrepniUI('cr'));
+await page.waitForTimeout(200);
+/* Zakázka s číslem projekce (OVP) — vědomá projekce, nenabízí se. */
+await dlgStub(page);
+await page.evaluate(() => { ZAK.cislo = '2026 - OVP - CN - 9902'; render(); window.__dlgTexty = []; });
+await page.evaluate(() => cenikRadaPrepniUI('zahr'));
+await page.waitForTimeout(300);
+test('P6: zakázka s číslem projekce (OVP) se na „jen realizace" neptá',
+  await page.evaluate(() => !window.__dlgTexty.some(t => /Zakázka jen realizace/.test(t)) && ZAK.jenOck === false));
+await page.evaluate(() => { cenikRadaPrepniUI('cr'); });
+await page.waitForTimeout(200);
+await page.evaluate(() => { ZAK.cislo = ''; ZAK.jenOck = false; render(); });
+
+/* ---------- P6 (K19-N114, 13. 10. 2026): zámek strany v UI ----------
+ * Číslo OPR → Kalkulace PROJ uzamčená a vynulovaná: lišta bez tlačítka
+ * „Počítat i tuhle stranu", štítek „vynulováno", žádná nenulová částka,
+ * krycí list PROJ jen panel, dokumenty PROJ zhasnuté. Smazání čísla vrátí
+ * cenu. Číslo OVP obráceně (OCK). */
+{
+  const castky = (sel) => page.evaluate((s) => {
+    const el = document.querySelector(s); if (!el) return null;
+    const t = el.innerText.replace(/\u00a0/g, ' ');
+    return (t.match(/\d[\d ]*(,\d+)? Kč(?!\/)/g) || []).filter(x => /[1-9]/.test(x.replace(/,\d+/, '')));
+  }, sel);
+  await page.evaluate(() => { ZAK.jenOck = false; ZAK.jenProj = false; ZAK.cislo = '2026 - OPR - CN - 9903'; prepniTab('proj'); render(); });
+  await page.waitForTimeout(250);
+  const ui = await page.evaluate(() => ({
+    lista: !!document.querySelector('#page-proj .zamek-lista[data-strana-vyrazena="proj"]'),
+    tlacitko: /Počítat i tuhle stranu/.test(document.body.innerText),
+    stitek: !!document.querySelector('#page-proj .strana-nulovana'),
+    zamceno: document.getElementById('proj-telo').classList.contains('strana-zamcena'),
+    kryci: !!document.querySelector('#page-kryciproj .strana-vyrazena-panel'),
+    zabNab: ukazkoveZabranaAttr('nabidkaProj'), zabSod: ukazkoveZabranaAttr('sodProj'), zabOck: ukazkoveZabranaAttr('nabidka') }));
+  test('P6 UI: číslo OPR — Kalkulace PROJ má lištu vyřazené strany, štítek „vynulováno" a je jen pro čtení',
+    ui.lista && ui.stitek && ui.zamceno, JSON.stringify(ui));
+  test('P6 UI: tlačítko „Počítat i tuhle stranu" nikde není', !ui.tlacitko);
+  test('P6 UI: krycí list PROJ ukazuje jen panel vyřazené strany', ui.kryci);
+  test('P6 UI: dokumenty PROJ (nabídka, SoD) zhasnuté s hláškou, OCK ne',
+    /disabled/.test(ui.zabNab) && /vynulovan/.test(ui.zabNab) && /disabled/.test(ui.zabSod) && !/vynulovan/.test(ui.zabOck), JSON.stringify(ui));
+  const nenulove = await castky('#page-proj');
+  test('P6 UI: v Kalkulaci PROJ se neukáže žádná nenulová částka', nenulove && nenulove.length === 0, JSON.stringify(nenulove));
+  const prehled = await page.evaluate(() => { const r = spocitejVariantu(aktivniVarianta(ZAK)); return { ock: !!r.ock, proj: r.proj }; });
+  test('P6 UI: přehledy (spocitejVariantu) PROJ nepočítají', prehled.ock && prehled.proj === null, JSON.stringify(prehled));
+  await page.evaluate(() => { ZAK.cislo = ZAK_CISLO_PREDLOHA; render(); });
+  await page.waitForTimeout(250);
+  /* Harness běží nad ceníkem sestavení (samé nuly) — „počítá" se proto
+   * pozná podle výsledku a zmizelého štítku, ne podle částky. */
+  const zpet = await page.evaluate(() => ({ stitek: !!document.querySelector('#page-proj .strana-nulovana'),
+    lista: !!document.querySelector('#page-proj .zamek-lista'), proj: !!spocitejVariantu(aktivniVarianta(ZAK)).proj,
+    zamceno: document.getElementById('proj-telo').classList.contains('strana-zamcena') }));
+  test('P6 UI: smazání čísla — PROJ zase počítá (výsledek, bez štítku a lišty, pole živá)',
+    zpet.proj && !zpet.stitek && !zpet.lista && !zpet.zamceno, JSON.stringify(zpet));
+  await page.evaluate(() => { ZAK.cislo = '2026 - OVP - CN - 9904'; prepniTab('kalk'); render(); });
+  await page.waitForTimeout(250);
+  const ock = await page.evaluate(() => ({
+    lista: !!document.querySelector('.zamek-lista[data-strana-vyrazena="ock"]'),
+    stitek: !!document.querySelector('#kalk-souhrn .strana-nulovana'),
+    kryci: !!document.querySelector('#page-kryci .strana-vyrazena-panel') }));
+  test('P6 UI: číslo OVP — Kalkulace OCK vyřazená (lišta, štítek, krycí list OCK jen panel)', ock.lista && ock.stitek && ock.kryci, JSON.stringify(ock));
+  const nenuloveOck = await castky('#kalk-souhrn');
+  test('P6 UI: souhrn Kalkulace OCK u čísla OVP bez nenulové částky', nenuloveOck && nenuloveOck.length === 0, JSON.stringify(nenuloveOck));
+  await page.evaluate(() => { ZAK.cislo = ''; render(); });
+}
 
 /* ---------- 7) uzamčená varianta se nepřepíná ---------- */
 test('uzamčená (odeslaná) varianta se nepřepne',

@@ -22,7 +22,7 @@ function kurzZrcadli(data) {
 function syncVarianta() {
   const v = aktivniVarianta(ZAK);
   ZAK.aktivni = v.id;
-  kurzZrcadli(v.data);
+  if (!(typeof variantaUzamcena === 'function' && variantaUzamcena(v))) kurzZrcadli(v.data);
   if (!v.data.kryci) v.data.kryci = { hodnoty: {} };
   if (!v.data.kryci.hodnoty) v.data.kryci.hodnoty = {};
   if (!v.data.kryciProj) v.data.kryciProj = { hodnoty: {} };     // krycí list PROJ (KLP-1)
@@ -45,10 +45,15 @@ function syncVarianta() {
   PJ = v.data.proj.zadani; PC = v.data.proj.cenik; TS = v.data.techspec;
   KL = v.data.kryci; KLP = v.data.kryciProj; SL = v.data.sleva; SLP = v.data.slevaProj;
   ZO = v.data.zaokr; ZOP = v.data.zaokrProj;
+  /* ZAMČENÁ VARIANTA SE NEDOPLŇUJE (N43, 24. 9. 2026). Trvalé položky
+   * ceníku zavedené PO odeslání nabídky do ní nepatří — u zámku bez
+   * zmrazeného výsledku by změnily cenu dotisku a server by uložení
+   * odmítl (data zamčené nabídky by se změnila). */
+  const zamcena = typeof variantaUzamcena === 'function' && variantaUzamcena(v);
   // trvalé (katalogové) položky ceníku → do zadání; idempotentní, páruje přes kid
-  katalogAplikuj(KATALOG, Z);
+  if (!zamcena) katalogAplikuj(KATALOG, Z);
   // totéž pro PROJ (19. 8. 2026): trvalé položky ceníku PROJ → do zadání PROJ
-  if (typeof projKatalogAplikuj === 'function') projKatalogAplikuj(PC, PJ);
+  if (!zamcena && typeof projKatalogAplikuj === 'function') projKatalogAplikuj(PC, PJ);
 }
 syncVarianta();
 
@@ -170,6 +175,11 @@ function smiPohledAdmina() {
 /* ---------- náhled pohledem konkrétního uživatele (20. 8. 2026) ---------- */
 
 function nahledAktivni() { return !!(NAST.nahledUzivatel && NAST.nahledUzivatel.email); }
+/* Jakýkoli náhled — účtu i role (P13 / K16-N77, 25. 9. 2026). Rolový náhled
+ * zápis dál neblokuje (administrátor v něm ladí), ale AUTOMATICKÉ ukládání
+ * v něm stojí: během náhledu „Obchodník" autosave uložil zakázku pod
+ * administrátorem, aniž by o tom kdo věděl. */
+function nahledJakykoli() { return nahledAktivni() || !!NAST.nahledRole; }
 
 /* Zapnutí: role vybraného účtu se stane rolí rozhraní. Pohled administrátora
  * se zhasne (`NAST.jeAdmin = false`), jinak by matice vůbec nezačala platit —
@@ -325,8 +335,10 @@ function sekceSbalena(oblast, sekceKey) {
  * i sloupec Výchozí (20. 8. 2026) — obojí je jedno zaškrtnutí, ne celá
  * matice, takže se ukládá hned a bez potvrzovacího okna. */
 function zobrazeniMaticiUloz(coSeNepovedlo) {
-  if (typeof onlineApi === 'function' && typeof jeAdminOnline === 'function' && jeAdminOnline()) {
-    onlineApi('/api/zobrazeni', { matice: NAST.zobrazeni })
+  if (typeof onlineZobrazeniPost === 'function' && typeof jeAdminOnline === 'function' && jeAdminOnline()) {
+    /* B168: přes onlineZobrazeniPost — server chce heslo správce. Zrušený
+     * dialog skončí hláškou níž, ne tichým neuložením. */
+    onlineZobrazeniPost()
       .then(() => { if (typeof onlineNactiZobrazeni === 'function') onlineNactiZobrazeni(); })
       .catch(e => { if (typeof onlineZprava === 'function') {
         onlineZprava(coSeNepovedlo + ' se nepodařilo uložit na server: ' + e.message, 'varovani'); render();
@@ -450,6 +462,21 @@ const SABLONY = {};
  * Vrací Promise: objekt { data, nazev, zdroj:'server', verze, otisk, typ,
  * mutaceChybi } — nebo null („pokračuj místní cestou"; jen mimo přísný
  * režim) — nebo odmítnutí s českou větou, kterou jde rovnou ukázat. */
+/* ZASTARALÁ JAZYKOVÁ MUTACE (#334, nález K10-N36 z 10. kola, 24. 9. 2026).
+ * Mutace EN/DE/FR se vyrábí z české šablony (Nastavení → Šablony) a zveřejní
+ * zvlášť. Když se pak zveřejní novější česká šablona, mutace zůstane stará
+ * — v ostré to byla v8 proti české v10: 31 řádků česky a chybějící řádek
+ * soklu. Aplikace to nepoznala, protože mutace „existovala".
+ * Od 24. 9. 2026 (#348) nese mutace otisk české šablony, ze které vznikla
+ * (`zdrojOtisk`): zastaralá je, když ten otisk nepatří platné české šabloně.
+ * Starší mutace bez otisku se posuzují postaru — zveřejněná DŘÍV než platná
+ * česká šablona = zastaralá. Chybí-li čas zveřejnění, nerozhoduje se. */
+function sablonaMutaceZastarala(meta, metaJ) {
+  if (!meta || !metaJ) return false;
+  if (metaJ.zdrojOtisk) return metaJ.zdrojOtisk !== meta.otisk;
+  const a = Date.parse(meta.kdy || ''), b = Date.parse(metaJ.kdy || '');
+  return isFinite(a) && isFinite(b) && b < a;
+}
 function sablonyOnlineAktivni() {
   return typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.bezi && !!ONLINE_STAV.ja;
 }
@@ -462,6 +489,19 @@ function sablonaProTisk(typ, lang) {
   const meta = onlineSablonaMeta(typ);
   const popis = (typeof dokumentPopis === 'function' && dokumentPopis(typ)) || typ;
 
+  if (metaJ && meta && sablonaMutaceZastarala(meta, metaJ)) {
+    const jazyk = { en: 'Anglická', de: 'Německá', fr: 'Francouzská' }[L] || L.toUpperCase();
+    const zprava = jazyk + ' mutace šablony „' + popis + '" (verze ' + metaJ.verze + ') je starší než platná '
+      + 'česká šablona (verze ' + meta.verze + ') — dokument by vyšel ze starého znění, zčásti česky. '
+      + 'Administrátor ji přegeneruje: Nastavení → Šablony → ' + L.toUpperCase() + ' → Zveřejnit online.';
+    /* Přísný režim zastaví (tiskla by se neaktuální smluvní nabídka);
+     * měkký tiskne dál, ale hlášku dostane volající v `mutaceZastarala`. */
+    if (rezim === 'prisny') return Promise.reject(new Error(zprava));
+    return onlineSablonaStahni(typJazyk)
+      .then(v => ({ data: v.data, nazev: v.nazev, zdroj: 'server', verze: v.verze, otisk: v.otisk,
+                    typ: typJazyk, mutaceChybi: false, mutaceZastarala: zprava }))
+      .catch(() => null);
+  }
   if (metaJ || meta) {
     const vybrany = metaJ ? typJazyk : typ;
     return onlineSablonaStahni(vybrany)
@@ -505,9 +545,27 @@ function tabViditelny(t) {
   return true;
 }
 
-/* #14 krok 3: pravidla formátů bydlí ve format.js — tady jen krátká jména. */
-const fmt = n => formatKc2(n);
-const fmt0 = n => formatKc0(n);
+/* #14 krok 3: pravidla formátů bydlí ve format.js — tady jen krátká jména.
+ *
+ * VYNULOVANÁ STRANA (P6 / K19-N114, 13. 10. 2026): při kreslení obrazovek
+ * vyřazené strany zakázky (stranaNulujKresli) ukazují částky 0 Kč — zadání
+ * zůstává vidět (jen pro čtení), ale nikde se pro ni neukáže nenulová cena.
+ * Vynulování je pravidlo čtení: data ani výpočet se nemění. */
+const STRANA_NULOVANI = { aktivni: false };
+const fmt = n => formatKc2(STRANA_NULOVANI.aktivni ? 0 : n);
+const fmt0 = n => formatKc0(STRANA_NULOVANI.aktivni ? 0 : n);
+function stranaNulujKresli(strana, kresli) {
+  const pred = STRANA_NULOVANI.aktivni;
+  STRANA_NULOVANI.aktivni = (typeof stranaZamcena === 'function' && typeof ZAK !== 'undefined')
+    ? stranaZamcena(ZAK, strana) : false;
+  try { return kresli(); } finally { STRANA_NULOVANI.aktivni = pred; }
+}
+/* Štítek ke vynulovaným částkám vyřazené strany (souhrn, sekce, detail). */
+function stranaNulovanaStitek(strana) {
+  if (typeof stranaZamcena !== 'function' || typeof ZAK === 'undefined' || !stranaZamcena(ZAK, strana)) return '';
+  const ved = strana === 'ock' ? 'proj' : 'ock';
+  return `<div class="strana-nulovana" data-strana="${strana}"><b>0 Kč — vynulováno</b>, cenovka vzniká v ${esc(STRANA_NAZEV[ved] || '')}.</div>`;
+}
 const num = (n, d = 2) => formatCislo(n, d);
 /* ---------- escapování textu vkládaného do HTML (#6) ----------
  * Celé UI se skládá jako řetězec a přiřazuje přes innerHTML. Do těch řetězců
@@ -537,12 +595,49 @@ const escJs = s => esc(String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'
 const nazevBezZavorek = t => String(t || '').replace(/\s*\([^)]*\)/g, '').trim();
 
 function rootObj() { return { Z, C, OCK, PJ, PC, TS, ZAK, SL }; }
+/* CESTA DO DAT NESMÍ SAHAT NA PROTOTYP (B70, 24. 9. 2026). Cesty vznikají
+ * i z dat zakázky (typ pásu opláštění → sazba v ceníku); `C.__proto__.x`
+ * by jinak zapsal do Object.prototype celé stránky. */
+const CESTA_ZAKAZANE = new Set(['__proto__', 'constructor', 'prototype']);
+function cestaBezpecna(path) {
+  return typeof path === 'string' && path.split('.').every(k => k !== '' && !CESTA_ZAKAZANE.has(k));
+}
 function get(path) { return path.split('.').reduce((o, k) => o[k], rootObj()); }
 /* Zápis do dat aktivní varianty. Zámek (#34): do vytištěné = odeslané nabídky
  * se už nepíše. Cesty začínající „ZAK." jsou výjimka – to jsou údaje zakázky
  * (číslo, zákazník, hlavička), ne obsah konkrétní varianty; ty musí jít
  * upravit i tehdy, když je některá varianta zamčená. */
+/* ZÁPORNÉ HODINY RUČNĚ ZADAT NEJDE (N56, rozhodnutí J. V. 24. 9. 2026:
+ * „záporné hodiny nemůže být možné zadat ručně"). Týká se hodin montáže
+ * a projekce v OCK (základ i ATYP) a hodin a rezervy položek PROJ. Výpočet
+ * sám do minusu nejde (korekce montáže od referenční šachty zůstávají
+ * kladné); záporná částka v nabídce dřív vznikla jen překlepem. */
+/* B111 (29. 9. 2026): totéž platí pro částku položky PROJ (polozky.N.cena)
+ * — záporná vlastní fixní položka snížila cenu PROJ o 40 % bez schválení.
+ * Hranicí je server (uloZaporneProblemy); tohle je jen hláška na místě. */
+const HODINY_BEZ_ZAPORU = /^(Z\.(montazZakladHod|montazAtypHod|projekceZakladHod|projekceAtypHod)|polozky\.\d+\.(hodiny|rezerva|cena))$/;
+function hodinyZaporneOdmitni(path, v) {
+  if (!HODINY_BEZ_ZAPORU.test(String(path)) || !(typeof v === 'number' && v < 0)) return false;
+  if (typeof hlaska === 'function') hlaska('Hodiny nemohou být záporné. Zadejte 0 nebo kladné číslo.');
+  if (typeof render === 'function') render();
+  return true;
+}
+/* ZÁPORNÁ ČÁSTKA NEBO MNOŽSTVÍ (B111, 29. 9. 2026): vlastní položky,
+ * příplatky a ruční přepisy množství a ceny. Záporná položka snižovala cenu
+ * nabídky bez schválení a beze stopy v dokumentu; snížení ceny patří do
+ * slevy, která jde přes schvalování. Server stejnou věc odmítne sám
+ * (uloZaporneProblemy) — tady jde jen o srozumitelnou hlášku hned u pole. */
+function zaporneOdmitni(v) {
+  const n = (typeof v === 'number') ? v : (typeof v === 'string' && v.trim() !== '' ? +String(v).replace(',', '.') : NaN);
+  if (!(n < 0)) return false;
+  if (typeof hlaska === 'function')
+    hlaska('Částka ani množství nemohou být záporné. Snížení ceny zadejte jako slevu — ta jde přes schvalování.');
+  if (typeof render === 'function') render();
+  return true;
+}
 function set(path, v) {
+  if (!cestaBezpecna(path)) return;
+  if (hodinyZaporneOdmitni(path, v)) return;
   /* Zámek čtení platí i na hlavičku (ZAK.*) — viz komentář u ZAMEK_CTENI. */
   if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
   if (!path.startsWith('ZAK.') && typeof zamekStop === 'function' && zamekStop()) return;
@@ -561,6 +656,20 @@ function set(path, v) {
    *
    * Změna se zapisuje do protokolu zakázky, takže je dohledatelné kdo, kdy
    * a z čeho na co. Tichý přepis by byl horší než zákaz. */
+  /* MODEL 1 JE ZMRAZENÝ (rozhodnutí J. V. 24. 9. 2026, #332: „model 1 zmraz
+   * pro použití mimo administrátory, tedy nepůjde na něj už přepnout").
+   * Dál se rozvíjí jen Model 2. Na Model 1 přepne jen administrátor;
+   * zakázka, která v Modelu 1 už je, se počítá dál beze změny ceny
+   * a obchodník ji smí převést na Model 2 — zpátky už ne. Pojistka je
+   * tady, ne jen v přepínači, aby ji neobešlo žádné jiné volání set(). */
+  if (path === 'OCK.fixes' && !v && (typeof jeAdmin !== 'function' || !jeAdmin())) {
+    const t = 'Model 1 (1:1 jako Excel) je zmrazený — přepnout na něj smí jen administrátor. '
+      + 'Nové nabídky se počítají Modelem 2.';
+    if (typeof hlaska === 'function') hlaska(t);
+    else if (typeof progZprava === 'function') progZprava(t, 'varovani');
+    render();
+    return;
+  }
   if (path === 'ZAK.cislo' && typeof zakazkaMaOdeslanou === 'function' && zakazkaMaOdeslanou(ZAK)) {
     if (typeof jeAdmin !== 'function' || !jeAdmin()) {
       if (typeof progZprava === 'function')
@@ -648,13 +757,24 @@ function inp(path, opts = {}) {
     return `<div class="row"><label>${opts.l}</label><select onchange="set('${path}', +this.value)">
       <option value="1" ${val ? 'selected' : ''}>Ano</option>
       <option value="0" ${!val ? 'selected' : ''}>Ne</option></select><span class="u"></span></div>`;
-  if (opts.type === 'pct')   // uloženo jako desetinné číslo (0,30), zobrazeno a zadáváno v % (30)
-    return `<div class="row"><label>${opts.l}</label><input type="number" step="${opts.step ?? 1}" value="${Math.round(val * 10000) / 100}" onchange="set('${path}', (+this.value) / 100)"><span class="u">%</span></div>`;
+  /* `min` u procent (B134, 12. 10. 2026): rezervy zadání OCK nesmějí být
+   * záporné — server zápornou rezervu neuloží a zábrana zapornaPolozka
+   * zastaví dokument; `min="0"` jen nepustí šipky pod nulu. Globální
+   * přirážku v ceníku min nemá (smí ji měnit jen administrátor). */
+  if (opts.type === 'pct') {  // uloženo jako desetinné číslo (0,30), zobrazeno a zadáváno v % (30)
+    const minPct = opts.min != null ? ` min="${esc(opts.min)}"` : '';
+    return `<div class="row"><label>${opts.l}</label><input type="number" step="${opts.step ?? 1}"${minPct} value="${Math.round(val * 10000) / 100}" onchange="set('${path}', (+this.value) / 100)"><span class="u">%</span></div>`;
+  }
   /* `t` = tooltip nad polem. Přibylo 10. 9. 2026, když se popisné texty
    * odstěhovaly ze Zadání šachty do Detailu výpočtu (zadání J. V.) — vysvětlení
    * se tím neztratilo, jen přestalo zabírat řádek pod každým polem. */
   const tit = opts.t ? ` title="${esc(opts.t)}"` : '';
-  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}" value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
+  const min = opts.min != null ? ` min="${esc(opts.min)}"` : '';
+  /* `max` (30. 9. 2026, K17-N91 — zdvih nejvýš 99 m): prohlížeč jen nepustí
+   * šipky přes hranici; napsané číslo se uloží, jak je (tiché oříznutí by
+   * z překlepu udělalo jinou nabídku). Co je nad hranicí, řekne volající. */
+  const max = opts.max != null ? ` max="${esc(opts.max)}"` : '';
+  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}"${min}${max} value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
 }
 
 /* NULA SE NEMUSÍ MAZAT (10. 9. 2026, zadání J. V.: „nastav buňky tak, aby když
@@ -803,9 +923,12 @@ function variantaStavPill() {
    * Zámek okna je silnější zpráva než stav varianty: dokud platí, neuloží
    * se nic, ať je varianta v jakémkoli stavu. */
   if (typeof zamekCteniJe === 'function' && zamekCteniJe())
+    /* Odkaz na „Odemknout a uložit" odsud zmizel 22. 9. 2026 (N25): tlačítko
+     * se v režimu čtení nenabízí a odemyká se na jednom místě, v liště
+     * zámku nahoře. */
     return `<span class="stav-pill cteni" title="Zakázka je otevřená z databáze jen ke čtení — `
-      + `dokud ji vědomě neodemknete, žádná změna se neuloží. Odemyká se tlačítkem v liště `
-      + `nahoře nebo tlačítkem „Odemknout a uložit“."
+      + `dokud ji vědomě neodemknete, žádná změna se neuloží. Jak pokračovat, nabízí lišta `
+      + `nahoře."
       >🔒 Jen ke čtení — neukládá se</span>`;
   const z = (typeof zamekInfo === 'function') ? zamekInfo(v) : null;
   /* Text je celá věta (21. 8. 2026, zadání J. V.): samotné „aktivní" vedle
@@ -1028,14 +1151,16 @@ function standardRozpis() {
  *
  * `event.stopPropagation()` u selectu je nutné: nadpis karty sám o sobě
  * sbaluje a rozbaluje, takže bez něj by každá změna volby kartu i překlopila. */
-function kartaRezim(oblast, sekceKey, title, inner, id = '') {
+function kartaRezim(oblast, sekceKey, title, inner, id = '', closed = false) {
   const rezim = sekceRezim(oblast, sekceKey);
   if (rezim === 'skryt') return '';
   const vpravo = jeAdmin() ? sekceRezimSelect(oblast, sekceKey)
     : (rezim === 'srolovat' ? sekceRozbalBtn(oblast, sekceKey) : '');
   const nadpis = `<span style="flex:1">${title}</span>`
     + (vpravo ? `<span onclick="event.stopPropagation()" style="font-weight:400">${vpravo}</span>` : '');
-  const zavreno = kartaZavrena(id, sekceSbalena(oblast, sekceKey));
+  /* `closed` = karta je ve výchozím stavu sbalená i bez volby „srolovat"
+   * (Dimenze profilů, 19. 8. 2026); ruční rozbalení nadpisem platí dál. */
+  const zavreno = kartaZavrena(id, sekceSbalena(oblast, sekceKey) || closed);
   return `<div class="card ${zavreno ? 'closed' : ''}"${id ? ` id="${id}"` : ''}>
     <h2 onclick="kartaPrepni(this)"
       style="display:flex;align-items:center;gap:12px">${nadpis}</h2>
@@ -1058,12 +1183,18 @@ const KOTVY_PROJ = {
  * záložky. Lišta je position:sticky, proto stojí ZA kartou hlavičky,
  * ne v ní – .card má overflow:hidden a sticky by uvnitř nefungovalo. */
 function kalkLista(ock) {
+  /* Třetí prvek = klíč režimu sekce (a u sekcí tabulky i karta, ve které
+   * leží). Kotva na SKRYTOU sekci by obchodníkovi ukazovala do prázdna
+   * a prozrazovala, že tam něco je — proto z lišty zmizí i ona (23. 9. 2026). */
   const chips = ock
-    ? [['ock-zadani', 'Zadání šachty'], ['ock-profily', 'Dimenze profilů'], ['ock-prace', 'Práce a režie'],
-       ['ock-kalkulace', 'Cenová kalkulace'], ['ock-sek-hrubaOck', 'Hrubá OCK'], ['ock-sek-oplasteni', 'Opláštění'],
-       ['ock-sek-volitelne', 'Volitelné'], ['ock-sek-rezie', 'Režie'], ['ock-priplatky', 'Příplatky'],
-       ['ock-sleva', 'Sleva'], ['ock-nabidka', 'Cenová nabídka']]
-    : PJ.sekce.map((s, i) => ['proj-sek-' + i, KOTVY_PROJ[s.key] || s.nazev])
+    ? [['ock-zadani', 'Zadání šachty', ['zadani']], ['ock-profily', 'Dimenze profilů', ['profily']],
+       ['ock-prace', 'Práce a režie', ['prace']], ['ock-kalkulace', 'Cenová kalkulace', ['kalkulace']],
+       ['ock-sek-hrubaOck', 'Hrubá OCK', ['kalkulace', 'hrubaOck']], ['ock-sek-oplasteni', 'Opláštění', ['kalkulace', 'oplasteni']],
+       ['ock-sek-volitelne', 'Volitelné', ['kalkulace', 'volitelne']], ['ock-sek-rezie', 'Režie', ['kalkulace', 'rezie']],
+       ['ock-priplatky', 'Příplatky', ['priplatky']], ['ock-sleva', 'Sleva', ['sleva']], ['ock-nabidka', 'Cenová nabídka', ['nabidka']]]
+        .filter(([, , kl]) => kl.every(k => sekceRezim('ock', k) !== 'skryt'))
+    : PJ.sekce.map((s, i) => ['proj-sek-' + i, KOTVY_PROJ[s.key] || s.nazev, s.key])
+        .filter(([, , k]) => sekceRezim('proj', k) !== 'skryt')
         .concat([['proj-sleva', 'Sleva'], ['proj-souhrn', 'Souhrn'], ['proj-nabidka', 'Cenová Nabídka']]);
   return `<div class="kalk-lista noprint">
     <button class="hist2 jsHistZpet" disabled onclick="historieZpet()">↶ Zpět</button>
@@ -1184,10 +1315,16 @@ function zakazkaHlavicka(ock) {
   const variantaRow = `<div class="row"><label>Otevřená varianta${ridiciPill}</label>
     <select class="cteni-ok" onchange="varAktivuj(this.value)" title="přepnout počítanou variantu">${opts}</select></div>`;
   const ridiciBtn = akt.ridici ? '' : `<div class="row"><label></label><button class="mini noprint" onclick="varRidici('${escJs(akt.id)}')">nastavit jako řídící (platná je „${esc(rid.nazev)}")</button></div>`;
-  const rezimRow = `<div class="row"><label>Režim výpočtu</label>
-    <select onchange="set('OCK.fixes', this.value==='fix')" title="přepnutí Model 2 – opravený / Model 1 – 1:1 jako Excel">
+  /* Model 1 je od 24. 9. 2026 zmrazený (#332): ne-administrátor ho v nabídce
+   * nemá. U zakázky, která v něm už je, vidí „Model 1 (zmrazený)" a může ji
+   * převést na Model 2; administrátor přepíná jako dřív. */
+  const rezimRow = (jeAdmin() || !OCK.fixes) ? `<div class="row"><label>Režim výpočtu</label>
+    <select class="rezim-vypoctu" onchange="set('OCK.fixes', this.value==='fix')" title="${jeAdmin()
+      ? 'přepnutí Model 2 – opravený / Model 1 – 1:1 jako Excel (Model 1 je zmrazený, přepnout na něj smí jen administrátor)'
+      : 'zakázka se počítá zmrazeným Modelem 1 — převést na Model 2 lze, zpět ne'}">
       <option value="fix" ${OCK.fixes ? 'selected' : ''}>Model 2 – opravený</option>
-      <option value="compat" ${!OCK.fixes ? 'selected' : ''}>Model 1 – 1:1 jako Excel</option></select></div>`;
+      <option value="compat" ${!OCK.fixes ? 'selected' : ''}>Model 1 – 1:1 jako Excel${jeAdmin() ? '' : ' (zmrazený)'}</option></select></div>`
+    : `<div class="row"><label>Režim výpočtu</label><div><span class="pill rezim-vypoctu" title="Model 1 je zmrazený; nové nabídky se počítají Modelem 2">Model 2 – opravený</span></div></div>`;
   const datumRow = `<div class="row na-konec"><label>Datum vytvoření</label>
     <input type="date" value="${esc(ZAK.datum)}" onchange="set('ZAK.datum', this.value)"></div>`;
 
@@ -1254,8 +1391,10 @@ function zakazkaHlavicka(ock) {
    * Vazba je zřejmá z ceníku, kde sekce SAZBY DPH klíče nese. */
   const dphSelect = (cesta, c, sazba) => `<div class="row"><label>Sazba DPH</label>
     <select onchange="set('${cesta}', +this.value)">${dphPredvolby(c, sazba).map(o =>
-      `<option value="${o.h}" ${Math.abs((+sazba || 0) - o.h) < 1e-9 ? 'selected' : ''}>${
-        Math.round(o.h * 10000) / 100} % ${o.l}</option>`).join('')}</select></div>`;
+      /* Sazba ze zakázky jde do value jen jako ČÍSLO (B69, 24. 9. 2026):
+       * uložená zakázka může nést v sazbě řetězec s HTML. */
+      `<option value="${esc(+o.h || 0)}" ${Math.abs((+sazba || 0) - (+o.h || 0)) < 1e-9 ? 'selected' : ''}>${
+        Math.round((+o.h || 0) * 10000) / 100} % ${esc(o.l)}</option>`).join('')}</select></div>`;
   const dphRow = dphSelect('C.dph', C, C.dph);
   // PROJ má vlastní sazbu DPH (ceník PROJ) – projekční práce bývají v jiné sazbě než stavební část
   /* Předvolby DPH bere projekce z ceníku OCK (2. 9. 2026: jeden zdroj pravdy).
@@ -1274,12 +1413,14 @@ function zakazkaHlavicka(ock) {
    * hlavně kterým ceníkem se počítalo. */
   const puvodVeta = (typeof puvodPopis === 'function') ? puvodPopis(akt) : '';
   const puvodRadek = puvodVeta ? `<div class="zak-puvod noprint">⤺ ${esc(puvodVeta)}</div>` : '';
-  /* Načíst, Nová zakázka, Historická kalkulace, Přehled i přepínač varianty
-   * nesou třídu cteni-ok: v režimu čtení (zámek okna) zůstávají živé, protože
-   * nic nezapisují — bez ní by je CSS .cteni-zamceno vypnulo spolu s poli
-   * (hlášení J. V. 7. 9. 2026: „nemůžu načíst starou ani otevřít novou"). */
-  const archivBtn = `<button class="mini cteni-ok" onclick="otevriArchiv()"
-    title="nahlédnout do uložených zakázek a převzít historickou kalkulaci jako alternativu">↩ Historická kalkulace…</button>`;
+  /* Načíst, Nová zakázka, Přehled i přepínač varianty nesou třídu cteni-ok:
+   * v režimu čtení (zámek okna) zůstávají živé, protože nic nezapisují — bez
+   * ní by je CSS .cteni-zamceno vypnulo spolu s poli (hlášení J. V. 7. 9. 2026:
+   * „nemůžu načíst starou ani otevřít novou").
+   *
+   * Tlačítko „↩ Historická kalkulace…" (okno archivu, #17) bylo 13. 10. 2026
+   * na pokyn J. V. odstraněno („Myslím, že už k ničemu není."). Varianty, které
+   * jím dřív vznikly, si původ nesou dál (v.puvod → puvodPopis, značka ⤺). */
 
   /* Tlačítko „Převzít údaje z hlavičky OCK/PROJ" v liště obou kalkulací bylo
    * 5. 8. 2026 na pokyn zrušeno. Lišta kalkulace má nést jen to, co se dělá
@@ -1305,7 +1446,6 @@ function zakazkaHlavicka(ock) {
         ${zakTrojice()}
         <span class="zak-cena-del"></span>
         <button class="mini" onclick="varNova()">+ Nová varianta (kopie otevřené)</button>
-        ${archivBtn}
         <button class="mini cteni-ok" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
       </div>${zakUlozeniRadek()}`;
     return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}${
@@ -1331,7 +1471,6 @@ function zakazkaHlavicka(ock) {
       ${zakTrojice()}
       <span class="zak-cena-del"></span>
       <button class="mini" onclick="varNova()">+ Nová varianta (kopie otevřené)</button>
-      ${archivBtn}
       <button class="mini cteni-ok" onclick="prepniTab('zakazka')">Přehled cenových nabídek →</button>
     </div>${zakUlozeniRadek()}`;
   return `<div class="card zak-bar${radaTed === 'zahr' ? ' rada-zahr' : ''}${
@@ -1513,7 +1652,9 @@ function verzeObnovUI() {
 
 function renderKalkHlavicka() {
   const el = document.getElementById('kalk-hlavicka');
-  if (el) el.innerHTML = zamekCteniLista() + zakazkaHlavicka(true) + zamekStranyLista('ock');
+  /* Lišta „jen ke čtení" tu stála do 13. 10. 2026 — od #404 ji nahrazuje
+   * jediná žlutá lišta nad záložkami (renderListaZakazky v zamek_ui.js). */
+  if (el) el.innerHTML = zakazkaHlavicka(true) + zamekStranyLista('ock');
   zamekStranyNasad('ock');
   zamekCteniNasad('ock');
 }
@@ -1542,7 +1683,11 @@ async function cenikRadaPrepniUI(rada) {
   const cr = (typeof cenikDnesniData === 'function') ? cenikDnesniData() : { cenik: DEFAULT_CENIK };
   const zahr = (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : null;
   const rozdily = (typeof cenikRadaRozdily === 'function') ? cenikRadaRozdily(cr, zahr) : [];
-  if (!rozdily.length && r === 'zahr') {
+  /* Odmítá se podle VÝSLOVNÝCH odchylek ceníku, ne podle výchozí nulové
+   * sazby DPH (22. 9. 2026 večer). Ta se doplní vždycky, takže by jinak
+   * přepnutí prošlo i nad zahraničním ceníkem, který administrátor ještě
+   * nezaložil — a zakázka by se tvářila jako zahraniční s tuzemskými cenami. */
+  if (!rozdily.some(x => !x.vychozi) && r === 'zahr') {
     hlaska('Zahraniční ceník zatím nemá žádnou odchylku — ceny by se nezměnily.\n\n'
       + 'Zadejte je v záložce Ceník nákladů OCK ve sloupci „Zahraničí" '
       + '(smí je zadat a zveřejnit jen administrátor).');
@@ -1553,9 +1698,18 @@ async function cenikRadaPrepniUI(rada) {
     + (rozdily.length > 8 ? '\n• … a další ' + (rozdily.length - 8) : '');
   if (!await potvrd('Přepnout výpočet na ' + (r === 'zahr' ? 'ZAHRANIČNÍ' : 'TUZEMSKÝ') + ' ceník?\n\n'
     + 'Dotkne se to ' + rozdily.length + ' ceníkových položek:\n' + vypis
-    + '\n\nRuční přepisy v zakázce se nemění. Globální přirážka a sazba DPH se přepnou jen '
-    + 'tehdy, když pro ně ceník zahraniční odchylku má a vy jste je v téhle nabídce sám '
-    + 'nepřenastavil.')) return;
+    /* Sazba DPH má v zahraniční řadě výchozí nulu (22. 9. 2026 večer) —
+     * dialog to říká nahlas, protože se tím mění cena s DPH v nabídce. */
+    + '\n\nRuční přepisy v zakázce se nemění. Sazba DPH jde v zahraničí na 0 % '
+    + '(pokud ceník neurčuje jinou), při návratu do tuzemska zpět na tuzemskou; globální '
+    + 'přirážka se přepne, když pro ni ceník odchylku má. Co jste si v téhle nabídce '
+    + 'nastavil sám, zůstává.'
+    /* P11 (rozhodnutí J. V. 29. 9. 2026): projekce se u zahraničí nedělá.
+     * Od P6 (K19-N114, 2. 10. 2026) se na „jen realizace" hned zeptá. */
+    + (r === 'zahr' && typeof zahrJenRealizaceNabidnout === 'function' && zahrJenRealizaceNabidnout(ZAK, 'zahr', []) === 'jenOck'
+      ? '\n\nProjekci u zahraničních zakázek nerealizujeme. Zahraniční '
+      + 'ceník u ní mění jen přirážku a DPH, sazby a fixy zůstávají tuzemské — po přepnutí se '
+      + 'zeptám, zda zakázku nastavit jen jako realizaci.' : ''))) return;
 
   const vysl = cenikRadaPrepni(d, cr, zahr, r);
   v.upraveno = new Date().toISOString();
@@ -1566,12 +1720,46 @@ async function cenikRadaPrepniUI(rada) {
         + (vysl.chranene && vysl.chranene.length
           ? ', ponecháno ručně nastavených: ' + vysl.chranene.length : '') });
   syncVarianta(); render();
+  await zahrJenRealizaceDotaz(r);
   /* Co se NEZMĚNILO, je stejně důležité jako co se změnilo: obchodník jinak
    * čeká zahraniční přirážku a v nabídce má pořád svou vlastní. */
   if (vysl.chranene && vysl.chranene.length)
     hlaska('Ceník je přepnutý na ' + nazev + '.\n\nBeze změny zůstalo, co jste si v téhle '
       + 'nabídce nastavil sám:\n' + vysl.chranene.map(x => '• ' + x.popis).join('\n')
       + '\n\nChcete-li i tady hodnotu z ceníku, přepište ji ručně.');
+}
+
+/* P6 (K19-N114, rozhodnutí J. V. 2. 10. 2026, upraveno 13. 10. 2026 — D6f):
+ * po přepnutí na zahraniční řadu nabídne zahraniční zakázce BEZ čísla
+ * „zakázka jen realizace" (výchozí Ano); zakázka s číslem OPR má PROJ
+ * vyřazenou už podle čísla. Po návratu všech variant do tuzemska nabídne
+ * zrušení `jenOck`. Rozhoduje zahrJenRealizaceNabidnout (zakazka.js);
+ * zápis jde přes set(), takže ho hlídá zámek i náhled jako každý jiný. */
+async function zahrJenRealizaceDotaz(rada) {
+  if (typeof zahrJenRealizaceNabidnout !== 'function') return;
+  const rady = (ZAK.varianty || []).map(x => (typeof cenikRadaVarianty === 'function') ? cenikRadaVarianty(x && x.data) : 'cr');
+  const co = zahrJenRealizaceNabidnout(ZAK, rada, rady);
+  if (!co) return;
+  const v = aktivniVarianta(ZAK);
+  const zapis = (text) => { if (typeof protokolZapis === 'function')
+    protokolZapis(ZAK, { kde: 'Kalkulace OCK', varianta: v && v.id, variantaNazev: v && v.nazev,
+      kdo: (typeof zamekKdo === 'function') ? zamekKdo() : '', co: text }); };
+  if (co === 'jenOck') {
+    if (!await potvrd('Zakázka jen realizace — projekci nepočítat?\n\n'
+      + 'Projekci u zahraničních zakázek nerealizujeme. Kalkulace PROJ se uzamkne a vynuluje (krycí list PROJ, '
+      + 'nabídka, smlouva PROJ a plán plateb PROJ nevzniknou) a kontroly projekce přestanou hlásit.\n\n'
+      + 'Platí pro celou zakázku, tedy pro všechny její varianty. Vrátit jde v Kalkulaci PROJ '
+      + 'odškrtnutím „Zakázka je jen realizace (bez PROJ)" — nebo návratem všech variant na tuzemský ceník.',
+      { ano: 'Ano, jen realizace', ne: 'Ne, projekci ponechat' })) return;
+    set('ZAK.jenOck', true);
+    if (ZAK.jenOck === true) zapis('Zakázka nastavena jen jako realizace (zahraniční ceník)');
+  } else if (co === 'zrusitJenOck') {
+    if (!await potvrd('Všechny varianty teď počítají s tuzemským ceníkem.\n\n'
+      + 'Zakázka je nastavená jen jako realizace. Počítat zase i projekci?',
+      { ano: 'Ano, počítat i projekci', ne: 'Ne, ponechat jen realizaci', vychoziNe: true })) return;
+    set('ZAK.jenOck', false);
+    if (ZAK.jenOck === false) zapis('Zakázka zase počítá i projekci (tuzemský ceník)');
+  }
 }
 
 /* ---------- ZÁMEK OTEVŘENÉ ZAKÁZKY: JEN PRO ČTENÍ (4. 9. 2026) ----------
@@ -1608,18 +1796,30 @@ function zamekCteniStop() {
   const hotovo = () => { ZAMEK_CTENI.dialog = false; };
   const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
   const smi = (typeof zamekCteniSmiOdemknout !== 'function') || zamekCteniSmiOdemknout(ZAK, ja);
+  /* ODESLANÁ NABÍDKA SE NEODEMYKÁ, POKRAČUJE SE KLONEM (#404, J. V. 13. 10.
+   * 2026). Obchodník u odeslané nabídky lištu „jen ke čtení" s Odemknout
+   * nemá — dialog proto nabídne totéž co oranžová lišta: klon varianty
+   * (zamekKlonUI okno odemkne, smí-li). Odemknout odeslanou nabídku smí jen
+   * role s právem zamek.odemknout, a to modrým pruhem. */
+  const v = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : null;
+  if (v && typeof variantaUzamcena === 'function' && variantaUzamcena(v) && typeof zamekUpozorni === 'function') {
+    Promise.resolve(zamekUpozorni(v)).then(hotovo, hotovo);
+    return true;
+  }
   if (smi && typeof potvrd === 'function') {
     /* Do 8. 9. 2026 dialog jen posílal „nahoru na Odemknout k úpravám" — jenže
      * na záložkách Ceník žádné takové tlačítko nebylo a přirážka se po každém
      * zadání vracela zpět (hlášení J. V.). Odemknutí se proto nabízí rovnou
      * tady; hodnotu pak člověk zadá znovu — ten jeden zablokovaný zápis se
      * dodatečně neprovádí, aby se do odemčené nabídky nezapsalo nic, co by
-     * dialog jen odklepl. */
-    potvrd('Nabídka je otevřená jen ke čtení — změna se neuložila.\n\n'
-      + 'Odemknout k úpravám teď? Hodnotu pak zadejte znovu; od té chvíle se změny zase '
-      + 'ukládají samy. Dokud je zamčená, nic se do databáze nezapisuje — otevřít si ji '
+     * dialog jen odklepl. Od #404 (13. 10. 2026) mluví dialog jazykem žluté
+     * lišty: „Pokračovat v rozpracované kalkulaci" dělá totéž co její tlačítko
+     * (odemkne a obnoví novější zálohu z prohlížeče, je-li). */
+    potvrd('Rozpracovaná kalkulace je otevřená jen ke čtení — změna se neuložila.\n\n'
+      + 'Pokračovat v rozpracované kalkulaci teď? Hodnotu pak zadejte znovu; od té chvíle se změny zase '
+      + 'ukládají samy. Dokud ji jen prohlížíte, nic se do databáze nezapisuje — otevřít si ji '
       + 'a jen se podívat je bezpečné.',
-      { nadpis: 'Nabídka jen ke čtení', ano: 'Odemknout a pokračovat', ne: 'Zůstat jen ke čtení' })
+      { nadpis: 'Kalkulace jen ke čtení', ano: 'Pokračovat v rozpracované kalkulaci', ne: 'Zůstat jen ke čtení' })
       /* ZŮSTAT ZNAMENÁ, ŽE SE ZMĚNA NEPROVEDE — A MUSÍ TO BÝT VIDĚT
        * (P3, nález N4, 21. 9. 2026). Zablokovaný zápis se dodatečně
        * neprovádí, jenže napsaná hodnota zůstávala v políčku a tvářila se
@@ -1627,30 +1827,24 @@ function zamekCteniStop() {
        * polí to, co je v datech, takže obrazovka zase říká pravdu. */
       .then(ano => {
         hotovo();
-        if (ano) zamekCteniOdemkniUI();
+        if (ano) { if (typeof listaPokracujUI === 'function') listaPokracujUI(); else zamekCteniOdemkniUI(); }
         else if (typeof render === 'function') render();
       }, hotovo);
   } else if (typeof hlaska === 'function') {
     const duvod = (typeof zamekCteniDuvod === 'function') ? zamekCteniDuvod(ZAK, ja) : '';
-    hlaska('Nabídka je otevřená jen ke čtení.' + (duvod ? '\n\n' + duvod : '')
-      + '\n\nDokud je zamčená, nic se do databáze neukládá — otevřít si ji a jen se podívat je bezpečné.')
+    hlaska('Kalkulace je otevřená jen ke čtení.' + (duvod ? '\n\n' + duvod : '')
+      + '\n\nNovou kalkulaci založíte tlačítkem „Založit novou kalkulaci" v liště nahoře. '
+      + 'Dokud ji jen prohlížíte, nic se do databáze neukládá.')
       .then(hotovo, hotovo);
   } else hotovo();
   return true;
 }
 
-function zamekCteniLista() {
-  if (!zamekCteniJe()) return '';
-  const ja = (typeof ONLINE_STAV !== 'undefined') ? ONLINE_STAV.ja : null;
-  const smi = (typeof zamekCteniSmiOdemknout !== 'function') || zamekCteniSmiOdemknout(ZAK, ja);
-  const duvod = (!smi && typeof zamekCteniDuvod === 'function') ? zamekCteniDuvod(ZAK, ja) : '';
-  return `<div class="zamek-lista zamek-cteni noprint">
-    <span class="ikona">🔒</span>
-    <span class="sp"><b>Nabídka je otevřená jen ke čtení.</b>
-      Nic se neukládá, dokud ji vědomě neodemknete.${duvod ? ' ' + esc(duvod) : ''}</span>
-    ${smi ? '<button class="mini" onclick="zamekCteniOdemkniUI()">Odemknout k úpravám</button>' : ''}
-  </div>`;
-}
+/* `zamekCteniLista()` — modrá lišta „Nabídka je otevřená jen ke čtení…
+ * Odemknout k úpravám" nad Kalkulací OCK, PROJ a ceníky — zanikla 13. 10.
+ * 2026 (#404). Režim čtení ovládá jediná žlutá lišta rozpracované kalkulace
+ * (renderListaZakazky v zamek_ui.js) a u odeslané nabídky modrý pruh
+ * „Odemknout k úpravám" jen pro roli s právem zamek.odemknout. */
 
 /* Třída na kontejnery s daty. Lišta ani hlavička okna v nich nejsou, takže
  * tlačítko Odemknout zůstane klikatelné. */
@@ -1674,7 +1868,7 @@ function zamekCteniOdemkniUI() {
   if (typeof nahledStop === 'function' && nahledStop('odemčení nabídky k úpravám')) return;
   zamekCteniVypni();
   if (typeof onlineZprava === 'function')
-    onlineZprava('Nabídka je odemčená k úpravám — od téhle chvíle se změny zase ukládají samy.');
+    onlineZprava('Pokračujete v rozpracované kalkulaci — od téhle chvíle se změny zase ukládají samy.');
   render();
 }
 
@@ -1692,12 +1886,30 @@ function zamekStranyLista(strana) {
   const vedouci = zakazkaVedouciStrana(ZAK);
   const cislo = zakazkaCisloVedouci(ZAK);
   const kam = vedouci === 'proj' ? 'proj' : 'kalk';
-  return `<div class="zamek-lista noprint">
+  /* P6 (K19-N114, J. V. 1. a 13. 10. 2026): vyřazená strana je uzamčená
+   * A VYNULOVANÁ a druhou stranu počítat nejde (D6a — tlačítko „Počítat
+   * i tuhle stranu" zmizelo). Druhá strana = samostatná zakázka. */
+  const jina = strana === 'proj'
+    ? 'Projekce se nabízí samostatnou zakázkou s vlastním číslem řady OVP'
+    : 'Ocelová konstrukce se nabízí samostatnou zakázkou s vlastním číslem řady OPR';
+  return `<div class="zamek-lista noprint" data-strana-vyrazena="${strana}">
     <span><b>Cenovka téhle zakázky vzniká v ${esc(STRANA_NAZEV[vedouci] || '')}</b>${cislo ? ' (' + esc(cislo) + ')' : ''}.
-      Tahle kalkulace je proto jen ke čtení, ať je zřejmé, odkud cena pochází.</span>
+      Tahle kalkulace je uzamčená a vynulovaná (0 Kč) — zadání zůstává jen ke čtení a nikam se nepočítá.
+      ${esc(jina)} (Seznam zakázek → Duplikovat jako novou zakázku), protože Pipedrive eviduje každou nabídku zvlášť.</span>
     <button class="mini" onclick="prepniTab('${kam}')">Přejít do počítané kalkulace</button>
-    <button class="mini" onclick="zamekStranyPovol()">Počítat i tuhle stranu</button>
+    ${strana === 'proj' && ZAK.jenOck ? `<label class="mini" title="příznak zakázky „jen realizace“ (zahraniční zakázka bez čísla); odškrtnutím se Kalkulace PROJ zase počítá, pokud ji nevyřazuje číslo nabídky">
+      <input type="checkbox" checked onchange="set('ZAK.jenOck', this.checked)"> Zakázka je jen realizace (bez PROJ)</label>` : ''}
   </div>`;
+}
+
+/* Panel místo obrazovky, která patří jen vyřazené straně (krycí list) —
+ * nese jen ceny a údaje strany, která se nenabízí (P6). */
+function stranaVyrazenaPanel(strana, nazev) {
+  if (typeof stranaZamcena !== 'function' || !stranaZamcena(ZAK, strana)) return '';
+  return `<div class="card strana-vyrazena-panel" data-strana-vyrazena="${strana}"><div class="body">
+    <b>${esc(nazev)} — kalkulace ${strana === 'proj' ? 'PROJ' : 'OCK'} je uzamčená a vynulovaná (0 Kč).</b>
+    <div class="note" style="margin-top:6px">${esc(typeof zakazkaVyrazenaText === 'function' ? zakazkaVyrazenaText(ZAK) : '')}</div>
+  </div></div>`;
 }
 
 /* Přepnutí třídy na kontejnerech s výpočtem. Hlavička (#kalk-hlavicka)
@@ -1714,18 +1926,10 @@ function zamekStranyNasad(strana) {
   });
 }
 
-/* „Počítat i tuhle stranu" — vědomé rozhodnutí, že zakázka nese obojí. */
-function zamekStranyPovol() {
-  if (typeof zamekStop === 'function' && zamekStop()) return;
-  if (typeof nahledStop === 'function' && nahledStop('odemčení druhé kalkulace')) return;
-  set('ZAK.obeStrany', true);
-  set('ZAK.jenProj', false);
-  set('ZAK.jenOck', false);
-}
 function renderNabidkaOck() {
   const el = document.getElementById('kalk-nabidka');
   if (el) el.innerHTML = slevaKarta() + zaokrKarta()
-    + card('Cenová nabídka (CN)', nabidkaKarta(), false, 'ock-nabidka');
+    + kartaRezim('ock', 'nabidka', 'Cenová nabídka (CN)', nabidkaKarta(), 'ock-nabidka');
 }
 
 /* ---------- Sleva (ZAK-10): zadání, stropy dle role, schvalování ----------
@@ -1819,15 +2023,29 @@ function slevaProjRefreshStav() { return slevaRefreshStavCast('proj'); }
  * ve které se poznámka NEnapsala, by jinak při nejbližším překreslení vrátila
  * starý text (audit 1. 8. 2026, N5). onchange pálí až při opuštění pole,
  * takže překreslení kurzor nekrade. */
+/* ROLE SLEVY = ROLE PŘIHLÁŠENÉHO (P1 / K16-N73, 25. 9. 2026). Výběr
+ * „Role zadavatele" z karty zmizel — obchodník si jím „schválil" slevu nad
+ * strop. Kdo mění procenta, je autor slevy; jeho role se zapíše do slevy
+ * (server ji stejně přepíše z relace). Bez přihlášení (soubor offline) zůstává
+ * role, jakou sleva má. Roli jinak změnit nejde. */
+function slevaRolePrihlaseneho() {
+  const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV) ? ONLINE_STAV.ja : null;
+  return (ja && ja.role) || null;
+}
+function slevaNastav(obj, pole, val) {
+  if (!obj || pole === 'role') return false;
+  if (pole === 'procenta') {
+    obj.procenta = Math.max(0, +val || 0);
+    const r = slevaRolePrihlaseneho();
+    if (r) obj.role = r;
+  } else obj[pole] = val;
+  return true;
+}
 function slevaSet(pole, val) {
-  if (!SL) return;
-  if (pole === 'procenta') SL.procenta = Math.max(0, +val || 0); else SL[pole] = val;
-  render();
+  if (slevaNastav(typeof SL !== 'undefined' ? SL : null, pole, val)) render();
 }
 function slevaProjSet(pole, val) {
-  if (!SLP) return;
-  if (pole === 'procenta') SLP.procenta = Math.max(0, +val || 0); else SLP[pole] = val;
-  render();
+  if (slevaNastav(typeof SLP !== 'undefined' ? SLP : null, pole, val)) render();
 }
 /* `slevaSetSchvalitel` a `slevaSchval` tu skončily 5. 8. 2026: schvalování
  * má vlastní záložku (`ui/schvalovani_ui.js`). Pole `SL.schvalitel` ve
@@ -1861,7 +2079,6 @@ function slevaKarta(kontext) {
   const schemata = NAST.slevy.schemata || [];
   const schemaOpts = ['<option value="">— schéma slevy —</option>']
     .concat(schemata.map(s => `<option ${s.nazev === SLC.schema ? 'selected' : ''}>${esc(s.nazev)}</option>`)).join('');
-  const roleOpts = NAST.role.map(rr => `<option ${rr === SLC.role ? 'selected' : ''}>${esc(rr)}</option>`).join('');
   const strop = v.strop;
 
   /* Stavů je pět, ale „zamítnuto" znamená dvě různé věci: buď slevu srazila
@@ -1924,7 +2141,7 @@ function slevaKarta(kontext) {
 
   const inner = `<div class="zak-head" style="grid-template-columns:1fr 1fr 1fr">
       <div class="row"><label>Schéma slevy</label><select onchange="${c.fn}('schema', this.value)">${schemaOpts}</select></div>
-      <div class="row"><label>Role zadavatele</label><select onchange="${c.fn}('role', this.value)">${roleOpts}</select></div>
+      <div class="row"><label>Zadal (role)</label><span title="Role slevy se bere z přihlášeného uživatele, který zadal procenta; určuje strop, do kterého se sleva schválí sama.">${esc(SLC.role || '—')}</span></div>
       <div class="row"><label>Sleva</label><span class="pct-wrap"><input type="number" step="0.5" min="0" value="${+SLC.procenta || 0}" onchange="${c.fn}('procenta', this.value)"> %</span></div>
     </div>
     <div class="row" style="max-width:100%"><label>Poznámka ke slevě</label>
@@ -1933,14 +2150,22 @@ function slevaKarta(kontext) {
       ${slevaPlati(SLC) ? '<span class="note" style="margin-left:8px">propíše se do ceny nabídky ↓</span>' : (+SLC.procenta > 0 ? '<span class="note" style="margin-left:8px">neschválená sleva se do nabídky nepropíše</span>' : '')}</div>
     ${dopad}${schvalBlok}${oddeleni}
     ${+SLC.procenta > 0 ? `<div class="btns" style="margin-top:6px"><button class="mini" onclick="${c.zrus}">Zrušit slevu</button></div>` : ''}`;
-  return card(c.nazev, inner, false, c.kotva);
+  /* Režim sekce i u slevy OCK (23. 9. 2026, zadání J. V.: „přidej skrývací
+   * a rolovací tlačítka do všech sekcí kalkulace OCK"). PROJ zůstává beze
+   * změny — zadání mířilo na OCK. */
+  return c.proj ? card(c.nazev, inner, false, c.kotva)
+    : kartaRezim('ock', 'sleva', c.nazev, inner, c.kotva);
 }
 
 /* Výsledky výpočtů pro libovolnou variantu (pro přehledy) */
 function spocitejVariantu(v) {
   let ock = null, proj = null;
-  try { ock = (typeof vypocetZ === 'function' ? vypocetZ(v, JEKLY) : vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes)); } catch (e) {}
-  try { proj = (typeof vypocetProjZ === 'function' ? vypocetProjZ(v) : vypocetProj(v.data.proj.zadani, v.data.proj.cenik)); } catch (e) {}
+  /* Zámek strany (P6 / K19-N114): vyřazená strana zakázky se v přehledech
+   * nepočítá — souhrn řídící varianty, porovnání i seznam ji ukážou jako
+   * „—" / 0 Kč. Jedno pravidlo: vysledekStrany (zakazka.js). */
+  const vyr = (typeof zakazkaVyrazenaStrana === 'function' && typeof ZAK !== 'undefined') ? zakazkaVyrazenaStrana(ZAK) : '';
+  try { ock = vyr === 'ock' ? null : (typeof vypocetZ === 'function' ? vypocetZ(v, JEKLY) : vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes)); } catch (e) {}
+  try { proj = vyr === 'proj' ? null : (typeof vypocetProjZ === 'function' ? vypocetProjZ(v) : vypocetProj(v.data.proj.zadani, v.data.proj.cenik)); } catch (e) {}
   return { ock, proj };
 }
 
@@ -2046,10 +2271,16 @@ function tiskListaSkript(hlasky, zamek) {
   }, hlasky || {});
   const z = (zamek && zamek.typ && typeof dokumentZamyka === 'function' && dokumentZamyka(zamek.typ))
     ? { typ: zamek.typ, varId: zamek.varId || '' } : null;
+  /* JSON uvnitř skriptu (B84, hloubkový test 24. 9. 2026): uzavírací značka
+   * skriptu v hlášce nebo id by skript ukončila a zbytek by se četl jako
+   * HTML. (Samotná značka tu v komentáři stát nesmí — aplikace je jeden
+   * vložený skript a ukončila by ho taky.) `<` se
+   * proto píše jako \u003c — pro JavaScript je to tentýž znak. */
+  const js = (x) => JSON.stringify(x).replace(/</g, '\\u003c');
   return '<scr' + 'ipt>'
     + 'var TISK_PUVODNI = null;\n'
-    + 'var TISK_HLASKY = ' + JSON.stringify(h) + ';\n'
-    + 'var TISK_ZAMEK = ' + JSON.stringify(z) + ';\n'
+    + 'var TISK_HLASKY = ' + js(h) + ';\n'
+    + 'var TISK_ZAMEK = ' + js(z) + ';\n'
     + 'var TISK_ZAMEK_KDY = 0;\n'
     + 'function tiskStav(t){var s=document.getElementById("tiskStav");if(s)s.textContent=t||"";}\n'
     + 'function tiskZamkni(){if(!TISK_ZAMEK)return;'
@@ -2241,7 +2472,13 @@ function ulozZakazku() {
   // #41: co je rozepsané, se do protokolu dopíše ještě před exportem –
   // uložený soubor má nést protokol k okamžiku uložení, ne o dvě vteřiny starší.
   if (typeof protokolZapisTed === 'function') protokolZapisTed();
-  const blob = new Blob([StorageAdapter.exportuj(ZAK)], { type: 'application/json' });
+  /* Bez práva na náklady (P12 / #369, v15.10.3) jde soubor bez ceníků
+   * rozpracovaných variant — jen jejich odchylky od platného ceníku; při
+   * načtení se ceník doplní z platného (zakazkaCenikDopln v zakazka.js). */
+  const bezCeniku = typeof StorageAdapter.exportujBezCeniku === 'function'
+    && typeof cenikDnesniProVariantu === 'function' && !smiZobrazit(ZOBRAZENI_KLIC_NAKLADY);
+  const blob = new Blob([bezCeniku ? StorageAdapter.exportujBezCeniku(ZAK, cenikDnesniProVariantu)
+    : StorageAdapter.exportuj(ZAK)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = StorageAdapter.nazevSouboru(ZAK);
@@ -2486,15 +2723,21 @@ function renderTelo() {
   renderRezimPill();
   renderVerzePill();
   renderKalkHlavicka();
-  renderInputs(); renderOutputs();
-  renderNabidkaOck();
-  renderDetail();
-  if (typeof renderDetailProj === 'function') renderDetailProj();
-  renderTechspec();
-  renderSpecData();
-  renderKryci();
-  renderProj();
-  renderKryciProj();
+  /* Obrazovky vyřazené strany (P6, zámek strany) se kreslí s vynulovanými
+   * částkami — stranaNulujKresli; mimo vyřazenou stranu beze změny. */
+  stranaNulujKresli('ock', () => {
+    renderInputs(); renderOutputs();
+    renderNabidkaOck();
+    renderDetail();
+    renderTechspec();
+    renderSpecData();
+    renderKryci();
+  });
+  stranaNulujKresli('proj', () => {
+    if (typeof renderDetailProj === 'function') renderDetailProj();
+    renderProj();
+    renderKryciProj();
+  });
   renderCenik();
   renderCenikProj();
   renderZakazka();

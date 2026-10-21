@@ -318,7 +318,9 @@ const dph = await p.evaluate(() => {
            cenikProj: /class="sec"[^>]*><td[^>]*>SAZBY DPH/.test(cenikProj)
              || /class="sec"[^>]*><td[^>]*>CIZÍ MĚNA/.test(cenikProj),
            projText: window.__projDph || '',
-           projPozn: /Sazby DPH a kurz EUR jsou společné s ceníkem OCK/.test(cenikProj),
+           projPozn: /PŘEDVOLBY sazeb DPH a kurz EUR jsou společné s ceníkem OCK/.test(cenikProj),
+           /* Co společné NENÍ, musí poznámka říct taky — viz test níž. */
+           projPoznVlastni: /Vybraná sazba nabídky\s*zůstává projekci vlastní/.test(cenikProj),
            text, sVlastni, sazba: aktivniVarianta(ZAK).data.cenik.dph };
 });
 /* Od 2. 9. 2026 má DPH i kurz JEDEN zdroj pravdy — ceník OCK. V ceníku PROJ
@@ -333,7 +335,14 @@ zkus('sazba mimo předvolby se nabídne jako vlastní a nepřepíše se', dph.sV
 zkus('výběr sazby se uloží do zakázky', Math.abs(dph.sazba - 0.19) < 1e-9, dph.sazba);
 zkus('hlavička PROJ nabízí TYTÉŽ sazby z ceníku OCK',
   /19 % základní/.test(dph.projText) && /9 % snížená/.test(dph.projText), dph.projText.slice(0, 120));
-zkus('ceník PROJ řekne, kde se DPH a kurz nastavují', dph.projPozn);
+zkus('ceník PROJ řekne, kde se PŘEDVOLBY DPH a kurz nastavují', dph.projPozn);
+/* UPŘESNĚNO 22. 9. 2026 (nález N18). Poznámka dřív tvrdila, že je s ceníkem
+ * OCK společná „sazba DPH". Společné jsou ale jen PŘEDVOLBY a kurz; sazba
+ * vybraná do nabídky je vlastní projekci (`PC.dph`) — od N18 má proto i svou
+ * zahraniční odchylku, kterou by při společné sazbě nemělo smysl zadávat.
+ * Test hlídá obě půlky věty: kdyby se poznámka vrátila k původnímu znění,
+ * posílala by obchodníka nastavovat sazbu PROJ do ceníku OCK. */
+zkus('a nezamlčí, že vybraná sazba nabídky zůstává projekci vlastní', dph.projPoznVlastni);
 
 /* ---------- 11) osm příplatků z předlohy + klíče souhrnů (1. 9. 2026) ---------- */
 const osm = await p.evaluate(() => {

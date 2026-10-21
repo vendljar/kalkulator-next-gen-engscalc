@@ -38,6 +38,7 @@ const CENIK_DEF = [
     ['C.vetraciMrizkaKc', 'Větrací mřížka (ext)', 'Kč/ks', ''],
     ['C.transportKc', 'Interní transport', 'Kč/cesta', ''],
     ['C.zastreseniM2Kc', 'Zastřešení šachty (ext)', 'Kč/m²', ''],
+    ['C.mustekKc', 'Můstek mezi budovou a OCK', 'Kč/ks', 'jeden můstek včetně montáže; počet se zadává v Zadání šachty'],
     ['C.oplechFasadaBmKc', 'Oplechování k fasádě (ext)', 'Kč/bm', ''],
   ]],
   /* ATYP (#7). Skupina se jmenuje stejně jako katalogová sekce `atyp` –
@@ -117,6 +118,8 @@ const CENIK_DEF = [
      * lišty. Hodiny se přičtou k zadání „Projekce – základ", nepřepisují ho. */
     ['C.zaskleniListyProjHod', 'Projekce navíc – zasklení mezi příčníky', 'hod', 'přičte se k projekci, jen u zasklení mezi příčníky (lišty)'],
     ['C.statikaHod', 'Statické posouzení – hodin', 'hod', ''],
+    /* P5 (K19-N109, 2. 10. 2026): druhý řádek statiky jen u šachty s opláštěním; 0 = řádek nevzniká. */
+    ['C.statikaOplHod', 'Statické posouzení opláštění – hodin', 'hod', 'druhý řádek statiky, jen u šachty s opláštěním; sazba jako statika OCK; 0 = bez řádku'],
     ['C.statikaKc', 'Statické posouzení – sazba', 'Kč/hod', ''],
     ['C.rezieKancelareKc', 'Režie kanceláře', 'Kč', ''],
     ['C.stavbyvedouciHod', 'Stavbyvedoucí – hodin', 'hod', ''],
@@ -243,6 +246,11 @@ const CENIK_DEF_PROJ = [
      * číslo bez účinku je past; klíč v datech zůstává kvůli starým ceníkům. */
     ['PC.dopravaHodKc', 'Cesta mimo Prahu – hodina cesty', 'Kč/h',
       'příplatek „mimo Prahu" = km / 60 × tato sazba (hodina cesty při 60 km/h); prázdné nebo 0 = 1 000 Kč/h'],
+    /* D2 (rozhodnutí J. V. 20. 10. 2026): pevná cena jednoho výjezdu technika
+     * u „Akce mimo Prahu" — přičte se k ceně zaměření, studie, DPZ a kolaudace,
+     * u IČ a AD se jen uvede v nabídce. U zakázky jde přepsat. */
+    ['PC.vyjezdTechnikKc', 'Akce mimo Prahu – 1 výjezd technika', 'Kč',
+      'přičte se k ceně ZAMĚŘENÍ, STUDIE, DPZ a KOLAUDACE, když je v Kalkulaci PROJ zapnuto „Akce mimo Prahu"; u IČ a AD se cena jen uvede v nabídce'],
   ]],
   /* Kurz EUR — viz poznámka u sekce Cizí měna v ceníku OCK (#155). */
   /* SAZBY DPH a KURZ EUR v ceníku PROJ NEJSOU (2. 9. 2026, pokyn J. V.:
@@ -312,6 +320,365 @@ function cenikPopisNastav(c, cesta, text) {
   else c.popisy[String(cesta)] = t;
 }
 
+/* ---------- příznak „cena dle nabídky" (S13, 16. 10. 2026) ----------------
+ *
+ * E-mail obchodníka D. S. 15. 10. 2026: příplatek „Prosklená stěna vedle
+ * šachty" má v ceníku jen orientační (přehnanou) cenu; obchodník ji přepsal
+ * na reálnou nižší a aplikace to brala jako směs ceníku — zábrana tisku,
+ * žádost o schválení. U nabídkových položek „za akci" ceník reálnou cenu
+ * nemá, zadává ji obchodník podle nabídky dodavatele.
+ *
+ * Řešení J. V. 16. 10. (varianta A): příznak položky ceníku. Mapa
+ * `dleNabidky` ({ 'C.priplatky.x': true }) stojí v ceníku vedle cen jako
+ * `popisy` — verzuje se a zveřejňuje s ceníkem (nese ji otisk verze), do
+ * porovnání CEN nevstupuje. Starý ceník bez mapy = nezaškrtnuto; doplnění
+ * klíčů z výchozího ceníku ji nepřidá (CENIK_NEDOPLNOVAT v engine.js).
+ *
+ * U položky s příznakem PLATNÉHO ceníku se ruční cena v zakázce
+ * nepovažuje za odchylku od ceníku (vyjimky.js, uloCenikProblemy) a
+ * automatický přepočet rozdělané zakázky ji nepřepíše. Příznak se bere VŽDY
+ * z platného ceníku, nikdy z ceníku varianty — zakázka si ho nesmí přidat
+ * sama. Jen OCK (sekce příplatků je v OCK); orientační cena se dál
+ * předvyplňuje z ceníku. */
+const CENIK_DLE_NABIDKY_VYCHOZI = ['C.priplatky.zabranyPadKc', 'C.priplatky.demontazOhrazeniKc',
+  'C.priplatky.malbaSchodnicKc', 'C.priplatky.naterOhrazeniKc', 'C.priplatky.naterOkopovychKc',
+  'C.priplatky.prosklenaStenaKc', 'C.priplatky.demontazVytahuKc', 'C.priplatky.destovySvodKc'];
+/* JEN PŘÍPLATKY (B179, J. V. 17. 10. 2026): příznak dává smysl jen
+ * u nabídkových položek „za akci" v sekci C.priplatky. Hodinová sazba
+ * montáže, profily, opláštění ho nenesou nikdy — ani když ho mapa ve
+ * zveřejněném ceníku má (starší verze, podvržená mapa z varianty). */
+function cenikDleNabidkySmi(cesta) {
+  return /^C\.priplatky\.[A-Za-z0-9_]+$/.test(String(cesta));
+}
+function cenikDleNabidkyJe(c, cesta) {
+  const m = c && c.dleNabidky;
+  return !!(cenikDleNabidkySmi(cesta) && m && typeof m === 'object'
+    && Object.prototype.hasOwnProperty.call(m, String(cesta)) && m[String(cesta)] === true);
+}
+function cenikDleNabidkyNastav(c, cesta, ano) {
+  if (!c || typeof c !== 'object') return;
+  const k = String(cesta);
+  if (ano) {
+    if (!c.dleNabidky || typeof c.dleNabidky !== 'object') c.dleNabidky = {};
+    c.dleNabidky[k] = true;
+  } else if (c.dleNabidky && typeof c.dleNabidky === 'object') {
+    /* Prázdná mapa zůstává: „výslovně nic" se liší od „mapa chybí"
+     * (návrh níž se pak už nevnucuje). */
+    delete c.dleNabidky[k];
+  }
+}
+/* NÁVRH V NASTAVENÍ → CENÍK (J. V. 16. 10. 2026: „předzaškrtnuté v UI").
+ * Ceník, který mapu příznaků vůbec nemá (zveřejněný před v16.10.3), ukáže
+ * ve sloupci výchozích osm položek zaškrtnutých jako NÁVRH; zapíše se až
+ * zveřejněním ceníku (progKontext → cenikDleNabidkyDoplnNavrh). Do té doby
+ * platí cenikDleNabidkyJe — tedy nezaškrtnuto a položky se hlídají. */
+function cenikDleNabidkyMaMapu(c) {
+  return !!(c && typeof c === 'object' && Object.prototype.hasOwnProperty.call(c, 'dleNabidky')
+    && c.dleNabidky && typeof c.dleNabidky === 'object' && !Array.isArray(c.dleNabidky));
+}
+function cenikDleNabidkyNavrh(c, cesta) {
+  return cenikDleNabidkyMaMapu(c) ? cenikDleNabidkyJe(c, cesta)
+    : CENIK_DLE_NABIDKY_VYCHOZI.indexOf(String(cesta)) >= 0;
+}
+/* Vrací true, když mapu doplnil (ceník ji neměl). */
+function cenikDleNabidkyDoplnNavrh(c) {
+  if (!c || typeof c !== 'object' || cenikDleNabidkyMaMapu(c)) return false;
+  c.dleNabidky = {};
+  CENIK_DLE_NABIDKY_VYCHOZI.forEach(k => { c.dleNabidky[k] = true; });
+  return true;
+}
+/* Do zveřejněného ceníku jen známé číselné cesty PŘÍPLATKŮ OCK s hodnotou
+ * true (B179: do 17. 10. každá číselná cesta OCK, i montáž za hodinu). */
+function cenikDleNabidkyOciste(m) {
+  const out = {};
+  if (!m || typeof m !== 'object' || Array.isArray(m)) return out;
+  const zname = new Set();
+  CENIK_DEF.forEach(([, items]) => items.forEach(([cesta, , , , typ]) => {
+    if (!typ && cenikDleNabidkySmi(cesta)) zname.add(cesta);
+  }));
+  Object.keys(m).forEach(k => { if (m[k] === true && zname.has(k)) out[k] = true; });
+  return out;
+}
+/* MAPA PRO ZVEŘEJNĚNÍ (B179, J. V. 17. 10. 2026). Do 17. 10. šla do platné
+ * verze mapa z ceníku OTEVŘENÉ VARIANTY — a tu mohl uložit kdokoli
+ * (zakázka obchodníka) nebo nést starší stav (vrácení vědomé volby
+ * správce). Teď: základ = mapa PLATNÉHO ceníku (`platny`; ceník bez mapy =
+ * návrh výchozích osmi), na ni jen výslovné změny správce v Nastavení →
+ * Ceník v této relaci (`zmeny` = { cesta: true | false }). Ceník varianty se
+ * nečte vůbec. Výsledek je očištěný (jen příplatky). */
+function cenikDleNabidkyProZverejneni(platny, zmeny) {
+  const zaklad = cenikDleNabidkyMaMapu(platny) ? platny.dleNabidky
+    : CENIK_DLE_NABIDKY_VYCHOZI.reduce((o, k) => { o[k] = true; return o; }, {});
+  const m = Object.assign({}, cenikDleNabidkyOciste(zaklad));
+  const z = (zmeny && typeof zmeny === 'object') ? zmeny : {};
+  Object.keys(z).forEach(k => {
+    if (!cenikDleNabidkySmi(k)) return;
+    if (z[k] === true) m[k] = true;
+    else if (z[k] === false) delete m[k];
+  });
+  return cenikDleNabidkyOciste(m);
+}
+/* ROZPIS ZVEŘEJNĚNÍ (B180, audit kola 26, 17. 10. 2026). Dialog „Zveřejnit
+ * ceník" vypisuje jen rozdíly CEN (programRozdily) — změna příznaků v něm
+ * nebyla vidět a při změně samotných příznaků tvrdil „Ceník beze změny".
+ * Mapa přitom jde do platné verze z ceníku OTEVŘENÉ VARIANTY (B179).
+ * Vrací řádek rozpisu s přidanými a zrušenými příznaky (název položky),
+ * '' = beze změny. Prostý text — dialog nic nevykresluje jako HTML. */
+function cenikDleNabidkyRozpis(stary, novy) {
+  const mapa = c => (cenikDleNabidkyMaMapu(c) ? c.dleNabidky : {});
+  const a = mapa(stary), b = mapa(novy);
+  const ano = (m, k) => Object.prototype.hasOwnProperty.call(m, k) && m[k] === true;
+  const pridano = Object.keys(b).filter(k => ano(b, k) && !ano(a, k)).sort();
+  const zruseno = Object.keys(a).filter(k => ano(a, k) && !ano(b, k)).sort();
+  if (!pridano.length && !zruseno.length) return '';
+  const nazvy = new Map();
+  CENIK_DEF.forEach(([, items]) => items.forEach(([cesta, popis]) => nazvy.set(cesta, popis)));
+  const seznam = (pole, znak) => pole.slice(0, 12).map(k => '\n   ' + znak + ' ' + (nazvy.get(k) || k)).join('')
+    + (pole.length > 12 ? '\n   … a další ' + (pole.length - 12) : '');
+  return 'Příznak „cena dle nabídky" (ruční cena bez schválení): '
+    + [pridano.length ? 'nově ' + pridano.length : '', zruseno.length ? 'zrušeno ' + zruseno.length : ''].filter(Boolean).join(', ')
+    + seznam(pridano, '+') + seznam(zruseno, '−');
+}
+
+/* ---------- dodatkové texty platné pro celou aplikaci (22. 9. 2026) ------
+ *
+ * Zadání J. V.: „dodatkové texty pod příplatky a volitelnými položkami,
+ * které jako administrátor zadám, mají zůstat v aplikaci uložené. Ostatní
+ * uživatelé je mohou v případě potřeby upravovat, ale jen admin je může
+ * zadat, resp. trvale přepisovat."
+ *
+ * Do 22. 9. text žil JEN v ceníku otevřené zakázky. Dokud správce ceník
+ * nezveřejnil, nikdo jiný ho neviděl — a zveřejnit celý ceník kvůli jedné
+ * větě znamená novou verzi ceníku se vším, co k tomu patří. Proto vedle
+ * ceníku stojí samostatná mapa textů (`/api/popisy`), kterou smí zapsat
+ * jen administrátor a která se při přihlášení vlije do výchozího ceníku.
+ * Odtud si ji každá nová zakázka odnese ve své kopii, takže odeslaná
+ * nabídka se pozdější změnou textu už nezmění.
+ *
+ * Očista je tady, v modelu, aby ji prohlížeč i server dělali TÝMŽ kódem —
+ * stejně jako u matice zobrazení. Klíčem je PŮVODNÍ NÁZEV položky, ne
+ * ceníková cesta (viz `popisZCeniku` v engine.js), takže se nedá ověřit
+ * proti seznamu cest; hlídá se tedy tvar a délka. */
+const POPISY_MAX_KLIC = 200;
+const POPISY_MAX_TEXT = 300;
+const POPISY_MAX_POLOZEK = 500;
+
+/* B103 (audit 9. 9. 2026; 13. 10. 2026): název položky je klíč mapy. Text
+ * pod klíčem „constructor" shodil sběr textů ze zakázek (`nalez[klic]` našel
+ * funkci Object a `.find` neexistuje → 500), „__proto__" se zapsal do
+ * prototypu a tiše zmizel. Takové názvy se jako klíče nepřijímají. */
+const POPISY_PROTO = ['__proto__', 'constructor', 'prototype'];
+/* Revize 13. 10.: nejen tři jména — „toString", „hasOwnProperty" a další
+ * vestavěná jména shodila sběr textů stejně. Odmítá se vše z Object.prototype. */
+const popisyKlicZakazany = (k) => POPISY_PROTO.indexOf(k) >= 0 || (k in Object.prototype);
+function popisyOciste(vstup) {
+  const v = (vstup && typeof vstup === 'object' && !Array.isArray(vstup)) ? vstup : {};
+  const out = {};
+  let kolik = 0;
+  Object.keys(v).forEach(k => {
+    if (kolik >= POPISY_MAX_POLOZEK) return;
+    const klic = String(k == null ? '' : k).trim();
+    if (!klic || klic.length > POPISY_MAX_KLIC || popisyKlicZakazany(klic)) return;   // B103
+    const t = (typeof v[k] === 'string') ? v[k].trim() : '';
+    if (!t) return;                       // prázdný text se neukládá, viz cenikPopisNastav
+    out[klic] = t.slice(0, POPISY_MAX_TEXT);
+    kolik++;
+  });
+  return out;
+}
+
+/* JAZYKOVÉ VARIANTY DODATKOVÝCH TEXTŮ (#379, nález K18-N96, 1. 10. 2026).
+ *
+ * Dodatkový text píše člověk a aplikace ho nepřekládá — slovník zná jen
+ * věty, které jsou v kódu. Firemní věta z ceníku proto v každé anglické,
+ * německé i francouzské nabídce zůstávala česky (od v30.9.4 o tom aspoň
+ * varovala kontrola „dodatekCesky"). Skutečné znění vět do slovníku
+ * nepatří (repozitář je veřejný a věty nejsou naše k vymýšlení), takže
+ * překlad dodá ten, kdo text napsal: administrátor ho v číselníku vyplní
+ * vedle českého (EN / DE / FR, každý nepovinně).
+ *
+ * TVAR: vedle mapy `popisy` (klíč → český text) stojí `popisyJazyky`
+ * (klíč → { en, de, fr }). Samostatná mapa, ne objekt místo řetězce:
+ * všechno, co dnes `popisy` čte (výpočet, porovnání ceníků, starší
+ * prohlížeče, zálohy), zůstává beze změny a starší data platí dál.
+ *
+ * OČISTA (prohlížeč i server tímtéž kódem): jen klíče en/de/fr, jen
+ * řetězce, řídicí znaky pryč (zalomení a tabulátor → mezera, ostatní
+ * vypustit), strop délky jako u českého textu. S mapou `texty` se navíc
+ * zahodí varianty klíčů, které český text nemají — varianta bez českého
+ * textu by se nikdy netiskla a jen by v datech strašila. */
+const POPISY_JAZYKY = ['en', 'de', 'fr'];
+function popisJazykCisty(x) {
+  if (typeof x !== 'string') return '';
+  return x.replace(/[\t\n\r]/g, ' ').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .trim().slice(0, POPISY_MAX_TEXT).trim();
+}
+function popisyJazykyOciste(vstup, texty) {
+  const v = (vstup && typeof vstup === 'object' && !Array.isArray(vstup)) ? vstup : {};
+  const t = (texty && typeof texty === 'object') ? texty : null;
+  const out = {};
+  let kolik = 0;
+  Object.keys(v).forEach(k => {
+    if (kolik >= POPISY_MAX_POLOZEK) return;
+    const klic = String(k == null ? '' : k).trim();
+    if (!klic || klic.length > POPISY_MAX_KLIC || popisyKlicZakazany(klic)) return;   // B103
+    if (t && !(typeof t[klic] === 'string' && t[klic].trim())) return;
+    const j = v[k];
+    if (!j || typeof j !== 'object' || Array.isArray(j)) return;
+    const radek = {};
+    POPISY_JAZYKY.forEach(l => { const s = popisJazykCisty(j[l]); if (s) radek[l] = s; });
+    if (!Object.keys(radek).length) return;
+    out[klic] = radek;
+    kolik++;
+  });
+  return out;
+}
+/* Varianta textu pro jazyk tisku, nebo ''. */
+function cenikPopisJazyk(c, klic, jazyk) {
+  const j = c && c.popisyJazyky && c.popisyJazyky[String(klic)];
+  const v = j && typeof j === 'object' ? j[String(jazyk || '').toLowerCase()] : '';
+  return (typeof v === 'string') ? v.trim() : '';
+}
+/* Doplní jazykové varianty do ceníku, ale JEN k textu, který je v ceníku
+ * DOSLOVA týž jako společný český text. Varianta je překlad konkrétní věty:
+ * obchodník, který si text u zakázky přepsal, by s ní dostal do cizí
+ * nabídky překlad něčeho jiného, než co stojí v české. Existující varianta
+ * jazyka se nepřepisuje (zakázka je pán, stejně jako u českého textu).
+ * Vrací počet doplněných jazykových textů. */
+function popisyJazykyDoplnChybejici(cenik, texty, jazyky) {
+  if (!cenik || !texty || !jazyky || typeof jazyky !== 'object') return 0;
+  const j = popisyJazykyOciste(jazyky, texty);
+  let n = 0;
+  Object.keys(j).forEach(k => {
+    const cz = (cenik.popisy && typeof cenik.popisy[k] === 'string') ? cenik.popisy[k].trim() : '';
+    if (!cz || cz !== String(texty[k]).trim()) return;
+    if (!cenik.popisyJazyky || typeof cenik.popisyJazyky !== 'object') cenik.popisyJazyky = {};
+    const cil = (cenik.popisyJazyky[k] && typeof cenik.popisyJazyky[k] === 'object') ? cenik.popisyJazyky[k] : {};
+    POPISY_JAZYKY.forEach(l => {
+      if (j[k][l] && !(typeof cil[l] === 'string' && cil[l].trim())) { cil[l] = j[k][l]; n++; }
+    });
+    if (Object.keys(cil).length) cenik.popisyJazyky[k] = cil;
+  });
+  return n;
+}
+/* Český text položky se v zakázce změnil (`popisSet`): varianty se srovnají
+ * s ním. Je-li nový text týž jako společný, převezmou se společné varianty;
+ * jinak se varianty u položky zahodí — překlad staré věty by do cizí
+ * nabídky přinesl něco jiného, než říká česká (a kontrola „dodatekCesky"
+ * pak řekne, že text zůstane česky). */
+function popisJazykySrovnej(cenik, klic, spolecneTexty, spolecneJazyky) {
+  if (!cenik) return;
+  const k = String(klic);
+  const cz = (cenik.popisy && typeof cenik.popisy[k] === 'string') ? cenik.popisy[k].trim() : '';
+  if (cenik.popisyJazyky && typeof cenik.popisyJazyky === 'object') delete cenik.popisyJazyky[k];
+  if (cenik.popisyJazyky && !Object.keys(cenik.popisyJazyky).length) delete cenik.popisyJazyky;
+  if (!cz || !spolecneTexty) return;
+  popisyJazykyDoplnChybejici(cenik, { [k]: spolecneTexty[k] }, spolecneJazyky ? { [k]: spolecneJazyky[k] } : null);
+}
+
+/* Vlije společné texty (číselník, `/api/popisy`) do VÝCHOZÍHO ceníku, ze
+ * kterého si je odnese každá nová zakázka.
+ *
+ * Do 1. 10. 2026 se vlévaly JEN tam, kde zveřejněný ceník vlastní text
+ * neměl („zveřejněná verze je konkrétnější zdroj", 22. 9. 2026). Od 25. 9.
+ * je ale místem pro tyhle texty číselník — „trvale uložený pro celou
+ * aplikaci, nezávisle na zakázce i na verzi ceníku" — a starší text, který
+ * si zveřejněný ceník nesl s sebou, ho tiše přebíjel. Hlášení J. V.
+ * 1. 10. 2026: „při načtení nové zakázky se nepropisuje dodatkový text
+ * přestože v ceníku ho mám" — v testu nesl zveřejněný ceník u SKN starší
+ * krátký text a každá nová zakázka dostala ten místo věty z číselníku.
+ *
+ * Proto má číselník PŘEDNOST: kde má text, platí jeho znění; text
+ * zveřejněného ceníku zůstává jen náhradou u položek, pro které číselník
+ * nic nemá (nic se tím neztratí). Přepsaný text zveřejněného ceníku se
+ * zapíše do `odlisne` (klíč → text), aby ho číselník ukázal. Jazykové
+ * varianty přepsaného textu patřily jiné větě — zahodí se a doplní se ty
+ * z číselníku (#379). Rozpracované a odeslané zakázky se tím nemění: mají
+ * vlastní kopii ceníku. */
+function popisyVlij(cenik, texty, jazyky, odlisne) {
+  if (!cenik) return cenik;
+  const t = popisyOciste(texty);
+  if (!cenik.popisy) cenik.popisy = {};
+  const pj = () => cenik.popisyJazyky && typeof cenik.popisyJazyky === 'object';
+  Object.keys(t).forEach(k => {
+    const puv = (typeof cenik.popisy[k] === 'string') ? cenik.popisy[k].trim() : '';
+    if (puv === t[k]) return;
+    if (puv && odlisne && typeof odlisne === 'object' && !Object.prototype.hasOwnProperty.call(odlisne, k))
+      odlisne[k] = puv;
+    cenik.popisy[k] = t[k];
+    if (pj()) delete cenik.popisyJazyky[k];
+  });
+  if (pj() && !Object.keys(cenik.popisyJazyky).length) delete cenik.popisyJazyky;
+  if (jazyky) popisyJazykyDoplnChybejici(cenik, t, jazyky);
+  return cenik;
+}
+
+/* Doplnění společných textů do ROZPRACOVANÉ zakázky (25. 9. 2026, hlášení
+ * J. V. „dodatkové texty se mi v čase ztrácí").
+ *
+ * Do té doby se společné texty vlévaly jen do výchozího ceníku, tedy do
+ * NOVÝCH zakázek. Kdo otevřel zakázku založenou dřív, než text napsal,
+ * pole měl prázdné — a vypadalo to, že text zmizel. Teď se doplní i do
+ * rozpracovaných variant, ale jen tam, kde klíč v ceníku varianty VŮBEC
+ * NENÍ: vlastní text zakázky se nepřepisuje a prázdný řetězec je vědomé
+ * „tady text nechci" (zapisuje ho `popisSet`, když obchodník text smaže).
+ * Uzamčené (odeslané) varianty sem volající vůbec nepouští. Vrací počet
+ * doplněných textů. */
+function popisyDoplnChybejici(cenik, texty) {
+  if (!cenik || !texty || typeof texty !== 'object') return 0;
+  let n = 0;
+  Object.keys(texty).forEach(k => {
+    const t = (typeof texty[k] === 'string') ? texty[k].trim() : '';
+    if (!t) return;
+    if (!cenik.popisy || typeof cenik.popisy !== 'object') cenik.popisy = {};
+    if (Object.prototype.hasOwnProperty.call(cenik.popisy, k)) return;
+    cenik.popisy[k] = t;
+    n++;
+  });
+  return n;
+}
+
+/* ČÍSELNÍK DODATKOVÝCH TEXTŮ (25. 9. 2026, zadání J. V.: „potřebujeme
+ * samostatný číselník, resp. pole v ceníku nákladů OCK, aby je trvale
+ * držel").
+ *
+ * Seznam všech položek, pod které se dodatkový text dá napsat — příplatky
+ * a volitelné položky s ceníkovou vazbou — pro exteriér i interiér. Počítá
+ * se výpočtem nad výchozím zadáním, ne ručním seznamem: nová položka v jádru
+ * se v číselníku objeví sama a přejmenovaná nezůstane viset pod starým
+ * názvem. Texty, jejichž položka už v jádru není, se nezahazují — vrací se
+ * zvlášť (`osirele`), aby je administrátor viděl a mohl rozhodnout.
+ *
+ * `vypocetFn(zadani, cenik)` dodá volající (v prohlížeči `vypocet`
+ * s JEKLY), díky tomu je funkce čistá a testuje se v Node. */
+function popisyCiselnik(vypocetFn, zadaniVychozi, cenik, texty) {
+  const radky = [], podle = {};
+  const t = popisyOciste(texty);
+  [['exteriérová', 'EXT'], ['interiérová', 'INT']].forEach(([typ, zn]) => {
+    let r = null;
+    try {
+      const z = JSON.parse(JSON.stringify(zadaniVychozi || {}));
+      z.typSachty = typ;
+      r = vypocetFn(z, cenik);
+    } catch (e) { r = null; }
+    if (!r) return;
+    const vloz = (it, skupina) => {
+      if (!it || it.vlastni || !it.cenaPath) return;
+      const klic = it.origNazev || it.nazev;
+      if (!klic) return;
+      if (!podle[klic]) {
+        podle[klic] = { klic, skupina, cenaPath: it.cenaPath, typy: [], text: t[klic] || '' };
+        radky.push(podle[klic]);
+      }
+      if (!podle[klic].typy.includes(zn)) podle[klic].typy.push(zn);
+    };
+    (r.priplatky || []).forEach(it => vloz(it, 'Příplatky'));
+    (r.volitelneKatalog || []).forEach(x => vloz(x && (x.it || x), 'Volitelné položky'));
+  });
+  const osirele = Object.keys(t).filter(k => !podle[k]).map(k => ({ klic: k, text: t[k] }));
+  return { radky, osirele };
+}
+
 function cenikVychozi(c, klic, zaklad) {
   const v = c ? c[klic] : null;
   return (typeof v === 'number' && isFinite(v) && v > 0) ? v : zaklad;
@@ -323,10 +690,45 @@ function cenikGet(obj, cesta) {
   return ks.reduce((o, k) => (o == null ? undefined : o[k]), obj);
 }
 function cenikSet(obj, cesta, val) {
+  /* B70: segment cesty nesmí sáhnout na prototyp (viz cestaBezpecna v common.js). */
+  if (String(cesta).split('.').some(k => k === '__proto__' || k === 'constructor' || k === 'prototype')) return;
   const ks = cesta.split('.').slice(1), last = ks.pop();
   const cil = ks.reduce((o, k) => (o[k] = o[k] || {}), obj);
   cil[last] = val;
 }
+/* ---- Probarvení buněk ceníku (13. 10. 2026, zadání J. V.) ----
+ *
+ * „Nastav v cenících pravidlo probarvení buněk. Světle červeně všechny, kde
+ * je hodnota nula nebo není vyplněno, a světle oranžově všechny, kde je
+ * hodnota vyšší než 40 000,- Kč."
+ *
+ * Je to jen pomůcka pro oči při kontrole ceníku — do dat ani do výpočtu nic
+ * nezapisuje. Pravidlo je tady (bez DOM), aby ho šlo otestovat v Node;
+ * ui/cenik_ui.js ho jen volá nad hodnotou políčka.
+ *
+ * KTERÉ POLOŽKY JSOU „V KČ": jednotka ceníku začíná „Kč" (Kč, Kč/ks, Kč/kg,
+ * Kč/hod, Kč/m² …). Procenta (%), hodiny (hod), kilogramy (kg) a množství
+ * (ks) oranžově nesvítí nikdy — 40 000 tam není cena. Nula či prázdno
+ * svítí červeně u všech číselných položek bez rozdílu jednotky.
+ *
+ * `opts.prazdnaOk`: prázdné pole je platný stav a červeně nesvítí. Platí
+ * pro sloupec Cena Zahraničí, kde prázdno znamená „jako ČR" (nula tam
+ * svítí, protože je to zapsaná hodnota). */
+const CENIK_BARVA_MEZ_KC = 40000;
+function cenikJednotkaKc(jednotka) {
+  return /^\s*Kč/.test(String(jednotka == null ? '' : jednotka));
+}
+function cenikBunkaTrida(hodnota, jednotka, opts) {
+  const o = opts || {};
+  const s = (hodnota == null) ? '' : String(hodnota).trim().replace(/\s/g, '').replace(',', '.');
+  if (s === '') return o.prazdnaOk ? '' : 'cenik-nula';
+  const n = Number(s);
+  if (!Number.isFinite(n)) return '';
+  if (n === 0) return 'cenik-nula';
+  if (cenikJednotkaKc(jednotka) && n > CENIK_BARVA_MEZ_KC) return 'cenik-vysoka';
+  return '';
+}
+
 function cenikTyp(def, cesta) {
   for (const [, items] of def) for (const it of items) if (it[0] === cesta) return it[4] || 'num';
   return 'num';
@@ -425,5 +827,10 @@ function cenikAplikuj(zmeny, C, PC) {
 
 if (typeof module !== 'undefined')
   module.exports = { CENIK_DEF, CENIK_DEF_PROJ, CENIK_JEN_ZAHR, cenikGet, cenikSet, cenikTyp, cenikVychozi,
+    CENIK_BARVA_MEZ_KC, cenikJednotkaKc, cenikBunkaTrida,
     cenikPopis, cenikPopisNastav,
+    CENIK_DLE_NABIDKY_VYCHOZI, cenikDleNabidkySmi, cenikDleNabidkyProZverejneni, cenikDleNabidkyJe, cenikDleNabidkyNastav, cenikDleNabidkyOciste,
+    cenikDleNabidkyMaMapu, cenikDleNabidkyNavrh, cenikDleNabidkyDoplnNavrh, cenikDleNabidkyRozpis,
+    POPISY_MAX_KLIC, POPISY_MAX_TEXT, POPISY_MAX_POLOZEK, popisyOciste, popisyVlij, popisyDoplnChybejici, popisyCiselnik,
+    POPISY_JAZYKY, popisyJazykyOciste, cenikPopisJazyk, popisyJazykyDoplnChybejici, popisJazykySrovnej,
     cenikSheetRows, cenikToSheets, cenikDiffZeSheets, cenikAplikuj, CENIK_HLAVICKA };

@@ -101,10 +101,16 @@ ZADANI.push({ popis: 'průchozí, nástupiště A3 + C2',
   test('B a D jsou zatím stejné (bocniM2 se dělí napůl)', blizko(s.B, s.D, 1e-12), { B: s.B, D: s.D });
   test('a dohromady dají přesně boční plochu',
     blizko(s.B + s.D, r.zaskleni.bocni.m2, 1e-9), { soucet: s.B + s.D, bocni: r.zaskleni.bocni.m2 });
-  test('C je zadní stěna po odečtení portálů',
-    blizko(s.C, r.zaskleni.zadniPlne.m2, 1e-12), { C: s.C, zadniPlne: r.zaskleni.zadniPlne.m2 });
-  test('A nese světlík nad dveřmi i po stranách',
-    blizko(s.A, r.zaskleni.svetliky.m2 + r.zaskleni.svetlikyBoky.m2, 1e-12), s.A);
+  /* Průchozí šachta od 24. 9. 2026 (N46, pravidlo nástupišť): A i C =
+   * světlíky nástupišť té stěny + patra bez dveří po celé ploše. */
+  const n = r.zaskleni.nastupisteSten;
+  test('N46: C = světlíky nástupišť C + patra bez dveří C',
+    blizko(s.C, n.C.svetliky + n.C.plne, 1e-12), { C: s.C, n: n.C });
+  test('N46: A = světlíky nástupišť A + patra bez dveří A',
+    blizko(s.A, n.A.svetliky + n.A.plne, 1e-12), { A: s.A, n: n.A });
+  test('N46: boční světlíky se dělí podle dveří (A 3, C 2)',
+    blizko(n.A.svetliky + n.C.svetliky, r.zaskleni.svetliky.m2 + r.zaskleni.svetlikyZadni.m2 + r.zaskleni.svetlikyBoky.m2, 1e-9),
+    { n, sv: r.zaskleni.svetliky.m2, svZ: r.zaskleni.svetlikyZadni.m2, boky: r.zaskleni.svetlikyBoky.m2 });
 }
 
 /* ---------- 4) cena se rozpojením nehnula ---------- */

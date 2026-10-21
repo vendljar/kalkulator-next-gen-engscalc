@@ -84,7 +84,8 @@ function renderDetailProj() {
     ['Celkem s DPH', K(dph.sDph), 'cena bez DPH + DPH'],
   ]), 'dvp-z');
 
-  el.innerHTML = `<div class="card"><h2>Detail výpočtu kalkulace PROJ
+  el.innerHTML = (typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('proj') : '')
+    + `<div class="card"><h2>Detail výpočtu kalkulace PROJ
       <span class="note" style="font-weight:400">— krok za krokem, přesně jak počítá aplikace</span></h2>
     <div class="body">
       <div class="note">Rozpis ukazuje ŽIVÁ čísla otevřené varianty — každá změna v Kalkulaci PROJ se sem

@@ -27,6 +27,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
 });
 
 import { createRequire } from 'module';
+import { najdiPodklad, preskoc } from './nastroje/harness_podklady.mjs';
 import { createServer } from 'http';
 import { readFileSync } from 'fs';
 import zdravi from './netlify/functions/zdravi.mjs';
@@ -56,6 +57,10 @@ const dlgStub = async (page) => page.evaluate(() => {
   window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(true); };
   window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
   window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve(v == null ? '' : v); };
+  /* B168 (18. 10. 2026): uložení matice zobrazení chce heslo správce — harness
+   * odpoví heslem zkušebního správce (`window.__dlgHeslo` ho přebije, null = zrušeno). */
+  window.dotazHeslo = (t) => { (window.__dlgTexty = window.__dlgTexty || []).push(String(t));
+    return Promise.resolve(window.__dlgHeslo === undefined ? 'Zkusebni.Heslo.123' : window.__dlgHeslo); };
 });
 const dlgPosledni = async (page) => page.evaluate(() =>
   (window.__dlgTexty && window.__dlgTexty.length) ? window.__dlgTexty[window.__dlgTexty.length - 1] : '');
@@ -151,7 +156,17 @@ test('odmítnutí říká, kdo to napraví (administrátor)',
 
 /* ---------- 2) administrátor zveřejní šablonu ---------- */
 console.log('\nzveřejnění šablony administrátorem');
-const sablonaB64 = readFileSync('/home/claude/work/sablona_proj/Sablona_NABIDKA_PROJ.docx').toString('base64');
+/* ŠABLONA SE ČETLA BEZ KONTROLY (N15, 22. 9. 2026) — mimo původní prostředí
+ * to byl pád na ENOENT uprostřed běhu, tedy až po přihlášení a polovině
+ * kontrol. Nově se přeskočí hned a s vysvětlením. */
+const sablonaCesta = najdiPodklad('Sablona_NABIDKA_PROJ.docx',
+  ['/home/claude/work/sablona_proj/Sablona_NABIDKA_PROJ.docx',
+   '/home/claude/work/deliver/Sablona_NABIDKA_PROJ.docx']);
+/* Kontroly přísného režimu výš šablonu nepotřebují a běží vždy — jejich
+ * selhání přeskočení nesmí zamést (nález T2 revize v22.9.9). */
+if (!sablonaCesta) preskoc('šablona Sablona_NABIDKA_PROJ.docx',
+  ['/home/claude/work/sablona_proj/', '$KNG_PODKLADY'], { ok, fail });
+const sablonaB64 = readFileSync(sablonaCesta).toString('base64');
 const zverejneni = await page.evaluate(async (b64) => {
   const bin = atob(b64);
   const u8 = new Uint8Array(bin.length);
@@ -163,8 +178,10 @@ const zverejneni = await page.evaluate(async (b64) => {
 test('zveřejnění vrátilo verzi 1', zverejneni.verze === 1, zverejneni);
 test('rejstřík v aplikaci hned zná platnou verzi',
   zverejneni.meta && zverejneni.meta.verze === 1 && zverejneni.meta.zverejnil === 'spravce@priklad.cz');
-test('obrazovka Nastavení → Šablony verzi ukazuje',
-  await page.evaluate(() => /Na serveru: verze 1/.test(nastSablony())));
+test('obrazovka Nastavení → Šablony verzi ukazuje (tabulka dokument × jazyk, #349)',
+  await page.evaluate(() => /data-sabl-typ="nabidkaProj"[\s\S]*?✓ v1/.test(nastSablony())));
+test('pod číslem verze je i název nahraného souboru (v10 ≠ soubor v12, 25. 9.)',
+  await page.evaluate(() => /data-sabl-typ="nabidkaProj"[\s\S]*?sabl-soubor" title="Sablona_NABIDKA_PROJ\.docx"/.test(nastSablony())));
 test('obrazovka nabízí přepínač režimu',
   await page.evaluate(() => /PŘÍSNÝ|MĚKKÝ/.test(nastSablony())));
 
@@ -226,6 +243,188 @@ const zal = await page.evaluate(() => onlineApi('/api/zaloha').then(o => ({
 })));
 test('záloha ke stažení nese rejstřík šablon', zal.maSablony && zal.verze === 1);
 test('záloha nese i samotný soubor šablony', zal.souborOk);
+
+/* ---------- 6) zastaralá jazyková mutace (#334, K10-N36, 24. 9. 2026) ----------
+ * V ostré byla zveřejněná EN/DE mutace z v8, česká šablona v10 — anglická
+ * nabídka vyšla z 17 % česky a aplikace to nepoznala. Mutace zveřejněná
+ * DŘÍV než platná česká šablona je zastaralá: v přísném režimu se z ní
+ * netiskne a Nastavení → Šablony to ukáže. */
+console.log('\nzastaralá jazyková mutace');
+/* Server odmítne zveřejnit soubor se stejným otiskem jako platná verze,
+ * proto každé zveřejnění dostane na konec jiný bajt (za koncem zipu —
+ * čtení archivu to neruší). */
+let poradi = 0;
+const zverejni = (typ, nazev) => page.evaluate(async ([b64, typ, nazev, n]) => {
+  const bin = atob(b64); const u8 = new Uint8Array(bin.length + 1);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  u8[bin.length] = n;
+  await new Promise(r => setTimeout(r, 30));          // ať mají zveřejnění různý čas
+  const o = await onlineSablonaZverejni(typ, nazev, u8.buffer, 'harness');
+  return o.verze;
+}, [sablonaB64, typ, nazev, ++poradi]);
+const tiskEn = () => page.evaluate(() =>
+  sablonaProTisk('nabidkaProj', 'en').then(s => 'prošlo:' + s.typ, e => e.message));
+await zverejni('nabidkaProj_en', 'Sablona_NABIDKA_PROJ_EN.docx');
+test('aktuální EN mutace se použije', /^prošlo:nabidkaProj_en$/.test(await tiskEn()), await tiskEn());
+await zverejni('nabidkaProj', 'Sablona_NABIDKA_PROJ.docx');      // novější česká → EN je teď zastaralá
+const zastaralaHlaska = await tiskEn();
+test('mutace starší než česká šablona se v přísném režimu odmítne', !/^prošlo/.test(zastaralaHlaska), zastaralaHlaska);
+test('hláška říká proč a kdo to napraví',
+  /starší než platná česká šablona/.test(zastaralaHlaska) && /Administrátor/.test(zastaralaHlaska), zastaralaHlaska);
+test('Nastavení → Šablony mutaci označí jako zastaralou',
+  await page.evaluate(() => /sablona-zastarala/.test(nastSablony())));
+test('česká nabídka se tím nezastaví',
+  /^prošlo/.test(await page.evaluate(() => sablonaProTisk('nabidkaProj', 'cz').then(() => 'prošlo', e => e.message))));
+await zverejni('nabidkaProj_en', 'Sablona_NABIDKA_PROJ_EN.docx'); // přegenerovaná a znovu zveřejněná
+test('po novém zveřejnění mutace tisk zase projde', /^prošlo:nabidkaProj_en$/.test(await tiskEn()), await tiskEn());
+test('a štítek „zastaralá" zmizí', await page.evaluate(() => !/sablona-zastarala/.test(nastSablony())));
+
+/* ---------- 7) správa šablon: průvodce, jazyk souboru, zdroj mutace (#348, #349) ----------
+ * 24. 9. 2026 se jako ČESKÁ šablona nabídky OCK zveřejnil soubor …_v11_DE.docx
+ * a EN/DE mutace pak hlásily „zastaralá" natrvalo (stejný soubor server
+ * podruhé nezveřejní). Tahle část prochází novou obrazovku tak, jak ji
+ * používá administrátor: průvodce nahráním, kontrola jazyka, zveřejnění
+ * najednou, přegenerování, doladěný soubor k jazyku a vrácení verze. */
+console.log('\nspráva šablon (průvodce, jazyk, zdroj mutace)');
+const cnCesta = najdiPodklad('Sablona_NABIDKA_CN_v11.docx', ['/home/claude/work/sablona/Sablona_NABIDKA_CN_v11.docx']);
+if (!cnCesta) console.log('  – přeskočeno: chybí Sablona_NABIDKA_CN_v11.docx (KNG_PODKLADY)');
+else {
+  const cnB64 = readFileSync(cnCesta).toString('base64');
+  await page.evaluate(async (b64) => {
+    const bin = atob(b64); const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    window.__CZ = { nazev: 'Sablona_NABIDKA_CN_v11.docx', data: u8.buffer };
+    const blob = await docxPrelozSablonu(u8.buffer.slice(0), 'de', {});
+    window.__DE = { nazev: 'Sablona_NABIDKA_CN_v11_DE.docx', data: await blob.arrayBuffer() };
+    window.nastRefresh = () => {};                 // obrazovka se čte přes nastSablony()
+  }, cnB64);
+
+  /* a) německý soubor místo české šablony */
+  const a = await page.evaluate(async () => {
+    await sablPruvodceStart('nabidka', window.__DE);
+    const k = SABL_UI.pruvodce.kontrola, html = nastSablony();
+    return { jiny: k.jinyJazyk, podil: k.jaz.podil, hlaska: /Soubor je německy, ne česky/.test(html),
+             pokracovatZakazano: /<button class="primary" disabled onclick="sablPruvodceDal\(\)">/.test(html),
+             nabidka: /Uložit jako DE verzi/.test(html) };
+  });
+  test('průvodce pozná, že soubor pro češtinu je německy', a.jiny === 'de' && a.podil > 0.5, a);
+  test('řekne to nahlas a nabídne uložit ho jako DE verzi', a.hlaska && a.nabidka, a);
+  test('dál pustit nejde (Pokračovat zakázáno)', a.pokracovatZakazano, a);
+  await page.evaluate(() => sablPruvodceZrus());
+  test('zrušením se nic nezveřejnilo', await page.evaluate(() => !onlineSablonaMeta('nabidka')));
+
+  /* b) česká šablona + EN a DE najednou */
+  const b = await page.evaluate(async () => {
+    await sablPruvodceStart('nabidka', window.__CZ);
+    const k = SABL_UI.pruvodce.kontrola;
+    await sablPruvodceDal();
+    const p = SABL_UI.pruvodce;
+    p.vybrane.en = true; p.vybrane.de = true;
+    const pokryti = { en: p.mutace.en.stat.procenta, de: p.mutace.de.stat.procenta };
+    await sablPruvodceZverejni();
+    const rej = ONLINE_STAV.sablonyRejstrik;
+    return { kontrolaOk: !k.chyby.length && !k.jinyJazyk, jazyk: k.jaz.jazyk, pokryti,
+             cz: sablonaPlatna(rej, 'nabidka'), en: sablonaPlatna(rej, 'nabidka_en'),
+             stavEn: sablonaMutaceStav(rej, 'nabidka', 'en').stav, stavDe: sablonaMutaceStav(rej, 'nabidka', 'de').stav,
+             pruvodceZavren: !SABL_UI.pruvodce };
+  });
+  test('česká šablona projde kontrolou', b.kontrolaOk && b.jazyk === 'cz', b);
+  test('jazykové verze se vyrobily samy (EN i DE přes 80 %)', b.pokryti.en > 80 && b.pokryti.de > 80, b.pokryti);
+  test('čeština, EN i DE jsou zveřejněné najednou', b.cz && b.cz.verze === 1 && b.en && b.pruvodceZavren, b);
+  test('EN nese otisk české verze, ze které vznikla', b.en && b.en.zdrojOtisk === b.cz.otisk, b.en);
+  test('EN i DE jsou aktuální', b.stavEn === 'aktualni' && b.stavDe === 'aktualni', b);
+
+  /* c) nová čeština → mutace zastaralé podle obsahu → přegenerování projde,
+   * i když vyjde stejný soubor jako minule (dřív „už je zveřejněná") */
+  const c = await page.evaluate(async () => {
+    const u8 = new Uint8Array(window.__CZ.data.byteLength + 1); u8.set(new Uint8Array(window.__CZ.data)); u8[u8.length - 1] = 7;
+    await sablPruvodceStart('nabidka', { nazev: 'Sablona_NABIDKA_CN_v12.docx', data: u8.buffer });
+    await sablPruvodceDal();
+    SABL_UI.pruvodce.vybrane = {};                 // jazyky tentokrát nezveřejnit
+    await sablPruvodceZverejni();
+    const rej1 = ONLINE_STAV.sablonyRejstrik;
+    const po = { stavEn: sablonaMutaceStav(rej1, 'nabidka', 'en').stav, stitek: /sablona-zastarala/.test(nastSablony()),
+                 tisk: await sablonaProTisk('nabidka', 'en').then(() => 'prošlo', e => e.message) };
+    await sablPregeneruj('nabidka', 'en');
+    const rej2 = ONLINE_STAV.sablonyRejstrik;
+    return Object.assign(po, { stavEnPo: sablonaMutaceStav(rej2, 'nabidka', 'en').stav,
+      enVerze: sablonaPlatna(rej2, 'nabidka_en').verze, zVerze: sablonaMutaceStav(rej2, 'nabidka', 'en').zVerze,
+      tiskPo: await sablonaProTisk('nabidka', 'en').then(s => 'prošlo:' + s.typ, e => e.message) });
+  });
+  test('po nové češtině jsou EN a DE zastaralé podle obsahu', c.stavEn === 'zastarala' && c.stitek, c);
+  test('v přísném režimu se ze zastaralé EN netiskne', !/^prošlo/.test(c.tisk), c.tisk);
+  test('přegenerování EN projde, i když je soubor stejný jako minule', c.stavEnPo === 'aktualni' && c.enVerze === 2 && c.zVerze === 2, c);
+  test('a z EN se zase tiskne', c.tiskPo === 'prošlo:nabidka_en', c.tiskPo);
+
+  /* d) doladěný soubor přímo k jazyku: německý soubor „Uložit jako DE" */
+  const d = await page.evaluate(async () => {
+    await sablPruvodceStart('nabidka', window.__DE);
+    await sablPruvodceJakoJazyk();
+    const rej = ONLINE_STAV.sablonyRejstrik;
+    return { cz: sablonaPlatna(rej, 'nabidka').verze, de: sablonaPlatna(rej, 'nabidka_de'),
+             stav: sablonaMutaceStav(rej, 'nabidka', 'de').stav, czOtisk: sablonaPlatna(rej, 'nabidka').otisk };
+  });
+  test('německý soubor šel k němčině, čeština zůstala', d.cz === 2 && d.de && d.de.verze === 2, d);
+  test('a DE je aktuální k platné češtině', d.stav === 'aktualni' && d.de.zdrojOtisk === d.czOtisk, d);
+  const d2 = await page.evaluate(async () => {
+    window.__dlgTexty = [];
+    await sablNahrajJazyk('nabidka', 'en', window.__CZ);        // český soubor jako angličtina
+    return { texty: window.__dlgTexty.slice(), en: sablonaPlatna(ONLINE_STAV.sablonyRejstrik, 'nabidka_en').verze };
+  });
+  test('český soubor jako EN verze se odmítne', d2.en === 2 && d2.texty.some(t => /je česky/.test(t)), d2);
+
+  /* d3) vlastní jazyková verze přímo v průvodci (25. 9. 2026, zadání J. V.:
+   * „při nahrávání šablon přidej možnost nahrát vlastní verzi jazykové mutace") */
+  const d3 = await page.evaluate(async () => {
+    const u8 = new Uint8Array(window.__CZ.data.byteLength + 2); u8.set(new Uint8Array(window.__CZ.data)); u8[u8.length - 1] = 9;
+    await sablPruvodceStart('nabidka', { nazev: 'Sablona_NABIDKA_CN_v13.docx', data: u8.buffer });
+    await sablPruvodceDal();
+    const p = SABL_UI.pruvodce;
+    const html0 = nastSablony();
+    await sablPruvodceVlastni('en', window.__DE);                 // německý soubor jako angličtina
+    const chybaEn = (p.vlastniChyba || {}).en || '';
+    const enZustal = !p.mutace.en.vlastni;
+    await sablPruvodceVlastni('de', window.__DE);
+    const de = p.mutace.de;
+    const html1 = nastSablony();
+    p.vybrane = { de: true };
+    await sablPruvodceZverejni();
+    const rej = ONLINE_STAV.sablonyRejstrik;
+    const deMeta = sablonaPlatna(rej, 'nabidka_de');
+    return { tlacitko: /Nahrát vlastní verzi/.test(html0), chybaEn, enZustal,
+             deVlastni: !!de.vlastni, deStroj: !!de.stroj, vybranoDe: true,
+             html1: /Vlastní soubor: <b>Sablona_NABIDKA_CN_v11_DE.docx<\/b>/.test(html1) && /Vrátit překlad aplikace/.test(html1),
+             deStav: sablonaMutaceStav(rej, 'nabidka', 'de').stav, deVerze: deMeta && deMeta.verze,
+             popis: JSON.stringify(deMeta) };
+  });
+  test('průvodce nabízí u jazyka „Nahrát vlastní verzi"', d3.tlacitko, d3);
+  test('vlastní soubor ve špatném jazyce se odmítne a překlad aplikace zůstane',
+    /je německy/.test(d3.chybaEn) && d3.enZustal, d3);
+  test('vlastní DE soubor nahradí překlad aplikace (a ten jde vrátit)', d3.deVlastni && d3.deStroj && d3.html1, d3);
+  test('zveřejní se spolu s češtinou a je aktuální', d3.deStav === 'aktualni' && d3.deVerze === 3, d3);
+  test('v záznamu stojí, že je to vlastní soubor', /vlastní soubor k české verzi/.test(d3.popis), d3.popis);
+
+  /* e) server: mutace s otiskem jiné než platné češtiny → 409 */
+  const e = await page.evaluate(async () => {
+    const cz = sablonaPlatna(ONLINE_STAV.sablonyRejstrik, 'nabidka');
+    const stara = sablonaVerze(ONLINE_STAV.sablonyRejstrik, 'nabidka').find(v => v.verze === 1);
+    return onlineSablonaZverejni('nabidka_fr', 'x.docx', window.__DE.data, 'harness', stara.otisk)
+      .then(() => 'prošlo', err => err.stav + ' ' + err.message).then(v => ({ v, cz: cz.verze }));
+  });
+  test('server odmítne mutaci k neplatné češtině (409)', /^409 /.test(e.v), e);
+
+  /* f) vrácení starší verze */
+  const f = await page.evaluate(async () => {
+    await sablVrat('nabidka', 1);
+    const rej = ONLINE_STAV.sablonyRejstrik, cz = sablonaPlatna(rej, 'nabidka');
+    return { verze: cz.verze, vracenoZ: cz.vracenoZ, otiskShoda: cz.otisk === sablonaVerze(rej, 'nabidka').find(v => v.verze === 1).otisk,
+             stavEn: sablonaMutaceStav(rej, 'nabidka', 'en').stav, historie: sablonaVerze(rej, 'nabidka').length };
+  });
+  /* v3 je od 25. 9. 2026 čeština z kroku d3 (vlastní jazyková verze), takže
+   * vrácení je v4. */
+  test('vrácení zveřejní v1 znovu jako v4 a nic nesmaže', f.verze === 4 && f.vracenoZ === 1 && f.otiskShoda && f.historie === 4, f);
+  test('EN vyrobená z v2 je po vrácení zastaralá', f.stavEn === 'zastarala', f);
+}
 
 test('konzole zůstala čistá', chyby.length === 0, chyby.slice(0, 3));
 

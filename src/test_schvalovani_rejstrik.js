@@ -119,7 +119,8 @@ test('nákladová položka se pozná',
 /* Seznam povolených klíčů je zároveň dokumentace toho, co rejstřík nese.
  * Kdyby se rozrostl, má to být vědomé rozhodnutí, ne vedlejší účinek. */
 test('povolené klíče položky jsou právě ty známé',
-  s.SCHV_REJSTRIK_POVOLENO.length === 10, s.SCHV_REJSTRIK_POVOLENO.join(','));
+  /* 13. 10. 2026: + `vyjimka` (cenová výjimka varianty — stav a počty, bez cen). */
+  s.SCHV_REJSTRIK_POVOLENO.length === 11 && s.SCHV_REJSTRIK_POVOLENO.includes('vyjimka'), s.SCHV_REJSTRIK_POVOLENO.join(','));
 /* `cast` přibyla 12. 8. 2026 (#134): jedna varianta může poslat do fronty
  * slevu na výtahovou šachtu i slevu na projekci a v cizí zakázce musí být
  * poznat, o kterou jde. Částku to nenese – je to jen 'ock' nebo 'proj'. */

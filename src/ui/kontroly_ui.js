@@ -35,10 +35,28 @@ function kontrolyCtxAkt() {
    * (rozměry, nástupiště) je právě na takový stav. */
   try { ock = vypocetAkt(); } catch (e) {}
   try { proj = vypocetProjAkt(); } catch (e) {}
+  /* Platební kalendář OCK z krycího listu (etapa A, D1 + D2) — pravidlo
+   * platbyWordOck; podle něj se stahuje i šablona nabídky. */
+  let platbyOck = null;
+  try {
+    platbyOck = (typeof kryciPlatebniKalendar === 'function' && typeof ZAK !== 'undefined')
+      ? kryciPlatebniKalendar(ZAK, aktivniVarianta(ZAK), JEKLY) : null;
+  } catch (e) { platbyOck = null; }
   return {
     zadani: Z,
     vysledek: ock,
-    jenProj: (typeof ZAK !== 'undefined') && !!ZAK.jenProj,
+    /* Zámek strany (P6): jenProj / jenOck z vyřazené strany (kontrolyProved
+     * to odvodí i sám — kontrolyCtxStrany). */
+    jenProj: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'ock' : !!ZAK.jenProj),
+    jenOck: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'proj' : !!ZAK.jenOck),
+    /* Řada ceníku varianty (P11): projekci u zahraniční zakázky hlídá
+     * pravidlo projZahranici. */
+    cenikRada: (() => {
+      try {
+        const v = aktivniVarianta(ZAK);
+        return (typeof cenikRadaPlatna === 'function') ? cenikRadaPlatna(v && v.data && v.data.cenikRada) : 'cr';
+      } catch (e) { return 'cr'; }
+    })(),
     projZadani: PJ,
     projVysledek: proj,
     cenik: C,
@@ -51,12 +69,120 @@ function kontrolyCtxAkt() {
     /* Hlavička zakázky sedí přímo na ZAK (cislo, nazevAkce, objednatel…),
      * ne ve vnořeném objektu – viz novaZakazka() v zakazka.js. */
     zak: (typeof ZAK !== 'undefined') ? ZAK : null,
+    /* Jazyk tisku — kapitoly nabídky má každý jazyk vlastní (K9-N32). */
+    jazyk: (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz',
+    /* Termín dodání tak, jak půjde do nabídky (#330): z krycího listu,
+     * včetně ručního přepisu a prodloužení za ATYP. */
+    terminDodani: (() => {
+      try {
+        return (typeof kryciPodminkoveSymboly === 'function' && typeof ZAK !== 'undefined')
+          ? String(kryciPodminkoveSymboly(ZAK, aktivniVarianta(ZAK), JEKLY).PODM_TERMIN_DODANI || '') : '';
+      } catch (e) { return ''; }
+    })(),
+    platbyOck,
+    /* Symboly šablony, ze které se tiskne nabídka OCK (P5) — null = nevíme. */
+    sablonaNabidka: (() => {
+      try {
+        return kontrolySablonaNabidka((typeof SL !== 'undefined') ? SL : null,
+          (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz', platbyOck);
+      } catch (e) { return null; }
+    })(),
+    /* Symboly šablony nabídky PROJ (P4 / K15-N66) — stahují se jen u zakázky
+     * se slevou projekce, s vlastními položkami PROJ, s plánem plateb, který
+     * starší šablona nevytiskne, nebo s oceněným geodetickým zaměřením
+     * (K18-N92); null = nevíme. */
+    sablonaNabidkaProj: (() => {
+      try {
+        return kontrolySablonaNabidkaProj((typeof SLP !== 'undefined') ? SLP : null, proj,
+          (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz');
+      } catch (e) { return null; }
+    })(),
     zaokr: (typeof ZO !== 'undefined') ? ZO : null,
+    /* Plán plateb projekce (etapa B) — 100 % u činností, platby smlouvy. */
+    platbyProj: (() => {
+      try {
+        return (typeof nabidkaProjPlatby === 'function' && typeof ZAK !== 'undefined')
+          ? nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz') : null;
+      } catch (e) { return null; }
+    })(),
     /* Od 4. 8. 2026 má PROJ vlastní obchodní zaokrouhlení (#38); kontroly
      * marže musí počítat s tím, které opravdu odejde v nabídce PROJ. */
     zaokrProj: (typeof ZOP !== 'undefined' && ZOP) ? ZOP
                  : (typeof ZO !== 'undefined' ? ZO : null),
+    /* Cenová výjimka otevřené varianty (13. 10. 2026, vyjimky.js) —
+     * zábrana cenovaVyjimka: směs ceníku nebo pás „jiné" bez schválení. */
+    vyjimka: (() => {
+      try {
+        return (typeof vyjimkyStavVarianty === 'function' && typeof ZAK !== 'undefined')
+          ? vyjimkyStavVarianty(aktivniVarianta(ZAK)) : null;
+      } catch (e) { return null; }
+    })(),
   };
+}
+
+/* Symboly šablony nabídky OCK pro kontrolu „sleva ve Wordu" (P5 / K13-N56).
+ * Kontroly běží synchronně, šablona se stahuje ze serveru — proto cache
+ * podle typu a verze: první dotaz stažení jen spustí (a vrátí null = zatím
+ * nevíme, pravidlo mlčí), po stažení se překreslí. Stahuje se JEN když má
+ * varianta platnou slevu, jinak by každá zakázka tahala šablonu zbytečně. */
+const KONTROLY_SABLONA = { cache: {}, bezi: {} };
+/* Od etapy A (30. 9. 2026) i kvůli platebním podmínkám: šablona se stáhne,
+ * když kalendář OCK obsahuje něco, co šablona v13 s pevnými větami nevytiskne
+ * (bez zálohy, splátka s 0 %, měsíční fakturace — kontrolyPlatbyDuvody). */
+function kontrolySablonaNabidka(sleva, jazyk, platby) {
+  const sleva_ = typeof slevaPlati === 'function' && slevaPlati(sleva);
+  const platby_ = typeof kontrolyPlatbyDuvody === 'function' && kontrolyPlatbyDuvody(platby).length > 0;
+  if (!sleva_ && !platby_) return null;
+  return kontrolySablonaSymboly('nabidka', jazyk);
+}
+/* Totéž pro nabídku PROJ (P4): stahuje se jen, když je co hlídat — schválená
+ * sleva projekce nebo vlastní položky PROJ, které se počítají. */
+/* Oceněné geodetické zaměření (K18-N92, pravidlo cenaWordProj): šablony PROJ
+ * v2 a v3 pro jeho cenu nemají místo, takže Word nesečte činnosti do CELKEM.
+ * Ostatní činnosti symbol ceny ve všech známých šablonách mají — kdyby ho
+ * vlastní šablona neměla, pravidlo to pozná, jakmile se šablona stáhne
+ * kvůli čemukoli z tohoto seznamu. Stahovat ji u každé zakázky s projekcí
+ * by bylo zbytečné (viz výš). */
+function kontrolySablonaNabidkaProj(slevaProj, projVysledek, jazyk) {
+  const sleva = typeof slevaPlati === 'function' && slevaPlati(slevaProj);
+  const navic = typeof kontrolyProjNavic === 'function' && kontrolyProjNavic(projVysledek).length > 0;
+  const geodet = ((projVysledek && projVysledek.sekce) || []).some(s => s && s.key === 'geodet' && Number(s.celkem) > 0);
+  /* Plán plateb, který šablona v2/v3 nevytiskne (etapa B) — pravidlo planPlatebWordProj. */
+  let plan = false;
+  try {
+    const pl = (typeof nabidkaProjPlatby === 'function') ? nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz') : null;
+    plan = !!(pl && !pl.stary && !planShodaSeStarouSablonou(pl.plan, pl.firemni, pl.ceny));
+  } catch (e) { plan = false; }
+  /* Varianta bez autorského dozoru — šablona bez značek AD by ho vytiskla
+   * (pravidlo autorskyDozorWordProj, 14. 10. 2026). */
+  const bezAD = typeof PJ !== 'undefined' && !!PJ && PJ.nabizetAD === false;
+  /* Akce mimo Prahu (D2) — šablona bez symbolů cestovného (cestovneWordProj). */
+  const mimoPrahu = typeof PJ !== 'undefined' && !!PJ && !!PJ.akceMimoPrahu;
+  if (!sleva && !navic && !plan && !geodet && !bezAD && !mimoPrahu) return null;
+  return kontrolySablonaSymboly('nabidkaProj', jazyk);
+}
+function kontrolySablonaSymboly(zaklad, jazyk) {
+  if (typeof sablonyOnlineAktivni !== 'function' || !sablonyOnlineAktivni()) return null;
+  if (typeof onlineSablonaMeta !== 'function' || typeof onlineSablonaStahni !== 'function'
+      || typeof docxTextSablony !== 'function' || typeof sablonaSymboly !== 'function') return null;
+  const L = jazyk || 'cz';
+  const typ = (L !== 'cz' && onlineSablonaMeta(zaklad + '_' + L)) ? zaklad + '_' + L : zaklad;
+  const meta = onlineSablonaMeta(typ);
+  if (!meta) return null;
+  const klic = typ + '/' + meta.verze;
+  if (KONTROLY_SABLONA.cache[klic]) return KONTROLY_SABLONA.cache[klic];
+  if (!KONTROLY_SABLONA.bezi[klic]) {
+    KONTROLY_SABLONA.bezi[klic] = true;
+    onlineSablonaStahni(typ)
+      .then(v => v ? docxTextSablony(v.data) : [])
+      .then(odst => {
+        KONTROLY_SABLONA.cache[klic] = { typ, verze: meta.verze, nazev: meta.nazev || '',
+                                         symboly: sablonaSymboly(odst) };
+        if (typeof render === 'function') render();
+      })
+      .catch(() => { /* bez šablony pravidlo mlčí; další pokus po změně verze */ });
+  }
+  return null;
 }
 
 function kontrolyStavAkt() {
@@ -64,10 +190,58 @@ function kontrolyStavAkt() {
   return kontrolyProved(kontrolyCtxAkt());
 }
 
-/* Právo na částky – jedno pravidlo pro celou aplikaci, půjčené od marže. */
+/* Kontroly nad VARIANTOU, ze které dokument vzniká (#377, 1. 10. 2026).
+ * Otevřená varianta = kontrolyStavAkt() (globály Z, C, PJ… jsou její).
+ * Jiná varianta (řídící po odpovědi „Ne" v nabidkaVarianta) se posoudí
+ * nad vlastními daty — stačí to, co čtou pravidla se zábranou (zadání,
+ * výsledky, ceníky, slevy, hlavička); šablony a termíny (jen varování)
+ * se pro ni nestahují. Zamčená varianta vydá svůj zmrazený výsledek
+ * (vypocetZ), takže se posuzuje to, co odešlo. */
+function kontrolyCtxVarianta(v) {
+  const d = (v && v.data) || {};
+  let ock = null, proj = null;
+  try { ock = (typeof vypocetZ === 'function') ? vypocetZ(v, JEKLY) : null; } catch (e) {}
+  try { proj = (typeof vypocetProjZ === 'function') ? vypocetProjZ(v) : null; } catch (e) {}
+  return {
+    zadani: d.ock ? d.ock.zadani : null,
+    vysledek: ock,
+    jenProj: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'ock' : !!ZAK.jenProj),
+    jenOck: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'proj' : !!ZAK.jenOck),
+    projZadani: d.proj ? d.proj.zadani : null,
+    projVysledek: proj,
+    cenik: d.cenik || null,
+    cenikProj: d.proj ? d.proj.cenik : null,
+    sleva: d.sleva || null,
+    slevaProj: d.slevaProj || null,
+    nast: (typeof NAST !== 'undefined') ? NAST : null,
+    zak: (typeof ZAK !== 'undefined') ? ZAK : null,
+    zaokr: d.zaokr || null,
+    zaokrProj: d.zaokrProj || d.zaokr || null,
+    /* Cenová výjimka (13. 10. 2026) — zábrana cenovaVyjimka. */
+    vyjimka: (() => { try { return (typeof vyjimkyStavVarianty === 'function') ? vyjimkyStavVarianty(v) : null; } catch (e) { return null; } })(),
+  };
+}
+function kontrolyStavVarianta(v) {
+  if (typeof kontrolyProved !== 'function') return { varovat: false, nalezy: [], kody: [] };
+  const akt = (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined') ? aktivniVarianta(ZAK) : null;
+  if (!v || v === akt || (akt && v.id === akt.id)) return kontrolyStavAkt();
+  return kontrolyProved(kontrolyCtxVarianta(v));
+}
+
+/* Právo na částky v kontrolách = klíč `kontroly.cisla` (P12 / #369, v15.10.3).
+ * Do v15.10.3 se funkce nejdřív zeptala marže (`marzeSmiCisla`, klíč
+ * `marze.lista`) a vrátila její odpověď — `kontroly.cisla` tak neměl žádný
+ * účinek: obchodník s přidělenou lištou marže viděl v kontrolách i náklady
+ * a odebrat mu je šlo jen spolu s lištou. Vedoucímu se chování nemění
+ * (zadání): ten čísla vidí i s právem na lištu marže, jako dosud.
+ * Ruční zviditelnění KPI „Marže" (NAST.kpiViditelne, smí jen administrátor)
+ * platí dál pro všechny, stejně jako v hlavičce kalkulace. */
 function kontrolySmiCisla() {
-  if (typeof marzeSmiCisla === 'function') return marzeSmiCisla();
-  if (typeof smiZobrazit === 'function' && smiZobrazit('kontroly.cisla')) return true;
+  if (typeof smiZobrazit === 'function') {
+    if (smiZobrazit('kontroly.cisla')) return true;
+    const role = (typeof zobrazeniRole === 'function') ? zobrazeniRole() : '';
+    if (role === 'Vedoucí' && typeof marzeSmiCisla === 'function' && marzeSmiCisla()) return true;
+  } else if (typeof marzeSmiCisla === 'function') return marzeSmiCisla();
   return !!(typeof NAST !== 'undefined' && NAST.kpiViditelne && NAST.kpiViditelne.marze);
 }
 
@@ -98,22 +272,32 @@ function kontrolyPanel() {
   }
   const cisla = kontrolySmiCisla();
   const plati = (typeof kontrolyPotvrzeniPlati === 'function') && kontrolyPotvrzeniPlati(p, s);
-  const polozky = s.nalezy.map(n => `<li>
-      <span class="kde">${esc(n.kde)}</span>
+  const polozky = s.nalezy.map(n => `<li${n.uroven === KONTROLY_UROVEN_ZABRANA ? ' class="zabrana"' : ''}>
+      <span class="kde">${n.uroven === KONTROLY_UROVEN_ZABRANA ? '⛔ ' : ''}${esc(n.kde)}</span>
       <span class="txt">${esc(n.text)}${cisla && n.detail ? ' <span class="detail">' + esc(n.detail) + '</span>' : ''}</span>
     </li>`).join('');
+  /* #377: zábrana se neodklepává — dokumenty, kterých se týká, jsou
+   * zhasnuté, dokud se nález neopraví (brána v dokumentZabrana). Tlačítko
+   * „Beru na vědomí" zůstává pro varování vedle ní: odklepnutí se uloží
+   * a platí, jakmile se zábrana opraví (kontrolyPotvrzeniPlati). */
+  const zabrana = s.brani
+    ? `<div class="kontroly-zabrana"><b>⛔ Zábrana:</b> dokumenty, kterých se nález označený ⛔ týká,
+        nevzniknou, dokud se neopraví — tlačítka jsou zhasnutá a bublina nad nimi řekne, co opravit.
+        Zábranu odklepnout nejde.</div>`
+    : '';
   const patka = plati
     ? `<div class="kontroly-odklep">✔ Odklepnuto${p.kdo ? ' (' + esc(p.kdo) + ')' : ''}
         ${p.kdy ? esc(String(p.kdy).slice(0, 10)) : ''} – nabídku lze vytvořit.</div>`
     : `<div class="kontroly-btns">
         <button class="mini" onclick="kontrolyPotvrd()">Beru na vědomí, pokračovat</button>
-        <span class="pozn">Nic se neblokuje. Odklepnutí se uloží k variantě, aby bylo dohledatelné,
-          že se na to někdo díval.</span>
+        <span class="pozn">${s.brani ? 'Varování se neblokují, zábrana ano.' : 'Nic se neblokuje.'}
+          Odklepnutí se uloží k variantě, aby bylo dohledatelné, že se na to někdo díval.</span>
       </div>`;
   return `<div class="kontroly-panel${plati ? ' odklepnuto' : ''}">
     <div class="kontroly-hlava"><span class="ikona">${plati ? '⚠' : '⚠'}</span>
       <b>Než nabídku odešlete – ${s.nalezy.length === 1 ? 'jedna věc' : s.nalezy.length + ' věci k ověření'}:</b></div>
     <ul class="kontroly-seznam">${polozky}</ul>
+    ${zabrana}
     ${patka}
   </div>`;
 }

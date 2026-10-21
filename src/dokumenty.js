@@ -24,9 +24,18 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
    * zhasnutá už v UI, ale sem vede jediná cesta ke každému dokumentu –
    * tudíž je to jediné místo, kde stačí hlídat jednou. Zábrana žije v UI
    * vrstvě (ui/ukazkove_ui.js), protože potřebuje stav běžící aplikace;
-   * v Node testech funkce neexistuje a podmínka je tím pádem neškodná. */
+   * v Node testech funkce neexistuje a podmínka je tím pádem neškodná.
+   * Varianta jde s sebou: dokument může vznikat z řídící varianty, ne
+   * z otevřené (nabidkaVarianta; plán plateb — revize etapy B 30. 9. 2026). */
   if (typeof dokumentZabrana === 'function') {
-    const duvod = dokumentZabrana(typ);
+    const duvod = dokumentZabrana(typ, varianta);
+    if (duvod) throw new Error(duvod);
+  }
+  /* Zámek strany (P6 / K19-N114, vzor #377): dokument vyřazené strany
+   * nevznikne ani mimo UI (Node, cizí volající) — rozhoduje zakázka,
+   * ze které dokument vzniká. */
+  if (typeof kontrolyStranaZabrana === 'function') {
+    const duvod = kontrolyStranaZabrana(zak, typ);
     if (duvod) throw new Error(duvod);
   }
   const def = DOKUMENTY[typ];
@@ -38,17 +47,30 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
   }
   // Režim B – vyplnění existující .docx šablony placeholdery {{...}}
   if (typeof def.builder !== 'function') throw new Error('Dokument „' + typ + '" nemá builder ani generate.');
-  const data = def.builder(zak, varianta, jekly, lang);
+  /* Builder, který potřebuje vědět, co šablona umí (def.sablonaSymboly —
+   * např. nabídka PROJ: má šablona řádek slevy?), dostane její symboly. */
+  const sablona = def.sablonaSymboly && templateArrayBuffer
+    ? { symboly: await dokumentSymbolySablony(templateArrayBuffer) } : null;
+  const data = def.builder(zak, varianta, jekly, lang, sablona);
   /* data.obrazky = { SYMBOL: 'data:image/…' } – obrázky, které se v šabloně
    * vymění za tvar označený alternativním textem {{SYMBOL}} (#146: sken
    * podpisu a razítka zpracovatele). Builder, který žádné nedodá, se chová
    * jako dřív. */
   const blob = await docxVyplnSablonu(templateArrayBuffer, data.placeholders,
-    data.priplatky || [], data.obrazky || {});
+    data.priplatky || [], data.obrazky || {}, { odstavcePryc: data.odstavcePryc || [], blokyPryc: data.blokyPryc || [], radkyNavic: data.tsRadkyNavic || [] });
   return { blob, nazevSouboru: data.nazevSouboru, data };
+}
+/* Symboly {{…}} šablony (tělo, záhlaví, zápatí) — i rozdělené mezi běhy. */
+async function dokumentSymbolySablony(templateArrayBuffer) {
+  const polozky = await zipPrecti(new Uint8Array(templateArrayBuffer.slice(0)));
+  const dekoder = new TextDecoder();
+  const mn = new Set();
+  polozky.filter(p => /^word\/(document|header\d*|footer\d*)\.xml$/.test(p.nazev))
+    .forEach(p => klicePlaceholderu(dekoder.decode(p.data)).forEach(k => mn.add(k)));
+  return mn;
 }
 /* seznam typů daného „druhu" (např. všechny krycí listy) dle prefixu */
 function dokumentTypyPrefix(prefix) { return Object.keys(DOKUMENTY).filter(t => t.indexOf(prefix) === 0); }
 
 if (typeof module !== 'undefined')
-  module.exports = { DOKUMENTY, dokumentRegistruj, dokumentDef, dokumentTypy, dokumentTypyPrefix, dokumentVygeneruj };
+  module.exports = { DOKUMENTY, dokumentRegistruj, dokumentDef, dokumentTypy, dokumentTypyPrefix, dokumentVygeneruj, dokumentSymbolySablony };

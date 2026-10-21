@@ -32,11 +32,14 @@ const ANALYTIKA_RETENCE_MESICU = 24;            // denní agregáty se drží 24
 
 /* ---------- klíč prvku ----------
  * „zalozka|TAG|popis". Popis je onclick/oninput prvku NEBO text tlačítka;
- * všechno v závorkách se nahrazuje „(…)“ — argumenty volání nesou
- * identifikátory variant a jména, a ta do analytiky NESMÍ. */
+ * všechno od první „(“ do konce se nahrazuje „(…)“ — argumenty volání nesou
+ * identifikátory variant a jména, a ta do analytiky NESMÍ.
+ * B89 (hloubkový test 24. 9. 2026, #347): do 15. 10. 2026 se nahrazoval jen
+ * úsek do PRVNÍ „)“ — závorka uvnitř řetězce („Bytový dům (Praha) Novák“)
+ * nebo vnořené volání nechaly zbytek argumentu v klíči. */
 function analytikaKlic(zalozka, tag, popis) {
   let p = String(popis == null ? '' : popis)
-    .replace(/\(([^)]|\n)*\)?/g, '(…)')       // zahodit argumenty volání
+    .replace(/\([\s\S]*$/, '(…)')               // zahodit argumenty volání (vč. zbytku)
     .replace(/\s+/g, ' ').trim();
   if (!p) p = '?';
   if (p.length > 80) p = p.slice(0, 80);
@@ -83,12 +86,26 @@ function analytikaNovePocty() {
 }
 
 /* Přičtení mapy klíč→počet (záložky, prvky) do cílové mapy uživatele. */
+/* PROTOTYPOVÉ KLÍČE (B81, audit 9. 9. 2026; opraveno 13. 10. 2026). Klíče
+ * map (prvek, záložka, e-mail, číslo zakázky) posílá klient. „constructor"
+ * našel v prázdné mapě funkci Object — počítadlo se slilo do textu
+ * „function Object()…1" a `pocty.constructor` prošlo jako známé počítadlo;
+ * „__proto__" zapisoval do prototypu místo do mapy. Takové klíče se
+ * zahazují a existence se ptá jen na vlastní vlastnosti. */
+const ANALYTIKA_PROTO = ['__proto__', 'constructor', 'prototype'];
+/* Strop počtu zakázek s měřeným časem (`cas/<číslo>`, B35). Firma založí
+ * pár set zakázek ročně; 5 000 je rezerva na roky a ještě se vejde do
+ * jednoho souhrnu. */
+const ANALYTIKA_MAX_CASU = 5000;
+function analytikaKlicPovolen(k) { return ANALYTIKA_PROTO.indexOf(String(k)) < 0; }
+const analytikaMa = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+
 function analytikaPrictiMapu(cil, zdroj) {
   if (!cil || !zdroj || typeof zdroj !== 'object') return cil;
   Object.entries(zdroj).forEach(([k, n]) => {
-    const klic = String(k).slice(0, ANALYTIKA_MAX_KLIC_ZNAKU);
-    if (!klic) return;
-    cil[klic] = (+cil[klic] || 0) + analytikaCislo(n);
+    const klic = analytikaKlicOrez(k);             // B175: i prvky po uživatelích
+    if (!klic || !analytikaKlicPovolen(klic)) return;
+    cil[klic] = (analytikaMa(cil, klic) ? (+cil[klic] || 0) : 0) + analytikaCislo(n);
   });
   return cil;
 }
@@ -149,8 +166,14 @@ function analytikaCislo(n) {
   if (!isFinite(x) || x <= 0) return 0;
   return Math.min(x, ANALYTIKA_MAX_HODNOTA);
 }
+/* Klíč prvku od klienta se očistí TÍMŽ pravidlem jako v analytikaKlic
+ * (B175, audit 15. 10. 2026, dávka H1): vše od první „(“ se nahradí „(…)“.
+ * Do v15.10.2 klient nechával v klíči zbytek argumentu (B89) a server ho
+ * jen ořízl na délku — jména zákazníků z té doby by se jinak slévala dál
+ * (souhrny za období, nový zápis dne). Klíč, který už očištěný je, se
+ * nezmění (idempotentní), záložky závorky nenesou. */
 function analytikaKlicOrez(k) {
-  return String(k == null ? '' : k).slice(0, ANALYTIKA_MAX_KLIC_ZNAKU);
+  return String(k == null ? '' : k).replace(/\([\s\S]*$/, '(…)').slice(0, ANALYTIKA_MAX_KLIC_ZNAKU);
 }
 /* Co smí z dávky klienta do slití: jmenovitě, bez `poUzivateli`. */
 function analytikaDavkaOcisti(den) {
@@ -163,17 +186,18 @@ function analytikaDavkaOcisti(den) {
 /* přičtení do mapy se stropem — přeteklé klíče se slévají do „…ostatní",
  * aby rozbitý klient nemohl denní záznam nafouknout do nekonečna */
 function analytikaDoMapy(mapa, klic, kolik) {
-  const k = (mapa[klic] === undefined && Object.keys(mapa).length >= ANALYTIKA_MAX_KLICU)
+  if (!analytikaKlicPovolen(klic)) return;
+  const k = (!analytikaMa(mapa, klic) && Object.keys(mapa).length >= ANALYTIKA_MAX_KLICU)
     ? '…ostatni' : klic;
-  mapa[k] = (mapa[k] || 0) + kolik;
+  mapa[k] = (analytikaMa(mapa, k) ? (mapa[k] || 0) : 0) + kolik;
 }
 
 function analytikaPridej(den, u) {
   if (!u) return den;
   if (u.typ === 'klik' && u.klic) analytikaDoMapy(den.kliky, u.klic, u.n || 1);
   else if (u.typ === 'zdrz' && u.klic) analytikaDoMapy(den.zdrz, u.klic, +u.sek || 0);
-  else if (u.typ === 'zalozka' && u.tab) den.zalozky[u.tab] = (den.zalozky[u.tab] || 0) + 1;
-  else if (u.typ === 'pocet' && u.co && den.pocty[u.co] !== undefined) den.pocty[u.co]++;
+  else if (u.typ === 'zalozka' && u.tab) analytikaDoMapy(den.zalozky, u.tab, 1);
+  else if (u.typ === 'pocet' && u.co && analytikaMa(den.pocty, u.co)) den.pocty[u.co]++;
   return den;                                    // neznámý typ se tiše ignoruje
 }
 
@@ -186,16 +210,17 @@ function analytikaSlij(a, b) {
     Object.entries(d.zdrz || {}).forEach(([k, n]) => analytikaDoMapy(v.zdrz, analytikaKlicOrez(k), analytikaCislo(n)));
     Object.entries(d.zalozky || {}).forEach(([k, n]) => analytikaDoMapy(v.zalozky, analytikaKlicOrez(k), analytikaCislo(n)));
     Object.entries(d.pocty || {}).forEach(([k, n]) => {
-      if (v.pocty[k] !== undefined) v.pocty[k] += analytikaCislo(n);
+      if (analytikaMa(v.pocty, k)) v.pocty[k] += analytikaCislo(n);
     });
     /* starší dny klíč `poUzivateli` nemají — slití to snese */
     Object.entries(d.poUzivateli || {}).forEach(([e, p]) => {
-      const cil = v.poUzivateli[e] || (v.poUzivateli[e] = analytikaNovePocty());
+      if (!analytikaKlicPovolen(e)) return;
+      const cil = (analytikaMa(v.poUzivateli, e) && v.poUzivateli[e]) || (v.poUzivateli[e] = analytikaNovePocty());
       analytikaPrictiMapu(cil.zalozky, p && p.zalozky);
       analytikaPrictiMapu(cil.kliky, p && p.kliky);
       Object.entries(p || {}).forEach(([k, n]) => {
         /* jen čísla — mapy záložek a prvků se slily o dva řádky výš */
-        if (typeof cil[k] === 'number') cil[k] += analytikaCislo(n);
+        if (analytikaMa(cil, k) && typeof cil[k] === 'number') cil[k] += analytikaCislo(n);
       });
     });
   });
@@ -243,6 +268,21 @@ function analytikaCastZTabu(tab) {
   return null;
 }
 
+/* ---------- jednorázová očista uložených dnů (B175) ----------
+ * Vrací očištěný den, když některý klíč prvku (souhrn i po uživatelích) nese
+ * zbytek argumentu z doby před v15.10.2; jinak null (den se nepřepisuje).
+ * Očistu dělá analytikaSlij — slévá klíče týmž pravidlem a součty sečte. */
+function analytikaDenPotrebujeOcistu(den) {
+  if (!den || typeof den !== 'object') return false;
+  const spatna = (m) => !!m && typeof m === 'object' && Object.keys(m).some(k => analytikaKlicOrez(k) !== k);
+  if (spatna(den.kliky) || spatna(den.zdrz)) return true;
+  return Object.values((den.poUzivateli && typeof den.poUzivateli === 'object') ? den.poUzivateli : {})
+    .some(u => u && spatna(u.kliky));
+}
+function analytikaDenOcisti(den) {
+  return analytikaDenPotrebujeOcistu(den) ? analytikaSlij(den, null) : null;
+}
+
 /* ---------- retence ----------
  * Vrací klíče „den/RRRR-MM-DD" starší než 24 měsíců od `dnes`. Cizí prefixy
  * a vadná data se nechávají být — mazat se smí jen to, čemu rozumíme. */
@@ -284,9 +324,9 @@ function analytikaRezimNastav(rezim, sber, kdo, kdy) {
 if (typeof module !== 'undefined')
   module.exports = { ANALYTIKA_GDPR_TEXT, ANALYTIKA_NECINNOST_MS, ANALYTIKA_MAX_KLICU,
                      ANALYTIKA_MAX_KLIC_ZNAKU, ANALYTIKA_MAX_HODNOTA,
-                     analytikaCislo, analytikaKlicOrez, analytikaDavkaOcisti,
+                     analytikaCislo, analytikaKlicOrez, analytikaDavkaOcisti, analytikaKlicPovolen, ANALYTIKA_MAX_CASU,
     ANALYTIKA_RETENCE_MESICU, analytikaKlic, analytikaNovyDen, analytikaPridej,
     analytikaSlij, analytikaPocetZKliku, casNovy, casKrok, analytikaCastZTabu,
     analytikaRetence, analytikaObdobi, analytikaRezimNovy, analytikaRezimNastav,
     analytikaNovePocty, analytikaPrictiUzivateli, analytikaPoctyUzivatele, analytikaUzivatele,
-    analytikaPrictiMapu };
+    analytikaPrictiMapu, analytikaDenPotrebujeOcistu, analytikaDenOcisti };

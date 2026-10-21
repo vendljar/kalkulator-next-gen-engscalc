@@ -53,6 +53,8 @@ const ONLINE_STAV = {
   rejstrik: [],      // rejstřík online zakázek
   otisky: [],        // souhrny záloh databáze (jen administrátor; bez dat)
   otiskyNacteno: false,
+  kopieDisk: null,   // záznam poslední kopie otisku na Disk (#151 N6) — ze serveru, bez dat
+  retenceVarovani: null,   // pojistka retence přeskočila mazání (K3-N13) — ze serveru
   soubor: '',        // pod jakým jménem je otevřená zakázka online
   razitko: '',
   /* Kolize verzí při zápisu (nález V27, 8. 9. 2026): { soubor, kdo, naDisku,
@@ -96,6 +98,7 @@ const ONLINE_STAV = {
   profilHlaska: '',
   profilTyp: '',
   hesloPro: '',      // e-mail účtu, u kterého je rozbalený reset hesla
+  kontaktPro: '',    // e-mail účtu, u kterého je rozbalená úprava kontaktu (titul, funkce, telefon)
   formEmail: '',     // přihlašovací formulář přežívá překreslení
   formHeslo: '',
   hlaska: '',
@@ -146,7 +149,9 @@ function onlineApi(cesta, telo, metoda) {
   }
   if (metoda) o.method = metoda;
   return fetch(cesta, o).then(r => r.json().catch(() => ({})).then(d => {
-    if (r.status === 401 && ONLINE_STAV.ja) {
+    /* 401 s kódem `hesloSpravce` (B77, 13. 10. 2026) je špatné heslo
+     * k potvrzení citlivé akce, ne vypršelé přihlášení — relace platí dál. */
+    if (r.status === 401 && ONLINE_STAV.ja && d.kod !== 'hesloSpravce') {
       ONLINE_STAV.ja = null; ONLINE_STAV.db = null; ONLINE_STAV.cenikPouzit = false;
       onlineZprava('Přihlášení vypršelo – přihlaste se prosím znovu.', 'varovani');
     }
@@ -168,7 +173,27 @@ function onlineApi(cesta, telo, metoda) {
  * Záměrně se nesleduje `set()` ani jiná datová cesta: zakázkou hýbe i sama
  * aplikace (přepočet, migrace, zrcadlení kurzu) a právě to se nemá ukládat.
  * Sledují se proto UDÁLOSTI OD ČLOVĚKA. */
-function onlineZmenaUzivatele() { ONLINE_STAV.zmenaUzivatele = true; }
+function onlineZmenaUzivatele(ev) {
+  if (onlineUdalostZPrihlaseni(ev)) return;
+  ONLINE_STAV.zmenaUzivatele = true;
+}
+/* PŘIHLAŠOVACÍ FORMULÁŘ NENÍ PRÁCE NA ZAKÁZCE (nález N34 revize v22.9.9).
+ *
+ * Posluchače níž sedí na celém dokumentu v zachycovací fázi — a přihlašovací
+ * okno je v tomtéž dokumentu. Kdo po vypršení relace napsal e-mail a heslo
+ * a klikl „Přihlásit", měl značku „uživatel něco udělal" nastavenou dřív, než
+ * se vůbec přihlásil. Návrat k poslední zakázce (#302) se pak neprovedl
+ * (`onlineObnovPosledni` na značku čeká) a otisk uložení se neposunul, takže
+ * aplikace hlásila neuložené změny, které nikdo neudělal. Oprava N12/N13 tím
+ * platila jen pro F5 se živou relací — přesně to, co měřil harness.
+ *
+ * Značka má dál chránit rozdělanou práci, proto se nemaže po přihlášení
+ * (kdo pracoval offline a pak se přihlásil, o ochranu nepřijde). Jen se
+ * nepočítají události, které vznikly uvnitř přihlašovacího okna. */
+function onlineUdalostZPrihlaseni(ev) {
+  const t = ev && ev.target;
+  return !!(t && typeof t.closest === 'function' && t.closest('#prihlaseni-overlay'));
+}
 
 /* Zavolá se jednou při startu (z onlineStart). Posluchače jsou v zachycovací
  * fázi, aby je nezastavil žádný stopPropagation po cestě. */
@@ -183,7 +208,7 @@ function onlineSledujUzivatele() {
   document.addEventListener('click', ev => {
     const t = ev.target;
     if (t && typeof t.closest === 'function' && t.closest('button, input, select, textarea'))
-      onlineZmenaUzivatele();
+      onlineZmenaUzivatele(ev);
   }, true);
 }
 
@@ -206,7 +231,13 @@ function onlineStart() {
       .then(ja => (ja && ja.ok ? onlinePoPrihlaseni(ja) : null))
       .catch(() => null);
   }).catch(() => null)
-    .then(() => { ONLINE_STAV.sondaHotova = true; if (typeof render === 'function') render(); });
+    .then(() => {
+      ONLINE_STAV.sondaHotova = true;
+      if (typeof render === 'function') render();
+      /* První pokus o načtení doběhl — červená lišta ukázkových dat smí
+       * přestat čekat (S5, v15.10.4; viz ukazkoveCekaniKonec). */
+      if (typeof ukazkoveCekaniKonec === 'function') ukazkoveCekaniKonec();
+    });
 }
 
 /* Hlídka nasazené verze (19. 8. 2026): stránka zůstává otevřená celé dny,
@@ -218,11 +249,42 @@ function onlineVerzeHlidkaStart() {
   /* Od 8. 9. 2026 rozdíl verzí stránku zablokuje (renderVerzeOverlay), tak
    * ať se na něj nečeká deset minut: dotaz každé 3 minuty a navíc při každém
    * návratu do záložky nebo okna — přesně tehdy se s aplikací začne pracovat. */
-  onlineVerzeCasovac = setInterval(onlineVerzeTik, 3 * 60 * 1000);
+  onlineVerzeCasovac = setInterval(() => { onlineVerzeTik(); onlineZobrazeniObnov(); }, 3 * 60 * 1000);
   if (typeof document !== 'undefined') {
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') onlineVerzeTik(); });
-    window.addEventListener('focus', () => onlineVerzeTik());
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { onlineVerzeTik(); onlineZobrazeniObnov(); } });
+    window.addEventListener('focus', () => { onlineVerzeTik(); onlineZobrazeniObnov(); });
   }
+}
+
+/* NASTAVENÍ ZOBRAZENÍ SE PŘIHLÁŠENÉMU OBCHODNÍKOVI OBNOVUJE SAMO
+ * (23. 9. 2026, hlášeno J. V.: „když vyberu skrýt, tak obchodník sekci
+ * stále vidí").
+ *
+ * Matice se dosud četla jen při přihlášení. Obchodník, který měl aplikaci
+ * otevřenou, tedy skrytou sekci viděl dál — až do obnovení stránky, a to
+ * i celé dny (stránka zůstává otevřená, viz hlídka verze výš). Teď se
+ * matice přečte znovu spolu s hlídkou verze: každé 3 minuty a při návratu
+ * do okna, nejčastěji jednou za minutu. Překresluje se, JEN když se něco
+ * změnilo — jinak by návrat do okna zbytečně sahal do obrazovky.
+ *
+ * Administrátora to vynechává: matici sám upravuje a ukládá (včetně
+ * odloženého uložení panelu za 800 ms), takže stažení by mu mohlo přepsat
+ * zaškrtnutí, které ještě neodešlo. */
+let onlineZobrazeniObnovCas = 0;
+function onlineZobrazeniObnov(vynutit) {
+  if (typeof ONLINE_STAV === 'undefined' || !ONLINE_STAV.ja || jeAdminOnline()) return Promise.resolve(false);
+  const ted = Date.now();
+  if (!vynutit && ted - onlineZobrazeniObnovCas < 60 * 1000) return Promise.resolve(false);
+  onlineZobrazeniObnovCas = ted;
+  return onlineApi('/api/zobrazeni').then(o => {
+    const nova = (o.zobrazeni && o.zobrazeni.matice) ? o.zobrazeni : null;
+    const otisk = z => JSON.stringify(z ? z.matice : null);
+    if (otisk(nova) === otisk(ONLINE_STAV.zobrazeni)) return false;
+    ONLINE_STAV.zobrazeni = nova;
+    onlineZobrazeniNasad(nova ? nova.matice : null);
+    if (typeof render === 'function') render();
+    return true;
+  }).catch(() => false);      // ticho: platí dál, co je načtené; hlásí se až chyba při přihlášení
 }
 function onlineVerzeTik() {
   return fetch('/api/zdravi').then(r => (r.ok ? r.json() : null)).then(z => {
@@ -252,7 +314,9 @@ function onlinePrihlas() {
 function onlinePoPrihlaseni(ja) {
   ONLINE_STAV.ja = { email: ja.email, jmeno: ja.jmeno || '', role: ja.role,
     titul: ja.titul || '', funkce: ja.funkce || '', telefon: ja.telefon || '',
-    podpis: ja.podpis || '' };
+    podpis: ja.podpis || '',
+    /* Jen u administrátora (#278, B57); jinde undefined = server to neřekl. */
+    spravceNastaven: (typeof ja.spravceNastaven === 'boolean') ? ja.spravceNastaven : undefined };
   ONLINE_STAV.uzivateleNacteno = false;   // seznam účtů se načte čerstvý
   if (typeof NAST !== 'undefined') {
     NAST.uzivatel = ja.jmeno || ja.email;
@@ -262,13 +326,95 @@ function onlinePoPrihlaseni(ja) {
   /* Matice zobrazení se načítá spolu s ostatním — a hlavně PŘED prvním
    * překreslením, aby rozhraní hned napoprvé odpovídalo roli. Kdyby dorazila
    * později, obchodník by na okamžik zahlédl ceníky a pak by mu zmizely. */
+  /* CO DO ZAKÁZKY NASYPALO SAMO PŘIHLÁŠENÍ, NENÍ NEULOŽENÁ PRÁCE UŽIVATELE
+   * (nálezy N12 a N13, 22. 9. 2026).
+   *
+   * Načtení níž vtiskne čerstvé zakázce PLATNÝ CENÍK (`progSrovnejNedotcene`
+   * uvnitř `onlineNactiProgram`) a MATICI ZOBRAZENÍ
+   * (`onlineZobrazeniDoCerstveZakazky` uvnitř `onlineNactiZobrazeni`).
+   * `HIST.ulozenoJako` přitom nese otisk pořízený PŘI STARTU stránky, tedy
+   * ještě s hodnotami z kódu — od téhle chvíle tedy `historieNeulozeno()`
+   * vrací true, přestože se člověk ničeho nedotkl.
+   *
+   * Platilo to na DVOU místech naráz a obě bolela:
+   *   · `onlineObnovPosledni()` se na to ptala a návrat k poslední zakázce
+   *     odmítla — po F5 dostal obchodník prázdný formulář (N13),
+   *   · `onlineOtevri()` na to otevře DIALOG „máte neuložené změny", takže
+   *     i když se návrat spustil, čekal na odpověď na otázku, která nedávala
+   *     smysl.
+   *
+   * Protože obě načtení běží v jednom `Promise.all`, záleželo na jejich
+   * pořadí — sada `overit_prirazka_cenik.mjs` proto padala jednou ze tří,
+   * což je ten nejhorší druh chyby: ta, které se přestane věřit.
+   *
+   * Otisk se proto posune AŽ PO všech načteních a JEN TEHDY, když člověk
+   * před přihlášením do formuláře nesáhl. `zmenaUzivatele` nastavují
+   * posluchače na `input`/`change`/klik, tedy události od člověka; kdo měl
+   * rozdělanou práci, o ni nepřijde. */
+  const byloOdUzivatele = !!ONLINE_STAV.zmenaUzivatele;
   return Promise.all([onlineNactiProgram(), onlineNactiFirmu(), onlineNactiZobrazeni(), onlineNactiRejstrik(),
                       onlineNactiSablony(),
+                      /* zveřejněný slovník překladů (#401) — na ceníku nezávisí */
+                      onlineNactiSlovnik(),
+                      /* controlling (#447) — jen administrátor; chyba načtení
+                       * přihlášení nezastaví (ctrlUiNacti ji jen zapíše) */
+                      (typeof ctrlUiNacti === 'function' && typeof jeAdminOnline === 'function' && jeAdminOnline())
+                        ? ctrlUiNacti() : Promise.resolve(),
                       /* analytika (#27): zjistit, jestli je sběr zapnutý, a nastartovat ho */
                       typeof analytikaPoPrihlaseni === 'function' ? analytikaPoPrihlaseni() : Promise.resolve()])
+    /* SPOLEČNÉ DODATKOVÉ TEXTY AŽ PO CENÍKU, NE VEDLE NĚJ (22. 9. 2026).
+     * `onlineNactiProgram` vyměňuje obsah DEFAULT_CENIK na místě
+     * (`progPouzij` → `konfigNahradVMiste`). Kdyby se texty vlévaly souběžně
+     * v témže `Promise.all`, rozhodovalo by pořadí a při nešťastném pořadí by
+     * je výměna ceníku smazala. Tahle chyba by se přitom projevila jednou za
+     * čas a vypadala jako „texty se občas neukážou" — přesně ten druh
+     * nestability, který 22. 9. ráno řešila dávka 2. */
+    .then(() => onlineNactiPopisy())
+    .then(() => {
+      if (!byloOdUzivatele && typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+    })
     .then(() => onlineObnovPosledni())
     .then(() => { if (jeAdminOnline()) onlineZalohaAuto(); });
 }
+
+/* SLEVY ZE SERVERU (revize 13. 10. 2026, B101/B105). Server rozhodnutí
+ * o slevě razí (čas) nebo vrací uložené (rozhodnutí bez práva). Převezme se
+ * jen u varianty, jejíž slevu uživatel mezi odesláním a odpovědí neměnil. */
+function onlineSlevyOtisk(zak) {
+  const out = {};
+  ((zak && zak.varianty) || []).forEach(v => {
+    if (v && v.data) out[v.id] = JSON.stringify([v.data.sleva || null, v.data.slevaProj || null, v.data.cenovaVyjimka || null]);
+  });
+  return out;
+}
+function onlineSlevyZeServeru(slevy, odeslane) {
+  if (!Array.isArray(slevy) || !ZAK || !Array.isArray(ZAK.varianty)) return 0;
+  const ted = onlineSlevyOtisk(ZAK);
+  let zmen = 0;
+  slevy.forEach(s => {
+    const v = s && ZAK.varianty.find(x => x && x.id === s.id);
+    if (!v || !v.data || !odeslane || ted[v.id] !== odeslane[v.id]) return;
+    /* Cenová výjimka (13. 10. 2026) — razí ji server jako slevu; starší
+     * server pole neposílá, pak se nechá, jak je. */
+    const sVyj = ('cenovaVyjimka' in s) ? (s.cenovaVyjimka || null) : (v.data.cenovaVyjimka || null);
+    const novy = JSON.stringify([s.sleva || null, s.slevaProj || null, sVyj]);
+    if (novy === ted[v.id]) return;
+    if (s.sleva) v.data.sleva = JSON.parse(JSON.stringify(s.sleva));
+    if (s.slevaProj) v.data.slevaProj = JSON.parse(JSON.stringify(s.slevaProj));
+    if (sVyj) v.data.cenovaVyjimka = JSON.parse(JSON.stringify(sVyj));
+    else delete v.data.cenovaVyjimka;
+    zmen++;
+  });
+  if (zmen && typeof syncVarianta === 'function') { try { syncVarianta(); render(); } catch (e) { /* nevadí */ } }
+  return zmen;
+}
+
+/* B171 (audit 15. 10. 2026, dávka H1): odhlášení zvedá verzi hesla
+ * (B6, functions/odhlaseni.mjs), takže ukončí relace tohoto účtu na VŠECH
+ * zařízeních. Tlačítko to říká v nápovědě a panel online i větou — jinak
+ * uživatel nechápe, proč je odhlášený i v telefonu. UI je jen česky
+ * (překlady EN/DE/FR se týkají dokumentů, ne rozhraní). */
+const ODHLASIT_TITULEK = 'Odhlásí vás na všech zařízeních, kde jste tímto účtem přihlášeni (počítač, telefon, tablet).';
 
 function onlineOdhlas() {
   return onlineApi('/api/odhlaseni', {}).catch(() => null).then(() => {
@@ -279,6 +425,7 @@ function onlineOdhlas() {
     /* Matice zpět na výchozí: odhlášený nemá čím doložit, komu co přidělil
      * administrátor, a výchozí stav je ten opatrnější (navíc nevidí nikdo). */
     ONLINE_STAV.zobrazeni = null; onlineZobrazeniNasad(null);
+    onlineZobrazeniHesloZapomen();                 // B168: heslo k matici jen v rámci přihlášení
     if (typeof NAST !== 'undefined') NAST.nahledRole = '';
     ONLINE_STAV.rejstrik = []; ONLINE_STAV.soubor = ''; ONLINE_STAV.razitko = ''; ONLINE_STAV.posledni = '';
     onlinePoslednizapamatuj('');   // po odhlášení se nikam nevracíme
@@ -289,6 +436,11 @@ function onlineOdhlas() {
     if (typeof nahledVypni === 'function' && NAST.nahledUzivatel) { NAST.nahledUzivatel = null; NAST.nahledRole = ''; NAST.nahledMenu = false; }
     ONLINE_STAV.otisky = []; ONLINE_STAV.otiskyNacteno = false;
     ONLINE_STAV.sablonyRejstrik = null;   // šablony patří přihlášeným (#139)
+    /* Zveřejněný slovník (#401) patří přihlášeným stejně jako ceník: po
+     * odhlášení se jeho hesla vrátí na znění zabudované v aplikaci. */
+    if (ONLINE_STAV.slovnikPolozeno && ONLINE_STAV.slovnikPolozeno.length && typeof slovnikPoloz === 'function')
+      onlineSlovnikPoloz({});
+    ONLINE_STAV.slovnik = null;
     /* analytika (#26): případná zapnutá heat mapa po odhlášení zhasne
      * a sběr se zastaví (analytikaBezi bez přihlášení nic nepustí) */
     if (typeof ANL !== 'undefined' && ANL.heat) {
@@ -423,14 +575,20 @@ function onlineSablonaStahni(typ) {
 
 /* Zveřejnění šablony — volá obrazovka Nastavení → Šablony. Soubor jde na
  * server v base64; verzi, otisk i odmítnutí ne-Wordu řeší server. */
-function onlineSablonaZverejni(typ, nazev, arrayBuffer, poznamka) {
+function onlineSablonaZverejni(typ, nazev, arrayBuffer, poznamka, zdrojOtisk) {
   const u8 = new Uint8Array(arrayBuffer);
   let bin = '';
   const KROK = 32768;   // String.fromCharCode má strop na počet argumentů
   for (let i = 0; i < u8.length; i += KROK)
     bin += String.fromCharCode.apply(null, u8.subarray(i, i + KROK));
-  return onlineApi('/api/sablony', { akce: 'zverejnit', typ, nazev, data: btoa(bin),
-                                     poznamka: String(poznamka || '') })
+  const telo = { akce: 'zverejnit', typ, nazev, data: btoa(bin), poznamka: String(poznamka || '') };
+  if (zdrojOtisk) telo.zdrojOtisk = zdrojOtisk;           // jazyková verze: ze které češtiny (#348)
+  return onlineApi('/api/sablony', telo).then(o => onlineNactiSablony().then(() => o));
+}
+
+/* Vrácení starší verze (#349): server ji zveřejní znovu jako novou verzi. */
+function onlineSablonaVrat(typ, verze, poznamka) {
+  return onlineApi('/api/sablony', { akce: 'vratit', typ, verze: +verze, poznamka: String(poznamka || '') })
     .then(o => onlineNactiSablony().then(() => o));
 }
 
@@ -491,34 +649,68 @@ function onlineFirmaPopis() {
 /* Zveřejnění – posílá se to, co je právě v Nastavení → Firma. Posílají se
  * ÚDAJE TAK, JAK JSOU (i se značkou ukázkových dat): server si musí umět sám
  * říct ne, kdyby prohlížeč někdo obešel. Čistou kopii si udělá on. */
-async function onlineZverejniFirmu() {
+/* `bezPotvrzeni` (U1, 20. 10. 2026): „Zapsat výchozí hodnoty" na záložce
+ * Smlouvy / Šablony zveřejňuje rovnou — stisk sám je to rozhodnutí (J. V.:
+ * „zapisuj je rovnou stiskem"). Kontroly zůstávají stejné. Výsledek se
+ * pamatuje v ONLINE_STAV.firmaVysledek, aby ho záložka ukázala u sebe. */
+/* `udaje` (K4-N7, O9): co odeslat — výchozí NAST.firma; „Zapsat výchozí
+ * hodnoty" posílá online kopii s novými podmínkami (firmaJenPodminky). */
+async function onlineZverejniFirmu(bezPotvrzeni, udaje, poznamka) {
+  const vysledek = (ok, text) => { ONLINE_STAV.firmaVysledek = { ok, text }; };
+  const posli = udaje || (typeof NAST !== 'undefined' ? NAST.firma : null);
   if (!jeAdminOnline()) {
-    onlineZprava('Firemní údaje smí zveřejnit jen administrátor.', 'varovani'); render();
+    onlineZprava('Firemní údaje smí zveřejnit jen administrátor.', 'varovani');
+    vysledek(false, 'Firemní údaje smí zveřejnit jen administrátor.'); render();
     return Promise.resolve(false);
   }
-  const lze = firmaLzeZverejnit(typeof NAST !== 'undefined' ? NAST.firma : null);
+  const lze = firmaLzeZverejnit(posli);
   if (!lze.ok) {
-    onlineZprava('Zveřejnit se nedají: ' + lze.duvod, 'varovani'); render();
+    onlineZprava('Zveřejnit se nedají: ' + lze.duvod, 'varovani');
+    vysledek(false, 'Online zveřejnit nešly: ' + lze.duvod); render();
+    if (typeof nastRefresh === 'function') nastRefresh();
     return Promise.resolve(false);
   }
-  if (!await potvrd('Zveřejnit firemní údaje online pro celý program?\n\n'
+  if (!bezPotvrzeni && !await potvrd('Zveřejnit firemní údaje online pro celý program?\n\n'
     + (NAST.firma.nazev || '') + ', ' + firmaSidlo(NAST.firma) + '\n\n'
     + 'Od této chvíle je uvidí v hlavičce nabídky všichni přihlášení, i ti, '
     + 'kdo nemají připojenou složku _DB.')) return Promise.resolve(false);
 
   ONLINE_STAV.pracuje = true; render();
-  return onlineApi('/api/firma', { udaje: NAST.firma })
+  return onlineApi('/api/firma', { udaje: posli })
     .then(() => onlineNactiFirmu().then(() => {
-      onlineZprava('Firemní údaje jsou zveřejněné online – obchodníci je uvidí po přihlášení.');
+      onlineZprava('Firemní údaje jsou zveřejněné online – obchodníci je uvidí po přihlášení.' + (poznamka ? ' ' + poznamka : ''));
+      vysledek(true, 'Zveřejněno online – obchodníci to uvidí po přihlášení.' + (poznamka ? ' ' + poznamka : ''));
       return true;
     }))
-    .catch(e => { onlineZprava('Zveřejnit firemní údaje se nepodařilo: ' + e.message, 'chyba'); return false; })
+    .catch(e => {
+      onlineZprava('Zveřejnit firemní údaje se nepodařilo: ' + e.message, 'chyba');
+      vysledek(false, 'Zveřejnit online se nepodařilo: ' + e.message);
+      return false;
+    })
     .then(v => { ONLINE_STAV.pracuje = false; render(); if (typeof nastRefresh === 'function') nastRefresh(); return v; });
 }
 
-/* Panel do Nastavení → Firma (jen administrátor, jen na serveru). */
-function onlineFirmaPanel() {
-  if (!onlineMozne() || !ONLINE_STAV.bezi || !jeAdminOnline()) return '';
+/* „Zapsat výchozí hodnoty" (K4-N7, O9): zveřejní jen platební podmínky.
+ * Ostatní rozdíly místní Firmy proti online kopii zůstanou nezveřejněné
+ * a hláška je vyjmenuje. Bez online kopie není co zachovat — zveřejní se
+ * Firma jako dosud (první zveřejnění, stisk sám je rozhodnutí, U1). */
+async function onlineZverejniPodminky() {
+  const online = ONLINE_STAV.firma ? ONLINE_STAV.firma.udaje : null;
+  const jen = typeof firmaJenPodminky === 'function' ? firmaJenPodminky(NAST.firma, online) : null;
+  if (!jen || !jen.ostatni.length) return onlineZverejniFirmu(true);
+  return onlineZverejniFirmu(true, jen.udaje, 'Zveřejněné jsou jen platební podmínky; ostatní změny Firmy ('
+    + jen.ostatni.join(', ') + ') zůstaly jen tady — zveřejníte je tlačítkem v Nastavení → Firma.');
+}
+
+/* Zveřejnit firemní údaje jde jen na serveru a jen administrátorovi. */
+function onlineFirmaZverejnitMozne() {
+  return onlineMozne() && ONLINE_STAV.bezi && jeAdminOnline();
+}
+
+/* Stav zveřejnění a tlačítko — sdílí panel v Nastavení → Firma a záložka
+ * Smlouvy / Šablony (U1, 20. 10. 2026: J. V. po „Zapsat výchozí hodnoty do
+ * Firmy" tlačítko „Zveřejnit" na záložce nenašel; bylo jen dole ve Firmě). */
+function onlineFirmaZverejnitBlok(popisek) {
   const lze = firmaLzeZverejnit(typeof NAST !== 'undefined' ? NAST.firma : null);
   const sh = onlineFirmaShoda();
   /* Když je nahoře totéž, co má administrátor u sebe, nemá se po něm chtít
@@ -531,17 +723,42 @@ function onlineFirmaPanel() {
     ? 'Oproti online kopii se liší: ' + sh.rozdily.slice(0, 6).join(', ')
       + (sh.rozdily.length > 6 ? ' a další' : '') + '.'
     : '';
-  return `<div class="sec-title">Firemní údaje v online databázi</div>
-    <div class="note" style="margin-top:0">${esc(onlineFirmaPopis())}</div>
-    ${lze.ok ? '' : `<div class="note" style="color:var(--warn)">⚠ ${esc(lze.duvod)}</div>`}
+  return {
+    poznamky: `${lze.ok ? '' : `<div class="note" style="color:var(--warn)">⚠ ${esc(lze.duvod)}</div>`}
     ${hotovo ? `<div class="note" style="color:var(--ok)">✓ Online databáze má přesně tyhle údaje.
       Zveřejňovat je znovu není potřeba.</div>` : ''}
     ${rozdilVeta ? `<div class="note" style="color:var(--warn)">⚠ ${esc(rozdilVeta)}
-      Dokud je nezveřejníte, platí pro ostatní pořád ta starší verze.</div>` : ''}
-    <div class="btns" style="margin-top:8px">
-      <button class="${hotovo ? 'mini' : 'primary'}" onclick="onlineZverejniFirmu()"
+      Dokud je nezveřejníte, platí pro ostatní pořád ta starší verze.</div>` : ''}`,
+    tlacitko: `<button class="${hotovo ? 'mini' : 'primary'}" onclick="onlineZverejniFirmu()"
         ${ONLINE_STAV.pracuje || !lze.ok ? 'disabled' : ''}>${hotovo
-          ? 'Zveřejnit znovu (není potřeba)' : 'Zveřejnit firemní údaje online'}</button>
+          ? 'Zveřejnit znovu (není potřeba)' : (popisek || 'Zveřejnit firemní údaje online')}</button>`,
+    hotovo, rozdilVeta, lze,
+  };
+}
+
+/* Věta do hlášek po změně firemních údajů na záložce Smlouvy / Šablony:
+ * tlačítko je na téže záložce nahoře; když tu zveřejnit nejde, proč. */
+function onlineFirmaKdeZverejnit() {
+  if (onlineFirmaZverejnitMozne())
+    return 'Online je zveřejníte tlačítkem „Zveřejnit změny online" nahoře na této záložce (pod oddílem „Společné pro OCK i PROJ").';
+  return 'Zapsáno jen v této aplikaci — online zveřejnit teď nejde, ' + onlineFirmaProcNe()
+    + '. Ostatním začnou platit, až je zveřejníte z aplikace na serveru přihlášen jako administrátor.';
+}
+function onlineFirmaProcNe() {
+  return !onlineMozne() ? 'aplikace neběží na serveru (je otevřená ze souboru)'
+    : !ONLINE_STAV.bezi ? 'server teď neodpovídá'
+    : 'nejste přihlášen k online databázi jako administrátor';
+}
+
+/* Panel do Nastavení → Firma (jen administrátor, jen na serveru). */
+function onlineFirmaPanel() {
+  if (!onlineFirmaZverejnitMozne()) return '';
+  const z = onlineFirmaZverejnitBlok();
+  return `<div class="sec-title">Firemní údaje v online databázi</div>
+    <div class="note" style="margin-top:0">${esc(onlineFirmaPopis())}</div>
+    ${z.poznamky}
+    <div class="btns" style="margin-top:8px">
+      ${z.tlacitko}
       <button class="mini" onclick="onlineNactiFirmu().then(function(){render();nastRefresh()})">Načíst online znovu</button>
     </div>
     <div class="note">Obchodník ani vedoucí složku <code>_DB</code> nemapují – hlavičku nabídky
@@ -616,6 +833,27 @@ function onlineZobrazeniDoCerstveZakazky() {
   try { vzor = novaVariantaData(); } catch (e) { return false; }
   if (!zobrazeniVychoziNedotcene(zo, zp, vzor.ock.zadani, vzor.proj.zadani)) return false;
   const zmen = zobrazeniVychoziAplikuj(NAST.zobrazeni, zo, zp);
+  /* VLASTNÍ ZÁSAH SE NESMÍ TVÁŘIT JAKO NEULOŽENÁ PRÁCE UŽIVATELE
+   * (22. 9. 2026, při řešení N12/N13).
+   *
+   * Tahle funkce právě přepsala `priplatkyVynechat` (a spol.) podle matice
+   * zobrazení. `HIST.ulozenoJako` ale nese otisk pořízený PŘI STARTU, ještě
+   * s hodnotami z kódu — od téhle chvíle se tedy ZAK od otisku liší
+   * a `historieNeulozeno()` vrací true, přestože se uživatel ničeho nedotkl.
+   * Prohlížeč pak při zavření okna varuje před ztrátou změn, které nikdo
+   * neudělal.
+   *
+   * Otisk se proto posouvá na nový stav. Je to bezpečné právě tady: funkce
+   * sahá VÝHRADNĚ na čerstvou zakázku bez čísla, názvu a objednatele, u níž
+   * `zobrazeniVychoziNedotcene()` výš potvrdilo, že v dotčených polích pořád
+   * stojí hodnoty z kódu. Co se tu změnilo, tedy nikdy nebyla práce člověka.
+   *
+   * POZOR, NENÍ TO OPRAVA N13. Návrat k poslední zakázce blokoval týž
+   * mechanismus, ale i z druhé strany (platný ceník z `progSrovnejNedotcene`),
+   * takže se řeší u zdroje — v `onlineObnovPosledni()`, která se nově ptá na
+   * `zmenaUzivatele` místo na otisk. Tohle je samostatná drobnost: falešné
+   * varování „máte neuložené změny". */
+  if (zmen && typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
   if (zmen && typeof render === 'function') render();
   return zmen > 0;
 }
@@ -629,6 +867,199 @@ function onlineNactiZobrazeni() {
     onlineZprava('Nastavení zobrazení se ze serveru nepodařilo načíst: ' + e.message
       + ' Platí výchozí rozdělení (vše navíc vidí jen administrátor).', 'varovani');
     onlineZobrazeniNasad(null);
+    return false;
+  });
+}
+
+/* ---------- společné dodatkové texty položek (22. 9. 2026) --------------
+ *
+ * Zadání J. V.: text, který pod příplatkem nebo volitelnou položkou napíše
+ * ADMINISTRÁTOR, má zůstat uložený v aplikaci; ostatní ho smí ve své zakázce
+ * upravit, ale trvale přepsat ne.
+ *
+ * Texty se vlévají do VÝCHOZÍHO ceníku (`DEFAULT_CENIK.popisy`) a jen tam,
+ * kde zveřejněný ceník vlastní text nemá — zveřejněná verze je konkrétnější
+ * zdroj a nesmí ji přebít nic mimo ni. Každá nová zakázka si pak text odnese
+ * ve své kopii ceníku, takže odeslaná nabídka se pozdější změnou nezmění.
+ *
+ * Selhání načtení není důvod cokoli hlásit nahlas: texty jsou pohodlí, ne
+ * podmínka kalkulace. Zůstane, co je v ceníku. */
+function onlineNactiPopisy() {
+  if (typeof popisyVlij !== 'function' || typeof DEFAULT_CENIK === 'undefined')
+    return Promise.resolve(false);
+  return onlineApi('/api/popisy').then(o => {
+    ONLINE_STAV.popisy = (o && o.popisy) ? o.popisy : null;
+    onlinePopisyVlijZnovu();
+    return true;
+  }).catch(() => { ONLINE_STAV.popisy = null; return false; });
+}
+
+/* ---------- zveřejněný slovník překladů (#401, 12. 10. 2026) ----------
+ *
+ * Zadání J. V.: „potřebuji, aby se slovník ukládal stejným způsobem jako
+ * ceník". Po přihlášení se platný slovník ze serveru položí přes zabudovaný
+ * (`slovnikPoloz` → `prekladImport`), stejně jako `progPouzij` nasadí platný
+ * ceník. Server nese jen odchylky od zabudovaného; hesla, která neprojdou
+ * kontrolou tvaru (`slovnikHeslaKontrola`), se nepoloží vůbec — PREKLAD je
+ * obyčejný objekt a klíč `__proto__` by v něm sáhl na prototyp.
+ *
+ * ONLINE_STAV.slovnik = { platny, historie } ze serveru (null = nezveřejněn),
+ * ONLINE_STAV.slovnikPolozeno = klíče, které položila poslední verze —
+ * aby šly při další verzi nebo odhlášení vrátit na zabudované znění. */
+function onlineNactiSlovnik() {
+  if (typeof slovnikPoloz !== 'function' || typeof PREKLAD_ZABUDOVANY === 'undefined')
+    return Promise.resolve(false);
+  return onlineApi('/api/slovnik').then(o => {
+    ONLINE_STAV.slovnik = (o && o.db && o.db.platny) ? o.db : null;
+    onlineSlovnikPoloz(ONLINE_STAV.slovnik ? ONLINE_STAV.slovnik.platny.hesla : {});
+    return true;
+  }).catch(e => {
+    /* Bez slovníku se dá pracovat (platí zabudovaný), ale říct se to musí:
+     * cizojazyčná nabídka by jinak tiše vyšla se starším zněním. */
+    ONLINE_STAV.slovnik = null;
+    onlineZprava('Platný slovník překladů se ze serveru nepodařilo načíst (' + e.message
+      + ') — překládá se slovníkem zabudovaným v aplikaci.', 'varovani');
+    return false;
+  });
+}
+function onlineSlovnikPoloz(hesla) {
+  const r = slovnikPoloz(hesla || {}, ONLINE_STAV.slovnikPolozeno || [], PREKLAD_ZABUDOVANY,
+    { importuj: prekladImport, smaz: prekladSmaz });
+  if (!r.ok) {
+    onlineZprava('Zveřejněný slovník má neplatný tvar (' + r.chyba + ') — nepoužije se.', 'varovani');
+    return false;
+  }
+  ONLINE_STAV.slovnikPolozeno = r.polozeno;
+  return true;
+}
+/* Kolik hesel živého slovníku se liší od platné zveřejněné verze (nebo od
+ * zabudovaného, když zveřejněná není) — „nezveřejněné změny" v Nastavení. */
+function onlineSlovnikNezverejneno() {
+  if (typeof slovnikOdchylky !== 'function') return 0;
+  const ted = slovnikOdchylky(PREKLAD, PREKLAD_ZABUDOVANY);
+  const platna = (ONLINE_STAV.slovnik && ONLINE_STAV.slovnik.platny && ONLINE_STAV.slovnik.platny.hesla) || {};
+  const ks = {};
+  Object.keys(ted).concat(Object.keys(platna)).forEach(k => { ks[k] = 1; });
+  const ma = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  return Object.keys(ks).filter(k => JSON.stringify(ma(ted, k) ? ted[k] : null)
+    !== JSON.stringify(ma(platna, k) ? platna[k] : null)).length;
+}
+/* Zveřejnění — stejná úvaha jako onlineZverejni u ceníku: dotaz s poznámkou,
+ * zápis na server (ten si roli, tvar i „beze změny" zkontroluje sám), pak
+ * čerstvé načtení platné verze. */
+async function onlineZverejniSlovnik(preddanaPozn) {
+  if (!jeAdminOnline()) { onlineZprava('Zveřejnit slovník smí jen administrátor.', 'varovani'); render(); return false; }
+  const hesla = slovnikOdchylky(PREKLAD, PREKLAD_ZABUDOVANY);
+  const k = slovnikHeslaKontrola(hesla);
+  if (!k.ok) { onlineZprava('Slovník nejde zveřejnit: ' + k.chyba, 'chyba'); render(); return false; }
+  const prazdne = slovnikPrazdnePrepisy(hesla, PREKLAD_ZABUDOVANY);
+  if (prazdne.length) { onlineZprava('Slovník nejde zveřejnit: ' + slovnikPrazdnePrepisyText(prazdne), 'chyba'); render(); return false; }
+  if (ONLINE_STAV.slovnik && slovnikBezeZmeny(ONLINE_STAV.slovnik, hesla)) {
+    onlineZprava('Slovník se od platné online verze neliší – není co zveřejňovat.'); render(); return false;
+  }
+  const p = ONLINE_STAV.slovnik && ONLINE_STAV.slovnik.platny;
+  const pozn = (typeof preddanaPozn === 'string') ? preddanaPozn
+    : await dotaz('Zveřejnit slovník překladů jako platný ONLINE pro celý program?\n\n'
+      + (p ? 'Dosud platí verze ' + p.verze + '. ' : 'Zatím žádná verze zveřejněná není. ')
+      + 'Nová verze ponese ' + k.pocet + ' hesel odlišných od slovníku zabudovaného v aplikaci'
+      + ' (změněno proti platné verzi: ' + onlineSlovnikNezverejneno() + ').\n\n'
+      + 'Od této chvíle se jím budou překládat dokumenty všech přihlášených. Už vytištěné '
+      + 'dokumenty se nemění; nově vygenerované (i ze starší zakázky) ponesou nové znění.'
+      + '\n\nČím se změna zdůvodňuje (nepovinné):', '');
+  if (pozn === null) return false;
+  ONLINE_STAV.pracuje = true; render();
+  return onlineApi('/api/slovnik', { hesla, poznamka: String(pozn || '') }).then(o => {
+    onlineZprava('Slovník zveřejněn online – platí verze ' + o.verze + ' (' + o.pocet + ' hesel odlišných od zabudovaného).');
+    return onlineNactiSlovnik().then(() => true);
+  }).catch(e => { onlineZprava('Zveřejnit slovník se nepodařilo: ' + e.message, 'chyba'); return false; })
+    .then(v => { ONLINE_STAV.pracuje = false; render(); if (typeof nastRefresh === 'function') nastRefresh(); return v; });
+}
+
+/* VLITÍ TEXTŮ DO VÝCHOZÍHO CENÍKU — i po každé jeho výměně (nález N35
+ * revize v22.9.9).
+ *
+ * `onlineNactiProgram` platný ceník jen stáhne; nasazuje ho až `onlineTik`
+ * při dalším překreslení (`progPouzij` → `konfigNahradVMiste`, která
+ * VŠECHNY klíče výchozího ceníku smaže a naplní znovu). Texty vlité po
+ * přihlášení tak smazalo nasazení ceníku, které doběhlo později — podle
+ * toho, který požadavek byl rychlejší. A po zveřejnění nového ceníku se to
+ * stalo pokaždé: každá nová zakázka až do dalšího přihlášení vznikala bez
+ * textů. Proto se vlévají i na konci `progPouzij`, tedy po každé výměně —
+ * pořadí požadavků pak nerozhoduje. */
+function onlinePopisyVlijZnovu(cerstvy) {
+  if (typeof popisyVlij !== 'function' || typeof DEFAULT_CENIK === 'undefined') return false;
+  if (!ONLINE_STAV.popisy) return false;
+  /* S jazykovými variantami (#379, K18-N96) — jdou jen k týmž českým textům. */
+  /* Číselník má přednost před textem zveřejněného ceníku (1. 10. 2026);
+   * texty, kterými se zveřejněný ceník liší, si pamatuje ONLINE_STAV.popisyZCeniku
+   * — ukazuje je číselník. `cerstvy` = výchozí ceník se právě vyměnil za
+   * zveřejněný (progPouzij), seznam se sestaví znovu. */
+  if (cerstvy || !ONLINE_STAV.popisyZCeniku) ONLINE_STAV.popisyZCeniku = {};
+  popisyVlij(DEFAULT_CENIK, ONLINE_STAV.popisy.texty, ONLINE_STAV.popisy.jazyky || null, ONLINE_STAV.popisyZCeniku);
+  return true;
+}
+
+/* Uložení JEDNOHO textu pro celou aplikaci. Smí jen administrátor — server
+ * to hlídá znovu (403), tohle je jen to, aby se ostatním tlačítko nenabízelo.
+ *
+ * POSÍLÁ SE JEN TEN JEDEN TEXT (25. 9. 2026, hlášení J. V. „dodatkové texty
+ * se mi v čase ztrácí"). Do té doby šla na server CELÁ mapa, jak si ji
+ * prohlížeč načetl při přihlášení — druhá karta nebo okno otevřené od rána
+ * tak při dalším zápisu smazalo všechno, co se mezitím zapsalo jinde, a po
+ * neúspěšném načtení mapy dokonce všechno kromě právě psaného textu.
+ * Server teď změnu sloučí se svým stavem a vrátí celou aktuální mapu. */
+function onlinePopisUloz(klic, text) {
+  if (!jeAdminOnline()) return Promise.resolve(false);
+  const t = String(text == null ? '' : text).trim();
+  return onlineApi('/api/popisy', { klic: String(klic), text: t }).then(o => {
+    ONLINE_STAV.popisy = (o && o.popisy) ? o.popisy
+      : { texty: Object.assign({}, (ONLINE_STAV.popisy || {}).texty || {}), kdo: '', kdy: '' };
+    if (typeof popisyVlij === 'function' && typeof DEFAULT_CENIK !== 'undefined') {
+      /* Vlití samo by starý text nepřepsalo (ceník má přednost), takže se
+       * u tohohle jednoho klíče srovná výchozí ceník natvrdo — administrátor
+       * právě řekl, jak má znít. Ostatní texty z odpovědi se doplní, kdyby
+       * je mezitím zapsal někdo jiný. */
+      if (!DEFAULT_CENIK.popisy) DEFAULT_CENIK.popisy = {};
+      if (t) DEFAULT_CENIK.popisy[String(klic)] = t; else delete DEFAULT_CENIK.popisy[String(klic)];
+      onlinePopisJazykyDoVychoziho(klic);
+      onlinePopisyVlijZnovu();
+    }
+    return true;
+  }).catch(e => {
+    onlineZprava('Dodatkový text se nepodařilo uložit pro celou aplikaci: ' + e.message
+      + ' V téhle zakázce zůstává zapsaný.', 'varovani');
+    return false;
+  });
+}
+
+/* Jazykové varianty společného textu do výchozího ceníku natvrdo (#379):
+ * administrátor je právě změnil, takže vlití („jen kde chybí") nestačí.
+ * Varianta patří jen k témuž českému textu, jinak se z výchozího ceníku
+ * u položky zahodí. */
+function onlinePopisJazykyDoVychoziho(klic) {
+  if (typeof DEFAULT_CENIK === 'undefined' || !ONLINE_STAV.popisy) return;
+  const k = String(klic);
+  const sp = ONLINE_STAV.popisy;
+  const j = sp.jazyky && sp.jazyky[k];
+  const cz = DEFAULT_CENIK.popisy && DEFAULT_CENIK.popisy[k];
+  if (j && cz && sp.texty && sp.texty[k] === cz) {
+    if (!DEFAULT_CENIK.popisyJazyky) DEFAULT_CENIK.popisyJazyky = {};
+    DEFAULT_CENIK.popisyJazyky[k] = Object.assign({}, j);
+  } else if (DEFAULT_CENIK.popisyJazyky) delete DEFAULT_CENIK.popisyJazyky[k];
+}
+
+/* Uložení JAZYKOVÝCH VARIANT jednoho textu (#379, nález K18-N96). Posílá
+ * se jen to, co se změnilo ({ en } / { de } / { fr }; prázdný text variantu
+ * smaže), server ji sloučí se svým stavem — stejně jako u českého textu.
+ * Český text se tím nemění. Jen administrátor; server to hlídá znovu. */
+function onlinePopisJazykyUloz(klic, jazyky) {
+  if (!jeAdminOnline()) return Promise.resolve(false);
+  return onlineApi('/api/popisy', { klic: String(klic), jazyky: jazyky || {} }).then(o => {
+    if (o && o.popisy) ONLINE_STAV.popisy = o.popisy;
+    onlinePopisJazykyDoVychoziho(klic);
+    return true;
+  }).catch(e => {
+    onlineZprava('Překlad dodatkového textu se nepodařilo uložit: ' + e.message, 'varovani');
     return false;
   });
 }
@@ -656,9 +1087,84 @@ function onlineZobrazeniPopis() {
  * nepřidělil prvek, který server stejně nepustí. */
 function onlineUlozZobrazeniTise() {
   if (!jeAdminOnline()) return Promise.reject(new Error('nastavení zobrazení smí ukládat jen administrátor'));
-  return onlineApi('/api/zobrazeni', { matice: NAST.zobrazeni })
+  return onlineZobrazeniPost()
     .then(() => onlineNactiZobrazeni())
     .then(() => true);
+}
+
+/* MATICE JEN S HESLEM SPRÁVCE (B168, audit 15. 10. 2026, zadání 18. 10. 2026).
+ * Server zápis matice pustí jen s polem `hesloSpravce` — matice řídí i
+ * serverová práva (CRM, nákladový ceník, ceník v zakázce). Heslo se ptá
+ * týmž dialogem jako citlivé akce účtů (B77).
+ *
+ * Panel ukládá sám 800 ms po změně, takže dialog u každého zaškrtnutí by
+ * byl k nepřežití. Výchozí volba dávky (J. V. se v sezení neptal): ověřené
+ * heslo drží jen paměť této stránky ZOBRAZENI_HESLO_MS po posledním
+ * úspěšném uložení; nikam se nezapisuje, odhlášením a odmítnutím serverem
+ * se zahodí. Ochrana proti ukradené cookie tím platí dál — kdo má jen
+ * cookie, heslo nemá. Souběžná uložení sdílí jeden dialog.
+ *
+ * OKNO SE NEPRODLUŽUJE (B192, audit kola 28; dávka H2 19. 10. 2026,
+ * výchozí volba): ZOBRAZENI_HESLO_MS se počítá od ZADÁNÍ hesla, ne od
+ * posledního uložení — dřív každé uložení matice okno posunulo a heslo
+ * v čitelné podobě mohlo v paměti stránky ležet libovolně dlouho (XSS na
+ * stránce by ho přečetl; mez v BEZPECNOST_MEZE.md, B168/B192). Po vypršení
+ * se panel zeptá znovu.
+ *
+ * Zrušený dialog nebo špatné heslo tiše neselže: volající dostane chybu
+ * s hláškou (panel ji ukáže u „Uložit teď", ostatní místa přes onlineZprava)
+ * a matice zůstane v paměti k dalšímu pokusu. */
+const ZOBRAZENI_HESLO_MS = 10 * 60 * 1000;
+const ZOBRAZENI_HESLO = { h: '', plati: 0, dotaz: null, casovac: null };
+function onlineZobrazeniHesloZapomen() {
+  ZOBRAZENI_HESLO.h = ''; ZOBRAZENI_HESLO.plati = 0;
+  if (ZOBRAZENI_HESLO.casovac) { clearTimeout(ZOBRAZENI_HESLO.casovac); ZOBRAZENI_HESLO.casovac = null; }
+}
+/* K3-N8 (audit K3, dávka O5 20. 10. 2026): heslo se po vypršení okna MAŽE
+ * (časovač + při každém dotazu) — dřív leželo čitelné do odhlášení, jen se
+ * nepoužilo. Okno se nastavuje jen čerstvě zadanému heslu. */
+/* K4-N16 (O9): `kdy` = čas ZADÁNÍ hesla (obnova ho předává; dřív okno běželo
+ * od konce obnovy). Okno, které už uplynulo, heslo neuloží vůbec. */
+function onlineZobrazeniHesloZapamatuj(h, kdy) {
+  onlineZobrazeniHesloZapomen();
+  const zadano = Number.isFinite(kdy) ? Math.min(kdy, Date.now()) : Date.now();
+  const zbyva = zadano + ZOBRAZENI_HESLO_MS - Date.now();
+  if (zbyva <= 0) return;
+  ZOBRAZENI_HESLO.h = h; ZOBRAZENI_HESLO.plati = zadano + ZOBRAZENI_HESLO_MS;
+  ZOBRAZENI_HESLO.casovac = setTimeout(onlineZobrazeniHesloZapomen, zbyva + 1000);
+}
+function onlineZobrazeniHesloPlatne() {
+  if (ZOBRAZENI_HESLO.h && Date.now() >= ZOBRAZENI_HESLO.plati) onlineZobrazeniHesloZapomen();
+  return !!ZOBRAZENI_HESLO.h;
+}
+/* Obnova s maticí: heslo z paměti okno neprodlužuje (cesta, kterou B192 nepokryl). */
+function onlineZobrazeniHesloPoObnove(h, zPameti, kdyZadano) {
+  if (h && !zPameti) onlineZobrazeniHesloZapamatuj(h, kdyZadano);
+}
+function onlineZobrazeniHeslo(text) {
+  if (onlineZobrazeniHesloPlatne()) return Promise.resolve(ZOBRAZENI_HESLO.h);
+  if (!ZOBRAZENI_HESLO.dotaz) {
+    ZOBRAZENI_HESLO.dotaz = Promise.resolve(dotazHeslo(text || ('Změna nastavení zobrazení řídí i to, kam server '
+      + 'pustí obchodníka a vedoucího (CRM, náklady, ceník v zakázce). Potvrďte ji svým heslem '
+      + '(tím, kterým se přihlašujete do aplikace).'), { nadpis: 'Potvrzení heslem správce' }))
+      .then(h => { ZOBRAZENI_HESLO.dotaz = null; return h || ''; },
+            e => { ZOBRAZENI_HESLO.dotaz = null; throw e; });
+  }
+  return ZOBRAZENI_HESLO.dotaz;
+}
+async function onlineZobrazeniPost() {
+  const zPameti = onlineZobrazeniHesloPlatne();
+  const h = await onlineZobrazeniHeslo();
+  if (!h) throw new Error('Nastavení zobrazení se neuložilo — bez vašeho hesla ho nelze potvrdit. '
+    + 'Uložte ho znovu („Uložit teď" v Nastavení → Zobrazení) a heslo zadejte.');
+  try {
+    const d = await onlineApi('/api/zobrazeni', { matice: NAST.zobrazeni, hesloSpravce: h });
+    if (!zPameti) onlineZobrazeniHesloZapamatuj(h);   // B192: jen čerstvě zadané heslo
+    return d;
+  } catch (e) {
+    if (e && e.data && e.data.kod === 'hesloSpravce') onlineZobrazeniHesloZapomen();
+    throw e;
+  }
 }
 
 /* Zveřejnění s dotazem – zůstává pro hromadné přepsání tabulky předlohou,
@@ -677,7 +1183,7 @@ async function onlineZverejniZobrazeni() {
     + 'přihlášení nebo po načtení stránky.')) return Promise.resolve(false);
 
   ONLINE_STAV.pracuje = true; render();
-  return onlineApi('/api/zobrazeni', { matice: NAST.zobrazeni })
+  return onlineZobrazeniPost()
     .then(() => onlineNactiZobrazeni().then(() => {
       onlineZprava('Nastavení zobrazení je zveřejněné online.');
       return true;
@@ -710,6 +1216,31 @@ function onlineUloz(opts) {
   opts = opts || {};
   if (!ONLINE_STAV.ja) {
     if (!opts.tiche) { onlineZprava('Nejdřív se přihlaste.', 'varovani'); render(); }
+    return Promise.resolve(false);
+  }
+  /* P13 (K16-N77): tiché (automatické) uložení během náhledu nic nezapíše —
+   * i když ho naplánovala změna těsně před zapnutím náhledu. Ruční uložení
+   * v rolovém náhledu se zeptá: zapíše se pod administrátorem, ne pod rolí,
+   * kterou se právě díváte. (Náhled účtu zápis blokuje celý, nahledStop.) */
+  if (typeof nahledJakykoli === 'function' && nahledJakykoli()) {
+    if (opts.tiche) return Promise.resolve(false);
+    if (NAST.nahledRole && !opts.nahledPotvrzeno && typeof potvrd === 'function')
+      return potvrd('Díváte se na aplikaci jako role „' + NAST.nahledRole + '", ale zakázka se uloží '
+        + 'pod vaším administrátorským účtem. Uložit?')
+        .then(ok => ok ? onlineUloz(Object.assign({}, opts, { nahledPotvrzeno: true })) : false);
+  }
+  /* BEZ ČÍSLA NABÍDKY SE NEUKLÁDÁ (P5 / K15-N69, 25. 9. 2026). Tlačítko
+   * v liště to hlídalo samo (stav „vyplnit"), ale do `onlineUloz()` vede
+   * víc cest — karta Databáze, dialog „Otevřít jinou zakázku → Uložit
+   * změny", autosave zakázky, které někdo číslo vymazal. Server pak založil
+   * „bez-cisla-….json", který v seznamu nikdo nenajde. Pravidlo drží model
+   * (`uloMaCislo`), stráž stojí u zápisu, ne u tlačítka. */
+  if (typeof uloMaCislo === 'function' && !uloMaCislo(ZAK)) {
+    if (!opts.tiche) {
+      onlineZprava('Zakázku nelze uložit bez čísla nabídky — vznikl by záznam, který v seznamu '
+        + 'nejde najít. Vyplňte číslo nabídky v hlavičce zakázky a uložte znovu.', 'varovani');
+      render();
+    }
     return Promise.resolve(false);
   }
   /* JEDEN ZÁPIS NAJEDNOU (nález V27, 8. 9. 2026). Ruční uložení, tlačítko
@@ -763,8 +1294,10 @@ function onlineUloz(opts) {
    * `prepsat: true` zůstává jako výslovná cesta pro volajícího. */
   const telo = { zakazka: ZAK, ocekavaneRazitko: ONLINE_STAV.razitko || '' };
   if (opts.prepsat) telo.prepsat = true;
+  const slevyOdeslane = onlineSlevyOtisk(ZAK);
   const beh = onlineApi('/api/zakazky', telo).then(o => {
     ONLINE_STAV.soubor = o.soubor; ONLINE_STAV.razitko = o.razitko || '';
+    onlineSlevyZeServeru(o.slevy, slevyOdeslane);
     /* Razítko i do zakázky samé, ať kopie v okně odpovídá tomu, co leží na
      * serveru — a ať se počítá do „naposledy zapsaného" o řádek níž. */
     if (o.razitko) ZAK.uloRazitko = o.razitko;
@@ -772,7 +1305,11 @@ function onlineUloz(opts) {
     onlinePoslednizapamatuj(o.soubor);   // po refreshi se sem vrátíme
     ONLINE_STAV.posledni = JSON.stringify(ZAK);
     ONLINE_STAV.kdyUlozeno = new Date();
-    onlineZprava('Uloženo online jako ' + o.soubor + ' (' + new Date().toLocaleTimeString('cs-CZ') + ').');
+    /* Server může uložení přijmout s varováním — typicky rozpor zmrazeného
+     * výsledku nově odeslané nabídky s jeho přepočtem (B59). Takové varování
+     * nesmí zaniknout pod běžným „Uloženo". */
+    onlineZprava('Uloženo online jako ' + o.soubor + ' (' + new Date().toLocaleTimeString('cs-CZ') + ').'
+      + (o.varovani ? ' ' + o.varovani : ''), o.varovani ? 'varovani' : '');
     if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
     /* Zakázka je v databázi – nouzová záloha v prohlížeči už nemá co chránit.
      * Kdyby se nechala ležet, ptá se na ni aplikace při každém dalším spuštění
@@ -794,6 +1331,7 @@ function onlineUloz(opts) {
       ONLINE_STAV.kolize = { soubor: ONLINE_STAV.soubor, kdo: String(e.data.kdo || ''),
                              naDisku: String(e.data.naDisku || ''), kdy: new Date().toISOString() };
       if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }
+      ONLINE_STAV.kolize.kdoVy = e.data.kdoVy === true;   // týž účet, jiné okno (P7 / K16-N87)
       onlineZprava(onlineKolizeText(), 'varovani');
       return false;
     }
@@ -810,9 +1348,17 @@ function onlineUloz(opts) {
 
 /* ---------- kolize verzí při zápisu (nález V27, 8. 9. 2026) ---------- */
 
+/* KDO A KDY (P7 / K16-N87, 25. 9. 2026): server posílá jméno z účtu (ne
+ * e-mail) a příznak `kdoVy`, když jde o týž účet v jiném okně či záložce —
+ * obchodník tak ví, jestli volat kolegovi, nebo zavřít druhou záložku.
+ * Čas je čas uložení verze, která na serveru leží. */
 function onlineKolizeText() {
   const k = ONLINE_STAV.kolize;
-  return 'Zakázku mezitím uložil ' + ((k && k.kdo) ? k.kdo : 'někdo jiný (nebo jiná záložka)')
+  const cas = (k && k.naDisku && typeof uloCasHhMm === 'function') ? uloCasHhMm(k.naDisku) : '';
+  const kdo = (k && k.kdo)
+    ? k.kdo + (k.kdoVy ? ' (váš účet — jiné okno nebo záložka)' : '')
+    : 'někdo jiný (nebo jiná záložka)';
+  return 'Zakázku mezitím uložil(a) ' + kdo + (cas ? ' v ' + cas : '')
     + ' — neuloženo. Zvolte: „Načíst znovu ze serveru" (moje změny se zahodí), '
     + 'nebo „Přepsat serverovou verzi" (moje změny přepíší tu na serveru).';
 }
@@ -888,7 +1434,34 @@ function onlineObnovPosledni() {
   if (!soubor || ONLINE_STAV.soubor) return Promise.resolve(false);
   const jeVRejstriku = (ONLINE_STAV.rejstrik || []).some(z => z.soubor === soubor);
   if (!jeVRejstriku) { onlinePoslednizapamatuj(''); return Promise.resolve(false); }
-  if (typeof historieNeulozeno === 'function' && historieNeulozeno()) return Promise.resolve(false);
+  /* PTÁME SE, JESTLI NĚCO UDĚLAL ČLOVĚK — ne jestli se zakázka liší od otisku
+   * (nálezy N12 a N13, 19. testovací kolo, 22. 9. 2026).
+   *
+   * Do téhle chvíle tu stálo `historieNeulozeno()`, tedy porovnání ZAK proti
+   * otisku pořízenému při startu stránky. Jenže mezi startem a tímhle místem
+   * proběhne přihlášení, a to do čerstvé zakázky samo nasype PLATNÝ CENÍK
+   * (`progSrovnejNedotcene`) a matici zobrazení (`onlineZobrazeniDoCerstveZakazky`).
+   * Zakázka se tím od otisku liší VŽDY — a návrat k poslední zakázce se tedy
+   * neprovedl NIKDY. Po každém F5 dostal obchodník prázdný formulář, přestože
+   * jeho zakázka ležela na serveru.
+   *
+   * Změřeno po refreshi: rozdíl proti otisku byl `cenik.marze` 0 → 0,42,
+   * `montazHodKc` 0 → 1234, zmizely značky `ukazkove`/`prazdny` a přibylo
+   * `cenikRazitko`. Ani jedné z těch změn se uživatel nedotkl.
+   *
+   * Tím padaly OBA nálezy naráz: zakázka se neotevřela (N13) a s ní se
+   * „ztratila" i ruční přirážka (N12) — ve skutečnosti pořád ležela na
+   * serveru, jen se k ní nikdo nevrátil a obchodník viděl firemní 0,42.
+   *
+   * `ONLINE_STAV.zmenaUzivatele` je na tohle v souboru odjakživa: nastavují
+   * ho posluchače na `input`/`change`/klik, tedy UDÁLOSTI OD ČLOVĚKA, a
+   * schválně ne `set()` — „zakázkou hýbe i sama aplikace (přepočet, migrace,
+   * zrcadlení kurzu) a právě to se nemá ukládat". Táž věta platí i tady.
+   *
+   * Ochrana rozdělané práce zůstává: kdo do formuláře sáhl nebo si kliknutím
+   * obnovil zálohu z prohlížeče, má příznak nastavený a jeho práci nic
+   * nepřepíše. */
+  if (ONLINE_STAV.zmenaUzivatele) return Promise.resolve(false);
   return onlineOtevri(soubor).then(v => {
     if (v) onlineZprava('Otevřena zakázka, na které jste naposledy pracoval: ' + soubor + '.');
     return v;
@@ -1036,6 +1609,8 @@ function onlineOtiskyNacti() {
   if (!jeAdminOnline()) return Promise.resolve(false);
   return onlineApi('/api/zaloha_vynuceno').then(o => {
     ONLINE_STAV.otisky = o.otisky || [];
+    ONLINE_STAV.kopieDisk = o.kopieDisk || null;
+    ONLINE_STAV.retenceVarovani = o.retenceVarovani || null;
     ONLINE_STAV.otiskyNacteno = true;
     return true;
   }).catch(e => {
@@ -1086,7 +1661,11 @@ function onlineZalohaAuto() {
   if (!jeAdminOnline()) return Promise.resolve(false);
   const dnes = new Date().toISOString().slice(0, 10);
   return onlineOtiskyNacti().then(() => {
-    const mameDnesni = (ONLINE_STAV.otisky || []).some(o => o.den === dnes);
+    /* Od 19. 10. 2026 (#151 N1) má vynucený otisk vlastní klíč s časem
+     * (`<den>T<hhmmss>-rucne|-auto`); dnešní je tedy noční i vynucený,
+     * jen otisk před obnovou ne — ten stav databáze nezálohuje. */
+    const mameDnesni = (ONLINE_STAV.otisky || []).some(o => String(o.den || '').slice(0, 10) === dnes
+      && !/pred-obnovou/.test(o.den));
     if (mameDnesni) return false;
     return onlineApi('/api/zaloha_vynuceno', { duvod: 'auto' })
       .then(o => onlineOtiskyNacti().then(() => {
@@ -1094,8 +1673,171 @@ function onlineZalohaAuto() {
           + onlinePocetText(o.pocetZakazek) + ').');
         return true;
       }))
-      .catch(e => { onlineZprava('Dnešní zálohu databáze se nepodařilo pořídit: ' + e.message, 'varovani'); return false; });
-  }).then(v => onlineZalohaDoSlozkyAuto().then(() => { render(); return v; }));
+      .catch(e => {
+        /* K3-N4: limit vynucených otisků (429) není porucha — dnešní záloha
+         * vznikla před chvílí jinde (jiná karta, jiný správce); mlčí se. */
+        if (e && e.stav === 429) return false;
+        onlineZprava('Dnešní zálohu databáze se nepodařilo pořídit: ' + e.message, 'varovani'); return false;
+      });
+  }).then(v => onlineZalohaDoSlozkyAuto().then(() => {
+    /* Hlídka noční zálohy (#152). Dopořízený dnešní otisk je „vynucený",
+     * noční otisky nepřepíše ani nezakryje — hlídka se proto smí ptát až
+     * teď. Hláška jde přes onlineZprava AŽ NAKONEC, aby ji nepřepsala
+     * zpráva o dnešní záloze; administrátor ji uvidí hned po přihlášení,
+     * ne až v Nastavení → Databáze. */
+    return onlineKopieDiskAuto().catch(() => false).then(() => {
+      const hl = (typeof uloZalohaHlidka === 'function') ? uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()) : null;
+      /* Hlídka kopie na Disku (#151 N6): starší než 14 dní → varování. */
+      const kd = (typeof uloKopieDiskStav === 'function') ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now()) : null;
+      /* Pojistka retence (K3-N13): pokles dat v noční záloze. */
+      const rv = (typeof uloRetenceVarovani === 'function') ? uloRetenceVarovani(ONLINE_STAV.retenceVarovani, Date.now()) : null;
+      const varovani = [rv ? rv.text : '', hl && hl.stara ? hl.text : '', kd && kd.stara ? kd.text : ''].filter(Boolean);
+      if (varovani.length) onlineZprava(varovani.join(' '), 'varovani');
+      render(); return v;
+    });
+  }));
+}
+
+/* ---------- KOPIE ZÁLOH NA DISK GOOGLE (#151 N6, 19. 10. 2026) ----------
+ *
+ * Rozhodnutí J. V.: jednou týdně kopie posledního nočního otisku mimo
+ * Netlify, do složky „_Zaloha Netlify DB" na Disku Google (sourozenec
+ * složky _DB). Netlify na Disk nedosáhne, takže kopii píše prohlížeč
+ * správce přes File System Access — stejně jako dřív odlévání do _DB, jen
+ * s VLASTNÍ složkou: složka _DB je od #150 vypnutá (ULO_SLOZKA_POVOLENA)
+ * a k sourozenci se z jejího odkazu dostat nejde. Složka se vybírá jednou
+ * tlačítkem a pamatuje se v IndexedDB (klíč „zalohaDisk"); prohlížeč se
+ * na právo zápisu může po restartu znovu zeptat — zeptat se smí jen po
+ * kliknutí, proto automatika po přihlášení bez uděleného práva mlčí a
+ * zbude hlídka (14 dní).
+ *
+ * Obsah (J. V.): BEZ otisků hesel a BEZ podpisů — server ho vydá očištěný
+ * (GET /api/zaloha?zdroj=nocni). Soubor `otisk_YYYY-MM-DD.json` (den
+ * nočního otisku) + `posledni_kopie.json` (datum, velikost, SHA-256);
+ * stejný záznam si poznamená server, aby hlídka fungovala všude. Na Disku
+ * se nic nemaže. */
+const KOPIE_DISK = { slozka: null, nacteno: false };
+const KOPIE_DISK_IDB_KLIC = 'zalohaDisk';
+
+function kopieDiskIdb(hodnota) {
+  if (typeof uloDb !== 'function') return Promise.resolve(null);
+  return uloDb().then(db => new Promise((res, rej) => {
+    const zapis = hodnota !== undefined;
+    const t = db.transaction(ULO_DB_STORE, zapis ? 'readwrite' : 'readonly');
+    const st = t.objectStore(ULO_DB_STORE);
+    const q = zapis ? st.put(hodnota, KOPIE_DISK_IDB_KLIC) : st.get(KOPIE_DISK_IDB_KLIC);
+    if (zapis) { t.oncomplete = () => res(true); t.onerror = () => rej(t.error); }
+    else { q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); }
+  }));
+}
+
+function kopieDiskSlozka() {
+  if (KOPIE_DISK.slozka || KOPIE_DISK.nacteno) return Promise.resolve(KOPIE_DISK.slozka);
+  return kopieDiskIdb().catch(() => null).then(h => {
+    KOPIE_DISK.nacteno = true;
+    if (h && !KOPIE_DISK.slozka) KOPIE_DISK.slozka = h;
+    return KOPIE_DISK.slozka;
+  });
+}
+
+async function kopieDiskSha256(text) {
+  if (typeof crypto === 'undefined' || !crypto.subtle) return '';
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+async function kopieDiskZapisSoubor(h, jmeno, text) {
+  const fh = await h.getFileHandle(jmeno, { create: true });
+  const w = await fh.createWritable();
+  await w.write(text); await w.close();
+  const f = await fh.getFile();
+  return f.size;
+}
+
+/* Vlastní kopie do složky `h` (právo zápisu už musí být udělené).
+ *
+ * K3-N1 (rozhodnutí J. V. 20. 10. 2026): záznam kopie odemyká na serveru
+ * mazání starých záloh, proto ho server přijme jen s heslem správce a jen ze
+ * složky „_Zaloha Netlify DB". Složka se kontroluje DŘÍV, než se cokoli
+ * zapíše (jinak by na Disku ležela kopie, o které server neví), a heslo se
+ * ptá dřív, než se stahuje záloha — zrušený dialog nic nezapíše.
+ * `heslo` = už zadané heslo (tlačítko), jinak se zeptá. */
+async function kopieDiskProved(h, heslo) {
+  if (String(h && h.name || '') !== ULO_KOPIE_DISK_SLOZKA) {
+    KOPIE_DISK.slozka = null;                 // příště se vybere znovu
+    kopieDiskIdb(null).catch(() => false);
+    throw new Error('vybraná složka „' + String(h && h.name || '') + '" se nejmenuje „' + ULO_KOPIE_DISK_SLOZKA
+      + '" — kopie se počítá jen v ní. Klikněte znovu na „Zkopírovat zálohu na Disk teď" a vyberte složku „'
+      + ULO_KOPIE_DISK_SLOZKA + '" na Disku Google');
+  }
+  const hesloSpravce = heslo || await dotazHeslo('Kopie zálohy na Disk odemyká na serveru mazání starých záloh. '
+    + 'Potvrďte ji svým heslem (tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
+  if (!hesloSpravce) throw new Error('bez vašeho hesla se kopie nepořídila');
+  const o = await onlineApi('/api/zaloha?zdroj=nocni');
+  if (!o || !o.ok || !o.zaloha) throw new Error((o && o.chyba) || 'server zálohu nevydal');
+  const jmeno = uloKopieDiskJmeno(o.otisk || new Date().toISOString().slice(0, 10));
+  const text = JSON.stringify(o.zaloha);
+  const ocekavano = new TextEncoder().encode(text).length;
+  const sha256 = await kopieDiskSha256(text);
+  const velikostB = await kopieDiskZapisSoubor(h, jmeno, text);
+  /* Kontrola zápisu: soubor na Disku musí mít celou délku, jinak se kopie
+   * nezapočítá (hlídka by jinak mlčela nad useknutým souborem). */
+  if (velikostB !== ocekavano) throw new Error('soubor ' + jmeno + ' se nezapsal celý (' + velikostB + ' z ' + ocekavano + ' B)');
+  const kopie = { soubor: jmeno, velikostB, sha256, otisk: o.otisk || null, puvod: o.puvod, slozka: String(h.name || '') };
+  /* K4-N15 (O9): posledni_kopie.json až PO přijetí záznamu serverem — při
+   * špatném hesle dřív tvrdil kopii, o které server neví. Samotný soubor
+   * zálohy na Disku zůstane (je to platná záloha), jen se nezapočítá. */
+  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });
+  ONLINE_STAV.kopieDisk = (z && z.kopieDisk) || ONLINE_STAV.kopieDisk;
+  await kopieDiskZapisSoubor(h, 'posledni_kopie.json',
+    JSON.stringify(Object.assign({ kdy: (z && z.kopieDisk && z.kopieDisk.kdy) || new Date().toISOString() }, kopie), null, 1));
+  return kopie;
+}
+
+function kopieDiskVelikost(b) {
+  return b >= 1048576 ? (b / 1048576).toLocaleString('cs-CZ', { maximumFractionDigits: 1 }) + ' MB'
+    : Math.max(1, Math.round(b / 1024)) + ' kB';
+}
+
+/* Tlačítko „Zkopírovat zálohu na Disk teď" — první běh i kdykoli potom.
+ * Ke kliknutí smí prohlížeč ukázat výběr složky i dotaz na právo zápisu. */
+async function onlineKopieDiskTed() {
+  if (!jeAdminOnline()) { onlineZprava('Kopii zálohy na Disk smí pořídit jen administrátor.', 'varovani'); render(); return false; }
+  ONLINE_STAV.pracuje = true; render();
+  try {
+    let h = await kopieDiskSlozka();
+    if (!h) {
+      if (typeof window === 'undefined' || typeof window.showDirectoryPicker !== 'function')
+        throw new Error('tenhle prohlížeč neumí zapisovat do složky — použijte Chrome nebo Edge na počítači s Diskem Google');
+      try { h = await window.showDirectoryPicker({ id: 'kng-zaloha-disk', mode: 'readwrite' }); }
+      catch (e) { if (e && e.name === 'AbortError') { onlineZprava('Kopie na Disk se nepořídila — složka nebyla vybrána.', 'varovani'); return false; } throw e; }
+      KOPIE_DISK.slozka = h;
+      kopieDiskIdb(h).catch(() => false);      // zapamatování je pohodlí, ne podmínka
+    }
+    if (!(await uloPravo(h, false))) throw new Error('prohlížeč nepovolil zápis do složky „' + h.name + '"');
+    const k = await kopieDiskProved(h);
+    onlineZprava('Záloha zkopírována na Disk: ' + h.name + '/' + k.soubor + ' (' + kopieDiskVelikost(k.velikostB) + ', '
+      + (k.puvod === 'nocni-otisk' ? 'noční otisk ' + k.otisk : 'aktuální stav — noční otisk za posledních 7 dní chybí') + ').');
+    return true;
+  } catch (e) {
+    onlineZprava('Kopii zálohy na Disk se nepodařilo pořídit: ' + (e && e.message || e), 'varovani');
+    return false;
+  } finally { ONLINE_STAV.pracuje = false; render(); }
+}
+
+/* Po přihlášení správce: je-li poslední kopie starší než 7 dní (nebo žádná)
+ * a v tomhle prohlížeči je složka vybraná s uděleným právem, automatika jen
+ * PŘIPOMENE tlačítko (K4-N15, O9). Kopie od K3-N1 chce heslo správce a dialog
+ * hesla hned po přihlášení, o který správce nežádal, je špatný zvyk (učí
+ * zadávat heslo do čehokoli, co vyskočí). Bez práva mlčí — hlídka varuje. */
+async function onlineKopieDiskAuto() {
+  if (!jeAdminOnline() || typeof uloKopieDiskStav !== 'function') return false;
+  if (!uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now()).potreba) return false;
+  const h = await kopieDiskSlozka();
+  if (!h || !(await uloPravo(h, true))) return false;
+  onlineZprava('Týdenní kopie zálohy na Disk čeká: Nastavení → Databáze → „Zkopírovat zálohu na Disk teď" '
+    + '(potvrdíte ji svým heslem).');
+  return false;
 }
 
 /* Odlití kopie na Disk Google. Jen když je složka opravdu připojená a
@@ -1153,7 +1895,23 @@ function onlineUzAkce(telo, hotovo, opts) {
     .then(v => { ONLINE_STAV.pracuje = false; onlineUzivateleObnov(); return v; });
 }
 
-function onlineUzZaloz() {
+/* POTVRZENÍ CITLIVÉ AKCE VLASTNÍM HESLEM (B77, 13. 10. 2026, rozhodnutí J. V.).
+ * Založení správce, povýšení na správce, reset cizího hesla a obnova účtů
+ * z otisku chtějí na serveru heslo přihlášeného správce (`hesloSpravce`) —
+ * kdo má jen jeho cookie, je neprovede. Vrací heslo, nebo null, když správce
+ * dialog zrušil (pak se nic neposílá). Špatné heslo hlásí server (401). */
+async function onlineHesloSpravce(co) {
+  const h = await dotazHeslo('Akce „' + co + '" je citlivá. Potvrďte ji svým heslem '
+    + '(tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
+  if (h === null || h === '') {
+    onlineZprava('Akce „' + co + '" se neprovedla — bez vašeho hesla ji nelze potvrdit.', 'varovani');
+    onlineUzivateleObnov();
+    return null;
+  }
+  return h;
+}
+
+async function onlineUzZaloz() {
   const f = ONLINE_STAV.uzForm;
   const email = String(f.email || '').trim().toLowerCase();
   /* Stejná pravidla jako na serveru, ale s hláškou hned a bez smazání
@@ -1171,8 +1929,14 @@ function onlineUzZaloz() {
    * odejde patička bez telefonu. Povinné nejsou – kdo je nezná, doplní je později. */
   const profil = { titul: String(f.titul || '').trim(), funkce: String(f.funkce || '').trim(),
                    telefon: String(f.telefon || '').trim() };
+  /* Nový správce jen s heslem zakládajícího (B77). */
+  let hesloSpravce;
+  if (f.role === 'Administrátor') {
+    hesloSpravce = await onlineHesloSpravce('založení účtu správce');
+    if (hesloSpravce === null) return false;
+  }
   return onlineUzAkce({ akce: 'zaloz', email, jmeno: String(f.jmeno || '').trim(),
-      role: f.role, heslo: f.heslo, ...profil },
+      role: f.role, heslo: f.heslo, ...profil, ...(hesloSpravce ? { hesloSpravce } : {}) },
     'Účet ' + email + ' (' + f.role + ') je založený. Heslo předejte osobně – e-mailem se neposílá.',
     { poUspechu: () => {
       /* nový účet do tabulky hned z odpovědi; formulář se maže až teď */
@@ -1189,17 +1953,53 @@ function onlineUzHesloPanel(email) {
   onlineUzivateleObnov();
 }
 
-function onlineUzHesloUloz(email) {
+async function onlineUzHesloUloz(email) {
   const el = document.getElementById('onlineUzNoveHeslo');
   const heslo = el ? el.value : '';
-  if (!heslo || heslo.length < 8) { onlineZprava('Nové heslo musí mít aspoň 8 znaků.', 'varovani'); onlineUzivateleObnov(); return; }
+  if (!heslo || heslo.length < 8) { onlineZprava('Nové heslo musí mít aspoň 8 znaků.', 'varovani'); onlineUzivateleObnov(); return false; }
+  /* Reset cizího hesla jen s vlastním heslem správce (B77). Při zrušení
+   * zůstane panel otevřený i s napsaným novým heslem. */
+  const hesloSpravce = await onlineHesloSpravce('reset hesla účtu ' + email);
+  if (hesloSpravce === null) return false;
   ONLINE_STAV.hesloPro = '';
-  onlineUzAkce({ akce: 'heslo', email, heslo },
+  return onlineUzAkce({ akce: 'heslo', email, heslo, hesloSpravce },
     'Heslo účtu ' + email + ' je nastavené. Předejte ho osobně.');
 }
 
-function onlineUzRoleZmen(email, role) {
-  onlineUzAkce({ akce: 'role', email, role }, 'Účet ' + email + ' má roli ' + role + '.');
+/* ÚPRAVA KONTAKTU ÚČTU SPRÁVCEM (12. 10. 2026, pokyn J. V.). Telefon
+ * v bloku „Vypracoval" nabídky se bere z účtu zpracovatele; v tabulce účtů
+ * byl jen vidět a opravit ho mohl jen sám uživatel v Můj profil — obchodník
+ * s chybným číslem tak posílal nabídky se špatným telefonem a správce to
+ * neměl jak spravit. Server úpravu cizího profilu správcem umí od #145
+ * (akce 'profil' s e-mailem; hlavní účet jen on sám). */
+function onlineUzKontaktPanel(email) {
+  ONLINE_STAV.kontaktPro = (ONLINE_STAV.kontaktPro === email) ? '' : email;
+  onlineUzivateleObnov();
+}
+function onlineUzKontaktUloz(email) {
+  const hod = id => { const el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; };
+  const profil = { titul: hod('onlineUzKTitul'), funkce: hod('onlineUzKFunkce'), telefon: hod('onlineUzKTelefon') };
+  ONLINE_STAV.kontaktPro = '';
+  return onlineUzAkce(Object.assign({ akce: 'profil', email }, profil),
+    'Kontakt účtu ' + email + ' je uložený. Do dalších nabídek půjde nový údaj.',
+    { poUspechu: (o) => {
+      /* Vlastní účet: blok „Vypracoval" musí platit hned, ne až po obnovení stránky. */
+      if (ONLINE_STAV.ja && ONLINE_STAV.ja.email === email && o)
+        Object.assign(ONLINE_STAV.ja, { titul: o.titul || '', funkce: o.funkce || '', telefon: o.telefon || '' });
+    } });
+}
+
+async function onlineUzRoleZmen(email, role) {
+  /* Povýšení na správce jen s vlastním heslem (B77). Účet, který správcem
+   * už je, ani snížení role heslo nechtějí — server to posuzuje stejně. */
+  const ucet = (ONLINE_STAV.uzivatele || []).find(u => u.email === email);
+  let hesloSpravce;
+  if (role === 'Administrátor' && !(ucet && ucet.role === 'Administrátor')) {
+    hesloSpravce = await onlineHesloSpravce('povýšení účtu ' + email + ' na správce');
+    if (hesloSpravce === null) return false;
+  }
+  return onlineUzAkce({ akce: 'role', email, role, ...(hesloSpravce ? { hesloSpravce } : {}) },
+    'Účet ' + email + ' má roli ' + role + '.');
 }
 
 /* ---------- archivace účtu a převod zakázek (11. 8. 2026) ----------
@@ -1340,6 +2140,11 @@ function onlineTik() {
     ONLINE_STAV.firmaPouzita = true;
     setTimeout(() => {
       konfigNahradVMiste(NAST.firma, ONLINE_STAV.firma.udaje);
+      /* Online záznam z doby před kapitolami (#282) jejich klíče nemá —
+       * doplní se výchozí texty (dávka O3; prázdné „" = vědomé vypuštění
+       * zůstává). Administrátor je pak jen zkontroluje a zveřejní (panel
+       * ukáže rozdíl proti online kopii). */
+      if (typeof firmaDoplnVychoziTexty === 'function') firmaDoplnVychoziTexty(NAST.firma, false);
       render();
     }, 0);
     /* Bez `return` ze stejného důvodu jako u ceníku výše. */
@@ -1358,6 +2163,8 @@ function onlineTik() {
   if (!ONLINE_STAV.auto || !ONLINE_STAV.ja || ONLINE_STAV.pracuje) return;
   /* Bez zásahu uživatele se nezapisuje (nález V23-B) — viz `zmenaUzivatele`. */
   if (!ONLINE_STAV.zmenaUzivatele) return;
+  /* Během náhledu (role i účtu) se automaticky neukládá (P13 / K16-N77). */
+  if (typeof nahledJakykoli === 'function' && nahledJakykoli()) return;
   /* V zakázce otevřené jen ke čtení se zapisuje JEN zápisník (nález C6).
    *
    * Dřív tu stálo prosté `return` s vysvětlením „zamčené okno stejně žádnou
@@ -1369,6 +2176,9 @@ function onlineTik() {
   /* Po kolizi verzí (V27) autosave stojí, dokud uživatel nezvolí cestu. */
   if (ONLINE_STAV.kolize) return;
   if (!ONLINE_STAV.soubor && !uloHlavickaVyplnena(ZAK)) return;
+  /* Uložená zakázka s vymazaným číslem by se zapsala do nového souboru
+   * „bez-cisla-…" (P5 / K15-N69) — počká, až číslo zase bude. */
+  if (typeof uloMaCislo === 'function' && !uloMaCislo(ZAK)) return;
   let text = '';
   try { text = JSON.stringify(ZAK); } catch (e) { return; }
   if (text === ONLINE_STAV.posledni) return;
@@ -1521,7 +2331,7 @@ function renderOnlineLista() {
     <button class="mini" onclick="otevriMujProfil()">Můj profil</button>
     <button class="mini" onclick="otevriZmenaHesla()">Změnit heslo</button>
     ${typeof heatPrepinacHtml === 'function' ? heatPrepinacHtml() : ''}
-    <button class="mini" onclick="onlineOdhlas()">Odhlásit</button>`;
+    <button class="mini" onclick="onlineOdhlas()" title="${esc(ODHLASIT_TITULEK)}">Odhlásit</button>`;
 }
 
 /* Rozbalení nabídky náhledu. Seznam účtů si vyžádá, když ho ještě nemá —
@@ -1837,11 +2647,27 @@ function renderOnlineKarta() {
            title="pořídí otisk celé databáze na serveru – stejný, jaký si server bere každou noc">Zálohovat teď</button>
          ${typeof ULO_STAV !== 'undefined' && ULO_STAV.pripraveno
     ? `<button onclick="onlineZaloha(true)" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Odlít zálohu do složky (Disk)</button>` : ''}
+         <button onclick="onlineKopieDiskTed()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}
+           title="zkopíruje poslední noční zálohu (bez hesel a podpisů) do složky „_Zaloha Netlify DB“ na Disku Google">Zkopírovat zálohu na Disk teď</button>
          <button onclick="onlineZaloha(false)" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Stáhnout zálohu</button>
          <button onclick="onlineObnovaOtevri()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}
            title="nalije zálohu zpátky do online databáze – nejdřív náhled, teprve pak obnova">Obnovit ze zálohy…</button>` : '';
+    /* Hlídka noční zálohy (#152): řádek s poslední noční zálohou, při
+     * výpadku delším než 48 hodin jako varování. */
+    const hlidka = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloZalohaHlidka === 'function')
+      ? uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()) : null;
+    /* Hlídka kopie na Disku (#151 N6): starší než 14 dní → varování. */
+    const kopieHl = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloKopieDiskStav === 'function')
+      ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now()) : null;
+    /* Pojistka retence (K3-N13): noční záloha s poklesem dat pod polovinu. */
+    const retenceHl = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloRetenceVarovani === 'function')
+      ? uloRetenceVarovani(ONLINE_STAV.retenceVarovani, Date.now()) : null;
     const zalohaRadek = jeAdminOnline()
-      ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>` : '';
+      ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>`
+        + (hlidka ? `<div id="online-zalohy-nocni" class="${hlidka.stara ? 'seznam-varovani' : 'note'}">${esc(hlidka.text)}</div>` : '')
+        + (kopieHl ? `<div id="online-kopie-disk" class="${kopieHl.stara ? 'seznam-varovani' : 'note'}">${esc(kopieHl.text)}</div>` : '')
+        + (retenceHl ? `<div id="online-retence-varovani" class="seznam-varovani">${esc(retenceHl.text)}</div>` : '')
+      : '';
     telo = `${hlaska}${onlineKolizeTlacitka()}${zalohaRadek}
       <div class="btns" style="margin-top:10px">
         <!-- V režimu čtení je tlačítko vypnuté a řekne proč (V41). Strážce
@@ -1854,8 +2680,9 @@ function renderOnlineKarta() {
           >Uložit online</button>
         <button onclick="otevriOnline()">Zakázky online…</button>
         ${adminTlacitka}
-        <button onclick="onlineOdhlas()">Odhlásit</button>
+        <button onclick="onlineOdhlas()" title="${esc(ODHLASIT_TITULEK)}">Odhlásit</button>
       </div>
+      <div class="note" data-odhlaseni-vsude>Odhlášení platí pro všechna zařízení: odhlásí vás i na ostatních počítačích a v telefonu, kde jste tímto účtem přihlášeni.</div>
       <div class="row" style="margin-top:10px"><label>Ukládat online samo po chvíli klidu</label>
         <input type="checkbox" ${ONLINE_STAV.auto ? 'checked' : ''} onchange="onlineAutoPrepni(this.checked)"><span class="u"></span></div>
       <div class="note">Zakázky i platný ceník žijí na serveru – ke stejným datům se dostanete
@@ -1883,6 +2710,9 @@ const OBNOVA_CASTI = [
   ['program', 'Ceník, katalog a slevová politika'],
   ['firma', 'Firemní údaje'],
   ['zobrazeni', 'Matice zobrazení'],
+  ['popisy', 'Dodatkové texty položek'],
+  ['slovnik', 'Slovník překladů (zveřejněné verze)'],
+  ['controlling', 'Controlling – nákladové skupiny a mapování'],
   ['zakazky', 'Zakázky (rejstřík se přestaví sám)'],
   ['uzivatele', 'Účty uživatelů (jen ze serverového otisku)'],
   ['sablony', 'Šablony dokumentů'],
@@ -1962,6 +2792,12 @@ function onlineObnovaCasti() {
   return OBNOVA_CASTI.map(([k]) => k).filter(k => o.casti[k]);
 }
 
+/* Nese soubor zálohy matici zobrazení, kterou by server zapsal (B188)?
+ * Stejná podmínka jako `obnovaNeseMatici` v netlify/functions/obnova.mjs. */
+function onlineObnovaNeseMatici(z) {
+  return !!z && Object.prototype.hasOwnProperty.call(z, 'zobrazeni') && z.zobrazeni != null && typeof z.zobrazeni === 'object';
+}
+
 function onlineObnovaTelo(nahled, zdroj) {
   const o = onlineObnovaStav();
   const t = { zdroj: zdroj || (o.zdrojTyp === 'soubor' ? { soubor: o.soubor } : { otisk: o.otiskDen }),
@@ -1992,7 +2828,7 @@ function onlineObnovaDavky(zaloha, casti) {
   let d = { ...hlava }, velikost = onlineObnovaVelikost(d);
   const neprazdna = () => Object.keys(d).length > Object.keys(hlava).length;
   const uzavri = () => { if (neprazdna()) davky.push(d); d = { ...hlava }; velikost = onlineObnovaVelikost(d); };
-  for (const k of ['program', 'firma', 'zobrazeni', 'uzivatele'].filter(k => casti.includes(k))) {
+  for (const k of ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'controlling', 'uzivatele'].filter(k => casti.includes(k))) {
     const v = zaloha[k] === undefined ? null : zaloha[k];
     const s = onlineObnovaVelikost(v);
     if (s > OBNOVA_DAVKA_MAX_B) { prilisVelke.push({ cast: k, klic: k, velikost: s }); continue; }
@@ -2086,11 +2922,44 @@ function onlineObnovaProved() {
     + 'Uzamčené (odeslané) nabídky se nepřepíšou a nic se nemaže.';
   return potvrd(text).then(async ano => {
     if (!ano) return false;
+    /* Účty z otisku jen s heslem správce (B77, 13. 10. 2026): obnova jim
+     * přepíše otisky hesel. Ze souboru se účty nezapisují (B27) — heslo
+     * se proto chce jen u otisku se zaškrtnutou částí účtů. */
+    /* Matice zobrazení ze zálohy jen s heslem správce (B188, 18. 10. 2026):
+     * server ho chce u souboru i u otisku, kdykoli by matici zapsal. Ptá se
+     * týmž dialogem a s toutéž 10min pamětí jako panel Zobrazení (B168);
+     * u otisku obsah klient nezná, heslo se proto chce vždy. */
+    const casti = onlineObnovaCasti();
+    const hesloUcty = o.zdrojTyp !== 'soubor' && casti.includes('uzivatele');
+    const hesloMatice = casti.includes('zobrazeni') && (o.zdrojTyp !== 'soubor' || onlineObnovaNeseMatici(o.soubor));
+    let hesloSpravce, hesloZPameti = false, hesloKdy = 0;
+    if (hesloUcty) {
+      hesloSpravce = await dotazHeslo('Obnova vrátí účtům uživatelů stav z otisku včetně hesel'
+        + (hesloMatice ? ' a nastavení zobrazení (práva obchodníka a vedoucího)' : '') + '. '
+        + 'Potvrďte ji svým heslem (tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
+      hesloKdy = Date.now();
+      if (!hesloSpravce) {
+        o.hlaska = 'Obnova se neprovedla — účty se bez vašeho hesla neobnovují.'; o.hlaskaTyp = 'varovani'; render();
+        return false;
+      }
+    } else if (hesloMatice) {
+      hesloZPameti = onlineZobrazeniHesloPlatne();
+      hesloSpravce = await onlineZobrazeniHeslo('Obnova přepíše nastavení zobrazení, které řídí i to, kam server '
+        + 'pustí obchodníka a vedoucího (CRM, náklady, ceník v zakázce). Potvrďte ji svým heslem '
+        + '(tím, kterým se přihlašujete do aplikace).');
+      hesloKdy = Date.now();
+      if (!hesloSpravce) {
+        o.hlaska = 'Obnova se neprovedla — nastavení zobrazení se bez vašeho hesla neobnovuje '
+          + '(nebo odškrtněte část „zobrazení").'; o.hlaskaTyp = 'varovani'; render();
+        return false;
+      }
+    }
+    const sHeslem = hesloSpravce ? { hesloSpravce } : {};
     o.pracuje = true; render();
     try {
       let r, upoz, otiskPred;
       if (o.zdrojTyp !== 'soubor') {
-        const d = await onlineApi('/api/obnova', onlineObnovaTelo(false));
+        const d = await onlineApi('/api/obnova', { ...onlineObnovaTelo(false), ...sHeslem });
         r = onlineObnovaSouhrn(d); upoz = d.upozorneni || []; otiskPred = d.otiskPred || '';
       } else {
         /* Po dávkách: začátek (otisk + token) → dávky → konec (rejstřík).
@@ -2103,7 +2972,7 @@ function onlineObnovaProved() {
         try {
           for (const davka of davky) {
             o.hlaska = 'Obnova: zapisuji dávku ' + (hotovo + 1) + ' z ' + davky.length + '…'; o.hlaskaTyp = ''; render();
-            await onlineApi('/api/obnova', { ...onlineObnovaTelo(false, { soubor: davka }), obnovaId: zac.obnovaId });
+            await onlineApi('/api/obnova', { ...onlineObnovaTelo(false, { soubor: davka }), obnovaId: zac.obnovaId, ...sHeslem });
             hotovo++;
           }
         } catch (e) { chybaDavky = e; }
@@ -2114,9 +2983,11 @@ function onlineObnovaProved() {
         upoz = [...(kon.upozorneni || [])];
         if (prilisVelke.length) upoz.push(prilisVelke.length + ' záznamů se nevešlo do jednoho požadavku a přeskočilo se: '
           + prilisVelke.map(p => p.cast + '/' + p.klic).join(', ') + '.');
+        if (chybaDavky && chybaDavky.data && chybaDavky.data.kod === 'hesloSpravce') onlineZobrazeniHesloZapomen();
         if (chybaDavky) throw new Error('dávka ' + (hotovo + 1) + ' z ' + davky.length + ' selhala (' + chybaDavky.message
           + '); zapsáno bylo ' + hotovo + ' dávek, rejstřík je přestavený a stav před obnovou leží v otisku ' + otiskPred + '.');
       }
+      if (hesloMatice) onlineZobrazeniHesloPoObnove(hesloSpravce, hesloZPameti, hesloKdy);   // K3-N8, K4-N16
       o.nahled = null;
       const zprava = 'Databáze obnovena: zapsáno ' + (r.nove + r.prepsane) + ' záznamů (' + r.nove + ' nových, '
         + r.prepsane + ' přepsaných), ' + r.preskocene + ' přeskočeno. ' + upoz.join(' ');
@@ -2137,6 +3008,7 @@ function onlineObnovaProved() {
       /* 409 „obnova už běží" (B28, 9. 9. 2026) není obecná chyba: server
        * říká, kdo a kdy obnovu zahájil, a panel nabídne dokončit ji, nebo
        * ji zahodit — bez toho by správce jen četl chybu a zkoušel to znovu. */
+      if (e && e.data && e.data.kod === 'hesloSpravce') onlineZobrazeniHesloZapomen();
       if (e.stav === 409 && e.data && e.data.obnovaBezi) {
         o.bezici = e.data.obnovaBezi;
         o.hlaska = 'Obnova už běží: ' + e.message; o.hlaskaTyp = 'varovani';
@@ -2196,7 +3068,8 @@ function renderOnlineObnova() {
   const dis = o.pracuje ? 'disabled' : '';
   const otisky = ONLINE_STAV.otisky || [];
   const popisOtisku = (x) => x.den + ' · '
-    + (/pred-obnovou/.test(x.zdroj) ? 'stav před obnovou' : /vynuc/.test(x.zdroj) ? 'ručně' : 'noční')
+    + (/pred-obnovou/.test(x.zdroj) ? 'stav před obnovou' : /-auto$/.test(x.den) ? 'při přihlášení'
+      : /vynuc/.test(x.zdroj) ? 'ručně' : 'noční')
     + ' · ' + onlinePocetText(x.pocetZakazek) + ', ' + x.pocetUctu + ' účtů';
   const volby = otisky.map(x => `<option value="${esc(x.den)}" ${x.den === o.otiskDen ? 'selected' : ''}>${esc(popisOtisku(x))}</option>`).join('');
   const zdrojTelo = o.zdrojTyp === 'otisk'
@@ -2365,7 +3238,8 @@ function onlineRadekZakazky(z, vyber) {
   return `<tr class="${otevrena ? 'aktivni' : ''} radek-klik" onclick="prehledRadekOtevri(event, '${escJs(z.soubor)}')"
     title="kliknutím otevřete zakázku — souhrn a varianty se ukážou v sekcích níž">${chk}
     <td style="text-align:left">${esc(z.cislo || '(bez čísla)')}</td>
-    <td style="text-align:left;white-space:normal">${esc(z.nazevAkce || '—')}</td>
+    <td style="text-align:left;white-space:normal">${esc(z.nazevAkce || '—')}${z.adresa
+      ? `<div class="rejstrik-adresa" style="font-size:11px;color:#6b7686">${esc(z.adresa)}</div>` : ''}</td>
     <td style="text-align:left;white-space:normal">${esc(z.objednatel || '—')}</td>
     <td><span class="pill mut">${esc(druh)}</span>${rada}</td>
     <td>${esc(z.datum || '')}</td>
@@ -2424,7 +3298,8 @@ function naseptavacHodnoty() {
   const videno = {};
   const hodnoty = [];
   (ONLINE_STAV.rejstrik || []).forEach(z => {
-    [z.cislo, z.nazevAkce, z.objednatel,
+    /* Adresa stavby (P15 / K16-N85): co hledání najde, to má našeptávač nabídnout. */
+    [z.cislo, z.nazevAkce, z.adresa, z.objednatel,
       (typeof uloObchodnik === 'function' ? uloObchodnik(z) : z.autorJmeno)].forEach(h => {
       const t = String(h || '').trim();
       if (!t || t === '—' || videno[t.toLowerCase()]) return;
@@ -2554,7 +3429,10 @@ function renderPrehledHledaniTelo() {
   const el = document.getElementById('prehledHledaniTelo');
   if (!el) return;
   const radky = prehledNabidky();
-  const vyber = jeAdminOnline();
+  /* Hromadný výběr a „Smazat vybrané…" jen tomu, kdo smí mazat PODLE
+   * ZOBRAZENÍ — v rolovém náhledu „Obchodník" je administrátor pořád
+   * administrátorem serveru, ale tlačítko obchodníkovi nepatří (P16 / K16-N89). */
+  const vyber = jeAdminOnline() && smiZobrazit('uloziste.mazani');
   const vybranych = (ONLINE_STAV.prehled.vybrane || []).length;
   const lista = vyber
     ? `<div class="prehled-vyber noprint">
@@ -2589,7 +3467,7 @@ function prehledHledaniKarta() {
   return card('Vyhledání nabídek',
     bezDb + `<div class="seznam-ovladani noprint">
       <span class="nasept-wrap"><input type="search" class="seznam-hledat"
-        placeholder="Hledat číslo, akci, zákazníka, obchodníka…"
+        placeholder="Hledat číslo, akci, adresu stavby, zákazníka, obchodníka…"
         title="Hledá se v čísle nabídky, názvu akce, zákazníkovi, datu i jménu obchodníka. Při psaní se nabídka průběžně zužuje."
         value="${esc(p.hledat)}" autocomplete="off"
         oninput="prehledHledatSet(this.value); naseptavacKresli('naseptBoxPrehled', this.value, 'prehled')"
@@ -2621,7 +3499,7 @@ function onlinePanelZakazky() {
    * seznam variant (seznam_ui.js). */
   return `<div class="seznam-ovladani">
       <span class="nasept-wrap"><input type="text" class="seznam-hledat" id="onlineZakHledat"
-             placeholder="Hledat číslo, akci, zákazníka, obchodníka…"
+             placeholder="Hledat číslo, akci, adresu stavby, zákazníka, obchodníka…"
              title="Při psaní se nabídka průběžně zužuje."
              value="${esc(ONLINE_STAV.hledat)}" autocomplete="off"
              oninput="onlineHledatSet(this.value); naseptavacKresli('naseptBoxOnline', this.value, 'online')"
@@ -2667,6 +3545,16 @@ function onlineRadekUzivatele(u) {
           onkeydown="if(event.key==='Enter')onlineUzHesloUloz('${escJs(u.email)}')">
         <button class="mini" onclick="onlineUzHesloUloz('${escJs(u.email)}')">Uložit heslo</button>
         <button class="mini" onclick="onlineUzHesloPanel('')">Zrušit</button></td></tr>` : '';
+  const kontaktRadek = ONLINE_STAV.kontaktPro === u.email
+    ? `<tr><td colspan="7" style="text-align:left;padding:6px 10px">
+        Kontakt do bloku „Vypracoval" pro ${esc(u.email)}:
+        <input type="text" id="onlineUzKTitul" style="width:70px" maxlength="40" placeholder="titul" value="${esc(u.titul || '')}">
+        <input type="text" id="onlineUzKFunkce" style="width:180px" maxlength="80" placeholder="funkce" value="${esc(u.funkce || '')}">
+        <input type="text" id="onlineUzKTelefon" style="width:150px" maxlength="40" placeholder="+420 602 000 000"
+          value="${esc(u.telefon || '')}" onkeydown="if(event.key==='Enter')onlineUzKontaktUloz('${escJs(u.email)}')">
+        <button class="mini" onclick="onlineUzKontaktUloz('${escJs(u.email)}')">Uložit kontakt</button>
+        <button class="mini" onclick="onlineUzKontaktPanel('')">Zrušit</button></td></tr>` : '';
+  const ja = ONLINE_STAV.ja && ONLINE_STAV.ja.email === u.email;
   /* Titul, funkce a telefon jsou v tabulce vidět proto, že přesně tyhle údaje
    * odcházejí zákazníkovi v bloku „Vypracoval" pod cenovou nabídkou (#145).
    * Administrátor tak na jednom místě pozná, komu chybí telefon, a nabídka
@@ -2681,7 +3569,11 @@ function onlineRadekUzivatele(u) {
     <td>${roleSel}</td>
     <td><input type="checkbox" ${u.aktivni ? 'checked' : ''} ${hlavni ? 'disabled' : ''}
         onchange="onlineUzAktivni('${escJs(u.email)}', this.checked)"></td>
-    <td><button class="mini" onclick="onlineUzHesloPanel('${escJs(u.email)}')">Nové heslo…</button>
+    <td>${/* Vlastní heslo jen se starým (B77-zbytek) — reset je pro cizí účty. */ ''}${ja
+        ? '<button class="mini" onclick="otevriZmenaHesla()">Změnit heslo…</button>'
+        : `<button class="mini" onclick="onlineUzHesloPanel('${escJs(u.email)}')">Nové heslo…</button>`}
+      ${/* Profil hlavního účtu mění jen on sám (B28) — jiným správcům tlačítko nepatří. */ ''}
+      ${(hlavni && !ja) ? '' : `<button class="mini" onclick="onlineUzKontaktPanel('${escJs(u.email)}')">Kontakt…</button>`}
       ${hlavni ? '' : (u.archiv
         ? `<button class="mini" onclick="onlineUzArchiv('${escJs(u.email)}', false)">Vrátit z archivu</button>`
         : `<button class="mini" onclick="onlineUzArchiv('${escJs(u.email)}', true)">Archivovat…</button>`)}
@@ -2689,16 +3581,33 @@ function onlineRadekUzivatele(u) {
             které vždycky skončí odmítnutím, do tabulky nepatří. */ ''}
       ${(hlavni || (ONLINE_STAV.ja && ONLINE_STAV.ja.email === u.email)) ? ''
         : `<button class="mini" onclick="onlineUzSmaz('${escJs(u.email)}')">Smazat…</button>`}</td>
-  </tr>${resetRadek}`;
+  </tr>${resetRadek}${kontaktRadek}`;
 }
 
 /* HTML správy účtů. Vykresluje se v panelu Nastavení (vnitřní záložka
  * Uživatelé) – tam, kde uživatel správu hledá (zadání 4. 8. 2026). */
+/* Je na serveru nastavený hlavní správce? (23. 9. 2026, #278)
+ *
+ * J. V. se 21. 9. ptal, kde to zjistí; odpověď „napište si do adresy
+ * /api/zdravi" nebyla odpověď. Bez proměnné ADMIN_EMAIL neplatí ochrany
+ * hlavního účtu a server zastaví správu uživatelů i obnovu ze zálohy (B54) —
+ * a to se administrátor musí dozvědět tady, kde uživatele spravuje.
+ * Údaj posílá server jen administrátorovi (B57). */
+function onlineSpravceStavHtml() {
+  const v = ONLINE_STAV.ja ? ONLINE_STAV.ja.spravceNastaven : undefined;
+  if (v === true) return `<div class="note spravce-stav" style="margin:0 0 8px">✔ Hlavní správce je na serveru
+    nastavený — ochrany hlavního účtu platí.</div>`;
+  if (v === false) return `<div class="cenik-stari spravce-stav" style="margin:0 0 8px">⚠ <b>Hlavní správce není na serveru
+    nastavený</b> (proměnná <code>ADMIN_EMAIL</code> v nastavení webu v Netlify). Ochrany hlavního účtu
+    neplatí a server proto odmítne správu uživatelů i obnovu ze zálohy. Doplňte proměnnou a web nasaďte znovu.</div>`;
+  return '';
+}
+
 function onlineUzivateleHtml() {
   const f = ONLINE_STAV.uzForm;
   /* Hláška (úspěch i odmítnutí serverem) se ukazuje PŘÍMO TADY — dřív šla
    * jen do karty na jiné záložce a založení účtu vypadalo, že nic nedělá. */
-  return `${ONLINE_STAV.hlaska ? `<div class="${zapisTridaHlasky(ONLINE_STAV.hlaskaTyp)}">${esc(ONLINE_STAV.hlaska)}</div>` : ''}
+  return `${onlineSpravceStavHtml()}${ONLINE_STAV.hlaska ? `<div class="${zapisTridaHlasky(ONLINE_STAV.hlaskaTyp)}">${esc(ONLINE_STAV.hlaska)}</div>` : ''}
     <div class="tab-scroll"><table class="vartbl archtbl">
       <tr><th style="text-align:left">E-mail</th><th style="text-align:left">Titul</th>
           <th style="text-align:left">Jméno / funkce</th><th style="text-align:left">Telefon</th>

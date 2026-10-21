@@ -52,6 +52,7 @@ const zakazka = (cislo, opts) => {
   if (opts.nazevAkce != null) z.nazevAkce = opts.nazevAkce;
   if (opts.objednatel != null) z.objednatel = opts.objednatel;
   if (opts.datum != null) z.datum = opts.datum;
+  if (opts.adresa != null) z.adresa = opts.adresa;
   return z;
 };
 
@@ -160,6 +161,37 @@ test('dvě slova musí sedět obě', uloHledej(R, 'brno dvorak').length === 1);
 test('dvě slova z různých zakázek nevrátí nic', uloHledej(R, 'brno novak').length === 0);
 test('neznámé slovo nevrátí nic', uloHledej(R, 'xyz').length === 0);
 
+/* ---------- 5b) adresa stavby v rejstříku a v hledání (P15 / K16-N85, 25. 9. 2026) ----------
+ * Obchodník hledá zakázku podle místa („ta na Kornpfortstraße"), ne podle
+ * čísla. Rejstřík adresu stavby nenesl, takže ji hledání nemohlo najít. */
+{
+  const za = zakazka('2026 - OPR - CN - 0510', { nazevAkce: 'Bytový dům', objednatel: 'Stavby a. s.',
+    datum: '2026-07-26', adresa: 'Kornpfortstraße 12, Koblenz' });
+  const ra = uloRejstrikZaznam(za, { razitko: '2026-07-31T08:00:00.000Z' });
+  test('P15: záznam rejstříku nese adresu stavby', ra.adresa === 'Kornpfortstraße 12, Koblenz', JSON.stringify(ra));
+  test('P15: adresa přežije normalizaci', uloRejstrikNormalizuj([ra])[0].adresa === 'Kornpfortstraße 12, Koblenz');
+  const RA = uloRejstrikSloucit(R, ra);
+  test('P15: hledání podle adresy stavby (malými, bez diakritiky)', uloHledej(RA, 'kornpfortstra').length === 1,
+    JSON.stringify(uloHledej(RA, 'kornpfortstra')));
+  /* Německé „ß" se píše i jako „ss" — obojí musí najít totéž. */
+  test('P15: „strasse" najde „Straße" i naopak', uloHledej(RA, 'kornpfortstrasse').length === 1
+    && uloHledej(RA, 'Kornpfortstraße').length === 1, JSON.stringify(uloHledej(RA, 'kornpfortstrasse')));
+  test('P15: hledání podle města z adresy', uloHledej(RA, 'koblenz').length === 1);
+  test('P15: slovo z adresy se kombinuje s ostatními poli', uloHledej(RA, 'koblenz stavby').length === 1
+    && uloHledej(RA, 'koblenz dvorak').length === 0);
+  test('P15: zakázka bez adresy má v záznamu prázdnou adresu (ne chybějící)',
+    uloRejstrikZaznam(zakazka('2026 - OPR - CN - 0511')).adresa === '');
+  /* Starší záznamy adresu nemají — server je doplní postupně, takže je musí
+   * umět odlišit od záznamu, jehož zakázka adresu prázdnou opravdu má. */
+  const stary = uloRejstrikNormalizuj([{ soubor: 'stary.json', cislo: 'x' }])[0];
+  test('P15: starší záznam bez adresy zůstane po normalizaci BEZ klíče adresa', !('adresa' in stary), JSON.stringify(stary));
+  test('P15: uloRejstrikBezAdresy vrátí starší záznamy (bez nových i prázdných)',
+    JSON.stringify(U.uloRejstrikBezAdresy([{ soubor: 'stary.json' }, ra, { soubor: 'prazdna.json', adresa: '' }]))
+      === JSON.stringify(['stary.json']));
+  test('P15: uloRejstrikBezAdresy bere nejvýš zadaný počet',
+    U.uloRejstrikBezAdresy([{ soubor: 'a.json' }, { soubor: 'b.json' }, { soubor: 'c.json' }], 2).length === 2);
+}
+
 /* ---------- 6) pojistka na uzamčené varianty ---------- */
 
 const naDisku = () => JSON.parse(JSON.stringify(z1));
@@ -191,6 +223,41 @@ prepsanyZamek.varianty[0].zamek.otisk = { ockZaklad: 1 };
 k = uloKontrolaZamku(naDisku(), prepsanyZamek);
 test('změněný otisk odeslaných částek se pozná',
   !k.ok && k.problemy[0].duvod === 'zmenena', JSON.stringify(k));
+
+/* ZMRAZENÝ VÝSLEDEK JE SOUČÁSTÍ ZÁMKU (nález B53, audit 22. 9. 2026).
+ *
+ * Od 15. 9. 2026 si zámek vedle souhrnného `otisk` drží CELÝ výsledek
+ * výpočtu a dokumenty i přehledy berou částky odtud. Do klíče se ale
+ * nepočítal, takže dvě varianty lišící se POUZE ve `vysledek` měly klíč
+ * shodný a přepsání částek už odeslané nabídky neprošlo nikde. */
+const sVysledkem = naDisku();
+sVysledkem.varianty[0].zamek.vysledek = { ock: { souhrn: { zakladCena: 912000, celkem: 1103520 } } };
+test('shodný zmrazený výsledek projde',
+  uloKontrolaZamku(sVysledkem, JSON.parse(JSON.stringify(sVysledkem))).ok);
+
+const prepsanyVysledek = JSON.parse(JSON.stringify(sVysledkem));
+prepsanyVysledek.varianty[0].zamek.vysledek.ock.souhrn.zakladCena = 1;
+k = uloKontrolaZamku(sVysledkem, prepsanyVysledek);
+test('přepsaná částka ve zmrazeném výsledku se pozná (B53)',
+  !k.ok && k.problemy[0].duvod === 'zmenena', JSON.stringify(k));
+
+/* Pojistka proti prázdnému testu: podvrh se smí lišit VÝHRADNĚ ve zmrazeném
+ * výsledku. Kdyby se lišil i jinde, chytila by ho jiná kontrola a tenhle
+ * test by B53 neměřil. */
+const bezVysledku = (z) => {
+  const c = JSON.parse(JSON.stringify(z));
+  c.varianty.forEach(v => { if (v.zamek) delete v.zamek.vysledek; });
+  return JSON.stringify(c);
+};
+test('podvrh se liší jedině ve zmrazeném výsledku',
+  bezVysledku(sVysledkem) === bezVysledku(prepsanyVysledek));
+
+/* Zámky pořízené před 15. 9. 2026 `vysledek` nemají. Klíč se skládá čerstvě
+ * pro obě strany porovnání, takže jim chybějící pole nic nerozbije. */
+const starsiZamek = JSON.parse(JSON.stringify(sVysledkem));
+starsiZamek.varianty.forEach(v => { if (v.zamek) delete v.zamek.vysledek; });
+test('starší zámek bez zmrazeného výsledku projde',
+  uloKontrolaZamku(starsiZamek, JSON.parse(JSON.stringify(starsiZamek))).ok);
 
 const zmenenaNezamcena = naDisku();
 zmenenaNezamcena.varianty[1].nazev = 'Přejmenováno';
@@ -314,6 +381,20 @@ test('uloIdProblemy najde špatnou variantu i přílohu, dobré nechá',
 test('čistá zakázka nemá žádný problém s id',
   uloIdProblemy({ varianty: [{ id: 'v1' }], poznamky: [], prilohy: [], aktivni: 'v1' }).length === 0);
 test('prázdná zakázka nepadá', uloIdProblemy(null).length === 0 && uloIdProblemy({}).length === 0);
+/* B82 (hloubkový test 24. 9. 2026): obsah přílohy jen jako data: adresa. */
+{
+  const zP = d => ({ varianty: [{ id: 'v1' }], prilohy: [{ id: 'pr1', nazev: 'a.pdf', data: d }], aktivni: 'v1' });
+  for (const zle of ['javascript:alert(1)', ' JavaScript:alert(1)', 'https://utocnik.example/x', 'vbscript:x', 'data', 42]) {
+    const pr = uloIdProblemy(zP(zle));
+    test('B82: příloha s obsahem ' + JSON.stringify(zle) + ' se odmítne', pr.length === 1 && pr[0].duvod === 'priloha', JSON.stringify(pr));
+  }
+  for (const dobre of ['data:application/pdf;base64,JVBERi0=', 'data:application/octet-stream;base64,AA==',
+                       'data:image/png;base64,iVBOR', 'data:text/plain;charset=utf-8;base64,YQ==', 'data:,', '', undefined]) {
+    test('B82: příloha s obsahem ' + JSON.stringify(dobre) + ' projde', uloIdProblemy(zP(dobre)).length === 0);
+  }
+  const t = uloIdProblemyText(uloIdProblemy(zP('javascript:alert(1)')));
+  test('B82: odmítnutí řekne proč (ne „identifikátor")', /nepovoleným obsahem/.test(t) && !/identifikátor/.test(t), t);
+}
 
 console.log('\n--- přibylé odemčení (B3) ---');
 const naDiskuB3 = { varianty: [{ id: 'v1', zamek: { zamceno: true, kdy: 'k', typ: 'nabidka' }, odemceni: [] },
@@ -388,6 +469,129 @@ test('věta pro odmítnutí rozliší tvar a duplicitu',
   /duplicitní id \(varianta v1/.test(uloIdProblemyText(dupl)) && !/nepovoleném tvaru/.test(uloIdProblemyText(dupl))
   && /nepovoleném tvaru/.test(uloIdProblemyText(uloIdProblemy({ varianty: [{ id: "x'" }] }))));
 test('různá id nejsou duplicita', uloIdProblemy({ varianty: [{ id: 'v1' }, { id: 'v2' }], aktivni: 'v1' }).length === 0);
+
+/* ---------- hlídka noční zálohy (#152, 24. 9. 2026) ----------
+ * Administrátor při přihlášení dnešní otisk dopořídí sám, takže přehled
+ * záloh vypadá zdravě, i když noční funkce týdny neběží. Hlídá se proto
+ * zvlášť poslední NOČNÍ otisk; starší než 48 hodin = zmeškané dvě noci. */
+{
+  const H = U.uloZalohaHlidka;
+  const ted = Date.parse('2026-09-24T10:00:00Z');
+  const o = (den, zdroj, porizena) => ({ den, zdroj, porizena: porizena || den + 'T02:00:00Z', pocetZakazek: 3, pocetUctu: 2 });
+  const vcera = H([o('2026-09-24', 'vynuceno', '2026-09-24T08:00:00Z'), o('2026-09-23', 'nocni-otisk')], ted);
+  test('#152: noční záloha z minulé noci je v pořádku', vcera.stara === false && vcera.posledni.den === '2026-09-23', vcera);
+  test('#152: text jmenuje poslední noční zálohu', /^Poslední noční záloha: /.test(vcera.text), vcera.text);
+  const hranice = H([o('2026-09-22', 'nocni-otisk', '2026-09-22T10:00:00Z')], ted);
+  test('#152: přesně 48 hodin je ještě v pořádku (jedna zmeškaná noc se nehlásí)', hranice.stara === false && hranice.hodin === 48, hranice);
+  const stara = H([o('2026-09-24', 'vynuceno', '2026-09-24T08:00:00Z'), o('2026-09-23', 'vynuceno'), o('2026-09-20', 'nocni-otisk')], ted);
+  test('#152: noční záloha starší než 48 h se hlásí, i když ruční zálohy jsou čerstvé', stara.stara === true, stara);
+  test('#152: hláška říká, kdy naposledy, a kde to zkontrolovat',
+    /před 4 dny/.test(stara.text) && /zaloha_nocni/.test(stara.text) && /zakrývají/.test(stara.text), stara.text);
+  const zadna = H([o('2026-09-24', 'vynuceno'), o('2026-09-23T101010-pred-obnovou', 'pred-obnovou', '2026-09-23T10:10:10Z')], ted);
+  test('#152: bez jediné noční zálohy se hlásí taky (otisk před obnovou se nepočítá)',
+    zadna.stara === true && zadna.posledni === null && /není žádná noční/.test(zadna.text), zadna);
+  test('#152: prázdný nebo rozbitý vstup nic neshodí',
+    H(null, ted).stara === true && H([null, {}, { zdroj: 'nocni-otisk', den: 'x' }], ted).stara === true);
+  test('#152: bere nejnovější noční zálohu, ne první v seznamu',
+    H([o('2026-09-10', 'nocni-otisk'), o('2026-09-23', 'nocni-otisk')], ted).posledni.den === '2026-09-23');
+}
+
+console.log('\n--- #340 (P1): typy polí zadání a ceníku ---');
+{
+  global.OPLASTENI_TYPY = eng.OPLASTENI_TYPY;
+  const T = U.uloTypyProblemy;
+  const nova = () => zk.novaZakazka();
+  const s1 = (fn) => { const z = nova(); fn(z.varianty[0].data); return T(z); };
+  test('#340: čerstvá zakázka projde', T(nova()).length === 0, JSON.stringify(T(nova())));
+  const XSS = '<img src=x onerror=alert(1)>';
+  test('#340: B69 — skript v sazbě DPH (číslo) neprojde', s1(d => { d.cenik.dph = XSS; }).some(p => /cenik\.dph/.test(p.kde)));
+  test('#340: B69 — skript v typu portálu (výčet) neprojde', s1(d => { d.ock.zadani.typPortalu = XSS; }).some(p => /typPortalu/.test(p.kde)));
+  test('#340: B69 — skript v zasklení neprojde', s1(d => { d.ock.zadani.zaskleni = '"><b>'; }).length === 1);
+  test('#340: skript v poli ano/ne (pravda) neprojde',
+    s1(d => { const k = Object.keys(d.ock.zadani).find(x => typeof eng.DEFAULT_ZADANI[x] === 'boolean'); d.ock.zadani[k] = XSS; }).length === 1);
+  test('#340: B70 — skript v typu pásu opláštění neprojde', s1(d => {
+    d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: "x');alert(1);//", doM: null }] } } };
+  }).some(p => /pasy\[0\]\.typ/.test(p.kde)));
+  test('#340: platný pás opláštění projde', s1(d => {
+    d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: 'C.cetrisKc', doM: 2.5 }, { typ: 'bez', doM: null }] } } };
+  }).length === 0);
+  test('#340: dimenze profilu jiného tvaru neprojde', s1(d => { d.ock.zadani.profily.sloupek.dim = '80x80<svg>'; }).length === 1);
+  test('#340: PROJ — text místo hodin neprojde', s1(d => { d.proj.zadani.sekce[0].polozky[0].hodiny = XSS; }).some(p => /hodiny/.test(p.kde)));
+  test('#340: PROJ — skript v sazbě položky neprojde', s1(d => { d.proj.zadani.sekce[0].polozky[0].sazba = XSS; }).length === 1);
+  test('#340: PROJ ceník — objekt místo čísla neprojde', s1(d => { const k = Object.keys(d.proj.cenik).find(x => typeof d.proj.cenik[x] === 'number'); d.proj.cenik[k] = { a: 1 }; }).length === 1);
+  test('#340: prázdno není nula — "" v čísle projde', s1(d => { d.cenik.dph = ''; d.ock.zadani.mustekSirkaMm = ''; }).length === 0);
+  /* Od B135 (12. 10. 2026) smí ceník varianty nést číslo jako text jen
+   * s desetinnou TEČKOU — jádro čte ceník přes `+x` a „0,21" je pro ně NaN.
+   * Zadání mimo vstupy jádra (můstek) dál snese „3,5". */
+  test('#340: číslo jako text („12", „3,5", ceník „0.21") projde', s1(d => { d.ock.zadani.mustekSirkaMm = '1200,5'; d.cenik.dph = '0.21'; }).length === 0);
+  test('B135: ceník varianty — číslo jako text s čárkou („0,21") neprojde', s1(d => { d.cenik.dph = '0,21'; }).some(p => /cenik\.dph/.test(p.kde)));
+  test('B135: ceník PROJ — číslo jako text s čárkou neprojde', s1(d => { const k = Object.keys(d.proj.cenik).find(x => typeof d.proj.cenik[x] === 'number'); d.proj.cenik[k] = '100,0'; }).length === 1);
+  test('#340: volba Ano/Ne uložená jako 0/1 projde', s1(d => { const k = Object.keys(d.ock.zadani).find(x => typeof eng.DEFAULT_ZADANI[x] === 'boolean'); d.ock.zadani[k] = 1; }).length === 0);
+  test('#340: klíče mimo vzor se nekontrolují', s1(d => { d.ock.zadani.nejakyNovyKlic = XSS; }).length === 0);
+  const zam = nova(); zam.varianty[0].data.cenik.dph = 'starý tvar'; zam.varianty[0].zamek = { zamceno: true };
+  test('#340: varianta zamčená už v uložené verzi se neposuzuje (doklad)', T(zam, JSON.parse(JSON.stringify(zam))).length === 0);
+  test('#340: NOVĚ zamčená varianta se posuzuje', T(zam, null).length === 1);
+  const t = U.uloIdProblemyText(s1(d => { d.cenik.dph = XSS; }));
+  test('#340: hláška jmenuje cestu, ne hodnotu', /cenik\.dph/.test(t) && t.indexOf('<img') < 0, t);
+  test('#340: nesmyslné vstupy nepadají', T(null).length === 0 && T({ varianty: [null, {}, { data: 5 }, { data: { ock: 7, proj: 'x' } }] }).length >= 0);
+}
+
+/* B96 (29. 9. 2026): krok a směr obchodního zaokrouhlení musí být z výčtu
+ * (ZAOKR_KROKY, ZAOKR_SMERY) — jádro bere jakékoli kladné číslo a krok
+ * 490 001 Kč srazil cenu nabídky na polovinu bez schválení. Před opravou
+ * funkce uloZaokrProblemy neexistovala. */
+{
+  const Z = U.uloZaokrProblemy;
+  test('B96: funkce uloZaokrProblemy existuje', typeof Z === 'function');
+  if (typeof Z === 'function') {
+    const zz = (zaokr, zaokrProj) => { const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 0596';
+      z.varianty[0].nazev = 'A'; z.varianty[0].data.zaokr = zaokr; if (zaokrProj !== undefined) z.varianty[0].data.zaokrProj = zaokrProj; return z; };
+    const p1 = Z(zz({ krok: 490001, smer: 'dolu' }));
+    test('B96: krok mimo výčet se nahlásí s cestou „varianta A: zaokr.krok"', p1.length === 1 && p1[0].kde === 'varianta A: zaokr.krok', JSON.stringify(p1));
+    test('B96: hláška mluví o zaokrouhlení', /zaokrouhlení/.test(U.uloIdProblemyText(p1)), U.uloIdProblemyText(p1));
+    test('B96: krok mimo výčet v zaokrProj se nahlásí zvlášť', Z(zz({ krok: 100, smer: 'nahoru' }, { krok: 12345, smer: 'dolu' })).map(x => x.kde).join() === 'varianta A: zaokrProj.krok');
+    test('B96: směr mimo výčet („dolů" s diakritikou) se nahlásí', Z(zz({ krok: 100, smer: 'dolů' })).length === 1);
+    test('B96: záporný krok se nahlásí', Z(zz({ krok: -100, smer: 'dolu' })).length === 1);
+    test('B96: nastavení, které není objekt, se nahlásí', Z(zz(5)).length === 1);
+    const ZR = require('./zaokrouhleni.js');
+    test('B96: všechny kombinace výčtu projdou',
+      ZR.ZAOKR_KROKY.every(k => ZR.ZAOKR_SMERY.every(s => Z(zz({ krok: k.krok, smer: s.smer }, { krok: k.krok, smer: s.smer })).length === 0)));
+    test('B96: krok jako text („1000") a chybějící nastavení se tolerují', Z(zz({ krok: '1000', smer: 'dolu' })).length === 0
+      && Z(zz(null, null)).length === 0 && Z(zz({ krok: 0 })).length === 0);
+    const stara = zz({ krok: 490001, smer: 'dolu' }); zamkniVariantu(stara.varianty[0], { typ: 'nabidka', kdo: 'Test' });
+    const nova = JSON.parse(JSON.stringify(stara));
+    test('B96: varianta zamčená už v uložené verzi se přeskočí (doklad)', Z(nova, stara).length === 0);
+    test('B96: bez uložené verze se táž zamčená varianta posoudí', Z(nova, null).length === 1);
+  }
+}
+
+/* #398 / B134 (12. 10. 2026): každé číselné pole výchozího zadání OCK je
+ * buď hlídaný vstup jádra (zápor, tvar čísla), rozměr šachty (B137), nebo
+ * vědomě mimo jádro. Nové pole bez zařazení test zastaví — jinak by se
+ * vrátila třída B134 (záporné číslo, které jádro násobí, nikdo nehlídá). */
+{
+  const kt = require('./kontroly.js');
+  const rozmery = kt.KONTROLY_ROZMERY_KLADNE.concat(kt.KONTROLY_ROZMERY_NEZAPORNE).map(x => x[0]);
+  const zarazene = new Set([].concat(U.ULO_ZADANI_BEZ_ZAPORU, U.ULO_HODINY_N56, U.ULO_ZADANI_MIMO_JADRO, rozmery));
+  const ciselna = Object.keys(eng.DEFAULT_ZADANI).filter(k => typeof eng.DEFAULT_ZADANI[k] === 'number'
+    || ['svetlikyBokyKs', 'svetlikyBokySirkaMm', 'zamecnikAtypKc', 'mustekHloubkaMm', 'mustekSirkaMm'].indexOf(k) >= 0);
+  const chybi = ciselna.filter(k => !zarazene.has(k));
+  test('B134: každé číselné pole DEFAULT_ZADANI je zařazené (vstup jádra / rozměr / mimo jádro)', chybi.length === 0, chybi.join(', '));
+  const f = U.uloZaporneVZadani;
+  test('B134: záporná rezerva → zaporne', f({ rezervaZakladPct: -0.999 }, null).some(p => p.duvod === 'zaporne' && /rezervaZakladPct/.test(p.kde)));
+  test('B134: kladná rezerva projde', f({ rezervaZakladPct: 0.3, rezervaPriplatkyPct: '0.3' }, null).length === 0);
+  test('B135: rezerva „0,3" (jádro čte NaN) → typ', f({ rezervaZakladPct: '0,3' }, null).some(p => p.duvod === 'typ'));
+  test('B145: přepis „12,5" → typ, „12.5" projde', f({ mnozstviPrepis: { a: '12,5' } }, null).some(p => p.duvod === 'typ')
+    && f({ mnozstviPrepis: { a: '12.5' } }, null).length === 0);
+  test('B111: „-5000,5" je dál hlášené jako záporné (ne jen typ)', f({ vlastniPolozky: { hrubaOck: [{ cena: '-5000,5', mnozstvi: 1 }] } }, null)
+    .some(p => p.duvod === 'zaporne'));
+  test('B137: uloRozmeryVZadani — při uložení jen nesmyslné číslo, u zámku i nula a prázdno',
+    U.uloRozmeryVZadani({ zdvih: 0, sirka: '', hloubka: 1, roztec: 1, cistyVstupMm: 800, sirkaRamuMm: 100, rohoveSloupky: 4, prejezd: 0, prohluben: 0 }, false).length === 0
+    && U.uloRozmeryVZadani({ zdvih: 0, sirka: '', hloubka: 1, roztec: 1, cistyVstupMm: 800, sirkaRamuMm: 100, rohoveSloupky: 4, prejezd: 0, prohluben: 0 }, true).length === 2
+    && U.uloRozmeryVZadani({ zdvih: -1, sirka: 1, hloubka: 1, roztec: 1, cistyVstupMm: 800, sirkaRamuMm: 100, rohoveSloupky: 4, prejezd: 0, prohluben: 0 }, false).length === 1);
+  test('B135: uloCisloJadro — číslo, prázdno, „12.5" ano; „12,5", „1e3" ne',
+    U.uloCisloJadro(3) && U.uloCisloJadro('') && U.uloCisloJadro(null) && U.uloCisloJadro('12.5') && !U.uloCisloJadro('12,5') && !U.uloCisloJadro('1e3'));
+}
 
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

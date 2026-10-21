@@ -8,11 +8,12 @@
  * variantou uvnitř téže zakázky.
  *
  * Číslování variant je ploché: původní varianta nese holé číslo zakázky,
- * každý klon dostane příponu .1, .2, .3 … Klon varianty „…-0500.1" je
- * tedy „…-0500.2", nikdy „…-0500.1.1" – přípony se nevnořují, jen rostou.
- * Nejvyšší přidělené číslo si zakázka pamatuje (zak.priponaMax), takže
- * ani po smazání varianty se číslo nepoužije podruhé: číslo, které už
- * jednou odešlo na papíře, nesmí patřit jiné nabídce.
+ * další varianty příponu podle pořadí — druhá .2, třetí .3 … (#320, 22. 9.
+ * 2026; do té doby dostal první klon .1, viz „Jedno číslo varianty" níž).
+ * Přípony se nevnořují, jen rostou. Nejvyšší přidělené číslo si zakázka
+ * pamatuje (zak.priponaMax), takže ani po smazání varianty se číslo
+ * nepoužije podruhé: číslo, které už jednou odešlo na papíře, nesmí patřit
+ * jiné nabídce.
  *
  * Tenhle soubor je čistý model – žádné DOM, žádné globální UI stavy.
  * Blokování editace řeší ui/zamek_ui.js, který se ptá jen na
@@ -36,7 +37,7 @@ const ZAMEK_DOKUMENTY = {
   sodProj:         { zamyka: true,  popis: 'Smlouva o dílo — projekční práce (Word)' },
   plnaMoc:         { zamyka: false, popis: 'Plná moc (Word)' },
   podklady:        { zamyka: false, popis: 'Náhled podkladů' },
-  kryci:           { zamyka: false, popis: 'Krycí list objednávky / SoD' },
+  kryci:           { zamyka: false, popis: 'Krycí list zakázky OCK' },
   kryciProj:       { zamyka: false, popis: 'Krycí list zakázky PROJ' },
   techspec:        { zamyka: false, popis: 'Technická specifikace' },
   porovnani:       { zamyka: false, popis: 'Porovnání variant' },
@@ -54,27 +55,74 @@ function dokumentPopis(typ) {
 
 /* ---------- číslování variant ---------------------------------------- */
 
+/* JEDNO ČÍSLO VARIANTY — ČÍSLO Z PAPÍRU (#320, rozhodnutí J. V. 22. 9. 2026:
+ * „platí číslo na papíře, nové klony dostanou příponu shodnou s pořadím
+ * a odeslaným nabídkám zůstane číslo, se kterým odešly").
+ *
+ * Do 22. 9. 2026 měla varianta DVĚ čísla. Dokumenty (nabídky, krycí listy)
+ * číslovaly podle POŘADÍ v zakázce — druhá varianta .2 (zadání 19. 8. 2026) —
+ * kdežto zámek, seznamy, hlášky i serverová pojistka B56 podle PŘÍPONY, kterou
+ * první klon dostal .1. Změřeno: druhá varianta odešla zákazníkovi jako
+ * 0555.2, v zámku stálo 0555.1. A číslo podle pořadí se navíc posouvalo:
+ * po smazání dřívější varianty dotisk téže odeslané nabídky nesl jiné číslo.
+ *
+ * Teď je číslo jedno — přípona — a dokumenty ho berou odsud taky
+ * (cisloSVariantou v zakazka.js). Zakázky uložené dřív se při načtení JEDNOU
+ * přečíslují podle pořadí (zajistiZamek, značka zak.priponySchema), tedy na
+ * přesně to číslo, které jim dosud tiskly dokumenty. Od té chvíle se číslo
+ * nemění ani po smazání jiné varianty.
+ *
+ * Mez, kterou nic nezavře: nabídka odeslaná PŘED touto změnou, u níž se
+ * mezitím smazala dřívější varianta, na papíře nese jiné číslo, než jaké jí
+ * dávalo pořadí v okamžiku migrace. Kolik variant tehdy existovalo, se
+ * nikde nezapisovalo — zůstává jí číslo, které aplikace ukazovala naposledy. */
+const PRIPONY_SCHEMA = 2;
+
 function variantaPripona(v) {
   const p = v && v.pripona;
   return (typeof p === 'number' && isFinite(p) && p > 0) ? Math.floor(p) : 0;
 }
 
+/* Přípona varianty v zakázce. Varianta, která příponu ještě nemá (zakázka
+ * sestavená v kódu mimo importZakazka), dostane tutéž, jakou by jí dala
+ * migrace: podle pořadí. */
+function variantaPriponaVZakazce(zak, v) {
+  if (v && typeof v.pripona === 'number') return variantaPripona(v);
+  const i = ((zak && zak.varianty) || []).findIndex(x => x === v || (x && v && x.id === v.id));
+  return i > 0 ? i + 1 : 0;
+}
+
+/* Příští přípona: podle pořadí (druhá varianta .2), ale nikdy číslo, které
+ * už v zakázce padlo — po smazání varianty se tedy pokračuje nad maximem. */
 function dalsiPriponaVarianty(zak) {
   let max = (zak && typeof zak.priponaMax === 'number' && isFinite(zak.priponaMax))
     ? Math.floor(zak.priponaMax) : 0;
-  ((zak && zak.varianty) || []).forEach(v => {
-    const p = variantaPripona(v);
+  const varianty = (zak && zak.varianty) || [];
+  varianty.forEach(v => {
+    const p = variantaPriponaVZakazce(zak, v);
     if (p > max) max = p;
   });
-  return max + 1;
+  return Math.max(max + 1, varianty.length + 1);
 }
 
-/* Číslo nabídky konkrétní varianty. Bez přípony vrací HOLÉ číslo zakázky –
- * díky tomu se u dosavadních zakázek na dokumentech nic nemění. */
+/* Číslo nabídky konkrétní varianty = číslo na papíře. Bez přípony vrací
+ * HOLÉ číslo zakázky. Tutéž příponu tisknou dokumenty (cisloSVariantou). */
 function variantaCislo(zak, v) {
   const zaklad = String((zak && zak.cislo) || '');
-  const p = variantaPripona(v);
+  const p = variantaPriponaVZakazce(zak, v);
   return p ? zaklad.replace(/\s+$/, '') + '.' + p : zaklad;
+}
+
+/* Patří uložené číslo z odeslané nabídky k tomuto číslu zakázky? Pro zámky
+ * pořízené před #320: ty v `zamek.cislo` nesou číslo z tehdejší přípony
+ * (první klon .1), které se od čísla na papíře může lišit v příponě. Mění se
+ * u nich proto jen ZÁKLAD — ten musí sedět; přípona je od migrace dána
+ * pořadím, ve kterém dokumenty tiskly. */
+function zamekCisloZakladSedi(cisloZamku, zak) {
+  const bylo = String(cisloZamku || '');
+  const zaklad = String((zak && zak.cislo) || '').replace(/\s+$/, '');
+  if (bylo === zaklad || bylo === String((zak && zak.cislo) || '')) return true;
+  return bylo.startsWith(zaklad + '.') && /^\d+$/.test(bylo.slice(zaklad.length + 1));
 }
 
 /* Klon = nová varianta uvnitř téže zakázky. Přebírá kompletní data
@@ -87,7 +135,8 @@ function klonujVariantu(zak, id, opts) {
   if (!zdroj) return null;
 
   const p = dalsiPriponaVarianty(zak);
-  const kopie = novaVarianta(opts.nazev || ('Varianta ' + (p + 1)),
+  /* Název nese totéž číslo jako přípona (#320): „Varianta 3" = …555.3. */
+  const kopie = novaVarianta(opts.nazev || ('Varianta ' + p),
                              JSON.parse(JSON.stringify(zdroj.data)));
   /* Id musí být v zakázce jedinečné i po načtení ze složky (B29, 9. 9. 2026). */
   if (typeof zakazkaUnikatniId === 'function') kopie.id = zakazkaUnikatniId(zak, kopie.id);
@@ -96,6 +145,9 @@ function klonujVariantu(zak, id, opts) {
   kopie.pripona = p;
   kopie.ridici = false;
   kopie.zamek = null;
+  /* Schválení slevy se do klonu nepřenáší (N44, 24. 9. 2026) — viz
+   * slevaRozhodnutiZahod v zakazka.js. */
+  if (typeof slevaRozhodnutiZahod === 'function') slevaRozhodnutiZahod(kopie.data);
   kopie.klonZ = zdroj.id;
   kopie.klonZCislo = variantaCislo(zak, zdroj);
   /* NOVÁ VARIANTA NESE DNEŠNÍ DATUM (nález D2, 15. 9. 2026). Klon vzniká
@@ -130,6 +182,22 @@ function vypocetZ(v, jekly) {
   const d = (v && v.data) || {};
   if (!d.ock || !d.cenik) return null;
   return vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes);
+}
+
+/* CO SE U ODESLANÉ NABÍDKY POČÍTÁ DNEŠNÍM JÁDREM (B130, audit 6. 10. 2026).
+ * Zamčená varianta bez zmrazeného výsledku (odešla před 15. 9. 2026) nebo
+ * s výsledkem jen jedné strany se dál počítá dnešním výpočtem — a ten se od
+ * papíru, který zákazník dostal, může lišit. Lišta zámku to proto říká
+ * nahlas. Vrací strany ('ock', 'proj'), které NEJSOU zmrazené; u nezamčené
+ * varianty prázdné pole. */
+function zamekPrepoctenoDnes(v) {
+  if (!zamekInfo(v)) return [];
+  const zmr = zamekVysledek(v) || {};
+  const d = (v && v.data) || {};
+  const out = [];
+  if (!zmr.ock && d.ock && d.cenik) out.push('ock');
+  if (!zmr.proj && d.proj) out.push('proj');
+  return out;
 }
 
 function vypocetProjZ(v) {
@@ -176,6 +244,92 @@ function variantaEditovatelna(v) {
   return !variantaUzamcena(v);
 }
 
+/* KRYCÍ LIST ODESLANÉ NABÍDKY SE DÁ DOPLŇOVAT (J. V. 14. 10. 2026: „krycí
+ * list by nemusel být zamčený vůbec … věci, které nejsou v cenové nabídce,
+ * by mělo být možné v krycím listu upravovat i po vytištění nabídky").
+ *
+ * Zámek drží to, co zákazník dostal na papíře. Z krycího listu jdou do
+ * cenové nabídky jen sekce KRYCI_NABIDKA_SEKCE (OCK) a
+ * KRYCI_PROJ_NABIDKA_SEKCE (PROJ) — podmínky pod „Celkem s DPH" a symboly
+ * {{PODM_…}} — a u starších dat PROJ bez plánu plateb i splátky SoD
+ * projekce (sodpPlatba1…, planPlatebZeStarych). Ty zůstávají zamčené, stejně
+ * jako plán plateb PROJ (planKlp…, vlastní obal v zamek_ui.js). Ostatní pole
+ * krycího listu (zákazník, kontakty, termíny, atypy, smlouva…) jsou podklad
+ * pro backoffice a obchodník je doplňuje i po odeslání nabídky.
+ *
+ * Platí, jen dokud z varianty neodešla SMLOUVA O DÍLO: ta pole krycího
+ * listu tiskne (zástupci, termíny, pokuty) a podepisuje se — po ní je
+ * krycí list zamčený celý jako dřív. Neznámé pole (není v sekcích) se
+ * bere jako tištěné do nabídky: radši zamčené navíc než změněná nabídka.
+ * Server hlídá totéž (zamekDataPorovnani v netlify/lib/zakazka_kontrola.mjs). */
+const ZAMEK_KRYCI_SMLOUVY = ['sod', 'sodProj'];
+
+function zamekTiskyTypy(v) {
+  const z = zamekInfo(v);
+  if (!z) return [];
+  return [z.typ].concat((Array.isArray(z.tisky) ? z.tisky : []).map(t => t && t.typ)).filter(Boolean);
+}
+
+/* Krycí list zamčené varianty jde (mimo pole nabídky) doplňovat? */
+function zamekKryciOtevreny(v) {
+  return variantaUzamcena(v) && !zamekTiskyTypy(v).some(t => ZAMEK_KRYCI_SMLOUVY.indexOf(t) >= 0);
+}
+
+/* Patří pole krycího listu (`list` = 'kryci' | 'kryciProj') do cenové nabídky? */
+function zamekKryciPoleVNabidce(list, id) {
+  id = String(id == null ? '' : id);
+  const proj = list === 'kryciProj';
+  if (proj && /^sodpPlatba\d+$/.test(id)) return true;
+  const sekce = proj ? (typeof KRYCI_PROJ_SEKCE !== 'undefined' ? KRYCI_PROJ_SEKCE : null)
+    : (typeof KRYCI_SEKCE !== 'undefined' ? KRYCI_SEKCE : null);
+  const nab = proj ? (typeof KRYCI_PROJ_NABIDKA_SEKCE !== 'undefined' ? KRYCI_PROJ_NABIDKA_SEKCE : null)
+    : (typeof KRYCI_NABIDKA_SEKCE !== 'undefined' ? KRYCI_NABIDKA_SEKCE : null);
+  if (!Array.isArray(sekce) || !Array.isArray(nab) || (list !== 'kryci' && !proj)) return true;
+  const s = sekce.find(x => x && Array.isArray(x.pole) && x.pole.some(p => p && p.id === id));
+  return !s || nab.indexOf(s.sekce) >= 0;
+}
+
+/* ÚDAJE ZMOCNITELE PLNÉ MOCI (B163, audit 25, 16. 10. 2026). Plná moc
+ * nic nezamyká a často se dělá až po smlouvě o dílo; SoD údaje zmocnitele
+ * netiskne. Pole `pm…` krycího listu PROJ proto zůstávají volná i po tisku
+ * SoD. Ostatní zámek SoD platí beze změny. Server hlídá totéž
+ * (zamekDataPorovnani). */
+function zamekKryciPolePlnaMoc(list, id) {
+  return list === 'kryciProj' && /^pm[A-Z]/.test(String(id == null ? '' : id));
+}
+
+/* PRVNÍ SMLOUVA O DÍLO (#366, J. V. 16. 10. 2026: „tisk SoD zamkne termín,
+ * podpisy a podmínky"). Vrací true, když tisk `typ` je smlouva o dílo a
+ * z varianty ještě žádná neodešla — jen tehdy se do krycích listů opíšou
+ * údaje, které by se jinak dál počítaly (číslo SoD z návrhu, datum podpisu
+ * = dnešek; kryciZmrazSod). Po první smlouvě je krycí list zamčený celý
+ * a server by další zápis odmítl. */
+function zamekPrvniSmlouva(v, typ) {
+  if (ZAMEK_KRYCI_SMLOUVY.indexOf(typ) < 0) return false;
+  return !zamekTiskyTypy(v).some(t => ZAMEK_KRYCI_SMLOUVY.indexOf(t) >= 0);
+}
+
+/* Smí se pole krycího listu změnit? Nezamčená varianta = ano. */
+function zamekKryciPoleVolne(v, list, id) {
+  if (!variantaUzamcena(v)) return true;
+  if (zamekKryciPoleVNabidce(list, id)) return false;
+  return zamekKryciOtevreny(v) || zamekKryciPolePlnaMoc(list, id);
+}
+
+/* Data zamčené varianty k porovnání „změnilo se něco odeslaného?" — bez
+ * ručních hodnot polí krycího listu, která se smí doplňovat. Zámek se bere
+ * z `v` (na serveru vždy z ULOŽENÉ verze, klient si ho nevybírá). */
+function zamekDataPorovnani(data, v) {
+  if (!data || typeof data !== 'object' || !variantaUzamcena(v)) return JSON.stringify(data);
+  const kopie = JSON.parse(JSON.stringify(data));
+  ['kryci', 'kryciProj'].forEach(list => {
+    const h = kopie[list] && kopie[list].hodnoty;
+    if (!h || typeof h !== 'object') return;
+    Object.keys(h).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete h[id]; });
+  });
+  return JSON.stringify(kopie);
+}
+
 /* Uzamčení. První tisk je ten definitivní okamžik „odesláno" – uloží se
  * datum, typ dokumentu, číslo nabídky a otisk částek, které odešly.
  * Každý další tisk téže (už zamčené) varianty se jen připíše do seznamu
@@ -194,6 +348,10 @@ function zamkniVariantu(v, info) {
      * odešla z centrálně řízené verze; „mistni" je razítko tisku mimo ni
      * (měkký režim nebo práce bez serveru) a nejde dodatečně zapřít. */
     sablona: info.sablona || null,
+    /* Kterým slovníkem překladů dokument vznikl (revize #401): { verze,
+     * otisk } — viz slovnikRazitko v slovnik.js. Zámky pořízené dřív
+     * razítko nemají (null) a dotisk se u nich na slovník neptá. */
+    slovnik: (typeof slovnikRazitkoOciste === 'function') ? slovnikRazitkoOciste(info.slovnik) : null,
   };
   if (variantaUzamcena(v)) {
     if (!Array.isArray(v.zamek.tisky)) v.zamek.tisky = [];
@@ -203,7 +361,13 @@ function zamkniVariantu(v, info) {
   v.zamek = {
     zamceno: true,
     kdy: zaznam.kdy, typ: zaznam.typ, popis: zaznam.popis, kdo: zaznam.kdo,
+    slovnik: zaznam.slovnik,
     cislo: info.cislo || '',
+    /* `cislo` je číslo Z PAPÍRU (#320) — tatáž přípona, jakou tisknou
+     * dokumenty. Zámky pořízené dřív značku nemají a jejich `cislo` může
+     * nést starou příponu (první klon .1); server u nich hlídá jen základ
+     * čísla (B56). Značka je v klíči zámku, takže se nedá potichu sundat. */
+    cisloPapir: true,
     otisk: info.otisk || null,
     /* CELÝ VÝSLEDEK, NE JEN SOUHRN (nálezy A1 a D1, rozhodnutí J. V.
      * 15. 9. 2026: „potřebujeme uzamknout nabídku as is, jakoby to bylo pdf …
@@ -237,6 +401,175 @@ function zamkniVariantu(v, info) {
 function zamekVysledek(v) {
   const z = zamekInfo(v);
   return (z && z.vysledek) ? z.vysledek : null;
+}
+
+/* VÝSLEDEK K ZAMČENÍ — JEDEN KÓD PRO PROHLÍŽEČ I SERVER (nález B59,
+ * revize v22.9.9, 22. 9. 2026).
+ *
+ * Prohlížeč tím při prvním tisku pořizuje zmrazený výsledek a server tímž
+ * kódem ověřuje, že výsledek NOVÉHO zámku odpovídá datům varianty. Dvě kopie
+ * téhož vzorce by se časem rozešly a server by hlásil rozpor tam, kde žádný
+ * není. Při chybě výpočtu vrací null — stejně jako dosud zamekPoTisku: zámek
+ * pak vznikne bez zmrazeného výsledku a dokumenty počítají z dat. */
+function zamekVysledekSpocti(v, jekly, build) {
+  const d = (v && v.data) || {};
+  try {
+    return {
+      ock: vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes),
+      proj: vypocetProj(d.proj.zadani, d.proj.cenik),
+      kurzEurKc: (d.cenik && +d.cenik.kurzEurKc) || (d.proj && d.proj.cenik && +d.proj.cenik.kurzEurKc) || 0,
+      build: build || '',
+      kdy: new Date().toISOString(),
+    };
+  } catch (e) { return null; }
+}
+
+/* Části výsledku, ze kterých se tiskne. `build` a `kdy` jsou razítka pořízení,
+ * ne čísla nabídky — ta se neporovnávají. */
+const ZAMEK_OVERENI_CASTI = ['ock', 'proj', 'kurzEurKc'];
+
+/* Částky, bez kterých žádný dokument nevznikne (cena bez DPH, DPH, s DPH
+ * u OCK; cena a celkem u PROJ; kurz EUR). Musí být v OBOU výsledcích —
+ * jinak by „chybějící klíč není rozdíl" (P6) pustil podvrh, který souhrn
+ * prostě vynechá, a server by mu dal razítko „shoda". */
+const ZAMEK_OVERENI_JADRO = ['ock.souhrn.zakladCena', 'ock.souhrn.zakladDph', 'ock.souhrn.zakladSDph',
+  'proj.souhrn.cena', 'proj.souhrn.celkem', 'kurzEurKc'];
+/* PŘÍSNÉ POROVNÁNÍ NOVÉHO ZÁMKU (B119, audit 2. 10. 2026). Uvolnění P6
+ * přeskakovalo řádek bez protějšku — podvržený příplatek s vymyšleným
+ * `origNazev` se tak nespároval, nikdo ho neporovnal a razítko bylo
+ * „shoda"; dotisk odeslané nabídky pak bral jeho cenu. Nový zámek při
+ * uložení se proto porovnává přísně: nespárovaný řádek je rozdíl a k jádru přibudou součty
+ * příplatků a zaškrtnutých volitelných položek. Starší zámky a obnova se
+ * porovnávají volně jako dosud. */
+const ZAMEK_OVERENI_JADRO_PRISNE = ['ock.souhrn.priplatkyCena', 'ock.souctySekci.volitelne.sMarzi'];
+
+/* Porovná výsledek ze zámku s přepočtem. Obě strany mají projít JSONem
+ * (klientská jím prošla cestou po síti — NaN je v ní null). Čísla se srovnávají
+ * s tolerancí na poslední bit, ne na koruny: jádro používá jen sčítání,
+ * násobení a zaokrouhlení, takže stejný kód nad stejnými daty dává shodu
+ * přesnou a každý skutečný rozdíl je rozdíl. Vrací počet rozdílů a prvních
+ * `max` cest — cesty, ne hodnoty: výsledek nese i náklady firmy.
+ *
+ * JEN PENÍZE A MNOŽSTVÍ (P6 / K15-N67, 25. 9. 2026). Do té doby se porovnával
+ * celý strom znak po znaku — i názvy položek, dodatkové texty, příznaky a klíče,
+ * které přidala nebo ubrala jiná verze aplikace. Lišta zámku pak u poctivé
+ * nabídky hlásila „čísla nesouhlasí", stačilo tisknout ze stránky načtené před
+ * nasazením nové verze. Teď platí:
+ *   – porovnávají se ČÍSLA (peníze, množství, hodiny); číslo proti čemukoli
+ *     jinému (null z NaN, text) je rozdíl,
+ *   – texty a příznaky (ano/ne) se neporovnávají,
+ *   – klíč, který je jen v jednom výsledku, se přeskočí — kromě jádra
+ *     (ZAMEK_OVERENI_JADRO), to musí mít obě strany,
+ *   – řádky se párují podle názvu (`origNazev`, `nazev`, `key`), když jsou
+ *     v obou polích jednoznačné: položka navíc v jedné verzi pak ostatní
+ *     řádky neposune; jinak po pořadí. Řádek jen na jedné straně rozdílem
+ *     není — jeho částka se promítne do součtů, a ty se porovnávají. */
+function zamekVysledekRozdily(klient, server, max, opts) {
+  const lim = max || 5;
+  const prisne = !!(opts && opts.prisne);
+  const out = { pocet: 0, cesty: [] };
+  const pridej = (c) => { out.pocet++; if (out.cesty.length < lim) out.cesty.push(c); };
+  const stejneCislo = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+  const cislo = (x) => typeof x === 'number';
+  const idRadku = (o) => {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return '';
+    for (const k of ['origNazev', 'nazev', 'key']) if (typeof o[k] === 'string' && o[k]) return k + ':' + o[k];
+    return '';
+  };
+  const podleId = (pole) => {
+    const m = new Map();
+    for (const x of pole) { const id = idRadku(x); if (!id || m.has(id)) return null; m.set(id, x); }
+    return m;
+  };
+  const projdi = (a, b, c) => {
+    /* B146 (audit 12. 10. 2026): v přísném porovnání je pole řádků proti
+     * čemukoli jinému (objekt, null, chybějící klíč) rozdíl — tatáž verze
+     * dává týž tvar; podvržené řádky (ock.priplatky) se změnou tvaru
+     * schovaly a součty zůstaly. */
+    if (prisne && Array.isArray(a) !== Array.isArray(b)) { pridej(c); return; }
+    if (a === undefined || b === undefined) return;          // klíč jen v jednom výsledku
+    if (cislo(a) || cislo(b)) { if (!(cislo(a) && cislo(b) && stejneCislo(a, b))) pridej(c); return; }
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return;   // texty, příznaky, null
+    if (Array.isArray(a) !== Array.isArray(b)) return;       // jiný tvar = jiná verze, ne jiná čísla
+    if (Array.isArray(a)) {
+      const mb = podleId(b);
+      const ma = mb && podleId(a);
+      if (ma) {
+        a.forEach((x, i) => {
+          const y = mb.get(idRadku(x));
+          if (y !== undefined) projdi(x, y, c + '[' + i + ']');
+          else if (prisne) pridej(c + '[' + i + ']');               // řádek jen v zámku (B119)
+        });
+        if (prisne) b.forEach(y => { if (!ma.has(idRadku(y))) pridej(c + '[chybí]'); });
+        return;
+      }
+      if (prisne && a.length !== b.length) pridej(c + '.length');
+      for (let i = 0; i < Math.min(a.length, b.length); i++) projdi(a[i], b[i], c + '[' + i + ']');
+      return;
+    }
+    Object.keys(a).forEach(k => {
+      if (Object.prototype.hasOwnProperty.call(b, k)) projdi(a[k], b[k], c + '.' + k);
+      else if (prisne && Array.isArray(a[k])) pridej(c + '.' + k);              // pole jen v zámku (B146)
+    });
+    if (prisne) Object.keys(b).forEach(k => {
+      if (!Object.prototype.hasOwnProperty.call(a, k) && Array.isArray(b[k])) pridej(c + '.' + k);   // vynechané pole (B146)
+    });
+  };
+  ZAMEK_OVERENI_CASTI.forEach(k => projdi(klient ? klient[k] : undefined, server ? server[k] : undefined, k));
+  const hodnota = (o, cesta) => cesta.split('.').reduce((x, k) => (x && typeof x === 'object') ? x[k] : undefined, o);
+  (prisne ? ZAMEK_OVERENI_JADRO.concat(ZAMEK_OVERENI_JADRO_PRISNE) : ZAMEK_OVERENI_JADRO).forEach(cesta => {
+    if (hodnota(klient, cesta) === undefined || hodnota(server, cesta) === undefined) pridej(cesta);
+  });
+  return out;
+}
+
+/* Razítko ověření zmrazeného výsledku (B59). Píše ho VÝHRADNĚ server při
+ * prvním uložení zámku; klient ho nepodvrhne ani nesmaže — při každém dalším
+ * uložení se přenáší z uložené verze. Stav:
+ *   'shoda'       výsledek odpovídá datům varianty,
+ *   'nesouhlasi'  neodpovídá: upravený klient, nebo stránka se starším jádrem
+ *                 (těsně po nasazení); `klient` a `server` říkají, které verze,
+ *   'chyba'       server výsledek nepřepočítal, takže ho neověřil.
+ * Zámek bez zmrazeného výsledku razítko nedostane (null): dokumenty ho
+ * počítají z dat, která server hlídá sám. */
+/* `opts.prisne` (B119): nový zámek při uložení se porovnává VŽDY přísně.
+ * Verzi ve výsledku (`build`) posílá klient, takže se podle ní o režimu
+ * rozhodovat nesmí (revize 6. 10. 2026: jiný `build` = volné porovnání
+ * = obchvat). Stránka načtená před nasazením, která má jiný tvar výsledku,
+ * dostane „nesouhlasí" — hláška po uložení radí obnovit stránku (Ctrl+F5)
+ * a vytisknout znovu; to je poctivější než mlčky přijatý podvrh. */
+function zamekOvereni(v, jekly, verzeServeru, kdy, opts) {
+  const z = zamekInfo(v);
+  if (!z || !z.vysledek) return null;
+  const zaklad = { kdy: kdy || new Date().toISOString(), server: String(verzeServeru || ''),
+                   klient: String(z.vysledek.build || '').slice(0, 40) };
+  const prisne = !!(opts && opts.prisne);
+  const server = zamekVysledekSpocti(v, jekly, '');
+  if (!server) return Object.assign({ stav: 'chyba', rozdilu: 0, cesty: [] }, zaklad);
+  /* Výsledek od klienta může být cokoli, co projde JSONem — ani patologický
+   * tvar nesmí shodit uložení; skončí jako „neověřeno". */
+  let r;
+  try { r = zamekVysledekRozdily(JSON.parse(JSON.stringify(z.vysledek)), JSON.parse(JSON.stringify(server)), 5, { prisne }); }
+  catch (e) { return Object.assign({ stav: 'chyba', rozdilu: 0, cesty: [] }, zaklad); }
+  return Object.assign({ stav: r.pocet ? 'nesouhlasi' : 'shoda', rozdilu: r.pocet, cesty: r.cesty }, zaklad);
+}
+
+/* Věta o sporném razítku pro lištu zámku a pro hlášku po uložení. Prázdno =
+ * není co říct (shoda, žádné razítko, starší zámek). */
+function zamekOvereniText(ov) {
+  if (!ov || typeof ov !== 'object') return '';
+  const verze = 'výsledek spočítala verze aplikace ' + (ov.klient || 'neuvedená')
+    + ', server běžel na ' + (ov.server || 'neznámé verzi');
+  const n = +ov.rozdilu || 0;
+  const rozdilu = n + (n === 1 ? ' rozdíl' : (n >= 2 && n <= 4) ? ' rozdíly' : ' rozdílů');
+  if (ov.stav === 'nesouhlasi')
+    return 'Čísla této odeslané nabídky nesouhlasí s výpočtem serveru z jejích dat ('
+      + rozdilu + '; ' + verze + '). Dokumenty se dál tisknou tak, '
+      + 'jak nabídka odešla — rozpor je zapsaný v jejím zámku.';
+  if (ov.stav === 'chyba')
+    return 'Čísla této odeslané nabídky server při uzamčení nepřepočítal, takže je neověřil ('
+      + verze + ').';
+  return '';
 }
 
 /* Odemknutí je výjimka, ne běžný krok: smí ho udělat jen správce a musí
@@ -298,27 +631,48 @@ function zamekOtiskZPorovnani(porovnani, id) {
 /* Doplní nová pole do zakázek uložených před zavedením zámku.
  *
  * Přípony: první varianta zůstává na holém čísle zakázky, další dostanou
- * .1, .2 … v pořadí, v jakém jsou v zakázce. Dosud se všechny varianty
- * tiskly pod jedním číslem, což je přesně ta záměna, kterou má číslování
- * odstranit; žádná varianta zatím není zamčená, takže se tím nepřepisuje
- * číslo žádné prokazatelně odeslané nabídky.
+ * .2, .3 … v pořadí, v jakém jsou v zakázce — číslo, které jim tiskly
+ * dokumenty (#320, 22. 9. 2026; původní migrace z #34 rozdávala .1, .2 …
+ * a číslo v zámku se tím rozešlo s číslem na papíře).
  *
  * Funkce je idempotentní – opakované volání už nic nemění. */
 function zajistiZamek(zak) {
   if (!zak || !Array.isArray(zak.varianty)) return zak;
 
-  // Přípony: pokud je nemá žádná varianta (stará zakázka), rozdá se
-  // 0, 1, 2 … v pořadí. Pokud některé už existují, doplní se jen ty
-  // chybějící – vždy nad dosavadní maximum, aby se číslo neopakovalo.
-  const zname = zak.varianty.filter(v => typeof v.pripona === 'number');
-  let volne = 0;
-  if (zname.length) {
-    volne = Math.max(...zname.map(variantaPripona),
-                     (typeof zak.priponaMax === 'number' && isFinite(zak.priponaMax))
-                       ? Math.floor(zak.priponaMax) : 0) + 1;
+  /* JEDNO ČÍSLO VARIANTY (#320). Zakázka uložená před 22. 9. 2026 se
+   * JEDNOU přečísluje podle pořadí: první varianta holé číslo, další .2, .3 …
+   * — přesně to číslo, které jí dosud tiskly dokumenty (cisloSVariantou
+   * číslovala podle pořadí). Týká se to i odeslaných variant: jejich papír
+   * nesl číslo podle pořadí, ne podle staré přípony. Zámku samotného se to
+   * nedotkne — `zamek.cislo` zůstává, jak byl pořízen (je v klíči zámku),
+   * a server u takového zámku hlídá jen základ čísla (B56).
+   *
+   * Značka zak.priponySchema zajistí, že se to stane jednou: po smazání
+   * varianty se už NEpřečísluje — právě to posouvání čísel byla chyba.
+   * Nová zakázka značku nese od založení (novaZakazka). */
+  if (zak.priponySchema !== PRIPONY_SCHEMA) {
+    zak.varianty.forEach((v, i) => { v.pripona = i === 0 ? 0 : i + 1; });
+    zak.priponaMax = zak.varianty.length > 1 ? zak.varianty.length : 0;
+    zak.priponySchema = PRIPONY_SCHEMA;
   }
-  zak.varianty.forEach(v => {
-    if (typeof v.pripona !== 'number') { v.pripona = volne; volne++; }
+
+  // Přípony, které chybí (varianta přidaná mimo klonujVariantu): podle
+  // pořadí, ale vždy nad dosavadní maximum, aby se číslo neopakovalo.
+  const zname = zak.varianty.filter(v => typeof v.pripona === 'number');
+  let volne = Math.max(0, ...zname.map(variantaPripona),
+                       (typeof zak.priponaMax === 'number' && isFinite(zak.priponaMax))
+                         ? Math.floor(zak.priponaMax) : 0);
+  /* Varianta bez přípony NA PRVNÍM MÍSTĚ je první varianta zakázky: holé
+   * číslo, pokud ho v zakázce ještě nikdo nemá (P1 / K13-N53, 24. 9. 2026).
+   * Dřív dostala 0 jen tehdy, když příponu neměla žádná varianta — po klonu
+   * založeném před prvním uložením (klon .2) tak vytištěná varianta 1
+   * dostala .3 a server obchodníkovi uložení odmítl (B56). */
+  const nulaObsazena = zname.some(v => variantaPripona(v) === 0);
+  zak.varianty.forEach((v, i) => {
+    if (typeof v.pripona === 'number') return;
+    if (i === 0 && !nulaObsazena) { v.pripona = 0; return; }
+    volne = Math.max(volne + 1, i + 1);
+    v.pripona = volne;
   });
 
   let max = 0;
@@ -361,6 +715,46 @@ function zajistiZamek(zak) {
  * Odemčení NEOTVÍRÁ uzamčenou (vytištěnou) variantu: ta má svůj vlastní
  * zámek a ten platí dál.
  * ============================================================ */
+/* PŘÍPONA PRVNÍ VARIANTY — nález a oprava dat (K13-P1, 25. 9. 2026).
+ *
+ * Kód je opravený od 24. 9. (nová zakázka dává první variantě 0), ale
+ * zakázky uložené předtím můžou mít u první varianty .3 místo holého čísla.
+ * Do 25. 9. se to dalo opravit jen skriptem nad staženou zálohou
+ * (podklady/K13_pripona_oprava.mjs); J. V.: „jak to mám udělat? nemůžeš to
+ * provést ty?" — teď to administrátor udělá tlačítkem v Nastavení →
+ * Databáze a logika je tady, jedna pro skript i pro aplikaci.
+ *
+ * „První varianta" = nejstarší (`vytvoreno`), která nevznikla klonem ani
+ * jako alternativa. Nález vrací null, když je v pořádku. */
+function priponaPrvniNalez(zak) {
+  if (!zak || !Array.isArray(zak.varianty) || !zak.varianty.length) return null;
+  const puvodni = zak.varianty.filter(v => v && !v.klonZ && !v.alternativaZ);
+  if (!puvodni.length) return null;
+  const prvni = puvodni.slice().sort((a, b) => String(a.vytvoreno || '').localeCompare(String(b.vytvoreno || '')))[0];
+  if (!(typeof prvni.pripona === 'number' && prvni.pripona > 0)) return null;
+  return {
+    id: prvni.id, nazev: prvni.nazev || prvni.id, pripona: prvni.pripona,
+    zamcena: variantaUzamcena(prvni),
+    cisloVZamku: (prvni.zamek && prvni.zamek.cislo) || '',
+    /* Holé číslo už drží jiná varianta — oprava by vyrobila dvě stejná
+     * čísla; tady musí rozhodnout člověk. */
+    holeZabrane: zak.varianty.some(v => v && v !== prvni && (v.pripona === 0 || v.pripona == null)),
+  };
+}
+/* Oprava na místě: první varianta dostane příponu 0. Uzamčenou (odeslanou)
+ * variantu NEOPRAVUJE — zámek nese číslo z papíru a server jeho změnu
+ * odmítne; postup je odemknout, opravit, znovu vytisknout. Vrací
+ * { opraveno, duvod }. */
+function priponaPrvniOprav(zak) {
+  const n = priponaPrvniNalez(zak);
+  if (!n) return { opraveno: false, duvod: 'v pořádku' };
+  if (n.zamcena) return { opraveno: false, duvod: 'odeslaná (uzamčená) varianta — nejdřív odemknout' };
+  if (n.holeZabrane) return { opraveno: false, duvod: 'holé číslo už má jiná varianta — rozhodne člověk' };
+  const v = zak.varianty.find(x => x && x.id === n.id);
+  v.pripona = 0;
+  return { opraveno: true, duvod: '.' + n.pripona + ' → holé číslo' };
+}
+
 function zamekCteniSmiOdemknout(zak, ja) {
   if (!ja || !ja.email) return true;                    // offline / bez přihlášení
   if (ja.role === 'Administrátor' || ja.role === 'Vedoucí') return true;
@@ -377,11 +771,123 @@ function zamekCteniDuvod(zak, ja) {
     + '. Upravit ji může on, vedoucí nebo administrátor.';
 }
 
+/* ---------- KTERÁ LIŠTA NAD ZAKÁZKOU (#404, J. V. 13. 10. 2026) ----------
+ *
+ * Do 13. 10. 2026 nad sebou svítily tři nezávislé lišty: žlutá záloha
+ * z prohlížeče („Obnovit rozpracovanou kalkulaci / Zahodit zálohu"), oranžová
+ * odeslaná varianta (s dlouhým textem a „Odemknout…") a modrá „jen ke čtení"
+ * s „Odemknout k úpravám". J. V.: „Aktuálně je v tom chaos." Odsouhlasený
+ * návrh (#404):
+ *   1. neodeslaná zakázka → JEDINÁ žlutá lišta „Rozpracovaná kalkulace …"
+ *      s „Pokračovat v rozpracované kalkulaci" (obnoví novější zálohu
+ *      z prohlížeče a odemkne režim jen ke čtení) a „Založit novou kalkulaci";
+ *      „Zahodit zálohu" je malý odkaz;
+ *   2. odeslaná zakázka → žádná žlutá lišta ani nabídka zálohy (záloha téže
+ *      zakázky se tiše zahodí), jen jednořádková informace s Klonovat /
+ *      Založit novou;
+ *   3. s právem `zamek.odemknout` (dnes administrátor) navíc modrý pruh
+ *      „Odemknout k úpravám" u odeslané nabídky;
+ *   4. cizí neodeslaná zakázka → žlutá lišta jen se „Založit novou" a větou,
+ *      kdo ji založil.
+ * Rozhoduje se TADY (čistá funkce, Node test `test_lista_zakazky.js`);
+ * obrazovka jen kreslí. Bezpečnost se nemění: režim čtení dál brání tichému
+ * ukládání, mění se jen to, KTERÁ lišta ho ovládá.
+ *
+ * ODESLANÁ = OTEVŘENÁ (aktivní) VARIANTA JE ZAMČENÁ TISKEM. Klon odeslané
+ * varianty je nová rozpracovaná práce a připomínat ji má smysl; a hlavně by
+ * bez žluté lišty nešel odemknout režim čtení (výklad #404, výchozí volba).
+ *
+ * Vstup:  zak    otevřená zakázka,
+ *         zaloha záloha z prohlížeče, kterou model zálohy (uloZalohaRozhodni)
+ *                dovolil nabídnout — { kdy, cislo, nazevAkce, zakazka } — nebo null,
+ *         ja     přihlášený uživatel (null = bez přihlášení),
+ *         prava  { odemknout: smí odemknout odeslanou nabídku (matice zobrazení) },
+ *         ctx    { cteni: zakázka je otevřená jen ke čtení,
+ *                  otevrena: JSON otevřené zakázky }.
+ * Výstup: { lista: 'zadna' | 'rozpracovana' | 'odeslana', … } — viz níže. */
+function listaZakazkyAktivni(zak) {
+  const vs = (zak && Array.isArray(zak.varianty)) ? zak.varianty : [];
+  return vs.find(v => v && v.id === zak.aktivni) || vs[0] || null;
+}
+function listaZakazkyCo(x) {
+  return [x && x.cislo, x && x.nazevAkce].map(s => String(s || '').trim()).filter(Boolean).join(' · ');
+}
+/* Je záloha z téže zakázky? Zakázka nemá vlastní id — pozná se podle čísla
+ * nabídky, a když číslo chybí v obou, podle názvu akce. */
+function listaZalohaStejna(zak, zaloha) {
+  if (!zak || !zaloha) return false;
+  const n = s => String(s || '').trim().toLowerCase();
+  if (n(zak.cislo) || n(zaloha.cislo)) return n(zak.cislo) === n(zaloha.cislo);
+  return !!n(zak.nazevAkce) && n(zak.nazevAkce) === n(zaloha.nazevAkce);
+}
+/* Záloha je novější než uložená zakázka. Bez razítka uložení (zakázka nikdy
+ * neuložená) rozhoduje to, že se liší; nečitelný čas zálohy = radši nabídnout. */
+function listaZalohaNovejsi(zaloha, razitko) {
+  const tz = Date.parse((zaloha && zaloha.kdy) || '');
+  const tr = Date.parse(razitko || '');
+  if (Number.isNaN(tz) || Number.isNaN(tr)) return true;
+  return tz > tr;
+}
+
+function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
+  const c = ctx || {};
+  const p = prava || {};
+  const v = listaZakazkyAktivni(zak);
+  const zal = (zaloha && zaloha.zakazka) ? zaloha : null;
+  const stejna = listaZalohaStejna(zak, zal);
+  const nic = { lista: 'zadna', co: '', kdy: '', pokracovat: false, obnovit: false,
+                zalozitNovou: false, zahodit: false, cizi: '', jinaZaloha: null,
+                modra: false, zahoditTise: false, duvod: '' };
+
+  /* 2 + 3: odeslaná nabídka. Záloha TÉŽE zakázky se tiše zahodí — obnovit
+   * do odeslané varianty nejde a připomínat ji nemá smysl. Záloha JINÉ
+   * zakázky zůstane v úložišti (nabídne se jindy), jen se teď neukazuje. */
+  const odeslana = !!v && ((typeof variantaUzamcena === 'function') ? variantaUzamcena(v) : !!(v.zamek && v.zamek.zamceno));
+  if (odeslana)
+    return Object.assign({}, nic, { lista: 'odeslana', co: listaZakazkyCo(zak),
+      modra: !!p.odemknout, zahoditTise: stejna, duvod: 'odeslaná nabídka' });
+
+  /* 1 + 4: zakázka otevřená z databáze jen ke čtení. */
+  if (c.cteni) {
+    const smi = (typeof zamekCteniSmiOdemknout !== 'function') || zamekCteniSmiOdemknout(zak, ja);
+    const obnovit = !!(stejna && smi && zal.zakazka !== c.otevrena
+      && listaZalohaNovejsi(zal, zak && zak.uloRazitko));
+    /* Záloha téže zakázky, která není novější než uložená verze, je
+     * přežitá — v databázi je táž nebo novější práce. */
+    const prezita = !!(stejna && !obnovit && smi);
+    return Object.assign({}, nic, {
+      lista: 'rozpracovana',
+      co: listaZakazkyCo(zak) || 'bez názvu',
+      kdy: obnovit ? String(zal.kdy || '') : String((zak && zak.uloRazitko) || ''),
+      pokracovat: smi, obnovit, zalozitNovou: true,
+      zahodit: !!(zal && smi && !prezita),
+      cizi: smi ? '' : ((typeof zamekCteniDuvod === 'function') ? zamekCteniDuvod(zak, ja) : 'Tuhle nabídku založil jiný obchodník.'),
+      /* Záloha jiné zakázky se nabídne malým odkazem — Pokračovat patří
+       * otevřené zakázce, ale o cizí práci z prohlížeče se přijít nesmí. */
+      jinaZaloha: (zal && !stejna && smi) ? { co: listaZakazkyCo(zal) || 'bez názvu', kdy: String(zal.kdy || '') } : null,
+      zahoditTise: prezita,
+      duvod: smi ? (obnovit ? 'novější záloha v prohlížeči' : 'zakázka jen ke čtení') : 'cizí zakázka',
+    });
+  }
+
+  /* Volná (odemčená) zakázka a v prohlížeči čeká záloha jiné práce —
+   * typicky po startu aplikace. Pokračovat = obnovit zálohu. */
+  if (zal && zal.zakazka !== c.otevrena)
+    return Object.assign({}, nic, { lista: 'rozpracovana', co: listaZakazkyCo(zal) || 'bez názvu',
+      kdy: String(zal.kdy || ''), pokracovat: true, obnovit: true, zalozitNovou: true,
+      zahodit: true, duvod: 'záloha v prohlížeči' });
+
+  return nic;
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
-                     zamekCteniSmiOdemknout, zamekCteniDuvod,
+  module.exports = { listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+                     zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
+                     zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,
+                     PRIPONY_SCHEMA, variantaPriponaVZakazce, zamekCisloZakladSedi,
                      klonujVariantu, zamekInfo, variantaUzamcena,
                      variantaEditovatelna, zamkniVariantu, odemkniVariantu,
                      ZAMEK_OTISK_POLE, zamekOtisk, zamekOtiskZPorovnani,
-                     zajistiZamek };
+                     zajistiZamek, ZAMEK_KRYCI_SMLOUVY, zamekTiskyTypy, zamekKryciOtevreny, zamekPrvniSmlouva,
+                     zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani };

@@ -30,8 +30,10 @@ function marzeSmiCisla() {
  * část jako neznámá – hlídání marže není místo, kde hlásit chybu výpočtu. */
 function marzePrehledAkt() {
   let ock = null, proj = null;
-  try { ock = vypocetAkt(); } catch (e) {}
-  try { proj = vypocetProjAkt(); } catch (e) {}
+  /* Zámek strany (P6): vyřazená strana do marže nepatří (vynulovaná). */
+  const vyr = (typeof zakazkaVyrazenaStrana === 'function' && typeof ZAK !== 'undefined') ? zakazkaVyrazenaStrana(ZAK) : '';
+  try { ock = vyr === 'ock' ? null : vypocetAkt(); } catch (e) {}
+  try { proj = vyr === 'proj' ? null : vypocetProjAkt(); } catch (e) {}
   /* ZO/ZOP (#38): hlídá se marže z ceny po obchodním zaokrouhlení, tedy z toho,
    * co zákazník opravdu zaplatí – zaokrouhlením dolů se marže reálně snižuje.
    * Od 4. 8. 2026 má každá část vlastní nastavení: ZO = výtahová šachta,

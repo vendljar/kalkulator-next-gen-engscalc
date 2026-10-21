@@ -27,6 +27,7 @@
  * v prohlížeči i při zápisu zakázky.
  */
 import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
 /* Kolik zakázek se nanejvýš projde. Pojistka proti tomu, aby se z otevření
  * záložky stal dlouhý běh přes celou databázi — při 300 zakázkách je to
@@ -49,6 +50,21 @@ function zadostiZeZakazky(zak, klic) {
       if (!sl || !(+sl.procenta > 0)) continue;
       out.push(zadost(zak, klic, v, sl, cast));
     }
+    /* Cenová výjimka varianty (13. 10. 2026): směs ceníku nebo pás „jiné"
+     * pod ceníkovou sazbou. Do rejstříku jen stav a KOLIK položek / pásů —
+     * ani hodnoty, ani názvy položek ceníku (vyjimkaRejstrik). */
+    const vy = v && v.data && v.data.cenovaVyjimka;
+    if (vy && typeof vy === 'object' && vy.stav) out.push({
+      klic, cast: 'vyjimka',
+      cislo: String((zak && zak.cislo) || ''),
+      nazevAkce: String((zak && zak.nazevAkce) || ''),
+      variantaId: v.id,
+      variantaNazev: String(v.nazev || ''),
+      ridici: !!v.ridici,
+      zamceno: !!(v.zamek && v.zamek.zamceno),
+      upraveno: String(v.upraveno || ''),
+      vyjimka: globalThis.vyjimkaRejstrik(vy),
+    });
   }
   return out;
 }
@@ -89,6 +105,8 @@ export default async (req) => {
   if (chyba) return chyba;
   if (req.method !== 'GET') return json({ ok: false, chyba: 'Použijte GET.' }, 405);
 
+  /* Jádro kvůli vyjimkaRejstrik (výběr polí cenové výjimky). */
+  try { await jadro(); } catch (e) { return jadroChyba(e); }
   const vse = new URL(req.url).searchParams.get('vse') === '1';
   const s = await uloziste('zakazky');
   const klice = (await s.seznam('z/')) || [];
@@ -104,7 +122,7 @@ export default async (req) => {
     zadosti.push(...zadostiZeZakazky(zak, k.replace(/^z\//, '')));
   }
 
-  const ceka = zadosti.filter(z => z.sleva.stav === 'čeká na schválení');
+  const ceka = zadosti.filter(z => (z.sleva || z.vyjimka || {}).stav === 'čeká na schválení');
   return json({
     ok: true,
     zadosti: vse ? zadosti : ceka,

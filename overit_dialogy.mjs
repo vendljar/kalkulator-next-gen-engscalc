@@ -90,10 +90,24 @@ const rada = await (async () => {
   await p.waitForSelector('#dlg', { timeout: 4000 });
   const text = await modalText();
   await klik('ano');
+  /* P6 (K19-N114, 2. 10. 2026): po přepnutí na zahraniční ceník následuje
+   * druhý modál „Zakázka jen realizace?". Bez odpovědi by přepnutí nikdy
+   * nedoběhlo (a harness by čekal donekonečna) — odpoví se Ne, ať zbytek
+   * běhu pracuje se zakázkou, která počítá obě strany. */
+  await p.waitForFunction(() => {
+    const t = document.querySelector('#dlg .dlg-text');
+    return !!t && /Zakázka jen realizace/.test(t.innerText);
+  }, null, { timeout: 4000 });
+  const text2 = await modalText();
+  await klik('ne');
   await beh;
-  return { text, rada: await p.evaluate(() => cenikRadaVarianty(aktivniVarianta(ZAK).data)),
-           cena: await p.evaluate(() => aktivniVarianta(ZAK).data.cenik.montazHodKc) };
+  return { text, text2, rada: await p.evaluate(() => cenikRadaVarianty(aktivniVarianta(ZAK).data)),
+           cena: await p.evaluate(() => aktivniVarianta(ZAK).data.cenik.montazHodKc),
+           jenOck: await p.evaluate(() => ZAK.jenOck) };
 })();
+zkus('P6: po přepnutí na zahraniční ceník se modálem zeptá na „jen realizace" (celá zakázka)',
+  /Zakázka jen realizace/.test(rada.text2) && /celou zakázku/.test(rada.text2), rada.text2.slice(0, 90));
+zkus('P6: odpověď Ne projekci ponechá a modál zmizí', rada.jenOck === false && (await modalVidet()) === false, String(rada.jenOck));
 zkus('přepínač ceníku se ptá modálem a vypíše dopad',
   /Dotkne se to \d+ ceníkových položek/.test(rada.text), rada.text.slice(0, 90));
 zkus('potvrzení přepne řadu i cenu', rada.rada === 'zahr' && rada.cena === 1234,
@@ -154,6 +168,103 @@ zkus('naráz je vidět jen jeden modál', fronta.kolik === 1, fronta.kolik);
 zkus('druhá otázka přijde na řadu až po první', /Druhá/.test(fronta.text2), fronta.text2);
 zkus('každá otázka dostane svou odpověď',
   JSON.stringify(fronta.vysledek) === '[true,false]', JSON.stringify(fronta.vysledek));
+
+/* ---------- 8a) dotaz na heslo správce (B77, 13. 10. 2026) ----------
+ * Skutečný modál: pole typu password, prázdné, Enter potvrdí a vrátí, co
+ * se napsalo; Esc vrátí null (akce se pak nepošle). */
+const hesloDlg = await (async () => {
+  const pending = p.evaluate(() => dotazHeslo('Potvrďte svým heslem.', { nadpis: 'Potvrzení heslem správce' }));
+  await p.waitForSelector('#dlg input[data-dlg="text"]');
+  const typ = await p.evaluate(() => document.querySelector('#dlg input[data-dlg="text"]').type);
+  const prazdne = await p.evaluate(() => document.querySelector('#dlg input[data-dlg="text"]').value === '');
+  await p.keyboard.type('Tajne.Heslo1');
+  await p.keyboard.press('Enter');
+  const vysledek = await pending;
+  const pending2 = p.evaluate(() => dotazHeslo('Znovu?'));
+  await p.waitForSelector('#dlg input[data-dlg="text"]');
+  await p.keyboard.press('Escape');
+  return { typ, prazdne, vysledek, zruseno: await pending2 };
+})();
+zkus('B77: dotaz na heslo má pole typu password a je prázdné', hesloDlg.typ === 'password' && hesloDlg.prazdne, JSON.stringify(hesloDlg));
+zkus('B77: Enter vrátí napsané heslo, Esc null',
+  hesloDlg.vysledek === 'Tajne.Heslo1' && hesloDlg.zruseno === null, JSON.stringify(hesloDlg));
+
+/* ---------- 8b) zablokované okno náhledu (23. 9. 2026, nález K6) ----------
+ * window.open vrátí null, když prohlížeč okno zablokuje. Dřív náhled spadl
+ * na w.document a nestalo se nic viditelného; teď se objeví hláška a do
+ * konzole nepadne žádná chyba. Zkouší se všech osm náhledů. */
+/* Prázdný ceník je tvrdá zábrana (dokument nevznikne ještě před oknem) —
+ * proto zkušební ceník ze src/zkusebni_cenik.js, stejně jako overit_lista. */
+{
+  const { createRequire: cr } = await import('module');
+  const ZCd = cr(import.meta.url)('./src/zkusebni_cenik.js');
+  await p.evaluate(([c, cp]) => {
+    Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
+    Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;
+    /* Nulové rozměry nové zakázky jsou zábrana „rozmery", která od #377
+     * (1. 10. 2026) zastaví nabídku i krycí list OCK ještě před oknem —
+     * rozměry vzorové šachty, ať se zkouší zablokované okno. */
+    ZAK = novaZakazka(); syncVarianta();
+    Object.assign(Z, { prejezd: 2.7, zdvih: 12, prohluben: 1.05, sirka: 1.51, hloubka: 1.515 }); render();
+  }, [ZCd.zkusebniCenik(), ZCd.zkusebniCenikProj()]);
+}
+const blok = await p.evaluate(async () => {
+  const puvodni = window.open;
+  window.open = () => null;
+  const chyby = [];
+  const nahledy = ['nabidkaOckDokument', 'nabidkaProjNahled', 'kryciTiskPohled', 'kryciProjTiskPohled',
+                   'detailTisk', 'porovnaniTisk', 'porovnaniPolozkyTisk', 'nabidkaNahled']
+    .filter(n => typeof window[n] === 'function');
+  let hlasek = 0, textOk = true; const bez = [];
+  for (const n of nahledy) {
+    try { const r = window[n]('bo'); if (r && r.then) await Promise.race([r, new Promise(res => setTimeout(res, 800))]); }
+    catch (e) { chyby.push(n + ': ' + e.message); }
+    await new Promise(res => setTimeout(res, 50));
+    const d = document.querySelector('#dlg');
+    if (d && /zablokoval okno/.test(d.textContent)) { hlasek++; const ok = d.querySelector('[data-dlg]'); if (ok) ok.click(); }
+    else { textOk = false; bez.push(n + ': ' + (d ? d.textContent.slice(0, 90) : 'žádný dialog')); }
+    await new Promise(res => setTimeout(res, 30));
+    /* případný jiný dialog (volba varianty apod.) zavřít, ať nebrzdí další */
+    document.querySelectorAll('#dlg [data-dlg]').forEach(x => x.click());
+  }
+  window.open = puvodni;
+  return { nahledy, hlasek, chyby, textOk, bez,
+           oknoNahledu: typeof oknoNahledu === 'function' };
+});
+zkus('K6: pomocník oknoNahledu je v sestavení', blok.oknoNahledu);
+zkus('K6: náhledy se při zablokovaném okně nesloží na chybě', blok.chyby.length === 0, blok.chyby.join(' | '));
+zkus('K6: každý nalezený náhled vysvětlí, co se stalo (' + blok.nahledy.length + ')',
+  blok.nahledy.length >= 4 && blok.hlasek === blok.nahledy.length, JSON.stringify(blok));
+
+/* ---------- 8c) uzamčená varianta — tlačítka říkají, co udělají (P7 / K15-N68) ----------
+ * Text dialogu radil „OK = založit klon…, Zrušit = nechat vše beze změny",
+ * ale modál v aplikaci má tlačítka Ano a Ne. Obchodník nevěděl, co zmáčknout.
+ * Teď tlačítka nesou přímo to, co udělají, a text je nepopisuje. */
+const zamek = await (async () => {
+  await p.evaluate(() => {
+    ZAK = novaZakazka(); syncVarianta();
+    set('ZAK.cislo', '2026 - OPR - CN - 0901');
+    zamkniVariantu(aktivniVarianta(ZAK), { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'harness',
+      cislo: variantaCislo(ZAK, aktivniVarianta(ZAK)) });
+    prepniTab('kalk'); render();
+  });
+  const beh = p.evaluate(() => { mnozstviSet('cokoli', 5); });
+  await p.waitForSelector('#dlg', { timeout: 4000 });
+  const text = await modalText();
+  const ano = await p.locator('#dlg [data-dlg="ano"]').innerText();
+  const ne = await p.locator('#dlg [data-dlg="ne"]').innerText();
+  await klik('ano');
+  await beh;
+  await p.waitForTimeout(200);
+  return { text, ano, ne, variant: await p.evaluate(() => ZAK.varianty.length),
+           aktivniZamcena: await p.evaluate(() => variantaUzamcena(aktivniVarianta(ZAK))) };
+})();
+zkus('P7: dialog uzamčené varianty nemluví o tlačítkách OK / Zrušit, která nemá',
+  !/\bOK\s*=|Zrušit\s*=/.test(zamek.text), zamek.text);
+zkus('P7: tlačítko pro klon říká, co udělá', /klon/i.test(zamek.ano), zamek.ano);
+zkus('P7: druhé tlačítko říká, že se nic nezmění', /beze změny/i.test(zamek.ne), zamek.ne);
+zkus('P7: „Založit klon" založí klon a přepne se do něj',
+  zamek.variant === 2 && zamek.aktivniZamcena === false, JSON.stringify(zamek));
 
 /* ---------- 9) žádný nativní dialog se neobjevil ---------- */
 zkus('aplikace nepoužila jediný nativní dialog', nativni === 0, String(nativni));

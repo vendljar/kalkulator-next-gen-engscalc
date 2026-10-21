@@ -15,20 +15,29 @@
  * s nulou ani s odhadem.
  * ============================================================ */
 
-/* Číselník sazeb smluvní pokuty je definovaný v kryci.js — v sestavené
- * aplikaci jsou oba moduly v jednom scope. V Node testech, kde bývá načtený
- * jen tenhle modul, se použije stejná trojice jako záloha. Že se ty dva
- * seznamy nerozešly, hlídá test_standardy.js. */
-const KRYCI_POKUTY_SAZBY = (typeof KRYCI_POKUTY !== 'undefined')
-  ? KRYCI_POKUTY : ['0', '0,05 % / den', '0,1 % / den'];
+/* PLATEBNÍ PODMÍNKY PROJ Z FIRMY (#367 fáze 2, 19. 10. 2026): splatnost,
+ * pokuty a limit pokut nese Nastavení → Firma (NAST.firma.podminky.proj),
+ * továrna je PODMINKY_VYCHOZI v podminky.js. V Node testech, kde bývá
+ * načtený jen tenhle modul, se podminky.js načte vedle. */
+function kryciProjPodm() {
+  if (typeof PODMINKY !== 'undefined') return PODMINKY;
+  return (typeof require === 'function') ? require('./podminky.js').PODMINKY : null;
+}
+function kryciProjPodmEf(firma) {
+  const f = firma !== undefined ? firma : ((typeof firmaAktualni === 'function') ? firmaAktualni() : {});
+  return kryciProjPodm().podminkyEf(f);
+}
+/* Číselník sazeb smluvní pokuty — znění továrny (dřív trojice v kryci.js
+ * a její kopie tady). Pole krycího listu berou číselník z Firmy. Že se OCK
+ * a PROJ nerozešly, hlídá test_standardy.js. */
+const KRYCI_POKUTY_SAZBY = kryciProjPodm().podminkyEf({}).sazbyPokut.slice();
 
 /* Zálohy a limit pokut (12. 8. 2026) — také jeden zdroj v kryci.js, tady jen
  * záloha pro samostatný Node běh. U projekce nesou volby holé procento bez
  * milníku: projekce se fakturuje po stupních dokumentace, ne po podpisu
  * a montáži, takže by věta u zálohy mátla. */
 const KRYCI_PROJ_ZALOHY = ['Bez zálohy', 'Záloha 30 %', 'Záloha 50 %', 'Záloha 70 %'];
-const KRYCI_PROJ_LIMIT_POKUT = (typeof KRYCI_LIMIT_POKUT !== 'undefined')
-  ? KRYCI_LIMIT_POKUT : ['Uplatněn limit 10 %', 'NEUPLATNĚN limit 10 %'];
+const KRYCI_PROJ_LIMIT_POKUT = kryciProjPodm().podminkyLimitVolby(kryciProjPodm().podminkyEf({}));   // znění továrny
 
 /* devět činností v pořadí VZORu (klíče sekcí engine_proj.js) */
 /* Kdo nabídku vypracoval (#146) – u projekce platí totéž co u OCK; funkce
@@ -83,6 +92,13 @@ const KRYCI_PROJ_STUPNE = KRYCI_PROJ_CINNOSTI.map(([key, label]) => ({
   prefill: c => kryciProjAno(c, key), src: 'z Kalkulace PROJ',
 }));
 
+/* Činnosti plánu plateb (etapa B) — zrcadlo PLAN_PROJ_SEKCE / PLAN_PROJ_ZKRATKY
+ * z plan_plateb.js. Pevný seznam tady, ne odkaz: kryci_proj.js se v sadách
+ * načítá i bez modulu plánu (pak platí dřívější pole krycího listu) a tisk
+ * má mít pevný počet řádků. Shodu hlídá src/test_plan_plateb_kryci.js. */
+const KRYCI_PROJ_PLAN_CINNOSTI = [['zamereni', 'ZA'], ['studie', 'SP'], ['projednani', 'projednání'], ['dpz', 'DPZ'],
+  ['ic', 'IČ'], ['dps', 'DPS'], ['ezc', 'EZC'], ['kolaudace', 'kolaudace'], ['geodet', 'geodet']];
+
 const KRYCI_PROJ_SEKCE = [
   { sekce: 'Základní údaje', pole: [
     /* KL-4: obchodník = kdo nabídku vypracoval (Nastavení → Firma). Aplikace
@@ -99,6 +115,13 @@ const KRYCI_PROJ_SEKCE = [
      * ne zvláštní číslo projekční části. Kdyby PROJ někdy měl vlastní řadu,
      * vrátí se sem bind na ZAK.projHlavicka.cislo. */
     { id: 'cisloCN', label: 'Číslo nabídky (CN)', verze: ['bo', 'techdata'], bind: 'ZAK.cislo', prefill: c => c.hl.cislo, src: 'hlavička kalkulace OCK' },
+    /* Číslo smlouvy o dílo projekce (zadání J. V. 15. 10. 2026, v15.10.9) —
+     * vlastní pole listu PROJ, s číslem SoD realizace v listu OCK se nesdílí.
+     * Od v17.10.2 (#366) návrh z čísla nabídky PROJ (sodCisloNavrh), ruční
+     * přepis má přednost; doplnit jde i po odeslání nabídky, zamkne ho tisk
+     * SoD (kryciProjZmrazSod). Plní symbol čísla smlouvy. */
+    { id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',
+      prefill: c => (typeof sodCisloNavrh === 'function' ? sodCisloNavrh(c.hl.cislo) : '') },
     { id: 'adresaStavby', label: 'Adresa stavby', verze: ['bo', 'techdata'], bind: 'ZAK.projHlavicka.adresa', prefill: c => c.hl.adresa, src: c => c.hlSrc('adresa') },
     { id: 'hodnotaBezDph', label: 'Hodnota zakázky bez DPH', verze: ['bo', 'techdata'], prefill: c => c.hodnota, src: 'z Kalkulace PROJ' },
     /* Vlastní pole projekční části – v OCK verzi obdobu nemají. */
@@ -178,45 +201,70 @@ const KRYCI_PROJ_SEKCE = [
     { id: 'odpovednyEmail', label: 'E-mail', verze: ['bo', 'techdata'] },
   ] },
   { sekce: 'Typ smlouvy', pole: [
-    { id: 'typSmlouvy', label: 'Typ smlouvy', verze: ['bo'], typ: 'radio', o: ['Naše bez úprav', 'Naše s úpravami', 'Cizí'], prefill: () => 'Naše bez úprav', src: 'výchozí' },
+    { id: 'typSmlouvy', label: 'Typ smlouvy', verze: ['bo'], typ: 'radio', o: ['Naše bez úprav', 'Naše s úpravami', 'Cizí'],
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.typSmlouvy, src: 'Nastavení → Firma' },
     { id: 'typProjektu', label: 'Typ projektu', verze: ['bo', 'techdata'], typ: 'radio', o: ['Nový projekt (novostavba)', 'Rekonstrukce objektu'], prefill: () => 'Rekonstrukce objektu', src: 'výchozí' },
     { id: 'pamatkovaOchrana', label: 'Objekt v památkové ochraně', verze: ['bo', 'techdata'], typ: 'radio', o: ['Ano', 'Ne', 'Zjišťuje se'] },
-    { id: 'autorskaPrava', label: 'Licence k projektové dokumentaci', verze: ['bo'], prefill: () => 'nevýhradní, pro účel stavby dle smlouvy', src: 'výchozí' },
+    { id: 'autorskaPrava', label: 'Licence k projektové dokumentaci', verze: ['bo'],
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.licence, src: 'Nastavení → Firma' },
   ] },
   { sekce: 'Rozsah projekčních prací (dle Kalkulace PROJ)', pole: KRYCI_PROJ_ROZSAH.concat([
     { id: 'rozsahJine', label: 'Jiné dohodnuté činnosti', verze: ['bo'], typ: 'textarea' },
-    { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'], typ: 'textarea', prefill: () => 'správní poplatky, posudky nad rámec nabídky, činnosti neuvedené v nabídce', src: 'výchozí' },
+    { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'], typ: 'textarea',
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.cenaNezahrnuje, src: 'Nastavení → Firma' },
   ]) },
   { sekce: 'Platební podmínky', pole: [
-    { id: 'splatnostDni', label: 'Splatnost faktur (dní)', verze: ['bo'], prefill: c => String(c.sazby.splatnostDni), src: 'z cenové nabídky PROJ' },
+    { id: 'splatnostDni', label: 'Splatnost faktur (dní)', verze: ['bo'],
+      prefill: c => String(kryciProjPodmEf(c && c.firma).proj.splatnostDni), src: 'Nastavení → Firma' },
     /* Firemní standardy (10. 8. 2026) — stejně jako u OCK. Platnost nabídky
      * měla dosud dva zdroje: krycí list ji bral z ceníku PROJ, ale v nabídce
      * OCK stála natvrdo jiná hodnota. Teď je zdroj jeden pro obojí a hodnota
      * z ceníku slouží už jen jako náhrada, kdyby firemní pole bylo prázdné. */
     { id: 'platnostNabidky', label: 'Platnost nabídky', verze: ['bo'],
-      prefill: c => firmaHodnota(c.firma, 'platnostNabidky') || (c.sazby.platnostMesicu + ' měsíce'),
+      prefill: c => firmaHodnota(c.firma, 'platnostNabidky') || kryciProjMesicu(c.sazby.platnostMesicu),
       src: 'Nastavení → Firma' },
-    { id: 'zpusobFakturace', label: 'Způsob fakturace', verze: ['bo'],
-      prefill: c => firmaHodnota(c.firma, 'zpusobFakturaceProj') || 'po dokončení jednotlivých stupňů dokumentace',
-      src: 'Nastavení → Firma' },
-    { id: 'faktZamereni', label: 'Fakturace – zaměření a studie', verze: ['bo'], prefill: () => '100 % po předání výstupů', src: 'výchozí' },
-    { id: 'faktDpz', label: 'Fakturace – DPZ a inženýrská činnost', verze: ['bo'], prefill: () => '100 % po odevzdání dokumentace', src: 'výchozí' },
-    { id: 'faktDps', label: 'Fakturace – DPS a EZC', verze: ['bo'], prefill: () => '100 % po odevzdání dokumentace', src: 'výchozí' },
+    /* PLÁN PLATEB (etapa B, #367, 30. 9. 2026). Způsob fakturace, fakturace
+     * po stupních a záloha byly čtvrtým, samostatným zněním plateb projekce
+     * (vedle nabídky, smlouvy a Nastavení) a s procenty nabídky se
+     * rozcházely. Nahradil je JEDEN plán plateb — editor v krycím listu,
+     * v tisku řádky „Plán plateb" níž (`plan: true`). Pole se značkou
+     * `stary` zůstávají v datech a ukazují se jen u odeslané nabídky z doby
+     * před plánem (tiskne se, jak odešla). Způsob fakturace se odvozuje
+     * z předvolby (výchozí návrh Q10); věta z Firmy platí pro předvolbu
+     * „100 % po dokončení stupně". */
+    { id: 'zpusobFakturace', label: 'Způsob fakturace', verze: ['bo'], stary: true,
+      prefill: c => (c && !c.planStary && c.planEf && typeof planZpusobFakturace === 'function')
+        ? planZpusobFakturace(c.planEf.plan, c.planEf.firemni, firmaHodnota(c.firma, 'zpusobFakturaceProj'))
+        : (firmaHodnota(c.firma, 'zpusobFakturaceProj') || 'po dokončení jednotlivých stupňů dokumentace'),
+      src: c => (c && !c.planStary) ? 'z plánu plateb' : 'Nastavení → Firma' },
+    { id: 'faktZamereni', label: 'Fakturace – zaměření a studie', verze: ['bo'], stary: true, prefill: () => '100 % po předání výstupů', src: 'výchozí' },
+    { id: 'faktDpz', label: 'Fakturace – DPZ a inženýrská činnost', verze: ['bo'], stary: true, prefill: () => '100 % po odevzdání dokumentace', src: 'výchozí' },
+    { id: 'faktDps', label: 'Fakturace – DPS a EZC', verze: ['bo'], stary: true, prefill: () => '100 % po odevzdání dokumentace', src: 'výchozí' },
     /* 12. 8. 2026: rolovací seznam místo trojice přepínačů, přibyla volba
      * 70 % a výchozí je 50 % (rozhodnutí J. V.). Přepínače se do řádku vešly,
      * dokud byly tři; se čtvrtou volbou a možností vlastního znění je
      * rozbalovátko čitelnější — a hlavně je stejné jako u výtahové šachty. */
-    { id: 'zaloha', label: 'Záloha', verze: ['bo'],
+    { id: 'zaloha', label: 'Záloha', verze: ['bo'], stary: true,
       typ: 'vyber', o: KRYCI_PROJ_ZALOHY, prefill: () => KRYCI_PROJ_ZALOHY[2], src: 'výchozí' },
+    { id: 'planPredvolba', label: 'Plán plateb', verze: ['bo'], plan: true,
+      vypocet: c => (c && c.planEf) ? planPopisPredvolby(c.planEf.plan, c.planEf.firemni, c.planEf.ceny) : '' },
+  ].concat(KRYCI_PROJ_PLAN_CINNOSTI.map(([k, zkr]) => (
+    { id: 'plan_' + k, label: 'Plán plateb — ' + zkr, verze: ['bo'], plan: true,
+      vypocet: c => (c && c.planEf) ? ((+c.planEf.ceny[k] > 0) ? planCinnostText(k, c.planEf.plan, c.planEf.firemni)
+        : 'není součástí nabídky') : '' }))).concat([
     /* Výběr sazby pokuty — tentýž číselník jako u OCK (KRYCI_POKUTY v kryci.js),
      * aby se dvě verze seznamu nerozešly. Předvyplněná je nula, tedy bez pokuty. */
     { id: 'pokutaTermin', label: 'Smluvní pokuta – prodlení s odevzdáním', verze: ['bo', 'techdata'],
-      typ: 'vyber', o: KRYCI_POKUTY_SAZBY, prefill: () => KRYCI_POKUTY_SAZBY[0], src: 'výchozí' },
+      typ: 'vyber', get o() { return kryciProjPodmEf().sazbyPokut; },
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.pokutaTermin, src: 'Nastavení → Firma' },
     { id: 'pokutaSplatnost', label: 'Smluvní pokuta – prodlení splatnosti', verze: ['bo', 'techdata'],
       /* Předvyplněných 0,05 % / den od 12. 8. 2026 — stejně jako u OCK. */
-      typ: 'vyber', o: KRYCI_POKUTY_SAZBY, prefill: () => KRYCI_POKUTY_SAZBY[1], src: 'výchozí' },
+      typ: 'vyber', get o() { return kryciProjPodmEf().sazbyPokut; },
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.pokutaSplatnost, src: 'Nastavení → Firma' },
     { id: 'pokutaLimit', label: 'Limit smluvních pokut', verze: ['bo', 'techdata'],
-      typ: 'vyber', o: KRYCI_PROJ_LIMIT_POKUT, prefill: () => KRYCI_PROJ_LIMIT_POKUT[0], src: 'výchozí' },
+      typ: 'vyber', get o() { return kryciProjPodm().podminkyLimitVolby(kryciProjPodmEf()); },
+      prefill: c => { const ef = kryciProjPodmEf(c && c.firma); return kryciProjPodm().podminkyLimitText(ef, ef.proj.pokutaLimit); },
+      src: 'Nastavení → Firma' },
     { id: 'pokutyJine', label: 'Jiné', verze: ['bo'], typ: 'textarea' },
     { id: 'platceDph', label: 'Plátce DPH', verze: ['bo'], typ: 'radio', o: ['Ano', 'Ne'], prefill: () => 'Ano', src: 'výchozí' },
     /* KL-7: viz kryci.js. Projekce má vlastní sazbu (PC.dph) — projekční práce
@@ -224,8 +272,9 @@ const KRYCI_PROJ_SEKCE = [
      * Kalkulace PROJ, ne do sazby OCK. */
     { id: 'sazbaDph', label: 'Sazba DPH', verze: ['bo'], typ: 'dph', dphBind: 'PC.dph',
       prefill: c => c.dph + ' %', src: 'z hlavičky kalkulace PROJ' },
-    { id: 'pojisteni', label: 'Pojištění odpovědnosti projektanta', verze: ['bo'], prefill: () => 'ANO – dle pojistné smlouvy zhotovitele', src: 'výchozí' },
-  ] },
+    { id: 'pojisteni', label: 'Pojištění odpovědnosti projektanta', verze: ['bo'],
+      prefill: c => kryciProjPodmEf(c && c.firma).proj.pojisteni, src: 'Nastavení → Firma' },
+  ]) },
   { sekce: 'Termíny', pole: [
     { id: 'terminZahajeni', label: 'Zahájení prací (podpis smlouvy)', verze: ['bo', 'techdata'], typ: 'date' },
     { id: 'terminZamereni', label: 'Předání výstupů ze zaměření', verze: ['bo', 'techdata'], typ: 'date' },
@@ -238,7 +287,8 @@ const KRYCI_PROJ_SEKCE = [
   { sekce: 'Stupně dokumentace (technická verze)', pole: KRYCI_PROJ_STUPNE },
   { sekce: 'Projekční specifika', pole: [
     { id: 'pocetVytahu', label: 'Počet výtahů / šachet', verze: ['techdata'], prefill: () => '1', src: 'výchozí' },
-    { id: 'autorskyDozor', label: 'Autorský dozor (AD)', verze: ['techdata'], prefill: c => c.sazby.autorskyDozorKcMesic.toLocaleString('cs-CZ') + ' Kč / měsíc, max. ' + c.sazby.autorskyDozorMaxHodin + ' h', src: 'paušál z nabídky PROJ' },
+    /* `ad` = jen když varianta autorský dozor nabízí (nabidkaProjNabiziAD, 14. 10. 2026). */
+    { id: 'autorskyDozor', ad: true, label: 'Autorský dozor (AD)', verze: ['techdata'], prefill: c => c.sazby.autorskyDozorKcMesic.toLocaleString('cs-CZ') + ' Kč / měsíc, max. ' + c.sazby.autorskyDozorMaxHodin + ' h', src: 'paušál z nabídky PROJ' },
     { id: 'variantaPamatkari', label: 'Každá další varianta pro památkáře', verze: ['techdata'], prefill: c => c.sazby.variantaSpKc.toLocaleString('cs-CZ') + ' Kč', src: 'paušál z nabídky PROJ' },
     { id: 'podkladyInvestor', label: 'Podklady od investora (původní PD, revize)', verze: ['techdata'], typ: 'textarea' },
     { id: 'dossSeznam', label: 'Dotčené orgány státní správy (DOSS)', verze: ['techdata'], typ: 'textarea' },
@@ -269,21 +319,27 @@ const KRYCI_PROJ_SEKCE = [
    * jedna ku jedné a rozpočítat je za obchodníka by znamenalo vymyslet
    * částku. U každého pole proto stojí, jaká sekce mu obsahem odpovídá. */
   { sekce: 'Smlouva o dílo — splátky (SoD projekce)', pole: [
-    { id: 'sodpPlatba1', label: 'Platba 1 — po podpisu smlouvy', verze: ['bo'], sod: 'SODP_PLATBA1_KC',
+    /* Od plánu plateb (etapa B, P9.3) se platby smlouvy DOPOČÍTÁVAJÍ: procento
+     * × cena činnosti po slevě, splátky se stejným milníkem sečtené, ruční
+     * přepis částky v tabulce plateb krycího listu. Osm pevných polí níž
+     * (`stary`) zůstává pro odeslané nabídky z doby před plánem. */
+    { id: 'sodpPlatby', label: 'Platby smlouvy (z plánu plateb)', verze: ['bo'], plan: true,
+      vypocet: c => (c && c.planEf) ? kryciProjPlatbyText(c.planEf) : '' },
+    { id: 'sodpPlatba1', stary: true, label: 'Platba 1 — po podpisu smlouvy', verze: ['bo'], sod: 'SODP_PLATBA1_KC',
       src: 'záloha dle platebních podmínek' },
-    { id: 'sodpPlatba2', label: 'Platba 2 — při předání 2D výstupů ze zaměření', verze: ['bo'], sod: 'SODP_PLATBA2_KC',
+    { id: 'sodpPlatba2', stary: true, label: 'Platba 2 — při předání 2D výstupů ze zaměření', verze: ['bo'], sod: 'SODP_PLATBA2_KC',
       src: c => 'odpovídá sekci ZAMĚŘENÍ: ' + kryciProjSekceKc(c, 'zamereni') },
-    { id: 'sodpPlatba3', label: 'Platba 3 — DPZ v rozsahu pro podání na dotčené orgány', verze: ['bo'], sod: 'SODP_PLATBA3_KC',
+    { id: 'sodpPlatba3', stary: true, label: 'Platba 3 — DPZ v rozsahu pro podání na dotčené orgány', verze: ['bo'], sod: 'SODP_PLATBA3_KC',
       src: c => 'část sekce DPZ (celá: ' + kryciProjSekceKc(c, 'dpz') + ')' },
-    { id: 'sodpPlatba4', label: 'Platba 4 — DPZ v rozsahu pro podání na stavební úřad', verze: ['bo'], sod: 'SODP_PLATBA4_KC',
+    { id: 'sodpPlatba4', stary: true, label: 'Platba 4 — DPZ v rozsahu pro podání na stavební úřad', verze: ['bo'], sod: 'SODP_PLATBA4_KC',
       src: c => 'zbytek sekce DPZ (celá: ' + kryciProjSekceKc(c, 'dpz') + ')' },
-    { id: 'sodpPlatba5', label: 'Platba 5 — po vydání pravomocného povolení záměru', verze: ['bo'], sod: 'SODP_PLATBA5_KC',
+    { id: 'sodpPlatba5', stary: true, label: 'Platba 5 — po vydání pravomocného povolení záměru', verze: ['bo'], sod: 'SODP_PLATBA5_KC',
       src: c => 'odpovídá sekci INŽENÝRSKÁ ČINNOST: ' + kryciProjSekceKc(c, 'ic') },
-    { id: 'sodpPlatba6', label: 'Platba 6 — po předání kompletní DPS', verze: ['bo'], sod: 'SODP_PLATBA6_KC',
+    { id: 'sodpPlatba6', stary: true, label: 'Platba 6 — po předání kompletní DPS', verze: ['bo'], sod: 'SODP_PLATBA6_KC',
       src: c => 'odpovídá sekci DPS: ' + kryciProjSekceKc(c, 'dps') },
-    { id: 'sodpPlatba7', label: 'Platba 7 — po dokončení ekonomické zadávací části', verze: ['bo'], sod: 'SODP_PLATBA7_KC',
+    { id: 'sodpPlatba7', stary: true, label: 'Platba 7 — po dokončení ekonomické zadávací části', verze: ['bo'], sod: 'SODP_PLATBA7_KC',
       src: c => 'odpovídá sekci EZC: ' + kryciProjSekceKc(c, 'ezc') },
-    { id: 'sodpPlatba8', label: 'Platba 8 — po doporučení dodavatele realizace', verze: ['bo'], sod: 'SODP_PLATBA8_KC',
+    { id: 'sodpPlatba8', stary: true, label: 'Platba 8 — po doporučení dodavatele realizace', verze: ['bo'], sod: 'SODP_PLATBA8_KC',
       src: 'závěrečná část výběrového řízení' },
     { id: 'sodpSpravniPoplatky', label: 'Správní poplatky stavebnímu úřadu (nad rámec ceny)', verze: ['bo'], sod: 'SODP_SPRAVNI_POPLATKY' },
     { id: 'sodpPokutaDenni', label: 'Pokuta za prodlení zákazníka se součinností (za den)', verze: ['bo'], sod: 'SODP_POKUTA_DENNI' },
@@ -325,7 +381,13 @@ function kryciProjCtx(zak, varianta) {
   const sekce = {};
   let hodnota = '—', ocenene = '—', neocenene = '—';
   try {
-    const r = vypocetProj(d.proj.zadani, d.proj.cenik);
+    /* U odeslané nabídky ze ZMRAZENÉHO výsledku (N47, hloubkový test 24. 9.
+     * 2026): krycí list i smlouva PROJ počítaly dnešním kódem, takže u starší
+     * odeslané nabídky tvrdily jinou cenu, než odešla (nabídka 245 700,
+     * krycí list 272 700 nad zkušebním ceníkem). vypocetProjZ vrací otisk
+     * zámku, u rozpracované varianty počítá jako dřív. */
+    const r = (typeof vypocetProjZ === 'function' && vypocetProjZ(varianta))
+      || vypocetProj(d.proj.zadani, d.proj.cenik);
     r.sekce.forEach(s => { sekce[s.key] = { nazev: s.nazev, celkem: s.celkem }; });
     /* Stejná cena jako v nabídce PROJ, tj. po obchodním zaokrouhlení (#38);
      * ceny jednotlivých činností zůstávají nezaokrouhlené. */
@@ -338,8 +400,12 @@ function kryciProjCtx(zak, varianta) {
     neocenene = ne.length ? ne.map(s => s.nazev).join(', ') : 'žádná – oceněny jsou všechny činnosti';
   } catch (e) {}
   const firma = (typeof firmaAktualni === 'function') ? firmaAktualni() : {};
-  const sazby = (typeof NABIDKA_PROJ_SAZBY !== 'undefined') ? NABIDKA_PROJ_SAZBY
-    : { splatnostDni: 14, platnostMesicu: 3, dphPct: 21, autorskyDozorKcMesic: 35000, autorskyDozorMaxHodin: 30, variantaSpKc: 8500 };
+  /* Splatnost z Firmy (#367) — do kontextu se opíše, ať ji čte každý,
+   * kdo dosud bral `c.sazby.splatnostDni`. */
+  const sazby = Object.assign({}, (typeof NABIDKA_PROJ_SAZBY !== 'undefined') ? NABIDKA_PROJ_SAZBY
+    /* platnost 2 měsíce jako všude jinde (P10.1, rozhodnutí J. V. 29. 9. 2026) */
+    : { platnostMesicu: 2, dphPct: 21, autorskyDozorKcMesic: 35000, autorskyDozorMaxHodin: 30, variantaSpKc: 8500 },
+    { splatnostDni: kryciProjPodmEf(firma).proj.splatnostDni });
   // DPH: přednost má vlastní sazba projekční části, jinak dosud platná z ceníku OCK
   const dph = (d.proj && d.proj.cenik && d.proj.cenik.dph != null) ? Math.round(d.proj.cenik.dph * 100)
     : (d.cenik && d.cenik.dph != null) ? Math.round(d.cenik.dph * 100) : sazby.dphPct;
@@ -359,7 +425,105 @@ function kryciProjCtx(zak, varianta) {
   /* Od 19. 8. 2026 je hlavička jedna společná — popisek zdroje je pro
    * všechna pole stejný a nikam neposílá. */
   const hlSrc = klic => 'hlavička zakázky (společná)';
-  return { zak, hl, hlSrc, sekce, hodnota, ocenene, neocenene, dph, firma, sazby };
+  /* Podmínky zmrazené při odeslání (P9.5) — jen dokud je varianta zamčená. */
+  const zmrazeno = (varianta && varianta.zamek && varianta.zamek.zamceno && d.kryciProj && d.kryciProj.zmrazeno) || null;
+  /* Plán plateb (etapa B). Bez modulu plánu v sestavení nebo u odeslané
+   * nabídky z doby před plánem je `planStary` — krycí list se chová jako
+   * dřív (pole zálohy a ručních splátek). */
+  let planEf = null;
+  try { planEf = (typeof nabidkaProjPlatby === 'function') ? nabidkaProjPlatby(zak, varianta, 'cz') : null; } catch (e) { planEf = null; }
+  const planStary = !planEf || !!planEf.stary;
+  const nabiziAD = (typeof nabidkaProjNabiziAD === 'function') ? nabidkaProjNabiziAD(varianta) : true;
+  return { zak, hl, hlSrc, sekce, hodnota, ocenene, neocenene, dph, firma, sazby, zmrazeno, planEf, planStary, nabiziAD };
+}
+
+/* Které pole krycího listu se u téhle varianty ukazuje a tiskne: pole
+ * dřívějšího znění (`stary`) jen u odeslané nabídky z doby před plánem
+ * plateb, řádky plánu (`plan`) naopak jen s plánem. */
+function kryciProjPoleViditelne(p, c) {
+  /* Autorský dozor jen když se nabízí (14. 10. 2026); bez kontextu jako dřív. */
+  if (p.ad && c && c.nabiziAD === false) return false;
+  if (p.stary && !(c && c.planStary)) return false;
+  if (p.plan && (!c || c.planStary)) return false;
+  return true;
+}
+/* Platby smlouvy pro tisk krycího listu: „Platba 1 — po podpisu smlouvy /
+ * objednávky: 95 880,00 Kč (ručně)". */
+function kryciProjPlatbyText(pl) {
+  const d = pl && pl.dopocet;
+  if (!d || !d.platby.length) return 'není nabízena žádná činnost s cenou';
+  const fmt = (pl.mena && typeof pl.mena.fmt === 'function') ? pl.mena.fmt : (n => String(n));
+  return d.platby.map((x, i) => 'Platba ' + (i + 1) + ' — ' + (x.text || '(milník chybí)') + ': ' + fmt(x.castka)
+    + (x.prepsano ? ' (ručně)' : '')).join('\n')
+    + (d.sedi ? '' : '\nSoučet plateb ' + fmt(d.soucet) + ' nesouhlasí s cenou díla ' + fmt(d.cena) + '.');
+}
+/* Snímek plánu plateb při prvním zamčení (P9.5 pro plán): pozdější změna
+ * firemního plánu odeslanou nabídku ani smlouvu nezmění. Bere se při
+ * KAŽDÉM prvním zamčení (zamekPoTisku sem chodí jen tehdy) a přepíše, co
+ * v datech je — stejně jako `zmrazeno`. Klon odeslané varianty i varianta
+ * odemčená správcem nesou snímek předlohy / dřívějšího odeslání; kdyby
+ * zůstal, zamčená varianta by tiskla cizí plán (revize etapy B, 30. 9.
+ * 2026). Zamčenou variantu (dotisk) nepřepíše nic. */
+function kryciProjZmrazPlan(zak, varianta) {
+  if (!varianta || !varianta.data || typeof nabidkaProjPlatby !== 'function' || typeof planPlatebSnimek !== 'function') return false;
+  const d = varianta.data;
+  if (!d.kryciProj || typeof d.kryciProj !== 'object') d.kryciProj = { hodnoty: {} };
+  if (varianta.zamek && varianta.zamek.zamceno) return false;
+  let pl = null;
+  try { pl = nabidkaProjPlatby(zak, varianta, 'cz'); } catch (e) { pl = null; }
+  if (!pl || pl.stary) { delete d.kryciProj.zmrazenoPlan; return false; }
+  d.kryciProj.zmrazenoPlan = planPlatebSnimek(pl.plan, pl.firemni, pl.ceny);
+  return true;
+}
+
+/* Totéž co kryciZmrazPodminky v kryci.js, nad krycím listem PROJ (P9.5). */
+function kryciProjZmrazPodminky(zak, varianta) {
+  if (!varianta || !varianta.data) return 0;
+  const d = varianta.data;
+  if (!d.kryciProj || typeof d.kryciProj !== 'object') d.kryciProj = { hodnoty: {} };
+  const h = d.kryciProj.hodnoty || {};
+  const c = kryciProjCtx(zak, varianta);
+  c.zmrazeno = null;
+  const out = {};
+  /* U plánu plateb (etapa B) se pole `stary` ruční hodnotou starší verze
+   * neřídí (nejde vidět ani smazat) — zmrazí se jejich předvyplnění. */
+  const plan = !c.planStary;
+  KRYCI_PROJ_SEKCE.forEach(s => s.pole.forEach(p => {
+    if (p.bind || p.dphBind || typeof p.prefill !== 'function') return;
+    if (!(plan && p.stary) && h[p.id] !== undefined && h[p.id] !== '') return;
+    let v = '';
+    try { v = p.prefill(c); } catch (e) { v = ''; }
+    if (v != null && v !== '') out[p.id] = String(v);
+  }));
+  d.kryciProj.zmrazeno = out;
+  /* K3-N2 (J. V. 20. 10. 2026): texty nabídky PROJ z Firmy (cena nezahrnuje,
+   * požadováno, termíny, doložky i `dolozkyTisk`) zamrznou s nabídkou —
+   * dotisk je čte ze snímku (nabidkaProjPodmEf(varianta)). */
+  d.kryciProj.zmrazenoPodminky = kryciProjPodm().podminkySnimek(c.firma, ['nabidkaProj']);
+  kryciProjZmrazPlan(zak, varianta);
+  return Object.keys(out).length;
+}
+
+/* Totéž co kryciZmrazSod v kryci.js (#366): první tisk smlouvy opíše návrh
+ * čísla SoD projekce do ručních hodnot, aby ho pozdější změna čísla nabídky
+ * nebo dotisk nezměnily. Datum podpisu list PROJ nemá. */
+const KRYCI_PROJ_SOD_OPIS = ['cisloSod'];
+function kryciProjZmrazSod(zak, varianta) {
+  if (!varianta || !varianta.data) return 0;
+  const d = varianta.data;
+  if (!d.kryciProj || typeof d.kryciProj !== 'object') d.kryciProj = { hodnoty: {} };
+  if (!d.kryciProj.hodnoty || typeof d.kryciProj.hodnoty !== 'object') d.kryciProj.hodnoty = {};
+  const h = d.kryciProj.hodnoty;
+  const c = kryciProjCtx(zak, varianta);
+  let n = 0;
+  KRYCI_PROJ_SOD_OPIS.forEach(id => {
+    if (h[id] !== undefined && h[id] !== '') return;
+    const p = KRYCI_PROJ_SEKCE.reduce((a, s) => a || s.pole.find(x => x.id === id), null);
+    if (!p) return;
+    const v = kryciProjHodnota(p, d.kryciProj, c);
+    if (v != null && v !== '') { h[id] = String(v); n++; }
+  });
+  return n;
 }
 
 /* KL-7: totéž jako kryciMigraceSazbaDph() v kryci.js, jen nad úložištěm PROJ —
@@ -383,20 +547,46 @@ function kryciProjSodSymboly(zak, varianta, placeholders) {
   const c = kryciProjCtx(zak, varianta);
   const kl = (varianta && varianta.data && varianta.data.kryciProj) || { hodnoty: {} };
   KRYCI_PROJ_SEKCE.forEach(s => s.pole.forEach(p => {
-    if (!p.sod) return;
+    if (!p.sod || !kryciProjPoleViditelne(p, c)) return;
     const v = String(kryciProjHodnota(p, kl, c) || '').trim();
     if (v) P[p.sod] = v;
   }));
   return P;
 }
 
+/* Hodnota jednoho pole podmínek krycího listu PROJ bez výpočtu kalkulace
+ * (pokuta za nedodržení termínu do smlouvy o dílo — rozhodnutí J. V.
+ * 1. 10. 2026, Q6): ruční přepis > zmrazené při odeslání > předvyplnění.
+ * Pole plánu plateb (`vypocet`) a provázaná pole tudy nejdou — ta potřebují
+ * celý kontext (kryciProjCtx). */
+function kryciProjPoleHodnota(zak, varianta, id) {
+  const d = (varianta && varianta.data) || {};
+  const c = { zak, zmrazeno: (varianta && varianta.zamek && varianta.zamek.zamceno && d.kryciProj && d.kryciProj.zmrazeno) || null };
+  const p = KRYCI_PROJ_SEKCE.reduce((a, s) => a || s.pole.find(x => x.id === id), null);
+  if (!p || typeof p.vypocet === 'function' || p.bind || p.dphBind) return '';
+  let v = '';
+  try { v = kryciProjHodnota(p, d.kryciProj || { hodnoty: {} }, c); } catch (e) { v = ''; }
+  return String(v == null ? '' : v);
+}
+
 /* hodnota pole: ruční přepis (data.kryciProj.hodnoty) > prefill > '' */
+/* „2 měsíce", „5 měsíců", „1 měsíc" — náhradní platnost nabídky se skloňuje
+ * (dřív „5 měsíce"; P10.1, 29. 9. 2026). Nečíselnou hodnotu nechá být. */
+function kryciProjMesicu(n) {
+  const k = parseInt(n, 10);
+  if (!isFinite(k)) return String(n == null ? '' : n);
+  return k + ' ' + (k === 1 ? 'měsíc' : (k >= 2 && k <= 4 ? 'měsíce' : 'měsíců'));
+}
 function kryciProjHodnota(pole, kl, c) {
+  /* Řádky plánu plateb se jen počítají — ruční přepis nemají (edituje se plán). */
+  if (typeof pole.vypocet === 'function') { try { const v = pole.vypocet(c); return v == null ? '' : v; } catch (e) { return ''; } }
   /* `dphBind` je totéž provázání jako `bind`, jen mířené do sazby DPH
    * v hlavičce Kalkulace PROJ — ruční přepis se proto nečte ani tady. */
   if (!pole.bind && !pole.dphBind) {   // provázaná pole (bind) čtou přímo ze ZAK, ne z ručních přepisů
     const h = (kl && kl.hodnoty) || {};
     if (h[pole.id] !== undefined && h[pole.id] !== '') return h[pole.id];
+    /* zamčená varianta: předvyplnění z doby odeslání (P9.5) */
+    if (c && c.zmrazeno && c.zmrazeno[pole.id] !== undefined) return c.zmrazeno[pole.id];
   }
   if (pole.prefill) { try { const v = pole.prefill(c); if (v != null && v !== '') return v; } catch (e) {} }
   return '';
@@ -407,9 +597,13 @@ function kryciProjData(zak, varianta, jekly, verze) {
   const c = kryciProjCtx(zak, varianta);
   const kl = varianta.data.kryciProj || { hodnoty: {} };
   const sekce = KRYCI_PROJ_SEKCE.map(s => {
-    const radky = s.pole.filter(p => p.verze.includes(verze)).map(p => [p.label, kryciProjHodnota(p, kl, c)]);
+    const radky = s.pole.filter(p => p.verze.includes(verze) && kryciProjPoleViditelne(p, c)).map(p => [p.label, kryciProjHodnota(p, kl, c)]);
     return radky.length ? { sekce: s.sekce, radky } : null;
   }).filter(Boolean);
+  /* Hodiny z kalkulace na konci verze Backoffice — jen z Kalkulace PROJ
+   * (kryciHodinySekce v kryci.js, 14. 10. 2026; jen vlastní strana 15. 10.). */
+  const hodiny = (typeof kryciHodinySekce === 'function') ? kryciHodinySekce(zak, varianta, jekly, verze, 'proj') : null;
+  if (hodiny) sekce.push(hodiny);
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
   const cislo = ((c.hl && c.hl.cislo) || 'CN').replace(/\s+/g, '');
   const nazevSouboru = ('KRYCI_LIST_PROJ_' + verzeNazev + '_' + cislo).replace(/[\\/:*?"<>|]+/g, '-');
@@ -444,11 +638,21 @@ function kryciProjPodminkoveSymboly(zak, varianta, P) {
   if (typeof kryciSymbolyZeSekci !== 'function') return {};
   const c = kryciProjCtx(zak, varianta);
   const kl = (varianta && varianta.data && varianta.data.kryciProj) || { hodnoty: {} };
-  return kryciSymbolyZeSekci(KRYCI_PROJ_SEKCE, KRYCI_PROJ_NABIDKA_SEKCE,
-    p => kryciProjHodnota(p, kl, c), P);
+  /* Pole nahrazená plánem plateb (`stary`, etapa B) jdou do symbolů jen
+   * u odeslané nabídky z doby před plánem — jinak by šablona tiskla zálohu
+   * a fakturaci po stupních, které plán neplatí. Způsob fakturace zůstává
+   * (odvozený z předvolby, Q10) a ruční hodnota starší verze ho nepřebije:
+   * pole nejde vidět ani smazat (revize etapy B, 30. 9. 2026). */
+  const plan = !c.planStary;
+  const sekce = KRYCI_PROJ_SEKCE.map(s => Object.assign({}, s, {
+    pole: s.pole.filter(p => kryciProjPoleViditelne(p, c) || (plan && p.id === 'zpusobFakturace')) }));
+  const bezRucnich = { hodnoty: {} };
+  return kryciSymbolyZeSekci(sekce, KRYCI_PROJ_NABIDKA_SEKCE,
+    p => kryciProjHodnota(p, (plan && p.stary) ? bezRucnich : kl, c), P);
 }
 
 if (typeof module !== 'undefined')
   module.exports = { KRYCI_PROJ_SEKCE, KRYCI_POKUTY_SAZBY, KRYCI_PROJ_NABIDKA_SEKCE, KRYCI_PROJ_CINNOSTI, kryciProjCtx,
     kryciProjHodnota, kryciProjData, kryciProjMigraceSazbaDph, kryciProjPodminkoveSymboly,
-    kryciProjSekceKc, kryciProjSodSymboly };
+    kryciProjSekceKc, kryciProjSodSymboly, kryciProjMesicu, kryciProjZmrazPodminky, KRYCI_PROJ_SOD_OPIS, kryciProjZmrazSod,
+    KRYCI_PROJ_PLAN_CINNOSTI, kryciProjPoleViditelne, kryciProjPlatbyText, kryciProjZmrazPlan, kryciProjPoleHodnota };

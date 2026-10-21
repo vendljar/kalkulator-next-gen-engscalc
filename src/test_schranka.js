@@ -104,9 +104,13 @@ for (const f of fs.readdirSync(uiDir)) {
 }
 const bezCile = Array.from(zony).filter(z => !cile.has(z));
 test('každá zóna Ctrl+V má registrovaný cíl', bezCile.length === 0, bezCile);
-test('zóny se opravdu našly (jinak by kontrola výše mlčela)', zony.size >= 4, Array.from(zony));
-test('cíle Ctrl+V jsou aspoň čtyři (fotka OCK, fotka PROJ, logo, přílohy)',
-  cile.size >= 4, Array.from(cile));
+/* Od 22. 9. 2026 jsou zóny TŘI: přílohy zakázky skončily spolu s jejich
+ * nahráváním (zadání J. V. — z interních poznámek zbylo textové pole).
+ * Zbývají fotka OCK, fotka PROJ a logo do hlavičky dokumentů. */
+test('zóny se opravdu našly (jinak by kontrola výše mlčela)', zony.size >= 3, Array.from(zony));
+test('cíle Ctrl+V jsou aspoň tři (fotka OCK, fotka PROJ, logo)',
+  cile.size >= 3, Array.from(cile));
+test('přílohy mezi cíli Ctrl+V už nejsou', !cile.has('prilohy'), Array.from(cile));
 
 /* Záložky, ze kterých se vkládá bez zaměření zóny, musí mířit na existující cíl. */
 const tabMap = src.match(/const VLOZ_OBRAZEK_TAB = \{([^}]*)\}/);

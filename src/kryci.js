@@ -22,24 +22,89 @@ function kryciObchodnikKontakt(f) {
        firmaHodnota(f, 'zpracovalEmail')].filter(Boolean).join(', ');
 }
 
+/* PLATEBNÍ PODMÍNKY Z FIRMY (#367 fáze 2, 19. 10. 2026). Výchozí hodnoty
+ * platebních polí (splatnost, záloha a splátky, zádržné, záruka, pokuty,
+ * limit) už v tomhle souboru nejsou — nese je Nastavení → Firma
+ * (NAST.firma.podminky) a jediná továrna pro prázdné Nastavení je
+ * PODMINKY_VYCHOZI v podminky.js. V prohlížeči je modul globální, v Node se
+ * načte vedle (vzor firmaPlanModul). */
+function kryciPodm() {
+  if (typeof PODMINKY !== 'undefined') return PODMINKY;
+  return (typeof require === 'function') ? require('./podminky.js').PODMINKY : null;
+}
+function kryciPodmEf(firma) {
+  const f = firma !== undefined ? firma : ((typeof firmaAktualni === 'function') ? firmaAktualni() : {});
+  return kryciPodm().podminkyEf(f);
+}
+const KRYCI_PODM_TOVARNA = kryciPodm().podminkyEf({});
+/* Podmínky pro TISK varianty (K3-N2, rozhodnutí J. V. 20. 10. 2026): zamčená
+ * varianta se snímkem (`data.kryci.zmrazenoPodminky`, kryciZmrazPodminky)
+ * tiskne věty platebního kalendáře a díly vět SoD z doby odeslání; bez
+ * snímku (zamčená před v20.10.2) a nezamčená = aktuální Firma. */
+function kryciPodmEfVarianty(varianta) {
+  const d = varianta && varianta.data;
+  const snimek = varianta && varianta.zamek && varianta.zamek.zamceno && d && d.kryci && d.kryci.zmrazenoPodminky;
+  const f = (typeof firmaAktualni === 'function') ? firmaAktualni() : {};
+  return snimek ? kryciPodm().podminkyEfZmrazene(f, snimek) : kryciPodm().podminkyEf(f);
+}
+
 /* Nabídka sazeb smluvní pokuty (10. 8. 2026). První hodnota je předvyplněná.
- * Sdílí ji krycí list OCK i PROJ, aby se sazby nerozešly mezi dvěma seznamy. */
-const KRYCI_POKUTY = ['0', '0,05 % / den', '0,1 % / den'];
+ * Sdílí ji krycí list OCK i PROJ, aby se sazby nerozešly mezi dvěma seznamy.
+ * Od #367 (19. 10. 2026) je to jen znění továrny — pole krycího listu berou
+ * číselník z Firmy (kryciPokutySazby). */
+const KRYCI_POKUTY = KRYCI_PODM_TOVARNA.sazbyPokut.slice();
+function kryciPokutySazby(firma) { return kryciPodmEf(firma).sazbyPokut; }
 
 /* Nabídka záloh (12. 8. 2026, rozhodnutí J. V.: „vybírání zálohy by mělo
  * fungovat z rolovacího seznamu"). U výtahové šachty nese každá volba i
  * milník, ke kterému se záloha váže — v podmínkách nestačí procento, musí
  * být jasné, kdy se fakturuje. Poslední volbu („jiné znění…") přidává
  * rozbalovátko samo, takže vlastní dohoda jde zapsat vždycky. */
-const KRYCI_ZALOHY = ['Bez zálohy', '30 % – po podpisu smlouvy',
-                      '50 % – po podpisu smlouvy', '70 % – po podpisu smlouvy'];
+const KRYCI_ZALOHY = kryciPodm().podminkyZalohyVolby(KRYCI_PODM_TOVARNA);   // znění továrny (#367)
+
+/* Způsob fakturace OCK (P10.5, 29. 9. 2026). */
+const KRYCI_FAKTURACE = ['Po milnících', 'Měsíční'];
+const KRYCI_FAKTURACE_STARY_VYCHOZI = 'Náš standard / měsíční';
 
 /* Limit smluvních pokut (12. 8. 2026). Do té doby volné pole s jediným
  * předvyplněným zněním. Obě varianty se v praxi používají a pletly se —
  * rozdíl mezi „UPLATNĚN" a „NEUPLATNĚN" je jedno slovo a znamená opak.
  * Výchozí je uplatněný limit: strop odpovědnosti chrání nás, ne zákazníka,
  * a vypustit ho má být vědomé rozhodnutí. */
-const KRYCI_LIMIT_POKUT = ['Uplatněn limit 10 %', 'NEUPLATNĚN limit 10 %'];
+const KRYCI_LIMIT_POKUT = kryciPodm().podminkyLimitVolby(KRYCI_PODM_TOVARNA);   // znění továrny (#367)
+function kryciLimitVolby(firma) { return kryciPodm().podminkyLimitVolby(kryciPodmEf(firma)); }
+
+/* Druh stavby v místě plnění smlouvy o dílo realizace (rozhodnutí J. V.
+ * 1. 10. 2026, Q3): věta šablony „Místem provádění díla je
+ * {{SOD_MISTO_PLNENI_DRUH}} na adrese {{ADRESA}}". Bez předvyplnění — druh
+ * stavby zná jen obchodník; rozbalovátko přidá „jiné znění…" samo. */
+const KRYCI_MISTO_PLNENI = ['bytový dům', 'rodinný dům', 'administrativní budova'];
+/* Režim DPH ve smlouvě o dílo realizace (rozhodnutí J. V. 18. 10. 2026).
+ * Pořadí = klíče SOD_DPH_REZIMY v sod.js. Výchozí podle DIČ objednatele
+ * (kryciDphRezimVychozi, B189 — rozhodnutí J. V. 19. 10. 2026, V7-N2 —
+ * rozhodnutí J. V. 20. 10. 2026: „zadej v ČR primárně přenesenou daňovou
+ * povinnost a obchodník si může měnit"; otázka pro účetní se neřeší):
+ *   DIČ CZ…   → přenesená daňová povinnost (tuzemsko, § 92e ZDPH) — jako
+ *               šablona v2, kde byla natvrdo,
+ *   bez DIČ   → taky přenesená daňová povinnost (tuzemsko) — do v20.10.5
+ *               česká DPH; u nepodnikatele ji obchodník přepne sám,
+ *   jiné DIČ  → BEZ výchozí volby (EU i mimo EU): u prací na stavbě rozhoduje
+ *               místo stavby, ne DIČ — obchodník vybere sám a smlouva bez
+ *               volby nevznikne (sodDphZabrana v sod.js).
+ * Ruční volba má vždy přednost (kryciHodnota, ↺ vrátí výchozí); uložená
+ * volba se nemění. */
+const KRYCI_DPH_REZIMY = ['česká DPH v zákonné sazbě', 'přenesená daňová povinnost (tuzemsko)',
+  'reverse charge EU (zákazník z jiného státu EU)'];
+/* Země objednatele: zakázka nemá pole státu, pozná se z předpony DIČ
+ * objednatele (formát VIES — CZ…, DE…, EL… pro Řecko). Seznam států EU
+ * zůstává pro ostatní moduly; výchozí volbu od B189 neurčuje. */
+const KRYCI_EU_DIC = ['AT', 'BE', 'BG', 'CY', 'DE', 'DK', 'EE', 'EL', 'ES', 'FI', 'FR', 'HR', 'HU', 'IE', 'IT',
+  'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK'];
+function kryciDphRezimVychozi(zak) {
+  const dic = String((zak && zak.dic) || '').replace(/\s/g, '').toUpperCase();
+  if (!dic) return KRYCI_DPH_REZIMY[1];   // V7-N2: bez DIČ jako tuzemsko
+  return dic.slice(0, 2) === 'CZ' ? KRYCI_DPH_REZIMY[1] : '';
+}
 
 /* Datum tisku pro předvyplnění pole „Dne" (20. 8. 2026). Formát YYYY-MM-DD,
  * protože pole je typu date; ruční přepis má přednost jako u všech prefillů. */
@@ -61,6 +126,15 @@ const KRYCI_SEKCE = [
       /* varianta ≥ 2 nese příponu .N (19. 8. 2026) */
       prefill: c => (typeof cisloSVariantou === 'function' ? cisloSVariantou(c.zak, c.varianta) : c.zak.cislo),
       src: 'hlavička kalkulace' },
+    /* Číslo smlouvy o dílo realizace (zadání J. V. 15. 10. 2026, v15.10.9).
+     * Od v17.10.2 (#366) předvyplněné NÁVRHEM z čísla nabídky (CN → SOD,
+     * sodCisloNavrh); ruční přepis má přednost, ↺ vrátí návrh. Sekce není
+     * v KRYCI_NABIDKA_SEKCE, takže se dá doplnit i po odeslání nabídky;
+     * tisk SoD ho zamkne a návrh opíše do dat (kryciZmrazSod). Ve smlouvě
+     * plní {{SOD_CISLO_SMLOUVY}}, prázdné pole nechá symbol vidět. */
+    { id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',
+      prefill: c => (typeof sodCisloNavrh === 'function'
+        ? sodCisloNavrh(typeof cisloSVariantou === 'function' ? cisloSVariantou(c.zak, c.varianta) : c.zak.cislo) : '') },
     { id: 'adresaStavby', label: 'Adresa stavby', verze: ['bo', 'techdata'], bind: 'ZAK.adresa', prefill: c => c.zak.adresa, src: 'hlavička kalkulace' },
     /* KL-2: jen část OCK po slevě. Projekce má vlastní krycí list PROJ. */
     { id: 'hodnotaBezDph', label: 'Hodnota zakázky bez DPH', verze: ['bo', 'techdata'], prefill: c => c.hodnota, src: 'z nabídky OCK (po slevě)' },
@@ -134,14 +208,16 @@ const KRYCI_SEKCE = [
   ] },
 
   { sekce: 'Typ smlouvy a produktu', pole: [
-    { id: 'typSmlouvy', label: 'Typ smlouvy', verze: ['bo'], typ: 'radio', o: ['Naše bez úprav', 'Naše s úpravami', 'Cizí'], prefill: () => 'Naše bez úprav', src: 'výchozí' },
+    { id: 'typSmlouvy', label: 'Typ smlouvy', verze: ['bo'], typ: 'radio', o: ['Naše bez úprav', 'Naše s úpravami', 'Cizí'],
+      prefill: c => kryciPodmEf(c && c.firma).ock.typSmlouvy, src: 'Nastavení → Firma' },
     /* KL-3: formulář zná i třetí možnost „Projekce". Čistě projekční zakázka
      * (OCK nula, PROJ oceněné) se nesmí označit jako šachta. Zůstává textové
      * pole, ne přepínač – kombinovaná zakázka se do tří škatulek nevejde. */
     { id: 'typProduktu', label: 'Typ produktu / služby', verze: ['bo', 'techdata'], prefill: c => c.typProduktu, src: 'z kalkulace (OCK + PROJ)' },
   ] },
   { sekce: 'Platební podmínky', pole: [
-    { id: 'splatnostDni', label: 'Splatnost faktur (dní)', verze: ['bo'], prefill: () => '14', src: 'výchozí' },
+    { id: 'splatnostDni', label: 'Splatnost faktur (dní)', verze: ['bo'],
+      prefill: c => String(kryciPodmEf(c && c.firma).ock.splatnostDni), src: 'Nastavení → Firma' },
     /* #147: šablona nabídky měla platnost („2 měsíce") napsanou natvrdo, takže
      * ji nešlo u konkrétní zakázky změnit jinak než ručně ve Wordu. Pole nese
      * celé sousloví včetně jednotky, ne jen číslo — čeština skloňuje
@@ -154,21 +230,40 @@ const KRYCI_SEKCE = [
     { id: 'platnostNabidky', label: 'Platnost nabídky', verze: ['bo'],
       prefill: c => firmaHodnota(c.firma, 'platnostNabidky') || '2 měsíce',
       src: 'Nastavení → Firma' },
-    { id: 'zpusobFakturace', label: 'Způsob fakturace', verze: ['bo'],
-      prefill: c => firmaHodnota(c.firma, 'zpusobFakturaceOck') || 'Náš standard / měsíční',
+    /* Způsob fakturace výběrem (P10.5, rozhodnutí J. V. 29. 9. 2026: „náš
+     * standard je 50, 40, 10"; „většinou po milnících, ale může být
+     * i měsíční"). Milníky a procenta nesou pole záloha / dílčí / konečná
+     * faktura níž. Dosavadní výchozí „Náš standard / měsíční" z Nastavení si
+     * s milníky odporovalo — čte se jako „Po milnících". */
+    { id: 'zpusobFakturace', label: 'Způsob fakturace', verze: ['bo'], typ: 'vyber', o: KRYCI_FAKTURACE,
+      prefill: c => {
+        const f = firmaHodnota(c.firma, 'zpusobFakturaceOck');
+        return (!f || f === KRYCI_FAKTURACE_STARY_VYCHOZI) ? KRYCI_FAKTURACE[0] : f;
+      },
       src: 'Nastavení → Firma' },
-    { id: 'zaloha1', label: 'Záloha / dílčí faktura č. 1', verze: ['bo'],
-      typ: 'vyber', o: KRYCI_ZALOHY, prefill: () => KRYCI_ZALOHY[2], src: 'výchozí' },
-    { id: 'faktura2', label: 'Dílčí faktura č. 2', verze: ['bo'], prefill: () => '40 % – po zahájení montáže', src: 'výchozí' },
-    { id: 'fakturaKonc', label: 'Konečná faktura', verze: ['bo'], prefill: () => '10 % – po předání', src: 'výchozí' },
+    /* Volby, výchozí záloha a obě další splátky z Firmy (#367). `o` je
+     * getter: rozbalovátko se kreslí z Firmy platné v okamžiku vykreslení. */
+    { id: 'zaloha1', label: 'Záloha / dílčí faktura č. 1', verze: ['bo'], typ: 'vyber',
+      get o() { return kryciPodm().podminkyZalohyVolby(kryciPodmEf()); },
+      prefill: c => kryciPodm().podminkyZalohaVychozi(kryciPodmEf(c && c.firma)), src: 'Nastavení → Firma' },
+    { id: 'faktura2', label: 'Dílčí faktura č. 2', verze: ['bo'],
+      prefill: c => kryciPodm().podminkyFaktura2(kryciPodmEf(c && c.firma)), src: 'Nastavení → Firma' },
+    { id: 'fakturaKonc', label: 'Konečná faktura', verze: ['bo'],
+      prefill: c => kryciPodm().podminkyKonecna(kryciPodmEf(c && c.firma)), src: 'Nastavení → Firma' },
     /* KL-5: ve formuláři jsou dva samostatné řádky, každý s vlastním procentem
      * („ANO do odstranění VaN | %" a „ANO po dobu záruky | %"). Původní id
      * `zadrzne` zůstává (nic se neodstraňuje), jen se zúžilo na první řádek;
      * starý volný text převede kryciMigraceZadrzne() níže. */
-    { id: 'zadrzne', label: 'Zádržné – do odstranění vad a nedodělků', verze: ['bo'], typ: 'radio', o: ['Ano', 'Ne'], prefill: () => 'Ano', src: 'výchozí' },
-    { id: 'zadrzneProc', label: 'Zádržné do odstranění VaN – %', verze: ['bo'], ph: 'např. 10' },
-    { id: 'zadrzneZaruka', label: 'Zádržné – po dobu záruky', verze: ['bo'], typ: 'radio', o: ['Ano', 'Ne'], prefill: () => 'Ne', src: 'výchozí' },
-    { id: 'zadrzneZarukaProc', label: 'Zádržné po dobu záruky – %', verze: ['bo'], ph: 'např. 5' },
+    { id: 'zadrzne', label: 'Zádržné – do odstranění vad a nedodělků', verze: ['bo'], typ: 'radio', o: ['Ano', 'Ne'],
+      prefill: c => kryciPodmEf(c && c.firma).ock.zadrzneVan, src: 'Nastavení → Firma' },
+    /* Procenta zádržného do #367 předvyplněná nebyla. Zamčená varianta je
+     * proto ani teď nedostane z Firmy — odešla bez nich (P9.5). */
+    { id: 'zadrzneProc', label: 'Zádržné do odstranění VaN – %', verze: ['bo'], ph: 'např. 10',
+      prefill: c => (c && c.zmrazeno) ? '' : String(kryciPodmEf(c && c.firma).ock.zadrzneVanProc), src: 'Nastavení → Firma' },
+    { id: 'zadrzneZaruka', label: 'Zádržné – po dobu záruky', verze: ['bo'], typ: 'radio', o: ['Ano', 'Ne'],
+      prefill: c => kryciPodmEf(c && c.firma).ock.zadrzneZaruka, src: 'Nastavení → Firma' },
+    { id: 'zadrzneZarukaProc', label: 'Zádržné po dobu záruky – %', verze: ['bo'], ph: 'např. 5',
+      prefill: c => (c && c.zmrazeno) ? '' : String(kryciPodmEf(c && c.firma).ock.zadrzneZarukaProc), src: 'Nastavení → Firma' },
     /* Smluvní pokuty: od 10. 8. 2026 výběr, ne volné pole (rozhodnutí J. V.).
      * Volné pole svádělo k překlepu, který se propsal do nabídky i do krycího
      * listu — a pokuta je jediný údaj v podmínkách, který se v případě sporu
@@ -177,15 +272,19 @@ const KRYCI_SEKCE = [
      * Poslední volba nechá zapsat vlastní znění, ať jde vyhovět zákazníkovi,
      * který si prosadí jinou sazbu. */
     { id: 'pokutaDodavka', label: 'Smluvní pokuta – prodlení dodávky', verze: ['bo', 'techdata'],
-      typ: 'vyber', o: KRYCI_POKUTY, prefill: () => KRYCI_POKUTY[0], src: 'výchozí' },
+      typ: 'vyber', get o() { return kryciPokutySazby(); },
+      prefill: c => kryciPodmEf(c && c.firma).ock.pokutaDodavka, src: 'Nastavení → Firma' },
     { id: 'pokutaSplatnost', label: 'Smluvní pokuta – prodlení splatnosti', verze: ['bo', 'techdata'],
       /* Předvyplněných 0,05 % / den od 12. 8. 2026 (rozhodnutí J. V.). Do té
        * doby nula, tedy bez pokuty — jenže prodlení se splatností je jediné
        * prodlení, které nezpůsobíme my, a nechávat ho bez sankce znamenalo
        * odesílat nabídky, kde na pozdní platbu není žádná páka. */
-      typ: 'vyber', o: KRYCI_POKUTY, prefill: () => KRYCI_POKUTY[1], src: 'výchozí' },
+      typ: 'vyber', get o() { return kryciPokutySazby(); },
+      prefill: c => kryciPodmEf(c && c.firma).ock.pokutaSplatnost, src: 'Nastavení → Firma' },
     { id: 'pokutaLimit', label: 'Limit smluvních pokut', verze: ['bo', 'techdata'],
-      typ: 'vyber', o: KRYCI_LIMIT_POKUT, prefill: () => KRYCI_LIMIT_POKUT[0], src: 'výchozí' },
+      typ: 'vyber', get o() { return kryciLimitVolby(); },
+      prefill: c => { const ef = kryciPodmEf(c && c.firma); return kryciPodm().podminkyLimitText(ef, ef.ock.pokutaLimit); },
+      src: 'Nastavení → Firma' },
     { id: 'pokutyJine', label: 'Jiné', verze: ['bo'], typ: 'textarea' },
     { id: 'platceDph', label: 'Plátce DPH', verze: ['bo'], typ: 'radio', o: ['Ano', 'Ne'], prefill: () => 'Ano', src: 'výchozí' },
     /* KL-7 (hlášení 5. 8. 2026): „Sazba DPH nemůže být přepisovatelná, ale musí
@@ -197,7 +296,8 @@ const KRYCI_SEKCE = [
      * ruční přepis se u takového pole vůbec nečte (viz kryciHodnota). */
     { id: 'sazbaDph', label: 'Sazba DPH', verze: ['bo'], typ: 'dph', dphBind: 'C.dph',
       prefill: c => c.dph + ' %', src: 'z hlavičky kalkulace OCK' },
-    { id: 'zarukaMesicu', label: 'Doba trvání záruky (měsíců)', verze: ['bo'], prefill: () => '60', src: 'výchozí' },
+    { id: 'zarukaMesicu', label: 'Doba trvání záruky (měsíců)', verze: ['bo'],
+      prefill: c => String(kryciPodmEf(c && c.firma).ock.zarukaMesicu), src: 'Nastavení → Firma' },
   ] },
   /* TERMÍN DODÁNÍ (21. 8. 2026, zadání J. V.: „atyp = + 4 týdny v CN termín").
    * Vlastní sekce, ne řádek mezi datumovými termíny: jako jediná z termínů
@@ -206,21 +306,57 @@ const KRYCI_SEKCE = [
    * se do nabídky nedávají — ty se domlouvají až u smlouvy. */
   { sekce: 'Termín dodání', pole: [
     { id: 'terminDodani', label: 'Termín dodání OCK', verze: ['bo', 'techdata'],
-      prefill: c => kryciTerminDodani(c), src: 'Nastavení → Firma (+ ATYP)' },
+      prefill: c => kryciTerminDodani(c), src: 'Nastavení → Firma (+ ATYP)',
+      /* ruční „10" odejde jako „10 týdnů" (P8b) */
+      normalizuj: v => kryciTerminSJednotkou(v) },
   ] },
   { sekce: 'Termíny', pole: [
-    { id: 'terminPrevzeti', label: 'Převzetí staveniště k montáži šachty', verze: ['bo', 'techdata'], typ: 'date' },
-    { id: 'terminMontaz', label: 'Ukončení montáže šachty a předání montáži výtahu', verze: ['bo', 'techdata'], typ: 'date' },
-    { id: 'terminPredani', label: 'Konečné předání díla', verze: ['bo', 'techdata'], typ: 'date' },
+    /* `sod`: termín jde i do smlouvy o dílo (P9.2, rozhodnutí J. V.
+     * 29. 9. 2026 „data z krycího listu"). Prázdný zůstane ve Wordu {{…}}.
+     *
+     * Termíny smlouvy, které krycí list do 1. 10. 2026 neznal a obchodník je
+     * dopisoval ve Wordu (rozhodnutí J. V. 1. 10. 2026 k návrhu SoD, Q2 + Q6):
+     * nepovinné a BEZ předvyplnění — datum se nevymýšlí. Pořadí jde podle
+     * průběhu stavby: podklady dodavatele výtahu potřebujeme už k výrobě,
+     * stavební připravenost k převzetí staveniště, pak montáž, opláštění,
+     * předání montáži výtahu, osazení dveří zákazníkem a konečné předání.
+     * Podklady dodavatele výtahu nese jen šablona SoD realizace v2 (v1 tam
+     * má pevné datum). */
+    { id: 'terminPodkladyVytah', label: 'Finální podklady od dodavatele výtahu do', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_PODKLADY_VYTAH' },
+    { id: 'terminPripravenost', label: 'Stavební připravenost zákazníka do', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_PRIPRAVENOST' },
+    { id: 'terminPrevzeti', label: 'Převzetí staveniště k montáži šachty', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_MONTAZ_OD' },
+    { id: 'terminMontazDo', label: 'Konec montáže ocelové konstrukce', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_MONTAZ_DO' },
+    { id: 'terminOplasteniOd', label: 'Opláštění od', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_OPLASTENI_OD' },
+    { id: 'terminOplasteniDo', label: 'Opláštění do', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_OPLASTENI_DO' },
+    /* Do SoD jako „předání konstrukce k montáži výtahu k …" (rozbor šablon
+     * SoD, 1. 10. 2026 — šablona SOD_REALIZACE v1 to pole nesla, aplikace ho
+     * neplnila, ač krycí list datum má). */
+    { id: 'terminMontaz', label: 'Ukončení montáže šachty a předání montáži výtahu', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_PREDANI_K_MONTAZI' },
+    { id: 'terminDvere', label: 'Osazení šachetních dveří zákazníkem do', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_DVERE' },
+    { id: 'terminPredani', label: 'Konečné předání díla', verze: ['bo', 'techdata'], typ: 'date',
+      sod: 'SOD_TERMIN_DOKONCENI' },
     { id: 'terminJine', label: 'Jiné termíny', verze: ['bo', 'techdata'], typ: 'textarea' },
   ] },
   { sekce: 'Rozsah a odchylky', pole: [
     { id: 'odchylky', label: 'Jiné odchylky oproti smluvnímu standardu', verze: ['bo'], typ: 'textarea', ph: 'popis odchylek…' },
     /* KL-4: zaměření prostor je položka kalkulace (3D skener v režii OCK,
      * v technické specifikaci pole `sken3d`). Není důvod se na ně ptát znovu. */
-    { id: 'zamereniStrojovna', label: 'Zaměření strojovna', verze: ['bo', 'techdata'], typ: 'radio', o: ['Ano', 'Ne'], prefill: c => c.sken3d, src: 'z technické specifikace (3D zaměření)' },
+    /* Od 30. 9. 2026 (J. V.: „když je v kalkulaci 0, tak je v krycím listu
+     * položka automaticky ve stavu ne") je řádek ODVOZENÝ (`odvozene`) —
+     * ruční přepis z dřívějška cenu nepřebije, viz kryciHodnota. */
+    { id: 'zamereniStrojovna', label: 'Zaměření strojovna', verze: ['bo', 'techdata'], typ: 'radio', o: ['Ano', 'Ne'], prefill: c => c.sken3d, odvozene: true,
+      src: 'z kalkulace OCK (Režie → ZAMĚŘENÍ 3D SKENEREM)' },
     { id: 'situacniFoto', label: 'Situační fotografie', verze: ['bo', 'techdata'], prefill: () => 'Ve složce', src: 'výchozí' },
-    { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'], prefill: () => 'dle CN', src: 'výchozí' },
+    { id: 'cenaNezahrnuje', label: 'Cena nezahrnuje', verze: ['bo'],
+      prefill: c => kryciPodmEf(c && c.firma).ock.cenaNezahrnuje, src: 'Nastavení → Firma' },
     { id: 'rozsah', label: 'Rozsah', verze: ['bo'],
       prefill: c => firmaHodnota(c.firma, 'rozsahDefinice') || 'je definován přílohou ke smlouvě (specifikace)',
       src: 'Nastavení → Firma' },
@@ -246,6 +382,51 @@ const KRYCI_SEKCE = [
     { id: 'atypProhluben', label: 'Atyp napojení u prohlubně', verze: ['techdata'], typ: 'textarea' },
     { id: 'atypTvar', label: 'Netradiční tvar OCK (např. 5 stěn)', verze: ['techdata'], typ: 'textarea' },
     { id: 'atypJiny', label: 'Jiný atyp (domluva na schůzce na stavbě)', verze: ['techdata'], typ: 'textarea' },
+  ] },
+  /* PODPISY A KOPIE DO SMLOUVY REALIZACE (P9.4, rozhodnutí J. V. 29. 9. 2026:
+   * „podpisy a kontakty objednatele i do SoD OCK"). Dosud je nesl jen krycí
+   * list PROJ, takže SoD realizace nechávala {{OBJEDNATEL_PODPIS2_*}}
+   * a kopie faktur vždy prázdné. Co už obchodník vyplnil v krycím listu
+   * PROJ, se sem předvyplní — objednatel je u obou smluv týž.
+   *
+   * Od 1. 10. 2026 (rozhodnutí J. V. k návrhu SoD) sem patří i místo plnění
+   * (Q3), denní pokuta za prodlení zákazníka (Q4, obdoba `sodpPokutaDenni`
+   * v krycím listu PROJ) a datum podpisu (Q10) — sekce se proto jmenuje
+   * „Smlouva o dílo (SoD realizace)" (dřív „… — podpisy a kopie …"; hodnoty
+   * se ukládají podle id pole, přejmenování na data nesahá). Do cenové
+   * nabídky nic z toho nejde (sekce není v KRYCI_NABIDKA_SEKCE). */
+  { sekce: 'Smlouva o dílo (SoD realizace)', pole: [
+    /* Režim DPH (18. 10. 2026): věta čl. V odst. 2 a odst. 3 šablony v3
+     * ({{SOD_DPH_REZIM}}, {{SOD_DPH_PROHLASENI}}) — skládá sod.js. */
+    { id: 'sodDphRezim', label: 'Režim DPH ve smlouvě', verze: ['bo'], typ: 'vyber', o: KRYCI_DPH_REZIMY,
+      prefill: c => kryciDphRezimVychozi(c && c.zak), src: 'podle DIČ zákazníka (CZ i bez DIČ → přenesená povinnost, cizí DIČ → vyberte podle místa stavby; jde přepsat)' },
+    { id: 'sodMistoPlneni', label: 'Místo plnění — druh stavby', verze: ['bo'], typ: 'vyber', o: KRYCI_MISTO_PLNENI,
+      sod: 'SOD_MISTO_PLNENI_DRUH', ph: 'např. polyfunkční dům',
+      src: 'věta smlouvy „Místem provádění díla je … na adrese …"' },
+    /* Částka bez předvyplnění — sazbu za den nikdo nevymýšlí (zásada 5).
+     * Šablona ji dosazuje do dvou vět (stavební připravenost, převzetí díla)
+     * a „za každý započatý den prodlení" píše sama. */
+    { id: 'sodPokutaDenni', label: 'Pokuta za prodlení zákazníka (stavební připravenost, převzetí díla) — za den', verze: ['bo'],
+      sod: 'SOD_POKUTA_DENNI', ph: 'částka za každý započatý den prodlení' },
+    /* DATUM PODPISU = DATUM TISKU SMLOUVY (Q10 — J. V. 1. 10. 2026: „datum
+     * podpisu ve smlouvě — předvyplňuj aktuální datum"). `nezmrazovat`: při
+     * zamčení varianty (odeslání nabídky) se NEOPISUJE do zmrazených podmínek
+     * (kryciZmrazPodminky) a zmrazená hodnota se nečte (kryciHodnota) — jinak
+     * by smlouva tištěná později nesla datum odeslání nabídky. Ruční přepis
+     * platí jako u každého pole. */
+    { id: 'sodDatumPodpisu', label: 'Datum podpisu smlouvy', verze: ['bo'], typ: 'date', sod: 'SOD_DATUM_PODPISU',
+      prefill: () => kryciDnesIso(), src: 'datum tisku', nezmrazovat: true },
+    { id: 'objPodpisFirma', label: 'Zákazník — firma v podpisové doložce', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS_FIRMA',
+      prefill: c => kryciZKrycihoListuProj(c, 'objPodpisFirma') || (c.zak && c.zak.objednatel) || '',
+      src: 'krycí list PROJ / hlavička zakázky' },
+    { id: 'objPodpis2Jmeno', label: 'Druhý podepisující za zákazníka — jméno', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS2_JMENO',
+      prefill: c => kryciZKrycihoListuProj(c, 'objPodpis2Jmeno'), src: 'u SVJ podepisují zpravidla dva členové výboru' },
+    { id: 'objPodpis2Funkce', label: '— funkce druhého podepisujícího', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS2_FUNKCE',
+      prefill: c => kryciZKrycihoListuProj(c, 'objPodpis2Funkce'), src: 'krycí list PROJ' },
+    { id: 'objKopie1', label: 'Faktury v kopii na (1)', verze: ['bo'], sod: 'OBJEDNATEL_KONTAKT_KOPIE1',
+      prefill: c => kryciZKrycihoListuProj(c, 'objKopie1'), src: 'krycí list PROJ' },
+    { id: 'objKopie2', label: 'Faktury v kopii na (2)', verze: ['bo'], sod: 'OBJEDNATEL_KONTAKT_KOPIE2',
+      prefill: c => kryciZKrycihoListuProj(c, 'objKopie2'), src: 'krycí list PROJ' },
   ] },
   /* KL-7: patička z předlohy. 20. 8. 2026 (zadání J. V.) přejmenovaná na
    * „Ostatní" — nejsou to podpisy, ale doprovodné údaje listu; „Dne" se
@@ -298,12 +479,13 @@ function kryciFaktura2Dopocet(zaloha1, fakturaKonc, stavajici) {
 }
 
 /* Totéž nad ručními hodnotami krycího listu: kde ruční hodnota není, platí
- * výchozí znění polí (záloha KRYCI_ZALOHY[2], konečná „10 % – po předání"). */
+ * výchozí znění polí z Firmy (#367; továrna záloha 50 %, konečná 10 %). */
 function kryciFaktura2Sync(hodnoty) {
   const h = hodnoty || {};
-  const zal = (h.zaloha1 != null && h.zaloha1 !== '') ? h.zaloha1 : KRYCI_ZALOHY[2];
-  const kon = (h.fakturaKonc != null && h.fakturaKonc !== '') ? h.fakturaKonc : '10 % – po předání';
-  const sta = (h.faktura2 != null && h.faktura2 !== '') ? h.faktura2 : '40 % – po zahájení montáže';
+  const ef = kryciPodmEf(), P = kryciPodm();
+  const zal = (h.zaloha1 != null && h.zaloha1 !== '') ? h.zaloha1 : P.podminkyZalohaVychozi(ef);
+  const kon = (h.fakturaKonc != null && h.fakturaKonc !== '') ? h.fakturaKonc : P.podminkyKonecna(ef);
+  const sta = (h.faktura2 != null && h.faktura2 !== '') ? h.faktura2 : P.podminkyFaktura2(ef);
   return kryciFaktura2Dopocet(zal, kon, sta);
 }
 
@@ -325,11 +507,22 @@ function kryciMigraceZadrzne(h) {
   return h;
 }
 
-const kryciKc = n => Math.round(n || 0).toLocaleString('cs-CZ') + ' Kč';
+/* Celé koruny, jen když částka haléře nemá (N55, hloubkový test 24. 9.
+ * 2026): při vypnutém obchodním zaokrouhlení nese cena haléře a nabídka je
+ * tiskne, kdežto krycí list je zaokrouhlil na celé Kč — dva dokumenty téže
+ * zakázky tak uváděly jinou cenu. */
+const kryciKc = n => {
+  const x = Math.round((+n || 0) * 100) / 100;
+  return (Number.isInteger(x) ? x.toLocaleString('cs-CZ')
+    : x.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) + ' Kč';
+};
 
 /* KL-4: „Zaměření strojovna" se v aplikaci už jednou zadává – jako 3D zaměření
  * v technické specifikaci. Čte se přes tsHodnota(), aby platilo stejné pořadí
- * ruční > z kalkulace > výchozí jako v samotné technické specifikaci. */
+ * jako v samotné technické specifikaci. Od 30. 9. 2026 (rozhodnutí J. V.) je
+ * tam 3D zaměření ODVOZENÉ z ceny: položka ZAMĚŘENÍ 3D SKENEREM v Režii
+ * s množstvím 0 (nebo vyřazená) dá „Ne" i přes ruční „ano" ve specifikaci.
+ * Ruční přepis tohoto řádku v krycím listu zůstává, jak byl (kryciHodnota). */
 function kryciSken3d(d, rOck) {
   try {
     if (typeof TECHSPEC_DEF === 'undefined' || typeof tsHodnota !== 'function') return '';
@@ -363,8 +556,10 @@ function kryciCtx(zak, varianta, jekly) {
   let priplatky = '—', ockKc = null, projKc = null, rOck = null;
   const projSekce = {};
   try {
-    /* Odeslaná nabídka vydá svůj otisk (A1). */
-    rOck = (typeof vypocetZ === 'function') ? vypocetZ(varianta, jekly)
+    /* Odeslaná nabídka vydá svůj otisk (A1). Vyřazená strana (P6, zámek
+     * strany) se nepočítá — krycí list OCK nese jen vedoucí stranu. */
+    rOck = (typeof vysledekStrany === 'function') ? vysledekStrany(zak, varianta, 'ock', jekly)
+      : (typeof vypocetZ === 'function') ? vypocetZ(varianta, jekly)
       : vypocet(Zv, Cv, jekly, d.ock.fixes);
     /* Hodnota krycího listu musí být přesně to, co je v nabídce – tedy včetně
      * obchodního zaokrouhlení (#38). Skládá ji zaokrouhleni.js. */
@@ -376,7 +571,11 @@ function kryciCtx(zak, varianta, jekly) {
     priplatky = zahrn.length ? (zahrn.length + ' – ' + zahrn.map(pp => pp.nazev).join(', ')) : 'bez příplatků';
   } catch (e) {}
   try {
-    const rp = (typeof vypocetProjZ === 'function' ? vypocetProjZ(varianta) : vypocetProj(d.proj.zadani, d.proj.cenik));
+    /* P6 (zámek strany): u zakázky s vyřazenou PROJ (číslo OPR, jen
+     * realizace) projekce do krycího listu OCK nejde — typ produktu bez
+     * „+ projekce" a bez cen činností. */
+    const rp = (typeof vysledekStrany === 'function') ? vysledekStrany(zak, varianta, 'proj', jekly)
+      : (typeof vypocetProjZ === 'function' ? vypocetProjZ(varianta) : vypocetProj(d.proj.zadani, d.proj.cenik));
     rp.sekce.forEach(s => { projSekce[s.key] = s.celkem; });
     projKc = rp.souhrn.celkem;
   } catch (e) {}
@@ -396,6 +595,11 @@ function kryciCtx(zak, varianta, jekly) {
     hodnota, priplatky, firma, typProduktu,
     sken3d: kryciSken3d(d, rOck),
     projAno: key => (projSekce[key] > 0 ? 'Ano' : 'Ne'),
+    /* Podmínky zmrazené při odeslání (P9.5) — platí jen, dokud je varianta
+     * zamčená; po odemčení nebo v klonu se předvyplňuje zase z Nastavení. */
+    zmrazeno: (varianta && varianta.zamek && varianta.zamek.zamceno && d.kryci && d.kryci.zmrazeno) || null,
+    /* Zamčená varianta drží i u odvozených řádků to, co se odeslalo. */
+    zamceno: !!(varianta && varianta.zamek && varianta.zamek.zamceno),
   };
 }
 /* ---------- termín dodání a přirážka za ATYP (21. 8. 2026) ----------
@@ -409,15 +613,32 @@ function kryciCtx(zak, varianta, jekly) {
  * Když v ní žádné číslo není (nebo lhůta není vyplněná vůbec), NIC SE
  * NEVYMÝŠLÍ — vrátí se, co tam je, a k tomu poznámka o atypu; termín pak
  * doplní člověk. Stejné pravidlo jako u cen. */
+/* JEDNOTKA U HOLÉHO ČÍSLA (P8b, rozhodnutí J. V. 29. 9. 2026: „číslo
+ * doplnit o týdnů"). Termín se v aplikaci počítá v týdnech (ATYP přičítá
+ * týdny k prvnímu číslu), holé „12" tedy jsou týdny — jen to v nabídce
+ * nestálo („Termín dodání: 12") a termín s ATYP se nedal přeložit. Doplňuje
+ * se jen k holému číslu (případně „cca 12"); věta s vlastní jednotkou nebo
+ * datem zůstává, jak ji kdo napsal. */
+function kryciTydnu(n) {
+  const k = Math.abs(parseInt(n, 10) || 0);
+  return k === 1 ? 'týden' : (k >= 2 && k <= 4 ? 'týdny' : 'týdnů');
+}
+function kryciTerminSJednotkou(text) {
+  const t = String(text == null ? '' : text).trim();
+  const m = t.match(/^(cca\s*)?(\d+)$/i);
+  return m ? (m[1] ? 'cca ' : '') + m[2] + ' ' + kryciTydnu(m[2]) : t;
+}
 function kryciTerminDodaniText(zakladniText, atyp, tydnyNavic) {
-  const zaklad = String(zakladniText == null ? '' : zakladniText).trim();
+  const zaklad = kryciTerminSJednotkou(zakladniText);
   const navic = Math.round(+String(tydnyNavic == null ? '' : tydnyNavic).replace(',', '.')) || 0;
   if (!atyp || navic <= 0) return zaklad;
   const m = zaklad.match(/\d+/);
   if (!m) return zaklad ? (zaklad + ' + ' + navic + ' týdnů (ATYP)') : '';
-  const nove = String(parseInt(m[0], 10) + navic);
-  return zaklad.slice(0, m.index) + nove + zaklad.slice(m.index + m[0].length)
-    + ' (vč. ' + navic + ' týdnů za ATYP)';
+  const nove = parseInt(m[0], 10) + navic;
+  /* „2 týdny" + 4 = „6 týdnů": tvar slova za číslem se srovná s novým číslem. */
+  const zbytek = zaklad.slice(m.index + m[0].length)
+    .replace(/^(\s+)týd(?:en|ny|nů)(?=$|[\s,.;:)])/, (x, mezera) => mezera + kryciTydnu(nove));
+  return zaklad.slice(0, m.index) + nove + zbytek + ' (vč. ' + navic + ' týdnů za ATYP)';
 }
 
 function kryciTerminDodani(c) {
@@ -429,16 +650,120 @@ function kryciTerminDodani(c) {
 
 /* hodnota pole: ruční přepis (data.kryci.hodnoty) > prefill > '' */
 function kryciHodnota(pole, kl, c) {
+  /* Odvozený řádek (`odvozene`, 30. 9. 2026 — Zaměření strojovna): hodnotu
+   * určuje kalkulace, ruční přepis se nečte (v datech zůstává). Zamčená
+   * varianta jde starou cestou (drží, co se odeslalo), a když se hodnota
+   * odvodit nedá, platí ruční přepis jako dřív. */
+  if (pole.odvozene && pole.prefill && !(c && c.zamceno)) {
+    try { const v = pole.prefill(c); if (v != null && v !== '') return v; } catch (e) {}
+  }
   /* `dphBind` je totéž provázání jako `bind`, jen mířené do sazby DPH
    * v hlavičce kalkulace — ruční přepis se proto nečte ani tady. */
   if (!pole.bind && !pole.dphBind) {   // provázaná pole (bind) čtou přímo ze ZAK, ne z ručních přepisů
     const h = (kl && kl.hodnoty) || {};
-    if (h[pole.id] !== undefined && h[pole.id] !== '') return h[pole.id];
+    if (h[pole.id] !== undefined && h[pole.id] !== '')
+      return typeof pole.normalizuj === 'function' ? pole.normalizuj(h[pole.id]) : h[pole.id];
+    /* zamčená varianta: předvyplnění z doby odeslání (P9.5); pole
+     * `nezmrazovat` (datum podpisu smlouvy, Q10) platí vždy ke dni tisku */
+    if (c && c.zmrazeno && !pole.nezmrazovat && c.zmrazeno[pole.id] !== undefined) return c.zmrazeno[pole.id];
   }
   if (pole.prefill) { try { const v = pole.prefill(c); if (v != null && v !== '') return v; } catch (e) {} }
   return '';
 }
 /* data pro Word danou verzi: {nadpis, sekce:[{sekce,radky:[[label,val]]}], nazevSouboru} */
+/* ============================================================
+ * HODINY Z KALKULACE — konec krycího listu OCK i PROJ, verze Backoffice
+ * (zadání J. V. 14. 10. 2026, návrh podklady/NAVRH_HODINY_KRYCI_LIST_
+ * 2026-10-14.md odsouhlasen s výhradou „desetinná čísla neuváděj,
+ * zaokrouhluj").
+ *
+ * KAŽDÝ LIST JEN SVOU STRANU (zadání J. V. 15. 10. 2026, v15.10.10 —
+ * nahrazuje rozhodnutí v14.10.2 o jedné tabulce se sloupci OCK i PROJ):
+ * krycí list OCK ukazuje jen hodiny z Kalkulace OCK, krycí list PROJ jen
+ * z Kalkulace PROJ; tabulka má jeden sloupec hodnot. Vyřazená / uzamčená
+ * strana (P6, vysledekStrany → null) tabulku ve svém listu nemá vůbec.
+ *
+ * Původně (14. 10.) jedna tabulka pro oba listy. Vypisují se hodiny ze
+ * všech položek, které se NABÍZEJÍ: OCK z počítaných řádků výsledku
+ * (`r.sekce.*` je už po filtru vyřazených a nepočítaných položek), hledané
+ * podle ceníkové cesty (přejmenování položky je neschová); PROJ po
+ * oceněných činnostech z hodinových položek (hodiny + rezerva), vyřazené
+ * a nulové se přeskočí. Paušální činnosti bez hodin (IČ, EZC, kolaudace,
+ * geodet) mají řádek „paušál (bez hodin)". Autorský dozor jen když se
+ * nabízí — „max. 30 h / měsíc", do celku se nepočítá. Vyřazená strana
+ * zakázky (P6) má sloupec „—".
+ *
+ * ZAOKROUHLUJE SE KAŽDÉ ČÍSLO NA CELÉ HODINY a řádek i celek se sčítají ze
+ * zaokrouhlených částí — tabulka tak dává součet sama v sobě (stejný princip
+ * jako #135 u cen). Odeslaná nabídka čte zmrazený otisk (vysledekStrany).
+ *
+ * Vrací { sloupce: ['', 'OCK'] | ['', 'PROJ'], radky: [[popis, hodnota]] }
+ * nebo null, když strana listu nemá co ukázat (vyřazená, nic s hodinami). */
+const KRYCI_HODINY_OCK = [
+  { popis: 'montáž na stavbě', cesty: ['C.montazHodKc'], montaz: true },
+  { popis: 'dílna — oplechování (práce)', cesty: ['C.oplechPracKc'] },
+  { popis: 'projekce / konstrukce', cesty: ['C.projekceHodKc'] },
+  { popis: 'statické posouzení', cesty: ['C.statikaKc'] },
+  { popis: 'stavbyvedoucí', cesty: ['C.stavbyvedouciKc'] },
+];
+const KRYCI_HODINY_PROJ = { zamereni: 'zaměření', studie: 'studie', projednani: 'projednání studie', dpz: 'DPZ', ic: 'IČ',
+  dps: 'DPS', ezc: 'EZC', kolaudace: 'kolaudace', geodet: 'geodetické zaměření' };
+function kryciHodinyText(n) { return Math.round(+n || 0).toLocaleString('cs-CZ') + ' h'; }
+function kryciHodiny(zak, varianta, jekly, strana) {
+  if (strana !== 'ock' && strana !== 'proj') return null;
+  let r = null;
+  try { r = (typeof vysledekStrany === 'function') ? vysledekStrany(zak, varianta, strana, jekly) : null; } catch (e) { r = null; }
+  const rOck = strana === 'ock' ? r : null, rProj = strana === 'proj' ? r : null;
+  const radky = [];
+  let celkem = null;
+  if (rOck && rOck.sekce) {
+    const pocitane = [].concat(rOck.sekce.hrubaOck || [], rOck.sekce.oplasteni || [], rOck.sekce.rezie || []);
+    KRYCI_HODINY_OCK.forEach(def => {
+      const casti = pocitane.filter(x => x && def.cesty.indexOf(x.cenaPath) >= 0)
+        .map(x => Math.round(+x.mnozstvi || 0)).filter(h => h > 0);
+      if (!casti.length) return;
+      const h = casti.reduce((a, b) => a + b, 0);
+      let detail = casti.length > 1 ? ' (' + casti.join(' + ') + ')' : '';
+      if (def.montaz && rOck.montaz && rOck.montaz.hodCelkem > 0 && rOck.montaz.hod1osoba > 0) {
+        const osob = Math.round(rOck.montaz.hodCelkem / rOck.montaz.hod1osoba);
+        const jeden = Math.round(rOck.montaz.hod1osoba);
+        if (osob > 1 && Math.round(rOck.montaz.hodCelkem) === h)
+          detail = ' (' + osob + ' os.' + (osob * jeden === h ? ' × ' + jeden + ' h' : '') + ')';
+      }
+      radky.push([def.popis, kryciHodinyText(h) + detail]);
+      celkem = (celkem || 0) + h;
+    });
+  }
+  if (rProj && Array.isArray(rProj.sekce)) {
+    const pausal = [];
+    Object.keys(KRYCI_HODINY_PROJ).forEach(k => {
+      const s = rProj.sekce.find(x => x && x.key === k);
+      if (!s || !(+s.celkem > 0)) return;                 // činnost se nenabízí
+      const casti = (s.polozky || []).filter(p => p && p.typ === 'hod' && !p.vyrazeno)
+        .map(p => ({ n: String(p.nazev || '').trim(), h: Math.round((+p.hodiny || 0) + (+p.rezerva || 0)) }))
+        .filter(x => x.h > 0);
+      if (!casti.length) { pausal.push(KRYCI_HODINY_PROJ[k]); return; }
+      const h = casti.reduce((a, x) => a + x.h, 0);
+      const detail = casti.length > 1 ? ' (' + casti.map(x => x.n + ' ' + x.h).join(' + ') + ')' : '';
+      radky.push([KRYCI_HODINY_PROJ[k], kryciHodinyText(h) + detail]);
+      celkem = (celkem || 0) + h;
+    });
+    if (pausal.length) radky.push([pausal.join(' / '), 'paušál (bez hodin)']);
+    const sazby = (typeof NABIDKA_PROJ_SAZBY !== 'undefined') ? NABIDKA_PROJ_SAZBY : null;
+    if (typeof nabidkaProjNabiziAD === 'function' && nabidkaProjNabiziAD(varianta))
+      radky.push(['autorský dozor', 'max. ' + ((sazby && sazby.autorskyDozorMaxHodin) || 30) + ' h / měsíc (do celku se nepočítá)']);
+  }
+  if (!radky.length) return null;
+  radky.push(['celkem', celkem == null ? '—' : kryciHodinyText(celkem)]);
+  return { sloupce: ['', strana === 'ock' ? 'OCK' : 'PROJ'], radky };
+}
+/* Sekce krycího listu s hodinami — jen verze Backoffice, jen strana listu. */
+function kryciHodinySekce(zak, varianta, jekly, verze, strana) {
+  if (verze !== 'bo') return null;
+  const h = kryciHodiny(zak, varianta, jekly, strana);
+  return h ? { sekce: 'Hodiny z kalkulace', sloupce: h.sloupce, radky: h.radky } : null;
+}
+
 function kryciData(zak, varianta, jekly, verze) {
   const c = kryciCtx(zak, varianta, jekly);
   const kl = varianta.data.kryci || { hodnoty: {} };
@@ -446,17 +771,19 @@ function kryciData(zak, varianta, jekly, verze) {
     const radky = s.pole.filter(p => p.verze.includes(verze)).map(p => [p.label, kryciHodnota(p, kl, c)]);
     return radky.length ? { sekce: s.sekce, radky } : null;
   }).filter(Boolean);
+  const hodiny = kryciHodinySekce(zak, varianta, jekly, verze, 'ock');   // konec listu BO, jen OCK (15. 10. 2026)
+  if (hodiny) sekce.push(hodiny);
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
   const cislo = (zak.cislo || 'CN').replace(/\s+/g, '');
   const nazevSouboru = ('KRYCI_LIST_' + verzeNazev + '_' + cislo).replace(/[\\/:*?"<>|]+/g, '-');
-  return { nadpis: 'Krycí list objednávky / SoD — ' + verzeNazev, sekce, nazevSouboru, verze, verzeNazev };
+  return { nadpis: 'Krycí list zakázky OCK — ' + verzeNazev, sekce, nazevSouboru, verze, verzeNazev };
 }
 
 /* registrace obou verzí do jednotného registru dokumentů (generují se od nuly) */
 if (typeof dokumentRegistruj === 'function') {
   [['bo', 'Backoffice'], ['techdata', 'Techdata']].forEach(([verze, label]) => {
     dokumentRegistruj('kryci_' + verze, {
-      nazev: 'Krycí list – ' + label,
+      nazev: 'Krycí list zakázky OCK – ' + label,
       generate: (zak, varianta, jekly) => {
         const d = kryciData(zak, varianta, jekly, verze);
         return { blob: docxDokumentBlob(d.nadpis, d.sekce), nazevSouboru: d.nazevSouboru, data: d };
@@ -548,6 +875,354 @@ function kryciSymbolyZeSekci(sekce, nazvy, hodnota, P) {
   return out;
 }
 
+/* Ruční hodnota z krycího listu PROJ téže varianty (P9.4 — podpisy a kopie
+ * se do krycího listu OCK předvyplní, ať se nepíšou dvakrát). */
+function kryciZKrycihoListuProj(c, id) {
+  const d = (c && c.varianta && c.varianta.data) || {};
+  const h = (d.kryciProj && d.kryciProj.hodnoty) || {};
+  return String(h[id] == null ? '' : h[id]).trim();
+}
+function kryciDatumCz(iso) {
+  const m = String(iso == null ? '' : iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? m[3] + '.' + m[2] + '.' + m[1] : String(iso == null ? '' : iso);
+}
+
+/* Symboly smlouvy o dílo realizace z krycího listu OCK (P9.2, P9.4): pole
+ * s klíčem `sod`. Plní se jen neprázdné — co chybí, zůstane ve Wordu {{…}}
+ * k doplnění (prázdné plnění by symbol beze stopy smazalo). Datum ve tvaru
+ * jako v nabídce (DD.MM.RRRR). */
+function kryciSodSymboly(zak, varianta, jekly, placeholders) {
+  const P = placeholders || {};
+  const c = kryciCtx(zak, varianta, jekly);
+  const kl = (varianta && varianta.data && varianta.data.kryci) || { hodnoty: {} };
+  KRYCI_SEKCE.forEach(s => s.pole.forEach(p => {
+    if (!p.sod) return;
+    let v = String(kryciHodnota(p, kl, c) || '').trim();
+    if (v && p.typ === 'date') v = kryciDatumCz(v);
+    if (v) P[p.sod] = v;
+  }));
+  /* Záruka (K18-N100): šablona píše „po dobu {{SOD_ZARUKA_MESICU}} měsíců",
+   * do symbolu jde jen číslo z krycího listu (zamčená varianta z doby
+   * odeslání). Bez čísla zůstane {{…}} k doplnění. */
+  const pz = KRYCI_SEKCE.reduce((a, s) => a || s.pole.find(p => p.id === 'zarukaMesicu'), null);
+  const zaruka = pz ? kryciCisloZTextu(kryciHodnota(pz, kl, c)) : '';
+  if (zaruka) P.SOD_ZARUKA_MESICU = zaruka;
+  return P;
+}
+
+/* ZÁMEK DRŽÍ I PŘEDVYPLNĚNÉ PODMÍNKY (P9.5, rozhodnutí J. V. 29. 9. 2026).
+ * Po odeslání zamrzly jen ruční přepisy krycího listu (jsou v datech
+ * varianty); co bylo předvyplněné z Nastavení (platnost, fakturace, termín,
+ * obchodník, datum), se počítalo znovu — smlouva vystavená po změně
+ * Nastavení tak mohla nést jiné podmínky, než jaké odešly v nabídce.
+ * Při prvním zamčení se proto předvyplněné hodnoty opíšou do
+ * data.kryci.zmrazeno; data zamčené varianty hlídá server, takže je nikdo
+ * nepřepíše. Pole provázaná se zakázkou (bind) se nezmrazují — mají vlastní
+ * zdroj. Nezmrazuje se ani pole `nezmrazovat` (datum podpisu smlouvy — platí
+ * ke dni tisku smlouvy, ne odeslání nabídky; J. V. 1. 10. 2026, Q10).
+ * Vrací počet zmrazených polí. */
+function kryciZmrazPodminky(zak, varianta, jekly) {
+  if (!varianta || !varianta.data) return 0;
+  const d = varianta.data;
+  if (!d.kryci || typeof d.kryci !== 'object') d.kryci = { hodnoty: {} };
+  const h = d.kryci.hodnoty || {};
+  const c = kryciCtx(zak, varianta, jekly);
+  c.zmrazeno = null;                         // čerstvě z Nastavení, ne ze staršího zmrazení
+  const out = {};
+  KRYCI_SEKCE.forEach(s => s.pole.forEach(p => {
+    if (p.bind || p.dphBind || p.nezmrazovat || typeof p.prefill !== 'function') return;
+    if (h[p.id] !== undefined && h[p.id] !== '') return;      // ruční přepis už je v datech
+    let v = '';
+    try { v = p.prefill(c); } catch (e) { v = ''; }
+    if (v != null && v !== '') out[p.id] = String(v);
+  }));
+  d.kryci.zmrazeno = out;
+  /* K3-N2: s předvyplněnými poli zamrznou i věty platebního kalendáře
+   * nabídky a díly vět SoD z Firmy (kryciPodmEfVarianty). */
+  d.kryci.zmrazenoPodminky = kryciPodm().podminkySnimek(c.firma, ['vety']);
+  /* Značka pravidel platebních podmínek, pod kterými nabídka odešla (D1/D2,
+   * 30. 9. 2026) — zamčená varianta bez ní odešla dřív a tiskne se jako
+   * dřív (kryciPlatbyStary). */
+  d.kryci.pravidlaPlateb = KRYCI_PRAVIDLA_PLATEB;
+  return Object.keys(out).length;
+}
+
+/* TISK SMLOUVY O DÍLO ZAMKNE ČÍSLO SoD A DATUM PODPISU (#366, V1,
+ * 17. 10. 2026). Zmrazení P9.5 proběhne při PRVNÍM zamčení (obvykle
+ * odeslání nabídky) a dvě pole smlouvy jím nezamrznou: datum podpisu
+ * (`nezmrazovat` — platí ke dni tisku smlouvy) a číslo SoD u nabídky
+ * odeslané před v17.10.2 (návrh tehdy neexistoval). Po tisku smlouvy by
+ * krycí list i dotisk smlouvy ukazovaly dnešní datum místo data podpisu.
+ * Proto se při PRVNÍM tisku smlouvy (zamekPrvniSmlouva) jejich hodnota
+ * opíše do ručních hodnot — tytéž, které právě šly do smlouvy. Zápis
+ * projde i serverem: pole nejsou v nabídce, takže jsou do tisku smlouvy
+ * volná (zamekKryciPoleVolne). Vrací počet opsaných polí. */
+const KRYCI_SOD_OPIS = ['cisloSod', 'sodDatumPodpisu'];
+function kryciZmrazSod(zak, varianta, jekly) {
+  if (!varianta || !varianta.data) return 0;
+  const d = varianta.data;
+  if (!d.kryci || typeof d.kryci !== 'object') d.kryci = { hodnoty: {} };
+  if (!d.kryci.hodnoty || typeof d.kryci.hodnoty !== 'object') d.kryci.hodnoty = {};
+  const h = d.kryci.hodnoty;
+  const c = kryciCtx(zak, varianta, jekly);
+  let n = 0;
+  KRYCI_SOD_OPIS.forEach(id => {
+    if (h[id] !== undefined && h[id] !== '') return;           // ruční hodnota už v datech je
+    const p = KRYCI_SEKCE.reduce((a, s) => a || s.pole.find(x => x.id === id), null);
+    if (!p) return;
+    const v = kryciHodnota(p, d.kryci, c);
+    if (v != null && v !== '') { h[id] = String(v); n++; }
+  });
+  return n;
+}
+
+/* ---------- PLATEBNÍ PODMÍNKY NABÍDKY OCK (etapa A, část 1 — 30. 9. 2026) ----------
+ *
+ * D1 (nález K18-N94): volba „Bez zálohy" dala ve Wordu větu „1. dílčí daňový
+ * doklad ve výši  (bez DPH)…" bez procenta. Šablona CN v13 má tři pevné věty
+ * a do první dosazuje {{PODM_ZALOHA1_PROC}}, které u „Bez zálohy" nic nenese.
+ * Splátka s 0 % se proto vynechá celá a zbylé dílčí doklady se přečíslují
+ * podle pořadí (návrh platebních podmínek 29. 9. 2026, oddíl 2: „doklad se
+ * pojmenuje sám podle pořadí") — dílčí faktura 2 (100 % − záloha − konečná,
+ * kryciFaktura2Dopocet) se pak tiskne jako 1. dílčí daňový doklad.
+ *
+ * D2 (rozhodnutí J. V. 29. 9. 2026, pokyn 30. 9.: „teď už by to mělo být
+ * možné, prověř to a nastav"): měsíční fakturace z krycího listu se do
+ * nabídky promítne schválenou větou místo vět o splátkách. Milníky zůstávají
+ * tři firemní, věty o podmínce úhrady u 1. a 2. splátky jako dnes.
+ *
+ * Znění vět je znění šablony CN v13 — slovník (preklad.js) je zná, v cizím
+ * jazyce je přeloží vzor s pořadím a procentem. Věty skládá aplikace pro
+ * šablonu CN v14 ({{PODM_PLATEBNI_KALENDAR}} — řádek tabulky za větu,
+ * {{PODM_FAKTURACE_MESICNE}} — tabulka měsíční fakturace; vyrábí je
+ * nastroje/vyrob_sablony.js --cn-v14). Dosavadní symboly {{PODM_ZALOHA1_PROC}}
+ * a spol. se plní beze změny, takže šablona v13 tiskne jako dřív; co
+ * nevytiskne, hlásí kontrola platbyWordOck.
+ *
+ * ODESLANÁ NABÍDKA SE NEMĚNÍ (P9.5 / A1): zamčená varianta bez značky
+ * `pravidlaPlateb` odešla pod dřívějším pravidlem („měsíční fakturace se do
+ * nabídky nepromítne, tiskne se 50/40/10") a tiskne se dál přesně větami v13
+ * (i s prázdným procentem, jak odešla). Značku zapíše kryciZmrazPodminky při
+ * prvním zamčení. */
+const KRYCI_PRAVIDLA_PLATEB = 1;
+const KRYCI_FAKTURACE_MESICNE_VETA = 'Fakturace probíhá měsíčně podle skutečně provedených prací.';
+const kryciVetaZalohy = (poradi, proc) => poradi + '. dílčí daňový doklad ve výši ' + proc
+  + ' (bez DPH) z celkové ceny díla bude vystaven po podpisu SoD. Úhrada tohoto daňového dokladu je podmínkou pro dodržení předem dohodnutých realizačních termínů.';
+const kryciVetaFaktury2 = (poradi, proc) => 'Po ukončení výroby, dodání materiálu na stavbu a po zahájení prací bude vystaven '
+  + poradi + '. dílčí daňový doklad ve výši ' + proc + ' (bez DPH) z celkové ceny díla. Úhrada tohoto daňového dokladu je podmínkou pro předání díla objednateli.';
+const KRYCI_VETA_KONECNA = 'Po ukončení všech výše uvedených prací a po řádném předání a převzetí celého díla předávacím protokolem '
+  + 'bude vystaven konečný daňový doklad na zbývající část celkové ceny díla s vyúčtováním DPH v zákonné výši.';
+/* Věty šablony CN v13 se symboly — klíče slovníku, ze kterých vznikly EN/DE/FR v13. */
+const KRYCI_VETY_V13 = [kryciVetaZalohy(1, '{{PODM_ZALOHA1_PROC}}'), kryciVetaFaktury2(2, '{{PODM_FAKTURA2_PROC}}'), KRYCI_VETA_KONECNA];
+
+/* Procento splátky z textu krycího listu: „Bez zálohy" = 0, jinak první číslo
+ * se znakem % (kryciProcentoZTextu); text bez procenta = neznámé (null) —
+ * nic se nedopočítává. */
+function kryciPlatbaProcento(text) {
+  const t = String(text == null ? '' : text);
+  if (/bez\s+zálohy/i.test(t)) return { pct: 0, proc: '' };
+  const proc = kryciProcentoZTextu(t);
+  const pct = proc ? parseFloat(proc.replace(',', '.')) : NaN;
+  return isFinite(pct) ? { pct, proc } : { pct: null, proc: '' };
+}
+
+/* Zamčená varianta, která odešla před pravidly D1/D2 (bez značky). */
+function kryciPlatbyStary(varianta) {
+  const d = (varianta && varianta.data) || {};
+  return !!(varianta && varianta.zamek && varianta.zamek.zamceno) && !(d.kryci && +d.kryci.pravidlaPlateb >= 1);
+}
+
+/* PLATEBNÍ KALENDÁŘ NABÍDKY z krycího listu varianty:
+ * { stary, mesicne, splatky: [{ id, text, pct, proc, poradi }], vynechane: [id],
+ *   necitelne: [id], hodnoty: { zaloha1, faktura2, fakturaKonc, zpusobFakturace } }.
+ * `poradi` = pořadí dílčího dokladu (1, 2), u konečného null. Kontext je
+ * lehký: pole platebních podmínek předvyplňuje jen Firma a zmrazení
+ * odeslané varianty — výpočet nabídky, který spouští kryciCtx, tu netřeba
+ * (test_platby_ock.js hlídá, že hodnoty sedí se symboly {{PODM_…}}). */
+function kryciPlatebniKalendar(zak, varianta, jekly) {
+  const d = (varianta && varianta.data) || {};
+  const kl = d.kryci || { hodnoty: {} };
+  const c = { zak, varianta, firma: (typeof firmaAktualni === 'function') ? firmaAktualni() : {},
+    zmrazeno: (varianta && varianta.zamek && varianta.zamek.zamceno && d.kryci && d.kryci.zmrazeno) || null };
+  const pole = {};
+  KRYCI_SEKCE.forEach(s => s.pole.forEach(p => { pole[p.id] = p; }));
+  const hodn = id => {
+    let v = '';
+    try { v = pole[id] ? kryciHodnota(pole[id], kl, c) : ''; } catch (e) { v = ''; }
+    return String(v == null ? '' : v);
+  };
+  const hodnoty = { zaloha1: hodn('zaloha1'), faktura2: hodn('faktura2'), fakturaKonc: hodn('fakturaKonc'),
+    zpusobFakturace: hodn('zpusobFakturace') };
+  const stary = kryciPlatbyStary(varianta);
+  /* Jen volba „Měsíční" z výběru. Vlastní znění (i dřívější „Náš standard
+   * / měsíční", P10.5) je dohoda, kterou aplikace nečte. */
+  const mesicne = !stary && hodnoty.zpusobFakturace.trim().toLowerCase() === KRYCI_FAKTURACE[1].toLowerCase();
+  const splatky = [], vynechane = [], necitelne = [];
+  let poradi = 0;
+  ['zaloha1', 'faktura2', 'fakturaKonc'].forEach(id => {
+    const text = hodnoty[id];
+    const konecna = id === 'fakturaKonc';
+    const { pct, proc } = kryciPlatbaProcento(text);
+    if (pct === 0) { vynechane.push(id); return; }
+    if (pct === null && !konecna) {
+      necitelne.push(id);
+      if (!text.trim()) return;                    // prázdné pole se netiskne (prázdno není nula)
+    }
+    splatky.push({ id, text, pct, proc, poradi: konecna ? null : ++poradi });
+  });
+  return { stary, mesicne, splatky, vynechane, necitelne, hodnoty, podmEf: kryciPodmEfVarianty(varianta) };
+}
+
+/* Symboly pro šablonu CN v14 (a online náhled) z kalendáře. P = překlad
+ * hodnot do jazyka nabídky (tr), lang jen kvůli francouzské dvojtečce.
+ * Konečný doklad nese větu „na zbývající část" — procento nepotřebuje;
+ * dílčí doklad bez čitelného procenta dostane řádek „1. dílčí faktura:
+ * <text krycího listu>" (vlastní znění zůstane, jak ho obchodník napsal). */
+function kryciPlatebniSymboly(kal, P, lang) {
+  const tr_ = (typeof P === 'function') ? P : (x => x);
+  if (!kal) return {};
+  if (kal.stary) {
+    const h = kal.hodnoty || {};
+    const vety = KRYCI_VETY_V13.map(v => String(tr_(v))
+      .replace('{{PODM_ZALOHA1_PROC}}', () => kryciProcentoZTextu(h.zaloha1))
+      .replace('{{PODM_FAKTURA2_PROC}}', () => kryciProcentoZTextu(h.faktura2)));
+    return { PODM_PLATEBNI_KALENDAR: vety.join('\n'), PODM_FAKTURACE_MESICNE: '' };
+  }
+  /* Věty z Firmy (#367 fáze 2b, Q3): česky znění Nastavení, cizí jazyk
+   * uložené znění, jinak slovník nad výchozí větou (= dosavadní výstup). */
+  const ef = kal.podmEf || kryciPodmEf(), V = (klic, s) => kryciPodm().podminkyVeta(ef, klic, lang, s && s.poradi, s && s.proc, tr_);
+  if (kal.mesicne) return { PODM_PLATEBNI_KALENDAR: '', PODM_FAKTURACE_MESICNE: V('mesicne') };
+  const dvojtecka = lang === 'fr' ? ' : ' : ': ';
+  const vety = (kal.splatky || []).map(s => {
+    if (s.id === 'fakturaKonc') return V('konecna');
+    if (s.pct === null) return tr_(s.poradi + '. dílčí faktura') + dvojtecka + tr_(s.text);
+    return V(s.id === 'zaloha1' ? 'zaloha' : 'faktura2', s);
+  });
+  return { PODM_PLATEBNI_KALENDAR: vety.join('\n'), PODM_FAKTURACE_MESICNE: '' };
+}
+
+/* ---------- SMLOUVA O DÍLO REALIZACE: ZÁRUKA A SPLÁTKY (K18-N100, 1. 10. 2026) ----------
+ *
+ * Ostrá v30.9.1 (C19, šablona SOD_REALIZACE v1): smlouva převzala cenu
+ * a termíny, ale {{SOD_ZARUKA_MESICU}} a {{SOD_SPLATKA1–4_PROC}} zůstaly
+ * k ručnímu doplnění, ač krycí list nese 60 měsíců a 50 / 40 / 10.
+ * Rozhodnutí J. V. 29. 9. 2026: platební podmínky se dotahují z krycího
+ * listu a při rozporu má krycí list přednost (#367, 10.3).
+ *
+ * Zdroj je TÝŽ platební kalendář jako u nabídky (kryciPlatebniKalendar):
+ * „Bez zálohy" splátku vynechá, „Měsíční" dá větu o měsíční fakturaci,
+ * zamčená varianta čte hodnoty z doby odeslání (zmrazeno).
+ *
+ * Šablona v2 (nastroje/vyrob_sablony.js --sod-real) má místo čtyř pevných
+ * vět jeden odstavec {{SOD_PLATEBNI_KALENDAR}} — generátor ho zopakuje za
+ * každou splátku. Šablona v1 má čtyři pevné věty s milníky smlouvy
+ * (po podpisu / po montáži konstrukce / po opláštění / po předání):
+ *   1 ← záloha, 2 ← dílčí faktura, 4 ← konečná („zbývajících …"),
+ *   věta 3 (druhá dílčí platba, kterou krycí list nemá) a věta zálohy
+ *   při „Bez zálohy" zmizí (`odstavcePryc`). Měsíční fakturaci ani víc
+ *   dílčích plateb v1 vyjádřit neumí — smlouva pak nevznikne a řekne proč.
+ * Splátka bez čitelného procenta zůstane ve v1 jako {{…}} k doplnění.
+ * Vrací { symboly, odstavcePryc, chyba }. */
+const KRYCI_SOD_VETA_ZALOHY = 'při uzavření této smlouvy o dílo';
+const KRYCI_SOD_Z_CENY = 'z celkové ceny díla';
+/* cizojazyčná smlouva (#157): konečná splátka jako milník + „zbývajících" */
+const KRYCI_SOD_VETA_KONECNA_CIZI = 'po provedení celého díla zhotovitele a jeho předání a převzetí bez vad a nedodělků bránících provozu výtahu';
+const KRYCI_SOD_ZBYVAJICI = 'zbývajících';
+const KRYCI_SOD_VETA_KONECNA = 'po provedení celého díla zhotovitele a jeho předání a převzetí bez vad a nedodělků bránících provozu výtahu zbývajících';
+function kryciSodMilnik(text) {
+  /* „40 % – po zahájení montáže" → „po zahájení montáže"; text bez pomlčky
+   * zůstane celý (vlastní znění obchodníka). */
+  const t = String(text == null ? '' : text).trim();
+  const m = t.match(/^\s*-?\d+(?:[.,]\d+)?\s*%\s*[–—-]\s*(.+)$/);
+  return m ? m[1].trim() : t;
+}
+/* Smlouva v cizím jazyce (#157, 17. 10. 2026): řádky seznamu plateb se
+ * skládají z týchž dílů přeložených slovníkem (tr) — milník, procento,
+ * „z celkové ceny díla". Vlastní znění obchodníka zůstane, jak ho napsal,
+ * když ho slovník nezná. */
+function kryciSodPlatby(zak, varianta, jekly, sablona, lang) {
+  const L = lang || 'cz';
+  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  const kal = kryciPlatebniKalendar(zak, varianta, jekly);
+  /* Díly vět z Firmy (#367 fáze 2b): česky Nastavení, cizí uložené znění,
+   * jinak slovník nad výchozím dílem (= dosavadní výstup). */
+  const ef = kryciPodmEfVarianty(varianta), V = klic => kryciPodm().podminkyVeta(ef, klic, L, null, null, P);
+  const sym = sablona && sablona.symboly;
+  const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
+  const symboly = {}, odstavcePryc = [];
+  const cislo = (proc) => String(proc || '').replace(/\s*%\s*$/, '');
+  /* seznam plateb (šablona v2, náhled) */
+  const radky = kal.mesicne ? [V('mesicne')] : kal.splatky.map(sp => {
+    if (sp.pct === null) return P(String(sp.text).trim());
+    if (L !== 'cz') {
+      /* „<milník> – [zbývajících] N % z celkové ceny díla" — pořadí, které
+       * drží ve všech jazycích; čeština zůstává beze změny (níž). */
+      const konecna = sp.id === 'fakturaKonc';
+      const milnik = sp.id === 'zaloha1' ? V('sodZaloha') : konecna ? V('sodKonecna') : P(kryciSodMilnik(sp.text));
+      return milnik + ' – ' + (konecna ? V('sodZbyvajici') + ' ' : '') + sp.proc + ' ' + V('sodZCeny');
+    }
+    const milnik = sp.id === 'zaloha1' ? V('sodZaloha') : sp.id === 'fakturaKonc' ? V('sodKonecna') + ' ' + V('sodZbyvajici') : kryciSodMilnik(sp.text);
+    return milnik + ' ' + sp.proc + ' ' + V('sodZCeny');
+  }).filter(Boolean);
+  if (radky.length) symboly.SOD_PLATEBNI_KALENDAR = radky.join('\n');
+  const stara = !!sym && !ma('SOD_PLATEBNI_KALENDAR') && ['SOD_SPLATKA1_PROC', 'SOD_SPLATKA2_PROC', 'SOD_SPLATKA3_PROC', 'SOD_SPLATKA4_PROC'].some(ma);
+  /* šablona v1 (i bez informace o šabloně se symboly v1 plní — náhled) */
+  const sp = id => kal.splatky.find(x => x.id === id);
+  const z = sp('zaloha1'), f2 = sp('faktura2'), k = sp('fakturaKonc');
+  if (!kal.mesicne) {
+    if (z && z.pct !== null) symboly.SOD_SPLATKA1_PROC = cislo(z.proc);
+    if (f2 && f2.pct !== null) symboly.SOD_SPLATKA2_PROC = cislo(f2.proc);
+    if (k && k.pct !== null) symboly.SOD_SPLATKA4_PROC = cislo(k.proc);
+  }
+  let chyba = '';
+  if (stara) {
+    if (kal.mesicne)
+      chyba = 'Šablona smlouvy o dílo realizace má čtyři pevné splátky a měsíční fakturaci z krycího listu OCK vyjádřit neumí. '
+        + 'Nahrajte šablonu SoD realizace se seznamem plateb {{SOD_PLATEBNI_KALENDAR}} (Nastavení → Smlouvy / Šablony), nebo změňte způsob fakturace v krycím listu OCK.';
+    else {
+      if (kal.vynechane.indexOf('zaloha1') >= 0) odstavcePryc.push('SOD_SPLATKA1_PROC');
+      if (kal.vynechane.indexOf('faktura2') >= 0) odstavcePryc.push('SOD_SPLATKA2_PROC');
+      odstavcePryc.push('SOD_SPLATKA3_PROC');
+    }
+  }
+  return { symboly, odstavcePryc, chyba, kalendar: kal };
+}
+
+/* ---------- POKUTA ZA PRODLENÍ ZHOTOVITELE VE SMLOUVĚ (1. 10. 2026) ----------
+ *
+ * Rozhodnutí J. V. k návrhu SoD (Q5): věta „Zhotovitel se zavazuje zaplatit
+ * objednateli smluvní pokutu ve výši … % z ceny díla …" bere v šabloně SoD
+ * realizace v2 sazbu z pokuty za prodlení DODÁVKY ({{PODM_POKUTA_DODAVKA_PROC}}),
+ * ne ze splatnosti — v1 tam měla symbol pokuty za prodlení zákazníka
+ * s placením. Co s větou udělat, řekne stav sazby z krycího listu:
+ *   'nula'      volba „0" (bez pokuty), ručně „0 %" nebo „bez pokuty" —
+ *               věta ve smlouvě nemá co říct a vypustí se celá (sod.js),
+ *   'procento'  čitelné procento — symbol se vyplní,
+ *   'necitelne' vlastní znění bez procenta (i prázdno) — symbol zůstane ve
+ *               Wordu {{…}} k doplnění; prázdno by dalo „ve výši  % z ceny".
+ * Totéž platí pro SoD projekce s pokutou za nedodržení termínu (Q6). */
+function kryciPokutaStav(text) {
+  const t = String(text == null ? '' : text).trim();
+  if (/^0+(?:[.,]0+)?(?:\s*%.*)?$/.test(t) || /^bez\s+(?:smluvní\s+)?pokut/i.test(t)) return 'nula';
+  const proc = kryciProcentoZTextu(t);
+  if (!proc) return 'necitelne';
+  return parseFloat(proc.replace(',', '.')) === 0 ? 'nula' : 'procento';
+}
+
+/* Hodnota jednoho pole krycího listu OCK bez výpočtu nabídky — lehký
+ * kontext jako u platebního kalendáře (pole podmínek předvyplňuje jen Firma
+ * a zmrazení odeslané varianty): ruční přepis > zmrazené > předvyplnění. */
+function kryciPoleHodnota(zak, varianta, id) {
+  const d = (varianta && varianta.data) || {};
+  const c = { zak, varianta, firma: (typeof firmaAktualni === 'function') ? firmaAktualni() : {},
+    zmrazeno: (varianta && varianta.zamek && varianta.zamek.zamceno && d.kryci && d.kryci.zmrazeno) || null };
+  const p = KRYCI_SEKCE.reduce((a, s) => a || s.pole.find(x => x.id === id), null);
+  if (!p) return '';
+  let v = '';
+  try { v = kryciHodnota(p, d.kryci || { hodnoty: {} }, c); } catch (e) { v = ''; }
+  return String(v == null ? '' : v);
+}
+
 function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
   const c = kryciCtx(zak, varianta, jekly);
   const kl = (varianta && varianta.data && varianta.data.kryci) || { hodnoty: {} };
@@ -555,9 +1230,13 @@ function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, kryciCtx, kryciHodnota,
+  module.exports = { kryciHodiny, kryciHodinySekce, KRYCI_HODINY_OCK, kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_ZALOHY, KRYCI_LIMIT_POKUT, kryciPokutySazby, kryciLimitVolby, kryciPodmEf, kryciPodmEfVarianty, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
     kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
-    kryciTerminDodani, kryciTerminDodaniText,
-    kryciSymbolyZeSekci, kryciPodminkoveSymboly,
-    kryciFaktura2Dopocet, kryciFaktura2Sync };
+    kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,
+    kryciSymbolyZeSekci, kryciPodminkoveSymboly, kryciSodSymboly, kryciZmrazPodminky, KRYCI_SOD_OPIS, kryciZmrazSod, kryciDatumCz,
+    kryciZKrycihoListuProj,
+    kryciFaktura2Dopocet, kryciFaktura2Sync,
+    KRYCI_PRAVIDLA_PLATEB, KRYCI_FAKTURACE_MESICNE_VETA, KRYCI_VETY_V13, kryciPlatbaProcento, kryciPlatbyStary,
+    kryciPlatebniKalendar, kryciPlatebniSymboly, kryciSodPlatby, kryciSodMilnik,
+    KRYCI_MISTO_PLNENI, KRYCI_DPH_REZIMY, KRYCI_EU_DIC, kryciDphRezimVychozi, kryciDnesIso, kryciPokutaStav, kryciPoleHodnota };

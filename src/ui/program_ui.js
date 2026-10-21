@@ -77,6 +77,27 @@ function progSrovnejNedotcene(verzeInfo) {
   if (typeof ZAK === 'undefined' || !ZAK || !Array.isArray(ZAK.varianty)) return 0;
   if (typeof cenikPrepoctiRozpracovane !== 'function'
     || typeof cenikDnesniData !== 'function') return 0;
+  /* RAZÍTKO CENÍKU NENÍ ZMĚNA UŽIVATELE (P5 / K14-N62, 25. 9. 2026).
+   *
+   * Tahle funkce vtiskne otevřené zakázce platný ceník sama — po zveřejnění
+   * nové verze, po přihlášení, po připojení složky. Otisk „naposledy
+   * uloženo" (`HIST.ulozenoJako`) se ale neposouval, takže od té chvíle
+   * zakázka hlásila neuložené změny, které nikdo neudělal: varování při
+   * zavření okna, dialog „Otevřít jinou zakázku", dotaz u nové zakázky.
+   * Přihlášení to obcházelo po svém (`onlinePoPrihlaseni`) — jen když razítko
+   * stihlo doběhnout dřív než posun otisku, což je závod.
+   *
+   * Stejné pravidlo jako u otevření zakázky (V35): přepočet na dnešní ceník
+   * se sám neukládá a nepočítá se za práci. Otisk se posune JEN tehdy, když
+   * před přepočtem nic rozepsaného nebylo — rozdělanou práci to neschová.
+   * Totéž pro otisk autosave (`ONLINE_STAV.posledni`), ať tlačítko Uložit
+   * nesvítí „čeká na uložení" kvůli něčemu, co se samo neuloží. */
+  const bezPrace = (typeof historieNeulozeno === 'function') && !historieNeulozeno();
+  let bezCekani = false;
+  try {
+    bezCekani = typeof ONLINE_STAV !== 'undefined' && !!ONLINE_STAV.posledni
+      && JSON.stringify(ZAK) === ONLINE_STAV.posledni;
+  } catch (e) { bezCekani = false; }
   const r = cenikPrepoctiRozpracovane(ZAK, cenikDnesniData(), Object.assign(
     { zahr: (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : null,
       build: (typeof buildVerze === 'function') ? buildVerze() : '' },
@@ -101,8 +122,12 @@ function progSrovnejNedotcene(verzeInfo) {
       zadani += cenikDoZadani(v);
     });
   }
-  const n = r.prepocteno + r.orazitkovano + (r.znacky || 0) + zadani;
+  const n = r.prepocteno + r.orazitkovano + (r.znacky || 0) + (r.popisy || 0) + zadani;
   if (n && typeof syncVarianta === 'function') syncVarianta();
+  if (n && bezPrace && typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+  if (n && bezCekani) {
+    try { ONLINE_STAV.posledni = JSON.stringify(ZAK); } catch (e) { /* nechat, jak bylo */ }
+  }
   return n;
 }
 
@@ -122,6 +147,8 @@ function progPouzij(zaznam) {
    * nese tři fixní částky lešení místo jedné. Převedeme je hned po načtení,
    * jinak by fixní část lešení v celé aplikaci byla nula (viz engine.js). */
   if (typeof cenikMigraceLeseni === 'function') cenikMigraceLeseni(DEFAULT_CENIK);
+  /* Změny příznaků, které nová platná verze už nese, se zapomenou (B179). */
+  if (typeof cenikDleNabidkyZmenyProcisti === 'function') cenikDleNabidkyZmenyProcisti();
   if (zaznam.katalog && typeof katalogImport === 'function') katalogImport(KATALOG, zaznam.katalog);
   if (zaznam.slevy && typeof NAST !== 'undefined' && NAST.slevy) {
     konfigNahradVMiste(NAST.slevy, zaznam.slevy);
@@ -132,6 +159,11 @@ function progPouzij(zaznam) {
   /* Verze se bere z použitého záznamu, ne z toho, co je zrovna platné –
    * kdyby se aplikace přepnula na starší verzi, razítko by jinak tvrdilo
    * číslo ceníku, ze kterého se nepočítá (#39). */
+  /* Společné dodatkové texty se po výměně ceníku vlévají znovu (N35) —
+   * `konfigNahradVMiste` výš je z výchozího ceníku smazala. Dřív než
+   * srovnání otevřené zakázky níž, ať s výchozím ceníkem nic nepracuje
+   * v neúplném stavu. */
+  if (typeof onlinePopisyVlijZnovu === 'function') onlinePopisyVlijZnovu(true);
   progSrovnejNedotcene({ verze: zaznam.verze, platnoOd: zaznam.platnoOd || '' });
 }
 
@@ -227,8 +259,18 @@ function progKontext(poznamka) {
    * porovnává tenhle kontext s uloženou verzí, a ta klíče nemá — bez očisty
    * by se každý podklad tvářil jako změněný. */
   const bezRady = o => (typeof cenikZverejneniOcisti === 'function') ? cenikZverejneniOcisti(o) : o;
+  /* Příznaky „cena dle nabídky" (B179, J. V. 17. 10. 2026): mapa NIKDY
+   * z ceníku varianty (tu mohl uložit kdokoli). Zveřejní se mapa platného
+   * ceníku (bez mapy = návrh výchozích osmi) se změnami, které správce v této
+   * relaci výslovně přepnul v Nastavení → Ceník — tedy přesně to, co sloupec
+   * ukazuje. Do kopie, ceník varianty zůstává. */
+  const sNavrhem = o => {
+    if (typeof cenikDleNabidkyMapaRelace === 'function') o.dleNabidky = cenikDleNabidkyMapaRelace();
+    else delete o.dleNabidky;
+    return o;
+  };
   return {
-    cenik: bezRady(bez(doplneno(d.cenik || {}, VZOR_OCK))),
+    cenik: bezRady(sNavrhem(bez(doplneno(d.cenik || {}, VZOR_OCK)))),
     cenikProj: bez(doplneno((d.proj && d.proj.cenik) || {}, VZOR_PROJ)),
     /* Řada VARIANTY, ze které podklad vznikl. Nezapisuje se do databáze
      * programu (programZaznam bere jen jmenovaná pole) — slouží kontrole
@@ -258,7 +300,12 @@ function progKontext(poznamka) {
 function progZverejniPojistka(ctx) {
   if (typeof cenikZverejneniKontrola !== 'function') return true;
   const zahr = (typeof CENIK_ZAHR !== 'undefined') ? CENIK_ZAHR : null;
-  const v = cenikZverejneniKontrola(ctx, zahr, ctx && ctx.rada);
+  /* Platná verze jde do kontroly od 22. 9. 2026 (nález B55): položka, jejíž
+   * ČR cena se zveřejněním NEMĚNÍ, se nepočítá jako shoda. Bez toho by
+   * nešlo zrušit víc než pět odchylek naráz — porovnávalo by se pořád proti
+   * tomu, co se ruší. */
+  const platny = (PROG_STAV.db && PROG_STAV.db.platny) || null;
+  const v = cenikZverejneniKontrola(ctx, zahr, ctx && ctx.rada, platny);
   if (v.ok) return true;
   const seznam = (v.shody && v.shody.length)
     ? '\n\nPoložky se shodnou cenou:\n' + v.shody.map(s => ' • ' + s.popis).join('\n')
@@ -291,10 +338,15 @@ function progZverejniRozpis(db, ctx) {
       + '\n' + pole.slice(0, 12).map(r => '   • ' + r.popis).join('\n')
       + (pole.length > 12 ? '\n   … a další ' + (pole.length - 12) : '')
     : 'beze změny');
+  /* Příznaky „cena dle nabídky" (B180, audit kola 26): rozdíly CEN je
+   * nevypíšou. Mapa jde z platného ceníku a změn správce (B179). */
+  const dn = (typeof cenikDleNabidkyRozpis === 'function')
+    ? cenikDleNabidkyRozpis(db.platny && db.platny.cenik, ctx && ctx.cenik) : '';
   return 'Varianta, ze které se zveřejňuje: řada ' + rada + '\n\n'
     + radek('Tuzemská řada (ČR)', cr) + '\n'
     + radek('Zahraniční odchylky (ZAHR)', zahr)
-    + ((!cr.length && !zahr.length) ? '\n\nCeník beze změny — mění se katalog nebo slevy.' : '');
+    + (dn ? '\n' + dn : '')
+    + ((!cr.length && !zahr.length && !dn) ? '\n\nCeník beze změny — mění se katalog nebo slevy.' : '');
 }
 
 async function progZverejni(preddanaPozn) {
@@ -336,7 +388,8 @@ async function progZverejni(preddanaPozn) {
     if (naDisku && String(naDisku.razitko || '') !== PROG_STAV.razitko) {
       if (!await potvrd('Databázi programu ve složce mezitím změnil někdo jiný'
         + (naDisku.razitko ? ' (naposledy ' + String(naDisku.razitko).slice(0, 16).replace('T', ' ') + ')' : '')
-        + '.\n\nOK = zveřejnit přesto (jeho verze zůstane v historii)\nZrušit = nechat soubor být a nejdřív si ho načíst')) return false;
+        + '.\n\nZveřejnit přesto? Jeho verze zůstane v historii.',
+        { ano: 'Zveřejnit přesto', ne: 'Nechat soubor být a nejdřív ho načíst' })) return false;
       // Navázat na to, co je na disku, ne na to, co máme v paměti – jinak by
       // se cizí verze z historie ztratila.
       try { PROG_STAV.db = programNormalizuj(naDisku); } catch (e) { /* nečitelné, zakládá se znovu */ }
@@ -644,6 +697,7 @@ function renderCenikProgramKarta() {
   return card('Platný ceník programu (OCK i PROJ)',
     `<div class="note" style="margin-top:0">${esc(stav)}</div>
      ${hlasky}
+     ${typeof ctrlUpozorneniBlok === 'function' ? ctrlUpozorneniBlok() : ''}
      <div class="btns" style="margin-top:10px">
        <button class="primary" onclick="cenikZverejniVse()" ${PROG_STAV.pracuje || ONLINE_STAV.pracuje ? 'disabled' : ''}>Zveřejnit ceník této varianty jako platný</button>
        ${akt.db ? `<button onclick="otevriProgram()">Verze ceníku… (historie)</button>` : ''}

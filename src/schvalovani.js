@@ -282,8 +282,41 @@ function schvalovaniSeznam(zak, vypocty, nast, role) {
  *
  * `spocteno: false` je tu podstatné: říká rozhraní, že čísla nechybí omylem,
  * ale že se v tomhle pohledu nepočítala. Kdo chce vidět peníze, otevře zakázku. */
+/* Cenová výjimka z rejstříku (13. 10. 2026): týž tvar záznamu, místo
+ * procenta počty položek a pásů; kategorie ze stavu. */
+const SCHV_VYJ_KATEGORIE = { 'čeká na schválení': 'ceka', 'schváleno': 'schvaleno', 'zamítnuto': 'zamitnuto' };
+function schvalovaniZaznamRejstrikVyjimka(p) {
+  const vy = p.vyjimka || {};
+  const kat = SCHV_VYJ_KATEGORIE[vy.stav] || 'bez';
+  return {
+    id: p.variantaId,
+    klic: String(p.klic || ''),
+    cast: 'vyjimka',
+    castNazev: 'Cenová výjimka (ceník / pás „jiné")',
+    nazev: String(p.variantaNazev || ''),
+    ridici: !!p.ridici,
+    zamceno: !!p.zamceno,
+    procenta: 0,
+    polozek: Math.max(0, +vy.polozek || 0),
+    pasu: Math.max(0, +vy.pasu || 0),
+    stav: String(vy.stav || ''),
+    kategorie: kat,
+    popis: SCHV_POPIS[kat] || '',
+    spocteno: false,
+    pozadal: String(vy.pozadal || ''),
+    schvalil: String(vy.schvalil || ''),
+    schvalilKdy: String(vy.schvalilKdy || ''),
+    zamitl: String(vy.zamitl || ''),
+    zamitlKdy: String(vy.zamitlKdy || ''),
+    zamitnutoDuvod: String(vy.zamitnutoDuvod || ''),
+    cizi: true,
+    cislo: String(p.cislo || ''),
+    nazevAkce: String(p.nazevAkce || ''),
+  };
+}
 function schvalovaniZaznamRejstrik(polozka) {
   const p = polozka || {};
+  if (p.cast === 'vyjimka') return schvalovaniZaznamRejstrikVyjimka(p);
   const sl = p.sleva || {};
   const kat = schvalovaniKategorie(sl);
   const proj = p.cast === 'proj';
@@ -336,7 +369,11 @@ function schvalovaniSeznamRejstrik(zadosti) {
  * částka. Kontroluje se tvar dat, ne jejich obsah — nová položka s cenou by
  * se sem musela doslova propašovat pod jménem, které neznáme. */
 const SCHV_REJSTRIK_POVOLENO = ['klic', 'cast', 'cislo', 'nazevAkce', 'variantaId', 'variantaNazev',
-  'ridici', 'zamceno', 'upraveno', 'sleva'];
+  'ridici', 'zamceno', 'upraveno', 'sleva', 'vyjimka'];
+/* Cenová výjimka v rejstříku (13. 10. 2026, vyjimky.js VYJ_REJSTRIK_POLE):
+ * stav a počty, žádná částka ani položka ceníku. */
+const SCHV_REJSTRIK_VYJIMKA_POVOLENO = ['stav', 'polozek', 'pasu', 'pozadal', 'pozadalKdy',
+  'schvalil', 'schvalilKdy', 'zamitl', 'zamitlKdy', 'zamitnutoDuvod'];
 const SCHV_REJSTRIK_SLEVA_POVOLENO = ['procenta', 'role', 'schema', 'poznamka', 'stav',
   'schvalil', 'schvalilKdy', 'schvalenoProc', 'zamitl', 'zamitlKdy', 'zamitnutoProc',
   'zamitnutoDuvod'];
@@ -347,6 +384,9 @@ function schvalovaniRejstrikNeznameKlice(zadosti) {
     Object.keys(z || {}).forEach(k => { if (!SCHV_REJSTRIK_POVOLENO.includes(k)) spatne.push(k); });
     Object.keys((z && z.sleva) || {}).forEach(k => {
       if (!SCHV_REJSTRIK_SLEVA_POVOLENO.includes(k)) spatne.push('sleva.' + k);
+    });
+    Object.keys((z && z.vyjimka) || {}).forEach(k => {
+      if (!SCHV_REJSTRIK_VYJIMKA_POVOLENO.includes(k)) spatne.push('vyjimka.' + k);
     });
   });
   return [...new Set(spatne)];
@@ -382,14 +422,29 @@ function schvalovaniSouhrn(seznam) {
  *
  * Vrací { ok:true } nebo { ok:false, chyba } a v `nova` doplní razítka.
  * `relace` = { email, jmeno, role }, `nast` = program.db.slevy (stropy). */
-function schvalovaniRozhodnutiKlic(sl) {
+/* `bezCasu` (B105, 13. 10. 2026): čas rozhodnutí razí server, takže se do
+ * porovnání „je to pořád totéž rozhodnutí" nepočítá — prohlížeč drží svůj
+ * čas z okamžiku kliknutí až do příštího načtení. */
+function schvalovaniRozhodnutiKlic(sl, bezCasu) {
   if (!sl) return '';
   const lidske = sl.stav === SCHV_SCHVALENO || (sl.stav === SCHV_ZAMITNUTO && !!sl.zamitl);
   if (!lidske) return '';
   return JSON.stringify({ stav: sl.stav, p: +sl.procenta || 0,
-    sp: sl.schvalenoProc, s: sl.schvalil || '', sk: sl.schvalilKdy || '',
-    zp: sl.zamitnutoProc, z: sl.zamitl || '', zk: sl.zamitlKdy || '' });
+    sp: sl.schvalenoProc, s: sl.schvalil || '', sk: bezCasu ? '' : (sl.schvalilKdy || ''),
+    zp: sl.zamitnutoProc, z: sl.zamitl || '', zk: bezCasu ? '' : (sl.zamitlKdy || '') });
 }
+const SCHV_STAVY = [SCHV_BEZ, SCHV_AUTO, SCHV_CEKA, SCHV_SCHVALENO, SCHV_ZAMITNUTO];
+/* Čas rozhodnutí z prohlížeče je věrohodný, když je nejvýš 10 minut od
+ * času serveru (B105 — autosave běží hned po kliknutí). */
+const SCHV_KDY_TOLERANCE_MS = 10 * 60 * 1000;
+function schvalovaniKdyBlizko(kdy, ted) {
+  const a = Date.parse(String(kdy || '')), b = Date.parse(ted);
+  return typeof kdy === 'string' && /^\d{4}-\d\d-\d\dT/.test(kdy) && isFinite(a) && isFinite(b)
+    && Math.abs(a - b) <= SCHV_KDY_TOLERANCE_MS;
+}
+/* Pole rozhodnutí, která se u vrácené žádosti obnoví z uložené verze. */
+const SCHV_ROZHODNUTI_POLE = ['stav', 'schvalenoProc', 'schvalil', 'schvalilKdy', 'schvalilEmail',
+                              'zamitnutoProc', 'zamitl', 'zamitlKdy', 'zamitlEmail', 'zamitnutoDuvod'];
 function schvalovaniServerKontrola(stara, nova, relace, nast) {
   relace = relace || {};
   const role = relace.role || '';
@@ -397,6 +452,12 @@ function schvalovaniServerKontrola(stara, nova, relace, nast) {
   const stare = (stara && Array.isArray(stara.varianty)) ? stara.varianty : [];
   const ted = new Date().toISOString();
   for (const v of ((nova && Array.isArray(nova.varianty)) ? nova.varianty : [])) {
+    for (const cast of ['sleva', 'slevaProj']) {
+      const sl0 = v && v.data && v.data[cast];
+      /* Stav jen z výčtu (revize 13. 10.): „xyz" by obešel větve níž. */
+      if (sl0 && sl0.stav != null && SCHV_STAVY.indexOf(sl0.stav) < 0)
+        return { ok: false, chyba: 'Neznámý stav slevy „' + String(sl0.stav).slice(0, 40) + '".' };
+    }
     if (!v || !v.data) continue;
     const sv = stare.find(x => x && x.id === v.id);
     for (const cast of ['sleva', 'slevaProj']) {
@@ -404,22 +465,76 @@ function schvalovaniServerKontrola(stara, nova, relace, nast) {
       if (!sl) continue;
       const p = +sl.procenta || 0;
       const ulozene = sv && sv.data ? sv.data[cast] : null;
-      const klicNovy = schvalovaniRozhodnutiKlic(sl);
-      if (klicNovy && klicNovy === schvalovaniRozhodnutiKlic(ulozene)) continue;   // beze změny
+      /* ROLE SLEVY URČUJE RELACE, NE DATA (P1 / K16-N73, K16-N74, 25. 9.
+       * 2026). Karta slevy dřív nabízela „Role zadavatele" se všemi rolemi:
+       * obchodník zvolil Administrátora a prohlížeč mu slevu nad strop
+       * „schválil automaticky". Teď: kdo mění procenta, je autor slevy a její
+       * role je role jeho relace; bez změny procent se role z uložené verze
+       * přepsat nedá. */
+      const zmenaProc = !ulozene || (+ulozene.procenta || 0) !== p;
+      if (zmenaProc) { if (role) sl.role = role; }
+      else if (ulozene && ulozene.role != null) sl.role = ulozene.role;
+      const klicNovy = schvalovaniRozhodnutiKlic(sl, true);
+      const klicUlozeny = schvalovaniRozhodnutiKlic(ulozene, true);
+      if (klicNovy && klicNovy === klicUlozeny) {                               // beze změny
+        /* Rozhodnutí zůstává celé tak, jak ho uložil server — čas (B105),
+         * e-mail i důvod zamítnutí (revize 13. 10.: e-mail a důvod šly
+         * podvrhnout i u „beze změny"). */
+        SCHV_ROZHODNUTI_POLE.forEach(k => {
+          if (ulozene[k] !== undefined) sl[k] = ulozene[k]; else delete sl[k];
+        });
+        continue;
+      }
       if (klicNovy) {
         if (!schvalovaniSmiRozhodnout(role, p, nast))
           return { ok: false, chyba: 'Slevu ' + p + ' % smí schválit nebo zamítnout jen '
             + 'nadřízený s dostatečným stropem; role ' + (role || '?') + ' na to právo nemá.' };
+        /* ČAS ROZHODNUTÍ HLÍDÁ SERVER (B105, audit 9. 9. 2026). Dřív se bral
+         * čas z prohlížeče, ať byl jakýkoli — rozhodnutí šlo antedatovat
+         * (třeba před odeslání nabídky). Čas z prohlížeče se přijme jen
+         * blízko času serveru (okamžik kliknutí před autosave); jinak razí
+         * server. Bez té tolerance by prohlížeč držel jiný čas než server
+         * a zámek nabídky vytištěné hned po schválení by při dalším uložení
+         * nesouhlasil (409; revize 13. 10.). */
+        const kdy = (k) => schvalovaniKdyBlizko(sl[k], ted) ? sl[k] : ted;
         if (sl.stav === SCHV_SCHVALENO) {
-          sl.schvalil = jmeno; sl.schvalilEmail = relace.email || '';
-          if (!sl.schvalilKdy) sl.schvalilKdy = ted;
+          sl.schvalil = jmeno; sl.schvalilEmail = relace.email || ''; sl.schvalilKdy = kdy('schvalilKdy');
         } else {
-          sl.zamitl = jmeno; sl.zamitlEmail = relace.email || '';
-          if (!sl.zamitlKdy) sl.zamitlKdy = ted;
+          sl.zamitl = jmeno; sl.zamitlEmail = relace.email || ''; sl.zamitlKdy = kdy('zamitlKdy');
         }
         continue;
       }
+      /* ROZHODNUTÍ ZPĚT NA „ČEKÁ" JEN S PRÁVEM ROZHODNOUT (B101, audit 9. 9.
+       * 2026). „Vzít rozhodnutí zpět" (schvalovaniVrat) je krok nadřízeného;
+       * bez změny procent ho obchodník uložením neprovede — zamítnutí by tak
+       * zmizelo a žádost by se vrátila do fronty, jako by o ní nikdo nerozhodl.
+       * Vrací se uložené rozhodnutí (stejně jako u cizího auto-schválení). */
+      /* Revize 13. 10.: nejen „čeká" — i prázdný či automatický stav nebo
+       * zamítnutí bez jména by rozhodnutí smazaly. */
+      /* Výjimka: schválená sleva, kterou prohlížeč sám přepnul na zamítnutí
+       * pod minimální marží (bez jména) — sleva tím do ceny nejde, takže je
+       * to bezpečný směr a uložení se nesmí zastavit o kontrolu marže. */
+      const podMarzi = sl.stav === SCHV_ZAMITNUTO && !sl.zamitl && ulozene && ulozene.stav === SCHV_SCHVALENO;
+      if (klicUlozeny && !zmenaProc && !podMarzi && !schvalovaniSmiRozhodnout(role, p, nast)) {
+        SCHV_ROZHODNUTI_POLE.forEach(k => {
+          if (ulozene[k] !== undefined) sl[k] = ulozene[k]; else delete sl[k];
+        });
+        continue;
+      }
       const autoBezeZmeny = !!ulozene && ulozene.stav === SCHV_AUTO && (+ulozene.procenta || 0) === p;
+      /* CIZÍ ŽÁDOST SE ULOŽENÍM NESCHVÁLÍ (P1 / K16-N74). Obchodník uložil
+       * 10 % jako „čeká"; vedoucí zakázku jen otevřel, jeho prohlížeč stav
+       * přepočítal na „schváleno automaticky" a uložení ho zapsalo — bez
+       * rozhodnutí a bez jména. Bez změny procent se automatické schválení
+       * přijme jen od téže role, jaká slevu zadala; jinak se vrací uložený
+       * stav. Schvaluje se výslovně (záložka Schvalování, razítko serveru). */
+      if (sl.stav === SCHV_AUTO && p > 0 && !autoBezeZmeny && !zmenaProc
+          && !(role && role === (ulozene && ulozene.role) && schvalovaniSmiRozhodnout(role, p, nast))) {
+        SCHV_ROZHODNUTI_POLE.forEach(k => {
+          if (ulozene && ulozene[k] !== undefined) sl[k] = ulozene[k]; else delete sl[k];
+        });
+        continue;
+      }
       if (sl.stav === SCHV_AUTO && p > 0 && !autoBezeZmeny && !schvalovaniSmiRozhodnout(role, p, nast))
         return { ok: false, chyba: 'Sleva ' + p + ' % je nad stropem role ' + (role || '?')
           + ' a nemůže být schválená automaticky — musí počkat na nadřízeného.' };
@@ -428,9 +543,80 @@ function schvalovaniServerKontrola(stara, nova, relace, nast) {
   return { ok: true };
 }
 
+/* MINIMÁLNÍ MARŽI U SLEVY OVĚŘUJE I SERVER (#341, nález B71 hloubkového
+ * testu 24. 9. 2026). schvalovaniServerKontrola hlídá jen strop role —
+ * marži nepočítala, takže upravený klient uložil „schváleno automaticky"
+ * (nebo si nechal schválit) slevu, po které nabídka klesne pod firemní
+ * minimum. Prohlížeč takovou slevu sám nikdy neuloží jako platnou
+ * (schvalovaniPrepocti ji přepne na „zamítnuto"), takže tahle kontrola
+ * poctivého obchodníka nezastaví — leda by měl načtené starší nastavení slev.
+ *
+ * Server spočítá základ TÉ ČÁSTI stejně jako prohlížeč (slevaZaklad
+ * v ui/common.js): OCK = souhrn.zakladCena / zakladNaklad, PROJ =
+ * souhrn.celkem / naklad + doprava. Minimum bere z programu (db.slevy).
+ *
+ * Co se nekontroluje a proč:
+ *  – varianta zamčená UŽ V ULOŽENÉ VERZI: odeslaná nabídka je doklad
+ *    a server ji nepřepočítává (stejně jako B53/B59);
+ *  – sleva, která neplatí (čeká, zamítnutá, 0 %): do ceny se nepropíše;
+ *  – varianta, kterou jádro nespočítá: bez výsledku nejde nic tvrdit a jádro
+ *    nespočítá ani tisk v prohlížeči — raději uložit než zahodit práci.
+ * Čísla marže se v hlášce neuvádějí: minimum je obchodní tajemství. */
+function schvalovaniZakladCasti(v, jekly, cast) {
+  const d = (v && v.data) || {};
+  try {
+    if (cast === 'proj') {
+      const r = vypocetProj(d.proj.zadani, d.proj.cenik);
+      if (!r || !r.souhrn) return null;
+      return { zakladCena: r.souhrn.celkem, zakladNaklad: r.souhrn.naklad + (r.souhrn.doprava || 0) };
+    }
+    const r = vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes);
+    if (!r || !r.souhrn) return null;
+    return { zakladCena: r.souhrn.zakladCena, zakladNaklad: r.souhrn.zakladNaklad };
+  } catch (e) { return null; }
+}
+function schvalovaniServerMarze(stara, nova, jekly, nast) {
+  nast = nast || {};
+  if (!(+nast.minMarze > 0)) return { ok: true };                 // minimum nenastavené — není co hlídat
+  const stare = (stara && Array.isArray(stara.varianty)) ? stara.varianty : [];
+  const zamcena = (v) => !!(v && v.zamek && v.zamek.zamceno);
+  for (const v of ((nova && Array.isArray(nova.varianty)) ? nova.varianty : [])) {
+    if (!v || !v.data) continue;
+    if (zamcena(stare.find(x => x && x.id === v.id))) continue;  // doklad — nepřepočítává se
+    /* Vyřazená strana zakázky (P6, zámek strany) se do ceny nepropíše —
+     * její slevu server neposuzuje (D6g: totéž pravidlo jako klient). */
+    const vyrazena = (typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(nova) : '';
+    for (const cast of ['ock', 'proj']) {
+      if (cast === vyrazena) continue;
+      const chyba = schvalovaniMarzeCasti(v, jekly, cast, nast);
+      if (chyba) return { ok: false, chyba: chyba + ' Obnovte stránku (F5), aby se načetlo '
+        + 'platné nastavení slev, a slevu upravte.' };
+    }
+  }
+  return { ok: true };
+}
+/* Marže platné slevy JEDNÉ STRANY varianty ('ock' | 'proj'). Vrací větu
+ * (bez čísel marže), nebo ''. Volá ji i dotisk dokumentu nové strany do
+ * odeslané varianty (B153): strana vyřazená při zámku (jenProj / jenOck)
+ * se tehdy neposuzovala a po vypnutí příznaku by vyšla dotiskem. */
+function schvalovaniMarzeCasti(v, jekly, cast, nast) {
+  nast = nast || {};
+  if (!(+nast.minMarze > 0) || !v || !v.data) return '';
+  const sl = v.data[cast === 'proj' ? 'slevaProj' : 'sleva'];
+  if (!slevaPlati(sl)) return '';
+  const z = schvalovaniZakladCasti(v, jekly, cast);
+  if (!z || !isFinite(z.zakladCena) || !isFinite(z.zakladNaklad)) return '';
+  if (!slevaVyhodnot(z.zakladCena, z.zakladNaklad, sl, nast).podMarzi) return '';
+  return 'Sleva ' + (+sl.procenta || 0) + ' % ('
+    + (cast === 'proj' ? 'projekční práce' : 'výtahová šachta') + ', varianta „'
+    + String(v.nazev || v.id) + '") by stlačila nabídku pod firemní minimální marži, '
+    + 'takže ji nejde schválit ani propsat do ceny.';
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { SCHV_BEZ, SCHV_AUTO, SCHV_CEKA, SCHV_SCHVALENO, SCHV_ZAMITNUTO,
+  module.exports = { SCHV_BEZ, SCHV_AUTO, SCHV_CEKA, SCHV_SCHVALENO, SCHV_ZAMITNUTO, SCHV_STAVY, schvalovaniKdyBlizko,
                      schvalovaniRozhodnutiKlic, schvalovaniServerKontrola,
+                     schvalovaniZakladCasti, schvalovaniServerMarze, schvalovaniMarzeCasti,
                      SCHV_PORADI, SCHV_POPIS, SCHV_ROLE_VYCHOZI,
                      schvalovaniKategorie, schvalovaniStrop, schvalovaniSmiRozhodnout,
                      schvalovaniKdoMuze, schvalovaniPrepocti,
@@ -438,4 +624,4 @@ if (typeof module !== 'undefined')
                      schvalovaniZaznam, schvalovaniSeznam, schvalovaniSouhrn,
                      schvalovaniZaznamRejstrik, schvalovaniSeznamRejstrik,
                      schvalovaniRejstrikNeznameKlice,
-                     SCHV_REJSTRIK_POVOLENO, SCHV_REJSTRIK_SLEVA_POVOLENO };
+                     SCHV_REJSTRIK_POVOLENO, SCHV_REJSTRIK_SLEVA_POVOLENO, SCHV_REJSTRIK_VYJIMKA_POVOLENO };

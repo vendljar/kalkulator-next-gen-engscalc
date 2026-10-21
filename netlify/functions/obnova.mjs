@@ -12,7 +12,7 @@
  *               | { otisk: 'YYYY-MM-DD' | '…-pred-obnovou' },
  *   rezim:      'doplnit' (zapíše jen to, co na serveru chybí)
  *               | 'prepsat' (zapíše všechno ze zálohy přes stávající),
- *   casti:      ['program','firma','zobrazeni','zakazky','uzivatele',
+ *   casti:      ['program','firma','zobrazeni','popisy','slovnik','controlling','zakazky','uzivatele',
  *                'sablony','zakaznici','podpisy']   — nepovinné = všechny,
  *   nahled:     true  → NIC nezapíše, jen vrátí, co by se stalo,
  *   potvrzeni:  'OBNOVIT' → bez něj se ostrá obnova odmítne (428)
@@ -82,12 +82,14 @@
  *    na to upozorní: firemní údaje a účty toho druhého webu nemusí být to,
  *    co tu člověk chce. */
 import { randomBytes } from 'node:crypto';
-import { uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hostitel, emailPlatny,
-         podpisZkontroluj, hesloVerzeUctu, SMAZANI_ULOZISTE } from '../lib/sdilene.mjs';
+import { potvrdHesloSpravce, uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hostitel, emailPlatny,
+         podpisZkontroluj, hesloVerzeUctu, SMAZANI_ULOZISTE,
+         bezHlavnihoUctu, serverVerze } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
+import { zakazkaPrijmi, zakazkaServerKontrola } from '../lib/zakazka_kontrola.mjs';
 import { porizOtisk, klicPredObnovou, OTISK_KLIC } from '../lib/zalohovani.mjs';
 
-export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'zakazky', 'uzivatele',
+export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'controlling', 'zakazky', 'uzivatele',
                              'sablony', 'zakaznici', 'podpisy'];
 export const OBNOVA_REZIMY = ['doplnit', 'prepsat'];
 export const OBNOVA_POTVRZENI = 'OBNOVIT';
@@ -97,8 +99,12 @@ const KLIC_MAX = 200;
 const TOKEN_PREDPONA = 'obnova-';
 const tokenKlic = (id) => TOKEN_PREDPONA + id;
 const maVlastni = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+/* Nese záloha matici zobrazení tak, že by ji obnova zapsala (B188)? Prázdná
+ * část (`null`, dávka bez matice) se přeskočí a heslo nepotřebuje. */
+export const obnovaNeseMatici = (z) => !!z && maVlastni(z, 'zobrazeni') && z.zobrazeni != null && typeof z.zobrazeni === 'object';
 
 const stejne = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const obnovaTxt = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
 const bilance = () => ({ nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0, duvody: [] });
 const preskoc = (b, klic, duvod) => { b.preskocene++; b.duvody.push({ klic: String(klic), duvod }); };
 
@@ -129,7 +135,8 @@ async function zaznam(b, s, klic, novy, rezim, zapisovat, kontrola) {
 
 /* Mapa klíč → záznam (sablony, zakaznici, podpisy; zakázky s předponou).
  * `overeni(klic, hodnota)` (B32) posoudí každý záznam ještě PŘED čtením
- * ze serveru — vrací důvod přeskočení, nebo prázdno. */
+ * ze serveru — vrací důvod přeskočení, prázdno, nebo { hodnota } s očištěným
+ * záznamem, který se zapíše místo původního (zákazníci, B100). */
 async function obnovMapu(b, s, mapa, rezim, zapisovat, predpona, kontrola, overeni) {
   if (!mapa || typeof mapa !== 'object' || Array.isArray(mapa)) {
     preskoc(b, '*', 'záloha tuto část nenese'); return;
@@ -137,12 +144,32 @@ async function obnovMapu(b, s, mapa, rezim, zapisovat, predpona, kontrola, overe
   for (const [k, v] of Object.entries(mapa)) {
     if (!k || k.length > KLIC_MAX) { preskoc(b, k, 'nepřijatelný klíč'); continue; }
     if (v == null || typeof v !== 'object') { preskoc(b, k, 'poškozený záznam (není objekt)'); continue; }
+    let hodnota = v;
     if (overeni) {
-      const d = overeni(k, v);
-      if (d) { preskoc(b, k, d); continue; }
+      /* Důvod přeskočení (text), nebo { hodnota } = očištěný záznam k zápisu. */
+      const d = await overeni(k, v);
+      if (typeof d === 'string' && d) { preskoc(b, k, d); continue; }
+      if (d && typeof d === 'object') hodnota = d.hodnota;
     }
-    await zaznam(b, s, (predpona || '') + k, v, rezim, zapisovat, kontrola);
+    await zaznam(b, s, (predpona || '') + k, hodnota, rezim, zapisovat, kontrola);
   }
+}
+
+/* REJSTŘÍK ŠABLON ZE ZÁLOHY JEN V OČEKÁVANÉM TVARU (B147, 12. 10. 2026):
+ * objekt s typy, každý typ známý, platná verze s kladným celým číslem,
+ * historie jako pole. Vrací důvod přeskočení, nebo ''. */
+function obnovaRejstrikSablonVada(r) {
+  const obj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  const verzeOk = (m) => obj(m) && Number.isInteger(m.verze) && m.verze > 0;
+  if (!obj(r) || !obj(r.typy)) return 'rejstřík šablon v nepovoleném tvaru';
+  if (r.rezim !== undefined && r.rezim !== 'prisny' && r.rezim !== 'mekky') return 'rejstřík šablon s neznámým režimem';
+  for (const [typ, t] of Object.entries(r.typy)) {
+    if (!globalThis.sablonaTypPlatny(typ) || !obj(t)) return 'rejstřík šablon s neznámým typem nebo záznamem';
+    if (t.platna != null && !verzeOk(t.platna)) return 'rejstřík šablon: platná verze „' + typ + '" v nepovoleném tvaru';
+    if (t.historie !== undefined && !(Array.isArray(t.historie) && t.historie.every(verzeOk)))
+      return 'rejstřík šablon: historie „' + typ + '" v nepovoleném tvaru';
+  }
+  return '';
 }
 
 /* Rejstřík ze skutečného obsahu úložiště — ne ze zálohy. */
@@ -263,11 +290,17 @@ export default async (req) => {
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte POST.' }, 405);
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
   if (chyba) return chyba;
-  let ULO;
-  try { ({ ULO } = await jadro()); } catch (e) { return jadroChyba(e); }
+  /* Obnova přepisuje účty i podpisy a hlavní účet v ní chrání porovnání
+   * s ADMIN_EMAIL (viz „hlavní administrátorský účet obnoví jen on sám"
+   * a „podpis hlavního administrátora mění jen on sám"). Bez té adresy
+   * ochrany neplatí, takže se obnova neobsluhuje (B54, 22. 9. 2026). */
+  { const stop = bezHlavnihoUctu(); if (stop) return stop; }
+  let ULO, SCHV, JEKLY, fm, ZOB;
+  try { ({ ULO, SCHV, JEKLY, fm, ZOB } = await jadro()); } catch (e) { return jadroChyba(e); }
 
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
-  if (!t || typeof t !== 'object') return json({ ok: false, chyba: 'Chybí tělo požadavku.' }, 400);
+  /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
 
   const faze = String(t.faze || '');
   const nahled = t.nahled === true;
@@ -377,6 +410,28 @@ export default async (req) => {
     upozorneni.push('Záloha pochází z jiného webu (' + zdrojPopis.web + ') než ten, do kterého obnovujete ('
       + tenhleWeb + '). Firemní údaje a účty toho webu nemusí být to, co tu chcete — zvažte odškrtnutí částí.');
 
+  /* ÚČTY Z OTISKU JEN S HESLEM SPRÁVCE (B77, 13. 10. 2026, rozhodnutí J. V.).
+   * Obnova části „uzivatele" přepisuje otisky hesel — kdo má cookie správce,
+   * vrátil by tudy kolegovi (i jinému správci) starší heslo, které zná.
+   * Účty se zapisují jen ze serverového otisku (B27), ze souboru se
+   * přeskočí, takže se heslo chce jen tam, kde by se opravdu zapsaly;
+   * náhled nic nezapisuje a heslo nechce. Ověří se dřív než zámek a otisk
+   * před obnovou — odmítnutí nesmí nic zapsat. */
+  /* MATICE ZOBRAZENÍ JEN S HESLEM SPRÁVCE (B188, audit 18. 10. 2026).
+   * B168 chce heslo u POST /api/zobrazeni, protože matice řídí i serverová
+   * práva (CRM, nákladový ceník, ceník v zakázce). Obnova té části byla
+   * druhá cesta zápisu `program/zobrazeni` bez hesla — ze souboru i z otisku
+   * (vrácení starší, volnější matice). Heslo se chce u obou zdrojů, kdykoli
+   * by se matice zapsala (část vybraná a záloha ji nese jako objekt), a to
+   * i v dávce rozpracované obnovy; ověří se se stejným místem jako u účtů,
+   * tedy dřív než zámek a otisk — odmítnutí nic nezapíše. */
+  const hesloUctu = zdrojPopis.typ === 'otisk' && casti.includes('uzivatele') && maVlastni(zaloha, 'uzivatele');
+  const hesloMatice = casti.includes('zobrazeni') && obnovaNeseMatici(zaloha);
+  if (!nahled && (hesloUctu || hesloMatice)) {
+    const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce);
+    if (stop) return stop;
+  }
+
   /* --- dávka rozpracované obnovy, nebo jednorázová obnova --- */
   let otiskPred = null;
   let tk = null;
@@ -408,7 +463,8 @@ export default async (req) => {
   const sProg = await uloziste('program');
 
   /* Jednozáznamové části v úložišti `program`. */
-  const jednoduche = { program: 'db', firma: 'firma', zobrazeni: 'zobrazeni' };
+  const jednoduche = { program: 'db', firma: 'firma', zobrazeni: 'zobrazeni', popisy: 'popisy', slovnik: 'slovnik',
+                       controlling: 'controlling' };
   for (const cast of Object.keys(jednoduche)) {
     if (!casti.includes(cast) || !maVlastni(zaloha, cast)) continue;
     const b = bilance();
@@ -419,6 +475,69 @@ export default async (req) => {
       /* B26: platný ceník ze zálohy nese kid trvalé položky v nepovoleném
        * tvaru — stejná kontrola jako při zveřejnění (/api/program). */
       preskoc(b, 'db', 'platný ceník v záloze nese identifikátor trvalé položky v nepovoleném tvaru — neobnovuje se');
+    }
+    else if (cast === 'popisy') {
+      /* SPOLEČNÉ DODATKOVÉ TEXTY PROJDOU TOUŽ OČISTOU JAKO /api/popisy
+       * (nález B64 revize v22.9.9). Záloha je soubor, který mohl projít
+       * čímkoli; obnova ho zapisovala doslova, bez stropu délky, počtu
+       * i tvaru, kdežto běžný zápis textů je hlídá. Aplikace si texty při
+       * čtení čistí sama, jenže do databáze se nemá dostat nic, co by
+       * běžnou cestou neprošlo. Razítko kdo/kdy se nese dál jako text
+       * s omezenou délkou — je to doklad, kdo texty naposledy měnil. */
+      if (typeof globalThis.popisyOciste !== 'function')
+        preskoc(b, 'popisy', 'očista dodatkových textů není k dispozici — neobnovuje se');
+      else {
+        const txt = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
+        const texty = globalThis.popisyOciste(hodnota.texty);
+        const cisty = { texty, kdo: txt(hodnota.kdo, 200), kdy: txt(hodnota.kdy, 40) };
+        /* JAZYKOVÉ VARIANTY SE OBNOVÍ S TEXTY (B120, audit 2. 10. 2026).
+         * Od #379 nese záznam vedle `texty` i `jazyky` (EN/DE/FR) a obnova je
+         * zahazovala — po obnově ze zálohy tiskla cizojazyčná nabídka českou
+         * větu. Varianty projdou touž očistou jako /api/popisy a drží se jen
+         * u položek s českým textem. Záloha bez variant (starší) nic nepřidá. */
+        if (typeof globalThis.popisyJazykyOciste === 'function' && hodnota && hodnota.jazyky !== undefined) {
+          const jazyky = globalThis.popisyJazykyOciste(hodnota.jazyky, texty);
+          if (Object.keys(jazyky).length) cisty.jazyky = jazyky;
+        }
+        await zaznam(b, sProg, jednoduche[cast], cisty, rezim, zapisovat);
+      }
+    }
+    else if (cast === 'firma') {
+      /* FIRMA PROJDE TOUŽ KONTROLOU A OČISTOU JAKO /api/firma (B100-zbytek,
+       * audit 12. 10. 2026). Obnova zapisovala záznam ze souboru doslova —
+       * i ukázkovou firmu nebo údaje, které běžné zveřejnění odmítne. Pořadí
+       * jako ve firma.mjs: nejdřív posoudit, co přišlo, pak čistá kopie. */
+      const lze = fm.firmaLzeZverejnit(hodnota.udaje || null);
+      if (!lze.ok) preskoc(b, 'firma', lze.duvod);
+      else await zaznam(b, sProg, 'firma', { udaje: fm.firmaKZverejneni(hodnota.udaje), kdo: obnovaTxt(hodnota.kdo, 200),
+                                             kdy: obnovaTxt(hodnota.kdy, 40) }, rezim, zapisovat);
+    }
+    else if (cast === 'zobrazeni') {
+      /* Matice zobrazení touž očistou jako /api/zobrazeni (B100-zbytek). */
+      await zaznam(b, sProg, 'zobrazeni', { matice: ZOB.zobrazeniOciste(hodnota.matice), kdo: obnovaTxt(hodnota.kdo, 200),
+                                            kdy: obnovaTxt(hodnota.kdy, 40) }, rezim, zapisovat);
+    }
+    else if (cast === 'slovnik') {
+      /* ZVEŘEJNĚNÝ SLOVNÍK (#401, 12. 10. 2026) projde touž kontrolou jako
+       * /api/slovnik: záloha je soubor, který mohl projít čímkoli, a hesla
+       * se v prohlížeči kladou do PREKLAD — `__proto__` nebo trojice
+       * s řídicími znaky do databáze nesmí ani oklikou přes obnovu. Vadná
+       * platná verze = část se přeskočí celá; vadné starší verze vypadnou. */
+      const c = (typeof globalThis.slovnikDbOciste === 'function')
+        ? globalThis.slovnikDbOciste(hodnota, globalThis.PREKLAD_ZABUDOVANY)
+        : { ok: false, chyba: 'kontrola slovníku není k dispozici' };
+      if (!c.ok) preskoc(b, 'slovnik', c.chyba + ' — neobnovuje se');
+      else await zaznam(b, sProg, jednoduche[cast], c.db, rezim, zapisovat);
+    }
+    else if (cast === 'controlling') {
+      /* CONTROLLING (#447) projde touž kontrolou jako /api/controlling —
+       * záloha je soubor, který mohl projít čímkoli. Vadná platná verze =
+       * část se přeskočí celá, vadné starší verze vypadnou. */
+      const c = (typeof globalThis.ctrlDbOciste === 'function')
+        ? globalThis.ctrlDbOciste(hodnota)
+        : { ok: false, chyba: 'kontrola controllingu není k dispozici' };
+      if (!c.ok) preskoc(b, 'controlling', c.chyba + ' — neobnovuje se');
+      else await zaznam(b, sProg, jednoduche[cast], c.db, rezim, zapisovat);
     }
     else await zaznam(b, sProg, jednoduche[cast], hodnota, rezim, zapisovat);
     /* Přeskočený ceník v režimu „doplnit" je nejčastější důvod dojmu, že
@@ -432,30 +551,50 @@ export default async (req) => {
     vysledek[cast] = b;
   }
 
-  /* Zakázky: pojistka 3 — stejná kontrola zámků jako při ukládání;
-   * a tvar i jedinečnost id jako při ukládání (B32, 9. 9. 2026). */
+  /* Zakázky: pojistka 3 — TYTÉŽ POJISTKY JAKO PŘI UKLÁDÁNÍ (P4 / B72,
+   * 25. 9. 2026). Do té doby měla obnova vlastní menší sadu (tvar id, typy,
+   * zámky) a mimo ni prošla obnovou sleva 60 % „schválená" vymyšleným jménem
+   * (B72) nebo záloha se značkou ukázkového ceníku hlásila změnu odeslané
+   * nabídky. Teď obě cesty volají lib/zakazka_kontrola.mjs; rozdíly režimu
+   * „obnova" (razítka ze zálohy zůstávají, číslo se nepřepisuje) jsou
+   * popsané tam. Zapisuje se zakázka po migraci a očistě — stejně jako při
+   * uložení z prohlížeče. */
   let rejstrik = null;
   if (casti.includes('zakazky') && maVlastni(zaloha, 'zakazky')) {
     const b = bilance();
     const s = await uloziste('zakazky');
-    const kontrolaZamku = (stara, nova) => {
-      const k = ULO.uloKontrolaZamku(stara, nova);
-      if (!k.ok) return 'uzamčená (odeslaná) nabídka: ' + k.problemy.map(ULO.uloProblemPopis).join('; ');
-      for (const sv of (stara.varianty || [])) {
-        if (!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(sv))) continue;
-        const nv = (nova.varianty || []).find(v => v && v.id === sv.id);
-        if (nv && !stejne(nv.data, sv.data)) {
-          const cislo = (typeof globalThis.variantaCislo === 'function') ? globalThis.variantaCislo(stara, sv) : '';
-          return 'změnila by se data uzamčené (odeslané) nabídky' + (cislo ? ' (' + cislo + ')' : '');
+    const mapa = zaloha.zakazky;
+    if (!mapa || typeof mapa !== 'object' || Array.isArray(mapa)) preskoc(b, '*', 'záloha tuto část nenese');
+    else {
+      const prog = await sProg.cti('db');
+      /* zeSouboru (B98): razítka zámku a odemčení z nahraného souboru nejsou
+       * doklad — viz lib/zakazka_kontrola.mjs. */
+      const ctx = { ULO, SCHV, JEKLY, slevyNast: (prog && prog.platny && prog.platny.slevy) || {},
+                    verzeServeru: serverVerze(), rezim: 'obnova', zeSouboru: zdrojPopis.typ === 'soubor' };
+      for (const [k, v] of Object.entries(mapa)) {
+        if (!k || k.length > KLIC_MAX) { preskoc(b, k, 'nepřijatelný klíč'); continue; }
+        if (v == null || typeof v !== 'object') { preskoc(b, k, 'poškozený záznam (není objekt)'); continue; }
+        const klic = 'z/' + k;
+        const stary = await s.cti(klic);
+        if (stary != null && stejne(stary, v)) { b.bezeZmeny++; continue; }
+        if (stary != null && rezim === 'doplnit') {
+          preskoc(b, klic, 'na serveru už je a liší se — režim „doplnit" nepřepisuje'); continue;
         }
+        /* Kopie: importZakazka mění objekt na místě a záloha je zdroj. */
+        const prijem = zakazkaPrijmi(JSON.parse(JSON.stringify(v)), ULO);
+        if (!prijem.ok) { preskoc(b, klic, prijem.chyba); continue; }
+        const kontrola = zakazkaServerKontrola(stary, prijem.zak, relace, ctx);
+        if (!kontrola.ok) { preskoc(b, klic, kontrola.chyba); continue; }
+        /* Nesouhlas zmrazeného výsledku odeslané nabídky (B98 — ze souboru se
+         * ověřuje znovu): zakázka se zapíše s razítkem „nesouhlasi" a náhled
+         * to řekne u konkrétní zakázky. */
+        for (const sp of (kontrola.sporne || []))
+          upozorneni.push('Zakázka ' + k + ': ' + (globalThis.zamekOvereniText ? globalThis.zamekOvereniText(sp.ov)
+            : 'zmrazený výsledek odeslané nabídky nesouhlasí s přepočtem serveru') + ' (' + (sp.cislo || '') + ')');
+        if (zapisovat) await s.zapis(klic, kontrola.zak);
+        if (stary == null) b.nove++; else b.prepsane++;
       }
-      return '';
-    };
-    const overeniId = (k, v) => {
-      const p = ULO.uloIdProblemy(v);
-      return p.length ? ULO.uloIdProblemyText(p) : '';
-    };
-    await obnovMapu(b, s, zaloha.zakazky, rezim, zapisovat, 'z/', kontrolaZamku, overeniId);
+    }
     vysledek.zakazky = b;
     /* V náhledu a v dávce se rejstřík nestaví — jen se spočítá, kolik zakázek
      * by v něm bylo (existující + nové). Dávky ho přestaví jednou na konci. */
@@ -479,6 +618,7 @@ export default async (req) => {
       if (seznam.length) upozorneni.push('Účty a podpisy se ze souboru neobnovují — obnovte je ze serverového otisku (zdroj „otisk na serveru").');
     } else {
       const kniha = await uloziste(SMAZANI_ULOZISTE);
+      const hesloVracene = [];                       // B93: účty, kterým obnova mění heslo
       for (const u of seznam) {
         const email = String((u && u.email) || '').trim().toLowerCase();
         if (!email) { preskoc(b, '?', 'účet bez e-mailu'); continue; }
@@ -501,6 +641,15 @@ export default async (req) => {
           stavUctuDrziServer(novy, stary);            // B30
           const vz = Math.max(hesloVerzeUctu(stary), hesloVerzeUctu(u));
           if (vz > 0) novy.hesloVerze = vz;           // B31: verze hesla nikdy neklesne
+          /* Obnova, která účtu MĚNÍ heslo, zvedne verzi hesla (B93, #347,
+           * 15. 10. 2026) — jako každá jiná změna hesla (B6). Jinak by
+           * relace přihlášené heslem, které obnova právě zrušila, platily
+           * dál. V režimu „doplnit" se existující účet nepřepisuje, tam se
+           * heslo nemění. */
+          if (rezim === 'prepsat' && String(u.heslo) !== String(stary.heslo || '')) {
+            novy.hesloVerze = vz + 1;
+            hesloVracene.push(email);
+          }
           if (rezim === 'prepsat' && ((u.aktivni !== false) !== (stary.aktivni !== false) || !!u.archiv !== !!stary.archiv))
             b.duvody.push({ klic: email, duvod: 'stav účtu (aktivní / archiv) drží server — v tom beze změny' });
         }
@@ -510,6 +659,27 @@ export default async (req) => {
             + ') — po obnově se přihlaste znovu heslem, které platilo tehdy.');
         await zaznam(b, s, email, novy, rezim, zapisovat);
       }
+      if (hesloVracene.length)
+        upozorneni.push('Obnova vrátí heslo z doby otisku (' + zdrojPopis.porizena.slice(0, 10) + ') účtům: '
+          + hesloVracene.join(', ') + ' — jejich dosavadní přihlášení skončí, přihlásí se heslem, které platilo tehdy (B93).');
+      /* Kniha smazaných účtů (B58, 23. 9. 2026) jde se zálohou a obnovuje se
+       * spolu s účty, tedy jen ze serverového otisku. Záznam se jen DOPLNÍ:
+       * existující se nepřepisuje, a u e-mailu, pod kterým dnes žije
+       * nesmazaný účet (znovu založený kolega), se nezapíše — kniha by jinak
+       * tvrdila, že je smazaný někdo, kdo pracuje. */
+      const bs = bilance();
+      const knihaZal = (zaloha.smazani && typeof zaloha.smazani === 'object' && !Array.isArray(zaloha.smazani)) ? zaloha.smazani : {};
+      for (const [k, zaz] of Object.entries(knihaZal)) {
+        const email = String(k || '').trim().toLowerCase();
+        if (!email || !emailPlatny(email) || !zaz || zaz.smazano !== true) { preskoc(bs, email || '?', 'záznam nemá platný tvar'); continue; }
+        if (await kniha.cti(email)) { bs.bezeZmeny++; continue; }
+        const ucet = await s.cti(email);
+        if (ucet && !ucet.smazano) { preskoc(bs, email, 'pod tímto e-mailem dnes je účet — do knihy smazaných se nezapisuje'); continue; }
+        if (zapisovat) await kniha.zapis(email, { email, smazano: true, kdy: String(zaz.kdy || ''), kdo: String(zaz.kdo || ''),
+          zakazek: Number.isFinite(+zaz.zakazek) ? +zaz.zakazek : 0 });
+        bs.nove++;
+      }
+      vysledek.smazani = bs;
     }
     vysledek.uzivatele = b;
   }
@@ -520,6 +690,34 @@ export default async (req) => {
     if (!casti.includes(cast) || !maVlastni(zaloha, cast)) continue;
     const b = bilance();
     let overeni = null;
+    /* B100 (6. 10. 2026): soubor šablony ze zálohy projde touž kontrolou
+     * obsahu jako zveřejnění (B99/B115) — ze souboru i z otisku (otisk může
+     * nést verzi zveřejněnou před kontrolou). Vadný se přeskočí s důvodem. */
+    if (cast === 'sablony') {
+      overeni = async (k, v) => {
+        /* B147 (12. 10. 2026): v úložišti šablon jsou jen `rejstrik`
+         * a `data/<typ>/<verze>`. Jiný klíč nebo rejstřík v jiném tvaru se
+         * neobnoví — rozbil by Nastavení → Šablony i tisk. */
+        if (k === 'rejstrik') return obnovaRejstrikSablonVada(v);
+        const mk = /^data\/([^/]+)\/([1-9]\d{0,8})$/.exec(k);
+        if (!mk || !globalThis.sablonaTypPlatny(mk[1])) return 'neznámý klíč v úložišti šablon';
+        if (typeof v.data !== 'string' || !globalThis.sablonaJeDocxB64(v.data)) return 'soubor šablony není .docx';
+        const vady = await globalThis.sablonaObsahVady(v.data);
+        return vady.length ? globalThis.sablonaObsahVadyText(vady) : '';
+      };
+    }
+    if (cast === 'zakaznici') {
+      /* ZÁKAZNÍCI TOUŽ OČISTOU JAKO /api/zakaznici (B100-zbytek, audit
+       * 12. 10. 2026): pole se stropem délky, IČO bez mezer, nic navíc.
+       * Razítka (kdo kartu založil a upravil) se drží ze zálohy. Klíč musí
+       * mít tvar z/<klíč> jako při běžném zápisu. */
+      overeni = (k, v) => {
+        const z = globalThis.zakaznikOciste(v, obnovaTxt(v.upravil, 200), obnovaTxt(v.upraven, 40));
+        z.autor = obnovaTxt(v.autor, 200); z.zalozen = obnovaTxt(v.zalozen, 40);
+        if (!/^z\/[^/]+$/.test(k) || !globalThis.zakaznikKlic(z)) return 'nepřijatelný klíč nebo zákazník bez IČO i názvu';
+        return { hodnota: z };
+      };
+    }
     if (cast === 'podpisy') {
       const podpisyZeSouboru = zdrojPopis.typ === 'soubor';
       if (podpisyZeSouboru) {
@@ -537,6 +735,32 @@ export default async (req) => {
     }
     await obnovMapu(b, await uloziste(mapy[cast]), zaloha[cast], rezim, zapisovat, '', null, overeni);
     vysledek[cast] = b;
+    /* #395 (8. 10. 2026): přeskočený soubor (B100) nebo soubor, který
+     * v úložišti chybí, nechá PLATNOU verzi rejstříku bez použitelné šablony.
+     * Po zápisu se proto platné verze ověří a správce dostane upozornění. */
+    /* B147 (12. 10. 2026): upozornění dává už NÁHLED — správce se o
+     * nepoužitelné platné šabloně dozví dřív, než obnovu pustí. Náhled nic
+     * nezapsal, takže rejstřík i soubor bere ze zálohy tam, kde by je obnova
+     * zapsala (klíč nepřeskočený), jinak ze serveru. */
+    if (cast === 'sablony') {
+      const s = await uloziste('sablony');
+      const zal = zaloha.sablony && typeof zaloha.sablony === 'object' ? zaloha.sablony : {};
+      const preskoceno = new Set(b.duvody.map(d => d.klic));
+      const zeZalohy = async (k) => {
+        if (zapisovat || !maVlastni(zal, k) || preskoceno.has(k)) return s.cti(k);
+        return zal[k];
+      };
+      const rej = await zeZalohy('rejstrik');
+      for (const typ of Object.keys((rej && rej.typy) || {})) {
+        const platna = globalThis.sablonaPlatna(rej, typ);
+        if (!platna) continue;
+        const soubor = await zeZalohy(globalThis.sablonaKlicSouboru(typ, platna.verze));
+        const vady = soubor && typeof soubor.data === 'string' && globalThis.sablonaJeDocxB64(soubor.data)
+          ? await globalThis.sablonaObsahVady(soubor.data) : ['soubor v úložišti chybí'];
+        if (vady.length) upozorneni.push('Platná šablona „' + typ + '" (verze ' + platna.verze + ') ' + (zapisovat ? 'není' : 'nebude') + ' po obnově '
+          + 'použitelná (' + vady.join('; ') + ') — zveřejněte ji znovu v Nastavení → Šablony.');
+      }
+    }
   }
 
   /* Dávka: přičíst k součtu zahájené obnovy.

@@ -115,8 +115,9 @@ test('OCK: u všech tří je vidět, že hodnota je z Nastavení → Firma',
 test('OCK: prázdné firemní pole spadne na dosavadní znění',
   hodnota(kr.KRYCI_SEKCE, 'platnostNabidky', {}) === '2 měsíce',
   hodnota(kr.KRYCI_SEKCE, 'platnostNabidky', {}));
-test('OCK: prázdný způsob fakturace spadne na dosavadní znění',
-  hodnota(kr.KRYCI_SEKCE, 'zpusobFakturace', {}) === 'Náš standard / měsíční');
+/* P10.5 (29. 9. 2026): výchozí „Po milnících" (dřív „Náš standard / měsíční"). */
+test('OCK: prázdný způsob fakturace spadne na „Po milnících"',
+  hodnota(kr.KRYCI_SEKCE, 'zpusobFakturace', {}) === 'Po milnících');
 test('OCK: prázdný rozsah spadne na dosavadní znění',
   hodnota(kr.KRYCI_SEKCE, 'rozsah', {}).indexOf('přílohou ke smlouvě') >= 0);
 

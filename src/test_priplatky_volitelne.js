@@ -75,11 +75,32 @@ const vlastni = (k) => String(k).indexOf('vlastni:') === 0;
   test('háky a sokl jsou jen na exteriérové šachtě',
     extK.indexOf('haky') >= 0 && extK.indexOf('sokl') >= 0
     && intK.indexOf('haky') < 0 && intK.indexOf('sokl') < 0);
+  /* VNĚJŠÍ LEŠENÍ TAKY (nález K1, 22. 9. 2026). Dělení podle typu šachty tu
+   * bylo od začátku, jen vnější lešení do něj nikdo nedopsal — interiérová
+   * šachta proto v základní ceně platila lešení, které se u ní nestaví.
+   * Hlídá se tu VOLITELNÝ katalog, tedy základní cena; mezi příplatky se
+   * u interiérové šachty od 22. 9. večer nabízí (viz níž). */
+  test('vnější lešení je v základní ceně jen na exteriérové šachtě',
+    extK.indexOf('leseniVnejsi') >= 0 && intK.indexOf('leseniVnejsi') < 0,
+    { ext: extK.indexOf('leseniVnejsi') >= 0, int: intK.indexOf('leseniVnejsi') >= 0 });
+  test('vnitřní lešení zůstává na obou', extK.indexOf('leseniVnitrni') >= 0
+    && intK.indexOf('leseniVnitrni') >= 0);
   test('zábradlí jen na interiérové',
     intK.indexOf('zabradli') >= 0 && extK.indexOf('zabradli') < 0);
-  const pI = klice(vypocti(INT, { haky: false, sokl: false }));
+  const pI = klice(vypocti(INT, { haky: false, sokl: false, leseniVnejsi: false }));
   test('a v příplatcích to platí taky — na interiérové se háky ani sokl nenabízejí',
     pI.indexOf('haky') < 0 && pI.indexOf('sokl') < 0, pI);
+  /* VÝJIMKA Z TOHO DĚLENÍ — vnější lešení (22. 9. 2026 večer, J. V.:
+   * „vnější lešení vrať do příplatkových položek"). Háky a sokl u interiérové
+   * šachty opravdu nedávají smysl; vnější lešení ano, jen ne v základní ceně.
+   * Oprava K1 z odpoledne ho vyřadila i odsud a šla tím dál, než znělo
+   * rozhodnutí („primárně nenabízet"). */
+  test('vnější lešení se ale na interiérové šachtě nabízí jako příplatek',
+    pI.indexOf('leseniVnejsi') >= 0, pI);
+  /* Protějšek: na exteriérové se po odškrtnutí nabídnout MUSÍ, jinak by
+   * oprava položku zrušila úplně. */
+  test('na exteriérové se vnější lešení po odškrtnutí nabídne',
+    klice(vypocti(EXT, { leseniVnejsi: false })).indexOf('leseniVnejsi') >= 0);
   const pE = klice(vypocti(EXT, { zabradli: false }));
   test('ani zábradlí na exteriérové', pE.indexOf('zabradli') < 0, pE);
 }
@@ -260,6 +281,12 @@ const prepinac = (key) => (key === 'prechMont') ? 'prechodove' : key;
   test('dostupnost podle typu šachty je i u příplatků',
     src.indexOf('(ext && !v.haky)') >= 0 && src.indexOf('(!ext && !v.zabradli)') >= 0
     && src.indexOf('(ext && !v.sokl)') >= 0);
+  /* Vnější lešení má opačný tvar než háky a sokl: na interiérové šachtě je
+   * příplatkem VŽDY (do základní ceny se tam dostat nemůže), na exteriérové
+   * jen když není zaškrtnuté. Chování hlídá blok 2) výš; tady se hlídá, že
+   * se podmínka nevrátila k tvaru z odpoledne 22. 9. */
+  test('vnější lešení je v příplatcích na interiérové vždy, na exteriérové po odškrtnutí',
+    src.indexOf('(!ext || !v.leseniVnejsi)') >= 0 && src.indexOf('(ext && !v.leseniVnejsi)') < 0);
 }
 
 /* ---------- 6) dva přepínače na jednu položku ----------

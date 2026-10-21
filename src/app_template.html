@@ -25,7 +25,10 @@
 <meta name="theme-color" content="#3A3F45">
 <style>
   :root { --ink:#1a2332; --mut:#6b7686; --line:#dde3ea; --bg:#f4f6f9; --card:#fff;
-          --acc:#1f5eff; --ok:#0a7d4f; --warn:#b45309; --sec:#eef2f8; }
+          --acc:#1f5eff; --ok:#0a7d4f; --warn:#b45309; --sec:#eef2f8;
+          /* probarvení buněk ceníku (13. 10. 2026): nula/prázdno, nad 40 000 Kč */
+          --cenik-nula-bg:#fde2e2; --cenik-nula-okraj:#f2a7a7;
+          --cenik-vysoka-bg:#ffe6c7; --cenik-vysoka-okraj:#f5b56b; }
   /* TESTOVACÍ WEB VYPADÁ JINAK (16. 9. 2026, zadání J. V.: „testovací
      rozhraní musí mít vlastní dummy data a jiný barevný vizuál").
 
@@ -152,6 +155,31 @@
   .opl-stena { min-width:0; }
   .opl-stena .row label { flex:1; min-width:0; }
   @media (max-width:1100px) { .opl-steny { grid-template-columns:1fr; } }
+  /* SLOUPCE POLÍ STĚNY (zadání J. V. 1. 10. 2026: „Zarovnej datová pole
+     u různého opláštění zprava"). Řádky stěny nesou různá pole (hlavička:
+     materiál + „po celé výšce"; pás: materiál + dělicí výška nebo „po horní
+     hranu" + křížek; „Opláštění začíná": jen výška). Skládaly se za sebe,
+     takže každý jinak široký prvek posunul ty před sebou a materiál pásu
+     „až nahoru" stál o kus vedle ostatních. Teď mají všechny řádky týž
+     pevný rastr materiál | výška | křížek, zarovnaný doprava jako ostatní
+     pole kalkulace (popisek zabírá zbytek řádku). */
+  .opl-stena .opl-sloupce { display:grid; grid-template-columns:190px 90px 30px; column-gap:6px;
+                            align-items:center; flex:none; }
+  .opl-sloupce > .opl-s1 { grid-column:1; }
+  .opl-sloupce > .opl-s2 { grid-column:2; }
+  .opl-sloupce > .opl-s3 { grid-column:3; justify-self:start; }
+  .opl-sloupce > .opl-s23 { grid-column:2 / 4; justify-self:start; }
+  .opl-sloupce > .opl-s23.opl-vpravo { justify-self:end; }
+  /* Řádek bez materiálu (hlavička rozdělené stěny, „+ přidat pás",
+     „Opláštění začíná") nese jen sloupce výška | křížek: popisek smí zabrat
+     i místo prvního sloupce (na užším okně se nezalomí do proužku) a výška
+     stojí pořád pod výškou, protože rastr je zarovnaný doprava. */
+  .opl-stena .opl-sloupce.opl-bez1 { grid-template-columns:90px 30px; }
+  .opl-bez1 > .opl-s2 { grid-column:1; }
+  .opl-bez1 > .opl-s3 { grid-column:2; }
+  .opl-bez1 > .opl-s23 { grid-column:1 / 3; }
+  .opl-sloupce > .note.opl-s2 { white-space:nowrap; }
+  .opl-jednotka { color:var(--mut); font-size:12px; white-space:nowrap; }
   /* NÁKRES STĚNY (#281). Pole vlevo, obrázek vpravo. Kóty leží v samostatné
      vrstvě nad pruhem, protože pruh má `overflow:hidden` (jinak by z něj
      barva pásu vytekla přes zaoblený roh) a popisek by se v něm oříznul. */
@@ -309,6 +337,11 @@
     padding:10px 22px; font-size:13px; align-items:center; gap:10px; flex-wrap:wrap; }
   #obnovaLista.zobraz { display:flex; }
   #obnovaLista button { padding:5px 12px; font-size:12.5px; }
+  /* #404 (13. 10. 2026): „Zahodit zálohu" a obnova zálohy jiné kalkulace
+     jsou v žluté liště jen malé odkazy — rozhoduje se Pokračovat / Založit novou. */
+  #obnovaLista button.odkaz { background:none; border:none; padding:2px 4px; color:#78350f;
+    text-decoration:underline; font-size:12px; cursor:pointer; box-shadow:none; }
+  #obnovaLista .sp { flex:1 1 auto; }
   /* #40 – lišta se stářím sestavení. Vypadá jako lišta obnovy, protože dělá
      totéž: řekne jednu větu a nechá uživatele pracovat dál. */
   .build-lista { display:flex; align-items:center; gap:10px; flex-wrap:wrap;
@@ -432,6 +465,12 @@
   .ceniktbl td.zahr-bunka { white-space:nowrap; }
   .ceniktbl input.zahr-cena { width:96px; }
   .ceniktbl input.zahr-cena.ma { border-color:#fdba74; background:#fffaf3; }
+  /* Probarvení buněk ceníku (13. 10. 2026, zadání J. V.): světle červená =
+   * nula nebo nevyplněno, světle oranžová = víc než 40 000 Kč. Třídy dává
+   * cenikObarvi() v ui/cenik_ui.js; zdvojená třída přebije .zahr-cena.ma.
+   * Aplikace tmavý režim nemá — barvy jsou proměnné v :root, kdyby přibyl. */
+  .ceniktbl input.cenik-nula.cenik-nula { background:var(--cenik-nula-bg); border-color:var(--cenik-nula-okraj); }
+  .ceniktbl input.cenik-vysoka.cenik-vysoka { background:var(--cenik-vysoka-bg); border-color:var(--cenik-vysoka-okraj); }
   .rada-stitek { font-size:11.5px; font-weight:600; padding:1px 9px; border-radius:999px; margin-left:8px;
                  background:#fff; color:#b45309; border:1px solid #fdba74; text-transform:none; letter-spacing:0; }
   /* Zamčená (nepočítaná) strana zakázky — 23. 8. 2026. Buňky zešednou
@@ -460,12 +499,17 @@
   tr.vypnuto-nulou textarea { opacity:1; color:var(--tmava, #17233a); }
   tr.vypnuto-nulou input[type=number] { border-color:#f0b429; background:#fffdf5; }
   .strana-zamcena { opacity:.62; filter:grayscale(.55); }
+  /* P6 (zámek strany, 13. 10. 2026): štítek vynulované strany. */
+  .strana-nulovana { background:#fff7ed; border:1px solid #fdba74; color:#7c2d12; border-radius:6px;
+    padding:5px 10px; margin:4px 0 8px; font-size:12.5px; }
   .strana-zamcena input, .strana-zamcena select, .strana-zamcena textarea,
   .strana-zamcena button { pointer-events:none; background:#f1f3f7; }
   .zamek-lista { display:flex; align-items:center; gap:12px; flex-wrap:wrap;
     background:#fff7ed; border:1px solid #fdba74; border-left:4px solid #ea580c;
     border-radius:6px; padding:8px 12px; margin:6px 0 10px; font-size:13px; }
   .zamek-lista b { color:#9a3412; }
+  /* B59: rozpor zmrazeného výsledku s výpočtem serveru — vlastní řádek. */
+  .zamek-lista .zamek-overeni { display:block; margin-top:4px; color:#991b1b; font-weight:600; }
   /* Lišta detailu je o řádek vyšší (přepínač a tisk stojí nad kotvami),
      proto má cíl kotvy větší odstup než v kalkulacích. */
   #page-detail [id], #page-detailproj [id] { scroll-margin-top:96px; }
@@ -510,7 +554,53 @@
   .pill.vyp { background:#fff4d6; color:#8a5a00; }
   .pill.stara { background:#fdecec; color:#b3261e; }   /* hlídka zastaralé verze (19. 8. 2026) */
   .pill.mut { background:#eef1f5; color:var(--mut); }
+  /* Platební podmínky firmy (#367): chybný součet splátek OCK */
+  .pill.bad { background:#fde8e8; color:#b91c1c; }
+  input.podm-chyba { border-color:#b91c1c; background:#fde8e8; }
+  .podm-chyba-text { color:#b91c1c; }
+  /* Sloupec jednotek v oddílech platebních podmínek (U1, 20. 10. 2026): pevná
+   * šířka i v řádcích bez jednotky, aby vstupy končily v jedné svislici. */
+  .podm-radek .podm-jednotka { flex:none; width:92px; white-space:nowrap; }
+  .podm-radek > input[type=number] { width:110px; }
   .note { color:var(--mut); font-size:12px; margin:6px 0; }
+  /* SPRÁVA ŠABLON (#349, 24. 9. 2026): tabulka dokument × jazyk, detail a průvodce. */
+  .sabl-tab { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  /* Plán plateb projekce (etapa B, 30. 9. 2026): texty milníků jsou dlouhé
+   * věty — zalamují se a zarovnávají vlevo; čísla vpravo. */
+  .plan-tab th, .plan-tab td { text-align:left; white-space:normal; vertical-align:middle; }
+  .plan-tab td.num, .plan-tab th.num { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .plan-tab td.nowrap, .plan-tab th.nowrap { white-space:nowrap; }
+  .plan-tab input[type=text] { width:100%; min-width:160px; box-sizing:border-box; text-align:left; }
+  .plan-tab input.plan-pct { width:64px; min-width:0; text-align:right; }
+  .plan-tab input.plan-kc { width:120px; min-width:0; text-align:right; }
+  .plan-tab select { width:100%; max-width:420px; }
+  select.plan-sel { min-width:300px; }
+  .plan-tab tr.prepsano td { background:#fff6e5; }
+  .plan-cin { border:1px solid var(--line); border-radius:8px; padding:6px 10px; margin:8px 0; }
+  .plan-cin-hlava { display:flex; gap:8px 12px; align-items:center; flex-wrap:wrap; }
+  .sabl-tab th { text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--mut); background:var(--sec); padding:8px 10px; }
+  .sabl-tab td { padding:9px 10px; border-top:1px solid var(--line); vertical-align:top; text-align:left; }
+  .sabl-tab tr.sabl-radek { cursor:pointer; }
+  .sabl-tab tr.sabl-radek:hover td { background:#f7f9fc; }
+  .sabl-tab tr.sabl-vybrany td { background:#eaf0fb; }
+  .sabl-tab tr.sabl-vybrany td:first-child { box-shadow:inset 3px 0 0 var(--acc); }
+  .sabl-chip { display:inline-block; font-size:12px; font-weight:600; padding:2px 8px; border-radius:6px; border:1px solid transparent; white-space:nowrap; }
+  .sabl-chip.ok { background:#e3f1e6; color:#1e6b3a; border-color:#a9d3b4; }
+  .sabl-chip.warn { background:#fff1de; color:#9a4a06; border-color:#e9b872; }
+  .sabl-chip.miss { background:#fff; color:var(--mut); border:1px dashed #b9b5aa; }
+  .sabl-chip.na { color:#8a919c; }
+  .sabl-sub { display:block; font-size:11.5px; color:var(--mut); margin-top:2px; }
+  .sabl-soubor { max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:ui-monospace,monospace; font-size:10.5px; }
+  .sabl-panel { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:12px 0; background:var(--card); }
+  .sabl-kontrola { display:flex; gap:10px; align-items:baseline; padding:7px 0; border-top:1px solid var(--line); font-size:13px; }
+  .sabl-kontrola:first-child { border-top:0; }
+  .sabl-kontrola b.ok { color:var(--ok); } .sabl-kontrola b.warn { color:var(--warn); } .sabl-kontrola b.chyba { color:#b3261e; }
+  .sabl-chyba { background:#fdecea; border:1px solid #e7a39b; border-radius:8px; padding:10px 12px; margin:8px 0; color:#5b1a12; }
+  .sabl-banner { background:#fff4e5; border:1px solid #e9b872; border-radius:8px; padding:10px 12px; margin:8px 0; color:#6b3504; }
+  .sabl-kroky { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 10px; }
+  .sabl-kroky span { font-size:12px; padding:4px 10px; border-radius:99px; background:var(--sec); color:var(--mut); }
+  .sabl-kroky span.akt { background:var(--acc); color:#fff; font-weight:600; }
+  .sabl-kroky span.hot { background:#e3f1e6; color:#1e6b3a; }
   button { font:inherit; padding:7px 14px; border-radius:7px; border:1px solid var(--line); background:#fff; cursor:pointer; }
   button.primary { background:var(--acc); border-color:var(--acc); color:#fff; }
   button.mini { padding:3px 9px; font-size:12px; }
@@ -621,6 +711,9 @@
   .spec-row .src { font-size:10px; width:74px; text-align:center; }
   /* jazykové mutace (N1) */
   .spec-row.ro > div:nth-child(2) { font-size:12.5px; padding:2px 0; }
+  /* Odvozené pole (hodnotu určuje cena, 22. 9. 2026): vypadá jako hodnota,
+     ne jako vstup — nedá se přepsat a nemá to svádět ke kliknutí. */
+  .spec-odvozene { font-size:12.5px; padding:4px 6px; background:#f4f6f9; border-radius:4px; }
   button.mini.aktivni { background:var(--ink); color:#fff; border-color:var(--ink); }
   .neprelozeno { border-bottom:1px dotted var(--warn); color:var(--warn); }
   @media print { .neprelozeno { border-bottom:none; color:inherit; } }
@@ -687,12 +780,7 @@
     border-radius:8px; padding:9px 12px; margin-bottom:8px; font-size:12.5px;
     line-height:1.55; font-weight:600; }
   .seznam-chyba .rada { display:block; font-weight:400; margin-top:4px; }
-  /* #17 – panel historických kalkulací. Je širší než ostatní modály (osm
-     sloupců plus dvě tlačítka) a tabulka se roluje uvnitř, aby ovládací
-     lišta i vysvětlivky zůstaly vidět. */
-  #archiv-panel { max-width:1180px; }
-  #archivTelo { overflow:auto; max-height:52vh; }
-  /* Databáze ve složce – stejně široký panel jako archiv, tabulka se roluje
+  /* Databáze ve složce – široký panel (1180 px), tabulka se roluje
      uvnitř, aby hledání i hláška o stavu složky zůstaly nad ní vidět. */
   #uloziste-panel { max-width:1180px; }
   #ulozisteTelo { overflow:auto; max-height:52vh; }
@@ -727,8 +815,6 @@
   .archtbl tr:hover td { background:#f7f9fe; }
   .archiv-soubory { display:flex; align-items:center; gap:6px; flex-wrap:wrap;
     margin:6px 0 10px; font-size:12px; color:var(--mut); }
-  .archiv-chip { display:inline-flex; align-items:center; gap:6px; background:#f3f6fa;
-    border:1px solid var(--line); border-radius:999px; padding:2px 4px 2px 10px; }
   /* #35 – upozornění na ceník starší, než jaký nese dnešní sestavení.
      Barevně stejné jako .seznam-varovani: je to upozornění, ne chyba – ceník
      bývá u konkrétní zakázky upravený schválně a nic se neblokuje. */
@@ -771,6 +857,11 @@
   .kontroly-btns { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:9px; }
   .kontroly-btns .pozn { font-size:11.5px; opacity:.8; }
   .kontroly-odklep { margin-top:9px; font-size:11.5px; opacity:.85; }
+  /* Zábrana z kontroly před nabídkou (#377, 1. 10. 2026): nález ⛔ a řádek
+     pod seznamem červeně — dokument, kterého se týká, nevznikne. */
+  .kontroly-seznam li.zabrana .kde, .kontroly-seznam li.zabrana .txt { color:#991b1b; }
+  .kontroly-zabrana { margin-top:9px; padding:6px 9px; background:#fef2f2; border:1px solid #fca5a5;
+    color:#7f1d1d; border-radius:6px; font-size:12px; line-height:1.5; }
   /* Zábrana: nenahraný ceník (30. 7. 2026). Červená, ne žlutá – kontroly výš
      jsou otázky k zodpovězení, tohle je konec cesty. Panel stojí přímo nad
      tlačítky, která zhasla, aby bylo vidět proč. */
@@ -990,11 +1081,6 @@
 
 <div id="nastaveni-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)zavriNastaveni()">
   <div class="modal wide" id="nastaveni-panel"></div>
-</div>
-
-<!-- #17 – nahlédnutí do uložených zakázek a převzetí historické kalkulace -->
-<div id="archiv-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)zavriArchiv()">
-  <div class="modal" id="archiv-panel"></div>
 </div>
 
 <!-- Databáze zakázek ve vybrané složce (mezikrok před online úložištěm) -->

@@ -85,7 +85,10 @@ const VYJIMKY = {
 const dataKlice = klice(eng.DEFAULT_CENIK, 'C', []).concat(klice(ep.DEFAULT_CENIK_PROJ, 'PC', []));
 {
   const chybi = dataKlice.filter(c => !radky.has(c) && !VYJIMKY[c]
-    && !/^(C|PC)\.vlastniPolozky\./.test(c));
+    && !/^(C|PC)\.vlastniPolozky\./.test(c)
+    /* Mapa příznaků „cena dle nabídky" (S13): klíče jsou cesty položek, ne
+     * ceny — příznak je sloupec u řádku té položky. */
+    && !/^C\.dleNabidky\./.test(c));
   test('každý cenový klíč v datech má řádek v ceníku', chybi.length === 0,
     chybi.join(', ') + '  ← buď doplňte řádek do CENIK_DEF, nebo klíč zahoďte '
     + '(migrace na konci engine.js), nebo ho zapište do VYJIMKY i s důvodem');

@@ -19,8 +19,38 @@
 import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
+/* Jména souborů zakázek, ke kterým smí vzniknout klíč `cas/` (B35,
+ * rozhodnutí J. V. 13. 10. 2026 „Ano"). Čte se JEDEN záznam — rejstřík
+ * zakázek (`_rejstrik` v úložišti `zakazky`) — a jen tehdy, když v dávce
+ * přijde číslo, které ještě klíč nemá; zakázky jednotlivě se nečtou.
+ * Číslo z hlavičky (klient ho posílá tak, jak je v ZAK.cislo, i s mezerami)
+ * se převede na jméno souboru stejnou funkcí, jakou zakázka dostala jméno
+ * při uložení (uloKlicSouboru) — žádná druhá pravda o tvaru čísla.
+ * Rejstřík se přestavuje při každém uložení i obnově; chybí-li zakázka
+ * v něm, čas se nezapíše — ztratí se nanejvýš statistika, ne data. */
+/* Povolené klíče cas/ z rejstříku: číslo zakázky PŘESNĚ, jak ho nese
+ * hlavička (a rejstřík), a jméno souboru bez přípony. Dřív se poslané číslo
+ * převádělo na jméno souboru — jenže převod slévá mezery a pomlčky, takže
+ * jedna skutečná zakázka dala desítky tisíc různých klíčů a jeden účet
+ * zaplnil strop B35 (B151, audit 15. 10. 2026). */
+async function zakazkyZRejstriku(ULO) {
+  const rej = await (await uloziste('zakazky')).cti('_rejstrik');
+  const cisla = new Set();
+  for (const z of (rej && Array.isArray(rej.zakazky)) ? rej.zakazky : []) {
+    if (!z) continue;
+    if (typeof z.cislo === 'string' && z.cislo.trim()) cisla.add(z.cislo.trim());
+    if (typeof z.soubor === 'string' && z.soubor.endsWith(ULO.ULO_PRIPONA))
+      cisla.add(z.soubor.slice(0, -ULO.ULO_PRIPONA.length));
+  }
+  return cisla;
+}
+function zakazkaVRejstriku(cisla, cislo) {
+  return cisla.has(cislo);
+}
+
 export default async (req) => {
-  try { await jadro(); } catch (e) { return jadroChyba(e); }
+  let ULO;
+  try { ({ ULO } = await jadro()); } catch (e) { return jadroChyba(e); }
   const g = globalThis;
   const s = await uloziste('analytika');
   const dnes = new Date().toISOString().slice(0, 10);
@@ -54,7 +84,7 @@ export default async (req) => {
     const casy = {};
     for (const k of await s.seznam('cas/')) {
       const c = await s.cti(k);
-      if (c) casy[k.slice(4)] = { ock: +c.ock || 0, proj: +c.proj || 0 };
+      if (c && g.analytikaKlicPovolen(k.slice(4))) casy[k.slice(4)] = { ock: +c.ock || 0, proj: +c.proj || 0 };   // B81
     }
     return json({ ok: true, od, do: doD, dnu: dvojice.length,
                   celkem: souhrn.celkem, poMesicich: souhrn.poMesicich,
@@ -63,6 +93,8 @@ export default async (req) => {
 
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte GET nebo POST.' }, 405);
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
 
   if (t.akce === 'rezim') {
     const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
@@ -101,17 +133,35 @@ export default async (req) => {
     }
     /* časy zakázek: { '2026-OPR-CN-0155': { ock: 120, proj: 30 }, … } */
     if (t.casy && typeof t.casy === 'object') {
+      /* STROP POČTU KLÍČŮ cas/ (B35, audit 9. 9. 2026; 13. 10. 2026). Tvar
+       * čísla hlídá B8, ale počet ne: kdokoli přihlášený zakládal po padesáti
+       * nových klíčích na požadavek do nekonečna (a souhrn je pak čte
+       * všechny). Nad stropem se nové zakázky nezakládají, existující se
+       * přičítají dál. Seznam se čte jen jednou a jen když přijde nový klíč. */
+      let existujici = null, vRejstriku = null;
       for (const [zak, c] of Object.entries(t.casy).slice(0, 50)) {
         /* Klíč musí vypadat jako číslo nabídky (B8): písmena, číslice,
          * pomlčky, mezery, tečky — a nanejvýš 60 znaků. Cizí tvar se zahodí,
          * ne „opraví" — jinak kdokoli přihlášený zakládá klíče do nekonečna. */
         const cislo = String(zak).trim();
-        if (!/^[\w\-. ]{1,60}$/.test(cislo)) continue;
+        if (!/^[\w\-. ]{1,60}$/.test(cislo) || !g.analytikaKlicPovolen(cislo)) continue;   // B81: ani __proto__
         const klic = 'cas/' + cislo;
         const ock = g.analytikaCislo(c && c.ock);
         const proj = g.analytikaCislo(c && c.proj);
         if (!ock && !proj) continue;
-        const stary = (await s.cti(klic)) || { ock: 0, proj: 0 };
+        let stary = await s.cti(klic);
+        if (!stary) {
+          /* B35 (13. 10. 2026, J. V. „Ano"): strop sám nestačil — jeden účet
+           * ho zaplnil smyšlenými čísly a měření pak skončilo pro všechny.
+           * Nový klíč jen pro zakázku, která v databázi existuje; strop
+           * zůstává jako druhá pojistka. */
+          if (!vRejstriku) vRejstriku = await zakazkyZRejstriku(ULO);
+          if (!zakazkaVRejstriku(vRejstriku, cislo)) continue;
+          if (!existujici) existujici = new Set(await s.seznam('cas/'));
+          if (!existujici.has(klic) && existujici.size >= g.ANALYTIKA_MAX_CASU) continue;   // B35
+          existujici.add(klic);
+          stary = { ock: 0, proj: 0 };
+        }
         await s.zapis(klic, { ock: (+stary.ock || 0) + ock, proj: (+stary.proj || 0) + proj });
       }
     }

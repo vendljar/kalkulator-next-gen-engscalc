@@ -189,6 +189,14 @@ function cenikRozdily(stara, nova) {
   cenikSledovane().forEach(p => {
     const a = cenikHodnota(stara, p.cesta), b = cenikHodnota(nova, p.cesta);
     if (a === undefined && b === undefined) return;
+    /* CHYBĚJÍCÍ KLÍČ = NULA (P3 / K13-N55, 24. 9. 2026). Import zakázky
+     * (klient i server) doplní klíč, který v uloženém ceníku chybí, nulou
+     * (cenikDoplnKlice v engine.js). Platný ceník starší než ten klíč ho
+     * nenese vůbec. Bez téhle rovnosti hlásila každá nová zakázka po
+     * otevření „Změnily se 2 ceny" (cetrisKc, zaskleniListyProjHod: 0 proti
+     * ničemu) a přepočet jí klíče smazal. Skutečná změna zůstává vidět:
+     * nenulová hodnota proti chybějící se hlásí dál. */
+    if ((a === undefined && b === 0) || (a === 0 && b === undefined)) return;
     const cislo = typeof a === 'number' && typeof b === 'number';
     if (cislo ? a === b : String(a == null ? '' : a) === String(b == null ? '' : b)) return;
     out.push({
@@ -317,6 +325,11 @@ function cenikPrehled(v, dnesni, opts) {
   const dnes = opts.dnes || new Date().toISOString().slice(0, 10);
   const data = (v && v.data) || null;
   const rozdily = data ? cenikRozdily(data, dnesni) : [];
+  /* Přirážka a sazba DPH jsou rozhodnutí zakázky, ne ceny (CENIK_ZAKAZKOVE).
+   * Automatický přepočet je vynechával, varování ne — ruční DPH 21 % pak
+   * svítilo jako „Sazba DPH −42,9 %" (P4 / K13-N58, 24. 9. 2026). V seznamu
+   * rozdílů (okno přepočtu) zůstávají, varování a jeho souhrn je nepočítají. */
+  const cenove = rozdily.filter(r => !cenikPatriZakazce(r.cesta));
   const otisk = data ? cenikOtisk(data) : '';
   const zamceno = !!(typeof variantaUzamcena === 'function' ? variantaUzamcena(v) : (v && v.zamek));
   const kvitovano = cenikJeKvitovano(v, otisk);
@@ -334,14 +347,14 @@ function cenikPrehled(v, dnesni, opts) {
   let verzeOdvozena = false;
   if (!verze && verzeDnes && data && rozdily.length === 0) { verze = verzeDnes; verzeOdvozena = true; }
   return {
-    rozdily, souhrn: cenikSouhrn(rozdily), otisk, zamceno, kvitovano,
+    rozdily, souhrn: cenikSouhrn(cenove), otisk, zamceno, kvitovano,
     datum, dni: cenikDniOd(datum, dnes),
     stariCeniku: cenikStariCeniku(dnes),
     verze, verzeOdvozena, verzeDnes,
     verzeText: cenikVerzeText(razitko),
     verzeDnesText: cenikVerzeText({ verze: verzeDnes, platnoOd: opts.platnoOd || '' }),
     verzeZaostava: !!(verze && verzeDnes && verze < verzeDnes),
-    varovat: rozdily.length > 0 && !kvitovano && !zamceno,
+    varovat: cenove.length > 0 && !kvitovano && !zamceno,
   };
 }
 
@@ -358,7 +371,9 @@ function cenikVarovaniText(p) {
   const kolik = s.pocet === 1 ? '1 položka' : (s.pocet < 5 ? s.pocet + ' položky' : s.pocet + ' položek');
   let t = 'Ceník v této kalkulaci se liší od dnešního ceníku aplikace – ' + kolik;
   if (s.nejvetsi && s.nejvetsi.zmena != null)
-    t += ', nejvíc „' + s.nejvetsi.popis + '" ' + cenikProcento(s.nejvetsi.zmena);
+    /* Směr jako v okně přepočtu (sloupce V kalkulaci → Dnes → Změna): změna
+     * je dnešní cena proti kalkulaci. Holé „−42,9 %" se četlo obráceně (P4). */
+    t += ', nejvíc „' + s.nejvetsi.popis + '" (dnes ' + cenikProcento(s.nejvetsi.zmena) + ' proti kalkulaci)';
   t += '.';
   if (p.datum) t += ' Ceny jsou z ' + cenikDatumCz(p.datum)
     + (p.dni != null && p.dni > 0 ? ' (před ' + p.dni + ' dny)' : '') + '.';
@@ -409,8 +424,18 @@ function cenikPrepocti(v, dnesni, opts) {
    * `opts.chranena` dovoluje volajícímu pravidlo zpřísnit — u ROZDĚLANÉ
    * zakázky jsou zakázkové hodnoty rozhodnutím vždycky (nález V23). */
   const chranena = (typeof opts.chranena === 'function') ? opts.chranena : cenikChranena;
+  /* Nula místo ceny dnešního ceníku (B138, rozhodnutí J. V. 12. 10. 2026):
+   * klíč, který starší verze neměla (import ho doplnil nulou), se přepočítá
+   * i při výběru položek — server směs s takovou nulou odmítne. Zakázkové
+   * hodnoty (přirážka, DPH) zůstávají rozhodnutím obchodníka. */
+  /* Jen tam, kde to server vynucuje: role bez práva měnit ceník části
+   * (`opts.vynutNuly` = { OCK, PROJ }; bez něj obojí). Kdo ceník měnit smí,
+   * tomu odškrtnutá položka zůstane, jak slibuje okno přepočtu (revize 13. 10.). */
+  const vynut = opts.vynutNuly || { OCK: true, PROJ: true };
+  const nulaMistoCeny = (r) => !!vynut[r.sekce] && (r.stara === 0 || r.stara === undefined || r.stara === '')
+    && typeof r.nova === 'number' && r.nova !== 0 && !chranena(v.data, r.cesta);
   const rozdily = cenikRozdily(v.data, dnesni)
-    .filter(r => (vyber ? vyber.has(r.cesta) : !chranena(v.data, r.cesta)));
+    .filter(r => (vyber ? (vyber.has(r.cesta) || nulaMistoCeny(r)) : !chranena(v.data, r.cesta)));
   rozdily.forEach(r => cenikNastavHodnotu(v.data, r.cesta, r.nova));
   /* Přepočet po vybraných položkách (dohodnutá cena skla zůstává) nechává
    * ceník jako směs: část z nové verze, část z původní dohody. Takový ceník
@@ -450,7 +475,7 @@ function cenikPrepocti(v, dnesni, opts) {
 function cenikPrepoctiRozpracovane(zak, dnesni, opts) {
   opts = opts || {};
   const vysledek = { prepocteno: 0, zmen: 0, zamcene: 0, dohodnute: 0,
-                     orazitkovano: 0, znacky: 0, varianty: [] };
+                     orazitkovano: 0, znacky: 0, popisy: 0, varianty: [] };
   if (!zak || !Array.isArray(zak.varianty)) return vysledek;
 
   /* ROZDĚLANÁ ZAKÁZKA (nález V23, 4. 9. 2026). Zakázka, která už má číslo
@@ -471,8 +496,14 @@ function cenikPrepoctiRozpracovane(zak, dnesni, opts) {
     return s !== '' && s !== p;
   };
   const rozdelana = vyplneno(zak.cislo) || vyplneno(zak.nazevAkce);
+  /* CENA DLE NABÍDKY (S13, 16. 10. 2026): v rozdělané zakázce je cena
+   * položky, kterou platný ceník označil příznakem, rozhodnutím obchodníka
+   * (zadal ji podle nabídky) — automatika ji nepřepíše. Prázdné nové zakázce
+   * se orientační cena z ceníku předvyplní jako dřív. */
+  const dleNab = (cesta) => typeof cenikDleNabidkyJe === 'function'
+    && String(cesta).indexOf('C.') === 0 && !!dnesni && cenikDleNabidkyJe(dnesni.cenik, cesta);
   const chranena = rozdelana
-    ? ((data, cesta) => cenikPatriZakazce(cesta))
+    ? ((data, cesta) => cenikPatriZakazce(cesta) || dleNab(cesta))
     : cenikChranena;
 
   zak.varianty.forEach(v => {
@@ -502,6 +533,20 @@ function cenikPrepoctiRozpracovane(zak, dnesni, opts) {
       vysledek.zamcene++;
       vysledek.varianty.push({ id: v.id, stav: 'zamcena', zmen: 0 });
       return;
+    }
+    /* Společné dodatkové texty (25. 9. 2026): rozpracovaná varianta dostane
+     * texty, které jí chybí — i ta s dohodnutými cenami, text není cena
+     * a otisk ceníku se jím nemění. Podrobně u `popisyDoplnChybejici`. */
+    if (typeof popisyDoplnChybejici === 'function' && v.data.cenik) {
+      const zdroj = (dnesniV && dnesniV.cenik && dnesniV.cenik.popisy)
+        || (dnesni && dnesni.cenik && dnesni.cenik.popisy) || null;
+      vysledek.popisy += popisyDoplnChybejici(v.data.cenik, zdroj);
+      /* Jazykové varianty textů (#379, K18-N96) jdou za českým textem:
+       * doplní se jen k položce, jejíž text v zakázce je týž jako společný. */
+      const zdrojJ = (dnesniV && dnesniV.cenik && dnesniV.cenik.popisyJazyky)
+        || (dnesni && dnesni.cenik && dnesni.cenik.popisyJazyky) || null;
+      if (zdroj && zdrojJ && typeof popisyJazykyDoplnChybejici === 'function')
+        vysledek.popisy += popisyJazykyDoplnChybejici(v.data.cenik, zdroj, zdrojJ);
     }
     if (cenikJeKvitovano(v, cenikOtisk(v.data))) {
       vysledek.dohodnute++;
@@ -590,9 +635,11 @@ function cenikCenaRozpracovanych(zak, jekly) {
        * vrátil si zastaralý ceník kvůli změně, která se ho netýká.
        * (Regresi zavedla dnešní oprava dopoledne, našlo ji druhé kolo
        * nezávislé revize.) */
-      const strana = (typeof zakazkaVedouciStrana === 'function')
-        ? zakazkaVedouciStrana(zak) : '';
-      if (strana !== 'proj') {
+      /* Od P6 (13. 10. 2026) jedním pravidlem: vyřazená strana
+       * (zakazkaVyrazenaStrana — uzamčená a vynulovaná) se nepočítá. */
+      const vyrazena = (typeof zakazkaVyrazenaStrana === 'function')
+        ? zakazkaVyrazenaStrana(zak) : '';
+      if (vyrazena !== 'ock') {
         const r = vypocet(v.data.ock.zadani, v.data.cenik, jekly, v.data.ock.fixes);
         dil += (r && r.souhrn && +r.souhrn.zakladCena) || 0;
       }
@@ -607,7 +654,7 @@ function cenikCenaRozpracovanych(zak, jekly) {
        *
        * Falešné ujištění je horší než mlčení: obchodník podle něj klikne
        * „Počítat s dnešním ceníkem" a nepodívá se. */
-      if (strana !== 'ock' && typeof vypocetProj === 'function'
+      if (vyrazena !== 'proj' && typeof vypocetProj === 'function'
           && v.data.proj && v.data.proj.zadani && v.data.proj.cenik) {
         const rp = vypocetProj(v.data.proj.zadani, v.data.proj.cenik);
         dil += (rp && rp.souhrn && +rp.souhrn.celkem) || 0;

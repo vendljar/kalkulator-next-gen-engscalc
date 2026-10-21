@@ -154,7 +154,39 @@ const pravidla = kontrolyPravidla();
  * + „atypBezCeny" (obojí 30. 7. 2026; atypBezCeny má vlastní sadu
  * v test_atyp_katalog.js). 13. pravidlo „slevaProjMax" přibylo po auditu
  * 1. 8. 2026 (N4): globální sleva PROJ nad firemní maximum. */
-test('pravidel je třináct', pravidla.length === 13, pravidla.length);
+/* 14. pravidlo „kapitoly" přibylo 23. 9. 2026 (K9-N32), 15. „terminAtyp"
+ * 24. 9. 2026 (#330, TD1), 16. „nadDvermiBez" (N58, test_nadprazi.js)
+ * a 17. „slevaWord" (P5 / K13-N56, test_k13_kontroly.js), obě 24. 9. 2026;
+ * 18. „mustky" 25. 9. 2026 (P7 / K13-N59, test_mustky.js). */
+/* 19. „cenaNula" 25. 9. 2026 (P2 / K16-N75): nulová nebo nečíselná cena = zábrana. */
+/* 20. „slevaWordProj" a 21. „polozkyNavicWordProj" 25. 9. 2026 (P4 / K15-N66,
+ * K14-N64, test_k16_proj_word.js): šablona PROJ neukáže slevu / vlastní položky. */
+/* 22. „projZahranici" 29. 9. 2026 (P11) a 23. „profilNeznamy" 29. 9. 2026
+ * (#372, dřív #365 ve větvi claude/stoic-cerf-j915ax): neznámý rozměr profilu. */
+/* 24. „zapornaPolozka" 29. 9. 2026 (B111, větev claude/oprava-sesti-nalezu-v29.9.1):
+ * záporná částka, množství nebo hodiny = zábrana. */
+/* 25.–27. „planPlateb100", „planPlatebSoucet" (zábrany) a „planPlatebWordProj"
+ * 30. 9. 2026 (etapa B plánu plateb, test_plan_plateb_sod.js). */
+/* 28. „platbyWordOck" 30. 9. 2026 (etapa A platebních podmínek OCK, D1 + D2,
+ * test_platby_ock.js): šablona CN v13 nevytiskne bez zálohy ani měsíční fakturaci. */
+/* 29. „cenaWordProj" 30. 9. 2026 (K18-N92, test_k18_nalezy.js): šablona PROJ
+ * nemá symbol ceny nabízené činnosti (v3 a geodetické zaměření). */
+/* 30. „dodatekCesky" 30. 9. 2026 (K18-N96, test_k18_nalezy.js): dodatkový
+ * text z ceníku zůstane v cizojazyčné nabídce česky. */
+/* 31. „bokyDveri" 30. 9. 2026 (#375, test_svetliky_boky.js): mezera vedle
+ * dveří při bocích „bez" a počet bočních světlíků. */
+/* 32. „statikaDvakrat" 2. 10. 2026 (P5 / K19-N109, test_statika_oplasteni.js):
+ * ručně přepsaná statika OCK a zároveň řádek statiky opláštění z ceníku. */
+/* 33. „stranyDriv" 13. 10. 2026 (P6 / K19-N114, test_zamek_strany.js):
+ * zakázka dřív počítala projekci i OCK — od P6 je druhá strana vynulovaná. */
+/* 34.–35. „mustkyPrechodove" a „mustekStrecha" 17. 10. 2026 (#355, #356,
+ * test_mustky.js): plechy v nástupišti s můstkem a střecha přes nejvyšší
+ * můstek bez rozměrů — obojí upozornění. */
+/* 38. „mustekRozmer" 20. 10. 2026 (K3-N17, O7, test_mustky.js): nezvykle
+ * velký nebo nečíselný rozměr můstku — upozornění. */
+/* 39. „dpzUvodWordProj" 20. 10. 2026 (D1); 40.–43. D2: jednostupnovaProj,
+ * vyjezdCenaChybi, uvodProjNesedi, cestovneWordProj. */
+test('pravidel je čtyřicet tři (20. 10. 2026: + mustekRozmer, + dpzUvodWordProj D1, + 4 pravidla D2)', pravidla.length === 43, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -183,6 +215,13 @@ test('K1 nechá nulovou prohlubeň projít',
 /* K2 – jedno nástupiště. Výška podlaží by se dělila nulou. */
 const k2 = kontrolyProved(ctxZdravy(c => { c.zadani.nastupiste = 1; }));
 test('K2 pozná jediné nástupiště', kody(k2).includes('stanice'), JSON.stringify(kody(k2)));
+/* N53 (hloubkový test 24. 9. 2026): průchozí šachta má nástupiště po
+ * stranách A a C — A0 + C0 se 3 patry procházelo bez varování. */
+if (typeof nastupisteCelkem === 'undefined') global.nastupisteCelkem = require('./engine.js').nastupisteCelkem;
+const k2p = kontrolyProved(ctxZdravy(c => { Object.assign(c.zadani, { pruchoziSachta: true, nastupiste: 4, nastupisteA: 0, nastupisteC: 0, patra: 3 }); }));
+test('N53: průchozí šachta bez nástupišť (A0 + C0) varuje', kody(k2p).includes('stanice'), JSON.stringify(kody(k2p)));
+const k2pOk = kontrolyProved(ctxZdravy(c => { Object.assign(c.zadani, { pruchoziSachta: true, nastupiste: 0, nastupisteA: 3, nastupisteC: 1, patra: 3 }); }));
+test('N53: průchozí šachta A3 + C1 projde i s nulou v poli nastupiste', !kody(k2pOk).includes('stanice'), JSON.stringify(kody(k2pOk)));
 
 /* K3 – výšky nesedí. Ne „součet nesedí s výškou šachty": výška šachty je
  * v engine.js DOPOČÍTANÁ (prejezd + zdvih + prohlubeň), takže se s vlastním
@@ -288,9 +327,10 @@ test('K10 nepovažuje holou předlohu čísla za vyplněné číslo',
 test('K10 mlčí u vyplněné hlavičky', !kody(zdravy).includes('hlavicka'));
 
 /* ---------- 4) víc problémů najednou ---------- */
+/* Od 25. 9. 2026 (P2) je nesmyslný rozměr zábrana, proto tu už šířka 0
+ * není — tahle část prověřuje souběh VAROVÁNÍ. Zábrany má oddíl níž. */
 const vic = kontrolyProved(ctxZdravy(c => {
   c.zadani.nastupiste = 1;
-  c.zadani.sirka = 0;
   c.zak = { cislo: '', nazevAkce: '', objednatel: '' };
 }));
 test('víc problémů se sejde v jednom seznamu', vic.nalezy.length >= 3, JSON.stringify(kody(vic)));
@@ -299,7 +339,60 @@ test('pořadí je stálé (podle pořadí pravidel)',
     pravidla.map(p => p.kod).filter(k => kody(vic).includes(k))), JSON.stringify(kody(vic)));
 test('žádný nález se neopakuje', new Set(kody(vic)).size === vic.nalezy.length);
 
-/* ---------- 5) blokuje jediná věc, a to vědomě ----------
+/* ---------- 5) blokují jen vědomé výjimky ----------
+ * Do 25. 9. 2026 jediná (prázdný ceník); od dávky A (P1, P2 kola 16) také
+ * nesmyslný rozměr, nulová cena a sleva „schválená automaticky" nad stropem
+ * role, která ji zadala. Ostatní zůstávají varováním. */
+{
+  const z1 = kontrolyProved(ctxZdravy(c => { c.zadani.sirka = 0; }));
+  test('P2: nesmyslný rozměr zastaví dokument', z1.brani && z1.kodyBrani.includes('rozmery'), JSON.stringify(z1.kodyBrani));
+  test('P2: zábrana se odklepnout nedá', kontrolyPotvrzeniPlati(kontrolyPotvrzeni(z1, 'x', 'y'), z1) === false);
+}
+/* ---------- 5a) dávka A kola 16 (P1, P2) ---------- */
+{
+  const brani = (fn) => kontrolyProved(ctxZdravy(fn));
+  test('P2: rozteč 0 → dokument nevznikne', brani(c => { c.zadani.roztec = 0; }).brani);
+  test('P2: zdvih −5 → dokument nevznikne', brani(c => { c.zadani.zdvih = -5; }).brani);
+  test('P2: zdvih jako text → dokument nevznikne', brani(c => { c.zadani.zdvih = 'abc'; }).brani);
+
+  /* HORNÍ HRANICE ZDVIHU (K17-N91, rozhodnutí J. V. 30. 9. 2026). Nález:
+   * „zdvih 1 000 000 000 m dá nabídku 51,6 bil. Kč bez varování." J. V.:
+   * „Nastav maximální zdvih na 99 m." Hranici má JEN zdvih. */
+  const obr = brani(c => { c.zadani.zdvih = 1e9; });
+  test('K17-N91: zdvih 1 000 000 000 m → zábrana „rozmery"',
+    obr.brani && obr.kodyBrani.includes('rozmery'), JSON.stringify(obr.kodyBrani));
+  const nObr = obr.nalezy.find(x => x.kod === 'rozmery') || {};
+  test('K17-N91: věta jmenuje zdvih a hranici 99 m', /Zdvih/.test(nObr.text || '') && /99 m/.test(nObr.text || ''), nObr.text);
+  test('K17-N91: a říká, že dokument nevznikne', /Dokument nevznikne/.test(nObr.text || ''), nObr.text);
+  test('K17-N91: zábrana se odklepnout nedá', kontrolyPotvrzeniPlati(kontrolyPotvrzeni(obr, 'x', 'y'), obr) === false);
+  test('K17-N91: zdvih přesně 99 m projde', !kody(brani(c => { c.zadani.zdvih = 99; })).includes('rozmery'));
+  test('K17-N91: zdvih 99,01 m už ne', brani(c => { c.zadani.zdvih = 99.01; }).kodyBrani.includes('rozmery'));
+  test('K17-N91: zdvih uložený jako text „150" se posoudí jako číslo',
+    brani(c => { c.zadani.zdvih = '150'; }).kodyBrani.includes('rozmery'));
+  test('K17-N91: jiné rozměry hranici nemají (šířka, hloubka, přejezd, prohlubeň 150 m)',
+    ['sirka', 'hloubka', 'prejezd', 'prohluben'].every(k => !kody(brani(c => { c.zadani[k] = 150; })).includes('rozmery')));
+  const obe = brani(c => { c.zadani.zdvih = 1e9; c.zadani.roztec = 0; });
+  const tObe = (obe.nalezy.find(x => x.kod === 'rozmery') || {}).text || '';
+  test('K17-N91: s dalším nesmyslným rozměrem jeden nález a obě věci ve větě',
+    obe.nalezy.filter(x => x.kod === 'rozmery').length === 1 && /rozteč/.test(tObe) && /99 m/.test(tObe), tObe);
+  test('K17-N91: hranice je jedna konstanta (čte ji i pole Zdvih v zadání)', kt.KONTROLY_ZDVIH_MAX_M === 99, kt.KONTROLY_ZDVIH_MAX_M);
+  const bezMustku = brani(c => { c.zadani.mustek = true; c.cenik = Object.assign({}, CENIK); delete c.cenik.mustekKc; });
+  test('P2: chybějící cena v ceníku nedá NaN v součtu', bezMustku.nalezy && isFinite(ctxZdravy(c => {
+    c.zadani.mustek = true; c.cenik = Object.assign({}, CENIK); delete c.cenik.mustekKc; }).vysledek.souhrn.zakladCena));
+  const nula = kontrolyProved(Object.assign(ctxZdravy(), { vysledek: { souhrn: { zakladCena: 0, zakladNaklad: 0 } } }));
+  test('P2: nulová cena OCK → cenaNula zastaví dokument', nula.brani && nula.kodyBrani.includes('cenaNula'), JSON.stringify(nula.kodyBrani));
+  const nan = kontrolyProved(Object.assign(ctxZdravy(), { vysledek: { souhrn: { zakladCena: NaN, zakladNaklad: 0 } } }));
+  test('P2: cena NaN → zastaví dokument', nan.kodyBrani.includes('cenaNula'));
+  test('P2: zdravá zakázka nic nezastaví', kontrolyProved(ctxZdravy()).brani === false, JSON.stringify(kontrolyProved(ctxZdravy()).kodyBrani));
+  const auto = (role, p) => kontrolyProved(ctxZdravy(c => {
+    c.sleva = Object.assign(sl.slevaDefault(), { procenta: p, role, stav: 'schváleno automaticky' }); }));
+  const stropObch = Math.round(((NAST.slevy.stropy || {})['Obchodník'] || 0.05) * 100);
+  test('P1: „schváleno automaticky" nad stropem role zadavatele → dokument nevznikne',
+    auto('Obchodník', stropObch + 1).kodyBrani.includes('sleva'), JSON.stringify(auto('Obchodník', stropObch + 1).kodyBrani));
+  test('P1: automaticky schválená sleva do stropu projde', !auto('Obchodník', Math.max(1, stropObch)).kodyBrani.includes('sleva'));
+}
+
+/* ---------- 5b) původní oddíl ----------
  * Pravidlo „nic se neblokuje natvrdo" (KONTROLY_UROVEN = 2) platí dál pro
  * všechna pravidla kromě prázdného ceníku. Testuje se obojí: že ostatní
  * nálezy zůstaly varováním, i že ta jedna výjimka opravdu zabírá. */
@@ -314,8 +407,10 @@ test('text varování nikde nepřikazuje ani neblokuje',
   !/nesmí|zakázán|zakázan|blokov|nelze pokračovat|nelze odeslat/i.test(textVse), textVse);
 test('zábrana má vlastní text, který se dá ukázat samostatně',
   k9.textBrani.length > 0 && k9.textBrani === n9.text, k9.textBrani);
+/* bokyDveri od #381 (1. 10. 2026): ruční šířka bočního světlíku v Modelu 2
+ * širší než mezera vedle dveří nebo „nevejdou se" zastaví dokumenty OCK. */
 test('v katalogu pravidel je poznat, které umí zastavit dokument',
-  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'ukazkovyCenik',
+  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,bokyDveri,sleva,slevaProj,ukazkovyCenik,planPlateb100,planPlatebSoucet,cenovaVyjimka',
   JSON.stringify(pravidla.filter(p => p.zabranaMozna).map(p => p.kod)));
 
 /* ---------- 6) dvě podoby textu ---------- */
@@ -367,6 +462,185 @@ const rozbity = kontrolyProved({ zadani: { sirka: 0 }, zak: null, sleva: null, n
                                  vysledek: { souhrn: null }, projVysledek: undefined });
 test('nekompletní kontext nic neshodí a nálezy dorazí',
   rozbity.varovat === true && kody(rozbity).includes('rozmery'), JSON.stringify(kody(rozbity)));
+
+/* ---------- 9) nevyplněné kapitoly nabídky (23. 9. 2026, K9-N32) ---------- */
+{
+  const fm = require('./firma.js');
+  global.firmaKapitolyPrazdne = fm.firmaKapitolyPrazdne;
+  const s = (firma, extra) => kontrolyProved(Object.assign({ nast: Object.assign({}, NAST, { firma }) }, extra || {}));
+  const plna = fm.firmaDefault();
+  test('K9-N32: vyplněné kapitoly nic nehlásí', !kody(s(plna)).includes('kapitoly'), JSON.stringify(kody(s(plna))));
+  const bez = Object.assign({}, plna, { kapPozadavky: '', kapTerminy: '  \n ', kapPredani: '' });
+  const n = s(bez).nalezy.find(x => x.kod === 'kapitoly');
+  test('K9-N32: prázdné IV.–VI. se hlásí před nabídkou', !!n, JSON.stringify(kody(s(bez))));
+  test('K9-N32: text jmenuje chybějící kapitoly a kde se vyplňují',
+    !!n && /IV\. /.test(n.text) && /V\. termíny/.test(n.text) && /VI\. /.test(n.text) && /Nastavení → Firma/.test(n.text), n && n.text);
+  test('K9-N32: doložky vyplněné, tak je text nejmenuje', !!n && !/doložky/.test(n.text), n && n.text);
+  test('K9-N32: je to varování, ne zábrana', !!n && n.uroven === KONTROLY_UROVEN);
+  const en = Object.assign({}, plna, { kapTerminyEn: '' });
+  test('K9-N32: anglická nabídka hlídá anglické kapitoly',
+    kody(s(en, { jazyk: 'en' })).includes('kapitoly') && !kody(s(en, { jazyk: 'cz' })).includes('kapitoly'));
+  test('K9-N32: zakázka jen projekce pravidlo nemá (kapitoly jsou v nabídce OCK)',
+    !kody(s(bez, { jenProj: true })).includes('kapitoly'));
+  test('K9-N32: bez firmy v kontextu pravidlo mlčí', !kody(kontrolyProved({ nast: NAST })).includes('kapitoly'));
+}
+
+
+/* ---------- 10) termín dodání u atypické zakázky (24. 9. 2026, #330, TD1) ---------- */
+{
+  const fm = require('./firma.js');
+  global.firmaKapitola = fm.firmaKapitola;
+  /* Starý text kapitoly V. s pevnou lhůtou (výchozí od O3 nese {TERMIN}). */
+  const firma = Object.assign(fm.firmaDefault(), { terminDodaniOck: 'cca 12 týdnů', terminAtypTydny: '4',
+    kapTerminy: fm.DEFAULT_FIRMA.kapTerminy.replace('{TERMIN}', 'cca 12 týdnů') });
+  const s = (f, extra, atyp) => kontrolyProved(Object.assign({
+    nast: Object.assign({}, NAST, { firma: f }), zadani: Object.assign(kopie(eng.DEFAULT_ZADANI), { atyp: atyp !== false }),
+    terminDodani: 'cca 16 týdnů (vč. 4 týdnů za ATYP)' }, extra || {}));
+  const n = s(firma).nalezy.find(x => x.kod === 'terminAtyp');
+  test('#330: ATYP a v kapitole V. zůstala standardní lhůta — hlásí dvě různá čísla', !!n, JSON.stringify(kody(s(firma))));
+  test('#330: text jmenuje oba termíny a kde se opravuje',
+    !!n && /16 týdnů/.test(n.text) && /12 týdnů/.test(n.text) && /Kapitoly nabídky/.test(n.text), n && n.text);
+  test('#330: je to varování, ne zábrana', !!n && n.uroven === KONTROLY_UROVEN);
+  const bezCisla = Object.assign({}, firma, { kapTerminy: 'Zahájení montáže po podpisu SoD.\nMontáž cca 1-2 týdny.' });
+  test('#330: kapitola V. bez standardní lhůty nic nehlásí (1–2 týdny montáže nejsou termín dodání)',
+    !kody(s(bezCisla)).includes('terminAtyp'), JSON.stringify(kody(s(bezCisla))));
+  test('#330: běžná zakázka (bez ATYP) pravidlo nemá',
+    !kody(s(firma, { terminDodani: 'cca 12 týdnů' }, false)).includes('terminAtyp'));
+  test('#330: ATYP bez vyplněné lhůty ve Firmě — hlásí, že prodloužení v nabídce nebude',
+    /Smluvní standardy/.test((s(firma, { terminDodani: '' }).nalezy.find(x => x.kod === 'terminAtyp') || {}).text || ''));
+  test('#330: anglická kapitola se hlídá také (weeks)',
+    kody(s(Object.assign({}, firma, { kapTerminyEn: 'Installation will start approx. 12 weeks from contract signature.' }), { jazyk: 'en' })).includes('terminAtyp'));
+  test('#330: zakázka jen projekce pravidlo nemá', !kody(s(firma, { jenProj: true })).includes('terminAtyp'));
+  test('O3/TD1: starý text s pevnou lhůtou — rada „nahraďte číslo značkou {TERMIN}"',
+    !!n && /značkou \{TERMIN\}/.test(n.text), n && n.text);
+  /* Značka {TERMIN} ve výchozím textu (dávka O3 / TD1, 19. 10. 2026). */
+  const znacka = Object.assign(fm.firmaDefault(), { terminDodaniOck: 'cca 12 týdnů', terminAtypTydny: '4' });
+  test('O3/TD1: výchozí text kapitoly V. nese {TERMIN}', /\{TERMIN\}/.test(znacka.kapTerminy));
+  test('O3/TD1: ATYP + {TERMIN} — dvě čísla vzniknout nemůžou, nic se nehlásí',
+    !kody(s(znacka)).includes('terminAtyp'), JSON.stringify(kody(s(znacka))));
+  test('O3/TD1: běžná zakázka bez termínu v krycím listu, lhůta ve Firmě — mlčí (dosadí se lhůta)',
+    !kody(s(znacka, { terminDodani: '' }, false)).includes('terminAtyp'));
+  const dleDohody = (atyp) => (s(Object.assign({}, znacka, { terminDodaniOck: '' }), { terminDodani: '' }, atyp)
+    .nalezy.find(x => x.kod === 'terminAtyp') || {}).text || '';
+  test('O3/TD1: bez termínu i lhůty — hlásí „dle dohody" (běžná zakázka)', /dle dohody/.test(dleDohody(false)), dleDohody(false));
+  test('O3/TD1: bez termínu i lhůty — hlásí „dle dohody" (ATYP)', /dle dohody/.test(dleDohody(true)) && /ATYP/.test(dleDohody(true)));
+  const bezAtyp = (s(znacka, { terminDodani: '' }).nalezy.find(x => x.kod === 'terminAtyp') || {}).text || '';
+  test('O3/TD1: ATYP bez termínu v krycím listu (lhůta ve Firmě bez ATYP) — hlásí lhůtu bez prodloužení',
+    /bez prodloužení za ATYP/.test(bezAtyp) && /cca 12 týdnů/.test(bezAtyp), bezAtyp);
+  test('O3/TD1: běžná zakázka se starým textem a smazaným termínem — mlčí (ATYP se netýká)',
+    !kody(s(firma, { terminDodani: '' }, false)).includes('terminAtyp'));
+  test('O3/TD1: běžná zakázka se starým textem a jiným termínem — mlčí',
+    !kody(s(firma, { terminDodani: '20 týdnů' }, false)).includes('terminAtyp'));
+  test('O3/TD1: EN text se značkou (jazyk en) — nic nehlásí',
+    !kody(s(znacka, { jazyk: 'en' })).includes('terminAtyp'));
+}
+
+/* B111 (29. 9. 2026) — záporná vlastní položka, množství nebo hodiny je
+ * zábrana: dokument nevznikne, dokud se to neopraví. Kladná položka
+ * pravidlo nespustí. Před opravou pravidlo neexistovalo (kód chyběl). */
+{
+  const sKladnou = kontrolyProved(ctxZdravy(c => { c.zadani.vlastniPolozky.hrubaOck = [{ nazev: 'Úprava', mnozstvi: 1, cena: 302167 }]; }));
+  test('B111: kladná vlastní položka pravidlo zapornaPolozka nespustí', !kody(sKladnou).includes('zapornaPolozka'), JSON.stringify(kody(sKladnou)));
+  const sZap = kontrolyProved(ctxZdravy(c => { c.zadani.vlastniPolozky.hrubaOck = [{ nazev: 'Úprava', mnozstvi: 1, cena: -302167 }]; }));
+  const nZap = sZap.nalezy.find(x => x.kod === 'zapornaPolozka');
+  test('B111: záporná vlastní položka OCK → kód zapornaPolozka', !!nZap, JSON.stringify(kody(sZap)));
+  test('B111: zapornaPolozka je zábrana (brani true, v kodyBrani)', !!nZap && nZap.uroven === KONTROLY_UROVEN_ZABRANA
+    && sZap.brani === true && sZap.kodyBrani.includes('zapornaPolozka'), JSON.stringify({ brani: sZap.brani, kodyBrani: sZap.kodyBrani }));
+  test('B111: zábranu nejde odklepnout', !kontrolyPotvrzeniPlati(kontrolyPotvrzeni(sZap, 'x'), sZap));
+  const sMn = kontrolyProved(ctxZdravy(c => { c.zadani.mnozstviPrepis = { 'MONTÁŽ NA STAVBĚ': -5 }; }));
+  test('B111: záporný přepis množství → zapornaPolozka', kody(sMn).includes('zapornaPolozka'), JSON.stringify(kody(sMn)));
+  const sHod = kontrolyProved(ctxZdravy(c => { c.zadani.montazZakladHod = -24; }));
+  test('B111/N56: záporné hodiny montáže → zapornaPolozka', kody(sHod).includes('zapornaPolozka'), JSON.stringify(kody(sHod)));
+  const sProj = kontrolyProved(ctxZdravy(c => { c.projZadani.sekce[0].polozky.push({ nazev: 'Úprava', typ: 'fix', cena: -90400, vlastni: true }); }));
+  const nProj = sProj.nalezy.find(x => x.kod === 'zapornaPolozka');
+  test('B111: záporná fixní položka PROJ → zapornaPolozka a text jmenuje kalkulaci PROJ', !!nProj && /PROJ/.test(nProj.text), nProj && nProj.text);
+}
+
+/* #377 (1. 10. 2026) — ZÁBRANY BLOKUJÍ DOKUMENTY, kterých se týkají.
+ * Do v30.9.4 brána dokumentů zábrany z kontrol nečetla (zdvih −5 m dal
+ * nabídku). kontrolyZabranaDokumentu rozhoduje, který dokument zastaví:
+ * OCK pravidla jen dokumenty OCK, PROJ pravidla jen PROJ, plnou moc nic.
+ * Před opravou funkce neexistovala (všechny testy oddílu selžou). */
+{
+  const zd = kt.kontrolyZabranaDokumentu || (() => { throw new Error('kontrolyZabranaDokumentu chybí'); });
+  const zkus = (n, fn) => { try { fn(); } catch (e) { test(n, false, e.message); } };
+  zkus('#377: brána dokumentů', () => {
+    const zdvih = kontrolyProved(ctxZdravy(c => { c.zadani.zdvih = 120; }));
+    const hl = zd(zdvih, 'nabidka');
+    test('#377: zdvih 120 m zastaví nabídku OCK (Word)', /Nesmyslný rozměr nebo počet/.test(hl) && /99 m/.test(hl), hl);
+    test('#377: … i náhled/tisk, SoD OCK a krycí list OCK (BO, Techdata, jazyk)',
+      ['nabidkaTisk', 'sod', 'kryci_bo', 'kryci_techdata', 'nabidka_en'].every(t => zd(zdvih, t) === hl));
+    test('#377: zábrana OCK nezastaví dokumenty PROJ ani plnou moc',
+      ['nabidkaProj', 'nabidkaProjTisk', 'sodProj', 'kryciproj_bo', 'plnaMoc'].every(t => zd(zdvih, t) === ''));
+    test('#377: neznámý typ / bez typu nic nezastaví', zd(zdvih, '') === '' && zd(zdvih, 'jinyDokument') === '');
+    test('#377: po opravě zdvihu cesta volná', zd(kontrolyProved(ctxZdravy(c => { c.zadani.zdvih = 12; })), 'nabidka') === '');
+    test('#377: zdvih −5 zastaví nabídku OCK', zd(kontrolyProved(ctxZdravy(c => { c.zadani.zdvih = -5; })), 'nabidka') !== '');
+
+    const sp = kontrolyProved(ctxZdravy(c => {
+      c.slevaProj = Object.assign(sl.slevaDefault(), { procenta: 50, role: 'Obchodník', stav: 'schváleno automaticky' }); }));
+    test('#377: sleva projekce nad stropem zastaví nabídku a SoD PROJ',
+      sp.kodyBrani.includes('slevaProj') && /Sleva projekce/.test(zd(sp, 'nabidkaProj')) && zd(sp, 'sodProj') !== '' && zd(sp, 'kryciproj_techdata') !== '',
+      JSON.stringify(sp.kodyBrani));
+    test('#377: … a nezastaví dokumenty OCK ani plnou moc', ['nabidka', 'nabidkaTisk', 'sod', 'kryci_bo', 'plnaMoc'].every(t => zd(sp, t) === ''));
+
+    const zapProj = kontrolyProved(ctxZdravy(c => { c.projZadani.sekce[0].polozky.push({ nazev: 'Úprava', typ: 'fix', cena: -90400, vlastni: true }); }));
+    test('#377: záporná položka PROJ zastaví PROJ, ne OCK', zd(zapProj, 'nabidkaProj') !== '' && zd(zapProj, 'nabidka') === '');
+    const zapOck = kontrolyProved(ctxZdravy(c => { c.zadani.vlastniPolozky.hrubaOck = [{ nazev: 'Úprava', mnozstvi: 1, cena: -302167 }]; }));
+    test('#377: záporná položka OCK zastaví OCK, ne PROJ', zd(zapOck, 'nabidka') !== '' && zd(zapOck, 'nabidkaProj') === '');
+    const nula = kontrolyProved(Object.assign(ctxZdravy(), { vysledek: { souhrn: { zakladCena: 0, zakladNaklad: 0 } } }));
+    test('#377: nulová cena OCK zastaví OCK, ne PROJ', zd(nula, 'sod') !== '' && zd(nula, 'sodProj') === '');
+
+    /* B113 (#374, 6. 10. 2026): projekce za 0 Kč v KOMBINOVANÉ nabídce
+     * (ne „jen projekce") nespustila nic — 0 není < 0 a nejde o jenProj.
+     * Ceník PROJ samé nuly (ceník sestavení bez značky) dal dokument PROJ
+     * za nula korun. Teď: projekce, která má co prodávat (položka ne
+     * vyřazená ani vypnutá nulou), a vyjde 0 → zastaví dokumenty PROJ.
+     * Před opravou první dva testy selžou. */
+    const cpNula = JSON.parse(JSON.stringify(CENIK_PROJ));
+    Object.keys(cpNula.sazby || {}).forEach(k => { cpNula.sazby[k] = 0; });
+    Object.keys(cpNula.fixy || {}).forEach(k => { cpNula.fixy[k] = 0; });
+    const projNula = kontrolyProved(ctxZdravy(c => { c.cenikProj = cpNula; }));
+    test('B113: projekce za 0 Kč v kombinované nabídce zastaví nabídku a SoD PROJ',
+      projNula.kodyBrani.includes('cenaNula') && /PROJ/.test(zd(projNula, 'nabidkaProj')) && zd(projNula, 'sodProj') !== '' && zd(projNula, 'kryciproj_bo') !== '',
+      JSON.stringify(projNula.kodyBrani));
+    test('B113: … a nezastaví dokumenty OCK', ['nabidka', 'nabidkaTisk', 'sod', 'kryci_bo', 'plnaMoc'].every(t => zd(projNula, t) === ''));
+    const projVyr = kontrolyProved(ctxZdravy(c => { c.cenikProj = cpNula;
+      c.projZadani.sekce.forEach(s => s.polozky.forEach(p => { p.vyrazeno = true; })); }));
+    test('B113: projekce, která se neprodává (vše vyřazené), dokument nezastaví', !projVyr.kodyBrani.includes('cenaNula'), JSON.stringify(projVyr.kodyBrani));
+    const projVyp = kontrolyProved(ctxZdravy(c => { c.cenikProj = cpNula;
+      c.projZadani.sekce.forEach(s => s.polozky.forEach(p => { if (p.typ === 'hod') { p.hodiny = 0; p.rezerva = 0; } else p.cenaPrepis = 0; })); }));
+    test('B113: projekce vypnutá nulou (hodiny 0, fix přepsaný na 0) dokument nezastaví', !projVyp.kodyBrani.includes('cenaNula'), JSON.stringify(projVyp.kodyBrani));
+    test('B113: zdravá projekce v kombinované nabídce nic nezastaví', zd(kontrolyProved(ctxZdravy()), 'nabidkaProj') === '');
+
+    test('#377: hláška nese název pravidla i text nálezu',
+      (() => { const n = zdvih.nalezy.find(x => x.kod === 'rozmery'); return hl.indexOf(n.nazev + ': ' + n.text) >= 0; })(), hl);
+    /* Zábrany hlídané jinde (prázdný ceník, plán plateb) se tu nezdvojují. */
+    const fake = { nalezy: [{ kod: 'ukazkovyCenik', uroven: KONTROLY_UROVEN_ZABRANA, nazev: 'x', text: 'y' },
+      { kod: 'planPlateb100', uroven: KONTROLY_UROVEN_ZABRANA, nazev: 'x', text: 'y', strany: ['ock', 'proj'] }] };
+    test('#377: prázdný ceník a plán plateb nechává brána jejich vlastním hlídačům',
+      zd(fake, 'nabidka') === '' && zd(fake, 'nabidkaProj') === '');
+    /* Varování (úroveň 2) — ani pravidla nad symboly šablon — nic nezastaví. */
+    const war = { nalezy: ['slevaWord', 'platbyWordOck', 'cenaWordProj', 'planPlatebWordProj', 'dodatekCesky', 'marze']
+      .map(k => ({ kod: k, uroven: KONTROLY_UROVEN, nazev: k, text: k })) };
+    test('#377: varování (i nad symboly šablon) dokument nezastaví', ['nabidka', 'nabidkaProj', 'sod', 'sodProj'].every(t => zd(war, t) === ''));
+    const pr = kontrolyPravidla();
+    test('#377: pravidla nad šablonami nemají zábranu',
+      ['slevaWord', 'platbyWordOck', 'slevaWordProj', 'polozkyNavicWordProj', 'cenaWordProj', 'planPlatebWordProj', 'dodatekCesky']
+        .every(k => { const r = pr.find(x => x.kod === k); return r && !r.zabranaMozna; }));
+  });
+}
+
+/* B137 (12. 10. 2026): pravidla rozměrů sdílí zábrana a server
+ * (kontrolyRozmery). Zábrana dál bere nulu i prázdno jako vadné. */
+{
+  const zad = { zdvih: 9, sirka: 1.6, hloubka: 1.8, roztec: 1.25, cistyVstupMm: 800, sirkaRamuMm: 100, rohoveSloupky: 4, prejezd: 3, prohluben: 1 };
+  const r0 = kt.kontrolyRozmery(zad);
+  test('B137: platné rozměry — nic', !r0.spatne.length && !r0.nula.length && !r0.chybi.length && !r0.vysoky, JSON.stringify(r0));
+  const r1 = kt.kontrolyRozmery(Object.assign({}, zad, { zdvih: -1, roztec: '1,5', sirka: 0, hloubka: '', prejezd: 0 }));
+  test('B137: −1 a „1,5" → spatne, 0 → nula, "" → chybi, přejezd 0 smí',
+    r1.spatne.map(x => x[0]).join() === 'zdvih,roztec' && r1.nula.map(x => x[0]).join() === 'sirka' && r1.chybi.map(x => x[0]).join() === 'hloubka', JSON.stringify(r1));
+  test('B137: zdvih 150 → vysoky', kt.kontrolyRozmery(Object.assign({}, zad, { zdvih: 150 })).vysoky === true);
+}
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

@@ -10,6 +10,9 @@
  * podíval přes rameno těsně před odesláním. Nic víc. (Jedenáctá – kontrolní
  * číslice IČO – přibyla 30. 7. 2026 spolu s polem v hlavičce.)
  *
+ * (Od 25. 9. 2026 má několik pravidel úroveň ZÁBRANA a od 1. 10. 2026, #377,
+ * opravdu zastaví dokumenty, kterých se týkají — viz BRÁNA DOKUMENTŮ níž.
+ * Ostatní pravidla zůstávají varováním, jak píše tento odstavec.)
  * NIC SE NEBLOKUJE. Zadání z 30. 7. 2026 je v tomhle jednoznačné: „pouze
  * rozsviť varování před nabídkou". Všechna pravidla mají úroveň 2 –
  * upozornění. Důvod je praktický, ne měkký: tvrdá zábrana v cenotvorbě se
@@ -54,12 +57,168 @@ const KONTROLY_UROVEN_ZABRANA = 1;
  * hlídala jiný výtah, než se počítá. */
 const KONTROLY_VYSKA_DVERI = 2.3;
 
+/* HORNÍ HRANICE ZDVIHU v metrech (K17-N91, rozhodnutí J. V. 30. 9. 2026:
+ * „Nastav maximální zdvih na 99 m."). Nález: zdvih 1 000 000 000 m dal
+ * nabídku za 51,6 bil. Kč bez jediného varování — pravidlo „rozmery" do té
+ * doby hlídalo jen kladnost. Hranici má JEN zdvih (pokyn zněl na zdvih);
+ * ostatní rozměry dál jen na kladnost. Totéž číslo čte pole Zdvih v zadání
+ * šachty (max a upozornění u pole, ui/kalk_ock.js) — jedno místo, ať se
+ * pole a kontrola nerozejdou. */
+const KONTROLY_ZDVIH_MAX_M = 99;
+/* Nezvykle velký rozměr můstku (K3-N17, J. V. 20. 10. 2026 „jen upozornit";
+ * práh výchozí volbou dávky O7). */
+const KONTROLY_MUSTEK_MAX_MM = 6000;
+
+/* ROZMĚRY ŠACHTY — JEDNA PRAVIDLA PRO ZÁBRANU I SERVER (B137, 12. 10. 2026).
+ *
+ * Audit 12. 10. 2026: rozměr ≤ 0 hlídala jen zábrana „rozmery" v prohlížeči.
+ * Ručním požadavkem prošel nový zámek se zdvihem −1 (cena −46 %), roztečí −1
+ * (−31 %) nebo hloubkou −1 (−39 %) — a razítko „shoda", protože server
+ * přepočítal tatáž zmanipulovaná data. Pravidla proto stojí tady jednou
+ * a čte je pravidlo „rozmery" i server (uloRozmeryProblemy v uloziste.js).
+ *
+ * Vrací { spatne, nula, chybi, vysoky }; první tři jsou seznamy [klíč, název].
+ *   spatne – záporné číslo nebo něco, co jádro jako číslo nepřečte (text
+ *            „1,5" je pro `+x` NaN) → server neuloží NIKDY;
+ *   nula   – nula tam, kde musí být kladné číslo;
+ *   chybi  – prázdné pole (''/null/chybí);
+ *   male   – zdvih, šířka nebo hloubka kladná, ale pod 0,6 m (13. 10. 2026);
+ *   vysoky – zdvih nad 99 m (K17-N91) → server neuloží nikdy.
+ * NULA A PRÁZDNO JSOU U ROZPRACOVANÉ ZAKÁZKY BĚŽNÉ: nová zakázka začíná se
+ * zdvihem, šířkou, hloubkou, přejezdem i prohlubní 0 (ZADANI_NOVA v
+ * zakazka.js — „rozměry vyplní obchodník"). Zábrana v prohlížeči mezi
+ * skupinami nerozlišuje (dokument z nich nevznikne), server ano: zakázku
+ * s nulou nebo prázdnem uloží, NOVÝ ZÁMEK z ní ne. */
+const KONTROLY_ROZMERY_KLADNE = [['zdvih', 'zdvih'], ['sirka', 'šířka šachty'], ['hloubka', 'hloubka šachty'],
+  ['roztec', 'rozteč'], ['cistyVstupMm', 'čistý vstup'], ['sirkaRamuMm', 'šířka rámu'],
+  ['rohoveSloupky', 'počet rohových sloupků']];
+/* Přejezd i prohlubeň smějí být nula (šachta bez jámy existuje). */
+const KONTROLY_ROZMERY_NEZAPORNE = [['prejezd', 'přejezd'], ['prohluben', 'prohlubeň']];
+/* NEJMENŠÍ ROZMĚR ŠACHTY (rozhodnutí J. V. 13. 10. 2026: „Ano pro zdvih
+ * a šířku i hloubku menší než 0,6 m. ostatní zatím neřeš."). Navazuje na
+ * B137 a otázku 2 nočního #398 (zdvih 0,001 m nebo hloubka 0,01 m prošly
+ * novým zámkem a srazily cenu o 4–40 %). Mez je jen pro tyto tři rozměry
+ * v metrech; rozteč, sloupky, nástupiště a čistý vstup beze změny. Kladné
+ * číslo pod mezí patří do skupiny `male`: zábrana „rozmery" ho nepustí do
+ * dokumentu a server odmítne NOVÝ ZÁMEK (uloRozmeryVZadani `naZamek`);
+ * rozpracovaná zakázka se s ním dál uloží. Přesně 0,6 m projde. */
+const KONTROLY_ROZMER_MIN_M = 0.6;
+const KONTROLY_ROZMERY_MIN = ['zdvih', 'sirka', 'hloubka'];
+function kontrolyRozmery(z) {
+  const out = { spatne: [], nula: [], chybi: [], male: [], vysoky: false };
+  if (!z || typeof z !== 'object') return out;
+  const prazdne = (h) => h === null || h === undefined || (typeof h === 'string' && h.trim() === '');
+  const zkus = (seznam, kladne) => seznam.forEach(([k, n]) => {
+    if (prazdne(z[k])) { out.chybi.push([k, n]); return; }
+    /* Číslo tak, jak ho čte jádro (`+x`): text „1,5" je NaN, tedy vadný. */
+    const v = typeof z[k] === 'number' || typeof z[k] === 'string' ? +z[k] : NaN;
+    if (!isFinite(v) || v < 0) out.spatne.push([k, n]);
+    else if (kladne && v === 0) out.nula.push([k, n]);
+    else if (KONTROLY_ROZMERY_MIN.indexOf(k) >= 0 && v < KONTROLY_ROZMER_MIN_M) out.male.push([k, n]);
+  });
+  zkus(KONTROLY_ROZMERY_KLADNE, true);
+  zkus(KONTROLY_ROZMERY_NEZAPORNE, false);
+  /* Zdvih nad hranicí 99 m (K17-N91) — posuzuje se jen zdvih, který prošel
+   * kladností; jinak by o něm věta mluvila dvakrát. */
+  const vadnyZdvih = out.spatne.concat(out.nula, out.chybi, out.male).some(x => x[0] === 'zdvih');
+  out.vysoky = !vadnyZdvih && +z.zdvih > KONTROLY_ZDVIH_MAX_M;
+  return out;
+}
+
+/* ŠÍŘKA BOČNÍHO SVĚTLÍKU PROTI MEZEŘE VEDLE DVEŘÍ (#381, rozhodnutí J. V.
+ * 1. 10. 2026 — výchozí odpovědi otázek 3 a 5 návrhu, jen Model 2).
+ *
+ * Ruční šířka jednoho světlíku mění plochu boků (počet × šířka × 2,2 m).
+ * Hlídá se proti mezeře vedle dveří (šířka stěny − otvor dveří − 0,04 m):
+ *   – světlík širší než mezera            → ZÁBRANA (taková šachta se
+ *     postavit nedá a cena by nesla výplň navíc),
+ *   – světlíky se vedle dveří nevejdou     → ZÁBRANA (počet × šířka >
+ *     dveře × mezera),
+ *   – jinak zbytek mezery nad 5 mm         → upozornění (zbytek nic
+ *     neoceňuje; obchodník případně přidá položku). Od 1. 10. 2026 věta
+ *     říká zbytek u jedněch dveří a součet zvlášť (viz níž).
+ * Šířka se zadává v celých mm, takže každý světlík smí nést zaokrouhlení
+ * do 0,5 mm — zaokrouhlená předpočítaná šířka (smíšené rozložení) tak
+ * zábranu nespustí.
+ *
+ * MODEL zná kontrola z výsledku jádra: `vypln.sirkaRucne` vydá jádro jen
+ * v Modelu 2 při ručním počtu světlíků, v Modelu 1 je vždy null (šířku
+ * nečte). Platí to stejně pro otevřenou variantu, pro zmrazený otisk
+ * odeslané nabídky i pro server (sluzba.js), kde se model zvlášť
+ * nepředává. Otisk z doby před #381 šířku nemá — nehlídá se nic.
+ *
+ * Vrací { zabrana: [věty], upozorneni: [věty] }; tytéž věty ukazuje
+ * nápověda pod polem šířky v zadání (ui/kalk_ock.js), ať pole a kontrola
+ * neříkají každé něco jiného. */
+function kontrolyBokySirka(r) {
+  const out = { zabrana: [], upozorneni: [] };
+  const v = r && r.zaskleni && r.zaskleni.vypln;
+  if (!v || v.sirkaRucne === null || v.sirkaRucne === undefined) return out;
+  const n = +v.bokyKs, d = +v.dvere, w = +v.sirkaRucne, m = +v.mezera;
+  if (!(n > 0) || !isFinite(w) || !isFinite(m) || !isFinite(d)) return out;
+  const wMm = Math.round(w * 1000), mMm = m * 1000;
+  const metry = x => (Math.round(x * 100) / 100).toFixed(2).replace('.', ',');
+  const sirsi = wMm > mMm + 0.5;
+  const nevejdou = n * wMm > d * mMm + 0.5 * n;
+  if (sirsi) {
+    out.zabrana.push('Boční světlík (' + wMm + ' mm) je širší než mezera vedle dveří (' + Math.round(mMm) + ' mm) — '
+      + 'vedle dveří se nevejde. Zmenšete šířku, nebo ji vraťte na předpočítanou (↺).');
+  } else if (nevejdou) {
+    out.zabrana.push('Boční světlíky se vedle dveří nevejdou: ' + n + ' × ' + wMm + ' mm = ' + metry(n * wMm / 1000)
+      + ' m, mezery u ' + d + ' dveří jsou celkem ' + metry(d * mMm / 1000) + ' m. Zmenšete šířku nebo počet světlíků.');
+  } else {
+    /* ZBYTEK MEZERY (J. V. 1. 10. 2026: „Text vedle dveří zůstane 1,50 m
+     * je podle mně špatně"). Do té doby věta nesla SOUČET přes všechny dveře
+     * (5 × (600 − 300) mm = 1,50 m), ale zněla, jako by 1,50 m zbylo vedle
+     * jedněch dveří — u šachty široké 1,5 m nesmysl. Teď říká zbytek u
+     * JEDNĚCH dveří, z čeho vznikl, a součet zvlášť. Dveře bez světlíku
+     * hlásí pravidlo počtu („u 2 dveří nebude boční světlík — mezera … tam
+     * zůstane neoceněná"), do zbytku se proto nepočítají podruhé (dřív je
+     * věta přičítala: 3 × 300 mm u 5 dveří = „2,10 m"). Smíšené rozložení
+     * (u některých dveří jeden, u jiných dva světlíky) má jen průměrnou
+     * šířku — tam věta uvádí součet a z čeho vznikl. Práh 5 mm platí pro
+     * součet jako dřív. */
+    const dva = isFinite(+v.dvereDva) ? +v.dvereDva : Math.max(0, Math.min(n, 2 * d) - d);
+    const jeden = isFinite(+v.dvereJeden) ? +v.dvereJeden : Math.min(n, d) - dva;
+    const sSvetlikem = dva + jeden;
+    const zbytek = sSvetlikem * mMm - n * wMm;
+    if (zbytek > 5 && sSvetlikem > 0) {
+      const mm = x => String(Math.round(x));
+      if (!dva || !jeden) {
+        const po = dva ? 2 : 1;
+        out.upozorneni.push('Vedle ' + (sSvetlikem > 1 ? 'každých ' : '') + 'dveří' + (d > sSvetlikem ? ' se světlíkem' : '')
+          + ' zůstane neoceněných ' + mm(mMm - po * wMm) + ' mm (mezera ' + mm(mMm) + ' mm − '
+          + (po === 1 ? 'světlík ' + wMm + ' mm' : '2 světlíky po ' + wMm + ' mm') + ')'
+          + (sSvetlikem > 1 ? ', u ' + sSvetlikem + ' dveří celkem ' + metry(zbytek / 1000) + ' m' : '') + '.');
+      } else {
+        out.upozorneni.push('Vedle dveří zůstane neoceněných celkem ' + metry(zbytek / 1000) + ' m (mezery u '
+          + sSvetlikem + ' dveří ' + metry(sSvetlikem * mMm / 1000) + ' m − ' + n
+          + (n >= 2 && n <= 4 ? ' světlíky' : ' světlíků') + ' po ' + wMm + ' mm).');
+      }
+    }
+  }
+  return out;
+}
+
 /* Výčet do věty („šířka šachty, hloubka šachty a rozteč"). */
 function kontrolyVyctem(pole) {
   const k = (pole || []).filter(Boolean);
   if (!k.length) return '';
   if (k.length === 1) return k[0];
   return k.slice(0, -1).join(', ') + ' a ' + k[k.length - 1];
+}
+
+/* Prodává projekce něco? Položka, která není vyřazená ani vypnutá nulou
+ * (polozkaProjVypnuta, prepisy.js — hodinová s nula hodinami, fixní
+ * s přepsanou nulou). Záložka pro samostatný Node běh bez prepisy.js. */
+function kontrolyProjProdava(pv) {
+  const vypnuta = (typeof polozkaProjVypnuta === 'function') ? polozkaProjVypnuta : (p) => {
+    if (!p || p.vyrazeno) return false;
+    if (p.typ === 'hod') return Number(p.hodinyCelkem != null ? p.hodinyCelkem : p.hodiny) === 0;
+    return !!p.cenaPrepsana && Number(p.cenaEfekt) === 0;
+  };
+  return ((pv && Array.isArray(pv.sekce)) ? pv.sekce : []).some(s => s && Array.isArray(s.polozky)
+    && s.polozky.some(p => p && !p.vyrazeno && !vypnuta(p)));
 }
 
 /* Přehled marže se počítá nanejvýš jednou za běh – používají ho dvě pravidla
@@ -94,22 +253,118 @@ function kontrolyMarze(ctx) {
 const KONTROLY = [
   {
     kod: 'rozmery', kde: 'Kalkulace OCK', nazev: 'Nesmyslný rozměr nebo počet',
+    zabranaMozna: true, strany: ['ock'],
     zjisti(ctx) {
       const z = ctx.zadani;
       if (!z) return null;
       /* Nula projde výpočtem bez chyby a udělá z kalkulace nesmysl, který
-       * vypadá jako sleva – proto se hlídá kladnost, ne jen „je to číslo". */
-      const kladne = [['zdvih', 'zdvih'], ['sirka', 'šířka šachty'], ['hloubka', 'hloubka šachty'],
-        ['roztec', 'rozteč'], ['cistyVstupMm', 'čistý vstup'], ['sirkaRamuMm', 'šířka rámu'],
-        ['rohoveSloupky', 'počet rohových sloupků']];
-      /* Přejezd i prohlubeň smějí být nula (šachta bez jámy existuje). */
-      const nezaporne = [['prejezd', 'přejezd'], ['prohluben', 'prohlubeň']];
+       * vypadá jako sleva – proto se hlídá kladnost, ne jen „je to číslo".
+       * Pravidla sdílí server (kontrolyRozmery výš, B137); tady se prázdné
+       * pole počítá mezi vadné — z nevyplněného rozměru dokument nevznikne. */
+      const r = kontrolyRozmery(z);
+      const vadneKlice = new Set(r.spatne.concat(r.nula, r.chybi).map(x => x[0]));
+      const spatne = KONTROLY_ROZMERY_KLADNE.concat(KONTROLY_ROZMERY_NEZAPORNE)
+        .filter(x => vadneKlice.has(x[0])).map(x => x[1]);
+      const zdvih = +z.zdvih;
+      const vysoky = r.vysoky;
+      /* Rozměr pod 0,6 m (13. 10. 2026) — kladný, ale nesmyslně malý. */
+      const male = r.male.map(x => x[1]);
+      if (!spatne.length && !vysoky && !male.length) return null;
+      /* ZÁBRANA od 25. 9. 2026 (P2 / K16-N75): rozteč 0 dala nabídku za
+       * 0 Kč, zdvih −5 nabídku za 433 000 Kč — a obojí šlo vytisknout. Není
+       * co vážit, je to omyl v zadání. Totéž platí pro zdvih nad hranicí. */
+      const vety = [];
+      if (spatne.length) vety.push('V zadání je rozměr nebo počet, který nedává smysl: ' + kontrolyVyctem(spatne) + '.');
+      if (male.length) vety.push('Rozměr šachty menší než ' + String(KONTROLY_ROZMER_MIN_M).replace('.', ',') + ' m: '
+        + kontrolyVyctem(male) + ' — nejspíš překlep (rozměry se zadávají v metrech).');
+      if (vysoky) vety.push('Zdvih ' + zdvih.toLocaleString('cs-CZ', { maximumFractionDigits: 3 })
+        + ' m je nad nejvyšším povoleným zdvihem ' + KONTROLY_ZDVIH_MAX_M + ' m — '
+        + 'nejspíš jde o překlep (zdvih se zadává v metrech).');
+      return { uroven: KONTROLY_UROVEN_ZABRANA, text: vety.join(' ') + ' Dokument nevznikne, dokud se to neopraví.' };
+    },
+  },
+  {
+    /* NEZNÁMÝ ROZMĚR PROFILU (#372, nález A2-1 z 26. 9. 2026). Výpočet
+     * s rozměrem mimo katalog jeklů už nepadá — dosadí nulovou hmotnost
+     * a plochu. Právě proto nesmí taková cena odejít: dokud se nevybere
+     * platný rozměr, dokument nevznikne. */
+    kod: 'profilNeznamy', kde: 'Kalkulace OCK', nazev: 'Rozměr profilu není v katalogu jeklů',
+    zabranaMozna: true, strany: ['ock'],
+    zjisti(ctx) {
+      const nez = ctx.vysledek && ctx.vysledek.profily && ctx.vysledek.profily.nezname;
+      if (!Array.isArray(nez) || !nez.length) return null;
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: 'Rozměr profilu ' + kontrolyVyctem(nez) + ' není v katalogu jeklů — vyberte platný. '
+          + 'Dokument nevznikne, dokud se to neopraví.' };
+    },
+  },
+  {
+    /* ZÁPORNÁ POLOŽKA (B111, 29. 9. 2026). Server zápornou částku, množství
+     * ani hodiny od opravy nepřijme; zakázka uložená dřív ji ale nést může
+     * (rozpracovaná varianta, záloha). Záporná položka snižuje cenu nabídky
+     * bez schválení a v dokumentu po ní nezůstane stopa — proto zábrana:
+     * dokument nevznikne, dokud se položka neopraví. Seznam míst dává
+     * uloZaporneVZadani z uloziste.js (táž funkce jako na serveru). */
+    kod: 'zapornaPolozka', kde: 'Nabídka', nazev: 'Záporná částka, množství nebo hodiny',
+    zabranaMozna: true,
+    zjisti(ctx) {
+      const f = (typeof uloZaporneVZadani === 'function') ? uloZaporneVZadani
+        : (typeof require === 'function' ? require('./uloziste.js').uloZaporneVZadani : null);
+      if (!f) return null;
+      const nal = f(ctx.jenProj ? null : ctx.zadani, ctx.projZadani).filter(p => p.duvod === 'zaporne');
+      if (!nal.length) return null;
+      /* Jen opláštění pod dnem prohlubně (K23T-N1): vlastní věta, ne „sleva". */
+      if (nal.every(p => p.podProhlubni)) {
+        const t = (typeof uloPodProhlubniText === 'function') ? uloPodProhlubniText
+          : require('./uloziste.js').uloPodProhlubniText;
+        return { uroven: KONTROLY_UROVEN_ZABRANA, strany: ['ock'],
+          text: t(nal) + '. Opravte začátek opláštění v zadání OCK. Dokument nevznikne, dokud se to neopraví.' };
+      }
+      const ock = nal.some(p => p.kde.indexOf('ock.') === 0), proj = nal.some(p => p.kde.indexOf('proj.') === 0);
+      const kde = [ock ? 'kalkulace OCK' : '', proj ? 'kalkulace PROJ' : ''].filter(Boolean);
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        /* Strana podle místa nálezu (#377): záporná položka v kalkulaci PROJ
+         * nesmí zastavit nabídku OCK a naopak. */
+        strany: [ock ? 'ock' : '', proj ? 'proj' : ''].filter(Boolean),
+        text: 'V zakázce je záporná částka, množství nebo hodiny (' + kontrolyVyctem(kde) + '). '
+          + 'Snížení ceny se zadává jako sleva, která jde přes schvalování. Dokument nevznikne, dokud se to neopraví.' };
+    },
+  },
+  {
+    /* CENA NABÍDKY MUSÍ BÝT KLADNÉ ČÍSLO (P2 / K16-N75 + K14-N61, 25. 9. 2026).
+     * Nula nebo NaN v ceně je vždy omyl (chybějící cena v ceníku, nesmyslné
+     * zadání) — nabídka za nula korun nesmí odejít. Projekce smí být nulová,
+     * když se neprodává; u zakázky „jen projekce" musí být kladná vždy,
+     * u kombinované, když má co prodávat (B113, 6. 10. 2026). */
+    kod: 'cenaNula', kde: 'Nabídka', nazev: 'Cena nabídky je nulová nebo není číslo',
+    zabranaMozna: true,
+    zjisti(ctx) {
+      /* Prázdný ceník (samé nuly) hlásí a zastavuje pravidlo „ukazkovyCenik"
+       * s přesnější větou — dvakrát totéž by jen mátlo. */
+      if (typeof ukazkoveStav === 'function') {
+        const u = ukazkoveStav({ cenik: ctx.cenik, cenikProj: ctx.cenikProj,
+          slevy: ctx.nast && ctx.nast.slevy, firma: ctx.nast && ctx.nast.firma });
+        if (u && u.prazdne) return null;
+      }
+      const o = !ctx.jenProj && ctx.vysledek && ctx.vysledek.souhrn ? ctx.vysledek.souhrn.zakladCena : undefined;
+      const pj = ctx.projVysledek && ctx.projVysledek.souhrn ? ctx.projVysledek.souhrn.celkem : undefined;
       const spatne = [];
-      kladne.forEach(([k, n]) => { const v = +z[k]; if (!isFinite(v) || v <= 0) spatne.push(n); });
-      nezaporne.forEach(([k, n]) => { const v = +z[k]; if (!isFinite(v) || v < 0) spatne.push(n); });
+      if (o !== undefined && !(Number(o) > 0)) spatne.push('výtahová šachta (OCK)');
+      /* Projekce za 0 Kč i v KOMBINOVANÉ nabídce (B113, #374, 6. 10. 2026):
+       * má-li projekce co prodávat (položka ani vyřazená, ani vypnutá nulou)
+       * a vyjde nula, je to ceník bez cen (ceník sestavení bez značky
+       * ukázkových dat) — dokument PROJ by odešel za nula korun. Projekce,
+       * která se neprodává (vše vyřazené nebo vypnuté), smí být nulová. */
+      if (pj !== undefined && (!isFinite(Number(pj)) || Number(pj) < 0
+          || ((ctx.jenProj || kontrolyProjProdava(ctx.projVysledek)) && !(Number(pj) > 0))))
+        spatne.push('projekční práce (PROJ)');
       if (!spatne.length) return null;
-      return { text: 'V zadání je rozměr nebo počet, který nedává smysl: '
-        + kontrolyVyctem(spatne) + '. Čísla nad tím se z toho počítají dál.' };
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        /* #377: zastaví jen dokumenty té části, jejíž cena je vadná. */
+        strany: [spatne.indexOf('výtahová šachta (OCK)') >= 0 ? 'ock' : '',
+          spatne.indexOf('projekční práce (PROJ)') >= 0 ? 'proj' : ''].filter(Boolean),
+        text: 'Cena nabídky vyšla nulová nebo to není číslo (' + kontrolyVyctem(spatne) + ') — '
+          + 'nejspíš chybí cena v ceníku nebo je nesmyslné zadání. Dokument nevznikne.' };
     },
   },
   {
@@ -117,7 +372,10 @@ const KONTROLY = [
     zjisti(ctx) {
       const z = ctx.zadani;
       if (!z) return null;
-      const n = +z.nastupiste;
+      /* U průchozí šachty se nástupiště zadávají po stranách A a C
+       * (nastupisteCelkem); pole `nastupiste` tam nic neznamená, takže
+       * A0 + C0 procházelo bez varování (N53, hloubkový test 24. 9. 2026). */
+      const n = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(z) : +z.nastupiste;
       if (isFinite(n) && n >= 2) return null;
       /* Výška podlaží se počítá jako zdvih/(nástupiště−1); při jednom
        * nástupišti se dělí nulou a odvozené rozměry přestanou dávat smysl. */
@@ -147,6 +405,200 @@ const KONTROLY = [
       if (!potize.length) return null;
       return { text: 'Rozměry si odporují: ' + kontrolyVyctem(potize)
         + '. Vyrobit se to dá, postavit ne.' };
+    },
+  },
+  {
+    /* NAD DVEŘMI NIC (N58, rozhodnutí J. V. 24. 9. 2026). Volba „bez"
+     * nechává pole nad dveřmi neocenené — šířka stěny × (světlá výška −
+     * 2,3 m) na každé nástupiště. Může to být záměr (stavba dozdí), proto
+     * jen upozornění; pod 10 cm pole prakticky není a pravidlo mlčí. */
+    kod: 'nadDvermiBez', kde: 'Kalkulace OCK', nazev: 'Nad dveřmi zůstane otvor',
+    zjisti(ctx) {
+      const z = ctx.zadani;
+      if (!z) return null;
+      const volba = (typeof nadDvermiVypln === 'function') ? nadDvermiVypln(z)
+        : (z.nadDvermi || (z.svetlikNadDvermi ? 'sklo' : 'bez'));
+      if (volba !== 'bez') return null;
+      const o = (ctx.vysledek && ctx.vysledek.odvozene) || null;
+      const svetla = o ? o.svetlaVyska : null;
+      if (svetla == null || !isFinite(svetla)) return null;
+      const h = svetla - KONTROLY_VYSKA_DVERI;
+      if (h <= 0.1) return null;
+      return { text: 'Nad šachetními dveřmi je zvoleno „bez" — zůstane otvor vysoký '
+        + (Math.round(h * 100) / 100).toString().replace('.', ',') + ' m, který nic neoceňuje. '
+        + 'Zvolte sklo, plech, materiál opláštění, nebo „zajistí stavba" (pak to uvede specifikace).' };
+    },
+  },
+  {
+    /* SVĚTLÍKY NA BOCÍCH DVEŘÍ (#375, rozhodnutí J. V. 30. 9. 2026). Boky
+     * „bez" nechávají mezeru vedle dveří neocenenou (šířka stěny − otvor
+     * dveří − 0,04 m na každých dveřích) — stejně jako „bez" nad dveřmi, jen
+     * upozornění; pod 2 cm mezera prakticky není. Dál se hlídá počet
+     * světlíků: víc než dva u každých dveří, dveře bez světlíku (mezera
+     * u nich zůstane) a nulový počet u zvolené výplně. Mezera se bere
+     * z výsledku jádra (rozměr skla, otvor dveří), volba a počet ze zadání
+     * — i u odeslané nabídky se zmrazeným otiskem z doby před #375.
+     *
+     * Od #381 (1. 10. 2026) hlídá i RUČNÍ ŠÍŘKU bočního světlíku (jen
+     * Model 2, viz kontrolyBokySirka): širší než mezera nebo „nevejdou se"
+     * je ZÁBRANA — zastaví dokumenty OCK (BRÁNA DOKUMENTŮ níž); zbytek
+     * mezery jen upozorní. Bez ruční šířky zůstává pravidlo upozorněním. */
+    kod: 'bokyDveri', kde: 'Kalkulace OCK', nazev: 'Světlíky na bocích dveří',
+    zabranaMozna: true, strany: ['ock'],
+    zjisti(ctx) {
+      const z = ctx.zadani;
+      const r = ctx.vysledek;
+      if (!z || typeof bokyVypln !== 'function' || typeof bokyPocet !== 'function') return null;
+      const volba = bokyVypln(z), n = bokyPocet(z);
+      const dvere = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(z) : +z.nastupiste;
+      const sir = r && r.zaskleni && r.zaskleni.rozmer ? +r.zaskleni.rozmer.sir : NaN;
+      const otvor = r && r.odvozene ? +r.odvozene.sirkaDveri : NaN;
+      const mezera = sir - otvor - 0.04;
+      const mezeraJe = isFinite(mezera) && mezera > 0.02;
+      const m = () => (Math.round(mezera * 100) / 100).toString().replace('.', ',') + ' m';
+      if (volba === 'bez') {
+        if (!mezeraJe || !(dvere > 0)) return null;
+        return { text: 'Na bocích šachetních dveří je zvoleno „bez" — vedle dveří zůstane mezera '
+          + m() + ' na každém nástupišti, kterou nic neoceňuje. '
+          + 'Zvolte sklo, plech, materiál opláštění, nebo „zajistí stavba" (pak to uvede specifikace).' };
+      }
+      const potize = [];
+      if (!(n > 0)) potize.push('počet je 0 — zvolte u boků „bez", nebo zadejte počet');
+      else {
+        if (isFinite(dvere) && n > 2 * dvere)
+          potize.push('zadaných světlíků (' + n + ') je víc než dva u každých dveří (' + (2 * dvere) + ')');
+        if (isFinite(dvere) && n < dvere) {
+          const bez = dvere - n;
+          potize.push((bez === 1 ? 'u 1 dveří nebude boční světlík' : 'u ' + bez + ' dveří nebude boční světlík')
+            + (mezeraJe ? ' — mezera ' + m() + ' tam zůstane neoceněná' : ''));
+        }
+      }
+      /* Ruční šířka bočního světlíku (#381) — zábrana nejdřív, pak počet,
+       * nakonec zbytek mezery. */
+      const sirka = kontrolyBokySirka(r);
+      if (!potize.length && !sirka.zabrana.length && !sirka.upozorneni.length) return null;
+      const vety = sirka.zabrana.slice();
+      if (potize.length) vety.push('Světlíky na bocích dveří: ' + kontrolyVyctem(potize) + '.');
+      vety.push(...sirka.upozorneni);
+      if (sirka.zabrana.length)
+        return { uroven: KONTROLY_UROVEN_ZABRANA, text: vety.join(' ') + ' Dokument nevznikne, dokud se to neopraví.' };
+      return { text: vety.join(' ') };
+    },
+  },
+  {
+    /* MŮSTKY (P7 / K13-N59, rozhodnutí J. V. 25. 9. 2026). Můstky se zadávají
+     * počtem a v kalkulaci mají vlastní řádek za ceníkovou cenu za kus.
+     * Dokud cena v ceníku chybí, jde řádek do nabídky za 0 Kč — to se musí
+     * říct. A víc můstků než nástupišť je překlep. */
+    kod: 'mustky', kde: 'Kalkulace OCK', nazev: 'Můstky mezi budovou a OCK',
+    zjisti(ctx) {
+      const z = ctx.zadani;
+      if (!z) return null;
+      const n = (typeof mustkyPocet === 'function') ? mustkyPocet(z) : (+z.mustkyKs || (z.mustek ? 1 : 0));
+      if (!n) return null;
+      const potize = [];
+      const nast = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(z) : +z.nastupiste;
+      if (isFinite(nast) && nast > 0 && n > nast)
+        potize.push('zadaných můstků (' + n + ') je víc než nástupišť (' + nast + ')');
+      const c = ctx.cenik;
+      if (c && !(+c.mustekKc > 0))
+        potize.push('v ceníku chybí cena můstku (Ceník → Hrubá OCK → Můstek mezi budovou a OCK), '
+          + 'takže ' + (n === 1 ? 'můstek jde' : 'můstky jdou') + ' do nabídky za 0 Kč');
+      if (!potize.length) return null;
+      return { text: 'Můstky mezi budovou a OCK: ' + kontrolyVyctem(potize) + '.' };
+    },
+  },
+  {
+    /* MŮSTKY × PŘECHODOVÉ PLECHY (#355, rozhodnutí J. V. 16. 10. 2026).
+     * Výpočet se NEMĚNÍ — plechy se počítají za všechna nástupiště, i ta,
+     * kde mezeru k podestě překrývá můstek. Obchodník se to jen dozví, ať
+     * zváží ruční úpravu množství. Upozornění, ne zábrana (v žádném jazyce
+     * tisku). Kde přesně můstky jsou, zadání neví — říká se počet. */
+    kod: 'mustkyPrechodove', kde: 'Kalkulace OCK', nazev: 'Můstky a přechodové plechy',
+    zjisti(ctx) {
+      const z = ctx.zadani, r = ctx.vysledek;
+      if (!z || !r || !r.sekce) return null;
+      const n = (typeof mustkyPocet === 'function') ? mustkyPocet(z) : (+z.mustkyKs || (z.mustek ? 1 : 0));
+      if (!n) return null;
+      const PLECH = { prechodove: 'materiál', prechMont: 'montáž', prechMat: 'materiál' };
+      const vyn = Array.isArray(z.priplatkyVynechat) ? z.priplatkyVynechat : [];
+      const zaklad = (r.sekce.volitelne || []).filter(x => x && PLECH[x.key] && x.zahrnuto && +x.mnozstvi > 0);
+      const prip = (Array.isArray(r.priplatky) ? r.priplatky : [])
+        .filter(x => x && (x.key === 'prechMat' || x.key === 'prechMont') && +x.mnozstvi > 0 && !vyn.includes(x.key));
+      if (!zaklad.length && !prip.length) return null;
+      const co = rows => { const m = rows.map(x => PLECH[x.key]);
+        return m.includes('materiál') && m.includes('montáž') ? 'materiál i montáž' : m[0]; };
+      const kde = [];
+      if (zaklad.length) kde.push(co(zaklad) + ' v základní ceně');
+      if (prip.length) kde.push(co(prip) + ' v příplatcích nabídky');
+      const nast = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(z) : +z.nastupiste;
+      const vse = nast > 1 && n >= nast - 1;
+      const mustkyTxt = n === 1 ? '1 můstek' : (n < 5 ? n + ' můstky' : n + ' můstků');
+      return { text: 'Šachta má ' + mustkyTxt + (vse ? ' (ve všech nadzemních nástupištích)' : '')
+        + ' a přechodové plechy se počítají za všech ' + nast + ' nástupišť (' + kontrolyVyctem(kde) + '). '
+        + 'V nástupišti s můstkem plech mezi podestou a dveřmi obvykle odpadá nebo je kratší — zvažte ruční '
+        + 'úpravu množství přechodových plechů v Kalkulaci OCK. Tisk to nezastaví.' };
+    },
+  },
+  {
+    /* STŘECHA PŘES NEJVYŠŠÍ MŮSTEK BEZ ROZMĚRŮ (#356). Jádro připočte
+     * plochu nad můstkem jen ze zadané šířky a hloubky můstku; bez nich
+     * jde do nabídky střecha jen nad šachtou. Upozornění, ne zábrana. */
+    kod: 'mustekStrecha', kde: 'Kalkulace OCK', nazev: 'Střecha přes nejvyšší můstek',
+    zjisti(ctx) {
+      const r = ctx.vysledek;
+      /* K29-N1: zastřešení vyřazené z nabídky → střecha nad můstkem se neřeší. */
+      if (!r || !r.strecha || r.strecha.vNabidce === false || !r.strecha.mustekNahore || r.strecha.mustekM2 > 0) return null;
+      return { text: 'Můstek je i v nejvyšším nástupišti, takže střecha šachty pokračuje nad ním až k fasádě, '
+        + 'ale chybí rozměr můstku (šířka nebo hloubka) — plocha střechy nad můstkem se do zastřešení '
+        + 'nepřipočetla. Doplňte rozměry můstku v zadání šachty.' };
+    },
+  },
+  {
+    /* ROZMĚRY MŮSTKU (K3-N17, rozhodnutí J. V. 20. 10. 2026: „jen upozornit").
+     * Hodnota se přijme, jádro ji započte (plocha střechy nad můstkem) —
+     * jen se upozorní na nezvykle velký rozměr (> KONTROLY_MUSTEK_MAX_MM,
+     * výchozí volba dávky O7), nejspíš překlep v jednotkách nebo nula navíc.
+     * Nečíselný nebo nekonečný údaj jádro bere jako prázdný (K3-N17, O5);
+     * tady se to řekne nahlas, ať obchodník neví jen o „chybějícím" rozměru. */
+    kod: 'mustekRozmer', kde: 'Kalkulace OCK', nazev: 'Rozměry můstku',
+    zjisti(ctx) {
+      const z = ctx.zadani;
+      if (!z) return null;
+      const n = (typeof mustkyPocet === 'function') ? mustkyPocet(z) : (+z.mustkyKs || (z.mustek ? 1 : 0));
+      if (!n) return null;
+      const potize = [];
+      [['mustekSirkaMm', 'šířka'], ['mustekHloubkaMm', 'hloubka']].forEach(([k, jm]) => {
+        const v = z[k];
+        if (v === undefined || v === null || String(v).trim() === '') return;
+        const c = +v;
+        if (!Number.isFinite(c) || c < 0) potize.push(jm + ' „' + String(v) + '" není platné číslo — počítá se jako nevyplněná');
+        else if (c > KONTROLY_MUSTEK_MAX_MM) potize.push(jm + ' ' + c.toLocaleString('cs-CZ') + ' mm je nezvykle velká (víc než '
+          + KONTROLY_MUSTEK_MAX_MM.toLocaleString('cs-CZ') + ' mm)');
+      });
+      if (!potize.length) return null;
+      return { text: 'Rozměry můstku: ' + kontrolyVyctem(potize) + '. Zkontrolujte zadání šachty (rozměr se zadává v milimetrech); '
+        + 'hodnota se do výpočtu bere, jak je zadaná. Tisk to nezastaví.' };
+    },
+  },
+  {
+    /* STATIKA DVAKRÁT (P5 / K19-N109, 2. 10. 2026). Než měla aplikace druhý
+     * řádek statiky (opláštění), dorovnávaly se převedené zakázky ručním
+     * přepisem hodin řádku STATICKÉ POSOUZENÍ (10–20 h = OCK + opláštění).
+     * Jakmile ceník nese hodiny statiky opláštění, taková varianta by je
+     * započítala dvakrát. Upozornění, ne zábrana — přepis může být i jiný
+     * důvod; rozhodne obchodník. */
+    kod: 'statikaDvakrat', kde: 'Kalkulace OCK', nazev: 'Statika opláštění a ručně přepsaná statika',
+    zjisti(ctx) {
+      const r = ctx.vysledek, z = ctx.zadani;
+      if (!r || !r.sekce || !Array.isArray(r.sekce.rezie) || !z) return null;
+      const najdi = (n) => r.sekce.rezie.find(x => x && x.origNazev === n);
+      const ock = najdi('STATICKÉ POSOUZENÍ'), opl = najdi('STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ');
+      if (!ock || !opl || !ock.prepsano) return null;
+      return { text: 'Statické posouzení má ručně přepsané hodiny (' + ock.mnozstvi + ' h) a ceník k nim '
+        + 'přidává řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ (' + opl.mnozstvi + ' h). Pokud přepis už statiku '
+        + 'opláštění zahrnuje (převod z Excelu), vraťte hodiny statiky na ceníkové, nebo řádek '
+        + 'statiky opláštění vyřaďte — jinak se zaplatí dvakrát.' };
     },
   },
   {
@@ -196,6 +648,7 @@ const KONTROLY = [
   },
   {
     kod: 'sleva', kde: 'Nabídka', nazev: 'Sleva mimo rozsah nebo bez schválení',
+    zabranaMozna: true, strany: ['ock'],
     zjisti(ctx) {
       if (ctx.jenProj) return null;   // ZAK-10 se počítá z ceny OCK; bez OCK není co hlídat
       const s = ctx.sleva;
@@ -220,6 +673,12 @@ const KONTROLY = [
       if (v.podMarzi && !schvalena)
         return { text: 'Sleva je tak velká, že by nabídku srazila pod firemní minimum marže; '
           + 'zůstává zamítnutá a do nabídky nevstoupí.' };
+      /* P1 (K16-N73, 25. 9. 2026): „schváleno automaticky" nad stropem role,
+       * která slevu zadala, je rozpor v datech (dřív šlo roli slevy zvolit) —
+       * taková nabídka nesmí odejít, slevu musí schválit nadřízený. */
+      if (v.nadStrop && s.stav === 'schváleno automaticky')
+        return { uroven: KONTROLY_UROVEN_ZABRANA, text: 'Sleva je označená jako schválená automaticky, '
+          + 'ale je nad stropem role, která ji zadala. Dokument nevznikne — slevu musí schválit nadřízený.' };
       if (v.nadStrop && !schvalena)
         return { text: 'Sleva je nad stropem role a nikdo ji zatím neschválil. '
           + 'Dokud schválená není, počítá se nabídka bez ní.' };
@@ -228,6 +687,7 @@ const KONTROLY = [
   },
   {
     kod: 'slevaProj', kde: 'Kalkulace PROJ', nazev: 'Sleva projekce mimo rozsah nebo bez schválení',
+    zabranaMozna: true, strany: ['proj'],
     zjisti(ctx) {
       /* Zrcadlo pravidla „sleva" nad projekční částí (#134, 12. 8. 2026).
        * Do té doby tu bylo pravidlo „slevaProjMax", které hlídalo jen horní
@@ -259,6 +719,9 @@ const KONTROLY = [
       if (v.podMarzi && !schvalena)
         return { text: 'Sleva projekce je tak velká, že by projekční část srazila pod firemní '
           + 'minimum marže; zůstává zamítnutá a do nabídky nevstoupí.' };
+      if (v.nadStrop && s.stav === 'schváleno automaticky')   // P1 (K16-N73)
+        return { uroven: KONTROLY_UROVEN_ZABRANA, text: 'Sleva projekce je označená jako schválená '
+          + 'automaticky, ale je nad stropem role, která ji zadala. Dokument nevznikne — slevu musí schválit nadřízený.' };
       if (v.nadStrop && !schvalena)
         return { text: 'Sleva projekce je nad stropem role a nikdo ji zatím neschválil. '
           + 'Dokud schválená není, počítá se nabídka projekce bez ní.' };
@@ -321,6 +784,378 @@ const KONTROLY = [
     },
   },
   {
+    /* KAPITOLY IV.–VI. A DOLOŽKY (23. 9. 2026, nález K9-N32). Prázdná
+     * kapitola se z nabídky OCK vypustí i s nadpisem, takže bez tohohle
+     * pravidla odešla nabídka bez požadavků, termínů a předání díla a nikdo
+     * se to nedozvěděl. Nabídka PROJ kapitoly nemá — u zakázky jen projekce
+     * pravidlo mlčí. Jazyk je jazyk tisku: anglická nabídka potřebuje
+     * anglické kapitoly, ne české. */
+    kod: 'kapitoly', kde: 'Nabídka', nazev: 'Nevyplněné kapitoly nabídky',
+    zjisti(ctx) {
+      if (ctx.jenProj || !ctx.nast || typeof firmaKapitolyPrazdne !== 'function') return null;
+      const f = ctx.nast.firma || null;
+      if (!f) return null;
+      const jaz = String(ctx.jazyk || 'cz').toLowerCase();
+      const chybi = firmaKapitolyPrazdne(f, jaz);
+      if (!chybi.length) return null;
+      return { text: 'Nabídka odejde bez ' + kontrolyVyctem(chybi.map(k => k.popis))
+        + ' — v Nastavení → Firma → Kapitoly nabídky nejsou vyplněné'
+        + (jaz !== 'cz' ? ' (jazyk ' + jaz.toUpperCase() + ')' : '') + '. Prázdná kapitola se z online nabídky '
+        /* Word ji vypustí jen se šablonou CN v13 a novější (značky kapitol,
+         * P8A 29. 9. 2026); starší šablona nechá nadpis a prázdný rámeček. */
+        + 'vypustí i s nadpisem; Word jen se šablonou CN v13 a novější — ve starší zůstane nadpis a prázdný rámeček.' };
+    },
+  },
+  {
+    /* DODATKOVÝ TEXT V CIZOJAZYČNÉ NABÍDCE (K18-N96, 30. 9. 2026). Pod
+     * příplatkem v kapitole II. tiskne nabídka dodatkový text z ceníku
+     * (#267, cenik.popisy — klíč = název položky). Ceník ho má v JEDNOM
+     * znění pro všechny jazyky a text napsaný člověkem aplikace nepřekládá
+     * (projde beze změny), takže anglická nabídka nesla českou větu a nikdo
+     * se to nedozvěděl. Od 1. 10. 2026 (#379) má číselník k textu jazykové
+     * varianty EN/DE/FR (`cenik.popisyJazyky`, výpočet je nese u položky
+     * jako `popisNabidkaJazyky`) — položka s variantou jazyka tisku se
+     * vytiskne v ní a nehlásí se. Varování zůstává pro text bez varianty.
+     * Rozhoduje totéž, co tiskne nabidkaData: příplatek v nabídce (ne
+     * vynechaný) s neprázdným textem; sloučené přechodové plechy (obě půlky
+     * v nabídce) vlastní text netisknou. Text, který slovník zná (nebo který
+     * je neutrální), se přeloží a nehlásí se; bez slovníku se nehádá. */
+    kod: 'dodatekCesky', kde: 'Nabídka', nazev: 'Dodatkový text zůstane v cizojazyčné nabídce česky',
+    zjisti(ctx) {
+      const jaz = String(ctx.jazyk || 'cz').toLowerCase();
+      if (ctx.jenProj || jaz === 'cz' || typeof trStav !== 'function') return null;
+      const r = ctx.vysledek;
+      if (!r || !Array.isArray(r.priplatky)) return null;
+      const vynech = (ctx.zadani && ctx.zadani.priplatkyVynechat) || [];
+      const vNabidce = r.priplatky.filter(p => p && !vynech.includes(p.key));
+      const plechy = ['prechMat', 'prechMont'];
+      const slouceny = plechy.every(k => vNabidce.some(p => p.key === k));
+      const cesky = vNabidce.filter(p => !(slouceny && plechy.includes(p.key)))
+        .filter(p => {
+          const t = String(p.popisNabidka || '').trim();
+          if (!t) return false;
+          const j = p.popisNabidkaJazyky && p.popisNabidkaJazyky[jaz];
+          if (typeof j === 'string' && j.trim()) return false;     // jazyková varianta (#379)
+          return !trStav(t, jaz).prelozeno;
+        })
+        .map(p => String(p.nazev || p.origNazev || p.key));
+      if (!cesky.length) return null;
+      return { text: 'Nabídka v jazyce ' + jaz.toUpperCase() + ' ponese česky dodatkový text '
+        + (cesky.length === 1 ? 'u položky ' : 'u položek ') + kontrolyVyctem(cesky.map(n => '„' + n + '"'))
+        + ': text nemá jazykovou variantu ' + jaz.toUpperCase() + ' a text napsaný ručně aplikace nepřekládá. '
+        + 'Variantu doplní administrátor v Ceníku nákladů OCK (číselník dodatkových textů, sloupec ' + jaz.toUpperCase() + '); '
+        + 'jinak přepište text u zakázky do jazyka nabídky (Kalkulace OCK, pole pod položkou), nebo ho smažte — '
+        + 'administrátorovi se tím změní i společný text pro všechny nabídky.' };
+    },
+  },
+  {
+    /* TERMÍN DODÁNÍ U ATYP (#330, nález TD1, 24. 9. 2026). Nabídka od teď
+     * nese termín ze zakázky jako první odrážku kapitoly V.; zbytek
+     * kapitoly je text z Firmy. Když v tom textu zůstala standardní lhůta
+     * („cca 12 týdnů") a zakázka je atypická, stojí v nabídce dvě různá
+     * čísla. A když ve Firmě standardní lhůta chybí, prodloužení za ATYP
+     * se do nabídky nedostane vůbec. Jen u ATYP — u běžné zakázky čísla
+     * souhlasí a pravidlo, které svítí pořád, se přestane číst. */
+    kod: 'terminAtyp', kde: 'Nabídka', nazev: 'Termín dodání u atypické zakázky',
+    zjisti(ctx) {
+      const z = ctx.zadani;
+      if (ctx.jenProj || !z || !ctx.nast || !ctx.nast.firma) return null;
+      const f = ctx.nast.firma;
+      const hodn = id => String(f[id] == null ? '' : f[id]).trim();
+      const termin = String(ctx.terminDodani || '').trim();
+      /* ZNAČKA {TERMIN} (dávka O3 / TD1, 19. 10. 2026): text kapitoly V.
+       * nese termín zakázky sám, dvě čísla vzniknout nemůžou. Ozve se jen
+       * tehdy, když termín chybí úplně — pak by v nabídce stálo
+       * „dle dohody" (u běžné zakázky i u ATYP). */
+      const kapV = (typeof firmaKapitola === 'function') ? firmaKapitola(f, 'kapTerminy', ctx.jazyk) : null;
+      if (kapV && kapV.termin) {
+        if (termin) return null;
+        if (!hodn('terminDodaniOck'))
+          return { text: 'Nabídka uvede v kapitole V. místo termínu dodání „dle dohody“: termín dodání '
+            + 'není v krycím listu ani jako standardní lhůta v Nastavení → Firma → Smluvní standardy'
+            + (z.atyp ? ' (u atypické zakázky se navíc prodlužuje o ATYP)' : '') + '.' };
+        if (!z.atyp) return null;
+        return { text: 'Zakázka je atypická, ale termín dodání v krycím listu je smazaný — kapitola V. '
+          + 'uvede standardní lhůtu z Firmy („' + hodn('terminDodaniOck') + '“) bez prodloužení za ATYP. '
+          + 'Doplňte termín v krycím listu (sekce Termín dodání).' };
+      }
+      if (!z.atyp) return null;
+      if (!termin) {
+        return { text: 'Zakázka je atypická, ale nabídka neuvede termín dodání s prodloužením za ATYP — '
+          + 'v Nastavení → Firma → Smluvní standardy není vyplněná standardní lhůta dodání OCK '
+          + '(nebo je v krycím listu smazaná).' };
+      }
+      const cislo = t => { const m = String(t).match(/\d+/); return m ? parseInt(m[0], 10) : null; };
+      const zaklad = cislo(hodn('terminDodaniOck'));
+      const vNabidce = cislo(termin);
+      if (zaklad == null || vNabidce == null || zaklad === vNabidce) return null;
+      const kap = kapV ? kapV.radky.join('\n') : '';
+      const re = /(\d+)\s*(?:týdn|weeks?\b|wochen|semaines)/gi;
+      let m, koliduje = false;
+      while ((m = re.exec(kap))) if (parseInt(m[1], 10) === zaklad) koliduje = true;
+      if (!koliduje) return null;
+      return { text: 'V nabídce budou dva různé termíny: termín dodání „' + termin + '" a v textu kapitoly V. '
+        + 'z Firmy standardní lhůta ' + zaklad + ' týdnů. Nahraďte číslo v textu kapitoly V. značkou {TERMIN} '
+        + '(Nastavení → Firma → Kapitoly nabídky) — dosadí se za ni termín dodání ze zakázky.' };
+    },
+  },
+  {
+    /* SLEVA VE WORDU (P5 / K13-N56, 24. 9. 2026). Aplikace slevu do Wordu
+     * posílá (CENA_PRED_SLEVOU, SLEVA_PROC, SLEVA_KC), ale šablona nabídky
+     * v11 ty symboly nemá — zákazník ve Wordu vidí jen konečnou cenu, zatímco
+     * online náhled ukazuje cenu před slevou i slevu. Kontrola se ozve jen
+     * tehdy, když symboly šablony známe (ctx.sablonaNabidka stahuje UI na
+     * pozadí); nevíme-li, mlčí — hádat by znamenalo varovat naslepo. */
+    kod: 'slevaWord', kde: 'Nabídka', nazev: 'Sleva se ve Wordu neukáže',
+    zjisti(ctx) {
+      if (ctx.jenProj || typeof slevaPlati !== 'function' || !slevaPlati(ctx.sleva)) return null;
+      const s = ctx.sablonaNabidka;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.indexOf('SLEVA_KC') >= 0) return null;
+      return { text: 'Word slevu neukáže, zákazník uvidí jen konečnou cenu: šablona nabídky OCK'
+        + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' nemá symbol {{SLEVA_KC}}. Schválená sleva ' + (+ctx.sleva.procenta) + ' % je v ceně započtená; '
+        + 'cenu před slevou a slevu ukazuje jen online náhled nabídky.' };
+    },
+  },
+  {
+    /* PLATEBNÍ PODMÍNKY OCK VE WORDU (etapa A, D1 + D2 — 30. 9. 2026; vzor
+     * slevaWord a planPlatebWordProj). Šablona CN v13 má tři pevné věty
+     * o dílčích dokladech: splátku s 0 % nevynechá (u „Bez zálohy" zůstane
+     * první věta bez procenta, K18-N94), procento vlastního znění nepřečte
+     * a měsíční fakturaci neukáže vůbec. Umí to až šablona CN v14
+     * ({{PODM_PLATEBNI_KALENDAR}}, {{PODM_FAKTURACE_MESICNE}}; vyrábí ji
+     * nastroje/vyrob_sablony.js --cn-v14). Varování, ne zábrana: s v13 se
+     * tiskne jako dřív a online náhled podmínky ukazuje správně. Mlčí, dokud
+     * šablonu neznáme, a u nabídky odeslané před pravidly (tiskne se beze
+     * změny). */
+    kod: 'platbyWordOck', kde: 'Nabídka', nazev: 'Platební podmínky OCK se ve Wordu neukážou správně',
+    zjisti(ctx) {
+      if (ctx.jenProj) return null;
+      const kal = ctx.platbyOck;
+      const duvody = kontrolyPlatbyDuvody(kal);
+      if (!duvody.length) return null;
+      const s = ctx.sablonaNabidka;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      const chybi = ['PODM_PLATEBNI_KALENDAR'].concat(kal.mesicne ? ['PODM_FAKTURACE_MESICNE'] : [])
+        .filter(k => s.symboly.indexOf(k) < 0);
+      if (!chybi.length) return null;
+      return { text: 'Word vytiskne pevné věty šablony o dílčích dokladech, ne platební podmínky zakázky: '
+        + kontrolyVyctem(duvody) + '. Šablona nabídky OCK' + (s.nazev ? ' „' + s.nazev + '"' : '')
+        + (s.verze ? ' (verze ' + s.verze + ')' : '') + ' nemá symbol ' + chybi.map(k => '{{' + k + '}}').join(' ani ')
+        + '. Online náhled nabídky podmínky ukazuje správně. Nahrajte šablonu nabídky OCK v14 (Nastavení → Smlouvy / Šablony).' };
+    },
+  },
+  {
+    /* SLEVA PROJEKCE VE WORDU (P4 / K15-N66, 25. 9. 2026). Aplikace posílá
+     * do Wordu PROJ_CENA_PRED_SLEVOU, PROJ_SLEVA_PROC, PROJ_SLEVA_KC
+     * i součty, ale šablona nabídky PROJ v2 nemá ani jeden — zákazník vidí
+     * jen ceny činností, sleva je v nich rozpuštěná a neví o ní. Symboly
+     * šablony se znají stejně jako u OCK (ctx.sablonaNabidkaProj stahuje UI
+     * na pozadí); dokud je neznáme, pravidlo mlčí. */
+    kod: 'slevaWordProj', kde: 'Nabídka PROJ', nazev: 'Sleva projekce se ve Wordu neukáže',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      if (typeof slevaPlati !== 'function' || !slevaPlati(ctx.slevaProj)) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.indexOf('PROJ_SLEVA_KC') >= 0) return null;
+      return { text: 'Word slevu projekce neukáže, zákazník uvidí jen ceny činností (sleva je v nich rozpuštěná): '
+        + 'šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' nemá symbol {{PROJ_SLEVA_KC}}. Schválená sleva ' + (+ctx.slevaProj.procenta) + ' % je v ceně započtená; '
+        + 'cenu před slevou a slevu ukazuje jen online náhled nabídky PROJ. Do šablony patří '
+        + '{{PROJ_CENA_PRED_SLEVOU}}, {{PROJ_SLEVA_PROC}}, {{PROJ_SLEVA_KC}} a {{PROJ_CELKEM_BEZ_DPH}}.' };
+    },
+  },
+  {
+    /* VLASTNÍ POLOŽKY PROJEKCE VE WORDU (P4 / K14-N64). Položky přidané
+     * do kalkulace PROJ („+ přidat položku", trvalé z ceníku) jsou v ceně
+     * sekce i v online nabídce; do Wordu jdou symboly PROJ_POLOZKY_NAVIC
+     * (souhrnně) a PROJ_NAVIC_<SEKCE> — šablona v2 nemá ani jeden. */
+    kod: 'polozkyNavicWordProj', kde: 'Nabídka PROJ', nazev: 'Vlastní položky projekce se ve Wordu neukážou',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const navic = Array.isArray(ctx.projNavic) ? ctx.projNavic : kontrolyProjNavic(ctx.projVysledek);
+      if (!navic.length) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.some(x => x === 'PROJ_POLOZKY_NAVIC' || /^PROJ_NAVIC_/.test(x))) return null;
+      return { text: 'Položky přidané do kalkulace PROJ (' + kontrolyVyctem(navic.map(n => '„' + n + '"'))
+        + ') wordová nabídka neukáže — šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '')
+        + ' nemá symbol {{PROJ_POLOZKY_NAVIC}} ani {{PROJ_NAVIC_<SEKCE>}}. V ceně sekcí jsou; '
+        + 'vypisuje je jen online náhled nabídky PROJ.' };
+    },
+  },
+  {
+    /* CENA ČINNOSTI VE WORDU (K18-N92, 30. 9. 2026, vzor slevaWordProj).
+     * Šablona PROJ v3 nemá místo pro cenu geodetického zaměření, CELKEM ji
+     * přitom obsahuje — zakázka P09 měla ve Wordu vidět 18 200 Kč a CELKEM
+     * 41 600 Kč. Pravidlo se ozve, když nabízená činnost s cenou nemá
+     * v šabloně svůj symbol (NABIDKA_PROJ_CENA_SYMBOL v nabidka_proj.js).
+     *
+     * VAROVÁNÍ, NE ZÁBRANA — stejně jako ostatní pravidla o Wordu
+     * (slevaWord, slevaWordProj, polozkyNavicWordProj, planPlatebWordProj):
+     * symboly šablony se stahují na pozadí, takže zábrana by dokument
+     * zastavovala podle toho, jestli stažení už doběhlo; vadu nezpůsobila
+     * data zakázky, ale šablona, kterou obchodník opravit nemůže (nahrává
+     * ji administrátor) — zábrana by mu vzala i Word, který si umí doplnit
+     * ručně; online náhled a PDF cenu ukazují správně. Oprava je šablona
+     * PROJ v4 (nastroje/vyrob_sablony.js --proj-v4), která blok ceny
+     * geodetického zaměření má. */
+    kod: 'cenaWordProj', kde: 'Nabídka PROJ', nazev: 'Cena činnosti se ve Wordu neukáže',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      const chybi = kontrolyProjCenyBezSymbolu(ctx.projVysledek, s.symboly);
+      if (!chybi.length) return null;
+      return { text: 'Word nabídky PROJ neukáže cenu za ' + kontrolyVyctem(chybi.map(c => c.nazev))
+        + ': šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' pro ni nemá symbol ' + kontrolyVyctem(chybi.map(c => '{{' + c.symbol + '}}'))
+        + '. V CELKEM cena započtená je, takže se částky činností ve Wordu do CELKEM nesečtou. '
+        + 'Správně ji ukazuje online náhled nabídky PROJ. Nahrajte šablonu nabídky PROJ v4.' };
+    },
+  },
+  {
+    /* AUTORSKÝ DOZOR VE WORDU (připomínka D. Sikory a J. Laudy, rozhodnutí
+     * J. V. 14. 10. 2026). Varianta AD nenabízí (proj.zadani.nabizetAD ===
+     * false), online nabídka i krycí list ho vynechají — šablona PROJ v4
+     * a starší ale nesou blok AD natvrdo bez značek a Word by ho vytiskl.
+     * Varování, ne zábrana (viz cenaWordProj): šablonu nahrává administrátor,
+     * oprava je PROJ v5 (nastroje/vyrob_sablony.js --proj-v5). */
+    kod: 'autorskyDozorWordProj', kde: 'Nabídka PROJ', nazev: 'Autorský dozor se ve Wordu vytiskne, i když se nenabízí',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      if (!ctx.projZadani || ctx.projZadani.nabizetAD !== false) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.indexOf('PROJ_CENA_AD_BLOK') >= 0 || s.symboly.indexOf('PROJ_CENA_AD') < 0) return null;
+      return { text: 'Autorský dozor se v této variantě nenabízí, wordová nabídka PROJ ho ale vytiskne: šablona nabídky PROJ'
+        + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' má blok autorského dozoru natvrdo ({{PROJ_CENA_AD}} bez značek {{BLOK_AD_ZAC}}/{{BLOK_AD_KON}}). '
+        + 'Online náhled nabídky PROJ ho správně vynechá. Nahrajte šablonu nabídky PROJ v5, nebo blok ve Wordu smažte ručně.' };
+    },
+  },
+  {
+    /* ÚVOD DPZ VE WORDU BEZ STUDIE (D1, postřeh D. Sikory 19. 10. 2026).
+     * Nabídka začíná rovnou DPZ (studie nemá cenu): online nabídka věta
+     * „… navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta …"
+     * vynechá, šablona PROJ v6 a starší ji ale má natvrdo. Varování, ne
+     * zábrana (viz cenaWordProj); oprava je šablona PROJ v7
+     * (nastroje/vyrob_sablony.js --proj-v7) se symbolem {{PROJ_DPZ_UVOD}}. */
+    kod: 'dpzUvodWordProj', kde: 'Nabídka PROJ', nazev: 'Word nabídky PROJ navazuje DPZ na studii, která se nenabízí',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const sekce = (ctx.projVysledek && ctx.projVysledek.sekce) || [];
+      const nabizena = k => sekce.some(x => x && x.key === k && Number(x.celkem) > 0);
+      if (!nabizena('dpz') || nabizena('studie')) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.indexOf('PROJ_DPZ_UVOD') >= 0) return null;
+      return { text: 'Studie proveditelnosti se v této variantě nenabízí, wordová nabídka PROJ ale v úvodu DPZ napíše, '
+        + 'že DPZ „navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI": šablona nabídky PROJ'
+        + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' má větu natvrdo (bez symbolu {{PROJ_DPZ_UVOD}}). Online náhled nabídky PROJ ji správně vynechá. '
+        + 'Nahrajte šablonu nabídky PROJ v7, nebo větu ve Wordu upravte ručně.' };
+    },
+  },
+  {
+    /* PLÁN PLATEB PROJEKCE — 100 % U ČINNOSTI (etapa B, #367, rozhodnutí J. V.
+     * 29. 9. 2026: „součet u každé činnosti 100 %, dokument nevznikne,
+     * odklepnout nejde"). Splátky nabízené činnosti musí dát 100 %, mít
+     * kladná procenta a známý milník. Skutečná brána je v dokumentZabrana
+     * (nabídka PROJ, náhled, smlouva) — tohle pravidlo ji ukáže předem. */
+    kod: 'planPlateb100', kde: 'Plán plateb PROJ', nazev: 'Plán plateb projekce nedává 100 % nebo nemá milník',
+    zabranaMozna: true,
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const pl = ctx.platbyProj;
+      if (!pl || pl.stary) return null;
+      const v = (pl.kontrola || []).filter(k => k.kod !== 'soucet');
+      if (!v.length) return null;
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: 'Plán plateb projekce: ' + v.map(x => x.text).join(' ')
+          + ' Nabídka PROJ ani smlouva nevznikne, dokud se to neopraví (krycí list PROJ → Plán plateb).' };
+    },
+  },
+  {
+    /* PLATBY SMLOUVY PROJ = CENA DÍLA (etapa B, P9.3). Dopočet sedí vždy;
+     * nesouhlas vznikne jen ruční částkou v tabulce plateb krycího listu.
+     * Zastaví smlouvu o dílo PROJ (nabídka platby v korunách nenese). */
+    kod: 'planPlatebSoucet', kde: 'Plán plateb PROJ', nazev: 'Platby smlouvy PROJ nedávají cenu díla',
+    zabranaMozna: true,
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const pl = ctx.platbyProj;
+      if (!pl || pl.stary || !pl.dopocet || pl.dopocet.sedi) return null;
+      const f = (pl.mena && pl.mena.fmt) || (n => String(n));
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: 'Součet plateb smlouvy o dílo PROJ (' + f(pl.dopocet.soucet) + ') nesouhlasí s cenou díla (' + f(pl.dopocet.cena)
+          + ') — upravte ruční částky v krycím listu PROJ (Smlouva o dílo — splátky) nebo vraťte dopočet (↺). '
+          + 'Smlouva nevznikne, dokud se to neopraví.' };
+    },
+  },
+  {
+    /* PLÁN PLATEB VE WORDU (etapa B, vzor slevaWordProj). Šablona PROJ v2/v3
+     * má platební podmínky natvrdo (procenta a texty výchozího Standardu
+     * z kódu) — plán, který se od nich liší (jiná předvolba, úprava, firemní
+     * Standard, přepsaný text milníku), by Word nevytiskl (planShodaSeStarou-
+     * Sablonou, revize etapy B 30. 9. 2026). Varování, ne zábrana: online
+     * náhled a krycí list plán ukazují, smlouva ho nese; řešením je šablona
+     * PROJ v4 (nastroje/vyrob_sablony.js --proj-v4). */
+    kod: 'planPlatebWordProj', kde: 'Nabídka PROJ', nazev: 'Plán plateb se ve Wordu neukáže',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const pl = ctx.platbyProj;
+      if (!pl || pl.stary || typeof planPredvolba !== 'function') return null;
+      if (planShodaSeStarouSablonou(pl.plan, pl.firemni, pl.ceny)) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.some(x => /^PROJ_PLATBY_/.test(x) || x === 'PROJ_PLATEBNI_PODMINKY')) return null;
+      return { text: 'Word vytiskne pevné platební podmínky šablony (výchozí Standard z doby před plánem plateb), ne plán plateb zakázky ('
+        + planPopisPredvolby(pl.plan, pl.firemni, pl.ceny) + '): šablona nabídky PROJ' + (s.nazev ? ' „' + s.nazev + '"' : '')
+        + (s.verze ? ' (verze ' + s.verze + ')' : '') + ' nemá symboly {{PROJ_PLATBY_…}}. Plán ukazuje online náhled nabídky '
+        + 'a krycí list, smlouva o dílo ho nese. Nahrajte šablonu nabídky PROJ v4.' };
+    },
+  },
+  {
+    /* PROJEKCE U ZAHRANIČNÍ ZAKÁZKY (P11 / K15-N72, rozhodnutí J. V.
+     * 29. 9. 2026: „zahraniční zakázky PROJ nerealizujeme"). Řada Zahraničí
+     * u projekce mění jen přirážku a DPH, sazby a fixy zůstávají tuzemské —
+     * a nikdo o tom nevěděl. Varování, ne zábrana: realizaci (OCK) téže
+     * varianty zastavit nesmí. */
+    kod: 'projZahranici', kde: 'Nabídka PROJ', nazev: 'Projekce u zahraniční zakázky',
+    zjisti(ctx) {
+      if (ctx.cenikRada !== 'zahr') return null;
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const r = ctx.projVysledek;
+      if (!r || !r.souhrn || !(Number(r.souhrn.celkem) > 0)) return null;
+      return { text: 'Varianta počítá se zahraničním ceníkem a má oceněnou projekci. Projekci u zahraničních '
+        + 'zakázek nerealizujeme — a její sazby a fixy by navíc zůstaly tuzemské (zahraniční ceník u projekce '
+        + 'mění jen přirážku a DPH). Projekci z varianty vyřaďte (zakázka jen realizace), nebo variantu '
+        + 'vraťte na tuzemský ceník.' };
+    },
+  },
+  {
+    /* ZAKÁZKA DŘÍV POČÍTALA OBĚ STRANY (P6 / K19-N114, rozhodnutí J. V.
+     * 13. 10. 2026, bod 9). Výjimka „Počítat i tuhle stranu" (`obeStrany`)
+     * se zrušila a čísla na obou stranách už druhou stranu nenechají žít
+     * (vede OCK, D6e). Starší zakázka, která obě strany počítala, se po
+     * načtení řídí novým pravidlem — tohle jí to řekne. Upozornění, ne
+     * zábrana: vedoucí strana dokument vytvořit smí. */
+    kod: 'stranyDriv', kde: 'Hlavička zakázky', nazev: 'Zakázka dřív počítala projekci i OCK',
+    zjisti(ctx) {
+      const zak = ctx.zak;
+      if (!zak || typeof zakazkaDrivObeStrany !== 'function' || !zakazkaDrivObeStrany(zak)) return null;
+      const vyr = (typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(zak) : '';
+      if (!vyr) return null;
+      const kod = vyr === 'proj' ? 'PROJ' : 'OCK';
+      return { text: 'Zakázka dřív počítala projekci i OCK. Od této verze se nabízejí zvlášť — Kalkulace '
+        + kod + ' je vynulovaná. ' + (vyr === 'proj' ? 'Projekci' : 'Ocelovou konstrukci')
+        + ' nacen v samostatné zakázce.' };
+    },
+  },
+  {
     kod: 'hlavicka', kde: 'Hlavička zakázky', nazev: 'Prázdná hlavička',
     zjisti(ctx) {
       const zak = ctx.zak;
@@ -356,15 +1191,156 @@ const KONTROLY = [
         + 'prohozené cifry; opisuje se do smlouvy i na fakturu.' };
     },
   },
+  {
+    /* CENOVÁ VÝJIMKA BEZ SCHVÁLENÍ (rozhodnutí J. V. 13. 10. 2026,
+     * vyjimky.js). Směs platného ceníku a starších cen nebo ruční sazba
+     * pásu „jiné" pod ceníkovou u role bez práva ceníku: dokument (tisk =
+     * odeslání, nový zámek) nevznikne bez platného schválení nadřízeného —
+     * zrcadlo serveru (vyjimkyZamekProblem, 403). `ctx.vyjimka` dodá UI
+     * ({ potreba, plati, zamitnuto, text }); bez něj (server, zamčená
+     * varianta, neznámý platný ceník) pravidlo mlčí. Server zámek posoudí
+     * u obou stran najednou, proto zábrana drží dokumenty obou stran. */
+    kod: 'cenovaVyjimka', kde: 'Ceník varianty', nazev: 'Cenová výjimka bez schválení',
+    zabranaMozna: true, strany: ['ock', 'proj'],
+    zjisti(ctx) {
+      const x = ctx.vyjimka;
+      if (!x || !x.potreba || x.plati) return null;
+      const veta = String(x.text || 'ceník varianty se liší od platného ceníku');
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: veta.charAt(0).toUpperCase() + veta.slice(1) + ' — '
+          + (x.zamitnuto ? 'nadřízený výjimku zamítl. Přepočítejte variantu podle platného ceníku, nebo požádejte znovu po úpravě. '
+            : 'požádejte o schválení nadřízeného v záložce Schvalování (nebo přepočítejte variantu podle platného ceníku). ')
+          + 'Rozpracovanou zakázku lze dál ukládat.' };
+    },
+  },
+  /* ---- D2: šablona nabídky PROJ D. Sikory (rozhodnutí J. V. 20. 10. 2026) ---- */
+  {
+    /* JEDNOSTUPŇOVÁ DOKUMENTACE. Aplikace nabídku nepřepisuje (DPZ a DPS
+     * zůstávají dvěma činnostmi) — kontrola jen připomene, co je nutné
+     * upravit ve Wordu ručně. Upozornění, ne zábrana. */
+    kod: 'jednostupnovaProj', kde: 'Nabídka PROJ', nazev: 'Jednostupňová dokumentace — nabídku upravte ve Wordu',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      if (!ctx.projZadani || !ctx.projZadani.jednostupnova) return null;
+      return { text: 'Varianta je označená jako jednostupňová dokumentace. Nabídku PROJ je nutné upravit ve Wordu ručně — '
+        + 'aplikace nic automaticky nepřepisuje. Hlídejte: DPZ a DPS se zpracují v jednom stupni (sloučit popis rozsahu '
+        + 'a úvod), ceny DPZ a DPS (jedna cena, nebo jasně rozdělená), plán plateb (milníky jednoho stupně, součet 100 %) '
+        + 'a termíny.' };
+    },
+  },
+  {
+    /* AKCE MIMO PRAHU BEZ CENY VÝJEZDU. Přepínač zapnutý, ale cena 1 výjezdu
+     * technika není v ceníku PROJ ani přepsaná u zakázky — nic se nepřičte
+     * a nabídka o cestovném mlčí (ceny se nevymýšlejí). Výslovná nula
+     * u zakázky je platná dohoda („cestu neúčtujeme") a pravidlo mlčí. */
+    kod: 'vyjezdCenaChybi', kde: 'Kalkulace PROJ', nazev: 'Akce mimo Prahu bez ceny výjezdu technika',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const z = ctx.projZadani;
+      if (!z || !z.akceMimoPrahu) return null;
+      const prepis = !(z.vyjezdKcPrepis === undefined || z.vyjezdKcPrepis === null || z.vyjezdKcPrepis === '');
+      if (prepis) return null;
+      if (+((ctx.cenikProj && ctx.cenikProj.vyjezdTechnikKc) || 0) > 0) return null;
+      return { text: 'Zakázka je označená „Akce mimo Prahu", cena 1 výjezdu technika ale není vyplněná v ceníku PROJ '
+        + 'ani u zakázky — k cenám zaměření, studie, DPZ a kolaudace se nic nepřičte a nabídka cestovné neuvede. '
+        + 'Vyplňte cenu v Kalkulaci PROJ (nebo v Ceníku nákladů PROJ).' };
+    },
+  },
+  {
+    /* RUČNÍ ÚVOD NABÍDKY, KTERÝ NEMUSÍ SEDĚT. Obchodník úvod „Naše NABÍDKA
+     * a doporučení" upravil a potom se změnily nabízené činnosti — výchozí
+     * znění by dnes bylo jiné než to, ze kterého vycházel. */
+    kod: 'uvodProjNesedi', kde: 'Nabídka PROJ', nazev: 'Ruční úvod nabídky PROJ nemusí sedět',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const z = ctx.projZadani;
+      if (!z || typeof nabidkaProjUvodNesedi !== 'function' || typeof nabidkaProjUvod !== 'function') return null;
+      const sekce = (ctx.projVysledek && ctx.projVysledek.sekce) || [];
+      const vRozsahu = k => sekce.some(x => x && x.key === k && Number(x.celkem) > 0);
+      if (!nabidkaProjUvodNesedi(z, nabidkaProjUvod(vRozsahu).join('\n'))) return null;
+      return { text: 'Úvod nabídky PROJ („Naše NABÍDKA a doporučení") byl upraven ručně a nabízené činnosti se od té doby '
+        + 'změnily — ruční text nemusí sedět. Zkontrolujte ho v kartě Cenová nabídka (PROJ), nebo vraťte výchozí znění.' };
+    },
+  },
+  {
+    /* CESTOVNÉ VE WORDU. Akce mimo Prahu s cenou výjezdu: online nabídka
+     * věty o cestovném tiskne, šablona PROJ bez symbolů {{PROJ_CESTOVNE_…}}
+     * (v7 a starší) je nemá kam dát — cena činnosti ve Wordu výjezd obsahuje,
+     * věta ne. Varování, ne zábrana (viz cenaWordProj); oprava je šablona
+     * PROJ v8 (nastroje/vyrob_sablony.js --proj-v8). */
+    kod: 'cestovneWordProj', kde: 'Nabídka PROJ', nazev: 'Word nabídky PROJ neuvede cestovné',
+    zjisti(ctx) {
+      if (ctx.jenOck || (ctx.zak && ctx.zak.jenOck)) return null;
+      const z = ctx.projZadani;
+      if (!z || !z.akceMimoPrahu || typeof vyjezdTechnikaKc !== 'function') return null;
+      if (!(vyjezdTechnikaKc(z, ctx.cenikProj || {}) > 0)) return null;
+      const s = ctx.sablonaNabidkaProj;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (s.symboly.some(k => /^PROJ_CESTOVNE_/.test(k))) return null;
+      return { text: 'Akce je mimo Prahu: ceny činností ve Wordu výjezd technika obsahují, šablona nabídky PROJ'
+        + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+        + ' ale nemá místo pro věty o cestovném ({{PROJ_CESTOVNE_…}}). Online náhled nabídky PROJ je uvede. '
+        + 'Nahrajte šablonu nabídky PROJ v8, nebo věty doplňte ve Wordu ručně.' };
+    },
+  },
 ];
 
 /* Katalog pravidel bez funkcí – pro nápovědu, protokol o kalkulaci (#41)
  * a pro test, že se pravidlo nikam neztratilo. */
+/* Názvy vlastních a trvalých položek PROJ, které se počítají (P4) — týž
+ * výběr jako v nabidkaProjData: vlastní, nevyřazená, něco stojí. */
+function kontrolyProjNavic(r) {
+  const out = [];
+  ((r && r.sekce) || []).forEach(s => (s.polozky || []).forEach(p => {
+    if (p && p.vlastni && !p.vyrazeno && Math.abs(+p.naklad || 0) > 0 && String(p.nazev || '').trim())
+      out.push(String(p.nazev).trim());
+  }));
+  return out;
+}
+
+/* Co z platebního kalendáře OCK (kryciPlatebniKalendar) šablona CN v13
+ * s pevnými větami nevytiskne — prázdný seznam = vytiskne správně (výchozí
+ * 50 / 40 / 10) nebo jde o nabídku odeslanou před pravidly. Sdílí ho
+ * pravidlo platbyWordOck a UI, které podle něj šablonu stahuje. */
+function kontrolyPlatbyDuvody(kal) {
+  if (!kal || kal.stary || !Array.isArray(kal.splatky)) return [];
+  if (kal.mesicne) return ['měsíční fakturaci neukáže (vytiskne splátky)'];
+  const out = [];
+  const vyn = Array.isArray(kal.vynechane) ? kal.vynechane : [];
+  if (vyn.indexOf('zaloha1') >= 0) out.push('u nabídky bez zálohy zůstane věta o 1. dílčím dokladu bez procenta');
+  if (vyn.some(id => id !== 'zaloha1')) out.push('splátku s 0 % nevynechá');
+  (Array.isArray(kal.necitelne) ? kal.necitelne : []).forEach(id => {
+    const t = String(((kal.hodnoty || {})[id]) || '').trim();
+    if (t) out.push('procento splátky „' + t + '" nepřečte (ve větě zůstane prázdné místo)');
+  });
+  return out;
+}
+
+/* Nabízené činnosti PROJ s cenou, jejichž cenu šablona neukáže (K18-N92):
+ * [{ key, nazev, symbol }]. Nabízená = sekce s kladnou cenou (tatáž, kterou
+ * nabídka tiskne). Šablona ji ukáže symbolem z NABIDKA_PROJ_CENA_SYMBOL nebo
+ * jeho podobou `…_BLOK`; zaměření i symbolem „části 1" studie
+ * ({{PROJ_CENA_SP1}}), dokud se studie nenabízí — pak tam stojí jen odkaz
+ * na cenu zaměření výše (nabidkaProjData). Bez mapy (modul nabídky PROJ
+ * není načtený — server ho záměrně nemá, viz jadro_moduly.cjs) se nehádá
+ * a vrací se prázdno. */
+function kontrolyProjCenyBezSymbolu(r, symboly) {
+  const mapa = (typeof NABIDKA_PROJ_CENA_SYMBOL !== 'undefined') ? NABIDKA_PROJ_CENA_SYMBOL : null;
+  if (!mapa || !Array.isArray(symboly)) return [];
+  const sekce = ((r && r.sekce) || []).filter(s => s && mapa[s.key] && Number(s.celkem) > 0);
+  const nabizena = k => sekce.some(s => s.key === k);
+  return sekce.filter(s => {
+    const ma = [mapa[s.key], mapa[s.key] + '_BLOK'];
+    if (s.key === 'zamereni' && !nabizena('studie') && !nabizena('projednani')) ma.push('PROJ_CENA_SP1');
+    return !ma.some(x => symboly.indexOf(x) >= 0);
+  }).map(s => ({ key: s.key, nazev: String(s.nazev || s.key), symbol: mapa[s.key] }));
+}
+
 function kontrolyPravidla() {
   return KONTROLY.map(r => ({ kod: r.kod, kde: r.kde, nazev: r.nazev,
     uroven: KONTROLY_UROVEN,
-    /* Jestli pravidlo umí zvednout ruku a dokument zastavit. Dnes jediné –
-     * `ukazkovyCenik` při prázdném ceníku. V nápovědě i v protokolu má být
+    /* Jestli pravidlo umí zvednout ruku a dokument zastavit (které dokumenty,
+     * viz BRÁNA DOKUMENTŮ níž, #377). V nápovědě i v protokolu má být
      * poznat, které pravidlo se dá odklepnout a které ne. */
     zabranaMozna: !!r.zabranaMozna }));
 }
@@ -374,7 +1350,31 @@ function kontrolyPravidla() {
  *         sleva, nast, zak, zaokr, marzePrehled? }
  * Co v kontextu není, to se nehlídá – kontrola nad rozdělanou zakázkou nesmí
  * hlásit chybu jen proto, že se ještě nezadalo všechno. */
+/* ZÁMEK STRANY V KONTROLÁCH (P6 / K19-N114, 13. 10. 2026). Vyřazená strana
+ * zakázky (zakazkaVyrazenaStrana: číslo nabídky, jenProj, jenOck) se
+ * nekontroluje: `jenProj` / `jenOck` kontextu se odvodí z ní (pravidla na
+ * nich už stojí — 19 míst) a data vyřazené strany se z kontextu vyjmou,
+ * aby ji nehlídala ani pravidla bez vlastní podmínky (cenaNula, slevaProj,
+ * zapornaPolozka, marže). Vrací kopii; vstup se nemění. */
+function kontrolyCtxStrany(ctx) {
+  if (!ctx || typeof ctx !== 'object') return ctx;
+  const vyr = (ctx.zak && typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ctx.zak) : '';
+  if (!vyr) return ctx;
+  const c = Object.assign({}, ctx);
+  if (vyr === 'ock') {
+    c.jenProj = true;
+    c.zadani = null; c.vysledek = null; c.sleva = null;
+  } else {
+    c.jenOck = true;
+    c.projZadani = null; c.projVysledek = null; c.slevaProj = null; c.platbyProj = null;
+  }
+  delete c.__marze;
+  delete c.marzePrehled;
+  return c;
+}
+
 function kontrolyProved(ctx) {
+  ctx = kontrolyCtxStrany(ctx);
   const nalezy = [];
   if (ctx && typeof ctx === 'object') {
     KONTROLY.forEach(r => {
@@ -391,6 +1391,10 @@ function kontrolyProved(ctx) {
       if (!v) return;
       nalezy.push({ kod: r.kod, kde: r.kde, nazev: r.nazev,
         uroven: v.uroven || KONTROLY_UROVEN,
+        /* Které části zakázky se nález týká (#377) — podle toho brána
+         * dokumentů rozhodne, který dokument zastaví. Bez údaje = obě. */
+        strany: (Array.isArray(v.strany) && v.strany.length) ? v.strany.slice()
+          : (Array.isArray(r.strany) ? r.strany.slice() : ['ock', 'proj']),
         text: v.text, detail: v.detail || '' });
     });
   }
@@ -400,6 +1404,84 @@ function kontrolyProved(ctx) {
             * volající nemusel prohledávat nálezy a nemohl na to zapomenout. */
            brani: zabrany.length > 0, kodyBrani: zabrany.map(n => n.kod),
            textBrani: zabrany.map(n => n.text).join(' ') };
+}
+
+/* ---------- BRÁNA DOKUMENTŮ (#377, 1. 10. 2026) ----------
+ * Zábrana (úroveň 1) říkala „Dokument nevznikne, dokud se to neopraví",
+ * ale do v30.9.4 ji brána dokumentů (dokumentZabrana v ui/ukazkove_ui.js)
+ * nečetla — hlídala jen prázdný ceník a plán plateb PROJ. Zdvih −5 m
+ * i 1 000 000 000 m dal nabídku. Tady je rozhodnutí, KTERÝ dokument která
+ * zábrana zastaví; UI jen dodá výsledek kontrol nad variantou, ze které
+ * dokument vzniká (kontrolyStavVarianta v ui/kontroly_ui.js).
+ *
+ *   zábrana (kód)         strana  zastaví dokumenty
+ *   --------------------  ------  -----------------------------------------
+ *   rozmery               OCK     nabídka OCK (Word + náhled/tisk), SoD OCK,
+ *   profilNeznamy         OCK       krycí list OCK (Backoffice i Techdata)
+ *   sleva (nad stropem)   OCK
+ *   bokyDveri             OCK       (jen ruční šířka bočního světlíku v Modelu 2:
+ *                                    širší než mezera / nevejdou se — #381)
+ *   slevaProj             PROJ    nabídka PROJ (Word + náhled/tisk), SoD PROJ,
+ *                                   krycí list PROJ (Backoffice i Techdata)
+ *   zapornaPolozka        podle místa nálezu (kalkulace OCK / PROJ)
+ *   cenaNula              podle části s vadnou cenou (OCK / PROJ)
+ *   ukazkovyCenik         —       hlídá ukazkoveBraniDokumentu (všechny)
+ *   planPlateb100/Soucet  —       hlídá planPlatebZabranaDokumentu (PROJ)
+ *
+ * Plná moc nenese cenu ani rozměry — žádná zábrana z kontrol ji nezastaví.
+ * Krycí listy ano: nesou cenu i rozměry do backoffice a výroby, nesmysl by
+ * odešel dál jen jinými dveřmi. „Kompletní náhled podkladů" (nabidkaNahled)
+ * není dokument pro zákazníka, ale kontrolní pohled na vstupy — zůstává
+ * otevřený, je to místo, kde se chyba hledá.
+ * Pravidla nad symboly šablon (slevaWord, platbyWordOck, slevaWordProj,
+ * polozkyNavicWordProj, cenaWordProj, planPlatebWordProj, autorskyDozorWordProj) a dodatekCesky
+ * jsou ZÁMĚRNĚ varování (šablona se stahuje na pozadí, náhled dokument
+ * ukáže správně) — úroveň 1 nemají, takže sem nikdy nedojdou. */
+const KONTROLY_DOKUMENTY_STRANY = {
+  ock: ['nabidka', 'nabidkaTisk', 'sod', 'kryci'],
+  proj: ['nabidkaProj', 'nabidkaProjTisk', 'sodProj', 'kryciproj'],
+};
+/* Zábrany, které hlídá jiná (přesnější) brána — tady se přeskakují, aby
+ * hláška nezazněla dvakrát a plán plateb dál rozlišoval nabídku a smlouvu. */
+const KONTROLY_BRANA_JINDE = ['ukazkovyCenik', 'planPlateb100', 'planPlatebSoucet'];
+
+/* Typ dokumentu → strana ('ock' | 'proj' | ''). Jazyková přípona (_en…)
+ * a verze krycího listu (kryci_bo, kryciproj_techdata) se odříznou. */
+function kontrolyDokumentStrana(typ) {
+  let t = String(typ || '').replace(/_(en|de|fr)$/, '');
+  if (/^kryciproj(_|$)/.test(t)) t = 'kryciproj';
+  else if (/^kryci(_|$)/.test(t)) t = 'kryci';
+  if (KONTROLY_DOKUMENTY_STRANY.ock.indexOf(t) >= 0) return 'ock';
+  if (KONTROLY_DOKUMENTY_STRANY.proj.indexOf(t) >= 0) return 'proj';
+  return '';
+}
+
+/* ZÁBRANA DOKUMENTU VYŘAZENÉ STRANY (P6 / K19-N114, bod 6). Dokument strany,
+ * která je u zakázky uzamčená a vynulovaná (nabídka a tisk, krycí list,
+ * SoD; plán plateb PROJ jede s nabídkou a SoD PROJ), nevznikne — ani dotisk
+ * do zámku varianty, který obě strany nese z doby před změnou (D6d).
+ * Vrací hlášku, nebo ''. Plná moc ani neznámý typ stranu nemají. */
+function kontrolyStranaZabrana(zak, typ) {
+  const strana = kontrolyDokumentStrana(typ);
+  if (!strana || !zak || typeof zakazkaVyrazenaStrana !== 'function') return '';
+  if (zakazkaVyrazenaStrana(zak) !== strana) return '';
+  return (typeof zakazkaVyrazenaText === 'function') ? zakazkaVyrazenaText(zak)
+    : 'Kalkulace ' + (strana === 'proj' ? 'PROJ' : 'OCK') + ' je uzamčená a vynulovaná.';
+}
+
+/* Zábrany z výsledku kontrolyProved, které zastaví dokument `typ`.
+ * Vrací hlášku (název pravidla + text nálezu — co opravit), nebo ''.
+ * Tatáž věta jde do bubliny zhasnutého tlačítka i do hlášky při pokusu
+ * o tisk (dokumentZabrana). */
+function kontrolyZabranaDokumentu(vysl, typ) {
+  const strana = kontrolyDokumentStrana(typ);
+  if (!strana || !vysl || !Array.isArray(vysl.nalezy)) return '';
+  const zab = vysl.nalezy.filter(n => n.uroven === KONTROLY_UROVEN_ZABRANA
+    && KONTROLY_BRANA_JINDE.indexOf(n.kod) < 0
+    && (!Array.isArray(n.strany) || n.strany.indexOf(strana) >= 0));
+  if (!zab.length) return '';
+  return 'Kontrola před nabídkou — dokument nevznikne, dokud se neopraví: '
+    + zab.map(n => n.nazev + ': ' + n.text).join(' | ');
 }
 
 /* Text pro člověka. opts.cisla = smí vidět částky (administrátor / KPI marže).
@@ -438,6 +1520,9 @@ function kontrolyPotvrzeniPlati(potvrzeni, vysl) {
 
 if (typeof module !== 'undefined')
   module.exports = { KONTROLY_UROVEN, KONTROLY_UROVEN_ZABRANA,
-                     KONTROLY_VYSKA_DVERI, kontrolyVyctem,
-                     kontrolyPravidla, kontrolyProved, kontrolyText,
-                     kontrolyPotvrzeni, kontrolyPotvrzeniPlati };
+                     KONTROLY_VYSKA_DVERI, KONTROLY_ZDVIH_MAX_M, KONTROLY_MUSTEK_MAX_MM, KONTROLY_ROZMERY_KLADNE, KONTROLY_ROZMERY_NEZAPORNE, KONTROLY_ROZMER_MIN_M, KONTROLY_ROZMERY_MIN, kontrolyRozmery, kontrolyVyctem, kontrolyBokySirka,
+                     kontrolyPravidla, kontrolyProved, kontrolyText, kontrolyProjNavic, kontrolyPlatbyDuvody, kontrolyProjCenyBezSymbolu,
+                     kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
+                     KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu,
+                     kontrolyCtxStrany, kontrolyStranaZabrana,
+                     kontrolyProjProdava };

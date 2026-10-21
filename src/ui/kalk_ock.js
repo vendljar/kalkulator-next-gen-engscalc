@@ -56,6 +56,21 @@ function patraVarovani() {
     se nedá spočítat výška podlaží a rozměry vycházejí nulové.</div>`;
 }
 
+/* HORNÍ HRANICE ZDVIHU (K17-N91, rozhodnutí J. V. 30. 9. 2026: „Nastav
+ * maximální zdvih na 99 m."). Zdvih 1 000 000 000 m dal nabídku za
+ * 51,6 bil. Kč bez varování. Pole má max (šipky přes hranici nepustí), ale
+ * napsané číslo se NEOŘEZÁVÁ — tiché oříznutí by z překlepu udělalo jinou
+ * nabídku, než jakou obchodník zadal. Místo toho se u pole řekne nahlas, co
+ * je špatně; zábranu hlásí kontrola „rozmery" (kontroly.js). Hranice je
+ * jedna konstanta KONTROLY_ZDVIH_MAX_M. */
+function zdvihVarovani() {
+  const v = +Z.zdvih;
+  if (!(v > KONTROLY_ZDVIH_MAX_M)) return '';
+  return `<div class="note warn zdvih-nad-max" style="margin:-2px 0 8px">Zdvih je nad nejvyšším povoleným
+    zdvihem ${esc(KONTROLY_ZDVIH_MAX_M)} m — nejspíš překlep (zdvih se zadává v metrech). Kontrola před
+    nabídkou to hlásí jako zábranu, opravte zadání.</div>`;
+}
+
 /* Přepnutí typu šachty dosadí výchozí dimenze profilů (9. 9. 2026, zadání
  * J. V.). Interiérová a exteriérová šachta se liší profily i zasklením, a
  * obchodník je dosud musel po přepnutí přenastavovat ručně — tedy na ně
@@ -94,12 +109,23 @@ function renderInputs() {
     if (key === 'lemovani' && !ext)
       return `<div class="row"><label>${label}</label>
         <span class="note" style="width:158px;display:inline-block">— (jen exteriérová šachta)</span><span class="u"></span></div>`;
-    const tls = Object.keys(JEKLY[p.dim].kg);
+    /* NEZNÁMÝ ROZMĚR NEBO TLOUŠŤKA (#372, nález A2-1). Rozměr mimo katalog
+     * jeklů shodil celé vykreslení (`JEKLY[p.dim].kg`). Teď výběr ukáže pravdu:
+     * navíc volbu „neznámý rozměr: …" (zvýrazněnou), ostatní volby jsou platné
+     * rozměry; po výběru platného dosadí zkontrolujTl platnou tloušťku.
+     * Dokument s neznámým profilem zastaví kontrola „profilNeznamy". */
+    const j = JEKLY[p.dim];
+    const tls = j ? Object.keys(j.kg) : [];
+    const tlZnama = tls.includes(String(p.tl));
+    const nezn = !j || !tlZnama;
     return `<div class="row"><label>${label}</label>
-      <select style="width:86px" onchange="set('Z.profily.${escJs(key)}.dim', this.value); zkontrolujTl('${escJs(key)}')">${dims.map(d =>
+      <select style="width:86px"${j ? '' : ' class="neg"'} onchange="set('Z.profily.${escJs(key)}.dim', this.value); zkontrolujTl('${escJs(key)}')">${
+        j ? '' : `<option selected class="neg" value="${esc(p.dim)}">neznámý rozměr: ${esc(p.dim)}</option>`}${dims.map(d =>
         `<option ${d === p.dim ? 'selected' : ''}>${esc(d)}</option>`).join('')}</select>
-      <select style="width:64px" onchange="set('Z.profily.${escJs(key)}.tl', +this.value)">${tls.map(t =>
-        `<option ${+t === p.tl ? 'selected' : ''} value="${esc(t)}">${esc(t)}</option>`).join('')}</select></div>`;
+      <select style="width:64px"${tlZnama ? '' : ' class="neg"'} onchange="set('Z.profily.${escJs(key)}.tl', +this.value)">${
+        tlZnama ? '' : `<option selected class="neg" value="${esc(p.tl)}">neznámá: ${esc(p.tl)}</option>`}${tls.map(t =>
+        `<option ${+t === p.tl ? 'selected' : ''} value="${esc(t)}">${esc(t)}</option>`).join('')}</select>${
+        nezn ? ' <span class="pill neg" title="Rozměr nebo tloušťka není v katalogu jeklů — vyberte platný. Dokument nevznikne, dokud se to neopraví.">mimo katalog</span>' : ''}</div>`;
   };
   /* ZADÁNÍ ŠACHTY VE ČTYŘECH PEVNÝCH SLOUPCÍCH (9. 9. 2026, zadání J. V.,
    * odsouhlaseno nad vizuálním návrhem).
@@ -113,8 +139,13 @@ function renderInputs() {
    * skládá pole vlastním gridem (auto-fill) — bez přebití by vznikl grid
    * v gridu a sloupce by se zúžily tak, že se popisky lámou. */
   const sl = (obsah) => `<div>${obsah}</div>`;
+  /* Výsledek jádra jednou pro celé zadání — bubliny u světlíků z něj čtou,
+   * čím se světlík vyplní (#375). Spadne-li výpočet, zadání se vykreslí
+   * i bez nich. */
+  let rAkt = null;
+  try { rAkt = vypocetAkt(); } catch (e) { rAkt = null; }
   document.getElementById('inputs').innerHTML =
-    card('Zadání šachty',
+    kartaRezim('ock', 'zadani', 'Zadání šachty',
       `<div class="zadani-ctyri">`
       + sl(
         /* Vlastní obsluha (9. 9. 2026): přepnutí typu dosadí výchozí profily. */
@@ -123,9 +154,17 @@ function renderInputs() {
             <option ${ext ? 'selected' : ''} value="exteriérová">exteriérová</option>
             <option ${ext ? '' : 'selected'} value="interiérová">interiérová</option>
           </select><span class="u"></span></div>`
-        + inp('Z.zdvih', { l: 'Zdvih', u: 'm' })
+        + inp('Z.zdvih', { l: 'Zdvih', u: 'm', max: KONTROLY_ZDVIH_MAX_M })
+        + zdvihVarovani()
         + inp('Z.prejezd', { l: 'Horní přejezd', u: 'm' })
-        + inp('Z.prohluben', { l: 'Prohlubeň', u: 'm' })
+        /* Prohlubeň + zkratka „prosklít i prohlubeň" (P2 / K19-N104,
+         * 2. 10. 2026). Vlastní obsluha: změna hloubky posune dolní meze
+         * stěn, dokud zkratka platí (oplasteniProhlubenSleduj). */
+        + `<div class="row"><label>Prohlubeň</label>
+            <input type="number" step="any" value="${esc(Z.prohluben)}"
+              title="Opláštění i v prohlubni: zaškrtněte „Opláštit i prohlubeň" — všechny stěny pak začínají v −prohlubeň (opláštění po stěnách)."
+              onchange="prohlubenSet(this.value)"><span class="u">m</span></div>`
+        + prohlubenSkloRadek()
         + `<div class="row"><label>Průchozí šachta</label>
             <input type="checkbox" ${Z.pruchoziSachta ? 'checked' : ''}
               onchange="pruchoziPrepni(this.checked)"><span class="u"></span></div>`
@@ -133,8 +172,11 @@ function renderInputs() {
       + sl(
         inp('Z.sirka', { l: 'Vnitřní šířka', u: 'm' })
         + inp('Z.hloubka', { l: 'Vnitřní hloubka', u: 'm' })
-        + inp('Z.typPortalu', { type: 'sel', l: 'Typ portálů', o: [['zapuštěný', 'zapuštěný'], ['předsazený', 'předsazený']] })
+        /* Pořadí polí 25. 9. 2026 (zadání J. V. obrázkem): nástupiště na místě
+         * typu portálů, pod ně počet sloupků; typ portálů ve 3. sloupci
+         * za opláštěním, přechodové plechy ve 4. sloupci za čistým vstupem. */
         + nastupisteRadek()
+        + inp('Z.rohoveSloupky', { l: 'Počet sloupků', step: 1, u: 'ks' })
         /* Popisný text pod polem se 10. 9. 2026 přestěhoval do Detailu výpočtu
          * (zadání J. V.); v zadání zůstal jako tooltip, aby nezabíral řádek. */
         + inp('Z.striskaKs', {
@@ -148,19 +190,42 @@ function renderInputs() {
          * Vlastní stěny jsou ve zvláštní kartě, která se kreslí až po
          * přepnutí — ve standardním režimu o nich obchodník nemá vědět. */
         + `<div class="row"><label>Opláštění</label>
-            <select style="width:150px" onchange="oplRezimSet(this.value)">
+            <select style="width:150px" onchange="oplRezimSet(this.value)" title="${esc(SKLO_JINE_NAPOVEDA)}">
               <option value="standard" ${oplPoStenach() ? '' : 'selected'}>jednotné (standard)</option>
               <option value="poStenach" ${oplPoStenach() ? 'selected' : ''}>po stěnách A–D</option>
             </select><span class="u"></span></div>`
-        + inp('Z.rohoveSloupky', { l: 'Počet sloupků', step: 1, u: 'ks' })
-        + inp('Z.svetlikyBoky', { type: 'sel', l: 'Světlíky na bocích dveří', o: [[0, 'bez'], [1, 'na jedné straně'], [2, 'na obou stranách']] })
-        + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
-        /* Můstek (#163, 21. 8. 2026). Do výpočtu nevstupuje — je to vstup pro
-         * kontrolu standardu a pro technickou specifikaci. Rozměry se ptají,
-         * jen když můstek je; prázdné pole znamená „nevyplněno", ne nulu. */
-        + `<div class="row"><label>Můstek mezi budovou a OCK</label>
-            <input type="checkbox" ${Z.mustek ? 'checked' : ''} onchange="set('Z.mustek', this.checked)"><span class="u"></span></div>`
-        + (Z.mustek
+        + inp('Z.typPortalu', { type: 'sel', l: 'Typ portálů', o: [['zapuštěný', 'zapuštěný'], ['předsazený', 'předsazený']] })
+        /* CO JE NAD DVEŘMI A VEDLE NICH (N58, N58b, zadání J. V. 24. 9. 2026).
+         * Světlík nad dveřmi se přesunul sem (mezi typ portálů a boční světlíky)
+         * a je z něj rolovací menu výplně. Hodnota se čte přes
+         * nadDvermiVypln(): stará zakázka bez volby ukáže to, co znamenalo
+         * její zaškrtávátko (sklo / bez). */
+        + `<div class="row"><label>Světlík nad šachetními dveřmi</label>
+            <select style="width:150px" onchange="nadDvermiSet(this.value)" title="${esc(svetlikVyplnTitulek('nad', rAkt))}">${NAD_DVERMI_POPISY.map(([v, t]) =>
+              `<option value="${v}" ${nadDvermiVypln(Z) === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+            </select><span class="u"></span></div>`
+        /* SVĚTLÍKY NA BOCÍCH DVEŘÍ (#375, rozhodnutí J. V. 30. 9. 2026): tytéž
+         * volby jako nad dveřmi (dřív počet stran a pod ním „Výplň boků
+         * dveří"). Pod volbou počet světlíků, jen když boky nejsou „bez". */
+        + `<div class="row"><label>Světlíky na bocích dveří</label>
+            <select style="width:150px" onchange="bokyDveriSet(this.value)" title="${esc(svetlikVyplnTitulek('boky', rAkt))}">${NAD_DVERMI_POPISY.map(([v, t]) =>
+              `<option value="${v}" ${bokyVypln(Z) === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+            </select><span class="u"></span></div>`
+        + bokyKsRadek()
+        /* Šířka bočního světlíku (#381): jen Model 2 a ruční počet. */
+        + bokySirkaRadek(rAkt))
+      + sl(
+        inp('Z.roztec', { l: 'Svislá rozteč příčníků', u: 'm' })
+        + inp('Z.sirkaRamuMm', { l: 'Šířka rámu dveří', step: 5, u: 'mm' })
+        + inp('Z.cistyVstupMm', { l: 'Čistý vstup – šířka', step: 10, u: 'mm' })
+        /* MŮSTKY MEZI BUDOVOU A OCK (#163; od 25. 9. 2026 počet kusů, zadání
+         * J. V.). 0 = žádný, jiné číslo = kolik jich na šachtě je. Stojí hned
+         * pod čistým vstupem, nad přechodovými plechy. Rozměry se ptají, jen
+         * když můstky jsou; prázdné pole znamená „nevyplněno", ne nulu. */
+        + `<div class="row"><label>Můstky mezi budovou a OCK</label>
+            <input type="number" step="1" min="0" value="${esc(mustkyPocet(Z))}"
+              title="počet můstků; 0 = šachta nemá žádný" onchange="mustkySet(this.value)"><span class="u">ks</span></div>`
+        + (mustkyPocet(Z) > 0
           ? `<div class="row"><label>Hloubka můstku</label>
                <input type="number" step="10" min="0" value="${esc(Z.mustekHloubkaMm == null ? '' : Z.mustekHloubkaMm)}"
                  placeholder="mm" title="vzdálenost mezi budovou a OCK; standard max 1 000 mm"
@@ -169,12 +234,9 @@ function renderInputs() {
                <input type="number" step="10" min="0" value="${esc(Z.mustekSirkaMm == null ? '' : Z.mustekSirkaMm)}"
                  placeholder="mm" title="standard: max na šířku OCK"
                  onchange="set('Z.mustekSirkaMm', this.value)"><span class="u">mm</span></div>`
-          : ''))
-      + sl(
-        inp('Z.roztec', { l: 'Svislá rozteč příčníků', u: 'm' })
-        + inp('Z.sirkaRamuMm', { l: 'Šířka rámu dveří', step: 5, u: 'mm' })
-        + inp('Z.cistyVstupMm', { l: 'Čistý vstup – šířka', step: 10, u: 'mm' })
-        + inp('Z.svetlikNadDvermi', { type: 'check', l: 'Světlík nad šachetními dveřmi' })
+          : '')
+        + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
+
         /* ATYP má vlastní obsluhu (17. 8. večer): zaškrtnutí předvyplní všechny
          * čtyři rezervy a Zámečníka atyp z ceníku; odškrtnutí vrací pole, do
          * kterých nikdo ručně nesáhl — atypové přirážky bez atypu nemají co
@@ -191,28 +253,28 @@ function renderInputs() {
        * v ceníku varianty (`C.atypPrirazka`, sekce REŽIE), takže se pořád
        * mění u jednotlivé nabídky a starší nabídky se nepřepočítávají;
        * mění ji ten, kdo vidí ceník. */
-      '', false, 'ock-zadani') +
+      '', 'ock-zadani') +
     /* Stěny stojí hned za zadáním šachty: navazují na přepínač Opláštění
        o pár polí výš a patří k popisu stavby, ne k cenám. */
     oplasteniKarta() +
-    card('Dimenze profilů',
+    kartaRezim('ock', 'profily', 'Dimenze profilů',
       profRow('sloupek', 'Sloupek') + profRow('precnikBok', 'Příčníky bok/zadek') + profRow('sloupekPortal', 'Sloupek portálu') +
       profRow('precnikPortal', 'Příčníky portálu') + profRow('spojka', 'Spojka sloupků') + profRow('lemovani', 'Lemování ext. šachty') +
       /* Rezervy se zadávají v PROCENTECH (17. 8. večer): 30 = +30 % k množství
        * profilů/plechů. V datech zůstává desetinný podíl (0,30) — staré
        * zakázky se počítají beze změny, jen zadávání je lidské. */
-      inp('Z.rezervaProfilyPct', { type: 'pct', l: 'Rezerva profily (atyp)' }) +
+      inp('Z.rezervaProfilyPct', { type: 'pct', min: 0, l: 'Rezerva profily (atyp)' }) +
       /* Karta je od 19. 8. 2026 ve výchozím stavu SBALENÁ (zadání J. V.):
        * dimenze se mění zřídka a obchodníka při běžné práci jen ruší.
        * Kliknutím na nadpis se karta kdykoli rozbalí. */
-      inp('Z.rezervaPlechyPct', { type: 'pct', l: 'Rezerva plechy (atyp)' }), true, 'ock-profily') +
-    card('Práce a režie',
-      inp('Z.montazZakladHod', { l: 'Montáž – základ (1 os.)', step: 1, u: 'hod', klic: 'Z.montazZakladHod ← C.vychMontazZakladHod' }) +
-      inp('Z.montazAtypHod', { l: 'Montáž – atyp navíc', step: 1, u: 'hod', klic: 'Z.montazAtypHod ← C.atypMontazPct' }) +
-      inp('Z.projekceZakladHod', { l: 'Projekce – základ', step: 1, u: 'hod', klic: 'Z.projekceZakladHod ← C.vychProjekceZakladHod' }) +
-      inp('Z.projekceAtypHod', { l: 'Projekce – atyp navíc', step: 1, u: 'hod', klic: 'Z.projekceAtypHod ← C.atypProjekcePct' }) +
-      inp('Z.oplechOstatniKg', { l: 'Oplechování ostatní – materiál', step: 1, u: 'kg', klic: 'Z.oplechOstatniKg ← C.vychOplechOstatniKg' }) +
-      inp('Z.oplechOstatniHod', { l: 'Oplechování ostatní – práce', step: 1, u: 'hod', klic: 'Z.oplechOstatniHod ← C.vychOplechOstatniHod' }) +
+      inp('Z.rezervaPlechyPct', { type: 'pct', min: 0, l: 'Rezerva plechy (atyp)' }), 'ock-profily', true) +
+    kartaRezim('ock', 'prace', 'Práce a režie',
+      inp('Z.montazZakladHod', { min: 0, l: 'Montáž – základ (1 os.)', step: 1, u: 'hod', klic: 'Z.montazZakladHod ← C.vychMontazZakladHod' }) +
+      inp('Z.montazAtypHod', { min: 0, l: 'Montáž – atyp navíc', step: 1, u: 'hod', klic: 'Z.montazAtypHod ← C.atypMontazPct' }) +
+      inp('Z.projekceZakladHod', { min: 0, l: 'Projekce – základ', step: 1, u: 'hod', klic: 'Z.projekceZakladHod ← C.vychProjekceZakladHod' }) +
+      inp('Z.projekceAtypHod', { min: 0, l: 'Projekce – atyp navíc', step: 1, u: 'hod', klic: 'Z.projekceAtypHod ← C.atypProjekcePct' }) +
+      inp('Z.oplechOstatniKg', { min: 0, l: 'Oplechování ostatní – materiál', step: 1, u: 'kg', klic: 'Z.oplechOstatniKg ← C.vychOplechOstatniKg' }) +
+      inp('Z.oplechOstatniHod', { min: 0, l: 'Oplechování ostatní – práce', step: 1, u: 'hod', klic: 'Z.oplechOstatniHod ← C.vychOplechOstatniHod' }) +
       /* Zámečník atyp je od 17. 8. večer JEDNA částka: pole „množství" zmizelo,
        * v kalkulaci je řádek s množstvím vždy 1 a hodnotou z tohoto pole.
        * Prázdné pole = řádek není (příp. ceníková sazba u starých zakázek
@@ -223,8 +285,8 @@ function renderInputs() {
       /* REZERVY v procentech (17. 8. večer): 30 = +30 %. Základ se počítá
        * z celého základu kalkulace, příplatky z příplatků — jako dosud,
        * mění se jen zadávání (v datech zůstává desetinný podíl). */
-      inp('Z.rezervaZakladPct', { type: 'pct', l: 'REZERVA základ', klic: 'Z.rezervaZakladPct ← C.atypRezervaZakladPct' }) +
-      inp('Z.rezervaPriplatkyPct', { type: 'pct', l: 'REZERVA příplatky', klic: 'Z.rezervaPriplatkyPct ← C.atypRezervaPriplatkyPct' }), false, 'ock-prace');
+      inp('Z.rezervaZakladPct', { type: 'pct', min: 0, l: 'REZERVA základ', klic: 'Z.rezervaZakladPct ← C.atypRezervaZakladPct' }) +
+      inp('Z.rezervaPriplatkyPct', { type: 'pct', min: 0, l: 'REZERVA příplatky', klic: 'Z.rezervaPriplatkyPct ← C.atypRezervaPriplatkyPct' }), 'ock-prace');
 }
 
 /* ---- ceník → zadání pro jednu variantu (1. 9. 2026) ----
@@ -244,8 +306,26 @@ function cenikDoZadani(v) {
   let zmen = zadaniZCeniku(d).zmen;
   const z = d.ock && d.ock.zadani, c = d.cenik;
   if (!z || !c || !z.atyp || typeof cenikVychozi !== 'function') return zmen;
-  const pm = cenikVychozi(c, 'atypMontazPct', null);
-  const pp = cenikVychozi(c, 'atypProjekcePct', null);
+  /* SAZBA SE BERE Z CENÍKU V OBOU CESTÁCH (rozhodnutí J. V. 22. 9. 2026,
+   * uzavírá #298 / nález N24).
+   *
+   * Do 22. 9. se tyhle dvě cesty lišily NE vzorcem, ale zdrojem sazby:
+   *   · zaškrtnutí ATYP (`atypPrepni`) sáhlo při chybějící sazbě po náhradě
+   *     ze sestavení (ATYP_NAHRADA) a hodiny spočítalo,
+   *   · přepočet na platný ceník (tahle funkce) dostal `null` a hodiny
+   *     nechal, jak byly.
+   * Táž zakázka proto vycházela jednou na 5 a jednou na 6 hodin podle toho,
+   * kudy se k ATYP došlo. Rozhodnutí J. V.: „sazba by se měla brát vždy
+   * z ceníku, ať už se atyp spustí automaticky nebo manuálně. To, že si to
+   * pak obchodník přepíše, už je jeho věc."
+   *
+   * Obě cesty tedy nově čtou touž hodnotu týmž způsobem. Ruční přepis
+   * obchodníka zůstává nedotčený — hlídá ho `zadaniRucniJe` o řádek níž —
+   * a uzamčené a kvitované varianty se sem vůbec nedostanou
+   * (`progSrovnejNedotcene` je vynechává), takže odeslanými nabídkami to
+   * nehne. */
+  const pm = cenikVychozi(c, 'atypMontazPct', ATYP_NAHRADA.atypMontazPct);
+  const pp = cenikVychozi(c, 'atypProjekcePct', ATYP_NAHRADA.atypProjekcePct);
   if (pm != null && !zadaniRucniJe(d, 'montazAtypHod')) {
     let navic = 0;
     try { navic = vypocet(z, c, JEKLY, (d.ock || {}).fixes).montaz.hodinyNavicCelkem || 0; } catch (e) { navic = 0; }
@@ -381,6 +461,7 @@ function keyAttr(s) { return escJs(s); }
 
 /* ---- ruční přepis množství (klíčem je PŮVODNÍ název položky) ---- */
 function mnozstviSet(nazev, v) {
+  if (typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
   if (!Z.mnozstviPrepis) Z.mnozstviPrepis = {};
   if (v === '' || v == null) delete Z.mnozstviPrepis[nazev]; else Z.mnozstviPrepis[nazev] = +v;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
@@ -398,39 +479,94 @@ function nazevReset(orig) { if (Z.nazvyPrepis) delete Z.nazvyPrepis[orig]; rende
 /* Dodatkový text k ceníkové položce (#267, 18. 9. 2026). Píše se do CENÍKU
  * varianty, ne do zadání — proto `C`, a ne `Z`. Zámek varianty se hlídá
  * stejně jako u ostatních zápisů; bez něj by šlo do uzamčené odeslané
- * nabídky dopsat větu, kterou zákazník nikdy neviděl. */
+ * nabídky dopsat větu, kterou zákazník nikdy neviděl.
+ *
+ * DVĚ ÚROVNĚ OD 22. 9. 2026 (zadání J. V.):
+ *   • ZAKÁZKA — píše každý, platí jen pro tuhle nabídku (`C.popisy`);
+ *   • APLIKACE — píše jen administrátor, platí pro všechny budoucí zakázky
+ *     (`/api/popisy`, vlévá se do `DEFAULT_CENIK.popisy` při přihlášení).
+ *
+ * Administrátorův zápis jde do obou: v otevřené zakázce se text projeví
+ * hned a zároveň se uloží jako nový výchozí. Ostatním se ukládá jen do
+ * zakázky, takže výchozí text nikdo nepřepíše nedopatřením. Do 22. 9. pole
+ * viděl jen administrátor a text nepřežil ani zavření zakázky, pokud
+ * nezveřejnil celý ceník. */
 function popisSet(cesta, v) {
   if (typeof zamekStop === 'function' && zamekStop()) return;
   if (typeof cenikPopisNastav !== 'function') return;
   cenikPopisNastav(C, cesta, v);
+  /* Smazaný text, ke kterému existuje společný text aplikace, se zapíše jako
+   * prázdný řetězec — vědomé „tady text nechci". Bez toho by ho doplnění
+   * společných textů (`popisyDoplnChybejici`, 25. 9. 2026) při dalším
+   * otevření zakázky vrátilo. Administrátor tím zároveň společný text maže
+   * (onlinePopisUloz níž), takže u něj značka nezůstává. */
+  const prazdny = String(v == null ? '' : v).trim() === '';
+  const admin = typeof jeAdmin === 'function' && jeAdmin();
+  if (prazdny && !admin && typeof DEFAULT_CENIK !== 'undefined' && DEFAULT_CENIK.popisy
+    && typeof DEFAULT_CENIK.popisy[cesta] === 'string' && DEFAULT_CENIK.popisy[cesta].trim()) {
+    if (!C.popisy) C.popisy = {};
+    C.popisy[cesta] = '';
+  }
+  /* Jazykové varianty (#379, K18-N96) patří ke konkrétnímu znění: nový
+   * text = staré překlady pryč, návrat na společný text = společné překlady.
+   * Administrátorův text se právě stává společným, proto se srovnává s ním. */
+  if (typeof popisJazykySrovnej === 'function' && typeof DEFAULT_CENIK !== 'undefined') {
+    const t = String(v == null ? '' : v).trim();
+    const spol = admin ? Object.assign({}, DEFAULT_CENIK.popisy || {}, { [cesta]: t }) : (DEFAULT_CENIK.popisy || {});
+    const spolJ = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.jazyky)
+      || DEFAULT_CENIK.popisyJazyky || null;
+    popisJazykySrovnej(C, cesta, spol, spolJ);
+  }
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  if (admin && typeof onlinePopisUloz === 'function')
+    onlinePopisUloz(cesta, v);
   render();
 }
 /* Řádek s dodatkovým textem pod položkou. Jeden pro příplatky i pro
  * volitelné — dvě kopie by se rozešly v popisku i v tom, kdo pole vidí.
  *
- * Text se ukládá k CENÍKOVÉ POLOŽCE, takže ho smí měnit jen ten, kdo smí
- * sahat na ceníkové ceny. Vlastní položka zakázky ceníkovou položku nemá,
- * ke které by se text vázal, a v příští nabídce stejně nevznikne.
- * Netiskne se: je to zadávací pole, ne obsah kalkulace. */
-function popisRadekHtml(r, cols, smiEdit) {
-  if (!smiEdit || !r || r.vlastni || !r.cenaPath) return '';
+ * Pole vidí KAŽDÝ (zadání J. V. 22. 9. 2026: „ostatní uživatelé je mohou
+ * v případě potřeby upravovat"). Vlastní položka zakázky ceníkovou položku
+ * nemá, ke které by se text vázal, a v příští nabídce stejně nevznikne.
+ * Samotné pole se netiskne: je zadávací, ne obsah kalkulace. */
+function popisRadekHtml(r, cols) {
+  if (!r || r.vlastni || !r.cenaPath) return '';
   /* Klíčem je PŮVODNÍ NÁZEV položky, ne ceníková cesta — dvě různé položky
    * můžou sdílet tutéž sazbu (madla boční × zadní) a v nabídce jsou to dva
    * různé výrobky. Podrobně u `popisZCeniku` v engine.js. */
   const klic = r.origNazev || r.nazev;
   const t = (typeof cenikPopis === 'function') ? cenikPopis(C, klic) : '';
+  const admin = (typeof jeAdmin === 'function') && jeAdmin();
+  const naped = admin
+    ? 'Tiskne se v nabídce pod názvem položky místo množství. Jako administrátor ho ukládáte '
+      + 'pro celou aplikaci — předvyplní se i v nabídkách ostatních.'
+    : 'Tiskne se v nabídce pod názvem položky místo množství. Změna platí jen pro tuhle '
+      + 'zakázku; výchozí text pro celou aplikaci zadává administrátor.';
   return `<tr class="noprint"><td colspan="${cols}" style="padding-top:0">
-    <input type="text" style="width:100%" value="${esc(t)}"
+    <input type="text" style="width:100%" value="${esc(t)}" maxlength="${POPISY_MAX_TEXT}"
       placeholder="dodatkový text do cenové nabídky (nepovinné)"
-      title="Tiskne se v nabídce pod názvem položky místo množství. Ukládá se do ceníku, takže se u další nabídky předvyplní."
-      onchange="popisSet('${keyAttr(klic)}', this.value)"></td></tr>`;
+      title="${esc(naped)}"
+      onchange="popisSet('${keyAttr(klic)}', this.value)">${popisJazykyStitek(klic, t)}</td></tr>`;
+}
+/* Které překlady text v téhle zakázce má (#379, K18-N96) — aby obchodník
+ * věděl, že do cizí nabídky nepůjde česká věta. Vyplňují se v číselníku
+ * dodatkových textů (Ceník nákladů OCK), ne tady. */
+function popisJazykyStitek(klic, t) {
+  if (!t || typeof cenikPopisJazyk !== 'function') return '';
+  const jazyky = (typeof POPISY_JAZYKY !== 'undefined') ? POPISY_JAZYKY : ['en', 'de', 'fr'];
+  const ma = jazyky.filter(l => cenikPopisJazyk(C, klic, l));
+  /* Bez překladu se nic nepíše: většina nabídek je česká a trvalá věta pod
+   * každým textem by se přestala číst. Cizí nabídku pohlídá „dodatekCesky". */
+  if (!ma.length) return '';
+  return `<div class="note popis-jazyky-stitek" style="margin:1px 0 0">Překlad do nabídky: ${esc(ma.map(l => l.toUpperCase()).join(', '))}${
+    ma.length < jazyky.length ? ' (ostatní jazyky ponesou český text)' : ''}</div>`;
 }
 function popisRadekVol(r, cols) {
-  return popisRadekHtml(r, cols, kalkSloupce().admin);
+  return popisRadekHtml(r, cols);
 }
 /* ---- ruční přepis jedn. ceny u položek bez ceníkové vazby ---- */
 function cenaSet(orig, v) {
+  if (typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
   if (!Z.cenyPrepis) Z.cenyPrepis = {};
   if (v === '' || v == null) delete Z.cenyPrepis[orig]; else Z.cenyPrepis[orig] = +v;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
@@ -467,8 +603,22 @@ const OPL_STENY_POPIS = { A: 'čelní stěna (dveře a světlíky)', B: 'boční
 const OPL_STENY = (typeof OPLASTENI_STENY !== 'undefined' ? OPLASTENI_STENY : ['A', 'B', 'C', 'D'])
   .map(k => ({ k, popis: OPL_STENY_POPIS[k] || '' }));
 
+/* ZAMČENÁ VARIANTA SE JEN ČTE (N41d z revize v22.9.9, ověřeno 24. 9. 2026).
+ * oplZadani() a oplStena() doplňovaly chybějící opláštění, stěny a pásy
+ * PŘÍMO do zadání — a volá je vykreslení obrazovky. U zamčené (odeslané)
+ * varianty tak pouhé otevření přepsalo data dokladu. U zamčené varianty
+ * se proto výchozí podoba jen spočítá a vrátí jako kopie; zapisuje se
+ * výhradně do varianty, kterou jde upravovat. */
+function oplJenCist() {
+  const v = (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined') ? aktivniVarianta(ZAK) : null;
+  return !!(v && typeof variantaEditovatelna === 'function' && !variantaEditovatelna(v));
+}
 function oplZadani() {
-  if (!Z.oplasteni || typeof Z.oplasteni !== 'object') Z.oplasteni = { rezim: 'standard', steny: null };
+  if (!Z.oplasteni || typeof Z.oplasteni !== 'object') {
+    const vych = { rezim: 'standard', steny: null };
+    if (oplJenCist()) return vych;
+    Z.oplasteni = vych;
+  }
   return Z.oplasteni;
 }
 function oplPoStenach() { return oplZadani().rezim === 'poStenach'; }
@@ -478,6 +628,17 @@ function oplPoStenach() { return oplZadani().rezim === 'poStenach'; }
  * z jádra, takže sedí na to, co by na stěně bylo ve standardním režimu. */
 function oplStena(k) {
   const o = oplZadani();
+  const jenCist = oplJenCist();
+  const ulozena = o.steny && typeof o.steny === 'object' && o.steny[k] && typeof o.steny[k] === 'object'
+    ? o.steny[k] : null;
+  /* U zamčené varianty chybějící nebo prázdnou stěnu jen dopočítat. */
+  if (jenCist && !(ulozena && Array.isArray(ulozena.pasy) && ulozena.pasy.length)) {
+    const vych = (typeof oplasteniStenyVychozi === 'function')
+      ? oplasteniStenyVychozi(Z, aktivniVarianta(ZAK).data.cenik)[k]
+      : { odM: 0, pasy: [{ typ: 'bez', doM: null }] };
+    return { odM: ulozena && ulozena.odM != null ? ulozena.odM : (vych.odM != null ? vych.odM : 0),
+             pasy: JSON.parse(JSON.stringify(vych.pasy)) };
+  }
   if (!o.steny || typeof o.steny !== 'object') o.steny = {};
   if (!o.steny[k] || typeof o.steny[k] !== 'object') o.steny[k] = { odM: 0, pasy: [] };
   const st = o.steny[k];
@@ -505,11 +666,208 @@ function oplCelaVyska(k) {
 
 function oplZmeneno() {
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
-  /* Ručně zadaný náklad u typu „jiné" znamená atyp — stejně jako ručně
-   * přepsané množství. Automatiku pouští `set()`; tady se na ni musí
-   * sáhnout zvlášť, protože zapisujeme mimo něj. */
+  /* Automat ATYP pouští `set()`; tady se na něj musí sáhnout zvlášť, protože
+   * zapisujeme mimo něj. Samotný režim po stěnách ani materiál stěny atyp
+   * od 30. 9. 2026 nedělají (rozhodnutí J. V., viz standard_ock.js), stěny
+   * ale mění plochu skel, a tím i příplatky, které kontrola standardu čte
+   * (jednotypovost zasklení). A přepnutí musí umět vypnout ATYP, který
+   * automat zaškrtl dřív — i ten podle pravidla platného do 30. 9. */
   if (typeof standardAtypAutomat === 'function') standardAtypAutomat();
   render();
+}
+
+/* Volby výplně nad dveřmi a vedle nich (N58, N58b). Hodnoty jsou z jádra
+ * (NAD_DVERMI_VOLBY), popisky podle zadání J. V. Od #375 (30. 9. 2026) mají
+ * světlíky na bocích dveří TYTÉŽ volby — dřívější „Výplň boků dveří" bez
+ * volby „bez" zanikla. */
+const NAD_DVERMI_POPISY = [['bez', 'bez'], ['sklo', 'sklo'], ['plech', 'plech'],
+                           ['material', 'materiál opláštění'], ['stavba', 'zajistí stavba']];
+
+/* Bublina u volby světlíků (#375): co volby znamenají a čím se světlík TEĎ
+ * vyplní. Materiál se bere z výsledku jádra (`vypocetAkt`, u odeslané
+ * nabídky zmrazený otisk), ne z vlastního přepočtu obrazovky — jinak by
+ * bublina při první změně pravidel tvrdila něco jiného, než z čeho je cena.
+ * Otisk z doby před #375 materiál nenese; pak zůstane jen vysvětlení. */
+function svetlikVyplnTitulek(kde, r) {
+  const zaklad = 'sklo = sklo stěny s dveřmi a její zasklení; materiál opláštění = materiál stěn B, C, D '
+    + '(liší-li se, převažující podle plochy)';
+  const m = r && r.zaskleni && r.zaskleni.vypln && r.zaskleni.vypln.material
+    && r.zaskleni.vypln.material[kde] && r.zaskleni.vypln.material[kde].A;
+  if (!m) return zaklad;
+  const co = (m.druh === 'sklo' || m.druh === 'deska') ? oplTypNazev(m.typ, m.nazev)
+    : ({ plech: 'plech', stavba: 'zajistí stavba (výplň 0 Kč)', bez: 'nic' })[m.druh] || '';
+  return zaklad + (co ? '. Teď: ' + co : '');
+}
+
+/* Počet světlíků na bocích dveří (#375). Prázdno = automaticky počet
+ * nástupišť × 2 (jde se změnou nástupišť); číslo = ruční přepis, který
+ * obrazovka označí a ↺ ho vrátí na výpočet — stejně jako přepis množství
+ * v kalkulaci. Víc než dva na dveře se uloží, jen na to upozorní kontrola. */
+function bokyKsRadek() {
+  if (bokyVypln(Z) === 'bez') return '';
+  const auto = bokyPocetAuto(Z), n = bokyPocet(Z), rucne = bokyPocetRucne(Z);
+  return `<div class="row"><label>Celkem světlíků na bocích dveří${rucne
+      ? ' <span class="pill mut" title="zadáno ručně — výpočet by dal ' + esc(auto) + '">ručně</span>' : ''}</label>
+      <span class="par"><input type="number" step="1" min="0" value="${esc(n)}"
+        title="${esc(rucne ? 'zadáno ručně; výpočet: počet nástupišť × 2 = ' + auto
+          : 'počet nástupišť × 2 — přepište, když jich je jinak')}"
+        onchange="bokyKsSet(this.value)">${rucne
+        ? `<button class="mini noprint" title="${esc('vrátit výpočet: počet nástupišť × 2 = ' + auto)}" onclick="bokyKsZpet()">↺</button>` : ''}</span>
+      <span class="u">ks</span></div>`;
+}
+
+/* Zápisy do boků (#375). Starší zakázka (počet stran) se nejdřív převede na
+ * nový tvar — jinak by nová volba bez uloženého počtu spadla na automatiku
+ * a jedna strana by se potichu zdvojila. Převod mění jen tvar dat, ne cenu.
+ * Funkce jsou v ZAMEK_CHRANENE: převod i zápis projdou jen u varianty, do
+ * které se smí psát (zámek, náhled). */
+function bokyDveriSet(v) {
+  if (NAD_DVERMI_VOLBY.indexOf(v) < 0) return;
+  if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
+  set('Z.bokyDveri', v);
+}
+function bokyKsSet(v) {
+  if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
+  const s = String(v == null ? '' : v).trim().replace(',', '.');
+  /* Prázdné pole = automatika; záporné číslo = 0 (jako u můstků). */
+  set('Z.svetlikyBokyKs', s === '' ? '' : Math.max(0, Math.floor(+s || 0)));
+}
+function bokyKsZpet() {
+  if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
+  /* ↺ u počtu vrací automatiku celou — ruční šířka bočního světlíku (#381)
+   * patří k ručnímu počtu, takže se zahodí taky (zapisuje se před set(),
+   * aby obojí prošlo jedním překreslením; zámek hlídá obal funkce). */
+  if (Z.svetlikyBokySirkaMm !== undefined && Z.svetlikyBokySirkaMm !== '') Z.svetlikyBokySirkaMm = '';
+  set('Z.svetlikyBokyKs', '');
+}
+
+/* ŠÍŘKA BOČNÍHO SVĚTLÍKU (#381, rozhodnutí J. V. 1. 10. 2026: „s návrhem
+ * šířky bočního světlíku souhlasím, zapracuj ho pro model 2 (modelu 1 nic
+ * neměň)").
+ *
+ * Řádek stojí hned pod počtem a ukáže se JEN v Modelu 2, u výplně jiné než
+ * „bez", při RUČNÍM počtu a aspoň jednom světlíku (otázka 1 návrhu).
+ * Hodnota = ruční šířka, nebo předpočítaná zaokrouhlená na mm — ta, při
+ * které vyjde plocha jako dřív (jeden světlík u dveří = celá mezera, dva =
+ * polovina, smíšené = průměr). Ruční šířka nese štítek „ručně" a ↺.
+ * Všechna čísla bere z výsledku jádra (`vypocetAkt`, u odeslané nabídky
+ * zmrazený otisk) — nápověda tak nemůže tvrdit nic jiného než cena; věty
+ * o nálezu jsou tytéž jako v kontrole před nabídkou (kontrolyBokySirka). */
+function bokySirkaDvere(n) { return n + (n >= 1 && n <= 4 ? ' dveře' : ' dveří'); }
+function bokySirkaRadek(r) {
+  if (typeof OCK === 'undefined' || !OCK || !OCK.fixes) return '';
+  if (bokyVypln(Z) === 'bez' || !bokyPocetRucne(Z)) return '';
+  const n = bokyPocet(Z);
+  if (!(n > 0)) return '';
+  const v = (r && r.zaskleni && r.zaskleni.vypln) || null;
+  /* Otisk z doby před #381 předpočítanou šířku nenese — plocha v něm je
+   * právě ta podle rozložení, takže se z ní dopočítá. */
+  const pred = v ? (v.sirkaPredpocitana != null ? +v.sirkaPredpocitana : (+v.bokyKs > 0 ? +v.bokyM2 / (2.2 * +v.bokyKs) : NaN)) : NaN;
+  const predMm = isFinite(pred) ? Math.round(pred * 1000) : null;
+  const rucniMm = bokySirkaRucniMm(Z);
+  const rucne = rucniMm != null;
+  const hodnota = rucne ? rucniMm : (predMm != null ? predMm : '');
+  const mezMm = v && isFinite(+v.mezera) ? Math.round(+v.mezera * 1000) : null;
+  let napoveda = '';
+  /* Šířka SKLA přes sloupky (#442, rozhodnutí J. V. 20. 10. 2026): výpočet
+   * beze změny, popisek říká, že tabule přesahuje sloupky — světlo vedle
+   * dveří je užší (postřeh D. Sikory 19. 10.). */
+  if (rucne) napoveda = 'zadáno ručně' + (predMm != null ? '; předpočítaná šířka skla přes sloupky ' + predMm + ' mm' : '');
+  else if (v && mezMm != null) {
+    const dva = +v.dvereDva || 0, jeden = +v.dvereJeden || 0, bez = +v.dvereBez || 0;
+    const slozeni = [];
+    if (dva) slozeni.push(bokySirkaDvere(dva) + ' se dvěma (po ' + Math.round(+v.mezera * 500) + ' mm)');
+    if (jeden) slozeni.push(bokySirkaDvere(jeden) + ' s jedním (' + mezMm + ' mm)');
+    if (bez) slozeni.push(bokySirkaDvere(bez) + ' bez světlíku');
+    napoveda = 'šířka skla přes sloupky, předpočítaná z mezery vedle dveří ' + mezMm + ' mm: ' + slozeni.join(', ') + (dva && jeden ? ' → průměr' : '');
+  }
+  const k = (typeof kontrolyBokySirka === 'function') ? kontrolyBokySirka(r) : { zabrana: [], upozorneni: [] };
+  const titulPred = predMm != null ? 'předpočítaná šířka skla přes sloupky ' + predMm + ' mm' : 'předpočítaná šířka skla přes sloupky';
+  return `<div class="row boky-sirka"><label>Šířka skla bočního světlíku (přes sloupky)${rucne
+      ? ' <span class="pill mut" title="' + esc('zadáno ručně; ' + titulPred) + '">ručně</span>' : ''}</label>
+      <span class="par"><input type="number" step="1" min="0" value="${esc(hodnota)}"
+        title="${esc(rucne ? 'zadáno ručně; ' + titulPred
+          : 'šířka skla jednoho bočního světlíku přes sloupky (tabule přesahuje sloupky, světlo vedle dveří je užší) — přepište, když je jiná (plocha boků = počet × šířka × 2,2 m)')}"
+        onchange="bokySirkaSet(this.value)">${rucne
+        ? `<button class="mini noprint" title="${esc('vrátit ' + titulPred)}" onclick="bokySirkaZpet()">↺</button>` : ''}</span>
+      <span class="u">mm</span></div>`
+    + (napoveda ? `<div class="note boky-sirka-napoveda" style="margin:-2px 0 6px">${esc(napoveda)}</div>` : '')
+    + k.zabrana.map(t => `<div class="note boky-sirka-zabrana" style="margin:-2px 0 6px;color:#b91c1c;font-weight:600">${esc(t)}</div>`).join('')
+    + k.upozorneni.map(t => `<div class="note boky-sirka-upozorneni" style="margin:-2px 0 6px;color:var(--warn)">${esc(t)}</div>`).join('');
+}
+/* Zápis šířky (#381). Prázdné pole = předpočítaná (prázdno není nula);
+ * jinak celé mm, záporné = 0. Starší zadání se nejdřív převede na nový tvar
+ * jako u počtu. Obě funkce jsou v ZAMEK_CHRANENE (zámek varianty, náhled). */
+function bokySirkaSet(v) {
+  if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
+  const s = String(v == null ? '' : v).trim().replace(',', '.');
+  set('Z.svetlikyBokySirkaMm', s === '' || !isFinite(+s) ? '' : Math.max(0, Math.round(+s)));
+}
+function bokySirkaZpet() {
+  if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
+  set('Z.svetlikyBokySirkaMm', '');
+}
+
+/* Volba nad dveřmi. Staré zaškrtávátko `svetlikNadDvermi` se drží v souladu
+ * (sklo i materiál = pole je sklo stěny), aby ho nepoplety starší části
+ * dat a čtenáři mimo jádro. Zapisuje se AŽ po set(): když zápis zastaví
+ * zámek, nesmí se změnit ani to druhé pole. */
+/* Počet můstků (25. 9. 2026). Celé nezáporné číslo; staré zaškrtávátko
+ * `mustek` se drží v souladu (kontrola standardu i starší data ho čtou).
+ * Zapisuje se AŽ po set() — když zápis zastaví zámek, nemění se nic. */
+function mustkySet(v) {
+  const n = Math.max(0, Math.floor(+v || 0));
+  set('Z.mustkyKs', n);
+  if (Z.mustkyKs === n) Z.mustek = n > 0;
+  render();
+}
+
+function nadDvermiSet(v) {
+  if (NAD_DVERMI_VOLBY.indexOf(v) < 0) return;
+  set('Z.nadDvermi', v);
+  if (Z.nadDvermi === v) Z.svetlikNadDvermi = (v === 'sklo' || v === 'material');
+}
+
+/* PROSKLÍT I PROHLUBEŇ (P2 / K19-N104, rozhodnutí J. V. 2. 10. 2026).
+ * Popisek „Opláštit i prohlubeň" (dřív „Prosklít…") — J. V. 13. 10. 2026:
+ * opláštění stěny nemusí být sklo, název má říkat, co zkratka dělá.
+ * Zaškrtávátko pod polem Prohlubeň. Stav se odvozuje z dolních mezí stěn
+ * (oplasteniProhlubenVse v jádře), žádný příznak v datech. Zapnutí přepne
+ * jednotné opláštění na po stěnách s výchozími typy stěn — to není cenově
+ * úplně neutrální (pásy a skutečné šířky stěn), proto jen po vědomém
+ * zaškrtnutí a s větou v nápovědě. */
+function prohlubenSkloRadek() {
+  const hl = +Z.prohluben || 0;
+  const cis = v => (typeof formatCislo === 'function') ? formatCislo(v) : String(Math.round(v * 100) / 100);
+  const ano = (typeof oplasteniProhlubenVse === 'function') && oplasteniProhlubenVse(Z);
+  const tit = hl > 0
+    ? 'Všem čtyřem stěnám nastaví „Opláštění začíná" = −' + cis(hl) + ' m (opláštění i v prohlubni). '
+      + 'Jednotné opláštění se tím přepne na opláštění po stěnách A–D s výchozími typy stěn. '
+      + 'Změna hloubky prohlubně meze posune, dokud je zaškrtnuto; ruční změna u jedné stěny zkratku zruší.'
+    : 'Prohlubeň je nulová — není co opláštit.';
+  return `<div class="row"><label style="font-weight:400">Opláštit i prohlubeň</label>
+    <input type="checkbox" ${ano ? 'checked' : ''} title="${esc(tit)}"
+      onchange="prohlubenSkloSet(this.checked)"><span class="u"></span></div>`;
+}
+function prohlubenSkloSet(ano) {
+  /* Nulová prohlubeň: není co opláštit. Zaškrtávátko se schválně
+   * nezakazuje (`disabled`) — vstupy kalkulace mají zůstat živé, hlídá to
+   * overit_lista.mjs — jen se vysvětlí a vrátí. */
+  if (ano && !((+Z.prohluben || 0) > 0)) {
+    hlaska('Prohlubeň je nulová — není co opláštit. Nejdřív vyplňte hloubku prohlubně.');
+    render();
+    return;
+  }
+  const v = aktivniVarianta(ZAK);
+  oplasteniProhlubenNastav(Z, v && v.data && v.data.cenik, !!ano);
+  oplZmeneno();
+}
+function prohlubenSet(val) {
+  const stara = +Z.prohluben || 0;
+  set('Z.prohluben', +val);
+  /* Zámek nebo náhled zápis zastaví — pak se meze stěn nesmí hnout. */
+  if (+Z.prohluben === +val && typeof oplasteniProhlubenSleduj === 'function'
+      && oplasteniProhlubenSleduj(Z, stara)) oplZmeneno();
 }
 
 function oplRezimSet(rezim) {
@@ -630,7 +988,68 @@ function oplStenaVarovani(k, opl) {
       return 'Pás ' + (i + 1) + ' je „jiné" bez sazby — dokud ji nevyplníte, počítá se za 0 Kč.';
   }
 
-  if (oplCelaVyska(k)) return '';
+  /* STĚNA, ZE KTERÉ SE DO CENY NEDOSTANE NIC (nález J. V. 21. 9. 2026).
+   *
+   * POZOR, NÁSLEDUJÍCÍ ODSTAVCE POPISUJÍ STAV PŘED #295 a N46 — nechávají
+   * se kvůli historii. Od 24. 9. 2026 platí pravidlo nástupišť (N46): patro
+   * s dveřmi nese jen světlíky, patro bez dveří se opláští celé; stěna
+   * s dveřmi v každém patře má bez světlíků plochu 0 m² a varování níž to
+   * vysvětlí.
+   *
+   * Plocha se v režimu po stěnách bere z dosavadního výpočtu (`skloSteny`)
+   * a pásy si ji dělí poměrem výšek — aby zapnutí režimu nehnulo cenou.
+   * U ČELNÍ STĚNY je ale tou dosavadní plochou jen SVĚTLÍK nad dveřmi a po
+   * stranách, protože zbytek čelní stěny zabírají dveře a portály. Bez
+   * světlíků je tedy plocha čelní stěny NULA — a obchodník si může vybrat
+   * sklo přes celou stěnu, nákres mu ji vybarví celou, specifikace ji
+   * zákazníkovi slíbí, a v ceně nebude ani koruna.
+   *
+   * Změřeno: šachta bez světlíků, stěna A celá ze skla od −2 m do 23 m →
+   * 0 m² nad nulou (do ceny jde jen část pod nulou, tedy prohlubeň),
+   * zatímco stěny B, C a D dají přes 40 m² každá.
+   *
+   * Tohle varování ten nesoulad pojmenuje. Čím plochu čelní stěny NAHRADIT
+   * je obchodní rozhodnutí (kolik z ní ukrojí dveře a portály), ne otázka
+   * pro kód — dokud nepadne, musí být aspoň vidět.
+   *
+   * POŘADÍ: hlásí se AŽ NAPOSLED. Chybějící dělicí výška nebo „jiné" bez
+   * sazby jsou konkrétní chyby zadání, se kterými obchodník něco udělá hned;
+   * tohle je vlastnost výpočtu, kterou sám nespraví. Kdyby to bylo naopak,
+   * zakrylo by to hlášky, na které se dá reagovat. Počítá se ale už tady,
+   * aby se dalo vrátit i u stěny po celé výšce, která má vlastní odbočku. */
+  let nulova = '';
+  if (opl && Array.isArray(opl.pasy)) {
+    const nadNulou = opl.pasy.filter(p => p.stena === k && (+p.doM || 0) > 0);
+    const m2 = nadNulou.reduce((a, p) => a + (+p.m2 || 0), 0);
+    const jenBez = nadNulou.length > 0 && nadNulou.every(p => String(p.typ) === 'bez');
+    /* TEXT PODLE DNEŠNÍHO VÝPOČTU (nález N39 revize v22.9.9). Do 22. 9. 2026
+     * tu stálo, že se plocha čelní stěny bere ze světlíků — to platilo před
+     * #295. Od té doby je čelní stěna celá stěna MÍNUS otvory dveří
+     * a portálů a od #296 se stejně počítá i zadní stěna průchozí šachty.
+     * Nula tedy u těch dvou stěn znamená jediné: otvory zaberou celou
+     * stěnu (nízká šachta s mnoha nástupišti). Stará věta posílala
+     * obchodníka hledat světlíky, které s tím nemají nic společného. */
+    /* OD 24. 9. 2026 (N46, pravidlo nástupišť): patro s dveřmi je nástupiště
+     * — dveře, portál s plechy, nástupní plech a světlíky; opláštění nese jen
+     * světlíky. Stěna s dveřmi v každém patře (čelní stěna běžné šachty)
+     * má proto bez světlíků plochu 0 m² — to je správně, ne chyba. Hláška
+     * to vysvětlí, aby si obchodník nemyslel, že sklo přes celou stěnu je
+     * zdarma. */
+    const sDvermi = k === 'A' || (k === 'C' && !!(Z && Z.pruchoziSachta) && (+(Z && Z.nastupisteC) || 0) > 0);
+    /* Od #375 (30. 9. 2026) se světlíky u dveří do pásů nepočítají — mají
+     * vlastní materiál. Stěna, která nese světlíky, tedy není „bez ceny". */
+    const svetM2 = (Array.isArray(opl.svetliky) ? opl.svetliky : [])
+      .filter(x => x.stena === k).reduce((a, x) => a + (+x.m2 || 0), 0);
+    if (nadNulou.length && !jenBez && m2 < 0.005 && svetM2 < 0.005)
+      nulova = 'Z téhle stěny se do ceny nedostane nic: nad úrovní nástupiště vychází 0 m². '
+        + (sDvermi
+          ? 'Stěna má dveře v každém patře, takže je celá nástupiště: kolem dveří je portál s plechy '
+            + 'a nástupní plech, opláštění nese jen světlíky. Bez světlíků je plocha 0 m² — tak to má být. '
+            + 'Chcete-li nad dveřmi sklo, zvolte u „Světlík nad šachetními dveřmi" volbu sklo.'
+          : 'Zkontrolujte rozměry šachty — výpočet u téhle stěny žádnou plochu nedává.');
+  }
+
+  if (oplCelaVyska(k)) return nulova;
 
   /* Horní hrana opláštění. Bere se z jádra (`r.oplasteni.vyska`), ne ze
    * zadání — jádro na ni dělicí výšky ořezává, takže se tím pozná pás,
@@ -661,7 +1080,7 @@ function oplStenaVarovani(k, opl) {
         + ' m) — pás ' + (i + 2) + ' a výš se do ceny nedostanou.';
     dolni = +doM;
   }
-  return '';
+  return nulova;
 }
 
 function oplTypSelect(k, i) {
@@ -674,7 +1093,7 @@ function oplTypSelect(k, i) {
    * a při nejbližším překreslení by se to do dat i zapsalo. */
   const zname = typy.some(t => t.id === p.typ);
   const navic = zname ? '' : `<option value="${esc(p.typ)}" selected>${esc(p.typ)} (z jiného typu šachty)</option>`;
-  return `<select style="width:190px" onchange="oplPasSet('${escJs(k)}', ${+i}, 'typ', this.value)">
+  return `<select class="opl-s1" style="width:190px" onchange="oplPasSet('${escJs(k)}', ${+i}, 'typ', this.value)">
       ${navic}${typy.map(t => `<option value="${esc(t.id)}" ${t.id === p.typ ? 'selected' : ''}>${esc(t.nazev)}</option>`).join('')}
     </select>`;
 }
@@ -685,13 +1104,16 @@ function oplJineHtml(k, i) {
   /* Ruční název i sazba patří do zadání, ne do ceníku: je to jednorázové
    * řešení téhle zakázky. Do ceníku se nepropisují schválně — jinak by se
    * jednorázovost stala sazbou pro všechny. */
-  return `<span class="par">
-      <input type="text" style="width:150px" placeholder="název opláštění"
+  /* Řádek ve sloupcích stěny (1. 10. 2026): název pod materiálem, sazba pod
+   * výškou — do té doby volný kus řádku pod pásem, mimo sloupce. */
+  return `<div class="row opl-jine"><label></label><span class="par opl-sloupce">
+      <input class="opl-s1" type="text" style="width:190px" placeholder="název opláštění"
         value="${esc(p.nazev || '')}" onchange="oplPasSet('${escJs(k)}', ${+i}, 'nazev', this.value)">
-      <input type="number" step="any" style="width:100px" placeholder="Kč/m²"
+      <input class="opl-s2" type="number" step="any" min="0" style="width:90px" placeholder="sazba"
         title="náklad za m²; ruční sazba znamená atyp"
         value="${esc(p.naklad == null ? '' : p.naklad)}" onchange="oplPasSet('${escJs(k)}', ${+i}, 'naklad', this.value)">
-    </span>`;
+      <span class="opl-s3 opl-jednotka">Kč/m²</span>
+    </span><span class="u"></span></div>`;
 }
 
 /* ---------- NÁKRES STĚNY (#281) ----------
@@ -792,9 +1214,13 @@ function oplNakresStena(k, opl) {
    * za který se nic nepočítá. S číslem je to na první pohled vidět. */
   const stenaM2 = pasy.reduce((a, p) => a + (p.typ === 'bez' ? 0 : (+p.m2 || 0)), 0);
   const cis = v => (typeof formatCislo === 'function') ? formatCislo(v) : String(Math.round(v * 100) / 100);
-  const popisek = `<div class="opl-nakres-pata${stenaM2 > 0 ? '' : ' opl-nakres-nic'}">${
-    stenaM2 > 0 ? esc(cis(stenaM2)) + ' m²'
-      : 'bez plochy k opláštění'}</div>`;
+  /* Světlíky u dveří na téhle stěně (#375) se oceňují zvlášť svým materiálem,
+   * ne pásy — pod obrázkem se připíšou, jinak by čelní stěna ukazovala
+   * „bez plochy", ačkoli se v ní světlíky platí. */
+  const svetM2 = ((opl && opl.svetliky) || []).filter(x => x.stena === k).reduce((a, x) => a + (+x.m2 || 0), 0);
+  const popisek = `<div class="opl-nakres-pata${stenaM2 > 0 || svetM2 > 0 ? '' : ' opl-nakres-nic'}">${
+    stenaM2 > 0 ? esc(cis(stenaM2)) + ' m²' : (svetM2 > 0 ? '' : 'bez plochy k opláštění')}${
+    svetM2 > 0 ? (stenaM2 > 0 ? ' + ' : '') + 'světlíky u dveří ' + esc(cis(svetM2)) + ' m²' : ''}</div>`;
 
   return `<div class="opl-nakres">
       <div class="opl-bar" style="height:${celkemPx.toFixed(1)}px">${kusy}</div>
@@ -825,11 +1251,21 @@ function oplStenaHtml(s, opl) {
    * za nulu bez ohledu na to, jestli je stěna rozdělená. */
   const varovaniHtml = varovani
     ? `<div class="seznam-varovani">Stěna ${esc(k)}: ${esc(varovani)}</div>` : '';
+  /* SLOUPCE STĚNY (zadání J. V. 1. 10. 2026: „Zarovnej datová pole u různého
+   * opláštění zprava"). Každý řádek stěny skládá svá pole do týchž tří
+   * sloupců (`.opl-sloupce` v app_template.html): materiál | výška | křížek.
+   * Dokud stála pole za sebou, posunul každý jinak široký prvek ty před sebou
+   * — materiál pásu „až nahoru" (vedle něj „po horní hranu" místo pole
+   * výšky) stál o kus jinde než u ostatních pásů a u stěny po celé výšce,
+   * „Opláštění začíná" jinde než dělicí výšky. Řádek bez materiálu
+   * (hlavička rozdělené stěny, „+ přidat pás", „Opláštění začíná") má jen
+   * sloupce výška | křížek (`opl-bez1`) — popisek smí zabrat i místo
+   * prvního sloupce a nezalomí se zbytečně, výška stojí pořád pod výškou. */
   const hlava = `<div class="row"><label title="${esc(s.popis)}">Stěna ${esc(k)}
       <span class="note" style="font-weight:400"> — ${esc(s.popis)}</span></label>
-    <span class="par">
+    <span class="par opl-sloupce${cela ? '' : ' opl-bez1'}">
       ${cela ? oplTypSelect(k, 0) : ''}
-      <label style="font-weight:400" title="celá stěna je z jednoho materiálu">
+      <label class="opl-s23" style="font-weight:400" title="celá stěna je z jednoho materiálu">
         <input type="checkbox" ${cela ? 'checked' : ''}
           onchange="oplCelaVyskaSet('${escJs(k)}', this.checked)"> po celé výšce</label>
     </span><span class="u"></span></div>`
@@ -846,13 +1282,13 @@ function oplStenaHtml(s, opl) {
   const pasy = st.pasy.map((p, i) => {
     const posledni = (i === st.pasy.length - 1);
     return `<div class="row"><label style="font-weight:400">Pás ${i + 1}${posledni ? ' (až nahoru)' : ''}</label>
-      <span class="par">${oplTypSelect(k, i)}
-        ${posledni ? '<span class="note">po horní hranu</span>'
-          : `<input type="number" step="0.01" style="width:90px" placeholder="do (m)"
+      <span class="par opl-sloupce">${oplTypSelect(k, i)}
+        ${posledni ? '<span class="note opl-s2">po horní hranu</span>'
+          : `<input class="opl-s2" type="number" step="0.01" style="width:90px" placeholder="do (m)"
               title="dělicí výška — kde tenhle pás končí a začíná další"
               value="${esc(p.doM == null ? '' : p.doM)}"
               onchange="oplPasSet('${escJs(k)}', ${+i}, 'doM', this.value)">`}
-        ${st.pasy.length > 1 ? `<button class="mini" title="odebrat pás"
+        ${st.pasy.length > 1 ? `<button class="mini opl-s3" title="odebrat pás"
           onclick="oplPasSmaz('${escJs(k)}', ${+i})">✕</button>` : ''}
       </span><span class="u"></span></div>`
       + oplJineHtml(k, i);
@@ -867,12 +1303,12 @@ function oplStenaHtml(s, opl) {
    * se týká jich. */
   return obal(hlava
     + pasy
-    + `<div class="row"><label></label><span class="par">
-        <button class="mini" onclick="oplPasPridej('${escJs(k)}')">+ přidat pás</button></span><span class="u"></span></div>`
+    + `<div class="row"><label></label><span class="par opl-sloupce opl-bez1">
+        <button class="mini opl-s23 opl-vpravo" onclick="oplPasPridej('${escJs(k)}')">+ přidat pás</button></span><span class="u"></span></div>`
     + `<div class="row"><label style="font-weight:400">Opláštění začíná</label>
-        <input type="number" step="0.01" style="width:90px"
+        <span class="par opl-sloupce opl-bez1"><input class="opl-s2" type="number" step="0.01" style="width:90px"
           title="výška, od které se opláštění počítá; záporná hodnota sahá do prohlubně"
-          value="${esc(st.odM)}" onchange="oplOdSet('${escJs(k)}', this.value)"><span class="u">m</span></div>`
+          value="${esc(st.odM)}" onchange="oplOdSet('${escJs(k)}', this.value)"><span class="opl-s3 opl-jednotka">m</span></span><span class="u"></span></div>`
     + varovaniHtml);
 }
 
@@ -890,7 +1326,7 @@ function oplasteniKarta() {
    * otisku (nález A1). Hlídá to `test_zamek_otisk.js` — a chytil to hned. */
   let opl = null;
   try { opl = (vypocetAkt() || {}).oplasteni || null; } catch (e) { opl = null; }
-  return card('Opláštění po stěnách (A–D)',
+  return kartaRezim('ock', 'oplasteniSteny', 'Opláštění po stěnách (A–D)',
     /* Každá stěna je JEDEN blok. Bez toho ji `.inputs .card .body` rozseká:
      * ten grid sází do sloupců každý `.row` zvlášť, takže hlavičky čtyř stěn
      * stály vedle sebe v ~290px sloupcích (popisek se lámal do svislého
@@ -913,11 +1349,20 @@ function oplasteniKarta() {
      * neplní, je horší než mlčení — obchodník podle něj čeká u Cetrisu nižší
      * cenu, která nepřijde. Jestli se terče a lišty MAJÍ vázat na sklo, je
      * otázka na J. V. (zapsáno v roadmapě). */
+    /* Věta o standardu přepsána 30. 9. 2026 (rozhodnutí J. V.: „je to záměr?
+     * Ne není. Toto změň na standard."). Do té doby tu stálo „Režim po
+     * stěnách je vždy mimo standard" a kontrola standardu u něj hlásila atyp
+     * i se čtyřmi stejnými stěnami — viz standard_ock.js. */
     + `<div class="note">Záporná hodnota u „Opláštění začíná" sahá <b>do prohlubně</b>.
       <b>Terče, lišty a plastové kotvy</b> se počítají z rozměrů šachty —
-      typ opláštění s nimi zatím nehýbe.
-      Režim po stěnách je vždy <b>mimo standard</b> — standard zná jen jednotné opláštění.</div>`,
-    false, 'ock-oplasteni-steny');
+      typ opláštění s nimi zatím nehýbe; jen světlík u dveří z desky (materiál opláštění = Cetris
+      nebo jiné) terče ani lišty nemá.
+      <b>Světlíky u dveří</b> se do pásů stěny nepočítají: oceňují se zvlášť podle volby v zadání
+      šachty — sklo = sklo stěny s dveřmi (není-li stěna ze skla, sklo čelní stěny ze standardu),
+      materiál opláštění = převažující materiál stěn B, C, D.
+      Režim po stěnách sám o sobě atyp nedělá — <b>standard OCK</b> se posuzuje stejně
+      jako u jednotného opláštění (profil sloupku, rozměry, způsob zasklení, počet sloupků, můstek).</div>`,
+    'ock-oplasteni-steny');
 }
 
 /* ---- vlastní ruční položky v jednotlivých sekcích ---- */
@@ -951,6 +1396,7 @@ function vlastniDoCeniku(sekce, i) {
 function vlastniSet(sekce, i, k, v) {
   const p = vlastniPolozkyArr(sekce)[i];
   if (!p) return;
+  if (k !== 'nazev' && typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
   const puvodni = p.nazev;
   p[k] = k === 'nazev' ? v : +v;
   // přejmenování vlastní položky – přestěhuj ruční přepisy klíčované názvem (#4)
@@ -1014,22 +1460,38 @@ function bunkaNazev(r, sekceKey) {
     r.cenaSkupina && !r.cenaPath
       ? 'řádek je součet celé skupiny ceníku — jednu cenu nemá'
       : undefined);
-  return `<input type="text" class="nazev-ed" value="${esc(r.nazev)}" onchange="${onch}" title="název položky lze přepsat">${reset}${pin}${del}${klic}${pozn}`;
+  const tit = 'název položky lze přepsat' + (jeRadekSkla(r) ? '. ' + SKLO_JINE_NAPOVEDA : '');
+  return `<input type="text" class="nazev-ed" value="${esc(r.nazev)}" onchange="${onch}" title="${esc(tit)}">${reset}${pin}${del}${klic}${pozn}`;
+}
+/* JINÉ SKLO = OPLÁŠTĚNÍ PO STĚNÁCH (P4 / K19-N107, rozhodnutí J. V.
+ * 2. 10. 2026 — výchozí návrh B). Druh skla ve standardním režimu určuje
+ * typ šachty a způsob zasklení (skloVolba); jiné sklo jde přes opláštění po
+ * stěnách, kde stěna může mít jinou položku skla z ceníku nebo typ „jiné"
+ * s vlastním názvem a sazbou. Tahle věta to říká u řádku skla, u volby
+ * opláštění a v Detailu výpočtu. */
+const SKLO_JINE_NAPOVEDA = 'Jiné sklo, než dává typ šachty a způsob zasklení: v zadání šachty zvolte '
+  + 'Opláštění „po stěnách A–D" a u stěn typ skla z ceníku, nebo „jiné" s vlastním názvem a sazbou '
+  + '(stejné sklo pro všechny stěny = stejný typ u všech čtyř).';
+function jeRadekSkla(r) {
+  if (!r || r.vlastni || oplPoStenach() || typeof skloVolba !== 'function') return false;
+  const v = aktivniVarianta(ZAK);
+  const sv = skloVolba(Z, v && v.data && v.data.cenik);
+  return r.origNazev === sv.boky.nazev || r.origNazev === sv.celni.nazev;
 }
 function bunkaMnozstvi(r) {
   if (r.vlastni)
-    return `<input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'mnozstvi', this.value)">`;
+    return `<input type="number" step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'mnozstvi', this.value)">`;
   const origJs = keyAttr(r.origNazev);
-  return `<input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat">` +
+  return `<input type="number" step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat">` +
     (r.prepsano ? ` <button class="mini noprint" title="vrátit vypočtené množství (${num(r.mnozstviAuto, 3)})" onclick="mnozstviSet('${origJs}', '')">↺</button>` : '');
 }
 function bunkaCena(r) {
   if (r.vlastni)
-    return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)">`;
+    return `<input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)">`;
   if (r.cenaPath)
-    return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="set('${r.cenaPath}', +this.value)" title="jedn. cena z ceníku – změna se propíše i do Ceníku nákladů (obousměrně)">`;
+    return `<input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="set('${escJs(r.cenaPath)}', +this.value)" title="jedn. cena z ceníku – změna se propíše i do Ceníku nákladů (obousměrně)">`;
   const origJs = keyAttr(r.origNazev);
-  return `<input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="cenaSet('${origJs}', this.value)" title="jedn. cena – ruční přepis (bez ceníkové vazby)">` +
+  return `<input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="cenaSet('${origJs}', this.value)" title="jedn. cena – ruční přepis (bez ceníkové vazby)">` +
     (r.cenaPrepsana ? ` <button class="mini noprint" title="vrátit vypočtenou cenu (${fmt(r.cenaAuto)})" onclick="cenaSet('${origJs}', '')">↺</button>` : '');
 }
 /* ---- stabilní klíč řádku (pro pořadí a viditelnost) ---- */
@@ -1169,6 +1631,19 @@ function adminKoncBunky(r, sekceKey) {
  * Stejný typ štítku jako „skrytá ostatním" nebo „bez ceny" — jeden vzhled
  * pro jednu třídu sdělení. Netiskne se: je to poznámka pro nás, ne pro
  * zákazníka (obchodník ostatně vypnutou položku do nabídky nedává). */
+/* Štítky „cena dle nabídky" / „vlastní cena" u příplatku (S13, J. V.
+ * 16. 10. 2026). Příznak se bere z PLATNÉHO ceníku (DEFAULT_CENIK = platný
+ * po progPouzij) — týž zdroj, ze kterého ho bere server; ceník varianty ho
+ * nesmí přidat. „Vlastní cena" = cena v zakázce se liší od orientační
+ * z platného ceníku. Do tisku nejdou. */
+function dleNabidkyStitky(x) {
+  if (!x || x.vlastni || !x.cenaPath || typeof cenikDleNabidkyJe !== 'function') return '';
+  if (typeof DEFAULT_CENIK === 'undefined' || !cenikDleNabidkyJe(DEFAULT_CENIK, x.cenaPath)) return '';
+  const orient = +cenikGet(DEFAULT_CENIK, x.cenaPath) || 0;
+  const vlastni = Math.abs((+x.cena || 0) - orient) > 1e-9;
+  return ` <span class="pill ok noprint dle-nabidky" title="cenu zadáváte podle nabídky — ruční cena není odchylka od ceníku, schválení nepotřebuje; z ceníku se předvyplňuje orientační cena">cena dle nabídky</span>`
+    + (vlastni ? ` <span class="pill warn noprint vlastni-cena" title="cena se liší od orientační ceny z ceníku (${esc(fmt(orient))})">vlastní cena</span>` : '');
+}
 function vypnutoHtml(r) {
   return (typeof radekVypnutyNulou === 'function' && radekVypnutyNulou(r))
     ? ` <span class="pill vyp noprint" title="${esc(VYPNUTO_POPIS)}">vypnuto (množství 0)</span>` : '';
@@ -1188,16 +1663,23 @@ function radekKalk(r, sekceKey) {
    * právo kalk.pridatPolozku) — jinak by obchodník přidal řádek, který sám
    * nedokáže pojmenovat ani ocenit. Jednotková cena vlastní položky se mu
    * ukazuje přímo u názvu (nákladové sloupce nevidí). */
-  const vlastniEd = !admin && r.vlastni && smiZobrazit('kalk.pridatPolozku');
+  /* Trvalý řádek z ceníku (kid) — jednotkovou cenu mění jen admin (#374 /
+   * B114, 6. 10. 2026; server ji roli bez práva sloupce.naklad proti uložené
+   * verzi a katalogu nepustí). Obchodník u něj smí množství a smazání jen
+   * v této zakázce — stejně jako u trvalých řádků PROJ. Do 6. 10. tu cena
+   * trvalé položky šla obchodníkovi přepsat (u volitelných ne). */
+  const vlastniEd = !admin && r.vlastni && !r.kid && smiZobrazit('kalk.pridatPolozku');
+  const trvalaEd = !admin && r.vlastni && !!r.kid && smiZobrazit('kalk.pridatPolozku');
   let c = `<td style="white-space:normal">${admin
     ? `<div class="vol-name">${gripHtml(r, sekceKey)}${bunkaNazev(r, sekceKey)}${bezCenyHtml(r)}${vypnutoHtml(r)}</div>`
     : vlastniEd
       ? `<input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'nazev', this.value)">
-         à <input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
+         à <input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
            onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)"> Kč
          <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('${escJs(r.sekce)}', ${r.idx})">✕</button>`
-      : esc(r.nazev) + poznHtml(r) + bezCenyHtml(r) + vypnutoHtml(r)}</td>`;
-  c += `<td style="white-space:nowrap">${(admin || vlastniEd) ? bunkaMnozstvi(r) : num(r.mnozstvi, 3)}</td>`;
+      : esc(r.nazev) + poznHtml(r) + bezCenyHtml(r) + vypnutoHtml(r)
+        + (trvalaEd ? ` <button class="mini noprint" title="smazat trvalou položku jen v této zakázce" onclick="vlastniDel('${escJs(r.sekce)}', ${r.idx})">✕</button>` : '')}</td>`;
+  c += `<td style="white-space:nowrap">${(admin || vlastniEd || trvalaEd) ? bunkaMnozstvi(r) : num(r.mnozstvi, 3)}</td>`;
   if (admin) c += `<td style="white-space:nowrap">${bunkaCena(r)}</td>`;
   if (showCost) c += `<td>${fmt(r.naklad)}</td><td>${fmt(r.marze)}</td>`;
   c += `<td>${fmt(r.sMarzi)}</td>`;
@@ -1327,10 +1809,10 @@ function tblVolitelne(katalog, sum) {
           : `<input type="checkbox" ${r.zahrnuto ? 'checked' : ''} onchange="volitelneToggle('${escJs(r.key)}', this.checked)" title="zahrnout do základní ceny"> `;
         c = vlEdV
           ? `<td style="white-space:normal">${chkU}<input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('volitelne', ${r.idx}, 'nazev', this.value)">
-               à <input type="number" step="any" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
+               à <input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
                  onchange="vlastniSet('volitelne', ${r.idx}, 'cena', this.value)"> Kč
                <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('volitelne', ${r.idx})">✕</button></td>
-             <td style="white-space:nowrap"><input type="number" step="any" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('volitelne', ${r.idx}, 'mnozstvi', this.value)"></td>`
+             <td style="white-space:nowrap"><input type="number" step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('volitelne', ${r.idx}, 'mnozstvi', this.value)"></td>`
           : `<td style="white-space:normal">${chkU}${esc(r.nazev) + poznHtml(r) + vypnutoHtml(r)}</td><td style="white-space:nowrap">${num(r.mnozstvi, 3)}</td>`;
       }
       /* NEZAŠKRTNUTÝ ŘÁDEK NEUKAZUJE ČÁSTKU (16. 9. 2026, nález J. V.:
@@ -1488,6 +1970,7 @@ function priplatekDoCeniku(i) {
 function priplatekVlastniSet(i, k, v) {
   const p = Z.priplatkyVlastni[i];
   if (!p) return;
+  if (k !== 'nazev' && typeof zaporneOdmitni === 'function' && zaporneOdmitni(v)) return;   // B111
   const puvodni = p.nazev;
   p[k] = k === 'nazev' ? v : +v;
   if (k === 'nazev' && puvodni && puvodni !== p.nazev) prepisyPrejmenuj(Z, puvodni, p.nazev);
@@ -1579,6 +2062,7 @@ function renderOutputs() {
       + `<div class="kpi-line"><span class="kl">Cena nabídky bez DPH</span><span class="kv">${fmt0(cenaPoSleve)}</span></div>`
     : '';
   const hlava = `<div class="kalk-title">${ZAK.cislo ? `<span class="kt-cislo">${esc(ZAK.cislo)}</span>` : ''}${esc(ZAK.nazevAkce || 'Bez názvu akce')}</div>
+  ${typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('ock') : ''}
   <div class="grand">
     <div class="kpi main"><div class="l">Základní cena bez DPH</div><div class="v">${fmt0(zaklad)}</div></div>
     <div class="kpi kpi-multi">
@@ -1626,7 +2110,7 @@ function renderOutputs() {
     /* Klíč ceníkové položky i u příplatku (2. 9. 2026): řádky kalkulace ho mají
      * od 1. 9., příplatky na něj tehdy zapomněly — a přitom je to jediné místo,
      * kde je vidět, ze které ceníkové položky se cena bere. */
-    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${origJs}', this.value)" title="název příplatku lze přepsat">${reset}${klicChip(x.cenaPath)}${vypnutoHtml(x)}`;
+    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${origJs}', this.value)" title="název příplatku lze přepsat">${reset}${klicChip(x.cenaPath)}${vypnutoHtml(x)}${dleNabidkyStitky(x)}`;
   };
   /* Množství u příplatku jde od 2. 9. 2026 PŘEPSAT (zadání J. V. po testu
    * Kornpfortstraße): předloha má u některých položek pod čarou nulu, aby se
@@ -1635,15 +2119,15 @@ function renderOutputs() {
    * které vrátí vypočtené množství; prázdné pole = platí výpočet. */
   const pripMnozstvi = (x) => {
     if (x.vlastni)
-      return `<input type="number" step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'mnozstvi', this.value)">`;
+      return `<input type="number" step="any" min="0" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'mnozstvi', this.value)">`;
     const origJs = keyAttr(x.origNazev);
     return `<input type="number" step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat (prázdné = vypočtené)">`
       + (x.prepsano ? ` <button class="mini noprint" title="vrátit vypočtené množství (${num(x.mnozstviAuto, 3)})" onclick="mnozstviSet('${origJs}', '')">↺</button>` : '');
   };
   const pripCena = (x) => x.vlastni
-    ? `<input type="number" step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'cena', this.value)">`
+    ? `<input type="number" step="any" min="0" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'cena', this.value)">`
     : (x.cenaPath
-        ? `<input type="number" step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="set('${x.cenaPath}', +this.value)" title="jedn. cena z ceníku – propíše se i do Ceníku (obousměrně)">`
+        ? `<input type="number" step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="set('${escJs(x.cenaPath)}', +this.value)" title="jedn. cena z ceníku – propíše se i do Ceníku (obousměrně)">`
         : fmt(x.cena));
   const pripHlava = (col.admin ? '<th title="zaškrtnuté položky se propíší do cenové nabídky">Nabídka</th>' : '')
     + '<th>Položka</th><th>Množství</th>' + (col.admin ? '<th>Jedn. cena</th>' : '')
@@ -1652,12 +2136,12 @@ function renderOutputs() {
       ? '<th class="admincol" title="viditelné pro běžného uživatele">Viditelné</th>'
         + '<th class="admincol" title="výchozí stav sloupce Nabídka v NOVÉ zakázce">Výchozí</th>' : '');
   /* Dodatkový text pod příplatkem (#267) — táž funkce jako u volitelných. */
-  const popisRadek = (x, cols) => popisRadekHtml(x, cols, col.admin);
+  const popisRadek = (x, cols) => popisRadekHtml(x, cols);
   const pripRadek = (x) => {
     let c = '';
     if (col.admin) c += `<td style="text-align:center"><input type="checkbox" ${vynech.includes(x.key) ? '' : 'checked'}
         onchange="priplatekNabidka('${keyAttr(x.key)}', this.checked)" title="propsat do cenové nabídky"></td>`;
-    c += `<td style="white-space:normal">${col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x)}</td>`;
+    c += `<td style="white-space:normal">${col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x) + dleNabidkyStitky(x)}</td>`;
     c += `<td style="white-space:nowrap">${col.admin ? pripMnozstvi(x) : num(x.mnozstvi, 3)}</td>`;
     if (col.admin) c += `<td style="white-space:nowrap">${pripCena(x)}</td>`;
     if (col.showCost) c += `<td>${fmt(x.naklad)}</td>`;
@@ -1701,55 +2185,66 @@ function renderOutputs() {
     <tr><td>Světlá výška nástupiště</td><td>${num(o.svetlaVyska, 3)} m</td><td>Výška prosklené části</td><td>${num(o.vyskaProsklene, 3)} m</td></tr>
     <tr><td>Šířka otvoru š. dveří</td><td>${num(o.sirkaDveri, 3)} m</td><td>Lešení věž / U-dokola</td><td>${num(o.leseniVez, 2)} m / ${num(o.leseniU, 2)} m²</td></tr>
     <tr class="subhead"><td colspan="4">Konstrukce</td></tr>
-    <tr><td>Počet rámů</td><td>${p.ramy}</td><td>Portálové příčníky</td><td>${p.portPricniky}</td></tr>
-    <tr><td>Spojky sloupků</td><td>${p.spojky}</td><td>Počet čílek (int)</td><td>${p.pocetCilek}</td></tr>
+    <tr><td>Počet rámů</td><td>${esc(p.ramy)}</td><td>Portálové příčníky</td><td>${esc(p.portPricniky)}</td></tr>
+    <tr><td>Spojky sloupků</td><td>${esc(p.spojky)}</td><td>Počet čílek (int)</td><td>${esc(p.pocetCilek)}</td></tr>
     <tr class="subhead"><td colspan="4">Materiál</td></tr>
     <tr><td>Profily celkem</td><td>${num(r.profily.celkemM, 2)} m · ${num(r.profily.celkemKg, 1)} kg</td>
         <td>Lemování ext</td><td>${num(r.profily.lemovani.m, 2)} m · ${num(r.profily.lemovani.kg, 1)} kg</td></tr>
-    <tr><td>Konstrukční plechy</td><td>${r.plechy.ks} ks · ${num(r.plechy.kg, 1)} kg</td>
-        <td>Terče / lišty</td><td>${r.dily.terceKs} ks / ${num(r.dily.listyBm, 1)} bm</td></tr>
-    <tr><td>Oplechování dveří</td><td>${r.dily.oplDvereKs} ks · ${num(r.dily.oplDvereKg, 1)} kg</td>
-        <td>Přechodové plechy</td><td>${r.dily.prechKs} ks · ${num(r.dily.prechKg, 1)} kg</td></tr>
+    <tr><td>Konstrukční plechy</td><td>${esc(r.plechy.ks)} ks · ${num(r.plechy.kg, 1)} kg</td>
+        <td>Terče / lišty</td><td>${esc(r.dily.terceKs)} ks / ${num(r.dily.listyBm, 1)} bm</td></tr>
+    <tr><td>Oplechování dveří</td><td>${esc(r.dily.oplDvereKs)} ks · ${num(r.dily.oplDvereKg, 1)} kg</td>
+        <td>Přechodové plechy</td><td>${esc(r.dily.prechKs)} ks · ${num(r.dily.prechKg, 1)} kg</td></tr>
     <tr class="subhead"><td colspan="4">Zasklení (rozměr skla ${num(r.zaskleni.rozmer.sir, 3)}×${num(r.zaskleni.rozmer.vys, 3)} m)</td></tr>
-    <tr><td>Zadní stěna</td><td>${r.zaskleni.zadni.ks} ks · ${num(r.zaskleni.zadni.m2, 2)} m²</td>
-        <td>Boční stěny</td><td>${r.zaskleni.bocni.ks} ks · ${num(r.zaskleni.bocni.m2, 2)} m²</td></tr>
-    <tr><td>Světlíky</td><td>${r.zaskleni.svetliky.ks + r.zaskleni.svetlikyBoky.ks} ks · ${num(r.zaskleni.svetliky.m2 + r.zaskleni.svetlikyBoky.m2, 2)} m²</td>
+    <tr><td>Zadní stěna</td><td>${esc(r.zaskleni.zadni.ks)} ks · ${num(r.zaskleni.zadni.m2, 2)} m²</td>
+        <td>Boční stěny</td><td>${esc(r.zaskleni.bocni.ks)} ks · ${num(r.zaskleni.bocni.m2, 2)} m²</td></tr>
+    <tr><td>Světlíky</td><td>${esc(r.zaskleni.svetliky.ks + r.zaskleni.svetlikyBoky.ks)} ks · ${num(r.zaskleni.svetliky.m2 + r.zaskleni.svetlikyBoky.m2, 2)} m²</td>
         <td><b>Zasklení celkem</b></td><td><b>${num(r.zaskleni.celkemM2, 2)} m²</b></td></tr>
     <tr class="subhead"><td colspan="4">Práce</td></tr>
     <tr><td>Montáž – hodiny navíc</td><td>${num(r.montaz.hodinyNavicCelkem, 2)} h</td>
         <td>Montáž celkem (4 os.)</td><td>${num(r.montaz.hodCelkem, 1)} h · ${num(r.montaz.dni, 1)} dní</td></tr>
     <tr><td>Lakování – Tomáš</td><td>${fmt(r.lakovani.tomas)}</td><td>Lakování – lakovna</td><td>${fmt(r.lakovani.lakovna)}</td></tr>
-    <tr><td>Spojovací materiál</td><td>${fmt(r.spojovaci.celkem)}</td><td>Nýtování</td><td>${r.spojovaci.nytovaniKs} ks</td></tr>
+    <tr><td>Spojovací materiál</td><td>${fmt(r.spojovaci.celkem)}</td><td>Nýtování</td><td>${esc(r.spojovaci.nytovaniKs)} ks</td></tr>
     </table>`;
 
   /* Souhrn (základní cena, DPH, náklad, marže) stojí NAD zadáním šachty —
    * rozvržení 3. 8. 2026: souhrn → zadání → dimenze → práce a režie →
    * cenová kalkulace, vše na plnou šířku jako v kalkulaci PROJ. */
+  /* INTERNÍ POZNÁMKY STOJÍ HNED POD SOUHRNEM (zadání J. V. 22. 9. 2026).
+   *
+   * Do 22. 9. visely úplně dole, pod Detailem mezivýpočtů — obchodník k nim
+   * musel projet celou kalkulaci a psal proto dál do e-mailu. Teď jsou tam,
+   * kam se dívá jako první. Schválně do `kalk-souhrn`, ne do `inputs`:
+   * `.inputs .card .body` skládá obsah vlastním gridem pro dvojice
+   * popisek/pole a textové pole by se v něm zalomilo do sloupce.
+   *
+   * Táž karta se vykresluje i v Kalkulaci PROJ (kalk_proj.js) — je to jeden
+   * zápisník zakázky, ne dva. */
+  const kartaPoznamek = (typeof poznamkyKarta === 'function')
+    ? kartaRezim('ock', 'poznamky', 'Interní poznámky k zakázce (netisknou se)',
+                 poznamkyKarta('ock'), 'ock-poznamky')
+    : '';
   const elSouhrn = document.getElementById('kalk-souhrn');
   if (elSouhrn) elSouhrn.innerHTML =
     (typeof standardRozpis === 'function' ? standardRozpis() : '')
-    + `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`;
+    + `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`
+    + kartaPoznamek;
   document.getElementById('outputs').innerHTML =
-    (elSouhrn ? '' : `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`) +
-    card('Cenová kalkulace', kalkulace, false, 'ock-kalkulace') +
+    (elSouhrn ? '' : `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`
+      + kartaPoznamek) +
+    kartaRezim('ock', 'kalkulace', 'Cenová kalkulace', kalkulace, 'ock-kalkulace') +
     /* Obě karty mají od 20. 8. 2026 režim sekce (zobrazit/skrýt/srolovat)
      * stejně jako sekce v tabulce kalkulace — dřív ho neměly, ačkoli je
      * obchodník vidí jako úplně stejné bloky. */
     kartaRezim('ock', 'priplatky', 'Příplatkové položky (ceník variant)', prip, 'ock-priplatky') +
     sirotciKarta(r) +
-    (col.admin ? kartaRezim('ock', 'detailMezivypoctu', 'Detail mezivýpočtů', det, 'ock-detail') : '') +
-    /* Interní poznámky a přílohy (#37). Do 21. 8. 2026 večer stály v Přehledu
-     * cenových nabídek; ten se na pokyn J. V. pročistil na vyhledávání
-     * a souhrn, a poznámky se přestěhovaly sem — „proč jsme šli s cenou
-     * dolů" je potřeba mít na očích tam, kde se ta cena dělá.
-     * Do žádného dokumentu se nedostanou. */
-    (typeof poznamkyKarta === 'function'
-      ? kartaRezim('ock', 'poznamky', 'Interní poznámky a přílohy k zakázce (netisknou se)',
-        poznamkyKarta(), 'ock-poznamky') : '');
+    (col.admin ? kartaRezim('ock', 'detailMezivypoctu', 'Detail mezivýpočtů', det, 'ock-detail') : '');
 }
 
 function zkontrolujTl(key) {
-  const p = Z.profily[key], tls = Object.keys(JEKLY[p.dim].kg);
-  if (!tls.includes(String(p.tl))) p.tl = +tls[Math.floor(tls.length / 2)];
+  /* Tolerantně (#372): u rozměru mimo katalog tloušťku nechá, jak je
+   * (neznámý rozměr zůstává vidět a hlídá ho kontrola), u platného dosadí
+   * platnou tloušťku jako dřív. */
+  const p = Z.profily[key], j = JEKLY[p.dim], tls = j ? Object.keys(j.kg) : [];
+  if (tls.length && !tls.includes(String(p.tl))) p.tl = +tls[Math.floor(tls.length / 2)];
   render();
 }

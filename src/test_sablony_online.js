@@ -113,5 +113,65 @@ test('rejstřík se vstupem nezměnil (zůstává verze 2)',
   sablonaPlatna(rej, 'nabidka').verze === 2);
 test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka') === null);
 
+// ---- zdroj jazykové verze a její stav (#348, 24. 9. 2026) ------------------
+/* Do 24. 9. se zastaralost poznávala podle času a stejný soubor server
+ * podruhé nezveřejní — „zastaralá" pak nešla odstranit. Mutace nese otisk
+ * české verze, ze které vznikla. */
+{
+  const O1 = 'aaaaaaaaaaaaaaaa', O2 = 'bbbbbbbbbbbbbbbb', OE = 'cccccccccccccccc';
+  let r = sablonyNovyRejstrik();
+  r = sablonyZverejni(r, { typ: 'nabidka', nazev: 'cz1.docx', otisk: O1, kdo: 'a', kdy: '2026-09-24T10:00:00Z' });
+  test('stav: chybí, dokud jazyková verze není', sablonaMutaceStav(r, 'nabidka', 'en').stav === 'chybi');
+  r = sablonyZverejni(r, { typ: 'nabidka_en', nazev: 'en.docx', otisk: OE, zdrojOtisk: O1, kdo: 'a', kdy: '2026-09-24T09:00:00Z' });
+  test('mutace si nese otisk zdrojové češtiny', sablonaPlatna(r, 'nabidka_en').zdrojOtisk === O1);
+  test('stav: aktuální k platné češtině (i když je zveřejněná dřív)', sablonaMutaceStav(r, 'nabidka', 'en').stav === 'aktualni',
+    sablonaMutaceStav(r, 'nabidka', 'en'));
+  test('stav zná číslo české verze, ze které vznikla', sablonaMutaceStav(r, 'nabidka', 'en').zVerze === 1);
+  r = sablonyZverejni(r, { typ: 'nabidka', nazev: 'cz2.docx', otisk: O2, kdo: 'a', kdy: '2026-09-24T11:00:00Z' });
+  test('nová čeština → mutace zastaralá', sablonaMutaceStav(r, 'nabidka', 'en').stav === 'zastarala');
+  test('a pořád ví, že vznikla z v1', sablonaMutaceStav(r, 'nabidka', 'en').zVerze === 1);
+  r = sablonyZverejni(r, { typ: 'nabidka_en', nazev: 'en.docx', otisk: OE, zdrojOtisk: O2, kdo: 'a', kdy: '2026-09-24T11:05:00Z' });
+  test('stejný soubor k nové češtině → aktuální', sablonaMutaceStav(r, 'nabidka', 'en').stav === 'aktualni');
+  r = sablonyZverejni(r, { typ: 'nabidka', nazev: 'cz1.docx', otisk: O1, kdo: 'a', kdy: '2026-09-24T12:00:00Z', vracenoZ: 1 });
+  test('vrácení na v1 zapíše, odkud se vracelo', sablonaPlatna(r, 'nabidka').vracenoZ === 1 && sablonaPlatna(r, 'nabidka').verze === 3);
+  test('po vrácení je mutace k v2 zastaralá', sablonaMutaceStav(r, 'nabidka', 'en').stav === 'zastarala');
+  test('sablonaVerze vrací platnou i historii od nejnovější', sablonaVerze(r, 'nabidka').map(v => v.verze).join() === '3,2,1');
+  const rc = sablonyZverejni(r, { typ: 'nabidka', nazev: 'x.docx', otisk: 'dddddddddddddddd', zdrojOtisk: O1, kdo: 'a', kdy: 'x' });
+  test('česká šablona zdrojOtisk nenese', !('zdrojOtisk' in sablonaPlatna(rc, 'nabidka')));
+  const rz = sablonyZverejni(r, { typ: 'nabidka_de', nazev: 'x.docx', otisk: 'dddddddddddddddd', zdrojOtisk: 'x"><img', kdo: 'a', kdy: 'x' });
+  test('neplatný zdrojOtisk se nezapíše', !('zdrojOtisk' in sablonaPlatna(rz, 'nabidka_de')));
+  /* starší záznam bez otisku: postaru podle času */
+  let s0 = sablonyNovyRejstrik();
+  s0 = sablonyZverejni(s0, { typ: 'sod', nazev: 'a', otisk: O1, kdo: 'a', kdy: '2026-09-20T10:00:00Z' });
+  s0 = sablonyZverejni(s0, { typ: 'sod_de', nazev: 'b', otisk: OE, kdo: 'a', kdy: '2026-09-19T10:00:00Z' });
+  test('starší mutace bez otisku: zveřejněná dřív než čeština = zastaralá (podle času)',
+    sablonaMutaceStav(s0, 'sod', 'de').stav === 'zastarala' && sablonaMutaceStav(s0, 'sod', 'de').podleCasu);
+  test('mutace bez české šablony', sablonaMutaceStav(sablonyZverejni(sablonyNovyRejstrik(),
+    { typ: 'sod_de', nazev: 'b', otisk: OE, kdo: 'a', kdy: 'x' }), 'sod', 'de').stav === 'bezZdroje');
+}
+
+// ---- jazyk souboru a symboly (#348) ----------------------------------------
+{
+  const cz = ['Cenová nabídka na dodávku ocelové konstrukce výtahové šachty', 'Cena je uvedena bez DPH a platí pro tuto zakázku',
+              'Objednatel zajistí přístup na stavbu', 'Termín dodání {{TERMIN}}'];
+  const de = ['Angebot für die Lieferung der Stahlkonstruktion des Aufzugsschachts', 'Der Preis ist ohne MwSt. und gilt für den Auftrag',
+              'Der Auftraggeber sorgt für den Zugang zur Baustelle', 'Liefertermin {{TERMIN}}'];
+  const en = ['Offer for the delivery of the steel structure of the lift shaft', 'The price is without VAT and is valid for this order',
+              'The customer shall provide access to the site'];
+  const fr = ['Offre pour la livraison de la structure métallique de la gaine', 'Le prix est hors TVA et est valable pour la commande'];
+  test('česky', sablonaJazykOdhad(cz).jazyk === 'cz' && sablonaJazykOdhad(cz).podil === 1, sablonaJazykOdhad(cz));
+  test('německy', sablonaJazykOdhad(de).jazyk === 'de', sablonaJazykOdhad(de));
+  test('anglicky', sablonaJazykOdhad(en).jazyk === 'en', sablonaJazykOdhad(en));
+  test('francouzsky', sablonaJazykOdhad(fr).jazyk === 'fr', sablonaJazykOdhad(fr));
+  /* Německé odstavce, které poznají hlavně přehlásky (nadpisy, krátké řádky). */
+  const deKratke = ['Prüfbericht und Übergabe der Schlüssel', 'Gültigkeit des Angebots: 30 Tage', 'Zahlungsbedingungen gemäß Vertrag'];
+  test('krátké německé řádky (přehlásky) nejsou čeština', sablonaJazykOdhad(deKratke).jazyk === 'de', sablonaJazykOdhad(deKratke));
+  test('odstavce jen se symboly a čísly se nezařadí', sablonaJazykOdhad(['{{CENA}}', '12 345', 'IČ 123']).zarazeno === 0);
+  test('prázdný vstup nespadne', sablonaJazykOdhad(null).jazyk === null);
+  test('symboly: unikátní a seřazené', sablonaSymboly(['{{B}} a {{A}}', '{{B}}', 'bez']).join() === 'A,B');
+  const r = sablonaSymbolyRozdil(['A', 'B', 'C'], ['B', 'C', 'D']);
+  test('rozdíl symbolů', r.pribylo.join() === 'D' && r.ubylo.join() === 'A', r);
+}
+
 console.log('\nPASS=' + passes + ' FAIL=' + fails);
 process.exit(fails ? 1 : 0);

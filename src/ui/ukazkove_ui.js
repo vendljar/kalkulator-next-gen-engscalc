@@ -75,9 +75,42 @@ function ukazkoveLista() {
   </div>`;
 }
 
+/* Čekání lišty při startu (S5, v15.10.4) — rozhoduje ukazkoveListaRozhodni
+ * v ukazkove.js. Jediný stav: kdy začalo a jestli první pokus o načtení
+ * z online databáze doběhl. `od: null` = nečeká se (file://, kde se online
+ * nic nenačítá). Nad http(s) se čas zapíše hned při načtení skriptu — dřív,
+ * než cokoli poprvé překreslí obrazovku. */
+const UKAZKOVE_CEKANI = { od: null, dobehlo: false };
+
+function ukazkoveCekaniStart(ted) {
+  if (UKAZKOVE_CEKANI.od !== null) return;
+  UKAZKOVE_CEKANI.od = (typeof ted === 'number') ? ted : Date.now();
+  /* Pojistka pro server, který neodpoví: po uplynutí doby se lišta
+   * vyhodnotí sama, i když by do té doby nic jiného nepřekreslilo. */
+  if (typeof setTimeout === 'function')
+    setTimeout(renderUkazkoveLista, UKAZKOVE_CEKANI_MS + 50);
+}
+
+/* Volá onlineStart(), když první pokus (zdraví → ja → ceník a firma) doběhl.
+ * Až v dalším tiku: onlineTik nasazuje stažený ceník a firmu v setTimeout(0)
+ * a ty jsou ve frontě dřív — lišta se tak vyhodnotí až nad skutečnými daty
+ * a nic neblikne. */
+function ukazkoveCekaniKonec() {
+  const hotovo = () => { UKAZKOVE_CEKANI.dobehlo = true; renderUkazkoveLista(); };
+  if (typeof setTimeout === 'function') setTimeout(hotovo, 0); else hotovo();
+}
+
+if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)
+    && typeof fetch === 'function')
+  ukazkoveCekaniStart();
+
 function renderUkazkoveLista() {
   const el = document.getElementById('ukazkoveLista');
-  if (el) el.innerHTML = ukazkoveLista();
+  if (!el) return;
+  /* Během čekání se lišta NEKRESLÍ — obsah (ukazkoveLista) ani zábrany
+   * dokumentů se ale nemění. */
+  el.innerHTML = ukazkoveListaRozhodni(ukazkoveStavAkt(), UKAZKOVE_CEKANI, Date.now()) === 'ukazat'
+    ? ukazkoveLista() : '';
 }
 
 /* Varování do náhledu dokumentu – poslední místo před odesláním.
@@ -93,11 +126,64 @@ function ukazkoveTiskLista() {
  * z čeho počítat." Dokument spočítaný z nul není nabídka za nula korun,
  * je to prázdný formulář s razítkem – a ten se zákazníkovi poslat nesmí.
  * Vrací důvod (text), nebo prázdný řetězec, když je cesta volná. */
-function dokumentZabrana() {
-  if (typeof ukazkoveBraniDokumentu !== 'function') return '';
-  const s = ukazkoveStavAkt();
-  if (!ukazkoveBraniDokumentu(s)) return '';
-  return ukazkoveKratce(s, !ukazkoveSlozkaSmi());
+function dokumentZabrana(typ, varianta) {
+  /* ZÁMEK STRANY (P6 / K19-N114, 13. 10. 2026): dokument strany, která je
+   * u zakázky uzamčená a vynulovaná (podle čísla nabídky nebo jenProj /
+   * jenOck), nevznikne — ani dotisk do odeslané varianty (D6d). Stojí
+   * první: je to nejpřesnější důvod (žádná oprava ceníku ani zadání
+   * dokument vyřazené strany nepustí). */
+  if (typ && typeof kontrolyStranaZabrana === 'function' && typeof ZAK !== 'undefined') {
+    const duvod = kontrolyStranaZabrana(ZAK, typ);
+    if (duvod) return duvod;
+  }
+  /* Dotisk dokumentu nové strany do odeslané varianty (B153): cenová
+   * výjimka a marže té strany — zrcadlo serveru (403). */
+  /* Smlouva o dílo realizace bez zvoleného režimu DPH (B189, 19. 10. 2026)
+   * — táž věta, kterou by hodil sodData; tlačítko zhasne s důvodem. */
+  if (typ === 'sod' && typeof sodDphZabrana === 'function' && typeof ZAK !== 'undefined') {
+    let duvod = '';
+    try { duvod = sodDphZabrana(ZAK, varianta || aktivniVarianta(ZAK)); } catch (e) { duvod = ''; }
+    if (duvod) return duvod;
+  }
+  if (typ && typeof vyjimkyDotiskZabrana === 'function' && typeof ZAK !== 'undefined') {
+    let duvod = '';
+    try { duvod = vyjimkyDotiskZabrana(typ, varianta || aktivniVarianta(ZAK)); } catch (e) { duvod = ''; }
+    if (duvod) return duvod;
+  }
+  if (typeof ukazkoveBraniDokumentu === 'function') {
+    const s = ukazkoveStavAkt();
+    if (ukazkoveBraniDokumentu(s)) return ukazkoveKratce(s, !ukazkoveSlozkaSmi());
+  }
+  /* Plán plateb projekce s vadou (etapa B) — jen dokumenty PROJ, které ho
+   * nesou (typ dokumentu a variantu, ZE KTERÉ vzniká, předává
+   * dokumentVygeneruj i náhled nabídky PROJ). */
+  if (typ && typeof planPlatebZabranaDokumentu === 'function') {
+    const duvod = planPlatebZabranaDokumentu(typ, varianta);
+    if (duvod) return duvod;
+  }
+  /* Zábrany z kontroly před nabídkou (#377, 1. 10. 2026) — rozměry, profil
+   * mimo katalog, záporná položka, nulová cena, sleva nad stropem. Které
+   * zábrany zastaví který dokument, rozhoduje kontrolyZabranaDokumentu
+   * (tabulka v kontroly.js); posuzuje se varianta, ZE KTERÉ dokument vzniká.
+   * Bez typu (panel prázdného ceníku) se neptá — ten mluví jen o ceníku. */
+  if (typ && typeof kontrolyZabranaDokumentu === 'function' && typeof kontrolyStavVarianta === 'function') {
+    let vysl = null;
+    try { vysl = kontrolyStavVarianta(varianta || null); } catch (e) { vysl = null; }
+    const duvod = kontrolyZabranaDokumentu(vysl, typ);
+    if (duvod) return duvod;
+  }
+  return '';
+}
+
+/* Pojistka v obsluze tlačítka: zábrana → hláška (stejná věta jako v bublině
+ * zhasnutého tlačítka) a stavový řádek; vrací true, když dokument nevznikne. */
+function dokumentZabranaHlas(typ, varianta, stav) {
+  if (typeof dokumentZabrana !== 'function') return false;
+  const duvod = dokumentZabrana(typ, varianta);
+  if (!duvod) return false;
+  if (typeof stav === 'function') stav('Dokument nevznikl — ' + duvod);
+  if (typeof hlaska === 'function') hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' });
+  return true;
 }
 
 /* Panel na místo tlačítek. Vysvětluje, co se má stát, ne jen že to nejde –
@@ -123,8 +209,13 @@ function ukazkoveZabranaPanel() {
   </div>`;
 }
 
-/* Atribut do tlačítek, která vytvářejí dokument (`<button ${ukazkoveZabranaAttr()}>`). */
-function ukazkoveZabranaAttr() {
-  const duvod = dokumentZabrana();
+/* Atribut do tlačítek, která vytvářejí dokument (`<button ${ukazkoveZabranaAttr('nabidka')}>`).
+ * Typ dokumentu (#377) zapne i zábrany z kontroly před nabídkou a plánu
+ * plateb — posuzuje se otevřená varianta (z té tlačítko dokument nabízí;
+ * řídící hlídá dokumentZabrana při generování). */
+function ukazkoveZabranaAttr(typ) {
+  const duvod = typ
+    ? dokumentZabrana(typ, (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined') ? aktivniVarianta(ZAK) : null)
+    : dokumentZabrana();
   return duvod ? ` disabled title="${esc(duvod)}"` : '';
 }

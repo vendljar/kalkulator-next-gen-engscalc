@@ -38,6 +38,36 @@ function cenikZahrSet(path, hodnota) {
       + 'jinak platí jen vám a po odhlášení se ztratí.', 'varovani');
   render();
 }
+/* Příznak „cena dle nabídky" (S13, J. V. 16. 10. 2026; model v cenik.js).
+ * ZMĚNY SPRÁVCE V TÉTO RELACI (B179, J. V. 17. 10. 2026): do 17. 10. se
+ * příznak zapisoval do ceníku otevřené varianty a zveřejnění bralo mapu
+ * odtamtud — i z varianty, kterou uložil obchodník. Teď se pamatují jen
+ * výslovné změny správce ({ cesta: true | false }); zveřejní se mapa
+ * PLATNÉHO ceníku (DEFAULT_CENIK po progPouzij) s těmito změnami. Ceník
+ * varianty se nemění ani nečte. Jen správce, jen příplatky. */
+let CENIK_DLE_ZMENY = {};
+function cenikDleNabidkyMapaRelace() {
+  return (typeof cenikDleNabidkyProZverejneni === 'function')
+    ? cenikDleNabidkyProZverejneni(typeof DEFAULT_CENIK !== 'undefined' ? DEFAULT_CENIK : null, CENIK_DLE_ZMENY) : {};
+}
+function cenikDleNabidkySet(path, ano) {
+  if (!jeAdmin() || typeof cenikDleNabidkySmi !== 'function' || !cenikDleNabidkySmi(path)) return;
+  CENIK_DLE_ZMENY[String(path)] = !!ano;
+  if (typeof progZprava === 'function')
+    progZprava('Příznak „cena dle nabídky" se změnil — platí až po zveřejnění ceníku tlačítkem níž.', 'varovani');
+  render();
+}
+/* Po načtení nebo zveřejnění platné verze: změny, které už platná mapa
+ * nese, se zapomenou (progPouzij). */
+function cenikDleNabidkyZmenyProcisti() {
+  if (typeof DEFAULT_CENIK === 'undefined' || typeof cenikDleNabidkyJe !== 'function') return;
+  const maMapu = typeof cenikDleNabidkyMaMapu === 'function' && cenikDleNabidkyMaMapu(DEFAULT_CENIK);
+  if (!maMapu) return;                    // návrh se teprve zveřejní — změny drž
+  Object.keys(CENIK_DLE_ZMENY).forEach(k => {
+    if (cenikDleNabidkyJe(DEFAULT_CENIK, k) === CENIK_DLE_ZMENY[k]) delete CENIK_DLE_ZMENY[k];
+  });
+}
+function cenikDleNabidkySloupec() { return jeAdmin() && typeof cenikDleNabidkyJe === 'function'; }
 function cenikZahrJenSet(path, ano) {
   if (!jeAdmin() || typeof CENIK_ZAHR === 'undefined') return;
   if (ano) CENIK_ZAHR.jenZahr[path] = true; else delete CENIK_ZAHR.jenZahr[path];
@@ -54,20 +84,84 @@ function cenikZahrJenSet(path, ano) {
  *
  * Prázdné pole = pro zahraničí platí tuzemská přirážka. Hodnota se ZADÁVÁ
  * V PROCENTECH a ukládá jako podíl, přesně jako tuzemská. */
-function cenikMarzeZahrPole(cesta) {
+/* ZOBECNĚNO NA LIBOVOLNOU PROCENTNÍ CESTU (nález N18, 22. 9. 2026).
+ *
+ * Původně to uměla jen přirážka. Sazba DPH je přitom úplně stejný druh
+ * hodnoty — jedno číslo nad celou nabídkou, uložené jako podíl, a taky
+ * sledovaná ceníková cesta (`C.dph` / `PC.dph` v CENIK_STARI_EXTRA).
+ * Rozdíl byl jen v tom, že pro ni nikdo neudělal pole: sloupec „Cena
+ * Zahraničí" se kreslí u řádků tabulky a DPH v tabulce není.
+ *
+ * `opts.label` a `opts.title` mění text, chování zůstává jedno.
+ *
+ * NULA JE PLATNÁ HODNOTA, ne „prázdné". U DPH to není detail: 0 % znamená
+ * přenesenou daňovou povinnost. `cenikZahrSet` maže odchylku jen u prázdného
+ * řetězce a `cenikZahrHodnota` vrací nulu jako nulu — drží to test. */
+function cenikZahrPctPole(cesta, opts) {
+  const o = opts || {};
   const zv = cenikZahrHodnota(cesta);
   const pct = zv === '' ? '' : Math.round(zv * 10000) / 100;
+  const label = o.label || '…&nbsp;pro ZAHRANIČÍ';
+  const title = o.title || 'prázdné = i v zahraniční zakázce platí tuzemská přirážka';
+  const reset = o.reset || 'převzít tuzemskou přirážku';
+  const placeholder = o.placeholder || 'jako ČR';
   return `<span class="pct-wrap" style="margin-left:18px">
-    <label style="margin-right:6px">…&nbsp;pro ZAHRANIČÍ</label>
+    <label style="margin-right:6px">${label}</label>
     <input type="number" step="1" class="zahr-cena${zv === '' ? '' : ' ma'}" style="width:80px"
-      value="${esc(pct)}" placeholder="jako ČR"
-      title="prázdné = i v zahraniční zakázce platí tuzemská přirážka"
+      value="${esc(pct)}" placeholder="${esc(placeholder)}"
+      title="${esc(title)}"
       onchange="cenikZahrSet('${cesta}', this.value === '' ? '' : (+this.value) / 100)"> %
-    ${zv === '' ? '' : `<button class="mini noprint" title="převzít tuzemskou přirážku"
+    ${zv === '' ? '' : `<button class="mini noprint" title="${esc(reset)}"
       onclick="cenikZahrSet('${cesta}', '')">↺</button>`}</span>`;
+}
+/* Sazba DPH pro zahraniční řadu. Vlastní texty, jinak totéž co u přirážky.
+ *
+ * PRÁZDNÉ POLE TU ZNAMENÁ NULU, ne „jako v ČR" (22. 9. 2026 večer, J. V.:
+ * „sazba DPH se při přepnutí na zahraniční ceník nepřepíná na 0 % … to by
+ * bylo optimální"). Výchozí nulu doplňuje model (`cenikZahrSVychozimi`),
+ * pole jen ukazuje, co platí. Kdo chce v zahraničí českou sazbu, zapíše ji. */
+function cenikDphZahrPole(cesta) {
+  return cenikZahrPctPole(cesta, {
+    label: 'SAZBA DPH&nbsp;… pro ZAHRANIČÍ',
+    placeholder: '0',
+    title: 'prázdné = v zahraniční zakázce platí 0 % (dodávka do zahraničí bez české DPH). '
+      + 'Chcete-li i v zahraničí českou sazbu, zapište ji sem.',
+    reset: 'vrátit výchozích 0 %',
+  });
+}
+
+/* ---------- probarvení buněk ceníku (13. 10. 2026, zadání J. V.) ----------
+ *
+ * Světle červená = nula nebo nevyplněno, světle oranžová = víc než 40 000 Kč.
+ * Pravidlo (cenikBunkaTrida) je v cenik.js a testuje se v Node; tady se jen
+ * políčku přidá jednotka (data-cenik-j) a třída se počítá z toho, co v poli
+ * právě stojí — při vykreslení (tedy i po načtení či přepnutí verze nebo
+ * varianty, které ceník kreslí znovu) a při každém úhozu (posluchač níž).
+ * Jen vzhled: do dat ani výpočtu se nic nezapisuje. */
+function cenikBarvaAttr(jednotka, opts) {
+  return ` data-cenik-j="${esc(jednotka || '')}"${opts && opts.prazdnaOk ? ' data-cenik-prazdna="ok"' : ''}`;
+}
+function cenikObarvi(el) {
+  if (!el || !el.classList || typeof cenikBunkaTrida !== 'function') return;
+  const t = el.disabled ? '' : cenikBunkaTrida(el.value, el.getAttribute('data-cenik-j'),
+    { prazdnaOk: el.getAttribute('data-cenik-prazdna') === 'ok' });
+  el.classList.toggle('cenik-nula', t === 'cenik-nula');
+  el.classList.toggle('cenik-vysoka', t === 'cenik-vysoka');
+}
+function cenikObarviVse(koren) {
+  if (koren && koren.querySelectorAll) koren.querySelectorAll('input[data-cenik-j]').forEach(cenikObarvi);
+}
+if (typeof document !== 'undefined' && document.addEventListener) {
+  const cenikBarvaPriZmene = e => {
+    const t = e.target;
+    if (t && t.matches && t.matches('input[data-cenik-j]')) cenikObarvi(t);
+  };
+  document.addEventListener('input', cenikBarvaPriZmene, true);
+  document.addEventListener('change', cenikBarvaPriZmene, true);
 }
 
 function cenikRows(def, zahrSloupec) {
+  const dleMapa = (def === CENIK_DEF && cenikDleNabidkySloupec()) ? cenikDleNabidkyMapaRelace() : {};
   return def.map(([grp, items]) => {
     const body = items.map(([path, l, u, note, typ]) => {
       const val = get(path);
@@ -87,8 +181,8 @@ function cenikRows(def, zahrSloupec) {
        * se lidsky — 30. Stejně jako globální přirážka o pár řádků výš
        * (31. 8. 2026, položky ATYP a výchozí rozsahy práce). */
       else if (typ === 'pct') ed = `<input type="number" step="1" value="${val == null || val === '' ? '' : Math.round(val * 10000) / 100}"
-          placeholder="nenastaveno" onchange="set('${path}', this.value === '' ? 0 : (+this.value) / 100)">`;
-      else ed = `<input type="number" step="any" value="${esc(val)}" onchange="set('${path}', +this.value)">`;
+          placeholder="nenastaveno"${cenikBarvaAttr(u)} onchange="set('${path}', this.value === '' ? 0 : (+this.value) / 100)">`;
+      else ed = `<input type="number" step="any" value="${esc(val)}"${cenikBarvaAttr(u)} onchange="set('${path}', +this.value)">`;
       /* TUZEMSKÁ CENA U POLOŽKY „JEN ZAHRANIČNÍ" SE NEZADÁVÁ (P4, nález N6).
        *
        * Ceník verze 27 měl u překladů CZ→DE vyplněnou i ČR hodnotu — dalo se
@@ -106,7 +200,7 @@ function cenikRows(def, zahrSloupec) {
         const jen = jenZahrPolozka;
         zahr = typ ? '<td colspan="2" class="note">—</td>' : `<td class="zahr-bunka">
           <input type="number" step="any" class="zahr-cena${zv === '' ? '' : ' ma'}" value="${esc(zv)}"
-            placeholder="jako ČR" title="prázdné = platí tuzemská cena"
+            placeholder="jako ČR" title="prázdné = platí tuzemská cena"${cenikBarvaAttr(u, { prazdnaOk: true })}
             onchange="cenikZahrSet('${path}', this.value)">
           ${zv === '' ? '' : `<button class="mini noprint" title="převzít tuzemskou cenu"
             onclick="cenikZahrSet('${path}', '')">↺</button>`}</td>
@@ -121,10 +215,18 @@ function cenikRows(def, zahrSloupec) {
        * buňky — poznámka zůstala v `white-space:nowrap` a utekla mimo kartu
        * (hlášeno J. V. 1. 9. 2026: „popisný text se nám v ceníku nevejde na
        * stránku"). Třída ví, co je co, ať sloupců přibude kolik chce. */
+      /* Sloupec „Cena dle nabídky" (S13) — jen ceník OCK, jen číselné položky. */
+      const dleSl = def === CENIK_DEF && cenikDleNabidkySloupec();
+      /* Zaškrtávátko jen u příplatků (B179); stav = mapa, která by se
+       * zveřejnila (platný ceník + změny správce), ne ceník varianty. */
+      const dle = !dleSl ? '' : ((typ || !cenikDleNabidkySmi(path)) ? '<td class="note c-dle">—</td>'
+        : `<td class="c-dle" style="text-align:center"><input type="checkbox" ${dleMapa[path] === true ? 'checked' : ''}
+            title="cenu zadává obchodník podle nabídky — ruční cena v zakázce není odchylka od ceníku (bez schválení); ceník předvyplní orientační cenu"
+            onchange="cenikDleNabidkySet('${escJs(path)}', this.checked)"></td>`);
       return `<tr${zahrSloupec && cenikZahrHodnota(path) !== '' ? ' class="ma-zahr"' : ''}>
-        <td class="c-nazev">${l}${klicChip(path)}</td><td class="c-hod">${ed}</td>${zahr}<td class="c-jed">${u}</td><td class="c-pozn">${note}</td></tr>`;
+        <td class="c-nazev">${l}${klicChip(path)}</td><td class="c-hod">${ed}</td>${zahr}${dle}<td class="c-jed">${u}</td><td class="c-pozn">${note}</td></tr>`;
     }).join('');
-    const sl = zahrSloupec ? 6 : 4;
+    const sl = (zahrSloupec ? 6 : 4) + (def === CENIK_DEF && cenikDleNabidkySloupec() ? 1 : 0);
     /* Na konci skupiny: v OCK trvalé položky katalogu, v PROJ trvalé položky
      * sekcí projekce, které pod tuhle skupinu patří (2. 9. 2026). */
     const trvale = (def === CENIK_DEF_PROJ)
@@ -151,9 +253,9 @@ function cenikCustomRows(sekceKey, sloupcu) {
   const sk = escJs(sekceKey);
   const rows = arr.map(p => `<tr>
       <td><input type="text" value="${esc(p.nazev)}" onchange="katSet('${sk}','${escJs(p.kid)}','nazev',this.value)"></td>
-      <td><input type="number" step="any" value="${+p.cena || 0}" onchange="katSet('${sk}','${escJs(p.kid)}','cena',this.value)"></td>
+      <td><input type="number" step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')} onchange="katSet('${sk}','${escJs(p.kid)}','cena',this.value)"></td>
       ${mezera}
-      <td><input type="number" step="any" style="width:70px" value="${+p.mnozstvi || 1}" onchange="katSet('${sk}','${escJs(p.kid)}','mnozstvi',this.value)" title="výchozí množství v nové nabídce"></td>
+      <td><input type="number" step="any" style="width:70px" value="${+p.mnozstvi || 1}"${cenikBarvaAttr('ks')} onchange="katSet('${sk}','${escJs(p.kid)}','mnozstvi',this.value)" title="výchozí množství v nové nabídce"></td>
       <td><span class="pill ok" title="je součástí každé nové cenové nabídky">trvalá</span>
           <button class="mini noprint" title="odebrat z ceníku i z této zakázky" onclick="katDel('${sk}','${escJs(p.kid)}')">✕</button></td></tr>`).join('');
   const lokal = katalogCil(Z, sekceKey).filter(p => !p.kid).length;
@@ -190,10 +292,11 @@ function renderCenik() {
   const zahrSl = jeAdmin() && typeof CENIK_ZAHR !== 'undefined';
   const zahrPocet = zahrSl ? Object.keys(CENIK_ZAHR.ceny || {}).length : 0;
   document.getElementById('page-cenik').innerHTML =
-    /* Lišta zámku čtení i tady (8. 9. 2026): ceník je součást otevřené varianty,
-     * takže zamčená nabídka blokuje i jeho úpravy — a bez lišty tu nebylo kde
-     * odemknout (hlášení J. V.: „přirážka se vždy vrátí na 20 %"). */
-    `${typeof zamekCteniLista === 'function' ? zamekCteniLista() : ''}
+    /* Lišta zámku čtení tu stála od 8. 9. 2026 (bez ní nebylo kde odemknout,
+     * hlášení J. V.: „přirážka se vždy vrátí na 20 %"). Od #404 (13. 10. 2026)
+     * je žlutá lišta rozpracované kalkulace jedna nad záložkami — vidět je
+     * i tady, takže se na stránce nekreslí podruhé. */
+    `
      ${smiZobrazit('cenik.zverejnit') ? renderCenikProgramKarta() : ''}
      <div class="card"><h2 style="cursor:default">Ceník nákladů OCK – číselník jednotkových cen
        <span class="pill warn" style="float:right">každou cenu před nabídkou překontrolovat!</span></h2>
@@ -208,7 +311,7 @@ function renderCenik() {
             přirážka pro každou NOVOU zakázku. -->
        <div class="row" style="max-width:620px">
          ${inp('C.marze', { type: 'pct', l: 'GLOBÁLNÍ PŘIRÁŽKA OCK' })}
-         ${zahrSl ? cenikMarzeZahrPole('C.marze') : ''}
+         ${zahrSl ? cenikZahrPctPole('C.marze') : ''}
        </div>
        <div class="note" style="margin-top:0">Táž hodnota jako v hlavičce Kalkulace OCK —
          změna se projeví na obou místech. <b>Zveřejněním ceníku</b> se z ní stane výchozí
@@ -216,16 +319,33 @@ function renderCenik() {
          nepřepíše (přirážka je rozhodnutí k zakázce, viz #177).${zahrSl ? ` Vyplněná
          <b>přirážka pro zahraničí</b> se použije, jakmile se zakázka přepne na zahraniční
          ceník — a jen tehdy, když si ji obchodník v té zakázce sám nepřenastavil.` : ''}</div>
-       <div class="note">Sazbu DPH nastavíš v hlavičce Kalkulace OCK. Tlačítkem
+       ${zahrSl ? `<div class="row" style="max-width:620px">${cenikDphZahrPole('C.dph')}</div>
+       <div class="note" style="margin-top:0"><b>Sazba DPH pro zahraničí</b> se použije, jakmile
+         se zakázka přepne na zahraniční ceník — a jen tehdy, když si ji obchodník v té nabídce sám
+         nepřenastavil. <b>Prázdné pole znamená 0 %</b> (dodávka do zahraničí bez české DPH);
+         chcete-li v zahraničí jinou sazbu, zapište ji. Při návratu zakázky do tuzemska se vrátí
+         tuzemská sazba.</div>` : ''}
+       <div class="note">Sazbu DPH pro tuzemsko nastavíš v hlavičce Kalkulace OCK. Tlačítkem
          „+ přidat <b>trvalou</b> položku do sekce" založíš položku, která je od té chvíle součástí
          <b>každé nové cenové nabídky</b> (žije mimo zakázku, v katalogu). Položka přidaná přímo v Kalkulaci OCK
          platí jen pro danou zakázku – natrvalo ji uložíš tlačítkem 📌 u řádku. Výchozí zaškrtnutí volitelných
          řešíš v hlavním výpočtovém poli (sloupec „Výchozí").</div>
        <div class="cenik-scroll"><table class="ceniktbl">
          <tr><th class="c-nazev">Položka</th><th>Cena ČR</th>${zahrSl
-           ? '<th>Cena Zahraničí</th><th>Jen zahraničí</th>' : ''}<th class="c-jed">Jednotka</th><th class="c-pozn">Poznámka</th></tr>
+           ? '<th>Cena Zahraničí</th><th>Jen zahraničí</th>' : ''}${cenikDleNabidkySloupec()
+           ? '<th class="c-dle" title="zaškrtnuto = obchodník zadá cenu podle nabídky, ruční cena není odchylka od ceníku">Cena dle nabídky</th>' : ''}<th class="c-jed">Jednotka</th><th class="c-pozn">Poznámka</th></tr>
          ${cenikRows(CENIK_DEF, zahrSl)}
        </table></div>
+       ${cenikDleNabidkySloupec() ? `<div class="note">Sloupec <b>Cena dle nabídky</b>: u zaškrtnuté položky
+         nemá ceník reálnou cenu — obchodník ji v zakázce zadá podle nabídky dodavatele a ruční cena se
+         <b>nepovažuje za odchylku od ceníku</b> (žádná žádost o schválení, tisk nabídky není zablokovaný).
+         Cena v ceníku se dál předvyplňuje jako orientační. Příznak jde nastavit jen u <b>příplatků</b>
+         a platí až po <b>zveřejnění ceníku</b> — zveřejní se zaškrtnutí, jak je tu vidět (platný ceník
+         a vaše změny), ne příznaky uložené v otevřené zakázce.</div>
+       ${typeof cenikDleNabidkyMaMapu === 'function' && typeof DEFAULT_CENIK !== 'undefined' && !cenikDleNabidkyMaMapu(DEFAULT_CENIK) ? `<div class="note dle-navrh"><span class="pill warn">návrh</span>
+         Platný ceník příznaky ještě nemá — zaškrtnutí ve sloupci <b>Cena dle nabídky</b> je výchozí návrh
+         (osm nabídkových položek za akci). Dokud ceník nezveřejníte, aplikace tyto položky hlídá jako ostatní;
+         zveřejněním se návrh zapíše do verze ceníku.</div>` : ''}` : ''}
        ${zahrSl ? `<div class="note">Prázdná buňka ve sloupci <b>Cena Zahraničí</b> znamená
          „stejná jako v ČR“ — udržují se jen odchylky. Zaškrtnutí <b>jen zahraničí</b> říká, že
          položka v tuzemské kalkulaci vůbec není (cestovní náklady, překlady); v tuzemské zakázce
@@ -241,7 +361,215 @@ function renderCenik() {
        </div>
        <div class="note" id="cenikStav">Export vytvoří <b>.xlsx</b> se dvěma listy (Ceník OCK, Ceník PROJ). Uprav ceny v Excelu a nahraj zpět tlačítkem Import – před uložením uvidíš přehled změn.</div>
        ${CENIK_POZN}
-     </div></div>`;
+     </div></div>
+     ${cenikPopisyKarta()}`;
+  cenikObarviVse(document.getElementById('page-cenik'));
+}
+
+/* ================= ČÍSELNÍK DODATKOVÝCH TEXTŮ (25. 9. 2026) =================
+ *
+ * Zadání J. V.: „z aplikace se mi v čase ztrácí dodatkové texty, které jsem
+ * tam vepsal. Myslím, že pro ně potřebujeme samostatný číselník, resp. pole
+ * v ceníku nákladů OCK, aby je trvale držel."
+ *
+ * Texty dál bydlí ve společné mapě aplikace (`/api/popisy`) — ta nemá verzi
+ * a nemusí se kvůli jedné větě zveřejňovat celý ceník. Nově má ale vlastní
+ * obrazovku: všechny položky, pod které se text dá napsat, na jednom místě,
+ * nezávisle na tom, která zakázka je otevřená. Zápis jde na server hned,
+ * po jednom textu (server ho sloučí, viz popisy.mjs), takže už se nepřepíšou
+ * navzájem dvě okna.
+ *
+ * Tlačítko „Najít texty v uložených zakázkách" je záchrana: text, který ze
+ * společné mapy zmizel, obvykle pořád leží v zakázce, kde byl napsaný. */
+const POPISY_CIS = { sber: null, hleda: false, chyba: '' };
+
+/* Kandidáti z uložených zakázek pod řádkem číselníku (hledání `?sber=1`). */
+function cenikPopisyKandidati(klic, admin) {
+  const sez = (POPISY_CIS.sber && POPISY_CIS.sber[klic]) || [];
+  return sez.slice(0, 3).map((x, i) => `<div class="note" style="margin:2px 0">
+      <b>${esc(x.cislo)}</b>${x.pocet > 1 ? ` (+${esc(x.pocet - 1)})` : ''}: „${esc(x.text)}"
+      ${admin ? `<button class="mini" onclick="cenikPopisPrevzit('${keyAttr(klic)}', ${escJs(i)})">převzít</button>` : ''}
+    </div>`).join('');
+}
+
+/* Jazykové varianty společných textů (#379, nález K18-N96). */
+function cenikPopisyJazykySpolecne() {
+  return (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.jazyky)
+    ? ONLINE_STAV.popisy.jazyky : {};
+}
+
+/* Pole překladů pod českým textem v číselníku (#379, nález K18-N96).
+ * Slovník ručně psané věty nezná, takže bez překladu by text v cizí
+ * nabídce zůstal česky. Každý jazyk je nepovinný; prázdný = platí dosavadní
+ * chování (slovník, jinak česky — a kontrola „dodatekCesky" to ohlásí).
+ * Bez českého textu se pole nekreslí: varianta by se nikdy netiskla. */
+function cenikPopisJazykyHtml(klic, t, admin) {
+  if (!t) return '';
+  const j = cenikPopisyJazykySpolecne()[klic] || {};
+  const jazyky = (typeof POPISY_JAZYKY !== 'undefined') ? POPISY_JAZYKY : ['en', 'de', 'fr'];
+  if (!admin) {
+    const vypl = jazyky.filter(l => j[l]);
+    return vypl.length ? `<div class="note" style="margin:2px 0">${vypl.map(l =>
+      `<b>${esc(l.toUpperCase())}:</b> ${esc(j[l])}`).join(' · ')}</div>` : '';
+  }
+  return `<div class="popis-jazyky" style="display:flex;gap:6px;margin-top:3px;flex-wrap:wrap">${jazyky.map(l =>
+    `<label style="flex:1;min-width:150px;display:flex;gap:4px;align-items:center"><span class="note"
+       style="margin:0">${esc(l.toUpperCase())}</span><input type="text" style="flex:1"
+       data-popis-jazyk="${esc(l)}" value="${esc(j[l] || '')}" maxlength="${POPISY_MAX_TEXT}"
+       placeholder="překlad (nepovinné)"
+       title="Text do nabídky v jazyce ${esc(l.toUpperCase())}. Prázdné pole = v nabídce zůstane český text (nebo překlad ze slovníku, zná-li ho)."
+       onchange="cenikPopisJazykUlozCis('${keyAttr(klic)}', '${keyAttr(l)}', this.value)"></label>`).join('')}</div>`;
+}
+
+function cenikPopisySpolecne() {
+  return (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.texty)
+    ? ONLINE_STAV.popisy.texty : {};
+}
+
+function cenikPopisyKarta() {
+  if (typeof popisyCiselnik !== 'function' || typeof vypocet !== 'function') return '';
+  const admin = (typeof jeAdminOnline === 'function') ? jeAdminOnline() : false;
+  const online = typeof ONLINE_STAV !== 'undefined' && !!ONLINE_STAV.ja;
+  const texty = cenikPopisySpolecne();
+  let cis;
+  try {
+    cis = popisyCiselnik((z, c) => vypocet(z, c, JEKLY, (typeof OCK !== 'undefined' && OCK) ? OCK.fixes : true),
+      (typeof DEFAULT_ZADANI !== 'undefined') ? DEFAULT_ZADANI : {}, C, texty);
+  } catch (e) { return ''; }
+  const zak = (C && C.popisy) || {};
+  const sber = POPISY_CIS.sber;
+  const radek = (r) => {
+    const t = texty[r.klic] || '';
+    const tz = zak[r.klic];
+    /* Otevřená zakázka má jiný text: ukázat ho a nabídnout převzetí textu
+     * z číselníku (jen rozpracovaná varianta; 1. 10. 2026). */
+    const lzePrevzit = t && typeof cenikPopisDoZakazkyLze === 'function' && cenikPopisDoZakazkyLze();
+    const jinde = (typeof tz === 'string' && tz !== t)
+      ? `<div class="note" style="margin:2px 0">V otevřené zakázce: ${tz ? '„' + esc(tz) + '"' : '<i>vědomě bez textu</i>'}${lzePrevzit
+        ? ` <button class="mini noprint" onclick="cenikPopisDoZakazky('${keyAttr(r.klic)}')"
+            title="nahradit text otevřené zakázky textem z číselníku">použít text z číselníku v otevřené zakázce</button>` : ''}</div>` : '';
+    /* Zveřejněný ceník nese u položky jiný (starší) text — do nových zakázek
+     * jde od 1. 10. 2026 text z číselníku (popisyVlij). */
+    const zCen = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisyZCeniku) ? ONLINE_STAV.popisyZCeniku[r.klic] : '';
+    const jinyCenik = (zCen && zCen !== t)
+      ? `<div class="note" style="margin:2px 0">Zveřejněný ceník má u položky jiný text: „${esc(zCen)}" —
+          do nových zakázek jde text z číselníku${t ? '' : ' (číselník je prázdný, platí text ceníku)'}.</div>` : '';
+    const pole = admin
+      ? `<input type="text" style="width:100%" value="${esc(t)}" maxlength="${POPISY_MAX_TEXT}"
+           placeholder="dodatkový text do cenové nabídky (nepovinné)"
+           onchange="cenikPopisUlozCis('${keyAttr(r.klic)}', this.value)">`
+      : (t ? esc(t) : '<span class="note">—</span>');
+    return `<tr><td class="c-nazev">${esc(r.klic)}<div class="note" style="margin:0">${esc(r.skupina)}
+        · ${esc(r.typy.join(' + '))}</div></td><td>${pole}${cenikPopisJazykyHtml(r.klic, t, admin)}${jinde}${jinyCenik}${cenikPopisyKandidati(r.klic, admin)}</td></tr>`;
+  };
+  const osirele = cis.osirele.length ? `<tr><th colspan="2">Texty k položkám, které výpočet už nezná
+      (přejmenované nebo zrušené) — nic se nemaže, rozhodněte sami</th></tr>`
+    + cis.osirele.map(o => `<tr><td class="c-nazev">${esc(o.klic)}</td><td>${admin
+      ? `<input type="text" style="width:100%" value="${esc(o.text)}" maxlength="${POPISY_MAX_TEXT}"
+           onchange="cenikPopisUlozCis('${keyAttr(o.klic)}', this.value)">` : esc(o.text)}</td></tr>`).join('') : '';
+  const kdo = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.kdy)
+    ? 'Naposledy změněno ' + String(ONLINE_STAV.popisy.kdy).slice(0, 16).replace('T', ' ')
+      + ' (' + (ONLINE_STAV.popisy.kdo || '?') + ').' : 'Zatím žádný text není uložený.';
+  return `<div class="card" id="cenikPopisyKarta"><h2 style="cursor:default">Dodatkové texty do cenové nabídky – číselník</h2>
+    <div class="body">
+      <div class="note">Text se tiskne v cenové nabídce pod názvem příplatku nebo volitelné položky.
+        Tady je <b>trvale uložený pro celou aplikaci</b> — nezávisle na zakázce i na verzi ceníku —
+        a předvyplní se do každé nové i rozpracované zakázky, která u položky vlastní text nemá.
+        Odeslané (uzamčené) nabídky se nemění.
+        Pod českým textem jsou <b>překlady EN / DE / FR</b> (nepovinné): ručně psaný text aplikace
+        nepřekládá, takže do anglické, německé a francouzské nabídky jde vyplněný překlad, jinak česká věta.
+        Po změně českého textu překlady zkontrolujte — patří ke znění, ke kterému byly napsané. ${admin
+          ? 'Každá změna se uloží hned, když opustíte pole.'
+          : 'Texty zadává administrátor; ve své zakázce je můžete upravit v Kalkulaci OCK pod položkou.'}
+        ${online ? esc(kdo) : '<b>Nepřihlášeno — texty se načtou po přihlášení.</b>'}</div>
+      ${admin ? `<div class="btns" style="margin:6px 0">
+        <button onclick="cenikPopisySber()" ${POPISY_CIS.hleda ? 'disabled' : ''}>${POPISY_CIS.hleda
+          ? 'Hledám v uložených zakázkách…' : 'Najít texty v uložených zakázkách'}</button>
+        ${sber ? `<span class="note">Nalezeno u ${Object.keys(sber).length} položek (jen texty,
+          které se od číselníku liší).</span>` : ''}
+        ${POPISY_CIS.chyba ? `<span class="note" style="color:#b00">${esc(POPISY_CIS.chyba)}</span>` : ''}
+      </div>` : ''}
+      <div class="cenik-scroll"><table class="ceniktbl">
+        <tr><th class="c-nazev">Položka</th><th>Dodatkový text</th></tr>
+        ${cis.radky.map(radek).join('')}
+        ${osirele}
+      </table></div>
+    </div></div>`;
+}
+
+/* Uložení z číselníku. Do otevřené rozpracované zakázky se text doplní jen
+ * tam, kde vlastní nemá — stejné pravidlo jako při otevření zakázky. */
+function cenikPopisUlozCis(klic, text) {
+  if (typeof onlinePopisUloz !== 'function') return Promise.resolve(false);
+  return onlinePopisUloz(klic, text).then(ok => {
+    if (ok && typeof popisyDoplnChybejici === 'function' && typeof ZAK !== 'undefined' && ZAK) {
+      const v = aktivniVarianta(ZAK);
+      const zam = (typeof variantaUzamcena === 'function') && variantaUzamcena(v);
+      const t = String(text == null ? '' : text).trim();
+      if (!zam && t && v && v.data && v.data.cenik && popisyDoplnChybejici(v.data.cenik, { [klic]: t })
+        && typeof syncVarianta === 'function') syncVarianta();
+    }
+    render();
+    return ok;
+  });
+}
+
+/* Uložení jednoho překladu z číselníku (#379). Do otevřené rozpracované
+ * zakázky se doplní jen tam, kde má týž český text a překlad toho jazyka
+ * ještě nemá — stejné pravidlo jako při otevření zakázky. */
+function cenikPopisJazykUlozCis(klic, jazyk, text) {
+  if (typeof onlinePopisJazykyUloz !== 'function') return Promise.resolve(false);
+  const t = String(text == null ? '' : text).trim();
+  return onlinePopisJazykyUloz(klic, { [jazyk]: t }).then(ok => {
+    if (ok && t && typeof popisyJazykyDoplnChybejici === 'function' && typeof ZAK !== 'undefined' && ZAK) {
+      const v = aktivniVarianta(ZAK);
+      const zam = (typeof variantaUzamcena === 'function') && variantaUzamcena(v);
+      const sp = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy) || {};
+      if (!zam && v && v.data && v.data.cenik && sp.texty
+        && popisyJazykyDoplnChybejici(v.data.cenik, { [klic]: sp.texty[klic] }, { [klic]: { [jazyk]: t } })
+        && typeof syncVarianta === 'function') syncVarianta();
+    }
+    render();
+    return ok;
+  });
+}
+
+/* Převzetí textu z číselníku do OTEVŘENÉ zakázky (1. 10. 2026). Zakázka
+ * založená dřív nese vlastní kopii textu, kterou číselník nepřepisuje
+ * („vlastní text zakázky se nepřepisuje") — tímhle tlačítkem ji obchodník
+ * nebo správce srovná vědomě. Jen rozpracovaná varianta (zámek, náhled). */
+function cenikPopisDoZakazkyLze() {
+  if (typeof ZAK === 'undefined' || !ZAK || typeof C === 'undefined' || !C) return false;
+  const v = aktivniVarianta(ZAK);
+  return !((typeof variantaUzamcena === 'function') && variantaUzamcena(v));
+}
+function cenikPopisDoZakazky(klic) {
+  if (typeof zamekStop === 'function' && zamekStop()) return;
+  if (!cenikPopisDoZakazkyLze()) return;
+  const spol = cenikPopisySpolecne();
+  const t = String(spol[klic] || '').trim();
+  if (!t || typeof cenikPopisNastav !== 'function') return;
+  cenikPopisNastav(C, klic, t);
+  if (typeof popisJazykySrovnej === 'function')
+    popisJazykySrovnej(C, klic, spol, (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.popisy && ONLINE_STAV.popisy.jazyky) || null);
+  aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  render();
+}
+
+function cenikPopisySber() {
+  if (typeof onlineApi !== 'function') return;
+  POPISY_CIS.hleda = true; POPISY_CIS.chyba = ''; render();
+  onlineApi('/api/popisy?sber=1').then(o => { POPISY_CIS.sber = (o && o.nalez) || {}; })
+    .catch(e => { POPISY_CIS.chyba = 'Hledání selhalo: ' + e.message; })
+    .then(() => { POPISY_CIS.hleda = false; render(); });
+}
+
+function cenikPopisPrevzit(klic, i) {
+  const x = POPISY_CIS.sber && POPISY_CIS.sber[klic] && POPISY_CIS.sber[klic][i];
+  if (!x) return;
+  cenikPopisUlozCis(klic, x.text).then(ok => {
+    if (ok && POPISY_CIS.sber) { delete POPISY_CIS.sber[klic]; render(); }
+  });
 }
 
 function renderCenikProj() {
@@ -257,7 +585,7 @@ function renderCenikProj() {
      * nad týmž stavem, stejný vzor jako karty slevy a zaokrouhlení. Karta
      * nenese žádné id (card() bez čtvrtého argumentu), dvojí vykreslení
      * proto nic nezdvojí; hlídá to overit_program.mjs. */
-    `${typeof zamekCteniLista === 'function' ? zamekCteniLista() : ''}
+    `
      ${smiZobrazit('cenik.zverejnit') ? renderCenikProgramKarta() : ''}
      <div class="card"><h2 style="cursor:default">Ceník nákladů PROJ – projekční práce
        <span class="pill warn" style="float:right">každou cenu před nabídkou překontrolovat!</span></h2>
@@ -266,19 +594,24 @@ function renderCenikProj() {
        ${cenikVerzeLista()}
        <div class="row" style="max-width:620px">
          ${inp('PC.marze', { type: 'pct', l: 'GLOBÁLNÍ PŘIRÁŽKA PROJ' })}
-         ${zahrSlProj ? cenikMarzeZahrPole('PC.marze') : ''}
+         ${zahrSlProj ? cenikZahrPctPole('PC.marze') : ''}
        </div>
-       ${zahrSlProj ? `<div class="note" style="margin-top:0">Vyplněná <b>přirážka pro
+       ${zahrSlProj ? `<div class="row" style="max-width:620px">${cenikDphZahrPole('PC.dph')}</div>
+       <div class="note" style="margin-top:0">Vyplněná <b>přirážka pro
          zahraničí</b> se použije, jakmile se zakázka přepne na zahraniční ceník — a jen
-         tehdy, když si ji obchodník v té zakázce sám nepřenastavil. Ostatní ceny projekce
+         tehdy, když si ji obchodník v té zakázce sám nepřenastavil. Totéž platí pro
+         <b>sazbu DPH</b>, jen s jiným výchozím stavem: <b>prázdné pole znamená 0 %</b>
+         (dodávka do zahraničí bez české DPH). Ostatní ceny projekce
          zahraniční variantu nemají; liší-li se, doplňte je jako ruční sazbu v kalkulaci.</div>` : ''}
        <div class="cenik-scroll"><table class="ceniktbl">
          <tr><th>Položka</th><th>Cena</th><th>Jednotka</th><th>Poznámka</th></tr>
          ${cenikRows(CENIK_DEF_PROJ)}
        </table></div>
-       <div class="note"><b>Sazby DPH a kurz EUR jsou společné s ceníkem OCK</b> —
+       <div class="note"><b>PŘEDVOLBY sazeb DPH a kurz EUR jsou společné s ceníkem OCK</b> —
          mají jeden zdroj pravdy, aby se nemohly rozejít. Nastavíte je v záložce
-         <b>Ceník nákladů OCK</b> (sekce SAZBY DPH a CIZÍ MĚNA); projekce si z nich
+         <b>Ceník nákladů OCK</b> (sekce SAZBY DPH a CIZÍ MĚNA). <b>Vybraná sazba nabídky
+         zůstává projekci vlastní</b> (<code>PC.dph</code>), a proto má i vlastní zahraniční
+         odchylku v poli výš; projekce si z nich
          bere předvolby a kurz. Sazbu DPH pro konkrétní nabídku projekce vybíráte
          dál v hlavičce Kalkulace PROJ — ta zůstává vlastní.</div>
        ${smiZobrazit('cenik.import') ? `<div class="btns" style="margin-top:12px">
@@ -296,6 +629,7 @@ function renderCenikProj() {
          v kartě <b>Databáze programu</b> nahoře (karta je na obou záložkách ceníku a je to táž karta).
          Obě sady tak vždy patří k téže verzi.</div>
      </div></div>`;
+  cenikObarviVse(document.getElementById('page-cenikproj'));
 }
 
 /* ---------- trvalé položky projekce v ceníku PROJ (1. 9. 2026) ----------
@@ -353,8 +687,8 @@ function cenikProjTrvaleRadky(sekce) {
         ${chip}</td>
       <td class="c-hod">${p.typ === 'hod'
         ? `<input type="number" step="any" style="width:90px" value="${+p.hodiny || 0}"
-             title="hodin" onchange="cenikProjTrvaleSet('${sk}','${kidJs}','hodiny',this.value)">`
-        : `<input type="number" step="any" value="${+p.cena || 0}"
+             title="hodin"${cenikBarvaAttr('hod')} onchange="cenikProjTrvaleSet('${sk}','${kidJs}','hodiny',this.value)">`
+        : `<input type="number" step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')}
              onchange="cenikProjTrvaleSet('${sk}','${kidJs}','cena',this.value)">`}</td>
       <td class="c-jed">${p.typ === 'hod' ? 'hod (' + esc(p.sazba || 'projektant') + ')' : 'Kč'}</td>
       <td class="c-pozn">trvalá položka${viceSekci ? ' — ' + esc(sek.nazev) : ''}, je v každé nové nabídce

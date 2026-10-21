@@ -10,6 +10,23 @@
  * Ukládá se do zakázky (ZAK.popisZameru), takže přežije uložení i export. */
 function nabidkaProjPopis(val) { ZAK.popisZameru = val; }
 
+/* Ruční úvod nabídky PROJ (D2). Text shodný s výchozím (nebo prázdný) = bez
+ * ruční úpravy. Se zápisem textu se uloží i výchozí znění, ze kterého
+ * obchodník vycházel — podle něj nabidkaProjUvodNesedi pozná, že se mezitím
+ * změnily nabízené činnosti. Zápis jde přes set(), takže ho hlídá zámek. */
+function nabidkaProjUvodNastav(val) {
+  let d = null;
+  try { d = nabidkaProjData(ZAK, aktivniVarianta(ZAK)); } catch (e) { return; }
+  const t = String(val || '').replace(/\r/g, '').trim();
+  if (!t || t === String(d.uvod.vychoziCz || '').trim()) { nabidkaProjUvodVychozi(); return; }
+  set('PJ.uvodNabidkyRucne', t);
+  if (typeof PJ !== 'undefined' && PJ && PJ.uvodNabidkyRucne === t) set('PJ.uvodNabidkyZaklad', d.uvod.vychoziCz);
+}
+function nabidkaProjUvodVychozi() {
+  set('PJ.uvodNabidkyRucne', '');
+  if (typeof PJ !== 'undefined' && PJ && !PJ.uvodNabidkyRucne) set('PJ.uvodNabidkyZaklad', null);
+}
+
 /* Karta pod souhrnem Kalkulace PROJ. */
 function nabidkaProjKarta() {
   const akt = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0];
@@ -43,6 +60,10 @@ function nabidkaProjKarta() {
   const rekap = d.rekapitulace.length
     ? `<table style="max-width:640px;margin-top:8px">
        ${d.rekapitulace.map(r => `<tr><td>${esc(r[0])}</td><td style="text-align:right">${esc(r[1])}</td></tr>`).join('')}
+       ${/* Činnosti stojí za cenu před slevou (29. 9. 2026) — sleva vlastním
+            řádkem, jinak by se rekapitulace nesečetla do celku. */ ''}
+       ${p.PROJ_SLEVA_KC ? `<tr><td>Cena před slevou</td><td style="text-align:right">${esc(p.PROJ_CENA_PRED_SLEVOU)}</td></tr>
+       <tr><td>Sleva ${esc(p.PROJ_SLEVA_PROC)} %</td><td style="text-align:right">− ${esc(p.PROJ_SLEVA_KC)}</td></tr>` : ''}
        <tr class="tot"><td><b>CELKEM bez DPH</b></td><td style="text-align:right"><b>${esc(p.PROJ_CELKEM_BEZ_DPH)}</b></td></tr>
        </table>`
     : `<div class="note">Zatím není oceněná žádná činnost – doplňte hodiny a fixní náklady v sekcích Kalkulace PROJ výše.
@@ -58,9 +79,29 @@ function nabidkaProjKarta() {
     <div class="note" style="font-weight:600;margin-top:8px">Rekapitulace cen:</div>
     ${rekap}
     ${typeof kryciProjPodminkyBlok === 'function' ? kryciProjPodminkyBlok() : ''}
+    ${/* Autorský dozor jen když se nabízí (14. 10. 2026). Volba je v zadání PROJ
+         varianty — zámek odeslané nabídky ji hlídá jako každé jiné pole (set). */ ''}
+    <label style="display:block;margin-top:10px;font-weight:600">
+      <input type="checkbox" id="projNabizetAD" ${nabidkaProjNabiziAD(akt) ? 'checked' : ''}
+        onchange="set('PJ.nabizetAD', this.checked)"> Nabízet autorský dozor</label>
+    <div class="note">Zaškrtnuté: nabídka PROJ (i Word se šablonou PROJ v5) a technická verze krycího listu PROJ
+      uvedou blok AUTORSKÝ DOZOR (AD) s měsíční sazbou a platebními podmínkami. Nová varianta autorský dozor nenabízí.</div>
     <div class="note" style="font-weight:600;margin-top:10px">Popis záměru (úvodní odstavec nabídky):</div>
     <textarea rows="4" style="width:100%" placeholder="Např.: Bytový dům, přístavba výtahu do zrcadla schodiště…"
       oninput="nabidkaProjPopis(this.value)">${esc(ZAK.popisZameru || '')}</textarea>
+    ${/* Úvod „Naše NABÍDKA a doporučení" (D2, 20. 10. 2026): předvyplněný
+         podle nabízených činností, obchodník ho smí upravit. */ ''}
+    <div class="note" style="font-weight:600;margin-top:10px">Naše NABÍDKA a doporučení (úvod nabídky)${d.uvod && d.uvod.rucne
+      ? ' <span class="pill" title="text upravený obchodníkem — platí pro tuto variantu">upraveno ručně</span>' : ''}:</div>
+    ${d.uvod && d.uvod.nesedi ? `<div class="neg" id="projUvodNesedi">⚠ Nabízené činnosti se od ruční úpravy úvodu změnily — ruční text nemusí sedět.
+      Zkontrolujte ho, nebo vraťte výchozí znění.</div>` : ''}
+    <textarea rows="5" style="width:100%" id="projUvodNabidky"
+      onchange="nabidkaProjUvodNastav(this.value)">${esc((d.uvod && (d.uvod.rucne || d.uvod.vychoziCz)) || '')}</textarea>
+    <div class="btns" style="margin-top:4px"><button class="mini" id="projUvodVychozi" ${d.uvod && d.uvod.rucne ? '' : 'disabled'}
+      onclick="nabidkaProjUvodVychozi()">↺ Vrátit výchozí</button></div>
+    <div class="note">Předvyplní se podle nabízených činností (studie, projednání s památkáři, DPZ…). Ruční úprava platí
+      pro tuto variantu a český dokument (online i Word se symbolem <code>{{UVOD_NABIDKY_PROJ}}</code>); EN/DE/FR tisknou
+      výchozí přeložené znění. Odstavce oddělte novým řádkem. Odeslaná (zamčená) varianta drží svůj text.</div>
     ${typeof nabidkaFotoKarta === 'function' ? nabidkaFotoKarta('proj') : ''}
     ${typeof kontrolyPanel === 'function' ? kontrolyPanel() : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
@@ -70,9 +111,9 @@ function nabidkaProjKarta() {
       <!-- cteni-ok: tisk a Word nic nezapisují, v režimu čtení (zámek okna)
            zůstávají živé — bez třídy by je CSS .cteni-zamceno v #proj-telo
            vypnulo (hlášení J. V. 7. 9. 2026: „nemůžu zakázku ani vytisknout"). -->
-      <button class="primary cteni-ok"${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr() : ''}
+      <button class="primary cteni-ok"${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr('nabidkaProjTisk') : ''}
         onclick="nabidkaProjNahled()">Kompletní náhled a tisk nabídky</button>
-      <button class="cteni-ok"${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr() : ''}
+      <button class="cteni-ok"${typeof ukazkoveZabranaAttr === 'function' ? ukazkoveZabranaAttr('nabidkaProj') : ''}
         onclick="nabidkaProjWord()">Vytvořit nabídku PROJ (Word)</button>
       ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}
     </div>
@@ -154,6 +195,9 @@ async function nabidkaProjWordGeneruj(srv) {
   const varianta = (typeof nabidkaVarianta === 'function')
     ? await nabidkaVarianta()
     : ((typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0]);
+  /* Zábrany (#377, plán plateb) — hláška dřív než chyba z registru. */
+  if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidkaProj', varianta, nabidkaProjStavText)) return;
+  if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaProj', varianta))) { nabidkaProjStavText('Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
   dokumentVygeneruj('nabidkaProj', sablona.slice(0), ZAK, varianta, JEKLY, L)
     .then(res => {
       const a = document.createElement('a');
@@ -173,6 +217,7 @@ async function nabidkaProjWordGeneruj(srv) {
                : (sablonyOnlineAktivni() ? ' POZOR: použita MÍSTNÍ šablona (měkký režim) – do zámku se to zapsalo.' : ''))
         + (mutaceChybi ? ' Pozor: pevný text šablony zůstal český – jazykovou mutaci šablony '
           + 'vyrobíte v Nastavení → Šablony.' : '')
+        + (srv && srv.mutaceZastarala ? ' POZOR: ' + srv.mutaceZastarala : '')
         + zamcenoText);
     })
     .catch(err => {
@@ -185,17 +230,20 @@ async function nabidkaProjWordGeneruj(srv) {
 }
 
 /* Kompletní tiskový náhled celé nabídky – všechny oddíly VZORu v pořadí. */
-function nabidkaProjNahled() {
+async function nabidkaProjNahled() {
   /* Pojistka pro případ, že by se sem někdo dostal jinudy než tlačítkem
-   * (zhasnutým) – tiskový náhled je dokument pro zákazníka jako každý jiný. */
+   * (zhasnutým) – tiskový náhled je dokument pro zákazníka jako každý jiný.
+   * Typ dokumentu kvůli bráně plánu plateb (etapa B). */
+  const akt = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0];
   if (typeof dokumentZabrana === 'function') {
-    const duvod = dokumentZabrana();
-    if (duvod) { hlaska(duvod); return; }
+    const duvod = dokumentZabrana('nabidkaProjTisk', akt);
+    if (duvod) { hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' }); return; }
   }
   const L = (typeof tiskJazyk === 'function') ? tiskJazyk()
     : ((typeof jazyk === 'function') ? jazyk() : 'cz');   // volba „Jazyk tisku" (#143)
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
-  const akt = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0];
+  /* Ptát se PŘED otevřením okna náhledu (P2): tisk z náhledu zamyká. */
+  if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaProjTisk', akt))) return;   // P2 (K13-N54)
   const d = nabidkaProjData(ZAK, akt, L);
   const p = d.placeholders;
 
@@ -224,10 +272,13 @@ function nabidkaProjNahled() {
       return `<h2>${esc(b.nadpis)}</h2><table>${b.radky.map(r =>
         `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</table>`;
     /* cena */
+    /* Vlastní a trvalé položky sekce (P4 / K14-N64) — pod popisem ceny. */
     return `<table class="cena"><tr><td><b>${esc(b.nadpis)}</b><br>
-        <span class="popis">${esc(b.popis || '')}</span></td>
+        <span class="popis">${esc(b.popis || '')}</span>${(b.navic || []).map(n =>
+          `<br><span class="popis polozka-navic">– ${esc(n)}</span>`).join('')}</td>
       <td class="castka${b.neuvedena ? ' chybi' : ''}">${esc(b.castka)}${b.neuvedena ? '' : '<br><span class="popis">'
         + esc(P('bez DPH')) + '</span>'}</td></tr>
+      ${(b.cestovne || []).length ? `<tr><td colspan="2" class="popis cestovne">${esc(b.cestovne.join(' '))}</td></tr>` : ''}
       ${b.hvezdicka ? `<tr><td colspan="2" class="popis">*) ${esc(b.hvezdicka)}</td></tr>` : ''}</table>`;
   }).join('');
 
@@ -248,8 +299,9 @@ function nabidkaProjNahled() {
   const logoHtml = dokLogoHtml();
   const patickaHtml = dokPatickaHtml(P);
 
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html lang="${L === 'cz' ? 'cs' : L}"><head><meta charset="utf-8">
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
+  w.document.write(`<!DOCTYPE html><html lang="${esc(L === 'cz' ? 'cs' : L)}"><head><meta charset="utf-8">
     <title>${esc(d.nazevSouboru)}</title>
     <style>body{font:13px/1.55 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}
     h1{font-size:20px;margin:6px 0} h1.sekce{font-size:15px;background:#1d4ed8;color:#fff;padding:7px 10px;margin:26px 0 10px;

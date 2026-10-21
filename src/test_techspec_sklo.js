@@ -77,9 +77,19 @@ const jeDvojsklo = (Z, C) => /dvojskl/i.test(eng.skloVolba(Z, C).boky.nazev);
   test('POVRCHOVÁ ÚPRAVA souhlasí s jádrem — ' + popis,
     /dvojskl/i.test(povrch) === jadro, { jadro, povrch });
 
+  /* ZMĚNA 30. 9. 2026 (#375, rozhodnutí J. V.): světlík volby „sklo" je
+   * sklem ČELNÍ stěny (u exteriéru VSG 4.4.1), ne boků — a přesně tím se
+   * počítá odjakživa. Řádek nadsvětlíků se proto srovnává se sklem, kterým
+   * jádro světlík opravdu počítá (`zaskleni.vypln.material`), ne se sklem
+   * boků. Dvojsklo u světlíku dává „materiál opláštění" (stěny B, C, D). */
   const nadsvetliky = hodnota('oplasteniNadsvetliku', Z, C);
-  test('OPLÁŠTĚNÍ NADSVĚTLÍKŮ souhlasí s jádrem — ' + popis,
-    /dvojskl/i.test(nadsvetliky) === jadro, { jadro, nadsvetliky });
+  const svetlikDvojsklo = eng.vypocet(Z, C, JEKLY, true).zaskleni.vypln.material.nad.A.typ === 'C.skloBokyKc';
+  test('OPLÁŠTĚNÍ NADSVĚTLÍKŮ souhlasí s jádrem (sklo světlíku) — ' + popis,
+    /dvojskl/i.test(nadsvetliky) === svetlikDvojsklo, { svetlikDvojsklo, nadsvetliky });
+  const Zm = Object.assign(JSON.parse(JSON.stringify(Z)), { nadDvermi: 'material' });
+  const nadsvetlikyMat = hodnota('oplasteniNadsvetliku', Zm, C);
+  test('… a u „materiálu opláštění" sklem boků a zad — ' + popis,
+    /dvojskl/i.test(nadsvetlikyMat) === jadro, { jadro, nadsvetlikyMat });
 
   /* Co se nabídne, musí jít i vybrat ze seznamu — jinak obchodník vidí
    * hodnotu, kterou by sám nastavit nemohl. */
@@ -202,8 +212,10 @@ const jeDvojsklo = (Z, C) => /dvojskl/i.test(eng.skloVolba(Z, C).boky.nazev);
   test('číselník názvu akce má čtyři varianty', seznam.length === 4, seznam);
   test('a žádná nenese obě možnosti naráz',
     seznam.every(x => !/\//.test(x)), seznam.filter(x => /\//.test(x)));
-  test('výchozí název je jedna z nich',
-    seznam.indexOf(ts.DEFAULT_TECHSPEC.nazevAkce) >= 0, ts.DEFAULT_TECHSPEC.nazevAkce);
+  /* Od 14. 10. 2026 je výchozí název z hlavičky zakázky — specifikace vlastní
+   * text nenese a číselník je jen nabídka pro ruční přepis. */
+  test('výchozí název nese hlavička zakázky (specifikace vlastní text nemá)',
+    ts.DEFAULT_TECHSPEC.nazevAkce === '' && ts.DEFAULT_TECHSPEC.nazevAkceRucne === false, ts.DEFAULT_TECHSPEC.nazevAkce);
   test('pole NÁZEV AKCE ten číselník opravdu nabízí',
     (ts.TS_HLAVICKA.find(x => x.id === 'nazevAkce') || {}).ciselnik === ts.TS_C.nazevAkce);
   /* Bez překladu by v EN/DE zůstala čeština — to byla druhá polovina nálezu. */

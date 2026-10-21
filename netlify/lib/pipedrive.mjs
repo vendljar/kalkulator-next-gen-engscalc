@@ -23,6 +23,9 @@
  *                       `mojefirma.pipedrive.com`
  * ============================================================ */
 
+import { uloziste, vyzadujRoli, cizihoPuvodu, json, vyhradne } from './sdilene.mjs';
+import { jadro, jadroChyba } from './jadro.mjs';
+
 export const PD_TOKEN_PROMENNA = 'PIPEDRIVE_TOKEN';
 export const PD_DOMENA_PROMENNA = 'PIPEDRIVE_DOMENA';
 
@@ -150,4 +153,62 @@ export async function pdVsechny(cesta, dotaz = {}, strop = 10) {
     if (!kurzor) break;
   }
   return vse;
+}
+
+/* ============================================================
+ * KDO SMÍ ČÍST Z PIPEDRIVE (B80, dávka S1, 15. 10. 2026)
+ *
+ * Audit 24. 9. 2026: /api/pd/* smí každý přihlášený, klient je přitom nevolá.
+ * S tokenem to znamenalo, že kterýkoli účet projde `/api/pd/deal?id=1…N`
+ * a odnese si celé CRM i s kontakty — a cestou vyčerpá denní rozpočet
+ * Pipedrive celé firmě. Pravidla teď platí stejná jako u ostatních funkcí:
+ *   - přihlášení a dnešní stav účtu (vyzadujRoli),
+ *   - požadavek z cizího původu se odmítne i u GET (B17 jinak hlídá jen
+ *     mutující požadavky; tady jde o data a o rozpočet, ne o zápis),
+ *   - právo z matice zobrazení `crm.pipedrive` (administrátor vždy; ostatním
+ *     ho přidělí administrátor, výchozí stav je „ne").
+ * Vrací { relace } nebo { chyba: hotová odpověď }.
+ * ============================================================ */
+export const PD_PRAVO = 'crm.pipedrive';
+
+export async function pdPristup(req) {
+  const { chyba, relace } = await vyzadujRoli(req);
+  if (chyba) return { chyba };
+  if (cizihoPuvodu(req))
+    return { chyba: json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403) };
+  if (relace.role !== 'Administrátor') {
+    let ZOB;
+    try { ({ ZOB } = await jadro()); } catch (e) { return { chyba: jadroChyba(e) }; }
+    const z = await (await uloziste('program')).cti('zobrazeni');
+    if (!ZOB.zobrazeniSmi(relace.role, PD_PRAVO, (z && z.matice) || null))
+      return { chyba: json({ ok: false, chyba: 'Čtení z Pipedrive vám administrátor nepřidělil '
+        + '(Nastavení → Zobrazení → „Čtení obchodních případů z Pipedrive").' }, 403) };
+  }
+  return { relace };
+}
+
+/* Strop čerstvých načtení detailu na uživatele (B80). Detail stojí 3 tokeny
+ * denního rozpočtu (deal + organizace + osoba po 1, x-token-cost ve
+ * specifikaci v2). Obchodník za hodinu otevře
+ * pár případů; třicet je velkorysá rezerva, a přitom smyčka přes všechna
+ * čísla případů narazí po pár vteřinách. Načtení z cache se nepočítá. */
+export const PD_CACHE_ULOZISTE = 'pd_cache';
+export const PD_DEAL_MAX = 30;
+export const PD_DEAL_OKNO_MS = 3600 * 1000;
+
+/* true = smí do Pipedrive (a načtení se započítalo), false = nad stropem. */
+export async function pdStropCerstvych(email) {
+  const s = await uloziste(PD_CACHE_ULOZISTE);
+  const klic = 'strop:' + String(email || '').toLowerCase();
+  /* Čtení a zápis počítadla ve výhradním úseku (B158): bez něj 200 souběžných
+   * požadavků přečetlo tutéž hodnotu a prošlo všech 200. */
+  return vyhradne(PD_CACHE_ULOZISTE + '/' + klic, async () => {
+    const ted = Date.now();
+    let z = await s.cti(klic);
+    if (!z || typeof z !== 'object' || !(ted - (+z.od || 0) < PD_DEAL_OKNO_MS)) z = { od: ted, pocet: 0 };
+    if ((+z.pocet || 0) >= PD_DEAL_MAX) return false;
+    z.pocet = (+z.pocet || 0) + 1;
+    await s.zapis(klic, z);
+    return true;
+  });
 }

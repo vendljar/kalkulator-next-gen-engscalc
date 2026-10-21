@@ -41,11 +41,15 @@ import zakazky from './netlify/functions/zakazky.mjs';
 import zaloha from './netlify/functions/zaloha.mjs';
 import firma from './netlify/functions/firma.mjs';
 import zobrazeni from './netlify/functions/zobrazeni.mjs';
+import popisyFn from './netlify/functions/popisy.mjs';
 import zakazniciFn from './netlify/functions/zakaznici.mjs';
 import zalohaVynuceno from './netlify/functions/zaloha_vynuceno.mjs';
+import { porizOtisk } from './netlify/lib/zalohovani.mjs';
 import sablonyFn from './netlify/functions/sablony.mjs';
 import analytikaFn from './netlify/functions/analytika.mjs';
 import obnovaFn from './netlify/functions/obnova.mjs';
+import slovnikFn from './netlify/functions/slovnik.mjs';
+import controllingFn from './netlify/functions/controlling.mjs';
 
 /* Dialogy jsou od 2. 9. 2026 v aplikaci (src/ui/dialog.js), ne nativní —
  * `page.on('dialog')` už tedy nic nechytí. Harness si proto potvrzování
@@ -57,6 +61,10 @@ const dlgStub = async (page) => page.evaluate(() => {
   window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(true); };
   window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
   window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve(v == null ? '' : v); };
+  /* Heslo správce k citlivé akci (B77, 13. 10. 2026): odpověď si harness
+   * nastaví ve `window.__dlgHeslo` (null = správce dialog zrušil). */
+  window.dotazHeslo = (t) => { window.__dlgTexty.push(String(t));
+    return Promise.resolve(window.__dlgHeslo === undefined ? null : window.__dlgHeslo); };
 });
 const dlgPosledni = async (page) => page.evaluate(() =>
   (window.__dlgTexty && window.__dlgTexty.length) ? window.__dlgTexty[window.__dlgTexty.length - 1] : '');
@@ -80,6 +88,7 @@ const FUNKCE = {
   /* Matice zobrazení (#136) — aplikace ji načítá hned po přihlášení, takže
    * bez ní by v každém průchodu svítilo 404 v konzoli. */
   '/api/zobrazeni': zobrazeni,
+  '/api/popisy': popisyFn,
   '/api/zakaznici': zakazniciFn,
   /* Vynucená (a ověřitelná) záloha databáze – 4. 8. 2026. Kdyby tu funkce
    * chyběla, volání z prohlížeče by skončilo na 404 a test by mlčel
@@ -93,6 +102,10 @@ const FUNKCE = {
    * funkci: panel, náhled bez zápisu, obnova smazané zakázky, odmítnutí
    * obchodníka. */
   '/api/obnova': obnovaFn,
+  /* Zveřejněný slovník překladů (#401) — načítá se hned po přihlášení. */
+  '/api/slovnik': slovnikFn,
+  /* Controlling (#447): správce si ho po přihlášení načte vedle slovníku. */
+  '/api/controlling': controllingFn,
 };
 
 let ok = 0, fail = 0;
@@ -113,12 +126,18 @@ const ADRESA = 'http://127.0.0.1:' + server.address().port;
 const prohlizec = await chromium.launch({ args: ['--no-sandbox'] });
 const ctx = await prohlizec.newContext({ acceptDownloads: true });
 const page = await ctx.newPage();
+/* Hlídač (13. 10. 2026): page.evaluate nad skutečným modálem (po selhání B59
+ * neuložená zakázka → dotaz „neuložené změny") by visel donekonečna a celé
+ * kolo s ním. Každý krok má strop, nezachycená chyba harness ukončí kódem 1. */
+const { hlidejHarness } = require('./nastroje/harness_hlidac.js');
+hlidejHarness({ page, uklid: async () => { await prohlizec.close(); server.close(); } });
 
 const chyby = [];
 page.on('console', m => {
   const t = m.text();
   // 401/403/400/409 z /api jsou v testu záměr – aplikace s nimi počítá.
-  if (m.type() === 'error' && !/status of (401|403|400|409)/.test(t)) chyby.push('console: ' + t);
+  // 429 od O7 (K3-N4): limit vynucených záloh harness zkouší záměrně.
+  if (m.type() === 'error' && !/status of (401|403|400|409|429)/.test(t)) chyby.push('console: ' + t);
 });
 page.on('pageerror', e => chyby.push('pageerror: ' + e.message));
 page.on('dialog', d => (d.type() === 'prompt' ? d.accept('zkušební zveřejnění') : d.accept()));
@@ -189,6 +208,144 @@ test('zveřejnění založilo online verzi 1',
   await page.evaluate(() => ONLINE_STAV.db.platny.verze === 1));
 test('online ceník se v aplikaci sám nasadil',
   await page.evaluate(() => ONLINE_STAV.cenikPouzit === true));
+
+/* ---- 4a) společné dodatkové texty přežijí nasazení ceníku (nález N35 revize v22.9.9) ----
+ *
+ * Texty se vlévají do výchozího ceníku. Nasazení ceníku (`progPouzij` →
+ * `konfigNahradVMiste`) ale všechny jeho klíče smaže a naplní znovu — takže
+ * texty vlité dřív zmizely, a po zveřejnění nového ceníku pokaždé.
+ *
+ * Zkouší se TATÁŽ CESTA, kterou jde zveřejnění i přihlášení: `onlineNactiProgram`
+ * shodí `cenikPouzit` a nasazení provede `onlineTik` při dalším překreslení.
+ * Novou verzi ceníku kvůli tomu nezakládá — další oddíly počítají s verzí 1. */
+const KLIC_TEXTU = 'Zkušební položka pro text';
+const textPred = await page.evaluate(async (klic) => {
+  await onlinePopisUloz(klic, 'Věta, která má přežít nový ceník.');
+  return (DEFAULT_CENIK.popisy || {})[klic] || '';
+}, KLIC_TEXTU);
+test('administrátor uložil dodatkový text pro celou aplikaci',
+  textPred === 'Věta, která má přežít nový ceník.', textPred);
+/* Stav po `onlineNactiProgram`: ceník stažený, nasazení čeká na tik. */
+await page.evaluate(() => { ONLINE_STAV.cenikPouzit = false; render(); });
+await page.waitForFunction(() => { try { return ONLINE_STAV.cenikPouzit === true; } catch (e) { return false; } });
+await page.waitForTimeout(300);
+const textPo = await page.evaluate((klic) => ({
+  text: (DEFAULT_CENIK.popisy || {})[klic] || '',
+  verze: ONLINE_STAV.db.platny.verze,
+  nova: (novaZakazka().varianty[0].data.cenik.popisy || {})[klic] || '',
+}), KLIC_TEXTU);
+test('po nasazení platného ceníku text ve výchozím ceníku zůstal (N35)',
+  textPo.text === 'Věta, která má přežít nový ceník.', textPo);
+test('a nová zakázka si ho odnese', textPo.nova === 'Věta, která má přežít nový ceník.', textPo);
+/* Úklid: text zpátky, ať další oddíly počítají s tím, s čím dosud. */
+await page.evaluate(async (klic) => { await onlinePopisUloz(klic, ''); }, KLIC_TEXTU);
+
+/* ---- 4a2) číselník dodatkových textů v Ceníku OCK (25. 9. 2026) ----
+ * Hlášení J. V.: „z aplikace se mi v čase ztrácí dodatkové texty". Druhé
+ * okno se starou mapou textů mazalo, co se mezitím zapsalo jinde. */
+{
+  await page.evaluate(() => { prepniTab('cenik'); render(); });
+  await page.waitForTimeout(200);
+  test('Ceník OCK má kartu číselníku dodatkových textů',
+    await page.locator('#cenikPopisyKarta').count() === 1);
+  const pole = page.locator('#cenikPopisyKarta tr', { hasText: 'Sklo VSG s mléčnou fólií' }).locator('input');
+  test('administrátor má u položky pole k zápisu', await pole.count() === 1);
+  await pole.fill('Mléčné sklo z číselníku.');
+  await pole.dispatchEvent('change');
+  await page.waitForTimeout(400);
+  /* Simulace druhého okna: mapa načtená dřív, bez právě uloženého textu. */
+  const stav = await page.evaluate(async () => {
+    ONLINE_STAV.popisy = { texty: {}, kdo: '', kdy: '' };
+    await onlinePopisUloz('VENTILÁTOR (EXT)', 'Druhé okno.');
+    const r = await (await fetch('/api/popisy', { credentials: 'same-origin' })).json();
+    return r.popisy.texty;
+  });
+  test('text z číselníku je na serveru', stav['Sklo VSG s mléčnou fólií'] === 'Mléčné sklo z číselníku.', stav);
+  test('druhé okno se starou mapou ho nesmazalo', stav['VENTILÁTOR (EXT)'] === 'Druhé okno.', stav);
+  const vZakazce = await page.evaluate(() => ((aktivniVarianta(ZAK).data.cenik.popisy) || {})['Sklo VSG s mléčnou fólií'] || '');
+  test('otevřená rozpracovaná zakázka text dostala', vZakazce === 'Mléčné sklo z číselníku.', vZakazce);
+  await page.evaluate(async () => {
+    await onlinePopisUloz('Sklo VSG s mléčnou fólií', '');
+    await onlinePopisUloz('VENTILÁTOR (EXT)', '');
+    delete (aktivniVarianta(ZAK).data.cenik.popisy || {})['Sklo VSG s mléčnou fólií'];
+    prepniTab('kalk'); render();
+  });
+}
+
+/* ---- 4a2b) překlady dodatkových textů v číselníku (#379, K18-N96, 1. 10. 2026) ----
+ * Ručně psaný text slovník nezná — do cizí nabídky šel česky. Administrátor
+ * k textu v číselníku vyplní EN/DE/FR; tady se ověřuje, že se pole ukážou,
+ * uloží na server a dostanou se do výchozího ceníku i do otevřené zakázky.
+ * Texty jsou smyšlené. */
+{
+  const KL = 'Sklo VSG s mléčnou fólií';
+  await page.evaluate(() => { prepniTab('cenik'); render(); });
+  await page.waitForTimeout(200);
+  const radek = () => page.locator('#cenikPopisyKarta tr', { hasText: KL });
+  test('#379: bez českého textu se pole překladů nekreslí',
+    await radek().locator('input[data-popis-jazyk]').count() === 0);
+  const cz = radek().locator('input:not([data-popis-jazyk])');
+  await cz.fill('Ukázkový dodatek VSG');
+  await cz.dispatchEvent('change');
+  await page.waitForTimeout(400);
+  test('#379: s českým textem má administrátor pole EN, DE a FR',
+    await radek().locator('input[data-popis-jazyk]').count() === 3
+      && await radek().locator('input[data-popis-jazyk="de"]').count() === 1);
+  const de = radek().locator('input[data-popis-jazyk="de"]');
+  await de.fill('Beispielzusatz VSG');
+  await de.dispatchEvent('change');
+  await page.waitForTimeout(400);
+  const st = await page.evaluate(async (k) => {
+    const r = await (await fetch('/api/popisy', { credentials: 'same-origin' })).json();
+    const v = aktivniVarianta(ZAK);
+    return { server: ((r.popisy || {}).jazyky || {})[k] || null, cz: (r.popisy.texty || {})[k],
+      vychozi: ((DEFAULT_CENIK.popisyJazyky || {})[k] || {}).de || '',
+      zakazka: ((v.data.cenik.popisyJazyky || {})[k] || {}).de || '',
+      nova: ((novaZakazka().varianty[0].data.cenik.popisyJazyky || {})[k] || {}).de || '' };
+  }, KL);
+  test('#379: překlad DE je na serveru a český text zůstal',
+    !!st.server && st.server.de === 'Beispielzusatz VSG' && !st.server.en && st.cz === 'Ukázkový dodatek VSG', st);
+  test('#379: překlad je ve výchozím ceníku (nová zakázka si ho odnese)',
+    st.vychozi === 'Beispielzusatz VSG' && st.nova === 'Beispielzusatz VSG', st);
+  test('#379: otevřená rozpracovaná zakázka překlad dostala', st.zakazka === 'Beispielzusatz VSG', st);
+  test('#379: po překreslení pole drží uložený překlad',
+    await radek().locator('input[data-popis-jazyk="de"]').inputValue() === 'Beispielzusatz VSG');
+  /* Úklid: smazání českého textu vezme na serveru i překlady. */
+  const po = await page.evaluate(async (k) => {
+    await onlinePopisUloz(k, '');
+    const v = aktivniVarianta(ZAK);
+    delete (v.data.cenik.popisy || {})[k];
+    delete (v.data.cenik.popisyJazyky || {})[k];
+    const r = await (await fetch('/api/popisy', { credentials: 'same-origin' })).json();
+    prepniTab('kalk'); render();
+    return { jazyky: (r.popisy || {}).jazyky || {}, vychozi: (DEFAULT_CENIK.popisyJazyky || {})[k] || null };
+  }, KL);
+  test('#379: smazání českého textu vezme překlady s sebou (server i výchozí ceník)',
+    !(KL in po.jazyky) && !po.vychozi, po);
+}
+
+/* ---- 4a3) kontrola a oprava přípony první varianty v aplikaci (K13-P1) ---- */
+{
+  const r = await page.evaluate(async () => {
+    const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 8801'; z.nazevAkce = 'Přípona P1';
+    klonujVariantu(z, z.varianty[0].id);
+    z.varianty[0].pripona = 3;
+    await onlineApi('/api/zakazky', { zakazka: z });
+    const puvodniPotvrd = window.potvrd; window.potvrd = () => Promise.resolve(true);
+    await priponyKontrola();
+    const nalez = PRIPONY.nalezy.map(n => n.cislo + '.' + n.pripona);
+    await priponyOprav();
+    window.potvrd = puvodniPotvrd;
+    const ul = (await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(PRIPONY.nalezy[0].soubor))).zakazka;
+    const karta = priponyKarta();
+    return { nalez, opraveno: PRIPONY.nalezy[0].opraveno, pripony: ul.varianty.map(v => v.pripona),
+             zprava: PRIPONY.zprava, karta: /Kontrola čísla první varianty/.test(karta) };
+  });
+  test('Nastavení → Databáze: karta kontroly přípon je', r.karta, r);
+  test('kontrola najde první variantu s .3', r.nalez.includes('2026 - OPR - CN - 8801.3'), r.nalez);
+  test('oprava ji na serveru vrátí na holé číslo, klon zůstane .2',
+    r.opraveno && r.pripony[0] === 0 && r.pripony[1] === 2, r);
+}
 
 /* ---- 4b) firemní údaje online (4. 8. 2026) ----
  * Ceník sám nestačí. Obchodník složku _DB nemapuje, takže dokud firemní údaje
@@ -311,35 +468,50 @@ const ziveVZamku = await page.evaluate(() => {
     historie: pe(b => /Historická kalkulace/.test(b.textContent)),
     prehled: pe(b => /Přehled cenových nabídek →/.test(b.textContent)),
     varianta: pe(b => b.tagName === 'SELECT' && /přepnout počítanou variantu/.test(b.title)),
-    /* Od 21. 9. 2026 se tlačítko v režimu čtení jmenuje jinak (viz níž),
-     * takže se hledá podle obou znění — jinak by test měřil „chybí". */
+    /* Hledá se podle obou znění, která tlačítko kdy mělo (viz níž). Od
+     * 22. 9. 2026 se v režimu čtení nekreslí ani jedno, takže tu vyjde
+     * „chybí" — a přesně to se dole tvrdí. Kdyby se sem regulární výraz
+     * zúžil na dnešní znění, test by prošel i tehdy, kdyby se tlačítko
+     * vrátilo pod svým starým jménem. */
     ulozit: pe(b => /Uložit zakázku|Odemknout a uložit/.test(b.textContent)),
     ulozitPopis: (() => {
       const b = [...document.querySelectorAll('button')]
         .find(x => /Uložit zakázku|Odemknout a uložit/.test(x.textContent));
       return b ? b.textContent.trim() : 'chybí';
     })(),
+    /* Odemčení musí být v tu chvíli dosažitelné — jinak by se oprava N25
+     * změnila v past: neuložíš a nemáš čím odemknout. Od #404 (13. 10. 2026)
+     * odemyká rozpracovanou zakázku „Pokračovat v rozpracované kalkulaci"
+     * v jediné žluté liště nad záložkami. */
+    odemknout: pe(b => /Pokračovat v rozpracované kalkulaci/.test(b.textContent)),
   };
 });
 test('otevřená zakázka z databáze je jen ke čtení', ziveVZamku.zamceno === true, ziveVZamku);
-test('v režimu čtení zůstává živé Načíst, Nová zakázka, Historická kalkulace, Přehled i přepínač varianty',
-  ['nacist', 'nova', 'historie', 'prehled', 'varianta'].every(k => ziveVZamku[k] === 'auto'), ziveVZamku);
-/* ZMĚNA OČEKÁVÁNÍ 21. 9. 2026 (P3, nález N4).
+test('v režimu čtení zůstává živé Načíst, Nová zakázka, Přehled i přepínač varianty',
+  ['nacist', 'nova', 'prehled', 'varianta'].every(k => ziveVZamku[k] === 'auto'), ziveVZamku);
+/* Tlačítko „↩ Historická kalkulace…" bylo 13. 10. 2026 na pokyn J. V.
+ * odstraněno („už k ničemu není") — do 12. 10. se tu hlídalo, že je živé. */
+test('tlačítko Historická kalkulace v liště už není', ziveVZamku.historie === 'chybí', ziveVZamku);
+/* OČEKÁVÁNÍ SE TU ZMĚNILO DVAKRÁT — celý vývoj, ať se nevracíme zpátky.
  *
- * Do té doby se hlídalo, že je tlačítko uložení v režimu čtení MRTVÉ
- * (`pointer-events:none`). Chránilo to sice data, ale právě tím vznikl
- * nález N4: tlačítko vypadalo jako tlačítko, kliknutí neudělalo nic
- * a jediné vysvětlení šlo do karty Databáze, kam se v tu chvíli nikdo
- * nedívá. Uživatel odcházel s dojmem, že je práce uložená.
+ * Do 21. 9. 2026 se hlídalo, že je tlačítko uložení v režimu čtení MRTVÉ
+ * (`pointer-events:none`). Chránilo to data, ale právě tím vznikl nález N4:
+ * tlačítko vypadalo jako tlačítko, kliknutí neudělalo nic a jediné
+ * vysvětlení šlo do karty Databáze, kam se v tu chvíli nikdo nedívá.
  *
- * Nově je tlačítko KLIKATELNÉ, jmenuje se „🔒 Odemknout a uložit" a místo
- * zápisu otevře dialog s odemknutím. Že se nic neuloží, hlídá kontrola
- * `zamekCteniStop()` na začátku `zakUlozUI()` — tedy pravidlo v kódu,
- * ne nedostupnost prvku. Nedostupné tlačítko není vysvětlení. */
-test('Uložit zakázku je v režimu čtení klikatelné (aby šlo nabídnout odemknutí)',
-  ziveVZamku.ulozit === 'auto', ziveVZamku);
-test('a říká, co se opravdu stane — nejdřív odemknout',
-  /Odemknout a uložit/.test(ziveVZamku.ulozitPopis), ziveVZamku.ulozitPopis);
+ * 21. 9. se tedy oživilo a přejmenovalo na „🔒 Odemknout a uložit". Jenže
+ * ani to akci nedokončilo: zůstala hláška o režimu čtení, nic se neuložilo
+ * a otevřel se panel Zakázky online (nález N25).
+ *
+ * 22. 9. 2026, rozhodnutí J. V.: „tlačítko u otevřené zakázky nenabízet."
+ * V režimu čtení se tedy nekreslí vůbec a lišta začíná „Načíst zakázku".
+ * Odemčení má jedno místo — lištu zámku. Že se nic neuloží, hlídá dál
+ * kontrola `zamekCteniStop()` na začátku `zakUlozUI()`: pravidlo v kódu,
+ * ne nedostupnost prvku. */
+test('Uložit zakázku se v režimu čtení vůbec nenabízí',
+  ziveVZamku.ulozit === 'chybí', ziveVZamku);
+test('a odemknout jde žlutou lištou (Pokračovat v rozpracované kalkulaci, #404)',
+  ziveVZamku.odemknout === 'auto', ziveVZamku);
 
 /* NOVÁ VARIANTA SE V ZAMČENÉ ZAKÁZCE NEVYROBÍ DO ZTRACENA (P3, nález N4).
  *
@@ -361,6 +533,32 @@ test('zakázka je pro tenhle test opravdu jen ke čtení', varZamek.zamceno === 
 test('„+ Nová varianta" v režimu čtení variantu NEzaloží',
   varZamek.poNova === varZamek.pred, varZamek);
 test('ani kopie ⧉ v Přehledu', varZamek.poKopie === varZamek.pred, varZamek);
+
+/* DODATKOVÝ TEXT V ZAMČENÉ ZAKÁZCE (nález B63 revize v22.9.9).
+ *
+ * Pole textu pod položkou vidí od #310 každý. `popisSet` se ale ptal jen na
+ * zámek varianty, ne na zámek čtení: text se v zakázce jen ke čtení zapsal,
+ * autosave ho neuložil a po F5 byl pryč. Měří se, že se do ceníku varianty
+ * NIC nezapsalo — dialog s odemčením sám o sobě nic nedokazuje. */
+const popisZamek = await page.evaluate(() => {
+  /* Předchozí kontroly („+ Nová varianta", kopie ⧉) odklepnou dialog
+   * s odemčením — stub odpovídá „ano" —, takže se zakázka před měřením
+   * zamyká znovu. Bez toho by test měřil odemčenou zakázku. */
+  zamekCteniZapni(); render();
+  const d = aktivniVarianta(ZAK).data;
+  const pred = JSON.stringify((d.cenik && d.cenik.popisy) || {});
+  const zamceno = zamekCteniJe();
+  popisSet('C.priplatky.zabranyDvereKc', 'Text napsaný v režimu čtení');
+  const po = JSON.stringify((aktivniVarianta(ZAK).data.cenik.popisy) || {});
+  const obaleny = !!(window.popisSet && window.popisSet._zamek);
+  /* Stub dialogu odpovídá „ano" a zakázku tím odemkne — vrátit, ať další
+   * kontroly počítají se zamčenou zakázkou jako dosud. */
+  zamekCteniZapni();
+  return { zamceno, stejne: pred === po, obaleny };
+});
+test('dodatkový text se v zakázce jen ke čtení nezapíše (B63)',
+  popisZamek.zamceno === true && popisZamek.stejne === true, popisZamek);
+test('a hlídá ho týž obal zámku jako ostatní zápisy', popisZamek.obaleny === true, popisZamek);
 
 /* A po odemčení to musí jít — zábrana nesmí zavřít i správnou cestu.
  *
@@ -399,13 +597,20 @@ test('v režimu čtení jde nabídku PROJ vytisknout, vytvořit Word, přepnout 
   Object.values(tiskProjVZamku).every(v => v === 'auto'), tiskProjVZamku);
 
 /* Zámek čtení na záložce Ceník (8. 9. 2026, hlášení J. V.: „přirážka se vždy
- * vrátí na 20 %"): lišta s Odemknout je i tady a dialog při zablokovaném
- * zápisu odemknutí rovnou nabídne (stub potvrd odpoví ano). */
+ * vrátí na 20 %"): odemknout jde i odsud a dialog při zablokovaném zápisu
+ * odemknutí rovnou nabídne (stub potvrd odpoví ano). Od #404 (13. 10. 2026)
+ * je lišta jediná žlutá nad záložkami — na záložce Ceník musí být vidět
+ * a stránka sama starou modrou lištu nenese. */
 await page.evaluate(() => prepniTab('cenik'));
 await page.waitForTimeout(300);
-test('záložka Ceník ukazuje lištu jen ke čtení s tlačítkem Odemknout',
-  /Nabídka je otevřená jen ke čtení/.test(await page.locator('#page-cenik').innerHTML())
-  && /zamekCteniOdemkniUI\(\)/.test(await page.locator('#page-cenik').innerHTML()));
+const listaCenik = await page.evaluate(() => {
+  const ob = document.getElementById('obnovaLista');
+  return { vidno: !!ob && ob.classList.contains('zobraz') && ob.offsetParent !== null,
+           pokracovat: /listaPokracujUI\(\)/.test(ob ? ob.innerHTML : ''),
+           stara: /Nabídka je otevřená jen ke čtení/.test(document.getElementById('page-cenik').innerHTML) };
+});
+test('záložka Ceník: žlutá lišta s Pokračovat je vidět, stará modrá lišta ne',
+  listaCenik.vidno && listaCenik.pokracovat && !listaCenik.stara, listaCenik);
 const odemceniZCeniku = await page.evaluate(async () => {
   const pred = C.marze;
   set('C.marze', 0.31);                       // zamčeno → dialog (stub: ano) → odemkne se
@@ -416,7 +621,7 @@ const odemceniZCeniku = await page.evaluate(async () => {
   return { pred, poZablokovani, odemceno, po: C.marze, dialog: window.__dlgTexty[window.__dlgTexty.length - 1] };
 });
 test('zamčený zápis do ceníku se neprovede a dialog nabídne odemknutí',
-  odemceniZCeniku.poZablokovani === odemceniZCeniku.pred && /Odemknout k úpravám/.test(odemceniZCeniku.dialog), odemceniZCeniku);
+  odemceniZCeniku.poZablokovani === odemceniZCeniku.pred && /Pokračovat v rozpracované kalkulaci/.test(odemceniZCeniku.dialog), odemceniZCeniku);
 test('po odemknutí z dialogu se přirážka zapíše', odemceniZCeniku.odemceno && odemceniZCeniku.po === 0.31, odemceniZCeniku);
 await page.evaluate((v) => { set('C.marze', v); zamekCteniZapni(); prepniTab('kalk'); render(); }, odemceniZCeniku.pred);
 await page.waitForTimeout(200);
@@ -437,18 +642,42 @@ const listaBtn = async (kde) => page.evaluate((k) => {
   return l ? Array.from(l.querySelectorAll('button')).map(b => b.textContent.trim()) : [];
 }, kde);
 
+/* Zakázka je v tuhle chvíli pořád otevřená z databáze, tedy jen ke čtení.
+ * Nejdřív se tedy měří ZAMČENÁ lišta: od 22. 9. 2026 (N25) v ní uložení
+ * není a začíná rovnou „Načíst zakázku". Teprve pak se odemkne a měří
+ * se trojice — jinak by se ty dva stavy daly zaměnit. */
 await page.evaluate(() => prepniTab('kalk'));
+const btnZamek = await listaBtn('kalk');
+test('lišta zamčené zakázky uložení vůbec nenabízí a začíná dvojicí Načíst / Nová zakázka',
+  !btnZamek.some(x => /Uložit zakázku|Odemknout a uložit/.test(x))
+  && /Načíst zakázku/.test(btnZamek[0] || '') && /Nová zakázka/.test(btnZamek[1] || ''),
+  btnZamek.slice(0, 4));
+
+await page.evaluate(() => { zamekCteniVypni(); render(); });
+await page.waitForTimeout(150);
 const btnOck = await listaBtn('kalk');
-/* Znění prvního tlačítka se od 21. 9. 2026 liší podle stavu zakázky
- * („Uložit zakázku" × „🔒 Odemknout a uložit" v režimu čtení). Test hlídá
- * POŘADÍ a složení trojice, ne konkrétní slovo — proto obě znění. */
+/* Test hlídá POŘADÍ a složení trojice, ne konkrétní slovo — jinak by prošel
+ * i tehdy, kdyby trojice skončila na konci lišty (zadání 4. 8. 2026). */
 test('lišta Kalkulace OCK začíná trojicí Uložit / Načíst / Nová zakázka',
-  /Uložit zakázku|Odemknout a uložit/.test(btnOck[0] || '') && /Načíst zakázku/.test(btnOck[1] || '')
+  /Uložit zakázku/.test(btnOck[0] || '') && /Načíst zakázku/.test(btnOck[1] || '')
   && /Nová zakázka/.test(btnOck[2] || ''), btnOck.slice(0, 4));
+test('po odemčení se tedy uložení vrátilo na své místo',
+  btnOck.length === btnZamek.length + 1, { btnZamek: btnZamek.slice(0, 4), btnOck: btnOck.slice(0, 4) });
+/* A uložení po odemčení SKUTEČNĚ PROJDE. Samotné tlačítko nic nedokazuje:
+ * přesně na tom stál nález N25, kde tlačítko bylo, ale akci nedokončilo. */
+const ulozPoOdemceni = await page.evaluate(async () => {
+  ONLINE_STAV.posledni = '';
+  ZAK.adresa = 'Odemčeno a uloženo 1, Praha';
+  await zakUlozUI();
+  return { zamceno: zamekCteniJe(), zapsano: (ONLINE_STAV.posledni || '').includes('Odemčeno a uloženo 1') };
+});
+test('a uložení po odemčení opravdu zapíše do databáze',
+  ulozPoOdemceni.zamceno === false && ulozPoOdemceni.zapsano, ulozPoOdemceni);
+
 await page.evaluate(() => prepniTab('proj'));
 const btnProj = await listaBtn('proj');
 test('lišta Kalkulace PROJ začíná stejnou trojicí (projekční zakázky)',
-  /Uložit zakázku|Odemknout a uložit/.test(btnProj[0] || '') && /Načíst zakázku/.test(btnProj[1] || '')
+  /Uložit zakázku/.test(btnProj[0] || '') && /Načíst zakázku/.test(btnProj[1] || '')
   && /Nová zakázka/.test(btnProj[2] || ''), btnProj.slice(0, 4));
 /* 5. 8. 2026: tlačítko „Převzít údaje z hlavičky OCK/PROJ" bylo z lišty obou
  * kalkulací zrušeno (zadání). Dřív se tu hlídalo jen jeho pořadí; teď se hlídá,
@@ -514,6 +743,62 @@ test('a po každém kroku se do databáze opravdu zapíše',
 test('zakázka „0777" je v rejstříku online zakázek',
   await page.evaluate(() => ONLINE_STAV.rejstrik.some(z => (z.cislo || '').includes('0777'))));
 
+/* ---- 5b2) DUPLIKACE NEZAHODÍ NEULOŽENOU PRÁCI (nález N36 revize v22.9.9) ----
+ *
+ * Dotaz na neuložené změny se ptal jen režimu SLOŽKY (`ULO_STAV.posledni`),
+ * který je vypnutý — v online režimu se tedy nepoložil nikdy a duplikace
+ * rozdělanou práci tiše zahodila. A naplánovaný autosave předchozí zakázky
+ * zůstal běžet. Tři volby jako u otevření jiné zakázky (V35); dialog se tu
+ * nahrazuje odpovědí, kterou dostane. */
+const dup = await page.evaluate(async () => {
+  const out = {};
+  window.__volbaOdpoved = 'zustat';
+  window.volba = (t, m) => { window.__dlgTexty.push(String(t)); return Promise.resolve(window.__volbaOdpoved); };
+  window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve('2026 - OPR - CN - 0778'); };
+  const puvodniCislo = ZAK.cislo;
+  const puvodniSoubor = ONLINE_STAV.soubor;
+  set('ZAK.adresa', 'Neuložená změna 12, Praha');        // práce, která ještě není na serveru
+  out.neulozeno = historieNeulozeno();
+  window.__dlgTexty = [];
+  await zakazkaDuplikujUI();
+  out.zustalo = ZAK.cislo === puvodniCislo && ZAK.adresa === 'Neuložená změna 12, Praha';
+  out.zeptal = (window.__dlgTexty || []).some(x => /neuložené změny/i.test(x));
+  window.__volbaOdpoved = 'zahodit';
+  await zakazkaDuplikujUI();
+  out.cislo = ZAK.cislo;
+  out.soubor = ONLINE_STAV.soubor;
+  out.timer = ONLINE_STAV.timer;
+  out.zmena = ONLINE_STAV.zmenaUzivatele;
+  /* Úklid: zpátky na uloženou zakázku 0777 (duplikát se zahodí), odemčenou
+   * jako dosud — další oddíly (kolize verzí) s ní počítají. */
+  window.__volbaOdpoved = 'zahodit';
+  await onlineOtevri(puvodniSoubor);
+  zamekCteniVypni();
+  out.zpet = ONLINE_STAV.soubor === puvodniSoubor;
+  delete window.volba;
+  return out;
+});
+test('(zakázka má opravdu neuloženou změnu)', dup.neulozeno === true, dup);
+test('duplikace se na neuložené změny zeptá (N36)', dup.zeptal === true, dup);
+test('„Zůstat tady" nechá otevřenou zakázku i s rozdělanou prací', dup.zustalo === true, dup);
+test('„Zahodit" duplikát založí a odpojí ho od souboru předlohy',
+  /0778/.test(dup.cislo) && dup.soubor === '', dup);
+test('a naplánovaný autosave předchozí zakázky se zrušil', dup.timer === null, dup);
+test('kliknutí v dialogu se za práci na duplikátu nepočítá', dup.zmena === false, dup);
+test('(úklid: zpátky na uloženou zakázku)', dup.zpet === true, dup);
+
+/* K3-N4 (O7): vynucený otisk má limit 1 za 10 minut. Harness před ruční
+ * zálohou „posune" dosavadní vynucené otisky (klíč i souhrn) o 11 minut
+ * zpátky, jako by vznikly dřív. Přehled bere den z klíče, ne ze souhrnu. */
+const uvolniLimitZaloh = () => {
+  for (const k of [...pamet.keys()]) {
+    const m = /^zalohy\/(souhrn\/)?(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(\d{2})-(rucne|auto)$/.exec(k);
+    if (!m) continue;
+    const t = new Date(Date.parse(m[2] + 'T' + m[3] + ':' + m[4] + ':' + m[5] + 'Z') - 11 * 60000).toISOString();
+    const v = pamet.get(k); pamet.delete(k);
+    pamet.set('zalohy/' + (m[1] || '') + t.slice(0, 10) + 'T' + t.slice(11, 19).replace(/:/g, '') + '-' + m[6], v);
+  }
+};
 /* ---- 5c) záloha databáze: automatická po přihlášení i vynucená ---- */
 test('po přihlášení administrátora vznikla dnešní záloha databáze sama',
   await page.evaluate(() => ONLINE_STAV.otiskyNacteno && ONLINE_STAV.otisky.length >= 1),
@@ -521,6 +806,7 @@ test('po přihlášení administrátora vznikla dnešní záloha databáze sama'
 test('záloha nese, kdy vznikla a kolik zakázek zachytila',
   await page.evaluate(() => { const o = ONLINE_STAV.otisky[0];
     return !!o && !!o.porizena && typeof o.pocetZakazek === 'number' && o.pocetUctu >= 1; }));
+uvolniLimitZaloh();
 await page.evaluate(() => onlineZalohaTed());
 await page.waitForFunction(() => { try { return !ONLINE_STAV.pracuje && /Záloha databáze pořízena/.test(ONLINE_STAV.hlaska); } catch (e) { return false; } },
   null, { timeout: 8000 });
@@ -537,6 +823,182 @@ test('přehled záloh se ukazuje v kartě Online databáze',
 test('přehled záloh neveze data zakázek ani hesla',
   await page.evaluate(() => { const t = JSON.stringify(ONLINE_STAV.otisky);
     return !t.includes('Samo do databáze') && !t.includes('heslo'); }));
+
+/* ---- 5c2) hlídka noční zálohy (#152, 24. 9. 2026) ----
+ * V harnessu noční funkce nikdy neběžela — jsou tu jen otisky dopořízené
+ * při přihlášení a ručně. Přesně ten stav, který dřív vypadal zdravě. */
+test('#152: bez noční zálohy dostane administrátor po přihlášení varování',
+  await page.evaluate(() => typeof uloZalohaHlidka === 'function'
+    && uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()).stara === true));
+await page.evaluate(() => { otevriNastaveni(); nastPanel('databaze'); });
+await page.waitForTimeout(200);
+{
+  const html = await page.locator('#nastaveni-panel').innerHTML();
+  test('#152: Nastavení → Databáze ukazuje varování o noční záloze',
+    /id="online-zalohy-nocni" class="seznam-varovani"/.test(html) && /není žádná noční/.test(html),
+    (html.match(/online-zalohy-nocni[^<]*<?[^<]{0,200}/) || [''])[0]);
+}
+/* Noční otisk z minulé noci — pořídí ho tatáž serverová funkce jako
+ * naplánovaná zaloha_nocni, jen s klíčem včerejška. */
+await porizOtisk('nocni-otisk', '', new Date(Date.now() - 20 * 3600000).toISOString().slice(0, 10));
+await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
+await page.waitForTimeout(200);
+{
+  const html = await page.locator('#nastaveni-panel').innerHTML();
+  test('#152: s čerstvou noční zálohou je řádek klidný a jmenuje ji',
+    /id="online-zalohy-nocni" class="note"/.test(html) && /Poslední noční záloha:/.test(html),
+    (html.match(/online-zalohy-nocni[^<]*<?[^<]{0,200}/) || [''])[0]);
+}
+test('#152: obchodník hlídku nevidí (jen administrátor)',
+  await page.evaluate(() => {
+    const ja = ONLINE_STAV.ja; ONLINE_STAV.ja = Object.assign({}, ja, { role: 'Obchodník' });
+    try { return !renderOnlineKarta().includes('online-zalohy-nocni'); }
+    finally { ONLINE_STAV.ja = ja; }
+  }));
+test('#152: (pojistka testu) administrátorovi karta hlídku ukazuje',
+  await page.evaluate(() => renderOnlineKarta().includes('online-zalohy-nocni')));
+
+/* ---- 5c3) kopie záloh na Disk Google (#151 N6, dávka O4, 19. 10. 2026) ----
+ * Rozhodnutí J. V.: týdenní kopie posledního nočního otisku (bez hesel
+ * a podpisů) do složky „_Zaloha Netlify DB". File System Access v headless
+ * Chromiu výběr složky neukáže — složku nahradí složka v paměti stránky
+ * (stejné rozhraní: getFileHandle / createWritable / getFile / práva). */
+await page.evaluate(() => {
+  const soubory = window.__diskSoubory = new Map();
+  window.__diskPravo = 'granted';
+  window.__diskVyber = 0;
+  const slozka = { kind: 'directory', name: '_Zaloha Netlify DB',
+    queryPermission: async () => window.__diskPravo, requestPermission: async () => window.__diskPravo,
+    getFileHandle: async (jmeno, o) => {
+      if (!soubory.has(jmeno) && !(o && o.create)) throw new DOMException('není', 'NotFoundError');
+      return { createWritable: async () => { let buf = '';
+          return { write: async (t) => { buf += t; }, close: async () => { soubory.set(jmeno, buf); } }; },
+        getFile: async () => new Blob([soubory.get(jmeno) || '']) };
+    } };
+  window.showDirectoryPicker = async () => { window.__diskVyber++;
+    /* K3-N1 (O7): harness umí podstrčit jednou složku s jiným jménem */
+    if (window.__diskJinaSlozka) { window.__diskJinaSlozka = false; return Object.assign({}, slozka, { name: 'Stažené soubory' }); }
+    return slozka; };
+});
+await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
+await page.waitForTimeout(150);
+{
+  const html = await page.locator('#nastaveni-panel').innerHTML();
+  test('N6: bez kopie na Disku hlídka varuje (seznam-varovani)',
+    /id="online-kopie-disk" class="seznam-varovani"/.test(html) && /zatím žádná/.test(html),
+    (html.match(/online-kopie-disk[^<]*<?[^<]{0,160}/) || [''])[0]);
+  test('N6: administrátor má tlačítko „Zkopírovat zálohu na Disk teď"', html.includes('Zkopírovat zálohu na Disk teď'));
+}
+const nocniDen = new Date(Date.now() - 20 * 3600000).toISOString().slice(0, 10);
+/* K3-N1 (O7, rozhodnutí J. V. 20. 10. 2026): kopie jen do složky
+ * „_Zaloha Netlify DB" a záznam jen s heslem správce. */
+await page.evaluate(() => { window.__diskJinaSlozka = true; window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__dlgTexty = []; });
+test('K3-N1 O7: složka s jiným jménem → kopie se nepořídí, nic se nezapíše, hláška jmenuje „_Zaloha Netlify DB"',
+  await page.evaluate(async () => (await onlineKopieDiskTed()) === false && window.__diskSoubory.size === 0
+    && /se nejmenuje „_Zaloha Netlify DB"/.test(ONLINE_STAV.hlaska) && window.__dlgTexty.length === 0),
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('K3-N1 O7: server o kopii z jiné složky neví', !pamet.has('zalohy/kopie-disk'));
+await page.evaluate(() => { window.__dlgHeslo = null; window.__dlgTexty = []; });
+test('K3-N1 O7: zrušený dialog hesla → kopie se nepořídí, nic se nezapíše (složka se vybírá znovu)',
+  await page.evaluate(async () => (await onlineKopieDiskTed()) === false && window.__diskSoubory.size === 0
+    && /bez vašeho hesla/.test(ONLINE_STAV.hlaska) && window.__dlgTexty.some(t => /mazání starých záloh/.test(t))
+    && window.__diskVyber === 2), await page.evaluate(() => [ONLINE_STAV.hlaska, window.__diskVyber]));
+test('K3-N1 O7: bez hesla server záznam nemá', !pamet.has('zalohy/kopie-disk'));
+await page.evaluate(() => { window.__dlgHeslo = 'Spatne.Heslo.999'; });
+test('K3-N1 O7: špatné heslo → server odmítne, kopie se nezapočítá',
+  await page.evaluate(async () => (await onlineKopieDiskTed()) === false && /heslo nesouhlasí/.test(ONLINE_STAV.hlaska)),
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('K3-N1 O7: po špatném hesle server záznam nemá a přihlášení trvá',
+  !pamet.has('zalohy/kopie-disk') && await page.evaluate(() => !!ONLINE_STAV.ja));
+test('K4-N15: po špatném hesle posledni_kopie.json na Disku nevznikne (netvrdí kopii, o které server neví)',
+  await page.evaluate(() => !window.__diskSoubory.has('posledni_kopie.json')), await page.evaluate(() => [...window.__diskSoubory.keys()]));
+await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__diskSoubory.clear(); });
+test('N6: tlačítko kopii pořídí', await page.evaluate(() => onlineKopieDiskTed()) === true,
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('K3-N1 O7: záznam na serveru nese složku a potvrzení heslem',
+  (() => { const z = JSON.parse(pamet.get('zalohy/kopie-disk') || 'null'); return !!z && z.potvrzeno === 'heslo-spravce' && z.slozka === '_Zaloha Netlify DB'; })(),
+  pamet.get('zalohy/kopie-disk'));
+{
+  const r = await page.evaluate(async () => {
+    const s = window.__diskSoubory;
+    const jm = [...s.keys()];
+    const otisk = jm.find(j => /^otisk_/.test(j));
+    const text = otisk ? s.get(otisk) : '';
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    const sha = [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+    return { jm, otisk, text, sha, posledni: JSON.parse(s.get('posledni_kopie.json') || 'null'),
+      hlaska: ONLINE_STAV.hlaska, kopie: ONLINE_STAV.kopieDisk, vyber: window.__diskVyber };
+  });
+  test('N6: soubor otisk_<den nočního otisku>.json + posledni_kopie.json', r.otisk === 'otisk_' + nocniDen + '.json'
+    && r.jm.includes('posledni_kopie.json'), r.jm);
+  const z = JSON.parse(r.text || '{}');
+  test('N6: kopie je noční otisk bez otisků hesel a bez podpisů', z.zdroj === 'nocni-otisk' && z.podpisy === null
+    && !/"heslo"|scrypt/.test(r.text) && Array.isArray(z.uzivatele) && z.uzivatele.length > 0);
+  test('N6: kopie nese zakázky a ceník', Object.keys(z.zakazky || {}).length > 0 && !!z.program);
+  test('N6: posledni_kopie.json nese datum, velikost a SHA-256 shodné se souborem',
+    !!r.posledni && !!r.posledni.kdy && r.posledni.velikostB === new TextEncoder().encode(r.text).length && r.posledni.sha256 === r.sha, r.posledni);
+  test('N6: hláška ukáže cestu a velikost', /_Zaloha Netlify DB\/otisk_\d{4}-\d{2}-\d{2}\.json \(\d/.test(r.hlaska), r.hlaska);
+  test('N6: server si kopii poznamenal (hlídka všude)', !!r.kopie && r.kopie.soubor === r.otisk
+    && JSON.parse(pamet.get('zalohy/kopie-disk')).sha256 === r.sha);
+  const html = await page.locator('#nastaveni-panel').innerHTML();
+  test('N6: po kopii je hlídka klidná', /id="online-kopie-disk" class="note"/.test(html) && /Poslední kopie/.test(html));
+}
+/* Automatika po přihlášení: kopie starší než 7 dní → sama, bez výběru složky. */
+await page.evaluate(() => { window.__diskSoubory.clear(); });
+pamet.set('zalohy/kopie-disk', JSON.stringify({ kdy: new Date(Date.now() - 8 * 86400000).toISOString(), soubor: 'otisk_stary.json' }));
+await page.evaluate(() => onlineOtiskyNacti());
+await page.evaluate(() => { window.__diskPravo = 'prompt'; });
+test('N6: bez uděleného práva automatika mlčí (zeptat se smí jen po kliknutí)',
+  await page.evaluate(async () => (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0));
+await page.evaluate(() => { window.__diskPravo = 'granted'; });
+/* K4-N15 (O9): automatika po přihlášení se na heslo NEPTÁ a nic nezapíše —
+ * jen připomene tlačítko. Pojistka: před opravou automatika otevřela dialog
+ * hesla a kopii pořídila (s kontrolou posledni_kopie.json níž 4 ✗; po opravě 268/0). */
+await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__dlgTexty = []; ONLINE_STAV.hlaska = ''; });
+test('K4-N15: po 8 dnech automatika kopii nepořídí, na heslo se neptá a nic nezapíše',
+  await page.evaluate(async () => (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0
+    && window.__dlgTexty.length === 0), await page.evaluate(() => [window.__dlgTexty, [...window.__diskSoubory.keys()]]));
+test('K4-N15: …jen připomene tlačítko „Zkopírovat zálohu na Disk teď"',
+  await page.evaluate(() => /Týdenní kopie zálohy na Disk čeká.*Zkopírovat zálohu na Disk teď/.test(ONLINE_STAV.hlaska)),
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('K4-N15: záznam kopie na serveru se automatikou nezmění', JSON.parse(pamet.get('zalohy/kopie-disk')).soubor === 'otisk_stary.json');
+test('N6: kopii pak pořídí tlačítko (bez nového výběru složky)',
+  await page.evaluate(async () => { const vyber = window.__diskVyber;
+    return (await onlineKopieDiskTed()) === true && [...window.__diskSoubory.keys()].some(j => /^otisk_/.test(j)) && window.__diskVyber === vyber; }));
+test('N6: čerstvá kopie (méně než 7 dní) se automaticky nepřipomíná',
+  await page.evaluate(async () => { window.__diskSoubory.clear(); ONLINE_STAV.hlaska = '';
+    return (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0 && !/čeká/.test(ONLINE_STAV.hlaska); }));
+pamet.set('zalohy/kopie-disk', JSON.stringify({ kdy: new Date(Date.now() - 15 * 86400000).toISOString(), soubor: 'otisk_stary.json' }));
+await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
+await page.waitForTimeout(150);
+test('N6: kopie starší než 14 dní → varování v Nastavení → Databáze',
+  /id="online-kopie-disk" class="seznam-varovani"[^>]*>[^<]*stará 15 dní/.test(await page.locator('#nastaveni-panel').innerHTML()));
+/* K3-N13 (O7): pojistka retence přeskočila mazání → hlídka v Databázi */
+pamet.set('zalohy/retence-varovani', JSON.stringify({ kdy: new Date(Date.now() - 3600000).toISOString(), den: '2026-10-21',
+  predchozi: '2026-10-20', pred: { pocetZakazek: 100, pocetUctu: 10 }, nove: { pocetZakazek: 40, pocetUctu: 10 }, text: 'x' }));
+await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
+await page.waitForTimeout(150);
+test('K3-N13 O7: varování pojistky retence svítí v Nastavení → Databáze',
+  /id="online-retence-varovani" class="seznam-varovani"[^>]*>[^<]*zakázek 100 → 40/.test(await page.locator('#nastaveni-panel').innerHTML()));
+pamet.set('zalohy/retence-varovani', JSON.stringify({ kdy: new Date(Date.now() - 31 * 86400000).toISOString(), den: 'x', predchozi: 'y',
+  pred: { pocetZakazek: 100 }, nove: { pocetZakazek: 1 } }));
+await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
+await page.waitForTimeout(150);
+test('K3-N13 O7: varování starší 30 dní už nesvítí', !(await page.locator('#nastaveni-panel').innerHTML()).includes('online-retence-varovani'));
+pamet.delete('zalohy/retence-varovani');
+/* K3-N4 (O7): limit vynucených otisků — ruční záloha hned po jiné ukáže, kdy to půjde */
+uvolniLimitZaloh();
+await page.evaluate(() => onlineZalohaTed());
+test('K3-N4 O7: druhá ruční záloha do 10 minut → hláška s časem, kdy to půjde',
+  await page.evaluate(async () => (await onlineZalohaTed()) === false && /Znovu to půjde dnes v \d{1,2}:\d{2}/.test(ONLINE_STAV.hlaska)),
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('K3-N4 O7: otisk při přihlášení je pod týmž limitem — klient dostane chybu se stavem 429 (onlineZalohaAuto ji zamlčí)',
+  await page.evaluate(async () => (await onlineApi('/api/zaloha_vynuceno', { duvod: 'auto' }).then(() => 'ok', e => e.stav)) === 429));
+test('N6: obchodník tlačítko ani hlídku kopie nevidí', await page.evaluate(() => {
+  const ja = ONLINE_STAV.ja; ONLINE_STAV.ja = Object.assign({}, ja, { role: 'Obchodník' });
+  try { const h = renderOnlineKarta(); return !h.includes('online-kopie-disk') && !h.includes('Zkopírovat zálohu na Disk'); }
+  finally { ONLINE_STAV.ja = ja; }
+}));
 
 /* ---- 5d) obnova databáze ze zálohy (7. 9. 2026) ----
  * Skutečný klient proti skutečné funkci /api/obnova: panel se otevře, bez
@@ -559,6 +1021,8 @@ const tlObnovit = () => page.evaluate(() => {
 test('panel obnovy je vidět a bez náhledu je tlačítko Obnovit databázi zhasnuté',
   (await dbPanel()).includes('id="online-obnova"') && (await tlObnovit()) === true);
 const rejPred = await page.evaluate(() => ONLINE_STAV.rejstrik.length);
+/* B77: obnova z otisku se všemi částmi (i účty) chce heslo správce. */
+await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; });
 await page.evaluate(() => onlineObnovaZmena('rezim', 'prepsat'));
 await page.evaluate(() => onlineObnovaNahled());
 await page.waitForFunction(() => { try { return !ONLINE_STAV.obnova.pracuje && !!ONLINE_STAV.obnova.nahled; } catch (e) { return false; } },
@@ -608,9 +1072,18 @@ test('ostrá obnova proběhla (panel má výsledek, ne chybu)',
  * řádek „Poslední obnova" v panelu — ten se hlídá. */
 test('panel ukazuje poslední obnovu',
   /Poslední obnova/.test(await dbPanel()));
+test('B77: obnova účtů z otisku si vyžádala heslo správce',
+  await page.evaluate(() => window.__dlgTexty.some(t => /Potvrďte ji svým heslem/.test(t))));
+test('B188: dialog hesla u obnovy z otisku zmiňuje i nastavení zobrazení',
+  await page.evaluate(() => window.__dlgTexty.some(t => /Potvrďte ji svým heslem/.test(t) && /nastavení zobrazení/.test(t))));
+test('B188: ověřené heslo si stránka pamatuje jako u panelu Zobrazení (10 min)',
+  await page.evaluate(() => ZOBRAZENI_HESLO.h === 'Zkusebni.Heslo.123' && ZOBRAZENI_HESLO.plati > Date.now()));
+/* Od B77 (13. 10. 2026) po potvrzení přijde ještě dotaz na heslo správce —
+ * potvrzovací text je proto předposlední, ne poslední. */
+const dlgObnova = await page.evaluate(() => (window.__dlgTexty || []).find(t => /Zapíše se/.test(t)) || '');
 test('potvrzovací dialog říká, kolik se zapíše, že vznikne otisk a že se zamčené nepřepíšou',
-  /Zapíše se \d+ záznam/.test(await dlgPosledni(page)) && /otisk/.test(await dlgPosledni(page))
-  && /Uzamčené/.test(await dlgPosledni(page)), await dlgPosledni(page));
+  /Zapíše se \d+ záznam/.test(dlgObnova) && /otisk/.test(dlgObnova)
+  && /Uzamčené/.test(dlgObnova), dlgObnova);
 test('obnova zakázku vrátila (rejstřík má zase původní počet a tu zakázku)',
   await page.evaluate(() => ONLINE_STAV.rejstrik.length) === rejPred
   && await page.evaluate((s) => ONLINE_STAV.rejstrik.some(z => z.soubor === s), smazana),
@@ -664,6 +1137,26 @@ test('ostrá obnova ze souboru proběhla (zacatek → dávky → konec)',
   await page.evaluate(() => 'panel: ' + ONLINE_STAV.obnova.hlaska + ' | posledni: ' + JSON.stringify(ONLINE_STAV.obnova.posledni)));
 test('po obnově ze souboru má rejstřík stejný počet zakázek (nic nepřibylo, nic nezmizelo)',
   await page.evaluate(() => ONLINE_STAV.rejstrik.length) === rejPredSouborem);
+/* B188 (18. 10. 2026): soubor s maticí zobrazení bez hesla správce se
+ * neobnoví — zrušený dialog zastaví obnovu dřív, než jde cokoli na server. */
+await page.evaluate(() => {
+  onlineZobrazeniHesloZapomen(); window.__dlgHeslo = null;
+  ONLINE_STAV.obnova.soubor = { ...ONLINE_STAV.obnova.soubor, zobrazeni: { matice: {}, kdo: 'x', kdy: '2026-10-18' } };
+  ONLINE_STAV.obnova.posledni = null;
+});
+await page.evaluate(() => onlineObnovaNahled());
+await page.waitForFunction(() => { try { return !ONLINE_STAV.obnova.pracuje && (!!ONLINE_STAV.obnova.nahled || !!ONLINE_STAV.obnova.hlaska); } catch (e) { return false; } },
+  null, { timeout: 20000 });
+const dlgPredB188 = await page.evaluate(() => window.__dlgTexty.length);
+await page.evaluate(() => onlineObnovaProved());
+await page.waitForFunction(() => { try { return !ONLINE_STAV.obnova.pracuje && !!ONLINE_STAV.obnova.hlaska; } catch (e) { return false; } },
+  null, { timeout: 15000 });
+test('B188: soubor s maticí si vyžádal heslo správce dialogem matice',
+  await page.evaluate((n) => window.__dlgTexty.slice(n).some(t => /Obnova přepíše nastavení zobrazení/.test(t)), dlgPredB188));
+test('B188: bez hesla se obnova souboru s maticí neprovede a hláška to říká',
+  await page.evaluate(() => !ONLINE_STAV.obnova.posledni && /nastavení zobrazení se bez vašeho hesla neobnovuje/.test(ONLINE_STAV.obnova.hlaska)),
+  await page.evaluate(() => ONLINE_STAV.obnova.hlaska));
+await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; });
 await page.evaluate(() => { onlineObnovaOtevri(); zavriNastaveni(); });
 
 /* ---- 5e) kolize verzí při ukládání (nález V27, 8. 9. 2026) ----
@@ -728,6 +1221,7 @@ const soubeh = await page.evaluate(async () => {
 test('dva ruční zápisy najednou se serializují a žádný neskončí kolizí', soubeh.a === true && soubeh.b === true && soubeh.kolize === null, soubeh);
 /* úklid: původní název, čerstvý otisk (další kroky s ním počítají), zámek jako předtím */
 await page.evaluate(async () => { ZAK.nazevAkce = 'Online ověření'; await onlineUloz(); ONLINE_STAV.zmenaUzivatele = false; });
+uvolniLimitZaloh();
 await page.evaluate(() => onlineZalohaTed());
 await page.waitForFunction(() => { try { return !ONLINE_STAV.pracuje && /Záloha databáze pořízena/.test(ONLINE_STAV.hlaska); } catch (e) { return false; } },
   null, { timeout: 8000 });
@@ -780,6 +1274,17 @@ test('nový účet obchodníka se založil klikem z Nastavení',
   await page.evaluate(() => ONLINE_STAV.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.role === 'Obchodník')));
 test('založení potvrzuje hláška přímo v panelu a nový řádek v tabulce',
   (await nastav()).includes('je založený') && (await nastav()).includes('obchodnik@priklad.cz'));
+/* B77-zbytek (13. 10. 2026): vlastní řádek nabízí změnu hesla se starým
+ * (otevře dialog „Změnit heslo"), cizí řádek reset „Nové heslo…". */
+{
+  const radky = await page.evaluate(() => [...document.querySelectorAll('#nastaveni-panel tr')]
+    .map(tr => tr.textContent).filter(t => /@priklad\.cz/.test(t)));
+  const muj = radky.find(t => t.includes('spravce@priklad.cz')) || '';
+  const cizi = radky.find(t => t.includes('obchodnik@priklad.cz')) || '';
+  test('B77-zbytek: vlastní účet v seznamu nabízí „Změnit heslo…", ne reset',
+    muj.includes('Změnit heslo…') && !muj.includes('Nové heslo…'), muj.slice(0, 300));
+  test('B77-zbytek: cizí účet dál nabízí reset „Nové heslo…"', cizi.includes('Nové heslo…'), cizi.slice(0, 300));
+}
 test('po úspěchu se formulář vyprázdnil',
   await page.evaluate(() => document.getElementById('onlineUzEmail').value === ''
     && document.getElementById('onlineUzHeslo').value === ''));
@@ -790,6 +1295,62 @@ test('opakované založení téhož účtu řekne důvod (účet už existuje)',
   await page.waitForTimeout(400);
   return (await nastav()).includes('Účet už existuje');
 })());
+/* Kontakt účtu opraví správce (12. 10. 2026, pokyn J. V.): telefon v bloku
+ * „Vypracoval" se bere z účtu a dřív ho mohl změnit jen sám uživatel. */
+test('u účtu obchodníka je tlačítko Kontakt…', await page.evaluate(() =>
+  [...document.querySelectorAll('#nastaveni-panel button')].filter(b => b.textContent === 'Kontakt…').length >= 2));
+await page.evaluate(() => onlineUzKontaktPanel('obchodnik@priklad.cz'));
+await page.fill('#onlineUzKTelefon', '+420 700 000 395');
+await page.click('#nastaveni-panel >> text=Uložit kontakt');
+await page.waitForFunction(() => { try { return ONLINE_STAV.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.telefon === '+420 700 000 395'); } catch (e) { return false; } });
+test('správce opraví telefon obchodníka a uloží se na server',
+  JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').telefon === '+420 700 000 395',
+  pamet.get('uzivatele/obchodnik@priklad.cz'));
+test('hláška potvrdí uložení kontaktu', (await nastav()).includes('Kontakt účtu obchodnik@priklad.cz je uložený'));
+/* B77 (13. 10. 2026, rozhodnutí J. V.): založení správce a reset cizího
+ * hesla klikem — aplikace si vyžádá heslo přihlášeného správce. Zrušení
+ * nic nepošle, špatné heslo nahlásí a neodhlásí, správné akci provede. */
+{
+  const zalozSpravce = async (heslo, email) => {
+    await page.evaluate((h) => { window.__dlgHeslo = h; window.__dlgTexty = []; }, heslo);
+    await page.fill('#onlineUzEmail', email);
+    await page.fill('#onlineUzJmeno', 'Druhý Správce');
+    await page.selectOption('#onlineUzRole', 'Administrátor');
+    await page.fill('#onlineUzHeslo', 'SpravceHeslo12');
+    await page.click('#nastaveni-panel >> text=Založit účet');
+    await page.waitForFunction(() => { try { return !ONLINE_STAV.pracuje; } catch (e) { return false; } });
+    await page.waitForTimeout(300);
+  };
+  await zalozSpravce(null, 'spravce2@priklad.cz');
+  test('B77: založení správce se ptá na heslo správce',
+    await page.evaluate(() => window.__dlgTexty.some(t => /Potvrďte ji svým heslem/.test(t))));
+  test('B77: zrušený dialog účet nezaloží a řekne proč',
+    !pamet.has('uzivatele/spravce2@priklad.cz') && (await nastav()).includes('neprovedla'));
+  await zalozSpravce('Urcite.Spatne.1', 'spravce2@priklad.cz');
+  test('B77: se špatným heslem správce účet nevznikne a hláška to řekne',
+    !pamet.has('uzivatele/spravce2@priklad.cz') && (await nastav()).includes('heslo nesouhlasí'),
+    await page.evaluate(() => ONLINE_STAV.hlaska));
+  test('B77: špatné heslo správce neodhlásí (401 s kódem hesloSpravce)',
+    await page.evaluate(() => !!ONLINE_STAV.ja));
+  await zalozSpravce('Zkusebni.Heslo.123', 'spravce2@priklad.cz');
+  test('B77: se správným heslem správce se účet správce založí',
+    JSON.parse(pamet.get('uzivatele/spravce2@priklad.cz') || '{}').role === 'Administrátor',
+    await page.evaluate(() => ONLINE_STAV.hlaska));
+
+  /* reset hesla obchodníka klikem: Nové heslo… → pole → Uložit heslo */
+  const otiskPred = JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').heslo;
+  await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__dlgTexty = []; onlineUzHesloPanel('obchodnik@priklad.cz'); });
+  await page.waitForTimeout(200);
+  await page.fill('#onlineUzNoveHeslo', 'ObchodniHeslo1');   // totéž heslo — dál se jím obchodník přihlašuje; otisk se změní solí
+  await page.click('#nastaveni-panel >> text=Uložit heslo');
+  await page.waitForFunction(() => { try { return !ONLINE_STAV.pracuje && /je nastavené/.test(ONLINE_STAV.hlaska); } catch (e) { return false; } },
+    null, { timeout: 8000 }).catch(() => {});
+  test('B77: reset hesla klikem se ptá na heslo správce a projde',
+    await page.evaluate(() => window.__dlgTexty.some(t => /reset hesla/.test(t)))
+    && JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').heslo !== otiskPred,
+    await page.evaluate(() => ONLINE_STAV.hlaska));
+  await page.evaluate(() => { window.__dlgHeslo = undefined; });
+}
 await page.evaluate(() => { ONLINE_STAV.uzForm = { email: '', jmeno: '', role: 'Obchodník', heslo: '' }; zavriNastaveni(); });
 
 /* ---- 7) záloha ke stažení ---- */
@@ -812,11 +1373,62 @@ test('po obnovení stránky je administrátor dál přihlášený a stránka se 
 test('platný ceník se po obnovení načetl a nasadil sám',
   await page.evaluate(() => ONLINE_STAV.db.platny.verze === 1 && ONLINE_STAV.cenikPouzit === true));
 
+/* ---- 8b) ZVEŘEJNĚNÝ SLOVNÍK (#401, 12. 10. 2026) ----
+ * Zadání J. V.: „slovník se má ukládat stejným způsobem jako ceník". Skutečný
+ * klient proti skutečné funkci: převzaté znění → Zveřejnit slovník (s
+ * poznámkou) → verze na serveru → po obnovení stránky se položí sám; níž
+ * (oddíl 9) ho po přihlášení dostane i obchodník. */
+const HESLO401 = 'POVRCHOVÁ ÚPRAVA KONSTRUKCE';
+const ZNENI401 = 'STEEL STRUCTURE FINISHING (published 401)';
+const zabudovane401 = await page.evaluate((k) => PREKLAD_ZABUDOVANY[k][0], HESLO401);
+const slov0 = await page.evaluate(() => { otevriNastaveni(); nastPanel('slovnik');
+  return { info: (document.getElementById('slovOnlineInfo') || {}).textContent || '',
+           tlacitko: !!document.getElementById('slovZverejnit'),
+           zhasnute: !!(document.getElementById('slovZverejnit') || {}).disabled }; });
+test('#401: Nastavení → Slovník říká, že zatím není zveřejněná žádná verze', /Zatím není zveřejněná žádná verze/.test(slov0.info), slov0.info);
+test('#401: tlačítko Zveřejnit slovník je, bez změn zhasnuté', slov0.tlacitko && slov0.zhasnute, slov0);
+const slov1 = await page.evaluate(async ([k, t]) => {
+  prekladNastav(k, 'en', t); nastPanel('slovnik');
+  const b = document.getElementById('slovZverejnit');
+  const nezv = (document.getElementById('slovNezverejneno') || {}).textContent || '';
+  window.dotaz = (txt) => { window.__dlgTexty.push(String(txt)); return Promise.resolve('tabulka J. V. 12. 10.'); };
+  const v = await onlineZverejniSlovnik();
+  nastPanel('slovnik');
+  return { zhasnute: b ? b.disabled : null, nezv, v, dotaz: window.__dlgTexty[window.__dlgTexty.length - 1] || '',
+           info: (document.getElementById('slovOnlineInfo') || {}).textContent || '',
+           nezvPo: (document.getElementById('slovNezverejneno') || {}).textContent || '' };
+}, [HESLO401, ZNENI401]);
+await dlgStub(page);
+test('#401: po změně se tlačítko rozsvítí a panel hlásí 1 nezveřejněnou změnu', slov1.zhasnute === false && /\b1\b/.test(slov1.nezv), slov1);
+test('#401: zveřejnění se ptá na poznámku a říká počet hesel', /Zveřejnit slovník překladů/.test(slov1.dotaz) && /1 hesel/.test(slov1.dotaz), slov1.dotaz);
+const ulozeny401 = JSON.parse(pamet.get('program/slovnik') || 'null');
+test('#401: na serveru vznikla verze 1 s autorem z relace a poznámkou', slov1.v === true && !!ulozeny401
+  && ulozeny401.platny.verze === 1 && ulozeny401.platny.kdo === 'spravce@priklad.cz'
+  && ulozeny401.platny.poznamka === 'tabulka J. V. 12. 10.', ulozeny401 && ulozeny401.platny);
+test('#401: zveřejňují se jen odchylky od zabudovaného slovníku',
+  !!ulozeny401 && Object.keys(ulozeny401.platny.hesla).length === 1 && ulozeny401.platny.hesla[HESLO401][0] === ZNENI401,
+  ulozeny401 && Object.keys(ulozeny401.platny.hesla));
+test('#401: panel ukazuje platnou verzi 1, kdo a že relace odpovídá', /verze 1/.test(slov1.info) && /spravce@priklad\.cz/.test(slov1.info)
+  && /odpovídá platné verzi/.test(slov1.nezvPo), slov1);
+const slov2 = await page.evaluate(async () => { const v = await onlineZverejniSlovnik('znovu'); return { v, hl: ONLINE_STAV.hlaska }; });
+test('#401: totéž podruhé se nezveřejní (neliší se)', slov2.v === false && /neliší/.test(slov2.hl), slov2);
+await page.evaluate(() => zavriNastaveni());
+await page.reload();
+await page.waitForFunction(() => typeof window.render === 'function');
+await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja && !!ONLINE_STAV.slovnik; } catch (e) { return false; } },
+  null, { timeout: 8000 });
+await dlgStub(page);
+const slov3 = await page.evaluate((k) => ({ tr: tr(k, 'en'), zab: PREKLAD_ZABUDOVANY[k][0] }), HESLO401);
+test('#401: po obnovení stránky se zveřejněný slovník položí sám (tr překládá zveřejněným zněním)',
+  slov3.tr === ZNENI401 && slov3.zab === zabudovane401, slov3);
+
 /* ---- 9) odhlášení → přihlašovací stránka; obchodník a jeho pohled ---- */
 await page.evaluate(() => onlineOdhlas());
 await page.waitForFunction(() => { try { return ONLINE_STAV.ja === null; } catch (e) { return false; } });
 await page.waitForTimeout(300);
 test('po odhlášení se vrátí přihlašovací stránka', await gateViditelna());
+test('#401: odhlášení vrátí hesla zveřejněného slovníku na zabudované znění (bez obnovení stránky)',
+  await page.evaluate(([k, z]) => tr(k, 'en') === z && ONLINE_STAV.slovnik === null, [HESLO401, zabudovane401]));
 
 /* Obnovení stránky = čerstvý obchodník: v paměti aplikace zůstal po
  * administrátorovi jak nasazený ceník, tak ručně přepsaná firma, takže bez
@@ -830,10 +1442,17 @@ await dlgStub(page);
 test('po odhlášení a obnovení stránky se aplikace zase zamkne', await gateViditelna());
 test('čerstvá aplikace startuje s ukázkovou firmou',
   await page.evaluate(() => NAST.firma.ukazkove === true));
+test('#401: po odhlášení a obnovení stránky platí zabudovaný slovník',
+  await page.evaluate(([k, t]) => tr(k, 'en') !== t, [HESLO401, ZNENI401]));
 
 await prihlas('obchodnik@priklad.cz', 'ObchodniHeslo1');
 await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } });
 await page.waitForTimeout(400);
+await page.waitForFunction(() => { try { return !!ONLINE_STAV.slovnik; } catch (e) { return false; } }, null, { timeout: 8000 });
+test('#401: obchodník po přihlášení překládá zveřejněným slovníkem',
+  await page.evaluate(([k, t]) => tr(k, 'en') === t, [HESLO401, ZNENI401]));
+test('#401: obchodník Zveřejnit slovník nedostane (zápis 403 a tlačítko není)', await page.evaluate(async () => {
+  const v = await onlineZverejniSlovnik('pokus'); return v === false && /jen administrátor/.test(ONLINE_STAV.hlaska); }));
 test('obchodník je přihlášený a roh to říká',
   (await roh()).includes('Zkušební Obchodník') && (await roh()).includes('Obchodník'));
 test('obchodník NENÍ administrátor aplikace',
@@ -1101,6 +1720,310 @@ const listaZamku = await page.evaluate(() => {
 });
 test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku (živé tlačítko)',
   listaZamku.klon && listaZamku.nova && listaZamku.poradi && listaZamku.ziva, listaZamku);
+
+/* ---- 10d) VÝSLEDEK NOVÉHO ZÁMKU OVĚŘÍ SERVER (nález B59 revize v22.9.9) ----
+ * Server výsledek nově odeslané nabídky přepočítá a porovnání zapíše do zámku.
+ * Node sady to zkoušejí nad modelem; tady jde o to, co Node nevidí: že výsledek,
+ * který spočítá SKUTEČNÝ prohlížeč (zamekPoTisku z tiskového náhledu), server
+ * po cestě přes síť a importZakazka uzná za shodný — plané „nesouhlasí" by
+ * strašilo obchodníky u každé odeslané nabídky. A naopak: upravený klient
+ * dostane varování a rozpor uvidí každý v liště zámku. */
+{
+  /* Ceník ze sestavení je v repozitáři vynulovaný — shoda 0 = 0 by nic
+   * nedokázala. Smyšlený zkušební ceník (týž jako v Node sadách). */
+  const ZKC = require('./src/zkusebni_cenik.js');
+  const ceniky = { ock: ZKC.zkusebniCenik(), proj: ZKC.zkusebniCenikProj() };
+  /* Od B112 (29. 9. 2026) uloží obchodník jen ceník, který administrátor
+   * zveřejnil (nebo ten z uložené verze či jiné varianty). Zkušební ceník se
+   * proto nejdřív zveřejní přímo serverovou funkcí pod administrátorem —
+   * do té doby si ho harness podstrčil jen v prohlížeči obchodníka. */
+  {
+    const rA = await prihlaseni(new Request('http://x/api/prihlaseni', { method: 'POST',
+      body: JSON.stringify({ email: 'spravce@priklad.cz', heslo: 'Zkusebni.Heslo.123' }) }));
+    const cA = (rA.headers.get('set-cookie') || '').split(';')[0];
+    const rp = await (await program(new Request('http://x/api/program', { method: 'POST', headers: { cookie: cA },
+      body: JSON.stringify({ cenik: ceniky.ock, cenikProj: ceniky.proj, poznamka: 'B59 zkušební ceník (harness)' }) }))).json();
+    test('B59: příprava — zkušební ceník zveřejněn administrátorem', rp.ok === true, JSON.stringify(rp).slice(0, 200));
+  }
+  const poctiva = await page.evaluate(async (ceniky) => {
+    ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 0761'; ZAK.nazevAkce = 'B59 poctivá';
+    aktivniVarianta(ZAK).data.cenik = ceniky.ock; aktivniVarianta(ZAK).data.proj.cenik = ceniky.proj;
+    /* Rozměry šachty (B137, 12. 10. 2026): zámek se tu pořizuje přímo, mimo
+     * tiskový dialog se zábranou „rozmery" — server nový zámek z nulových
+     * rozměrů nové zakázky neuloží. Vyplní se, jako by je zadal obchodník. */
+    Object.assign(aktivniVarianta(ZAK).data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 });
+    syncVarianta(); render();
+    await onlineUloz();
+    zamekPoTisku('nabidkaTisk', aktivniVarianta(ZAK).id);
+    await onlineUloz();
+    const d = await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(ONLINE_STAV.soubor));
+    const z = d.zakazka.varianty[0].zamek || {};
+    return { overeni: z.overeni || null, klient: buildVerze(), hlaska: ONLINE_STAV.hlaska,
+             typ: ONLINE_STAV.hlaskaTyp, castka: ((z.vysledek || {}).ock || {}).souhrn
+               ? z.vysledek.ock.souhrn.zakladCena : null,
+             /* P9.5: podmínky krycích listů zmrazené při odeslání, jak je server uložil */
+             zmrazeno: ((d.zakazka.varianty[0].data || {}).kryci || {}).zmrazeno || null,
+             zmrazenoProj: ((d.zakazka.varianty[0].data || {}).kryciProj || {}).zmrazeno || null };
+  }, ceniky);
+  test('P9.5: zamčení po tisku zmrazí podmínky krycího listu OCK i PROJ a server je uloží',
+    !!(poctiva.zmrazeno && poctiva.zmrazeno.platnostNabidky && poctiva.zmrazenoProj && poctiva.zmrazenoProj.platnostNabidky),
+    JSON.stringify([poctiva.zmrazeno && poctiva.zmrazeno.platnostNabidky, poctiva.zmrazenoProj && poctiva.zmrazenoProj.platnostNabidky]));
+  test('B59: nabídka zamčená tiskem v prohlížeči má u serveru shodu',
+    poctiva.overeni && poctiva.overeni.stav === 'shoda' && poctiva.overeni.rozdilu === 0,
+    JSON.stringify(poctiva));
+  test('B59: a zkouší se na nenulových číslech (smyšlený zkušební ceník)', poctiva.castka > 0, poctiva.castka);
+  test('B59: razítko nese verzi stránky, která výsledek spočítala',
+    poctiva.overeni && poctiva.overeni.klient === poctiva.klient && /^v\d/.test(poctiva.klient),
+    JSON.stringify(poctiva.overeni));
+  test('B59: poctivé uložení žádné varování nenese',
+    poctiva.typ !== 'varovani' && !/Pozor/.test(poctiva.hlaska), poctiva.hlaska);
+
+  const upraveny = await page.evaluate(async (ceniky) => {
+    ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 0762'; ZAK.nazevAkce = 'B59 upravený klient';
+    aktivniVarianta(ZAK).data.cenik = ceniky.ock; aktivniVarianta(ZAK).data.proj.cenik = ceniky.proj;
+    Object.assign(aktivniVarianta(ZAK).data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 });   // B137
+    syncVarianta(); render();
+    await onlineUloz();
+    zamekPoTisku('nabidkaTisk', aktivniVarianta(ZAK).id);
+    aktivniVarianta(ZAK).zamek.vysledek.ock.souhrn.zakladSDph += 1000;   // upravený klient
+    await onlineUloz();
+    const po = { hlaska: ONLINE_STAV.hlaska, typ: ONLINE_STAV.hlaskaTyp, soubor: ONLINE_STAV.soubor };
+    await onlineOtevri(po.soubor);
+    po.lista = (document.getElementById('zamekLista') || {}).textContent || '';
+    return po;
+  }, ceniky);
+  test('B59: upravený klient se uloží, ale hláška varuje, že čísla nesouhlasí',
+    upraveny.typ === 'varovani' && /nesouhlasí/.test(upraveny.hlaska) && /0762/.test(upraveny.hlaska),
+    JSON.stringify(upraveny));
+  test('B59: po otevření ze serveru ukazuje rozpor lišta zámku',
+    /nesouhlasí s výpočtem serveru/.test(upraveny.lista), upraveny.lista);
+  test('B130: zámek se zmrazeným výsledkem „přepočteno dnes" netvrdí',
+    !/nejsou u zámku zmrazené/.test(upraveny.lista), upraveny.lista);
+  await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
+    ZAK = novaZakazka(); syncVarianta(); render(); });
+}
+
+/* ---- 10e) JEDNO ČÍSLO VARIANTY — ČÍSLO Z PAPÍRU (#320) ----
+ * Zakázka uložená před #320: druhá varianta odešla zákazníkovi jako …0763.2
+ * (dokumenty číslovaly podle pořadí), ale v zámku a v liště stála jako
+ * …0763.1. Uloží se do databáze PŘÍMO (bez serverového importu, jako by
+ * ležela z dřívějška) a otevře se ve skutečném klientu: lišta zámku i číslo
+ * pro dokument musí ukázat číslo z papíru. */
+{
+  const zamekStary = { zamceno: true, kdy: '2026-09-18T08:00:00.000Z', typ: 'nabidka',
+    popis: 'Cenová nabídka OCK (Word)', kdo: 'Harness', cislo: '2026 - OPR - CN - 0763.1', otisk: null,
+    tisky: [{ kdy: '2026-09-18T08:00:00.000Z', typ: 'nabidka' }] };
+  const stara = await page.evaluate((zamek) => {
+    const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 0763'; z.nazevAkce = '#320 stará zakázka';
+    delete z.priponySchema;
+    const v2 = JSON.parse(JSON.stringify(z.varianty[0]));
+    v2.id = 'v320-2'; v2.nazev = 'Varianta 2'; v2.ridici = false; v2.pripona = 1; v2.zamek = zamek;
+    z.varianty[0].pripona = 0; z.varianty.push(v2); z.aktivni = v2.id;
+    return JSON.parse(JSON.stringify(z));
+  }, zamekStary);
+  pamet.set('zakazky/z/2026-OPR-CN-0763.json', JSON.stringify(stara));
+  const po = await page.evaluate(async () => {
+    /* Otevřená je čerstvá prázdná zakázka — dotaz na neuložené změny se
+     * odpoví „zahodit" (skutečný modál by harness zastavil). */
+    window.volba = () => Promise.resolve('zahodit');
+    try { await onlineOtevri('2026-OPR-CN-0763.json'); } finally { delete window.volba; }
+    const v = ZAK.varianty.find(x => x.id === 'v320-2');
+    const ob = document.getElementById('obnovaLista');
+    return { lista: (document.getElementById('zamekLista') || {}).textContent || '',
+             zluta: !!ob && ob.classList.contains('zobraz'), cteni: zamekCteniJe(),
+             role: (ONLINE_STAV.ja || {}).role, pravo: smiZobrazit('zamek.odemknout'),
+             dokument: cisloSVariantou(ZAK, v), cislo: variantaCislo(ZAK, v),
+             zamekCislo: v.zamek && v.zamek.cislo, pripony: ZAK.varianty.map(x => x.pripona) };
+  });
+  test('#320: stará zakázka se v klientu přečísluje podle papíru (0, 2)',
+    po.pripony.join(',') === '0,2', JSON.stringify(po));
+  test('#320: dokument i číslo varianty nesou číslo z papíru (.2)',
+    po.dokument === '2026 - OPR - CN - 0763.2' && po.cislo === po.dokument, JSON.stringify(po));
+  test('#320: lišta zámku ukazuje číslo z papíru, ne starou příponu ze zámku',
+    /0763\.2/.test(po.lista) && !/0763\.1/.test(po.lista), po.lista);
+  test('#320: zámek sám zůstal, jak byl pořízen', po.zamekCislo === '2026 - OPR - CN - 0763.1', po.zamekCislo);
+  /* B130 (audit 6. 10. 2026): zámek bez zmrazeného výsledku (odešel před
+   * 15. 9. 2026) — částky počítá dnešní jádro a lišta to říká nahlas. */
+  test('B130: lišta zámku bez zmrazeného výsledku řekne, že částky jsou přepočtené dnes',
+    /nejsou u zámku zmrazené/.test(po.lista) && /přepočtené dnes/.test(po.lista), po.lista);
+  /* #404 (J. V. 13. 10. 2026): odeslaná nabídka otevřená z databáze — žádná
+   * žlutá lišta, jen jednořádková informace; modrý pruh „Odemknout
+   * k úpravám" právě tehdy, když má role právo zamek.odemknout. */
+  test('#404: otevřená odeslaná nabídka je jen ke čtení a žlutou lištu nemá', po.cteni && !po.zluta, JSON.stringify(po));
+  test('#404: lišta odeslané nabídky je jednořádková („Odeslaná nabídka … — needituje se")',
+    /Odeslaná nabídka/.test(po.lista) && /needituje se/.test(po.lista) && !/Pokračujte klonem/.test(po.lista), po.lista);
+  test('#404: modrý pruh Odemknout k úpravám jen s právem zamek.odemknout (role ' + po.role + ')',
+    /Odemknout k úpravám/.test(po.lista) === po.pravo, JSON.stringify({ role: po.role, pravo: po.pravo }));
+  await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
+    ZAK = novaZakazka(); syncVarianta(); render(); });
+}
+
+/* ---- 10f) TISK Z NABÍDKY OTEVŘENÉ JEN KE ČTENÍ (P2 / K13-N54) ----
+ * Test 13. kola: Word ze zakázky otevřené jen ke čtení zamkl variantu JEN
+ * v prohlížeči, uložení se odmítlo a na serveru zámek nebyl. Teď se před
+ * dokumentem, který zamyká, aplikace zeptá: Zrušit = dokument nevznikne
+ * a nic se nezamkne; Odemknout = dokument vznikne a zámek se uloží. */
+{
+  /* Zakázka jako z aplikace se zveřejněným ceníkem a vyplněnou šachtou:
+   * nový zámek obchodníka z ceníku bez cen nebo za 0 Kč server odmítne
+   * (#395 V3, zrcadlo zábran ukazkovyCenik a cenaNula, které tu harness
+   * vypíná). */
+  const platny = () => { const db = JSON.parse(pamet.get('program/db') || '{}');
+    return db.platny ? { cenik: db.platny.cenik || null, cenikProj: db.platny.cenikProj || null } : {}; };
+  const otevriCteni = async (cislo) => page.evaluate(async ([cislo, pl]) => {
+    ZAK = novaZakazka(); ZAK.cislo = cislo; ZAK.nazevAkce = 'P2 tisk jen ke čtení';
+    const d = ZAK.varianty[0].data;
+    if (pl.cenik) Object.assign(d.cenik, JSON.parse(JSON.stringify(pl.cenik)));
+    if (pl.cenikProj) Object.assign(d.proj.cenik, JSON.parse(JSON.stringify(pl.cenikProj)));
+    Object.assign(d.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
+    syncVarianta(); render();
+    await onlineUloz();
+    const soubor = ONLINE_STAV.soubor;
+    window.volba = () => Promise.resolve('zahodit');
+    try { await onlineOtevri(soubor); } finally { delete window.volba; }
+    /* Prohlížeč harnessu zveřejněný ceník nenačetl a otevřená varianta se
+     * přepočítala jeho (nulovým) — vrátit ceník, se kterým se uložila. */
+    const d2 = ZAK.varianty[0].data;
+    if (pl.cenik) Object.assign(d2.cenik, JSON.parse(JSON.stringify(pl.cenik)));
+    if (pl.cenikProj) Object.assign(d2.proj.cenik, JSON.parse(JSON.stringify(pl.cenikProj)));
+    return { soubor, cteni: zamekCteniJe() };
+  }, [cislo, platny()]);
+  const zamekNaServeru = (soubor) => {
+    const z = JSON.parse(pamet.get('zakazky/z/' + soubor) || '{}');
+    return !!(z.varianty && z.varianty[0] && z.varianty[0].zamek && z.varianty[0].zamek.zamceno);
+  };
+  const pripravStuby = (odpoved) => page.evaluate((odpoved) => {
+    window.__p2 = { okna: 0, dokumenty: 0, dialog: '' };
+    /* Zábrany dokumentů (#377) tu nejsou předmětem — platný ceník serveru je
+     * v tomhle místě harnessu nulový (zábrana „cenaNula"). Brána se vypne,
+     * zkouší se jen dotaz „Odemknout a tisknout"; zábrany hlídá
+     * overit_zabrany_dokumenty.mjs. */
+    window.__zabPuv = window.__zabPuv || window.dokumentZabrana;
+    window.dokumentZabrana = () => '';
+    window.potvrd = (t) => { window.__p2.dialog = String(t); return Promise.resolve(odpoved); };
+    window.__oknoPuv = window.__oknoPuv || window.oknoNahledu;
+    window.oknoNahledu = () => { window.__p2.okna++; return null; };
+    window.__dokPuv = window.__dokPuv || window.dokumentVygeneruj;
+    window.dokumentVygeneruj = () => { window.__p2.dokumenty++;
+      return Promise.resolve({ blob: new Blob(['x']), nazevSouboru: 'P2_harness' }); };
+    SABLONA_DOCX = { nazev: 'harness.docx', data: new ArrayBuffer(8) };
+  }, odpoved);
+  const stav = () => page.evaluate(() => ({ p2: window.__p2, cteni: zamekCteniJe(),
+    zamceno: variantaUzamcena(aktivniVarianta(ZAK)) }));
+
+  /* Zrušit — náhled k tisku i Word. */
+  const a = await otevriCteni('2026 - OPR - CN - 0764');
+  test('P2: zakázka je otevřená jen ke čtení', a.cteni === true, a);
+  await pripravStuby(false);
+  await page.evaluate(async () => { await nabidkaOckDokument(); await nabidkaWordGeneruj(null); });
+  const poZrus = await stav();
+  test('P2: před tiskem se aplikace zeptá (Odemknout a tisknout / Zrušit)',
+    /Tisk odešle nabídku a uzamkne variantu/.test(poZrus.p2.dialog), poZrus.p2.dialog);
+  test('P2: Zrušit — náhled k tisku se neotevře a Word nevznikne',
+    poZrus.p2.okna === 0 && poZrus.p2.dokumenty === 0, JSON.stringify(poZrus));
+  test('P2: Zrušit — varianta zůstala nezamčená a zakázka jen ke čtení',
+    !poZrus.zamceno && poZrus.cteni, JSON.stringify(poZrus));
+
+  /* Odemknout — Word vznikne, zámek se uloží na server. */
+  await pripravStuby(true);
+  await page.evaluate(async () => { await nabidkaWordGeneruj(null); });
+  await page.waitForTimeout(100);
+  const poOdem = await stav();
+  test('P2: Odemknout — zakázka je odemčená a Word vznikl',
+    !poOdem.cteni && poOdem.p2.dokumenty === 1, JSON.stringify(poOdem));
+  test('P2: Odemknout — varianta je zamčená jako odeslaná', poOdem.zamceno, JSON.stringify(poOdem));
+  await page.evaluate(async () => { await onlineUloz(); });
+  test('P2: po uložení (jako autosave) je zámek na serveru', zamekNaServeru(a.soubor), a.soubor);
+
+  /* Náhled k tisku s odemknutím: okno se otevře až po odpovědi. */
+  const b = await otevriCteni('2026 - OPR - CN - 0765');
+  await pripravStuby(true);
+  await page.evaluate(async () => { await nabidkaOckDokument(); });
+  const poNahled = await stav();
+  test('P2: náhled k tisku se po odemknutí otevře (okno až po dialogu)',
+    poNahled.p2.okna === 1 && !poNahled.cteni, JSON.stringify(poNahled));
+  test('P2: bez tisku z náhledu se nic nezamklo ani neuložilo', !poNahled.zamceno && !zamekNaServeru(b.soubor));
+
+  /* Dotisk už zamčené varianty v režimu čtení se neptá. */
+  await page.evaluate(async (soubor) => {
+    window.volba = () => Promise.resolve('zahodit');
+    try { await onlineOtevri(soubor); } finally { delete window.volba; }
+  }, a.soubor);
+  await pripravStuby(false);
+  await page.evaluate(async () => { await nabidkaWordGeneruj(null); });
+  const dotisk = await stav();
+  test('P2: dotisk odeslané nabídky v režimu čtení se neptá a Word vznikne',
+    dotisk.p2.dialog === '' && dotisk.p2.dokumenty === 1 && dotisk.cteni, JSON.stringify(dotisk));
+
+  await page.evaluate(() => {
+    window.oknoNahledu = window.__oknoPuv; window.dokumentVygeneruj = window.__dokPuv; if (window.__zabPuv) window.dokumentZabrana = window.__zabPuv;
+    SABLONA_DOCX = null;
+    if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
+    ZAK = novaZakazka(); syncVarianta(); render();
+  });
+  await dlgStub(page);
+}
+
+/* ---- 10f) #404: ODEMKNOUT ODESLANOU NABÍDKU — MODRÝ PRUH JEN SPRÁVCI ----
+ * Rozhodnutí J. V. 13. 10. 2026. Obchodník u odeslané nabídky modrý pruh
+ * nevidí a ani obejitím tlačítka ji neodemkne (server, B3); administrátor
+ * ji modrým pruhem odemkne a odemčení se uloží na server. Jede se nad
+ * odeslanou nabídkou z bloku P2 (…0764). */
+{
+  const klic = [...pamet.keys()].find(k => /^zakazky\/z\/.*0764/.test(k));
+  const soubor = klic ? klic.replace(/^zakazky\/z\//, '') : '';
+  const zamcenoNaServeru = () => {
+    const z = JSON.parse(pamet.get(klic) || '{}');
+    const v = (z.varianty || []).find(x => x.id === z.aktivni) || (z.varianty || [])[0];
+    return !!(v && v.zamek && v.zamek.zamceno);
+  };
+  test('#404: odeslaná nabídka z P2 je na serveru zamčená', !!klic && zamcenoNaServeru(), soubor);
+  const obch = await page.evaluate(async (soubor) => {
+    window.volba = () => Promise.resolve('zahodit');
+    try { await onlineOtevri(soubor); } finally { delete window.volba; }
+    const ob = document.getElementById('obnovaLista');
+    const r = { role: ONLINE_STAV.ja.role, cteni: zamekCteniJe(),
+      zluta: ob.classList.contains('zobraz'),
+      modra: /Odemknout k úpravám/.test(document.getElementById('zamekLista').textContent) };
+    /* Obejití tlačítka: odemknout v prohlížeči a uložit — server musí odmítnout. */
+    const v = aktivniVarianta(ZAK);
+    odemkniVariantu(v, { jeAdmin: true, duvod: 'pokus obchodníka', kdo: 'harness' });
+    zamekCteniVypni();
+    r.ulozeno = await onlineUloz();
+    return r;
+  }, soubor);
+  test('#404: obchodník u odeslané nabídky nemá žlutou lištu ani modrý pruh',
+    obch.role === 'Obchodník' && obch.cteni && !obch.zluta && !obch.modra, JSON.stringify(obch));
+  test('#404: obejitím tlačítka obchodník odeslanou nabídku na serveru neodemkne (B3)',
+    obch.ulozeno !== true && zamcenoNaServeru(), JSON.stringify(obch));
+
+  await page.evaluate(() => { zamekCteniVypni(); ZAK = novaZakazka(); syncVarianta(); render(); onlineOdhlas(); });
+  await page.waitForFunction(() => { try { return ONLINE_STAV.ja === null; } catch (e) { return false; } });
+  await prihlas('spravce@priklad.cz', 'Zkusebni.Heslo.123');
+  await page.waitForFunction(() => { try { return !!ONLINE_STAV.ja; } catch (e) { return false; } });
+  await page.waitForTimeout(400);
+  await dlgStub(page);
+  const adm = await page.evaluate(async (soubor) => {
+    window.volba = () => Promise.resolve('zahodit');
+    window.dotaz = () => Promise.resolve('oprava překlepu (harness #404)');
+    try { await onlineOtevri(soubor); } finally { delete window.volba; }
+    const r = { role: ONLINE_STAV.ja.role, cteni: zamekCteniJe(),
+      zluta: document.getElementById('obnovaLista').classList.contains('zobraz') };
+    const b = [...document.querySelectorAll('#zamekLista button')].find(x => /Odemknout k úpravám/.test(x.textContent));
+    r.modra = !!b;
+    if (b) { b.click(); await new Promise(res => setTimeout(res, 100)); }
+    r.poKliku = { cteni: zamekCteniJe(), zamcena: variantaUzamcena(aktivniVarianta(ZAK)) };
+    r.ulozeno = await onlineUloz();
+    return r;
+  }, soubor);
+  test('#404: administrátor vidí u odeslané nabídky modrý pruh (žlutou lištu ne)',
+    adm.role === 'Administrátor' && adm.modra && !adm.zluta, JSON.stringify(adm));
+  test('#404: modrý pruh odemkne nabídku i okno', !adm.poKliku.cteni && !adm.poKliku.zamcena, JSON.stringify(adm));
+  test('#404: odemčení správcem server přijme a uloží', adm.ulozeno === true && !zamcenoNaServeru(), JSON.stringify(adm));
+  await page.evaluate(() => { if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
+    ZAK = novaZakazka(); syncVarianta(); render(); });
+  await dlgStub(page);
+}
 
 /* ---- 11) čistá konzole ---- */
 test('za celý průchod nevznikla nečekaná chyba v konzoli', chyby.length === 0, chyby);

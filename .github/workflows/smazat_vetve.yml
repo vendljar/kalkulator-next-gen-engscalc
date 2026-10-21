@@ -1,0 +1,69 @@
+# Smazání sloučených pomocných větví jedním klikem (W2, J. V. 20. 10. 2026)
+#
+# Proč: z cloudového sezení vzdálenou větev smazat nejde (proxy vrací 403)
+# a seznam odkazů na mazání po jedné větvi byl zdlouhavý. Spouští se JEN
+# RUČNĚ: GitHub → Actions → Smazat sloučené větve → Run workflow, „Use
+# workflow from“ = main. Tlačítko se objeví jen pro workflow ve výchozí
+# větvi, ale formulář dovolí vybrat i jinou větev — pak by běžel workflow
+# i skript z té větve s právem zápisu (K4-N11). Proto job běží jen nad main
+# (podmínka `if` níže) a skript totéž hlídá sám (GITHUB_REF, kód 2).
+#
+# Logika výběru je v nastroje/sloucene_vetve.sh (test
+# nastroje/test_sloucene_vetve.sh ve statických kontrolách kola): smaže se
+# větev celá v test, kromě main, test, test-draft, claude/integrace-*,
+# větví s posledním commitem mladším než „stari_hodin“ a větví z „vynechat“.
+# Skutečné stáří větve (K4-N2, O8) se bere z času poslední aktivity větve
+# v GitHub API (gh api …/activity, GH_TOKEN = GITHUB_TOKEN); bez něj se smaže
+# jen větev sloučená merge commitem mimo hlavní linii chráněných větví.
+# Maže se s --force-with-lease (K4-N3): souběžný push smazání zastaví.
+# Souhrn (smazané, vynechané s důvodem, počty) je v souhrnu běhu.
+name: Smazat sloučené větve
+
+on:
+  workflow_dispatch:
+    inputs:
+      jen_vypsat:
+        description: 'Jen vypsat, nic nemazat'
+        type: boolean
+        default: false
+      stari_hodin:
+        description: 'Nemazat větve s posledním commitem mladším než (hodin)'
+        type: string
+        default: '24'
+      vynechat:
+        description: 'Nemazat ani tyto větve (názvy oddělené mezerou)'
+        type: string
+        default: ''
+
+# Jen tenhle workflow smí do repozitáře zapisovat (mazání větví přes
+# GITHUB_TOKEN); testy.yml zůstává contents: read (B125). Akce připnuté
+# na celý SHA commitu jako v testy.yml.
+permissions:
+  contents: write
+
+concurrency:
+  group: smazat-vetve
+  cancel-in-progress: false
+
+jobs:
+  smazat:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      # Vstupy jdou přes proměnné prostředí, ne vložením do příkazu — text
+      # z formuláře se tak nikdy nespustí jako shell.
+      - name: Smazat sloučené větve (nastroje/sloucene_vetve.sh)
+        env:
+          JEN_VYPSAT: ${{ inputs.jen_vypsat }}
+          STARI_HODIN: ${{ inputs.stari_hodin }}
+          VYNECHAT: ${{ inputs.vynechat }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          volby=(--stari-hodin "$STARI_HODIN" --vynechat "$VYNECHAT" --github-repo "$GITHUB_REPOSITORY")
+          [ "$JEN_VYPSAT" = "true" ] && volby+=(--jen-vypsat)
+          bash nastroje/sloucene_vetve.sh "${volby[@]}"

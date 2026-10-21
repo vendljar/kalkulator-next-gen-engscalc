@@ -25,6 +25,22 @@ import { readFileSync, existsSync } from 'fs';
 import { createRequire } from 'module';
 import { chromium } from 'playwright';
 
+/* Cesta k sestavení i ke zdrojákům se odvozuje od UMÍSTĚNÍ HARNESSU, ne od
+ * stroje, na kterém kdysi vznikl (nález 14. 9. 2026 při zavádění jobu
+ * „harnessy" do CI). Šestnáct harnessů neslo napevno /home/claude/work/kng/… —
+ * tedy cestu z cloudového prostředí, ve kterém je psal.
+ *
+ * MUSÍ STÁT PŘED PRVNÍM POUŽITÍM (oprava N15, 22. 9. 2026). Deklarace tu
+ * do té doby byla AŽ POD `require(KOREN + …)`, takže `const` v dočasné mrtvé
+ * zóně shodil celý soubor hned při načtení:
+ *     ReferenceError: Cannot access 'KOREN' before initialization
+ * Sada tedy od 14. 9. NENASTARTOVALA vůbec a její kontroly neběžely nikde —
+ * ani lokálně, ani v CI, protože tenhle harness v CI nebyl. `import` se
+ * vytahuje nahoru sám, `const` ne. */
+import { fileURLToPath } from 'node:url';
+const KOREN = fileURLToPath(new URL('.', import.meta.url));
+
+import { najdiPodklad, preskoc } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
 const { zipPrecti } = require(KOREN + 'src/docxgen.js');
 
@@ -32,20 +48,9 @@ const KDE_SABLONA = [
   '/home/claude/work/sablona_proj/Sablona_NABIDKA_PROJ.docx',
   '/home/claude/work/deliver/Sablona_NABIDKA_PROJ.docx',
 ];
-const sablona = KDE_SABLONA.find(p => existsSync(p));
-if (!sablona) {
-  console.log('PŘESKOČENO – šablona Sablona_NABIDKA_PROJ.docx nenalezena.');
-  console.log('Hledáno v:\n  ' + KDE_SABLONA.join('\n  '));
-  process.exit(0);
-}
+const sablona = najdiPodklad('Sablona_NABIDKA_PROJ.docx', KDE_SABLONA);
+if (!sablona) preskoc('šablona Sablona_NABIDKA_PROJ.docx', KDE_SABLONA.concat('$KNG_PODKLADY'));
 
-/* Cesta k sestavení se odvozuje od UMÍSTĚNÍ HARNESSU, ne od stroje, na kterém
- * kdysi vznikl (nález 14. 9. 2026 při zavádění jobu „harnessy" do CI).
- * Šestnáct harnessů neslo napevno /home/claude/work/kng/… — tedy cestu
- * z cloudového prostředí, ve kterém je psal. Jinde než tam se nedaly spustit
- * vůbec, a právě proto si nikdo nevšiml, že se mezitím rozešly s aplikací. */
-import { fileURLToPath } from 'node:url';
-const KOREN = fileURLToPath(new URL('.', import.meta.url));
 const KDE = new URL('dist/kalkulacka.html', import.meta.url).href;
 let ok = 0, fail = 0;
 const test = (n, podm, info) => {
@@ -121,6 +126,29 @@ console.log('\nšablona Sablona_NABIDKA_PROJ.docx');
   /* Vzorové hodnoty by v nabídce vypadaly jako skutečné údaje zákazníka. */
   for (const s of ['Xx xxx Kč', 'xx.xx.2026', 'OVP-CN-00xx', 'Zákazník ….'])
     test('vzorová hodnota „' + s + '" je nahrazená', !docS.includes(s));
+
+  /* STRUKTURA A JAZYKOVÉ VERZE (25. 9. 2026). Šablona PROJ v2 vyšla ze
+   * skriptu s rozbitým XML (Word ji otevřel jen s opravou) a tahle sada to
+   * nepoznala — dosazování jde přes text. Hlídá se teď strom značek
+   * a zároveň to, že slovník pokryje šablonu do EN/DE/FR celou. */
+  const dg = require(KOREN + 'src/docxgen.js');
+  const pr = require(KOREN + 'src/preklad.js');
+  Object.keys(pr).forEach(k => { globalThis[k] = pr[k]; });
+  const buf = readFileSync(sablona);
+  const ab = () => buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.length);
+  const vady = await dg.docxXmlVady(ab());
+  test('šablona má neporušenou strukturu XML (Word ji otevře bez opravy)', !vady.length, vady);
+  for (const L of ['en', 'de', 'fr']) {
+    const st = {};
+    const out = await dg.docxPrelozSablonu(ab(), L, st);
+    const vadyL = await dg.docxXmlVady(await out.arrayBuffer());
+    test(L.toUpperCase() + ' verze: slovník pokryje všechny pevné texty (' + st.procenta + ' %)',
+      st.chybi.length === 0, [...new Set(st.chybi)].slice(0, 5));
+    test(L.toUpperCase() + ' verze má neporušenou strukturu XML', !vadyL.length, vadyL);
+    /* P3 (K14-N63, K16-N84): ani odstavce se symbolem nezůstanou česky. */
+    test(L.toUpperCase() + ' verze: přeložené jsou i odstavce se symboly {{…}} (P3)',
+      !(st.symbolove || []).length, (st.symbolove || []).slice(0, 5));
+  }
 }
 
 /* ---------- 1) ovládání v aplikaci ---------- */
@@ -227,6 +255,63 @@ test('alternativní text obrázku se po výměně vyprázdnil',
   !/descr="\{\{UVODNI_FOTO\}\}"/.test(doc));
 test('popisek fotky se dosadil jako text', doc.includes('Bytový dům, pohled z ulice')
   || !doc.includes('UVODNI_FOTO_POPIS'));
+
+/* ---------- 2b) šablona PROJ v3: rekapitulace a vlastní položky ----------
+ * (29. 9. 2026; K15-N66, K14-N64, oprava součtu #364). Šablona v3 má před
+ * „Vypracoval" rekapitulaci (cena před slevou, sleva, CELKEM bez DPH) a blok
+ * {{PROJ_POLOZKY_NAVIC}}. Se slevou stojí činnosti za cenu PŘED slevou;
+ * řádky slevy i blok položek bez obsahu zmizí. Starší šablona je nemá. */
+{
+  const docSablony = dekoduj((await zipPrecti(new Uint8Array(zdroj))).find(x => x.nazev === 'word/document.xml').data);
+  if (!docSablony.includes('{{PROJ_SLEVA_KC}}')) {
+    console.log('\nšablona PROJ v3 — přeskočeno (šablona nemá rekapitulaci se slevou)');
+  } else {
+    console.log('\nšablona PROJ v3: rekapitulace a vlastní položky');
+    const text = x => x.replace(/<[^>]+>/g, '');
+    test('v3 bez slevy: rekapitulace s CELKEM bez DPH', text(doc).includes('REKAPITULACE CENOVÉ NABÍDKY')
+      && text(doc).includes('CELKEM bez DPH') && doc.includes(vysledek.celkem));
+    test('v3 bez slevy: řádky slevy nejsou', !text(doc).includes('Cena před slevou') && !/Sleva\s*%/.test(text(doc)));
+    test('v3 bez vlastních položek: blok položek zmizel', !text(doc).includes('Další položky zahrnuté v ceně'));
+    test('v3: značky bloků v dokumentu nejsou', !/_ZAC\}\}|_KON\}\}/.test(doc));
+    const se = await p.evaluate(async (sablonaB64) => {
+      const bin = atob(sablonaB64);
+      const u8 = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      const puvodniMarze = PC.marze;
+      PC.marze = 0.3;
+      NAST.slevy.stropy = Object.assign({}, NAST.slevy.stropy, { 'Obchodník': 0.2 });
+      const zam = PJ.sekce.find(x => x.key === 'zamereni');
+      zam.polozky.push({ nazev: 'Zaměření sklepa navíc', typ: 'fix', cena: 5000, vlastni: true });
+      render();
+      slevaProjSet('procenta', 14);
+      render();
+      const varianta = aktivniVarianta(ZAK);
+      const stav = varianta.data.slevaProj.stav;
+      const res = await dokumentVygeneruj('nabidkaProj', u8.buffer, ZAK, varianta, JEKLY, 'cz');
+      const bajty = new Uint8Array(await res.blob.arrayBuffer());
+      let s = '';
+      for (let i = 0; i < bajty.length; i++) s += String.fromCharCode(bajty[i]);
+      const d = nabidkaProjData(ZAK, varianta);                 // online = činnosti před slevou
+      const out = { docx: btoa(s), stav, ph: d.placeholders };
+      slevaProjSet('procenta', 0);
+      zam.polozky.pop();
+      PC.marze = puvodniMarze;
+      render();
+      return out;
+    }, b64);
+    const docSe = dekoduj((await zipPrecti(new Uint8Array(Buffer.from(se.docx, 'base64')))).find(x => x.nazev === 'word/document.xml').data);
+    const t = text(docSe);
+    test('příprava: sleva projekce 14 % je schválená', se.stav === 'schváleno automaticky', se.stav);
+    test('v3 se slevou: cena před slevou, sleva 14 % i CELKEM', t.includes('Cena před slevou') && t.includes(se.ph.PROJ_CENA_PRED_SLEVOU)
+      && /Sleva\s*14\s*%/.test(t) && t.includes(se.ph.PROJ_SLEVA_KC) && t.includes(se.ph.PROJ_CELKEM_BEZ_DPH), t.slice(t.indexOf('REKAPITULACE'), t.indexOf('REKAPITULACE') + 300));
+    test('v3 se slevou: činnosti stojí za cenu před slevou (jako online nabídka)',
+      t.includes(se.ph.PROJ_CENA_ZAMERENI) && t.includes(se.ph.PROJ_CENA_DPZ), [se.ph.PROJ_CENA_ZAMERENI, se.ph.PROJ_CENA_DPZ]);
+    test('v3: vlastní položka je v bloku „Další položky zahrnuté v ceně"',
+      t.includes('Další položky zahrnuté v ceně') && t.indexOf('Zaměření sklepa navíc') > t.indexOf('Další položky zahrnuté v ceně'));
+    test('v3 se slevou: v dokumentu nezůstal žádný symbol {{…}}', !/\{\{[A-Z0-9_]+\}\}/.test(docSe),
+      (docSe.match(/\{\{[A-Z0-9_]+\}\}/g) || []).slice(0, 6).join(' '));
+  }
+}
 
 /* ---------- 3) zámek varianty ---------- */
 console.log('\nzámek po vytištění');

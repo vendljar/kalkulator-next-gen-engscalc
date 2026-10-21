@@ -47,10 +47,14 @@ const test = (n, cond, info) => {
     cenik.novaPolozka === 0, cenik.novaPolozka);
   test('a doplnila se právě jedna', doplneno === 1, doplneno);
   test('stávající ceny zůstaly', cenik.montazHodKc === 850 && cenik.priplatky.madlaBmKc === 120);
-  test('seznam nedoplňovaných klíčů je právě ten pár',
-    CENIK_NEDOPLNOVAT.length === 2
+  /* S13 (16. 10. 2026): třetí je mapa příznaků „cena dle nabídky" — starý
+   * ceník bez ní = nezaškrtnuto (zadání J. V.), doplnění z výchozího ceníku
+   * by ji tam vneslo. Značky ukázkových dat zůstávají. */
+  test('seznam nedoplňovaných klíčů: dvojice značek + mapa příznaků dleNabidky',
+    CENIK_NEDOPLNOVAT.length === 3
     && CENIK_NEDOPLNOVAT.indexOf('ukazkove') >= 0
-    && CENIK_NEDOPLNOVAT.indexOf('prazdny') >= 0, CENIK_NEDOPLNOVAT);
+    && CENIK_NEDOPLNOVAT.indexOf('prazdny') >= 0
+    && CENIK_NEDOPLNOVAT.indexOf('dleNabidky') >= 0, CENIK_NEDOPLNOVAT);
   /* Seznam v engine.js je napsaný doslova, protože odkaz na konstanty
    * z ukazkove.js by v sestaveném souboru padl do dočasné mrtvé zóny
    * (stalo se 21. 9. 2026 — aplikace se vůbec nespustila). Tím ale vznikla
@@ -80,6 +84,34 @@ const test = (n, cond, info) => {
   test('dodatkové texty se za čísla nepočítají',
     ukazkoveMaCisla({ popisy: { 'MADLA': 'nerez' }, montazHodKc: 0 }) === false);
   test('prázdno i nesmysl snese', ukazkoveMaCisla(null) === false && ukazkoveMaCisla('x') === false);
+
+  /* SKUTEČNÝ VÝCHOZÍ CENÍK ZE SESTAVENÍ, NE UMĚLÁ FIXTURA (nález N33 revize
+   * v22.9.9). Kontroly výš měly `dph: 0` — stav, který v repozitáři není:
+   * sestavení nese skutečné sazby DPH (zákonné, ne firemní data), takže
+   * každý ceník „měl čísla" a značka prázdného ceníku se sundávala pořád.
+   * Tady se ptá přímo DEFAULT_CENIK a DEFAULT_CENIK_PROJ z jader. */
+  const ep = require('./engine_proj.js');
+  const ock = JSON.parse(JSON.stringify(eng.DEFAULT_CENIK));
+  const proj = JSON.parse(JSON.stringify(ep.DEFAULT_CENIK_PROJ));
+  test('(výchozí ceník OCK opravdu nese nenulové sazby DPH)',
+    ock.dph > 0 && ock.dphZakladni > 0, [ock.dph, ock.dphZakladni]);
+  test('výchozí ceník OCK ze sestavení čísla NEMÁ (N33)', ukazkoveMaCisla(ock) === false);
+  test('ani výchozí ceník PROJ', ukazkoveMaCisla(proj) === false);
+  test('a jeho značky srovnání s obsahem nesundá',
+    ukazkoveSrovnejSObsahem(ock) === false && ock.prazdny === true && ock.ukazkove === true,
+    [ock.prazdny, ock.ukazkove]);
+  test('ani u projekce', ukazkoveSrovnejSObsahem(proj) === false && proj.prazdny === true,
+    [proj.prazdny]);
+  /* Jediná skutečná cena ale značku sundat musí — oprava nesmí přepnout
+   * na opačnou chybu. */
+  const sCenou = JSON.parse(JSON.stringify(eng.DEFAULT_CENIK)); sCenou.montazHodKc = 850;
+  test('jediná skutečná cena ve výchozím ceníku značku sundá', ukazkoveSrovnejSObsahem(sCenou) === true
+    && !('prazdny' in sCenou), Object.keys(sCenou).filter(k => /prazdny|ukazkove/.test(k)));
+  /* Co se za cenu nepočítá: sazby a předvolby DPH, přirážka, procenta, kurz. */
+  test('sazby, přirážka, procenta ani kurz se za ceny nepočítají',
+    ukazkoveMaCisla({ dph: 0.21, dphZakladni: 0.21, dphSnizena: 0.12, marze: 0.42,
+      atypMontazPct: 0.3, kurzEurKc: 25 }) === false);
+  test('položka v Kč ale ano, i vedle nich', ukazkoveMaCisla({ dph: 0.21, cisteniKc: 1 }) === true);
 }
 
 /* ---------- 3) srovnání podle obsahu JEN odebírá ---------- */
@@ -112,7 +144,9 @@ const test = (n, cond, info) => {
     zamek: zamcena ? { zamceno: true, kdo: 'a@b.cz', kdy: '2026-09-01T10:00:00Z' } : null,
     data: {
       cenik: { ukazkove: true, prazdny: true, montazHodKc: 850, dph: 21 },
-      proj: { cenik: { ukazkove: true, projHodKc: 700 }, zadani: {} },
+      /* Klíč ze vzoru DEFAULT_CENIK_PROJ (B136, 12. 10. 2026: cena se počítá jen
+       * v klíčích vzoru — dřívější smyšlený `projHodKc` už cenou není). */
+      proj: { cenik: { ukazkove: true, sazby: { projektant: 700 } }, zadani: {} },
       zadani: {},
     },
   });
@@ -133,7 +167,7 @@ const test = (n, cond, info) => {
   test('ale CENY uzamčené varianty se nehnuly',
     zak.varianty[0].data.cenik.montazHodKc === pred.montazHodKc
     && zak.varianty[0].data.cenik.dph === pred.dph
-    && zak.varianty[0].data.proj.cenik.projHodKc === 700);
+    && zak.varianty[0].data.proj.cenik.sazby.projektant === 700);
   test('a srovnání se započítalo, takže se varianta uloží', r.znacky >= 2, r.znacky);
 }
 

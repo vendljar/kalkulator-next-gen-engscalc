@@ -188,5 +188,60 @@ test('B8: serverová atribuce také nepřičítá záporné', pu.poUzivateli['a@
     analytikaPoctyUzivatele(den, 'anna@example.cz').zdrz === undefined);
 }
 
+/* B81 (13. 10. 2026): prototypové klíče z klienta. */
+{
+  const d = analytikaSlij(null, { kliky: { constructor: 5, __proto__x: 1, 'tlačítko': 2 },
+    zalozky: JSON.parse('{"__proto__": 3, "prototype": 1, "ock": 1}'),
+    pocty: { constructor: 7, zakazky: 1 },
+    poUzivateli: JSON.parse('{"__proto__": {"zakazky": 9}, "a@b.cz": {"constructor": 4, "zakazky": 1}}') });
+  test('B81: klik „constructor" se nezapočte a nerozbije mapu', !Object.prototype.hasOwnProperty.call(d.kliky, 'constructor') && d.kliky['tlačítko'] === 2, d.kliky);
+  test('B81: záložka „__proto__"/„prototype" se zahodí, ostatní zůstanou', Object.keys(d.zalozky).join(',') === 'ock' && Object.getPrototypeOf(d.zalozky) === Object.prototype, d.zalozky);
+  test('B81: počítadlo „constructor" není známé počítadlo', !Object.prototype.hasOwnProperty.call(d.pocty, 'constructor') && typeof d.pocty.constructor === 'function', d.pocty);
+  test('B81: uživatel „__proto__" se zahodí, počty uživatele bez „constructor"',
+    Object.keys(d.poUzivateli).join(',') === 'a@b.cz' && !Object.prototype.hasOwnProperty.call(d.poUzivateli['a@b.cz'], 'constructor'), d.poUzivateli);
+  const den = analytikaNovyDen();
+  analytikaPridej(den, { typ: 'zalozka', tab: 'constructor' }); analytikaPridej(den, { typ: 'pocet', co: 'constructor' });
+  analytikaPridej(den, { typ: 'klik', klic: '__proto__' });
+  test('B81: analytikaPridej prototypové klíče ignoruje', JSON.stringify(den.zalozky) === '{}' && JSON.stringify(den.kliky) === '{}'
+    && typeof den.pocty.constructor === 'function', den);
+  test('B81: analytikaKlicPovolen', typeof analytikaKlicPovolen === 'function' && !analytikaKlicPovolen('__proto__') && analytikaKlicPovolen('2026-OPR-CN-1'));
+}
+
+// ---- B89 (hloubkový test 24. 9. 2026, #347): klíč prvku nesmí propustit část názvu ----
+/* Regex „(…)" končil na první „)" — závorka uvnitř řetězce nebo vnořené
+ * volání nechalo zbytek argumentu (název akce, jméno zákazníka) v klíči. */
+{
+  const k1 = analytikaKlic('zakazka', 'BUTTON', "otevri('Bytový dům (Praha) Novák')");
+  test('B89: závorka v argumentu nepropustí zbytek názvu', !/Nov|Praha/.test(k1) && k1 === 'zakazka|BUTTON|otevri(…)', k1);
+  const k2 = analytikaKlic('zakazka', 'BUTTON', "varAktivuj(kid('Novák s.r.o.'))");
+  test('B89: vnořené volání nepropustí argument', !/Nov|s\.r\.o/.test(k2) && k2 === 'zakazka|BUTTON|varAktivuj(…)', k2);
+  const k3 = analytikaKlic('zakazka', 'BUTTON', "a(')Novák'); b('x')");
+  test('B89: řetězec začínající „)" nepropustí zbytek', !/Nov/.test(k3), k3);
+  /* Rozhraní nesmí tvrdit, že stopa jednotlivce neexistuje — od 20. 8. / 31. 8.
+   * 2026 se počítadla, záložky i prvky ukládají i po uživatelích. */
+  const ui = require('fs').readFileSync(require('path').join(__dirname, 'ui', 'analytika_ui.js'), 'utf8');
+  test('B89: heat mapa netvrdí „stopa jednotlivce neexistuje"', !/stopa jednotlivce neexistuje/.test(ui));
+  test('B89: karta netvrdí, že verze měří „čistě anonymní souhrny"', !/což tahle verze dodržuje/.test(ui));
+}
+
+/* B175 (dávka H1, 18. 10. 2026): server čistí klíče prvků týmž pravidlem jako
+ * klient. Pojistka: před opravou (analytikaKlicOrez jen ořezávala délku) padají
+ * všechny čtyři kontroly; po opravě projdou. */
+{
+  const SPIN = "zakazky|BUTTON|otevri('Bytový dům (Praha) Novák')";
+  const CIST = 'zakazky|BUTTON|otevri(…)';
+  test('B175: analytikaKlicOrez zahodí argument volání', analytikaKlicOrez(SPIN) === CIST);
+  test('B175: očištěný klíč se nemění (idempotence)', analytikaKlicOrez(CIST) === CIST);
+  const den = analytikaSlij(null, analytikaDavkaOcisti({ kliky: { [SPIN]: 2, [CIST]: 1 }, zdrz: { [SPIN]: 5 } }));
+  test('B175: zápis dne ze špinavé dávky nese jen očištěné klíče (2 + 1)',
+    den.kliky[CIST] === 3 && den.zdrz[CIST] === 5 && !/Novák/.test(JSON.stringify(den)), JSON.stringify(den));
+  analytikaPrictiUzivateli(den, 'obchodnik@priklad.cz', {}, { kliky: { [SPIN]: 4 } });
+  test('B175: prvky po uživateli se čistí taky',
+    den.poUzivateli['obchodnik@priklad.cz'].kliky[CIST] === 4 && !/Novák/.test(JSON.stringify(den.poUzivateli)),
+    JSON.stringify(den.poUzivateli));
+  test('B175: analytikaDenOcisti vrátí null u čistého dne', analytikaDenOcisti(den) === null);
+}
+
 console.log('\nPASS=' + passes + ' FAIL=' + fails);
+console.log(passes + ' OK, ' + fails + ' FAIL');   // souhrn pro mutace.mjs
 process.exit(fails ? 1 : 0);

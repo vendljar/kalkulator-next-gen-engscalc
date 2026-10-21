@@ -297,5 +297,117 @@ test('žádost „čeká na schválení" obchodník uloží', r.ok === true);
 r = schvalovaniServerKontrola(null, { varianty: [{ id: 'v1' }, null, { id: 'v2', data: {} }] }, OBCH, NAST);
 test('varianty bez dat nepadají', r.ok === true);
 
+console.log('\n--- schvalovaniServerMarze (#341, B71) ---');
+global.vypocetProj = ep.vypocetProj;
+/* Skutečná varianta se spočitatelnými daty: server marži přepočítá sám. */
+function zakMarze(slOck, slProj, zamek) {
+  const z = zk.novaZakazka();
+  const v = z.varianty[0];
+  v.data.ock.fixes = true;
+  if (slOck) v.data.sleva = Object.assign(slevaDefault(), slOck);
+  if (slProj) v.data.slevaProj = Object.assign(slevaDefault(), slProj);
+  if (zamek) v.zamek = { zamceno: true };
+  return z;
+}
+const AUTO = (p) => ({ procenta: p, role: 'Administrátor', stav: SCHV_AUTO });
+let m = schvalovaniServerMarze(null, zakMarze(AUTO(POD_MARZI)), JEKLY, NAST);
+test('#341: podmaržová sleva OCK „schváleno automaticky" neprojde', m.ok === false, JSON.stringify(m));
+test('#341: hláška neprozradí číslo minimální marže (jediné % je sleva)', m.ok === false && (m.chyba.match(/%/g) || []).length === 1, m.chyba);
+m = schvalovaniServerMarze(null, zakMarze({ ...AUTO(POD_MARZI), stav: SCHV_SCHVALENO, schvalenoProc: POD_MARZI }), JEKLY, NAST);
+test('#341: ani lidsky „schválená" podmaržová sleva neprojde', m.ok === false);
+m = schvalovaniServerMarze(null, zakMarze(AUTO(DO_STROPU)), JEKLY, NAST);
+test('#341: sleva nad minimem projde', m.ok === true, JSON.stringify(m));
+m = schvalovaniServerMarze(null, zakMarze({ procenta: POD_MARZI, stav: SCHV_ZAMITNUTO }), JEKLY, NAST);
+test('#341: zamítnutá podmaržová sleva se uloží (do ceny se nepropíše)', m.ok === true);
+m = schvalovaniServerMarze(null, zakMarze({ procenta: POD_MARZI, stav: SCHV_CEKA }), JEKLY, NAST);
+test('#341: čekající žádost se uloží', m.ok === true);
+const vpr = zakMarze().varianty[0];
+const rp = ep.vypocetProj(vpr.data.proj.zadani, vpr.data.proj.cenik);
+let podProj = 90;
+for (let p = 1; p <= 95; p++) {
+  if (slevaVyhodnot(rp.souhrn.celkem, rp.souhrn.naklad + (rp.souhrn.doprava || 0), { procenta: p }, NAST).podMarzi) { podProj = p; break; }
+}
+m = schvalovaniServerMarze(null, zakMarze(null, AUTO(podProj)), JEKLY, NAST);
+test('#341: podmaržová sleva PROJ neprojde (základ projekce vč. dopravy)', m.ok === false && /projekční/.test(m.chyba), JSON.stringify(m));
+m = schvalovaniServerMarze(null, zakMarze(null, AUTO(Math.max(1, podProj - 1))), JEKLY, NAST);
+test('#341: sleva PROJ těsně nad hranicí projde', m.ok === true, JSON.stringify(m));
+const doklad = zakMarze(AUTO(POD_MARZI), null, true);
+m = schvalovaniServerMarze(JSON.parse(JSON.stringify(doklad)), doklad, JEKLY, NAST);
+test('#341: varianta zamčená už v uložené verzi se nepřepočítává (doklad)', m.ok === true);
+m = schvalovaniServerMarze(zakMarze(), doklad, JEKLY, NAST);
+test('#341: NOVĚ zamčená podmaržová varianta neprojde', m.ok === false);
+m = schvalovaniServerMarze(null, zakMarze(AUTO(POD_MARZI)), JEKLY, { ...NAST, minMarze: 0 });
+test('#341: bez nastaveného minima se nehlídá', m.ok === true);
+const rozbita = zakMarze(AUTO(POD_MARZI)); rozbita.varianty[0].data.ock = null;
+m = schvalovaniServerMarze(null, rozbita, JEKLY, NAST);
+test('#341: nespočitatelná varianta uložení neshodí', m.ok === true);
+test('#341: prázdné vstupy nepadají',
+  schvalovaniServerMarze(null, null, JEKLY, NAST).ok && schvalovaniServerMarze(null, { varianty: [null, {}] }, JEKLY, NAST).ok);
+
+/* B105 (13. 10. 2026): čas rozhodnutí razí server, ne prohlížeč. */
+{
+  const z = zakSe(podvrh(NAD_STROP));                 // schvalilKdy z prohlížeče: 2026-08-22
+  const pred = Date.now();
+  const r1 = schvalovaniServerKontrola(null, z, VED, NAST);
+  const kdy = z.varianty[0].data.sleva.schvalilKdy;
+  test('B105: čas schválení je čas serveru, ne podvržený z prohlížeče',
+    r1.ok === true && kdy !== '2026-08-22T00:00:00Z' && Date.parse(kdy) >= pred - 1000, kdy);
+  const ulozenaB = JSON.parse(JSON.stringify(z));
+  const znovu = JSON.parse(JSON.stringify(z)); znovu.varianty[0].data.sleva.schvalilKdy = '2026-01-01T00:00:00Z';
+  const r2 = schvalovaniServerKontrola(ulozenaB, znovu, OBCH, NAST);
+  test('B105: obchodník uloží zakázku se schválením i s jiným časem v prohlížeči (200) a čas zůstane serverový',
+    r2.ok === true && znovu.varianty[0].data.sleva.schvalilKdy === kdy, JSON.stringify([r2, znovu.varianty[0].data.sleva.schvalilKdy]));
+  const zamZ = zakSe({ ...slevaDefault(), procenta: NAD_STROP, stav: SCHV_ZAMITNUTO, zamitnutoProc: NAD_STROP,
+    zamitl: 'x', zamitlKdy: '2020-01-01T00:00:00Z' });
+  schvalovaniServerKontrola(null, zamZ, VED, NAST);
+  test('B105: čas zamítnutí taky ze serveru', zamZ.varianty[0].data.sleva.zamitlKdy !== '2020-01-01T00:00:00Z');
+}
+/* B101 (13. 10. 2026): rozhodnutí zpět na „čeká" jen s právem rozhodnout. */
+{
+  const ul = zakSe({ ...slevaDefault(), procenta: NAD_STROP, stav: SCHV_ZAMITNUTO, zamitnutoProc: NAD_STROP,
+    zamitl: 'Vedoucí Věra (Vedoucí)', zamitlKdy: '2026-10-01T00:00:00Z', role: 'Obchodník' });
+  const vrat = JSON.parse(JSON.stringify(ul)); schvalovaniVrat(vrat.varianty[0].data.sleva);
+  const r1 = schvalovaniServerKontrola(ul, vrat, OBCH, NAST);
+  test('B101: obchodník zamítnutí uložením na „čeká" nevrátí (uložené rozhodnutí zůstane)',
+    r1.ok === true && vrat.varianty[0].data.sleva.stav === SCHV_ZAMITNUTO && vrat.varianty[0].data.sleva.zamitl === 'Vedoucí Věra (Vedoucí)',
+    JSON.stringify(vrat.varianty[0].data.sleva));
+  const vrat2 = JSON.parse(JSON.stringify(ul)); schvalovaniVrat(vrat2.varianty[0].data.sleva);
+  const r2 = schvalovaniServerKontrola(ul, vrat2, VED, NAST);
+  test('B101: vedoucí rozhodnutí vzít zpět smí', r2.ok === true && vrat2.varianty[0].data.sleva.stav === SCHV_CEKA, JSON.stringify(vrat2.varianty[0].data.sleva));
+  const zvys = JSON.parse(JSON.stringify(ul)); zvys.varianty[0].data.sleva.procenta = NAD_STROP + 1;
+  schvalovaniVrat(zvys.varianty[0].data.sleva);
+  test('B101: nová žádost (jiná procenta) se obchodníkovi do fronty vrátit smí',
+    schvalovaniServerKontrola(ul, zvys, OBCH, NAST).ok === true && zvys.varianty[0].data.sleva.stav === SCHV_CEKA);
+}
+
+/* Revize 13. 10. 2026 (audit dávky): obchvaty B101 a B105, regrese 409. */
+{
+  const ul = zakSe({ ...slevaDefault(), procenta: NAD_STROP, stav: SCHV_ZAMITNUTO, zamitnutoProc: NAD_STROP,
+    zamitl: 'Vedoucí Věra (Vedoucí)', zamitlEmail: 'v@x.cz', zamitlKdy: '2026-10-01T00:00:00Z', zamitnutoDuvod: 'pod cenou' });
+  for (const stav of ['', SCHV_AUTO]) {
+    const z = JSON.parse(JSON.stringify(ul)); const s = z.varianty[0].data.sleva;
+    s.stav = stav; delete s.zamitl; delete s.zamitlKdy; delete s.zamitnutoProc;
+    const r = schvalovaniServerKontrola(ul, z, OBCH, NAST);
+    test('revize B101: stav ' + JSON.stringify(stav) + ' zamítnutí nesmaže (vrátí se uložené)',
+      (r.ok === true && z.varianty[0].data.sleva.stav === SCHV_ZAMITNUTO && z.varianty[0].data.sleva.zamitl === 'Vedoucí Věra (Vedoucí)') || r.ok === false,
+      JSON.stringify([r, z.varianty[0].data.sleva]));
+  }
+  const xyz = JSON.parse(JSON.stringify(ul)); xyz.varianty[0].data.sleva.stav = 'xyz';
+  test('revize B101: neznámý stav slevy se odmítne', schvalovaniServerKontrola(ul, xyz, OBCH, NAST).ok === false);
+  const podvrh2 = JSON.parse(JSON.stringify(ul)); Object.assign(podvrh2.varianty[0].data.sleva, { zamitlEmail: 'jiny@x.cz', zamitnutoDuvod: 'jiný důvod' });
+  schvalovaniServerKontrola(ul, podvrh2, OBCH, NAST);
+  test('revize B105: u nezměněného rozhodnutí se e-mail ani důvod nepodvrhnou',
+    podvrh2.varianty[0].data.sleva.zamitlEmail === 'v@x.cz' && podvrh2.varianty[0].data.sleva.zamitnutoDuvod === 'pod cenou', JSON.stringify(podvrh2.varianty[0].data.sleva));
+  const blizko = new Date(Date.now() - 60 * 1000).toISOString();
+  const zb = zakSe({ ...podvrh(NAD_STROP), schvalilKdy: blizko });
+  schvalovaniServerKontrola(null, zb, VED, NAST);
+  test('revize B105: čas kliknutí blízko serveru se ponechá (prohlížeč a server drží týž čas)', zb.varianty[0].data.sleva.schvalilKdy === blizko, zb.varianty[0].data.sleva.schvalilKdy);
+  const sch = zakSe({ ...podvrh(NAD_STROP) }); schvalovaniServerKontrola(null, sch, VED, NAST);
+  const pm = JSON.parse(JSON.stringify(sch)); const s2 = pm.varianty[0].data.sleva;
+  s2.stav = SCHV_ZAMITNUTO; delete s2.schvalil; delete s2.schvalilKdy; delete s2.schvalenoProc; s2.zamitl = '';
+  test('revize B101: schválená sleva přepnutá prohlížečem pod marží na zamítnutí (bez jména) se uloží',
+    schvalovaniServerKontrola(sch, pm, OBCH, NAST).ok === true && pm.varianty[0].data.sleva.stav === SCHV_ZAMITNUTO);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

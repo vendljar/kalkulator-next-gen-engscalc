@@ -296,7 +296,8 @@ function uloUlozDoSlozky(opts) {
       }
       if (!await potvrd('Soubor ' + jmeno + ' se ve složce mezitím změnil'
         + (kol.naDisku ? ' (naposledy ' + kol.naDisku.slice(0, 16).replace('T', ' ') + ')' : '')
-        + '.\n\nOK = přepsat tím, co mám otevřené\nZrušit = nechat soubor na disku být')) return false;
+        + '.\n\nPřepsat ho tím, co máte otevřené?',
+        { ano: 'Přepsat tím, co mám otevřené', ne: 'Nechat soubor na disku být' })) return false;
     }
 
     // 3) vlastní zápis
@@ -372,7 +373,7 @@ function uloSrovnejSPlatnymCenikem() {
   /* Srovnaná značka je taky změna: zakázka spočítaná bez připojené složky si
    * v ceníku varianty nese „nejsou to ostrá data" a po otevření nad platným
    * ceníkem by jinak dál svítila červená lišta a dokument by byl zablokovaný. */
-  if ((r.prepocteno || r.orazitkovano || r.znacky) && typeof syncVarianta === 'function') syncVarianta();
+  if ((r.prepocteno || r.orazitkovano || r.znacky || r.popisy) && typeof syncVarianta === 'function') syncVarianta();
   return r;
 }
 
@@ -410,7 +411,32 @@ function uloPrepocetVeta(r) {
  * se tím nic trvalého nerozhodlo. Kdo chce mít od dotazů pokoj natrvalo,
  * potvrdí u varianty „ceny jsou dohodnuté" (kvitance) — a dialog na to
  * sám upozorní. */
-async function uloPrepocetDialog(r) {
+/* ÚVODNÍ VĚTA DIALOGU O PŘEPOČTU — ČESKY (nález K5, 8. kolo, 22. 9. 2026).
+ *
+ * Do 22. 9. z toho vycházelo „přepočítala se na nová verze. Změnilo se
+ * 3 ceny.": číslo verze se skládalo v 1. pádě a dosazovalo do věty, která
+ * žádá 4. pád, a sloveso bylo napsané jednou pro všechny tvary počtu.
+ *
+ * Pozor na NULU: patří do „Změnilo se 0 cen", ne do tvaru pro 2–4. Dosavadní
+ * podmínka `zmen < 5` to nehlídala.
+ *
+ * Samostatná funkce schválně: věta se tím dá změřit testem bez otevírání
+ * dialogu a bez vyrábění zakázky s přesným počtem změněných cen. */
+function uloPrepocetUvod(zmen, verze) {
+  const n = +zmen || 0;
+  const cast = verze ? ('verzi ' + verze) : 'novou verzi';
+  const kolik = n === 1 ? 'Změnila se 1 cena'
+    : (n >= 2 && n <= 4 ? 'Změnily se ' + n + ' ceny' : 'Změnilo se ' + n + ' cen');
+  return 'Zakázka se otevřela s ceníkem, který už neplatí, a přepočítala se na '
+    + cast + '. ' + kolik + '.';
+}
+
+/* `opts.zdroj` říká, odkud zakázka přišla: 'server' / 'soubor' (výchozí —
+ * data, která už někde uložená jsou), nebo 'zaloha' (záloha v prohlížeči,
+ * tedy práce, která na serveru NENÍ). Rozhoduje o tom, jestli se po vrácení
+ * cen smí zakázka prohlásit za uloženou — viz konec funkce (nález N37). */
+async function uloPrepocetDialog(r, opts) {
+  const zdroj = (opts && opts.zdroj) || 'server';
   if (!r || !r.prepocteno || !r.zmen) return false;
   if (typeof volba !== 'function' || !ULO_PREPOCET.zaloha) return false;
 
@@ -440,10 +466,7 @@ async function uloPrepocetDialog(r) {
     dopad = 'Dopad na celkovou cenu se nepodařilo spočítat.';
   }
 
-  const verze = ULO_PREPOCET.verze ? ('verze ' + ULO_PREPOCET.verze) : 'nová verze';
-  const text = 'Zakázka se otevřela s ceníkem, který už neplatí, a přepočítala se na '
-    + verze + '. Změnilo se ' + r.zmen + (r.zmen === 1 ? ' cena' : (r.zmen < 5 ? ' ceny' : ' cen'))
-    + '. ' + dopad
+  const text = uloPrepocetUvod(r.zmen, ULO_PREPOCET.verze) + ' ' + dopad
     + '\n\nChcete-li v téhle zakázce ceny držet natrvalo, potvrďte u varianty '
     + '„ceny jsou dohodnuté" — pak se přepočítávat nebude a tenhle dotaz se '
     + 'příště neobjeví.';
@@ -499,9 +522,19 @@ async function uloPrepocetDialog(r) {
   /* Po vrácení je zakázka zase přesně taková, jaká přišla ze souboru nebo
    * ze serveru — tedy BEZ neuložené změny. Kdyby se otisky pro autosave
    * nechaly na stavu po přepočtu, první klik kamkoli by zakázku uložil
-   * s cenami, které uživatel právě odmítl (týž mechanismus jako nález V35). */
-  if (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV) ONLINE_STAV.posledni = JSON.stringify(ZAK);
-  if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+   * s cenami, které uživatel právě odmítl (týž mechanismus jako nález V35).
+   *
+   * JENŽE NE U ZÁLOHY Z PROHLÍŽEČE (nález N37 revize v22.9.9). Dialog se
+   * od 21. 9. ukazuje i po obnově zálohy (`historieObnovZalohu`) — a ta
+   * záloha je právě práce, která na serveru NENÍ. Prohlásit ji po vrácení
+   * cen za uloženou znamenalo, že ji autosave přestal považovat za změnu
+   * a varování při zavření okna mlčelo: po zavření byla pryč. U zálohy se
+   * proto otisky nechávají, jak je nastavila obnova — vrácené ceny jsou
+   * ty, se kterými se v záloze pracovalo, a uložit se mají. */
+  if (zdroj !== 'zaloha') {
+    if (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV) ONLINE_STAV.posledni = JSON.stringify(ZAK);
+    if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+  }
   if (typeof render === 'function') render();
   if (typeof nabidkaStavTextBezpecne === 'function')
     nabidkaStavTextBezpecne('Původní ceny vráceny. Zakázka počítá z ceníku, se kterým byla uložena.');

@@ -66,6 +66,41 @@ function cenikZahrOciste(vstup) {
   return out;
 }
 
+/* ---------- výchozí NULOVÁ sazba DPH v zahraniční řadě (22. 9. 2026 večer) ----------
+ *
+ * J. V.: „sazba DPH se při přepnutí na zahraniční ceník nepřepíná na 0 %
+ * … to by bylo optimální."
+ *
+ * Do té doby se sazba DPH chovala jako každá jiná cesta ceníku: bez výslovné
+ * zahraniční odchylky platila tuzemská. Pole pro tu odchylku přibylo dávkou
+ * N18 (v22.9.13), jenže v zveřejněném ceníku nic není — a ceník se během
+ * testu nemění. Zahraniční nabídka se tak dál tiskla s českou sazbou.
+ *
+ * U sazby DPH proto „prázdné" v zahraniční řadě neznamená „jako v ČR", ale
+ * NULU: dodávka s montáží do jiného státu se běžně fakturuje bez české daně
+ * (přenesená daňová povinnost, vývoz). Výslovně zadaná sazba má přednost —
+ * kdo chce i v zahraničí českou sazbu, zapíše ji do ceníku.
+ *
+ * VÝCHOZÍ HODNOTA SE NEUKLÁDÁ do ceníku: nemění otisk ani verzi a pojistka
+ * zveřejnění (`cenikZverejneniShody`) ji nevidí. Doplňuje se jen tam, kde se
+ * zahraniční řada SKLÁDÁ — přepnutí varianty, dnešní ceník pro přepočet
+ * a složení řady. Všechna tři místa musí mluvit stejně: kdyby výchozí nulu
+ * znalo jen přepnutí, přepočet při příštím otevření by prázdné zakázce
+ * sazbu vrátil na tuzemskou (zakázkové hodnoty se u NEROZDĚLANÉ zakázky
+ * z ceníku natahují, viz cenikPrepoctiRozpracovane).
+ *
+ * Ruční volba obchodníka se nepřepisuje (cenikChranena, #177) a u rozdělané
+ * zakázky ji nemění ani přepočet (V23). */
+const CENIK_ZAHR_DPH_CESTY = ['C.dph', 'PC.dph'];
+function cenikZahrDphVychozi(cesta) { return CENIK_ZAHR_DPH_CESTY.indexOf(String(cesta)) >= 0; }
+function cenikZahrSVychozimi(zahr) {
+  const z = cenikZahrOciste(zahr);
+  CENIK_ZAHR_DPH_CESTY.forEach(c => {
+    if (!Object.prototype.hasOwnProperty.call(z.ceny, c)) z.ceny[c] = 0;
+  });
+  return z;
+}
+
 function cenikZahrPrazdna(z) {
   return !z || (!Object.keys(z.ceny || {}).length && !Object.keys(z.jenZahr || {}).length);
 }
@@ -152,7 +187,8 @@ function cenikSlozRadu(cr, zahr, rada) {
     cenikJenZahrVynuluj({ cenik: zaklad }, zahr);
     return zaklad;
   }
-  Object.entries(z.ceny).forEach(([cesta, hodnota]) => {
+  /* Zahraniční řada včetně výchozí nulové sazby DPH (viz cenikZahrSVychozimi). */
+  Object.entries(cenikZahrSVychozimi(zahr).ceny).forEach(([cesta, hodnota]) => {
     if (typeof cenikNastavHodnotu === 'function') cenikNastavHodnotu({ cenik: zaklad }, cesta, hodnota);
   });
   return zaklad;
@@ -170,7 +206,10 @@ function cenikRadaTuzemskaData(cr) {
   return { cenik: cr || {}, proj: { cenik: {} } };
 }
 function cenikRadaRozdily(cr, zahr) {
-  const z = cenikZahrOciste(zahr);
+  /* S výchozí nulovou sazbou DPH: přepnutí ji musí ukázat v dialogu
+   * a provést, i když ji ceník výslovně nemá (22. 9. 2026 večer). */
+  const vyslovne = cenikZahrOciste(zahr).ceny;
+  const z = cenikZahrSVychozimi(zahr);
   const popisy = {};
   if (typeof cenikSledovane === 'function')
     cenikSledovane().forEach(p => { popisy[p.cesta] = p.popis; });
@@ -181,7 +220,15 @@ function cenikRadaRozdily(cr, zahr) {
     cr: (typeof cenikHodnota === 'function') ? cenikHodnota(data, cesta) : undefined,
     zahr: z.ceny[cesta],
     jenZahr: !!z.jenZahr[cesta],
-  })).filter(r => r.jenZahr || String(r.cr) !== String(r.zahr));
+    /* Doplněná výchozí nula, ne odchylka zapsaná v ceníku. */
+    vychozi: !Object.prototype.hasOwnProperty.call(vyslovne, cesta),
+  }))
+    /* Výchozí nula jen tam, kde je tuzemská sazba ZNÁMÁ. Volající, který
+     * pošle holý ceník OCK (starší volání), ceník projekce nemá — bez
+     * tuzemské hodnoty by se sazba projekce při návratu do tuzemska neměla
+     * kam vrátit, a v dialogu by svítil rozdíl „? → 0 %". */
+    .filter(r => !(r.vychozi && r.cr === undefined))
+    .filter(r => r.jenZahr || String(r.cr) !== String(r.zahr));
 }
 
 /* ---------- přepnutí řady u varianty ----------
@@ -194,8 +241,20 @@ function cenikRadaPrepni(data, crDnesni, zahr, rada) {
   const out = { rada: r, zmen: 0, rozdily: [], chranene: [] };
   if (!data) return out;
   const rozdily = cenikRadaRozdily(crDnesni, zahr);
+  /* NÁVRAT DO TUZEMSKA BERE TUZEMSKOU ŘADU, NE SYROVÁ TUZEMSKÁ DATA (nález
+   * N38 revize v22.9.9). Položka „jen pro zahraničí" má v tuzemské řadě
+   * nulu (`cenikDnesniProRadu` → `cenikJenZahrVynuluj`, P4), jenže návrat
+   * sem dosazoval hodnotu z ČR sloupce tak, jak v ceníku leží. Změřeno:
+   * ČR 50 000 → zahraničí 60 000 → zpátky ČR 50 000, zatímco tuzemská řada
+   * má 0 — a přepočet při příštím otevření pak hlásil „Změnila se 1 cena",
+   * ačkoli se nic nezměnilo (výpočet řádek v tuzemsku stejně vynechá).
+   * Hodnota se proto bere ze SLOŽENÉ tuzemské řady — tatáž funkce jako při
+   * přepočtu, takže obě místa mluví stejně. */
+  const crRada = (r === 'cr' && typeof cenikDnesniProRadu === 'function')
+    ? cenikDnesniProRadu(crDnesni, zahr, 'cr') : null;
   rozdily.forEach(rd => {
-    const nova = (r === 'zahr') ? rd.zahr : rd.cr;
+    const nova = (r === 'zahr') ? rd.zahr
+      : ((crRada && rd.jenZahr && typeof cenikHodnota === 'function') ? cenikHodnota(crRada, rd.cesta) : rd.cr);
     if (nova === undefined) return;
     /* Zakázkovou hodnotu (přirážka, DPH), kterou obchodník v TÉHLE nabídce
      * sám nastavil, přepnutí řady nepřepíše — pravidlo #177 platí i tady.
@@ -257,7 +316,9 @@ function cenikDnesniProRadu(dnesni, zahr, rada) {
     cenikJenZahrVynuluj(out, zahr);
     return out;
   }
-  Object.entries(z.ceny).forEach(([cesta, hodnota]) => {
+  /* Včetně výchozí nulové sazby DPH — jinak by přepočet při otevření vrátil
+   * prázdné zahraniční zakázce sazbu, kterou jí přepnutí právě vynulovalo. */
+  Object.entries(cenikZahrSVychozimi(zahr).ceny).forEach(([cesta, hodnota]) => {
     if (typeof cenikNastavHodnotu === 'function') cenikNastavHodnotu(out, cesta, hodnota);
   });
   return out;
@@ -298,24 +359,64 @@ function cenikZverejneniOcisti(cenik) {
   const k = JSON.parse(JSON.stringify(cenik));
   delete k.rada;
   delete k.jenZahr;
+  /* Příznaky „cena dle nabídky" (S13): jen známé cesty OCK s true. Prázdná
+   * mapa zůstává — „výslovně nic" (návrh v Nastavení se pak nevnucuje);
+   * otisk ji nenese, takže na shodě verzí nic nemění. */
+  if ('dleNabidky' in k) {
+    k.dleNabidky = (typeof cenikDleNabidkyOciste === 'function') ? cenikDleNabidkyOciste(k.dleNabidky) : {};
+  }
   return k;
+}
+
+/* Sloučení zahraničních odchylek ze dvou zdrojů: z PLATNÉ VERZE a z toho,
+ * co přišlo v požadavku. Příchozí přebíjí uloženou hodnotu u téže cesty.
+ *
+ * Proč (nález B55, audit 22. 9. 2026): pojistka zveřejnění porovnávala ČR
+ * ceny výhradně proti odchylkám Z TÉHOŽ POŽADAVKU. Kdo pole `zahranicni`
+ * v požadavku vynechal (starší klient, ruční volání), neměl se s čím
+ * shodovat a pojistka mlčky vypadla — přitom právě tehdy je podklad
+ * nejpodezřelejší. Uložené odchylky server zná vždycky. */
+function cenikZahrSluc(ulozene, prichozi) {
+  const a = cenikZahrOciste(ulozene), b = cenikZahrOciste(prichozi);
+  const ceny = {}, jenZahr = {};
+  Object.keys(a.ceny).forEach(k => { ceny[k] = a.ceny[k]; });
+  Object.keys(b.ceny).forEach(k => { ceny[k] = b.ceny[k]; });
+  Object.keys(a.jenZahr).forEach(k => { if (a.jenZahr[k]) jenZahr[k] = true; });
+  Object.keys(b.jenZahr).forEach(k => { if (b.jenZahr[k]) jenZahr[k] = true; });
+  return { ceny, jenZahr };
 }
 
 /* Položky, kde se ČR hodnota shoduje se zahraniční odchylkou.
  * `ctx` je podklad zveřejnění ({ cenik, cenikProj }) — tedy tvar, ve kterém
  * ho posílá UI i přijímá server; `cenikHodnota` chce { cenik, proj:{cenik} },
- * proto se uvnitř převádí. */
-function cenikZverejneniShody(ctx, zahr) {
+ * proto se uvnitř převádí.
+ *
+ * `platny` (nepovinný) je ZÁZNAM PLATNÉ VERZE ceníku. Když je po ruce,
+ * nepočítají se položky, jejichž ČR cena se tímhle zveřejněním NEMĚNÍ.
+ * Bez toho by sloučené odchylky uměly ceník zamknout: kdo chce zrušit víc
+ * než pět odchylek naráz, by neprošel, protože by se pořád porovnával proti
+ * tomu, co ruší — a zrušit je jinak než zveřejněním nejde. Cena, která
+ * zůstala shodná s platnou verzí, přitom z přepnuté varianty pocházet
+ * nemůže: v platném ceníku je už dnes a nikdo ji teď nezapisuje. */
+function cenikZverejneniShody(ctx, zahr, platny) {
   const z = cenikZahrOciste(zahr);
   const c = ctx || {};
   const data = { cenik: c.cenik || {}, proj: { cenik: c.cenikProj || {} } };
+  const stara = platny
+    ? { cenik: platny.cenik || {}, proj: { cenik: platny.cenikProj || {} } } : null;
   const popisy = {};
   if (typeof cenikSledovane === 'function')
     cenikSledovane().forEach(p => { popisy[p.cesta] = p.popis; });
   return Object.keys(z.ceny).filter(cesta => {
     const ted = (typeof cenikHodnota === 'function') ? cenikHodnota(data, cesta) : undefined;
     if (ted === undefined || ted === null || ted === '') return false;
-    return String(ted) === String(z.ceny[cesta]);
+    if (String(ted) !== String(z.ceny[cesta])) return false;
+    if (stara && typeof cenikHodnota === 'function') {
+      const drive = cenikHodnota(stara, cesta);
+      if (drive !== undefined && drive !== null && drive !== '' && String(drive) === String(ted))
+        return false;                      // ČR cena se nemění — nemá odkud přijít
+    }
+    return true;
   }).map(cesta => ({ cesta, popis: popisy[cesta] || cesta }));
 }
 
@@ -326,7 +427,7 @@ function cenikZverejneniShody(ctx, zahr) {
  * `rada` se bere přednostně z varianty (UI ji zná), jinak z klíče `rada`
  * v samotném ceníku — ten tam nechal `cenikRadaPrepni`, takže i požadavek
  * poslaný mimo dialog se pozná. */
-function cenikZverejneniKontrola(ctx, zahr, rada) {
+function cenikZverejneniKontrola(ctx, zahr, rada, platny) {
   const c = ctx || {};
   const r = cenikRadaPlatna(rada !== undefined && rada !== null && rada !== ''
     ? rada : (c.cenik && c.cenik.rada));
@@ -336,7 +437,7 @@ function cenikZverejneniKontrola(ctx, zahr, rada) {
         + 'zahraniční ceny. Zveřejněním by se dostaly do tuzemského ceníku pro všechny '
         + 'budoucí zakázky. Přepněte variantu zpět na ČR, nebo ceny zapište do zahraniční '
         + 'řady v Nastavení → Ceník.' };
-  const shody = cenikZverejneniShody(c, zahr);
+  const shody = cenikZverejneniShody(c, zahr, platny);
   if (shody.length > CENIK_ZVEREJNENI_SHODA_MAX)
     return { ok: false, kod: 'shoda', rada: r, shody,
       duvod: 'U ' + shody.length + ' položek se tuzemská cena shoduje se zahraniční odchylkou. '
@@ -350,7 +451,8 @@ if (typeof module !== 'undefined')
   module.exports = { CENIK_RADY, CENIK_ZAHR, cenikRadaPlatna, cenikRadaNazev, cenikRadaPopis,
                      cenikZahrPrazdny, cenikZahrOciste, cenikZahrPrazdna,
                      cenikSlozRadu, cenikRadaRozdily, cenikRadaPrepni, cenikRadaVarianty,
+                     CENIK_ZAHR_DPH_CESTY, cenikZahrDphVychozi, cenikZahrSVychozimi,
                      cenikJenZahrCesty, cenikJenZahrVynuluj,
                      cenikRadaTuzemskaData, cenikDnesniProRadu,
-                     CENIK_ZVEREJNENI_SHODA_MAX, cenikZverejneniOcisti,
+                     CENIK_ZVEREJNENI_SHODA_MAX, cenikZverejneniOcisti, cenikZahrSluc,
                      cenikZverejneniShody, cenikZverejneniKontrola };

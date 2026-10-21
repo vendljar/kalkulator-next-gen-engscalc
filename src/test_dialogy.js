@@ -58,6 +58,24 @@ test('v src/ není žádné nativní confirm / alert / prompt', nalezy.length ==
   + '\n      → použijte potvrd() / hlaska() / dotaz() z ui/dialog.js'
   + '\n        (volající funkci označte async; viz hlavička téhle sady)');
 
+/* TEXT DIALOGU NESMÍ POPISOVAT TLAČÍTKA, KTERÁ MODÁL NEMÁ (P7 / K15-N68,
+ * 25. 9. 2026). Tři dialogy zůstaly po převodu z nativního confirm() u vět
+ * „OK = …, Zrušit = …" — modál v aplikaci ale nabízí Ano / Ne (nebo vlastní
+ * popisky). U uzamčené varianty tak obchodník nevěděl, které tlačítko založí
+ * klon. Tlačítka mají nést, co udělají (`potvrd(text, { ano, ne })`). */
+const TLACITKA_V_TEXTU = /(^|[\s'"`(]|\\n)(OK|Zrušit|Storno)\s*=\s/;
+const popisTlacitek = [];
+for (const { p, rel } of soubory(KOREN)) {
+  if (VYJIMKY.has(rel) || jeTest(rel)) continue;
+  fs.readFileSync(p, 'utf8').split('\n').forEach((r, i) => {
+    const bezKomentare = r.replace(/^\s*(\/\/|\*|\/\*).*$/, '');
+    if (TLACITKA_V_TEXTU.test(bezKomentare)) popisTlacitek.push(rel + ':' + (i + 1));
+  });
+}
+test('žádný dialog nepopisuje tlačítka „OK = …" / „Zrušit = …" (modál má Ano / Ne)',
+  popisTlacitek.length === 0, '\n      ' + popisTlacitek.join('\n      ')
+  + '\n      → potvrd(text, { ano: \'co udělá Ano\', ne: \'co udělá Ne\' })');
+
 /* Modul dialogů musí existovat, nést všechny tři funkce a mít stabilní
  * data- atributy, na které se váže automatizované testování. */
 const dlg = fs.readFileSync(path.join(KOREN, 'ui', 'dialog.js'), 'utf8');
@@ -71,6 +89,10 @@ test('text dialogu se escapuje (B26) a zachovává řádkování',
 test('dialogy se řadí za sebe, nepřekrývají se', /DLG\.fronta/.test(dlg) && /DLG\.bezi/.test(dlg));
 test('Esc ruší a Enter potvrzuje', /'Escape'/.test(dlg) && /'Enter'/.test(dlg));
 test('modál se netiskne', /noprint/.test(dlg));
+/* B77 (13. 10. 2026): potvrzení citlivé akce heslem správce — pole typu
+ * password bez výchozí hodnoty (heslo se nesmí zobrazit ani předvyplnit). */
+test('dialog umí dotaz na heslo (dotazHeslo, pole type="password")',
+  /function dotazHeslo\(/.test(dlg) && /type="password" id="dlg-text" data-dlg="text"[^>]*value=""/.test(dlg));
 
 /* Modul musí být v seznamu souborů buildu — jinak by funkce v aplikaci
  * nebyly a všechna převedená volání by spadla na „potvrd is not defined". */

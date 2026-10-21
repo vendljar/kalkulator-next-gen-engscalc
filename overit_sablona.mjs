@@ -21,19 +21,23 @@
 import { readFileSync, existsSync } from 'fs';
 import { createRequire } from 'module';
 
+import { najdiNejnovejsi, preskoc } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
 const { docxVyplnSablonu, zipPrecti, rozmeryObrazku } = require('./src/docxgen.js');
 
-const KDE = [
-  '/home/claude/work/sablona/Sablona_NABIDKA_CN_v7.docx',
-  '/home/claude/work/deliver/Sablona_NABIDKA_CN_v7.docx',
-];
-const sablona = KDE.find(p => existsSync(p));
-if (!sablona) {
-  console.log('PŘESKOČENO – šablona Sablona_NABIDKA_CN_v7.docx nenalezena.');
-  console.log('Hledáno v:\n  ' + KDE.join('\n  '));
-  process.exit(0);
-}
+/* ŠABLONA CN: NEJNOVĚJŠÍ VERZE, KTERÁ JE PO RUCE (23. 9. 2026).
+ *
+ * Do 22. 9. harness hledal napevno v8, případně v7 — jenže na Drive už od
+ * 17. 9. platila v10, takže ověřoval šablonu, se kterou se netiskne. Teď se
+ * bere soubor s nejvyšším číslem verze (najdiNejnovejsi); která to byla,
+ * se vypíše, ať je to v protokolu vidět. */
+const VZOR_CN = /^Sablona_NABIDKA_CN_v(\d+)\.docx$/;
+const KDE = ['/home/claude/work/sablona', '/home/claude/work/deliver'];
+const nalez = najdiNejnovejsi(VZOR_CN, KDE);
+const sablona = nalez ? nalez.cesta : null;
+if (!sablona) preskoc('šablona Sablona_NABIDKA_CN_v<číslo>.docx (bere se nejvyšší verze)',
+  KDE.concat('$KNG_PODKLADY'));
+console.log('Šablona: ' + sablona);
 console.log('šablona: ' + sablona + '\n');
 
 let ok = 0, fail = 0;
@@ -59,6 +63,14 @@ const zdroj = readFileSync(sablona);
 const bufer = () => zdroj.buffer.slice(zdroj.byteOffset, zdroj.byteOffset + zdroj.byteLength);
 
 const dekoduj = u8 => new TextDecoder().decode(u8);
+/* TITULNÍ OBRÁZEK JE OD v9 ÚVODNÍ FOTKA (23. 9. 2026). Ve v7/v8 byl na titulní
+ * straně pevný obrázek šachty (o:title=""), od v9 je to rámeček {{UVODNI_FOTO}},
+ * do kterého aplikace vloží fotku stavby — a bez fotky ho odstraní celý
+ * (stejné pravidlo jako u podpisu). U takové šablony dodáváme i fotku,
+ * jinak by kontroly „titulní obrázek zůstal" měřily záměrné odstranění. */
+const TITULNI_JE_FOTO = /<v:imagedata r:id="rId7" o:title="\{\{UVODNI_FOTO\}\}"/.test(
+  dekoduj((await zipPrecti(new Uint8Array(zdroj))).find(p => p.nazev === 'word/document.xml').data));
+console.log('titulní obrázek: ' + (TITULNI_JE_FOTO ? 'rámeček úvodní fotky {{UVODNI_FOTO}}' : 'pevný obrázek šablony'));
 async function vygeneruj(placeholders, obrazky) {
   const blob = await docxVyplnSablonu(bufer(), placeholders, [], obrazky);
   const polozky = await zipPrecti(new Uint8Array(await blob.arrayBuffer()));
@@ -86,8 +98,11 @@ console.log('šablona obsahuje symboly zpracovatele');
   const vse = polozky.filter(p => /\.(xml|rels)$/.test(p.nazev)).map(p => dekoduj(p.data)).join('');
   for (const s of ['Lauda', 'lauda.jiri', '590 945'])
     test('v šabloně nezůstalo „' + s + '"', !vse.includes(s));
-  /* Platební podmínky (#147) – navázané na kalkulaci ve v6, nesmí se ztratit. */
-  for (const s of ['PODM_ZALOHA1_PROC', 'PODM_SPLATNOST_DNI_CISLO', 'PODM_PLATNOST_NABIDKY'])
+  /* Platební podmínky (#147) – navázané na kalkulaci ve v6, nesmí se ztratit.
+   * Od CN v14 (etapa A, 30. 9. 2026) nese věty o dílčích dokladech jeden
+   * symbol {{PODM_PLATEBNI_KALENDAR}} místo {{PODM_ZALOHA1_PROC}}. */
+  const kalendar = doc.includes('{{PODM_PLATEBNI_KALENDAR}}') ? 'PODM_PLATEBNI_KALENDAR' : 'PODM_ZALOHA1_PROC';
+  for (const s of [kalendar, 'PODM_SPLATNOST_DNI_CISLO', 'PODM_PLATNOST_NABIDKY'])
     test('symbol {{' + s + '}} z platebních podmínek zůstal', doc.includes(s));
   test('překlep „bPoznámky" je opravený', !doc.includes('bPozn'));
 }
@@ -97,7 +112,8 @@ console.log('\nnabídka přihlášeného uživatele');
 {
   const puvodni = await zipPrecti(new Uint8Array(zdroj));
   const puvodniPodpis = puvodni.find(p => p.nazev === 'word/media/image2.jpeg');
-  const { doc, najdi, polozky } = await vygeneruj(JA, { ZPRAC_PODPIS: PODPIS_PNG });
+  const { doc, najdi, polozky } = await vygeneruj(JA, Object.assign({ ZPRAC_PODPIS: PODPIS_PNG },
+    TITULNI_JE_FOTO ? { UVODNI_FOTO: PODPIS_PNG } : {}));
 
   for (const [k, v] of Object.entries(JA))
     test('v dokumentu je ' + k.replace('ZPRAC_', '').toLowerCase() + ' „' + v + '"', doc.includes(v), k);
@@ -134,9 +150,17 @@ console.log('\nnabídka přihlášeného uživatele');
   const podpisTvar = /<v:shape[^>]*>(?=<v:imagedata r:id="rId8")/.exec(doc);
   test('měnil se tvar podpisu, ne titulní obrázek', !!podpisTvar);
   const titulni = /<v:shape[^>]*style="([^"]*)"[^>]*>(?=<v:imagedata r:id="rId7")/.exec(doc);
-  test('titulní obrázek zůstal 261 × 347,3 pt',
-    titulni && titulni[1].includes('width:261pt') && titulni[1].includes('height:347.3pt'),
-    titulni && titulni[1]);
+  if (!TITULNI_JE_FOTO)
+    test('titulní obrázek zůstal 261 × 347,3 pt',
+      titulni && titulni[1].includes('width:261pt') && titulni[1].includes('height:347.3pt'),
+      titulni && titulni[1]);
+  else {
+    /* Fotka 6×2 px se do rámečku 261 × 347,3 vejde celá: omezí ji šířka. */
+    const w = titulni && parseFloat((/width:([\d.]+)pt/.exec(titulni[1]) || [])[1]);
+    const h = titulni && parseFloat((/height:([\d.]+)pt/.exec(titulni[1]) || [])[1]);
+    test('úvodní fotka se vešla do rámečku 261 × 347,3 pt (podpis ji nerozhodil)',
+      !!titulni && Math.abs(w - 261) < 0.02 && h <= 347.3 + 0.01 && Math.abs(h - 87) < 0.05, titulni && titulni[1]);
+  }
   const styl = /style="([^"]*)"/.exec(podpisTvar[0])[1];
   const sirka = parseFloat(/width:([\d.]+)pt/.exec(styl)[1]);
   const vyska = parseFloat(/height:([\d.]+)pt/.exec(styl)[1]);
@@ -150,7 +174,7 @@ console.log('\nnabídka přihlášeného uživatele');
 /* ---------- 2) uživatel bez nahraného podpisu ---------- */
 console.log('\nnabídka uživatele, který podpis nenahrál');
 {
-  const { doc, najdi } = await vygeneruj(JA, {});
+  const { doc, najdi } = await vygeneruj(JA, TITULNI_JE_FOTO ? { UVODNI_FOTO: PODPIS_PNG } : {});
   test('texty se doplnily i bez obrázku', doc.includes(JA.ZPRAC_JMENO) && doc.includes(JA.ZPRAC_EMAIL));
   /* Prázdný rámeček by v nabídce vypadal jako chyba tisku a cizí podpis
    * by byl horší než žádný — celý tvar proto musí zmizet. */
@@ -177,6 +201,239 @@ console.log('\nnabídka vygenerovaná offline (firemní údaje)');
   test('prázdná funkce nenechá v dokumentu symbol', !doc.includes('ZPRAC_FUNKCE'));
   test('žádný symbol {{ZPRAC_…}} nezůstal', !/\{\{ZPRAC_[A-Z_]+\}\}/.test(doc),
     (doc.match(/\{\{ZPRAC_[A-Z_]+\}\}/g) || []).join(' '));
+}
+
+/* ---------- 4) kapitoly IV.–VI. a doložky ze symbolů (šablona v11, #331) ----------
+ * Do v10 byly kapitoly v šabloně napsané natvrdo — úprava v Nastavení → Firma
+ * se do Wordu nedostala a termín dodání s ATYP (#330) taky ne. Od v11 je
+ * zdroj jeden: aplikace plní {{FIRMA_NAB_…}} a {{NAB_KAP_TERMINY}}
+ * (termín dodání ze zakázky + text kapitoly V. z Firmy). Starší šablona
+ * tyhle symboly nemá — pak se kontroly jen oznámí jako přeskočené. */
+console.log('\nkapitoly IV.–VI. a doložky ze symbolů (v11+)');
+{
+  const polozky = await zipPrecti(new Uint8Array(zdroj));
+  const doc0 = dekoduj(polozky.find(p => p.nazev === 'word/document.xml').data);
+  const KAP = ['FIRMA_NAB_POZADAVKY', 'NAB_KAP_TERMINY', 'FIRMA_NAB_PREDANI', 'FIRMA_NAB_DOLOZKY'];
+  if (!KAP.some(s => doc0.includes('{{' + s + '}}'))) {
+    console.log('  – přeskočeno: šablona je starší než v11 (kapitoly natvrdo)');
+  } else {
+    for (const s of KAP)
+      test('symbol {{' + s + '}} je v šabloně právě jednou', doc0.split('{{' + s + '}}').length === 2,
+        doc0.split('{{' + s + '}}').length - 1);
+    /* Pevné texty z v10 musí zmizet — jinak by v dokumentu stály dvakrát
+     * a „cca 12 týdnů" by dál odporovalo termínu s ATYP. */
+    for (const t of ['cca 12 týdnů', 'Montáž ocelové konstrukce výtahové šachty cca', 'Zajištění přístupu na místo realizace'])
+      test('pevný text „' + t + '" v šabloně už není', !doc0.includes(t));
+    const ph = {
+      FIRMA_NAB_POZADAVKY: 'Požadavek první\nPožadavek druhý',
+      NAB_KAP_TERMINY: 'Termín dodání: cca 16 týdnů (vč. 4 týdnů za ATYP)\nHarmonogram do 3 týdnů',
+      FIRMA_NAB_PREDANI: '1. protokol\n2. protokol',
+      FIRMA_NAB_DOLOZKY: 'Doložka A',
+    };
+    const { doc } = await vygeneruj(ph, TITULNI_JE_FOTO ? { UVODNI_FOTO: PODPIS_PNG } : {});
+    test('termín dodání s ATYP je v kapitole V.', doc.includes('Termín dodání: cca 16 týdnů (vč. 4 týdnů za ATYP)'));
+    /* P14 (K16-N81): zalomení stojí VEDLE textu (`</w:t><w:br/><w:t …>`),
+     * ne uvnitř `<w:t>` — tam ho Word nevykreslí. Do 25. 9. 2026 harness
+     * bral oba tvary, takže chybu nemohl ukázat. */
+    test('víceřádková kapitola se zalomí (</w:t><w:br/><w:t> — ne uvnitř textu)',
+      doc.includes('Požadavek první</w:t><w:br/><w:t xml:space="preserve">Požadavek druhý'));
+    test('P14: v celém dokumentu není zalomení uvnitř <w:t>',
+      !/<w:t(?:\s[^>]*)?>[^<]*<w:br\/>/.test(doc), (doc.match(/<w:t(?:\s[^>]*)?>[^<]*<w:br\/>/) || [''])[0].slice(0, 80));
+    test('doložky se doplnily', doc.includes('Doložka A'));
+    test('žádný symbol kapitol nezůstal', !/\{\{(FIRMA_NAB_|NAB_KAP_)[A-Z_]+\}\}/.test(doc),
+      (doc.match(/\{\{(FIRMA_NAB_|NAB_KAP_)[A-Z_]+\}\}/g) || []).join(' '));
+    const poradi = ['IV. POŽADAVKY', 'Požadavek první', 'V. TERMÍNY', 'Termín dodání:', 'VI. PŘEDÁNÍ', '1. protokol', 'DOLOŽKY', 'Doložka A', 'Vypracoval:']
+      .map(t => doc.indexOf(t));
+    test('kapitoly jdou ve správném pořadí a před blokem „Vypracoval:"',
+      poradi.every((x, i) => x >= 0 && (i === 0 || x > poradi[i - 1])), poradi.join(','));
+  }
+}
+
+/* ---------- v13: značky kapitol — prázdná kapitola zmizí i s nadpisem ----------
+ * (P8 varianta A, rozhodnutí J. V. 29. 9. 2026). Do v12 nechal Word
+ * u prázdné kapitoly nadpis a prázdný orámovaný rámeček (u VI. i větu
+ * o předávacím protokolu). v13 obaluje kapitoly odstavci {{KAP_…_ZAC}}
+ * a {{KAP_…_KON}}; starší šablona je nemá — kontroly se přeskočí.
+ * Tady i věty o dílčích dokladech „(bez DPH)" (P10.4). */
+console.log('\nv13: značky kapitol a znění „(bez DPH)"');
+{
+  const polozky = await zipPrecti(new Uint8Array(zdroj));
+  const doc0 = dekoduj(polozky.find(p => p.nazev === 'word/document.xml').data);
+  if (!doc0.includes('{{KAP_IV_ZAC}}')) {
+    console.log('  – přeskočeno: šablona je starší než v13 (bez značek kapitol)');
+  } else {
+    for (const k of ['KAP_IV', 'KAP_V', 'KAP_VI', 'KAP_DOLOZKY'])
+      test('značky {{' + k + '_ZAC}} a {{' + k + '_KON}} jsou v šabloně právě jednou',
+        doc0.split('{{' + k + '_ZAC}}').length === 2 && doc0.split('{{' + k + '_KON}}').length === 2);
+    /* v14 věty o dokladech v šabloně nemá — skládá je aplikace (i „bez DPH"). */
+    test('věty o dílčích dokladech jsou „(bez DPH)", ne „(+ DPH)"',
+      ((doc0.match(/\(bez DPH\)/g) || []).length === 2 || doc0.includes('{{PODM_PLATEBNI_KALENDAR}}')) && !doc0.includes('(+ DPH)'));
+    const plne = { FIRMA_NAB_POZADAVKY: 'Požadavek první', NAB_KAP_TERMINY: 'Termín dodání: 12 týdnů',
+      FIRMA_NAB_PREDANI: '1. protokol', FIRMA_NAB_DOLOZKY: 'Doložka A' };
+    const obr = TITULNI_JE_FOTO ? { UVODNI_FOTO: PODPIS_PNG } : {};
+    const { doc: sPlnymi } = await vygeneruj(plne, obr);
+    test('vyplněné kapitoly zůstanou, značky v dokumentu nejsou',
+      sPlnymi.includes('IV. POŽADAVKY') && sPlnymi.includes('DOLOŽKY') && !/_ZAC\}\}|_KON\}\}/.test(sPlnymi));
+    const { doc: bezIV } = await vygeneruj(Object.assign({}, plne, { FIRMA_NAB_POZADAVKY: '', FIRMA_NAB_PREDANI: '' }), obr);
+    test('prázdná kapitola IV. zmizí i s nadpisem', !bezIV.includes('IV. POŽADAVKY') && !bezIV.includes('{{FIRMA_NAB_POZADAVKY}}'));
+    test('prázdná kapitola VI. zmizí i s větou o předávacím protokolu',
+      !bezIV.includes('VI. PŘEDÁNÍ') && !bezIV.includes('Předávací protokol'));
+    test('ostatní kapitoly zůstanou', bezIV.includes('V. TERMÍNY') && bezIV.includes('Termín dodání: 12 týdnů') && bezIV.includes('Doložka A'));
+    const vada = require('./src/docxgen.js').xmlStrukturaVada(bezIV);
+    test('dokument bez prázdných kapitol je platné XML', !vada, vada);
+  }
+}
+
+/* ---------- v12: sleva, popis záměru, stříška/příčka, můstky ----------
+ * (25. 9. 2026, rozhodnutí J. V. k rozboru K13: P5, P6, P7, P10). Starší
+ * šablony tyhle symboly nemají, proto jen od v12. */
+if (nalez && +nalez.verze >= 12) {
+  console.log('\nšablona v12: sleva, popis záměru, doplňkové konstrukce');
+  const text = doc => (doc.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g) || []).map(t => t.replace(/<[^>]+>/g, '')).join('');
+  const zaklad = { POPIS_ZAMERU_OCK: 'Vestavba výtahu v nové ocelové konstrukci výtahové šachty do vnitřního prostoru objektu.',
+    OPLASTENI_VETA: 'Opláštění šachty: vrstvené bezpečnostní sklo VSG.', CENA_BEZ_DPH: '950 000 Kč',
+    CENA_PRED_SLEVOU: '1 000 000 Kč', TS_PROSKLENA_PRICKA: '', TS_PROSKLENA_STRISKA: '2× nad nástupišti',
+    TS_MUSTKY: '2 ks, hloubka 900 mm', TS_PRECHODOVE_PLECHY: 'nejsou součástí dodávky, viz příplatkové ceny' };
+  const se = text((await vygeneruj(Object.assign({}, zaklad, { SLEVA_PROC: '5', SLEVA_KC: '50 000 Kč' }))).doc);
+  const bez = text((await vygeneruj(Object.assign({}, zaklad, { SLEVA_PROC: '', SLEVA_KC: '' }))).doc);
+  test('v12: popis záměru ze zakázky, pevný odstavec o dvorní fasádě pryč',
+    se.includes(zaklad.POPIS_ZAMERU_OCK) && !se.includes('dvorní fasádě'));
+  test('v12: věta o opláštění ze specifikace, pevné dvojsklo pryč',
+    se.includes(zaklad.OPLASTENI_VETA) && !se.includes('izolačním dvojsklem'));
+  test('v12: se slevou řádky „Cena před slevou" a „Sleva"', se.includes('Cena před slevou') && se.includes('50 000 Kč'));
+  test('v12: bez slevy oba řádky zmizí', !bez.includes('Cena před slevou') && !bez.includes('Sleva'));
+  test('v12: stříška a můstky v doplňkových konstrukcích, prázdná příčka vynechaná',
+    se.includes('PROSKLENÁ STŘÍŠKA') && se.includes('2× nad nástupišti') && se.includes('MŮSTKY MEZI BUDOVOU A OCK')
+    && !se.includes('PROSKLENÁ PŘÍČKA'));
+  test('v12: nezůstal žádný nový symbol {{…}}', !/\{\{(POPIS_ZAMERU_OCK|OPLASTENI_VETA|SLEVA_|CENA_PRED|TS_MUSTKY|TS_PROSKLENA)/.test(se));
+}
+
+/* ---------- JAZYKOVÉ MUTACE ŠABLONY CN (P3 / K14-N63, K16-N84, 25. 9. 2026) ----------
+ * Mutace z české šablony nesmí nechat česky žádný pevný text — ani odstavce
+ * se symbolem („Číslo nabídky: {{…}}", „{{CENA_S_DPH}} včetně DPH",
+ * platební podmínky). A překlad nesmí přestěhovat text přes tabulátor nebo
+ * zalomení, kterými šablona odděluje popisek od symbolu. */
+{
+  console.log('\njazykové mutace šablony (P3)');
+  const pr = require('./src/preklad.js');
+  Object.keys(pr).forEach(k => { globalThis[k] = pr[k]; });
+  const dg = require('./src/docxgen.js');
+  for (const L of ['en', 'de', 'fr']) {
+    const st = {};
+    const out = await dg.docxPrelozSablonu(bufer(), L, st);
+    const ab = await out.arrayBuffer();
+    test(L.toUpperCase() + ': žádný pevný text nezůstal česky', !(st.chybi || []).length, (st.chybi || []).slice(0, 3));
+    test(L.toUpperCase() + ': ani odstavec se symbolem', !(st.symbolove || []).length, (st.symbolove || []).slice(0, 3));
+    test(L.toUpperCase() + ': struktura XML je neporušená', !(await dg.docxXmlVady(ab)).length);
+    const doc = dekoduj((await zipPrecti(new Uint8Array(ab))).find(x => x.nazev === 'word/document.xml').data);
+    const i = doc.indexOf('{{CENA_S_DPH}}');
+    const odst = i < 0 ? '' : doc.slice(Math.max(doc.lastIndexOf('<w:p ', i), doc.lastIndexOf('<w:p>', i)), doc.indexOf('</w:p>', i));
+    const vDph = { en: 'including VAT', de: 'inkl. MwSt.', fr: 'TTC' }[L];
+    test(L.toUpperCase() + ': „' + vDph + '" zůstane za zalomením pod cenou',
+      i < 0 || (odst.indexOf('<w:br/>') > odst.indexOf('{{CENA_S_DPH}}') && odst.indexOf(vDph) > odst.indexOf('<w:br/>')),
+      odst.replace(/<w:rPr>[\s\S]*?<\/w:rPr>/g, '').slice(0, 200));
+  }
+}
+
+/* ---------- CN v14: platební podmínky z platebního kalendáře OCK ----------
+ * (etapa A platebních podmínek, D1 + D2 — 30. 9. 2026). Šablonu v14 vyrábí
+ * z v13 nástroj nastroje/vyrob_sablony.js --cn-v14; tady vznikne v paměti
+ * ze skutečné nejnovější šablony (je-li to už v14, bere se rovnou) a naplní
+ * se větami, které skládá aplikace (kryciPlatebniSymboly). Výchozí 50 / 40
+ * / 10 musí dát ve Wordu tentýž text jako v13 (česky i anglicky), „Bez
+ * zálohy" dvě správně očíslované věty a měsíční fakturace jen schválenou
+ * větu. Pro srovnání se ukáže i vada v13 (K18-N94). */
+console.log('\nCN v14: platební kalendář OCK (bez zálohy, měsíční fakturace)');
+{
+  const dg = require('./src/docxgen.js');
+  const pr = require('./src/preklad.js');
+  Object.keys(pr).forEach(k => { globalThis[k] = pr[k]; });
+  const fm = require('./src/firma.js');
+  Object.keys(fm).forEach(k => { if (globalThis[k] === undefined) globalThis[k] = fm[k]; });
+  const kr = require('./src/kryci.js');
+  const VS = require('./nastroje/vyrob_sablony.js');
+  const enc = new TextEncoder();
+  const doc0 = dekoduj((await zipPrecti(new Uint8Array(zdroj))).find(p => p.nazev === 'word/document.xml').data);
+  const jeV14 = doc0.includes('{{PODM_PLATEBNI_KALENDAR}}');
+  let v14 = null, v13 = null;
+  if (jeV14) v14 = bufer();
+  else if (doc0.includes('{{KAP_IV_ZAC}}') && doc0.includes('{{PODM_ZALOHA1_PROC}}')) {
+    v13 = bufer();
+    const pol = await zipPrecti(new Uint8Array(zdroj));
+    const d = pol.find(p => p.nazev === 'word/document.xml');
+    d.data = enc.encode(VS.cnV14(dekoduj(d.data)));
+    v14 = await (await dg.zipZapis(pol)).arrayBuffer();
+  }
+  if (!v14) console.log('  – přeskočeno: šablona je starší než v13');
+  else {
+    const MES = 'Fakturace probíhá měsíčně podle skutečně provedených prací.';
+    const docV14 = dekoduj((await zipPrecti(new Uint8Array(v14))).find(p => p.nazev === 'word/document.xml').data);
+    for (const s of ['PODM_PLATEBNI_KALENDAR', 'PODM_FAKTURACE_MESICNE', 'PLATBY_SPLATKY_ZAC', 'PLATBY_SPLATKY_KON', 'PLATBY_MESICNE_ZAC', 'PLATBY_MESICNE_KON'])
+      test('v14: {{' + s + '}} je v šabloně právě jednou', docV14.split('{{' + s + '}}').length === 2, docV14.split('{{' + s + '}}').length - 1);
+    test('v14: pevné věty v13 ({{PODM_ZALOHA1_PROC}}, {{PODM_FAKTURA2_PROC}}) zmizely, značky kapitol zůstaly',
+      !docV14.includes('PODM_ZALOHA1_PROC') && !docV14.includes('PODM_FAKTURA2_PROC') && docV14.includes('{{KAP_IV_ZAC}}'));
+    test('v14: struktura XML je neporušená', !(await dg.docxXmlVady(v14)).length);
+
+    const vypln = async (buf, ph) => {
+      const blob = await docxVyplnSablonu(buf.slice(0), ph, [], {});
+      return dekoduj((await zipPrecti(new Uint8Array(await blob.arrayBuffer()))).find(p => p.nazev === 'word/document.xml').data);
+    };
+    /* texty odstavců kapitoly III. mezi nadpisem a poznámkami */
+    /* Hranice hledané v XML musí stát v jednom běhu textu — „Poznámky"
+     * a „ k platebním podmínkám" jsou ve v13 dva běhy. Nenalezená hranice
+     * = null / -1, ať kontrola nahlas selže místo tichého srovnání prázdna. */
+    const useky = (doc, od, po) => { const a = doc.indexOf(od), b = a >= 0 ? doc.indexOf(po, a) : -1; return a >= 0 && b > a ? doc.slice(a, b) : null; };
+    const kapitola = (doc, od, po) => {
+      const kus = useky(doc, od, po);
+      return kus === null ? null : (kus.match(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g) || [])
+        .map(p => (p.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g) || []).map(t => t.replace(/<[^>]+>/g, '')).join(''))
+        .filter(t => t.trim()).map(t => t.replace(/ /g, ' '));
+    };
+    const odrazek = (doc, od, po) => { const kus = useky(doc, od, po); return kus === null ? -1 : (kus.match(/<w:numId w:val="2"\/>/g) || []).length; };
+    const kal = (hodnoty) => kr.kryciPlatebniKalendar({}, { data: { kryci: { hodnoty } } }, null);
+    const phV14 = (hodnoty, L) => kr.kryciPlatebniSymboly(kal(hodnoty), L && L !== 'cz' ? (t => pr.tr(t, L)) : null, L || 'cz');
+    const phV13 = (hodnoty) => { const k = kal(hodnoty); return { PODM_ZALOHA1_PROC: kr.kryciProcentoZTextu(k.hodnoty.zaloha1), PODM_FAKTURA2_PROC: kr.kryciProcentoZTextu(k.hodnoty.faktura2) }; };
+    const BEZ = { zaloha1: 'Bez zálohy', faktura2: '90 % – po zahájení montáže' };
+    const III = 'III. PLATEBNÍ PODMÍNKY', POZN = 'Poznámky';
+
+    const dStd = await vypln(v14, phV14({}));
+    const tStd = kapitola(dStd, III, POZN);
+    test('v14 výchozí 50 / 40 / 10: hlavička a tři věty s odrážkou a), b), c), tabulka měsíční fakturace zmizela',
+      !!tStd && tStd.length === 4 && odrazek(dStd, III, POZN) === 3 && /^Cena díla je splatná/.test(tStd[0])
+      && /^1\. dílčí daňový doklad ve výši 50 % \(bez DPH\)/.test(tStd[1]) && !tStd.includes('Způsob fakturace:'), tStd);
+    if (v13) {
+      const t13 = kapitola(await vypln(v13, phV13({})), III, POZN);
+      test('v14 výchozí: text kapitoly III. je tentýž jako z v13', !!tStd && !!t13 && t13.length === 4 && JSON.stringify(tStd) === JSON.stringify(t13), [tStd, t13]);
+      const b13 = kapitola(await vypln(v13, phV13(BEZ)), III, POZN);
+      test('pro srovnání: v13 u „Bez zálohy" tiskne větu bez procenta (K18-N94)', !!b13 && b13.some(t => /ve výši\s+\(bez DPH\)/.test(t)), b13);
+    }
+    const dBez = await vypln(v14, phV14(BEZ));
+    const tBez = kapitola(dBez, III, POZN);
+    test('v14 Bez zálohy: dvě věty — 1. dílčí doklad 90 % a konečný, žádná bez procenta',
+      !!tBez && odrazek(dBez, III, POZN) === 2 && tBez.some(t => /bude vystaven 1\. dílčí daňový doklad ve výši 90 % \(bez DPH\)/.test(t))
+      && tBez.some(t => /konečný daňový doklad/.test(t)) && !tBez.some(t => /ve výši\s+\(bez DPH\)|2\. dílčí/.test(t)), tBez);
+    const dMes = await vypln(v14, phV14({ zpusobFakturace: 'Měsíční' }));
+    const tMes = kapitola(dMes, III, POZN);
+    test('v14 měsíční: jen „Způsob fakturace:" a schválená věta, žádné splátky ani jejich hlavička',
+      odrazek(dMes, III, POZN) === 0 && JSON.stringify(tMes) === JSON.stringify(['Způsob fakturace:', MES]), tMes);
+    for (const [n, d] of [['výchozí', dStd], ['bez zálohy', dBez], ['měsíční', dMes]]) {
+      test('v14 ' + n + ': platné XML, žádná značka ani symbol platebních podmínek nezůstal',
+        !dg.xmlStrukturaVada(d) && !/PLATBY_(SPLATKY|MESICNE)_|PODM_PLATEBNI_KALENDAR|PODM_FAKTURACE_MESICNE/.test(d), dg.xmlStrukturaVada(d));
+    }
+    /* anglicky: přeložená v14 + věty z aplikace = přeložená v13 */
+    const prelozena = async (buf) => (await (await dg.docxPrelozSablonu(buf.slice(0), 'en', {})).arrayBuffer());
+    const v14en = await prelozena(v14);
+    const IIIen = 'III. BILLING PLAN', POZNen = 'Notes on payment terms';
+    const eStd = kapitola(await vypln(v14en, phV14({}, 'en')), IIIen, POZNen);
+    if (v13) {
+      const e13 = kapitola(await vypln(await prelozena(v13), phV13({})), IIIen, POZNen);
+      test('v14 EN výchozí: text kapitoly III. je tentýž jako z přeložené v13', !!eStd && !!e13 && e13.length === 4 && JSON.stringify(eStd) === JSON.stringify(e13), [eStd, e13]);
+    }
+    const eBez = kapitola(await vypln(v14en, phV14(BEZ, 'en')), IIIen, POZNen);
+    test('v14 EN Bez zálohy: „the 1st partial tax invoice … 90 %"', !!eBez && eBez.some(t => /the 1st partial tax invoice will be issued in the amount of 90 % \(excl\. VAT\)/.test(t)), eBez);
+    const eMes = kapitola(await vypln(v14en, phV14({ zpusobFakturace: 'Měsíční' }, 'en')), IIIen, POZNen);
+    test('v14 EN měsíční: přeložená hlavička a věta', !!eMes && eMes.length === 2 && eMes[1] === pr.tr(MES, 'en') && eMes[1] !== MES, eMes);
+  }
 }
 
 function atobDelka(dataUrl) {

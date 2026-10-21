@@ -83,13 +83,16 @@ function kryciProjPodminkyBlok() {
   let c = null;
   try { c = kryciProjCtx(ZAK, aktivniVarianta(ZAK)); } catch (e) { c = null; }
   const sekceHtml = KRYCI_PROJ_SEKCE.filter(s => KRYCI_PROJ_NABIDKA_SEKCE.indexOf(s.sekce) >= 0).map(s => {
-    const rows = s.pole.filter(p => !p.bind).map(p => {
+    /* Pole dřívějšího znění (`stary`) a tiskové řádky plánu (`plan`) —
+     * viz kryciProjPoleViditelne; plán se edituje kartou pod sekcí. */
+    const rows = s.pole.filter(p => !p.bind && !p.plan && kryciProjPoleViditelne(p, c)).map(p => {
       let pref = null;
       if (p.prefill && c) { try { pref = p.prefill(c); } catch (e) { pref = null; } }
       const zdroj = typeof p.src === 'function' ? (c ? p.src(c) : '') : p.src;
       return klpRow(p.id, p.label, { prefill: pref, type: p.typ, o: p.o, src: zdroj, ph: p.ph, dphBind: p.dphBind });
     }).join('');
-    return `<h3>${s.sekce}</h3>${rows}`;
+    const plan = (s.sekce === 'Platební podmínky' && typeof planKlpKarta === 'function') ? planKlpKarta(c) : '';
+    return `<h3>${s.sekce}</h3>${rows}${plan}`;
   }).join('');
   /* Sbalovací karta, ve výchozím stavu otevřená — viz kryciPodminkyBlok().
    * Rovněž bez id (nabidkaProjKarta() se vykresluje v Kalkulaci PROJ i v
@@ -103,9 +106,14 @@ function kryciProjPodminkyBlok() {
 
 function renderKryciProj() {
   const el = document.getElementById('page-kryciproj'); if (!el) return;
+  /* Zámek strany (P6): krycí list PROJ (a plán plateb PROJ v něm) u zakázky
+   * s vyřazenou PROJ nevzniká. */
+  const vyr = (typeof stranaVyrazenaPanel === 'function') ? stranaVyrazenaPanel('proj', 'Krycí list zakázky PROJ') : '';
+  if (vyr) { el.innerHTML = vyr; return; }
   const c = kryciProjCtx(ZAK, aktivniVarianta(ZAK));   // kontext prefillů (jeden zdroj pravdy: KRYCI_PROJ_SEKCE)
   /* Prázdný ceník zhasíná výstupy – krycí list nese ceny stejně jako nabídka. */
-  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr() : '';
+  /* #377: i zábrany z kontroly před nabídkou (strana PROJ). */
+  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('kryciproj_bo') : '';
 
   const znacka = verze => verze.includes('bo') && verze.includes('techdata')
     ? '<span class="pill mut kl-verze" title="v obou verzích">BO+Tech</span>'
@@ -113,7 +121,10 @@ function renderKryciProj() {
       : '<span class="pill kl-verze" title="jen Backoffice">BO</span>');
 
   const sekceHtml = KRYCI_PROJ_SEKCE.map(s => {
-    const rows = s.pole.map(p => {
+    /* Plán plateb (etapa B): pole dřívějšího znění (`stary`) jen u odeslané
+     * nabídky z doby před plánem, tiskové řádky plánu (`plan`) se neukazují —
+     * místo nich karta plánu a tabulka plateb smlouvy. */
+    const rows = s.pole.filter(p => !p.plan && kryciProjPoleViditelne(p, c)).map(p => {
       const zdroj = typeof p.src === 'function' ? p.src(c) : p.src;   // popisek zdroje smí být i funkce
       if (p.bind) {   // obousměrné provázání s hlavičkou zakázky – žádný ruční přepis
         /* Je-li pole v hlavičce PROJ prázdné, zobrazí se hodnota z hlavičky OCK
@@ -132,7 +143,9 @@ function renderKryciProj() {
       return klpRow(p.id, p.label + ' ' + znacka(p.verze),
         { prefill: pref, type: p.typ, o: p.o, src: zdroj, ph: p.ph, dphBind: p.dphBind });
     }).join('');
-    return `<h3>${s.sekce}</h3>${rows}`;
+    const plan = (s.sekce === 'Platební podmínky' && typeof planKlpKarta === 'function') ? planKlpKarta(c) : '';
+    const platby = (/^Smlouva o dílo — splátky/.test(s.sekce) && typeof planKlpPlatbyKarta === 'function') ? planKlpPlatbyKarta(c) : '';
+    return `<h3>${s.sekce}</h3>${platby}${rows}${plan}`;
   }).join('');
 
   el.innerHTML = `<div class="kl-doc">
@@ -142,8 +155,10 @@ function renderKryciProj() {
     a z Nastavení → Firma; ruční přepis má přednost (↺ vrátí automatiku). Činnost, která v kalkulaci nemá cenu,
     se vypíše jako <b>„není součástí nabídky“</b> – nikdy nulou ani odhadem. Štítky <b>BO</b> / <b>Tech</b> / <b>BO+Tech</b>
     ukazují, do které verze výstupu pole patří.</div>
+    ${typeof zamekKryciPoznamka === 'function' ? zamekKryciPoznamka((typeof KRYCI_PROJ_NABIDKA_SEKCE !== 'undefined' ? KRYCI_PROJ_NABIDKA_SEKCE.concat(['plán plateb']) : [])) : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     ${sekceHtml}
+    ${typeof kryciHodinyBlok === 'function' ? kryciHodinyBlok('proj') : ''}
     ${kryciProjTiskBlok(zab)}
   </div>
   ${typeof sodProjKarta === 'function'
@@ -168,15 +183,16 @@ function kryciProjTiskPohled(verze) {
   /* Pojistka pro případ, že by se sem někdo dostal jinudy než tlačítkem
    * (zhasnutým) – tiskový náhled je dokument pro zákazníka jako každý jiný. */
   if (typeof dokumentZabrana === 'function') {
-    const duvod = dokumentZabrana();
-    if (duvod) { hlaska(duvod); return; }
+    const duvod = dokumentZabrana('kryciproj_' + verze, aktivniVarianta(ZAK));   // #377
+    if (duvod) { hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' }); return; }
   }
   const v = aktivniVarianta(ZAK);
   const e2 = esc;   // #6: sjednoceno se sdíleným escapováním (ošetří i uvozovky a apostrof)
   const d = kryciProjData(ZAK, v, JEKLY, verze);
   const sekHtml = d.sekce.map(s =>
-    `<h2>${e2(s.sekce)}</h2><table>${s.radky.map(r => `<tr><td class="l">${e2(r[0])}</td><td>${e2(r[1] || '')}</td></tr>`).join('')}</table>`).join('');
-  const w = window.open('', '_blank');
+    `<h2>${e2(s.sekce)}</h2>${kryciTiskTabulka(s)}`).join('');
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8"><title>${e2(d.nazevSouboru)}</title>
     <style>body{font:12px/1.45 "Segoe UI",sans-serif;color:#111;max-width:800px;margin:16px auto;padding:0 16px}
     h1{font-size:17px;margin:2px 0 8px} h2{font-size:11.5px;background:#2b3850;color:#fff;padding:4px 8px;margin:12px 0 4px;text-transform:uppercase}

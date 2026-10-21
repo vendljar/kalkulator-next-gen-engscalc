@@ -86,7 +86,11 @@ const cerstva = await spust({ zaloha: zaloha() });
 zkus('čerstvá záloha obnovu nabídne', cerstva.vidno);
 zkus('lišta pojmenuje, co se našlo', /0777|Nádraží/.test(cerstva.text));
 zkus('čerstvá záloha zůstává v úložišti', !!cerstva.zbylo);
-zkus('lišta nabízí obnovu i zahození', /Obnovit/.test(cerstva.text) && /Zahodit/.test(cerstva.text));
+/* #404 (13. 10. 2026): jediná žlutá lišta „Rozpracovaná kalkulace" —
+ * Pokračovat / Založit novou, Zahodit zálohu jako malý odkaz. */
+zkus('lišta nabízí Pokračovat, Založit novou i (odkazem) Zahodit zálohu',
+  /Rozpracovaná kalkulace/.test(cerstva.text) && /Pokračovat v rozpracované kalkulaci/.test(cerstva.text)
+  && /Založit novou kalkulaci/.test(cerstva.text) && /Zahodit zálohu/.test(cerstva.text));
 zkus('tlačítko „Teď ne" v liště NENÍ (odstraněno 19. 8. 2026)', !/Teď ne/.test(cerstva.text));
 zkus('při startu se nic nesype do konzole', cerstva.chyby.length === 0);
 
@@ -192,6 +196,143 @@ const poVyplneni = await ochrana.stranka.evaluate(([k]) => {
 zkus('jakmile má zakázka název akce, autosave zase normálně píše',
   poVyplneni.nazev === 'Nová práce po startu');
 await ochrana.stranka.close();
+
+/* ===================== #404 — lišty rozpracované / odeslané zakázky =====================
+ * Rozhodnutí J. V. 13. 10. 2026 („Ano, jak je navrženo"). Model je
+ * listaZakazkyRozhodni (zamek.js, test_lista_zakazky.js); tady se ověřuje,
+ * že se do obrazovky propsal a že tlačítka dělají, co říkají. */
+console.log('\n#404 — lišty rozpracované a odeslané zakázky');
+const ZAMCENA_JSON = JSON.stringify({ cislo: '2026 - OPR - CN - 0777', nazevAkce: 'Výtah Nádraží', aktivni: 'v1',
+  varianty: [{ id: 'v1', zamek: { zamceno: true, kdy: '2026-10-01T10:00:00.000Z' } }] });
+
+/* 10) záloha odeslané nabídky se vůbec nenabízí a tiše se uklidí (bod 2) */
+const odeslanaZal = await spust({ zaloha: zaloha({ zakazka: ZAMCENA_JSON }) });
+zkus('10: záloha odeslané nabídky se po startu nenabízí', !odeslanaZal.vidno);
+zkus('10: a z úložiště se tiše uklidí', !odeslanaZal.zbylo);
+await odeslanaZal.stranka.close();
+
+/* Pomocník: otevře v prohlížeči zakázku „z databáze" (jen ke čtení) pod
+ * daným uživatelem a vrátí, co je vidět. */
+const listy = () => {
+  const ob = document.getElementById('obnovaLista');
+  const zl = document.getElementById('zamekLista');
+  return {
+    zluta: !!ob && ob.classList.contains('zobraz'), zlutaText: ob ? ob.innerText : '',
+    zamekText: zl ? zl.innerText : '', zamekHtml: zl ? zl.innerHTML : '',
+    modraStara: /Nabídka je otevřená jen ke čtení/.test(document.body.innerText),
+    cteni: zamekCteniJe(),
+  };
+};
+const p404 = await spust();
+const otevri = async (opts) => p404.stranka.evaluate(([o, listySrc]) => {
+  const listy = eval('(' + listySrc + ')');
+  window.potvrd = () => Promise.resolve(true);
+  window.hlaska = (t) => { window.__hlaska = String(t); return Promise.resolve(); };
+  window.dotaz = () => Promise.resolve('test #404');
+  ONLINE_STAV.ja = o.ja;
+  NAST.jeAdmin = o.ja.role === 'Administrátor';
+  ZAK = novaZakazka();
+  ZAK.cislo = '2026 - OPR - CN - 0404'; ZAK.nazevAkce = 'Šachta #404';
+  ZAK.autor = o.autor || o.ja.email; ZAK.autorJmeno = o.autorJmeno || '';
+  ZAK.uloRazitko = new Date(Date.now() - 2 * 3600e3).toISOString();
+  syncVarianta();
+  if (o.zamknout) zamkniVariantu(aktivniVarianta(ZAK), { typ: 'nabidka', kdo: 'test', cislo: ZAK.cislo });
+  HIST.nabidka = null;
+  if (o.zaloha) {
+    const kopie = JSON.parse(JSON.stringify(ZAK));
+    if (o.zamknout) kopie.varianty.forEach(v => { delete v.zamek; });
+    kopie.nazevAkce = o.zaloha;
+    const zaznam = { verze: 1, kdy: new Date().toISOString(), cislo: kopie.cislo, nazevAkce: kopie.nazevAkce,
+                     zakazka: JSON.stringify(kopie) };
+    localStorage.setItem('kng_rozpracovano_v1', JSON.stringify(zaznam));
+    HIST.nabidka = zaznam;
+  } else localStorage.removeItem('kng_rozpracovano_v1');
+  zamekCteniZapni();
+  prepniTab('kalk'); render();
+  return listy();
+}, [opts, listy.toString()]);
+
+const OBCH = { email: 'obchod@priklad.cz', jmeno: 'Obchodník', role: 'Obchodník' };
+const ADMIN = { email: 'spravce@priklad.cz', jmeno: 'Správce', role: 'Administrátor' };
+
+/* 11) bod 1: vlastní neodeslaná zakázka jen ke čtení */
+const b1 = await otevri({ ja: OBCH });
+zkus('11: neodeslaná zakázka jen ke čtení → žlutá lišta „Rozpracovaná kalkulace"',
+  b1.zluta && /Rozpracovaná kalkulace/.test(b1.zlutaText) && /0404/.test(b1.zlutaText));
+zkus('11: s Pokračovat a Založit novou kalkulaci',
+  /Pokračovat v rozpracované kalkulaci/.test(b1.zlutaText) && /Založit novou kalkulaci/.test(b1.zlutaText));
+zkus('11: bez zálohy se Zahodit zálohu nenabízí', !/Zahodit zálohu/.test(b1.zlutaText));
+zkus('11: modrá lišta „jen ke čtení" odpadla', !b1.modraStara);
+zkus('11: lišta odeslané nabídky prázdná', !b1.zamekText.trim());
+const b1po = await p404.stranka.evaluate(([listySrc]) => {
+  const listy = eval('(' + listySrc + ')');
+  [...document.querySelectorAll('#obnovaLista button')].find(b => /Pokračovat/.test(b.textContent)).click();
+  return listy();
+}, [listy.toString()]);
+zkus('11: Pokračovat odemkne režim jen ke čtení', b1po.cteni === false);
+zkus('11: a žlutá lišta zmizí', !b1po.zluta);
+
+/* 11a) bod 1: novější záloha téže zakázky — Pokračovat ji obnoví */
+const b1a = await otevri({ ja: OBCH, zaloha: 'Šachta #404 — rozdělaná práce' });
+zkus('11a: novější záloha téže zakázky: lišta nabízí Pokračovat a odkaz Zahodit zálohu',
+  b1a.zluta && /Pokračovat v rozpracované kalkulaci/.test(b1a.zlutaText) && /Zahodit zálohu/.test(b1a.zlutaText));
+const b1aZapis = await p404.stranka.evaluate(() => {
+  historieZalohaZapis();             // autosave zálohy v režimu čtení
+  return JSON.parse(localStorage.getItem('kng_rozpracovano_v1') || '{}').nazevAkce;
+});
+zkus('11a: zakázka jen ke čtení zálohu v prohlížeči nepřepíše', b1aZapis === 'Šachta #404 — rozdělaná práce');
+const b1aPo = await p404.stranka.evaluate(([listySrc]) => {
+  const listy = eval('(' + listySrc + ')');
+  [...document.querySelectorAll('#obnovaLista button')].find(b => /Pokračovat/.test(b.textContent)).click();
+  return Object.assign(listy(), { nazev: ZAK.nazevAkce });
+}, [listy.toString()]);
+zkus('11a: Pokračovat obnoví rozpracovanou práci ze zálohy', b1aPo.nazev === 'Šachta #404 — rozdělaná práce');
+zkus('11a: a odemkne zakázku', b1aPo.cteni === false && !b1aPo.zluta);
+
+/* 12) bod 4: cizí neodeslaná zakázka */
+const b4 = await otevri({ ja: OBCH, autor: 'kolega@priklad.cz', autorJmeno: 'Kolega Zkušební' });
+zkus('12: cizí zakázka → žlutá lišta se Založit novou kalkulaci',
+  b4.zluta && /Založit novou kalkulaci/.test(b4.zlutaText));
+zkus('12: bez Pokračovat', !/Pokračovat/.test(b4.zlutaText));
+zkus('12: s větou, kdo ji založil', /Kolega Zkušební/.test(b4.zlutaText));
+zkus('12: zakázka zůstává jen ke čtení', b4.cteni === true);
+
+/* 13) body 2 a 3: odeslaná zakázka — obchodník */
+const b2 = await otevri({ ja: OBCH, zamknout: true, zaloha: 'Starší rozpracovaná podoba' });
+zkus('13: odeslaná zakázka → žádná žlutá lišta', !b2.zluta);
+zkus('13: záloha odeslané zakázky se tiše zahodí',
+  await p404.stranka.evaluate(() => localStorage.getItem('kng_rozpracovano_v1') === null && HIST.nabidka === null));
+zkus('13: jednořádková informace „Odeslaná nabídka … — needituje se"',
+  /Odeslaná nabídka/.test(b2.zamekText) && /needituje se/.test(b2.zamekText) && /vytištěno/.test(b2.zamekText));
+zkus('13: s Klonovat a pokračovat a Založit novou zakázku',
+  /Klonovat a pokračovat/.test(b2.zamekText) && /Založit novou zakázku/.test(b2.zamekText));
+zkus('13: dlouhý text „Pokračujte klonem…" zmizel', !/Pokračujte klonem/.test(b2.zamekText));
+zkus('13: obchodník modrý pruh Odemknout k úpravám nevidí', !/Odemknout/.test(b2.zamekText));
+const b2klon = await p404.stranka.evaluate(([listySrc]) => {
+  const listy = eval('(' + listySrc + ')');
+  [...document.querySelectorAll('#zamekLista button')].find(b => /Klonovat/.test(b.textContent)).click();
+  return Object.assign(listy(), { variant: ZAK.varianty.length, zamcena: variantaUzamcena(aktivniVarianta(ZAK)) });
+}, [listy.toString()]);
+zkus('13: Klonovat a pokračovat založí klon a odemkne okno (klon se uloží)',
+  b2klon.variant === 2 && b2klon.zamcena === false && b2klon.cteni === false);
+
+/* 14) bod 3: odeslaná zakázka — administrátor (právo zamek.odemknout) */
+const b3 = await otevri({ ja: ADMIN, zamknout: true });
+zkus('14: administrátor vidí modrý pruh Odemknout k úpravám',
+  /Odemknout k úpravám/.test(b3.zamekText) && /zamek-cteni/.test(b3.zamekHtml));
+zkus('14: žlutá lišta ani u administrátora není', !b3.zluta);
+const b3po = await p404.stranka.evaluate(async ([listySrc]) => {
+  const listy = eval('(' + listySrc + ')');
+  [...document.querySelectorAll('#zamekLista button')].find(b => /Odemknout k úpravám/.test(b.textContent)).click();
+  await new Promise(r => setTimeout(r, 50));
+  const v = aktivniVarianta(ZAK);
+  return Object.assign(listy(), { zamcena: variantaUzamcena(v), zaznam: (v.odemceni || []).length });
+}, [listy.toString()]);
+zkus('14: Odemknout k úpravám odemkne nabídku se záznamem', b3po.zamcena === false && b3po.zaznam === 1);
+zkus('14: a odemkne i okno (záznam se uloží)', b3po.cteni === false);
+zkus('#404: za celý průchod žádná chyba v konzoli', p404.chyby.length === 0);
+if (p404.chyby.length) console.log(p404.chyby.slice(0, 3).join('\n'));
+await p404.stranka.close();
 
 await prohlizec.close();
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');

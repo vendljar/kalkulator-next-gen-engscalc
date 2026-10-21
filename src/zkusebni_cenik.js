@@ -32,7 +32,7 @@ const ZKUSEBNI_CENIK = {
   profilasKgKc: 100,
   powertechExt: 200, powertechInt: 200,
   montazniNosnik: 1000, lemovaniKgKc: 100,
-  oplechPracKc: 500, nytKc: 10, spodniRamKc: 5000, cilkoKc: 100,
+  oplechPracKc: 500, nytKc: 10, spodniRamKc: 5000, cilkoKc: 100, mustekKc: 40000,
   zamecnikAtypKc: 800,            /* #7 – sazba atypické zámečnické práce */
   montazHodKc: 500, vetraciMrizkaKc: 5000, transportKc: 5000,
   zastreseniM2Kc: 5000, oplechFasadaBmKc: 500,
@@ -69,6 +69,7 @@ const ZKUSEBNI_CENIK_PROJ = {
   sazby: { projektant: 1000, statik: 1000, zamereni: 1000 },
   dopravaKmKc: 10,
   dopravaHodKc: 1000,                // hodina cesty mimo Prahu (8. 9. 2026)
+  vyjezdTechnikKc: 3500,             // Akce mimo Prahu – 1 výjezd technika (D2, smyšlené)
   dopravaPausalKc: 1000,
   fixy: {
     pamatkari: 0,

@@ -268,6 +268,25 @@ const ZOBRAZENI_PRVKY = [
     proc: 'Totéž jako u kontrol: samotné varování je bezpečnostní pojistka pro všechny, '
         + 'čísla za ním jsou nákladová informace.',
   },
+  /* P12 / roadmapa #369 (v15.10.3). Rozhodnutí J. V. 15. 10. 2026: „náklady
+   * zatím pro obchodníky nechat zobrazené s tím, že je administrátor
+   * v budoucnu skryje" — výchozí je proto VŠEM ZAPNUTO (dnešní stav) a skrývá
+   * se odškrtnutím v Nastavení → Zobrazení. Vlastní klíč, ne `sloupce.naklad`
+   * (to by s sebou vzalo i náklad a přirážku položek). Server se na tentýž
+   * klíč ptá u GET /api/program (historie verzí ceníku). */
+  {
+    klic: 'naklady.ceniky', skupina: 'cisla', nazev: 'Nákladové sazby PROJ, ceníky v souboru zakázky a historie ceníku',
+    kde: 'Kalkulace PROJ (sloupec Sazba, souhrn), Uložit zakázku do souboru, ceník ze serveru',
+    popis: 'S tímto právem je v Kalkulaci PROJ vidět nákladová sazba (Kč/h · fix) a souhrn s náklady, '
+         + 'stažený soubor zakázky nese celé ceníky variant a server pošle i starší verze ceníku. '
+         + 'Bez něj je místo nákladové sazby prodejní (s přirážkou) a soubor nese jen to, čím se '
+         + 'varianta liší od platného ceníku.',
+    vychozi: { 'Obchodník': true, 'Vedoucí': true },
+    navrh: { 'Obchodník': false, 'Vedoucí': true },
+    proc: 'Nákladová sazba vedle ceny prozradí přirážku a stažený soubor celý nákupní ceník. '
+        + 'Obchodníkovi k nabídce stačí prodejní sazba a cena; vedoucí s náklady pracuje při '
+        + 'schvalování slev. Do rozhodnutí administrátora zůstává zapnuto všem (stav před v15.10.3).',
+  },
 
   /* ---------- nastavení ---------- */
   {
@@ -409,6 +428,22 @@ const ZOBRAZENI_PRVKY = [
     proc: 'Nevratné zásahy do dat. Drží se pravidla „nic se nemaže bez dotazu" — a mazat '
         + 'smí jeden člověk.',
   },
+  /* B80 (15. 10. 2026): čtení z Pipedrive drží server (netlify/lib/pipedrive.mjs,
+   * pdPristup) — na rozdíl od ostatních prvků tu matice NENÍ jen pohodlí,
+   * server se na ni ptá. Výchozí stav „všichni" je rozhodnutí J. V.
+   * 15. 10. 2026 (v15.10.7): „zatím přidej všem uživatelům, časem to možná
+   * v nastavení změním". Před velkým stahováním chrání strop a cache. */
+  {
+    klic: 'crm.pipedrive', skupina: 'data', nazev: 'Čtení obchodních případů z Pipedrive',
+    kde: 'serverové rozhraní /api/pd/* (výběr zakázky z CRM; v rozhraní zatím není)',
+    popis: 'Seznam a detail obchodních případů z CRM včetně objednatele, IČO a kontaktů '
+         + '(jméno, e-mail, telefon) a mapa vlastních polí CRM.',
+    vychozi: { 'Obchodník': true, 'Vedoucí': true },
+    navrh: { 'Obchodník': true, 'Vedoucí': true },
+    proc: 'Server pouští čtení jen roli s tímto právem (audit B80). Podle rozhodnutí J. V. '
+        + '15. 10. 2026 ho zatím mají všichni uživatelé; před vytěžením celého CRM a vyčerpáním '
+        + 'denního limitu Pipedrive chrání strop načtení na uživatele. Odebrat ho jde tady.',
+  },
   {
     klic: 'zaloha.vynucena', skupina: 'data', nazev: 'Vynucená záloha databáze',
     kde: 'karta online databáze',
@@ -423,7 +458,7 @@ const ZOBRAZENI_PRVKY = [
   /* ---------- zakázky, zámek, slevy ---------- */
   {
     klic: 'zamek.odemknout', skupina: 'zakazky', nazev: 'Odemknutí odeslané nabídky',
-    kde: 'Přehled cenových nabídek – řádek varianty, tlačítko „Odemknout…"',
+    kde: 'Lišta odeslané nabídky – modrý pruh „Odemknout k úpravám" (#404)',
     popis: 'Vytištěná (odeslaná) nabídka se zamkne, aby zůstal doklad o tom, co zákazník '
          + 'dostal. Odemknutí ji zase zpřístupní k úpravě — s důvodem do protokolu.',
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
@@ -443,7 +478,10 @@ const ZOBRAZENI_PRVKY = [
   {
     klic: 'sleva.schvalovani', skupina: 'zakazky', nazev: 'Schvalování slevy nad strop role',
     kde: 'karta Sleva; nová záložka Schvalování slev',
-    popis: 'Odklepnutí slevy, která přesahuje strop role zadavatele.',
+    /* Od 13. 10. 2026 totéž právo rozhoduje i o cenové výjimce varianty
+     * (směs ceníku, pás „jiné" pod ceníkovou sazbou — vyjimky.js). */
+    popis: 'Odklepnutí slevy, která přesahuje strop role zadavatele, a cenové výjimky varianty '
+      + '(ceník je směsí platného a starších cen, pás opláštění „jiné" pod ceníkovou sazbou).',
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
     navrh: { 'Obchodník': false, 'Vedoucí': true },
     proc: 'Přesně tohle je smysl role Vedoucí a dnes to v rozhraní neumí nikdo jiný než '
@@ -464,6 +502,9 @@ function zobrazeniVychozi() {
   return m;
 }
 
+/* Klíč „práva na náklady" pro P12 (#369) — jedno jméno pro prohlížeč i server. */
+const ZOBRAZENI_KLIC_NAKLADY = 'naklady.ceniky';
+
 function zobrazeniPrvek(klic) {
   return ZOBRAZENI_PRVKY.find(p => p.klic === klic) || null;
 }
@@ -473,13 +514,16 @@ function zobrazeniPrvek(klic) {
  *   klic  – klíč prvku
  *   mat   – uložená matice (může být neúplná i undefined)
  *
- * Neznámý klíč vrací true. Je to schválně: kdyby se někde v UI zeptalo na
- * prvek, který v seznamu (ještě) není, nemá se kvůli překlepu ztratit kus
- * rozhraní. Že seznam a volání v UI sedí, hlídá test_zobrazeni.js. */
+ * Administrátor smí vždy (i u neznámého klíče — o ovládání nepřijde).
+ * Neznámý klíč ostatním NEPOVOLUJE (B176, audit 15. 10., zadání 18. 10. 2026):
+ * do v18.10.5 vracel true, aby překlep neutnul kus UI — jenže na matici se
+ * ptá i server (CRM, náklady, ceník v zakázce) a překlep v konstantě práva
+ * by právo otevřel všem. Že každý klíč, na který se kód ptá, v seznamu je,
+ * hlídá test_zobrazeni.js (statická kontrola src/ i netlify/). */
 function zobrazeniSmi(role, klic, mat) {
-  const p = zobrazeniPrvek(klic);
-  if (!p) return true;
   if (role === ZOBRAZENI_ROLE_VZDY) return true;
+  const p = zobrazeniPrvek(klic);
+  if (!p) return false;                            // B176: fail-closed
   if (p.pevne) return false;                       // drží server, nepřiděluje se
   if (ZOBRAZENI_ROLE_PRIDELITELNE.indexOf(role) < 0) return false;
   const r = mat && mat[klic];
@@ -730,6 +774,7 @@ if (typeof module !== 'undefined')
   module.exports = {
     ZOBRAZENI_PRVKY, ZOBRAZENI_SKUPINY, ZOBRAZENI_ROLE_VZDY, ZOBRAZENI_ROLE_PRIDELITELNE,
     zobrazeniVychozi, zobrazeniPrvek, zobrazeniSmi, zobrazeniOciste, zobrazeniZmeny,
+    ZOBRAZENI_KLIC_NAKLADY,
     ZOBRAZENI_SEKCE_VOLBY, zobrazeniSekceVolba, zobrazeniSekceNastav,
     ZOBRAZENI_POCITAT, ZOBRAZENI_PRIPLATEK,
     zobrazeniPolozkaVychozi, zobrazeniPolozkaVychoziNastav,

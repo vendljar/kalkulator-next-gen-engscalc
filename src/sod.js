@@ -83,8 +83,118 @@ function sodVedouciMontaziDoplna(placeholders) {
   return p;
 }
 
+/* SMLOUVA V CIZÍM JAZYCE (#157, rozhodnutí J. V. 16. 10. 2026). Pevný text
+ * dodá jazyková šablona (překlad české šablony, Nastavení → Šablony → EN),
+ * částky jsou v eurech podle pravidel nabídky (#155). Hodnoty z krycího
+ * listu, které jsou volbou z nabídky (druh místa plnění), přeloží slovník;
+ * vlastní znění obchodníka zůstane, jak ho napsal. */
+const SOD_PREKLAD_HODNOT = ['SOD_MISTO_PLNENI_DRUH'];
+function sodPrelozHodnoty(placeholders, L) {
+  if (!placeholders || !L || L === 'cz' || typeof tr !== 'function') return placeholders;
+  SOD_PREKLAD_HODNOT.forEach(k => { if (placeholders[k]) placeholders[k] = tr(placeholders[k], L); });
+  return placeholders;
+}
+
+/* REŽIM DPH A SKLADNÉ (rozhodnutí J. V. 18. 10. 2026). Šablona v2 nesla
+ * v čl. V natvrdo „DPH … v režimu přenesené daňové povinnosti" a hned za
+ * tím prohlášení o snížené sazbě DPH pro bydlení — jedno vylučuje druhé.
+ * Šablona v3 má místo nich symboly a věty skládá aplikace podle volby
+ * „Režim DPH ve smlouvě" v krycím listu OCK:
+ *   {{SOD_DPH_REZIM}}  odst. 2 — věta zvoleného režimu,
+ *   {{SOD_DPH_PROHLASENI}}  odst. 3 — prohlášení o snížené sazbě jen při
+ *                           české DPH a stavbě pro bydlení (bytový / rodinný
+ *                           dům), jinak věta o oznámení změny (druhá věta
+ *                           původního odstavce) — odstavec „3." musí zůstat,
+ *                           čl. V a XIII odkazují na „bod 4" / „odst. 4".
+ * Znění vět je ke kontrole účetní (podklady/SOD_EN_KONTROLA.md); cizí jazyk
+ * přeloží slovník. Vlastní znění režimu v krycím listu aplikace nečte —
+ * symboly pak zůstanou ve Wordu {{…}} k doplnění.
+ * {{SOD_SKLADNE}} — skladné z Nastavení → Firma (Kč za den): česky
+ * „N,- Kč" jako dřív v šabloně, jinak v měně smlouvy (#155, celá eura
+ * nahoru). Bez částky symbol zůstane {{…}}. */
+const SOD_DPH_REZIMY = ['ceska', 'prenesena', 'eu'];
+const SOD_DPH_VETY = {
+  ceska: 'K ceně díla bude připočtena DPH v zákonné sazbě platné ke dni uskutečnění zdanitelného plnění.',
+  prenesena: 'DPH bude účtováno dle platných předpisů v režimu přenesené daňové povinnosti.',
+  eu: 'Plnění není předmětem české DPH; daň přizná a odvede objednatel v režimu přenesení daňové povinnosti (reverse charge) podle čl. 196 směrnice Rady 2006/112/ES.',
+};
+const SOD_DPH_PROHLASENI_SNIZENA = 'Objednatel prohlašuje, že objekt, v němž je prováděno dílo, je ve smyslu § 48 zákona č. 235/2004 Sb., '
+  + 'o dani z přidané hodnoty, ve znění pozdějších předpisů, dokončenou stavbou pro bydlení nebo stavbu pro sociální bydlení, a splňuje tak '
+  + 'zákonné podmínky pro použití snížené sazby DPH. Objednatel se zavazuje, že o každé změně tohoto statutu bude zhotovitele písemně '
+  + 'informovat do tří dnů ode dne, kdy taková změna nastane.';
+const SOD_DPH_PROHLASENI_OZNAMENI = 'Objednatel se zavazuje, že o každé změně skutečností rozhodných pro režim DPH podle odst. 2 tohoto článku '
+  + 'bude zhotovitele písemně informovat do tří dnů ode dne, kdy taková změna nastane.';
+const SOD_BYDLENI = ['bytový dům', 'rodinný dům'];
+function sodDphRezimKlic(text) {
+  const t = String(text == null ? '' : text).trim().toLowerCase();
+  const o = (typeof KRYCI_DPH_REZIMY !== 'undefined') ? KRYCI_DPH_REZIMY : [];
+  const i = o.findIndex(x => x.toLowerCase() === t);
+  return i >= 0 ? SOD_DPH_REZIMY[i] : null;
+}
+function sodDphSymboly(placeholders, rezimText, mistoText, L) {
+  const P = (L && L !== 'cz' && typeof tr === 'function') ? (t => tr(t, L)) : (t => t);
+  const k = sodDphRezimKlic(rezimText);
+  if (!k || !placeholders) return placeholders;
+  placeholders.SOD_DPH_REZIM = P(SOD_DPH_VETY[k]);
+  const bydleni = SOD_BYDLENI.indexOf(String(mistoText == null ? '' : mistoText).trim().toLowerCase()) >= 0;
+  placeholders.SOD_DPH_PROHLASENI = P(k === 'ceska' && bydleni ? SOD_DPH_PROHLASENI_SNIZENA : SOD_DPH_PROHLASENI_OZNAMENI);
+  return placeholders;
+}
+/* ZÁBRANA: SMLOUVA BEZ ZVOLENÉHO REŽIMU DPH (B189, rozhodnutí J. V.
+ * 19. 10. 2026). Zákazník s DIČ jiného státu (EU i mimo EU) nemá výchozí
+ * režim — u prací na stavbě rozhoduje místo stavby, ne DIČ. Dokud obchodník
+ * režim v krycím listu OCK nevybere, smlouva o dílo realizace nevznikne
+ * (fail-closed; sodData hází, UI ukáže tutéž větu dřív). Vlastní znění
+ * režimu se počítá jako volba — symboly pak doplní ve Wordu. Vrací větu pro
+ * obchodníka, nebo '' (smí se tisknout). */
+function sodDphZabrana(zak, varianta) {
+  if (typeof kryciPoleHodnota !== 'function') return '';
+  if (String(kryciPoleHodnota(zak, varianta, 'sodDphRezim') || '').trim()) return '';
+  const dic = String((zak && zak.dic) || '').replace(/\s/g, '').toUpperCase();
+  const pre = dic.slice(0, 2) === 'GR' ? 'EL' : dic.slice(0, 2);
+  const eu = typeof KRYCI_EU_DIC !== 'undefined' && KRYCI_EU_DIC.indexOf(pre) >= 0;
+  return 'Smlouva o dílo nevznikne: není zvolený režim DPH. Zákazník má DIČ ' + (eu ? 'z jiného státu EU' : 'mimo Českou republiku a EU')
+    + (dic ? ' (' + dic + ')' : '') + ' a výchozí režim se u něj nevolí — rozhoduje místo stavby. '
+    + 'Vyberte ho v Krycím listu zakázky OCK, sekce „Smlouva o dílo (SoD realizace)" → „Režim DPH ve smlouvě".';
+}
+/* Částka skladného z volného pole firmy (B190, audit kola 28, 18. 10. 2026).
+ * Do v18.10.11 se brala první číslice regexem s tečkou jako desetinnou
+ * čárkou — „1.500" (tisíce s tečkou) dalo 1,5 → „2,- Kč" a nikdo si toho
+ * nevšiml. Přijme se jen celé číslo, nebo s 1–2 desetinnými místy za čárkou
+ * či tečkou (mezery, koncové „,-" a „Kč" se pominou); cokoli jiného vrátí 0
+ * a symbol zůstane ve Wordu vidět k doplnění. */
+function sodSkladneKc(v) {
+  const s = String(v == null ? '' : v).replace(/\s/g, '').replace(/(?:,-|\.-|,–|kč)+$/i, '');
+  const m = s.match(/^(\d+)(?:[.,](\d{1,2}))?$/);
+  return m ? +(m[1] + (m[2] ? '.' + m[2] : '')) : 0;
+}
+function sodSkladne(placeholders, firma, mena, L) {
+  const kc = sodSkladneKc((firma || {}).skladneDenneKc);
+  if (!(kc > 0) || !placeholders) return placeholders;
+  if (!L || L === 'cz' || !mena || !mena.eur) placeholders.SOD_SKLADNE = Math.round(kc).toLocaleString('cs-CZ') + ',- Kč';
+  else placeholders.SOD_SKLADNE = mena.fmt(mena.na(kc));
+  return placeholders;
+}
+
+/* Bez jazykové šablony smlouva v cizím jazyce NEVZNIKNE (#157). U nabídky
+ * se dřív tisklo z české šablony s upozorněním „pevný text zůstal český";
+ * smlouva by tak měla český právní text s anglickými hodnotami a cenou
+ * v eurech — dokument, který nejde podepsat. Vrací větu pro obchodníka,
+ * nebo '' (smí se tisknout). */
+const SOD_JAZYK_NAZEV = { en: 'anglická', de: 'německá', fr: 'francouzská' };
+function sodJazykZabrana(typ, L, maMutaci) {
+  if ((typ !== 'sod' && typ !== 'sodProj') || !L || L === 'cz' || maMutaci) return '';
+  const popis = typ === 'sod' ? 'Šablona smlouvy o dílo — REALIZACE (OCK)' : 'Šablona smlouvy o dílo — PROJEKČNÍ PRÁCE';
+  return 'Smlouva o dílo v jazyce ' + String(L).toUpperCase() + ' nevznikne: ' + (SOD_JAZYK_NAZEV[L] || L.toUpperCase())
+    + ' šablona smlouvy není zveřejněná a z české šablony by vyšel český právní text s cizojazyčnými hodnotami. '
+    + 'Administrátor ji nahraje v Nastavení → Šablony → „' + popis + '" → ' + String(L).toUpperCase()
+    + '; do té doby zvolte u tlačítka Jazyk tisku „česky".';
+}
+
 /* SoD realizace (OCK) — stejná data jako nabídka OCK, jiné jméno souboru. */
-function sodData(zak, varianta, jekly, lang) {
+function sodData(zak, varianta, jekly, lang, sablona) {
+  const zabranaDph = sodDphZabrana(zak, varianta);   // B189: bez režimu DPH smlouva nevznikne
+  if (zabranaDph) throw new Error(zabranaDph);
   const d = nabidkaData(zak, varianta, jekly, lang);
   const L = d.jazyk || 'cz';
   const nazev = ('SOD_' + (d.placeholders.CISLO_NABIDKY || 'CN')
@@ -92,14 +202,61 @@ function sodData(zak, varianta, jekly, lang) {
     + (L !== 'cz' ? '_' + L.toUpperCase() : ''));
   sodObjednatelDoplna(d.placeholders, zak);
   sodVedouciMontaziDoplna(d.placeholders);
+  /* Termíny, podpisy a kopie faktur z krycího listu OCK (P9.2, P9.4 —
+   * rozhodnutí J. V. 29. 9. 2026), od 1. 10. 2026 i místo plnění, denní
+   * pokuta a datum podpisu (Q2–Q4, Q10). Co obchodník nevyplnil, zůstane {{…}}. */
+  if (typeof kryciSodSymboly === 'function') kryciSodSymboly(zak, varianta, jekly, d.placeholders);
+  /* Režim DPH a skladné (18. 10. 2026) — místo plnění česky z krycího
+   * listu (před překladem hodnot). */
+  if (typeof kryciPoleHodnota === 'function')
+    sodDphSymboly(d.placeholders, kryciPoleHodnota(zak, varianta, 'sodDphRezim'), kryciPoleHodnota(zak, varianta, 'sodMistoPlneni'), L);
+  sodSkladne(d.placeholders, (typeof firmaAktualni === 'function') ? firmaAktualni() : null, d.mena, L);
+  sodPrelozHodnoty(d.placeholders, L);
+  /* Splátky z platebního kalendáře krycího listu (K18-N100). */
+  const odstavcePryc = [];
+  if (typeof kryciSodPlatby === 'function') {
+    const pl = kryciSodPlatby(zak, varianta, jekly, sablona, L);
+    if (pl.chyba) throw new Error(pl.chyba);
+    Object.assign(d.placeholders, pl.symboly);
+    odstavcePryc.push(...pl.odstavcePryc);
+  }
+  /* Pokuta za prodlení zhotovitele = pokuta za prodlení dodávky (Q5). */
+  if (typeof kryciPoleHodnota === 'function')
+    odstavcePryc.push(...sodPokutaZhotovitele(d.placeholders, sablona, 'PODM_POKUTA_DODAVKA_PROC',
+      kryciPoleHodnota(zak, varianta, 'pokutaDodavka')));
   return Object.assign({}, d,
-    { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') });
+    { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') }, odstavcePryc.length ? { odstavcePryc } : {});
+}
+
+/* POKUTA ZA PRODLENÍ ZHOTOVITELE (rozhodnutí J. V. 1. 10. 2026 k návrhu SoD,
+ * Q5 a Q6). Šablony v2 nesou ve větě o prodlení zhotovitele sazbu z krycího
+ * listu — SoD realizace pokutu za prodlení dodávky {{PODM_POKUTA_DODAVKA_PROC}},
+ * SoD projekce pokutu za nedodržení termínu {{PODM_POKUTA_TERMIN_PROC}}
+ * (v1 tam měly symbol pokuty za prodlení s placením a mají ho dál).
+ *   – „0" (bez pokuty): věta zmizí celá — vrátí se symbol pro odstavcePryc,
+ *     ale JEN když ho šablona má (bez informace o šabloně se nic nemaže),
+ *   – vlastní znění bez čitelného procenta: symbol se z dat vyřadí, aby
+ *     zůstal ve Wordu vidět jako {{…}} (prázdno by dalo „ve výši  % z ceny"),
+ *   – procento: symbol se vyplní jako dosud (PODM_*_PROC z krycího listu).
+ * Vrací seznam symbolů, jejichž odstavce do smlouvy nepatří. */
+function sodPokutaZhotovitele(placeholders, sablona, symbol, text) {
+  const sym = sablona && sablona.symboly;
+  const ma = !!sym && (typeof sym.has === 'function' ? sym.has(symbol) : Array.from(sym).indexOf(symbol) >= 0);
+  const stav = (typeof kryciPokutaStav === 'function') ? kryciPokutaStav(text) : 'necitelne';
+  if (stav === 'nula') return ma ? [symbol] : [];
+  if (stav !== 'procento' && placeholders) delete placeholders[symbol];
+  return [];
 }
 
 /* SoD projekčních prací — stejná data jako nabídka PROJ (hlavička PROJ,
  * číslo OVP), jiné jméno souboru. */
-function sodProjData(zak, varianta, lang) {
-  const d = nabidkaProjData(zak, varianta, lang);
+function sodProjData(zak, varianta, lang, sablona) {
+  /* Smlouva nese cenu díla: činnosti po slevě, ať se sečtou na cenu, kterou
+   * objednatel platí (řádek slevy smlouva nemá). */
+  const d = nabidkaProjData(zak, varianta, lang, { slevaZvlast: false });
+  /* Bloky studie jsou bloky NABÍDKY PROJ v7 (D1) — smlouva má vlastní seznam
+   * (sodProjRozsah); cizí jméno by u šablony SoD v4 zastavilo dokument. */
+  d.blokyPryc = [];
   const L = d.jazyk || 'cz';
   const nazev = ('SOD_PROJ_' + (d.placeholders.CISLO_NABIDKY || 'OVP-CN')
     + (varianta && varianta.zakaznik ? '_' + varianta.zakaznik : '')
@@ -109,8 +266,154 @@ function sodProjData(zak, varianta, lang) {
    * v krycím listu PROJ (23. 8. 2026) — smlouva si je odtud vyzvedne.
    * Co obchodník nevyplnil, zůstane ve Wordu vidět jako {{…}}. */
   if (typeof kryciProjSodSymboly === 'function') kryciProjSodSymboly(zak, varianta, d.placeholders);
+  sodProjPlatby(d, sablona, L);
+  sodProjRozsah(d, L);
+  /* Pokuta za prodlení zhotovitele = pokuta za nedodržení termínu (Q6). */
+  if (typeof kryciProjPoleHodnota === 'function') {
+    const pryc = sodPokutaZhotovitele(d.placeholders, sablona, 'PODM_POKUTA_TERMIN_PROC',
+      kryciProjPoleHodnota(zak, varianta, 'pokutaTermin'));
+    if (pryc.length) d.odstavcePryc = (d.odstavcePryc || []).concat(pryc);
+  }
   return Object.assign({}, d,
     { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') });
+}
+
+/* ROZSAH DÍLA SoD PROJ PODLE NABÍDKY (#380 Q7, rozhodnutí J. V. 17. 10. 2026,
+ * varianta B). Šablona v3 měla v příloze č. 1 natvrdo „… na vypracování
+ * dokumentace DPZ+DSP včetně zajištění inženýringu …" a v čl. II a III všech
+ * sedm činností bez ohledu na nabídku. Šablona v4 má větu přílohy se symbolem
+ * {{SODP_ROZSAH_DILA}} a každou činnost v čl. II i III ve značkách
+ * {{CIN_<X>_ZAC}}/{{CIN_<X>_KON}}. Činnost, kterou nabídka neoceňuje, jde do
+ * `blokyPryc` a zmizí z předmětu díla i z termínů (číslování odrážek dělá Word,
+ * zůstane souvislé). Sekce kalkulace podle vět osmi plateb staré šablony
+ * (PLAN_SODP_STARE_CINNOST): IČ DOSS i povolení záměru = inženýrská činnost,
+ * výběr dodavatele navazuje na ekonomickou zadávací část. Studie, projednání,
+ * kolaudaci ani geodetické zaměření šablona v předmětu díla nemá — do výčtu
+ * nepatří. Názvy jsou plné jako v čl. II. Bez nabízené činnosti symbol zůstane
+ * ve Wordu vidět k doplnění. Šablona v3 (bez značek a symbolu) se nemění. */
+const SODP_CINNOSTI = [
+  /* Název zaměření má vlastní překlad: slovník porovnává hesla bez ohledu
+   * na velikost písmen a „ZAMĚŘENÍ a zpracování výstupů" (nadpis nabídky
+   * PROJ, „SURVEY and processing of outputs") by ve smlouvě dal nadpisový
+   * tvar. Ostatní názvy jsou ve slovníku (preklad.js, #380, 18. 10. 2026). */
+  { blok: 'CIN_ZAMERENI', sekce: 'zamereni', nazev: 'Zaměření a zpracování výstupů',
+    preklad: { en: 'Survey and processing of outputs', de: 'Aufmaß und Ausarbeitung der Ergebnisse', fr: 'Relevé et traitement des résultats' } },
+  { blok: 'CIN_DPZ', sekce: 'dpz', nazev: 'Dokumentace pro povolení záměru' },
+  { blok: 'CIN_IC_DOSS', sekce: 'ic', nazev: 'Inženýrská činnost DOSS' },
+  { blok: 'CIN_POVOLENI', sekce: 'ic', nazev: 'Podání žádosti na příslušný stavební úřad a vyřízení povolení záměru' },
+  { blok: 'CIN_DPS', sekce: 'dps', nazev: 'Dokumentace pro provedení stavby' },
+  { blok: 'CIN_EZC', sekce: 'ezc', nazev: 'Ekonomická zadávací část' },
+  { blok: 'CIN_VYBER', sekce: 'ezc', nazev: 'Výběr dodavatele pro realizaci záměru' },
+];
+/* Výčet činností do věty přílohy: „zaměření a zpracování výstupů, …
+ * a výběr dodavatele pro realizaci záměru". Kdyby J. V. chtěl zkratky
+ * (DPZ, IČ, DPS, EZČ), mění se jen tahle funkce. */
+function sodProjRozsahText(nazvy, L) {
+  const P = t => (L && L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  const n = nazvy.map(t => { const c = SODP_CINNOSTI.find(x => x.nazev === t);
+    return (c && c.preklad && L && c.preklad[L]) ? c.preklad[L] : P(t); }).map((t, i) => (L === 'de' ? t : t.charAt(0).toLowerCase() + t.slice(1)));
+  const a = { en: ' and ', de: ' und ', fr: ' et ' }[L] || ' a ';
+  return n.length < 2 ? (n[0] || '') : n.slice(0, -1).join(', ') + a + n[n.length - 1];
+}
+function sodProjRozsah(d, L) {
+  const nab = (d && d.nabizeneSekce) || [];
+  const ano = SODP_CINNOSTI.filter(c => nab.indexOf(c.sekce) >= 0);
+  const pryc = SODP_CINNOSTI.filter(c => ano.indexOf(c) < 0).map(c => c.blok);
+  if (ano.length) d.placeholders.SODP_ROZSAH_DILA = sodProjRozsahText(ano.map(c => c.nazev), L);
+  if (pryc.length) d.blokyPryc = (d.blokyPryc || []).concat(pryc);
+}
+
+/* PLATBY SMLOUVY Z PLÁNU PLATEB (etapa B, P9.3 — rozhodnutí J. V. 29. 9. 2026).
+ * Dopočet: procento × cena činnosti po slevě, splátky se stejným milníkem
+ * sečtené, ruční částka z krycího listu platí. Nová šablona má seznam plateb
+ * jedním symbolem {{SODP_PLATEBNI_KALENDAR}} (odstavec za platbu); stará
+ * s osmi pevnými platbami dostane SODP_PLATBAn_KC u plateb se stejným
+ * milníkem — a když plán obsahuje platbu, kterou stará šablona vyjádřit
+ * neumí, smlouva nevznikne (nesouhlasila by s nabídkou ani s cenou díla).
+ * Odeslaná nabídka z doby před plánem (`stary`) nese ruční splátky jako dřív
+ * (SODP_PLATBAn_KC z krycího listu) a nová šablona z nich dostane seznam
+ * plateb větou s milníky osmi pevných plateb staré šablony (revize etapy B,
+ * 30. 9. 2026). Prázdný seznam symbol neplní — zůstane ve Wordu vidět.
+ *
+ * K18-N101 (ostrá v30.9.1, P18 bez zaměření; 1. 10. 2026): součet plateb se
+ * se šablonou v ruce kontroluje proti ceně díla vždy (plán i ruční splátky
+ * odeslané nabídky) a věta staré šablony o platbě, kterou zakázka nemá,
+ * zmizí celá (`odstavcePryc` → docxgen). Ruční splátka k nenabízené
+ * činnosti smlouvu zastaví s vysvětlením. */
+function sodProjPlatby(d, sablona, lang) {
+  const L = lang || 'cz';
+  const P = (L !== 'cz' && typeof tr === 'function') ? (t => tr(t, L)) : null;   // #157: věty plateb v jazyce smlouvy
+  const pl = d && d.platbyProj;
+  if (!pl || typeof planSodKalendar !== 'function') return;
+  const sym = sablona && sablona.symboly;
+  const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
+  /* STARÁ ŠABLONA = osm pevných vět s milníky, bez seznamu plateb. Bez
+   * informace o šabloně (online náhled, testy) se nic neodmítá ani nemaže. */
+  const stara = !!sym && !ma('SODP_PLATEBNI_KALENDAR')
+    && PLAN_SODP_STARE.some((m, i) => ma('SODP_PLATBA' + (i + 1) + '_KC'));
+  const kcFmt = (n) => (+n || 0).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kč';
+  const nabizi = (m) => { const k = PLAN_SODP_STARE_CINNOST[m]; return !k || +((pl.ceny || {})[k]) > 0; };
+  const odstavcePryc = [];
+  if (pl.stary) {
+    const radky = PLAN_SODP_STARE.map((m, i) => {
+      const kc = d.placeholders['SODP_PLATBA' + (i + 1) + '_KC'];
+      return kc ? { castka: kc, text: planMilnikText({ m }, PLAN_PROJ_VYCHOZI), m, i } : null;
+    }).filter(Boolean);
+    if (radky.length) d.placeholders.SODP_PLATEBNI_KALENDAR = planSodKalendar({ platby: radky }, x => String(x), P);
+    if (sym) {
+      /* K18-N101: ruční splátka u činnosti, kterou nabídka nemá, by ve
+       * smlouvě nesla větu o cizí práci („… při předání 2D výstupů ze
+       * zaměření" u projekce bez zaměření). */
+      const cizi = radky.filter(r => !nabizi(r.m));
+      if (cizi.length)
+        throw new Error('Smlouva o dílo PROJ nevznikne: ruční splátka ' + cizi.map(r => (r.i + 1) + ' (' + r.castka + ', „' + r.text + '")').join(', ')
+          + ' patří k činnosti, kterou nabídka nemá. Opravte splátky v krycím listu PROJ (Smlouva o dílo — splátky).');
+      /* Součet ručních splátek = cena díla (K18-N101; v korunách — ruční
+       * částky jsou v Kč, cizojazyčný dokument se nekontroluje). */
+      if (radky.length && !pl.eur) {
+        const necitelne = radky.filter(r => planCastkaZTextu(r.castka) === null);
+        const soucet = radky.reduce((a, r) => a + (planCastkaZTextu(r.castka) || 0), 0);
+        const cena = Object.keys(pl.ceny || {}).reduce((a, k) => a + (+pl.ceny[k] || 0), 0);
+        if (necitelne.length || Math.round(soucet * 100) !== Math.round(cena * 100))
+          throw new Error('Smlouva o dílo PROJ nevznikne: '
+            + (necitelne.length ? 'ruční splátku ' + necitelne.map(r => '„' + r.castka + '"').join(', ') + ' nejde přečíst jako částku v Kč'
+              : 'součet ručních splátek (' + kcFmt(soucet) + ') nesouhlasí s cenou díla (' + kcFmt(cena) + ')')
+            + '. Opravte splátky v krycím listu PROJ (Smlouva o dílo — splátky).');
+      }
+      /* Věta nenabízené činnosti ze staré šablony zmizí. */
+      if (stara) PLAN_SODP_STARE.forEach((m, i) => {
+        if (!nabizi(m) && !d.placeholders['SODP_PLATBA' + (i + 1) + '_KC']) odstavcePryc.push('SODP_PLATBA' + (i + 1) + '_KC');
+      });
+    }
+    if (odstavcePryc.length) d.odstavcePryc = odstavcePryc;
+    return;
+  }
+  const fmt = (pl.mena && pl.mena.fmt) || null;
+  const kalendar = planSodKalendar(pl.dopocet, fmt, P);
+  if (kalendar) d.placeholders.SODP_PLATEBNI_KALENDAR = kalendar;
+  const stare = planSodStareSymboly(pl.dopocet, fmt);
+  Object.assign(d.placeholders, stare.symboly);
+  if (!sym) return;
+  /* Součet plateb = cena díla i bez kontroly před dokumentem (K18-N101).
+   * Zábrana planPlatebSoucet totéž ukáže předem a zastaví tlačítko; tady je
+   * pojistka builderu, ať smlouva s jiným součtem nevznikne žádnou cestou. */
+  if (pl.dopocet && !pl.dopocet.sedi) {
+    const f = fmt || kcFmt;
+    throw new Error('Smlouva o dílo PROJ nevznikne: součet plateb (' + f(pl.dopocet.soucet) + ') nesouhlasí s cenou díla ('
+      + f(pl.dopocet.cena) + '). Upravte ruční částky v krycím listu PROJ (Plán plateb) nebo vraťte dopočet (↺).');
+  }
+  if (stara && stare.navic.length)
+    throw new Error('Šablona smlouvy o dílo PROJ má jen osm pevných plateb ({{SODP_PLATBA1_KC}} … {{SODP_PLATBA8_KC}}) '
+      + 'a plán plateb má platby, které v ní nejsou (' + stare.navic.map(x => x.text || x.klic).join('; ') + '). '
+      + 'Smlouva by nesouhlasila s nabídkou ani s cenou díla. Nahrajte šablonu SoD PROJ se seznamem plateb '
+      + '{{SODP_PLATEBNI_KALENDAR}} (Nastavení → Smlouvy / Šablony), nebo upravte plán plateb v krycím listu PROJ.');
+  /* Pevná věta staré šablony, ke které plán platbu nemá (nenabízená činnost,
+   * předvolba bez té platby), zmizí celá — v dokumentu by zůstala věta
+   * o práci, která se neplatí, s {{…}} místo částky (K18-N101). */
+  if (stara) {
+    PLAN_SODP_STARE.forEach((m, i) => { const k = 'SODP_PLATBA' + (i + 1) + '_KC'; if (!(k in stare.symboly)) odstavcePryc.push(k); });
+    if (odstavcePryc.length) d.odstavcePryc = odstavcePryc;
+  }
 }
 
 /* Plná moc — vyřizuje se pro OBJEKT (povolení, jednání s úřady), ne pro
@@ -141,11 +444,15 @@ function plnaMocData(zak, varianta) {
 if (typeof dokumentRegistruj === 'function') {
   dokumentRegistruj('sod', {
     nazev: 'Smlouva o dílo — realizace (OCK)', sablona: 'Sablona_SOD_REALIZACE.docx',
-    builder: (zak, varianta, jekly, lang) => sodData(zak, varianta, jekly, lang),
+    /* Symboly šablony: v1 (čtyři pevné splátky) × v2 se seznamem plateb (K18-N100). */
+    sablonaSymboly: true,
+    builder: (zak, varianta, jekly, lang, sablona) => sodData(zak, varianta, jekly, lang, sablona),
   });
   dokumentRegistruj('sodProj', {
     nazev: 'Smlouva o dílo — projekční práce', sablona: 'Sablona_SOD_PROJEKCE.docx',
-    builder: (zak, varianta, jekly, lang) => sodProjData(zak, varianta, lang),
+    /* Symboly šablony: stará (8 pevných plateb) × nová se seznamem plateb. */
+    sablonaSymboly: true,
+    builder: (zak, varianta, jekly, lang, sablona) => sodProjData(zak, varianta, lang, sablona),
   });
   dokumentRegistruj('plnaMoc', {
     nazev: 'Plná moc', sablona: 'Sablona_PLNA_MOC.docx',
@@ -154,4 +461,5 @@ if (typeof dokumentRegistruj === 'function') {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { sodData, sodProjData, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna };
+  module.exports = { sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
+    sodJazykZabrana, sodPrelozHodnoty, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };

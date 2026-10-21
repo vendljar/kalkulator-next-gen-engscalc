@@ -1,0 +1,474 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Kokpit dávek KNG</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+/* Rozvržení: úzký velín pro postranní okno (~600 px) — čeká na vás, 4 dlaždice větví, řádky dávek, deník */
+:root{
+  --bg:#f2f4f3; --panel:#ffffff; --fg:#1b2320; --muted:#5f6b65; --line:#d8ddda; --soft:#eef1ef;
+  --steel:#2f6475; --ok:#2e7d4f; --warn:#a86200; --bad:#b3261e; --idle:#86918b;
+  --okbg:#e2f1e7; --warnbg:#fcefd8; --badbg:#f9e1df; --steelbg:#e0edf1;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121715; --panel:#1b221f; --fg:#e3e9e6; --muted:#9ba8a1; --line:#2e3833; --soft:#222a26;
+  --steel:#82b8c8; --ok:#6cc68f; --warn:#e6a64a; --bad:#f08a80; --idle:#7d8983;
+  --okbg:#1b3325; --warnbg:#3a2c14; --badbg:#3d1f1c; --steelbg:#1c3139; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121715; --panel:#1b221f; --fg:#e3e9e6; --muted:#9ba8a1; --line:#2e3833; --soft:#222a26;
+  --steel:#82b8c8; --ok:#6cc68f; --warn:#e6a64a; --bad:#f08a80; --idle:#7d8983;
+  --okbg:#1b3325; --warnbg:#3a2c14; --badbg:#3d1f1c; --steelbg:#1c3139; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:12.5px;line-height:1.4;
+  padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));padding-block:10px 24px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:10px;min-width:0}
+h1{font-family:var(--display);font-size:22px;letter-spacing:.02em;margin:0;line-height:1}
+h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 4px;color:var(--muted)}
+.top{display:flex;flex-wrap:wrap;gap:2px 12px;align-items:baseline;justify-content:space-between}
+.stamp{font-family:var(--mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.mono{font-family:var(--mono);font-size:11px;font-variant-numeric:tabular-nums}
+.alert{border-radius:5px;padding:8px 10px;display:grid;gap:4px;border:1px solid var(--warn);background:var(--warnbg)}
+.alert.empty{border-color:var(--ok);background:var(--okbg)}
+.alert .h{font-weight:600;color:var(--warn)} .alert.empty .h{color:var(--ok)}
+.alert ol{margin:0;padding-left:18px;display:grid;gap:3px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:6px 8px;display:grid;gap:1px;min-width:0;border-top:3px solid var(--idle)}
+.tile.ok{border-top-color:var(--ok)} .tile.warn{border-top-color:var(--warn)} .tile.run{border-top-color:var(--steel)} .tile.bad{border-top-color:var(--bad)}
+.tile .k{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font-family:var(--display);font-size:19px;line-height:1.05}
+.tile .d{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.rows{display:grid;gap:6px}
+.row{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--idle);border-radius:5px;padding:7px 9px;display:grid;
+  grid-template-columns:minmax(0,1fr) 130px;gap:2px 10px;align-items:start}
+.r-run{border-left-color:var(--steel)} .r-ok{border-left-color:var(--ok)} .r-warn{border-left-color:var(--warn)} .r-bad{border-left-color:var(--bad)}
+.r-idle{opacity:.8}
+.main{min-width:0;display:grid;gap:3px}
+.name{font-weight:600;font-size:13px;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.role{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.sid{color:var(--muted);font-size:10.5px}
+.co{font-size:12px}
+.p-idle{background:var(--soft);color:var(--idle)}
+.row .id{font-family:var(--display);font-size:22px;line-height:1;grid-row:span 2}
+.row .id small{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);font-weight:400;margin-top:3px}
+.what{font-weight:600;min-width:0}
+.sub{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.right{text-align:right;display:grid;gap:4px;justify-items:end}
+.eta{font-family:var(--display);font-size:18px;line-height:1}
+.rt{font-family:var(--mono);font-size:10.5px;color:var(--muted);white-space:nowrap}
+.etal{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.ctx{width:100%;display:grid;gap:2px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.bar i.w{background:var(--warn)} .bar i.b{background:var(--bad)}
+.ph{display:flex;align-items:center;gap:8px;min-width:0}
+.steps{display:flex;gap:2px;flex:0 0 120px}
+.step{flex:1;height:6px;border-radius:1px;background:var(--line)}
+.step.done{background:var(--ok)} .step.now{background:var(--steel)} .step.blk{background:var(--warn)}
+.stepl{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stepl b{color:var(--fg);font-weight:600}
+.next{grid-column:1 / 3;font-size:11.5px;border-top:1px dashed var(--line);padding-top:4px;margin-top:2px}
+.next b{color:var(--muted);font-weight:500}
+.legend{display:flex;flex-wrap:wrap;gap:8px;font-size:10.5px;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;gap:4px;align-items:center}
+.legend i{display:inline-block;width:12px;height:6px;border-radius:1px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:5px}
+.log table{border-collapse:collapse;width:100%}
+.log td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.log tr:last-child td{border-bottom:0}
+.log td.cas{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap;width:1%}
+.done ul{list-style:none;margin:0;padding:0}
+.done li{padding:4px 8px;border-bottom:1px solid var(--line);display:flex;gap:8px}
+.done li:last-child{border-bottom:0}
+.done b{font-family:var(--display);font-size:15px;min-width:22px}
+.note{font-size:10.5px;color:var(--muted)}
+a{color:var(--steel);overflow-wrap:anywhere}
+@media (max-width:480px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.row{grid-template-columns:minmax(0,1fr) 72px}.steps{flex-basis:84px}}
+.celkem{margin-left:auto;text-align:right;display:grid;gap:1px}
+.celkem .ck{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.celkem .cv{font-family:var(--display);font-size:22px;line-height:1}
+.celkem .cd{font-size:11px;color:var(--muted)}
+</style>
+
+<div class="wrap">
+  <div class="top"><div><h1>Kokpit dávek KNG</h1><div class="stamp" id="stamp"></div></div><div class="celkem" id="celkem"></div></div>
+  <section id="cekani" class="alert"></section>
+  <section class="tiles" id="tiles"></section>
+  <div class="note" id="releasy"></div>
+  <section>
+    <div class="top"><h2>Sezení (nearchivovaná)</h2>
+      <div class="legend"><span><i style="background:var(--ok)"></i>hotovo</span><span><i style="background:var(--steel)"></i>teď</span><span><i style="background:var(--warn)"></i>čeká</span></div></div>
+    <div class="rows" id="board"></div>
+    <div class="note">Jen sezení, která nejsou archivovaná; hotové a archivované se skrývají. Fáze (u dávek): kód → testy → mutace → souhrn → integrace → sady → test. Zbývá = odhad koordinace. Kontext = čerpání limitu sezení (nad 60 % žlutě, nad 75 % červeně).</div>
+  </section>
+  <section><h2>Deník</h2><div class="box log"><table id="log"></table></div></section>
+</div>
+
+<script id="data" type="application/json">
+{
+ "aktualizace": "20. 10. 2026 15:45 UTC",
+ "koordinace": {
+  "id": "session_01Ln2mMn7iC6W9ECztHTJpZe",
+  "kontext": 58
+ },
+ "releasy": "vydáno v20.10.7 (b6f49a7, souhrn v20.10.2–7, 15:33 UTC), v20.10.1, v19.10.8, v19.10.5, v19.10.1 · bez releasu jen mezilehlé v20.10.2–6",
+ "cekaNaJV": [
+  "D2 (po nasazení v20.10.4): vyplnit a zveřejnit cenu výjezdu technika v ceníku PROJ (PC.vyjezdTechnikKc, oddíl Doprava). Šablona PROJ v8 s cestovným navazuje na v7 (S10).",
+  "Šablona PROJ v8 (cestovné D2 + vše z v7): vyrábí S10 (CZ + EN/DE/FR, ~1 h) — na test nahrát rovnou v8 (test = v20.10.7), na main až s v20.10.7 v main; všechny čtyři najednou průvodcem. Postup: https://claude.ai/artifact/5RqvHSPuuun2dcUg26UwUD",
+  "Smazat sloučené větve: tlačítko je hotové (W2, 8c0c4f1) — po sloučení a „pošli do main“: Actions → Smazat sloučené větve → Run workflow (poprvé s jen_vypsat = true), https://github.com/vendljar/kalkulator-next-gen-engscalc/actions/workflows/smazat_vetve.yml. Do té doby ručně: https://github.com/vendljar/kalkulator-next-gen-engscalc/blob/claude/integrace-16-10/podklady/VETVE_KE_SMAZANI_20_10.md"
+ ],
+ "dlazdice": [
+  {
+   "k": "main",
+   "v": "v20.10.1",
+   "d": "5dc28d1 · = test (J. V. 20. 10.)",
+   "s": "ok"
+  },
+  {
+   "k": "test",
+   "v": "v20.10.7",
+   "d": "fa08e9c · = integrace (kód b6f49a7 + zápis koordinace)",
+   "s": "ok"
+  },
+  {
+   "k": "integrace",
+   "v": "v20.10.7",
+   "d": "b6f49a7 · O7, D1, D2, B183, V7-N2, U1, W2 — ověřeno",
+   "s": "ok"
+  },
+  {
+   "k": "sady + mutace",
+   "v": "zelené",
+   "d": "b6f49a7: kolo 286/0/6, statické 4/4; mutace O7 16/16 + 25/25, d1 38/38, #151 42/42, D2 18/18, V7-N2 3/3, B189 8/8, B183 11/11 + 5/5, výjimky 40/40",
+   "s": "ok"
+  }
+ ],
+ "faze": [
+  "kód",
+  "testy",
+  "mutace",
+  "souhrn",
+  "integrace",
+  "sady",
+  "test"
+ ],
+ "sezeni": [
+  {
+   "nazev": "ŘÍDÍCÍ 20.10 - Koordinace O7, D1, D2, K29-N1, S9 (v20.10.2–4)",
+   "id": "session_01Ln2mMn7iC6W9ECztHTJpZe",
+   "role": "koordinace",
+   "stav": "run",
+   "stavText": "koordinuje",
+   "faze": null,
+   "eta": "~3 h",
+   "kontext": 58,
+   "kontextTok": 580,
+   "bezi": "2 h 12 min",
+   "hlaseni": "právě teď",
+   "konec": null,
+   "co": "Převzetí koordinace: O7 → D1 → D2 do integrace, sady + mutace → test; K29-N1 jen výsledek J. V.; S9 šablony.",
+   "dalsi": "Předání noční koordinaci"
+  },
+  {
+   "nazev": "V3 #380 + #157 smlouva o dílo v angličtině",
+   "id": "session_01GyotCYY7DhFnyXhceNA3de",
+   "role": "dávka",
+   "stav": "warn",
+   "stavText": "hotovo",
+   "faze": 4,
+   "eta": "hotovo",
+   "kontext": 72,
+   "bezi": null,
+   "hlaseni": "10:00",
+   "konec": null,
+   "co": "V3 + V3b sloučeny (v18.10.7, v18.10.11): DPH režim, skladné, SoD EN/DE/FR, projekce v4 EN/DE/FR",
+   "dalsi": "Nearchivovat — přílohy šablon; čeká kontrola účetní a rodilých mluvčích",
+   "kontextTok": 725
+  },
+  {
+   "nazev": "K29-N1 příplatek za měď bez zastřešení šachty",
+   "id": "session_016n1qtH3wQFbKP1VLQD7jf2",
+   "role": "dávka",
+   "stav": "run",
+   "stavText": "příprava v20.10.8",
+   "faze": 1,
+   "eta": "~1 h",
+   "kontext": 19,
+   "kontextTok": 188,
+   "bezi": "právě",
+   "hlaseni": "12:57 (a8346f4)",
+   "konec": "~17:00 UTC",
+   "co": "J. V.: SLOUČIT jako v20.10.8 — dávka bere integraci v20.10.7, zvyšuje verzi, kolo + mutace K29-N1/mustky",
+   "dalsi": "Souhrn → integrace (v20.10.8) → test až na pokyn J. V."
+  },
+  {
+   "nazev": "S10 šablona OVP-CN PROJ v7 CZ+EN/DE/FR (pro D1, v20.10.3)",
+   "id": "session_01RogHrxV3LS1vj4DZWyoPSL",
+   "role": "dávka",
+   "stav": "run",
+   "stavText": "v8",
+   "faze": null,
+   "eta": "~1 h",
+   "kontext": null,
+   "kontextTok": null,
+   "bezi": "právě",
+   "hlaseni": "15:25",
+   "konec": "~16:30 UTC",
+   "co": "Nové zadání: šablona PROJ v8 (v7 + cestovné D2) CZ + EN/DE/FR — sloučí integraci v20.10.7, --proj-v8 nad svými v7, ověření jako server a vyplnění kódem v20.10.7",
+   "dalsi": "Soubory v8 + artefakt → J. V."
+  },
+  {
+   "nazev": "CONTROLLING — nová sekce Nastavení: předkalkulované náklady po kapitolách pro postkalkulace (A. Mácová)",
+   "id": "session_01TbMCaR4k38Rix8XxoRBnr5",
+   "role": "jiné",
+   "stav": "run",
+   "stavText": "C2",
+   "faze": null,
+   "eta": "~3 h",
+   "kontext": null,
+   "kontextTok": null,
+   "bezi": "právě",
+   "hlaseni": "14:08",
+   "konec": "~19:00 UTC",
+   "co": "J. V. schválil C2 přes noc: obrazovka Nastavení → Controlling a export předkalkulace varianty (C1 hotová)",
+   "dalsi": "C1+C2 → integrace jako další verze; test na pokyn J. V."
+  },
+  {
+   "nazev": "K4 celé kolo s mutacemi + bezpečnostní audit nad test v20.10.7",
+   "id": "session_011TNhhP4qdyPSxXQsiE8nJy",
+   "role": "dávka",
+   "stav": "run",
+   "stavText": "kolo",
+   "faze": null,
+   "eta": "~8 h",
+   "kontext": null,
+   "kontextTok": null,
+   "bezi": "právě",
+   "hlaseni": "15:40",
+   "konec": "~24:00 UTC",
+   "co": "claude/k4-kolo nad test fa08e9c: celé kolo (sady + mutace jádra a serveru + statické) a bezpečnostní audit 1b0e2f7..b6f49a7 (O5–U1, W2 workflow)",
+   "dalsi": "Souhrn a nálezy → ráno J. V."
+  }
+ ],
+ "log": [
+  [
+   "15:45",
+   "J. V. v dialogu: přes noc K4 (celé kolo + audit nad v20.10.7) — spuštěna session_011TNhhP4qdyPSxXQsiE8nJy; K29-N1 SLOUČIT jako v20.10.8 (dávka připravuje větev); Controlling C2 přes noc — ano; main zatím ne."
+  ],
+  [
+   "15:40",
+   "Kokpit: odkazy se zobrazují zkráceně (artefakt …, sezení …, nový release …, název souboru); celá adresa zůstává v odkazu a v bublině po najetí myší."
+  ],
+  [
+   "15:35",
+   "Release v20.10.7 vydán (tag v20.10.7 → b6f49a7, publikováno 15:33 UTC, ověřeno přes GitHub)."
+  ],
+  [
+   "15:27",
+   "J. V.: „nemám šablonu v8“ → S10 vyrobí PROJ v8 (v7 + cestovné D2) CZ + EN/DE/FR nad integrací v20.10.7; na test nahrát rovnou v8."
+  ],
+  [
+   "15:20",
+   "J. V.: „pushni do test“ → test fast-forward 5dc28d1 → fa08e9c (v20.10.7: O7, D1, D2, B183, V7-N2, U1, W2). Release odkaz v20.10.7 v Čeká na vás."
+  ],
+  [
+   "15:16",
+   "S10: šablona PROJ v7 CZ + EN/DE/FR ověřená (titul, úvod DPZ, hvězdička, bloky studie OK s kódem v20.10.3). Na v20.10.1 by zůstaly viditelné symboly → na main až s v20.10.3+. Nalezena chyba: „vyrobit jazykovou verzi“ v aplikaci nechá česky nadpis „CENA ZA … (DPZ)*“ → do příští kódové dávky."
+  ],
+  [
+   "15:00",
+   "Integrace b6f49a7 (v20.10.7) VŠE ZELENÉ: kolo 286/0/6, statické 4/4, mutace B183 11/11 + 5/5, výjimky 40/40. Fast-forward test zamítla kontrola oprávnění → čeká na „pushni do test“. Release odkaz v20.10.7 (souhrn v20.10.2–7) v Čeká na vás."
+  ],
+  [
+   "14:24",
+   "CONTROLLING C1 hotová (číselník skupin, mapování, /api/controlling jen admin, záloha/obnova; testy zelené, mutace #447 11/11). Neslučuje se do dnešního test — půjde s C2; čeká na pokyn J. V. k C2."
+  ],
+  [
+   "14:20",
+   "Mutace nad 5b07d3b vše chycené (D2 18/18, V7-N2 3/3, B189 8/8). B183 (nahoru, a4859db; kolo 281/0/6, mutace 11/11 + 5/5) sloučena → integrace b6f49a7 (v20.10.7; B183 v roadmapě #448). Běží kolo + mutace B183 a výjimek. B183 archivována."
+  ],
+  [
+   "14:10",
+   "Kolo nad integrací 5b07d3b (v20.10.7: O7, D1, D2, V7-N2, U1, W2) VŠE ZELENÉ: 286/0/6, statické 4/4. Běží cílené mutace D2, V7-N2, B189."
+  ],
+  [
+   "13:50",
+   "Kontrola: kolo nad 5b07d3b běží (sady v Node), B183 kód nahoru hotový (302abcc, testy), S10 šablona v7 hotová (artefakt https://claude.ai/artifact/5RqvHSPuuun2dcUg26UwUD), CONTROLLING: J. V. odpověděl J1–J11, běží C1. Kontext koordinace 53 %."
+  ],
+  [
+   "13:45",
+   "Mutace nad 7268aa4 vše chycené (#151 42/42). Sloučeny D2 (c16dc34; konflikty nabidka_proj.js, vyrob_sablony.js v7+v8, pravidel kontrol 43, roadmapa), V7-N2 (52a84a8), U1 (59b8a2f), W2 (5b07d3b) → integrace v20.10.7. Běží kolo bez mutací. D2 archivována."
+  ],
+  [
+   "13:21",
+   "J. V. k B183: plochu výjimky zaokrouhlovat na 0,1 m² NAHORU (pokryje horší variantu); dříve schválené výjimky beze změny. Předáno B183 k úpravě."
+  ],
+  [
+   "13:19",
+   "B183 hotová (b088133, v20.10.5): kolo 281/0/6, mutace B183 9/9 + 5/5, výjimky 40/40. Mutace nad 7268aa4: jádro O7 16/16, d1 38/38, server O7 25/25; dobíhá #151."
+  ],
+  [
+   "12:58",
+   "K29-N1 hotová (a8346f4): měď jen se zastřešením v nabídce; testy 222/0/1, mutace K29-N1 5/5, jádro 316/316. Nesloučeno — rozhodne J. V."
+  ],
+  [
+   "12:43",
+   "D2 hotová (68b0bf4, v20.10.4): kolo 282/0/6, mutace D2 18/18. Sloučí se po doběhnutí mutací O7/D1. Controlling přečíslován na #447 (D2 má #444–#446)."
+  ],
+  [
+   "12:40",
+   "Kolo nad integrací 7268aa4 (O7 + D1) VŠE ZELENÉ: sady 284/0/6, statické 3/3. Běží cílené mutace (jádro O7, d1; server O7, #151)."
+  ],
+  [
+   "12:36",
+   "CONTROLLING fáze 1 hotová (893fb8d): artefakt https://claude.ai/artifact/MNaTnXQ4847f2rNiAT9br7, otázky J1–J11 → Čeká na vás. Roadmapa přečíslována na #444 (kolize s V7-N2)."
+  ],
+  [
+   "12:29",
+   "W2 hotová (8c0c4f1): workflow „Smazat sloučené větve“ + nastroje/sloucene_vetve.sh, test 17/0 (pojistka), kolo 281/0/6, statické 4/4. Sezení archivováno; tlačítko bude vidět po main."
+  ],
+  [
+   "12:27",
+   "Archivovány hotové O7, D1 (obě v integraci), V7-N2 (ee3ee33) a U1 (bb24f4a) — větve čekají na sloučení. Spuštěno sezení CONTROLLING session_01TbMCaR4k38Rix8XxoRBnr5 (návrh A. Mácové 15. 9. → sekce Nastavení → Controlling)."
+  ],
+  [
+   "12:24",
+   "U1 hotová (bb24f4a, v20.10.7): tlačítko „Zapsat výchozí hodnoty“ zapíše a zveřejní, stav „Neuloženo online“ a zveřejnění změn přímo na záložce Smlouvy / Šablony, zarovnání vstupů. Kolo 282/0/6."
+  ],
+  [
+   "12:25",
+   "O7 hotová (bbde363, v20.10.2; kolo 283/0/6, mutace O7 16/16 + 25/25). O7 + D1 sloučeny → integrace 7268aa4 (konflikty jen dokumentace, verze, pravidel kontrol 38 → 39). --kontrola: jádro 363, server 663 úseků. Běží kolo bez mutací."
+  ],
+  [
+   "12:20",
+   "J. V.: kontrola účetní a rodilých mluvčích teď není třeba — odstraněno z „Čeká na vás“. Prověřen e-mail D. Sikory 18. 9. 20:52 (CN-0377): všechny body už opravené (v21.9.2 ceník ČR/ZAHR, zámek „jen ke čtení“ a varianta 2, duplikace; v12.10.1 telefon; v19.10.x kapitoly IV.–VI. a platební podmínky v EN/DE/FR)."
+  ],
+  [
+   "12:13",
+   "J. V.: první kopie zálohy na Disk („_Zaloha Netlify DB“) provedena, platební podmínky OCK/PROJ a texty PROJ zkontrolovány a zveřejněny."
+  ],
+  [
+   "12:11",
+   "V7-N2 hotová (ee3ee33, v20.10.6): kolo 281/0/6, statické 3/3, mutace V7-N2 3/3 + B189 8/8, otázky žádné. Sloučí se po B183."
+  ],
+  [
+   "12:10",
+   "Kontrola: O7 56aa5cd (dořešena přeživší #151 N6, běží kolo), D1 hotová 8c912a7, D2 WIP (kolo), B183 WIP 73beb27, V7-N2 fca58ae, W2 4a75d93, K29-N1 mutace jádra, U1 a S10 začínají. Kontext koordinace 29 %."
+  ],
+  [
+   "12:08",
+   "J. V. potvrdil titul nabídky PROJ bez studie „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“ (D1 Q3) → předáno S10 a D1."
+  ],
+  [
+   "12:06",
+   "J. V.: „vyrob mi teď v7 pro ostrou verzi“ → dávka S10 session_01RogHrxV3LS1vj4DZWyoPSL (PROJ v7 CZ + EN/DE/FR). Upozornění: main = v20.10.1 nové symboly v7 nezná — nahrát až s v20.10.3 v main."
+  ],
+  [
+   "12:05",
+   "J. V.: potřebuje šablony PROJ v7. Rozbor větví: šablonu mění jen D1 (PROJ v7: titul, úvod DPZ, hvězdička) a D2 (PROJ v8: cestovné, upravitelný úvod); OCK v15 a SoD beze změny (O7, B183, V7-N2, U1, K29-N1 bez nových symbolů). Plán: po D2 dávka S10 vyrobí PROJ v8 CZ + EN/DE/FR z v5/v6 na Disku."
+  ],
+  [
+   "12:00",
+   "J. V.: archivovány S9 a ŘÍDÍCÍ 19.10. U1 upřesněno: „Zapsat výchozí hodnoty do Firmy“ → „Zapsat výchozí hodnoty“, stisk zapíše a rovnou zveřejní, potvrzení na stránce, kde se data zadávají (ne v záložce Firma)."
+  ],
+  [
+   "11:57",
+   "J. V.: šablony nahrané. Nenašel tlačítko „Zveřejnit“ z hlášky v Smlouvy / Šablony (je v Nastavení → Firma dole) a pole Limit smluvních pokut není zarovnané → dávka U1 session_015dsB1LmutbtCMBhm7N7GiT (v20.10.7)."
+  ],
+  [
+   "11:55",
+   "D1 hotová (8c912a7, v20.10.3): kolo 282/0/6, statické 3/3, mutace d1 38/38 + d1 q2 5/5. Čeká na sloučení po O7. Pro J. V.: znění titulu bez studie, výroba šablony PROJ v7."
+  ],
+  [
+   "11:48",
+   "J. V. chce mazat sloučené větve na jeden klik → dávka W2 session_01FAhspUBJD5mzveFVtNiypf: tlačítko v GitHub Actions (workflow_dispatch, vidět až z main)."
+  ],
+  [
+   "11:47",
+   "J. V.: V7-N2 — otázku pro účetní neřešit; v ČR výchozí přenesená daňová povinnost (i bez DIČ), obchodník může změnit. Spuštěna dávka V7-N2 session_013g1WKAjPEuoXQNuFy8CKHR (v20.10.6, nad test)."
+  ],
+  [
+   "11:46",
+   "J. V.: B183 → zaokrouhlení plochy výjimky na 0,1 m² (volba b). Spuštěna dávka B183 session_016BjwuA2q9Y6AaW6tAV126L (v20.10.5, nad test); pořadí slučování O7 → D1 → D2 → B183."
+  ],
+  [
+   "11:50",
+   "S9 hotová: šablony k nahrání (CN OCK v15, OVP-CN PROJ v6, SoD realizace v3, projekce v4, plná moc v1; 7 .docx v souborech sezení S9) https://claude.ai/artifact/ChFFv9Y2pN92S87b3L1TAF → Čeká na vás. Seznam 33 větví celých v test ke smazání (6fe92d8)."
+  ],
+  [
+   "11:55",
+   "Koordinaci převzalo session_01Ln2mMn7iC6W9ECztHTJpZe (ŘÍDÍCÍ 20.10). Dávkám O7, D1, D2, K29-N1, S9 ohlášeno převzetí (souhrny sem). Stav: O7 666a6ea — mutace O7 16/16 + 25/25, dobíhá #151, pak oprava overit_lista; D1 4be4b5b — Q1–Q3 + popisek hotové, běží testy."
+  ],
+  [
+   "11:45",
+   "J. V.: B192 (heslo správce → potvrzení) zatím neřešit — odloženo. main už = test (v20.10.1), položka „main“ v nepovinných odpadá."
+  ],
+  [
+   "11:40",
+   "J. V.: „pošli aktuální test do main“ → main fast-forward 1cbab3a → 5dc28d1 (v20.10.1). Profily portálu: dnešní stav správně (sloupek 40×40, příčník 80×40), návrh D1 se nepoužije. Spuštěny K29-N1 (měď bez zastřešení, nad test, neslučovat bez J. V.) a S9 (šablony k nahrání). Koordinaci převzalo ŘÍDÍCÍ 20.10 session_01Ln2mMn7iC6W9ECztHTJpZe (staré ~70 % kontextu). Předávka b491f78."
+  ]
+ ],
+ "celkem": {
+  "eta": "~8 h",
+  "detail": "Noc: K4 (~24:00 UTC), K29-N1 v20.10.8 → integrace (~17:30), S10 šablona v8 (~16:30), Controlling C2 (~19:00); ráno souhrn. test/main jen na pokyn J. V."
+ }
+}
+</script>
+<script>
+(function(){
+  var D;
+  try{D=JSON.parse(document.getElementById('data').textContent);}
+  catch(e){var c0=document.getElementById('cekani');c0.className='alert';c0.innerHTML='<div class="h">Data kokpitu jsou poškozená — koordinace je opraví při příští aktualizaci.</div><div class="mono">'+String(e.message).replace(/[<&]/g,'')+'</div>';return;}
+  /* K4-N21 (O9): třídy jen z povoleného seznamu a čísla jen jako čísla — jdou
+   * do atributu class / do HTML bez escapu. */
+  var STAVY={ok:1,warn:1,run:1,bad:1,idle:1};
+  var trida=function(x){return STAVY.hasOwnProperty(x)?x:'idle'};
+  var cislo=function(x){return (x!=null&&x!==''&&isFinite(+x))?+x:null};
+  var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+  /* Odkazy v textech vždy živé a proklikávací (J. V. 19. 10. 2026). */
+  /* Krátký popisek odkazu (J. V. 20. 10. 2026): href zůstává celý, zobrazí se jen čitelný název. */
+  var kratko=function(u){var m;
+    if((m=u.match(/claude\.ai\/artifact\/([A-Za-z0-9]+)/)))return 'artefakt '+m[1].slice(0,6)+'…';
+    if((m=u.match(/claude\.ai\/code\/(session_[A-Za-z0-9]+)/)))return 'sezení '+m[1].slice(8,14)+'…';
+    if((m=u.match(/releases\/new\?tag=([^&]+)/)))return 'nový release '+decodeURIComponent(m[1]);
+    if((m=u.match(/releases\/tag\/([^/?#]+)/)))return 'release '+decodeURIComponent(m[1]);
+    if((m=u.match(/actions\/workflows\/([^/?#]+)/)))return 'Actions: '+m[1];
+    if((m=u.match(/github\.com\/[^/]+\/[^/]+\/tree\/(.+)$/)))return 'větev '+decodeURIComponent(m[1]);
+    if((m=u.match(/github\.com\/[^/]+\/[^/]+\/blob\/[^/]+\/(.+)$/)))return decodeURIComponent(m[1]).split('/').pop();
+    var t=u.replace(/^https?:\/\//,'');return t.length>40?t.slice(0,38)+'…':t;};
+  var lnk=function(s){return esc(s).replace(/https?:\/\/[^\s<"]+/g,function(u){var k='';var m=u.match(/[.,;:)\u201c\u201d]+$/);if(m){k=m[0];u=u.slice(0,-k.length);}return '<a href="'+u+'" target="_blank" rel="noopener" title="'+u+'">'+kratko(u)+'</a>'+k;})};
+  var pill={run:'p-run',ok:'p-ok',warn:'p-warn',bad:'p-bad',idle:'p-idle'};
+  var ctx=function(p,tok){
+    p=cislo(p); tok=cislo(tok);
+    var tt=(tok!=null)?' · '+tok+' tis.':'';
+    if(p==null) return '<div class="ctx"><span class="mono">kontext ?</span><div class="bar"><i style="width:0"></i></div></div>';
+    var c=p>=75?'b':(p>=60?'w':'');
+    return '<div class="ctx"><span class="mono">kontext '+p+' %'+tt+'</span><div class="bar"><i class="'+c+'" style="width:'+Math.min(p,100)+'%"></i></div></div>'};
+  document.getElementById('stamp').textContent=D.aktualizace;
+  (function(){var C=D.celkem,el=document.getElementById('celkem');if(!el||!C)return;
+    el.innerHTML='<div class="ck">do konce úkolu</div><div class="cv">'+esc(C.eta)+'</div><div class="cd">'+lnk(C.detail||'')+'</div>';})();
+  var c=document.getElementById('cekani');
+  if(D.cekaNaJV.length){c.innerHTML='<div class="h">Čeká na vás</div><ol>'+D.cekaNaJV.map(function(x){return '<li>'+lnk(x)+'</li>'}).join('')+'</ol>'}
+  else{c.className='alert empty';c.innerHTML='<div class="h">Nic na vás nečeká — koordinace běží sama.</div>'}
+  document.getElementById('tiles').innerHTML=D.dlazdice.map(function(t){
+    return '<div class="tile '+trida(t.s)+'"><div class="k">'+esc(t.k)+'</div><div class="v">'+esc(t.v)+'</div><div class="d">'+esc(t.d)+'</div></div>'}).join('');
+  document.getElementById('releasy').innerHTML='<b>Releasy:</b> '+lnk(D.releasy||'');
+  document.getElementById('board').innerHTML=D.sezeni.map(function(s){
+    var ph='';
+    s.faze=cislo(s.faze);
+    if(s.faze!=null){
+      var st=D.faze.map(function(f,i){var k=i<s.faze?'done':(i===s.faze?(s.stav==='warn'?'blk':'now'):'');return '<div class="step '+k+'" title="'+esc(f)+'"></div>'}).join('');
+      ph='<div class="ph"><div class="steps">'+st+'</div><div class="stepl">fáze: <b>'+esc(D.faze[s.faze]||'v test')+'</b> '+Math.min(s.faze+1,D.faze.length)+'/'+D.faze.length+'</div></div>';
+    }
+    return '<div class="row r-'+trida(s.stav)+'"><div class="main"><div class="name">'+esc(s.nazev)+'</div>'+
+      '<div class="meta"><span class="pill '+pill[trida(s.stav)]+'">'+esc(s.stavText)+'</span><span class="role">'+esc(s.role)+'</span><span class="mono sid">'+esc(s.id)+'</span></div>'+
+      '<div class="co">'+lnk(s.co)+'</div>'+ph+'</div>'+
+      '<div class="right"><div><div class="eta">'+esc(s.eta)+'</div><div class="etal">zbývá</div>'+(s.konec?'<div class="rt">konec ~'+esc(s.konec)+'</div>':'')+(s.bezi?'<div class="rt">běží '+esc(s.bezi)+'</div>':'')+'</div>'+ctx(s.kontext,s.kontextTok)+'</div>'+
+      '<div class="next"><b>Další:</b> '+lnk(s.dalsi)+'</div></div>'}).join('');
+  document.getElementById('log').innerHTML=D.log.map(function(r){return '<tr><td class="cas">'+esc(r[0])+'</td><td>'+lnk(r[1])+'</td></tr>'}).join('');
+})();
+</script>
+
+</body></html>

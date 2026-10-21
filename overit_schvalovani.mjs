@@ -302,6 +302,101 @@ test('a řekne se proč', /uzamčená/.test(poslednihlaska), poslednihlaska);
 test('přepočet uzamčenou variantu nepřepisuje',
   (await stav()).schvalenoProc === 10, JSON.stringify(await stav()));
 
+/* ---------- P1 kola 16 (K16-N73): role slevy = role přihlášeného ---------- */
+const p1 = await page.evaluate(() => {
+  const puvodni = ONLINE_STAV.ja;
+  const s = slevaDefault();
+  ONLINE_STAV.ja = { email: 'v@x.cz', jmeno: 'Ved', role: 'Vedoucí' };
+  slevaNastav(s, 'procenta', 7);
+  const poZmene = s.role;
+  slevaNastav(s, 'role', 'Administrátor');
+  const poVolbe = s.role;
+  ONLINE_STAV.ja = null;
+  slevaNastav(s, 'procenta', 9);
+  const offline = s.role;
+  ONLINE_STAV.ja = puvodni;
+  return { poZmene, poVolbe, offline };
+});
+test('P1: změna procent zapíše roli přihlášeného', p1.poZmene === 'Vedoucí', JSON.stringify(p1));
+test('P1: roli slevy nejde zvolit', p1.poVolbe === 'Vedoucí', JSON.stringify(p1));
+test('P1: bez přihlášení zůstává role slevy', p1.offline === 'Vedoucí', JSON.stringify(p1));
+await page.evaluate(() => { prepniTab('kalk'); render(); });
+test('P1: karta slevy už nenabízí výběr „Role zadavatele"',
+  !(await page.locator('#ock-sleva').innerText()).includes('Role zadavatele'));
+
+/* ---------- 9) cenové výjimky (rozhodnutí J. V. 13. 10. 2026) ----------
+ * Směs platného ceníku a starších cen a pás „jiné" pod ceníkovou sazbou:
+ * obchodník bez schválení dokument nevytvoří (zábrana „cenovaVyjimka"),
+ * požádá v záložce, nadřízený schválí, změna směsi schválení zruší.
+ * Platný ceník = záznam programu ze „složky" (PROG_STAV), týž, ze kterého
+ * počítá server. Vedoucí má z oddílu 7 právo sleva.schvalovani. */
+await page.evaluate(([c, cp]) => {
+  zobrNahled('');
+  PROG_STAV.db = { platny: { verze: 2, cenik: JSON.parse(JSON.stringify(c)), cenikProj: JSON.parse(JSON.stringify(cp)),
+    zahranicni: { ceny: {}, jenZahr: {} } } };
+  ZAK = novaZakazka(); ZAK.cislo = '2026 - CN - 0777'; syncVarianta();
+  const d = aktivniVarianta(ZAK).data;
+  d.cenik = JSON.parse(JSON.stringify(c)); d.proj.cenik = JSON.parse(JSON.stringify(cp)); syncVarianta();
+  d.cenik.profilasKgKc = (+d.cenik.profilasKgKc || 0) + 5;     // starší cena ve směsi
+  render();
+}, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj()]);
+await page.waitForTimeout(250);
+const vyjStav = () => page.evaluate(() => {
+  const k = kontrolyStavAkt();
+  const d = aktivniVarianta(ZAK).data;
+  return { brani: k.kodyBrani.includes('cenovaVyjimka'), text: kontrolyZabranaDokumentu(k, 'nabidka'),
+    proj: !!kontrolyZabranaDokumentu(k, 'nabidkaProj'), rec: d.cenovaVyjimka || null };
+});
+await page.evaluate(() => zobrNahled('Obchodník'));
+await page.waitForTimeout(250);
+let vs = await vyjStav();
+test('výjimky: obchodník — směs ceníku zastaví nabídku OCK i PROJ', vs.brani && vs.proj && /směs/.test(vs.text) && /Schvalování/.test(vs.text), vs);
+t = await textZalozky();
+test('výjimky: karta „Cenové výjimky" ukazuje variantu a co se liší (bez částek)',
+  /Cenové výjimky/i.test(t) && /Profily/.test(t) && /bez žádosti/.test(t), t.slice(-700));
+test('výjimky: obchodník má „Požádat o schválení", ne „Schválit"',
+  await tlacitko('Požádat o schválení').isVisible() && await tlacitko('Schválit').count() === 0);
+await page.evaluate(() => { window.__dlgTexty = []; vyjRozhodni(ZAK.aktivni, 'schvalit'); });
+await page.waitForTimeout(200);
+test('výjimky: schválení z konzole bez práva neprojde', !(await vyjStav()).rec && /nadřízený/.test(await dlgPosledni(page)), await dlgPosledni(page));
+await tlacitko('Požádat o schválení').click();
+await page.waitForTimeout(250);
+vs = await vyjStav();
+test('výjimky: žádost zapsána (čeká), zábrana trvá', vs.rec && vs.rec.stav === 'čeká na schválení' && !!vs.rec.obsah && vs.brani, vs);
+await page.evaluate(() => zobrNahled('Vedoucí'));
+await page.waitForTimeout(250);
+t = await textZalozky();
+test('výjimky: vedoucí s právem schvalovat má „Schválit"', await tlacitko('Schválit').isVisible(), t.slice(-500));
+await tlacitko('Schválit').click();
+await page.waitForTimeout(250);
+await page.evaluate(() => zobrNahled('Obchodník'));
+await page.waitForTimeout(250);
+vs = await vyjStav();
+test('výjimky: po schválení zábrana mlčí (obchodník smí tisknout)', vs.rec && vs.rec.stav === 'schváleno' && /Vedoucí/.test(vs.rec.schvalil || '') && !vs.brani, vs);
+await page.evaluate(() => { aktivniVarianta(ZAK).data.cenik.profilasKgKc += 1; render(); });
+await page.waitForTimeout(250);
+vs = await vyjStav();
+test('výjimky: změna směsi po schválení — zábrana zpět', vs.brani, vs);
+t = await textZalozky();
+test('výjimky: záložka schválení k jinému obsahu vrátí do „čeká"', /čeká na rozhodnutí/.test(t) && (await vyjStav()).rec.stav === 'čeká na schválení', t.slice(-500));
+await page.evaluate(() => zobrNahled(''));
+await page.waitForTimeout(250);
+test('výjimky: administrátor — zábrana mlčí (právo ceníku)', !(await vyjStav()).brani);
+/* Pás „jiné" pod ceníkovou sazbou, ceník jinak platný. */
+await page.evaluate(() => {
+  const d = aktivniVarianta(ZAK).data;
+  d.cenik.profilasKgKc = PROG_STAV.db.platny.cenik.profilasKgKc; delete d.cenovaVyjimka;
+  d.ock.zadani.oplasteni = { rezim: 'poStenach', steny: { A: { odM: 0, pasy: [{ typ: 'jine', nazev: 'Deska', naklad: 1, doM: null }] } } };
+  /* Od B178 (v17.10.4) nese výjimka meze po ořezu na zdvih + přejezd —
+   * šachta bez rozměrů (nová zakázka) pás nemá. Smyšlené rozměry. */
+  Object.assign(d.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2 });
+  zobrNahled('Obchodník'); render();
+});
+await page.waitForTimeout(250);
+vs = await vyjStav();
+test('výjimky: pás „jiné" 1 Kč/m² zastaví nabídku obchodníka', vs.brani && /„jiné"/.test(vs.text), vs);
+await page.evaluate(() => { PROG_STAV.db = null; zobrNahled(''); render(); });
+
 test('žádná chyba JavaScriptu', chyby.length === 0, chyby.slice(0, 2).join(' | '));
 
 await prohlizec.close();

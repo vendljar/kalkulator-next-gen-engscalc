@@ -8,7 +8,8 @@
  * 4. 8. 2026 stěhovaly online firemní údaje; proto i stejný vzor.
  *
  * GET  /api/zobrazeni  → { ok, zobrazeni: { matice, kdo, kdy } | null } — každý přihlášený
- * POST /api/zobrazeni { matice } → uložit — JEN Administrátor
+ * POST /api/zobrazeni { matice, hesloSpravce } → uložit — JEN Administrátor
+ *      s potvrzením vlastním heslem (B168, 18. 10. 2026)
  *
  * Ukládá se do úložiště `program` pod klíč `zobrazeni`, aby to noční otisk
  * i ruční záloha braly s sebou jedním čtením.
@@ -21,8 +22,17 @@
  *
  * POZOR: tohle je vrstva pohodlí, ne hranice bezpečnosti. Skutečné hranice
  * (zveřejnit ceník, spravovat účty, pořídit otisk databáze) drží dál příslušné
- * funkce vlastní kontrolou role a maticí se ovlivnit nedají. */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+ * funkce vlastní kontrolou role a maticí se ovlivnit nedají.
+ *
+ * HESLO SPRÁVCE U ZÁPISU (B168, audit 15. 10. 2026, zadání 18. 10. 2026).
+ * Matice přesto řídí i serverová práva — přístup do CRM (pipedrive.mjs),
+ * čtení nákladového ceníku (program.mjs), úpravy ceníku v zakázce
+ * (zakazka_kontrola.mjs). Kdo získal cookie správce, by si jediným POST
+ * otevřel tyhle cesty obyčejnému účtu. Zápis proto chce totéž potvrzení
+ * jako citlivé akce účtů (B77): pole `hesloSpravce`, odmítnutí 401/429
+ * s `kod: 'hesloSpravce'`, tentýž limit pokusů. Heslo se ověří dřív, než
+ * se čte matice, a do záznamu se neukládá. */
+import { uloziste, vyzadujRoli, json, potvrdHesloSpravce } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
 export default async (req) => {
@@ -42,6 +52,10 @@ export default async (req) => {
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
   if (chyba) return chyba;
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
+  /* B168: matice řídí i serverová práva — jen s vlastním heslem správce. */
+  { const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce); if (stop) return stop; }
 
   const matice = ZOB.zobrazeniOciste(t && t.matice);
   const zaznam = { matice, kdo: relace.email, kdy: new Date().toISOString() };

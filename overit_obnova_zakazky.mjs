@@ -44,6 +44,10 @@ const dlgStub = async (page) => page.evaluate(() => {
   window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(true); };
   window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
   window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve(v == null ? '' : v); };
+  /* B168 (18. 10. 2026): uložení matice zobrazení chce heslo správce — harness
+   * odpoví heslem zkušebního správce (`window.__dlgHeslo` ho přebije, null = zrušeno). */
+  window.dotazHeslo = (t) => { (window.__dlgTexty = window.__dlgTexty || []).push(String(t));
+    return Promise.resolve(window.__dlgHeslo === undefined ? 'Zkusebni.Heslo.123' : window.__dlgHeslo); };
 });
 const dlgPosledni = async (page) => page.evaluate(() =>
   (window.__dlgTexty && window.__dlgTexty.length) ? window.__dlgTexty[window.__dlgTexty.length - 1] : '');
@@ -112,10 +116,33 @@ const pred = await page.evaluate(() => ({
 }));
 test('zakázka se uložila s přirážkou 40 %', pred.marze === 0.40 && !!pred.soubor, JSON.stringify(pred));
 
+/* ČEKÁ SE NA PODMÍNKU, NE NA HODINKY (22. 9. 2026).
+ *
+ * Po `reload()` běží přihlášení a návrat k poslední zakázce asynchronně.
+ * Pevné `waitForTimeout(2000)` proto sadu dělalo NESTABILNÍ: na volném stroji
+ * stihla doběhnout, pod zátěží ne — a test pak hlásil „přirážka se ztratila",
+ * ačkoli se jen ještě nestihla načíst. Test, který někdy lže, je horší než
+ * žádný; v CI by navíc červenal náhodně a lidé by si zvykli ho přehlížet.
+ *
+ * Čeká se tedy na to, co nás doopravdy zajímá: že je uživatel přihlášený,
+ * nic se nenačítá a zakázka je otevřená. Když se to nestane do limitu,
+ * pokračuje se dál a kontrola níž selže s konkrétním číslem — což je
+ * správné selhání, ne timeout uprostřed harnessu. */
+const pockejNaObnovu = async (page) => {
+  try {
+    await page.waitForFunction(() => {
+      try { return !!ONLINE_STAV.ja && !ONLINE_STAV.pracuje && !!ONLINE_STAV.soubor; }
+      catch (e) { return false; }
+    }, null, { timeout: 20000 });
+  } catch (e) { /* necháme selhat kontrolu, ne harness */ }
+  await page.waitForTimeout(300);
+};
+
+
 /* 2) obnovení stránky (F5) */
 await page.reload();
 await page.waitForFunction(() => typeof window.render === 'function');
-await page.waitForTimeout(1200);
+await pockejNaObnovu(page);
 await dlgStub(page);
 const po = await page.evaluate(() => ({
   marze: aktivniVarianta(ZAK).data.cenik.marze, cislo: ZAK.cislo,
@@ -124,6 +151,35 @@ const po = await page.evaluate(() => ({
 test('po obnovení stránky je zakázka zase otevřená', po.soubor === pred.soubor, JSON.stringify(po));
 test('a přirážka v ní zůstala 40 %', po.marze === 0.40, po.marze);
 test('i číslo nabídky sedí', /0999/.test(po.cislo), po.cislo);
+
+/* 2b) VYPRŠELÁ RELACE → RUČNÍ PŘIHLÁŠENÍ (nález N34 revize v22.9.9).
+ *
+ * Krok 2 měří F5 se ŽIVOU relací — přihlášení proběhne samo a nikdo nic
+ * nepíše. Jenže relace vyprší za dvanáct hodin a pak se člověk přihlásí
+ * RUKAMA: napíše e-mail a heslo a klikne. Posluchače „uživatel něco udělal"
+ * sedí na celém dokumentu, přihlašovací okno je v tomtéž dokumentu, takže
+ * značka byla nastavená dřív, než se vůbec přihlásil — a návrat k poslední
+ * zakázce se neprovedl. Tady se to zkouší skutečným psaním (page.fill)
+ * a kliknutím, ne voláním funkce. */
+cookieJar = '';                                   // relace vypršela
+await page.reload();
+await page.waitForFunction(() => typeof window.render === 'function');
+await page.waitForSelector('#onlineEmail', { timeout: 10000 });
+await dlgStub(page);
+const predPrihlasenim = await page.evaluate(() => ({ ja: !!ONLINE_STAV.ja, soubor: ONLINE_STAV.soubor }));
+test('(relace opravdu vypršela: nikdo přihlášený, žádná zakázka otevřená)',
+  !predPrihlasenim.ja && !predPrihlasenim.soubor, JSON.stringify(predPrihlasenim));
+await prihlas();
+await pockejNaObnovu(page);
+const poRucnim = await page.evaluate(() => ({
+  soubor: ONLINE_STAV.soubor, marze: aktivniVarianta(ZAK).data.cenik.marze,
+  zmena: !!ONLINE_STAV.zmenaUzivatele,
+}));
+test('po ručním přihlášení se otevře zakázka, na které se pracovalo (N34)',
+  poRucnim.soubor === pred.soubor, JSON.stringify(poRucnim));
+test('i s přirážkou 40 %', poRucnim.marze === 0.40, poRucnim.marze);
+test('psaní do přihlašovacího okna se za práci na zakázce nepočítá',
+  poRucnim.zmena === false, JSON.stringify(poRucnim));
 
 /* 3) nová zakázka značku zahodí — po refreshi se pak není kam vracet */
 /* novaZakazkaUI() se od 2. 9. 2026 ptá in-app modálem (Promise) — stub

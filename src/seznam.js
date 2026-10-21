@@ -79,10 +79,12 @@ function seznamSloupec(id) {
 /* Bez diakritiky a bez velkých písmen: obchodník hledá „hejtmanska", ne
  * „Hejtmánská". Rozdělení na slova znamená, že „opr 500" najde i řádek,
  * kde je mezi tím ještě něco jiného. */
+/* Německé „ß" se v hledání rovná „ss" (P15 / K16-N85, 25. 9. 2026): adresy
+ * staveb v Německu se píšou oběma způsoby a obchodník napíše „strasse". */
 function seznamNorm(s) {
   return String(s == null ? '' : s)
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase().trim();
+    .toLowerCase().replace(/ß/g, 'ss').trim();
 }
 
 function seznamSlova(dotaz) {

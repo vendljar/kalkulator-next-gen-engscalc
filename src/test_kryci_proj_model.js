@@ -354,11 +354,18 @@ test('sekce zobrazené u nabídky PROJ se v krycím listu opravdu jmenují stejn
   kp.KRYCI_PROJ_NABIDKA_SEKCE.filter(n => !kp.KRYCI_PROJ_SEKCE.some(s => s.sekce === n)).join(','));
 test('všechny symboly mají prefix PODM_',
   Object.keys(sym).every(k => k.indexOf(kr.PODM_PREFIX) === 0));
+/* Jen pole, která jsou u varianty vidět: řádky plánu plateb (`plan`) a pole
+ * dřívějšího znění zálohy a fakturace (`stary`) se řídí variantou stejně
+ * jako v tisku (revize etapy B, 30. 9. 2026 — do té doby plnila symboly
+ * i skrytá pole). Tahle sada modul plánu nenačítá, platí tu dřívější znění. */
 const poleNabidky = [].concat(...kp.KRYCI_PROJ_SEKCE
-  .filter(s => kp.KRYCI_PROJ_NABIDKA_SEKCE.includes(s.sekce)).map(s => s.pole));
+  .filter(s => kp.KRYCI_PROJ_NABIDKA_SEKCE.includes(s.sekce)).map(s => s.pole.filter(p => kp.kryciProjPoleViditelne(p, c))));
 test('každé pole zobrazené u nabídky PROJ má svůj symbol',
   poleNabidky.every(p => (kr.PODM_PREFIX + kr.kryciSymbolId(p.id)) in sym),
   poleNabidky.filter(p => !((kr.PODM_PREFIX + kr.kryciSymbolId(p.id)) in sym)).map(p => p.id).join(','));
+test('řádky plánu plateb, které u varianty nejsou vidět, symbol nemají',
+  c.planStary && !('PODM_PLAN_PREDVOLBA' in sym) && !('PODM_PLAN_DPZ' in sym) && 'PODM_ZALOHA' in sym,
+  Object.keys(sym).filter(k => /^PODM_(PLAN|ZALOHA)/.test(k)).join(','));
 test('symbol nikdy není undefined', Object.keys(sym).every(k => typeof sym[k] === 'string'));
 /* Řádky činností do šablony nepatří – rozsah prací má nabídka vlastní. */
 test('činnosti se do podmínkových symbolů nedostávají',
@@ -396,14 +403,19 @@ test('texty symbolů projdou překladem', symP.PODM_PLATCE_DPH === 'Yes', symP.P
 
 const dBo = kp.kryciProjData(zak, v, JEKLY, 'bo');
 const dTd = kp.kryciProjData(zak, v, JEKLY, 'techdata');
-const radky = (dd) => [].concat(...dd.sekce.map(s => s.radky));
+/* Tabulka „Hodiny z kalkulace" (konec BO, 14. 10. 2026) nejsou pole formuláře — hlídá ji test_kryci_hodiny.js. */
+const radky = (dd) => [].concat(...dd.sekce.filter(s => s.sekce !== 'Hodiny z kalkulace').map(s => s.radky));
 const labely = (dd) => radky(dd).map(r => r[0]);
 const najdiRadek = (dd, label) => (radky(dd).find(r => r[0] === label) || [])[1];
 
+/* Etapa B plánu plateb (30. 9. 2026): řádky plánu (`plan`) a pole dřívějšího
+ * znění zálohy a splátek (`stary`) se tisknou podle varianty — počítá se
+ * proto jen s poli, která jsou pro tuto variantu vidět. */
+const vidi = (p) => kp.kryciProjPoleViditelne(p, kp.kryciProjCtx(zak, v));
 test('verze Backoffice obsahuje jen pole své verze',
-  radky(dBo).length === VSECHNA_POLE.filter(p => p.verze.includes('bo')).length, radky(dBo).length);
+  radky(dBo).length === VSECHNA_POLE.filter(p => p.verze.includes('bo') && vidi(p)).length, radky(dBo).length);
 test('verze Techdata obsahuje jen pole své verze',
-  radky(dTd).length === VSECHNA_POLE.filter(p => p.verze.includes('techdata')).length, radky(dTd).length);
+  radky(dTd).length === VSECHNA_POLE.filter(p => p.verze.includes('techdata') && vidi(p)).length, radky(dTd).length);
 test('sekce bez jediného řádku se do dokumentu nedostane',
   dBo.sekce.every(s => s.radky.length > 0) && dTd.sekce.every(s => s.radky.length > 0));
 /* Ceny činností vidí backoffice, technické oddělení jen stupně.
@@ -464,6 +476,25 @@ test('úklid sazby DPH se ostatních hodnot nedotkne',
   kp.kryciProjMigraceSazbaDph({ sazbaDph: '19 %', splatnostDni: '30' }).splatnostDni === '30');
 test('úklid sazby DPH nespadne na prázdném vstupu',
   kp.kryciProjMigraceSazbaDph(null) === null && kp.kryciProjMigraceSazbaDph(undefined) === undefined);
+
+console.log('\n--- N47: odeslaná nabídka — krycí list PROJ ze zmrazeného výsledku ---');
+{
+  nacti('./zamek.js');
+  const zN = zk.novaZakazka();
+  const vN = zN.varianty[0];
+  const dnes = vypocetProj(vN.data.proj.zadani, vN.data.proj.cenik);
+  /* Otisk zámku s jinou cenou, než dá dnešní výpočet — jako u nabídky,
+   * která odešla před změnou kódu nebo ceníku. */
+  const otisk = JSON.parse(JSON.stringify(dnes));
+  otisk.souhrn.celkem = Math.round(dnes.souhrn.celkem / 2);
+  otisk.sekce.forEach(s => { s.celkem = Math.round(s.celkem / 2); });
+  vN.zamek = { zamceno: true, typ: 'nabidkaProj', vysledek: { ock: null, proj: otisk, kurzEurKc: 0, build: 'test' } };
+  const cZ = kp.kryciProjCtx(zN, vN);
+  const cD = kp.kryciProjCtx(zN, Object.assign({}, vN, { zamek: null }));
+  test('N47: zamčená varianta bere hodnotu z otisku zámku, ne z dnešního výpočtu',
+    cZ.hodnota !== cD.hodnota, cZ.hodnota + ' × ' + cD.hodnota);
+  test('N47: rozpracovaná varianta počítá jako dřív', cD.hodnota !== '—');
+}
 
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

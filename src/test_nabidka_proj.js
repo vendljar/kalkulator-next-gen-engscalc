@@ -41,11 +41,16 @@ zak.adresa = 'Ulice 1, 170 00 Praha 7'; zak.datum = '2026-07-26'; zak.nazevAkce 
  * ať test hlídá přenos do dokumentu, ne dnešní datum. */
 zak.projHlavicka.datum = '2026-07-26';
 const v = zak.varianty[0];
+/* Autorský dozor nová varianta nenabízí (14. 10. 2026) — tahle sada hlídá
+ * i jeho bloky, proto ho zapne; chování bez AD hlídá test_autorsky_dozor.js. */
+v.data.proj.zadani.nabizetAD = true;
 const d = nabidkaProjData(zak, v);
 const r = vypocetProj(v.data.proj.zadani, v.data.proj.cenik);
 
 /* --- 1) struktura dokumentu podle VZORu --- */
-const TYPY = ['nadpis', 'proza', 'rozsah', 'cena', 'seznam', 'pary', 'pozn'];
+/* 'platby' (etapa B, 30. 9. 2026): platební podmínky činností z plánu plateb —
+ * rozvine se na blok 'pary' za každou nabízenou činnost. */
+const TYPY = ['nadpis', 'proza', 'rozsah', 'cena', 'seznam', 'pary', 'pozn', 'platby'];
 test('definice není prázdná a má rozumný rozsah', NABIDKA_PROJ_DEF.length >= 30, NABIDKA_PROJ_DEF.length);
 test('všechny bloky mají známý typ',
   NABIDKA_PROJ_DEF.every(b => TYPY.includes(b.typ)),
@@ -117,6 +122,7 @@ test('paušál autorského dozoru je z sazebníku, ne z kalkulace',
 /* --- 4) nulová sekce = „není součástí“, nikdy vymyšlená částka --- */
 const zakN = zk.novaZakazka();
 const vN = zakN.varianty[0];
+vN.data.proj.zadani.nabizetAD = true;   // AD nabízený (viz výš)
 vN.data.proj.zadani.sekce.forEach(s => {
   (s.polozky || []).forEach(p => { if (p.hodiny != null) p.hodiny = 0; });
 });

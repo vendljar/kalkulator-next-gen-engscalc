@@ -47,11 +47,14 @@ function schvVypocty() {
   const out = {};
   ((ZAK && ZAK.varianty) || []).forEach(v => {
     let r = null;
-    try { r = (typeof vypocetZ === 'function' ? vypocetZ(v, JEKLY) : vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes)); } catch (e) {}
+    /* Vyřazená strana (P6, zámek strany) nemá cenu, ze které by šla sleva
+     * schvalovat — výsledek null, jako u části, která nejde spočítat. */
+    const vyr = (typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) : '';
+    try { r = vyr === 'ock' ? null : (typeof vypocetZ === 'function' ? vypocetZ(v, JEKLY) : vypocet(v.data.ock.zadani, v.data.cenik, JEKLY, v.data.ock.fixes)); } catch (e) {}
     /* Dvě části, dva základy (#134). Sleva projekce se počítá z ceny projekce
      * včetně dopravy — cena ji obsahuje, tak ji musí obsahovat i náklad. */
     let rp = null;
-    try { rp = (typeof vypocetProjZ === 'function' ? vypocetProjZ(v) : vypocetProj(v.data.proj.zadani, v.data.proj.cenik)); } catch (e) {}
+    try { rp = vyr === 'proj' ? null : (typeof vypocetProjZ === 'function' ? vypocetProjZ(v) : vypocetProj(v.data.proj.zadani, v.data.proj.cenik)); } catch (e) {}
     out[v.id] = {
       ock: (r && r.souhrn) ? { zakladCena: r.souhrn.zakladCena, zakladNaklad: r.souhrn.zakladNaklad } : null,
       proj: (rp && rp.souhrn) ? { zakladCena: rp.souhrn.celkem,
@@ -337,7 +340,8 @@ function schvCiziKarta() {
 
   const seznam = schvalovaniSeznamRejstrik(SCHV_CIZI.zadosti);
   const uvod = `<div class="note">Žádosti ze <b>všech zakázek v databázi</b>${SCHV_CIZI.vse ? '' : ' , které čekají na rozhodnutí'}.
-      <b>Částky se tu nezobrazují</b> — sdílený přehled nese jen číslo zakázky, procento slevy a stav.
+      <b>Částky se tu nezobrazují</b> — sdílený přehled nese jen číslo zakázky, procento slevy a stav
+      (u cenové výjimky počet položek ceníku a pásů „jiné").
       Cenu a marži uvidíte po otevření zakázky, kde platí obvyklá pravidla zobrazení.</div>`;
   const volba = `<div style="margin-top:6px">
       <label><input type="checkbox" ${SCHV_CIZI.vse ? 'checked' : ''}
@@ -358,7 +362,11 @@ function schvCiziKarta() {
     return `<tr>
       <td><b>${esc(z.cislo || '—')}</b><div class="note">${esc(z.nazevAkce || '')}</div></td>
       <td>${esc(z.nazev)}${z.ridici ? ' <span class="pill">řídicí</span>' : ''}</td>
-      <td style="text-align:right">${schvPct(z.procenta / 100)}</td>
+      <td style="text-align:right">${z.cast === 'vyjimka'
+        /* Cenová výjimka (13. 10. 2026): jen kolik položek / pásů, bez cen. */
+        ? '<span class="note">výjimka: ' + [z.polozek ? z.polozek + ' položek ceníku' : '', z.pasu ? z.pasu + ' pás „jiné"' : '']
+            .filter(Boolean).join(', ') + '</span>'
+        : schvPct(z.procenta / 100)}</td>
       <td><span class="pill ${pillCls}">${pillTxt}</span>
         ${z.zamceno ? ' <span class="pill mut">uzamčeno</span>' : ''}</td>
       <td class="note">${esc(z.schvalil || z.zamitl || '')}${(z.schvalilKdy || z.zamitlKdy)
@@ -387,7 +395,225 @@ function schvOtevriZakazku(klic) {
   });
 }
 
+/* ================= CENOVÉ VÝJIMKY VARIANTY (13. 10. 2026) =================
+ * Rozhodnutí J. V.: směs platného ceníku a starších cen a ruční sazba pásu
+ * „jiné" pod ceníkovou jdou u role bez práva ceníku do schvalování. Model
+ * a serverová pojistka jsou ve vyjimky.js; tady je karta vedle slev, žádost
+ * obchodníka a rozhodnutí nadřízeného (razítka pak přepíše server).
+ * ======================================================================= */
+
+/* Platný ceník — záznam programu, ze kterého počítá i server (online
+ * databáze, nebo připojená složka). Bez něj se směs neposuzuje. */
+function vyjPlatnyZaznam() {
+  if (typeof progJede === 'function' && progJede()) return PROG_STAV.db.platny;
+  if (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV && ONLINE_STAV.cenikPouzit
+      && ONLINE_STAV.db && ONLINE_STAV.db.platny) return ONLINE_STAV.db.platny;
+  return null;
+}
+function vyjObsah(v) {
+  if (!v || !v.data || typeof vyjimkyObsah !== 'function') return null;
+  const platny = vyjPlatnyZaznam();
+  const vyr = (typeof zakazkaVyrazenaStrana === 'function' && typeof ZAK !== 'undefined') ? (zakazkaVyrazenaStrana(ZAK) || '') : '';
+  const jk = typeof JEKLY !== 'undefined' ? JEKLY : null;
+  try { return vyjimkyObsah(v.data, platny ? vyjimkyDnesniZProgramu(platny, v.data) : null, vyr, jk); }
+  catch (e) { return null; }
+}
+/* Stav pro zábranu „cenovaVyjimka" (kontroly_ui.js). Zamčená varianta
+ * odešla — neposuzuje se (dotisk server pustí, data se nemění). */
+function vyjimkyStavVarianty(v) {
+  if (!v || !v.data) return null;
+  if (typeof variantaUzamcena === 'function' && variantaUzamcena(v)) return null;
+  const o = vyjObsah(v);
+  if (!o || o.prazdny) return null;
+  const rec = v.data.cenovaVyjimka;
+  return {
+    potreba: vyjimkyPotreba(o, k => smiZobrazit(k)).potreba,
+    plati: vyjimkaPlati(rec, o),
+    zamitnuto: !!(rec && rec.stav === VYJ_ZAMITNUTO && vyjimkaObsahSedi(rec, o)),
+    text: vyjimkyText(o),
+  };
+}
+/* DOTISK DOKUMENTU NOVÉ STRANY do odeslané varianty (B153, zrcadlo serveru
+ * v zakazka_kontrola.mjs): strana, jejíž dokument v zámku ještě není (typicky
+ * OCK po vypnutí „jen projekce"), se posoudí jako nový zámek — cenová výjimka
+ * její části (schválení musí sedět na celý obsah) a minimální marže její
+ * platné slevy. Data zamčené varianty se už nezmění, takže jediná cesta je
+ * klon. Vrací větu důvodu, nebo ''. */
+function vyjimkyDotiskZabrana(typ, v) {
+  if (!typ || !v || !v.data || !v.zamek || typeof variantaUzamcena !== 'function' || !variantaUzamcena(v)) return '';
+  if (typeof kontrolyDokumentStrana !== 'function') return '';
+  /* Dokument bez strany (technická specifikace…) do zámku nejde — nic. */
+  const strana = kontrolyDokumentStrana(typ);
+  if (!strana) return '';
+  const tisky = [v.zamek.typ].concat((Array.isArray(v.zamek.tisky) ? v.zamek.tisky : []).map(t => t && t.typ));
+  if (tisky.some(t => (kontrolyDokumentStrana(t) || '?') === strana)) return '';
+  const konec = ' Odeslanou nabídku už nejde změnit — pokračujte klonem varianty.';
+  const role = (typeof zobrazeniRole === 'function') ? zobrazeniRole() : 'Obchodník';
+  const platny = vyjPlatnyZaznam();
+  const vyj = vyjimkyZamekProblem(typeof ZAK !== 'undefined' ? ZAK : null, v, { role },
+    { program: platny ? { platny } : null, smi: k => smiZobrazit(k), strany: [strana],
+      jekly: typeof JEKLY !== 'undefined' ? JEKLY : null });
+  if (vyj) return 'Dokument strany, která z této odeslané nabídky ještě neodešla: ' + vyj + '.' + konec;
+  if (typeof schvalovaniMarzeCasti === 'function' && typeof JEKLY !== 'undefined') {
+    for (const cast of ['ock', 'proj']) {
+      if (strana !== cast) continue;
+      const m = schvalovaniMarzeCasti(v, JEKLY, cast, (typeof NAST !== 'undefined' && NAST) ? NAST.slevy : null);
+      if (m) return 'Dokument strany, která z této odeslané nabídky ještě neodešla: ' + m + konec;
+    }
+  }
+  return '';
+}
+function vyjSmiRozhodovat() {
+  const role = (typeof zobrazeniRole === 'function') ? zobrazeniRole() : 'Obchodník';
+  return vyjimkaSmiRozhodnout(role, k => smiZobrazit(k));
+}
+
+const VYJ_DUVODY = {};
+function vyjDuvod(id, val) { VYJ_DUVODY[id] = String(val || ''); }
+
+/* Žádost / rozhodnutí o výjimce jedné varianty.
+ * `co` = 'pozadat' | 'schvalit' | 'zamitnout' | 'vratit'. */
+function vyjRozhodni(id, co) {
+  const v = ((ZAK && ZAK.varianty) || []).find(x => x.id === id);
+  if (!v || !v.data) return;
+  if (typeof variantaUzamcena === 'function' && variantaUzamcena(v)) {
+    hlaska(`Varianta „${v.nazev}" je uzamčená – byla vytištěna jako cenová nabídka. `
+      + 'Co v ní odešlo, se zpětně neschvaluje. Pro jinou cenu založte novou variantu.');
+    return;
+  }
+  const o = vyjObsah(v);
+  if (!o || o.prazdny) return;
+  if (co === 'pozadat') vyjimkaPozadej(v.data, o, schvKdoJsem());
+  else {
+    if (!vyjSmiRozhodovat()) {
+      hlaska('O cenových výjimkách rozhoduje nadřízený – administrátor nebo role s právem '
+        + '„Schvalování slevy nad strop role" (Nastavení → Zobrazení).');
+      return;
+    }
+    if (co === 'schvalit') vyjimkaSchval(v.data, o, schvKdoJsem());
+    else if (co === 'zamitnout') vyjimkaZamitni(v.data, o, schvKdoJsem(), null, VYJ_DUVODY[id] || '');
+    else vyjimkaVrat(v.data, o);
+  }
+  render();
+}
+
+/* Dopad výjimky na cenu pro kartu (B165); chyba výpočtu = bez čísel. */
+function vyjDopad(v, o) {
+  if (typeof vyjimkyDopad !== 'function') return null;
+  const platny = vyjPlatnyZaznam();
+  try { return vyjimkyDopad(v.data, o, platny ? vyjimkyDnesniZProgramu(platny, v.data) : null, typeof JEKLY !== 'undefined' ? JEKLY : null); }
+  catch (e) { return null; }
+}
+/* „použitá 1 Kč/m² · ceníková 412 Kč/m² · dopad −2,1 % (−3 456 Kč)" —
+ * escapované (hodnota textové položky jde od obchodníka). */
+function vyjSazby(x) {
+  const h = val => (typeof val === 'number' ? formatCislo(val) : String(val == null ? '—' : val));
+  const jed = x.jed ? ' ' + x.jed : '';
+  const t = 'použitá ' + h(x.pouzita) + jed + ' · ceníková ' + h(x.cenikova) + jed;
+  const d = vyjimkyDopadText(x);
+  return esc(t + (d ? ' · dopad ' + d : ''));
+}
+
+const VYJ_PILL = {
+  nepozadano: ['mut', 'bez žádosti'],
+  ceka: ['warn', '⏳ čeká na rozhodnutí'],
+  schvaleno: ['', '✓ schváleno'],
+  zamitnuto: ['neg', '✕ zamítnuto'],
+};
+
+function vyjimkyKarta() {
+  const radky = [];
+  const smi = vyjSmiRozhodovat();
+  ((ZAK && ZAK.varianty) || []).forEach(v => {
+    if (!v || !v.data) return;
+    const zamceno = (typeof variantaUzamcena === 'function') && variantaUzamcena(v);
+    const o = vyjObsah(v);
+    if (!o) return;
+    /* Rozhodnutí k jinému obsahu padá zpět do „čeká" (jako sleva po změně
+     * procenta); u zamčené varianty se nic nepřepisuje. */
+    if (!zamceno) vyjimkaPrepocti(v.data, o);
+    const rec = v.data.cenovaVyjimka;
+    if (zamceno ? !rec : o.prazdny) return;
+    const kat = zamceno
+      ? ({ 'čeká na schválení': 'ceka', 'schváleno': 'schvaleno', 'zamítnuto': 'zamitnuto' }[rec.stav] || 'nepozadano')
+      : vyjimkaKategorie(rec, o);
+    const [pillCls, pillTxt] = VYJ_PILL[kat] || ['mut', kat];
+    const potreba = !zamceno && vyjimkyPotreba(o, k => smiZobrazit(k)).potreba;
+    const tl = [];
+    const b = (co, popis, prim) => `<button class="mini${prim ? ' primary' : ''}" onclick="vyjRozhodni('${escJs(v.id)}','${escJs(co)}')">${esc(popis)}</button>`;
+    if (!zamceno) {
+      if (smi) {
+        if (kat !== 'schvaleno') tl.push(b('schvalit', 'Schválit', true));
+        if (kat !== 'zamitnuto') tl.push(b('zamitnout', 'Zamítnout'));
+        if (kat === 'schvaleno' || kat === 'zamitnuto') tl.push(b('vratit', 'Vrátit rozhodnutí'));
+      } else if (kat === 'nepozadano') tl.push(b('pozadat', 'Požádat o schválení', true));
+    }
+    tl.push(`<button class="mini" onclick="schvOtevriVariantu('${escJs(v.id)}')">Otevřít v kalkulaci</button>`);
+    /* Co se liší — názvy položek a pásů. Sazby a dopad na cenu (B165)
+     * vidí jen ten, kdo smí rozhodnout; obchodník bez práva ceníku
+     * ceníkové sazby nevidí ani tady (čísla jsou v ceníku, kde platí
+     * matice). Plocha pásu (B178) z výsledku jádra, jako v obsahu. */
+    const co = [];
+    const dp = smi && !zamceno ? vyjDopad(v, o) : null;
+    /* Dřív schválená výjimka (plocha na celé m², B183 b): karta ukáže
+     * plochu tak, jak byla schválena. */
+    const st = !zamceno && vyjimkaStaryTvar(rec, o);
+    const plocha = x => vyjimkyPasPlocha(x, st);
+    if (o.polozek) {
+      const pol = dp ? dp.polozky : o.smes;
+      co.push('Položky ceníku: ' + pol.slice(0, 8).map(x => esc(x.popis) + (dp ? ' (' + vyjSazby(x) + ')' : '')).join(dp ? '; ' : ', ')
+        + (o.polozek > 8 ? ' a další ' + (o.polozek - 8) : ''));
+    }
+    if (o.pasu) {
+      const pas = dp ? dp.pasy : o.pasy;
+      co.push('Pásy „jiné": ' + pas.map(p => 'stěna ' + esc(p.stena) + ' (' + esc(p.nazev || 'bez názvu') + ', ' + esc(vyjimkyPasRozsah(p))
+        + (plocha(p) ? ', ' + esc(plocha(p)) : '') + (dp ? '; ' + vyjSazby(Object.assign({ jed: 'Kč/m²' }, p)) : '') + ')').join(', '));
+      if (o.svetliky && o.svetliky.length)
+        co.push('Světlíky „jiné" u dveří: ' + o.svetliky.map(x => (x.kde === 'boky' ? 'boky dveří ' : 'nad dveřmi ') + esc(x.stena)
+          + ' (' + esc(x.nazev || 'bez názvu') + (plocha(x) ? ', ' + esc(plocha(x)) : '') + ')').join(', '));
+    }
+    if (dp) {
+      const cel = [['OCK', dp.ock], ['PROJ', dp.proj]].filter(([, x]) => vyjimkyDopadText(x))
+        .map(([k, x]) => 'cena ' + k + ' ' + esc(vyjimkyDopadText(x)));
+      if (cel.length) co.push('<b>Dopad celkem proti ceníku:</b> ' + cel.join(', '));
+    }
+    const podr = [];
+    if (rec && rec.pozadal) podr.push('Požádal: <b>' + esc(rec.pozadal) + '</b>'
+      + (rec.pozadalKdy ? ' · ' + new Date(rec.pozadalKdy).toLocaleString('cs-CZ') : ''));
+    if (kat === 'schvaleno' && rec.schvalil) podr.push('Schválil: <b>' + esc(rec.schvalil) + '</b>'
+      + (rec.schvalilKdy ? ' · ' + new Date(rec.schvalilKdy).toLocaleString('cs-CZ') : ''));
+    if (kat === 'zamitnuto' && rec.zamitl) podr.push('Zamítl: <b>' + esc(rec.zamitl) + '</b>'
+      + (rec.zamitlKdy ? ' · ' + new Date(rec.zamitlKdy).toLocaleString('cs-CZ') : '')
+      + (rec.zamitnutoDuvod ? ' – ' + esc(rec.zamitnutoDuvod) : ''));
+    if (st && kat === 'schvaleno') podr.push('Schváleno před v20.10.5 s plochou na celé m² — platí, dokud se výjimka nezmění');
+    if (!zamceno) podr.push(potreba ? 'Vaše role ji bez schválení neodešle.' : 'Vaše role ji smí odeslat i bez schválení (právo ceníku).');
+    const duvod = smi && !zamceno && kat !== 'zamitnuto'
+      ? `<div class="row" style="max-width:520px;margin-top:4px"><label>Důvod zamítnutí <span class="note">(nepovinný)</span></label>
+           <input type="text" value="${esc(VYJ_DUVODY[v.id] || '')}" placeholder="proč výjimku nepustit…"
+             onchange="vyjDuvod('${escJs(v.id)}', this.value)"></div>` : '';
+    radky.push(`<tr>
+        <td>${esc(v.nazev || '')}${v.ridici ? ' <span class="pill">řídící</span>' : ''}${zamceno ? ' <span class="pill mut">uzamčená</span>' : ''}</td>
+        <td>${esc(zamceno ? '' : vyjimkyText(o))}<div class="note">${co.join(' · ')}</div></td>
+        <td><span class="pill ${pillCls}">${pillTxt}</span></td>
+        <td><div class="btns" style="margin:0">${tl.join('')}</div></td>
+      </tr>
+      <tr><td colspan="4" style="padding-top:0"><div class="note">${podr.join(' · ')}</div>${duvod}</td></tr>`);
+  });
+  const uvod = `<div class="note">Varianty, jejichž ceník je směsí platného ceníku a starších cen, nebo
+      které mají ruční sazbu pásu opláštění „jiné" nižší než ceníkovou. Role bez práva ceníku je smí
+      odeslat (vytisknout nabídku) jen se schválením nadřízeného; rozpracovanou zakázku lze ukládat
+      i bez něj. Změna směsi, sazby, rozsahu nebo plochy pásu (i světlíků „jiné" u dveří) po schválení
+      schválení zruší. Schvalovatel u položek vidí použitou a ceníkovou sazbu a dopad na cenu.</div>`;
+  if (!radky.length)
+    return card('Cenové výjimky', uvod + '<div class="note" style="margin-top:8px">Žádná varianta této zakázky '
+      + 'se od platného ceníku neliší a nemá pás „jiné" pod ceníkovou sazbou.</div>', false, 'vyj-seznam');
+  return card('Cenové výjimky', uvod + `<table class="sd-tbl" style="margin-top:8px">
+      <tr><th>Varianta</th><th>Co se liší</th><th>Stav</th><th>Rozhodnutí</th></tr>${radky.join('')}</table>`
+    + (smi ? `<div class="note" style="margin-top:8px">Rozhodnutí se podepisuje jako <b>${esc(schvKdoJsem())}</b>.</div>` : ''),
+    false, 'vyj-seznam');
+}
+
 function renderSchvalovani() {
   const el = document.getElementById('page-schvalovani');
-  if (el) el.innerHTML = (SCHV_CIZI.rozsah === 'vse') ? schvCiziKarta() : schvalovaniKarta();
+  if (el) el.innerHTML = (SCHV_CIZI.rozsah === 'vse') ? schvCiziKarta() : schvalovaniKarta() + vyjimkyKarta();
 }

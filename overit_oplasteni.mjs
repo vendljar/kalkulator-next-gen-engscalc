@@ -312,6 +312,60 @@ zkus('pod každým nákresem stojí plocha stěny, nebo že žádná není',
 zkus('pod kartou je legenda s plochami podle typu',
   nakres.legendaKusu >= 2 && /celkem k opláštění/.test(nakres.legenda), nakres.legendaKusu);
 
+/* ---------- ZAROVNÁNÍ POLÍ STĚNY (zadání J. V. 1. 10. 2026) ----------
+ *
+ * „Zarovnej datová pole u různého opláštění zprava" (snímek s modrou
+ * linkou): materiál pásu „až nahoru" stál o kus vedle materiálu ostatních
+ * pásů (vedle něj je místo pole výšky kratší text „po horní hranu"),
+ * „Opláštění začíná" stálo jinde než dělicí výšky a název a sazba „jiné"
+ * mimo sloupce úplně. Ve stejném sloupci stěn (A a C vlevo, B a D vpravo)
+ * musí každý druh pole končit na téže svislé hraně. Měří se z obrazovky
+ * a prvky se hledají podle obsluhy, ne podle nových tříd — kontrola tak
+ * platí i proti sestavení před opravou (tam selže). Stav: A a C rozdělené
+ * (C se třemi pásy, z toho „jiné"), B rozdělená s dolní mezí v prohlubni,
+ * D po celé výšce. */
+{
+  const m = await p.evaluate(() => {
+    const steny = [...document.querySelectorAll('#ock-oplasteni-steny .opl-stena')];
+    const hrana = (el, h) => Math.round(el.getBoundingClientRect()[h] * 10) / 10;
+    const s = (st, sel, re) => [...st.querySelectorAll(sel)]
+      .filter(e => re.test(e.getAttribute('onchange') || e.getAttribute('onclick') || ''));
+    return steny.map((st, i) => ({
+      k: 'ABCD'[i],
+      sloupec: Math.round(st.getBoundingClientRect().left),
+      material: s(st, 'select', /oplPasSet\(.*'typ'/).map(e => hrana(e, 'right')),
+      vyska: s(st, 'input', /'doM'|oplOdSet/).map(e => hrana(e, 'right')),
+      nazev: s(st, 'input', /'nazev'/).map(e => hrana(e, 'right')),
+      sazba: s(st, 'input', /'naklad'/).map(e => hrana(e, 'right')),
+      krizek: s(st, 'button', /oplPasSmaz/).map(e => hrana(e, 'left')),
+      celaVyska: s(st, 'input', /oplCelaVyskaSet/).map(e => hrana(e, 'left')),
+    }));
+  });
+  const sloupce = [...new Set(m.map(x => x.sloupec))].map(l => m.filter(x => x.sloupec === l));
+  const stejne = (pole) => pole.length > 0 && Math.max(...pole) - Math.min(...pole) <= 0.5;
+  const vse = (sl, klic) => sl.flatMap(x => x[klic]);
+  const popis = (sl, klic) => sl.map(x => x.k + ': ' + x[klic].join(', ')).join(' | ');
+  zkus('(předpoklad: dva sloupce stěn — A a C vlevo, B a D vpravo)',
+    sloupce.length === 2 && sloupce.every(sl => sl.length === 2), JSON.stringify(m.map(x => x.k + '@' + x.sloupec)));
+  zkus('(pojistka proti prázdné kontrole: změřeno 5 + 3 polí materiálu, 5 + 2 výšek, název a sazba „jiné")',
+    vse(sloupce[0], 'material').length === 5 && vse(sloupce[1], 'material').length === 3
+    && vse(sloupce[0], 'vyska').length === 5 && vse(sloupce[1], 'vyska').length === 2
+    && vse(m, 'nazev').length === 1 && vse(m, 'sazba').length === 1, JSON.stringify(m));
+  sloupce.forEach(sl => {
+    const kde = sl.map(x => x.k).join(' a ');
+    zkus('stěny ' + kde + ': materiál končí u všech pásů (i „až nahoru") i u stěny po celé výšce na téže hraně',
+      stejne(vse(sl, 'material')), popis(sl, 'material'));
+    zkus('stěny ' + kde + ': dělicí výšky i „Opláštění začíná" končí na téže hraně',
+      stejne(vse(sl, 'vyska')), popis(sl, 'vyska'));
+    zkus('stěny ' + kde + ': křížky pásů začínají na téže hraně', stejne(vse(sl, 'krizek')), popis(sl, 'krizek'));
+    zkus('stěny ' + kde + ': „po celé výšce" stojí u rozdělené i nerozdělené stěny na stejném místě',
+      stejne(vse(sl, 'celaVyska')), popis(sl, 'celaVyska'));
+  });
+  const c = m.find(x => x.k === 'C');
+  zkus('„jiné": název končí s materiálem a sazba s výškou (ve sloupcích stěny)',
+    stejne([...c.nazev, ...c.material]) && stejne([...c.sazba, ...c.vyska]), JSON.stringify(c));
+}
+
 /* ---------- NÁLEZY NEZÁVISLÉ REVIZE (21. 9. 2026) ---------- */
 
 /* N1: sloučení stěny zpět nesmí zahodit ruční název a sazbu u typu „jiné".
@@ -366,9 +420,14 @@ zkus('N5: dolní mez pod dnem prohlubně se ohlásí',
 zkus('N4: dělicí výška nad horní hranou se ohlásí',
   /nad horní hranou/.test(await varovani('Z.oplasteni.steny.A.pasy[0].doM = 99;')),
   await varovani('Z.oplasteni.steny.A.pasy[0].doM = 99;'));
-zkus('a správné zadání nevaruje',
-  (await varovani('Z.oplasteni.steny.A.odM = 0;')) === '',
-  await varovani('Z.oplasteni.steny.A.odM = 0;'));
+/* ZMĚNA OČEKÁVÁNÍ 21. 9. 2026 (nález J. V.): zkušební šachta nemá světlíky,
+ * takže čelní stěna vychází na 0 m² — a nové varování to právem hlásí.
+ * „Správné zadání" se proto zkouší nad šachtou se světlíkem; jinak by tenhle
+ * řádek vyžadoval, aby aplikace o nulové ploše mlčela. */
+/* Od N58 (24. 9. 2026) je nad dveřmi volba výplně a nová zakázka má plech;
+ * sklo nad dveřmi se volí hodnotou „sklo". */
+const spravne = "Z.nadDvermi = 'sklo'; Z.oplasteni.steny.A.odM = 0;";
+zkus('a správné zadání nevaruje', (await varovani(spravne)) === '', await varovani(spravne));
 
 /* N9: minimální výška pásu 2 px nesmí přetéct pruh — spodní pás by se
  * v `overflow:hidden` tiše oříznul. */
@@ -396,6 +455,262 @@ zkus('po vypnutí režimu karta stěn zmizí',
   await p.locator('#ock-oplasteni-steny').count() === 0);
 const prezilo = await p.evaluate(() => Z.oplasteni.steny.B.pasy.length);
 zkus('rozdělení stěn se vypnutím režimu nezahodí', prezilo === 2, prezilo);
+
+/* STĚNA, ZE KTERÉ SE DO CENY NEDOSTANE NIC (nález J. V. 21. 9. 2026).
+ *
+ * Čelní stěna bere plochu ze SVĚTLÍKŮ nad dveřmi a po stranách — zbytek
+ * zabírají dveře a portály. Bez světlíků je ta plocha nula, takže sklo přes
+ * celou čelní stěnu vyjde na 0 m², nákres ji přitom vybarví celou
+ * a specifikace ji zákazníkovi slíbí. */
+{
+  const stav = await p.evaluate(() => {
+    ZAK = novaZakazka(); syncVarianta();
+    set('OCK.zadani.typSachty', 'exteriérová');
+    set('OCK.zadani.sirka', 1.6); set('OCK.zadani.hloubka', 1.4);
+    set('OCK.zadani.zdvih', 9); set('OCK.zadani.prejezd', 3.5);
+    set('OCK.zadani.prohluben', 1.1); set('OCK.zadani.nastupiste', 4);
+    set('OCK.zadani.nadDvermi', 'bez');   // N58: bez skla nad dveřmi
+    set('OCK.zadani.svetlikyBoky', 0);
+    oplRezimSet('poStenach');
+    render();
+    const r = vypocetAkt();
+    const m2 = (k) => (r.oplasteni.pasy || [])
+      .filter(x => x.stena === k && (+x.doM || 0) > 0)
+      .reduce((a, x) => a + (+x.m2 || 0), 0);
+    const text = (k) => {
+      const i = ['A', 'B', 'C', 'D'].indexOf(k);
+      const el = document.querySelectorAll('#ock-oplasteni-steny .opl-stena')[i];
+      const v = el && el.querySelector('.seznam-varovani');
+      return v ? v.textContent.replace(/\s+/g, ' ').trim() : '';
+    };
+    return { a: m2('A'), b: m2('B'), c: m2('C'), d: m2('D'),
+             varA: text('A'), varB: text('B') };
+  });
+  /* POJISTKA PROTI PRÁZDNÉ KONTROLE: nesoulad tu opravdu je — ostatní stěny
+   * plochu mají, čelní ne. Bez tohohle by kontrola níž prošla i tehdy, kdyby
+   * plochu neměla ani jedna stěna (třeba u rozbitého zadání). */
+  zkus('kontrola není prázdná — ostatní stěny plochu mají',
+    stav.b > 1 && stav.c > 1 && stav.d > 1, JSON.stringify(stav));
+  /* ZMĚNA OČEKÁVÁNÍ 21. 9. 2026 (rozhodnutí J. V., #295, varianta „b").
+   *
+   * Nejdřív se tu čekala NULA a varování k ní — takový byl stav, který J. V.
+   * našel. Rozhodnutí ten stav odstranilo u zdroje: čelní stěna se nově
+   * počítá jako celá stěna MÍNUS dveřní otvory, takže plocha je i bez
+   * světlíků. Varování v kódu zůstává jako pojistka pro zadání, kde by
+   * plocha vyšla nulová i tak (třeba dveře přes celou stěnu) — tady už ale
+   * nemá co hlásit, a právě to se měří. */
+  /* ZMĚNA OČEKÁVÁNÍ 24. 9. 2026 (N46, pravidlo nástupišť J. V.): čelní
+   * stěna běžné šachty má dveře v každém patře, je tedy celá nástupiště —
+   * opláštění nese jen světlíky, bez nich 0 m². Varování to vysvětlí
+   * (a neposílá obchodníka hledat chybu v rozměrech). */
+  zkus('N46: čelní stěna bez světlíků je nástupiště — plocha 0 m²', stav.a < 0.005, stav.a);
+  zkus('N46: hláška vysvětlí, že jde o nástupiště a pomůže světlík',
+    /celá nástupiště/.test(stav.varA) && /Světlík nad šachetními dveřmi/.test(stav.varA), stav.varA.slice(0, 200));
+  zkus('ani u ostatních stěn', !/nedostane nic/i.test(stav.varB), stav.varB.slice(0, 120));
+  /* Otvory dveří se ale odečetly — čelní stěna musí být MENŠÍ než zadní,
+   * která u neprůchozí šachty žádné otvory nemá. Bez tohohle by kontrola
+   * výš prošla i u výpočtu, který otvory ignoruje. */
+  zkus('a čelní stěna je menší než zadní (zadní bez dveří je celá)',
+    stav.a < stav.c - 1, { celni: stav.a, zadni: stav.c });
+}
+
+/* KDYŽ OTVORY ZABEROU CELOU STĚNU, VAROVÁNÍ ŘEKNE PRAVÝ DŮVOD (nález N39
+ * revize v22.9.9). Do 22. 9. 2026 text tvrdil, že se čelní stěna bere ze
+ * světlíků — stav před #295. Nula dnes vzniká jen u nízké šachty s mnoha
+ * nástupišti: šest otvorů 2,3 m vysokých se do 7,6 m vysoké stěny široké
+ * 1,6 m nevejde. */
+{
+  const stav = await p.evaluate(() => {
+    ZAK = novaZakazka(); syncVarianta();
+    set('OCK.zadani.typSachty', 'exteriérová');
+    set('OCK.zadani.sirka', 1.6); set('OCK.zadani.hloubka', 1.4);
+    set('OCK.zadani.zdvih', 3); set('OCK.zadani.prejezd', 3.5);
+    set('OCK.zadani.prohluben', 1.1); set('OCK.zadani.nastupiste', 6);
+    set('OCK.zadani.nadDvermi', 'bez');   // N58: bez skla nad dveřmi
+    set('OCK.zadani.svetlikyBoky', 0);
+    oplRezimSet('poStenach');
+    render();
+    const r = vypocetAkt();
+    const el = document.querySelectorAll('#ock-oplasteni-steny .opl-stena')[0];
+    const v = el && el.querySelector('.seznam-varovani');
+    return { zakladA: r.oplasteni.zakladSten.A,
+             varA: v ? v.textContent.replace(/\s+/g, ' ').trim() : '' };
+  });
+  /* Pojistka proti prázdné kontrole: stěna A tu opravdu vychází na nulu. */
+  zkus('(zadání opravdu dává čelní stěnu 0 m²)', stav.zakladA === 0, stav.zakladA);
+  zkus('varování u nulové čelní stěny se ukáže', /nedostane nic/.test(stav.varA), stav.varA.slice(0, 160));
+  /* Od 24. 9. 2026 (N46) je důvodem pravidlo nástupišť, ne otvory. */
+  zkus('N46: jako důvod jmenuje nástupiště (portál s plechy, jen světlíky)', /celá nástupiště/.test(stav.varA),
+    stav.varA.slice(0, 200));
+}
+
+/* ---------- N41d: vykreslení nesmí zapisovat do zamčené varianty ----------
+ * Revize v22.9.9 (N41d, neověřeno): oplStena() při každém vykreslení zakládá
+ * chybějící stěny a pásy PŘÍMO do zadání — i u zamčené (odeslané) varianty.
+ * Zamčená varianta je doklad toho, co odešlo zákazníkovi; obrazovka ji smí
+ * jen číst. Stav bez stěn v režimu po stěnách vznikne u ručně upraveného
+ * JSON nebo u staré zakázky, proto se tu nasimuluje přímo. */
+{
+  const vysl = await p.evaluate(() => {
+    const v = aktivniVarianta(ZAK);
+    Z.oplasteni = { rezim: 'poStenach', steny: null };
+    zamkniVariantu(v, { typ: 'nabidka', kdo: 'harness', cislo: ZAK.cislo || 'X' });
+    const pred = JSON.stringify(Z.oplasteni);
+    prepniTab('kalk'); render();
+    const karta = !!document.querySelector('#ock-oplasteni-steny .opl-stena');
+    const po = JSON.stringify(Z.oplasteni);
+    delete v.zamek; render();
+    return { pred, po, karta };
+  });
+  zkus('N41d: zamčená varianta po stěnách se vykreslí (4 stěny s výchozími pásy)', vysl.karta);
+  zkus('N41d: vykreslení do zadání zamčené varianty nic nezapsalo', vysl.pred === vysl.po,
+    vysl.pred + ' → ' + vysl.po.slice(0, 120));
+}
+
+/* ---------- N43 (klient): trvalá položka ceníku se do zamčené varianty nedoplní ----------
+ * syncVarianta doplňovala trvalé položky katalogu i do odeslané nabídky;
+ * server pak uložení odmítl a u zámku bez zmrazeného výsledku by se změnila
+ * cena dotisku. */
+{
+  const vysl = await p.evaluate(() => {
+    const v = aktivniVarianta(ZAK);
+    const puvKat = JSON.stringify(KATALOG);
+    zamkniVariantu(v, { typ: 'nabidka', kdo: 'harness', cislo: ZAK.cislo || 'X' });
+    const pred = JSON.stringify(v.data.ock.zadani);
+    katalogPridej(KATALOG, 'hrubaOck', { nazev: 'Harness trvalá položka', cena: 100 });
+    syncVarianta(); render();
+    const poZamcene = JSON.stringify(aktivniVarianta(ZAK).data.ock.zadani);
+    delete v.zamek; syncVarianta();
+    const poOdemcene = JSON.stringify(aktivniVarianta(ZAK).data.ock.zadani);
+    Object.keys(KATALOG).forEach(k => delete KATALOG[k]); Object.assign(KATALOG, JSON.parse(puvKat)); render();
+    return { zamcenaBeze: pred === poZamcene, odemcenaDoplni: pred !== poOdemcene };
+  });
+  zkus('N43: do zamčené varianty se trvalá položka ceníku nedoplní', vysl.zamcenaBeze);
+  zkus('N43: do odemčené ano (katalog dál funguje)', vysl.odemcenaDoplni);
+}
+
+/* ---------- 30. 9. 2026: režim po stěnách sám ATYP nedělá (rozhodnutí J. V.) ----------
+ * Nález z testování: „Opláštění po stěnách se vždy počítá jako ATYP, i když
+ * jsou všechny stěny stejné. Cena tím stoupne asi o 28 % a termín o 4 týdny."
+ * J. V.: „je to záměr? Ne není. Toto změň na standard." Jednotkový test
+ * (src/test_oplasteni_steny.js) hlídá kontrolu standardu; tady se ověřuje
+ * celá cesta, kterou nevidí: přepnutí režimu → kontrola standardu → automat
+ * ATYP → přirážky v ceně → termín dodání v podmínkách nabídky. Ceník je
+ * zkušební — z nulového by se přirážka nepoznala. */
+{
+  const ZC = require(path.resolve('src/zkusebni_cenik.js'));
+  const vysl = await p.evaluate(([cen]) => {
+    Object.assign(DEFAULT_CENIK, cen); delete DEFAULT_CENIK.prazdny;
+    NAST.firma = Object.assign({}, NAST.firma || {},
+      { terminDodaniOck: '12 týdnů od podpisu smlouvy', terminAtypTydny: '4' });
+    ZAK = novaZakazka(); syncVarianta();
+    Object.assign(Z, { typSachty: 'exteriérová', sirka: 1.51, hloubka: 1.515, zdvih: 17.325, prejezd: 2.7,
+      prohluben: 1.05, nastupiste: 6, rohoveSloupky: 4, zaskleni: 'na terče', atyp: false });
+    Z.profily = JSON.parse(JSON.stringify(PROFILY_VYCHOZI['exteriérová']));
+    delete Z.atypAutomat; delete Z.atypRucneVypnut;
+    prepniTab('kalk'); render();
+    let poleTermin = null;
+    KRYCI_SEKCE.forEach(s => s.pole.forEach(q => { if (q.id === 'terminDodani') poleTermin = q; }));
+    const stav = () => {
+      const v = aktivniVarianta(ZAK);
+      return { atyp: !!Z.atyp, automat: !!Z.atypAutomat, std: standardVysledek().stav,
+        cena: vypocetAkt().souhrn.zakladCena,
+        termin: kryciHodnota(poleTermin, v.data.kryci || { hodnoty: {} }, kryciCtx(ZAK, v, JEKLY)) };
+    };
+    const pred = stav();
+    oplRezimSet('poStenach');
+    const po = stav();
+    const karta = document.getElementById('ock-oplasteni-steny');
+    po.karta = karta ? karta.innerText.replace(/\s+/g, ' ') : '';
+    /* Stěna B z Cetrisu: jiný materiál stěny, pořád žádný ATYP. */
+    oplPasSet('B', 0, 'typ', 'C.cetrisKc');
+    const cetris = stav();
+    /* Pojistka proti prázdnému testu: zasklení mimo standard venkovní šachty
+     * (sklo do rámečku) je atyp dál — automat ATYP zaškrtne a termín se
+     * prodlouží, stejně jako v jednotném režimu. */
+    set('Z.zaskleni', 'mezi příčníky');
+    const mimo = stav();
+    set('Z.zaskleni', 'na terče');
+    const zpet = stav();
+    return { pred, po, cetris, mimo, zpet };
+  }, [ZC.zkusebniCenik()]);
+  const J = x => JSON.stringify(x);
+  zkus('(výchozí šachta je standardní, bez ATYP, s cenou a termínem 12 týdnů)',
+    vysl.pred.std === 'standard' && !vysl.pred.atyp && vysl.pred.cena > 0 && /^12 týdnů/.test(vysl.pred.termin), J(vysl.pred));
+  zkus('30. 9.: po přepnutí na opláštění po stěnách zůstává STANDARD OCK', vysl.po.std === 'standard', J(vysl.po));
+  zkus('30. 9.: ATYP se po přepnutí sám nezaškrtne', !vysl.po.atyp && !vysl.po.automat, J(vysl.po));
+  zkus('30. 9.: cena se nezmění — žádné přirážky ATYP (plocha stěn je od N46 stejná)',
+    Math.abs(vysl.po.cena - vysl.pred.cena) < 0.5, vysl.pred.cena + ' → ' + vysl.po.cena);
+  zkus('30. 9.: termín dodání se neprodlouží o 4 týdny', vysl.po.termin === vysl.pred.termin,
+    vysl.pred.termin + ' → ' + vysl.po.termin);
+  zkus('30. 9.: karta stěn už netvrdí, že je režim vždy mimo standard, a říká, podle čeho se standard posuzuje',
+    !/vždy mimo standard/.test(vysl.po.karta) && /sám o sobě atyp nedělá/.test(vysl.po.karta), vysl.po.karta.slice(-400));
+  zkus('30. 9.: stěna z Cetrisu ATYP taky nezapne', vysl.cetris.std === 'standard' && !vysl.cetris.atyp, J(vysl.cetris));
+  zkus('zasklení mimo standard je po stěnách dál atyp: ATYP se zaškrtne a termín prodlouží',
+    vysl.mimo.std === 'atyp' && vysl.mimo.atyp && vysl.mimo.automat && /^16 týdnů/.test(vysl.mimo.termin), J(vysl.mimo));
+  zkus('a po návratu do standardu automat svůj ATYP zase vypne',
+    vysl.zpet.std === 'standard' && !vysl.zpet.atyp && vysl.zpet.termin === vysl.pred.termin, J(vysl.zpet));
+}
+
+/* ---------- P2 (K19-N104, 2. 10. 2026): zkratka „Prosklít i prohlubeň" ----------
+ * Čerstvá stránka (standardní opláštění). Zaškrtnutí pod polem Prohlubeň
+ * přepne na po stěnách a všem stěnám nastaví „Opláštění začíná" = −prohlubeň;
+ * změna hloubky meze posune; odškrtnutí je vrátí na 0. */
+await p.goto(KDE);
+await p.waitForTimeout(600);
+{
+  const cb = p.locator('input[onchange^="prohlubenSkloSet"]');
+  zkus('P2: pod polem Prohlubeň je zaškrtávátko „Opláštit i prohlubeň" (nezaškrtnuté)',
+    await cb.count() === 1 && !(await cb.isChecked()), await cb.count());
+  /* Přejmenování 13. 10. 2026 (J. V.): popisek řádku je „Opláštit i prohlubeň", „Prosklít" už nikde. */
+  zkus('P2: popisek řádku je „Opláštit i prohlubeň" a „Prosklít" v aplikaci není',
+    await p.evaluate(() => { const i = document.querySelector('input[onchange^="prohlubenSkloSet"]');
+      const l = i && i.closest('.row') && i.closest('.row').querySelector('label');
+      return !!l && l.textContent.trim() === 'Opláštit i prohlubeň' && !/Prosklít/i.test(document.body.innerText); }));
+  zkus('P2: pole Prohlubeň nese nápovědu k opláštění prohlubně',
+    /Opláštit i prohlubeň/.test(await p.locator('input[onchange^="prohlubenSet"]').getAttribute('title') || ''));
+  /* Nulová prohlubeň: zaškrtnutí nic nezmění (zaškrtávátko se nezakazuje —
+   * vstupy kalkulace zůstávají živé, overit_lista.mjs). */
+  await p.evaluate(() => { window.hlaska = () => Promise.resolve(); });
+  await cb.click();
+  await p.waitForTimeout(200);
+  zkus('P2: u nové zakázky (prohlubeň 0) zaškrtnutí nic nezmění',
+    await p.evaluate(() => (Z.oplasteni || {}).rezim !== 'poStenach') && !(await p.locator('input[onchange^="prohlubenSkloSet"]').isChecked()));
+  /* P4 (K19-N107): nápověda „jiné sklo = po stěnách" u řádku skla ve standardu a u volby opláštění. */
+  const p4 = await p.evaluate(() => {
+    const sv = skloVolba(Z, aktivniVarianta(ZAK).data.cenik);
+    const tit = (n) => { const i = [...document.querySelectorAll('input.nazev-ed')].find(x => x.value === n); return i ? i.title : null; };
+    return { boky: tit(sv.boky.nazev), celni: tit(sv.celni.nazev), prace: tit('PRÁCE OPLÁŠTĚNÍ'),
+      volba: (document.querySelector('select[onchange^="oplRezimSet"]') || {}).title || '' };
+  });
+  zkus('P4: řádek skla boků i čelního skla nese nápovědu „jiné sklo = opláštění po stěnách"',
+    /po stěnách A–D/.test(p4.boky || '') && /po stěnách A–D/.test(p4.celni || ''), JSON.stringify(p4));
+  zkus('P4: jiný řádek (PRÁCE OPLÁŠTĚNÍ) ji nenese a volba opláštění ano',
+    p4.prace != null && !/po stěnách A–D/.test(p4.prace) && /po stěnách A–D/.test(p4.volba), JSON.stringify(p4));
+  await p.evaluate(() => {
+    set('OCK.zadani.sirka', 1.6); set('OCK.zadani.hloubka', 1.4);
+    set('OCK.zadani.zdvih', 9); set('OCK.zadani.prejezd', 3.5); set('OCK.zadani.prohluben', 1.1);
+  });
+  await p.waitForTimeout(250);
+  await p.locator('input[onchange^="prohlubenSkloSet"]').check();
+  await p.waitForTimeout(250);
+  const po = await p.evaluate(() => ({ rezim: Z.oplasteni.rezim, hl: Z.prohluben,
+    meze: ['A', 'B', 'C', 'D'].map(k => Z.oplasteni.steny[k].odM),
+    karta: document.querySelectorAll('#ock-oplasteni-steny').length,
+    cb: document.querySelector('input[onchange^="prohlubenSkloSet"]').checked }));
+  zkus('P2: zaškrtnutí přepne na opláštění po stěnách a kreslí kartu stěn', po.rezim === 'poStenach' && po.karta === 1, JSON.stringify(po));
+  zkus('P2: všechny čtyři stěny začínají v −prohlubeň a zaškrtávátko zůstane zaškrtnuté',
+    po.meze.every(m => m === -po.hl) && po.cb, JSON.stringify(po));
+  const pole = p.locator('input[onchange^="prohlubenSet"]');
+  await pole.fill('1.5'); await pole.dispatchEvent('change');
+  await p.waitForTimeout(250);
+  const meze2 = await p.evaluate(() => ['A', 'B', 'C', 'D'].map(k => Z.oplasteni.steny[k].odM));
+  zkus('P2: změna hloubky prohlubně meze stěn posune (−1,5 m)', meze2.every(m => m === -1.5), JSON.stringify(meze2));
+  await p.locator('input[onchange^="prohlubenSkloSet"]').uncheck();
+  await p.waitForTimeout(250);
+  const meze3 = await p.evaluate(() => ['A', 'B', 'C', 'D'].map(k => Z.oplasteni.steny[k].odM));
+  zkus('P2: odškrtnutí vrátí meze na 0', meze3.every(m => m === 0), JSON.stringify(meze3));
+}
 
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));
 

@@ -47,20 +47,47 @@ Object.assign(globalThis, require('../../src/schvalovani.js'));   // serverová 
 Object.assign(globalThis, require('../../src/zaokrouhleni.js'));
 Object.assign(globalThis, require('../../src/marze.js'));
 Object.assign(globalThis, require('../../src/kontroly.js'));
+/* MIGRACE ZAKÁZKY MUSÍ NA SERVERU BĚŽET STEJNĚ JAKO V PROHLÍŽEČI (A3 / N43,
+ * 25. 9. 2026). `importZakazka` volá přes `typeof` stráže i migrace krycího
+ * listu (kryci.js: zadržné „ANO 10 %" → Ano + procento, zahození sazby DPH;
+ * kryci_proj.js) a doplnění zápisníku a protokolu (poznamky.js, protokol.js).
+ * Bez těchto modulů server migroval MÉNĚ než prohlížeč: porovnání „migrované
+ * s migrovaným" (oprava N43 z v24.9.4) pak u zakázky se starším krycím listem
+ * v zamčené variantě zase hlásilo 409 „změnila by se data uzamčené nabídky".
+ * Doloženo fixturou zakazka_2026-08-08_odeslana_bez_otisku.json
+ * v src/test_zamek_historie.js. Pořadí jako v CORE build.py. */
+Object.assign(globalThis, require('../../src/poznamky.js'));
+Object.assign(globalThis, require('../../src/protokol.js'));
+/* Platební podmínky firmy (#367): krycí listy a firmaLzeZverejnit je čtou. */
+Object.assign(globalThis, require('../../src/podminky.js'));
 Object.assign(globalThis, require('../../src/firma.js'));
+Object.assign(globalThis, require('../../src/kryci.js'));        // migrace krycího listu (A3 / N43)
+Object.assign(globalThis, require('../../src/kryci_proj.js'));
 Object.assign(globalThis, require('../../src/cenik.js'));
 Object.assign(globalThis, require('../../src/cenik_stari.js'));
 /* Řady ceníku (#181): server očišťuje zahraniční odchylky týmž kódem jako
  * prohlížeč — bez tohohle řádku by `cenikZahrOciste` neznal seznam cest
  * a propustil by i cizí klíč. */
 Object.assign(globalThis, require('../../src/cenik_rady.js'));
+/* Cenové výjimky varianty (13. 10. 2026): směs ceníku a pás „jiné" pod
+ * ceníkovou sazbou — rozhodnutí a nový zámek hlídá server týmž kódem. */
+Object.assign(globalThis, require('../../src/vyjimky.js'));
+/* Zveřejněný slovník (#401, 12. 10. 2026): /api/slovnik i obnova kontrolují
+ * hesla týmž kódem jako prohlížeč (slovnikHeslaKontrola, slovnikDbOciste). */
+Object.assign(globalThis, require('../../src/slovnik.js'));
 Object.assign(globalThis, require('../../src/konfigurace.js'));
 Object.assign(globalThis, require('../../src/sablony_online.js'));
+/* Kontrola obsahu šablony Wordu (B99): čte ZIP přes docxgen.js (vyžádá si ho
+ * sama až při kontrole — jinak dokumentové moduly na server nepatří). */
+Object.assign(globalThis, require('../../src/sablona_obsah.js'));
 Object.assign(globalThis, require('../../src/analytika.js'));
 Object.assign(globalThis, require('../../src/program.js'));
 Object.assign(globalThis, require('../../src/ukazkove.js'));
 Object.assign(globalThis, require('../../src/zobrazeni.js'));
 Object.assign(globalThis, require('../../src/zakaznici.js'));
+/* Controlling (#447): /api/controlling a obnova kontrolují číselník a mapování
+ * týmž kódem jako prohlížeč (ctrlDataKontrola, ctrlDbOciste). */
+Object.assign(globalThis, require('../../src/controlling.js'));
 Object.assign(globalThis, require('../../src/sluzba.js'));   // jen server (služba K2)
 
 /* Pojmenované držáky pro moduly, které se v kódu funkcí volají přes tečku

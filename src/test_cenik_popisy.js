@@ -127,5 +127,75 @@ const test = (n, cond, info) => {
   test('ale mezi ZMĚNAMI CEN se neobjeví', rozd.length === 0, rozd.map(r => r.cesta));
 }
 
+/* ===== SPOLEČNÁ MAPA TEXTŮ PRO CELOU APLIKACI (22. 9. 2026) =====
+ *
+ * Zadání J. V.: text zadaný administrátorem zůstane uložený v aplikaci;
+ * ostatní ho smí ve své zakázce upravit, ale trvale přepsat ne. Mapa proto
+ * stojí vedle ceníku (`/api/popisy`) a při přihlášení se vlévá do výchozího
+ * ceníku. Očista je společná pro prohlížeč i server — tahle sada hlídá ji
+ * a pravidlo přednosti. */
+{
+  const o = ck.popisyOciste({
+    '  Sklo VSG  ': '  Provedení vnějších skel.  ',   // ořízne se klíč i text
+    'Prázdný': '   ',                                  // prázdné se neukládá
+    'Číslo': 123,                                      // jiný typ než text
+    '': 'bez klíče',
+  });
+  test('očista ořízne klíč i text', o['Sklo VSG'] === 'Provedení vnějších skel.', JSON.stringify(o));
+  test('prázdný text se neukládá', !('Prázdný' in o), JSON.stringify(o));
+  test('nepsaná hodnota se zahodí', !('Číslo' in o), JSON.stringify(o));
+  test('klíč bez názvu se zahodí', !('' in o), JSON.stringify(o));
+
+  /* Stropy: mapa se vlévá do ceníku každé nové zakázky, takže se sem nesmí
+   * dát poslat slovník libovolné velikosti ani román místo věty. */
+  const dlouhy = {}; dlouhy['A'.repeat(ck.POPISY_MAX_KLIC + 1)] = 'x';
+  test('příliš dlouhý klíč neprojde', Object.keys(ck.popisyOciste(dlouhy)).length === 0);
+  const roman = ck.popisyOciste({ 'X': 'a'.repeat(ck.POPISY_MAX_TEXT + 50) });
+  test('text se zkrátí na strop', roman['X'].length === ck.POPISY_MAX_TEXT, roman['X'].length);
+  const mnoho = {};
+  for (let i = 0; i < ck.POPISY_MAX_POLOZEK + 20; i++) mnoho['k' + i] = 'text';
+  test('počet položek má strop',
+    Object.keys(ck.popisyOciste(mnoho)).length === ck.POPISY_MAX_POLOZEK);
+
+  /* PŘEDNOST MÁ ČÍSELNÍK (od 1. 10. 2026). Do té doby ji měl zveřejněný
+   * ceník — a starší text, který si nesl, tiše přebíjel číselník: hlášení
+   * J. V. 1. 10. 2026 „při načtení nové zakázky se nepropisuje dodatkový
+   * text přestože v ceníku ho mám" (test: zveřejněný ceník nesl u SKN
+   * krátký text, číselník celou větu). Text ceníku zůstává náhradou tam,
+   * kde číselník nic nemá. Před opravou tyto testy selžou (ceník vyhrál). */
+  const cenik = { popisy: { 'Sklo VSG': 'z ceníku', 'Sklo SKN': 'Provedení vnějších skel', 'Jen v ceníku': 'zůstane' },
+    popisyJazyky: { 'Sklo SKN': { de: 'Alte Übersetzung' } } };
+  const odlisne = {};
+  ck.popisyVlij(cenik, { 'Sklo VSG': 'ze společné mapy', 'Madlo': 'nový text',
+    'Sklo SKN': 'Provedení vnějších skel opláštění šachty (ukázková věta)' }, null, odlisne);
+  test('číselník má přednost před textem zveřejněného ceníku', cenik.popisy['Sklo VSG'] === 'ze společné mapy'
+    && cenik.popisy['Sklo SKN'] === 'Provedení vnějších skel opláštění šachty (ukázková věta)', cenik.popisy);
+  test('co ceník nemá, se doplní', cenik.popisy['Madlo'] === 'nový text');
+  test('text ceníku zůstává tam, kde číselník nic nemá', cenik.popisy['Jen v ceníku'] === 'zůstane');
+  test('přepsané texty zveřejněného ceníku se vrátí k zobrazení v číselníku',
+    odlisne['Sklo VSG'] === 'z ceníku' && odlisne['Sklo SKN'] === 'Provedení vnějších skel'
+      && !('Madlo' in odlisne) && !('Jen v ceníku' in odlisne), odlisne);
+  test('překlad staré věty ceníku se u přepsaného textu zahodí', !cenik.popisyJazyky || !cenik.popisyJazyky['Sklo SKN'],
+    cenik.popisyJazyky);
+  const znovu = {};
+  ck.popisyVlij(cenik, { 'Sklo VSG': 'ze společné mapy' }, null, znovu);
+  test('opakované vlití stejného textu nic nemění ani nehlásí', Object.keys(znovu).length === 0
+    && cenik.popisy['Sklo VSG'] === 'ze společné mapy', znovu);
+
+  /* Ceník bez mapy popisů je běžný stav (starší zveřejněná verze). */
+  const prazdny = {};
+  ck.popisyVlij(prazdny, { 'Madlo': 'text' });
+  test('vlití funguje i do ceníku bez popisů', prazdny.popisy['Madlo'] === 'text');
+}
+
+/* B103 (13. 10. 2026): název položky „constructor"/„__proto__" jako klíč. */
+{
+  const o = ck.popisyOciste(JSON.parse('{"constructor": "x", "__proto__": "y", "prototype": "z", "toString": "t", "hasOwnProperty": "h", "valueOf": "v", "Nástupiště": "ok"}'));
+  test('B103: popisyOciste prototypové klíče nepřijme', Object.keys(o).join(',') === 'Nástupiště', o);
+  const j = ck.popisyJazykyOciste(JSON.parse('{"constructor": {"en": "x"}, "Nástupiště": {"en": "ok"}}'));
+  test('B103: popisyJazykyOciste taky ne', Object.keys(j).join(',') === 'Nástupiště', j);
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
+console.log(ok + ' OK, ' + fail + ' FAIL');   // souhrn pro mutace.mjs
 if (fail) process.exit(1);

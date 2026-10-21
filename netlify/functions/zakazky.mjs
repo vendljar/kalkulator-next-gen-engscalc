@@ -7,15 +7,25 @@
  *   stejná kontrola jako ve složce (uloKontrolaZamku není v modelu, ale
  *   zámky hlídá porovnání razítek: server odmítne zápis, který by změnil
  *   variantu zamčenou v uložené verzi). */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, serverVerze } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
+import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B, zakazkaVelikostHlaska } from '../lib/zakazka_kontrola.mjs';
 
-const ZAKAZKA_MAX_B = 4 * 1024 * 1024;
-const CISLO_MAX = 60;
+/* Jméno k e-mailu z účtů (P7 / K16-N87) — jen pro hlášku o kolizi verzí
+ * u zakázek uložených dřív, než se jméno začalo zapisovat. Jedno čtení,
+ * a jen když ke kolizi dojde; selhání není důvod hlášku neposlat. */
+async function jmenoUctu(email) {
+  const e = String(email || '').trim().toLowerCase();
+  if (!e) return '';
+  try {
+    const ucet = await (await uloziste('uzivatele')).cti(e);
+    return (ucet && ucet.jmeno) ? String(ucet.jmeno) : '';
+  } catch (err) { return ''; }
+}
 
 export default async (req) => {
-  let ULO, SCHV;
-  try { ({ ULO, SCHV } = await jadro()); } catch (e) { return jadroChyba(e); }
+  let ULO, SCHV, JEKLY;
+  try { ({ ULO, SCHV, JEKLY } = await jadro()); } catch (e) { return jadroChyba(e); }
 
   const { chyba, relace } = await vyzadujRoli(req);
   if (chyba) return chyba;
@@ -71,73 +81,27 @@ export default async (req) => {
   /* Strop velikosti (audit 22. 8. 2026, B14): zakázka má řádově desítky
    * kilobajtů, s přílohami stovky. 4 MB je pojistka proti zaplnění úložiště
    * a proti holé 502 při překročení limitu Blobs — ne provozní hranice. */
+  /* K4-N18 (O9): do dvojnásobku stropu se tělo přečte, aby hláška řekla, z čeho
+   * se velikost skládá (Netlify samo nepustí tělo nad 6 MB); nad ním bez čtení. */
   const delka = +req.headers.get('content-length') || 0;
-  if (delka > ZAKAZKA_MAX_B)
+  if (delka > 2 * ZAKAZKA_MAX_B)
     return json({ ok: false, chyba: 'Zakázka je příliš velká (' + Math.round(delka / 1024) + ' kB, strop '
-      + Math.round(ZAKAZKA_MAX_B / 1024) + ' kB). Zmenšete přílohy.' }, 413);
+      + Math.round(ZAKAZKA_MAX_B / 1024) + ' kB). Zmenšete přílohy, nebo další nabídku založte jako novou zakázku.' }, 413);
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
   if (JSON.stringify(t).length > ZAKAZKA_MAX_B)
-    return json({ ok: false, chyba: 'Zakázka je příliš velká. Zmenšete přílohy.' }, 413);
-  /* importZakazka na nesmyslném vstupu vyhodí výjimku. Bez tohohle obalu by
-   * z ní vznikl pád funkce (Netlify vrátí holou 502) — a to je špatná odpověď
-   * hned dvakrát: uživatel se nedozví, co poslal špatně, a v odpovědi se může
-   * objevit kus vnitřku serveru. Odmítnutí patří sem, srozumitelně. */
-  let zak;
-  try { zak = globalThis.importZakazka(t.zakazka || {}); }
-  catch (e) { return json({ ok: false, chyba: 'Zakázku se nepodařilo přečíst: ' + e.message }, 400); }
-  const jmeno = ULO.uloJmenoSouboru(zak);
-  if (!jmeno) return json({ ok: false, chyba: 'Zakázka nemá vyplněné číslo nabídky.' }, 400);
-  if (String(zak.cislo || '').length > CISLO_MAX)
-    return json({ ok: false, chyba: 'Číslo nabídky je příliš dlouhé (nejvýš ' + CISLO_MAX + ' znaků).' }, 400);
+    return json({ ok: false, chyba: zakazkaVelikostHlaska(t.zakazka, Math.max(delka, JSON.stringify(t).length)) }, 413);
 
-  /* Tvar identifikátorů (bezpečnostní audit 22. 8. 2026, nález B1). Id variant,
-   * poznámek a příloh jdou v obrazovce do onclick; obrazovka je od 22. 8.
-   * escapuje, ale server navíc nepustí dovnitř nic, co není písmeno, číslice,
-   * tečka, podtržítko nebo pomlčka. Dvě vrstvy — kdyby jedna selhala. */
-  /* Od 9. 9. 2026 (B26, B29) hlídá uloIdProblemy i `kid` trvalých položek
-   * ceníku uvnitř variant a jedinečnost id variant, poznámek a příloh. */
-  const spatnaId = ULO.uloIdProblemy(zak);
-  if (spatnaId.length)
-    return json({ ok: false, chyba: 'Zakázka nese ' + ULO.uloIdProblemyText(spatnaId) + '.' }, 400);
-
-  /* vytištěná (odeslaná) nabídka se nikdy nepřepíše. Dvě vrstvy:
-   * 1) TÁŽ kontrola jako u složky (uloKontrolaZamku) — zámek nesmí zmizet
-   *    ani se změnit; žádná druhá pravda o zámcích.
-   * 2) Serverová pojistka navíc: u zamčené varianty se nesmí změnit ANI DATA.
-   *    V aplikaci to hlídá obrazovka, ale server mluví s kýmkoli — upravený
-   *    klient by jinak mohl přepsat obsah odeslané nabídky a zámek si nechat. */
+  /* POJISTKY ZAKÁZKY STOJÍ V lib/zakazka_kontrola.mjs (P4 / B72, 25. 9. 2026)
+   * a volá je i obnova ze zálohy — dvě kopie by se rozešly (a rozešly).
+   * Tady zůstává jen to, co je vlastní ukládání z prohlížeče: strop
+   * velikosti, razítko verze proti souběhu (B10), zápis a rejstřík. */
+  const prijem = zakazkaPrijmi(t.zakazka, ULO);
+  if (!prijem.ok) return json({ ok: false, chyba: prijem.chyba }, prijem.status);
+  const { zak, jmeno } = prijem;
   const stara = await s.cti('z/' + jmeno);
 
-  /* ZNAČKY UKÁZKOVÉHO A PRÁZDNÉHO CENÍKU SE DO DATABÁZE NEUKLÁDAJÍ
-   * (P2, nálezy N2/N3, 21. 9. 2026).
-   *
-   * Příčinu řeší jádro (`cenikDoplnKlice` značky ze vzoru nedoplňuje);
-   * tohle je druhá obrana: značka může přijít i starším klientem, importem
-   * souboru nebo ze zakázky uložené dřív, než se oprava nasadila. Uložená
-   * značka je zákeřná v tom, že uzamčené varianty se při načtení
-   * nepřepočítávají — zůstala by tam napořád a vypínala tisk nabídky
-   * u zakázky, která ceník má (ostré 0383 a 377).
-   *
-   * STOJÍ TO PŘED KONTROLOU UZAMČENÝCH VARIANT, A TO SCHVÁLNĚ. Ta kontrola
-   * porovnává `data` uložené a příchozí varianty na shodu znak po znaku;
-   * kdyby se značky odstraňovaly až těsně před zápisem, uložená verze by
-   * je neměla, příchozí ano, a legitimní uložení by spadlo na 409 „změnila
-   * by se data uzamčené nabídky". Čistí se proto OBĚ strany: příchozí
-   * zakázka i kopie té uložené, kterou server drží jen pro porovnání
-   * (zapisuje se `zak`, `stara` se nikdy neukládá).
-   *
-   * Čistí se jen značky, ne ceny — obsahu ceníku se to nedotýká. */
-  const ocistiZnacky = (z) => {
-    if (!z || typeof globalThis.ukazkoveOcisti !== 'function') return;
-    for (const v of (z.varianty || [])) {
-      const d = (v && v.data) || null;
-      if (!d) continue;
-      globalThis.ukazkoveOcisti(d.cenik);
-      if (d.proj) globalThis.ukazkoveOcisti(d.proj.cenik);
-    }
-  };
-  ocistiZnacky(zak);
-  ocistiZnacky(stara);
   /* Razítko verze (audit 22. 8. 2026, B10). Klient posílá razítko verze, ze
    * které vyšel (`ocekavaneRazitko`). Když v databázi leží jiná verze —
    * kolega mezitím uložil, nebo jde o cizí zakázku pod stejným číslem — server
@@ -146,88 +110,39 @@ export default async (req) => {
    * kontrola neuplatní, aby nasazení nezastavilo rozdělanou práci. */
   if (stara && typeof t.ocekavaneRazitko === 'string' && t.prepsat !== true) {
     const kol = ULO.uloKolize(stara, t.ocekavaneRazitko);
-    if (kol.kolize)
+    if (kol.kolize) {
+      /* KOLIZE JMENUJE ČLOVĚKA, NE E-MAIL (P7 / K16-N87, 25. 9. 2026).
+       * Do té doby hláška zněla „Zakázku mezitím uložil jan@firma.cz" —
+       * nebo „někdo jiný", když e-mail chyběl. Jméno se bere z razítka
+       * uložené verze (`upravilJmeno`, píše ho server z relace), u starších
+       * zakázek se dohledá v účtech. Nic se nevymýšlí: účet bez jména
+       * zůstane e-mailem. `kdoVy` = týž účet, tedy jiné okno nebo záložka. */
+      const kdoEmail = String((t.ocekavaneRazitko ? stara.upravil : stara.autor) || stara.upravil || stara.autor || '');
+      const ulozeneJmeno = String((t.ocekavaneRazitko ? stara.upravilJmeno : stara.autorJmeno) || '');
+      const kdo = ulozeneJmeno || (await jmenoUctu(kdoEmail)) || kdoEmail;
+      const kdoVy = !!kdoEmail && kdoEmail.toLowerCase() === String(relace.email || '').toLowerCase();
       return json({ ok: false, kolize: true, naDisku: kol.naDisku,
-        kdo: stara.upravil || stara.autor || '',
+        kdo, kdoEmail, kdoVy,
         chyba: t.ocekavaneRazitko
-          ? 'Zakázku mezitím uložil ' + (stara.upravil || 'někdo jiný') + '. Načtěte ji znovu, nebo změny vědomě přepište.'
-          : 'Stejné číslo nabídky už používá uložená zakázka ' + jmeno + ' (' + (stara.autor || '') + '). Zvolte vlastní číslo, nebo ji vědomě přepište.' }, 409);
-  }
-  if (stara) {
-    /* Odemčení odeslané nabídky smí jen administrátor (audit 22. 8. 2026, B3).
-     * uloKontrolaZamku bere zmizení zámku jako řádné, když přibyl záznam
-     * v odemceni[] — ale KDO ho přidal, do té doby nikdo na serveru neověřil.
-     * Teď: přibylo-li odemčení, vyžaduje se role Administrátor a razítko
-     * kdo/kdy se přepíše z relace, ne z toho, co poslal klient. */
-    const odemcene = ULO.uloOdemceniPribylo(stara, zak);
-    if (odemcene.length) {
-      if (relace.role !== 'Administrátor')
-        return json({ ok: false, chyba: 'Odemknout odeslanou (uzamčenou) nabídku smí jen '
-          + 'administrátor. Pokračujte klonem varianty.' }, 403);
-      for (const v of odemcene) {
-        const posledni = v.odemceni[v.odemceni.length - 1];
-        if (posledni && typeof posledni === 'object') {
-          posledni.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;
-          posledni.kdy = new Date().toISOString();
-        }
-      }
-    }
-    const k = ULO.uloKontrolaZamku(stara, zak);
-    if (!k.ok)
-      return json({ ok: false, chyba: 'Neuloženo: '
-        + k.problemy.map(ULO.uloProblemPopis).join('; ')
-        + '. Pokračujte klonem varianty.' }, 409);
-    for (const sv of (stara.varianty || [])) {
-      if (!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(sv))) continue;
-      const nv = (zak.varianty || []).find(v => v && v.id === sv.id);
-      if (nv && JSON.stringify(nv.data) !== JSON.stringify(sv.data))
-        return json({ ok: false, chyba: 'Neuloženo: změnila by se data uzamčené (odeslané) '
-          + 'nabídky. Pokračujte klonem varianty.' }, 409);
+          ? 'Zakázku mezitím uložil(a) ' + (kdo || 'někdo jiný') + (kdoVy ? ' (váš účet — jiné okno nebo záložka)' : '')
+            + '. Načtěte ji znovu, nebo změny vědomě přepište.'
+          : 'Stejné číslo nabídky už používá uložená zakázka ' + jmeno + (kdo ? ' (' + kdo + ')' : '')
+            + '. Zvolte vlastní číslo, nebo ji vědomě přepište.' }, 409);
     }
   }
 
-  /* Rozhodnutí o slevě (bezpečnostní audit 22. 8. 2026, nález B2). Stav
-   * „schváleno" / „zamítnuto" a jméno schvalovatele se do té doby přebíraly
-   * z prohlížeče. Teď je hlídá SCHV.schvalovaniServerKontrola proti stropům
-   * z programu (program/db.slevy) a roli z relace; razítka píše server. */
-  const prog = await (await uloziste('program')).cti('db');
+  const sProg = await uloziste('program');
+  const prog = await sProg.cti('db');
   const slevyNast = (prog && prog.platny && prog.platny.slevy) || {};
-  const rozhodnuti = SCHV.schvalovaniServerKontrola(stara, zak, relace, slevyNast);
-  if (!rozhodnuti.ok) return json({ ok: false, chyba: 'Neuloženo: ' + rozhodnuti.chyba }, 403);
-
-  /* Autor zakázky (11. 8. 2026). Doteď se nikde nepsalo, kdo zakázku založil —
-   * rejstřík věděl jen, kdo do něj naposledy sáhl. Bez autora se ale nedá
-   * převést práce po odcházejícím kolegovi na někoho jiného, což je přesně
-   * to, kvůli čemu archivace účtů vznikla.
-   *
-   * Autor se zapisuje jen jednou, při prvním uložení. Kdyby se přepisoval
-   * pokaždé, „autorem" by se stal ten, kdo si zakázku naposledy otevřel
-   * a uložil — a razítko by ztratilo smysl. Kdo naposledy sáhl, je `upravil`. */
-  /* Razítka při založení (audit 22. 8. 2026, nález B13). Do té doby se
-   * `autor` u NOVÉ zakázky přebíral z těla požadavku, když tam byl — obchodník
-   * mohl založit zakázku „za" vedoucího. Teď: nová zakázka (v databázi ještě
-   * není) dostane autora z relace; cizího autora smí u nové zakázky ponechat
-   * jen administrátor (obnova ze souboru/zálohy — tam je razítko doklad).
-   * U existující se autor nepřepisuje (11. 8. 2026), viz níž. */
-  if (!stara) {
-    if (!zak.autor || zak.autor === relace.email || relace.role !== 'Administrátor')
-      zak.autor = relace.email;
-  } else if (!zak.autor) zak.autor = relace.email;
-  zak.upravil = relace.email;
-  /* Totéž pro razítko zámku: NOVĚ vzniklý zámek (v uložené verzi varianta
-   * zamčená nebyla) nese `kdo` z relace, ne z klienta. `kdy` se nechává —
-   * je součástí klíče zámku a klient si ho drží v rozpracované kopii. */
-  for (const v of (zak.varianty || [])) {
-    if (!v || !v.zamek || !v.zamek.zamceno) continue;
-    const sv = stara ? (stara.varianty || []).find(x => x && x.id === v.id) : null;
-    if (sv && sv.zamek && sv.zamek.zamceno) continue;           // zámek už byl — nesahat
-    v.zamek.kdo = relace.jmeno ? relace.jmeno + ' <' + relace.email + '>' : relace.email;
-  }
-  /* Jméno obchodníka do rejstříku (21. 8. 2026, zadání J. V.). Bere se
-   * z RELACE, ne od klienta — jméno v seznamu je stejné razítko jako autor
-   * a nesmí jít podvrhnout. Zapisuje se při každém uložení, aby se
-   * v seznamu projevila i změna jména v profilu. */
-  if (zak.autor === relace.email && relace.jmeno) zak.autorJmeno = relace.jmeno;
+  /* Matice zobrazení a zveřejněné ceníky pro kontrolu B112 (kdo smí měnit
+   * ceník varianty a přepisy). Administrátor matici nepotřebuje — čte se
+   * jen pro ostatní role. */
+  const zobr = relace.role === 'Administrátor' ? null : await sProg.cti('zobrazeni');
+  const kontrola = zakazkaServerKontrola(stara, zak, relace,
+    { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni',
+      program: prog, matice: (zobr && zobr.matice) || null });
+  if (!kontrola.ok) return json({ ok: false, chyba: kontrola.chyba }, kontrola.status);
+  const sporne = kontrola.sporne;
 
   const razitko = ULO.uloRazitkoNove();
   zak.uloRazitko = razitko;
@@ -263,10 +178,39 @@ export default async (req) => {
         ? { ...z, autorJmeno: mapa[String(z.autor).toLowerCase()] } : z);
     } catch (e) { /* jména jsou pohodlí, ne podmínka uložení zakázky */ }
   }
+  /* ADRESY STAVEB U STARŠÍCH ZÁZNAMŮ (P15 / K16-N85, 25. 9. 2026).
+   *
+   * Hledání umí adresu stavby, jenže záznamy uložené dřív ji v rejstříku
+   * nemají — a zakázky, které se už neotevírají, by se podle adresy nenašly
+   * nikdy. Doplňují se proto po dávkách při ukládání: nejvýš
+   * ULO_ADRESY_DAVKA zakázek najednou, čtou se souběžně a jen dokud nějaký
+   * záznam klíč `adresa` nenese (pak se tahle větev přestane spouštět sama).
+   * Nečitelná zakázka se zkusí příště; zmizelá dostane prázdnou adresu. */
+  const bezAdresy = ULO.uloRejstrikBezAdresy(stavajici).filter(x => x !== jmeno);
+  if (bezAdresy.length) {
+    const nalezene = await Promise.all(bezAdresy.map(async (soubor) => {
+      try { const z = await s.cti('z/' + soubor); return [soubor, ULO.uloRejstrikAdresa(z && z.adresa)]; }
+      catch (e) { return null; }
+    }));
+    const adresy = new Map(nalezene.filter(Boolean));
+    stavajici = stavajici.map(z => (z && adresy.has(z.soubor)) ? { ...z, adresa: adresy.get(z.soubor) } : z);
+  }
   const novy = ULO.uloRejstrikSloucit(stavajici,
     ULO.uloRejstrikZaznam(zak, { soubor: jmeno, razitko }));
   await s.zapis('_rejstrik', { schema: 1, zakazky: ULO.uloRejstrikSerad(novy), kdo: relace.email,
                                upraveno: new Date().toISOString() });
-  return json({ ok: true, soubor: jmeno, razitko });
+  /* Sporné razítko (B59) se hlásí hned — uložení prošlo, ale obchodník se
+   * musí dozvědět, že čísla odeslané nabídky server z dat nedostal. */
+  const varovani = sporne.map(x => 'Pozor, nabídka ' + x.cislo + ': '
+    + globalThis.zamekOvereniText(x.ov) + ' Obnovte stránku (Ctrl+F5) a nabídku zkontrolujte.').join(' ');
+  /* Slevy tak, jak je server uložil (revize 13. 10. 2026): schvalovaniServerKontrola
+   * může čas rozhodnutí orazítkovat nebo vrátit uložené rozhodnutí (B101,
+   * B105). Prohlížeč si je převezme — jinak by ukazoval jiný stav slevy, než
+   * jaký leží v databázi, a zámek nabídky by při dalším uložení nesouhlasil. */
+  const slevy = (zak.varianty || []).filter(v => v && v.data)
+    .map(v => ({ id: v.id, sleva: v.data.sleva || null, slevaProj: v.data.slevaProj || null,
+      /* Cenová výjimka (13. 10. 2026) — server ji razí stejně jako slevu. */
+      cenovaVyjimka: v.data.cenovaVyjimka || null }));
+  return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, slevy } : { ok: true, soubor: jmeno, razitko, slevy });
 };
 export const config = { path: '/api/zakazky' };

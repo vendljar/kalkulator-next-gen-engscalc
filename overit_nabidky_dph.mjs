@@ -56,8 +56,14 @@ await p.evaluate(() => {
   const bezZnacek = o => { if (o) { delete o.ukazkove; delete o.prazdny; } };
   [DEFAULT_CENIK, DEFAULT_CENIK_PROJ, C, PC, NAST.slevy, NAST.firma].forEach(bezZnacek);
   ZAK.varianty.forEach(v => { bezZnacek(v.data.cenik); bezZnacek(v.data.proj.cenik); });
+  /* P4 (K14-N64): vlastní položka sekce se musí v nabídce PROJ objevit. */
+  const zam = PJ.sekce.find(x => x.key === 'zamereni');
+  if (zam) zam.polozky.push({ nazev: 'Zkušební položka navíc', typ: 'fix', cena: 5000, vlastni: true });
   ZAK.cislo = '2026 - OVP - CN - 0365'; ZAK.nazevAkce = 'Zkouška nabídky';
   ZAK.objednatel = 'Zkušební zákazník'; ZAK.adresa = 'Ulice 1, Praha';
+  /* Nulové rozměry nové zakázky jsou zábrana „rozmery", která od #377
+   * (1. 10. 2026) nabídku OCK nepustí — rozměry vzorové šachty. */
+  Object.assign(Z, { prejezd: 2.7, zdvih: 12, prohluben: 1.05, sirka: 1.51, hloubka: 1.515 });
   render();
 });
 
@@ -87,6 +93,9 @@ const stavDph = (o) => o.evaluate(() => {
     prepinac: !!document.getElementById('tiskDphCheck'),
   };
 });
+const textProj = await proj.evaluate(() => document.getElementById('dok').innerText);
+zkus('P4: vlastní položka PROJ je v online nabídce u své sekce', /– Zkušební položka navíc/.test(textProj)
+  && textProj.indexOf('Zkušební položka navíc') > textProj.indexOf('CENA ZA ZAMĚŘENÍ'), textProj.slice(0, 200));
 let s = await stavDph(proj);
 zkus('PROJ: nabídka se generuje bez DPH', s.bezDph && s.videt === 0, JSON.stringify(s));
 zkus('PROJ: řádky DPH v dokumentu existují (jen se netisknou)', s.radku >= 2, s.radku);
@@ -144,8 +153,56 @@ zkus('PROJ: podpis s razítkem má dvojnásobnou velikost (336 px)',
   podpis === 'bez podpisu' || /max-height:\s*336px/.test(podpis), podpis);
 await proj2.close();
 
+/* Sleva projekce (nález J. V. 29. 9. 2026): činnosti za cenu PŘED slevou,
+ * rekapitulace se musí sečíst — řádky = cena před slevou, − sleva = celkem.
+ * Do opravy stály činnosti po slevě a „DPZ + IČ" nedalo cenu před slevou. */
+/* Sleva cestou obchodníka (slevaProjSet): přirážka 30 % a strop role 20 %,
+ * aby 14 % prošlo automaticky (marže po slevě 10,55 % nad minimem 10 %). */
+const puvodniMarze = await p.evaluate(() => {
+  const m = PC.marze;
+  PC.marze = 0.3;
+  NAST.slevy.stropy = Object.assign({}, NAST.slevy.stropy, { 'Obchodník': 0.2 });
+  render();
+  slevaProjSet('procenta', 14);
+  render();
+  return m;
+});
+zkus('příprava: sleva projekce 14 % je schválená automaticky',
+  await p.evaluate(() => aktivniVarianta(ZAK).data.slevaProj.stav) === 'schváleno automaticky');
+const proj3 = await nabidka('nabidkaProjNahled');
+const rek = await proj3.evaluate(() => [...document.querySelectorAll('table.rekap tr')]
+  .map(tr => [...tr.cells].map(td => td.innerText.trim())));
+const kc = t => +String(t || '').replace(/[^\d,]/g, '').replace(',', '.');
+const iPred = rek.findIndex(r => /Cena před slevou/.test(r[0]));
+const radkySlevy = rek.find(r => /^Sleva/.test(r[0])) || [];
+const celkem = rek.find(r => /CELKEM bez DPH/.test(r[0])) || [];
+const soucetCinnosti = rek.slice(0, Math.max(0, iPred)).reduce((a, r) => a + kc(r[1]), 0);
+zkus('PROJ se slevou: rekapitulace má řádek ceny před slevou i slevy', iPred > 0 && radkySlevy.length === 2, JSON.stringify(rek));
+zkus('PROJ se slevou: součet činností = cena před slevou',
+  iPred > 0 && Math.abs(soucetCinnosti - kc(rek[iPred][1])) < 0.005, soucetCinnosti + ' × ' + (rek[iPred] || [])[1]);
+zkus('PROJ se slevou: cena před slevou − sleva = CELKEM bez DPH',
+  iPred > 0 && Math.abs(kc(rek[iPred][1]) - kc(radkySlevy[1]) - kc(celkem[1])) < 0.005, JSON.stringify(rek.slice(iPred)));
+const cenaDpz = await proj3.evaluate(() => {
+  const t = [...document.querySelectorAll('table.cena')].find(x => /POVOLENÍ ZÁMĚRU \(DPZ\)/.test(x.innerText));
+  return t ? t.querySelector('td.castka').innerText.split('\n')[0].trim() : '';
+});
+const dpzRekap = (rek.find(r => /^DPZ/.test(r[0])) || [])[1] || '';
+zkus('PROJ se slevou: cena DPZ v textu nabídky = řádek DPZ v rekapitulaci (před slevou)',
+  !!cenaDpz && kc(cenaDpz) === kc(dpzRekap), cenaDpz + ' × ' + dpzRekap);
+await proj3.close();
+await p.evaluate((m) => { slevaProjSet('procenta', 0); PC.marze = m; render(); }, puvodniMarze);
+
 /* ---------- nabídka OCK ---------- */
-await p.evaluate(() => { prepniTab('spec'); render(); });
+/* Ceník OCK sestavení je nulový — nabídka za 0 Kč je zábrana „cenaNula",
+ * která od #377 (1. 10. 2026) náhled nepustí. Zkušební ceník z repozitáře. */
+{
+  const { createRequire } = await import('module');
+  const ZC = createRequire(import.meta.url)('./src/zkusebni_cenik.js');
+  await p.evaluate((c) => { Object.assign(C, c); delete C.prazdny; delete C.ukazkove; }, ZC.zkusebniCenik());
+}
+/* Zámek strany (P6 / K19-N114, 13. 10. 2026): číslo OVP vyřadí OCK a jeho
+ * nabídku zablokuje — nabídka OCK patří zakázce s číslem řady OPR. */
+await p.evaluate(() => { ZAK.cislo = '2026 - OPR - CN - 0365'; prepniTab('spec'); render(); });
 const ock = await nabidka('nabidkaOckDokument');
 s = await stavDph(ock);
 zkus('OCK: nabídka se generuje bez DPH', s.bezDph && s.videt === 0, JSON.stringify(s));

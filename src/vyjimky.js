@@ -1,0 +1,615 @@
+/* ============================================================
+ * CENOVÉ VÝJIMKY VARIANTY VE SCHVALOVÁNÍ (rozhodnutí J. V. 13. 10. 2026)
+ *
+ * CO SE TÍM ŘEŠÍ
+ * Dvě cesty, kterými obchodník (role bez práva měnit ceník) pošle nabídku
+ * levněji než podle platného ceníku, a přitom mimo schvalování slev:
+ *
+ *  1) SMĚS CENÍKU. Zakázka se starším ceníkem smí přepočítat jen vybrané
+ *     položky („dohodnutá cena zůstává" — cenikPrepocti s `opts.cesty`)
+ *     a server (kontrola ceníku skupiny B128/B138 v uloziste.js) takovou
+ *     směs „uložená verze + platný ceník" pustí i se zámkem nabídky (audit:
+ *     −3,7 % proti platnému). J. V.: „Ano, směs do schvalování."
+ *  2) RUČNÍ SAZBA PÁSU OPLÁŠTĚNÍ „JINÉ" nižší než ceníková (otázka 3 nočního
+ *     #398: 1 Kč/m² = −17 %). J. V.: „Ponechat se schvalováním."
+ *
+ * MECHANISMUS (co nejjednodušší, nad schvalováním slev)
+ * Varianta nese v datech `cenovaVyjimka` — jedno rozhodnutí, které kryje
+ * obojí:
+ *   { stav: 'čeká na schválení' | 'schváleno' | 'zamítnuto',
+ *     obsah, polozek, pasu,                      // co se schvaluje
+ *     pozadal, pozadalKdy,                       // žádost obchodníka
+ *     schvalil, schvalilEmail, schvalilKdy,      // razí server
+ *     zamitl, zamitlEmail, zamitlKdy, zamitnutoDuvod }
+ * OBSAH je kanonický zápis (JSON) toho, čím se varianta od platného ceníku
+ * liší: cesty a hodnoty sledovaných položek (cenikSledovane), které se od
+ * platného ceníku řady varianty liší a nejsou zakázkové (přirážka, DPH),
+ * a pásy „jiné" pod ceníkovou sazbou (stěna, pořadí, název, sazba).
+ * Rozhodnutí ho nese CELÝ a platí jen pro přesně tentýž text (B154, audit
+ * 15. 10. 2026: 32bitový otisk FNV-1a šel dvěma znaky v názvu pásu dopočítat
+ * na schválenou hodnotu). Změna směsi nebo sazby po schválení obsah změní —
+ * schválení přestane platit. Rozhodnutí z doby před v15.10.8 nesou jen
+ * otisk, obsah ne — neplatí a výjimka se musí schválit znovu.
+ *
+ * KDO CO SMÍ (vzor B2 / B101 / B105 u slev)
+ *  – Požádat smí každý (stav „čeká"); server žádost orazítkuje.
+ *  – Schválit / zamítnout / vzít zpět smí administrátor a role s právem
+ *    „Schvalování slevy nad strop role" (`sleva.schvalovani` v matici
+ *    zobrazení — týž nadřízený, který odklepává slevy). Jméno, e-mail, čas
+ *    a obsah razí server z relace a z dat, která se ukládají; bez práva se
+ *    rozhodnutí nepřepíše ani nesmaže (vrátí se uložené), dokud platí.
+ *  – Výjimku POTŘEBUJE jen role bez práva ceníku té části: směs položek OCK
+ *    bez `tab.cenik`, PROJ bez `tab.cenikproj`, pás „jiné" bez `tab.cenik`.
+ *    Administrátor nikdy.
+ *  – Nový zámek nabídky (tisk = odeslání) varianty, která výjimku potřebuje
+ *    a nemá platné schválení, odmítne klient (zábrana „cenovaVyjimka"
+ *    v kontroly.js) i server (403). Rozpracované uložení beze zámku projde.
+ *
+ * Výpočet ceny se tím nemění ani o korunu — modul jen posuzuje data.
+ * ============================================================ */
+
+const VYJ_CEKA = 'čeká na schválení';
+const VYJ_SCHVALENO = 'schváleno';
+const VYJ_ZAMITNUTO = 'zamítnuto';
+const VYJ_STAVY = [VYJ_CEKA, VYJ_SCHVALENO, VYJ_ZAMITNUTO];
+/* Pole záznamu; jiná server zahodí (nic, co by se tvářilo jako razítko). */
+const VYJ_POLE = ['stav', 'obsah', 'polozek', 'pasu', 'pozadal', 'pozadalKdy',
+  'schvalil', 'schvalilEmail', 'schvalilKdy', 'zamitl', 'zamitlEmail', 'zamitlKdy', 'zamitnutoDuvod'];
+/* Do sdíleného rejstříku (/api/schvalovani) jen tohle — žádná částka, žádná
+ * položka ceníku, jen kolik jich je. */
+const VYJ_REJSTRIK_POLE = ['stav', 'polozek', 'pasu', 'pozadal', 'pozadalKdy',
+  'schvalil', 'schvalilKdy', 'zamitl', 'zamitlKdy', 'zamitnutoDuvod'];
+const VYJ_DUVOD_MAX = 500;
+/* Značka tvaru obsahu s pásem: 2 = plocha na 0,1 m² (B183 b, v20.10.5). */
+const VYJ_OBSAH_TVAR = 2;
+
+/* NEJNIŽŠÍ CENÍKOVÁ SAZBA OPLÁŠTĚNÍ pro šachtu (výklad, výchozí volba):
+ * typy z číselníku, které se u té šachty nabízejí (oplasteniTypy podle
+ * interiér/exteriér), bez „bez — dodá stavba" a „jiné", se sazbou z ceníku
+ * VARIANTY větší než nula. Pás „jiné" levnější než nejlevnější materiál,
+ * který jde vybrat bez schválení, je cenová výjimka. Typ s nulovou sazbou
+ * se nebere (prázdná položka ceníku by mez srazila na nulu). null = ceník
+ * žádnou kladnou sazbu nemá — není s čím srovnat. */
+function vyjimkyMinSazbaOpl(zadani, cenik) {
+  const typy = (typeof oplasteniTypy === 'function')
+    ? oplasteniTypy(!zadani || zadani.typSachty !== 'interiérová') : [];
+  let min = null;
+  typy.forEach(t => {
+    if (!t || t.id === 'bez' || t.id === 'jine') return;
+    const sazba = +String(t.id).split('.').slice(1).reduce((o, k) => (o == null ? undefined : o[k]), cenik || {});
+    if (isFinite(sazba) && sazba > 0 && (min === null || sazba < min)) min = sazba;
+  });
+  return min;
+}
+
+/* Pásy „jiné" (opláštění po stěnách) s ruční sazbou pod nejnižší ceníkovou.
+ * Standardní režim pásy nečte — tam se nehlídá nic.
+ * ROZSAH PO OŘEZU (B178, J. V. 17. 10. 2026): do 16. 10. nesl pás meze tak,
+ * jak je obchodník zadal (B155) — poslední pás „až nahoru" pak šel po
+ * schválení roztáhnout zvýšením zdvihu nebo rozměru stěny. Meze teď počítá
+ * TÁŽ funkce jako jádro (oplasteniPasyMeze: horní hrana = zdvih + přejezd,
+ * mezilehlé pásy ořezané na ni, pás nulové výšky vypadne) a k nim jde délka
+ * stěny ze zadání (A, C = šířka šachty, B, D = hloubka). Změna zdvihu,
+ * přejezdu, šířky nebo hloubky, která pás mění, změní obsah → schválení
+ * neplatí (fail-closed). Plochu (m²) obsah nenese — jádro ji počítá
+ * z vnějších rozměrů stěny podle profilů a zasklení; karta ji dopočítá
+ * z výsledku jádra (vyjimkyPasyPlochy). Čísla jako
+ * jádro: `+x || 0`. */
+function vyjimkyPasyJine(zadani, cenik) {
+  const o = zadani && zadani.oplasteni;
+  if (!o || o.rezim !== 'poStenach' || !o.steny || typeof o.steny !== 'object') return [];
+  if (typeof oplasteniPasyMeze !== 'function') return [];
+  const min = vyjimkyMinSazbaOpl(zadani, cenik);
+  if (min === null) return [];
+  const vyska = (+zadani.zdvih || 0) + (+zadani.prejezd || 0);
+  const delky = { A: +zadani.sirka || 0, B: +zadani.hloubka || 0, C: +zadani.sirka || 0, D: +zadani.hloubka || 0 };
+  const r3 = x => Math.round(x * 1000) / 1000;
+  const out = [];
+  ['A', 'B', 'C', 'D'].forEach(k => {
+    const st = o.steny[k];
+    if (!st || typeof st !== 'object' || !Array.isArray(st.pasy) || !st.pasy.length) return;
+    const posl = st.pasy.length - 1;
+    /* Výchozí typ se u stěny s pásy nepoužije (pásy jsou) — jen neznámý typ
+     * by ho dostal, a ten „jiné" není. */
+    oplasteniPasyMeze(o.steny, k, vyska, () => '').forEach(p => {
+      if (p.typ !== 'jine') return;
+      const sazba = +p.naklad || 0;
+      if (sazba >= min) return;
+      const delka = delky[k];
+      out.push({ stena: k, i: p.i, nazev: String(p.nazev || ''), naklad: sazba,
+        odM: r3(p.odM), doM: r3(p.doM), posledni: p.i === posl, delka: r3(delka) });
+    });
+  });
+  return out;
+}
+
+/* Platný ceník pro řadu varianty ze záznamu programu (db.platny) — týmiž
+ * kroky, jakými ho aplikace nasadí (progPouzij: migrace lešení, zahraniční
+ * odchylky očištěné) a podá variantě (cenikDnesniProVariantu). Server
+ * i prohlížeč volají TUTÉŽ funkci nad týmž záznamem, ať se obsahy shodují.
+ * null = platný ceník neznáme (nic zveřejněného) — směs se neposuzuje. */
+function vyjimkyDnesniZProgramu(platny, data) {
+  if (!platny || !platny.cenik || typeof platny.cenik !== 'object') return null;
+  const kopie = x => JSON.parse(JSON.stringify(x || {}));
+  const d = { cenik: kopie(platny.cenik), proj: { cenik: kopie(platny.cenikProj) } };
+  if (typeof cenikMigraceLeseni === 'function') { try { cenikMigraceLeseni(d.cenik); } catch (e) { /* nic */ } }
+  if (typeof cenikDnesniProRadu !== 'function') return d;
+  const zahr = (typeof cenikZahrOciste === 'function') ? cenikZahrOciste(platny.zahranicni) : platny.zahranicni;
+  const rada = (typeof cenikRadaVarianty === 'function') ? cenikRadaVarianty(data) : 'cr';
+  let out;
+  try { out = cenikDnesniProRadu(d, zahr, rada); } catch (e) { out = d; }
+  /* Číslo platné verze — jen pro znění hlášky (vyjimkyObsah, `pod`). */
+  if (out && typeof out === 'object') out.verze = platny.verze;
+  return out;
+}
+
+/* CO SE NA VARIANTĚ SCHVALUJE. `dnesni` = platný ceník pro řadu varianty
+ * (vyjimkyDnesniZProgramu), null = neznámý (směs se pak neposuzuje, pásy
+ * ano — srovnávají se s ceníkem varianty). `vyrazena` = strana vyřazená
+ * P6 ('ock' | 'proj' | ''): její data se neposuzují.
+ * Vrací { smes:[{cesta, sekce, popis}], pasy:[…], polozek, pasu, obsah,
+ * prazdny }. `obsah` (kanonický JSON) nese hodnoty VARIANTY (ne platného
+ * ceníku) — mění se, když obchodník po schválení sáhne na směs, sazbu
+ * nebo rozsah pásu (odM/doM, B155 — J. V. 16. 10. 2026).
+ * `jekly` = katalog profilů pro výpočet ploch (B178, v17.10.5); bez něj
+ * se vezme globální JEKLY, a není-li ani ten, plocha je neznámá (null). */
+function vyjimkyObsah(data, dnesni, vyrazena, jekly) {
+  const d = data || {};
+  const smes = [];
+  /* Varianta počítala z PLATNÉ verze (razítko) → rozdíly jsou ruční úpravy
+   * cen, ne starší ceník. Jen pro znění hlášky; rozhoduje se jinde. */
+  const vR = d.cenikRazitko && typeof d.cenikRazitko === 'object' ? +d.cenikRazitko.verze : NaN;
+  const naPlatne = !!dnesni && isFinite(vR) && vR > 0 && vR === +dnesni.verze;
+  if (dnesni && typeof cenikRozdily === 'function') {
+    cenikRozdily(d, dnesni).forEach(r => {
+      if (typeof cenikPatriZakazce === 'function' && cenikPatriZakazce(r.cesta)) return;   // přirážka, DPH
+      /* Klíč, který platný ceník vůbec nenese (zveřejněný dřív, než klíč
+       * vznikl): hodnotu variantě doplnil import (cenikDoplnKlice — nula,
+       * u voleb výchozí text), ne obchodník. Není s čím srovnat. */
+      if (r.nova === undefined) return;
+      /* CENA DLE NABÍDKY (S13, J. V. 16. 10. 2026): položku, kterou PLATNÝ
+       * ceník označil příznakem, zadává obchodník sám podle nabídky — ruční
+       * cena není odchylka od ceníku. Příznak jen z platného ceníku
+       * (`dnesni`), nikdy z ceníku varianty: ten si zakázka umí podstrčit. */
+      if (typeof cenikDleNabidkyJe === 'function' && String(r.cesta).indexOf('C.') === 0
+          && cenikDleNabidkyJe(dnesni.cenik, r.cesta)) return;
+      const sekce = r.sekce === 'PROJ' ? 'PROJ' : 'OCK';
+      if ((sekce === 'PROJ' ? 'proj' : 'ock') === vyrazena) return;
+      /* `pod` = číslo varianty pod platným ceníkem — jen pro znění hlášky. */
+      const pod = naPlatne && typeof r.stara === 'number' && typeof r.nova === 'number' && r.stara < r.nova;
+      smes.push({ cesta: r.cesta, sekce, popis: String(r.popis || r.cesta), hodnota: r.stara, pod,
+        cenikova: r.nova, jed: r.jed });
+    });
+  }
+  smes.sort((a, b) => (a.cesta < b.cesta ? -1 : a.cesta > b.cesta ? 1 : 0));
+  const pasy0 = vyrazena === 'ock' ? [] : vyjimkyPasyJine(d.ock && d.ock.zadani, d.cenik);
+  /* PLOCHA Z VÝSLEDKU JÁDRA (zbytek B178, J. V. 17. 10. 2026: spojit
+   * s B165). Jen když je pás „jiné" pod mezí — obsah samotné směsi má
+   * tvar jako dřív a jeho schválení platí dál. */
+  const pl = pasy0.length ? vyjimkyPlochyJadra(d, pasy0, jekly) : { pasy: [], svetliky: [] };
+  const pasy = pasy0.length ? pl.pasy : pasy0;
+  const svetliky = pl.svetliky;
+  /* PLOCHA NA 0,1 m² (B183 volba b, J. V. 20. 10. 2026, v20.10.5). Obsah
+   * s pásem nese značku tvaru `v: 2`; do v20.10.4 nesl plochu na celé m²
+   * bez značky. `obsahStary` = obsah starého tvaru (celé m²) — jen pro
+   * porovnání DŘÍV schválených výjimek (vyjimkaObsahSedi): nový záznam ho
+   * nikdy nenese (razí se z `obsah`), takže nové schválení drží mez
+   * < 0,1 m². Obsah jen se směsí má tvar beze změny (bez `v`). */
+  const zapis = (m2o, stary) => {
+    const ob = { s: smes.map(x => [x.cesta, x.hodnota === undefined ? null : x.hodnota]),
+      p: pasy.map(x => [x.stena, x.i, x.nazev, x.naklad, x.odM, x.doM, x.delka, m2o(x.m2)]) };
+    if (pasy.length) ob.l = svetliky.map(x => [x.kde, x.stena, x.nazev, x.naklad, m2o(x.m2)]);
+    if (pasy.length && !stary) ob.v = VYJ_OBSAH_TVAR;
+    return JSON.stringify(ob);
+  };
+  const obsah = (smes.length || pasy.length) ? zapis(vyjimkyM2Schvaleni, false) : '';
+  const obsahStary = pasy.length ? zapis(vyjimkyM2Stary, true) : '';
+  return { smes: smes.map(x => ({ cesta: x.cesta, sekce: x.sekce, popis: x.popis, pod: x.pod,
+      pouzita: x.hodnota, cenikova: x.cenikova, jed: x.jed })), pasy, svetliky,
+    polozek: smes.length, pasu: pasy.length, obsah, obsahStary, prazdny: !smes.length && !pasy.length };
+}
+
+/* PLOCHY PÁSŮ A SVĚTLÍKŮ „JINÉ" Z VÝSLEDKU JÁDRA (zbytek B178, v17.10.5).
+ * Jádro počítá plochu z vnějších rozměrů stěny podle profilů a zasklení
+ * a k pásům přidá světlíky u dveří z převažujícího materiálu stěn B–D
+ * (#375) — jejich plocha závisí na nástupištích a šířce vstupu. Obojí
+ * proto patří do obsahu: schválení levného pásu nekryje bez nového
+ * schválení větší světlíky ani posun vnějšího rozměru.
+ * ZAOKROUHLENÍ (B183 volba b, J. V. 20. 10. 2026, v20.10.5): obsah nese
+ * plochu na 0,1 m² NAHORU (do v20.10.4 na celé m² — nekrytý nárůst až těsně pod
+ * 1 m²). Změna, která plochu posune přes zaokrouhlení na desetiny,
+ * schválení shodí; nekrytý nárůst je AŽ TĚSNĚ POD 0,1 m² na pás či
+ * světlík (2,51 → 2,60 m² = týž obsah „2,6“, 2,61 m² jiný) × rozdíl sazeb
+ * (BEZPECNOST_MEZE.md). Dřív schválené výjimky (obsah na celé m², bez
+ * značky tvaru) platí dál, dokud se jejich obsah starého tvaru nezmění
+ * (vyjimkaObsahSedi) — s mezí < 1 m², kterou schvalovatel tehdy schválil.
+ * Karta ukazuje plochu touž funkcí `vyjimkyM2Schvaleni` (V7-N1).
+ * Světlík „jiné" se bere se sazbou pod mezí (táž jako u pásů); chyba
+ * výpočtu = plocha null (obsah jiný než při schválení — fail-closed). */
+function vyjimkyPlochyJadra(d, pasy, jekly) {
+  const jk = jekly || (typeof JEKLY !== 'undefined' ? JEKLY : null);
+  let vys = null;
+  if (jk && typeof vypocet === 'function' && d.ock) {
+    try { vys = vypocet(d.ock.zadani, d.cenik, jk, d.ock.fixes); } catch (e) { vys = null; }
+  }
+  const min = vyjimkyMinSazbaOpl(d.ock && d.ock.zadani, d.cenik);
+  const r2 = x => (isFinite(+x) ? Math.round(+x * 100) / 100 : null);
+  const sv = (vys && vys.oplasteni && Array.isArray(vys.oplasteni.svetliky)) ? vys.oplasteni.svetliky : [];
+  const svetliky = sv.filter(x => x && x.typ === 'jine' && min !== null && (+x.naklad || 0) < min)
+    .map(x => ({ kde: String(x.kde || ''), stena: String(x.stena || ''), nazev: String(x.nazev || ''),
+      naklad: +x.naklad || 0, m2: r2(x.m2) }));
+  return { pasy: vyjimkyPasyPlochy(pasy, vys), svetliky };
+}
+
+/* Část obsahu, která patří ke stranám `strany` ('ock' | 'proj'; '?' =
+ * neznámý typ dokumentu = obě) — pro dotisk dokumentu nové strany do
+ * odeslané varianty (B153). Pásy „jiné" patří k OCK. */
+function vyjimkyObsahStran(obsah, strany) {
+  const o = obsah || {};
+  const s = new Set(strany || []);
+  const ock = s.has('ock') || s.has('?'), proj = s.has('proj') || s.has('?');
+  const smes = (o.smes || []).filter(x => (x.sekce === 'PROJ' ? proj : ock));
+  const pasy = ock ? (o.pasy || []) : [];
+  return { smes, pasy, polozek: smes.length, pasu: pasy.length, obsah: o.obsah || '',
+    prazdny: !smes.length && !pasy.length };
+}
+
+/* Potřebuje role schválení? `smi(klic)` = právo z matice zobrazení
+ * (server: zobrazeniSmi s rolí relace, prohlížeč: smiZobrazit). */
+function vyjimkyPotreba(obsah, smi) {
+  const o = obsah || {};
+  const s = typeof smi === 'function' ? smi : () => false;
+  const ock = (o.smes || []).some(x => x.sekce === 'OCK') && !s('tab.cenik');
+  const proj = (o.smes || []).some(x => x.sekce === 'PROJ') && !s('tab.cenikproj');
+  const pas = (o.pasy || []).length > 0 && !s('tab.cenik');
+  return { potreba: ock || proj || pas, ock, proj, pas };
+}
+
+/* Sedí obsah záznamu na obsah varianty? PŘESNĚ týž text (B154), nebo
+ * — u záznamu z doby před v20.10.5 — týž text starého tvaru (plocha na
+ * celé m², B183 b). Starý tvar nemá značku `v`, nový ji má, takže nový
+ * záznam starým zaokrouhlením nikdy neprojde. */
+function vyjimkaObsahSedi(rec, obsah) {
+  if (!rec || typeof rec !== 'object' || typeof rec.obsah !== 'string' || rec.obsah === '') return false;
+  if (!obsah || typeof obsah.obsah !== 'string' || obsah.obsah === '') return false;
+  if (rec.obsah === obsah.obsah) return true;
+  return typeof obsah.obsahStary === 'string' && obsah.obsahStary !== '' && rec.obsah === obsah.obsahStary;
+}
+/* Sedí záznam jen starým tvarem (karta pak ukáže plochu, jak ji schválil). */
+function vyjimkaStaryTvar(rec, obsah) {
+  return vyjimkaObsahSedi(rec, obsah) && rec.obsah !== obsah.obsah;
+}
+
+/* Schválení platí jen pro týž obsah (B154, vyjimkaObsahSedi). Rozhodnutí
+ * bez obsahu (staré, jen s otiskem) neplatí. */
+function vyjimkaPlati(rec, obsah) {
+  return !!(rec && typeof rec === 'object' && rec.stav === VYJ_SCHVALENO && vyjimkaObsahSedi(rec, obsah));
+}
+
+/* Kategorie pro záložku: 'bez' (nic se neliší), 'nepozadano', 'ceka',
+ * 'schvaleno', 'zamitnuto'. Rozhodnutí k jinému obsahu = čeká znovu. */
+function vyjimkaKategorie(rec, obsah) {
+  if (!obsah || obsah.prazdny) return 'bez';
+  if (!rec || typeof rec !== 'object' || VYJ_STAVY.indexOf(rec.stav) < 0) return 'nepozadano';
+  if (!vyjimkaObsahSedi(rec, obsah)) return 'ceka';
+  if (rec.stav === VYJ_SCHVALENO) return 'schvaleno';
+  if (rec.stav === VYJ_ZAMITNUTO) return 'zamitnuto';
+  return 'ceka';
+}
+
+/* Kdo smí rozhodnout: administrátor a role s právem schvalovat slevy. */
+function vyjimkaSmiRozhodnout(role, smi) {
+  if (role === 'Administrátor') return true;
+  return !!(typeof smi === 'function' && smi('sleva.schvalovani'));
+}
+
+/* ---------- kroky v prohlížeči (server je stejně razí po svém) ---------- */
+
+function vyjimkaZaklad(obsah, puvodni) {
+  const p = puvodni && typeof puvodni === 'object' ? puvodni : {};
+  const r = { obsah: (obsah && obsah.obsah) || '', polozek: (obsah && obsah.polozek) || 0, pasu: (obsah && obsah.pasu) || 0 };
+  if (p.pozadal) { r.pozadal = String(p.pozadal); r.pozadalKdy = String(p.pozadalKdy || ''); }
+  return r;
+}
+function vyjimkaPozadej(data, obsah, kdo, kdy) {
+  if (!data || !obsah || obsah.prazdny) return null;
+  data.cenovaVyjimka = Object.assign(vyjimkaZaklad(obsah, null), { stav: VYJ_CEKA,
+    pozadal: String(kdo || ''), pozadalKdy: kdy || new Date().toISOString() });
+  return data.cenovaVyjimka;
+}
+function vyjimkaSchval(data, obsah, kdo, kdy) {
+  if (!data || !obsah || obsah.prazdny) return null;
+  data.cenovaVyjimka = Object.assign(vyjimkaZaklad(obsah, data.cenovaVyjimka), { stav: VYJ_SCHVALENO,
+    schvalil: String(kdo || 'nadřízený'), schvalilKdy: kdy || new Date().toISOString() });
+  return data.cenovaVyjimka;
+}
+function vyjimkaZamitni(data, obsah, kdo, kdy, duvod) {
+  if (!data || !obsah || obsah.prazdny) return null;
+  data.cenovaVyjimka = Object.assign(vyjimkaZaklad(obsah, data.cenovaVyjimka), { stav: VYJ_ZAMITNUTO,
+    zamitl: String(kdo || 'nadřízený'), zamitlKdy: kdy || new Date().toISOString(),
+    zamitnutoDuvod: String(duvod || '').slice(0, VYJ_DUVOD_MAX) });
+  return data.cenovaVyjimka;
+}
+/* Vzít rozhodnutí zpět — žádost zůstane čekat. */
+function vyjimkaVrat(data, obsah) {
+  if (!data || !obsah || obsah.prazdny) return null;
+  data.cenovaVyjimka = Object.assign(vyjimkaZaklad(obsah, data.cenovaVyjimka), { stav: VYJ_CEKA });
+  return data.cenovaVyjimka;
+}
+/* Srovnání záznamu s tím, co varianta nese teď (záložka Schvalování):
+ * nic se neliší → záznam pryč; rozhodnutí k jinému obsahu → čeká znovu
+ * (s novým obsahem a počty). Vrací true, když se něco změnilo. */
+function vyjimkaPrepocti(data, obsah) {
+  if (!data || !obsah) return false;
+  const rec = data.cenovaVyjimka;
+  if (!rec || typeof rec !== 'object') return false;
+  if (obsah.prazdny) { delete data.cenovaVyjimka; return true; }
+  if (vyjimkaObsahSedi(rec, obsah) && rec.polozek === obsah.polozek && rec.pasu === obsah.pasu) return false;
+  data.cenovaVyjimka = Object.assign(vyjimkaZaklad(obsah, rec), { stav: VYJ_CEKA });
+  return true;
+}
+
+/* Popis bez částek — do záložky, do zábrany i do odmítnutí serveru. */
+/* Rozsah pásu pro kartu výjimek (B155): „0–1 m", „od 2,2 m až nahoru",
+ * záporný začátek (prohlubeň) se znaménkem. Desetinná čárka. Bez escapování —
+ * volající ho pouští přes esc(). */
+function vyjimkyPasRozsah(p) {
+  const m = x => String(+x || 0).replace('.', ',');
+  if (!p || typeof p !== 'object') return '';
+  return p.posledni || p.doM === null || p.doM === undefined
+    ? 'od ' + m(p.odM) + ' m až nahoru' + (p.doM === null || p.doM === undefined ? '' : ' (' + m(p.doM) + ' m)')
+    : m(p.odM) + '–' + m(p.doM) + ' m';
+}
+
+/* PLOCHA PÁSŮ PRO KARTU VÝJIMKY (B178, J. V. 17. 10. 2026): schvalovatel
+ * vidí, kolik m² za ruční sazbu schvaluje. Bere se z výsledku jádra
+ * (`vysledek.oplasteni.pasy`, totéž `m2`, které jde do ceny) — pás se páruje
+ * stěnou a mezemi (obě strany z oplasteniPasyMeze). Vrací kopie pásů
+ * s `m2` (null = jádro pás nenašlo). Na obsah výjimky nemá vliv. Navazuje
+ * B165 (ceníková vs. použitá sazba a dopad). */
+function vyjimkyPasyPlochy(pasy, vysledek) {
+  const jp = (vysledek && vysledek.oplasteni && Array.isArray(vysledek.oplasteni.pasy)) ? vysledek.oplasteni.pasy : [];
+  const blizko = (a, b) => Math.abs((+a || 0) - (+b || 0)) < 0.0005;
+  return (pasy || []).map(p => {
+    const j = jp.find(x => x && x.stena === p.stena && x.typ === 'jine' && blizko(x.odM, p.odM) && blizko(x.doM, p.doM));
+    return Object.assign({}, p, { m2: j && isFinite(+j.m2) ? Math.round(+j.m2 * 100) / 100 : null });
+  });
+}
+
+/* Plocha pásu či světlíku tak, jak ji drží obsah schválení: na 0,1 m²
+ * NAHORU (B183 volba b, J. V. 20. 10. 2026: „pak bude vždy nákladově
+ * pokrývat horší variantu“) — 2,50 → 2,5; 2,51 i 2,60 → 2,6; 2,61 → 2,7.
+ * Schvalovatel vidí plochu nejvýš o necelou desetinu větší, než je, a
+ * nárůst o 0,1 m² obsah změní. Tolerance 1e-6 (× 10) srovná šum plovoucí
+ * čárky (2,5000000000000004 → 2,5, ne 2,6); plocha přichází na setiny
+ * (vyjimkyPasyPlochy, vyjimkyPlochyJadra), test 0,01–20 000 m². Null =
+ * plochu neznáme. */
+function vyjimkyM2Schvaleni(x) {
+  return typeof x === 'number' && isFinite(x) ? Math.ceil(x * 10 - 1e-6) / 10 : null;
+}
+/* Starý tvar (do v20.10.4): celé m². Jen pro dřív schválené výjimky. */
+function vyjimkyM2Stary(x) {
+  return typeof x === 'number' && isFinite(x) ? Math.round(x) : null;
+}
+
+/* „2,6 m²" pro kartu (V7-N1): karta ukazuje plochu tak, jak ji drží
+ * schválení — na 0,1 m², toutéž funkcí jako obsah (dřív setiny, 2,61 m²,
+ * tedy jiné číslo, než schvalovatel schvaluje). Plocha, která zaokrouhlená
+ * není, nese poznámku „zaokrouhleno pro schválení". `stary` = záznam sedí
+ * starým tvarem (vyjimkaStaryTvar) — karta ukáže celé m², jak bylo
+ * schváleno. Prázdné, když plochu neznáme. */
+function vyjimkyPasPlocha(p, stary) {
+  if (!p || typeof p !== 'object' || typeof p.m2 !== 'number' || !isFinite(p.m2)) return '';
+  const c = (stary ? vyjimkyM2Stary : vyjimkyM2Schvaleni)(p.m2);
+  return String(c).replace('.', ',') + ' m²' + (c === p.m2 ? '' : ' (zaokrouhleno pro schválení)');
+}
+
+/* DOPAD VÝJIMKY NA CENU (B165, J. V. 16. 10. 2026): schvalovatel vidí
+ * u každé položky použitou a ceníkovou sazbu a o kolik je cena strany
+ * varianty (OCK = cena bez DPH, PROJ = celkem) jiná, než kdyby položka
+ * měla ceníkovou hodnotu. Ceníková hodnota: u směsi platný ceník
+ * (`dnesni`), u pásu „jiné" nejnižší ceníková sazba opláštění — tatáž mez,
+ * pod kterou je pás výjimkou. Dopad = cena varianty − cena s ceníkovou
+ * hodnotou (záporný = levněji), `dopadPct` proti ceně s ceníkovou.
+ * `ock` / `proj` = všechny odchylky strany najednou. Jen pro kartu — na
+ * obsah ani na cenu vliv nemá; null = výpočet nevyšel. */
+function vyjimkyDopad(data, obsah, dnesni, jekly) {
+  const d = data || {}, o = obsah || {};
+  const jk = jekly || (typeof JEKLY !== 'undefined' ? JEKLY : null);
+  const kopie = x => JSON.parse(JSON.stringify(x));
+  const cena = (dd, sekce) => {
+    try {
+      return sekce === 'PROJ' ? +vypocetProj(dd.proj.zadani, dd.proj.cenik).souhrn.celkem
+        : +vypocet(dd.ock.zadani, dd.cenik, jk, dd.ock.fixes).souhrn.zakladCena;
+    } catch (e) { return NaN; }
+  };
+  const zaklad = { OCK: (o.pasu || (o.smes || []).some(x => x.sekce !== 'PROJ')) ? cena(d, 'OCK') : NaN,
+    PROJ: (o.smes || []).some(x => x.sekce === 'PROJ') ? cena(d, 'PROJ') : NaN };
+  const min = vyjimkyMinSazbaOpl(d.ock && d.ock.zadani, d.cenik);
+  const uprav = {
+    polozka: (k, x) => { if (typeof cenikNastavHodnotu === 'function') cenikNastavHodnotu(k, x.cesta, x.cenikova); },
+    pas: (k, p) => { const st = k.ock.zadani.oplasteni.steny[p.stena]; if (st && st.pasy && st.pasy[p.i]) st.pasy[p.i].naklad = min; },
+  };
+  const dopad = (sekce, fn) => {
+    const s = zaklad[sekce];
+    if (!isFinite(s)) return { dopadKc: null, dopadPct: null };
+    let bez = NaN;
+    try { const k = kopie(d); fn(k); bez = cena(k, sekce); } catch (e) { bez = NaN; }
+    if (!isFinite(bez) || bez <= 0) return { dopadKc: null, dopadPct: null };
+    return { cena: s, cenaCenik: bez, dopadKc: s - bez, dopadPct: (s - bez) / bez };
+  };
+  const polozky = (o.smes || []).map(x => Object.assign({}, x, dopad(x.sekce, k => uprav.polozka(k, x))));
+  const pasy = (o.pasy || []).map(p => Object.assign({}, p, { pouzita: p.naklad, cenikova: min },
+    min === null ? { dopadKc: null, dopadPct: null } : dopad('OCK', k => uprav.pas(k, p))));
+  const strana = (sekce) => {
+    const sm = (o.smes || []).filter(x => (sekce === 'PROJ') === (x.sekce === 'PROJ'));
+    const ps = sekce === 'PROJ' || min === null ? [] : (o.pasy || []);
+    if (!sm.length && !ps.length) return null;
+    return dopad(sekce, k => { sm.forEach(x => uprav.polozka(k, x)); ps.forEach(p => uprav.pas(k, p)); });
+  };
+  return { polozky, pasy, ock: strana('OCK'), proj: strana('PROJ') };
+}
+
+/* „−3,7 % (−12 345 Kč)" — dopad pro kartu; prázdné, když není znám. */
+function vyjimkyDopadText(x) {
+  if (!x || typeof x.dopadPct !== 'number' || !isFinite(x.dopadPct)) return '';
+  const pct = (typeof formatPctTypo === 'function') ? formatPctTypo(x.dopadPct)
+    : (Math.round(x.dopadPct * 1000) / 10).toString().replace('.', ',') + ' %';
+  const kc = (typeof formatKcTypo === 'function') ? formatKcTypo(x.dopadKc) : Math.round(x.dopadKc) + ' Kč';
+  return (x.dopadPct > 0 ? '+' : '') + pct + ' (' + (x.dopadKc > 0 ? '+' : '') + kc + ')';
+}
+
+function vyjimkyText(obsah) {
+  const o = obsah || {};
+  const casti = [];
+  /* KONKRÉTNÍ ZNĚNÍ (S13, J. V. 16. 10. 2026): varianta, která počítala
+   * z PLATNÉ verze (razítko) a má položku POD ceníkem, dostane jmenovitou
+   * větu („Ventilátor (ext): cena pod ceníkem") — to je ruční úprava ceny.
+   * Skutečná směs (starší verze, přepočet jen vybraných položek, vyšší
+   * nebo textové hodnoty) si nechává znění směsi. Obsah výjimky (a tím
+   * platnost schválení) se nemění. */
+  const pod = (o.smes || []).filter(x => x.pod);
+  const smes = (o.smes || []).filter(x => !x.pod);
+  if (pod.length) {
+    const jm = pod.slice(0, 3).map(x => String(x.popis || x.cesta) + ': cena pod ceníkem');
+    if (pod.length > 3) jm.push('a ' + (pod.length - 3) + ' další ' + (pod.length - 3 === 1 ? 'položka' : 'položky') + ' pod ceníkem');
+    casti.push(jm.join('; '));
+  }
+  const n = (o.smes ? smes.length : (o.polozek || 0));
+  if (n) {
+    const ock = smes.filter(x => x.sekce === 'OCK').length, proj = o.smes ? n - ock : 0;
+    casti.push('ceník varianty je směs platného ceníku a starších cen (' + n
+      + (n === 1 ? ' položka' : (n < 5 ? ' položky' : ' položek'))
+      + (ock && proj ? ': OCK ' + ock + ', PROJ ' + proj : (proj ? ' PROJ' : ' OCK')) + ')');
+  }
+  if (o.pasu) casti.push('ruční sazba pásu opláštění „jiné" je nižší než ceníková ('
+    + o.pasu + (o.pasu === 1 ? ' pás' : (o.pasu < 5 ? ' pásy' : ' pásů')) + ')');
+  return casti.join(' a ');
+}
+
+/* ---------- serverová pojistka (vzor schvalovaniServerKontrola, B2) ---------- */
+
+function vyjimkySmiF(role, matice) {
+  return (k) => typeof zobrazeniSmi === 'function' && !!zobrazeniSmi(role, k, matice || null);
+}
+/* Klíč LIDSKÉHO rozhodnutí — bez času (razí ho server, B105). */
+function vyjimkaRozhodnutiKlic(rec) {
+  if (!rec || typeof rec !== 'object') return '';
+  if (rec.stav !== VYJ_SCHVALENO && rec.stav !== VYJ_ZAMITNUTO) return '';
+  return JSON.stringify({ s: rec.stav, o: String(rec.obsah || ''), a: String(rec.schvalil || ''),
+    z: String(rec.zamitl || ''), d: String(rec.zamitnutoDuvod || '') });
+}
+function vyjimkaJenPole(rec) {
+  const out = {};
+  VYJ_POLE.forEach(k => { if (rec && rec[k] !== undefined) out[k] = rec[k]; });
+  return out;
+}
+/* Čas z prohlížeče se přijme jen blízko času serveru (B105). */
+function vyjimkaKdy(kdy, ted) {
+  return (typeof schvalovaniKdyBlizko === 'function' && schvalovaniKdyBlizko(kdy, ted)) ? kdy : ted;
+}
+
+/* Kontrola rozhodnutí o cenové výjimce při uložení. `stara` = uložená verze
+ * po téže migraci (staraPorovnani), `ctx` = { matice, program,
+ * zamcenaDriv(v) }. Varianta zamčená už v uložené verzi se neposuzuje
+ * (doklad — data hlídá kontrola zámku). Vrací { ok:true } nebo
+ * { ok:false, status, chyba }; v `nova` doplní razítka. */
+function vyjimkyServerKontrola(stara, nova, relace, ctx) {
+  relace = relace || {}; ctx = ctx || {};
+  const role = String(relace.role || '');
+  const smi = vyjimkySmiF(role, ctx.matice);
+  const smiRozh = vyjimkaSmiRozhodnout(role, smi);
+  const jmeno = (relace.jmeno || relace.email || '') + (role ? ' (' + role + ')' : '');
+  const ted = new Date().toISOString();
+  const platny = ctx.program && ctx.program.platny ? ctx.program.platny : null;
+  const vyrazena = (typeof zakazkaVyrazenaStrana === 'function') ? (zakazkaVyrazenaStrana(nova) || '') : '';
+  const stare = (stara && Array.isArray(stara.varianty)) ? stara.varianty : [];
+  for (const v of ((nova && Array.isArray(nova.varianty)) ? nova.varianty : [])) {
+    if (!v || !v.data || typeof v.data !== 'object') continue;
+    if (typeof ctx.zamcenaDriv === 'function' && ctx.zamcenaDriv(v)) continue;
+    const sv = stare.find(x => x && x.id === v.id);
+    const srec = sv && sv.data && sv.data.cenovaVyjimka && typeof sv.data.cenovaVyjimka === 'object' ? sv.data.cenovaVyjimka : null;
+    let rec = v.data.cenovaVyjimka;
+    if (rec !== undefined && rec !== null
+        && (typeof rec !== 'object' || Array.isArray(rec) || VYJ_STAVY.indexOf(rec.stav) < 0))
+      return { ok: false, status: 400, chyba: 'Neznámý stav cenové výjimky varianty „' + String(v.nazev || v.id).slice(0, 60) + '".' };
+    const obsah = vyjimkyObsah(v.data, vyjimkyDnesniZProgramu(platny, v.data), vyrazena, ctx.jekly);
+    const kN = vyjimkaRozhodnutiKlic(rec), kS = vyjimkaRozhodnutiKlic(srec);
+    /* Totéž rozhodnutí, jaké už v databázi je: celé z uložené verze. */
+    if (kN && kN === kS) { v.data.cenovaVyjimka = vyjimkaJenPole(srec); continue; }
+    /* Nové nebo změněné rozhodnutí: jen s právem; razí server. */
+    if (kN) {
+      if (!smiRozh)
+        return { ok: false, status: 403, chyba: 'Cenovou výjimku varianty smí schválit nebo zamítnout jen nadřízený '
+          + '(administrátor nebo role s právem „Schvalování slevy nad strop role"); role ' + (role || '?') + ' na to právo nemá.' };
+      /* Žadatel jen z uložené verze — z těla požadavku se nebere. */
+      const n = Object.assign(vyjimkaZaklad(obsah, srec), { stav: rec.stav });
+      if (rec.stav === VYJ_SCHVALENO) {
+        n.schvalil = jmeno; n.schvalilEmail = String(relace.email || ''); n.schvalilKdy = vyjimkaKdy(rec.schvalilKdy, ted);
+      } else {
+        n.zamitl = jmeno; n.zamitlEmail = String(relace.email || ''); n.zamitlKdy = vyjimkaKdy(rec.zamitlKdy, ted);
+        n.zamitnutoDuvod = String(rec.zamitnutoDuvod || '').slice(0, VYJ_DUVOD_MAX);
+      }
+      v.data.cenovaVyjimka = n;
+      continue;
+    }
+    /* Uložené rozhodnutí, které pořád platí (obsah sedí), bez práva nezmizí
+     * ani se nevrátí do „čeká" (B101) — vrací se uložené. */
+    if (kS && !smiRozh && vyjimkaObsahSedi(srec, obsah)) { v.data.cenovaVyjimka = vyjimkaJenPole(srec); continue; }
+    if (rec === undefined || rec === null) { delete v.data.cenovaVyjimka; continue; }
+    /* Žádost („čeká"): obsah a počty z dat, žadatel z relace (u trvající
+     * žádosti z uložené verze). Bez rozdílu proti ceníku není o čem žádat. */
+    if (obsah.prazdny) { delete v.data.cenovaVyjimka; continue; }
+    const trva = srec && srec.stav === VYJ_CEKA && srec.pozadal;
+    const z = Object.assign(vyjimkaZaklad(obsah, null), { stav: VYJ_CEKA,
+      pozadal: trva ? String(srec.pozadal) : jmeno,
+      pozadalKdy: trva ? String(srec.pozadalKdy || '') : vyjimkaKdy(rec.pozadalKdy, ted) });
+    v.data.cenovaVyjimka = z;
+  }
+  return { ok: true };
+}
+
+/* NOVÝ ZÁMEK: varianta, jejíž role výjimku potřebuje, smí odejít jen
+ * s platným schválením. Vrací větu důvodu, nebo ''.
+ * DOTISK DOKUMENTU NOVÉ STRANY do odeslané varianty (B153, audit 15. 10.
+ * 2026) se posuzuje jako nový zámek té strany: `ctx.strany` = strany
+ * dotištěných dokumentů — potřeba se zjišťuje jen z jejich části obsahu
+ * (směs OCK u odeslané PROJ nové PROJ nezastaví), schválení musí sedět na
+ * celý obsah (jak se schvaluje). Strana vyřazená při zámku (jenProj) se
+ * po vypnutí příznaku posoudí tady. `ctx.smi` (prohlížeč) nahradí matici. */
+function vyjimkyZamekProblem(zak, v, relace, ctx) {
+  relace = relace || {}; ctx = ctx || {};
+  const role = String(relace.role || '');
+  if (role === 'Administrátor') return '';
+  const platny = ctx.program && ctx.program.platny ? ctx.program.platny : null;
+  const vyrazena = (typeof zakazkaVyrazenaStrana === 'function') ? (zakazkaVyrazenaStrana(zak) || '') : '';
+  const d = (v && v.data) || {};
+  const obsah = vyjimkyObsah(d, vyjimkyDnesniZProgramu(platny, d), vyrazena, ctx.jekly);
+  const cast = Array.isArray(ctx.strany) ? vyjimkyObsahStran(obsah, ctx.strany) : obsah;
+  const smi = typeof ctx.smi === 'function' ? ctx.smi : vyjimkySmiF(role, ctx.matice);
+  if (!vyjimkyPotreba(cast, smi).potreba) return '';
+  if (vyjimkaPlati(d.cenovaVyjimka, obsah)) return '';
+  const zamitnuto = d.cenovaVyjimka && d.cenovaVyjimka.stav === VYJ_ZAMITNUTO && vyjimkaObsahSedi(d.cenovaVyjimka, obsah);
+  return vyjimkyText(cast) + ' — odeslat ji smí jen se schválením nadřízeného'
+    + (zamitnuto ? ' (výjimka byla zamítnuta)' : '') + '. Požádejte o schválení v záložce Schvalování, '
+    + 'nebo přepočítejte variantu podle platného ceníku; rozpracovanou zakázku lze dál ukládat';
+}
+
+/* Záznam do sdíleného rejstříku — jmenovitě vybraná pole, bez obsahu. */
+function vyjimkaRejstrik(rec) {
+  const out = {};
+  if (!rec || typeof rec !== 'object') return out;
+  VYJ_REJSTRIK_POLE.forEach(k => {
+    if (rec[k] === undefined) return;
+    out[k] = (k === 'polozek' || k === 'pasu') ? (+rec[k] || 0) : String(rec[k]);
+  });
+  return out;
+}
+
+if (typeof module !== 'undefined')
+  module.exports = { VYJ_CEKA, VYJ_SCHVALENO, VYJ_ZAMITNUTO, VYJ_STAVY, VYJ_POLE, VYJ_REJSTRIK_POLE, VYJ_OBSAH_TVAR,
+                     vyjimkaObsahSedi, vyjimkaStaryTvar, vyjimkyM2Stary,
+                     vyjimkyMinSazbaOpl, vyjimkyPasyJine, vyjimkyDnesniZProgramu, vyjimkyObsah, vyjimkyObsahStran,
+                     vyjimkyPotreba, vyjimkaPlati, vyjimkaKategorie, vyjimkaSmiRozhodnout,
+                     vyjimkaPozadej, vyjimkaSchval, vyjimkaZamitni, vyjimkaVrat, vyjimkaPrepocti, vyjimkyText, vyjimkyPasRozsah, vyjimkyPasPlocha, vyjimkyM2Schvaleni, vyjimkyPasyPlochy, vyjimkyPlochyJadra, vyjimkyDopad, vyjimkyDopadText,
+                     vyjimkaRozhodnutiKlic, vyjimkyServerKontrola, vyjimkyZamekProblem, vyjimkaRejstrik };

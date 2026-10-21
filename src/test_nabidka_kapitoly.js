@@ -42,7 +42,7 @@ const SEKCE = { kapPozadavky: 'IV. POŽADAVKY PRO PROVEDENÍ REALIZACE',
                 kapTerminy: 'V. TERMÍNY REALIZACE',
                 kapPredani: 'VI. PŘEDÁNÍ DÍLA', dolozky: 'DOLOŽKY' };
 
-function nahled(jazyk, upravFirmu) {
+function nahled(jazyk, upravFirmu, upravZadani) {
   const puv = global.NAST;
   const f = Object.assign({}, fm.DEFAULT_FIRMA, { nazev: 'Zkušební firma s.r.o.' });
   if (upravFirmu) upravFirmu(f);
@@ -50,10 +50,113 @@ function nahled(jazyk, upravFirmu) {
   const zak = zk.novaZakazka();
   const v = zak.varianty[0];
   v.data.cenik = ZC.zkusebniCenik();
+  if (upravZadani) upravZadani(v.data.ock.zadani);
   const d = N.nabidkaData(zak, v, JEKLY, jazyk);
   const s = N.nabidkaNahledSekce(d.placeholders, jazyk);
   global.NAST = puv;
   return { ph: d.placeholders, sekce: s, nazvy: s.map(x => x.sekce) };
+}
+
+/* ---------- 0) lešení si nesmí odporovat se specifikací (P8/7) ----------
+ *
+ * Kapitola IV. žádá po objednateli „zajištění montážního lešení". Když je
+ * ale vnější lešení v základní ceně, technická specifikace u téže zakázky
+ * říká, že je součástí dodávky — dokument si protiřečil a zákazník si mohl
+ * vybrat výklad, který je pro něj levnější.
+ *
+ * Rozhodnutí J. V. 22. 9. 2026: odrážka zmizí, když je lešení v dodávce.
+ * Hlídá se ve všech třech jazycích, protože kapitola se nepřekládá — každý
+ * jazyk má vlastní ručně psaný text. */
+{
+  const LESENI = /lešen|scaffold|gerüst|échafaud/i;
+  [['cz', 'Zajištění montážního lešení'], ['en', 'scaffold'], ['de', 'Gerüst']].forEach(([jaz]) => {
+    const bez = nahled(jaz, null, (z) => { z.typSachty = 'exteriérová'; z.volitelne.leseniVnejsi = false; });
+    const sNim = nahled(jaz, null, (z) => { z.typSachty = 'exteriérová'; z.volitelne.leseniVnejsi = true; });
+    const radky = (ph) => String(ph.FIRMA_NAB_POZADAVKY || '').split('\n');
+    test('kapitola IV. (' + jaz + ') odrážku o lešení má, když v dodávce není',
+      radky(bez.ph).some(r => LESENI.test(r)), radky(bez.ph).filter(r => LESENI.test(r)));
+    test('a nemá ji, když vnější lešení v dodávce je',
+      !radky(sNim.ph).some(r => LESENI.test(r)), radky(sNim.ph).filter(r => LESENI.test(r)));
+    /* Pojistka proti prázdnému testu: zmizet smí JEDNA odrážka, ne kapitola. */
+    test('ostatní odrážky (' + jaz + ') zůstanou',
+      radky(sNim.ph).length === radky(bez.ph).length - 1,
+      [radky(bez.ph).length, radky(sNim.ph).length]);
+  });
+
+  /* Interiérová šachta nemá vnější lešení v základní ceně, takže odrážka
+   * zůstává: bez příplatku si ho objednatel zajistí sám. */
+  const int = nahled('cz', null, (z) => { z.typSachty = 'interiérová'; z.volitelne.leseniVnejsi = true; });
+  test('na interiérové šachtě odrážka zůstává',
+    String(int.ph.FIRMA_NAB_POZADAVKY || '').split('\n').some(r => LESENI.test(r)));
+  /* A v rozšíření nabídky u ní nesmí stát „v základní ceně" (nález K1).
+   * Od 22. 9. večer je tam naopak CENA PŘÍPLATKU — J. V.: „vnější lešení
+   * vrať do příplatkových položek". Do té doby (odpoledne) tam byla
+   * pomlčka, protože položka u interiérové šachty neexistovala vůbec. */
+  test('a v nabídce u ní nestojí „v základní ceně"',
+    String(int.ph.PRIP_LESENI_VNEJSI || '').indexOf('základní') < 0, int.ph.PRIP_LESENI_VNEJSI);
+  test('ale cena příplatku (lešení se u ní nabízí jako příplatek)',
+    /\d/.test(String(int.ph.PRIP_LESENI_VNEJSI || '')), int.ph.PRIP_LESENI_VNEJSI);
+  test('a specifikace u ní odkazuje na příplatkové ceny',
+    /příplatkové ceny/.test(String(int.ph.TS_LESENI_VNE || '')), int.ph.TS_LESENI_VNE);
+
+  /* ŘÁDEK „LEŠENÍ KOLEM OCK…" V SEKCI SOUČÁSTÍ DODÁVKY NENÍ (P8/7).
+   * Schválený návrh chtěl srovnat specifikaci i kapitolu IV.; oprava K1
+   * srovnala jen kapitolu. U lešení v základní ceně tak dokument pořád
+   * tvrdil v jedné sekci „je součástí dodávky" a v druhé „součástí dodávky
+   * není — zajistí objednatel". Řádek teď v tom případě zmizí (jako sokl). */
+  const neniSekce = (n) => (n.sekce.find(s => s.sekce === 'SOUČÁSTÍ DODÁVKY NENÍ') || { radky: [] })
+    .radky.map(rr => rr[0]);
+  const extSLesenim = nahled('cz', null, (z) => { z.typSachty = 'exteriérová'; z.volitelne.leseniVnejsi = true; });
+  const extBezLeseni = nahled('cz', null, (z) => { z.typSachty = 'exteriérová'; z.volitelne.leseniVnejsi = false; });
+  test('lešení v základní ceně: řádek LEŠENÍ KOLEM OCK v „Součástí dodávky není" chybí',
+    neniSekce(extSLesenim).indexOf('LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ') < 0
+    && extSLesenim.ph.TS_NENI_LESENI === '', neniSekce(extSLesenim));
+  test('bez lešení v ceně tam je', neniSekce(extBezLeseni).indexOf('LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ') >= 0,
+    neniSekce(extBezLeseni));
+  test('a u interiérové šachty taky (lešení je tam příplatek)',
+    neniSekce(int).indexOf('LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ') >= 0, neniSekce(int));
+  /* Pojistka proti prázdnému testu: zmizet smí jen ten jeden řádek. */
+  test('ostatní řádky sekce zůstanou',
+    neniSekce(extSLesenim).length === neniSekce(extBezLeseni).length - 1,
+    [neniSekce(extBezLeseni).length, neniSekce(extSLesenim).length]);
+
+  /* STATIKA V DOKUMENTU SE ŘÍDÍ CENOU (P8/6). Model a hraniční případy
+   * hlídá test_specifikace_cena.js; tady jen, že to dojde až do nabídky. */
+  const sStatikou = nahled('cz');
+  const bezStatiky = nahled('cz', null, (z) => { z.mnozstviPrepis = { 'STATICKÉ POSOUZENÍ': 0 }; });
+  test('nabídka: statika v ceně → „ano"', sStatikou.ph.TS_STATIKA === 'ano', sStatikou.ph.TS_STATIKA);
+  test('nabídka: statika vypnutá množstvím 0 → „ne"', bezStatiky.ph.TS_STATIKA === 'ne', bezStatiky.ph.TS_STATIKA);
+  const ext = nahled('cz', null, (z) => { z.typSachty = 'exteriérová'; z.volitelne.leseniVnejsi = true; });
+  test('na exteriérové v základní ceně naopak stojí',
+    String(ext.ph.PRIP_LESENI_VNEJSI || '').indexOf('základní') >= 0, ext.ph.PRIP_LESENI_VNEJSI);
+}
+
+/* ---------- 0b) nulová sazba DPH má v nabídce vlastní jméno (22. 9. 2026 večer) ----------
+ *
+ * Zahraniční řada ceníku od téhle dávky přepíná DPH na 0 %. Podmínka
+ * `dph <= 0.15 ? 'snížená' : 'základní'` by pak tiskla „DPH 0 % (snížená
+ * sazba)" — nesmysl, který zákazník přečte jako chybu v nabídce. */
+{
+  const sDph = (sazba, jaz) => {
+    const puv = global.NAST;
+    global.NAST = { firma: Object.assign({}, fm.DEFAULT_FIRMA, { nazev: 'Zkušební firma s.r.o.' }) };
+    const zak = zk.novaZakazka();
+    const v = zak.varianty[0];
+    v.data.cenik = Object.assign(ZC.zkusebniCenik(), { dph: sazba, kurzEurKc: 25 });
+    const ph = N.nabidkaData(zak, v, JEKLY, jaz || 'cz').placeholders;
+    global.NAST = puv;
+    return ph;
+  };
+  const nula = sDph(0);
+  test('0 % se jmenuje „nulová", ne „snížená"', nula.DPH_NAZEV === 'nulová' && nula.DPH_SAZBA === '0',
+    [nula.DPH_SAZBA, nula.DPH_NAZEV]);
+  test('částka DPH je u nulové sazby nulová', /^0[,.]00/.test(String(nula.DPH_KC).trim()), nula.DPH_KC);
+  test('snížená sazba zůstává snížená', sDph(0.12).DPH_NAZEV === 'snížená', sDph(0.12).DPH_NAZEV);
+  test('základní zůstává základní', sDph(0.21).DPH_NAZEV === 'základní', sDph(0.21).DPH_NAZEV);
+  /* Zahraniční nabídka se tiskne v cizím jazyce — jméno musí být ve slovníku,
+   * jinak by zůstalo česky a export chybějících překladů by ho hlásil. */
+  test('v angličtině „zero"', sDph(0, 'en').DPH_NAZEV === 'zero', sDph(0, 'en').DPH_NAZEV);
+  test('v němčině „Null"', sDph(0, 'de').DPH_NAZEV === 'Null', sDph(0, 'de').DPH_NAZEV);
 }
 
 /* ---------- 1) výchozí texty existují ve všech třech jazycích ---------- */
@@ -107,13 +210,18 @@ test('doložka používá značku {FIRMA}', /\{FIRMA\}/.test(String(fm.DEFAULT_F
     bezNazvu.radky[0] === 'od {FIRMA}', bezNazvu.radky);
 }
 
-/* ---------- 4) francouzština: čeština + hlasité upozornění ---------- */
+/* ---------- 4) francouzština: čeština + hlasité upozornění ----------
+ * Od #367 fáze 2b (19. 10. 2026, Q3) má francouzština výchozí text, takže
+ * záloha češtinou platí jen pro firmu, která FR pole vyprázdnila (starší
+ * uložená firma). Mechanismus se zkouší na takové firmě. */
+const BEZ_FR = f => { ['kapPozadavkyFr', 'kapTerminyFr', 'kapPredaniFr', 'dolozkyFr'].forEach(k => { delete f[k]; }); };
 {
-  const fr = fm.firmaKapitola(Object.assign({}, fm.DEFAULT_FIRMA), 'kapPredani', 'fr');
-  test('francouzština hlásí chybějící překlad', fr.chybi === true);
+  const bezFr = Object.assign({}, fm.DEFAULT_FIRMA); BEZ_FR(bezFr);
+  const fr = fm.firmaKapitola(bezFr, 'kapPredani', 'fr');
+  test('francouzština bez FR textu hlásí chybějící překlad', fr.chybi === true);
   test('a vydá český text, ne prázdno', fr.radky.length > 0, fr.radky.length);
 
-  const n = nahled('fr');
+  const n = nahled('fr', BEZ_FR);
   const sek = n.sekce.find(s => /REMISE|PŘEDÁNÍ/.test(s.sekce));
   test('francouzský náhled kapitolu má', !!sek, n.nazvy.join(' | '));
   const varovani = sek ? sek.radky.filter(r => /⚠/.test(String(r[0]))) : [];
@@ -194,8 +302,15 @@ KAPITOLY.forEach(base => {
   test('anglické symboly nesou anglický text',
     /Handover protocol/.test(String(n.ph.FIRMA_NAB_PREDANI || '')), String(n.ph.FIRMA_NAB_PREDANI || '').slice(0, 60));
   test('a příznak chybějícího překladu je prázdný', !n.ph.FIRMA_NAB_PREDANI_CHYBI);
-  const fr = nahled('fr');
-  test('u francouzštiny je příznak nastavený', fr.ph.FIRMA_NAB_PREDANI_CHYBI === '1');
+  const fr = nahled('fr', BEZ_FR);
+  test('u francouzštiny bez FR textu je příznak nastavený', fr.ph.FIRMA_NAB_PREDANI_CHYBI === '1');
+  const frVych = nahled('fr');
+  test('#367 Q3: s výchozí firmou nese FR nabídka francouzský text a žádné upozornění',
+    /procès-verbal de réception/.test(String(frVych.ph.FIRMA_NAB_PREDANI || '')) && !frVych.ph.FIRMA_NAB_PREDANI_CHYBI
+    && ['POZADAVKY', 'TERMINY', 'DOLOZKY'].every(k => !frVych.ph['FIRMA_NAB_' + k + '_CHYBI']),
+    String(frVych.ph.FIRMA_NAB_PREDANI || '').slice(0, 60));
+  test('#367 Q6: výchozí kapitola V. v žádném jazyce nenese větu o záruce',
+    ['kapTerminy', 'kapTerminyEn', 'kapTerminyDe', 'kapTerminyFr'].every(k => !/záruk|warrant|Garantie|garantie/i.test(fm.DEFAULT_FIRMA[k])));
 }
 
 /* ---------- 10) jazykové symboly do šablony nesou hotový text ----------
@@ -232,6 +347,116 @@ KAPITOLY.forEach(base => {
   test('německá doložka si vyhrazuje i vlastnické právo',
     /die Eigentums- und Urheberrechte/.test(String(ph.FIRMA_NAB_DOLOZKY_DE || '')),
     String(ph.FIRMA_NAB_DOLOZKY_DE || '').slice(0, 160));
+}
+
+/* ---------- 11) platební podmínky se do ciziny tisknou PŘELOŽENÉ ----------
+ * (#283, rozhodnutí J. V. 21. 9. 2026)
+ *
+ * Kapitola III. bere hodnoty z krycího listu a ty jsou volný text — slovníkem
+ * prošly beze změny, takže anglická nabídka měla nadpisy anglicky a hodnoty
+ * česky („50 % – po podpisu smlouvy", „2 měsíce"). Zákazník dostal kapitolu,
+ * které z poloviny nerozuměl.
+ *
+ * Překládá se KONEČNÁ SADA PŘEDVYPLNĚNÝCH hodnot. Co obchodník napíše ručně,
+ * projde beze změny — vymýšlet překlad cizí věty se nesmí. */
+{
+  const HODNOTY = ['Bez zálohy', '30 \u2013 po podpisu smlouvy'.replace('30 ', '30 % '),
+                   '50 % \u2013 po podpisu smlouvy', '40 % \u2013 po zahájení montáže',
+                   '10 % \u2013 po předání', '2 měsíce', 'Náš standard / měsíční',
+                   'Uplatněn limit 10 %', '0,05 % / den'];
+  HODNOTY.forEach(h => {
+    ['en', 'de'].forEach(jaz => {
+      const p = P.tr(h, jaz);
+      test('„' + h + '" se přeloží do ' + jaz, p !== h && String(p).trim() !== '', p);
+    });
+  });
+  /* POJISTKA PROTI PRÁZDNÉMU TESTU: v češtině se nic nepřekládá, takže kdyby
+   * `tr` vracela pořád vstup, kontroly výš by padaly — a kdyby vracela
+   * cokoli jiného, padla by tahle. */
+  test('v češtině zůstává původní znění', P.tr('2 měsíce', 'cz') === '2 měsíce');
+  /* A ruční text se nepřekládá ani nemrzačí. */
+  const rucni = 'Dohodnuto telefonicky s panem Novákem';
+  test('ručně napsaná podmínka projde beze změny', P.tr(rucni, 'en') === rucni, P.tr(rucni, 'en'));
+}
+
+
+/* ---------- TERMÍN DODÁNÍ V KAPITOLE V. (#330, nález TD1, 24. 9. 2026) ----------
+ *
+ * Krycí list počítal termín dodání i s +4 týdny za ATYP, ale do nabídky se
+ * nedostal — kapitola V. byla jen text z Firmy („cca 12 týdnů") a atypický
+ * zákazník dostal o 4 týdny kratší termín. Rozhodnutí J. V. 24. 9. 2026:
+ * termín ze zakázky je první odrážka kapitoly V., zbytek zůstává z Firmy. */
+{
+  /* Od O3 (19. 10. 2026) nese výchozí text kapitoly V. značku {TERMIN}.
+   * Tyhle kontroly hlídají chování STARÉHO textu bez značky (uloženého ve
+   * Firmě dřív) — proto se do firmy vrací pevné „cca 12 týdnů". */
+  const stary = f => ['', 'En', 'De', 'Fr'].forEach(suf => {
+    f['kapTerminy' + suf] = fm.DEFAULT_FIRMA['kapTerminy' + suf]
+      .replace('{TERMIN}', { '': 'cca 12 týdnů', En: 'cca 12 weeks', De: 'ca. 12 Wochen', Fr: 'environ 12 semaines' }[suf]);
+  });
+  const lhuta = f => { f.terminDodaniOck = 'cca 12 týdnů'; f.terminAtypTydny = '4'; stary(f); };
+  const kapV = (n) => (n.sekce.find(s => /^V\. /.test(s.sekce) || /^V\. /.test(String(s.sekce))) || { radky: [] }).radky;
+  const bezny = nahled('cz', lhuta, z => { z.atyp = false; });
+  const atyp = nahled('cz', lhuta, z => { z.atyp = true; });
+  test('#330: běžná zakázka má v kapitole V. první odrážku „Termín dodání: cca 12 týdnů"',
+    kapV(bezny)[0] && kapV(bezny)[0][0] === 'Termín dodání' && kapV(bezny)[0][1] === 'cca 12 týdnů', kapV(bezny)[0]);
+  test('#330: atypická zakázka nese prodloužený termín z krycího listu',
+    kapV(atyp)[0] && /^cca 16 týdnů \(vč\. 4 týdnů za ATYP\)$/.test(kapV(atyp)[0][1]), kapV(atyp)[0]);
+  test('#330: symbol pro Word nese totéž ({{PODM_TERMIN_DODANI}})',
+    atyp.ph.PODM_TERMIN_DODANI === kapV(atyp)[0][1], atyp.ph.PODM_TERMIN_DODANI);
+  test('#330: zbytek kapitoly V. zůstává textem z Firmy',
+    kapV(atyp).length > 1 && /Harmonogram/.test(kapV(atyp).map(r => r[0]).join('\n')));
+  const prazdna = nahled('cz', f => { f.terminDodaniOck = ''; });
+  test('#330: bez lhůty ve Firmě se termín nevymýšlí — odrážka chybí',
+    !kapV(prazdna).some(r => r[0] === 'Termín dodání'), kapV(prazdna)[0]);
+  const jenTermin = nahled('cz', f => { lhuta(f); f.kapTerminy = ''; });
+  /* Od 29. 9. 2026 (P10.7) nese kapitola V. navíc záruku z krycího listu. */
+  test('#330: prázdný text kapitoly V. — kapitola zůstane s termínem dodání (a zárukou z krycího listu)',
+    kapV(jenTermin).length === 2 && kapV(jenTermin)[0][0] === 'Termín dodání' && kapV(jenTermin)[1][0] === 'Záruka',
+    kapV(jenTermin));
+  [['en', /^approx\. 16 weeks \(incl\. 4 weeks for the non-standard design\)$/, 'Delivery time'],
+   ['de', /^ca\. 16 Wochen \(inkl\. 4 Wochen für die Sonderausführung\)$/, 'Lieferzeit'],
+   ['fr', /^env\. 16 semaines \(dont 4 semaines pour l.exécution spéciale\)$/, 'Délai de livraison']].forEach(([jaz, re, popis]) => {
+    const n = nahled(jaz, lhuta, z => { z.atyp = true; });
+    const r = (n.sekce.find(s => s.radky.some(x => x[0] === popis)) || { radky: [] }).radky.find(x => x[0] === popis);
+    test('#330: ' + jaz + ' — termín dodání přeložený celý', !!r && re.test(r[1]), r);
+  });
+  test('#330: vzor zná i termín bez „cca" a bez ATYP', P.tr('12 týdnů', 'en') === '12 weeks', P.tr('12 týdnů', 'en'));
+  test('#330: obecné „cca …" platí dál', P.tr('cca 3 dny', 'en') === 'approx. 3 dny');
+  /* Word v11 (#331): kapitola V. je jeden symbol — termín dodání + text z Firmy. */
+  const wv = String(atyp.ph.NAB_KAP_TERMINY || '').split('\n');
+  test('#331: {{NAB_KAP_TERMINY}} začíná termínem dodání s ATYP',
+    wv[0] === 'Termín dodání: cca 16 týdnů (vč. 4 týdnů za ATYP)', wv[0]);
+  /* P10.7 (29. 9. 2026): věta o záruce z Firmy vypadne a na konec přijde
+   * záruka z krycího listu — krycí list má přednost. */
+  const bezZaruky = t => String(t).split('\n').filter(r => !/záruk/i.test(r)).join('\n');
+  test('#331: a pokračuje textem kapitoly V. z Firmy (bez věty o záruce), záruka z krycího listu na konci',
+    wv.slice(1, -1).join('\n') === bezZaruky(atyp.ph.FIRMA_NAB_TERMINY) && wv[wv.length - 1] === 'Záruka: 60 měsíců', wv);
+  const wvEn = String(nahled('en', lhuta, z => { z.atyp = true; }).ph.NAB_KAP_TERMINY || '').split('\n')[0];
+  test('#331: anglicky celý řádek přeložený (popisek i hodnota)',
+    wvEn === 'Delivery time: approx. 16 weeks (incl. 4 weeks for the non-standard design)', wvEn);
+  test('#331: bez lhůty ve Firmě symbol nese jen text kapitoly (a záruku z krycího listu)',
+    prazdna.ph.NAB_KAP_TERMINY === bezZaruky(prazdna.ph.FIRMA_NAB_TERMINY) + '\nZáruka: 60 měsíců', prazdna.ph.NAB_KAP_TERMINY);
+}
+
+/* ---------- FRANCOUZSKÉ KAPITOLY (N41c, 24. 9. 2026) ----------
+ * Do 24. 9. FR kapitoly neexistovaly a FR nabídka tiskla češtinu
+ * s upozorněním. Nově má Firma FR pole; vyplněné se použije, prázdné
+ * dál spadne na češtinu s upozorněním (nic se nevypustí). */
+{
+  const FR_TEXT = 'Premier point du procès-verbal\nSecond point';
+  const sFr = nahled('fr', f => { BEZ_FR(f); f.kapPredaniFr = FR_TEXT; });
+  test('N41c: vyplněné FR pole se v FR nabídce použije',
+    sFr.ph.FIRMA_NAB_PREDANI === FR_TEXT, sFr.ph.FIRMA_NAB_PREDANI);
+  test('N41c: a upozornění „překlad nebyl dodán" u ní není', sFr.ph.FIRMA_NAB_PREDANI_CHYBI === '', sFr.ph.FIRMA_NAB_PREDANI_CHYBI);
+  test('N41c: ostatní kapitoly bez FR textu jsou dál česky s upozorněním',
+    sFr.ph.FIRMA_NAB_POZADAVKY_CHYBI === '1' && String(sFr.ph.FIRMA_NAB_POZADAVKY).length > 0);
+  test('N41c: prázdné FR pole kapitolu nevypustí (záloha češtinou)',
+    fm.firmaKapitola(Object.assign({}, fm.DEFAULT_FIRMA, { kapTerminyFr: '  ' }), 'kapTerminy', 'fr').radky.length > 0);
+  test('N41c: anglická kapitola se na češtinu nevrací (prázdná EN = vědomě vypuštěná)',
+    fm.firmaKapitola(Object.assign({}, fm.DEFAULT_FIRMA, { kapTerminyEn: '' }), 'kapTerminy', 'en').prazdne === true);
+  test('N41c: formulář Firmy má FR pole pro všechny čtyři kapitoly',
+    ['kapPozadavkyFr', 'kapTerminyFr', 'kapPredaniFr', 'dolozkyFr'].every(id => fm.FIRMA_POLE.some(p => p.id === id && /_FR$/.test(p.symbol))));
 }
 
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));

@@ -25,18 +25,64 @@ function crc32(u8) {
 }
 
 /* ---------- čtení ZIP ---------- */
+/* STROP ROZBALENÍ (#395, 8. 10. 2026). Šablona má zabalená nejvýš ~3,7 MB
+ * (SABLONA_MAX_B64), deflate ale umí ze 100 kB udělat stovky megabajtů
+ * („ZIP bomba") — server by je při zveřejnění nebo obnově rozbaloval do
+ * paměti. Rozbaluje se proto po kouscích a nad strop se čtení zastaví.
+ * Firemní šablony i ceníky v Excelu jsou rozbalené v jednotkách MB. */
+const ZIP_ROZBALENO_MAX = 64 * 1024 * 1024;
+async function zipRozbal(komprimovana, zbyva) {
+  const ds = new DecompressionStream('deflate-raw');
+  const ctecka = new Blob([komprimovana]).stream().pipeThrough(ds).getReader();
+  const kusy = [];
+  let n = 0;
+  for (;;) {
+    const { done, value } = await ctecka.read();
+    if (done) break;
+    n += value.length;
+    if (n > zbyva) {
+      try { await ctecka.cancel(); } catch (e) { /* nic */ }
+      throw new Error('ZIP se rozbalí na víc než ' + Math.round(ZIP_ROZBALENO_MAX / 1024 / 1024) + ' MB.');
+    }
+    kusy.push(value);
+  }
+  const out = new Uint8Array(n);
+  let o = 0;
+  for (const k of kusy) { out.set(k, o); o += k.length; }
+  return out;
+}
+/* KONEC ADRESÁŘE (EOCD) MUSÍ BÝT JEDNOZNAČNÝ (#395, 8. 10. 2026). Hledal se
+ * první podpis PK\x05\x06 od konce — i uvnitř komentáře archivu. Podvržený
+ * konec v komentáři ukázal kontrole jiný adresář (a jiné soubory) než
+ * programu, který bere skutečný. Věrohodný konec = podpis, jehož komentář se
+ * do souboru vejde a adresář leží před ním; víc takových = nejednoznačný
+ * archiv. Bajty za koncem (některé nástroje je přidávají) nevadí.
+ * B142 (audit 12. 10. 2026): nevěrohodný podpis se tiše přeskočil. Čistý
+ * archiv + za ním škodlivý, jehož konec má komentář o 1 B delší než zbytek
+ * souboru: kontrola četla čistý, Python zipfile i unzip škodlivý. Podpis
+ * konce, který věrohodnosti nevyhoví a leží ZA věrohodným koncem (tam ho
+ * jiné programy hledají), proto archiv odmítne. Podpis uvnitř dat před ním
+ * (4 bajty náhodou v obrázku) nevadí — revize 12. 10. 2026, R1. */
 async function zipPrecti(u8) {
   const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
   // najdi End of Central Directory (PK\x05\x06) od konce
-  let eocd = -1;
-  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65536); i--) {
-    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  const kandidati = [], neverohodne = [];
+  for (let i = u8.length - 4; i >= Math.max(0, u8.length - 22 - 65535); i--) {
+    if (dv.getUint32(i, true) !== 0x06054b50) continue;
+    if (i + 22 <= u8.length && i + 22 + dv.getUint16(i + 20, true) <= u8.length
+        && dv.getUint32(i + 16, true) + dv.getUint32(i + 12, true) <= i) kandidati.push(i);
+    else neverohodne.push(i);
   }
-  if (eocd < 0) throw new Error('Soubor není platný .docx (ZIP).');
+  if (!kandidati.length) throw new Error('Soubor není platný .docx (ZIP).');
+  if (neverohodne.some(i => i > kandidati[0]))
+    throw new Error('Nevěrohodný konec ZIP adresáře (za archivem je připojený jiný).');
+  const eocd = kandidati[0];
   const pocet = dv.getUint16(eocd + 10, true);
   let off = dv.getUint32(eocd + 16, true);
   const dekoder = new TextDecoder();
   const polozky = [];
+  let zbyva = ZIP_ROZBALENO_MAX;
+  const rozsahy = [];                                   // data položek (R1)
   for (let n = 0; n < pocet; n++) {
     if (dv.getUint32(off, true) !== 0x02014b50) throw new Error('Poškozený ZIP adresář.');
     const metoda = dv.getUint16(off + 10, true);
@@ -50,15 +96,22 @@ async function zipPrecti(u8) {
     const lN = dv.getUint16(lokalOff + 26, true), lE = dv.getUint16(lokalOff + 28, true);
     const dataZac = lokalOff + 30 + lN + lE;
     const komprimovana = u8.subarray(dataZac, dataZac + velKomp);
+    rozsahy.push([dataZac, dataZac + velKomp]);
     let data;
-    if (metoda === 0) data = new Uint8Array(komprimovana);
-    else if (metoda === 8) {
-      const ds = new DecompressionStream('deflate-raw');
-      data = new Uint8Array(await new Response(new Blob([komprimovana]).stream().pipeThrough(ds)).arrayBuffer());
-    } else throw new Error('Nepodporovaná komprese v ZIP: ' + metoda);
+    if (metoda === 0) {
+      if (komprimovana.length > zbyva) throw new Error('ZIP se rozbalí na víc než ' + Math.round(ZIP_ROZBALENO_MAX / 1024 / 1024) + ' MB.');
+      data = new Uint8Array(komprimovana);
+    }
+    else if (metoda === 8) data = await zipRozbal(komprimovana, zbyva);
+    else throw new Error('Nepodporovaná komprese v ZIP: ' + metoda);
+    zbyva -= data.length;
     polozky.push({ nazev, data });
     off += 46 + delkaNazvu + delkaExtra + delkaKom;
   }
+  /* Další věrohodný konec = nejednoznačný archiv (#395) — kromě podpisu
+   * uvnitř dat položky (obrázek), který žádný program za konec nebere (R1). */
+  if (kandidati.slice(1).some(i => !rozsahy.some(([a, b]) => i >= a && i + 4 <= b)))
+    throw new Error('Nejednoznačný konec ZIP adresáře (podvržený v komentáři archivu).');
   return polozky;
 }
 
@@ -95,7 +148,8 @@ function zipZapis(polozky, mime) {
 /* Řídicí znaky (kromě tabulátoru a konců řádků) XML 1.0 nepovoluje — Word
  * takový dokument odmítne otevřít. Přijdou z poznámky nebo z CRM; odstraní
  * se tady, na jediném místě, kudy text do XML vstupuje (audit 22. 8., B20). */
-const XML_RIDICI = /[\x00-\x08\x0B\x0C\x0E-\x1F]/g;
+/* U+FFFE a U+FFFF nejsou v XML 1.0 povolené taky (revize #401, 12. 10. 2026). */
+const XML_RIDICI = /[\x00-\x08\x0B\x0C\x0E-\x1F\uFFFE\uFFFF]/g;
 function xmlEsc(s) {
   return String(s).replace(XML_RIDICI, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
@@ -105,17 +159,53 @@ function xmlEsc(s) {
  * jako obyčejnou MEZERU. Dvouřádková patička by tak ve wordové nabídce
  * skončila na jednom řádku a nikdo by nepoznal proč.
  *
- * Řádky se proto spojují značkou `<w:br/>`, která uvnitř běhu (`<w:r>`)
- * znamená zalomení. Placeholder v běhu vždycky je, takže je to platné.
+ * ZALOMENÍ PATŘÍ VEDLE TEXTU, NE DO NĚJ (P14 / K16-N81, 25. 9. 2026).
+ * Do té doby se řádky spojovaly holou značkou `<w:br/>` — jenže symbol leží
+ * uvnitř `<w:t>…</w:t>` a `w:t` smí podle OOXML nést jen text. Zalomení je
+ * samostatný prvek běhu (`w:r`), takže Word značku uvnitř textu nevykreslil
+ * a víceřádkové kapitoly, patička i dodatkové texty dál skončily na jednom
+ * řádku. Text se proto před zalomením uzavře a za ním otevře znovu
+ * (`xml:space="preserve"`, ať nezmizí mezery na začátku řádku).
  * `\r` se zahazuje, aby se ze souboru s CRLF nedělaly prázdné řádky. */
-function xmlEscRadky(s) {
-  return String(s).replace(/\r/g, '').split('\n').map(xmlEsc).join('<w:br/>');
+const DOCX_ZALOMENI = '</w:t><w:br/><w:t xml:space="preserve">';
+function xmlEscRadky(s, vTextu) {
+  const radky = String(s).replace(/\r/g, '').split('\n').map(xmlEsc);
+  /* Mimo `<w:t>` (atribut, alternativní text tvaru) by značka rozbila XML —
+   * tam se konec řádku stane mezerou. */
+  return radky.join(vTextu === false ? ' ' : DOCX_ZALOMENI);
+}
+/* Leží místo `pos` uvnitř prvku textu `<w:t …>…</w:t>`? */
+function docxUvnitrTextu(xml, pos) {
+  const konec = xml.lastIndexOf('</w:t>', pos);
+  const zacatek = Math.max(xml.lastIndexOf('<w:t>', pos), xml.lastIndexOf('<w:t ', pos));
+  return zacatek > konec;
+}
+/* DVOJÍ PROCENTO (1. 10. 2026, rozbor šablon SoD). Symboly PODM_*_PROC nesou
+ * procento i se znakem („0,05 %") — tak je chtějí šablony nabídek. Šablona
+ * smlouvy o dílo ale píše znak sama („ve výši {{PODM_POKUTA_SPLATNOST_PROC}} %
+ * z dlužné částky"), takže smlouva tiskla „0,05 % %". Když hodnota končí
+ * znakem % a text šablony za symbolem (do konce odstavce, bez značek) začíná
+ * týmž znakem, znak z hodnoty se vypustí. Jinak se nemění nic. */
+function docxZaSymbolemProcento(xml, konec) {
+  const kp = xml.indexOf('</w:p>', konec);
+  const usek = xml.slice(konec, kp < 0 ? konec + 400 : Math.min(kp, konec + 400)).replace(/<[^>]+>/g, '');
+  return /^[\s\u00a0]*%/.test(usek);
 }
 function nahradPlaceholdery(xml, ph) {
   // {{KLÍČ}} i rozdělené mezi runy: {{ / KLÍČ / }} mohou být proloženy XML tagy
-  return xml.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, vnitrek) => {
+  return xml.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, vnitrek, pos) => {
     const klic = vnitrek.replace(/<[^>]+>/g, '');
-    return ph[klic] != null ? xmlEscRadky(ph[klic]) : cely;
+    if (ph[klic] == null) return cely;
+    let hodnota = String(ph[klic]);
+    if (/%\s*$/.test(hodnota) && docxZaSymbolemProcento(xml, pos + cely.length))
+      hodnota = hodnota.replace(/[\s\u00a0]*%\s*$/, '');
+    /* HODNOTA SE NEROZVINE PODRUHÉ (B122, audit 2. 10. 2026). Řádky
+     * seznamu plateb (vlastní milník, katalog milníků, volné znění
+     * splátky) se vkládají PŘED hlavním průchodem — `{{SYMBOL}}` napsaný
+     * uživatelem by se v něm rozvinul jako symbol šablony. Složená závorka
+     * z hodnoty proto jde do XML jako znaková entita `&#123;`: Word ji
+     * vykreslí doslova, další průchod ji za symbol nepovažuje. */
+    return xmlEscRadky(hodnota, /\n/.test(hodnota) ? docxUvnitrTextu(xml, pos) : true).replace(/\{/g, '&#123;');
   });
 }
 
@@ -129,8 +219,15 @@ function nahradPlaceholdery(xml, ph) {
  * nemají jediný datový řádek (následuje přímo další sekce nebo konec tabulky). */
 const TS_SEKCE_NAZVY = ['ZÁKLADNÍ PARAMETRY ŠACHTY', 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY',
   'OPLÁŠTĚNÍ ŠACHTY', 'DOPLŇKOVÉ KONSTRUKCE', 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE',
-  'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ'];
+  'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ',
+  /* pruh vlastních řádků (docxRadkyNavic, D. S. 15. 10. 2026): sekce nad ním,
+   * které nezbyl řádek, se pozná jako prázdná a zmizí */
+  'DALŠÍ UJEDNÁNÍ'];
 
+const DOCX_SLEVA_KLICE = ['CENA_PRED_SLEVOU', 'SLEVA_PROC', 'SLEVA_KC'];
+/* Totéž pro nabídku PROJ (P4 / K15-N66): řádky „Cena před slevou" a „Sleva"
+ * zmizí, když projekce slevu nemá (prázdný PROJ_SLEVA_KC). */
+const DOCX_SLEVA_PROJ_KLICE = ['PROJ_CENA_PRED_SLEVOU', 'PROJ_SLEVA_PROC', 'PROJ_SLEVA_KC'];
 function jePrazdnaHodnota(v) {
   const t = String(v == null ? '' : v).trim();
   return t === '' || t === '-' || t === '–' || t === '—';
@@ -142,6 +239,202 @@ function klicePlaceholderu(fragment) {
     klice.push(vnitrek.replace(/<[^>]+>/g, '')); return _c;
   });
   return klice;
+}
+/* ZNAČKY BLOKŮ: PRÁZDNÁ KAPITOLA ZMIZÍ I S NADPISEM (P8 varianta A,
+ * K16-N78 / K9-N32; rozhodnutí J. V. 29. 9. 2026).
+ *
+ * Word nabídky nechával u prázdné kapitoly IV.–VI. nadpis i prázdný
+ * orámovaný rámeček (u VI. i osiřelou větu o předávacím protokolu), náhled
+ * a PDF kapitolu vypustily. Šablona (CN v13) proto obalí každý blok
+ * odstavci se značkami {{JMENO_ZAC}} … {{JMENO_KON}}. Když jsou VŠECHNY
+ * symboly uvnitř bloku prázdné, zmizí celý blok i se značkami; jinak zmizí
+ * jen značky. Symbol, který aplikace nezná (není v `ph`), blok drží —
+ * zůstane vidět a někdo si ho všimne. Značky, které nejsou ve stejné úrovni
+ * dokumentu (tělo × buňka tabulky), obsah nemažou: vypadne jen značka
+ * (v buňce se nahradí prázdným odstavcem, buňka bez odstavce by byla vada).
+ * Šablona bez značek se chová jako dřív. */
+const DOCX_ZNACKA_BLOKU_RE = /^\s*\{\{([A-Z0-9_]+?)_(ZAC|KON)\}\}\s*$/;
+/* K3-N10 (20. 10. 2026): značka se nerozpoznává z entity. Text uživatele
+ * (vlastní řádky TS) nese „{" jako `&#123;` (B122) a `odstavecText` ho
+ * dekóduje zpět — odstavec „{{X_KON}}" napsaný obchodníkem by jinak
+ * rozpároval skutečný blok kapitoly. Word sám složené závorky entitou
+ * nepíše, takže šablony to nezasáhne. */
+const DOCX_ZAVORKA_ENTITOU_RE = /&#(?:123|125|x7[bd]);/i;
+function docxZnackyBloku(xml) {
+  return odstavcoveSpany(xml).map(sp => {
+    const odst = xml.slice(sp.zac, sp.kon);
+    if (DOCX_ZAVORKA_ENTITOU_RE.test(odst)) return null;
+    const m = odstavecText(odst).match(DOCX_ZNACKA_BLOKU_RE);
+    return m ? { zac: sp.zac, kon: sp.kon, jmeno: m[1], typ: m[2] } : null;
+  }).filter(Boolean);
+}
+/* ODSTAVEC ZA KAŽDÝ ŘÁDEK (etapa B plánu plateb, 30. 9. 2026). Seznam
+ * plateb smlouvy o dílo PROJ stojí v šabloně jako JEDEN odstavec (odrážka)
+ * se symbolem; každá platba má být vlastní odrážkou, jako bylo osm pevných
+ * řádků. Pro symboly z tohoto seznamu se proto odstavec zopakuje za každý
+ * neprázdný řádek hodnoty (i s číslováním a stylem). Ostatní víceřádkové
+ * symboly se dál lámou uvnitř odstavce (<w:br/>, viz xmlEscRadky). */
+/* {{PODM_PLATEBNI_KALENDAR}} (věty o dílčích dokladech nabídky OCK, šablona
+ * CN v14) je tu pro šablonu, která by ho nesla v obyčejném odstavci; v CN v14
+ * stojí v řádku tabulky a rozvine ho rozvinRadkyZaRadek níž (ta běží dřív). */
+/* {{SOD_PLATEBNI_KALENDAR}} — splátky smlouvy o dílo realizace z krycího
+ * listu OCK (šablona SoD realizace v2, K18-N100, 1. 10. 2026). */
+const DOCX_ODSTAVCE_ZA_RADEK = ['SODP_PLATEBNI_KALENDAR', 'PODM_PLATEBNI_KALENDAR', 'SOD_PLATEBNI_KALENDAR'];
+function rozvinOdstavceZaRadek(xml, ph) {
+  DOCX_ODSTAVCE_ZA_RADEK.forEach(klic => {
+    if (!ph || ph[klic] == null) return;
+    const radky = String(ph[klic]).replace(/\r/g, '').split('\n').filter(r => r.trim() !== '');
+    if (radky.length < 2) return;
+    xml = xml.replace(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, (p) => {
+      if (klicePlaceholderu(p).indexOf(klic) < 0) return p;
+      return radky.map(r => nahradPlaceholdery(p, { [klic]: r })).join('');
+    });
+  });
+  return xml;
+}
+/* ŘÁDEK TABULKY ZA KAŽDÝ ŘÁDEK HODNOTY (etapa A platebních podmínek OCK,
+ * 30. 9. 2026). V šabloně CN v13 stojí každá věta o dílčím daňovém dokladu
+ * ve vlastním orámovaném řádku tabulky s písmenem a), b), c). Šablona v14 má
+ * místo tří pevných řádků jeden se symbolem {{PODM_PLATEBNI_KALENDAR}}
+ * a aplikace ho zopakuje za každou větu (i s rámečkem a číslováním) — bez
+ * zálohy tedy dva řádky, výchozích 50 / 40 / 10 tři jako dřív. Rozvíjí se
+ * nejvnitřnější řádek se symbolem; bez neprázdného řádku hodnoty zůstane
+ * řádek, jak je (prázdnou tabulku odstraní značky bloku, které běží dřív). */
+/* Texty nabídky PROJ z Nastavení → Firma (šablona PROJ v6, W1 19. 10. 2026):
+ * odrážka = vlastní orámovaný řádek, jako byly pevné řádky v5. Termíny mají
+ * dva sloupce — skupina symbolů se rozvíjí SPOLEČNĚ: i-tý řádek tabulky
+ * dostane i-tý řádek každé hodnoty (činnost vlevo, termín vpravo). Řádek
+ * tabulky, který z dvojice nese jen jeden symbol, se rozvine sám. */
+const DOCX_RADKY_ZA_RADEK = ['PODM_PLATEBNI_KALENDAR', 'PROJ_CENA_NEZAHRNUJE', 'PROJ_POZADOVANO_OD_INVESTORA', 'PROJ_DOLOZKY',
+  ['PROJ_TERMINY_CINNOST', 'PROJ_TERMINY_TERMIN']];
+function rozvinRadkyZaRadek(xml, ph) {
+  DOCX_RADKY_ZA_RADEK.forEach(skupina => {
+    const klice = (Array.isArray(skupina) ? skupina : [skupina]).filter(k => ph && ph[k] != null);
+    if (!klice.length) return;
+    const hodnoty = klice.map(k => String(ph[k]).replace(/\r/g, '').split('\n'));
+    const pocet = Math.max(...hodnoty.map(h => h.length));
+    /* řádek (index), který má aspoň v jedné hodnotě text — sloupce zůstanou zarovnané */
+    const indexy = [...Array(pocet).keys()].filter(i => hodnoty.some(h => String(h[i] || '').trim() !== ''));
+    if (!indexy.length) return;
+    radkoveSpany(xml)
+      .filter(sp => klicePlaceholderu(vlastniObsahRadku(xml.slice(sp.zac, sp.kon))).some(k => klice.indexOf(k) >= 0))
+      .sort((a, b) => b.zac - a.zac)                               // odzadu, ať sedí pozice
+      .forEach(sp => {
+        const radek = xml.slice(sp.zac, sp.kon);
+        xml = xml.slice(0, sp.zac) + indexy.map(i => nahradPlaceholdery(radek,
+          klice.reduce((o, k, j) => { o[k] = hodnoty[j][i] || ''; return o; }, {}))).join('') + xml.slice(sp.kon);
+      });
+  });
+  return xml;
+}
+/* ODSTAVEC S VĚTOU, KTERÁ DO DOKUMENTU NEPATŘÍ (K18-N101, 1. 10. 2026).
+ * Stará šablona SoD PROJ má osm pevných vět „Platba ve výši
+ * {{SODP_PLATBAn_KC}} + DPH proběhne …" s milníky napsanými v šabloně.
+ * Platba, kterou plán plateb nemá (činnost se nenabízí, nebo předvolba
+ * u ní neplatí), tam do v30.9.4 zůstávala jako {{…}} ve větě o činnosti,
+ * kterou zakázka nemá („… při předání 2D výstupů ze zaměření" u projekce
+ * bez zaměření). Builder proto může říct, které symboly v dokumentu NEMAJÍ
+ * BÝT (`odstavcePryc`) — odstavec s takovým symbolem zmizí celý. Je to
+ * výslovný seznam od builderu, ne pravidlo „prázdný symbol = pryč": symbol,
+ * o kterém builder nic neví, zůstává dál viditelný k doplnění. */
+function odstranOdstavceSeSymboly(xml, klice) {
+  const k = Array.isArray(klice) ? klice.filter(Boolean) : [];
+  if (!k.length) return xml;
+  /* v buňce tabulky zůstane prázdný odstavec — buňka bez odstavce je vada */
+  return xml.replace(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, (p, pos) =>
+    (klicePlaceholderu(p).some(x => k.indexOf(x) >= 0) ? (docxVBunce(xml, pos) ? '<w:p/>' : '') : p));
+}
+function docxVBunce(xml, pos) {
+  const pred = xml.slice(0, pos);
+  return (pred.match(/<w:tc[\s>]/g) || []).length > (pred.match(/<\/w:tc>/g) || []).length;
+}
+/* K3-N11 (20. 10. 2026): zásobník, ne jen počty — „</w:tc><w:tc>" (blok od
+ * buňky 1 do buňky 2 téhož řádku) má počty stejné, ale vyvážený není;
+ * jeho odstranění by buňky sloučilo. Prázdné `<w:p/>` se nepočítá. */
+function docxVyvazene(fr) {
+  const zas = [];
+  const re = /<(\/?)w:(tbl|tr|tc|p)(?=[\s>\/])([^>]*)>/g;
+  let m;
+  while ((m = re.exec(fr))) {
+    if (!m[1] && /\/$/.test(m[3])) continue;                     // <w:p/>, <w:p …/>
+    if (!m[1]) zas.push(m[2]);
+    else if (zas.pop() !== m[2]) return false;
+  }
+  return zas.length === 0;
+}
+/* BLOK, KTERÝ DO DOKUMENTU NEPATŘÍ (#380 Q7, rozhodnutí J. V. 17. 10. 2026).
+ * Činnost v předmětu díla a v termínech SoD PROJ v4 je pevný text bez
+ * symbolu — prázdnou hodnotou se zmizet nedá. Builder proto dodá výslovný
+ * seznam jmen bloků (`blokyPryc`, např. CIN_EZC), které zmizí celé i s obsahem
+ * (jako `odstavcePryc` u vět, K18-N101). Blok, o kterém builder nic neřekl,
+ * se řídí obsahem jako dřív.
+ * NEVYVÁŽENÝ BLOK ZE SEZNAMU (B191, audit kola 28; dávka H2 19. 10. 2026):
+ * blok z `blokyPryc`, který nejde odstranit (značky bez páru, zkřížené,
+ * nebo začátek v buňce tabulky a konec mimo ni — šablona upravená ve
+ * Wordu), dřív v dokumentu tiše zůstal a zmizely jen značky — smlouva by
+ * vyjmenovala nenabízenou činnost. Teď generátor hází (fail-closed,
+ * dokument nevznikne); blok mimo seznam se řídí obsahem jako dřív. */
+/* CHYBĚJÍCÍ BLOK ZE SEZNAMU (K3-N3, audit K3; dávka O5 20. 10. 2026):
+ * šablona SoD PROJ v4 (nese {{SODP_ROZSAH_DILA}} nebo značku CIN_*), ze
+ * které někdo ve Wordu smazal OBA odstavce se značkami bloku ze seznamu,
+ * by se vytiskla s nenabízenou činností bez varování — B191 hlídal jen
+ * značku, která v dokumentu je. Teď musí mít taková šablona blok každého
+ * jména z `blokyPryc`, jinak dokument nevznikne. Šablona bez symbolu
+ * rozsahu i bez značek CIN_* (v3, záhlaví, zápatí) se chová jako dřív. */
+/* K4-N6 (audit K4; dávka O9 21. 10. 2026): totéž pro nabídku PROJ v7 — šablona
+ * se symbolem {{PROJ_DPZ_UVOD}} nebo {{PROJ_TITUL_CINNOSTI}} musí mít bloky
+ * BLOK_STUDIE_* ze seznamu, jinak by nabídka bez studie tiskla rozsah a cenu
+ * studie. Nabídka v6 a starší (bez těch symbolů) se chová jako dřív. */
+function docxBlokyPrycChybi(xml, pryc) {
+  if (!pryc.length) return null;
+  const klice = klicePlaceholderu(xml);
+  if (!klice.some(k => k === 'SODP_ROZSAH_DILA' || k === 'PROJ_DPZ_UVOD' || k === 'PROJ_TITUL_CINNOSTI'
+    || /^CIN_[A-Z0-9_]+_(?:ZAC|KON)$/.test(k))) return null;
+  const jmena = new Set(docxZnackyBloku(xml).map(z => z.jmeno));
+  return pryc.find(j => !jmena.has(j)) || null;
+}
+function odstranPrazdneBloky(xml, ph, blokyPryc) {
+  const pryc = Array.isArray(blokyPryc) ? blokyPryc : [];
+  const chybi = docxBlokyPrycChybi(xml, pryc);
+  if (chybi) throw new Error(docxBlokChybiText(chybi));
+  if (!/_(?:ZAC|KON)(?:<[^>]+>)*\}/.test(xml)) return xml;       // šablona bez značek
+  const bezZnacky = (x, z) => (docxVBunce(x, z.zac) ? '<w:p/>' : '');
+  for (let kolo = 0; kolo < 500; kolo++) {
+    const zn = docxZnackyBloku(xml);
+    let par = null;                          // nejvnitřnější pár: ZAC hned následovaný svým KON
+    for (let i = 0; i < zn.length - 1 && !par; i++)
+      if (zn[i].typ === 'ZAC' && zn[i + 1].typ === 'KON' && zn[i + 1].jmeno === zn[i].jmeno) par = [zn[i], zn[i + 1]];
+    if (!par) break;
+    const [a, b] = par;
+    const uvnitr = xml.slice(a.kon, b.zac);
+    const klice = klicePlaceholderu(uvnitr);
+    if (pryc.indexOf(a.jmeno) >= 0 && !docxVyvazene(uvnitr)) throw new Error(docxBlokNejdeText(a.jmeno));
+    const prazdny = docxVyvazene(uvnitr) && (pryc.indexOf(a.jmeno) >= 0
+      || (klice.length > 0 && klice.every(k => ph && ph[k] != null && jePrazdnaHodnota(ph[k]))));
+    xml = prazdny ? xml.slice(0, a.zac) + xml.slice(b.kon)
+      : xml.slice(0, a.zac) + bezZnacky(xml, a) + uvnitr + bezZnacky(xml, b) + xml.slice(b.kon);
+  }
+  /* značky bez páru nebo zkřížené: jen pryč, obsah zůstává — kromě bloku
+   * ze seznamu pryč (B191: ten by v dokumentu zůstal) */
+  const zbyle = docxZnackyBloku(xml).find(z => pryc.indexOf(z.jmeno) >= 0);
+  if (zbyle) throw new Error(docxBlokNejdeText(zbyle.jmeno));
+  docxZnackyBloku(xml).sort((p, q) => q.zac - p.zac)
+    .forEach(z => { xml = xml.slice(0, z.zac) + bezZnacky(xml, z) + xml.slice(z.kon); });
+  return xml;
+}
+
+function docxBlokChybiText(jmeno) {
+  if (/^BLOK_STUDIE_/.test(jmeno))
+    return 'Šablona nabídky PROJ (v7) nemá blok ' + jmeno + ' (značky {{' + jmeno + '_ZAC}} a {{' + jmeno
+      + '_KON}}) — text o studii, která se nenabízí, by v nabídce zůstal. Dokument proto nevznikne. Opravte šablonu.';
+  return 'Šablona smlouvy má rozsah díla po činnostech, ale chybí v ní blok ' + jmeno + ' (značky {{' + jmeno
+    + '_ZAC}} a {{' + jmeno + '_KON}}) — činnost, která do dokumentu nepatří, by v něm zůstala. '
+    + 'Dokument proto nevznikne. Opravte šablonu.';
+}
+function docxBlokNejdeText(jmeno) {
+  return 'Šablona má blok ' + jmeno + ', který do dokumentu nepatří, ale jeho značky {{' + jmeno
+    + '_ZAC}} a {{' + jmeno + '_KON}} nejsou správně spárované (např. začátek v tabulce a konec za ní) — '
+    + 'blok nejde odstranit, dokument proto nevznikne. Opravte šablonu.';
 }
 /* páry <w:tr>…</w:tr> se správným párováním (počítání vnoření – tabulka v tabulce) */
 function radkoveSpany(xml) {
@@ -175,8 +468,16 @@ function odstranPrazdneTsRadky(xml, ph) {
   const kOdstr = [];
   for (const sp of radkoveSpany(xml)) {
     const obsah = vlastniObsahRadku(xml.slice(sp.zac, sp.kon));
-    const tsKlice = klicePlaceholderu(obsah).filter(k => k.startsWith('TS_'));
+    const klice = klicePlaceholderu(obsah);
+    const tsKlice = klice.filter(k => k.startsWith('TS_'));
     if (tsKlice.length && tsKlice.every(k => (k in ph) && jePrazdnaHodnota(ph[k]))) kOdstr.push(sp);
+    /* ŘÁDKY SLEVY (P5 / K13-N56, 25. 9. 2026): „Cena před slevou" a „Sleva"
+     * zmizí, když nabídka slevu nemá (prázdný SLEVA_KC). Cena před slevou
+     * se plní vždy, proto rozhoduje SLEVA_KC, ne hodnota v řádku. */
+    else if (klice.some(k => DOCX_SLEVA_KLICE.includes(k)) && ('SLEVA_KC' in ph) && jePrazdnaHodnota(ph.SLEVA_KC))
+      kOdstr.push(sp);
+    else if (klice.some(k => DOCX_SLEVA_PROJ_KLICE.includes(k)) && ('PROJ_SLEVA_KC' in ph) && jePrazdnaHodnota(ph.PROJ_SLEVA_KC))
+      kOdstr.push(sp);
   }
   // neodstraňuj nadřazený řádek kvůli vnořenému – ponech jen vnější z překrývajících
   const vyber = kOdstr.filter(sp => !kOdstr.some(o => o !== sp && o.zac <= sp.zac && sp.kon <= o.kon && o.hloubka < sp.hloubka));
@@ -205,6 +506,70 @@ function odstranPrazdneTsRadky(xml, ph) {
   return xml;
 }
 
+/* ŘÁDKY TABULKY NAVÍC (D. S. 15. 10. 2026, v16.10.2). Technická specifikace
+ * umí řádky, pro které šablona CN symbol nemá (vnitřní lešení, vlastní řádky
+ * DALŠÍ UJEDNÁNÍ). Builder je pošle jako `volby.radkyNavic`:
+ *   { kotva, pred?, symbol?, nazev, hodnota, pruh? }
+ * Řádek se NAKLONUJE z nejvnitřnějšího řádku se symbolem `kotva` (formát,
+ * rámečky i šířky zůstanou), první buňka dostane `nazev`, symbol kotvy se
+ * nahradí `hodnota`. `pruh` = sekční pruh: klonuje se nejbližší řádek BEZ
+ * symbolu nad kotvou (nadpis sekce) a vepíše se do něj `nazev`. Vkládá se
+ * za kotvu (v pořadí seznamu), s `pred` před ni. Nevkládá se, když šablona
+ * `symbol` už nese (dostane hodnotu do svého řádku), když je hodnota prázdná
+ * (bez `vzdy` — vlastní řádek s popiskem a bez hodnoty se vloží) nebo kotva v šabloně chybí. Běží PŘED odstraněním prázdných TS řádků, takže
+ * kotva, která sama zmizí, klon nezruší. Text jde přes xmlEsc a `{` jako
+ * entita (B122) — vlastní text uživatele se nerozvine jako symbol. */
+function docxTextDoRadku(radek, text) {
+  let prvni = true;
+  return radek.replace(/<w:t(\s[^>]*)?>[\s\S]*?<\/w:t>/g, () => {
+    if (!prvni) return '<w:t></w:t>';
+    prvni = false;
+    return '<w:t xml:space="preserve">' + xmlEsc(text).replace(/\{/g, '&#123;') + '</w:t>';
+  });
+}
+function docxRadkyNavic(xml, radky) {
+  const seznam = (Array.isArray(radky) ? radky : []).filter(x => x && x.kotva
+    && (x.pruh || x.vzdy || !jePrazdnaHodnota(x.hodnota))
+    && !(x.symbol && klicePlaceholderu(xml).indexOf(x.symbol) >= 0));
+  if (!seznam.length) return xml;
+  const kotvy = [];
+  seznam.forEach(x => { if (kotvy.indexOf(x.kotva) < 0) kotvy.push(x.kotva); });
+  const vlozit = [];
+  kotvy.forEach(kotva => {
+    const spany = radkoveSpany(xml);
+    const kandidati = spany.filter(sp => klicePlaceholderu(vlastniObsahRadku(xml.slice(sp.zac, sp.kon))).indexOf(kotva) >= 0);
+    if (!kandidati.length) return;
+    const sp = kandidati.reduce((a, b) => (b.hloubka > a.hloubka ? b : a));
+    const radek = xml.slice(sp.zac, sp.kon);
+    const prvniBunka = (r, text) => {
+      const m = r.match(/<w:tc[\s>][\s\S]*?<\/w:tc>/);
+      return m ? r.replace(m[0], docxTextDoRadku(m[0], text)) : r;
+    };
+    /* sekční pruh: nejbližší řádek téže hloubky nad kotvou bez symbolu, ve stejné tabulce */
+    const pruhVzor = () => {
+      const pred = spany.filter(o => o.hloubka === sp.hloubka && o.kon <= sp.zac).sort((a, b) => b.zac - a.zac);
+      for (const o of pred) {
+        if (/<\/w:tbl>|<w:tbl[\s>]/.test(xml.slice(o.kon, sp.zac).replace(/<w:tr[\s>][\s\S]*?<\/w:tr>/g, ''))) return null;
+        const r = xml.slice(o.zac, o.kon);
+        if (!klicePlaceholderu(r).length) return r;
+      }
+      return null;
+    };
+    let predBlok = '', zaBlok = '';
+    seznam.filter(x => x.kotva === kotva).forEach(x => {
+      let novy;
+      if (x.pruh) { const v = pruhVzor(); if (!v) return; novy = docxTextDoRadku(v, x.nazev); }
+      else novy = nahradPlaceholdery(prvniBunka(radek, String(x.nazev == null ? '' : x.nazev)),
+        { [kotva]: String(x.hodnota == null ? '' : x.hodnota) });
+      if (x.pred) predBlok += novy; else zaBlok += novy;
+    });
+    vlozit.push({ sp, predBlok, zaBlok });
+  });
+  vlozit.sort((a, b) => b.sp.zac - a.sp.zac)
+    .forEach(v => { xml = xml.slice(0, v.sp.zac) + v.predBlok + xml.slice(v.sp.zac, v.sp.kon) + v.zaBlok + xml.slice(v.sp.kon); });
+  return xml;
+}
+
 /* ---------- dynamické bloky: tabulka s {{PRIP_NAZEV}} se naklonuje pro každý příplatek ---------- */
 function najdiTabulku(xml, pozice) {
   const udalosti = [];
@@ -230,8 +595,16 @@ function expandujPriplatky(xml, priplatky) {
   const t = najdiTabulku(xml, marker);
   if (!t) return xml;
   const proto = xml.slice(t.zac, t.kon);
+  /* Složená závorka z NÁZVU příplatku se nesmí stát symbolem (B86, hloubkový
+   * test 24. 9. 2026): celý dokument se po rozvinutí tabulky plní ještě
+   * jednou, takže příplatek pojmenovaný „{{FIRMA_ICO}}" by se ve Wordu
+   * rozvinul. Závorka z hodnot se proto vloží jako znaková entita &#123; —
+   * Word ukáže „{", ale symbol z ní nevznikne. Značka \uE000 (soukromá
+   * oblast Unicode) jen přečká escapování. */
+  const bezSymbolu = (v) => (v == null ? v : String(v).replace(/\{/g, '\uE000'));
   const kopie = (priplatky || []).map(p =>
-    nahradPlaceholdery(proto, { PRIP_NAZEV: p.nazev, PRIP_POPIS: p.popis, PRIP_CENA: p.cena }));
+    nahradPlaceholdery(proto, { PRIP_NAZEV: bezSymbolu(p.nazev), PRIP_POPIS: bezSymbolu(p.popis),
+                                PRIP_CENA: bezSymbolu(p.cena) }).replace(/\uE000/g, '&#123;'));
   return xml.slice(0, t.zac) + (kopie.length ? kopie.join('<w:p/>') : '<w:p/>') + xml.slice(t.kon);
 }
 
@@ -487,9 +860,24 @@ function docxVlozObrazky(polozky, obrazky) {
   return zasahu;
 }
 
+/* OBRANA DO HLOUBKY (B99, 29. 9. 2026): generátor i překlad kopírují zbytek
+ * ZIPu (vztahy, settings.xml.rels, vložené objekty) beze změny. Šablona
+ * s vnějším attachedTemplate, makry nebo poli INCLUDE… a DDE se proto odmítne
+ * i tady — ne tiše vyčistí: zveřejněná šablona má takové prvky odmítnout
+ * už server a průvodce (src/sablona_obsah.js). */
+function docxObsahZkontroluj(polozky) {
+  let so = null;
+  if (typeof sablonaObsahVadyZipu === 'function') so = { sablonaObsahVadyZipu, sablonaObsahVadyText: (typeof sablonaObsahVadyText === 'function') ? sablonaObsahVadyText : null };
+  else if (typeof require === 'function') { try { so = require('./sablona_obsah.js'); } catch (e) { so = null; } }
+  if (!so) return;
+  const vady = so.sablonaObsahVadyZipu(polozky);
+  if (vady.length) throw new Error(so.sablonaObsahVadyText ? so.sablonaObsahVadyText(vady) : 'Šablona obsahuje nepovolené prvky: ' + vady.join('; '));
+}
+
 /* ---------- hlavní funkce: vyplní šablonu a vrátí Blob .docx ---------- */
-async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky) {
+async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, volby) {
   const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
+  docxObsahZkontroluj(polozky);                                      // B99
   const dekoder = new TextDecoder(), enkoder = new TextEncoder();
   /* Obrázky nejdřív: pracují s alternativním textem {{…}}, který by textová
    * náhrada mohla považovat za neznámý symbol a nechat v dokumentu. */
@@ -501,8 +889,13 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky) {
       let po = pred;
       if (p.nazev === 'word/document.xml') {
         po = expandujPriplatky(po, priplatky);
+        po = docxRadkyNavic(po, volby && volby.radkyNavic);   // řádky bez symbolu v šabloně (D. S. 15. 10. 2026)
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
       }
+      po = odstranOdstavceSeSymboly(po, volby && volby.odstavcePryc);   // věty, které do dokumentu nepatří (K18-N101)
+      po = odstranPrazdneBloky(po, placeholders, volby && volby.blokyPryc);   // prázdné kapitoly (P8A) a nenabízené činnosti SoD PROJ (#380)
+      po = rozvinRadkyZaRadek(po, placeholders);        // věty o dílčích dokladech OCK: řádek tabulky za větu (etapa A)
+      po = rozvinOdstavceZaRadek(po, placeholders);     // seznam plateb: odstavec za platbu (etapa B)
       po = nahradPlaceholdery(po, placeholders);
       if (po !== pred) nahrad++;
       p.data = enkoder.encode(po);
@@ -529,7 +922,9 @@ function docxPar(text, o) {
   const ppr = `<w:pPr>${o.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>` : ''}`
     + `<w:spacing w:after="${o.after != null ? o.after : 40}" w:line="240" w:lineRule="auto"/>`
     + (rpr ? `<w:rPr>${rpr}</w:rPr>` : '') + '</w:pPr>';
-  return `<w:p>${ppr}<w:r>${rpr ? `<w:rPr>${rpr}</w:rPr>` : ''}<w:t xml:space="preserve">${docxEsc(text)}</w:t></w:r></w:p>`;
+  /* Víceřádková hodnota se zalomí i v dokumentu od nuly (P14 / K16-N81). */
+  const radky = String(text == null ? '' : text).replace(/\r/g, '').split('\n').map(docxEsc).join(DOCX_ZALOMENI);
+  return `<w:p>${ppr}<w:r>${rpr ? `<w:rPr>${rpr}</w:rPr>` : ''}<w:t xml:space="preserve">${radky}</w:t></w:r></w:p>`;
 }
 function docxCell(inner, w, o) {
   o = o || {};
@@ -545,6 +940,24 @@ function docxTeloZeSekci(nadpis, sekce) {
   const W1 = 3400, W2 = 5600, WFULL = W1 + W2;
   let body = docxPar(nadpis, { b: true, sz: 32, after: 160 });
   (sekce || []).forEach(s => {
+    /* Sekce se sloupci (hodiny z kalkulace v krycím listu BO, 14. 10. 2026):
+     * záhlaví sloupců a řádky [popis, …hodnoty]; šířka hodnot se dělí rovným dílem.
+     * Od 15. 10. má tabulka hodin jen jeden sloupec hodnot (OCK nebo PROJ) —
+     * záhlaví se vypíše i tak, proto stačí dva sloupce. */
+    if (Array.isArray(s.sloupce) && s.sloupce.length >= 2) {
+      const n = s.sloupce.length - 1, WV = Math.floor(W2 / n), WT = W1 + WV * n;
+      const bunky = (r, opt) => `<w:tr>${docxCell(docxPar(r[0], { b: true, sz: 18, after: 0 }), W1, { fill: 'EEF2F8' })}`
+        + r.slice(1, n + 1).map(v => docxCell(docxPar(v == null ? '' : v, Object.assign({ sz: 18, after: 0 }, opt || {})), WV)).join('') + '</w:tr>';
+      body += `<w:tbl><w:tblPr><w:tblW w:w="${WT}" w:type="dxa"/>`
+        + '<w:tblBorders><w:top w:val="single" w:sz="4" w:color="C7D0DB"/><w:left w:val="single" w:sz="4" w:color="C7D0DB"/>'
+        + '<w:bottom w:val="single" w:sz="4" w:color="C7D0DB"/><w:right w:val="single" w:sz="4" w:color="C7D0DB"/>'
+        + '<w:insideH w:val="single" w:sz="4" w:color="C7D0DB"/><w:insideV w:val="single" w:sz="4" w:color="C7D0DB"/></w:tblBorders>'
+        + `</w:tblPr><w:tblGrid><w:gridCol w:w="${W1}"/>` + Array(n).fill(`<w:gridCol w:w="${WV}"/>`).join('') + '</w:tblGrid>'
+        + `<w:tr>${docxCell(docxPar(s.sekce, { b: true, sz: 20, color: 'FFFFFF', after: 0 }), WT, { span: n + 1, fill: '2B3850' })}</w:tr>`
+        + bunky(s.sloupce, { b: true })
+        + (s.radky || []).map(r => bunky(r)).join('') + '</w:tbl>' + docxPar('', { after: 80 });
+      return;
+    }
     const hlava = `<w:tr>${docxCell(docxPar(s.sekce, { b: true, sz: 20, color: 'FFFFFF', after: 0 }), WFULL, { span: 2, fill: '2B3850' })}</w:tr>`;
     const radky = (s.radky || []).map(([l, v]) =>
       `<w:tr>${docxCell(docxPar(l, { b: true, sz: 18, after: 0 }), W1, { fill: 'EEF2F8' })}`
@@ -622,6 +1035,83 @@ function odstavecText(odst) {
   const casti = odst.match(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g) || [];
   return casti.map(t => xmlUnesc(t.replace(/^<w:t(?:\s[^>]*)?>/, '').replace(/<\/w:t>$/, ''))).join('');
 }
+/* PŘEKLAD PO ÚSECÍCH MEZI SYMBOLY (P3 / K14-N63, K16-N84, 25. 9. 2026).
+ *
+ * Odstavec se symbolem {{…}}, který slovník nezná celý („Číslo nabídky:
+ * {{CISLO_NABIDKY}}", „{{CENA_S_DPH}} včetně DPH"), zůstával v cizojazyčné
+ * šabloně česky, i když slovník znal každý jeho kus. A v šablonách dělí text
+ * a symbol TABULÁTORY a ZALOMENÍ (`<w:tab/>`, `<w:br/>`) — překlad celého
+ * odstavce do prvního `<w:t>` by text přestěhoval přes ně a rozbil rozvržení.
+ *
+ * Proto se odstavec rozloží na ÚSEKY mezi symboly a oddělovači, přeloží se
+ * jejich jádra (bez okrajových mezer a znamének) a každé jádro se vrátí do
+ * běhu, kde začínalo. Symboly, tabulátory, zalomení i formátování běhů zůstávají
+ * na místě. Všechno, nebo nic: když některý úsek slovník nezná, zůstane česky
+ * celý odstavec (půlka věty v cizím jazyce je horší) a vypíše se.
+ * Dvojtečka a tečka na konci se srovnají podle originálu (francouzsky „ :").
+ * Vrací { ok, xml } nebo { ok: true, prazdne: true } (není co překládat —
+ * jen symboly, čísla a znaménka). */
+const DOCX_ODDELOVAC_RE = /<w:(?:tab|br|cr)(?:\s[^>]*)?\/>/;
+function docxMaOddelovace(odst) {
+  const zac = odst.search(/<w:t(?:\s[^>]*)?>/), kon = odst.lastIndexOf('</w:t>');
+  return zac >= 0 && kon > zac && DOCX_ODDELOVAC_RE.test(odst.slice(zac, kon));
+}
+function docxPrelozUseky(odst, lang, prelozit) {
+  const re = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:tab|br|cr)(?:\s[^>]*)?\/>/g;
+  const uzly = [];                 // prvky textu: { zac, kon, pozice v T, text }
+  let T = '', m;                   // spojený text; oddělovač = \u0001
+  while ((m = re.exec(odst))) {
+    if (m[1] !== undefined) {                              // <w:t>…</w:t>
+      const text = xmlUnesc(m[1]);
+      uzly.push({ zac: m.index, kon: m.index + m[0].length, t: T.length, text });
+      T += text;
+    } else if (T.length) T += '\u0001';
+  }
+  const hranice = [];
+  const reSym = /\{\{[^{}]*\}\}/g;
+  while ((m = reSym.exec(T))) hranice.push([m.index, m.index + m[0].length]);
+  const useky = [];
+  const rozdel = (a, b) => {
+    let s = a;
+    for (let k = a; k <= b; k++) if (k === b || T[k] === '\u0001') { if (k > s) useky.push([s, k]); s = k + 1; }
+  };
+  let a = 0;
+  hranice.forEach(([s, e]) => { rozdel(a, s); a = e; });
+  rozdel(a, T.length);
+  const upravy = [];
+  for (const [s, e] of useky) {
+    const u = T.slice(s, e);
+    if (!/\p{L}/u.test(u)) continue;
+    const pred = u.match(/^[^\p{L}\p{N}]*/u)[0];
+    const za = u.slice(pred.length).match(/[^\p{L}\p{N}:.!?*]*$/u)[0];
+    const jadro = u.slice(pred.length, u.length - za.length);
+    if (!jadro) continue;
+    const st = prelozit(jadro, lang);
+    if (st && st.zdroj === 'neutrální') continue;
+    if (!st || !st.prelozeno) return { ok: false };
+    let pr = String(st.text);
+    const dvojtecka = /:\s*$/.test(jadro), maDvojtecku = /\s?:\s*$/.test(pr);
+    if (dvojtecka && !maDvojtecku) pr = pr.replace(/\s+$/, '') + (lang === 'fr' ? ' :' : ':');
+    else if (!dvojtecka && maDvojtecku) pr = pr.replace(/\s?:\s*$/, '');
+    if (/\.\s*$/.test(jadro) && !/[.!?…]\s*$/.test(pr)) pr += '.';
+    upravy.push({ s: s + pred.length, e: e - za.length, text: pr });
+  }
+  if (!upravy.length) return { ok: true, prazdne: true };
+  let novy = odst;
+  for (let i = uzly.length - 1; i >= 0; i--) {             // odzadu, ať sedí pozice
+    const n = uzly[i];
+    let t = '';
+    for (let k = 0; k < n.text.length; k++) {
+      const p = n.t + k;
+      const up = upravy.find(x => p >= x.s && p < x.e);
+      if (up) { if (p === up.s) t += up.text; continue; }
+      t += n.text[k];
+    }
+    if (t === n.text) continue;
+    novy = novy.slice(0, n.zac) + '<w:t xml:space="preserve">' + xmlEsc(t) + '</w:t>' + novy.slice(n.kon);
+  }
+  return { ok: true, xml: novy };
+}
 /* přeloží pevný text v jednom XML dílu dokumentu */
 function docxPrelozXml(xml, lang, stat) {
   const prelozit = typeof trStav === 'function' ? trStav : null;
@@ -634,7 +1124,38 @@ function docxPrelozXml(xml, lang, stat) {
     const sp = spany[i], cely = xml.slice(sp.zac, sp.kon);
     const text = odstavecText(cely);
     if (!text.trim()) continue;
-    if (/\{\{|\}\}/.test(text)) continue;                   // odstavec se symbolem {{…}} se nedotýkáme
+    /* ODSTAVEC SE SYMBOLEM {{…}} (#350, 25. 9. 2026). Do té doby se takový
+     * odstavec přeskakoval celý — u nabídek nevadilo, ve smlouvě o dílo jsou
+     * to ale právě články s cenou, platbami a pokutami („Celková cena díla
+     * byla dohodnuta na {{…}}"), takže by cizojazyčná smlouva měla klíčové
+     * věty česky. Teď se přeloží, když ho slovník zná celý (i se symboly)
+     * a překlad nese PŘESNĚ tytéž symboly — ztracený nebo přidaný symbol by
+     * v dokumentu tiše chyběl. Neznámý odstavec se symbolem se dál nechá
+     * být a do pokrytí se nepočítá; průvodce ho vypíše zvlášť (stat.symbolove),
+     * ať je vidět, co zůstane česky. */
+    if (/\{\{|\}\}/.test(text)) {
+      const sym = (t) => (String(t).match(/\{\{[^{}]*\}\}/g) || []).sort().join('|');
+      const ss = prelozit(text, lang);
+      /* Celý odstavec do prvního běhu jen tehdy, když text nedělí tabulátor
+       * ani zalomení — jinak by se přestěhoval přes ně (P3). */
+      if (ss && ss.prelozeno && ss.zdroj !== 'neutrální' && sym(ss.text) === sym(text) && !docxMaOddelovace(cely)) {
+        stat.celkem++; stat.prelozeno++;
+        let n = 0;
+        const novy = cely.replace(/<w:t(?:\s[^>]*)?>[\s\S]*?<\/w:t>/g, () =>
+          '<w:t xml:space="preserve">' + (n++ === 0 ? xmlEsc(ss.text) : '') + '</w:t>');
+        xml = xml.slice(0, sp.zac) + novy + xml.slice(sp.kon);
+        continue;
+      }
+      const u = docxPrelozUseky(cely, lang, prelozit);
+      if (u.ok && u.prazdne) continue;                      // jen symboly a znaménka
+      if (u.ok && sym(odstavecText(u.xml)) === sym(text)) {
+        stat.celkem++; stat.prelozeno++;
+        xml = xml.slice(0, sp.zac) + u.xml + xml.slice(sp.kon);
+        continue;
+      }
+      (stat.symbolove = stat.symbolove || []).push(text);
+      continue;
+    }
     const st = prelozit(text, lang);
     stat.celkem++;
     if (st.zdroj === 'neutrální') { stat.neutralni++; continue; }
@@ -651,9 +1172,10 @@ function docxPrelozXml(xml, lang, stat) {
  * stat (volitelně) se naplní statistikou: celkem/prelozeno/neutralni/chybi[]. */
 async function docxPrelozSablonu(arrayBuffer, lang, stat) {
   stat = stat || {};
-  stat.celkem = 0; stat.prelozeno = 0; stat.neutralni = 0; stat.chybi = [];
+  stat.celkem = 0; stat.prelozeno = 0; stat.neutralni = 0; stat.chybi = []; stat.symbolove = [];
   if (!lang || lang === 'cz') throw new Error('Zvolte cílový jazyk šablony (EN / DE / FR).');
   const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
+  docxObsahZkontroluj(polozky);                                      // B99
   const dekoder = new TextDecoder(), enkoder = new TextEncoder();
   let dotceno = 0;
   for (const p of polozky) {
@@ -669,9 +1191,65 @@ async function docxPrelozSablonu(arrayBuffer, lang, stat) {
   return zipZapis(polozky);
 }
 
+/* TEXT ŠABLONY PRO KONTROLY (#348, 24. 9. 2026): odstavce z těla, záhlaví
+ * a zápatí (jen nejvnitřnější, stejně jako překlad) plus symboly z popisků
+ * obrázků (`descr="{{…}}"`). Nic se nemění — slouží ke kontrole jazyka
+ * a symbolů před zveřejněním. */
+async function docxTextSablony(arrayBuffer) {
+  const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
+  const dekoder = new TextDecoder();
+  const odstavce = [];
+  for (const p of polozky) {
+    if (!/^word\/(document|header\d*|footer\d*)\.xml$/.test(p.nazev)) continue;
+    const xml = dekoder.decode(p.data);
+    odstavcoveSpany(xml).forEach(sp => {
+      const cely = xml.slice(sp.zac, sp.kon);
+      if (/<w:p(?:\s[^>]*[^/])?>/.test(cely.replace(/^<w:p(?:\s[^>]*)?>/, ''))) return;
+      const t = odstavecText(cely);
+      if (t.trim()) odstavce.push(t);
+    });
+    xml.replace(/descr="(\{\{[A-Z0-9_]+\}\})"/g, (_m, sym) => { odstavce.push(sym); return _m; });
+  }
+  return odstavce;
+}
+
+/* KONTROLA STRUKTURY XML (25. 9. 2026). Šablona PROJ v2 vyšla ze skriptu
+ * s rozbitým document.xml — nenasytný regex smazal kus odstavce s textovým
+ * polem a nechal neuzavřené značky. Aplikace z ní přesto tiskla (dosazování
+ * jde přes text, ne přes strom), jenže Word takový soubor otevře jen
+ * s opravou. Tahle kontrola to pozná dřív, než se šablona zveřejní: projde
+ * značky dílů těla, záhlaví a zápatí a hlídá, že se párují. Vrací seznam
+ * vadných dílů s popisem (prázdný = v pořádku). */
+function xmlStrukturaVada(xml) {
+  const zas = [];
+  const re = /<(\/?)([A-Za-z_][\w:.-]*)((?:[^>"']|"[^"]*"|'[^']*')*?)(\/?)>/g;
+  let m;
+  const bez = String(xml).replace(/<\?[\s\S]*?\?>/g, '').replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '');
+  while ((m = re.exec(bez))) {
+    if (m[4] === '/') continue;
+    if (m[1] === '/') {
+      const top = zas.pop();
+      if (top !== m[2]) return 'značka </' + m[2] + '> uzavírá <' + (top || '—') + '> (pozice ' + m.index + ')';
+    } else zas.push(m[2]);
+  }
+  return zas.length ? 'neuzavřená značka <' + zas[zas.length - 1] + '>' : '';
+}
+async function docxXmlVady(arrayBuffer) {
+  const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
+  const dekoder = new TextDecoder();
+  const vady = [];
+  for (const p of polozky) {
+    if (!/^word\/(document|header\d*|footer\d*|styles|numbering)\.xml$/.test(p.nazev)) continue;
+    const v = xmlStrukturaVada(dekoder.decode(p.data));
+    if (v) vady.push(p.nazev + ': ' + v);
+  }
+  return vady;
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
-    odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu,
+  module.exports = { docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+    odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
     docxPrelozSablonu, docxPrelozXml, odstavcoveSpany, odstavecText, xmlUnesc };

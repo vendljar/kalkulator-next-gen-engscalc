@@ -34,7 +34,9 @@ test('nula je vyplněná hodnota', !TS.tsPrazdna(0));
 test('text je vyplněno', !TS.tsPrazdna('v exteriéru'));
 
 /* --- 3) plné zadání z kalkulace projde bez chyb --- */
-const zak = { cislo: '2026-OPR-CN-9001', objednatel: 'SVJ Ulice 1', datum: '2026-07-26', adresa: 'Ulice 1, Praha' };
+/* Název akce se od 14. 10. 2026 bere z hlavičky zakázky (tsNazevAkce). */
+const zak = { cislo: '2026-OPR-CN-9001', objednatel: 'SVJ Ulice 1', datum: '2026-07-26', adresa: 'Ulice 1, Praha',
+  nazevAkce: 'Bytový dům Ulice 1 — výtah' };
 const kOk = TS.tsKontrola(novaTs(), r, Z, C, zak);
 test('kompletní specifikace nehlásí nic', kOk.ok && kOk.pocet === 0,
   kOk.chybi.map(x => x.id).join(','));
@@ -46,8 +48,8 @@ const tsPrazdnaHlav = novaTs(); tsPrazdnaHlav.nazevAkce = '';
 const kHlav = TS.tsKontrola(tsPrazdnaHlav, r, Z, C, { cislo: '', objednatel: '  ', datum: '', adresa: null });
 test('prázdná hlavička hlásí 5 položek', kHlav.hlavicka.length === 5, kHlav.hlavicka.map(x => x.id).join(','));
 test('prázdná hlavička neovlivní pole dokumentu', kHlav.pole.length === 0, kHlav.pole.map(x => x.id).join(','));
-test('chybějící název akce se hlásí z TS, ne ze zakázky', (() => {
-  const t = novaTs(); t.nazevAkce = '';
+test('ručně vyprázdněný název akce se hlásí i při vyplněné hlavičce', (() => {
+  const t = novaTs(); t.nazevAkce = ''; t.nazevAkceRucne = true;
   return TS.tsKontrola(t, r, Z, C, zak).hlavicka.map(x => x.id).join(',') === 'nazevAkce';
 })());
 test('bez zakázky se hlavička přeskočí', TS.tsKontrola(novaTs(), r, Z, C, null).hlavicka.length === 0);

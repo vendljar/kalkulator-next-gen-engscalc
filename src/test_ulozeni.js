@@ -132,9 +132,32 @@ const cekaSCasem = st({ ulozeno: '2026-OPR-CN-0500.json', zmeneno: true, kdy: KD
 test('čekající změna nese čas posledního uložení', /14:32/.test(cekaSCasem.text), cekaSCasem.text);
 test('čekající změna pořád říká, že se uloží sama', /sam/i.test(cekaSCasem.text), cekaSCasem.text);
 
+/* Po prvním uložení se ukládá dál, i když se název akce vyprázdní —
+ * jméno souboru nese číslo, takže změny jdou do téhož souboru. */
+const bezNazvuUlozena = st({ zakazka: zakazka({ cislo: '2026 - OPR - CN - 0500' }),
+  ulozeno: '2026-OPR-CN-0500.json', zmeneno: true });
+test('už uložená zakázka se ukládá samo i s vyprázdněným názvem akce',
+  bezNazvuUlozena.muzeSam === true && bezNazvuUlozena.stav === 'ceka', bezNazvuUlozena);
+
+/* BEZ ČÍSLA SE NEUKLÁDÁ ANI UŽ ULOŽENÁ ZAKÁZKA (P5 / K15-N69, 25. 9. 2026).
+ * Do té doby tu stálo „ukládá se samo i s vyprázdněnou hlavičkou" — jenže
+ * vymazané číslo nemíří do uloženého souboru: jméno souboru se skládá
+ * z čísla, takže by vznikl nový záznam „bez-cisla-…" a starý soubor by
+ * zůstal s původním obsahem. */
+test('uloMaCislo: předloha čísla číslem není', U.uloMaCislo(prazdna) === false);
+test('uloMaCislo: vyplněné číslo OCK', U.uloMaCislo(zakazka({ cislo: '2026 - OPR - CN - 0500' })) === true);
+test('uloMaCislo: stačí číslo z hlavičky PROJ (jako u jména souboru)', U.uloMaCislo(proj) === true);
+test('uloMaCislo: zakázka bez hlaviček čísla nemá', U.uloMaCislo({}) === false && U.uloMaCislo(null) === false);
 const prazdnaUlozena = st({ zakazka: prazdna, ulozeno: '2026-OPR-CN-0500.json', zmeneno: true });
-test('už uložená zakázka se ukládá samo i s vyprázdněnou hlavičkou',
-  prazdnaUlozena.muzeSam === true);
+test('uložená zakázka s vymazaným číslem se sama NEUKLÁDÁ', prazdnaUlozena.muzeSam === false, prazdnaUlozena);
+test('a stav je „vyplnit" s číslem mezi chybějícími',
+  prazdnaUlozena.stav === 'vyplnit' && prazdnaUlozena.chybi.join('|') === 'Číslo nabídky (CN)', prazdnaUlozena);
+test('věta říká, proč se neukládá a co vyplnit',
+  /čísl/i.test(prazdnaUlozena.text) && /hlavičce/.test(prazdnaUlozena.text), prazdnaUlozena.text);
+/* Otevřená a nezměněná zakázka bez čísla (starý záznam „bez-cisla-…") je
+ * pořád uložená — lež by bylo tvrdit opak. */
+test('nezměněná uložená zakázka bez čísla je pořád „ulozeno"',
+  st({ zakazka: prazdna, ulozeno: 'bez-cisla-2026-08-04-v1.json', zmeneno: false }).stav === 'ulozeno');
 
 /* Vstup smí být i neúplný (UI se ptá i před dokončeným startem aplikace) –
  * model nesmí spadnout, jinak by render() shodil celou stránku. */

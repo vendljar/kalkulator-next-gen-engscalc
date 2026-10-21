@@ -1,5 +1,5 @@
 /* ============================================================
- * Test kryci.js – datový model krycího listu objednávky / SoD (OCK)
+ * Test kryci.js – datový model krycího listu zakázky OCK
  *
  * PROČ TAHLE SADA
  *
@@ -68,6 +68,12 @@ const v = zak.varianty[0];
 global.NAST = { firma: global.firmaDefault() };
 
 const c = kr.kryciCtx(zak, v, JEKLY);
+/* Zámek strany (P6 / K19-N114, 13. 10. 2026): číslo OPR vyřadí PROJ, takže
+ * krycí list OCK nese jen šachtu. Kombinace OCK + projekce zbývá jen
+ * u zakázky BEZ čísla (obchodník se teprve rozhoduje) — na ní se ověřuje
+ * popis „šachta + projekce" a ceny činností PROJ. */
+const zakObe = Object.assign({}, zak, { cislo: zk.ZAK_CISLO_PREDLOHA });
+const cObe = kr.kryciCtx(zakObe, v, JEKLY);
 
 /* ============================================================
  * 1) Definice polí – jedno místo pro dvě verze listu
@@ -163,8 +169,13 @@ test('schválená sleva se do hodnoty zakázky propíše',
 
 /* KL-3: čistě projekční zakázka není šachta. Škatulka se odvozuje z toho,
  * co je oceněné, ne z toho, co je vyplněné v technické specifikaci. */
-test('zakázka s OCK i projekcí se popíše jako šachta + projekce',
-  /šachta \+ projekce$/.test(c.typProduktu), c.typProduktu);
+test('zakázka s OCK i projekcí (bez čísla) se popíše jako šachta + projekce',
+  /šachta \+ projekce$/.test(cObe.typProduktu), cObe.typProduktu);
+test('P6: číslo OPR vyřadí PROJ — typ produktu bez „+ projekce"',
+  !/projekce/.test(c.typProduktu) && /šachta$/.test(c.typProduktu), c.typProduktu);
+test('P6: číslo OPR — činnosti PROJ v krycím listu OCK „Ne"',
+  c.projAno('dps') === 'Ne' && cObe.projAno('dps') === (rProj.sekce.find(s => s.key === 'dps').celkem > 0 ? 'Ano' : 'Ne'),
+  [c.projAno('dps'), cObe.projAno('dps')]);
 test('typ šachty (interiérová / exteriérová) přijde z kalkulace OCK',
   c.ext === (v.data.ock.zadani.typSachty === 'exteriérová')
   && new RegExp(c.ext ? 'Exteriérová' : 'Interiérová').test(c.typProduktu), c.typProduktu);
@@ -174,9 +185,50 @@ test('typ šachty (interiérová / exteriérová) přijde z kalkulace OCK',
  * na jednu otázku a nevědět, která platí. */
 test('3D zaměření se přebírá z technické specifikace jako Ano/Ne',
   c.sken3d === 'Ano' || c.sken3d === 'Ne' || c.sken3d === '', JSON.stringify(c.sken3d));
-test('oceněná sekce kalkulace PROJ znamená ANO',
-  c.projAno('dps') === (rProj.sekce.find(s => s.key === 'dps').celkem > 0 ? 'Ano' : 'Ne'),
-  c.projAno('dps'));
+/* Od rozhodnutí J. V. 30. 9. 2026 se 3D zaměření ŘÍDÍ CENOU (ve specifikaci
+ * je odvozené jako statika). Krycí list ho čte přes tsHodnota, takže položka
+ * vypnutá v Režii množstvím 0 musí dát „Ne" — i když specifikace nese ruční
+ * „ano" z doby, kdy zaměření v ceně ještě bylo. A naopak. */
+{
+  const vBez = zk.novaVarianta('Bez 3D skenu', JSON.parse(JSON.stringify(v.data)));
+  vBez.data.ock.zadani.mnozstviPrepis = { 'ZAMĚŘENÍ 3D SKENEREM': 0 };
+  vBez.data.techspec = { hodnoty: { sken3d: 'ano' }, extra: [] };
+  const cBez = kr.kryciCtx(zak, vBez, JEKLY);
+  test('3D sken vypnutý v Režii → Zaměření strojovna „Ne" i přes ruční „ano" ve specifikaci',
+    cBez.sken3d === 'Ne', cBez.sken3d);
+  test('a řádek krycího listu se tak i předvyplní',
+    kr.kryciHodnota(pole('zamereniStrojovna'), { hodnoty: {} }, cBez) === 'Ne',
+    kr.kryciHodnota(pole('zamereniStrojovna'), { hodnoty: {} }, cBez));
+  const vS = zk.novaVarianta('S 3D skenem', JSON.parse(JSON.stringify(v.data)));
+  vS.data.techspec = { hodnoty: { sken3d: 'ne' }, extra: [] };
+  const cS = kr.kryciCtx(zak, vS, JEKLY);
+  test('3D sken v ceně → Zaměření strojovna „Ano" i přes ruční „ne" ve specifikaci',
+    cS.sken3d === 'Ano', cS.sken3d);
+  /* Zadání J. V. 30. 9. 2026: „když je v kalkulaci 0, tak je v krycím listu
+   * položka automaticky ve stavu ne". Ruční přepis ŘÁDKU KRYCÍHO LISTU
+   * (kliknuté „Ano" z doby, kdy zaměření v ceně bylo) proto cenu nepřebije —
+   * řádek je odvozený stejně jako pole ve specifikaci. Zamčená varianta
+   * drží, co se odeslalo. */
+  const zs = pole('zamereniStrojovna');
+  test('ruční „Ano" v krycím listu u 3D skenu vypnutého v Režii → „Ne"',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, cBez) === 'Ne',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, cBez));
+  test('ruční „Ne" v krycím listu u 3D skenu v ceně → „Ano"',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ne' } }, cS) === 'Ano',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ne' } }, cS));
+  const cZam = Object.assign({}, cBez, { zamceno: true, zmrazeno: null });
+  test('zamčená varianta: ruční hodnota z doby odeslání zůstává',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, cZam) === 'Ano',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, cZam));
+  test('když se odvodit nedá (prázdná hodnota), platí ruční přepis',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, Object.assign({}, cBez, { sken3d: '' })) === 'Ano',
+    kr.kryciHodnota(zs, { hodnoty: { zamereniStrojovna: 'Ano' } }, Object.assign({}, cBez, { sken3d: '' })));
+  test('kontext krycího listu nese stav zámku varianty',
+    cBez.zamceno === false, cBez.zamceno);
+}
+test('oceněná sekce kalkulace PROJ znamená ANO (zakázka bez čísla)',
+  cObe.projAno('dps') === (rProj.sekce.find(s => s.key === 'dps').celkem > 0 ? 'Ano' : 'Ne'),
+  cObe.projAno('dps'));
 /* Neznámý klíč nesmí skončit prázdnem, které se v dokumentu čte jako
  * nevyplněný řádek – žádná činnost = NE. */
 test('neznámá sekce kalkulace PROJ končí u NE, ne u prázdna',
@@ -186,7 +238,7 @@ test('neznámá sekce kalkulace PROJ končí u NE, ne u prázdna',
  * shodit celý krycí list — obchodník potřebuje aspoň smluvní podmínky,
  * i když cena chybí. */
 let cBezJeklu = null, spadlo = false;
-try { cBezJeklu = kr.kryciCtx(zak, v, null); } catch (e) { spadlo = true; }
+try { cBezJeklu = kr.kryciCtx(zakObe, v, null); } catch (e) { spadlo = true; }
 test('nespočítaná kalkulace OCK krycí list neshodí', !spadlo && !!cBezJeklu);
 /* „Prázdno není nula": nespočítaná cena se vypíše pomlčkou. Nula by se
  * v podkladu pro smlouvu četla jako „zdarma". */
@@ -255,7 +307,8 @@ test('výjimka v prefillu neshodí krycí list a končí prázdnem',
 
 const dBo = kr.kryciData(zak, v, JEKLY, 'bo');
 const dTd = kr.kryciData(zak, v, JEKLY, 'techdata');
-const radky = (dd) => [].concat(...dd.sekce.map(s => s.radky));
+/* Tabulka „Hodiny z kalkulace" (konec BO, 14. 10. 2026) nejsou pole formuláře — hlídá ji test_kryci_hodiny.js. */
+const radky = (dd) => [].concat(...dd.sekce.filter(s => s.sekce !== 'Hodiny z kalkulace').map(s => s.radky));
 const labely = (dd) => radky(dd).map(r => r[0]);
 
 test('verze Backoffice obsahuje jen pole své verze',
@@ -482,6 +535,12 @@ test('kryciFaktura2Sync doplní i výchozí hodnoty (nic ručně nezadáno)',
 test('kryciFaktura2Sync reaguje na ruční zálohu 70 %',
   kr.kryciFaktura2Sync({ zaloha1: '70 % – po podpisu smlouvy' }) === '20 % – po zahájení montáže',
   kr.kryciFaktura2Sync({ zaloha1: '70 % – po podpisu smlouvy' }));
+
+/* N55: krycí list nesmí zaokrouhlit haléře, které nabídka tiskne. */
+const sp = (t) => t.replace(/\s/g, ' ');
+test('N55: celá částka bez haléřů', sp(kr.kryciKc(123456)) === '123 456 Kč', kr.kryciKc(123456));
+test('N55: částka s haléři je nese', sp(kr.kryciKc(123456.5)) === '123 456,50 Kč', kr.kryciKc(123456.5));
+test('N55: prázdno je nula', sp(kr.kryciKc(null)) === '0 Kč');
 
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

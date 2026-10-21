@@ -11,8 +11,12 @@
   # Připnutá verze Node (audit 22. 8. 2026, B11): funkce spoléhají na globální
   # fetch/Response (Node ≥ 18); bez připnutí by změna výchozí verze Netlify
   # nasadila kód do prostředí, ve kterém nikdo nic netestoval.
+  # Přesná verze (25. 9. 2026): s pouhým "22" si Netlify vzal čerstvé 22.23.3,
+  # jeho binárku nešlo rozbalit přes poškozenou složku v cache, Node se začal
+  # kompilovat ze zdrojů a build spadl na časový limit 18 min. Povýšení verze
+  # dělat vědomě a hlídat první nasazení.
   [build.environment]
-    NODE_VERSION = "22"
+    NODE_VERSION = "22.23.2"
 
 [functions]
   directory = "netlify/functions"

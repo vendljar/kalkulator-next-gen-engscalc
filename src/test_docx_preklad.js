@@ -71,6 +71,12 @@ P.prekladNastav('test & pokus', 'en', 'test & attempt <ok>');
 out = docxPrelozXml(par('test &amp; pokus'), 'en', stat);
 test('výstup je XML-escapovaný', texty(out)[0] === 'test &amp; attempt &lt;ok&gt;', texty(out));
 P.prekladSmaz('test & pokus');
+/* Revize #401 (12. 10. 2026): U+FFFE a U+FFFF XML 1.0 nepovoluje — Word by
+ * dokument neotevřel. Překlad (třeba ze starší konfigurace) je nesmí pronést. */
+P.prekladNastav('test nepovolený znak', 'en', 'bad￾char￿');
+out = docxPrelozXml(par('test nepovolený znak'), 'en', { celkem: 0, prelozeno: 0, neutralni: 0, chybi: [] });
+test('U+FFFE a U+FFFF se do XML nedostanou', texty(out)[0] === 'badchar' && !/[￾￿]/.test(out), texty(out));
+P.prekladSmaz('test nepovolený znak');
 
 // ---- 7. celý .docx roundtrip ----------------------------------------------
 (async () => {
@@ -119,7 +125,10 @@ P.prekladSmaz('test & pokus');
    * Zkouší se proto totéž co o pár řádků výš u TS_HAKY — že hodnota projde
    * slovníkem —, ne jaká slova v ní stojí. */
   test('EN: sokl přeložen',
-    en.placeholders.TS_NENI_SOKL === P.tr(cz.placeholders.TS_NENI_SOKL, 'en')
+    /* hodnoty „co není součástí dodávky" v cizím jazyce začínají velkým
+     * písmenem (D. Sikora 3. 10. 2026) — porovnává se tedy bez prvního písmene */
+    en.placeholders.TS_NENI_SOKL.toLowerCase() === P.tr(cz.placeholders.TS_NENI_SOKL, 'en').toLowerCase()
+    && /^\p{Lu}/u.test(en.placeholders.TS_NENI_SOKL)
     && ['slovník', 'vzor'].includes(P.trStav(cz.placeholders.TS_NENI_SOKL, 'en').zdroj),
     cz.placeholders.TS_NENI_SOKL + ' → ' + en.placeholders.TS_NENI_SOKL);
   test('ceny zůstávají shodné bez ohledu na jazyk',
@@ -148,6 +157,99 @@ P.prekladSmaz('test & pokus');
     .filter(k => cz.placeholders[k] !== '' && cz.placeholders[k] != null)
     .filter(k => en.placeholders[k] == null || en.placeholders[k] === '');
   test('překlad neztratil žádný vyplněný placeholder', ztracene.length === 0, ztracene.join(','));
+
+  /* #350: odstavec se symbolem {{…}} se přeloží, když ho slovník zná celý
+   * a překlad nese tytéž symboly; jinak zůstane a vypíše se zvlášť. */
+  {
+    P.prekladNastav('Cena díla činí {{CENA}} bez DPH.', 'en', 'The contract price is {{CENA}} excl. VAT.');
+    P.prekladNastav('Záloha {{ZALOHA}} se platí předem.', 'en', 'The advance is paid beforehand.');   // ztratil symbol
+    const odst = (t) => '<w:p><w:r><w:t>' + t + '</w:t></w:r></w:p>';
+    const xml = '<w:body>' + odst('Cena díla ') .replace('</w:t></w:r></w:p>', '</w:t></w:r><w:r><w:t>činí {{CENA}} bez DPH.</w:t></w:r></w:p>')
+      + odst('Záloha {{ZALOHA}} se platí předem.') + odst('Neznámá věta {{X}}.') + odst('{{OBJEDNATEL}}') + '</w:body>';
+    const st = { celkem: 0, prelozeno: 0, neutralni: 0, chybi: [] };
+    const po = dg.docxPrelozXml(xml, 'en', st);
+    test('#350: známý odstavec se symbolem se přeloží i přes dva runy', po.includes('The contract price is {{CENA}} excl. VAT.'), po);
+    test('#350: překlad, který ztratil symbol, se nepoužije', po.includes('Záloha {{ZALOHA}} se platí předem.') && !po.includes('The advance'), po);
+    test('#350: neznámý odstavec se symbolem zůstane a vypíše se zvlášť',
+      po.includes('Neznámá věta {{X}}.') && (st.symbolove || []).includes('Neznámá věta {{X}}.'), JSON.stringify(st.symbolove));
+    test('#350: odstavec jen ze symbolů se nevypisuje', !(st.symbolove || []).includes('{{OBJEDNATEL}}'));
+    test('#350: do pokrytí se počítá jen přeložený odstavec se symbolem', st.celkem === 1 && st.prelozeno === 1, JSON.stringify(st));
+  }
+
+  /* PŘEKLAD PO ÚSECÍCH MEZI SYMBOLY (P3 / K14-N63, K16-N84, 25. 9. 2026).
+   *
+   * EN/DE/FR mutace šablony CN v12 nechávala česky 15 odstavců se symbolem
+   * (PROJ v2 dvanáct): hlavičku „Číslo nabídky: {{…}}", „{{CENA_S_DPH}}
+   * včetně DPH", platební podmínky. Slovník přitom popisky znal — jen ne celý
+   * odstavec i se symbolem. A v šabloně dělí text a symbol TABULÁTORY
+   * a ZALOMENÍ; překlad celého odstavce do prvního `<w:t>` by text přestěhoval
+   * přes ně a rozbil rozvržení. Proto se překládá po úsecích mezi symboly
+   * a oddělovači a každý úsek zůstává ve svém běhu. */
+  {
+    const r = t => '<w:r><w:t>' + t + '</w:t></w:r>';
+    const rp = t => '<w:r><w:t xml:space="preserve">' + t + '</w:t></w:r>';
+    const TAB = '<w:r><w:tab/></w:r>';
+    const p = (...casti) => '<w:p>' + casti.join('') + '</w:p>';
+    const stP = () => ({ celkem: 0, prelozeno: 0, neutralni: 0, chybi: [] });
+    const poradi = (xml, ...co) => co.map(c => xml.indexOf(c)).every((x, i, a) => x >= 0 && (i === 0 || x > a[i - 1]));
+
+    const hl = p(r('Číslo nabídky:'), TAB, TAB, r('{{CISLO_NABIDKY}}'));
+    const s1 = stP(); const o1 = dg.docxPrelozXml(hl, 'en', s1);
+    test('P3: popisek před tabulátory se přeloží na svém místě (EN)',
+      JSON.stringify(texty(o1)) === JSON.stringify(['Tender number:', '{{CISLO_NABIDKY}}']), texty(o1));
+    test('P3: tabulátory zůstanou mezi popiskem a symbolem',
+      poradi(o1, 'Tender number:', '<w:tab/>', '{{CISLO_NABIDKY}}') && (o1.match(/<w:tab\/>/g) || []).length === 2, o1);
+    test('P3: přeložený odstavec se symbolem se počítá do pokrytí', s1.celkem === 1 && s1.prelozeno === 1, JSON.stringify(s1));
+    const oFr = dg.docxPrelozXml(p(r('Datum: {{DATUM}}')), 'fr', stP());
+    test('P3: francouzská dvojtečka má před sebou mezeru', odstavecText(oFr) === 'Date : {{DATUM}}', odstavecText(oFr));
+
+    const cena = p(r('{{CENA_S_DPH}}'), '<w:r><w:br/><w:t>včetně DPH</w:t></w:r>');
+    const oC = { en: dg.docxPrelozXml(cena, 'en', stP()), de: dg.docxPrelozXml(cena, 'de', stP()),
+                 fr: dg.docxPrelozXml(cena, 'fr', stP()) };
+    test('P3: „včetně DPH" se přeloží (EN/DE/FR)',
+      texty(oC.en)[1] === 'including VAT' && texty(oC.de)[1] === 'inkl. MwSt.' && texty(oC.fr)[1] === 'TTC',
+      JSON.stringify([texty(oC.en), texty(oC.de), texty(oC.fr)]));
+    test('P3: a zůstane za zalomením, ne před ním (K16-N84)', poradi(oC.en, '{{CENA_S_DPH}}', '<w:br/>', 'including VAT'), oC.en);
+
+    const plat = p(rp('Platnost této nabídky je '), r('{{PODM_PLATNOST_NABIDKY}}'), rp(' od data uvedeného v'),
+      r(' '), r('záhlaví'), r('.'));
+    const oP = dg.docxPrelozXml(plat, 'en', stP());
+    test('P3: věta se symbolem přes několik běhů se přeloží celá',
+      odstavecText(oP) === 'This offer is valid for {{PODM_PLATNOST_NABIDKY}} from the date stated in the header.', odstavecText(oP));
+    const oPde = dg.docxPrelozXml(plat, 'de', stP());
+    test('P3: totéž německy', /^Dieses Angebot gilt \{\{PODM_PLATNOST_NABIDKY\}\} ab /.test(odstavecText(oPde)), odstavecText(oPde));
+
+    const dph = p(r('DPH {{DPH_SAZBA}} % ({{DPH_NAZEV}} sazba)'));
+    const dEn = odstavecText(dg.docxPrelozXml(dph, 'en', stP())), dDe = odstavecText(dg.docxPrelozXml(dph, 'de', stP()));
+    test('P3: řádek DPH se sazbou se přeloží celý (bez „Regelsatz Satz")',
+      dEn === 'VAT {{DPH_SAZBA}} % ({{DPH_NAZEV}} rate)' && dDe === 'MwSt. {{DPH_SAZBA}} % ({{DPH_NAZEV}})', [dEn, dDe]);
+
+    const mesic = p(rp('     {{PROJ_CENA_AD}} / měsíc'));
+    const mEn = odstavecText(dg.docxPrelozXml(mesic, 'en', stP()));
+    test('P3: jednotka za symbolem („/ měsíc") se přeloží a oddělovač zůstane', mEn === '     {{PROJ_CENA_AD}} / month', mEn);
+    const dni = odstavecText(dg.docxPrelozXml(p(r('{{PODM_SPLATNOST_DNI_CISLO}} dní')), 'en', stP()));
+    test('P3: „{{…}} dní" → „days"', dni === '{{PODM_SPLATNOST_DNI_CISLO}} days', dni);
+
+    const sleva = p(r('− {{SLEVA_KC}} ({{SLEVA_PROC}} %)'));
+    const sS = stP(); const oS = dg.docxPrelozXml(sleva, 'en', sS);
+    test('P3: odstavec jen se symboly a znaménky se nemění a nehlásí jako nepřeložený',
+      oS === sleva && !(sS.symbolove || []).length, JSON.stringify(sS));
+
+    const nezn = p(r('Neznámý štítek:'), TAB, r('{{X}}'));
+    const sN = stP(); const oN = dg.docxPrelozXml(nezn, 'en', sN);
+    test('P3: neznámý úsek nechá celý odstavec česky (žádná půlka v cizím jazyce)', oN === nezn, oN);
+    test('P3: a odstavec se vypíše mezi nepřeloženými', (sN.symbolove || []).includes('Neznámý štítek:{{X}}'), JSON.stringify(sN.symbolove));
+
+    /* Odstavec, který slovník zná celý, ale text a symbol dělí tabulátor:
+     * celý překlad do prvního běhu by text přestěhoval přes tabulátor. */
+    P.prekladNastav('Zkušební popisek:{{X}}', 'en', 'Test label:{{X}}');
+    P.prekladNastav('Zkušební popisek', 'en', 'Test label');
+    const tabCelek = p(r('Zkušební popisek:'), TAB, r('{{X}}'));
+    const oT = dg.docxPrelozXml(tabCelek, 'en', stP());
+    test('P3: celý odstavec přes tabulátor se nepřestěhuje — přeloží se po úsecích',
+      poradi(oT, 'Test label:', '<w:tab/>', '{{X}}') && texty(oT).length === 2, oT);
+    P.prekladSmaz('Zkušební popisek:{{X}}'); P.prekladSmaz('Zkušební popisek');
+  }
 
   console.log(fail ? `\n${fail} CHYB (${ok} OK)` : `\nVŠECHNY TESTY DOCX-PŘEKLAD OK (${ok})`);
   process.exit(fail ? 1 : 0);

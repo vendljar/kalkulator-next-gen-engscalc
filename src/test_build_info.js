@@ -111,13 +111,31 @@ test('build.py umí režim --kontrola-verze', bp.indexOf("'--kontrola-verze'") >
 test('kontrola se měří proti datu commitu, ne proti dnešku',
   /git['"],\s*['"]log['"]/.test(bp) && bp.indexOf('%cd') >= 0);
 
-const wf = fs.readFileSync(__dirname + '/../.github/workflows/testy.yml', 'utf8');
-test('CI pouští kontrolu verze', wf.indexOf('build.py --kontrola-verze') >= 0);
-/* Hledá se spouštěcí řádek, ne pouhá zmínka: `spust_testy.sh` je i v úvodním
- * komentáři workflow, který stojí nad vším ostatním. */
+/* OD 26. 9. 2026 JE JEDINÝ SEZNAM KROKŮ V nastroje/testovaci_kolo.sh (A5) —
+ * workflow ho jen volá. Kontrola verze tedy musí být v kole, a to v kroku
+ * sestavení, tedy PŘED sadami (spust_testy.sh --smoke): špatná verze má
+ * spadnout za vteřinu, ne po dvaceti minutách. Hledají se SPOUŠTĚCÍ řádky
+ * (začátek řádku bez `#`), ne zmínky v komentáři nad skriptem. A workflow
+ * musí kolo opravdu pouštět — jinak by kontrola existovala jen na papíře. */
+const kolo = fs.readFileSync(__dirname + '/../nastroje/testovaci_kolo.sh', 'utf8');
+const kde = (re) => { const m = re.exec(kolo); return m ? m.index : -1; };
+const iVerze = kde(/^\s*python3 build\.py --kontrola-verze/m);
+const iSady = kde(/^\s*bash \.\/spust_testy\.sh --smoke/m);
+test('testovací kolo pouští kontrolu verze', iVerze >= 0);
 test('kontrola verze běží PŘED sadami (padne dřív, než se čeká 20 minut)',
-  wf.indexOf('build.py --kontrola-verze') < wf.indexOf('bash ./spust_testy.sh'),
-  [wf.indexOf('build.py --kontrola-verze'), wf.indexOf('bash ./spust_testy.sh')]);
+  iVerze >= 0 && iSady >= 0 && iVerze < iSady, [iVerze, iSady]);
+const wf = fs.readFileSync(__dirname + '/../.github/workflows/testy.yml', 'utf8');
+test('CI volá testovací kolo a nemá vlastní seznam kroků',
+  /run: bash nastroje\/testovaci_kolo\.sh/.test(wf) && wf.indexOf('bash ./spust_testy.sh') < 0
+  && wf.indexOf('build.py --kontrola-verze') < 0);
+
+/* B125 (audit 2. 10. 2026): CI jen čte, akce připnuté na SHA, Playwright
+ * s pevnou verzí. Před úpravou testy.yml 0 / 3, po ní 3 / 0. */
+test('B125: workflow má permissions contents: read', /^permissions:\s*\n\s+contents:\s*read\s*$/m.test(wf));
+const pouziti = wf.match(/^\s*-?\s*uses:\s*\S+/gm) || [];
+test('B125: každá akce je připnutá na celý SHA commitu',
+  pouziti.length > 0 && pouziti.every(u => /@[0-9a-f]{40}$/.test(u.trim())), pouziti);
+test('B125: Playwright v CI má pevnou verzi', /npm i [^\n]*playwright@\d+\.\d+\.\d+/.test(wf));
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

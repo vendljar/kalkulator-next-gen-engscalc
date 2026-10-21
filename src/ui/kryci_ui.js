@@ -1,5 +1,5 @@
 /* ================= ZÁLOŽKA KRYCÍ LIST ZAKÁZKY OCK =================
- * Krycí list objednávky / SoD (dle přiloženého xlsx). Pole se předvyplňují
+ * Krycí list zakázky OCK (dříve „Krycí list objednávky / SoD“, dle přiloženého xlsx). Pole se předvyplňují
  * z kalkulace OCK, zakázky a technické specifikace; ruční hodnoty se ukládají
  * ve variantě (data.kryci.hodnoty), ruční přepis má přednost (↺ vrátí prefill).
  * Tisk do PDF vlastním tlačítkem u náhledu krycího listu (od 4. 8. 2026;
@@ -101,6 +101,20 @@ function klRow(id, label, opts = {}) {
   const val = klVal(id, pref);
   const manual = klManual(id);
   let field;
+  /* Odvozený řádek (30. 9. 2026, Zaměření strojovna — J. V.: „když je
+   * v kalkulaci 0, tak je v krycím listu položka automaticky ve stavu ne"):
+   * hodnota jde z kalkulace a je jen ke čtení. Ruční přepis by ji nepřebil
+   * (kryciHodnota), takže ho obrazovka nenabízí; dřívější přepis uložený
+   * v zakázce se jen ohlásí, že neplatí. */
+  if (opts.odvozene && pref !== '') {
+    const volby = Array.isArray(opts.o) ? opts.o : [pref];
+    const radia = volby.map(x => `<label><input type="radio" disabled ${String(pref) === String(x) ? 'checked' : ''}
+        value="${esc(x)}">${esc(x)}</label>`).join('');
+    const neplati = manual && String(val) !== String(pref)
+      ? ` <span class="note" style="font-size:10px">(dřívější ruční „${esc(val)}" neplatí)</span>` : '';
+    return `<div class="kl-row kl-odvozene"><div class="lbl">${label}</div><div><div class="kl-radio">${radia}</div></div>
+      <div class="src"><span class="note" style="font-size:10px">${esc(opts.src || 'z kalkulace')}</span>${neplati}</div></div>`;
+  }
   if (opts.type === 'dph' && opts.dphBind) {
     /* Bez „ručně" a bez ↺: není co vracet, hodnota nikdy nebyla ruční. */
     return `<div class="kl-row"><div class="lbl">${label}</div><div>${klDphPole(opts.dphBind)}</div>
@@ -127,7 +141,13 @@ function klRow(id, label, opts = {}) {
      * to jen v paměti obrazovky (KL_JINA) — do zakázky se ukládá jenom to,
      * co je opravdu napsané. Uložený soubor tak nenese stav rozbalovátka. */
     const jina = KL_JINA[id] || (klManual(id) && opts.o.indexOf(String(val)) < 0);
-    const volby = opts.o.map(x =>
+    /* Výběr BEZ předvyplnění (místo plnění smlouvy, 1. 10. 2026) začíná
+     * prázdnou volbou — jinak by prohlížeč ukázal jako vybranou první
+     * položku seznamu, ačkoli v datech nic není a do smlouvy nic nejde.
+     * Návrat na prázdnou volbu ruční hodnotu smaže (klVyber → klSet ''). */
+    const prazdna = pref === ''
+      ? `<option value="" ${!jina && String(val) === '' ? 'selected' : ''}>— nevybráno —</option>` : '';
+    const volby = prazdna + opts.o.map(x =>
       `<option value="${esc(x)}" ${!jina && String(val) === String(x) ? 'selected' : ''}>${esc(x)}</option>`).join('');
     field = `<select onchange="klVyber('${escJs(id)}', this.value)">${volby}`
       + `<option value="${KL_JINE_ZNENI}" ${jina ? 'selected' : ''}>jiné znění…</option></select>`
@@ -192,9 +212,14 @@ function kryciPodminkyBlok() {
 
 function renderKryci() {
   const el = document.getElementById('page-kryci'); if (!el) return;
+  /* Zámek strany (P6): krycí list OCK u zakázky s vyřazenou OCK nevzniká. */
+  const vyr = (typeof stranaVyrazenaPanel === 'function') ? stranaVyrazenaPanel('ock', 'Krycí list zakázky OCK') : '';
+  if (vyr) { el.innerHTML = vyr; return; }
   const c = kryciCtx(ZAK, aktivniVarianta(ZAK), JEKLY);   // kontext prefillů (jeden zdroj pravdy: KRYCI_SEKCE)
   /* Prázdný ceník zhasíná výstupy – krycí list nese ceny stejně jako nabídka. */
-  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr() : '';
+  /* #377: i zábrany z kontroly před nabídkou (strana OCK) — krycí list nese
+   * cenu i rozměry do backoffice a výroby. */
+  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('kryci_bo') : '';
 
   const znacka = verze => verze.includes('bo') && verze.includes('techdata')
     ? '<span class="pill mut kl-verze" title="v obou verzích">BO+Tech</span>'
@@ -210,18 +235,21 @@ function renderKryci() {
       }
       const pref = p.prefill ? p.prefill(c) : null;
       return klRow(p.id, p.label + ' ' + znacka(p.verze),
-        { prefill: pref, type: p.typ, o: p.o, src: p.src, ph: p.ph, dphBind: p.dphBind });
+        { prefill: pref, type: p.typ, o: p.o, src: p.src, ph: p.ph, dphBind: p.dphBind,
+          odvozene: !!p.odvozene && !(c && c.zamceno) });
     }).join('');
     return `<h3>${s.sekce}</h3>${rows}`;
   }).join('');
 
   el.innerHTML = `<div class="kl-doc">
-    <h1>Krycí list objednávky / SoD</h1>
+    <h1>Krycí list zakázky OCK</h1>
     <div class="note" style="margin-bottom:6px">Podklad pro objednávku / smlouvu o dílo. Pole se předvyplňují z kalkulace OCK,
     zakázky a technické specifikace; ruční přepis má přednost (↺ vrátí automatiku). Štítky <b>BO</b> / <b>Tech</b> / <b>BO+Tech</b>
     ukazují, do které verze výstupu pole patří.</div>
+    ${typeof zamekKryciPoznamka === 'function' ? zamekKryciPoznamka((typeof KRYCI_NABIDKA_SEKCE !== 'undefined' ? KRYCI_NABIDKA_SEKCE : [])) : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     ${sekceHtml}
+    ${kryciHodinyBlok('ock')}
     ${kryciTiskBlok(zab)}
   </div>
   ${typeof sodKarta === 'function'
@@ -250,19 +278,47 @@ function kryciTiskBlok(zab) {
 /* Tiskový pohled krycího listu → PDF přes tisk prohlížeče. Vždy JEDNA verze
  * (samostatný soubor), aby šla distribuovat odděleně – Backoffice (finance) vs
  * Technické oddělení (bez finančních detailů). */
+/* Tabulka sekce tiskového pohledu krycího listu (OCK i PROJ). Sekce se
+ * sloupci (hodiny z kalkulace, 14. 10. 2026) má záhlaví a víc hodnot. */
+function kryciTiskTabulka(s) {
+  const e2 = esc;
+  if (Array.isArray(s.sloupce) && s.sloupce.length >= 2) {   // i jeden sloupec hodnot má záhlaví (15. 10.)
+    const n = s.sloupce.length - 1;
+    const tr = (r, th) => `<tr><td class="l">${e2(r[0] || '')}</td>${r.slice(1, n + 1).map(v =>
+      th ? `<td style="font-weight:600;background:#eef2f8">${e2(v || '')}</td>` : `<td>${e2(v == null ? '' : v)}</td>`).join('')}</tr>`;
+    return `<table>${tr(s.sloupce, true)}${s.radky.map(r => tr(r)).join('')}</table>`;
+  }
+  return `<table>${s.radky.map(r => `<tr><td class="l">${e2(r[0])}</td><td>${e2(r[1] || '')}</td></tr>`).join('')}</table>`;
+}
+/* HODINY Z KALKULACE na konci krycího listu (OCK i PROJ, 14. 10. 2026) —
+ * jen ke čtení; počítá kryciHodiny (kryci.js), do výstupu jde ve verzi BO.
+ * Každý list jen svou stranu (15. 10. 2026); vyřazená strana bez tabulky.
+ * `kde` = 'ock' | 'proj': obě stránky krycích listů jsou v dokumentu naráz,
+ * id proto nese příponu (jinak dvojí id — overit_program, overit_podminky). */
+function kryciHodinyBlok(kde) {
+  let h = null;
+  const strana = kde === 'proj' ? 'proj' : 'ock';
+  try { h = (typeof kryciHodiny === 'function') ? kryciHodiny(ZAK, aktivniVarianta(ZAK), JEKLY, strana) : null; } catch (e) { h = null; }
+  if (!h) return '';
+  return `<h3>Hodiny z kalkulace <span class="pill kl-verze" title="jen Backoffice">BO</span></h3>
+    <div class="note">Počítá se z položek, které se nabízejí (Kalkulace ${strana === 'proj' ? 'PROJ' : 'OCK'}); celé hodiny, zaokrouhleno.</div>
+    <div id="kryciHodiny_${kde === 'proj' ? 'proj' : 'ock'}">${kryciTiskTabulka({ sloupce: h.sloupce, radky: h.radky })}</div>`;
+}
+
 function kryciTiskPohled(verze) {
   /* Pojistka pro případ, že by se sem někdo dostal jinudy než tlačítkem
    * (zhasnutým) – tiskový náhled je dokument pro zákazníka jako každý jiný. */
   if (typeof dokumentZabrana === 'function') {
-    const duvod = dokumentZabrana();
-    if (duvod) { hlaska(duvod); return; }
+    const duvod = dokumentZabrana('kryci_' + verze, aktivniVarianta(ZAK));   // #377
+    if (duvod) { hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' }); return; }
   }
   const v = aktivniVarianta(ZAK);
   const e2 = esc;   // #6: sjednoceno se sdíleným escapováním (ošetří i uvozovky a apostrof)
   const d = kryciData(ZAK, v, JEKLY, verze);
   const sekHtml = d.sekce.map(s =>
-    `<h2>${e2(s.sekce)}</h2><table>${s.radky.map(r => `<tr><td class="l">${e2(r[0])}</td><td>${e2(r[1] || '')}</td></tr>`).join('')}</table>`).join('');
-  const w = window.open('', '_blank');
+    `<h2>${e2(s.sekce)}</h2>${kryciTiskTabulka(s)}`).join('');
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="cs"><head><meta charset="utf-8"><title>${e2(d.nazevSouboru)}</title>
     <style>body{font:12px/1.45 "Segoe UI",sans-serif;color:#111;max-width:800px;margin:16px auto;padding:0 16px}
     h1{font-size:17px;margin:2px 0 8px} h2{font-size:11.5px;background:#2b3850;color:#fff;padding:4px 8px;margin:12px 0 4px;text-transform:uppercase}

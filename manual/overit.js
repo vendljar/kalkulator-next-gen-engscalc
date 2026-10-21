@@ -112,12 +112,20 @@
   /* Od 17. 9. 2026 se fotí SKUTEČNÉ částky (rozhodnutí J. V.), takže dřívější
    * věta „čísla jsou zkušební" by byla nepravdivá. Místo ní musí příručka
    * nést označení, že je interní — nepravdivé varování je horší než žádné. */
-  test('příručka je označená jako interní',
-    /Interní dokument/i.test(text) && /skutečné částky/i.test(text));
+  /* Od 24. 9. 2026 (dávka E2) se snímky dají pořídit i automaticky nad
+   * ZKUŠEBNÍM ceníkem (manual/snimky_auto.mjs) — pak musí příručka říct, že
+   * částky nejsou naše ceny. Platí jedno, nebo druhé; obojí naráz ne. */
+  var interni = /Interní dokument/i.test(text) && /skutečné částky/i.test(text);
+  var zkusebni = /nejsou naše ceny/i.test(text);
+  test('příručka říká pravdu o částkách (interní se skutečnými, nebo zkušební)',
+    interni !== zkusebni, 'interní: ' + interni + ', zkušební: ' + zkusebni);
   test('příručka říká, že jména zákazníků jsou vymyšlená',
     /vymyšlená/i.test(text));
-  test('kapitola o testovacím webu je uvnitř',
-    /testengscalc/i.test(text) && /TESTOVACÍ PROSTŘEDÍ/i.test(text));
+  /* Od 24. 9. 2026 (J. V.): testovací web obchodníkům přístupný nebude
+   * a nemají ho používat — příručka o něm nesmí mluvit. Snímky z něj
+   * pocházet smějí (pořizují se tam nebo lokálně nad zkušebním ceníkem). */
+  test('příručka nezmiňuje testovací web',
+    !/testengscalc/i.test(text) && !/TESTOVACÍ PROSTŘEDÍ/i.test(text) && !/testovací(m|ho)? web/i.test(text));
   test('příručka vysvětluje pomlčku u nezahrnuté položky',
     /pomlčk/i.test(text));
   test('příručka popisuje dvojici přechodových plechů',
@@ -129,7 +137,8 @@
    * protože text kapitol píše člověk a může do něj jméno napsat rukou. */
   var firmy = text.match(/[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][^\n]{2,40}?(a\.s\.|s\.r\.o\.|spol\. s r\.o\.)/g) || [];
   var podezrele = firmy.filter(function (f) {
-    return !/Ukázk|Vzorov|Modelov|Zkušebn|Příkladn/.test(f);
+    /* Naše vlastní firma v příručce být smí (patička, blok „Vypracoval"). */
+    return !/Ukázk|Vzorov|Modelov|Zkušebn|Příkladn|ENGINEERS CZ/.test(f);
   });
   test('v příručce nejsou skutečné firmy', podezrele.length === 0, podezrele.join(' | '));
   test('žádná stopa po skutečném ceníku',

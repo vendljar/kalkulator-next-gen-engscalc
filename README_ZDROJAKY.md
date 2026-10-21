@@ -1,6 +1,10 @@
 # Kalkulačka OCK / PROJ – zdrojové soubory
 
-Verze v tomto archivu: **v7.9.2** (soubor `verze.txt`).
+Verzi tohohle archivu nese soubor **`verze.txt`** — tam je vždycky pravda.
+
+> Dřív tu stálo číslo natvrdo („v7.9.2") a zůstalo stát, zatímco archiv byl
+> o víc než sto dávek dál. Číslo napsané na dvou místech se dřív nebo později
+> rozejde, a to na tom, které je vidět první. Proto tu žádné není.
 
 ## Co je uvnitř
 
@@ -27,6 +31,22 @@ Skript poskládá všechny zdroje do jednoho HTML souboru a vytvoří:
 Výsledek je jediný soubor bez jakýchkoli závislostí – stačí ho otevřít v prohlížeči.
 
 ## Jak spustit testy
+
+Celé testovací kolo jedním příkazem (od 26. 9. 2026, A5):
+
+    bash nastroje/testovaci_kolo.sh                # sestavení → všechny sady → mutace jádra → mutace serveru → statické kontroly → souhrn
+    bash nastroje/testovaci_kolo.sh --bez-mutaci   # totéž bez mutací (dávka, která nesáhla do jádra ani serveru)
+
+Skript končí jedním souhrnem s počty (prošlo / selhalo / přeskočeno, chycené
+mutace) a nenulovým návratovým kódem, když cokoli selhalo. Přeskočené sady
+(chybí playwright, firemní podklad, skutečný ceník) vypíše jmenovitě — nikdy
+je nepočítá jako prošlé. `nastroje/pred_pushem.sh` je jen obal nad ním a CI
+(`.github/workflows/testy.yml`) volá tentýž skript, takže seznam kroků je
+jediný. Statické kontroly zahrnují i `nastroje/kontrola_udaju.py` — e-maily,
+telefony a tajemství mimo povolený seznam `nastroje/povolene_kontakty.txt`
+(repozitář je veřejný).
+
+Jen sady v Node:
 
     ./spust_testy.sh
 
@@ -60,14 +80,41 @@ sady v Node běží dál. Samostatně:
 
     NODE_PATH=$(npm root -g) node smoke.mjs
 
-Vedle kouřového testu existuje `overit_lista.mjs` – cílená kontrola klouzající
-lišty kalkulací (Zpět/Znovu + kotvy sekcí, sticky chování), přejmenované
-záložky Přehled cenových nabídek a karet obou nabídek v ní (od v29.7.5).
-Od v29.7.6 kontroluje i modrou barvu lišty (shodnou s lištami názvů sekcí)
-a zadané krátké názvy kotev v liště PROJ. Od v29.7.7 navíc hlídá ztlumený
-vzhled: rámeček lišty nesmí být plná akcentová modř a stín nesmí být modrý
-ani rozlitý (žádná „luminiscence“). Stejnou kontrolou prochází i ovládací
-lišta v Detailu výpočtu – porovnává se přímo s klouzající lištou (podklad,
-rámeček, barva písma, stín, bílé pilulky kotev), aby obě zůstaly stejné:
+### Cílené harnessy (`overit_*.mjs`)
+
+Vedle kouřového testu leží v kořeni repozitáře sada cílených kontrol —
+každá otevře sestavený build v Chromiu a prověří jednu oblast: lištu
+kalkulací, opláštění, zámek a odeslané nabídky, přihlášení a role, ceník
+a jeho řady, nabídky a jejich DPH, zálohu a obnovu, analytiku a další.
+Dnes je jich 37 a `./spust_testy.sh --smoke` pouští **všechny**; seznam se
+nikde neudržuje ručně, běží se přes `overit_*.mjs`.
+
+**Proč to stojí za zmínku (nález N16, 22. 9. 2026):** do 22. 9. měly CI
+a místní běh dva ručně psané seznamy. V CI jich běželo deset z třiceti
+sedmi — a právě ve zbylých vyšly tři nálezy 19. testovacího kola. Seznam se
+proto na obou stranách nahradil globem: nový harness se přidá sám tím, že
+vznikne soubor.
+
+Samostatně:
 
     NODE_PATH=$(npm root -g) node overit_lista.mjs
+
+`overit_lista.mjs` je cílená kontrola klouzající lišty kalkulací (Zpět/Znovu
++ kotvy sekcí, sticky chování), přejmenované záložky Přehled cenových nabídek
+a karet obou nabídek v ní (od v29.7.5). Od v29.7.6 kontroluje i modrou barvu
+lišty (shodnou s lištami názvů sekcí) a zadané krátké názvy kotev v liště
+PROJ. Od v29.7.7 navíc hlídá ztlumený vzhled: rámeček lišty nesmí být plná
+akcentová modř a stín nesmí být modrý ani rozlitý (žádná „luminiscence“).
+Stejnou kontrolou prochází i ovládací lišta v Detailu výpočtu – porovnává se
+přímo s klouzající lištou (podklad, rámeček, barva písma, stín, bílé pilulky
+kotev), aby obě zůstaly stejné.
+
+**Harnessy, které potřebují firemní podklady** (šablony smluv a nabídek,
+vygenerovaná ROADMAPA.html, ruční příručka) se v repozitáři nenacházejí —
+jsou to firemní dokumenty. Takový harness se **přeskočí a řekne, co mu
+chybí**; nepadá a nepředstírá, že prošel. Cestu k podkladům lze předat
+proměnnou `KNG_PODKLADY`.
+
+`ADMIN_EMAIL` je potřeba u harnessů, které se přihlašují
+(`ADMIN_EMAIL=spravce@priklad.cz`). Bez ní serverové cesty správně odmítnou
+obsluhu — od 22. 9. 2026 návratovým kódem 503, viz nález B54 v CHANGELOGu.

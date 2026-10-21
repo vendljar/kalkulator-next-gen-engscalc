@@ -103,11 +103,41 @@ async function zakazkaDuplikujUI() {
   }
 
   /* Neuložená práce v otevřené zakázce by se přepnutím ztratila. Ptáme se
-   * dřív, než cokoli uděláme — po přepnutí už není kam se vrátit. */
-  if (typeof ULO_STAV !== 'undefined' && ULO_STAV.posledni
-    && ULO_STAV.posledni !== JSON.stringify(ZAK)
-    && !await potvrd('Otevřená zakázka má neuložené změny. Duplikací se zavře a změny se ztratí.\n\n'
-      + 'Pokračovat?', { nadpis: 'Neuložené změny', vychoziNe: true })) return;
+   * dřív, než cokoli uděláme — po přepnutí už není kam se vrátit.
+   *
+   * DOTAZ SE PTAL JEN SLOŽKY (nález N36 revize v22.9.9). Podmínka stála na
+   * `ULO_STAV.posledni`, tedy na režimu složky — a ten je od 18. 8. 2026
+   * vypnutý (jediná databáze je online). V online režimu je to pole prázdné,
+   * takže se dotaz nepoložil NIKDY a duplikace rozdělanou práci tiše
+   * zahodila. Ptá se tedy stejně jako otevření jiné zakázky (V35):
+   * `historieNeulozeno()` zná obě cesty a nabízí se i „Uložit změny". */
+  if (typeof historieNeulozeno === 'function' && historieNeulozeno()) {
+    const jenCteni = typeof zamekCteniJe === 'function' && zamekCteniJe();
+    const otazka = jenCteni
+      ? 'Zakázka je otevřená jen ke čtení a její výpočet se liší od uloženého. Uložit je '
+        + 'odsud nejde — duplikací se tyhle rozdíly zahodí. Co teď?'
+      : 'Otevřená zakázka má neuložené změny. Duplikací se zavře. Co s nimi?';
+    const moznosti = jenCteni
+      ? [{ kod: 'zahodit', popis: 'Zahodit a duplikovat' },
+         { kod: 'zustat', popis: 'Zůstat tady', primary: true }]
+      : [{ kod: 'ulozit', popis: 'Uložit změny a duplikovat', primary: true },
+         { kod: 'zahodit', popis: 'Zahodit změny a duplikovat' },
+         { kod: 'zustat', popis: 'Zůstat tady' }];
+    const co = (typeof volba === 'function')
+      ? await volba(otazka, moznosti, { nadpis: 'Duplikovat zakázku' })
+      : (await potvrd('Otevřená zakázka má neuložené změny. Duplikací se zavře a změny se ztratí.\n\n'
+        + 'Pokračovat?', { nadpis: 'Neuložené změny', vychoziNe: true }) ? 'zahodit' : 'zustat');
+    if (co !== 'ulozit' && co !== 'zahodit') return;
+    if (co === 'ulozit') {
+      const uspech = (typeof onlineUloz === 'function') ? await onlineUloz() : false;
+      /* Neuložilo se (kolize verzí, výpadek)? Pak se neduplikuje — jinak
+       * by se změny ztratily přesně tam, kde je uživatel chtěl zachránit. */
+      if (!uspech) {
+        await hlaska('Změny se nepodařilo uložit — duplikace se nekoná, zakázka zůstává otevřená.');
+        return;
+      }
+    }
+  }
 
   const nova = zakazkaDuplikuj(ZAK, c);
   if (!nova) return;
@@ -116,9 +146,21 @@ async function zakazkaDuplikujUI() {
    * uložení by přepsalo původní zakázku. To je ta nejhorší chyba, kterou
    * tahle funkce může udělat, takže se to hlídá tady i v modelu. */
   ZAK = nova;
-  if (typeof ULO_STAV !== 'undefined') { ULO_STAV.soubor = ''; ULO_STAV.razitko = ''; ULO_STAV.posledni = ''; }
-  if (typeof ONLINE_STAV !== 'undefined') { ONLINE_STAV.soubor = ''; ONLINE_STAV.razitko = ''; ONLINE_STAV.posledni = ''; }
-  if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
+  /* Odpojení od uložené předlohy dělá TÁŽ funkce jako „Nová zakázka"
+   * (nález N36): kromě jména souboru a razítka ruší i NAPLÁNOVANÝ AUTOSAVE
+   * předchozí zakázky (mechanismus V35 — doběhl by až po přepnutí a zapsal
+   * duplikát, ačkoli hláška níž tvrdí, že uložený není), kolizi verzí,
+   * značku „kam se vrátit po F5" a zámek čtení. Ruční výčet polí, který tu
+   * stál, na časovač a značku zapomněl. */
+  if (typeof zakOdpojUlozeni === 'function') zakOdpojUlozeni();
+  else {
+    if (typeof ULO_STAV !== 'undefined') { ULO_STAV.soubor = ''; ULO_STAV.razitko = ''; ULO_STAV.posledni = ''; }
+    if (typeof ONLINE_STAV !== 'undefined') { ONLINE_STAV.soubor = ''; ONLINE_STAV.razitko = ''; ONLINE_STAV.posledni = ''; }
+    if (typeof zamekCteniVypni === 'function') zamekCteniVypni();
+  }
+  /* Kliknutí v dialogu duplikace není práce na duplikátu — ukládat se má,
+   * až v něm uživatel něco udělá (nebo klikne na Uložit), jak hláška říká. */
+  if (typeof ONLINE_STAV !== 'undefined') ONLINE_STAV.zmenaUzivatele = false;
   if (typeof syncVarianta === 'function') syncVarianta();
   render();
   await hlaska('Založena nová zakázka ' + esc(c) + ' jako kopie ' + esc(puvodni) + '.\n\n'
@@ -264,8 +306,6 @@ function seznamKarta() {
       <button class="primary" onclick="varNova()">+ Nová varianta (kopie otevřené)</button>
       <button onclick="zakazkaDuplikujUI()"
         title="založit SAMOSTATNOU zakázku s vlastním číslem CN z kopie téhle – pro novou poptávku, která se té staré podobá">⧉⧉ Duplikovat jako novou zakázku…</button>
-      <button onclick="otevriArchiv()"
-        title="nahlédnout do uložených zakázek a převzít historickou kalkulaci jako alternativu">↩ Historická kalkulace…</button>
     </div>
     <div class="note">Přepínačem vlevo otevřete variantu k úpravám (záložky Kalkulace OCK, Technická
     specifikace i Kalkulace PROJ pak pracují s jejími daty). Zaškrtnutím ve sloupci <b>Řídící</b> určíte
@@ -274,9 +314,6 @@ function seznamKarta() {
     další dostane příponu .1, .2, .3 … Vytištěním cenové nabídky se varianta uzamkne (🔒 odeslána) –
     co odešlo zákazníkovi, musí zůstat doslova. Pokračuje se tlačítkem <b>⧉</b> na jejím řádku, které
     založí kopii s dalším číslem.</div>
-    <div class="note">Tlačítko <b>↩ Historická kalkulace…</b> otevře uložené zakázky (.json) a převezme
-    z nich kalkulaci jako další variantu téhle zakázky – v čísle je pak poznat značkou <b>⤺</b>,
-    po najetí myší se ukáže, z jaké nabídky pochází a kterým ceníkem se počítala.</div>
     <div class="note">Hledání i filtr mění jen to, co je vidět – žádná varianta se jimi nemaže a
     nastavení se neukládá do souboru zakázky. Kliknutím na záhlaví sloupce seznam seřadíte,
     druhým kliknutím obrátíte směr, třetím se vrátíte k pořadí, v jakém varianty vznikaly.</div>`);

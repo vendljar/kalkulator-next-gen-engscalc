@@ -37,7 +37,8 @@ const pz = require('./poznamky.js');
 const { POZN_DRUHY, POZN_MAX_PRILOHA, POZN_MAX_CELKEM,
         poznamkyZajisti, poznamkyPridej, poznamkyUprav, poznamkySmaz, poznamkyObnov,
         poznamkySeznam, poznamkyShrnuti, poznamkyText, poznamkyVelikostText,
-        prilohyPridej, prilohySmaz, prilohySeznam, prilohyVelikost } = pz;
+        prilohyPridej, prilohySmaz, prilohySeznam, prilohyVelikost,
+        poznamkyPoleText, poznamkyTextNastav, POZN_POLE_ZAPISNIKU } = pz;
 
 let ok = 0, fail = 0;
 const test = (n, cond, info) => { if (cond) { ok++; console.log('OK  ' + n); } else { fail++; console.log('FAIL ' + n, info === undefined ? '' : info); } };
@@ -235,6 +236,51 @@ const hrisnici = GENERATORY.filter(f =>
   /\bpoznamky\b|\bprilohy\b/.test(fs.readFileSync(__dirname + '/' + f, 'utf8')));
 test('generátory dokumentů o poznámkách vůbec nevědí',
   hrisnici.length === 0, hrisnici.join(', '));
+
+/* ===== JEDNO TEXTOVÉ POLE (zadání J. V. 22. 9. 2026) =====
+ *
+ * Zápisník se scvrkl na volné textové pole. Starší zakázky nesou
+ * strukturované poznámky dál a nesmí o ně přijít: dokud do pole nikdo
+ * nesáhne, ukazuje text složený právě z nich. */
+{
+  const z = nova();
+  test('prázdná zakázka má prázdné pole', poznamkyPoleText(z) === '');
+
+  poznamkyPridej(z, 'Sleva 6 % dohodnutá s p. Novákem.', { kdo: 'Jan', druh: 'sleva' });
+  poznamkyPridej(z, 'Montáž v jednom nájezdu.', { kdo: 'Jan', druh: 'technika' });
+  const odvozeny = poznamkyPoleText(z);
+  test('starší poznámky se v poli ukážou', /Sleva 6 %/.test(odvozeny) && /jednom nájezdu/.test(odvozeny),
+    odvozeny);
+
+  /* ČTENÍ NESMÍ ZAKÁZKU MĚNIT. Kdyby se pole materializovalo při vykreslení,
+   * zakázka by se sama označila za neuloženou — nález N12/N13 z téhož dne. */
+  const pred = JSON.stringify(z);
+  poznamkyPoleText(z); poznamkyPoleText(z);
+  test('čtení pole zakázku nezmění', JSON.stringify(z) === pred);
+
+  poznamkyTextNastav(z, 'Ručně přepsaný text.');
+  test('po zápisu platí nové pole', poznamkyPoleText(z) === 'Ručně přepsaný text.');
+  test('a staré poznámky zůstaly v datech', z.poznamky.length === 2, z.poznamky.length);
+
+  /* Prázdný text je platný stav — uživatel má právo pole vymazat. */
+  poznamkyTextNastav(z, '');
+  test('vymazané pole se nevrací ke starým poznámkám', poznamkyPoleText(z) === '');
+
+  test('pole patří do zápisníku, takže se smí uložit i nad zamčenou variantou',
+    POZN_POLE_ZAPISNIKU.includes('poznamkyText'), POZN_POLE_ZAPISNIKU.join(','));
+}
+
+/* Obrazovka od 22. 9. 2026 přílohy nenabízí. Model je umí dál (starší
+ * zakázky je nesou a musí jít stáhnout), ale v UI nesmí zůstat cesta, jak
+ * novou nahrát — jinak by se zadání minulo účinkem. */
+{
+  const ui = fs.readFileSync(__dirname + '/ui/poznamky_ui.js', 'utf8');
+  test('obrazovka nenabízí nahrání přílohy', !/prilohyPridej|input.*type.*file|inp\.click/.test(ui));
+  test('ani vkládání obrázku ze schránky', !/vlozObrazekCil/.test(ui));
+  test('ale stažení existující přílohy zůstalo', /prilohyStahni/.test(ui));
+  test('štítky druhu poznámky z obrazovky zmizely', !/POZN_DRUHY/.test(ui));
+  test('a zůstalo jedno textové pole', (ui.match(/<textarea/g) || []).length === 1);
+}
 
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

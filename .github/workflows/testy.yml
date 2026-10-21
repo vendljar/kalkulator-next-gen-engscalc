@@ -1,173 +1,113 @@
-# Testy Kalkulátoru v cloudu (7. 9. 2026)
+# Testy Kalkulátoru v cloudu (7. 9. 2026; od 26. 9. 2026 přes testovaci_kolo.sh)
 #
 # Proč: na pracovním notebooku nejde z bezpečnostních důvodů instalovat Node
-# ani Python, takže sady ze spust_testy.sh tam nikdy nepoběží. Kód už na
-# GitHubu je a Netlify ho staví v cloudu — testy tedy běží tamtéž, na
-# GitHub Actions, nad týmiž vynulovanými zdrojáky: žádný skutečný ceník
-# (sady, které ho potřebují, se přeskočí s kódem 3 stejně jako lokálně),
-# žádná tajemství (overit_online.mjs si nastavuje vlastní zkušební).
+# ani Python, takže sady tam nikdy nepoběží. Kód už na GitHubu je a Netlify
+# ho staví v cloudu — testy tedy běží tamtéž, na GitHub Actions, nad týmiž
+# vynulovanými zdrojáky: žádný skutečný ceník (sady, které ho potřebují, se
+# přeskočí s kódem 3 stejně jako lokálně), žádná tajemství (harnessy si
+# nastavují vlastní zkušební), žádné firemní šablony (harnessy, které je
+# potřebují, se hlásí jako přeskočené s kódem 4).
 #
-# Spouští se při každém pushi a pull requestu na main/test a ručně
-# (GitHub → Actions → Testy → Run workflow). Výsledek: zelená/červená
-# u commitu, podrobný výpis v záložce Actions, sestavený dist/ jako
-# artefakt ke stažení. Nasazení na Netlify tím NENÍ podmíněné — Netlify
-# staví dál sám; tohle je nezávislá kontrola.
+# OD 24. 9. 2026 (rozhodnutí J. V.) SE SPOUŠTÍ AUTOMATICKY JEN PŘI PUSHI NA
+# MAIN a ručně (GitHub → Actions → Testy → Run workflow). Před pushem na
+# test-draft/test pouští tytéž kroky nastroje/pred_pushem.sh v cloudovém
+# sezení. Nasazení na Netlify tím NENÍ podmíněné — Netlify staví dál sám.
+#
+# JEDINÝ SEZNAM KROKŮ JE V nastroje/testovaci_kolo.sh (A5, 26. 9. 2026).
+# Do té doby tu byl vlastní výčet kroků a vlastní smyčka přes harnessy —
+# a dvakrát se rozešel s tím, co se pouštělo lokálně (N16, 22. 9. 2026:
+# 27 harnessů osm dní nikde neběželo). Tady se jen volá ten skript:
+#   job „testy"          = testovaci_kolo.sh --bez-mutaci
+#                          (sestavení, všechny sady v Node i na serveru,
+#                          smoke + VŠECHNY overit_*.mjs globem, statické
+#                          kontroly: verze = den commitu, CRLF, osobní údaje
+#                          a tajemství)
+#   job „mutace-server"  = testovaci_kolo.sh --jen mutace-server
+#   job „mutace-jadro"   = testovaci_kolo.sh --jen mutace-jadro
+# Mutace běží v samostatných jobech, aby jely souběžně — každý trvá kolem
+# dvaceti minut. Přeskočené sady vypíše souhrn skriptu; přeskočená kontrola,
+# o které se mlčí, je totéž co kontrola, která neexistuje.
 name: Testy
 
 on:
   push:
-    branches: [main, test]
-  pull_request:
+    branches: [main]
   workflow_dispatch:
+
+# B125 (audit 2. 10. 2026): workflow jen čte repozitář — token GITHUB_TOKEN
+# nesmí víc. Akce jsou připnuté na celý SHA commitu (značka v komentáři):
+# značka se dá přesunout, SHA ne. Playwright má pevnou verzi, aby CI
+# nestahovalo pokaždé jinou (stejná verze jako v cloudovém sezení).
+permissions:
+  contents: read
 
 jobs:
   testy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    # Adresa hlavního správce se od 16. 9. 2026 bere z proměnné prostředí,
-    # ne z konstanty v repozitáři (ten je veřejný). Testům stačí SMYŠLENÁ
-    # adresa — ověřují pravidla, ne konkrétní účet. Ostrý a testovací web mají
-    # svou vlastní nastavenou v Netlify.
+    timeout-minutes: 45
+    # Adresa hlavního správce se bere z proměnné prostředí, ne z konstanty
+    # v repozitáři (ten je veřejný). Testům stačí SMYŠLENÁ adresa — ověřují
+    # pravidla, ne konkrétní účet. Ostrý i testovací web mají svou v Netlify.
     env:
       ADMIN_EMAIL: spravce@priklad.cz
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
-          node-version: '22'   # stejná verze jako NODE_VERSION v netlify.toml
+          node-version: '22.23.2'   # stejná verze jako NODE_VERSION v netlify.toml
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.12'
 
-      # Konvence vDEN.MĚSÍC.pořadí (10. 9. 2026). Na pracovním notebooku nejde
-      # spustit Python, takže se verze.txt píše ručně a pojistka uvnitř build.py
-      # se nikdy nespustí — čtyři dávky z 10. září odešly jako 9.9.x. Tenhle
-      # krok je ten chybějící článek: měří verzi proti datu posledního commitu.
-      - name: Verze odpovídá dni commitu (vDEN.MĚSÍC.pořadí)
-        run: python3 build.py --kontrola-verze
-
-      # Žádný CR ve zdrojácích (nález B46, 14. 9. 2026). Soubor s CRLF vyřadí
-      # statický hlídač XSS: test_escape.js si vytahuje esc()/escJs() ze zdroje
-      # hledáním konce deklarace a v CRLF ho nenajde. Na Linuxu se to nestane
-      # samo od sebe, ale commit s CRLF sem přijít může — a pak by hlídač
-      # mlčel, aniž by kdokoli poznal, že neběží.
-      - name: Žádné CRLF ve zdrojácích
-        run: |
-          if grep -rlI $'\r' src netlify *.mjs *.sh *.py *.toml; then
-            echo "CHYBA: soubory výš mají CRLF. Repozitář má .gitattributes s eol=lf —"
-            echo "spusťte 'git add --renormalize .' a commitněte."
-            exit 1
-          fi
-          echo "Konce řádků v pořádku (LF)."
-
-      - name: Sady v Node (jádro, UI, serverové funkce)
-        run: bash ./spust_testy.sh
-
-      - name: Sestavení (verze se přebírá z verze.txt a nezvyšuje se)
-        env:
-          KNG_NEZVYSOVAT_VERZI: '1'
-        run: python3 build.py
-
+      # Playwright se instaluje MÍSTNĚ, ne globálně: `NODE_PATH` platí jen pro
+      # require() ze CommonJS, hledání modulů pro `import` ho ignoruje (nález
+      # 14. 9. 2026). Místní node_modules/playwright vidí obě cesty.
       - name: Playwright (Chromium)
         run: |
-          npm i -g playwright
+          npm i --no-save playwright@1.56.1
           npx playwright install --with-deps chromium
 
-      - name: Kouřový test sestavené aplikace (smoke.mjs)
-        run: NODE_PATH="$(npm root -g)" node smoke.mjs
-
-      - name: Online databáze — skutečný klient proti skutečným funkcím (overit_online.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_online.mjs
-
-      - name: Vypnutý řádek (V22) a zápis přepisu bez Enteru (N8) v prohlížeči (overit_vypnuty_radek.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_vypnuty_radek.mjs
-
-      - name: Obrazovka opláštění po stěnách (#268) v prohlížeči (overit_oplasteni.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_oplasteni.mjs
-
-      - name: Dialog o přepočtu na dnešní ceník (#284) v prohlížeči (overit_prepocet_dialog.mjs)
-        run: NODE_PATH="$(npm root -g)" node overit_prepocet_dialog.mjs
+      - name: Testovací kolo bez mutací (sestavení, sady, harnessy, statické kontroly)
+        run: bash nastroje/testovaci_kolo.sh --bez-mutaci
 
       - name: Sestavený dist/ jako artefakt
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: dist-${{ github.sha }}
           path: dist/
           if-no-files-found: ignore
           retention-days: 14
 
-  # Mutační testování serverové vrstvy (netlify/mutace.mjs) — samostatný
-  # job, protože pouští tři serverové sady znovu pro každou z ~100 mutací
-  # a trvá řádově deset minut. Od 9. 9. 2026 hlídá i regresi nálezů auditu
-  # B26–B31 a část B32: kdyby někdo kontrolu odstranil, testy by to musely
-  # chytit — a tohle ověřuje, že by to opravdu chytily.
-  #
-  # Upřesněno 14. 9. 2026 (nález B55): starší srpnová sada mutací nesla čísla
-  # B27–B31 z pořadníku 4. dávky a s čísly auditu se to pletlo. Ta starší je
-  # od té chvíle L27–L31; čísla auditu zůstala, odkazuje na ně protokol
-  # i roadmapa.
-  mutace:
+  # Mutační testování serverové vrstvy (netlify/mutace.mjs): pouští serverové
+  # sady znovu pro každou z ~190 mutací. Od 9. 9. 2026 hlídá i regresi nálezů
+  # auditu: kdyby někdo kontrolu odstranil, testy by to musely chytit — tohle
+  # ověřuje, že by to opravdu chytily. Rychlá kontrola zadání (--kontrola)
+  # běží už v jobu „testy" uvnitř spust_testy.sh.
+  mutace-server:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
       ADMIN_EMAIL: spravce@priklad.cz
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
-          node-version: '22'
-      - name: Mutační testování serverové vrstvy (netlify/mutace.mjs)
-        run: node netlify/mutace.mjs
+          node-version: '22.23.2'
+      - name: Mutace serveru (netlify/mutace.mjs)
+        run: bash nastroje/testovaci_kolo.sh --jen mutace-server
 
-  # Prohlížečové harnessy (nález N13, 14. 9. 2026). Do té doby jezdil v CI
-  # jediný (overit_vypnuty_radek) a o tom, že se ostatní rozešly s aplikací,
-  # se přišlo až při testovacím kole: overit_lista čekal rozměr, který nová
-  # nabídka od v9.9.3 nemá, overit_atyp měřil ATYP nad prázdným formulářem
-  # a overit_proj17 hledal částku, která se mezitím přestěhovala do ceníku.
-  # Harness, který nikdo nepouští, není pojistka, ale falešný pocit jistoty.
-  #
-  # Vlastní job, protože každý harness startuje Chromium a dohromady to trvá
-  # pár minut — do sad v Node to nepatří.
-  harnessy:
+  # Mutační testování VÝPOČETNÍHO JÁDRA (nález N19, 23. 9. 2026): mutace_jadro.mjs
+  # pouští sady, které se na jádro odkazují, pro každou ze ~76 mutací.
+  mutace-jadro:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    env:
-      ADMIN_EMAIL: spravce@priklad.cz
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
-          node-version: '22'
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - name: Sestavení (verze se přebírá z verze.txt)
-        env:
-          KNG_NEZVYSOVAT_VERZI: '1'
-        run: python3 build.py
-      # Playwright se instaluje MÍSTNĚ, ne globálně. `NODE_PATH` totiž platí
-      # jen pro require() ze CommonJS — hledání modulů pro `import` ho ignoruje
-      # úplně, takže harness končil na ERR_MODULE_NOT_FOUND. Ve starším jobu to
-      # nikdo neodhalil, protože ty kroky nikdy nedoběhly: padalo už spouštění
-      # sad o dva kroky výš (nález 14. 9. 2026 při zavádění tohohle jobu).
-      - name: Playwright (Chromium)
-        run: |
-          npm i playwright
-          npx playwright install --with-deps chromium
-      - name: Lišta a historie (overit_lista.mjs)
-        run: node overit_lista.mjs
-      - name: ATYP a ceníkové podíly (overit_atyp.mjs)
-        run: node overit_atyp.mjs
-      - name: Detail výpočtu PROJ (overit_proj17.mjs)
-        run: node overit_proj17.mjs
-      - name: Matice zobrazení (overit_zobrazeni.mjs)
-        run: node overit_zobrazeni.mjs
-      # Průchod celou cestou OCK zakázky: založení → zadání → volitelné →
-      # příplatky → nabídka → PDF (16. 9. 2026). Jednotkové sady ověřují
-      # jednotlivé kroky; tenhle harness ověřuje MEZERY mezi nimi — tam byly
-      # všechny tři závady, které J. V. ten den hlásil po sobě.
-      - name: Celá cesta OCK zakázky (overit_ock_cela_cesta.mjs)
-        run: node overit_ock_cela_cesta.mjs
+          node-version: '22.23.2'
+      - name: Mutace jádra (mutace_jadro.mjs)
+        run: bash nastroje/testovaci_kolo.sh --jen mutace-jadro

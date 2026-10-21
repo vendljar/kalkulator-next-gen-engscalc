@@ -53,15 +53,23 @@ const prace = (r) => plocha(r, 'PRÁCE OPLÁŠTĚNÍ');
             const zm = { typSachty: t, zaskleni: zs, svetlikNadDvermi: sv, nastupiste: n };
             const a = spocti(zm, { rezim: 'standard', steny: null }, fixes);
             const b = spocti(zm, PO_STENACH(null), fixes);
-            if (blizko(a.souhrn.zakladCena, b.souhrn.zakladCena, 0.005)) shoda++;
+            /* ZMĚNA PRAVIDLA 21. 9. 2026 (rozhodnutí J. V., #295): zapnutí
+             * režimu už cenou hnout SMÍ — čelní stěna se nově počítá jako celá
+             * stěna mínus dveřní otvory, ne jen jako světlík nad dveřmi.
+             * Podrobné zdůvodnění i směr změny je v test_oplasteni_zapnuti.js;
+             * tady se hlídá, že se rozdíl VEJDE DO ČELNÍ STĚNY — tedy že
+             * zapnutí režimu nehnulo ničím jiným. */
+            const rozdilPlochy = b.oplasteni.zakladSten.A - a.zaskleni.steny.A;
+            const rozdilCelkem = b.oplasteni.plochaCelkem - a.zaskleni.celkemM2;
+            if (blizko(rozdilCelkem, rozdilPlochy, 0.005)) shoda++;
             else rozdil.push(t + '/' + zs + '/' + n + (fixes ? '/M2' : '/M1')
-              + ': ' + a.souhrn.zakladCena + ' vs ' + b.souhrn.zakladCena);
+              + ': rozdíl ploch ' + rozdilCelkem + ' vs čelní stěna ' + rozdilPlochy);
           });
         });
       });
     });
   });
-  test('zapnutí režimu beze změny zadání nezmění cenu (' + shoda + ' zadání)',
+  test('zapnutí režimu hne jen čelní stěnou, ničím jiným (' + shoda + ' zadání)',
     rozdil.length === 0, rozdil.slice(0, 3));
 }
 
@@ -143,20 +151,126 @@ const prace = (r) => plocha(r, 'PRÁCE OPLÁŠTĚNÍ');
     !!radek && !radek.cenaPath, radek && radek.cenaPath);
 }
 
-/* ---------- 6) kontrola standardu ---------- */
+/* ---------- 6) kontrola standardu ----------
+ *
+ * ZMĚNA PRAVIDLA 30. 9. 2026 (rozhodnutí J. V.). Do té doby byl režim po
+ * stěnách „mimo standard z definice" (standard zná jen jednotné opláštění)
+ * a kontrola u každé takové šachty hlásila atyp — i když byly všechny stěny
+ * stejné. Automat pak zaškrtl ATYP: cena asi +28 %, termín +4 týdny (nález
+ * z testování). J. V.: „je to záměr? Ne není. Toto změň na standard."
+ *
+ * Režim po stěnách sám o sobě je tedy standard. Atyp smí přijít jen z týchž
+ * pravidel jako ve standardním režimu — profil sloupku, rozměry, způsob
+ * zasklení, počet sloupků, můstek. Hlídá se to přímo: vyhodnocení po
+ * stěnách se musí SHODOVAT s vyhodnocením téhož zadání v jednotném režimu,
+ * včetně nálezů a počtu kontrolovaných pravidel. */
 {
   const std = SO.standardOciste({});
-  const zad = (opl) => Object.assign({
+  const zad = (opl, zm) => Object.assign({
     typSachty: 'interiérová', sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2,
     zaskleni: 'na terče', profily: { sloupek: { dim: '80x50' } }, rohoveSloupky: 4, mustek: false,
-  }, opl ? { oplasteni: opl } : {});
-  test('standardní režim projde', SO.standardVyhodnot(zad(null), 13.4, std, []).stav === 'standard');
-  const v = SO.standardVyhodnot(zad({ rezim: 'poStenach', steny: null }), 13.4, std, []);
-  test('opláštění po stěnách je VŽDY atyp', v.stav === 'atyp', v.stav);
-  const n = v.nalezy.find(x => /Opláštění/.test(x.co));
-  /* „mimo standard", ne „nelze posoudit": posoudit to jde, odpověď je ne. */
-  test('a hlásí se jako mimo standard, ne jako chybějící údaj',
-    !!n && n.stav === 'mimo', n);
+  }, opl ? { oplasteni: opl } : {}, zm || {});
+  const vyhodnot = (opl, zm, vyska) => SO.standardVyhodnot(zad(opl, zm), vyska == null ? 13.4 : vyska, std, []);
+  const shodne = (a, b) => a.stav === b.stav && a.kontrol === b.kontrol
+    && JSON.stringify(a.nalezy) === JSON.stringify(b.nalezy);
+  const kratce = v => ({ stav: v.stav, kontrol: v.kontrol, nalezy: v.nalezy });
+  const ctyri = (typ) => PO_STENACH(['A', 'B', 'C', 'D'].reduce((o, k) => {
+    o[k] = { odM: 0, pasy: [{ typ, doM: null }] }; return o; }, {}));
+
+  test('standardní režim projde', vyhodnot(null).stav === 'standard');
+  const vych = vyhodnot(PO_STENACH(null));
+  test('30. 9.: po stěnách s výchozími stěnami je STANDARD, ne atyp', vych.stav === 'standard', kratce(vych));
+  test('a nehlásí žádný nález', vych.nalezy.length === 0, vych.nalezy);
+  test('30. 9.: čtyři stejné stěny (VSG 4.4.2) jsou standard',
+    vyhodnot(ctyri('C.skloVsg442Kc')).stav === 'standard', kratce(vyhodnot(ctyri('C.skloVsg442Kc'))));
+
+  /* Stejné zadání, dva režimy, stejná odpověď — i tam, kde odpověď je atyp
+   * nebo „nelze posoudit". Poslední případ je materiál mimo standard
+   * (sklo do rámečku u venkovní šachty, kde standard připouští jen terče):
+   * po stěnách se chová přesně jako dosud v jednotném režimu. */
+  const pripady = [
+    ['beze změny', {}],
+    ['profil sloupku mimo standard', { profily: { sloupek: { dim: '100x100' } } }],
+    ['šířka nad limit', { sirka: 2.0 }],
+    ['pět sloupků', { rohoveSloupky: 5 }],
+    ['můstek bez rozměrů (nelze posoudit)', { mustek: true }],
+    ['exteriér se sklem do rámečku (zasklení mimo standard)',
+      { typSachty: 'exteriérová', zaskleni: 'mezi příčníky', profily: { sloupek: { dim: '80x80' } } }],
+  ];
+  pripady.forEach(([jm, zm]) => {
+    const a = vyhodnot(null, zm), b = vyhodnot(PO_STENACH(null), zm);
+    test('po stěnách hodnotí stejně jako jednotný režim: ' + jm + ' (' + a.stav + ')', shodne(a, b), { jednotne: kratce(a), poStenach: kratce(b) });
+  });
+  const vysoka = [vyhodnot(null, {}, 31), vyhodnot(PO_STENACH(null), {}, 31)];
+  test('po stěnách hodnotí stejně jako jednotný režim: výška nad limit (' + vysoka[0].stav + ')',
+    shodne(vysoka[0], vysoka[1]), vysoka.map(kratce));
+  /* Pojistka proti prázdnému testu: mezi případy musí být skutečný atyp
+   * i „nelze posoudit" — jinak by shoda nic neříkala. */
+  test('mezi porovnanými případy je atyp i „nelze posoudit"',
+    pripady.some(([, zm]) => vyhodnot(null, zm).stav === 'atyp')
+      && pripady.some(([, zm]) => vyhodnot(null, zm).stav === 'nelze'));
+  const zasklMimo = vyhodnot(PO_STENACH(null), pripady[5][1]);
+  test('zasklení mimo standard je po stěnách dál atyp (nález „Opláštění (exteriér)")',
+    zasklMimo.stav === 'atyp' && zasklMimo.nalezy.some(n => n.co === 'Opláštění (exteriér)' && n.stav === 'mimo'), kratce(zasklMimo));
+
+  /* MATERIÁL STĚNY standard nezná — tabulka má jen způsoby zasklení. Cetris,
+   * „jiné" ani „bez — dodá stavba" proto samy nález nepřidají (dřív je
+   * schoval plošný atyp celého režimu). Kdyby J. V. chtěl, aby „jiné" s ruční
+   * sazbou bylo atyp, je to samostatné pravidlo — viz otevřená otázka. */
+  const jine = PO_STENACH({ A: { odM: 0, pasy: [{ typ: 'C.skloVsg442Kc', doM: null }] },
+    B: { odM: 0, pasy: [{ typ: 'C.cetrisKc', doM: null }] },
+    C: { odM: 0, pasy: [{ typ: 'jine', doM: null, nazev: 'Trapézový plech', naklad: 900 }] },
+    D: { odM: 0, pasy: [{ typ: 'bez', doM: null }] } });
+  test('stěny z Cetrisu, „jiného" materiálu a „bez" samy atyp nedělají',
+    shodne(vyhodnot(jine), vyhodnot(null)), kratce(vyhodnot(jine)));
+}
+
+/* N50 (hloubkový test 24. 9. 2026): příplatky VSG fólie a SKN se po
+ * stěnách počítají jen ze skleněných pásů (SKN jen z dvojskla). */
+{
+  const prip = (r, key) => { const p = (r.priplatky || []).find(x => x.key === key); return p ? p.mnozstvi : null; };
+  const pas = (typ) => ({ odM: 0, pasy: [{ typ, doM: null }] });
+  const zm = { typSachty: 'exteriérová' };
+  const std = spocti(zm, { rezim: 'standard', steny: null }, true);
+  const vych = spocti(zm, PO_STENACH(null), true);
+  test('N50: výchozí stěny po stěnách = standard (VSG i SKN)',
+    blizko(prip(vych, 'vsgFolie'), prip(std, 'vsgFolie')) && blizko(prip(vych, 'skn'), prip(std, 'skn')),
+    [prip(vych, 'vsgFolie'), prip(std, 'vsgFolie'), prip(vych, 'skn'), prip(std, 'skn')]);
+  /* ZMĚNA 30. 9. 2026 (#375, rozhodnutí J. V.): světlík nad dveřmi volby
+   * „sklo" zůstává sklem i tehdy, když je stěna A „bez — dodá stavba" (sklo
+   * čelní stěny ze standardu, VSG 4.4.1). Fólii VSG tedy nese on, stěny samy
+   * nic; SKN (náhrada dvojskla) zůstává nulové. Zadání bez světlíku drží
+   * původní smysl N50: ze stěn „bez" nevznikne VSG ani SKN. */
+  const vsech4bez = PO_STENACH({ A: pas('bez'), B: pas('bez'), C: pas('bez'), D: pas('bez') });
+  const bez = spocti(zm, vsech4bez, true);
+  test('N50 + #375: všechny stěny „bez" → VSG jen ze skleněného světlíku nad dveřmi, SKN nula',
+    blizko(prip(bez, 'vsgFolie'), bez.zaskleni.svetliky.m2) && bez.zaskleni.svetliky.m2 > 0 && prip(bez, 'skn') === 0,
+    [prip(bez, 'vsgFolie'), bez.zaskleni.svetliky.m2, prip(bez, 'skn')]);
+  const bezSvetliku = spocti(Object.assign({ nadDvermi: 'bez' }, zm), vsech4bez, true);
+  test('N50: všechny stěny „bez" a bez světlíků → VSG i SKN nula',
+    prip(bezSvetliku, 'vsgFolie') === 0 && prip(bezSvetliku, 'skn') === 0,
+    [prip(bezSvetliku, 'vsgFolie'), prip(bezSvetliku, 'skn')]);
+  const cetris = spocti(zm, PO_STENACH({ A: pas('C.skloCelniKc'), B: pas('C.cetrisKc'), C: pas('C.skloBokyKc'), D: pas('C.skloBokyKc') }), true);
+  test('N50: stěna z Cetrisu zmenší SKN i VSG', prip(cetris, 'skn') < prip(std, 'skn') && prip(cetris, 'vsgFolie') < prip(std, 'vsgFolie'),
+    [prip(cetris, 'skn'), prip(std, 'skn')]);
+  test('N50: SKN jen z dvojskla (VSG 4.4.1 na čele se nepočítá)', prip(cetris, 'skn') < prip(cetris, 'vsgFolie'));
+}
+
+/* N52: dva pásy „jiné" stejného názvu a jiné sazby = dva řádky s různým
+ * názvem, takže ruční přepis jednoho nezasáhne druhý. */
+{
+  const jine = (naklad) => ({ odM: 0, pasy: [{ typ: 'jine', nazev: 'Trapézový plech', naklad, doM: null }] });
+  const opl = PO_STENACH({ A: { odM: 0, pasy: [{ typ: 'C.skloCelniKc', doM: null }] }, B: jine(1000), C: jine(1500), D: { odM: 0, pasy: [{ typ: 'bez', doM: null }] } });
+  const r = spocti({}, opl, true);
+  const radky = r.sekce.oplasteni.filter(i => /TRAPÉZOVÝ/.test(i.origNazev));
+  test('N52: dva řádky „jiné" stejného názvu mají různé názvy', radky.length === 2 && radky[0].origNazev !== radky[1].origNazev,
+    radky.map(x => x.origNazev));
+  test('N52: první řádek si název nechá', radky.some(x => x.origNazev === 'OPLÁŠTĚNÍ - TRAPÉZOVÝ PLECH'));
+  const z2 = spocti({ cenyPrepis: { 'OPLÁŠTĚNÍ - TRAPÉZOVÝ PLECH (2)': 9999 } }, opl, true);
+  const r2 = z2.sekce.oplasteni.filter(i => /TRAPÉZOVÝ/.test(i.origNazev));
+  test('N52: ruční cena druhého řádku nezasáhne první',
+    r2.find(x => /\(2\)/.test(x.origNazev)).cena === 9999 && r2.find(x => !/\(2\)/.test(x.origNazev)).cena !== 9999,
+    r2.map(x => [x.origNazev, x.cena]));
 }
 
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));

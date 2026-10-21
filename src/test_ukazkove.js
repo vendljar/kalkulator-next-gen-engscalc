@@ -330,5 +330,31 @@ test('po srovnání s ostrým ceníkem lišta zhasne a dokument se odblokuje', (
     && uk.ukazkoveBraniDokumentu(po) === false;
 })());
 
+/* ---------- čekání lišty při startu (S5, v15.10.4) ----------
+ * Lišta nad prázdným ceníkem počká, dokud doběhne první pokus o načtení
+ * z online databáze, nejdéle 5 s. Zábrana dokumentů na čekání nehledí. */
+{
+  const R = uk.ukazkoveListaRozhodni;
+  const prazdny = ukazkoveStav({ cenik: { ukazkove: true, prazdny: true }, cenikProj: { ukazkove: true, prazdny: true } });
+  const ostry = ukazkoveStav({ cenik: { marze: 0.42 }, cenikProj: { marze: 0.42 }, slevy: {}, firma: {} });
+  const T0 = 1000000;
+  const ceka = { od: T0, dobehlo: false };
+  test('čekání trvá 5 s', uk.UKAZKOVE_CEKANI_MS === 5000);
+  test('hned po startu nad prázdným ceníkem lišta čeká', R(prazdny, ceka, T0) === 'ceka');
+  test('ještě v 4,99 s čeká', R(prazdny, ceka, T0 + 4999) === 'ceka');
+  test('v 5 s bez odpovědi se lišta ukáže', R(prazdny, ceka, T0 + 5000) === 'ukazat');
+  test('doběhlé načtení s chybou → lišta hned, i před 5 s',
+    R(prazdny, { od: T0, dobehlo: true }, T0 + 300) === 'ukazat');
+  test('načtený ceník → lišta se neukáže (během čekání ani po něm)',
+    R(ostry, ceka, T0 + 10) === 'neukazat' && R(ostry, { od: T0, dobehlo: true }, T0 + 10) === 'neukazat');
+  test('bez čekání (file://, od = null) lišta hned jako dosud',
+    R(prazdny, { od: null, dobehlo: false }, T0) === 'ukazat' && R(prazdny, null, T0) === 'ukazat');
+  test('čekání nebrání zábraně dokumentu (prázdný ceník blokuje i během čekání)',
+    R(prazdny, ceka, T0) === 'ceka' && uk.ukazkoveBraniDokumentu(prazdny) === true);
+  test('ukazkoveCekaniTrva: konec čekání je trvalý (po 5 s ani po doběhnutí už nečeká)',
+    uk.ukazkoveCekaniTrva(ceka, T0 + 1) === true && uk.ukazkoveCekaniTrva(ceka, T0 + 6000) === false
+    && uk.ukazkoveCekaniTrva({ od: T0, dobehlo: true }, T0 + 1) === false);
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

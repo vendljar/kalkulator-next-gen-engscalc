@@ -332,15 +332,25 @@ const chovani = await p.evaluate(() => {
   // klon musí být editovatelný a mít další číslo
   const klon = klonujVariantu(ZAK, v.id); syncVarianta(); render();
   const klonCislo = variantaCislo(ZAK, klon);
+  /* Číslo, které vytiskne nabídka (#320). Harness pracuje s nevyplněnou
+   * předlohou čísla, na kterou dokument příponu záměrně nelepí — proto se
+   * srovnává nad vyplněným základem. */
+  const ZKOUSKA = '2026 - OPR - CN - 0999';
+  const klonDokument = cisloSVariantou(ZAK, klon, ZKOUSKA);
+  const klonCisloVyplnene = variantaCislo(Object.assign({}, ZAK, { cislo: ZKOUSKA }), klon);
   const klonEdit = variantaEditovatelna(klon);
   set('Z.zdvih', puvodni + 3);
   const klonZapis = Z.zdvih;
   window.potvrd = puvodniConfirm;
-  return { zamceno, cislo, poZapisu, puvodni, klonCislo, klonEdit, klonZapis, listaText };
+  return { zamceno, cislo, poZapisu, puvodni, klonCislo, klonDokument, klonCisloVyplnene,
+           klonEdit, klonZapis, listaText };
 });
 ok(`tisk nabídky uzamkl variantu (číslo ${chovani.cislo})`, chovani.zamceno);
 ok('do zamčené varianty se nezapsalo', chovani.poZapisu === chovani.puvodni);
-ok(`klon dostal další číslo (${chovani.klonCislo})`, /\.1$/.test(chovani.klonCislo));
+/* #320: druhá varianta je .2 — v zámku, v seznamu i na dokumentu (dřív .1 × .2). */
+ok(`klon dostal další číslo (${chovani.klonCislo})`, /\.2$/.test(chovani.klonCislo));
+ok(`a nabídka ho vytiskne pod týmž číslem (${chovani.klonDokument})`,
+  chovani.klonDokument === chovani.klonCisloVyplnene && /\.2$/.test(chovani.klonDokument));
 ok('klon je editovatelný', chovani.klonEdit);
 ok('do klonu se zapsat dá', chovani.klonZapis === chovani.puvodni + 3);
 ok('lišta zámku se u zamčené varianty zobrazila', chovani.listaText.length > 0);
@@ -424,110 +434,53 @@ ok(`kopie dostala další číslo nabídky (${kopie.cislo}, zdroj ${kopie.zdrojC
    /\.\d+$/.test(kopie.cislo) && kopie.cislo !== kopie.zdrojCislo);
 ok('kopie přibyla do seznamu (5)', (await nazvy()).length === 5);
 
-/* --- #17 historická kalkulace → alternativní nabídka -----------------------
- * Archiv se plní jen soubory, které uživatel sám otevře. Soubor se proto
- * nejdřív vyrobí z aplikace samotné (StorageAdapter.exportuj), aby test
- * pracoval s formátem, jaký aplikace opravdu ukládá, ne s ručním výmyslem. */
-const HIST = '/tmp/hist_0207.json';
-const histJson = await p.evaluate(() => {
-  const z = novaZakazka();
-  z.cislo = '2024 - OPR - CN - 0207';
-  z.nazevAkce = 'Úvoz Brno – nástavba';
-  z.objednatel = 'Reality Úvoz a.s.';
-  z.adresa = 'Úvoz 3, Brno';
-  z.datum = '2024-06-20';
-  const v = z.varianty[0];
-  v.nazev = 'Varianta 1';
-  v.data.cenik.marze = 0.19;            // tehdejší přirážka – podle ní se pozná ceník
-  v.data.ock.zadani.pocetStanic = 7;        // tehdejší zadání – to se přebírá vždy
-  zamkniVariantu(v, { typ: 'nabidkaTisk', cislo: variantaCislo(z, v),
-    kdy: '2024-06-21T08:00:00.000Z', otisk: zamekOtisk({ celkemBezDph: 880000 }) });
-  return StorageAdapter.exportuj(z);
-});
-fs.writeFileSync(HIST, histJson);
-
-ok('seznam kalkulací i hlavička nabízejí načtení historické kalkulace',
-   await p.locator('#page-zakazka button', { hasText: 'Historická kalkulace' }).count() === 1
-   && await p.locator('#kalk-hlavicka .zak-cena button', { hasText: 'Historická kalkulace' }).count() === 1);
+/* --- #17 historická kalkulace: tlačítka odstraněna (13. 10. 2026) ----------
+ * Pokyn J. V.: „Odstraň z hlavičky tlačítka Historická kalkulace. Myslím, že
+ * už k ničemu není." Okno archivu odešlo i s modelem. Hlídá se, že tlačítko
+ * není v liště kalkulace ani v seznamu kalkulací a že okno v sestavení není.
+ *
+ * Varianty, které oknem dřív vznikly, jsou v uložených zakázkách dál a nesou
+ * `puvod` — jejich věta a značka ⤺ se ukazují dál. Taková varianta se tu
+ * proto vyrobí přímo (klon + tehdejší ceník a zadání + puvod, jak by přišla
+ * ze souboru) a na ní pak navazuje #35 níž: tehdejší přirážka 0,19 a cena
+ * montáže 777 jsou přesně ten „starší ceník", na který #35 upozorňuje. */
+ok('v seznamu kalkulací není tlačítko „Historická kalkulace"',
+   await p.locator('#page-zakazka button', { hasText: 'Historická kalkulace' }).count() === 0);
+ok('v liště kalkulace OCK není tlačítko „Historická kalkulace"',
+   await p.locator('#kalk-hlavicka button', { hasText: 'Historická kalkulace' }).count() === 0
+   && await p.locator('#page-kalk button', { hasText: 'Historická kalkulace' }).count() === 0);
+ok('ani v Kalkulaci PROJ',
+   await p.locator('#page-proj button', { hasText: 'Historická kalkulace' }).count() === 0);
+ok('okno archivu v sestavení není',
+   await p.locator('#archiv-overlay').count() === 0
+   && await p.evaluate(() => typeof otevriArchiv === 'undefined' && typeof vytvorAlternativu === 'undefined'));
+ok('stránka nikde nevolá okno archivu',
+   await p.locator('[onclick*="otevriArchiv"]').count() === 0);
 
 const marzeDnes = await p.evaluate(() => aktivniVarianta(ZAK).data.cenik.marze);
-await p.locator('#page-zakazka button', { hasText: 'Historická kalkulace' }).click();
-await p.waitForTimeout(300);
-ok('panel archivu se otevřel', await p.locator('#archiv-overlay').isVisible());
-ok('prázdný archiv řekne, co se má udělat',
-   (await p.locator('#archivTelo .seznam-prazdno').innerText()).includes('Nahlédnout do souborů'));
-
-await p.setInputFiles('#archivIn', HIST);
-await p.waitForTimeout(400);
-const radku = () => p.locator('#archivTelo table.archtbl tr').count();
-ok('nahlédnutí do souboru přidalo kalkulaci', (await radku()) === 2);   // hlavička + 1 řádek
-const archText = await p.locator('#archivTelo').innerText();
-ok('řádek nese číslo, akci i odeslanou částku',
-   archText.includes('2024 - OPR - CN - 0207') && archText.includes('Úvoz Brno – nástavba')
-   && archText.replace(/ /g, ' ').includes('880 000'));
-ok('panel vypíše, ze kterého souboru se nahlédlo',
-   (await p.locator('#archivSoubory').innerText()).includes('hist_0207.json'));
-
-await p.fill('#archivHledat', 'nesmysl xyz');
-await p.waitForTimeout(250);
-ok('hledání bez shody nabídne návrat', await p.locator('#archivTelo .seznam-prazdno').count() === 1);
-await p.fill('#archivHledat', 'uvoz');
-await p.waitForTimeout(250);
-ok('hledá se bez diakritiky', (await radku()) === 2);
-
-const pocetPred = await p.evaluate(() => ZAK.varianty.length);
-const hlavickaPred = await p.evaluate(() => ZAK.cislo + '|' + ZAK.nazevAkce + '|' + ZAK.objednatel);
-await p.locator('#archivTelo button', { hasText: 'Dnešní ceny' }).click();
-await p.waitForTimeout(500);
 const alt = await p.evaluate(() => {
-  const v = ZAK.varianty[ZAK.varianty.length - 1];
-  return { nazev: v.nazev, cislo: variantaCislo(ZAK, v), pocet: ZAK.varianty.length,
-           aktivni: ZAK.aktivni === v.id, ridici: !!v.ridici, zamceno: variantaUzamcena(v),
-           marze: v.data.cenik.marze, stanic: v.data.ock.zadani.pocetStanic,
-           puvod: v.puvod ? v.puvod.cislo : '', cenik: v.puvod ? v.puvod.cenik : '',
-           hlavicka: ZAK.cislo + '|' + ZAK.nazevAkce + '|' + ZAK.objednatel };
+  const k = klonujVariantu(ZAK, aktivniVarianta(ZAK).id);
+  ZAK.aktivni = k.id;
+  k.data.cenik.marze = 0.19;              // tehdejší přirážka
+  k.data.cenik.montazHodKc = 777;         // a tehdejší cena (P4 / K13-N58)
+  k.data.ock.zadani.pocetStanic = 7;      // tehdejší zadání
+  k.puvod = { cislo: '2024 - OPR - CN - 0207', nazevAkce: 'Úvoz Brno – nástavba',
+              varianta: 'Varianta 1', soubor: 'hist_0207.json', cenik: 'historicky',
+              kdy: '2026-07-29T11:00:00.000Z' };
+  syncVarianta(); render();
+  return { popis: puvodPopis(k) };
 });
-ok('panel se po převzetí zavřel', !(await p.locator('#archiv-overlay').isVisible()));
-ok(`alternativa přibyla jako varianta (${alt.pocet})`, alt.pocet === pocetPred + 1);
-ok(`alternativa se jmenuje podle zdroje („${alt.nazev}")`, alt.nazev === 'Alternativa – Varianta 1');
-ok(`alternativa má další číslo v řadě zakázky (${alt.cislo})`,
-   /\.\d+$/.test(alt.cislo) && alt.cislo.replace(/\.\d+$/, '') === alt.hlavicka.split('|')[0].trim());
-ok('alternativa je otevřená, není řídící ani zamčená',
-   alt.aktivni && !alt.ridici && !alt.zamceno);
-ok('hlavička zakázky se převzetím nezměnila', alt.hlavicka === hlavickaPred);
-ok(`historické zadání se přeneslo (stanic ${alt.stanic})`, alt.stanic === 7);
-ok(`výchozí převzetí počítá dnešním ceníkem (${alt.marze} ≠ 0.19)`, alt.marze === marzeDnes);
-ok('u varianty je zapsáno, odkud přišla', alt.puvod === '2024 - OPR - CN - 0207' && alt.cenik === 'aktualni');
+ok('varianta převzatá dřív z archivu má větu o původu',
+   alt.popis.includes('2024 - OPR - CN - 0207') && alt.popis.includes('historickým ceníkem'));
 ok('hlavička kalkulace ukazuje větu o původu',
    (await p.locator('#page-kalk .zak-puvod').innerText()).includes('2024 - OPR - CN - 0207'));
-
 await p.locator('#tab-zakazka').click();
 await p.waitForTimeout(300);
-ok('v seznamu je alternativa označena značkou ⤺',
+ok('v seznamu je taková varianta dál označena značkou ⤺',
    await p.locator('#seznamTelo .pill[title*="převzato z nabídky"]').count() === 1);
 
-// druhé převzetí – tentokrát 1:1 podle historie
-await p.locator('#page-zakazka button', { hasText: 'Historická kalkulace' }).click();
-await p.waitForTimeout(300);
-ok('archiv si pamatuje soubory z minula (panel není prázdný)', (await radku()) === 2);
-await p.locator('#archivTelo button', { hasText: '1:1 historie' }).click();
-await p.waitForTimeout(500);
-const alt2 = await p.evaluate(() => {
-  const v = ZAK.varianty[ZAK.varianty.length - 1];
-  return { nazev: v.nazev, cislo: variantaCislo(ZAK, v), marze: v.data.cenik.marze,
-           cenik: v.puvod.cenik, popis: puvodPopis(v) };
-});
-ok(`druhá alternativa se jmenuje jinak („${alt2.nazev}")`, alt2.nazev === 'Alternativa (2) – Varianta 1');
-ok(`1:1 podle historie ponechalo tehdejší ceník (${alt2.marze})`, alt2.marze === 0.19);
-ok('u varianty je zapsáno, že se počítalo historickým ceníkem',
-   alt2.cenik === 'historicky' && alt2.popis.includes('historickým ceníkem'));
-ok(`obě alternativy jsou v jedné číselné řadě (${alt.cislo} → ${alt2.cislo})`,
-   alt2.cislo !== alt.cislo && /\.\d+$/.test(alt2.cislo));
-
-fs.unlinkSync(HIST);
-
 /* --- #35 stáří ceníku u načtené zakázky ------------------------------------
- * Předchozí krok („1:1 historie") záměrně nechal ve variantě tehdejší ceník,
+ * Předchozí krok (varianta s původem z archivu) záměrně nese tehdejší ceník,
  * takže otevřená varianta má teď přesně ten stav, na který #35 upozorňuje.
  * Nic se nesmí blokovat – kontroluje se, že se rozsvítí varování a že přepočet
  * je nabídka, ne automat. */
@@ -536,8 +489,8 @@ await p.waitForTimeout(300);
 const lst = p.locator('#page-cenik .cenik-stari');
 ok('na záložce Ceník OCK svítí upozornění na starší ceník', await lst.count() === 1);
 const lstText = await lst.innerText();
-ok('věta pojmenuje největší změnu („Globální přirážka OCK")',
-   lstText.includes('Globální přirážka OCK') && /[+−-]?\d/.test(lstText));
+ok('věta pojmenuje největší změnu ceny („Montáž na stavbě"), ne přirážku (P4)',
+   lstText.includes('Montáž na stavbě') && !lstText.includes('Globální přirážka OCK'), lstText);
 ok('věta se odvolá na datum, ke kterému ceny patří', lstText.includes('Ceny jsou z '));
 ok('upozornění se netiskne', (await lst.getAttribute('class')).includes('noprint'));
 ok('stejné upozornění je i na záložce Ceník PROJ',
@@ -614,17 +567,17 @@ ok('po přepočtu už lišta nesvítí', await p.locator('#page-cenik .cenik-sta
 // „Ceny jsou dohodnuté" – ztišení bez přepisu cen
 const kvit = await p.evaluate(() => {
   const v = aktivniVarianta(ZAK);
-  v.data.cenik.marze = 0.19;             // zpět na dohodnutou cenu
+  v.data.cenik.montazHodKc = 777;        // zpět na dohodnutou cenu (přirážka by od P4 nevarovala)
   syncVarianta(); render();
   const pred = document.querySelectorAll('#page-cenik .cenik-stari').length;
   cenikDohodnute();
   const po = document.querySelectorAll('#page-cenik .cenik-stari').length;
   const v2 = aktivniVarianta(ZAK);
-  return { pred, po, marze: v2.data.cenik.marze, kdo: (v2.cenikKvitance || {}).kdo != null };
+  return { pred, po, montaz: v2.data.cenik.montazHodKc, kdo: (v2.cenikKvitance || {}).kdo != null };
 });
 ok('ruční změna ceny varování znovu rozsvítí', kvit.pred === 1);
 ok('„Ceny jsou dohodnuté" varování ztiší', kvit.po === 0);
-ok('ztišení ceny nepřepsalo (zůstává dohodnutá 0.19)', kvit.marze === 0.19);
+ok('ztišení ceny nepřepsalo (zůstává dohodnutá 777)', kvit.montaz === 777);
 ok('u kvitance je zapsáno, kdo ji dal', kvit.kdo);
 const znovu = await p.evaluate(() => {
   aktivniVarianta(ZAK).data.cenik.montazHodKc = 1;   // další změna ceníku
@@ -901,7 +854,7 @@ ok('modul kontrol je v sestavení', k33.logika && k33.panelFn);
 // 11 = 10 z vlny B + „ico" (30. 7. 2026)
 /* 12 = 10 z vlny B + „ico" + „atypBezCeny" (obojí 30. 7. 2026). Číslo je tu
  * napevno schválně: omylem zdvojené pravidlo by se jinak nepoznalo. */
-ok(`pravidel je ${k33.pravidel} (čekám 13 – slevaProjMax přibylo po auditu)`, k33.pravidel === 13);
+ok(`pravidel je ${k33.pravidel} (čekám 43 – slevaProjMax po auditu, kapitoly 23. 9., terminAtyp, nadDvermiBez a slevaWord 24. 9., mustky, cenaNula, slevaWordProj a polozkyNavicWordProj 25. 9., projZahranici, profilNeznamy a zapornaPolozka 29. 9., planPlateb100, planPlatebSoucet, planPlatebWordProj a platbyWordOck 30. 9. 2026, cenaWordProj a dodatekCesky — K18-N92, N96, bokyDveri — #375, statikaDvakrat — P5 / K19-N109, stranyDriv — P6 / K19-N114, cenovaVyjimka 13. 10. 2026, autorskyDozorWordProj 14. 10. 2026, mustkyPrechodove a mustekStrecha 17. 10. 2026 — #355, #356, mustekRozmer 20. 10. 2026 — K3-N17, dpzUvodWordProj 20. 10. 2026 — D1, jednostupnovaProj, vyjezdCenaChybi, uvodProjNesedi a cestovneWordProj 20. 10. 2026 — D2)`, k33.pravidel === 43);
 ok('všechna pravidla jsou varování (úroveň 2)', k33.uroven);
 /* Sestavení nese ukázkový ceník, takže tohle pravidlo svítí vždycky – je to
  * zároveň důkaz, že se panel v čerstvé instalaci opravdu ukáže. */
@@ -918,8 +871,12 @@ ok('panel kontrol je v kartě cenové nabídky (Technická specifikace)', await 
 ok('panel vyjmenuje nálezy',
    await p.locator('#page-spec .kontroly-panel .kontroly-seznam li').count() >= 1);
 
-/* Nic se neblokuje: tlačítka nabídky zůstávají funkční i s rozsvíceným panelem. */
+/* Varování neblokují: tlačítka nabídky zůstávají funkční i s rozsvíceným
+ * panelem. Od #377 (1. 10. 2026) zábrana tlačítka zhasíná — nulové rozměry
+ * nové zakázky jsou zábrana „rozmery", proto se rozměry nejdřív vyplní
+ * (zbydou jen varování, např. ukázkový ceník). */
 const tlacitka = await p.evaluate(() => {
+  Z.zdvih = 9; Z.sirka = 1.6; Z.hloubka = 1.8; render();
   const b = [...document.querySelectorAll('#page-spec button')]
     .filter(x => /tisk nabídky|nabídku \(Word\)/i.test(x.textContent));
   return { pocet: b.length, zakazana: b.filter(x => x.disabled).length };
@@ -930,6 +887,10 @@ ok('tlačítka nabídky nejsou zablokovaná',
 /* Odklepnutí se uloží k variantě a panel na tentýž stav zhasne do klidové
  * podoby; nový problém ho musí rozsvítit znovu. */
 const odklep = await p.evaluate(() => {
+  /* Od 25. 9. 2026 (P2 kola 16) je nulový rozměr ZÁBRANA a zábrana se
+   * odklepnout nedá — nová zakázka má zdvih, šířku i hloubku nulové. Tady se
+   * zkouší odklepnutí VAROVÁNÍ, proto se rozměry nejdřív vyplní. */
+  Z.zdvih = 9; Z.sirka = 1.6; Z.hloubka = 1.8; render();
   kontrolyPotvrd();
   const v = aktivniVarianta(ZAK);
   const poOdklepu = document.querySelector('#page-spec .kontroly-panel');
@@ -963,70 +924,82 @@ const tisk = await p.evaluate(() => {
 ok('náhled tisku nese varování kontrol', tisk.v && tisk.lista.length > 0);
 ok('a neprozradí v něm žádnou částku', tisk.kc === false, tisk.lista);
 
-// --- #37 interní poznámky a přílohy ---------------------------------------
+// --- #37 interní poznámky (zjednodušeno 22. 9. 2026) ----------------------
 /* Stejný důvod jako u #33: kdyby poznamky.js chyběl v seznamu v build.py,
  * aplikace by běžela dál, jen by karta zmizela a nikdo by si toho nevšiml. */
 const p37 = await p.evaluate(() => ({
-  logika: typeof poznamkyPridej === 'function' && typeof poznamkySeznam === 'function',
+  logika: typeof poznamkyPoleText === 'function' && typeof poznamkyTextNastav === 'function',
   karta: typeof poznamkyKarta === 'function',
-  druhu: typeof POZN_DRUHY !== 'undefined' ? POZN_DRUHY.length : -1,
 }));
 ok('modul poznámek je v sestavení', p37.logika && p37.karta, JSON.stringify(p37));
-ok('druhů poznámek je pět', p37.druhu === 5);
 
-/* Poznámky se 21. 8. 2026 večer přestěhovaly z Přehledu cenových nabídek
- * na konec Kalkulace OCK — „proč jsme šli s cenou dolů" má být na očích tam,
- * kde se ta cena dělá (zadání J. V.). */
+/* Karta se 22. 9. 2026 přestěhovala na pokyn J. V. z úplného konce Kalkulace
+ * OCK nahoru, mezi souhrn zakázky a Zadání šachty — dolů k ní obchodník
+ * musel projet celou kalkulaci a psal proto dál do e-mailu. */
 await p.locator('#tab-kalk').click();
 await p.waitForTimeout(400);
 const kartaPozn = await p.evaluate(() => {
   const h = [...document.querySelectorAll('#page-kalk .card h2')]
     .find(x => /Interní poznámky/i.test(x.textContent));
   return { je: !!h, nadpis: h ? h.textContent.trim() : '',
-           zapis: !!document.querySelector('#page-kalk .pozn-zapis'),
-           pole: !!document.getElementById('poznText') };
+           vSouhrnu: !!document.querySelector('#kalk-souhrn .pozn-zapis'),
+           poli: document.querySelectorAll('#page-kalk .pozn-pole').length,
+           tlacitek: document.querySelectorAll('#kalk-souhrn .pozn-zapis button').length };
 });
-ok('karta poznámek je na konci Kalkulace OCK', kartaPozn.je, kartaPozn.nadpis);
-ok('a v nadpisu stojí, že se netiskne', /netisknou se/i.test(kartaPozn.nadpis), kartaPozn.nadpis);
-ok('karta má zápisník i pole pro text', kartaPozn.zapis && kartaPozn.pole);
+ok('karta poznámek je v Kalkulaci OCK', kartaPozn.je, kartaPozn.nadpis);
+ok('a stojí nad Zadáním šachty, v bloku souhrnu', kartaPozn.vSouhrnu, JSON.stringify(kartaPozn));
+ok('v nadpisu stojí, že se netiskne', /netisknou se/i.test(kartaPozn.nadpis), kartaPozn.nadpis);
+ok('má právě jedno textové pole', kartaPozn.poli === 1, kartaPozn.poli);
+ok('a žádná tlačítka (druhy, přílohy, ukládání)', kartaPozn.tlacitek === 0, kartaPozn.tlacitek);
 
+/* Starší zakázky nesou strukturované poznámky. Dokud do pole nikdo nesáhne,
+ * musí je ukazovat — jinak by to vypadalo, že se ztratily. */
 const TAJNE37 = 'TAJNÁ INTERNÍ VĚTA 4711';
-const zapis37 = await p.evaluate((tajne) => {
+const stare37 = await p.evaluate((tajne) => {
   poznamkyPridej(ZAK, tajne, { kdo: 'Test', druh: 'sleva' });
-  prilohyPridej(ZAK, { nazev: 'Interni_kalkulace.pdf', typ: 'application/pdf',
-                       velikost: 2048, data: 'data:application/pdf;base64,AAAA' }, { kdo: 'Test' });
   render();
-  return {
-    radku: document.querySelectorAll('#page-kalk .pozn-seznam .pozn-radek').length,
-    priloh: document.querySelectorAll('#page-kalk .pozn-prilohy .pozn-priloha').length,
-    vidim: document.getElementById('page-kalk').innerText.includes(tajne),
-  };
+  const ta = document.querySelector('#kalk-souhrn .pozn-pole');
+  return { vPoli: !!ta && ta.value.includes(tajne),
+           vDatech: ZAK.poznamky.length,
+           poleNevzniklo: typeof ZAK.poznamkyText === 'undefined' };
 }, TAJNE37);
-ok('poznámka se objeví v seznamu', zapis37.radku >= 1, JSON.stringify(zapis37));
-ok('příloha se objeví v seznamu', zapis37.priloh === 1);
-ok('a text poznámky je v kartě opravdu vidět', zapis37.vidim);
+ok('starší poznámka se objeví v textovém poli', stare37.vPoli, JSON.stringify(stare37));
+ok('a samo vykreslení pole v datech nevyrobí', stare37.poleNevzniklo, JSON.stringify(stare37));
 
-/* Měkké mazání: záznam z běžného seznamu zmizí, ale v datech zůstane
- * i se jménem a datem, a jde ho vrátit. */
-const smaz37 = await p.evaluate(() => {
-  const id = poznamkySeznam(ZAK)[0].id;
-  poznamkySmazUI(id);
-  const po = { vidi: document.querySelectorAll('#page-kalk .pozn-seznam .pozn-radek').length,
-               vDatech: ZAK.poznamky.length,
-               stopa: !!(ZAK.poznamky.find(x => x.id === id) || {}).smazano };
-  poznamkySmazanePrepni();
-  po.skrz = document.querySelectorAll('#page-kalk .pozn-radek.smazana').length;
-  poznamkyObnovUI(id);
-  po.zpet = poznamkySeznam(ZAK).length;
-  poznamkySmazanePrepni();
-  return po;
+/* Zápis jde rovnou do zakázky, takže ho vezme automatické ukládání
+ * a nepřežije ho jen DOM (dřív ho držela proměnná POZN_ROZEPSANO). */
+const zapis37 = await p.evaluate(() => {
+  poznamkyPoleHotovo('Přepsáno do jednoho pole.');
+  const ta = document.querySelector('#kalk-souhrn .pozn-pole');
+  return { vZakazce: ZAK.poznamkyText, vPoli: ta ? ta.value : '' };
 });
-ok('smazaná poznámka zmizí ze seznamu', smaz37.vidi === 0, JSON.stringify(smaz37));
-ok('ale v datech zůstane se stopou', smaz37.vDatech >= 1 && smaz37.stopa);
-ok('smazané jdou zobrazit zvlášť', smaz37.skrz >= 1);
-ok('a dají se vrátit', smaz37.zpet >= 1);
+ok('zápis se uloží do zakázky', zapis37.vZakazce === 'Přepsáno do jednoho pole.', JSON.stringify(zapis37));
+ok('a po překreslení je pořád v poli', zapis37.vPoli === 'Přepsáno do jednoho pole.');
 
-/* A to hlavní: nic z toho se nesmí dostat do dokumentu, který jde ven. */
+/* Táž karta musí být i v Kalkulaci PROJ (zadání J. V.) a musí to být TÝŽ
+ * zápisník — jeden text zakázky, ne dva vedle sebe. */
+await p.locator('#tab-proj').click();
+await p.waitForTimeout(400);
+const proj37 = await p.evaluate(() => {
+  const h = [...document.querySelectorAll('#page-proj .card h2')]
+    .find(x => /Interní poznámky/i.test(x.textContent));
+  const ta = document.querySelector('#page-proj .pozn-pole');
+  return { je: !!h, text: ta ? ta.value : null,
+           predKalkulaci: (() => {
+             const karty = [...document.querySelectorAll('#page-proj .card h2')].map(x => x.textContent);
+             const iP = karty.findIndex(x => /Interní poznámky/i.test(x));
+             const iK = karty.findIndex(x => /Cenová kalkulace PROJ/i.test(x));
+             return iP >= 0 && iK >= 0 && iP < iK;
+           })() };
+});
+ok('karta poznámek je i v Kalkulaci PROJ', proj37.je, JSON.stringify(proj37));
+ok('a stojí nad Cenovou kalkulací PROJ', proj37.predKalkulaci, JSON.stringify(proj37));
+ok('je to týž text jako v OCK', proj37.text === 'Přepsáno do jednoho pole.', proj37.text);
+await p.locator('#tab-kalk').click();
+await p.waitForTimeout(300);
+
+/* A to hlavní, co platí od #37 pořád: nic z toho se nesmí dostat do
+ * dokumentu, který jde ven. */
 const tajne37 = await p.evaluate((tajne) => {
   const v = aktivniVarianta(ZAK);
   let text = '';
@@ -1034,14 +1007,17 @@ const tajne37 = await p.evaluate((tajne) => {
   try { text += JSON.stringify(kryciData(ZAK, v, JEKLY)); } catch (e) {}
   try { text += tiskListaHtml({}); } catch (e) {}
   return { delka: text.length, pozn: text.includes(tajne),
-           priloha: text.includes('Interni_kalkulace') };
+           pole: text.includes('Přepsáno do jednoho pole') };
 }, TAJNE37);
 ok('dokumenty se opravdu sestavily', tajne37.delka > 0);
-ok('poznámka se do dokumentů nedostane', tajne37.pozn === false);
-ok('ani název přílohy', tajne37.priloha === false);
+ok('stará poznámka se do dokumentů nedostane', tajne37.pozn === false);
+ok('ani text z nového pole', tajne37.pole === false);
 
 /* Úklid, ať do snímků obrazovky nelezou testovací data. */
-await p.evaluate(() => { ZAK.poznamky = []; ZAK.prilohy = []; ZAK.prilohySmazane = []; render(); });
+await p.evaluate(() => {
+  ZAK.poznamky = []; ZAK.prilohy = []; ZAK.prilohySmazane = [];
+  delete ZAK.poznamkyText; render();
+});
 
 // --- #41 protokol o kalkulaci ---------------------------------------------
 /* Stejný důvod jako u #33 a #37: chybějící řádek v build.py aplikaci
@@ -1508,7 +1484,7 @@ ok(`tlačítka nabídky zhasla (${zab.zhaslych}/${zab.tlacitek})`,
    zab.tlacitek > 0 && zab.zhaslych === zab.tlacitek);
 ok('zhasnuté tlačítko má v bublině důvod', /ceník/i.test(zab.titulek), zab.titulek);
 ok('kontroly hlásí zábranu vlastním příznakem',
-   zab.brani === true && zab.kodyBrani === 'ukazkovyCenik', zab.kodyBrani);
+   zab.brani === true && zab.kodyBrani.split(',').includes('ukazkovyCenik'), zab.kodyBrani);   // + „rozmery" u prázdné nové zakázky (P2)
 ok('zábrana se nedá odklepnout – tlačítko „Beru na vědomí" zůstává', zab.odklep === true);
 ok('registr dokumentů zná důvod odmítnutí', !!zab.duvod, zab.duvod);
 

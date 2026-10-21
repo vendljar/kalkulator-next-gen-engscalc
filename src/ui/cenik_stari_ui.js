@@ -215,6 +215,10 @@ function prepocetProved() {
    * si snímek pořídí sám, takže Ctrl+Z funguje i po přepočtu. */
   const r = cenikPrepocti(v, cenikDnesniProVariantu(v), Object.assign({
     cesty: Array.from(PREPOCET_VYBER),
+    /* B138: nulu za položku platného ceníku server odmítne jen roli bez
+     * práva ceníku — jen jí se přepočítá i odškrtnutá (revize 13. 10.). */
+    vynutNuly: (typeof smiZobrazit === 'function')
+      ? { OCK: !smiZobrazit('tab.cenik'), PROJ: !smiZobrazit('tab.cenikproj') } : undefined,
     build: (typeof buildVerze === 'function') ? buildVerze() : '',
   }, cenikPlatnaVerzeInfo()));
   zavriPrepocet();

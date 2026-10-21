@@ -14,8 +14,9 @@
  *
  * Odpověď schválně NENESE token ani nic z prostředí — jen názvy polí a jejich
  * hashe, což je informace o tvaru CRM, ne o datech zakázek. */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
-import { pdNastaveno, pdZavolej, PdChyba, PD_TOKEN_PROMENNA, PD_DOMENA_PROMENNA } from '../lib/pipedrive.mjs';
+import { uloziste, json } from '../lib/sdilene.mjs';
+import { pdNastaveno, pdZavolej, PdChyba, PD_TOKEN_PROMENNA, PD_DOMENA_PROMENNA,
+         pdPristup } from '../lib/pipedrive.mjs';
 import { pdMapaZPoli, POLE_DEALU, POLE_ORGANIZACE } from '../lib/pd_mapa.mjs';
 
 const ULOZISTE = 'pipedrive';
@@ -46,7 +47,8 @@ export async function pdPoleMapa(obnovit = false) {
 }
 
 export default async (req) => {
-  const { chyba, relace } = await vyzadujRoli(req);
+  /* Přihlášení, původ a právo z matice (B80) — lib/pipedrive.mjs. */
+  const { chyba, relace } = await pdPristup(req);
   if (chyba) return chyba;
 
   if (!pdNastaveno())

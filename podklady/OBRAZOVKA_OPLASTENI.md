@@ -78,5 +78,6 @@ sklo, je otevřená otázka — roadmapa **#287**.
 Práce a tmelení se zatím počítají **po celé ploše bez ohledu na typ**
 (rozhodnutí J. V.); počítá se **skutečná plocha**.
 
-Režim po stěnách je vždy **mimo standard** — standard zná jen jednotné
-opláštění.
+Režim po stěnách sám o sobě **atyp nedělá** (J. V. 30. 9. 2026, K18: „Ne není.
+Toto změň na standard.") — standard OCK se posuzuje stejně jako u jednotného
+opláštění. Do 30. 9. 2026 tu stálo, že je vždy mimo standard.

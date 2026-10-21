@@ -154,17 +154,22 @@
     return e;
   }
 
-  /* Text v obsahu smí nést jednoduché zvýraznění **tučně** a `kód`.
-   * Záměrně nic víc: příručku píše člověk do JSONu a každá další značka
-   * je další způsob, jak si ji rozbít. */
+  /* Text v obsahu smí nést jednoduché zvýraznění **tučně**, *kurzívou*
+   * a `kód`. Záměrně nic víc: příručku píše člověk do JSONu a každá další
+   * značka je další způsob, jak si ji rozbít.
+   * Kurzíva přibyla 13. 10. 2026: obsah.json ji používal (názvy tlačítek
+   * a voleb, přes 70 míst), ale renderer ji neznal a čtenář viděl holé
+   * hvězdičky. Hvězdička uvnitř musí sousedit s písmenem (ne s mezerou),
+   * aby osamělá hvězdička v textu kurzívu nezaložila. */
   function bohatyText(s) {
     var e = document.createElement('p');
     var zbytek = String(s), kus;
-    var vzor = /(\*\*[^*]+\*\*|`[^`]+`)/;
+    var vzor = /(\*\*[^*]+\*\*|\*[^*\s](?:[^*]*[^*\s])?\*|`[^`]+`)/;
     while ((kus = zbytek.match(vzor))) {
       if (kus.index > 0) e.appendChild(document.createTextNode(zbytek.slice(0, kus.index)));
       var t = kus[0];
-      if (t.charAt(0) === '*') e.appendChild(el('b', null, t.slice(2, -2)));
+      if (t.slice(0, 2) === '**') e.appendChild(el('b', null, t.slice(2, -2)));
+      else if (t.charAt(0) === '*') e.appendChild(el('i', null, t.slice(1, -1)));
       else e.appendChild(el('code', null, t.slice(1, -1)));
       zbytek = zbytek.slice(kus.index + t.length);
     }

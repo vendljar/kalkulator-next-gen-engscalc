@@ -187,8 +187,12 @@ PRIPADY.forEach(([typ, sokl, cekanaSekce, popis]) => {
    * text nesmí zpětně měnit. V kódu to zajišťuje `vypocetZ`; kdyby se sokl
    * četl z `Zv.volitelne`, vytištěná nabídka by po odškrtnutí změnila znění. */
   const src = fs.readFileSync(__dirname + '/nabidka.js', 'utf8');
+  /* Od 14. 10. 2026 rozhoduje společná funkce tsSoklRadek (techspec.js) pro
+   * nabídku i technickou specifikaci — hlídá se, že čte výsledek (r). */
+  const tsSrc = fs.readFileSync(__dirname + '/techspec.js', 'utf8');
   test('rozhodnutí se bere z výsledku výpočtu (r), ne ze zadání',
-    src.indexOf("const soklJe = (r.volitelneKatalog || []).some(x => x.key === 'sokl' && x.zahrnuto);") >= 0);
+    /tsSoklRadek\)\(r, Zv\)/.test(src)
+    && tsSrc.indexOf("const vDodavce = !!(r && (r.volitelneKatalog || []).some(x => x.key === 'sokl' && x.zahrnuto));") >= 0);
   test('a v placeholderu už nefiguruje Zv.volitelne.sokl',
     src.indexOf('Zv.volitelne.sokl') < 0);
   test('náhled umísťuje řádek podle vyplněnosti zástupce',

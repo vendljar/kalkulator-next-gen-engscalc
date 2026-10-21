@@ -19,11 +19,13 @@ function varNova() {
    * překvapení, kterému se tu vyhýbáme. */
   if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
   const zdroj = aktivniVarianta(ZAK);
-  const v = (typeof klonujVariantu === 'function')
-    ? klonujVariantu(ZAK, zdroj.id, { nazev: 'Varianta ' + (ZAK.varianty.length + 1) })
-    : null;
+  /* Název dá klonujVariantu podle PŘÍPONY („Varianta 3" = …555.3, #320).
+   * Do 25. 9. 2026 se sem posílal název podle počtu variant — po smazání
+   * jedné tak vznikly dvě „Varianta 3" a název neodpovídal číslu (N54). */
+  const v = (typeof klonujVariantu === 'function') ? klonujVariantu(ZAK, zdroj.id) : null;
   if (!v) {   // pojistka pro sestavení bez zamek.js
-    const z = novaVarianta('Varianta ' + (ZAK.varianty.length + 1),
+    const p = (typeof dalsiPriponaVarianty === 'function') ? dalsiPriponaVarianty(ZAK) : ZAK.varianty.length + 1;
+    const z = novaVarianta('Varianta ' + p,
       JSON.parse(JSON.stringify(zdroj.data)));
     if (typeof zakazkaUnikatniId === 'function') z.id = zakazkaUnikatniId(ZAK, z.id);   // B29
     ZAK.varianty.push(z); ZAK.aktivni = z.id;
@@ -67,7 +69,12 @@ async function varSet(id, k, val) {
   render();
 }
 async function novaZakazkaUI() {
-  if (!await potvrd('Založit novou prázdnou zakázku? Neuložené změny aktuální zakázky se ztratí.',
+  /* O neuložených změnách se mluví, jen když nějaké jsou (P5 / K14-N65,
+   * 25. 9. 2026) — do té doby to dialog tvrdil pokaždé, i nad zakázkou
+   * právě uloženou, a upozornění tím ztrácelo váhu. */
+  const neulozene = (typeof historieNeulozeno === 'function') && historieNeulozeno();
+  if (!await potvrd('Založit novou prázdnou zakázku?'
+    + (neulozene ? ' Neuložené změny aktuální zakázky se ztratí.' : ''),
     { nadpis: 'Nová zakázka' })) return;
   ZAK = novaZakazka(); syncVarianta();
   /* Výchozí zaškrtnutí položek (20. 8. 2026): sloupec Výchozí v kalkulaci
@@ -84,6 +91,12 @@ async function novaZakazkaUI() {
   if (typeof zakOdpojUlozeni === 'function') zakOdpojUlozeni();
   if (typeof seznamReset === 'function') seznamReset();   // #18 – viz nactiZakazku
   render(); prepniTab('kalk');
+  /* ČERSTVÁ ZAKÁZKA NEMÁ NEULOŽENÉ ZMĚNY (P5 / K14-N65, 25. 9. 2026).
+   * Otisk „naposledy uloženo" nesl předchozí zakázku, takže se nová
+   * porovnávala s ní — lišila se id varianty a klíčem protokolu a prohlížeč
+   * při zavření okna varoval před ztrátou změn, které nikdo neudělal.
+   * Posouvá se až po překreslení, aby zahrnul i to, co render dopočítá. */
+  if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
 }
 
 /* #18: tabulka variant má vlastní modul (seznam.js + ui/seznam_ui.js), protože
@@ -384,8 +397,9 @@ function porovnaniPolozkyTisk() {
       </table>`;
   }).join('');
 
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html lang="${L}"><head><meta charset="utf-8">
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
+  w.document.write(`<!DOCTYPE html><html lang="${esc(L)}"><head><meta charset="utf-8">
     <title>${esc(T('Detail položek'))} ${esc(ZAK.cislo || '')}</title>
     <style>body{font:12px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:1100px;margin:24px auto;padding:0 16px}
     h1{font-size:19px;margin-bottom:2px} h2{font-size:15px;margin:18px 0 2px}
@@ -431,8 +445,9 @@ function porovnaniTisk() {
     return `<tr class="${m.hlavni ? 'hlavni' : ''}"><th>${esc(T(m.popis))}</th>${bunky}</tr>`;
   }).join('');
 
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html lang="${L}"><head><meta charset="utf-8">
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
+  w.document.write(`<!DOCTYPE html><html lang="${esc(L)}"><head><meta charset="utf-8">
     <title>${esc(T('Porovnání variant'))} ${esc(ZAK.cislo || '')}</title>
     <style>body{font:13px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:1000px;margin:24px auto;padding:0 16px}
     h1{font-size:19px;margin-bottom:2px} .sub{color:#6b7686;margin-bottom:14px}
@@ -484,6 +499,9 @@ function nabidkaKarta() {
     <b>Sablona_NABIDKA_CN.docx</b> (složka _CN). Vyplní se hlavička níže, kompletní technická specifikace
     (přesně jak je v záložce Technická specifikace OCK) a ceny z Kalkulace OCK. Popis záměru, platební
     podmínky, termíny a další příplatky doladíte ve Wordu; PDF: Soubor → Uložit jako → PDF.</div>
+    <div class="note" style="font-weight:600;margin-top:10px">Popis záměru (úvodní odstavec nabídky OCK i PROJ):</div>
+    <textarea rows="3" style="width:100%" placeholder="Prázdné = věta podle typu šachty (např. „Přístavba výtahu v nové ocelové konstrukci výtahové šachty k fasádě objektu.“)"
+      oninput="nabidkaProjPopis(this.value)">${esc(ZAK.popisZameru || '')}</textarea>
     <div class="note" style="font-weight:600;margin-top:8px">Co se vyplní do nabídky (živý náhled):</div>
     ${nahled}
     ${typeof kryciPodminkyBlok === 'function' ? kryciPodminkyBlok() : ''}
@@ -502,12 +520,15 @@ function nabidkaKarta() {
  * na pokyn J. V. se přestěhoval na KONEC záložky Technická specifikace OCK —
  * obchodník projde specifikaci a rovnou pod ní dokument vytvoří. */
 function nabidkaDokumentyBlok() {
-  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr() : '';
+  /* Typ dokumentu (#377): zábrany z kontroly před nabídkou (zdvih, profil,
+   * záporná položka, nulová cena, sleva nad stropem) zhasnou tlačítka OCK. */
+  const zabTisk = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('nabidkaTisk') : '';
+  const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('nabidka') : '';
   return `${nabidkaFotoKarta()}
     ${typeof kontrolyPanel === 'function' ? kontrolyPanel() : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     <div class="btns" style="margin-top:10px">
-      <button class="primary"${zab} onclick="nabidkaOckDokument()">Kompletní náhled a tisk nabídky</button>
+      <button class="primary"${zabTisk} onclick="nabidkaOckDokument()">Kompletní náhled a tisk nabídky</button>
       <button${zab} onclick="nabidkaWord()">Vytvořit nabídku (Word)</button>
       <button onclick="nabidkaNahled()">Kompletní náhled podkladů</button>
       ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}
@@ -591,6 +612,9 @@ async function nabidkaWordGeneruj(srv) {
     + (srv ? ' [serverová verze ' + srv.verze + ']' : ''));
   // varianta se určuje jednou dopředu – potřebujeme ji i pro zámek (#34)
   const varianta = await nabidkaVarianta();
+  /* Zábrany z kontroly před nabídkou (#377) — hláška dřív než chyba z registru. */
+  if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidka', varianta, nabidkaStavText)) return;
+  if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidka', varianta))) { nabidkaStavText('Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
   // jednotný registr dokumentů (dokumenty.js) – stejná cesta jako krycí list apod.
   dokumentVygeneruj('nabidka', sablona.slice(0), ZAK, varianta, JEKLY, L)
     .then(res => {
@@ -611,6 +635,7 @@ async function nabidkaWordGeneruj(srv) {
                : (sablonyOnlineAktivni() ? ' POZOR: použita MÍSTNÍ šablona (měkký režim) – do zámku se to zapsalo.' : ''))
         + (mutaceChybi ? ' Pozor: pevný text šablony zůstal český – jazykovou mutaci šablony '
           + 'vyrobíte v Nastavení → Šablony.' : '')
+        + (srv && srv.mutaceZastarala ? ' POZOR: ' + srv.mutaceZastarala : '')
         + zamcenoText);
     })
     .catch(err => {
@@ -629,12 +654,20 @@ async function nabidkaWordGeneruj(srv) {
  * překládá nabidkaData, popisky a nadpisy nabidkaNahledSekce + P() níže.
  * Neznámý výraz zůstává česky (slovník, preklad.js) – nic se nevymýšlí. */
 async function nabidkaNahled() {
+  /* Zámek strany (P6 / K19-N114): u zakázky s vyřazenou OCK (číslo OVP,
+   * jen projekce) by podklady ukázaly ceny vynulované strany. Zábrany
+   * z kontrol se tu záměrně neptají (kontrolní pohled, #377) — tahle ano. */
+  if (typeof kontrolyStranaZabrana === 'function') {
+    const duvod = kontrolyStranaZabrana(ZAK, 'nabidka');
+    if (duvod) { if (typeof hlaska === 'function') hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' }); return; }
+  }
   const L = (typeof jazyk === 'function') ? jazyk() : 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const data = nabidkaData(ZAK, await nabidkaVarianta(), JEKLY, L);
   const p = data.placeholders;
   const radek = (l, v) => `<tr><td style="font-weight:600">${esc(l)}</td><td>${esc(v)}</td></tr>`;
-  const sekceHtml = nabidkaNahledSekce(p, L).map(s =>
+  /* platební kalendář OCK: splátky a měsíční fakturace podle týchž pravidel jako Word (D1/D2) */
+  const sekceHtml = nabidkaNahledSekce(p, L, data.platbyOck, data.tsExtra).map(s =>
     `<h2>${esc(s.sekce)}</h2><table>${s.radky.map(r => radek(r[0], r[1])).join('')}</table>`).join('');
   const nadpisPripl = `<h2>${esc('II. ' + P('ROZŠÍŘENÍ CENOVÉ NABÍDKY – PŘÍPLATKY'))}</h2>`;
   const priplatkyHtml = data.priplatky.length
@@ -647,8 +680,9 @@ async function nabidkaNahled() {
   const logoHtml = dokLogoHtml();
   const patickaHtml = dokPatickaHtml(P);
 
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html lang="${L === 'cz' ? 'cs' : L}"><head><meta charset="utf-8">
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
+  w.document.write(`<!DOCTYPE html><html lang="${esc(L === 'cz' ? 'cs' : L)}"><head><meta charset="utf-8">
     <title>${esc(data.nazevSouboru)}</title>
     <style>body{font:13px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}
     h1{font-size:19px} h2{font-size:13px;background:#eef2f8;padding:6px 10px;margin:18px 0 6px;text-transform:uppercase;letter-spacing:.03em}
@@ -807,13 +841,17 @@ async function nabidkaOckDokument() {
     : ((typeof jazyk === 'function') ? jazyk() : 'cz');   // volba „Jazyk tisku" (#143)
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const varianta = await nabidkaVarianta();   // drží se kvůli zámku (#34)
+  /* Zábrany z kontroly před nabídkou nad variantou, ze které náhled vzniká (#377). */
+  if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidkaTisk', varianta, nabidkaStavText)) return;
+  /* Ptát se PŘED otevřením okna náhledu (P2): tisk z náhledu zamyká. */
+  if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaTisk', varianta))) { return; }   // P2 (K13-N54)
   const data = nabidkaData(ZAK, varianta, JEKLY, L);
   const p = data.placeholders;
 
   /* sekce z nabidka.js: [0] hlavička (tiskne se jako tabulka nahoře),
    * pak technická část, obchodní část (rozepsaná níže vlastní tabulkou)
    * a nakonec nepovinný Dodavatel. */
-  const vse = nabidkaNahledSekce(p, L);
+  const vse = nabidkaNahledSekce(p, L, data.platbyOck, data.tsExtra);   // platební kalendář OCK (D1/D2)
   let iObchod = vse.findIndex(s => s.radky.some(r => r[1] === p.CENA_S_DPH));
   if (iObchod < 0) iObchod = vse.length - 1;
   const radek = (l, v) => `<tr><td>${esc(l)}</td><td>${esc(v)}</td></tr>`;
@@ -847,8 +885,9 @@ async function nabidkaOckDokument() {
   const logoHtml = dokLogoHtml();
   const patickaHtml = dokPatickaHtml(P);
 
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html lang="${L === 'cz' ? 'cs' : L}"><head><meta charset="utf-8">
+  const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
+  if (!w) return;
+  w.document.write(`<!DOCTYPE html><html lang="${esc(L === 'cz' ? 'cs' : L)}"><head><meta charset="utf-8">
     <title>${esc(data.nazevSouboru)}</title>
     <style>body{font:13px/1.55 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}
     h1{font-size:20px;margin:6px 0} h1.sekce{font-size:15px;background:#1d4ed8;color:#fff;padding:7px 10px;margin:26px 0 10px;
@@ -892,6 +931,11 @@ async function nabidkaOckDokument() {
       <tr><td>${esc(P('Datum'))}</td><td>${esc(p.DATUM)}</td></tr>
     </table>
     ${nabidkaFotoHtml()}
+    ${/* Popis záměru a věta o opláštění (P6 / K13-N57, schváleno J. V.
+       * 25. 9. 2026) — stejné znění jako v šabloně v12, text z hlavičky
+       * zakázky, jinak podle typu šachty. */
+      p.POPIS_ZAMERU_OCK ? `<h2>${esc(P('Popis záměru'))}</h2><p>${esc(p.POPIS_ZAMERU_OCK)}</p>`
+        + (p.OPLASTENI_VETA ? `<p>${esc(p.OPLASTENI_VETA)}</p>` : '') : ''}
     <h1 class="sekce">${esc('I. ' + P('TECHNICKÁ ČÁST – SPECIFIKACE DODÁVKY'))}</h1>
     ${sekceHtml}
     <h1 class="sekce">${esc(P('B. OBCHODNÍ ČÁST – CENOVÁ NABÍDKA'))}</h1>

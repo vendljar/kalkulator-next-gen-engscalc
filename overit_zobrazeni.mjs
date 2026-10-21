@@ -58,6 +58,10 @@ const dlgStub = async (page) => page.evaluate(() => {
   window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(true); };
   window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
   window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve(v == null ? '' : v); };
+  /* B168 (18. 10. 2026): uložení matice zobrazení chce heslo správce — harness
+   * odpoví heslem zkušebního správce (`window.__dlgHeslo` ho přebije, null = zrušeno). */
+  window.dotazHeslo = (t) => { (window.__dlgTexty = window.__dlgTexty || []).push(String(t));
+    return Promise.resolve(window.__dlgHeslo === undefined ? 'Zkusebni.Heslo.123' : window.__dlgHeslo); };
 });
 const dlgPosledni = async (page) => page.evaluate(() =>
   (window.__dlgTexty && window.__dlgTexty.length) ? window.__dlgTexty[window.__dlgTexty.length - 1] : '');
@@ -186,11 +190,26 @@ test('prvek držený serverem zůstane nepřidělený i po zásahu z konzole',
 
 /* ---------- 3) zveřejnění online ---------- */
 
+/* B168 (18. 10. 2026): bez hesla správce se matice neuloží a neztratí se
+ * potichu — správce dostane hlášku a zaškrtnutí zůstane k dalšímu pokusu. */
+await page.evaluate(() => { window.__dlgTexty = []; window.__dlgHeslo = null; });
+const b168Zrus = await page.evaluate(() => onlineZverejniZobrazeni());
+await page.waitForTimeout(400);
+test('B168: zrušené heslo — matice se na server neodeslala',
+  b168Zrus === false && !volani.includes('POST /api/zobrazeni'), volani.join(', '));
+test('B168: zrušené heslo — hláška říká, že se neuložilo a jak to zopakovat',
+  await page.evaluate(() => /neuložilo.*Uložit teď/.test(ONLINE_STAV.hlaska || '')),
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('B168: zrušené heslo — zaškrtnutí v paměti zůstalo',
+  await page.evaluate(() => NAST.zobrazeni['tab.detail']['Obchodník'] === true));
+await page.evaluate(() => { delete window.__dlgHeslo; });
+
 await page.evaluate(() => { window.__dlgTexty = []; });
 await page.evaluate(() => onlineZverejniZobrazeni());
 await page.waitForTimeout(800);
-poslednihlaska = await dlgPosledni(page);
-test('zveřejnění se administrátora nejdřív zeptá', /Zveřejnit/.test(poslednihlaska), poslednihlaska);
+const dlgZverejneni = await page.evaluate(() => window.__dlgTexty.slice());
+test('zveřejnění se administrátora nejdřív zeptá', /Zveřejnit/.test(dlgZverejneni[0] || ''), dlgZverejneni);
+test('B168: zveřejnění si vyžádá heslo správce', /Potvrďte ji svým heslem/.test(dlgZverejneni[1] || ''), dlgZverejneni);
 test('zveřejnění poslalo matici na server',
   volani.includes('POST /api/zobrazeni'), volani.join(', '));
 test('server matici přijal a vrátil ji zpět',
@@ -357,6 +376,45 @@ test('srolování karty ji zavře (třída closed) a jde rozbalit',
     sekceRezimSet('ock.priplatky', 'zobrazit');
     return zavrena && otevrena;
   }));
+
+/* ---------- režim u VŠECH karet Kalkulace OCK (23. 9. 2026) ----------
+ * Zadání J. V.: „přidej skrývací a rolovací tlačítka do všech sekcí
+ * kalkulace OCK … stejný formát jako u detailu mezivýpočtu." Do té doby je
+ * měly jen sekce tabulky, Příplatky, Detail a Poznámky. */
+const KARTY_OCK = { 'ock-zadani': 'zadani', 'ock-profily': 'profily', 'ock-prace': 'prace',
+  'ock-kalkulace': 'kalkulace', 'ock-sleva': 'sleva', 'ock-zaokr': 'zaokr', 'ock-nabidka': 'nabidka' };
+const bezSelectu = await page.evaluate((karty) => {
+  prepniTab('kalk'); render();
+  return Object.entries(karty).filter(([id, k]) => {
+    const el = document.getElementById(id);
+    const h2 = el && el.querySelector(':scope > h2');
+    return !(h2 && h2.innerHTML.includes("sekceRezimSet('ock." + k + "'"));
+  }).map(([id]) => id);
+}, KARTY_OCK);
+test('každá karta Kalkulace OCK má v nadpisu select režimu', bezSelectu.length === 0, bezSelectu.join(', '));
+test('srolovaná karta má vedle selectu tlačítko „▸ rozbalit" jako Detail mezivýpočtů',
+  await page.evaluate(() => {
+    sekceRezimSet('ock.prace', 'srolovat');
+    prepniTab('kalk'); render();
+    const el = document.getElementById('ock-prace');
+    const ok = el.classList.contains('closed') && el.querySelector(':scope > h2').innerHTML.includes('▸ rozbalit');
+    sekceRozbal('ock.prace');
+    const otevrena = !document.getElementById('ock-prace').classList.contains('closed');
+    sekceRezimSet('ock.prace', 'zobrazit');
+    return ok && otevrena;
+  }));
+test('Dimenze profilů zůstávají ve výchozím stavu sbalené',
+  await page.evaluate(() => document.getElementById('ock-profily').classList.contains('closed')));
+test('administrátorovi skrytá karta zůstane i se štítkem „skrytá ostatním"',
+  await page.evaluate(() => {
+    sekceRezimSet('ock.profily', 'skryt');
+    prepniTab('kalk'); render();
+    const el = document.getElementById('ock-profily');
+    return !!el && el.innerHTML.includes('skrytá ostatním');
+  }));
+await page.waitForTimeout(400);
+await page.evaluate(() => { sekceRezimSet('ock.sleva', 'srolovat'); });
+await page.waitForTimeout(400);
 
 /* ---------- tisková tlačítka krycích listů (20. 8. 2026) ----------
  * Přestěhovala se dolů nad smlouvu, Word zmizel z obrazovky (funkce zůstala)
@@ -819,6 +877,19 @@ test('ceník OCK založí trvalou položku do katalogu',
 /* Založíme obchodníka a odhlásíme se. */
 await page.evaluate(() => { nastPanel('uzivatele'); });
 await page.waitForFunction(() => { try { return ONLINE_STAV.uzivateleNacteno; } catch (e) { return false; } });
+/* #278 (23. 9. 2026): administrátor vidí, jestli je na serveru nastavený
+ * hlavní správce — přímo u správy uživatelů, ne v /api/zdravi. */
+test('#278: panel Uživatelé ukáže, že hlavní správce je nastavený',
+  await page.evaluate(() => /Hlavní správce je na serveru\s+nastavený/.test(
+    (document.querySelector('#nastaveni-panel .spravce-stav') || {}).textContent || '')));
+test('#278: nenastavený správce se ukáže jako varování s návodem',
+  await page.evaluate(() => {
+    const puv = ONLINE_STAV.ja.spravceNastaven;
+    ONLINE_STAV.ja.spravceNastaven = false;
+    const h = onlineUzivateleHtml();
+    ONLINE_STAV.ja.spravceNastaven = puv;
+    return /není na serveru\s+nastavený/.test(h) && h.includes('ADMIN_EMAIL');
+  }));
 await page.fill('#onlineUzEmail', 'obchodnik@priklad.cz');
 await page.fill('#onlineUzJmeno', 'Petr Novák');
 await page.fill('#onlineUzHeslo', 'ObchodniHeslo1');
@@ -861,6 +932,45 @@ test('skrytá sekce OCK (REŽIE) se obchodníkovi vůbec nekreslí',
     return !document.getElementById('ock-sek-rezie')
       && !!document.getElementById('ock-sek-hrubaOck');   // ostatní sekce zůstávají
   }));
+test('skrytá KARTA (Dimenze profilů) se obchodníkovi nekreslí',
+  await page.evaluate(() => { prepniTab('kalk'); render(); return !document.getElementById('ock-profily')
+    && !!document.getElementById('ock-prace'); }));
+test('a zmizí i její kotva v klouzající liště (stejně jako kotva skryté REŽIE)',
+  await page.evaluate(() => {
+    const h = document.getElementById('page-kalk').innerHTML;
+    return !h.includes('href="#ock-profily"') && !h.includes('href="#ock-sek-rezie"') && h.includes('href="#ock-prace"');
+  }));
+test('srolovaná karta (Sleva) je obchodníkovi sbalená a má „▸ rozbalit"',
+  await page.evaluate(() => {
+    const el = document.getElementById('ock-sleva');
+    return !!el && el.classList.contains('closed') && el.innerHTML.includes('▸ rozbalit');
+  }));
+/* Změna za chodu: administrátor skryje sekci, zatímco obchodník má aplikaci
+ * otevřenou. Dřív ji obchodník viděl až do obnovení stránky. Zápis jde
+ * rovnou do paměťového úložiště serveru — jako by ho udělal jiný prohlížeč. */
+{
+  const z = JSON.parse(pamet.get('program/zobrazeni'));
+  z.matice.sekce = Object.assign({}, z.matice.sekce, { 'ock.prace': 'skryt', 'ock.hrubaOck': 'skryt' });
+  pamet.set('program/zobrazeni', JSON.stringify(z));
+}
+test('před obnovou obchodník Práci a režii ještě vidí (načteno při přihlášení)',
+  await page.evaluate(() => !!document.getElementById('ock-prace')));
+test('obnova nastavení zobrazení změnu přinese a překreslí',
+  await page.evaluate(async () => await onlineZobrazeniObnov(true) === true));
+test('po obnově obchodník skrytou kartu i sekci tabulky nevidí',
+  await page.evaluate(() => !document.getElementById('ock-prace') && !document.getElementById('ock-sek-hrubaOck')
+    && !!document.getElementById('ock-sek-oplasteni')));
+test('beze změny na serveru se nepřekresluje (vrací false)',
+  await page.evaluate(async () => await onlineZobrazeniObnov(true) === false));
+/* Úklid: další kontroly počítají s viditelnou Hrubou OCK a Prací a režií. */
+{
+  const z = JSON.parse(pamet.get('program/zobrazeni'));
+  delete z.matice.sekce['ock.prace']; delete z.matice.sekce['ock.hrubaOck'];
+  pamet.set('program/zobrazeni', JSON.stringify(z));
+}
+test('a po vrácení volby se karta obchodníkovi zase ukáže',
+  await page.evaluate(async () => await onlineZobrazeniObnov(true) === true
+    && !!document.getElementById('ock-prace') && !!document.getElementById('ock-sek-hrubaOck')));
 test('obchodník nemá žádný select režimu sekce',
   await page.evaluate(() => !document.getElementById('page-kalk').innerHTML.includes('sekceRezimSet')));
 test('obchodník má „+ přidat položku", ale NE „… trvale"',
@@ -1173,6 +1283,27 @@ test('filtr zúží seznam na PROJ a hledání funguje i podle obchodníka',
     prehledHledatSet('');
     return jenProj === 1 && podleJmena === 1;
   }));
+/* P15 (K16-N85, 25. 9. 2026): obchodník hledá zakázku podle místa stavby. */
+test('P15: hledání i našeptávač najdou zakázku podle adresy stavby a řádek adresu ukáže',
+  await page.evaluate(() => {
+    ONLINE_STAV.ja = { email: 'a@b.cz', jmeno: 'Správce', role: 'Administrátor' };
+    NAST.jeAdmin = true;
+    ONLINE_STAV.rejstrik = [
+      { soubor: 'a.json', cislo: '2026 - OPR - CN - 1', nazevAkce: 'Šachta', objednatel: 'SVJ', adresa: 'Kornpfortstraße 12, Koblenz',
+        autor: 'a@b.cz', autorJmeno: 'Jan Novák', datum: '2026-08-01', variant: 1, odeslane: 0, upraveno: '' },
+      { soubor: 'b.json', cislo: '2026 - OVP - CN - 2', nazevAkce: 'Studie', objednatel: 'Firma',
+        autor: 'c@d.cz', autorJmeno: '', datum: '2026-08-02', variant: 1, odeslane: 0, upraveno: '' },
+    ];
+    prehledDruhSet('vse'); prehledHledatSet('koblenz');
+    const radky = [...document.querySelectorAll('#prehledHledaniTelo tr')].filter(r => r.querySelector('td'));
+    const vRadku = radky.length === 1 && /Kornpfortstraße 12, Koblenz/.test(radky[0].textContent);
+    prehledHledatSet('strasse');
+    const ss = [...document.querySelectorAll('#prehledHledaniTelo tr')].filter(r => r.querySelector('td')).length === 1;
+    prehledHledatSet('');
+    const nasept = naseptavacFiltr('kornpf');
+    const placeholder = (document.querySelector('#page-zakazka input.seznam-hledat') || {}).placeholder || '';
+    return vRadku && ss && nasept.length === 1 && nasept[0] === 'Kornpfortstraße 12, Koblenz' && /adres/.test(placeholder);
+  }));
 
 test('pole Zákazník našeptává z kartotéky i z rejstříku',
   await page.evaluate(() => {
@@ -1329,6 +1460,54 @@ test('pole bez rozepsané hodnoty se překreslením jen znovu zaostří',
     if (a) a.blur();
     prepniTab('zakazka'); render();
     return !!ok;
+  }));
+
+/* ---------- Model 1 je zmrazený pro ne-administrátory (#332, 24. 9. 2026) ----------
+ * Rozhodnutí J. V.: „model 1 zmraz pro použití mimo administrátory, tedy
+ * nepůjde na něj už přepnout". Obchodník nesmí Model 1 zvolit ani v přepínači,
+ * ani žádným jiným voláním set(); zakázku, která v Modelu 1 už je, smí převést
+ * na Model 2, zpátky ne. Administrátor přepíná oběma směry. */
+test('#332 obchodník u zakázky v Modelu 2 nemá v přepínači Model 1',
+  await page.evaluate(() => {
+    try {
+      NAST.jeAdmin = true; NAST.nahledRole = ''; set('OCK.fixes', true);
+      NAST.jeAdmin = false; NAST.nahledRole = 'Obchodník'; prepniTab('kalk'); render();
+      const h = document.getElementById('page-kalk').innerHTML;
+      return !/value="compat"/.test(h) && /rezim-vypoctu/.test(h);
+    } finally { NAST.jeAdmin = true; NAST.nahledRole = ''; render(); }
+  }));
+test('#332 obchodník nepřepne na Model 1 ani přímým set() — zůstane Model 2 a přijde hláška',
+  await page.evaluate(() => {
+    try {
+      NAST.jeAdmin = true; NAST.nahledRole = ''; set('OCK.fixes', true);
+      NAST.jeAdmin = false; NAST.nahledRole = 'Obchodník'; render();
+      window.__dlgTexty = [];
+      set('OCK.fixes', false);
+      return OCK.fixes === true && (window.__dlgTexty || []).some(t => /zmrazený/.test(t));
+    } finally { NAST.jeAdmin = true; NAST.nahledRole = ''; render(); }
+  }));
+test('#332 zakázka už v Modelu 1: obchodník vidí „Model 1 (zmrazený)", převede na Model 2, zpátky ne',
+  await page.evaluate(() => {
+    try {
+      NAST.jeAdmin = true; NAST.nahledRole = ''; set('OCK.fixes', false);
+      if (OCK.fixes !== false) return 'admin nepřepnul';
+      NAST.jeAdmin = false; NAST.nahledRole = 'Obchodník'; prepniTab('kalk'); render();
+      const h = document.getElementById('page-kalk').innerHTML;
+      const stitek = /Model 1 – 1:1 jako Excel \(zmrazený\)/.test(h);
+      set('OCK.fixes', true);
+      const naM2 = OCK.fixes === true;
+      set('OCK.fixes', false);
+      return stitek && naM2 && OCK.fixes === true;
+    } finally { NAST.jeAdmin = true; NAST.nahledRole = ''; set('OCK.fixes', true); render(); }
+  }));
+test('#332 administrátor přepíná oběma směry a štítek „zmrazený" u volby nemá',
+  await page.evaluate(() => {
+    NAST.jeAdmin = true; NAST.nahledRole = ''; prepniTab('kalk'); render();
+    const h = document.getElementById('page-kalk').innerHTML;
+    const volba = /value="compat"/.test(h) && !/\(zmrazený\)/.test(h);
+    set('OCK.fixes', false); const m1 = OCK.fixes === false;
+    set('OCK.fixes', true);
+    return volba && m1 && OCK.fixes === true;
   }));
 
 test('žádná chyba JavaScriptu', chyby.length === 0, chyby.slice(0, 2).join(' | '));

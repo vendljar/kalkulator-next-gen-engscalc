@@ -15,7 +15,18 @@
  * kterou si uživatel nastaví v Netlify (heslo nikdy neputuje přes konverzaci
  * ani repozitář); po založení účtu lze proměnnou smazat.
  * ============================================================ */
-import { scryptSync, randomBytes, timingSafeEqual, createHmac } from 'node:crypto';
+import { scryptSync, randomBytes, timingSafeEqual, createHmac, createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+
+/* VERZE NASAZENÉHO SERVERU — z verze.txt přibalené ke všem funkcím
+ * (netlify.toml: included_files). Čte ji /api/zdravi a od 22. 9. 2026 i razítko
+ * ověření zmrazeného výsledku nové odeslané nabídky (B59, /api/zakazky). */
+export function serverVerze() {
+  for (const cesta of ['verze.txt', '../../verze.txt', new URL('../../verze.txt', import.meta.url).pathname]) {
+    try { return readFileSync(cesta, 'utf8').trim(); } catch (e) { /* zkusí další */ }
+  }
+  return 'neznámá';
+}
 
 /* ADRESA HLAVNÍHO SPRÁVCE UŽ NENÍ V REPOZITÁŘI (16. 9. 2026).
  *
@@ -27,16 +38,49 @@ import { scryptSync, randomBytes, timingSafeEqual, createHmac } from 'node:crypt
  *
  * KDYŽ PROMĚNNÁ CHYBÍ, konstanta je prázdná. Přihlášení tím nepřestane
  * fungovat — existující účty se hlásí dál, protože se ověřují proti databázi.
- * Přestanou ale platit ochrany HLAVNÍHO účtu (nikdo mu nesmí změnit roli,
- * deaktivovat ho ani ho smazat) a nepůjde prvotní založení účtu. Je to tedy
- * tiché oslabení, ne výpadek — a přesně proto se nenastavená proměnná hlásí
- * v /api/zdravi, aby to nikdo nepřehlédl.
+ * Od 22. 9. 2026 se ale zastaví SPRÁVA UŽIVATELŮ a OBNOVA ZE ZÁLOHY, viz
+ * `bezHlavnihoUctu()` níž.
  *
  * Porovnává se v malých písmenech a bez okrajových mezer: adresa zapsaná
  * v Netlify s velkým písmenem by jinak vyrobila „hlavní účet, který jím
  * není". */
 export const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
 export const ROLE = ['Obchodník', 'Vedoucí', 'Administrátor'];
+
+/* CHRÁNĚNÉ CESTY SE BEZ ADRESY HLAVNÍHO ÚČTU NEOBSLUHUJÍ
+ * (bezpečnostní audit 22. 9. 2026, nález B54).
+ *
+ * Do 22. 9. byla nenastavená proměnná TICHÉ OSLABENÍ: všechny ochrany
+ * hlavního účtu jsou psané jako `email === ADMIN_EMAIL`, a proti prázdné
+ * konstantě se nerovná žádná skutečná adresa. Vedlejší správce tedy směl
+ * hlavnímu účtu změnit roli, vypnout ho, smazat ho, resetovat mu heslo
+ * i přepsat jeho podpis — a nikde se nic neozvalo. Že to hlásí /api/zdravi,
+ * je málo: hlášení si někdo musí přečíst, kdežto tohle platí hned.
+ *
+ * Správně je to odmítnout: 503 (dočasně nedostupné) je poctivější než 403,
+ * protože chyba není na straně volajícího, ale v nastavení webu. Přihlášení
+ * a změna VLASTNÍHO hesla zůstávají funkční schválně — bez nich by se
+ * závada nedala opravit zevnitř.
+ *
+ * Ptáme se na konstantu I na živou proměnnou prostředí. Konstanta je ta
+ * hodnota, na které ochrany opravdu stojí (čte se jednou při načtení
+ * modulu); živá proměnná dovolí ověřit chování testem v témže procesu.
+ * Odmítne se, když je prázdná kterákoli z nich — tedy přísněji z obou. */
+/* Je adresa hlavního účtu nastavená? (23. 9. 2026, #278 + nález B57)
+ * Stejná podmínka jako v `bezHlavnihoUctu()`, jen jako ano/ne. Do 23. 9. ji
+ * hlásilo anonymní /api/zdravi komukoli na internetu; teď ji dostane jen
+ * přihlášený ADMINISTRÁTOR v /api/ja a v odpovědi na přihlášení — a aplikace
+ * mu ji ukáže v Nastavení → Uživatelé. Ostatním do ní nic není. */
+export function spravceNastaven() {
+  return !!ADMIN_EMAIL && String(process.env.ADMIN_EMAIL || '').trim() !== '';
+}
+
+export function bezHlavnihoUctu() {
+  if (ADMIN_EMAIL && String(process.env.ADMIN_EMAIL || '').trim() !== '') return null;
+  return json({ ok: false, chyba: 'Server nemá nastavenou adresu hlavního administrátorského '
+    + 'účtu, takže ochrany toho účtu neplatí. Správa uživatelů a obnova ze zálohy jsou proto '
+    + 'zastavené. Doplňte proměnnou ADMIN_EMAIL v nastavení webu a zkuste to znovu.' }, 503);
+}
 
 /* ---------- úložiště ---------- */
 export async function uloziste(nazev) {
@@ -58,6 +102,27 @@ export async function uloziste(nazev) {
     /* mazání potřebuje jen retence analytiky (dny starší 24 měsíců) */
     async smaz(klic) { await s.delete(klic); },
   };
+}
+
+/* VÝHRADNÍ ÚSEK NAD KLÍČEM (B158, audit 25, 16. 10. 2026). Počítadlo je
+ * čtení–změna–zápis a Blobs atomický inkrement nemá (viz B4 níž). Souběžné
+ * požadavky v téže instanci funkce se proto řadí za sebe: každý další čeká,
+ * až předchozí dočte a zapíše. Řetěz se po doběhnutí uklidí, chyba jednoho
+ * úseku neblokuje další. Mez: dvě různé instance funkce (studený start pod
+ * náporem) se navzájem nevidí — viz BEZPECNOST_MEZE.md (B158). */
+const VYHRADNE_FRONTY = new Map();
+export async function vyhradne(klic, fn) {
+  const pred = VYHRADNE_FRONTY.get(klic) || Promise.resolve();
+  let uvolni;
+  const muj = new Promise(r => { uvolni = r; });
+  const konec = pred.then(() => muj);
+  VYHRADNE_FRONTY.set(klic, konec);
+  await pred;
+  try { return await fn(); }
+  finally {
+    uvolni();
+    if (VYHRADNE_FRONTY.get(klic) === konec) VYHRADNE_FRONTY.delete(klic);
+  }
 }
 
 /* ---------- tvar e-mailu a hesla (audit 22. 8. 2026, B16) ----------
@@ -90,6 +155,16 @@ export function hesloSedi(heslo, ulozene) {
     const b = scryptSync(String(heslo), sul, 64);
     return timingSafeEqual(Buffer.from(hash, 'hex'), b);
   } catch (e) { return false; }
+}
+
+/* Porovnání dvou tajných textů v konstantním čase (B42, B107 — 13. 10. 2026).
+ * Obojí se nejdřív zahashuje, takže ani délka správné hodnoty z času odpovědi
+ * nevyteče; `===` končí na prvním rozdílném znaku. Prázdné nikdy nesedí. */
+export function tajneShodne(a, b) {
+  const x = String(a == null ? '' : a), y = String(b == null ? '' : b);
+  if (!x || !y) return false;
+  const h = (t) => createHash('sha256').update(t, 'utf8').digest();
+  return timingSafeEqual(h(x), h(y));
 }
 
 /* ---------- zástupný otisk pro neexistující účty (#93, 9. 8. 2026) ----------
@@ -140,24 +215,40 @@ export function pockej(ms) {
   return new Promise((hotovo) => setTimeout(hotovo, ms));
 }
 
-function pokusyKlic(email) { return String(email || '').trim().toLowerCase(); }
+/* JMENNÉ PROSTORY POČÍTADEL (B97, 29. 9. 2026). Počítadlo e-mailu mělo za
+ * klíč e-mail malými písmeny BEZ předpony, počítadlo adresy „ip:<adresa>"
+ * nebo „ip6:<prefix>::/64" — obojí v tomtéž úložišti „pokusy". Anonym, který
+ * se 61× „přihlásil" e-mailem „ip:198.51.100.55", tak zvedl počítadlo ADRESY
+ * cizího člověka a ten dostal 429 i se správným heslem (od B75 se limit
+ * adresy rozhoduje před ověřením hesla). E-mailový klíč proto nese předponu
+ * „e:" a obě rodiny klíčů se nikdy nepotkají. Migrace není potřeba:
+ * počítadla žijí jen čtvrt hodiny (POKUSY_OKNO_MS), starý klíč bez předpony
+ * sám vyprší. Funkce …Klic pracují se syrovým klíčem úložiště, e-mailové
+ * funkce (pokusyStav/Neuspech/Reset) klíč skládají samy. */
+function pokusyKlic(email) { return 'e:' + String(email || '').trim().toLowerCase(); }
 
-export async function pokusyStav(email) {
+async function pokusyStavKlic(klic) {
   const s = await uloziste(POKUSY_ULOZISTE);
-  const z = await s.cti(pokusyKlic(email));
+  const z = await s.cti(klic);
   /* Po uplynutí okna se počítadlo zapomíná. Bez toho by se neúspěchy
    * sčítaly napříč měsíci a člověk, který si jednou za čas splete heslo,
    * by se jednoho dne bez příčiny nepřihlásil. */
   if (!z || (Date.now() - (z.posledni || 0)) > POKUSY_OKNO_MS) return { n: 0, posledni: 0 };
   return { n: z.n || 0, posledni: z.posledni || 0 };
 }
-
-export async function pokusyNeuspech(email) {
+async function pokusyNeuspechKlic(klic) {
   const s = await uloziste(POKUSY_ULOZISTE);
-  const z = { n: (await pokusyStav(email)).n + 1, posledni: Date.now() };
-  await s.zapis(pokusyKlic(email), z);
+  const z = { n: (await pokusyStavKlic(klic)).n + 1, posledni: Date.now() };
+  await s.zapis(klic, z);
   return z;
 }
+export async function pokusyResetKlic(klic) {
+  const s = await uloziste(POKUSY_ULOZISTE);
+  await s.zapis(klic, { n: 0, posledni: 0 });
+}
+
+export async function pokusyStav(email) { return pokusyStavKlic(pokusyKlic(email)); }
+export async function pokusyNeuspech(email) { return pokusyNeuspechKlic(pokusyKlic(email)); }
 
 /* ---------- souběh a druhý limit na adresu (audit 22. 8. 2026, nález B4) ----
  *
@@ -178,29 +269,71 @@ export async function pokusyNeuspech(email) {
  * byl správně, ale náhrada pro testy ho nemá a ostrý běh by se nedal v cloudu
  * ověřit. Zůstává jako otevřená část nálezu B4 pro lokální ověření. */
 export const POKUSY_IP_MAX = 60;
-export function pokusyIpKlic(ip) { return 'ip:' + String(ip || '').trim().slice(0, 64); }
+/* KLÍČ POČÍTADLA ADRESY (B75, hloubkový test 24. 9. 2026). Do té doby se
+ * počítala doslovná adresa. U IPv6 má ale jeden připojený stroj běžně celý
+ * blok /64 (2^64 adres) a útočník by každý pokus poslal z jiné — počítadlo
+ * adresy by nikdy nenarostlo. IPv6 se proto klíčuje po /64 (prvních 64 bitů),
+ * IPv4 celá; adresa IPv4 zapsaná jako IPv6 (::ffff:1.2.3.4) je IPv4. */
+export function pokusyIpKlic(ip) {
+  const a = String(ip || '').trim().slice(0, 64);
+  if (a.indexOf(':') < 0) return 'ip:' + a;
+  const v4 = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(a);
+  if (v4) return 'ip:' + v4[1];
+  return 'ip6:' + ipv6Prefix64(a);
+}
+/* Prvních 64 bitů IPv6 jako čtyři skupiny bez úvodních nul; neplatný zápis
+ * se vrátí, jak je (počítá se aspoň doslova). */
+export function ipv6Prefix64(a) {
+  const bezZony = String(a || '').split('%')[0].toLowerCase();
+  const casti = bezZony.split('::');
+  if (casti.length > 2) return bezZony;
+  const hlava = casti[0] ? casti[0].split(':') : [];
+  const ocas = casti.length === 2 && casti[1] ? casti[1].split(':') : [];
+  const chybi = 8 - hlava.length - ocas.length;
+  if (chybi < 0 || (casti.length === 1 && chybi !== 0)) return bezZony;
+  const skupiny = hlava.concat(Array(Math.max(chybi, 0)).fill('0'), ocas);
+  if (skupiny.length !== 8 || skupiny.some(g => !/^[0-9a-f]{1,4}$/.test(g))) return bezZony;
+  return skupiny.slice(0, 4).map(g => g.replace(/^0+(?=.)/, '')).join(':') + '::/64';
+}
 export function adresaKlienta(req) {
   try {
     return (req.headers.get('x-nf-client-connection-ip')
       || (req.headers.get('x-forwarded-for') || '').split(',')[0] || '').trim();
   } catch (e) { return ''; }
 }
-/* Započítá pokus pro e-mail i adresu a vrátí stav obou. */
+/* Započítá pokus pro e-mail i adresu a vrátí stav obou. E-mail neplatného
+ * tvaru (B97) žádné e-mailové počítadlo nezakládá ani nezvedá — takový účet
+ * neexistuje (emailPlatny hlídá založení) a obří nebo podvržený klíč nemá co
+ * dělat v úložišti. Počítadlo ADRESY se ale započítá vždy, jinak by šlo
+ * hádat bez brzdy. Odpověď volajícího zůstává stejná jako u špatného hesla. */
 export async function pokusyZacatek(email, ip) {
-  const z = await pokusyNeuspech(email);
+  const z = emailPlatny(email) ? await pokusyNeuspech(email) : { n: 0, posledni: 0 };
   let a = { n: 0, posledni: 0 };
-  if (ip) a = await pokusyNeuspech(pokusyIpKlic(ip));
+  if (ip) a = await pokusyNeuspechKlic(pokusyIpKlic(ip));
   return { email: z, adresa: a };
 }
+/* Je adresa nad limitem? Rozhoduje se PŘED ověřením hesla (B75): kdo z jedné
+ * adresy vyčerpal limit, dostane 429 bez počítání scryptu. Není to zámek
+ * účtu — majitel se přihlásí odjinud, počítadlo za čtvrt hodiny vyprší. */
+export function pokusyAdresaNadLimit(pokusy) {
+  return !!(pokusy && pokusy.adresa && pokusy.adresa.n > POKUSY_IP_MAX);
+}
+/* ÚSPĚCH NULUJE POČÍTADLO E-MAILU, ADRESE JEN VRÁTÍ TENHLE POKUS (B75).
+ * Do 25. 9. 2026 úspěšné přihlášení vynulovalo i počítadlo adresy — útočník
+ * s jedním vlastním účtem tak mezi hádáním cizích hesel jednou za čas
+ * přihlásil sebe a limit adresy nikdy nenarostl. Teď se úspěch na adrese
+ * jen nepočítá jako neúspěch; cizí neúspěchy z téže adresy zůstávají. */
 export async function pokusyUspech(email, ip) {
   await pokusyReset(email);
-  if (ip) await pokusyReset(pokusyIpKlic(ip));
+  if (ip) await pokusyUber(pokusyIpKlic(ip));
+}
+export async function pokusyUber(klic) {
+  const s = await uloziste(POKUSY_ULOZISTE);
+  const z = await pokusyStavKlic(klic);
+  await s.zapis(klic, { n: Math.max(0, z.n - 1), posledni: z.posledni || Date.now() });
 }
 
-export async function pokusyReset(email) {
-  const s = await uloziste(POKUSY_ULOZISTE);
-  await s.zapis(pokusyKlic(email), { n: 0, posledni: 0 });
-}
+export async function pokusyReset(email) { return pokusyResetKlic(pokusyKlic(email)); }
 
 /* ---------- relace (HMAC cookie) ---------- */
 function tajemstvi() {
@@ -284,9 +417,30 @@ export function cizihoPuvodu(req) {
     return new URL(origin).host.toLowerCase() !== host;
   } catch (e) { return true; }
 }
+/* ZÁPIS MIMO APLIKACI (B159, audit 25, 16. 10. 2026). `cizihoPuvodu`
+ * propouští `Origin: null` (sandboxovaný rámec, stránka data:) a nehlídá typ
+ * těla — `text/plain` je „jednoduchý" požadavek, který cizí stránka pošle
+ * bez preflightu. U zápisů tak bránila jen SameSite=Lax. Prohlížeč posílá
+ * Origin u každého POST/DELETE; aplikace (onlineApi) posílá tělo vždy jako
+ * JSON a DELETE bez těla. S hlavičkou Origin se proto odmítne „null" a tělo,
+ * které má jiný typ než application/json. Bez Origin (curl, testy) se nic
+ * neodmítá — stejná zásada jako u B17. Přihlášení a odhlášení mají vlastní
+ * kontrolu (B78). */
+export function zapisMimoAplikaci(req) {
+  try {
+    const origin = req.headers.get('origin');
+    if (!origin) return false;
+    if (origin === 'null') return true;
+    const ct = String(req.headers.get('content-type') || '').trim().toLowerCase();
+    if (ct && !/^application\/json\s*(;|$)/.test(ct)) return true;
+    return false;
+  } catch (e) { return true; }
+}
 export async function prihlaseny(req) {
-  /* Mutující požadavek z cizího původu se nepovažuje za přihlášený (B17). */
-  if (req.method && req.method !== 'GET' && cizihoPuvodu(req)) return null;
+  /* Mutující požadavek z cizího původu se nepovažuje za přihlášený (B17),
+   * ani zápis z `Origin: null` nebo s tělem, které není JSON (B159). */
+  if (req.method && req.method !== 'GET' && req.method !== 'HEAD'
+      && (cizihoPuvodu(req) || zapisMimoAplikaci(req))) return null;
   return relaceOver(req.headers.get('cookie'));
 }
 
@@ -301,6 +455,16 @@ export async function prihlaseny(req) {
  * Kdyby si každá funkce skládala odpověď po svém, dřív nebo později by
  * jedna z nich poslala do prohlížeče i `heslo` (scrypt otisk). Takhle
  * se vypisují políčka jmenovitě a nic navíc neprojde. */
+/* Razítko „jméno <e-mail>" pod zámkem a odemčením (B95, #347, 15. 10. 2026).
+ * Ostré závorky se ze jména odstraní — jméno „Jan <reditel@…>" by jinak
+ * napodobilo cizí razítko. Ukládání jména je čistí taky (uzivatele.mjs);
+ * tady jde o účty z doby před opravou. Pravý e-mail je vždy na konci. */
+export function razitkoKdo(relace) {
+  const r = relace || {};
+  const jmeno = String(r.jmeno == null ? '' : r.jmeno).replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
+  return jmeno ? jmeno + ' <' + r.email + '>' : r.email;
+}
+
 export function profilZUctu(ucet) {
   const u = ucet || {};
   return {
@@ -384,7 +548,7 @@ export async function vyzadujRoli(req, ...role) {
     return { chyba: json({ ok: false, chyba: 'Účet je vypnutý. Obraťte se na správce.' }, 401) };
   /* Verze hesla (B6): relace vydaná před změnou hesla už neplatí. */
   if (((+r.hv) || 0) !== hesloVerzeUctu(ucet))
-    return { chyba: json({ ok: false, chyba: 'Heslo účtu bylo změněno. Přihlaste se znovu.' }, 401) };
+    return { chyba: json({ ok: false, chyba: 'Přihlášení skončilo (odhlášení, změna hesla nebo zásah správce). Přihlaste se znovu.' }, 401) };
 
   /* Profil (titul, funkce, telefon) jde s relací, protože se čte účet stejně
    * tak jako tak. Podpis ne — ten je stranou a dotahuje se jen tam, kde je
@@ -393,4 +557,42 @@ export async function vyzadujRoli(req, ...role) {
   if (role.length && !role.includes(relace.role))
     return { chyba: json({ ok: false, chyba: 'K této akci je potřeba role: ' + role.join(' / ') + '.' }, 403) };
   return { relace, ucet };
+}
+
+/* ---------- potvrzení citlivé akce vlastním heslem správce (B77, 13. 10. 2026) ----------
+ *
+ * Rozhodnutí J. V. 13. 10. 2026 („Ano"). Kdo získal cookie správce (odemčený
+ * počítač, ukradená relace), už mu po B77-zbytku nezmění heslo — ale mohl si
+ * založit vlastní účet s rolí Administrátor, povýšit kterýkoli účet, resetovat
+ * heslo kolegovi (i jinému správci) nebo obnovou účtů z otisku vrátit starší
+ * otisk hesla. Tyhle akce proto chtějí v těle pole `hesloSpravce` s heslem
+ * PŘIHLÁŠENÉHO správce, ověřené stejně jako staré heslo u 'mojeheslo':
+ * pokus se započítá dřív, než se heslo ověří (B4), nad limitem adresy 429
+ * hned (B75), nad limitem e-mailu 429 jen u špatného hesla — správné heslo
+ * projde vždy a počítadlo vynuluje (#92).
+ *
+ * Chybějící pole se nepočítá jako pokus: nic se nehádá, a starší klient
+ * (nebo správce, který dialog zavřel) by si jinak zbytečně ukrajoval
+ * z limitu. `kod: 'hesloSpravce'` u všech odmítnutí říká klientovi, že 401
+ * tu NEZNAMENÁ vypršelé přihlášení (onlineApi jinak stav přihlášení shodí).
+ * Vrací null, když heslo sedí, jinak hotovou odpověď. */
+export async function potvrdHesloSpravce(req, relace, heslo) {
+  const odmitni = (chyba, stav) => json({ ok: false, kod: 'hesloSpravce', chyba }, stav);
+  if (typeof heslo !== 'string' || !heslo)
+    return odmitni('Tuto akci potvrďte svým heslem (heslo, kterým se přihlašujete).', 401);
+  const ucet = await (await uloziste('uzivatele')).cti(relace && relace.email);
+  const ip = adresaKlienta(req);
+  const pokusy = await pokusyZacatek(relace && relace.email, ip);
+  if (pokusyAdresaNadLimit(pokusy))
+    return odmitni('Příliš mnoho neúspěšných pokusů z této adresy. Zkuste to za '
+      + 'několik minut znovu, nebo se ozvěte správci.', 429);
+  await pockej(zpozdeniMs(pokusy.email.n));
+  if (!ucet || !hesloSedi(heslo, ucet.heslo)) {
+    if (pokusy.email.n > POKUSY_MAX)
+      return odmitni('Příliš mnoho neúspěšných pokusů. Zkuste to za '
+        + 'několik minut znovu, nebo se ozvěte správci.', 429);
+    return odmitni('Vaše heslo nesouhlasí — akce se neprovedla.', 401);
+  }
+  await pokusyUspech(relace.email, ip);
+  return null;
 }
