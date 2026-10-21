@@ -79,8 +79,9 @@ async function podmZapsatVychozi() {
    * jinak šla na server ukázková firma ze sestavení. */
   f.podminky = PODMINKY.podminkyCiste(PODMINKY.podminkyEf(f));
   nastRefresh();
+  /* K4-N7 (O9): jen podmínky, ne celá místní Firma (onlineZverejniPodminky). */
   if (typeof onlineFirmaZverejnitMozne === 'function' && onlineFirmaZverejnitMozne())
-    return onlineZverejniFirmu(true);
+    return onlineZverejniPodminky();
   hlaska('Platební podmínky jsou zapsané. ' + podmKdeZverejnit());
   return false;
 }

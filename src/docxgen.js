@@ -381,10 +381,15 @@ function docxVyvazene(fr) {
  * značku, která v dokumentu je. Teď musí mít taková šablona blok každého
  * jména z `blokyPryc`, jinak dokument nevznikne. Šablona bez symbolu
  * rozsahu i bez značek CIN_* (v3, záhlaví, zápatí) se chová jako dřív. */
+/* K4-N6 (audit K4; dávka O9 21. 10. 2026): totéž pro nabídku PROJ v7 — šablona
+ * se symbolem {{PROJ_DPZ_UVOD}} nebo {{PROJ_TITUL_CINNOSTI}} musí mít bloky
+ * BLOK_STUDIE_* ze seznamu, jinak by nabídka bez studie tiskla rozsah a cenu
+ * studie. Nabídka v6 a starší (bez těch symbolů) se chová jako dřív. */
 function docxBlokyPrycChybi(xml, pryc) {
   if (!pryc.length) return null;
   const klice = klicePlaceholderu(xml);
-  if (!klice.some(k => k === 'SODP_ROZSAH_DILA' || /^CIN_[A-Z0-9_]+_(?:ZAC|KON)$/.test(k))) return null;
+  if (!klice.some(k => k === 'SODP_ROZSAH_DILA' || k === 'PROJ_DPZ_UVOD' || k === 'PROJ_TITUL_CINNOSTI'
+    || /^CIN_[A-Z0-9_]+_(?:ZAC|KON)$/.test(k))) return null;
   const jmena = new Set(docxZnackyBloku(xml).map(z => z.jmeno));
   return pryc.find(j => !jmena.has(j)) || null;
 }
@@ -419,6 +424,9 @@ function odstranPrazdneBloky(xml, ph, blokyPryc) {
 }
 
 function docxBlokChybiText(jmeno) {
+  if (/^BLOK_STUDIE_/.test(jmeno))
+    return 'Šablona nabídky PROJ (v7) nemá blok ' + jmeno + ' (značky {{' + jmeno + '_ZAC}} a {{' + jmeno
+      + '_KON}}) — text o studii, která se nenabízí, by v nabídce zůstal. Dokument proto nevznikne. Opravte šablonu.';
   return 'Šablona smlouvy má rozsah díla po činnostech, ale chybí v ní blok ' + jmeno + ' (značky {{' + jmeno
     + '_ZAC}} a {{' + jmeno + '_KON}}) — činnost, která do dokumentu nepatří, by v něm zůstala. '
     + 'Dokument proto nevznikne. Opravte šablonu.';

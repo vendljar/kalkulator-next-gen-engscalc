@@ -697,10 +697,27 @@ function firmaShodaSOnline(mistni, online) {
   return { maOnline: true, shodne: rozdily.length === 0, rozdily };
 }
 
+/* „ZAPSAT VÝCHOZÍ HODNOTY" ZVEŘEJNÍ JEN PODMÍNKY (K4-N7, dávka O9 21. 10. 2026).
+ * Tlačítko na záložce Smlouvy / Šablony slibuje platební podmínky, ale do O9
+ * odeslalo celou místní Firmu — s ní i nezveřejněné úpravy jiných polí
+ * (např. z místně importované konfigurace). Teď: liší-li se místní Firma od
+ * online kopie i jinde než v podmínkách, zveřejní se ONLINE kopie s novými
+ * podmínkami a ostatní rozdíly zůstanou jen místně (`ostatni`). Bez online
+ * kopie vrací null — pak jde o první zveřejnění celé Firmy (jako dosud). */
+function firmaJenPodminky(mistni, online) {
+  if (!online || typeof online !== 'object' || !mistni || typeof mistni !== 'object') return null;
+  const ostatni = firmaShodaSOnline(mistni, online).rozdily.filter(r => r !== 'Platební podmínky');
+  if (!ostatni.length) return { udaje: mistni, ostatni };
+  const udaje = JSON.parse(JSON.stringify(online));
+  if (mistni.podminky === undefined) delete udaje.podminky;
+  else udaje.podminky = JSON.parse(JSON.stringify(mistni.podminky));
+  return { udaje, ostatni };
+}
+
 if (typeof module !== 'undefined')
   module.exports = { FIRMA_KAPITOLY, FIRMA_KAP_JAZYK, firmaKapitola, firmaKapitolyPrazdne,
     FIRMA_KAP_VYCHOZI_KLICE, firmaDoplnVychoziTexty, firmaDoplnVychoziText, FIRMA_KAP_TERMIN, firmaTerminZaloha,
     FIRMA_POLE, FIRMA_SEKCE, DEFAULT_FIRMA, firmaDefault, firmaAktualni,
     firmaPole, firmaHodnota, firmaAdresaRadek, firmaSidlo, firmaKorespondencni, firmaBankaRadek,
     firmaIcoDic, firmaPaticka, firmaPlaceholders, firmaSymboly, firmaRadky, firmaKontrola,
-    firmaLzeZverejnit, firmaKZverejneni, firmaShodaSOnline };
+    firmaLzeZverejnit, firmaKZverejneni, firmaShodaSOnline, firmaJenPodminky };

@@ -139,6 +139,30 @@ await p.evaluate(() => { NAST.firma.ukazkove = false; NAST.firma.kapitolaIV = ''
 h = await p.evaluate(() => window.__dlg.join(' | '));
 ok('hláška u kapitol nabídky: „Zveřejnit změny online" na této záložce', !/„Zveřejnit"\./.test(h)
   && (/Žádná kapitola/.test(h) || /„Zveřejnit změny online" nahoře na této záložce/.test(h)), h);
+
+/* K4-N7 (O9, 21. 10. 2026): „Zapsat výchozí hodnoty" zveřejní jen podmínky.
+ * Místní Firma s nezveřejněnou změnou názvu a kapitoly → na server jde online
+ * kopie (název i kapitola zveřejněné) s novými podmínkami, rozdíl zůstane
+ * místně a hláška ho vyjmenuje. Pojistka: před opravou odešel místní název
+ * a kapitola (3 ✗). */
+await p.evaluate(() => { window.__chyba = null; NAST.firma.ukazkove = false; NAST.firma.kapPozadavky = 'Zveřejněná kapitola IV.'; });
+await p.evaluate(() => onlineZverejniFirmu(true));
+await p.waitForTimeout(300);
+await p.evaluate(() => { firmaSet('nazev', 'Nezveřejněný název s.r.o.'); NAST.firma.kapPozadavky = 'Místní rozepsaná kapitola';
+  podmSet(null, 'limitPokutProc', '17', 'cislo'); window.__api = []; window.__potvrd = 0; });
+await p.evaluate(() => podmZapsatVychozi());
+await p.waitForTimeout(400);
+const n7 = await p.evaluate(() => (window.__api.find(([c, telo]) => c === '/api/firma' && telo) || [null, null])[1]);
+ok('K4-N7: na server jdou místní podmínky (zapsané výchozí hodnoty)', !!n7 && !!n7.udaje.podminky && n7.udaje.podminky.limitPokutProc === 17,
+  JSON.stringify(n7 && n7.udaje.podminky));
+ok('K4-N7: místní nezveřejněný název ani kapitola na server nejdou (zůstane online znění)',
+  !!n7 && n7.udaje.nazev === 'Zkušební ocelárna s.r.o.' && n7.udaje.kapPozadavky === 'Zveřejněná kapitola IV.', JSON.stringify(n7 && [n7.udaje.nazev, n7.udaje.kapPozadavky]));
+tx = await text(p) + ' ' + await p.evaluate(() => JSON.stringify(ONLINE_STAV.firmaVysledek));   // zpráva + výsledek; záložka ukáže rozdíl
+ok('K4-N7: hláška vyjmenuje, co zůstalo jen místně, a kde to zveřejnit',
+  /jen platební podmínky/.test(tx) && /Název firmy, IV. Požadavky/.test(tx) && /Nastavení → Firma/.test(tx), tx.slice(0, 400));
+ok('K4-N7: záložka dál ukáže „Neuloženo online" s rozdílem Název firmy', /Neuloženo online/.test(tx) && /se liší: Název firmy, IV. Požadavky/.test(tx));
+ok('K4-N7: místní změny zůstaly místně (nic se nepřepsalo)', await p.evaluate(() => NAST.firma.nazev === 'Nezveřejněný název s.r.o.'
+  && NAST.firma.kapPozadavky === 'Místní rozepsaná kapitola' && window.__potvrd === 0));
 await p.close();
 
 // --- 3) zarovnání oddílu „Společné pro OCK i PROJ" a karet OCK/PROJ -------------

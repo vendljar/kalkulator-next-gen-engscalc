@@ -75,6 +75,15 @@ vm.runInContext(zdroj.slice(zac, kon) + '\nthis.post = onlineZobrazeniPost; this
     test('K3-N8: obnova s čerstvě zadaným heslem okno nastaví od zadání', ctx.H.plati === ctx.cas + ctx.MS && ctx.H.h === 'heslo-nove');
     posunCas(ctx.cas + ctx.MS + 2000);
     test('K3-N8: i heslo z obnovy po vypršení zmizí', ctx.H.h === '', ctx.H);
+    /* K4-N16 (O9): okno běží od ZADÁNÍ hesla u obnovy, ne od jejího konce.
+     * Pojistka: před opravou plati = konec obnovy + 10 min (2 FAIL). */
+    const zadanoObn = ctx.cas;
+    posunCas(zadanoObn + 4 * MIN);                                // obnova trvala 4 min
+    ctx.poObnove('heslo-obnova', false, zadanoObn);
+    test('K4-N16: po obnově okno od zadání (zbývá 6 min, ne 10)', ctx.H.plati === zadanoObn + ctx.MS && ctx.H.h === 'heslo-obnova', ctx.H);
+    posunCas(zadanoObn + 11 * MIN);
+    ctx.poObnove('heslo-obnova', false, zadanoObn);               // obnova delší než okno
+    test('K4-N16: obnova delší než okno — heslo se vůbec neuloží', ctx.H.h === '' && !ctx.H.plati, ctx.H);
   }
   console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
   process.exit(fail ? 1 : 0);

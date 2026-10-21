@@ -910,6 +910,8 @@ test('K3-N1 O7: špatné heslo → server odmítne, kopie se nezapočítá',
   await page.evaluate(() => ONLINE_STAV.hlaska));
 test('K3-N1 O7: po špatném hesle server záznam nemá a přihlášení trvá',
   !pamet.has('zalohy/kopie-disk') && await page.evaluate(() => !!ONLINE_STAV.ja));
+test('K4-N15: po špatném hesle posledni_kopie.json na Disku nevznikne (netvrdí kopii, o které server neví)',
+  await page.evaluate(() => !window.__diskSoubory.has('posledni_kopie.json')), await page.evaluate(() => [...window.__diskSoubory.keys()]));
 await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__diskSoubory.clear(); });
 test('N6: tlačítko kopii pořídí', await page.evaluate(() => onlineKopieDiskTed()) === true,
   await page.evaluate(() => ONLINE_STAV.hlaska));
@@ -949,20 +951,23 @@ await page.evaluate(() => { window.__diskPravo = 'prompt'; });
 test('N6: bez uděleného práva automatika mlčí (zeptat se smí jen po kliknutí)',
   await page.evaluate(async () => (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0));
 await page.evaluate(() => { window.__diskPravo = 'granted'; });
-test('N6: po 8 dnech se kopie po přihlášení pořídí sama, bez nového výběru složky',
+/* K4-N15 (O9): automatika po přihlášení se na heslo NEPTÁ a nic nezapíše —
+ * jen připomene tlačítko. Pojistka: před opravou automatika otevřela dialog
+ * hesla a kopii pořídila (s kontrolou posledni_kopie.json níž 4 ✗; po opravě 268/0). */
+await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__dlgTexty = []; ONLINE_STAV.hlaska = ''; });
+test('K4-N15: po 8 dnech automatika kopii nepořídí, na heslo se neptá a nic nezapíše',
+  await page.evaluate(async () => (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0
+    && window.__dlgTexty.length === 0), await page.evaluate(() => [window.__dlgTexty, [...window.__diskSoubory.keys()]]));
+test('K4-N15: …jen připomene tlačítko „Zkopírovat zálohu na Disk teď"',
+  await page.evaluate(() => /Týdenní kopie zálohy na Disk čeká.*Zkopírovat zálohu na Disk teď/.test(ONLINE_STAV.hlaska)),
+  await page.evaluate(() => ONLINE_STAV.hlaska));
+test('K4-N15: záznam kopie na serveru se automatikou nezmění', JSON.parse(pamet.get('zalohy/kopie-disk')).soubor === 'otisk_stary.json');
+test('N6: kopii pak pořídí tlačítko (bez nového výběru složky)',
   await page.evaluate(async () => { const vyber = window.__diskVyber;
-    return (await onlineKopieDiskAuto()) === true
-      && [...window.__diskSoubory.keys()].some(j => /^otisk_/.test(j)) && window.__diskVyber === vyber; }));
-pamet.set('zalohy/kopie-disk', JSON.stringify({ kdy: new Date(Date.now() - 8 * 86400000).toISOString(), soubor: 'otisk_stary.json' }));
-await page.evaluate(() => onlineOtiskyNacti());
-await page.evaluate(() => { window.__diskSoubory.clear(); window.__dlgHeslo = null; });
-test('K3-N1 O7: automatika po přihlášení se zrušeným heslem kopii nepořídí a záznam nezmění',
-  await page.evaluate(async () => (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0)
-    && JSON.parse(pamet.get('zalohy/kopie-disk')).soubor === 'otisk_stary.json');
-await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; });
-test('K3-N1 O7: automatika s heslem kopii pořídí', await page.evaluate(async () => (await onlineKopieDiskAuto()) === true));
-test('N6: čerstvá kopie (méně než 7 dní) se automaticky neopakuje',
-  await page.evaluate(async () => { window.__diskSoubory.clear(); return (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0; }));
+    return (await onlineKopieDiskTed()) === true && [...window.__diskSoubory.keys()].some(j => /^otisk_/.test(j)) && window.__diskVyber === vyber; }));
+test('N6: čerstvá kopie (méně než 7 dní) se automaticky nepřipomíná',
+  await page.evaluate(async () => { window.__diskSoubory.clear(); ONLINE_STAV.hlaska = '';
+    return (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0 && !/čeká/.test(ONLINE_STAV.hlaska); }));
 pamet.set('zalohy/kopie-disk', JSON.stringify({ kdy: new Date(Date.now() - 15 * 86400000).toISOString(), soubor: 'otisk_stary.json' }));
 await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
 await page.waitForTimeout(150);

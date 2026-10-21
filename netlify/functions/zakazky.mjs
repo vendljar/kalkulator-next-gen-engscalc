@@ -9,7 +9,7 @@
  *   variantu zamčenou v uložené verzi). */
 import { uloziste, vyzadujRoli, json, serverVerze } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
-import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B } from '../lib/zakazka_kontrola.mjs';
+import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B, zakazkaVelikostHlaska } from '../lib/zakazka_kontrola.mjs';
 
 /* Jméno k e-mailu z účtů (P7 / K16-N87) — jen pro hlášku o kolizi verzí
  * u zakázek uložených dřív, než se jméno začalo zapisovat. Jedno čtení,
@@ -81,15 +81,17 @@ export default async (req) => {
   /* Strop velikosti (audit 22. 8. 2026, B14): zakázka má řádově desítky
    * kilobajtů, s přílohami stovky. 4 MB je pojistka proti zaplnění úložiště
    * a proti holé 502 při překročení limitu Blobs — ne provozní hranice. */
+  /* K4-N18 (O9): do dvojnásobku stropu se tělo přečte, aby hláška řekla, z čeho
+   * se velikost skládá (Netlify samo nepustí tělo nad 6 MB); nad ním bez čtení. */
   const delka = +req.headers.get('content-length') || 0;
-  if (delka > ZAKAZKA_MAX_B)
+  if (delka > 2 * ZAKAZKA_MAX_B)
     return json({ ok: false, chyba: 'Zakázka je příliš velká (' + Math.round(delka / 1024) + ' kB, strop '
-      + Math.round(ZAKAZKA_MAX_B / 1024) + ' kB). Zmenšete přílohy.' }, 413);
+      + Math.round(ZAKAZKA_MAX_B / 1024) + ' kB). Zmenšete přílohy, nebo další nabídku založte jako novou zakázku.' }, 413);
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
   /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
   if (JSON.stringify(t).length > ZAKAZKA_MAX_B)
-    return json({ ok: false, chyba: 'Zakázka je příliš velká. Zmenšete přílohy.' }, 413);
+    return json({ ok: false, chyba: zakazkaVelikostHlaska(t.zakazka, Math.max(delka, JSON.stringify(t).length)) }, 413);
 
   /* POJISTKY ZAKÁZKY STOJÍ V lib/zakazka_kontrola.mjs (P4 / B72, 25. 9. 2026)
    * a volá je i obnova ze zálohy — dvě kopie by se rozešly (a rozešly).

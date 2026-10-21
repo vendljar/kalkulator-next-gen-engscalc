@@ -653,14 +653,17 @@ function onlineFirmaPopis() {
  * Smlouvy / Šablony zveřejňuje rovnou — stisk sám je to rozhodnutí (J. V.:
  * „zapisuj je rovnou stiskem"). Kontroly zůstávají stejné. Výsledek se
  * pamatuje v ONLINE_STAV.firmaVysledek, aby ho záložka ukázala u sebe. */
-async function onlineZverejniFirmu(bezPotvrzeni) {
+/* `udaje` (K4-N7, O9): co odeslat — výchozí NAST.firma; „Zapsat výchozí
+ * hodnoty" posílá online kopii s novými podmínkami (firmaJenPodminky). */
+async function onlineZverejniFirmu(bezPotvrzeni, udaje, poznamka) {
   const vysledek = (ok, text) => { ONLINE_STAV.firmaVysledek = { ok, text }; };
+  const posli = udaje || (typeof NAST !== 'undefined' ? NAST.firma : null);
   if (!jeAdminOnline()) {
     onlineZprava('Firemní údaje smí zveřejnit jen administrátor.', 'varovani');
     vysledek(false, 'Firemní údaje smí zveřejnit jen administrátor.'); render();
     return Promise.resolve(false);
   }
-  const lze = firmaLzeZverejnit(typeof NAST !== 'undefined' ? NAST.firma : null);
+  const lze = firmaLzeZverejnit(posli);
   if (!lze.ok) {
     onlineZprava('Zveřejnit se nedají: ' + lze.duvod, 'varovani');
     vysledek(false, 'Online zveřejnit nešly: ' + lze.duvod); render();
@@ -673,10 +676,10 @@ async function onlineZverejniFirmu(bezPotvrzeni) {
     + 'kdo nemají připojenou složku _DB.')) return Promise.resolve(false);
 
   ONLINE_STAV.pracuje = true; render();
-  return onlineApi('/api/firma', { udaje: NAST.firma })
+  return onlineApi('/api/firma', { udaje: posli })
     .then(() => onlineNactiFirmu().then(() => {
-      onlineZprava('Firemní údaje jsou zveřejněné online – obchodníci je uvidí po přihlášení.');
-      vysledek(true, 'Zveřejněno online – obchodníci to uvidí po přihlášení.');
+      onlineZprava('Firemní údaje jsou zveřejněné online – obchodníci je uvidí po přihlášení.' + (poznamka ? ' ' + poznamka : ''));
+      vysledek(true, 'Zveřejněno online – obchodníci to uvidí po přihlášení.' + (poznamka ? ' ' + poznamka : ''));
       return true;
     }))
     .catch(e => {
@@ -685,6 +688,18 @@ async function onlineZverejniFirmu(bezPotvrzeni) {
       return false;
     })
     .then(v => { ONLINE_STAV.pracuje = false; render(); if (typeof nastRefresh === 'function') nastRefresh(); return v; });
+}
+
+/* „Zapsat výchozí hodnoty" (K4-N7, O9): zveřejní jen platební podmínky.
+ * Ostatní rozdíly místní Firmy proti online kopii zůstanou nezveřejněné
+ * a hláška je vyjmenuje. Bez online kopie není co zachovat — zveřejní se
+ * Firma jako dosud (první zveřejnění, stisk sám je rozhodnutí, U1). */
+async function onlineZverejniPodminky() {
+  const online = ONLINE_STAV.firma ? ONLINE_STAV.firma.udaje : null;
+  const jen = typeof firmaJenPodminky === 'function' ? firmaJenPodminky(NAST.firma, online) : null;
+  if (!jen || !jen.ostatni.length) return onlineZverejniFirmu(true);
+  return onlineZverejniFirmu(true, jen.udaje, 'Zveřejněné jsou jen platební podmínky; ostatní změny Firmy ('
+    + jen.ostatni.join(', ') + ') zůstaly jen tady — zveřejníte je tlačítkem v Nastavení → Firma.');
 }
 
 /* Zveřejnit firemní údaje jde jen na serveru a jen administrátorovi. */
@@ -1108,18 +1123,23 @@ function onlineZobrazeniHesloZapomen() {
 /* K3-N8 (audit K3, dávka O5 20. 10. 2026): heslo se po vypršení okna MAŽE
  * (časovač + při každém dotazu) — dřív leželo čitelné do odhlášení, jen se
  * nepoužilo. Okno se nastavuje jen čerstvě zadanému heslu. */
-function onlineZobrazeniHesloZapamatuj(h) {
+/* K4-N16 (O9): `kdy` = čas ZADÁNÍ hesla (obnova ho předává; dřív okno běželo
+ * od konce obnovy). Okno, které už uplynulo, heslo neuloží vůbec. */
+function onlineZobrazeniHesloZapamatuj(h, kdy) {
   onlineZobrazeniHesloZapomen();
-  ZOBRAZENI_HESLO.h = h; ZOBRAZENI_HESLO.plati = Date.now() + ZOBRAZENI_HESLO_MS;
-  ZOBRAZENI_HESLO.casovac = setTimeout(onlineZobrazeniHesloZapomen, ZOBRAZENI_HESLO_MS + 1000);
+  const zadano = Number.isFinite(kdy) ? Math.min(kdy, Date.now()) : Date.now();
+  const zbyva = zadano + ZOBRAZENI_HESLO_MS - Date.now();
+  if (zbyva <= 0) return;
+  ZOBRAZENI_HESLO.h = h; ZOBRAZENI_HESLO.plati = zadano + ZOBRAZENI_HESLO_MS;
+  ZOBRAZENI_HESLO.casovac = setTimeout(onlineZobrazeniHesloZapomen, zbyva + 1000);
 }
 function onlineZobrazeniHesloPlatne() {
   if (ZOBRAZENI_HESLO.h && Date.now() >= ZOBRAZENI_HESLO.plati) onlineZobrazeniHesloZapomen();
   return !!ZOBRAZENI_HESLO.h;
 }
 /* Obnova s maticí: heslo z paměti okno neprodlužuje (cesta, kterou B192 nepokryl). */
-function onlineZobrazeniHesloPoObnove(h, zPameti) {
-  if (h && !zPameti) onlineZobrazeniHesloZapamatuj(h);
+function onlineZobrazeniHesloPoObnove(h, zPameti, kdyZadano) {
+  if (h && !zPameti) onlineZobrazeniHesloZapamatuj(h, kdyZadano);
 }
 function onlineZobrazeniHeslo(text) {
   if (onlineZobrazeniHesloPlatne()) return Promise.resolve(ZOBRAZENI_HESLO.h);
@@ -1764,10 +1784,13 @@ async function kopieDiskProved(h, heslo) {
    * nezapočítá (hlídka by jinak mlčela nad useknutým souborem). */
   if (velikostB !== ocekavano) throw new Error('soubor ' + jmeno + ' se nezapsal celý (' + velikostB + ' z ' + ocekavano + ' B)');
   const kopie = { soubor: jmeno, velikostB, sha256, otisk: o.otisk || null, puvod: o.puvod, slozka: String(h.name || '') };
-  await kopieDiskZapisSoubor(h, 'posledni_kopie.json',
-    JSON.stringify(Object.assign({ kdy: new Date().toISOString() }, kopie), null, 1));
+  /* K4-N15 (O9): posledni_kopie.json až PO přijetí záznamu serverem — při
+   * špatném hesle dřív tvrdil kopii, o které server neví. Samotný soubor
+   * zálohy na Disku zůstane (je to platná záloha), jen se nezapočítá. */
   const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });
   ONLINE_STAV.kopieDisk = (z && z.kopieDisk) || ONLINE_STAV.kopieDisk;
+  await kopieDiskZapisSoubor(h, 'posledni_kopie.json',
+    JSON.stringify(Object.assign({ kdy: (z && z.kopieDisk && z.kopieDisk.kdy) || new Date().toISOString() }, kopie), null, 1));
   return kopie;
 }
 
@@ -1803,21 +1826,18 @@ async function onlineKopieDiskTed() {
 }
 
 /* Po přihlášení správce: je-li poslední kopie starší než 7 dní (nebo žádná)
- * a v tomhle prohlížeči je složka vybraná s uděleným právem, zkopíruje se
- * sama. Bez práva mlčí (zeptat se smí jen po kliknutí) — hlídka varuje. */
+ * a v tomhle prohlížeči je složka vybraná s uděleným právem, automatika jen
+ * PŘIPOMENE tlačítko (K4-N15, O9). Kopie od K3-N1 chce heslo správce a dialog
+ * hesla hned po přihlášení, o který správce nežádal, je špatný zvyk (učí
+ * zadávat heslo do čehokoli, co vyskočí). Bez práva mlčí — hlídka varuje. */
 async function onlineKopieDiskAuto() {
   if (!jeAdminOnline() || typeof uloKopieDiskStav !== 'function') return false;
   if (!uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now()).potreba) return false;
   const h = await kopieDiskSlozka();
   if (!h || !(await uloPravo(h, true))) return false;
-  try {
-    const k = await kopieDiskProved(h);
-    onlineZprava('Týdenní kopie zálohy se sama uložila na Disk: ' + h.name + '/' + k.soubor + ' (' + kopieDiskVelikost(k.velikostB) + ').');
-    return true;
-  } catch (e) {
-    onlineZprava('Týdenní kopii zálohy na Disk se nepodařilo pořídit: ' + (e && e.message || e), 'varovani');
-    return false;
-  }
+  onlineZprava('Týdenní kopie zálohy na Disk čeká: Nastavení → Databáze → „Zkopírovat zálohu na Disk teď" '
+    + '(potvrdíte ji svým heslem).');
+  return false;
 }
 
 /* Odlití kopie na Disk Google. Jen když je složka opravdu připojená a
@@ -2912,11 +2932,12 @@ function onlineObnovaProved() {
     const casti = onlineObnovaCasti();
     const hesloUcty = o.zdrojTyp !== 'soubor' && casti.includes('uzivatele');
     const hesloMatice = casti.includes('zobrazeni') && (o.zdrojTyp !== 'soubor' || onlineObnovaNeseMatici(o.soubor));
-    let hesloSpravce, hesloZPameti = false;
+    let hesloSpravce, hesloZPameti = false, hesloKdy = 0;
     if (hesloUcty) {
       hesloSpravce = await dotazHeslo('Obnova vrátí účtům uživatelů stav z otisku včetně hesel'
         + (hesloMatice ? ' a nastavení zobrazení (práva obchodníka a vedoucího)' : '') + '. '
         + 'Potvrďte ji svým heslem (tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
+      hesloKdy = Date.now();
       if (!hesloSpravce) {
         o.hlaska = 'Obnova se neprovedla — účty se bez vašeho hesla neobnovují.'; o.hlaskaTyp = 'varovani'; render();
         return false;
@@ -2926,6 +2947,7 @@ function onlineObnovaProved() {
       hesloSpravce = await onlineZobrazeniHeslo('Obnova přepíše nastavení zobrazení, které řídí i to, kam server '
         + 'pustí obchodníka a vedoucího (CRM, náklady, ceník v zakázce). Potvrďte ji svým heslem '
         + '(tím, kterým se přihlašujete do aplikace).');
+      hesloKdy = Date.now();
       if (!hesloSpravce) {
         o.hlaska = 'Obnova se neprovedla — nastavení zobrazení se bez vašeho hesla neobnovuje '
           + '(nebo odškrtněte část „zobrazení").'; o.hlaskaTyp = 'varovani'; render();
@@ -2965,7 +2987,7 @@ function onlineObnovaProved() {
         if (chybaDavky) throw new Error('dávka ' + (hotovo + 1) + ' z ' + davky.length + ' selhala (' + chybaDavky.message
           + '); zapsáno bylo ' + hotovo + ' dávek, rejstřík je přestavený a stav před obnovou leží v otisku ' + otiskPred + '.');
       }
-      if (hesloMatice) onlineZobrazeniHesloPoObnove(hesloSpravce, hesloZPameti);   // K3-N8
+      if (hesloMatice) onlineZobrazeniHesloPoObnove(hesloSpravce, hesloZPameti, hesloKdy);   // K3-N8, K4-N16
       o.nahled = null;
       const zprava = 'Databáze obnovena: zapsáno ' + (r.nove + r.prepsane) + ' záznamů (' + r.nove + ' nových, '
         + r.prepsane + ' přepsaných), ' + r.preskocene + ' přeskočeno. ' + upoz.join(' ');

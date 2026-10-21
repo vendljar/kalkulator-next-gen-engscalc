@@ -421,6 +421,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
   var D;
   try{D=JSON.parse(document.getElementById('data').textContent);}
   catch(e){var c0=document.getElementById('cekani');c0.className='alert';c0.innerHTML='<div class="h">Data kokpitu jsou poškozená — koordinace je opraví při příští aktualizaci.</div><div class="mono">'+String(e.message).replace(/[<&]/g,'')+'</div>';return;}
+  /* K4-N21 (O9): třídy jen z povoleného seznamu a čísla jen jako čísla — jdou
+   * do atributu class / do HTML bez escapu. */
+  var STAVY={ok:1,warn:1,run:1,bad:1,idle:1};
+  var trida=function(x){return STAVY.hasOwnProperty(x)?x:'idle'};
+  var cislo=function(x){return (x!=null&&x!==''&&isFinite(+x))?+x:null};
   var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
   /* Odkazy v textech vždy živé a proklikávací (J. V. 19. 10. 2026). */
   /* Krátký popisek odkazu (J. V. 20. 10. 2026): href zůstává celý, zobrazí se jen čitelný název. */
@@ -436,6 +441,7 @@ a{color:var(--steel);overflow-wrap:anywhere}
   var lnk=function(s){return esc(s).replace(/https?:\/\/[^\s<"]+/g,function(u){var k='';var m=u.match(/[.,;:)\u201c\u201d]+$/);if(m){k=m[0];u=u.slice(0,-k.length);}return '<a href="'+u+'" target="_blank" rel="noopener" title="'+u+'">'+kratko(u)+'</a>'+k;})};
   var pill={run:'p-run',ok:'p-ok',warn:'p-warn',bad:'p-bad',idle:'p-idle'};
   var ctx=function(p,tok){
+    p=cislo(p); tok=cislo(tok);
     var tt=(tok!=null)?' · '+tok+' tis.':'';
     if(p==null) return '<div class="ctx"><span class="mono">kontext ?</span><div class="bar"><i style="width:0"></i></div></div>';
     var c=p>=75?'b':(p>=60?'w':'');
@@ -447,16 +453,17 @@ a{color:var(--steel);overflow-wrap:anywhere}
   if(D.cekaNaJV.length){c.innerHTML='<div class="h">Čeká na vás</div><ol>'+D.cekaNaJV.map(function(x){return '<li>'+lnk(x)+'</li>'}).join('')+'</ol>'}
   else{c.className='alert empty';c.innerHTML='<div class="h">Nic na vás nečeká — koordinace běží sama.</div>'}
   document.getElementById('tiles').innerHTML=D.dlazdice.map(function(t){
-    return '<div class="tile '+t.s+'"><div class="k">'+esc(t.k)+'</div><div class="v">'+esc(t.v)+'</div><div class="d">'+esc(t.d)+'</div></div>'}).join('');
+    return '<div class="tile '+trida(t.s)+'"><div class="k">'+esc(t.k)+'</div><div class="v">'+esc(t.v)+'</div><div class="d">'+esc(t.d)+'</div></div>'}).join('');
   document.getElementById('releasy').innerHTML='<b>Releasy:</b> '+lnk(D.releasy||'');
   document.getElementById('board').innerHTML=D.sezeni.map(function(s){
     var ph='';
+    s.faze=cislo(s.faze);
     if(s.faze!=null){
       var st=D.faze.map(function(f,i){var k=i<s.faze?'done':(i===s.faze?(s.stav==='warn'?'blk':'now'):'');return '<div class="step '+k+'" title="'+esc(f)+'"></div>'}).join('');
       ph='<div class="ph"><div class="steps">'+st+'</div><div class="stepl">fáze: <b>'+esc(D.faze[s.faze]||'v test')+'</b> '+Math.min(s.faze+1,D.faze.length)+'/'+D.faze.length+'</div></div>';
     }
-    return '<div class="row r-'+s.stav+'"><div class="main"><div class="name">'+esc(s.nazev)+'</div>'+
-      '<div class="meta"><span class="pill '+pill[s.stav]+'">'+esc(s.stavText)+'</span><span class="role">'+esc(s.role)+'</span><span class="mono sid">'+esc(s.id)+'</span></div>'+
+    return '<div class="row r-'+trida(s.stav)+'"><div class="main"><div class="name">'+esc(s.nazev)+'</div>'+
+      '<div class="meta"><span class="pill '+pill[trida(s.stav)]+'">'+esc(s.stavText)+'</span><span class="role">'+esc(s.role)+'</span><span class="mono sid">'+esc(s.id)+'</span></div>'+
       '<div class="co">'+lnk(s.co)+'</div>'+ph+'</div>'+
       '<div class="right"><div><div class="eta">'+esc(s.eta)+'</div><div class="etal">zbývá</div>'+(s.konec?'<div class="rt">konec ~'+esc(s.konec)+'</div>':'')+(s.bezi?'<div class="rt">běží '+esc(s.bezi)+'</div>':'')+'</div>'+ctx(s.kontext,s.kontextTok)+'</div>'+
       '<div class="next"><b>Další:</b> '+lnk(s.dalsi)+'</div></div>'}).join('');

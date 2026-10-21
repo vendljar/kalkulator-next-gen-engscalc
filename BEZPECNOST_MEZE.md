@@ -847,8 +847,18 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   **1 za 10 minut a 20 za 24 hodin** (klouzavě); nad limit server odpoví
   429 s hláškou, kdy to půjde znovu. Noční otisk a otisk před obnovou se
   nepočítají a limit je nezastaví. Počítá se z klíčů otisků v úložišti
-  (čas je v klíči). Mez: dva souběžné požadavky v téže sekundě mohou projít
-  oba (limit není transakční) — jen Administrátor, nanejvýš jednotky otisků.
+  (čas je v klíči). ~~Mez: dva souběžné požadavky v téže sekundě mohou projít
+  oba.~~ **Opraveno v O9 (K4-N5):** audit K4 ukázal, že limit šlo obejít po
+  celou dobu pořizování otisku (klíč otisku vznikal až na konci — pokus:
+  12 požadavků po 250 ms → 5× 200). Od O9 se před pořízením zapíše rezervace
+  `vynucene-rezervace/<slot>~<náhoda>`, která se do limitu počítá jako otisk;
+  v jedné instanci funkce se kontrola a rezervace řadí za sebe (`vyhradne`),
+  mezi instancemi rozhoduje druhá kontrola po zápisu rezervace (kdo uvidí
+  cizí rezervaci, svou smaže a odmítne — při souběhu dvou instancí se
+  odmítnou obě). **Trvá:** Blobs nemají podmíněný zápis, takže úplně
+  transakční to není — dvě instance, které zapíšou rezervaci a znovu čtou
+  v řádu milisekund přesně proti sobě, se odmítnou obě (fail-closed, žádný
+  otisk navíc). Rezervace po pádu funkce dožije 24 h a pak se uklidí.
 
 ### K3-N15 — zveřejnění Firmy jen s relací administrátora (vědomá mez, rozhodnutí J. V. 20. 10. 2026)
 
@@ -856,9 +866,51 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   na Firmu nerozšiřuje — rozhodnutí J. V. „beze změny“). Firma od #367 nese
   i výchozí platební podmínky, pokuty, záruky a texty nabídky PROJ pro
   všechny NOVÉ nabídky; kdo má cookie správce, může je změnit bez hesla.
-  Odeslané nabídky to od v20.10.2 nezasáhne (K3-N2 — věty a texty jsou
-  zmrazené ve variantě), rozpracované převezmou změnu. Souhrnný strop
-  podmínek 500 kB (K3-N18) omezuje velikost záznamu.
+  **Oprava textu (K4-N1, O9):** do O9 tu stálo, že odeslané nabídky to od
+  v20.10.2 nezasáhne — **neplatí to celé.** Při prvním zamčení se zmrazí jen
+  věty kalendáře plateb a díly SoD (OCK, `zmrazenoPodminky` s `vety`) a texty
+  nabídky PROJ včetně doložek (`kryciProj.zmrazenoPodminky`). **Kapitoly
+  nabídky OCK IV.–VI. (`FIRMA_NAB_POZADAVKY/TERMINY/PREDANI`) a doložky OCK
+  se nezmrazují** — dotisk odeslané nabídky OCK je bere z aktuální Firmy,
+  takže změna kapitoly nebo doložky po odeslání se v dotisku projeví. Ve
+  zmrazených doložkách PROJ se `{FIRMA}` dosazuje z aktuálního názvu firmy.
+  Zmrazit i kapitoly a doložky OCK rozhodne J. V. (doporučení K4: ano, jako
+  věty). Rozpracované nabídky převezmou změnu vždy. Souhrnný strop podmínek
+  500 kB (K3-N18) omezuje velikost záznamu.
+- **Velikost zakázky (K4-N18, O9):** snímek podmínek se ukládá do každé
+  zamčené varianty (a s ním celý výsledek, A1). Se Firmou u stropu 500 kB
+  by asi 8 zamčených variant narazilo na strop zakázky 4 MB. Od O9 server
+  při 413 vypíše, z čeho se velikost skládá (přílohy a fotky / zmrazené
+  údaje odeslaných variant / ostatní) a u odeslaných variant poradí založit
+  novou zakázku — zamčené varianty se zmenšit nedají. Dnešní texty mají
+  jednotky kB, prakticky to nenastává.
+
+### Audit K4 — opravy bez rozhodnutí J. V. (dávka O9, 21. 10. 2026)
+
+- **K4-N14 — záznam kopie jen k čerstvému otisku:** retenci odemkne jen
+  kopie jednoho ze 7 nejnovějších nočních otisků v úložišti (do O9 i kopie
+  libovolně starého otisku — staré otisky se nemažou). Počítá se z klíčů,
+  ne z hodin. Trvá mez #151 N5: kdo zná heslo správce, pošle věrohodný
+  záznam i bez souboru na Disku.
+- **K4-N15 — kopie na Disk jen po kliknutí:** automatika po přihlášení
+  správce kopii nepořizuje ani se neptá na heslo, jen připomene tlačítko.
+  `posledni_kopie.json` se na Disk zapíše až po přijetí záznamu serverem;
+  soubor zálohy, který se zapsal před odmítnutím (špatné heslo), na Disku
+  zůstane jako platná záloha, jen se nezapočítá.
+- **K4-N16 — okno hesla správce od zadání:** heslo zadané u obnovy drží
+  paměť stránky 10 minut od zadání, ne od konce obnovy; obnova delší než
+  okno heslo neuloží. Riziko trvá jen spolu s XSS (B5, B192).
+- **K4-N7 — „Zapsat výchozí hodnoty“ zveřejní jen podmínky:** liší-li se
+  místní Firma od online kopie i jinde, odejde online kopie s novými
+  podmínkami a ostatní rozdíly zůstanou jen místně (hláška je vyjmenuje).
+  Bez online kopie se zveřejní celá Firma jako dosud (první zveřejnění).
+- **K4-N12 — vstup záloh jako text:** pole těla `/api/zaloha_vynuceno` se
+  berou jen jako řetězec / číslo (objekt s klíčem `toString` dřív dal 500).
+- **K4-N6 — nabídka PROJ v7:** šablona se `{{PROJ_DPZ_UVOD}}` nebo
+  `{{PROJ_TITUL_CINNOSTI}}` musí mít bloky `BLOK_STUDIE_*` ze seznamu
+  k odstranění, jinak dokument nevznikne (fail-closed jako K3-N3).
+- **K4-N21 — kokpit koordinace:** třídy z dat jen z povoleného seznamu,
+  čísla jen jako čísla (do O9 šly do `class` a HTML bez escapu).
 
 ### B194 — zámek mutačních běhů (jen vývoj, ne produkce)
 
