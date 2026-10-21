@@ -1,3 +1,22 @@
+# Předávka — 21. 10. 2026: dávka K4 (bez verze), větev `claude/k4-kolo` — celé kolo s mutacemi a audit nad v20.10.7
+
+Nad `test` fa08e9c (kód b6f49a7 = v20.10.7). Kód aplikace beze změny; do test / main / test-draft / integrace nic.
+Koordinace přes noc: session_01By6bWivtf2rTJYJFGVv8e1 („ŘÍDÍCÍ 20.10 noc“). Podklad: `podklady/K4_AUDIT_20_10.md`,
+CHANGELOG (v20.10.7, oddíl K4), roadmapa #449.
+
+- **Hotovo — kolo:** sady 286 / 0 / 6 přeskočeno, statické 4/4, mutace jádra 393/394 (přežila „DPH: prohlášení
+  o snížené sazbě i mimo bydlení“ = prázdný test po V7-N2, K4-N22), mutace serveru 668/668 (60 částí podle
+  souboru, úplnost ověřena po názvech).
+- **Hotovo — audit 1b0e2f7..b6f49a7:** 0 kritických, 0 vysokých, 3 střední (K4-N1 kapitoly IV.–VI. a doložky OCK
+  se při zamčení nezmrazují × BEZPECNOST_MEZE tvrdí opak; K4-N2 skript W2 smaže čerstvou dávkovou větev nad
+  starou špičkou test; K4-N3 W2 maže bez lease), 10 nízkých, 10 informativních. Regrese K3: 18 opraveno, K3-N2 částečně.
+- **Předáno:** K4-N2, K4-N3, K4-N22 opravuje O8 (`claude/o8-k4-nalezy`, session_011JwntSkAYYZryjVGfc4TZe);
+  K4-N23 (test_obnova padá ~23:49–24:00 UTC) předán koordinaci.
+- **Čeká na J. V.:** K4-N1 zmrazit i kapitoly/doložky OCK (doporučeno ano), K4-N4 kdo smí přepsat/vypnout výjezd PROJ,
+  K4-N13 retence do potvrzení správcem, K4-N17 termín starého tvaru výjimky (doporučeno ponechat), K4-N20 Rulesets.
+- **Pozor:** `smazat_vetve.yml` zatím není v `main`; po posunu do `main` do opravy K4-N2/N3 spouštět jen s `jen_vypsat`.
+- **Lokálně J. V.:** sady s firemními podklady (`KNG_PODKLADY`) a `test.js` s ostrým ceníkem.
+
 # Předávka — 20. 10. 2026: dávka B183 (v20.10.5), větev `claude/b183-plocha-01` — plocha výjimky na 0,1 m²
 
 Nad `test` (5dc28d1, v20.10.1). Do test / main / test-draft / integrace nic — slučuje koordinace

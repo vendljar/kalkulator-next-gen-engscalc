@@ -7005,6 +7005,20 @@
    "kde": "`src/vyjimky.js`, `src/ui/schvalovani_ui.js`, `mutace_jadro.mjs`, `netlify/mutace.mjs`",
    "hotovoV": "v20.10.5",
    "pozn": "Id 448 přidělila koordinace (předběžné 441 kolidovalo s D1) (přidělí koordinace při sloučení; 438–440 nechány souběžným dávkám O7, D1, D2)."
+  },
+  {
+   "id": "449",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "hotovoV": "v20.10.7",
+   "nazev": "K4 — celé testovací kolo s mutacemi a bezpečnostní audit 1b0e2f7..b6f49a7 (O5–O7, D1, D2, B183, V7-N2, U1, W2)",
+   "proc": "Dávka K4 (J. V. 20. 10. 2026, přes noc): ověřit integraci v20.10.7 celým kolem a auditovat změny od K3.",
+   "detail": "Kolo nad b6f49a7: sady 286/0/6, mutace jádra 393/394 (přežila „DPH: prohlášení o snížené sazbě i mimo bydlení“ — prázdný test po V7-N2, K4-N22), mutace serveru 668/668, statické 4/4. Audit (podklady/K4_AUDIT_20_10.md): 0 kritických, 0 vysokých, 3 střední (K4-N1 kapitoly a doložky OCK se při zamčení nezmrazují × BEZPECNOST_MEZE; K4-N2 a K4-N3 skript mazání větví W2 — čerstvá větev nad starou špičkou test, mazání bez lease), 10 nízkých (vč. K4-N23 test_obnova kolem půlnoci UTC), 10 informativních. Regrese K3: 18 opraveno, K3-N2 částečně.",
+   "hotovoKdyz": "Kolo i audit zapsané (podklad, CHANGELOG), nálezy předané koordinaci s návrhem, co opravit bez J. V.",
+   "kde": "`podklady/K4_AUDIT_20_10.md`, `CHANGELOG.md`",
+   "pozn": "Bez změny kódu a verze. Opravy: K4-N2, K4-N3, K4-N22 dávka O8 (claude/o8-k4-nalezy); ostatní bez J. V. do další opravné dávky; rozhodnutí J. V.: K4-N1 (doporučeno zmrazit), K4-N4, K4-N13, K4-N17, K4-N20."
   }
  ],
  "meta" : {
