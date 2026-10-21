@@ -29,6 +29,8 @@ slučuje koordinace (ŘÍDÍCÍ session_01By6bWivtf2rTJYJFGVv8e1). Rozhodnutí J
   147/0, `overit_controlling.mjs` 44/0, `test_escape` 37/0; mutace „#447 C" 24/24 (C2 7, C3 13, C4 4). Kolo
   `--bez-mutaci` (ca592dc předchůdce): 290/2/6 → obě opravené (test_escape `${id}`; overit_verzi jen kvůli
   `KNG_NEZVYSOVAT_VERZI` exportované do kola — bez ní 7/0).
+  **Kolo `--bez-mutaci` nad dff91bc (C3 + C4): 292 prošlo / 0 selhalo / 6 přeskočeno (test.js a KNG_PODKLADY),
+  statické 4/4 — VŠE ZELENÉ.**
 
 # Předávka — 21. 10. 2026 noc: dávka O9 (kód aplikace, verzi přidělí sloučení) — opravy K4 bez rozhodnutí J. V.
 
