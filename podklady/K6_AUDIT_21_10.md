@@ -5,11 +5,12 @@
 - **Navazuje na:** `podklady/K5_AUDIT_21_10.md` (K5-S1…K5-W7) a `podklady/K4_AUDIT_20_10.md`.
 - **Rozsah:** `git diff 7652bb9..7fac477` (v21.10.4 → v21.10.5; 42 souborů, 27 commitů): O12 #474 (průvodce šablon — jazykové verze k platné češtině), S11 (šablona SoD realizace v4, `vyrob_sablony.js --sod-real-v4`), Controlling C5 (export v2) + C6 #447 (objednané příplatky — `src/objednane.js`, `objKontrola` na serveru, krycí list, export `podle=prodej`, SoD), O13 (opravy K5-S1, K5-K1 + K5-K3, K5-W1, K5-W2; „(DPZ)*“ v jazykové verzi), zápis K5.
 - **Metoda:** jen čtení ve třech čočkách třemi nezávislými subagenty — (1) server, autorizace, úložiště; (2) klient, dokumenty, XSS, zámek a integrita odeslané nabídky; (3) nástroje, W2, CI, supply chain, tajemství. Pokusy nad kopiemi stromu (`git archive 7fac477`) s úložištěm v paměti, W2 nad lokálním holým repem s podvrženým `gh`; nikdy proti GitHubu ani síti. Nálezy K6-S1, K6-S3, K6-K1, K6-K2, K6-W1 a K6-W2 ověřeny druhým, vlastním čtením kódu. Opravy kódu se v dávce nedělaly (zadání).
+- **Testovací kolo K6** (týž SHA): sady 296/0/6, mutace jádra 417/417, mutace serveru 753/753, statické 4/4 — žádná přeživší mutace, viz oddíl „Testovací kolo“.
 - Ceny ani osobní údaje v auditu nejsou.
 
 ## Testovací kolo
 
-Celé kolo nad `7fac477` (v21.10.5), 21. 10. 2026 od 16:30 UTC; `ADMIN_EMAIL=spravce@priklad.cz`, `KNG_NEZVYSOVAT_VERZI` do kola NEexportováno:
+Celé kolo nad `7fac477` (v21.10.5), 21. 10. 2026 16:30–19:51 UTC, po částech; `ADMIN_EMAIL=spravce@priklad.cz`, `KNG_NEZVYSOVAT_VERZI` do kola NEexportováno:
 
 | Krok | Výsledek | Pozn. |
 |---|---|---|
@@ -17,11 +18,21 @@ Celé kolo nad `7fac477` (v21.10.5), 21. 10. 2026 od 16:30 UTC; `ADMIN_EMAIL=spr
 | Sady (`spust_testy.sh --smoke`) | **296 prošlo / 0 selhalo / 6 přeskočeno** (302 sad) | 19 min 0 s; přeskočené `test.js` (ostrý ceník) + 5 harnessů bez `KNG_PODKLADY` (`overit_manual`, `overit_nabidka_proj_word`, `overit_sablona`, `overit_sablony_online`, `overit_sod`) |
 | Statické kontroly | **4/4** | verze, CRLF, osobní údaje a tajemství, test výběru větví W2 51/0 |
 | Mutace jádra (`mutace_jadro.mjs`) | **417/417** | 170 sad; samostatný `git worktree` nad `7fac477`, 16:31–17:40 UTC; otisky obou jader po běhu souhlasí, strom čistý |
-| Mutace serveru (`netlify/mutace.mjs`) | _běží_ | 753 mutací, 64 souborů = 64 částí filtrem podle cesty souboru ve třech frontách (3 `git worktree` nad `7fac477`); `--kontrola` 753/753 |
+| Mutace serveru (`netlify/mutace.mjs`) | **753/753**, 0 chybně zadaných | 64 souborů = 64 částí filtrem podle cesty souboru ve třech frontách (3 samostatné `git worktree` nad `7fac477`, 16:31–19:51 UTC; běžely mimo 2h strop úloh na pozadí, žádná část se nepřerušila); úplnost ověřena po názvech proti zadání `7fac477` (753 unikátních mutací chycených, žádná neověřená ani navíc; `--kontrola` 753/753). Stromy po každé části i po běhu čisté na `7fac477`; výchozí stav „sady nejsou zelené ani bez mutace“ nenastal ani jednou. |
+
+**Přeživší mutace: žádná** (jádro 417/417, server 753/753) → **prázdné testy (přeživší mutace s funkčním kódem): žádné.** Pro úplnost: auditní čočka 3 ručními mutanty `nastroje/test_sloucene_vetve.sh` (mimo `testovaci_kolo.sh`) našla nechycené K5-W4, K5-W7 (trvají) a nový K6-W4 — v „opravit bez J. V.“.
+
+Zbývá jen J. V. lokálně: sady s firemními podklady (šablony z Disku) a `test.js` s ostrým ceníkem.
 
 ## Verdikt
 
-_Doplní se po doběhnutí mutací._
+**VYHOVUJE S VÝHRADOU — 0 kritických, 0 vysokých, 1 střední, 9 nízkých, 12 informativních.** Kolo je celé zelené a žádná mutace nepřežila. Opravy K5 z O13 drží (K5-S1, K5-K1, K5-K3, K5-W1, K5-W2), regrese K4 ani K5 není. K5-S2, K5-W4 a K5-W7 O13 neopravila (zůstávají v „opravit bez J. V.“). Výhrady se týkají nového kódu **C6 (objednané příplatky)**:
+- **K6-K1 (střední, funkční):** objednaný *vlastní* příplatek server odmítne, takže uložení zakázky selže, ale SoD se z prohlížeče vytiskne a záznam tisku se neuloží.
+- **K6-S1:** objekt v `objednane` shodí uložení na HTTP 500 (stejná třída chyby jako K5-S1).
+- **K6-S3:** `varianta` jako pole skryje prodej z exportu.
+- **K6-S2 (J. V.):** obchodník obejde pravidlo „po podpisu SoD jen admin“ tím, že smaže datum podpisu.
+
+C6 drží hranici rolí (obchodník cizí zakázky 403, razítka ze serveru) a nemění odeslanou nabídku. Mimo aplikaci: data kokpitu lze ukončit `</ScRiPt>` (K6-W1) a kontrola osobních údajů nečte `podklady/` ani `.claude/` (K6-W2).
 
 | | Počet | Nálezy |
 |---|---|---|
@@ -111,4 +122,24 @@ Trvají z K5 (beze změny, čekají na J. V.): **K5-W3** (první ostrý běh W2 
 
 ## Doporučený postup
 
-_Doplní se po doběhnutí mutací._
+1. **Posun `test` → `main`:** kolo je celé zelené, žádná mutace nepřežila, kritické ani vysoké nálezy nejsou. Jediný střední nález (K6-K1) se projeví jen tehdy, když obchodník u SoD zaškrtne **vlastní** příplatek. Doporučení:
+   - **varianta A:** posunout s opravnou dávkou K6-K1 + K6-S1 + K6-S3 (malé, jeden soubor `src/objednane.js` + testy);
+   - **varianta B:** posunout hned a do opravy obchodníky upozornit, ať vlastní příplatky v kartě „Objednané příplatky“ nezaškrtávají.
+
+   Rozhoduje J. V.; doporučuji A (oprava je na hodinu práce, kolo `--bez-mutaci` + cílené mutace).
+2. **Opravná dávka bez rozhodnutí J. V.** (jedna verze, testy s pojistkou před/po a mutace):
+   - **přednostně:** K6-K1, K6-S1, K6-S3;
+   - **dál:** K6-S4, K6-S6, K6-K5, K6-K6, K6-K8, K6-K9, K5-S2;
+   - **nástroje:** K6-W2, K6-W3 (před zveřejněním v4 otevřít ve Wordu), K6-W4, K5-W4, K5-W7;
+   - **kokpit:** K6-W1 (opraví koordinace ve skillu).
+3. **Čeká na J. V.** (s doporučením):
+   - K6-S2: „vrácení“ podpisu SoD. Doporučení: ne-adminovi zakázat změnu nebo smazání platného uloženého data podpisu a datum podpisu v budoucnosti; jinak aspoň doplnit mez.
+   - K6-K2: SoD s objednanými a šablonou v3. Doporučení: zveřejnit v4 CZ/EN/DE/FR spolu s C6 v `main`.
+   - K6-K3: přechodové plechy po položkách. Doporučení: sloučit jako v nabídce.
+   - K6-K4: otisk objednaných a ceny díla v záznamu tisku SoD. Doporučení: ano + upřesnit mez.
+   - K6-S5: spodní mez data prodeje. Doporučení: ≥ den zámku.
+   - K6-S7: razítka obnovy. Doporučení: razítkovat relací.
+   - K6-K7: CSV, zbytkové znaky. Doporučení: ponechat.
+   - K6-W5 / K5-W6: jména v repu nahradit rolí. Doporučení: ano.
+   - K6-W6: ověřit, že částky v podkladu S11 jsou smyšlené.
+   - Trvají z K5: K5-W3 / K5-W5 (Rulesets), K5-K2 (zapsat mez), K5-S3 (zapsat mez), K5-S4 (změřit), K5-K4 (ponechat).
