@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v21.10.2 · sestaveno 21. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v21.10.3 · sestaveno 21. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -14,9 +14,13 @@
       ]
     },
     {
-      "nadpis": "Co je nového — dávka O10 (21. 10. 2026, číslo verze doplní sloučení)",
+      "nadpis": "Co je nového ve verzi v21.10.3 (21. 10. 2026)",
       "odstavce": [
-        "**Odeslaná nabídka OCK si drží kapitoly IV.–VI. a doložky.** Při prvním tisku (zamčení varianty) se s platebními podmínkami uloží i texty kapitol Požadavky pro provedení realizace, Termíny realizace, Předání díla a doložek ve všech jazycích. Dotisk odeslané nabídky je proto stejný, i když administrátor mezitím texty v Nastavení → Firma změní. Rozpracované (nezamčené) nabídky berou vždy aktuální texty. Nabídky odeslané před touto verzí se tisknou jako dosud, tedy s aktuálními texty z Firmy."
+        "**Odeslaná nabídka OCK si drží kapitoly IV.–VI. a doložky.** Při prvním tisku (zamčení varianty) se s platebními podmínkami uloží i texty kapitol Požadavky pro provedení realizace, Termíny realizace, Předání díla a doložek ve všech jazycích. Dotisk odeslané nabídky je proto stejný, i když administrátor mezitím texty v Nastavení → Firma změní. Rozpracované (nezamčené) nabídky berou vždy aktuální texty. Nabídky odeslané před touto verzí se tisknou jako dosud, tedy s aktuálními texty z Firmy.",
+        "**Cena výjezdu technika u akce mimo Prahu (kalkulace PROJ).** Zaškrtávátko „Akce mimo Prahu“ zapínáte dál sami — k ceně zaměření, studie, DPZ a kolaudace se přičte cena 1 výjezdu technika z ceníku PROJ. **Cenu výjezdu ale přepisuje jen ten, kdo smí vidět náklady** (administrátor, případně role, které to administrátor povolí); obchodník ji vidí jako číslo. Potřebujete-li u zakázky jinou cenu cesty, požádejte administrátora.",
+        "Zadá-li se do ceny výjezdu číslo s desetinnou čárkou nebo jiný nečitelný údaj, aplikace upozorní a hodnotu nezmění — dřív se takové číslo tiše počítalo jako nula.",
+        "**Měděná střecha podle ručně přepsané plochy zastřešení (OCK, exteriér).** Když u řádku ZASTŘEŠENÍ ŠACHTY (EXT) ručně přepíšete množství, PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) teď počítá s touto plochou (dřív s vypočtenou). Stříška nad můstkem je v přepsané ploše už zahrnutá. Vlastní ruční množství mědi má dál přednost; odeslané (zamčené) nabídky se nemění.",
+        "**Pro administrátora — zálohy:** když noční záloha nese méně než polovinu zakázek nebo účtů proti předchozí noci, mazání starých záloh se zastaví a **zůstane zastavené, dokud v Nastavení → Databáze nestisknete „Úbytek byl záměrný“** (potvrzení svým heslem), nejdéle 30 dní. Než potvrdíte, zkontrolujte, že se data opravdu neztratila — starší zálohy jsou pro obnovu k dispozici."
       ]
     },
     {

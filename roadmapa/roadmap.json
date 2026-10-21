@@ -7026,18 +7026,19 @@
   {
    "id": "451",
    "vlna": "C",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "nizka",
    "slozitost": "S",
    "nazev": "Měď na střechu při ručně přepsané ploše zastřešení bere vypočtenou plochu",
    "proc": "Zjištěno v dávce K29-N1 (20. 10. 2026), mimo její rozsah: když je zastřešení šachty v nabídce, ale s ručně přepsaným množstvím (ne nulou), příplatek za měď dál počítá s vypočtenou plochou, ne s přepsanou.",
-   "detail": "Rozhodnout, zda má měď převzít ruční plochu zastřešení (a případně stříšku nad můstkem), nebo zůstat u vypočtené. Neopravovat bez pokynu J. V.",
-   "hotovoKdyz": "Rozhodnutí J. V.; případně test s pojistkou a mutace.",
+   "detail": "HOTOVO (O11, rozhodnutí J. V. 21. 10. 2026, varianta A): s ručním množstvím zastřešení (platné číslo ≠ 0) bere měď přepsanou plochu; stříška nad můstkem je v ní obsažená, nic se nepřičítá. Prázdný/nečitelný přepis = vypočtená, vlastní množství mědi má přednost, zamčené varianty beze změny.",
+   "hotovoKdyz": "test_mustky.js #451 (oba modely, pojistka 4 FAIL); mutace jádra #451 (3) + upravená #356.",
+ "hotovoV": "",
    "kde": "`src/engine.js`",
    "zavisi": [
     "450"
    ],
-   "pozn": "Otevřený bod z K29-N1."
+   "pozn": "Otevřený bod z K29-N1; uzavřeno v dávce O11 (v21.10.3)."
   },
   {
    "id": "452",
@@ -7348,8 +7349,53 @@
    "hotovoKdyz": "src/test_o10_kapitoly.js bez opravy 11 ✕, s opravou 30/0; test_prava O10 4/0 (porovnání zámku bez snímku → 3 ✕); mutace O10 v mutace_jadro.mjs a netlify/mutace.mjs.",
    "kde": "`src/firma.js`, `src/kryci.js`, `src/nabidka.js`, `BEZPECNOST_MEZE.md`",
    "zavisi": [{"id": "460", "typ": "doporuceno", "proc": "text meze K4-N1 z O9"}],
-   "hotovoV": "O10 (verzi přidělí sloučení)",
+   "hotovoV": "v21.10.3",
    "pozn": "Id přidělila koordinace (dávka O10)."
+  },
+  {
+   "id": "470",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K4-N4: cenu výjezdu technika PROJ přepisuje jen role s právem na náklady (+ tvar čísla)",
+   "proc": "Audit K4: přepis PJ.vyjezdKcPrepis nebyl pod ochranou B112 a kreslil se každé roli; „100,5“ tiše dalo 0.",
+   "detail": "HOTOVO (O11, rozhodnutí J. V. 21. 10. 2026): pole jen se sloupce.naklad, obchodník vidí účinnou cenu a smí „Akce mimo Prahu“; uloB112PrepisyProj zná vyjezdKcPrepis (403); uloZaporneVZadani hlídá tvar, zápor a strop (400, upozornění v prohlížeči); nečitelný vstup v poli hodnotu nezmění a ohlásí se.",
+   "hotovoKdyz": "test_uloziste.js +4 (před opravou 3 FAIL), test_prava.mjs +8 (před opravou 4 FAIL), overit_o11_vyjezd.mjs 14/0 (před opravou spadne); mutace O11 K4-N4 (3).",
+   "kde": "`src/ui/kalk_proj.js`, `src/uloziste.js`, `netlify/test_prava.mjs`, `src/test_uloziste.js`, `overit_o11_vyjezd.mjs`",
+   "zavisi": [],
+   "hotovoV": "",
+   "pozn": "Id přidělila koordinace (dávka O11); verzi přidělí sloučení."
+  },
+  {
+   "id": "471",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K4-N13: retence nočních záloh stojí do potvrzení úbytku správcem (nejdéle 30 dní)",
+   "proc": "Audit K4: pojistka K3-N13 zastavila retenci jen na jednu noc — další noc se srovnalo s „chudým“ otiskem a mazalo se.",
+   "detail": "HOTOVO (O11, rozhodnutí J. V. 21. 10. 2026): retenceDrzena + retenceProved drží retenci při nepotvrzeném varování < 30 dní; POST /api/zaloha_vynuceno { akce: 'retence-potvrdit', den, hesloSpravce }; tlačítko „Úbytek byl záměrný“ v Nastavení → Databáze; potvrzené varování zhasne; popsáno v BEZPECNOST_MEZE.md.",
+   "hotovoKdyz": "test_zalohy.mjs blok O11 15/0 (před opravou 3 FAIL + výjimka), test_o7_kopie_klient.js +2, overit_online.mjs +2 (před opravou FAIL); mutace O11 K4-N13 (7).",
+   "kde": "`netlify/lib/zalohovani.mjs`, `netlify/functions/zaloha_vynuceno.mjs`, `netlify/functions/zaloha_nocni.mjs`, `src/uloziste.js`, `src/ui/online_ui.js`",
+   "zavisi": [],
+   "hotovoV": "",
+   "pozn": "Id přidělila koordinace (dávka O11); verzi přidělí sloučení."
+  },
+  {
+   "id": "472",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "nizka",
+   "slozitost": "XS",
+   "nazev": "K4-N17: výjimky B183 ve starém tvaru (celé m²) bez časového omezení — ponecháno",
+   "proc": "Audit K4: výjimky schválené před v20.10.5 platí, dokud se nezmění obsah; mez nekrytého nárůstu < 1 m².",
+   "detail": "UZAVŘENO bez změny kódu (rozhodnutí J. V. 21. 10. 2026: ponechat). Mez zapsaná v BEZPECNOST_MEZE.md.",
+   "hotovoKdyz": "Rozhodnutí J. V. zapsané v roadmapě a MEZE.",
+   "kde": "`src/vyjimky.js`, `BEZPECNOST_MEZE.md`",
+   "zavisi": [],
+   "hotovoV": "",
+   "pozn": "Id přidělila koordinace (dávka O11)."
   }
  ],
  "meta" : {

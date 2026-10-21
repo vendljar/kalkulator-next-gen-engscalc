@@ -116,7 +116,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* O9 (21. 10. 2026): K4-N7 „Zapsat výchozí hodnoty" jen podmínky (src/firma.js). */
      '../src/test_o9_k4.js',
      /* O10 (21. 10. 2026): K4-N1 kapitoly a doložky OCK ze snímku (src/nabidka.js, src/firma.js). */
-     '../src/test_o10_kapitoly.js'];
+     '../src/test_o10_kapitoly.js',
+     /* O11 (21. 10. 2026): K4-N4 tvar, zápor a strop ceny výjezdu PROJ (uloZaporneVZadani). */
+     '../src/test_uloziste.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -3359,6 +3361,49 @@ const MUTACE = [
     hledej: "  FIRMA_KAP_VYCHOZI_KLICE.forEach(k => { out[k] = typeof snimek[k] === 'string' ? snimek[k] : ''; });",
     nahrad: "  FIRMA_KAP_VYCHOZI_KLICE.forEach(k => { if (typeof snimek[k] === 'string') out[k] = snimek[k]; });",
     proc: "kapitola prázdná při odeslání by se v dotisku doplnila z aktuální Firmy" },
+  /* O11 (21. 10. 2026, rozhodnutí J. V.): K4-N4 cena výjezdu technika PROJ
+   * jen s právem sloupce.naklad a s tvarem čísla; K4-N13 retence stojí do
+   * potvrzení úbytku správcem (nejdéle 30 dní). */
+  { nazev: "O11: K4-N4 B112 nezná cenu výjezdu", soubor: "../src/uloziste.js",
+    hledej: "  if (hv !== '') out['#zadani\\u0000vyjezdKcPrepis'] = { h: hv, kde: 'proj.zadani.vyjezdKcPrepis' };",
+    nahrad: "  void hv;",
+    proc: "obchodník by ručním požadavkem vynuloval cestovné" },
+  { nazev: "O11: K4-N4 tvar a zápor ceny výjezdu se nehlídá", soubor: "../src/uloziste.js",
+    hledej: "    hlidej(zp.vyjezdKcPrepis, 'proj.zadani.vyjezdKcPrepis');",
+    nahrad: "    void 0;",
+    proc: "„100,5\" by jádro tiše počítalo jako 0" },
+  { nazev: "O11: K4-N4 cena výjezdu bez stropu", soubor: "../src/uloziste.js",
+    hledej: "    strop(zp.vyjezdKcPrepis, 'proj.zadani.vyjezdKcPrepis');",
+    nahrad: "    void 0;",
+    proc: "obří cena výjezdu by dala nekonečno v ceně" },
+  { nazev: "O11: K4-N13 retence drží jen jeden den", soubor: "lib/zalohovani.mjs",
+    hledej: "  if (dnu >= RETENCE_VAROVANI_DNU) return null;",
+    nahrad: "  if (dnu >= 1) return null;",
+    proc: "druhou noc by retence mazala dobré otisky" },
+  { nazev: "O11: K4-N13 potvrzení retenci neodemkne", soubor: "lib/zalohovani.mjs",
+    hledej: "  if (!varovani || typeof varovani !== 'object' || varovani.potvrzeno) return null;",
+    nahrad: "  if (!varovani || typeof varovani !== 'object') return null;",
+    proc: "tlačítko by nic neudělalo, úložiště by 30 dní rostlo" },
+  { nazev: "O11: K4-N13 retenceProved nedrží", soubor: "lib/zalohovani.mjs",
+    hledej: "  if (drzeno)\n    return { smazano: [], chyby: [], drzeno,",
+    nahrad: "  if (false)\n    return { smazano: [], chyby: [], drzeno,",
+    proc: "pojistka by zase platila jen jednu noc" },
+  { nazev: "O11: K4-N13 potvrzení bez kontroly varování", soubor: "functions/zaloha_vynuceno.mjs",
+    hledej: "    if (!retenceDrzena(v))",
+    nahrad: "    if (!v)",
+    proc: "šlo by potvrzovat znovu a přepsat čas potvrzení" },
+  { nazev: "O11: K4-N13 potvrzení jiného dne", soubor: "functions/zaloha_vynuceno.mjs",
+    hledej: "    if (txt(telo.den) !== String(v.den || ''))",
+    nahrad: "    if (false)",
+    proc: "staré potvrzení by odemklo novější, nezkontrolované varování" },
+  { nazev: "O11: K4-N13 potvrzení bez hesla správce", soubor: "functions/zaloha_vynuceno.mjs",
+    hledej: "    if (stopHeslo) return stopHeslo;",
+    nahrad: "    void stopHeslo;",
+    proc: "mazání záloh by odemkla samotná cookie" },
+  { nazev: "O11: K4-N13 potvrzené varování svítí dál", soubor: "../src/uloziste.js",
+    hledej: "  if (v.potvrzeno) return null;",
+    nahrad: "",
+    proc: "správce by nevěděl, že potvrzení prošlo" },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------

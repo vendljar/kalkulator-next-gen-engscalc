@@ -1481,6 +1481,26 @@ console.log('\n===== B112: CENÍK VARIANTY A SKRYTÉ PŘEPISY PODLE ROLE HLÍDÁ
   const r8 = await upravB112(a => { d0(a).cenik.marze = 0.05; }, cVedB);
   test('B112: vedoucí (bez práva v matici) sníží přirážku → 403', r8.status === 403, r8);
 
+  /* K4-N4 (O11, rozhodnutí J. V. 21. 10. 2026): ruční cena výjezdu technika
+   * PROJ je přepis ceny jako sazba — smí jen role s právem sloupce.naklad.
+   * „Akce mimo Prahu" smí obchodník. Pojistka: před O11 r8a–r8c vrátily 200
+   * (pole v B112 chybělo) a „100,5" od administrátora také 200. */
+  const sAkci = (z) => { d0(z).proj.zadani.akceMimoPrahu = true; };
+  const r8a = await upravB112(a => { d0(a).proj.zadani.akceMimoPrahu = true; d0(a).proj.zadani.vyjezdKcPrepis = 0; }, cObchB);
+  test('K4-N4: obchodník přepíše cenu výjezdu na 0 („cestu neúčtujeme") → 403', r8a.status === 403 && /vyjezdKcPrepis/.test(r8a.chyba || ''), r8a);
+  const r8b = await upravB112(a => { d0(a).proj.zadani.vyjezdKcPrepis = 1; }, cObchB, z => { sAkci(z); d0(z).proj.zadani.vyjezdKcPrepis = 5000; });
+  test('K4-N4: obchodník změní sjednanou cenu výjezdu 5000 → 1 → 403', r8b.status === 403, r8b);
+  const r8c = await upravB112(a => { delete d0(a).proj.zadani.vyjezdKcPrepis; }, cObchB, z => { sAkci(z); d0(z).proj.zadani.vyjezdKcPrepis = 5000; });
+  test('K4-N4: obchodník smaže sjednanou cenu výjezdu → 403', r8c.status === 403, r8c);
+  const r8d = await upravB112(a => { d0(a).proj.zadani.akceMimoPrahu = true; }, cObchB);
+  test('K4-N4: obchodník zapne „Akce mimo Prahu" (cena z ceníku) → 200', r8d.status === 200, r8d);
+  const r8e = await upravB112(a => { d0(a).proj.zadani.akceMimoPrahu = false; a.nazevAkce += ' (x)'; }, cObchB, z => { sAkci(z); d0(z).proj.zadani.vyjezdKcPrepis = 5000; });
+  test('K4-N4: obchodník s nezměněnou sjednanou cenou vypne akci a uloží → 200', r8e.status === 200, r8e);
+  const r8f = await upravB112(a => { d0(a).proj.zadani.vyjezdKcPrepis = 4200; }, cAdmin, sAkci);
+  test('K4-N4: administrátor cenu výjezdu přepíše → 200', r8f.status === 200, r8f);
+  const r8g = await upravB112(a => { d0(a).proj.zadani.vyjezdKcPrepis = '100,5'; }, cAdmin, sAkci);
+  test('K4-N4: cena výjezdu „100,5" (jádro by četlo 0) i od administrátora → 400', r8g.status === 400 && /vyjezdKcPrepis/.test(r8g.chyba || ''), r8g);
+
   /* 9–14) oprava nesmí blokovat běžnou práci */
   const r9 = await upravB112(a => { d0(a).cenik.marze = 0.05; d0(a).cenik.profilasKgKc = 1; d0(a).proj.cenik.marze = 0.1;
     d0(a).ock.zadani.mnozstviPrepis = { 'MONTÁŽ NA STAVBĚ': 10 }; d0(a).proj.zadani.sekce[0].prirazkaPct = -50; }, cAdmin);
@@ -1518,6 +1538,8 @@ console.log('\n===== B112: CENÍK VARIANTY A SKRYTÉ PŘEPISY PODLE ROLE HLÍDÁ
   await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: { 'sloupce.naklad': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
   const r17 = await upravB112(a => { d0(a).ock.zadani.mnozstviPrepis = { 'MONTÁŽ NA STAVBĚ': 10 }; d0(a).proj.zadani.sekce[0].prirazkaPct = 5; }, cObchB);
   test('B112: obchodník s právem sloupce.naklad (sloupce, kde se přepisy zadávají) smí přepsat (200)', r17.status === 200, r17);
+  const r17v = await upravB112(a => { d0(a).proj.zadani.vyjezdKcPrepis = 0; }, cObchB, sAkci);
+  test('K4-N4: obchodník s právem sloupce.naklad smí přepsat cenu výjezdu (200)', r17v.status === 200, r17v);
   await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: {} }, cAdmin);
 
   /* 18) přepočet po položkách na novou verzi ceníku: směs uložené a zveřejněné */

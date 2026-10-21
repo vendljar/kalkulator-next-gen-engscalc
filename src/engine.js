@@ -1104,6 +1104,16 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const zastreseniVNabidce = ext
     && !(Array.isArray(z.nepocitat) && z.nepocitat.map(String).indexOf(strechaNazev) >= 0)
     && !(strechaPrepisJe && +strechaPrepis === 0);
+  /* MĚĎ PODLE RUČNÍ PLOCHY ZASTŘEŠENÍ (#451, rozhodnutí J. V. 21. 10. 2026).
+   * Je-li řádek ZASTŘEŠENÍ ŠACHTY (EXT) v nabídce s ručně přepsaným
+   * množstvím (platné číslo ≠ 0), bere příplatek za měď tuto plochu místo
+   * vypočtené `strechaM2`. Stříška nad nejvyšším můstkem (#356) je součástí
+   * téže střechy, takže v přepsané ploše už je — nic se nepřičítá (varianta
+   * A, koordinace 21. 10.). Prázdný přepis = vypočtená plocha; vlastní ruční
+   * množství mědi má dál přednost (mkPrip); zamčené varianty nese zmrazený
+   * výsledek. */
+  const medStrechaM2 = (zastreseniVNabidce && strechaPrepisJe && Number.isFinite(+strechaPrepis) && +strechaPrepis !== 0)
+    ? +strechaPrepis : strechaM2;
 
   const prechKs = prechodoveAno ? nastupist : 0;
   const prechKsMont = prechMontAno ? nastupist : 0;
@@ -2114,7 +2124,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * ruční množství mědi = vědomá dohoda obchodníka, řádek zůstává. Název
      * se zapíše i bez řádku, ať přepisy mědi nejsou „sirotci" (#4). */
     ext ? ((zastreseniVNabidce || medStrechaPrepsana)
-      ? mkPrip('medStrecha', MED_STRECHA_NAZEV, strechaM2, pp.medStrechaM2, { cenaPath: 'C.priplatky.medStrechaM2' })
+      ? mkPrip('medStrecha', MED_STRECHA_NAZEV, medStrechaM2, pp.medStrechaM2, { cenaPath: 'C.priplatky.medStrechaM2' })
       : (zapisNazev(MED_STRECHA_NAZEV), null)) : null,
     ext ? mkPrip('ventilator', 'VENTILÁTOR (EXT)', 1, pp.ventilatorKc, { cenaPath: 'C.priplatky.ventilatorKc' }) : null,
     mkPrip('zabranyDvere', 'ZÁBRANY DO DVEŘNÍCH VSTUPŮ', nastupist, pp.zabranyDvereKc, { cenaPath: 'C.priplatky.zabranyDvereKc' }),

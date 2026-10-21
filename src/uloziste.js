@@ -1183,6 +1183,14 @@ function uloZaporneVZadani(z, zp) {
       });
     });
   }
+  /* Cena 1 výjezdu technika (K4-N4, O11 — rozhodnutí J. V. 21. 10. 2026):
+   * jádro ji čte přes `+x` a přičítá k ceně po přirážce, takže „100,5"
+   * by tiše dalo 0 (= cestu neúčtujeme). Tvar čísla, zápor i strop jako
+   * u ostatních přepisů PROJ; kdo ji smí přepsat, hlídá B112. */
+  if (zp && typeof zp === 'object') {
+    hlidej(zp.vyjezdKcPrepis, 'proj.zadani.vyjezdKcPrepis');
+    strop(zp.vyjezdKcPrepis, 'proj.zadani.vyjezdKcPrepis');
+  }
   const sekce = zp && typeof zp === 'object' ? zp.sekce : null;
   if (Array.isArray(sekce)) sekce.forEach((s, i) => {
     /* Doprava sekce (revize 6. 10. 2026, V1): km a ruční příplatek nikdy záporné. */
@@ -1469,6 +1477,11 @@ function uloB112PrepisyOck(z) {
 }
 function uloB112PrepisyProj(zp) {
   const out = {};
+  /* Ruční cena výjezdu technika (K4-N4, O11): přepis ceny jako sazba
+   * a fixní částka — smí jen role s právem sloupce.naklad. Přepínač
+   * `akceMimoPrahu` je věc místa stavby a hlídá se jen zámkem nabídky. */
+  const hv = uloB112Hodnota(zp && typeof zp === 'object' ? zp.vyjezdKcPrepis : '');
+  if (hv !== '') out['#zadani\u0000vyjezdKcPrepis'] = { h: hv, kde: 'proj.zadani.vyjezdKcPrepis' };
   const sekce = zp && Array.isArray(zp.sekce) ? zp.sekce : [];
   sekce.forEach((s, i) => {
     if (!s || typeof s !== 'object') return;
@@ -2024,18 +2037,22 @@ function uloKopieDiskStav(kopie, ted) {
  * přeskočí mazání starých otisků, když nový noční otisk nese méně než
  * polovinu zakázek nebo účtů proti předchozímu nočnímu, a zapíše záznam
  * (GET /api/zaloha_vynuceno → retenceVarovani). Hlídka ho ukazuje
- * ULO_RETENCE_VAROVANI_DNU dní — tak dlouho drží retence denní otisky
- * z doby před poklesem. Vrací null nebo { text }. */
+ * ULO_RETENCE_VAROVANI_DNU dní — od O11 (K4-N13) tak dlouho retence STOJÍ,
+ * pokud správce úbytek dřív nepotvrdí (tlačítko „Úbytek byl záměrný"; pak
+ * hlídka zhasne). Vrací null nebo { text }. */
 const ULO_RETENCE_VAROVANI_DNU = 30;
 function uloRetenceVarovani(v, ted) {
   const t = v && Date.parse(v.kdy || '');
   if (!v || !isFinite(t)) return null;
+  /* K4-N13 (O11): potvrzený úbytek už nesvítí — retence zase maže. */
+  if (v.potvrzeno) return null;
   const dnu = Math.floor(((+ted || Date.now()) - t) / 86400000);
   if (dnu < 0 || dnu >= ULO_RETENCE_VAROVANI_DNU) return null;
   const pocty = (a, b) => [a && b && a.pocetZakazek !== b.pocetZakazek ? 'zakázek ' + (+a.pocetZakazek || 0) + ' → ' + (+b.pocetZakazek || 0) : '',
     a && b && a.pocetUctu !== b.pocetUctu ? 'účtů ' + (+a.pocetUctu || 0) + ' → ' + (+b.pocetUctu || 0) : ''].filter(Boolean).join(', ');
   return { dnu, text: 'Pozor: noční záloha ' + String(v.den || '') + ' nese proti ' + String(v.predchozi || '') + ' méně než polovinu dat ('
-    + pocty(v.pred, v.nove) + '). Mazání starých záloh se ten den přeskočilo. Zkontrolujte, jestli se data neztratila — '
+    + pocty(v.pred, v.nove) + '). Mazání starých záloh stojí, dokud úbytek nepotvrdíte tlačítkem „Úbytek byl záměrný" '
+    + '(nejdéle ' + (ULO_RETENCE_VAROVANI_DNU - dnu) + ' dní). Zkontrolujte, jestli se data neztratila — '
     + 'starší zálohy jsou pro obnovu k dispozici (Obnovit ze zálohy…).' };
 }
 

@@ -593,5 +593,18 @@ console.log('\n--- #340 (P1): typy polí zadání a ceníku ---');
     U.uloCisloJadro(3) && U.uloCisloJadro('') && U.uloCisloJadro(null) && U.uloCisloJadro('12.5') && !U.uloCisloJadro('12,5') && !U.uloCisloJadro('1e3'));
 }
 
+/* K4-N4 (O11, rozhodnutí J. V. 21. 10. 2026): ruční cena výjezdu technika
+ * PROJ (`vyjezdKcPrepis`) — tvar čísla podle jádra (B135), zápor a strop
+ * jako u ostatních přepisů PROJ. Pojistka: před O11 pole nikdo nehlídal,
+ * všechny tři první kontroly selžou. */
+{
+  const f = U.uloZaporneVZadani;
+  const v = (h) => f(null, { vyjezdKcPrepis: h, sekce: [] }).filter(p => p.kde === 'proj.zadani.vyjezdKcPrepis');
+  test('K4-N4: cena výjezdu „100,5" (jádro čte NaN → 0) → typ', v('100,5').some(p => p.duvod === 'typ'));
+  test('K4-N4: cena výjezdu −1 → zaporne', v(-1).some(p => p.duvod === 'zaporne'));
+  test('K4-N4: cena výjezdu 1e300 → typ (strop přepisů)', v(1e300).some(p => p.duvod === 'typ'));
+  test('K4-N4: 0, 3500, „3500.5", prázdno a null projdou', [0, 3500, '3500.5', '', null, undefined].every(h => v(h).length === 0));
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

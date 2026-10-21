@@ -840,6 +840,19 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   a záznam `retence-varovani` ukáže hlídka v Nastavení → Databáze a po
   přihlášení správce (30 dní). Mez: pomalý úbytek (každou noc méně než
   o polovinu) pojistka nezachytí; porovnávají se jen počty, ne obsah.
+- **Retence stojí do potvrzení (K4-N13, dávka O11, rozhodnutí J. V.
+  21. 10. 2026):** do O11 stála retence jen tu jednu noc — další noc se nový
+  otisk porovnal s už „chudým“ a retence mazala dobré otisky z doby před
+  ztrátou, jak dosáhly 30 dní. Teď po poklesu retence **stojí, dokud správce
+  varování nepotvrdí** tlačítkem „Úbytek byl záměrný“ v Nastavení → Databáze
+  (`POST /api/zaloha_vynuceno { akce: 'retence-potvrdit', den, hesloSpravce }`
+  — jen Administrátor, s heslem správce, `den` musí sedět s varováním, jinak
+  409), **nejdéle 30 dní** od varování; pak běží normálně. Nečitelný záznam
+  varování = nemazat. Nový pokles zapíše nové varování (a nových 30 dní).
+  Meze: kdo zná heslo správce, retenci potvrzením odemkne (jako záznam kopie,
+  #151 N5); po 30 dnech bez potvrzení retence maže i bez reakce správce
+  (úložiště nesmí růst donekonečna); otisky před 20. 10. 2026 a první
+  v měsíci se nemažou nikdy.
 
 ### #151 N1 — limit vynucených otisků (K3-N4, rozhodnutí J. V. 20. 10. 2026, v20.10.2)
 
@@ -917,6 +930,25 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   k odstranění, jinak dokument nevznikne (fail-closed jako K3-N3).
 - **K4-N21 — kokpit koordinace:** třídy z dat jen z povoleného seznamu,
   čísla jen jako čísla (do O9 šly do `class` a HTML bez escapu).
+
+### Audit K4 — rozhodnutí J. V. 21. 10. 2026 (dávka O11)
+
+- **K4-N4 — cena výjezdu technika PROJ jen s právem na náklady:** ruční
+  přepis `PJ.vyjezdKcPrepis` (cestovné za 1 výjezd u akce mimo Prahu, přičítá
+  se po přirážce, 0 = „cestu neúčtujeme“) smí jen role s právem
+  `sloupce.naklad` — stejně jako přepis sazby a fixní částky. Server (B112,
+  `uloB112PrepisyProj`) hodnotu porovná s uloženou verzí / jinou uloženou
+  variantou: obchodník ji podvrženým uložením nezmění, nevloží ani nesmaže
+  (403). Přepínač „Akce mimo Prahu“ smí obchodník (je to věc místa stavby,
+  ne ceny); s ním se přičte jen ceníková nebo už sjednaná cena. Tvar čísla
+  (B135) a zápor/strop hlídá `uloZaporneVZadani` pro všechny role — „100,5“
+  → 400, v prohlížeči upozornění místo tichého 0. Mez: vypnutím přepínače
+  obchodník cestovné z nabídky odebere (rozhodnutí J. V.; zámek odeslané
+  nabídky ho drží).
+- **K4-N13 — retence do potvrzení:** viz #151 N5 výše.
+- **K4-N17 — výjimky B183 ve starém tvaru:** beze změny (rozhodnutí J. V.
+  ponechat); mez nekrytého nárůstu < 1 m² u výjimek schválených před
+  v20.10.5 trvá, dokud se nezmění obsah.
 
 ### B194 — zámek mutačních běhů (jen vývoj, ne produkce)
 

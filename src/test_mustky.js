@@ -274,6 +274,20 @@ for (const fixes of [true, false]) {
       && med(ok2) && blizko(med(ok2).mnozstvi, 4.11165), [med(ok1), med(ok2)]);
     const int = spocti({}, fixes, 'interiérová').r;
     test(M + ' K29-N1: interiér → žádná měď, vNabidce false', !med(int) && int.strecha.vNabidce === false);
+    /* #451 (rozhodnutí J. V. 21. 10. 2026): ruční plocha zastřešení (platné
+     * číslo ≠ 0) → měď s ní; stříška nad můstkem je v přepsané ploše (varianta
+     * A — nic se nepřičítá). Pojistka: před opravou měď brala vypočtených
+     * 2,76165 / 4,11165 m² → první dvě kontroly selžou. */
+    const p9 = spocti({ mnozstviPrepis: { [ZAS]: 9 } }, fixes).r;
+    test(M + ' #451: ruční plocha zastřešení 9 m² → měď 9 m²', med(p9) && blizko(med(p9).mnozstvi, 9), med(p9));
+    const p9m = spocti(Object.assign({}, m3, { nepocitat: [], mnozstviPrepis: { [ZAS]: '9.5' } }), fixes).r;
+    test(M + ' #451: s můstkem nahoře — měď = přepsaná plocha 9,5 (stříška se nepřičítá)', med(p9m) && blizko(med(p9m).mnozstvi, 9.5), med(p9m));
+    const p9v = spocti({ mnozstviPrepis: { [ZAS]: 9, [MED_N]: 3 } }, fixes).r;
+    test(M + ' #451: vlastní ruční množství mědi má přednost (3)', med(p9v) && med(p9v).mnozstvi === 3, med(p9v));
+    const pTxt = spocti({ mnozstviPrepis: { [ZAS]: '9,5' } }, fixes).r;
+    test(M + ' #451: nečitelný přepis („9,5") → měď s vypočtenou plochou', med(pTxt) && blizko(med(pTxt).mnozstvi, 2.76165), med(pTxt));
+    const pVyr = spocti({ nepocitat: [ZAS], mnozstviPrepis: { [ZAS]: 9 } }, fixes).r;
+    test(M + ' #451: přepsané, ale vyřazené zastřešení → žádná měď (K29-N1 trvá)', !med(pVyr));
   }
 }
 

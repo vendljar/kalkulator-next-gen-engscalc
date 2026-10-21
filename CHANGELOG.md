@@ -8,7 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## O10 — zmrazení kapitol IV.–VI. a doložek nabídky OCK při zamčení varianty (verzi přidělí sloučení; větev claude/o10-k4n1-zmrazeni)
+## v21.10.3 — O11: rozhodnutí J. V. k auditu K4 — cena výjezdu PROJ, retence záloh; #451 měď (větev claude/o11-k4-n4-n13)
+
+Dávka O11 (koordinace 21. 10. 2026) nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), větev `claude/o11-k4-n4-n13`.
+Build bez zvýšení verze (`KNG_NEZVYSOVAT_VERZI=1`). Podklad `podklady/K4_AUDIT_20_10.md`, rozhodnutí J. V. 21. 10. 2026.
+Každá oprava má test s pojistkou (před opravou selže, po ní projde) a mutace „O11“.
+
+- **#470 (K4-N4) — cenu výjezdu technika v kalkulaci PROJ přepisuje jen role s právem vidět náklady.** Pole
+  „Cena 1 výjezdu technika“ (`PJ.vyjezdKcPrepis`) se kreslí jen s `sloupce.naklad`; obchodník vidí účinnou cenu
+  jako text a zaškrtávátko „Akce mimo Prahu“ smí dál. Server (B112) cenu výjezdu hlídá jako ostatní přepisy PROJ —
+  obchodník ji ručním požadavkem nezmění, nevloží ani nesmaže (403). Kontrola tvaru čísla (B135): „100,5“ → 400
+  při uložení a v prohlížeči upozornění místo tichého 0; nečitelný vstup v poli hodnotu nezmění a ohlásí se.
+- **#471 (K4-N13) — retence nočních záloh stojí, dokud úbytek dat nepotvrdí správce.** Po poklesu otisku pod 50 %
+  dřív stála jen jednu noc; teď drží, dokud správce v Nastavení → Databáze nestiskne „Úbytek byl záměrný“ (dotaz +
+  heslo správce, `POST /api/zaloha_vynuceno { akce: 'retence-potvrdit' }`), nejdéle 30 dní. Potvrzené varování zhasne.
+- **#472 (K4-N17)** — beze změny (J. V. ponechal), uzavřeno v roadmapě.
+- **#451 — příplatek za střechu v mědi podle ručně přepsané plochy zastřešení** (rozhodnutí J. V. 21. 10. 2026,
+  varianta A). Je-li řádek ZASTŘEŠENÍ ŠACHTY (EXT) v nabídce s ručním množstvím (platné číslo ≠ 0), bere PŘÍPLATEK ZA
+  STŘECHU V MĚDI (EXT) tuto plochu místo vypočtené; stříška nad nejvyšším můstkem je v ní už obsažená (nic se
+  nepřičítá). Prázdný nebo nečitelný přepis = vypočtená plocha, vlastní ruční množství mědi má přednost, vyřazené
+  zastřešení = bez mědi (K29-N1), zamčené varianty beze změny (zmrazený výsledek). `src/engine.js`, test
+  `src/test_mustky.js` (oba modely, pojistka 4 FAIL), mutace „#451“ (3) a upravená „#356: příplatek za měď…“.
+- Oprava během dávky: nový řádek s heslem v `zaloha_vynuceno.mjs` zdvojil hledaný úsek mutace O7 K3-N1 — přepsán
+  jinak, ať zadání mutací sedí.
+
+---
+
+## v21.10.3 — O10: zmrazení kapitol IV.–VI. a doložek nabídky OCK při zamčení varianty (větev claude/o10-k4n1-zmrazeni)
 
 Dávka O10 (koordinace 21. 10. 2026) nad `claude/integrace-16-10` (test = ac26027, v21.10.2). Rozhodnutí J. V.
 21. 10. 2026 k auditu K4: K4-N1 varianta (a) — zmrazit. Build bez zvýšení verze (`KNG_NEZVYSOVAT_VERZI=1`).
