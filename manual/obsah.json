@@ -16,6 +16,10 @@
     {
       "nadpis": "Co je nového ve verzi v21.10.5 (21. 10. 2026)",
       "odstavce": [
+        "**Když zákazník k nabídce objedná příplatky:** v krycím listu OCK dole u **Smlouvy o dílo** je nový rámeček **Objednané příplatky**. Zaškrtněte příplatky z odeslané nabídky, které zákazník objednal, a zkontrolujte datum prodeje (předvyplní se datum podpisu smlouvy). Odeslaná nabídka se tím nemění.",
+        "**Smlouva o dílo** pak nese cenu díla = cena nabídky + objednané příplatky (příplatky v ceně z nabídky, bez slevy; DPH z celku). V krycím listu je vidět řádek **Objednané příplatky**.",
+        "Objednané příplatky zapisuje obchodník, který zakázku založil, vedoucí a administrátor. **Jakmile je v krycím listu vyplněné datum podpisu smlouvy (dnes nebo dřív), mění je už jen administrátor.**",
+        "**Jen pro administrátora.** Export předkalkulace (jedna zakázka i za období) má nově list **Řádky jen s náklady v ceně nabídky** — součet sedí na náklad nabídky bez filtrování. Příplatky nabídnuté jako volba jsou zvlášť na listu **„Příplatky – volby“**. Řádky nesou i sloupce **Řídící varianta** a **Výsledek** (zmrazený při tisku / přepočtený). Hromadný export vezme zamčenou řídící variantu, a když řídící zamčená není, poslední zamčenou variantu v období. Pro práci obchodníka se nic nemění.",
         "**Jen pro administrátora — šablony dokumentů.** Jazykové verze (EN, DE, FR) jde přidat i k české šabloně, která už platí: spusťte průvodce „Nahrát novou českou verzi…“ se stejným českým souborem. Průvodce pozná, že čeština je shodná s platnou verzí, znovu ji nezveřejní a zveřejní jen zaškrtnuté jazykové verze (tlačítko „Zveřejnit jazykové verze k platné češtině…“). Jednotlivý jazyk jde doplnit i bez průvodce tlačítkem „Nahrát doladěný soubor“ u jazyka. Pro práci obchodníka se nic nemění."
       ]
     },

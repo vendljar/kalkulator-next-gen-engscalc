@@ -270,6 +270,7 @@ function ctrlRozvrhOck(vysledek, opts) {
     if (P.mapa[klic] === CTRL_NENI_NAKLAD) return;
     const s = ctrlSkupinaKlice(P.mapa, klic, r.sekce || sekce);
     out.push({ oblast: 'ock', sekce, nazev: String(r.nazev || r.origNazev || ''), klic,
+      ...(sekce === 'priplatky' && r.key ? { pKey: String(r.key) } : {}),
       skupina: s.skupina, zarazeno: s.zarazeno, vZakladu,
       vlastni: !!r.vlastni, mnozstvi: +r.mnozstvi || 0, cena: +r.cena || 0,
       naklad: +r.naklad || 0, prodej: +r.sMarzi || 0 });
@@ -562,14 +563,20 @@ function ctrlKatalogNazvy(katalog, cenikProj) {
  * Částky vždy v Kč bez DPH, i u zahraniční řady (euro je jen pro dokument).
  * Vyřazená strana zakázky (zámek strany, zakazkaVyrazenaStrana) se
  * nevyváží. */
-const CTRL_EXPORT_VERZE = 1;
+/* Verze 2 (C5, rozhodnutí J. V. 21. 10. 2026 nad ukázkou XLSX): list Řádky
+ * nese JEN náklady v ceně nabídky (kontingenční tabulka bez filtru = náklad
+ * nabídky), příplatky-volby jsou na listu „Příplatky – volby"; nové sloupce
+ * „Řídící varianta" a „Výsledek" (zmrazený / přepočtený). */
+const CTRL_EXPORT_VERZE = 2;
 function ctrlExportVarianty(zak, v, opts) {
   const o = opts || {};
   if (!zak || !v) return { ok: false, chyba: 'Není otevřená žádná zakázka.' };
   const zamek = (v.zamek && v.zamek.zamceno) ? v.zamek : null;
   if (!zamek) return { ok: false, chyba: 'Varianta není zamčená — exportuje se jen odeslaná (zamčená) nabídka.' };
   const ridici = (zak.varianty || []).find(x => x && x.ridici) || (zak.varianty || [])[0];
-  if (!ridici || ridici.id !== v.id) return { ok: false, chyba: 'Varianta není řídící — exportuje se jen řídící varianta zakázky.' };
+  /* Hromadný export (C5) smí vzít i zamčenou NEřídící variantu, když řídící
+   * zamčená není — vybírá ji ctrlHromadnyVarianta; jednotlivý export dál jen řídící. */
+  if (!o.povolitNeridici && (!ridici || ridici.id !== v.id)) return { ok: false, chyba: 'Varianta není řídící — exportuje se jen řídící varianta zakázky.' };
   const d = v.data || {};
   const vyrazena = (typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(zak) : (zak.jenProj ? 'ock' : '');
   const vOck = vyrazena === 'ock' ? null : (typeof vypocetZ === 'function' ? vypocetZ(v, o.jekly) : null);
@@ -592,16 +599,21 @@ function ctrlExportVarianty(zak, v, opts) {
       naklad: (+vProj.souhrn.naklad || 0) + (+vProj.souhrn.doprava || 0) + (+vProj.souhrn.vyjezd || 0), cena });
   }
   if (!strany.length) return { ok: false, chyba: 'Varianta nemá výsledek výpočtu k exportu.' };
+  /* C6: příplatky, které zákazník z této nabídky objednal (zak.objednane),
+   * jdou do listu Řádky se sloupcem „Objednáno dodatečně". */
+  const obj = zak.objednane && Array.isArray(zak.objednane.klice) && zak.objednane.varianta === v.id ? zak.objednane : null;
+  if (obj) radky.forEach(r => { if (!r.vZakladu && r.pKey && obj.klice.includes(r.pKey)) r.objednano = true; });
   const razitko = d.cenikRazitko || {};
   const hlavicka = {
     nazevAkce: String(zak.nazevAkce || ''), zakaznik: String(zak.objednatel || ''), ico: String(zak.ico || ''),
     datum: (typeof variantaDatum === 'function') ? String(variantaDatum(zak, v) || '') : String(zak.datum || ''),
-    zamceno: String(zamek.kdy || ''), zamkl: String(zamek.kdo || ''), ridici: true,
+    zamceno: String(zamek.kdy || ''), zamkl: String(zamek.kdo || ''), ridici: !!ridici && ridici.id === v.id,
     rada: String(d.cenikRada || 'cr') === 'zahr' ? 'zahraničí' : 'ČR',
     model: (d.ock && d.ock.fixes) ? 2 : 1,
     cenikVerze: razitko.verze != null ? String(razitko.verze) : '', cenikOtisk: String(razitko.otisk || ''),
     verzeMapovani: o.verzeMapovani != null ? String(o.verzeMapovani) : 'výchozí',
     pipedrive: String(zak.pdDealId || ''),
+    datumProdeje: obj ? String(obj.datum || '') : '',
     zmrazeno: !!(zamek.vysledek),
   };
   return { ok: true, hlavicka, strany, radky, kapitoly: ctrlKapitoly(radky, { data: o.data, jenZaklad: true }),
@@ -624,6 +636,7 @@ const CTRL_HROMADNY = { cteni: 600, zakazek: 150, dni: 400, odpoved: 5 * 1024 * 
 const CTRL_DATUM_TVAR = /^\d{4}-\d{2}-\d{2}$/;
 const CTRL_FILTR_OBLAST = ['obe', 'ock', 'proj'];
 const CTRL_FILTR_RADA = ['obe', 'cr', 'zahr'];
+const CTRL_FILTR_PODLE = ['zamceni', 'prodej'];
 
 function ctrlDatumPlatne(x) {
   if (typeof x !== 'string' || !CTRL_DATUM_TVAR.test(x)) return false;
@@ -652,7 +665,10 @@ function ctrlHromadnyFiltr(q) {
   const rada = x.rada == null || x.rada === '' ? 'obe' : x.rada;
   if (!CTRL_FILTR_OBLAST.includes(oblast)) return { ok: false, chyba: 'Neznámá oblast (ock, proj, obe).' };
   if (!CTRL_FILTR_RADA.includes(rada)) return { ok: false, chyba: 'Neznámá číselná řada (cr, zahr, obe).' };
-  return { ok: true, filtr: { od, do: d, oblast, rada } };
+  /* C6: výběr podle data zamčení (výchozí) nebo data prodeje (objednané příplatky / podpis SoD). */
+  const podle = x.podle == null || x.podle === '' ? 'zamceni' : x.podle;
+  if (!CTRL_FILTR_PODLE.includes(podle)) return { ok: false, chyba: 'Neznámý výběr (zamceni, prodej).' };
+  return { ok: true, filtr: { od, do: d, oblast, rada, podle } };
 }
 
 /* Předvýběr z rejstříku: jen zakázky s odeslanou (zamčenou) nabídkou, řada
@@ -676,17 +692,36 @@ function ctrlHromadnyKandidati(rejstrik, filtr) {
 /* Jedna přečtená zakázka → export, nebo důvod, proč do souboru nepatří.
  * `mimo: true` = nepatří do výběru (jiné období, řada, oblast) — to se
  * nehlásí; ostatní důvody se do listu Popis vypíšou jako přeskočené. */
+/* Kterou variantu hromadný export vyveze (C5, rozhodnutí J. V. 21. 10. 2026):
+ * řídící, je-li zamčená (o období rozhodne její den zámku); jinak poslední
+ * zamčenou variantu se dnem zámku v období — „ze které šla nabídka".
+ * Sloupec „Řídící varianta" pak řekne, že nejde o řídící. */
+function ctrlHromadnyVarianta(zak, filtr) {
+  const zamcena = (x) => !!(x && x.zamek && x.zamek.zamceno);
+  const rid = zak.varianty.find(x => x && x.ridici) || zak.varianty[0];
+  if (zamcena(rid)) return rid;
+  const vObdobi = zak.varianty.filter(x => zamcena(x)).filter(x => {
+    const den = ctrlDenPraha(x.zamek.kdy);
+    return den && den >= filtr.od && den <= filtr.do;
+  });
+  return vObdobi.sort((a, b) => Date.parse(b.zamek.kdy) - Date.parse(a.zamek.kdy))[0] || rid;
+}
 function ctrlHromadnyZakazka(zak, filtr, opts) {
   if (!zak || !Array.isArray(zak.varianty) || !zak.varianty.length) return { ok: false, duvod: 'zakázka nemá varianty' };
-  const v = zak.varianty.find(x => x && x.ridici) || zak.varianty[0];
+  /* C6: podle data prodeje rozhoduje záznam objednaných příplatků — jeho
+   * varianta a datum; zakázka bez prodeje do takového výběru nepatří. */
+  const prodej = filtr.podle === 'prodej'
+    ? (zak.objednane && Array.isArray(zak.objednane.klice) && zak.objednane.klice.length ? zak.objednane : null) : null;
+  if (filtr.podle === 'prodej' && !prodej) return { ok: false, mimo: true, duvod: 'bez prodeje' };
+  const v = prodej ? zak.varianty.find(x => x && x.id === prodej.varianta) : ctrlHromadnyVarianta(zak, filtr);
   const zamek = v && v.zamek && v.zamek.zamceno ? v.zamek : null;
-  if (!zamek) return { ok: false, mimo: true, duvod: 'řídící varianta není zamčená' };
-  const den = ctrlDenPraha(zamek.kdy);
+  if (!zamek) return { ok: false, mimo: true, duvod: 'žádná zamčená varianta' };
+  const den = prodej ? String(prodej.datum || '') : ctrlDenPraha(zamek.kdy);
   if (!den || den < filtr.od || den > filtr.do) return { ok: false, mimo: true, duvod: 'zamčena mimo období' };
   const rada = String((v.data && v.data.cenikRada) || 'cr') === 'zahr' ? 'zahr' : 'cr';
   if (filtr.rada !== 'obe' && filtr.rada !== rada) return { ok: false, mimo: true, duvod: 'jiná číselná řada' };
   let exp;
-  try { exp = ctrlExportVarianty(zak, v, opts); } catch (e) { return { ok: false, duvod: 'výpočet selhal: ' + (e && e.message ? e.message : e) }; }
+  try { exp = ctrlExportVarianty(zak, v, Object.assign({}, opts, { povolitNeridici: true })); } catch (e) { return { ok: false, duvod: 'výpočet selhal: ' + (e && e.message ? e.message : e) }; }
   if (!exp.ok) return { ok: false, duvod: exp.chyba };
   if (filtr.oblast !== 'obe') {
     exp.strany = exp.strany.filter(s => s.oblast === filtr.oblast);
@@ -734,6 +769,7 @@ function ctrlPdDealKontrola(stara, zak, role) {
 const ctrlZaokr = (x) => Math.round((+x || 0) * 100) / 100;
 const CTRL_RADKY_HLAVICKA = ['Číslo nabídky', 'Název akce', 'Zákazník', 'IČO', 'Datum varianty', 'Zamčeno', 'Zamkl',
   'Řada', 'Model výpočtu', 'Verze ceníku', 'Otisk ceníku', 'Verze mapování', 'Pipedrive deal',
+  'Řídící varianta', 'Výsledek', 'Objednáno dodatečně',
   'Oblast', 'Sekce kalkulace', 'Řádek', 'Klíč', 'Skupina (id)', 'Skupina', 'Položka v ManVysl',
   'Účet Helios nyní', 'Účet Helios budoucí', 'Typ nákladu', 'Chování', 'V základní ceně', 'Ruční / vlastní',
   'Zařazeno', 'Množství', 'Jednotka ceny', 'Jednotková nákladová cena (Kč)', 'Náklad celkem (Kč)',
@@ -745,6 +781,7 @@ const CTRL_CHOVANI_TEXT = { variabilni: 'variabilní', fixni: 'fixní' };
  * text: rozhodnutí J. V. o sloupci „V nabídce" u příplatků (ano – v ceně /
  * ano – jako možnost / ne – netištěno, návrh 21. 10. 2026) se doplní sem
  * a do Kapitol, až padne — dávka C3 ho záměrně NEDĚLÁ. */
+const CTRL_LIST_PRIPLATKY = 'Příplatky – volby';
 function ctrlVZakladuText(r) { return r.vZakladu ? 'ano' : 'ne (příplatek – volba)'; }
 
 /* Tři listy: Řádky (jeden řádek kalkulace), Kapitoly (varianta × skupina
@@ -762,6 +799,8 @@ function ctrlExportListy(exp, data, opts) {
   const P = ctrlPlatne(data);
   const sk = {}; P.skupiny.forEach(s => { sk[s.id] = s; });
   const radky = [CTRL_RADKY_HLAVICKA.slice()];
+  /* C5: příplatky-volby (mimo cenu nabídky) zvlášť, se stejnými sloupci. */
+  const priplatky = [CTRL_RADKY_HLAVICKA.slice()];
   const kap = [['Číslo nabídky', 'Oblast', 'Skupina (id)', 'Skupina', 'Položka v ManVysl', 'Účet Helios nyní',
     'Účet Helios budoucí', 'Typ nákladu', 'Chování', 'Náklad základní ceny (Kč)', 'Podíl na nákladu (%)',
     'Prodejní cena (Kč)', 'Náklad příplatků – volby (Kč)']];
@@ -773,8 +812,9 @@ function ctrlExportListy(exp, data, opts) {
     e.radky.forEach(r => {
       const s = sk[r.skupina] || { nazev: r.skupina, manVysl: '', ucetNyni: [], ucetBudouci: [], typ: '', chovani: '' };
       const pop = ctrlPopisKlice(r.klic);
-      radky.push([cisloStrany[r.oblast] || '', h.nazevAkce, h.zakaznik, h.ico, h.datum, h.zamceno, h.zamkl,
+      (r.vZakladu || r.objednano ? radky : priplatky).push([cisloStrany[r.oblast] || '', h.nazevAkce, h.zakaznik, h.ico, h.datum, h.zamceno, h.zamkl,
         h.rada, h.model, h.cenikVerze, h.cenikOtisk, h.verzeMapovani, h.pipedrive,
+        h.ridici ? 'ano' : 'ne', h.zmrazeno ? 'zmrazený' : 'přepočtený', r.objednano ? 'ano' : 'ne',
         r.oblast.toUpperCase(), r.sekce, r.nazev, r.klic, r.skupina, s.nazev, s.manVysl || '',
         (s.ucetNyni || []).join(', '), (s.ucetBudouci || []).join(', '), CTRL_TYP_TEXT[s.typ] || '', CTRL_CHOVANI_TEXT[s.chovani] || '',
         ctrlVZakladuText(r), r.vlastni ? 'ano' : 'ne', r.zarazeno ? 'ano' : 'ne (náhradní skupina)',
@@ -814,7 +854,7 @@ function ctrlExportListy(exp, data, opts) {
     ['Verze aplikace', hr ? String(o.build || prvni.build || '') : prvni.build],
     ['Verze mapování', hr ? (o.verzeMapovani != null ? String(o.verzeMapovani) : 'výchozí') : prvni.hlavicka.verzeMapovani]];
   if (hr) {
-    popis.push(['Období zamčení (odeslání)', String(hr.od) + ' – ' + String(hr.do)]);
+    popis.push([hr.podle === 'prodej' ? 'Období prodeje (podpisu SoD)' : 'Období zamčení (odeslání)', String(hr.od) + ' – ' + String(hr.do)]);
     popis.push(['Oblast', { ock: 'jen OCK', proj: 'jen PROJ' }[hr.oblast] || 'OCK i PROJ']);
     popis.push(['Číselná řada', { cr: 'jen ČR', zahr: 'jen zahraničí' }[hr.rada] || 'ČR i zahraničí']);
     popis.push(['Zakázek v exportu', exps.length]);
@@ -826,16 +866,21 @@ function ctrlExportListy(exp, data, opts) {
       : 'zámek bez zmrazeného výsledku (nabídka před 15. 9. 2026) — přepočteno dnešním výpočtem']);
   }
   popis.push(['Částky', 'Kč bez DPH (i u zahraniční řady); prodejní cena řádku je před slevou a zaokrouhlením']);
+  popis.push(['List Řádky', 'náklady v ceně nabídky a příplatky, které zákazník dodatečně objednal (sloupec Objednáno dodatečně = ano); bez nich součet sloupce Náklad celkem = náklad základní ceny nabídky']);
+  const prodane = exps.filter(e => e.hlavicka.datumProdeje);
+  if (!hr && prodane.length) popis.push(['Datum prodeje (objednané příplatky)', prodane[0].hlavicka.datumProdeje]);
+  if (hr) popis.push(['Zakázek s objednanými příplatky', prodane.length]);
+  popis.push(['List ' + CTRL_LIST_PRIPLATKY, 'příplatky nabídnuté jako volba (mimo cenu nabídky), stejné sloupce jako Řádky']);
   popis.push([]);
   popis.push(['Skupina (id)', 'Skupina', 'Položka v ManVysl', 'Účet Helios nyní', 'Účet Helios budoucí', 'Typ nákladu', 'Chování', 'Oblast']);
   P.skupiny.forEach(s => popis.push([s.id, s.nazev, s.manVysl || '', (s.ucetNyni || []).join(', '), (s.ucetBudouci || []).join(', '),
     CTRL_TYP_TEXT[s.typ] || '', CTRL_CHOVANI_TEXT[s.chovani] || '', s.oblast]));
   if (hr) {
     popis.push([]);
-    popis.push(['Zakázky v exportu', 'Název akce', 'Zákazník', 'Zamčeno', 'Řada', 'Oblast', 'Výsledek']);
+    popis.push(['Zakázky v exportu', 'Název akce', 'Zákazník', 'Zamčeno', 'Řada', 'Oblast', 'Výsledek', 'Datum prodeje']);
     exps.forEach(e => popis.push([e.strany.map(s => s.cislo).join(' + '), e.hlavicka.nazevAkce, e.hlavicka.zakaznik,
       e.hlavicka.zamceno, e.hlavicka.rada, e.strany.map(s => s.oblast.toUpperCase()).join(' + '),
-      e.hlavicka.zmrazeno ? 'zmrazený' : 'přepočtený']));
+      e.hlavicka.zmrazeno ? 'zmrazený' : 'přepočtený', e.hlavicka.datumProdeje || '']));
     const presk = Array.isArray(hr.preskoceno) ? hr.preskoceno : [];
     if (presk.length) {
       popis.push([]);
@@ -843,7 +888,8 @@ function ctrlExportListy(exp, data, opts) {
       presk.forEach(p => popis.push([String(p.cislo || p.soubor || ''), String(p.duvod || '')]));
     }
   }
-  return [{ nazev: 'Řádky', rows: radky }, { nazev: 'Kapitoly', rows: kap }, { nazev: 'Popis', rows: popis }];
+  return [{ nazev: 'Řádky', rows: radky }, { nazev: CTRL_LIST_PRIPLATKY, rows: priplatky },
+    { nazev: 'Kapitoly', rows: kap }, { nazev: 'Popis', rows: popis }];
 }
 
 /* CSV = list Řádky (Excel v češtině: středník, desetinná čárka, UTF-8 s BOM).
@@ -853,8 +899,11 @@ function ctrlCsvBunka(x) {
   if (typeof csvBunka === 'function') return csvBunka(x);
   return '"' + String(x == null ? '' : x).replace(/"/g, '""') + '"';
 }
-function ctrlExportCsv(exp, data, opts) {
-  const rows = ctrlExportListy(exp, data, opts)[0].rows;
+/* `list` (nepovinné) = název listu; výchozí Řádky (jen náklady v ceně
+ * nabídky, C5). Příplatky-volby jdou stejně: list CTRL_LIST_PRIPLATKY. */
+function ctrlExportCsv(exp, data, opts, list) {
+  const listy = ctrlExportListy(exp, data, opts);
+  const rows = (listy.find(l => l.nazev === (list || 'Řádky')) || listy[0]).rows;
   return '﻿' + rows.map(r => r.map(ctrlCsvBunka).join(';')).join('\r\n') + '\r\n';
 }
 
@@ -932,6 +981,6 @@ if (typeof module !== 'undefined' && module.exports)
     ctrlKapitoly, ctrlNezarazene, ctrlKliceKatalogu, ctrlBajty, ctrlDataKontrola, ctrlBezeZmeny,
     ctrlDbNovaVerze, ctrlDbOciste,
     ctrlOdchylky, CTRL_PSEUDO_POPIS, ctrlPopisKlice, ctrlKatalogNazvy, CTRL_EXPORT_VERZE, ctrlExportVarianty,
-    CTRL_RADKY_HLAVICKA, ctrlExportListy, ctrlExportCsv, ctrlVZakladuText,
+    CTRL_RADKY_HLAVICKA, CTRL_LIST_PRIPLATKY, ctrlExportListy, ctrlExportCsv, ctrlVZakladuText, ctrlHromadnyVarianta,
     CTRL_PD_ID_MAX, ctrlPdDealIdNorm, ctrlPdDealKontrola,
     CTRL_HROMADNY, ctrlDatumPlatne, ctrlDenPraha, ctrlHromadnyFiltr, ctrlHromadnyKandidati, ctrlHromadnyZakazka, ctrlProtokolPridej, CTRL_MAPA_HLAVICKA, ctrlMapaListy, ctrlImportZListu };

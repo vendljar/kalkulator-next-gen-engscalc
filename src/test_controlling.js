@@ -278,10 +278,21 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     v.data.cenik.transportKc = 999999;
     const exp2 = C.ctrlExportVarianty(zak, v, { jekly: JEKLY });
     test('změna ceníku po zamčení export nezmění', JSON.stringify(exp2.radky) === pred);
-    const listy = C.ctrlExportListy(exp);
-    test('export má listy Řádky, Kapitoly, Popis', listy.map(l => l.nazev).join(',') === 'Řádky,Kapitoly,Popis');
-    test('list Řádky: hlavička + jeden řádek na řádek kalkulace', listy[0].rows.length === exp.radky.length + 1
-      && listy[0].rows[0].length === C.CTRL_RADKY_HLAVICKA.length && listy[0].rows.every(r => r.length === C.CTRL_RADKY_HLAVICKA.length));
+    const listyVse = C.ctrlExportListy(exp);
+    const L = (n) => listyVse.find(l => l.nazev === n);
+    /* listy[0] = Řádky, listy[1] = Kapitoly, listy[2] = Popis (testy níž) */
+    const listy = [L('Řádky'), L('Kapitoly'), L('Popis')];
+    const zakl = exp.radky.filter(r => r.vZakladu), voleb = exp.radky.filter(r => !r.vZakladu);
+    test('C5 export má listy Řádky, Příplatky – volby, Kapitoly, Popis', listyVse.map(l => l.nazev).join(',') === 'Řádky,Příplatky – volby,Kapitoly,Popis');
+    test('C5 list Řádky: hlavička + jen řádky v ceně nabídky', listy[0].rows.length === zakl.length + 1 && voleb.length > 0
+      && listy[0].rows[0].length === C.CTRL_RADKY_HLAVICKA.length && listy[0].rows.every(r => r.length === C.CTRL_RADKY_HLAVICKA.length), { z: zakl.length, v: voleb.length });
+    const iNk = C.CTRL_RADKY_HLAVICKA.indexOf('Náklad celkem (Kč)');
+    test('C5 součet Řádků bez filtru = náklad základní ceny nabídky', Math.abs(listy[0].rows.slice(1).reduce((a, r) => a + r[iNk], 0) - vO.souhrn.zakladNaklad) < 0.01 * listy[0].rows.length);
+    test('C5 list Příplatky – volby: stejné sloupce, jen volby', L('Příplatky – volby').rows.length === voleb.length + 1
+      && JSON.stringify(L('Příplatky – volby').rows[0]) === JSON.stringify(C.CTRL_RADKY_HLAVICKA));
+    const iRid = C.CTRL_RADKY_HLAVICKA.indexOf('Řídící varianta'), iVys = C.CTRL_RADKY_HLAVICKA.indexOf('Výsledek');
+    test('C5 sloupce Řídící varianta a Výsledek', iRid > 0 && iVys > 0 && listy[0].rows.slice(1).every(r => r[iRid] === 'ano' && r[iVys] === 'zmrazený'));
+    test('C5 verze struktury souboru 2', C.CTRL_EXPORT_VERZE === 2 && (listy[2].rows.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 2);
     const iN = C.CTRL_RADKY_HLAVICKA.indexOf('Náklad celkem (Kč)');
     test('čísla v listu jsou čísla, ne text', listy[0].rows.slice(1).every(r => typeof r[iN] === 'number'));
     const souhrnRadek = listy[1].rows.find(r => r[0] === '2026 - OPR - CN - 0901' && r[1] === 'OCK' && typeof r[2] === 'number' && r.length === 10);
@@ -289,9 +300,13 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     const kapZaklad = listy[1].rows.filter(r => r.length === 13 && r[1] === 'OCK' && typeof r[9] === 'number').reduce((a, r) => a + r[9], 0);
     test('součet kapitol v listu = náklad základní ceny (na haléře)', Math.abs(kapZaklad - vO.souhrn.zakladNaklad) < 0.05 * 30, { kapZaklad, n: vO.souhrn.zakladNaklad });
     const csv = C.ctrlExportCsv(exp);
-    test('CSV: BOM, středník, řádek na řádek kalkulace', csv.charCodeAt(0) === 0xFEFF && csv.split('\r\n').filter(Boolean).length === exp.radky.length + 1
+    test('CSV: BOM, středník, řádek na řádek v ceně nabídky (C5)', csv.charCodeAt(0) === 0xFEFF && csv.split('\r\n').filter(Boolean).length === zakl.length + 1
       && csv.split('\r\n')[0].includes('";"'));
     test('CSV: desetinná čárka u čísel', /;\d+,\d+(;|\r)/.test(csv));
+    test('C5 CSV příplatků-voleb jde zvlášť', C.ctrlExportCsv(exp, null, null, C.CTRL_LIST_PRIPLATKY).split('\r\n').filter(Boolean).length === voleb.length + 1);
+    const vPrep = kopie(v); delete vPrep.zamek.vysledek; const zP = kopie(zak); zP.varianty[0] = vPrep;
+    const eP = C.ctrlExportVarianty(zP, vPrep, { jekly: JEKLY });
+    test('C5 přepočtený výsledek je vidět v Řádcích', eP.ok && C.ctrlExportListy(eP)[0].rows.slice(1).every(r => r[iVys] === 'přepočtený'));
     const zak3 = kopie(zak); zak3.nazevAkce = '=HYPERLINK("x")';
     const csv3 = C.ctrlExportCsv(C.ctrlExportVarianty(zak3, zak3.varianty[0], { jekly: JEKLY }));
     test('CSV: text začínající „=" nejde jako vzorec', csv3.includes('"\'=HYPERLINK(""x"")"'));
@@ -337,7 +352,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
 {
   const F = (q) => C.ctrlHromadnyFiltr(q);
   test('C3 filtr: platné období, výchozí oblast i řada = obojí',
-    JSON.stringify(F({ od: '2026-10-01', do: '2026-10-31' })) === JSON.stringify({ ok: true, filtr: { od: '2026-10-01', do: '2026-10-31', oblast: 'obe', rada: 'obe' } }));
+    JSON.stringify(F({ od: '2026-10-01', do: '2026-10-31' })) === JSON.stringify({ ok: true, filtr: { od: '2026-10-01', do: '2026-10-31', oblast: 'obe', rada: 'obe', podle: 'zamceni' } }));
   test('C3 filtr: neplatné datum (31. 2.) odmítne', !F({ od: '2026-02-31', do: '2026-03-01' }).ok);
   test('C3 filtr: datum v jiném tvaru odmítne', !F({ od: '1. 10. 2026', do: '2026-10-31' }).ok && !F({ do: '2026-10-31' }).ok);
   test('C3 filtr: od po do odmítne', !F({ od: '2026-11-01', do: '2026-10-01' }).ok);
@@ -376,7 +391,15 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     const zakR = kopie(zak); const v2 = kopie(zakR.varianty[0]); v2.id = 'v-nezamcena'; v2.zamek = null;
     zakR.varianty.forEach(x => { x.ridici = false; }); v2.ridici = true; zakR.varianty.push(v2);
     const rr = C.ctrlHromadnyZakazka(zakR, fo, opts);
-    test('C3 zamčená, ale neřídící varianta se nevyváží (řídící je nezamčená)', !rr.ok && rr.mimo === true, rr);
+    test('C5 řídící nezamčená → vyveze se poslední zamčená varianta v období, označená jako neřídící',
+      rr.ok && rr.exp.hlavicka.ridici === false && rr.exp.hlavicka.zamceno === v.zamek.kdy, rr.duvod || rr.exp && rr.exp.hlavicka);
+    const zakR2 = kopie(zakR); const v3 = kopie(zakR2.varianty[0]); v3.id = 'v-pozdejsi'; v3.ridici = false; v3.zamek.kdy = '2026-10-20T08:00:00Z';
+    const v4 = kopie(zakR2.varianty[0]); v4.id = 'v-mimo'; v4.ridici = false; v4.zamek.kdy = '2026-11-20T08:00:00Z';
+    zakR2.varianty.push(v3, v4);
+    test('C5 z více zamčených neřídících se bere poslední v období', C.ctrlHromadnyVarianta(zakR2, fo).id === 'v-pozdejsi');
+    test('C5 zamčená řídící má přednost před pozdější neřídící', C.ctrlHromadnyVarianta(Object.assign(kopie(zakR2),
+      { varianty: kopie(zakR2.varianty).map(x => Object.assign(x, { ridici: x.id === v.id })) }), fo).id === v.id);
+    test('C5 jednotlivý export neřídící varianty dál odmítne', !C.ctrlExportVarianty(zakR, zakR.varianty[0], { jekly: JEKLY }).ok);
     const zahr = C.ctrlHromadnyZakazka(zak, Object.assign({}, fo, { rada: 'zahr' }), opts);
     test('C3 tuzemská zakázka ve filtru ZAHR vypadne', !zahr.ok && zahr.mimo === true);
     const proj = C.ctrlHromadnyZakazka(zak, Object.assign({}, fo, { oblast: 'proj' }), opts);
@@ -391,20 +414,21 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     const e2 = C.ctrlHromadnyZakazka(zak2, fo, opts).exp;
     const listy = C.ctrlExportListy([r1.exp, e2], null, { kdy: opts.kdy, kdo: opts.kdo,
       hromadny: { od: fo.od, do: fo.do, oblast: 'obe', rada: 'obe', preskoceno: [{ cislo: 'X', duvod: 'zkouška' }] } });
-    test('C3 sešit za období: list Řádky = hlavička + řádky obou zakázek',
-      listy[0].rows.length === 1 + r1.exp.radky.length + e2.radky.length
+    const zk = (e) => e.radky.filter(r => r.vZakladu).length;
+    test('C3 sešit za období: list Řádky = hlavička + řádky v ceně obou zakázek',
+      listy[0].rows.length === 1 + zk(r1.exp) + zk(e2)
       && listy[0].rows.every(r => r.length === C.CTRL_RADKY_HLAVICKA.length));
     test('C3 sešit za období: každý řádek nese číslo své zakázky',
-      listy[0].rows.slice(1).filter(r => r[0] === '2026 - OPR - CN - 0902').length === e2.radky.length
-      && listy[0].rows.slice(1).filter(r => r[1] === 'Druhá akce').length === e2.radky.length);
-    const souhrny = listy[1].rows.filter(r => r.length === 10 && typeof r[2] === 'number');
+      listy[0].rows.slice(1).filter(r => r[0] === '2026 - OPR - CN - 0902').length === zk(e2)
+      && listy[0].rows.slice(1).filter(r => r[1] === 'Druhá akce').length === zk(e2));
+    const souhrny = listy[2].rows.filter(r => r.length === 10 && typeof r[2] === 'number');
     test('C3 sešit za období: Kapitoly nesou souhrn obou zakázek', souhrny.length === 2, souhrny.map(r => r[0]));
-    const pop = listy[2].rows;
+    const pop = listy[3].rows;
     const najdi = (k) => (pop.find(r => r[0] === k) || [])[1];
     test('C3 Popis: období, počet zakázek a přeskočené', najdi('Období zamčení (odeslání)') === '2026-10-01 – 2026-10-31'
       && najdi('Zakázek v exportu') === 2 && najdi('X') === 'zkouška' && najdi('Exportoval') === 'admin@priklad.cz');
     const csv = C.ctrlExportCsv([r1.exp, e2], null, { hromadny: { od: fo.od, do: fo.do } });
-    test('C3 CSV za období: řádek na řádek obou zakázek', csv.split('\r\n').filter(Boolean).length === 1 + r1.exp.radky.length + e2.radky.length);
+    test('C3 CSV za období: řádek na řádek v ceně obou zakázek', csv.split('\r\n').filter(Boolean).length === 1 + zk(r1.exp) + zk(e2));
     test('C3 jedna varianta: sešit beze změny proti C2 (pole o jedné = objekt)',
       JSON.stringify(C.ctrlExportListy([r1.exp])) === JSON.stringify(C.ctrlExportListy(r1.exp)));
     test('C3 sloupec V základní ceně jde přes jedno místo (příprava „V nabídce")',

@@ -113,16 +113,80 @@ async function sodWordGeneruj(typ, srv) {
     });
 }
 
+/* ---------- objednané příplatky (#447 C6, rozhodnutí J. V. 21. 10. 2026) ----------
+ * Obchodník při vystavení SoD zaškrtne, které příplatky z odeslané nabídky
+ * zákazník objednal. Zapisuje se do zakázky (ZAK.objednane, src/objednane.js),
+ * NE do zamčené varianty — odeslaná nabídka se nemění. Server hlídá, že jde
+ * o nabídnutý příplatek a že po podpisu SoD (datum podpisu v krycím listu ≤ dnes)
+ * mění jen administrátor. */
+function objUiVarianta() { return (typeof ZAK !== 'undefined' && ZAK) ? aktivniVarianta(ZAK) : null; }
+function objUiSmi(v) {
+  if (!v || !v.zamek || !v.zamek.zamceno) return false;
+  const admin = typeof jeAdmin === 'function' && jeAdmin();
+  return admin || !objPodepsano(v);
+}
+function objUiUloz(klice, datum) {
+  const v = objUiVarianta();
+  if (!objUiSmi(v)) return;
+  const kopie = JSON.parse(JSON.stringify(ZAK));
+  const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja) ? ONLINE_STAV.ja.email : '';
+  const chyba = objNastav(kopie, v, klice, datum, { kdo: ja });
+  if (chyba) { hlaska(chyba); return; }
+  set('ZAK.objednane', kopie.objednane || null);
+}
+function objUiPrepni(klic, zap) {
+  const o = objStav(ZAK);
+  const v = objUiVarianta();
+  const klice = (o && v && o.varianta === v.id) ? o.klice.slice() : [];
+  const i = klice.indexOf(klic);
+  if (zap && i < 0) klice.push(klic);
+  if (!zap && i >= 0) klice.splice(i, 1);
+  objUiUloz(klice, o && o.datum);
+}
+function objUiDatum(datum) {
+  const o = objStav(ZAK);
+  if (!o) return;
+  objUiUloz(o.klice, datum);
+}
+function objKarta() {
+  const v = objUiVarianta();
+  if (!v) return '';
+  if (!v.zamek || !v.zamek.zamceno) return `<div class="note" id="objKarta">Objednané příplatky jde zaznamenat až
+      k <b>odeslané (zamčené)</b> nabídce.</div>`;
+  const jekly = typeof JEKLY !== 'undefined' ? JEKLY : null;
+  const nab = objNabidnute(v, jekly);
+  if (!nab.length) return `<div class="note" id="objKarta">Odeslaná nabídka žádné příplatky nenabízela.</div>`;
+  const o = objStav(ZAK);
+  const moje = o && o.varianta === v.id ? o : null;
+  const smi = objUiSmi(v);
+  const dis = smi ? '' : ' disabled';
+  const radky = nab.map(p => `<label style="display:flex;gap:6px;align-items:center" data-obj-klic="${esc(p.key)}">
+      <input type="checkbox"${dis} ${moje && moje.klice.includes(p.key) ? 'checked' : ''}
+        onchange="objUiPrepni('${escJs(p.key)}', this.checked)"> ${esc(p.nazev)}
+      <span class="note">${fmt0(p.sMarzi)} Kč bez DPH</span></label>`).join('');
+  return `<div id="objKarta" style="margin:10px 0;padding:8px 10px;border:1px solid var(--line);border-radius:8px">
+      <div class="sec-title">Objednané příplatky</div>
+      <div class="note">Zaškrtněte příplatky z odeslané nabídky, které zákazník <b>objednal</b>. Nabídka se tím
+        nemění; objednané příplatky jdou do krycího listu a do exportu pro controlling.
+        ${smi ? '' : '<b>Smlouva o dílo je podepsaná (datum podpisu v krycím listu výše) — měnit smí jen administrátor.</b>'}</div>
+      ${radky}
+      ${moje ? `<label style="margin-top:6px;display:inline-flex;gap:6px;align-items:center">Datum prodeje (podpisu SoD)
+        <input type="date" id="objDatum"${dis} value="${esc(moje.datum || '')}" onchange="objUiDatum(this.value)"></label>` : ''}
+    </div>`;
+}
+
 /* ---------- karta v Kalkulaci OCK: smlouva o dílo — realizace ---------- */
 function sodKarta() {
   const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('sod') : '';   // #377
   return `<div class="note" style="font-weight:600;margin-top:14px">Smlouva o dílo — realizace (Word):</div>
     <div class="note">Smlouva se plní <b>stejnými daty jako cenová nabídka</b> (hlavička zakázky, cena bez DPH,
       platební podmínky z krycího listu, firemní údaje) – cenu si nikdy nepočítá sama, takže se s nabídkou
-      nemůže rozejít. <b>Zástupci a kontakty zákazníka</b> i bankovní údaje se od 20. 8. 2026 berou z krycího
+      nemůže rozejít. <b>Objednané příplatky</b> (níž) se k ceně díla přičtou v ceně z nabídky (bez slevy);
+      DPH se počítá z celku. <b>Zástupci a kontakty zákazníka</b> i bankovní údaje se od 20. 8. 2026 berou z krycího
       listu výše. Co aplikace nezná – <b>termíny, splátkový kalendář, číslo smlouvy</b> – zůstane
       v dokumentu viditelně jako <code>{{SOD_…}}</code> a doplní se ve Wordu.
       Vytištěná smlouva variantu <b>uzamkne</b> stejně jako odeslaná nabídka.</div>
+    ${objKarta()}
     <div class="btns" style="margin-top:6px">
       <button class="primary"${zab} onclick="sodWord('sod')">Vytvořit smlouvu o dílo (Word)</button>
       ${typeof tiskJazykVyber === 'function' ? tiskJazykVyber() : ''}

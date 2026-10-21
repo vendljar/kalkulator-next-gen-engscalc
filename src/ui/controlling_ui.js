@@ -209,7 +209,9 @@ function ctrlUiExport(format) {
      * (a spustil ukládání) jen kvůli tomu, že si ji někdo přečetl. Protokol
      * exportů vede hromadný export na serveru (C3); export jedné otevřené
      * varianty dělá prohlížeč z dat, která už má. */
-    ctrlUiZprava('Staženo ' + jmeno + '.' + format + ' — ' + exp.radky.length + ' řádků'
+    const vCene = exp.radky.filter(r => r.vZakladu).length;
+    ctrlUiZprava('Staženo ' + jmeno + '.' + format + ' — ' + vCene + ' řádků v ceně nabídky'
+      + (format !== 'csv' && exp.radky.length > vCene ? ', ' + (exp.radky.length - vCene) + ' příplatků-voleb' : '')
       + (ctrlUiZmeneno() ? '. Pozor: neuložené změny mapování se do exportu nepromítly — platí uložená verze.' : '.'));
   } catch (e) { ctrlUiZprava('Export se nepovedl: ' + e.message, true); }
 }
@@ -256,7 +258,7 @@ function ctrlUiDenLokal(d) {
 function ctrlUiHrom() {
   if (!CTRL_STAV.hrom) {
     const d = new Date();
-    CTRL_STAV.hrom = { od: ctrlUiDenLokal(new Date(d.getFullYear(), d.getMonth(), 1)), do: ctrlUiDenLokal(d), oblast: 'obe', rada: 'obe' };
+    CTRL_STAV.hrom = { od: ctrlUiDenLokal(new Date(d.getFullYear(), d.getMonth(), 1)), do: ctrlUiDenLokal(d), oblast: 'obe', rada: 'obe', podle: 'zamceni' };
   }
   return CTRL_STAV.hrom;
 }
@@ -288,9 +290,9 @@ async function ctrlUiHromadny(format) {
       const jmeno = 'PREDKALKULACE_' + f.filtr.od + '_' + f.filtr.do + zuz;
       if (format === 'csv') ctrlUiStahni(new Blob([ctrlExportCsv(o.exporty, o.data, opts)], { type: 'text/csv;charset=utf-8' }), jmeno + '.csv');
       else ctrlUiStahni(xlsxZapis(ctrlExportListy(o.exporty, o.data, opts)), jmeno + '.xlsx');
-      const radku = o.exporty.reduce((a, e) => a + e.radky.length, 0);
+      const radku = o.exporty.reduce((a, e) => a + e.radky.filter(r => r.vZakladu).length, 0);
       ctrlUiZprava('Staženo ' + jmeno + '.' + format + ' — ' + o.exporty.length + ' '
-        + (o.exporty.length === 1 ? 'zakázka' : (o.exporty.length < 5 ? 'zakázky' : 'zakázek')) + ', ' + radku + ' řádků'
+        + (o.exporty.length === 1 ? 'zakázka' : (o.exporty.length < 5 ? 'zakázky' : 'zakázek')) + ', ' + radku + ' řádků v ceně nabídky'
         + (o.preskoceno && o.preskoceno.length ? '; přeskočeno ' + o.preskoceno.length + ' (důvody v listu Popis)' : '') + '.');
     }
     await ctrlUiProtokolNacti();
@@ -307,12 +309,15 @@ function ctrlUiKartaHromadny() {
       <td>${esc({ ock: 'OCK', proj: 'PROJ' }[z.oblast] || 'obě')}</td><td>${esc({ cr: 'ČR', zahr: 'ZAHR' }[z.rada] || 'obě')}</td>
       <td>${+z.zakazek || 0}</td><td>${+z.radku || 0}</td></tr>`).join('');
   return `<div class="sec-title" style="margin-top:14px">Hromadně za období</div>
-    <div class="note">Všechny <b>zamčené řídící varianty</b>, jejichž nabídka byla zamčena (odeslána) v zadaném období —
+    <div class="note">Podle data zamčení: <b>zamčené řídící varianty</b> (není-li řídící zamčená, poslední zamčená v období),
+      jejichž nabídka byla zamčena (odeslána) v zadaném období. Podle data prodeje: zakázky s <b>objednanými příplatky</b>
+      (krycí list → Smlouva o dílo) s datem prodeje v období —
       částky ze zmrazeného výsledku tisku. Počítá server; soubor má stejné listy a sloupce jako export jedné zakázky.
       Každý export se zapíše do protokolu.</div>
     <div class="btns" style="margin:8px 0;align-items:center">
       <label>od <input type="date" id="ctrlHromOd" value="${esc(h.od)}" onchange="ctrlUiHromSet('od', this.value)"></label>
       <label>do <input type="date" id="ctrlHromDo" value="${esc(h.do)}" onchange="ctrlUiHromSet('do', this.value)"></label>
+      ${sel('ctrlHromPodle', 'podle', [['zamceni', 'podle data zamčení (odeslání)'], ['prodej', 'podle data prodeje (SoD)']])}
       ${sel('ctrlHromOblast', 'oblast', [['obe', 'OCK i PROJ'], ['ock', 'jen OCK'], ['proj', 'jen PROJ']])}
       ${sel('ctrlHromRada', 'rada', [['obe', 'ČR i ZAHR'], ['cr', 'jen ČR'], ['zahr', 'jen ZAHR']])}
       <button class="primary" id="ctrlHromXlsx" onclick="ctrlUiHromadny('xlsx')" ${CTRL_STAV.pracuje ? 'disabled' : ''}>⤓ Za období (.xlsx)</button>
@@ -434,10 +439,11 @@ function ctrlUiKartaExport() {
     <div class="btns" style="margin-top:8px">
       <button class="primary" id="ctrlExportXlsx" onclick="ctrlUiExport('xlsx')" ${zamek ? '' : 'disabled'}>⤓ Stáhnout předkalkulaci (.xlsx)</button>
       <button id="ctrlExportCsv" onclick="ctrlUiExport('csv')" ${zamek ? '' : 'disabled'}>⤓ CSV (list Řádky)</button></div>
-    <div class="note">Sešit má listy <b>Řádky</b> (jeden řádek kalkulace: klíč, skupina, účty, množství, jednotková
-      a celková nákladová cena, prodejní cena), <b>Kapitoly</b> (součty po skupinách a souhrn zakázky se slevou,
-      zaokrouhlením a marží) a <b>Popis</b> (verze struktury souboru, kdo a kdy exportoval, číselník).
-      Příplatky jsou nabídnuté volby — jsou v exportu označené a do nákladu základní ceny se nepočítají.
+    <div class="note">Sešit má listy <b>Řádky</b> (jen náklady <b>v ceně nabídky</b> — součet bez filtru = náklad
+      nabídky; klíč, skupina, účty, množství, jednotková a celková nákladová cena, prodejní cena, řídící varianta,
+      výsledek zmrazený / přepočtený), <b>Příplatky – volby</b> (příplatky nabídnuté jako volba, mimo cenu nabídky,
+      stejné sloupce), <b>Kapitoly</b> (součty po skupinách a souhrn zakázky se slevou, zaokrouhlením a marží)
+      a <b>Popis</b> (verze struktury souboru, kdo a kdy exportoval, číselník). CSV = list Řádky.
       Export otevřené zakázky jde spustit i z Přehledu cenových nabídek (tlačítko u zamčené řídící varianty).</div>
     ${ctrlUiKartaHromadny()}`;
 }

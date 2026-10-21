@@ -45,6 +45,56 @@ Kód aplikace beze změny — jen nástroj šablon, test a zápis. Podklad symbo
 - **Nahrání na web až s kódem C6** (test po sloučení C6 do test, main s C6 v main), všechny čtyři jazyky najednou —
   postup v `podklady/SABLONA_SOD_REALIZACE_V4_21_10.md`.
 
+## v21.10.5 — C6: Objednané příplatky u smlouvy o dílo (#447, větev claude/controlling-c3)
+
+Rozhodnutí J. V. 21. 10. 2026 ~13:00 a odpovědi Q1–Q3 (~13:35). Build bez zvýšení verze.
+
+- **Krycí list OCK → Smlouva o dílo → „Objednané příplatky"**: obchodník zaškrtne, které příplatky z odeslané
+  (zamčené) nabídky zákazník objednal, a datum prodeje (výchozí = datum podpisu smlouvy z krycího listu, jinak
+  dnešek). Záznam `zak.objednane` leží v zakázce **mimo zámek** — odeslaná nabídka se nemění (`src/objednane.js`).
+- **Smlouva o dílo realizace (CZ/EN/DE/FR):** cena díla = cena nabídky po slevě + objednané příplatky v ceně
+  z nabídky (**bez slevy**, v eurech po položkách nahoru), **DPH z celku**; `{{CENA_BEZ_DPH}}`, `{{DPH_KC}}`,
+  `{{CENA_S_DPH}}` = celková cena díla. Nové symboly `{{SOD_CENA_NABIDKY}}`, `{{SOD_PRIPLATKY_OBJEDNANE}}`,
+  `{{SOD_PRIPLATKY_KC}}` (bez objednaných příplatků prázdné a jejich odstavce zmizí). Šablonu v4 vyrobí šablonová
+  dávka — kam symboly patří: `podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md`. Starší šablony dostanou správnou
+  celkovou cenu, jen bez rozpisu. Splátky jsou v % — přepočtou se samy.
+- **Krycí list:** nové pole „Objednané příplatky" vedle „Příplatky v nabídce" (verze BO i technická data).
+- **Export pro controlling:** list Řádky = základ + objednané příplatky (sloupec **„Objednáno dodatečně"**), Popis
+  nese datum prodeje; hromadný export volitelně **podle data prodeje** (`podle=prodej`) místo data zamčení.
+- **Pravidla (server, `objKontrola` v `lib/zakazka_kontrola.mjs`):** jen příplatek nabídnutý v zamčené variantě
+  (zmrazený výsledek, mimo vynechané), datum platné a ne v budoucnosti; zapisuje obchodník, který zakázku založil,
+  vedoucí a administrátor; **po podpisu SoD** (ručně vyplněné Datum podpisu smlouvy v krycím listu ≤ dnes, podle
+  uložené verze) mění už **jen administrátor**; kdo/kdy píše server z relace.
+- Testy: nová `src/test_objednane.js` 36/0, `src/test_sod.js` 58/0 (+8), `src/test_controlling.js` 188/0,
+  `netlify/test_controlling.mjs` 53/0 (+2), `test_prava` 907/0 (+13), `overit_controlling.mjs` 48/0 (+4), mutace
+  „#447 C6" (11). Pojistka: bez kódu C6 nové sady spadnou / selžou (doloženo v commitech).
+
+---
+
+## v21.10.5 — C5: Controlling: export předkalkulace verze 2 — Řádky jen v ceně nabídky, příplatky zvlášť (#447, větev claude/controlling-c3)
+
+Rozhodnutí J. V. 21. 10. 2026 ~12:50 nad ukázkovým XLSX (předala koordinace). Nad v21.10.4 (integrace 7652bb9 sloučena
+do větve), build bez zvýšení verze. Struktura souboru **verze 2** (`CTRL_EXPORT_VERZE`), jednotlivý i hromadný export.
+
+- **List Řádky nese JEN náklady v ceně nabídky** — kontingenční tabulka nad Řádky bez filtru sedí na náklad
+  základní ceny nabídky. **Příplatky nabídnuté jako volba** (mimo cenu) jsou na novém listu **„Příplatky – volby"**
+  se stejnými sloupci. Pořadí listů: Řádky, Příplatky – volby, Kapitoly, Popis. Kapitoly beze změny (ze základu,
+  sloupec „Náklad příplatků – volby" zůstává). Popis vysvětluje oba listy.
+- **Nové sloupce v Řádcích (i v Příplatcích):** „Řídící varianta" (ano/ne) a „Výsledek" (zmrazený / přepočtený
+  dnešním výpočtem — nabídky zamčené před 15. 9. 2026 bez zmrazeného výsledku).
+- **Hromadný export bere řídící zamčenou variantu, jinak poslední zamčenou v období** (`ctrlHromadnyVarianta`) —
+  zakázka, kde je zamčená jen neřídící varianta, už z exportu nevypadne; sloupec „Řídící varianta" = ne. Jednotlivý
+  export (Nastavení, Přehled) dál jen řídící.
+- **CSV = list Řádky** (jen v ceně nabídky); příplatky-volby v CSV vynechány (model umí i druhé CSV —
+  `ctrlExportCsv(…, CTRL_LIST_PRIPLATKY)` — tlačítko přidáme, bude-li potřeba).
+- Sloupec „V nabídce" se NEdělá; evidence příplatků dodatečně objednaných zákazníkem čeká na J. V.
+- Testy: `src/test_controlling.js` 188/0 (+9: listy, součet Řádků = náklad nabídky, sloupce, verze 2, CSV příplatků,
+  přepočtený výsledek, výběr varianty), `netlify/test_controlling.mjs` 51/0 (+2: zamčená neřídící varianta v hromadném
+  exportu), `overit_controlling.mjs` 44/0 (listy v2), mutace „#447 C5" (5) + upravené úseky C2/C3. Pojistka: proti kódu
+  před C5 selžou 3 modelové (sada pak spadne) a 3 serverové testy.
+
+---
+
 ## v21.10.4 — C3 + C4: Controlling: hromadný export za období, export z Přehledu, Pipedrive deal id (#447, větev claude/controlling-c3)
 
 Rozhodnutí J. V. 21. 10. 2026 (dialog s koordinací), body 1, 2 a 4. Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2),

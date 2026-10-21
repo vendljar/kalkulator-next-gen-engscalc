@@ -1005,6 +1005,15 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   neověřuje, že id v Pipedrive existuje (to by stálo dotaz do denního
   rozpočtu); admin může zadat překlep. Automatické převzetí z propojeného
   dealu zatím neexistuje.
+- **Objednané příplatky (C6, 21. 10. 2026):** `zak.objednane` mimo zámek
+  varianty; server (`objKontrola` → `zakazkaServerKontrola`) pustí jen
+  příplatek nabídnutý v zamčené variantě, datum ne v budoucnosti, zápis
+  obchodníkovi-autorovi, vedoucímu a adminovi; po podpisu SoD (ručně
+  vyplněné datum podpisu ≤ dnes v ULOŽENÉ verzi) jen admin; kdo/kdy z relace
+  (beze změny záznamu drží razítko uložené verze). Mutace „#447 C6“.
+  **Mez:** datum podpisu je pole krycího listu — obchodník ho může (dokud
+  smlouva podepsaná není) posunout do budoucna a objednané dál měnit; tisk
+  SoD se do pravidla nepočítá (rozhodnutí J. V. Q3).
 - **Tlačítko „Export pro controlling“ v Přehledu (C3)** kreslí jen
   administrátorovi online a ne v rolovém náhledu; export jedné varianty běží
   dál v prohlížeči (mez jako u C2 výše).

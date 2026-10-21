@@ -37,6 +37,41 @@ koordinace (session_016CbSudw1q9GXrrtfiJKvAG). Zápis: `podklady/SABLONA_SOD_REA
   prohlížečových sad — v kontejneru S11 chybí playwright** (kód aplikace se neměnil). test_sod_real_v4 18/0,
   test_sod / test_preklad_sod / test_sod_real_v3 zelené.
 
+# Předávka — 21. 10. 2026 odpoledne: Controlling #447 — C6 objednané příplatky, větev `claude/controlling-c3`
+
+Navazuje na C5 (641b9c2). Koordinace teď **session_016CbSudw1q9GXrrtfiJKvAG** (souhrny tam). Build bez zvýšení verze.
+
+- **Hotovo:** `src/objednane.js` (záznam `zak.objednane = { varianta, klice, datum, kdo, kdy }` mimo zámek, nabídnuté
+  příplatky ze zmrazeného výsledku, `objKontrola`), serverová kontrola + razítko v `lib/zakazka_kontrola.mjs`, rámeček
+  v kartě SoD (`objKarta` v `ui/sod_ui.js`), pole krycího listu `priplatkyObjednane`, SoD `sodObjednaneSymboly`
+  (`src/sod.js`, `nabidkaData` vrací `ceny`), export (Řádky + „Objednáno dodatečně", Popis datum prodeje,
+  hromadně `podle=prodej`).
+- **Rozhodnutí J. V. Q1–Q3:** sleva jen na základ; nové symboly SoD ano (šablonu v4 dělá šablonová dávka podle
+  `podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md`); „po podpisu" = ručně vyplněné datum podpisu ≤ dnes → jen admin.
+- **Ke slučování:** CHANGELOG „C6", příručka („Co je nového — objednané příplatky…"), MEZE, roadmapa #447,
+  `netlify/mutace.mjs` (blok „#447 C6" + SADY test_objednane, test_sod), `build.py` + `jadro_moduly.cjs` (objednane.js).
+- **Testy (finál 20ea508, C5 + C6):** kolo `--bez-mutaci` **295 prošlo / 0 selhalo / 6 přeskočeno** (test.js
+  a KNG_PODKLADY), statické 4/4 — VŠE ZELENÉ; mutace „#447 C" **40/40** (C2 7, C3 13, C4 4, C5 5, C6 11).
+  Nález kola nad 5d6ae24 (opraveno 20ea508): nové symboly SoD šly do odstavcePryc i u šablony, která je nemá.
+- **Otevřené po C6 (nic pro tuto dávku):** šablona SoD v4 (dávka S11, podklad předán), sloupec „V nabídce"
+  (J. V. nerozhodl), nálezy z ukázky (1) zaokrouhlení OCK v exportu a (4) zaokrouhlení Kapitol po skupinách,
+  automatické Pipedrive deal id (chybí výběr dealu z CRM), výjimka zálohy `controlling_exporty`.
+
+# Předávka — 21. 10. 2026 odpoledne: Controlling #447 — C5 (export v2), větev `claude/controlling-c3` (verzi přidělí sloučení)
+
+Navazuje na 8716b20; integrace `claude/integrace-16-10` 7652bb9 (C3 + C4 = v21.10.4, O10, O11) do větve SLOUČENA.
+Rozhodnutí J. V. ~12:50 nad ukázkovým XLSX (koordinace session_01By6bWivtf2rTJYJFGVv8e1). Build `KNG_NEZVYSOVAT_VERZI=1`.
+
+- **Hotovo:** `CTRL_EXPORT_VERZE = 2` — list Řádky jen `vZakladu` (součet = náklad nabídky), nový list
+  `CTRL_LIST_PRIPLATKY` „Příplatky – volby" (stejné sloupce), sloupce „Řídící varianta" a „Výsledek"; hromadný
+  export vybírá `ctrlHromadnyVarianta` (řídící zamčená, jinak poslední zamčená v období; `ctrlExportVarianty`
+  s `povolitNeridici`). CSV = Řádky; příplatky v CSV vynechány (model umí `ctrlExportCsv(…, CTRL_LIST_PRIPLATKY)`).
+- **NEdělat bez J. V.:** sloupec „V nabídce", evidence příplatků dodatečně objednaných zákazníkem; nálezy (1) CEIL
+  zaokrouhlení OCK v exportu a (4) zaokrouhlení Kapitol po skupinách.
+- **Ke slučování:** CHANGELOG oddíl „C5" nahoře, `manual/obsah.json` („Co je nového — export pro controlling verze 2"),
+  roadmapa #447 pozn, `netlify/mutace.mjs` (blok „#447 C5" před C4, upravené úseky C2 „neřídící" a C3 „nezamčené").
+- **Testy:** src `test_controlling.js` 188/0, server `test_controlling.mjs` 51/0, `overit_controlling.mjs` 44/0, mutace „#447 C" 29/29 (C5 5/5). Kolo viz další commit.
+
 # Předávka — 21. 10. 2026: Controlling #447 — C3 + C4, větev `claude/controlling-c3` (verzi přidělí sloučení)
 
 Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. **Do test / main / integrace nic** —

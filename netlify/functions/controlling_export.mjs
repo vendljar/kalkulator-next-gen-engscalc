@@ -1,7 +1,8 @@
 /* Controlling — hromadný export předkalkulace za období (#447, dávka C3,
  * 21. 10. 2026; rozhodnutí J. V. 21. 10. 2026, bod 2).
  *
- * GET /api/controlling/export?od=RRRR-MM-DD&do=RRRR-MM-DD&oblast=obe|ock|proj&rada=obe|cr|zahr
+ * GET /api/controlling/export?od=RRRR-MM-DD&do=RRRR-MM-DD&oblast=obe|ock|proj&rada=obe|cr|zahr&podle=zamceni|prodej
+ *   (podle=prodej — C6: datum prodeje z objednaných příplatků místo data zamčení)
  *   → { ok, exporty: [ export jedné zakázky (ctrlExportVarianty) ], data, verzeMapovani,
  *       preskoceno: [ { soubor, cislo, duvod } ], kdy, kdo, filtr }
  * GET /api/controlling/export?protokol=1
@@ -43,7 +44,7 @@ export default async (req) => {
   }
 
   const f = G.ctrlHromadnyFiltr({ od: url.searchParams.get('od'), do: url.searchParams.get('do'),
-    oblast: url.searchParams.get('oblast'), rada: url.searchParams.get('rada') });
+    oblast: url.searchParams.get('oblast'), rada: url.searchParams.get('rada'), podle: url.searchParams.get('podle') });
   if (!f.ok) return json({ ok: false, chyba: f.chyba }, 400);
   const filtr = f.filtr;
 
@@ -85,7 +86,7 @@ export default async (req) => {
 
   const prot = await sProg.cti('controlling_exporty');
   await sProg.zapis('controlling_exporty', G.ctrlProtokolPridej(prot, { kdy, kdo: relace.email,
-    od: filtr.od, do: filtr.do, oblast: filtr.oblast, rada: filtr.rada,
+    od: filtr.od, do: filtr.do, oblast: filtr.oblast, rada: filtr.rada, podle: filtr.podle,
     zakazek: exporty.length, radku: exporty.reduce((a, e) => a + e.radky.length, 0), preskoceno: preskoceno.length }));
   return new Response(telo, { status: 200, headers: { 'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store' } });
