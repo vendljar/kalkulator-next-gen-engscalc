@@ -140,7 +140,7 @@ export function vynuceneLimit(klice, ted) {
   /* rezervace s doběhlým otiskem téhož slotu se nepočítá dvakrát */
   for (const s of [...sloty]) { const i = s.indexOf('~'); if (i > 0 && sloty.has(s.slice(0, i))) sloty.delete(s); }
   const casy = [...sloty]
-    .map(k => { const m = /^(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(\d{2})-(rucne|auto)/.exec(k);
+    .map(k => { const m = /^(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(\d{2})-/.exec(k);     // sloty už jsou jen vynucené
       return m ? Date.parse(m[1] + 'T' + m[2] + ':' + m[3] + ':' + m[4] + 'Z') : NaN; })
     .filter(t => Number.isFinite(t) && t <= nyni && nyni - t < DEN_MS)
     .sort((a, b) => a - b);
@@ -517,7 +517,8 @@ export const KOPIE_DISK_NEJNOVEJSICH = 7;
 export function kopieDiskPodlozena(zaznam, klice) {
   if (!zaznam || typeof zaznam !== 'object' || zaznam.puvod !== 'nocni-otisk') return false;
   const otisk = typeof zaznam.otisk === 'string' ? zaznam.otisk : '';
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(otisk) || !Array.isArray(klice) || !klice.includes(otisk)) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(otisk) || !Array.isArray(klice)) return false;
+  /* otisk musí v úložišti být (K3-N1) a být mezi 7 nejnovějšími (K4-N14) */
   const nejnovejsi = klice.filter(k => typeof k === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(k))
     .sort().reverse().slice(0, KOPIE_DISK_NEJNOVEJSICH);
   if (!nejnovejsi.includes(otisk)) return false;
