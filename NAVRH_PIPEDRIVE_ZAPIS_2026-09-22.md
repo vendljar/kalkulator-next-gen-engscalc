@@ -627,7 +627,10 @@ Integrátor 21. 10. 2026 oznámil, že pole podle zrevidované tabulky
 (`Pipedrive_nova_pole_dealu_rev_JV.xlsx`, 54 nových polí + 4 úpravy
 stávajících) jsou v Pipedrive založená. Test proběhl **jen čtením**:
 definice polí přes připojený konektor Pipedrive a jeden výpis všech dealů
-s vybranými poli (**celkem 10 tokenů**). Nic se nezapisovalo.
+s vybranými poli. Výpis dealů stál 10 tokenů; načtení definic polí volá
+uvnitř konektoru několik seznamů (pole dealu, organizace, osob, aktivit po 10,
+pipeline a fáze po 5), takže **celý test řádově 60 tokenů**. Nic se
+nezapisovalo.
 
 ### 11.1 Nastavení polí — sedí
 
