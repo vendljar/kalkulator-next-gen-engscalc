@@ -16,7 +16,7 @@ Celé kolo nad `7fac477` (v21.10.5), 21. 10. 2026 od 16:30 UTC; `ADMIN_EMAIL=spr
 | Kontrola verze + sestavení | ✓ | `bash nastroje/testovaci_kolo.sh --jen build,sady,staticke` |
 | Sady (`spust_testy.sh --smoke`) | **296 prošlo / 0 selhalo / 6 přeskočeno** (302 sad) | 19 min 0 s; přeskočené `test.js` (ostrý ceník) + 5 harnessů bez `KNG_PODKLADY` (`overit_manual`, `overit_nabidka_proj_word`, `overit_sablona`, `overit_sablony_online`, `overit_sod`) |
 | Statické kontroly | **4/4** | verze, CRLF, osobní údaje a tajemství, test výběru větví W2 51/0 |
-| Mutace jádra (`mutace_jadro.mjs`) | _běží_ | 417 mutací, samostatný `git worktree` nad `7fac477` |
+| Mutace jádra (`mutace_jadro.mjs`) | **417/417** | 170 sad; samostatný `git worktree` nad `7fac477`, 16:31–17:40 UTC; otisky obou jader po běhu souhlasí, strom čistý |
 | Mutace serveru (`netlify/mutace.mjs`) | _běží_ | 753 mutací, 64 souborů = 64 částí filtrem podle cesty souboru ve třech frontách (3 `git worktree` nad `7fac477`); `--kontrola` 753/753 |
 
 ## Verdikt
