@@ -119,6 +119,30 @@ function sablonaPlatna(rej, typ) {
   return (t && t.platna) || null;
 }
 
+/* BINÁRNÍ SOUBOR → BASE64 (#473, O12, 21. 10. 2026). Tentýž převod, jakým
+ * klient posílá soubor na server (onlineSablonaZverejni) — otisk spočítaný
+ * z výsledku je proto shodný s otiskem, který si spočítá server. */
+function sablonaAbNaB64(arrayBuffer) {
+  const u8 = new Uint8Array(arrayBuffer || new ArrayBuffer(0));
+  let bin = '';
+  const KROK = 32768;   // String.fromCharCode má strop na počet argumentů
+  for (let i = 0; i < u8.length; i += KROK)
+    bin += String.fromCharCode.apply(null, u8.subarray(i, i + KROK));
+  return btoa(bin);
+}
+
+/* ČEŠTINA SHODNÁ S PLATNOU (#473, O12, 21. 10. 2026). J. V. spustil průvodce
+ * znovu se STEJNÝM českým souborem, jen aby k platné češtině přidal vlastní
+ * EN/DE/FR — server stejný soubor podruhé nezveřejní (400 „už je zveřejněná")
+ * a průvodce skončil dřív, než zveřejnil jazyky. Vrací meta platné české
+ * verze, když má nahraný soubor (base64) stejný otisk; jinak null. Průvodce
+ * pak češtinu nezveřejňuje a jazykové verze pošle se `zdrojOtisk` platné. */
+function sablonaCestinaShodna(rej, typ, b64) {
+  const cz = sablonaPlatna(rej, typ);
+  if (!cz || !b64) return null;
+  return sablonaOtisk(b64) === cz.otisk ? cz : null;
+}
+
 /* Všechny známé verze typu (platná + historie), od nejnovější. */
 function sablonaVerze(rej, typ) {
   const t = rej && rej.typy && rej.typy[typ];
@@ -232,4 +256,4 @@ if (typeof module !== 'undefined')
                      SABLONY_ONLINE_TYPY, SABLONY_ONLINE_JAZYKY, SABLONA_MAX_B64,
                      sablonaTypPlatny, sablonaJeDocxB64, sablonaOtisk,
                      sablonyNovyRejstrik, sablonaKlicSouboru, sablonyZverejni,
-                     sablonaPlatna, sablonyRezimNastav };
+                     sablonaPlatna, sablonyRezimNastav, sablonaAbNaB64, sablonaCestinaShodna };

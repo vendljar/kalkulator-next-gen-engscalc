@@ -576,12 +576,8 @@ function onlineSablonaStahni(typ) {
 /* Zveřejnění šablony — volá obrazovka Nastavení → Šablony. Soubor jde na
  * server v base64; verzi, otisk i odmítnutí ne-Wordu řeší server. */
 function onlineSablonaZverejni(typ, nazev, arrayBuffer, poznamka, zdrojOtisk) {
-  const u8 = new Uint8Array(arrayBuffer);
-  let bin = '';
-  const KROK = 32768;   // String.fromCharCode má strop na počet argumentů
-  for (let i = 0; i < u8.length; i += KROK)
-    bin += String.fromCharCode.apply(null, u8.subarray(i, i + KROK));
-  const telo = { akce: 'zverejnit', typ, nazev, data: btoa(bin), poznamka: String(poznamka || '') };
+  /* převod sdílí s průvodcem šablon (sablonaAbNaB64, #473) — otisk vyjde stejný */
+  const telo = { akce: 'zverejnit', typ, nazev, data: sablonaAbNaB64(arrayBuffer), poznamka: String(poznamka || '') };
   if (zdrojOtisk) telo.zdrojOtisk = zdrojOtisk;           // jazyková verze: ze které češtiny (#348)
   return onlineApi('/api/sablony', telo).then(o => onlineNactiSablony().then(() => o));
 }
