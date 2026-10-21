@@ -15,6 +15,28 @@ slučuje koordinace (verzi v21.10.5 může přečíslovat).
   jádra „#474“ 8/8, kolo `--bez-mutaci` 294 prošlo / 0 selhalo / 6 přeskočeno (test.js, KNG_PODKLADY), statické
   4/4 — VŠE ZELENÉ. `overit_sablony_online.mjs` krok 7 bez KNG_PODKLADY neběží (chybí šablona CN v11).
 
+# Předávka — 21. 10. 2026: dávka S11 — šablona SoD realizace v4 CZ/EN/DE/FR (#447 C6), větev `claude/s11-sod-realizace-v4`
+
+Nad `claude/integrace-16-10` 7ce01b3 (v21.10.4). **Kód aplikace beze změny.** Do integrace / test nic — slučuje
+koordinace (session_016CbSudw1q9GXrrtfiJKvAG). Zápis: `podklady/SABLONA_SOD_REALIZACE_V4_21_10.md`.
+
+- **Hotovo (body 1–3, 5):** `node nastroje/vyrob_sablony.js --sod-real-v4 <složka s v3 + v3_EN/_DE/_FR>` → v4
+  CZ/EN/DE/FR. V čl. V pod „{{CENA_BEZ_DPH}} (bez DPH)" tři samostatné odstavce „z toho cena … {{SOD_CENA_NABIDKY}}",
+  „objednané příplatky:↵{{SOD_PRIPLATKY_OBJEDNANE}}", „příplatky celkem: {{SOD_PRIPLATKY_KC}}". v4 × v3 +3 −0,
+  EN/DE/FR × CZ v4 +0 −0, obsahVady prázdné, XML bez vad, jazyky OK. Test `src/test_sod_real_v4.js` 17/0
+  (pojistka 0/1). Soubory přiloženy J. V. (SendUserFile); na Disk nenahrány (base64 0,44–0,50 MB — konektor jen
+  ručním přepisem). CHANGELOG (bez verze), roadmapa #447 (pozn + kde).
+- **Nález:** EN/DE/FR v3 na Disku jsou revidované (≠ slovníky preklad_sod, EN 99 odstavců) → v4 jazyky z nich
+  (vložení přeloženého bloku), slovníky jen záloha. Slovníky na Disku revizi nenesou — k rozhodnutí J. V./koordinace.
+- **Hotovo (bod 4):** vyplnění kódem C6 (controlling-c3 5d6ae24) v odděleném worktree: CZ/EN/DE/FR × 0/1/3
+  příplatky 72/0 — bez příplatků blok zmizí celý (žádný popisek ani prázdný odstavec), součty a DPH z celku sedí,
+  žádný symbol ceny nezůstal. Koordinace potvrdila pořadí „celková cena první, rozpis z toho pod ní".
+- **Kolo `--bez-mutaci`** (nad 7b4a165, pracovní strom = bbff8be bez dokumentace): sady **256 prošlo / 1 selhalo /
+  44 přeskočeno**, statické 4/4. Jediné selhání `overit_verzi.mjs` — artefakt `KNG_NEZVYSOVAT_VERZI` exportované do
+  kola (známé z C3); samostatně bez ní 7/0. Přeskočeno: test.js (export pro GitHub), 2× KNG_PODKLADY a **41
+  prohlížečových sad — v kontejneru S11 chybí playwright** (kód aplikace se neměnil). test_sod_real_v4 18/0,
+  test_sod / test_preklad_sod / test_sod_real_v3 zelené.
+
 # Předávka — 21. 10. 2026: Controlling #447 — C3 + C4, větev `claude/controlling-c3` (verzi přidělí sloučení)
 
 Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. **Do test / main / integrace nic** —

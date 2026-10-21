@@ -26,6 +26,25 @@ není co zveřejňovat." a nezveřejnil nic. Totéž u SoD PROJEKČNÍ PRÁCE (v
 - Testy: `src/test_sablony_online.js` +22 (průvodce ve vm se zástupným serverem); mutace jádra „#474" 8
   (`ui/sablony_sprava_ui.js` nově mezi soubory mutačního běhu).
 
+## v21.10.5 — S11: šablona Smlouvy o dílo – realizace v4 CZ/EN/DE/FR (#447 C6, větev claude/s11-sod-realizace-v4)
+
+Kód aplikace beze změny — jen nástroj šablon, test a zápis. Podklad symbolů: `podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md`
+(větev `claude/controlling-c3`).
+
+- **`node nastroje/vyrob_sablony.js --sod-real-v4 <složka>`** vyrobí z v3 (Disk, Sablony) `Sablona_SOD_REALIZACE_v4.docx`:
+  v čl. V za odrážku „{{CENA_BEZ_DPH}} (bez DPH)" (celková cena díla) tři **samostatné odstavce** (ne tabulka) „z toho
+  cena díla dle cenové nabídky č. {{CISLO_NABIDKY}}: {{SOD_CENA_NABIDKY}} (bez DPH)", „objednané příplatky:" se seznamem
+  {{SOD_PRIPLATKY_OBJEDNANE}} na dalším řádku a „příplatky celkem: {{SOD_PRIPLATKY_KC}} (bez DPH)". Bez objednaných
+  příplatků je aplikace (C6) odstraní celé — smlouva je pak stejná jako s v3. v3 nemá v článku o ceně slevu ani DPH
+  v Kč, nic se nepřesouvá.
+- **Jazykové verze z revidovaných v3:** EN/DE/FR v3 na Disku (21. 10.) mají revidované znění, odlišné od slovníků
+  `preklad_sod.js` (99 odstavců v EN). v4 EN/DE/FR proto vznikají vložením přeloženého bloku do nich (mimo blok beze
+  změny); bez nich záložně překlad slovníky v3 + nové záznamy `SOD_REAL_V4_PREKLAD`.
+- Ověření: v4 proti v3 +3 −0 symboly, EN/DE/FR proti CZ v4 +0 −0, `sablonaObsahVady` prázdné, XML bez vad, jazyk
+  cz/en/de/fr, base64 ≤ 0,5 MB. Test `src/test_sod_real_v4.js` 17/0 (před úpravou nástroje 0/1).
+- **Nahrání na web až s kódem C6** (test po sloučení C6 do test, main s C6 v main), všechny čtyři jazyky najednou —
+  postup v `podklady/SABLONA_SOD_REALIZACE_V4_21_10.md`.
+
 ## v21.10.4 — C3 + C4: Controlling: hromadný export za období, export z Přehledu, Pipedrive deal id (#447, větev claude/controlling-c3)
 
 Rozhodnutí J. V. 21. 10. 2026 (dialog s koordinací), body 1, 2 a 4. Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2),
