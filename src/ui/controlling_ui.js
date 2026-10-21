@@ -258,7 +258,7 @@ function ctrlUiDenLokal(d) {
 function ctrlUiHrom() {
   if (!CTRL_STAV.hrom) {
     const d = new Date();
-    CTRL_STAV.hrom = { od: ctrlUiDenLokal(new Date(d.getFullYear(), d.getMonth(), 1)), do: ctrlUiDenLokal(d), oblast: 'obe', rada: 'obe' };
+    CTRL_STAV.hrom = { od: ctrlUiDenLokal(new Date(d.getFullYear(), d.getMonth(), 1)), do: ctrlUiDenLokal(d), oblast: 'obe', rada: 'obe', podle: 'zamceni' };
   }
   return CTRL_STAV.hrom;
 }
@@ -309,12 +309,15 @@ function ctrlUiKartaHromadny() {
       <td>${esc({ ock: 'OCK', proj: 'PROJ' }[z.oblast] || 'obě')}</td><td>${esc({ cr: 'ČR', zahr: 'ZAHR' }[z.rada] || 'obě')}</td>
       <td>${+z.zakazek || 0}</td><td>${+z.radku || 0}</td></tr>`).join('');
   return `<div class="sec-title" style="margin-top:14px">Hromadně za období</div>
-    <div class="note">Všechny <b>zamčené řídící varianty</b>, jejichž nabídka byla zamčena (odeslána) v zadaném období —
+    <div class="note">Podle data zamčení: <b>zamčené řídící varianty</b> (není-li řídící zamčená, poslední zamčená v období),
+      jejichž nabídka byla zamčena (odeslána) v zadaném období. Podle data prodeje: zakázky s <b>objednanými příplatky</b>
+      (krycí list → Smlouva o dílo) s datem prodeje v období —
       částky ze zmrazeného výsledku tisku. Počítá server; soubor má stejné listy a sloupce jako export jedné zakázky.
       Každý export se zapíše do protokolu.</div>
     <div class="btns" style="margin:8px 0;align-items:center">
       <label>od <input type="date" id="ctrlHromOd" value="${esc(h.od)}" onchange="ctrlUiHromSet('od', this.value)"></label>
       <label>do <input type="date" id="ctrlHromDo" value="${esc(h.do)}" onchange="ctrlUiHromSet('do', this.value)"></label>
+      ${sel('ctrlHromPodle', 'podle', [['zamceni', 'podle data zamčení (odeslání)'], ['prodej', 'podle data prodeje (SoD)']])}
       ${sel('ctrlHromOblast', 'oblast', [['obe', 'OCK i PROJ'], ['ock', 'jen OCK'], ['proj', 'jen PROJ']])}
       ${sel('ctrlHromRada', 'rada', [['obe', 'ČR i ZAHR'], ['cr', 'jen ČR'], ['zahr', 'jen ZAHR']])}
       <button class="primary" id="ctrlHromXlsx" onclick="ctrlUiHromadny('xlsx')" ${CTRL_STAV.pracuje ? 'disabled' : ''}>⤓ Za období (.xlsx)</button>

@@ -352,7 +352,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
 {
   const F = (q) => C.ctrlHromadnyFiltr(q);
   test('C3 filtr: platné období, výchozí oblast i řada = obojí',
-    JSON.stringify(F({ od: '2026-10-01', do: '2026-10-31' })) === JSON.stringify({ ok: true, filtr: { od: '2026-10-01', do: '2026-10-31', oblast: 'obe', rada: 'obe' } }));
+    JSON.stringify(F({ od: '2026-10-01', do: '2026-10-31' })) === JSON.stringify({ ok: true, filtr: { od: '2026-10-01', do: '2026-10-31', oblast: 'obe', rada: 'obe', podle: 'zamceni' } }));
   test('C3 filtr: neplatné datum (31. 2.) odmítne', !F({ od: '2026-02-31', do: '2026-03-01' }).ok);
   test('C3 filtr: datum v jiném tvaru odmítne', !F({ od: '1. 10. 2026', do: '2026-10-31' }).ok && !F({ do: '2026-10-31' }).ok);
   test('C3 filtr: od po do odmítne', !F({ od: '2026-11-01', do: '2026-10-01' }).ok);

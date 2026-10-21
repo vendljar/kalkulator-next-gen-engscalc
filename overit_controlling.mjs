@@ -225,6 +225,24 @@ zkus('C4: neplatné deal id se do zakázky nezapíše a hlásí chybu', !pdZle.i
 await stranka.fill('#ctrlPdDeal', '4711'); await stranka.dispatchEvent('#ctrlPdDeal', 'change');
 const pdOk = await stranka.evaluate(() => ({ id: ZAK.pdDealId, exp: ctrlExportVarianty(ZAK, ridiciVarianta(ZAK), { jekly: JEKLY }).hlavicka.pipedrive }));
 zkus('C4: deal id se zapíše do zakázky a jde do exportu', pdOk.id === '4711' && pdOk.exp === '4711', JSON.stringify(pdOk));
+/* C6: objednané příplatky v kartě Smlouva o dílo (krycí list OCK). */
+const obj = await stranka.evaluate(() => {
+  ZAK.aktivni = ridiciVarianta(ZAK).id;
+  const nab = objNabidnute(ridiciVarianta(ZAK), JEKLY);
+  const box = document.createElement('div'); box.innerHTML = objKarta(); document.body.appendChild(box);
+  const zaskrt = box.querySelectorAll('#objKarta input[type=checkbox]').length;
+  objUiPrepni(nab[0].key, true);
+  const po = JSON.parse(JSON.stringify(ZAK.objednane || null));
+  const text = kryciCtx(ZAK, ridiciVarianta(ZAK), JEKLY).objednane;
+  const exp = ctrlExportVarianty(ZAK, ridiciVarianta(ZAK), { jekly: JEKLY });
+  objUiPrepni(nab[0].key, false);
+  box.remove();
+  return { nab: nab.length, zaskrt, po, text, objednanych: exp.radky.filter(r => r.objednano).length, poZruseni: ZAK.objednane || null };
+});
+zkus('C6: karta SoD nabízí zaškrtnout každý nabídnutý příplatek', obj.nab >= 1 && obj.zaskrt === obj.nab, JSON.stringify(obj).slice(0, 200));
+zkus('C6: zaškrtnutí zapíše objednané do zakázky (dnešek, jen ten klíč)', !!obj.po && obj.po.klice.length === 1 && /^\d{4}-\d{2}-\d{2}$/.test(obj.po.datum));
+zkus('C6: krycí list i export objednaný příplatek vidí', /^1 – /.test(obj.text) && obj.objednanych >= 1, obj.text);
+zkus('C6: odškrtnutí posledního záznam smaže', obj.poZruseni === null);
 await stranka.evaluate(() => { const v = ridiciVarianta(ZAK); CTRL_STAV.hrom.od = ctrlDenPraha(v.zamek.kdy); CTRL_STAV.hrom.do = CTRL_STAV.hrom.od; render(); });
 await stranka.selectOption('#ctrlHromOblast', 'ock');
 const [stHrom] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#ctrlHromXlsx')]);

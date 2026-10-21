@@ -139,6 +139,9 @@ const KRYCI_SEKCE = [
     /* KL-2: jen část OCK po slevě. Projekce má vlastní krycí list PROJ. */
     { id: 'hodnotaBezDph', label: 'Hodnota zakázky bez DPH', verze: ['bo', 'techdata'], prefill: c => c.hodnota, src: 'z nabídky OCK (po slevě)' },
     { id: 'priplatkyNabidka', label: 'Příplatky v nabídce', verze: ['bo', 'techdata'], prefill: c => c.priplatky, src: 'z nabídky' },
+    /* #447 C6 (21. 10. 2026): příplatky, které zákazník z odeslané nabídky
+     * objednal (zaškrtávají se u Smlouvy o dílo níž, src/objednane.js). */
+    { id: 'priplatkyObjednane', label: 'Objednané příplatky', verze: ['bo', 'techdata'], prefill: c => c.objednane, src: 'Smlouva o dílo — objednáno zákazníkem' },
   ] },
   /* SET-3 – firemní údaje se doplní automaticky z Nastavení → Firma;
    * ruční přepis v krycím listu je možný (např. jiná fakturační adresa). */
@@ -593,6 +596,7 @@ function kryciCtx(zak, varianta, jekly) {
     /* ATYP z otevřené varianty — termín dodání se podle něj prodlužuje. */
     atyp: !!Zv.atyp,
     hodnota, priplatky, firma, typProduktu,
+    objednane: (typeof objText === 'function') ? objText(zak, varianta, jekly) : '—',
     sken3d: kryciSken3d(d, rOck),
     projAno: key => (projSekce[key] > 0 ? 'Ano' : 'Ne'),
     /* Podmínky zmrazené při odeslání (P9.5) — platí jen, dokud je varianta

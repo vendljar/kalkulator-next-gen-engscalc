@@ -200,9 +200,21 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     && sesit[0].rows.length === 1 + e1.o.exporty.reduce((a, e) => a + e.radky.filter(r => r.vZakladu).length, 0)
     && sesit[1].rows.length === 1 + e1.o.exporty.reduce((a, e) => a + e.radky.filter(r => !r.vZakladu).length, 0));
 
+  /* C6: výběr podle data prodeje (objednané příplatky) — 0801 prodaná 25. 10. */
+  { const soub = rejstrik.find(r => r.cislo === '2026 - OPR - CN - 0801').soubor;
+    const z = G.importZakazka(await sZ.cti('z/' + soub));
+    z.objednane = { varianta: z.varianty[0].id, klice: [G.objNabidnute(z.varianty[0], JEKLY)[0].key], datum: '2026-10-25' };
+    await sZ.zapis('z/' + soub, z);
+    /* Razítko úpravy jako po uložení na serveru (zápis prodeje = uložení zakázky). */
+    rejstrik.find(r => r.soubor === soub).upraveno = '2026-10-25T12:00:00Z';
+    await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik }); }
+  const eP = await ex('?od=2026-10-25&do=2026-10-25&podle=prodej', cAdmin);
+  test('C6: hromadně podle data prodeje jen prodaná zakázka s objednaným řádkem', cisla(eP.o) === '2026 - OPR - CN - 0801'
+    && eP.o.exporty[0].radky.some(r => r.objednano) && eP.o.filtr.podle === 'prodej', cisla(eP.o));
+  test('C6: neznámý výběr podle → 400', (await ex('?od=2026-10-01&do=2026-10-31&podle=tisk', cAdmin)).st === 400);
   const prot = await ex('?protokol=1', cAdmin);
-  test('C3: každý export je v protokolu (kdo, rozsah, počet)', prot.st === 200 && prot.o.zaznamy.length === 5
-    && prot.o.zaznamy[0].oblast === 'ock' && prot.o.zaznamy[0].kdo === ADMIN_EMAIL && prot.o.zaznamy[0].zakazek === 2, prot.o.zaznamy && prot.o.zaznamy[0]);
+  test('C3: každý export je v protokolu (kdo, rozsah, počet)', prot.st === 200 && prot.o.zaznamy.length === 6
+    && prot.o.zaznamy[0].podle === 'prodej' && prot.o.zaznamy[1].oblast === 'ock' && prot.o.zaznamy[0].kdo === ADMIN_EMAIL && prot.o.zaznamy[1].zakazek === 2, prot.o.zaznamy && prot.o.zaznamy[0]);
   test('C3: odmítnutý dotaz se do protokolu nezapíše', prot.o.zaznamy.every(z => z.od <= z.do));
   test('C3: protokol vedoucí nečte (403)', (await get(controllingExport, URL_E + '?protokol=1', cVed)).status === 403);
 

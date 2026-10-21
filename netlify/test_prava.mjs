@@ -1666,6 +1666,45 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   test('C4: obchodník deal id nesmaže (403)', je403(pd7, /deal id/), pd7);
   const pd8 = await uprav374(a => { a.pdDealId = '12ab'; }, cAdmin);
   test('C4: neplatný tvar deal id neuloží ani správce (400)', pd8.status === 400 && /deal id/.test(pd8.chyba || ''), pd8);
+
+  /* #447 C6 (21. 10. 2026): objednané příplatky — mimo zámek nabídky, jen
+   * nabídnuté příplatky zamčené varianty, kdo/kdy z relace, po vytištěné SoD
+   * mění jen administrátor. */
+  {
+    const zO = odesliB59(nova374());
+    const r0 = await uloz374(zO, cObch);
+    test('C6: příprava — obchodník uloží odeslanou nabídku (200)', r0.status === 200, r0);
+    const nacti6 = async () => { const g = await nactiB59(r0.soubor); return { g, a: zk.importZakazka(JSON.parse(JSON.stringify(g))) }; };
+    const nab6 = globalThis.objNabidnute((await nacti6()).a.varianty[0], JEKLY_T).map(p => p.key);
+    test('C6: příprava — nabídka nabízí aspoň dva příplatky', nab6.length >= 2, nab6);
+    const zapis6 = async (zmena, c) => { const { g, a } = await nacti6(); zmena(a); return uloz374(a, c, { ocekavaneRazitko: g.uloRazitko }); };
+    const dnes6 = globalThis.objDnes();
+    const o1 = await zapis6(a => { a.objednane = { varianta: a.varianty[0].id, klice: [nab6[0]], datum: dnes6, kdo: 'podvrh@priklad.cz', kdy: '2000-01-01' }; }, cObch);
+    const ul1 = (await nacti6()).g.objednane || {};
+    test('C6: obchodník zakázky zapíše objednaný příplatek (200), kdo z relace', o1.status === 200
+      && ul1.kdo === UCTY['Obchodník'].email && ul1.kdy !== '2000-01-01' && ul1.klice.join() === nab6[0], { o1, ul1 });
+    const o2 = await zapis6(a => { a.objednane.klice = ['neexistujici']; }, cObch);
+    test('C6: nenabídnutý příplatek → 400', o2.status === 400 && /nabídnut/.test(o2.chyba || ''), o2);
+    const o3 = await zapis6(a => { a.objednane.datum = '2999-01-01'; }, cObch);
+    test('C6: datum prodeje v budoucnosti → 400', o3.status === 400, o3);
+    const o4 = await zapis6(a => { a.nazevAkce = 'jiný název C6'; a.objednane.kdo = 'podvrh@priklad.cz'; }, cVed);
+    test('C6: uložení beze změny objednaných drží razítko (kdo se nepřepíše)', o4.status === 200
+      && (await nacti6()).g.objednane.kdo === UCTY['Obchodník'].email, o4);
+    const o5 = await zapis6(a => { a.objednane.klice = [nab6[0], nab6[1]]; }, cVed);
+    test('C6: vedoucí objednané změní (200)', o5.status === 200, o5);
+    /* Vytištěná SoD (dotisk typu sod do zámku) — dál jen administrátor. */
+    const o6 = await zapis6(a => { zam.zamkniVariantu(a.varianty[0], { typ: 'sod', kdo: 'Matice práv' }); }, cObch);
+    test('C6: příprava — tisk SoD uložen (200)', o6.status === 200, o6);
+    const o7 = await zapis6(a => { a.objednane.klice = [nab6[1]]; }, cObch);
+    test('C6: po SoD obchodník objednané nezmění (403)', o7.status === 403 && /Smlouva o dílo/.test(o7.chyba || ''), o7);
+    const o8 = await zapis6(a => { delete a.objednane; }, cVed);
+    test('C6: po SoD vedoucí objednané nesmaže (403)', o8.status === 403, o8);
+    const o9 = await zapis6(a => { a.objednane.klice = [nab6[1]]; }, cAdmin);
+    test('C6: po SoD administrátor změní (200)', o9.status === 200 && (await nacti6()).g.objednane.klice.join() === nab6[1], o9);
+    const n10 = nova374(); n10.objednane = { varianta: n10.varianty[0].id, klice: [nab6[0]], datum: dnes6 };
+    const o10 = await uloz374(n10, cObch);
+    test('C6: objednané k nezamčené variantě → 400', o10.status === 400, o10);
+  }
   const n1 = nova374(); hod(n1).sazba = 'neexistuje'; hod(n1).sazbaKc = 1;
   const a9 = await uloz374(n1, cObch);
   test('B114: nová zakázka obchodníka s pozměněnou položkou → 403 (proti výchozímu zadání)', je403(a9), a9);
