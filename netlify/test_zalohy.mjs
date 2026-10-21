@@ -644,8 +644,11 @@ await zkus('O9', async () => {
   for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
   const puvodni = globalThis.__TEST_ULOZISTE;
   /* pořízení otisku trvá (čtení zakázek zpomalené o 30 ms), jako u skutečné databáze */
-  globalThis.__TEST_ULOZISTE = (n) => { const u = puvodni(n); if (n !== 'zakazky') return u;
-    return { ...u, async seznam(p) { await new Promise(r => setTimeout(r, 30)); return u.seznam(p); } }; };
+  /* …a výpis záloh trvá 20 ms, takže všech 5 požadavků projde první kontrolou
+   * dřív, než kterýkoli zapíše rezervaci — bez řazení v instanci (vyhradne)
+   * by se odmítly všechny (mutace „bez řazení" přežila, O9). */
+  globalThis.__TEST_ULOZISTE = (n) => { const u = puvodni(n); if (n !== 'zakazky' && n !== 'zalohy') return u;
+    return { ...u, async seznam(p) { await new Promise(r => setTimeout(r, n === 'zalohy' ? 20 : 30)); return u.seznam(p); } }; };
   let stavy = [];
   try {
     stavy = await sHodinami(() => Promise.all(Array.from({ length: 5 }, () =>
