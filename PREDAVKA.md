@@ -11,7 +11,12 @@ Navazuje na C5 (641b9c2). Koordinace teď **session_016CbSudw1q9GXrrtfiJKvAG** (
   `podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md`); „po podpisu" = ručně vyplněné datum podpisu ≤ dnes → jen admin.
 - **Ke slučování:** CHANGELOG „C6", příručka („Co je nového — objednané příplatky…"), MEZE, roadmapa #447,
   `netlify/mutace.mjs` (blok „#447 C6" + SADY test_objednane, test_sod), `build.py` + `jadro_moduly.cjs` (objednane.js).
-- **Testy:** viz CHANGELOG C6; kolo a mutace viz commit.
+- **Testy (finál 20ea508, C5 + C6):** kolo `--bez-mutaci` **295 prošlo / 0 selhalo / 6 přeskočeno** (test.js
+  a KNG_PODKLADY), statické 4/4 — VŠE ZELENÉ; mutace „#447 C" **40/40** (C2 7, C3 13, C4 4, C5 5, C6 11).
+  Nález kola nad 5d6ae24 (opraveno 20ea508): nové symboly SoD šly do odstavcePryc i u šablony, která je nemá.
+- **Otevřené po C6 (nic pro tuto dávku):** šablona SoD v4 (dávka S11, podklad předán), sloupec „V nabídce"
+  (J. V. nerozhodl), nálezy z ukázky (1) zaokrouhlení OCK v exportu a (4) zaokrouhlení Kapitol po skupinách,
+  automatické Pipedrive deal id (chybí výběr dealu z CRM), výjimka zálohy `controlling_exporty`.
 
 # Předávka — 21. 10. 2026 odpoledne: Controlling #447 — C5 (export v2), větev `claude/controlling-c3` (verzi přidělí sloučení)
 
