@@ -288,7 +288,7 @@ async function ctrlUiHromadny(format) {
 function ctrlUiKartaHromadny() {
   const h = ctrlUiHrom();
   if (CTRL_STAV.protokol === null) { CTRL_STAV.protokol = []; setTimeout(ctrlUiProtokolNacti, 0); }
-  const sel = (id, pole, volby) => `<select id="${id}" onchange="ctrlUiHromSet('${pole}', this.value)">${volby.map(([v, t]) =>
+  const sel = (id, pole, volby) => `<select id="${esc(id)}" onchange="ctrlUiHromSet('${escJs(pole)}', this.value)">${volby.map(([v, t]) =>
     `<option value="${v}"${h[pole] === v ? ' selected' : ''}>${t}</option>`).join('')}</select>`;
   const prot = (CTRL_STAV.protokol || []).slice(0, 10).map(z => `<tr><td>${esc(new Date(z.kdy).toLocaleString('cs-CZ'))}</td>
       <td>${esc(z.kdo || '')}</td><td>${esc(z.od || '')} – ${esc(z.do || '')}</td>
