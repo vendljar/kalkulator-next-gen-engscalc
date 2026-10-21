@@ -7398,7 +7398,7 @@
    "pozn": "Id přidělila koordinace (dávka O11)."
   },
   {
-   "id": "473",
+   "id": "474",
    "vlna": "B",
    "stav": "hotovo",
    "dulezitost": "stredni",
@@ -7406,7 +7406,7 @@
    "nazev": "Jazykové verze šablony k už platné češtině",
    "proc": "J. V. 21. 10. 2026: průvodce se stejnou (platnou) češtinou + vlastní EN/DE/FR skončil hláškou „už je zveřejněná jako platná verze 2“ a nezveřejnil nic (SoD REALIZACE v2, SoD PROJ v3).",
    "detail": "HOTOVO (O12): čeština shodná s platnou (otisk) se znovu nezveřejňuje, průvodce zveřejní jen zaškrtnuté jazyky se zdrojOtisk platné češtiny; záhlaví, tlačítko („Zveřejnit jazykové verze k platné češtině vN: …“, bez jazyka zakázané), potvrzení a výsledek po jazycích. „Nahrát doladěný soubor“ u jazyka ověřeno (i ve stavu „chybí“). Server beze změny.",
-   "hotovoKdyz": "src/test_sablony_online.js (průvodce ve vm) zelený, mutace jádra „#473“ chycené.",
+   "hotovoKdyz": "src/test_sablony_online.js (průvodce ve vm) zelený, mutace jádra „#474“ chycené.",
    "kde": "`src/ui/sablony_sprava_ui.js` (sablPruvodceZverejniJazyky), `src/sablony_online.js` (sablonaCestinaShodna, sablonaAbNaB64)",
    "zavisi": [],
    "hotovoV": "v21.10.5",

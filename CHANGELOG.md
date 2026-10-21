@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v21.10.5 — O12: jazykové verze šablony k už platné češtině (#473, větev claude/o12-sablony-jazyky)
+## v21.10.5 — O12: jazykové verze šablony k už platné češtině (#474, větev claude/o12-sablony-jazyky)
 
 Chyba J. V. 21. 10. 2026 (screenshot): SoD REALIZACE (OCK) má platnou češtinu v2; průvodce spuštěný znovu se
 stejným českým souborem a vlastními EN/DE/FR skončil hláškou „Tahle šablona už je zveřejněná jako platná verze 2 –
@@ -23,7 +23,7 @@ není co zveřejňovat." a nezveřejnil nic. Totéž u SoD PROJEKČNÍ PRÁCE (v
 - Ověřeno: „Nahrát doladěný soubor" u jazyka (i ve stavu „chybí") v detailu dokumentu funguje — beze změny.
 - Server beze změny (jeho kontrola stejného souboru je správná). Nové `sablonaCestinaShodna` a `sablonaAbNaB64`
   v `src/sablony_online.js` (převod base64 sdílí i `onlineSablonaZverejni`).
-- Testy: `src/test_sablony_online.js` +22 (průvodce ve vm se zástupným serverem); mutace jádra „#473" 8
+- Testy: `src/test_sablony_online.js` +22 (průvodce ve vm se zástupným serverem); mutace jádra „#474" 8
   (`ui/sablony_sprava_ui.js` nově mezi soubory mutačního běhu).
 
 ## v21.10.4 — C3 + C4: Controlling: hromadný export za období, export z Přehledu, Pipedrive deal id (#447, větev claude/controlling-c3)

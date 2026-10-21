@@ -283,7 +283,7 @@ async function sablPruvodceStart(typ, predvybrany) {
     if (sablonaPlatna(sablRej(), d.typ))
       vzor = sablonaSymboly(await docxTextSablony((await onlineSablonaStahni(d.typ)).data));
     const k = await sablKontrolaSouboru(soubor.data, 'cz', vzor);
-    /* #473 (O12, 21. 10. 2026): stejný soubor jako platná čeština — průvodce
+    /* #474 (O12, 21. 10. 2026): stejný soubor jako platná čeština — průvodce
      * ji znovu nezveřejní (server by odmítl „už je zveřejněná") a jen k ní
      * přidá jazykové verze. U dokumentu bez jazyků není co zveřejňovat. */
     const shoda = sablonaCestinaShodna(sablRej(), d.typ, sablonaAbNaB64(soubor.data));
@@ -302,7 +302,7 @@ function sablPruvodceHtml() {
   const p = SABL_UI.pruvodce, d = sablDok(p.typ), k = p.kontrola;
   const kroky = ['Soubor', 'Kontrola', d.jazyky ? 'Jazykové verze' : null, 'Zveřejnit'].filter(Boolean);
   const aktIdx = p.krok === 'kontrola' ? 1 : (d.jazyky ? 2 : 3);
-  const shoda = p.shodaCz;                 // #473: čeština shodná s platnou verzí
+  const shoda = p.shodaCz;                 // #474: čeština shodná s platnou verzí
   const hlavicka = `<div class="sabl-kroky">${kroky.map((n, i) =>
     `<span class="${i < aktIdx ? 'hot' : (i === aktIdx ? 'akt' : '')}">${i + 1} · ${esc(n)}</span>`).join('')}</div>
     <div><b>${esc(d.nazev)} — ${shoda ? 'čeština shodná s platnou verzí ' + esc(shoda.verze) : 'nová česká verze'}</b> · <code>${esc(p.soubor.nazev)}</code>
@@ -369,7 +369,7 @@ function sablPruvodceHtml() {
     </div>`;
   }).join('') : '';
   const vybrane = SABL_JAZYKY.filter(([l]) => p.vybrane[l]).map(([l]) => l.toUpperCase());
-  /* #473: u češtiny shodné s platnou se zveřejňují jen jazyky — bez nich
+  /* #474: u češtiny shodné s platnou se zveřejňují jen jazyky — bez nich
    * není co zveřejnit, tlačítko se zakáže a řekne proč. */
   const tlZverejnit = shoda
     ? `<button class="primary" ${vybrane.length ? '' : 'disabled'} onclick="sablPruvodceZverejni()">Zveřejnit jazykové verze k platné češtině v${esc(shoda.verze)}${vybrane.length ? ': ' + esc(vybrane.join(' + ')) : ''}</button>`
@@ -456,7 +456,7 @@ async function sablPruvodceDal() {
       /* Výchozí výběr: jazyky, které už na serveru jsou — aby po nové
        * češtině nezůstaly pozadu. Nový jazyk si administrátor zaškrtne sám. */
       p.vybrane[l] = p.shodaCz
-        /* #473: k platné češtině se předvybere jen zastaralá jazyková verze —
+        /* #474: k platné češtině se předvybere jen zastaralá jazyková verze —
          * aktuální by byla týž soubor, server by ji odmítl */
         ? sablonaMutaceStav(rej, p.typ, l).stav === 'zastarala'
         : !!sablonaPlatna(rej, p.typ + '_' + l);
@@ -469,7 +469,7 @@ async function sablPruvodceZverejni() {
   const p = SABL_UI.pruvodce; if (!p || !jeAdmin()) return;
   const el = document.getElementById('sablPozn'); if (el) p.poznamka = el.value;
   const jazyky = SABL_JAZYKY.map(([l]) => l).filter(l => p.vybrane[l] && p.mutace[l] && p.mutace[l].data);
-  /* #473 (O12, 21. 10. 2026): čeština shodná s platnou se znovu NEzveřejňuje
+  /* #474 (O12, 21. 10. 2026): čeština shodná s platnou se znovu NEzveřejňuje
    * (server by ji odmítl 400 a výjimka by ukončila průvodce dřív, než by se
    * zveřejnily jazyky). Shoda se ověřuje znovu proti aktuálnímu rejstříku. */
   const shoda = sablonaCestinaShodna(sablRej(), p.typ, sablonaAbNaB64(p.soubor.data));
@@ -495,7 +495,7 @@ async function sablPruvodceZverejni() {
     sablPrace('Hotovo: ' + vysledky.join(' · '));
   } catch (e) { sablPrace(''); hlaska('Zveřejnění se nepovedlo: ' + e.message); }
 }
-/* Jen jazykové verze k už platné češtině (#473). Každý jazyk zvlášť: chyba
+/* Jen jazykové verze k už platné češtině (#474). Každý jazyk zvlášť: chyba
  * jednoho nezastaví ostatní a výsledek ji vypíše u jazyka. Když se nepovede
  * žádný, průvodce zůstane otevřený, aby šlo zkusit znovu. */
 async function sablPruvodceZverejniJazyky(p, cz, jazyky) {

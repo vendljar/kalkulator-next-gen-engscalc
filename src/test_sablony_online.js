@@ -173,7 +173,7 @@ test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka
   test('rozdíl symbolů', r.pribylo.join() === 'D' && r.ubylo.join() === 'A', r);
 }
 
-// ---- #473 (O12, 21. 10. 2026): jazykové verze k už platné češtině ----------
+// ---- #474 (O12, 21. 10. 2026): jazykové verze k už platné češtině ----------
 /* J. V. 21. 10.: SoD REALIZACE má platnou češtinu v2. Průvodce spuštěný znovu
  * se STEJNÝM českým souborem + vlastní EN/DE/FR skončil hláškou „už je
  * zveřejněná jako platná verze 2" a nezveřejnil nic. Průvodce (src/ui/
@@ -262,30 +262,30 @@ test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka
     await S.run(`sablPruvodceVlastni('de', __DE)`);
     await S.run(`sablPruvodceVlastni('fr', __FR)`);
     const html = S.run('sablPruvodceHtml()');
-    test('#473 průvodce: záhlaví řekne, že čeština je shodná s platnou v2',
+    test('#474 průvodce: záhlaví řekne, že čeština je shodná s platnou v2',
       /shodná s platnou verzí 2/.test(html) && !/nová česká verze/.test(html) && /shodná s platnou verzí 2/.test(htmlKontrola), html.slice(0, 400));
-    test('#473 průvodce: tlačítko „Zveřejnit jazykové verze k platné češtině v2: EN + DE + FR"',
+    test('#474 průvodce: tlačítko „Zveřejnit jazykové verze k platné češtině v2: EN + DE + FR"',
       /Zveřejnit jazykové verze k platné češtině v2: EN \+ DE \+ FR/.test(html) && !/Zveřejnit najednou: čeština/.test(html),
       (html.match(/<button class="primary"[^>]*>[^<]*/g) || []).join(' | '));
     await S.run('sablPruvodceZverejni()');
     const rej = S.ctx.ONLINE_STAV.sablonyRejstrik;
-    test('#473 průvodce: čeština se znovu nezveřejňuje (žádné volání pro „sod")',
+    test('#474 průvodce: čeština se znovu nezveřejňuje (žádné volání pro „sod")',
       !S.volani.some(v => v.typ === 'sod'), S.volani.map(v => v.typ));
-    test('#473 průvodce: zveřejní se právě EN, DE a FR',
+    test('#474 průvodce: zveřejní se právě EN, DE a FR',
       S.volani.map(v => v.typ).join() === 'sod_en,sod_de,sod_fr', S.volani.map(v => v.typ));
-    test('#473 průvodce: jazyky nesou zdrojOtisk platné češtiny v2',
+    test('#474 průvodce: jazyky nesou zdrojOtisk platné češtiny v2',
       S.volani.length === 3 && S.volani.every(v => v.zdrojOtisk === S.czOtisk), S.volani);
-    test('#473 průvodce: poznámka „vlastní soubor k české verzi 2"',
+    test('#474 průvodce: poznámka „vlastní soubor k české verzi 2"',
       S.volani.length === 3 && S.volani.every(v => /vlastní soubor k české verzi 2/.test(v.poznamka)), S.volani.map(v => v.poznamka));
-    test('#473 průvodce: čeština zůstala v2 a EN/DE/FR jsou aktuální',
+    test('#474 průvodce: čeština zůstala v2 a EN/DE/FR jsou aktuální',
       sablonaPlatna(rej, 'sod').verze === 2 && ['en', 'de', 'fr'].every(l => sablonaMutaceStav(rej, 'sod', l).stav === 'aktualni'),
       ['en', 'de', 'fr'].map(l => sablonaMutaceStav(rej, 'sod', l).stav));
     const prace = S.run('SABL_UI.prace');
-    test('#473 průvodce: výsledek „Hotovo" vypíše jazyky', /^Hotovo/.test(prace) && /EN v1/.test(prace) && /DE v1/.test(prace) && /FR v1/.test(prace)
+    test('#474 průvodce: výsledek „Hotovo" vypíše jazyky', /^Hotovo/.test(prace) && /EN v1/.test(prace) && /DE v1/.test(prace) && /FR v1/.test(prace)
       && S.run('SABL_UI.pruvodce') === null, prace);
-    test('#473 průvodce: potvrzení řekne, že se čeština nezveřejní',
+    test('#474 průvodce: potvrzení řekne, že se čeština nezveřejní',
       S.dialogy.some(t => /shodná s platnou verzí 2/.test(t) && /EN, DE, FR/.test(t)), S.dialogy);
-    test('#473 průvodce: žádná hláška „už je zveřejněná"', !S.dialogy.some(t => /už je zveřejněná/.test(t)), S.dialogy);
+    test('#474 průvodce: žádná hláška „už je zveřejněná"', !S.dialogy.some(t => /už je zveřejněná/.test(t)), S.dialogy);
 
     /* b) bez vybraného jazyka: tlačítko zakázané s vysvětlením, nic se nepošle */
     const S2 = prostredi();
@@ -294,11 +294,11 @@ test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka
     await S2.run('sablPruvodceDal()');
     S2.run('SABL_UI.pruvodce.vybrane = {}');
     const html2 = S2.run('sablPruvodceHtml()');
-    test('#473 průvodce: bez jazyka je tlačítko zakázané a vysvětlené',
+    test('#474 průvodce: bez jazyka je tlačítko zakázané a vysvětlené',
       /<button class="primary" disabled[^>]*>Zveřejnit jazykové verze k platné češtině v2/.test(html2) && /Vyberte aspoň jeden jazyk/.test(html2),
       (html2.match(/<button class="primary"[^>]*>[^<]*/g) || []).join(' | '));
     await S2.run('sablPruvodceZverejni()');
-    test('#473 průvodce: bez jazyka se nic nezveřejní', S2.volani.length === 0, S2.volani);
+    test('#474 průvodce: bez jazyka se nic nezveřejní', S2.volani.length === 0, S2.volani);
 
     /* c) chyba u jednoho jazyka: ostatní se zveřejní, výsledek ji vypíše po jazyce */
     const S3 = prostredi();
@@ -311,7 +311,7 @@ test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka
     S3.run('SABL_UI.pruvodce.vybrane = { en: true, fr: true }');
     await S3.run('sablPruvodceZverejni()');
     const prace3 = S3.run('SABL_UI.prace');
-    test('#473 průvodce: chyba jednoho jazyka se vypíše, ostatní zveřejněné',
+    test('#474 průvodce: chyba jednoho jazyka se vypíše, ostatní zveřejněné',
       /EN: výpadek spojení/.test(prace3) && /FR v1/.test(prace3) && !!sablonaPlatna(S3.ctx.ONLINE_STAV.sablonyRejstrik, 'sod_fr'), prace3);
 
     /* d) nová čeština (jiný soubor) dál zveřejní češtinu i jazyky postaru */
@@ -323,7 +323,7 @@ test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka
     const html4 = S4.run('sablPruvodceHtml()');
     await S4.run('sablPruvodceZverejni()');
     const rej4 = S4.ctx.ONLINE_STAV.sablonyRejstrik;
-    test('#473 průvodce: nová čeština jde postaru (čeština + EN, EN k v3)',
+    test('#474 průvodce: nová čeština jde postaru (čeština + EN, EN k v3)',
       /Zveřejnit najednou: čeština \+ EN/.test(html4) && S4.volani.map(v => v.typ).join() === 'sod,sod_en'
       && sablonaPlatna(rej4, 'sod').verze === 3 && sablonaMutaceStav(rej4, 'sod', 'en').stav === 'aktualni', S4.volani);
 
@@ -331,15 +331,15 @@ test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka
     const S5 = prostredi();
     const det = S5.run(`SABL_UI.vybrany = 'sod'; sablDetailHtml(sablRej(), true)`);
     const radekFr = (det.split('<b>Francouzština</b>')[1] || '').split('</div>')[0] + (det.split('<b>Francouzština</b>')[1] || '').split('</span></div>')[0];
-    test('#473 detail: u jazyka „chybí" je tlačítko „Nahrát doladěný soubor" (povolené)',
+    test('#474 detail: u jazyka „chybí" je tlačítko „Nahrát doladěný soubor" (povolené)',
       /<button class="mini"  onclick="sablNahrajJazyk\('sod','fr'\)">Nahrát doladěný soubor<\/button>/.test(radekFr), radekFr.slice(0, 600));
     S5.ctx.__FR = FR;
     await S5.run(`sablNahrajJazyk('sod', 'fr', __FR)`);
-    test('#473 detail: doladěný FR soubor se zveřejní k platné češtině v2',
+    test('#474 detail: doladěný FR soubor se zveřejní k platné češtině v2',
       S5.volani.length === 1 && S5.volani[0].typ === 'sod_fr' && S5.volani[0].zdrojOtisk === S5.czOtisk
       && sablonaMutaceStav(S5.ctx.ONLINE_STAV.sablonyRejstrik, 'sod', 'fr').stav === 'aktualni', S5.volani);
 
     console.log('\nPASS=' + passes + ' FAIL=' + fails);
     process.exit(fails ? 1 : 0);
-  })().catch(e => { console.log('  FAIL #473 výjimka: ' + (e && e.stack || e)); process.exit(1); });
+  })().catch(e => { console.log('  FAIL #474 výjimka: ' + (e && e.stack || e)); process.exit(1); });
 }

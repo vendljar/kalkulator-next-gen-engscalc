@@ -576,7 +576,7 @@ function onlineSablonaStahni(typ) {
 /* Zveřejnění šablony — volá obrazovka Nastavení → Šablony. Soubor jde na
  * server v base64; verzi, otisk i odmítnutí ne-Wordu řeší server. */
 function onlineSablonaZverejni(typ, nazev, arrayBuffer, poznamka, zdrojOtisk) {
-  /* převod sdílí s průvodcem šablon (sablonaAbNaB64, #473) — otisk vyjde stejný */
+  /* převod sdílí s průvodcem šablon (sablonaAbNaB64, #474) — otisk vyjde stejný */
   const telo = { akce: 'zverejnit', typ, nazev, data: sablonaAbNaB64(arrayBuffer), poznamka: String(poznamka || '') };
   if (zdrojOtisk) telo.zdrojOtisk = zdrojOtisk;           // jazyková verze: ze které češtiny (#348)
   return onlineApi('/api/sablony', telo).then(o => onlineNactiSablony().then(() => o));

@@ -1,4 +1,4 @@
-# Předávka — 21. 10. 2026: dávka O12 — jazykové verze šablony k už platné češtině (#473, v21.10.5)
+# Předávka — 21. 10. 2026: dávka O12 — jazykové verze šablony k už platné češtině (#474, v21.10.5)
 
 Větev `claude/o12-sablony-jazyky` nad `claude/integrace-16-10` 7ce01b3 (v21.10.4). **Do integrace / test nic** —
 slučuje koordinace (verzi v21.10.5 může přečíslovat).
@@ -9,10 +9,10 @@ slučuje koordinace (verzi v21.10.5 může přečíslovat).
   krok 3, tlačítko (bez jazyka zakázané), potvrzení a výsledek po jazycích. „Nahrát doladěný soubor“ u jazyka
   fungoval i dřív (i ve stavu „chybí“) — jen ověřeno testem. Server beze změny.
 - **Ke slučování:** CHANGELOG oddíl v21.10.5, `verze.txt` 21.10.5, `manual/obsah.json` („Co je nového ve verzi
-  v21.10.5“), roadmapa #473, `mutace_jadro.mjs` (JADRA + `ui/sablony_sprava_ui.js`, blok „#473“ na konci),
+  v21.10.5“), roadmapa #474, `mutace_jadro.mjs` (JADRA + `ui/sablony_sprava_ui.js`, blok „#474“ na konci),
   `src/ui/online_ui.js` (`onlineSablonaZverejni` volá `sablonaAbNaB64`).
 - **Testy:** `src/test_sablony_online.js` 85/0 (+22; před opravou 13 FAIL s hláškou „už je zveřejněná“), mutace
-  jádra „#473“ 8/8, kolo `--bez-mutaci` 294 prošlo / 0 selhalo / 6 přeskočeno (test.js, KNG_PODKLADY), statické
+  jádra „#474“ 8/8, kolo `--bez-mutaci` 294 prošlo / 0 selhalo / 6 přeskočeno (test.js, KNG_PODKLADY), statické
   4/4 — VŠE ZELENÉ. `overit_sablony_online.mjs` krok 7 bez KNG_PODKLADY neběží (chybí šablona CN v11).
 
 # Předávka — 21. 10. 2026: Controlling #447 — C3 + C4, větev `claude/controlling-c3` (verzi přidělí sloučení)

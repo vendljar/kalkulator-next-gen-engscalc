@@ -119,7 +119,7 @@ function sablonaPlatna(rej, typ) {
   return (t && t.platna) || null;
 }
 
-/* BINÁRNÍ SOUBOR → BASE64 (#473, O12, 21. 10. 2026). Tentýž převod, jakým
+/* BINÁRNÍ SOUBOR → BASE64 (#474, O12, 21. 10. 2026). Tentýž převod, jakým
  * klient posílá soubor na server (onlineSablonaZverejni) — otisk spočítaný
  * z výsledku je proto shodný s otiskem, který si spočítá server. */
 function sablonaAbNaB64(arrayBuffer) {
@@ -131,7 +131,7 @@ function sablonaAbNaB64(arrayBuffer) {
   return btoa(bin);
 }
 
-/* ČEŠTINA SHODNÁ S PLATNOU (#473, O12, 21. 10. 2026). J. V. spustil průvodce
+/* ČEŠTINA SHODNÁ S PLATNOU (#474, O12, 21. 10. 2026). J. V. spustil průvodce
  * znovu se STEJNÝM českým souborem, jen aby k platné češtině přidal vlastní
  * EN/DE/FR — server stejný soubor podruhé nezveřejní (400 „už je zveřejněná")
  * a průvodce skončil dřív, než zveřejnil jazyky. Vrací meta platné české
