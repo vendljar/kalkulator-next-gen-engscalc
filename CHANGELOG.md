@@ -111,6 +111,26 @@ Dávka W2 (J. V. 20. 10. 2026) nad `test` 5dc28d1. Aplikace se nemění, verze z
 
 ## v20.10.7 — U1: zveřejnění platebních podmínek přímo na záložce Smlouvy / Šablony, zarovnání limitu pokut (větev claude/u1-podminky-zverejnit)
 
+**Celé kolo K4 nad b6f49a7 (v20.10.7, 20.–21. 10. 2026; dávka K4, koordinace „ŘÍDÍCÍ 20.10 noc“, větev claude/k4-kolo) — 1 PŘEŽIVŠÍ MUTACE JÁDRA (prázdný test po V7-N2, kód v pořádku):**
+build OK; sady **286 prošlo / 0 selhalo / 6 přeskočeno** (`test.js` + 5 harnessů bez `KNG_PODKLADY`);
+mutace jádra **393/394**, otisky obou jader po běhu souhlasí; mutace serveru **668/668**, 0 chybně
+zadaných; statické kontroly **4/4**. Kód aplikace ani verze se neměnily.
+- **Přeživší: „DPH: prohlášení o snížené sazbě i mimo stavbu pro bydlení“** (`sod.js`). Test
+  „česká DPH + administrativní budova“ (`src/test_sod_en.js:206`) běží s výchozím režimem, který je od
+  V7-N2 přenesená povinnost → kontrola projde vždy. Nález **K4-N22** (nízký), oprava testu bez J. V.
+- **`netlify/test_obnova.mjs` padá ~23:49–24:00 UTC** (posun hodin +11 min na každý vynucený otisk proti
+  nepřesunutému `dnes()`) — nález **K4-N23** (nízký). Doloženo v kole: 23 částí mutací serveru spuštěných
+  v tom okně skončilo „sady nejsou zelené ani bez mutace“, po 00:01 UTC prošly.
+- **Průběh:** server po 60 částech filtrem podle souboru (2h strop úlohy přerušil 3× rozběhnutou část —
+  `vyjimky.js`, `zakazka.js`, `ukazkove.js`; SIGTERM, soubor vrácen, část opakována celá); úplnost
+  ověřena po názvech proti zadání (668 unikátních mutací). Pracovní kopie po každé části čistá.
+- **Bezpečnostní audit `1b0e2f7..b6f49a7`:** `podklady/K4_AUDIT_20_10.md` — 0 kritických, 0 vysokých,
+  **3 střední** (K4-N1 kapitoly IV.–VI. a doložky OCK se při zamčení nezmrazují a `BEZPECNOST_MEZE.md`
+  tvrdí opak; K4-N2 skript W2 smaže čerstvou dávkovou větev založenou nad starší špičkou `test`;
+  K4-N3 W2 maže bez `--force-with-lease`, souběžný push se ztratí), 10 nízkých (vč. K4-N22, K4-N23),
+  10 informativních. Regrese K3: 18 opraveno, K3-N2 částečně. Rozhodnutí J. V. chtějí K4-N1, K4-N4,
+  K4-N13, K4-N17, K4-N20; ostatní jdou opravit bez něj (K4-N2, K4-N3, K4-N22 dělá O8).
+
 Dávka U1 (postřehy J. V. 20. 10. 2026 + zpřesnění ~12:00), základ `test` 5dc28d1 (v20.10.1).
 
 - **Tlačítko „Zapsat výchozí hodnoty"** (dřív „Zapsat výchozí hodnoty do Firmy"): stisk zapíše
