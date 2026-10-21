@@ -108,21 +108,17 @@ a{color:var(--steel);overflow-wrap:anywhere}
 
 <script id="data" type="application/json">
 {
- "aktualizace": "21. 10. 2026 05:02 UTC",
+ "aktualizace": "21. 10. 2026 11:42 UTC",
  "koordinace": {
   "id": "session_01By6bWivtf2rTJYJFGVv8e1",
-  "kontext": 31
+  "kontext": 62
  },
- "releasy": "vydáno v20.10.7 (b6f49a7), v20.10.1, v19.10.8 · připraveno v20.10.8 (b04873f), v21.10.1 (6dfcfe9), v21.10.2 (ac26027) — vydat po posunu test",
+ "releasy": "vydáno v21.10.2, v21.10.1, v20.10.8, v20.10.7 · připraveno v21.10.3 (b107e28)",
  "cekaNaJV": [
-  "Souhrn noci s doporučenými odpověďmi: https://claude.ai/artifact/F4kAdBxGqALqevbhQuPoLE",
-  "Do test (jen na váš pokyn): integrace ac26027 = v20.10.8 (K29-N1) + v21.10.1 (Controlling C1+C2, S10 nástroj) + v21.10.2 (O9 opravy z auditu K4) + O8 (tlačítko mazání větví, testy). Ověřeno: kolo 292/0/6, statické 4/4, mutace O9 3/3 + 14/14, #447 18/18, K3-N1 26/26, K3-N3 3/3, K3-N4 7/7, K3-N8 3/3, #151 N1 5/5. „pushni do test“ → test na ac26027.",
-  "Release po posunu test (tagy neexistují, ověřeno 04:50): v20.10.8 https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v20.10.8&target=b04873f7571d5b9811c28d7a53c90093f2e9050a&title=v20.10.8%20%E2%80%94%20K29-N1%3A%20p%C5%99%C3%ADplatek%20za%20m%C4%9B%C4%8F%20jen%20se%20zast%C5%99e%C5%A1en%C3%ADm%20%C5%A1achty%20v%20nab%C3%ADdce&body=%23%23%23%20K29-N1%3A%20p%C5%99%C3%ADplatek%20za%20m%C4%9B%C4%8F%20jen%20se%20zast%C5%99e%C5%A1en%C3%ADm%20%C5%A1achty%20v%20nab%C3%ADdce%0A-%20%60src%2Fengine.js%60%3A%20jedno%20m%C3%ADsto%20%60zastreseniVNabidce%60%20%3D%20EXT%20%26%26%20zast%C5%99e%C5%A1en%C3%AD%20nen%C3%AD%20v%20%60nepocitat%60%20%26%26%20jeho%20ru%C4%8Dn%C3%AD%20mno%C5%BEstv%C3%AD%20nen%C3%AD%20platn%C3%A1%20nula%20%28pr%C3%A1zdno%20nen%C3%AD%20nula%29%0A-%20%60src%2Fkontroly.js%60%3A%20%60mustekStrecha%60%20ml%C4%8D%C3%AD%20p%C5%99i%20%60strecha.vNabidce%20%3D%3D%3D%20false%60%0A-%20Testy%20%60src%2Ftest_mustky.js%60%20%2B18%20%28oba%20modely%29%3A%20p%C5%99ed%20opravou%2018%20sel%C5%BEe%2C%20po%20n%C3%AD%2085%2F0%0A-%20Zak%C3%A1zky%20se%20zast%C5%99e%C5%A1en%C3%ADm%20v%20nab%C3%ADdce%20beze%20zm%C4%9Bny%20%28st%C3%A1vaj%C3%ADc%C3%AD%20testy%20%23356%2C%20fixtury%2012%20variant%20%2F%205%20zam%C4%8Den%C3%BDch%20na%20korunu%20stejn%C4%9B%29%0A-%20Mimo%20rozsah%20%28nehl%C3%A1%C5%A1eno%20jako%20oprava%29%3A%20zast%C5%99e%C5%A1en%C3%AD%20v%20nab%C3%ADdce%20s%20ru%C4%8Dn%C4%9B%20p%C5%99epsanou%20plochou%20%28ne%20nulou%29%20%E2%80%94%20m%C4%9B%C4%8F%20d%C3%A1l%20bere%20vypo%C4%8Dtenou%20plochu%2C%20ne%20p%C5%99epsanou%0A%0APodrobn%C4%9B%3A%20CHANGELOG.md%2C%20odd%C3%ADl%20v20.10.8.%0A · v21.10.1 https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v21.10.1&target=6dfcfe9259f499e2291c404de2f37ad0f2bfa04c&title=v21.10.1%20%E2%80%94%20S10%3A%20n%C3%A1stroj%20%C5%A1ablon%20p%C5%99ekl%C3%A1d%C3%A1%20nadpis%20%E2%80%9ECENA%20ZA%20%E2%80%A6%20%28DPZ%29%2A%E2%80%9C%20a%20%C5%A1ablona%20PROJ%20v8&body=%23%23%23%20S10%3A%20n%C3%A1stroj%20%C5%A1ablon%20p%C5%99ekl%C3%A1d%C3%A1%20nadpis%20%E2%80%9ECENA%20ZA%20%E2%80%A6%20%28DPZ%29%2A%E2%80%9C%20a%20%C5%A1ablona%20PROJ%20v8%0A-%20%60nastroje%2Fvyrob_sablony.js%60%20%28%60trStavSeZavorkou%60%2C%20%60prelozSablonu%60%29%3A%20p%C5%99eklad%20%C3%BAseku%20se%20z%C3%A1vorkou%20t%C4%9Bsn%C4%9B%20p%C5%99ed%20symbolem%20%E2%80%94%20nadpis%20%E2%80%9ECENA%20ZA%20%E2%80%A6%20%28DPZ%29%7B%7BPROJ_DPZ_HVEZDICK%E2%80%A6%0A-%20%C5%A0ablona%20Wordu%20OVP-CN%20PROJ%20v8%20CZ%20%2B%20EN%2FDE%2FFR%20%28v7%20%2B%20cestovn%C3%A9%20D2%29%3A%20soubory%20mimo%20repozit%C3%A1%C5%99%20%28sezen%C3%AD%20S10%29%2C%20postup%20%60podklady%2FSABLONA_PROJ_V8_20_10.md%60%3B%20ov%C4%9B%C5%99eno%20vypln%E2%80%A6%0A%0A%23%23%23%20C2%3A%20Controlling%20%E2%80%94%20obrazovka%2C%20upozorn%C4%9Bn%C3%AD%20u%20cen%C3%ADku%2C%20export%20p%C5%99edkalkulace%20%28%23447%2C%20v%C4%9Btev%20claude%2Fcontrolling-navrh%29%0A-%20Nastaven%C3%AD%20%E2%86%92%20Controlling%0A-%20Upozorn%C4%9Bn%C3%AD%20u%20zve%C5%99ejn%C4%9Bn%C3%AD%20cen%C3%ADku%20%28J5%29%3A%0A-%20Export%20p%C5%99edkalkulace%20jedn%C3%A9%20varianty%20%28J9%29%3A%0A-%20Oprava%20modelu%20C1%20nalezen%C3%A1%20harnessem%3A%20trval%C3%A9%20polo%C5%BEky%20katalogu%20OCK%20le%C5%BE%C3%AD%20pod%20%60KATALOG.polozky%60%20%28d%C5%99%C3%ADv%20se%20hledaly%20o%20%C3%BArove%C5%88%20v%C3%BD%C5%A1%20a%20neza%C5%99azen%C3%A9%20by%20se%20neuk%C3%A1zaly%29%0A-%20Testy%3A%20%60src%2Ftest_controlling.js%60%20146%20%28export%2C%20CSV%2C%20import%2C%20odchylky%29%2C%20nov%C3%BD%20harness%20%60overit_controlling.mjs%60%2030%20%28z%C3%A1lo%C5%BEka%2C%20ulo%C5%BEen%C3%AD%2C%20za%C5%99azen%C3%AD%20z%20karty%20cen%C3%ADku%2C%20st%E2%80%A6%0A%0A%23%23%23%20C1%3A%20Controlling%20%E2%80%94%20n%C3%A1kladov%C3%A9%20skupiny%20a%20mapov%C3%A1n%C3%AD%20%28%23447%2C%20v%C4%9Btev%20claude%2Fcontrolling-navrh%29%0A-%20Nov%C3%A9%20%60src%2Fcontrolling.js%60%0A-%20Nov%C3%A9%20%60%2Fapi%2Fcontrolling%60%0A-%20Testy%3A%20%60src%2Ftest_controlling.js%60%20%28%C3%BAplnost%20mapov%C3%A1n%C3%AD%20proti%20cen%C3%ADku%20i%20j%C3%A1dru%2C%20sou%C4%8Dty%20rozvrhu%20%3D%20n%C3%A1klad%20kalkulace%20v%20Modelu%201%20i%202%2C%20z%C3%A1znam%29%2C%20%60netlify%2Ftest_controlling%E2%80%A6%0A%0APodrobn%C4%9B%3A%20CHANGELOG.md%2C%20odd%C3%ADl%20v21.10.1.%0A · v21.10.2 https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v21.10.2&target=ac26027292e3fd7bf743b752096a854a414017f9&title=v21.10.2%20%E2%80%94%20O9%3A%20opravy%20k%C3%B3du%20aplikace%20z%20auditu%20K4%20bez%20rozhodnut%C3%AD%20J.%20V.&body=%23%23%23%20O9%3A%20opravy%20k%C3%B3du%20aplikace%20z%20auditu%20K4%20bez%20rozhodnut%C3%AD%20J.%20V.%0A-%20%23460%20%28K4-N1%2C%20K4-N5%20%E2%80%94%20texty%20mez%C3%AD%29%0A-%20%23461%20%28K4-N5%29%20%E2%80%94%20limit%20vynucen%C3%BDch%20otisk%C5%AF%20bez%20soub%C4%9Bhu%0A-%20%23462%20%28K4-N6%29%0A-%20%23463%20%28K4-N7%29%0A-%20%23464%20%28K4-N12%2C%20K4-N14%29%0A-%20%23465%20%28K4-N15%29%0A-%20%23466%20%28K4-N16%29%0A-%20%23467%20%28K4-N18%29%0A-%20%23468%20%28K4-N21%29%0A-%20Testy%20a%20pojistky%3A%0A-%20Mutace%3A%0A-%20Kolo%20%60--bez-mutaci%60%3A%0A-%20%E2%80%A6%20a%20dal%C5%A1%C3%ADch%202%0A%0APodrobn%C4%9B%3A%20CHANGELOG.md%2C%20odd%C3%ADl%20v21.10.2.%0A",
-  "Rozhodnutí z auditu K4 (doporučeno): K4-N1 zmrazit kapitoly IV.–VI. a doložky OCK při zamčení (ano); K4-N4 přepis ceny výjezdu jen s oprávněním vidět náklady; K4-N13 retence do potvrzení správcem, max 30 dní (ano); K4-N17 starý tvar výjimek ponechat; K4-N20 Rulesets „Restrict deletions“ (ano); #451 měď z přepsané plochy zastřešení (ano). https://github.com/vendljar/kalkulator-next-gen-engscalc/blob/claude/integrace-16-10/podklady/K4_AUDIT_20_10.md",
-  "Controlling C3/C4 — 5 otázek (doporučeno vše ano): export i v Přehledu nabídek; filtr hromadného exportu podle data zamčení + OCK×PROJ a řada; sloupec „v nabídce“ u příplatků; ukládat bez hesla správce; Pipedrive deal id automaticky, ručně jen správce.",
-  "Šablona PROJ v8 HOTOVÁ (S10): Sablona_NABIDKA_PROJ_v8.docx + _EN/_DE/_FR v souborech sezení https://claude.ai/code/session_01RogHrxV3LS1vj4DZWyoPSL, postup https://claude.ai/artifact/5RqvHSPuuun2dcUg26UwUD. Na test nahrát rovnou v8 — všechny čtyři najednou průvodcem (EN/DE/FR z S10, ne „vyrobit“ v aplikaci); na main až s v20.10.7 v main. Ověřeno: +18 symbolů proti v7, nic neubylo, vyplnění kódem v20.10.7 v 16 kombinacích bez zbytků.",
-  "D2 (po nasazení v20.10.4): vyplnit a zveřejnit cenu výjezdu technika v ceníku PROJ (PC.vyjezdTechnikKc, oddíl Doprava). Šablona PROJ v8 s cestovným navazuje na v7 (S10).",
-  "Smazat sloučené větve: tlačítko je hotové (W2, 8c0c4f1) — po sloučení a „pošli do main“: Actions → Smazat sloučené větve → Run workflow (poprvé s jen_vypsat = true), https://github.com/vendljar/kalkulator-next-gen-engscalc/actions/workflows/smazat_vetve.yml. Do té doby ručně: https://github.com/vendljar/kalkulator-next-gen-engscalc/blob/claude/integrace-16-10/podklady/VETVE_KE_SMAZANI_20_10.md"
+  "Vydat release v21.10.3 (test = ced34cc, kód b107e28; tag neexistuje): https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v21.10.3&target=b107e289f4cecc2ff2553aa8802faed421567c54&title=v21.10.3%20%E2%80%94%20O11%3A%20rozhodnut%C3%AD%20J.%20V.%20k%20auditu%20K4%20%E2%80%94%20cena%20v%C3%BDjezdu%20PROJ%2C%20retence%20z%C3%A1loh%3B%20%23451%20m%C4%9B%C4%8F&body=%23%23%23%20O11%3A%20rozhodnut%C3%AD%20J.%20V.%20k%20auditu%20K4%20%E2%80%94%20cena%20v%C3%BDjezdu%20PROJ%2C%20retence%20z%C3%A1loh%3B%20%23451%20m%C4%9B%C4%8F%0A-%20%23470%20%28K4-N4%29%20%E2%80%94%20cenu%20v%C3%BDjezdu%20technika%20v%20kalkulaci%20PROJ%20p%C5%99episuje%20jen%20role%20s%20pr%C3%A1vem%20vid%C4%9Bt%20n%C3%A1klady%0A-%20%23471%20%28K4-N13%29%20%E2%80%94%20retence%20no%C4%8Dn%C3%ADch%20z%C3%A1loh%20stoj%C3%AD%2C%20dokud%20%C3%BAbytek%20dat%20nepotvrd%C3%AD%20spr%C3%A1vce%0A-%20%23472%20%28K4-N17%29%0A-%20%23451%20%E2%80%94%20p%C5%99%C3%ADplatek%20za%20st%C5%99echu%20v%20m%C4%9Bdi%20podle%20ru%C4%8Dn%C4%9B%20p%C5%99epsan%C3%A9%20plochy%20zast%C5%99e%C5%A1en%C3%AD%0A-%20Oprava%20b%C4%9Bhem%20d%C3%A1vky%3A%20nov%C3%BD%20%C5%99%C3%A1dek%20s%20heslem%20v%20%60zaloha_vynuceno.mjs%60%20zdvojil%20hledan%C3%BD%20%C3%BAsek%20mutace%20O7%20K3-N1%20%E2%80%94%20p%C5%99eps%C3%A1n%20jinak%2C%20a%C5%A5%20zad%C3%A1n%C3%AD%20mutac%C3%AD%20sed%C3%AD%0A%0A%23%23%23%20O10%3A%20zmrazen%C3%AD%20kapitol%20IV.%E2%80%93VI.%20a%20dolo%C5%BEek%20nab%C3%ADdky%20OCK%20p%C5%99i%20zam%C4%8Den%C3%AD%20varianty%0A-%20%23469%20%28K4-N1%29%20%E2%80%94%20dotisk%20odeslan%C3%A9%20nab%C3%ADdky%20OCK%20nese%20kapitoly%20a%20dolo%C5%BEky%20z%20doby%20odesl%C3%A1n%C3%AD%0A-%20Testy%3A%0A%0APodrobn%C4%9B%3A%20CHANGELOG.md%2C%20odd%C3%ADl%20v21.10.3.%0A",
+  "Controlling: projít ukázkový XLSX (5 nabídek, zkušební data, poslán v chatu) a říct, zda takový výstup potřebujete / co chybí.",
+  "Smazat sloučené větve: tlačítko (W2 + opravy O8) je v test; v Actions bude vidět až po main — https://github.com/vendljar/kalkulator-next-gen-engscalc/actions/workflows/smazat_vetve.yml",
+  "K archivaci: předchozí koordinace ŘÍDÍCÍ 20.10 https://claude.ai/code/session_01Ln2mMn7iC6W9ECztHTJpZe a CONTROLLING (C1+C2) https://claude.ai/code/session_01TbMCaR4k38Rix8XxoRBnr5 (pokračuje nové sezení C3)"
  ],
  "dlazdice": [
   {
@@ -133,20 +129,20 @@ a{color:var(--steel);overflow-wrap:anywhere}
   },
   {
    "k": "test",
-   "v": "v20.10.7",
-   "d": "fa08e9c · = integrace (kód b6f49a7 + zápis koordinace)",
+   "v": "v21.10.3",
+   "d": "ced34cc · O10 + O11 (pokyn J. V.: hotové posílat do test)",
    "s": "ok"
   },
   {
    "k": "integrace",
-   "v": "v21.10.2",
-   "d": "ac26027 · v20.10.8 + O8 + v21.10.1 Controlling/S10 + v21.10.2 O9 — ověřeno",
+   "v": "v21.10.3",
+   "d": "ced34cc · = test",
    "s": "ok"
   },
   {
    "k": "sady + mutace",
    "v": "zelené",
-   "d": "ac26027: kolo 292/0/6, statické 4/4; mutace O9 3/3 + 14/14, #447 18/18, K3-N1 26/26, K3-N3 3/3, K3-N4 7/7, K3-N8 3/3, #151 N1 5/5",
+   "d": "b107e28: kolo 294/0/6, statické 4/4; mutace O10 1/1 + 7/7, O11 10/10, #451 3/3, K29-N1 5/5",
    "s": "ok"
   }
  ],
@@ -165,16 +161,16 @@ a{color:var(--steel);overflow-wrap:anywhere}
    "id": "session_01By6bWivtf2rTJYJFGVv8e1",
    "role": "koordinace",
    "stav": "run",
-   "stavText": "noc hotová",
+   "stavText": "koordinuje",
    "faze": null,
-   "eta": "hotovo",
-   "kontext": 31,
-   "kontextTok": 310,
+   "eta": "~2,5 h",
+   "kontext": 62,
+   "kontextTok": 620,
    "bezi": "13 h 15 min",
    "hlaseni": "právě teď",
    "konec": "~06:00 UTC",
-   "co": "Noc: K29-N1 → integrace v20.10.8 + kolo a mutace; výsledky S10 (šablona v8) a K4 (kolo + audit) do kokpitu; ráno souhrn noci.",
-   "dalsi": "Ranní souhrn publikován; čeká na J. V."
+   "co": "Den 21. 10.: test = v21.10.2 (releasy vydány), běží O10 a O11 podle rozhodnutí J. V.; zbývají odpovědi #451 a Controlling C3/C4.",
+   "dalsi": "C3 → integrace + test; nad 75 % předávka"
   },
   {
    "nazev": "ŘÍDÍCÍ 20.10 - Koordinace O7, D1, D2, K29-N1, S9 (v20.10.2–4)",
@@ -209,27 +205,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
    "kontextTok": 725
   },
   {
-   "nazev": "S10 šablona OVP-CN PROJ v7 CZ+EN/DE/FR (pro D1, v20.10.3)",
-   "id": "session_01RogHrxV3LS1vj4DZWyoPSL",
-   "role": "dávka",
-   "stav": "ok",
-   "stavText": "v integraci",
-   "faze": 4,
-   "eta": "dobíhá kolo",
-   "kontext": 36,
-   "kontextTok": 356,
-   "bezi": "právě",
-   "hlaseni": "17:14",
-   "konec": "~17:10 UTC",
-   "co": "Šablona PROJ v8 CZ+EN/DE/FR hotová (claude/s10-sablona-proj-v7 @ 51ea6e2; + oprava nástroje vyrob_sablony.js — překlad „(DPZ)*“, kód aplikace beze změny). Dobíhá kolo.",
-   "dalsi": "Oprava nástroje sloučena (v20.10.9). Nearchivovat, dokud J. V. nestáhne šablony v8."
-  },
-  {
    "nazev": "CONTROLLING — nová sekce Nastavení: předkalkulované náklady po kapitolách pro postkalkulace (A. Mácová)",
    "id": "session_01TbMCaR4k38Rix8XxoRBnr5",
    "role": "jiné",
-   "stav": "ok",
-   "stavText": "C1+C2 v integraci",
+   "stav": "idle",
+   "stavText": "C1+C2 v test",
    "faze": 4,
    "eta": "hotovo",
    "kontext": 70,
@@ -238,10 +218,54 @@ a{color:var(--steel);overflow-wrap:anywhere}
    "hlaseni": "17:02 (5391ca2)",
    "konec": null,
    "co": "C2 hotová (claude/controlling-navrh 5391ca2, kód 49a9353): Nastavení → Controlling (skupiny, mapování s XLSX exportem/importem, export předkalkulace), upozornění v kartě Platný ceník, export zamčené řídící varianty XLSX/CSV, oprava modelu C1. Testy src 146/0, server 31/0, overit_controlling 30/0, mutace #447 18/18, kolo 289/0/6.",
-   "dalsi": "Otázky k C3/C4 → ráno J. V.; C3 v novém sezení. Nearchivovat (pokyn)."
+   "dalsi": "Pokračuje nové sezení C3 (kontext 70 %) — navrženo k archivaci."
+  },
+  {
+   "nazev": "CONTROLLING C3 — hromadný export a export z Přehledu nabídek",
+   "id": "session_01JtioiPRsGUDpkKu1m66Rdt",
+   "role": "dávka",
+   "stav": "run",
+   "stavText": "kód",
+   "faze": 0,
+   "eta": "~3 h",
+   "kontext": null,
+   "kontextTok": null,
+   "bezi": "právě",
+   "hlaseni": "10:44",
+   "konec": "~14:00 UTC",
+   "co": "J. V. 21. 10.: tlačítko exportu v Přehledu nabídek (admin); hromadný export podle data zamčení + OCK/PROJ + řada (server, jen admin); ukládání bez hesla; C4 deal id automaticky z dealu, ručně jen admin. Sloupec „V nabídce“ čeká na rozhodnutí J. V.",
+   "dalsi": "Souhrn → integrace (další verze)"
   }
  ],
  "log": [
+  [
+   "11:41",
+   "v21.10.3 OVĚŘENA (kolo 294/0/6, statické 4/4, mutace O10 1/1 + 7/7, O11 10/10, #451 3/3, K29-N1 5/5) → test fast-forward ac26027 → ced34cc (pokyn J. V.). Release odkaz v21.10.3 v Čeká na vás. O10 a O11 archivovány."
+  ],
+  [
+   "11:13",
+   "O11 hotová (b9d2deb: K4-N4, N13, N17, #451) → O10 + O11 sloučeny do integrace jako v21.10.3 (b107e28); --kontrola jádro 406 / server 717. Běží kolo + mutace O10, O11, #451, K29-N1 → zelené = do test (pokyn J. V.). Ukázkový XLSX controllingu poslán J. V. Kontext koordinace 61 %."
+  ],
+  [
+   "10:54",
+   "J. V.: co bude hotové a zelené, poslat do test (trvalý pokyn pro O10/O11 v21.10.3 a C3). Sloupec „V nabídce“ nechápe → koordinace připraví ukázkový XLSX exportu na 5 odeslaných nabídkách (zkušební data) s vysvětlením; C3 sloupec nedělá."
+  ],
+  [
+   "10:49",
+   "O10 HOTOVÁ (3c5d33c, #469): snímek kapitol IV.–VI. a doložek OCK při prvním zamčení, server změnu snímku odmítne (409); kolo 293/0/6, statické 4/4, mutace O10 8/8 → fast-forward do integrace. O11: K4-N4, N13, N17 hotovo (mutace 10/10), dodělává #451 (měď = přepsaná plocha vč. stříšky nad můstkem). Pak sloučení jako v21.10.3."
+  ],
+  [
+   "10:45",
+   "J. V.: klíčové větve chráněné na GitHubu (K4-N20 hotovo). #451 měď z přepsané plochy → doplněno do O11. Controlling: export v Přehledu nabídek ano, hromadný export podle data zamčení + OCK/PROJ + řada, bez hesla, deal id automaticky (ručně jen admin) → spuštěna C3 session_01JtioiPRsGUDpkKu1m66Rdt. Sloupec „V nabídce“: návrh https://claude.ai/artifact/ELHhaqkbhBaGEeyJGoxUPb."
+  ],
+  [
+   "10:18",
+   "J. V.: releasy v20.10.8, v21.10.1, v21.10.2 vydány (tagy ověřeny); šablona PROJ v8 nahrána na test → S10 archivována. K4-N4 přepis výjezdu jen „vidí náklady“, K4-N13 retence do potvrzení max 30 dní, K4-N17 ponechat → dávka O11 session_0167KttkNvdBnysK9VM7UtgX. K4-N1 zmrazit → O10 session_01FTy5gZsREPz22DRF8dzgfc. K4-N20: nejdřív ne, pak ano — postup poslán."
+  ],
+  [
+   "05:18",
+   "J. V. v dialogu: test posunout na celé ac26027 → test fast-forward fa08e9c → ac26027 (v20.10.8 + v21.10.1 + v21.10.2). K4-N1: zmrazit při zamčení → dávka O10. Ostatní K4 a Controlling C3/C4: J. V. chce podrobné vysvětlení."
+  ],
   [
    "05:01",
    "Archivována hotová sezení bez otevřených otázek: K29-N1, K4, O8/O9. Ponechány: CONTROLLING, S10 (do stažení šablon v8), V3, toto sezení; ŘÍDÍCÍ 20.10 (denní) k archivaci J. V."
@@ -368,8 +392,8 @@ a{color:var(--steel);overflow-wrap:anywhere}
   ]
  ],
  "celkem": {
-  "eta": "hotovo",
-  "detail": "Noc dokončena 04:58 UTC. Zbývá jen na J. V.: pushni do test, releasy, rozhodnutí K4 a Controlling, šablona v8, archivace."
+  "eta": "~2,5 h",
+  "detail": "C3 Controlling (~14:00 UTC) → integrace, kolo, test. Čeká na J. V.: release v21.10.3, názor na ukázkový XLSX."
  }
 }
 </script>
