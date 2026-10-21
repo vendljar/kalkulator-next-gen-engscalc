@@ -613,3 +613,124 @@ opět ne přes mě).
 | 16 | Navrhnout úspornější přenos | ✅ | §3.8 — přenos ≈ 30–40 tokenů, čtení požadavků 0 přes webhook |
 | 17 | Vyjmenovat nativní pole, která se nepřenášejí | ✅ | §5.2 |
 | 18 | Webhook v Pipedrive + `PIPEDRIVE_WEBHOOK_HESLO` v Netlify | ⬜ | integrátor + ty; otázka K |
+| 19 | Otestovat pole založená integrátorem | ✅ | §11 — 53/54 nových + 4/4 úpravy sedí; nález v našem párování |
+| 20 | Přepnout párování polí na přesné názvy | ⬜ | §11.3 — bez toho se tři údaje spárují špatně a čtyři ztratí |
+| 21 | Opravit čtení IČ na organizaci | ⬜ | §11.3 — regex nechytí „IČ", pole je číslo (ztráta nul na začátku) |
+| 22 | Převodní tabulka hodnot krycí list → volby Pipedrive | ⬜ | §11.4 — sedm polí potřebuje překlad, jedno volbu navíc |
+| 23 | Zkušební zápis na testovacím dealu | ⬜ | §11.5 — čeká na souhlas (automatizace v Make) |
+
+---
+
+## 11) Test polí založených integrátorem (21. 10. 2026)
+
+Integrátor 21. 10. 2026 oznámil, že pole podle zrevidované tabulky
+(`Pipedrive_nova_pole_dealu_rev_JV.xlsx`, 54 nových polí + 4 úpravy
+stávajících) jsou v Pipedrive založená. Test proběhl **jen čtením**:
+definice polí přes připojený konektor Pipedrive a jeden výpis všech dealů
+s vybranými poli (**celkem 10 tokenů**). Nic se nezapisovalo.
+
+### 11.1 Nastavení polí — sedí
+
+| kontrola | výsledek |
+|---|---|
+| nová pole: název, typ, volby, zapisovatelnost | **53 z 54 přesně** |
+| #10 „Typ produktu / služby" | nezaloženo — ale stávající **„Typ zakázky"** má **přesně tytéž** volby, integrátor ho zjevně použil místo nového (k potvrzení) |
+| úpravy stávajících (#1–#4) | **4 z 4** — přejmenováno, volby podle revize |
+| data po přejmenování | zachovaná: 372 dealů, „Zádržné – do odstranění VaN" 31×, „Smluvní pokuta – prodlení dodávky / odevzdání" 31×, „Způsob fakturace" 4× |
+| čtyři pole, na která čekala #114 | **vyřešeno** — jmenují se „Zdroj poptávky – Organizace" (org), „Zdroj poptávky – Osoba" (people), „Priorita" (1/2/3) a „Podmínky a technická specifikace zakázky" (text) |
+
+Typy se překládají takto (Excel → Pipedrive): Text → `varchar`, Velký text
+→ `text`, Číselné → `double`, Datum → `date`, Jedna možnost → `enum`, Více
+možností → `set`, Měna → `monetary`, Uživatel → `user`, Osoba → `people`,
+Organizace → `org`. Všech 53 sedí.
+
+### 11.2 Co se ověřit nedalo
+
+- **Viditelnost podle nástěnky.** Tabulka říká, že pole OCK a PROJ budou
+  vidět jen v příslušné pipeline — **účet má ale jedinou pipeline
+  („Obchod")**. Konektor viditelnost (`ui_visibility`) nevrací, a s jednou
+  pipeline by stejně všech 54 polí viselo na každém dealu. Otázka pro
+  integrátora.
+- **Pole typu Uživatel** proti seznamu uživatelů — token konektoru nemá
+  právo `users:read`. Naší aplikace se to netýká (má vlastní token).
+- **Zápis** — viz §11.5.
+
+### 11.3 Nález v NAŠEM kódu: párování podle vzoru se s novými poli rozbilo
+
+Spustil jsem skutečné `pdMapaZPoli()` a `pdDealNaNase()` z
+`netlify/lib/pd_mapa.mjs` nad skutečnými definicemi polí a skutečným
+(vyhraným) dealem:
+
+| údaj kalkulačky | dnes se spáruje s | má být | dopad na skutečném dealu |
+|---|---|---|---|
+| záloha / 1. faktura | — nic | „První splátka (%)" | 50 → **prázdno** |
+| dílčí faktura č. 2 | — nic | „Druhá splátka (%)" | 40 → **prázdno** |
+| doba záruky | **„Zádržné – po dobu záruky"** (výběr!) | „Doba trvání záruky (počet měsíců)" | 60 → **prázdno** |
+| smluvní pokuta za den | **„Limit smluvních pokut (%)"** | „Smluvní pokuta – prodlení dodávky / odevzdání (% / den)" | 0 → **prázdno** |
+| objednatel (výtahová firma) | **„Podepisující firma (pokud jiná)"** | „Zdroj poptávky – Organizace" | firma → **žádná** |
+| IČO na organizaci | — nic | „IČ" | — |
+
+Tři pole se spárují **se špatným polem** — nové názvy obsahují slova, která
+vzory hledají („záruk", „pokut", „firma"), a kratší název vyhrává. U čtení
+to znamená prázdný krycí list, **u zápisu by číslo záruky šlo do výběrového
+pole zádržného.** Vzor na IČO selže ze dvou důvodů: pole se jmenuje „IČ"
+a `\b` v JavaScriptu bez příznaku `/u` nebere „Č" jako písmeno.
+
+**Oprava (úkol 20):** názvy polí jsou teď dohodnuté písemně v tabulce
+s integrátorem, takže se párují **přesně podle názvu a typu**; vzory zůstanou
+jen jako *návrh* pro administrátora v přehledu mapy (#114), nikdy pro zápis.
+Hashe se do kódu pořád nedávají — název je smlouva s integrátorem, hash ne.
+Přejmenování pole v CRM se pak projeví jako „chybí pole" v přehledu, ne jako
+tichý zápis jinam.
+
+**IČ (úkol 21):** pole je typu **číslo**, takže IČO s nulami na začátku
+(`00064581`) Pipedrive uloží jako `64581`. Typ pole po založení změnit nejde;
+stačí při čtení doplnit nuly zleva na osm číslic — kontrolní součet mod 11
+pak projde.
+
+### 11.4 Hodnoty krycího listu proti volbám Pipedrive
+
+Výběrová pole se zapisují **ID volby** (§3.4), takže hodnota z krycího listu
+musí na volbu přesně sednout. Sedí u: Typ projektu, Zaměření strojovny,
+Zádržné (Ne + procenta), ATYP. Překlad potřebuje:
+
+| pole | krycí list dává | Pipedrive zná | řešení |
+|---|---|---|---|
+| Typ smlouvy | „Cizí" | „Smlouva zákazníka" | překlad (nebo sjednotit popisek v krycím listu) |
+| Objekt v památkové ochraně | Ano / Ne / **„Zjišťuje se"** | Ano / Ne | **požádat integrátora o volbu „Zjišťuje se"** |
+| Licence k PD | volný text „nevýhradní, pro účel stavby…" | dvě pevné volby | v krycím listu udělat výběr se stejnými volbami |
+| Pojištění projektanta | volný text „ANO – dle…" | „Ano – dle…" / „Ne" | totéž |
+| Situační fotografie | volný text „Ve složce" | „Ve složce" / „Nejsou k dispozici" | totéž |
+| Způsob fakturace | „Náš standard / měsíční" (OCK), „po dokončení jednotlivých stupňů…" (PROJ) | tři pevné volby | výběr; **znamená „Náš standard" totéž co „Měsíční"?** |
+| DSP + Prováděcí dokumentace | dvě pole Ano/Ne | jedno pole s více volbami | složit do jedné hodnoty |
+| Sazba DPH | číslo z ceníku (21) | „21 %" / „12 %" / „0 % – přenesená…" | překlad čísla na volbu |
+
+Čísla se převádějí z textu (`kryciCisloZTextu`, už existuje): platnost
+nabídky „2 měsíce" → 2, termín dodání „12 týdnů…" → 12, záloha „50 % – po
+podpisu" → 50, pokuta „0,05 % / den" → 0,05, limit „Uplatněn limit 10 %" → 10
+a „NEUPLATNĚN" → 0.
+
+### 11.5 Zkušební zápis — neproveden, čeká na souhlas
+
+Čtení testuje nastavení, ne zápis. Plnou zkoušku navrhuji na **samostatném
+testovacím dealu**: založit („TEST – integrace kalkulačky"), zapsat jednu
+hodnotu od každého typu (varchar, text, double, date, enum, set, monetary,
+user, people, org), přečíst zpět, smazat — **≈ 14 tokenů**. Neprovedl jsem
+ji sám, protože účet má pole „Vygenerovat podklady k nabídce" a „Odkaz na
+podklady k nabídce", která vypadají na **automatizaci v Make** — zápis do
+dealu by ji mohl spustit. Nejdřív potvrdit s integrátorem, co na nový nebo
+změněný deal reaguje.
+
+### 11.6 Co v Pipedrive (zatím) není a návrh s tím počítá
+
+- **„Stav kalkulace"** (příznak požadavku z §6.2) — tabulka ho neobsahovala,
+  takže založený není. Otázka G pořád platí; existující „Vygenerovat podklady
+  k nabídce = Ano" ukazuje, že podobný příznak už v účtu funguje.
+- **Služební pole** z §5.2 (druh kalkulace, řídící varianta, datum zápisu).
+
+### 11.7 Drobnosti v datech (neblokuje)
+
+Smluvní pokuta 0,5 %/den u dvou dealů (krycí list zná 0 / 0,05 / 0,1 — spíš
+překlep), doba záruky 61 měsíců jednou a 0 měsíců patnáctkrát. „Způsob
+fakturace" má po převodu ze starého ANO/NE čtyřikrát „Náš standard" — je
+dobré vědět, jak integrátor ANO a NE převáděl.
