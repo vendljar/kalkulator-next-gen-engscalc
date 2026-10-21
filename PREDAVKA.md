@@ -1,3 +1,24 @@
+# Předávka — 21. 10. 2026 večer: dávka D3 — opravy nálezů auditu K6 (#483, v21.10.6), větev `claude/d3-k6-opravy`
+
+Nad `test` = v21.10.5 (7fac477). **Do integrace / test nic** — slučuje koordinace (session_01X93Edh1U8MQru6HV28FdBY,
+„ŘÍDÍCÍ 21.10 noc 2“). Podklad `podklady/K6_AUDIT_21_10.md` ve větvi `claude/k6-kolo`. Verze `verze.txt` 21.10.6,
+CHANGELOG oddíl `## v21.10.6 — D3`, roadmapa #483 (hotovo), #484 a #485 (čeká). Čísla #476–#482 rezervovaná pro #O13-1…7 (D1).
+
+- **Hotovo:** K6-K1 (tvar klíče `vlastni:<číslo>`, test celé cesty klient → server), K6-S1 + K6-S3 (`objTvarPlatny` → 400,
+  i v obnově), K6-S4 (server ukládá `objednane` jen z povolených polí), K5-S2 (shodné deal id beze změny), K6-S6
+  (export přeskočí zakázku s výjimkou), K6-K6 (název ve SoD na jeden řádek), K6-K8 (řídicí znaky v XLSX), K6-W1
+  (`kontrola.py` odmítne `<` v datech kokpitu, SKILL.md), K6-W2 (`kontrola_udaju.py` + `podklady/`, `.claude/`),
+  K6-W3 (`pPrSInd` — pořadí `w:pPr` v SoD v4), K6-W4 + K5-W4 + K5-W7 (scénáře v `test_sloucene_vetve.sh`).
+- **O13 obal `trStavSeZavorkou`: PONECHÁN** — není nadbytečný: „(…{{SYMBOL}})“ aplikace nepřeloží, obal ano
+  (338/2304 rozdílů). Test hlídá; rozšíření aplikace = #485.
+- **Zapsáno, neopraveno:** K6-K5, K6-K9 (#484). Nedělat (J. V.): K6-S2, K6-K3, K6-K4, K6-K2, K6-S5, K6-S7, K6-K7,
+  K6-W5, K6-W6, K5-W3/W5/K2/S3/S4/K4. N46 beze změny.
+- **Testy s pojistkou** (viz CHANGELOG a commity): všechny dotčené sady zelené. **Cílené mutace 16/16, 0 přeživších**
+  (server k6- 9, k5-s2 1, C6 „kdo zapsal“ 1; jádro k6- 4, O13/D3 1); `--kontrola` server 763, jádro 422.
+  Prohlížečové sady a celé kolo ručně nepouštěny — pustí koordinace.
+- **Otázky pro J. V.:** (1) #485 — rozšířit aplikaci o „)“ za symbolem a pak obal odstranit? (2) #484 — zařadit?
+  (3) Už vyrobené soubory SoD v4 (S11) vyrobit znovu kvůli K6-W3, před zveřejněním otevřít ve Wordu.
+
 # Předávka — 21. 10. 2026: dávka O12 — jazykové verze šablony k už platné češtině (#474, v21.10.5)
 
 Větev `claude/o12-sablony-jazyky` nad `claude/integrace-16-10` 7ce01b3 (v21.10.4). **Do integrace / test nic** —

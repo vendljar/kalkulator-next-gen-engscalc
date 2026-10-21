@@ -7426,6 +7426,49 @@
    "zavisi": [],
    "hotovoV": "v21.10.5",
    "pozn": "Dávka O12; číslo verze může koordinace při slučování přečíslovat."
+  },
+  {
+   "id": "483",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "nazev": "Opravná dávka D3 — nálezy auditu K6 bez J. V.",
+   "proc": "Audit K6 (podklady/K6_AUDIT_21_10.md, větev claude/k6-kolo) nad v21.10.5: 1 střední (K6-K1 vlastní příplatek nejde uložit) a nízké/informativní nálezy, které nečekají na rozhodnutí J. V.",
+   "detail": "HOTOVO (D3): K6-K1 tvar klíče vlastni:<číslo>; K6-S1/S3 tvar objednane → 400 (i v obnově); K6-S4 jen povolená pole; K5-S2 shodné deal id beze změny; K6-S6 export přeskočí; K6-K6 název ve SoD na jeden řádek; K6-K8 řídicí znaky v XLSX; K6-W1 kontrola dat kokpitu; K6-W2 kontrola_udaju i podklady/ a .claude/; K6-W3 pořadí w:pPr v SoD v4; K6-W4, K5-W4, K5-W7 scénáře W2. O13: obal trStavSeZavorkou ponechán (není nadbytečný, viz #485).",
+   "hotovoKdyz": "Testy s pojistkou zelené, cílené mutace 16/16 chycené.",
+   "kde": "`src/objednane.js`, `netlify/lib/zakazka_kontrola.mjs`, `src/controlling.js`, `netlify/functions/controlling_export.mjs`, `src/sod.js`, `src/xlsx.js`, `nastroje/vyrob_sablony.js`, `nastroje/kontrola_udaju.py`, `.claude/skills/kokpit-koordinace/kontrola.py`, `nastroje/test_sloucene_vetve.sh`",
+   "zavisi": [],
+   "hotovoV": "v21.10.6",
+   "pozn": "Větev claude/d3-k6-opravy; číslo verze může koordinace při slučování přečíslovat. Už vyrobenou SoD v4 vyrobit znovu (K6-W3)."
+  },
+  {
+   "id": "484",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "Karta objednaných příplatků — přepis jiné varianty a měna (K6-K5, K6-K9)",
+   "proc": "Audit K6, informativní: karta SoD tiše přepíše objednané u jiné zamčené varianty (objUiPrepni začne prázdným seznamem); u eurové nabídky ukazuje ceny příplatků v Kč, SoD tiskne eura.",
+   "detail": "Návrh: upozornění/potvrzení před přepisem záznamu jiné varianty; ceny v kartě v měně dokumentu. Zapsáno v D3, neopraveno.",
+   "hotovoKdyz": "Test karty (sod_ui) na přepis jiné varianty a měnu.",
+   "kde": "`src/ui/sod_ui.js`",
+   "zavisi": [],
+   "pozn": "Čeká na zařazení koordinací / J. V."
+  },
+  {
+   "id": "485",
+   "vlna": "B",
+   "stav": "ceka",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "Jazyková verze: „(…{{SYMBOL}})“ — závorka za symbolem v aplikaci",
+   "proc": "D3 ověřilo návrh O13 „odstranit obal trStavSeZavorkou“: aplikace (docxPrelozUseky) dotáhne „)“ jen hned za úsekem; u „Splatnost faktur (dní{{X}})“ nechá úsek česky, nástroj s obalem ho přeloží (338 rozdílů ze 2304 porovnání).",
+   "detail": "Návrh: docxPrelozUseky zkusí jádro s „)“ i tehdy, když „)“ stojí za symbolem; pak obal v nástroji odstranit (test v test_sablona_proj_v7_preklad.js dnes hlídá, že obal zůstává).",
+   "hotovoKdyz": "Aplikace přeloží „(…{{X}})“ bez obalu; obal i jeho test odstraněny.",
+   "kde": "`src/docxgen.js`, `nastroje/vyrob_sablony.js`",
+   "zavisi": [],
+   "pozn": "Mění chování aplikace — rozhodne koordinace / J. V."
   }
  ],
  "meta" : {
