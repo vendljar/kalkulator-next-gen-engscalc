@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## C6 — Objednané příplatky u smlouvy o dílo (#447, větev claude/controlling-c3) — verzi přidělí sloučení
+
+Rozhodnutí J. V. 21. 10. 2026 ~13:00 a odpovědi Q1–Q3 (~13:35). Build bez zvýšení verze.
+
+- **Krycí list OCK → Smlouva o dílo → „Objednané příplatky"**: obchodník zaškrtne, které příplatky z odeslané
+  (zamčené) nabídky zákazník objednal, a datum prodeje (výchozí = datum podpisu smlouvy z krycího listu, jinak
+  dnešek). Záznam `zak.objednane` leží v zakázce **mimo zámek** — odeslaná nabídka se nemění (`src/objednane.js`).
+- **Smlouva o dílo realizace (CZ/EN/DE/FR):** cena díla = cena nabídky po slevě + objednané příplatky v ceně
+  z nabídky (**bez slevy**, v eurech po položkách nahoru), **DPH z celku**; `{{CENA_BEZ_DPH}}`, `{{DPH_KC}}`,
+  `{{CENA_S_DPH}}` = celková cena díla. Nové symboly `{{SOD_CENA_NABIDKY}}`, `{{SOD_PRIPLATKY_OBJEDNANE}}`,
+  `{{SOD_PRIPLATKY_KC}}` (bez objednaných příplatků prázdné a jejich odstavce zmizí). Šablonu v4 vyrobí šablonová
+  dávka — kam symboly patří: `podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md`. Starší šablony dostanou správnou
+  celkovou cenu, jen bez rozpisu. Splátky jsou v % — přepočtou se samy.
+- **Krycí list:** nové pole „Objednané příplatky" vedle „Příplatky v nabídce" (verze BO i technická data).
+- **Export pro controlling:** list Řádky = základ + objednané příplatky (sloupec **„Objednáno dodatečně"**), Popis
+  nese datum prodeje; hromadný export volitelně **podle data prodeje** (`podle=prodej`) místo data zamčení.
+- **Pravidla (server, `objKontrola` v `lib/zakazka_kontrola.mjs`):** jen příplatek nabídnutý v zamčené variantě
+  (zmrazený výsledek, mimo vynechané), datum platné a ne v budoucnosti; zapisuje obchodník, který zakázku založil,
+  vedoucí a administrátor; **po podpisu SoD** (ručně vyplněné Datum podpisu smlouvy v krycím listu ≤ dnes, podle
+  uložené verze) mění už **jen administrátor**; kdo/kdy píše server z relace.
+- Testy: nová `src/test_objednane.js` 36/0, `src/test_sod.js` 58/0 (+8), `src/test_controlling.js` 188/0,
+  `netlify/test_controlling.mjs` 53/0 (+2), `test_prava` 907/0 (+13), `overit_controlling.mjs` 48/0 (+4), mutace
+  „#447 C6" (11). Pojistka: bez kódu C6 nové sady spadnou / selžou (doloženo v commitech).
+
+---
+
 ## C5 — Controlling: export předkalkulace verze 2 — Řádky jen v ceně nabídky, příplatky zvlášť (#447, větev claude/controlling-c3) — verzi přidělí sloučení
 
 Rozhodnutí J. V. 21. 10. 2026 ~12:50 nad ukázkovým XLSX (předala koordinace). Nad v21.10.4 (integrace 7652bb9 sloučena

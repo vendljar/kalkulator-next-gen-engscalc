@@ -512,6 +512,9 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
     ...tsExtra.map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
   ];
   return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic, tsExtra, mena,
+           /* Cena nabídky bez DPH ve měně dokumentu a sazba DPH — SoD k ní
+            * přičítá objednané příplatky (#447 C6, sodObjednaneSymboly). */
+           ceny: { bezDph: cenaBezDphNum, dphSazba: +Cv.dph || 0 },
            /* sken podpisu s razítkem (#146) + úvodní fotka stavby */
            obrazky: Object.assign({},
              typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky() : {},

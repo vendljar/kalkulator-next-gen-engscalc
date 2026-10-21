@@ -1692,15 +1692,16 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
       && (await nacti6()).g.objednane.kdo === UCTY['Obchodník'].email, o4);
     const o5 = await zapis6(a => { a.objednane.klice = [nab6[0], nab6[1]]; }, cVed);
     test('C6: vedoucí objednané změní (200)', o5.status === 200, o5);
-    /* Vytištěná SoD (dotisk typu sod do zámku) — dál jen administrátor. */
-    const o6 = await zapis6(a => { zam.zamkniVariantu(a.varianty[0], { typ: 'sod', kdo: 'Matice práv' }); }, cObch);
-    test('C6: příprava — tisk SoD uložen (200)', o6.status === 200, o6);
+    /* Podpis SoD (Q3: ručně vyplněné datum podpisu v krycím listu ≤ dnes) — dál jen administrátor. */
+    const o6 = await zapis6(a => { const d = a.varianty[0].data; d.kryci = Object.assign({ hodnoty: {} }, d.kryci);
+      d.kryci.hodnoty = Object.assign({}, d.kryci.hodnoty, { sodDatumPodpisu: dnes6 }); }, cObch);
+    test('C6: příprava — datum podpisu SoD uloženo (200)', o6.status === 200, o6);
     const o7 = await zapis6(a => { a.objednane.klice = [nab6[1]]; }, cObch);
-    test('C6: po SoD obchodník objednané nezmění (403)', o7.status === 403 && /Smlouva o dílo/.test(o7.chyba || ''), o7);
+    test('C6: po podpisu SoD obchodník objednané nezmění (403)', o7.status === 403 && /podepsaná/.test(o7.chyba || ''), o7);
     const o8 = await zapis6(a => { delete a.objednane; }, cVed);
-    test('C6: po SoD vedoucí objednané nesmaže (403)', o8.status === 403, o8);
+    test('C6: po podpisu SoD vedoucí objednané nesmaže (403)', o8.status === 403, o8);
     const o9 = await zapis6(a => { a.objednane.klice = [nab6[1]]; }, cAdmin);
-    test('C6: po SoD administrátor změní (200)', o9.status === 200 && (await nacti6()).g.objednane.klice.join() === nab6[1], o9);
+    test('C6: po podpisu SoD administrátor změní (200)', o9.status === 200 && (await nacti6()).g.objednane.klice.join() === nab6[1], o9);
     const n10 = nova374(); n10.objednane = { varianta: n10.varianty[0].id, klice: [nab6[0]], datum: dnes6 };
     const o10 = await uloz374(n10, cObch);
     test('C6: objednané k nezamčené variantě → 400', o10.status === 400, o10);

@@ -117,12 +117,13 @@ async function sodWordGeneruj(typ, srv) {
  * Obchodník při vystavení SoD zaškrtne, které příplatky z odeslané nabídky
  * zákazník objednal. Zapisuje se do zakázky (ZAK.objednane, src/objednane.js),
  * NE do zamčené varianty — odeslaná nabídka se nemění. Server hlídá, že jde
- * o nabídnutý příplatek a že po vytištěné SoD mění jen administrátor. */
+ * o nabídnutý příplatek a že po podpisu SoD (datum podpisu v krycím listu ≤ dnes)
+ * mění jen administrátor. */
 function objUiVarianta() { return (typeof ZAK !== 'undefined' && ZAK) ? aktivniVarianta(ZAK) : null; }
 function objUiSmi(v) {
   if (!v || !v.zamek || !v.zamek.zamceno) return false;
   const admin = typeof jeAdmin === 'function' && jeAdmin();
-  return admin || !objSodVytistena(v);
+  return admin || !objPodepsano(v);
 }
 function objUiUloz(klice, datum) {
   const v = objUiVarianta();
@@ -167,7 +168,7 @@ function objKarta() {
       <div class="sec-title">Objednané příplatky</div>
       <div class="note">Zaškrtněte příplatky z odeslané nabídky, které zákazník <b>objednal</b>. Nabídka se tím
         nemění; objednané příplatky jdou do krycího listu a do exportu pro controlling.
-        ${smi ? '' : '<b>Smlouva o dílo už je vytištěná — měnit smí jen administrátor.</b>'}</div>
+        ${smi ? '' : '<b>Smlouva o dílo je podepsaná (datum podpisu v krycím listu výše) — měnit smí jen administrátor.</b>'}</div>
       ${radky}
       ${moje ? `<label style="margin-top:6px;display:inline-flex;gap:6px;align-items:center">Datum prodeje (podpisu SoD)
         <input type="date" id="objDatum"${dis} value="${esc(moje.datum || '')}" onchange="objUiDatum(this.value)"></label>` : ''}
@@ -180,7 +181,8 @@ function sodKarta() {
   return `<div class="note" style="font-weight:600;margin-top:14px">Smlouva o dílo — realizace (Word):</div>
     <div class="note">Smlouva se plní <b>stejnými daty jako cenová nabídka</b> (hlavička zakázky, cena bez DPH,
       platební podmínky z krycího listu, firemní údaje) – cenu si nikdy nepočítá sama, takže se s nabídkou
-      nemůže rozejít. <b>Zástupci a kontakty zákazníka</b> i bankovní údaje se od 20. 8. 2026 berou z krycího
+      nemůže rozejít. <b>Objednané příplatky</b> (níž) se k ceně díla přičtou v ceně z nabídky (bez slevy);
+      DPH se počítá z celku. <b>Zástupci a kontakty zákazníka</b> i bankovní údaje se od 20. 8. 2026 berou z krycího
       listu výše. Co aplikace nezná – <b>termíny, splátkový kalendář, číslo smlouvy</b> – zůstane
       v dokumentu viditelně jako <code>{{SOD_…}}</code> a doplní se ve Wordu.
       Vytištěná smlouva variantu <b>uzamkne</b> stejně jako odeslaná nabídka.</div>

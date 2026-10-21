@@ -1,3 +1,18 @@
+# Předávka — 21. 10. 2026 odpoledne: Controlling #447 — C6 objednané příplatky, větev `claude/controlling-c3`
+
+Navazuje na C5 (641b9c2). Koordinace teď **session_016CbSudw1q9GXrrtfiJKvAG** (souhrny tam). Build bez zvýšení verze.
+
+- **Hotovo:** `src/objednane.js` (záznam `zak.objednane = { varianta, klice, datum, kdo, kdy }` mimo zámek, nabídnuté
+  příplatky ze zmrazeného výsledku, `objKontrola`), serverová kontrola + razítko v `lib/zakazka_kontrola.mjs`, rámeček
+  v kartě SoD (`objKarta` v `ui/sod_ui.js`), pole krycího listu `priplatkyObjednane`, SoD `sodObjednaneSymboly`
+  (`src/sod.js`, `nabidkaData` vrací `ceny`), export (Řádky + „Objednáno dodatečně", Popis datum prodeje,
+  hromadně `podle=prodej`).
+- **Rozhodnutí J. V. Q1–Q3:** sleva jen na základ; nové symboly SoD ano (šablonu v4 dělá šablonová dávka podle
+  `podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md`); „po podpisu" = ručně vyplněné datum podpisu ≤ dnes → jen admin.
+- **Ke slučování:** CHANGELOG „C6", příručka („Co je nového — objednané příplatky…"), MEZE, roadmapa #447,
+  `netlify/mutace.mjs` (blok „#447 C6" + SADY test_objednane, test_sod), `build.py` + `jadro_moduly.cjs` (objednane.js).
+- **Testy:** viz CHANGELOG C6; kolo a mutace viz commit.
+
 # Předávka — 21. 10. 2026 odpoledne: Controlling #447 — C5 (export v2), větev `claude/controlling-c3` (verzi přidělí sloučení)
 
 Navazuje na 8716b20; integrace `claude/integrace-16-10` 7652bb9 (C3 + C4 = v21.10.4, O10, O11) do větve SLOUČENA.

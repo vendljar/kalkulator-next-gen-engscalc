@@ -18,8 +18,10 @@
  *   – datum platné a ne v budoucnosti (hromadný export podle data prodeje
  *     se o to opírá);
  *   – zapisuje obchodník, který zakázku založil, vedoucí a administrátor;
- *   – PO VYTIŠTĚNÍ SoD (záznam typu 'sod' v zámku varianty) mění už jen
- *     administrátor — smlouva odešla s cenou včetně objednaných příplatků.
+ *   – PO PODPISU SoD mění už jen administrátor (rozhodnutí J. V. 21. 10.,
+ *     Q3: „po podpisu" = v krycím listu RUČNĚ vyplněné Datum podpisu smlouvy
+ *     ≤ dnes; předvyplněný dnešek se nepočítá). Rozhoduje uložená verze,
+ *     takže datum podpisu a změnu objednaných nejde obejít jedním zápisem.
  *
  * Modul nekreslí; obrazovka je v ui/sod_ui.js, krycí list v kryci.js,
  * export v controlling.js. Běží v prohlížeči i na serveru (jadro_moduly).
@@ -48,14 +50,18 @@ function objStav(zak) {
   return o;
 }
 
-/* Je u varianty vytištěná smlouva o dílo? (zámek typu 'sod' nebo dotisk) */
-function objSodVytistena(v) {
-  const z = v && v.zamek;
-  if (!z || !z.zamceno) return false;
-  if (z.typ === 'sod') return true;
-  return Array.isArray(z.tisky) && z.tisky.some(t => t && t.typ === 'sod');
+/* Datum podpisu SoD z krycího listu varianty — jen RUČNĚ vyplněné (prefill
+ * pole je dnešek, ten podpis neznamená). '' = nevyplněno. */
+function objDatumPodpisu(v) {
+  const h = v && v.data && v.data.kryci && v.data.kryci.hodnoty;
+  const x = h ? h.sodDatumPodpisu : '';
+  return objDatumPlatne(x) ? x : '';
 }
-
+/* Je smlouva podepsaná (Q3)? Vyplněné datum podpisu ≤ dnes. */
+function objPodepsano(v, ted) {
+  const d = objDatumPodpisu(v);
+  return !!d && d <= objDnes(ted);
+}
 /* Příplatky NABÍDNUTÉ v zamčené variantě: [{ key, nazev, sMarzi, naklad }].
  * Ze zmrazeného výsledku (vypocetZ) a ze zadání varianty, které je zamčené. */
 function objNabidnute(v, jekly) {
@@ -94,7 +100,11 @@ function objNastav(zak, v, klice, datum, ctx) {
   if (!k.length) { delete zak.objednane; return ''; }
   if (!v || !v.zamek || !v.zamek.zamceno) return 'Objednané příplatky jdou zapsat jen k odeslané (zamčené) nabídce.';
   const c = ctx || {};
-  zak.objednane = { varianta: v.id, klice: k, datum: objDatumPlatne(datum) ? datum : objDnes(c.ted),
+  /* Výchozí datum prodeje = datum podpisu z krycího listu (je-li vyplněné
+   * a ne v budoucnosti), jinak dnešek. */
+  const podpis = objDatumPodpisu(v);
+  const vychozi = podpis && podpis <= objDnes(c.ted) ? podpis : objDnes(c.ted);
+  zak.objednane = { varianta: v.id, klice: k, datum: objDatumPlatne(datum) ? datum : vychozi,
     kdo: String(c.kdo || ''), kdy: c.kdy || new Date().toISOString() };
   return '';
 }
@@ -119,11 +129,12 @@ function objKontrola(stara, zak, relace, ctx) {
   const autor = !!stara && String(stara.autor || '').toLowerCase() === String((relace && relace.email) || '').toLowerCase();
   if (!admin && role !== 'Vedoucí' && !(autor || !stara))
     return { status: 403, chyba: 'Objednané příplatky zapisuje obchodník zakázky, vedoucí nebo administrátor' };
-  /* Po vytištěné SoD jen administrátor — u staré i nové varianty záznamu. */
+  /* Po podpisu SoD (Q3) jen administrátor — podle ULOŽENÉ verze, u varianty
+   * starého i nového záznamu. */
   const vari = (z, id) => (z && Array.isArray(z.varianty)) ? z.varianty.find(x => x && x.id === id) : null;
   const staraVar = stara && stara.objednane ? vari(stara, stara.objednane.varianta) : null;
-  if (!admin && staraVar && objSodVytistena(staraVar))
-    return { status: 403, chyba: 'Smlouva o dílo už je vytištěná — objednané příplatky mění jen administrátor' };
+  if (!admin && staraVar && objPodepsano(staraVar, c.ted))
+    return { status: 403, chyba: 'Smlouva o dílo je podepsaná — objednané příplatky mění jen administrátor' };
   if (!otNova) return null;                                          // smazání (před SoD) smí, kdo smí zapisovat
   if (!nova.klice.every(k => typeof k === 'string' && OBJ_KLIC_TVAR.test(k)) || nova.klice.length > OBJ_MAX_KLICU
     || new Set(nova.klice).size !== nova.klice.length)
@@ -133,8 +144,9 @@ function objKontrola(stara, zak, relace, ctx) {
   const v = vari(zak, String(nova.varianta || ''));
   if (!v || !v.zamek || !v.zamek.zamceno)
     return { status: 400, chyba: 'Objednané příplatky patří k odeslané (zamčené) variantě' };
-  if (!admin && objSodVytistena(v))
-    return { status: 403, chyba: 'Smlouva o dílo už je vytištěná — objednané příplatky mění jen administrátor' };
+  const novaUlozena = vari(stara, v.id);
+  if (!admin && novaUlozena && objPodepsano(novaUlozena, c.ted))
+    return { status: 403, chyba: 'Smlouva o dílo je podepsaná — objednané příplatky mění jen administrátor' };
   const nabidnute = objNabidnute(v, c.jekly).map(p => p.key);
   const cizi = nova.klice.filter(k => !nabidnute.includes(k));
   if (cizi.length) return { status: 400, chyba: 'Příplatek ' + cizi.join(', ') + ' nebyl v odeslané nabídce nabídnut' };
@@ -142,5 +154,5 @@ function objKontrola(stara, zak, relace, ctx) {
 }
 
 if (typeof module !== 'undefined' && module.exports)
-  module.exports = { OBJ_DATUM_TVAR, OBJ_MAX_KLICU, objDnes, objDatumPlatne, objStav, objSodVytistena, objNabidnute,
+  module.exports = { OBJ_DATUM_TVAR, OBJ_MAX_KLICU, objDnes, objDatumPlatne, objStav, objDatumPodpisu, objPodepsano, objNabidnute,
     objObjednaneVarianty, objText, objNastav, objOtisk, objKontrola };

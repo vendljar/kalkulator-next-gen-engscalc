@@ -80,20 +80,25 @@ const ulozena = sObj(zak, [k1]);
 test('beze změny (jen jiné razítko kdo/kdy) projde i cizímu', K(ulozena, Object.assign(kopie(ulozena),
   { objednane: Object.assign({}, ulozena.objednane, { kdo: 'podvrh', kdy: 'x' }) }), JINY) === null);
 test('smazání objednaných: obchodník zakázky ano, cizí ne', K(ulozena, zak, OBCH) === null && (K(ulozena, zak, JINY) || {}).status === 403);
-/* Po vytištěné SoD jen administrátor. */
-const poSod = kopie(ulozena); zamkniVariantu(poSod.varianty[0], { typ: 'sod', kdo: 'obchodnik@priklad.cz' });
-test('vytištěná SoD se pozná (dotisk typu sod)', O.objSodVytistena(poSod.varianty[0]) && !O.objSodVytistena(v));
-test('po SoD obchodník nezmění ani nesmaže (403)', (K(poSod, sObj(poSod, [k1, k2]), OBCH) || {}).status === 403
+/* Po podpisu SoD (Q3: ručně vyplněné datum podpisu ≤ dnes) jen administrátor. */
+const podpis = (z, d) => { z.varianty[0].data.kryci = Object.assign({}, z.varianty[0].data.kryci, { hodnoty: { sodDatumPodpisu: d } }); return z; };
+const poSod = podpis(kopie(ulozena), '2026-10-20');
+test('podpis se pozná jen z ručně vyplněného data ≤ dnes', O.objPodepsano(poSod.varianty[0], TED)
+  && !O.objPodepsano(v, TED) && !O.objPodepsano(podpis(kopie(ulozena), '2026-10-25').varianty[0], TED)
+  && !O.objPodepsano(podpis(kopie(ulozena), 'zítra').varianty[0], TED));
+test('datum podpisu v budoucnosti: obchodník dál smí', K(podpis(kopie(ulozena), '2026-10-25'), sObj(ulozena, [k1, k2]), OBCH) === null);
+test('po podpisu SoD obchodník nezmění ani nesmaže (403)', (K(poSod, sObj(poSod, [k1, k2]), OBCH) || {}).status === 403
   && (K(poSod, Object.assign(kopie(poSod), { objednane: undefined }), OBCH) || {}).status === 403);
-test('po SoD vedoucí taky ne (403), administrátor ano', (K(poSod, sObj(poSod, [k2]), VED) || {}).status === 403
+test('po podpisu SoD vedoucí taky ne (403), administrátor ano', (K(poSod, sObj(poSod, [k2]), VED) || {}).status === 403
   && K(poSod, sObj(poSod, [k2]), ADM) === null);
-test('po SoD bez předchozího záznamu: obchodník nezapíše (403)', (K(Object.assign(kopie(poSod), { objednane: undefined }), sObj(poSod, [k1]), OBCH) || {}).status === 403);
+test('po podpisu SoD bez předchozího záznamu: obchodník nezapíše (403)', (K(Object.assign(kopie(poSod), { objednane: undefined }), sObj(poSod, [k1]), OBCH) || {}).status === 403);
 
 /* ---- klient: objNastav, text do krycího listu ---- */
 { const z = kopie(zak);
   test('objNastav k zamčené variantě zapíše klíče a datum', O.objNastav(z, z.varianty[0], [k1, k1, k2], '2026-10-20') === ''
     && z.objednane.klice.join() === [k1, k2].join() && z.objednane.datum === '2026-10-20');
   test('objNastav bez data doplní dnešek', (O.objNastav(z, z.varianty[0], [k1], '', { ted: TED }), z.objednane.datum === '2026-10-21'));
+  test('objNastav bez data vezme datum podpisu z krycího listu', (O.objNastav(podpis(z, '2026-10-18'), z.varianty[0], [k1], '', { ted: TED }), z.objednane.datum === '2026-10-18'));
   test('objNastav s prázdným seznamem záznam smaže', O.objNastav(z, z.varianty[0], []) === '' && !('objednane' in z));
   const zn = kopie(zak); zn.varianty[0].zamek = null;
   test('objNastav k nezamčené variantě vrátí chybu', /zamčené/.test(O.objNastav(zn, zn.varianty[0], [k1])));

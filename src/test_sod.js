@@ -17,6 +17,7 @@ nacti('./nabidka.js'); nacti('./nabidka_proj.js');
 const ZC = require('./zkusebni_cenik.js');
 global.DEFAULT_CENIK = ZC.zkusebniCenik();
 global.DEFAULT_CENIK_PROJ = ZC.zkusebniCenikProj();
+nacti('./objednane.js');   // #447 C6: objednané příplatky ve SoD
 nacti('./sod.js');
 const JEKLY = JSON.parse(require('fs').readFileSync(__dirname + '/jekly.json', 'utf8'));
 
@@ -245,6 +246,40 @@ test('a bez firemního údaje se symbol nevyrobí',
   const prazdne = sodData(z9, Object.assign({}, v9, { data: Object.assign({}, v9.data, { kryci: { hodnoty: {} } }) }), JEKLY, 'cz').placeholders;
   test('P9.2: bez termínu v krycím listu se SOD_TERMIN_* neplní', prazdne.SOD_TERMIN_MONTAZ_OD === undefined
     && prazdne.SOD_TERMIN_DOKONCENI === undefined);
+}
+
+// ---- #447 C6: objednané příplatky — cena díla = nabídka + objednané (J. V. 21. 10. 2026) ----
+{
+  const zO = novaZakazka();
+  zO.cislo = '2026 - OPR - CN - 0156'; zO.objednatel = 'SVJ Zkušební 10';
+  const vO = zO.varianty[0];
+  Object.assign(vO.data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 });
+  vO.data.cenik.kurzEurKc = 25;
+  vO.data.sleva = { pct: 0.1, schvaleno: true, stav: 'schvaleno' };
+  zamkniVariantu(vO, { typ: 'nabidka', kdo: 'test', cislo: variantaCislo(zO, vO), vysledek: zamekVysledekSpocti(vO, JEKLY, 'test') });
+  const bez = sodData(zO, vO, JEKLY, 'cz');
+  const nabO = nabidkaData(zO, vO, JEKLY, 'cz');
+  test('C6 bez objednaných: cena díla = cena nabídky, rozpis prázdný a jeho odstavce pryč',
+    bez.placeholders.CENA_BEZ_DPH === nabO.placeholders.CENA_BEZ_DPH && bez.placeholders.SOD_CENA_NABIDKY === ''
+    && ['SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_OBJEDNANE', 'SOD_PRIPLATKY_KC'].every(k => (bez.odstavcePryc || []).includes(k)));
+  const nabidnute = objNabidnute(vO, JEKLY);
+  zO.objednane = { varianta: vO.id, klice: nabidnute.slice(0, 2).map(p => p.key), datum: '2026-10-20' };
+  const s = sodData(zO, vO, JEKLY, 'cz');
+  const cislo = t => +String(t).replace(/[^0-9,]/g, '').replace(',', '.');
+  const prip = nabidnute.slice(0, 2).reduce((a, p) => a + p.sMarzi, 0);
+  test('C6 rozpis: cena dle nabídky = cena nabídky (po slevě)', s.placeholders.SOD_CENA_NABIDKY === nabO.placeholders.CENA_BEZ_DPH, s.placeholders.SOD_CENA_NABIDKY);
+  test('C6 příplatky bez slevy: součet = sMarzi objednaných', Math.abs(cislo(s.placeholders.SOD_PRIPLATKY_KC) - prip) < 1, [s.placeholders.SOD_PRIPLATKY_KC, prip]);
+  test('C6 cena díla = nabídka + příplatky', Math.abs(cislo(s.placeholders.CENA_BEZ_DPH) - (cislo(nabO.placeholders.CENA_BEZ_DPH) + prip)) < 1);
+  test('C6 DPH a cena s DPH z celku', Math.abs(cislo(s.placeholders.CENA_S_DPH) - cislo(s.placeholders.CENA_BEZ_DPH) - cislo(s.placeholders.DPH_KC)) < 0.02
+    && cislo(s.placeholders.DPH_KC) > cislo(nabO.placeholders.DPH_KC));
+  test('C6 seznam: řádek na příplatek „název – cena", odstavce rozpisu zůstávají',
+    s.placeholders.SOD_PRIPLATKY_OBJEDNANE.split('\n').length === 2 && s.placeholders.SOD_PRIPLATKY_OBJEDNANE.startsWith(nabidnute[0].nazev + ' – ')
+    && !(s.odstavcePryc || []).includes('SOD_CENA_NABIDKY'));
+  test('C6 nabídka se objednanými příplatky nemění', nabidkaData(zO, vO, JEKLY, 'cz').placeholders.CENA_BEZ_DPH === nabO.placeholders.CENA_BEZ_DPH);
+  let eur = null; try { eur = sodData(zO, vO, JEKLY, 'en').placeholders; } catch (e) { eur = { chyba: e.message }; }
+  test('C6 v eurech: cena díla = nabídka + příplatky po položkách nahoru, DPH z celku nahoru', !!eur && !eur.chyba
+    && cislo(eur.CENA_BEZ_DPH) === cislo(eur.SOD_CENA_NABIDKY) + cislo(eur.SOD_PRIPLATKY_KC)
+    && cislo(eur.CENA_S_DPH) === cislo(eur.CENA_BEZ_DPH) + cislo(eur.DPH_KC), eur && [eur.chyba, eur.CENA_BEZ_DPH, eur.SOD_CENA_NABIDKY, eur.SOD_PRIPLATKY_KC]);
 }
 
 console.log('\nPASS=' + passes + ' FAIL=' + fails);

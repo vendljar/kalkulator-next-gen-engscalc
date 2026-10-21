@@ -71,7 +71,7 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* #447 / C1 (20. 10. 2026): controlling — číselník skupin a mapování. */
      'test_controlling.mjs', '../src/test_controlling.js',
      /* #447 C6 (21. 10. 2026): objednané příplatky. */
-     '../src/test_objednane.js',
+     '../src/test_objednane.js', '../src/test_sod.js',
      /* B81, B103 (13. 10. 2026): prototypové klíče analytiky a dodatkových textů. */
      '../src/test_analytika.js', '../src/test_cenik_popisy.js',
      /* B101, B105 (13. 10. 2026): serverová kontrola rozhodnutí o slevě. */
@@ -906,8 +906,8 @@ const MUTACE = [
     hledej: "  if (!admin && role !== 'Vedoucí' && !(autor || !stara))",
     nahrad: "  if (false)",
     proc: 'cizí obchodník by zakázce kolegy přidal prodané příplatky a zvedl cenu díla ve SoD' },
-  { nazev: '#447 C6: po vytištěné SoD mění objednané kdokoli', soubor: '../src/objednane.js',
-    hledej: "  if (!admin && staraVar && objSodVytistena(staraVar))",
+  { nazev: '#447 C6: po podpisu SoD mění objednané kdokoli', soubor: '../src/objednane.js',
+    hledej: "  if (!admin && staraVar && objPodepsano(staraVar, c.ted))",
     nahrad: "  if (false)",
     proc: 'po podpisu smlouvy by se objednané příplatky změnily a smlouva by nesouhlasila s kalkulátorem' },
   { nazev: '#447 C6: objednaný příplatek nemusí být z nabídky', soubor: '../src/objednane.js',
@@ -934,6 +934,18 @@ const MUTACE = [
     hledej: "  const den = prodej ? String(prodej.datum || '') : ctrlDenPraha(zamek.kdy);",
     nahrad: "  const den = ctrlDenPraha(zamek.kdy);",
     proc: 'export prodejů za měsíc by nesl nabídky odeslané v tom měsíci místo prodaných' },
+  { nazev: '#447 C6: SoD bez objednaných příplatků v ceně díla', soubor: '../src/sod.js',
+    hledej: "  const celkem = zaklad + prip;",
+    nahrad: "  const celkem = zaklad;",
+    proc: 'smlouva by nesla cenu bez příplatků, které zákazník objednal' },
+  { nazev: '#447 C6: SoD bez příplatků nechá prázdný rozpis', soubor: '../src/sod.js',
+    hledej: "    return SOD_OBJ_SYMBOLY.slice();",
+    nahrad: "    return [];",
+    proc: 'smlouva v4 bez objednaných příplatků by nesla prázdné řádky „Objednané příplatky:"' },
+  { nazev: '#447 C6: podpis i z předvyplněného dnešku', soubor: '../src/objednane.js',
+    hledej: "  const x = h ? h.sodDatumPodpisu : '';",
+    nahrad: "  const x = (h && h.sodDatumPodpisu) || objDnes();",
+    proc: 'krycí list předvyplňuje dnešek — obchodník by objednané nemohl zapsat vůbec' },
   /* C4 (21. 10. 2026): Pipedrive deal id zakázky — ručně jen administrátor. */
   { nazev: '#447 C4: deal id zadá a opraví kdokoli', soubor: '../src/controlling.js',
     hledej: "  if (nova !== puvodni && role !== 'Administrátor')",
