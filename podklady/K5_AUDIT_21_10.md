@@ -5,11 +5,24 @@
 - **Navazuje na:** `podklady/K4_AUDIT_20_10.md` (K4-N1…K4-N23).
 - **Rozsah:** `git diff b6f49a7..7652bb9` (v20.10.7 → v21.10.4; 66 souborů, 71 commitů): v20.10.8 K29-N1 (můstky), O8 (oprava nástroje W2 — K4-N2, N3, N9, N10, N11, N19; test K4-N22), v21.10.1 Controlling C1 + C2 (`/api/controlling`, export varianty) a S10 (šablona PROJ v8), v21.10.2 O9 (opravy K4 bez J. V.), v21.10.3 O10 (K4-N1 zmrazení kapitol OCK) + O11 (K4-N4, K4-N13, K4-N17, #451 měď), v21.10.4 Controlling C3 + C4 (`/api/controlling/export`, protokol exportů mimo zálohy — schváleno J. V., `pdDealId` jen admin).
 - **Metoda:** jen čtení (`git show 7652bb9:…`) ve třech čočkách třemi nezávislými subagenty — (1) server, zálohy, autorizace, úložiště; (2) klient, dokumenty, XSS, zámek a integrita odeslané nabídky; (3) nástroje, workflow W2, CI, supply chain, tajemství. Pokusy nad kopiemi stromu (`git archive`) s úložištěm v paměti a nad lokálními holými repy (W2 — `origin` vždy lokální soubor), nikdy proti GitHubu ani síti. Nálezy K5-S1, K5-S2, K5-K1 a K5-W1 ověřeny druhým, vlastním čtením. Opravy kódu se v dávce nedělaly (zadání).
+- **Testovací kolo K5** (týž SHA): sady 294/0/6, mutace jádra 406/406, mutace serveru 734/734, statické 4/4 — žádná přeživší mutace, viz oddíl „Testovací kolo“.
 - Ceny ani osobní údaje v auditu nejsou.
 
 ## Testovací kolo
 
-<!-- K5-KOLO -->
+Celé kolo nad `7652bb9` (v21.10.4), 21. 10. 2026 13:13–16:21 UTC, po částech (2h strop úloh na pozadí); `ADMIN_EMAIL=spravce@priklad.cz`, `KNG_NEZVYSOVAT_VERZI` do kola NEexportováno:
+
+| Krok | Výsledek | Pozn. |
+|---|---|---|
+| Kontrola verze + sestavení | ✓ | `bash nastroje/testovaci_kolo.sh --jen build,sady` |
+| Sady (`spust_testy.sh --smoke`) | **294 prošlo / 0 selhalo / 6 přeskočeno** (300 sad) | 19 min 27 s; přeskočené `test.js` (ostrý ceník) + 5 harnessů bez `KNG_PODKLADY` (`overit_manual`, `overit_nabidka_proj_word`, `overit_sablona`, `overit_sablony_online`, `overit_sod`) |
+| Statické kontroly | **4/4** | verze, CRLF, osobní údaje a tajemství, test výběru větví W2 48/0 |
+| Mutace jádra (`mutace_jadro.mjs`) | **406/406** | 168 sad; otisky obou jader po běhu souhlasí |
+| Mutace serveru (`netlify/mutace.mjs`) | **734/734**, 0 chybně zadaných | 63 souborů = 63 částí filtrem podle cesty souboru ve čtyřech frontách (samostatné `git worktree` nad `7652bb9`, zámek mutací je per strom); úplnost ověřena po názvech proti zadání `7652bb9` (734 unikátních mutací, žádná neověřená ani navíc; `--kontrola` 734/734). Strop 2 h přerušil 2 rozběhnuté části (`src/vyjimky.js` po 26 mutacích, `src/ui/program_ui.js`) — SIGTERM, skript soubor vrátil, obě části opakovány celé. Pracovní kopie po každé části čistá; výchozí stav „sady nejsou zelené ani bez mutace“ nenastal ani jednou. |
+
+**Přeživší mutace: žádná** (jádro 406/406, server 734/734) → **prázdné testy (přeživší mutace s funkčním kódem): žádné.** Pro úplnost: auditní čočka 3 ručními mutanty `nastroje/test_sloucene_vetve.sh` (mimo `testovaci_kolo.sh`) našla dva nechycené — K5-W4 a K5-W7.
+
+Zbývá jen J. V. lokálně: sady s firemními podklady (šablony z Disku) a `test.js` s ostrým ceníkem.
 
 ## Verdikt
 
@@ -47,7 +60,6 @@ Statické kontroly (přidané řádky `src/`, `netlify/`, `nastroje/`, `.github/
 | K5-W6 | informativní | Veřejné repo — hygiena | Přibylo křestní jméno zaměstnankyně controllingu (v b6f49a7 ani jednou): v komentářích a textech mutací `src/controlling.js` (6×), `src/test_controlling.js` (2×), `src/ui/controlling_ui.js`, `netlify/mutace.mjs` (2×), `CHANGELOG.md`, `BEZPECNOST_MEZE.md` a 32× `podklady/CONTROLLING_NAVRH_20_10.md`. Není to zákazník ani cena. | `git grep -c <jméno> 7652bb9` | **J. V.** — doporučeno nahradit rolí „controlling“ |
 | K5-W7 | informativní | W2 — test | Nečíselný čas commitu se obsluhuje bezpečně (větev se vynechá), ale tuhle větev nic netestuje (mutant bez kontroly `*:` prošel). Prakticky nenastane. | `nastroje/sloucene_vetve.sh:161-163` | ANO (volitelné) |
 
-<!-- K5-MUTACE-NALEZY -->
 
 ## Regrese K4
 
@@ -97,4 +109,12 @@ Statické kontroly (přidané řádky `src/`, `netlify/`, `nastroje/`, `.github/
 
 ## Doporučený postup
 
-<!-- K5-POSTUP -->
+1. **Posun `test` → `main`:** z kola ani z auditu nic nebrání (0 kritických, 0 vysokých, 0 středních; kolo celé zelené, žádná přeživší mutace). Rozhoduje J. V.
+2. **Opravná dávka bez rozhodnutí J. V.** (jedna verze, testy s pojistkou před/po): **K5-S1** (přednostně — 500 v uložení a možný pád obnovy), **K5-K1** (přísnější CSV jen pro controlling), K5-K3, K5-S2, K5-W1 (kokpit — mimo aplikaci, opraví koordinace), K5-W2, K5-W4, K5-W7. Nic z toho nebrání posunu do `main`.
+3. **Čeká na J. V.** (s doporučením):
+   - K5-W3 — první ostrý běh „Smazat sloučené větve“ s `jen_vypsat` a zapnout Rulesets „Restrict deletions“ (K4-N20, K5-W5). Doporučení: ano.
+   - K5-K2 — obsah snímku kapitol na serveru neověřovat, zapsat jako mez. Doporučení: zapsat mez.
+   - K5-S3 — souběh potvrzení retence a nočního běhu zapsat jako mez. Doporučení: zapsat mez.
+   - K5-S4 — změřit hromadný export na reálných datech, případně snížit strop čtení. Doporučení: změřit při první ostré zkoušce.
+   - K5-K4 — export varianty jen s klientskou hranicí. Doporučení: ponechat (zapsaná mez).
+   - K5-W6 — jméno zaměstnankyně v repu nahradit rolí „controlling“. Doporučení: ano.

@@ -1,3 +1,23 @@
+# Předávka — 21. 10. 2026: dávka K5 — celé kolo + bezpečnostní audit nad v21.10.4, větev `claude/k5-kolo`
+
+Nad `7652bb9` (integrace C3 + C4 = v21.10.4, jde do `test`). **Do test / main / integrace nic** — slučuje
+koordinace (ŘÍDÍCÍ 21.10, od 21. 10. ~14:00 sezení session_016CbSudw1q9GXrrtfiJKvAG). Kód se neopravoval (zadání).
+
+- **Hotovo — kolo (celé, s mutacemi):** sady **294 / 0 / 6** přeskočeno (`test.js` + 5 harnessů bez
+  `KNG_PODKLADY`), mutace jádra **406/406** (otisky souhlasí), mutace serveru **734/734** (63 částí po
+  souborech ve 4 `git worktree` nad týmž SHA; strop 2 h přerušil `vyjimky.js` a `program_ui.js`, obě
+  opakovány celé; úplnost po názvech 734/734, `--kontrola` OK), statické **4/4**. **Žádná přeživší mutace,
+  žádný prázdný test.**
+- **Hotovo — audit `b6f49a7..7652bb9`:** `podklady/K5_AUDIT_21_10.md` — 0 kritických, 0 vysokých,
+  0 středních, 5 nízkých, 10 informativních; regrese K4 žádná (19 opraveno, K4-N17 ponecháno, K4-N20 mimo repo).
+  Zápis také v CHANGELOG (oddíl v21.10.4) a roadmapa #473 (hotovo).
+- **Opravit bez J. V. (samostatná dávka):** K5-S1 (`pdDealId` objekt → 500, přednostně), K5-K1 (CSV
+  controllingu `+ `/`- `), K5-K3, K5-S2, K5-W1 (kokpit — koordinace), K5-W2, K5-W4, K5-W7.
+- **Čeká na J. V.:** K5-W3 (+ Rulesets K4-N20, K5-W5), K5-K2, K5-S3, K5-S4, K5-K4, K5-W6 (jméno
+  zaměstnankyně v repu) — doporučení v auditu, oddíl „Doporučený postup“.
+- **Posun test → main:** z kola ani auditu nic nebrání; rozhoduje J. V. Lokálně zbývá jen sady
+  s firemními podklady a `test.js` s ostrým ceníkem.
+
 # Předávka — 21. 10. 2026: Controlling #447 — C3 + C4, větev `claude/controlling-c3` (verzi přidělí sloučení)
 
 Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. **Do test / main / integrace nic** —
