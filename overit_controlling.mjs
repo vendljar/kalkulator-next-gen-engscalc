@@ -184,12 +184,12 @@ const obsah = await stranka.evaluate(async (b) => {
   const r = sheets.find(s => s.nazev === 'Řádky');
   const p = sheets.find(s => s.nazev === 'Popis');
   const exp = ctrlExportVarianty(ZAK, ridiciVarianta(ZAK), { jekly: JEKLY });
-  return { listy: sheets.map(s => s.nazev), radku: r ? r.rows.length : 0, ocekavano: exp.radky.length + 1,
+  return { listy: sheets.map(s => s.nazev), radku: r ? r.rows.length : 0, ocekavano: exp.radky.filter(x => x.vZakladu).length + 1,
     hlavicka: r ? r.rows[0].slice(0, 3) : [], verze: p ? (p.rows.find(x => x[0] === 'Verze mapování') || [])[1] : null,
     stav: (document.getElementById('ctrlStav') || {}).textContent || '' };
 }, bajty);
-zkus('sešit má listy Řádky, Kapitoly, Popis', obsah.listy.join(',') === 'Řádky,Kapitoly,Popis', obsah.listy.join(','));
-zkus('list Řádky: hlavička + řádek na řádek kalkulace', obsah.radku === obsah.ocekavano && obsah.hlavicka[0] === 'Číslo nabídky', obsah.radku + ' / ' + obsah.ocekavano);
+zkus('C5 sešit má listy Řádky, Příplatky – volby, Kapitoly, Popis', obsah.listy.join(',') === 'Řádky,Příplatky – volby,Kapitoly,Popis', obsah.listy.join(','));
+zkus('C5 list Řádky: hlavička + řádek na řádek v ceně nabídky', obsah.radku === obsah.ocekavano && obsah.hlavicka[0] === 'Číslo nabídky', obsah.radku + ' / ' + obsah.ocekavano);
 zkus('list Popis nese uloženou verzi mapování (2)', String(obsah.verze) === '2', String(obsah.verze));
 zkus('hláška o stažení s počtem řádků', /Staženo PREDKALKULACE_.*řádků/.test(obsah.stav), obsah.stav);
 const [csvStazeni] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#ctrlExportCsv')]);
@@ -241,7 +241,7 @@ const hrom = await stranka.evaluate(async (b) => {
     protokol: document.querySelectorAll('#ctrlProtokol tr').length };
 }, Array.from(readFileSync(await stHrom.path())));
 zkus('dotaz na server nese období a oblast OCK', hrom.dotaz && hrom.dotaz.oblast === 'ock' && hrom.dotaz.od === hrom.dotaz.do, JSON.stringify(hrom.dotaz));
-zkus('sešit za období: listy, 1 zakázka, oblast, přeskočená ROZBITA v Popisu', hrom.listy === 'Řádky,Kapitoly,Popis' && hrom.zakazek === '1'
+zkus('sešit za období: listy, 1 zakázka, oblast, přeskočená ROZBITA v Popisu', hrom.listy === 'Řádky,Příplatky – volby,Kapitoly,Popis' && hrom.zakazek === '1'
   && hrom.oblast === 'jen OCK' && /nepodařilo/.test(hrom.presk || ''), JSON.stringify(hrom));
 zkus('hláška: 1 zakázka, přeskočeno 1', /Staženo PREDKALKULACE_.*1 zakázka.*přeskočeno 1/.test(hrom.stav), hrom.stav);
 zkus('protokol exportů se po exportu ukáže (hlavička + 1 řádek)', hrom.protokol === 2, String(hrom.protokol));

@@ -1,3 +1,18 @@
+# Předávka — 21. 10. 2026 odpoledne: Controlling #447 — C5 (export v2), větev `claude/controlling-c3` (verzi přidělí sloučení)
+
+Navazuje na 8716b20; integrace `claude/integrace-16-10` 7652bb9 (C3 + C4 = v21.10.4, O10, O11) do větve SLOUČENA.
+Rozhodnutí J. V. ~12:50 nad ukázkovým XLSX (koordinace session_01By6bWivtf2rTJYJFGVv8e1). Build `KNG_NEZVYSOVAT_VERZI=1`.
+
+- **Hotovo:** `CTRL_EXPORT_VERZE = 2` — list Řádky jen `vZakladu` (součet = náklad nabídky), nový list
+  `CTRL_LIST_PRIPLATKY` „Příplatky – volby" (stejné sloupce), sloupce „Řídící varianta" a „Výsledek"; hromadný
+  export vybírá `ctrlHromadnyVarianta` (řídící zamčená, jinak poslední zamčená v období; `ctrlExportVarianty`
+  s `povolitNeridici`). CSV = Řádky; příplatky v CSV vynechány (model umí `ctrlExportCsv(…, CTRL_LIST_PRIPLATKY)`).
+- **NEdělat bez J. V.:** sloupec „V nabídce", evidence příplatků dodatečně objednaných zákazníkem; nálezy (1) CEIL
+  zaokrouhlení OCK v exportu a (4) zaokrouhlení Kapitol po skupinách.
+- **Ke slučování:** CHANGELOG oddíl „C5" nahoře, `manual/obsah.json` („Co je nového — export pro controlling verze 2"),
+  roadmapa #447 pozn, `netlify/mutace.mjs` (blok „#447 C5" před C4, upravené úseky C2 „neřídící" a C3 „nezamčené").
+- **Testy:** src `test_controlling.js` 188/0, server `test_controlling.mjs` 51/0, `overit_controlling.mjs` 44/0, mutace „#447 C" 29/29 (C5 5/5). Kolo viz další commit.
+
 # Předávka — 21. 10. 2026: Controlling #447 — C3 + C4, větev `claude/controlling-c3` (verzi přidělí sloučení)
 
 Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. **Do test / main / integrace nic** —

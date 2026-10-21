@@ -161,6 +161,11 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
   await vloz(zamcena('2026 - OPR - CN - 0803', '2026-09-20T09:00:00Z'));          // mimo období
   await vloz(zamcena('2026 - OPR - CN - 0804', '2026-10-12T09:00:00Z', 'zahr'));
   { const z = zamcena('2026 - OPR - CN - 0805', '2026-10-15T09:00:00Z'); z.varianty[0].zamek = null; await vloz(z, r => { r.odeslane = 1; }); }
+  /* C5: řídící nezamčená, zamčená je jen neřídící varianta (2. 11.) — vyveze se ona, označená. */
+  { const z = zamcena('2026 - OPR - CN - 0806', '2026-11-02T09:00:00Z');
+    const v2 = JSON.parse(JSON.stringify(z.varianty[0])); v2.id = 'v-ridici-rozpracovana'; v2.zamek = null;
+    z.varianty.forEach(x => { x.ridici = false; }); v2.ridici = true; z.varianty.push(v2);
+    await vloz(z, r => { r.upraveno = '2026-11-02T09:01:00Z'; }); }
   await sZ.zapis('z/rozbita.json', { schema: 2, varianty: 'nesmysl' });
   rejstrik.push({ soubor: 'rozbita.json', cislo: 'ROZBITA', odeslane: 1, upraveno: '2026-10-20T09:00:00Z' });
   await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
@@ -182,15 +187,18 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     && e1.o.exporty.every(e => e.kdo === ADMIN_EMAIL));
   test('C3: řádky nesou zmrazený výsledek (hlavička zmrazeno)', e1.o.exporty.every(e => e.hlavicka.zmrazeno === true && e.radky.length > 0));
   const e2 = await ex('?od=2026-11-01&do=2026-11-30', cAdmin);
-  test('C3: zámek 23:30 UTC 31. 10. patří do listopadu', cisla(e2.o) === '2026 - OPR - CN - 0802', cisla(e2.o));
+  test('C3+C5: listopad = 0802 (zámek 23:30 UTC 31. 10.) a 0806 (zamčená neřídící)', cisla(e2.o) === '2026 - OPR - CN - 0802,2026 - OPR - CN - 0806', cisla(e2.o));
+  const e806 = (e2.o.exporty || []).find(e => /0806/.test(e.strany[0].cislo));
+  test('C5: zamčená neřídící jde s příznakem ridici=false', !!e806 && e806.hlavicka.ridici === false, e806 && e806.hlavicka);
   test('C3: řada ZAHR jen zahraniční', cisla((await ex('?od=2026-10-01&do=2026-10-31&rada=zahr', cAdmin)).o) === '2026 - OPR - CN - 0804');
   test('C3: řada ČR bez zahraniční', cisla((await ex('?od=2026-10-01&do=2026-10-31&rada=cr', cAdmin)).o) === '2026 - OPR - CN - 0801');
   const eO = await ex('?od=2026-10-01&do=2026-10-31&oblast=ock', cAdmin);
   test('C3: filtr OCK nechá jen řádky OCK', eO.st === 200 && eO.o.exporty.length === 2
     && eO.o.exporty.every(e => e.radky.every(r => r.oblast === 'ock')));
   const sesit = C.ctrlExportListy(e1.o.exporty, e1.o.data, { hromadny: e1.o.filtr });
-  test('C3: z odpovědi se složí sešit Řádky / Kapitoly / Popis', sesit.map(l => l.nazev).join(',') === 'Řádky,Kapitoly,Popis'
-    && sesit[0].rows.length === 1 + e1.o.exporty.reduce((a, e) => a + e.radky.length, 0));
+  test('C5: z odpovědi se složí sešit Řádky / Příplatky – volby / Kapitoly / Popis', sesit.map(l => l.nazev).join(',') === 'Řádky,Příplatky – volby,Kapitoly,Popis'
+    && sesit[0].rows.length === 1 + e1.o.exporty.reduce((a, e) => a + e.radky.filter(r => r.vZakladu).length, 0)
+    && sesit[1].rows.length === 1 + e1.o.exporty.reduce((a, e) => a + e.radky.filter(r => !r.vZakladu).length, 0));
 
   const prot = await ex('?protokol=1', cAdmin);
   test('C3: každý export je v protokolu (kdo, rozsah, počet)', prot.st === 200 && prot.o.zaznamy.length === 5

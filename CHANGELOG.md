@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## C5 — Controlling: export předkalkulace verze 2 — Řádky jen v ceně nabídky, příplatky zvlášť (#447, větev claude/controlling-c3) — verzi přidělí sloučení
+
+Rozhodnutí J. V. 21. 10. 2026 ~12:50 nad ukázkovým XLSX (předala koordinace). Nad v21.10.4 (integrace 7652bb9 sloučena
+do větve), build bez zvýšení verze. Struktura souboru **verze 2** (`CTRL_EXPORT_VERZE`), jednotlivý i hromadný export.
+
+- **List Řádky nese JEN náklady v ceně nabídky** — kontingenční tabulka nad Řádky bez filtru sedí na náklad
+  základní ceny nabídky. **Příplatky nabídnuté jako volba** (mimo cenu) jsou na novém listu **„Příplatky – volby"**
+  se stejnými sloupci. Pořadí listů: Řádky, Příplatky – volby, Kapitoly, Popis. Kapitoly beze změny (ze základu,
+  sloupec „Náklad příplatků – volby" zůstává). Popis vysvětluje oba listy.
+- **Nové sloupce v Řádcích (i v Příplatcích):** „Řídící varianta" (ano/ne) a „Výsledek" (zmrazený / přepočtený
+  dnešním výpočtem — nabídky zamčené před 15. 9. 2026 bez zmrazeného výsledku).
+- **Hromadný export bere řídící zamčenou variantu, jinak poslední zamčenou v období** (`ctrlHromadnyVarianta`) —
+  zakázka, kde je zamčená jen neřídící varianta, už z exportu nevypadne; sloupec „Řídící varianta" = ne. Jednotlivý
+  export (Nastavení, Přehled) dál jen řídící.
+- **CSV = list Řádky** (jen v ceně nabídky); příplatky-volby v CSV vynechány (model umí i druhé CSV —
+  `ctrlExportCsv(…, CTRL_LIST_PRIPLATKY)` — tlačítko přidáme, bude-li potřeba).
+- Sloupec „V nabídce" se NEdělá; evidence příplatků dodatečně objednaných zákazníkem čeká na J. V.
+- Testy: `src/test_controlling.js` 188/0 (+9: listy, součet Řádků = náklad nabídky, sloupce, verze 2, CSV příplatků,
+  přepočtený výsledek, výběr varianty), `netlify/test_controlling.mjs` 51/0 (+2: zamčená neřídící varianta v hromadném
+  exportu), `overit_controlling.mjs` 44/0 (listy v2), mutace „#447 C5" (5) + upravené úseky C2/C3. Pojistka: proti kódu
+  před C5 selžou 3 modelové (sada pak spadne) a 3 serverové testy.
+
+---
+
 ## v21.10.4 — C3 + C4: Controlling: hromadný export za období, export z Přehledu, Pipedrive deal id (#447, větev claude/controlling-c3)
 
 Rozhodnutí J. V. 21. 10. 2026 (dialog s koordinací), body 1, 2 a 4. Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2),

@@ -14,6 +14,12 @@
       ]
     },
     {
+      "nadpis": "Co je nového — export pro controlling verze 2 (verzi přidělí sloučení)",
+      "odstavce": [
+        "**Jen pro administrátora.** Export předkalkulace (jedna zakázka i za období) má nově list **Řádky jen s náklady v ceně nabídky** — součet sedí na náklad nabídky bez filtrování. Příplatky nabídnuté jako volba jsou zvlášť na listu **„Příplatky – volby“**. Řádky nesou i sloupce **Řídící varianta** a **Výsledek** (zmrazený při tisku / přepočtený). Hromadný export vezme zamčenou řídící variantu, a když řídící zamčená není, poslední zamčenou variantu v období. Pro práci obchodníka se nic nemění."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v21.10.4 (21. 10. 2026)",
       "odstavce": [
         "**Jen pro administrátora.** V Přehledu cenových nabídek má zamčená řídící varianta otevřené zakázky tlačítko **„Export pro controlling“** — stáhne předkalkulaci do Excelu stejně jako Nastavení → Controlling.",
