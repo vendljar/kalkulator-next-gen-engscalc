@@ -2223,6 +2223,23 @@ console.log('\n===== AUDIT B14: VELIKOST ZAKÁZKY =====\n');
   obr.prilohy = [{ id: 'pr1', nazev: 'a', data: 'A'.repeat(4 * 1024 * 1024 + 10) }];
   const r = await post(zakazky, 'http://x/api/zakazky', { zakazka: obr }, cObch);
   test('B14: zakázka nad 4 MB se odmítne (413)', r.status === 413, r.status);
+  /* K4-N18 (O9): hláška řekne, z čeho se velikost skládá, a poradí podle
+   * největší části. Pojistka: před opravou jen „Zmenšete přílohy." (2 FAIL). */
+  const rj = await r.json();
+  test('K4-N18: přílohy přes strop → rozpis velikosti a rada zmenšit přílohy',
+    /přílohy a fotky \d+ kB/.test(rj.chyba) && /strop 4096 kB/.test(rj.chyba) && /Zmenšete nebo odeberte přílohy/.test(rj.chyba), rj.chyba);
+  const zamc = zakazkaCislo('2026 - OPR - CN - 0982');
+  const v0 = zamc.varianty[0];
+  zamc.varianty = Array.from({ length: 9 }, (_, i) => { const v = JSON.parse(JSON.stringify(v0)); v.id = 'v' + i;
+    v.zamek = { zamceno: true, kdy: '2026-10-20T10:00:00Z', vysledek: { text: 'B'.repeat(200 * 1024) } };
+    v.data.kryci = Object.assign({}, v.data.kryci, { zmrazenoPodminky: { vety: { text: 'P'.repeat(300 * 1024) } } }); return v; });
+  const r2 = await post(zakazky, 'http://x/api/zakazky', { zakazka: zamc }, cObch);
+  const r2j = await r2.json();
+  test('K4-N18: mnoho zamčených variant se snímky podmínek → 413 s počtem odeslaných variant a radou založit novou zakázku',
+    r2.status === 413 && /zmrazené údaje 9 odeslaných variant \d+ kB/.test(r2j.chyba) && /novou zakázku/.test(r2j.chyba)
+    && !/Zmenšete nebo odeberte přílohy/.test(r2j.chyba), [r2.status, r2j.chyba]);
+  const hl = await zakazky(new Request('http://x/api/zakazky', { method: 'POST', headers: { cookie: cObch, 'content-length': String(9 * 1024 * 1024) }, body: '{}' }));
+  test('K4-N18: hlášená délka nad dvojnásobek stropu → 413 bez čtení těla', hl.status === 413 && /strop 4096 kB/.test((await hl.json()).chyba));
   const dlouhe = zakazkaCislo('2026 - OPR - CN - ' + '9'.repeat(70));
   test('B14: číslo nabídky nad 60 znaků se odmítne (400)',
     (await post(zakazky, 'http://x/api/zakazky', { zakazka: dlouhe }, cObch)).status === 400);

@@ -37,6 +37,42 @@
  * ============================================================ */
 
 export const ZAKAZKA_MAX_B = 4 * 1024 * 1024;
+
+/* HLÁŠKA PŘI PŘEKROČENÍ STROPU (K4-N18, dávka O9 21. 10. 2026). Od K3-N2 nese
+ * každá zamčená varianta snímek podmínek (a od A1 celý výsledek) — zakázka
+ * s mnoha odeslanými variantami může narazit na strop i bez příloh, a pak
+ * rada „Zmenšete přílohy" nepomůže. Hláška proto řekne, z čeho se velikost
+ * skládá (přílohy a obrázky / zmrazené údaje zamčených variant / ostatní)
+ * a poradí podle největší části. Čistá funkce, `zak` = příchozí zakázka. */
+export function zakazkaVelikostHlaska(zak, bajtu) {
+  const kB = (n) => Math.round(n / 1024) + ' kB';
+  const delka = (x) => { try { return x === undefined ? 0 : JSON.stringify(x).length; } catch (e) { return 0; } };
+  let obrazky = 0;
+  const projdi = (x, hloubka) => {
+    if (hloubka > 40 || x == null) return;
+    if (typeof x === 'string') { if (x.length > 256 && /^data:/.test(x)) obrazky += x.length; return; }
+    if (typeof x !== 'object') return;
+    for (const k of Object.keys(x)) projdi(x[k], hloubka + 1);
+  };
+  const z = (zak && typeof zak === 'object') ? zak : {};
+  projdi(z.prilohy, 0); projdi(z.uvodniFoto, 0); projdi(z.uvodniFotoProj, 0);
+  const prilohy = Math.max(obrazky, delka(z.prilohy));
+  let zmrazene = 0, zamcenych = 0;
+  for (const v of (Array.isArray(z.varianty) ? z.varianty : [])) {
+    if (!v || !v.zamek) continue;
+    zamcenych++;
+    const d = v.data || {};
+    zmrazene += delka(v.zamek) + delka(d.kryci && d.kryci.zmrazenoPodminky) + delka(d.kryciProj && d.kryciProj.zmrazenoPodminky);
+  }
+  const celkem = Math.max(+bajtu || 0, delka(z));
+  const ostatni = Math.max(0, celkem - prilohy - zmrazene);
+  const rada = prilohy >= zmrazene && prilohy >= ostatni ? 'Zmenšete nebo odeberte přílohy a fotky.'
+    : zmrazene >= ostatni ? 'Většinu tvoří odeslané (zamčené) varianty, které se zmenšit nedají — další nabídku '
+      + 'založte jako novou zakázku.'
+    : 'Smažte nepotřebné varianty nebo založte novou zakázku.';
+  return 'Zakázka je příliš velká (' + kB(celkem) + ', strop ' + kB(ZAKAZKA_MAX_B) + '): přílohy a fotky ' + kB(prilohy)
+    + ', zmrazené údaje ' + zamcenych + ' odeslaných variant ' + kB(zmrazene) + ', ostatní ' + kB(ostatni) + '. ' + rada;
+}
 import { razitkoKdo } from './sdilene.mjs';
 
 export const CISLO_MAX = 60;
