@@ -6,7 +6,10 @@
  *   – verze a historii (historie jde ven bez dat),
  *   – odmítnutí vadných dat, prázdného zápisu a příliš velkého těla,
  *   – zálohu (záloha nese `controlling`) a obnovu touž očistou jako zápis
- *     (otrávený záznam ze zálohy se neobnoví). */
+ *     (otrávený záznam ze zálohy se neobnoví);
+ *   – C3 (21. 10. 2026): /api/controlling/export — hromadný export za období
+ *     jen pro správce, výběr podle dne zamčení v českém čase, řada, oblast,
+ *     přeskočené zakázky, protokol exportů a strop 413. */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
 process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
 const pamet = new Map();
@@ -21,6 +24,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
 import prihlaseni from './functions/prihlaseni.mjs';
 import uzivatele from './functions/uzivatele.mjs';
 import controllingFn from './functions/controlling.mjs';
+import controllingExport from './functions/controlling_export.mjs';
 import zaloha from './functions/zaloha.mjs';
 import obnova from './functions/obnova.mjs';
 import { ADMIN_EMAIL } from './lib/sdilene.mjs';
@@ -122,6 +126,86 @@ const o2 = await (await post(obnova, 'http://x/api/obnova',
 const poO2 = await ulz('program').cti('controlling');
 test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2.platny.poznamka === 'z vadné historie'
   && poO2.historie.length === 0, o2.casti);
+
+/* ---- C3: hromadný export za období (/api/controlling/export) ---- */
+{
+  const G = globalThis;
+  const URL_E = 'http://x/api/controlling/export';
+  const JEKLY = require('../src/jekly.json');
+  const zamcena = (cislo, kdy, rada) => {
+    const zak = G.novaZakazka();
+    zak.cislo = cislo; zak.nazevAkce = 'Akce ' + cislo; zak.objednatel = 'Zkušební zákazník s.r.o.';
+    const v = zak.varianty[0];
+    Object.assign(v.data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 });
+    if (rada) v.data.cenikRada = rada;
+    G.zamkniVariantu(v, { cislo: G.variantaCislo(zak, v), kdo: 'admin@priklad.cz', typ: 'nabidka',
+      vysledek: G.zamekVysledekSpocti(v, JEKLY, 'test') });
+    v.zamek.kdy = kdy;
+    return zak;
+  };
+  const sZ = ulz('zakazky');
+  const rejstrik = [];
+  const vloz = async (zak, upravit) => {
+    const soubor = G.uloJmenoSouboru(zak);
+    await sZ.zapis('z/' + soubor, zak);
+    /* Razítko úpravy jako na serveru: uložení po zamčení. */
+    const zam = zak.varianty[0].zamek;
+    const z = G.uloRejstrikZaznam(zak, { soubor, razitko: zam ? new Date(Date.parse(zam.kdy) + 60000).toISOString() : '' });
+    if (upravit) upravit(z);
+    rejstrik.push(z);
+    await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
+    return soubor;
+  };
+  await vloz(zamcena('2026 - OPR - CN - 0801', '2026-10-05T09:00:00Z'));
+  await vloz(zamcena('2026 - OPR - CN - 0802', '2026-10-31T23:30:00Z'));          // v Praze už 1. 11.
+  await vloz(zamcena('2026 - OPR - CN - 0803', '2026-09-20T09:00:00Z'));          // mimo období
+  await vloz(zamcena('2026 - OPR - CN - 0804', '2026-10-12T09:00:00Z', 'zahr'));
+  { const z = zamcena('2026 - OPR - CN - 0805', '2026-10-15T09:00:00Z'); z.varianty[0].zamek = null; await vloz(z, r => { r.odeslane = 1; }); }
+  await sZ.zapis('z/rozbita.json', { schema: 2, varianty: 'nesmysl' });
+  rejstrik.push({ soubor: 'rozbita.json', cislo: 'ROZBITA', odeslane: 1, upraveno: '2026-10-20T09:00:00Z' });
+  await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
+
+  const ex = async (q, c) => { const r = await get(controllingExport, URL_E + q, c); return { st: r.status, o: await r.json() }; };
+  test('C3: vedoucí hromadný export nedostane (403)', (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-31', cVed)).status === 403);
+  test('C3: nepřihlášený nic (401)', (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-31')).status === 401);
+  test('C3: POST → 405', (await post(controllingExport, URL_E, {}, cAdmin)).status === 405);
+  test('C3: neplatné období → 400', (await ex('?od=2026-10-31&do=2026-10-01', cAdmin)).st === 400);
+  test('C3: neznámá oblast → 400', (await ex('?od=2026-10-01&do=2026-10-31&oblast=vse', cAdmin)).st === 400);
+
+  const e1 = await ex('?od=2026-10-01&do=2026-10-31', cAdmin);
+  const cisla = (o) => (o.exporty || []).map(e => e.strany[0].cislo).sort().join(',');
+  test('C3: říjen = zamčené řídící v období (0801, 0804), bez 1. 11. v Praze, září ani nezamčené',
+    e1.st === 200 && cisla(e1.o) === '2026 - OPR - CN - 0801,2026 - OPR - CN - 0804', cisla(e1.o));
+  test('C3: nečitelná zakázka se hlásí jako přeskočená', (e1.o.preskoceno || []).some(p => p.soubor === 'rozbita.json'), e1.o.preskoceno);
+  test('C3: export nese platné mapování a jeho verzi', e1.o.verzeMapovani === 2 && e1.o.data && e1.o.data.mapa['K.k7'] === 'mat-ostatni');
+  test('C3: kdo a kdy z relace a serveru', e1.o.kdo === ADMIN_EMAIL && /^\d{4}-\d{2}-\d{2}T/.test(e1.o.kdy)
+    && e1.o.exporty.every(e => e.kdo === ADMIN_EMAIL));
+  test('C3: řádky nesou zmrazený výsledek (hlavička zmrazeno)', e1.o.exporty.every(e => e.hlavicka.zmrazeno === true && e.radky.length > 0));
+  const e2 = await ex('?od=2026-11-01&do=2026-11-30', cAdmin);
+  test('C3: zámek 23:30 UTC 31. 10. patří do listopadu', cisla(e2.o) === '2026 - OPR - CN - 0802', cisla(e2.o));
+  test('C3: řada ZAHR jen zahraniční', cisla((await ex('?od=2026-10-01&do=2026-10-31&rada=zahr', cAdmin)).o) === '2026 - OPR - CN - 0804');
+  test('C3: řada ČR bez zahraniční', cisla((await ex('?od=2026-10-01&do=2026-10-31&rada=cr', cAdmin)).o) === '2026 - OPR - CN - 0801');
+  const eO = await ex('?od=2026-10-01&do=2026-10-31&oblast=ock', cAdmin);
+  test('C3: filtr OCK nechá jen řádky OCK', eO.st === 200 && eO.o.exporty.length === 2
+    && eO.o.exporty.every(e => e.radky.every(r => r.oblast === 'ock')));
+  const sesit = C.ctrlExportListy(e1.o.exporty, e1.o.data, { hromadny: e1.o.filtr });
+  test('C3: z odpovědi se složí sešit Řádky / Kapitoly / Popis', sesit.map(l => l.nazev).join(',') === 'Řádky,Kapitoly,Popis'
+    && sesit[0].rows.length === 1 + e1.o.exporty.reduce((a, e) => a + e.radky.length, 0));
+
+  const prot = await ex('?protokol=1', cAdmin);
+  test('C3: každý export je v protokolu (kdo, rozsah, počet)', prot.st === 200 && prot.o.zaznamy.length === 5
+    && prot.o.zaznamy[0].oblast === 'ock' && prot.o.zaznamy[0].kdo === ADMIN_EMAIL && prot.o.zaznamy[0].zakazek === 2, prot.o.zaznamy && prot.o.zaznamy[0]);
+  test('C3: odmítnutý dotaz se do protokolu nezapíše', prot.o.zaznamy.every(z => z.od <= z.do));
+  test('C3: protokol vedoucí nečte (403)', (await get(controllingExport, URL_E + '?protokol=1', cVed)).status === 403);
+
+  /* Strop: víc zakázek k přečtení, než unese jeden export → 413, nic se neořízne potichu. */
+  const strop = C.CTRL_HROMADNY.cteni;
+  const velky = { schema: 1, zakazky: Array.from({ length: strop + 1 }, (_, i) => ({ soubor: 'x' + i + '.json', cislo: 'X' + i, odeslane: 1 })) };
+  await sZ.zapis('_rejstrik', velky);
+  const e413 = await ex('?od=2026-10-01&do=2026-10-31', cAdmin);
+  test('C3: nad strop čtení → 413 s výzvou zúžit období', e413.st === 413 && /zužte/.test(e413.o.chyba), e413);
+  await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
+}
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 if (fail) process.exit(1);

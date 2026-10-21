@@ -8,6 +8,36 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## C3 — Controlling: hromadný export za období a export z Přehledu (#447, větev claude/controlling-c3) — verzi přidělí sloučení
+
+Rozhodnutí J. V. 21. 10. 2026 (dialog s koordinací), body 1, 2 a 4. Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2),
+build bez zvýšení verze (`KNG_NEZVYSOVAT_VERZI=1`).
+
+- **Tlačítko „Export pro controlling" v Přehledu cenových nabídek** (bod 1): u zamčené řídící varianty otevřené
+  zakázky v seznamu variant, jen administrátor online (v rolovém náhledu se nekreslí). Stáhne týž XLSX jako
+  Nastavení → Controlling → Export předkalkulace; mapování se dotáhne ze serveru, chyba jde do dialogu.
+- **Hromadný export za období na serveru** (bod 2): nové `GET /api/controlling/export?od=&do=&oblast=&rada=`
+  (`netlify/functions/controlling_export.mjs`), **jen administrátor** (server, matice `test_prava`). Výběr podle
+  **dne zamčení (odeslání) v českém čase**, filtr **OCK / PROJ / obojí** a **číselná řada ČR / ZAHR / obojí**; jen
+  zamčené řídící varianty, částky ze zmrazeného výsledku tisku, mapování = platná uložená verze. Prohlížeč z odpovědi
+  složí **týž sešit** (Řádky, Kapitoly, Popis — stejné sloupce, víc zakázek) nebo CSV; Popis nese období, filtry,
+  seznam zakázek (zmrazený / přepočtený výsledek) a **přeskočené zakázky s důvodem**. Ovládání v Nastavení →
+  Controlling → Export předkalkulace → „Hromadně za období" (výchozí období = tento měsíc).
+- **Protokol exportů:** každý hromadný export se zapíše (kdo z relace, kdy, období, oblast, řada, počet zakázek
+  a řádků; posledních 200 v `program/controlling_exporty`), posledních 10 je vidět pod formulářem.
+- **Meze:** období nejvýš 400 dní, nejvýš 600 zakázek k přečtení, 150 zakázek v souboru a 5 MB odpovědi — při
+  překročení **413 s výzvou zúžit období**, nikdy potichu oříznutý soubor (`CTRL_HROMADNY`, `BEZPECNOST_MEZE.md`).
+- **Nastavení controllingu dál bez hesla správce** (bod 4) — beze změny.
+- **Sloupec „V nabídce" u příplatků (bod 3) se NEDĚLÁ** — čeká na rozhodnutí J. V.; text sloupce „V základní ceně"
+  je nově na jednom místě (`ctrlVZakladuText`), kam se rozhodnutí doplní.
+- Testy: `src/test_controlling.js` 170 (+24: filtr, den v Praze, předvýběr, výběr zakázky, oblast, sešit za období,
+  CSV), `netlify/test_controlling.mjs` 50 (+22: práva, období, řada, oblast, přeskočené, protokol, strop 413),
+  `test_prava` +2 řádky matice, `overit_controlling.mjs` 42 (+12: tlačítko v Přehledu jen admin a jen u zamčené
+  řídící, stažení, hromadný XLSX/CSV, protokol, neplatné období se nepošle), mutace „#447 C3" (13).
+  Pojistka: před opravou model padal (funkce neexistovaly), serverová sada nenašla funkci, harness neviděl tlačítko.
+
+---
+
 ## v21.10.2 — O9: opravy kódu aplikace z auditu K4 bez rozhodnutí J. V. (větev claude/o8-k4-nalezy)
 
 Dávka O9 (noční koordinace 21. 10. 2026) nad `claude/integrace-16-10` 12b41b0 (v20.10.8). Build bez zvýšení

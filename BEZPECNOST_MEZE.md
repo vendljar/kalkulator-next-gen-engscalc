@@ -941,7 +941,25 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   mapování se čte z `/api/controlling` (jen admin). **Mez:** hranici tu drží
   jen klient; nákladová data zakázky v prohlížeči jsou už dnes (B88), takže
   se tím nic nového neodkrývá, ale XLSX je přenosný soubor s nákupními
-  cenami a marží. Hromadný export za období (C3) poběží na serveru s kontrolou
-  role a protokolem exportů.
+  cenami a marží. Hromadný export za období (C3) běží na serveru s kontrolou
+  role a protokolem exportů (viz níže).
 - **CSV exportu** jde přes `csvBunka` (ochrana proti vzorcům, text „=…" se
   nespustí); čísla bez uvozovek s desetinnou čárkou.
+- **Hromadný export za období (C3, 21. 10. 2026) počítá server:**
+  `GET /api/controlling/export` jen Administrátor (`vyzadujRoli`, matice
+  `test_prava`, mutace „#447 C3“); export i protokol exportů. Heslo správce
+  se nežádá (rozhodnutí J. V. 21. 10. 2026, bod 4; export nic nemění).
+  Parametry se ověří (`ctrlHromadnyFiltr`: datum RRRR-MM-DD, období ≤ 400
+  dní, oblast a řada z výčtu — neznámá hodnota je 400, ne „obojí“).
+  **Meze `CTRL_HROMADNY`:** ≤ 600 zakázek k přečtení, ≤ 150 zakázek v souboru,
+  odpověď ≤ 5 MB (Netlify vrací nejvýš 6 MB) — jinak 413 s výzvou zúžit
+  období, soubor se nikdy neořízne potichu. Nečitelná zakázka se vypíše
+  v Popisu jako přeskočená. **Protokol:** každý export zapíše server
+  (`program/controlling_exporty`, posledních 200; kdo z relace, kdy z hodin
+  serveru, rozsah z ověřeného filtru). Protokol není v záloze — je to stopa
+  přístupu, ne data k obnově. **Mez:** stažený XLSX je dál přenosný soubor
+  s nákupními cenami a marží celé firmy za období; kam ho správce pošle
+  (Andy), protokol nehlídá.
+- **Tlačítko „Export pro controlling“ v Přehledu (C3)** kreslí jen
+  administrátorovi online a ne v rolovém náhledu; export jedné varianty běží
+  dál v prohlížeči (mez jako u C2 výše).

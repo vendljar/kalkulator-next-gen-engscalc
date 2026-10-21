@@ -10,7 +10,12 @@
  *      → skupina; filtr „jen nezařazené", export a import XLSX ve tvaru
  *      Andyiny tabulky;
  *   3. Export předkalkulace — otevřená zakázka, JEN ZAMČENÁ ŘÍDÍCÍ varianta
- *      (J9), XLSX (Řádky, Kapitoly, Popis) nebo CSV.
+ *      (J9), XLSX (Řádky, Kapitoly, Popis) nebo CSV; od C3 (21. 10. 2026)
+ *      i HROMADNĚ ZA OBDOBÍ — počítá server (/api/controlling/export),
+ *      prohlížeč z odpovědi jen složí soubor týmž ctrlExportListy — a
+ *      protokol exportů. Export jedné varianty jde od C3 spustit i z
+ *      Přehledu cenových nabídek (tlačítko u zamčené řídící varianty,
+ *      ctrlUiExportPrehled), jen administrátor.
  *
  * Jen administrátor přihlášený online (J7) — hranici drží server
  * (/api/controlling vrací ostatním 403); záložka je v NAST_PANELY
@@ -29,7 +34,10 @@
 
 const CTRL_STAV = { nacteno: false, nacita: false, chyba: '', db: null, data: null, puvodni: '',
   karta: 'skupiny', oblast: 'vse', jenNezarazene: false, hledej: '', hlaska: '', hlaskaChyba: false,
-  import: null, pracuje: false };
+  import: null, pracuje: false,
+  /* C3: výběr hromadného exportu (období podle data zamčení, oblast, řada)
+   * a protokol exportů ze serveru (null = zatím nenačten). */
+  hrom: null, protokol: null };
 
 function ctrlUiPrekresli() { if (typeof render === 'function') render(); }
 function ctrlUiZprava(text, chyba) { CTRL_STAV.hlaska = text || ''; CTRL_STAV.hlaskaChyba = !!chyba; ctrlUiPrekresli(); }
@@ -198,11 +206,108 @@ function ctrlUiExport(format) {
     if (format === 'csv') ctrlUiStahni(new Blob([ctrlExportCsv(exp, data)], { type: 'text/csv;charset=utf-8' }), jmeno + '.csv');
     else ctrlUiStahni(xlsxZapis(ctrlExportListy(exp, data)), jmeno + '.xlsx');
     /* Do protokolu zakázky se export nezapisuje: zápis by zakázku změnil
-     * (a spustil ukládání) jen kvůli tomu, že si ji někdo přečetl. Záznam
-     * exportů vede až hromadný export na serveru (dávka C3). */
+     * (a spustil ukládání) jen kvůli tomu, že si ji někdo přečetl. Protokol
+     * exportů vede hromadný export na serveru (C3); export jedné otevřené
+     * varianty dělá prohlížeč z dat, která už má. */
     ctrlUiZprava('Staženo ' + jmeno + '.' + format + ' — ' + exp.radky.length + ' řádků'
       + (ctrlUiZmeneno() ? '. Pozor: neuložené změny mapování se do exportu nepromítly — platí uložená verze.' : '.'));
   } catch (e) { ctrlUiZprava('Export se nepovedl: ' + e.message, true); }
+}
+
+/* Přehled cenových nabídek (C3, rozhodnutí J. V. 21. 10. 2026, bod 1):
+ * tlačítko „Export pro controlling" u zamčené řídící varianty otevřené
+ * zakázky. Mapování se dotáhne ze serveru, pokud ještě není načtené.
+ * Přehled nemá vlastní lištu hlášek, takže chyba jde do dialogu; zdařilý
+ * export ohlásí prohlížeč stažením souboru. */
+async function ctrlUiExportPrehled(format) {
+  if (!ctrlUiSmi()) return hlaska('Export pro controlling smí jen administrátor přihlášený online.');
+  if (!CTRL_STAV.nacteno) await ctrlUiNacti();
+  if (CTRL_STAV.chyba) return hlaska('Controlling se nepodařilo načíst: ' + CTRL_STAV.chyba);
+  ctrlUiExport(format || 'xlsx');
+  if (CTRL_STAV.hlaskaChyba) return hlaska(CTRL_STAV.hlaska);
+}
+/* Má mít řádek přehledu tlačítko? Jen řídící zamčená varianta otevřené
+ * zakázky a jen administrátor online — mimo rolový náhled (P16: tlačítko,
+ * které by obchodník neviděl, se v jeho pohledu nekreslí). */
+function ctrlUiPrehledTlacitko(r) {
+  if (!r || !r.ridici || !r.zamceno || !ctrlUiSmi()) return '';
+  if (typeof nahledJakykoli === 'function' && nahledJakykoli()) return '';
+  return `<button class="mini" onclick="ctrlUiExportPrehled('xlsx')" data-ctrl-prehled="1"
+        title="Export pro controlling — předkalkulace zamčené řídící varianty (.xlsx), jen administrátor">Export pro controlling</button>`;
+}
+
+/* ---------- C3: hromadný export za období ---------- */
+/* Výchozí období: od prvního dne tohoto měsíce do dneška (místní čas). */
+function ctrlUiDenLokal(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function ctrlUiHrom() {
+  if (!CTRL_STAV.hrom) {
+    const d = new Date();
+    CTRL_STAV.hrom = { od: ctrlUiDenLokal(new Date(d.getFullYear(), d.getMonth(), 1)), do: ctrlUiDenLokal(d), oblast: 'obe', rada: 'obe' };
+  }
+  return CTRL_STAV.hrom;
+}
+function ctrlUiHromSet(pole, hodnota) { ctrlUiHrom()[pole] = String(hodnota || ''); CTRL_STAV.hlaska = ''; ctrlUiPrekresli(); }
+function ctrlUiProtokolNacti() {
+  if (!ctrlUiSmi() || !ctrlUiServer()) return Promise.resolve();
+  return onlineApi('/api/controlling/export?protokol=1')
+    .then(o => { CTRL_STAV.protokol = o.zaznamy || []; })
+    .catch(e => { CTRL_STAV.protokol = []; CTRL_STAV.hlaska = 'Protokol exportů se nenačetl: ' + e.message; CTRL_STAV.hlaskaChyba = true; })
+    .then(() => ctrlUiPrekresli());
+}
+async function ctrlUiHromadny(format) {
+  if (!ctrlUiSmi()) return ctrlUiZprava('Hromadný export smí jen administrátor přihlášený online.', true);
+  const h = ctrlUiHrom();
+  const f = ctrlHromadnyFiltr(h);
+  if (!f.ok) return ctrlUiZprava(f.chyba, true);
+  CTRL_STAV.pracuje = true; ctrlUiZprava('Server počítá export za období ' + h.od + ' – ' + h.do + '…');
+  try {
+    const q = new URLSearchParams(f.filtr).toString();
+    const o = await onlineApi('/api/controlling/export?' + q);
+    if (!o.exporty || !o.exporty.length) {
+      ctrlUiZprava('V období ' + f.filtr.od + ' – ' + f.filtr.do + ' není žádná zamčená řídící varianta odpovídající filtru'
+        + (o.preskoceno && o.preskoceno.length ? ' (přeskočeno ' + o.preskoceno.length + ': ' + o.preskoceno.slice(0, 3).map(p => p.cislo || p.soubor).join(', ') + ')' : '') + '.');
+    } else {
+      const opts = { kdy: o.kdy, kdo: o.kdo, verzeMapovani: o.verzeMapovani,
+        build: (typeof buildVerze === 'function' && buildVerze()) || '',
+        hromadny: Object.assign({}, o.filtr || f.filtr, { preskoceno: o.preskoceno || [] }) };
+      const zuz = (f.filtr.oblast !== 'obe' ? '_' + f.filtr.oblast.toUpperCase() : '') + (f.filtr.rada !== 'obe' ? '_' + f.filtr.rada.toUpperCase() : '');
+      const jmeno = 'PREDKALKULACE_' + f.filtr.od + '_' + f.filtr.do + zuz;
+      if (format === 'csv') ctrlUiStahni(new Blob([ctrlExportCsv(o.exporty, o.data, opts)], { type: 'text/csv;charset=utf-8' }), jmeno + '.csv');
+      else ctrlUiStahni(xlsxZapis(ctrlExportListy(o.exporty, o.data, opts)), jmeno + '.xlsx');
+      const radku = o.exporty.reduce((a, e) => a + e.radky.length, 0);
+      ctrlUiZprava('Staženo ' + jmeno + '.' + format + ' — ' + o.exporty.length + ' '
+        + (o.exporty.length === 1 ? 'zakázka' : (o.exporty.length < 5 ? 'zakázky' : 'zakázek')) + ', ' + radku + ' řádků'
+        + (o.preskoceno && o.preskoceno.length ? '; přeskočeno ' + o.preskoceno.length + ' (důvody v listu Popis)' : '') + '.');
+    }
+    await ctrlUiProtokolNacti();
+  } catch (e) { ctrlUiZprava('Hromadný export se nepovedl: ' + e.message, true); }
+  finally { CTRL_STAV.pracuje = false; ctrlUiPrekresli(); }
+}
+function ctrlUiKartaHromadny() {
+  const h = ctrlUiHrom();
+  if (CTRL_STAV.protokol === null) { CTRL_STAV.protokol = []; setTimeout(ctrlUiProtokolNacti, 0); }
+  const sel = (id, pole, volby) => `<select id="${id}" onchange="ctrlUiHromSet('${pole}', this.value)">${volby.map(([v, t]) =>
+    `<option value="${v}"${h[pole] === v ? ' selected' : ''}>${t}</option>`).join('')}</select>`;
+  const prot = (CTRL_STAV.protokol || []).slice(0, 10).map(z => `<tr><td>${esc(new Date(z.kdy).toLocaleString('cs-CZ'))}</td>
+      <td>${esc(z.kdo || '')}</td><td>${esc(z.od || '')} – ${esc(z.do || '')}</td>
+      <td>${esc({ ock: 'OCK', proj: 'PROJ' }[z.oblast] || 'obě')}</td><td>${esc({ cr: 'ČR', zahr: 'ZAHR' }[z.rada] || 'obě')}</td>
+      <td>${+z.zakazek || 0}</td><td>${+z.radku || 0}</td></tr>`).join('');
+  return `<div class="sec-title" style="margin-top:14px">Hromadně za období</div>
+    <div class="note">Všechny <b>zamčené řídící varianty</b>, jejichž nabídka byla zamčena (odeslána) v zadaném období —
+      částky ze zmrazeného výsledku tisku. Počítá server; soubor má stejné listy a sloupce jako export jedné zakázky.
+      Každý export se zapíše do protokolu.</div>
+    <div class="btns" style="margin:8px 0;align-items:center">
+      <label>od <input type="date" id="ctrlHromOd" value="${esc(h.od)}" onchange="ctrlUiHromSet('od', this.value)"></label>
+      <label>do <input type="date" id="ctrlHromDo" value="${esc(h.do)}" onchange="ctrlUiHromSet('do', this.value)"></label>
+      ${sel('ctrlHromOblast', 'oblast', [['obe', 'OCK i PROJ'], ['ock', 'jen OCK'], ['proj', 'jen PROJ']])}
+      ${sel('ctrlHromRada', 'rada', [['obe', 'ČR i ZAHR'], ['cr', 'jen ČR'], ['zahr', 'jen ZAHR']])}
+      <button class="primary" id="ctrlHromXlsx" onclick="ctrlUiHromadny('xlsx')" ${CTRL_STAV.pracuje ? 'disabled' : ''}>⤓ Za období (.xlsx)</button>
+      <button id="ctrlHromCsv" onclick="ctrlUiHromadny('csv')" ${CTRL_STAV.pracuje ? 'disabled' : ''}>⤓ CSV</button></div>
+    ${prot ? `<div class="note">Poslední exporty za období:</div><div style="overflow-x:auto"><table class="ceniktbl" id="ctrlProtokol">
+      <tr><th>Kdy</th><th>Kdo</th><th>Období</th><th>Oblast</th><th>Řada</th><th>Zakázek</th><th>Řádků</th></tr>${prot}</table></div>`
+      : '<div class="note" id="ctrlProtokolPrazdny">Protokol exportů je zatím prázdný.</div>'}`;
 }
 
 /* ---------- kreslení ---------- */
@@ -317,7 +422,8 @@ function ctrlUiKartaExport() {
       a celková nákladová cena, prodejní cena), <b>Kapitoly</b> (součty po skupinách a souhrn zakázky se slevou,
       zaokrouhlením a marží) a <b>Popis</b> (verze struktury souboru, kdo a kdy exportoval, číselník).
       Příplatky jsou nabídnuté volby — jsou v exportu označené a do nákladu základní ceny se nepočítají.
-      Hromadný export za období přijde v další dávce.</div>`;
+      Export otevřené zakázky jde spustit i z Přehledu cenových nabídek (tlačítko u zamčené řídící varianty).</div>
+    ${ctrlUiKartaHromadny()}`;
 }
 function nastControlling() {
   if (!ctrlUiSmi()) return `<div class="note">Controlling je dostupný <b>jen administrátorovi přihlášenému online</b>

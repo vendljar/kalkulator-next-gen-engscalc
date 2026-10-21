@@ -54,6 +54,7 @@ import zobrazeni from './functions/zobrazeni.mjs';
 import popisy from './functions/popisy.mjs';
 import slovnikFn from './functions/slovnik.mjs';
 import controllingFn from './functions/controlling.mjs';
+import controllingExportFn from './functions/controlling_export.mjs';
 import zakazniciFn from './functions/zakaznici.mjs';
 import schvalovaniFn from './functions/schvalovani.mjs';
 import sablonyFn from './functions/sablony.mjs';
@@ -418,6 +419,18 @@ const MATICE = [
     telo: (r) => { const d = require('../src/controlling.js').ctrlVychozi();
       d.skupiny[0].nazev = 'Cestovné ' + r; return { data: d, poznamka: 'matice' }; },
     proc: 'mapování určuje, do které kapitoly controllingu jde který náklad — mění ho jen administrátor (J7)',
+    prava: JEN_ADMIN },
+
+  /* C3 (21. 10. 2026): hromadný export předkalkulace za období a protokol
+   * exportů — nákupní ceny a marže celé firmy, jen administrátor (J7). */
+  { fn: controllingExportFn, soubor: 'controlling_export.mjs', nazev: 'controlling — hromadný export (GET /api/controlling/export)', metoda: 'GET',
+    url: 'http://x/api/controlling/export?od=2026-10-01&do=2026-10-31',
+    proc: 'export nese nákupní ceny a marže všech odeslaných nabídek za období — jen správce (J7, rozhodnutí J. V. 21. 10. 2026)',
+    prava: JEN_ADMIN },
+
+  { fn: controllingExportFn, nazev: 'controlling — protokol exportů (GET /api/controlling/export?protokol=1)', metoda: 'GET',
+    url: 'http://x/api/controlling/export?protokol=1',
+    proc: 'protokol říká, kdo si kdy vyvezl náklady — vidí ho jen správce',
     prava: JEN_ADMIN },
 
   { fn: zakazky, soubor: 'zakazky.mjs', nazev: 'zakázky — rejstřík (GET /api/zakazky)', metoda: 'GET',

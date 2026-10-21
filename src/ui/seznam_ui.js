@@ -248,7 +248,9 @@ function seznamRadekHtml(r) {
     <td class="note">${esc((r.upraveno || '').slice(0, 10))}</td>
     <td style="white-space:nowrap"><button class="mini" onclick="varKopie('${escJs(r.id)}')"
         title="založit kopii této kalkulace s dalším číslem nabídky a pokračovat v ní">⧉</button>
-      <button class="mini" onclick="varSmaz('${escJs(r.id)}')" title="smazat variantu">✕</button></td>
+      <button class="mini" onclick="varSmaz('${escJs(r.id)}')" title="smazat variantu">✕</button>${
+        /* C3: export pro controlling u zamčené řídící varianty, jen admin */
+        typeof ctrlUiPrehledTlacitko === 'function' ? ctrlUiPrehledTlacitko(r) : ''}</td>
   </tr>`;
 }
 

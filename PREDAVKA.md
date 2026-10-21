@@ -1,3 +1,25 @@
+# Předávka — 21. 10. 2026: Controlling #447 — C3, větev `claude/controlling-c3` (verzi přidělí sloučení)
+
+Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. **Do test / main / integrace nic** —
+slučuje koordinace (ŘÍDÍCÍ session_01By6bWivtf2rTJYJFGVv8e1). Rozhodnutí J. V. 21. 10. 2026 body 1–5 (prompt dávky).
+
+- **Hotovo (bod 1):** tlačítko „Export pro controlling" v Přehledu cenových nabídek u zamčené řídící varianty
+  (`ctrlUiPrehledTlacitko` v `src/ui/controlling_ui.js`, volá ho `seznamRadekHtml`), jen admin online, ne v náhledu.
+- **Hotovo (bod 2):** `GET /api/controlling/export` (`netlify/functions/controlling_export.mjs`, jen admin) — den
+  zamčení v českém čase od–do, oblast OCK/PROJ/obojí, řada ČR/ZAHR/obojí, jen zamčené řídící, zmrazený výsledek;
+  prohlížeč skládá sešit `ctrlExportListy(pole exportů, data, { hromadny })` (stejné listy/sloupce, Popis s obdobím,
+  zakázkami a přeskočenými) nebo CSV. Protokol `program/controlling_exporty` (200, ?protokol=1). Meze `CTRL_HROMADNY`
+  (400 dní, 600 čtení, 150 zakázek, 5 MB → 413). Model v `src/controlling.js` (ctrlHromadnyFiltr/Kandidati/Zakazka).
+- **Bod 4:** beze změny (bez hesla). **Bod 3 (sloupec „V nabídce") NEDĚLÁNO** — čeká na potvrzení koordinace;
+  text sloupce je na jednom místě `ctrlVZakladuText` (+ Kapitoly v `ctrlExportListy`).
+- **Bod 5 / C4 neděláno:** klient deal k zakázce nepropojuje (`zak.pdDealId` nikdo nezapisuje, výběr z CRM „v rozhraní
+  zatím není" — `src/zobrazeni.js`), automatické převzetí nemá na co navázat. Potřeba zadání výběru dealu.
+- **Čeká na J. V.:** výjimka zálohy `controlling_exporty` (protokol není v otisku — stopa přístupu; `test_zalohy.mjs` N4).
+- **Ke slučování:** CHANGELOG oddíl „C3", `manual/obsah.json` („Co je nového — controlling za období" → číslo verze),
+  roadmapa #447 (pozn, kde), `netlify/mutace.mjs` (blok „#447 C3" za C2), `test_prava.mjs` (+2), `test_zalohy.mjs`
+  (výjimka), `BEZPECNOST_MEZE.md` (oddíl Controlling), `seznam_ui.js` (1 řádek).
+- **Testy:** viz souhrn níže (doplněno po kole).
+
 # Předávka — 21. 10. 2026 noc: dávka O9 (kód aplikace, verzi přidělí sloučení) — opravy K4 bez rozhodnutí J. V.
 
 Nad `claude/integrace-16-10` 12b41b0 (v20.10.8), build `KNG_NEZVYSOVAT_VERZI=1`. Lokálně větev `claude/o9-k4-kod`;

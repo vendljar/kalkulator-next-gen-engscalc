@@ -42,7 +42,26 @@ await stranka.evaluate(() => {
   window.ctrlUiServer = () => true;
   /* Náhrada serveru: /api/controlling v paměti. */
   window.__srv = { db: null, posty: [], gety: 0 };
+  window.__srv.exportDotazy = []; window.__srv.protokol = [];
   window.onlineApi = (cesta, telo) => {
+    /* C3: /api/controlling/export — spočítá otevřenou zakázku touž funkcí
+     * jako server (ctrlHromadnyZakazka); práva a výběr z úložiště měří
+     * netlify/test_controlling.mjs. */
+    if (cesta.startsWith('/api/controlling/export?')) {
+      const q = Object.fromEntries(new URLSearchParams(cesta.split('?')[1]));
+      if (q.protokol) return Promise.resolve({ ok: true, zaznamy: window.__srv.protokol });
+      window.__srv.exportDotazy.push(q);
+      const f = ctrlHromadnyFiltr(q);
+      if (!f.ok) return Promise.reject(new Error(f.chyba));
+      const p = window.__srv.db && window.__srv.db.platny;
+      const opts = { jekly: JEKLY, data: p ? p.data : null, verzeMapovani: p ? p.verze : null, kdo: 'spravce@priklad.cz', kdy: new Date().toISOString() };
+      const v = ctrlHromadnyZakazka(ZAK, f.filtr, opts);
+      const exporty = v.ok ? [v.exp] : [];
+      window.__srv.protokol.unshift({ kdy: opts.kdy, kdo: opts.kdo, od: f.filtr.od, do: f.filtr.do, oblast: f.filtr.oblast,
+        rada: f.filtr.rada, zakazek: exporty.length, radku: exporty.reduce((a, e) => a + e.radky.length, 0) });
+      return Promise.resolve({ ok: true, exporty, data: opts.data, verzeMapovani: opts.verzeMapovani,
+        preskoceno: [{ soubor: 'rozbita.json', cislo: 'ROZBITA', duvod: 'zakázku se nepodařilo přečíst' }], kdy: opts.kdy, kdo: opts.kdo, filtr: f.filtr });
+    }
     if (cesta !== '/api/controlling') return Promise.reject(new Error('harness: neznámá cesta ' + cesta));
     if (telo == null) { window.__srv.gety++; return Promise.resolve({ ok: true, db: window.__srv.db }); }
     window.__srv.posty.push(JSON.parse(JSON.stringify(telo)));
@@ -176,6 +195,58 @@ zkus('hláška o stažení s počtem řádků', /Staženo PREDKALKULACE_.*řádk
 const [csvStazeni] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#ctrlExportCsv')]);
 const csv = readFileSync(await csvStazeni.path(), 'utf8');
 zkus('CSV: BOM, středník, jméno .csv', csv.charCodeAt(0) === 0xFEFF && csv.split('\r\n')[0].includes('";"') && /\.csv$/.test(csvStazeni.suggestedFilename()));
+
+console.log('\nC3 — export pro controlling v Přehledu cenových nabídek');
+const prehled = async () => stranka.evaluate(() => { zavriNastaveni(); prepniTab('zakazka'); render();
+  const b = document.querySelectorAll('#page-zakazka [data-ctrl-prehled]');
+  return { pocet: b.length, text: b[0] ? b[0].textContent.trim() : '' }; });
+const pAdmin = await prehled();
+zkus('administrátor má u zamčené řídící varianty tlačítko „Export pro controlling"', pAdmin.pocet === 1 && pAdmin.text === 'Export pro controlling', JSON.stringify(pAdmin));
+const [stPrehled] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#page-zakazka [data-ctrl-prehled]')]);
+zkus('klik v Přehledu stáhne PREDKALKULACE_<číslo>_<datum>.xlsx', /^PREDKALKULACE_2026_-_OPR_-_CN_-_0902_\d{4}-\d{2}-\d{2}\.xlsx$/.test(stPrehled.suggestedFilename()), stPrehled.suggestedFilename());
+const pObch = await stranka.evaluate(() => { ONLINE_STAV.ja = { email: 'obchodnik@priklad.cz', role: 'Obchodník', jmeno: 'O' }; render();
+  const n = document.querySelectorAll('#page-zakazka [data-ctrl-prehled]').length;
+  ONLINE_STAV.ja = { email: 'spravce@priklad.cz', role: 'Administrátor', jmeno: 'S' }; NAST.nahledRole = 'Obchodník'; render();
+  const nN = document.querySelectorAll('#page-zakazka [data-ctrl-prehled]').length;
+  NAST.nahledRole = ''; render(); return { n, nN }; });
+zkus('obchodník tlačítko nemá, v rolovém náhledu ho nemá ani správce', pObch.n === 0 && pObch.nN === 0, JSON.stringify(pObch));
+const pNezam = await stranka.evaluate(() => { const v = ridiciVarianta(ZAK); const z = v.zamek; v.zamek = null; render();
+  const n = document.querySelectorAll('#page-zakazka [data-ctrl-prehled]').length; v.zamek = z; render(); return n; });
+zkus('nezamčená řídící varianta tlačítko nemá', pNezam === 0, String(pNezam));
+
+console.log('\nC3 — hromadný export za období');
+await stranka.evaluate(() => { otevriNastaveni(); nastPanel('controlling'); CTRL_STAV.karta = 'export'; render(); });
+await stranka.waitForFunction(() => !!document.getElementById('ctrlHromXlsx'));
+const vychozi = await stranka.evaluate(() => ({ od: document.getElementById('ctrlHromOd').value, do: document.getElementById('ctrlHromDo').value }));
+zkus('výchozí období = od 1. dne měsíce do dneška', /^\d{4}-\d{2}-01$/.test(vychozi.od) && vychozi.od <= vychozi.do, JSON.stringify(vychozi));
+await stranka.evaluate(() => { const v = ridiciVarianta(ZAK); CTRL_STAV.hrom.od = ctrlDenPraha(v.zamek.kdy); CTRL_STAV.hrom.do = CTRL_STAV.hrom.od; render(); });
+await stranka.selectOption('#ctrlHromOblast', 'ock');
+const [stHrom] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#ctrlHromXlsx')]);
+const jmHrom = stHrom.suggestedFilename();
+zkus('stáhne se PREDKALKULACE_<od>_<do>_OCK.xlsx', /^PREDKALKULACE_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_OCK\.xlsx$/.test(jmHrom), jmHrom);
+const hrom = await stranka.evaluate(async (b) => {
+  const sheets = await xlsxPrecti(new Uint8Array(b));
+  const p = sheets.find(s => s.nazev === 'Popis');
+  const najdi = (k) => (p.rows.find(x => x[0] === k) || [])[1];
+  await new Promise(r => setTimeout(r, 50));
+  return { listy: sheets.map(s => s.nazev).join(','), dotaz: window.__srv.exportDotazy.slice(-1)[0],
+    zakazek: String(najdi('Zakázek v exportu')), oblast: najdi('Oblast'), presk: najdi('ROZBITA'),
+    stav: (document.getElementById('ctrlStav') || {}).textContent || '',
+    protokol: document.querySelectorAll('#ctrlProtokol tr').length };
+}, Array.from(readFileSync(await stHrom.path())));
+zkus('dotaz na server nese období a oblast OCK', hrom.dotaz && hrom.dotaz.oblast === 'ock' && hrom.dotaz.od === hrom.dotaz.do, JSON.stringify(hrom.dotaz));
+zkus('sešit za období: listy, 1 zakázka, oblast, přeskočená ROZBITA v Popisu', hrom.listy === 'Řádky,Kapitoly,Popis' && hrom.zakazek === '1'
+  && hrom.oblast === 'jen OCK' && /nepodařilo/.test(hrom.presk || ''), JSON.stringify(hrom));
+zkus('hláška: 1 zakázka, přeskočeno 1', /Staženo PREDKALKULACE_.*1 zakázka.*přeskočeno 1/.test(hrom.stav), hrom.stav);
+zkus('protokol exportů se po exportu ukáže (hlavička + 1 řádek)', hrom.protokol === 2, String(hrom.protokol));
+const [stCsv] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#ctrlHromCsv')]);
+zkus('hromadné CSV: BOM a .csv', readFileSync(await stCsv.path(), 'utf8').charCodeAt(0) === 0xFEFF && /\.csv$/.test(stCsv.suggestedFilename()));
+await stranka.evaluate(() => { CTRL_STAV.hrom.do = '2000-01-01'; render(); });
+await stranka.click('#ctrlHromXlsx');
+await stranka.waitForTimeout(100);
+const zle = await stranka.evaluate(() => ({ stav: document.getElementById('ctrlStav').textContent, dotazu: window.__srv.exportDotazy.length }));
+zkus('neplatné období se na server vůbec nepošle a hlásí chybu', /po jeho konci/.test(zle.stav) && zle.dotazu === 2, JSON.stringify(zle));
+await stranka.evaluate(() => { CTRL_STAV.hrom = null; CTRL_STAV.karta = 'skupiny'; render(); });
 
 console.log('\nImport mapování ze souboru');
 const xlsxImport = await stranka.evaluate(async () => {

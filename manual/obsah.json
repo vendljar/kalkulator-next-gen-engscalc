@@ -14,6 +14,13 @@
       ]
     },
     {
+      "nadpis": "Co je nového — controlling za období (verzi přidělí sloučení)",
+      "odstavce": [
+        "**Jen pro administrátora.** V Přehledu cenových nabídek má zamčená řídící varianta otevřené zakázky tlačítko **„Export pro controlling“** — stáhne předkalkulaci do Excelu stejně jako Nastavení → Controlling.",
+        "**Hromadný export za období:** Nastavení → Controlling → Export předkalkulace → „Hromadně za období“. Zadáte období podle data zamčení (odeslání) nabídky, OCK / PROJ / obojí a číselnou řadu ČR / ZAHR / obojí; server vybere všechny zamčené řídící varianty a stáhne jeden sešit (Řádky, Kapitoly, Popis) nebo CSV. Každý export se zapíše do protokolu, posledních deset je vidět pod formulářem. Pro práci obchodníka se nic nemění."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v21.10.2 (21. 10. 2026)",
       "odstavce": [
         "**Zapsat výchozí hodnoty zveřejní jen platební podmínky** (Nastavení → Smlouvy / Šablony, jen administrátor). Máte-li v Nastavení → Firma ještě nezveřejněné úpravy jiných údajů (název, kapitoly nabídky…), zůstanou jen u vás — hláška je vyjmenuje a zveřejníte je tlačítkem v Nastavení → Firma.",
