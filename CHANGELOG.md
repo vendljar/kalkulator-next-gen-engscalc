@@ -8,6 +8,12 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.10.6 — Integrace do test (koordinace 21. 10. 2026)
+
+- Obsah: D3 (opravy nálezů auditu K6 bez J. V., #483) + zápis K6 (celé kolo s mutacemi a audit nad v21.10.5, #475, `podklady/K6_AUDIT_21_10.md`).
+- Kolo `--bez-mutaci` nad b5a5b47: 298 prošlo / 0 selhalo / 6 přeskočeno (test.js + 5 harnessů bez KNG_PODKLADY), statické 4/4 (W2 59/0) — VŠE ZELENÉ.
+- Cílené mutace: server „k6-“ 9/9, „k5-s2“ 1/1, „#447 C6: kdo“ 1/1; jádro „k6-“ 4/4, „O13/D3“ 1/1 — 0 přeživších. `--kontrola` jádro 422 úseků, server 763 úseků.
+
 ## v21.10.6 — D3: opravy nálezů auditu K6 (#483, větev claude/d3-k6-opravy)
 
 Opravná dávka nad `test` = v21.10.5 (7fac477), podklad `podklady/K6_AUDIT_21_10.md` (větev `claude/k6-kolo`),
