@@ -866,6 +866,33 @@ jinyZamek.varianty[0].zamek = { ...jinyZamek.varianty[0].zamek,
 test('zámek nesmí být potichu vyměněn za jiný',
   (await post(zakazky, 'http://x/api/zakazky', { zakazka: jinyZamek }, cObch)).status === 409);
 
+/* ---------- O10 / K4-N1: SNÍMEK KAPITOL ZAMČENÉ VARIANTY ----------
+ * Kapitoly IV.–VI. a doložky OCK zamrznou při prvním zamčení do
+ * `data.kryci.zmrazenoPodminky.kapitoly`. Obchodník nesmí snímek odeslané
+ * varianty změnit ani dopsat do varianty zamčené před O10 (bez snímku). */
+{
+  const sKap = zakazkaCislo('2026 - OPR - CN - 0469');
+  const v0 = sKap.varianty[0];
+  v0.data.kryci = Object.assign({}, v0.data.kryci, { zmrazenoPodminky: { v: 1,
+    kapitoly: { v: 1, nazev: 'Zkušební firma s.r.o.', dolozky: 'Doložka z doby odeslání.' } } });
+  zamkniJakoAplikace(sKap, v0, { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv' });
+  test('O10: zakázku se snímkem kapitol uložit lze',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: sKap }, cObch)).status === 200);
+  const zmeneny = JSON.parse(JSON.stringify(sKap));
+  zmeneny.varianty[0].data.kryci.zmrazenoPodminky.kapitoly.dolozky = 'PODVRŽENÁ doložka.';
+  test('O10: obchodník nezmění zmrazenou doložku zamčené varianty → 409',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: zmeneny }, cObch)).status === 409);
+  const bezSnimku = JSON.parse(JSON.stringify(sKap));
+  delete bezSnimku.varianty[0].data.kryci.zmrazenoPodminky.kapitoly;
+  test('O10: obchodník snímek kapitol zamčené varianty nesmaže (tisk by spadl na aktuální Firmu) → 409',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: bezSnimku }, cObch)).status === 409);
+  const dopsany = JSON.parse(JSON.stringify(zamcena));
+  dopsany.varianty[0].data.kryci = Object.assign({}, dopsany.varianty[0].data.kryci,
+    { zmrazenoPodminky: { v: 1, kapitoly: { v: 1, dolozky: 'Dopsaná doložka.' } } });
+  test('O10: do varianty zamčené bez snímku se snímek kapitol dopsat nedá → 409',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: dopsany }, cObch)).status === 409);
+}
+
 /* ---------- B53: ZMRAZENÝ VÝSLEDEK ODESLANÉ NABÍDKY ----------
  * (bezpečnostní audit 22. 9. 2026, vysoká závažnost)
  *

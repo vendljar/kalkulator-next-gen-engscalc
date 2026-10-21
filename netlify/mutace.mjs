@@ -114,7 +114,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* O5 (20. 10. 2026): K3-N16 název firmy v kapitolách (src/firma.js). */
      '../src/test_o5_podminky.js',
      /* O9 (21. 10. 2026): K4-N7 „Zapsat výchozí hodnoty" jen podmínky (src/firma.js). */
-     '../src/test_o9_k4.js'];
+     '../src/test_o9_k4.js',
+     /* O10 (21. 10. 2026): K4-N1 kapitoly a doložky OCK ze snímku (src/nabidka.js, src/firma.js). */
+     '../src/test_o10_kapitoly.js'];
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
@@ -3325,6 +3327,38 @@ const MUTACE = [
     hledej: "  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });",
     nahrad: "  await kopieDiskZapisSoubor(h, 'posledni_kopie.json', '{}');\n  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });",
     proc: "při špatném hesle by Disk tvrdil kopii, o které server neví" },
+  /* O10 (21. 10. 2026): K4-N1 — snímek kapitol zamčené varianty hlídá
+   * obecné porovnání dat zámku; žádná dřívější mutace na něj necílila. */
+  { nazev: "O10: K4-N1 snímek podmínek mimo porovnání zámku", soubor: "../src/zamek.js",
+    hledej: "  const kopie = JSON.parse(JSON.stringify(data));\n  ['kryci', 'kryciProj'].forEach(list => {",
+    nahrad: "  const kopie = JSON.parse(JSON.stringify(data));\n  if (kopie.kryci) delete kopie.kryci.zmrazenoPodminky;\n  ['kryci', 'kryciProj'].forEach(list => {",
+    proc: "obchodník by přepsal zmrazené kapitoly a doložky odeslané nabídky" },
+  /* O10: tisk nabídky OCK ze snímku (src/nabidka.js, src/firma.js) — hlídá
+   * src/test_o10_kapitoly.js (přidán do SADY). */
+  { nazev: "O10: K4-N1 kapitoly nabídky nečtou snímek", soubor: "../src/nabidka.js",
+    hledej: "    const f = nabidkaKapitolyFirma(varianta) || ((typeof firmaAktualni === 'function') ? firmaAktualni() : null);",
+    nahrad: "    const f = (typeof firmaAktualni === 'function') ? firmaAktualni() : null;",
+    proc: "kapitoly IV.–VI. odeslané nabídky z aktuální Firmy" },
+  { nazev: "O10: K4-N1 jazykové symboly kapitol nečtou snímek", soubor: "../src/nabidka.js",
+    hledej: "  if (kapFirma && typeof firmaKapitolyJazykoveSymboly === 'function') firmaKapitolyJazykoveSymboly(kapFirma, placeholders);",
+    nahrad: "",
+    proc: "{{FIRMA_NAB_DOLOZKY_DE}} odeslané nabídky z aktuální Firmy" },
+  { nazev: "O10: K4-N1 snímek kapitol platí i pro nezamčenou variantu", soubor: "../src/nabidka.js",
+    hledej: "  const zp = varianta && varianta.zamek && varianta.zamek.zamceno && d && d.kryci && d.kryci.zmrazenoPodminky;",
+    nahrad: "  const zp = d && d.kryci && d.kryci.zmrazenoPodminky;",
+    proc: "klon odeslané varianty by nepřevzal nové kapitoly Firmy" },
+  { nazev: "O10: K4-N1 snímek kapitol bez názvu firmy", soubor: "../src/firma.js",
+    hledej: "  out.nazev = typeof snimek.nazev === 'string' ? snimek.nazev : '';",
+    nahrad: "",
+    proc: "{FIRMA} v doložce odeslané nabídky by nesl nový název" },
+  { nazev: "O10: K4-N1 snímek nese i prázdná pole", soubor: "../src/firma.js",
+    hledej: "    if (typeof t === 'string' && t.trim()) out[k] = t;",
+    nahrad: "    if (typeof t === 'string') out[k] = t;",
+    proc: "snímek by zbytečně rostl (strop zakázky 4 MB, K4-N18)" },
+  { nazev: "O10: K4-N1 poškozené pole snímku nepadne na prázdné", soubor: "../src/firma.js",
+    hledej: "  FIRMA_KAP_VYCHOZI_KLICE.forEach(k => { out[k] = typeof snimek[k] === 'string' ? snimek[k] : ''; });",
+    nahrad: "  FIRMA_KAP_VYCHOZI_KLICE.forEach(k => { if (typeof snimek[k] === 'string') out[k] = snimek[k]; });",
+    proc: "kapitola prázdná při odeslání by se v dotisku doplnila z aktuální Firmy" },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------

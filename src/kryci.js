@@ -940,6 +940,10 @@ function kryciZmrazPodminky(zak, varianta, jekly) {
   /* K3-N2: s předvyplněnými poli zamrznou i věty platebního kalendáře
    * nabídky a díly vět SoD z Firmy (kryciPodmEfVarianty). */
   d.kryci.zmrazenoPodminky = kryciPodm().podminkySnimek(c.firma, ['vety']);
+  /* K4-N1 (O10, J. V. 21. 10. 2026): s větami zamrznou i kapitoly IV.–VI.
+   * a doložky nabídky OCK (nabidkaKapitolyFirma v nabidka.js). */
+  if (typeof firmaKapitolySnimek === 'function')
+    d.kryci.zmrazenoPodminky.kapitoly = firmaKapitolySnimek(c.firma);
   /* Značka pravidel platebních podmínek, pod kterými nabídka odešla (D1/D2,
    * 30. 9. 2026) — zamčená varianta bez ní odešla dřív a tiskne se jako
    * dřív (kryciPlatbyStary). */

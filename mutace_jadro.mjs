@@ -1927,6 +1927,12 @@ const MUTACE = [
     hledej: "  if (/^BLOK_STUDIE_/.test(jmeno))",
     nahrad: "  if (false)",
     proc: "obchodník by hledal chybu ve smlouvě místo v šabloně nabídky" },
+  /* O10 (21. 10. 2026): K4-N1 — kapitoly IV.–VI. a doložky OCK zamrznou
+   * při prvním zamčení (rozhodnutí J. V. 21. 10. 2026). */
+  { nazev: "O10: K4-N1 snímek kapitol se nezapíše", soubor: "kryci.js",
+    hledej: "    d.kryci.zmrazenoPodminky.kapitoly = firmaKapitolySnimek(c.firma);",
+    nahrad: "    void 0;",
+    proc: "dotisk odeslané nabídky OCK by nesl nové kapitoly a doložky z Firmy" },
 ];
 
 /* ============================================================

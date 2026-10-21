@@ -8,6 +8,26 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## O10 — zmrazení kapitol IV.–VI. a doložek nabídky OCK při zamčení varianty (verzi přidělí sloučení; větev claude/o10-k4n1-zmrazeni)
+
+Dávka O10 (koordinace 21. 10. 2026) nad `claude/integrace-16-10` (test = ac26027, v21.10.2). Rozhodnutí J. V.
+21. 10. 2026 k auditu K4: K4-N1 varianta (a) — zmrazit. Build bez zvýšení verze (`KNG_NEZVYSOVAT_VERZI=1`).
+
+- **#469 (K4-N1) — dotisk odeslané nabídky OCK nese kapitoly a doložky z doby odeslání.** Při prvním zamčení
+  varianty `kryciZmrazPodminky` (`src/kryci.js`) uloží vedle vět kalendáře i snímek kapitol
+  `data.kryci.zmrazenoPodminky.kapitoly` (`firmaKapitolySnimek`, `src/firma.js`): syrový text NEPRÁZDNÝCH polí
+  kapitol IV.–VI. a doložek ve všech jazycích + název firmy pro `{FIRMA}` (výchozí texty asi 8 kB; strop zakázky
+  4 MB, K4-N18). `nabidkaData` (`src/nabidka.js`, `nabidkaKapitolyFirma`) u zamčené varianty se snímkem bere
+  kapitoly i jazykové symboly `{{FIRMA_NAB_*_EN/DE/FR}}` ze snímku; `{TERMIN}` se dosazuje dál z termínu zakázky.
+  Nezamčená varianta (i klon odeslané) = aktuální Firma; varianta zamčená před O10 (bez snímku) tiskne aktuální
+  Firmu jako dosud — nic se zpětně nepřepočítává. Server snímek hlídá obecným porovnáním dat zámku: změna, smazání
+  i dopsání snímku do zamčené varianty → 409 (nové testy v `netlify/test_prava.mjs`). `BEZPECNOST_MEZE.md` (K3-N15)
+  upraven na nový stav.
+- **Testy:** `src/test_o10_kapitoly.js` (30 kontrol) — pojistka: bez zápisu a čtení snímku 11 selhání, s opravou 0;
+  `netlify/test_prava.mjs` +4 (O10) — pojistka: porovnání zámku bez `zmrazenoPodminky` → 3 selhání (dřív to
+  nechytil žádný test). Mutace „O10“: 1 v `mutace_jadro.mjs` (kryci.js), 7 v `netlify/mutace.mjs` (zamek.js,
+  nabidka.js, firma.js; `test_o10_kapitoly.js` přidán do SADY).
+
 ## v21.10.2 — O9: opravy kódu aplikace z auditu K4 bez rozhodnutí J. V. (větev claude/o8-k4-nalezy)
 
 Dávka O9 (noční koordinace 21. 10. 2026) nad `claude/integrace-16-10` 12b41b0 (v20.10.8). Build bez zvýšení

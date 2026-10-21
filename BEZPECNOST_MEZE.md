@@ -866,19 +866,25 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   na Firmu nerozšiřuje — rozhodnutí J. V. „beze změny“). Firma od #367 nese
   i výchozí platební podmínky, pokuty, záruky a texty nabídky PROJ pro
   všechny NOVÉ nabídky; kdo má cookie správce, může je změnit bez hesla.
-  **Oprava textu (K4-N1, O9):** do O9 tu stálo, že odeslané nabídky to od
-  v20.10.2 nezasáhne — **neplatí to celé.** Při prvním zamčení se zmrazí jen
-  věty kalendáře plateb a díly SoD (OCK, `zmrazenoPodminky` s `vety`) a texty
-  nabídky PROJ včetně doložek (`kryciProj.zmrazenoPodminky`). **Kapitoly
-  nabídky OCK IV.–VI. (`FIRMA_NAB_POZADAVKY/TERMINY/PREDANI`) a doložky OCK
-  se nezmrazují** — dotisk odeslané nabídky OCK je bere z aktuální Firmy,
-  takže změna kapitoly nebo doložky po odeslání se v dotisku projeví. Ve
-  zmrazených doložkách PROJ se `{FIRMA}` dosazuje z aktuálního názvu firmy.
-  Zmrazit i kapitoly a doložky OCK rozhodne J. V. (doporučení K4: ano, jako
-  věty). Rozpracované nabídky převezmou změnu vždy. Souhrnný strop podmínek
+  **Odeslané nabídky (K4-N1; text opraven v O9, zmrazení doplněno v O10
+  podle rozhodnutí J. V. 21. 10. 2026):** při prvním zamčení varianty se
+  zmrazí věty kalendáře plateb a díly SoD (OCK, `kryci.zmrazenoPodminky.vety`),
+  **od O10 i kapitoly nabídky OCK IV.–VI. (`FIRMA_NAB_POZADAVKY/TERMINY/PREDANI`)
+  a doložky OCK** (`kryci.zmrazenoPodminky.kapitoly` — syrový text neprázdných
+  polí ve všech jazycích a název firmy pro `{FIRMA}`; `{TERMIN}` je údaj
+  zakázky a dosazuje se při tisku) a texty nabídky PROJ včetně doložek
+  (`kryciProj.zmrazenoPodminky`). Dotisk zamčené varianty se snímkem tiskne
+  znění z doby odeslání; snímek hlídá server porovnáním dat zámku (změna,
+  smazání i dopsání snímku do zamčené varianty → 409). **Zbývající meze:**
+  varianty zamčené před O10 (bez snímku kapitol) tisknou kapitoly a doložky
+  OCK dál z aktuální Firmy — nic se zpětně nepřepočítává; ve zmrazených
+  doložkách PROJ se `{FIRMA}` dosazuje z aktuálního názvu firmy; ostatní
+  firemní údaje dokumentu (adresa, kontakty, logo) se nezmrazují.
+  Rozpracované nabídky převezmou změnu vždy. Souhrnný strop podmínek
   500 kB (K3-N18) omezuje velikost záznamu.
 - **Velikost zakázky (K4-N18, O9):** snímek podmínek se ukládá do každé
-  zamčené varianty (a s ním celý výsledek, A1). Se Firmou u stropu 500 kB
+  zamčené varianty (a s ním celý výsledek, A1); od O10 v něm jsou i kapitoly
+  OCK (výchozí texty ve 4 jazycích asi 8 kB, ukládají se jen neprázdná pole). Se Firmou u stropu 500 kB
   by asi 8 zamčených variant narazilo na strop zakázky 4 MB. Od O9 server
   při 413 vypíše, z čeho se velikost skládá (přílohy a fotky / zmrazené
   údaje odeslaných variant / ostatní) a u odeslaných variant poradí založit

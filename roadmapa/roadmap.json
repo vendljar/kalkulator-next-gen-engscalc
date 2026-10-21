@@ -7335,6 +7335,21 @@
    "zavisi": [],
    "hotovoV": "v21.10.2",
    "pozn": "Id přidělila koordinace (dávka O9)."
+  },
+  {
+   "id": "469",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "S",
+   "nazev": "K4-N1: zmrazit kapitoly IV.–VI. a doložky nabídky OCK při zamčení varianty",
+   "proc": "Audit K4: dotisk odeslané nabídky OCK bral kapitoly a doložky z aktuální Firmy. Rozhodnutí J. V. 21. 10. 2026: zmrazit jako věty kalendáře (K3-N2).",
+   "detail": "HOTOVO (O10): snímek data.kryci.zmrazenoPodminky.kapitoly (neprázdná pole všech jazyků + název firmy), tisk zamčené varianty ze snímku vč. jazykových symbolů; bez snímku = aktuální Firma; server hlídá porovnáním dat zámku.",
+   "hotovoKdyz": "src/test_o10_kapitoly.js bez opravy 11 ✕, s opravou 30/0; test_prava O10 4/0 (porovnání zámku bez snímku → 3 ✕); mutace O10 v mutace_jadro.mjs a netlify/mutace.mjs.",
+   "kde": "`src/firma.js`, `src/kryci.js`, `src/nabidka.js`, `BEZPECNOST_MEZE.md`",
+   "zavisi": [{"id": "460", "typ": "doporuceno", "proc": "text meze K4-N1 z O9"}],
+   "hotovoV": "O10 (verzi přidělí sloučení)",
+   "pozn": "Id přidělila koordinace (dávka O10)."
   }
  ],
  "meta" : {

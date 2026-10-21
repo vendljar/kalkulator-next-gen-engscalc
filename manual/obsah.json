@@ -14,6 +14,12 @@
       ]
     },
     {
+      "nadpis": "Co je nového — dávka O10 (21. 10. 2026, číslo verze doplní sloučení)",
+      "odstavce": [
+        "**Odeslaná nabídka OCK si drží kapitoly IV.–VI. a doložky.** Při prvním tisku (zamčení varianty) se s platebními podmínkami uloží i texty kapitol Požadavky pro provedení realizace, Termíny realizace, Předání díla a doložek ve všech jazycích. Dotisk odeslané nabídky je proto stejný, i když administrátor mezitím texty v Nastavení → Firma změní. Rozpracované (nezamčené) nabídky berou vždy aktuální texty. Nabídky odeslané před touto verzí se tisknou jako dosud, tedy s aktuálními texty z Firmy."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v21.10.2 (21. 10. 2026)",
       "odstavce": [
         "**Zapsat výchozí hodnoty zveřejní jen platební podmínky** (Nastavení → Smlouvy / Šablony, jen administrátor). Máte-li v Nastavení → Firma ještě nezveřejněné úpravy jiných údajů (název, kapitoly nabídky…), zůstanou jen u vás — hláška je vyjmenuje a zveřejníte je tlačítkem v Nastavení → Firma.",
