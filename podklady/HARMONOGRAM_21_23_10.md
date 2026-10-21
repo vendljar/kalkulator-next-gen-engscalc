@@ -10,7 +10,7 @@ Kokpit: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2
 - **Novou koordinaci zakládá koordinace sama** při kontextu nad 75 % (předávka sem + do PREDAVKA_KOORDINACE_15_10.md, kontroly send_later).
 - **Stará koordinace ŘÍDÍCÍ 21.10** session_013EFud9jETTivWTCJNmbAX4: archivovat, až doběhne O12 a předá SHA (pokyn J. V.).
 - **22. 10. J. V. celý den u počítače NEBUDE** → zítra jen dávky bez jeho rozhodnutí; otázky se jen sbírají do „Čeká na vás“. #19 zítra nedělat.
-- **V3 (#380 + #157) uzavřena 21. 10. ~14:45 (J. V.):** finální jazykové verze SoD (EN/DE/FR) má J. V. připravené ve složce šablon na Disku (revidované znění, liší se od strojového překladu V3 v 99 odstavcích) = závazné znění; **kontrola účetní (režim DPH, prohlášení, skladné) se nedělá** — otevře se znovu jen při potřebě; **revize promítnout do slovníků** `nastroje/preklad_sod.js` (dávka D4). Sezení V3 archivováno (přílohy zůstávají v archivovaném sezení).
+- **V3 (#380 + #157) uzavřena 21. 10. ~14:20 (J. V.):** finální jazykové verze SoD (EN/DE/FR) má J. V. připravené ve složce šablon na Disku (revidované znění, liší se od strojového překladu V3 v 99 odstavcích) = závazné znění; **kontrola účetní (režim DPH, prohlášení, skladné) se nedělá** — otevře se znovu jen při potřebě; **revize promítnout do slovníků** `nastroje/preklad_sod.js` (dávka D4). Sezení V3 archivováno (přílohy zůstávají v archivovaném sezení).
 - **Týdenní limit: do pátku 23. 10. rána nepřekročit 90 % (max +2 %).** Stav 21. 10. 14:15 = **63 %**, obnova **so 24. 10. 7:00** (Praha).
 
 ## Rozpočet limitu (kalibrace koordinace)
