@@ -1,3 +1,26 @@
+# Předávka — 21. 10. 2026: dávka O10 (verzi přidělí sloučení, v21.10.3) — K4-N1 zmrazení kapitol OCK (#469)
+
+Větev `claude/o10-k4n1-zmrazeni` nad `claude/integrace-16-10` 2cb9d2b (test = ac26027, v21.10.2), build bez
+zvýšení verze. **Do test / main / test-draft / integrace nic** — slučuje koordinace (session_01By6bWivtf2rTJYJFGVv8e1).
+Rozhodnutí J. V. 21. 10. 2026: K4-N1 varianta (a) — zmrazit.
+
+- **Hotovo #469:** `kryciZmrazPodminky` ukládá `data.kryci.zmrazenoPodminky.kapitoly` (`firmaKapitolySnimek`
+  v `src/firma.js`: neprázdná pole kapitol IV.–VI. + doložek ve 4 jazycích, název firmy pro `{FIRMA}`; výchozí texty
+  asi 8 kB). `nabidkaData` čte u zamčené varianty kapitoly i jazykové symboly `{{FIRMA_NAB_*_EN/DE/FR}}` ze snímku
+  (`nabidkaKapitolyFirma`, `firmaKapitolyZeSnimku`, `firmaKapitolyJazykoveSymboly`). Nezamčená = aktuální Firma;
+  zamčená bez snímku (před O10) = aktuální Firma, nic zpětně. `{TERMIN}` dál z termínu zakázky. Server: snímek hlídá
+  porovnání dat zámku (změna/smazání/dopsání → 409, ověřeno testem). Velikost: snímek je uvnitř
+  `zmrazenoPodminky`, takže ho počítá rozpad 413 (K4-N18).
+- **Testy:** `src/test_o10_kapitoly.js` 30/0 (bez opravy 11 ✕); `netlify/test_prava.mjs` +4 O10 (porovnání zámku
+  bez snímku → 3 ✕; dřív to nechytala žádná sada). Mutace O10: jádro 1/1, server 7/7. Kolo `--bez-mutaci`:
+  **293 / 0 / 6 přeskočeno, statické 4/4 — VŠE ZELENÉ** (první běh měl 1 ✕ `overit_verzi.mjs` jen proto, že jsem
+  `KNG_NEZVYSOVAT_VERZI=1` exportoval do celého kola; bez něj 7/0).
+- **Ke slučování:** CHANGELOG oddíl „O10“ nahoře, roadmapa #469 na konci `polozky`, `manual/obsah.json`
+  („Co je nového — dávka O10“ → přejmenovat na číslo verze), `netlify/mutace.mjs` (blok O10 na konci + SADY
+  `test_o10_kapitoly.js`), `mutace_jadro.mjs` (1 mutace O10 na konci), `BEZPECNOST_MEZE.md` oddíl K3-N15.
+- **Zbylé meze (zapsané v MEZE):** `{FIRMA}` ve zmrazených doložkách PROJ z aktuálního názvu; ostatní firemní údaje
+  dokumentu se nezmrazují; kontrola `terminAtyp` (kontroly.js) čte u zamčené varianty aktuální Firmu (jen hláška).
+
 # Předávka — 21. 10. 2026 noc: dávka O9 (kód aplikace, verzi přidělí sloučení) — opravy K4 bez rozhodnutí J. V.
 
 Nad `claude/integrace-16-10` 12b41b0 (v20.10.8), build `KNG_NEZVYSOVAT_VERZI=1`. Lokálně větev `claude/o9-k4-kod`;
