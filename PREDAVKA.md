@@ -102,6 +102,40 @@ Koordinace: ŘÍDÍCÍ 20.10 session_01Ln2mMn7iC6W9ECztHTJpZe. Podrobnosti: CHAN
   vypočtenou `strechaM2`, ne přepsanou. Nic neměněno; k rozhodnutí J. V.
 - **Další krok:** J. V. rozhodne o sloučení; testovací kolo ověří na N17 a S03–S05 se zastřešením vyřazeným (K29).
 
+# Předávka — 20. 10. 2026 odpoledne: dávka S10 část 2 — šablona PROJ v8 (`claude/s10-sablona-proj-v7`)
+
+Sloučena integrace `claude/integrace-16-10` (fa08e9c, v20.10.7; konflikt jen v exportech
+`vyrob_sablony.js` — oprava závorky S10 + `projV8` D2, obojí zachováno). Kód beze změny.
+Podklad `podklady/SABLONA_PROJ_V8_20_10.md`, artefakt https://claude.ai/artifact/5RqvHSPuuun2dcUg26UwUD.
+
+- **Hotovo:** `--proj-v8` ze skutečné v7 (S10) → v8 CZ + EN/DE/FR, 113 symbolů, přeloženo 195/206, nadpis
+  „(DPZ)*" přeložený, `sablonaObsahVady` prázdné, 1,40 MB; v8 proti v7 +18 (6 `PROJ_CESTOVNE_*` + 12 značek), −0.
+  Vyplnění v20.10.7 ve 16 kombinacích (jazyk × studie × Praha/mimo): Praha 0 vět, mimo Prahu 3/4 věty,
+  žádný symbol nezůstal. Soubory = soubory sezení S10 (na Disk konektorem nejdou).
+- **Nahrání:** test rovnou v8 (v7 vůbec ne); main až s v20.10.7; všechny čtyři najednou.
+- **main v20.10.1 + v8 (ověřeno):** viditelné `{{PROJ_TITUL_*}}`, `{{PROJ_DPZ_*}}` i `{{PROJ_CESTOVNE_*}}`.
+
+# Předávka — 20. 10. 2026: dávka S10, větev `claude/s10-sablona-proj-v7` — šablona PROJ v7 pro ostrou verzi
+
+Nad `claude/d1-sikora` (8c912a7, v20.10.3). Kód aplikace a verze beze změny; do test/main/integrace nic.
+Podklad `podklady/SABLONA_PROJ_V7_20_10.md`.
+
+- **Hotovo:** v5 z Disku → `--proj-v6` (document.xml bajtově = v6, kterou J. V. dnes nahrál na Disk) →
+  `--proj-v7` CZ + EN/DE/FR (95 symbolů, přeloženo 195/206, jazyk sedí, `sablonaObsahVady` prázdné,
+  1,40 MB base64; proti v6 přibylo přesně 13 symbolů D1, ubylo 0). Soubory = soubory sezení S10
+  (na Disk konektorem nejdou, ~1,4 MB base64).
+- **Oprava nástroje:** EN/DE/FR nechávaly česky „CENA ZA … (DPZ){{PROJ_DPZ_HVEZDICKA_ZNACKA}}:" —
+  `docxPrelozUseky` (docxgen) odřízne „)" před symbolem. `vyrob_sablony.js`: `trStavSeZavorkou` +
+  `prelozSablonu`; test `src/test_sablona_proj_v7_preklad.js` 13/0 (před opravou FAIL). **Návrh pro
+  kódovou dávku:** opravit totéž v `docxPrelozUseky` (jinak „vyrobit jazykovou verzi" v aplikaci
+  dá nadpis česky).
+- **main v20.10.1 + v7 (ověřeno kódem origin/main):** nahrání projde, Word vznikne s viditelnými
+  `{{PROJ_TITUL_*}}`, `{{PROJ_DPZ_UVOD}}`, `{{PROJ_DPZ_HVEZDICKA*}}` a bez studie i se všemi bloky
+  studie; přísný režim to nezastaví (hlídá jen zastaralé/chybějící šablony). ⇒ v7 na main až po v20.10.3.
+- **Titul bez studie „PROJEKTOVÉ a INŽENÝRSKÉ ČINNOSTI“ potvrdil J. V. 20. 10.** (podklad D1 v integraci).
+  Čeká: nové texty EN/DE/FR ke kontrole rodilými mluvčími (tabulka v podkladu); oprava
+  `docxPrelozUseky` jde do příští kódové dávky. D2 (v20.10.4) staví PROJ v8 nad touto v7.
+
 # Předávka — 20. 10. 2026: dávka B183 (v20.10.5), větev `claude/b183-plocha-01` — plocha výjimky na 0,1 m²
 
 Nad `test` (5dc28d1, v20.10.1). Do test / main / test-draft / integrace nic — slučuje koordinace

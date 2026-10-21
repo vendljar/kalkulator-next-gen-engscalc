@@ -8,6 +8,17 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v20.10.9 — S10: nástroj šablon překládá nadpis „CENA ZA … (DPZ)*“ a šablona PROJ v8 (větev claude/s10-sablona-proj-v7)
+
+- `nastroje/vyrob_sablony.js` (`trStavSeZavorkou`, `prelozSablonu`): překlad úseku se závorkou těsně před symbolem —
+  nadpis „CENA ZA … (DPZ){{PROJ_DPZ_HVEZDICKA_ZNACKA}}:“ zůstával v EN/DE/FR šabloně česky. Test
+  `src/test_sablona_proj_v7_preklad.js` 13/0 (před opravou selže). Kód aplikace beze změny — stejná chyba
+  v `docxPrelozUseky` (aplikace, „vyrobit jazykovou verzi“) čeká na kódovou dávku.
+- Šablona Wordu OVP-CN PROJ **v8** CZ + EN/DE/FR (v7 + cestovné D2): soubory mimo repozitář (sezení S10), postup
+  `podklady/SABLONA_PROJ_V8_20_10.md`; ověřeno vyplnění kódem v20.10.7 v 16 kombinacích bez zbylých symbolů.
+
+---
+
 ## v20.10.9 — C2: Controlling — obrazovka, upozornění u ceníku, export předkalkulace (#447, větev claude/controlling-navrh)
 
 Spuštěno na pokyn J. V. předaný koordinací 20. 10. ~15:45 („C2 přes noc"). Verzi přidělí koordinace (C1 + C2 jako jedna verze).
