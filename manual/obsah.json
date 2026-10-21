@@ -14,6 +14,14 @@
       ]
     },
     {
+      "nadpis": "Co je nového v dávce O11 (21. 10. 2026)",
+      "odstavce": [
+        "**Cena výjezdu technika u akce mimo Prahu (kalkulace PROJ).** Zaškrtávátko „Akce mimo Prahu“ zapínáte dál sami — k ceně zaměření, studie, DPZ a kolaudace se přičte cena 1 výjezdu technika z ceníku PROJ. **Cenu výjezdu ale přepisuje jen ten, kdo smí vidět náklady** (administrátor, případně role, které to administrátor povolí); obchodník ji vidí jako číslo. Potřebujete-li u zakázky jinou cenu cesty, požádejte administrátora.",
+        "Zadá-li se do ceny výjezdu číslo s desetinnou čárkou nebo jiný nečitelný údaj, aplikace upozorní a hodnotu nezmění — dřív se takové číslo tiše počítalo jako nula.",
+        "**Pro administrátora — zálohy:** když noční záloha nese méně než polovinu zakázek nebo účtů proti předchozí noci, mazání starých záloh se zastaví a **zůstane zastavené, dokud v Nastavení → Databáze nestisknete „Úbytek byl záměrný“** (potvrzení svým heslem), nejdéle 30 dní. Než potvrdíte, zkontrolujte, že se data opravdu neztratila — starší zálohy jsou pro obnovu k dispozici."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v21.10.2 (21. 10. 2026)",
       "odstavce": [
         "**Zapsat výchozí hodnoty zveřejní jen platební podmínky** (Nastavení → Smlouvy / Šablony, jen administrátor). Máte-li v Nastavení → Firma ještě nezveřejněné úpravy jiných údajů (název, kapitoly nabídky…), zůstanou jen u vás — hláška je vyjmenuje a zveřejníte je tlačítkem v Nastavení → Firma.",

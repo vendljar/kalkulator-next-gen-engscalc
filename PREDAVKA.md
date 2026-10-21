@@ -1,3 +1,19 @@
+# Předávka — 21. 10. 2026: dávka O11 (verzi přidělí sloučení) — rozhodnutí J. V. k auditu K4: K4-N4, K4-N13, K4-N17
+
+Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. Větev `claude/o11-k4-n4-n13`.
+**Do test / main / test-draft / integrace nic** — slučuje koordinace (ŘÍDÍCÍ session_01By6bWivtf2rTJYJFGVv8e1).
+Souběžně O10 (K4-N1 zmrazení kapitol) — konflikty čekat jen v dokumentaci (CHANGELOG, roadmapa, obsah.json, MEZE).
+
+- **Hotovo:** #470 K4-N4 (pole ceny výjezdu PROJ jen se `sloupce.naklad`, B112 zná `vyjezdKcPrepis`, tvar/zápor/strop
+  v `uloZaporneVZadani`, `pjVyjezdPrepis` s upozorněním), #471 K4-N13 (retence stojí do potvrzení správcem ≤ 30 dní,
+  `retenceDrzena`, POST `retence-potvrdit` s heslem správce a `den`, tlačítko „Úbytek byl záměrný“), #472 K4-N17
+  uzavřeno bez změny.
+- **Ke slučování:** CHANGELOG oddíl „O11 — …“ (přejmenovat na číslo verze), `manual/obsah.json` („Co je nového
+  v dávce O11“ → číslo verze), roadmapa +3 na konci (`hotovoV` doplnit verzí), `BEZPECNOST_MEZE.md` (odstavec pod
+  K3-N13 + oddíl „Audit K4 — rozhodnutí J. V. 21. 10. 2026 (dávka O11)“), `netlify/mutace.mjs` (blok O11 na konci
+  + SADY `../src/test_uloziste.js`), nový harness `overit_o11_vyjezd.mjs`.
+- **Ověření:** viz souhrn na konci dávky (mutace O11, kolo `--bez-mutaci`).
+
 # Předávka — 21. 10. 2026 noc: dávka O9 (kód aplikace, verzi přidělí sloučení) — opravy K4 bez rozhodnutí J. V.
 
 Nad `claude/integrace-16-10` 12b41b0 (v20.10.8), build `KNG_NEZVYSOVAT_VERZI=1`. Lokálně větev `claude/o9-k4-kod`;

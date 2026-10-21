@@ -8,6 +8,22 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## O11 — rozhodnutí J. V. k auditu K4: cena výjezdu PROJ, retence záloh (verzi přidělí sloučení)
+
+Dávka O11 (koordinace 21. 10. 2026) nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), větev `claude/o11-k4-n4-n13`.
+Build bez zvýšení verze (`KNG_NEZVYSOVAT_VERZI=1`). Podklad `podklady/K4_AUDIT_20_10.md`, rozhodnutí J. V. 21. 10. 2026.
+Každá oprava má test s pojistkou (před opravou selže, po ní projde) a mutace „O11“.
+
+- **#470 (K4-N4) — cenu výjezdu technika v kalkulaci PROJ přepisuje jen role s právem vidět náklady.** Pole
+  „Cena 1 výjezdu technika“ (`PJ.vyjezdKcPrepis`) se kreslí jen s `sloupce.naklad`; obchodník vidí účinnou cenu
+  jako text a zaškrtávátko „Akce mimo Prahu“ smí dál. Server (B112) cenu výjezdu hlídá jako ostatní přepisy PROJ —
+  obchodník ji ručním požadavkem nezmění, nevloží ani nesmaže (403). Kontrola tvaru čísla (B135): „100,5“ → 400
+  při uložení a v prohlížeči upozornění místo tichého 0; nečitelný vstup v poli hodnotu nezmění a ohlásí se.
+- **#471 (K4-N13) — retence nočních záloh stojí, dokud úbytek dat nepotvrdí správce.** Po poklesu otisku pod 50 %
+  dřív stála jen jednu noc; teď drží, dokud správce v Nastavení → Databáze nestiskne „Úbytek byl záměrný“ (dotaz +
+  heslo správce, `POST /api/zaloha_vynuceno { akce: 'retence-potvrdit' }`), nejdéle 30 dní. Potvrzené varování zhasne.
+- **#472 (K4-N17)** — beze změny (J. V. ponechal), uzavřeno v roadmapě.
+
 ## v21.10.2 — O9: opravy kódu aplikace z auditu K4 bez rozhodnutí J. V. (větev claude/o8-k4-nalezy)
 
 Dávka O9 (noční koordinace 21. 10. 2026) nad `claude/integrace-16-10` 12b41b0 (v20.10.8). Build bez zvýšení
