@@ -1277,8 +1277,12 @@ async function symbolyASablona(bajty) {
  * se tu slovník obalí: nepřeložený text s jednou neuzavřenou „(" se zkusí
  * i s „)" a z překladu se koncová „)" zase vezme (zůstává v dokumentu za
  * přeloženým úsekem). Vše ostatní jde beze změny do původního trStav.
- * Od O13 (21. 10. 2026) totéž dělá sama aplikace (docxPrelozUseky), obal
- * je tím nadbytečný a neškodný — odstranění zapsáno do PREDAVKA.md. */
+ * Od O13 (21. 10. 2026) totéž dělá sama aplikace (docxPrelozUseky), ale jen
+ * když „)" stojí hned za úsekem. Obal NENÍ nadbytečný (ověřeno v D3,
+ * 21. 10. 2026, nad všemi slovníkovými texty končícími „)" × EN/DE/FR):
+ * u „Splatnost faktur (dní{{X}})" — „)" až za symbolem — aplikace úsek
+ * nechá česky, obal ho přeloží (338 rozdílů ze 2304 porovnání; další se liší
+ * jen u textu bez „)" vůbec). Proto zůstává. */
 function trStavSeZavorkou(puvodni) {
   return (cz, lang) => {
     const st = puvodni(cz, lang);

@@ -72,6 +72,17 @@ if (VS && VS.trStavSeZavorkou) {
   test('obal: známý text beze změny', stejne(NADPIS, 'en') && stejne('STUDIE PROVEDITELNOSTI', 'de'));
   test('obal: vyvážené závorky beze změny (i neznámý text)', stejne('Neznámý text (XYZ) bez překladu', 'en'));
   test('obal: neznámý text s „(" zůstane nepřeložený', ob('Úplně neznámá věta (abc', 'en').prelozeno === false);
+  /* D3 (21. 10. 2026, návrh O13 „obal odstranit"): obal NENÍ nadbytečný —
+   * „)" až za symbolem aplikace nedotáhne, obal ano. Hlídá, aby se obal
+   * neodstranil, dokud to aplikace neumí. */
+  {
+    const xs = '<w:document><w:body><w:p><w:r><w:t>' + NADPIS.slice(0, -1) + '</w:t></w:r><w:r><w:t>{{X}}</w:t></w:r><w:r><w:t>)</w:t></w:r></w:p></w:body></w:document>';
+    const stat = () => ({ celkem: 0, prelozeno: 0, neutralni: 0, chybi: [], symbolove: [] });
+    const bez = text(dg.docxPrelozXml(xs, 'en', stat()));
+    global.trStav = ob; let s; try { s = text(dg.docxPrelozXml(xs, 'en', stat())); } finally { global.trStav = puvodni; }
+    test('obal: „… (DPZ{{X}})" — aplikace nechá česky, obal přeloží (proto obal zůstává)',
+      bez === NADPIS.slice(0, -1) + '{{X}})' && s === 'PRICE FOR THE DOCUMENTATION FOR THE PROJECT PERMIT (DPZ{{X}})', { bez, s });
+  }
   test('obal: „… (DPZ" → překlad bez koncové „)"', ob('CENA ZA DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ', 'en').text === 'PRICE FOR THE DOCUMENTATION FOR THE PROJECT PERMIT (DPZ');
 }
 if (VS && VS.prelozSablonu) {
