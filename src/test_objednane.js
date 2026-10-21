@@ -76,6 +76,26 @@ test('neplatné datum odmítne (400)', (K(zak, sObj(zak, [k1], '2026-02-30'), OB
 { const z = kopie(zak); z.varianty[0].zamek = null; const n = sObj(z, [k1]);
   test('k nezamčené variantě odmítne (400)', (K(z, n, ADM) || {}).status === 400); }
 test('tvar pole místo objektu odmítne (400)', (K(zak, Object.assign(kopie(zak), { objednane: [k1] }), ADM) || {}).status === 400);
+/* K6-K1 (D3): vlastní příplatek varianty má klíč `vlastni:N` — tvar
+ * klíče ho pustí (dřív 400), jiný tvar s dvojtečkou dál ne. */
+{ const z = kopie(zak); const zv = z.varianty[0];
+  zv.data.ock.zadani.priplatkyVlastni = [{ nazev: 'Vlastní příplatek', mnozstvi: 1, cena: 50 }];
+  zv.zamek.vysledek = zamekVysledekSpocti(zv, JEKLY, 'test');
+  const nabV = O.objNabidnute(zv, JEKLY).map(p => p.key);
+  const n = kopie(z); n.objednane = { varianta: zv.id, klice: ['vlastni:0'], datum: '2026-10-20' };
+  test('K6-K1: vlastní příplatek nabídnutý a objednatelný (null)', nabV.includes('vlastni:0') && K(z, n, OBCH) === null, { nabV, k: K(z, n, OBCH) });
+  const spatne = ['vlastni:x', 'vlastni:', 'vlastni:1:2', 'jiny:1', 'vlastni:12345'].map(k => { const m = kopie(n); m.objednane.klice = [k]; return (K(z, m, ADM) || {}).status; });
+  test('K6-K1: jiný tvar s dvojtečkou odmítne (400)', spatne.every(x => x === 400), spatne); }
+/* K6-S1, K6-S3 (D3): objekt nebo pole v klice/varianta/datum → 400, ne výjimka. */
+{ const zly = [o => { o.klice = [{ toString: 1 }]; }, o => { o.varianta = { toString: 1 }; }, o => { o.datum = { toString: 1 }; },
+    o => { o.varianta = [o.varianta]; }, o => { o.klice = 'k1'; }, o => { o.klice = [1]; }];
+  const st = zly.map(f => { const n = sObj(zak, [k1]); f(n.objednane); try { return (K(zak, n, ADM) || {}).status; } catch (e) { return 'výjimka ' + e.message; } });
+  test('K6-S1/S3: neplatný tvar záznamu → 400 (i beze změny proti uložené)', st.every(x => x === 400), st);
+  const ul = sObj(zak, [k1]); ul.objednane.varianta = [v.id];
+  let st2; try { st2 = (K(ul, kopie(ul), ADM) || {}).status; } catch (e) { st2 = 'výjimka'; }
+  test('K6-S3: varianta jako pole neprojde ani jako „beze změny“', st2 === 400, st2);
+  let ot; try { ot = O.objOtisk({ varianta: { toString: 1 }, klice: [{ toString: 1 }], datum: 'x' }); } catch (e) { ot = 'výjimka'; }
+  test('K6-S1: objOtisk s objekty nevyhodí výjimku', typeof ot === 'string' && ot !== 'výjimka', ot); }
 const ulozena = sObj(zak, [k1]);
 test('beze změny (jen jiné razítko kdo/kdy) projde i cizímu', K(ulozena, Object.assign(kopie(ulozena),
   { objednane: Object.assign({}, ulozena.objednane, { kdo: 'podvrh', kdy: 'x' }) }), JINY) === null);

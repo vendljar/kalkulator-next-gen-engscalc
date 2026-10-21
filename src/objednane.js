@@ -28,7 +28,9 @@
  * ============================================================ */
 
 const OBJ_DATUM_TVAR = /^\d{4}-\d{2}-\d{2}$/;
-const OBJ_KLIC_TVAR = /^[A-Za-z][A-Za-z0-9_.-]{0,79}$/;
+/* Klíč příplatku jádra, nebo vlastní příplatek varianty `vlastni:<pořadí>`
+ * (engine.js; K6-K1: dvojtečku jinde nepustí). */
+const OBJ_KLIC_TVAR = /^(?:[A-Za-z][A-Za-z0-9_.-]{0,79}|vlastni:\d{1,4})$/;
 const OBJ_MAX_KLICU = 200;
 
 /* Den v českém čase (shodně s controllingem). */
@@ -109,10 +111,23 @@ function objNastav(zak, v, klice, datum, ctx) {
   return '';
 }
 
-/* Porovnání bez razítek kdo/kdy — změnou je jen jiná varianta, klíče nebo datum. */
+/* Porovnání bez razítek kdo/kdy — změnou je jen jiná varianta, klíče nebo datum.
+ * Objekt v poli nepřevádí přes String (K6-S1: {"toString":1} vyhodí TypeError). */
 function objOtisk(o) {
   if (!o || typeof o !== 'object' || !Array.isArray(o.klice) || !o.klice.length) return '';
-  return JSON.stringify({ v: String(o.varianta || ''), k: o.klice.map(String).slice().sort(), d: String(o.datum || '') });
+  const t = x => (x !== null && typeof x === 'object') ? JSON.stringify(x) : String(x);
+  return JSON.stringify({ v: t(o.varianta || ''), k: o.klice.map(t).slice().sort(), d: t(o.datum || '') });
+}
+/* Tvar záznamu z požadavku (K6-S1, K6-S3): varianta a datum řetězec, klíče
+ * pole řetězců do stropu. Chybějící pole posoudí až pravidla níž. */
+function objTvarPlatny(o) {
+  if (o === undefined || o === null) return true;
+  if (typeof o !== 'object' || Array.isArray(o)) return false;
+  if (o.varianta !== undefined && typeof o.varianta !== 'string') return false;
+  if (o.datum !== undefined && typeof o.datum !== 'string') return false;
+  if (o.klice !== undefined && (!Array.isArray(o.klice) || o.klice.length > OBJ_MAX_KLICU
+    || !o.klice.every(k => typeof k === 'string'))) return false;
+  return true;
 }
 
 /* SERVER: null = v pořádku, jinak { status, chyba }. `relace` = { email, role }.
@@ -120,9 +135,8 @@ function objOtisk(o) {
 function objKontrola(stara, zak, relace, ctx) {
   const c = ctx || {};
   const nova = zak ? zak.objednane : undefined;
+  if (!objTvarPlatny(nova)) return { status: 400, chyba: 'Objednané příplatky mají neplatný tvar' };
   const otNova = objOtisk(nova), otStara = objOtisk(stara && stara.objednane);
-  if (nova !== undefined && nova !== null && (typeof nova !== 'object' || Array.isArray(nova)))
-    return { status: 400, chyba: 'Objednané příplatky mají neplatný tvar' };
   if (otNova === otStara) return null;                              // beze změny (i razítek) projde každému
   const role = String((relace && relace.role) || '');
   const admin = role === 'Administrátor';
@@ -141,7 +155,7 @@ function objKontrola(stara, zak, relace, ctx) {
     return { status: 400, chyba: 'Objednané příplatky nesou neplatný nebo zdvojený klíč' };
   if (!objDatumPlatne(nova.datum)) return { status: 400, chyba: 'Datum prodeje (podpisu SoD) chybí nebo je neplatné' };
   if (nova.datum > objDnes(c.ted)) return { status: 400, chyba: 'Datum prodeje (podpisu SoD) nesmí být v budoucnosti' };
-  const v = vari(zak, String(nova.varianta || ''));
+  const v = vari(zak, nova.varianta || '');
   if (!v || !v.zamek || !v.zamek.zamceno)
     return { status: 400, chyba: 'Objednané příplatky patří k odeslané (zamčené) variantě' };
   const novaUlozena = vari(stara, v.id);
@@ -155,4 +169,4 @@ function objKontrola(stara, zak, relace, ctx) {
 
 if (typeof module !== 'undefined' && module.exports)
   module.exports = { OBJ_DATUM_TVAR, OBJ_MAX_KLICU, objDnes, objDatumPlatne, objStav, objDatumPodpisu, objPodepsano, objNabidnute,
-    objObjednaneVarianty, objText, objNastav, objOtisk, objKontrola };
+    objObjednaneVarianty, objText, objNastav, objOtisk, objTvarPlatny, objKontrola };

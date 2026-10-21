@@ -1711,6 +1711,59 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
     const n10 = nova374(); n10.objednane = { varianta: n10.varianty[0].id, klice: [nab6[0]], datum: dnes6 };
     const o10 = await uloz374(n10, cObch);
     test('C6: objednané k nezamčené variantě → 400', o10.status === 400, o10);
+    /* K6-S1, K6-S3 (D3): objekt v klice/varianta/datum shodil uložení na
+     * HTTP 500 (String({"toString":1}) v objOtisk), varianta jako pole
+     * ["<id>"] prošla a skryla prodej z exportu — má být 400. */
+    const chyt = p => p.catch(e => ({ status: 500, chyba: e.message }));
+    const s1 = await chyt(zapis6(a => { a.objednane.klice = [{ toString: 1 }]; }, cAdmin));
+    test('K6-S1: objekt v objednane.klice → 400, ne 500', s1.status === 400 && /tvar/.test(s1.chyba || ''), s1);
+    const s2 = await chyt(zapis6(a => { a.objednane.varianta = { toString: 1 }; }, cAdmin));
+    test('K6-S1: objekt v objednane.varianta → 400, ne 500', s2.status === 400 && /tvar/.test(s2.chyba || ''), s2);
+    const s3 = await chyt(zapis6(a => { a.objednane.datum = { toString: 1 }; }, cAdmin));
+    test('K6-S1: objekt v objednane.datum → 400, ne 500', s3.status === 400 && /tvar/.test(s3.chyba || ''), s3);
+    const s4 = await chyt(zapis6(a => { a.objednane.varianta = [a.objednane.varianta]; }, cAdmin));
+    test('K6-S3: objednane.varianta jako pole → 400', s4.status === 400 && /tvar/.test(s4.chyba || ''), s4);
+    /* K6-S4 (D3): server uloží záznam jen z povolených polí (cizí pole
+     * a vlastní klíč "__proto__" z JSON zahodí). */
+    const s5 = await zapis6(a => { a.objednane = JSON.parse(JSON.stringify(Object.assign({}, a.objednane, { cizi: 'x'.repeat(1000) }))
+      .replace(/^\{/, '{"__proto__":{"podvrh":1},')); }, cAdmin);
+    const ul5 = (await nacti6()).g.objednane || {};
+    test('K6-S4: objednane se uloží jen s poli varianta, klice, datum, kdo, kdy', s5.status === 200
+      && Object.keys(ul5).sort().join() === 'datum,kdo,kdy,klice,varianta', { s5, klice: Object.keys(ul5) });
+    /* K6-S1 v obnově (D3): výjimka by přerušila dávku uprostřed — zakázka se
+     * má přeskočit s důvodem a ostatní obnovit. */
+    const gO = (await nacti6()).g;
+    const zlaO = JSON.parse(JSON.stringify(gO)); zlaO.cislo = '2026 - OPR - CN - 9798'; zlaO.objednane.klice = [{ toString: 1 }];
+    const dobraO = JSON.parse(JSON.stringify(gO)); dobraO.objednane.cizi = 'y';
+    const jmO = c => c.replace(/\s+/g, '') + '.json';
+    const rO = await chyt(post(obnova, 'http://x/api/obnova', { zdroj: { soubor: { porizena: new Date().toISOString(),
+      zakazky: { [jmO(zlaO.cislo)]: zlaO, [r0.soubor]: dobraO } } }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cAdmin)
+      .then(async r => ({ status: r.status, ...(await r.json()) })));
+    const bO = (rO.casti && rO.casti.zakazky) || {};
+    const obO = (JSON.parse(pamet.get('zakazky/z/' + r0.soubor) || '{}')).objednane || {};
+    test('K6-S1: obnova s objektem v objednane.klice zakázku přeskočí (tvar), ostatní obnoví', rO.status === 200
+      && bO.preskocene === 1 && /tvar/.test(JSON.stringify(bO.duvody || [])) && !pamet.has('zakazky/z/' + jmO(zlaO.cislo))
+      && bO.prepsane === 1, { status: rO.status, chyba: rO.chyba, bO });
+    test('K6-S4: obnova uloží objednane bez cizích polí', !('cizi' in obO) && obO.klice && obO.klice.length === 1, obO);
+    /* K6-K1 (D3): vlastní příplatek varianty (klíč `vlastni:N`) — celá cesta
+     * klient (objNabidnute + objNastav jako karta SoD) → server. Před opravou
+     * 400 „neplatný nebo zdvojený klíč“. */
+    const zV = nova374(); zV.varianty[0].data.ock.zadani.priplatkyVlastni = [{ nazev: 'Vlastní příplatek K6', mnozstvi: 1, cena: 1000 }];
+    const rV = await uloz374(odesliB59(zV), cObch);
+    const gV = rV.status === 200 ? await nactiB59(rV.soubor) : null;
+    const aV = gV ? zk.importZakazka(JSON.parse(JSON.stringify(gV))) : null;
+    const nabV = aV ? globalThis.objNabidnute(aV.varianty[0], JEKLY_T).map(p => p.key) : [];
+    test('K6-K1: příprava — odeslaná nabídka nabízí vlastní příplatek vlastni:0', nabV.includes('vlastni:0'), { rV, nabV });
+    if (aV) {
+      const chV = globalThis.objNastav(aV, aV.varianty[0], ['vlastni:0'], dnes6, { kdo: UCTY['Obchodník'].email });
+      const oV = await uloz374(aV, cObch, { ocekavaneRazitko: gV.uloRazitko });
+      const ulV = (await nactiB59(rV.soubor)).objednane || {};
+      test('K6-K1: objednaný vlastní příplatek se uloží (200)', chV === '' && oV.status === 200
+        && (ulV.klice || []).join() === 'vlastni:0', { chV, oV, ulV });
+      const oV2 = await uloz374(Object.assign(JSON.parse(JSON.stringify(aV)), { objednane: Object.assign({}, aV.objednane, { klice: ['vlastni:x'] }) }),
+        cObch, { ocekavaneRazitko: (await nactiB59(rV.soubor)).uloRazitko });
+      test('K6-K1: jiný tvar s dvojtečkou (vlastni:x) dál 400', oV2.status === 400 && /klíč/.test(oV2.chyba || ''), oV2);
+    }
   }
   const n1 = nova374(); hod(n1).sazba = 'neexistuje'; hod(n1).sazbaKc = 1;
   const a9 = await uloz374(n1, cObch);
