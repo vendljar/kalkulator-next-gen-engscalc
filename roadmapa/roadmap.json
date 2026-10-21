@@ -7398,6 +7398,21 @@
    "pozn": "Id přidělila koordinace (dávka O11)."
   },
   {
+   "id": "473",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "nazev": "Kolo K5 + bezpečnostní audit nad v21.10.4 — podmínka posunu test → main",
+   "proc": "Zadání J. V. 21. 10. 2026: celé testovací kolo s mutacemi a bezpečnostní audit změn od K4 (b6f49a7..7652bb9: K29-N1, O8–O11, Controlling C1–C4, S10) před posunem test → main.",
+   "detail": "Kolo nad 7652bb9: sady 294/0/6, mutace jádra 406/406, mutace serveru 734/734 (úplnost po názvech), statické 4/4 — žádná přeživší mutace, žádný prázdný test. Audit (podklady/K5_AUDIT_21_10.md): 0 kritických, 0 vysokých, 0 středních, 5 nízkých (K5-S1, K5-K1, K5-W1, K5-W2, K5-W3), 10 informativních; regrese K4 žádná. Kód se neopravoval.",
+   "hotovoKdyz": "Kolo celé zelené a audit zapsaný s rozdělením nálezů na opravu bez J. V. a rozhodnutí J. V.",
+   "kde": "`podklady/K5_AUDIT_21_10.md`, `CHANGELOG.md` (v21.10.4)",
+   "zavisi": [],
+   "hotovoV": "v21.10.4",
+   "pozn": "Id přidělila koordinace (dávka K5). Opravy nálezů K5 = samostatná dávka."
+  },
+  {
    "id": "474",
    "vlna": "B",
    "stav": "hotovo",

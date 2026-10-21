@@ -8,6 +8,18 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v21.10.5 — Integrace do test (koordinace 21. 10. 2026)
+
+v21.10.5 = O12 (#474 průvodce šablon — jazykové verze k platné češtině) + S11 (šablona SoD realizace v4, nástroj
+`--sod-real-v4`) + C5 + C6 (#447 controlling: export v2, objednané příplatky u SoD, krycí list, export prodané zakázky)
++ O13 (nízké nálezy K5: S1, K1 + K3, W1, W2; „(DPZ)*" v jazykové verzi) + zápis K5 (#473). Integrace `claude/integrace-16-10`.
+
+- Kolo `--bez-mutaci` nad dda2abc: **296 prošlo / 0 selhalo / 6 přeskočeno** (test.js + 5 harnessů bez KNG_PODKLADY),
+  statické 4/4 — VŠE ZELENÉ.
+- Cílené mutace: server „#447 C" **40/40**, „k5-" **3/3**; jádro „#474" **8/8**, „O13:" **3/3** — 0 přeživších.
+  `--kontrola` jádro 417 úseků, server 753 úseků.
+- Celé kolo s mutacemi nad v21.10.4 (K5, #473): sady 294/0/6, jádro 406/406, server 734/734, audit 0/0/0/5 nízkých/10 info.
+
 ## v21.10.5 — O12: jazykové verze šablony k už platné češtině (#474, větev claude/o12-sablony-jazyky)
 
 Chyba J. V. 21. 10. 2026 (screenshot): SoD REALIZACE (OCK) má platnou češtinu v2; průvodce spuštěný znovu se
@@ -121,6 +133,20 @@ označené „opravit bez J. V.". Číslo verze může koordinace při slučová
 ---
 
 ## v21.10.4 — C3 + C4: Controlling: hromadný export za období, export z Přehledu, Pipedrive deal id (#447, větev claude/controlling-c3)
+
+**Celé kolo K5 nad 7652bb9 (v21.10.4, 21. 10. 2026; dávka K5, koordinace „ŘÍDÍCÍ 21.10“, větev claude/k5-kolo, #473) — VŠE ZELENÉ, ŽÁDNÁ PŘEŽIVŠÍ MUTACE:**
+build OK; sady **294 prošlo / 0 selhalo / 6 přeskočeno** (`test.js` + 5 harnessů bez `KNG_PODKLADY`);
+mutace jádra **406/406**, otisky obou jader po běhu souhlasí; mutace serveru **734/734**, 0 chybně
+zadaných; statické kontroly **4/4** (W2 48/0). Kód aplikace ani verze se neměnily. Prázdné testy: žádné.
+- **Průběh:** server po 63 částech filtrem podle souboru ve čtyřech `git worktree` nad týmž SHA; strop
+  úlohy přerušil 2 rozběhnuté části (`vyjimky.js`, `program_ui.js` — SIGTERM, soubor vrácen, opakováno
+  celé); úplnost ověřena po názvech proti zadání (734 unikátních mutací). Stromy po každé části čisté.
+- **Bezpečnostní audit `b6f49a7..7652bb9`:** `podklady/K5_AUDIT_21_10.md` — 0 kritických, 0 vysokých,
+  0 středních, 5 nízkých (K5-S1 `pdDealId` jako objekt → HTTP 500 při uložení zakázky; K5-K1 CSV
+  controllingu propustí `+ `/`- ` bez apostrofu; K5-W1 kokpit koordinace vkládá dekódované jméno větve
+  bez escapu; K5-W2 W2 nekóduje jméno větve v dotazu na API; K5-W3 zbytek K4-N2 bez času z API),
+  10 informativních. Regrese K4: žádná — 19 opraveno, K4-N17 ponecháno (J. V.), K4-N20 mimo repo.
+  Rozhodnutí J. V. chtějí K5-W3, K5-K2, K5-S3, K5-S4, K5-K4, K5-W6; ostatní jdou opravit bez něj.
 
 Rozhodnutí J. V. 21. 10. 2026 (dialog s koordinací), body 1, 2 a 4. Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2),
 build bez zvýšení verze (`KNG_NEZVYSOVAT_VERZI=1`).
