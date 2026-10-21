@@ -10,6 +10,14 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 21. 10. ~02:00 UTC — noční koordinace „ŘÍDÍCÍ 20.10 noc“ session_01By6bWivtf2rTJYJFGVv8e1 (kontext ~28 %)
+
+- **Integrace = 6dfcfe9 (v21.10.1), plně ověřená:** v20.10.8 (K29-N1, kód b04873f) + O8 (#452–#459: W2 mazání větví K4-N2/N3/N9/N10/N11/N19, testy V7-N2, D2, test_obnova kolem půlnoci) + zápis K4 (47e5eab, `podklady/K4_AUDIT_20_10.md`, #449) + Controlling C1+C2 (#447) + S10 oprava nástroje šablon. Kolo 290/0/6, statické 4/4, mutace #447 18/18, `--kontrola` jádro 399 / server 686. **Pozor na verzi:** commit z 21. 10. musí mít v21.10.N (20.10.9 kontrola verze odmítla).
+- **test = fa08e9c (v20.10.7)** beze změny — jen na „pushni do test“. Release odkazy v20.10.8 (b04873f) a v21.10.1 (6dfcfe9) v kokpitu; tagy neexistují (01:55).
+- **K4 hotová** (5113d0a): server 668/668, jádro 393/394 (prázdný test → O8), audit 0/0/3 stř./10 níz./10 info. Rozhodnutí J. V.: K4-N1 (zmrazit kapitoly IV.–VI. + doložky OCK, doporučeno ano), K4-N4, K4-N13, K4-N17, K4-N20.
+- **Běží O9** (sezení O8 session_011JwntSkAYYZryjVGfc4TZe, push do `claude/o8-k4-nalezy` nad 12b41b0): opravy kódu z auditu K4 bez J. V. (text meze N1/N5, N5, N6, N7, N12, N14–N16, N18, N21; #460–#468) → merge do integrace jako **v21.10.2** + kolo a cílené mutace.
+- **Ráno:** souhrn noci artefaktem; dialog J. V.: K4 rozhodnutí, Controlling C3/C4 (5 otázek), pushni do test, archivace (K29-N1, K4, ŘÍDÍCÍ 20.10 session_01Ln2mMn7iC6W9ECztHTJpZe).
+
 ## STAV 20. 10. ~16:20 UTC — noční koordinace „ŘÍDÍCÍ 20.10 noc“ session_01By6bWivtf2rTJYJFGVv8e1
 
 - **Integrace = b04873f (v20.10.8)**: K29-N1 sloučila koordinace (dávce kontrola oprávnění nedovolila sloučit integraci z pokynu jiného sezení). Konflikty CHANGELOG, PREDAVKA, `src/test_mustky.js` (oba bloky, 93/0); příručka, roadmapa #450 (hotovo) + #451 (otevřený bod: měď při ručně přepsané ploše zastřešení, neopravovat bez J. V.). Kolo `--bez-mutaci` 286/0/6, statické 4/4; mutace jádra K29-N1 5/5, „můst“ 13/13, #356 5/5 (filtr „mustky“ nic nenajde — používat „můst“). Release odkaz v20.10.8 (cíl b04873f, tag neexistuje) v kokpitu. **test beze změny (fa08e9c) — jen na pokyn J. V.**
