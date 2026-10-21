@@ -38,12 +38,18 @@ Každá oprava má test s pojistkou (před opravou selže, po ní projde) a muta
   / ostatní) a poradí podle největší části (`zakazkaVelikostHlaska`); tělo do 2× stropu se kvůli tomu přečte.
 - **#468 (K4-N21)** — kokpit koordinace: třídy z dat jen z povoleného seznamu, čísla jen jako čísla; nový
   prohlížečový test `overit_kokpit.mjs` (stará šablona 5 ✕, XSS se spustil; nová 9/0).
-- **Testy a pojistky:** `netlify/test_zalohy.mjs` 130 → 146 (před opravou 135/11), `netlify/test_prava.mjs` +3
+- **Testy a pojistky:** `netlify/test_zalohy.mjs` 130 → 146 (před opravou 135/11; +1 souběh porizVynuceny = 147), `netlify/test_prava.mjs` +3
   (před 2 FAIL), nový `src/test_o9_k4.js` 10 (před opravou 5 FAIL: K4-N6 2, K4-N7 3), `src/test_zobrazeni_heslo_okno.js` +2
   (před 2 FAIL), `src/test_o7_kopie_klient.js` +2 (před 1 FAIL), `overit_online.mjs` (před 4 ✗, po 268/0),
   `overit_podminky_zverejnit.mjs` (před 3 ✗, po 35/0), `overit_kokpit.mjs` 9.
-- **Mutace:** server +14 „O9“, jádro +3 „O9“; úseky starších mutací (#151 N1, K3-N8 ×2, K3-N1, K3-N4 ×2, jádro
-  K3-N3 ×2) přepsané na nový kód (`--kontrola` server 682, jádro 402 úseků — vše právě jednou).
+- **Mutace:** server +14 „O9“, jádro +3 „O9“; úseky starších mutací (#151 N1, K3-N8 ×2, K3-N1 ×2, K3-N4 ×3, jádro
+  K3-N3 ×2) přepsané na nový kód (`--kontrola` server 682, jádro 402 úseků — vše právě jednou). Cílené běhy: jádro
+  „O9“ 3/3, „K3-N3“ 3/3; server „O9“ 14/14, „K3-N1“ 26/26, „K3-N4“ 7/7, „#151 N1“ 5/5, „K3-N8“ 3/3. Při prvním běhu
+  přežily 4 mutanty (dvojí kontrola po K4-N5/N14 je udělala ekvivalentními; „bez řazení v instanci“ test souběhu
+  nevynutil) — kód zjednodušen, úseky přesměrovány, přidán test souběhu přímo nad `porizVynuceny` s bariérou.
+- **Kolo `--bez-mutaci`:** sady 288 prošlo / 0 selhalo / 6 přeskočeno (firemní podklady); statické 3/4 —
+  **kontrola verze selže záměrně**: commity jsou z 21. 10., `verze.txt` zůstává 20.10.8 (verzi přidělí sloučení,
+  v21.10.2).
 - **Příručka:** „Co je nového v dávce O9“ (admin: Zapsat výchozí hodnoty, kopie na Disk po kliknutí, hláška 413) —
   při sloučení přejmenovat na číslo verze.
 - **Nedělá se (rozhodne J. V.):** zmrazení kapitol a doložek OCK (K4-N1), kdo smí přepsat výjezd (K4-N4), retence
