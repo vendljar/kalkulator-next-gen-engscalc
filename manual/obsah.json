@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v20.10.9 · sestaveno 20. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
+  "verze": "Platí pro aplikaci v21.10.1 · sestaveno 21. 10. 2026 · nahrazuje příručku z 25. 9. 2026 (v25.9.3)",
 
   "uvod": [
     {
@@ -14,7 +14,7 @@
       ]
     },
     {
-      "nadpis": "Co je nového ve verzi v20.10.9 (21. 10. 2026)",
+      "nadpis": "Co je nového ve verzi v21.10.1 (21. 10. 2026)",
       "odstavce": [
         "**Nastavení → Controlling (jen administrátor).** Nová záložka pro controlling: nákladové skupiny (účty Helios, přímý/nepřímý, variabilní/fixní), mapování položek ceníku do skupin (s filtrem nezařazených a stažením / nahráním v Excelu) a export předkalkulace zamčené řídící varianty otevřené zakázky do Excelu nebo CSV. Karta Platný ceník programu upozorní na trvalé položky bez skupiny a nabídne je rovnou zařadit; zveřejnění ceníku neblokuje. Pro práci obchodníka se nic nemění."
       ]

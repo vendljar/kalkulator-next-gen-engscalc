@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v20.10.9 — S10: nástroj šablon překládá nadpis „CENA ZA … (DPZ)*“ a šablona PROJ v8 (větev claude/s10-sablona-proj-v7)
+## v21.10.1 — S10: nástroj šablon překládá nadpis „CENA ZA … (DPZ)*“ a šablona PROJ v8 (větev claude/s10-sablona-proj-v7)
 
 - `nastroje/vyrob_sablony.js` (`trStavSeZavorkou`, `prelozSablonu`): překlad úseku se závorkou těsně před symbolem —
   nadpis „CENA ZA … (DPZ){{PROJ_DPZ_HVEZDICKA_ZNACKA}}:“ zůstával v EN/DE/FR šabloně česky. Test
@@ -19,7 +19,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v20.10.9 — C2: Controlling — obrazovka, upozornění u ceníku, export předkalkulace (#447, větev claude/controlling-navrh)
+## v21.10.1 — C2: Controlling — obrazovka, upozornění u ceníku, export předkalkulace (#447, větev claude/controlling-navrh)
 
 Spuštěno na pokyn J. V. předaný koordinací 20. 10. ~15:45 („C2 přes noc"). Verzi přidělí koordinace (C1 + C2 jako jedna verze).
 
@@ -44,7 +44,7 @@ Spuštěno na pokyn J. V. předaný koordinací 20. 10. ~15:45 („C2 přes noc"
 
 ---
 
-## v20.10.9 — C1: Controlling — nákladové skupiny a mapování (#447, větev claude/controlling-navrh)
+## v21.10.1 — C1: Controlling — nákladové skupiny a mapování (#447, větev claude/controlling-navrh)
 
 Nad `test` 5dc28d1 (v20.10.1). Návrh a rozhodnutí J. V. J1–J11: `podklady/CONTROLLING_NAVRH_20_10.md`.
 Verzi přidělí koordinace při slučování.
