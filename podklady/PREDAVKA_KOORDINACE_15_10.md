@@ -10,6 +10,14 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 21. 10. ~20:50 UTC — koordinace „ŘÍDÍCÍ 21.10 noc 2“ session_01X93Edh1U8MQru6HV28FdBY (kontext ~24 %)
+
+- **test = integrace = 4c127f5 (v21.10.6)** = D3 (opravy nálezů K6 bez J. V., #483: K6-K1, S1, S3, S4, S6, K6, K8, W1–W4, K5-S2, W4, W7) + zápis K6 (#475). Kolo `--bez-mutaci` 298/0/6, statické 4/4, cílené mutace 16/16. **K6** nad v21.10.5: celé kolo s mutacemi zelené (jádro 417/417, server 753/753), audit VYHOVUJE S VÝHRADOU (`podklady/K6_AUDIT_21_10.md`). K6 i D3 archivovány.
+- **Release v21.10.5 a v21.10.6 čekají na vydání** (odkazy v kokpitu; tagy ověřeny `git ls-remote`). `release_odkaz.py` klasifikátor auto režimu v tomto sezení nepustil — odkaz v21.10.6 sestaven ručně (urllib) z CHANGELOG.
+- **Návrh main = v21.10.6** (v kokpitu „Čeká na vás“); rozhodnutí J. V. z K6 (S2, K2, K3, K4 + drobné) a z D3 (#484, #485, nové vyrobení SoD v4 kvůli K6-W3).
+- **Další:** ranní krok 04:50 UTC (send_later trig_014Mi6x7gx4cGPTm9HJ5VfiK): souhrn noci, archivace staré koordinace session_016CbSudw1q9GXrrtfiJKvAG, dávky D1, D2, D4 nad 4c127f5. Roadmapa: #476–#482 = #O13-1…7 (D1), #483–#485 D3. Odhad limitu ~70 %.
+- **Poučení:** `node netlify/mutace.mjs --help` spustí VŠECHNY mutace (argument bez `--` = filtr, `--help` se ignoruje) — nepoužívat; `setsid nohup … &` vrací PID setsid, ne skriptu → PID hledat `ps`.
+
 ## PŘEDÁNÍ 21. 10. ~16:40 UTC → nová koordinace „ŘÍDÍCÍ 21.10 noc 2“ (staré „ŘÍDÍCÍ 21.10 noc“ session_016CbSudw1q9GXrrtfiJKvAG, kontext ~40 %, předává kvůli ceně nočních kontrol)
 
 - **Plán a pokyny J. V. do pátku: `podklady/HARMONOGRAM_21_23_10.md` (ZÁVAZNÉ — rozpočet limitu, brzdy, dávky D1–D4, K6, K7).** J. V. 22. 10. celý den pryč → nic, co čeká na jeho rozhodnutí; otázky jen do „Čeká na vás“.
