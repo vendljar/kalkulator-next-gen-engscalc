@@ -14,7 +14,11 @@ koordinace (session_016CbSudw1q9GXrrtfiJKvAG). Zápis: `podklady/SABLONA_SOD_REA
 - **Hotovo (bod 4):** vyplnění kódem C6 (controlling-c3 5d6ae24) v odděleném worktree: CZ/EN/DE/FR × 0/1/3
   příplatky 72/0 — bez příplatků blok zmizí celý (žádný popisek ani prázdný odstavec), součty a DPH z celku sedí,
   žádný symbol ceny nezůstal. Koordinace potvrdila pořadí „celková cena první, rozpis z toho pod ní".
-- **Kolo:** viz níže (doplněno po doběhu).
+- **Kolo `--bez-mutaci`** (nad 7b4a165, pracovní strom = bbff8be bez dokumentace): sady **256 prošlo / 1 selhalo /
+  44 přeskočeno**, statické 4/4. Jediné selhání `overit_verzi.mjs` — artefakt `KNG_NEZVYSOVAT_VERZI` exportované do
+  kola (známé z C3); samostatně bez ní 7/0. Přeskočeno: test.js (export pro GitHub), 2× KNG_PODKLADY a **41
+  prohlížečových sad — v kontejneru S11 chybí playwright** (kód aplikace se neměnil). test_sod_real_v4 18/0,
+  test_sod / test_preklad_sod / test_sod_real_v3 zelené.
 
 # Předávka — 21. 10. 2026: Controlling #447 — C3 + C4, větev `claude/controlling-c3` (verzi přidělí sloučení)
 
