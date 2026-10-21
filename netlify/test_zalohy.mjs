@@ -658,6 +658,26 @@ await zkus('O9', async () => {
     && stavy.filter(x => x === 429).length === 4, stavy);
   test('K4-N5: vznikl jeden vynucený otisk a žádná rezervace nezůstala', vynKlice().length === 1 && rezKlice().length === 0,
     [vynKlice(), rezKlice()]);
+  /* totéž přímo nad porizVynuceny (bez přihlášení, které požadavky rozfázuje):
+   * 5 volání naráz → v jedné instanci se řadí (vyhradne), projde právě jedno.
+   * Bez řazení by všech 5 prošlo první kontrolou, zapsalo rezervaci a druhou
+   * kontrolou se odmítlo navzájem (0 otisků). Pojistka: mutace „bez řazení"
+   * před tímto testem přežila (O9), s ním je chycená. */
+  for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
+  /* Bariéra: zápis rezervace počká, až k němu dojde všech 5 (nejdéle 50 ms).
+   * S řazením se tam dostane jen jedno volání naráz (bariéra vyprší), bez
+   * něj všech 5 zapíše rezervaci dřív, než kterékoli zkontroluje znovu. */
+  const bariera = [];
+  globalThis.__TEST_ULOZISTE = (n) => { const u = puvodni(n); if (n !== 'zalohy') return u;
+    return { ...u, async zapis(k, v) {
+      if (k.startsWith(Z.VYNUCENE_REZERVACE)) await new Promise(r => { bariera.push(r); if (bariera.length >= 5) bariera.forEach(f => f()); setTimeout(r, 50); });
+      return u.zapis(k, v); } }; };
+  let primo = [];
+  try { primo = await sHodinami(() => Promise.all(Array.from({ length: 5 }, () => Z.porizVynuceny('rucne', ADMIN_EMAIL)))); }
+  finally { globalThis.__TEST_ULOZISTE = puvodni; }
+  test('K4-N5: 5 souběžných porizVynuceny v jedné instanci → právě jeden otisk, 4× limit',
+    primo.filter(x => x && x.den).length === 1 && primo.filter(x => x && x.limit).length === 4 && rezKlice().length === 0,
+    primo.map(x => x && (x.den || (x.limit && 'limit'))));
   /* jiná instance funkce zarezervuje slot mezi naší první kontrolou a zápisem rezervace */
   for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
   let cizi = null;
