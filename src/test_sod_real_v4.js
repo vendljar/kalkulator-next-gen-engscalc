@@ -53,6 +53,24 @@ if (fail) { console.log(`\n${ok} prošlo, ${fail} selhalo`); process.exit(1); }
   const nove = spany.slice(2, 5).map(sp => vys.slice(sp.zac, sp.kon));
   test('nové odstavce: bez odrážky, styl a zarovnání jako cena, písmo běhu ceny',
     nove.every(p => !/<w:numPr>/.test(p) && /<w:pStyle w:val="Normlnweb"\/>/.test(p) && /<w:jc w:val="both"\/>/.test(p) && p.indexOf(rPr) >= 0), nove);
+  /* K6-W3 (D3): <w:ind> se vkládal hned za <w:pPr>, tj. před <w:pStyle> —
+   * porušuje pořadí prvků w:pPr ve schématu OOXML. */
+  const PORADI = ['pStyle', 'keepNext', 'keepLines', 'pageBreakBefore', 'framePr', 'widowControl', 'numPr', 'suppressLineNumbers',
+    'pBdr', 'shd', 'tabs', 'suppressAutoHyphens', 'kinsoku', 'wordWrap', 'overflowPunct', 'topLinePunct', 'autoSpaceDE', 'autoSpaceDN',
+    'bidi', 'adjustRightInd', 'snapToGrid', 'spacing', 'ind', 'contextualSpacing', 'mirrorIndents', 'suppressOverlap', 'jc',
+    'textDirection', 'textAlignment', 'textboxTightWrap', 'outlineLvl', 'divId', 'cnfStyle', 'rPr', 'sectPr', 'pPrChange'];
+  const poradiOk = p => { const pPr = (p.match(/<w:pPr>([\s\S]*?)<\/w:pPr>/) || [])[1] || '';
+    const deti = []; let hl = 0; pPr.replace(/<(\/?)w:([A-Za-z]+)\b[^>]*?(\/?)>/g, (m, z, jm, s) => { if (!z && hl === 0) deti.push(jm); if (!z && !s) hl++; if (z) hl--; return m; });
+    const i = deti.map(d => PORADI.indexOf(d)); return i.every((x, k) => x >= 0 && (k === 0 || x > i[k - 1])); };
+  test('K6-W3: nové odstavce mají prvky w:pPr v pořadí schématu (ind za pStyle, před jc)', nove.every(poradiOk)
+    && nove.every(p => /<w:ind w:left="1080"/.test(p)), nove.map(p => (p.match(/<w:pPr>[\s\S]*?<\/w:pPr>/) || [''])[0]));
+  if (typeof VS.pPrSInd === 'function') {
+    const I = '<w:ind w:left="1"/>';
+    test('K6-W3: pPrSInd — za spacing, před rPr; prázdný pPr; jen pStyle', VS.pPrSInd('<w:pPr><w:pStyle w:val="a"/><w:spacing w:after="0"/><w:rPr><w:b/></w:rPr></w:pPr>', I)
+      === '<w:pPr><w:pStyle w:val="a"/><w:spacing w:after="0"/>' + I + '<w:rPr><w:b/></w:rPr></w:pPr>'
+      && VS.pPrSInd('<w:pPr></w:pPr>', I) === '<w:pPr>' + I + '</w:pPr>'
+      && VS.pPrSInd('<w:pPr><w:pStyle w:val="a"/></w:pPr>', I) === '<w:pPr><w:pStyle w:val="a"/>' + I + '</w:pPr>');
+  }
   test('každý symbol v jednom běhu', ['SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_OBJEDNANE', 'SOD_PRIPLATKY_KC', 'CISLO_NABIDKY']
     .every(k => vys.indexOf('{{' + k + '}}</w:t>') >= 0 || new RegExp('>[^<]*\\{\\{' + k + '\\}\\}[^<]*</w:t>').test(vys)));
   test('seznam příplatků začíná na novém řádku pod popiskem', /<w:br\/><w:t xml:space="preserve">\{\{SOD_PRIPLATKY_OBJEDNANE\}\}/.test(nove[1]), nove[1]);
