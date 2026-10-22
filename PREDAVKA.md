@@ -1,3 +1,25 @@
+# Předávka — 22. 10. 2026: dávka P1 — Stav Pipedrive v hlavičce zakázky a v exportu controllingu (v22.10.2), větev `claude/p1-stav-pipedrive`
+
+Nad integrací b7fa82c (= test v22.10.1 + podklady). **Do integrace / test nic** — slučuje koordinace
+(session_01X93Edh1U8MQru6HV28FdBY). Zadání `podklady/PIPEDRIVE_STAV_DEALU_22_10.md`, CHANGELOG `## v22.10.2 — P1`,
+`verze.txt` 22.10.2, roadmapa **#501** (číslo i verzi může koordinace přečíslovat).
+
+- **Hotovo:** řádek „Stav Pipedrive“ nahoře v pravém sloupci hlavičky (OCK i PROJ, `pdStavRadek` v `src/ui/common.js`,
+  jen ke čtení, štítky `.pill.pd-*`), `GET /api/pd/stav?soubor=` (`netlify/functions/pd_stav.mjs`, `netlify/lib/pd_stav.mjs`,
+  úložiště `pd_stav`), `zak.pdStav` dosazuje server (čtení / uložení / hromadný export), kontrola tvaru → 400
+  (`pdStavKontrola` v `src/controlling.js`, volá `zakazka_kontrola.mjs`), export controllingu verze 3 (sloupce
+  „Stav Pipedrive“, „Stav Pipedrive načten“), klient `pdStavObnovUI` (online_ui.js) při otevření a po uložení nového dealu,
+  `zakazkaDuplikuj` stav nepřebírá, příručka (novinky v22.10.2 + kap. 5 hlavička).
+- **Testy:** `src/test_pd_stav.js` 63/0, `netlify/test_pd_stav.mjs` 41/0 (pojistka v CHANGELOG), test_prava 924/0,
+  test_controlling 200/0, test_zalohy 162/0, test_pd_pristup 54/0, test_pipedrive 71/0, test_funkce 267/0, test_obnova 235/0; spust_testy.sh 238/0/1 (test.js), statické 4/4, kontrola_udaju čistá.
+  Mutace jádra „P1:“ 13/13; server „P1:“ 14/14 (12 nových + 2 stávající se shodou názvu), 0 přeživších; `--kontrola` jádro 445, server 775 úseků.
+- **K rozhodnutí J. V.:** (1) úložiště `pd_stav` je ve výjimkách záloh (stav se při uložení zapisuje i do zakázky; jinak
+  znovu z Pipedrive) — schválit, nebo přidat do otisku; (2) stav se načítá jen při otevření zakázky (tlačítko „načíst
+  znovu“ nevzniklo — zadání „jen pokud bude potřeba“).
+- **Pozor pro koordinaci:** prohlížečové sady (overit_lista, overit_online…) nepouštěny — řádek přidal do pravého sloupce
+  hlavičky jeden řádek. Pipedrive API v2 u smazaného dealu: ověřeno jen proti náhradnímu fetch (`is_deleted`/`status: deleted`).
+- **Další krok:** sloučení do integrace + celé kolo (koordinace).
+
 # Předávka — 22. 10. 2026: dávka D4 — slovníky překladu SoD podle revidovaného znění (v22.10.1), větev `claude/d4-sod-slovniky`
 
 Nad `test` = v21.10.6 (4c127f5). **Do integrace / test nic** — slučuje koordinace (session_01X93Edh1U8MQru6HV28FdBY).

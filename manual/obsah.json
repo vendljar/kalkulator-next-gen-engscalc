@@ -14,6 +14,15 @@
       ]
     },
     {
+      "nadpis": "Co je nového ve verzi v22.10.2 (22. 10. 2026)",
+      "odstavce": [
+        "**Stav Pipedrive v hlavičce zakázky.** Úplně nahoře v pravém sloupci hlavičky (Kalkulace OCK i PROJ) je nový řádek **Stav Pipedrive** — barevný štítek a pole se stavem obchodu v Pipedrive: **Otevřené, Ztracené, Vyhrané** nebo **Smazané**. Ostatní řádky (Otevřená varianta, Režim výpočtu, Globální přirážka, Ceník) se posunuly o řádek níž.",
+        "Stav se načte sám při otevření zakázky z dealu, se kterým je zakázka propojená. **V kalkulaci ho nikdo nemění** — pole je jen ke čtení, mění se v Pipedrive. Stav **nic neovlivňuje** (cenu, zámek nabídky ani smlouvu); je to informace pro vás a pro controlling. Zakázka bez propojeného dealu má šedé pole **„— zakázka nemá deal —“**.",
+        "Když Pipedrive zrovna neodpovídá, ukáže se poslední známý stav. Smazaný deal Pipedrive po 30 dnech odstraní úplně — kalkulace pak dál ukazuje **Smazané**.",
+        "**Jen pro administrátora.** Export pro controlling (jedna zakázka i hromadně za období, Excel i CSV) má za sloupcem „Pipedrive deal“ dva nové sloupce: **Stav Pipedrive** (česky, prázdný bez dealu) a **Stav Pipedrive načten** (datum). Jde jen o informaci, výběr zakázek do exportu se nemění. Verze struktury souboru je 3."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v21.10.5 (21. 10. 2026)",
       "odstavce": [
         "**Když zákazník k nabídce objedná příplatky:** v krycím listu OCK dole u **Smlouvy o dílo** je nový rámeček **Objednané příplatky**. Zaškrtněte příplatky z odeslané nabídky, které zákazník objednal, a zkontrolujte datum prodeje (předvyplní se datum podpisu smlouvy). Odeslaná nabídka se tím nemění.",
@@ -333,6 +342,7 @@
             { "popisek": "Ceník", "cely": ".row", "text": "Přepínač **ČR / Zahraničí** rozhoduje, ze které řady ceníku se počítá (kapitola 9)." }
           ]
         },
+        { "typ": "text", "text": "Nahoře v pravém sloupci hlavičky je od v22.10.2 řádek **Stav Pipedrive**: štítek a pole se stavem dealu propojeného se zakázkou (Otevřené / Ztracené / Vyhrané / Smazané). Je **jen ke čtení** pro všechny, načítá se z Pipedrive při otevření zakázky a nic v kalkulaci neovlivňuje. Bez propojeného dealu je pole šedé — „— zakázka nemá deal —“." },
         { "typ": "text", "text": "Drobnost, která ušetří nejvíc času: **Tabulátor prochází hlavičku po sloupcích** shora dolů, ne zpátky na první pole. Celá hlavička se tak dá vyplnit, aniž sáhnete na myš." },
         { "typ": "text", "text": "Dvě pole si zaslouží komentář, protože se pravidelně pletou. **Adresa stavby a sídlo objednatele nejsou totéž** — developer sídlí zpravidla jinde, než staví. Krycí list bere adresu stavby do řádku „Adresa stavby“ a sídlo do řádku „Adresa objednatele“; dokud sídlo nevyplníte, zůstane v krycím listu prázdné. A **IČO objednatele** není jen evidence: po jeho vyplnění zesvětlá tlačítko *Najít firmu v ARES*, které doplní název i adresu za vás." },
         { "typ": "podnadpis", "text": "Kontaktní osoba: aplikace se zeptá, koho vybrat" },

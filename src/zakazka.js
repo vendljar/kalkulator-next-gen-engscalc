@@ -1650,6 +1650,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
    * původní nepřebírá — jinak by ji obchodník ani neuložil (id mění jen
    * administrátor). */
   delete nova.pdDealId;
+  delete nova.pdStav;   // stav patří dealu (P1, 22. 10. 2026)
 
   /* Zápisy o jednání patří k původní akci, ne sem. */
   nova.poznamky = [];

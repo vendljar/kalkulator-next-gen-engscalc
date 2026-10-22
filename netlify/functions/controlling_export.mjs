@@ -26,6 +26,7 @@
  * překročení 413 s výzvou zúžit období, nikdy potichu oříznutý soubor. */
 import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
+import { pdStavPripoj } from '../lib/pd_stav.mjs';
 
 export default async (req) => {
   let J;
@@ -70,6 +71,8 @@ export default async (req) => {
       zak = raw ? G.importZakazka(raw) : null;
     } catch (e) { zak = null; }
     if (!zak) { preskoceno.push({ soubor: k.soubor, cislo: k.cislo, duvod: 'zakázku se nepodařilo přečíst' }); continue; }
+    /* Sloupec „Stav Pipedrive" (P1): poslední známý stav dealu z úložiště pd_stav. */
+    await pdStavPripoj(zak);
     /* Nečekaný tvar uložené zakázky shodí jen ji, ne celý export (K6-S6). */
     let v;
     try { v = G.ctrlHromadnyZakazka(zak, filtr, opts); }

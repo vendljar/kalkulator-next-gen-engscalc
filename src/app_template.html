@@ -556,6 +556,14 @@
   .pill.mut { background:#eef1f5; color:var(--mut); }
   /* Platební podmínky firmy (#367): chybný součet splátek OCK */
   .pill.bad { background:#fde8e8; color:#b91c1c; }
+  /* Stav dealu Pipedrive v hlavičce zakázky (P1, 22. 10. 2026) — barvy podle
+     náhledu odsouhlaseného J. V.; třída jen z výčtu PD_STAV_PILL v common.js. */
+  .pill.pd-open { background:#e8efff; color:#1f5eff; }
+  .pill.pd-won { background:#e7efe9; color:#0a7d4f; }
+  .pill.pd-lost { background:#fde8e8; color:#b91c1c; }
+  .pill.pd-deleted { background:#eef1f5; color:var(--mut); }
+  .zak-head select.pd-stav:disabled { color:var(--ink, #1a2332); opacity:1; background:#f4f6f9; cursor:default; }
+  .zak-head select.pd-stav.bez-dealu:disabled { color:var(--mut); }
   input.podm-chyba { border-color:#b91c1c; background:#fde8e8; }
   .podm-chyba-text { color:#b91c1c; }
   /* Sloupec jednotek v oddílech platebních podmínek (U1, 20. 10. 2026): pevná

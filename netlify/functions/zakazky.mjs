@@ -10,6 +10,7 @@
 import { uloziste, vyzadujRoli, json, serverVerze } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B, zakazkaVelikostHlaska } from '../lib/zakazka_kontrola.mjs';
+import { pdStavPripoj, pdStavUlozeni } from '../lib/pd_stav.mjs';
 
 /* Jméno k e-mailu z účtů (P7 / K16-N87) — jen pro hlášku o kolizi verzí
  * u zakázek uložených dřív, než se jméno začalo zapisovat. Jedno čtení,
@@ -39,7 +40,8 @@ export default async (req) => {
       return json({ ok: true, rejstrik: rejstrik || { schema: 1, zakazky: [] } });
     }
     const zak = await s.cti('z/' + soubor);
-    return zak ? json({ ok: true, zakazka: zak })
+    /* Stav dealu Pipedrive (P1): poslední známý z úložiště pd_stav. */
+    return zak ? json({ ok: true, zakazka: await pdStavPripoj(zak) })
                : json({ ok: false, chyba: 'Zakázka nenalezena: ' + soubor }, 404);
   }
   /* DELETE /api/zakazky?soubor=X — SMAZÁNÍ ZAKÁZKY (21. 8. 2026, zadání J. V.
@@ -143,6 +145,8 @@ export default async (req) => {
       program: prog, matice: (zobr && zobr.matice) || null });
   if (!kontrola.ok) return json({ ok: false, chyba: kontrola.chyba }, kontrola.status);
   const sporne = kontrola.sporne;
+  /* Stav dealu Pipedrive dosazuje server (P1) — z prohlížeče jen tvar. */
+  await pdStavUlozeni(zak, stara);
 
   const razitko = ULO.uloRazitkoNove();
   zak.uloRazitko = razitko;

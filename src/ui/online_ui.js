@@ -1311,6 +1311,9 @@ function onlineUloz(opts) {
      * Kdyby se nechala ležet, ptá se na ni aplikace při každém dalším spuštění
      * i za měsíc („V prohlížeči je rozpracovaná kalkulace…"). */
     if (typeof historieZalohaHotovo === 'function') historieZalohaHotovo();
+    /* Nově propojený deal (správce zadal deal id) — stav dealu se načte hned
+     * po uložení, ne až při příštím otevření (P1). */
+    if (ZAK.pdDealId && !ZAK.pdStav) pdStavObnovUI(o.soubor);
     /* Liší-li se hlavička od karty zákazníka, aplikace to NABÍDNE (#162,
      * 20. 8. 2026) — nikdy nezapíše potichu. Selhání nabídky nesmí shodit
      * uložení zakázky, proto .catch(() => {}). */
@@ -1563,9 +1566,38 @@ async function onlineOtevri(soubor) {
     /* Otevření není editace: značka se shodí AŽ TEĎ, po přepočtu i po
      * překreslení, aby ji nenastavil klik, kterým se zakázka otevřela. */
     ONLINE_STAV.zmenaUzivatele = false;
+    /* Stav dealu Pipedrive (P1) — na pozadí, otevření na něj nečeká. */
+    pdStavObnovUI(soubor);
     return true;
   }).catch(e => { onlineZprava('Zakázku se nepodařilo otevřít: ' + e.message, 'varovani'); renderOnlinePanel(); return false; })
     .then(v => { ONLINE_STAV.pracuje = false; return v; });
+}
+
+/* ---------- stav dealu Pipedrive (P1, 22. 10. 2026) ----------
+ * Po otevření zakázky se zeptá serveru na stav propojeného dealu
+ * (/api/pd/stav — deal id server bere z uložené zakázky). Výsledek je
+ * poslední známý stav: vloží se do ZAK.pdStav a hlavička se překreslí.
+ * Chyby (výpadek, nenastavené napojení, zakázka mezitím přepnutá) se
+ * NEHLÁSÍ — zůstane, co bylo. Nová hodnota NENÍ neuložená změna: když byla
+ * zakázka čistá, otisky pro autosave i „neuloženo" se posunou s ní
+ * (stejná zásada jako u přepočtu na dnešní ceník, V35). Do uložení stav
+ * stejně dosazuje server (lib/pd_stav.mjs). */
+function pdStavObnovUI(soubor) {
+  if (!soubor || typeof onlineApi !== 'function' || typeof pdStavNorm !== 'function') return Promise.resolve(false);
+  return onlineApi('/api/pd/stav?soubor=' + encodeURIComponent(soubor)).then(o => {
+    if (ONLINE_STAV.soubor !== soubor || !o || o.ok !== true) return false;
+    const novy = pdStavNorm(o.pdStav);
+    if (!novy) return false;
+    if (JSON.stringify(pdStavNorm(ZAK.pdStav) || null) === JSON.stringify(novy)) return false;
+    const pred = JSON.stringify(ZAK);
+    const autosaveCisty = ONLINE_STAV.posledni === pred;
+    const histCista = typeof historieNeulozeno === 'function' && !historieNeulozeno();
+    ZAK.pdStav = novy;
+    if (autosaveCisty) ONLINE_STAV.posledni = JSON.stringify(ZAK);
+    if (histCista && typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+    render();
+    return true;
+  }).catch(() => false);
 }
 
 /* ---------- záloha („odlévání" na Disk Google) ---------- */

@@ -91,7 +91,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'ui/sablony_sprava_ui.js',
   /* xlsx.js (K6-K8, D3 21. 10. 2026): sešit pro controlling a ceník —
    * řídicí znak v textu buňky by rozbil celý soubor. Hlídá src/test_cenik_xlsx.js. */
-  'xlsx.js'];
+  'xlsx.js',
+  /* controlling.js a ui/common.js (P1, 22. 10. 2026): stav dealu Pipedrive —
+   * tvar a whitelist `pdStav`, sloupec exportu pro controlling a řádek
+   * hlavičky jen ke čtení. Hlídá je src/test_pd_stav.js. */
+  'controlling.js', 'ui/common.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -120,6 +124,8 @@ const PRIORITA = [
   'test_sod_en.js', 'test_sod_real_v3.js', 'test_preklad_sod.js', 'test_sod_slovnik_revize.js',
   /* průvodce šablon (#474, O12) — rychlá sada, chytá mutace ui/sablony_sprava_ui.js */
   'test_sablony_online.js',
+  /* stav Pipedrive (P1) — rychlá sada, chytá mutace controlling.js a ui/common.js */
+  'test_pd_stav.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -2064,6 +2070,61 @@ const MUTACE = [
     hledej: "${shoda ? 'čeština shodná s platnou verzí ' + esc(shoda.verze) : 'nová česká verze'}",
     nahrad: "nová česká verze",
     proc: "J. V. by nevěděl, že se čeština znovu nezveřejní" },
+
+  /* ---------- P1 (22. 10. 2026): stav dealu Pipedrive v hlavičce a v exportu ----------
+   * Hlídá src/test_pd_stav.js. */
+  { nazev: "P1: pole Stav Pipedrive jde měnit (není disabled)", soubor: "ui/common.js",
+    hledej: "<select class=\"pd-stav${maDeal ? '' : ' bez-dealu'}\" disabled title=",
+    nahrad: "<select class=\"pd-stav${maDeal ? '' : ' bez-dealu'}\" title=",
+    proc: "stav jde z Pipedrive — v kalkulaci ho nesmí měnit nikdo" },
+  { nazev: "P1: třída štítku přímo ze stavu (bez výčtu)", soubor: "ui/common.js",
+    hledej: "? PD_STAV_PILL[st.status] : 'mut';",
+    nahrad: "? PD_STAV_PILL[st.status] : String(zak && zak.pdStav && zak.pdStav.status);",
+    proc: "třída z dat zakázky by šla do atributu bez výčtu" },
+  { nazev: "P1: bez dealu se ukáže uložený stav", soubor: "ui/common.js",
+    hledej: "const st = (maDeal && typeof pdStavNorm === 'function') ? pdStavNorm(zak.pdStav) : null;",
+    nahrad: "const st = (typeof pdStavNorm === 'function') ? pdStavNorm(zak.pdStav) : null;",
+    proc: "zakázka bez dealu by tvrdila stav, který k ní nepatří" },
+  { nazev: "P1: řádek Stav Pipedrive v OCK až pod variantou", soubor: "ui/common.js",
+    hledej: "        ${pdStavRow}${variantaRow}${ridiciBtn}${rezimRow}",
+    nahrad: "        ${variantaRow}${pdStavRow}${ridiciBtn}${rezimRow}",
+    proc: "zadání: úplně nahoře v pravém sloupci" },
+  { nazev: "P1: řádek Stav Pipedrive chybí v PROJ", soubor: "ui/common.js",
+    hledej: "<div class=\"zak-head-col\">${pdStavRow}${variantaRow}${ridiciBtn}${prirazkaRowProj}</div>",
+    nahrad: "<div class=\"zak-head-col\">${variantaRow}${ridiciBtn}${prirazkaRowProj}</div>",
+    proc: "hlavička je společná pro OCK i PROJ" },
+  { nazev: "P1: text pole bez escapování", soubor: "ui/common.js",
+    hledej: "disabled title=\"${esc(titul)}\"><option selected>${esc(pole)}</option>",
+    nahrad: "disabled title=\"${titul}\"><option selected>${esc(pole)}</option>",
+    proc: "bublina nese čas z dat — bez esc() průchod pro skript" },
+  { nazev: "P1: tvar pdStav pustí cizí pole", soubor: "controlling.js",
+    hledej: "  if (klice.length !== 2 || klice.some(k => k !== 'status' && k !== 'nacteno')) return null;\n",
+    nahrad: "",
+    proc: "do zakázky by se uložila libovolná data pod pdStav" },
+  { nazev: "P1: stav mimo whitelist", soubor: "controlling.js",
+    hledej: "  if (typeof x.status !== 'string' || !PD_STAVY.includes(x.status)) return null;",
+    nahrad: "  if (typeof x.status !== 'string') return null;",
+    proc: "neznámý stav by se ukázal i vyvezl" },
+  { nazev: "P1: čas načtení se netestuje na tvar", soubor: "controlling.js",
+    hledej: "  if (typeof x.nacteno !== 'string' || !PD_STAV_NACTENO_TVAR.test(x.nacteno) || isNaN(Date.parse(x.nacteno))) return null;",
+    nahrad: "  if (x.nacteno == null) return null;",
+    proc: "objekt v čase načtení by shodil uložení na 500 (třída K5-S1)" },
+  { nazev: "P1: smazaný deal (is_deleted) se nepozná", soubor: "controlling.js",
+    hledej: "  if (d.is_deleted === true || d.deleted === true) return 'deleted';\n",
+    nahrad: "",
+    proc: "smazaný deal by v kalkulaci zůstal Ztracené/Otevřené" },
+  { nazev: "P1: export ukáže stav i bez dealu", soubor: "controlling.js",
+    hledej: "  if (!zak || !ctrlPdDealIdNorm(zak.pdDealId)) return '';\n  const s = pdStavNorm(zak.pdStav);",
+    nahrad: "  if (!zak) return '';\n  const s = pdStavNorm(zak.pdStav);",
+    proc: "zadání: bez dealu prázdné" },
+  { nazev: "P1: sloupec Stav Pipedrive v exportu prázdný", soubor: "controlling.js",
+    hledej: "        h.pdStav || '', h.pdStavNacteno || '',",
+    nahrad: "        '', h.pdStavNacteno || '',",
+    proc: "controlling by stav dealu v CSV/XLSX nedostal" },
+  { nazev: "P1: verze exportu zůstala 2", soubor: "controlling.js",
+    hledej: "const CTRL_EXPORT_VERZE = 3;",
+    nahrad: "const CTRL_EXPORT_VERZE = 2;",
+    proc: "převodník controllingu by nepoznal posunuté sloupce" },
 ];
 
 /* ============================================================
