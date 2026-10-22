@@ -1,3 +1,27 @@
+# Předávka — 22. 10. 2026: dávka D4 — slovníky překladu SoD podle revidovaného znění (v22.10.1), větev `claude/d4-sod-slovniky`
+
+Nad `test` = v21.10.6 (4c127f5). **Do integrace / test nic** — slučuje koordinace (session_01X93Edh1U8MQru6HV28FdBY).
+Podklad `podklady/D4_SOD_SLOVNIKY_22_10.md`, CHANGELOG `## v22.10.1 — D4`, `verze.txt` 22.10.1 (aplikace beze změny).
+
+- **Hotovo:** `nastroje/preklad_sod.js --z-revize` (slovník z revidované jazykové šablony, ověření složením) a
+  `--porovnej` (rozdíly textu / běhů / w:pPr / název / jazyk). Šablona z nástroje nově: w:lang cs-CZ → en-GB/de-DE/fr-FR,
+  název dokumentu, sloučené běhy, bez w:rsid*, bloky `drzetSpolu` (w:keepNext podpisu), pomocné styly tabulátorů,
+  zápis NBSP jako ` `.
+- **Výsledek:** realizace v3 EN 99 / DE 97 / FR 117 rozdílů textu → **0** (i běhy, w:pPr, název, jazyk); realizace v4
+  ze slovníků = postup S11, 0 rozdílů; projekce v4 nové slovníky, 0 rozdílů **jen textu** (revidované soubory projekce
+  konektor nevydá bajtově — pod ~50 kB je vrací jen inline; text přepsán 2× nezávisle, shodně).
+- **Slovníky = přílohy sezení D4** (6× JSON, sha256 v podkladu). Na Disk dnes NIC dalšího (pokyn koordinace).
+  Na Disku ale už je 6 souborů `…_2026-10-22.json` (Sablony) vytvořených před pokynem — bez NBSP (FR realizace vadná,
+  60 odstavců) → J. V. nahradí přílohami („Nahrát novou verzi“) nebo smaže. Konektor neumí přepsat obsah ani mazat bez schválení.
+- **Testy:** `src/test_sod_slovnik_revize.js` 29/0 (pojistka: před D4 0/1, NBSP proti ad78da2 28/1); test_preklad_sod 19/0,
+  test_sod_real_v4 20/0, test_sod_real_v3 11/0, test_sod_en 49/0, test_docx_preklad 52, test_sablony_online 85/0;
+  mutace „D4 slovník z revize“ 10/10, všechny `preklad_sod` 16/16, `--kontrola` 432; kontrola údajů čistá;
+  `build.py --kontrola-verze` OK, overit_verzi 7/0. Prohlížečové sady a celé kolo nepouštěny (koordinace).
+- **Otázky pro J. V.:** (1) DE revize používá „BGB“ pro český občanský zákoník — ponechat? (2) překlad nových odstavců
+  SoD v4 (příplatky) — viz podklad; (3) projekce v4: tučné úseky / tabulátory podle češtiny — zkontrolovat ve Wordu;
+  (4) uložit přílohy na Disk a nahradit dnešní kopie; (5) pro bajtové ověření projekce: zabalit 3 revidované soubory do .zip.
+- **Další krok:** po uložení slovníků J. V. lze přesnost projekce doověřit `--porovnej` (potřeba bajtové soubory).
+
 # Předávka — 21. 10. 2026 večer: dávka D3 — opravy nálezů auditu K6 (#483, v21.10.6), větev `claude/d3-k6-opravy`
 
 Nad `test` = v21.10.5 (7fac477). **Do integrace / test nic** — slučuje koordinace (session_01X93Edh1U8MQru6HV28FdBY,

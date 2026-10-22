@@ -9,7 +9,7 @@
  * řádků podpisu (blok „drzetSpolu"), název dokumentu, jazyk ve stylech a
  * nastavení, w:rsid* u běhů, sloučení běhů stejného písma.
  * Pojistka: proti nástroji 4c127f5 (před D4) sada selže — slovnikZRevize
- * a porovnejSRevizi chybí: 0 prošlo / 1 selhalo; po D4 28 / 0.
+ * a porovnejSRevizi chybí: 0 prošlo / 1 selhalo; po D4 29 / 0 (zápis \u00a0 — proti ad78da2 28 / 1).
  *
  * Spuštění: cd src && node test_sod_slovnik_revize.js */
 const path = require('path');
@@ -114,6 +114,11 @@ const docx = async (xml, title) => new Uint8Array(await (await dg.zipZapis([
   test('kruh: styles.xml w:lang → en-GB (eastAsia beze změny)', styl.indexOf('<w:lang w:val="en-GB" w:eastAsia="en-US"/>') > 0 && styl.indexOf('de-DE') < 0, styl);
   test('kruh: settings.xml themeFontLang → en-GB', nast.indexOf('<w:themeFontLang w:val="en-GB"/>') > 0, nast);
   test('kruh: docProps title z vlastnosti slovníku', dec.decode(polozky.find(q => q.nazev === 'docProps/core.xml').data).indexOf('<dc:title>CONTRACT FOR WORK</dc:title>') > 0);
+
+  /* zápis slovníku: nezlomitelná mezera jako \u00a0 (přenos textem přes konektor Disku ji jinak ztratí) */
+  const nb = String.fromCharCode(0xa0), js = typeof ps.jsonSlovniku === 'function' ? ps.jsonSlovniku([{ cz: 'v' + nb + 'Praze', en: 'in Prague' }]) : '';
+  test('zápis slovníku: \\u00a0 místo nezlomitelné mezery, čisté ASCII, načte se stejně', /v\\u00a0Praze/.test(js)
+    && !/[^\x00-\x7f]/.test(js) && JSON.parse(js)[0].cz === 'v' + nb + 'Praze', js);
 
   /* odhalení vad revize */
   const revKurziva = await docx(REV.replace(r(en(B), 'fixed'), r('<w:rPr><w:i/></w:rPr>', 'fixed')), 'X');

@@ -16,6 +16,21 @@
  *   node nastroje/preklad_sod.js [--jazyk de] <složka> [výstupní složka]
  *       ze šablon Sablona_SOD_REALIZACE_v3.docx a Sablona_SOD_PROJEKCE_v4.docx
  *       a jejich slovníků vyrobí …_EN.docx (_DE, _FR) a vypíše kontrolu
+ *   node nastroje/preklad_sod.js --z-revize [--jazyk de] <složka> [výstupní složka]
+ *       (D4, 22. 10. 2026) ze šablony a její REVIDOVANÉ jazykové verze
+ *       <šablona>_<JAZYK>.docx ve složce upraví slovník tak, aby nástroj
+ *       vyrobil přesně revidované znění; zapíše ho do výstupní složky
+ *       (výchozí = vstupní) a vypíše vady a sporné věty
+ *   node nastroje/preklad_sod.js --porovnej [--jazyk de] <složka> [soubor.docx …]
+ *       vyrobí šablonu ze slovníku a porovná ji s <šablona>_<JAZYK>.docx
+ *       ve složce: rozdíly textu, běhů (po sloučení stejného písma), w:pPr,
+ *       název dokumentu, jazyk ve stylech a nastavení (0 = shoda)
+ *
+ * JAZYK DOKUMENTU (D4, jako revidované znění J. V.): w:lang cs-CZ → en-GB /
+ * de-DE / fr-FR v těle, styles.xml (všechny w:lang w:val) a themeFontLang
+ * v settings.xml; název dokumentu (docProps) ze záznamu { vlastnost: 'title',
+ * <jazyk> }; běhy těla bez w:rsid*. Blok { drzetSpolu: { za, pred } } dá
+ * w:keepNext odstavcům mezi dvěma textovými kotvami (podpisový blok).
  *
  * POJMENOVANÁ MÍSTA (18. 10. 2026, J. V.: sporná místa — DPH u zahraničního
  * zákazníka, skladné — se budou měnit „jedním přepisem"). Záznam slovníku
@@ -287,6 +302,11 @@ function nactiSlovnik(soubor) {
   zaznamy.forEach(z => { if (z && typeof z.cz === 'string') mapa.set(normKlic(z.cz), z); });
   return { zaznamy, mapa };
 }
+/* JSON slovníku; neviditelné mezery (nezlomitelná …) jako \u00a0 — při přenosu
+ * přes konektor Disku textem se jinak mění na obyčejné mezery (D4). */
+const NEVIDITELNE = /[\u00a0\u2000-\u200f\u2028\u2029\u202f\u2060\ufeff]/g;
+const jsonSlovniku = zaznamy => JSON.stringify(zaznamy, null, 1)
+  .replace(NEVIDITELNE, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')) + '\n';
 const slovnikSoubor = (sablona, L) => sablona.replace(/\.docx$/i, '.preklad_' + (L || 'en') + '.json');
 
 async function kostra(soubor, L) {
@@ -525,7 +545,7 @@ async function hlavni() {
         const v = await slovnikZRevize(czB, revB, zaz, L);
         if (!fs.existsSync(vystupni)) fs.mkdirSync(vystupni, { recursive: true });
         const cil = path.join(vystupni, path.basename(slovnikSoubor(f, L)));
-        fs.writeFileSync(cil, JSON.stringify(v.zaznamy, null, 1) + '\n');
+        fs.writeFileSync(cil, jsonSlovniku(v.zaznamy));
         celkem += v.vady.length + v.sporne.length;
         console.log((v.vady.length + v.sporne.length ? '✗ ' : '✓ ') + path.basename(cil) + ' — změněno ' + v.zmeneno + ', nových ' + v.novych
           + ', beze změny ' + v.beze + v.sporne.concat(v.vady).map(t => '\n    ' + t).join(''));
@@ -565,4 +585,4 @@ async function hlavni() {
 
 if (require.main === module) hlavni().then(k => process.exit(k)).catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
 module.exports = { rozborOdstavce, stylyOdstavce, zapisOdstavce, slozOdstavec, odstavceKPrekladu, prelozXml, prelozSablonu, normKlic,
-  rozvinMista, mistaZeZaznamu, JAZYKY_SOD, slovnikZRevize, porovnejSRevizi, zapisZRevize };
+  rozvinMista, mistaZeZaznamu, JAZYKY_SOD, slovnikZRevize, porovnejSRevizi, zapisZRevize, jsonSlovniku };
