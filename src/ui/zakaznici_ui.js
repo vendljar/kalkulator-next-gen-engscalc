@@ -100,6 +100,12 @@ function naseptavacZakVyber(hodnota, kde) {
   const karta = naseptavacZakKarta(hodnota);
   if (!karta || typeof zakaznikPredvypln !== 'function') { set('ZAK.objednatel', hodnota); return; }
   if (typeof zamekStop === 'function' && zamekStop()) return;
+  /* Z1: po smlouvě o dílo kterékoli varianty se údaje zákazníka v hlavičce
+   * nemění (zamekZakCestaZmrazena) — i když je otevřený nezamčený klon. */
+  if (typeof zamekZakCestaZmrazena === 'function' && zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel')) {
+    if (typeof hlaska === 'function') hlaska(zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel'));
+    render(); return;
+  }
   if (typeof nahledStop === 'function' && nahledStop('dotažení zákazníka do hlavičky')) return;
   const v = zakaznikPredvypln(karta, ZAK);
   if (v.zmeny.indexOf('objednatel') < 0) ZAK.objednatel = hodnota;   // název se vybral výslovně
@@ -239,6 +245,12 @@ function zakaznikDoZakazkyUI(klic) {
     || (ZAK_DB.otevreny && zakaznikKlic(ZAK_DB.otevreny) === klic ? ZAK_DB.otevreny : null);
   if (!z) return;
   if (typeof zamekStop === 'function' && zamekStop()) return;
+  /* Z1: po smlouvě o dílo kterékoli varianty se údaje zákazníka v hlavičce
+   * nemění (zamekZakCestaZmrazena) — i když je otevřený nezamčený klon. */
+  if (typeof zamekZakCestaZmrazena === 'function' && zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel')) {
+    if (typeof hlaska === 'function') hlaska(zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel'));
+    render(); return;
+  }
   if (typeof nahledStop === 'function' && nahledStop('přenesení zákazníka do zakázky')) return;
   const n = zakaznikDoZakazky(z, ZAK);
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();

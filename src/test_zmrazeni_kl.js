@@ -25,7 +25,7 @@ const fs = require('fs');
 const path = require('path');
 const nacti = (f) => { const m = require(f); Object.keys(m).forEach(k => { if (global[k] === undefined) global[k] = m[k]; }); return m; };
 const ZC = require('./zkusebni_cenik.js');
-nacti('./format.js');
+const F = nacti('./format.js');
 nacti('./preklad.js');
 nacti('./docxgen.js');
 nacti('./engine.js');
@@ -272,6 +272,28 @@ test('neznámé pole se po tisku CN bere jako zmrazené', (() => { const v = zam
   const sp = SD.sodProjData(z, v).placeholders || {};
   test('PROJ: smlouva o dílo (sodProjData) nese novou splatnost', sp.PODM_SPLATNOST_DNI === '90', sp.PODM_SPLATNOST_DNI);
 }
+
+/* ---- 5b) ceny činností v krycím listu PROJ jako v nabídce (Z1, podnět obchodníka) ----
+ * Pojistka: nad v22.10.2 nesl krycí list nezaokrouhlené ceny činností, součet
+ * řádků neseděl s „Celkem bez DPH" nabídky (oba případy níž selžou). */
+const kc0 = n => Math.round(n || 0).toLocaleString('cs-CZ') + ' Kč';   // = kryciProjKc
+[['krok 1000 bez slevy', { krok: 1000, smer: 'nahoru' }, null],
+ ['krok 100 se slevou 7 %', { krok: 100, smer: 'nahoru' }, { procenta: 7, stav: 'schváleno' }]].forEach(([nazev, zaokr, sleva]) => {
+  const z = nova(); z.cislo = '2026 - OVP - CN - 4773'; const v = z.varianty[0];
+  v.data.zaokrProj = zaokr; if (sleva) v.data.slevaProj = sleva;
+  const nc = NP.nabidkaProjCeny(v, 'cz');
+  const c = KP.kryciProjCtx(z, v);
+  const klice = Object.keys(nc.cenyPo).filter(k => c.sekce[k]);
+  const p = sleva ? sleva.procenta / 100 : 0;
+  test(nazev + ': příprava — aspoň jedna činnost má cenu, kterou nabídka zaokrouhlí',
+    nc.r.sekce.some(s => s.celkem > 0 && Math.abs(s.celkem * (1 - p) - nc.cenyPo[s.key]) > 0.5));
+  test(nazev + ': cena každé činnosti v krycím listu = cena v nabídce',
+    klice.length > 0 && klice.every(k => Math.abs(c.sekce[k].celkem - nc.cenyPo[k]) < 1e-9), klice.map(k => [k, c.sekce[k].celkem, nc.cenyPo[k]]));
+  const soucet = klice.reduce((a, k) => a + (c.sekce[k].celkem || 0), 0);
+  const pd = NP.nabidkaProjData(z, v, 'cz', { slevaZvlast: false }).placeholders || {};
+  test(nazev + ': součet činností = hodnota zakázky = Celkem bez DPH v nabídce',
+    kc0(soucet) === c.hodnota && pd.PROJ_CELKEM_BEZ_DPH === F.formatKc2(soucet), [kc0(soucet), c.hodnota, pd.PROJ_CELKEM_BEZ_DPH]);
+});
 
 /* ---- 6) Zaměření strojovna ---- */
 {
