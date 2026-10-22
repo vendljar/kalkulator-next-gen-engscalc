@@ -7889,25 +7889,48 @@
  "pozn": "Číslo položky přidělila D5 (volné za #501; koordinace přečíslovala na #503 (#502 má Z1)); koordinace může přečíslovat. Větev claude/d5-rozhodnuti-k6 (D5); číslo verze může koordinace při slučování přečíslovat."
   },
   {
-   "id": "504",
-   "vlna": "B",
-   "stav": "hotovo",
-   "dulezitost": "vysoka",
-   "slozitost": "M",
-   "nazev": "Hromadný export controllingu za období: přesný výběr z rejstříku, dávky a souběh (413 / 504)",
-   "proc": "Hlášení J. V. 22. 10. 2026 (ostrá verze, Nastavení → Controlling → Export předkalkulace → Hromadně za období): 1.–22. 10. → „muselo by se přečíst 633 zakázek (strop 600)“, 12.–22. 10. → „server odpověděl 504“. Předvýběr bral každou zakázku s odeslanou nabídkou upravenou v období (hromadné přeuložení, migrace) a server četl sekvenčně do vypršení funkce.",
-   "detail": "HOTOVO (E1): rejstřík nese `ctrlDny` (dny zámků v Praze s řadou varianty, den prodeje z objednaných příplatků; `{ cist: true }` = rozhodne přečtená zakázka) — ctrlRejstrikDny, uloRejstrikZaznam/Normalizuj; předvýběr ctrlHromadnyKandidati vybírá podle dnů ± rezerva 2 dny, starší záznamy bez dnů hrubým předvýběrem jako dřív, server je dopočítává po dávkách při ukládání (jako adresy, ULO_ADRESY_DAVKA). Export čte souběžně (12) s časovým rozpočtem 5 s a nejvýš 150 zakázkami na dávku, vrací kurzor `dalsi`; prohlížeč (ctrlHromadnyStahni) skládá dávky do jednoho souboru, protokol jeden záznam (probiha → hotovo / odmitnuto), navazující dávka jen ke svému exportu a stejné verzi mapování. Bez stropu počtu zakázek (doplnění J. V. 22. 10.: cteni/zakazek zrušeny, jen dni 400, odpověď dávky 5 MB, 1000 dávek; simulace 1000 zakázek netlify/test_controlling_objem.mjs). Filtr Stav Pipedrive `pd` (výchozí won; open/lost/deleted/bez/vse) — server, protokol, list Popis s počty vyřazených (jiný stav / bez stavu), hláška prázdného výsledku; poslední známý stav, z Pipedrive se nedotahuje. Vypršený dotaz → česká hláška s radou kratšího období. ctrlDenPraha drží jeden formátovač (byl nejdražší částí předvýběru).",
-   "hotovoKdyz": "Testy s pojistkou (src/test_controlling.js, netlify/test_controlling.mjs, netlify/test_rejstrik.mjs) zelené, mutace „#504“ jádra i serveru bez přeživších, `--kontrola` obou.",
-   "kde": "`src/controlling.js`, `src/uloziste.js`, `src/ui/controlling_ui.js`, `netlify/functions/controlling_export.mjs`, `netlify/functions/zakazky.mjs`",
-   "zavisi": [
+   "id" : "504",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "dulezitost" : "vysoka",
+   "slozitost" : "M",
+   "hotovoV" : "v22.10.5",
+   "nazev" : "Hromadný export controllingu bez stropu 600 a 504, filtr Stav Pipedrive",
+   "proc" : "Hlášení J. V. 22. 10. 2026 (ostrá): export 1.–22. 10. „muselo by se přečíst 633 zakázek (strop 600)“, 12.–22. 10. „server odpověděl 504“ — „exporty pro controlling od určité velikosti nefungují“. J. V.: „nejsme schopni stahovat více než 600 zakázek?“ a „v exportu potřebujeme filtrovat i podle stavu Pipedrive … ve výchozí variantě vyhrané zakázky“.",
+   "detail" : "HOTOVO (E1, claude/e1-export-obdobi nad 4ce35d2): (1) rejstřík nese `ctrlDny` (dny zámků v Praze s řadou varianty, den prodeje; `{cist:true}` = rozhodne přečtená zakázka) — ctrlRejstrikDny, uloRejstrikZaznam/Normalizuj; ctrlHromadnyKandidati vybírá podle dnů ± 2 dny, starší záznamy hrubým předvýběrem jako dřív a server je dopočítává po dávkách při ukládání (jako adresy). (2) Export čte souběžně (12) s rozpočtem 5 s / 150 zakázek na dávku a vrací kurzor `dalsi`; prohlížeč (ctrlHromadnyStahni) skládá dávky do jednoho souboru, protokol jeden záznam (probiha → hotovo), navazující dávka jen ke svému exportu se stejným filtrem a verzí mapování. Stropy počtu (cteni 600, zakazek 150) zrušeny — jen období 400 dní, odpověď dávky 5 MB, 1000 dávek; simulace 1000 zakázek (netlify/test_controlling_objem.mjs) 8 dávek, nejdelší 0,5 s. (3) Filtr Stav Pipedrive `pd` (výchozí won; open/lost/deleted/bez/vse) — server, protokol, list Popis s počty vyřazených (jiný stav / bez stavu), jméno souboru, hláška prázdného výsledku; poslední známý stav, z Pipedrive se nedotahuje. Vypršený dotaz → česká hláška s radou kratšího období. ctrlDenPraha s jedním formátovačem.",
+   "hotovoKdyz" : "Export ~1 000 zakázek doběhne (simulace), výběr jen zakázek se zámkem/prodejem v období, filtr stavu Pipedrive s výchozím Vyhrané ověřen i serverem; testy s pojistkou, mutace „#504“, kolo zelené, v test.",
+   "kde" : "`netlify/functions/controlling_export.mjs`, `netlify/functions/zakazky.mjs`, `src/controlling.js` (ctrlRejstrikDny, ctrlHromadnyKandidati, ctrlHromadnyFiltr, ctrlHromadnyStahni, CTRL_HROMADNY), `src/uloziste.js` (rejstřík ctrlDny), `src/ui/controlling_ui.js`",
+   "zavisi" : [
     {
-     "id": "447",
-     "typ": "nutne",
-     "proc": "hromadný export controllingu (C3) vznikl v #447"
+     "id" : "447",
+     "typ" : "tvrda",
+     "proc" : "hromadný export controllingu"
+    },
+    {
+     "id" : "501",
+     "typ" : "tvrda",
+     "proc" : "stav dealu Pipedrive"
     }
-   ],
-   "hotovoV": "v22.10.5",
-   "pozn": "Číslo přidělila koordinace ŘÍDÍCÍ 22.10 (dávka E1, větev claude/e1-export-obdobi). Volitelně později: admin akce „dopočítat rejstřík najednou“ — zatím stačí dopočet při ukládání."
+   ]
+  },
+  {
+   "id" : "505",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "Verze ceníku v razítku varianty se v online režimu maže",
+   "proc" : "Rozbor koordinace 22. 10. 2026 nad ostrým exportem J. V.: sloupec „Verze ceníku“ prázdný u všech 1 690 řádků (56 nabídek). J. V.: „opravu ceník přidej k E1“. Bez verze nejde u nabídky doložit, z jaké zveřejněné verze ceníku se počítalo (#39); verzi čte i kontrola cenových výjimek.",
+   "detail" : "Při otevření zakázky se platná verze bere z progPlatnaVerzeInfo(), která zná jen databázi programu ve složce; online je null a přepočet razítka (cenikPrepoctiRozpracovane) přepíše číslo verze prázdnem. Oprava v dávce E1: platná verze z online databáze (ONLINE_STAV.db.platny), ze složky jen když vládne složka. Zamčené nabídky se nemění — zpětně verzi doplnit nejde (ve zmrazených datech není), otisk ceníku zůstává.",
+   "hotovoKdyz" : "Test s pojistkou: online otevření zakázky zachová/zapíše číslo platné verze; mutace „#505“; export nových nabídek nese verzi ceníku.",
+   "kde" : "`src/ui/program_ui.js` (progPlatnaVerzeInfo), `src/ui/uloziste_ui.js` (uloSrovnejSPlatnymCenikem), `src/cenik_stari.js`, `src/ui/cenik_stari_ui.js`, `src/vyjimky.js`",
+   "zavisi" : [
+    {
+     "id" : "447",
+     "typ" : "doporuceno",
+     "proc" : "export controllingu zobrazuje verzi ceníku"
+    }
+   ]
   }
  ],
  "meta" : {
@@ -8577,6 +8600,11 @@
     "text": "22. 10. 2026 — v22.10.4: D5 rozhodnutí J. V. k auditu K6 — K6-K2 upozornění šablony, K6-K3 plechy jednou položkou, K6-K4 záznam tisku SoD, K6-K5/K9 karta, K6-S7 obnova, K6-W5 jména → role, K6-W6 vztahy místo částek, #485 závorka za symbolem (obal zanikl), #503 cena v EUR v dlaždici; K6-S2, K6-S5, K6-K7 ponechány (#484, #485, #491–#499, #503).",
     "hotovo": true,
     "pozn": "Větev claude/d5-rozhodnuti-k6; testy s pojistkou, cílené mutace (viz CHANGELOG)."
+   },
+   {
+    "text" : "22. 10. 2026 — v22.10.5: Z1 odpovědi J. V. (Z1-1 ceny činností PROJ zmrazené, Z1-2 hlavička podle řídící varianty, Z1-3 kontakt po SoD volný, Z1-4 tisk CN hned uloží), plán plateb PROJ po CN se propisuje do KL/SoD/exportu, D5-3 údaje negativní kontroly šablon mimo repozitář (#501–#503). Do test 22. 10. 14:03.",
+    "hotovo" : true,
+    "pozn" : "Kolo --bez-mutaci 303/1/6 (overit_online opraven → 271/0), mutace jádro 30/30, server 71/71."
    }
   ],
   "pravidla" : [
@@ -8663,7 +8691,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v21.10.6 (engscalc, test = 4c127f5)",
+  "build" : "v22.10.5 (engscalc, test = 4ce35d2)",
   "stavKDatu" : "22. 10. 2026"
  },
  "_comment" : [
