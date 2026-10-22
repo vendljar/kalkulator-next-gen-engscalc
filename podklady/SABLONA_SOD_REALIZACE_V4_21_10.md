@@ -126,3 +126,56 @@ Skript ověření leží jen ve scratchpadu sezení (potřebuje kód C6, který 
 4. Zkouška: zakázka OCK, krycí list → karta Smlouva o dílo → „Objednané příplatky" **nic** → Word CZ: čl. V jako
    dřív; zaškrtnout 1 a pak 3 příplatky → pod celkovou cenou „z toho …", seznam a součet, celková cena = nabídka +
    příplatky, DPH z celku; totéž EN. Žádné `{{…}}`.
+
+## 7. Vyrobeno znovu 22. 10. (S12)
+
+Zadání J. V. 22. 10. 2026: „šablony SoD realizace v4 potřebuji připravit ke stažení, ve složce nejsou“. Dávka S12,
+větev `claude/s12-sod-v4-soubory` nad integrací 2f25daa (test v22.10.1 + P1 v22.10.2). Kód beze změny, verze beze změny.
+Výroba **bez jazykových v3** ve složce — EN/DE/FR ze slovníků D4 (`nastroje/preklad_sod.js` přes `vyrob_sablony.js
+--sod-real-v4`, nové odstavce rozpisu ze `SOD_REAL_V4_PREKLAD` = terminologie D4), už s opravou pořadí `w:pPr` (K6-W3).
+
+**Zdroje** (Disk, Kalkulator NextGen / Sablony, 1RDW2m9p-OzDScADrhSi0H8ef6Mq_gyh7) — stažené bajtově
+(`download_file_content` → soubor výsledku → dekódování base64 skriptem, žádný ruční přepis); soubory `…_VADNE.json`
+nepoužité. Velikosti i sha256 slovníků se shodují s tabulkou D4 (`podklady/D4_SOD_SLOVNIKY_22_10.md`).
+
+| Soubor | ID | Bajtů | sha256 |
+|---|---|---|---|
+| `Sablona_SOD_REALIZACE_v3.docx` | 1lMzwgBR5L4oHoaSd2SnQ6Gw3fsQPXJot | 392 457 | d756a31e8df7662abe046b82e8d7e916c3ad25cdce07cc938fcc13f0430ca7d1 (testzip OK) |
+| `Sablona_SOD_REALIZACE_v3.preklad_en.json` | 1Snd3Y4GlrwYgCgVpvAt2-ZzIVL_QfOGR | 66 168 | 4586ac9a6432f98a4d038a046977250940f7ebdf778a166663873c0c5b63eed7 |
+| `Sablona_SOD_REALIZACE_v3.preklad_de.json` | 1MvSeg8nqDMak9Y1T1p55Sn1mBay2CRr5 | 68 292 | 5c6acffaf288aaee773e04595b9520ba56f701efc44ab98fa504f4838f1aa5ba |
+| `Sablona_SOD_REALIZACE_v3.preklad_fr.json` | 1oo6uORItk98CDeGai3z6yHElb3MJvBGi | 69 270 | 0356a45606757fd65ee5a6dcd255fc8837c8c944752ce959265530c96912e546 |
+
+**Výstup** (soubory sezení S12, do repozitáře ani na Disk se nedávají):
+
+| Soubor | Bajtů | sha256 |
+|---|---|---|
+| `Sablona_SOD_REALIZACE_v4.docx` | 393 846 | e8d39b804002835d7bdde046739ba2b13e3acbe1b766563bad8ade558c487e8a |
+| `Sablona_SOD_REALIZACE_v4_EN.docx` | 343 540 | 681b899cc19e444e46db6d37f68d017372021c9d8933e44fde11d0b8c1daa830 |
+| `Sablona_SOD_REALIZACE_v4_DE.docx` | 346 226 | da3e8aa8ab5b9e2869684207249067a9c7a5a7590a5649a1e8f7e47d7229d992 |
+| `Sablona_SOD_REALIZACE_v4_FR.docx` | 346 751 | c1cff16ca4ff0f1e73ecbf28dc8e92e72d5c31fb5d36758a52718ecef05ccbb8 |
+
+**Ověření** (`vyrob_sablony.js --sod-real-v4` kód 0 + ověřovací skript sezení nad kódem C6 v této větvi, 63 / 0):
+
+| Soubor | symboly | `sablonaObsahVady` | `docxXmlVady` | `w:pPr` mimo pořadí | jazyk | w:lang / themeFontLang |
+|---|---|---|---|---|---|---|
+| v4 CZ | 59; proti v3 **+3 −0** | prázdné | prázdné | 0 / 267 (nové 3 OK) | cz 100 % | — |
+| v4 EN | 59; proti CZ v4 **+0 −0** | prázdné | prázdné | 0 / 267 (nové 3 OK) | en 99 % | jen en-GB / en-GB |
+| v4 DE | 59; proti CZ v4 **+0 −0** | prázdné | prázdné | 0 / 267 (nové 3 OK) | de 96 % | jen de-DE / de-DE |
+| v4 FR | 59; proti CZ v4 **+0 −0** | prázdné | prázdné | 0 / 267 (nové 3 OK) | fr 100 % | jen fr-FR / fr-FR |
+
+- Přibylo přesně `SOD_CENA_NABIDKY`, `SOD_PRIPLATKY_KC`, `SOD_PRIPLATKY_OBJEDNANE`; přeloženo 140 odstavců v každém jazyce.
+- Nové odstavce: EN „of which the price of the Work according to price quotation No. … (excl. VAT)“ · „ordered surcharges:“ ·
+  „surcharges in total: … (excl. VAT)“; DE „davon Werkpreis gemäß Preisangebot Nr. … (ohne MwSt.)“ · „bestellte Zuschläge:“ ·
+  „Zuschläge insgesamt: …“; FR „dont prix de l’Ouvrage selon l’offre de prix n° … (HT)“ · „suppléments commandés :“ ·
+  „total des suppléments : … (HT)“ — shodně s D4 bod 3 (k ověření J. V. zůstává).
+- **Vyplnění kódem C6** (`dokumentVygeneruj('sod', v4, …)` jako aplikace, zkušební ceník, zakázka 1,6 × 1,8 m, zdvih 9 m,
+  sleva 10 %, kurz 25, zamčená varianta; objednané 0 / 1 / 3 první nabízené příplatky), všechny 4 jazyky: žádný symbol ceny
+  ani rozpisu nezůstal, XML vyplněného souboru bez vad; bez příplatků rozpis zmizí celý (žádný popisek); s příplatky
+  celkem = nabídka + příplatky, řádek na příplatek. Součty shodné s tabulkou v oddílu 4 (vzorová zakázka, ne ceny firmy).
+- Repo testy: `test_sod_real_v4` 20 / 0, `test_sod` 60 / 0, `test_preklad_sod` 19 / 0. Prohlížečové sady a celé kolo
+  nepouštěny (pustí koordinace).
+
+**Ke stažení:** soukromý artefakt „Šablony SoD realizace v4“ https://claude.ai/artifact/46MdDQowmCeKPdP5Z7ghfw (capability
+`downloads`, tlačítko u každého souboru + „Stáhnout všechny čtyři“; před uložením ověří sha256). HTML vyrobil skript
+sezení (base64 vkládá skript, kontrola zpětným dekódováním: 4 × shoda sha256). Soubory jsou i přílohami sezení S12.
+Postup nahrání beze změny (oddíl 6) — nahrát EN/DE/FR z artefaktu, ne vyrábět v aplikaci.
