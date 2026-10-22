@@ -1807,13 +1807,13 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
     test('K6-K4: změna objednaných po tisku SoD se zapíše do historie (kdo/kdy z relace)', p4.status === 200
       && Array.isArray(g4.objednaneZmeny) && g4.objednaneZmeny.length === 1 && g4.objednaneZmeny[0].kdo === process.env.ADMIN_EMAIL
       && g4.objednaneZmeny[0].klice.join() === [jedno[0], jedno[1]].join(), { p4, h: g4.objednaneZmeny });
-    const p5 = await zapis(a => { a.objednaneZmeny = []; a.nazevAkce = 'jiný název D5'; }, cAdmin);
+    const p5 = await zapis(a => { a.objednaneZmeny = []; a.kontakt = 'jiný kontakt D5'; /* Z1: název akce je po odeslání zmrazený */ }, cAdmin);
     test('K6-K4: historii změn klient nesmaže', p5.status === 200 && ((await nacti()).g.objednaneZmeny || []).length === 1, p5);
     const t4 = g4.varianty[0].zamek.tisky; const sn4 = t4[t4.length - 1].sod;
     test('K6-K4: záznam tisku SoD se změnou objednaných nemění', JSON.stringify(sn4) === JSON.stringify(sn), sn4);
     /* K6-S7: obnova ze souboru — podvržené razítko objednaných → relace obnovujícího */
     const gS = (await nacti()).g;
-    const zly = JSON.parse(JSON.stringify(gS)); zly.nazevAkce = 'obnova D5 podvrh'; zly.objednane.kdo = 'podvrh@priklad.cz'; zly.objednane.kdy = '2000-01-01T00:00:00Z';
+    const zly = JSON.parse(JSON.stringify(gS)); zly.kontakt = 'obnova D5 podvrh'; zly.objednane.kdo = 'podvrh@priklad.cz'; zly.objednane.kdy = '2000-01-01T00:00:00Z';
     const obn = async (z) => chyt(post(obnova, 'http://x/api/obnova', { zdroj: { soubor: { porizena: new Date().toISOString(),
       zakazky: { [r0.soubor]: z } } }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cAdmin)
       .then(async r => ({ status: r.status, ...(await r.json()) })));
@@ -1822,11 +1822,11 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
     test('K6-S7: obnova ze souboru s cizím razítkem objednaných → razítko obnovujícího administrátora', o1.status === 200
       && u1.kdo === process.env.ADMIN_EMAIL && u1.kdy !== '2000-01-01T00:00:00Z', { o1: o1.status, u1 });
     const shoda = JSON.parse(JSON.stringify(JSON.parse(pamet.get('zakazky/z/' + r0.soubor))));
-    shoda.nazevAkce = 'obnova D5 shoda';
+    shoda.kontakt = 'obnova D5 shoda';
     const o2 = await obn(shoda);
     const u2 = (JSON.parse(pamet.get('zakazky/z/' + r0.soubor) || '{}')).objednane || {};
     test('K6-S7: obnova ze souboru s razítkem shodným s databází ho zachová', o2.status === 200
-      && u2.kdo === u1.kdo && u2.kdy === u1.kdy && (JSON.parse(pamet.get('zakazky/z/' + r0.soubor))).nazevAkce === 'obnova D5 shoda', { o2: o2.status, u2, u1 });
+      && u2.kdo === u1.kdo && u2.kdy === u1.kdy && (JSON.parse(pamet.get('zakazky/z/' + r0.soubor))).kontakt === 'obnova D5 shoda', { o2: o2.status, u2, u1 });
   }
   const n1 = nova374(); hod(n1).sazba = 'neexistuje'; hod(n1).sazbaKc = 1;
   const a9 = await uloz374(n1, cObch);

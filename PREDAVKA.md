@@ -1,3 +1,17 @@
+# Předávka — 22. 10. 2026 odpoledne: Z1 — odpovědi J. V. (v22.10.5), větev `claude/z1-zmrazeni-kl`
+
+Do větve sloučena integrace `claude/integrace-16-10` d28e48a (test v22.10.2 + Z1 f73f9ab + D5 v22.10.4; fast-forward,
+`zamekPoTisku` nese snímek Z1 i `navic.sod` D5). **Do integrace / test nic** — slučuje koordinace.
+
+- **Hotovo (v22.10.5):** Z1-1 `cin_*`/`st_*` po CN zmrazené (+18 řádků v tabulce JSON, `_pravidla`); Z1-2 název akce
+  a adresa jen podle řídící varianty (klient `zamekZakStav`, server `zamekZakZmeny` — řídící odeslaná v uložené i
+  ukládané verzi); Z1-3 kontaktní osoba (hlavička `ZAK.kontakt` + krycí listy jméno/telefon/e-mail) po SoD volná;
+  Z1-4 tisk = hned uložit (`zamekPoTiskuUloz`, jen online a přihlášeně); P1-1/P1-2 zapsány v roadmapě #501.
+  CHANGELOG `## v22.10.5`, roadmapa #502 `rozhodnuto`, příručka (novinky v22.10.5).
+- **Testy:** viz CHANGELOG; `overit_kryci_po_tisku.mjs` (výjimečně puštěn) 36/36, kód 0.
+- **Mutace:** viz zpráva koordinaci; Z1-4 je jen v UI (zamek_ui.js), hlídá ho harness, ne mutace.
+- **Další krok:** koordinace sloučí a pustí kolo.
+
 # Předávka — 22. 10. 2026: dávka D5 — rozhodnutí J. V. k auditu K6 (v22.10.4), větev `claude/d5-rozhodnuti-k6`
 
 Nad integrací f1db496 (= test v22.10.1 + P1 v22.10.2). **Do integrace / test nic** — slučuje koordinace

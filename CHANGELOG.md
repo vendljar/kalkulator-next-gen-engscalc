@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.10.5 — Z1: odpovědi J. V. k otázkám zmrazení krycích listů (větev claude/z1-zmrazeni-kl)
+
+Nad integrací d28e48a (= test v22.10.2 + Z1 f73f9ab + D5 v22.10.4; sloučeno do větve Z1). Rozhodnutí J. V. 22. 10. 2026.
+Roadmapa #502 (otázky → rozhodnuto), #501 (P1-1, P1-2 rozhodnuto).
+
+- **Z1-1 (A) ceny činností PROJ zmrazené:** generovaná pole rozsahu prací `cin_*` (s cenou) a `st_*` (ANO/NE) jsou po
+  odeslání nabídky zmrazená jako hodnota bez DPH (`ZAMEK_KRYCI_PO_CN.kryciProj.vzory`); popis jiných činností
+  (`rozsahJine`) zůstává editovatelný. Tabulka `podklady/ZMRAZENI_KL_VOLBY_JV_22_10.json` doplněna o 18 řádků.
+- **Z1-2 (B) hlavička podle řídící varianty:** název akce a adresa stavby se zmrazí, jen když je odeslaná ŘÍDÍCÍ varianta
+  (`zamekZakRidici` = varianta s příznakem `ridici`, jinak první). Server hlídá, když je řídící odeslaná v uložené verzi
+  i v ukládané — přepnutí řídící na nezamčený klon hlavičku uvolní stejně jako v prohlížeči. Po SoD kterékoli varianty
+  beze změny (pole krycích listů s `bind` + zákazník, IČO, sídlo zamčené).
+- **Z1-3 (B) kontaktní osoba po SoD editovatelná:** v hlavičce `ZAK.kontakt` (i `projHlavicka.kontakt`) a v krycích
+  listech `jmenoPrijmeni`, `kontaktZakaznikTel`, `kontaktZakaznikEmail` (`ZAMEK_KRYCI_PO_SOD_VOLNE`, vedle plné moci).
+- **Z1-4 (B) tisk = hned uložit:** `zamekPoTisku` po zamčení zavolá `zamekPoTiskuUloz` → `onlineUloz({ tiche: true })`,
+  jen online a přihlášeně (fronta zápisů v onlineUloz); ze souboru z disku beze změny. Obnova snímku před prvním
+  uložením (`zamekSnimkyObnov`) zůstává jako pojistka pro výpadek sítě.
+- **P1-1, P1-2:** beze změny (stav Pipedrive mimo zálohy, tlačítko obnovení ne) — zapsáno v roadmapě #501.
+- **Testy s pojistkou:** `src/test_zmrazeni_kl.js` 102/0 (nad v22.10.4 selžou Z1-1 cin_* „zmrazeno", Z1-2 neřídící
+  varianta a přepnutí řídící, Z1-3 kontakt v hlavičce i v krycím listu po SoD); `netlify/test_kryci_po_tisku.mjs` 36/0
+  (nový blok Z1-2/Z1-3: 3× „200" nad v22.10.4 vrací 409); `src/test_kryci_po_tisku.js` 103/0;
+  `overit_kryci_po_tisku.mjs` 36/36, kód 0 (blok Z1-4: nad v22.10.4 „online tisk uloží" FAIL). Sady D5 a starší,
+  které po SoD měnily kontaktní jméno jako „zamčené" pole nebo název akce jako „neškodnou" změnu, mění atyp můstku /
+  kontaktní osobu.
+
 ## v22.10.4 — D5: rozhodnutí J. V. k auditu K6 (větev claude/d5-rozhodnuti-k6)
 
 Nad integrací f1db496 (= test v22.10.1 + P1 v22.10.2). Rozhodnutí J. V. 22. 10. 2026 k auditu K6
