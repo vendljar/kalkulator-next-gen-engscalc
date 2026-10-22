@@ -8,7 +8,7 @@
  * tam přidej možnost uživateli nahrát snímek s podpisem a rozítkem."
  *
  * Do teď měl účet jen e-mail, jméno a roli. V šabloně nabídky přitom stojí
- * natvrdo vepsaný blok „Vypracoval: Ing. Jiří Lauda / Obchodní technik /
+ * natvrdo vepsaný blok „Vypracoval: Ing. Jan Zkušební / Obchodní technik /
  * Tel: … / Email: …" a pod ním zapečený obrázek podpisu a razítka. Ať nabídku
  * dělal kdokoli, odcházela pod jménem jednoho kolegy — a když ji poslal někdo
  * jiný, musel to po vygenerování ručně přepsat ve Wordu, včetně obrázku.
@@ -76,18 +76,18 @@ const cAdmin = await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123');
  * ============================================================ */
 
 const zal = await tel(uzivatele, 'http://x/api/uzivatele',
-  { akce: 'zaloz', email: 'lauda.jiri@example.com', jmeno: 'Jiří Lauda', titul: 'Ing.',
+  { akce: 'zaloz', email: 'zkusebni.jan@example.com', jmeno: 'Jan Zkušební', titul: 'Ing.',
     funkce: 'Obchodní technik', telefon: '+420 602 590 945',
-    role: 'Obchodník', heslo: 'LaudaHeslo1' }, cAdmin);
+    role: 'Obchodník', heslo: 'ZkusebniHeslo1' }, cAdmin);
 test('založení účtu s titulem, funkcí a telefonem projde', zal.ok === true, zal);
 
-const cLauda = await prihlas('lauda.jiri@example.com', 'LaudaHeslo1');
-let mujProfil = await (await get(ja, 'http://x/api/ja', cLauda)).json();
+const cZkus = await prihlas('zkusebni.jan@example.com', 'ZkusebniHeslo1');
+let mujProfil = await (await get(ja, 'http://x/api/ja', cZkus)).json();
 test('titul se uložil', mujProfil.titul === 'Ing.', mujProfil.titul);
 test('funkce se uložila', mujProfil.funkce === 'Obchodní technik', mujProfil.funkce);
 test('telefon se uložil tak, jak byl zadán (mezery ani + se nepřepisují)',
   mujProfil.telefon === '+420 602 590 945', mujProfil.telefon);
-test('jméno a role zůstávají', mujProfil.jmeno === 'Jiří Lauda' && mujProfil.role === 'Obchodník', mujProfil);
+test('jméno a role zůstávají', mujProfil.jmeno === 'Jan Zkušební' && mujProfil.role === 'Obchodník', mujProfil);
 
 const bezUdaju = await tel(uzivatele, 'http://x/api/uzivatele',
   { akce: 'zaloz', email: 'bez.udaju@example.com', jmeno: 'Bez Údajů',
@@ -116,9 +116,9 @@ test('okolní mezery v titulu i telefonu se ořežou', await (async () => {
  * ============================================================ */
 
 const uprav = await tel(uzivatele, 'http://x/api/uzivatele',
-  { akce: 'profil', titul: 'Ing.', funkce: 'Vedoucí obchodu', telefon: '+420 777 111 222' }, cLauda);
+  { akce: 'profil', titul: 'Ing.', funkce: 'Vedoucí obchodu', telefon: '+420 777 111 222' }, cZkus);
 test('obchodník si smí upravit vlastní profil', uprav.ok === true, uprav);
-mujProfil = await (await get(ja, 'http://x/api/ja', cLauda)).json();
+mujProfil = await (await get(ja, 'http://x/api/ja', cZkus)).json();
 test('změna telefonu se projeví hned', mujProfil.telefon === '+420 777 111 222', mujProfil.telefon);
 test('změna funkce se projeví hned', mujProfil.funkce === 'Vedoucí obchodu', mujProfil.funkce);
 
@@ -130,16 +130,16 @@ test('nepřihlášený profil měnit nesmí', bezPrihlaseni.ok === false, bezPri
  * se do účtu kopírovalo celé přijaté tělo, stačilo by k povýšení na
  * administrátora poslat vlastní profil s jiným polem `role`. */
 const povyseni = await tel(uzivatele, 'http://x/api/uzivatele',
-  { akce: 'profil', titul: 'Ing.', role: 'Administrátor' }, cLauda);
-mujProfil = await (await get(ja, 'http://x/api/ja', cLauda)).json();
+  { akce: 'profil', titul: 'Ing.', role: 'Administrátor' }, cZkus);
+mujProfil = await (await get(ja, 'http://x/api/ja', cZkus)).json();
 test('profil nesmí změnit vlastní roli', mujProfil.role === 'Obchodník', [povyseni, mujProfil.role]);
 
 const prepisEmailu = await tel(uzivatele, 'http://x/api/uzivatele',
-  { akce: 'profil', email: 'bez.udaju@example.com', telefon: '+420 999 888 777' }, cLauda);
+  { akce: 'profil', email: 'bez.udaju@example.com', telefon: '+420 999 888 777' }, cZkus);
 const cizi = await (await get(ja, 'http://x/api/ja', cBez)).json();
 test('obchodník nesmí přes profil sáhnout na cizí účet',
   prepisEmailu.ok === false && cizi.telefon === '', [prepisEmailu, cizi.telefon]);
-mujProfil = await (await get(ja, 'http://x/api/ja', cLauda)).json();
+mujProfil = await (await get(ja, 'http://x/api/ja', cZkus)).json();
 test('odmítnutý pokus o cizí účet nezměnil ani vlastní údaje',
   mujProfil.telefon === '+420 777 111 222', mujProfil.telefon);
 
@@ -167,9 +167,9 @@ test('administrátor smí doplnit údaje kolegovi',
  * proto jen to, co je opravdu obrázek a co Word umí vložit.
  * ============================================================ */
 
-const podpisOk = await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: PNG }, cLauda);
+const podpisOk = await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: PNG }, cZkus);
 test('PNG podpis se uloží', podpisOk.ok === true, podpisOk);
-mujProfil = await (await get(ja, 'http://x/api/ja', cLauda)).json();
+mujProfil = await (await get(ja, 'http://x/api/ja', cZkus)).json();
 test('podpis se vrací zpět celý a beze změny', mujProfil.podpis === PNG,
   (mujProfil.podpis || '').slice(0, 40));
 
@@ -177,38 +177,38 @@ const podpisJpeg = await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpi
 test('JPEG podpis se uloží taky (sken bývá JPEG)', podpisJpeg.ok === true, podpisJpeg);
 
 const svg = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>1</script></svg>').toString('base64');
-const podpisSvg = await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: svg }, cLauda);
+const podpisSvg = await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: svg }, cZkus);
 test('SVG se odmítne (umí nést skript a Word ho stejně nevloží)', podpisSvg.ok === false, podpisSvg);
 
 const podpisOdkaz = await tel(uzivatele, 'http://x/api/uzivatele',
-  { akce: 'podpis', obrazek: 'https://priklad.cz/podpis.png' }, cLauda);
+  { akce: 'podpis', obrazek: 'https://priklad.cz/podpis.png' }, cZkus);
 test('odkaz místo obrázku se odmítne (dokument musí být soběstačný)',
   podpisOdkaz.ok === false, podpisOdkaz);
 
 const podpisNesmysl = await tel(uzivatele, 'http://x/api/uzivatele',
-  { akce: 'podpis', obrazek: 'data:image/png;base64,tohle NENÍ base64 !!!' }, cLauda);
+  { akce: 'podpis', obrazek: 'data:image/png;base64,tohle NENÍ base64 !!!' }, cZkus);
 test('poškozený obsah se odmítne', podpisNesmysl.ok === false, podpisNesmysl);
 
 const velky = 'data:image/png;base64,' + 'A'.repeat(PODPIS_MAX);
-const podpisVelky = await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: velky }, cLauda);
+const podpisVelky = await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: velky }, cZkus);
 test('příliš velký obrázek se odmítne s vysvětlením, ne mlčky',
   podpisVelky.ok === false && /zmenš|men|velk|MB|kB/i.test(podpisVelky.chyba || ''), podpisVelky);
 
-mujProfil = await (await get(ja, 'http://x/api/ja', cLauda)).json();
+mujProfil = await (await get(ja, 'http://x/api/ja', cZkus)).json();
 test('odmítnuté nahrání nepřepsalo dřívější platný podpis', mujProfil.podpis === PNG,
   (mujProfil.podpis || '').slice(0, 40));
 
 const podpisCizi = await tel(uzivatele, 'http://x/api/uzivatele',
-  { akce: 'podpis', email: 'bez.udaju@example.com', obrazek: PNG }, cLauda);
+  { akce: 'podpis', email: 'bez.udaju@example.com', obrazek: PNG }, cZkus);
 test('cizí podpis nahrát nelze (jinak by šla poslat nabídka s cizím podpisem)',
   podpisCizi.ok === false, podpisCizi);
 
-const smaz = await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: '' }, cLauda);
-mujProfil = await (await get(ja, 'http://x/api/ja', cLauda)).json();
+const smaz = await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: '' }, cZkus);
+mujProfil = await (await get(ja, 'http://x/api/ja', cZkus)).json();
 test('prázdné nahrání podpis odstraní', smaz.ok === true && !mujProfil.podpis,
   [smaz, mujProfil.podpis]);
 
-await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: PNG }, cLauda);
+await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: PNG }, cZkus);
 
 /* ============================================================
  * 4) SEZNAM ÚČTŮ — co v něm smí být a co ne
@@ -220,7 +220,7 @@ await tel(uzivatele, 'http://x/api/uzivatele', { akce: 'podpis', obrazek: PNG },
  * ============================================================ */
 
 const seznam = await (await get(uzivatele, 'http://x/api/uzivatele', cAdmin)).json();
-const radek = (seznam.uzivatele || []).find(u => u.email === 'lauda.jiri@example.com');
+const radek = (seznam.uzivatele || []).find(u => u.email === 'zkusebni.jan@example.com');
 test('seznam účtů nese titul', radek && radek.titul === 'Ing.', radek);
 test('seznam účtů nese telefon', radek && radek.telefon === '+420 777 111 222', radek);
 test('seznam účtů nese funkci', radek && radek.funkce === 'Vedoucí obchodu', radek);
@@ -229,7 +229,7 @@ test('seznam účtů podpisy NEnese (nafoukl by odpověď)',
 test('seznam účtů nikdy nenese otisk hesla',
   (seznam.uzivatele || []).every(u => !('heslo' in u)), seznam.uzivatele);
 test('seznam účtů smí číst jen administrátor',
-  (await (await get(uzivatele, 'http://x/api/uzivatele', cLauda)).json()).ok === false);
+  (await (await get(uzivatele, 'http://x/api/uzivatele', cZkus)).json()).ok === false);
 
 /* ============================================================
  * 5) PŘIHLÁŠENÍ VRACÍ PROFIL ROVNOU
@@ -240,7 +240,7 @@ test('seznam účtů smí číst jen administrátor',
  * ============================================================ */
 
 const odpovedPrihlaseni = await (await post(prihlaseni, 'http://x/api/prihlaseni',
-  { email: 'lauda.jiri@example.com', heslo: 'LaudaHeslo1' })).json();
+  { email: 'zkusebni.jan@example.com', heslo: 'ZkusebniHeslo1' })).json();
 test('přihlášení vrací titul, funkci i telefon',
   odpovedPrihlaseni.titul === 'Ing.' && odpovedPrihlaseni.funkce === 'Vedoucí obchodu'
   && odpovedPrihlaseni.telefon === '+420 777 111 222', odpovedPrihlaseni);
@@ -258,8 +258,8 @@ test('odpověď přihlášení nikdy nenese otisk hesla',
 
 pamet.set('uzivatele/stary@example.com', JSON.stringify({
   email: 'stary@example.com', jmeno: 'Starý Účet', role: 'Obchodník',
-  heslo: JSON.parse(pamet.get('uzivatele/lauda.jiri@example.com')).heslo, aktivni: true }));
-const cStary = await prihlas('stary@example.com', 'LaudaHeslo1');
+  heslo: JSON.parse(pamet.get('uzivatele/zkusebni.jan@example.com')).heslo, aktivni: true }));
+const cStary = await prihlas('stary@example.com', 'ZkusebniHeslo1');
 const profilStary = await (await get(ja, 'http://x/api/ja', cStary)).json();
 test('účet bez nových políček se přihlásí a vrátí prázdné hodnoty',
   profilStary.ok === true && profilStary.titul === '' && profilStary.telefon === ''

@@ -76,8 +76,8 @@ for (const fixes of [true, false]) {
     [polozka(plech, PL_PRACE).mnozstvi, polozka(bez, PL_PRACE).mnozstvi]);
   test('plech: montáž jako u světlíku (bez odečtu 0,2 h)', plech.montaz.hodinyNavic.svetlik === sklo.montaz.hodinyNavic.svetlik
     && plech.montaz.hodinyNavic.svetlik === 0, [plech.montaz.hodinyNavic.svetlik, bez.montaz.hodinyNavic.svetlik]);
-  /* Lakování plechu obou stran: rozdíl = 2 × plocha × sazba plechu (Tomáš i lakovna). */
-  test('plech: lakování obou stran (Tomáš)', blizko(plech.lakovani.tomas - bez.lakovani.tomas, 2 * m2 * CENIK.lak.tomasOplechM2, 1e-6),
+  /* Lakování plechu obou stran: rozdíl = 2 × plocha × sazba plechu (lakovna B i lakovna). */
+  test('plech: lakování obou stran (lakovna B)', blizko(plech.lakovani.tomas - bez.lakovani.tomas, 2 * m2 * CENIK.lak.tomasOplechM2, 1e-6),
     [plech.lakovani.tomas, bez.lakovani.tomas]);
   test('plech: lakování obou stran (lakovna)', blizko(plech.lakovani.lakovna - bez.lakovani.lakovna, 2 * m2 * CENIK.lak.lakovnaM2, 1e-6));
   test('plech: cena vyšší než „bez"', plech.souhrn.zakladCena > bez.souhrn.zakladCena);

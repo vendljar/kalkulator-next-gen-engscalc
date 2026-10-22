@@ -419,10 +419,10 @@ function renderDetail() {
   const lakVl = (r.lakovani.vlastniRows || []).map(x =>
     [x.nazev, `${M(x.ks, 3)} × ${M(x.cena)} = ${K(x.celkem)}`, 'vlastní položka z ceníku']);
   const krLak = dvKrok('10. Lakování', dvTab([
-    ['Režim „Tomáš"', K(r.lakovani.tomas),
+    ['Režim „lakovna B"', K(r.lakovani.tomas),
       'profily m² + lišty bm + plechy ks + oplechování m² + terče ks, každé svou sazbou z ceníku'],
     ['Režim „lakovna"', K(r.lakovani.lakovna),
-      'profily bm + lišty bm + m² (plechy + oplechování + terče); jiné jednotky než režim „Tomáš"'],
+      'profily bm + lišty bm + m² (plechy + oplechování + terče); jiné jednotky než režim „lakovna B"'],
     ...lakVl,
     ...(r.lakovani.vlastniKc ? [['Vlastní položky celkem', K(r.lakovani.vlastniKc), 'přičítá se k oběma režimům']] : []),
     ['Použito ve výpočtu', `${K(r.lakovani.pouzito)} (${r.lakovani.rezim})`,

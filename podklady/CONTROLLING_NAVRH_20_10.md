@@ -4,28 +4,28 @@ Sezení 20. 10. 2026, větev `claude/controlling-navrh` nad `test` (`5dc28d1`, v
 **Kód se v této fázi neměnil.** Jde jen o rozbor, návrh a otázky. Implementace začne až po souhlasu J. V.
 Předběžné číslo v roadmapě je **#447** (přidělí koordinace).
 
-Cíl (J. V.): dát controllerce Andree Mácové všechny informace o **předkalkulovaných nákladech rozdělených
+Cíl (J. V.): dát controllerce všechny informace o **předkalkulovaných nákladech rozdělených
 do nákladových skupin (kapitol)**, aby je mohla v Reporting CZ porovnat s účetními daty z Heliosu (PRE × POST).
 
 Podklady:
 
 - vlákno „Dotazy nový kalkulák“ (31. 8. – 15. 9. 2026);
-- tabulka A. Mácové „CENIK_2025-v2.9.4_rozvrzeni nakladu“ (Google Sheet);
+- tabulka controllingu „CENIK_2025-v2.9.4_rozvrzeni nakladu“ (Google Sheet);
 - „Dotazy k analýze“ (17. 9., 23. 9., 20. 10.);
 - „Nová ostrá databáze“ (9. – 15. 9.);
 - „Analýza a návrh controllingu a reportingu“ (24. 9., Google Doc).
 
 Ceny se do tohoto souboru nepřebírají. Jsou tu jen klíče, názvy, skupiny a účty.
 
-> Termín: A. Mácová je podle e-mailu z 24. 9. **dva měsíce mimo PC a vrací se v prosinci**.
+> Termín: Controlling je podle e-mailu z 24. 9. **dva měsíce mimo PC a vrací se v prosinci**.
 > Otázky na ni proto počkají. Do té doby se dá postavit všechno, co nepotřebuje její odpověď,
 > a její rozvržení použít jako výchozí návrh (dá se později přepsat v Nastavení).
 
 ---
 
-## A. Rozbor: Andyino rozvržení × současný ceník a výpočet
+## A. Rozbor: rozvržení controllingu × současný ceník a výpočet
 
-### A1. Co Andy navrhla
+### A1. Co controlling navrhl
 
 Dvanáct nákladových skupin („Název budoucí analytiky“). Ke každé patří položka manažerské výsledovky
 („Položka_v_ManVysl“) a analytický účet Helios, který platí dnes. Sloupec pro budoucí účet je až na
@@ -49,7 +49,7 @@ jeden řádek prázdný („bude doplněno“).
 | x | není náklad (přirážka, DPH, hodiny, výchozí hodnoty, kurz, přepínač lakování) | — | — | 13 |
 | ? | bez skupiny (ATYP rezerva základ a příplatky, Tmelení) | — | — | 3 |
 
-Andy rozvrhla ceník OCK celý (96 klíčů). Ceník PROJ nerozvrhla, má ho v tabulce jen pro úplnost.
+Controlling rozvrhl ceník OCK celý (96 klíčů). Ceník PROJ nerozvrhl, má ho v tabulce jen pro úplnost.
 To odpovídá dohodě „nejdřív OPR, PROJ později“.
 
 ### A2. Co v ceníku přibylo od v2.9.4 (a nemá skupinu)
@@ -67,7 +67,7 @@ nezanikl ani se nepřejmenoval.** `C.marze` a `C.dph` stojí mimo `CENIK_DEF`, a
 | `PC.dopravaHodKc` | PROJ: Cesta mimo Prahu – hodina cesty | v8.9.2 (#220) | ano, Kč/h | **Cestovné** (PROJ) |
 | `PC.vyjezdTechnikKc` | PROJ: Akce mimo Prahu – 1 výjezd technika | jen větev `claude/d2-proj-sikora` (D2), v `test` zatím není | ano, Kč | **Cestovné** (PROJ) — až se D2 sloučí |
 
-Sekce ceníku PROJ „Sazby DPH“ a „Cizí měna“ (`PC.dph*`) v Andyině tabulce ještě jsou. Ve v2.9.6 (#202)
+Sekce ceníku PROJ „Sazby DPH“ a „Cizí měna“ (`PC.dph*`) v tabulce controllingu ještě jsou. Ve v2.9.6 (#202)
 se sloučily do `C.dph*` a `C.kurzEurKc`, nejsou to náklady a na rozvržení nemají vliv.
 
 Ostatní body ze zadání, které jsem prověřil:
@@ -83,7 +83,7 @@ Ostatní body ze zadání, které jsem prověřil:
 - **Slevy, cenové výjimky, minimální marže.** Nejsou to položky ceníku. Sleva je procento z ceny na
   variantě. Cenová výjimka je schvalovací záznam a výpočet nemění. Pro kapitoly nákladů jsou
   irelevantní, do exportu ale patří sleva jako údaj o výnosu (rozdíl prodejní ceny).
-- **Přirážky.** `C.marze` / `PC.marze` jsou globální přirážky k nákladu, ne náklad (Andy správně „x“).
+- **Přirážky.** `C.marze` / `PC.marze` jsou globální přirážky k nákladu, ne náklad (controlling správně „x“).
 
 ### A3. Řádky kalkulace, které nemají klíč ceníku (nelze je zařadit podle ceníku)
 
@@ -95,25 +95,25 @@ klíče, ne podle názvu. Výjimky, pro které je potřeba vlastní pravidlo:
 | SPOJOVACÍ MATERIÁL (souhrn) | `cenaSkupina: 'C.spojovaci.*'` | `C.spojovaci.*` | Spotřeba materiálu – spojovací (všech 12 klíčů má stejnou skupinu) |
 | LAKOVÁNÍ (souhrn) | `cenaSkupina: 'C.lak.*'` | `C.lak.*` | Ostatní služby – lakování |
 | PRÁCE ZÁMEČNÍKA – OSTATNÍ (ATYP) | `cenaPath: 'Z.zamecnikAtypKc'` (částka ze zakázky) | `Z.zamecnikAtypKc` | Ostatní služby – zámečníci |
-| PŘIRÁŽKA ZA ATYP – projekční a koordinační práce | bez klíče, % z nákladu Režie | `R.atypPrirazka` | Ostatní služby – projekce (shodně s Andy, `C.atypPrirazka`) |
+| PŘIRÁŽKA ZA ATYP – projekční a koordinační práce | bez klíče, % z nákladu Režie | `R.atypPrirazka` | Ostatní služby – projekce (shodně s controllingem, `C.atypPrirazka`) |
 | REZERVA základ / REZERVA příplatky | souhrn, % z nákladu | `R.rezervaZaklad`, `R.rezervaPriplatky` | **samostatná skupina „Rezerva“** (nerozpouštět, viz otázka J4) |
 | Vlastní (trvalé) položky z katalogu | `kid` (kN, pkN) | `K.<kid>` | admin přiřadí v Nastavení; dokud ne, „Nezařazeno“ |
 | Ruční řádek jen v zakázce („+ přidat položku“) | sekce + index, bez `kid` | `V.<sekce>` | výchozí skupina podle sekce (nastavitelná); v exportu příznak „ruční“ |
 | Příplatky | `key` + `cenaPath C.priplatky.*` | podle `cenaPath` | podle klíče |
-| PROJ položky | `sekce.key` + `fixKey` nebo `sazba` | `PC.sazby.<sazba>`, `PC.fixy.<fix>`, `PC.doprava` | rozvrhnout s Andy později (návrh v B2) |
+| PROJ položky | `sekce.key` + `fixKey` nebo `sazba` | `PC.sazby.<sazba>`, `PC.fixy.<fix>`, `PC.doprava` | rozvrhnout s controllingem později (návrh v B2) |
 
 Pozor na jednu vlastnost výpočtu: **jeden klíč může stát u více řádků.** Například `C.powertechInt` je u tří
 řádků plechů, `C.oplechPracKc` u dvou řádků práce a `C.statikaKc` u statiky i statiky opláštění. Pro zařazení
 do skupin to nevadí, protože skupina patří klíči. Export ale musí jít **po řádcích** (název řádku + klíč),
 ne po klíčích.
 
-### A4. Odpovědi na Andyiny otázky — z kódu
+### A4. Odpovědi na otázky controllingu — z kódu
 
 **„Režie kanceláře“ — co to je a s čím ji párovat?**
 
 - Ve výpočtu je to **paušál v Kč za zakázku**: množství 1 × `C.rezieKancelareKc` (`src/engine.js:1930`).
 - Je součástí **nákladu** sekce Režie a dostane stejnou globální přirážku jako každý jiný řádek.
-- Na nic navázaná není: nezávisí na velikosti zakázky, hodinách ani ceně. Andy to odhadla správně.
+- Na nic navázaná není: nezávisí na velikosti zakázky, hodinách ani ceně. Controlling to odhadl správně.
 - Kód ani poznámky neříkají, co přesně má krýt (nájem, back office, obchod, energie). To musí říct J. V.
   (otázka J1).
 - **Doporučení pro controlling:** neporovnávat ji s přímými náklady z účetnictví. Vést ji jako
@@ -138,15 +138,15 @@ a minimální marži hlídá `src/marze.js` (podíl (cena − náklad) / cena). 
 zakázek se proto **nemá** rovnat rozpočtu všech nákladů. Zbytek jde přes krycí příspěvek.
 
 **„Primární klíče místo párování podle názvu?“** Ano. Každá položka ceníku má stabilní klíč (`C.transportKc`,
-`C.lak.lakovnaProfilBm` atd.), který se nemění ani při přejmenování popisku. Andy je už v tabulce používá.
+`C.lak.lakovnaProfilBm` atd.), který se nemění ani při přejmenování popisku. Controlling je už v tabulce používá.
 Řádky bez klíče řeší A3.
 
 **„Vzorek dat skutečných zakázek“** — do repozitáře nepatří (ceny a zákazníci). Navrhuji, aby ho po
-dávce C2 vyrobil J. V. exportem z ostré databáze (CSV/XLSX níže) a poslal Andy sám.
+dávce C2 vyrobil J. V. exportem z ostré databáze (CSV/XLSX níže) a poslal controllingu sám.
 
-**Andyiny poznámky v tabulce:**
+**poznámky controllingu v tabulce:**
 
-- „Tomáš – lakování: Tomáš Chládek?“ — kód zná jen „Tomáš“ (`C.lak.tomas*`), jde o druhý ceník lakování
+- „lakování B: dodavatel lakovny B?“ — kód zná jen klíč `C.lak.tomas*`, jde o druhý ceník lakování
   vedle lakovny. Potvrdí J. V.
 - „Zaměření 3D skenerem — kdo to dělá?“ — v OCK je to paušál za zakázku. V PROJ je zaměření hodinová
   sazba `PC.sazby.zamereni`, tedy interní práce. Kdo skutečně měří, ví J. V. (otázka J3).
@@ -158,7 +158,7 @@ dávce C2 vyrobil J. V. exportem z ostré databáze (CSV/XLSX níže) a poslal A
   sazba skutečného řádku nákladu (pseudo-klíč `R.atypPrirazka`).
 - „Lešení / čištění / práce opláštění — samostatně, nebo jako stavební práce?“ — doporučuji **lešení
   samostatně** (jiný dodavatel, velká a proměnlivá částka, často příplatek), čištění a práce opláštění
-  pod stavební práce. Rozhoduje Andy.
+  pod stavební práce. Rozhoduje controlling.
 - „Tmelení — ideálně rozdělit“ — v ceníku je jedna sazba materiál + práce. Návrh: dočasně stavební
   práce. Kdyby bylo potřeba dělit, rozdělí se ceník na dva klíče (otázka J6).
 - „ATYP rezervy — rozpustit do kategorií?“ — doporučuji **nerozpouštět**. Rezerva je nejistota, ne
@@ -188,7 +188,7 @@ dávce C2 vyrobil J. V. exportem z ostré databáze (CSV/XLSX níže) a poslal A
 | Pole | Příklad | Pozn. |
 |---|---|---|
 | `id` | `sluzby-lakovani` | stabilní, nemění se ani při přejmenování |
-| Název | Ostatní služby – lakování | Andyin „Název budoucí analytiky“ |
+| Název | Ostatní služby – lakování | „Název budoucí analytiky“ controllingu |
 | Položka v ManVysl | Ostatní služby k zakázkám | |
 | Účet Helios — nyní | 518800, 518001 | víc účtů dovoleno |
 | Účet Helios — budoucí | 518001 | prázdné = zatím neurčeno |
@@ -197,9 +197,9 @@ dávce C2 vyrobil J. V. exportem z ostré databáze (CSV/XLSX níže) a poslal A
 | Pořadí | 3 | pořadí v exportu |
 | Aktivní | ano | zrušenou skupinu nejde mazat, dokud na ni něco ukazuje |
 
-Výchozí obsah: Andyiných 12 skupin a k nim tři navržené, které v jejím číselníku chybějí:
+Výchozí obsah: 12 skupin controllingu a k nim tři navržené, které v jeho číselníku chybějí:
 **Režie – kalkulační příspěvek** (nepřímý/fixní), **Rezerva** a **Nezařazeno**.
-Pro PROJ navrhuji (zatím jen jako návrh, rozhodne Andy v prosinci):
+Pro PROJ navrhuji (zatím jen jako návrh, rozhodne controlling v prosinci):
 
 - **Projekce – vlastní práce** (sazby projektant, statik, zaměření; přímý/variabilní, osobní náklady);
 - **Projekce – subdodávky** (PBŘ, elektro, studie osvitu, geodet, EZC);
@@ -213,8 +213,8 @@ Pro PROJ navrhuji (zatím jen jako návrh, rozhodne Andy v prosinci):
 - obsahuje všechny klíče `CENIK_DEF` a `CENIK_DEF_PROJ`, pseudo-klíče z A3 a trvalé vlastní položky
   katalogu OCK i PROJ (`K.<kid>`);
 - filtr **„jen nezařazené“** a počitadlo v záhlaví („3 položky bez skupiny“);
-- import a export mapování do XLSX ve stejném tvaru jako Andyina tabulka (Klíč, Popis, Skupina, ManVysl,
-  účty), aby ho Andy mohla upravit v Excelu a správce ho nahrál zpět (s náhledem rozdílů, stejně jako
+- import a export mapování do XLSX ve stejném tvaru jako tabulka controllingu (Klíč, Popis, Skupina, ManVysl,
+  účty), aby ho controlling mohl upravit v Excelu a správce ho nahrál zpět (s náhledem rozdílů, stejně jako
   import ceníku).
 
 **3) Export předkalkulace** — viz B4.
@@ -276,7 +276,7 @@ pro dokument a do controllingu nepatří. Kurz je ve sloupci pro informaci.
 
 1. **Které nabídky jsou vyhrané.** Kalkulátor to dnes neví (vyhraná = Pipedrive, projekt = Helios). Pro
    PRE × POST stačí exportovat **řídící zamčené varianty** a párovat v Reporting CZ přes převodník
-   *číslo CN ↔ číslo projektu*, jak se J. V. s Andy dohodli 14. 9. Kalkulátor číslo projektu znát nemusí.
+   *číslo CN ↔ číslo projektu*, jak se J. V. s controllingem dohodli 14. 9. Kalkulátor číslo projektu znát nemusí.
    Volitelně lze u zakázky doplnit ručně pole „Číslo projektu Helios“ (jen admin), až bude zakázka vyhraná.
 2. **Pipedrive deal id do zakázky.** Dnes se nikde neukládá (je jen serverové čtení dealu). Pro
    párování CRM ↔ kalkulace je to nejlevnější klíč. Navazuje na připravovaný zápis do Pipedrive
@@ -291,7 +291,7 @@ pro dokument a do controllingu nepatří. Kurz je ve sloupci pro informaci.
    okruh administrátora“ (`cenik.import`). Proto:
    - export jen Administrátor, hlídá **server**, ne skrytí tlačítka;
    - každý export se zapíše do protokolu (kdo, kdy, rozsah);
-   - Andy jako externí controllerka **nedostane účet s rolí Administrátor**. Export jí posílá J. V.,
+   - Controlling (externí controllerka) **nedostane účet s rolí Administrátor**. Export jí posílá J. V.,
      případně jí později zřídíme zvláštní právo `controlling.export` (výchozí jen admin, fail-closed
      podle B176). Rozhodnutí J7;
    - mez se zapíše do `BEZPECNOST_MEZE.md` (B88: náklady jsou v DOM každé role už dnes, export je ale
@@ -302,17 +302,17 @@ pro dokument a do controllingu nepatří. Kurz je ve sloupci pro informaci.
    se stálou strukturou sloupců (verze struktury v listu Popis), aby se dal import v Reportingu nastavit
    jednou.
 8. **Hodiny jako fyzická veličina.** Montážní hodiny (1 osoba × 4) a hodiny projekce dát do exportu
-   i jako množství. Andy se 17. 9. ptala na přiřazování osobních nákladů. Hodiny umožní porovnat
+   i jako množství. Controlling se 17. 9. ptal na přiřazování osobních nákladů. Hodiny umožní porovnat
    i výkaz dodavatele, nejen korunu.
 
 ### B6. Dávky (odhad)
 
 | Dávka | Obsah | Velikost | Závisí na |
 |---|---|---|---|
-| **C1** | `src/controlling.js` (číselník skupin + výchozí mapování z Andyiny tabulky, pseudo-klíče, výpočet „řádek → skupina“), test úplnosti s pojistkou, server `/api/controlling` (GET/POST admin + heslo správce, historie verzí), záloha, `test_prava` | M | souhlas J. V. |
+| **C1** | `src/controlling.js` (číselník skupin + výchozí mapování z tabulky controllingu, pseudo-klíče, výpočet „řádek → skupina“), test úplnosti s pojistkou, server `/api/controlling` (GET/POST admin + heslo správce, historie verzí), záloha, `test_prava` | M | souhlas J. V. |
 | **C2** | Nastavení → Controlling (3 karty: číselník, mapování s filtrem nezařazených, import/export mapování XLSX), upozornění při zveřejnění ceníku, export **jedné varianty** XLSX/CSV z `vypocetZ` | M | C1 |
 | **C3** | Hromadný export za období na serveru, filtry, strop, protokol exportů, mez v `BEZPECNOST_MEZE.md`, Playwright harness | M–L | C2 |
-| **C4** | Pipedrive deal id a (volitelně) číslo projektu Helios u zakázky; PROJ mapování podle Andy | S–M | rozhodnutí J4/J8, návrat Andy (prosinec) |
+| **C4** | Pipedrive deal id a (volitelně) číslo projektu Helios u zakázky; PROJ mapování podle controllingu | S–M | rozhodnutí J4/J8, návrat controllingu (prosinec) |
 
 Každá dávka podle CLAUDE.md: testy s pojistkou (před opravou selže, po ní projde), mutace (C1–C3 se
 dotýkají serveru, takže `netlify/mutace.mjs`), kolo `nastroje/testovaci_kolo.sh --bez-mutaci`, push do
@@ -326,27 +326,27 @@ dotýkají serveru, takže `netlify/mutace.mjs`), kolo `nastroje/testovaci_kolo.
 
 | # | Otázka | Doporučení |
 |---|---|---|
-| J1 | Co má Režie kanceláře krýt (nájem, back office, obchod, energie…) a podle čeho se určila částka? | Napsat Andy jednou větou. V controllingu ji vést jako kalkulační příspěvek na správní režii (nepřímý/fixní), ne jako přímý náklad. |
+| J1 | Co má Režie kanceláře krýt (nájem, back office, obchod, energie…) a podle čeho se určila částka? | Napsat controllingu jednou větou. V controllingu ji vést jako kalkulační příspěvek na správní režii (nepřímý/fixní), ne jako přímý náklad. |
 | J2 | Potvrzujete, že výrobní režie se nekalkuluje, protože výroba a montáž jdou přes kooperace? | Ano. Skupinu „Režie výroba“ nezakládat. |
-| J3 | Kdo dělá 3D zaměření u OCK (interně, nebo externě)? A je „Tomáš“ v lakování Tomáš Chládek? | Doplnit. Podle toho zůstane zaměření v „projekce“, případně přejde pod osobní náklady. |
-| J4 | Rezervy (základ, příplatky) a přirážka za ATYP: samostatná skupina „Rezerva“, nebo rozpustit? | Rezerva samostatně, přirážka ATYP do projekce (jak navrhla Andy). |
+| J3 | Kdo dělá 3D zaměření u OCK (interně, nebo externě)? A je druhý ceník lakování (klíč `tomas`) dodavatel lakovny B? | Doplnit. Podle toho zůstane zaměření v „projekce“, případně přejde pod osobní náklady. |
+| J4 | Rezervy (základ, příplatky) a přirážka za ATYP: samostatná skupina „Rezerva“, nebo rozpustit? | Rezerva samostatně, přirážka ATYP do projekce (jak navrhl controlling). |
 | J5 | Má nezařazená položka zveřejnění ceníku **blokovat**, nebo jen upozornit? | Jen upozornit (obchod nečeká na controlling). |
-| J6 | Tmelení: nechat jednu sazbu (stavební práce), nebo rozdělit ceník na materiál a práci? | Nechat jednu, rozdělit až na žádost Andy. |
-| J7 | Kdo smí exportovat? Má Andy dostat účet? | Jen Administrátor. Andy účet zatím ne, exporty jí posílá J. V. |
+| J6 | Tmelení: nechat jednu sazbu (stavební práce), nebo rozdělit ceník na materiál a práci? | Nechat jednu, rozdělit až na žádost controllingu. |
+| J7 | Kdo smí exportovat? Má controlling dostat účet? | Jen Administrátor. controlling účet zatím ne, exporty posílá J. V. |
 | J8 | Ukládat u zakázky Pipedrive deal id a ručně číslo projektu Helios? | Deal id ano (C4, s mapováním Pipedrive). Číslo projektu ne, párovat převodníkem v Reportingu. |
 | J9 | Exportovat jen zamčené (odeslané) varianty, nebo i rozpracované? | Výchozí jen zamčené řídící. Rozpracované na zaškrtnutí s příznakem. |
 | J10 | Můstek (`C.mustekKc`, vč. montáže): zámečníci, nebo materiál? | Zámečníci (kooperace). |
-| J11 | Začít C1–C2 hned s Andyiným rozvržením jako výchozím, než se v prosinci vrátí? | Ano. Mapování jde přepsat v Nastavení bez nové verze aplikace. |
+| J11 | Začít C1–C2 hned s rozvržením controllingu jako výchozím, než se v prosinci vrátí? | Ano. Mapování jde přepsat v Nastavení bez nové verze aplikace. |
 
-### Pro A. Mácovou (až se vrátí; navržené odpovědi k potvrzení)
+### Pro controlling (až se vrátí; navržené odpovědi k potvrzení)
 
 | # | Otázka | Navrženo |
 |---|---|---|
 | A1 | Lešení samostatná skupina, čištění a práce opláštění pod stavební práce — souhlasíte? | ano |
 | A2 | Nová skupina „Režie – kalkulační příspěvek“ (jen Režie kanceláře) a „Rezerva“ — vyhovuje to manažerské výsledovce? | ano |
-| A3 | Rozvržení PROJ (4 skupiny v B2) — doplnit účty Helios? | doplní Andy s Verčou |
+| A3 | Rozvržení PROJ (4 skupiny v B2) — doplnit účty Helios? | doplní controlling s kolegyní |
 | A4 | Struktura exportu (3 listy, sloupce v B4) — stačí pro import do Reporting CZ? Jaký formát čísel a dat? | XLSX, Kč bez DPH, datum ISO |
-| A5 | Budoucí účty Helios — vyplní je Andy přímo v Nastavení → Controlling (přes import XLSX)? | ano, přes import, J. V. zveřejní |
+| A5 | Budoucí účty Helios — vyplní je controlling přímo v Nastavení → Controlling (přes import XLSX)? | ano, přes import, J. V. zveřejní |
 | A6 | Hodiny montáže a projekce v exportu jako množství — využijete je pro postkalkulaci osobních nákladů? | ano |
 
 ---
@@ -357,15 +357,15 @@ dotýkají serveru, takže `netlify/mutace.mjs`), kolo `nastroje/testovaci_kolo.
 |---|---|
 | J1 | Režie kanceláře = **příspěvek na správní režii** (nepřímý/fixní), neporovnávat s přímými náklady. |
 | J2 | Výrobní režie se nekalkuluje — skupinu **nezakládat**. |
-| J3 | 3D zaměření dělá **interně** náš technik/projektant (skupina projekce). „Tomáš“ v lakování = **Tomáš Chládek**. |
+| J3 | 3D zaměření dělá **interně** náš technik/projektant (skupina projekce). druhý ceník lakování (klíč `tomas`) = **dodavatel lakovny B**. |
 | J4 | **Rezerva** samostatná skupina, **přirážka za ATYP do projekce**. |
 | J5 | Při zveřejnění ceníku **upozornit a umožnit položku rovnou zařadit do skupiny** (neblokovat). |
 | J6 | Tmelení **jedna sazba** (stavební práce). |
-| J7 | Export **jen administrátor** (server), Andy účet nedostane. |
+| J7 | Export **jen administrátor** (server), controlling účet nedostane. |
 | J8 | **Pipedrive deal id ano** (C4), číslo projektu Helios ne — převodník v Reportingu. |
 | J9 | Exportovat **jen zamčené řídící varianty** (bez volby rozpracovaných). |
 | J10 | Můstek → **Ostatní služby – zámečníci**. |
-| J11 | **Začít C1** s Andyiným rozvržením jako výchozím. |
+| J11 | **Začít C1** s rozvržením controllingu jako výchozím. |
 
 
 ## D. Stav

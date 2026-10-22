@@ -66,7 +66,7 @@
  *           když jsou doložky PROJ vypnuté nebo prázdné (odstranPrazdneBloky).
  *           Nadpisy tabulek zůstávají z v5.
  *
- * PROJ v7 (úvod DPZ bez studie, D1 20. 10. 2026, postřeh D. Sikory):
+ * PROJ v7 (úvod DPZ bez studie, D1 20. 10. 2026, postřeh obchodníka):
  *   node nastroje/vyrob_sablony.js --proj-v7 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_NABIDKA_PROJ_v6.docx
  * Výstup: Sablona_NABIDKA_PROJ_v7.docx + _EN/_DE/_FR
@@ -598,7 +598,7 @@ function nahradVOdstavcich(body, popis, najdi, nahrada) {
  *           AD ({{PROJ_CENA_AD_BLOK}}, uvnitř bloku AD) přibude odstavec
  *           {{PROJ_CESTOVNE_<X>}} mezi značkami {{BLOK_CESTOVNE_<X>_ZAC/_KON}}.
  *           Aplikace do něj dá věty o cestovném (rozhodnutí J. V. 20. 10. 2026,
- *           šablona D. Sikory rev. 33); akce v Praze = prázdný symbol, blok zmizí.
+ *           šablona obchodníka rev. 33); akce v Praze = prázdný symbol, blok zmizí.
  * Každý symbol ceny musí být v právě jednom prvku těla (tabulce), jinak chyba —
  * nic se nehádá. Písmo odstavce: styl „Bezmezer", 9 pt kurzívou. */
 const PROJ_V8_CESTOVNE = [['PROJ_CENA_ZAMERENI', 'ZAMERENI'], ['PROJ_CENA_SP2', 'SP'], ['PROJ_CENA_DPZ', 'DPZ'],

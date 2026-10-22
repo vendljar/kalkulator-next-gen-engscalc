@@ -480,7 +480,7 @@ const MUTACE = [
     hledej: "      odvozene: (r, Z) => { const s = tsSoklRadek(r, Z); return s.vDodavce ? '' : s.text; },",
     nahrad: "      odvozene: (r, Z) => { const s = tsSoklRadek(r, Z); return s.text; },",
     proc: 'specifikace by zákazníkovi tvrdila obojí naráz: v dodávce je i není' },
-  /* ---------- lešení ve specifikaci řízené kalkulací (D. S. 15. 10. 2026, bod 2; v16.10.2) ---------- */
+  /* ---------- lešení ve specifikaci řízené kalkulací (obchodník 15. 10. 2026, bod 2; v16.10.2) ---------- */
   { nazev: 'LEŠ 16. 10.: lešení se počítá za dodávku i nezahrnuté', soubor: 'techspec.js',
     hledej: "  const vDodavce = !!(r && (r.volitelneKatalog || []).some(x => x.key === key && x.zahrnuto));",
     nahrad: "  const vDodavce = !!(r && (r.volitelneKatalog || []).some(x => x.key === key));",
@@ -488,7 +488,7 @@ const MUTACE = [
   { nazev: 'LEŠ 16. 10.: příplatek lešení se ve specifikaci zamlčí', soubor: 'techspec.js',
     hledej: "  return { vDodavce, text: tsPriplatekNabizen(r, Z, key) ? 'nabízeno jako příplatek' : TS_LESENI_NENI_VYCHOZI };",
     nahrad: "  return { vDodavce, text: TS_LESENI_NENI_VYCHOZI };",
-    proc: 'kapitola II. by lešení nabízela za příplatek a tabulka by tvrdila „zajistí objednatel" (D. S. bod 2)' },
+    proc: 'kapitola II. by lešení nabízela za příplatek a tabulka by tvrdila „zajistí objednatel" (obchodník bod 2)' },
   { nazev: 'LEŠ 16. 10.: lešení kolem OCK zase jen výchozí text', soubor: 'techspec.js',
     hledej: "      prefill: (r, Z) => tsLeseniNeniRadek(r, Z, 'leseniVnejsi').text,",
     nahrad: "",
@@ -500,7 +500,7 @@ const MUTACE = [
   { nazev: 'LEŠ 16. 10.: Word řádky navíc nevkládá', soubor: 'docxgen.js',
     hledej: "        po = docxRadkyNavic(po, volby && volby.radkyNavic);",
     nahrad: "",
-    proc: 'vnitřní lešení a vlastní řádky by ve Wordu nabídky chyběly (D. S. body 2 a 3)' },
+    proc: 'vnitřní lešení a vlastní řádky by ve Wordu nabídky chyběly (obchodník body 2 a 3)' },
   { nazev: 'LEŠ 16. 10.: Word klonuje řádek i pro šablonu se symbolem', soubor: 'docxgen.js',
     hledej: "    && !(x.symbol && klicePlaceholderu(xml).indexOf(x.symbol) >= 0));",
     nahrad: "    );",
@@ -513,7 +513,7 @@ const MUTACE = [
     hledej: "      if (x.pred) predBlok += novy; else zaBlok += novy;",
     nahrad: "      zaBlok += novy;",
     proc: 'pořadí řádků ve Wordu by se rozešlo se specifikací a náhledem' },
-  /* ---------- vlastní řádky specifikace v nabídce (D. S. 15. 10. 2026, bod 3; v16.10.2) ---------- */
+  /* ---------- vlastní řádky specifikace v nabídce (obchodník 15. 10. 2026, bod 3; v16.10.2) ---------- */
   { nazev: 'VLR 16. 10.: pruh DALŠÍ UJEDNÁNÍ se klonuje z datového řádku', soubor: 'docxgen.js',
     hledej: "        if (!klicePlaceholderu(r).length) return r;",
     nahrad: "        return r;",
@@ -1488,7 +1488,7 @@ const MUTACE = [
   { nazev: 'S13: prosklená stěna není ve výchozím ceníku zaškrtnutá', soubor: 'engine.js',
     hledej: "    'C.priplatky.naterOkopovychKc': true, 'C.priplatky.prosklenaStenaKc': true,",
     nahrad: "    'C.priplatky.naterOkopovychKc': true,",
-    proc: 'položka z e-mailu D. S. by v novém ceníku zůstala hlídaná jako běžná cena' },
+    proc: 'položka z e-mailu obchodníka by v novém ceníku zůstala hlídaná jako běžná cena' },
 
   /* ---------- #367 fáze 2 (19. 10. 2026): platební podmínky z Nastavení → Firma ---------- */
   { nazev: '#367: Firma se při čtení ignoruje (vždy továrna)', soubor: 'podminky.js',
@@ -1698,7 +1698,7 @@ const MUTACE = [
     hledej: "  const konTerminu = body.indexOf(znacka('BLOK_TERMINY_KON')) + znacka('BLOK_TERMINY_KON').length;",
     nahrad: "  const konTerminu = body.indexOf(znacka('BLOK_TERMINY_ZAC'));",
     proc: 'doložky by stály uprostřed podmínek místo za termíny' },
-  /* ---------- D1 (20. 10. 2026): úvod DPZ bez studie (postřeh D. Sikory) ---------- */
+  /* ---------- D1 (20. 10. 2026): úvod DPZ bez studie (postřeh obchodníka) ---------- */
   { nazev: 'D1: úvod DPZ se neřídí studií', soubor: 'nabidka_proj.js',
     hledej: '      const uvod = (b.uvod || []).map(o => (o && o.sekce && !vRozsahu(o.sekce))',
     nahrad: '      const uvod = (b.uvod || []).map(o => (o && o.sekce && false)',
@@ -1838,12 +1838,12 @@ const MUTACE = [
   { nazev: 'D1 #442: specifikace píše „šířka“ místo „šířka skla“', soubor: 'techspec.js',
     hledej: "v.sirkaRucne != null ? ', šířka skla ' + Math.round(v.sirkaRucne * 1000) + ' mm' : '');",
     nahrad: "v.sirkaRucne != null ? ', šířka ' + Math.round(v.sirkaRucne * 1000) + ' mm' : '');",
-    proc: 'zákazník by šířku tabule skla přes sloupky četl jako světlo vedle dveří (postřeh D. Sikory)' },
+    proc: 'zákazník by šířku tabule skla přes sloupky četl jako světlo vedle dveří (postřeh obchodníka)' },
   { nazev: 'D1 Q2: znění termínu bez studie jiné než rozhodl J. V.', soubor: 'podminky.js',
     hledej: "const PODMINKY_TERMIN_DPZ_BEZ_STUDIE = 'do 12 týdnů od zpracování výstupů ze zaměření';",
     nahrad: "const PODMINKY_TERMIN_DPZ_BEZ_STUDIE = 'do 10–12 týdnů od schválení studie investorem a objednání';",
     proc: 'nabídka bez studie by dál psala o schválení studie' },
-  /* ---------- D2 (20. 10. 2026): šablona PROJ D. Sikory — cestovné, úvod, jednostupňová ---------- */
+  /* ---------- D2 (20. 10. 2026): šablona PROJ obchodníka — cestovné, úvod, jednostupňová ---------- */
   { nazev: 'D2: výjezd i u vyřazené sekce', soubor: 'engine_proj.js',
     hledej: "    if (kde.indexOf(s.key) < 0 || !(s.naklad > 0)) return;",
     nahrad: "    if (kde.indexOf(s.key) < 0) return;",

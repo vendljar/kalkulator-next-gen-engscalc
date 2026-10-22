@@ -670,7 +670,7 @@ const TECHSPEC_DEF = [
      * Oprava K1 z 22. 9. odpoledne srovnala jen kapitolu IV. a řádek výš;
      * tenhle zůstal a u exteriérové šachty s lešením v ceně tvrdil opak.
      * Mimo tenhle případ se pole chová jako dřív — text volí obchodník. */
-    /* LEŠENÍ ŘÍZENÉ KALKULACÍ (D. S. 15. 10. 2026, bod 2; v16.10.2). Obchodník
+    /* LEŠENÍ ŘÍZENÉ KALKULACÍ (obchodník 15. 10. 2026, bod 2; v16.10.2). Obchodník
      * měl oba příplatky lešení v nabídce a tabulka tvrdila „zajistí objednatel
      * v rámci SP" se štítkem „výchozí". Mimo základní cenu teď text navrhuje
      * kalkulace (`prefill`, štítek „z kalkulace") — „nabízeno jako příplatek",
@@ -801,7 +801,7 @@ function tsSoklRadek(r, Z) {
   return { vDodavce, text: tsPriplatekNabizen(r, Z, 'sokl') ? 'nabízeno jako příplatek' : 'není součástí nabídky' };
 }
 
-/* LEŠENÍ V SOUČÁSTÍ DODÁVKY NENÍ (D. S. 15. 10. 2026, bod 2) — obdoba
+/* LEŠENÍ V SOUČÁSTÍ DODÁVKY NENÍ (obchodník 15. 10. 2026, bod 2) — obdoba
  * tsSoklRadek pro `leseniVnitrni` a `leseniVnejsi`. Vrací { vDodavce, text }:
  *   vDodavce = lešení je v ZÁKLADNÍ CENĚ (volitelná položka zahrnutá ve
  *     výsledku; u odeslané nabídky zmrazený otisk) → řádek se nedává, dodávku

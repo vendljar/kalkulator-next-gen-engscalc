@@ -61,7 +61,7 @@ test('nepřihlášený nic (401)', (await get(controllingFn, URL_C)).status === 
 test('jiná metoda → 405', (await controllingFn(new Request(URL_C, { method: 'DELETE', headers: { cookie: cAdmin } }))).status === 405);
 
 /* ---- zápis a verze ---- */
-const p1 = await (await post(controllingFn, URL_C, { data: C.ctrlVychozi(), poznamka: 'výchozí rozvržení A. Mácové' }, cAdmin)).json();
+const p1 = await (await post(controllingFn, URL_C, { data: C.ctrlVychozi(), poznamka: 'výchozí rozvržení controllingu' }, cAdmin)).json();
 test('první zápis = verze 1', p1.ok === true && p1.verze === 1, p1);
 const p1b = await post(controllingFn, URL_C, { data: C.ctrlVychozi() }, cAdmin);
 test('stejná data znovu → 400 „není co ukládat"', p1b.status === 400 && /neliší/.test((await p1b.json()).chyba));

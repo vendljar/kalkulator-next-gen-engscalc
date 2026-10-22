@@ -106,7 +106,7 @@ function dnesIso() { return new Date().toISOString().slice(0, 10); }
  *             Nenuluje; nula se použije jen u zakázky, která snímek nemá,
  *             protože přesně to v ní před zapnutím bylo.
  *
- * POZOR, TOHLE SI ODPORUJE SE STARŠÍ PŘIPOMÍNKOU. D. Sikora 10. 9. 2026:
+ * POZOR, TOHLE SI ODPORUJE SE STARŠÍ PŘIPOMÍNKOU. Obchodník 10. 9. 2026:
  * „pokud se ta částka změní, tak by ji to tlačítko ATYP měnit zpět na 25 000
  * nemělo." Podle sledu výš ji zpět mění. Rozpor je vědomý a rozhodl ho J. V.
  * 16. 9. 2026 jako pozdější zadání; hlavní důvod původní stížnosti ale trvá

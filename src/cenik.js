@@ -151,15 +151,15 @@ const CENIK_DEF = [
     ['C.spojovaci.chemKotva', 'Chemické kotvy', 'Kč/ks', ''],
   ]],
   ['LAKOVÁNÍ', [
-    ['C.lak.rezim', 'Počítat dle ceníku', '', 'ceny ověřit u lakovny nebo Tomáše', 'selLak'],
+    ['C.lak.rezim', 'Počítat dle ceníku', '', 'ceny ověřit u lakovny nebo lakovny B', 'selLak'],
     ['C.lak.lakovnaProfilBm', 'Lakovna – profily', 'Kč/bm', ''],
     ['C.lak.lakovnaListaBm', 'Lakovna – lišty', 'Kč/bm', ''],
     ['C.lak.lakovnaM2', 'Lakovna – plechy/oplechování/terče', 'Kč/m²', ''],
-    ['C.lak.tomasProfilM2', 'Tomáš – profily', 'Kč/m²', ''],
-    ['C.lak.tomasListaBm', 'Tomáš – lišty', 'Kč/bm', ''],
-    ['C.lak.tomasPlechKs', 'Tomáš – konstrukční plechy', 'Kč/ks', ''],
-    ['C.lak.tomasOplechM2', 'Tomáš – oplechování', 'Kč/m²', ''],
-    ['C.lak.tomasTercKs', 'Tomáš – terče', 'Kč/ks', ''],
+    ['C.lak.tomasProfilM2', 'Lakovna B – profily', 'Kč/m²', ''],
+    ['C.lak.tomasListaBm', 'Lakovna B – lišty', 'Kč/bm', ''],
+    ['C.lak.tomasPlechKs', 'Lakovna B – konstrukční plechy', 'Kč/ks', ''],
+    ['C.lak.tomasOplechM2', 'Lakovna B – oplechování', 'Kč/m²', ''],
+    ['C.lak.tomasTercKs', 'Lakovna B – terče', 'Kč/ks', ''],
   ]],
   ['PŘÍPLATKOVÉ POLOŽKY', [
     ['C.priplatky.vsgFolieM2', 'Sklo VSG s mléčnou fólií (příplatek)', 'Kč/m²', ''],
@@ -322,7 +322,7 @@ function cenikPopisNastav(c, cesta, text) {
 
 /* ---------- příznak „cena dle nabídky" (S13, 16. 10. 2026) ----------------
  *
- * E-mail obchodníka D. S. 15. 10. 2026: příplatek „Prosklená stěna vedle
+ * E-mail obchodníka 15. 10. 2026: příplatek „Prosklená stěna vedle
  * šachty" má v ceníku jen orientační (přehnanou) cenu; obchodník ji přepsal
  * na reálnou nižší a aplikace to brala jako směs ceníku — zábrana tisku,
  * žádost o schválení. U nabídkových položek „za akci" ceník reálnou cenu

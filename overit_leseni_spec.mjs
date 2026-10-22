@@ -1,4 +1,4 @@
-/* Ověření v prohlížeči: připomínky obchodu D. S. 15. 10. 2026 (dávka S12,
+/* Ověření v prohlížeči: připomínky obchodu obchodník 15. 10. 2026 (dávka S12,
  * větev claude/leseni-spec-radek, v16.10.2).
  *   bod 2 — lešení v technické specifikaci řízené kalkulací: řádky
  *           LEŠENÍ VNITŘNÍ PRO STAVBU OCK a LEŠENÍ KOLEM OCK… se štítkem
@@ -41,7 +41,7 @@ await p.evaluate(([c, cp]) => {
   ZAK.cislo = '2026 - OPR - CN - 9163'; ZAK.nazevAkce = 'Lešení ve specifikaci';
   ZAK.objednatel = 'Smyšlený objednatel'; ZAK.adresa = 'Ulice 1, Praha';
   C.kurzEurKc = 25;
-  /* snímek D. S.: vnitřní šachta, oba příplatky lešení v nabídce (vnitřní lešení není v ceně) */
+  /* snímek obchodník: vnitřní šachta, oba příplatky lešení v nabídce (vnitřní lešení není v ceně) */
   Object.assign(Z, { prejezd: 3.5, zdvih: 12, prohluben: 1.1, sirka: 1.6, hloubka: 1.5, nastupiste: 4, typSachty: 'interiérová' });
   Z.volitelne.leseniVnitrni = false; Z.volitelne.leseniVnejsi = false;
   render();

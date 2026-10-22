@@ -32,7 +32,7 @@ const DEFAULT_CENIK_PROJ = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_githu
    * aby ceníky zveřejněné před tímhle klíčem počítaly dál stejně. */
   dopravaHodKc: 0,
   /* Cena 1 výjezdu technika (D2, rozhodnutí J. V. 20. 10. 2026, šablona
-   * D. Sikory): přičte se k ceně ZAMĚŘENÍ, STUDIE, DPZ a KOLAUDACE, když je
+   * obchodníka): přičte se k ceně ZAMĚŘENÍ, STUDIE, DPZ a KOLAUDACE, když je
    * zakázka „Akce mimo Prahu" (zadání PROJ `akceMimoPrahu`). 0 = nevyplněno. */
   vyjezdTechnikKc: 0,
   dopravaPausalKc: 0,                // mrtvý klíč (paušál do 17. 8. 2026), nesou ho staré ceníky

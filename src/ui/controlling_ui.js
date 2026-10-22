@@ -8,7 +8,7 @@
  *      variabilní × fixní, oblast);
  *   2. Mapování položek — každý klíč ceníku, pseudo-klíč a trvalá položka
  *      → skupina; filtr „jen nezařazené", export a import XLSX ve tvaru
- *      Andyiny tabulky;
+ *      tabulky controllingu;
  *   3. Export předkalkulace — otevřená zakázka, JEN ZAMČENÁ ŘÍDÍCÍ varianta
  *      (J9), XLSX (Řádky, Kapitoly, Popis) nebo CSV; od C3 (21. 10. 2026)
  *      i HROMADNĚ ZA OBDOBÍ — počítá server (/api/controlling/export),
@@ -355,7 +355,7 @@ function ctrlUiKartaSkupiny() {
         : `<button class="mini" onclick="ctrlUiSmazSkupinu(${i})" title="zrušit skupinu">✕</button>`}</td>
     </tr>`).join('');
   return `<div class="note">Kapitoly nákladů pro porovnání předkalkulace se skutečností v Reporting CZ. Výchozí obsah je
-      rozvržení A. Mácové (15. 9. 2026) a rozhodnutí J. V. z 20. 10. 2026. Účty Helios oddělujte čárkou.
+      rozvržení controllingu (15. 9. 2026) a rozhodnutí J. V. z 20. 10. 2026. Účty Helios oddělujte čárkou.
       Identifikátor skupiny se nemění ani při přejmenování — podle něj se páruje export.</div>
     <div style="overflow-x:auto"><table class="ceniktbl" id="ctrlSkupiny"><tr><th>Id</th><th>Název</th><th>Položka v ManVysl</th>
       <th>Účet Helios nyní</th><th>Účet Helios budoucí</th><th>Typ nákladu</th><th>Chování</th><th>Oblast</th><th class="noprint"></th></tr>

@@ -1017,7 +1017,7 @@ const KONTROLY = [
     },
   },
   {
-    /* AUTORSKÝ DOZOR VE WORDU (připomínka D. Sikory a J. Laudy, rozhodnutí
+    /* AUTORSKÝ DOZOR VE WORDU (připomínka obchodníka a obchodního technika, rozhodnutí
      * J. V. 14. 10. 2026). Varianta AD nenabízí (proj.zadani.nabizetAD ===
      * false), online nabídka i krycí list ho vynechají — šablona PROJ v4
      * a starší ale nesou blok AD natvrdo bez značek a Word by ho vytiskl.
@@ -1037,7 +1037,7 @@ const KONTROLY = [
     },
   },
   {
-    /* ÚVOD DPZ VE WORDU BEZ STUDIE (D1, postřeh D. Sikory 19. 10. 2026).
+    /* ÚVOD DPZ VE WORDU BEZ STUDIE (D1, postřeh obchodníka 19. 10. 2026).
      * Nabídka začíná rovnou DPZ (studie nemá cenu): online nabídka věta
      * „… navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta …"
      * vynechá, šablona PROJ v6 a starší ji ale má natvrdo. Varování, ne
@@ -1213,7 +1213,7 @@ const KONTROLY = [
           + 'Rozpracovanou zakázku lze dál ukládat.' };
     },
   },
-  /* ---- D2: šablona nabídky PROJ D. Sikory (rozhodnutí J. V. 20. 10. 2026) ---- */
+  /* ---- D2: šablona nabídky PROJ obchodníka (rozhodnutí J. V. 20. 10. 2026) ---- */
   {
     /* JEDNOSTUPŇOVÁ DOKUMENTACE. Aplikace nabídku nepřepisuje (DPZ a DPS
      * zůstávají dvěma činnostmi) — kontrola jen připomene, co je nutné

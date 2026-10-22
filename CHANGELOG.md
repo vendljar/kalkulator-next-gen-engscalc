@@ -439,7 +439,7 @@ Spuštěno na pokyn J. V. předaný koordinací 20. 10. ~15:45 („C2 přes noc"
 Nad `test` 5dc28d1 (v20.10.1). Návrh a rozhodnutí J. V. J1–J11: `podklady/CONTROLLING_NAVRH_20_10.md`.
 Verzi přidělí koordinace při slučování.
 
-- **Nové `src/controlling.js`** — číselník nákladových skupin (Andyiných 12 + Režie – kalkulační
+- **Nové `src/controlling.js`** — číselník nákladových skupin (12 skupin controllingu + Režie – kalkulační
   příspěvek, Rezerva, 3 návrhové PROJ, Nezařazeno), výchozí mapování každého klíče ceníku OCK i PROJ
   podle stabilního klíče (nové od v2.9.4 zařazené: můstek → zámečníci, VSG 4.4.2 → sklo, Cetris →
   materiál, hodina cesty PROJ → cestovné), pseudo-klíče řádků bez klíče ceníku (rezervy, přirážka
@@ -655,10 +655,10 @@ kontrola V7: V7-6, V7-N1). Základ `test` 5dc28d1 (v20.10.1).
 
 ---
 
-## v20.10.4 — D2: šablona nabídky PROJ D. Sikory — cestovné mimo Prahu, upravitelný úvod, jednostupňová dokumentace (větev claude/d2-proj-sikora)
+## v20.10.4 — D2: šablona nabídky PROJ obchodníka — cestovné mimo Prahu, upravitelný úvod, jednostupňová dokumentace (větev claude/d2-proj-sikora)
 
 Dávka D2 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1 (v20.10.1). Zdroj: šablona
-nabídky PROJ od D. Sikory (OVP-CN „online calkulak“, rev. 33, 15. 9. 2026) — roadmapa **#260** tím
+nabídky PROJ od obchodníka (OVP-CN „online calkulak“, rev. 33, 15. 9. 2026) — roadmapa **#260** tím
 dodána a uzavřena. Rozhodnutí J. V. 20. 10. 2026, výchozí volby a postup v `podklady/D2_SIKORA_PROJ.md`.
 
 **Nové**
@@ -688,7 +688,7 @@ pojistka), `src/test_kontroly.js` a `overit_lista.mjs` počet pravidel 37 → 41
 
 ---
 
-## v20.10.3 — D1: postřehy D. Sikory 19. 10. 2026 (větev claude/d1-sikora)
+## v20.10.3 — D1: postřehy obchodníka 19. 10. 2026 (větev claude/d1-sikora)
 
 Dávka D1 (koordinace „ŘÍDÍCÍ 19.10“), základ `claude/integrace-16-10` 5dc28d1 (v20.10.1).
 Souběžně O7 má v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`, roadmapa #440–#443 (předběžná id).
@@ -2041,7 +2041,7 @@ Dávka A1 (koordinace 16. 10. 2026, roadmapa #420), nálezy z
 
 ## v16.10.3 — příznak ceníku „cena dle nabídky" (větev claude/cena-dle-nabidky)
 
-Dávka S13 nad `origin/test` (1cbab3a, v15.10.14). E-mail obchodníka D. S.
+Dávka S13 nad `origin/test` (1cbab3a, v15.10.14). E-mail obchodníka
 15. 10. 2026: příplatek „Prosklená stěna vedle šachty" má v ceníku jen
 orientační (přehnanou) cenu; po přepsání na reálnou nižší aplikace hlásila
 „Ceník varianty je směs platného ceníku a starších cen (1 položka OCK) —
@@ -2106,7 +2106,7 @@ příznaky platí. Zveřejnění samotného příznaku projde (otisk ho nese).
 
 ## v16.10.2 — lešení a vlastní řádky technické specifikace v nabídce (větev claude/leseni-spec-radek)
 
-Dávka S12, připomínky obchodníka D. S. z 15. 10. 2026 (e-mail „online
+Dávka S12, připomínky obchodníka z 15. 10. 2026 (e-mail „online
 kalkulak"). Nad `origin/test` (1cbab3a, v15.10.14).
 
 - **Bod 2 — lešení v technické specifikaci řízené kalkulací.** Obchodník měl
@@ -2973,7 +2973,7 @@ ze snímků. Celé kolo s mutacemi nad sloučeným stavem pustí sezení
 
 ## v14.10.2 — připomínky obchodu (větev claude/pripominky-14-10)
 
-Připomínky D. Sikory a J. Laudy, rozhodnutí J. V. 14. 10. 2026. Z `test-draft`
+Připomínky obchodníka a obchodního technika, rozhodnutí J. V. 14. 10. 2026. Z `test-draft`
 (v14.10.1, 823c61e). Do `test-draft` nic — rozhodne J. V.
 
 - **Bod 1 — autorský dozor (AD) v nabídce PROJ jen když se nabízí.** Volba
@@ -4043,10 +4043,10 @@ serveru 249 z 249, statické 3 z 3; mutace jádra 169 z 169 z kola nad c19ea55.
 řádků základních parametrů, usazení bez volby teď záměrně mizí → 11),
 mutace serveru 245 z 245; po úpravě testu kolo nad 3db9bb7 (bez mutací
 serveru — server se nezměnil) VŠE ZELENÉ: sady 222 prošlo, 0 selhalo,
-1 přeskočeno, mutace jádra 167 z 167, statické 3 z 3. Telefon D. Sikory
+1 přeskočeno, mutace jádra 167 z 167, statické 3 z 3. Telefon obchodníka
 opravil J. V. v profilu 12. 10. (chyba byla v účtu).
 
-Pokyn J. V. 12. 10. 2026 (mail D. Sikory a sken specifikace × nabídky).
+Pokyn J. V. 12. 10. 2026 (mail obchodníka a sken specifikace × nabídky).
 Větev z `claude/cenik-395` (v8.10.1). Roadmapa #396.
 
 - **Usazení OCK v nabídce OCK jako v technické specifikaci.** Specifikace má
@@ -4137,7 +4137,7 @@ na nové znění.
 Sloučeny větve `claude/vsg-skn-prepis-skla` (G, D), `claude/audit-b119-b122` (B),
 `claude/koncova-cena-374` (A), `claude/sablony-obsah-b115` (C),
 `claude/testy-ci-b124` (E) nad `test-draft` (v2.10.1); konflikty jen
-v CHANGELOG a seznamu jader `mutace_jadro.mjs`. K tomu drobnosti D. Sikory,
+v CHANGELOG a seznamu jader `mutace_jadro.mjs`. K tomu drobnosti obchodníka,
 opravy z nezávislé revize a rozbor F. Oddíly níž podle dávek.
 
 **Ověřeno celým kolem:** celé kolo nad b292d32 VŠE ZELENÉ (73 min 13 s):
@@ -4191,7 +4191,7 @@ přečtené. Opraveno v téže větvi:
   revize C (kódování XML bez BOM, strop dekomprese ZIPu, komentář EOCD,
   ověření souborů platných verzí šablon po obnově).
 
-## Drobnosti z mailů D. Sikory (2. a 3. 10. 2026) — v integrační větvi claude/davka-6-10
+## Drobnosti z mailů obchodníka (2. a 3. 10. 2026) — v integrační větvi claude/davka-6-10
 
 Pokyn J. V. 6. 10. 2026 („přidej do oprav tyto drobnosti"). Roadmapa #394.
 
@@ -4205,7 +4205,7 @@ Pokyn J. V. 6. 10. 2026 („přidej do oprav tyto drobnosti"). Roadmapa #394.
   i Word); česká nabídka beze změny (`src/nabidka.js`).
 - **S3 — „Po milnících" anglicky „Follow project milestones"**
   (`src/preklad.js`). Záruka „60 měsíců" se v testu překládá už od
-  K18-N93 (v2.10.1) — D. Sikora zkoušel ostrou v30.9.1.
+  K18-N93 (v2.10.1) — obchodník zkoušel ostrou v30.9.1.
 - **S4 — název souboru v jazyce nabídky:** EN `PRICE_QUOTATION_…`,
   DE `ANGEBOT_…`, FR `DEVIS_…` (OCK i PROJ, přípona jazyka zůstává);
   česky dál `NABÍDKA_…`.
@@ -7856,7 +7856,7 @@ tlačítka, Escape i to, že se bez změn neotevře vůbec).
 
 ### P7 — nabídka končila cenou, chyběly čtyři kapitoly (#282)
 
-*Nálezy N15 a N16; mail D. Sikory: „nám tam schází úplně — platební
+*Nálezy N15 a N16; mail obchodníka: „nám tam schází úplně — platební
 podmínky, požadavky na provedení realizace, termíny realizace, předání
 díla."*
 

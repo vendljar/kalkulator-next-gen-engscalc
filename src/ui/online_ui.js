@@ -2423,7 +2423,7 @@ function nahledMenuHtml() {
   </div>`;
 }
 
-/* Jméno tak, jak patří pod nabídku: „Ing. Jiří Lauda". Titul je nepovinný,
+/* Jméno tak, jak patří pod nabídku: „Ing. Jan Zkušební". Titul je nepovinný,
  * takže se nikdy nelepí prázdná mezera navíc. */
 function onlineJmenoSTitulem(u) {
   const x = u || ONLINE_STAV.ja || {};
@@ -2494,7 +2494,7 @@ function onlineZmenHeslo() {
  * před jménem a telefonní číslo … Zároveň tam přidej možnost uživateli nahrát
  * snímek s podpisem a rozítkem."
  *
- * Blok „Vypracoval: Ing. Jiří Lauda / Obchodní technik / Tel: … / Email: …"
+ * Blok „Vypracoval: Ing. Jan Zkušební / Obchodní technik / Tel: … / Email: …"
  * byl v šabloně vepsaný natvrdo a pod ním zapečený obrázek podpisu s razítkem.
  * Ať nabídku dělal kdokoli, odešla pod jménem jednoho kolegy — a kdo ji
  * posílal za sebe, přepisoval to po každém vygenerování ručně ve Wordu.
@@ -2550,7 +2550,7 @@ function renderMujProfil() {
         <input type="text" id="profilTitul" value="${esc(p.titul)}" placeholder="Ing."
           oninput="ONLINE_STAV.profil.titul=this.value"><span class="u"></span></div>
       <div class="row"><label>Jméno a příjmení</label>
-        <input type="text" id="profilJmeno" value="${esc(p.jmeno)}" placeholder="Jiří Lauda"
+        <input type="text" id="profilJmeno" value="${esc(p.jmeno)}" placeholder="Jan Zkušební"
           oninput="ONLINE_STAV.profil.jmeno=this.value"><span class="u"></span></div>
       <div class="row"><label>Funkce</label>
         <input type="text" id="profilFunkce" value="${esc(p.funkce)}" placeholder="Obchodní technik"

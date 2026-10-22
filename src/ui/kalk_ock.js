@@ -412,7 +412,7 @@ function atypPrepni(zap, opts) {
    *
    * Do 15. 9. přepnutí bezpodmínečně přepsalo sedm polí zadání — a k tomu
    * zrušilo ruční značky, aby si na to nikdo nemohl stěžovat. Obchodník
-   * (D. Sikora, 10. 9.) to popsal přesně: „pokud se ta částka změní, tak by
+   * (obchodník, 10. 9.) to popsal přesně: „pokud se ta částka změní, tak by
    * ji to tlačítko ATYP měnit zpět na 25 000 nemělo." Na 2026-OPR-CN-0290 to
    * po několikerém prokliknutí srazilo cenu o 64 000.
    *
@@ -771,7 +771,7 @@ function bokySirkaRadek(r) {
   let napoveda = '';
   /* Šířka SKLA přes sloupky (#442, rozhodnutí J. V. 20. 10. 2026): výpočet
    * beze změny, popisek říká, že tabule přesahuje sloupky — světlo vedle
-   * dveří je užší (postřeh D. Sikory 19. 10.). */
+   * dveří je užší (postřeh obchodníka 19. 10.). */
   if (rucne) napoveda = 'zadáno ručně' + (predMm != null ? '; předpočítaná šířka skla přes sloupky ' + predMm + ' mm' : '');
   else if (v && mezMm != null) {
     const dva = +v.dvereDva || 0, jeden = +v.dvereJeden || 0, bez = +v.dvereBez || 0;
@@ -2202,7 +2202,7 @@ function renderOutputs() {
     <tr class="subhead"><td colspan="4">Práce</td></tr>
     <tr><td>Montáž – hodiny navíc</td><td>${num(r.montaz.hodinyNavicCelkem, 2)} h</td>
         <td>Montáž celkem (4 os.)</td><td>${num(r.montaz.hodCelkem, 1)} h · ${num(r.montaz.dni, 1)} dní</td></tr>
-    <tr><td>Lakování – Tomáš</td><td>${fmt(r.lakovani.tomas)}</td><td>Lakování – lakovna</td><td>${fmt(r.lakovani.lakovna)}</td></tr>
+    <tr><td>Lakování – lakovna B</td><td>${fmt(r.lakovani.tomas)}</td><td>Lakování – lakovna</td><td>${fmt(r.lakovani.lakovna)}</td></tr>
     <tr><td>Spojovací materiál</td><td>${fmt(r.spojovaci.celkem)}</td><td>Nýtování</td><td>${esc(r.spojovaci.nytovaniKs)} ks</td></tr>
     </table>`;
 

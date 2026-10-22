@@ -1,4 +1,4 @@
-# D1 — postřehy D. Sikory z 19. 10. 2026 („online kalkulak“)
+# D1 — postřehy obchodníka z 19. 10. 2026 („online kalkulak“)
 
 Dávka D1, verze **v20.10.3**, větev `claude/d1-sikora` (nad `claude/integrace-16-10` 5dc28d1, v20.10.1).
 Návrh k bodu 3 je v samostatné větvi `claude/d1-sikora-navrh-profily` (o jeden commit dál, **nesloučit**).
@@ -111,7 +111,7 @@ prvek dvě šířky (sklo 600 / 252 × délka krátkých příčníků světlík
 | Varianta | Vzorec | Šířka | Plocha boků (4 ks) |
 |---|---|---|---|
 | **A** dnešní stav, jen přejmenovat na „šířka skla bočního světlíku (přes sloupky)“ | šířka skla − otvor − 40 | **600 / 300** | 5,28 m² |
-| **B** výpočet D. Sikory | vnitřní šířka − vstup − 2 × rám | **500 / 250** | 4,40 m² |
+| **B** výpočet obchodníka | vnitřní šířka − vstup − 2 × rám | **500 / 250** | 4,40 m² |
 | **C** světlá šířka z vnitřní šířky (fyzikálně, shodná s příčníky) | (1 500 − 1 040 − n × 40) / n | **420 / 190** | 3,70 m² |
 
 **Doporučení:** A hned (přejmenování, cena beze změny) a C až po potvrzení Jirky L., a to jen
@@ -127,7 +127,7 @@ zůstává, smaže ji J. V.). Rozbor níže je jen pro záznam.
 **Dnes** (`src/engine.js` `PROFILY_VYCHOZI`; `DEFAULT_ZADANI.profily` = exteriér; přepnutí typu šachty
 dosadí sadu typu, `src/ui/kalk_ock.js` `typSachtyPrepni`; uložené zakázky nesou profily ve svém zadání):
 
-| Prvek | EXT dnes | INT dnes | Postřeh D. Sikory |
+| Prvek | EXT dnes | INT dnes | Postřeh obchodníka |
 |---|---|---|---|
 | sloupek | 80×80/4 | 80×40/4 | – |
 | příčníky bok / zadek | 80×80/3 | 80×40/3 | – |

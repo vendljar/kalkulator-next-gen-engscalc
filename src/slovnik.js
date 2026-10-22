@@ -173,7 +173,7 @@ function slovnikCsvJenVApp(jenVApp) {
  * administrátor načetl konfiguraci s upraveným slovníkem, exportuje se ta.
  * Jinak by soubor tvrdil něco jiného, než čím se právě překládá.
  *
- * Sloupec `stav` je tu kvůli reviznímu kolu (nález E, D. Sikora): rozlišuje
+ * Sloupec `stav` je tu kvůli reviznímu kolu (nález E, obchodník): rozlišuje
  * „přeloženo" od „chybí", aby šlo v Excelu filtrovat, co ještě není hotové,
  * bez porovnávání prázdných buněk. */
 function slovnikToSheets(preklad, jazyky) {

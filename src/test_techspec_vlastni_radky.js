@@ -1,5 +1,5 @@
 /* VLASTNÍ ŘÁDKY TECHNICKÉ SPECIFIKACE V CENOVÉ NABÍDCE (připomínka obchodu
- * D. S. 15. 10. 2026, bod 3; dávka S12, v16.10.2).
+ * obchodník 15. 10. 2026, bod 3; dávka S12, v16.10.2).
  *
  * Obchodník si ve specifikaci tlačítkem „+ přidat vlastní řádek" přidal do
  * sekce DALŠÍ UJEDNÁNÍ řádek „LEŠENÍ VNITŘNÍ PRO STAVBU OCK" = „zajistí

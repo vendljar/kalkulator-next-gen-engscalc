@@ -220,7 +220,7 @@ function nahradPlaceholdery(xml, ph) {
 const TS_SEKCE_NAZVY = ['ZÁKLADNÍ PARAMETRY ŠACHTY', 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY',
   'OPLÁŠTĚNÍ ŠACHTY', 'DOPLŇKOVÉ KONSTRUKCE', 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE',
   'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ',
-  /* pruh vlastních řádků (docxRadkyNavic, D. S. 15. 10. 2026): sekce nad ním,
+  /* pruh vlastních řádků (docxRadkyNavic, obchodník 15. 10. 2026): sekce nad ním,
    * které nezbyl řádek, se pozná jako prázdná a zmizí */
   'DALŠÍ UJEDNÁNÍ'];
 
@@ -506,7 +506,7 @@ function odstranPrazdneTsRadky(xml, ph) {
   return xml;
 }
 
-/* ŘÁDKY TABULKY NAVÍC (D. S. 15. 10. 2026, v16.10.2). Technická specifikace
+/* ŘÁDKY TABULKY NAVÍC (obchodník 15. 10. 2026, v16.10.2). Technická specifikace
  * umí řádky, pro které šablona CN symbol nemá (vnitřní lešení, vlastní řádky
  * DALŠÍ UJEDNÁNÍ). Builder je pošle jako `volby.radkyNavic`:
  *   { kotva, pred?, symbol?, nazev, hodnota, pruh? }
@@ -889,7 +889,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
       let po = pred;
       if (p.nazev === 'word/document.xml') {
         po = expandujPriplatky(po, priplatky);
-        po = docxRadkyNavic(po, volby && volby.radkyNavic);   // řádky bez symbolu v šabloně (D. S. 15. 10. 2026)
+        po = docxRadkyNavic(po, volby && volby.radkyNavic);   // řádky bez symbolu v šabloně (obchodník 15. 10. 2026)
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
       }
       po = odstranOdstavceSeSymboly(po, volby && volby.odstavcePryc);   // věty, které do dokumentu nepatří (K18-N101)

@@ -317,7 +317,7 @@ tím cenu nabídky o její orientační hodnotu bez schválení. Záporná nebo
 nečíselná cena projít nemůže (403).
 
 **Proč to tak zůstává:** rozhodnutí J. V. 16. 10. 2026 (varianta A, e-mail
-obchodníka D. S. 15. 10.): u těchto položek ceník reálnou cenu nemá, cenu
+obchodníka 15. 10.): u těchto položek ceník reálnou cenu nemá, cenu
 určuje nabídka dodavatele. Které položky do skupiny patří, určuje správce
 zaškrtnutím v Nastavení → Ceník a zveřejněním ceníku; ostatní příplatky se
 hlídají beze změny.
@@ -997,7 +997,7 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   serveru, rozsah z ověřeného filtru). Protokol není v záloze — je to stopa
   přístupu, ne data k obnově. **Mez:** stažený XLSX je dál přenosný soubor
   s nákupními cenami a marží celé firmy za období; kam ho správce pošle
-  (Andy), protokol nehlídá.
+  (controlling), protokol nehlídá.
 - **Pipedrive deal id zakázky (C4, 21. 10. 2026):** `zak.pdDealId` mění jen
   Administrátor — server (`zakazkaServerKontrola` → `ctrlPdDealKontrola`)
   vrátí 403 jiné roli při zadání, opravě i smazání, 400 každému při tvaru

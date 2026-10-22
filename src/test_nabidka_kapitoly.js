@@ -1,5 +1,5 @@
 /* ===== KAPITOLY III.–VI. CENOVÉ NABÍDKY =====
- * (#282, nálezy N15 a N16 kola 6; mail D. Sikory 21. 9. 2026:
+ * (#282, nálezy N15 a N16 kola 6; mail obchodníka 21. 9. 2026:
  *  „nám tam schází úplně — platební podmínky, požadavky na provedení
  *   realizace, termíny realizace, předání díla")
  *
