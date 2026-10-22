@@ -50,6 +50,7 @@ import analytikaFn from './netlify/functions/analytika.mjs';
 import obnovaFn from './netlify/functions/obnova.mjs';
 import slovnikFn from './netlify/functions/slovnik.mjs';
 import controllingFn from './netlify/functions/controlling.mjs';
+import pdStavFn from './netlify/functions/pd_stav.mjs';
 
 /* Dialogy jsou od 2. 9. 2026 v aplikaci (src/ui/dialog.js), ne nativní —
  * `page.on('dialog')` už tedy nic nechytí. Harness si proto potvrzování
@@ -98,6 +99,10 @@ const FUNKCE = {
    * bez téhle cesty by každý průchod svítil 404 v konzoli. */
   '/api/sablony': sablonyFn,
   '/api/analytika': analytikaFn,
+  /* Stav Pipedrive v hlavičce (P1, v22.10.2) — aplikace ho čte při otevření
+   * zakázky; bez téhle cesty by každý průchod svítil 404 v konzoli. Bez
+   * nastaveného Pipedrive funkce vrátí jen poslední známý stav. */
+  '/api/pd/stav': pdStavFn,
   /* Obnova databáze ze zálohy (7. 9. 2026) — skutečný klient proti skutečné
    * funkci: panel, náhled bez zápisu, obnova smazané zakázky, odmítnutí
    * obchodníka. */
