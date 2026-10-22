@@ -365,9 +365,10 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
 
 /* ---------- 5. C3: hromadný export za období ---------- */
 {
-  const F = (q) => C.ctrlHromadnyFiltr(q);
+  /* #504: filtr stavu Pipedrive má výchozí „vyhrané"; sady C3 zkoušejí zakázky bez dealu, proto pd=vse. */
+  const F = (q) => C.ctrlHromadnyFiltr(Object.assign({ pd: 'vse' }, q));
   test('C3 filtr: platné období, výchozí oblast i řada = obojí',
-    JSON.stringify(F({ od: '2026-10-01', do: '2026-10-31' })) === JSON.stringify({ ok: true, filtr: { od: '2026-10-01', do: '2026-10-31', oblast: 'obe', rada: 'obe', podle: 'zamceni' } }));
+    JSON.stringify(F({ od: '2026-10-01', do: '2026-10-31' })) === JSON.stringify({ ok: true, filtr: { od: '2026-10-01', do: '2026-10-31', oblast: 'obe', rada: 'obe', podle: 'zamceni', pd: 'vse' } }));
   test('C3 filtr: neplatné datum (31. 2.) odmítne', !F({ od: '2026-02-31', do: '2026-03-01' }).ok);
   test('C3 filtr: datum v jiném tvaru odmítne', !F({ od: '1. 10. 2026', do: '2026-10-31' }).ok && !F({ do: '2026-10-31' }).ok);
   test('C3 filtr: od po do odmítne', !F({ od: '2026-11-01', do: '2026-10-01' }).ok);
@@ -484,6 +485,32 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   }
 }
 
+/* ---------- #504 doplnění J. V. 22. 10.: filtr Stav Pipedrive (výchozí vyhrané) ----------
+ * Před doplněním 0 / 4 (filtr `pd` neexistoval), po něm 4 / 4. */
+if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
+  const Fq = (q) => C.ctrlHromadnyFiltr(Object.assign({ od: '2000-01-01', do: '2099-12-31' }, q));
+  test('#504 PD: výchozí stav Pipedrive = vyhrané, všechny hodnoty platí, cizí → chyba',
+    C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31' }).filtr.pd === 'won'
+    && ['won', 'open', 'lost', 'deleted', 'bez', 'vse'].every(x => Fq({ od: '2026-10-01', do: '2026-10-31', pd: x }).ok)
+    && !Fq({ od: '2026-10-01', do: '2026-10-31', pd: 'Won' }).ok && /stav Pipedrive/.test(Fq({ od: '2026-10-01', do: '2026-10-31', pd: 'x' }).chyba || ''));
+  const zak = zakazkaZamcena();
+  const den = C.ctrlDenPraha(zak.varianty[0].zamek.kdy);
+  const f = (pd) => C.ctrlHromadnyFiltr({ od: den, do: den, pd }).filtr;
+  const o = { jekly: JEKLY };
+  const sDealem = (st) => { const z = kopie(zak); z.pdDealId = '77'; if (st) z.pdStav = { status: st, nacteno: '2026-10-20T10:00:00.000Z' }; return z; };
+  const won = sDealem('won');
+  test('#504 PD: vyhraná projde výchozím filtrem i „všechny", ztracená ne (vyřazena jako jiný stav)',
+    C.ctrlHromadnyZakazka(won, f(), o).ok && C.ctrlHromadnyZakazka(won, f('vse'), o).ok
+    && C.ctrlHromadnyZakazka(sDealem('lost'), f(), o).pdVyrazeno === 'jiny' && C.ctrlHromadnyZakazka(sDealem('lost'), f('lost'), o).ok);
+  test('#504 PD: bez dealu, deal bez stavu i stav bez platného dealu = „bez stavu"',
+    C.ctrlHromadnyZakazka(zak, f(), o).pdVyrazeno === 'bez' && C.ctrlHromadnyZakazka(zak, f('bez'), o).ok
+    && C.ctrlHromadnyZakazka(sDealem(''), f('bez'), o).ok
+    && C.ctrlHromadnyZakazka(Object.assign(kopie(won), { pdDealId: '' }), f('bez'), o).ok
+    && C.ctrlHromadnyZakazka(won, f('bez'), o).pdVyrazeno === 'jiny');
+  const mimo = C.ctrlHromadnyZakazka(sDealem('lost'), C.ctrlHromadnyFiltr({ od: '2000-01-01', do: '2000-01-02' }).filtr, o);
+  test('#504 PD: zakázka mimo období se do vyřazených filtrem stavu nepočítá', mimo.mimo === true && !mimo.pdVyrazeno, mimo);
+}
+
 /* ---------- #504 (22. 10. 2026): výběr kandidátů podle dnů v rejstříku, dávky exportu ----------
  * Hlášení J. V.: 1.–22. 10. → 413 (633 kandidátů nad strop 600), 12.–22. 10. → 504.
  * Před opravou 0 / 9 prošlo (funkce a pole neexistovaly, předvýběr bral každou
@@ -508,7 +535,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     && C.ctrlRejstrikDny({ varianty: 'nesmysl' }).cist === true && C.ctrlRejstrikDny(null).cist === true);
 
   /* 700 zakázek upravených včera (hromadné přeuložení), zamčených v září; 30 v říjnu. */
-  const F = C.ctrlHromadnyFiltr;
+  const F = (q) => C.ctrlHromadnyFiltr(Object.assign({ pd: 'vse' }, q));
   const rej = Array.from({ length: 700 }, (_, i) => ({ soubor: 'z' + String(i).padStart(4, '0') + '.json', cislo: 'Z' + i, odeslane: 1,
     upraveno: '2026-10-21T10:00:00Z', ctrlDny: { zamky: [{ den: i < 30 ? '2026-10-' + String(1 + (i % 22)).padStart(2, '0') : '2026-09-10',
       rada: i % 3 ? 'cr' : 'zahr' }], prodej: i === 5 ? { den: '2026-10-25', rada: 'zahr' } : null } }));
@@ -559,15 +586,17 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     const t413 = C.ctrlHromadnyChybaText(Object.assign(new Error('Do období spadá víc než 1000 zakázek'), { stav: 413, data: { chyba: 'x' } }));
     test('#504: vypršený dotaz a přerušené spojení → česky „kratší období", bez kódu 504; hláška serveru zůstane',
       /kratší období/.test(t504) && !/504/.test(t504) && /kratší období/.test(tSit) && /1000 zakázek/.test(t413), { t504, tSit, t413 });
-    const P = { zaznamy: [{ id: 'abcdefgh1234', kdo: 'a@b.cz', stav: 'probiha', od: fR.od, do: fR.do, oblast: 'obe', rada: 'obe', podle: 'zamceni', zakazek: 2, radku: 10, preskoceno: 1, davek: 1 }] };
+    const P = { zaznamy: [{ id: 'abcdefgh1234', kdo: 'a@b.cz', stav: 'probiha', od: fR.od, do: fR.do, oblast: 'obe', rada: 'obe', podle: 'zamceni', pd: 'vse', zakazek: 2, radku: 10, preskoceno: 1, davek: 1, vyrazenoPd: 0, vyrazenoBez: 0 }] };
     test('#504: navazující dávka jen ke svému běžícímu exportu; dávka se přičte',
       !!C.ctrlProtokolNavaz(P, 'abcdefgh1234', fR, 'a@b.cz') && !C.ctrlProtokolNavaz(P, 'abcdefgh1234', fR, 'c@b.cz')
       && !C.ctrlProtokolNavaz(P, 'abcdefgh1234', Object.assign({}, fR, { rada: 'cr' }), 'a@b.cz')
       && !C.ctrlProtokolNavaz({ zaznamy: [Object.assign({}, P.zaznamy[0], { stav: 'hotovo' })] }, 'abcdefgh1234', fR, 'a@b.cz')
-      && JSON.stringify(C.ctrlProtokolDavka(P, 'abcdefgh1234', { zakazek: 3, radku: 5, preskoceno: 0 }, 'hotovo').zaznamy[0])
-        === JSON.stringify(Object.assign({}, P.zaznamy[0], { zakazek: 5, radku: 15, preskoceno: 1, davek: 2, stav: 'hotovo' })));
-    test('#504: strop čtení unese běžný měsíc i hrubý předvýběr (≥ 2000), soubor ≥ 300 zakázek',
-      C.CTRL_HROMADNY.cteni >= 2000 && C.CTRL_HROMADNY.zakazek >= 300 && C.CTRL_HROMADNY.casMs < 10000);
+      && !C.ctrlProtokolNavaz(P, 'abcdefgh1234', Object.assign({}, fR, { pd: 'won' }), 'a@b.cz')
+      && JSON.stringify(C.ctrlProtokolDavka(P, 'abcdefgh1234', { zakazek: 3, radku: 5, preskoceno: 0, vyrazenoPd: 2, vyrazenoBez: 1 }, 'hotovo').zaznamy[0])
+        === JSON.stringify(Object.assign({}, P.zaznamy[0], { zakazek: 5, radku: 15, preskoceno: 1, davek: 2, stav: 'hotovo', vyrazenoPd: 2, vyrazenoBez: 1 })));
+    test('#504: žádný strop počtu zakázek (cteni ani zakazek), zbývají technické pojistky pod limitem funkce',
+      !('cteni' in C.CTRL_HROMADNY) && !('zakazek' in C.CTRL_HROMADNY) && C.CTRL_HROMADNY.dni === 400
+      && C.CTRL_HROMADNY.odpoved <= 6 * 1024 * 1024 && C.CTRL_HROMADNY.casMs < 10000 && C.CTRL_HROMADNY.davek >= 500);
     console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
     if (fail) process.exit(1);
   })().catch(e => { console.log('FAIL #504 výjimka ' + e.message); process.exit(1); });

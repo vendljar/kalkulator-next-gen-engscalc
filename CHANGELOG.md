@@ -23,16 +23,32 @@ přečíst 633 zakázek (strop 600)", 12.–22. 10. → „server odpověděl 50
   odpověď nese kurzor `dalsi` a prohlížeč (`ctrlHromadnyStahni`) pošle další dávky a složí jeden soubor (průběh
   „zpracováno N z M"). Protokol vede jeden záznam na export (`probiha` → `hotovo` / `odmitnuto`); navazující dávka
   projde jen ke svému běžícímu exportu se stejným filtrem a stejnou verzí mapování, čas exportu je z první dávky.
-- **Stropy:** čtení 3000 kandidátů, 1000 zakázek v jednom souboru (sčítá se přes dávky), 5 MB na odpověď dávky.
+- **Bez stropu počtu zakázek (doplnění J. V. 22. 10.: „nejsme schopni stahovat víc než 600?"):** `cteni` (600 na
+  dotaz) i `zakazek` (150 v souboru) zrušeny, čtení na dotaz drží dávka. Zbývají technické pojistky: období ≤ 400 dní,
+  odpověď jedné dávky ≤ 5 MB (413 „příliš velký … kratší období"), nejvýš 1000 dávek. Simulace 1000 zakázek
+  (+ 400 mimo období, polovina rejstříku bez dnů, úložiště 25 ms na čtení): 8 dávek, nejdelší 0,5 s, celkem 3,6 s.
+- **Filtr Stav Pipedrive (doplnění J. V.):** `pd` = won (výchozí) / open / lost / deleted / bez / vse; server ho
+  ověřuje (`ctrlHromadnyFiltr`, neznámá hodnota 400) a uplatní až po období, řadě a oblasti (`ctrlHromadnyZakazka`),
+  takže počet vyřazených (`vyrazenoPd` jiný stav / bez stavu) říká, kolik zakázek z období filtr skryl. Poslední
+  známý stav (pd_stav / u zakázky), z Pipedrive se při exportu nedotahuje — řečeno v listu Popis i v nápovědě UI.
+  Filtr jde do protokolu (sloupec „Stav PD"), do jména souboru (`_PD-WON`) a do hlášky prázdného výsledku („… zkuste
+  filtr Stav Pipedrive: Všechny"). Export jedné zakázky beze změny. Rejstřík `pdDealId` nenese: přesný počet
+  vyřazených potřebuje zakázku přečíst (období rozhoduje přečtená zakázka), čtení je souběžné.
 - **Hlášky:** vypršený dotaz / přerušené spojení → „Server export za zvolené období nestihl připravit … Zkuste kratší
   období, třeba jeden týden" (bez kódu 504); v protokolu exportů „(nedokončen)" / „(odmítnut)".
 - **Rychlost:** `ctrlDenPraha` staví `Intl.DateTimeFormat` jednou — nový formátovač na každé volání byl nejdražší
   částí předvýběru (sada se 700 zakázkami 9,5 s → 2,9 s).
-- **Testy s pojistkou:** `src/test_controlling.js` 212/0 (12 nových #504; nad 4ce35d2 spadne na chybějící
-  `ctrlRejstrikDny`), `netlify/test_controlling.mjs` 64/0 (10 nových #504; nad 4ce35d2 0/10 — 700 kandidátů místo 300,
-  dávky neexistují), `netlify/test_rejstrik.mjs` 24/0 (3 nové; nad 4ce35d2 0/3). Dvě starší očekávání C3 upravena
-  na řazení kandidátů podle souboru (kurzor dávek) a C6 na záznam rejstříku jako po uložení na serveru.
-- **Mutace:** jádro „#504" 11 nových, server „#504" 14 nových; 4 starší mutace C3 přesměrovány na nové znění kódu.
+- **Testy s pojistkou:** `src/test_controlling.js` 216/0 (16 nových #504; nad 4ce35d2 spadne na chybějící
+  `ctrlRejstrikDny`, filtr PD nad 6d67f26 0/4), `netlify/test_controlling.mjs` 70/0 (16 nových #504; nad 4ce35d2
+  700 kandidátů místo 300 a dávky neexistují, filtr PD nad 6d67f26 0/6), `netlify/test_rejstrik.mjs` 24/0 (3 nové;
+  nad 4ce35d2 0/3), nová `netlify/test_controlling_objem.mjs` 3/0 (1000 zakázek; nad 4ce35d2 0/3, není v seznamu
+  mutací kvůli délce běhu). Starší očekávání: C3 řazení kandidátů podle souboru (kurzor dávek), C6 záznam rejstříku
+  jako po uložení na serveru, sady C3/C6 a `test_objednane.js` s `pd=vse` (jejich zakázky deal nemají),
+  `test_pd_stav.js` „filtr stav nezná" → filtr má `pd` s výchozím won; strop 413 nad 600 nahrazen testem 3001
+  kandidátů bez stropu a 413 nad strop velikosti odpovědi. `overit_controlling.mjs` (nespuštěno): kontrola výchozí
+  volby Vyhrané a hromadný blok s „Všechny". `spust_testy.sh` 242 prošlo / 0 selhalo / 1 přeskočena (`test.js`).
+- **Mutace:** jádro „#504" 18 nových, server „#504" 17 nových (14 chycených už v 6d67f26); starší mutace C3
+  přesměrovány na nové znění kódu, „strop čtení zakázek se neuplatní" a „strop zakázek v souboru" zrušeny se stropy.
 
 ## v22.10.5 — Z1: odpovědi J. V. k otázkám zmrazení krycích listů (větev claude/z1-zmrazeni-kl)
 

@@ -174,7 +174,9 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
   rejstrik.push({ soubor: 'rozbita.json', cislo: 'ROZBITA', odeslane: 1, upraveno: '2026-10-20T09:00:00Z' });
   await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
 
-  const ex = async (q, c) => { const r = await get(controllingExport, URL_E + q, c); return { st: r.status, o: await r.json() }; };
+  /* #504: stav Pipedrive má výchozí „vyhrané"; sady C3 bez dealu jdou s pd=vse, není-li v dotazu jiný. */
+  const sPd = (q) => (/[?&]pd=/.test(q) || /protokol=/.test(q)) ? q : q + '&pd=vse';
+  const ex = async (q, c) => { const r = await get(controllingExport, URL_E + sPd(q), c); return { st: r.status, o: await r.json() }; };
   test('C3: vedoucí hromadný export nedostane (403)', (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-31', cVed)).status === 403);
   test('C3: nepřihlášený nic (401)', (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-31')).status === 401);
   test('C3: POST → 405', (await post(controllingExport, URL_E, {}, cAdmin)).status === 405);
@@ -223,13 +225,42 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
   test('C3: odmítnutý dotaz se do protokolu nezapíše', prot.o.zaznamy.every(z => z.od <= z.do));
   test('C3: protokol vedoucí nečte (403)', (await get(controllingExport, URL_E + '?protokol=1', cVed)).status === 403);
 
-  /* Strop: víc zakázek k přečtení, než unese jeden export → 413, nic se neořízne potichu. */
-  const strop = C.CTRL_HROMADNY.cteni;
-  const velky = { schema: 1, zakazky: Array.from({ length: strop + 1 }, (_, i) => ({ soubor: 'x' + i + '.json', cislo: 'X' + i, odeslane: 1 })) };
-  await sZ.zapis('_rejstrik', velky);
-  const e413 = await ex('?od=2026-10-01&do=2026-10-31', cAdmin);
-  test('C3: nad strop čtení → 413 s výzvou zúžit období', e413.st === 413 && /zužte/.test(e413.o.chyba), e413);
-  await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
+  /* Strop čtení (dřív 413 nad 600 kandidátů) zrušen v #504 — viz blok #504 níž. */
+
+  /* #504 (doplnění J. V. 22. 10.): filtr Stav Pipedrive, výchozí „vyhrané". 0801 má vyhraný
+   * deal (poslední známý stav uložený u zakázky), 0804 deal nemá. Před doplněním 0 / 6
+   * (parametr pd server neznal, export bral obě), po něm 6 / 6. */
+  {
+    const soub = rejstrik.find(r => r.cislo === '2026 - OPR - CN - 0801').soubor;
+    const z = await sZ.cti('z/' + soub);
+    z.pdDealId = '501'; z.pdStav = { status: 'won', nacteno: '2026-10-20T10:00:00.000Z' };
+    await sZ.zapis('z/' + soub, z);
+    const holy = async (q) => { const r = await get(controllingExport, URL_E + q, cAdmin); return { st: r.status, o: await r.json() }; };
+    const ePdV = await holy('?od=2026-10-01&do=2026-10-31');
+    test('#504 PD: výchozí filtr = vyhrané — jen 0801, 0804 bez dealu vyřazená jako „bez stavu"',
+      ePdV.st === 200 && cisla(ePdV.o) === '2026 - OPR - CN - 0801' && ePdV.o.filtr.pd === 'won'
+      && ePdV.o.vyrazenoPd.bez === 1 && ePdV.o.vyrazenoPd.jiny === 0, { c: cisla(ePdV.o), v: ePdV.o.vyrazenoPd });
+    const ePdB = await holy('?od=2026-10-01&do=2026-10-31&pd=bez');
+    test('#504 PD: „bez stavu" = zakázky bez dealu nebo bez známého stavu (0804), vyhraná vyřazena jako jiný stav',
+      cisla(ePdB.o) === '2026 - OPR - CN - 0804' && ePdB.o.vyrazenoPd.jiny === 1 && ePdB.o.vyrazenoPd.bez === 0, ePdB.o.vyrazenoPd);
+    const ePdA = await holy('?od=2026-10-01&do=2026-10-31&pd=vse');
+    test('#504 PD: „všechny" bere obě, nic nevyřadí', cisla(ePdA.o) === '2026 - OPR - CN - 0801,2026 - OPR - CN - 0804'
+      && ePdA.o.vyrazenoPd.jiny + ePdA.o.vyrazenoPd.bez === 0);
+    const ePdL = await holy('?od=2026-10-01&do=2026-10-31&pd=lost');
+    test('#504 PD: ztracené — prázdný export, vyřazené spočítané zvlášť (jiný stav 1, bez stavu 1)',
+      ePdL.st === 200 && ePdL.o.exporty.length === 0 && ePdL.o.vyrazenoPd.jiny === 1 && ePdL.o.vyrazenoPd.bez === 1, ePdL.o.vyrazenoPd);
+    test('#504 PD: neplatný stav → 400', (await holy('?od=2026-10-01&do=2026-10-31&pd=WON')).st === 400
+      && (await holy('?od=2026-10-01&do=2026-10-31&pd=x')).st === 400);
+    const pPd = ((await ulz('program').cti('controlling_exporty')) || {}).zaznamy || [];
+    const popis = C.ctrlExportListy(ePdV.o.exporty, ePdV.o.data, { hromadny: Object.assign({}, ePdV.o.filtr, { vyrazenoPd: ePdV.o.vyrazenoPd }) })
+      .find(l => l.nazev === 'Popis').rows;
+    const radek = (t) => (popis.find(r => r[0] === t) || [])[1];
+    test('#504 PD: filtr a počty vyřazených v protokolu i v listu Popis (stav se z Pipedrive nedotahuje)',
+      pPd[0].pd === 'lost' && pPd[0].vyrazenoPd === 1 && pPd[0].vyrazenoBez === 1 && pPd[3].pd === 'won'
+      && /^Vyhrané .*nedotahuje/.test(radek('Stav Pipedrive') || '')
+      && radek('Vyřazeno filtrem stavu — jiný stav') === 0 && radek('Vyřazeno filtrem stavu — bez stavu (bez dealu nebo stav neznámý)') === 1,
+      { p: pPd[0], st: radek('Stav Pipedrive') });
+  }
   /* K6-S6 (D3): nečekaný tvar uložené zakázky (sem podstrčený mimo server —
    * datum prodeje jako objekt, String() vyhodí výjimku) shodil celý export na
    * 500; má jít mezi přeskočené a zbytek se vyveze. */
@@ -269,7 +300,7 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
       rej504.push(G.uloRejstrikZaznam(z, { soubor, razitko: '2026-10-21T10:00:00Z' }));
     }
     await sZ.zapis('_rejstrik', { schema: 1, zakazky: rej504 });
-    const fRijen = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-22' }).filtr;
+    const fRijen = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-22', pd: 'vse' }).filtr;
     test('#504: z 700 zakázek upravených včera jsou kandidáti jen ti zamčení v období (300)',
       C.ctrlHromadnyKandidati(await sZ.cti('_rejstrik'), fRijen).length === 300, C.ctrlHromadnyKandidati(await sZ.cti('_rejstrik'), fRijen).length);
     let volani = 0;
@@ -288,11 +319,11 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     test('#504: export 300 zakázek za 1.–22. 10. nespadne na strop', !e300.chyba && (e300.exporty || []).length === 300
       && !(e300.preskoceno || []).length, e300.chyba || (e300.exporty || []).length);
     const p300 = (await sProgCti()).zaznamy || [];
-    test('#504: protokol má jeden záznam na export, dokončený, s počtem zakázek',
-      p300.length === prot0 + 1 && p300[0].stav === 'hotovo' && p300[0].zakazek === 300 && p300[0].davek >= 1, p300[0]);
+    test('#504: protokol má jeden záznam na export, dokončený, s počtem zakázek a filtrem stavu',
+      p300.length === prot0 + 1 && p300[0].stav === 'hotovo' && p300[0].zakazek === 300 && p300[0].davek >= 1 && p300[0].pd === 'vse', p300[0]);
 
     /* Dávkování a souběh vrátí tentýž obsah jako jeden sekvenční dotaz. */
-    const fKratke = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-03' }).filtr;
+    const fKratke = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-03', pd: 'vse' }).filtr;
     /* Čas exportu (`kdy`) má každý běh vlastní — porovnává se obsah bez něj. */
     const obsah = (o) => JSON.stringify({ e: (o.exporty || []).map(e => ({ ...e, kdy: '' })), p: o.preskoceno });
     Object.assign(M, { soubeh: 1, davkaMax: 100000, casMs: 1e9 });
@@ -328,12 +359,22 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
 
     test('#504: všechny dávky jednoho exportu nesou týž čas exportu (z první dávky)',
       new Set((davky.exporty || []).map(e => e.kdy)).size === 1 && new Set((soub.exporty || []).map(e => e.kdy)).size === 1);
-    /* Strop zakázek v souboru se sčítá přes dávky; odmítnutý export je v protokolu tak označený. */
-    Object.assign(M, { davkaMax: 5, zakazek: 12 });
-    const eStrop = await stahni(fKratke);
+    /* #504 (doplnění J. V. 22. 10.): žádný strop počtu — rejstřík s 3001 kandidáty (dřív 413 nad 600)
+     * se stáhne po dávkách; jejich zakázky v úložišti nejsou, takže jsou všechny přeskočené. */
+    const velky = { schema: 1, zakazky: Array.from({ length: 3001 }, (_, i) => ({ soubor: 'x' + String(i).padStart(5, '0') + '.json', cislo: 'X' + i, odeslane: 1 })) };
+    const ulozeny = await sZ.cti('_rejstrik');
+    await sZ.zapis('_rejstrik', velky);
+    const eVelky = await stahni(fKratke);
+    await sZ.zapis('_rejstrik', ulozeny);
+    test('#504: 3001 kandidátů bez stropu čtení — po dávkách, všechny nečitelné přeskočené, žádné 413',
+      !eVelky.chyba && (eVelky.preskoceno || []).length === 3001 && eVelky.davek > 1, eVelky.chyba || eVelky.davek);
+    /* Technická pojistka zůstává: odpověď jedné dávky nad strop velikosti → 413 s výzvou zkrátit období. */
+    Object.assign(M, { odpoved: 2000 });
+    const eVel = await stahni(fKratke);
     Object.assign(M, puvodne);
-    test('#504: strop zakázek v jednom souboru platí přes všechny dávky (413), protokol „odmítnuto"',
-      eStrop.stav === 413 && /kratší období/.test(eStrop.chyba || '') && ((await sProgCti()).zaznamy || [])[0].stav === 'odmitnuto', eStrop);
+    test('#504: odpověď dávky nad strop velikosti → 413 „příliš velký … kratší období"', eVel.stav === 413
+      && /příliš velký.*kratší období/.test(eVel.chyba || ''), eVel);
+
     /* Starší záznamy rejstříku bez dnů zámků: hrubý předvýběr jako dřív — export dál správný. */
     const bezDnu = (await sZ.cti('_rejstrik')).zakazky.map(z => { const x = { ...z }; delete x.ctrlDny; return x; });
     await sZ.zapis('_rejstrik', { schema: 1, zakazky: bezDnu });

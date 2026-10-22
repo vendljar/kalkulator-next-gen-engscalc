@@ -2,6 +2,7 @@
  * 21. 10. 2026; rozhodnutí J. V. 21. 10. 2026, bod 2).
  *
  * GET /api/controlling/export?od=RRRR-MM-DD&do=RRRR-MM-DD&oblast=obe|ock|proj&rada=obe|cr|zahr&podle=zamceni|prodej
+ *     &pd=won|open|lost|deleted|bez|vse   (#504: poslední známý stav Pipedrive, výchozí won)
  *   (podle=prodej — C6: datum prodeje z objednaných příplatků místo data zamčení)
  *   → { ok, exporty: [ export jedné zakázky (ctrlExportVarianty) ], data, verzeMapovani,
  *       preskoceno: [ { soubor, cislo, duvod } ], kdy, kdo, filtr }
@@ -26,7 +27,7 @@
  * Každý export se zapíše do protokolu (úložiště `program`, klíč
  * `controlling_exporty`): kdo a kdy z relace a hodin serveru, rozsah
  * z ověřeného filtru; export po dávkách má jeden záznam (stav probiha →
- * hotovo). Meze CTRL_HROMADNY (src/controlling.js) — při
+ * hotovo). Strop počtu zakázek není (#504) — meze CTRL_HROMADNY (src/controlling.js) — při
  * překročení 413 s výzvou zúžit období, nikdy potichu oříznutý soubor. */
 import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
@@ -50,7 +51,8 @@ export default async (req) => {
   }
 
   const f = G.ctrlHromadnyFiltr({ od: url.searchParams.get('od'), do: url.searchParams.get('do'),
-    oblast: url.searchParams.get('oblast'), rada: url.searchParams.get('rada'), podle: url.searchParams.get('podle') });
+    oblast: url.searchParams.get('oblast'), rada: url.searchParams.get('rada'), podle: url.searchParams.get('podle'),
+    pd: url.searchParams.get('pd') });
   if (!f.ok) return json({ ok: false, chyba: f.chyba }, 400);
   const filtr = f.filtr;
 
@@ -73,17 +75,15 @@ export default async (req) => {
     return json({ ok: false, chyba: 'Mapování controllingu se během exportu změnilo — spusťte export znovu.' }, 409);
 
   const s = await uloziste('zakazky');
+  /* Bez stropu počtu (#504, J. V. 22. 10.): počet čtení na jeden dotaz drží dávka. */
   const kandidati = G.ctrlHromadnyKandidati(await s.cti('_rejstrik'), filtr);
-  if (kandidati.length > M.cteni)
-    return json({ ok: false, chyba: 'Pro zvolené období by se muselo přečíst ' + kandidati.length
-      + ' zakázek (strop ' + M.cteni + ') — zužte období nebo filtr.' }, 413);
   const zbyva = G.ctrlHromadnyZa(kandidati, po);
 
   /* Čas exportu je jeden pro všechny dávky (z první dávky v protokolu). */
   const kdy = navaz ? navaz.kdy : new Date().toISOString();
   const opts = { jekly: J.JEKLY, data, verzeMapovani, kdo: relace.email, kdy };
 
-  /* Jedna zakázka → { exp } | { preskoc } | {} (mimo výběr). */
+  /* Jedna zakázka → { exp } | { preskoc } | { pd } (vyřazená filtrem stavu) | {} (mimo výběr). */
   let bajty = 0;
   const zpracuj = async (k) => {
     let zak = null;
@@ -99,7 +99,8 @@ export default async (req) => {
     try { v = G.ctrlHromadnyZakazka(zak, filtr, opts); }
     catch (e) { v = { ok: false, duvod: 'zakázku se nepodařilo zpracovat' }; }
     if (v.ok) { bajty += G.ctrlBajty(JSON.stringify(v.exp)); return { exp: v.exp }; }
-    return v.mimo ? {} : { preskoc: { soubor: k.soubor, cislo: k.cislo, duvod: v.duvod } };
+    if (v.mimo) return v.pdVyrazeno ? { pd: v.pdVyrazeno } : {};
+    return { preskoc: { soubor: k.soubor, cislo: k.cislo, duvod: v.duvod } };
   };
   /* Souběžné čtení (#504): M.soubeh pracovníků bere kandidáty v pořadí;
    * nový se nebere po vyčerpání časového rozpočtu, velikosti nebo počtu
@@ -114,19 +115,13 @@ export default async (req) => {
   await Promise.all(Array.from({ length: Math.max(1, M.soubeh) }, pracovnik));
   const exporty = [];
   const preskoceno = [];
-  vysledky.forEach(r => { if (r.exp) exporty.push(r.exp); else if (r.preskoc) preskoceno.push(r.preskoc); });
+  const vyrazenoPd = { jiny: 0, bez: 0 };
+  vysledky.forEach(r => { if (r.exp) exporty.push(r.exp); else if (r.preskoc) preskoceno.push(r.preskoc);
+    else if (r.pd) vyrazenoPd[r.pd === 'bez' ? 'bez' : 'jiny']++; });
   const hotovo = vzato >= zbyva.length;
 
-  const zakazek = (navaz ? (+navaz.zakazek || 0) : 0) + exporty.length;
-  if (zakazek > M.zakazek) {
-    if (navaz) await sProg.zapis('controlling_exporty', G.ctrlProtokolDavka(await sProg.cti('controlling_exporty'), navaz.id,
-      { zakazek: 0, radku: 0, preskoceno: 0 }, 'odmitnuto'));
-    return json({ ok: false, chyba: 'Do období spadá víc než ' + M.zakazek + ' zakázek (strop'
-      + ' v jednom souboru) — rozdělte export na kratší období.' }, 413);
-  }
-
   const id = navaz ? navaz.id : randomUUID().replace(/-/g, '');
-  const odpoved = { ok: true, exporty, data, verzeMapovani, preskoceno, kdy, kdo: relace.email, filtr,
+  const odpoved = { ok: true, exporty, data, verzeMapovani, preskoceno, vyrazenoPd, kdy, kdo: relace.email, filtr,
     export: id, dalsi: hotovo ? null : zbyva[vzato - 1].soubor,
     kandidatu: kandidati.length, zpracovano: kandidati.length - zbyva.length + vzato };
   const telo = JSON.stringify(odpoved);
@@ -135,13 +130,15 @@ export default async (req) => {
       + ' MB) — rozdělte ho na kratší období.' }, 413);
 
   /* Protokol (#504): první dávka založí záznam, další do něj přičítají. */
-  const davka = { zakazek: exporty.length, radku: exporty.reduce((a, e) => a + e.radky.length, 0), preskoceno: preskoceno.length };
+  const davka = { zakazek: exporty.length, radku: exporty.reduce((a, e) => a + e.radky.length, 0), preskoceno: preskoceno.length,
+    vyrazenoPd: vyrazenoPd.jiny, vyrazenoBez: vyrazenoPd.bez };
   const stav = hotovo ? 'hotovo' : 'probiha';
   const prot = await sProg.cti('controlling_exporty');
   await sProg.zapis('controlling_exporty', navaz ? G.ctrlProtokolDavka(prot, id, davka, stav)
     : G.ctrlProtokolPridej(prot, { id, kdy, kdo: relace.email,
-      od: filtr.od, do: filtr.do, oblast: filtr.oblast, rada: filtr.rada, podle: filtr.podle,
-      zakazek: davka.zakazek, radku: davka.radku, preskoceno: davka.preskoceno, davek: 1, stav, verzeMapovani }));
+      od: filtr.od, do: filtr.do, oblast: filtr.oblast, rada: filtr.rada, podle: filtr.podle, pd: filtr.pd,
+      zakazek: davka.zakazek, radku: davka.radku, preskoceno: davka.preskoceno,
+      vyrazenoPd: davka.vyrazenoPd, vyrazenoBez: davka.vyrazenoBez, davek: 1, stav, verzeMapovani }));
   return new Response(telo, { status: 200, headers: { 'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store' } });
 };

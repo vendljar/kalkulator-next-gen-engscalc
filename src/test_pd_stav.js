@@ -158,9 +158,11 @@ async function export3() {
   /* Stav nic neovlivňuje: řádky exportu (mimo dva nové sloupce) jsou s ním i bez něj shodné. */
   const bezSloupcu = rows => rows.map(r => r.filter((x, i) => i !== iSt && i !== iNac && i !== iDeal));
   test('stav neovlivní částky ani řádky exportu', JSON.stringify(bezSloupcu(C.ctrlExportListy(eS)[0].rows)) === JSON.stringify(bezSloupcu(C.ctrlExportListy(eB)[0].rows)));
-  /* Filtry hromadného exportu se nemění (oblast, řada, období — stav v nich není). */
-  const f = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31', stav: 'won' });
-  test('filtr hromadného exportu stav nezná (beze změny)', f.ok && !('stav' in f.filtr) && JSON.stringify(Object.keys(f.filtr)) === '["od","do","oblast","rada","podle"]', f);
+  /* Filtr hromadného exportu podle stavu je od #504 (doplnění J. V. 22. 10.) parametr `pd`
+   * s výchozím „won"; neznámý parametr `stav` filtr dál nezná. */
+  const f = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31', stav: 'lost' });
+  test('filtr hromadného exportu: parametr „stav" nezná, stav Pipedrive je `pd` (výchozí won)', f.ok && !('stav' in f.filtr)
+    && JSON.stringify(Object.keys(f.filtr)) === '["od","do","oblast","rada","podle","pd"]' && f.filtr.pd === 'won', f);
   ['lost', 'deleted', 'open'].forEach(s => {
     const z = kopie(zak); z.pdDealId = '4711'; z.pdStav = { status: s, nacteno: T };
     const e = C.ctrlExportVarianty(z, z.varianty[0], { jekly: JEKLY });

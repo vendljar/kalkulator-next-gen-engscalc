@@ -256,8 +256,11 @@ zkus('K6-K3: zaškrtnutí sloučené dvojice zapíše oba klíče', !obj.skupina
 zkus('C6: zaškrtnutí zapíše objednané do zakázky (dnešek, jen ten klíč)', !!obj.po && obj.po.klice.length === 1 && /^\d{4}-\d{2}-\d{2}$/.test(obj.po.datum));
 zkus('C6: krycí list i export objednaný příplatek vidí', /^1 – /.test(obj.text) && obj.objednanych >= 1, obj.text);
 zkus('C6: odškrtnutí posledního záznam smaže', obj.poZruseni === null);
+/* #504: výběr Stav Pipedrive má výchozí „Vyhrané"; zakázka harnessu deal nemá, proto „Všechny". */
+zkus('#504: Stav Pipedrive ve výchozím stavu Vyhrané', await stranka.evaluate(() => (document.getElementById('ctrlHromPd') || {}).value) === 'won');
 await stranka.evaluate(() => { const v = ridiciVarianta(ZAK); CTRL_STAV.hrom.od = ctrlDenPraha(v.zamek.kdy); CTRL_STAV.hrom.do = CTRL_STAV.hrom.od; render(); });
 await stranka.selectOption('#ctrlHromOblast', 'ock');
+await stranka.selectOption('#ctrlHromPd', 'vse');
 const [stHrom] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#ctrlHromXlsx')]);
 const jmHrom = stHrom.suggestedFilename();
 zkus('stáhne se PREDKALKULACE_<od>_<do>_OCK.xlsx', /^PREDKALKULACE_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_OCK\.xlsx$/.test(jmHrom), jmHrom);

@@ -657,14 +657,20 @@ function ctrlExportVarianty(zak, v, opts) {
  * a po dávkách s časovým rozpočtem (`casMs`, funkce Netlify má 10 s) —
  * prohlížeč pošle tolik dotazů, kolik je dávek (`po` = kurzor, nejvýš
  * `davek`), a složí jeden soubor; protokol vede jeden záznam na export.
- * `cteni` hlídá jen celkový počet kandidátů (s dny v rejstříku jsou to
- * zakázky z období, hrubý předvýběr jen u starších záznamů). */
-const CTRL_HROMADNY = { cteni: 3000, zakazek: 1000, dni: 400, odpoved: 5 * 1024 * 1024, protokol: 200, rezervaDni: 2,
-  soubeh: 12, casMs: 5000, davkaMax: 150, davkaBajty: 3 * 1024 * 1024, davek: 100 };
+ * Doplnění J. V. 22. 10. („nejsme schopni stahovat víc než 600 zakázek?"):
+ * strop počtu zakázek (dřív `cteni` 600 na dotaz a `zakazek` 150 v souboru)
+ * zmizel — zbývají jen technické pojistky: délka období `dni`, velikost
+ * jedné odpovědi `odpoved` a počet dávek `davek` proti zacyklení. */
+const CTRL_HROMADNY = { dni: 400, odpoved: 5 * 1024 * 1024, protokol: 200, rezervaDni: 2,
+  soubeh: 12, casMs: 5000, davkaMax: 150, davkaBajty: 3 * 1024 * 1024, davek: 1000 };
 const CTRL_DATUM_TVAR = /^\d{4}-\d{2}-\d{2}$/;
 const CTRL_FILTR_OBLAST = ['obe', 'ock', 'proj'];
 const CTRL_FILTR_RADA = ['obe', 'cr', 'zahr'];
 const CTRL_FILTR_PODLE = ['zamceni', 'prodej'];
+/* #504 (doplnění J. V. 22. 10.): filtr podle posledního známého stavu dealu
+ * Pipedrive; 'bez' = bez dealu nebo bez známého stavu. Výchozí = vyhrané. */
+const CTRL_FILTR_PD = ['won', 'open', 'lost', 'deleted', 'bez', 'vse'];
+const CTRL_FILTR_PD_TEXT = { won: 'Vyhrané', open: 'Otevřené', lost: 'Ztracené', deleted: 'Smazané', bez: 'Bez stavu', vse: 'Všechny' };
 
 function ctrlDatumPlatne(x) {
   if (typeof x !== 'string' || !CTRL_DATUM_TVAR.test(x)) return false;
@@ -701,7 +707,9 @@ function ctrlHromadnyFiltr(q) {
   /* C6: výběr podle data zamčení (výchozí) nebo data prodeje (objednané příplatky / podpis SoD). */
   const podle = x.podle == null || x.podle === '' ? 'zamceni' : x.podle;
   if (!CTRL_FILTR_PODLE.includes(podle)) return { ok: false, chyba: 'Neznámý výběr (zamceni, prodej).' };
-  return { ok: true, filtr: { od, do: d, oblast, rada, podle } };
+  const pd = x.pd == null || x.pd === '' ? 'won' : x.pd;
+  if (!CTRL_FILTR_PD.includes(pd)) return { ok: false, chyba: 'Neznámý stav Pipedrive (won, open, lost, deleted, bez, vse).' };
+  return { ok: true, filtr: { od, do: d, oblast, rada, podle, pd } };
 }
 
 /* Dny, podle kterých hromadný export zakázku vybírá (#504) — do rejstříku
@@ -809,6 +817,15 @@ function ctrlHromadnyZakazka(zak, filtr, opts) {
     if (!exp.strany.length) return { ok: false, mimo: true, duvod: 'bez strany ' + filtr.oblast.toUpperCase() };
     exp.kapitoly = ctrlKapitoly(exp.radky, { data: opts && opts.data, jenZaklad: true });
   }
+  /* #504: stav Pipedrive až po všech ostatních podmínkách — počet vyřazených
+   * pak říká, kolik zakázek z období filtr stavu skryl. Poslední známý stav
+   * (pdStav u zakázky, server ho připojí z pd_stav); z Pipedrive se nedotahuje. */
+  const pd = filtr.pd || 'vse';
+  if (pd !== 'vse') {
+    const st = ctrlPdStavZakazky(zak);
+    if (pd === 'bez' ? st !== '' : st !== pd)
+      return { ok: false, mimo: true, pdVyrazeno: st ? 'jiny' : 'bez', duvod: 'jiný stav Pipedrive' };
+  }
   return { ok: true, exp };
 }
 
@@ -825,14 +842,15 @@ const CTRL_EXPORT_ID = /^[a-z0-9]{8,40}$/;
 function ctrlProtokolNavaz(db, id, filtr, kdo) {
   const z = (db && Array.isArray(db.zaznamy)) ? db.zaznamy.find(x => x && x.id === id) : null;
   if (!z || z.stav !== 'probiha' || z.kdo !== kdo) return null;
-  return ['od', 'do', 'oblast', 'rada', 'podle'].every(k => z[k] === filtr[k]) ? z : null;
+  return ['od', 'do', 'oblast', 'rada', 'podle', 'pd'].every(k => z[k] === filtr[k]) ? z : null;
 }
 /* Přičte dávku k záznamu `id` (počty spočítal server) a nastaví stav. */
 function ctrlProtokolDavka(db, id, davka, stav) {
   const zaznamy = (db && Array.isArray(db.zaznamy)) ? db.zaznamy : [];
   return { schema: 1, zaznamy: zaznamy.map(z => (z && z.id === id) ? Object.assign({}, z, {
     zakazek: (+z.zakazek || 0) + davka.zakazek, radku: (+z.radku || 0) + davka.radku,
-    preskoceno: (+z.preskoceno || 0) + davka.preskoceno, davek: (+z.davek || 0) + 1, stav }) : z) };
+    preskoceno: (+z.preskoceno || 0) + davka.preskoceno, davek: (+z.davek || 0) + 1, stav,
+    vyrazenoPd: (+z.vyrazenoPd || 0) + (+davka.vyrazenoPd || 0), vyrazenoBez: (+z.vyrazenoBez || 0) + (+davka.vyrazenoBez || 0) }) : z) };
 }
 
 /* Prohlížeč: export za období po dávkách (#504). `api(cesta)` vrací
@@ -844,9 +862,11 @@ async function ctrlHromadnyStahni(api, filtr, prubeh) {
   let po = '', id = '', vysl = null;
   for (let i = 0; i < CTRL_HROMADNY.davek; i++) {
     const o = await api(zaklad + (id ? '&export=' + encodeURIComponent(id) : '') + (po ? '&po=' + encodeURIComponent(po) : ''));
-    if (!vysl) vysl = Object.assign({}, o, { exporty: [], preskoceno: [] });
+    if (!vysl) vysl = Object.assign({}, o, { exporty: [], preskoceno: [], vyrazenoPd: { jiny: 0, bez: 0 } });
     (o.exporty || []).forEach(e => vysl.exporty.push(e));
     (o.preskoceno || []).forEach(p => vysl.preskoceno.push(p));
+    vysl.vyrazenoPd.jiny += +(o.vyrazenoPd && o.vyrazenoPd.jiny) || 0;
+    vysl.vyrazenoPd.bez += +(o.vyrazenoPd && o.vyrazenoPd.bez) || 0;
     id = id || String(o.export || '');
     if (prubeh) prubeh(+o.zpracovano || 0, +o.kandidatu || 0);
     if (!o.dalsi) { delete vysl.dalsi; vysl.davek = i + 1; return vysl; }
@@ -934,6 +954,12 @@ function pdStavZDealu(d) {
   if (!d || typeof d !== 'object') return '';
   if (d.is_deleted === true || d.deleted === true) return 'deleted';
   return PD_STAVY.includes(d.status) ? d.status : '';
+}
+/* Stav dealu zakázky pro filtr hromadného exportu (#504): '' bez dealu nebo bez známého stavu. */
+function ctrlPdStavZakazky(zak) {
+  if (!zak || !ctrlPdDealIdNorm(zak.pdDealId)) return '';      // stav bez platného dealu neplatí
+  const s = pdStavNorm(zak.pdStav);
+  return s ? s.status : '';
 }
 /* Text pro hlavičku a export: '' bez dealu nebo bez známého stavu. */
 function pdStavText(zak) {
@@ -1039,6 +1065,14 @@ function ctrlExportListy(exp, data, opts) {
     popis.push([hr.podle === 'prodej' ? 'Období prodeje (podpisu SoD)' : 'Období zamčení (odeslání)', String(hr.od) + ' – ' + String(hr.do)]);
     popis.push(['Oblast', { ock: 'jen OCK', proj: 'jen PROJ' }[hr.oblast] || 'OCK i PROJ']);
     popis.push(['Číselná řada', { cr: 'jen ČR', zahr: 'jen zahraničí' }[hr.rada] || 'ČR i zahraničí']);
+    /* #504: filtr stavu Pipedrive — poslední známý stav, při exportu se z Pipedrive nedotahuje. */
+    popis.push(['Stav Pipedrive', (CTRL_FILTR_PD_TEXT[hr.pd] || 'Všechny')
+      + ' (poslední známý stav v kalkulátoru, při exportu se z Pipedrive nedotahuje)']);
+    if (hr.pd && hr.pd !== 'vse') {
+      const vy = hr.vyrazenoPd || {};
+      popis.push(['Vyřazeno filtrem stavu — jiný stav', +vy.jiny || 0]);
+      popis.push(['Vyřazeno filtrem stavu — bez stavu (bez dealu nebo stav neznámý)', +vy.bez || 0]);
+    }
     popis.push(['Zakázek v exportu', exps.length]);
     popis.push(['Výsledek', zmrazenych === exps.length ? 'u všech zmrazený při prvním tisku nabídky'
       : 'zmrazený u ' + zmrazenych + ', u ' + (exps.length - zmrazenych)
@@ -1177,5 +1211,5 @@ if (typeof module !== 'undefined' && module.exports)
     CTRL_RADKY_HLAVICKA, CTRL_LIST_PRIPLATKY, ctrlExportListy, ctrlCsvBunka, ctrlExportCsv, ctrlVZakladuText, ctrlHromadnyVarianta,
     CTRL_PD_ID_MAX, ctrlPdDealIdNorm, ctrlPdDealKontrola,
     PD_STAVY, PD_STAV_TEXT, pdStavNorm, pdStavKontrola, pdStavZDealu, pdStavText, pdStavNactenoText,
-    CTRL_HROMADNY, ctrlDatumPlatne, ctrlDenPraha, ctrlHromadnyFiltr, ctrlHromadnyKandidati, ctrlHromadnyZakazka, ctrlProtokolPridej,
+    CTRL_HROMADNY, CTRL_FILTR_PD, CTRL_FILTR_PD_TEXT, ctrlPdStavZakazky, ctrlDatumPlatne, ctrlDenPraha, ctrlHromadnyFiltr, ctrlHromadnyKandidati, ctrlHromadnyZakazka, ctrlProtokolPridej,
     ctrlRejstrikDny, ctrlHromadnyZa, CTRL_EXPORT_ID, ctrlProtokolNavaz, ctrlProtokolDavka, ctrlHromadnyStahni, ctrlHromadnyChybaText, CTRL_MAPA_HLAVICKA, ctrlMapaListy, ctrlImportZListu };

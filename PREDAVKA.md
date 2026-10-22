@@ -12,10 +12,13 @@ test nic** — slučuje koordinace (session_013yuBUKmpUYvEnjxWjGi5kj, „ŘÍDÍ
   150 zakázek na dávku, kurzor `dalsi`, protokol jeden záznam (`id`, `stav` probiha/hotovo/odmitnuto, `verzeMapovani`).
   Prohlížeč `ctrlHromadnyStahni` skládá dávky, `ctrlHromadnyChybaText` (bez „504“). Stropy: čtení 3000, soubor 1000
   zakázek. `ctrlDenPraha` s jedním formátovačem. Příručka: novinky v22.10.5 + odstavec hromadného exportu.
+- **Doplnění J. V. (zpráva koordinace 13:58 UTC):** stropy `cteni` a `zakazek` zrušeny (jen technické: `dni` 400,
+  odpověď dávky 5 MB, 1000 dávek); filtr **Stav Pipedrive** `pd` (výchozí won; open/lost/deleted/bez/vse) na serveru,
+  v protokolu, Popisu, jménu souboru a hlášce prázdného výsledku; simulace 1000 zakázek `netlify/test_controlling_objem.mjs`.
 - **Rozhodnutí udělaná v sezení (návrh pro J. V., ověřit):** (1) dopočet starších záznamů jen při ukládání (žádná
-  admin akce, žádný zápis rejstříku z exportu — ten by přidal souběžný zápis rejstříku bez zámku); (2) strop
-  zakázek v jednom souboru zvednut 150 → 1000 (zadání „300 nespadne“), (3) výběr oblasti OCK/PROJ dál až nad
-  přečtenou zakázkou (rejstřík stranu nenese).
+  admin akce, žádný zápis rejstříku z exportu — ten by přidal souběžný zápis rejstříku bez zámku); (2) rejstřík
+  nenese `pdDealId` — přesný počet „vyřazeno filtrem stavu“ potřebuje přečtenou zakázku (období rozhoduje ona);
+  (3) výběr oblasti OCK/PROJ dál až nad přečtenou zakázkou; (4) výchozí `pd=won` platí i na serveru (dotaz bez `pd`).
 - **Testy / mutace:** viz CHANGELOG a zprávu koordinaci.
 - **Další krok:** koordinace sloučí a pustí celé kolo (prohlížečové sady — hlavně `overit_controlling.mjs` — jsem
   nespouštěl).
