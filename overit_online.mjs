@@ -1774,6 +1774,11 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
     syncVarianta(); render();
     await onlineUloz();
     zamekPoTisku('nabidkaTisk', aktivniVarianta(ZAK).id);
+    /* Z1-4: tisk uložil sám — zámek je na serveru ještě před dalším ručním uložením. */
+    const tiskUlozil = !!ONLINE_STAV.ukladaBeh;
+    await (ONLINE_STAV.ukladaBeh || Promise.resolve());
+    const dTisk = await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(ONLINE_STAV.soubor));
+    const zamekPoTiskuNaServeru = !!(dTisk.zakazka.varianty[0].zamek && dTisk.zakazka.varianty[0].zamek.zamceno);
     await onlineUloz();
     const d = await onlineApi('/api/zakazky?soubor=' + encodeURIComponent(ONLINE_STAV.soubor));
     const z = d.zakazka.varianty[0].zamek || {};
@@ -1782,8 +1787,11 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
                ? z.vysledek.ock.souhrn.zakladCena : null,
              /* P9.5: podmínky krycích listů zmrazené při odeslání, jak je server uložil */
              zmrazeno: ((d.zakazka.varianty[0].data || {}).kryci || {}).zmrazeno || null,
-             zmrazenoProj: ((d.zakazka.varianty[0].data || {}).kryciProj || {}).zmrazeno || null };
+             zmrazenoProj: ((d.zakazka.varianty[0].data || {}).kryciProj || {}).zmrazeno || null,
+             tiskUlozil, zamekPoTiskuNaServeru };
   }, ceniky);
+  test('Z1-4: tisk nabídky zakázku hned uloží (zámek je na serveru bez dalšího uložení)',
+    poctiva.tiskUlozil && poctiva.zamekPoTiskuNaServeru, JSON.stringify([poctiva.tiskUlozil, poctiva.zamekPoTiskuNaServeru]));
   test('P9.5: zamčení po tisku zmrazí podmínky krycího listu OCK i PROJ a server je uloží',
     !!(poctiva.zmrazeno && poctiva.zmrazeno.platnostNabidky && poctiva.zmrazenoProj && poctiva.zmrazenoProj.platnostNabidky),
     JSON.stringify([poctiva.zmrazeno && poctiva.zmrazeno.platnostNabidky, poctiva.zmrazenoProj && poctiva.zmrazenoProj.platnostNabidky]));
@@ -1803,7 +1811,14 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
     Object.assign(aktivniVarianta(ZAK).data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 });   // B137
     syncVarianta(); render();
     await onlineUloz();
-    zamekPoTisku('nabidkaTisk', aktivniVarianta(ZAK).id);
+    /* Z1-4 (v22.10.5): tisk zakázku hned uloží (zamekPoTiskuUloz) — poctivý
+     * zámek by tak byl na serveru dřív, než ho tenhle „upravený klient"
+     * podvrhne, a podvrh by narazil na uložený zámek (409, zámek se liší).
+     * Upravený klient okamžité uložení vynechá a pošle podvržený výsledek
+     * hned v prvním zápisu nového zámku — tak, jak se B59 ověřuje. */
+    const puvTiskUloz = window.zamekPoTiskuUloz;
+    window.zamekPoTiskuUloz = () => false;
+    try { zamekPoTisku('nabidkaTisk', aktivniVarianta(ZAK).id); } finally { window.zamekPoTiskuUloz = puvTiskUloz; }
     aktivniVarianta(ZAK).zamek.vysledek.ock.souhrn.zakladSDph += 1000;   // upravený klient
     await onlineUloz();
     const po = { hlaska: ONLINE_STAV.hlaska, typ: ONLINE_STAV.hlaskaTyp, soubor: ONLINE_STAV.soubor };

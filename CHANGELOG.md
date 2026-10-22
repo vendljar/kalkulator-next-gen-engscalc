@@ -46,6 +46,12 @@ Roadmapa #502 (otázky → rozhodnuto), #501 (P1-1, P1-2 rozhodnuto).
   přeskočí s hláškou, poškozený soubor je chyba. Výjimka telefonu z `nastroje/povolene_kontakty.txt` odebrána,
   `kontrola_udaju.py` čistá. Pojistka `src/test_harness_podklady.js`: bez změny 5 FAIL, po 30/0. D5-1, D5-2, D5-4
   beze změny (roadmapa #503 rozhodnuto).
+- **overit_online.mjs po sloučení 9e11e06 (visel v bloku B59 „upravený klient"):** příčinou je Z1-4 — tisk hned
+  uložil poctivý zámek, ruční podvrh `zamek.vysledek` v harnessu pak narazil na uložený zámek (409, zámek se liší)
+  a `onlineOtevri` zůstal viset v dialogu neuložených změn. Aplikace se chová správně (podvrh po uložení je navíc
+  odmítnut tvrdě); zastaralý byl postup harnessu — „upravený klient" okamžité uložení vynechá a podvrh pošle v prvním
+  zápisu zámku. Nová kontrola „Z1-4: tisk nabídky zakázku hned uloží". Pojistka: před úpravou harness visí 120 s
+  (kód 1), po ní 271/0, kód 0. Kód aplikace beze změny.
 - **Mutace (0 přeživších):** server „z1" 26/26 (omezená sada `KNG_MUTACE_SADY`), „b163" 3/3, jádro „z1" 6/6;
   `--kontrola` jádro 467, server 813 úseků. Z1-4 (UI) hlídá harness.
 
