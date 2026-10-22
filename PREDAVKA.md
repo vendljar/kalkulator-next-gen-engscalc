@@ -1,3 +1,19 @@
+# Předávka — 22./23. 10. 2026 noc: K7 — celé kolo + audit nad v22.10.6 (#506), větev `claude/k7-kolo`
+
+Kód `3394b2b` (v22.10.6, integrace) beze změny; výstup jen dokumentace. Koordinace: session_013yuBUKmpUYvEnjxWjGi5kj.
+
+- **Kolo:** sady 306/0/6 (přeskočeno `test.js` + 5 harnessů bez `KNG_PODKLADY`), mutace jádra 492/492 (otisky souhlasí),
+  statické 4/4. Mutace serveru: první běh v hlavní kopii přerušil restart kontejneru ~19:18 UTC po 347 chycených
+  (0 přeživších; zbylý mutant `src/zamek.js` vrácen `git checkout`). Zbylých 482 (+ opakování v týchž souborech,
+  728 spuštění) běží ve třech frontách po souborech ve worktree `/home/user/k7mut0..2` (detached 3394b2b), skript
+  `scratchpad/fronta.sh`, logy `scratchpad/kolo/logy/server_fronta{0,1,2}.log`. Úplnost se ověří po názvech
+  (829 unikátních) — seznam `scratchpad/mut_vse.json`.
+- **Audit:** `podklady/K7_AUDIT_22_10.md` — 0 kritických, 0 vysokých, 3 střední (K7-K1, K7-K2, K7-S1), 12 nízkých,
+  16 info; K7-W1 (sdílecí odkaz na sezení ve veřejném repu) k ověření J. V. Předběžný verdikt VYHOVUJE S VÝHRADOU.
+- **Po restartu kontejneru:** `ps` → běží-li `fronta.sh`, čekat; jinak z logů zjistit hotové části a pustit zbytek
+  (`bash fronta.sh <worktree> <soubor se zbylými cestami>`); nikdy `mutace.mjs --help`.
+- **Další krok:** po doběhu doplnit oddíl „Testovací kolo“ a Verdikt v auditu, #506 → hotovo, finální hlášení koordinaci.
+
 # Předávka — 22. 10. 2026 večer: E1 — hromadný export controllingu (#504) a verze ceníku online (#505), větev `claude/e1-export-obdobi`
 
 Nad integrací 4ce35d2 (v22.10.5, tag) + 9abed07, verze **22.10.6** (pokyn koordinace; oddíl CHANGELOG `## v22.10.6 — E1`). **Do integrace /
