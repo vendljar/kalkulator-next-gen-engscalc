@@ -8,6 +8,12 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.10.1 — Integrace do test (koordinace 22. 10. 2026)
+
+- Obsah: D4 (slovníky překladu SoD podle revidovaného znění, nástroj) + D1 (roadmapa dorovnána, `podklady/NOVINKY_v20.10.2-v21.10.6.md`, ukázkový export controllingu v2) + D2 (podklad #367 P10, `podklady/P10_PLATEBNI_PODMINKY_22_10.md`).
+- Kolo `--bez-mutaci` nad fb76acc: 299 prošlo / 0 selhalo / 6 přeskočeno (test.js + 5 harnessů bez KNG_PODKLADY), statické 4/4 — VŠE ZELENÉ.
+- Cílené mutace jádra: „D4 slovník z revize“ 10/10, „preklad_sod“ 16/16 — 0 přeživších. `--kontrola` jádro 432 úseků, server 763 úseků; roadmapa `--kontrola` 500 položek bez nálezu.
+
 ## v22.10.1 — D4: slovníky překladu SoD podle revidovaného znění (nástroj, bez změny aplikace; větev claude/d4-sod-slovniky)
 
 Nad `test` = v21.10.6 (4c127f5). J. V. 21. 10. 2026: revidované EN/DE/FR SoD na Disku jsou závazné znění.
