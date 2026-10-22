@@ -26,7 +26,7 @@
  * a vypíše, co hledal. Staré cesty zůstávají jako druhá možnost, aby se
  * v původním prostředí nic nerozbilo; nic se nemaže.
  */
-import { existsSync, readdirSync } from 'fs';
+import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join, basename } from 'path';
 
 /* Vrací první existující cestu, nebo null.
@@ -131,4 +131,37 @@ export function preskoc(co, hledano, stav) {
   }
   if (stav) console.log('Kontroly před přeskočením: ' + (+stav.ok || 0) + ' prošlo, 0 selhalo.');
   process.exit(KOD_PRESKOCENO);
+}
+
+/* NEGATIVNÍ KONTROLA ŠABLON (D5-3, rozhodnutí J. V. 22. 10. 2026).
+ *
+ * Harnessy šablon (overit_sablona.mjs, overit_nabidka_proj_word.mjs) hlídají,
+ * že v šabloně nezůstalo jméno, e-mail ani telefon kolegy, z jehož dokumentu
+ * vzor vznikl. Ty údaje jsou skutečné a repozitář je veřejný — proto nejsou
+ * v kódu, ale ve firemních podkladech vedle šablon:
+ *
+ *   $KNG_PODKLADY/negativni_kontrola.json
+ *   { "cn":   ["<text>", …],     // šablona cenové nabídky OCK (Sablona_NABIDKA_CN_v*.docx)
+ *     "proj": ["<text>", …] }    // šablona nabídky PROJ (Sablona_NABIDKA_PROJ.docx)
+ *
+ * Položka = přesný řetězec (příjmení, začátek e-mailu, telefon s mezerami);
+ * hledá se v XML šablony, telefon i s pevnou mezerou. Vrací pole řetězců
+ * (prázdné, když klíč chybí), nebo null, když soubor není — harness pak
+ * kontrolu přeskočí s hláškou. Poškozený soubor je chyba, ne přeskočení.
+ * Hodnoty se nikdy nevypisují (výstup jde do protokolů). */
+export function negativniKontrola(klic, kandidati = []) {
+  const cesta = najdiPodklad('negativni_kontrola.json', kandidati);
+  if (!cesta) return null;
+  let d;
+  try { d = JSON.parse(readFileSync(cesta, 'utf8')); }
+  catch (e) { throw new Error('negativni_kontrola.json nejde přečíst: ' + e.message); }
+  const a = d && d[klic];
+  return Array.isArray(a) ? a.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()) : [];
+}
+
+/* Totéž porovnání pro oba harnessy: text šablony (všechna XML) proti seznamu.
+ * Vrací pořadová čísla položek, které v šabloně zůstaly. */
+export function negativniNalezy(text, seznam) {
+  const t = String(text || ''), tn = t.replace(/\u00a0/g, ' ');
+  return (seznam || []).map((s, i) => (t.includes(s) || tn.includes(s.replace(/\u00a0/g, ' ')) ? i + 1 : 0)).filter(Boolean);
 }

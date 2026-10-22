@@ -32,6 +32,20 @@ Roadmapa #502 (otázky → rozhodnuto), #501 (P1-1, P1-2 rozhodnuto).
   `overit_kryci_po_tisku.mjs` 36/36, kód 0 (blok Z1-4: nad v22.10.4 „online tisk uloží" FAIL). Sady D5 a starší,
   které po SoD měnily kontaktní jméno jako „zamčené" pole nebo název akce jako „neškodnou" změnu, mění atyp můstku /
   kontaktní osobu. `spust_testy.sh` 241 prošlo / 0 selhalo.
+- **Po kole nad 1e40538:** (1) plán plateb PROJ upravený po CN se dřív neprojevil nikde — `planPlatebVarianty`
+  u zamčené varianty četl vždy `zmrazenoPlan`. Nově: liší-li se živý plán od plánu ve snímku zámku, platí pro krycí
+  list, SoD a export živý plán doplněný ze snímku (předvolba, záloha, milníky); dotisk CN beze změny (pohled = snímek).
+  Pojistka `test_zmrazeni_kl.js` blok 5a: bez opravy 2 FAIL, po 107/0; mutace jádra 2/2. (2) `overit_plan_plateb.mjs`
+  — očekávání otočeno (zápis do plánu po CN projde, dotisk CN beze změny), klon a náhled byly jen následek; 49/0.
+  (3) `overit_controlling.mjs` — karta SoD počítá dvojici přechodových plechů jako jednu položku (K6-K3, D5), nová
+  kontrola „zaškrtnutí dvojice zapíše oba klíče"; 49/0.
+- **D5-3 (J. V. 22. 10.):** skutečné jméno, e-mail a telefon kolegy v negativní kontrole harnessů šablon
+  (`overit_sablona.mjs`, `overit_nabidka_proj_word.mjs`) přesunuty mimo repozitář — harnessy je čtou z
+  `$KNG_PODKLADY/negativni_kontrola.json` (`{ "cn": […], "proj": […] }`, `negativniKontrola` / `negativniNalezy`
+  v `nastroje/harness_podklady.mjs`, telefon i s pevnou mezerou, hodnoty se nevypisují); bez souboru se kontrola
+  přeskočí s hláškou, poškozený soubor je chyba. Výjimka telefonu z `nastroje/povolene_kontakty.txt` odebrána,
+  `kontrola_udaju.py` čistá. Pojistka `src/test_harness_podklady.js`: bez změny 5 FAIL, po 30/0. D5-1, D5-2, D5-4
+  beze změny (roadmapa #503 rozhodnuto).
 - **Mutace (0 přeživších):** server „z1" 26/26 (omezená sada `KNG_MUTACE_SADY`), „b163" 3/3, jádro „z1" 6/6;
   `--kontrola` jádro 467, server 813 úseků. Z1-4 (UI) hlídá harness.
 

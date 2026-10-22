@@ -205,6 +205,14 @@ const MUTACE = [
     proc: 'u dřív schválené výjimky by karta ukázala jiné číslo, než schvalovatel schválil' },
   /* ---------- #157: smlouva o dílo v jazyce tisku (17. 10. 2026, v17.10.6) ---------- */
   /* Z1 (22. 10. 2026): smlouva o dílo nese živé podmínky a DPH, dotisk CN snímek. */
+  { nazev: 'Z1: plán plateb upravený po CN se v krycím listu a SoD neprojeví', soubor: 'plan_plateb.js',
+    hledej: "    if (sn && plan && JSON.stringify(plan) !== JSON.stringify(sn.planPlateb || null)) {",
+    nahrad: "    if (false) {",
+    proc: 'editovatelný plán plateb PROJ (tabulka J. V.) by se po odeslání nikam nepropsal' },
+  { nazev: 'Z1: dotisk CN bere upravený plán plateb', soubor: 'plan_plateb.js',
+    hledej: "    if (sn && plan && JSON.stringify(plan) !== JSON.stringify(sn.planPlateb || null)) {",
+    nahrad: "    if (plan) {",
+    proc: 'dotisk odeslané CN PROJ by ukázal plán plateb změněný po odeslání' },
   { nazev: 'Z1: SoD realizace tiskne snímek odeslané nabídky', soubor: 'sod.js',
     hledej: "  const d = nabidkaData(zak, varianta, jekly, lang, undefined, { zive: true });",
     nahrad: "  const d = nabidkaData(zak, varianta, jekly, lang);",

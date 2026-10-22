@@ -226,9 +226,12 @@ await stranka.fill('#ctrlPdDeal', '4711'); await stranka.dispatchEvent('#ctrlPdD
 const pdOk = await stranka.evaluate(() => ({ id: ZAK.pdDealId, exp: ctrlExportVarianty(ZAK, ridiciVarianta(ZAK), { jekly: JEKLY }).hlavicka.pipedrive }));
 zkus('C4: deal id se zapíše do zakázky a jde do exportu', pdOk.id === '4711' && pdOk.exp === '4711', JSON.stringify(pdOk));
 /* C6: objednané příplatky v kartě Smlouva o dílo (krycí list OCK). */
-const obj = await stranka.evaluate(() => {
+const obj = await stranka.evaluate(async () => {
   ZAK.aktivni = ridiciVarianta(ZAK).id;
   const nab = objNabidnute(ridiciVarianta(ZAK), JEKLY);
+  /* K6-K3 (D5): dvojice přechodových plechů je v kartě JEDNA položka (objPolozky). */
+  const polozek = objPolozky(nab).length;
+  const skupina = objPolozky(nab).find(p => p.klice.length > 1) || null;
   const box = document.createElement('div'); box.innerHTML = objKarta(); document.body.appendChild(box);
   const zaskrt = box.querySelectorAll('#objKarta input[type=checkbox]').length;
   objUiPrepni(nab[0].key, true);
@@ -236,10 +239,20 @@ const obj = await stranka.evaluate(() => {
   const text = kryciCtx(ZAK, ridiciVarianta(ZAK), JEKLY).objednane;
   const exp = ctrlExportVarianty(ZAK, ridiciVarianta(ZAK), { jekly: JEKLY });
   objUiPrepni(nab[0].key, false);
+  let skupinaKlice = null;
+  if (skupina) {
+    await objUiPrepni(skupina.klice, true);
+    skupinaKlice = ZAK.objednane ? ZAK.objednane.klice.slice() : [];
+    await objUiPrepni(skupina.klice, false);
+  }
   box.remove();
-  return { nab: nab.length, zaskrt, po, text, objednanych: exp.radky.filter(r => r.objednano).length, poZruseni: ZAK.objednane || null };
+  return { nab: nab.length, polozek, zaskrt, po, text, objednanych: exp.radky.filter(r => r.objednano).length, poZruseni: ZAK.objednane || null,
+           skupina: skupina ? skupina.klice : null, skupinaKlice };
 });
-zkus('C6: karta SoD nabízí zaškrtnout každý nabídnutý příplatek', obj.nab >= 1 && obj.zaskrt === obj.nab, JSON.stringify(obj).slice(0, 200));
+zkus('C6: karta SoD nabízí zaškrtnout každý nabídnutý příplatek (dvojice přechodových plechů = jedna položka, K6-K3)',
+  obj.nab >= 1 && obj.zaskrt === obj.polozek, JSON.stringify(obj).slice(0, 200));
+zkus('K6-K3: zaškrtnutí sloučené dvojice zapíše oba klíče', !obj.skupina
+  || (obj.skupina.length === 2 && obj.skupina.every(k => (obj.skupinaKlice || []).includes(k))), JSON.stringify({ s: obj.skupina, k: obj.skupinaKlice }));
 zkus('C6: zaškrtnutí zapíše objednané do zakázky (dnešek, jen ten klíč)', !!obj.po && obj.po.klice.length === 1 && /^\d{4}-\d{2}-\d{2}$/.test(obj.po.datum));
 zkus('C6: krycí list i export objednaný příplatek vidí', /^1 – /.test(obj.text) && obj.objednanych >= 1, obj.text);
 zkus('C6: odškrtnutí posledního záznam smaže', obj.poZruseni === null);

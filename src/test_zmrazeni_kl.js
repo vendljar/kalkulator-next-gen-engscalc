@@ -308,6 +308,26 @@ test('neznámé pole se po tisku CN bere jako zmrazené', (() => { const v = zam
   test('PROJ: smlouva o dílo (sodProjData) nese novou splatnost', sp.PODM_SPLATNOST_DNI === '90', sp.PODM_SPLATNOST_DNI);
 }
 
+/* ---- 5a) plán plateb PROJ upravený po odeslání (Z1, editovatelný podle tabulky) ----
+ * Pojistka: nad v22.10.5 (1e40538) planPlatebVarianty zamčené varianty čte vždy
+ * zmrazenoPlan — úprava plánu po CN se neprojeví v krycím listu ani SoD. */
+{
+  const z = nova(); z.cislo = '2026 - OVP - CN - 4774'; const v = z.varianty[0];
+  v.data.kryciProj = { hodnoty: {}, planPlateb: { v: 1, predvolba: 'zaloha', zaloha: 30 } };
+  zamkni(z, 'nabidkaProj');
+  const radky = (vv) => { const pl = NP.nabidkaProjPlatby(z, vv, 'cz'); return pl && pl.dopocet ? pl.dopocet.platby.map(x => x.klic + ':' + x.castka).join('|') : ''; };
+  const cnPred = radky(ZM.zamekNabidkaPohled(v)), zivePred = radky(v);
+  test('příprava: plán plateb PROJ odeslané nabídky má platby', !!cnPred && cnPred === zivePred, [cnPred, zivePred]);
+  v.data.kryciProj.planPlateb = { v: 1, predvolba: 'sto' };
+  const cnPo = radky(ZM.zamekNabidkaPohled(v)), zivePo = radky(v);
+  test('plán upravený po CN: krycí list / SoD (živě) nesou nový plán', zivePo !== zivePred && !!zivePo, [zivePred, zivePo]);
+  test('plán upravený po CN: dotisk CN ze snímku beze změny', cnPo === cnPred, [cnPred, cnPo]);
+  const ef = (typeof planPlatebVarianty === 'function') ? planPlatebVarianty(v, null) : null;
+  test('plán upravený po CN: není „zmrazeno při odeslání", texty milníků ze snímku', !!ef && ef.zmrazeny === false && ef.plan.predvolba === 'sto');
+  v.data.kryciProj.planPlateb = JSON.parse(JSON.stringify(v.zamek.snimek.kryciProj.planPlateb));
+  test('plán vrácený na stav ze snímku: zase zmrazený plán', planPlatebVarianty(v, null).zmrazeny === true && radky(v) === zivePred);
+}
+
 /* ---- 5b) ceny činností v krycím listu PROJ jako v nabídce (Z1, podnět obchodníka) ----
  * Pojistka: nad v22.10.2 nesl krycí list nezaokrouhlené ceny činností, součet
  * řádků neseděl s „Celkem bez DPH" nabídky (oba případy níž selžou). */

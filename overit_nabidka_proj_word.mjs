@@ -40,7 +40,7 @@ import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 const KOREN = fileURLToPath(new URL('.', import.meta.url));
 
-import { najdiPodklad, preskoc } from './nastroje/harness_podklady.mjs';
+import { najdiPodklad, preskoc, negativniKontrola, negativniNalezy } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
 const { zipPrecti } = require(KOREN + 'src/docxgen.js');
 
@@ -112,12 +112,14 @@ console.log('\nšablona Sablona_NABIDKA_PROJ.docx');
   /* Šablona koluje mezi lidmi. Jméno, telefon, e-mail ani sken podpisu kolegy,
    * ze jehož nabídky vzor vznikl, v ní nemají co dělat. */
   const vse = casti.filter(x => /\.(xml|rels)$/.test(x.nazev)).map(x => dek(x.data)).join('');
-  /* Telefon se hledá i s pevnou mezerou (Word je tak píše). Samotné „724"
-   * by chytalo i vnitřní značky Wordu (w:rsid), takže se hledá celé číslo. */
-  const telefon = vse.replace(/ /g, ' ');
-  for (const s of ['Sikora', 'sikora.daniel'])
-    test('v šabloně nezůstalo „' + s + '"', !vse.includes(s));
-  test('v šabloně nezůstal telefon kolegy', !telefon.includes('724 323 407'));
+  /* D5-3: jméno, e-mail a telefon kolegy nejsou v repozitáři — seznam je ve
+   * firemních podkladech (negativni_kontrola.json, klíč „proj"; formát
+   * v nastroje/harness_podklady.mjs). Telefon se porovná i s pevnou mezerou. */
+  const negativni = negativniKontrola('proj', KDE_SABLONA.map(k => k.replace(/[^/]*$/, 'negativni_kontrola.json')));
+  if (negativni === null)
+    console.log('  – negativní kontrola jmen a kontaktů PŘESKOČENA: chybí negativni_kontrola.json ($KNG_PODKLADY)');
+  else test('v šabloně nezůstal žádný údaj z negativní kontroly (' + negativni.length + ' položek)',
+    negativni.length > 0 && !negativniNalezy(vse, negativni).length, 'položky č. ' + negativniNalezy(vse, negativni).join(', '));
   const podpis = casti.find(x => x.nazev === 'word/media/image2.png');
   test('sken podpisu ze vzoru je ze šablony vyprázdněný',
     podpis && podpis.data.length < 200, podpis && podpis.data.length);

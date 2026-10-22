@@ -166,5 +166,33 @@ function funkceZeSkriptu() {
   test('šablona: neexistující KNG_PODKLADY nespadne a jde dál', r3 && r3.verze === 11, JSON.stringify(r3));
 }
 
+/* ---------- negativní kontrola šablon z firemních podkladů (D5-3, 22. 10. 2026) ----------
+ * Skutečné údaje kolegy jsou v $KNG_PODKLADY/negativni_kontrola.json, ne v repu.
+ * Hodnoty níž jsou smyšlené. Pojistka: nad v22.10.5 funkce neexistují (FAIL). */
+{
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'kng-neg-'));
+  const zavolej = (podklady, kod) => {
+    const k = "import * as H from " + JSON.stringify(PODKLADY) + "; " + kod;
+    const r = spawnSync(process.execPath, ['--input-type=module', '-e', k], { encoding: 'utf8',
+      env: Object.assign({}, process.env, { KNG_PODKLADY: podklady }) });
+    return { kod: r.status, out: String(r.stdout || '').trim(), err: String(r.stderr || '') };
+  };
+  const bez = zavolej(tmp, "console.log(JSON.stringify(H.negativniKontrola('proj')))");
+  test('D5-3: bez souboru negativní kontroly vrací null (harness kontrolu přeskočí)', bez.kod === 0 && bez.out === 'null', bez);
+  fs.writeFileSync(path.join(tmp, 'negativni_kontrola.json'), JSON.stringify({ cn: ['Zkušební'], proj: ['Ukázková', ' +420 000 000 000 ', 7] }));
+  const se = zavolej(tmp, "console.log(JSON.stringify([H.negativniKontrola('proj'), H.negativniKontrola('cn'), H.negativniKontrola('jine')]))");
+  let v = null; try { v = JSON.parse(se.out); } catch (e) {}
+  test('D5-3: soubor se načte (jen texty, ořezané), chybějící klíč = prázdný seznam',
+    !!v && JSON.stringify(v) === JSON.stringify([['Ukázková', '+420 000 000 000'], ['Zkušební'], []]), se);
+  const nal = zavolej(tmp, "console.log(JSON.stringify([H.negativniNalezy('<w:t>tel. +420\u00a0000\u00a0000\u00a0000</w:t>', ['Ukázková', '+420 000 000 000']), H.negativniNalezy('<w:t>čisto</w:t>', ['Ukázková'])]))");
+  test('D5-3: nález i s pevnou mezerou, čistá šablona bez nálezu', nal.out === '[[2],[]]', nal);
+  fs.writeFileSync(path.join(tmp, 'negativni_kontrola.json'), '{ poškozené');
+  const zle = zavolej(tmp, "H.negativniKontrola('proj')");
+  test('D5-3: poškozený soubor je chyba, ne tiché přeskočení', zle.kod !== 0 && /negativni_kontrola\.json/.test(zle.err), zle.kod);
+  fs.rmSync(tmp, { recursive: true, force: true });
+  const harn = ['overit_sablona.mjs', 'overit_nabidka_proj_word.mjs'].map(f => fs.readFileSync(path.join(KOREN, f), 'utf8'));
+  test('D5-3: oba harnessy šablon berou seznam z negativniKontrola', harn.every(t => /negativniKontrola\(/.test(t) && /negativniNalezy\(/.test(t)));
+}
+
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));
 if (fail) process.exit(1);

@@ -1,3 +1,22 @@
+# Předávka — 22. 10. 2026 odpoledne (2): Z1 — harnessy po kole nad 1e40538, větev `claude/z1-zmrazeni-kl`
+
+**Zprávu koordinaci nešlo doručit (session_01X93Edh1U8MQru6HV28FdBY neaktivní) — tenhle oddíl ji nahrazuje.**
+HEAD s opravou: b4e28fd1e8d9a1e1ae39297bf7d9aa3802f01274 (verze 22.10.5).
+
+- **overit_plan_plateb.mjs 49/0 (dřív 46/3).** (a) Zápis do plánu po CN projde (tabulka J. V.). Navíc oprava kódu:
+  `planPlatebVarianty` u zamčené varianty četl vždy `zmrazenoPlan`, úprava plánu se tak neprojevila v krycím listu
+  ani SoD. Nově platí živý plán, liší-li se od plánu ve snímku zámku (doplněný ze `zmrazenoPlan`); dotisk CN beze
+  změny. Pojistka `test_zmrazeni_kl.js` 5a: bez opravy 2 FAIL, po 107/0; mutace jádra 2/2. (b) klon a (c) dialog
+  byly jen následek (a) — klon zdědil upravené splátky; snímek klonu je v pořádku.
+- **overit_controlling.mjs 49/0 (dřív 47/1):** karta počítá dvojici přechodových plechů jako jednu položku (K6-K3);
+  nová kontrola, že zaškrtnutí dvojice zapíše oba klíče.
+- `spust_testy.sh` 241/0; `--kontrola` jádro 469.
+- **D5-3:** negativní kontrola šablon čte `$KNG_PODKLADY/negativni_kontrola.json` — formát
+  `{ "cn": ["<text>", …], "proj": ["<text>", …] }` (příjmení, začátek e-mailu, telefon s mezerami; popis
+  v `nastroje/harness_podklady.mjs`). **J. V. / koordinace musí soubor vytvořit vedle šablon** (hodnoty, které byly
+  dřív v harnessech) — bez něj se kontrola přeskočí s hláškou. D5-1/2/4 zapsány v #503 jako rozhodnuté.
+- **Hlášení teď jde nové koordinaci session_013yuBUKmpUYvEnjxWjGi5kj („ŘÍDÍCÍ 22.10“).**
+
 # Předávka — 22. 10. 2026 odpoledne: Z1 — odpovědi J. V. (v22.10.5), větev `claude/z1-zmrazeni-kl`
 
 Do větve sloučena integrace `claude/integrace-16-10` d28e48a (test v22.10.2 + Z1 f73f9ab + D5 v22.10.4; fast-forward,
