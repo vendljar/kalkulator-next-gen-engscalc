@@ -21,10 +21,12 @@ Verze v22.10.2 nese i #114 z 21. 10. (oddíl CHANGELOG pod ním).
 - **Testy:** `netlify/test_pd_stav.mjs` 52/0 (nová), `src/test_controlling.js` 220/0, `netlify/test_controlling.mjs`
   57/0, `netlify/test_prava.mjs` 924/0, `overit_pd_stav.mjs` 42/0 (nový harness), `overit_lista` 255/0,
   `overit_controlling` 48/0; pojistky na 4957b61 doložené (CHANGELOG). Mutace „Stav Pipedrive“ 23 nových (+ L27):
-  cíleně 24/24. **Celé kolo na 252c49f:** sady 302 prošlo / 0 selhalo / 6 přeskočeno, mutace jádra 432/432; mutace
-  serveru a statické kontroly běží znovu (`testovaci_kolo.sh --jen mutace-server,staticke`) — kontejner se ve 12:23 UTC
-  restartoval uprostřed mutací serveru (dočasná mutace v `netlify/lib/zakazka_kontrola.mjs` vrácena checkoutem).
-  Výsledek doplní další commit; **přerušené kolo se nesmí brát jako prošlé.**
+  cíleně 24/24. **Celé kolo na 252c49f je NEÚPLNÉ:** sestavení ✓, sady 302 prošlo / 0 selhalo / 6 přeskočeno,
+  mutace jádra 432/432, statické kontroly 4/4; mutace serveru 527 z 808 chycených, 0 přežilo. První běh přerušil
+  restart kontejneru ve 12:23 UTC (dočasná mutace v `netlify/lib/zakazka_kontrola.mjs` vrácena checkoutem), opakovaný
+  `--jen mutace-server` (303/303) ukončil ve 14:33 UTC dvouhodinový limit úlohy na pozadí (strom po něm čistý).
+  V tomhle kontejneru trvají mutace serveru ~5 h (v CI ~20–45 min). **Mutace 528–808 v kole neběžely** (blok
+  „Stav Pipedrive“ jen cíleně 24/24) — dokud nedoběhnou, kolo se nebere jako prošlé.
 - **Prostředí:** prohlížečové harnessy v kontejneru běží — Playwright 1.56.1 je globálně, stačí odkazy
   `mkdir -p node_modules && ln -sfn /opt/node22/lib/node_modules/playwright node_modules/playwright && ln -sfn
   /opt/node22/lib/node_modules/playwright/node_modules/playwright-core node_modules/playwright-core`
@@ -54,12 +56,13 @@ Verze v22.10.2 nese i #114 z 21. 10. (oddíl CHANGELOG pod ním).
   mapovací tabulka `Pipedrive_Kalkulator_mapa_poli_2026-10-22.xlsx` (Přehled, Mapa polí 81 řádků, Převody hodnot,
   Otázky 1–17 se sloupcem pro odpověď) — poslaná J. V. v sezení, generátor jen ve scratchpadu (čte `POLE_DEALU` a
   popisky krycích listů z commitu). Do repa nejde (jméno integrátora, firemní podklad).
-- **Další krok:** výsledek kola do CHANGELOG (KOLO_MUTACE) a roadmapy (POZN_DOPLNIT); po rozhodnutí o duplicitě s P1
-  revert / sloučení; pak jako 21. 10. — po potvrzení §12 dotáhnout #113, pak #115 a #502.
+- **Další krok:** dokončit mutace serveru (GitHub Actions → Testy → Run workflow na větvi `claude/eager-carson-1xznt2`,
+  job mutace-server — spustí J. V.; jinak v sezení po částech pod 2 h); po rozhodnutí o duplicitě s P1 revert / sloučení; pak jako 21. 10. — po potvrzení §12 dotáhnout #113, pak #115 a #502.
 
 **Otázky pro J. V.** (z 21. 10. platí): 1. souhlas s návrhem směru dat (`podklady/NAVRH…` §12) → doporučuji ano;
 2. zapisovat z kalkulace hodnotu dealu → doporučuji ano.
-3. duplicita Stav Pipedrive s P1 → doporučuji revert mé verze, sloučení integrace a převod tří oprav (viz výše).
+3. duplicita Stav Pipedrive s P1 → doporučuji revert mé verze, sloučení integrace a převod tří oprav (viz výše);
+4. dokončení mutací serveru → doporučuji ruční běh workflow Testy na této větvi (sezení ho samo nespouští).
 
 ---
 

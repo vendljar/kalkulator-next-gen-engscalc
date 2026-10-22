@@ -46,7 +46,11 @@ roadmapy může slučování přečíslovat.
   neexistuje), `src/test_controlling.js` 220/0 (+20; před úpravou 9 selhání a pád), `netlify/test_controlling.mjs`
   57/0 (+3; před úpravou 3 selhání), `netlify/test_prava.mjs` 924/0 (matice funkcí + `pd_stav.mjs`; před úpravou
   pád na chybějícím modulu), nový harness `overit_pd_stav.mjs` 42/0 (staré sestavení 11 prošlo / 31 selhalo).
-  Mutace „Stav Pipedrive“ v `netlify/mutace.mjs` (23 nových, sada `test_pd_stav.mjs` v `SADY`): KOLO_MUTACE.
+  Mutace „Stav Pipedrive“ v `netlify/mutace.mjs` (23 nových, sada `test_pd_stav.mjs` v `SADY`): cíleně 24/24 (23 nových + L27).
+  **Celé kolo na 252c49f NEÚPLNÉ:** sestavení ✓, sady 302 prošlo / 0 selhalo / 6 přeskočeno, mutace jádra 432/432,
+  statické kontroly 4/4; mutace serveru 527 z 808 chycených, 0 přežilo — běh přerušil restart kontejneru, opakovaný
+  běh (303/303) ukončil dvouhodinový limit úlohy na pozadí. Mutace 528–808 (mezi nimi blok „Stav Pipedrive“, ten
+  cíleně 24/24) v celém kole neběžely; dokončí je job mutace-server v GitHub Actions nebo další sezení.
   Kotva mutace B80 („strop čerstvých načtení“) posunuta na `>= max`.
 - **Ke slučování:** CHANGELOG (tento oddíl), roadmapa #504 (+ záznam dávky), `netlify/mutace.mjs` (blok „Stav
   Pipedrive“ za #114, `test_pd_stav.mjs` na konci `SADY`), `manual/obsah.json` (Co je nového v22.10.2), PREDAVKA.
