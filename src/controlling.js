@@ -571,6 +571,16 @@ function ctrlKatalogNazvy(katalog, cenikProj) {
  * „Stav Pipedrive" a „Stav Pipedrive načten" (poslední známý stav dealu,
  * jen informace — filtry exportu se nemění). */
 const CTRL_EXPORT_VERZE = 3;
+function ctrlCenaDilaSod(v) {
+  const z = (typeof objSodZaznam === 'function') ? objSodZaznam(v) : null;
+  return z && z.bezDphKc !== null && isFinite(+z.bezDphKc) && z.bezDphKc !== '' ? +z.bezDphKc : null;
+}
+function ctrlObjZmenenoPoSod(zak, v) {
+  if (typeof objZmenenoPoSod !== 'function' || !objZmenenoPoSod(zak, v)) return '';
+  const h = Array.isArray(zak.objednaneZmeny) ? zak.objednaneZmeny.filter(x => x && x.varianta === v.id) : [];
+  const z = h[h.length - 1];
+  return 'ano' + (z ? ' (' + String(z.kdo || '') + ', ' + String(z.kdy || '').slice(0, 10) + ')' : '');
+}
 function ctrlExportVarianty(zak, v, opts) {
   const o = opts || {};
   if (!zak || !v) return { ok: false, chyba: 'Není otevřená žádná zakázka.' };
@@ -619,6 +629,11 @@ function ctrlExportVarianty(zak, v, opts) {
     pdStav: pdStavText(zak), pdStavNacteno: pdStavNactenoText(zak),
     datumProdeje: obj ? String(obj.datum || '') : '',
     zmrazeno: !!(zamek.vysledek),
+    /* K6-K4 (rozhodnutí J. V. 22. 10. 2026): cena díla z posledního záznamu
+     * tisku SoD (Kč bez DPH, jak smlouva odešla) a zda se objednané od tisku
+     * změnily — kdo a kdy z historie objednaneZmeny (píše server). */
+    cenaDilaSod: ctrlCenaDilaSod(v),
+    objZmenenoPoSod: ctrlObjZmenenoPoSod(zak, v),
   };
   return { ok: true, hlavicka, strany, radky, kapitoly: ctrlKapitoly(radky, { data: o.data, jenZaklad: true }),
     kdy: o.kdy || new Date().toISOString(), kdo: String(o.kdo || ''), build: String(o.build || '') };
@@ -927,6 +942,8 @@ function ctrlExportListy(exp, data, opts) {
   popis.push(['List Řádky', 'náklady v ceně nabídky a příplatky, které zákazník dodatečně objednal (sloupec Objednáno dodatečně = ano); bez nich součet sloupce Náklad celkem = náklad základní ceny nabídky']);
   const prodane = exps.filter(e => e.hlavicka.datumProdeje);
   if (!hr && prodane.length) popis.push(['Datum prodeje (objednané příplatky)', prodane[0].hlavicka.datumProdeje]);
+  if (!hr && prvni.hlavicka && prvni.hlavicka.cenaDilaSod != null) popis.push(['Cena díla dle SoD (Kč bez DPH)', ctrlZaokr(prvni.hlavicka.cenaDilaSod)]);
+  if (!hr && prvni.hlavicka && prvni.hlavicka.objZmenenoPoSod) popis.push(['Objednané změněny po tisku SoD', prvni.hlavicka.objZmenenoPoSod]);
   if (hr) popis.push(['Zakázek s objednanými příplatky', prodane.length]);
   popis.push(['List ' + CTRL_LIST_PRIPLATKY, 'příplatky nabídnuté jako volba (mimo cenu nabídky), stejné sloupce jako Řádky']);
   popis.push([]);
@@ -935,10 +952,12 @@ function ctrlExportListy(exp, data, opts) {
     CTRL_TYP_TEXT[s.typ] || '', CTRL_CHOVANI_TEXT[s.chovani] || '', s.oblast]));
   if (hr) {
     popis.push([]);
-    popis.push(['Zakázky v exportu', 'Název akce', 'Zákazník', 'Zamčeno', 'Řada', 'Oblast', 'Výsledek', 'Datum prodeje']);
+    popis.push(['Zakázky v exportu', 'Název akce', 'Zákazník', 'Zamčeno', 'Řada', 'Oblast', 'Výsledek', 'Datum prodeje',
+      'Cena díla dle SoD (Kč bez DPH)', 'Objednané změněny po tisku SoD']);
     exps.forEach(e => popis.push([e.strany.map(s => s.cislo).join(' + '), e.hlavicka.nazevAkce, e.hlavicka.zakaznik,
       e.hlavicka.zamceno, e.hlavicka.rada, e.strany.map(s => s.oblast.toUpperCase()).join(' + '),
-      e.hlavicka.zmrazeno ? 'zmrazený' : 'přepočtený', e.hlavicka.datumProdeje || '']));
+      e.hlavicka.zmrazeno ? 'zmrazený' : 'přepočtený', e.hlavicka.datumProdeje || '',
+      e.hlavicka.cenaDilaSod != null ? ctrlZaokr(e.hlavicka.cenaDilaSod) : '', e.hlavicka.objZmenenoPoSod || '']));
     const presk = Array.isArray(hr.preskoceno) ? hr.preskoceno : [];
     if (presk.length) {
       popis.push([]);

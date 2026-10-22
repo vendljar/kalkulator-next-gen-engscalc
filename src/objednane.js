@@ -77,12 +77,158 @@ function objNabidnute(v, jekly) {
     .map(p => ({ key: String(p.key), nazev: String(p.nazev || p.key), sMarzi: +p.sMarzi || 0, naklad: +p.naklad || 0 }));
 }
 
-/* Objednané příplatky varianty s cenami: [{ key, nazev, sMarzi, naklad }]
- * — jen ty, které záznam zakázky uvádí PRO TUTO variantu. */
+/* DVOJICE, KTEROU NABÍDKA TISKNE JEDNOU POLOŽKOU (K6-K3, rozhodnutí J. V.
+ * 22. 10. 2026). Přechodové plechy jsou v kalkulaci materiál a montáž zvlášť,
+ * nabídka je ale tiskne jedním řádkem „Přechodové plechy" s cenou součtu
+ * (nabidka.js, PLECHY). Karta objednaných i SoD je proto berou stejně: jedna
+ * položka, v eurech se zaokrouhluje nahoru SOUČET (jako v nabídce), objednat
+ * jde jen celá. Je-li v nabídce jen jedna půlka, zůstane sama a beze změny
+ * názvu — stejně jako v nabídce. V záznamu zakázky zůstávají oba klíče jádra
+ * (export pro controlling páruje řádky po klíčích). */
+const OBJ_SKUPINY = [{ klice: ['prechMat', 'prechMont'], nazev: 'Přechodové plechy' }];
+
+/* Nabídnuté příplatky jako POLOŽKY dokumentu: [{ key, klice, nazev, sMarzi,
+ * naklad }] — dvojice z OBJ_SKUPINY nabídnutá celá je jedna položka (key =
+ * první klíč, klice = oba), ostatní jedna položka na klíč (klice = [key]). */
+function objPolozky(nab) {
+  const out = [];
+  (nab || []).forEach(p => {
+    const sk = OBJ_SKUPINY.find(g => g.klice.includes(p.key));
+    const cleny = sk ? nab.filter(x => sk.klice.includes(x.key)) : [];
+    if (!sk || cleny.length < sk.klice.length) { out.push(Object.assign({}, p, { klice: [p.key] })); return; }
+    if (p.key !== cleny[0].key) return;                 // druhá půlka dvojice je už v položce
+    out.push({ key: cleny[0].key, klice: cleny.map(x => x.key), nazev: sk.nazev,
+      sMarzi: cleny.reduce((a, x) => a + x.sMarzi, 0), naklad: cleny.reduce((a, x) => a + x.naklad, 0) });
+  });
+  return out;
+}
+
+/* Objednané příplatky varianty s cenami (POLOŽKY, dvojice sloučené):
+ * [{ key, klice, nazev, sMarzi, naklad }] — jen ty, které záznam zakázky
+ * uvádí PRO TUTO variantu. */
 function objObjednaneVarianty(zak, v, jekly) {
   const o = objStav(zak);
   if (!o || !v || o.varianta !== v.id) return [];
-  return objNabidnute(v, jekly).filter(p => o.klice.includes(p.key));
+  return objPolozky(objNabidnute(v, jekly)).filter(p => p.klice.some(k => o.klice.includes(k)));
+}
+
+/* Položky (dvojice sloučené) podle seznamu klíčů — dotisk SoD z otisku tisku. */
+function objPolozkyKlicu(v, jekly, klice) {
+  const k = Array.isArray(klice) ? klice : [];
+  return objPolozky(objNabidnute(v, jekly)).filter(p => p.klice.some(x => k.includes(x)));
+}
+
+/* CENA DÍLA SoD (K6-K4, rozhodnutí J. V. 22. 10. 2026): cena nabídky po slevě
+ * a zaokrouhlení + objednané příplatky v ceně nabídky — v měně dokumentu
+ * (`L` ≠ cz = eura kurzem odeslané nabídky, celá eura nahoru po položkách,
+ * jako sodObjednaneSymboly) a vždy i v Kč (export pro controlling je v Kč).
+ * `klice` = objednané klíče (bez nich ze záznamu zakázky). Bez výsledku
+ * výpočtu nebo kurzu vrací null — nic se nedopočítává odhadem. */
+function objCenaDila(zak, v, jekly, L, klice) {
+  if (!v || typeof vypocetZ !== 'function' || typeof cenaNabidkyOck !== 'function') return null;
+  let r = null, mena = null;
+  try {
+    r = vypocetZ(v, jekly);
+    const d = v.data || {};
+    const kurz = (typeof kurzEurZ === 'function') ? kurzEurZ(v, d.cenik && d.cenik.kurzEurKc) : (d.cenik && d.cenik.kurzEurKc);
+    mena = (typeof menaDokumentu === 'function') ? menaDokumentu(L || 'cz', kurz) : { eur: false, na: n => n };
+  } catch (e) { return null; }
+  const cn = r ? cenaNabidkyOck(r, (v.data || {}).sleva, (v.data || {}).zaokr) : null;
+  if (!cn) return null;
+  const obj = klice ? objPolozkyKlicu(v, jekly, klice) : objObjednaneVarianty(zak, v, jekly);
+  const nabidka = mena.na(cn.cena), priplatky = obj.reduce((a, p) => a + mena.na(p.sMarzi), 0);
+  return { mena: mena.eur ? 'EUR' : 'CZK', nabidka, priplatky, bezDph: nabidka + priplatky,
+    bezDphKc: cn.cena + obj.reduce((a, p) => a + p.sMarzi, 0),
+    klice: obj.reduce((a, p) => a.concat(p.klice), []) };
+}
+
+/* ZÁZNAM TISKU SoD (K6-K4): poslední tisk `sod` varianty s otiskem
+ * objednaných a cenou díla (`t.sod`), nebo null (SoD netištěna nebo
+ * vytištěna před v22.10.4 — tehdy se dotisk řídí záznamem zakázky). */
+function objSodZaznam(v) {
+  const t = (v && v.zamek && Array.isArray(v.zamek.tisky)) ? v.zamek.tisky : [];
+  for (let i = t.length - 1; i >= 0; i--)
+    if (t[i] && t[i].typ === 'sod' && t[i].sod && typeof t[i].sod === 'object' && Array.isArray(t[i].sod.klice)) return t[i].sod;
+  return null;
+}
+/* Otisk objednaných a cena díla do záznamu tisku SoD. Prohlížeč ho zapisuje
+ * při tisku, server ho u NOVĚ připsaného tisku spočítá znovu (objSodZaznamyServer).
+ * `pred` = záznam předchozího tisku SoD: dotisk nese jeho objednané (jako
+ * dokument, sodObjednaneSymboly), cenu díla v měně tohoto tisku. */
+function objSodSnimek(zak, v, jekly, L, pred) {
+  const o = objStav(zak);
+  const moje = pred ? { varianta: v && v.id, klice: pred.klice.filter(k => typeof k === 'string'), datum: pred.datum }
+    : (o && v && o.varianta === v.id ? o : null);
+  const c = objCenaDila(zak, v, jekly, L, moje ? moje.klice : []);
+  return { objOtisk: pred ? String(pred.objOtisk || '') : (moje ? objOtisk(moje) : ''), klice: moje ? moje.klice.slice() : [],
+    datum: moje ? String(moje.datum || '') : '',
+    mena: c ? c.mena : '', nabidka: c ? c.nabidka : null, priplatky: c ? c.priplatky : null,
+    bezDph: c ? c.bezDph : null, bezDphKc: c ? c.bezDphKc : null };
+}
+/* SERVER: u tisků `sod` připsaných v tomto požadavku (za uloženým začátkem
+ * `tisky[]`) přepíše záznam `sod` vlastním výpočtem — klient smí říct jen
+ * měnu dokumentu. Vrací počet přepsaných. */
+function objSodZaznamyServer(stara, zak, jekly) {
+  let n = 0;
+  ((zak && zak.varianty) || []).forEach(v => {
+    if (!v || !v.zamek || !v.zamek.zamceno || !Array.isArray(v.zamek.tisky)) return;
+    const sv = stara && Array.isArray(stara.varianty) ? stara.varianty.find(x => x && x.id === v.id) : null;
+    const pocet = sv && sv.zamek && sv.zamek.zamceno && Array.isArray(sv.zamek.tisky) ? sv.zamek.tisky.length : 0;
+    let pred = objSodZaznam(sv && sv.zamek && sv.zamek.zamceno ? sv : null);
+    v.zamek.tisky.slice(pocet).forEach(t => {
+      if (!t || typeof t !== 'object' || t.typ !== 'sod') return;
+      const eur = !!(t.sod && typeof t.sod === 'object' && t.sod.mena === 'EUR');
+      t.sod = objSodSnimek(zak, v, jekly, eur ? 'en' : 'cz', pred);
+      pred = t.sod;
+      n++;
+    });
+  });
+  return n;
+}
+/* Změnily se objednané varianty od posledního tisku SoD? → záznam tisku,
+ * jinak null. */
+function objZmenenoPoSod(zak, v) {
+  const z = objSodZaznam(v);
+  if (!z) return null;
+  const o = objStav(zak);
+  const ted = o && v && o.varianta === v.id ? objOtisk(o) : '';
+  return ted === String(z.objOtisk || '') ? null : z;
+}
+
+/* HISTORIE ZMĚN PO TISKU SoD (K6-K4): `zak.objednaneZmeny` = [{ varianta,
+ * klice, datum, kdo, kdy }] drží SERVER — začátek bere z uložené verze
+ * (klient ho nepřepíše ani neubere) a připíše záznam, když se objednané
+ * změní u varianty, ke které už byla vytištěná SoD se záznamem. */
+const OBJ_ZMENY_MAX = 50;
+function objZmenyServer(stara, zak, relace, kdy) {
+  const stare = stara && Array.isArray(stara.objednaneZmeny) ? JSON.parse(JSON.stringify(stara.objednaneZmeny)) : [];
+  const so = stara ? objStav(stara) : null, no = objStav(zak);
+  let zmeny = stare;
+  if (objOtisk(so) !== objOtisk(no)) {
+    const vari = (z, id) => (z && Array.isArray(z.varianty)) ? z.varianty.find(x => x && x.id === id) : null;
+    const ids = [so && so.varianta, no && no.varianta].filter(Boolean);
+    const poSod = ids.some(id => objSodZaznam(vari(stara, id)));
+    if (poSod) zmeny = stare.concat([{ varianta: String((no || so).varianta || ''), klice: no ? no.klice.slice() : [],
+      datum: no ? String(no.datum || '') : '', kdo: String((relace && relace.email) || ''), kdy: kdy || new Date().toISOString() }])
+      .slice(-OBJ_ZMENY_MAX);
+  }
+  if (zmeny.length) zak.objednaneZmeny = zmeny; else delete zak.objednaneZmeny;
+  return zmeny;
+}
+/* Obnova ze serverového otisku: historie ze zálohy, jen povolená pole a tvar. */
+function objZmenyOciste(seznam) {
+  const t = x => (typeof x === 'string' ? x.slice(0, 200) : '');
+  return (Array.isArray(seznam) ? seznam : []).filter(z => z && typeof z === 'object' && !Array.isArray(z))
+    .slice(-OBJ_ZMENY_MAX).map(z => ({ varianta: t(z.varianta), klice: Array.isArray(z.klice) ? z.klice.filter(k => typeof k === 'string').slice(0, OBJ_MAX_KLICU) : [],
+      datum: t(z.datum), kdo: t(z.kdo), kdy: t(z.kdy) }));
+}
+
+/* Neúplná dvojice v klíčích (K6-K3): seznam názvů položek, ze kterých je
+ * objednaná jen část, ačkoli nabídka nabízela celou. */
+function objNeuplne(klice, nab) {
+  return objPolozky(nab).filter(p => p.klice.length > 1)
+    .filter(p => { const n = p.klice.filter(k => klice.includes(k)).length; return n > 0 && n < p.klice.length; })
+    .map(p => p.nazev);
 }
 
 /* Text do krycího listu: „2 – Název, Název (21. 10. 2026)" / „nic". */
@@ -160,12 +306,15 @@ function objKontrola(stara, zak, relace, ctx) {
   const novaUlozena = vari(stara, v.id);
   if (!admin && novaUlozena && objPodepsano(novaUlozena, c.ted))
     return { status: 403, chyba: 'Smlouva o dílo je podepsaná — objednané příplatky mění jen administrátor' };
-  const nabidnute = objNabidnute(v, c.jekly).map(p => p.key);
+  const nab = objNabidnute(v, c.jekly), nabidnute = nab.map(p => p.key);
   const cizi = nova.klice.filter(k => !nabidnute.includes(k));
   if (cizi.length) return { status: 400, chyba: 'Příplatek ' + cizi.join(', ') + ' nebyl v odeslané nabídce nabídnut' };
+  const pul = objNeuplne(nova.klice, nab);
+  if (pul.length) return { status: 400, chyba: pul.join(', ') + ' jdou objednat jen celé (materiál i montáž) — v nabídce jsou jednou položkou' };
   return null;
 }
 
 if (typeof module !== 'undefined' && module.exports)
-  module.exports = { OBJ_DATUM_TVAR, OBJ_MAX_KLICU, objDnes, objDatumPlatne, objStav, objDatumPodpisu, objPodepsano, objNabidnute,
+  module.exports = { OBJ_DATUM_TVAR, OBJ_MAX_KLICU, OBJ_SKUPINY, OBJ_ZMENY_MAX, objPolozky, objPolozkyKlicu, objNeuplne, objCenaDila, objSodZaznam,
+    objSodSnimek, objSodZaznamyServer, objZmenenoPoSod, objZmenyServer, objZmenyOciste, objDnes, objDatumPlatne, objStav, objDatumPodpisu, objPodepsano, objNabidnute,
     objObjednaneVarianty, objText, objNastav, objOtisk, objTvarPlatny, objKontrola };

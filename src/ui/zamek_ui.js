@@ -324,7 +324,7 @@ async function tiskZamekCteniPovol(typ, varianta) {
 /* Volá se ze dvou míst: po stažení nabídky do Wordu a z tiskového náhledu
  * (okno náhledu si sáhne přes window.opener). Zamykají jen dokumenty, které
  * jdou zákazníkovi – viz ZAMEK_DOKUMENTY v zamek.js. */
-function zamekPoTisku(typ, varId, sablona) {
+function zamekPoTisku(typ, varId, sablona, navic) {
   if (!dokumentZamyka(typ)) return null;
   const v = (varId && ZAK.varianty.find(x => x.id === varId)) || aktivniVarianta(ZAK);
   if (!v) return null;
@@ -357,7 +357,7 @@ function zamekPoTisku(typ, varId, sablona) {
     try { if (typeof kryciProjZmrazPodminky === 'function') kryciProjZmrazPodminky(ZAK, v); } catch (e) {}
   }
   zamkniVariantu(v, { typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek,
-                      sablona: sablona || null, slovnik: zamekSlovnikTed() });
+                      sablona: sablona || null, slovnik: zamekSlovnikTed(), sod: (navic && navic.sod) || null });
   render();
   return v.zamek;
 }
