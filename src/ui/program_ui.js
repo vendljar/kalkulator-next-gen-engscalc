@@ -28,6 +28,9 @@
 
 const PROG_STAV = {
   db: null,          // normalizovaná databáze ze složky (null = jedeme ze sestavení)
+  /* #505: verze záznamu, který progPouzij naposledy nasadil (online i ze složky);
+   * null = platí ceník ze sestavení. */
+  pouzita: null,
   razitko: '',       // razítko souboru, jak jsme ho načetli (proti souběžnému zápisu)
   chyba: '',         // soubor ve složce je, ale nedá se použít
   hlaska: '',
@@ -62,8 +65,15 @@ function progJede() { return !!(PROG_STAV.db && PROG_STAV.db.platny); }
  * u nabídky šlo i za rok říct, ze které verze počítala – ne jen co v ceníku
  * tehdy asi bylo. Bez načtené složky verze neexistuje a nic se nepředstírá:
  * ceník ze sestavení je prázdný a žádné číslo zveřejnění nemá. */
+/* #505 (22. 10. 2026, ostrý export: prázdná „Verze ceníku" u všech nabídek):
+ * do v22.10.5 se četla jen databáze ve složce — online byla null a každé
+ * otevření zakázky (uloSrovnejSPlatnymCenikem) přerazítkovalo variantu
+ * verzí null, i když progPouzij(ONLINE_STAV.db.platny) nasadil verzi N.
+ * Platná je verze, kterou aplikace skutečně počítá: ze složky, když vládne
+ * ona, jinak ta, kterou nasadil progPouzij (online ceník); po návratu
+ * k ceníku ze sestavení žádná. Jediné místo — čte ho i cenikPlatnaVerzeInfo. */
 function progPlatnaVerzeInfo() {
-  const p = PROG_STAV.db && PROG_STAV.db.platny;
+  const p = progJede() ? PROG_STAV.db.platny : PROG_STAV.pouzita;
   return p ? { verze: p.verze, platnoOd: p.platnoOd || '' } : { verze: null, platnoOd: '' };
 }
 
@@ -164,6 +174,7 @@ function progPouzij(zaznam) {
    * srovnání otevřené zakázky níž, ať s výchozím ceníkem nic nepracuje
    * v neúplném stavu. */
   if (typeof onlinePopisyVlijZnovu === 'function') onlinePopisyVlijZnovu(true);
+  PROG_STAV.pouzita = { verze: zaznam.verze, platnoOd: zaznam.platnoOd || '' };
   progSrovnejNedotcene({ verze: zaznam.verze, platnoOd: zaznam.platnoOd || '' });
 }
 
@@ -174,6 +185,7 @@ function progZpetNaBuild() {
   if (typeof CENIK_ZAHR !== 'undefined') konfigNahradVMiste(CENIK_ZAHR, PROG_BUILD.zahranicni);
   if (PROG_BUILD.katalog && typeof katalogImport === 'function') katalogImport(KATALOG, PROG_BUILD.katalog);
   if (typeof NAST !== 'undefined' && NAST.slevy) konfigNahradVMiste(NAST.slevy, PROG_BUILD.slevy);
+  PROG_STAV.pouzita = null;
   /* Sestavení žádné číslo zveřejnění nemá – po odpojení složky se tedy
    * verze v razítku maže, ne zachovává. Tvrdit u prázdného ceníku verzi 3
    * by bylo horší než neříct nic. */

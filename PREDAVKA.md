@@ -1,4 +1,4 @@
-# Předávka — 22. 10. 2026 večer: E1 — hromadný export controllingu za období (#504), větev `claude/e1-export-obdobi`
+# Předávka — 22. 10. 2026 večer: E1 — hromadný export controllingu (#504) a verze ceníku online (#505), větev `claude/e1-export-obdobi`
 
 Nad integrací 4ce35d2 (v22.10.5), verze zůstává **22.10.5** (oddíl CHANGELOG `## v22.10.5 — E1`). **Do integrace /
 test nic** — slučuje koordinace (session_013yuBUKmpUYvEnjxWjGi5kj, „ŘÍDÍCÍ 22.10“).
@@ -19,7 +19,11 @@ test nic** — slučuje koordinace (session_013yuBUKmpUYvEnjxWjGi5kj, „ŘÍDÍ
   admin akce, žádný zápis rejstříku z exportu — ten by přidal souběžný zápis rejstříku bez zámku); (2) rejstřík
   nenese `pdDealId` — přesný počet „vyřazeno filtrem stavu“ potřebuje přečtenou zakázku (období rozhoduje ona);
   (3) výběr oblasti OCK/PROJ dál až nad přečtenou zakázkou; (4) výchozí `pd=won` platí i na serveru (dotaz bez `pd`).
-- **Testy / mutace:** viz CHANGELOG a zprávu koordinaci.
+- **#505 (druhé doplnění 14:21 UTC):** `progPlatnaVerzeInfo` = složka, když vládne, jinak `PROG_STAV.pouzita`
+  (zapisuje `progPouzij`, maže `progZpetNaBuild`); Popis exportu: prázdná verze = neznámá. Test
+  `src/test_cenik_verze_online.js`, mutace jádra „#505“ 4/4. Roadmapa: integrace 9abed07 sloučena, #504/#505 → hotovo.
+- **Testy / mutace:** viz CHANGELOG a zprávu koordinaci (server „#504“ 17/17, jádro „#504“ 18/18, „#505“ 4/4;
+  `spust_testy.sh` 243/0/1).
 - **Další krok:** koordinace sloučí a pustí celé kolo (prohlížečové sady — hlavně `overit_controlling.mjs` — jsem
   nespouštěl).
 

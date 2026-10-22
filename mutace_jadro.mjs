@@ -99,7 +99,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* ui/sod_ui.js a ui/kalk_*.js (D5, 22. 10. 2026): karta objednaných příplatků
    * (potvrzení nahrazení, měna smlouvy, dvojice plechů) a cena v EUR v dlaždici
    * Základní cena. Hlídá src/test_d5_rozhodnuti_k6.js a src/test_d5_eur_dlazdice.js. */
-  'ui/sod_ui.js', 'ui/kalk_ock.js', 'ui/kalk_proj.js'];
+  'ui/sod_ui.js', 'ui/kalk_ock.js', 'ui/kalk_proj.js',
+  /* ui/program_ui.js (#505, 22. 10. 2026): platná verze ceníku, kterou
+   * razítko varianty zapisuje — v online režimu se mazala. Hlídá ji
+   * src/test_cenik_verze_online.js. */
+  'ui/program_ui.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -130,6 +134,8 @@ const PRIORITA = [
   'test_sablony_online.js',
   /* stav Pipedrive (P1) — rychlá sada, chytá mutace controlling.js a ui/common.js */
   'test_pd_stav.js',
+  /* verze ceníku v razítku (#505) — rychlá sada, chytá mutace ui/program_ui.js */
+  'test_cenik_verze_online.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -1665,6 +1671,23 @@ const MUTACE = [
     hledej: "    zakazek: (+z.zakazek || 0) + davka.zakazek,",
     nahrad: "    zakazek: davka.zakazek,",
     proc: 'protokol by u exportu po dávkách hlásil jen poslední dávku' },
+  /* #505 (22. 10. 2026): verze ceníku v razítku varianty v online režimu. */
+  { nazev: '#505: platná verze jen ze složky', soubor: 'ui/program_ui.js',
+    hledej: "  const p = progJede() ? PROG_STAV.db.platny : PROG_STAV.pouzita;",
+    nahrad: "  const p = PROG_STAV.db && PROG_STAV.db.platny;",
+    proc: 'online otevření zakázky by verzi ceníku v razítku smazalo (ostrý export 19.–22. 10.: prázdná u 56 nabídek)' },
+  { nazev: '#505: nasazený ceník si verzi nezapamatuje', soubor: 'ui/program_ui.js',
+    hledej: "  PROG_STAV.pouzita = { verze: zaznam.verze, platnoOd: zaznam.platnoOd || '' };",
+    nahrad: "",
+    proc: 'v online režimu by aplikace netvrdila žádnou platnou verzi a razítka by ji ztrácela' },
+  { nazev: '#505: návrat k ceníku ze sestavení drží starou verzi', soubor: 'ui/program_ui.js',
+    hledej: "  PROG_STAV.pouzita = null;",
+    nahrad: "",
+    proc: 'varianta spočítaná z ceníku sestavení by tvrdila číslo zveřejněné verze (#39)' },
+  { nazev: '#505: Popis mlčí o prázdné verzi ceníku', soubor: 'controlling.js',
+    hledej: "  if (exps.some(e => e.hlavicka && e.hlavicka.cenikVerze === ''))",
+    nahrad: "  if (false)",
+    proc: 'controlling by prázdný sloupec Verze ceníku četl jako chybu exportu, ne jako neznámou verzi' },
   /* #504 doplnění J. V. 22. 10.: filtr Stav Pipedrive v hromadném exportu (výchozí vyhrané). */
   { nazev: '#504 PD: výchozí stav = všechny', soubor: 'controlling.js',
     hledej: "  const pd = x.pd == null || x.pd === '' ? 'won' : x.pd;",

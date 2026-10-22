@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v22.10.5 — E1: hromadný export controllingu za období (#504, větev claude/e1-export-obdobi)
+## v22.10.5 — E1: hromadný export controllingu za období (#504) a verze ceníku v razítku online (#505), větev claude/e1-export-obdobi
 
 Nad integrací 4ce35d2 (v22.10.5). Hlášení J. V. 22. 10. 2026 z ostré verze: export 1.–22. 10. → „muselo by se
 přečíst 633 zakázek (strop 600)", 12.–22. 10. → „server odpověděl 504". Roadmapa #504.
@@ -47,6 +47,16 @@ přečíst 633 zakázek (strop 600)", 12.–22. 10. → „server odpověděl 50
   `test_pd_stav.js` „filtr stav nezná" → filtr má `pd` s výchozím won; strop 413 nad 600 nahrazen testem 3001
   kandidátů bez stropu a 413 nad strop velikosti odpovědi. `overit_controlling.mjs` (nespuštěno): kontrola výchozí
   volby Vyhrané a hromadný blok s „Všechny". `spust_testy.sh` 242 prošlo / 0 selhalo / 1 přeskočena (`test.js`).
+- **#505 — prázdná „Verze ceníku" v razítku varianty (online):** ostrý export 19.–22. 10. měl sloupec prázdný u všech
+  1 690 řádků / 56 nabídek. `progPlatnaVerzeInfo()` znala jen databázi ve složce, online vracela null a otevření
+  zakázky (`uloSrovnejSPlatnymCenikem` → `cenikPrepoctiRozpracovane`) přerazítkovalo variantu verzí null hned po
+  `progPouzij(ONLINE_STAV.db.platny)`. Nově jedno místo: vládne-li složka, její platná verze, jinak verze, kterou
+  `progPouzij` skutečně nasadil (`PROG_STAV.pouzita`), po `progZpetNaBuild` null; čte ho i `cenikPlatnaVerzeInfo`
+  (a tím přehled ceníku a znění hlášky výjimek). Zamčené varianty beze změny, zpětně se nic nedoplňuje — list Popis
+  exportu řekne, že prázdná verze = neznámá (ceník doloží otisk). Rozpracované varianty dostanou číslo při dalším
+  otevření. Test `src/test_cenik_verze_online.js` 8/0 (skutečné ui/program_ui.js a ui/cenik_stari_ui.js ve vm nad
+  jádrem; nad 4ce35d2 4 FAIL), Popis v `src/test_controlling.js`; mutace jádra „#505" 4/4 (`ui/program_ui.js`
+  přidán do JADRA mutace_jadro.mjs). `spust_testy.sh` 243 prošlo / 0 selhalo / 1 přeskočena.
 - **Mutace:** jádro „#504" 18 nových, server „#504" 17 nových (14 chycených už v 6d67f26); starší mutace C3
   přesměrovány na nové znění kódu, „strop čtení zakázek se neuplatní" a „strop zakázek v souboru" zrušeny se stropy.
 

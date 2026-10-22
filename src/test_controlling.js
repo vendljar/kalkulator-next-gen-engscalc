@@ -518,6 +518,13 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     && radek('Vyřazeno filtrem stavu — bez stavu (bez dealu nebo stav neznámý)') === 3
     && /^Všechny/.test((popisVse.find(r => r[0] === 'Stav Pipedrive') || [])[1] || '')
     && !popisVse.some(r => /^Vyřazeno filtrem stavu/.test(String(r[0]))), popis.slice(0, 14));
+  /* #505: prázdná verze ceníku v razítku = neznámá — list Popis to řekne, se známou verzí mlčí. */
+  const bezVerze = kopie(won); delete bezVerze.varianty[0].data.cenikRazitko;
+  const sVerzi = kopie(won); sVerzi.varianty[0].data.cenikRazitko = { verze: 7, otisk: 'x' };
+  const popisZ = (z) => (C.ctrlExportListy([C.ctrlHromadnyZakazka(z, f(), o).exp], null, { hromadny: f() }).find(l => l.nazev === 'Popis') || { rows: [] }).rows;
+  test('#505: Popis řekne, že prázdná verze ceníku = neznámá; se známou verzí řádek není',
+    /neznámá.*#505/.test((popisZ(bezVerze).find(r => r[0] === 'Verze ceníku') || [])[1] || '')
+    && !popisZ(sVerzi).some(r => r[0] === 'Verze ceníku'));
   const mimo = C.ctrlHromadnyZakazka(sDealem('lost'), C.ctrlHromadnyFiltr({ od: '2000-01-01', do: '2000-01-02' }).filtr, o);
   test('#504 PD: zakázka mimo období se do vyřazených filtrem stavu nepočítá', mimo.mimo === true && !mimo.pdVyrazeno, mimo);
 }
