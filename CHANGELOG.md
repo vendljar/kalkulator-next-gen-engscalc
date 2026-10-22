@@ -32,6 +32,13 @@ Roadmapa #502 (otázky → rozhodnuto), #501 (P1-1, P1-2 rozhodnuto).
   `overit_kryci_po_tisku.mjs` 36/36, kód 0 (blok Z1-4: nad v22.10.4 „online tisk uloží" FAIL). Sady D5 a starší,
   které po SoD měnily kontaktní jméno jako „zamčené" pole nebo název akce jako „neškodnou" změnu, mění atyp můstku /
   kontaktní osobu. `spust_testy.sh` 241 prošlo / 0 selhalo.
+- **Po kole nad 1e40538:** (1) plán plateb PROJ upravený po CN se dřív neprojevil nikde — `planPlatebVarianty`
+  u zamčené varianty četl vždy `zmrazenoPlan`. Nově: liší-li se živý plán od plánu ve snímku zámku, platí pro krycí
+  list, SoD a export živý plán doplněný ze snímku (předvolba, záloha, milníky); dotisk CN beze změny (pohled = snímek).
+  Pojistka `test_zmrazeni_kl.js` blok 5a: bez opravy 2 FAIL, po 107/0; mutace jádra 2/2. (2) `overit_plan_plateb.mjs`
+  — očekávání otočeno (zápis do plánu po CN projde, dotisk CN beze změny), klon a náhled byly jen následek; 49/0.
+  (3) `overit_controlling.mjs` — karta SoD počítá dvojici přechodových plechů jako jednu položku (K6-K3, D5), nová
+  kontrola „zaškrtnutí dvojice zapíše oba klíče"; 49/0.
 - **Mutace (0 přeživších):** server „z1" 26/26 (omezená sada `KNG_MUTACE_SADY`), „b163" 3/3, jádro „z1" 6/6;
   `--kontrola` jádro 467, server 813 úseků. Z1-4 (UI) hlídá harness.
 

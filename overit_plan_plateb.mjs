@@ -233,9 +233,20 @@ const platbyPred = await p.evaluate(() => nabidkaProjPlatby(ZAK, aktivniVarianta
 await p.evaluate(() => { NAST.firma.planPlatebProj = JSON.parse(JSON.stringify(PLAN_PROJ_VYCHOZI)); NAST.firma.planPlatebProj.milniky[0].cz = 'po podpisu (nové znění)'; NAST.firma.planPlatebProj.zalohaPct = 70; render(); });
 const po = await p.evaluate(() => nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz').dopocet.platby.map(x => x.klic + ':' + x.text + ':' + x.castka).join('|'));
 zkus('změna firemního plánu po odeslání platby odeslané nabídky nezmění (snímek)', platbyPred === po && !/nové znění/.test(po), po);
+/* Z1 (tabulka J. V. 22. 10. 2026): plán plateb PROJ je po tisku CN
+ * EDITOVATELNÝ — zápis projde, krycí list / SoD nesou nový plán, dotisk CN
+ * (zamekNabidkaPohled = snímek zámku) zůstává, jak odešel. Úprava se pak
+ * vrátí, ať klon níž začíná z odeslaného plánu. */
+const cnPred = await p.evaluate(() => nabidkaProjPlatby(ZAK, zamekNabidkaPohled(aktivniVarianta(ZAK)), 'cz').dopocet.platby.map(x => x.klic + ':' + x.castka).join('|'));
 await p.evaluate(() => planKlpProcento('dpz', 0, '10'));
-await odmitni();
-zkus('zamčená varianta: zápis do plánu zámek odmítne', await p.evaluate(() => variantaUzamcena(aktivniVarianta(ZAK)) && !(KLP.planPlateb.cinnosti && KLP.planPlateb.cinnosti.dpz)));
+await odklikni();
+const poUprave = await p.evaluate(() => ({ zamceno: variantaUzamcena(aktivniVarianta(ZAK)),
+  dpz: (KLP.planPlateb.cinnosti && KLP.planPlateb.cinnosti.dpz || []).map(r => r.p).join(),
+  cn: nabidkaProjPlatby(ZAK, zamekNabidkaPohled(aktivniVarianta(ZAK)), 'cz').dopocet.platby.map(x => x.klic + ':' + x.castka).join('|'),
+  zive: nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz').dopocet.cinnosti.dpz.map(r => r.p).join() }));
+zkus('Z1: zamčená varianta — zápis do plánu projde, krycí list nese nový plán, dotisk CN beze změny',
+  poUprave.zamceno && /^10/.test(poUprave.dpz) && /^10/.test(poUprave.zive) && poUprave.cn === cnPred, JSON.stringify(Object.assign({ cnPred }, poUprave)));
+await p.evaluate(() => { KLP.planPlateb = JSON.parse(JSON.stringify(aktivniVarianta(ZAK).zamek.snimek.kryciProj.planPlateb)); render(); });
 /* odeslaná nabídka z doby před plánem plateb (bez snímku): krycí list jako dřív */
 /* klon odeslané varianty (revize etapy B): první tisk klonu zamkne JEHO plán,
  * ne zděděný snímek předlohy */

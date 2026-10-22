@@ -300,6 +300,21 @@ function planPlatebVarianty(varianta, firma) {
      * „upraveno"); zamčený plán se nesrovnává se Standardem z kódu, pod
      * kterým neodešel (revize etapy B, 30. 9. 2026). */
     const upravene = Array.isArray(z.upravene) ? z.upravene.filter(k => PLAN_PROJ_SEKCE.indexOf(k) >= 0) : undefined;
+    /* PLÁN UPRAVENÝ PO ODESLÁNÍ (Z1, tabulka J. V. 22. 10. 2026: plán plateb
+     * PROJ je po tisku CN editovatelný). Nabídka odeslaná od v22.10.3 nese
+     * snímek krycího listu (zamek.snimek); liší-li se živý plán od plánu ve
+     * snímku, platí pro krycí list, SoD a export živý plán — doplněný ze
+     * snímku zmrazenoPlan (předvolba, záloha, splátky neupravených činností,
+     * texty milníků). Dotisk CN jde přes zamekNabidkaPohled, jehož krycí list
+     * JE snímek, takže se sem nedostane a tiskne zmrazený plán. */
+    const sn = varianta.zamek.snimek && varianta.zamek.snimek.kryciProj;
+    if (sn && plan && JSON.stringify(plan) !== JSON.stringify(sn.planPlateb || null)) {
+      const stejnaPredvolba = !plan.predvolba || plan.predvolba === z.predvolba;
+      const cin = Object.assign({}, stejnaPredvolba ? cinnosti : {},
+        (plan.cinnosti && typeof plan.cinnosti === 'object') ? plan.cinnosti : {});
+      return { plan: Object.assign({ v: 1, predvolba: z.predvolba, zaloha: z.zaloha }, plan, { cinnosti: cin, prepis }),
+               firemni, zmrazeny: false, stary: false, zeStarych };
+    }
     return { plan: { v: 1, predvolba: z.predvolba, zaloha: z.zaloha, cinnosti, prepis, upravene },
              firemni, zmrazeny: true, stary: false, zeStarych };
   }
