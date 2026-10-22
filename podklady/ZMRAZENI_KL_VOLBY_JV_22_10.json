@@ -1,0 +1,2001 @@
+{
+ "ock": [
+  {
+   "id": "obchodnik",
+   "label": "Jméno obchodníka",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true
+  },
+  {
+   "id": "nazevAkce",
+   "label": "Název akce",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false
+  },
+  {
+   "id": "cisloCN",
+   "label": "Číslo nabídky (CN)",
+   "sekce": "Základní údaje",
+   "dnes": "jen_admin",
+   "navrh": "jen_admin",
+   "volba_jv": "jen_admin",
+   "upraveno_jv": false
+  },
+  {
+   "id": "cisloSod",
+   "label": "Číslo SoD",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "adresaStavby",
+   "label": "Adresa stavby",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false
+  },
+  {
+   "id": "hodnotaBezDph",
+   "label": "Hodnota zakázky bez DPH",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false
+  },
+  {
+   "id": "priplatkyNabidka",
+   "label": "Příplatky v nabídce",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "priplatkyObjednane",
+   "label": "Objednané příplatky",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "dodNazev",
+   "label": "Zhotovitel",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false
+  },
+  {
+   "id": "dodIcoDic",
+   "label": "IČO / DIČ zhotovitele",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false
+  },
+  {
+   "id": "dodSidlo",
+   "label": "Sídlo zhotovitele",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false
+  },
+  {
+   "id": "dodBanka",
+   "label": "Bankovní spojení zhotovitele",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false
+  },
+  {
+   "id": "dodKontakt",
+   "label": "Kontakt na zhotovitele (telefon, e-mail)",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true
+  },
+  {
+   "id": "dodZpracoval",
+   "label": "Nabídku vypracoval",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false
+  },
+  {
+   "id": "jmenoPrijmeni",
+   "label": "Jméno a příjmení kontaktu",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "zakaznik",
+   "label": "Zákazník (smluvní partner)",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "kontaktZakaznikTel",
+   "label": "Telefon na zákazníka",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "kontaktZakaznikEmail",
+   "label": "E-mail na zákazníka",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "ico",
+   "label": "IČO",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "dic",
+   "label": "DIČ",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "adresaZakaznik",
+   "label": "Adresa (sídlo) zákazníka",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "zastBanka",
+   "label": "Bankovní spojení zákazníka",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastUcet",
+   "label": "Číslo účtu / směrový kód",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastZapis",
+   "label": "Zápis v rejstříku (zákazník)",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "scoring",
+   "label": "Scoring Cribis / Pipedrive",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastSmluvniJmeno",
+   "label": "Ve věcech smluvních — jméno",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastSmluvniPozice",
+   "label": "— pozice (podepisuje smlouvu)",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastSmluvniTel",
+   "label": "— telefon",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastSmluvniEmail",
+   "label": "— e-mail",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastObchodniJmeno",
+   "label": "Ve věcech obchodních — jméno",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastObchodniTel",
+   "label": "— telefon",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastObchodniEmail",
+   "label": "— e-mail",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastTechnickyJmeno",
+   "label": "Ve věcech technických — jméno",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastTechnickyTel",
+   "label": "— telefon (nutný telefon NEBO e-mail)",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastTechnickyEmail",
+   "label": "— e-mail (nutný telefon NEBO e-mail)",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastFakturyEmail",
+   "label": "Fakturace — e-mail",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zastFakturyTel",
+   "label": "Fakturace — telefon",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "typSmlouvy",
+   "label": "Typ smlouvy",
+   "sekce": "Typ smlouvy a produktu",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false
+  },
+  {
+   "id": "typProduktu",
+   "label": "Typ produktu / služby",
+   "sekce": "Typ smlouvy a produktu",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false
+  },
+  {
+   "id": "splatnostDni",
+   "label": "Splatnost faktur (dní)",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "platnostNabidky",
+   "label": "Platnost nabídky",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false
+  },
+  {
+   "id": "zpusobFakturace",
+   "label": "Způsob fakturace",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "zaloha1",
+   "label": "Záloha / dílčí faktura č. 1",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "faktura2",
+   "label": "Dílčí faktura č. 2",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "fakturaKonc",
+   "label": "Konečná faktura",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "zadrzne",
+   "label": "Zádržné – do odstranění vad a nedodělků",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "zadrzneProc",
+   "label": "Zádržné do odstranění VaN – %",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "zadrzneZaruka",
+   "label": "Zádržné – po dobu záruky",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "zadrzneZarukaProc",
+   "label": "Zádržné po dobu záruky – %",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "pokutaDodavka",
+   "label": "Smluvní pokuta – prodlení dodávky",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "pokutaSplatnost",
+   "label": "Smluvní pokuta – prodlení splatnosti",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "pokutaLimit",
+   "label": "Limit smluvních pokut",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "pokutyJine",
+   "label": "Jiné",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "platceDph",
+   "label": "Plátce DPH",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "sazbaDph",
+   "label": "Sazba DPH",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "zarukaMesicu",
+   "label": "Doba trvání záruky (měsíců)",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "terminDodani",
+   "label": "Termín dodání OCK",
+   "sekce": "Termín dodání",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "terminPodkladyVytah",
+   "label": "Finální podklady od dodavatele výtahu do",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "terminPripravenost",
+   "label": "Stavební připravenost zákazníka do",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "terminPrevzeti",
+   "label": "Převzetí staveniště k montáži šachty",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "terminMontazDo",
+   "label": "Konec montáže ocelové konstrukce",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "terminOplasteniOd",
+   "label": "Opláštění od",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "terminOplasteniDo",
+   "label": "Opláštění do",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "terminMontaz",
+   "label": "Ukončení montáže šachty a předání montáži výtahu",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "terminDvere",
+   "label": "Osazení šachetních dveří zákazníkem do",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "terminPredani",
+   "label": "Konečné předání díla",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "terminJine",
+   "label": "Jiné termíny",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "odchylky",
+   "label": "Jiné odchylky oproti smluvnímu standardu",
+   "sekce": "Rozsah a odchylky",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "zamereniStrojovna",
+   "label": "Zaměření strojovna",
+   "sekce": "Rozsah a odchylky",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "situacniFoto",
+   "label": "Situační fotografie",
+   "sekce": "Rozsah a odchylky",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "cenaNezahrnuje",
+   "label": "Cena nezahrnuje",
+   "sekce": "Rozsah a odchylky",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "rozsah",
+   "label": "Rozsah",
+   "sekce": "Rozsah a odchylky",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "typProjektu",
+   "label": "Typ projektu",
+   "sekce": "Rozsah a odchylky",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": true
+  },
+  {
+   "id": "provadeciDok",
+   "label": "Prováděcí dokumentace",
+   "sekce": "Rozsah a odchylky",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "dsp",
+   "label": "DSP",
+   "sekce": "Rozsah a odchylky",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "typSachty",
+   "label": "Typ šachty",
+   "sekce": "Technická specifika",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "popisProjektu",
+   "label": "Stručný popis projektu",
+   "sekce": "Technická specifika",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "dodavatelStavby",
+   "label": "Dodavatel stavby (kontakt email / telefon)",
+   "sekce": "Technická specifika",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "dodavatelVytahu",
+   "label": "Dodavatel výtahu (kontakt email / telefon)",
+   "sekce": "Technická specifika",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "atypMustky",
+   "label": "Můstky (rozměr, napojení stavba ↔ OCK)",
+   "sekce": "Atypy OCK",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "atypOplasteni",
+   "label": "Typ a způsob opláštění",
+   "sekce": "Atypy OCK",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "atypHlava",
+   "label": "Napojení hlavy OCK",
+   "sekce": "Atypy OCK",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "atypStavbaVyska",
+   "label": "Napojení na stavbu po výšce šachty",
+   "sekce": "Atypy OCK",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "atypPodchozi",
+   "label": "Podchozí OCK",
+   "sekce": "Atypy OCK",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "atypProhluben",
+   "label": "Atyp napojení u prohlubně",
+   "sekce": "Atypy OCK",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "atypTvar",
+   "label": "Netradiční tvar OCK (např. 5 stěn)",
+   "sekce": "Atypy OCK",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "atypJiny",
+   "label": "Jiný atyp (domluva na schůzce na stavbě)",
+   "sekce": "Atypy OCK",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "sodDphRezim",
+   "label": "Režim DPH ve smlouvě",
+   "sekce": "Smlouva o dílo (SoD realizace)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "sodMistoPlneni",
+   "label": "Místo plnění — druh stavby",
+   "sekce": "Smlouva o dílo (SoD realizace)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "sodPokutaDenni",
+   "label": "Pokuta za prodlení zákazníka (stavební připravenost, převzetí díla) — za den",
+   "sekce": "Smlouva o dílo (SoD realizace)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "sodDatumPodpisu",
+   "label": "Datum podpisu smlouvy",
+   "sekce": "Smlouva o dílo (SoD realizace)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "objPodpisFirma",
+   "label": "Zákazník — firma v podpisové doložce",
+   "sekce": "Smlouva o dílo (SoD realizace)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "objPodpis2Jmeno",
+   "label": "Druhý podepisující za zákazníka — jméno",
+   "sekce": "Smlouva o dílo (SoD realizace)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "objPodpis2Funkce",
+   "label": "— funkce druhého podepisujícího",
+   "sekce": "Smlouva o dílo (SoD realizace)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "objKopie1",
+   "label": "Faktury v kopii na (1)",
+   "sekce": "Smlouva o dílo (SoD realizace)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "objKopie2",
+   "label": "Faktury v kopii na (2)",
+   "sekce": "Smlouva o dílo (SoD realizace)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "podpisDne",
+   "label": "Dne",
+   "sekce": "Ostatní",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "podpisObchodnik",
+   "label": "Obchodník",
+   "sekce": "Ostatní",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "podpisInformovanBo",
+   "label": "Informováno Backoffice",
+   "sekce": "Ostatní",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  },
+  {
+   "id": "podpisInformovanTech",
+   "label": "Informováno Technické odd.",
+   "sekce": "Ostatní",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false
+  }
+ ],
+ "proj": [
+  {
+   "id": "obchodnik",
+   "label": "Jméno obchodníka",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "nazevAkce",
+   "label": "Název akce",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "cisloCN",
+   "label": "Číslo nabídky (CN)",
+   "sekce": "Základní údaje",
+   "dnes": "jen_admin",
+   "navrh": "jen_admin",
+   "volba_jv": "jen_admin",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "cisloSod",
+   "label": "Číslo SoD",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "adresaStavby",
+   "label": "Adresa stavby",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "hodnotaBezDph",
+   "label": "Hodnota zakázky bez DPH",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "predmet",
+   "label": "Předmět zakázky",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "ocenenoCinnosti",
+   "label": "Oceněných činností",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "mimoNabidku",
+   "label": "Činnosti mimo nabídku",
+   "sekce": "Základní údaje",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "dodNazev",
+   "label": "Zhotovitel",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "dodIcoDic",
+   "label": "IČO / DIČ zhotovitele",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "dodSidlo",
+   "label": "Sídlo zhotovitele",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "dodBanka",
+   "label": "Bankovní spojení zhotovitele",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "dodKontakt",
+   "label": "Kontakt na zhotovitele (telefon, e-mail)",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "dodZpracoval",
+   "label": "Nabídku vypracoval",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "hlavniProjektant",
+   "label": "Hlavní projektant (jméno, autorizace)",
+   "sekce": "Dodavatel (naše firma)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "jmenoPrijmeni",
+   "label": "Jméno a příjmení kontaktu",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zakaznik",
+   "label": "Zákazník (smluvní partner)",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "kontaktZakaznikTel",
+   "label": "Telefon na zákazníka",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "kontaktZakaznikEmail",
+   "label": "E-mail na zákazníka",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "ico",
+   "label": "IČO",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "dic",
+   "label": "DIČ",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "adresaZakaznik",
+   "label": "Adresa (sídlo) zákazníka",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastBanka",
+   "label": "Bankovní spojení zákazníka",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastUcet",
+   "label": "Číslo účtu / směrový kód",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastZapis",
+   "label": "Zápis v rejstříku (zákazník)",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "scoring",
+   "label": "Scoring Cribis / Pipedrive",
+   "sekce": "Zákazník (smluvní partner)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastSmluvniJmeno",
+   "label": "Ve věcech smluvních — jméno",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastSmluvniPozice",
+   "label": "— pozice (podepisuje smlouvu)",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastSmluvniTel",
+   "label": "— telefon",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastSmluvniEmail",
+   "label": "— e-mail",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastObchodniJmeno",
+   "label": "Ve věcech obchodních — jméno",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastObchodniTel",
+   "label": "— telefon",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastObchodniEmail",
+   "label": "— e-mail",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastTechnickyJmeno",
+   "label": "Ve věcech technických — jméno",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastTechnickyTel",
+   "label": "— telefon (nutný telefon NEBO e-mail)",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastTechnickyEmail",
+   "label": "— e-mail (nutný telefon NEBO e-mail)",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastFakturyEmail",
+   "label": "Fakturace — e-mail",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zastFakturyTel",
+   "label": "Fakturace — telefon",
+   "sekce": "Zástupci a kontakty zákazníka",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "odpovednyJmeno",
+   "label": "Jméno",
+   "sekce": "Odpovědná osoba za projekci (za nás)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "odpovednyTel",
+   "label": "Telefon",
+   "sekce": "Odpovědná osoba za projekci (za nás)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "odpovednyEmail",
+   "label": "E-mail",
+   "sekce": "Odpovědná osoba za projekci (za nás)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "typSmlouvy",
+   "label": "Typ smlouvy",
+   "sekce": "Typ smlouvy",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "typProjektu",
+   "label": "Typ projektu",
+   "sekce": "Typ smlouvy",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "pamatkovaOchrana",
+   "label": "Objekt v památkové ochraně",
+   "sekce": "Typ smlouvy",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "autorskaPrava",
+   "label": "Licence k projektové dokumentaci",
+   "sekce": "Typ smlouvy",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "rozsahJine",
+   "label": "Jiné dohodnuté činnosti",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "cenaNezahrnuje",
+   "label": "Cena nezahrnuje",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "splatnostDni",
+   "label": "Splatnost faktur (dní)",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "platnostNabidky",
+   "label": "Platnost nabídky",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zpusobFakturace",
+   "label": "Způsob fakturace",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "faktZamereni",
+   "label": "Fakturace – zaměření a studie",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "faktDpz",
+   "label": "Fakturace – DPZ a inženýrská činnost",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "faktDps",
+   "label": "Fakturace – DPS a EZC",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "zaloha",
+   "label": "Záloha",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "planPredvolba",
+   "label": "Plán plateb",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "plan_*",
+   "label": "Plán plateb projekce (4 znění)",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "pokutaTermin",
+   "label": "Smluvní pokuta – prodlení s odevzdáním",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "pokutaSplatnost",
+   "label": "Smluvní pokuta – prodlení splatnosti",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "pokutaLimit",
+   "label": "Limit smluvních pokut",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "pokutyJine",
+   "label": "Jiné",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "platceDph",
+   "label": "Plátce DPH",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sazbaDph",
+   "label": "Sazba DPH",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "pojisteni",
+   "label": "Pojištění odpovědnosti projektanta",
+   "sekce": "Platební podmínky",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "terminZahajeni",
+   "label": "Zahájení prací (podpis smlouvy)",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "terminZamereni",
+   "label": "Předání výstupů ze zaměření",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "terminStudie",
+   "label": "Odevzdání studie proveditelnosti",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "terminDpz",
+   "label": "Odevzdání DPZ",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "terminPovoleni",
+   "label": "Předpoklad povolení záměru",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "terminDps",
+   "label": "Odevzdání DPS",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "terminJine",
+   "label": "Jiné termíny",
+   "sekce": "Termíny",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "pocetVytahu",
+   "label": "Počet výtahů / šachet",
+   "sekce": "Projekční specifika",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "autorskyDozor",
+   "label": "Autorský dozor (AD)",
+   "sekce": "Projekční specifika",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "variantaPamatkari",
+   "label": "Každá další varianta pro památkáře",
+   "sekce": "Projekční specifika",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "podkladyInvestor",
+   "label": "Podklady od investora (původní PD, revize)",
+   "sekce": "Projekční specifika",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "dossSeznam",
+   "label": "Dotčené orgány státní správy (DOSS)",
+   "sekce": "Projekční specifika",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "dodavatelStavby",
+   "label": "Dodavatel stavby (kontakt email / telefon)",
+   "sekce": "Projekční specifika",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "dodavatelVytahu",
+   "label": "Dodavatel výtahu (kontakt email / telefon)",
+   "sekce": "Projekční specifika",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "navaznostOck",
+   "label": "Návaznost na kalkulaci OCK",
+   "sekce": "Projekční specifika",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "atypPamatky",
+   "label": "Požadavky památkové péče",
+   "sekce": "Atypy a rizika PROJ",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "atypStatika",
+   "label": "Statická rizika (zásah do nosných konstrukcí)",
+   "sekce": "Atypy a rizika PROJ",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "atypDokumentace",
+   "label": "Chybějící nebo nespolehlivá původní dokumentace",
+   "sekce": "Atypy a rizika PROJ",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "atypInstalace",
+   "label": "Kolize s technickými instalacemi",
+   "sekce": "Atypy a rizika PROJ",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "atypOsvit",
+   "label": "Studie osvitu / denní osvětlení",
+   "sekce": "Atypy a rizika PROJ",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "atypJiny",
+   "label": "Jiný atyp nebo riziko",
+   "sekce": "Atypy a rizika PROJ",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sodpPlatby",
+   "label": "Platby smlouvy (z plánu plateb)",
+   "sekce": "Smlouva o dílo — splátky (SoD projekce)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sodpPlatba1",
+   "label": "Platba 1 — po podpisu smlouvy",
+   "sekce": "Smlouva o dílo — splátky (SoD projekce)",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sodpPlatba2",
+   "label": "Platba 2 — při předání 2D výstupů ze zaměření",
+   "sekce": "Smlouva o dílo — splátky (SoD projekce)",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sodpPlatba3",
+   "label": "Platba 3 — DPZ v rozsahu pro podání na dotčené orgány",
+   "sekce": "Smlouva o dílo — splátky (SoD projekce)",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sodpPlatba4",
+   "label": "Platba 4 — DPZ v rozsahu pro podání na stavební úřad",
+   "sekce": "Smlouva o dílo — splátky (SoD projekce)",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sodpPlatba5",
+   "label": "Platba 5 — po vydání pravomocného povolení záměru",
+   "sekce": "Smlouva o dílo — splátky (SoD projekce)",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sodpPlatba6",
+   "label": "Platba 6 — po předání kompletní DPS",
+   "sekce": "Smlouva o dílo — splátky (SoD projekce)",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sodpPlatba7",
+   "label": "Platba 7 — po dokončení ekonomické zadávací části",
+   "sekce": "Smlouva o dílo — splátky (SoD projekce)",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sodpPlatba8",
+   "label": "Platba 8 — po doporučení dodavatele realizace",
+   "sekce": "Smlouva o dílo — splátky (SoD projekce)",
+   "dnes": "zmrazeno",
+   "navrh": "zmrazeno",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sodpSpravniPoplatky",
+   "label": "Správní poplatky stavebnímu úřadu (nad rámec ceny)",
+   "sekce": "Smlouva o dílo — splátky (SoD projekce)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "sodpPokutaDenni",
+   "label": "Pokuta za prodlení zákazníka se součinností (za den)",
+   "sekce": "Smlouva o dílo — splátky (SoD projekce)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "objPodpisFirma",
+   "label": "Zákazník — firma v podpisové doložce",
+   "sekce": "Smlouva o dílo — podpisy a kopie (SoD projekce)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "objPodpis2Jmeno",
+   "label": "Druhý podepisující za zákazníka — jméno",
+   "sekce": "Smlouva o dílo — podpisy a kopie (SoD projekce)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "objPodpis2Funkce",
+   "label": "— funkce druhého podepisujícího",
+   "sekce": "Smlouva o dílo — podpisy a kopie (SoD projekce)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "objKopie1",
+   "label": "Faktury v kopii na (1)",
+   "sekce": "Smlouva o dílo — podpisy a kopie (SoD projekce)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "objKopie2",
+   "label": "Faktury v kopii na (2)",
+   "sekce": "Smlouva o dílo — podpisy a kopie (SoD projekce)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "pmZmocnitel",
+   "label": "Zmocnitel — jméno a příjmení",
+   "sekce": "Plná moc (zmocnitel)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "pmZmocnitelNarozen",
+   "label": "— datum narození",
+   "sekce": "Plná moc (zmocnitel)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "pmZmocnitelBytem",
+   "label": "— trvale bytem",
+   "sekce": "Plná moc (zmocnitel)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "pmJednajici",
+   "label": "Za zhotovitele jedná (zmocněnec)",
+   "sekce": "Plná moc (zmocnitel)",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "podpisDne",
+   "label": "Dne",
+   "sekce": "Ostatní",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "podpisObchodnik",
+   "label": "Obchodník",
+   "sekce": "Ostatní",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "podpisInformovanBo",
+   "label": "Informováno Backoffice",
+   "sekce": "Ostatní",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  },
+  {
+   "id": "podpisInformovanTech",
+   "label": "Informováno Technické odd.",
+   "sekce": "Ostatní",
+   "dnes": "editovatelne",
+   "navrh": "editovatelne",
+   "volba_jv": "editovatelne",
+   "upraveno_jv": false,
+   "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
+  }
+ ],
+ "_pravidla": {
+  "po_tisku_SoD": "beze změny — zamčený celý krycí list kromě plné moci (pm*)",
+  "nabidka_snimek": "J. V. 22. 10.: odeslaná cenová nabídka zůstává zmrazená — dotisk CN ukazuje původní ceny, DPH a podmínky ze snímku zamčení; editace v krycím listu po tisku CN se projeví jen v krycím listu, SoD a exportu",
+  "hlavicka_ZAK": "položky s bind ZAK.* se řídí touto tabulkou (dnes je zámek vynechává)"
+ }
+}
