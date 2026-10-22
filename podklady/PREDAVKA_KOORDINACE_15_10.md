@@ -10,6 +10,15 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 22. 10. ~14:35 UTC — koordinace „ŘÍDÍCÍ 22.10“ session_013yuBUKmpUYvEnjxWjGi5kj (kontext ~30 %)
+
+- **test = integrace (kód) = 4ce35d2 (v22.10.5), release v22.10.5 vydán J. V.** (Z1 + D5; kolo 303/1/6 → overit_online opraven 271/0, mutace jádro 30/30, server 71/71). Integrace = 69f5e8b (+ roadmapa #504, #505). main = v22.10.1 (jen na pokyn J. V.). Z1 a stará koordinace archivovány.
+- **Běží E1** session_01KyvdFmvDF2hTwWvzoSvHgr (`claude/e1-export-obdobi` nad 4ce35d2): #504 hromadný export controllingu (předvýběr podle dne zámku/prodeje z rejstříku, dávky bez stropu 600/150, filtr Stav Pipedrive výchozí Vyhrané, **výchozí „podle data prodeje“**) + #505 verze ceníku v razítku (online režim maže číslo verze — progPlatnaVerzeInfo čte jen složku). → v22.10.6.
+- **Plán schválený J. V. 22. 10. ~14:35 (jeho počítač nebude přístupný):** E1 → integrace, kolo + mutace #504/#505 → test v22.10.6 + release odkaz do kokpitu → **K7 (#506)** celé kolo s mutacemi + audit aea832a..test, výstup `podklady/K7_AUDIT_22_10.md` → pá 05:00 UTC souhrn + návrh main (trig_01RUFWxC5WkeUYpwBoWGd6tZ). Kontroly: trig_014wKmS8vWTs9h4eLWrhQvz8 (15:30), dál řetěz send_later ~60 min.
+- **Kontejner koordinace:** pro prohlížečové sady je nutný odkaz `node_modules -> $(npm root -g)` v kořeni (jinak 44 sad „chybí playwright“). Kokpit se upravuje skriptem `kp.py` ve scratchpadu (ztratí se — snadno znovu: načíst JSON z `<script id="data">`, upravit, `kontrola.py`).
+- **Čeká na J. V.:** `negativni_kontrola.json` do KNG_PODKLADY (D5-3), import slovníku SoD v4, pokyn main. Roadmapa publikována https://claude.ai/artifact/5D6wt2R6PQDdwLXP4rkvjS
+- **Odhad limitu ~81 %** (cíl pá ≤ 88 %; K7 ~3 %).
+
 ## PŘEDÁNÍ 22. 10. ~11:30 UTC → nová koordinace (staré „ŘÍDÍCÍ 21.10 noc 2“ session_01X93Edh1U8MQru6HV28FdBY, kontext ~70 %, týdenní limit hlásí varování)
 
 - **main = test-1 = aea832a (v22.10.1)** — J. V. 22. 10.: main posunut a nasazen na ostrou (mapování controllingu, šablony PROJ v8 i SoD realizace v4 CZ/EN/DE/FR nahrány). Release v22.10.1 a v22.10.2 vydány.
