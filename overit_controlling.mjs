@@ -258,9 +258,11 @@ zkus('C6: krycí list i export objednaný příplatek vidí', /^1 – /.test(obj
 zkus('C6: odškrtnutí posledního záznam smaže', obj.poZruseni === null);
 /* #504: výběr Stav Pipedrive má výchozí „Vyhrané"; zakázka harnessu deal nemá, proto „Všechny". */
 zkus('#504: Stav Pipedrive ve výchozím stavu Vyhrané', await stranka.evaluate(() => (document.getElementById('ctrlHromPd') || {}).value) === 'won');
+zkus('#504: výchozí výběr podle data prodeje', await stranka.evaluate(() => (document.getElementById('ctrlHromPodle') || {}).value) === 'prodej');
 await stranka.evaluate(() => { const v = ridiciVarianta(ZAK); CTRL_STAV.hrom.od = ctrlDenPraha(v.zamek.kdy); CTRL_STAV.hrom.do = CTRL_STAV.hrom.od; render(); });
 await stranka.selectOption('#ctrlHromOblast', 'ock');
 await stranka.selectOption('#ctrlHromPd', 'vse');
+await stranka.selectOption('#ctrlHromPodle', 'zamceni');   // blok níž ověřuje výběr podle dne zámku
 const [stHrom] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#ctrlHromXlsx')]);
 const jmHrom = stHrom.suggestedFilename();
 zkus('stáhne se PREDKALKULACE_<od>_<do>_OCK.xlsx', /^PREDKALKULACE_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_OCK\.xlsx$/.test(jmHrom), jmHrom);

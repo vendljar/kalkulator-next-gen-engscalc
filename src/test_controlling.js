@@ -366,7 +366,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
 /* ---------- 5. C3: hromadný export za období ---------- */
 {
   /* #504: filtr stavu Pipedrive má výchozí „vyhrané"; sady C3 zkoušejí zakázky bez dealu, proto pd=vse. */
-  const F = (q) => C.ctrlHromadnyFiltr(Object.assign({ pd: 'vse' }, q));
+  const F = (q) => C.ctrlHromadnyFiltr(Object.assign({ pd: 'vse', podle: 'zamceni' }, q));   // #504: výchozí je prodej + vyhrané
   test('C3 filtr: platné období, výchozí oblast i řada = obojí',
     JSON.stringify(F({ od: '2026-10-01', do: '2026-10-31' })) === JSON.stringify({ ok: true, filtr: { od: '2026-10-01', do: '2026-10-31', oblast: 'obe', rada: 'obe', podle: 'zamceni', pd: 'vse' } }));
   test('C3 filtr: neplatné datum (31. 2.) odmítne', !F({ od: '2026-02-31', do: '2026-03-01' }).ok);
@@ -489,13 +489,17 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
  * Před doplněním 0 / 5 (filtr `pd` neexistoval), po něm 5 / 5. */
 if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   const Fq = (q) => C.ctrlHromadnyFiltr(Object.assign({ od: '2000-01-01', do: '2099-12-31' }, q));
+  /* Třetí doplnění J. V. 22. 10.: výchozí výběr = podle data prodeje (dřív zamčení). Před změnou FAIL. */
+  test('#504: bez parametru „podle" se vybírá podle data prodeje, zamčení zůstává volbou',
+    C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31' }).filtr.podle === 'prodej'
+    && C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31', podle: 'zamceni' }).filtr.podle === 'zamceni');
   test('#504 PD: výchozí stav Pipedrive = vyhrané, všechny hodnoty platí, cizí → chyba',
     C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31' }).filtr.pd === 'won'
     && ['won', 'open', 'lost', 'deleted', 'bez', 'vse'].every(x => Fq({ od: '2026-10-01', do: '2026-10-31', pd: x }).ok)
     && !Fq({ od: '2026-10-01', do: '2026-10-31', pd: 'Won' }).ok && /stav Pipedrive/.test(Fq({ od: '2026-10-01', do: '2026-10-31', pd: 'x' }).chyba || ''));
   const zak = zakazkaZamcena();
   const den = C.ctrlDenPraha(zak.varianty[0].zamek.kdy);
-  const f = (pd) => C.ctrlHromadnyFiltr({ od: den, do: den, pd }).filtr;
+  const f = (pd) => C.ctrlHromadnyFiltr({ od: den, do: den, pd, podle: 'zamceni' }).filtr;
   const o = { jekly: JEKLY };
   const sDealem = (st) => { const z = kopie(zak); z.pdDealId = '77'; if (st) z.pdStav = { status: st, nacteno: '2026-10-20T10:00:00.000Z' }; return z; };
   const won = sDealem('won');
@@ -525,7 +529,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   test('#505: Popis řekne, že prázdná verze ceníku = neznámá; se známou verzí řádek není',
     /neznámá.*#505/.test((popisZ(bezVerze).find(r => r[0] === 'Verze ceníku') || [])[1] || '')
     && !popisZ(sVerzi).some(r => r[0] === 'Verze ceníku'));
-  const mimo = C.ctrlHromadnyZakazka(sDealem('lost'), C.ctrlHromadnyFiltr({ od: '2000-01-01', do: '2000-01-02' }).filtr, o);
+  const mimo = C.ctrlHromadnyZakazka(sDealem('lost'), C.ctrlHromadnyFiltr({ od: '2000-01-01', do: '2000-01-02', podle: 'zamceni' }).filtr, o);
   test('#504 PD: zakázka mimo období se do vyřazených filtrem stavu nepočítá', mimo.mimo === true && !mimo.pdVyrazeno, mimo);
 }
 
@@ -553,7 +557,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     && C.ctrlRejstrikDny({ varianty: 'nesmysl' }).cist === true && C.ctrlRejstrikDny(null).cist === true);
 
   /* 700 zakázek upravených včera (hromadné přeuložení), zamčených v září; 30 v říjnu. */
-  const F = (q) => C.ctrlHromadnyFiltr(Object.assign({ pd: 'vse' }, q));
+  const F = (q) => C.ctrlHromadnyFiltr(Object.assign({ pd: 'vse', podle: 'zamceni' }, q));   // #504: výchozí je prodej + vyhrané
   const rej = Array.from({ length: 700 }, (_, i) => ({ soubor: 'z' + String(i).padStart(4, '0') + '.json', cislo: 'Z' + i, odeslane: 1,
     upraveno: '2026-10-21T10:00:00Z', ctrlDny: { zamky: [{ den: i < 30 ? '2026-10-' + String(1 + (i % 22)).padStart(2, '0') : '2026-09-10',
       rada: i % 3 ? 'cr' : 'zahr' }], prodej: i === 5 ? { den: '2026-10-25', rada: 'zahr' } : null } }));

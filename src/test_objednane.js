@@ -177,7 +177,7 @@ if (typeof kryciData === 'function' && typeof kryciZmrazPodminky === 'function')
   const jina = kopie(ulozena); jina.objednane.varianta = 'jina';
   test('záznam k jiné variantě se do exportu nepromítne', !C.ctrlExportVarianty(jina, jina.varianty[0], { jekly: JEKLY }).radky.some(r => r.objednano));
 
-  const F = (q) => C.ctrlHromadnyFiltr(Object.assign({ pd: 'vse' }, q)).filtr;   // #504: bez filtru stavu Pipedrive
+  const F = (q) => C.ctrlHromadnyFiltr(Object.assign({ pd: 'vse', podle: 'zamceni' }, q)).filtr;   // #504: výchozí prodej + vyhrané   // #504: bez filtru stavu Pipedrive
   test('hromadně: filtr podle prodeje přijme, neznámý výběr odmítne', F({ od: '2026-10-01', do: '2026-10-31', podle: 'prodej' }).podle === 'prodej'
     && !C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31', podle: 'tisk' }).ok);
   const opts = { jekly: JEKLY };

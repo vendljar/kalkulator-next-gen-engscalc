@@ -175,7 +175,8 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
   await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
 
   /* #504: stav Pipedrive má výchozí „vyhrané"; sady C3 bez dealu jdou s pd=vse, není-li v dotazu jiný. */
-  const sPd = (q) => (/[?&]pd=/.test(q) || /protokol=/.test(q)) ? q : q + '&pd=vse';
+  const sPd = (q) => /protokol=/.test(q) ? q
+    : q + (/[?&]pd=/.test(q) ? '' : '&pd=vse') + (/[?&]podle=/.test(q) ? '' : '&podle=zamceni');   // výchozí je prodej + vyhrané
   const ex = async (q, c) => { const r = await get(controllingExport, URL_E + sPd(q), c); return { st: r.status, o: await r.json() }; };
   test('C3: vedoucí hromadný export nedostane (403)', (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-31', cVed)).status === 403);
   test('C3: nepřihlášený nic (401)', (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-31')).status === 401);
@@ -235,7 +236,7 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     const z = await sZ.cti('z/' + soub);
     z.pdDealId = '501'; z.pdStav = { status: 'won', nacteno: '2026-10-20T10:00:00.000Z' };
     await sZ.zapis('z/' + soub, z);
-    const holy = async (q) => { const r = await get(controllingExport, URL_E + q, cAdmin); return { st: r.status, o: await r.json() }; };
+    const holy = async (q) => { const r = await get(controllingExport, URL_E + q + '&podle=zamceni', cAdmin); return { st: r.status, o: await r.json() }; };
     const ePdV = await holy('?od=2026-10-01&do=2026-10-31');
     test('#504 PD: výchozí filtr = vyhrané — jen 0801, 0804 bez dealu vyřazená jako „bez stavu"',
       ePdV.st === 200 && cisla(ePdV.o) === '2026 - OPR - CN - 0801' && ePdV.o.filtr.pd === 'won'
@@ -300,7 +301,7 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
       rej504.push(G.uloRejstrikZaznam(z, { soubor, razitko: '2026-10-21T10:00:00Z' }));
     }
     await sZ.zapis('_rejstrik', { schema: 1, zakazky: rej504 });
-    const fRijen = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-22', pd: 'vse' }).filtr;
+    const fRijen = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-22', pd: 'vse', podle: 'zamceni' }).filtr;
     test('#504: z 700 zakázek upravených včera jsou kandidáti jen ti zamčení v období (300)',
       C.ctrlHromadnyKandidati(await sZ.cti('_rejstrik'), fRijen).length === 300, C.ctrlHromadnyKandidati(await sZ.cti('_rejstrik'), fRijen).length);
     let volani = 0;
@@ -323,7 +324,7 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
       p300.length === prot0 + 1 && p300[0].stav === 'hotovo' && p300[0].zakazek === 300 && p300[0].davek >= 1 && p300[0].pd === 'vse', p300[0]);
 
     /* Dávkování a souběh vrátí tentýž obsah jako jeden sekvenční dotaz. */
-    const fKratke = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-03', pd: 'vse' }).filtr;
+    const fKratke = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-03', pd: 'vse', podle: 'zamceni' }).filtr;
     /* Čas exportu (`kdy`) má každý běh vlastní — porovnává se obsah bez něj. */
     const obsah = (o) => JSON.stringify({ e: (o.exporty || []).map(e => ({ ...e, kdy: '' })), p: o.preskoceno });
     Object.assign(M, { soubeh: 1, davkaMax: 100000, casMs: 1e9 });
@@ -352,10 +353,10 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
       && await st('?od=2026-10-01&do=2026-10-03&export=' + idHot + '&po=x.json') === 409
       && await st('?od=2026-10-01&do=2026-10-03&export=' + encodeURIComponent('../x') + '&po=x.json') === 400);
     Object.assign(M, { davkaMax: 5 });
-    const prvni = await (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-03', cAdmin)).json();
+    const prvni = await (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-03&podle=zamceni&pd=vse', cAdmin)).json();
     Object.assign(M, puvodne);
     test('#504: navazující dávka s jiným filtrem než první → 409', !!prvni.dalsi
-      && await st('?od=2026-10-01&do=2026-10-04&export=' + prvni.export + '&po=' + encodeURIComponent(prvni.dalsi)) === 409, prvni.dalsi);
+      && await st('?od=2026-10-01&do=2026-10-04&podle=zamceni&pd=vse&export=' + prvni.export + '&po=' + encodeURIComponent(prvni.dalsi)) === 409, prvni.dalsi);
 
     test('#504: všechny dávky jednoho exportu nesou týž čas exportu (z první dávky)',
       new Set((davky.exporty || []).map(e => e.kdy)).size === 1 && new Set((soub.exporty || []).map(e => e.kdy)).size === 1);
@@ -384,10 +385,10 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
       eStare.chyba || (eStare.exporty || []).length);
     /* Změna mapování mezi dávkami: navazující dávka se odmítne (soubor by míchal dvě verze). */
     Object.assign(M, { davkaMax: 5 });
-    const d1 = await (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-03', cAdmin)).json();
+    const d1 = await (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-03&podle=zamceni&pd=vse', cAdmin)).json();
     const dm = C.ctrlVychozi(); dm.mapa['K.k7'] = 'mat-ostatni'; dm.mapa['C.transportKc'] = 'cestovne';
     const pm = await (await post(controllingFn, URL_C, { data: dm, poznamka: 'změna během exportu' }, cAdmin)).json();
-    const d2 = await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-03&export=' + d1.export + '&po=' + encodeURIComponent(d1.dalsi || ''), cAdmin);
+    const d2 = await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-03&podle=zamceni&pd=vse&export=' + d1.export + '&po=' + encodeURIComponent(d1.dalsi || ''), cAdmin);
     Object.assign(M, puvodne);
     test('#504: změna mapování mezi dávkami → navazující dávka 409', !!d1.dalsi && pm.ok === true && d2.status === 409, { d: d1.dalsi, pm, st: d2.status });
 

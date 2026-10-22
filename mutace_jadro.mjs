@@ -1688,6 +1688,10 @@ const MUTACE = [
     hledej: "  if (exps.some(e => e.hlavicka && e.hlavicka.cenikVerze === ''))",
     nahrad: "  if (false)",
     proc: 'controlling by prázdný sloupec Verze ceníku četl jako chybu exportu, ne jako neznámou verzi' },
+  { nazev: '#504: výchozí výběr podle zamčení místo prodeje', soubor: 'controlling.js',
+    hledej: "  const podle = x.podle == null || x.podle === '' ? 'prodej' : x.podle;",
+    nahrad: "  const podle = x.podle == null || x.podle === '' ? 'zamceni' : x.podle;",
+    proc: 'J. V. 22. 10.: výchozí export podle data prodeje „ať je to jistější"' },
   /* #504 doplnění J. V. 22. 10.: filtr Stav Pipedrive v hromadném exportu (výchozí vyhrané). */
   { nazev: '#504 PD: výchozí stav = všechny', soubor: 'controlling.js',
     hledej: "  const pd = x.pd == null || x.pd === '' ? 'won' : x.pd;",

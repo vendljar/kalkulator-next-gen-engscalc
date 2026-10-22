@@ -34,6 +34,10 @@ přečíst 633 zakázek (strop 600)", 12.–22. 10. → „server odpověděl 50
   Filtr jde do protokolu (sloupec „Stav PD"), do jména souboru (`_PD-WON`) a do hlášky prázdného výsledku („… zkuste
   filtr Stav Pipedrive: Všechny"). Export jedné zakázky beze změny. Rejstřík `pdDealId` nenese: přesný počet
   vyřazených potřebuje zakázku přečíst (období rozhoduje přečtená zakázka), čtení je souběžné.
+- **Výchozí výběr = podle data prodeje (třetí doplnění J. V. 22. 10.: „ať je to jistější"):** `podle` bez parametru
+  = `prodej` v `ctrlHromadnyFiltr` i v UI (volba nahoře), „podle data zamčení" zůstává volbou; spolu s výchozím
+  Stav Pipedrive = Vyhrané. Nápověda UI a příručka upravené; test v `src/test_controlling.js` (před změnou FAIL),
+  objemová zkouška běží s výchozími volbami, mutace jádra „#504: výchozí výběr podle zamčení místo prodeje".
 - **Hlášky:** vypršený dotaz / přerušené spojení → „Server export za zvolené období nestihl připravit … Zkuste kratší
   období, třeba jeden týden" (bez kódu 504); v protokolu exportů „(nedokončen)" / „(odmítnut)".
 - **Rychlost:** `ctrlDenPraha` staví `Intl.DateTimeFormat` jednou — nový formátovač na každé volání byl nejdražší

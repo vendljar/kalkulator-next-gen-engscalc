@@ -19,6 +19,8 @@ test nic** — slučuje koordinace (session_013yuBUKmpUYvEnjxWjGi5kj, „ŘÍDÍ
   admin akce, žádný zápis rejstříku z exportu — ten by přidal souběžný zápis rejstříku bez zámku); (2) rejstřík
   nenese `pdDealId` — přesný počet „vyřazeno filtrem stavu“ potřebuje přečtenou zakázku (období rozhoduje ona);
   (3) výběr oblasti OCK/PROJ dál až nad přečtenou zakázkou; (4) výchozí `pd=won` platí i na serveru (dotaz bez `pd`).
+- **Třetí doplnění (14:22 UTC):** výchozí `podle=prodej` (UI i server), zamčení volbou; overit_controlling.mjs
+  vybírá pro svůj blok „podle data zamčení“ a kontroluje výchozí prodej.
 - **#505 (druhé doplnění 14:21 UTC):** `progPlatnaVerzeInfo` = složka, když vládne, jinak `PROG_STAV.pouzita`
   (zapisuje `progPouzij`, maže `progZpetNaBuild`); Popis exportu: prázdná verze = neznámá. Test
   `src/test_cenik_verze_online.js`, mutace jádra „#505“ 4/4. Roadmapa: integrace 9abed07 sloučena, #504/#505 → hotovo.

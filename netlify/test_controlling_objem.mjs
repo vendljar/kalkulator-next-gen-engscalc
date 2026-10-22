@@ -1,7 +1,8 @@
 /* HROMADNÝ EXPORT CONTROLLINGU — OBJEM (#504, 22. 10. 2026)
  *
  * Doplnění J. V. 22. 10. 2026: „Nejsme schopni stahovat víc než 600 zakázek?"
- * Simulace: 1000 zakázek zamčených v říjnu s vyhraným dealem a 400 v září,
+ * Simulace s VÝCHOZÍMI volbami (podle data prodeje, Stav Pipedrive Vyhrané):
+ * 1000 zakázek prodaných v říjnu s vyhraným dealem a 400 v září,
  * úložiště se zpožděním 25 ms na čtení zakázky (řádově jako Netlify Blobs).
  * Ověřuje, že export doběhne celý, v dávkách, z nichž žádná nepřesáhne časový
  * rozpočet o víc než doběh rozebraných čtení (funkce Netlify má 10 s), že
@@ -50,14 +51,17 @@ G.zamkniVariantu(v, { cislo: G.variantaCislo(vzor, v), kdo: 'admin@priklad.cz', 
   vysledek: G.zamekVysledekSpocti(v, J.JEKLY, 'test') });
 v.zamek.kdy = '2026-10-01T09:00:00Z';
 const tpl = JSON.stringify(vzor);
+const KLIC = G.objNabidnute(v, J.JEKLY)[0].key;
 const rej = [];
 for (let i = 0; i < 1400; i++) {
   const cislo = '2026 - OPR - CN - ' + (10000 + i);
   const kdy = i < 1000 ? '2026-10-' + String(1 + (i % 22)).padStart(2, '0') + 'T09:00:00Z' : '2026-09-' + String(1 + (i % 25)).padStart(2, '0') + 'T09:00:00Z';
   const text = tpl.split('2026 - OPR - CN - 9000').join(cislo).split('2026-10-01T09:00:00Z').join(kdy);
   const z = JSON.parse(text);
+  /* Prodej (C6): objednaný příplatek z nabídky, den prodeje = den zámku. */
+  z.objednane = { varianta: z.varianty[0].id, klice: [KLIC], datum: kdy.slice(0, 10) };
   const soubor = G.uloJmenoSouboru(z);
-  pamet.set('zakazky/z/' + soubor, text);
+  pamet.set('zakazky/z/' + soubor, JSON.stringify(z));
   const zaznam = G.uloRejstrikZaznam(z, { soubor, razitko: '2026-10-21T10:00:00Z' });
   /* Polovina záznamů jako starší rejstřík bez dnů zámků — hrubý předvýběr (1400 kandidátů). */
   if (i % 2) delete zaznam.ctrlDny;
@@ -81,14 +85,15 @@ let vysl;
 try { vysl = await G.ctrlHromadnyStahni(api, f); } catch (e) { vysl = { chyba: e.message }; }
 const celkem = Date.now() - t0;
 const cisla = (vysl.exporty || []).map(e => e.strany[0].cislo);
-test('#504 objem: 1000 vyhraných zakázek za 1.–22. 10. (1400 kandidátů s hrubým předvýběrem) doběhne celý, bez duplicit',
+test('#504 objem: výchozí volby (prodej + vyhrané) — 1000 zakázek za 1.–22. 10. (1400 kandidátů s hrubým předvýběrem) doběhne celý, bez duplicit',
   !vysl.chyba && cisla.length === 1000 && new Set(cisla).size === 1000 && !(vysl.preskoceno || []).length,
   vysl.chyba || { n: cisla.length, presk: (vysl.preskoceno || []).length });
 test('#504 objem: po dávkách, žádný dotaz nepřesáhne rozpočet + doběh rozebraných čtení (pod limitem funkce 10 s)',
   casy.length > 1 && Math.max(...casy) < M.casMs + 2000, { davek: casy.length, max: Math.max(...casy), celkem });
 const prot = (JSON.parse(pamet.get('program/controlling_exporty') || '{}').zaznamy) || [];
 test('#504 objem: protokol jeden záznam, dokončený, 1000 zakázek, filtr vyhrané',
-  prot.length === 1 && prot[0].stav === 'hotovo' && prot[0].zakazek === 1000 && prot[0].pd === 'won' && prot[0].davek === casy.length, prot[0]);
+  prot.length === 1 && prot[0].stav === 'hotovo' && prot[0].zakazek === 1000 && prot[0].pd === 'won' && prot[0].podle === 'prodej'
+  && prot[0].davek === casy.length, prot[0]);
 console.log('dávek ' + casy.length + ', nejdelší ' + Math.max(...casy) + ' ms, celkem ' + celkem + ' ms');
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');

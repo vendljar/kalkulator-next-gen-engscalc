@@ -704,8 +704,9 @@ function ctrlHromadnyFiltr(q) {
   const rada = x.rada == null || x.rada === '' ? 'obe' : x.rada;
   if (!CTRL_FILTR_OBLAST.includes(oblast)) return { ok: false, chyba: 'Neznámá oblast (ock, proj, obe).' };
   if (!CTRL_FILTR_RADA.includes(rada)) return { ok: false, chyba: 'Neznámá číselná řada (cr, zahr, obe).' };
-  /* C6: výběr podle data zamčení (výchozí) nebo data prodeje (objednané příplatky / podpis SoD). */
-  const podle = x.podle == null || x.podle === '' ? 'zamceni' : x.podle;
+  /* C6: výběr podle data prodeje (objednané příplatky / podpis SoD) nebo data zamčení. Výchozí
+   * je od #504 (J. V. 22. 10.: „ať je to jistější") PRODEJ — dřív zamčení. */
+  const podle = x.podle == null || x.podle === '' ? 'prodej' : x.podle;
   if (!CTRL_FILTR_PODLE.includes(podle)) return { ok: false, chyba: 'Neznámý výběr (zamceni, prodej).' };
   const pd = x.pd == null || x.pd === '' ? 'won' : x.pd;
   if (!CTRL_FILTR_PD.includes(pd)) return { ok: false, chyba: 'Neznámý stav Pipedrive (won, open, lost, deleted, bez, vse).' };
