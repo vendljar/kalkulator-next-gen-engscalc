@@ -7887,6 +7887,27 @@
    "hotovoV": "v22.10.4",
    "rozhodnuto": "J. V. 22. 10. 2026 (otázky D5 podle návrhu): D5-1 (#485 text bez „)“ zůstává česky, obal O13), D5-2 (dotisk SoD nese objednané z prvního tisku), D5-4 (popisky ceníku rolí) beze změny; D5-3 hotovo ve v22.10.5 — skutečné jméno, e-mail a telefon v harnessech šablon přesunuty do $KNG_PODKLADY/negativni_kontrola.json (nastroje/harness_podklady.mjs), výjimka z povolene_kontakty.txt odebrána.",
  "pozn": "Číslo položky přidělila D5 (volné za #501; koordinace přečíslovala na #503 (#502 má Z1)); koordinace může přečíslovat. Větev claude/d5-rozhodnuti-k6 (D5); číslo verze může koordinace při slučování přečíslovat."
+  },
+  {
+   "id": "504",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "nazev": "Hromadný export controllingu za období: přesný výběr z rejstříku, dávky a souběh (413 / 504)",
+   "proc": "Hlášení J. V. 22. 10. 2026 (ostrá verze, Nastavení → Controlling → Export předkalkulace → Hromadně za období): 1.–22. 10. → „muselo by se přečíst 633 zakázek (strop 600)“, 12.–22. 10. → „server odpověděl 504“. Předvýběr bral každou zakázku s odeslanou nabídkou upravenou v období (hromadné přeuložení, migrace) a server četl sekvenčně do vypršení funkce.",
+   "detail": "HOTOVO (E1): rejstřík nese `ctrlDny` (dny zámků v Praze s řadou varianty, den prodeje z objednaných příplatků; `{ cist: true }` = rozhodne přečtená zakázka) — ctrlRejstrikDny, uloRejstrikZaznam/Normalizuj; předvýběr ctrlHromadnyKandidati vybírá podle dnů ± rezerva 2 dny, starší záznamy bez dnů hrubým předvýběrem jako dřív, server je dopočítává po dávkách při ukládání (jako adresy, ULO_ADRESY_DAVKA). Export čte souběžně (12) s časovým rozpočtem 5 s a nejvýš 150 zakázkami na dávku, vrací kurzor `dalsi`; prohlížeč (ctrlHromadnyStahni) skládá dávky do jednoho souboru, protokol jeden záznam (probiha → hotovo / odmitnuto), navazující dávka jen ke svému exportu a stejné verzi mapování. Strop čtení 3000, zakázek v souboru 1000; vypršený dotaz → česká hláška s radou kratšího období. ctrlDenPraha drží jeden formátovač (byl nejdražší částí předvýběru).",
+   "hotovoKdyz": "Testy s pojistkou (src/test_controlling.js, netlify/test_controlling.mjs, netlify/test_rejstrik.mjs) zelené, mutace „#504“ jádra i serveru bez přeživších, `--kontrola` obou.",
+   "kde": "`src/controlling.js`, `src/uloziste.js`, `src/ui/controlling_ui.js`, `netlify/functions/controlling_export.mjs`, `netlify/functions/zakazky.mjs`",
+   "zavisi": [
+    {
+     "id": "447",
+     "typ": "nutne",
+     "proc": "hromadný export controllingu (C3) vznikl v #447"
+    }
+   ],
+   "hotovoV": "v22.10.5",
+   "pozn": "Číslo přidělila koordinace ŘÍDÍCÍ 22.10 (dávka E1, větev claude/e1-export-obdobi). Volitelně později: admin akce „dopočítat rejstřík najednou“ — zatím stačí dopočet při ukládání."
   }
  ],
  "meta" : {

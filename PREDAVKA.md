@@ -1,3 +1,25 @@
+# Předávka — 22. 10. 2026 večer: E1 — hromadný export controllingu za období (#504), větev `claude/e1-export-obdobi`
+
+Nad integrací 4ce35d2 (v22.10.5), verze zůstává **22.10.5** (oddíl CHANGELOG `## v22.10.5 — E1`). **Do integrace /
+test nic** — slučuje koordinace (session_013yuBUKmpUYvEnjxWjGi5kj, „ŘÍDÍCÍ 22.10“).
+
+- **Příčina 413 (633 > 600):** předvýběr bral každou zakázku s odeslanou nabídkou upravenou v období (hromadné
+  přeuložení). **Příčina 504:** sekvenční čtení zakázek do vypršení funkce Netlify (10 s).
+- **Hotovo:** rejstřík nese `ctrlDny` (dny zámků v Praze + řada varianty, den prodeje; `{cist:true}` = rozhodne
+  přečtená zakázka) — `ctrlRejstrikDny` (controlling.js), `uloRejstrikZaznam/Normalizuj/BezDnu` (uloziste.js);
+  `ctrlHromadnyKandidati` podle dnů ± 2 dny, starší záznamy hrubě jako dřív; dopočet starších záznamů při ukládání
+  v `zakazky.mjs` (25 najednou, spolu s adresami). Export (`controlling_export.mjs`) čte souběžně 12, rozpočet 5 s /
+  150 zakázek na dávku, kurzor `dalsi`, protokol jeden záznam (`id`, `stav` probiha/hotovo/odmitnuto, `verzeMapovani`).
+  Prohlížeč `ctrlHromadnyStahni` skládá dávky, `ctrlHromadnyChybaText` (bez „504“). Stropy: čtení 3000, soubor 1000
+  zakázek. `ctrlDenPraha` s jedním formátovačem. Příručka: novinky v22.10.5 + odstavec hromadného exportu.
+- **Rozhodnutí udělaná v sezení (návrh pro J. V., ověřit):** (1) dopočet starších záznamů jen při ukládání (žádná
+  admin akce, žádný zápis rejstříku z exportu — ten by přidal souběžný zápis rejstříku bez zámku); (2) strop
+  zakázek v jednom souboru zvednut 150 → 1000 (zadání „300 nespadne“), (3) výběr oblasti OCK/PROJ dál až nad
+  přečtenou zakázkou (rejstřík stranu nenese).
+- **Testy / mutace:** viz CHANGELOG a zprávu koordinaci.
+- **Další krok:** koordinace sloučí a pustí celé kolo (prohlížečové sady — hlavně `overit_controlling.mjs` — jsem
+  nespouštěl).
+
 # Předávka — 22. 10. 2026 odpoledne (2): Z1 — harnessy po kole nad 1e40538, větev `claude/z1-zmrazeni-kl`
 
 **Zprávu koordinaci nešlo doručit (session_01X93Edh1U8MQru6HV28FdBY neaktivní) — tenhle oddíl ji nahrazuje.**

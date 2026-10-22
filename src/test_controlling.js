@@ -386,10 +386,10 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     { soubor: 'e.json', cislo: 'E', odeslane: 1, rada: '' } ] };
   const fo = F({ od: '2026-10-01', do: '2026-10-31' }).filtr;
   test('C3 předvýběr: jen s odeslanou nabídkou a s úpravou v období (rezerva 2 dny na hodiny) nebo bez razítka',
-    C.ctrlHromadnyKandidati(rej, fo).map(z => z.soubor).join(',') === 'a.json,c.json,f.json,e.json', C.ctrlHromadnyKandidati(rej, fo));
+    C.ctrlHromadnyKandidati(rej, fo).map(z => z.soubor).join(',') === 'a.json,c.json,e.json,f.json', C.ctrlHromadnyKandidati(rej, fo));   // #504: seřazeno podle souboru (kurzor dávek)
   test('C3 předvýběr: řada ZAHR / ČR podle rejstříku',
     C.ctrlHromadnyKandidati(rej, Object.assign({}, fo, { rada: 'zahr' })).map(z => z.soubor).join(',') === 'c.json'
-    && C.ctrlHromadnyKandidati(rej, Object.assign({}, fo, { rada: 'cr' })).map(z => z.soubor).join(',') === 'a.json,f.json,e.json');
+    && C.ctrlHromadnyKandidati(rej, Object.assign({}, fo, { rada: 'cr' })).map(z => z.soubor).join(',') === 'a.json,e.json,f.json');
 
   if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     const zak = zakazkaZamcena();
@@ -484,5 +484,91 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   }
 }
 
-console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
-if (fail) process.exit(1);
+/* ---------- #504 (22. 10. 2026): výběr kandidátů podle dnů v rejstříku, dávky exportu ----------
+ * Hlášení J. V.: 1.–22. 10. → 413 (633 kandidátů nad strop 600), 12.–22. 10. → 504.
+ * Před opravou 0 / 9 prošlo (funkce a pole neexistovaly, předvýběr bral každou
+ * zakázku upravenou v období), po opravě 9 / 9. */
+{
+  const ULO = require('./uloziste.js');
+  const varianta = (id, kdy, rada, zamceno) => ({ id, ridici: id === 'v1', data: rada ? { cenikRada: rada } : {},
+    zamek: kdy ? { zamceno: zamceno !== false, kdy } : null });
+  const zak = (varianty, objednane) => ({ varianty, ...(objednane ? { objednane } : {}) });
+  test('#504: dny zámků v českém čase a s řadou varianty (bez duplicit, nezamčená a vadný čas vynechány)',
+    JSON.stringify(C.ctrlRejstrikDny(zak([varianta('v1', '2026-10-31T23:30:00Z'), varianta('v2', '2026-10-05T09:00:00Z', 'zahr'),
+      varianta('v3', '2026-10-05T10:00:00Z', 'zahr'), varianta('v4', '2026-10-06T09:00:00Z', '', false), varianta('v5', 'nesmysl')])))
+    === JSON.stringify({ zamky: [{ den: '2026-11-01', rada: 'cr' }, { den: '2026-10-05', rada: 'zahr' }], prodej: null }),
+    C.ctrlRejstrikDny(zak([varianta('v1', '2026-10-31T23:30:00Z')])));
+  test('#504: den prodeje jen u zamčené prodané varianty; datum jiného tvaru i rozbitý tvar → „čti vždy"',
+    JSON.stringify(C.ctrlRejstrikDny(zak([varianta('v1', '2026-10-01T09:00:00Z', 'zahr')], { varianta: 'v1', klice: ['a'], datum: '2026-10-25' })).prodej)
+      === JSON.stringify({ den: '2026-10-25', rada: 'zahr' })
+    && C.ctrlRejstrikDny(zak([varianta('v1', null)], { varianta: 'v1', klice: ['a'], datum: '2026-10-25' })).prodej === null
+    && C.ctrlRejstrikDny(zak([varianta('v1', '2026-10-01T09:00:00Z')], { varianta: 'v1', klice: [], datum: '2026-10-25' })).prodej === null
+    && C.ctrlRejstrikDny(zak([varianta('v1', '2026-10-01T09:00:00Z')], { varianta: 'v1', klice: ['a'], datum: '25. 10. 2026' })).cist === true
+    && C.ctrlRejstrikDny(zak([varianta('v1', '2026-10-01T09:00:00Z')], { varianta: 'v1', klice: ['a'], datum: { toString: 1 } })).cist === true
+    && C.ctrlRejstrikDny({ varianty: 'nesmysl' }).cist === true && C.ctrlRejstrikDny(null).cist === true);
+
+  /* 700 zakázek upravených včera (hromadné přeuložení), zamčených v září; 30 v říjnu. */
+  const F = C.ctrlHromadnyFiltr;
+  const rej = Array.from({ length: 700 }, (_, i) => ({ soubor: 'z' + String(i).padStart(4, '0') + '.json', cislo: 'Z' + i, odeslane: 1,
+    upraveno: '2026-10-21T10:00:00Z', ctrlDny: { zamky: [{ den: i < 30 ? '2026-10-' + String(1 + (i % 22)).padStart(2, '0') : '2026-09-10',
+      rada: i % 3 ? 'cr' : 'zahr' }], prodej: i === 5 ? { den: '2026-10-25', rada: 'zahr' } : null } }));
+  const fR = F({ od: '2026-10-01', do: '2026-10-22' }).filtr;
+  test('#504: z 700 zakázek upravených včera jsou kandidáti jen ti 30 zamčení v období',
+    C.ctrlHromadnyKandidati(rej, fR).length === 30, C.ctrlHromadnyKandidati(rej, fR).length);
+  test('#504: řada podle zamčené varianty, výběr podle prodeje podle dne prodeje, rezerva 2 dny na okrajích',
+    C.ctrlHromadnyKandidati(rej, Object.assign({}, fR, { rada: 'zahr' })).length === 10
+    && C.ctrlHromadnyKandidati(rej, F({ od: '2026-10-25', do: '2026-10-25', podle: 'prodej' }).filtr).map(k => k.soubor).join() === 'z0005.json'
+    && C.ctrlHromadnyKandidati(rej, F({ od: '2026-10-25', do: '2026-10-25', podle: 'prodej', rada: 'cr' }).filtr).length === 0
+    && C.ctrlHromadnyKandidati(rej, F({ od: '2026-09-01', do: '2026-09-08' }).filtr).length === 670
+    && C.ctrlHromadnyKandidati(rej, F({ od: '2026-09-01', do: '2026-09-07' }).filtr).length === 0);
+  const stare = rej.map(z => { const x = { ...z }; delete x.ctrlDny; return x; });
+  stare.push({ soubor: 'cist.json', cislo: 'C', odeslane: 1, upraveno: '2026-10-21T10:00:00Z', ctrlDny: { cist: true } });
+  test('#504: starší záznamy bez dnů (a „čti vždy") → hrubý předvýběr jako dřív, označené jako starší',
+    C.ctrlHromadnyKandidati(stare, fR).length === 701 && C.ctrlHromadnyKandidati(stare, fR).filter(k => k.stary).length === 700
+    && C.ctrlHromadnyKandidati(stare, F({ od: '2026-10-24', do: '2026-10-31' }).filtr).length === 0);
+  test('#504: kandidáti seřazení podle souboru, kurzor vrátí jen ty za ním',
+    C.ctrlHromadnyZa(C.ctrlHromadnyKandidati(rej, fR), 'z0027.json').map(k => k.soubor).join() === 'z0028.json,z0029.json');
+  test('#504: rejstřík dny normalizuje (platný tvar zůstane, vadný zmizí, celý záznam z uloRejstrikZaznam je nese)',
+    JSON.stringify(ULO.uloRejstrikNormalizuj([rej[5]])[0].ctrlDny) === JSON.stringify(rej[5].ctrlDny)
+    && ULO.uloRejstrikNormalizuj([{ soubor: 'a.json', ctrlDny: { zamky: [{ den: '1. 10.' }] } }])[0].ctrlDny === undefined
+    && ULO.uloRejstrikNormalizuj([{ soubor: 'a.json', ctrlDny: { zamky: 'x' } }])[0].ctrlDny === undefined
+    && ULO.uloRejstrikNormalizuj([{ soubor: 'a.json', ctrlDny: { cist: true, zamky: [] } }])[0].ctrlDny.cist === true
+    && ULO.uloRejstrikBezDnu([rej[0], { soubor: 'b.json' }]).join() === 'b.json'
+    && JSON.stringify(ULO.uloRejstrikZaznam(zak([varianta('v1', '2026-10-31T23:30:00Z')]), { soubor: 'a.json' }).ctrlDny)
+      === JSON.stringify({ zamky: [{ den: '2026-11-01', rada: 'cr' }], prodej: null }));
+
+  /* Prohlížeč skládá dávky v pořadí kurzoru do jednoho výsledku. */
+  const davky = { '': { export: 'abcdefgh1234', exporty: [{ n: 1 }, { n: 2 }], preskoceno: [{ s: 'a' }], dalsi: 'b.json', kandidatu: 5, zpracovano: 2, data: { d: 1 } },
+    'b.json': { export: 'abcdefgh1234', exporty: [{ n: 3 }], preskoceno: [], dalsi: 'd.json', kandidatu: 5, zpracovano: 4 },
+    'd.json': { export: 'abcdefgh1234', exporty: [{ n: 4 }], preskoceno: [{ s: 'e' }], dalsi: null, kandidatu: 5, zpracovano: 5 } };
+  const cesty = [];
+  const api = async (c) => { cesty.push(c); const q = new URLSearchParams(c.split('?')[1]); return davky[q.get('po') || '']; };
+  (async () => {
+    const prubeh = [];
+    const o = await C.ctrlHromadnyStahni(api, fR, (h, c) => prubeh.push(h + '/' + c));
+    test('#504: dávky se složí v pořadí (exporty, přeskočené, data z první), id a kurzor jdou s dotazem',
+      o.exporty.map(e => e.n).join() === '1,2,3,4' && o.preskoceno.map(p => p.s).join() === 'a,e' && o.data.d === 1 && o.davek === 3
+      && !('dalsi' in o) && cesty.length === 3 && !/export=/.test(cesty[0]) && /export=abcdefgh1234&po=b.json/.test(cesty[1])
+      && prubeh.join() === '2/5,4/5,5/5', { o, cesty, prubeh });
+    let chyba = '';
+    try { await C.ctrlHromadnyStahni(async () => ({ export: 'abcdefgh1234', exporty: [], dalsi: 'a.json' }), fR); }
+    catch (e) { chyba = e.message; }
+    test('#504: server, který kurzor neposune, skončí chybou (žádná nekonečná smyčka)', /neposunul/.test(chyba), chyba);
+    const t504 = C.ctrlHromadnyChybaText(Object.assign(new Error('server odpověděl 504'), { stav: 504, data: {} }));
+    const tSit = C.ctrlHromadnyChybaText(new TypeError('Failed to fetch'));
+    const t413 = C.ctrlHromadnyChybaText(Object.assign(new Error('Do období spadá víc než 1000 zakázek'), { stav: 413, data: { chyba: 'x' } }));
+    test('#504: vypršený dotaz a přerušené spojení → česky „kratší období", bez kódu 504; hláška serveru zůstane',
+      /kratší období/.test(t504) && !/504/.test(t504) && /kratší období/.test(tSit) && /1000 zakázek/.test(t413), { t504, tSit, t413 });
+    const P = { zaznamy: [{ id: 'abcdefgh1234', kdo: 'a@b.cz', stav: 'probiha', od: fR.od, do: fR.do, oblast: 'obe', rada: 'obe', podle: 'zamceni', zakazek: 2, radku: 10, preskoceno: 1, davek: 1 }] };
+    test('#504: navazující dávka jen ke svému běžícímu exportu; dávka se přičte',
+      !!C.ctrlProtokolNavaz(P, 'abcdefgh1234', fR, 'a@b.cz') && !C.ctrlProtokolNavaz(P, 'abcdefgh1234', fR, 'c@b.cz')
+      && !C.ctrlProtokolNavaz(P, 'abcdefgh1234', Object.assign({}, fR, { rada: 'cr' }), 'a@b.cz')
+      && !C.ctrlProtokolNavaz({ zaznamy: [Object.assign({}, P.zaznamy[0], { stav: 'hotovo' })] }, 'abcdefgh1234', fR, 'a@b.cz')
+      && JSON.stringify(C.ctrlProtokolDavka(P, 'abcdefgh1234', { zakazek: 3, radku: 5, preskoceno: 0 }, 'hotovo').zaznamy[0])
+        === JSON.stringify(Object.assign({}, P.zaznamy[0], { zakazek: 5, radku: 15, preskoceno: 1, davek: 2, stav: 'hotovo' })));
+    test('#504: strop čtení unese běžný měsíc i hrubý předvýběr (≥ 2000), soubor ≥ 300 zakázek',
+      C.CTRL_HROMADNY.cteni >= 2000 && C.CTRL_HROMADNY.zakazek >= 300 && C.CTRL_HROMADNY.casMs < 10000);
+    console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
+    if (fail) process.exit(1);
+  })().catch(e => { console.log('FAIL #504 výjimka ' + e.message); process.exit(1); });
+}

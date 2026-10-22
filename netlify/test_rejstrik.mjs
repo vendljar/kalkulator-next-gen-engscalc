@@ -153,5 +153,37 @@ test('P15: dávkou doplněná adresa sedí na svou zakázku',
   test('N4: objednatel jiného typu než text = prázdný', !!r && r.objednatel === '', r && r.objednatel);
 }
 
+/* 7) #504 (22. 10. 2026): dny zámků v rejstříku pro hromadný export controllingu.
+ * Nově uložená zakázka je nese; starší záznamy bez nich doplní server po
+ * dávkách při ukládání (stejně jako adresy) a zmizelá zakázka dostane
+ * „čti vždy". Před opravou 0 / 3, po ní 3 / 3. */
+{
+  const u = await uloz(nova('2026 - OPR - CN - 0905', 'Nová 11, Kolín'));
+  const r = await zaznam('2026-OPR-CN-0905.json', cA);
+  test('#504: nově uložená (nezamčená) zakázka má v rejstříku prázdné dny zámků',
+    u.ok === true && !!r && JSON.stringify(r.ctrlDny) === JSON.stringify({ zamky: [], prodej: null }), r && r.ctrlDny);
+  /* Zamčená zakázka zapsaná do úložiště mimo tuhle funkci a starší rejstřík bez dnů. */
+  const zam = nova('2026 - OPR - CN - 0906', 'Nová 12, Kolín');
+  globalThis.zamkniVariantu(zam.varianty[0], { cislo: '2026 - OPR - CN - 0906', kdo: 'admin@priklad.cz', typ: 'nabidka' });
+  zam.varianty[0].zamek.kdy = '2026-10-31T23:30:00Z';
+  zam.varianty[0].data.cenikRada = 'zahr';
+  pamet.set('zakazky/z/2026-OPR-CN-0906.json', JSON.stringify(zam));
+  const rj = JSON.parse(pamet.get('zakazky/_rejstrik'));
+  rj.zakazky.forEach(x => { delete x.ctrlDny; });
+  rj.zakazky.push({ soubor: '2026-OPR-CN-0906.json', cislo: '2026 - OPR - CN - 0906', odeslane: 1, adresa: '' });
+  pamet.set('zakazky/_rejstrik', JSON.stringify(rj));
+  const celkem = rj.zakazky.length;
+  await uloz(nova('2026 - OPR - CN - 0907', 'Nová 13, Kolín'));
+  const po1 = await rejstrik(cA);
+  test('#504: jedno uložení doplní dny nejvýš ' + ULO.ULO_ADRESY_DAVKA + ' starším záznamům',
+    po1.filter(z => !z.ctrlDny).length === celkem - ULO.ULO_ADRESY_DAVKA, { bez: po1.filter(z => !z.ctrlDny).length, celkem });
+  for (let i = 0; i < 4; i++) await uloz(nova('2026 - OPR - CN - 09' + (10 + i), 'Nová 13, Kolín'));
+  const po = await rejstrik(cA);
+  const z6 = po.find(z => z.soubor === '2026-OPR-CN-0906.json');
+  test('#504: dopočtené dny sedí na zakázku (den v Praze, řada) a sirotek dostane „čti vždy"',
+    po.every(z => !!z.ctrlDny) && !!z6 && JSON.stringify(z6.ctrlDny) === JSON.stringify({ zamky: [{ den: '2026-11-01', rada: 'zahr' }], prodej: null })
+    && (po.find(z => z.soubor === 'zmizela.json') || {}).ctrlDny.cist === true, { z6, bez: po.filter(z => !z.ctrlDny).map(z => z.soubor) });
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);

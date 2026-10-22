@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.10.5 — E1: hromadný export controllingu za období (#504, větev claude/e1-export-obdobi)
+
+Nad integrací 4ce35d2 (v22.10.5). Hlášení J. V. 22. 10. 2026 z ostré verze: export 1.–22. 10. → „muselo by se
+přečíst 633 zakázek (strop 600)", 12.–22. 10. → „server odpověděl 504". Roadmapa #504.
+
+- **Přesný předvýběr:** záznam rejstříku nese `ctrlDny` — dny zámků zamčených variant (v Praze, s řadou té varianty)
+  a den prodeje z objednaných příplatků (`ctrlRejstrikDny`; nejasný tvar → `{ cist: true }`, zakázku přečte server).
+  `ctrlHromadnyKandidati` vybírá podle dne zámku / prodeje v období ± 2 dny, ne podle poslední úpravy — hromadné
+  přeuložení už nevytáhne zakázky z jara. Konečné rozhodnutí dál dělá `ctrlHromadnyZakazka` nad přečtenou zakázkou.
+- **Starší záznamy bez dnů:** hrubý předvýběr jako dřív (odeslaná nabídka, řada, úprava v období); server je dopočítává
+  po dávkách při ukládání zakázky (25 najednou, jedno čtení doplní adresu i dny), zmizelá zakázka dostane „čti vždy".
+- **Odolnost proti 504:** export čte zakázky souběžně (12) a po dávkách s časovým rozpočtem 5 s / nejvýš 150 zakázek;
+  odpověď nese kurzor `dalsi` a prohlížeč (`ctrlHromadnyStahni`) pošle další dávky a složí jeden soubor (průběh
+  „zpracováno N z M"). Protokol vede jeden záznam na export (`probiha` → `hotovo` / `odmitnuto`); navazující dávka
+  projde jen ke svému běžícímu exportu se stejným filtrem a stejnou verzí mapování, čas exportu je z první dávky.
+- **Stropy:** čtení 3000 kandidátů, 1000 zakázek v jednom souboru (sčítá se přes dávky), 5 MB na odpověď dávky.
+- **Hlášky:** vypršený dotaz / přerušené spojení → „Server export za zvolené období nestihl připravit … Zkuste kratší
+  období, třeba jeden týden" (bez kódu 504); v protokolu exportů „(nedokončen)" / „(odmítnut)".
+- **Rychlost:** `ctrlDenPraha` staví `Intl.DateTimeFormat` jednou — nový formátovač na každé volání byl nejdražší
+  částí předvýběru (sada se 700 zakázkami 9,5 s → 2,9 s).
+- **Testy s pojistkou:** `src/test_controlling.js` 212/0 (12 nových #504; nad 4ce35d2 spadne na chybějící
+  `ctrlRejstrikDny`), `netlify/test_controlling.mjs` 64/0 (10 nových #504; nad 4ce35d2 0/10 — 700 kandidátů místo 300,
+  dávky neexistují), `netlify/test_rejstrik.mjs` 24/0 (3 nové; nad 4ce35d2 0/3). Dvě starší očekávání C3 upravena
+  na řazení kandidátů podle souboru (kurzor dávek) a C6 na záznam rejstříku jako po uložení na serveru.
+- **Mutace:** jádro „#504" 11 nových, server „#504" 14 nových; 4 starší mutace C3 přesměrovány na nové znění kódu.
+
 ## v22.10.5 — Z1: odpovědi J. V. k otázkám zmrazení krycích listů (větev claude/z1-zmrazeni-kl)
 
 Nad integrací d28e48a (= test v22.10.2 + Z1 f73f9ab + D5 v22.10.4; sloučeno do větve Z1). Rozhodnutí J. V. 22. 10. 2026.

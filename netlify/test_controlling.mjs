@@ -13,8 +13,12 @@
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
 process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
 const pamet = new Map();
+/* #504: zpoždění čtení zakázky (ms) — simulace úložiště Blobs pro souběh a časový rozpočet. */
+let zpozdeni = 0;
 globalThis.__TEST_ULOZISTE = (nazev) => ({
-  async cti(k) { return pamet.has(nazev + '/' + k) ? JSON.parse(pamet.get(nazev + '/' + k)) : null; },
+  async cti(k) {
+    if (zpozdeni && nazev === 'zakazky' && k.startsWith('z/')) await new Promise(r => setTimeout(r, zpozdeni));
+    return pamet.has(nazev + '/' + k) ? JSON.parse(pamet.get(nazev + '/' + k)) : null; },
   async zapis(k, v) { pamet.set(nazev + '/' + k, JSON.stringify(v)); },
   async seznam(prefix) { return [...pamet.keys()].filter(x => x.startsWith(nazev + '/' + (prefix || '')))
     .map(x => x.slice(nazev.length + 1)); },
@@ -205,8 +209,9 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     const z = G.importZakazka(await sZ.cti('z/' + soub));
     z.objednane = { varianta: z.varianty[0].id, klice: [G.objNabidnute(z.varianty[0], JEKLY)[0].key], datum: '2026-10-25' };
     await sZ.zapis('z/' + soub, z);
-    /* Razítko úpravy jako po uložení na serveru (zápis prodeje = uložení zakázky). */
-    rejstrik.find(r => r.soubor === soub).upraveno = '2026-10-25T12:00:00Z';
+    /* Záznam rejstříku jako po uložení na serveru (zápis prodeje = uložení
+     * zakázky; #504: záznam nese i den prodeje). */
+    rejstrik[rejstrik.findIndex(r => r.soubor === soub)] = G.uloRejstrikZaznam(z, { soubor: soub, razitko: '2026-10-25T12:00:00Z' });
     await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik }); }
   const eP = await ex('?od=2026-10-25&do=2026-10-25&podle=prodej', cAdmin);
   test('C6: hromadně podle data prodeje jen prodaná zakázka s objednaným řádkem', cisla(eP.o) === '2026 - OPR - CN - 0801'
@@ -237,6 +242,117 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     test('K6-S6: výjimka u jedné zakázky v exportu → 200, zakázka mezi přeskočenými', eS.st === 200
       && (eS.o.preskoceno || []).some(p => p.soubor === sb), eS);
     rejstrik.pop(); await sZ.smaz('z/' + sb); await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
+  }
+
+  /* #504 (22. 10. 2026, hlášení J. V.): „exporty od určité velikosti nefungují" —
+   * 1.–22. 10. skončilo 413 (633 kandidátů nad strop 600), protože předvýběr
+   * bral každou zakázku upravenou v období; pod stropem server četl sekvenčně
+   * a funkce vypršela (504). Rejstřík: 300 zakázek zamčených v říjnu a 400
+   * v září, všechny upravené 21. 10. (hromadné přeuložení). Před opravou
+   * 0 / 10 prošlo (413 nad strop čtení, strop 150 zakázek v souboru, dávky nebyly),
+   * po opravě 10 / 10. */
+  {
+    const M = C.CTRL_HROMADNY;
+    const puvodne = { ...M };
+    const vzor = zamcena('2026 - OPR - CN - 5000', '2026-10-01T09:00:00Z');
+    const rej504 = [];
+    /* Kopie vzoru náhradou v textu (rychlejší než 700× klonovat objekt — sada běží v každé mutaci). */
+    const tpl = JSON.stringify(vzor);
+    for (let i = 0; i < 700; i++) {
+      const cislo = '2026 - OPR - CN - ' + (5001 + i);
+      const kdy = i < 300 ? '2026-10-' + String(1 + (i % 22)).padStart(2, '0') + 'T09:00:00Z'
+        : '2026-09-' + String(1 + (i % 25)).padStart(2, '0') + 'T09:00:00Z';
+      const text = tpl.split('2026 - OPR - CN - 5000').join(cislo).split('2026-10-01T09:00:00Z').join(kdy);
+      const z = JSON.parse(text);
+      const soubor = G.uloJmenoSouboru(z);
+      pamet.set('zakazky/z/' + soubor, text);
+      rej504.push(G.uloRejstrikZaznam(z, { soubor, razitko: '2026-10-21T10:00:00Z' }));
+    }
+    await sZ.zapis('_rejstrik', { schema: 1, zakazky: rej504 });
+    const fRijen = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-22' }).filtr;
+    test('#504: z 700 zakázek upravených včera jsou kandidáti jen ti zamčení v období (300)',
+      C.ctrlHromadnyKandidati(await sZ.cti('_rejstrik'), fRijen).length === 300, C.ctrlHromadnyKandidati(await sZ.cti('_rejstrik'), fRijen).length);
+    let volani = 0;
+    const api = async (cesta) => {
+      volani++;
+      const r = await get(controllingExport, 'http://x' + cesta, cAdmin);
+      const o = await r.json();
+      if (!r.ok || o.ok === false) { const e = new Error(o.chyba || ('server odpověděl ' + r.status)); e.stav = r.status; e.data = o; throw e; }
+      return o;
+    };
+    const stahni = async (f) => { volani = 0; try { return await C.ctrlHromadnyStahni(api, f); } catch (e) { return { chyba: e.message, stav: e.stav }; } };
+    const pocetProt = async () => ((await sProgCti()).zaznamy || []).length;
+    const sProgCti = async () => (await ulz('program').cti('controlling_exporty')) || {};
+    const prot0 = await pocetProt();
+    const e300 = await stahni(fRijen);
+    test('#504: export 300 zakázek za 1.–22. 10. nespadne na strop', !e300.chyba && (e300.exporty || []).length === 300
+      && !(e300.preskoceno || []).length, e300.chyba || (e300.exporty || []).length);
+    const p300 = (await sProgCti()).zaznamy || [];
+    test('#504: protokol má jeden záznam na export, dokončený, s počtem zakázek',
+      p300.length === prot0 + 1 && p300[0].stav === 'hotovo' && p300[0].zakazek === 300 && p300[0].davek >= 1, p300[0]);
+
+    /* Dávkování a souběh vrátí tentýž obsah jako jeden sekvenční dotaz. */
+    const fKratke = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-03' }).filtr;
+    /* Čas exportu (`kdy`) má každý běh vlastní — porovnává se obsah bez něj. */
+    const obsah = (o) => JSON.stringify({ e: (o.exporty || []).map(e => ({ ...e, kdy: '' })), p: o.preskoceno });
+    Object.assign(M, { soubeh: 1, davkaMax: 100000, casMs: 1e9 });
+    const sekv = await stahni(fKratke);
+    const sekvVolani = volani;
+    Object.assign(M, { soubeh: 1, davkaMax: 7 });
+    const davky = await stahni(fKratke);
+    const davkyVolani = volani;
+    Object.assign(M, { soubeh: 12, davkaMax: 100000, casMs: 15 });
+    zpozdeni = 4;
+    const soub = await stahni(fKratke);
+    const soubVolani = volani;
+    zpozdeni = 0;
+    Object.assign(M, puvodne);
+    test('#504: dávky po 7 i souběh 12 se zpožděným úložištěm a rozpočtem 15 ms = tentýž obsah jako sekvenční běh',
+      !sekv.chyba && sekv.exporty.length > 30 && sekvVolani === 1 && davkyVolani > 1 && soubVolani > 1
+      && obsah(davky) === obsah(sekv) && obsah(soub) === obsah(sekv),
+      { sekv: sekv.chyba || sekv.exporty.length, sekvVolani, davkyVolani, soubVolani, d: davky.chyba, s: soub.chyba });
+
+    /* Navazující dávka serveru nevěří: kurzor bez exportu, cizí id, jiný filtr. */
+    const st = async (q) => (await get(controllingExport, URL_E + q, cAdmin)).status;
+    const idHot = ((await sProgCti()).zaznamy || [])[0].id;
+    test('#504: kurzor bez id exportu → 400, neznámé nebo dokončené id → 409',
+      await st('?od=2026-10-01&do=2026-10-03&po=x.json') === 400
+      && await st('?od=2026-10-01&do=2026-10-03&export=abcdefgh12345678&po=x.json') === 409
+      && await st('?od=2026-10-01&do=2026-10-03&export=' + idHot + '&po=x.json') === 409
+      && await st('?od=2026-10-01&do=2026-10-03&export=' + encodeURIComponent('../x') + '&po=x.json') === 400);
+    Object.assign(M, { davkaMax: 5 });
+    const prvni = await (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-03', cAdmin)).json();
+    Object.assign(M, puvodne);
+    test('#504: navazující dávka s jiným filtrem než první → 409', !!prvni.dalsi
+      && await st('?od=2026-10-01&do=2026-10-04&export=' + prvni.export + '&po=' + encodeURIComponent(prvni.dalsi)) === 409, prvni.dalsi);
+
+    test('#504: všechny dávky jednoho exportu nesou týž čas exportu (z první dávky)',
+      new Set((davky.exporty || []).map(e => e.kdy)).size === 1 && new Set((soub.exporty || []).map(e => e.kdy)).size === 1);
+    /* Strop zakázek v souboru se sčítá přes dávky; odmítnutý export je v protokolu tak označený. */
+    Object.assign(M, { davkaMax: 5, zakazek: 12 });
+    const eStrop = await stahni(fKratke);
+    Object.assign(M, puvodne);
+    test('#504: strop zakázek v jednom souboru platí přes všechny dávky (413), protokol „odmítnuto"',
+      eStrop.stav === 413 && /kratší období/.test(eStrop.chyba || '') && ((await sProgCti()).zaznamy || [])[0].stav === 'odmitnuto', eStrop);
+    /* Starší záznamy rejstříku bez dnů zámků: hrubý předvýběr jako dřív — export dál správný. */
+    const bezDnu = (await sZ.cti('_rejstrik')).zakazky.map(z => { const x = { ...z }; delete x.ctrlDny; return x; });
+    await sZ.zapis('_rejstrik', { schema: 1, zakazky: bezDnu });
+    const eStare = await stahni(fKratke);
+    test('#504: starší rejstřík bez dnů zámků — předvýběr hrubý (700), export týž jako s dny',
+      C.ctrlHromadnyKandidati({ zakazky: bezDnu }, fKratke).length === 700 && !eStare.chyba && obsah(eStare) === obsah(sekv),
+      eStare.chyba || (eStare.exporty || []).length);
+    /* Změna mapování mezi dávkami: navazující dávka se odmítne (soubor by míchal dvě verze). */
+    Object.assign(M, { davkaMax: 5 });
+    const d1 = await (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-03', cAdmin)).json();
+    const dm = C.ctrlVychozi(); dm.mapa['K.k7'] = 'mat-ostatni'; dm.mapa['C.transportKc'] = 'cestovne';
+    const pm = await (await post(controllingFn, URL_C, { data: dm, poznamka: 'změna během exportu' }, cAdmin)).json();
+    const d2 = await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-03&export=' + d1.export + '&po=' + encodeURIComponent(d1.dalsi || ''), cAdmin);
+    Object.assign(M, puvodne);
+    test('#504: změna mapování mezi dávkami → navazující dávka 409', !!d1.dalsi && pm.ok === true && d2.status === 409, { d: d1.dalsi, pm, st: d2.status });
+
+    Object.assign(M, puvodne);
+    for (const z of rej504) await sZ.smaz('z/' + z.soubor);
+    await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
   }
 }
 
