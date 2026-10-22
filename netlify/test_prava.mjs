@@ -62,6 +62,7 @@ import analytikaFn from './functions/analytika.mjs';
 import pdPole from './functions/pd_pole.mjs';
 import pdDealy from './functions/pd_dealy.mjs';
 import pdDeal from './functions/pd_deal.mjs';
+import pdStavFn from './functions/pd_stav.mjs';
 import { config as configNocni } from './functions/zaloha_nocni.mjs';
 import { ADMIN_EMAIL, ROLE, POKUSY_MAX, POKUSY_IP_MAX, zpozdeniMs, pokusyReset,
          uloziste, PODPIS_ULOZISTE } from './lib/sdilene.mjs';
@@ -513,6 +514,14 @@ const MATICE = [
     nazev: 'schvalování — sdílený rejstřík (GET /api/schvalovani)',
     metoda: 'GET', url: 'http://x/api/schvalovani',
     proc: 'schvalovatel musí vidět, že někde vznikla žádost, aniž by tu zakázku otevíral',
+    prava: PRIHLASENY_OK },
+
+  /* Stav dealu Pipedrive u zakázky (P1, 22. 10. 2026): vidí ho každý, kdo
+   * vidí zakázku — bez práva crm.pipedrive; deal id bere server z uložené
+   * zakázky. Podrobnosti hlídá test_pd_stav.mjs. */
+  { fn: pdStavFn, soubor: 'pd_stav.mjs', nazev: 'Pipedrive — stav dealu zakázky (GET /api/pd/stav)',
+    metoda: 'GET', url: 'http://x/api/pd/stav?soubor=' + encodeURIComponent(ulozena.soubor),
+    proc: 'jen { status, nacteno } dealu uložené zakázky — informace pro všechny, kdo zakázku vidí',
     prava: PRIHLASENY_OK },
 
   { fn: pdPole, soubor: 'pd_pole.mjs', nazev: 'Pipedrive — mapa vlastních polí (GET /api/pd/pole)',

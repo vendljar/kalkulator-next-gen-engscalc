@@ -185,6 +185,7 @@ const ULOZISTE = {
   uzivatele: 'cele', sablony: 'cele', zakaznici: 'cele', podpisy: 'cele', smazani: 'cele',
   analytika: 'výjimka: statistiky použití, po havárii začnou od nuly (podklad #151, oddíl 3)',
   pd_cache: 'výjimka: cache Pipedrive s osobními daty, maže se po 30 dnech',
+  pd_stav: 'výjimka: poslední známý stav dealu (P1) — při uložení se zapisuje i do zakázky, ta se zálohuje; jinak se znovu načte z Pipedrive',
   pipedrive: 'výjimka: mapa polí Pipedrive, znovu se načte',
   pokusy: 'výjimka: krátkodobá počítadla pokusů přihlášení',
   zalohy: 'výjimka: otisky samy, tokeny obnovy',

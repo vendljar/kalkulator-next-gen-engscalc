@@ -1211,6 +1211,28 @@ function kalkLista(ock) {
  * Zobrazuje se na začátku záložek Kalkulace OCK i Kalkulace PROJ, aby byl
  * kontext (jaká zakázka a která varianta se počítá) vždy na očích.
  * Kompletní správa a přehled variant zůstává v záložce „Přehled cenových nabídek". */
+/* ---------- Stav Pipedrive (P1, rozhodnutí J. V. 22. 10. 2026) ----------
+ * Úplně nahoře v pravém sloupci sdílené hlavičky (OCK i PROJ): štítek v barvě
+ * stavu u popisku + pole stejné šířky jako ostatní. JEN KE ČTENÍ PRO VŠECHNY
+ * (select je vždy disabled, nic nezapisuje), vidí ho každý, nic neovlivňuje
+ * (cena, zámek, SoD, export filtry). Stav plní server (/api/pd/stav při
+ * otevření zakázky, pdStavObnovUI v online_ui.js). Žádný šedý text pod polem.
+ * Třída štítku jen z výčtu; text i čas jdou přes esc(). */
+const PD_STAV_PILL = { open: 'pd-open', lost: 'pd-lost', won: 'pd-won', deleted: 'pd-deleted' };
+function pdStavRadek(zak) {
+  const maDeal = typeof ctrlPdDealIdNorm === 'function' && !!ctrlPdDealIdNorm(zak && zak.pdDealId);
+  const st = (maDeal && typeof pdStavNorm === 'function') ? pdStavNorm(zak.pdStav) : null;
+  const trida = (st && Object.prototype.hasOwnProperty.call(PD_STAV_PILL, st.status)) ? PD_STAV_PILL[st.status] : 'mut';
+  const nazev = st ? PD_STAV_TEXT[st.status] : '';
+  const stitek = st ? nazev : (maDeal ? 'neznámý' : 'nepropojeno');
+  const pole = !maDeal ? '— zakázka nemá deal —' : (st ? nazev : '— stav zatím neznámý —');
+  const kdy = (st && typeof ctrlDenPraha === 'function') ? ctrlDenPraha(st.nacteno) : '';
+  const titul = 'stav obchodu v Pipedrive — jen ke čtení, mění se v Pipedrive'
+    + (kdy ? ' (načteno ' + kdy + ')' : '');
+  return `<div class="row pd-stav-radek"><label>Stav Pipedrive<span class="pill ${trida}" style="margin-left:12px">${esc(stitek)}</span></label>
+    <select class="pd-stav${maDeal ? '' : ' bez-dealu'}" disabled title="${esc(titul)}"><option selected>${esc(pole)}</option></select></div>`;
+}
+
 function zakazkaHlavicka(ock) {
   const akt = aktivniVarianta(ZAK), rid = ridiciVarianta(ZAK);
   zajistiProjHlavicku(ZAK);   // starší zakázka hlavičku PROJ ještě nemá – doplní se
@@ -1311,6 +1333,8 @@ function zakazkaHlavicka(ock) {
   };
 
   // indikátor řídící varianty přímo za popiskem „Otevřená varianta" (odsazený)
+  /* Stav Pipedrive úplně nahoře v pravém sloupci (P1) — OCK i PROJ. */
+  const pdStavRow = pdStavRadek(ZAK);
   const ridiciPill = `<span class="pill ${akt.ridici ? '' : 'mut'}" style="margin-left:12px" title="řídící = aktuálně platná varianta pro nabídku">${akt.ridici ? '✓ řídící' : 'není řídící'}</span>`;
   const variantaRow = `<div class="row"><label>Otevřená varianta${ridiciPill}</label>
     <select class="cteni-ok" onchange="varAktivuj(this.value)" title="přepnout počítanou variantu">${opts}</select></div>`;
@@ -1440,7 +1464,7 @@ function zakazkaHlavicka(ock) {
         <div class="zak-head-col">
           ${zakaznikRow('proj')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico', 'proj')}${dphRowProj}
         </div>
-        <div class="zak-head-col">${variantaRow}${ridiciBtn}${prirazkaRowProj}</div>
+        <div class="zak-head-col">${pdStavRow}${variantaRow}${ridiciBtn}${prirazkaRowProj}</div>
       </div>${puvodRadek}
       <div class="zak-cena noprint">
         ${zakTrojice()}
@@ -1464,7 +1488,7 @@ function zakazkaHlavicka(ock) {
         ${zakaznikRow('ock')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico')}${dphRow}
       </div>
       <div class="zak-head-col">
-        ${variantaRow}${ridiciBtn}${rezimRow}${prirazkaRow}${radaRow}${kurzRow}
+        ${pdStavRow}${variantaRow}${ridiciBtn}${rezimRow}${prirazkaRow}${radaRow}${kurzRow}
       </div>
     </div>${puvodRadek}
     <div class="zak-cena noprint">

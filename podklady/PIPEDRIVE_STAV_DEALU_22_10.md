@@ -31,5 +31,9 @@ Rozhodnutí J. V. 22. 10. 2026 (náhled: https://claude.ai/artifact/UHqdUv62Kax3
 
 ## Stav
 
-Čeká na odsouhlasení náhledu J. V. → pak dávka do aplikace (UI hlavičky + serverové čtení + test
+**Hotovo v22.10.2 (dávka P1, větev `claude/p1-stav-pipedrive`, roadmapa #501)** — viz CHANGELOG. Řešení přenosu:
+`GET /api/pd/stav?soubor=…` při otevření zakázky, poslední známý stav v úložišti `pd_stav`, k zakázce ho připojuje
+server (čtení, uložení, hromadný export).
+
+Původně: čekalo na odsouhlasení náhledu J. V. → pak dávka do aplikace (UI hlavičky + serverové čtení + test
 s pojistkou + mutace). Koordinace: session_01X93Edh1U8MQru6HV28FdBY.

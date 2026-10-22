@@ -567,7 +567,10 @@ function ctrlKatalogNazvy(katalog, cenikProj) {
  * nese JEN náklady v ceně nabídky (kontingenční tabulka bez filtru = náklad
  * nabídky), příplatky-volby jsou na listu „Příplatky – volby"; nové sloupce
  * „Řídící varianta" a „Výsledek" (zmrazený / přepočtený). */
-const CTRL_EXPORT_VERZE = 2;
+/* Verze 3 (P1, 22. 10. 2026): za sloupcem „Pipedrive deal" nové sloupce
+ * „Stav Pipedrive" a „Stav Pipedrive načten" (poslední známý stav dealu,
+ * jen informace — filtry exportu se nemění). */
+const CTRL_EXPORT_VERZE = 3;
 function ctrlExportVarianty(zak, v, opts) {
   const o = opts || {};
   if (!zak || !v) return { ok: false, chyba: 'Není otevřená žádná zakázka.' };
@@ -613,6 +616,7 @@ function ctrlExportVarianty(zak, v, opts) {
     cenikVerze: razitko.verze != null ? String(razitko.verze) : '', cenikOtisk: String(razitko.otisk || ''),
     verzeMapovani: o.verzeMapovani != null ? String(o.verzeMapovani) : 'výchozí',
     pipedrive: String(zak.pdDealId || ''),
+    pdStav: pdStavText(zak), pdStavNacteno: pdStavNactenoText(zak),
     datumProdeje: obj ? String(obj.datum || '') : '',
     zmrazeno: !!(zamek.vysledek),
   };
@@ -772,9 +776,56 @@ function ctrlPdDealKontrola(stara, zak, role) {
   return null;
 }
 
+/* ---------- P1: stav dealu Pipedrive u zakázky (22. 10. 2026) ----------
+ * Rozhodnutí J. V. 22. 10. 2026 (podklady/PIPEDRIVE_STAV_DEALU_22_10.md):
+ * hlavička zakázky ukazuje stav propojeného dealu (Otevřené / Ztracené /
+ * Vyhrané / Smazané), jen ke čtení pro všechny, nic neovlivňuje. Poslední
+ * známý stav nese zakázka jako `zak.pdStav = { status, nacteno }` — pole
+ * plní SERVER (netlify/lib/pd_stav.mjs), prohlížeči se nevěří. Tady je tvar,
+ * whitelist a texty; sdílí je server, obrazovka i export controllingu. */
+const PD_STAVY = ['open', 'lost', 'won', 'deleted'];
+const PD_STAV_TEXT = { open: 'Otevřené', lost: 'Ztracené', won: 'Vyhrané', deleted: 'Smazané' };
+const PD_STAV_NACTENO_TVAR = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
+/* '' = pole chybí (bez stavu), null = neplatný tvar, jinak čistý objekt
+ * jen se dvěma povolenými poli (cizí pole ani `__proto__` neprojdou). */
+function pdStavNorm(x) {
+  if (x === undefined || x === null) return '';
+  if (typeof x !== 'object' || Array.isArray(x)) return null;
+  const klice = Object.keys(x);
+  if (klice.length !== 2 || klice.some(k => k !== 'status' && k !== 'nacteno')) return null;
+  if (typeof x.status !== 'string' || !PD_STAVY.includes(x.status)) return null;
+  if (typeof x.nacteno !== 'string' || !PD_STAV_NACTENO_TVAR.test(x.nacteno) || isNaN(Date.parse(x.nacteno))) return null;
+  return { status: x.status, nacteno: x.nacteno };
+}
+/* Kontrola příchozí zakázky (třída K5-S1/K6-S1): objekt nebo cizí typ → 400,
+ * ne 500. Obsah (kterému dealu stav patří) dosazuje server zvlášť. */
+function pdStavKontrola(zak) {
+  if (pdStavNorm(zak && zak.pdStav) === null)
+    return { status: 400, chyba: 'Stav Pipedrive má neplatný tvar (jen { status, nacteno } ze serveru)' };
+  return null;
+}
+/* Deal z API Pipedrive → stav z whitelistu, nebo '' (neznámý = nic se
+ * nemění). Smazaný deal nese v API v2 `is_deleted`, v1 `status: deleted`. */
+function pdStavZDealu(d) {
+  if (!d || typeof d !== 'object') return '';
+  if (d.is_deleted === true || d.deleted === true) return 'deleted';
+  return PD_STAVY.includes(d.status) ? d.status : '';
+}
+/* Text pro hlavičku a export: '' bez dealu nebo bez známého stavu. */
+function pdStavText(zak) {
+  if (!zak || !ctrlPdDealIdNorm(zak.pdDealId)) return '';
+  const s = pdStavNorm(zak.pdStav);
+  return s ? PD_STAV_TEXT[s.status] : '';
+}
+function pdStavNactenoText(zak) {
+  if (!pdStavText(zak)) return '';
+  return ctrlDenPraha(zak.pdStav.nacteno);
+}
+
 const ctrlZaokr = (x) => Math.round((+x || 0) * 100) / 100;
 const CTRL_RADKY_HLAVICKA = ['Číslo nabídky', 'Název akce', 'Zákazník', 'IČO', 'Datum varianty', 'Zamčeno', 'Zamkl',
   'Řada', 'Model výpočtu', 'Verze ceníku', 'Otisk ceníku', 'Verze mapování', 'Pipedrive deal',
+  'Stav Pipedrive', 'Stav Pipedrive načten',
   'Řídící varianta', 'Výsledek', 'Objednáno dodatečně',
   'Oblast', 'Sekce kalkulace', 'Řádek', 'Klíč', 'Skupina (id)', 'Skupina', 'Položka v ManVysl',
   'Účet Helios nyní', 'Účet Helios budoucí', 'Typ nákladu', 'Chování', 'V základní ceně', 'Ruční / vlastní',
@@ -820,6 +871,7 @@ function ctrlExportListy(exp, data, opts) {
       const pop = ctrlPopisKlice(r.klic);
       (r.vZakladu || r.objednano ? radky : priplatky).push([cisloStrany[r.oblast] || '', h.nazevAkce, h.zakaznik, h.ico, h.datum, h.zamceno, h.zamkl,
         h.rada, h.model, h.cenikVerze, h.cenikOtisk, h.verzeMapovani, h.pipedrive,
+        h.pdStav || '', h.pdStavNacteno || '',
         h.ridici ? 'ano' : 'ne', h.zmrazeno ? 'zmrazený' : 'přepočtený', r.objednano ? 'ano' : 'ne',
         r.oblast.toUpperCase(), r.sekce, r.nazev, r.klic, r.skupina, s.nazev, s.manVysl || '',
         (s.ucetNyni || []).join(', '), (s.ucetBudouci || []).join(', '), CTRL_TYP_TEXT[s.typ] || '', CTRL_CHOVANI_TEXT[s.chovani] || '',
@@ -996,4 +1048,5 @@ if (typeof module !== 'undefined' && module.exports)
     ctrlOdchylky, CTRL_PSEUDO_POPIS, ctrlPopisKlice, ctrlKatalogNazvy, CTRL_EXPORT_VERZE, ctrlExportVarianty,
     CTRL_RADKY_HLAVICKA, CTRL_LIST_PRIPLATKY, ctrlExportListy, ctrlCsvBunka, ctrlExportCsv, ctrlVZakladuText, ctrlHromadnyVarianta,
     CTRL_PD_ID_MAX, ctrlPdDealIdNorm, ctrlPdDealKontrola,
+    PD_STAVY, PD_STAV_TEXT, pdStavNorm, pdStavKontrola, pdStavZDealu, pdStavText, pdStavNactenoText,
     CTRL_HROMADNY, ctrlDatumPlatne, ctrlDenPraha, ctrlHromadnyFiltr, ctrlHromadnyKandidati, ctrlHromadnyZakazka, ctrlProtokolPridej, CTRL_MAPA_HLAVICKA, ctrlMapaListy, ctrlImportZListu };

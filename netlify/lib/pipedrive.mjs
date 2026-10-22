@@ -169,12 +169,15 @@ export async function pdVsechny(cesta, dotaz = {}, strop = 10) {
  * ============================================================ */
 export const PD_PRAVO = 'crm.pipedrive';
 
-export async function pdPristup(req) {
+/* `volby.bezPrava` (P1, 22. 10. 2026): stav dealu zakázky (/api/pd/stav)
+ * vidí každý, kdo vidí zakázku — právo `crm.pipedrive` se u něj nevyžaduje,
+ * přihlášení a původ ano. Deal id přitom bere server z uložené zakázky. */
+export async function pdPristup(req, volby = {}) {
   const { chyba, relace } = await vyzadujRoli(req);
   if (chyba) return { chyba };
   if (cizihoPuvodu(req))
     return { chyba: json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403) };
-  if (relace.role !== 'Administrátor') {
+  if (relace.role !== 'Administrátor' && !volby.bezPrava) {
     let ZOB;
     try { ({ ZOB } = await jadro()); } catch (e) { return { chyba: jadroChyba(e) }; }
     const z = await (await uloziste('program')).cti('zobrazeni');
@@ -193,17 +196,19 @@ export const PD_CACHE_ULOZISTE = 'pd_cache';
 export const PD_DEAL_MAX = 30;
 export const PD_DEAL_OKNO_MS = 3600 * 1000;
 
-/* true = smí do Pipedrive (a načtení se započítalo), false = nad stropem. */
-export async function pdStropCerstvych(email) {
+/* true = smí do Pipedrive (a načtení se započítalo), false = nad stropem.
+ * `druh` a `max` (P1): stav dealu má vlastní počítadlo, ať otevírání
+ * zakázek nevyčerpá strop detailu dealu a naopak. */
+export async function pdStropCerstvych(email, druh = '', max = PD_DEAL_MAX) {
   const s = await uloziste(PD_CACHE_ULOZISTE);
-  const klic = 'strop:' + String(email || '').toLowerCase();
+  const klic = 'strop:' + (druh ? druh + ':' : '') + String(email || '').toLowerCase();
   /* Čtení a zápis počítadla ve výhradním úseku (B158): bez něj 200 souběžných
    * požadavků přečetlo tutéž hodnotu a prošlo všech 200. */
   return vyhradne(PD_CACHE_ULOZISTE + '/' + klic, async () => {
     const ted = Date.now();
     let z = await s.cti(klic);
     if (!z || typeof z !== 'object' || !(ted - (+z.od || 0) < PD_DEAL_OKNO_MS)) z = { od: ted, pocet: 0 };
-    if ((+z.pocet || 0) >= PD_DEAL_MAX) return false;
+    if ((+z.pocet || 0) >= max) return false;
     z.pocet = (+z.pocet || 0) + 1;
     await s.zapis(klic, z);
     return true;

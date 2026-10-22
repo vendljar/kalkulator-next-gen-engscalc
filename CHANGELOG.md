@@ -8,6 +8,38 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.10.2 — P1: Stav Pipedrive v hlavičce zakázky a v exportu pro controlling (větev claude/p1-stav-pipedrive)
+
+Nad integrací b7fa82c (= test v22.10.1 + podklady). Zadání `podklady/PIPEDRIVE_STAV_DEALU_22_10.md`, náhled odsouhlasený
+J. V. 22. 10. 2026. Roadmapa #501 (číslo i verzi může koordinace při slučování přečíslovat).
+
+- **Hlavička zakázky (OCK i PROJ):** úplně nahoře v pravém sloupci nový řádek **„Stav Pipedrive“** — štítek v barvě
+  stavu (Otevřené / Ztracené / Vyhrané / Smazané, třída jen z výčtu `PD_STAV_PILL`) a pole šířky 200 px jen ke čtení
+  (`select disabled`, bez obsluhy, pro všechny role stejné). Bez dealu šedé „— zakázka nemá deal —“, bez šedého textu
+  pod polem; datum načtení jen v bublině. Ostatní řádky o řádek níž. Stav nic neovlivňuje (cena, zámek, SoD, filtry exportu).
+- **Server:** `GET /api/pd/stav?soubor=<zakázka>` (`netlify/functions/pd_stav.mjs`) — deal id bere server z uložené
+  zakázky, vidí každý přihlášený (bez práva `crm.pipedrive`, původ se kontroluje), ven jen `{status, nacteno}` ze
+  whitelistu, token zůstává na serveru. Poslední známý stav v úložišti `pd_stav` (`deal:<id>`), cache 10 min, vlastní
+  strop 120/h na uživatele; výpadek API, deal nenalezen (smazaný po 30 dnech), stav mimo whitelist i nenastavené
+  napojení = tiše poslední známý stav. Do Pipedrive se nic nezapisuje. Klient se ptá při otevření zakázky
+  a po uložení nově propojeného dealu (`pdStavObnovUI`); nová hodnota není neuložená změna.
+- **`zak.pdStav = {status, nacteno}`** připojuje server ke čtení zakázky, dosazuje při uložení (hodnota z prohlížeče se
+  nebere; bez dealu nebo po změně dealu se odebere) a do hromadného exportu. Serverová kontrola: jiný tvar, cizí pole,
+  stav mimo whitelist, objekt/cizí typ → **400, ne 500** (třída K5-S1/K6-S1). Proč samostatné úložiště: uložení
+  zakázky nemá zámek — zápis stavu do zakázky by souběžně přepsal práci obchodníka (`netlify/lib/pd_stav.mjs`).
+- **Export pro controlling verze 3:** za „Pipedrive deal“ sloupce **„Stav Pipedrive“** (česky, prázdný bez dealu)
+  a **„Stav Pipedrive načten“** (den v českém čase) — Řádky i Příplatky – volby, CSV i XLSX, jednotlivý i hromadný;
+  filtry beze změny, CSV ochrana jako ostatní buňky.
+- **Zálohy:** úložiště `pd_stav` je ve výjimkách `test_zalohy.mjs` (stav se při uložení zapisuje i do zakázky, jinak
+  se znovu načte z Pipedrive) — **ke schválení J. V.**
+- **Testy s pojistkou:** `src/test_pd_stav.js` 63/0 (model, hlavička, export CSV/XLSX; před opravou pád modelu /
+  4 FAIL na pořadí v hlavičce), `netlify/test_pd_stav.mjs` 41/0 (přístup, cache, chyby, smazaný deal, tvar 400,
+  podvrh, změna dealu; před opravou chybí funkce, s modelem bez napojení 16 FAIL). `test_prava` 924/0 (nový řádek
+  matice `pd_stav.mjs`), `test_controlling` 200/0 (verze 3), `test_zalohy` 162/0, `test_pd_pristup` 54/0,
+  `test_pipedrive` 71/0, `test_funkce` 267/0, `test_obnova` 235/0.
+- **Mutace:** jádro „P1:“ 13/13 (nově v `mutace_jadro.mjs` i `controlling.js` a `ui/common.js`), server „P1:“ 14/14
+  (12 nových + 2 stávající se shodou názvu) — 0 přeživších; `--kontrola` jádro 445, server 775 úseků; opravená 3 zadání posunutá změnou kódu (jméno souboru v GET zakázky, B80 právo, B80 strop).
+
 ## v22.10.1 — Integrace do test (koordinace 22. 10. 2026)
 
 - Obsah: D4 (slovníky překladu SoD podle revidovaného znění, nástroj) + D1 (roadmapa dorovnána, `podklady/NOVINKY_v20.10.2-v21.10.6.md`, ukázkový export controllingu v2) + D2 (podklad #367 P10, `podklady/P10_PLATEBNI_PODMINKY_22_10.md`).

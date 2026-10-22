@@ -7835,6 +7835,27 @@
    ],
    "cekaNa": "rozhodnutí J. V. (nálezy z ukázky 21. 10.) a podklady controllingu (po návratu v prosinci)",
    "pozn": "Zapsala D1 22. 10. 2026 ze zbytku #447."
+  },
+  {
+   "id": "501",
+   "vlna": "D",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "nazev": "Stav Pipedrive v hlavičce zakázky a v exportu pro controlling (P1)",
+   "proc": "Rozhodnutí J. V. 22. 10. 2026 (náhled odsouhlasen): stav propojeného dealu (Otevřené / Ztracené / Vyhrané / Smazané) má být vidět v kalkulaci a jít do exportu pro controlling.",
+   "detail": "HOTOVO (P1): řádek „Stav Pipedrive“ úplně nahoře v pravém sloupci sdílené hlavičky (OCK i PROJ), štítek v barvě stavu, pole jen ke čtení pro všechny role, bez dealu „— zakázka nemá deal —“; GET /api/pd/stav?soubor= (deal id bere server z uložené zakázky, vidí všichni přihlášení, cache 10 min, vlastní strop, chyba API / 404 / nenastaveno = poslední známý stav); úložiště pd_stav (deal:<id>), `zak.pdStav = {status, nacteno}` dosazuje server při čtení, uložení i hromadném exportu, tvar mimo whitelist → 400; export controllingu verze 3 se sloupci „Stav Pipedrive“ a „Stav Pipedrive načten“ (CSV i XLSX, filtry beze změny).",
+   "hotovoKdyz": "Hlavička ukazuje stav dealu, nikdo ho v kalkulaci nemění, export ho nese; testy s pojistkou a cílené mutace zelené.",
+   "kde": "`src/ui/common.js`, `src/ui/online_ui.js`, `src/controlling.js`, `netlify/lib/pd_stav.mjs`, `netlify/functions/pd_stav.mjs`, `netlify/functions/zakazky.mjs`, `netlify/lib/zakazka_kontrola.mjs`, `netlify/functions/controlling_export.mjs`, `podklady/PIPEDRIVE_STAV_DEALU_22_10.md`",
+   "zavisi": [
+    {
+     "id": "447",
+     "typ": "doporuceno",
+     "proc": "export pro controlling a Pipedrive deal id (C4)"
+    }
+   ],
+   "hotovoV": "v22.10.2",
+   "pozn": "Větev claude/p1-stav-pipedrive; číslo položky i verze může koordinace při slučování přečíslovat. Výjimka zálohy pro úložiště pd_stav (stav se při uložení zapisuje i do zakázky) — ke schválení J. V."
   }
  ],
  "meta" : {
@@ -8494,6 +8515,11 @@
     "text": "22. 10. 2026 — D1 (claude/d1-roadmapa-novinky, dokumentace bez verze): roadmapa dorovnaná na v21.10.6, rozhodnutí J. V. z auditů K5/K6 zapsaná (#486–#499), zbytek controllingu #500; soupis novinek pro obchodníky v20.10.2–v21.10.6; ukázkový XLSX exportu pro controlling verze 2.",
     "hotovo": true,
     "pozn": "Kód aplikace beze změny."
+   },
+   {
+    "text": "22. 10. 2026 — v22.10.2: P1 stav dealu Pipedrive v hlavičce zakázky a v exportu pro controlling (#501).",
+    "hotovo": true,
+    "pozn": "Větev claude/p1-stav-pipedrive; testy s pojistkou, cílené mutace P1 (viz CHANGELOG)."
    }
   ],
   "pravidla" : [
