@@ -8,6 +8,58 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.10.4 — D5: rozhodnutí J. V. k auditu K6 (větev claude/d5-rozhodnuti-k6)
+
+Nad integrací f1db496 (= test v22.10.1 + P1 v22.10.2). Rozhodnutí J. V. 22. 10. 2026 k auditu K6
+(`podklady/K6_AUDIT_21_10.md`), roadmapa #484, #485, #491–#499, nová #502. Paralelně Z1 (v22.10.3, zámek krycího
+listu) — do `src/zamek.js` přibyl jen záznam `sod` v tisku, do `priplatkyObjednane` ani zámku krycího listu se nesahá.
+
+- **K6-K3 — přechodové plechy jednou položkou:** v kartě Objednané příplatky i ve SoD jsou `prechMat` + `prechMont`
+  jedna položka **„Přechodové plechy“** jako v nabídce (`OBJ_SKUPINY`, `objPolozky` v `src/objednane.js`); v eurech
+  se zaokrouhluje nahoru součet (jako `src/nabidka.js`, `PLECHY`). Objednat jen celé — server 400 „jdou objednat jen
+  celé“. Je-li v nabídce jen půlka, zůstane sama s původním názvem. Záznam zakázky nese dál oba klíče jádra.
+- **K6-K2 — upozornění šablony bez rozpisu:** SoD se šablonou bez `SOD_PRIPLATKY_OBJEDNANE` a s objednanými
+  příplatky vrátí `upozorneni` „Šablona nemá rozpis objednaných příplatků — ve smlouvě bude jen celková cena.“
+  — stav pod tlačítkem SoD + dialog (`sodUpozorneniText`, `src/ui/sod_ui.js`).
+- **K6-K4 — záznam tisku SoD:** tisk SoD ukládá do `zamek.tisky[i].sod` otisk objednaných (`objOtisk`, klíče,
+  datum) a cenu díla (měna dokumentu i Kč, `objCenaDila`, `objSodSnimek`). U nově připsaného tisku ho server spočítá
+  sám (`objSodZaznamyServer` z `zakazka_kontrola.mjs`; klient určí jen měnu), uložené záznamy drží B62. **Dotisk SoD**
+  nese objednané a cenu díla z posledního záznamu (`sodObjednaneSymboly`); **export pro controlling** má v listu
+  Popis „Cena díla dle SoD (Kč bez DPH)“ a „Objednané změněny po tisku SoD“ (i v tabulce zakázek hromadného exportu;
+  struktura Řádků beze změny, verze 3). Pozdější změnu objednaných u varianty s vytištěnou SoD zapíše server do
+  `zak.objednaneZmeny` (kdo z relace, kdy; začátek z uložené verze, klient ho nepřepíše ani nesmaže). Karta
+  objednaných to oranžově ukáže. Mez v `BEZPECNOST_MEZE.md` upřesněna.
+- **K6-K5 — potvrzení:** zaškrtnutí v kartě objednaných u jiné zamčené varianty, než ke které záznam patří, se
+  zeptá „Objednané příplatky varianty X budou nahrazeny…“ (`potvrd`); bez potvrzení se nic nemění.
+- **K6-K9 — měna karty:** ceny v kartě objednaných v měně smlouvy (jazyk tisku ≠ česky → eura kurzem odeslané
+  nabídky, celá eura nahoru po položkách — `menaDokumentu` jako SoD); bez kurzu „€ — chybí kurz EUR“.
+- **K6-S7 — obnova ze souboru:** razítko `objednane.kdo/kdy` ze souboru jen při shodě s databází (týž záznam
+  i razítko), jinak relací obnovujícího administrátora (vzor B98). Obnova z otisku beze změny; historie změn
+  z otisku očištěná (`objZmenyOciste`).
+- **#485 — závorka za symbolem v aplikaci, obal zanikl:** `docxPrelozUseky` (`src/docxgen.js`) zkusí jádro s „)“ i když
+  „)“ stojí až za symbolem/symboly (`DOCX_ZAVORKA_ZA_RE`; přes tabulátor ani zalomení ne). Nad slovníkovými texty
+  končícími „)“ (75 textů × 5 vzorů se „)“ v dokumentu × EN/DE/FR = **1 125 porovnání**) shodný výsledek s dřívějším
+  obalem `trStavSeZavorkou` — **0 rozdílů** (před D5 549; D3 měřilo jinou sadou 338/2 304). Obal v
+  `nastroje/vyrob_sablony.js` odstraněn, nástroj překládá kódem aplikace. Záměrný rozdíl (O13): text, za nímž „)“
+  v dokumentu vůbec není, zůstane česky.
+- **#502 — cena v EUR v dlaždici:** u zahraniční zakázky (řada Zahraničí nebo jazyk tisku ≠ česky) dlaždice
+  „Základní cena bez DPH“ v Kalkulaci OCK i PROJ nese pod částkou malým písmem vpravo cenu v EUR (`kpiEurHtml`,
+  `src/ui/common.js`; kurz `kurzEurZ`, celá eura nahoru jako nabídka v eurech). Tuzemská nic; bez kurzu „chybí kurz
+  EUR“; na práva se neptá (cena, ne náklad).
+- **K6-W5 — jména osob → role:** pracovnice controllingu → „controlling“, dodavatel lakovny → „dodavatel lakovny B“
+  (popisky ceníku „Lakovna B – …“, klíče `C.lak.tomas*` beze změny), obchodník a obchodní technik v komentářích,
+  zkušebních datech a nápovědě pole profilu → role / smyšlené jméno. Ponecháno: J. V., jména souborů a větví,
+  negativní kontroly harnessů šablon.
+- **K6-W6:** tabulka ověření v `podklady/SABLONA_SOD_REALIZACE_V4_21_10.md` nese vztahy místo částek.
+- **Ponecháno (J. V.):** K6-S2 (zapsáno jako známá mez — mazání a budoucí datum podpisu do tisku SoD), K6-S5 (datum
+  prodeje bez spodní meze), K6-K7 (CSV).
+- **Testy s pojistkou:** `src/test_d5_rozhodnuti_k6.js` **38/0** (K3, K2, K4, K5, K9; před opravou pád na chybějící
+  `objPolozky`), `src/test_d5_eur_dlazdice.js` **12/0** (před opravou 0/4 — funkce chybí),
+  `src/test_sablona_proj_v7_preklad.js` **14/0** (před opravou 7 FAIL: 549 rozdílů, „(…{{X}})“ česky, obal v nástroji),
+  `netlify/test_prava.mjs` **932/0** (blok D5 8 kontrol: před opravou 2 OK / 6 FAIL). Upravené stávající:
+  `test_objednane.js` 42/0, `test_sod.js` 60/0, `test_prava` C6 (jednotlivé příplatky mimo dvojici plechů).
+- **Mutace:** (doplní se po doběhnutí — viz PREDAVKA).
+
 ## v22.10.2 — P1: Stav Pipedrive v hlavičce zakázky a v exportu pro controlling (větev claude/p1-stav-pipedrive)
 
 Nad integrací b7fa82c (= test v22.10.1 + podklady). Zadání `podklady/PIPEDRIVE_STAV_DEALU_22_10.md`, náhled odsouhlasený

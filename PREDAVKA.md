@@ -1,3 +1,30 @@
+# Předávka — 22. 10. 2026: dávka D5 — rozhodnutí J. V. k auditu K6 (v22.10.4), větev `claude/d5-rozhodnuti-k6`
+
+Nad integrací f1db496 (= test v22.10.1 + P1 v22.10.2). **Do integrace / test nic** — slučuje koordinace
+(session_01X93Edh1U8MQru6HV28FdBY). CHANGELOG `## v22.10.4 — D5`, `verze.txt` 22.10.4, roadmapa #484, #485,
+#491–#499 → hotovo / rozhodnuto, nová **#502** (cena v EUR v dlaždici). Paralelní Z1 (v22.10.3, zámek krycího listu):
+v `src/zamek.js` jen 3 řádky (záznam `sod` v tisku, `zamkniVariantu`), `priplatkyObjednane` ani zámek krycího listu nedotčeny.
+
+- **Hotovo:** K6-K3 plechy jednou položkou (`OBJ_SKUPINY`, `objPolozky`, server 400 na půlku), K6-K2 upozornění šablony
+  bez rozpisu, K6-K4 záznam tisku SoD (`tisky[i].sod`, server přepočítá, dotisk ze záznamu, export „Cena díla dle SoD“,
+  historie `objednaneZmeny`), K6-K5 potvrzení přepnutí varianty, K6-K9 měna karty, K6-S7 razítka obnovy ze souboru,
+  #485 závorka za symbolem (obal `trStavSeZavorkou` odstraněn), #502 EUR v dlaždici OCK/PROJ, K6-W5 jména → role,
+  K6-W6 vztahy místo částek; K6-S2/S5/K7 ponechány a zapsány (BEZPECNOST_MEZE.md, roadmapa). Příručka: novinky v22.10.4,
+  podkapitola „Objednané příplatky ve smlouvě o dílo“, cena v EUR (kap. 25).
+- **Testy:** viz CHANGELOG (pojistky); celá Node sada: VYSLEDEK_SADY. Mutace: VYSLEDEK_MUTACI.
+- **Otázky pro J. V.:** (1) #485 — text, za nímž v dokumentu „)“ vůbec není, aplikace nechá česky (O13), obal ho
+  překládal — po odstranění obalu se to v nástroji šablon změní (na reálných šablonách nejspíš nenastává; ověřit
+  při příští výrobě jazykových šablon). (2) K6-K4 — dotisk SoD nese objednané z prvního tisku; SoD vytištěná
+  před zaškrtnutím objednaných je tím „bez příplatků“ i při dotisku (obchodník je má zaškrtnout PŘED tiskem — příručka).
+  Souhlasí? (3) K6-W5 — jména souborů/větví (`test_*_sikora*`, `claude/d1-sikora`…) ponechána; harnessy šablon
+  (`overit_sablona.mjs`, `overit_nabidka_proj_word.mjs`) nesou jméno, e-mail a telefon kolegy jako NEGATIVNÍ kontrolu
+  (že ve vzoru nezůstaly) — přesunout do souboru mimo repo? (4) popisky ceníku „Tomáš – …“ přejmenovány na
+  „Lakovna B – …“ (klíče beze změny) — v pořádku?
+- **Pozor pro koordinaci:** prohlížečové sady nepouštěny (karta objednaných, dlaždice — `overit_*` může čekat staré
+  texty); mutace pouštěny v samostatném worktree filtry „K6-K“, „D5 EUR“, „#485“, „O13“ (jádro) a „objednane.js“,
+  „K6-S7“, „K6-K4“, „#447 C6“ (server).
+- **Další krok:** sloučení do integrace + celé kolo (koordinace).
+
 # Předávka — 22. 10. 2026: dávka P1 — Stav Pipedrive v hlavičce zakázky a v exportu controllingu (v22.10.2), větev `claude/p1-stav-pipedrive`
 
 Nad integrací b7fa82c (= test v22.10.1 + podklady). **Do integrace / test nic** — slučuje koordinace
