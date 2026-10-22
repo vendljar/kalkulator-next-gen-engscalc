@@ -114,5 +114,21 @@ function trStavSeZavorkou(puvodni) {
   test('#485: bez „)" v dokumentu zůstane text, který slovník zná jen se „)", česky (O13)', jenSeZavorkou.length > 50 && bezZ === jenSeZavorkou.length,
     { bezZ, n: jenSeZavorkou.length });
 }
-console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
-process.exit(fail ? 1 : 0);
+/* Nástroj šablon překládá kódem aplikace: „(…{{X}})" v .docx → EN (#485). */
+(async () => {
+  if (VS && VS.prelozSablonu) {
+    const enc = new TextEncoder();
+    const doc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+      + '<w:p><w:r><w:t>' + NADPIS.slice(0, -1) + '</w:t></w:r><w:r><w:t>{{X}}</w:t></w:r><w:r><w:t>)</w:t></w:r></w:p></w:body></w:document>';
+    let t = '', e = '';
+    try {
+      const bajty = new Uint8Array(await (await dg.zipZapis([{ nazev: 'word/document.xml', data: enc.encode(doc) }])).arrayBuffer());
+      const out = await VS.prelozSablonu(bajty, 'en', {});
+      const pol = await dg.zipPrecti(new Uint8Array(await out.arrayBuffer()));
+      t = text(new TextDecoder().decode(pol.find(x => x.nazev === 'word/document.xml').data));
+    } catch (x) { e = x.message; }
+    test('nástroj: prelozSablonu přeloží „… (DPZ{{X}})" kódem aplikace', t === 'PRICE FOR THE DOCUMENTATION FOR THE PROJECT PERMIT (DPZ{{X}})', { t, e });
+  }
+  console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
+  process.exit(fail ? 1 : 0);
+})();

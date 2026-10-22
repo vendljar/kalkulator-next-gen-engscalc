@@ -1012,8 +1012,31 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   vyplněné datum podpisu ≤ dnes v ULOŽENÉ verzi) jen admin; kdo/kdy z relace
   (beze změny záznamu drží razítko uložené verze). Mutace „#447 C6“.
   **Mez:** datum podpisu je pole krycího listu — obchodník ho může (dokud
-  smlouva podepsaná není) posunout do budoucna a objednané dál měnit; tisk
-  SoD se do pravidla nepočítá (rozhodnutí J. V. Q3).
+  smlouva podepsaná není) posunout do budoucna a objednané dál měnit.
+  **Známá mez K6-S2 (rozhodnutí J. V. 22. 10. 2026 — PONECHAT):** obchodník
+  může datum podpisu do tisku SoD i SMAZAT (podpis tím „vrátí") a pak objednané
+  změnit, nebo zadat datum podpisu v budoucnosti; server změnu ani smazání
+  uloženého data podpisu nehlídá. Upřesnění (K6-K4): PRVNÍ tisk SoD opíše do
+  krycího listu datum podpisu = den tisku (kryciZmrazSod) a krycí list zamkne —
+  od té chvíle je smlouva „podepsaná" a objednané mění jen admin; mez se tak
+  týká jen doby před prvním tiskem SoD (a data v budoucnosti, které tisk
+  nepřepíše).
+  **Záznam tisku SoD (K6-K4, rozhodnutí J. V. 22. 10. 2026):** každý tisk SoD
+  nese v `zamek.tisky[i].sod` otisk objednaných (`objOtisk`, klíče, datum)
+  a cenu díla (měna dokumentu + Kč). U NOVĚ připsaného tisku ho server spočítá
+  sám (`objSodZaznamyServer`; klient určí jen měnu), uložené záznamy drží
+  (`uloZamekRazitkaDrz`). Dotisk SoD nese objednané a cenu díla z posledního
+  záznamu (ne ze zakázky), export pro controlling sloupec „Cena díla dle SoD".
+  Pozdější změnu objednaných u varianty s vytištěnou SoD zapíše server do
+  `zak.objednaneZmeny` (kdo z relace, kdy z hodin serveru; začátek z uložené
+  verze, klient ho nepřepíše). **Mez:** SoD vytištěná před v22.10.4 záznam
+  nemá — dotisk se řídí záznamem zakázky; obnova ze souboru záznam přepočte
+  z dat (B98), z otisku převezme.
+  **Obnova ze souboru (K6-S7):** razítko `objednane.kdo/kdy` ze souboru platí
+  jen při shodě s databází (týž záznam i razítko), jinak ho dostane obnovující
+  administrátor z relace (vzor B98). Obnova z otisku přebírá razítka beze změny.
+  **Datum prodeje (K6-S5, rozhodnutí J. V. — PONECHAT):** bez spodní meze —
+  obchodník může prodej přesunout i do už vyexportovaného období `podle=prodej`.
 - **Tlačítko „Export pro controlling“ v Přehledu (C3)** kreslí jen
   administrátorovi online a ne v rolovém náhledu; export jedné varianty běží
   dál v prohlížeči (mez jako u C2 výše).
