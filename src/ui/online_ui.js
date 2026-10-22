@@ -1210,15 +1210,6 @@ function onlineJenZapisnik() {
 
 function onlineUloz(opts) {
   opts = opts || {};
-  /* BEZ SERVERU SE NEODESÍLÁ (Z1, nález koordinace 22. 10. 2026): v souboru
-   * spuštěném z disku (file://) online vrstva neexistuje. Autosave si sem
-   * mohl sáhnout, když stav přihlášení přišel odjinud (sady v prohlížeči),
-   * a fetch na file:///api/zakazky skončil chybou v konzoli. Časovač autosave
-   * zůstává (overit_v23.mjs), zápis se jen neodešle. */
-  if (typeof onlineMozne === 'function' && !onlineMozne()) {
-    if (!opts.tiche) { onlineZprava('Online databáze není dostupná — aplikace běží ze souboru.', 'varovani'); render(); }
-    return Promise.resolve(false);
-  }
   if (!ONLINE_STAV.ja) {
     if (!opts.tiche) { onlineZprava('Nejdřív se přihlaste.', 'varovani'); render(); }
     return Promise.resolve(false);
@@ -1288,6 +1279,11 @@ function onlineUloz(opts) {
         + '(Interní poznámky a přílohy se ukládají i tak.)', 'varovani');
       render();
     }
+    return Promise.resolve(false);
+  }
+  /* Ze souboru (file://) se neodesílá nic (Z1, 22. 10. 2026; časovač autosave zůstává). */
+  if (typeof onlineMozne === 'function' && !onlineMozne()) {
+    if (!opts.tiche) { onlineZprava('Online databáze není dostupná — aplikace běží ze souboru.', 'varovani'); render(); }
     return Promise.resolve(false);
   }
   // #41: rozepsané změny do protokolu hned – uložený záznam nese protokol
