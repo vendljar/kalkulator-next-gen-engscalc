@@ -14,6 +14,14 @@
       ]
     },
     {
+      "nadpis": "Co je nového ve verzi v22.10.2 (22. 10. 2026)",
+      "odstavce": [
+        "**Stav Pipedrive v hlavičce:** v Kalkulaci OCK i PROJ je v pravém sloupci hlavičky úplně nahoře nový řádek **Stav Pipedrive**. Ukazuje, jak dopadl obchod v Pipedrive u dealu, se kterým je zakázka propojená: **Otevřené**, **Ztracené**, **Vyhrané** nebo **Smazané** (barevný štítek u popisku). Zakázka bez propojeného dealu má šedé „— zakázka nemá deal —“.",
+        "Pole je **jen ke čtení** — stav se mění v Pipedrive a kalkulace si ho načte při otevření zakázky. **Nic v kalkulaci neovlivňuje** (cenu, zámek ani smlouvu). Kdy byl stav načten, ukáže bublina po najetí myší; bez spojení se serverem zůstane poslední známý stav.",
+        "**Jen pro administrátora.** Export předkalkulace pro controlling (jedna zakázka i za období) má za sloupcem „Pipedrive deal“ dva nové sloupce **Stav Pipedrive** a **Stav Pipedrive – načteno** (verze struktury souboru 3). Výběr do exportu se nemění."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v21.10.5 (21. 10. 2026)",
       "odstavce": [
         "**Když zákazník k nabídce objedná příplatky:** v krycím listu OCK dole u **Smlouvy o dílo** je nový rámeček **Objednané příplatky**. Zaškrtněte příplatky z odeslané nabídky, které zákazník objednal, a zkontrolujte datum prodeje (předvyplní se datum podpisu smlouvy). Odeslaná nabídka se tím nemění.",

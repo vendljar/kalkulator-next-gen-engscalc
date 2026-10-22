@@ -8,6 +8,49 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.10.2 — Stav Pipedrive v hlavičce kalkulace (#504, větev claude/eager-carson-1xznt2)
+
+Rozhodnutí J. V. 22. 10. 2026, zadání `podklady/PIPEDRIVE_STAV_DEALU_22_10.md` (větev `claude/integrace-16-10`),
+náhled https://claude.ai/artifact/UHqdUv62Kax3NCLGHWXcb1. Nad `test` v22.10.1 (sloučení 4957b61); verzi i číslo
+roadmapy může slučování přečíslovat.
+
+- **Hlavička OCK i PROJ:** řádek **„Stav Pipedrive“** úplně nahoře v pravém sloupci sdílené hlavičky (ostatní řádky
+  o řádek níž). Hodnoty z Pipedrive **Otevřené / Ztracené / Vyhrané / Smazané** s barevným štítkem u popisku (barvy
+  z náhledu); bez dealu šedé „— zakázka nemá deal —“ (štítek „nepropojeno“), s dealem a bez načteného stavu
+  „— stav zatím nenačten —“. Pole je vypnuté pro každého, vidí ho všichni a nic v kalkulaci neovlivňuje; kdy byl
+  stav načten, říká bublina — pod polem žádný text. **Sazba DPH** stojí na konci sloupce jako datum vytvoření:
+  u zahraniční zakázky s kurzem je třetí sloupec nově nejvyšší a datum by sjelo o 38 px pod sazbu DPH.
+- **Načtení:** po otevření zakázky (online, ze souboru, obnovou zálohy, krokem zpět), po změně dealu a po
+  přihlášení se aplikace jednou zeptá `GET /api/pd/stav?deal=<id>` (`pdStavHlidej` v `ui/online_ui.js`, z render()
+  jen naplánuje dotaz). Prohlížeč dostane jen `{status, nacteno}`; stav se uloží k zakázce (`zak.pdStav`) a ukáže
+  se i offline. Načtený stav **není neuložená změna** (`historieBezZmenyPo`, otisk autosave). Chyby (deal
+  nenalezen, Pipedrive nedostupný, bez práva, strop) tiše ponechají poslední známý stav; pozdní odpověď k jiné
+  zakázce a starší stav se zahodí.
+- **Server — `netlify/functions/pd_stav.mjs`:** detail dealu (1 token); smazaný deal v koši (`is_deleted`) =
+  Smazané, detail 404 → seznam smazaných (`status=deleted`, 10 tokenů); deal, který Pipedrive odstranil úplně,
+  nechá poslední známý stav „Smazané“. Poslední známý stav v úložišti `pipedrive` (`stav/<id>`), ne v `pd_cache`
+  (noční úklid ji po 30 dnech maže); dotaz na týž deal nejvýš jednou za 10 min; vlastní strop 120 čtení za hodinu
+  na uživatele (`pdStropCerstvych` s druhem `stav`, detail dealu ho nesdílí). Chyby Pipedrive vrací 502 / 429 —
+  nikdy 401 (prohlížeč by ji vzal jako vypršelé přihlášení). Práva jako ostatní `/api/pd/*` (přihlášení, vlastní
+  původ, `crm.pipedrive`); uložený stav vidí v hlavičce každý. Lehký obal `lib/controlling_modul.cjs` místo celého
+  jádra (studený start).
+- **Stav je údaj serveru:** při uložení zakázky (`zakazky.mjs` → `ctrlPdStavPrijmi` v `lib/zakazka_kontrola.mjs`)
+  server vezme novější ze svého záznamu a z uložené verze téhož dealu; co pošle prohlížeč, se zahodí — obchodník si
+  do exportu „Vyhrané“ nenapíše. Bez dealu stav není, po změně deal id se stav starého dealu nepřenese, obnova bere
+  stav ze zálohy, duplikát zakázky deal ani stav nepřebírá.
+- **Export pro controlling:** sloupce **„Stav Pipedrive“** a **„Stav Pipedrive – načteno“** hned za „Pipedrive deal“
+  (Řádky i Příplatky – volby), stav i v seznamu zakázek hromadného exportu a vysvětlení v listu Popis; hromadný
+  export doplní novější stav ze serveru. Filtry exportu beze změny. **Verze struktury souboru 3** (sloupce za
+  „Pipedrive deal“ se posunuly o dva).
+- **Testy (pojistka: na 4957b61 před úpravou selžou):** nová `netlify/test_pd_stav.mjs` 52/0 (před úpravou: modul
+  neexistuje), `src/test_controlling.js` 220/0 (+20; před úpravou 9 selhání a pád), `netlify/test_controlling.mjs`
+  57/0 (+3; před úpravou 3 selhání), `netlify/test_prava.mjs` 924/0 (matice funkcí + `pd_stav.mjs`; před úpravou
+  pád na chybějícím modulu), nový harness `overit_pd_stav.mjs` 42/0 (staré sestavení 11 prošlo / 31 selhalo).
+  Mutace „Stav Pipedrive“ v `netlify/mutace.mjs` (23 nových, sada `test_pd_stav.mjs` v `SADY`): KOLO_MUTACE.
+  Kotva mutace B80 („strop čerstvých načtení“) posunuta na `>= max`.
+- **Ke slučování:** CHANGELOG (tento oddíl), roadmapa #504 (+ záznam dávky), `netlify/mutace.mjs` (blok „Stav
+  Pipedrive“ za #114, `test_pd_stav.mjs` na konci `SADY`), `manual/obsah.json` (Co je nového v22.10.2), PREDAVKA.
+
 ## v22.10.2 — #114: párování polí Pipedrive podle přesného názvu, převod hodnot krycího listu (větev claude/eager-carson-1xznt2)
 
 Nad `test` v21.10.2 (merge a5f0308); 22. 10. 2026 sloučeno s `test` v22.10.1 a vydáno spolu s dávkou „Stav Pipedrive“

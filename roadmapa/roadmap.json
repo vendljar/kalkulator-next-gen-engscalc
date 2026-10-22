@@ -7889,11 +7889,32 @@
    "dulezitost": "",
    "slozitost": "S",
    "proc": "Převod hodnot krycího listu do Pipedrive neposílá nic, co by si musel domyslet. Čtyři pravidla ale potřebují rozhodnutí — do té doby se dotčené hodnoty neposílají (u limitu pokut se posílají podle navrženého výkladu).",
-   "detail": "UZAVŘENO 21. 10. 2026 pravidlem J. V.: „proč mám rozhodovat 475? do pipedrive by se mělo přenášet to co je v kalkulačním nástroji.“ Každé pole má jednoho vlastníka a co kalkulace má, to se zapíše: (1) předvolby plánu plateb PROJ → „Způsob fakturace“ se zapíší, jakmile je Pipedrive umí uložit — přesně odpovídající („po dokončení jednotlivých stupňů dokumentace“) už dnes, pro ostatní má integrátor doplnit volby nebo změnit pole na text (#473, otázka 15); (2) „Předpokládané datum ukončení realizace“ vyplňují obchodníci v Pipedrive (85/85 vyhraných dealů) — čte se a předvyplní Konečné předání díla, kalkulace ho nepřepisuje (podklady/NAVRH… §12); (3) neuplatněný limit pokut se zapisuje jako 0 (technická dohoda s integrátorem, #473 otázka 13); (4) „Cizí“ smlouva se zapisuje jako „Smlouva zákazníka“ (stejný význam, jiný popisek). Rozhodování J. V. tu nebylo potřeba — otázky byly špatně položené.",
+   "detail": "UZAVŘENO 21. 10. 2026 pravidlem J. V.: „proč mám rozhodovat 475? do pipedrive by se mělo přenášet to co je v kalkulačním nástroji.“ Každé pole má jednoho vlastníka a co kalkulace má, to se zapíše: (1) předvolby plánu plateb PROJ → „Způsob fakturace“ se zapíší, jakmile je Pipedrive umí uložit — přesně odpovídající („po dokončení jednotlivých stupňů dokumentace“) už dnes, pro ostatní má integrátor doplnit volby nebo změnit pole na text (#501, otázka 15); (2) „Předpokládané datum ukončení realizace“ vyplňují obchodníci v Pipedrive (85/85 vyhraných dealů) — čte se a předvyplní Konečné předání díla, kalkulace ho nepřepisuje (podklady/NAVRH… §12); (3) neuplatněný limit pokut se zapisuje jako 0 (technická dohoda s integrátorem, #501 otázka 13); (4) „Cizí“ smlouva se zapisuje jako „Smlouva zákazníka“ (stejný význam, jiný popisek). Rozhodování J. V. tu nebylo potřeba — otázky byly špatně položené.",
    "hotovoKdyz": "Splněno: pravidlo je v mapě polí (jediný vlastník, `smer` jen `cteni` / `zapis` / `nic`) a hlídají ho testy v netlify/test_pipedrive.mjs a netlify/test_pd_prevod.mjs.",
    "kde": "netlify/lib/pd_mapa.mjs, netlify/lib/pd_prevod.mjs",
-   "hotovoV": "bez verze (claude/eager-carson-1xznt2)",
+   "hotovoV": "v22.10.2 (claude/eager-carson-1xznt2)",
    "pozn": "Do sloučení s test v22.10.1 (22. 10. 2026) vedeno jako #475 (odtud citace „proč mám rozhodovat 475?“) — to číslo v test patří kolu K6."
+  },
+  {
+   "id": "504",
+   "nazev": "Pipedrive: stav dealu v hlavičce kalkulace a v exportu pro controlling",
+   "vlna": "D",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "proc": "Rozhodnutí J. V. 22. 10. 2026: v hlavičce kalkulace OCK i PROJ má být vidět, jak dopadl obchod v Pipedrive (Otevřené / Ztracené / Vyhrané / Smazané), a controlling ho potřebuje v exportu předkalkulace. Je to jen informace — cenu, zámek, smlouvu ani výběr exportu neovlivňuje.",
+   "detail": "Hlavička: řádek „Stav Pipedrive“ úplně nahoře v pravém sloupci (OCK i PROJ), vypnuté pole se štítkem v barvě stavu, bez dealu „— zakázka nemá deal —“; kdy byl stav načten, říká bublina. Sazba DPH stojí na konci sloupce jako datum vytvoření (u zahraniční zakázky s kurzem by datum jinak sjelo o 38 px). Načtení: po otevření zakázky, změně dealu nebo přihlášení jednou GET /api/pd/stav?deal=<id> (prohlížeč dostane jen stav a čas); chyby tiše ponechají poslední známý stav; načtený stav není neuložená změna. Server: detail dealu 1 token, smazaný deal podle is_deleted, při 404 seznam smazaných (10 tokenů); poslední známý stav v úložišti pipedrive (stav/<id>), dotaz nejvýš jednou za 10 min, strop 120 čtení za hodinu na uživatele, chyby Pipedrive 502/429 (nikdy 401). Stav je údaj serveru: při uložení zakázky ho server vezme ze svého záznamu nebo z uložené verze téhož dealu, co pošle prohlížeč, se zahodí. Export: sloupce „Stav Pipedrive“ a „Stav Pipedrive – načteno“ za „Pipedrive deal“, verze struktury 3; hromadný export doplní novější stav ze serveru.",
+   "hotovoKdyz": "Splněno: pole v hlavičce (overit_pd_stav.mjs), serverové čtení a stav jako údaj serveru (netlify/test_pd_stav.mjs), sloupce exportu (src/test_controlling.js, netlify/test_controlling.mjs), mutace „Stav Pipedrive“ v netlify/mutace.mjs.",
+   "kde": "netlify/functions/pd_stav.mjs, netlify/lib/pipedrive.mjs, netlify/lib/pd_mapa.mjs, netlify/lib/zakazka_kontrola.mjs, netlify/functions/zakazky.mjs, netlify/functions/controlling_export.mjs, src/controlling.js, src/ui/common.js, src/ui/online_ui.js",
+   "zavisi": [
+    {
+     "id": "447",
+     "typ": "doporuceno",
+     "proc": "export pro controlling a deal id zakázky (C4)"
+    }
+   ],
+   "hotovoV": "v22.10.2 (claude/eager-carson-1xznt2)",
+   "pozn": "Zadání podklady/PIPEDRIVE_STAV_DEALU_22_10.md (claude/integrace-16-10), náhled https://claude.ai/artifact/UHqdUv62Kax3NCLGHWXcb1. Číslo může slučování přečíslovat."
   }
  ],
  "meta" : {
@@ -8558,6 +8579,11 @@
     "text": "22. 10. 2026 — D1 (claude/d1-roadmapa-novinky, dokumentace bez verze): roadmapa dorovnaná na v21.10.6, rozhodnutí J. V. z auditů K5/K6 zapsaná (#486–#499), zbytek controllingu #500; soupis novinek pro obchodníky v20.10.2–v21.10.6; ukázkový XLSX exportu pro controlling verze 2.",
     "hotovo": true,
     "pozn": "Kód aplikace beze změny."
+   },
+   {
+    "text": "22. 10. 2026 — dávka Stav Pipedrive (claude/eager-carson-1xznt2, v22.10.2, se #114 z 21. 10.): pole „Stav Pipedrive“ v hlavičce OCK i PROJ (jen ke čtení), čtení stavu dealu /api/pd/stav, stav jako údaj serveru při uložení zakázky, sloupce Stav Pipedrive v exportu pro controlling (verze struktury 3). #504; položky #473–#475 z této větve přečíslovány na #501–#503.",
+    "hotovo": true,
+    "pozn": "POZN_DOPLNIT"
    }
   ],
   "pravidla" : [
@@ -8644,7 +8670,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v22.10.1 (test) + claude/eager-carson-1xznt2 (#114 Pipedrive, Stav Pipedrive v hlavičce)",
+  "build" : "v22.10.2 (claude/eager-carson-1xznt2: #114 Pipedrive + Stav Pipedrive v hlavičce; nad test v22.10.1)",
   "stavKDatu" : "22. 10. 2026"
  },
  "_comment" : [

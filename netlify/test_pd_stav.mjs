@@ -50,8 +50,11 @@ const get = (fn, url, cookie, hlavicky = {}) =>
   fn(new Request(url, { headers: { ...(cookie ? { cookie } : {}), ...hlavicky } }));
 const post = (fn, url, telo, cookie) => fn(new Request(url, { method: 'POST',
   headers: cookie ? { cookie } : {}, body: JSON.stringify(telo) }));
+/* Výjimka obsluhy = 500 (jako Netlify), ať jedna rozbitá cesta neshodí celou sadu. */
 const stav = async (deal, c, hlavicky) => {
-  const r = await get(pdStav, 'http://x/api/pd/stav?deal=' + deal, c, hlavicky);
+  let r;
+  try { r = await get(pdStav, 'http://x/api/pd/stav?deal=' + deal, c, hlavicky); }
+  catch (e) { return { st: 500, o: { vyjimka: String(e && e.message) } }; }
   let o = null; try { o = await r.json(); } catch (e) { o = null; }
   return { st: r.status, o: o || {} };
 };
@@ -160,7 +163,7 @@ volani = [];
 const s2 = await stav(4711, cObch);
 test('opakované otevření do 10 minut jde bez Pipedrive', s2.st === 200 && s2.o.status === 'lost'
   && s2.o.nacteno === s1.o.nacteno && volani.length === 0, { s2, volani });
-pamet.set('pipedrive/stav/4711', JSON.stringify(Object.assign(zaznam(4711),
+pamet.set('pipedrive/stav/4711', JSON.stringify(Object.assign(zaznam(4711) || {},
   { overeno: new Date(Date.now() - PD.PD_STAV_CACHE_MS - 1000).toISOString() })));
 DEALY[4711] = Object.assign({}, DEALY[4711], { status: 'won' });
 volani = [];
@@ -179,13 +182,13 @@ test('detail smazaného dealu 404 → seznam smazaných ho najde (Smazané)', s5
 
 /* Po 30 dnech Pipedrive smazaný deal odstraní úplně — stav už nevrátí. */
 DEALY[4713] = 'zmizely';
-pamet.set('pipedrive/stav/4713', JSON.stringify(Object.assign(zaznam(4713),
+pamet.set('pipedrive/stav/4713', JSON.stringify(Object.assign(zaznam(4713) || {},
   { overeno: new Date(Date.now() - PD.PD_STAV_CACHE_MS - 1000).toISOString() })));
 volani = [];
 const s6 = await stav(4713, cObch);
 test('deal zmizel i z koše → zůstává poslední známý stav „Smazané"', s6.st === 200 && s6.o.status === 'deleted'
   && s6.o.nacteno === s5.o.nacteno && s6.o.nenalezen === true && volani.length === 2, { s6, volani });
-test('… a záznam serveru stav nezahodí', zaznam(4713).status === 'deleted' && zaznam(4713).nacteno === s5.o.nacteno);
+test('… a záznam serveru stav nezahodí', (zaznam(4713) || {}).status === 'deleted' && (zaznam(4713) || {}).nacteno === s5.o.nacteno);
 volani = [];
 const s6b = await stav(4713, cObch);
 test('… další dotaz do 10 minut už do Pipedrive nejde', s6b.o.status === 'deleted' && volani.length === 0, volani);
@@ -204,8 +207,8 @@ for (const [id, popis] of [[4715, 'špatný token (401)'], [4716, 'odepřený p�
 { /* Chyba při obnově známého stavu ho nepřepíše. */
   pamet.set('pipedrive/stav/4715', JSON.stringify({ status: 'open', nacteno: '2026-10-01T08:00:00.000Z', overeno: '2026-10-01T08:00:00.000Z' }));
   const r = await stav(4715, cObch);
-  test('chyba Pipedrive poslední známý stav nepřepíše', r.st === 502 && zaznam(4715).status === 'open'
-    && zaznam(4715).nacteno === '2026-10-01T08:00:00.000Z', zaznam(4715)); }
+  test('chyba Pipedrive poslední známý stav nepřepíše', r.st === 502 && (zaznam(4715) || {}).status === 'open'
+    && (zaznam(4715) || {}).nacteno === '2026-10-01T08:00:00.000Z', zaznam(4715)); }
 
 console.log('\n===== 4) STROP NA UŽIVATELE =====\n');
 { const MAX = PD.PD_STAV_MAX;
@@ -270,12 +273,12 @@ const znovu = async (soubor, zmena, c) => {
 
   pamet.set('pipedrive/stav/4799', JSON.stringify({ status: 'lost', nacteno: '2026-10-01T08:00:00.000Z', overeno: '2026-10-01T08:00:00.000Z' }));
   await znovu(soubor, a => { a.nazevAkce = 'Stav Pipedrive — starší záznam'; }, cObch);
-  test('starší záznam serveru novější uložený stav nepřepíše', ulozena(soubor).pdStav.status === 'open', ulozena(soubor).pdStav);
+  test('starší záznam serveru novější uložený stav nepřepíše', (ulozena(soubor).pdStav || {}).status === 'open', ulozena(soubor).pdStav);
 
   const r5 = await znovu(soubor, a => { a.pdDealId = '4718'; a.pdStav = podvrh; }, cAdmin);
   test('změna dealu (administrátor): uloží se stav, který server zná pro nový deal',
     r5.status === 200 && ulozena(soubor).pdDealId === '4718' && ulozena(soubor).pdStav
-    && ulozena(soubor).pdStav.status === 'won' && ulozena(soubor).pdStav.nacteno === zaznam(4718).nacteno, ulozena(soubor).pdStav);
+    && ulozena(soubor).pdStav.status === 'won' && ulozena(soubor).pdStav.nacteno === (zaznam(4718) || {}).nacteno, ulozena(soubor).pdStav);
   const r5b = await znovu(soubor, a => { a.pdDealId = '4790'; }, cAdmin);
   test('změna na deal, o kterém server nic neví: stav předchozího dealu se nepřenese',
     r5b.status === 200 && ulozena(soubor).pdDealId === '4790' && ulozena(soubor).pdStav === undefined, ulozena(soubor).pdStav);
