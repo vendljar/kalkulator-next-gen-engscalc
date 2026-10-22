@@ -132,14 +132,14 @@ const novaProj = (nazev) => { const z = nova(nazev); z.cislo = '2026 - OVP - CN 
 console.log('===== po smlouvě o dílo =====');
 {
   const z = zamkni(nova('SoD kontakt'), 'nabidka'); zamkni(z, 'sod');
-  const r = await poTisku(z, d => { h(d, 'kryci').jmenoPrijmeni = 'Zkušební Kontakt'; }, cA);
+  const r = await poTisku(z, d => { h(d, 'kryci').atypMustky = 'Ukázkový můstek'; }, cA);   // Z1-3: kontakt je po SoD volný
   test('SoD vytištěná: ani pole mimo nabídku se nemění (409)', r.status === 409 && /uzamčené/.test(r.chyba || ''), r);
 }
 {
   /* Klient si SoD ze seznamu tisků „sundat" nemůže — razítka zámku drží
    * server z uložené verze (B62) a porovnání bere zámek z ní. */
   const z = zamkni(nova('SoD sundaná'), 'nabidka'); zamkni(z, 'sod');
-  const r = await poTisku(z, (d, a) => { a.varianty[0].zamek.tisky = []; h(d, 'kryci').jmenoPrijmeni = 'Zkušební Kontakt'; }, cA);
+  const r = await poTisku(z, (d, a) => { a.varianty[0].zamek.tisky = []; h(d, 'kryci').atypMustky = 'Ukázkový můstek'; }, cA);
   test('SoD vytištěná: smazaný záznam tisku SoD zápis nepovolí (409)', r.status === 409 && /uzamčené/.test(r.chyba || ''), r);
 }
 
@@ -281,6 +281,38 @@ const zamkniZ1 = (z, typ, v) => { v = v || z.varianty[0];
   const a = zk.importZakazka(kopie(g)); a.varianty[0].zamek.snimek.kryci = { hodnoty: { zaloha1: 'Bez zálohy' } };
   const r2 = await uloz(a, cO, g.uloRazitko);
   test('Z1: přepsaný snímek uloženého zámku → 409', r2.status === 409, r2);
+}
+
+console.log('===== Z1-2 / Z1-3 (odpovědi J. V. 22. 10. 2026) =====');
+/* Z1-2: název akce a adresa se zmrazí jen podle ŘÍDÍCÍ varianty. Z1-3: po SoD
+ * zůstává kontaktní osoba zákazníka editovatelná (hlavička i krycí list).
+ * Pojistka: nad v22.10.4 (f73f9ab) vrací všechny tři „200" případy 409. */
+{
+  const z = nova('Z1-2 neřídící'); const v1 = z.varianty[0];
+  const v2 = zam.klonujVariantu(z, v1.id, { aktivovat: true });
+  z.varianty.forEach(v => { v.ridici = v.id === v1.id; });
+  zamkniZ1(z, 'nabidka', v2);
+  const r = await poTisku(z, (d, a) => { a.nazevAkce = 'TEST Z1-2 přejmenováno'; }, cO);
+  test('Z1-2: odeslaná NEŘÍDÍCÍ varianta název akce nezmrazí (200)', r.status === 200, r);
+}
+{
+  const z = nova('Z1-2 řídící'); const v1 = z.varianty[0];
+  const v2 = zam.klonujVariantu(z, v1.id, { aktivovat: true });
+  z.varianty.forEach(v => { v.ridici = v.id === v2.id; });
+  zamkniZ1(z, 'nabidka', v2);
+  const r = await poTisku(z, (d, a) => { a.adresa = 'Jiná 3'; }, cO);
+  test('Z1-2: odeslaná ŘÍDÍCÍ varianta adresu zmrazí (409)', r.status === 409 && /adresa/.test(r.chyba || ''), r);
+}
+{
+  const z = zamkniZ1(nova('Z1-3 kontakt')); zamkniZ1(z, 'sod');
+  const r = await poTisku(z, (d, a) => { a.kontakt = 'Ukázková Kontaktní';
+    Object.assign(h(d, 'kryci'), { jmenoPrijmeni: 'Ukázková Kontaktní', kontaktZakaznikTel: '+420 000 000 000', kontaktZakaznikEmail: 'kontakt@priklad.cz' }); }, cO);
+  test('Z1-3: po SoD se kontaktní osoba v hlavičce i v krycím listu uloží (200)', r.status === 200, r);
+}
+{
+  const z = zamkniZ1(nova('Z1-3 IČO')); zamkniZ1(z, 'sod');
+  const r = await poTisku(z, (d, a) => { a.kontakt = 'Ukázková Kontaktní'; a.ico = '00000019'; }, cO);
+  test('Z1-3: po SoD změna IČO vedle kontaktu dál 409', r.status === 409 && /ico/.test(r.chyba || ''), r);
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

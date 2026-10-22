@@ -1383,6 +1383,186 @@
    "odvozeno": "J. V. 22. 10.: PROJ stejně jako OCK"
   },
   {
+   "id": "cin_zamereni",
+   "label": "Zaměření a zpracování výstupů (ZA)",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "cin_studie",
+   "label": "Studie proveditelnosti (ST)",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "cin_projednani",
+   "label": "Projednání studie (památkáři, územní rozvoj)",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "cin_dpz",
+   "label": "Dokumentace pro povolení záměru (DPZ)",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "cin_ic",
+   "label": "Inženýrská činnost (IČ)",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "cin_dps",
+   "label": "Dokumentace pro provedení stavby (DPS)",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "cin_ezc",
+   "label": "Ekonomická zadávací část (EZC)",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "cin_kolaudace",
+   "label": "Kolaudace",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "cin_geodet",
+   "label": "Geodetické zaměření",
+   "sekce": "Rozsah projekčních prací (dle Kalkulace PROJ)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "st_zamereni",
+   "label": "Zaměření a zpracování výstupů (ZA)",
+   "sekce": "Stupně dokumentace (technická verze)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "st_studie",
+   "label": "Studie proveditelnosti (ST)",
+   "sekce": "Stupně dokumentace (technická verze)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "st_projednani",
+   "label": "Projednání studie (památkáři, územní rozvoj)",
+   "sekce": "Stupně dokumentace (technická verze)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "st_dpz",
+   "label": "Dokumentace pro povolení záměru (DPZ)",
+   "sekce": "Stupně dokumentace (technická verze)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "st_ic",
+   "label": "Inženýrská činnost (IČ)",
+   "sekce": "Stupně dokumentace (technická verze)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "st_dps",
+   "label": "Dokumentace pro provedení stavby (DPS)",
+   "sekce": "Stupně dokumentace (technická verze)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "st_ezc",
+   "label": "Ekonomická zadávací část (EZC)",
+   "sekce": "Stupně dokumentace (technická verze)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "st_kolaudace",
+   "label": "Kolaudace",
+   "sekce": "Stupně dokumentace (technická verze)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
+   "id": "st_geodet",
+   "label": "Geodetické zaměření",
+   "sekce": "Stupně dokumentace (technická verze)",
+   "dnes": "editovatelne",
+   "navrh": "zmrazeno",
+   "volba_jv": "zmrazeno",
+   "upraveno_jv": true,
+   "pozn": "doplněno Z1-1 (J. V. 22. 10. 2026): cena / ANO-NE činnosti PROJ po odeslání nabídky zmrazená"
+  },
+  {
    "id": "splatnostDni",
    "label": "Splatnost faktur (dní)",
    "sekce": "Platební podmínky",
@@ -1994,8 +2174,11 @@
   }
  ],
  "_pravidla": {
-  "po_tisku_SoD": "beze změny — zamčený celý krycí list kromě plné moci (pm*)",
+  "po_tisku_SoD": "beze změny — zamčený celý krycí list kromě plné moci (pm*) a kontaktní osoby zákazníka (jmenoPrijmeni, kontaktZakaznikTel, kontaktZakaznikEmail; Z1-3)",
   "nabidka_snimek": "J. V. 22. 10.: odeslaná cenová nabídka zůstává zmrazená — dotisk CN ukazuje původní ceny, DPH a podmínky ze snímku zamčení; editace v krycím listu po tisku CN se projeví jen v krycím listu, SoD a exportu",
-  "hlavicka_ZAK": "položky s bind ZAK.* se řídí touto tabulkou (dnes je zámek vynechává)"
+  "hlavicka_ZAK": "položky s bind ZAK.* se řídí touto tabulkou (dnes je zámek vynechává)",
+  "ceny_cinnosti_proj": "J. V. 22. 10. (Z1-1): ceny jednotlivých činností PROJ (cin_*, st_*) po odeslání nabídky zmrazit jako hodnotu bez DPH; popis jiných činností (rozsahJine) zůstává editovatelný",
+  "hlavicka_ridici": "J. V. 22. 10. (Z1-2): název akce a adresa v hlavičce se zmrazí jen podle řídící varianty (je-li odeslaná)",
+  "kontakt_po_SoD": "J. V. 22. 10. (Z1-3): po tisku SoD zůstává kontaktní osoba zákazníka (jméno, telefon, e-mail) editovatelná"
  }
 }

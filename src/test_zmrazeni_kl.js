@@ -91,10 +91,8 @@ const idRadku = (sekce, id) => /\*$/.test(id)
 LISTY.forEach(([k, list, sekce]) => {
   const vTab = new Set();
   TAB[k].forEach(r => idRadku(sekce, r.id).forEach(id => vTab.add(id)));
-  /* Pole činností PROJ (cin_*, st_*) se generují z KRYCI_PROJ_CINNOSTI a tabulka
-   * je nemá; patří do sekce „Rozsah projekčních prací", která je celá
-   * editovatelná — ověřeno zvlášť níž (otevřená otázka pro J. V.). */
-  const vSek = sekce.reduce((a, s) => a.concat(s.pole.map(p => p.id)), []).filter(id => !/^(cin|st)_/.test(id));
+  /* Pole činností PROJ (cin_*, st_*) jsou v tabulce od Z1-1 (J. V. 22. 10.). */
+  const vSek = sekce.reduce((a, s) => a.concat(s.pole.map(p => p.id)), []);
   const chybiVTab = vSek.filter(id => !vTab.has(id));
   const chybiVSek = [...vTab].filter(id => vSek.indexOf(id) < 0);
   test(k + ': každé pole krycího listu má řádek v tabulce J. V.', !chybiVTab.length, chybiVTab);
@@ -119,10 +117,12 @@ LISTY.forEach(([k, list, sekce]) => {
   test('nezamčená varianta: všechno editovatelné', LISTY.every(([k, list, sekce]) =>
     TAB[k].every(r => idRadku(sekce, r.id).every(id => ZM.zamekKryciPoleStav(v, list, id) === 'editovatelne'))));
 }
-test('PROJ: generovaná pole činností (cin_*, st_*) po tisku CN editovatelná jako zbytek sekce Rozsah',
+test('Z1-1: generovaná pole činností PROJ (cin_*, st_*) po tisku CN zmrazená, popis jiných činností editovatelný',
   (() => { const v = zamkni(nova(), 'nabidkaProj');
     const ids = KP.KRYCI_PROJ_SEKCE.reduce((a, s) => a.concat(s.pole.map(p => p.id)), []).filter(id => /^(cin|st)_/.test(id));
-    return ids.length >= 10 && ids.every(id => ZM.zamekKryciPoleStav(v, 'kryciProj', id) === 'editovatelne'); })());
+    return ids.length >= 10 && ids.every(id => ZM.zamekKryciPoleStav(v, 'kryciProj', id) === 'zmrazeno')
+      && ZM.zamekKryciPoleStav(v, 'kryciProj', 'rozsahJine') === 'editovatelne'
+      && ZM.zamekKryciPoleStav(v, 'kryciProj', 'cin_neznama') === 'zmrazeno'; })());
 test('neznámé pole se po tisku CN bere jako zmrazené', (() => { const v = zamkni(nova(), 'nabidka');
   return ZM.zamekKryciPoleStav(v, 'kryci', 'neniTakovePole') === 'zmrazeno'
     && ZM.zamekKryciPoleStav(v, 'kryciProj', 'neniTakovePole') === 'zmrazeno'
@@ -133,11 +133,14 @@ test('neznámé pole se po tisku CN bere jako zmrazené', (() => { const v = zam
   const z = nova(); const v = zamkni(z, typy[0]); typy.slice(1).forEach(t => zamkni(z, t));
   const spatne = [];
   LISTY.forEach(([k, list, sekce]) => TAB[k].forEach(r => idRadku(sekce, r.id).forEach(id => {
-    const ceka = r.volba_jv === 'jen_admin' ? 'jen_admin' : (list === 'kryciProj' && /^pm[A-Z]/.test(id) ? 'editovatelne' : 'zmrazeno');
+    /* po SoD volná jen plná moc (B163) a kontaktní osoba zákazníka (Z1-3) */
+    const ceka = r.volba_jv === 'jen_admin' ? 'jen_admin'
+      : ((list === 'kryciProj' && /^pm[A-Z]/.test(id)) || ['jmenoPrijmeni', 'kontaktZakaznikTel', 'kontaktZakaznikEmail'].indexOf(id) >= 0
+        ? 'editovatelne' : 'zmrazeno');
     const st = ZM.zamekKryciPoleStav(v, list, id);
     if (st !== ceka) spatne.push(list + '.' + id + ': ' + st + ' ≠ ' + ceka);
   })));
-  test(typy.join(' + ') + ': po SoD zmrazený celý krycí list kromě plné moci', !spatne.length, spatne);
+  test(typy.join(' + ') + ': po SoD zmrazený celý krycí list kromě plné moci a kontaktní osoby', !spatne.length, spatne);
 });
 
 /* ---- 2) zámek bez snímku (odeslaný dřív) ---- */
@@ -209,9 +212,13 @@ test('neznámé pole se po tisku CN bere jako zmrazené', (() => { const v = zam
   test('ZAK.cislo řeší pravidlo jen pro administrátora, ne tahle funkce', !ZM.zamekZakCestaZmrazena(z, 'ZAK.cislo'));
   zamkni(z, 'sod', v1);
   ['ZAK.dic', 'ZAK.zastupci.smluvniJmeno', 'ZAK.zastupci.banka', 'ZAK.zastupci.fakturyEmail', 'ZAK.nazevAkce',
-   'ZAK.objednatel', 'ZAK.ico', 'ZAK.adresaObjednatele', 'ZAK.kontakt'].forEach(c =>
+   'ZAK.objednatel', 'ZAK.ico', 'ZAK.adresaObjednatele'].forEach(c =>
     test('po tisku SoD: ' + c + ' zmrazeno', !!ZM.zamekZakCestaZmrazena(z, c)));
   test('po tisku SoD: pole hlavičky mimo krycí listy a SoD (datum) zůstává', !ZM.zamekZakCestaZmrazena(z, 'ZAK.datum'));
+  test('Z1-3: po tisku SoD zůstává kontaktní osoba zákazníka editovatelná',
+    !ZM.zamekZakCestaZmrazena(z, 'ZAK.kontakt') && !ZM.zamekZakCestaZmrazena(z, 'ZAK.projHlavicka.kontakt'));
+  { const no = kopie(z); no.kontakt = 'Jiná kontaktní osoba';
+    test('Z1-3: server po SoD změnu kontaktní osoby pustí', !ZM.zamekZakZmeny(kopie(z), no).length, ZM.zamekZakZmeny(kopie(z), no)); }
   /* serverová kontrola */
   const st = kopie(z);
   const no = kopie(z); no.nazevAkce = 'Přejmenováno'; no.zastupci = Object.assign({}, no.zastupci, { banka: 'Jiná banka' }); no.datum = '2026-12-31';
@@ -230,6 +237,27 @@ test('neznámé pole se po tisku CN bere jako zmrazené', (() => { const v = zam
   test('server: po tisku CN se adresa stavby změnit nesmí', ZM.zamekZakZmeny(stCN, noCN2).indexOf('ZAK.adresa') >= 0);
   const noPr = kopie(stCN); delete noPr.adresa; const stPr = kopie(stCN); stPr.adresa = '';
   test('server: chybějící a prázdné pole jsou totéž', !ZM.zamekZakZmeny(stPr, noPr).length);
+}
+
+/* ---- 4b) Z1-2: název akce a adresa jen podle ŘÍDÍCÍ varianty ---- */
+{
+  const z = nova(); const v1 = z.varianty[0];
+  const v2 = ZM.klonujVariantu(z, v1.id, { aktivovat: true });
+  zamkni(z, 'nabidka', v2);                       // odeslaná je jen klon, řídící (V1) ne
+  z.varianty.forEach(v => { v.ridici = v.id === v1.id; });
+  test('Z1-2: odeslaná neřídící varianta název akce ani adresu nezmrazí',
+    !ZM.zamekZakCestaZmrazena(z, 'ZAK.nazevAkce') && !ZM.zamekZakCestaZmrazena(z, 'ZAK.adresa'));
+  const st = kopie(z); const no = kopie(z); no.nazevAkce = 'Přejmenováno'; no.adresa = 'Jinde 1';
+  test('Z1-2: server změnu názvu pustí, když řídící varianta odeslaná není', !ZM.zamekZakZmeny(st, no).length, ZM.zamekZakZmeny(st, no));
+  z.varianty.forEach(v => { v.ridici = v.id === v2.id; });   // řídící je odeslaná
+  test('Z1-2: odeslaná řídící varianta název akce i adresu zmrazí',
+    !!ZM.zamekZakCestaZmrazena(z, 'ZAK.nazevAkce') && !!ZM.zamekZakCestaZmrazena(z, 'ZAK.projHlavicka.adresa'));
+  const st2 = kopie(z); const no2 = kopie(z); no2.nazevAkce = 'Přejmenováno';
+  test('Z1-2: server změnu názvu u odeslané řídící varianty odmítne', ZM.zamekZakZmeny(st2, no2).indexOf('ZAK.nazevAkce') >= 0);
+  const no3 = kopie(z); no3.nazevAkce = 'Přejmenováno'; no3.varianty.forEach(v => { v.ridici = v.id === v1.id; });
+  test('Z1-2: server pustí, když se v témže uložení řídící přepne na nezamčenou variantu', !ZM.zamekZakZmeny(st2, no3).length);
+  z.varianty.forEach(v => { delete v.ridici; });             // bez příznaku je řídící první (V1, nezamčená)
+  test('Z1-2: bez příznaku řídící rozhoduje první varianta', !ZM.zamekZakCestaZmrazena(z, 'ZAK.nazevAkce'));
 }
 
 /* ---- 5) dotisk odeslané CN po změně DPH a podmínek ---- */

@@ -417,7 +417,20 @@ function zamekPoTisku(typ, varId, sablona, navic) {
   zamkniVariantu(v, { typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek,
                       sablona: sablona || null, slovnik: zamekSlovnikTed(), sod: (navic && navic.sod) || null });
   render();
+  zamekPoTiskuUloz();
   return v.zamek;
+}
+
+/* TISK = HNED ULOŽIT (Z1-4, rozhodnutí J. V. 22. 10. 2026). Odeslaný dokument
+ * se zapíše do databáze rovnou, ne až autosavem — mezi tiskem a uložením tak
+ * nevznikne okno, ve kterém by se změna podmínek dostala do snímku zámku.
+ * Jen online a přihlášeně; ze souboru z disku beze změny (onlineMozne).
+ * Souběh se zápisem, který už běží, řeší fronta v onlineUloz. */
+function zamekPoTiskuUloz() {
+  if (typeof onlineMozne !== 'function' || !onlineMozne()) return false;
+  if (typeof ONLINE_STAV === 'undefined' || !ONLINE_STAV.ja || typeof onlineUloz !== 'function') return false;
+  try { onlineUloz({ tiche: true }); } catch (e) { return false; }
+  return true;
 }
 
 /* ---------- lišta se stavem zámku ---------- */

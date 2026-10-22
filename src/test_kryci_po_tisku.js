@@ -80,7 +80,7 @@ test('neznámý list se bere jako zamčený', ZM.zamekKryciPoleVNabidce('jine', 
   const v = zamcena(typ, dalsi);
   const t = [typ].concat(dalsi || []).join(' + ');
   test(t + ': po smlouvě o dílo je krycí list zamčený celý', !ZM.zamekKryciOtevreny(v)
-    && !ZM.zamekKryciPoleVolne(v, 'kryci', 'jmenoPrijmeni') && !ZM.zamekKryciPoleVolne(v, 'kryciProj', 'odpovednyJmeno'));
+    && !ZM.zamekKryciPoleVolne(v, 'kryci', 'atypMustky') && !ZM.zamekKryciPoleVolne(v, 'kryciProj', 'odpovednyJmeno'));
 });
 
 /* B163 (audit 25, 16. 10. 2026): plná moc nic nezamyká a často se dělá až
@@ -96,7 +96,7 @@ test('B163: pole plné moci v krycím listu PROJ existují',
     PM.every(id => ZM.zamekKryciPoleVolne(v, 'kryciProj', id)));
   test('B163: ' + t + ': ostatní pole krycího listu zůstávají zamčená',
     !ZM.zamekKryciPoleVolne(v, 'kryciProj', 'odpovednyJmeno') && !ZM.zamekKryciPoleVolne(v, 'kryciProj', 'objPodpisFirma')
-    && !ZM.zamekKryciPoleVolne(v, 'kryci', 'jmenoPrijmeni') && !ZM.zamekKryciPoleVolne(v, 'kryciProj', 'splatnostDni'));
+    && !ZM.zamekKryciPoleVolne(v, 'kryci', 'atypMustky') && !ZM.zamekKryciPoleVolne(v, 'kryciProj', 'splatnostDni'));
 });
 test('B163: pole „pm…" v krycím listu OCK (žádné takové není) volné není',
   !ZM.zamekKryciPoleVolne(zamcena('sod'), 'kryci', 'pmZmocnitel'));

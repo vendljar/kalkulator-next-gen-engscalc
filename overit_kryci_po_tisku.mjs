@@ -186,6 +186,31 @@ ok('Z1: zmrazená pole krycího listu PROJ jsou označená (🔒, neaktivní)',
 ok('Z1: poznámka říká, co je po odeslání zmrazené',
   await p.evaluate(() => /zmrazená \(🔒/.test((document.querySelector('.kl-zamek-pozn') || {}).textContent || '')));
 
+/* Z1-4 (J. V. 22. 10. 2026): tisk nabídky zakázku hned uloží — jen online
+ * a přihlášeně; ze souboru z disku beze změny (žádný zápis, žádný fetch). */
+console.log('— Z1-4: tisk = hned uložit —');
+const z14 = await p.evaluate(() => {
+  const puvodni = { mozne: window.onlineMozne, uloz: window.onlineUloz };
+  const volani = [];
+  window.onlineUloz = (o) => { volani.push(o || {}); return Promise.resolve(true); };
+  const priprava = () => { ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 9952'; syncVarianta(); };
+  priprava(); ONLINE_STAV.ja = { email: 'autor.kryci@priklad.cz', role: 'Obchodník' };
+  zamekPoTisku('nabidkaTisk');
+  const offline = volani.length;
+  window.onlineMozne = () => true;
+  priprava(); zamekPoTisku('nabidkaTisk');
+  const online = volani.length - offline, tiche = volani.length ? volani[volani.length - 1].tiche === true : false;
+  priprava(); zamekPoTisku('techspec');                 // nezamykající dokument nic neukládá
+  const techspec = volani.length - offline - online;
+  priprava(); ONLINE_STAV.ja = null; zamekPoTisku('nabidkaTisk');
+  const odhlaseny = volani.length - offline - online - techspec;
+  window.onlineMozne = puvodni.mozne; window.onlineUloz = puvodni.uloz;
+  return { offline, online, tiche, techspec, odhlaseny };
+});
+ok('Z1-4: ze souboru z disku tisk nic neukládá', z14.offline === 0, z14);
+ok('Z1-4: online a přihlášeně tisk nabídky hned uloží (jednou, tiše)', z14.online === 1 && z14.tiche, z14);
+ok('Z1-4: nezamykající dokument ani nepřihlášený uživatel nic neukládá', z14.techspec === 0 && z14.odhlaseny === 0, z14);
+
 await b.close();
 if (konzole.length) console.log('Konzole:\n  ' + konzole.join('\n  '));
 const spatne = chyby.filter(x => !x).length;
