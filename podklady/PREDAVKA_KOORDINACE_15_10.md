@@ -10,6 +10,13 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 22. 10. ~06:25 UTC — koordinace „ŘÍDÍCÍ 21.10 noc 2“ session_01X93Edh1U8MQru6HV28FdBY (kontext ~34 %)
+
+- **test = integrace = aea832a (v22.10.1)** = D4 (slovníky překladu SoD z revidovaného znění, nástroj) + D1 (roadmapa dorovnána, #475–#482, rozhodnutí J. V. #486–#499, controlling #500; soupis novinek; ukázkový export v2) + D2 (podklad #367 P10). Kolo 299/0/6, statické 4/4, mutace 26/26. Plán dne (D1–D4) hotový, všechny dávky archivovány, stará koordinace archivována.
+- **Čeká na J. V.:** main (návrh v22.10.1), releasy v21.10.5, v21.10.6, v22.10.1 (odkazy v kokpitu), rozhodnutí K5/K6 (#486–#499), P10 (10 otázek, Q1), D4 — 6 vadných slovníků na Disku nahradit přílohami z archivovaného sezení D4 session_01BXbjNzMGvJmNGvTVPasUd7 + 4 otázky, D3 (#484, #485, SoD v4 znovu kvůli K6-W3).
+- **Další:** 11:50 UTC polední krok (trig_013ZUxtr2X1U7JUb1AMuHARp): rozpočet (odhad ~71 %), případně R2/R3; noc 22./23. 10. K7 nad v22.10.1 (~16:00, při ≤ 82 %); pá 05:00 souhrn.
+- **Poučení:** dávky s Google Disk konektorem zastaví schválení zápisu → do promptu „na Disk nic nezapisuj“; commit z nového dne = nová verze i u čisté dokumentace (slučovat do test až s další verzí).
+
 ## STAV 21. 10. ~20:50 UTC — koordinace „ŘÍDÍCÍ 21.10 noc 2“ session_01X93Edh1U8MQru6HV28FdBY (kontext ~24 %)
 
 - **test = integrace = 4c127f5 (v21.10.6)** = D3 (opravy nálezů K6 bez J. V., #483: K6-K1, S1, S3, S4, S6, K6, K8, W1–W4, K5-S2, W4, W7) + zápis K6 (#475). Kolo `--bez-mutaci` 298/0/6, statické 4/4, cílené mutace 16/16. **K6** nad v21.10.5: celé kolo s mutacemi zelené (jádro 417/417, server 753/753), audit VYHOVUJE S VÝHRADOU (`podklady/K6_AUDIT_21_10.md`). K6 i D3 archivovány.
