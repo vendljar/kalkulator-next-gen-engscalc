@@ -486,7 +486,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
 }
 
 /* ---------- #504 doplnění J. V. 22. 10.: filtr Stav Pipedrive (výchozí vyhrané) ----------
- * Před doplněním 0 / 4 (filtr `pd` neexistoval), po něm 4 / 4. */
+ * Před doplněním 0 / 5 (filtr `pd` neexistoval), po něm 5 / 5. */
 if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   const Fq = (q) => C.ctrlHromadnyFiltr(Object.assign({ od: '2000-01-01', do: '2099-12-31' }, q));
   test('#504 PD: výchozí stav Pipedrive = vyhrané, všechny hodnoty platí, cizí → chyba',
@@ -507,6 +507,17 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     && C.ctrlHromadnyZakazka(sDealem(''), f('bez'), o).ok
     && C.ctrlHromadnyZakazka(Object.assign(kopie(won), { pdDealId: '' }), f('bez'), o).ok
     && C.ctrlHromadnyZakazka(won, f('bez'), o).pdVyrazeno === 'jiny');
+  const listy = C.ctrlExportListy([C.ctrlHromadnyZakazka(won, f(), o).exp], null,
+    { hromadny: Object.assign({}, f(), { vyrazenoPd: { jiny: 2, bez: 3 } }) });
+  const popis = (listy.find(l => l.nazev === 'Popis') || { rows: [] }).rows;
+  const radek = (t) => (popis.find(r => r[0] === t) || [])[1];
+  const listyVse = C.ctrlExportListy([C.ctrlHromadnyZakazka(won, f('vse'), o).exp], null, { hromadny: f('vse') });
+  const popisVse = (listyVse.find(l => l.nazev === 'Popis') || { rows: [] }).rows;
+  test('#504 PD: list Popis nese filtr stavu (nedotahuje se) a počty vyřazených zvlášť; u „Všechny" bez počtů',
+    /^Vyhrané .*nedotahuje/.test(radek('Stav Pipedrive') || '') && radek('Vyřazeno filtrem stavu — jiný stav') === 2
+    && radek('Vyřazeno filtrem stavu — bez stavu (bez dealu nebo stav neznámý)') === 3
+    && /^Všechny/.test((popisVse.find(r => r[0] === 'Stav Pipedrive') || [])[1] || '')
+    && !popisVse.some(r => /^Vyřazeno filtrem stavu/.test(String(r[0]))), popis.slice(0, 14));
   const mimo = C.ctrlHromadnyZakazka(sDealem('lost'), C.ctrlHromadnyFiltr({ od: '2000-01-01', do: '2000-01-02' }).filtr, o);
   test('#504 PD: zakázka mimo období se do vyřazených filtrem stavu nepočítá', mimo.mimo === true && !mimo.pdVyrazeno, mimo);
 }
