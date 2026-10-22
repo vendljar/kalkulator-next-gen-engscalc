@@ -1,3 +1,68 @@
+# Předávka — 22. 10. 2026: Stav Pipedrive v hlavičce kalkulace (v22.10.2, #504), větev `claude/eager-carson-1xznt2`
+
+Nad `test` v22.10.1 (sloučení 4957b61 — konflikty jen v evidenci; položky #473–#475 této větve mají od sloučení
+čísla #501–#503, v `test` se mezitím obsadila). **Do test / main / test-draft / integrace nic** — slučuje
+koordinace na pokyn J. V. Zadání `podklady/PIPEDRIVE_STAV_DEALU_22_10.md` (větev `claude/integrace-16-10`),
+náhled https://claude.ai/artifact/UHqdUv62Kax3NCLGHWXcb1, CHANGELOG `## v22.10.2 — Stav Pipedrive`, roadmapa #504.
+Verze v22.10.2 nese i #114 z 21. 10. (oddíl CHANGELOG pod ním).
+
+- **Hotovo — hlavička:** řádek „Stav Pipedrive“ úplně nahoře v pravém sloupci OCK i PROJ (`pdStavRadek` v
+  `src/ui/common.js`), vypnuté pole + štítek v barvě stavu, bez dealu „— zakázka nemá deal —“, s dealem a bez
+  stavu „— stav zatím nenačten —“, čas načtení v bublině. Sazba DPH má `na-konec` (jinak u zahraniční zakázky
+  s kurzem datum sjede o 38 px).
+- **Hotovo — načtení:** `pdStavHlidej` / `pdStavNacti` / `pdStavPouzij` v `src/ui/online_ui.js` (z `render()` jen
+  naplánuje dotaz; jednou po výměně zakázky v paměti, změně dealu nebo přihlášení); `historieBezZmenyPo` v
+  `ui/historie.js` (načtený stav není neuložená změna); `ctrlUiPdDeal` zahodí stav při změně deal id.
+- **Hotovo — server:** `GET /api/pd/stav?deal=<id>` (`netlify/functions/pd_stav.mjs`), záznam `pipedrive/stav/<id>`
+  `{status, nacteno, overeno}`, cache 10 min, strop 120/h (`pdStropCerstvych(email, {druh:'stav'})`), smazaný deal
+  `is_deleted` / 404 → `status=deleted`, chyby 502/429 (nikdy 401); `lib/controlling_modul.cjs` (lehký obal).
+  Uložení: `ctrlPdStavPrijmi` (src/controlling.js) v `lib/zakazka_kontrola.mjs`, záznam čte `zakazky.mjs`.
+  Export: sloupce „Stav Pipedrive“ + „– načteno“, verze struktury 3, hromadný export doplní novější stav.
+- **Testy:** `netlify/test_pd_stav.mjs` 52/0 (nová), `src/test_controlling.js` 220/0, `netlify/test_controlling.mjs`
+  57/0, `netlify/test_prava.mjs` 924/0, `overit_pd_stav.mjs` 42/0 (nový harness), `overit_lista` 255/0,
+  `overit_controlling` 48/0; pojistky na 4957b61 doložené (CHANGELOG). Mutace „Stav Pipedrive“ 23 nových (+ L27):
+  cíleně 24/24. **Celé kolo na 252c49f:** sady 302 prošlo / 0 selhalo / 6 přeskočeno, mutace jádra 432/432; mutace
+  serveru a statické kontroly běží znovu (`testovaci_kolo.sh --jen mutace-server,staticke`) — kontejner se ve 12:23 UTC
+  restartoval uprostřed mutací serveru (dočasná mutace v `netlify/lib/zakazka_kontrola.mjs` vrácena checkoutem).
+  Výsledek doplní další commit; **přerušené kolo se nesmí brát jako prošlé.**
+- **Prostředí:** prohlížečové harnessy v kontejneru běží — Playwright 1.56.1 je globálně, stačí odkazy
+  `mkdir -p node_modules && ln -sfn /opt/node22/lib/node_modules/playwright node_modules/playwright && ln -sfn
+  /opt/node22/lib/node_modules/playwright/node_modules/playwright-core node_modules/playwright-core`
+  (`node_modules` je v `.gitignore`). Samostatné sady `netlify/test_*.mjs` potřebují `ADMIN_EMAIL=spravce@priklad.cz`
+  (kolo i `spust_testy.sh` ho nastavují samy).
+- **Pozor (22. 10. ráno):** kontejner se uprostřed dávky restartoval (čerstvý klon, místní větev na `main`,
+  prázdný scratchpad). Nic se neztratilo, sloučení bylo na GitHubu — proto WIP commity po každém kroku.
+- **Pozor (22. 10. 12:23 UTC):** druhý restart, tentokrát uprostřed mutací serveru — po restartu vždy `git status`;
+  pozměněný soubor v `src/` nebo `netlify/` bez běžícího mutačního procesu je zbytek mutace → `git checkout -- <soubor>`.
+- **Rozhodnuto v dávce (k odsouhlasení J. V., jinak platí):**
+  1. Stav je **údaj serveru** — při uložení ho server bere ze svého záznamu, ne od prohlížeče (podvržení
+     „Vyhrané“ nejde).
+  2. Obnovu stavu z Pipedrive dělá jen uživatel s právem `crm.pipedrive` (jako ostatní `/api/pd/*`, výchozí
+     všichni); uložený stav v hlavičce vidí každý.
+  3. Export má **dva sloupce** (stav a čas načtení) místo jednoho — kvůli filtrování v Excelu; verze struktury 3.
+  4. Stav se obnovuje při otevření zakázky (podle zadání); hromadný export bere nejnovější, co server zná.
+- **Ke slučování:** CHANGELOG (dva oddíly v22.10.2 nahoře), roadmapa #504 + záznam dávky + `meta.build`,
+  `netlify/mutace.mjs` (blok „Stav Pipedrive“ za #114, `test_pd_stav.mjs` na konci `SADY`, kotva B80 `>= max`),
+  `netlify/test_prava.mjs` (matice: `pd_stav.mjs`), `manual/obsah.json` (Co je nového v22.10.2), tento oddíl.
+- **DUPLICITA (zjištěno 22. 10. po dokončení):** P1 ve větvi `claude/integrace-16-10` udělala Stav Pipedrive také
+  (`GET /api/pd/stav?soubor=`, úložiště `pd_stav`, bez práva `crm.pipedrive`, sloupce „Stav Pipedrive“ / „Stav Pipedrive
+  načten“) a obsazuje také v22.10.2. Navrženo J. V. (bez odpovědi se nic nedělá): revert mých commitů Stav Pipedrive
+  (4b63ad7, 2da16e1, část 252c49f), sloučit integraci a do ní převést opravy, které P1 nemá — Sazba DPH `na-konec`
+  (38 px u zahraniční zakázky), smazaný deal při 404 přes seznam `status=deleted`, obnova stavu i po otevření ze
+  souboru, obnově zálohy a přihlášení.
+- **Mimo repozitář (pro J. V. / integrátora):** souhrnný dokument k 22. 10. https://claude.ai/artifact/XSFa1QVnFCWXoLpzx7yD8u;
+  mapovací tabulka `Pipedrive_Kalkulator_mapa_poli_2026-10-22.xlsx` (Přehled, Mapa polí 81 řádků, Převody hodnot,
+  Otázky 1–17 se sloupcem pro odpověď) — poslaná J. V. v sezení, generátor jen ve scratchpadu (čte `POLE_DEALU` a
+  popisky krycích listů z commitu). Do repa nejde (jméno integrátora, firemní podklad).
+- **Další krok:** výsledek kola do CHANGELOG (KOLO_MUTACE) a roadmapy (POZN_DOPLNIT); po rozhodnutí o duplicitě s P1
+  revert / sloučení; pak jako 21. 10. — po potvrzení §12 dotáhnout #113, pak #115 a #502.
+
+**Otázky pro J. V.** (z 21. 10. platí): 1. souhlas s návrhem směru dat (`podklady/NAVRH…` §12) → doporučuji ano;
+2. zapisovat z kalkulace hodnotu dealu → doporučuji ano.
+3. duplicita Stav Pipedrive s P1 → doporučuji revert mé verze, sloučení integrace a převod tří oprav (viz výše).
+
+---
+
 # Předávka — 21. 10. 2026 odpoledne: #114 Pipedrive — párování polí podle přesného názvu, převod hodnot, jediný vlastník pole (bez verze), větev `claude/eager-carson-1xznt2`
 
 Nad `test` v21.10.2 (merge a5f0308). **Do test / main / test-draft / integrace nic.** Podklad:
