@@ -1281,6 +1281,11 @@ function onlineUloz(opts) {
     }
     return Promise.resolve(false);
   }
+  /* Ze souboru (file://) se neodesílá nic (Z1, 22. 10. 2026; časovač autosave zůstává). */
+  if (typeof onlineMozne === 'function' && !onlineMozne()) {
+    if (!opts.tiche) { onlineZprava('Online databáze není dostupná — aplikace běží ze souboru.', 'varovani'); render(); }
+    return Promise.resolve(false);
+  }
   // #41: rozepsané změny do protokolu hned – uložený záznam nese protokol
   // k okamžiku uložení (stejně jako ukládání do složky).
   if (typeof protokolZapisTed === 'function') protokolZapisTed();
