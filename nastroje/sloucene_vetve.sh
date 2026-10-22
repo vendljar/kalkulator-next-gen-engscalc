@@ -133,11 +133,25 @@ while read -r _ prvni dalsi; do
   for c in $dalsi; do SLOUCENO_MERGEM[$c]=1; done
 done < <(git log --merges --format='%H %P' "refs/remotes/$REMOTE/$ZAKLAD")
 
+# Jméno větve do dotazu URL: každý segment jako encodeURIComponent, „/“
+# zůstává (K5-W2, O13 — „a&ref=…“ by zdvojilo ref, „h#x“ by se useklo).
+uri_segmenty() {
+  local LC_ALL=C s="$1" out="" c h i
+  for (( i = 0; i < ${#s}; i++ )); do
+    c="${s:i:1}"
+    case "$c" in
+      [A-Za-z0-9._~/-]) out+="$c" ;;
+      *) printf -v h '%%%02X' "'$c"; out+="$h" ;;
+    esac
+  done
+  printf '%s' "$out"
+}
+
 # Čas poslední aktivity větve na GitHubu (epoch), prázdný = nezjištěn.
 cas_aktivity() {
   [ -n "$GITHUB_REPO" ] || return 0
   local t
-  t=$(gh api "repos/$GITHUB_REPO/activity?ref=refs/heads/$1&per_page=1" --jq '.[0].timestamp // empty' 2>/dev/null) || return 0
+  t=$(gh api "repos/$GITHUB_REPO/activity?ref=refs/heads/$(uri_segmenty "$1")&per_page=1" --jq '.[0].timestamp // empty' 2>/dev/null) || return 0
   [ -n "$t" ] || return 0
   date -d "$t" +%s 2>/dev/null || true
 }

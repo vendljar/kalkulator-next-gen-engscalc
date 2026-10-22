@@ -8,8 +8,9 @@ telefon ani tajemství. Testy používají smyšlené adresy (…@priklad.cz,
 …@example.com) a smyšlená čísla; skutečná adresa nebo klíč ve zdrojácích
 zůstane v historii Gitu napořád.
 
-Co se hlídá (v src/, netlify/, server/, nastroje/, manual/, roadmapa/, .github/
-a v kořenových *.md, *.toml, *.yml, *.mjs, *.py, *.sh, *.json):
+Co se hlídá (v src/, netlify/, server/, nastroje/, manual/, roadmapa/, .github/,
+podklady/ a .claude/ — ty dvě od K6-W2, 21. 10. 2026: předávky, audity a data
+kokpitu — a v kořenových *.md, *.toml, *.yml, *.mjs, *.py, *.sh, *.json):
   1. e-mailové adresy mimo povolený seznam (nastroje/povolene_kontakty.txt —
      přesné adresy nebo celé domény zápisem *@domena),
   2. telefonní čísla v českém tvaru (+420 …, 9 číslic začínajících 6/7) mimo
@@ -28,7 +29,7 @@ import re
 import sys
 
 KOREN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SLOZKY = ['src', 'netlify', 'server', 'nastroje', 'manual', 'roadmapa', '.github']
+SLOZKY = ['src', 'netlify', 'server', 'nastroje', 'manual', 'roadmapa', '.github', 'podklady', '.claude']
 KORENOVE_PRIPONY = ('.md', '.toml', '.yml', '.yaml', '.mjs', '.js', '.py', '.sh', '.json', '.txt')
 PRIPONY = ('.js', '.mjs', '.cjs', '.py', '.sh', '.md', '.toml', '.yml', '.yaml', '.json', '.html', '.txt', '.svg')
 VYNECHAT_SLOZKY = {'node_modules', 'dist', '.git', '_soukrome', '_DB', '__pycache__'}

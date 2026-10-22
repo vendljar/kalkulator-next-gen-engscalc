@@ -17,8 +17,11 @@ function xlsxColIndex(ref) {
   let n = 0; for (const ch of m[0]) n = n * 26 + (ch.charCodeAt(0) - 64);
   return n - 1;
 }
+/* Řídicí znaky, které XML 1.0 nepovoluje (jako XML_RIDICI v docxgen.js) —
+ * jeden v názvu akce by rozbil celý sešit (K6-K8). */
+const XLSX_RIDICI = /[\x00-\x08\x0B\x0C\x0E-\x1F\uFFFE\uFFFF]/g;
 function xlsxEsc(s) {
-  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return String(s == null ? '' : s).replace(XLSX_RIDICI, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 function xlsxUnesc(s) {

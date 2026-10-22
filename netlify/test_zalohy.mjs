@@ -196,6 +196,10 @@ const KLICE = {
   slovnik: ['program', true],
   controlling: ['program', true],
   popisy_historie: ['program', 'výjimka: historie 30 verzí dodatkových textů, platné popisy jsou v otisku'],
+  /* C3 (#447, 21. 10. 2026): protokol hromadných exportů controllingu — stopa
+   * přístupu (kdo si kdy vyvezl náklady), ne data k obnově; po havárii začne
+   * od nuly. Výjimku má potvrdit J. V. (souhrn dávky C3). */
+  controlling_exporty: ['program', 'výjimka: protokol exportů controllingu (C3), stopa přístupu, ne data k obnově'],
   'z/': ['zakazky', true], _rejstrik: ['zakazky', true],
   rejstrik: ['sablony', true],
   rezim: ['analytika', false], 'den/': ['analytika', false], 'ocista-b175': ['analytika', false],
@@ -710,6 +714,94 @@ await zkus('O9', async () => {
   pamet.set(stara, JSON.stringify({ kdy: 'x' }));
   const poStare = await postVynuceny({ duvod: 'rucne' });
   test('K4-N5: rezervace starší 24 h limit nedrží a uklidí se', poStare.ok === true && !pamet.has(stara) && rezKlice().length === 0, poStare);
+});
+
+/* ---------------- O11: K4-N13 — retence stojí do potvrzení úbytku správcem ---------------- */
+/* Rozhodnutí J. V. 21. 10. 2026: po poklesu pod 50 % retence stojí, dokud
+ * správce varování nepotvrdí, nejdéle 30 dní. Pojistka: před O11 druhá noc
+ * po poklesu mazala (FAIL „druhá noc"), retenceDrzena ani akce
+ * „retence-potvrdit" neexistovaly (výjimka / 400 místo 409 a 200). */
+await zkus('O11', async () => {
+  const s = ulz('zalohy');
+  const D0 = '2028-10-19', D1 = '2028-10-20';
+  const ted0 = Date.parse('2028-10-19T03:00:00Z');
+  const nocni = (z, u) => ({ porizena: 'x', zdroj: 'nocni-otisk', pocetZakazek: z, pocetUctu: u });
+  const pripravit = async () => {
+    for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
+    for (const k of ['2028-09-02', '2028-09-03'])
+      { await s.zapis(k, { zdroj: 'x' }); await s.zapis(Z.souhrnKlic(k), nocni(100, 10)); }
+    await s.zapis('2028-09-01', { zdroj: 'nocni-otisk' });
+    await s.zapis('2028-10-18', { zdroj: 'nocni-otisk' }); await s.zapis(Z.souhrnKlic('2028-10-18'), nocni(100, 10));
+    await s.zapis(D0, { zdroj: 'nocni-otisk' }); await s.zapis(Z.souhrnKlic(D0), nocni(40, 10));
+  };
+  /* noc D1: nový noční otisk se stejně „chudými" počty jako D0 */
+  const noc = async (den, ted) => {
+    await s.zapis(den, { zdroj: 'nocni-otisk' }); await s.zapis(Z.souhrnKlic(den), nocni(40, 10));
+    await s.zapis(Z.KOPIE_DISK_KLIC, { kdy: new Date(ted - 3600000).toISOString(), soubor: 'otisk_' + den + '.json', velikostB: 1234,
+      sha256: 'b'.repeat(64), otisk: den, puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', potvrzeno: 'heslo-spravce' });
+    return Z.retenceProved(den, den, ted);
+  };
+  await pripravit();
+  await s.zapis(Z.KOPIE_DISK_KLIC, { kdy: new Date(ted0 - 3600000).toISOString(), soubor: 'otisk_' + D0 + '.json', velikostB: 1,
+    sha256: 'b'.repeat(64), otisk: D0, puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', potvrzeno: 'heslo-spravce' });
+  const r0 = await Z.retenceProved(D0, D0, ted0);
+  test('K4-N13: noc s poklesem — retence přeskočena, varování zapsáno', r0.smazano.length === 0 && !!r0.varovani, r0);
+  const r1 = await noc(D1, Date.parse('2028-10-20T03:00:00Z'));
+  test('K4-N13: druhá noc po poklesu (otisk se srovná s „chudým") — retence DÁL STOJÍ, nic se nesmaže',
+    r1.smazano.length === 0 && !!r1.drzeno && /retence stojí do potvrzení/.test(r1.ceka || '')
+    && pamet.has('zalohy/2028-09-02') && pamet.has('zalohy/2028-09-03'), r1);
+  const t29 = Date.parse(r0.varovani.kdy) + 29 * 86400000 + 3600000;
+  const r29 = await noc('2028-11-17', t29);
+  test('K4-N13: 29. den po varování retence pořád stojí', r29.smazano.length === 0 && !!r29.drzeno, r29);
+  const t30 = Date.parse(r0.varovani.kdy) + 30 * 86400000;
+  const r30 = await noc('2028-11-18', t30);
+  test('K4-N13: po 30 dnech bez potvrzení retence běží normálně', !r30.drzeno && r30.smazano.includes('2028-09-02'), r30);
+  test('K4-N13: čistá funkce — potvrzené / staré / nečitelné varování retenci nedrží, čerstvé drží',
+    Z.retenceDrzena({ kdy: new Date(ted0).toISOString(), potvrzeno: { kdy: 'x' } }, ted0) === null
+    && Z.retenceDrzena({ kdy: 'x' }, ted0) === null && Z.retenceDrzena(null, ted0) === null
+    && Z.retenceDrzena({ kdy: new Date(ted0 - 30 * 86400000).toISOString() }, ted0) === null
+    && Z.retenceDrzena({ kdy: new Date(ted0 - 3600000).toISOString() }, ted0).dnu === 0);
+
+  /* potvrzení správcem: endpoint */
+  await pripravit();
+  const realNow = Date.now;
+  try {
+    pamet.delete('zalohy/' + Z.RETENCE_VAROVANI_KLIC);
+    const bez = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: D0, hesloSpravce: 'Docasne.Heslo.123' }, cookie);
+    test('K4-N13: potvrzení bez varování → 409 „Není co potvrdit"', bez.status === 409 && /Není co potvrdit/.test((await bez.json()).chyba || ''));
+    await s.zapis(Z.RETENCE_VAROVANI_KLIC, { kdy: new Date().toISOString(), den: D0, predchozi: '2028-10-18',
+      pred: { pocetZakazek: 100, pocetUctu: 10 }, nove: { pocetZakazek: 40, pocetUctu: 10 }, text: 'x' });
+    const jinyDen = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: '2028-10-01', hesloSpravce: 'Docasne.Heslo.123' }, cookie);
+    test('K4-N13: potvrzení jiného (staršího) varování → 409', jinyDen.status === 409);
+    const spatne = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: D0, hesloSpravce: 'Spatne.Heslo.999' }, cookie);
+    test('K4-N13: potvrzení se špatným heslem správce → 401, záznam beze změny',
+      spatne.status === 401 && !(await s.cti(Z.RETENCE_VAROVANI_KLIC)).potvrzeno);
+    const bezHesla = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: D0 }, cookie);
+    test('K4-N13: potvrzení bez hesla → odmítnuto', bezHesla.status >= 400 && !(await s.cti(Z.RETENCE_VAROVANI_KLIC)).potvrzeno);
+    const anon = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: D0, hesloSpravce: 'Docasne.Heslo.123' });
+    test('K4-N13: potvrzení bez přihlášení → 401', anon.status === 401);
+    const okR = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: D0, hesloSpravce: 'Docasne.Heslo.123' }, cookie);
+    const okJ = await okR.json();
+    const zaz = await s.cti(Z.RETENCE_VAROVANI_KLIC);
+    test('K4-N13: správce s heslem potvrdí → 200, záznam nese kdo a kdy', okR.status === 200 && okJ.ok
+      && !!zaz.potvrzeno && !!Date.parse(zaz.potvrzeno.kdy) && /@/.test(zaz.potvrzeno.kdo) && zaz.den === D0, okJ);
+    const znovu = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: D0, hesloSpravce: 'Docasne.Heslo.123' }, cookie);
+    test('K4-N13: druhé potvrzení téhož → 409', znovu.status === 409);
+    const g = await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', cookie)).json();
+    test('K4-N13: přehled záloh vrací potvrzené varování', !!(g.retenceVarovani && g.retenceVarovani.potvrzeno), g.retenceVarovani);
+    const rp = await noc(D1, Date.now() + 3600000);
+    test('K4-N13: po potvrzení retence zase maže', !rp.drzeno && rp.smazano.includes('2028-09-02'), rp);
+    /* noční funkce: nepotvrzené varování → log VAROVÁNÍ s K4-N13 */
+    await pripravit();
+    await s.zapis(Z.RETENCE_VAROVANI_KLIC, { kdy: new Date(Date.now() - 86400000).toISOString(), den: D0, predchozi: '2028-10-18',
+      pred: { pocetZakazek: 100, pocetUctu: 10 }, nove: { pocetZakazek: 40, pocetUctu: 10 } });
+    const varovani = [], logy = [];
+    const l = console.log, w = console.warn;
+    console.log = (...a) => logy.push(a.join(' ')); console.warn = (...a) => varovani.push(a.join(' '));
+    let n; try { n = await (await zalohaNocni()).json(); } finally { console.log = l; console.warn = w; }
+    test('K4-N13: noční funkce s nepotvrzeným varováním nic nesmaže a zaloguje „retence stojí"',
+      n.ok && n.retence.smazano.length === 0 && varovani.some(x => /retence stojí do potvrzení.*K4-N13/.test(x)), { varovani, r: n && n.retence });
+  } finally { Date.now = realNow; }
 });
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');

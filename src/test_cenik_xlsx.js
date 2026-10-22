@@ -123,6 +123,17 @@ const clone = o => JSON.parse(JSON.stringify(o));
       d.chyby.join(';') + ' | ' + d.nezname.join(','));
   }
 
+  /* K6-K8 (D3): řídicí znak (U+0001, U+001F, U+FFFE) v textu buňky by
+   * udělal neplatné XML a rozbil celý sešit — xlsxEsc ho vynechá jako docx;
+   * TAB, LF a CR zůstávají. */
+  {
+    const xml = xl.xlsxSheetXml([['Akce\u0001 A\u001F', 'B\uFFFE', 'tab\tlf\ncr\r']]);
+    test('K6-K8: řídicí znaky XML v buňce vynechá, TAB/LF/CR ponechá', !/[\x00-\x08\x0B\x0C\x0E-\x1F\uFFFE\uFFFF]/.test(xml)
+      && xml.includes('Akce A') && xml.includes('tab\tlf\ncr\r'), xml);
+    const zpet = await xl.xlsxPrecti(new Uint8Array(await xl.xlsxZapis([{ nazev: 'L', rows: [['x\u0002y']] }]).arrayBuffer()));
+    test('K6-K8: sešit s řídicím znakem se přečte zpět bez něj', JSON.stringify(zpet).includes('xy'), JSON.stringify(zpet).slice(0, 200));
+  }
+
   console.log(fail ? `\n${fail} CHYB` : '\nVŠECHNY TESTY CENÍK XLSX OK');
   process.exit(fail ? 1 : 0);
 })();

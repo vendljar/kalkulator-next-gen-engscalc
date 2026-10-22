@@ -1086,7 +1086,18 @@ function docxPrelozUseky(odst, lang, prelozit) {
     const za = u.slice(pred.length).match(/[^\p{L}\p{N}:.!?*]*$/u)[0];
     const jadro = u.slice(pred.length, u.length - za.length);
     if (!jadro) continue;
-    const st = prelozit(jadro, lang);
+    let st = prelozit(jadro, lang);
+    /* ZÁVORKA PŘED SYMBOLEM (O13, přeneseno z nástroje šablon — S10):
+     * „CENA ZA … (DPZ){{PROJ_DPZ_HVEZDICKA_ZNACKA}}:" — „)" spadne do `za`
+     * a slovník „… (DPZ" nezná. Jádro s jednou neuzavřenou „(", za nímž
+     * v dokumentu „)" opravdu stojí, se zkusí i se „)" a z překladu se
+     * koncová „)" vezme (v dokumentu zůstává za přeloženým jádrem). */
+    if ((!st || !st.prelozeno) && za[0] === ')'
+        && (jadro.match(/\(/g) || []).length === (jadro.match(/\)/g) || []).length + 1) {
+      const z = prelozit(jadro + ')', lang);
+      if (z && z.prelozeno && z.zdroj !== 'neutrální' && /\)\s*$/.test(z.text))
+        st = Object.assign({}, z, { text: String(z.text).replace(/\)\s*$/, '') });
+    }
     if (st && st.zdroj === 'neutrální') continue;
     if (!st || !st.prelozeno) return { ok: false };
     let pr = String(st.text);

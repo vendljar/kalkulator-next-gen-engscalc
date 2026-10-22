@@ -314,6 +314,52 @@ function firmaKapitolyPrazdne(f, jazyk) {
                    popis: (kap.cislo ? kap.cislo + ' ' : '') + kap.nadpis.toLowerCase() }));
 }
 
+/* Jazykové symboly kapitol ({{FIRMA_NAB_DOLOZKY_DE}} …) — přepíše jen ty,
+ * které už v `out` jsou (firmaPlaceholders je založí z FIRMA_POLE). Volá ji
+ * i nabídka OCK nad zmrazenými kapitolami odeslané varianty (K4-N1). */
+function firmaKapitolyJazykoveSymboly(f, out) {
+  FIRMA_KAPITOLY.forEach(kap => {
+    const zaklad = 'FIRMA_NAB_' + kap.base.replace(/^kap/, '').toUpperCase();
+    Object.keys(FIRMA_KAP_JAZYK).forEach(jaz => {
+      const suf = FIRMA_KAP_JAZYK[jaz];
+      const sym = zaklad + (suf ? '_' + suf.toUpperCase() : '');
+      if (!(sym in out)) return;
+      out[sym] = firmaKapitola(f, kap.base, jaz).radky.join('\n');
+    });
+  });
+  return out;
+}
+
+/* ZMRAZENÍ KAPITOL IV.–VI. A DOLOŽEK OCK (K4-N1, dávka O10, rozhodnutí J. V.
+ * 21. 10. 2026). Dotisk odeslané nabídky OCK četl kapitoly z aktuální Firmy;
+ * teď se při PRVNÍM zamčení varianty opíšou do snímku podmínek
+ * (kryciZmrazPodminky → data.kryci.zmrazenoPodminky.kapitoly) stejně jako
+ * věty kalendáře (K3-N2). Kvůli stropu zakázky 4 MB (K4-N18) jde do snímku
+ * jen syrový text NEPRÁZDNÝCH polí (chybějící klíč = kapitola byla prázdná
+ * a vypustila se) a název firmy pro {FIRMA}. {TERMIN} se dosazuje dál při
+ * tisku — termín je údaj zakázky, ten zámek drží sám. */
+function firmaKapitolySnimek(f) {
+  const firma = f || {};
+  const out = { v: 1 };
+  const nazev = String(firma.nazev || '').trim();
+  if (nazev) out.nazev = nazev;
+  FIRMA_KAP_VYCHOZI_KLICE.forEach(k => {
+    const t = firma[k];
+    if (typeof t === 'string' && t.trim()) out[k] = t;
+  });
+  return out;
+}
+/* Firma pro tisk kapitol: aktuální Firma, přes ni texty a název ze snímku.
+ * Bez snímku (varianta zamčená před O10 nebo nezamčená) = aktuální Firma.
+ * Poškozené pole (ne řetězec) = prázdné, nikdy výjimka. */
+function firmaKapitolyZeSnimku(f, snimek) {
+  if (!snimek || typeof snimek !== 'object' || Array.isArray(snimek)) return f;
+  const out = Object.assign({}, f || {});
+  FIRMA_KAP_VYCHOZI_KLICE.forEach(k => { out[k] = typeof snimek[k] === 'string' ? snimek[k] : ''; });
+  out.nazev = typeof snimek.nazev === 'string' ? snimek.nazev : '';
+  return out;
+}
+
 /* Pořadí sekcí ve formuláři i v náhledech. */
 const FIRMA_SEKCE = ['Identifikace', 'Sídlo', 'Korespondenční adresa', 'Bankovní spojení',
   'Kontakty', 'Zástupci zhotovitele', 'Smluvní standardy', 'Kapitoly nabídky'];
@@ -491,15 +537,7 @@ function firmaPlaceholders(f, prekl) {
    * Prožene se to proto touž funkcí, kterou používá nabídka. Jazyk se bere
    * ze SUFFIXU symbolu, ne z jazyka dokumentu: kdo si do šablony napíše
    * `_DE`, chce němčinu bez ohledu na to, v jakém jazyce se tiskne. */
-  FIRMA_KAPITOLY.forEach(kap => {
-    const zaklad = 'FIRMA_NAB_' + kap.base.replace(/^kap/, '').toUpperCase();
-    Object.keys(FIRMA_KAP_JAZYK).forEach(jaz => {
-      const suf = FIRMA_KAP_JAZYK[jaz];
-      const sym = zaklad + (suf ? '_' + suf.toUpperCase() : '');
-      if (!(sym in out)) return;
-      out[sym] = firmaKapitola(f, kap.base, jaz).radky.join('\n');
-    });
-  });
+  firmaKapitolyJazykoveSymboly(f, out);
 
   out.FIRMA_SIDLO = firmaSidlo(f);
   out.FIRMA_KORESPONDENCNI = firmaKorespondencni(f);
@@ -716,6 +754,7 @@ function firmaJenPodminky(mistni, online) {
 
 if (typeof module !== 'undefined')
   module.exports = { FIRMA_KAPITOLY, FIRMA_KAP_JAZYK, firmaKapitola, firmaKapitolyPrazdne,
+    firmaKapitolyJazykoveSymboly, firmaKapitolySnimek, firmaKapitolyZeSnimku,
     FIRMA_KAP_VYCHOZI_KLICE, firmaDoplnVychoziTexty, firmaDoplnVychoziText, FIRMA_KAP_TERMIN, firmaTerminZaloha,
     FIRMA_POLE, FIRMA_SEKCE, DEFAULT_FIRMA, firmaDefault, firmaAktualni,
     firmaPole, firmaHodnota, firmaAdresaRadek, firmaSidlo, firmaKorespondencni, firmaBankaRadek,

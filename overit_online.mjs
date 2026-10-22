@@ -980,6 +980,20 @@ await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
 await page.waitForTimeout(150);
 test('K3-N13 O7: varování pojistky retence svítí v Nastavení → Databáze',
   /id="online-retence-varovani" class="seznam-varovani"[^>]*>[^<]*zakázek 100 → 40/.test(await page.locator('#nastaveni-panel').innerHTML()));
+/* K4-N13 (O11): tlačítko „Úbytek byl záměrný" — potvrzení heslem správce
+ * zapíše na server `potvrzeno` a hlídka zhasne. Pojistka: před O11 tlačítko
+ * (#online-retence-potvrdit) neexistovalo → test selže. */
+await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__dlgTexty = []; });
+test('K4-N13 O11: u varování je tlačítko „Úbytek byl záměrný"',
+  (await page.locator('#online-retence-potvrdit').count()) === 1 && /Mazání starých záloh stojí/.test(await page.locator('#online-retence-varovani').innerText()));
+await page.click('#online-retence-potvrdit');
+await page.waitForTimeout(400);
+test('K4-N13 O11: po potvrzení (dotaz + heslo správce) server zapíše potvrzeno a hlídka zhasne',
+  !!JSON.parse(pamet.get('zalohy/retence-varovani')).potvrzeno
+  && !(await page.locator('#nastaveni-panel').innerHTML()).includes('online-retence-varovani')
+  && await page.evaluate(() => window.__dlgTexty.some(t => /záměrně/.test(t)) && window.__dlgTexty.some(t => /heslem/.test(t))),
+  await page.evaluate(() => [window.__dlgTexty, ONLINE_STAV.hlaska]));
+await page.evaluate(() => { window.__dlgHeslo = null; window.__dlgTexty = []; });
 pamet.set('zalohy/retence-varovani', JSON.stringify({ kdy: new Date(Date.now() - 31 * 86400000).toISOString(), den: 'x', predchozi: 'y',
   pred: { pocetZakazek: 100 }, nove: { pocetZakazek: 1 } }));
 await page.evaluate(() => onlineOtiskyNacti().then(() => render()));

@@ -9,6 +9,8 @@
  *   J. V.) jen s heslem správce a jen ze složky „_Zaloha Netlify DB".
  * Vynucený otisk má limit 1 za 10 min a 20 za 24 h (K3-N4) → jinak 429.
  * GET vrací i `retenceVarovani` (K3-N13) pro hlídku v administraci.
+ * POST { akce: 'retence-potvrdit', den, hesloSpravce } → správce potvrdí, že
+ *   úbytek dat byl záměrný; retence pak zase maže (K4-N13, O11).
  * GET  /api/zaloha_vynuceno → { ok, otisky: [ { den, porizena, zdroj, kdo,
  *   pocetZakazek, pocetUctu } … ] } – souhrn posledních otisků BEZ dat,
  *   aby bylo v obrazovce vidět, kdy záloha naposledy vznikla.
@@ -23,7 +25,7 @@
  * /api/zaloha, která otisky hesel nenese. */
 import { vyzadujRoli, json, uloziste, potvrdHesloSpravce } from '../lib/sdilene.mjs';
 import { seznamOtisku, KOPIE_DISK_KLIC, KOPIE_DISK_SLOZKA, porizVynuceny,
-  RETENCE_VAROVANI_KLIC } from '../lib/zalohovani.mjs';
+  RETENCE_VAROVANI_KLIC, retenceDrzena } from '../lib/zalohovani.mjs';
 
 /* K4-N12 (O9): pole z těla jen jako text / číslo. String() nad objektem
  * z JSON s klíčem „toString", který není funkce, vyhodil výjimku → 500. */
@@ -73,6 +75,24 @@ export default async (req) => {
       slozka: KOPIE_DISK_SLOZKA, potvrzeno: 'heslo-spravce' };
     await (await uloziste('zalohy')).zapis(KOPIE_DISK_KLIC, zaznam);
     return json({ ok: true, kopieDisk: zaznam });
+  }
+  /* POTVRZENÍ ÚBYTKU DAT (K4-N13, O11, rozhodnutí J. V. 21. 10. 2026).
+   * Po poklesu pod polovinu stojí retence, dokud správce nepotvrdí, že byl
+   * záměrný (nejdéle 30 dní). Potvrzení odemyká mazání, proto jako záznam
+   * kopie jen s heslem správce. `den` = den varování, které správce viděl:
+   * novější varování se starým potvrzením neodemkne (409). */
+  if (telo.akce === 'retence-potvrdit') {
+    const sZal = await uloziste('zalohy');
+    const v = await sZal.cti(RETENCE_VAROVANI_KLIC);
+    if (!retenceDrzena(v))
+      return json({ ok: false, chyba: 'Není co potvrdit — retence záloh nestojí (varování chybí, je potvrzené nebo starší než 30 dní).' }, 409);
+    if (txt(telo.den) !== String(v.den || ''))
+      return json({ ok: false, chyba: 'Varování se mezitím změnilo — načtěte přehled záloh znovu a zkontrolujte ho.' }, 409);
+    const stopHeslo = await potvrdHesloSpravce(req, relace, telo.hesloSpravce);
+    if (stopHeslo) return stopHeslo;
+    const zaznam = { ...v, potvrzeno: { kdy: new Date().toISOString(), kdo: relace.email } };
+    await sZal.zapis(RETENCE_VAROVANI_KLIC, zaznam);
+    return json({ ok: true, retenceVarovani: zaznam });
   }
   const duvod = txt(telo.duvod);
   /* K3-N4: limit vynucených otisků; 429 řekne, kdy to půjde znovu.

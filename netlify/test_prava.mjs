@@ -54,6 +54,7 @@ import zobrazeni from './functions/zobrazeni.mjs';
 import popisy from './functions/popisy.mjs';
 import slovnikFn from './functions/slovnik.mjs';
 import controllingFn from './functions/controlling.mjs';
+import controllingExportFn from './functions/controlling_export.mjs';
 import zakazniciFn from './functions/zakaznici.mjs';
 import schvalovaniFn from './functions/schvalovani.mjs';
 import sablonyFn from './functions/sablony.mjs';
@@ -418,6 +419,18 @@ const MATICE = [
     telo: (r) => { const d = require('../src/controlling.js').ctrlVychozi();
       d.skupiny[0].nazev = 'Cestovné ' + r; return { data: d, poznamka: 'matice' }; },
     proc: 'mapování určuje, do které kapitoly controllingu jde který náklad — mění ho jen administrátor (J7)',
+    prava: JEN_ADMIN },
+
+  /* C3 (21. 10. 2026): hromadný export předkalkulace za období a protokol
+   * exportů — nákupní ceny a marže celé firmy, jen administrátor (J7). */
+  { fn: controllingExportFn, soubor: 'controlling_export.mjs', nazev: 'controlling — hromadný export (GET /api/controlling/export)', metoda: 'GET',
+    url: 'http://x/api/controlling/export?od=2026-10-01&do=2026-10-31',
+    proc: 'export nese nákupní ceny a marže všech odeslaných nabídek za období — jen správce (J7, rozhodnutí J. V. 21. 10. 2026)',
+    prava: JEN_ADMIN },
+
+  { fn: controllingExportFn, nazev: 'controlling — protokol exportů (GET /api/controlling/export?protokol=1)', metoda: 'GET',
+    url: 'http://x/api/controlling/export?protokol=1',
+    proc: 'protokol říká, kdo si kdy vyvezl náklady — vidí ho jen správce',
     prava: JEN_ADMIN },
 
   { fn: zakazky, soubor: 'zakazky.mjs', nazev: 'zakázky — rejstřík (GET /api/zakazky)', metoda: 'GET',
@@ -865,6 +878,33 @@ jinyZamek.varianty[0].zamek = { ...jinyZamek.varianty[0].zamek,
   kdy: new Date(Date.now() + 60000).toISOString() };
 test('zámek nesmí být potichu vyměněn za jiný',
   (await post(zakazky, 'http://x/api/zakazky', { zakazka: jinyZamek }, cObch)).status === 409);
+
+/* ---------- O10 / K4-N1: SNÍMEK KAPITOL ZAMČENÉ VARIANTY ----------
+ * Kapitoly IV.–VI. a doložky OCK zamrznou při prvním zamčení do
+ * `data.kryci.zmrazenoPodminky.kapitoly`. Obchodník nesmí snímek odeslané
+ * varianty změnit ani dopsat do varianty zamčené před O10 (bez snímku). */
+{
+  const sKap = zakazkaCislo('2026 - OPR - CN - 0469');
+  const v0 = sKap.varianty[0];
+  v0.data.kryci = Object.assign({}, v0.data.kryci, { zmrazenoPodminky: { v: 1,
+    kapitoly: { v: 1, nazev: 'Zkušební firma s.r.o.', dolozky: 'Doložka z doby odeslání.' } } });
+  zamkniJakoAplikace(sKap, v0, { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Matice práv' });
+  test('O10: zakázku se snímkem kapitol uložit lze',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: sKap }, cObch)).status === 200);
+  const zmeneny = JSON.parse(JSON.stringify(sKap));
+  zmeneny.varianty[0].data.kryci.zmrazenoPodminky.kapitoly.dolozky = 'PODVRŽENÁ doložka.';
+  test('O10: obchodník nezmění zmrazenou doložku zamčené varianty → 409',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: zmeneny }, cObch)).status === 409);
+  const bezSnimku = JSON.parse(JSON.stringify(sKap));
+  delete bezSnimku.varianty[0].data.kryci.zmrazenoPodminky.kapitoly;
+  test('O10: obchodník snímek kapitol zamčené varianty nesmaže (tisk by spadl na aktuální Firmu) → 409',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: bezSnimku }, cObch)).status === 409);
+  const dopsany = JSON.parse(JSON.stringify(zamcena));
+  dopsany.varianty[0].data.kryci = Object.assign({}, dopsany.varianty[0].data.kryci,
+    { zmrazenoPodminky: { v: 1, kapitoly: { v: 1, dolozky: 'Dopsaná doložka.' } } });
+  test('O10: do varianty zamčené bez snímku se snímek kapitol dopsat nedá → 409',
+    (await post(zakazky, 'http://x/api/zakazky', { zakazka: dopsany }, cObch)).status === 409);
+}
 
 /* ---------- B53: ZMRAZENÝ VÝSLEDEK ODESLANÉ NABÍDKY ----------
  * (bezpečnostní audit 22. 9. 2026, vysoká závažnost)
@@ -1454,6 +1494,26 @@ console.log('\n===== B112: CENÍK VARIANTY A SKRYTÉ PŘEPISY PODLE ROLE HLÍDÁ
   const r8 = await upravB112(a => { d0(a).cenik.marze = 0.05; }, cVedB);
   test('B112: vedoucí (bez práva v matici) sníží přirážku → 403', r8.status === 403, r8);
 
+  /* K4-N4 (O11, rozhodnutí J. V. 21. 10. 2026): ruční cena výjezdu technika
+   * PROJ je přepis ceny jako sazba — smí jen role s právem sloupce.naklad.
+   * „Akce mimo Prahu" smí obchodník. Pojistka: před O11 r8a–r8c vrátily 200
+   * (pole v B112 chybělo) a „100,5" od administrátora také 200. */
+  const sAkci = (z) => { d0(z).proj.zadani.akceMimoPrahu = true; };
+  const r8a = await upravB112(a => { d0(a).proj.zadani.akceMimoPrahu = true; d0(a).proj.zadani.vyjezdKcPrepis = 0; }, cObchB);
+  test('K4-N4: obchodník přepíše cenu výjezdu na 0 („cestu neúčtujeme") → 403', r8a.status === 403 && /vyjezdKcPrepis/.test(r8a.chyba || ''), r8a);
+  const r8b = await upravB112(a => { d0(a).proj.zadani.vyjezdKcPrepis = 1; }, cObchB, z => { sAkci(z); d0(z).proj.zadani.vyjezdKcPrepis = 5000; });
+  test('K4-N4: obchodník změní sjednanou cenu výjezdu 5000 → 1 → 403', r8b.status === 403, r8b);
+  const r8c = await upravB112(a => { delete d0(a).proj.zadani.vyjezdKcPrepis; }, cObchB, z => { sAkci(z); d0(z).proj.zadani.vyjezdKcPrepis = 5000; });
+  test('K4-N4: obchodník smaže sjednanou cenu výjezdu → 403', r8c.status === 403, r8c);
+  const r8d = await upravB112(a => { d0(a).proj.zadani.akceMimoPrahu = true; }, cObchB);
+  test('K4-N4: obchodník zapne „Akce mimo Prahu" (cena z ceníku) → 200', r8d.status === 200, r8d);
+  const r8e = await upravB112(a => { d0(a).proj.zadani.akceMimoPrahu = false; a.nazevAkce += ' (x)'; }, cObchB, z => { sAkci(z); d0(z).proj.zadani.vyjezdKcPrepis = 5000; });
+  test('K4-N4: obchodník s nezměněnou sjednanou cenou vypne akci a uloží → 200', r8e.status === 200, r8e);
+  const r8f = await upravB112(a => { d0(a).proj.zadani.vyjezdKcPrepis = 4200; }, cAdmin, sAkci);
+  test('K4-N4: administrátor cenu výjezdu přepíše → 200', r8f.status === 200, r8f);
+  const r8g = await upravB112(a => { d0(a).proj.zadani.vyjezdKcPrepis = '100,5'; }, cAdmin, sAkci);
+  test('K4-N4: cena výjezdu „100,5" (jádro by četlo 0) i od administrátora → 400', r8g.status === 400 && /vyjezdKcPrepis/.test(r8g.chyba || ''), r8g);
+
   /* 9–14) oprava nesmí blokovat běžnou práci */
   const r9 = await upravB112(a => { d0(a).cenik.marze = 0.05; d0(a).cenik.profilasKgKc = 1; d0(a).proj.cenik.marze = 0.1;
     d0(a).ock.zadani.mnozstviPrepis = { 'MONTÁŽ NA STAVBĚ': 10 }; d0(a).proj.zadani.sekce[0].prirazkaPct = -50; }, cAdmin);
@@ -1491,6 +1551,8 @@ console.log('\n===== B112: CENÍK VARIANTY A SKRYTÉ PŘEPISY PODLE ROLE HLÍDÁ
   await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: { 'sloupce.naklad': { 'Obchodník': true, 'Vedoucí': false } } }, cAdmin);
   const r17 = await upravB112(a => { d0(a).ock.zadani.mnozstviPrepis = { 'MONTÁŽ NA STAVBĚ': 10 }; d0(a).proj.zadani.sekce[0].prirazkaPct = 5; }, cObchB);
   test('B112: obchodník s právem sloupce.naklad (sloupce, kde se přepisy zadávají) smí přepsat (200)', r17.status === 200, r17);
+  const r17v = await upravB112(a => { d0(a).proj.zadani.vyjezdKcPrepis = 0; }, cObchB, sAkci);
+  test('K4-N4: obchodník s právem sloupce.naklad smí přepsat cenu výjezdu (200)', r17v.status === 200, r17v);
   await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: {} }, cAdmin);
 
   /* 18) přepočet po položkách na novou verzi ceníku: směs uložené a zveřejněné */
@@ -1584,6 +1646,125 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   test('B114: vedoucí (bez práva v matici) — klíč sazby → 403', je403(a7), a7);
   const a8 = await uprav374(a => { hod(a).sazba = 'statik'; hod(a).hodiny = 30; delete fix(a).fixKey; fix(a).cena = 1; }, cAdmin);
   test('B114: administrátor smí identitu položek změnit (200)', a8.status === 200, a8);
+
+  /* #447 C4 (21. 10. 2026): Pipedrive deal id zakázky zadává a opravuje jen
+   * administrátor — hlídá server; tvar (kladné celé číslo) platí všem. */
+  const pd1 = await uprav374(a => { a.pdDealId = '4711'; }, cObch);
+  test('C4: obchodník deal id do uložené zakázky nezadá (403)', je403(pd1, /deal id/), pd1);
+  const pdN = nova374(); pdN.pdDealId = '4711';
+  const pd2 = await uloz374(pdN, cObch);
+  test('C4: obchodník nezaloží zakázku s deal id (403)', je403(pd2, /deal id/), pd2);
+  const pd3 = await uprav374(a => { a.pdDealId = '4712'; }, cVed);
+  test('C4: vedoucí deal id nezadá (403)', je403(pd3, /deal id/), pd3);
+  const pd4 = await uprav374(a => { a.pdDealId = '4713'; }, cAdmin);
+  test('C4: administrátor deal id zadá (200)', pd4.status === 200, pd4);
+  const pd5 = await uprav374(a => { a.nazevAkce = 'jiný název'; }, cObch, z => { z.pdDealId = '4714'; });
+  test('C4: obchodník uloží zakázku s deal id od správce beze změny (200)', pd5.status === 200, pd5);
+  const pd6 = await uprav374(a => { a.pdDealId = '4716'; }, cObch, z => { z.pdDealId = '4715'; });
+  test('C4: obchodník deal id od správce neopraví (403)', je403(pd6, /deal id/), pd6);
+  const pd7 = await uprav374(a => { delete a.pdDealId; }, cObch, z => { z.pdDealId = '4717'; });
+  test('C4: obchodník deal id nesmaže (403)', je403(pd7, /deal id/), pd7);
+  const pd8 = await uprav374(a => { a.pdDealId = '12ab'; }, cAdmin);
+  test('C4: neplatný tvar deal id neuloží ani správce (400)', pd8.status === 400 && /deal id/.test(pd8.chyba || ''), pd8);
+  /* K5-S1 (O13): deal id jako objekt (JSON {"toString":1}) nebo pole shodilo
+   * uložení na HTTP 500 (String(x) vyhodí TypeError) — má být 400 s českou větou. */
+  const pd9 = await uprav374(a => { a.pdDealId = { toString: 1 }; }, cObch).catch(e => ({ status: 500, chyba: e.message }));
+  test('K5-S1: deal id jako objekt → 400, ne 500', pd9.status === 400 && /deal id/.test(pd9.chyba || ''), pd9);
+  const pd10 = await uprav374(a => { a.pdDealId = ['4718']; }, cAdmin).catch(e => ({ status: 500, chyba: e.message }));
+  test('K5-S1: deal id jako pole neuloží ani správce (400)', pd10.status === 400 && /deal id/.test(pd10.chyba || ''), pd10);
+
+  /* #447 C6 (21. 10. 2026): objednané příplatky — mimo zámek nabídky, jen
+   * nabídnuté příplatky zamčené varianty, kdo/kdy z relace, po vytištěné SoD
+   * mění jen administrátor. */
+  {
+    const zO = odesliB59(nova374());
+    const r0 = await uloz374(zO, cObch);
+    test('C6: příprava — obchodník uloží odeslanou nabídku (200)', r0.status === 200, r0);
+    const nacti6 = async () => { const g = await nactiB59(r0.soubor); return { g, a: zk.importZakazka(JSON.parse(JSON.stringify(g))) }; };
+    const nab6 = globalThis.objNabidnute((await nacti6()).a.varianty[0], JEKLY_T).map(p => p.key);
+    test('C6: příprava — nabídka nabízí aspoň dva příplatky', nab6.length >= 2, nab6);
+    const zapis6 = async (zmena, c) => { const { g, a } = await nacti6(); zmena(a); return uloz374(a, c, { ocekavaneRazitko: g.uloRazitko }); };
+    const dnes6 = globalThis.objDnes();
+    const o1 = await zapis6(a => { a.objednane = { varianta: a.varianty[0].id, klice: [nab6[0]], datum: dnes6, kdo: 'podvrh@priklad.cz', kdy: '2000-01-01' }; }, cObch);
+    const ul1 = (await nacti6()).g.objednane || {};
+    test('C6: obchodník zakázky zapíše objednaný příplatek (200), kdo z relace', o1.status === 200
+      && ul1.kdo === UCTY['Obchodník'].email && ul1.kdy !== '2000-01-01' && ul1.klice.join() === nab6[0], { o1, ul1 });
+    const o2 = await zapis6(a => { a.objednane.klice = ['neexistujici']; }, cObch);
+    test('C6: nenabídnutý příplatek → 400', o2.status === 400 && /nabídnut/.test(o2.chyba || ''), o2);
+    const o3 = await zapis6(a => { a.objednane.datum = '2999-01-01'; }, cObch);
+    test('C6: datum prodeje v budoucnosti → 400', o3.status === 400, o3);
+    const o4 = await zapis6(a => { a.nazevAkce = 'jiný název C6'; a.objednane.kdo = 'podvrh@priklad.cz'; }, cVed);
+    test('C6: uložení beze změny objednaných drží razítko (kdo se nepřepíše)', o4.status === 200
+      && (await nacti6()).g.objednane.kdo === UCTY['Obchodník'].email, o4);
+    const o5 = await zapis6(a => { a.objednane.klice = [nab6[0], nab6[1]]; }, cVed);
+    test('C6: vedoucí objednané změní (200)', o5.status === 200, o5);
+    /* Podpis SoD (Q3: ručně vyplněné datum podpisu v krycím listu ≤ dnes) — dál jen administrátor. */
+    const o6 = await zapis6(a => { const d = a.varianty[0].data; d.kryci = Object.assign({ hodnoty: {} }, d.kryci);
+      d.kryci.hodnoty = Object.assign({}, d.kryci.hodnoty, { sodDatumPodpisu: dnes6 }); }, cObch);
+    test('C6: příprava — datum podpisu SoD uloženo (200)', o6.status === 200, o6);
+    const o7 = await zapis6(a => { a.objednane.klice = [nab6[1]]; }, cObch);
+    test('C6: po podpisu SoD obchodník objednané nezmění (403)', o7.status === 403 && /podepsaná/.test(o7.chyba || ''), o7);
+    const o8 = await zapis6(a => { delete a.objednane; }, cVed);
+    test('C6: po podpisu SoD vedoucí objednané nesmaže (403)', o8.status === 403, o8);
+    const o9 = await zapis6(a => { a.objednane.klice = [nab6[1]]; }, cAdmin);
+    test('C6: po podpisu SoD administrátor změní (200)', o9.status === 200 && (await nacti6()).g.objednane.klice.join() === nab6[1], o9);
+    const n10 = nova374(); n10.objednane = { varianta: n10.varianty[0].id, klice: [nab6[0]], datum: dnes6 };
+    const o10 = await uloz374(n10, cObch);
+    test('C6: objednané k nezamčené variantě → 400', o10.status === 400, o10);
+    /* K6-S1, K6-S3 (D3): objekt v klice/varianta/datum shodil uložení na
+     * HTTP 500 (String({"toString":1}) v objOtisk), varianta jako pole
+     * ["<id>"] prošla a skryla prodej z exportu — má být 400. */
+    const chyt = p => p.catch(e => ({ status: 500, chyba: e.message }));
+    const s1 = await chyt(zapis6(a => { a.objednane.klice = [{ toString: 1 }]; }, cAdmin));
+    test('K6-S1: objekt v objednane.klice → 400, ne 500', s1.status === 400 && /tvar/.test(s1.chyba || ''), s1);
+    const s2 = await chyt(zapis6(a => { a.objednane.varianta = { toString: 1 }; }, cAdmin));
+    test('K6-S1: objekt v objednane.varianta → 400, ne 500', s2.status === 400 && /tvar/.test(s2.chyba || ''), s2);
+    const s3 = await chyt(zapis6(a => { a.objednane.datum = { toString: 1 }; }, cAdmin));
+    test('K6-S1: objekt v objednane.datum → 400, ne 500', s3.status === 400 && /tvar/.test(s3.chyba || ''), s3);
+    const s4 = await chyt(zapis6(a => { a.objednane.varianta = [a.objednane.varianta]; }, cAdmin));
+    test('K6-S3: objednane.varianta jako pole → 400', s4.status === 400 && /tvar/.test(s4.chyba || ''), s4);
+    /* K6-S4 (D3): server uloží záznam jen z povolených polí (cizí pole
+     * a vlastní klíč "__proto__" z JSON zahodí). */
+    const s5 = await zapis6(a => { a.objednane = JSON.parse(JSON.stringify(Object.assign({}, a.objednane, { cizi: 'x'.repeat(1000) }))
+      .replace(/^\{/, '{"__proto__":{"podvrh":1},')); }, cAdmin);
+    const ul5 = (await nacti6()).g.objednane || {};
+    test('K6-S4: objednane se uloží jen s poli varianta, klice, datum, kdo, kdy', s5.status === 200
+      && Object.keys(ul5).sort().join() === 'datum,kdo,kdy,klice,varianta', { s5, klice: Object.keys(ul5) });
+    /* K6-S1 v obnově (D3): výjimka by přerušila dávku uprostřed — zakázka se
+     * má přeskočit s důvodem a ostatní obnovit. */
+    const gO = (await nacti6()).g;
+    const zlaO = JSON.parse(JSON.stringify(gO)); zlaO.cislo = '2026 - OPR - CN - 9798'; zlaO.objednane.klice = [{ toString: 1 }];
+    const dobraO = JSON.parse(JSON.stringify(gO)); dobraO.objednane.cizi = 'y';
+    const jmO = c => c.replace(/\s+/g, '') + '.json';
+    const rO = await chyt(post(obnova, 'http://x/api/obnova', { zdroj: { soubor: { porizena: new Date().toISOString(),
+      zakazky: { [jmO(zlaO.cislo)]: zlaO, [r0.soubor]: dobraO } } }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cAdmin)
+      .then(async r => ({ status: r.status, ...(await r.json()) })));
+    const bO = (rO.casti && rO.casti.zakazky) || {};
+    const obO = (JSON.parse(pamet.get('zakazky/z/' + r0.soubor) || '{}')).objednane || {};
+    test('K6-S1: obnova s objektem v objednane.klice zakázku přeskočí (tvar), ostatní obnoví', rO.status === 200
+      && bO.preskocene === 1 && /tvar/.test(JSON.stringify(bO.duvody || [])) && !pamet.has('zakazky/z/' + jmO(zlaO.cislo))
+      && bO.prepsane === 1, { status: rO.status, chyba: rO.chyba, bO });
+    test('K6-S4: obnova uloží objednane bez cizích polí', !('cizi' in obO) && obO.klice && obO.klice.length === 1, obO);
+    /* K6-K1 (D3): vlastní příplatek varianty (klíč `vlastni:N`) — celá cesta
+     * klient (objNabidnute + objNastav jako karta SoD) → server. Před opravou
+     * 400 „neplatný nebo zdvojený klíč“. */
+    const zV = nova374(); zV.varianty[0].data.ock.zadani.priplatkyVlastni = [{ nazev: 'Vlastní příplatek K6', mnozstvi: 1, cena: 1000 }];
+    const rV = await uloz374(odesliB59(zV), cObch);
+    const gV = rV.status === 200 ? await nactiB59(rV.soubor) : null;
+    const aV = gV ? zk.importZakazka(JSON.parse(JSON.stringify(gV))) : null;
+    const nabV = aV ? globalThis.objNabidnute(aV.varianty[0], JEKLY_T).map(p => p.key) : [];
+    test('K6-K1: příprava — odeslaná nabídka nabízí vlastní příplatek vlastni:0', nabV.includes('vlastni:0'), { rV, nabV });
+    if (aV) {
+      const chV = globalThis.objNastav(aV, aV.varianty[0], ['vlastni:0'], dnes6, { kdo: UCTY['Obchodník'].email });
+      const oV = await uloz374(aV, cObch, { ocekavaneRazitko: gV.uloRazitko });
+      const ulV = (await nactiB59(rV.soubor)).objednane || {};
+      test('K6-K1: objednaný vlastní příplatek se uloží (200)', chV === '' && oV.status === 200
+        && (ulV.klice || []).join() === 'vlastni:0', { chV, oV, ulV });
+      const oV2 = await uloz374(Object.assign(JSON.parse(JSON.stringify(aV)), { objednane: Object.assign({}, aV.objednane, { klice: ['vlastni:x'] }) }),
+        cObch, { ocekavaneRazitko: (await nactiB59(rV.soubor)).uloRazitko });
+      test('K6-K1: jiný tvar s dvojtečkou (vlastni:x) dál 400', oV2.status === 400 && /klíč/.test(oV2.chyba || ''), oV2);
+    }
+  }
   const n1 = nova374(); hod(n1).sazba = 'neexistuje'; hod(n1).sazbaKc = 1;
   const a9 = await uloz374(n1, cObch);
   test('B114: nová zakázka obchodníka s pozměněnou položkou → 403 (proti výchozímu zadání)', je403(a9), a9);

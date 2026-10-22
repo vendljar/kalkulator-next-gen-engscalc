@@ -2,7 +2,7 @@
 
 Nad `test` v21.10.2 (merge a5f0308). **Do test / main / test-draft / integrace nic.** Podklad:
 `podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11, CHANGELOG oddíl „(bez verze) — #114“, roadmapa #16, #114, #115,
-#117 a nové #473–#475 (#475 uzavřená).
+#117 a nové #501–#503 (do sloučení s test v22.10.1 #473–#475; #503 uzavřená).
 
 - **Hotovo (0db8476):** test polí, která integrátor založil 21. 10. (jen čtením: 53/54 nových + 4/4 úprav sedí, #10
   nahrazuje „Typ zakázky“ — k potvrzení). Párování v `netlify/lib/pd_mapa.mjs`: přesný název + typ místo vzorů (vzory
@@ -18,7 +18,7 @@ Nad `test` v21.10.2 (merge a5f0308). **Do test / main / test-draft / integrace n
   - **návrh směru dat podle 85 vyhraných dealů** (J. V.: „hlavičku dealu a kontaktní údaje, které obchodník
     standardně vyplňuje“ z Pipedrive do kalkulace) — §12, čeká na potvrzení; „Předpokládané datum ukončení
     realizace“ vyplňují obchodníci (85/85) → čte se a předvyplní Konečné předání díla, nezapisuje se,
-  - **#475 uzavřena** (otázky na J. V. byly špatně položené: co kalkulace má, to se zapíše; kde to Pipedrive neumí
+  - **#503 (dřív #475) uzavřena** (otázky na J. V. byly špatně položené: co kalkulace má, to se zapíše; kde to Pipedrive neumí
     uložit, upraví se Pipedrive — otázky 13 a 15 pro integrátora).
 - **Přejímka na skutečných datech (jen v kontejneru, nic v repu):** 66/66 polí, 0 špatně.
 - **Testy:** `test_pipedrive.mjs` 91/0 (pojistky: na kódu před opravou 26 z 94 selže; na 0db8476 selže 6 z 90),
@@ -28,14 +28,14 @@ Nad `test` v21.10.2 (merge a5f0308). **Do test / main / test-draft / integrace n
 - **Mimo repozitář (pro J. V.):** dokument pro integrátora — Claude Doc https://claude.ai/artifact/RCVznN7Dn2goRM8TmuAZfz
   (upravený: zákazník, žádná obousměrná synchronizace, otázka 15) + export `.docx`; koncept e-mailu jako text (Outlook
   konektor nemá `Mail.ReadWrite`).
-- **Čeká:** odpovědi integrátora (#473), zkušební zápis (#474 — po potvrzení automatizací v Make; přes konektor kdykoli,
+- **Čeká:** odpovědi integrátora (#501), zkušební zápis (#502 — po potvrzení automatizací v Make; přes konektor kdykoli,
   z aplikace až po #115 a z testovacího webu s vlastním `PIPEDRIVE_TOKEN` / `PIPEDRIVE_DOMENA`).
 - **Ke slučování:** CHANGELOG (oddíl nahoře), `netlify/mutace.mjs` (blok #114 před blokem S5 + `test_pipedrive.mjs`,
-  `test_pd_prevod.mjs` na konci `SADY`), roadmapa (#16, #114, #115, #117 upravené; nové #473–#475 — integrace má už
+  `test_pd_prevod.mjs` na konci `SADY`), roadmapa (#16, #114, #115, #117 upravené; nové #501–#503 (dřív #473–#475) — integrace má už
   #470–#472, čísla přidělí sloučení), `podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11.
 - **Další krok:** po potvrzení §12 dotáhnout čtení zadání (#113: telefon a e-mail zvlášť, obchodník, zástupci,
   specifikace, druh kalkulace podle Typu zakázky), pak serverový zápis řídící varianty (#115: POST `/api/pd/deal`
-  nad `pdZapisDealu`, potvrzení „stará → nová“, kontrola `update_time`) a zkouška z testovacího webu (#474).
+  nad `pdZapisDealu`, potvrzení „stará → nová“, kontrola `update_time`) a zkouška z testovacího webu (#502).
 
 **Otázky pro J. V.:**
 1. Souhlasí návrh směru dat v `podklady/NAVRH…` §12 (hlavička a kontakty z Pipedrive, krycí list do Pipedrive)? →
@@ -45,6 +45,300 @@ Nad `test` v21.10.2 (merge a5f0308). **Do test / main / test-draft / integrace n
 Z dřívějška platí token a doména v Netlify (#113, pro testovací web vlastní) a #117 (nedopsaná pole v CRM).
 
 ---
+
+# Předávka — 22. 10. 2026: dávka D4 — slovníky překladu SoD podle revidovaného znění (v22.10.1), větev `claude/d4-sod-slovniky`
+
+Nad `test` = v21.10.6 (4c127f5). **Do integrace / test nic** — slučuje koordinace (session_01X93Edh1U8MQru6HV28FdBY).
+Podklad `podklady/D4_SOD_SLOVNIKY_22_10.md`, CHANGELOG `## v22.10.1 — D4`, `verze.txt` 22.10.1 (aplikace beze změny).
+
+- **Hotovo:** `nastroje/preklad_sod.js --z-revize` (slovník z revidované jazykové šablony, ověření složením) a
+  `--porovnej` (rozdíly textu / běhů / w:pPr / název / jazyk). Šablona z nástroje nově: w:lang cs-CZ → en-GB/de-DE/fr-FR,
+  název dokumentu, sloučené běhy, bez w:rsid*, bloky `drzetSpolu` (w:keepNext podpisu), pomocné styly tabulátorů,
+  zápis NBSP jako ` `.
+- **Výsledek:** realizace v3 EN 99 / DE 97 / FR 117 rozdílů textu → **0** (i běhy, w:pPr, název, jazyk); realizace v4
+  ze slovníků = postup S11, 0 rozdílů; projekce v4 nové slovníky, 0 rozdílů **jen textu** (revidované soubory projekce
+  konektor nevydá bajtově — pod ~50 kB je vrací jen inline; text přepsán 2× nezávisle, shodně).
+- **Slovníky = přílohy sezení D4** (6× JSON, sha256 v podkladu). Na Disk dnes NIC dalšího (pokyn koordinace).
+  Na Disku ale už je 6 souborů `…_2026-10-22.json` (Sablony) vytvořených před pokynem — bez NBSP (FR realizace vadná,
+  60 odstavců) → J. V. nahradí přílohami („Nahrát novou verzi“) nebo smaže. Konektor neumí přepsat obsah ani mazat bez schválení.
+- **Testy:** `src/test_sod_slovnik_revize.js` 29/0 (pojistka: před D4 0/1, NBSP proti ad78da2 28/1); test_preklad_sod 19/0,
+  test_sod_real_v4 20/0, test_sod_real_v3 11/0, test_sod_en 49/0, test_docx_preklad 52, test_sablony_online 85/0;
+  mutace „D4 slovník z revize“ 10/10, všechny `preklad_sod` 16/16, `--kontrola` 432; kontrola údajů čistá;
+  `build.py --kontrola-verze` OK, overit_verzi 7/0. Prohlížečové sady a celé kolo nepouštěny (koordinace).
+- **Otázky pro J. V.:** (1) DE revize používá „BGB“ pro český občanský zákoník — ponechat? (2) překlad nových odstavců
+  SoD v4 (příplatky) — viz podklad; (3) projekce v4: tučné úseky / tabulátory podle češtiny — zkontrolovat ve Wordu;
+  (4) uložit přílohy na Disk a nahradit dnešní kopie; (5) pro bajtové ověření projekce: zabalit 3 revidované soubory do .zip.
+- **Další krok:** po uložení slovníků J. V. lze přesnost projekce doověřit `--porovnej` (potřeba bajtové soubory).
+
+# Předávka — 22. 10. 2026: dávka D1 — roadmapa, novinky pro obchodníky, ukázka exportu controllingu v2, větev `claude/d1-roadmapa-novinky`
+
+Nad `test` = v21.10.6 (4c127f5). Jen dokumentace — kód aplikace ani `verze.txt` se neměnily. **Do integrace / test
+nic** — slučuje koordinace (session_01X93Edh1U8MQru6HV28FdBY). J. V. 22. 10. pryč — otázky jen zapsané.
+
+- **Roadmapa** (`roadmapa/roadmap.json`, `--kontrola` čistá): meta 22. 10. 2026 / v21.10.6; `poradi` doplněné
+  v18.10.12 → v21.10.6 (+ řádek D1); #447 Controlling C1–C6 → hotovo v21.10.5; `hotovoV` u #451, #470–#472
+  (v21.10.3); nové #475 (kolo K6), #476–#482 (= #O13-1…7: K5-S1, K5-K1+K3, K5-W1, K5-W2, „(DPZ)*“ v aplikaci —
+  v21.10.5; návrh odstranit obal → ověřen D3 a ponechán, K5-S2/W4/W7 → D3 — v21.10.6); #484 a #485 ověřeny nad
+  v21.10.6 — trvají; rozhodnutí J. V. z auditů K5/K6 jako `blokovano` s otázkou: #486 K5-W3(+W5), #487 K5-K2,
+  #488 K5-S3, #489 K5-S4, #490 K5-K4, #491 K5-W6/K6-W5, #492 K6-S2, #493 K6-K2, #494 K6-K3, #495 K6-K4,
+  #496 K6-S5, #497 K6-S7, #498 K6-K7, #499 K6-W6; #500 zbytek controllingu (nálezy z ukázky 1 a 4, protokol
+  exportů v záloze, PROJ a budoucí účty). Úpravy cílené (soubor se nepřeformátoval) → konflikty jen v místech změn.
+- **`podklady/NOVINKY_v20.10.2-v21.10.6.md`** — soupis pro obchodníky (SoD a objednané příplatky, zmrazení textů,
+  PROJ, OCK, DPH, controlling, zálohy), bez cen a osobních údajů.
+- **`podklady/ukazky/controlling_export_v2_ukazka.xlsx` + `.md`** — hromadný export v2 kódem aplikace nad 5
+  smyšlenými nabídkami (3 OCK, 2 PROJ; objednané příplatky, neřídící varianta, přepočtený výsledek), zkušební ceník
+  testů; generátor `podklady/ukazky/vyrob_controlling_export_v2.js`.
+- **Ověření:** `roadmapa.py --kontrola` čistá, `kontrola_udaju.py` čistá, `testovaci_kolo.sh --jen staticke` 4/4.
+
+# Předávka — 21. 10. 2026 večer: dávka D3 — opravy nálezů auditu K6 (#483, v21.10.6), větev `claude/d3-k6-opravy`
+
+Nad `test` = v21.10.5 (7fac477). **Do integrace / test nic** — slučuje koordinace (session_01X93Edh1U8MQru6HV28FdBY,
+„ŘÍDÍCÍ 21.10 noc 2“). Podklad `podklady/K6_AUDIT_21_10.md` ve větvi `claude/k6-kolo`. Verze `verze.txt` 21.10.6,
+CHANGELOG oddíl `## v21.10.6 — D3`, roadmapa #483 (hotovo), #484 a #485 (čeká). Čísla #476–#482 rezervovaná pro #O13-1…7 (D1).
+
+- **Hotovo:** K6-K1 (tvar klíče `vlastni:<číslo>`, test celé cesty klient → server), K6-S1 + K6-S3 (`objTvarPlatny` → 400,
+  i v obnově), K6-S4 (server ukládá `objednane` jen z povolených polí), K5-S2 (shodné deal id beze změny), K6-S6
+  (export přeskočí zakázku s výjimkou), K6-K6 (název ve SoD na jeden řádek), K6-K8 (řídicí znaky v XLSX), K6-W1
+  (`kontrola.py` odmítne `<` v datech kokpitu, SKILL.md), K6-W2 (`kontrola_udaju.py` + `podklady/`, `.claude/`),
+  K6-W3 (`pPrSInd` — pořadí `w:pPr` v SoD v4), K6-W4 + K5-W4 + K5-W7 (scénáře v `test_sloucene_vetve.sh`).
+- **O13 obal `trStavSeZavorkou`: PONECHÁN** — není nadbytečný: „(…{{SYMBOL}})“ aplikace nepřeloží, obal ano
+  (338/2304 rozdílů). Test hlídá; rozšíření aplikace = #485.
+- **Zapsáno, neopraveno:** K6-K5, K6-K9 (#484). Nedělat (J. V.): K6-S2, K6-K3, K6-K4, K6-K2, K6-S5, K6-S7, K6-K7,
+  K6-W5, K6-W6, K5-W3/W5/K2/S3/S4/K4. N46 beze změny.
+- **Testy s pojistkou** (viz CHANGELOG a commity): všechny dotčené sady zelené. **Cílené mutace 16/16, 0 přeživších**
+  (server k6- 9, k5-s2 1, C6 „kdo zapsal“ 1; jádro k6- 4, O13/D3 1); `--kontrola` server 763, jádro 422.
+  Prohlížečové sady a celé kolo ručně nepouštěny — pustí koordinace.
+- **Otázky pro J. V.:** (1) #485 — rozšířit aplikaci o „)“ za symbolem a pak obal odstranit? (2) #484 — zařadit?
+  (3) Už vyrobené soubory SoD v4 (S11) vyrobit znovu kvůli K6-W3, před zveřejněním otevřít ve Wordu.
+
+# Předávka — 21. 10. 2026: dávka K6 — celé kolo + bezpečnostní audit nad v21.10.5, větev `claude/k6-kolo` (#475)
+
+Nad `7fac477` (v21.10.5 = `test`). **Do test / main / integrace nic** — slučuje koordinace (ŘÍDÍCÍ 21.10 noc 2,
+session_01X93Edh1U8MQru6HV28FdBY). Kód se neopravoval (zadání).
+
+- **Hotovo — kolo (celé, s mutacemi):** sady **296 / 0 / 6** přeskočeno (`test.js` + 5 harnessů bez
+  `KNG_PODKLADY`), mutace jádra **417/417** (otisky souhlasí), mutace serveru **753/753** (64 částí po souborech
+  ve 3 `git worktree` nad týmž SHA, nic nepřerušeno, úplnost po názvech 753/753, `--kontrola` OK), statické **4/4**.
+  **Žádná přeživší mutace, žádný prázdný test.**
+- **Hotovo — audit `7652bb9..7fac477`:** `podklady/K6_AUDIT_21_10.md` — 0 kritických, 0 vysokých, 1 střední
+  (K6-K1), 9 nízkých, 12 informativních; opravy K5 (O13) drží, regrese K4/K5 žádná. Zápis také v CHANGELOG
+  (oddíl v21.10.5 Integrace).
+- **Opravit bez J. V. (samostatná dávka):** přednostně K6-K1 (`OBJ_KLIC_TVAR` bez `:` → vlastní příplatek nejde
+  uložit), K6-S1 (objekt v `objednane` → 500), K6-S3 (`varianta` jako pole); dál K6-S4, S6, K5, K6, K8, K9,
+  K5-S2, nástroje K6-W2, W3, W4, K5-W4, K5-W7, kokpit K6-W1 (koordinace).
+- **Čeká na J. V.:** posun `test` → `main` (doporučeno s opravou K6-K1 + S1 + S3), K6-S2 (vrácení podpisu SoD),
+  K6-K2 (zveřejnit SoD v4 spolu s C6), K6-K3, K6-K4, K6-S5, K6-S7, K6-K7, K6-W5, K6-W6 + trvající K5 (W3/W5, K2,
+  S3, S4, K4).
+
+# Předávka — 21. 10. 2026: dávka O12 — jazykové verze šablony k už platné češtině (#474, v21.10.5)
+
+Větev `claude/o12-sablony-jazyky` nad `claude/integrace-16-10` 7ce01b3 (v21.10.4). **Do integrace / test nic** —
+slučuje koordinace (verzi v21.10.5 může přečíslovat).
+
+- **Hotovo:** průvodce šablon (`src/ui/sablony_sprava_ui.js`) pozná, že nahraná čeština je shodná s platnou
+  (`sablonaCestinaShodna` v `src/sablony_online.js`, otisk ze `sablonaAbNaB64`), češtinu znovu nezveřejní a pošle
+  jen zaškrtnuté jazyky se `zdrojOtisk` platné češtiny (`sablPruvodceZverejniJazyky`). Záhlaví, krok Kontrola,
+  krok 3, tlačítko (bez jazyka zakázané), potvrzení a výsledek po jazycích. „Nahrát doladěný soubor“ u jazyka
+  fungoval i dřív (i ve stavu „chybí“) — jen ověřeno testem. Server beze změny.
+- **Ke slučování:** CHANGELOG oddíl v21.10.5, `verze.txt` 21.10.5, `manual/obsah.json` („Co je nového ve verzi
+  v21.10.5“), roadmapa #474, `mutace_jadro.mjs` (JADRA + `ui/sablony_sprava_ui.js`, blok „#474“ na konci),
+  `src/ui/online_ui.js` (`onlineSablonaZverejni` volá `sablonaAbNaB64`).
+- **Testy:** `src/test_sablony_online.js` 85/0 (+22; před opravou 13 FAIL s hláškou „už je zveřejněná“), mutace
+  jádra „#474“ 8/8, kolo `--bez-mutaci` 294 prošlo / 0 selhalo / 6 přeskočeno (test.js, KNG_PODKLADY), statické
+  4/4 — VŠE ZELENÉ. `overit_sablony_online.mjs` krok 7 bez KNG_PODKLADY neběží (chybí šablona CN v11).
+
+# Předávka — 21. 10. 2026: dávka S11 — šablona SoD realizace v4 CZ/EN/DE/FR (#447 C6), větev `claude/s11-sod-realizace-v4`
+
+Nad `claude/integrace-16-10` 7ce01b3 (v21.10.4). **Kód aplikace beze změny.** Do integrace / test nic — slučuje
+koordinace (session_016CbSudw1q9GXrrtfiJKvAG). Zápis: `podklady/SABLONA_SOD_REALIZACE_V4_21_10.md`.
+
+- **Hotovo (body 1–3, 5):** `node nastroje/vyrob_sablony.js --sod-real-v4 <složka s v3 + v3_EN/_DE/_FR>` → v4
+  CZ/EN/DE/FR. V čl. V pod „{{CENA_BEZ_DPH}} (bez DPH)" tři samostatné odstavce „z toho cena … {{SOD_CENA_NABIDKY}}",
+  „objednané příplatky:↵{{SOD_PRIPLATKY_OBJEDNANE}}", „příplatky celkem: {{SOD_PRIPLATKY_KC}}". v4 × v3 +3 −0,
+  EN/DE/FR × CZ v4 +0 −0, obsahVady prázdné, XML bez vad, jazyky OK. Test `src/test_sod_real_v4.js` 17/0
+  (pojistka 0/1). Soubory přiloženy J. V. (SendUserFile); na Disk nenahrány (base64 0,44–0,50 MB — konektor jen
+  ručním přepisem). CHANGELOG (bez verze), roadmapa #447 (pozn + kde).
+- **Nález:** EN/DE/FR v3 na Disku jsou revidované (≠ slovníky preklad_sod, EN 99 odstavců) → v4 jazyky z nich
+  (vložení přeloženého bloku), slovníky jen záloha. Slovníky na Disku revizi nenesou — k rozhodnutí J. V./koordinace.
+- **Hotovo (bod 4):** vyplnění kódem C6 (controlling-c3 5d6ae24) v odděleném worktree: CZ/EN/DE/FR × 0/1/3
+  příplatky 72/0 — bez příplatků blok zmizí celý (žádný popisek ani prázdný odstavec), součty a DPH z celku sedí,
+  žádný symbol ceny nezůstal. Koordinace potvrdila pořadí „celková cena první, rozpis z toho pod ní".
+- **Kolo `--bez-mutaci`** (nad 7b4a165, pracovní strom = bbff8be bez dokumentace): sady **256 prošlo / 1 selhalo /
+  44 přeskočeno**, statické 4/4. Jediné selhání `overit_verzi.mjs` — artefakt `KNG_NEZVYSOVAT_VERZI` exportované do
+  kola (známé z C3); samostatně bez ní 7/0. Přeskočeno: test.js (export pro GitHub), 2× KNG_PODKLADY a **41
+  prohlížečových sad — v kontejneru S11 chybí playwright** (kód aplikace se neměnil). test_sod_real_v4 18/0,
+  test_sod / test_preklad_sod / test_sod_real_v3 zelené.
+
+# Předávka — 21. 10. 2026 odpoledne: Controlling #447 — C6 objednané příplatky, větev `claude/controlling-c3`
+
+Navazuje na C5 (641b9c2). Koordinace teď **session_016CbSudw1q9GXrrtfiJKvAG** (souhrny tam). Build bez zvýšení verze.
+
+- **Hotovo:** `src/objednane.js` (záznam `zak.objednane = { varianta, klice, datum, kdo, kdy }` mimo zámek, nabídnuté
+  příplatky ze zmrazeného výsledku, `objKontrola`), serverová kontrola + razítko v `lib/zakazka_kontrola.mjs`, rámeček
+  v kartě SoD (`objKarta` v `ui/sod_ui.js`), pole krycího listu `priplatkyObjednane`, SoD `sodObjednaneSymboly`
+  (`src/sod.js`, `nabidkaData` vrací `ceny`), export (Řádky + „Objednáno dodatečně", Popis datum prodeje,
+  hromadně `podle=prodej`).
+- **Rozhodnutí J. V. Q1–Q3:** sleva jen na základ; nové symboly SoD ano (šablonu v4 dělá šablonová dávka podle
+  `podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md`); „po podpisu" = ručně vyplněné datum podpisu ≤ dnes → jen admin.
+- **Ke slučování:** CHANGELOG „C6", příručka („Co je nového — objednané příplatky…"), MEZE, roadmapa #447,
+  `netlify/mutace.mjs` (blok „#447 C6" + SADY test_objednane, test_sod), `build.py` + `jadro_moduly.cjs` (objednane.js).
+- **Testy (finál 20ea508, C5 + C6):** kolo `--bez-mutaci` **295 prošlo / 0 selhalo / 6 přeskočeno** (test.js
+  a KNG_PODKLADY), statické 4/4 — VŠE ZELENÉ; mutace „#447 C" **40/40** (C2 7, C3 13, C4 4, C5 5, C6 11).
+  Nález kola nad 5d6ae24 (opraveno 20ea508): nové symboly SoD šly do odstavcePryc i u šablony, která je nemá.
+- **Otevřené po C6 (nic pro tuto dávku):** šablona SoD v4 (dávka S11, podklad předán), sloupec „V nabídce"
+  (J. V. nerozhodl), nálezy z ukázky (1) zaokrouhlení OCK v exportu a (4) zaokrouhlení Kapitol po skupinách,
+  automatické Pipedrive deal id (chybí výběr dealu z CRM), výjimka zálohy `controlling_exporty`.
+
+# Předávka — 21. 10. 2026 odpoledne: Controlling #447 — C5 (export v2), větev `claude/controlling-c3` (verzi přidělí sloučení)
+
+Navazuje na 8716b20; integrace `claude/integrace-16-10` 7652bb9 (C3 + C4 = v21.10.4, O10, O11) do větve SLOUČENA.
+Rozhodnutí J. V. ~12:50 nad ukázkovým XLSX (koordinace session_01By6bWivtf2rTJYJFGVv8e1). Build `KNG_NEZVYSOVAT_VERZI=1`.
+
+- **Hotovo:** `CTRL_EXPORT_VERZE = 2` — list Řádky jen `vZakladu` (součet = náklad nabídky), nový list
+  `CTRL_LIST_PRIPLATKY` „Příplatky – volby" (stejné sloupce), sloupce „Řídící varianta" a „Výsledek"; hromadný
+  export vybírá `ctrlHromadnyVarianta` (řídící zamčená, jinak poslední zamčená v období; `ctrlExportVarianty`
+  s `povolitNeridici`). CSV = Řádky; příplatky v CSV vynechány (model umí `ctrlExportCsv(…, CTRL_LIST_PRIPLATKY)`).
+- **NEdělat bez J. V.:** sloupec „V nabídce", evidence příplatků dodatečně objednaných zákazníkem; nálezy (1) CEIL
+  zaokrouhlení OCK v exportu a (4) zaokrouhlení Kapitol po skupinách.
+- **Ke slučování:** CHANGELOG oddíl „C5" nahoře, `manual/obsah.json` („Co je nového — export pro controlling verze 2"),
+  roadmapa #447 pozn, `netlify/mutace.mjs` (blok „#447 C5" před C4, upravené úseky C2 „neřídící" a C3 „nezamčené").
+- **Testy:** src `test_controlling.js` 188/0, server `test_controlling.mjs` 51/0, `overit_controlling.mjs` 44/0, mutace „#447 C" 29/29 (C5 5/5). Kolo viz další commit.
+
+# Předávka — 21. 10. 2026: dávka O13 — nálezy K5 bez J. V. (v21.10.6, přečísluje koordinace), větev `claude/o13-k5-nalezy`
+
+Nad `claude/integrace-16-10` f4298f9 (v21.10.4); `verze.txt` beze změny (21.10.4), CHANGELOG oddíl `## v21.10.6 — O13`.
+**Do integrace / test / main nic** — slučuje koordinace (session_016CbSudw1q9GXrrtfiJKvAG). Podklad
+`podklady/K5_AUDIT_21_10.md` ve větvi `claude/k5-kolo`.
+
+- **Hotovo — #O13-1 K5-S1:** `ctrlPdDealIdNorm` (`src/controlling.js`) pustí jen string/number; objekt/pole/bool → 400
+  „Pipedrive deal id musí být…" (dřív `String({toString:1})` → TypeError → HTTP 500, i v obnově).
+- **Hotovo — #O13-2 K5-K1 (+ K5-K3):** `ctrlCsvBunka` vlastní přísná ochrana: apostrof u textu začínajícího
+  `= + - @ TAB CR`; čísla (i záporná) bez uvozovek; globální `csvBunka` (odrážky překladů) beze změny; záložní cesta
+  bez ochrany zmizela.
+- **Hotovo — #O13-3 K5-W1:** kokpit `kratko`/`lnk` — popisek z odescapovaného odkazu, `dek()` v try/catch, výstup přes
+  `esc()`; vzhled beze změny.
+- **Hotovo — #O13-4 K5-W2:** `nastroje/sloucene_vetve.sh` `uri_segmenty` (encodeURIComponent po segmentech, „/" zůstává)
+  v dotazu `activity?ref=`.
+- **Hotovo — #O13-5 jazyková verze „(DPZ)*":** `docxPrelozUseky` (`src/docxgen.js`) zkusí jádro s jednou neuzavřenou „(",
+  za nímž v dokumentu stojí „)", i se „)" a koncovou „)" z překladu vezme (oprava S10 z nástroje). Obal
+  `trStavSeZavorkou` v `nastroje/vyrob_sablony.js` je teď nadbytečný — ponechán (neškodný); **návrh #O13-6:** odstranit
+  ho i s testy obalu v příští dávce šablon (rozhodne koordinace).
+- **Nedělat:** K5-W3 (čeká na J. V.). Nedělané „ANO" nálezy mimo zadání: K5-S2 (uložení beze změny s neplatným
+  uloženým `pdDealId`), K5-W4, K5-W7 (testy W2) — **návrh #O13-7** do další opravné dávky.
+- **Testy s pojistkou (před → po):** `src/test_controlling.js` S1 3 FAIL → 0, K1 2 FAIL → 0 (189/0);
+  `netlify/test_prava.mjs` 2 FAIL → 0 (897/0); `overit_kokpit.mjs` 3 ✕ → 0 (12/0); `nastroje/test_sloucene_vetve.sh`
+  2 ✗ → 0 (51/0); `src/test_sablona_proj_v7_preklad.js` 3 FAIL (EN/DE/FR) → 0 (17/0).
+- **Mutace (cílené):** `netlify/mutace.mjs` „k5-" 3/3 + upravená „#447 C2: CSV bez ochrany" 1/1; `mutace_jadro.mjs`
+  „O13:" 3/3 → **7/7 chycených, 0 přeživších**. Kokpit (HTML) a W2 (shell) v mutačních nástrojích nejsou — mutant
+  = vrácení opravy, doložen pojistkou testu.
+- **Ke slučování:** CHANGELOG (oddíl v21.10.6 → číslo verze), `netlify/mutace.mjs` (blok „O13" za „#447 C2: CSV…",
+  ta mutace má nový `hledej`), `mutace_jadro.mjs` (blok O13 za „W1: dvojice termínů…"), `test_prava.mjs` (+2 za C4),
+  `test_controlling.js` (+10), `overit_kokpit.mjs`, `test_sloucene_vetve.sh`, `test_sablona_proj_v7_preklad.js`
+  (blok „bez obalu" nahrazen), roadmapa a `manual/obsah.json` nedotčeny (čísla #O13-1…7 přidělí koordinace).
+- **Kolo `--bez-mutaci` (nastroje/testovaci_kolo.sh): 256 prošlo / 0 selhalo / 44 přeskočeno (playwright v kořeni,
+  test.js, KNG_PODKLADY), statické 4/4 — VŠE ZELENÉ.** Ručně navíc: `overit_kokpit` 12/0, `overit_xss` 383/0,
+  `overit_controlling` 44/0, `overit_zahranicni` 56/0, `overit_sod_en` 6/0, `overit_slovnik` 21/0. Celé kolo s harnessy
+  a mutacemi pustí koordinace po sloučení.
+
+# Předávka — 21. 10. 2026: dávka K5 — celé kolo + bezpečnostní audit nad v21.10.4, větev `claude/k5-kolo`
+
+Nad `7652bb9` (integrace C3 + C4 = v21.10.4, jde do `test`). **Do test / main / integrace nic** — slučuje
+koordinace (ŘÍDÍCÍ 21.10, od 21. 10. ~14:00 sezení session_016CbSudw1q9GXrrtfiJKvAG). Kód se neopravoval (zadání).
+
+- **Hotovo — kolo (celé, s mutacemi):** sady **294 / 0 / 6** přeskočeno (`test.js` + 5 harnessů bez
+  `KNG_PODKLADY`), mutace jádra **406/406** (otisky souhlasí), mutace serveru **734/734** (63 částí po
+  souborech ve 4 `git worktree` nad týmž SHA; strop 2 h přerušil `vyjimky.js` a `program_ui.js`, obě
+  opakovány celé; úplnost po názvech 734/734, `--kontrola` OK), statické **4/4**. **Žádná přeživší mutace,
+  žádný prázdný test.**
+- **Hotovo — audit `b6f49a7..7652bb9`:** `podklady/K5_AUDIT_21_10.md` — 0 kritických, 0 vysokých,
+  0 středních, 5 nízkých, 10 informativních; regrese K4 žádná (19 opraveno, K4-N17 ponecháno, K4-N20 mimo repo).
+  Zápis také v CHANGELOG (oddíl v21.10.4) a roadmapa #473 (hotovo).
+- **Opravit bez J. V. (samostatná dávka):** K5-S1 (`pdDealId` objekt → 500, přednostně), K5-K1 (CSV
+  controllingu `+ `/`- `), K5-K3, K5-S2, K5-W1 (kokpit — koordinace), K5-W2, K5-W4, K5-W7.
+- **Čeká na J. V.:** K5-W3 (+ Rulesets K4-N20, K5-W5), K5-K2, K5-S3, K5-S4, K5-K4, K5-W6 (jméno
+  zaměstnankyně v repu) — doporučení v auditu, oddíl „Doporučený postup“.
+- **Posun test → main:** z kola ani auditu nic nebrání; rozhoduje J. V. Lokálně zbývá jen sady
+  s firemními podklady a `test.js` s ostrým ceníkem.
+
+# Předávka — 21. 10. 2026: Controlling #447 — C3 + C4, větev `claude/controlling-c3` (verzi přidělí sloučení)
+
+Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. **Do test / main / integrace nic** —
+slučuje koordinace (ŘÍDÍCÍ session_01By6bWivtf2rTJYJFGVv8e1). Rozhodnutí J. V. 21. 10. 2026 body 1–5 (prompt dávky).
+
+- **Hotovo (bod 1):** tlačítko „Export pro controlling" v Přehledu cenových nabídek u zamčené řídící varianty
+  (`ctrlUiPrehledTlacitko` v `src/ui/controlling_ui.js`, volá ho `seznamRadekHtml`), jen admin online, ne v náhledu.
+- **Hotovo (bod 2):** `GET /api/controlling/export` (`netlify/functions/controlling_export.mjs`, jen admin) — den
+  zamčení v českém čase od–do, oblast OCK/PROJ/obojí, řada ČR/ZAHR/obojí, jen zamčené řídící, zmrazený výsledek;
+  prohlížeč skládá sešit `ctrlExportListy(pole exportů, data, { hromadny })` (stejné listy/sloupce, Popis s obdobím,
+  zakázkami a přeskočenými) nebo CSV. Protokol `program/controlling_exporty` (200, ?protokol=1). Meze `CTRL_HROMADNY`
+  (400 dní, 600 čtení, 150 zakázek, 5 MB → 413). Model v `src/controlling.js` (ctrlHromadnyFiltr/Kandidati/Zakazka).
+- **Bod 4:** beze změny (bez hesla). **Bod 3 (sloupec „V nabídce") NEDĚLAT** — koordinace 21. 10. ~11:00: J. V. chce
+  nejdřív ukázkový XLSX (dělá koordinace). Text sloupce je na jednom místě `ctrlVZakladuText` (+ Kapitoly).
+- **Hotovo (bod 5 / C4):** `zak.pdDealId` ručně jen admin (pole v Nastavení → Controlling → Export), server
+  `ctrlPdDealKontrola` v `lib/zakazka_kontrola.mjs` (403 jiné roli, 400 tvar), duplikát id nepřebírá. Automatické
+  převzetí z propojeného dealu NENÍ — výběr dealu z CRM v rozhraní neexistuje (`src/zobrazeni.js` pd.cist).
+- **Nálezy koordinace z ukázky na 5 nabídkách (21. 10. ~11:08) — jen poznamenáno, NEOPRAVOVAT bez J. V.:**
+  (1) zaokrouhlení OCK nahoru (CEIL) export neukazuje, sloupec Zaokrouhlení = 0; (2) zakázka se zamčenou jen
+  NEřídící variantou se nevyveze; (3) přepočtený výsledek (bez zmrazení) není v řádcích vidět; (4) Kapitoly
+  zaokrouhlují po skupinách (podíl 100,01 %). Návrh řešení (2) a (3) poslán koordinaci v souhrnu.
+- **Čeká na J. V.:** výjimka zálohy `controlling_exporty` (protokol není v otisku — stopa přístupu; `test_zalohy.mjs` N4);
+  nálezy (1)–(4); bod 3.
+- **Ke slučování:** CHANGELOG oddíl „C3 + C4", `manual/obsah.json` („Co je nového — controlling za období" → číslo
+  verze), roadmapa #447 (pozn, kde), `netlify/mutace.mjs` (bloky „#447 C3" a „#447 C4" za C2), `test_prava.mjs` (+2
+  řádky matice, +8 C4 v bloku #374), `test_zalohy.mjs` (výjimka), `BEZPECNOST_MEZE.md` (oddíl Controlling),
+  `seznam_ui.js` (1 řádek), `zakazka.js` (zakazkaDuplikuj), `lib/zakazka_kontrola.mjs` (1 kontrola).
+- **Testy:** src `test_controlling.js` 179/0, server `test_controlling.mjs` 50/0, `test_prava` 883/0, `test_zalohy`
+  147/0, `overit_controlling.mjs` 44/0, `test_escape` 37/0; mutace „#447 C" 24/24 (C2 7, C3 13, C4 4). Kolo
+  `--bez-mutaci` (ca592dc předchůdce): 290/2/6 → obě opravené (test_escape `${id}`; overit_verzi jen kvůli
+  `KNG_NEZVYSOVAT_VERZI` exportované do kola — bez ní 7/0).
+  **Kolo `--bez-mutaci` nad dff91bc (C3 + C4): 292 prošlo / 0 selhalo / 6 přeskočeno (test.js a KNG_PODKLADY),
+  statické 4/4 — VŠE ZELENÉ.**
+
+# Předávka — 21. 10. 2026: dávka O11 (verzi přidělí sloučení) — rozhodnutí J. V.: K4-N4, K4-N13, K4-N17, #451
+
+Nad `claude/integrace-16-10` 2cb9d2b (v21.10.2), build `KNG_NEZVYSOVAT_VERZI=1`. Větev `claude/o11-k4-n4-n13`.
+**Do test / main / test-draft / integrace nic** — slučuje koordinace (ŘÍDÍCÍ session_01By6bWivtf2rTJYJFGVv8e1).
+Souběžně O10 (K4-N1 zmrazení kapitol) — konflikty čekat jen v dokumentaci (CHANGELOG, roadmapa, obsah.json, MEZE).
+
+- **Hotovo:** #470 K4-N4 (pole ceny výjezdu PROJ jen se `sloupce.naklad`, B112 zná `vyjezdKcPrepis`, tvar/zápor/strop
+  v `uloZaporneVZadani`, `pjVyjezdPrepis` s upozorněním), #471 K4-N13 (retence stojí do potvrzení správcem ≤ 30 dní,
+  `retenceDrzena`, POST `retence-potvrdit` s heslem správce a `den`, tlačítko „Úbytek byl záměrný“), #472 K4-N17
+  uzavřeno bez změny; **#451** (doplnění koordinace) měď podle ručně přepsané plochy zastřešení, varianta A
+  (stříška nad můstkem je v přepsané ploše, nic se nepřičítá) — `src/engine.js` `medStrechaM2`.
+- **Ke slučování:** CHANGELOG oddíl „O11 — …“ (přejmenovat na číslo verze), `manual/obsah.json` („Co je nového
+  v dávce O11“ → číslo verze), roadmapa +3 na konci (`hotovoV` doplnit verzí), `BEZPECNOST_MEZE.md` (odstavec pod
+  K3-N13 + oddíl „Audit K4 — rozhodnutí J. V. 21. 10. 2026 (dávka O11)“), `netlify/mutace.mjs` (blok O11 na konci
+  + SADY `../src/test_uloziste.js`), nový harness `overit_o11_vyjezd.mjs`.
+- **Ke slučování navíc:** `mutace_jadro.mjs` (blok #451 na konci + upravená „#356: příplatek za měď…“ — hledá teď
+  `? +strechaPrepis : strechaM2;`), `src/test_mustky.js` (#451 na konci bloku K29-N1), roadmapa #451 → hotovo.
+  `zaloha_vynuceno.mjs`: kontrola hesla v `retence-potvrdit` je zapsaná jinak (`stopHeslo`), ať úsek mutace O7 K3-N1
+  zůstane jedinečný.
+- **Ověření:** mutace server O11 10/10, jádro #451 3/3 + #356 1/1; kolo `--bez-mutaci` 293 / 0 / 6 přeskočeno
+  (KNG_PODKLADY, test.js), statické 4/4 — VŠE ZELENÉ. Pozor: kolo neběžet s exportovaným `KNG_NEZVYSOVAT_VERZI`
+  (shodí `overit_verzi.mjs`); kolo samo verzi nezvyšuje.
+
+# Předávka — 21. 10. 2026: dávka O10 (verzi přidělí sloučení, v21.10.3) — K4-N1 zmrazení kapitol OCK (#469)
+
+Větev `claude/o10-k4n1-zmrazeni` nad `claude/integrace-16-10` 2cb9d2b (test = ac26027, v21.10.2), build bez
+zvýšení verze. **Do test / main / test-draft / integrace nic** — slučuje koordinace (session_01By6bWivtf2rTJYJFGVv8e1).
+Rozhodnutí J. V. 21. 10. 2026: K4-N1 varianta (a) — zmrazit.
+
+- **Hotovo #469:** `kryciZmrazPodminky` ukládá `data.kryci.zmrazenoPodminky.kapitoly` (`firmaKapitolySnimek`
+  v `src/firma.js`: neprázdná pole kapitol IV.–VI. + doložek ve 4 jazycích, název firmy pro `{FIRMA}`; výchozí texty
+  asi 8 kB). `nabidkaData` čte u zamčené varianty kapitoly i jazykové symboly `{{FIRMA_NAB_*_EN/DE/FR}}` ze snímku
+  (`nabidkaKapitolyFirma`, `firmaKapitolyZeSnimku`, `firmaKapitolyJazykoveSymboly`). Nezamčená = aktuální Firma;
+  zamčená bez snímku (před O10) = aktuální Firma, nic zpětně. `{TERMIN}` dál z termínu zakázky. Server: snímek hlídá
+  porovnání dat zámku (změna/smazání/dopsání → 409, ověřeno testem). Velikost: snímek je uvnitř
+  `zmrazenoPodminky`, takže ho počítá rozpad 413 (K4-N18).
+- **Testy:** `src/test_o10_kapitoly.js` 30/0 (bez opravy 11 ✕); `netlify/test_prava.mjs` +4 O10 (porovnání zámku
+  bez snímku → 3 ✕; dřív to nechytala žádná sada). Mutace O10: jádro 1/1, server 7/7. Kolo `--bez-mutaci`:
+  **293 / 0 / 6 přeskočeno, statické 4/4 — VŠE ZELENÉ** (první běh měl 1 ✕ `overit_verzi.mjs` jen proto, že jsem
+  `KNG_NEZVYSOVAT_VERZI=1` exportoval do celého kola; bez něj 7/0).
+- **Ke slučování:** CHANGELOG oddíl „O10“ nahoře, roadmapa #469 na konci `polozky`, `manual/obsah.json`
+  („Co je nového — dávka O10“ → přejmenovat na číslo verze), `netlify/mutace.mjs` (blok O10 na konci + SADY
+  `test_o10_kapitoly.js`), `mutace_jadro.mjs` (1 mutace O10 na konci), `BEZPECNOST_MEZE.md` oddíl K3-N15.
+- **Zbylé meze (zapsané v MEZE):** `{FIRMA}` ve zmrazených doložkách PROJ z aktuálního názvu; ostatní firemní údaje
+  dokumentu se nezmrazují; kontrola `terminAtyp` (kontroly.js) čte u zamčené varianty aktuální Firmu (jen hláška).
 
 # Předávka — 21. 10. 2026 noc: dávka O9 (kód aplikace, verzi přidělí sloučení) — opravy K4 bez rozhodnutí J. V.
 

@@ -621,7 +621,7 @@ opět ne přes mě).
 | 24 | Dokument a koncept e-mailu pro integrátora | ✅ | mimo repozitář; otázky §11.9 |
 | 25 | Odpovědi integrátora na §11.9 | ⬜ | čeká na integrátora |
 | 26 | Zákazník = organizace dealu, ne zdroj poptávky | ✅ | §11.11 — ověřeno na rolích organizací |
-| 27 | Každé pole jeden vlastník, žádná obousměrná synchronizace | ✅ | §11.10 — pravidlo J. V. 21. 10. 2026; #475 uzavřeno |
+| 27 | Každé pole jeden vlastník, žádná obousměrná synchronizace | ✅ | §11.10 — pravidlo J. V. 21. 10. 2026; #503 (dřív #475) uzavřeno |
 
 ---
 
@@ -840,7 +840,7 @@ pole má **jednoho vlastníka** (`smer` v `netlify/lib/pd_mapa.mjs` je jen
 Pole kalkulace se do kalkulace zpátky nečtou: ruční změnu takového pole
 v Pipedrive přepíše další zápis řídící varianty a obchodník ji uvidí
 v potvrzení „stará → nová" (#115). Detail dealu (`/api/pd/deal`) proto
-podmínky krycího listu nevrací. Otázky z roadmapy #475 (plán plateb PROJ,
+podmínky krycího listu nevrací. Otázky z roadmapy #503 (do 22. 10. #475; plán plateb PROJ,
 limit pokut, „Cizí") se tím vyřešily bez dalšího dotazu na J. V.: co
 kalkulace má, to se zapíše; kde Pipedrive hodnotu kalkulace neumí uložit,
 upraví se Pipedrive (otázky 1, 9, 10, 13 a 15 v §11.9). Které údaje vlastní

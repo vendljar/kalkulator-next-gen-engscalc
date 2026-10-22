@@ -16,6 +16,21 @@
  *   node nastroje/preklad_sod.js [--jazyk de] <složka> [výstupní složka]
  *       ze šablon Sablona_SOD_REALIZACE_v3.docx a Sablona_SOD_PROJEKCE_v4.docx
  *       a jejich slovníků vyrobí …_EN.docx (_DE, _FR) a vypíše kontrolu
+ *   node nastroje/preklad_sod.js --z-revize [--jazyk de] <složka> [výstupní složka]
+ *       (D4, 22. 10. 2026) ze šablony a její REVIDOVANÉ jazykové verze
+ *       <šablona>_<JAZYK>.docx ve složce upraví slovník tak, aby nástroj
+ *       vyrobil přesně revidované znění; zapíše ho do výstupní složky
+ *       (výchozí = vstupní) a vypíše vady a sporné věty
+ *   node nastroje/preklad_sod.js --porovnej [--jazyk de] <složka> [soubor.docx …]
+ *       vyrobí šablonu ze slovníku a porovná ji s <šablona>_<JAZYK>.docx
+ *       ve složce: rozdíly textu, běhů (po sloučení stejného písma), w:pPr,
+ *       název dokumentu, jazyk ve stylech a nastavení (0 = shoda)
+ *
+ * JAZYK DOKUMENTU (D4, jako revidované znění J. V.): w:lang cs-CZ → en-GB /
+ * de-DE / fr-FR v těle, styles.xml (všechny w:lang w:val) a themeFontLang
+ * v settings.xml; název dokumentu (docProps) ze záznamu { vlastnost: 'title',
+ * <jazyk> }; běhy těla bez w:rsid*. Blok { drzetSpolu: { za, pred } } dá
+ * w:keepNext odstavcům mezi dvěma textovými kotvami (podpisový blok).
  *
  * POJMENOVANÁ MÍSTA (18. 10. 2026, J. V.: sporná místa — DPH u zahraničního
  * zákazníka, skladné — se budou měnit „jedním přepisem"). Záznam slovníku
@@ -125,7 +140,14 @@ function stylyOdstavce(behy) {
   delka.forEach((n, r) => { if (n > max) { max = n; zaklad = r; } });
   const dalsi = [];
   delka.forEach((_n, r) => { if (r !== zaklad) dalsi.push(r); });
-  return { zaklad, dalsi };
+  /* písmo úseků bez písmen (tabulátory, mezery, uvozovky) — styly za `dalsi`,
+   * kostra je nepoužívá (klíč slovníku se nemění), překlad je smí označit */
+  const pomocne = [];
+  behy.forEach(b => {
+    const t = String(b.text).replace(SYMBOL_RE, '');
+    if (t && !/\p{L}/u.test(t) && b.rPr !== zaklad && dalsi.indexOf(b.rPr) < 0 && pomocne.indexOf(b.rPr) < 0) pomocne.push(b.rPr);
+  });
+  return { zaklad, dalsi, pomocne };
 }
 
 /* Text odstavce se značkami stylů (klíč slovníku). Úsek bez písmen (mezery,
@@ -148,8 +170,22 @@ const normKlic = t => String(t).replace(/ /g, ' ').replace(/[ ]+/g, ' ').trim()
 const podpisOddelovacu = t => (String(t).match(/[\t\n\f]/g) || []).join('');
 const symbolySerazene = t => (bezZnacek(t).match(SYMBOL_RE) || []).sort().join('|');
 
-/* Přeskládá odstavec z překladu. Vrací XML odstavce nebo hodí chybu. */
-function slozOdstavec(rozbor, styly, en) {
+/* Jazyk dokumentu (D4, 22. 10. 2026 — jako revidované znění J. V.):
+ * w:lang ve styles.xml, themeFontLang v settings.xml a značka odstavce. */
+const KOD_JAZYKA = { en: 'en-GB', de: 'de-DE', fr: 'fr-FR' };
+const jazykXml = (xml, L) => xml.replace(/(<w:lang w:val=")cs-CZ"/g, '$1' + KOD_JAZYKA[L] + '"');
+/* w:keepNext na své místo v w:pPr (za w:pStyle), když tam ještě není. */
+function pPrKeepNext(pPr) {
+  if (!pPr) return '<w:pPr><w:keepNext/></w:pPr>';
+  if (/<w:keepNext\/>/.test(pPr)) return pPr;
+  const m = pPr.match(/^\s*<w:pPr>(<w:pStyle [^>]*\/>)?/);
+  return pPr.slice(0, m[0].length) + '<w:keepNext/>' + pPr.slice(m[0].length);
+}
+
+/* Přeskládá odstavec z překladu. Vrací XML odstavce nebo hodí chybu.
+ * Sousední úseky stejného písma (i se symbolem) jdou do jednoho běhu. */
+function slozOdstavec(rozbor, styly, en, keepNext) {
+  const vsechny = styly.dalsi.concat(styly.pomocne || []);
   const symRPr = {};
   rozbor.behy.forEach(b => (b.text.match(SYMBOL_RE) || []).forEach(s => { if (!(s in symRPr)) symRPr[s] = b.rPr; }));
   const casti = [];
@@ -158,21 +194,22 @@ function slozOdstavec(rozbor, styly, en) {
   const pridej = (text, styl) => { if (text) casti.push({ text, styl }); };
   while ((m = re.exec(en))) { pridej(en.slice(posl, m.index), 0); pridej(m[2], +m[1]); posl = m.index + m[0].length; }
   pridej(en.slice(posl), 0);
-  let behy = '';
+  const useky = [];                                          // [{ rPr, text }] po sloučení
   casti.forEach(c => {
     if (/<\/?s\d+>/.test(c.text)) throw new Error('značky stylů se nesmí vnořovat ani zůstat neuzavřené');
-    if (c.styl > styly.dalsi.length) throw new Error('styl s' + c.styl + ' odstavec nemá');
-    const rPr = c.styl ? styly.dalsi[c.styl - 1] : styly.zaklad;
+    if (c.styl > vsechny.length) throw new Error('styl s' + c.styl + ' odstavec nemá');
+    const rPr = c.styl ? vsechny[c.styl - 1] : styly.zaklad;
     c.text.split(/(\{\{[A-Z0-9_]+\}\})/).forEach(kus => {
       if (!kus) return;
       const r = /^\{\{[A-Z0-9_]+\}\}$/.test(kus) ? (symRPr[kus] != null ? symRPr[kus] : rPr) : rPr;
-      const prvky = kus.split(/([\t\n\f])/).filter(x => x !== '').map(x =>
-        x === '\t' ? '<w:tab/>' : x === '\n' ? '<w:br/>' : x === '\f' ? '<w:br w:type="page"/>'
-          : '<w:t xml:space="preserve">' + xmlEsc(x) + '</w:t>').join('');
-      behy += '<w:r>' + r + prvky + '</w:r>';
+      const posl = useky[useky.length - 1];
+      if (posl && posl.rPr === r) posl.text += kus; else useky.push({ rPr: r, text: kus });
     });
   });
-  return rozbor.otevr + rozbor.pPr + behy + rozbor.ostatni.join('') + '</w:p>';
+  const behy = useky.map(u => '<w:r>' + u.rPr + u.text.split(/([\t\n\f])/).filter(x => x !== '').map(x =>
+    x === '\t' ? '<w:tab/>' : x === '\n' ? '<w:br/>' : x === '\f' ? '<w:br w:type="page"/>'
+      : '<w:t xml:space="preserve">' + xmlEsc(x) + '</w:t>').join('') + '</w:r>').join('');
+  return rozbor.otevr + (keepNext ? pPrKeepNext(rozbor.pPr) : rozbor.pPr) + behy + rozbor.ostatni.join('') + '</w:p>';
 }
 
 /* Odstavce dílu k překladu: [{ cz, styly: [rPr…] }] (pro kostru). */
@@ -207,16 +244,35 @@ function rozvinMista(text, mista) {
   return { text: out, vady };
 }
 
-function prelozXml(xml, slovnik, L, mista) {
+/* Bloky „držet spolu" (D4): odstavce mezi kotvou `za` a nejbližší další
+ * kotvou `pred` (klíče slovníku) dostanou w:keepNext — i prázdné řádky
+ * podpisového bloku, které slovník podle textu nepozná. */
+function svazaneOdstavce(klice, bloky) {
+  const out = new Set();
+  (bloky || []).forEach(b => klice.forEach((k, i) => {
+    if (k !== b.za) return;
+    for (let j = i + 1; j < klice.length; j++) {
+      if (klice[j] === b.pred) { for (let q = i + 1; q < j; q++) out.add(q); break; }
+    }
+  }));
+  return out;
+}
+const klicOdstavce = r => { const t = r.behy.map(b => b.text).join(''); return maText(t) ? normKlic(zapisOdstavce(r.behy, stylyOdstavce(r.behy))) : null; };
+
+function prelozXml(xml, slovnik, L, mista, bloky) {
   L = L || 'en';
   const chybi = [], vady = [];
   let prelozeno = 0;
   const spany = vnitrniSpany(xml);
+  const svazat = svazaneOdstavce(spany.map(sp => klicOdstavce(rozborOdstavce(xml.slice(sp.zac, sp.kon)))), bloky);
   for (let i = spany.length - 1; i >= 0; i--) {
     const sp = spany[i], odst = xml.slice(sp.zac, sp.kon);
     const r = rozborOdstavce(odst);
     const text = r.behy.map(b => b.text).join('');
-    if (!maText(text)) continue;
+    if (!maText(text)) {
+      if (svazat.has(i)) xml = xml.slice(0, sp.zac) + r.otevr + pPrKeepNext(r.pPr) + odst.slice(r.otevr.length + r.pPr.length) + xml.slice(sp.kon);
+      continue;
+    }
     const st = stylyOdstavce(r.behy);
     const cz = zapisOdstavce(r.behy, st);
     const z = slovnik.get(normKlic(cz));
@@ -230,7 +286,7 @@ function prelozXml(xml, slovnik, L, mista) {
       : '';
     if (vada) { vady.push(vada + ': „' + bezZnacek(cz).slice(0, 80) + '"'); continue; }
     try {
-      xml = xml.slice(0, sp.zac) + slozOdstavec(r, st, en) + xml.slice(sp.kon);
+      xml = xml.slice(0, sp.zac) + slozOdstavec(r, st, en, svazat.has(i)) + xml.slice(sp.kon);
       prelozeno++;
     } catch (e) { vady.push(e.message + ': „' + bezZnacek(cz).slice(0, 80) + '"'); }
   }
@@ -246,6 +302,11 @@ function nactiSlovnik(soubor) {
   zaznamy.forEach(z => { if (z && typeof z.cz === 'string') mapa.set(normKlic(z.cz), z); });
   return { zaznamy, mapa };
 }
+/* JSON slovníku; neviditelné mezery (nezlomitelná …) jako \u00a0 — při přenosu
+ * přes konektor Disku textem se jinak mění na obyčejné mezery (D4). */
+const NEVIDITELNE = /[\u00a0\u2000-\u200f\u2028\u2029\u202f\u2060\ufeff]/g;
+const jsonSlovniku = zaznamy => JSON.stringify(zaznamy, null, 1)
+  .replace(NEVIDITELNE, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')) + '\n';
 const slovnikSoubor = (sablona, L) => sablona.replace(/\.docx$/i, '.preklad_' + (L || 'en') + '.json');
 
 async function kostra(soubor, L) {
@@ -267,6 +328,146 @@ async function kostra(soubor, L) {
   return { zaznamu: zaznamy.length, novych, soubor: slovnikSoubor(soubor, L) };
 }
 
+/* SLOVNÍK Z REVIDOVANÉHO ZNĚNÍ (D4, 22. 10. 2026 — J. V. 21. 10.: revidované
+ * EN/DE/FR šablony na Disku jsou závazné znění). Revize vznikla z výstupu
+ * nástroje, odstavce tedy jdou 1 : 1 s češtinou (po dílech, v pořadí).
+ * Z každé dvojice odstavců se odvodí zápis překladu: písmo běhu revize se
+ * najde mezi styly české věty (základ = bez značky, další = <sN>), symboly
+ * nesou písmo svého běhu; w:keepNext, které revize přidala, jde do bloku
+ * „drzetSpolu" mezi textovými kotvami před a za úsekem. Odvozený
+ * zápis se hned složí a porovná s revizí — co nesedí, je `vada`. */
+const slucBehy = behy => behy.reduce((o, b) => {
+  if (!b.text) return o;
+  if (o.length && o[o.length - 1].rPr === b.rPr) o[o.length - 1].text += b.text; else o.push({ rPr: b.rPr, text: b.text });
+  return o;
+}, []);
+const odstavceDilu = xml => vnitrniSpany(xml).map(sp => rozborOdstavce(xml.slice(sp.zac, sp.kon)));
+const textOdstavce = r => r.behy.map(b => b.text).join('');
+
+function zapisZRevize(rCz, rRev, L) {
+  const st = stylyOdstavce(rCz.behy), cz = zapisOdstavce(rCz.behy, st);
+  const seznam = [st.zaklad].concat(st.dalsi, st.pomocne).map(r => jazykXml(r, L)), symRPr = {};
+  rCz.behy.forEach(b => (b.text.match(SYMBOL_RE) || []).forEach(s => { if (!(s in symRPr)) symRPr[s] = jazykXml(b.rPr, L); }));
+  let out = '', akt = 0, vada = '';
+  rRev.behy.forEach(b => String(b.text).split(/(\{\{[A-Z0-9_]+\}\})/).forEach(kus => {
+    if (!kus) return;
+    if (/^\{\{[A-Z0-9_]+\}\}$/.test(kus)) {
+      if (symRPr[kus] != null && symRPr[kus] !== b.rPr && !vada) vada = 'symbol ' + kus + ' má v revizi jiné písmo';
+      out += kus; return;
+    }
+    let s = seznam.indexOf(b.rPr);
+    if (s < 0) { if (/\p{L}/u.test(kus) && !vada) vada = 'písmo běhu, které česká věta nemá'; s = akt; }
+    if (s !== akt) { if (akt) out += '</s' + akt + '>'; if (s) out += '<s' + s + '>'; akt = s; }
+    out += kus;
+  }));
+  if (akt) out += '</s' + akt + '>';
+  out = out.replace(/<\/s(\d+)><s\1>/g, '');
+  const keepNext = /<w:keepNext\/>/.test(rRev.pPr) && !/<w:keepNext\/>/.test(rCz.pPr);
+  if (!vada) {
+    try {
+      const r = rozborOdstavce(jazykXml(slozOdstavec(rCz, st, out, keepNext), L));
+      if (JSON.stringify(slucBehy(r.behy)) !== JSON.stringify(slucBehy(rRev.behy))) vada = 'běhy po složení nesouhlasí s revizí';
+      else if (r.pPr !== rRev.pPr) vada = 'vlastnosti odstavce (w:pPr) nesouhlasí s revizí';
+    } catch (e) { vada = e.message; }
+  }
+  return { cz, text: out, keepNext, vada };
+}
+
+const bezMist = r => zapisOdstavce(r.behy, stylyOdstavce(r.behy));
+const nazevDokumentu = polozky => {
+  const p = polozky.find(x => x.nazev === 'docProps/core.xml');
+  const m = p && dec.decode(p.data).match(/<dc:title>([^<]*)<\/dc:title>/);
+  return m ? xmlUnesc(m[1]) : '';
+};
+
+/* Upraví záznamy slovníku jazyka L podle revize. Vrací { zaznamy, zmeneno,
+ * novych, beze, sporne: [], vady: [] }; vstupní pole se nemění. */
+async function slovnikZRevize(czBajty, revBajty, zaznamy, L) {
+  zaznamy = JSON.parse(JSON.stringify(zaznamy || []));
+  const pc = await dg.zipPrecti(czBajty), pr = await dg.zipPrecti(revBajty);
+  const odvozene = new Map(), sporne = [], vady = [], bloky = [];
+  for (const p of pc) {
+    if (!DILY.test(p.nazev)) continue;
+    const q = pr.find(x => x.nazev === p.nazev);
+    if (!q) { vady.push('revize nemá díl ' + p.nazev); continue; }
+    const oc = odstavceDilu(dec.decode(p.data)), or = odstavceDilu(dec.decode(q.data));
+    if (oc.length !== or.length) { vady.push(p.nazev + ': počet odstavců ' + oc.length + ' × revize ' + or.length + ' — revize nejde spárovat'); continue; }
+    const kn = r => /<w:keepNext\/>/.test(r.pPr);
+    const pridany = oc.map((rc, i) => kn(or[i]) && !kn(rc));
+    for (let i = 0; i < pridany.length; i++) {
+      if (!pridany[i] || pridany[i - 1]) continue;
+      let e = i; while (pridany[e + 1]) e++;
+      const za = i > 0 ? klicOdstavce(oc[i - 1]) : null, pred = e + 1 < oc.length ? klicOdstavce(oc[e + 1]) : null;
+      if (!za || !pred) vady.push(p.nazev + ': w:keepNext v revizi u odstavců #' + i + '–#' + e + ' nemá textové kotvy');
+      else bloky.push({ za: bezMist(oc[i - 1]), pred: bezMist(oc[e + 1]) });
+    }
+    oc.forEach((rc, i) => {
+      if (!maText(textOdstavce(rc))) return;
+      const o = zapisZRevize(rc, or[i], L), k = normKlic(o.cz);
+      if (o.vada) vady.push(o.vada + ': „' + bezZnacek(o.cz).slice(0, 80) + '"');
+      const driv = odvozene.get(k);
+      if (driv && driv.text !== o.text) sporne.push('stejná česká věta, revize ji překládá různě: „' + bezZnacek(o.cz).slice(0, 80) + '"');
+      else if (!driv) odvozene.set(k, o);
+    });
+  }
+  const mapa = new Map();
+  zaznamy.forEach(z => { if (z && typeof z.cz === 'string') mapa.set(normKlic(z.cz), z); });
+  const mista = mistaZeZaznamu(zaznamy, L);
+  let zmeneno = 0, novych = 0, beze = 0;
+  odvozene.forEach((o, k) => {
+    const z = mapa.get(k);
+    if (!z) { zaznamy.push(mapa.set(k, { cz: o.cz, [L]: o.text, pozn: '' }).get(k)); novych++; return; }
+    const stary = rozvinMista(z[L] || '', mista).text;
+    if (stary === o.text) { beze++; return; }
+    const casti = String(z[L] || '').split(/\[\[([A-Z0-9_]+)\]\]/);
+    if (casti.length === 3 && o.text.startsWith(casti[0]) && o.text.endsWith(casti[2]) && o.text.length >= casti[0].length + casti[2].length) {
+      const mz = zaznamy.find(x => x && x.misto === casti[1]);                 // pojmenované místo zůstane
+      mz[L] = o.text.slice(casti[0].length, o.text.length - casti[2].length); mista[casti[1]] = mz[L];
+    } else z[L] = o.text;
+    zmeneno++;
+  });
+  const popis = b => JSON.stringify([b.za, b.pred]);
+  if (zaznamy.filter(z => z && z.drzetSpolu).map(z => popis(z.drzetSpolu)).join() !== bloky.map(popis).join()) {
+    zaznamy = zaznamy.filter(z => !(z && z.drzetSpolu));
+    bloky.forEach(b => zaznamy.push({ drzetSpolu: b, pozn: 'w:keepNext odstavců mezi kotvami (revidované znění)' }));
+    zmeneno += bloky.length;
+  }
+  const nr = nazevDokumentu(pr);
+  if (nr && nr !== nazevDokumentu(pc)) {
+    let z = zaznamy.find(x => x && x.vlastnost === 'title');
+    if (!z) { z = { vlastnost: 'title', pozn: 'název dokumentu (docProps)' }; zaznamy.push(z); }
+    if (z[L] !== nr) { z[L] = nr; zmeneno++; }
+  }
+  return { zaznamy, zmeneno, novych, beze, sporne, vady };
+}
+
+/* Porovná jazykovou šablonu z nástroje s revizí: odstavce (text, běhy po
+ * sloučení stejného písma, w:pPr), název dokumentu a jazyk ve stylech
+ * a nastavení. Vrací { odstavcu, text, behy, pPr, ostatni: [], rozdily: [] }. */
+async function porovnejSRevizi(vystupBajty, revBajty) {
+  const pa = await dg.zipPrecti(vystupBajty), pb = await dg.zipPrecti(revBajty);
+  const v = { odstavcu: 0, text: 0, behy: 0, pPr: 0, ostatni: [], rozdily: [] };
+  for (const p of pa) {
+    const q = pb.find(x => x.nazev === p.nazev);
+    if (!DILY.test(p.nazev)) continue;
+    if (!q) { v.ostatni.push('revize nemá ' + p.nazev); continue; }
+    const oa = odstavceDilu(dec.decode(p.data)), ob = odstavceDilu(dec.decode(q.data));
+    if (oa.length !== ob.length) { v.ostatni.push(p.nazev + ': počet odstavců ' + oa.length + ' × ' + ob.length); continue; }
+    oa.forEach((a, i) => {
+      const b = ob[i], ta = textOdstavce(a), tb = textOdstavce(b);
+      v.odstavcu++;
+      const druh = ta !== tb ? 'text' : JSON.stringify(slucBehy(a.behy)) !== JSON.stringify(slucBehy(b.behy)) ? 'behy' : a.pPr !== b.pPr ? 'pPr' : '';
+      if (druh) { v[druh]++; v.rozdily.push(druh + ' (' + p.nazev + ' #' + i + '): „' + ta.slice(0, 70) + '" × „' + tb.slice(0, 70) + '"'); }
+    });
+  }
+  if (nazevDokumentu(pa) !== nazevDokumentu(pb)) v.ostatni.push('název dokumentu: „' + nazevDokumentu(pa) + '" × „' + nazevDokumentu(pb) + '"');
+  const jaz = (pp, n, re) => { const x = pp.find(y => y.nazev === n); return x ? (dec.decode(x.data).match(re) || []).join('|') : ''; };
+  [['word/styles.xml', /<w:lang w:val="[^"]*"/g], ['word/settings.xml', /<w:themeFontLang w:val="[^"]*"/g]].forEach(([n, re]) => {
+    if (jaz(pa, n, re) !== jaz(pb, n, re)) v.ostatni.push('jazyk v ' + n + ' nesouhlasí');
+  });
+  return v;
+}
+
 /* Vyrobí jazykovou šablonu a zkontroluje ji. Vrací { bajty, problemy: [], pozn: [] }. */
 async function prelozSablonu(bajty, zaznamy, L) {
   L = L || 'en';
@@ -277,9 +478,18 @@ async function prelozSablonu(bajty, zaznamy, L) {
   const polozky = await dg.zipPrecti(bajty);
   const problemy = [];
   let prelozeno = 0;
+  const nazev = (zaznamy || []).find(z => z && z.vlastnost === 'title' && typeof z[L] === 'string');
+  const bloky = (zaznamy || []).filter(z => z && z.drzetSpolu).map(z => ({ za: normKlic(z.drzetSpolu.za), pred: normKlic(z.drzetSpolu.pred) }));
   for (const p of polozky) {
+    if (p.nazev === 'word/styles.xml') p.data = enc.encode(dec.decode(p.data).replace(/(<w:lang w:val=")[^"]*"/g, '$1' + KOD_JAZYKA[L] + '"'));
+    if (p.nazev === 'word/settings.xml') p.data = enc.encode(dec.decode(p.data).replace(/(<w:themeFontLang w:val=")[^"]*"/, '$1' + KOD_JAZYKA[L] + '"'));
+    if (p.nazev === 'docProps/core.xml' && nazev) p.data = enc.encode(dec.decode(p.data)
+      .replace(/<dc:title\/>|<dc:title>[^<]*<\/dc:title>/, '<dc:title>' + xmlEsc(nazev[L]) + '</dc:title>'));
     if (!DILY.test(p.nazev)) continue;
-    const v = prelozXml(dec.decode(p.data), mapa, L, mista);
+    const v = prelozXml(dec.decode(p.data), mapa, L, mista, bloky);
+    v.xml = jazykXml(v.xml, L);                              // w:lang cs-CZ → jazyk šablony
+    /* tělo dokumentu bez w:rsid* u běhů (revidované znění je nemá; v záhlaví zůstávají) */
+    if (p.nazev === 'word/document.xml') v.xml = v.xml.replace(/<w:r(?:\s+w:rsid\w*="[^"]*")+\s*>/g, '<w:r>');
     p.data = enc.encode(v.xml);
     prelozeno += v.prelozeno;
     v.chybi.forEach(t => problemy.push('nepřeloženo (' + p.nazev + '): „' + bezZnacek(t).slice(0, 90) + '"'));
@@ -317,6 +527,40 @@ async function hlavni() {
     }
     return 0;
   }
+  if (argy[0] === '--z-revize' || argy[0] === '--porovnej') {
+    /* --z-revize <složka> [výstupní složka] · --porovnej <složka> [soubor.docx …] */
+    const slozka = argy[1], porovnat = argy[0] === '--porovnej';
+    const vystupni = (!porovnat && argy[2]) || slozka;
+    if (!slozka) { console.error('Použití: node nastroje/preklad_sod.js --z-revize [--jazyk en|de|fr] <složka> [výstupní složka]\n'
+      + '        node nastroje/preklad_sod.js --porovnej [--jazyk en|de|fr] <složka> [soubor.docx …]'); process.exit(2); }
+    let celkem = 0, nalezeno = 0;
+    const sablony = porovnat && argy.length > 2 ? argy.slice(2) : SABLONY_SOD;
+    for (const f of sablony.map(x => path.join(slozka, x)).filter(x => fs.existsSync(x))) {
+      const rev = f.replace(/\.docx$/i, '_' + L.toUpperCase() + '.docx');
+      if (!fs.existsSync(rev)) continue;
+      nalezeno++;
+      const czB = new Uint8Array(fs.readFileSync(f)), revB = new Uint8Array(fs.readFileSync(rev));
+      const zaz = nactiSlovnik(slovnikSoubor(f, L)).zaznamy;
+      if (argy[0] === '--z-revize') {
+        const v = await slovnikZRevize(czB, revB, zaz, L);
+        if (!fs.existsSync(vystupni)) fs.mkdirSync(vystupni, { recursive: true });
+        const cil = path.join(vystupni, path.basename(slovnikSoubor(f, L)));
+        fs.writeFileSync(cil, jsonSlovniku(v.zaznamy));
+        celkem += v.vady.length + v.sporne.length;
+        console.log((v.vady.length + v.sporne.length ? '✗ ' : '✓ ') + path.basename(cil) + ' — změněno ' + v.zmeneno + ', nových ' + v.novych
+          + ', beze změny ' + v.beze + v.sporne.concat(v.vady).map(t => '\n    ' + t).join(''));
+      } else {
+        const v = await porovnejSRevizi((await prelozSablonu(czB, zaz, L)).bajty, revB);
+        const n = v.text + v.behy + v.pPr + v.ostatni.length;
+        celkem += n;
+        console.log((n ? '✗ ' : '✓ ') + path.basename(rev) + ' — odstavců ' + v.odstavcu + ', rozdíl textu ' + v.text + ', jen běhy ' + v.behy
+          + ', w:pPr ' + v.pPr + v.ostatni.concat(v.rozdily).map(t => '\n    ' + t).join(''));
+      }
+    }
+    if (!nalezeno) throw new Error('Ve složce ' + slozka + ' není česká šablona SoD s revizí …_' + L.toUpperCase() + '.docx');
+    console.log(celkem ? '\nROZDÍLŮ / VAD: ' + celkem : '\nBez rozdílů.');
+    return celkem ? 1 : 0;
+  }
   const slozka = argy[0], vystupni = argy[1] || argy[0];
   if (!slozka) { console.error('Použití: node nastroje/preklad_sod.js [--kostra] [--jazyk en|de|fr] <složka> [výstupní složka]'); process.exit(2); }
   const soubory = SABLONY_SOD.map(f => path.join(slozka, f)).filter(f => fs.existsSync(f));
@@ -341,4 +585,4 @@ async function hlavni() {
 
 if (require.main === module) hlavni().then(k => process.exit(k)).catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
 module.exports = { rozborOdstavce, stylyOdstavce, zapisOdstavce, slozOdstavec, odstavceKPrekladu, prelozXml, prelozSablonu, normKlic,
-  rozvinMista, mistaZeZaznamu, JAZYKY_SOD };
+  rozvinMista, mistaZeZaznamu, JAZYKY_SOD, slovnikZRevize, porovnejSRevizi, zapisZRevize, jsonSlovniku };

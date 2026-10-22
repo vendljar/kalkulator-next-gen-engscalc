@@ -293,6 +293,10 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
   if (typeof firmaPlaceholders === 'function')
     Object.assign(placeholders, firmaPlaceholders(
       typeof firmaAktualni === 'function' ? firmaAktualni() : null, P));
+  /* Jazykové symboly kapitol ({{FIRMA_NAB_DOLOZKY_DE}} …) odeslané varianty
+   * ze snímku (K4-N1) — jinak by je firmaPlaceholders vzal z aktuální Firmy. */
+  const kapFirma = nabidkaKapitolyFirma(varianta);
+  if (kapFirma && typeof firmaKapitolyJazykoveSymboly === 'function') firmaKapitolyJazykoveSymboly(kapFirma, placeholders);
 
   /* Zpracovatel nabídky (#146) – symboly {{ZPRAC_…}} do bloku „Vypracoval“.
    * Nabídku podepisuje ten obchodní technik, který je právě přihlášený;
@@ -342,7 +346,8 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
    * řekne nahlas — tiché nahrazení češtinou by znamenalo poslat cizímu
    * zákazníkovi podmínky v jazyce, kterému nemusí rozumět. */
   if (typeof firmaKapitola === 'function' && typeof FIRMA_KAPITOLY !== 'undefined') {
-    const f = (typeof firmaAktualni === 'function') ? firmaAktualni() : null;
+    /* Zamčená varianta se snímkem tiskne kapitoly z doby odeslání (K4-N1). */
+    const f = nabidkaKapitolyFirma(varianta) || ((typeof firmaAktualni === 'function') ? firmaAktualni() : null);
     /* LEŠENÍ SI NESMÍ ODPOROVAT S TECHNICKOU SPECIFIKACÍ (P8/7, rozhodnutí
      * J. V. 22. 9. 2026).
      *
@@ -507,6 +512,9 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
     ...tsExtra.map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
   ];
   return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic, tsExtra, mena,
+           /* Cena nabídky bez DPH ve měně dokumentu a sazba DPH — SoD k ní
+            * přičítá objednané příplatky (#447 C6, sodObjednaneSymboly). */
+           ceny: { bezDph: cenaBezDphNum, dphSazba: +Cv.dph || 0 },
            /* sken podpisu s razítkem (#146) + úvodní fotka stavby */
            obrazky: Object.assign({},
              typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky() : {},
@@ -517,6 +525,19 @@ function nabidkaData(zak, varianta, jekly, lang, sablona) {
 /* Struktura náhledu podkladů – stejné sekce jako v technické specifikaci/nabídce.
  * lang = 'cz' | 'en' | 'de' | 'fr' – překládají se NÁZVY SEKCÍ a POPISKY řádků;
  * hodnoty už přeložené přicházejí v ph (nabidkaData). Neznámý výraz zůstává česky. */
+/* KAPITOLY IV.–VI. A DOLOŽKY ODESLANÉ NABÍDKY (K4-N1, dávka O10, rozhodnutí
+ * J. V. 21. 10. 2026). Zamčená varianta se snímkem (`data.kryci.
+ * zmrazenoPodminky.kapitoly`, kryciZmrazPodminky) vrátí Firmu s texty z doby
+ * odeslání; nezamčená a zamčená před O10 (bez snímku) vrátí null = tiskne se
+ * aktuální Firma jako dosud. */
+function nabidkaKapitolyFirma(varianta) {
+  const d = varianta && varianta.data;
+  const zp = varianta && varianta.zamek && varianta.zamek.zamceno && d && d.kryci && d.kryci.zmrazenoPodminky;
+  const snimek = zp && zp.kapitoly;
+  if (!snimek || typeof firmaKapitolyZeSnimku !== 'function') return null;
+  return firmaKapitolyZeSnimku((typeof firmaAktualni === 'function') ? firmaAktualni() : {}, snimek);
+}
+
 /* Popis záměru do nabídky OCK (P6). Vlastní text z hlavičky zakázky má
  * přednost — pole `popisZameru` už existuje (dnes ho vyplňuje nabídka PROJ).
  * Jinak věta složená podle typu šachty a průchodnosti. NÁVRH ZNĚNÍ. */
@@ -751,4 +772,4 @@ if (typeof dokumentRegistruj === 'function')
     builder: (zak, varianta, jekly, lang, sablona) => nabidkaData(zak, varianta, jekly, lang, sablona),
   });
 
-if (typeof module !== 'undefined') module.exports = { nabidkaData, usazeniBocniSloucene, nabidkaNahledSekce, nabidkaSlovoSouboru, NABIDKA_SOUBOR_SLOVO, nabidkaPopisZameru };
+if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaKapitolyFirma, usazeniBocniSloucene, nabidkaNahledSekce, nabidkaSlovoSouboru, NABIDKA_SOUBOR_SLOVO, nabidkaPopisZameru };

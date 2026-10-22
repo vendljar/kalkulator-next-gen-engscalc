@@ -371,6 +371,23 @@ export function retenceVyber(klice, dnes) {
 export const RETENCE_POKLES_PRAH = 0.5;
 export const RETENCE_VAROVANI_KLIC = 'retence-varovani';
 export const RETENCE_VAROVANI_DNU = 30;
+/* DRŽENÍ RETENCE DO POTVRZENÍ (K4-N13, dávka O11, rozhodnutí J. V.
+ * 21. 10. 2026). Do O11 pojistka zastavila retenci jen na jednu noc: další
+ * noc se nový otisk porovnal s už „chudým" a retence mazala dobré otisky
+ * z doby před ztrátou, jak dosáhly 30 dní. Teď retence po poklesu stojí,
+ * dokud správce varování v administraci nepotvrdí (POST
+ * /api/zaloha_vynuceno { akce: 'retence-potvrdit' }, heslo správce),
+ * nejdéle RETENCE_VAROVANI_DNU dní od varování; pak běží normálně.
+ * Čistá funkce: vrací null (retence smí běžet), nebo { dnu, doKdy }. */
+export function retenceDrzena(varovani, ted) {
+  if (!varovani || typeof varovani !== 'object' || varovani.potvrzeno) return null;
+  const t = Date.parse(typeof varovani.kdy === 'string' ? varovani.kdy : '');
+  if (!Number.isFinite(t)) return null;
+  const nyni = Number.isFinite(+ted) && ted ? +ted : Date.now();
+  const dnu = Math.floor((nyni - t) / DEN_MS);
+  if (dnu >= RETENCE_VAROVANI_DNU) return null;
+  return { dnu, doKdy: new Date(t + RETENCE_VAROVANI_DNU * DEN_MS).toISOString() };
+}
 /* Počty zakázek a účtů otisku: ze souhrnu (#151 N3), u otisku bez souhrnu
  * z otisku samého. Vrací null, když otisk není. */
 async function otiskPocty(s, klic) {
@@ -428,13 +445,24 @@ export async function retenceProved(novyKlic, dnes, ted) {
   /* POJISTKA PROTI TICHÉ ZTRÁTĚ DAT (K3-N13, rozhodnutí J. V. 20. 10. 2026).
    * Nese-li nový noční otisk méně než 50 % zakázek nebo účtů proti
    * předchozímu nočnímu, retence se ten den přeskočí, zaloguje se varování
-   * a záznam `retence-varovani` ukáže hlídka v administraci (30 dní). */
+   * a záznam `retence-varovani` ukáže hlídka v administraci (30 dní).
+   * Od O11 (K4-N13) retence stojí i další noci, dokud správce úbytek
+   * nepotvrdí — viz retenceDrzena. */
   const pokles = await retencePokles(s, klice, novyKlic);
   if (pokles) {
     const varovani = { kdy: new Date(Number.isFinite(+ted) && ted ? +ted : Date.now()).toISOString(), ...pokles };
     try { await s.zapis(RETENCE_VAROVANI_KLIC, varovani); } catch (e) { /* varování je navíc, retence stejně stojí */ }
     return { smazano: [], chyby: [], ceka: 'retence přeskočena — ' + pokles.text, varovani };
   }
+  /* K4-N13 (O11): nepotvrzené varování z dřívější noci drží retenci dál
+   * (nejdéle 30 dní). Nečitelný záznam = radši nemazat. */
+  let drzeno;
+  try { drzeno = retenceDrzena(await s.cti(RETENCE_VAROVANI_KLIC), ted); }
+  catch (e) { drzeno = { dnu: 0, doKdy: '', chyba: String(e && e.message || e) }; }
+  if (drzeno)
+    return { smazano: [], chyby: [], drzeno, ceka: drzeno.chyba
+      ? 'retence stojí — záznam varování pojistky nejde přečíst (' + drzeno.chyba + ')'
+      : 'retence stojí do potvrzení úbytku dat správcem (varování před ' + drzeno.dnu + ' dny, nejdéle do ' + drzeno.doKdy.slice(0, 10) + ')' };
   const kopie = await s.cti(KOPIE_DISK_KLIC);
   if (!kopieDiskCerstva(kopie, ted))
     return { smazano: [], chyby: [], ceka: 'retence čeká na první kopii na Disk' };

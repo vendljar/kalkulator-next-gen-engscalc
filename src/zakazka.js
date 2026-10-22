@@ -1646,6 +1646,10 @@ function zakazkaDuplikuj(zak, noveCislo) {
   delete nova.autor;
   delete nova.autorJmeno;
   delete nova.upravil;
+  /* Pipedrive eviduje každou nabídku zvlášť (#447 C4): nová zakázka deal
+   * původní nepřebírá — jinak by ji obchodník ani neuložil (id mění jen
+   * administrátor). */
+  delete nova.pdDealId;
 
   /* Zápisy o jednání patří k původní akci, ne sem. */
   nova.poznamky = [];

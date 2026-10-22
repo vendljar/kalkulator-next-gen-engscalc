@@ -576,12 +576,8 @@ function onlineSablonaStahni(typ) {
 /* Zveřejnění šablony — volá obrazovka Nastavení → Šablony. Soubor jde na
  * server v base64; verzi, otisk i odmítnutí ne-Wordu řeší server. */
 function onlineSablonaZverejni(typ, nazev, arrayBuffer, poznamka, zdrojOtisk) {
-  const u8 = new Uint8Array(arrayBuffer);
-  let bin = '';
-  const KROK = 32768;   // String.fromCharCode má strop na počet argumentů
-  for (let i = 0; i < u8.length; i += KROK)
-    bin += String.fromCharCode.apply(null, u8.subarray(i, i + KROK));
-  const telo = { akce: 'zverejnit', typ, nazev, data: btoa(bin), poznamka: String(poznamka || '') };
+  /* převod sdílí s průvodcem šablon (sablonaAbNaB64, #474) — otisk vyjde stejný */
+  const telo = { akce: 'zverejnit', typ, nazev, data: sablonaAbNaB64(arrayBuffer), poznamka: String(poznamka || '') };
   if (zdrojOtisk) telo.zdrojOtisk = zdrojOtisk;           // jazyková verze: ze které češtiny (#348)
   return onlineApi('/api/sablony', telo).then(o => onlineNactiSablony().then(() => o));
 }
@@ -1601,6 +1597,32 @@ function onlineZaloha(doSlozky) {
 }
 
 /* ---------- otisky databáze na serveru (vynucená i noční záloha) ---------- */
+
+/* POTVRZENÍ ÚBYTKU DAT (K4-N13, O11, rozhodnutí J. V. 21. 10. 2026). Po
+ * poklesu dat v noční záloze pod polovinu stojí mazání starých záloh, dokud
+ * to správce nepotvrdí (nejdéle 30 dní). Potvrzení odemyká mazání, proto
+ * heslem správce; server ověří, že jde o totéž varování (`den`). */
+async function onlineRetencePotvrd() {
+  const v = ONLINE_STAV.retenceVarovani;
+  if (!v || !jeAdminOnline()) return false;
+  const ano = await potvrd('Opravdu data ubyla záměrně (smazané zakázky nebo účty)? Po potvrzení se mazání starých záloh '
+    + 'znovu rozběhne a zálohy z doby před úbytkem začnou postupně mizet podle pravidel retence.',
+    { nadpis: 'Úbytek dat v noční záloze', ano: 'Ano, úbytek byl záměrný', ne: 'Zpět' });
+  if (!ano) return false;
+  const hesloSpravce = await dotazHeslo('Potvrzení odemyká mazání starých záloh na serveru. '
+    + 'Potvrďte ho svým heslem (tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
+  if (!hesloSpravce) return false;
+  ONLINE_STAV.pracuje = true; render();
+  try {
+    const o = await onlineApi('/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: String(v.den || ''), hesloSpravce });
+    ONLINE_STAV.retenceVarovani = (o && o.retenceVarovani) || null;
+    onlineZprava('Úbytek dat potvrzen — mazání starých záloh poběží zase podle pravidel retence.', '');
+    return true;
+  } catch (e) {
+    onlineZprava('Potvrzení se nepovedlo: ' + e.message, 'varovani');
+    return false;
+  } finally { ONLINE_STAV.pracuje = false; render(); }
+}
 
 /* Přehled otisků: kdy záloha naposledy vznikla a odkud. Seznam vozí JEN
  * souhrny (den, čas, zdroj, počty) – obsah otisků z něj vytáhnout nejde,
@@ -2666,7 +2688,9 @@ function renderOnlineKarta() {
       ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>`
         + (hlidka ? `<div id="online-zalohy-nocni" class="${hlidka.stara ? 'seznam-varovani' : 'note'}">${esc(hlidka.text)}</div>` : '')
         + (kopieHl ? `<div id="online-kopie-disk" class="${kopieHl.stara ? 'seznam-varovani' : 'note'}">${esc(kopieHl.text)}</div>` : '')
-        + (retenceHl ? `<div id="online-retence-varovani" class="seznam-varovani">${esc(retenceHl.text)}</div>` : '')
+        + (retenceHl ? `<div id="online-retence-varovani" class="seznam-varovani">${esc(retenceHl.text)}
+            <button class="mini" id="online-retence-potvrdit" onclick="onlineRetencePotvrd()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}
+              title="potvrdí, že data ubyla záměrně (smazané zakázky, účty) — mazání starých záloh se znovu rozběhne">Úbytek byl záměrný</button></div>` : '')
       : '';
     telo = `${hlaska}${onlineKolizeTlacitka()}${zalohaRadek}
       <div class="btns" style="margin-top:10px">

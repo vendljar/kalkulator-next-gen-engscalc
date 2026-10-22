@@ -148,6 +148,13 @@ const slozka = (ctx, name) => ({ name, getFileHandle: async (jm) => {
       && !!U.uloRetenceVarovani(Object.assign({}, v, { kdy: new Date(ted - 29 * 86400000 - 3600000).toISOString() }), ted)
       && !U.uloRetenceVarovani(Object.assign({}, v, { kdy: new Date(ted - 30 * 86400000).toISOString() }), ted));
     test('K3-N13: bez záznamu nebo s nečitelným časem nic', U.uloRetenceVarovani(null, ted) === null && U.uloRetenceVarovani({ kdy: 'x' }, ted) === null);
+    /* K4-N13 (O11): retence stojí do potvrzení; potvrzené varování nesvítí.
+     * Pojistka: před O11 obě kontroly selžou (text „se ten den přeskočilo",
+     * potvrzené varování svítilo dál). */
+    test('K4-N13: hlídka řekne, že mazání stojí do potvrzení tlačítkem, a kolik dní nejdéle',
+      !!r && /Mazání starých záloh stojí, dokud úbytek nepotvrdíte tlačítkem „Úbytek byl záměrný"/.test(r.text) && /nejdéle 29 dní/.test(r.text), r);
+    test('K4-N13: potvrzené varování už nesvítí',
+      U.uloRetenceVarovani(Object.assign({}, v, { potvrzeno: { kdy: '2026-11-10T07:00:00Z', kdo: 'spravce' } }), ted) === null);
   }
   console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
   process.exit(fail ? 1 : 0);

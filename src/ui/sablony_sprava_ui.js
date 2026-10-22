@@ -282,7 +282,15 @@ async function sablPruvodceStart(typ, predvybrany) {
     let vzor = null;
     if (sablonaPlatna(sablRej(), d.typ))
       vzor = sablonaSymboly(await docxTextSablony((await onlineSablonaStahni(d.typ)).data));
-    SABL_UI.pruvodce.kontrola = await sablKontrolaSouboru(soubor.data, 'cz', vzor);
+    const k = await sablKontrolaSouboru(soubor.data, 'cz', vzor);
+    /* #474 (O12, 21. 10. 2026): stejný soubor jako platná čeština — průvodce
+     * ji znovu nezveřejní (server by odmítl „už je zveřejněná") a jen k ní
+     * přidá jazykové verze. U dokumentu bez jazyků není co zveřejňovat. */
+    const shoda = sablonaCestinaShodna(sablRej(), d.typ, sablonaAbNaB64(soubor.data));
+    SABL_UI.pruvodce.shodaCz = shoda ? { verze: shoda.verze, otisk: shoda.otisk } : null;
+    if (shoda && !d.jazyky)
+      k.chyby.push('Soubor je shodný s platnou českou verzí ' + shoda.verze + ' – není co zveřejňovat.');
+    SABL_UI.pruvodce.kontrola = k;
   } catch (e) {
     SABL_UI.pruvodce.kontrola = { chyby: ['Soubor se nepodařilo přečíst: ' + e.message], varovani: [], symboly: [], jaz: {} };
   }
@@ -294,10 +302,12 @@ function sablPruvodceHtml() {
   const p = SABL_UI.pruvodce, d = sablDok(p.typ), k = p.kontrola;
   const kroky = ['Soubor', 'Kontrola', d.jazyky ? 'Jazykové verze' : null, 'Zveřejnit'].filter(Boolean);
   const aktIdx = p.krok === 'kontrola' ? 1 : (d.jazyky ? 2 : 3);
+  const shoda = p.shodaCz;                 // #474: čeština shodná s platnou verzí
   const hlavicka = `<div class="sabl-kroky">${kroky.map((n, i) =>
     `<span class="${i < aktIdx ? 'hot' : (i === aktIdx ? 'akt' : '')}">${i + 1} · ${esc(n)}</span>`).join('')}</div>
-    <div><b>${esc(d.nazev)} — nová česká verze</b> · <code>${esc(p.soubor.nazev)}</code>
-      <span class="note">(${esc(Math.round(p.soubor.data.byteLength / 1024))} kB · zatím nic nezveřejněno)</span></div>`;
+    <div><b>${esc(d.nazev)} — ${shoda ? 'čeština shodná s platnou verzí ' + esc(shoda.verze) : 'nová česká verze'}</b> · <code>${esc(p.soubor.nazev)}</code>
+      <span class="note">(${esc(Math.round(p.soubor.data.byteLength / 1024))} kB · ${shoda
+        ? 'čeština se znovu nezveřejní, přidají se jen jazykové verze' : 'zatím nic nezveřejněno'})</span></div>`;
   if (!k) return `<div class="sabl-panel" id="sablPruvodce">${hlavicka}<div class="note">Kontroluji…</div></div>`;
   if (p.krok === 'kontrola') {
     const lze = !k.chyby.length && !k.jinyJazyk;
@@ -315,6 +325,9 @@ function sablPruvodceHtml() {
             ${r.pribylo.length ? 'přibylo ' + esc(r.pribylo.join(', ')) : ''}${r.pribylo.length && r.ubylo.length ? '; ' : ''}
             ${r.ubylo.length ? '<b>chybí ' + esc(r.ubylo.join(', ')) + '</b> (tyto údaje se nedosadí)' : ''}</span></div>`);
     }
+    if (shoda && d.jazyky)
+      radky.push(`<div class="sabl-kontrola"><b class="ok">i</b><span>Soubor je shodný s platnou českou verzí ${esc(shoda.verze)} —
+        čeština se znovu nezveřejní; v dalším kroku k ní přidáte jazykové verze.</span></div>`);
     k.chyby.forEach(t => radky.push(`<div class="sabl-kontrola"><b class="chyba">✕</b><span>${esc(t)}</span></div>`));
     k.varovani.forEach(t => radky.push(`<div class="sabl-kontrola"><b class="warn">⚠</b><span>${esc(t)}</span></div>`));
     return `<div class="sabl-panel" id="sablPruvodce">${hlavicka}
@@ -356,16 +369,25 @@ function sablPruvodceHtml() {
     </div>`;
   }).join('') : '';
   const vybrane = SABL_JAZYKY.filter(([l]) => p.vybrane[l]).map(([l]) => l.toUpperCase());
+  /* #474: u češtiny shodné s platnou se zveřejňují jen jazyky — bez nich
+   * není co zveřejnit, tlačítko se zakáže a řekne proč. */
+  const tlZverejnit = shoda
+    ? `<button class="primary" ${vybrane.length ? '' : 'disabled'} onclick="sablPruvodceZverejni()">Zveřejnit jazykové verze k platné češtině v${esc(shoda.verze)}${vybrane.length ? ': ' + esc(vybrane.join(' + ')) : ''}</button>`
+    : `<button class="primary" onclick="sablPruvodceZverejni()">Zveřejnit najednou: čeština${vybrane.length ? ' + ' + esc(vybrane.join(' + ')) : ''}</button>`;
   return `<div class="sabl-panel" id="sablPruvodce">${hlavicka}
-    ${d.jazyky ? `<div class="note">Jazykové verze aplikace vyrobila z nové češtiny. Zaškrtnuté se zveřejní spolu s ní;
-      ostatní zůstanou, jak jsou (a označí se jako zastaralé). Místo překladu aplikace můžete u jazyka
+    ${d.jazyky ? `<div class="note">${shoda
+      ? `Čeština je shodná s platnou verzí ${esc(shoda.verze)} a znovu se nezveřejní. Zaškrtnuté jazykové verze se zveřejní
+      k ní; ostatní zůstanou, jak jsou.`
+      : `Jazykové verze aplikace vyrobila z nové češtiny. Zaškrtnuté se zveřejní spolu s ní;
+      ostatní zůstanou, jak jsou (a označí se jako zastaralé).`} Místo překladu aplikace můžete u jazyka
       <b>nahrát vlastní verzi</b> (doladěnou ve Wordu nebo od překladatele); doladěný soubor lze nahrát i později přímo k jazyku.</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0">${karty}</div>` : ''}
     <div class="row" style="margin-top:8px"><label for="sablPozn">Poznámka ke změně</label>
       <input type="text" id="sablPozn" value="${esc(p.poznamka)}" onchange="SABL_UI.pruvodce.poznamka=this.value"></div>
     <div class="btns" style="margin-top:10px">
       <button onclick="sablPruvodceZrus()">Zrušit</button>
-      <button class="primary" onclick="sablPruvodceZverejni()">Zveřejnit najednou: čeština${vybrane.length ? ' + ' + esc(vybrane.join(' + ')) : ''}</button></div>
+      ${tlZverejnit}</div>
+    ${shoda && !vybrane.length ? '<div class="note">Vyberte aspoň jeden jazyk — čeština je shodná s platnou verzí a znovu se nezveřejňuje.</div>' : ''}
   </div>`;
 }
 async function sablPruvodceJinySoubor() {
@@ -399,7 +421,7 @@ async function sablPruvodceVlastni(l, predvybrany) {
     else {
       const puvodni = p.mutace[l];
       p.mutace[l] = { data: soubor.data, nazev: soubor.nazev, vlastni: true,
-                      varovani: k.varovani.map(t => t.replace('platné české verzi', 'nové české verzi')),
+                      varovani: p.shodaCz ? k.varovani : k.varovani.map(t => t.replace('platné české verzi', 'nové české verzi')),
                       stroj: (puvodni && puvodni.vlastni) ? puvodni.stroj : puvodni };
       p.vybrane[l] = true;
     }
@@ -433,7 +455,11 @@ async function sablPruvodceDal() {
                       nazev: p.soubor.nazev.replace(/\.docx$/i, '') + '_' + l.toUpperCase() + '.docx' };
       /* Výchozí výběr: jazyky, které už na serveru jsou — aby po nové
        * češtině nezůstaly pozadu. Nový jazyk si administrátor zaškrtne sám. */
-      p.vybrane[l] = !!sablonaPlatna(rej, p.typ + '_' + l);
+      p.vybrane[l] = p.shodaCz
+        /* #474: k platné češtině se předvybere jen zastaralá jazyková verze —
+         * aktuální by byla týž soubor, server by ji odmítl */
+        ? sablonaMutaceStav(rej, p.typ, l).stav === 'zastarala'
+        : !!sablonaPlatna(rej, p.typ + '_' + l);
     } catch (e) { p.mutace[l] = { chyba: e.message }; }
     if (SABL_UI.pruvodce !== p) return;
     nastRefresh();
@@ -443,6 +469,11 @@ async function sablPruvodceZverejni() {
   const p = SABL_UI.pruvodce; if (!p || !jeAdmin()) return;
   const el = document.getElementById('sablPozn'); if (el) p.poznamka = el.value;
   const jazyky = SABL_JAZYKY.map(([l]) => l).filter(l => p.vybrane[l] && p.mutace[l] && p.mutace[l].data);
+  /* #474 (O12, 21. 10. 2026): čeština shodná s platnou se znovu NEzveřejňuje
+   * (server by ji odmítl 400 a výjimka by ukončila průvodce dřív, než by se
+   * zveřejnily jazyky). Shoda se ověřuje znovu proti aktuálnímu rejstříku. */
+  const shoda = sablonaCestinaShodna(sablRej(), p.typ, sablonaAbNaB64(p.soubor.data));
+  if (shoda) return sablPruvodceZverejniJazyky(p, shoda, jazyky);
   if (!await potvrd('Zveřejnit „' + p.soubor.nazev + '" jako platnou českou šablonu'
     + (jazyky.length ? ' spolu s ' + jazyky.map(l => l.toUpperCase()).join(', ') : '') + '?\n\nOd této chvíle z ní tisknou všichni přihlášení.')) return;
   sablPrace('Zveřejňuji českou šablonu…');
@@ -463,6 +494,36 @@ async function sablPruvodceZverejni() {
     SABL_UI.pruvodce = null;
     sablPrace('Hotovo: ' + vysledky.join(' · '));
   } catch (e) { sablPrace(''); hlaska('Zveřejnění se nepovedlo: ' + e.message); }
+}
+/* Jen jazykové verze k už platné češtině (#474). Každý jazyk zvlášť: chyba
+ * jednoho nezastaví ostatní a výsledek ji vypíše u jazyka. Když se nepovede
+ * žádný, průvodce zůstane otevřený, aby šlo zkusit znovu. */
+async function sablPruvodceZverejniJazyky(p, cz, jazyky) {
+  if (!jazyky.length)
+    return hlaska('Čeština je shodná s platnou verzí ' + cz.verze + ' a znovu se nezveřejňuje. '
+      + 'Vyberte aspoň jednu jazykovou verzi, kterou k ní chcete zveřejnit.');
+  const seznam = jazyky.map(l => l.toUpperCase()).join(', ');
+  if (!await potvrd('Čeština „' + p.soubor.nazev + '" je shodná s platnou verzí ' + cz.verze + ' – znovu se nezveřejní.\n\n'
+    + 'Zveřejnit jazykové verze ' + seznam + ' k české verzi ' + cz.verze + '?\n\nOd této chvíle se z nich tiskne.')) return;
+  const vysledky = [];
+  let povedlo = 0;
+  for (const l of jazyky) {
+    sablPrace('Zveřejňuji ' + l.toUpperCase() + '…');
+    try {
+      const m = p.mutace[l];
+      const oj = await onlineSablonaZverejni(p.typ + '_' + l, m.nazev, m.data,
+        (m.vlastni ? 'vlastní soubor k české verzi ' : 'vyrobeno z české verze ') + cz.verze
+        + (p.poznamka ? ' – ' + p.poznamka : ''), cz.otisk);
+      vysledky.push(l.toUpperCase() + ' v' + oj.verze);
+      povedlo++;
+    } catch (e) { vysledky.push(l.toUpperCase() + ': ' + e.message); }
+  }
+  if (!povedlo) {
+    sablPrace('');
+    return hlaska('Zveřejnění se nepovedlo (čeština v' + cz.verze + ' beze změny):\n– ' + vysledky.join('\n– '));
+  }
+  if (SABL_UI.pruvodce === p) SABL_UI.pruvodce = null;
+  sablPrace('Hotovo (k platné češtině v' + cz.verze + '): ' + vysledky.join(' · '));
 }
 
 if (typeof module !== 'undefined')

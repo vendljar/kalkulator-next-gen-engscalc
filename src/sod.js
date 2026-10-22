@@ -197,6 +197,8 @@ function sodData(zak, varianta, jekly, lang, sablona) {
   if (zabranaDph) throw new Error(zabranaDph);
   const d = nabidkaData(zak, varianta, jekly, lang);
   const L = d.jazyk || 'cz';
+  /* Objednané příplatky (#447 C6) — cena díla = nabídka + objednané. */
+  const objPryc = sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona);
   const nazev = ('SOD_' + (d.placeholders.CISLO_NABIDKY || 'CN')
     + (varianta && varianta.zakaznik ? '_' + varianta.zakaznik : '')
     + (L !== 'cz' ? '_' + L.toUpperCase() : ''));
@@ -213,7 +215,7 @@ function sodData(zak, varianta, jekly, lang, sablona) {
   sodSkladne(d.placeholders, (typeof firmaAktualni === 'function') ? firmaAktualni() : null, d.mena, L);
   sodPrelozHodnoty(d.placeholders, L);
   /* Splátky z platebního kalendáře krycího listu (K18-N100). */
-  const odstavcePryc = [];
+  const odstavcePryc = objPryc.slice();
   if (typeof kryciSodPlatby === 'function') {
     const pl = kryciSodPlatby(zak, varianta, jekly, sablona, L);
     if (pl.chyba) throw new Error(pl.chyba);
@@ -226,6 +228,46 @@ function sodData(zak, varianta, jekly, lang, sablona) {
       kryciPoleHodnota(zak, varianta, 'pokutaDodavka')));
   return Object.assign({}, d,
     { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') }, odstavcePryc.length ? { odstavcePryc } : {});
+}
+
+/* OBJEDNANÉ PŘÍPLATKY VE SMLOUVĚ (#447 C6, rozhodnutí J. V. 21. 10. 2026,
+ * Q1–Q2; šablona v4: podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md).
+ * Cena díla = cena nabídky po slevě + objednané příplatky v ceně vytištěné
+ * v nabídce (sekce II.: bez slevy, v eurech po položkách nahoru); DPH z celku.
+ * CENA_BEZ_DPH / DPH_KC / CENA_S_DPH pak nesou celkovou cenu díla, rozpis
+ * nesou SOD_CENA_NABIDKY, SOD_PRIPLATKY_OBJEDNANE (řádek na příplatek)
+ * a SOD_PRIPLATKY_KC. Bez objednaných příplatků se ceny nemění a odstavce
+ * s rozpisem zmizí (vrací se jako odstavcePryc) — ale jen ty, které šablona
+ * opravdu má; bez informace o šabloně (náhled) se nic nemaže, jako
+ * u sodPokutaZhotovitele. */
+const SOD_OBJ_SYMBOLY = ['SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_OBJEDNANE', 'SOD_PRIPLATKY_KC'];
+function sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona) {
+  const ph = d.placeholders;
+  const obj = (typeof objObjednaneVarianty === 'function') ? objObjednaneVarianty(zak, varianta, jekly) : [];
+  if (!obj.length || !d.ceny || !d.mena) {
+    SOD_OBJ_SYMBOLY.forEach(k => { ph[k] = ''; });
+    const sym = sablona && sablona.symboly;
+    const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
+    return SOD_OBJ_SYMBOLY.filter(ma);
+  }
+  const mena = d.mena, kc = mena.fmt, sazba = d.ceny.dphSazba;
+  const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  const castky = obj.map(p => mena.na(p.sMarzi));
+  const prip = castky.reduce((a, x) => a + x, 0);
+  const zaklad = d.ceny.bezDph;
+  const celkem = zaklad + prip;
+  /* DPH stejně jako nabídka: v eurech z převedeného základu nahoru, v korunách cenaSDph. */
+  const dph = mena.eur ? Math.ceil(celkem * sazba)
+    : ((typeof cenaSDph === 'function') ? cenaSDph(celkem, sazba).dphKc : celkem * sazba);
+  ph.SOD_CENA_NABIDKY = kc(zaklad);
+  /* Název na jeden řádek (K6-K6): `\n` z vlastního názvu by ve smlouvě
+   * vypadal jako další položka. */
+  ph.SOD_PRIPLATKY_OBJEDNANE = obj.map((p, i) => P(String(p.nazev).replace(/\s+/g, ' ').trim()) + ' – ' + kc(castky[i])).join('\n');
+  ph.SOD_PRIPLATKY_KC = kc(prip);
+  ph.CENA_BEZ_DPH = kc(celkem);
+  ph.DPH_KC = kc(dph);
+  ph.CENA_S_DPH = kc(celkem + dph);
+  return [];
 }
 
 /* POKUTA ZA PRODLENÍ ZHOTOVITELE (rozhodnutí J. V. 1. 10. 2026 k návrhu SoD,
@@ -462,4 +504,4 @@ if (typeof dokumentRegistruj === 'function') {
 
 if (typeof module !== 'undefined')
   module.exports = { sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
-    sodJazykZabrana, sodPrelozHodnoty, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };
+    sodJazykZabrana, sodPrelozHodnoty, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };

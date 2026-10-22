@@ -8,8 +8,8 @@
  *
  * Oprava je v nástroji (nastroje/vyrob_sablony.js: trStavSeZavorkou,
  * prelozSablonu), kód aplikace se v dávce šablon neměnil. Sada hlídá:
- *   – že bez obalu odstavec zůstane česky (stav aplikace — kdyby se docxgen
- *     opravil, test to ohlásí a obal půjde pryč),
+ *   – že aplikace (docxPrelozUseky) nadpis přeloží i bez obalu (O13, oprava
+ *     přenesena z nástroje do src/docxgen.js),
  *   – že s obalem je nadpis přeložený ve všech třech jazycích a symbol
  *     i dvojtečka zůstaly na místě,
  *   – že obal nemění nic jiného (známé texty, vyvážené závorky, neznámé),
@@ -40,11 +40,22 @@ const OCEK = { en: 'PRICE FOR THE DOCUMENTATION FOR THE PROJECT PERMIT (DPZ){{PR
   de: 'PREIS FÜR DIE UNTERLAGEN ZUR VORHABENGENEHMIGUNG (DPZ){{PROJ_DPZ_HVEZDICKA_ZNACKA}}:',
   fr: "PRIX DU DOSSIER DE DEMANDE D'AUTORISATION (DPZ){{PROJ_DPZ_HVEZDICKA_ZNACKA}}:" };
 
-/* stav aplikace: bez obalu odstavec zůstane česky (do pokrytí se nepočítá) */
+/* O13 (21. 10. 2026): oprava přenesena do aplikace — docxPrelozUseky
+ * („vyrobit jazykovou verzi") přeloží nadpis i BEZ obalu nástroje.
+ * Pojistka: před O13 tu byly 3 FAIL (nadpis česky, hlášený v symbolove). */
+for (const L of ['en', 'de', 'fr']) {
+  const st = {}; const x = dg.docxPrelozXml(xml, L, st);
+  test(L + ': aplikace (docxgen) bez obalu přeloží „… (DPZ){{…}}:", symbol a dvojtečka na místě',
+    text(x) === OCEK[L] && !(st.symbolove || []).length && (x.match(/<w:b\/>/g) || []).length === 3, { t: text(x), st });
+}
 {
-  const st = {}; const x = dg.docxPrelozXml(xml, 'en', st);
-  test('bez obalu (docxgen): nadpis se symbolem zůstane česky a hlásí se v symbolove',
-    text(x) === NADPIS + '{{PROJ_DPZ_HVEZDICKA_ZNACKA}}:' && (st.symbolove || []).length === 1, { t: text(x), st });
+  /* aplikace: závorka se dotahuje jen u úseku, za kterým „)" opravdu je */
+  const odst2 = '<w:p><w:r><w:t>Úplně neznámá věta (abc</w:t></w:r><w:r><w:t>{{X}}</w:t></w:r></w:p>';
+  const st = {}; const x = dg.docxPrelozXml('<w:document><w:body>' + odst2 + '</w:body></w:document>', 'en', st);
+  test('aplikace: neznámý text s „(" zůstane česky', text(x) === 'Úplně neznámá věta (abc{{X}}', text(x));
+  const odst3 = '<w:p><w:r><w:t>' + NADPIS.slice(0, -1) + '</w:t></w:r><w:r><w:t>{{X}}</w:t></w:r></w:p>';
+  const x3 = dg.docxPrelozXml('<w:document><w:body>' + odst3 + '</w:body></w:document>', 'en', {});
+  test('aplikace: „… (DPZ" bez „)" v dokumentu se nedoplňuje (zůstane česky)', text(x3) === NADPIS.slice(0, -1) + '{{X}}', text(x3));
 }
 if (VS && VS.trStavSeZavorkou) {
   const puvodni = global.trStav;
@@ -61,6 +72,17 @@ if (VS && VS.trStavSeZavorkou) {
   test('obal: známý text beze změny', stejne(NADPIS, 'en') && stejne('STUDIE PROVEDITELNOSTI', 'de'));
   test('obal: vyvážené závorky beze změny (i neznámý text)', stejne('Neznámý text (XYZ) bez překladu', 'en'));
   test('obal: neznámý text s „(" zůstane nepřeložený', ob('Úplně neznámá věta (abc', 'en').prelozeno === false);
+  /* D3 (21. 10. 2026, návrh O13 „obal odstranit"): obal NENÍ nadbytečný —
+   * „)" až za symbolem aplikace nedotáhne, obal ano. Hlídá, aby se obal
+   * neodstranil, dokud to aplikace neumí. */
+  {
+    const xs = '<w:document><w:body><w:p><w:r><w:t>' + NADPIS.slice(0, -1) + '</w:t></w:r><w:r><w:t>{{X}}</w:t></w:r><w:r><w:t>)</w:t></w:r></w:p></w:body></w:document>';
+    const stat = () => ({ celkem: 0, prelozeno: 0, neutralni: 0, chybi: [], symbolove: [] });
+    const bez = text(dg.docxPrelozXml(xs, 'en', stat()));
+    global.trStav = ob; let s; try { s = text(dg.docxPrelozXml(xs, 'en', stat())); } finally { global.trStav = puvodni; }
+    test('obal: „… (DPZ{{X}})" — aplikace nechá česky, obal přeloží (proto obal zůstává)',
+      bez === NADPIS.slice(0, -1) + '{{X}})' && s === 'PRICE FOR THE DOCUMENTATION FOR THE PROJECT PERMIT (DPZ{{X}})', { bez, s });
+  }
   test('obal: „… (DPZ" → překlad bez koncové „)"', ob('CENA ZA DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ', 'en').text === 'PRICE FOR THE DOCUMENTATION FOR THE PROJECT PERMIT (DPZ');
 }
 if (VS && VS.prelozSablonu) {

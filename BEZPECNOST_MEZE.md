@@ -840,6 +840,19 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   a záznam `retence-varovani` ukáže hlídka v Nastavení → Databáze a po
   přihlášení správce (30 dní). Mez: pomalý úbytek (každou noc méně než
   o polovinu) pojistka nezachytí; porovnávají se jen počty, ne obsah.
+- **Retence stojí do potvrzení (K4-N13, dávka O11, rozhodnutí J. V.
+  21. 10. 2026):** do O11 stála retence jen tu jednu noc — další noc se nový
+  otisk porovnal s už „chudým“ a retence mazala dobré otisky z doby před
+  ztrátou, jak dosáhly 30 dní. Teď po poklesu retence **stojí, dokud správce
+  varování nepotvrdí** tlačítkem „Úbytek byl záměrný“ v Nastavení → Databáze
+  (`POST /api/zaloha_vynuceno { akce: 'retence-potvrdit', den, hesloSpravce }`
+  — jen Administrátor, s heslem správce, `den` musí sedět s varováním, jinak
+  409), **nejdéle 30 dní** od varování; pak běží normálně. Nečitelný záznam
+  varování = nemazat. Nový pokles zapíše nové varování (a nových 30 dní).
+  Meze: kdo zná heslo správce, retenci potvrzením odemkne (jako záznam kopie,
+  #151 N5); po 30 dnech bez potvrzení retence maže i bez reakce správce
+  (úložiště nesmí růst donekonečna); otisky před 20. 10. 2026 a první
+  v měsíci se nemažou nikdy.
 
 ### #151 N1 — limit vynucených otisků (K3-N4, rozhodnutí J. V. 20. 10. 2026, v20.10.2)
 
@@ -866,19 +879,25 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   na Firmu nerozšiřuje — rozhodnutí J. V. „beze změny“). Firma od #367 nese
   i výchozí platební podmínky, pokuty, záruky a texty nabídky PROJ pro
   všechny NOVÉ nabídky; kdo má cookie správce, může je změnit bez hesla.
-  **Oprava textu (K4-N1, O9):** do O9 tu stálo, že odeslané nabídky to od
-  v20.10.2 nezasáhne — **neplatí to celé.** Při prvním zamčení se zmrazí jen
-  věty kalendáře plateb a díly SoD (OCK, `zmrazenoPodminky` s `vety`) a texty
-  nabídky PROJ včetně doložek (`kryciProj.zmrazenoPodminky`). **Kapitoly
-  nabídky OCK IV.–VI. (`FIRMA_NAB_POZADAVKY/TERMINY/PREDANI`) a doložky OCK
-  se nezmrazují** — dotisk odeslané nabídky OCK je bere z aktuální Firmy,
-  takže změna kapitoly nebo doložky po odeslání se v dotisku projeví. Ve
-  zmrazených doložkách PROJ se `{FIRMA}` dosazuje z aktuálního názvu firmy.
-  Zmrazit i kapitoly a doložky OCK rozhodne J. V. (doporučení K4: ano, jako
-  věty). Rozpracované nabídky převezmou změnu vždy. Souhrnný strop podmínek
+  **Odeslané nabídky (K4-N1; text opraven v O9, zmrazení doplněno v O10
+  podle rozhodnutí J. V. 21. 10. 2026):** při prvním zamčení varianty se
+  zmrazí věty kalendáře plateb a díly SoD (OCK, `kryci.zmrazenoPodminky.vety`),
+  **od O10 i kapitoly nabídky OCK IV.–VI. (`FIRMA_NAB_POZADAVKY/TERMINY/PREDANI`)
+  a doložky OCK** (`kryci.zmrazenoPodminky.kapitoly` — syrový text neprázdných
+  polí ve všech jazycích a název firmy pro `{FIRMA}`; `{TERMIN}` je údaj
+  zakázky a dosazuje se při tisku) a texty nabídky PROJ včetně doložek
+  (`kryciProj.zmrazenoPodminky`). Dotisk zamčené varianty se snímkem tiskne
+  znění z doby odeslání; snímek hlídá server porovnáním dat zámku (změna,
+  smazání i dopsání snímku do zamčené varianty → 409). **Zbývající meze:**
+  varianty zamčené před O10 (bez snímku kapitol) tisknou kapitoly a doložky
+  OCK dál z aktuální Firmy — nic se zpětně nepřepočítává; ve zmrazených
+  doložkách PROJ se `{FIRMA}` dosazuje z aktuálního názvu firmy; ostatní
+  firemní údaje dokumentu (adresa, kontakty, logo) se nezmrazují.
+  Rozpracované nabídky převezmou změnu vždy. Souhrnný strop podmínek
   500 kB (K3-N18) omezuje velikost záznamu.
 - **Velikost zakázky (K4-N18, O9):** snímek podmínek se ukládá do každé
-  zamčené varianty (a s ním celý výsledek, A1). Se Firmou u stropu 500 kB
+  zamčené varianty (a s ním celý výsledek, A1); od O10 v něm jsou i kapitoly
+  OCK (výchozí texty ve 4 jazycích asi 8 kB, ukládají se jen neprázdná pole). Se Firmou u stropu 500 kB
   by asi 8 zamčených variant narazilo na strop zakázky 4 MB. Od O9 server
   při 413 vypíše, z čeho se velikost skládá (přílohy a fotky / zmrazené
   údaje odeslaných variant / ostatní) a u odeslaných variant poradí založit
@@ -912,6 +931,25 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
 - **K4-N21 — kokpit koordinace:** třídy z dat jen z povoleného seznamu,
   čísla jen jako čísla (do O9 šly do `class` a HTML bez escapu).
 
+### Audit K4 — rozhodnutí J. V. 21. 10. 2026 (dávka O11)
+
+- **K4-N4 — cena výjezdu technika PROJ jen s právem na náklady:** ruční
+  přepis `PJ.vyjezdKcPrepis` (cestovné za 1 výjezd u akce mimo Prahu, přičítá
+  se po přirážce, 0 = „cestu neúčtujeme“) smí jen role s právem
+  `sloupce.naklad` — stejně jako přepis sazby a fixní částky. Server (B112,
+  `uloB112PrepisyProj`) hodnotu porovná s uloženou verzí / jinou uloženou
+  variantou: obchodník ji podvrženým uložením nezmění, nevloží ani nesmaže
+  (403). Přepínač „Akce mimo Prahu“ smí obchodník (je to věc místa stavby,
+  ne ceny); s ním se přičte jen ceníková nebo už sjednaná cena. Tvar čísla
+  (B135) a zápor/strop hlídá `uloZaporneVZadani` pro všechny role — „100,5“
+  → 400, v prohlížeči upozornění místo tichého 0. Mez: vypnutím přepínače
+  obchodník cestovné z nabídky odebere (rozhodnutí J. V.; zámek odeslané
+  nabídky ho drží).
+- **K4-N13 — retence do potvrzení:** viz #151 N5 výše.
+- **K4-N17 — výjimky B183 ve starém tvaru:** beze změny (rozhodnutí J. V.
+  ponechat); mez nekrytého nárůstu < 1 m² u výjimek schválených před
+  v20.10.5 trvá, dokud se nezmění obsah.
+
 ### B194 — zámek mutačních běhů (jen vývoj, ne produkce)
 
 - Zámek `.mutace_bezi.json` chrání pracovní kopii před dvěma souběžnými
@@ -941,7 +979,41 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   mapování se čte z `/api/controlling` (jen admin). **Mez:** hranici tu drží
   jen klient; nákladová data zakázky v prohlížeči jsou už dnes (B88), takže
   se tím nic nového neodkrývá, ale XLSX je přenosný soubor s nákupními
-  cenami a marží. Hromadný export za období (C3) poběží na serveru s kontrolou
-  role a protokolem exportů.
+  cenami a marží. Hromadný export za období (C3) běží na serveru s kontrolou
+  role a protokolem exportů (viz níže).
 - **CSV exportu** jde přes `csvBunka` (ochrana proti vzorcům, text „=…" se
   nespustí); čísla bez uvozovek s desetinnou čárkou.
+- **Hromadný export za období (C3, 21. 10. 2026) počítá server:**
+  `GET /api/controlling/export` jen Administrátor (`vyzadujRoli`, matice
+  `test_prava`, mutace „#447 C3“); export i protokol exportů. Heslo správce
+  se nežádá (rozhodnutí J. V. 21. 10. 2026, bod 4; export nic nemění).
+  Parametry se ověří (`ctrlHromadnyFiltr`: datum RRRR-MM-DD, období ≤ 400
+  dní, oblast a řada z výčtu — neznámá hodnota je 400, ne „obojí“).
+  **Meze `CTRL_HROMADNY`:** ≤ 600 zakázek k přečtení, ≤ 150 zakázek v souboru,
+  odpověď ≤ 5 MB (Netlify vrací nejvýš 6 MB) — jinak 413 s výzvou zúžit
+  období, soubor se nikdy neořízne potichu. Nečitelná zakázka se vypíše
+  v Popisu jako přeskočená. **Protokol:** každý export zapíše server
+  (`program/controlling_exporty`, posledních 200; kdo z relace, kdy z hodin
+  serveru, rozsah z ověřeného filtru). Protokol není v záloze — je to stopa
+  přístupu, ne data k obnově. **Mez:** stažený XLSX je dál přenosný soubor
+  s nákupními cenami a marží celé firmy za období; kam ho správce pošle
+  (Andy), protokol nehlídá.
+- **Pipedrive deal id zakázky (C4, 21. 10. 2026):** `zak.pdDealId` mění jen
+  Administrátor — server (`zakazkaServerKontrola` → `ctrlPdDealKontrola`)
+  vrátí 403 jiné roli při zadání, opravě i smazání, 400 každému při tvaru
+  mimo kladné celé číslo ≤ 2147483647; mutace „#447 C4“. **Mez:** server
+  neověřuje, že id v Pipedrive existuje (to by stálo dotaz do denního
+  rozpočtu); admin může zadat překlep. Automatické převzetí z propojeného
+  dealu zatím neexistuje.
+- **Objednané příplatky (C6, 21. 10. 2026):** `zak.objednane` mimo zámek
+  varianty; server (`objKontrola` → `zakazkaServerKontrola`) pustí jen
+  příplatek nabídnutý v zamčené variantě, datum ne v budoucnosti, zápis
+  obchodníkovi-autorovi, vedoucímu a adminovi; po podpisu SoD (ručně
+  vyplněné datum podpisu ≤ dnes v ULOŽENÉ verzi) jen admin; kdo/kdy z relace
+  (beze změny záznamu drží razítko uložené verze). Mutace „#447 C6“.
+  **Mez:** datum podpisu je pole krycího listu — obchodník ho může (dokud
+  smlouva podepsaná není) posunout do budoucna a objednané dál měnit; tisk
+  SoD se do pravidla nepočítá (rozhodnutí J. V. Q3).
+- **Tlačítko „Export pro controlling“ v Přehledu (C3)** kreslí jen
+  administrátorovi online a ne v rolovém náhledu; export jedné varianty běží
+  dál v prohlížeči (mez jako u C2 výše).
