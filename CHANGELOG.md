@@ -56,6 +56,10 @@ Nad integrací fcf14e3 (= test v22.10.1 + podklady). Závazná tabulka `podklady
   před 3 FAIL, po 47/0. Sady, které jako „neškodnou změnu" odeslané zakázky měnily název akce, mění nově kontaktní
   osobu (test_prava, test_koncova_cena, test_zaporne, test_vyjimky, test_obchodnik, test_zamek_historie).
   Prohlížečový `overit_kryci_po_tisku.mjs` má nový blok Z1 (nepuštěno — celé kolo pouští koordinace).
+- **Oprava po kole nad integrací 846ee10:** `overit_kryci_po_tisku.mjs` padal na 4× „Fetch API cannot load
+  file:///api/zakazky" — blok Z1 harnessu vyplní hlavičku při nastaveném přihlášení a autosave v souboru z disku
+  odeslal zápis. `onlineUloz` nově bez `onlineMozne()` nic neodesílá (časovač autosave zůstává, overit_v23).
+  Pojistka: harness před opravou 33/33 kontrol + 4 chyby konzole → kód 1, po opravě 33/33, kód 0.
 - **Mutace:** server „z1" 20/20 chycených (sady omezené `KNG_MUTACE_SADY` na relevantní testy; mutace „DPH volná
   i bez snímku" vyřazena jako ekvivalentní, „porovnání přehlíží každou změnu DPH" chycená až po doplnění cíleného
   testu), „b163" 3/3, „zmrazený výsledek se bere" 1/1 (plná sada); jádro „z1" 6/6 — 0 přeživších.
