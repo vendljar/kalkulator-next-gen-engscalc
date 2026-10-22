@@ -58,7 +58,10 @@ listu) — do `src/zamek.js` přibyl jen záznam `sod` v tisku, do `priplatkyObj
   `src/test_sablona_proj_v7_preklad.js` **14/0** (před opravou 7 FAIL: 549 rozdílů, „(…{{X}})“ česky, obal v nástroji),
   `netlify/test_prava.mjs` **932/0** (blok D5 8 kontrol: před opravou 2 OK / 6 FAIL). Upravené stávající:
   `test_objednane.js` 42/0, `test_sod.js` 60/0, `test_prava` C6 (jednotlivé příplatky mimo dvojici plechů).
-- **Mutace:** (doplní se po doběhnutí — viz PREDAVKA).
+- **Mutace (0 přeživších):** jádro **22/22** (filtry „K6-K“, „D5 EUR“, „#485“, „O13“; nové D5 18 + upravené O13 2,
+  JADRA + `ui/sod_ui.js`, `ui/kalk_ock.js`, `ui/kalk_proj.js`), server **30/30** (filtry „objednane.js“, „K6-S7“,
+  „K6-K4“, „#447 C6“; nové D5 12 + upravené C6 2). `--kontrola` jádro 461, server 787. Celá Node sada 240/0/1
+  (`test.js` přeskočen — ostrý ceník), statické 4/4.
 
 ## v22.10.2 — P1: Stav Pipedrive v hlavičce zakázky a v exportu pro controlling (větev claude/p1-stav-pipedrive)
 

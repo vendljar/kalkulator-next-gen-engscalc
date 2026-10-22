@@ -11,7 +11,7 @@ v `src/zamek.js` jen 3 řádky (záznam `sod` v tisku, `zamkniVariantu`), `pripl
   #485 závorka za symbolem (obal `trStavSeZavorkou` odstraněn), #502 EUR v dlaždici OCK/PROJ, K6-W5 jména → role,
   K6-W6 vztahy místo částek; K6-S2/S5/K7 ponechány a zapsány (BEZPECNOST_MEZE.md, roadmapa). Příručka: novinky v22.10.4,
   podkapitola „Objednané příplatky ve smlouvě o dílo“, cena v EUR (kap. 25).
-- **Testy:** viz CHANGELOG (pojistky); celá Node sada: VYSLEDEK_SADY. Mutace: VYSLEDEK_MUTACI.
+- **Testy:** viz CHANGELOG (pojistky); celá Node sada 240/0/1 (`test.js` přeskočen), statické 4/4. Mutace jádro 22/22, server 30/30, 0 přeživších; `--kontrola` 461 / 787.
 - **Otázky pro J. V.:** (1) #485 — text, za nímž v dokumentu „)“ vůbec není, aplikace nechá česky (O13), obal ho
   překládal — po odstranění obalu se to v nástroji šablon změní (na reálných šablonách nejspíš nenastává; ověřit
   při příští výrobě jazykových šablon). (2) K6-K4 — dotisk SoD nese objednané z prvního tisku; SoD vytištěná
