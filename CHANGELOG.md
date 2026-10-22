@@ -8,6 +8,25 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.10.1 — D4: slovníky překladu SoD podle revidovaného znění (nástroj, bez změny aplikace; větev claude/d4-sod-slovniky)
+
+Nad `test` = v21.10.6 (4c127f5). J. V. 21. 10. 2026: revidované EN/DE/FR SoD na Disku jsou závazné znění.
+Podklad `podklady/D4_SOD_SLOVNIKY_22_10.md` (počty před/po, sporné překlady k ověření).
+
+- **`nastroje/preklad_sod.js --z-revize`** odvodí slovník z dvojice česká šablona × revidovaná jazyková
+  (styly běhů, pomocné styly tabulátorů, pojmenovaná místa, název dokumentu, bloky w:keepNext
+  „drzetSpolu“) a hned ověří složením; **`--porovnej`** hlásí rozdíly textu, běhů a w:pPr proti revizi.
+- Jazyková šablona z nástroje nově: `w:lang` cs-CZ → en-GB / de-DE / fr-FR (tělo, styles.xml, settings.xml),
+  název dokumentu (docProps), sloučené běhy stejného písma, bez `w:rsid*` u běhů těla.
+- **SoD realizace v3:** EN 99 / DE 97 / FR 117 rozdílů textu (+ běhy, w:pPr, název, jazyk) → **0** ve všech
+  jazycích. **Realizace v4:** nástroj ze slovníků = postup S11 z revize, 0 rozdílů. **Projekce v4:** nové
+  slovníky, 0 rozdílů na úrovni textu (revidované soubory konektor nevydá bajtově — písmo běhů a tabulátory
+  neověřené). Výsledné slovníky = přílohy sezení D4 (na Disk je uloží J. V.; dnešní kopie s datem
+  2026-10-22 na Disku mají nezlomitelné mezery změněné na obyčejné — nahradit, viz podklad).
+- `--z-revize` zapisuje nezlomitelné a jiné neviditelné mezery jako `\u00a0` (přenos textem je jinak ztrácí).
+- Test `src/test_sod_slovnik_revize.js` (smyšlený vzorek, kruh): před 0 / 1, po 29 / 0. Mutace „D4 slovník
+  z revize“ 10/10, `preklad_sod` 16/16, `--kontrola` 432 úseků.
+
 ## v21.10.6 — Integrace do test (koordinace 21. 10. 2026)
 
 - Obsah: D3 (opravy nálezů auditu K6 bez J. V., #483) + zápis K6 (celé kolo s mutacemi a audit nad v21.10.5, #475, `podklady/K6_AUDIT_21_10.md`).
