@@ -639,8 +639,26 @@ function set(path, v) {
   if (!cestaBezpecna(path)) return;
   if (hodinyZaporneOdmitni(path, v)) return;
   /* Zámek čtení platí i na hlavičku (ZAK.*) — viz komentář u ZAMEK_CTENI. */
-  if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
-  if (!path.startsWith('ZAK.') && typeof zamekStop === 'function' && zamekStop()) return;
+  /* Sazba DPH odeslané nabídky se snímkem (Z1, J. V. 22. 10. 2026) se smí
+   * změnit — dotisk CN ji drží ze snímku zámku. Jde cestou krycího listu
+   * (zámek čtení ji uvolní stejně jako doplnění pole krycího listu). */
+  const dphVolna = (path === 'C.dph' || path === 'PC.dph') && typeof zamekDphVolna === 'function'
+    && typeof variantaUzamcena === 'function' && variantaUzamcena(aktivniVarianta(ZAK)) && zamekDphVolna(aktivniVarianta(ZAK), path);
+  if (dphVolna) { if (typeof zamekKryciCteniUvolni === 'function' && !zamekKryciCteniUvolni()) return; }
+  else if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return;
+  if (!path.startsWith('ZAK.') && !dphVolna && typeof zamekStop === 'function' && zamekStop()) return;
+  /* HLAVIČKA ODESLANÉ ZAKÁZKY (Z1): název akce a adresa stavby po tisku CN,
+   * ostatní pole krycích listů v hlavičce po tisku SoD — model
+   * zamekZakCestaZmrazena v zamek.js, server hlídá totéž (zamekZakZmeny). */
+  if (path.startsWith('ZAK.') && typeof zamekZakCestaZmrazena === 'function') {
+    const duvod = zamekZakCestaZmrazena(ZAK, path);
+    if (duvod) {
+      if (typeof hlaska === 'function') hlaska(duvod);
+      else if (typeof progZprava === 'function') progZprava(duvod, 'varovani');
+      render();
+      return;
+    }
+  }
   /* ČÍSLO ODESLANÉ NABÍDKY MĚNÍ JEN ADMINISTRÁTOR (nález A3, rozhodnutí
    * J. V. 15. 9. 2026: „Pouze administrátor").
    *
@@ -1239,7 +1257,8 @@ function zakazkaHlavicka(ock) {
   const opts = ZAK.varianty.map(v =>
     `<option value="${esc(v.id)}" ${v.id === akt.id ? 'selected' : ''}>${esc(v.nazev)}${v.ridici ? ' · řídící' : ''}</option>`).join('');
   const txt = (path, label, pill) => `<div class="row"><label>${label}${pill || ''}</label>
-    <input type="text" value="${esc(get(path))}" onchange="set('${path}', this.value)"></div>`;
+    <input type="text" value="${esc(get(path))}" onchange="set('${path}', this.value)"${
+      typeof zamekZakAttr === 'function' ? zamekZakAttr(path) : ''}></div>`;
 
   /* Pole „Zákazník" našeptává z kartotéky i z rejstříku zakázek (22. 8. 2026,
    * zadání J. V.). `kde` je 'ock' nebo 'proj' — obě hlavičky jsou v dokumentu
@@ -1253,7 +1272,7 @@ function zakazkaHlavicka(ock) {
    * jména z dřívějších zakázek a dotahovat by neměl z čeho. */
   const zakaznikRow = (kde) => `<div class="row"><label>Zákazník</label>
     <span class="nasept-wrap" style="flex:1"><input type="text" style="width:100%" autocomplete="off"
-      value="${esc(get('ZAK.objednatel'))}"
+      value="${esc(get('ZAK.objednatel'))}"${typeof zamekZakAttr === 'function' ? zamekZakAttr('ZAK.objednatel') : ''}
       title="Při psaní se nabízejí zákazníci z databáze a z dřívějších zakázek. Výběrem se doplní prázdná pole hlavičky (kontaktní osoba, IČO, adresa); už vyplněné údaje zůstanou a celou hlavičku přepíše tlačítko „Vybrat z databáze zákazníků“."
       onchange="if(typeof naseptavacZakVyber==='function')naseptavacZakVyber(this.value,'${kde}'); else set('ZAK.objednatel', this.value)"
       oninput="naseptavacZakKresli('${kde}', this.value)"
@@ -1327,7 +1346,7 @@ function zakazkaHlavicka(ock) {
            title="uložit údaje z téhle hlavičky jako novou kartu zákazníka${esc(zakDuvod)}">Uložit jako zákazníka</button>`;
     const aresBtns = (typeof aresRadek === 'function') ? aresRadek(kde, false, zakDbBtns) : zakDbBtns;
     return `<div class="row"><label>IČO zákazníka${pill}</label>
-      <input type="text" value="${esc(h)}" placeholder="8 číslic"
+      <input type="text" value="${esc(h)}" placeholder="8 číslic"${typeof zamekZakAttr === 'function' ? zamekZakAttr(path) : ''}
         title="IČO zákazníka; přebírá ho krycí list. Prázdné pole se nikde nehlásí."
         onchange="set('${path}', this.value)"></div>${aresBtns}`;
   };
@@ -1414,7 +1433,7 @@ function zakazkaHlavicka(ock) {
    * řádku posunul „Datum vytvoření" o čtyři pixely (chytil overit_lista.mjs).
    * Vazba je zřejmá z ceníku, kde sekce SAZBY DPH klíče nese. */
   const dphSelect = (cesta, c, sazba) => `<div class="row"><label>Sazba DPH</label>
-    <select onchange="set('${cesta}', +this.value)">${dphPredvolby(c, sazba).map(o =>
+    <select onchange="set('${cesta}', +this.value)"${typeof zamekDphAttr === 'function' ? zamekDphAttr(cesta) : ''}>${dphPredvolby(c, sazba).map(o =>
       /* Sazba ze zakázky jde do value jen jako ČÍSLO (B69, 24. 9. 2026):
        * uložená zakázka může nést v sazbě řetězec s HTML. */
       `<option value="${esc(+o.h || 0)}" ${Math.abs((+sazba || 0) - (+o.h || 0)) < 1e-9 ? 'selected' : ''}>${

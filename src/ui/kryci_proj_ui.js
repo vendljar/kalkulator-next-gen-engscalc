@@ -69,6 +69,12 @@ function klpRow(id, label, opts = {}) {
     ? (manual ? '<span class="pill mut" style="font-size:10px">ručně</span>'
               : `<span class="note" style="font-size:10px">${opts.src}</span>`)
     : '';
+  /* Zmrazené pole odeslané nabídky (Z1, bod 5) — viz klRow. */
+  const zmr = typeof zamekPoleAttr === 'function' ? zamekPoleAttr('kryciProj', id) : '';
+  if (zmr) {
+    field = field.replace(/<(input|select|textarea)\b/g, '<$1' + zmr);
+    return `<div class="kl-row kl-zmrazeno"><div class="lbl">${label}</div><div>${field}</div><div class="src"><span class="pill mut" style="font-size:10px" title="${esc(zmr.match(/title="([^"]*)"/)[1])}">🔒 zmrazeno</span></div></div>`;
+  }
   const reset = (manual && opts.prefill != null)
     ? ` <button class="mini noprint" title="vrátit automatiku (${esc(pref)})" onclick="klpReset('${escJs(id)}')">↺</button>` : '';
   return `<div class="kl-row"><div class="lbl">${label}</div><div>${field}</div><div class="src">${meta}${reset}</div></div>`;
@@ -136,7 +142,7 @@ function renderKryciProj() {
         const jeVyplneno = (typeof hlavickaVyplneno === 'function') ? hlavickaVyplneno(zapsano) : (zapsano != null && zapsano !== '');
         const val = jeVyplneno ? zapsano : (p.prefill ? (p.prefill(c) || '') : '');
         return `<div class="kl-row"><div class="lbl">${p.label} ${znacka(p.verze)}</div>
-          <div><input type="text" value="${esc(val)}" onchange="set('${p.bind}', this.value)"></div>
+          <div><input type="text" value="${esc(val)}" onchange="set('${p.bind}', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''}></div>
           <div class="src"><span class="note" style="font-size:10px">${esc(zdroj || 'hlavička kalkulace')} ↔</span></div></div>`;
       }
       const pref = p.prefill ? p.prefill(c) : null;

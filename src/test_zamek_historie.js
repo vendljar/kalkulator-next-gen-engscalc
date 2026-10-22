@@ -150,13 +150,13 @@ function klientKontext() {
 
     /* 3) znovu otevřít a uložit — migrace je idempotentní */
     const otevrena2 = klientOtevri(ulozena1);
-    otevrena2.nazevAkce = raw.nazevAkce + ' (upraveno)';
+    otevrena2.kontakt = (raw.kontakt || '') + ' (upraveno)';   // Z1: název akce je po odeslání zmrazený
     const u2 = await uloz(otevrena2, ulozena1.uloRazitko, cObch);
     test('server: druhé otevření a uložení projde (migrace je idempotentní)', u2.status === 200, u2);
     const ulozena2 = JSON.parse(pamet.get('zakazky/z/' + jmeno));
     test('server: data zamčené varianty se mezi prvním a druhým uložením nezměnila',
       zamcene.every(v => JSON.stringify(ulozena1.varianty.find(x => x.id === v.id).data) === JSON.stringify(ulozena2.varianty.find(x => x.id === v.id).data)));
-    test('server: práce na hlavičce se uložila', ulozena2.nazevAkce === raw.nazevAkce + ' (upraveno)');
+    test('server: práce na hlavičce se uložila', ulozena2.kontakt === (raw.kontakt || '') + ' (upraveno)');
 
     /* 4) skutečná změna odeslané nabídky se dál odmítne */
     const zmenena = klientOtevri(ulozena2);

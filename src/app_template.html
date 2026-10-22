@@ -401,6 +401,9 @@
   .kl-row input[type=text], .kl-row input[type=date], .kl-row textarea, .kl-row select { width:100%; text-align:left; }
   .kl-row textarea { min-height:38px; resize:vertical; padding:5px 7px; border:1px solid var(--line); border-radius:6px; font:inherit; }
   .kl-row .src { font-size:10px; width:80px; text-align:center; }
+  /* Z1 (22. 10. 2026): pole zmrazené po odeslání nabídky — šedé, s důvodem v bublině. */
+  input.zmrazeno, select.zmrazeno, textarea.zmrazeno { background:#eef0f3 !important; color:#5b6472 !important; cursor:not-allowed; }
+  .kl-zmrazeno .lbl { color:#5b6472; }
   .kl-radio { display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
   .kl-radio label { display:flex; gap:5px; align-items:center; font-weight:400; }
   /* smluvní a platební podmínky v souhrnu cenové nabídky (5. 8. 2026) – tytéž

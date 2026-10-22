@@ -380,6 +380,14 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
           ? 'změnila by se data uzamčené (odeslané) nabídky' + (cisloVarianty(stara, sv) ? ' (' + cisloVarianty(stara, sv) + ')' : '')
           : 'Neuloženo: změnila by se data uzamčené (odeslané) nabídky. Pokračujte klonem varianty.');
     }
+    /* HLAVIČKA ODESLANÉ ZAKÁZKY (Z1, J. V. 22. 10. 2026): název akce
+     * a adresa stavby po tisku CN, pole krycích listů v hlavičce po tisku
+     * SoD — zámek z ULOŽENÉ verze (zamekZakZmeny v zamek.js, klient hlídá
+     * totéž v set()). */
+    const zmenyZak = typeof globalThis.zamekZakZmeny === 'function' ? globalThis.zamekZakZmeny(staraPorovnani, zak) : [];
+    if (zmenyZak.length)
+      return odmitni(409, (obnova ? 'změnila by se hlavička zakázky s odeslanou nabídkou' : 'Neuloženo: zakázka má odeslanou nabídku, a hlavička')
+        + ' (' + zmenyZak.map(c => c.replace(/^ZAK\./, '')).join(', ') + ') se už nemění. Pokračujte klonem varianty nebo novou zakázkou.');
     /* Razítka mimo klíč zámku (kdo, popis, šablona, tisky[], odemceni[])
      * se u existujícího zámku berou z uložené verze (B62). */
     ULO.uloZamekRazitkaDrz(stara, zak);
@@ -518,6 +526,15 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       return odmitni(409, 'Neuloženo: nová odeslaná (uzamčená) nabídka nese jiné číslo ('
         + (v.zamek.cislo || 'prázdné') + '), než dávají údaje zakázky (' + (cisloMaBy || 'prázdné')
         + '). Obnovte stránku (Ctrl+F5) a nabídku vytiskněte znovu.');
+    /* SNÍMEK ODESLANÉ NABÍDKY (Z1): krycí listy a sazby DPH, ze kterých tiskne
+     * dotisk CN. Klíčové pole zámku server nepřepisuje (klient by pak u příštího
+     * uložení narazil na rozdíl klíče), proto ho OVĚŘÍ proti ukládaným datům.
+     * Zámek bez snímku (starší klient) se bere jako zámek před Z1 — pole
+     * nabídky pak zůstávají zmrazená celá. */
+    if (v.zamek.snimek != null && typeof globalThis.zamekSnimekSpocti === 'function'
+      && JSON.stringify(v.zamek.snimek) !== JSON.stringify(globalThis.zamekSnimekSpocti(v)))
+      return odmitni(409, 'Neuloženo: snímek podmínek nové odeslané nabídky nesedí s daty varianty. '
+        + 'Obnovte stránku (Ctrl+F5) a nabídku vytiskněte znovu.');
     /* P6 (D6g): nový zámek dokumentu vyřazené strany se nepustí. */
     const vyrProblem = zamekVyrazenaStranaProblem(zak, [v.zamek.typ].concat((Array.isArray(v.zamek.tisky) ? v.zamek.tisky : []).map(t => t && t.typ)));
     if (vyrProblem) return odmitni(403, 'Neuloženo: ' + vyrProblem + '.');

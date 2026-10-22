@@ -8,6 +8,59 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v22.10.3 — Z1: zmrazení krycích listů po tisku CN po polích (rozhodnutí J. V. 22. 10. 2026; větev claude/z1-zmrazeni-kl)
+
+Nad integrací fcf14e3 (= test v22.10.1 + podklady). Závazná tabulka `podklady/ZMRAZENI_KL_VOLBY_JV_22_10.json` (`volba_jv`).
+Číslo verze může koordinace při slučování přečíslovat (paralelně P1 = v22.10.2). Roadmapa #502.
+
+- **Zámek po tisku CN po polích, ne po sekcích:** jediný zdroj pravdy `ZAMEK_KRYCI_PO_CN` + `zamekKryciPoleStav()`
+  v `src/zamek.js` (prohlížeč i server přes `zamekDataPorovnani`). Zmrazeno OCK: obchodník, název akce, adresa stavby,
+  hodnota bez DPH, dod*, typ smlouvy a produktu, platnost nabídky; PROJ totéž + hlavní projektant, památková ochrana,
+  autorská práva (typ projektu uvolněn). `cisloCN` jen administrátor. Editovatelné nově celé platební podmínky kromě
+  platnosti (vč. sazby DPH, záruky, pokut, plátce DPH), termín dodání, plán plateb PROJ, `sodpPlatba*`. Neznámé pole
+  = zmrazené. Po tisku SoD beze změny (vše kromě plné moci `pm*`). Generovaná pole činností PROJ (`cin_*`, `st_*`)
+  tabulka nemá — zůstávají editovatelná jako zbytek sekce Rozsah (otázka pro J. V.).
+- **Odeslaná nabídka zůstává zmrazená — snímek zámku:** při prvním zamčení (`zamekPoTisku`, po zmrazení podmínek
+  P9.5/K3-N2/K4-N1) se uloží `zamek.snimek` = krycí listy OCK/PROJ a sazby DPH (`zamekSnimekSpocti`); je v klíči zámku
+  (`uloZamekKlic`). Dotisk CN (`nabidkaData` / `nabidkaProjData`) tiskne přes `zamekNabidkaPohled` — ceny, DPH
+  i podmínky z okamžiku odeslání; SoD jde s `{ zive: true }` a nese nové podmínky a DPH. Ověřeno: dotisk CN po změně
+  `C.dph` / `PC.dph` beze změny ceny s DPH (DPH se v CN počítalo ze živé sazby — doplněno do snímku, výpočet ceny
+  kalkulace beze změny). Server snímek NOVÉHO zámku ověří proti ukládaným datům (podvrh → 409; klíčové pole zámku
+  nepřepisuje), klient snímek neuloženého zámku před odesláním obnoví (`zamekSnimkyObnov`).
+  **Zámek bez snímku (odeslaný před v22.10.3) drží pole nabídky a DPH zmrazené jako dřív** (jinak by se dotisk změnil).
+- **Sazba DPH po tisku CN:** `set('C.dph' | 'PC.dph')` projde u zámku se snímkem (`zamekDphVolna`), server změnu
+  `cenik.dph` / `proj.cenik.dph` i plánu plateb PROJ v porovnání přehlíží jen tehdy; po SoD / bez snímku 409.
+- **Hlavička zakázky (ZAK.*):** po tisku CN KTERÉKOLI varianty se zmrazí název akce a adresa stavby (OCK `ZAK.nazevAkce`
+  / `ZAK.adresa`, PROJ `ZAK.projHlavicka.*`) — i z nezamčeného klonu (hlavička je jedna a dotisk každé odeslané nabídky
+  ji čte; pravidlo jako u čísla A3). Po tisku SoD kterékoli varianty i všechna pole krycích listů s `bind` (DIČ,
+  zástupci, banka…) a zdroje předvyplnění SoD (zákazník, IČO, sídlo, kontaktní osoba). Varianta odemčená správcem
+  v témže uložení se nepočítá. Klient `set()` + `zamekZakCestaZmrazena`, server `zamekZakZmeny` → 409 (i obnova);
+  výběr zákazníka z kartotéky po SoD zastaví hláška.
+- **Zaměření strojovna (oprava):** po zamčení se z odvozeného řádku stávalo přepínátko bez vazby a ožil neplatný ruční
+  přepis z doby před odesláním. Teď `kryciZmrazPodminky` zmrazí odvozenou hodnotu jako předvyplnění a starý přepis
+  zahodí; po odeslání jde pole přepsat, ↺ vrátí hodnotu z kalkulace.
+- **UI:** zmrazená pole krycích listů a hlavičky šedá, neaktivní, štítek 🔒 a důvod v `title` (`zamekPoleAttr`,
+  `zamekZakAttr`, `zamekDphAttr`); poznámka nad krycím listem říká, co je zmrazené a že dotisk zůstává.
+- **Ceny činností v krycím listu PROJ jako v nabídce (doplnění koordinace, podnět obchodníka):** `cin_*` / splátkové
+  nápovědy nesly nezaokrouhlené ceny, součet neseděl s „Celkem bez DPH". `kryciProjCtx` teď počítá cenu činnosti
+  touž cestou jako `cenaNabidkyProj` / `nabidkaProjCeny` (× (1 − sleva) → `zaokrouhli`); součet = hodnota zakázky
+  = celkem v nabídce. Cena nabídky beze změny. OCK krycí list ceny položek netiskne (jen hodnotu po zaokrouhlení).
+- **K31-N1 (#447 C6, doplnění koordinace):** „Objednané příplatky" (`priplatkyObjednane`) měly `prefill` bez
+  `nezmrazovat` → zmrazení P9.5 opsalo „nic objednáno" a krycí list ho u odeslané nabídky ukazoval i po zápisu
+  objednaných. Teď `nezmrazovat: true`; u zámků z v21.10.6–v22.10.1 se zmrazená hodnota nečte (data se nepřepisují).
+  Krycí list PROJ pole nemá, export controllingu bere `objednane` přímo (ověřeno).
+- **Testy s pojistkou:** `src/test_zmrazeni_kl.js` (nová, matice pole × stav OCK i PROJ čte přímo tabulku JSON, SoD,
+  starý zámek, DPH, porovnání dat, hlavička, dotisk CN/SoD, ceny činností, Zaměření strojovna) — nad fcf14e3 0/7
+  (chybí model), po opravě 95/0; ceny činností před opravou 4 FAIL. `netlify/test_kryci_po_tisku.mjs` blok Z1 (14):
+  nad fcf14e3 9 FAIL (podmínky/DPH/plán 409, obchodník/hlavička 200), po 32/0. `src/test_objednane.js` K31-N1:
+  před 3 FAIL, po 47/0. Sady, které jako „neškodnou změnu" odeslané zakázky měnily název akce, mění nově kontaktní
+  osobu (test_prava, test_koncova_cena, test_zaporne, test_vyjimky, test_obchodnik, test_zamek_historie).
+  Prohlížečový `overit_kryci_po_tisku.mjs` má nový blok Z1 (nepuštěno — celé kolo pouští koordinace).
+- **Mutace:** server „z1" 20/20 chycených (sady omezené `KNG_MUTACE_SADY` na relevantní testy; mutace „DPH volná
+  i bez snímku" vyřazena jako ekvivalentní, „porovnání přehlíží každou změnu DPH" chycená až po doplnění cíleného
+  testu), „b163" 3/3, „zmrazený výsledek se bere" 1/1 (plná sada); jádro „z1" 6/6 — 0 přeživších.
+  `--kontrola` jádro 438, server 783 úseků. `spust_testy.sh` 236 prošlo / 0 selhalo.
+
 ## v22.10.2 — P1: Stav Pipedrive v hlavičce zakázky a v exportu pro controlling (větev claude/p1-stav-pipedrive)
 
 Nad integrací b7fa82c (= test v22.10.1 + podklady). Zadání `podklady/PIPEDRIVE_STAV_DEALU_22_10.md`, náhled odsouhlasený

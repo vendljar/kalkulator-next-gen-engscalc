@@ -141,7 +141,13 @@ const KRYCI_SEKCE = [
     { id: 'priplatkyNabidka', label: 'Příplatky v nabídce', verze: ['bo', 'techdata'], prefill: c => c.priplatky, src: 'z nabídky' },
     /* #447 C6 (21. 10. 2026): příplatky, které zákazník z odeslané nabídky
      * objednal (zaškrtávají se u Smlouvy o dílo níž, src/objednane.js). */
-    { id: 'priplatkyObjednane', label: 'Objednané příplatky', verze: ['bo', 'techdata'], prefill: c => c.objednane, src: 'Smlouva o dílo — objednáno zákazníkem' },
+    /* `nezmrazovat` (K31-N1, #447 C6, 22. 10. 2026): objednané příplatky se
+     * zapisují až k ODESLANÉ (zamčené) variantě (objNastav). Zmrazení P9.5
+     * při tisku nabídky do 22. 10. opsalo „nic objednáno" a krycí list ho
+     * u každé odeslané nabídky ukazoval dál, i když zákazník objednal (SoD
+     * i objText počítaly správně). S příznakem se pole nezmrazuje a u starších
+     * zámků se zmrazená hodnota nečte (kryciHodnota) — data se nepřepisují. */
+    { id: 'priplatkyObjednane', label: 'Objednané příplatky', verze: ['bo', 'techdata'], prefill: c => c.objednane, src: 'Smlouva o dílo — objednáno zákazníkem', nezmrazovat: true },
   ] },
   /* SET-3 – firemní údaje se doplní automaticky z Nastavení → Firma;
    * ruční přepis v krycím listu je možný (např. jiná fakturační adresa). */
@@ -935,6 +941,18 @@ function kryciZmrazPodminky(zak, varianta, jekly) {
   const out = {};
   KRYCI_SEKCE.forEach(s => s.pole.forEach(p => {
     if (p.bind || p.dphBind || p.nezmrazovat || typeof p.prefill !== 'function') return;
+    /* ODVOZENÝ ŘÁDEK (Zaměření strojovna, Z1 — J. V. 22. 10. 2026): před
+     * zámkem platí hodnota z kalkulace a ruční přepis se nečte. Do v22.10.2
+     * ale zámek ten starý, neplatný přepis „oživil" (kryciHodnota ho u zamčené
+     * varianty čte) a z řádku se stalo přepínátko bez vazby. Teď se při
+     * zamčení zmrazí odvozená hodnota (předvyplnění) a starý přepis se zahodí;
+     * po odeslání jde pole přepsat (tabulka J. V.: editovatelné) a ↺ vrátí
+     * hodnotu z kalkulace. */
+    if (p.odvozene) {
+      let vo = '';
+      try { vo = p.prefill(c); } catch (e) { vo = ''; }
+      if (vo != null && vo !== '') { out[p.id] = String(vo); delete h[p.id]; return; }
+    }
     if (h[p.id] !== undefined && h[p.id] !== '') return;      // ruční přepis už je v datech
     let v = '';
     try { v = p.prefill(c); } catch (e) { v = ''; }

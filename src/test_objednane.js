@@ -135,6 +135,27 @@ test('po podpisu SoD bez předchozího záznamu: obchodník nezapíše (403)', (
   }
 }
 
+/* ---- K31-N1 (#447 C6, 22. 10. 2026): krycí list zamčené varianty ----
+ * Zmrazení P9.5 při tisku nabídky opsalo „nic objednáno" do data.kryci.zmrazeno
+ * a krycí list ho ukazoval i po zápisu objednaných. Pojistka: nad v22.10.1
+ * selže (1) a (2) — řádek nese „nic objednáno". */
+if (typeof kryciData === 'function' && typeof kryciZmrazPodminky === 'function') {
+  const radek = (z) => { const d = kryciData(z, z.varianty[0], JEKLY, 'bo');
+    const r = d.sekce.flatMap(s => s.radky).find(x => x[0] === 'Objednané příplatky'); return r ? r[1] : undefined; };
+  const z1 = kopie(zak); delete z1.objednane;
+  kryciZmrazPodminky(z1, z1.varianty[0], JEKLY);   // tisk nabídky (P9.5)
+  test('K31-N1: zmrazení při tisku nabídky objednané příplatky neopíše',
+    !(z1.varianty[0].data.kryci.zmrazeno || {}).hasOwnProperty('priplatkyObjednane'), z1.varianty[0].data.kryci.zmrazeno);
+  test('K31-N1 (3): bez objednaných krycí list ukáže „nic objednáno"', radek(z1) === 'nic objednáno', radek(z1));
+  O.objNastav(z1, z1.varianty[0], [k1, k2], '2026-10-20');
+  test('K31-N1 (1): po objNastav krycí list zamčené varianty = objText', radek(z1) === O.objText(z1, z1.varianty[0], JEKLY)
+    && radek(z1) !== 'nic objednáno', [radek(z1), O.objText(z1, z1.varianty[0], JEKLY)]);
+  const z2 = kopie(z1); z2.varianty[0].data.kryci.zmrazeno = Object.assign({}, z2.varianty[0].data.kryci.zmrazeno, { priplatkyObjednane: 'nic objednáno' });
+  const pred = JSON.stringify(z2.varianty[0].data);
+  test('K31-N1 (2): varianta zmrazená dřív („nic objednáno" v datech) ukáže skutečné objednané', radek(z2) === O.objText(z2, z2.varianty[0], JEKLY), radek(z2));
+  test('K31-N1: data zamčené varianty se nepřepisují', JSON.stringify(z2.varianty[0].data) === pred);
+}
+
 /* ---- export pro controlling ---- */
 {
   const e0 = C.ctrlExportVarianty(zak, v, { jekly: JEKLY });

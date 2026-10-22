@@ -588,6 +588,8 @@ function nabidkaProjPlatby(zak, varianta, lang, spoctene) {
 const NABIDKA_PROJ_SPOJKA = { cz: 'a', en: 'and', de: 'und', fr: 'et' };
 
 function nabidkaProjData(zak, varianta, lang, moznosti) {
+  /* Dotisk odeslané CN PROJ ze snímku zámku (Z1) — viz nabidkaData. */
+  if (!(moznosti && moznosti.zive) && typeof zamekNabidkaPohled === 'function') varianta = zamekNabidkaPohled(varianta);
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const d = (varianta && varianta.data) || {};

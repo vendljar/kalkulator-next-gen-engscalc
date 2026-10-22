@@ -388,11 +388,19 @@ function kryciProjCtx(zak, varianta) {
      * zámku, u rozpracované varianty počítá jako dřív. */
     const r = (typeof vypocetProjZ === 'function' && vypocetProjZ(varianta))
       || vypocetProj(d.proj.zadani, d.proj.cenik);
-    r.sekce.forEach(s => { sekce[s.key] = { nazev: s.nazev, celkem: s.celkem }; });
-    /* Stejná cena jako v nabídce PROJ, tj. po obchodním zaokrouhlení (#38);
-     * ceny jednotlivých činností zůstávají nezaokrouhlené. */
-    const cn = (typeof cenaNabidkyProj === 'function')
-      ? cenaNabidkyProj(r, d.slevaProj, (typeof zaokrProjZ === 'function') ? zaokrProjZ(d) : d.zaokr) : null;
+    /* Stejná cena jako v nabídce PROJ, tj. po obchodním zaokrouhlení (#38). */
+    const zaokrP = (typeof zaokrProjZ === 'function') ? zaokrProjZ(d) : d.zaokr;
+    const cn = (typeof cenaNabidkyProj === 'function') ? cenaNabidkyProj(r, d.slevaProj, zaokrP) : null;
+    /* CENY ČINNOSTÍ JAKO V NABÍDCE (Z1, J. V. 22. 10. 2026, podnět obchodníka):
+     * do 22. 10. nesl krycí list nezaokrouhlené ceny činností, nabídka
+     * (nabidkaProjCeny) zaokrouhlené po slevě — součet řádků v krycím listu
+     * neseděl s „Celkem bez DPH". Teď tatáž cesta jako cenaNabidkyProj:
+     * cena sekce × (1 − sleva) → zaokrouhli; součet = hodnota zakázky. */
+    const p = cn ? cn.slevaPct : 0;
+    r.sekce.forEach(s => {
+      const celkem = (cn && typeof zaokrouhli === 'function') ? zaokrouhli((+s.celkem || 0) * (1 - p), zaokrP) : s.celkem;
+      sekce[s.key] = { nazev: s.nazev, celkem };
+    });
     hodnota = kryciProjKc(cn ? cn.cena : r.souhrn.celkem);
     const oc = r.sekce.filter(s => s.celkem > 0);
     const ne = r.sekce.filter(s => !(s.celkem > 0));

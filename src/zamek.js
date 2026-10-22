@@ -309,16 +309,176 @@ function zamekPrvniSmlouva(v, typ) {
   return !zamekTiskyTypy(v).some(t => ZAMEK_KRYCI_SMLOUVY.indexOf(t) >= 0);
 }
 
+/* ZMRAZENÍ PO TISKU CENOVÉ NABÍDKY PO POLÍCH (Z1, rozhodnutí J. V.
+ * 22. 10. 2026, tabulka podklady/ZMRAZENI_KL_VOLBY_JV_22_10.json, sloupec
+ * `volba_jv`). Do v22.10.2 se zamykaly celé sekce, které jdou do nabídky
+ * (zamekKryciPoleVNabidce). Nově je JEDINÝM zdrojem pravdy tenhle seznam —
+ * prohlížeč i server (zamekDataPorovnani) se ptají na zamekKryciPoleStav:
+ *   – `zmrazeno` = pole níž (a neznámé pole — radši zamčené navíc),
+ *   – `jen_admin` = číslo nabídky (pravidlo A3 v set() a B56 na serveru),
+ *   – ostatní pole jsou po tisku CN editovatelná, i když se tisknou do
+ *     nabídky (platební podmínky, sazba DPH, termín dodání, plán plateb PROJ,
+ *     splátky SoD PROJ): odeslaná nabídka je drží ve SNÍMKU zámku
+ *     (zamekSnimekSpocti) a její dotisk tiskne ze snímku (zamekNabidkaPohled).
+ * Zámek BEZ snímku (odeslaný před v22.10.3) snímek nemá, a pole nabídky proto
+ * drží dál zmrazená jako dřív — jinak by se dotisk staré nabídky změnil.
+ * Po tisku SoD je krycí list zmrazený celý kromě plné moci (beze změny).
+ * Shodu s tabulkou hlídá src/test_zmrazeni_kl.js. */
+const ZAMEK_KRYCI_PO_CN = {
+  kryci: {
+    zmrazeno: ['obchodnik', 'nazevAkce', 'adresaStavby', 'hodnotaBezDph',
+      'dodNazev', 'dodIcoDic', 'dodSidlo', 'dodBanka', 'dodKontakt', 'dodZpracoval',
+      'typSmlouvy', 'typProduktu', 'platnostNabidky'],
+    jenAdmin: ['cisloCN'],
+  },
+  kryciProj: {
+    zmrazeno: ['obchodnik', 'nazevAkce', 'adresaStavby', 'hodnotaBezDph',
+      'dodNazev', 'dodIcoDic', 'dodSidlo', 'dodBanka', 'dodKontakt', 'dodZpracoval', 'hlavniProjektant',
+      'typSmlouvy', 'pamatkovaOchrana', 'autorskaPrava', 'platnostNabidky'],
+    jenAdmin: ['cisloCN'],
+  },
+};
+
+/* Je pole v krycím listu `list` vůbec známé? (Neznámé = zmrazené.) */
+function zamekKryciPoleZname(list, id) {
+  const sekce = list === 'kryciProj' ? (typeof KRYCI_PROJ_SEKCE !== 'undefined' ? KRYCI_PROJ_SEKCE : null)
+    : list === 'kryci' ? (typeof KRYCI_SEKCE !== 'undefined' ? KRYCI_SEKCE : null) : null;
+  if (!Array.isArray(sekce)) return false;
+  return sekce.some(s => s && Array.isArray(s.pole) && s.pole.some(p => p && p.id === id));
+}
+
+/* Snímek odeslané nabídky (Z1): krycí listy a sazby DPH v okamžiku prvního
+ * zamčení. Prohlížeč ho bere v zamekPoTisku po zmrazení podmínek (P9.5),
+ * server ho u NOVÉHO zámku spočítá sám z ukládaných dat (klientskému nevěří)
+ * a je v klíči zámku (uloZamekKlic), takže se už nezmění. */
+function zamekSnimekSpocti(v) {
+  const d = (v && v.data) || {};
+  const kopie = x => (x === undefined || x === null) ? null : JSON.parse(JSON.stringify(x));
+  const cislo = x => (typeof x === 'number' && isFinite(x)) ? x : null;
+  return {
+    kryci: kopie(d.kryci),
+    kryciProj: kopie(d.kryciProj),
+    dph: cislo(d.cenik && d.cenik.dph),
+    dphProj: cislo(d.proj && d.proj.cenik && d.proj.cenik.dph),
+  };
+}
+
+function zamekSnimek(v) {
+  const z = zamekInfo(v);
+  return (z && z.snimek && typeof z.snimek === 'object') ? z.snimek : null;
+}
+
+/* Stav pole krycího listu: 'editovatelne' | 'zmrazeno' | 'jen_admin'. */
+function zamekKryciPoleStav(v, list, id) {
+  id = String(id == null ? '' : id);
+  if (!variantaUzamcena(v)) return 'editovatelne';
+  const tab = ZAMEK_KRYCI_PO_CN[list];
+  if (tab && tab.jenAdmin.indexOf(id) >= 0) return 'jen_admin';
+  if (!zamekKryciOtevreny(v)) return zamekKryciPolePlnaMoc(list, id) ? 'editovatelne' : 'zmrazeno';
+  if (!tab || tab.zmrazeno.indexOf(id) >= 0) return 'zmrazeno';
+  /* splátky SoD PROJ starších dat (sodpPlatba1…) jsou pole krycího listu */
+  if (!zamekKryciPoleZname(list, id) && !(list === 'kryciProj' && /^sodpPlatba\d+$/.test(id))) return 'zmrazeno';
+  if (!zamekSnimek(v) && zamekKryciPoleVNabidce(list, id)) return 'zmrazeno';
+  return 'editovatelne';
+}
+
 /* Smí se pole krycího listu změnit? Nezamčená varianta = ano. */
 function zamekKryciPoleVolne(v, list, id) {
+  return zamekKryciPoleStav(v, list, id) === 'editovatelne';
+}
+
+/* Sazba DPH (pole krycího listu `sazbaDph` s dphBind C.dph / PC.dph) je po
+ * tisku CN editovatelná, jen když ji odeslaná nabídka drží ve snímku. */
+const ZAMEK_DPH_CESTY = { 'C.dph': ['kryci', 'dph'], 'PC.dph': ['kryciProj', 'dphProj'] };
+function zamekDphVolna(v, cesta) {
+  const c = ZAMEK_DPH_CESTY[cesta];
+  if (!c) return false;
   if (!variantaUzamcena(v)) return true;
-  if (zamekKryciPoleVNabidce(list, id)) return false;
-  return zamekKryciOtevreny(v) || zamekKryciPolePlnaMoc(list, id);
+  const s = zamekSnimek(v);
+  return !!(s && typeof s[c[1]] === 'number') && zamekKryciPoleVolne(v, c[0], 'sazbaDph');
+}
+
+/* Pohled na variantu pro TISK CENOVÉ NABÍDKY: u odeslané nabídky se snímkem
+ * krycí listy a sazby DPH z okamžiku odeslání — změna editovatelného pole
+ * po tisku se projeví v krycím listu, SoD a exportu, dotisk CN zůstává.
+ * Bez snímku vrací tutéž variantu. Data varianty nemění. */
+function zamekNabidkaPohled(v) {
+  const s = zamekSnimek(v);
+  if (!s || !v || !v.data) return v;
+  const kopie = x => (x === undefined || x === null) ? undefined : JSON.parse(JSON.stringify(x));
+  const d = Object.assign({}, v.data, { kryci: kopie(s.kryci), kryciProj: kopie(s.kryciProj) });
+  if (typeof s.dph === 'number' && d.cenik) d.cenik = Object.assign({}, d.cenik, { dph: s.dph });
+  if (typeof s.dphProj === 'number' && d.proj && d.proj.cenik)
+    d.proj = Object.assign({}, d.proj, { cenik: Object.assign({}, d.proj.cenik, { dph: s.dphProj }) });
+  return Object.assign({}, v, { data: d });
+}
+
+/* HLAVIČKA ZAKÁZKY (ZAK.*) PO ODESLÁNÍ (Z1, J. V. 22. 10. 2026). Hlavička je
+ * jedna pro všechny varianty, a dotisk každé odeslané nabídky ji čte. Proto:
+ *   – po tisku CN KTERÉKOLI varianty se zmrazí název akce a adresa stavby
+ *     (pole krycích listů s `bind` a stavem zmrazeno — OCK ZAK.nazevAkce /
+ *     ZAK.adresa, PROJ ZAK.projHlavicka.*), i když je otevřený nezamčený klon;
+ *   – po tisku SoD kterékoli varianty se zmrazí všechna pole krycích listů
+ *     provázaná s hlavičkou (DIČ, zástupci, banka…), jako zbytek krycího listu.
+ * Pravidlo je stejné jako u čísla nabídky (A3: „zakázka má odeslanou
+ * nabídku"). Číslo (ZAK.cislo) dál řeší pravidlo jen pro administrátora. */
+/* Pole hlavičky, ze kterých se krycí listy jen PŘEDVYPLŇUJÍ (bez `bind`) a
+ * která tiskne smlouva o dílo (sod.js: objednatel, IČO, sídlo, kontakt). */
+const ZAMEK_ZAK_PO_SOD = ['ZAK.objednatel', 'ZAK.ico', 'ZAK.adresaObjednatele', 'ZAK.kontakt',
+  'ZAK.projHlavicka.objednatel', 'ZAK.projHlavicka.ico', 'ZAK.projHlavicka.adresaObjednatele', 'ZAK.projHlavicka.kontakt'];
+function zamekZakCesty() {
+  const out = { poCn: [], poSod: ZAMEK_ZAK_PO_SOD.slice() };
+  [['kryci', typeof KRYCI_SEKCE !== 'undefined' ? KRYCI_SEKCE : null],
+   ['kryciProj', typeof KRYCI_PROJ_SEKCE !== 'undefined' ? KRYCI_PROJ_SEKCE : null]].forEach(([list, sekce]) => {
+    (Array.isArray(sekce) ? sekce : []).forEach(s => (s.pole || []).forEach(p => {
+      if (!p || typeof p.bind !== 'string' || !p.bind.startsWith('ZAK.') || p.bind === 'ZAK.cislo') return;
+      if (out.poSod.indexOf(p.bind) < 0) out.poSod.push(p.bind);
+      if (ZAMEK_KRYCI_PO_CN[list].zmrazeno.indexOf(p.id) >= 0 && out.poCn.indexOf(p.bind) < 0) out.poCn.push(p.bind);
+    }));
+  });
+  return out;
+}
+
+function zamekZakStav(varianty) {
+  const zam = (varianty || []).filter(v => variantaUzamcena(v));
+  return { cn: zam.length > 0, sod: zam.some(v => !zamekKryciOtevreny(v)) };
+}
+
+/* Důvod, proč se cesta hlavičky nesmí změnit, nebo ''. */
+function zamekZakCestaZmrazena(zak, cesta) {
+  const st = zamekZakStav(zak && zak.varianty);
+  if (!st.cn) return '';
+  const c = zamekZakCesty();
+  if (st.sod && c.poSod.indexOf(cesta) >= 0)
+    return 'Ze zakázky odešla smlouva o dílo — údaje zákazníka v hlavičce se už nemění. Pokračujte novou zakázkou.';
+  if (c.poCn.indexOf(cesta) >= 0)
+    return 'Zakázka má odeslanou cenovou nabídku — název akce a adresa stavby jsou v ní vytištěné, a proto se už nemění.';
+  return '';
+}
+
+/* Serverová pojistka hlavičky: cesty, které se změnily, ač nesmějí.
+ * Zámek se bere z ULOŽENÉ verze (`stara`); varianta, kterou v témže uložení
+ * odemkl správce (v nové verzi už zamčená není), se nepočítá. */
+function zamekZakZmeny(stara, nova) {
+  const nove = (nova && nova.varianty) || [];
+  const zamcene = ((stara && stara.varianty) || []).filter(sv => {
+    const nv = nove.find(x => x && sv && x.id === sv.id);
+    return variantaUzamcena(sv) && (!nv || variantaUzamcena(nv));
+  });
+  const st = zamekZakStav(zamcene);
+  if (!st.cn) return [];
+  const c = zamekZakCesty();
+  const hodnota = (o, cesta) => {
+    const x = cesta.split('.').slice(1).reduce((a, k) => (a && typeof a === 'object') ? a[k] : undefined, o);
+    return (x === undefined || x === null || x === '') ? '' : JSON.stringify(x);
+  };
+  return (st.sod ? c.poSod : c.poCn).filter(cesta => hodnota(stara, cesta) !== hodnota(nova, cesta));
 }
 
 /* Data zamčené varianty k porovnání „změnilo se něco odeslaného?" — bez
  * ručních hodnot polí krycího listu, která se smí doplňovat. Zámek se bere
- * z `v` (na serveru vždy z ULOŽENÉ verze, klient si ho nevybírá). */
+ * z `v` (na serveru vždy z ULOŽENÉ verze, klient si ho nevybírá). Od Z1
+ * se vynechá i plán plateb PROJ a sazby DPH, když jsou editovatelné. */
 function zamekDataPorovnani(data, v) {
   if (!data || typeof data !== 'object' || !variantaUzamcena(v)) return JSON.stringify(data);
   const kopie = JSON.parse(JSON.stringify(data));
@@ -327,6 +487,11 @@ function zamekDataPorovnani(data, v) {
     if (!h || typeof h !== 'object') return;
     Object.keys(h).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete h[id]; });
   });
+  if (kopie.kryciProj && typeof kopie.kryciProj === 'object' && zamekKryciPoleVolne(v, 'kryciProj', 'planPredvolba'))
+    delete kopie.kryciProj.planPlateb;
+  if (kopie.cenik && typeof kopie.cenik === 'object' && zamekDphVolna(v, 'C.dph')) delete kopie.cenik.dph;
+  if (kopie.proj && kopie.proj.cenik && typeof kopie.proj.cenik === 'object' && zamekDphVolna(v, 'PC.dph'))
+    delete kopie.proj.cenik.dph;
   return JSON.stringify(kopie);
 }
 
@@ -389,6 +554,9 @@ function zamkniVariantu(v, info) {
      *
      * `build` je tu kvůli dohledatelnosti: říká, který kód to číslo vydal. */
     vysledek: info.vysledek || null,
+    /* Snímek krycích listů a sazeb DPH z okamžiku odeslání (Z1,
+     * zamekSnimekSpocti) — dotisk CN tiskne z něj. */
+    snimek: info.snimek || null,
     tisky: [zaznam],
   };
   return v.zamek;
@@ -890,4 +1058,6 @@ if (typeof module !== 'undefined')
                      variantaEditovatelna, zamkniVariantu, odemkniVariantu,
                      ZAMEK_OTISK_POLE, zamekOtisk, zamekOtiskZPorovnani,
                      zajistiZamek, ZAMEK_KRYCI_SMLOUVY, zamekTiskyTypy, zamekKryciOtevreny, zamekPrvniSmlouva,
-                     zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani };
+                     zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani,
+                     ZAMEK_KRYCI_PO_CN, zamekKryciPoleStav, zamekKryciPoleZname, zamekSnimekSpocti, zamekSnimek,
+                     zamekDphVolna, zamekNabidkaPohled, zamekZakCesty, zamekZakCestaZmrazena, zamekZakZmeny };

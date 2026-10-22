@@ -204,5 +204,84 @@ console.log('===== B157: cizí obchodník a volná pole odeslané nabídky (zám
   test('B157: pole nabídky cizí odeslané nabídky dál zamčené (409)', r2.status === 409, r2);
 }
 
+console.log('===== Z1: zmrazení po polích podle tabulky J. V. (22. 10. 2026) =====');
+/* Zámek se snímkem (zamekPoTisku od v22.10.3): editovatelná pole nabídky
+ * (podmínky, DPH, plán plateb) se uloží, zmrazená pole a hlavička (název akce,
+ * adresa po CN; pole krycích listů v hlavičce po SoD) vrátí 409; snímek
+ * nového zámku server ověří proti datům. Pojistka: nad v22.10.2 vrací
+ * „200" případy 409 (pole nabídky byla zamčená celá) a hlavička prošla 200. */
+const zamkniZ1 = (z, typ, v) => { v = v || z.varianty[0];
+  const prvni = !zam.variantaUzamcena(v);
+  zam.zamkniVariantu(v, { typ: typ || 'nabidka', kdy: new Date().toISOString(), kdo: 'Test Z1',
+    cislo: zam.variantaCislo(z, v), vysledek: prvni ? zam.zamekVysledekSpocti(v, JEKLY, 'v-z1') : null,
+    snimek: prvni ? zam.zamekSnimekSpocti(v) : null });
+  return z; };
+{
+  const r = await poTisku(zamkniZ1(nova('Z1 záloha')), d => {
+    Object.assign(h(d, 'kryci'), { zaloha1: '10 % – po podpisu smlouvy', splatnostDni: '60', terminDodani: '20 týdnů' }); }, cO);
+  test('Z1: po tisku CN se změna zálohy, splatnosti a termínu dodání uloží (200)', r.status === 200, r);
+}
+{
+  const jina = x => (Math.abs((+x || 0) - 0.12) < 1e-9 ? 0.21 : 0.12);   // vždy skutečná změna sazby
+  const r = await poTisku(zamkniZ1(nova('Z1 DPH')), d => { d.cenik.dph = jina(d.cenik.dph); d.proj.cenik.dph = jina(d.proj.cenik.dph); }, cO);
+  test('Z1: po tisku CN se změna sazby DPH OCK i PROJ uloží (200)', r.status === 200, r);
+}
+{
+  const r = await poTisku(zamkniZ1(nova('Z1 obchodník')), d => { h(d, 'kryci').obchodnik = 'Jiný Obchodník'; }, cO);
+  test('Z1: po tisku CN změna zmrazeného pole (obchodník) → 409', r.status === 409 && /uzamčené/.test(r.chyba || ''), r);
+}
+{
+  const r = await poTisku(zamkniZ1(novaProj('Z1 projektant'), 'nabidkaProjTisk'), d => { h(d, 'kryciProj').hlavniProjektant = 'Jiný Projektant'; }, cO);
+  test('Z1: po tisku CN PROJ změna hlavního projektanta → 409', r.status === 409 && /uzamčené/.test(r.chyba || ''), r);
+}
+{
+  const r = await poTisku(zamkniZ1(novaProj('Z1 plán'), 'nabidkaProjTisk'), d => {
+    d.kryciProj = d.kryciProj || {}; d.kryciProj.planPlateb = { predvolba: 'zaloha', zaloha: 0.5 };
+    h(d, 'kryciProj').sodpPlatba1 = '100 % po podpisu'; h(d, 'kryciProj').typProjektu = 'Rekonstrukce'; }, cO);
+  test('Z1: po tisku CN PROJ se plán plateb, splátka SoD a typ projektu uloží (200)', r.status === 200, r);
+}
+{
+  const r = await poTisku(zamkniZ1(nova('Z1 kalkulace za DPH')), d => { d.cenik.dph = d.cenik.dph === 0.12 ? 0.21 : 0.12; d.ock.zadani.zdvih = 12; }, cO);
+  test('Z1: změna kalkulace schovaná za změnu DPH → 409', r.status === 409 && /uzamčené/.test(r.chyba || ''), r);
+}
+{
+  const r = await poTisku(zamkniZ1(nova('Z1 název')), (d, a) => { a.nazevAkce = 'TEST přejmenováno'; }, cO);
+  test('Z1: po tisku CN změna ZAK.nazevAkce → 409', r.status === 409 && /hlavička/.test(r.chyba || '') && /nazevAkce/.test(r.chyba || ''), r);
+}
+{
+  const r = await poTisku(zamkniZ1(nova('Z1 adresa admin')), (d, a) => { a.adresa = 'Jiná 2'; }, cA);
+  test('Z1: po tisku CN změna ZAK.adresa i administrátorovi → 409', r.status === 409 && /adresa/.test(r.chyba || ''), r);
+}
+{
+  const r = await poTisku(zamkniZ1(nova('Z1 DIČ po CN')), (d, a) => { a.dic = 'CZ00000000'; a.zastupci = Object.assign({}, a.zastupci, { banka: 'Ukázková banka' }); }, cO);
+  test('Z1: po tisku CN se DIČ a banka v hlavičce uloží (200)', r.status === 200, r);
+}
+{
+  const z = zamkniZ1(nova('Z1 DIČ po SoD')); zamkniZ1(z, 'sod');
+  const r = await poTisku(z, (d, a) => { a.dic = 'CZ00000000'; }, cA);
+  test('Z1: po tisku SoD změna DIČ v hlavičce → 409', r.status === 409 && /dic/.test(r.chyba || ''), r);
+}
+{
+  /* Hlavička je jedna pro všechny varianty: odeslaná V1 drží název i tehdy,
+   * když se ukládá změna z nezamčeného klonu. */
+  const z = nova('Z1 klon'); const k = zam.klonujVariantu(z, z.varianty[0].id, { aktivovat: true });
+  zamkniZ1(z, 'nabidka', z.varianty[0]);
+  const r = await poTisku(z, (d, a) => { a.nazevAkce = 'TEST z klonu'; }, cO);
+  test('Z1: název akce nezmění ani uložení z nezamčeného klonu (409)', r.status === 409 && !!k, r);
+}
+{
+  const z = zamkniZ1(nova('Z1 podvržený snímek')); z.varianty[0].zamek.snimek.dph = 0;
+  const r = await uloz(z, cO);
+  test('Z1: nový zámek s podvrženým snímkem (DPH 0) → 409', r.status === 409 && /snímek/.test(r.chyba || ''), r);
+}
+{
+  const z = zamkniZ1(nova('Z1 snímek uložen'));
+  const r = await uloz(z, cO); const g = await nacti(r.soubor, cO);
+  test('Z1: snímek nového zámku se uloží beze změny', r.status === 200 && JSON.stringify(g.varianty[0].zamek.snimek) === JSON.stringify(z.varianty[0].zamek.snimek), r);
+  const a = zk.importZakazka(kopie(g)); a.varianty[0].zamek.snimek.kryci = { hodnoty: { zaloha1: 'Bez zálohy' } };
+  const r2 = await uloz(a, cO, g.uloRazitko);
+  test('Z1: přepsaný snímek uloženého zámku → 409', r2.status === 409, r2);
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

@@ -274,7 +274,7 @@ function renderTechspec() {
       <div class="spec-row"><div class="lbl">OBJEDNATEL</div><div><input type="text" value="${esc(ZAK.objednatel)}" onchange="set('ZAK.objednatel', this.value)"></div><div></div></div>
       <div class="spec-row"><div class="lbl">DATUM</div><div><input type="date" style="text-align:left" value="${esc(ZAK.datum)}" onchange="set('ZAK.datum', this.value)"></div><div></div></div>
       ${tsNazevAkceRadek()}
-      <div class="spec-row"><div class="lbl">ADRESA STAVBY</div><div><input type="text" value="${esc(ZAK.adresa)}" onchange="set('ZAK.adresa', this.value)"></div><div></div></div>
+      <div class="spec-row"><div class="lbl">ADRESA STAVBY</div><div><input type="text" value="${esc(ZAK.adresa)}" onchange="set('ZAK.adresa', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr('ZAK.adresa') : ''}></div><div></div></div>
       ${sekce}
       ${extra ? '<h3>DALŠÍ UJEDNÁNÍ</h3>' + extra : ''}
       <div class="btns noprint" style="margin-top:14px">

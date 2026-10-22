@@ -7856,7 +7856,29 @@
    ],
    "hotovoV": "v22.10.2",
    "pozn": "Větev claude/p1-stav-pipedrive; číslo položky i verze může koordinace při slučování přečíslovat. Výjimka zálohy pro úložiště pd_stav (stav se při uložení zapisuje i do zakázky) — ke schválení J. V."
-  }
+  },
+ {
+  "id": "502",
+  "vlna": "B",
+  "stav": "hotovo",
+  "dulezitost": "vysoka",
+  "slozitost": "M",
+  "nazev": "Zmrazení krycích listů po tisku CN po polích (Z1) + hlavička, snímek odeslané nabídky, K31-N1",
+  "proc": "Rozhodnutí J. V. 22. 10. 2026 (tabulka podklady/ZMRAZENI_KL_VOLBY_JV_22_10.json): po tisku cenové nabídky se nezamykají celé sekce krycího listu, ale jednotlivá pole; odeslaná nabídka přitom zůstává zmrazená.",
+  "detail": "HOTOVO (Z1): seznam ZAMEK_KRYCI_PO_CN + zamekKryciPoleStav (klient i server); snímek krycích listů a DPH v zámku (zamekSnimekSpocti, v klíči zámku, server ověří) — dotisk CN ze snímku, SoD živě; sazba DPH a plán plateb PROJ editovatelné po CN; hlavička ZAK.nazevAkce/adresa po CN, pole krycích listů v hlavičce po SoD (klient set() + server zamekZakZmeny); Zaměření strojovna drží odvozenou hodnotu jako předvyplnění; UI 🔒 šedá pole s důvodem; ceny činností v krycím listu PROJ zaokrouhlené jako v nabídce; K31-N1 objednané příplatky se nezmrazují. Zámky bez snímku (před v22.10.3) drží pole nabídky jako dřív.",
+  "hotovoKdyz": "Matice pole × stav odpovídá tabulce J. V. (test čte JSON), testy s pojistkou zelené, cílené mutace 0 přeživších.",
+  "kde": "`src/zamek.js`, `src/uloziste.js`, `src/ui/zamek_ui.js`, `src/ui/common.js`, `src/kryci.js`, `src/kryci_proj.js`, `src/nabidka.js`, `src/nabidka_proj.js`, `src/sod.js`, `netlify/lib/zakazka_kontrola.mjs`, `src/test_zmrazeni_kl.js`",
+  "zavisi": [
+   {
+    "id": "447",
+    "typ": "doporuceno",
+    "proc": "K31-N1 je nález objednaných příplatků (C6)"
+   }
+  ],
+  "hotovoV": "v22.10.3",
+  "otazka": "Pole činností PROJ cin_*/st_* tabulka nemá (nechána editovatelná jako sekce Rozsah). Hlavička se zmrazuje po odeslání KTERÉKOLI varianty (ne jen řídící/otevřené) — potvrdit.",
+  "pozn": "Větev claude/z1-zmrazeni-kl; číslo verze může koordinace při slučování přečíslovat. Koordinace přečíslovala #501 → #502 (#501 má P1)."
+ }
  ],
  "meta" : {
   "projekt" : "Kalkulator Next Gen",

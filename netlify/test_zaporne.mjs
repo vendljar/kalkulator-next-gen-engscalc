@@ -175,7 +175,7 @@ for (const [role, c] of [['Vedoucí', cV], ['Administrátor', cA]]) {
   vlastni(v, 'hrubaOck', { nazev: 'Historická úprava', mnozstvi: 1, cena: -1000 });
   zam.zamkniVariantu(v, { cislo: zam.variantaCislo(ul, v), typ: 'nabidka', kdo: 'Historie', vysledek: zam.zamekVysledekSpocti(v, JEKLY, 'B111') });
   pamet.set(klic, JSON.stringify(ul));
-  const g = await nacti(r.soubor, cO); const a = zk.importZakazka(kopie(g)); a.nazevAkce += ' (poznámka)';
+  const g = await nacti(r.soubor, cO); const a = zk.importZakazka(kopie(g)); a.kontakt = (a.kontakt || '') + ' (poznámka)';   // Z1: název akce je po odeslání zmrazený
   const r2 = await uloz(a, cO, g.uloRazitko);
   test('B111: odeslaná varianta, která zápornou položku už nese, se beze změny uloží (200 — doklad)', r2.status === 200 && r2.ok, r2); }
 /* 12) obnova ze zálohy: tatáž kontrola (B72/P4) — zakázka se přeskočí s důvodem */

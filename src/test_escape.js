@@ -277,6 +277,12 @@ const PROVERENO = {
   'common.js': {
     'label': 'popisek pole ve formulářové šabloně txt(path, label) – volá se s literály',
     'id': 'id karty / sekce / kotvy (card(), sekce(), detailKotvy) – literály z kódu, ne data',
+    /* Z1 (22. 10. 2026): zamekZakAttr() vrací hotové atributy (disabled,
+     * class, title přes esc()) — text důvodu je literál ze zamek.js. */
+    "typeof zamekZakAttr === 'function' ? zamekZakAttr('ZAK.objednatel') : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc()',
+  },
+  'techspec_ui.js': {
+    "typeof zamekZakAttr === 'function' ? zamekZakAttr('ZAK.adresa') : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc()',
   },
   /* `detail_ui.js` ze seznamu 14. 9. 2026 zmizel: `dvKrok()` od té chvíle
    * escapuje nadpis i id sama (nález B45), takže obě hodnoty projdou přes

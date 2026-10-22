@@ -323,7 +323,7 @@ for (const [k, h] of [['zdvih', -1], ['roztec', -1], ['hloubka', -1], ['sirka', 
   const z = nova('B137 doklad'); const r = await uloz(z, cO);
   const klic = 'zakazky/z/' + r.soubor; const ul = JSON.parse(pamet.get(klic)); const v = ul.varianty[0];
   v.data.ock.zadani.zdvih = -1; zamkni(ul, 'nabidka', v); pamet.set(klic, JSON.stringify(ul));
-  const g = await nacti(r.soubor, cO); const a = zk.importZakazka(kopie(g)); a.nazevAkce += ' (poznámka)';
+  const g = await nacti(r.soubor, cO); const a = zk.importZakazka(kopie(g)); a.kontakt = (a.kontakt || '') + ' (poznámka)';   // Z1: název akce je po odeslání zmrazený
   const r2 = await uloz(a, cO, g.uloRazitko);
   test('B137: odeslaná varianta, která nesmyslný rozměr už nese, se beze změny uloží (200 — doklad)', r2.status === 200, r2); }
 console.log('===== Mez 0,6 m pro zdvih, šířku a hloubku (rozhodnutí J. V. 13. 10. 2026) =====');
@@ -384,7 +384,7 @@ console.log('===== Nezávislá revize #398 (12. 10. 2026): N1 jenZahr, N2 nepoci
 { const r = await dvakrat(nova('N2 dvoukrok'), a => { d0(a).ock.zadani.nepocitat = ['PROFILY - HLAVNÍ NOSNÉ PRVKY']; }, cO);
   test('N2: obchodník — nepocitat přidané do uložené varianty → 403', r.status === 403, r); }
 { const z = nova('N2 admin'); d0(z).ock.zadani.nepocitat = ['MONTÁŽ NA STAVBĚ'];
-  const r = await dvakrat(z, a => { a.nazevAkce += ' (poznámka)'; d0(a).ock.zadani.nepocitat = []; }, cO, cA);
+  const r = await dvakrat(z, a => { a.kontakt = (a.kontakt || '') + ' (poznámka)'; /* Z1: název akce je po odeslání zmrazený */ d0(a).ock.zadani.nepocitat = []; }, cO, cA);
   test('N2: obchodník zakázku, které správce řádek vyřadil, uloží a smí ho vrátit (200)', r.status === 200, r); }
 { const { default: zobrazeni } = await import(R + 'netlify/functions/zobrazeni.mjs');
   await post(zobrazeni, 'http://x/api/zobrazeni', { hesloSpravce: 'Docasne.Heslo.123', matice: { vychozi: { 'ock.pocitat:MONTÁŽ NA STAVBĚ': false } } }, cA);
@@ -409,7 +409,7 @@ console.log('===== Nezávislá revize #398 (12. 10. 2026): N1 jenZahr, N2 nepoci
 { const r = await dvakrat(nova('Model 1 přepnutí'), a => { d0(a).ock.fixes = false; }, cO);
   test('Model 1: obchodník přepne uloženou variantu na Model 1 → 403', r.status === 403, r); }
 { const z = nova('Model 1 správce'); d0(z).ock.fixes = false;
-  const r = await dvakrat(z, a => { a.nazevAkce += ' (poznámka)'; a.varianty[0].nazev = 'A'; zam.klonujVariantu(a, a.varianty[0].id); }, cO, cA);
+  const r = await dvakrat(z, a => { a.kontakt = (a.kontakt || '') + ' (poznámka)'; /* Z1: název akce je po odeslání zmrazený */ a.varianty[0].nazev = 'A'; zam.klonujVariantu(a, a.varianty[0].id); }, cO, cA);
   test('Model 1: variantu v Modelu 1 (od správce) obchodník uloží i naklonuje (200)', r.status === 200, r);
   const r2 = await dvakrat(nova('Model 1 → 2'), a => { d0(a).ock.fixes = true; }, cO, cA);
   test('Model 1: převod Modelu 1 na Model 2 smí obchodník (200)', r2.status === 200, r2); }
@@ -457,7 +457,7 @@ console.log('===== revize 13. 10.: schválení a hned tisk (B105 × zámek) ====
   zamkni(z);
   const r2 = await uloz(z, cA, r1.razitko);
   test('B105: tisk hned po schválení — zámek uložen (200)', r2.status === 200, r2);
-  z.nazevAkce += ' (poznámka)';
+  z.kontakt = (z.kontakt || '') + ' (poznámka)';   // Z1: název akce je po odeslání zmrazený
   const r3 = await uloz(z, cA, r2.razitko);
   test('B105: další uložení z téhož okna projde (200, ne 409)', r3.status === 200, r3);
   test('B105: odpověď nese slevy tak, jak je server uložil', Array.isArray(r1.slevy) && r1.slevy.some(s => s.sleva && s.sleva.stav === 'schváleno'), r1.slevy);
@@ -490,7 +490,7 @@ console.log('===== B138: dvoukrok se starší zveřejněnou verzí ceníku =====
   { const r = await dvakrat(staraZak('B138 klon'), a => { const id = zam.klonujVariantu(a, a.varianty[0].id);
       smes(a, a.varianty.find(v => v.id === id) || a.varianty[a.varianty.length - 1]); }, cO);
     test('B138: nová varianta (klon) ve starší zakázce se směsí → 403', r.status === 403 && /statikaOplHod/.test(r.chyba || ''), r); }
-  { const r = await dvakrat(staraZak('B138 beze změny'), a => { a.nazevAkce += ' (poznámka)'; }, cO);
+  { const r = await dvakrat(staraZak('B138 beze změny'), a => { a.kontakt = (a.kontakt || '') + ' (poznámka)'; /* Z1: název akce je po odeslání zmrazený */ }, cO);
     test('B138: zakázka se starší verzí — uložení beze změny ceníku dál projde (200)', r.status === 200, r); }
   { const r = await dvakrat(staraZak('B138 přechod'), a => { d0(a).cenik = kopie(platny().cenik); }, cO);
     test('B138: přechod na platný ceník celý (200)', r.status === 200, r); }
@@ -531,7 +531,7 @@ console.log('===== P6 zámek strany (13. 10. 2026) =====');
   if (r.status === 200) {
     const g = await nacti(r.soubor, cO);
     const otisk = JSON.stringify(g.varianty[0].zamek.vysledek);
-    const a = zk.importZakazka(kopie(g)); a.nazevAkce += ' (poznámka)';
+    const a = zk.importZakazka(kopie(g)); a.kontakt = (a.kontakt || '') + ' (poznámka)';   // Z1: název akce je po odeslání zmrazený
     const r2 = await uloz(a, cO, g.uloRazitko);
     test('P6 (h): uložení zakázky se zamčenou variantou dál projde (200)', r2.status === 200, r2);
     const g2 = await nacti(r.soubor, cO);

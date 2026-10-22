@@ -91,7 +91,7 @@ function klDphPole(bind) {
   const popis = { 12: '12 % snížená', 21: '21 % základní' };
   const opts = nabidka.map(s =>
     `<option value="${s}" ${s === ted ? 'selected' : ''}>${esc(popis[s] || (s + ' %'))}</option>`).join('');
-  return `<select onchange="set('${bind}', (+this.value) / 100)">${opts}</select>`;
+  return `<select onchange="set('${bind}', (+this.value) / 100)"${typeof zamekDphAttr === 'function' ? zamekDphAttr(bind) : ''}>${opts}</select>`;
 }
 
 /* jeden řádek krycího listu; opts: {prefill, type:'text|textarea|date|radio|link|dph', o:[...], src:'zdroj', dphBind:'C.dph'} */
@@ -162,6 +162,12 @@ function klRow(id, label, opts = {}) {
     ? (manual ? '<span class="pill mut" style="font-size:10px">ručně</span>'
               : `<span class="note" style="font-size:10px">${opts.src}</span>`)
     : '';
+  /* Zmrazené pole odeslané nabídky (Z1, bod 5): šedé, neaktivní, s důvodem. */
+  const zmr = typeof zamekPoleAttr === 'function' ? zamekPoleAttr('kryci', id) : '';
+  if (zmr) {
+    field = field.replace(/<(input|select|textarea)\b/g, '<$1' + zmr);
+    return `<div class="kl-row kl-zmrazeno"><div class="lbl">${label}</div><div>${field}</div><div class="src"><span class="pill mut" style="font-size:10px" title="${esc(zmr.match(/title="([^"]*)"/)[1])}">🔒 zmrazeno</span></div></div>`;
+  }
   const reset = (manual && opts.prefill != null)
     ? ` <button class="mini noprint" title="vrátit automatiku (${esc(pref)})" onclick="klReset('${escJs(id)}')">↺</button>` : '';
   return `<div class="kl-row"><div class="lbl">${label}</div><div>${field}</div><div class="src">${meta}${reset}</div></div>`;
@@ -230,7 +236,7 @@ function renderKryci() {
     const rows = s.pole.map(p => {
       if (p.bind) {   // obousměrné provázání s hlavičkou kalkulace (ZAK) – žádný ruční přepis
         return `<div class="kl-row"><div class="lbl">${p.label} ${znacka(p.verze)}</div>
-          <div><input type="text" value="${esc(get(p.bind))}" onchange="set('${p.bind}', this.value)"></div>
+          <div><input type="text" value="${esc(get(p.bind))}" onchange="set('${p.bind}', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''}></div>
           <div class="src"><span class="note" style="font-size:10px">${esc(p.src || 'hlavička kalkulace')} ↔</span></div></div>`;
       }
       const pref = p.prefill ? p.prefill(c) : null;
