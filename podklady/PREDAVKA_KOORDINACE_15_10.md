@@ -261,7 +261,7 @@ Náhled plánu: https://claude.ai/artifact/YYF76p9QthTbM8mA6UyfJH · Kokpit: htt
 ## Stav 16. 10. ~12:20 UTC (koordinace session_01NQjWzfqv1obHAg7DWPHAKH, kontext 63 %)
 
 - `main` = `test` = 1cbab3a (v15.10.14, release vydán). Šablona SoD projekce v3 nahraná J. V. do aplikace.
-- Běží: **S11** session_015fBoTjo5sPVrotmk1h5Nvz (`claude/b155-rozsah-pasu`, v16.10.1, B155 rozsah pásu — první commit 2b03b31), **S12** session_01ARSMBgZ2uFKva4VC1kj1qJ (`claude/leseni-spec-radek`, v16.10.2, e-mail D. S. body 2 a 3), **S13** session_01Stc6SXBihwz8ewqcX84f6k (`claude/cena-dle-nabidky`, v16.10.3, „cena dle nabídky“, návrh https://claude.ai/artifact/3eaLDMphHDZCqWTK66TEfc schválen).
+- Běží: **S11** session_015fBoTjo5sPVrotmk1h5Nvz (`claude/b155-rozsah-pasu`, v16.10.1, B155 rozsah pásu — první commit 2b03b31), **S12** session_01ARSMBgZ2uFKva4VC1kj1qJ (`claude/leseni-spec-radek`, v16.10.2, e-mail obchodníka body 2 a 3), **S13** session_01Stc6SXBihwz8ewqcX84f6k (`claude/cena-dle-nabidky`, v16.10.3, „cena dle nabídky“, návrh https://claude.ai/artifact/3eaLDMphHDZCqWTK66TEfc schválen).
 - **Pokyn J. V. 16. 10.: „až vše dokončíš, proveď rovnou sloučení do test“** — po souhrnech S11–S13 sloučit do integrace (S11 a S13 obě sahají do `src/vyjimky.js` / schvalování — pozor na konflikty), sady, celé kolo s mutacemi, fast-forward `test`, release odkaz (`release_odkaz.py` hlídá tag). Do `main` jen na pokyn.
 - Soupis změn pro obchodníky (main v14.10.3 → v15.10.14): https://claude.ai/artifact/DMWk88SYC2TphF3FJ7zSQS
 - Kokpit: https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2 (skill `.claude/skills/kokpit-koordinace`, nově pole `celkem` = odhad do konce úkolu; týdenní limit se nezobrazuje).

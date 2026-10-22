@@ -126,7 +126,7 @@ P.prekladSmaz('test nepovolený znak');
    * slovníkem —, ne jaká slova v ní stojí. */
   test('EN: sokl přeložen',
     /* hodnoty „co není součástí dodávky" v cizím jazyce začínají velkým
-     * písmenem (D. Sikora 3. 10. 2026) — porovnává se tedy bez prvního písmene */
+     * písmenem (obchodník 3. 10. 2026) — porovnává se tedy bez prvního písmene */
     en.placeholders.TS_NENI_SOKL.toLowerCase() === P.tr(cz.placeholders.TS_NENI_SOKL, 'en').toLowerCase()
     && /^\p{Lu}/u.test(en.placeholders.TS_NENI_SOKL)
     && ['slovník', 'vzor'].includes(P.trStav(cz.placeholders.TS_NENI_SOKL, 'en').zdroj),

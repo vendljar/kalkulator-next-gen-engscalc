@@ -266,7 +266,8 @@ test('a bez firemního údaje se symbol nevyrobí',
   const bezV3 = sodData(zO, vO, JEKLY, 'cz', { symboly: new Set(['CENA_BEZ_DPH']) });
   test('C6 šablona bez nových symbolů ani náhled nic navíc nemažou', !(bezV3.odstavcePryc || []).some(k => /^SOD_(CENA_NABIDKY|PRIPLATKY)/.test(k))
     && !(sodData(zO, vO, JEKLY, 'cz').odstavcePryc || []).some(k => /^SOD_(CENA_NABIDKY|PRIPLATKY)/.test(k)));
-  const nabidnute = objNabidnute(vO, JEKLY);
+  /* Jednotlivé příplatky (přechodové plechy jsou jedna položka — K6-K3, test_objednane.js). */
+  const nabidnute = objNabidnute(vO, JEKLY).filter(p => !['prechMat', 'prechMont'].includes(p.key));
   zO.objednane = { varianta: vO.id, klice: nabidnute.slice(0, 2).map(p => p.key), datum: '2026-10-20' };
   const s = sodData(zO, vO, JEKLY, 'cz', v4);
   const cislo = t => +String(t).replace(/[^0-9,]/g, '').replace(',', '.');

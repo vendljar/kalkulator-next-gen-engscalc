@@ -259,10 +259,24 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       const txt = x => (typeof x === 'string' ? x : '');
       /* Záznam jen z povolených polí (K6-S4) — cizí pole ani `__proto__` se
        * neuloží. Beze změny drží razítko uložené verze, klient ho nepřepíše. */
+      /* Obnova ze SOUBORU (K6-S7, rozhodnutí J. V. 22. 10. 2026; vzor B98):
+       * razítko ze souboru platí jen při shodě s databází (týž záznam i kdo/kdy),
+       * jinak ho dostane obnovující administrátor z relace. Obnova z otisku
+       * razítka přebírá, jak byla zálohována. */
+      const sedi = !!stara && !!stara.objednane && beze
+        && txt(o.kdo) === String(stara.objednane.kdo || '') && txt(o.kdy) === String(stara.objednane.kdy || '');
+      const zeZalohy = obnova && (!zeSouboru || sedi);
       zak.objednane = { varianta: o.varianta, klice: o.klice.slice(), datum: o.datum,
-        kdo: obnova ? txt(o.kdo) : beze ? String(stara.objednane.kdo || '') : String(relace.email || ''),
-        kdy: obnova ? txt(o.kdy) : beze ? String(stara.objednane.kdy || '') : new Date().toISOString() };
+        kdo: zeZalohy ? txt(o.kdo) : beze && !obnova ? String(stara.objednane.kdo || '') : String(relace.email || ''),
+        kdy: zeZalohy ? txt(o.kdy) : beze && !obnova ? String(stara.objednane.kdy || '') : new Date().toISOString() };
     } else if (zak.objednane !== undefined) delete zak.objednane;
+    /* Historie změn objednaných po tisku SoD (K6-K4) drží server: obnova
+     * z otisku ji bere ze zálohy (jen povolená pole), jinak začátek z databáze
+     * + záznam o změně z relace. */
+    if (obnova && !zeSouboru) {
+      const h = globalThis.objZmenyOciste(zak.objednaneZmeny);
+      if (h.length) zak.objednaneZmeny = h; else delete zak.objednaneZmeny;
+    } else globalThis.objZmenyServer(stara, zak, relace);
   }
   /* Rozměr šachty, který nedává smysl (B137, 12. 10. 2026) — záporný,
    * nečitelný pro jádro nebo zdvih nad 99 m — nikomu. Nulu a prázdno
@@ -392,6 +406,10 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
      * se u existujícího zámku berou z uložené verze (B62). */
     ULO.uloZamekRazitkaDrz(stara, zak);
   }
+  /* Záznam tisku SoD (K6-K4): otisk objednaných a cenu díla u NOVĚ připsaného
+   * tisku `sod` spočítá server sám (klient dodá jen měnu dokumentu). Obnova
+   * z otisku záznamy přebírá; ze souboru se počítají znovu (B98). */
+  if (globalThis.objSodZaznamyServer && (!obnova || zeSouboru)) globalThis.objSodZaznamyServer(stara, zak, JEKLY);
 
   /* ČÍSLO ODESLANÉ NABÍDKY MĚNÍ JEN ADMINISTRÁTOR (B56): zámek nese číslo
    * z okamžiku odeslání. Zámek od #320 se hlídá celý (cisloPapir), starší

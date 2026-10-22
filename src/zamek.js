@@ -518,6 +518,9 @@ function zamkniVariantu(v, info) {
      * razítko nemají (null) a dotisk se u nich na slovník neptá. */
     slovnik: (typeof slovnikRazitkoOciste === 'function') ? slovnikRazitkoOciste(info.slovnik) : null,
   };
+  /* Tisk SoD (K6-K4): otisk objednaných a cena díla, jak smlouva odešla
+   * (objSodSnimek; server ho u nového tisku spočítá znovu). */
+  if (info.sod && typeof info.sod === 'object') zaznam.sod = info.sod;
   if (variantaUzamcena(v)) {
     if (!Array.isArray(v.zamek.tisky)) v.zamek.tisky = [];
     v.zamek.tisky.push(zaznam);

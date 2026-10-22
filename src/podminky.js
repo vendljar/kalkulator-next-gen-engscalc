@@ -27,7 +27,7 @@
 
 /* Továrna = dnešní hodnoty z kódu (stav e3995e6), aby se výstup nezměnil. */
 /* TERMÍN HRUBOPISU DPZ BEZ STUDIE (D1) — rozhodnutí J. V. 20. 10. 2026 ~11:35:
- * pevných 12 týdnů s navázáním D. Sikory (na výstupy ze zaměření); se studií
+ * pevných 12 týdnů s navázáním obchodníka (na výstupy ze zaměření); se studií
  * zůstává „do 10–12 týdnů od schválení studie investorem a objednání". */
 const PODMINKY_TERMIN_DPZ_BEZ_STUDIE = 'do 12 týdnů od zpracování výstupů ze zaměření';
 

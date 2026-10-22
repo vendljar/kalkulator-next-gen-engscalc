@@ -1,7 +1,7 @@
-# #277 — Čtyři oddíly nabídky podle D. Sikory: skutečný stav a co zbývá
+# #277 — Čtyři oddíly nabídky podle obchodníka: skutečný stav a co zbývá
 
 > Podklad k rozhodnutí, připraven 23. 9. 2026 večer (dávka D4).
-> Zadání (mail D. Sikory, předán 21. 9. 2026): v nabídce chybí **PLATEBNÍ
+> Zadání (mail obchodníka, předán 21. 9. 2026): v nabídce chybí **PLATEBNÍ
 > PODMÍNKY, POŽADAVKY NA PROVEDENÍ REALIZACE, TERMÍNY REALIZACE, PŘEDÁNÍ
 > DÍLA**.
 
@@ -35,7 +35,7 @@ Ověřeno 23. 9. 2026 nad `src/nabidka.js`, `src/kryci.js` a šablonou
 `Sablona_NABIDKA_CN_v10.docx` z Drive (šablona zůstala mimo repozitář).
 
 Nabídka **PROJ** má vlastní platební podmínky a termíny pevně v šabloně
-(zaměření, studie…) a kapitoly IV.–VI. nemá. Mail D. Sikory mířil na OCK,
+(zaměření, studie…) a kapitoly IV.–VI. nemá. Mail obchodníka mířil na OCK,
 proto se tu PROJ neřeší.
 
 ## Co navrhuji (výchozí odpovědi — odpovězte jen tam, kde se chcete odchýlit)
@@ -52,10 +52,10 @@ proto se tu PROJ neřeší.
    pak vypustit, aby tam nebyla dvě různá čísla.
 3. **Konkrétní data** z krycího listu (převzetí staveniště, ukončení
    montáže, konečné předání) do nabídky **nedávat** a nechat je smlouvě.
-   Platí rozhodnutí z 21. 8. 2026: domlouvají se až u smlouvy. D. Sikora
+   Platí rozhodnutí z 21. 8. 2026: domlouvají se až u smlouvy. obchodník
    psal o oddílu „Termíny realizace“, ne o datech, a ten v nabídce je.
 4. **„Požadavky na provedení realizace“** nechat jako firemní standard
-   (Nastavení → Firma), ne jako pole zakázky. Šablony z mailu D. Sikory
+   (Nastavení → Firma), ne jako pole zakázky. Šablony z mailu obchodníka
    nemám. Pokud v nich je něco, co se liší zakázka od zakázky, pošlete je
    a doplním to.
 5. **#277 uzavřít** v roadmapě s odkazem na #282. Body 1 a 2 vést jako
@@ -64,5 +64,5 @@ proto se tu PROJ neřeší.
 ## Co je potřeba od vás
 
 - Souhlas s body 1–5, nebo odchylky.
-- Pokud chcete bod 4 řešit podle šablon D. Sikory: poslat ty šablony
+- Pokud chcete bod 4 řešit podle šablon obchodníka: poslat ty šablony
   (CZ/EN/DE).

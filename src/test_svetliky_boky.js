@@ -142,7 +142,7 @@ test('záporný ruční počet = 0', () => E.bokyPocet(zad({ bokyDveri: 'sklo', 
   /* Proti „zajistí stavba" se stejným počtem: konstrukce, terče i spoje jsou
    * tytéž, liší se jen plech výplně. */
   const st7 = spocti(zad({ bokyDveri: 'stavba', svetlikyBokyKs: 7 }));
-  test('plech: lakování obou stran (Tomáš)', () => blizko(pl.lakovani.tomas - st7.lakovani.tomas,
+  test('plech: lakování obou stran (lakovna B)', () => blizko(pl.lakovani.tomas - st7.lakovani.tomas,
     2 * plM2 * CENIK().lak.tomasOplechM2, 1e-6), () => [pl.lakovani.tomas, st7.lakovani.tomas]);
   test('plech: lakování obou stran (lakovna)', () => blizko(pl.lakovani.lakovna - st7.lakovani.lakovna,
     2 * plM2 * CENIK().lak.lakovnaM2, 1e-6));

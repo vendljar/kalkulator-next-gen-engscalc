@@ -1,4 +1,4 @@
-/* LEŠENÍ V TECHNICKÉ SPECIFIKACI ŘÍZENÉ KALKULACÍ (připomínka obchodu D. S.
+/* LEŠENÍ V TECHNICKÉ SPECIFIKACI ŘÍZENÉ KALKULACÍ (připomínka obchodu obchodník
  * 15. 10. 2026, bod 2; dávka S12, v16.10.2).
  *
  * Obchodník měl v Kalkulaci OCK mezi příplatky v nabídce LEŠENÍ - vnitřní
@@ -76,7 +76,7 @@ const radkyNeni = (s, L) => {
 
 const PRIPAD_DS = z => { z.typSachty = 'interiérová'; z.volitelne.leseniVnitrni = false; z.volitelne.leseniVnejsi = false; };
 const PRIPADY = [
-  /* snímek obrazovky D. S.: oba příplatky lešení zaškrtnuté v nabídce */
+  /* snímek obrazovky obchodník: oba příplatky lešení zaškrtnuté v nabídce */
   ['vnitřní šachta, oba příplatky lešení v nabídce', PRIPAD_DS, ['nabízeno jako příplatek', 'nabízeno jako příplatek']],
   ['exteriér, oba příplatky lešení v nabídce', z => { z.typSachty = 'exteriérová';
     z.volitelne.leseniVnitrni = false; z.volitelne.leseniVnejsi = false; }, ['nabízeno jako příplatek', 'nabízeno jako příplatek']],

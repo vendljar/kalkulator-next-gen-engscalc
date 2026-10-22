@@ -1,3 +1,30 @@
+# Předávka — 22. 10. 2026: dávka D5 — rozhodnutí J. V. k auditu K6 (v22.10.4), větev `claude/d5-rozhodnuti-k6`
+
+Nad integrací f1db496 (= test v22.10.1 + P1 v22.10.2). **Do integrace / test nic** — slučuje koordinace
+(session_01X93Edh1U8MQru6HV28FdBY). CHANGELOG `## v22.10.4 — D5`, `verze.txt` 22.10.4, roadmapa #484, #485,
+#491–#499 → hotovo / rozhodnuto, nová **#502** (cena v EUR v dlaždici). Paralelní Z1 (v22.10.3, zámek krycího listu):
+v `src/zamek.js` jen 3 řádky (záznam `sod` v tisku, `zamkniVariantu`), `priplatkyObjednane` ani zámek krycího listu nedotčeny.
+
+- **Hotovo:** K6-K3 plechy jednou položkou (`OBJ_SKUPINY`, `objPolozky`, server 400 na půlku), K6-K2 upozornění šablony
+  bez rozpisu, K6-K4 záznam tisku SoD (`tisky[i].sod`, server přepočítá, dotisk ze záznamu, export „Cena díla dle SoD“,
+  historie `objednaneZmeny`), K6-K5 potvrzení přepnutí varianty, K6-K9 měna karty, K6-S7 razítka obnovy ze souboru,
+  #485 závorka za symbolem (obal `trStavSeZavorkou` odstraněn), #502 EUR v dlaždici OCK/PROJ, K6-W5 jména → role,
+  K6-W6 vztahy místo částek; K6-S2/S5/K7 ponechány a zapsány (BEZPECNOST_MEZE.md, roadmapa). Příručka: novinky v22.10.4,
+  podkapitola „Objednané příplatky ve smlouvě o dílo“, cena v EUR (kap. 25).
+- **Testy:** viz CHANGELOG (pojistky); celá Node sada 240/0/1 (`test.js` přeskočen), statické 4/4. Mutace jádro 22/22, server 30/30, 0 přeživších; `--kontrola` 461 / 787.
+- **Otázky pro J. V.:** (1) #485 — text, za nímž v dokumentu „)“ vůbec není, aplikace nechá česky (O13), obal ho
+  překládal — po odstranění obalu se to v nástroji šablon změní (na reálných šablonách nejspíš nenastává; ověřit
+  při příští výrobě jazykových šablon). (2) K6-K4 — dotisk SoD nese objednané z prvního tisku; SoD vytištěná
+  před zaškrtnutím objednaných je tím „bez příplatků“ i při dotisku (obchodník je má zaškrtnout PŘED tiskem — příručka).
+  Souhlasí? (3) K6-W5 — jména souborů/větví (`test_*_sikora*`, `claude/d1-sikora`…) ponechána; harnessy šablon
+  (`overit_sablona.mjs`, `overit_nabidka_proj_word.mjs`) nesou jméno, e-mail a telefon kolegy jako NEGATIVNÍ kontrolu
+  (že ve vzoru nezůstaly) — přesunout do souboru mimo repo? (4) popisky ceníku „Tomáš – …“ přejmenovány na
+  „Lakovna B – …“ (klíče beze změny) — v pořádku?
+- **Pozor pro koordinaci:** prohlížečové sady nepouštěny (karta objednaných, dlaždice — `overit_*` může čekat staré
+  texty); mutace pouštěny v samostatném worktree filtry „K6-K“, „D5 EUR“, „#485“, „O13“ (jádro) a „objednane.js“,
+  „K6-S7“, „K6-K4“, „#447 C6“ (server).
+- **Další krok:** sloučení do integrace + celé kolo (koordinace).
+
 # Předávka — 22. 10. 2026: dávka Z1 — zmrazení krycích listů po tisku CN po polích (v22.10.3), větev `claude/z1-zmrazeni-kl`
 
 Nad integrací fcf14e3 (= test v22.10.1 + podklady). **Do integrace / test nic** — slučuje koordinace
@@ -377,7 +404,7 @@ session_01By6bWivtf2rTJYJFGVv8e1) ráno po K4 jako další verzi. Podklad: `podk
   mutace #447 18/18 (C1 11 + C2 7). Kolo `--bez-mutaci` s Playwrightem: 1. běh 282/7/6 → opraveno (49a9353),
   **2. běh (49a9353): 289 prošlo / 0 selhalo / 6 přeskočeno (jen KNG_PODKLADY a test.js) — VŠE ZELENÉ.**
 - **Zbývá:** C3 hromadný export za období na serveru (filtry, strop, protokol exportů, mez), C4 Pipedrive deal id
-  u zakázky + rozvržení PROJ s A. Mácovou (v prosinci).
+  u zakázky + rozvržení PROJ s controllingem (v prosinci).
 - **Ke slučování:** CHANGELOG oddíly „(bez verze) — C1“ a „— C2“, `netlify/mutace.mjs` (#447 + 2 opravené #401),
   `obnova.mjs`/`zalohovani.mjs` (část controlling), `online_ui.js` (obnova + načtení po přihlášení), `build.py`,
   `jadro_moduly.cjs`, `overit_online.mjs` (cesta /api/controlling), `test_escape.js` (PROVERENO), `test_csv_vzorce.js`,
@@ -563,7 +590,7 @@ Nad `test` (`5dc28d1`, v20.10.1). Do `test` / `main` / `test-draft` / integrace 
 - **Při slučování:** konflikty v CHANGELOG / PREDAVKA / `verze.txt` / `manual/obsah.json` (záhlaví verze, Co je nového)
   / roadmapě (id 438 může kolidovat s paralelními dávkami).
 
-# Předávka — 20. 10. 2026: dávka D2 (v20.10.4), větev `claude/d2-proj-sikora` — šablona nabídky PROJ D. Sikory
+# Předávka — 20. 10. 2026: dávka D2 (v20.10.4), větev `claude/d2-proj-sikora` — šablona nabídky PROJ obchodníka
 
 Nad `claude/integrace-16-10` (5dc28d1 + 6fe92d8). Do integrace / `test` nic — slučuje koordinace
 „ŘÍDÍCÍ 20.10“ (session_01Ln2mMn7iC6W9ECztHTJpZe), pořadí O7 → D1 → D2. Podklad `podklady/D2_SIKORA_PROJ.md`,
@@ -581,7 +608,7 @@ CHANGELOG v20.10.4, roadmapa #260 (uzavřeno), #444–#446 (předběžná id).
   úvod/cestovné D2, návratový objekt), CHANGELOG/verze/příručka (novější nahoru), `mutace_jadro.mjs`.
 - **Čeká na J. V.:** cena výjezdu v ceníku PROJ (zveřejnit), šablona v8 (S10), kontrola překladů D2.
 
-# Předávka — 20. 10. 2026: dávka D1 (v20.10.3), větev `claude/d1-sikora` — postřehy D. Sikory 19. 10.
+# Předávka — 20. 10. 2026: dávka D1 (v20.10.3), větev `claude/d1-sikora` — postřehy obchodníka 19. 10.
 
 Nad `claude/integrace-16-10` (5dc28d1, v20.10.1). Do integrace / `test` nic — slučuje koordinace
 (session_017KEALG3ppimL5fW2XswzrB); O7 má souběžně v20.10.2. Podklad `podklady/D1_SIKORA_19_10.md`,
@@ -1128,7 +1155,7 @@ B158, B159, B161, B162a, B164").
 # Předávka — 16. 10. 2026: dávka S13 (v16.10.3), větev `claude/cena-dle-nabidky` — příznak ceníku „cena dle nabídky"
 
 Nad `origin/test` (1cbab3a, v15.10.14). Zadání J. V. 16. 10. (varianta A,
-e-mail D. S. 15. 10.: vlastní cena prosklené stěny blokovala tisk nabídky).
+e-mail obchodníka 15. 10.: vlastní cena prosklené stěny blokovala tisk nabídky).
 Do `test-draft` / `test` / `main` nic — sloučení a celé kolo dělá koordinace
 (session_01NQjWzfqv1obHAg7DWPHAKH). Podrobnosti: CHANGELOG v16.10.3.
 
@@ -1155,7 +1182,7 @@ Do `test-draft` / `test` / `main` nic — sloučení a celé kolo dělá koordin
 
 # Předávka — 16. 10. 2026: dávka S12 (v16.10.2), větev `claude/leseni-spec-radek` — lešení a vlastní řádky specifikace v CN
 
-Nad `origin/test` (1cbab3a, v15.10.14). Připomínky D. S. 15. 10. 2026, body 2
+Nad `origin/test` (1cbab3a, v15.10.14). Připomínky obchodníka 15. 10. 2026, body 2
 a 3. Do `test-draft` / `test` / `main` nic — sloučení a celé kolo dělá
 koordinace (session_01NQjWzfqv1obHAg7DWPHAKH). Podrobnosti: CHANGELOG v16.10.2.
 
@@ -1174,7 +1201,7 @@ koordinace (session_01NQjWzfqv1obHAg7DWPHAKH). Podrobnosti: CHANGELOG v16.10.2.
   (ne „lze doplnit – viz příplatkové ceny" z N49); sekce DALŠÍ UJEDNÁNÍ za
   SOUČÁSTÍ DODÁVKY NENÍ.
 - **Pozor pro obchodníka:** kdo si vnitřní lešení dřív přidal vlastním
-  řádkem (jako D. S.), uvidí ho teď dvakrát — vlastní řádek smazat.
+  řádkem (jako obchodník), uvidí ho teď dvakrát — vlastní řádek smazat.
 - **Při slučování:** konflikty čekej v CHANGELOG, PREDAVKA, `verze.txt`,
   `manual/obsah.json`, `roadmapa/roadmap.json` (#421 — S11 si mohla vzít
   totéž číslo, přečíslovat při slučování) a v `MUTACE` v `mutace_jadro.mjs`.
@@ -1657,7 +1684,7 @@ nad sloučeným stavem.
 
 # Předávka — 14. 10. 2026: větev `claude/pripominky-14-10` (v14.10.2), připomínky obchodu
 
-Z `test-draft` (v14.10.1, 823c61e). Připomínky D. Sikory a J. Laudy,
+Z `test-draft` (v14.10.1, 823c61e). Připomínky obchodníka a obchodního technika,
 rozhodnutí J. V. 14. 10. Do `test-draft` / `test` / `main` nic — rozhodne J. V.
 Podrobnosti a testy před/po: CHANGELOG v14.10.2.
 
@@ -2113,7 +2140,7 @@ do testu a odkaz na release"). Obsahuje #395 (v8.10.1, větev
 `claude/cenik-395`) a #396 (větev `claude/nabidka-usazeni-telefon`):
 usazení OCK v nabídce podle specifikace (levá/pravá boční stěna, řádky bez
 volby pryč; Word CN v14 je dostane do řádku „boční stěny"), tlačítko
-Kontakt… u účtů. Telefon D. Sikory opravil J. V. v profilu (chyba v účtu).
+Kontakt… u účtů. Telefon obchodníka opravil J. V. v profilu (chyba v účtu).
 `main` = v30.9.1. Release v6.10.1 a v12.10.1 čekají na J. V.
 
 Čeká na J. V.: B126 (vysoká) + B127, B128, B131 z auditu 6. 10. (výchozí:
@@ -2131,7 +2158,7 @@ Sezení session_01DrQLceJMdr6XWCvRcFSjbY (založené ze session_01FbEVKCocjc6ZDk
 zatím nevydán (odkaz J. V. poslán 8. 10.; releasy do v2.10.1 včetně).
 
 Pokyn J. V. 8. 10.: „souhlasím s výchozími návrhy, začni #395". Mail
-D. Sikory z 18. 9. (role zadavatele / sleva do CN) ověřen jako vyřešený:
+obchodníka z 18. 9. (role zadavatele / sleva do CN) ověřen jako vyřešený:
 v25.9.6 (volba role z karty slevy zmizela, server roli bere z relace)
 a v29.9.1 #364 (činnosti PROJ v nabídce za cenu před slevou) — obojí v `main`.
 
@@ -2228,7 +2255,7 @@ a `test` až na pokyn J. V. Sezení session_01FbEVKCocjc6ZDk2hyoDe3k.
 | B | B119 přísné ověření nového zámku, B120 obnova překladů dodatků, B121 rejstřík, B122 symboly v textu plateb | #393 | ✅ |
 | C | B115 kontrola obsahu šablon, B116 vrácení verze, B100 obnova šablon | — | ✅ |
 | E | B124 overit_xss (215 → 299), B125 CI; šablony SoD v2 předány J. V. (SendUserFile) | — | ✅ |
-| Sikora | poznámka *) jen s IČ, velká písmena v Out of scope, Follow project milestones, název souboru v jazyce | #394 | ✅ |
+| obchodník | poznámka *) jen s IČ, velká písmena v Out of scope, Follow project milestones, název souboru v jazyce | #394 | ✅ |
 | Revize | dva nezávislí revizoři: B119 vždy přísně, šablony bez 5 dalších obchvatů, strop rejstříku, doprava PROJ, záporná sazbaKc, duplicitní sekce, čísla jako jádro | #395 (zbytky) | ✅ |
 | F | rozbor polí Pipedrive `podklady/PIPEDRIVE_POLE_DEALU_ROZBOR_2026-10-06.md` + xlsx s návrhem vyjádření (SendUserFile) | — | ✅ |
 | H | 21. kolo (protokol + audit na Disk) | — | ⬜ nestihlo se |
@@ -2254,7 +2281,7 @@ nad 5b3213d selhalo jen na zadání mutace B59 (úsek změnil B119) — opraveno
   Pozor: navržené názvy polí by rozbily párování `pd_mapa.mjs` (#114).
 - Nahrát šablony SoD realizace v2 a SoD PROJ v2 a nabídky PROJ v4
   (Nastavení → Šablony) v testu i v ostré.
-- Sikora S2: česká nabídka zůstala malými písmeny (výchozí: ponechat).
+- Obchodník S2: česká nabídka zůstala malými písmeny (výchozí: ponechat).
   Word PROJ má poznámku *) pevně v šabloně — zmizí jen z online nabídky
   (výchozí: v šabloně PROJ v5 nahradit symbolem).
 - Převod v6.10.1 do `test-draft` a `test` („pošli do testu"), release

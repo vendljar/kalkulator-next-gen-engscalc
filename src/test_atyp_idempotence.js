@@ -1,7 +1,7 @@
 /* ===== PŘEPÍNAČ ATYP NESMÍ PŘEPISOVAT RUČNÍ HODNOTY =====
  * (nálezy C1 z testování obchodníkem a V39 ze 4. kola, 15. 9. 2026)
  *
- * D. Sikora, 10. 9. 2026: „při prokliknutí políčka ATYP se automaticky doplní
+ * obchodník, 10. 9. 2026: „při prokliknutí políčka ATYP se automaticky doplní
  * do ceny zámečníka atyp 25 000. Ta cena atypu bude pokaždé jiná — jako
  * začátek by mohlo být těch 25 000, ale pokud se ta částka změní, tak by ji
  * to tlačítko ATYP měnit zpět na 25 000 nemělo." Na 2026-OPR-CN-0290 to po

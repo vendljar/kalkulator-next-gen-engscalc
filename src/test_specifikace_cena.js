@@ -133,7 +133,7 @@ REZIMY.forEach(([rezim, jm]) => {
   const vneBez = hodnota('leseniVne', ext(false), null, rezim);
   test('exteriérová bez lešení: „lze doplnit viz příplatkové ceny"' + sfx,
     /příplatkové ceny/.test(vneBez.text), vneBez);
-  /* Od v16.10.2 (D. S. 15. 10. 2026, bod 2) navrhuje text kalkulace: příplatek
+  /* Od v16.10.2 (obchodník 15. 10. 2026, bod 2) navrhuje text kalkulace: příplatek
    * vnějšího lešení je v nabídce → „nabízeno jako příplatek" (štítek „z kalkulace"),
    * dřív stál výchozí „zajistí objednatel v rámci SP" (test_leseni_specifikace.js). */
   const neniBez = hodnota('neni3', ext(false), null, rezim);

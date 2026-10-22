@@ -377,7 +377,7 @@ function zamekSnimkyUlozeno(ids) { (ids || []).forEach(id => ZAMEK_SNIMEK_NEULOZ
 /* Volá se ze dvou míst: po stažení nabídky do Wordu a z tiskového náhledu
  * (okno náhledu si sáhne přes window.opener). Zamykají jen dokumenty, které
  * jdou zákazníkovi – viz ZAMEK_DOKUMENTY v zamek.js. */
-function zamekPoTisku(typ, varId, sablona) {
+function zamekPoTisku(typ, varId, sablona, navic) {
   if (!dokumentZamyka(typ)) return null;
   const v = (varId && ZAK.varianty.find(x => x.id === varId)) || aktivniVarianta(ZAK);
   if (!v) return null;
@@ -415,7 +415,7 @@ function zamekPoTisku(typ, varId, sablona) {
   const snimek = (prvni && typeof zamekSnimekSpocti === 'function') ? zamekSnimekSpocti(v) : null;
   if (snimek) ZAMEK_SNIMEK_NEULOZENY.add(v.id);
   zamkniVariantu(v, { typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek,
-                      sablona: sablona || null, slovnik: zamekSlovnikTed() });
+                      sablona: sablona || null, slovnik: zamekSlovnikTed(), sod: (navic && navic.sod) || null });
   render();
   return v.zamek;
 }

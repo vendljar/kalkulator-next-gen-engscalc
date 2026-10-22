@@ -240,7 +240,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     TS_SKEN3D: ts('sken3d'), TS_VYSTUP_ZAMERENI: ts('vystupZamereni'),
     TS_DILENSKA_DOK: ts('dilenskaDok'), TS_STATIKA: ts('statika'),
     TS_NENI_OSVETLENI: ts('neni1'), TS_NENI_VENTILATOR: ts('neni2'),
-    /* Lešení v SOUČÁSTÍ DODÁVKY NENÍ se řídí kalkulací (D. S. 15. 10. 2026,
+    /* Lešení v SOUČÁSTÍ DODÁVKY NENÍ se řídí kalkulací (obchodník 15. 10. 2026,
      * bod 2): prázdné, když je lešení v základní ceně (řádek zmizí), jinak
      * návrh z tsLeseniNeniRadek nebo ruční text. Šablony CN do v15 symbol
      * vnitřního lešení nemají — řádek se do Wordu naklonuje (tsRadkyNavic). */
@@ -281,7 +281,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     PRIP_LESENI_VNEJSI: prip('leseniVnejsi'),
     PRIP_SKN: prip('skn'),
   };
-  /* „CO NENÍ SOUČÁSTÍ DODÁVKY" V CIZÍM JAZYCE S VELKÝM PÍSMENEM (D. Sikora
+  /* „CO NENÍ SOUČÁSTÍ DODÁVKY" V CIZÍM JAZYCE S VELKÝM PÍSMENEM (obchodník
    * 3. 10. 2026: „některé položky začínají velkým písmenem a jiné malým …
    * sjednoť to prosím na VELKÉ písmeno"). Hodnoty jsou překlady vět, které
    * česky začínají malým („zajistí objednatel", „není součástí nabídky"),
@@ -341,7 +341,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    *
    * Wordová šablona je má, aplikace je neuměla — tiskla tedy nabídku bez
    * kapitol POŽADAVKY PRO PROVEDENÍ REALIZACE, TERMÍNY REALIZACE, PŘEDÁNÍ
-   * DÍLA a bez závěrečných doložek. D. Sikora to hlásil slovy „nám tam
+   * DÍLA a bez závěrečných doložek. Obchodník to hlásil slovy „nám tam
    * schází úplně". Texty jsou firemní standard (Nastavení → Firma), každý
    * jazyk má vlastní.
    *
@@ -482,7 +482,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     });
   });
 
-  /* NÁZEV SOUBORU V JAZYCE NABÍDKY (D. Sikora 3. 10. 2026: „jeste by mohl
+  /* NÁZEV SOUBORU V JAZYCE NABÍDKY (obchodník 3. 10. 2026: „jeste by mohl
    * kalkulak generovat nazvy souboru v jazyce cenova nabidky — EN price
    * quotation, DE angebot"). Přípona jazyka zůstává. */
   const nazevSouboru = nabidkaSlovoSouboru(L) + '_' + (placeholders.CISLO_NABIDKY || 'CN')
@@ -495,11 +495,11 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    * strana Wordu vozila fotografii cizí stavby ze šablony. */
   Object.assign(placeholders,
     typeof uvodniFotoSymboly === 'function' ? uvodniFotoSymboly(zak) : {});
-  /* ŘÁDKY TABULKY, PRO KTERÉ ŠABLONA NEMÁ SYMBOL (D. S. 15. 10. 2026).
+  /* ŘÁDKY TABULKY, PRO KTERÉ ŠABLONA NEMÁ SYMBOL (obchodník 15. 10. 2026).
    * docxgen je naklonuje z řádku `kotva` (formát zůstane) a vepíše popisek
    * v jazyce dokumentu; šablona, která symbol už nese, dostane hodnotu do
    * svého řádku a klon nevznikne. Prázdná hodnota = řádek se nevkládá. */
-  /* VLASTNÍ ŘÁDKY SPECIFIKACE (D. S. 15. 10. 2026, bod 3). Tlačítko „+ přidat
+  /* VLASTNÍ ŘÁDKY SPECIFIKACE (obchodník 15. 10. 2026, bod 3). Tlačítko „+ přidat
    * vlastní řádek" plní `techspec.extra` a obrazovka je ukazuje pod nadpisem
    * DALŠÍ UJEDNÁNÍ — nabídka je dosud nečetla vůbec, takže řádek zákazníkovi
    * nikdy neodešel. Do nabídky jdou jako sekce DALŠÍ UJEDNÁNÍ za SOUČÁSTÍ
@@ -594,7 +594,7 @@ function usazeniBocniSloucene(ph, P) {
 /* Slovo „nabídka" na začátku názvu souboru podle jazyka dokumentu. */
 const NABIDKA_SOUBOR_SLOVO = { cz: 'NABÍDKA', en: 'PRICE_QUOTATION', de: 'ANGEBOT', fr: 'DEVIS' };
 function nabidkaSlovoSouboru(L) { return NABIDKA_SOUBOR_SLOVO[L] || NABIDKA_SOUBOR_SLOVO.cz; }
-/* `extra` (nepovinné, D. S. 15. 10. 2026) = data.tsExtra z nabidkaData —
+/* `extra` (nepovinné, obchodník 15. 10. 2026) = data.tsExtra z nabidkaData —
  * vlastní řádky specifikace, už přeložené; tvoří sekci DALŠÍ UJEDNÁNÍ. */
 function nabidkaNahledSekce(ph, lang, platby, extra) {
   const L = lang || 'cz';
@@ -658,7 +658,7 @@ function nabidkaNahledSekce(ph, lang, platby, extra) {
       /* Řádek zmizí, když je vnější lešení v základní ceně (P8/7) — dodávku
        * pak říká LEŠENÍ – VNĚ ŠACHTY výš. Word ho vyhodí sám (prázdný TS_*),
        * náhled se musí zeptat tady, stejně jako u soklu. */
-      ...(ph.TS_NENI_LESENI_VNITRNI ? [['LEŠENÍ VNITŘNÍ PRO STAVBU OCK', ph.TS_NENI_LESENI_VNITRNI]] : []),   // D. S. 15. 10.
+      ...(ph.TS_NENI_LESENI_VNITRNI ? [['LEŠENÍ VNITŘNÍ PRO STAVBU OCK', ph.TS_NENI_LESENI_VNITRNI]] : []),   // obchodník 15. 10.
       ...(ph.TS_NENI_LESENI ? [['LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ', ph.TS_NENI_LESENI]] : []),
       ['ODBĚRNÉ MÍSTO EL. ENERGIE PO DOBU REALIZACE', ph.TS_NENI_ODBERNE], ['ÚLOŽNÉ PROSTORY', ph.TS_NENI_ULOZNE],
       ['DOZDĚNÍ KOLEM ŠACHETNÍCH DVEŘÍ', ph.TS_NENI_DOZDENI], ['STAVEBNÍ PŘÍPRAVA', ph.TS_NENI_STAVEBNI],
@@ -681,7 +681,7 @@ function nabidkaNahledSekce(ph, lang, platby, extra) {
    *
    * Do 21. 9. 2026 nabídka končila cenou. Wordová šablona přitom měla ještě
    * čtyři kapitoly a dvě doložky — dokument z aplikace se tedy s dokumentem,
-   * který zákazník dostal, neshodoval. D. Sikora: „nám tam schází úplně".
+   * který zákazník dostal, neshodoval. obchodník: „nám tam schází úplně".
    *
    * KAPITOLA III. SE SKLÁDÁ Z ÚDAJŮ ZAKÁZKY, ne z pevného textu: zálohy,
    * splatnost i platnost nabídky už v krycím listu jsou a do šablony jdou

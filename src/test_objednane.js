@@ -62,7 +62,9 @@ test('nezamčená varianta nenabízí nic', O.objNabidnute(Object.assign(kopie(v
 /* ---- objKontrola: pravidla zápisu ---- */
 const K = (stara, nova, rel, ted) => O.objKontrola(stara, nova, rel, { jekly: JEKLY, ted: ted || TED });
 const sObj = (z, klice, datum) => { const n = kopie(z); n.objednane = { varianta: v.id, klice, datum: datum || '2026-10-20' }; return n; };
-const k1 = nab[0].key, k2 = nab[1].key;
+/* Jednotlivé příplatky (přechodové plechy jsou dvojice — K6-K3, vlastní blok níž). */
+const nabJ = nab.filter(p => !O.OBJ_SKUPINY.some(g => g.klice.includes(p.key)));
+const k1 = nabJ[0].key, k2 = nabJ[1].key;
 test('obchodník zakázky zapíše objednaný příplatek', K(zak, sObj(zak, [k1]), OBCH) === null);
 test('jiný obchodník ne (403)', (K(zak, sObj(zak, [k1]), JINY) || {}).status === 403);
 test('vedoucí a administrátor ano', K(zak, sObj(zak, [k1]), VED) === null && K(zak, sObj(zak, [k1]), ADM) === null);
@@ -124,7 +126,7 @@ test('po podpisu SoD bez předchozího záznamu: obchodník nezapíše (403)', (
   test('objNastav s prázdným seznamem záznam smaže', O.objNastav(z, z.varianty[0], []) === '' && !('objednane' in z));
   const zn = kopie(zak); zn.varianty[0].zamek = null;
   test('objNastav k nezamčené variantě vrátí chybu', /zamčené/.test(O.objNastav(zn, zn.varianty[0], [k1])));
-  test('text krycího listu', O.objText(ulozena, ulozena.varianty[0], JEKLY) === '1 – ' + nab[0].nazev + ' (20. 10. 2026)'
+  test('text krycího listu', O.objText(ulozena, ulozena.varianty[0], JEKLY) === '1 – ' + nabJ[0].nazev + ' (20. 10. 2026)'
     && O.objText(zak, v, JEKLY) === 'nic objednáno');
   if (typeof kryciCtx === 'function') {
     let ctx = null; try { ctx = kryciCtx(ulozena, ulozena.varianty[0], JEKLY); } catch (e) { ctx = { chyba: e.message }; }

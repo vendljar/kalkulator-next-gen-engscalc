@@ -53,8 +53,8 @@ const test = (n, cond, info) => {
 {
   const zak = novaZakazka();
   zak.cislo = '2026 - OPR - CN - 0383';
-  zak.nazevAkce = 'Výtah Lauda';
-  zak.objednatel = 'Jiří Lauda';
+  zak.nazevAkce = 'Výtah Zkušební';
+  zak.objednatel = 'Jan Zkušební';
   zak.ico = '12345678';
   zak.uloRazitko = 'razitko-puvodni';
   zak.autor = 'obchodnik@priklad.cz';
@@ -96,7 +96,7 @@ const test = (n, cond, info) => {
 
   /* Hlavička — to je ta práce, kvůli které se duplikuje. */
   test('hlavička se zkopírovala',
-    nova.nazevAkce === 'Výtah Lauda' && nova.objednatel === 'Jiří Lauda' && nova.ico === '12345678',
+    nova.nazevAkce === 'Výtah Zkušební' && nova.objednatel === 'Jan Zkušební' && nova.ico === '12345678',
     [nova.nazevAkce, nova.objednatel, nova.ico]);
   test('zadání variant se zkopírovalo',
     nova.varianty.length === 3

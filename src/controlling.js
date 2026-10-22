@@ -2,7 +2,7 @@
  * CONTROLLING — nákladové skupiny (kapitoly) a rozvrh předkalkulace
  * (#447, dávka C1, 20. 10. 2026; návrh podklady/CONTROLLING_NAVRH_20_10.md)
  *
- * Zadání J. V.: dát controllingu (A. Mácová) předkalkulované náklady
+ * Zadání J. V.: dát controllingu předkalkulované náklady
  * rozdělené do nákladových skupin tak, aby šly v Reporting CZ porovnat
  * s účetními daty z Heliosu (PRE × POST).
  *
@@ -10,7 +10,7 @@
  *   1. ČÍSELNÍK SKUPIN (kapitol) — název, položka manažerské výsledovky,
  *      účet Helios nyní / budoucí, přímý × nepřímý, variabilní × fixní;
  *   2. MAPOVÁNÍ KLÍČE → SKUPINA — podle STABILNÍHO KLÍČE ceníku (`C.…`,
- *      `PC.…`), nikdy podle názvu (Andy 1. 9. 2026: „určitě ty položky mají
+ *      `PC.…`), nikdy podle názvu (controlling 1. 9. 2026: „určitě ty položky mají
  *      nějaké primární klíče, abychom to nemuseli párovat jen dle názvu");
  *   3. ROZVRH VÝSLEDKU VÝPOČTU do skupin — řádek kalkulace → klíč → skupina.
  *
@@ -19,7 +19,7 @@
  * nemění. Engine se tím nedotkne, Model 1 zůstává 1:1 a nová funkce nemůže
  * pohnout cenou ani o korunu.
  *
- * Výchozí obsah = rozvržení A. Mácové (tabulka „CENIK_2025-v2.9.4_rozvrzeni
+ * Výchozí obsah = rozvržení controllingu (tabulka „CENIK_2025-v2.9.4_rozvrzeni
  * nakladu", 15. 9. 2026) doplněné o položky, které přibyly později, a o
  * rozhodnutí J. V. 20. 10. 2026 (J1–J11 v podkladu). Do kódu nepatří ceny —
  * jen klíče, názvy, skupiny a čísla účtů z účtové osnovy.
@@ -38,7 +38,7 @@ const CTRL_CHOVANI = ['variabilni', 'fixni'];
 const CTRL_OBLASTI = ['ock', 'proj', 'obe'];
 
 /* ČÍSELNÍK SKUPIN. `id` je stabilní (na něj ukazuje mapování i export),
- * `nazev` jde v Nastavení přejmenovat. Účty jsou pole — Andy u lakování,
+ * `nazev` jde v Nastavení přejmenovat. Účty jsou pole — controlling u lakování,
  * projekce a zámečníků uvádí dva (518800 a 518001). */
 const CTRL_SKUPINY_VYCHOZI = [
   { id: 'cestovne', nazev: 'Cestovné', manVysl: 'Ostatní přímé náklady',
@@ -50,7 +50,7 @@ const CTRL_SKUPINY_VYCHOZI = [
   { id: 'sl-stavebni', nazev: 'Ostatní služby – stavební práce', manVysl: 'Stavební práce – kooperace',
     ucetNyni: ['518800'], ucetBudouci: [], typ: 'primy', chovani: 'variabilni', oblast: 'ock' },
   /* J3 (20. 10. 2026): 3D zaměření dělá interně náš technik/projektant —
-   * zůstává tady (projekce), Andy to dostane jako odpověď na svůj dotaz. */
+   * zůstává tady (projekce), controlling to dostane jako odpověď na svůj dotaz. */
   { id: 'sl-projekce', nazev: 'Ostatní služby – projekce, engineering a dokumentace', manVysl: 'Ostatní služby k zakázkám',
     ucetNyni: ['518800', '518001'], ucetBudouci: [], typ: 'primy', chovani: 'variabilni', oblast: 'ock' },
   { id: 'sl-leseni', nazev: 'Ostatní služby – lešení', manVysl: 'Ostatní služby k zakázkám',
@@ -76,7 +76,7 @@ const CTRL_SKUPINY_VYCHOZI = [
    * skupině je při porovnání se skutečností vidět, kolik se spotřebovalo. */
   { id: 'rezerva', nazev: 'Rezerva', manVysl: '',
     ucetNyni: [], ucetBudouci: [], typ: 'neprimy', chovani: 'variabilni', oblast: 'ock' },
-  /* PROJ — zatím NÁVRH (Andy rozvrhla jen OCK; PROJ s ní v prosinci). */
+  /* PROJ — zatím NÁVRH (controlling rozvrhl jen OCK; PROJ s ním v prosinci). */
   { id: 'proj-prace', nazev: 'Projekce – vlastní práce', manVysl: '',
     ucetNyni: [], ucetBudouci: [], typ: 'primy', chovani: 'variabilni', oblast: 'proj' },
   { id: 'proj-subdodavky', nazev: 'Projekce – subdodávky', manVysl: '',
@@ -571,6 +571,16 @@ function ctrlKatalogNazvy(katalog, cenikProj) {
  * „Stav Pipedrive" a „Stav Pipedrive načten" (poslední známý stav dealu,
  * jen informace — filtry exportu se nemění). */
 const CTRL_EXPORT_VERZE = 3;
+function ctrlCenaDilaSod(v) {
+  const z = (typeof objSodZaznam === 'function') ? objSodZaznam(v) : null;
+  return z && z.bezDphKc !== null && isFinite(+z.bezDphKc) && z.bezDphKc !== '' ? +z.bezDphKc : null;
+}
+function ctrlObjZmenenoPoSod(zak, v) {
+  if (typeof objZmenenoPoSod !== 'function' || !objZmenenoPoSod(zak, v)) return '';
+  const h = Array.isArray(zak.objednaneZmeny) ? zak.objednaneZmeny.filter(x => x && x.varianta === v.id) : [];
+  const z = h[h.length - 1];
+  return 'ano' + (z ? ' (' + String(z.kdo || '') + ', ' + String(z.kdy || '').slice(0, 10) + ')' : '');
+}
 function ctrlExportVarianty(zak, v, opts) {
   const o = opts || {};
   if (!zak || !v) return { ok: false, chyba: 'Není otevřená žádná zakázka.' };
@@ -619,6 +629,11 @@ function ctrlExportVarianty(zak, v, opts) {
     pdStav: pdStavText(zak), pdStavNacteno: pdStavNactenoText(zak),
     datumProdeje: obj ? String(obj.datum || '') : '',
     zmrazeno: !!(zamek.vysledek),
+    /* K6-K4 (rozhodnutí J. V. 22. 10. 2026): cena díla z posledního záznamu
+     * tisku SoD (Kč bez DPH, jak smlouva odešla) a zda se objednané od tisku
+     * změnily — kdo a kdy z historie objednaneZmeny (píše server). */
+    cenaDilaSod: ctrlCenaDilaSod(v),
+    objZmenenoPoSod: ctrlObjZmenenoPoSod(zak, v),
   };
   return { ok: true, hlavicka, strany, radky, kapitoly: ctrlKapitoly(radky, { data: o.data, jenZaklad: true }),
     kdy: o.kdy || new Date().toISOString(), kdo: String(o.kdo || ''), build: String(o.build || '') };
@@ -846,7 +861,7 @@ function ctrlVZakladuText(r) { return r.vZakladu ? 'ano' : 'ne (příplatek – 
  *
  * C3 (21. 10. 2026): `exp` smí být i POLE exportů — hromadný export za
  * období skládá víc zakázek do jednoho sešitu se STEJNÝMI listy a sloupci
- * (Andy si je v Reportingu páruje jedním převodníkem). Hlavička zakázky jde
+ * (controlling si je v Reportingu páruje jedním převodníkem). Hlavička zakázky jde
  * do každého řádku z jejího vlastního exportu. `opts.hromadny` = popis
  * výběru (období, oblast, řada, přeskočené) do listu Popis; bez něj je
  * výstup pro jednu variantu beze změny proti C2. */
@@ -927,6 +942,8 @@ function ctrlExportListy(exp, data, opts) {
   popis.push(['List Řádky', 'náklady v ceně nabídky a příplatky, které zákazník dodatečně objednal (sloupec Objednáno dodatečně = ano); bez nich součet sloupce Náklad celkem = náklad základní ceny nabídky']);
   const prodane = exps.filter(e => e.hlavicka.datumProdeje);
   if (!hr && prodane.length) popis.push(['Datum prodeje (objednané příplatky)', prodane[0].hlavicka.datumProdeje]);
+  if (!hr && prvni.hlavicka && prvni.hlavicka.cenaDilaSod != null) popis.push(['Cena díla dle SoD (Kč bez DPH)', ctrlZaokr(prvni.hlavicka.cenaDilaSod)]);
+  if (!hr && prvni.hlavicka && prvni.hlavicka.objZmenenoPoSod) popis.push(['Objednané změněny po tisku SoD', prvni.hlavicka.objZmenenoPoSod]);
   if (hr) popis.push(['Zakázek s objednanými příplatky', prodane.length]);
   popis.push(['List ' + CTRL_LIST_PRIPLATKY, 'příplatky nabídnuté jako volba (mimo cenu nabídky), stejné sloupce jako Řádky']);
   popis.push([]);
@@ -935,10 +952,12 @@ function ctrlExportListy(exp, data, opts) {
     CTRL_TYP_TEXT[s.typ] || '', CTRL_CHOVANI_TEXT[s.chovani] || '', s.oblast]));
   if (hr) {
     popis.push([]);
-    popis.push(['Zakázky v exportu', 'Název akce', 'Zákazník', 'Zamčeno', 'Řada', 'Oblast', 'Výsledek', 'Datum prodeje']);
+    popis.push(['Zakázky v exportu', 'Název akce', 'Zákazník', 'Zamčeno', 'Řada', 'Oblast', 'Výsledek', 'Datum prodeje',
+      'Cena díla dle SoD (Kč bez DPH)', 'Objednané změněny po tisku SoD']);
     exps.forEach(e => popis.push([e.strany.map(s => s.cislo).join(' + '), e.hlavicka.nazevAkce, e.hlavicka.zakaznik,
       e.hlavicka.zamceno, e.hlavicka.rada, e.strany.map(s => s.oblast.toUpperCase()).join(' + '),
-      e.hlavicka.zmrazeno ? 'zmrazený' : 'přepočtený', e.hlavicka.datumProdeje || '']));
+      e.hlavicka.zmrazeno ? 'zmrazený' : 'přepočtený', e.hlavicka.datumProdeje || '',
+      e.hlavicka.cenaDilaSod != null ? ctrlZaokr(e.hlavicka.cenaDilaSod) : '', e.hlavicka.objZmenenoPoSod || '']));
     const presk = Array.isArray(hr.preskoceno) ? hr.preskoceno : [];
     if (presk.length) {
       popis.push([]);
@@ -972,7 +991,7 @@ function ctrlExportCsv(exp, data, opts, list) {
   return '﻿' + rows.map(r => r.map(ctrlCsvBunka).join(';')).join('\r\n') + '\r\n';
 }
 
-/* ---------- export / import mapování (tvar Andyiny tabulky) ---------- */
+/* ---------- export / import mapování (tvar tabulky controllingu) ---------- */
 const CTRL_MAPA_HLAVICKA = ['Klíč', 'Popis', 'Oblast', 'Sekce ceníku', 'Jednotka', 'Skupina (id)', 'Skupina',
   'Položka v ManVysl', 'Účet Helios nyní', 'Účet Helios budoucí'];
 function ctrlMapaListy(data, katalogNazvy) {

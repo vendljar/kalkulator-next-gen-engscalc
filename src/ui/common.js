@@ -554,6 +554,25 @@ function tabViditelny(t) {
 const STRANA_NULOVANI = { aktivni: false };
 const fmt = n => formatKc2(STRANA_NULOVANI.aktivni ? 0 : n);
 const fmt0 = n => formatKc0(STRANA_NULOVANI.aktivni ? 0 : n);
+/* CENA V EUR V DLAŽDICI „Základní cena bez DPH" (D5, zadání J. V. 22. 10. 2026).
+ * Zahraniční zakázka = varianta na řadě ceníku Zahraničí, nebo jazyk tisku
+ * jiný než česky (eurová nabídka). Pod hlavní částkou malým písmem vpravo
+ * táž částka v eurech TÝMŽ převodem jako cenová nabídka v eurech
+ * (menaDokumentu: kurz odeslané nabídky přes kurzEurZ, celá eura nahoru).
+ * Bez kurzu se euro nevymýšlí — dlaždice řekne, že kurz chybí. Tuzemská
+ * zakázka nic. Ukazuje se každému, kdo vidí dlaždici (cena, ne náklad). */
+function zakazkaZahranicni(v) {
+  if (v && v.data && String(v.data.cenikRada || 'cr') === 'zahr') return true;
+  return typeof tiskJazyk === 'function' && tiskJazyk() !== 'cz';
+}
+function kpiEurHtml(castkaKc, v, kurzZaklad) {
+  if (!zakazkaZahranicni(v)) return '';
+  const kurz = (typeof kurzEurZ === 'function') ? kurzEurZ(v, kurzZaklad) : kurzZaklad;
+  let t;
+  try { const m = menaDokumentu('en', kurz); t = m.fmt(m.na(STRANA_NULOVANI.aktivni ? 0 : castkaKc)); }
+  catch (e) { t = '€ — chybí kurz EUR'; }
+  return `<div class="v-eur" title="cena v eurech jako v cenové nabídce v eurech (kurz z ceníku varianty, celá eura nahoru)">${esc(t)}</div>`;
+}
 function stranaNulujKresli(strana, kresli) {
   const pred = STRANA_NULOVANI.aktivni;
   STRANA_NULOVANI.aktivni = (typeof stranaZamcena === 'function' && typeof ZAK !== 'undefined')

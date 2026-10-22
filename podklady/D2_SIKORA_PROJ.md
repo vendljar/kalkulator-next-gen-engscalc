@@ -1,6 +1,6 @@
-# D2 — šablona nabídky PROJ D. Sikory (v20.10.4, 20. 10. 2026)
+# D2 — šablona nabídky PROJ obchodníka (v20.10.4, 20. 10. 2026)
 
-Zdroj: šablona nabídky PROJ od D. Sikory (OVP-CN „online calkulak“, rev. 33,
+Zdroj: šablona nabídky PROJ od obchodníka (OVP-CN „online calkulak“, rev. 33,
 15. 9. 2026 — barevně vyznačené podmíněné texty; soubor má J. V.). Tím je
 dodaná příloha roadmapy **#260** → uzavřeno. Větev `claude/d2-proj-sikora`,
 koordinace „ŘÍDÍCÍ 19.10“. J. V. se v dávce neptal — výchozí volby níž.

@@ -241,29 +241,44 @@ function sodData(zak, varianta, jekly, lang, sablona) {
  * opravdu má; bez informace o šabloně (náhled) se nic nemaže, jako
  * u sodPokutaZhotovitele. */
 const SOD_OBJ_SYMBOLY = ['SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_OBJEDNANE', 'SOD_PRIPLATKY_KC'];
+/* K6-K2 (rozhodnutí J. V. 22. 10. 2026): šablona bez rozpisu objednaných
+ * (starší než v4) dostane jen celkovou cenu díla — obchodník to má vědět
+ * dřív, než smlouvu pošle. Věta jde do stavu pod tlačítkem SoD. */
+const SOD_OBJ_BEZ_ROZPISU = 'Šablona nemá rozpis objednaných příplatků — ve smlouvě bude jen celková cena.';
 function sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona) {
   const ph = d.placeholders;
-  const obj = (typeof objObjednaneVarianty === 'function') ? objObjednaneVarianty(zak, varianta, jekly) : [];
+  const sym = sablona && sablona.symboly;
+  const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
+  /* DOTISK PODLE ZÁZNAMU TISKU (K6-K4, rozhodnutí J. V. 22. 10. 2026):
+   * po první SoD se záznamem nese každý další tisk objednané příplatky
+   * a cenu díla z posledního záznamu tisku SoD — pozdější změna objednaných
+   * (jen administrátor, zapsaná v objednaneZmeny) smlouvu nepřepíše. */
+  const zaznam = (typeof objSodZaznam === 'function') ? objSodZaznam(varianta) : null;
+  const obj = zaznam && typeof objPolozkyKlicu === 'function' ? objPolozkyKlicu(varianta, jekly, zaznam.klice)
+    : ((typeof objObjednaneVarianty === 'function') ? objObjednaneVarianty(zak, varianta, jekly) : []);
+  if (zaznam) d.sodZaznam = zaznam;
   if (!obj.length || !d.ceny || !d.mena) {
     SOD_OBJ_SYMBOLY.forEach(k => { ph[k] = ''; });
-    const sym = sablona && sablona.symboly;
-    const ma = (k) => !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
     return SOD_OBJ_SYMBOLY.filter(ma);
   }
+  if (sym && !ma('SOD_PRIPLATKY_OBJEDNANE')) d.upozorneni = (d.upozorneni || []).concat([SOD_OBJ_BEZ_ROZPISU]);
   const mena = d.mena, kc = mena.fmt, sazba = d.ceny.dphSazba;
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const castky = obj.map(p => mena.na(p.sMarzi));
   const prip = castky.reduce((a, x) => a + x, 0);
   const zaklad = d.ceny.bezDph;
-  const celkem = zaklad + prip;
+  /* Cena díla ze záznamu, sedí-li měna (jinak přepočet týchž klíčů). */
+  const zeZaznamu = zaznam && zaznam.mena === (mena.eur ? 'EUR' : 'CZK') && isFinite(+zaznam.bezDph) && zaznam.bezDph !== null;
+  const zakladD = zeZaznamu ? +zaznam.nabidka : zaklad, pripD = zeZaznamu ? +zaznam.priplatky : prip;
+  const celkem = zeZaznamu ? +zaznam.bezDph : zaklad + prip;
   /* DPH stejně jako nabídka: v eurech z převedeného základu nahoru, v korunách cenaSDph. */
   const dph = mena.eur ? Math.ceil(celkem * sazba)
     : ((typeof cenaSDph === 'function') ? cenaSDph(celkem, sazba).dphKc : celkem * sazba);
-  ph.SOD_CENA_NABIDKY = kc(zaklad);
+  ph.SOD_CENA_NABIDKY = kc(zakladD);
   /* Název na jeden řádek (K6-K6): `\n` z vlastního názvu by ve smlouvě
    * vypadal jako další položka. */
   ph.SOD_PRIPLATKY_OBJEDNANE = obj.map((p, i) => P(String(p.nazev).replace(/\s+/g, ' ').trim()) + ' – ' + kc(castky[i])).join('\n');
-  ph.SOD_PRIPLATKY_KC = kc(prip);
+  ph.SOD_PRIPLATKY_KC = kc(pripD);
   ph.CENA_BEZ_DPH = kc(celkem);
   ph.DPH_KC = kc(dph);
   ph.CENA_S_DPH = kc(celkem + dph);
@@ -503,5 +518,5 @@ if (typeof dokumentRegistruj === 'function') {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
+  module.exports = { SOD_OBJ_BEZ_ROZPISU, sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
     sodJazykZabrana, sodPrelozHodnoty, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };

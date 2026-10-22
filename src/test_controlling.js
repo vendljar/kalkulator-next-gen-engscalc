@@ -4,7 +4,7 @@
  *   1. ÚPLNOST — každý klíč ceníku OCK i PROJ (CENIK_DEF, CENIK_DEF_PROJ,
  *      CENIK_STARI_EXTRA) a každá `cenaPath` / `cenaSkupina` z jádra má
  *      ve výchozím mapování skupinu nebo značku „není náklad". Nová položka
- *      ceníku bez zařazení shodí tuhle sadu dřív, než se dostane k Andy.
+ *      ceníku bez zařazení shodí tuhle sadu dřív, než se dostane ke controllingu.
  *   2. SOUČTY — rozvrh výsledku do skupin nic neztratí ani nezdvojí:
  *      náklad řádků základní ceny = souhrn.zakladNaklad, příplatky zvlášť,
  *      PROJ = náklad + doprava.
@@ -339,7 +339,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   test('zamčená, ale neřídící varianta se nevyváží', !eR.ok && /řídící/.test(eR.chyba), eR);
 } else test('modely zakázky a zámku jdou v Node načíst', false);
 
-/* Mapování: export a zpětný import (tvar Andyiny tabulky). */
+/* Mapování: export a zpětný import (tvar tabulky controllingu). */
 {
   const listy = C.ctrlMapaListy(null, { 'K.k7': 'Kotva' });
   test('export mapování: listy Mapování a Skupiny', listy[0].nazev === 'Mapování' && listy[1].nazev === 'Skupiny');

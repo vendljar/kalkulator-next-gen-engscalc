@@ -1690,7 +1690,9 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
     const r0 = await uloz374(zO, cObch);
     test('C6: příprava — obchodník uloží odeslanou nabídku (200)', r0.status === 200, r0);
     const nacti6 = async () => { const g = await nactiB59(r0.soubor); return { g, a: zk.importZakazka(JSON.parse(JSON.stringify(g))) }; };
-    const nab6 = globalThis.objNabidnute((await nacti6()).a.varianty[0], JEKLY_T).map(p => p.key);
+    /* Jednotlivé příplatky — přechodové plechy jdou objednat jen celé (K6-K3, blok D5 níž). */
+    const nab6 = globalThis.objNabidnute((await nacti6()).a.varianty[0], JEKLY_T).map(p => p.key)
+      .filter(k => !globalThis.OBJ_SKUPINY.some(g => g.klice.includes(k)));
     test('C6: příprava — nabídka nabízí aspoň dva příplatky', nab6.length >= 2, nab6);
     const zapis6 = async (zmena, c) => { const { g, a } = await nacti6(); zmena(a); return uloz374(a, c, { ocekavaneRazitko: g.uloRazitko }); };
     const dnes6 = globalThis.objDnes();
@@ -1773,6 +1775,58 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
         cObch, { ocekavaneRazitko: (await nactiB59(rV.soubor)).uloRazitko });
       test('K6-K1: jiný tvar s dvojtečkou (vlastni:x) dál 400', oV2.status === 400 && /klíč/.test(oV2.chyba || ''), oV2);
     }
+  }
+  /* D5 (22. 10. 2026, rozhodnutí J. V. k auditu K6): K6-K3 přechodové plechy
+   * jen celé, K6-K4 záznam tisku SoD a historie změn po něm drží server,
+   * K6-S7 razítko objednaných z obnovy ze souboru jen při shodě s databází.
+   * Před opravou 2 OK / 6 FAIL (plechy po půlce 200, snímek od klienta, bez
+   * historie, razítko ze souboru převzaté), po opravě 8 / 0. */
+  {
+    const chyt = p => p.catch(e => ({ status: 500, chyba: e.message }));
+    const r0 = await uloz374(odesliB59(nova374()), cObch);
+    const nacti = async () => { const g = await nactiB59(r0.soubor); return { g, a: zk.importZakazka(JSON.parse(JSON.stringify(g))) }; };
+    const zapis = async (zmena, c) => { const { g, a } = await nacti(); zmena(a); return chyt(uloz374(a, c, { ocekavaneRazitko: g.uloRazitko })); };
+    const vsech = globalThis.objNabidnute((await nacti()).a.varianty[0], JEKLY_T).map(p => p.key);
+    const jedno = vsech.filter(k => !['prechMat', 'prechMont'].includes(k));
+    const dnes = globalThis.objDnes();
+    const p1 = await zapis(a => { a.objednane = { varianta: a.varianty[0].id, klice: ['prechMat'], datum: dnes }; }, cObch);
+    test('K6-K3: obchodník objedná jen materiál přechodových plechů → 400 „jen celé"', p1.status === 400 && /celé/.test(p1.chyba || ''), p1);
+    const p2 = await zapis(a => { a.objednane = { varianta: a.varianty[0].id, klice: ['prechMat', 'prechMont', jedno[0]], datum: dnes }; }, cObch);
+    test('K6-K3: celá dvojice projde (200)', p2.status === 200, p2);
+    /* tisk SoD s podvrženým snímkem (cena 1 €, cizí klíče) */
+    const p3 = await zapis(a => { zam.zamkniVariantu(a.varianty[0], { typ: 'sod', kdo: 'x',
+      sod: { objOtisk: 'podvrh', klice: ['podvrh'], mena: 'CZK', nabidka: 1, priplatky: 0, bezDph: 1, bezDphKc: 1 } }); }, cObch);
+    const t3 = (await nacti()).g.varianty[0].zamek.tisky;
+    const sn = (t3[t3.length - 1] || {}).sod || {};
+    const cena = globalThis.objCenaDila((await nacti()).a, (await nacti()).a.varianty[0], JEKLY_T, 'cz');
+    test('K6-K4: snímek tisku SoD spočítá server (otisk objednaných, cena díla), klientův zahodí', p3.status === 200
+      && sn.klice && sn.klice.join() === ['prechMat', 'prechMont', jedno[0]].join() && sn.bezDph !== 1 && !!cena
+      && sn.bezDph === cena.bezDph && sn.bezDphKc === cena.bezDphKc && sn.objOtisk === globalThis.objOtisk((await nacti()).g.objednane), { p3, sn });
+    const p4 = await zapis(a => { a.objednane.klice = [jedno[0], jedno[1]]; }, cAdmin);
+    const g4 = (await nacti()).g;
+    test('K6-K4: změna objednaných po tisku SoD se zapíše do historie (kdo/kdy z relace)', p4.status === 200
+      && Array.isArray(g4.objednaneZmeny) && g4.objednaneZmeny.length === 1 && g4.objednaneZmeny[0].kdo === process.env.ADMIN_EMAIL
+      && g4.objednaneZmeny[0].klice.join() === [jedno[0], jedno[1]].join(), { p4, h: g4.objednaneZmeny });
+    const p5 = await zapis(a => { a.objednaneZmeny = []; a.nazevAkce = 'jiný název D5'; }, cAdmin);
+    test('K6-K4: historii změn klient nesmaže', p5.status === 200 && ((await nacti()).g.objednaneZmeny || []).length === 1, p5);
+    const t4 = g4.varianty[0].zamek.tisky; const sn4 = t4[t4.length - 1].sod;
+    test('K6-K4: záznam tisku SoD se změnou objednaných nemění', JSON.stringify(sn4) === JSON.stringify(sn), sn4);
+    /* K6-S7: obnova ze souboru — podvržené razítko objednaných → relace obnovujícího */
+    const gS = (await nacti()).g;
+    const zly = JSON.parse(JSON.stringify(gS)); zly.nazevAkce = 'obnova D5 podvrh'; zly.objednane.kdo = 'podvrh@priklad.cz'; zly.objednane.kdy = '2000-01-01T00:00:00Z';
+    const obn = async (z) => chyt(post(obnova, 'http://x/api/obnova', { zdroj: { soubor: { porizena: new Date().toISOString(),
+      zakazky: { [r0.soubor]: z } } }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['zakazky'] }, cAdmin)
+      .then(async r => ({ status: r.status, ...(await r.json()) })));
+    const o1 = await obn(zly);
+    const u1 = (JSON.parse(pamet.get('zakazky/z/' + r0.soubor) || '{}')).objednane || {};
+    test('K6-S7: obnova ze souboru s cizím razítkem objednaných → razítko obnovujícího administrátora', o1.status === 200
+      && u1.kdo === process.env.ADMIN_EMAIL && u1.kdy !== '2000-01-01T00:00:00Z', { o1: o1.status, u1 });
+    const shoda = JSON.parse(JSON.stringify(JSON.parse(pamet.get('zakazky/z/' + r0.soubor))));
+    shoda.nazevAkce = 'obnova D5 shoda';
+    const o2 = await obn(shoda);
+    const u2 = (JSON.parse(pamet.get('zakazky/z/' + r0.soubor) || '{}')).objednane || {};
+    test('K6-S7: obnova ze souboru s razítkem shodným s databází ho zachová', o2.status === 200
+      && u2.kdo === u1.kdo && u2.kdy === u1.kdy && (JSON.parse(pamet.get('zakazky/z/' + r0.soubor))).nazevAkce === 'obnova D5 shoda', { o2: o2.status, u2, u1 });
   }
   const n1 = nova374(); hod(n1).sazba = 'neexistuje'; hod(n1).sazbaKc = 1;
   const a9 = await uloz374(n1, cObch);

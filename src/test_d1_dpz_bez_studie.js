@@ -1,4 +1,4 @@
-/* ÚVOD DPZ BEZ STUDIE PROVEDITELNOSTI (D1, postřeh D. Sikory 19. 10. 2026).
+/* ÚVOD DPZ BEZ STUDIE PROVEDITELNOSTI (D1, postřeh obchodníka 19. 10. 2026).
  *
  * „Pokud nenabízíme Studii proveditelnosti a přímo začínáme s DPZ, je potřeba
  * v textu CN vymazat" větu z úvodu oddílu DOKUMENTACE PRO POVOLENÍ ZÁMĚRU:

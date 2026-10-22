@@ -1,5 +1,5 @@
 /* Příznak ceníkové položky „cena dle nabídky" (S13, v16.10.3; e-mail
- * obchodníka D. S. 15. 10. 2026, varianta A schválená J. V. 16. 10. 2026).
+ * obchodníka 15. 10. 2026, varianta A schválená J. V. 16. 10. 2026).
  *
  * U nabídkových položek „za akci" (prosklená stěna vedle šachty a dalších
  * sedm z excelové předlohy) nemá ceník reálnou cenu — obchodník ji zadává

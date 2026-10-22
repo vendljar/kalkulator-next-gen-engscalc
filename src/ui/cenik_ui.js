@@ -175,7 +175,7 @@ function cenikRows(def, zahrSloupec) {
       let ed;
       if (typ === 'text') ed = `<input type="text" style="width:130px;text-align:left" value="${esc(val)}" onchange="set('${path}', this.value)">`;
       else if (typ === 'selLak') ed = `<select style="width:130px" onchange="set('${path}', this.value)">
-          <option value="tomas" ${val === 'tomas' ? 'selected' : ''}>Tomáš</option>
+          <option value="tomas" ${val === 'tomas' ? 'selected' : ''}>Lakovna B</option>
           <option value="lakovna" ${val === 'lakovna' ? 'selected' : ''}>lakovna</option></select>`;
       /* Procenta se v datech drží jako desetinný podíl (0,30), ale zadávají
        * se lidsky — 30. Stejně jako globální přirážka o pár řádků výš

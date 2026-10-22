@@ -1,5 +1,5 @@
-/* AUTORSKÝ DOZOR V NABÍDCE PROJ JEN KDYŽ SE NABÍZÍ (připomínka D. Sikory
- * a J. Laudy, rozhodnutí J. V. 14. 10. 2026).
+/* AUTORSKÝ DOZOR V NABÍDCE PROJ JEN KDYŽ SE NABÍZÍ (připomínka obchodníka
+ * a obchodního technika, rozhodnutí J. V. 14. 10. 2026).
  *
  * Do 14. 10. tiskla nabídka PROJ (online i Word) a technická verze krycího
  * listu PROJ blok AUTORSKÝ DOZOR (AD) — popis, měsíční sazbu a platební

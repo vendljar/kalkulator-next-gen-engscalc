@@ -66,7 +66,7 @@
  *           když jsou doložky PROJ vypnuté nebo prázdné (odstranPrazdneBloky).
  *           Nadpisy tabulek zůstávají z v5.
  *
- * PROJ v7 (úvod DPZ bez studie, D1 20. 10. 2026, postřeh D. Sikory):
+ * PROJ v7 (úvod DPZ bez studie, D1 20. 10. 2026, postřeh obchodníka):
  *   node nastroje/vyrob_sablony.js --proj-v7 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_NABIDKA_PROJ_v6.docx
  * Výstup: Sablona_NABIDKA_PROJ_v7.docx + _EN/_DE/_FR
@@ -598,7 +598,7 @@ function nahradVOdstavcich(body, popis, najdi, nahrada) {
  *           AD ({{PROJ_CENA_AD_BLOK}}, uvnitř bloku AD) přibude odstavec
  *           {{PROJ_CESTOVNE_<X>}} mezi značkami {{BLOK_CESTOVNE_<X>_ZAC/_KON}}.
  *           Aplikace do něj dá věty o cestovném (rozhodnutí J. V. 20. 10. 2026,
- *           šablona D. Sikory rev. 33); akce v Praze = prázdný symbol, blok zmizí.
+ *           šablona obchodníka rev. 33); akce v Praze = prázdný symbol, blok zmizí.
  * Každý symbol ceny musí být v právě jednom prvku těla (tabulce), jinak chyba —
  * nic se nehádá. Písmo odstavce: styl „Bezmezer", 9 pt kurzívou. */
 const PROJ_V8_CESTOVNE = [['PROJ_CENA_ZAMERENI', 'ZAMERENI'], ['PROJ_CENA_SP2', 'SP'], ['PROJ_CENA_DPZ', 'DPZ'],
@@ -1269,36 +1269,19 @@ async function vyrob(vstup, uprava) {
 async function symbolyASablona(bajty) {
   return so.sablonaSymboly(await dg.docxTextSablony(bajty.slice().buffer));
 }
-/* ZÁVORKA PŘED SYMBOLEM (S10, 20. 10. 2026 — PROJ v7 na skutečné šabloně).
- * Nadpis „CENA ZA DOKUMENTACI PRO POVOLENÍ ZÁMĚRU (DPZ){{PROJ_DPZ_HVEZDICKA_ZNACKA}}:"
- * zůstával v EN/DE/FR česky: docxPrelozUseky (src/docxgen.js) před překladem
- * úseku odřízne koncové znaky mimo písmena a „:.!?*", tedy i „)", a slovník
- * pak hledá „… (DPZ" — nezná. Kód aplikace se v dávce šablon nemění, proto
- * se tu slovník obalí: nepřeložený text s jednou neuzavřenou „(" se zkusí
- * i s „)" a z překladu se koncová „)" zase vezme (zůstává v dokumentu za
- * přeloženým úsekem). Vše ostatní jde beze změny do původního trStav.
- * Od O13 (21. 10. 2026) totéž dělá sama aplikace (docxPrelozUseky), ale jen
- * když „)" stojí hned za úsekem. Obal NENÍ nadbytečný (ověřeno v D3,
- * 21. 10. 2026, nad všemi slovníkovými texty končícími „)" × EN/DE/FR):
- * u „Splatnost faktur (dní{{X}})" — „)" až za symbolem — aplikace úsek
- * nechá česky, obal ho přeloží (338 rozdílů ze 2304 porovnání; další se liší
- * jen u textu bez „)" vůbec). Proto zůstává. */
-function trStavSeZavorkou(puvodni) {
-  return (cz, lang) => {
-    const st = puvodni(cz, lang);
-    if (st && st.prelozeno) return st;
-    const s = String(cz), poc = re => (s.match(re) || []).length;
-    if (poc(/\(/g) !== poc(/\)/g) + 1 || /\)\s*$/.test(s)) return st;
-    const z = puvodni(s + ')', lang);
-    if (!z || !z.prelozeno || z.zdroj === 'neutrální' || !/\)\s*$/.test(z.text)) return st;
-    return Object.assign({}, z, { text: String(z.text).replace(/\)\s*$/, '') });
-  };
-}
+/* JAZYKOVÁ VERZE ŠABLONY = PŘEKLAD APLIKACE (#485, D5 22. 10. 2026).
+ * Do D5 tu byl obal slovníku `trStavSeZavorkou` (S10 / O13): nepřeložený
+ * text s jednou neuzavřenou „(" zkoušel i s „)", protože docxPrelozUseky
+ * (src/docxgen.js) před překladem úseku odřízne koncovou „)" — a u
+ * „(…{{SYMBOL}})" (závorka až za symbolem) ji neviděl vůbec. Od D5 to umí
+ * aplikace sama (DOCX_ZAVORKA_ZA_RE); nad slovníkovými texty končícími „)"
+ * dává 5 vzorů se „)" v dokumentu shodný výsledek s obalem (1 125 porovnání,
+ * 0 rozdílů — src/test_sablona_proj_v7_preklad.js). Obal proto zanikl a
+ * nástroj překládá TÝMŽ kódem jako aplikace. Jediný rozdíl: text, za nímž
+ * v dokumentu „)" vůbec není, zůstane česky (rozhodnutí O13 — závorka se
+ * nedoplňuje). */
 async function prelozSablonu(bajty, L, stat) {
-  const puvodni = global.trStav;
-  global.trStav = trStavSeZavorkou(puvodni);
-  try { return await dg.docxPrelozSablonu(bajty.slice().buffer, L, stat); }
-  finally { global.trStav = puvodni; }
+  return dg.docxPrelozSablonu(bajty.slice().buffer, L, stat);
 }
 async function ulozSMutacemi(bajty, zaklad) {
   const vysledek = [];
@@ -1474,4 +1457,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, projV8, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, pPrSInd, sodProjCislo, sodProjV4, prepisUsekOdstavce, trStavSeZavorkou, prelozSablonu };
+module.exports = { cnV13, cnV14, projV3, projV4, projV5, projV6, projV7, projV8, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, pPrSInd, sodProjCislo, sodProjV4, prepisUsekOdstavce, prelozSablonu };

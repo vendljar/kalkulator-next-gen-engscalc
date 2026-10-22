@@ -120,7 +120,7 @@ const FIRMA_POLE = [
    *
    * Wordová šablona má kapitoly III. PLATEBNÍ PODMÍNKY, IV. POŽADAVKY PRO
    * PROVEDENÍ REALIZACE, V. TERMÍNY REALIZACE a VI. PŘEDÁNÍ DÍLA; aplikace
-   * je neuměla, takže tiskla nabídku bez nich. D. Sikora to hlásil slovy
+   * je neuměla, takže tiskla nabídku bez nich. Obchodník to hlásil slovy
    * „nám tam schází úplně".
    *
    * KAPITOLA III. SE TADY NEVYPLŇUJE. Skládá se z údajů zakázky, které už

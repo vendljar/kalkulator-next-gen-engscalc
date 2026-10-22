@@ -492,7 +492,7 @@ const PREKLAD = {
   "kruhový tvar": ["Circular shape","Runde Form","Forme circulaire"],
   "lakované lišty po obvodu skla": ["Painted trims along the glass perimeter","Lackierte Leisten am Glasumfang","Baguettes laquées sur le pourtour du verre"],
   "lesklý ochranný lak, odstín RAL 7016": ["Glossy protective paint, RAL 7016","Glänzender Schutzlack, RAL 7016","Peinture de protection brillante, teinte RAL 7016"],
-  /* D. S. 15. 10. 2026, bod 2 (v16.10.2): vnitřní lešení v SOUČÁSTÍ DODÁVKY NENÍ */
+  /* obchodník 15. 10. 2026, bod 2 (v16.10.2): vnitřní lešení v SOUČÁSTÍ DODÁVKY NENÍ */
   /* bod 3: sekce vlastních řádků specifikace v nabídce */
   "DALŠÍ UJEDNÁNÍ": ["OTHER ARRANGEMENTS","WEITERE VEREINBARUNGEN","AUTRES DISPOSITIONS"],
   "LEŠENÍ VNITŘNÍ PRO STAVBU OCK": ["INTERNAL SCAFFOLDING FOR THE STRUCTURE ERECTION","INNENGERÜST FÜR DIE MONTAGE DER STAHLKONSTRUKTION","ÉCHAFAUDAGE INTÉRIEUR POUR LE MONTAGE DE LA STRUCTURE"],
@@ -1034,7 +1034,7 @@ const PREKLAD = {
   "100 % z celkové ceny za tuto činnost, fakturováno měsíčně": ["100 % of the total price for this service, invoiced monthly", "100 % des Gesamtpreises für diese Leistung, monatlich abgerechnet", "100 % du prix total de cette prestation, facturé mensuellement"],
   "Platba po zajištění autorského dozoru a součtu hodin": ["Payment after the designer's site supervision has been provided and the hours totalled", "Zahlung nach erbrachter planerischer Objektüberwachung und Summierung der Stunden", "Paiement après réalisation du suivi architectural et décompte des heures"],
   "50 % z celkové ceny za tuto činnost": ["50 % of the total price for this service", "50 % des Gesamtpreises für diese Leistung", "50 % du prix total de cette prestation"],
-  /* D2 (20. 10. 2026): cestovné u akce mimo Prahu (šablona PROJ D. Sikory,
+  /* D2 (20. 10. 2026): cestovné u akce mimo Prahu (šablona PROJ obchodníka,
    * symboly {{PROJ_CESTOVNE_…}}); {X} = cena 1 výjezdu v měně dokumentu.
    * Výchozí znění — ke kontrole rodilými mluvčími (podklady/D2_SIKORA_PROJ.md). */
   "Cena zahrnuje i cestovní náklady na 1 výjezd technika na stavbu ({X} bez DPH).": ["The price also includes travel costs for 1 visit of a technician to the site ({X} excl. VAT).", "Der Preis beinhaltet auch die Reisekosten für 1 Fahrt eines Technikers zur Baustelle ({X} ohne MwSt.).", "Le prix comprend également les frais de déplacement pour 1 visite d'un technicien sur le chantier ({X} HT)."],

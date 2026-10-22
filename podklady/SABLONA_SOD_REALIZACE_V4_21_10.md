@@ -93,15 +93,18 @@ kurz 25, zamčená řídící varianta; objednané = první 1 / 3 nabízené př
 
 | | bez příplatků | 1 příplatek | 3 příplatky |
 |---|---|---|---|
-| CZ | 983 000,00 Kč; DPH 117 960,00; s DPH 1 100 960,00 | 989 000,00 = 983 000,00 + 6 000,00; DPH 118 680,00 | 1 041 000,00 = 983 000,00 + 58 000,00; DPH 124 920,00 |
-| EN/DE/FR | € 39 320; DPH € 4 719; s DPH € 44 039 | € 39 560 = € 39 320 + € 240; DPH € 4 748 | € 41 640 = € 39 320 + € 2 320; DPH € 4 997 |
+| CZ | cena díla = cena nabídky (po slevě); DPH z ní; s DPH = cena díla + DPH | cena díla = cena nabídky + příplatek (bez slevy); DPH z celku | cena díla = cena nabídky + součet 3 příplatků; DPH z celku |
+| EN/DE/FR | totéž v eurech (cena nabídky převedená celými eury nahoru); DPH z celku nahoru | cena díla = nabídka v € + příplatek v € (po položce nahoru); DPH z celku nahoru | cena díla = nabídka v € + součet příplatků v € (každý nahoru); DPH z celku nahoru |
+
+*(K6-W6, rozhodnutí J. V. 22. 10. 2026: konkrétní částky ze zkušebního ceníku nahrazeny vztahy — test
+`src/test_sod.js` a `src/test_d5_rozhodnuti_k6.js` ověřují právě tyto vztahy.)*
 
 - **Bez příplatků** tři odstavce zmizí celé — žádný popisek „objednané příplatky" / „ordered surcharges" …,
   žádný prázdný odstavec; za cenou rovnou věta o režimu DPH, jako v3.
 - **S příplatky** tři odstavce pod celkovou cenou; seznam má řádek na příplatek (`<w:br/>` v témže odstavci jako
   popisek), součet řádků = „příplatky celkem", celková cena = nabídka + příplatky, s DPH = celek + DPH (DPH z celku;
   v eurech po položkách nahoru). Názvy příplatků přeložené (např. EN „SILL EXTENSION PLATES - STAINLESS STEEL
-  (MATERIAL)"; přechodové plechy jdou jako dvě položky materiál / montáž, jak říká podklad).
+  (MATERIAL)"; přechodové plechy šly jako dvě položky materiál / montáž; od D5 (K6-K3, rozhodnutí J. V. 22. 10. 2026) jsou jednou položkou „Přechodové plechy“ jako v nabídce).
 - **Žádný symbol ceny ani rozpisu nezůstal.** Zbylé `{{OBJEDNATEL_*}}`, `{{SOD_TERMIN_*}}`, `{{SOD_SKLADNE}}` …
   jsou pole krycího listu, která zkušební zakázka nevyplnila — stejné jako u v3.
 

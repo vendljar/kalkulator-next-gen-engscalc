@@ -56,7 +56,7 @@ function nabidkaProjPodmEf(varianta) {
   return snimek ? P.podminkyEfZmrazene(f, snimek) : P.podminkyEf(f);
 }
 
-/* AUTORSKÝ DOZOR JEN KDYŽ SE NABÍZÍ (připomínka D. Sikory a J. Laudy,
+/* AUTORSKÝ DOZOR JEN KDYŽ SE NABÍZÍ (připomínka obchodníka a obchodního technika,
  * rozhodnutí J. V. 14. 10. 2026). Do té doby nabídka PROJ, krycí list PROJ
  * i šablona Word tiskly blok AD (popis, měsíční sazba, platební podmínky)
  * vždy — i zákazníkovi, kterému se dozor nenabízel, a obchodník ho mazal
@@ -106,7 +106,7 @@ const NABIDKA_PROJ_UVOD = [
 const NABIDKA_PROJ_UVOD_ZAVER = 'Všechny nabízené činnosti jsou popsány na dalších stránkách naší nabídky.';
 
 /* ÚVOD UPRAVENÝ OBCHODNÍKEM (D2, rozhodnutí J. V. 20. 10. 2026, šablona
- * D. Sikory). Úvod se dál předvyplní podle nabízených činností; obchodník
+ * obchodníka). Úvod se dál předvyplní podle nabízených činností; obchodník
  * ho u varianty smí přepsat (`proj.zadani.uvodNabidkyRucne`, odstavce
  * oddělené koncem řádku) a tlačítkem „Vrátit výchozí" vrátit. S ručním
  * textem se ukládá i výchozí znění, ze kterého obchodník vycházel
@@ -127,7 +127,7 @@ function nabidkaProjUvodNesedi(zadani, vychoziCz) {
 }
 
 /* CESTOVNÉ U AKCE MIMO PRAHU (D2, rozhodnutí J. V. 20. 10. 2026, šablona
- * nabídky PROJ D. Sikory rev. 33). `{X}` = cena 1 výjezdu technika
+ * nabídky PROJ obchodníka rev. 33). `{X}` = cena 1 výjezdu technika
  * v měně dokumentu. U ZAMĚŘENÍ, STUDIE, DPZ a KOLAUDACE je výjezd v ceně
  * činnosti (přičítá ho engine_proj.js), u DPZ a KOLAUDACE s dovětkem
  * o dalších cestách; u IČ a AD se cena výjezdu jen uvede. Akce v Praze
@@ -263,7 +263,7 @@ const NABIDKA_PROJ_DEF = [
 
   /* ---------------- DPZ ---------------- */
   /* Úvod DPZ se odkazuje na studii, jen když se studie nabízí (D1, postřeh
-   * D. Sikory 19. 10. 2026: „pokud nenabízíme Studii proveditelnosti a přímo
+   * obchodníka 19. 10. 2026: „pokud nenabízíme Studii proveditelnosti a přímo
    * začínáme s DPZ, je potřeba v textu CN vymazat"). `jinak` = znění bez
    * navázání; věty drží NABIDKA_PROJ_DPZ_UVOD (i pro Word {{PROJ_DPZ_UVOD}}). */
   { typ: 'rozsah', nadpis: 'DOKUMENTACE PRO POVOLENÍ ZÁMĚRU (DPZ)', sekce: 'dpz', uvod: [
@@ -435,7 +435,7 @@ const NABIDKA_PROJ_DEF = [
    * Od překladu šablony PROJ (25. 9. 2026) je zná a jazykové mutace Wordu je
    * tisknou přeložené; online nabídka v EN/DE/FR je nechávala česky. */
   /* Hvězdičku nesou jen řádky inženýrské činnosti (IČ) — poznámka k ní má
-   * smysl, jen když se IČ nabízí (D. Sikora 2. 10. 2026: nabídka zaměření
+   * smysl, jen když se IČ nabízí (obchodník 2. 10. 2026: nabídka zaměření
    * a studie ji tiskla a musel ji mazat). `{ t, sekce }` = překládaný text
    * vázaný na činnost. */
   { typ: 'pozn', radky: [
@@ -1109,7 +1109,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   if (typeof uvodniFotoSymboly === 'function')
     Object.assign(placeholders, uvodniFotoSymboly(zak, 'proj'));
 
-  /* Slovo „nabídka" v jazyce dokumentu (D. Sikora 3. 10. 2026), viz nabidka.js. */
+  /* Slovo „nabídka" v jazyce dokumentu (obchodník 3. 10. 2026), viz nabidka.js. */
   const slovo = (typeof nabidkaSlovoSouboru === 'function') ? nabidkaSlovoSouboru(L)
     : ({ en: 'PRICE_QUOTATION', de: 'ANGEBOT', fr: 'DEVIS' }[L] || 'NABÍDKA');
   const nazevSouboru = (slovo + '_PROJ_' + (placeholders.CISLO_NABIDKY || 'OVP-CN')

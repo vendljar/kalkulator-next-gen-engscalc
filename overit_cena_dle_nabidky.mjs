@@ -1,5 +1,5 @@
 /* Ověření v prohlížeči: příznak ceníku „cena dle nabídky" (S13, v16.10.3;
- * e-mail obchodníka D. S. 15. 10. 2026, varianta A schválená J. V. 16. 10.).
+ * e-mail obchodníka 15. 10. 2026, varianta A schválená J. V. 16. 10.).
  *
  * Co se hlídá (model a server hlídají src/test_cena_dle_nabidky.js
  * a netlify/test_cena_dle_nabidky.mjs; tady jde o to, co uvidí lidé):

@@ -93,10 +93,16 @@ async function sodWordGeneruj(typ, srv) {
       a.click();
       let zamcenoText = '';
       if (typeof zamekPoTisku === 'function') {
-        const z = zamekPoTisku(typ, varianta.id, sablonaInfo);   // plnou moc přeskočí sám
+        /* K6-K4: do záznamu tisku SoD otisk objednaných a cena díla (dotisk
+         * nese stav posledního tisku, viz sodObjednaneSymboly). */
+        const navic = (typ === 'sod' && typeof objSodSnimek === 'function')
+          ? { sod: objSodSnimek(ZAK, varianta, JEKLY, L, objSodZaznam(varianta)) } : null;
+        const z = zamekPoTisku(typ, varianta.id, sablonaInfo, navic);   // plnou moc přeskočí sám
         if (z) zamcenoText = ' Varianta ' + (z.cislo || '') + ' je nyní uzamčená; pokračujte jejím klonem.';
       }
-      sodStavText(typ, 'Hotovo – soubor ' + res.nazevSouboru + '.docx je ve Stažených. '
+      const upoz = sodUpozorneniText(res);
+      if (upoz) hlaska(upoz, { nadpis: 'Smlouva o dílo' });
+      sodStavText(typ, (upoz ? '⚠ ' + upoz + ' ' : '') + 'Hotovo – soubor ' + res.nazevSouboru + '.docx je ve Stažených. '
         + 'Žlutě značené symboly {{…}} (termíny, splátky, zástupci objednatele) doplňte ve Wordu.'
         + (srv ? ' Použita centrální šablona (verze ' + srv.verze + ').'
                : (sablonyOnlineAktivni() ? ' POZOR: použita MÍSTNÍ šablona (měkký režim) – do zámku se to zapsalo.' : ''))
@@ -111,6 +117,12 @@ async function sodWordGeneruj(typ, srv) {
       delete SOD_DOCX[typ];
       sodStavText(typ, 'Chyba: ' + err.message);
     });
+}
+
+/* Upozornění builderu SoD (K6-K2: šablona bez rozpisu objednaných) jednou větou, nebo ''. */
+function sodUpozorneniText(res) {
+  const u = res && res.data && Array.isArray(res.data.upozorneni) ? res.data.upozorneni : [];
+  return Array.from(new Set(u)).join(' ');
 }
 
 /* ---------- objednané příplatky (#447 C6, rozhodnutí J. V. 21. 10. 2026) ----------
@@ -134,19 +146,43 @@ function objUiUloz(klice, datum) {
   if (chyba) { hlaska(chyba); return; }
   set('ZAK.objednane', kopie.objednane || null);
 }
-function objUiPrepni(klic, zap) {
+/* Přepnutí položky (klíč nebo dvojice klíčů — přechodové plechy jdou jen
+ * celé, K6-K3). Záznam patří k jiné zamčené variantě → nejdřív potvrzení
+ * (K6-K5, rozhodnutí J. V. 22. 10. 2026); bez něj se nic nemění. */
+async function objUiPrepni(klic, zap) {
   const o = objStav(ZAK);
   const v = objUiVarianta();
+  if (o && v && o.varianta !== v.id) {
+    const jina = (ZAK.varianty || []).find(x => x && x.id === o.varianta);
+    const cislo = jina ? variantaCislo(ZAK, jina) : String(o.varianta || '');
+    if (!await potvrd(objUiNahraditText(cislo), { nadpis: 'Objednané příplatky' })) { render(); return false; }
+  }
   const klice = (o && v && o.varianta === v.id) ? o.klice.slice() : [];
-  const i = klice.indexOf(klic);
-  if (zap && i < 0) klice.push(klic);
-  if (!zap && i >= 0) klice.splice(i, 1);
-  objUiUloz(klice, o && o.datum);
+  const sada = Array.isArray(klic) ? klic : [klic];
+  sada.forEach(k => {
+    const i = klice.indexOf(k);
+    if (zap && i < 0) klice.push(k);
+    if (!zap && i >= 0) klice.splice(i, 1);
+  });
+  objUiUloz(klice, o && o.varianta === (v && v.id) ? o.datum : '');
+  return true;
+}
+function objUiNahraditText(cislo) {
+  return 'Objednané příplatky varianty ' + cislo + ' budou nahrazeny objednanými příplatky této varianty. '
+    + 'Zakázka nese objednané příplatky jen jedné odeslané nabídky.';
 }
 function objUiDatum(datum) {
   const o = objStav(ZAK);
   if (!o) return;
   objUiUloz(o.klice, datum);
+}
+/* Měna karty = měna smlouvy (K6-K9): jazyk tisku ≠ česky → eura kurzem
+ * odeslané nabídky, celá eura nahoru po položkách (menaDokumentu, jako SoD). */
+function objUiMena(v) {
+  const L = (typeof sodJazyk === 'function') ? sodJazyk('sod') : 'cz';
+  const kurz = (typeof kurzEurZ === 'function') ? kurzEurZ(v, v && v.data && v.data.cenik && v.data.cenik.kurzEurKc) : 0;
+  try { return Object.assign({ chyba: '' }, menaDokumentu(L, kurz)); }
+  catch (e) { return { eur: true, chyba: 'chybí kurz EUR', na: n => n, fmt: () => '€ —' }; }
 }
 function objKarta() {
   const v = objUiVarianta();
@@ -154,21 +190,33 @@ function objKarta() {
   if (!v.zamek || !v.zamek.zamceno) return `<div class="note" id="objKarta">Objednané příplatky jde zaznamenat až
       k <b>odeslané (zamčené)</b> nabídce.</div>`;
   const jekly = typeof JEKLY !== 'undefined' ? JEKLY : null;
-  const nab = objNabidnute(v, jekly);
+  const nab = objPolozky(objNabidnute(v, jekly));
   if (!nab.length) return `<div class="note" id="objKarta">Odeslaná nabídka žádné příplatky nenabízela.</div>`;
   const o = objStav(ZAK);
   const moje = o && o.varianta === v.id ? o : null;
   const smi = objUiSmi(v);
   const dis = smi ? '' : ' disabled';
+  const mena = objUiMena(v);
+  const cena = p => mena.chyba ? `€ — (${esc(mena.chyba)})` : esc(mena.fmt(mena.na(p.sMarzi)));
+  const jsKlic = p => p.klice.length > 1 ? `[${p.klice.map(k => `'${escJs(k)}'`).join(',')}]` : `'${escJs(p.key)}'`;
   const radky = nab.map(p => `<label style="display:flex;gap:6px;align-items:center" data-obj-klic="${esc(p.key)}">
-      <input type="checkbox"${dis} ${moje && moje.klice.includes(p.key) ? 'checked' : ''}
-        onchange="objUiPrepni('${escJs(p.key)}', this.checked)"> ${esc(p.nazev)}
-      <span class="note">${fmt0(p.sMarzi)} Kč bez DPH</span></label>`).join('');
+      <input type="checkbox"${dis} ${moje && p.klice.every(k => moje.klice.includes(k)) ? 'checked' : ''}
+        onchange="objUiPrepni(${jsKlic(p)}, this.checked)"> ${esc(p.nazev)}
+      <span class="note">${cena(p)} bez DPH</span></label>`).join('');
+  const jina = o && !moje ? (ZAK.varianty || []).find(x => x && x.id === o.varianta) : null;
+  const sod = typeof objZmenenoPoSod === 'function' ? objZmenenoPoSod(ZAK, v) : null;
+  const zm = Array.isArray(ZAK.objednaneZmeny) ? ZAK.objednaneZmeny[ZAK.objednaneZmeny.length - 1] : null;
   return `<div id="objKarta" style="margin:10px 0;padding:8px 10px;border:1px solid var(--line);border-radius:8px">
       <div class="sec-title">Objednané příplatky</div>
-      <div class="note">Zaškrtněte příplatky z odeslané nabídky, které zákazník <b>objednal</b>. Nabídka se tím
-        nemění; objednané příplatky jdou do krycího listu a do exportu pro controlling.
+      <div class="note">Zaškrtněte příplatky z odeslané nabídky, které zákazník <b>objednal</b> — <b>před tiskem smlouvy</b>
+        (smlouva i její dotisk nesou objednané z tisku). Nabídka se tím nemění; objednané příplatky jdou do krycího listu
+        a do exportu pro controlling. Ceny jsou v měně smlouvy (jazyk tisku).
         ${smi ? '' : '<b>Smlouva o dílo je podepsaná (datum podpisu v krycím listu výše) — měnit smí jen administrátor.</b>'}</div>
+      ${jina ? `<div class="note obj-jina">Zakázka nese objednané příplatky varianty ${esc(variantaCislo(ZAK, jina))} — zaškrtnutím
+        je nahradíte (aplikace se zeptá).</div>` : ''}
+      ${sod ? `<div class="note obj-po-sod" style="color:#b45309">⚠ Objednané se od tisku smlouvy o dílo změnily${zm
+        ? ` (${esc(zm.kdo || '')}, ${esc(String(zm.kdy || '').slice(0, 10))})` : ''} — smlouva i její dotisk nesou cenu díla
+        z tisku${sod.mena && sod.bezDph != null ? ` (${esc(sod.mena === 'EUR' ? '€ ' + Math.round(sod.bezDph).toLocaleString('cs-CZ') : fmt0(sod.bezDph))} bez DPH)` : ''}.</div>` : ''}
       ${radky}
       ${moje ? `<label style="margin-top:6px;display:inline-flex;gap:6px;align-items:center">Datum prodeje (podpisu SoD)
         <input type="date" id="objDatum"${dis} value="${esc(moje.datum || '')}" onchange="objUiDatum(this.value)"></label>` : ''}

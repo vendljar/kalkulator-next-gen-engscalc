@@ -1,7 +1,7 @@
 /* Test – VÝMĚNA OBRÁZKU V ŠABLONĚ (#146)
  *
  * Proč tahle sada vznikla. Pod cenovou nabídkou byl do 5. 8. 2026 natvrdo
- * vepsaný jeden kolega („Vypracoval: Ing. Jiří Lauda …“) a vedle něj zapečený
+ * vepsaný jeden kolega („Vypracoval: Ing. Jan Zkušební …“) a vedle něj zapečený
  * sken jeho podpisu s razítkem. Nabídku ale dělá ten obchodní technik, který
  * je zrovna přihlášený, a každý má svůj podpis. Text vyřeší obyčejné symboly
  * {{ZPRAC_…}}. Obrázek ne – ten musí do souboru vstoupit jako bajty.
