@@ -1083,9 +1083,9 @@ function ctrlExportListy(exp, data, opts) {
       : 'zámek bez zmrazeného výsledku (nabídka před 15. 9. 2026) — přepočteno dnešním výpočtem']);
   }
   popis.push(['Částky', 'Kč bez DPH (i u zahraniční řady); prodejní cena řádku je před slevou a zaokrouhlením']);
-  /* #505: varianty orazítkované online před v22.10.5 verzi ceníku nenesou — zpětně se nedoplňuje. */
+  /* #505: varianty orazítkované online před v22.10.6 verzi ceníku nenesou — zpětně se nedoplňuje. */
   if (exps.some(e => e.hlavicka && e.hlavicka.cenikVerze === ''))
-    popis.push(['Verze ceníku', 'prázdná = neznámá (varianta orazítkovaná v online režimu před opravou #505 ve v22.10.5); ceník doloží Otisk ceníku']);
+    popis.push(['Verze ceníku', 'prázdná = neznámá (varianta orazítkovaná v online režimu před opravou #505 ve v22.10.6); ceník doloží Otisk ceníku']);
   popis.push(['List Řádky', 'náklady v ceně nabídky a příplatky, které zákazník dodatečně objednal (sloupec Objednáno dodatečně = ano); bez nich součet sloupce Náklad celkem = náklad základní ceny nabídky']);
   const prodane = exps.filter(e => e.hlavicka.datumProdeje);
   if (!hr && prodane.length) popis.push(['Datum prodeje (objednané příplatky)', prodane[0].hlavicka.datumProdeje]);
