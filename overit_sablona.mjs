@@ -21,7 +21,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { createRequire } from 'module';
 
-import { najdiNejnovejsi, preskoc } from './nastroje/harness_podklady.mjs';
+import { najdiNejnovejsi, preskoc, negativniKontrola, negativniNalezy } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
 const { docxVyplnSablonu, zipPrecti, rozmeryObrazku } = require('./src/docxgen.js');
 
@@ -96,8 +96,13 @@ console.log('šablona obsahuje symboly zpracovatele');
   /* Šablona koluje mezi lidmi a chodí i na GitHub. Konkrétní jméno, telefon
    * ani e-mail kolegy v ní nemají co dělat — ani v textu, ani v metadatech. */
   const vse = polozky.filter(p => /\.(xml|rels)$/.test(p.nazev)).map(p => dekoduj(p.data)).join('');
-  for (const s of ['Lauda', 'lauda.jiri', '590 945'])
-    test('v šabloně nezůstalo „' + s + '"', !vse.includes(s));
+  /* D5-3: skutečné údaje kolegy nejsou v repozitáři — seznam je ve firemních
+   * podkladech (negativni_kontrola.json, formát v nastroje/harness_podklady.mjs). */
+  const negativni = negativniKontrola('cn', KDE.map(k => k + '/negativni_kontrola.json'));
+  if (negativni === null)
+    console.log('  – negativní kontrola jmen a kontaktů PŘESKOČENA: chybí negativni_kontrola.json ($KNG_PODKLADY)');
+  else test('v šabloně nezůstal žádný údaj z negativní kontroly (' + negativni.length + ' položek)',
+    negativni.length > 0 && !negativniNalezy(vse, negativni).length, 'položky č. ' + negativniNalezy(vse, negativni).join(', '));
   /* Platební podmínky (#147) – navázané na kalkulaci ve v6, nesmí se ztratit.
    * Od CN v14 (etapa A, 30. 9. 2026) nese věty o dílčích dokladech jeden
    * symbol {{PODM_PLATEBNI_KALENDAR}} místo {{PODM_ZALOHA1_PROC}}. */

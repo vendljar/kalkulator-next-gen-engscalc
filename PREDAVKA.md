@@ -11,6 +11,11 @@ HEAD s opravou: b4e28fd1e8d9a1e1ae39297bf7d9aa3802f01274 (verze 22.10.5).
 - **overit_controlling.mjs 49/0 (dřív 47/1):** karta počítá dvojici přechodových plechů jako jednu položku (K6-K3);
   nová kontrola, že zaškrtnutí dvojice zapíše oba klíče.
 - `spust_testy.sh` 241/0; `--kontrola` jádro 469.
+- **D5-3:** negativní kontrola šablon čte `$KNG_PODKLADY/negativni_kontrola.json` — formát
+  `{ "cn": ["<text>", …], "proj": ["<text>", …] }` (příjmení, začátek e-mailu, telefon s mezerami; popis
+  v `nastroje/harness_podklady.mjs`). **J. V. / koordinace musí soubor vytvořit vedle šablon** (hodnoty, které byly
+  dřív v harnessech) — bez něj se kontrola přeskočí s hláškou. D5-1/2/4 zapsány v #503 jako rozhodnuté.
+- **Hlášení teď jde nové koordinaci session_013yuBUKmpUYvEnjxWjGi5kj („ŘÍDÍCÍ 22.10“).**
 
 # Předávka — 22. 10. 2026 odpoledne: Z1 — odpovědi J. V. (v22.10.5), větev `claude/z1-zmrazeni-kl`
 

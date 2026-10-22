@@ -45,12 +45,7 @@ vendl.jaroslav@engineers-cz.cz
 # 12. 10. 2026: smyšlený telefon v overit_online.mjs (oprava kontaktu účtu správcem, #396).
 +420 700 000 395
 
-# NÁLEZ 25. 9. 2026 — ČEKÁ NA ROZHODNUTÍ J. V.: telefon kolegy, z jehož nabídky
-# vznikl vzor šablony PROJ, stojí v harnessu overit_nabidka_proj_word.mjs jako
-# kontrola „v šabloně nezůstal telefon kolegy" (spolu s jeho jménem). Je to
-# skutečné číslo ve veřejném repozitáři. Dočasně povoleno, aby kolo neskončilo
-# červeně kvůli rozhodnutí, které je na J. V.; možnosti: nechat (jako B79),
-# nebo kontrolu přepsat na obecné „v šabloně není žádný telefon ani e-mail"
-# a číslo i jméno ze zdrojáků odstranit.
-+420 724 323 407
+# NÁLEZ 25. 9. 2026 (telefon a jméno kolegy v overit_nabidka_proj_word.mjs) VYŘEŠEN
+# D5-3 (J. V. 22. 10. 2026): údaje negativní kontroly šablon jsou ve firemních
+# podkladech ($KNG_PODKLADY/negativni_kontrola.json), výjimka tu už není.
 noreply@anthropic.com  # K6-W2 (D3, 21. 10. 2026): technická adresa v řádku Co-Authored-By ve vzoru promptu (podklady/PROMPT_roadmapa_405_406.md) — ne osobní kontakt

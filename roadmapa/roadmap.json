@@ -7885,7 +7885,8 @@
    "kde": "`src/ui/common.js`, `src/ui/kalk_ock.js`, `src/ui/kalk_proj.js`, `src/app_template.html`",
    "zavisi": [],
    "hotovoV": "v22.10.4",
-   "pozn": "Číslo položky přidělila D5 (volné za #501; koordinace přečíslovala na #503 (#502 má Z1)); koordinace může přečíslovat. Větev claude/d5-rozhodnuti-k6 (D5); číslo verze může koordinace při slučování přečíslovat."
+   "rozhodnuto": "J. V. 22. 10. 2026 (otázky D5 podle návrhu): D5-1 (#485 text bez „)“ zůstává česky, obal O13), D5-2 (dotisk SoD nese objednané z prvního tisku), D5-4 (popisky ceníku rolí) beze změny; D5-3 hotovo ve v22.10.5 — skutečné jméno, e-mail a telefon v harnessech šablon přesunuty do $KNG_PODKLADY/negativni_kontrola.json (nastroje/harness_podklady.mjs), výjimka z povolene_kontakty.txt odebrána.",
+ "pozn": "Číslo položky přidělila D5 (volné za #501; koordinace přečíslovala na #503 (#502 má Z1)); koordinace může přečíslovat. Větev claude/d5-rozhodnuti-k6 (D5); číslo verze může koordinace při slučování přečíslovat."
   }
  ],
  "meta" : {
