@@ -1,6 +1,6 @@
 # Předávka — 22. 10. 2026 večer: E1 — hromadný export controllingu (#504) a verze ceníku online (#505), větev `claude/e1-export-obdobi`
 
-Nad integrací 4ce35d2 (v22.10.5), verze zůstává **22.10.5** (oddíl CHANGELOG `## v22.10.5 — E1`). **Do integrace /
+Nad integrací 4ce35d2 (v22.10.5, tag) + 9abed07, verze **22.10.6** (pokyn koordinace; oddíl CHANGELOG `## v22.10.6 — E1`). **Do integrace /
 test nic** — slučuje koordinace (session_013yuBUKmpUYvEnjxWjGi5kj, „ŘÍDÍCÍ 22.10“).
 
 - **Příčina 413 (633 > 600):** předvýběr bral každou zakázku s odeslanou nabídkou upravenou v období (hromadné
@@ -11,7 +11,7 @@ test nic** — slučuje koordinace (session_013yuBUKmpUYvEnjxWjGi5kj, „ŘÍDÍ
   v `zakazky.mjs` (25 najednou, spolu s adresami). Export (`controlling_export.mjs`) čte souběžně 12, rozpočet 5 s /
   150 zakázek na dávku, kurzor `dalsi`, protokol jeden záznam (`id`, `stav` probiha/hotovo/odmitnuto, `verzeMapovani`).
   Prohlížeč `ctrlHromadnyStahni` skládá dávky, `ctrlHromadnyChybaText` (bez „504“). Stropy: čtení 3000, soubor 1000
-  zakázek. `ctrlDenPraha` s jedním formátovačem. Příručka: novinky v22.10.5 + odstavec hromadného exportu.
+  zakázek. `ctrlDenPraha` s jedním formátovačem. Příručka: novinky v22.10.6 + odstavec hromadného exportu.
 - **Doplnění J. V. (zpráva koordinace 13:58 UTC):** stropy `cteni` a `zakazek` zrušeny (jen technické: `dni` 400,
   odpověď dávky 5 MB, 1000 dávek); filtr **Stav Pipedrive** `pd` (výchozí won; open/lost/deleted/bez/vse) na serveru,
   v protokolu, Popisu, jménu souboru a hlášce prázdného výsledku; simulace 1000 zakázek `netlify/test_controlling_objem.mjs`.

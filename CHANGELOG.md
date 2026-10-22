@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v22.10.5 — E1: hromadný export controllingu za období (#504) a verze ceníku v razítku online (#505), větev claude/e1-export-obdobi
+## v22.10.6 — E1: hromadný export controllingu za období (#504) a verze ceníku v razítku online (#505), větev claude/e1-export-obdobi
 
-Nad integrací 4ce35d2 (v22.10.5). Hlášení J. V. 22. 10. 2026 z ostré verze: export 1.–22. 10. → „muselo by se
+Nad integrací 4ce35d2 (v22.10.5, tag) + 9abed07. Hlášení J. V. 22. 10. 2026 z ostré verze: export 1.–22. 10. → „muselo by se
 přečíst 633 zakázek (strop 600)", 12.–22. 10. → „server odpověděl 504". Roadmapa #504.
 
 - **Přesný předvýběr:** záznam rejstříku nese `ctrlDny` — dny zámků zamčených variant (v Praze, s řadou té varianty)
