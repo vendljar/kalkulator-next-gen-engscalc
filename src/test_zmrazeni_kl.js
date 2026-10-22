@@ -177,6 +177,13 @@ test('neznámé pole se po tisku CN bere jako zmrazené', (() => { const v = zam
   zamkni(z, 'sod');
   test('po SoD: DPH zamčená', !ZM.zamekDphVolna(v, 'C.dph') && !ZM.zamekDphVolna(v, 'PC.dph'));
   test('po SoD: změna DPH porovnání mění', ZM.zamekDataPorovnani(d1, v) !== ZM.zamekDataPorovnani(v.data, v));
+  const dJenDph = kopie(v.data); dJenDph.cenik.dph = jina(dJenDph.cenik.dph);
+  test('po SoD: samotná změna DPH OCK porovnání mění', ZM.zamekDataPorovnani(dJenDph, v) !== ZM.zamekDataPorovnani(v.data, v));
+  const dJenDphP = kopie(v.data); dJenDphP.proj.cenik.dph = jina(dJenDphP.proj.cenik.dph);
+  test('po SoD: samotná změna DPH PROJ porovnání mění', ZM.zamekDataPorovnani(dJenDphP, v) !== ZM.zamekDataPorovnani(v.data, v));
+  const zs = nova(); const vs = zs.varianty[0]; ZM.zamkniVariantu(vs, { typ: 'nabidka', cislo: ZM.variantaCislo(zs, vs) });   // bez snímku
+  const ds = kopie(vs.data); ds.cenik.dph = jina(ds.cenik.dph);
+  test('starý zámek bez snímku: samotná změna DPH porovnání mění', ZM.zamekDataPorovnani(ds, vs) !== ZM.zamekDataPorovnani(vs.data, vs));
   const v0 = nova().varianty[0];
   test('nezamčená varianta: DPH volná', ZM.zamekDphVolna(v0, 'C.dph'));
 }

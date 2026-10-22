@@ -1655,10 +1655,9 @@ const MUTACE = [
     hledej: "  if (tab && tab.jenAdmin.indexOf(id) >= 0) return 'jen_admin';",
     nahrad: "",
     proc: 'matice krycího listu by neodpovídala tabulce J. V. (číslo CN jen administrátor)' },
-  { nazev: 'Z1: DPH odeslané nabídky volná i bez snímku', soubor: '../src/zamek.js',
-    hledej: "  return !!(s && typeof s[c[1]] === 'number') && zamekKryciPoleVolne(v, c[0], 'sazbaDph');",
-    nahrad: "  return zamekKryciPoleVolne(v, c[0], 'sazbaDph');",
-    proc: 'u nabídky odeslané před Z1 by změna DPH změnila dotisk CN' },
+  /* (Mutace „DPH volná i bez snímku" — vypuštění podmínky na snímek v
+   * zamekDphVolna — je ekvivalentní: bez snímku je pole `sazbaDph` v sekci
+   * nabídky, zamekKryciPoleStav ho zmrazí dřív, a výsledek je tentýž.) */
   { nazev: 'Z1: DPH odeslané nabídky volná i po SoD', soubor: '../src/zamek.js',
     hledej: "  return !!(s && typeof s[c[1]] === 'number') && zamekKryciPoleVolne(v, c[0], 'sazbaDph');",
     nahrad: "  return !!(s && typeof s[c[1]] === 'number');",

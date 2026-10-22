@@ -1,3 +1,32 @@
+# Předávka — 22. 10. 2026: dávka Z1 — zmrazení krycích listů po tisku CN po polích (v22.10.3), větev `claude/z1-zmrazeni-kl`
+
+Nad integrací fcf14e3 (= test v22.10.1 + podklady). **Do integrace / test nic** — slučuje koordinace
+(session_01X93Edh1U8MQru6HV28FdBY). Verze `verze.txt` 22.10.3 (P1 má v22.10.2; koordinace případně přečísluje).
+CHANGELOG `## v22.10.3 — Z1`, roadmapa #501 (hotovo), příručka `manual/obsah.json` (novinky v22.10.3 + kapitola o odeslané nabídce).
+
+- **Hotovo:** (1) zámek po tisku CN po polích podle `podklady/ZMRAZENI_KL_VOLBY_JV_22_10.json` — `ZAMEK_KRYCI_PO_CN`
+  + `zamekKryciPoleStav` v `src/zamek.js` (klient i server); (2) hlavička: `ZAK.nazevAkce`/`ZAK.adresa`
+  (+ `projHlavicka.*`) po CN, ostatní pole krycích listů v hlavičce + zdroje předvyplnění SoD (zákazník, IČO, sídlo,
+  kontakt) po SoD — **pravidlo: po odeslání KTERÉKOLI varianty** (hlavička je jedna, dotisk každé odeslané CN ji čte;
+  jako A3 u čísla); klient `set()`, server `zamekZakZmeny` 409; (3) snímek odeslané nabídky `zamek.snimek`
+  (krycí listy + DPH), dotisk CN přes `zamekNabidkaPohled`, SoD `{ zive: true }`; server snímek nového zámku ověří
+  (nepřepisuje — klient by jinak narazil na rozdíl klíče); klient ho před prvním uložením obnoví; zámky bez snímku
+  drží pole nabídky a DPH jako dřív; (4) Zaměření strojovna; (5) UI 🔒; (6) testy; (7) příručka, roadmapa, CHANGELOG.
+  **Doplnění koordinace:** ceny činností v krycím listu PROJ = zaokrouhlené ceny nabídky (`kryciProjCtx`), K31-N1
+  `priplatkyObjednane` `nezmrazovat: true` (staré zmrazené „nic objednáno" se nečte, data se nepřepisují; PROJ pole
+  nemá, controlling bere `objednane` přímo).
+- **Testy:** `spust_testy.sh` 236 prošlo / 0 selhalo (test.js přeskočen). Pojistky viz CHANGELOG / commit 668fdcc.
+  Starší sady, které jako „neškodnou změnu" odeslané zakázky měnily název akce, mění kontaktní osobu.
+  `overit_kryci_po_tisku.mjs` má nový blok Z1 — **nepuštěn** (prohlížečové sady pouští koordinace).
+- **Mutace:** `--kontrola` jádro 438 / server 783 úseků. Server „z1" 20/20 (omezená sada `KNG_MUTACE_SADY`
+  relevantních testů — falešně „chycená" být nemůže; plný seznam sad pustí celé kolo), „b163" 3/3, „zmrazený výsledek
+  se bere" 1/1 (plná sada), jádro „z1" 6/6 — 0 přeživších. Ekvivalentní mutace „DPH volná i bez snímku" vyřazena s poznámkou.
+- **Otázky pro J. V.:** (1) pole činností PROJ `cin_*`/`st_*` tabulka nemá — nechány editovatelné jako sekce Rozsah;
+  (2) hlavička se zmrazí po odeslání kterékoli varianty (ne jen řídící/otevřené) — potvrdit; (3) po SoD jsou
+  v hlavičce zamčené i zákazník/IČO/sídlo/kontakt (tisknou se do SoD) — potvrdit; (4) mezi tiskem a prvním uložením
+  se snímek obnovuje (změna podmínek v té chvíli se do snímku dostane) — přijatelné?
+- **Další krok:** koordinace sloučí, pustí celé kolo (vč. `overit_kryci_po_tisku.mjs`, `overit_lista.mjs`).
+
 # Předávka — 22. 10. 2026: dávka D4 — slovníky překladu SoD podle revidovaného znění (v22.10.1), větev `claude/d4-sod-slovniky`
 
 Nad `test` = v21.10.6 (4c127f5). **Do integrace / test nic** — slučuje koordinace (session_01X93Edh1U8MQru6HV28FdBY).

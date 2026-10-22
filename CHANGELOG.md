@@ -51,11 +51,15 @@ Nad integrací fcf14e3 (= test v22.10.1 + podklady). Závazná tabulka `podklady
   Krycí list PROJ pole nemá, export controllingu bere `objednane` přímo (ověřeno).
 - **Testy s pojistkou:** `src/test_zmrazeni_kl.js` (nová, matice pole × stav OCK i PROJ čte přímo tabulku JSON, SoD,
   starý zámek, DPH, porovnání dat, hlavička, dotisk CN/SoD, ceny činností, Zaměření strojovna) — nad fcf14e3 0/7
-  (chybí model), po opravě 92/0; ceny činností před opravou 4 FAIL. `netlify/test_kryci_po_tisku.mjs` blok Z1 (14):
+  (chybí model), po opravě 95/0; ceny činností před opravou 4 FAIL. `netlify/test_kryci_po_tisku.mjs` blok Z1 (14):
   nad fcf14e3 9 FAIL (podmínky/DPH/plán 409, obchodník/hlavička 200), po 32/0. `src/test_objednane.js` K31-N1:
   před 3 FAIL, po 47/0. Sady, které jako „neškodnou změnu" odeslané zakázky měnily název akce, mění nově kontaktní
   osobu (test_prava, test_koncova_cena, test_zaporne, test_vyjimky, test_obchodnik, test_zamek_historie).
   Prohlížečový `overit_kryci_po_tisku.mjs` má nový blok Z1 (nepuštěno — celé kolo pouští koordinace).
+- **Mutace:** server „z1" 20/20 chycených (sady omezené `KNG_MUTACE_SADY` na relevantní testy; mutace „DPH volná
+  i bez snímku" vyřazena jako ekvivalentní, „porovnání přehlíží každou změnu DPH" chycená až po doplnění cíleného
+  testu), „b163" 3/3, „zmrazený výsledek se bere" 1/1 (plná sada); jádro „z1" 6/6 — 0 přeživších.
+  `--kontrola` jádro 438, server 783 úseků. `spust_testy.sh` 236 prošlo / 0 selhalo.
 
 ## v22.10.1 — Integrace do test (koordinace 22. 10. 2026)
 
