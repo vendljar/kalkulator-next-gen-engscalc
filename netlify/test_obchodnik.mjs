@@ -149,7 +149,7 @@ for (const [id, p, ok] of [['S6', 10, true], ['S7', 15, false]]) {
 { const z = nova('S13 cizí'); const r = await uloz(z, cO2); const l = await (await get(zakazky, 'http://x/api/zakazky', cO)).json();
   const seznam = l.zakazky || l.seznam || l.rejstrik || []; const vidi = JSON.stringify(seznam).includes('S13');
   const g = await nacti(r.soubor, cO); test('S13', 'obchodník 1 vidí a otevře zakázku obchodníka 2', vidi && !!g, { vidiVSeznamu: vidi, otevre: !!g }, 'informativní – sdílený rejstřík');
-  const zz = zk.importZakazka(kopie(g)); zz.nazevAkce += ' upraveno'; const r2 = await uloz(zz, cO, g.uloRazitko); const g2 = await nacti(r.soubor, cO);
+  const zz = zk.importZakazka(kopie(g)); zz.kontakt = (zz.kontakt || '') + ' upraveno'; /* Z1: název akce je po odeslání zmrazený */ const r2 = await uloz(zz, cO, g.uloRazitko); const g2 = await nacti(r.soubor, cO);
   test('S13b', 'obchodník 1 přepíše zakázku obchodníka 2; autor zůstane obchodník 2', r2.ok && g2.autor === 'obch2@priklad.cz', { ok: r2.ok, autor: g2.autor, upravil: g2.upravil }, 'informativní'); }
 /* S15 – schvalovací rejstřík obchodníkovi */
 { const s = await (await get(schvalovani, 'http://x/api/schvalovani?vse=1', cO)).json(); test('S15', 'obchodník čte rejstřík všech žádostí o slevu (i cizích)', s.ok, { pocetCelkem: s.pocetCelkem, pocetCeka: s.pocetCeka }, 'informativní'); }

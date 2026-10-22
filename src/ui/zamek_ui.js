@@ -90,6 +90,11 @@ const ZAMEK_CHRANENE = [
  * Plán plateb PROJ (planKlp…) sem nepatří: jde do nabídky celý. */
 const ZAMEK_KRYCI_FUNKCE = { klSet: 'kryci', klReset: 'kryci', klVyber: 'kryci',
   klpSet: 'kryciProj', klpReset: 'kryciProj', klpVyber: 'kryciProj' };
+/* Plán plateb PROJ (planKlp…) je od Z1 (J. V. 22. 10. 2026) po tisku CN
+ * editovatelný — odeslaná nabídka ho drží ve snímku zámku. Ptá se za něj
+ * pole `planPredvolba` (zámek bez snímku ho dál drží zmrazený). */
+const ZAMEK_KRYCI_PLAN = ['planKlpPredvolba', 'planKlpZaloha', 'planKlpProcento', 'planKlpMilnik', 'planKlpMilnikText',
+  'planKlpPridej', 'planKlpOdeber', 'planKlpPosun', 'planKlpVratitCinnost', 'planKlpPrepis', 'planKlpPrepisZrus'];
 
 /* Pole krycího listu ZAMČENÉ varianty, které se smí doplnit. U nezamčené
  * varianty vrací false — ta jde běžnou cestou (zámek čtení, …). */
@@ -123,8 +128,37 @@ function zamekKryciPoznamka(sekce) {
   if (!v || !variantaUzamcena(v)) return '';
   const otevreny = typeof zamekKryciOtevreny === 'function' && zamekKryciOtevreny(v);
   return `<div class="note noprint kl-zamek-pozn" style="margin-bottom:6px">🔒 ${otevreny
-    ? `Nabídka už odešla. Krycí list dál doplňujte — zamčená jsou jen pole, která jsou v cenové nabídce (${esc(sekce.join(', '))}).`
+    ? (typeof zamekSnimek === 'function' && zamekSnimek(v)
+      ? 'Nabídka už odešla. Krycí list dál doplňujte — zmrazená (🔒, šedá) jsou jen pole, která se po odeslání nemění '
+        + '(obchodník, název a adresa akce, hodnota zakázky, údaje zhotovitele, typ smlouvy, platnost nabídky). '
+        + 'Změna platebních podmínek, DPH nebo termínu se projeví v krycím listu a ve smlouvě; dotisk odeslané nabídky zůstává, jak odešla.'
+      : `Nabídka už odešla. Krycí list dál doplňujte — zamčená jsou jen pole, která jsou v cenové nabídce (${esc(sekce.join(', '))}).`)
     : 'Ze zakázky odešla smlouva o dílo — krycí list se už nemění (doplnit jde jen plná moc v krycím listu PROJ). Pokračujte klonem varianty.'}</div>`;
+}
+
+/* OZNAČENÍ ZMRAZENÉHO POLE (Z1, bod 5): atributy pro <input>/<select>/
+ * <textarea> pole krycího listu nebo cesty hlavičky, které se po odeslání
+ * nemění — šedé, neaktivní a s důvodem v bublině, ať obchodník nenaráží až
+ * na dialog klonu. Vrací '' u volného pole. */
+const ZAMEK_POLE_DUVOD = 'Nabídka už odešla — pole se po tisku cenové nabídky nemění (pokračujte klonem varianty).';
+function zamekPoleAttr(list, id) {
+  const v = (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined') ? aktivniVarianta(ZAK) : null;
+  if (!v || typeof zamekKryciPoleStav !== 'function' || !variantaUzamcena(v)) return '';
+  const st = zamekKryciPoleStav(v, list, id);
+  if (st === 'editovatelne') return '';
+  const duvod = st === 'jen_admin' ? 'Číslo odeslané nabídky mění jen administrátor.'
+    : (zamekKryciOtevreny(v) ? ZAMEK_POLE_DUVOD
+      : 'Ze zakázky odešla smlouva o dílo — krycí list se už nemění (pokračujte klonem varianty).');
+  return ` disabled class="zmrazeno" title="${esc('🔒 ' + duvod)}"`;
+}
+function zamekZakAttr(cesta) {
+  const duvod = (typeof zamekZakCestaZmrazena === 'function' && typeof ZAK !== 'undefined') ? zamekZakCestaZmrazena(ZAK, cesta) : '';
+  return duvod ? ` disabled class="zmrazeno" title="${esc('🔒 ' + duvod)}"` : '';
+}
+function zamekDphAttr(cesta) {
+  const v = (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined') ? aktivniVarianta(ZAK) : null;
+  if (!v || !variantaUzamcena(v) || typeof zamekDphVolna !== 'function' || zamekDphVolna(v, cesta)) return '';
+  return ` disabled class="zmrazeno" title="${esc('🔒 ' + ZAMEK_POLE_DUVOD)}"`;
 }
 
 let _zamekNainstalovan = false;
@@ -149,7 +183,8 @@ function zamekChranFunkce() {
        * do cenové nabídky, se doplňují i po tisku — dokud neodešla smlouva
        * o dílo (model zamekKryciPoleVolne v zamek.js, server hlídá totéž). */
       const kryciList = ZAMEK_KRYCI_FUNKCE[nazev];
-      if (kryciList && zamekKryciVolnePole(kryciList, args[0])) {
+      const planVolny = ZAMEK_KRYCI_PLAN.indexOf(nazev) >= 0 && zamekKryciVolnePole('kryciProj', 'planPredvolba');
+      if (planVolny || (kryciList && zamekKryciVolnePole(kryciList, args[0]))) {
         if (!zamekKryciCteniUvolni()) return;
         return puvodni.apply(this, args);
       }
@@ -321,6 +356,24 @@ async function tiskZamekCteniPovol(typ, varianta) {
   return !zamekCteniJe();   // odemknutí mohl zastavit náhled (nahledStop)
 }
 
+/* SNÍMEK, KTERÝ JEŠTĚ NENÍ NA SERVERU (Z1). Server snímek nového zámku
+ * ověří proti ukládaným datům; kdyby obchodník mezi tiskem a prvním uložením
+ * změnil editovatelné pole nabídky, snímek by nesedil a uložení by spadlo.
+ * Dokud zámek na serveru není, obnoví se proto snímek těsně před odesláním
+ * (online_ui.js) — stejně, jak ho spočítá server. Vrací id obnovených. */
+const ZAMEK_SNIMEK_NEULOZENY = new Set();
+function zamekSnimkyObnov() {
+  const ids = [];
+  ZAMEK_SNIMEK_NEULOZENY.forEach(id => {
+    const v = ((typeof ZAK !== 'undefined' && ZAK.varianty) || []).find(x => x && x.id === id);
+    if (!v || !variantaUzamcena(v) || !v.zamek.snimek) { ZAMEK_SNIMEK_NEULOZENY.delete(id); return; }
+    v.zamek.snimek = zamekSnimekSpocti(v);
+    ids.push(id);
+  });
+  return ids;
+}
+function zamekSnimkyUlozeno(ids) { (ids || []).forEach(id => ZAMEK_SNIMEK_NEULOZENY.delete(id)); }
+
 /* Volá se ze dvou míst: po stažení nabídky do Wordu a z tiskového náhledu
  * (okno náhledu si sáhne přes window.opener). Zamykají jen dokumenty, které
  * jdou zákazníkovi – viz ZAMEK_DOKUMENTY v zamek.js. */
@@ -356,7 +409,12 @@ function zamekPoTisku(typ, varId, sablona) {
     try { if (typeof kryciZmrazPodminky === 'function') kryciZmrazPodminky(ZAK, v, JEKLY); } catch (e) {}
     try { if (typeof kryciProjZmrazPodminky === 'function') kryciProjZmrazPodminky(ZAK, v); } catch (e) {}
   }
-  zamkniVariantu(v, { typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek,
+  /* Snímek krycích listů a DPH odeslané nabídky (Z1) — až PO zmrazení
+   * podmínek, aby nesl i předvyplněné věty. Server ho u nového zámku
+   * spočítá z dat znovu (klientskému nevěří). */
+  const snimek = (prvni && typeof zamekSnimekSpocti === 'function') ? zamekSnimekSpocti(v) : null;
+  if (snimek) ZAMEK_SNIMEK_NEULOZENY.add(v.id);
+  zamkniVariantu(v, { typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek,
                       sablona: sablona || null, slovnik: zamekSlovnikTed() });
   render();
   return v.zamek;

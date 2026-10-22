@@ -144,6 +144,48 @@ await zavri();
 ok('po SoD poznámka říká, že se krycí list nemění',
   await p.evaluate(() => /odešla smlouva o dílo/.test((document.querySelector('.kl-zamek-pozn') || {}).textContent || '')));
 
+/* Z1 (J. V. 22. 10. 2026): zámek se snímkem (zamekPoTisku od v22.10.3) —
+ * platební podmínky a DPH se po tisku CN mění bez dialogu, zmrazená pole
+ * (obchodník, název akce v hlavičce) ne a v krycím listu jsou označená. */
+console.log('— Z1: nabídka se snímkem —');
+await p.evaluate(([c, cp]) => {
+  Object.assign(DEFAULT_CENIK, c); delete DEFAULT_CENIK.prazdny;
+  Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;
+  ZAK = novaZakazka(); ZAK.cislo = '2026 - OVP - CN - 9951'; ZAK.nazevAkce = 'Ukázková akce Z1'; ZAK.autor = 'autor.kryci@priklad.cz';
+  syncVarianta();
+  KL.hodnoty.zaloha1 = '30 % – po podpisu smlouvy';
+  const v = aktivniVarianta(ZAK);
+  zamkniVariantu(v, { typ: 'nabidkaProjTisk', snimek: zamekSnimekSpocti(v) });
+  if (typeof ONLINE_STAV !== 'undefined') ONLINE_STAV.ja = { email: 'autor.kryci@priklad.cz', role: 'Obchodník' };
+  prepniTab('kryciProj'); render();
+}, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj()]);
+await p.evaluate(() => klSet('zaloha1', '10 % – po podpisu smlouvy'));
+await p.waitForTimeout(300);
+s = await stav();
+ok('Z1: záloha (editovatelná po tisku CN) se zapsala bez dialogu', s.kl.zaloha1 === '10 % – po podpisu smlouvy' && !(await modal()), [s.kl, await modalText()]);
+await zavri();
+await p.evaluate(() => set('PC.dph', 0.12));
+await p.waitForTimeout(300);
+ok('Z1: sazba DPH PROJ se po tisku CN změní bez dialogu',
+  await p.evaluate(() => aktivniVarianta(ZAK).data.proj.cenik.dph === 0.12) && !(await modal()), await modalText());
+await zavri();
+await p.evaluate(() => klpSet('obchodnik', 'Jiný Obchodník'));
+await p.waitForTimeout(400);
+s = await stav();
+ok('Z1: zmrazené pole (obchodník) se nezapsalo', s.klp.obchodnik === undefined, s.klp);
+await zavri();
+await p.evaluate(() => set('ZAK.nazevAkce', 'Přejmenováno'));
+await p.waitForTimeout(400);
+ok('Z1: název akce v hlavičce se po tisku CN nezmění', await p.evaluate(() => ZAK.nazevAkce === 'Ukázková akce Z1'));
+await zavri();
+await p.evaluate(() => { prepniTab('kryciProj'); render(); });
+await p.waitForTimeout(300);
+ok('Z1: zmrazená pole krycího listu PROJ jsou označená (🔒, neaktivní)',
+  await p.evaluate(() => { const r = document.querySelectorAll('.kl-zmrazeno');
+    return r.length > 0 && [...r].every(x => [...x.querySelectorAll('input,select,textarea')].every(i => i.disabled)); }));
+ok('Z1: poznámka říká, co je po odeslání zmrazené',
+  await p.evaluate(() => /zmrazená \(🔒/.test((document.querySelector('.kl-zamek-pozn') || {}).textContent || '')));
+
 await b.close();
 if (konzole.length) console.log('Konzole:\n  ' + konzole.join('\n  '));
 const spatne = chyby.filter(x => !x).length;

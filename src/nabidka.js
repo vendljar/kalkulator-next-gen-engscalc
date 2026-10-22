@@ -11,7 +11,12 @@
  * Pevný text šablony překládá docxPrelozSablonu (docxgen.js); tady se překládají
  * jen dosazované hodnoty, aby výsledný dokument byl jazykově konzistentní.
  * Neznámý výraz zůstává česky (viz preklad.js) – nikdy se nic nevymýšlí. */
-function nabidkaData(zak, varianta, jekly, lang, sablona) {
+function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
+  /* ODESLANÁ NABÍDKA ZŮSTÁVÁ ZMRAZENÁ (Z1, J. V. 22. 10. 2026): dotisk CN
+   * bere krycí list a sazbu DPH ze snímku zámku (zamekNabidkaPohled), takže
+   * podmínky ani DPH změněné po odeslání ho nezmění. Smlouva o dílo staví
+   * na týchž datech, ale s živými hodnotami (`moznosti.zive`). */
+  if (!(moznosti && moznosti.zive) && typeof zamekNabidkaPohled === 'function') varianta = zamekNabidkaPohled(varianta);
   const d = varianta.data;
   const Zv = d.ock.zadani, Cv = d.cenik, TSv = d.techspec;
   /* Odeslaná nabídka vydá svůj otisk, ne dnešní výpočet (nález A1). */

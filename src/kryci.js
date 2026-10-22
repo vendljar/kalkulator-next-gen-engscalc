@@ -935,6 +935,18 @@ function kryciZmrazPodminky(zak, varianta, jekly) {
   const out = {};
   KRYCI_SEKCE.forEach(s => s.pole.forEach(p => {
     if (p.bind || p.dphBind || p.nezmrazovat || typeof p.prefill !== 'function') return;
+    /* ODVOZENÝ ŘÁDEK (Zaměření strojovna, Z1 — J. V. 22. 10. 2026): před
+     * zámkem platí hodnota z kalkulace a ruční přepis se nečte. Do v22.10.2
+     * ale zámek ten starý, neplatný přepis „oživil" (kryciHodnota ho u zamčené
+     * varianty čte) a z řádku se stalo přepínátko bez vazby. Teď se při
+     * zamčení zmrazí odvozená hodnota (předvyplnění) a starý přepis se zahodí;
+     * po odeslání jde pole přepsat (tabulka J. V.: editovatelné) a ↺ vrátí
+     * hodnotu z kalkulace. */
+    if (p.odvozene) {
+      let vo = '';
+      try { vo = p.prefill(c); } catch (e) { vo = ''; }
+      if (vo != null && vo !== '') { out[p.id] = String(vo); delete h[p.id]; return; }
+    }
     if (h[p.id] !== undefined && h[p.id] !== '') return;      // ruční přepis už je v datech
     let v = '';
     try { v = p.prefill(c); } catch (e) { v = ''; }

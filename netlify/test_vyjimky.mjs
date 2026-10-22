@@ -179,7 +179,7 @@ console.log('===== směs ceníku: žádost, schválení, zámek =====');
   const c4 = zk.importZakazka(kopie(g4)); zamkni(c4);
   const r4 = await uloz(c4, cO, g4.uloRazitko);
   test('se schválením: nový zámek obchodníka (200)', r4.status === 200, r4);
-  c4.nazevAkce += ' (poznámka)';
+  c4.kontakt = (c4.kontakt || '') + ' (poznámka)';   // Z1: název akce je po odeslání zmrazený
   (r4.slevy || []).forEach(x => { const v = c4.varianty.find(y => y.id === x.id); if (v && x.cenovaVyjimka) v.data.cenovaVyjimka = kopie(x.cenovaVyjimka); });
   const r5 = await uloz(c4, cO, r4.razitko);
   test('další uložení z téhož okna po tisku projde (200, ne 409)', r5.status === 200, r5); }

@@ -550,7 +550,9 @@ function uloZamekKlic(v) {
    * odeslané nabídky na mírnější (u starých zámků jen základ, B56). */
   return JSON.stringify({ kdy: z.kdy || '', typ: z.typ || '', cislo: z.cislo || '',
                           otisk: z.otisk || null, cisloPapir: !!z.cisloPapir,
-                          vysledek: z.vysledek || null });
+                          vysledek: z.vysledek || null,
+                          /* Snímek odeslané nabídky (Z1) — z něj tiskne dotisk CN. */
+                          snimek: z.snimek || null });
 }
 
 /* RAZÍTKA EXISTUJÍCÍHO ZÁMKU DRŽÍ SERVER (23. 9. 2026, nález B62).

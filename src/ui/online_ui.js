@@ -1288,11 +1288,13 @@ function onlineUloz(opts) {
   /* Razítko verze jde se zakázkou (B10, 22. 8. 2026): server odmítne přepsat
    * verzi, ze které jsme nevyšli. Kolizi řeší hláška s dvěma tlačítky (V27);
    * `prepsat: true` zůstává jako výslovná cesta pro volajícího. */
+  const snimkyNove = (typeof zamekSnimkyObnov === 'function') ? zamekSnimkyObnov() : [];   // Z1
   const telo = { zakazka: ZAK, ocekavaneRazitko: ONLINE_STAV.razitko || '' };
   if (opts.prepsat) telo.prepsat = true;
   const slevyOdeslane = onlineSlevyOtisk(ZAK);
   const beh = onlineApi('/api/zakazky', telo).then(o => {
     ONLINE_STAV.soubor = o.soubor; ONLINE_STAV.razitko = o.razitko || '';
+    if (typeof zamekSnimkyUlozeno === 'function') zamekSnimkyUlozeno(snimkyNove);
     onlineSlevyZeServeru(o.slevy, slevyOdeslane);
     /* Razítko i do zakázky samé, ať kopie v okně odpovídá tomu, co leží na
      * serveru — a ať se počítá do „naposledy zapsaného" o řádek níž. */

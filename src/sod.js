@@ -195,7 +195,7 @@ function sodJazykZabrana(typ, L, maMutaci) {
 function sodData(zak, varianta, jekly, lang, sablona) {
   const zabranaDph = sodDphZabrana(zak, varianta);   // B189: bez režimu DPH smlouva nevznikne
   if (zabranaDph) throw new Error(zabranaDph);
-  const d = nabidkaData(zak, varianta, jekly, lang);
+  const d = nabidkaData(zak, varianta, jekly, lang, undefined, { zive: true });   // Z1: SoD nese živé podmínky a DPH
   const L = d.jazyk || 'cz';
   /* Objednané příplatky (#447 C6) — cena díla = nabídka + objednané. */
   const objPryc = sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona);
@@ -295,7 +295,7 @@ function sodPokutaZhotovitele(placeholders, sablona, symbol, text) {
 function sodProjData(zak, varianta, lang, sablona) {
   /* Smlouva nese cenu díla: činnosti po slevě, ať se sečtou na cenu, kterou
    * objednatel platí (řádek slevy smlouva nemá). */
-  const d = nabidkaProjData(zak, varianta, lang, { slevaZvlast: false });
+  const d = nabidkaProjData(zak, varianta, lang, { slevaZvlast: false, zive: true });   // Z1: živé podmínky a DPH
   /* Bloky studie jsou bloky NABÍDKY PROJ v7 (D1) — smlouva má vlastní seznam
    * (sodProjRozsah); cizí jméno by u šablony SoD v4 zastavilo dokument. */
   d.blokyPryc = [];
