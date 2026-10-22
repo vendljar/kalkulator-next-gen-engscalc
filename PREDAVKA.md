@@ -1,3 +1,23 @@
+# Předávka — 22. 10. 2026: dávka D1 — roadmapa, novinky pro obchodníky, ukázka exportu controllingu v2, větev `claude/d1-roadmapa-novinky`
+
+Nad `test` = v21.10.6 (4c127f5). Jen dokumentace — kód aplikace ani `verze.txt` se neměnily. **Do integrace / test
+nic** — slučuje koordinace (session_01X93Edh1U8MQru6HV28FdBY). J. V. 22. 10. pryč — otázky jen zapsané.
+
+- **Roadmapa** (`roadmapa/roadmap.json`, `--kontrola` čistá): meta 22. 10. 2026 / v21.10.6; `poradi` doplněné
+  v18.10.12 → v21.10.6 (+ řádek D1); #447 Controlling C1–C6 → hotovo v21.10.5; `hotovoV` u #451, #470–#472
+  (v21.10.3); nové #475 (kolo K6), #476–#482 (= #O13-1…7: K5-S1, K5-K1+K3, K5-W1, K5-W2, „(DPZ)*“ v aplikaci —
+  v21.10.5; návrh odstranit obal → ověřen D3 a ponechán, K5-S2/W4/W7 → D3 — v21.10.6); #484 a #485 ověřeny nad
+  v21.10.6 — trvají; rozhodnutí J. V. z auditů K5/K6 jako `blokovano` s otázkou: #486 K5-W3(+W5), #487 K5-K2,
+  #488 K5-S3, #489 K5-S4, #490 K5-K4, #491 K5-W6/K6-W5, #492 K6-S2, #493 K6-K2, #494 K6-K3, #495 K6-K4,
+  #496 K6-S5, #497 K6-S7, #498 K6-K7, #499 K6-W6; #500 zbytek controllingu (nálezy z ukázky 1 a 4, protokol
+  exportů v záloze, PROJ a budoucí účty). Úpravy cílené (soubor se nepřeformátoval) → konflikty jen v místech změn.
+- **`podklady/NOVINKY_v20.10.2-v21.10.6.md`** — soupis pro obchodníky (SoD a objednané příplatky, zmrazení textů,
+  PROJ, OCK, DPH, controlling, zálohy), bez cen a osobních údajů.
+- **`podklady/ukazky/controlling_export_v2_ukazka.xlsx` + `.md`** — hromadný export v2 kódem aplikace nad 5
+  smyšlenými nabídkami (3 OCK, 2 PROJ; objednané příplatky, neřídící varianta, přepočtený výsledek), zkušební ceník
+  testů; generátor `podklady/ukazky/vyrob_controlling_export_v2.js`.
+- **Ověření:** `roadmapa.py --kontrola` čistá, `kontrola_udaju.py` čistá, `testovaci_kolo.sh --jen staticke` 4/4.
+
 # Předávka — 21. 10. 2026 večer: dávka D3 — opravy nálezů auditu K6 (#483, v21.10.6), větev `claude/d3-k6-opravy`
 
 Nad `test` = v21.10.5 (7fac477). **Do integrace / test nic** — slučuje koordinace (session_01X93Edh1U8MQru6HV28FdBY,

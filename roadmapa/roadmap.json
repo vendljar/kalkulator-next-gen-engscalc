@@ -7033,7 +7033,7 @@
    "proc": "Zjištěno v dávce K29-N1 (20. 10. 2026), mimo její rozsah: když je zastřešení šachty v nabídce, ale s ručně přepsaným množstvím (ne nulou), příplatek za měď dál počítá s vypočtenou plochou, ne s přepsanou.",
    "detail": "HOTOVO (O11, rozhodnutí J. V. 21. 10. 2026, varianta A): s ručním množstvím zastřešení (platné číslo ≠ 0) bere měď přepsanou plochu; stříška nad můstkem je v ní obsažená, nic se nepřičítá. Prázdný/nečitelný přepis = vypočtená, vlastní množství mědi má přednost, zamčené varianty beze změny.",
    "hotovoKdyz": "test_mustky.js #451 (oba modely, pojistka 4 FAIL); mutace jádra #451 (3) + upravená #356.",
- "hotovoV": "",
+   "hotovoV": "v21.10.3",
    "kde": "`src/engine.js`",
    "zavisi": [
     "450"
@@ -7189,16 +7189,17 @@
   {
    "id": "447",
    "vlna": "C",
-   "stav": "ceka",
-   "dulezitost": "vysoka",
+   "stav": "hotovo",
+   "dulezitost": "",
    "slozitost": "L",
-      "nazev": "Nastavení → Controlling: nákladové skupiny (kapitoly), mapování klíčů ceníku a export předkalkulace pro Reporting CZ",
+   "nazev": "Nastavení → Controlling: nákladové skupiny (kapitoly), mapování klíčů ceníku a export předkalkulace pro Reporting CZ",
    "proc": "Controlling (A. Mácová) potřebuje předkalkulované náklady po nákladových skupinách s účty Helios, aby šly v Reporting CZ porovnat se skutečností (PRE × POST).",
-   "detail": "Číselník skupin (ManVysl, účet Helios nyní/budoucí, přímý/nepřímý, variabilní/fixní); mapování každého klíče C.*/PC.* a pseudo-klíčů (rezerva, přirážka ATYP, vlastní položky) podle stabilního klíče; hlídání nezařazených (test úplnosti + upozornění při zveřejnění ceníku); export varianty i hromadně za období (XLSX/CSV, u zamčené varianty zmrazený výsledek). Dávky C1–C4.",
+   "detail": "Číselník skupin (ManVysl, účet Helios nyní/budoucí, přímý/nepřímý, variabilní/fixní); mapování každého klíče C.*/PC.* a pseudo-klíčů (rezerva, přirážka ATYP, vlastní položky) podle stabilního klíče; hlídání nezařazených (test úplnosti + upozornění při zveřejnění ceníku); export varianty i hromadně za období (XLSX/CSV, u zamčené varianty zmrazený výsledek). Dávky C1–C4. HOTOVO (uzavřeno 22. 10. 2026, D1): C1 a C2 v21.10.1 (skupiny, mapování, obrazovka, upozornění u ceníku, export varianty), C3 + C4 v21.10.4 (hromadný export za období, export z Přehledu, Pipedrive deal id jen admin), C5 + C6 v21.10.5 (export verze 2 — Řádky jen v ceně nabídky, list „Příplatky – volby“, sloupce Řídící varianta a Výsledek; objednané příplatky u SoD, krycí list, export podle data prodeje), šablona SoD realizace v4 (S11). Opravy nálezů K5/K6 v O13 a D3 (v21.10.5, v21.10.6). Co z controllingu zbývá, je v #500.",
    "hotovoKdyz": "Admin v Nastavení → Controlling spravuje skupiny a mapování, test úplnosti hlídá nové klíče, export po kapitolách jde stáhnout pro variantu i za období; práva drží server.",
    "kde": "`podklady/CONTROLLING_NAVRH_20_10.md`, `src/controlling.js`, `src/ui/controlling_ui.js`, `netlify/functions/controlling.mjs`, `netlify/functions/controlling_export.mjs`; `nastroje/vyrob_sablony.js` (--sod-real-v4); větve `claude/controlling-navrh`, `claude/controlling-c3`, `claude/s11-sod-realizace-v4`",
    "zavisi": [],
-   "pozn": "Předběžné id (přidělí koordinace při sloučení). Rozhodnutí J. V. J1–J11 20. 10. 2026; C1 HOTOVO 20. 10. (f377c80: model, /api/controlling, záloha a obnova, mutace 11/11). C2 HOTOVO v21.10.1 (obrazovka Nastavení → Controlling, upozornění u ceníku, export jedné zamčené řídící varianty). C3 HOTOVO v21.10.4 (větev claude/controlling-c3; rozhodnutí J. V. 21. 10. body 1, 2, 4): tlačítko „Export pro controlling“ v Přehledu (jen admin), hromadný export za období na serveru GET /api/controlling/export (den zamčení v českém čase, OCK/PROJ/obojí, ČR/ZAHR/obojí, jen zamčené řídící, protokol exportů, meze 413). Čeká na J. V.: bod 3 — sloupec „V nabídce“ u příplatků (návrh https://claude.ai/artifact/ELHhaqkbhBaGEeyJGoxUPb), kód připraven (ctrlVZakladuText). C6 HOTOVO 21. 10. (táž větev): objednané příplatky u SoD (zak.objednane mimo zámek, server objKontrola, po podpisu SoD jen admin), cena díla SoD = nabídka + objednané bez slevy, DPH z celku, nové symboly SOD_CENA_NABIDKY / SOD_PRIPLATKY_OBJEDNANE / SOD_PRIPLATKY_KC (šablona v4 čeká na šablonovou dávku, podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md), krycí list „Objednané příplatky“, export Řádky + „Objednáno dodatečně“, hromadně podle data prodeje. C5 HOTOVO 21. 10. (táž větev, rozhodnutí J. V. ~12:50 nad ukázkou): struktura exportu v2 — Řádky jen v ceně nabídky, list „Příplatky – volby“, sloupce Řídící varianta a Výsledek, hromadně řídící zamčená jinak poslední zamčená v období; „V nabídce“ a evidence dodatečně objednaných příplatků čekají na J. V. C4 HOTOVO 21. 10. (táž větev): zak.pdDealId ručně jen admin (Nastavení → Controlling → Export), server 403/400, duplikát id nepřebírá; automatické převzetí z propojeného dealu čeká na výběr dealu z CRM v rozhraní (zatím neexistuje). Nálezy koordinace z ukázky na 5 nabídkách (21. 10.) čekají na J. V.: zaokrouhlení OCK nahoru v exportu nevidět, zamčená jen neřídící varianta se nevyveze, přepočtený výsledek není vidět v řádcích, Kapitoly zaokrouhlují po skupinách. A. Mácová je mimo do prosince — rozvržení PROJ a budoucí účty doplní pak. C6 šablona HOTOVO 21. 10. (S11, větev claude/s11-sod-realizace-v4): Smlouva o dílo – realizace v4 CZ/EN/DE/FR (`vyrob_sablony.js --sod-real-v4`) — v čl. V pod celkovou cenou díla tři samostatné odstavce s cenou dle nabídky, objednanými příplatky a jejich součtem ({{SOD_CENA_NABIDKY}}, {{SOD_PRIPLATKY_OBJEDNANE}}, {{SOD_PRIPLATKY_KC}}); bez objednaných příplatků zmizí. Na web až s kódem C6 (`podklady/SABLONA_SOD_REALIZACE_V4_21_10.md`)."
+   "pozn": "Předběžné id (přidělí koordinace při sloučení). Rozhodnutí J. V. J1–J11 20. 10. 2026; C1 HOTOVO 20. 10. (f377c80: model, /api/controlling, záloha a obnova, mutace 11/11). C2 HOTOVO v21.10.1 (obrazovka Nastavení → Controlling, upozornění u ceníku, export jedné zamčené řídící varianty). C3 HOTOVO v21.10.4 (větev claude/controlling-c3; rozhodnutí J. V. 21. 10. body 1, 2, 4): tlačítko „Export pro controlling“ v Přehledu (jen admin), hromadný export za období na serveru GET /api/controlling/export (den zamčení v českém čase, OCK/PROJ/obojí, ČR/ZAHR/obojí, jen zamčené řídící, protokol exportů, meze 413). Čeká na J. V.: bod 3 — sloupec „V nabídce“ u příplatků (návrh https://claude.ai/artifact/ELHhaqkbhBaGEeyJGoxUPb), kód připraven (ctrlVZakladuText). C6 HOTOVO 21. 10. (táž větev): objednané příplatky u SoD (zak.objednane mimo zámek, server objKontrola, po podpisu SoD jen admin), cena díla SoD = nabídka + objednané bez slevy, DPH z celku, nové symboly SOD_CENA_NABIDKY / SOD_PRIPLATKY_OBJEDNANE / SOD_PRIPLATKY_KC (šablona v4 čeká na šablonovou dávku, podklady/SOD_V4_OBJEDNANE_PRIPLATKY_21_10.md), krycí list „Objednané příplatky“, export Řádky + „Objednáno dodatečně“, hromadně podle data prodeje. C5 HOTOVO 21. 10. (táž větev, rozhodnutí J. V. ~12:50 nad ukázkou): struktura exportu v2 — Řádky jen v ceně nabídky, list „Příplatky – volby“, sloupce Řídící varianta a Výsledek, hromadně řídící zamčená jinak poslední zamčená v období; „V nabídce“ a evidence dodatečně objednaných příplatků čekají na J. V. C4 HOTOVO 21. 10. (táž větev): zak.pdDealId ručně jen admin (Nastavení → Controlling → Export), server 403/400, duplikát id nepřebírá; automatické převzetí z propojeného dealu čeká na výběr dealu z CRM v rozhraní (zatím neexistuje). Nálezy koordinace z ukázky na 5 nabídkách (21. 10.) čekají na J. V.: zaokrouhlení OCK nahoru v exportu nevidět, zamčená jen neřídící varianta se nevyveze, přepočtený výsledek není vidět v řádcích, Kapitoly zaokrouhlují po skupinách. A. Mácová je mimo do prosince — rozvržení PROJ a budoucí účty doplní pak. C6 šablona HOTOVO 21. 10. (S11, větev claude/s11-sod-realizace-v4): Smlouva o dílo – realizace v4 CZ/EN/DE/FR (`vyrob_sablony.js --sod-real-v4`) — v čl. V pod celkovou cenou díla tři samostatné odstavce s cenou dle nabídky, objednanými příplatky a jejich součtem ({{SOD_CENA_NABIDKY}}, {{SOD_PRIPLATKY_OBJEDNANE}}, {{SOD_PRIPLATKY_KC}}); bez objednaných příplatků zmizí. Na web až s kódem C6 (`podklady/SABLONA_SOD_REALIZACE_V4_21_10.md`).",
+   "hotovoV": "v21.10.5"
   },
   {
    "id": "460",
@@ -7364,7 +7365,7 @@
    "hotovoKdyz": "test_uloziste.js +4 (před opravou 3 FAIL), test_prava.mjs +8 (před opravou 4 FAIL), overit_o11_vyjezd.mjs 14/0 (před opravou spadne); mutace O11 K4-N4 (3).",
    "kde": "`src/ui/kalk_proj.js`, `src/uloziste.js`, `netlify/test_prava.mjs`, `src/test_uloziste.js`, `overit_o11_vyjezd.mjs`",
    "zavisi": [],
-   "hotovoV": "",
+   "hotovoV": "v21.10.3",
    "pozn": "Id přidělila koordinace (dávka O11); v21.10.3."
   },
   {
@@ -7379,7 +7380,7 @@
    "hotovoKdyz": "test_zalohy.mjs blok O11 15/0 (před opravou 3 FAIL + výjimka), test_o7_kopie_klient.js +2, overit_online.mjs +2 (před opravou FAIL); mutace O11 K4-N13 (7).",
    "kde": "`netlify/lib/zalohovani.mjs`, `netlify/functions/zaloha_vynuceno.mjs`, `netlify/functions/zaloha_nocni.mjs`, `src/uloziste.js`, `src/ui/online_ui.js`",
    "zavisi": [],
-   "hotovoV": "",
+   "hotovoV": "v21.10.3",
    "pozn": "Id přidělila koordinace (dávka O11); v21.10.3."
   },
   {
@@ -7394,7 +7395,7 @@
    "hotovoKdyz": "Rozhodnutí J. V. zapsané v roadmapě a MEZE.",
    "kde": "`src/vyjimky.js`, `BEZPECNOST_MEZE.md`",
    "zavisi": [],
-   "hotovoV": "",
+   "hotovoV": "v21.10.3",
    "pozn": "Id přidělila koordinace (dávka O11)."
   },
   {
@@ -7454,7 +7455,7 @@
    "hotovoKdyz": "Test karty (sod_ui) na přepis jiné varianty a měnu.",
    "kde": "`src/ui/sod_ui.js`",
    "zavisi": [],
-   "pozn": "Čeká na zařazení koordinací / J. V."
+   "pozn": "Čeká na zařazení koordinací / J. V. Ověřeno D1 22. 10. 2026 nad v21.10.6: trvá (objUiPrepni u jiné varianty začne prázdným seznamem, karta ukazuje Kč)."
   },
   {
    "id": "485",
@@ -7468,7 +7469,372 @@
    "hotovoKdyz": "Aplikace přeloží „(…{{X}})“ bez obalu; obal i jeho test odstraněny.",
    "kde": "`src/docxgen.js`, `nastroje/vyrob_sablony.js`",
    "zavisi": [],
-   "pozn": "Mění chování aplikace — rozhodne koordinace / J. V."
+   "pozn": "Mění chování aplikace — rozhodne koordinace / J. V. Ověřeno D1 22. 10. 2026 nad v21.10.6: trvá (docxPrelozUseky beze změny od D3, obal v nástroji zůstává)."
+  },
+  {
+   "id": "475",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "M",
+   "nazev": "Kolo K6 + bezpečnostní audit nad v21.10.5 — podmínka posunu test → main",
+   "proc": "Zadání koordinace 21. 10. 2026: celé testovací kolo s mutacemi a audit změn v21.10.4 → v21.10.5 (O12, S11, Controlling C5 + C6, O13, zápis K5) před návrhem posunu test → main.",
+   "detail": "Kolo nad 7fac477: sady 296/0/6, mutace jádra 417/417, mutace serveru 753/753 (úplnost po názvech), statické 4/4 — žádná přeživší mutace, žádný prázdný test. Audit (podklady/K6_AUDIT_21_10.md): 0 kritických, 0 vysokých, 1 střední (K6-K1), 9 nízkých, 12 informativních; opravy bez J. V. udělala D3 (#483), rozhodnutí J. V. #486–#499.",
+   "hotovoKdyz": "Kolo celé zelené a audit zapsaný s rozdělením nálezů na opravu bez J. V. a rozhodnutí J. V.",
+   "kde": "`podklady/K6_AUDIT_21_10.md`, `CHANGELOG.md` (v21.10.5 — Integrace)",
+   "zavisi": [],
+   "hotovoV": "v21.10.5",
+   "pozn": "Id přidělila koordinace (dávka K6, větev claude/k6-kolo). Kód se neměnil."
+  },
+  {
+   "id": "476",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "S",
+   "nazev": "K5-S1: Pipedrive deal id jako objekt už neshodí uložení zakázky (400 místo 500)",
+   "proc": "Audit K5: objekt/pole v pdDealId shodil uložení zakázky i obnovu na HTTP 500 (String({toString:1}) → TypeError).",
+   "detail": "HOTOVO (O13): ctrlPdDealIdNorm pustí jen text nebo číslo; objekt, pole, logická hodnota → 400 „Pipedrive deal id musí být…“, i v obnově; neplatná uložená hodnota se bere jako prázdná.",
+   "hotovoKdyz": "src/test_controlling.js S1 (před opravou 3 FAIL), netlify/test_prava.mjs (+2), mutace „k5-“.",
+   "kde": "`src/controlling.js` (ctrlPdDealIdNorm), `netlify/lib/zakazka_kontrola.mjs`",
+   "zavisi": [],
+   "hotovoV": "v21.10.5",
+   "pozn": "Dávka O13 (claude/o13-k5-nalezy), bod #O13-1 z její PREDAVKA; id přidělila D1 22. 10. 2026."
+  },
+  {
+   "id": "477",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "S",
+   "nazev": "K5-K1 + K5-K3: CSV pro controlling chráněné proti vzorcům i u „+ “ a „- “",
+   "proc": "Audit K5: buňky začínající „+ “, „- “ nebo „+TAB“ mohly Excel vyhodnotit jako vzorec; záložní cesta ctrlCsvBunka byla bez ochrany.",
+   "detail": "HOTOVO (O13): ctrlCsvBunka má vlastní přísnou ochranu — apostrof u textu začínajícího = + - @ TAB CR, čísla (i záporná) bez uvozovek; globální csvBunka (odrážky překladů) beze změny; záložní cesta bez ochrany zmizela.",
+   "hotovoKdyz": "src/test_controlling.js K1 (před opravou 2 FAIL), mutace „k5-“ a upravená „#447 C2: CSV bez ochrany“.",
+   "kde": "`src/controlling.js` (ctrlCsvBunka)",
+   "zavisi": [],
+   "hotovoV": "v21.10.5",
+   "pozn": "Dávka O13 (claude/o13-k5-nalezy), bod #O13-2 z její PREDAVKA; id přidělila D1 22. 10. 2026."
+  },
+  {
+   "id": "478",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "S",
+   "nazev": "K5-W1: kokpit koordinace — popisek odkazu bezpečně (kratko/lnk)",
+   "proc": "Audit K5: kokpit skládal popisek odkazu z neošetřeného textu; chybné kódování URL shodilo vykreslení.",
+   "detail": "HOTOVO (O13): popisek z odescapovaného odkazu, dek() v try/catch, výstup přes esc(); vzhled beze změny.",
+   "hotovoKdyz": "overit_kokpit.mjs 12/0 (před opravou 3 ✕).",
+   "kde": "`.claude/skills/kokpit-koordinace/`",
+   "zavisi": [],
+   "hotovoV": "v21.10.5",
+   "pozn": "Dávka O13 (claude/o13-k5-nalezy), bod #O13-3 z její PREDAVKA; id přidělila D1 22. 10. 2026."
+  },
+  {
+   "id": "479",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "S",
+   "nazev": "K5-W2: mazání sloučených větví — jména se znaky & # % v dotazu na API",
+   "proc": "Audit K5: nastroje/sloucene_vetve.sh dával jméno větve do dotazu activity?ref= bez kódování.",
+   "detail": "HOTOVO (O13): uri_segmenty (encodeURIComponent po segmentech, „/“ zůstává) v dotazu activity?ref=.",
+   "hotovoKdyz": "nastroje/test_sloucene_vetve.sh 51/0 (před opravou 2 ✗).",
+   "kde": "`nastroje/sloucene_vetve.sh`",
+   "zavisi": [],
+   "hotovoV": "v21.10.5",
+   "pozn": "Dávka O13 (claude/o13-k5-nalezy), bod #O13-4 z její PREDAVKA; id přidělila D1 22. 10. 2026."
+  },
+  {
+   "id": "480",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "S",
+   "nazev": "Jazyková verze v aplikaci: nadpis „CENA ZA … (DPZ)*“ se přeloží",
+   "proc": "S10 opravilo překlad úseku se závorkou před symbolem jen v nástroji šablon; „vyrobit jazykovou verzi“ v aplikaci nechávala nadpis česky.",
+   "detail": "HOTOVO (O13): docxPrelozUseky zkusí jádro s jednou neuzavřenou „(“, za nímž v dokumentu stojí „)“, i se „)“ a koncovou „)“ vezme z překladu.",
+   "hotovoKdyz": "src/test_sablona_proj_v7_preklad.js 17/0 (před opravou 3 FAIL — EN/DE/FR), mutace jádra „O13:“.",
+   "kde": "`src/docxgen.js` (docxPrelozUseky)",
+   "zavisi": [],
+   "hotovoV": "v21.10.5",
+   "pozn": "Dávka O13 (claude/o13-k5-nalezy), bod #O13-5 z její PREDAVKA; id přidělila D1 22. 10. 2026."
+  },
+  {
+   "id": "481",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "S",
+   "nazev": "Návrh O13: odstranit obal trStavSeZavorkou z nástroje šablon — ověřeno, ponechán",
+   "proc": "O13 po opravě #480 navrhla obal v nástroji odstranit jako nadbytečný.",
+   "detail": "HOTOVO (D3, ověření): obal NENÍ nadbytečný — u „(…{{SYMBOL}})“ (závorka až za symbolem) aplikace úsek nechá česky, obal ho přeloží (338 rozdílů ze 2304 porovnání). Obal ponechán, test hlídá, že zůstává. Rozšíření aplikace = #485.",
+   "hotovoKdyz": "Rozhodnuto ověřením, test test_sablona_proj_v7_preklad.js (obal vyřazený → FAIL).",
+   "kde": "`nastroje/vyrob_sablony.js` (trStavSeZavorkou)",
+   "zavisi": [],
+   "hotovoV": "v21.10.6",
+   "pozn": "Dávka O13 (claude/o13-k5-nalezy), bod #O13-6 z její PREDAVKA; id přidělila D1 22. 10. 2026."
+  },
+  {
+   "id": "482",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "S",
+   "nazev": "Zbytek K5 bez J. V.: K5-S2 (shodné deal id), K5-W4, K5-W7 (testy W2)",
+   "proc": "O13 tyto nálezy „opravit bez J. V.“ neudělala (mimo zadání) a navrhla je do další opravné dávky; audit K6 je potvrdil jako trvající.",
+   "detail": "HOTOVO (D3): K5-S2 — shodné příchozí a uložené pdDealId (i neplatné) projde beze změny; K5-W4 a K5-W7 — test_sloucene_vetve.sh pokrývá mazání krátkým jménem a nečíselný čas commitu i odpovědi API (mutanty z auditu chycené).",
+   "hotovoKdyz": "netlify/test_prava.mjs a test_sloucene_vetve.sh s pojistkou (CHANGELOG v21.10.6 — D3), mutace „k5-s2“ 1/1.",
+   "kde": "`netlify/lib/zakazka_kontrola.mjs`, `nastroje/test_sloucene_vetve.sh`",
+   "zavisi": [],
+   "hotovoV": "v21.10.6",
+   "pozn": "Dávka O13 (claude/o13-k5-nalezy), bod #O13-7 z její PREDAVKA; id přidělila D1 22. 10. 2026."
+  },
+  {
+   "id": "486",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K5-W3 (+K5-W5): mazání větví bez API — první běh „jen vypsat“ a Rulesets",
+   "proc": "Audit K5, nízký: čerstvá větev založená přesně na špičce už sloučené dávkové větve se bez času z API smaže; pojistka „jen z main“ chrání jen před omylem.",
+   "detail": "Doporučení auditu: první ostrý běh „Smazat sloučené větve“ s jen_vypsat (souhrn ukáže důvod „GitHub“) a zapnout Rulesets „Restrict deletions“ (K4-N20) jako druhou vrstvu.",
+   "hotovoKdyz": "J. V. rozhodl; první běh s jen_vypsat proběhl a Rulesets jsou zapnuté, nebo je mez zapsaná.",
+   "kde": "`nastroje/sloucene_vetve.sh`, `.github/workflows/smazat_vetve.yml`",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K5, podklady/K5_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Pustit první ostrý běh s jen_vypsat a zapnout Rulesets „Restrict deletions“? (doporučeno ano)"
+  },
+  {
+   "id": "487",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K5-K2: obsah snímku kapitol při zamčení server neověřuje",
+   "proc": "Audit K5, informativní: snímek kapitol IV.–VI. a doložek skládá klient; obchodník s devtools může zamknout variantu s upravenými texty a dotisk je pak trvale reprodukuje (papír, který odešel, nese týž text).",
+   "detail": "Doporučení: zapsat jako mez do BEZPECNOST_MEZE.md; případně při prvním uložení zámku porovnat snímek s online Firmou (obdoba B59).",
+   "hotovoKdyz": "Mez zapsaná, nebo server snímek porovná s Firmou (test + mutace).",
+   "kde": "`src/kryci.js`, `netlify/lib/zakazka_kontrola.mjs`",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K5, podklady/K5_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Zapsat jako mez, nebo ověřovat na serveru? (doporučeno mez)"
+  },
+  {
+   "id": "488",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K5-S3: souběh potvrzení retence záloh a nočního běhu",
+   "proc": "Audit K5, informativní: potvrzení retence dělá „přečti, uprav, zapiš“; zapíše-li noční běh mezi tím nové varování, přepíše se. Obdobně protokol exportů controllingu (jen ztráta záznamu).",
+   "detail": "Doporučení: zapsat do BEZPECNOST_MEZE.md; případně před zápisem přečíst znovu a porovnat kdy.",
+   "hotovoKdyz": "Mez zapsaná, nebo zápis s kontrolou kdy (test souběhu).",
+   "kde": "`netlify/functions/zaloha_vynuceno.mjs`, `netlify/functions/controlling_export.mjs`",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K5, podklady/K5_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Zapsat jako mez? (doporučeno ano)"
+  },
+  {
+   "id": "489",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K5-S4: změřit hromadný export pro controlling na reálných datech",
+   "proc": "Audit K5, informativní (neověřeno): 600 čtení + výpočet může přesáhnout časový limit funkce Netlify dřív než mez → správce dostane 502 místo 413.",
+   "detail": "Doporučení: změřit při první ostré zkoušce hromadného exportu; podle výsledku snížit strop čtení (CTRL_HROMADNY.cteni).",
+   "hotovoKdyz": "Změřeno na ostrých datech, strop odpovídá limitu funkce.",
+   "kde": "`netlify/functions/controlling_export.mjs`, `src/controlling.js` (CTRL_HROMADNY)",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K5, podklady/K5_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Kdy a nad jakým obdobím změřit? (doporučeno při první ostré zkoušce)"
+  },
+  {
+   "id": "490",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K5-K4: export jedné varianty pro controlling hlídá jen klient",
+   "proc": "Audit K5, informativní: export varianty (karta, Přehled) běží v prohlížeči z lokální zakázky; hranici drží jen klient. Mez je zapsaná, nákladová data jsou v prohlížeči i tak (B88).",
+   "detail": "Doporučení: ponechat (zapsaná mez).",
+   "hotovoKdyz": "J. V. potvrdil ponechání.",
+   "kde": "`src/ui/controlling_ui.js`, `BEZPECNOST_MEZE.md` (Controlling C2)",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K5, podklady/K5_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Ponechat? (doporučeno ano)"
+  },
+  {
+   "id": "491",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K5-W6 / K6-W5: jména osob v repozitáři nahradit rolí",
+   "proc": "Audit K5 a K6, informativní: v komentářích, testech, mutacích a podkladech přibylo křestní jméno a iniciála s příjmením pracovnice controllingu a jméno externího dodavatele (není to zákazník ani cena).",
+   "detail": "Doporučení: nahradit rolí („controlling“, „lakovna B“) v kódu, testech, mutacích, roadmapě a podkladech.",
+   "hotovoKdyz": "git grep jmen v repu nic nenajde (kromě povolených), kontrola_udaju zelená.",
+   "kde": "`src/controlling.js`, `src/test_controlling.js`, `netlify/mutace.mjs`, `podklady/CONTROLLING_NAVRH_20_10.md`, `roadmapa/roadmap.json`",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K5, podklady/K5_AUDIT_21_10.md, zapsáno 22. 10. 2026); K6-W5",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Nahradit jména rolí? (doporučeno ano)"
+  },
+  {
+   "id": "492",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S–M",
+   "nazev": "K6-S2: obchodník „vrátí“ podpis SoD smazáním data a mění objednané příplatky",
+   "proc": "Audit K6, nízký: pravidlo „po podpisu SoD mění objednané jen admin“ obchodník obejde dvěma kroky — smaže datum podpisu a pak objednané změní (200); datum podpisu v budoucnosti s dotiskem SoD také projde.",
+   "detail": "Doporučení: ne-adminovi odmítnout změnu/smazání platného uloženého data podpisu ≤ dnes (403) a datum podpisu v budoucnosti (400), nebo brát tisk SoD jako podepsáno; aspoň doplnit mez.",
+   "hotovoKdyz": "Test dvoukrokového „vrácení“ podpisu (403) a mutace, nebo zapsaná mez.",
+   "kde": "`src/objednane.js`, `src/zamek.js`, `netlify/lib/zakazka_kontrola.mjs`",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K6, podklady/K6_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Zakázat ne-adminovi měnit platné datum podpisu SoD, nebo jen zapsat mez? (doporučeno zakázat)"
+  },
+  {
+   "id": "493",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K6-K2: SoD se starší šablonou (v3) a objednanými příplatky — bez rozpisu ceny",
+   "proc": "Audit K6, informativní: se šablonou bez rozpisu dostane SoD vyšší celkovou cenu než nabídka bez vysvětlení (záměr C6, chybí test i upozornění).",
+   "detail": "Doporučení: zveřejnit šablonu SoD realizace v4 CZ/EN/DE/FR spolu s C6 v main (postup podklady/SABLONA_SOD_REALIZACE_V4_21_10.md); případně upozornění v dialogu SoD, dokud šablona nemá SOD_PRIPLATKY_OBJEDNANE.",
+   "hotovoKdyz": "v4 zveřejněná v aplikaci (všechny jazyky), nebo upozornění v dialogu SoD s testem.",
+   "kde": "`src/sod.js`, `podklady/SABLONA_SOD_REALIZACE_V4_21_10.md`",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K6, podklady/K6_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Zveřejnit v4 spolu s posunem do main? (doporučeno ano)"
+  },
+  {
+   "id": "494",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K6-K3: přechodové plechy jsou v kartě a SoD po položkách, v nabídce jedním řádkem",
+   "proc": "Audit K6, nízký: nabídka tiskne přechodové plechy (materiál + montáž) jedním řádkem a v eurech zaokrouhluje součet; karta i SoD je berou zvlášť — jde objednat půlku a v eurech vyjde o 1 € víc.",
+   "detail": "Doporučení: sloučit dvojici v kartě objednaných i ve SoD jako v nabídce.",
+   "hotovoKdyz": "Karta a SoD mají jeden řádek přechodových plechů, součet v eurech sedí s nabídkou (test).",
+   "kde": "`src/objednane.js`, `src/sod.js`, `src/nabidka.js`",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K6, podklady/K6_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Sloučit jako v nabídce? (doporučeno ano)"
+  },
+  {
+   "id": "495",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K6-K4: záznam tisku SoD bez otisku objednaných příplatků a ceny díla",
+   "proc": "Audit K6, nízký: po tisku SoD může admin objednané změnit a krycí list, export i dotisk pak ukážou jinou cenu díla než podepsaná smlouva, bez stopy; text meze „tisk SoD se do pravidla nepočítá“ je nepřesný.",
+   "detail": "Doporučení: ukládat do záznamu tisku SoD otisk objednaných (objOtisk) a cenu díla; upřesnit text meze.",
+   "hotovoKdyz": "Záznam tisku SoD nese otisk a cenu (test), mez v BEZPECNOST_MEZE.md opravená.",
+   "kde": "`src/zamek.js`, `src/ui/zamek_ui.js`, `src/kryci.js`, `BEZPECNOST_MEZE.md`",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K6, podklady/K6_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Ukládat otisk a cenu díla do záznamu tisku SoD? (doporučeno ano + upřesnit mez)"
+  },
+  {
+   "id": "496",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K6-S5: datum prodeje objednaných příplatků bez spodní meze",
+   "proc": "Audit K6, informativní: datum prodeje 1900-01-01 projde; obchodník přesune prodej do jiného, i už vyexportovaného období (export podle data prodeje).",
+   "detail": "Doporučení: datum prodeje ≥ den zámku varianty (400).",
+   "hotovoKdyz": "Server odmítne datum před zámkem varianty (test + mutace).",
+   "kde": "`src/objednane.js`, `netlify/lib/zakazka_kontrola.mjs`",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K6, podklady/K6_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Zavést spodní mez = den zámku? (doporučeno ano)"
+  },
+  {
+   "id": "497",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K6-S7: obnova ze souboru přebírá razítka objednaných příplatků (kdo/kdy)",
+   "proc": "Audit K6, informativní: u zámku a odemčení se razítkům ze souboru nevěří (B98), u objednaných ano. Jen administrátor.",
+   "detail": "Doporučení: razítko ze souboru jen při shodě s databází, jinak relací obnovujícího.",
+   "hotovoKdyz": "Obnova razítkuje relací (test obnovy s objednane).",
+   "kde": "`netlify/lib/zakazka_kontrola.mjs`, `netlify/functions/obnova.mjs`",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K6, podklady/K6_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Razítkovat obnovu relací? (doporučeno ano)"
+  },
+  {
+   "id": "498",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K6-K7: CSV pro controlling — zbytkové znaky před „=“ bez apostrofu",
+   "proc": "Audit K6, informativní: bez apostrofu zůstanou „ =1“, „＝1“, „\\n=1“; sadu OWASP (= + - @ TAB CR) ochrana pokrývá, vyhodnocení Excelem neověřené (pravděpodobně ne).",
+   "detail": "Doporučení: ponechat.",
+   "hotovoKdyz": "J. V. potvrdil ponechání.",
+   "kde": "`src/controlling.js` (ctrlCsvBunka)",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K6, podklady/K6_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Ponechat? (doporučeno ano)"
+  },
+  {
+   "id": "499",
+   "vlna": "B",
+   "stav": "blokovano",
+   "dulezitost": "nizka",
+   "slozitost": "S",
+   "nazev": "K6-W6: ověřit, že částky v podkladu šablony SoD v4 jsou smyšlené",
+   "proc": "Audit K6, informativní: tabulka ověření SoD v4 uvádí konkrétní výsledné částky ze „zkušebního ceníku“; původ ceníku neověřen.",
+   "detail": "Doporučení: ověřit původ; nejde-li o smyšlená čísla, nahradit tabulku vztahy (bez částek).",
+   "hotovoKdyz": "Původ potvrzený, nebo částky v podkladu nahrazené.",
+   "kde": "`podklady/SABLONA_SOD_REALIZACE_V4_21_10.md`",
+   "zavisi": [],
+   "cekaNa": "rozhodnutí J. V. (audit K6, podklady/K6_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
+   "otazka": "Jsou částky ze zkušebního ceníku testů? (ověřit)"
+  },
+  {
+   "id": "500",
+   "vlna": "C",
+   "stav": "blokovano",
+   "dulezitost": "stredni",
+   "slozitost": "S–M",
+   "nazev": "Controlling — co zbývá po #447: zaokrouhlení v exportu, Kapitoly, protokol v záloze, PROJ",
+   "proc": "Po uzavření #447 (C1–C6) zůstaly otevřené nálezy koordinace z ukázky na 5 nabídkách (21. 10.) a body, které doplní controlling po návratu.",
+   "detail": "Čeká na J. V.: (1) zaokrouhlení OCK nahoru export neukazuje (sloupec Zaokrouhlení = 0); (4) Kapitoly zaokrouhlují po skupinách (podíl 100,01 %); výjimka zálohy pro protokol exportů program/controlling_exporty (není v otisku); rozvržení PROJ a budoucí účty Helios doplní controlling (mimo do prosince). Nálezy (2) a (3) vyřešila C5 (výběr varianty, sloupec Výsledek).",
+   "hotovoKdyz": "J. V. rozhodl u (1), (4) a protokolu; rozvržení PROJ a budoucí účty zapsané v číselníku.",
+   "kde": "`src/controlling.js`, `netlify/functions/controlling_export.mjs`, `netlify/test_zalohy.mjs`",
+   "zavisi": [
+    {
+     "id": "447",
+     "typ": "doporuceno",
+     "proc": "navazuje na hotový controlling C1–C6"
+    }
+   ],
+   "cekaNa": "rozhodnutí J. V. (nálezy z ukázky 21. 10.) a podklady controllingu (po návratu v prosinci)",
+   "pozn": "Zapsala D1 22. 10. 2026 ze zbytku #447."
   }
  ],
  "meta" : {
@@ -8071,7 +8437,64 @@
    "text" : "17. 10. 2026 — dávka B165 (claude/b165-karta-vyjimky, v17.10.5): karta cenové výjimky ukazuje schvalovateli použitou vs. ceníkovou sazbu, dopad na cenu v % a Kč a plochu pásu; zbytek B178 — plocha pásů a světlíků „jiné“ z jádra v obsahu výjimky. Vlastní schválení (B165 část 2) čeká na J. V. #420, #424.",
    "hotovo" : true,
    "pozn" : "Pojistka a mutace v CHANGELOG v17.10.5."
-  }
+  },
+   {
+    "text": "18. 10. 2026 — kolo 28 + audit (claude/kolo28-audit, v18.10.12): audit v17.10.5 → v18.10.11 — B188, B189 střední, B190 opraven, B191–B193 informativní. #429, #430.",
+    "hotovo": true,
+    "pozn": "Audit podklady/AUDIT_2026-10-18_v18.10.11.md."
+   },
+   {
+    "text": "18. 10. 2026 — dávka H1 (claude/h1-hygiena, v18.10.13): odhlášení všude, úklid cache Pipedrive a analytiky, čísla zadání textem, XSS karty schvalovatele (B171, B174, B175, B186, B187).",
+    "hotovo": true
+   },
+   {
+    "text": "18. 10. 2026 — dávka V7 (claude/v7-kontrola, v18.10.14): kontrola rozhodnutí 16.–18. 10. (SoD DPH, skladné, DE/FR, #380, #425, B183) — opravy V7-1 až V7-7, nálezy V7-N1, V7-N2.",
+    "hotovo": true,
+    "pozn": "podklady/KONTROLA_ROZHODNUTI_V7_18_10.md."
+   },
+   {
+    "text": "18. 10. 2026 — dávka O1 (claude/o1-b188, v18.10.15): B188 obnova matice zobrazení jen s heslem správce. #429. Kolo K2 celé zelené.",
+    "hotovo": true,
+    "pozn": "Mutace jádra 248/248, serveru 538/538."
+   },
+   {
+    "text": "19. 10. 2026 — O2 (v19.10.1) B189 výchozí režim DPH ve SoD (#430); A2 (v19.10.2) #356 střecha přes nejvyšší můstek; O3 (v19.10.3) výchozí texty kapitol do Nastavení (#431); H2 (v19.10.4) plocha v kartě výjimky, B191, B192 (#433).",
+    "hotovo": true
+   },
+   {
+    "text": "19. 10. 2026 — O4 (v19.10.5, v19.10.8) noční zálohování N1–N6: oprava, retence otisků, týdenní kopie na Disk (#151, #151a, #151b); V8 (v19.10.6, v19.10.7) #367 fáze 2 — platební podmínky a texty nabídky PROJ z Nastavení → Firma; W1 (v19.10.9) šablona PROJ v6.",
+    "hotovo": true
+   },
+   {
+    "text": "19.–20. 10. 2026 — B194 (v19.10.10) zámek mutačních běhů; kolo K3 nad v19.10.10 (1 prázdný test B58, opraven v O5). O5 (v20.10.1) opravy K3 bez J. V.; O7 (v20.10.2) rozhodnutí J. V. ke K3 — zmrazení vět při zamčení (#437).",
+    "hotovo": true,
+    "pozn": "Kolo K3: mutace jádra 291/291, serveru 586/587."
+   },
+   {
+    "text": "20. 10. 2026 — D1 (v20.10.3) postřehy D. Sikory (#440–#443); D2 (v20.10.4) šablona nabídky PROJ — cestovné mimo Prahu, úvod, jednostupňová dokumentace (#260, #444–#446); B183 (v20.10.5) plocha výjimky na 0,1 m²; V7-N2 (v20.10.6) výchozí DPH v ČR = přenesená povinnost (#438); U1 (v20.10.7) zveřejnění platebních podmínek; K29-N1 (v20.10.8) měď jen se zastřešením.",
+    "hotovo": true,
+    "pozn": "Kolo K4 nad v20.10.7: mutace jádra 393/394 (prázdný test K4-N22), serveru 668/668."
+   },
+   {
+    "text": "21. 10. 2026 — Controlling C1 + C2 a S10 (v21.10.1, #447); O9 (v21.10.2) opravy K4 bez J. V. (#460–#468); O10 + O11 (v21.10.3) zmrazení kapitol při zamčení (#469), cena výjezdu PROJ, retence záloh, měď (#470–#472, #451); C3 + C4 (v21.10.4) hromadný export za období, Pipedrive deal id (#447).",
+    "hotovo": true,
+    "pozn": "Kolo K5 nad v21.10.4 (#473): sady 294/0/6, mutace jádra 406/406, serveru 734/734."
+   },
+   {
+    "text": "21. 10. 2026 — v21.10.5: O12 jazykové verze k platné češtině (#474), S11 šablona SoD realizace v4, Controlling C5 (export verze 2) + C6 (objednané příplatky) — #447 hotovo, O13 opravy K5 (#476–#480).",
+    "hotovo": true,
+    "pozn": "Kolo K6 nad v21.10.5 (#475): sady 296/0/6, mutace jádra 417/417, serveru 753/753, statické 4/4."
+   },
+   {
+    "text": "21. 10. 2026 — v21.10.6: D3 opravy nálezů K6 bez J. V. (#483, #481, #482); zapsáno #484, #485.",
+    "hotovo": true,
+    "pozn": "Kolo --bez-mutaci 298/0/6, statické 4/4, cílené mutace 16/16."
+   },
+   {
+    "text": "22. 10. 2026 — D1 (claude/d1-roadmapa-novinky, dokumentace bez verze): roadmapa dorovnaná na v21.10.6, rozhodnutí J. V. z auditů K5/K6 zapsaná (#486–#499), zbytek controllingu #500; soupis novinek pro obchodníky v20.10.2–v21.10.6; ukázkový XLSX exportu pro controlling verze 2.",
+    "hotovo": true,
+    "pozn": "Kód aplikace beze změny."
+   }
   ],
   "pravidla" : [
    "GitHub (INFRA-14), rosti.cz (INFRA-15) a Apps Script se bez výslovného pokynu nespouští ani neaktualizují.",
@@ -8157,8 +8580,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v18.10.11 (engscalc, claude/integrace-16-10)",
-  "stavKDatu" : "16. 10. 2026"
+  "build" : "v21.10.6 (engscalc, test = 4c127f5)",
+  "stavKDatu" : "22. 10. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
