@@ -31,7 +31,9 @@ Roadmapa #502 (otázky → rozhodnuto), #501 (P1-1, P1-2 rozhodnuto).
   (nový blok Z1-2/Z1-3: 3× „200" nad v22.10.4 vrací 409); `src/test_kryci_po_tisku.js` 103/0;
   `overit_kryci_po_tisku.mjs` 36/36, kód 0 (blok Z1-4: nad v22.10.4 „online tisk uloží" FAIL). Sady D5 a starší,
   které po SoD měnily kontaktní jméno jako „zamčené" pole nebo název akce jako „neškodnou" změnu, mění atyp můstku /
-  kontaktní osobu.
+  kontaktní osobu. `spust_testy.sh` 241 prošlo / 0 selhalo.
+- **Mutace (0 přeživších):** server „z1" 26/26 (omezená sada `KNG_MUTACE_SADY`), „b163" 3/3, jádro „z1" 6/6;
+  `--kontrola` jádro 467, server 813 úseků. Z1-4 (UI) hlídá harness.
 
 ## v22.10.4 — D5: rozhodnutí J. V. k auditu K6 (větev claude/d5-rozhodnuti-k6)
 

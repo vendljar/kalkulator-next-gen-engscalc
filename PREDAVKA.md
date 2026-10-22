@@ -9,7 +9,7 @@ Do větve sloučena integrace `claude/integrace-16-10` d28e48a (test v22.10.2 + 
   Z1-4 tisk = hned uložit (`zamekPoTiskuUloz`, jen online a přihlášeně); P1-1/P1-2 zapsány v roadmapě #501.
   CHANGELOG `## v22.10.5`, roadmapa #502 `rozhodnuto`, příručka (novinky v22.10.5).
 - **Testy:** viz CHANGELOG; `overit_kryci_po_tisku.mjs` (výjimečně puštěn) 36/36, kód 0.
-- **Mutace:** viz zpráva koordinaci; Z1-4 je jen v UI (zamek_ui.js), hlídá ho harness, ne mutace.
+- **Mutace:** server „z1" 26/26, „b163" 3/3, jádro „z1" 6/6, 0 přeživších; Z1-4 je jen v UI (zamek_ui.js), hlídá ho harness. `spust_testy.sh` 241/0.
 - **Další krok:** koordinace sloučí a pustí kolo.
 
 # Předávka — 22. 10. 2026: dávka D5 — rozhodnutí J. V. k auditu K6 (v22.10.4), větev `claude/d5-rozhodnuti-k6`
