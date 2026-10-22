@@ -191,13 +191,32 @@ export default async (req) => {
    * záznam klíč `adresa` nenese (pak se tahle větev přestane spouštět sama).
    * Nečitelná zakázka se zkusí příště; zmizelá dostane prázdnou adresu. */
   const bezAdresy = ULO.uloRejstrikBezAdresy(stavajici).filter(x => x !== jmeno);
-  if (bezAdresy.length) {
-    const nalezene = await Promise.all(bezAdresy.map(async (soubor) => {
-      try { const z = await s.cti('z/' + soubor); return [soubor, ULO.uloRejstrikAdresa(z && z.adresa)]; }
+  /* DNY ZÁMKŮ U STARŠÍCH ZÁZNAMŮ (#504, 22. 10. 2026) — touž cestou: hromadný
+   * export controllingu podle nich vybírá zakázky z období; záznam bez nich
+   * jde hrubým předvýběrem. Jedno čtení zakázky doplní adresu i dny. */
+  const G = globalThis;
+  const bezDnu = (typeof G.ctrlRejstrikDny === 'function')
+    ? ULO.uloRejstrikBezDnu(stavajici).filter(x => x !== jmeno) : [];
+  const kDoplneni = [...new Set(bezAdresy.concat(bezDnu))];
+  if (kDoplneni.length) {
+    const nalezene = await Promise.all(kDoplneni.map(async (soubor) => {
+      try {
+        const z = await s.cti('z/' + soubor);
+        let dny;
+        /* Zmizelá nebo nečitelná zakázka: „čti vždy" — export ji ohlásí jako přeskočenou. */
+        try { dny = z ? G.ctrlRejstrikDny(G.importZakazka(z)) : { cist: true }; }
+        catch (e) { dny = { cist: true }; }
+        return [soubor, { adresa: ULO.uloRejstrikAdresa(z && z.adresa), dny }];
+      }
       catch (e) { return null; }
     }));
-    const adresy = new Map(nalezene.filter(Boolean));
-    stavajici = stavajici.map(z => (z && adresy.has(z.soubor)) ? { ...z, adresa: adresy.get(z.soubor) } : z);
+    const doplnit = new Map(nalezene.filter(Boolean));
+    const sAdresou = new Set(bezAdresy), sDny = new Set(bezDnu);
+    stavajici = stavajici.map(z => {
+      const d = z && doplnit.get(z.soubor);
+      if (!d) return z;
+      return { ...z, ...(sAdresou.has(z.soubor) ? { adresa: d.adresa } : {}), ...(sDny.has(z.soubor) ? { ctrlDny: d.dny } : {}) };
+    });
   }
   const novy = ULO.uloRejstrikSloucit(stavajici,
     ULO.uloRejstrikZaznam(zak, { soubor: jmeno, razitko }));

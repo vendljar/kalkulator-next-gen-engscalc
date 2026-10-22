@@ -395,7 +395,28 @@ function uloRejstrikZaznam(zak, opts) {
     variant: varianty.length,
     odeslane: varianty.filter(zamcena).length,
     upraveno,
+    /* Dny zámků a prodeje pro hromadný export controllingu (#504, 22. 10.
+     * 2026): server podle nich vybere jen zakázky z období a nečte celou
+     * databázi. Počítá je controlling.js (ctrlRejstrikDny); bez něj (sady,
+     * které ho nenačítají) klíč chybí a export použije hrubý předvýběr. */
+    ...((typeof ctrlRejstrikDny === 'function') ? { ctrlDny: ctrlRejstrikDny(zak) } : {}),
   };
+}
+
+/* Tvar `ctrlDny` v rejstříku (#504): { zamky: [{ den, rada }], prodej: { den, rada } | null }
+ * nebo { cist: true } = „z rejstříku nerozhodnu, zakázku přečti". Cokoli
+ * jiného (starší záznam, poškozený tvar) → undefined, tedy hrubý předvýběr. */
+const ULO_REJSTRIK_DNY_MAX = 50;
+function uloRejstrikCtrlDny(x) {
+  if (!x || typeof x !== 'object') return undefined;
+  if (x.cist === true) return { cist: true };
+  if (!Array.isArray(x.zamky) || x.zamky.length > ULO_REJSTRIK_DNY_MAX) return undefined;
+  const den = d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+  const rada = r => r === 'zahr' ? 'zahr' : 'cr';
+  if (!x.zamky.every(z => z && den(z.den))) return undefined;
+  if (x.prodej != null && !(x.prodej && den(x.prodej.den))) return undefined;
+  return { zamky: x.zamky.map(z => ({ den: z.den, rada: rada(z.rada) })),
+    prodej: x.prodej ? { den: x.prodej.den, rada: rada(x.prodej.rada) } : null };
 }
 
 /* Rejstřík je soubor na sdíleném disku – může být poškozený, prázdný,
@@ -424,6 +445,8 @@ function uloRejstrikNormalizuj(x) {
       variant: cislo(z.variant),
       odeslane: cislo(z.odeslane),
       upraveno: uloRejstrikText(z.upraveno),
+      /* #504: dny zámků a prodeje jen v platném tvaru — jinak klíč chybí. */
+      ...(uloRejstrikCtrlDny(z.ctrlDny) ? { ctrlDny: uloRejstrikCtrlDny(z.ctrlDny) } : {}),
     }));
 }
 
@@ -469,6 +492,14 @@ const ULO_ADRESY_DAVKA = 25;
 function uloRejstrikBezAdresy(rejstrik, max) {
   const lim = (typeof max === 'number' && max >= 0) ? max : ULO_ADRESY_DAVKA;
   return uloRejstrikNormalizuj(rejstrik).filter(z => !('adresa' in z)).slice(0, lim).map(z => z.soubor);
+}
+
+/* STARŠÍ ZÁZNAMY BEZ DNŮ ZÁMKŮ (#504, 22. 10. 2026) — stejný dopočet jako
+ * u adres: server je doplňuje po dávkách při ukládání (ULO_ADRESY_DAVKA
+ * najednou). Do té doby je hromadný export vybírá hrubým předvýběrem. */
+function uloRejstrikBezDnu(rejstrik, max) {
+  const lim = (typeof max === 'number' && max >= 0) ? max : ULO_ADRESY_DAVKA;
+  return uloRejstrikNormalizuj(rejstrik).filter(z => !z.ctrlDny).slice(0, lim).map(z => z.soubor);
 }
 
 /* Nejnovější nahoře – po otevření složky chce člověk nejčastěji to,
@@ -2070,6 +2101,7 @@ if (typeof module !== 'undefined')
                      uloRejstrikZaznam, uloRejstrikNormalizuj, uloRejstrikSloucit,
                      uloDruhZakazky, uloObchodnik,
                      uloRejstrikOdeber, uloRejstrikSerad, uloHledej, uloRejstrikBezAdresy, ULO_ADRESY_DAVKA,
+                     uloRejstrikCtrlDny, uloRejstrikBezDnu, ULO_REJSTRIK_DNY_MAX,
                      uloZamekKlic, uloPocetOdemceni, uloKontrolaZamku, uloProblemPopis,
                      uloOdemceniPribylo, ULO_ID_TVAR, uloIdBezpecne, uloIdProblemy,
                      uloIdProblemyText, uloKidProblemyProgramu };

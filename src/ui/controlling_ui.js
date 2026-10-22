@@ -280,8 +280,11 @@ async function ctrlUiHromadny(format) {
   if (!f.ok) return ctrlUiZprava(f.chyba, true);
   CTRL_STAV.pracuje = true; ctrlUiZprava('Server počítá export za období ' + h.od + ' – ' + h.do + '…');
   try {
-    const q = new URLSearchParams(f.filtr).toString();
-    const o = await onlineApi('/api/controlling/export?' + q);
+    /* #504: server vrací export po dávkách, prohlížeč je složí do jednoho souboru. */
+    const o = await ctrlHromadnyStahni(onlineApi, f.filtr, (hotovo, celkem) => {
+      if (celkem > 0 && hotovo < celkem) ctrlUiZprava('Server počítá export za období ' + h.od + ' – ' + h.do
+        + '… zpracováno ' + hotovo + ' z ' + celkem + ' zakázek.');
+    });
     if (!o.exporty || !o.exporty.length) {
       ctrlUiZprava('V období ' + f.filtr.od + ' – ' + f.filtr.do + ' není žádná zamčená řídící varianta odpovídající filtru'
         + (o.preskoceno && o.preskoceno.length ? ' (přeskočeno ' + o.preskoceno.length + ': ' + o.preskoceno.slice(0, 3).map(p => p.cislo || p.soubor).join(', ') + ')' : '') + '.');
@@ -299,7 +302,7 @@ async function ctrlUiHromadny(format) {
         + (o.preskoceno && o.preskoceno.length ? '; přeskočeno ' + o.preskoceno.length + ' (důvody v listu Popis)' : '') + '.');
     }
     await ctrlUiProtokolNacti();
-  } catch (e) { ctrlUiZprava('Hromadný export se nepovedl: ' + e.message, true); }
+  } catch (e) { ctrlUiZprava('Hromadný export se nepovedl: ' + ctrlHromadnyChybaText(e), true); }
   finally { CTRL_STAV.pracuje = false; ctrlUiPrekresli(); }
 }
 function ctrlUiKartaHromadny() {
@@ -310,7 +313,7 @@ function ctrlUiKartaHromadny() {
   const prot = (CTRL_STAV.protokol || []).slice(0, 10).map(z => `<tr><td>${esc(new Date(z.kdy).toLocaleString('cs-CZ'))}</td>
       <td>${esc(z.kdo || '')}</td><td>${esc(z.od || '')} – ${esc(z.do || '')}</td>
       <td>${esc({ ock: 'OCK', proj: 'PROJ' }[z.oblast] || 'obě')}</td><td>${esc({ cr: 'ČR', zahr: 'ZAHR' }[z.rada] || 'obě')}</td>
-      <td>${+z.zakazek || 0}</td><td>${+z.radku || 0}</td></tr>`).join('');
+      <td>${+z.zakazek || 0}${z.stav === 'probiha' ? ' (nedokončen)' : (z.stav === 'odmitnuto' ? ' (odmítnut)' : '')}</td><td>${+z.radku || 0}</td></tr>`).join('');
   return `<div class="sec-title" style="margin-top:14px">Hromadně za období</div>
     <div class="note">Podle data zamčení: <b>zamčené řídící varianty</b> (není-li řídící zamčená, poslední zamčená v období),
       jejichž nabídka byla zamčena (odeslána) v zadaném období. Podle data prodeje: zakázky s <b>objednanými příplatky</b>

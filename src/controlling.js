@@ -651,7 +651,16 @@ function ctrlExportVarianty(zak, v, opts) {
  * předvýběru), `zakazek` strop zakázek v jednom souboru a `odpoved` strop
  * velikosti odpovědi (funkce Netlify vrací nejvýš 6 MB). Při překročení
  * server soubor NEOŘÍZNE potichu — odmítne a řekne, ať se zúží období. */
-const CTRL_HROMADNY = { cteni: 600, zakazek: 150, dni: 400, odpoved: 5 * 1024 * 1024, protokol: 200, rezervaDni: 2 };
+/* #504 (22. 10. 2026, hlášení J. V.: „exporty od určité velikosti nefungují" —
+ * 413 při 633 kandidátech, 504 pod stropem): předvýběr podle dnů zámků
+ * a prodeje z rejstříku (ctrlRejstrikDny), čtení souběžně (`soubeh`)
+ * a po dávkách s časovým rozpočtem (`casMs`, funkce Netlify má 10 s) —
+ * prohlížeč pošle tolik dotazů, kolik je dávek (`po` = kurzor, nejvýš
+ * `davek`), a složí jeden soubor; protokol vede jeden záznam na export.
+ * `cteni` hlídá jen celkový počet kandidátů (s dny v rejstříku jsou to
+ * zakázky z období, hrubý předvýběr jen u starších záznamů). */
+const CTRL_HROMADNY = { cteni: 3000, zakazek: 1000, dni: 400, odpoved: 5 * 1024 * 1024, protokol: 200, rezervaDni: 2,
+  soubeh: 12, casMs: 5000, davkaMax: 150, davkaBajty: 3 * 1024 * 1024, davek: 100 };
 const CTRL_DATUM_TVAR = /^\d{4}-\d{2}-\d{2}$/;
 const CTRL_FILTR_OBLAST = ['obe', 'ock', 'proj'];
 const CTRL_FILTR_RADA = ['obe', 'cr', 'zahr'];
@@ -664,11 +673,16 @@ function ctrlDatumPlatne(x) {
 }
 /* Kalendářní den okamžiku v českém čase — zámek ve 23:30 UTC 31. 10. patří
  * do listopadu. Bez Intl (starší prostředí) den v UTC. */
+/* Formátovač se staví jednou (#504): nový Intl.DateTimeFormat na každé volání
+ * stál u předvýběru stovek zakázek víc času než celé čtení. */
+let CTRL_DEN_PRAHA_FMT = null;
 function ctrlDenPraha(iso) {
   const d = new Date(iso);
   if (!iso || isNaN(d)) return '';
-  try { return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Prague' }).format(d); }
-  catch (e) { return d.toISOString().slice(0, 10); }
+  try {
+    if (!CTRL_DEN_PRAHA_FMT) CTRL_DEN_PRAHA_FMT = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Prague' });
+    return CTRL_DEN_PRAHA_FMT.format(d);
+  } catch (e) { return d.toISOString().slice(0, 10); }
 }
 
 /* Kontrola dotazu: { od, do, oblast, rada } → { ok, filtr } | { ok:false, chyba }.
@@ -690,22 +704,69 @@ function ctrlHromadnyFiltr(q) {
   return { ok: true, filtr: { od, do: d, oblast, rada, podle } };
 }
 
-/* Předvýběr z rejstříku: jen zakázky s odeslanou (zamčenou) nabídkou, řada
- * podle rejstříku a poslední úprava ne starší než začátek období. Zámek se
- * na server dostane uložením a server při každém uložení píše nové razítko
- * (zakazky.mjs → uloRazitkoNove), takže zamčená varianta nemůže být mladší
- * než razítko úpravy. Čas zámku ale bere prohlížeč, razítko server — proto
- * rezerva CTRL_HROMADNY.rezervaDni na rozjeté hodiny. Záznam bez razítka se
- * čte vždy. Konečné rozhodnutí dělá ctrlHromadnyZakazka nad přečtenou
- * zakázkou. */
+/* Dny, podle kterých hromadný export zakázku vybírá (#504) — do rejstříku
+ * je při každém uložení píše server (uloRejstrikZaznam). Tytéž podmínky
+ * jako ctrlHromadnyZakazka nad přečtenou zakázkou: zamčené varianty (den
+ * zámku v Praze a řada té varianty) a prodej (den a řada prodané varianty,
+ * jen je-li zamčená). Co z dat jednoznačně neplyne (nečekaný tvar, nečitelné
+ * datum prodeje, víc než ULO_REJSTRIK_DNY_MAX dnů), vrací { cist: true } —
+ * takovou zakázku server přečte a rozhodne nad ní. */
+function ctrlRejstrikDny(zak) {
+  try {
+    if (!zak || !Array.isArray(zak.varianty)) return { cist: true };
+    const rada = v => String((v.data && v.data.cenikRada) || 'cr') === 'zahr' ? 'zahr' : 'cr';
+    const zamcena = v => !!(v && v.zamek && v.zamek.zamceno);
+    const zamky = [];
+    zak.varianty.filter(zamcena).forEach(v => {
+      const den = ctrlDenPraha(v.zamek.kdy);
+      if (!den) return;                              // ctrlHromadnyZakazka ji vyřadí taky
+      const r = rada(v);
+      if (!zamky.some(z => z.den === den && z.rada === r)) zamky.push({ den, rada: r });
+    });
+    if (zamky.length > 50) return { cist: true };
+    let prodej = null;
+    const o = zak.objednane;
+    if (o && Array.isArray(o.klice) && o.klice.length) {
+      if (typeof o.datum !== 'string') return { cist: true };
+      if (o.datum !== '' && !ctrlDatumPlatne(o.datum)) return { cist: true };
+      const v = zak.varianty.find(x => x && x.id === o.varianta);
+      if (o.datum && zamcena(v)) prodej = { den: o.datum, rada: rada(v) };
+    }
+    return { zamky, prodej };
+  } catch (e) { return { cist: true }; }
+}
+
+/* Předvýběr z rejstříku (#504): záznam s dny (ctrlDny) se vybere jen tehdy,
+ * když den zámku (podle=zamceni) nebo prodeje (podle=prodej) padá do období
+ * ± CTRL_HROMADNY.rezervaDni a řada té varianty sedí. Starší záznam bez dnů
+ * (a záznam „čti vždy") jde hrubým předvýběrem jako do v22.10.5: odeslaná
+ * nabídka, řada podle rejstříku a poslední úprava ne starší než začátek
+ * období minus rezerva (zámek se na server dostane uložením, takže zamčená
+ * varianta nemůže být mladší než razítko úpravy; čas zámku bere prohlížeč,
+ * razítko server). Záznam bez razítka se čte vždy. Konečné rozhodnutí dělá
+ * ctrlHromadnyZakazka nad přečtenou zakázkou. Pořadí podle jména souboru —
+ * kurzor dávek (`po`) na něm stojí. `stary` = záznam bez dnů. */
 function ctrlHromadnyKandidati(rejstrik, filtr) {
   const pole = (typeof uloRejstrikNormalizuj === 'function') ? uloRejstrikNormalizuj(rejstrik)
     : (Array.isArray(rejstrik) ? rejstrik : ((rejstrik && rejstrik.zakazky) || []));
-  const mez = new Date(Date.parse(filtr.od + 'T00:00:00Z') - CTRL_HROMADNY.rezervaDni * 86400000).toISOString().slice(0, 10);
-  return pole.filter(z => z && (+z.odeslane || 0) > 0)
-    .filter(z => filtr.rada === 'obe' || (filtr.rada === 'zahr') === (z.rada === 'zahr'))
-    .filter(z => !z.upraveno || !ctrlDenPraha(z.upraveno) || ctrlDenPraha(z.upraveno) >= mez)
-    .map(z => ({ soubor: z.soubor, cislo: z.cislo || '' }));
+  const posun = (den, dni) => new Date(Date.parse(den + 'T00:00:00Z') + dni * 86400000).toISOString().slice(0, 10);
+  const mez = posun(filtr.od, -CTRL_HROMADNY.rezervaDni);
+  const mezDo = posun(filtr.do, CTRL_HROMADNY.rezervaDni);
+  const vObdobi = (x) => !!x && x.den >= mez && x.den <= mezDo && (filtr.rada === 'obe' || filtr.rada === x.rada);
+  const vyber = (z) => {
+    const dny = z.ctrlDny && !z.ctrlDny.cist ? z.ctrlDny : null;
+    if (dny) return filtr.podle === 'prodej' ? vObdobi(dny.prodej) : dny.zamky.some(vObdobi);
+    if (!((+z.odeslane || 0) > 0)) return false;
+    if (filtr.rada !== 'obe' && (filtr.rada === 'zahr') !== (z.rada === 'zahr')) return false;
+    return !z.upraveno || !ctrlDenPraha(z.upraveno) || ctrlDenPraha(z.upraveno) >= mez;
+  };
+  return pole.filter(z => z && vyber(z))
+    .map(z => ({ soubor: z.soubor, cislo: z.cislo || '', stary: !z.ctrlDny }))
+    .sort((a, b) => (a.soubor < b.soubor ? -1 : (a.soubor > b.soubor ? 1 : 0)));
+}
+/* Kandidáti za kurzorem dávky (#504): jen jména souborů větší než `po`. */
+function ctrlHromadnyZa(kandidati, po) {
+  return po ? kandidati.filter(k => k.soubor > po) : kandidati;
 }
 
 /* Jedna přečtená zakázka → export, nebo důvod, proč do souboru nepatří.
@@ -756,6 +817,54 @@ function ctrlHromadnyZakazka(zak, filtr, opts) {
 function ctrlProtokolPridej(db, zaznam) {
   const stare = (db && Array.isArray(db.zaznamy)) ? db.zaznamy : [];
   return { schema: 1, zaznamy: [zaznam].concat(stare).slice(0, CTRL_HROMADNY.protokol) };
+}
+/* Navazující dávka exportu (#504): záznam protokolu `id`, který založila
+ * první dávka téhož správce se stejným filtrem a ještě běží — jinak null.
+ * Kurzor a id jdou z prohlížeče, takže server jim nevěří víc než tohle. */
+const CTRL_EXPORT_ID = /^[a-z0-9]{8,40}$/;
+function ctrlProtokolNavaz(db, id, filtr, kdo) {
+  const z = (db && Array.isArray(db.zaznamy)) ? db.zaznamy.find(x => x && x.id === id) : null;
+  if (!z || z.stav !== 'probiha' || z.kdo !== kdo) return null;
+  return ['od', 'do', 'oblast', 'rada', 'podle'].every(k => z[k] === filtr[k]) ? z : null;
+}
+/* Přičte dávku k záznamu `id` (počty spočítal server) a nastaví stav. */
+function ctrlProtokolDavka(db, id, davka, stav) {
+  const zaznamy = (db && Array.isArray(db.zaznamy)) ? db.zaznamy : [];
+  return { schema: 1, zaznamy: zaznamy.map(z => (z && z.id === id) ? Object.assign({}, z, {
+    zakazek: (+z.zakazek || 0) + davka.zakazek, radku: (+z.radku || 0) + davka.radku,
+    preskoceno: (+z.preskoceno || 0) + davka.preskoceno, davek: (+z.davek || 0) + 1, stav }) : z) };
+}
+
+/* Prohlížeč: export za období po dávkách (#504). `api(cesta)` vrací
+ * odpověď serveru (onlineApi); dávky se skládají v pořadí kurzoru, takže
+ * výsledek je tentýž jako z jednoho dotazu. `prubeh(hotovo, celkem)`
+ * hlásí postup. Server, který neposune kurzor, je chyba — ne nekonečná smyčka. */
+async function ctrlHromadnyStahni(api, filtr, prubeh) {
+  const zaklad = '/api/controlling/export?' + new URLSearchParams(filtr).toString();
+  let po = '', id = '', vysl = null;
+  for (let i = 0; i < CTRL_HROMADNY.davek; i++) {
+    const o = await api(zaklad + (id ? '&export=' + encodeURIComponent(id) : '') + (po ? '&po=' + encodeURIComponent(po) : ''));
+    if (!vysl) vysl = Object.assign({}, o, { exporty: [], preskoceno: [] });
+    (o.exporty || []).forEach(e => vysl.exporty.push(e));
+    (o.preskoceno || []).forEach(p => vysl.preskoceno.push(p));
+    id = id || String(o.export || '');
+    if (prubeh) prubeh(+o.zpracovano || 0, +o.kandidatu || 0);
+    if (!o.dalsi) { delete vysl.dalsi; vysl.davek = i + 1; return vysl; }
+    if (o.dalsi <= po || !id) throw new Error('Server neposunul export na další dávku — zkuste to znovu nebo zvolte kratší období.');
+    po = String(o.dalsi);
+  }
+  throw new Error('Export za zvolené období by potřeboval víc než ' + CTRL_HROMADNY.davek + ' dávek — zvolte kratší období.');
+}
+/* Srozumitelná hláška k selhání hromadného exportu (#504): vypršený dotaz
+ * (502/503/504 bez vysvětlení serveru, přerušené spojení) se uživateli
+ * neukazuje kódem — nabídne se kratší období. */
+function ctrlHromadnyChybaText(e) {
+  const st = e && e.stav;
+  const bezTextu = !(e && e.data && e.data.chyba);
+  if ((st === 502 || st === 503 || st === 504) && bezTextu || (e && e.name === 'TypeError'))
+    return 'Server export za zvolené období nestihl připravit (dotaz vypršel nebo se přerušilo spojení). '
+      + 'Zkuste kratší období, třeba jeden týden, nebo export za chvíli zopakujte.';
+  return (e && e.message) ? e.message : String(e);
 }
 
 /* ---------- C4: Pipedrive deal id u zakázky (21. 10. 2026) ----------
@@ -1068,4 +1177,5 @@ if (typeof module !== 'undefined' && module.exports)
     CTRL_RADKY_HLAVICKA, CTRL_LIST_PRIPLATKY, ctrlExportListy, ctrlCsvBunka, ctrlExportCsv, ctrlVZakladuText, ctrlHromadnyVarianta,
     CTRL_PD_ID_MAX, ctrlPdDealIdNorm, ctrlPdDealKontrola,
     PD_STAVY, PD_STAV_TEXT, pdStavNorm, pdStavKontrola, pdStavZDealu, pdStavText, pdStavNactenoText,
-    CTRL_HROMADNY, ctrlDatumPlatne, ctrlDenPraha, ctrlHromadnyFiltr, ctrlHromadnyKandidati, ctrlHromadnyZakazka, ctrlProtokolPridej, CTRL_MAPA_HLAVICKA, ctrlMapaListy, ctrlImportZListu };
+    CTRL_HROMADNY, ctrlDatumPlatne, ctrlDenPraha, ctrlHromadnyFiltr, ctrlHromadnyKandidati, ctrlHromadnyZakazka, ctrlProtokolPridej,
+    ctrlRejstrikDny, ctrlHromadnyZa, CTRL_EXPORT_ID, ctrlProtokolNavaz, ctrlProtokolDavka, ctrlHromadnyStahni, ctrlHromadnyChybaText, CTRL_MAPA_HLAVICKA, ctrlMapaListy, ctrlImportZListu };
