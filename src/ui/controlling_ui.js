@@ -246,6 +246,10 @@ function ctrlUiPdDeal(hodnota) {
   if (!ctrlUiSmi()) return ctrlUiZprava('Pipedrive deal id zadává jen administrátor přihlášený online.', true);
   const n = ctrlPdDealIdNorm(hodnota);
   if (n === null) return ctrlUiZprava('Pipedrive deal id musí být kladné celé číslo (id obchodního případu).', true);
+  /* Stav Pipedrive (22. 10. 2026) patří dealu: po změně id se starý stav
+   * zahodí a nový načte hlavička (pdStavHlidej) — jinak by u nového dealu
+   * svítil stav starého. Server to při uložení hlídá taky. */
+  if (n !== (ctrlPdDealIdNorm(ZAK.pdDealId) || '')) delete ZAK.pdStav;
   if (typeof set === 'function') set('ZAK.pdDealId', n);
   ctrlUiZprava(n ? 'Deal id ' + n + ' zapsáno do zakázky — uloží se se zakázkou.' : 'Deal id ze zakázky odebráno — uloží se se zakázkou.');
 }

@@ -341,6 +341,13 @@ function historieNeulozeno() {
 function historieOznacUlozeno() {
   try { HIST.ulozenoJako = JSON.stringify(ZAK); } catch (e) {}
 }
+/* Změna, kterou udělala aplikace, ne člověk, a která se nemá hlásit jako
+ * neuložená (Stav Pipedrive načtený po otevření zakázky, 22. 10. 2026):
+ * byla-li zakázka těsně před změnou uložená (`predtim` = její JSON), zůstane
+ * uložená i po ní. Neuloženou (i nikdy neuloženou) zakázku nechá být. */
+function historieBezZmenyPo(predtim) {
+  try { if (HIST.ulozenoJako !== null && HIST.ulozenoJako === predtim) HIST.ulozenoJako = JSON.stringify(ZAK); } catch (e) {}
+}
 
 /* ---------- start ---------- */
 function historieStart() {

@@ -1207,6 +1207,28 @@ function kalkLista(ock) {
   </div>`;
 }
 
+/* ---------- Stav Pipedrive v hlavičce (22. 10. 2026) ----------
+ * Zadání J. V. (podklady/PIPEDRIVE_STAV_DEALU_22_10.md, náhled
+ * https://claude.ai/artifact/UHqdUv62Kax3NCLGHWXcb1): v pravém sloupci
+ * hlavičky OCK i PROJ úplně nahoře stav dealu propojeného se zakázkou
+ * (ZAK.pdDealId) — Otevřené, Ztracené, Vyhrané, Smazané — s barevným
+ * štítkem u popisku. JEN KE ČTENÍ: pole je vypnuté pro každého (stav se
+ * mění v Pipedrive), vidí ho všichni, kdo vidí zakázku, a nic v kalkulaci
+ * neovlivňuje. Bez dealu šedé „— zakázka nemá deal —". Pod polem žádný
+ * doplňující text; kdy byl stav načten, říká bublina. Stav načítá při
+ * otevření zakázky pdStavHlidej (online_ui.js). */
+function pdStavRadek() {
+  const deal = (typeof ctrlPdDealIdNorm === 'function') ? ctrlPdDealIdNorm(ZAK && ZAK.pdDealId) : '';
+  const st = (deal && typeof ctrlPdStavNorm === 'function') ? ctrlPdStavNorm(ZAK.pdStav) : null;
+  const text = st ? CTRL_PD_STAV_TEXT[st.status] : (deal ? '— stav zatím nenačten —' : '— zakázka nemá deal —');
+  const stitek = st ? CTRL_PD_STAV_TEXT[st.status] : (deal ? 'nenačteno' : 'nepropojeno');
+  const bublina = 'stav obchodu v Pipedrive — jen ke čtení, mění se v Pipedrive'
+    + (deal ? ' · deal ' + deal : '') + (st ? ' · načteno ' + new Date(st.nacteno).toLocaleString('cs-CZ') : '');
+  return `<div class="row pd-stav-radek"><label>Stav Pipedrive<span class="pill pd-${st ? st.status : 'zadny'}"
+      style="margin-left:12px">${esc(stitek)}</span></label>
+    <select class="pd-stav" disabled title="${esc(bublina)}"><option selected>${esc(text)}</option></select></div>`;
+}
+
 /* ---------- sdílená hlavička: zakázka + přepínač otevřené varianty ----------
  * Zobrazuje se na začátku záložek Kalkulace OCK i Kalkulace PROJ, aby byl
  * kontext (jaká zakázka a která varianta se počítá) vždy na očích.
@@ -1388,8 +1410,11 @@ function zakazkaHlavicka(ock) {
   };
   /* Bez klíče v popisku schválně: hlavička má pevné rozvržení a klíč v tomhle
    * řádku posunul „Datum vytvoření" o čtyři pixely (chytil overit_lista.mjs).
-   * Vazba je zřejmá z ceníku, kde sekce SAZBY DPH klíče nese. */
-  const dphSelect = (cesta, c, sazba) => `<div class="row"><label>Sazba DPH</label>
+   * Vazba je zřejmá z ceníku, kde sekce SAZBY DPH klíče nese.
+   * Na konci sloupce (`na-konec`, 22. 10. 2026) jako datum vytvoření: od řádku
+   * „Stav Pipedrive" bývá nejvyšší třetí sloupec (u zahraniční zakázky
+   * s kurzem i dřív) a datum by jinak sjelo pod úroveň sazby DPH. */
+  const dphSelect = (cesta, c, sazba) => `<div class="row na-konec"><label>Sazba DPH</label>
     <select onchange="set('${cesta}', +this.value)">${dphPredvolby(c, sazba).map(o =>
       /* Sazba ze zakázky jde do value jen jako ČÍSLO (B69, 24. 9. 2026):
        * uložená zakázka může nést v sazbě řetězec s HTML. */
@@ -1440,7 +1465,7 @@ function zakazkaHlavicka(ock) {
         <div class="zak-head-col">
           ${zakaznikRow('proj')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico', 'proj')}${dphRowProj}
         </div>
-        <div class="zak-head-col">${variantaRow}${ridiciBtn}${prirazkaRowProj}</div>
+        <div class="zak-head-col">${pdStavRadek()}${variantaRow}${ridiciBtn}${prirazkaRowProj}</div>
       </div>${puvodRadek}
       <div class="zak-cena noprint">
         ${zakTrojice()}
@@ -1464,7 +1489,7 @@ function zakazkaHlavicka(ock) {
         ${zakaznikRow('ock')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico')}${dphRow}
       </div>
       <div class="zak-head-col">
-        ${variantaRow}${ridiciBtn}${rezimRow}${prirazkaRow}${radaRow}${kurzRow}
+        ${pdStavRadek()}${variantaRow}${ridiciBtn}${rezimRow}${prirazkaRow}${radaRow}${kurzRow}
       </div>
     </div>${puvodRadek}
     <div class="zak-cena noprint">
@@ -2682,6 +2707,10 @@ function render() {
     /* heat mapa (#26) jede s uživatelem: každé překreslení aplikace
      * překreslí i ji — jinak by po přepnutí záložky ukazovala staré prvky */
     if (typeof heatPoRenderu === 'function') heatPoRenderu();
+    /* Stav Pipedrive (22. 10. 2026): po otevření jiné zakázky (nebo změně
+     * dealu) se jednou zeptá serveru na stav dealu. Sám nic nezapisuje —
+     * dotaz jen naplánuje mimo vykreslování (online_ui.js). */
+    if (typeof pdStavHlidej === 'function') pdStavHlidej();
     /* Otevřené okno Nastavení se překresluje SPOLU s aplikací (21. 8. 2026
      * večer). Do té doby ho obnovoval jen `nastRefresh()` — jenže od chvíle,
      * kdy se do Nastavení přestěhovala karta Databáze, sedí v modálním okně

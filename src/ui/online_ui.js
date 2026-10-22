@@ -167,6 +167,55 @@ function onlineApi(cesta, telo, metoda) {
   }));
 }
 
+/* ---------- Stav Pipedrive v hlavičce (22. 10. 2026) ----------
+ * Zadání J. V. (podklady/PIPEDRIVE_STAV_DEALU_22_10.md): stav dealu se
+ * načte při otevření zakázky a uloží se k ní jako poslední známý
+ * (`ZAK.pdStav = { status, nacteno }`) — ukáže se i offline a jde do
+ * exportu pro controlling. Server ho při uložení stejně bere ze svého
+ * záznamu (ctrlPdStavPrijmi); tady jde o to, aby ho hlavička ukázala hned.
+ *
+ * Kdy: hlídá to render() přes pdStavHlidej — po výměně zakázky v paměti
+ * (otevření online, ze souboru, obnovení zálohy, krok zpět), po změně
+ * dealu nebo po přihlášení se zeptá JEDNOU. Úpravy zakázky zakázku
+ * nevyměňují, takže se při práci znovu neptá. Dotaz jde mimo vykreslování
+ * (setTimeout) — zápis uvnitř render() by byla smyčka.
+ *
+ * Chyby (deal nenalezen, Pipedrive nedostupný, bez práva, strop) se tiše
+ * přejdou: zůstává poslední známý stav (bod 5 zadání). Načtený stav není
+ * neuložená změna — kdo zakázku jen otevřel, nemá se ptát „uložit?". */
+const PD_STAV_UI = { zak: null, deal: '', ja: '' };
+/* Spojení se serverem — harness nad file:// ho podstrčí. */
+function pdStavServer() { return onlineMozne(); }
+function pdStavHlidej() {
+  const deal = (typeof ctrlPdDealIdNorm === 'function') ? (ctrlPdDealIdNorm(ZAK && ZAK.pdDealId) || '') : '';
+  const ja = (ONLINE_STAV.ja && ONLINE_STAV.ja.email) || '';
+  if (PD_STAV_UI.zak === ZAK && PD_STAV_UI.deal === deal && PD_STAV_UI.ja === ja) return;
+  PD_STAV_UI.zak = ZAK; PD_STAV_UI.deal = deal; PD_STAV_UI.ja = ja;
+  if (!deal || !ja || !pdStavServer()) return;
+  const zak = ZAK;
+  setTimeout(() => { pdStavNacti(zak, deal); }, 0);
+}
+function pdStavNacti(zak, deal) {
+  return onlineApi('/api/pd/stav?deal=' + encodeURIComponent(deal))
+    .then(o => pdStavPouzij(zak, deal, o), () => false);
+}
+/* true = stav v hlavičce se změnil. Odpověď k jiné (mezitím otevřené)
+ * zakázce nebo k jinému dealu se zahodí; starší stav nový nepřepíše. */
+function pdStavPouzij(zak, deal, o) {
+  if (ZAK !== zak || (ctrlPdDealIdNorm(ZAK.pdDealId) || '') !== deal) return false;
+  const novy = ctrlPdStavNorm(o && { status: o.status, nacteno: o.nacteno });
+  if (!novy) return false;
+  const ted = ctrlPdStavNorm(ZAK.pdStav);
+  if (ted && (ted.status === novy.status && ted.nacteno === novy.nacteno
+    || Date.parse(ted.nacteno) > Date.parse(novy.nacteno))) return false;
+  const predtim = JSON.stringify(ZAK);
+  ZAK.pdStav = novy;
+  if (typeof historieBezZmenyPo === 'function') historieBezZmenyPo(predtim);
+  if (ONLINE_STAV.posledni === predtim) ONLINE_STAV.posledni = JSON.stringify(ZAK);
+  render();
+  return true;
+}
+
 /* ---------- start a přihlášení ---------- */
 
 /* Uživatel opravdu něco udělal — od téhle chvíle smí autosave zapisovat.
