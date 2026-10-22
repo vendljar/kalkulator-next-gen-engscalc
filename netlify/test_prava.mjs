@@ -62,6 +62,7 @@ import analytikaFn from './functions/analytika.mjs';
 import pdPole from './functions/pd_pole.mjs';
 import pdDealy from './functions/pd_dealy.mjs';
 import pdDeal from './functions/pd_deal.mjs';
+import pdStav from './functions/pd_stav.mjs';
 import { config as configNocni } from './functions/zaloha_nocni.mjs';
 import { ADMIN_EMAIL, ROLE, POKUSY_MAX, POKUSY_IP_MAX, zpozdeniMs, pokusyReset,
          uloziste, PODPIS_ULOZISTE } from './lib/sdilene.mjs';
@@ -503,6 +504,14 @@ const MATICE = [
   { fn: pdDeal, soubor: 'pd_deal.mjs', nazev: 'Pipedrive — detail případu (GET /api/pd/deal)',
     metoda: 'GET', url: 'http://x/api/pd/deal?id=1',
     proc: 'detail nese kontakty objednatele (B80) — s právem crm.pipedrive, výchozí všem',
+    prava: PRIHLASENY_OK },
+
+  /* Stav případu pro hlavičku kalkulace (22. 10. 2026): jen stav a čas
+   * načtení, práva jako ostatní /api/pd/* — původ a strop hlídá
+   * netlify/test_pd_stav.mjs. */
+  { fn: pdStav, soubor: 'pd_stav.mjs', nazev: 'Pipedrive — stav případu pro hlavičku (GET /api/pd/stav)',
+    metoda: 'GET', url: 'http://x/api/pd/stav?deal=1',
+    proc: 'prohlížeč dostane jen stav dealu a čas načtení — s právem crm.pipedrive, výchozí všem',
     prava: PRIHLASENY_OK },
 
   /* Sdílený rejstřík žádostí o slevu (#102). Čte ho každý přihlášený —

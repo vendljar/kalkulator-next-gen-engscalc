@@ -292,7 +292,33 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
       && JSON.stringify(L('Příplatky – volby').rows[0]) === JSON.stringify(C.CTRL_RADKY_HLAVICKA));
     const iRid = C.CTRL_RADKY_HLAVICKA.indexOf('Řídící varianta'), iVys = C.CTRL_RADKY_HLAVICKA.indexOf('Výsledek');
     test('C5 sloupce Řídící varianta a Výsledek', iRid > 0 && iVys > 0 && listy[0].rows.slice(1).every(r => r[iRid] === 'ano' && r[iVys] === 'zmrazený'));
-    test('C5 verze struktury souboru 2', C.CTRL_EXPORT_VERZE === 2 && (listy[2].rows.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 2);
+    test('Stav Pipedrive: verze struktury souboru 3', C.CTRL_EXPORT_VERZE === 3 && (listy[2].rows.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 3);
+    /* Stav Pipedrive (22. 10. 2026): dva sloupce hned za „Pipedrive deal",
+     * v Řádcích i v Příplatcích; bez dealu prázdné. Pojistka: před úpravou
+     * sloupce neexistují (indexOf −1) a zakázka se stavem je nenese. */
+    const iDeal = C.CTRL_RADKY_HLAVICKA.indexOf('Pipedrive deal');
+    const iSt = C.CTRL_RADKY_HLAVICKA.indexOf('Stav Pipedrive'), iStN = C.CTRL_RADKY_HLAVICKA.indexOf('Stav Pipedrive – načteno');
+    test('Stav Pipedrive: sloupce stojí hned za „Pipedrive deal"', iDeal > 0 && iSt === iDeal + 1 && iStN === iDeal + 2);
+    test('Stav Pipedrive: bez dealu jsou sloupce prázdné', listy[0].rows.slice(1).every(r => r[iSt] === '' && r[iStN] === ''));
+    const zakSt = zakazkaZamcena();
+    zakSt.pdDealId = '4711';
+    zakSt.pdStav = { status: 'won', nacteno: '2026-10-22T08:15:00.000Z' };
+    const expSt = C.ctrlExportVarianty(zakSt, zakSt.varianty[0], { jekly: JEKLY });
+    const listySt = C.ctrlExportListy(expSt);
+    const LS = (n) => listySt.find(l => l.nazev === n);
+    test('Stav Pipedrive: hlavička exportu nese poslední známý stav', !!expSt.hlavicka.pdStav && expSt.hlavicka.pdStav.status === 'won');
+    test('Stav Pipedrive: každý řádek nese „Vyhrané" a čas načtení', LS('Řádky').rows.length > 1
+      && LS('Řádky').rows.slice(1).every(r => r[iDeal] === '4711' && r[iSt] === 'Vyhrané' && r[iStN] === '2026-10-22T08:15:00.000Z')
+      && LS('Příplatky – volby').rows.slice(1).every(r => r[iSt] === 'Vyhrané'));
+    test('Stav Pipedrive: list Popis vysvětluje sloupec', !!LS('Popis').rows.find(r => r[0] === 'Stav Pipedrive' && /jen informace/.test(r[1])));
+    test('Stav Pipedrive: CSV nese stav', /"Vyhrané"/.test(C.ctrlExportCsv(expSt)));
+    zakSt.pdStav = { status: 'vyhrano', nacteno: '2026-10-22T08:15:00.000Z' };
+    const expSpatne = C.ctrlExportVarianty(zakSt, zakSt.varianty[0], { jekly: JEKLY });
+    test('Stav Pipedrive: neznámý stav se do exportu nedostane', expSpatne.hlavicka.pdStav === null
+      && C.ctrlExportListy(expSpatne)[0].rows.slice(1).every(r => r[iSt] === ''));
+    zakSt.pdStav = { status: 'lost', nacteno: '2026-10-22T08:15:00.000Z' };
+    delete zakSt.pdDealId;
+    test('Stav Pipedrive: stav bez dealu se nevyváží', C.ctrlExportVarianty(zakSt, zakSt.varianty[0], { jekly: JEKLY }).hlavicka.pdStav === null);
     const iN = C.CTRL_RADKY_HLAVICKA.indexOf('Náklad celkem (Kč)');
     test('čísla v listu jsou čísla, ne text', listy[0].rows.slice(1).every(r => typeof r[iN] === 'number'));
     const souhrnRadek = listy[1].rows.find(r => r[0] === '2026 - OPR - CN - 0901' && r[1] === 'OCK' && typeof r[2] === 'number' && r.length === 10);
@@ -481,6 +507,57 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   if (typeof zakazkaDuplikuj === 'function') {
     const z = novaZakazka(); z.pdDealId = '991';
     test('C4: duplikát zakázky deal id nepřebírá', !('pdDealId' in zakazkaDuplikuj(z, '2026 - OPR - CN - 1')));
+  }
+}
+
+/* ---------- 7. Stav Pipedrive (22. 10. 2026) ----------
+ * Zadání podklady/PIPEDRIVE_STAV_DEALU_22_10.md. Pojistka: před úpravou
+ * funkce neexistují (C.ctrlPdStavNorm undefined → výjimka u prvního testu). */
+{
+  const N = C.ctrlPdStavNorm, NV = C.ctrlPdStavNovejsi, P = C.ctrlPdStavPrijmi;
+  const t1 = '2026-10-22T08:00:00.000Z', t2 = '2026-10-22T09:30:00.000Z';
+  test('Stav: čtyři stavy z Pipedrive s českými názvy',
+    C.CTRL_PD_STAVY.join(',') === 'open,lost,won,deleted'
+    && C.CTRL_PD_STAVY.map(s => C.ctrlPdStavText({ status: s, nacteno: t1 })).join(',') === 'Otevřené,Ztracené,Vyhrané,Smazané');
+  test('Stav: platný záznam projde, cizí pole se zahodí',
+    JSON.stringify(N({ status: 'won', nacteno: t1, kdo: 'x', odkaz: 'y' })) === JSON.stringify({ status: 'won', nacteno: t1 }));
+  test('Stav: neznámý stav, prototyp i prázdno → null',
+    [null, undefined, '', 'won', [], {}, { status: 'vyhrano', nacteno: t1 }, { status: '__proto__', nacteno: t1 },
+      { status: 'toString', nacteno: t1 }, { status: ['won'], nacteno: t1 }].every(x => N(x) === null));
+  test('Stav: čas jen jako ISO z hodin serveru',
+    [{ status: 'won' }, { status: 'won', nacteno: 'včera' }, { status: 'won', nacteno: 1792658476000 },
+      { status: 'won', nacteno: '22. 10. 2026' }, { status: 'won', nacteno: '2026-10-22' },
+      { status: 'won', nacteno: { toString: () => t1 } }, { status: 'won', nacteno: '2026-13-45T99:99:99.000Z' },
+      { status: 'won', nacteno: t1 + '<script>' }].every(x => N(x) === null));
+  test('Stav: novější vyhraje, neplatný se nepočítá',
+    NV({ status: 'open', nacteno: t1 }, { status: 'won', nacteno: t2 }).status === 'won'
+    && NV({ status: 'won', nacteno: t2 }, { status: 'open', nacteno: t1 }).status === 'won'
+    && NV(null, { status: 'lost', nacteno: t1 }).status === 'lost'
+    && NV({ status: 'lost', nacteno: t1 }, { status: 'x', nacteno: t2 }).status === 'lost'
+    && NV(null, undefined) === null);
+  /* Uložení: stav je údaj serveru — co pošle prohlížeč, se nebere. */
+  const klient = { status: 'won', nacteno: '2030-01-01T00:00:00.000Z' };
+  test('Stav: prohlížeč si stav nenapíše (bez záznamu serveru nic)',
+    P(null, { pdDealId: '5', pdStav: klient }, {}) === null
+    && P({ pdDealId: '5' }, { pdDealId: '5', pdStav: klient }, { serverStav: null }) === null);
+  test('Stav: uloží se záznam serveru',
+    JSON.stringify(P({ pdDealId: '5' }, { pdDealId: '5', pdStav: klient }, { serverStav: { status: 'lost', nacteno: t1, overeno: t2 } }))
+      === JSON.stringify({ status: 'lost', nacteno: t1 }));
+  test('Stav: uložená verze téhož dealu zůstane, novější vyhraje',
+    P({ pdDealId: '5', pdStav: { status: 'open', nacteno: t1 } }, { pdDealId: '5', pdStav: klient }, {}).status === 'open'
+    && P({ pdDealId: '5', pdStav: { status: 'open', nacteno: t1 } }, { pdDealId: 5 }, { serverStav: { status: 'deleted', nacteno: t2 } }).status === 'deleted'
+    && P({ pdDealId: '5', pdStav: { status: 'deleted', nacteno: t2 } }, { pdDealId: '5' }, { serverStav: { status: 'open', nacteno: t1 } }).status === 'deleted');
+  test('Stav: po změně dealu se stav starého nepřenese',
+    P({ pdDealId: '5', pdStav: { status: 'won', nacteno: t1 } }, { pdDealId: '6' }, { serverStav: null }) === null);
+  test('Stav: bez dealu (i s neplatným id) žádný stav',
+    P({ pdDealId: '5', pdStav: { status: 'won', nacteno: t1 } }, { pdStav: { status: 'won', nacteno: t1 } }, { serverStav: { status: 'won', nacteno: t1 } }) === null
+    && P(null, { pdDealId: 'x1', pdStav: { status: 'won', nacteno: t1 } }, { obnova: true }) === null);
+  test('Stav: obnova bere stav ze zálohy (očištěný)',
+    JSON.stringify(P(null, { pdDealId: '5', pdStav: { status: 'won', nacteno: t1, x: 1 } }, { obnova: true })) === JSON.stringify({ status: 'won', nacteno: t1 })
+    && P(null, { pdDealId: '5', pdStav: { status: 'vyhrano', nacteno: t1 } }, { obnova: true }) === null);
+  if (typeof zakazkaDuplikuj === 'function') {
+    const z = novaZakazka(); z.pdDealId = '991'; z.pdStav = { status: 'won', nacteno: t1 };
+    test('Stav: duplikát zakázky stav dealu nepřebírá', !('pdStav' in zakazkaDuplikuj(z, '2026 - OPR - CN - 1')));
   }
 }
 

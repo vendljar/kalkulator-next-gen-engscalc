@@ -351,6 +351,18 @@ export function pdDealNaNase(deal, mapa, dopln = {}) {
   };
 }
 
+/* STAV DEALU PRO HLAVIČKU KALKULACE (22. 10. 2026, /api/pd/stav).
+ * API v2 nese u dealu `status` (open, won, lost) a příznak `is_deleted`:
+ * smazaný deal leží 30 dní v koši s PŮVODNÍM stavem, proto má příznak
+ * přednost — jinak by smazaný vyhraný deal svítil jako „Vyhrané".
+ * Cokoli jiného je null (nic se nevymýšlí). */
+export const PD_STAVY = ['open', 'won', 'lost', 'deleted'];
+export function pdStavZDealu(deal) {
+  if (!deal || typeof deal !== 'object' || Array.isArray(deal)) return null;
+  if (deal.is_deleted === true) return 'deleted';
+  return PD_STAVY.includes(deal.status) ? deal.status : null;
+}
+
 /* Konečná faktura, když chybí třetí splátka — dopočítá se do sta procent.
  * Vrací prázdno, když zálohy nedávají smysl, ať se do krycího listu
  * nedostane nesmysl. (Detail dealu ji od 21. 10. 2026 nevolá: podmínky

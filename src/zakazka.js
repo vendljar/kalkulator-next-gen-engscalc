@@ -1650,6 +1650,8 @@ function zakazkaDuplikuj(zak, noveCislo) {
    * původní nepřebírá — jinak by ji obchodník ani neuložil (id mění jen
    * administrátor). */
   delete nova.pdDealId;
+  /* …a s ním ani poslední známý stav toho dealu (Stav Pipedrive, 22. 10. 2026). */
+  delete nova.pdStav;
 
   /* Zápisy o jednání patří k původní akci, ne sem. */
   nova.poznamky = [];

@@ -196,19 +196,53 @@ export const PD_CACHE_ULOZISTE = 'pd_cache';
 export const PD_DEAL_MAX = 30;
 export const PD_DEAL_OKNO_MS = 3600 * 1000;
 
-/* true = smí do Pipedrive (a načtení se započítalo), false = nad stropem. */
-export async function pdStropCerstvych(email) {
+/* true = smí do Pipedrive (a načtení se započítalo), false = nad stropem.
+ * `volby.druh` + `volby.max`: vlastní počítadlo pro jiný druh čtení (stav
+ * dealu, 22. 10. 2026) — klíč zůstává pod `strop:`, ať ho noční úklid
+ * (lib/uklid.mjs) dál pozná podle času `od`. */
+export async function pdStropCerstvych(email, volby = {}) {
   const s = await uloziste(PD_CACHE_ULOZISTE);
-  const klic = 'strop:' + String(email || '').toLowerCase();
+  const max = volby.max || PD_DEAL_MAX;
+  const klic = 'strop:' + (volby.druh ? volby.druh + ':' : '') + String(email || '').toLowerCase();
   /* Čtení a zápis počítadla ve výhradním úseku (B158): bez něj 200 souběžných
    * požadavků přečetlo tutéž hodnotu a prošlo všech 200. */
   return vyhradne(PD_CACHE_ULOZISTE + '/' + klic, async () => {
     const ted = Date.now();
     let z = await s.cti(klic);
     if (!z || typeof z !== 'object' || !(ted - (+z.od || 0) < PD_DEAL_OKNO_MS)) z = { od: ted, pocet: 0 };
-    if ((+z.pocet || 0) >= PD_DEAL_MAX) return false;
+    if ((+z.pocet || 0) >= max) return false;
     z.pocet = (+z.pocet || 0) + 1;
     await s.zapis(klic, z);
     return true;
   });
+}
+
+/* ============================================================
+ * STAV DEALU PRO HLAVIČKU KALKULACE (22. 10. 2026)
+ * Zadání J. V.: podklady/PIPEDRIVE_STAV_DEALU_22_10.md.
+ *
+ * Poslední známý stav dealu si server pamatuje v úložišti `pipedrive`
+ * pod `stav/<id>` = { status, nacteno, overeno }:
+ *   status, nacteno — co a kdy Pipedrive naposledy vrátil (open, lost,
+ *                     won, deleted);
+ *   overeno         — kdy se server Pipedrive naposledy ptal (i když deal
+ *                     nenašel) — podle něj se nechodí znovu dřív než za
+ *                     PD_STAV_CACHE_MS.
+ * Záměrně NE v `pd_cache`: tu noční úklid po 30 dnech maže (B174, osobní
+ * údaje z detailu), a „Smazané" musí přežít i deal, který Pipedrive po
+ * 30 dnech odstraní úplně. Záznam nenese nic osobního.
+ * Ze záznamu bere stav i uložení zakázky (zakazky.mjs → ctrlPdStavPrijmi)
+ * a hromadný export pro controlling.
+ * ============================================================ */
+export const PD_STAV_ULOZISTE = 'pipedrive';
+export const PD_STAV_CACHE_MS = 10 * 60 * 1000;
+/* Stav stojí 1 token (detail dealu), smazaný deal o 10 víc (seznam). Kdo
+ * prochází nabídky, otevře jich za hodinu desítky; 120 je rezerva a strop
+ * na jednoho uživatele drží rozpočet firmy i proti smyčce. */
+export const PD_STAV_MAX = 120;
+
+/* Záznam serveru pro deal, nebo null. Chyba úložiště se nehlásí — stav je
+ * informace, kvůli které nesmí selhat uložení zakázky. */
+export async function pdStavZaznam(id) {
+  try { return await (await uloziste(PD_STAV_ULOZISTE)).cti('stav/' + id); } catch (e) { return null; }
 }

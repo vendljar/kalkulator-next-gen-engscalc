@@ -10,6 +10,7 @@
 import { uloziste, vyzadujRoli, json, serverVerze } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B, zakazkaVelikostHlaska } from '../lib/zakazka_kontrola.mjs';
+import { pdStavZaznam } from '../lib/pipedrive.mjs';
 
 /* Jméno k e-mailu z účtů (P7 / K16-N87) — jen pro hlášku o kolizi verzí
  * u zakázek uložených dřív, než se jméno začalo zapisovat. Jedno čtení,
@@ -138,9 +139,14 @@ export default async (req) => {
    * ceník varianty a přepisy). Administrátor matici nepotřebuje — čte se
    * jen pro ostatní role. */
   const zobr = relace.role === 'Administrátor' ? null : await sProg.cti('zobrazeni');
+  /* Stav Pipedrive (22. 10. 2026): poslední známý stav dealu je údaj
+   * serveru — bere se z jeho záznamu (/api/pd/stav), ne z prohlížeče
+   * (ctrlPdStavPrijmi v lib/zakazka_kontrola.mjs). */
+  const pdId = globalThis.ctrlPdDealIdNorm ? globalThis.ctrlPdDealIdNorm(zak.pdDealId) : '';
+  const pdStav = pdId ? await pdStavZaznam(pdId) : null;
   const kontrola = zakazkaServerKontrola(stara, zak, relace,
     { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni',
-      program: prog, matice: (zobr && zobr.matice) || null });
+      program: prog, matice: (zobr && zobr.matice) || null, pdStav });
   if (!kontrola.ok) return json({ ok: false, chyba: kontrola.chyba }, kontrola.status);
   const sporne = kontrola.sporne;
 

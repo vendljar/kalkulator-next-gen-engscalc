@@ -241,6 +241,15 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
    * hlídá každému, ruční zadání a opravu pustí jen administrátorovi. */
   const pdDeal = globalThis.ctrlPdDealKontrola ? globalThis.ctrlPdDealKontrola(stara, zak, relace.role) : null;
   if (pdDeal) return odmitni(pdDeal.status, veta(pdDeal.chyba));
+  /* Stav Pipedrive (22. 10. 2026): poslední známý stav dealu je údaj
+   * serveru. Uloží se novější ze záznamu serveru (`ctx.pdStav`, čte ho
+   * /api/pd/stav) a z uložené verze téhož dealu; co poslal prohlížeč, se
+   * zahodí. Obnova bere stav ze zálohy (doklad, viz hlavička souboru). */
+  if (globalThis.ctrlPdStavPrijmi) {
+    const pdStav = globalThis.ctrlPdStavPrijmi(stara, zak, { obnova, serverStav: ctx.pdStav || null });
+    if (pdStav) zak.pdStav = pdStav;
+    else if (zak.pdStav !== undefined) delete zak.pdStav;
+  }
   /* Objednané příplatky (#447 C6, rozhodnutí J. V. 21. 10. 2026): jen
    * nabídnuté příplatky zamčené varianty, datum ne v budoucnosti, po
    * vytištěné SoD mění jen administrátor. Kdo a kdy píše server z relace

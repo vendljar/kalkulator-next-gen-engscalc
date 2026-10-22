@@ -169,6 +169,22 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
   await sZ.zapis('z/rozbita.json', { schema: 2, varianty: 'nesmysl' });
   rejstrik.push({ soubor: 'rozbita.json', cislo: 'ROZBITA', odeslane: 1, upraveno: '2026-10-20T09:00:00Z' });
   await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
+  /* Stav Pipedrive (22. 10. 2026): 0801 nese v uložené zakázce starší stav,
+   * server zná novější (zakázku od uložení někdo otevřel); u 0804 je
+   * novější uložený stav. Pojistka: bez doplnění ve funkci exportu by 0801
+   * vyšla „Otevřené". */
+  const sPd = ulz('pipedrive');
+  const dealK = async (cislo, deal, pdStav, serverStav) => {
+    const soub = rejstrik.find(r => r.cislo === cislo).soubor;
+    const z = await sZ.cti('z/' + soub);
+    z.pdDealId = deal; z.pdStav = pdStav;
+    await sZ.zapis('z/' + soub, z);
+    if (serverStav) await sPd.zapis('stav/' + deal, serverStav);
+  };
+  await dealK('2026 - OPR - CN - 0801', '4801', { status: 'open', nacteno: '2026-10-05T09:00:00.000Z' },
+    { status: 'won', nacteno: '2026-10-21T10:00:00.000Z', overeno: '2026-10-21T10:00:00.000Z' });
+  await dealK('2026 - OPR - CN - 0804', '4804', { status: 'lost', nacteno: '2026-10-20T10:00:00.000Z' },
+    { status: 'open', nacteno: '2026-10-12T10:00:00.000Z', overeno: '2026-10-12T10:00:00.000Z' });
 
   const ex = async (q, c) => { const r = await get(controllingExport, URL_E + q, c); return { st: r.status, o: await r.json() }; };
   test('C3: vedoucí hromadný export nedostane (403)', (await get(controllingExport, URL_E + '?od=2026-10-01&do=2026-10-31', cVed)).status === 403);
@@ -186,6 +202,18 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
   test('C3: kdo a kdy z relace a serveru', e1.o.kdo === ADMIN_EMAIL && /^\d{4}-\d{2}-\d{2}T/.test(e1.o.kdy)
     && e1.o.exporty.every(e => e.kdo === ADMIN_EMAIL));
   test('C3: řádky nesou zmrazený výsledek (hlavička zmrazeno)', e1.o.exporty.every(e => e.hlavicka.zmrazeno === true && e.radky.length > 0));
+  const stavExp = (o, c) => ((o.exporty || []).find(e => e.strany[0].cislo === c) || { hlavicka: {} }).hlavicka.pdStav || null;
+  test('Stav Pipedrive: export vezme novější stav, který zná server',
+    JSON.stringify(stavExp(e1.o, '2026 - OPR - CN - 0801')) === JSON.stringify({ status: 'won', nacteno: '2026-10-21T10:00:00.000Z' }),
+    stavExp(e1.o, '2026 - OPR - CN - 0801'));
+  test('Stav Pipedrive: starší záznam serveru novější uložený stav nepřepíše',
+    (stavExp(e1.o, '2026 - OPR - CN - 0804') || {}).status === 'lost', stavExp(e1.o, '2026 - OPR - CN - 0804'));
+  const sesitSt = C.ctrlExportListy(e1.o.exporty, e1.o.data, { hromadny: e1.o.filtr });
+  const iSt = C.CTRL_RADKY_HLAVICKA.indexOf('Stav Pipedrive');
+  test('Stav Pipedrive: sešit z odpovědi nese stav v řádcích i v seznamu zakázek',
+    sesitSt[0].rows.slice(1).some(r => r[0] === '2026 - OPR - CN - 0801' && r[iSt] === 'Vyhrané')
+    && sesitSt[0].rows.slice(1).some(r => r[0] === '2026 - OPR - CN - 0804' && r[iSt] === 'Ztracené')
+    && sesitSt[3].rows.some(r => r[0] === '2026 - OPR - CN - 0801' && r[8] === 'Vyhrané'));
   const e2 = await ex('?od=2026-11-01&do=2026-11-30', cAdmin);
   test('C3+C5: listopad = 0802 (zámek 23:30 UTC 31. 10.) a 0806 (zamčená neřídící)', cisla(e2.o) === '2026 - OPR - CN - 0802,2026 - OPR - CN - 0806', cisla(e2.o));
   const e806 = (e2.o.exporty || []).find(e => /0806/.test(e.strany[0].cislo));

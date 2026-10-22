@@ -2773,7 +2773,7 @@ const MUTACE = [
     nahrad: "  if (false)\n    return { chyba: json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403) };",
     proc: 'cizí stránka by pod relací oběti spotřebovávala rozpočet Pipedrive' },
   { nazev: 'B80: strop čerstvých načtení dealu se nekontroluje', soubor: 'lib/pipedrive.mjs',
-    hledej: "  if ((+z.pocet || 0) >= PD_DEAL_MAX) return false;",
+    hledej: "  if ((+z.pocet || 0) >= max) return false;",
     nahrad: "  if (false) return false;",
     proc: 'smyčka přes čísla případů by odnesla celé CRM a vyčerpala denní limit Pipedrive' },
   { nazev: 'B80: čerstvé načtení dealu se do stropu nezapočítá', soubor: 'lib/pipedrive.mjs',

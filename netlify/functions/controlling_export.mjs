@@ -26,6 +26,7 @@
  * překročení 413 s výzvou zúžit období, nikdy potichu oříznutý soubor. */
 import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
+import { pdStavZaznam } from '../lib/pipedrive.mjs';
 
 export default async (req) => {
   let J;
@@ -80,6 +81,13 @@ export default async (req) => {
   if (exporty.length > M.zakazek)
     return json({ ok: false, chyba: 'Do období spadá ' + exporty.length + ' zakázek (strop ' + M.zakazek
       + ' v jednom souboru) — rozdělte export na kratší období.' }, 413);
+  /* Stav Pipedrive (22. 10. 2026): uložená zakázka nese stav z posledního
+   * uložení, server zná novější, když ji od té doby někdo otevřel
+   * (/api/pd/stav). Čte se jen u vyvážených zakázek s dealem, souběžně. */
+  await Promise.all(exporty.map(async (e) => {
+    const id = G.ctrlPdDealIdNorm(e.hlavicka.pipedrive);
+    if (id) e.hlavicka.pdStav = G.ctrlPdStavNovejsi(e.hlavicka.pdStav, await pdStavZaznam(id));
+  }));
 
   const odpoved = { ok: true, exporty, data, verzeMapovani, preskoceno, kdy, kdo: relace.email, filtr };
   const telo = JSON.stringify(odpoved);
