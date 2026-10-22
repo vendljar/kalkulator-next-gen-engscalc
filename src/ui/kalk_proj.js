@@ -247,7 +247,7 @@ function renderProj() {
   const hlava = `<div class="kalk-title">${ZAK.cislo ? `<span class="kt-cislo">${esc(ZAK.cislo)}</span>` : ''}${esc(ZAK.nazevAkce || 'Bez názvu akce')}</div>
   ${typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('proj') : ''}
   <div class="grand">
-    <div class="kpi main"><div class="l">Základní cena bez DPH</div><div class="v">${fmt0(r.souhrn.cena)}</div></div>
+    <div class="kpi main"><div class="l">Základní cena bez DPH</div><div class="v">${fmt0(r.souhrn.cena)}</div>${kpiEurHtml(r.souhrn.cena, aktivniVarianta(ZAK), PC.kurzEurKc)}</div>
     <div class="kpi kpi-multi">
       ${cenaLine}
       <div class="kpi-line"><span class="kl">DPH ${Math.round(PC.dph * 100)} %</span><span class="kv">${fmt0(dphKc)}</span></div>

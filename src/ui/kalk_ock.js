@@ -2064,7 +2064,7 @@ function renderOutputs() {
   const hlava = `<div class="kalk-title">${ZAK.cislo ? `<span class="kt-cislo">${esc(ZAK.cislo)}</span>` : ''}${esc(ZAK.nazevAkce || 'Bez názvu akce')}</div>
   ${typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('ock') : ''}
   <div class="grand">
-    <div class="kpi main"><div class="l">Základní cena bez DPH</div><div class="v">${fmt0(zaklad)}</div></div>
+    <div class="kpi main"><div class="l">Základní cena bez DPH</div><div class="v">${fmt0(zaklad)}</div>${kpiEurHtml(zaklad, aktivniVarianta(ZAK), C.kurzEurKc)}</div>
     <div class="kpi kpi-multi">
       ${zaokrLine}
       <div class="kpi-line"><span class="kl">DPH ${Math.round(C.dph * 100)} %</span><span class="kv">${fmt0(dphKc)}</span></div>

@@ -1056,6 +1056,8 @@ function docxMaOddelovace(odst) {
   const zac = odst.search(/<w:t(?:\s[^>]*)?>/), kon = odst.lastIndexOf('</w:t>');
   return zac >= 0 && kon > zac && DOCX_ODDELOVAC_RE.test(odst.slice(zac, kon));
 }
+/* „)" hned za jádrem, nebo až za symboly {{…}} (mezery smí, oddělovač \u0001 ne). */
+const DOCX_ZAVORKA_ZA_RE = /^[^\S\u0001]*(?:\{\{[^{}]*\}\}[^\S\u0001]*)*\)/;
 function docxPrelozUseky(odst, lang, prelozit) {
   const re = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:tab|br|cr)(?:\s[^>]*)?\/>/g;
   const uzly = [];                 // prvky textu: { zac, kon, pozice v T, text }
@@ -1091,8 +1093,12 @@ function docxPrelozUseky(odst, lang, prelozit) {
      * „CENA ZA … (DPZ){{PROJ_DPZ_HVEZDICKA_ZNACKA}}:" — „)" spadne do `za`
      * a slovník „… (DPZ" nezná. Jádro s jednou neuzavřenou „(", za nímž
      * v dokumentu „)" opravdu stojí, se zkusí i se „)" a z překladu se
-     * koncová „)" vezme (v dokumentu zůstává za přeloženým jádrem). */
-    if ((!st || !st.prelozeno) && za[0] === ')'
+     * koncová „)" vezme (v dokumentu zůstává za přeloženým jádrem).
+     * ZÁVORKA AŽ ZA SYMBOLEM (#485, D5 22. 10. 2026): „Splatnost faktur
+     * (dní{{X}})" — „)" stojí za symbolem (symboly mezi jádrem a „)" se
+     * přeskočí, tabulátor ani zalomení ne). Do D5 to uměl jen obal nástroje
+     * šablon (trStavSeZavorkou); teď aplikace sama a obal zanikl. */
+    if ((!st || !st.prelozeno) && DOCX_ZAVORKA_ZA_RE.test(T.slice(s + pred.length + jadro.length))
         && (jadro.match(/\(/g) || []).length === (jadro.match(/\)/g) || []).length + 1) {
       const z = prelozit(jadro + ')', lang);
       if (z && z.prelozeno && z.zdroj !== 'neutrální' && /\)\s*$/.test(z.text))
