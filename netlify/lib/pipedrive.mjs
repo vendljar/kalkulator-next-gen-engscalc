@@ -29,9 +29,11 @@ import { jadro, jadroChyba } from './jadro.mjs';
 export const PD_TOKEN_PROMENNA = 'PIPEDRIVE_TOKEN';
 export const PD_DOMENA_PROMENNA = 'PIPEDRIVE_DOMENA';
 
-/* Kolik dealů se natáhne najednou. Seznam stojí 20 tokenů denního
- * rozpočtu bez ohledu na velikost stránky, takže větší stránka je levnější
- * než víc malých. Strop Pipedrive je 500. */
+/* Kolik dealů se natáhne najednou. Každý POŽADAVEK na seznam stojí
+ * 10 tokenů denního rozpočtu (x-token-cost ve specifikaci v2, ověřeno
+ * 22. 9. 2026) bez ohledu na velikost stránky, takže větší stránka je
+ * levnější než víc malých. Strop Pipedrive je 500. Pozor: cena je za
+ * každou stránku, takže pdVsechny() s deseti stránkami může stát až 100. */
 export const PD_STRANKA = 200;
 
 /* Kolikrát to zkusit znovu, když API odpoví 429 (vyčerpaný krátkodobý
@@ -188,8 +190,9 @@ export async function pdPristup(req, volby = {}) {
   return { relace };
 }
 
-/* Strop čerstvých načtení detailu na uživatele (B80). Detail stojí 6 tokenů
- * denního rozpočtu (deal + organizace + osoba). Obchodník za hodinu otevře
+/* Strop čerstvých načtení detailu na uživatele (B80). Detail stojí 3 tokeny
+ * denního rozpočtu (deal + organizace + osoba po 1, x-token-cost ve
+ * specifikaci v2). Obchodník za hodinu otevře
  * pár případů; třicet je velkorysá rezerva, a přitom smyčka přes všechna
  * čísla případů narazí po pár vteřinách. Načtení z cache se nepočítá. */
 export const PD_CACHE_ULOZISTE = 'pd_cache';

@@ -1,5 +1,6 @@
 /* ============================================================
- * MAPA POLÍ PIPEDRIVE → POLE KALKULAČKY (9. 8. 2026, #16)
+ * MAPA POLÍ PIPEDRIVE ↔ POLE KALKULAČKY (9. 8. 2026, #16; párování podle
+ * přesného názvu od 21. 10. 2026, #114)
  *
  * Vlastní pole se v Pipedrive neadresují názvem, ale čtyřicetiznakovým
  * hashem (`dcf558aac1ae…`). Hash je pro každý účet jiný a v kódu nemá co
@@ -7,82 +8,258 @@
  * do cizích polí. Mapa se proto skládá až na serveru z definic polí
  * (`GET /api/v2/dealFields`) podle NÁZVU pole.
  *
- * Párování podle názvu je záměrně volné (vzory níž), protože názvy v CRM
- * nikdo nedrží v šachu — „Splatnost", „Splatnost faktur", „splatnost (dny)"
- * mají znamenat totéž. Co se nespáruje, se nezahodí: vrací se v seznamu
- * `nezarazeno`, aby administrátor viděl, co zbylo, a mohl mapu doplnit ručně.
+ * PROČ PŘESNÝ NÁZEV, A NE VZOR (21. 10. 2026). Do té doby se párovalo volně
+ * podle vzorů („záruk", „pokut", „firma") a vyhrával nejkratší vyhovující
+ * název. Integrátor 21. 10. 2026 založil 54 nových polí podle tabulky
+ * `Pipedrive_nova_pole_dealu` (revize J. V. 14. 10.) a jejich názvy ta slova
+ * obsahují taky. Test nad skutečnými definicemi ukázal, že by se doba záruky
+ * spárovala se „Zádržné – po dobu záruky", pokuta za den s „Limit smluvních
+ * pokut (%)" a objednatel s „Podepisující firma (pokud jiná)" — u čtení
+ * prázdný krycí list, u zápisu číslo záruky ve výběrovém poli zádržného.
+ * Názvy jsou teď dohodnuté písemně, takže se páruje PŘESNĚ podle názvu
+ * (bez ohledu na velikost písmen, mezery a druh pomlčky) A podle typu pole.
+ * Přejmenování pole v CRM se pak projeví jako „chybí pole" v přehledu, ne
+ * jako tichý zápis jinam. Název je smlouva s integrátorem, hash ne.
  *
  * Ověřeno na skutečném účtu 9. 8. 2026 (308 dealů, 1 820 organizací):
- *  · trojice splatnost 14 dní / záloha 50 % / dílčí faktura 40 % je vyplněná
- *    u 306 z 308 dealů a odpovídá výchozím hodnotám krycího listu
- *    (zbylých 10 % konečné faktury se dopočítává, pole pro ně v CRM není),
- *  · IČO je vlastní pole ORGANIZACE, ne dealu, a všech 100 nalezených hodnot
- *    prošlo kontrolním součtem mod 11,
+ *  · trojice splatnost 14 dní / první splátka 50 % / druhá splátka 40 % je
+ *    vyplněná skoro u všech dealů (21. 10. 2026: 370 z 372),
+ *  · IČO je vlastní pole ORGANIZACE („IČ"), typu ČÍSLO — nuly na začátku
+ *    se v Pipedrive ztrácejí, doplňuje je `pdIco()`,
  *  · DIČ ani fakturační adresa v CRM nejsou vůbec,
- *  · dvě číselná pole dealu, která na první pohled vypadala jako čísla týdnů,
- *    jsou ve skutečnosti odkazy na organizaci a osobu (objednatel = výtahová
- *    firma a kontakt u ní), protože deal.org_id nese investora.
+ *  · ZÁKAZNÍK (smluvní partner) je organizace a osoba dealu. „Zdroj
+ *    poptávky – Organizace / Osoba" je ten, kdo poptávku přinesl: 21. 10.
+ *    2026 ze 138 vyplněných 119× výtahová společnost, ale 19× jiná role
+ *    (poptávkový server, stavební i správcovská společnost, investor,
+ *    konzultant, projektant) — za zákazníka se proto nebere. Organizace
+ *    dealu má všechny role (investor 142×, výtahová společnost 136×, …).
+ *
+ * KDO JE ZDROJEM (pravidlo J. V. 21. 10. 2026: „do pipedrive by se mělo
+ * přenášet to, co je v kalkulačním nástroji"). Každé pole má JEDNOHO
+ * vlastníka a nic se nesynchronizuje oběma směry: zadání z Pipedrive
+ * (zákazník, adresa, typ zakázky) se čte do kalkulace; co vznikne
+ * v kalkulaci (krycí list řídící varianty), se zapisuje do Pipedrive a do
+ * kalkulace se zpátky nečte. Ruční změnu takového pole v Pipedrive přepíše
+ * další zápis řídící varianty — obchodník ji uvidí v potvrzení (#115).
  * ============================================================ */
 
-/* Pole dealu, o která stojíme. `vzor` se zkouší na název pole v CRM. */
+/* Typy polí Pipedrive, které smí stát za údajem daného druhu. */
+const TYP = {
+  text: ['varchar', 'text', 'varchar_auto'],
+  cislo: ['double'],
+  procento: ['double'],
+  datum: ['date'],
+  volba: ['enum'],
+  volby: ['set'],
+  mena: ['monetary'],
+  uzivatel: ['user'],
+  osoba: ['people'],
+  organizace: ['org'],
+};
+
+/* Jedna definice = JEDNO pole Pipedrive. Kdo by tentýž název zapsal
+ * dvakrát, dostal by dva zápisy do jednoho pole — hlídá test.
+ *
+ *   klic   stálý klíč u nás (`pdDealNaNase` a přehled mapy ho čtou),
+ *   nazev  PŘESNÝ název pole v Pipedrive (podle tabulky s integrátorem),
+ *   druh   co za údaj to je (určuje dovolený typ pole i převod hodnoty),
+ *   kl     pole krycího listu OCK / PROJ, se kterým údaj souvisí — u zápisu
+ *          zdroj hodnoty (id pole; seznam id = údaj složený z více polí;
+ *          „@…" = údaj z kalkulace),
+ *   smer   jediný vlastník: 'cteni' zdrojem je CRM (čte se do kalkulace, nikdy
+ *          se nezapisuje) · 'zapis' zdrojem je kalkulace (zapisuje se, do
+ *          kalkulace se nečte) · 'nic' kalkulátor pole jen zná (plní ho
+ *          člověk nebo automatizace). Obousměrné pole neexistuje.
+ *   prevod zvláštní převod hodnoty (`pd_prevod.mjs`).
+ *
+ * Kdo pole čte a kdo do něj píše, rozhoduje jen tahle tabulka — zápis
+ * (#115) se podle ní řídí, nic jiného si nevymýšlí. */
+const D = (klic, nazev, druh, kl, smer, navic) =>
+  Object.assign({ klic, nazev, popis: nazev, druh, typ: TYP[druh], kl: kl || null, smer }, navic || {});
+
 export const POLE_DEALU = [
-  { klic: 'splatnostDni', popis: 'Splatnost faktur (dní)', vzor: /splatnost/i, typ: 'cislo' },
-  { klic: 'zaloha1Proc', popis: 'Záloha / dílčí faktura č. 1 (%)', vzor: /z[áa]loh/i, typ: 'cislo' },
-  { klic: 'faktura2Proc', popis: 'Dílčí faktura č. 2 (%)',
-    vzor: /(d[íi]l[čc][íi].*(2|dv)|2\.?\s*(d[íi]l[čc][íi]|faktur)|druh[áa].*faktur)/i, typ: 'cislo' },
-  { klic: 'zarukaMesicu', popis: 'Doba záruky (měsíců)', vzor: /z[áa]ruk/i, typ: 'cislo' },
-  { klic: 'pokutaProcDen', popis: 'Smluvní pokuta (% / den)', vzor: /pokut/i, typ: 'cislo' },
-  { klic: 'zadrzneProc', popis: 'Zádržné', vzor: /z[áa]dr[žz]n/i, typ: 'text' },
-  { klic: 'typZakazky', popis: 'Typ zakázky', vzor: /typ\s*(zak[áa]zky|projektu|obchodu)/i, typ: 'vyber' },
-  { klic: 'adresaStavby', popis: 'Adresa stavby', vzor: /(adresa|m[íi]sto)\s*(stavby|realizace|pln[ěe]n[íi])?/i, typ: 'text' },
-  { klic: 'terminPlneni', popis: 'Termín plnění', vzor: /term[íi]n|pln[ěe]n[íi]|realizac/i,
-    typ: 'datum', pdTyp: ['date'] },
-  /* U těchhle dvou nestačí název: „Objednatel (výtahová firma)" i „Kontakt
-   * objednatele" obsahují slovo objednatel, takže by si je vzory přebraly
-   * navzájem. Rozhoduje proto TYP pole v Pipedrive — jedno je odkaz na
-   * organizaci, druhé na osobu, a to zaměnit nejde. */
-  { klic: 'objednatelFirma', popis: 'Objednatel (výtahová firma)', vzor: /(objednatel|v[ýy]tahov|firma)/i,
-    typ: 'organizace', pdTyp: ['org'] },
-  { klic: 'objednatelOsoba', popis: 'Kontakt u objednatele', vzor: /(kontakt|osoba)/i,
-    typ: 'osoba', pdTyp: ['people', 'person'] },
+  /* --- pole, která v Pipedrive byla už před 21. 10. 2026 --- */
+  D('typZakazky', 'Typ zakázky', 'volba', null, 'cteni'),
+  D('adresaStavby', 'Adresa realizace', 'text', null, 'cteni'),
+  /* Kdo poptávku přinesl — NE zákazník (ten je organizace a osoba dealu,
+   * viz hlavička). Kalkulátor pole zná, aby ho přehled mapy nehlásil jako
+   * nezařazené; do kalkulace ho zatím nepřebírá. */
+  D('zdrojFirma', 'Zdroj poptávky - Organizace', 'organizace', null, 'cteni'),
+  D('zdrojOsoba', 'Zdroj poptávky - Osoba', 'osoba', null, 'cteni'),
+  /* Obchodníci ho vyplňují v Pipedrive (21. 10. 2026: u 85 z 85 vyhraných
+   * dealů, 83× po datu výhry) — zdrojem je CRM. V kalkulaci jen předvyplní
+   * Konečné předání díla (krycí list OCK); kalkulace ho nepřepisuje. */
+  D('terminPlneni', 'Předpokládané datum ukončení realizace', 'datum', { ock: 'terminPredani' }, 'cteni'),
+  D('zpusobFakturace', 'Způsob fakturace', 'volba', { ock: 'zpusobFakturace', proj: 'zpusobFakturace' }, 'zapis', {
+    /* P10.5 (J. V. 29. 9. 2026): „náš standard je 50, 40, 10" — tedy po
+     * milnících; dřívější výchozí „Náš standard / měsíční" aplikace čte
+     * jako „Po milnících". */
+    synonyma: { 'po milnicich': 'Náš standard', 'nas standard mesicni': 'Náš standard',
+      'po dokonceni jednotlivych stupnu dokumentace': 'Po dokončení stupňů dokumentace' } }),
+  D('splatnostDni', 'Splatnost faktur (dny)', 'cislo', { ock: 'splatnostDni', proj: 'splatnostDni' }, 'zapis'),
+  /* PROJ: záloha je pole `stary` — platí jen u nabídky z doby před plánem
+   * plateb; nová nabídka má proměnný plán a první splátku z něj neposílá. */
+  D('zaloha1Proc', 'První splátka (%)', 'procento', { ock: 'zaloha1', proj: 'zaloha' }, 'zapis', { stary: ['proj'] }),
+  D('faktura2Proc', 'Druhá splátka (%)', 'procento', { ock: 'faktura2' }, 'zapis'),
+  D('fakturaKoncProc', 'Třetí splátka (%)', 'procento', { ock: 'fakturaKonc' }, 'zapis'),
+  D('zarukaMesicu', 'Doba trvání záruky (počet měsíců)', 'cislo', { ock: 'zarukaMesicu' }, 'zapis'),
+  D('zadrzneProc', 'Zádržné – do odstranění VaN', 'volba', { ock: ['zadrzne', 'zadrzneProc'] }, 'zapis',
+    { prevod: 'zadrzne' }),
+  D('pokutaProcDen', 'Smluvní pokuta – prodlení dodávky / odevzdání (% / den)', 'cislo',
+    { ock: 'pokutaDodavka', proj: 'pokutaTermin' }, 'zapis'),
+
+  /* --- nová pole od integrátora (21. 10. 2026) --- */
+  D('cisloNabidky', 'Číslo nabídky (CN)', 'text', { ock: 'cisloCN', proj: 'cisloCN' }, 'zapis'),
+  /* Uživatel, osoba, organizace: hodnotou je ID záznamu v Pipedrive. Krycí
+   * list drží jména a kontakty jako text; uživatele dohledá až zápis (#115)
+   * podle e-mailu, osoby a organizace kalkulátor jen čte (vrstva 2, §5.2). */
+  D('nabidkuVypracoval', 'Nabídku vypracoval', 'uzivatel', { ock: 'dodZpracoval', proj: 'dodZpracoval' }, 'zapis'),
+  D('priplatkyNabidka', 'Příplatky v nabídce', 'text', { ock: 'priplatkyNabidka' }, 'zapis'),
+  D('hlavniProjektant', 'Hlavní projektant', 'uzivatel', { proj: 'hlavniProjektant' }, 'zapis'),
+  D('odpovednaOsoba', 'Odpovědná osoba za projekci', 'uzivatel', { proj: 'odpovednyEmail' }, 'zapis'),
+  D('kontaktSmluvni', 'Kontakt – ve věcech smluvních', 'osoba',
+    { ock: 'zastSmluvniJmeno', proj: 'zastSmluvniJmeno' }, 'cteni'),
+  D('kontaktObchodni', 'Kontakt – ve věcech obchodních', 'osoba',
+    { ock: 'zastObchodniJmeno', proj: 'zastObchodniJmeno' }, 'cteni'),
+  D('kontaktTechnicky', 'Kontakt – ve věcech technických', 'osoba',
+    { ock: 'zastTechnickyJmeno', proj: 'zastTechnickyJmeno' }, 'cteni'),
+  D('typSmlouvy', 'Typ smlouvy', 'volba', { ock: 'typSmlouvy', proj: 'typSmlouvy' }, 'zapis',
+    { synonyma: { 'cizi': 'Smlouva zákazníka' } }),
+  D('typProjektu', 'Typ projektu', 'volba', { ock: 'typProjektu', proj: 'typProjektu' }, 'zapis'),
+  D('pamatkovaOchrana', 'Objekt v památkové ochraně', 'volba', { proj: 'pamatkovaOchrana' }, 'zapis'),
+  D('licence', 'Licence k projektové dokumentaci', 'volba', { proj: 'autorskaPrava' }, 'zapis',
+    { podleZacatku: true }),
+  D('platnostMesicu', 'Platnost nabídky (měsíce)', 'cislo', { ock: 'platnostNabidky', proj: 'platnostNabidky' },
+    'zapis', { jednotka: 'mesic' }),
+  D('zadrzneZaruka', 'Zádržné – po dobu záruky', 'volba', { ock: ['zadrzneZaruka', 'zadrzneZarukaProc'] }, 'zapis',
+    { prevod: 'zadrzne' }),
+  D('pokutaSplatnost', 'Smluvní pokuta – prodlení splatnosti (% / den)', 'cislo',
+    { ock: 'pokutaSplatnost', proj: 'pokutaSplatnost' }, 'zapis'),
+  D('pokutaLimit', 'Limit smluvních pokut (%)', 'cislo', { ock: 'pokutaLimit', proj: 'pokutaLimit' }, 'zapis',
+    { prevod: 'limit' }),
+  D('podminkyJine', 'Platební podmínky – jiné', 'text', { ock: 'pokutyJine', proj: 'pokutyJine' }, 'zapis'),
+  /* Sazba DPH se do kalkulace z CRM nikdy nečte — rozhoduje o ceně. */
+  D('sazbaDph', 'Sazba DPH', 'volba', { ock: ['sazbaDph', 'sodDphRezim'], proj: ['sazbaDph'] }, 'zapis',
+    { prevod: 'dph' }),
+  D('pojisteni', 'Pojištění odpovědnosti projektanta', 'volba', { proj: 'pojisteni' }, 'zapis',
+    { podleZacatku: true }),
+  D('terminDodaniTydny', 'Termín dodání OCK (týdny)', 'cislo', { ock: 'terminDodani' }, 'zapis', { jednotka: 'tyden' }),
+  D('atyp', 'ATYP', 'volba', { ock: '@atyp' }, 'zapis', { prevod: 'atyp' }),
+  /* OCK předvyplňuje datum podpisu DATEM TISKU — to není podpis, posílá se
+   * jen ručně zadané datum (rozbor 6. 10., #23). */
+  D('datumPodpisu', 'Datum podpisu smlouvy', 'datum', { ock: 'sodDatumPodpisu', proj: 'terminZahajeni' }, 'zapis',
+    { jenRucne: ['ock'] }),
+  D('terminPrevzeti', 'Převzetí staveniště k montáži šachty', 'datum', { ock: 'terminPrevzeti' }, 'zapis'),
+  D('terminMontaz', 'Ukončení montáže šachty a předání montáži výtahu', 'datum', { ock: 'terminMontaz' }, 'zapis'),
+  D('terminZamereni', 'Předání výstupů ze zaměření', 'datum', { proj: 'terminZamereni' }, 'zapis'),
+  D('terminStudie', 'Odevzdání studie proveditelnosti', 'datum', { proj: 'terminStudie' }, 'zapis'),
+  D('terminDpz', 'Odevzdání DPZ', 'datum', { proj: 'terminDpz' }, 'zapis'),
+  D('terminPovoleni', 'Předpoklad povolení záměru', 'datum', { proj: 'terminPovoleni' }, 'zapis'),
+  D('terminDps', 'Odevzdání DPS', 'datum', { proj: 'terminDps' }, 'zapis'),
+  D('terminJine', 'Jiné termíny', 'text', { ock: 'terminJine', proj: 'terminJine' }, 'zapis'),
+  D('odchylky', 'Odchylky oproti smluvnímu standardu', 'text', { ock: 'odchylky' }, 'zapis'),
+  /* Odvozené z kalkulace (3D sken, sekce DPZ/DPS) — z CRM se nečtou. */
+  D('zamereniStrojovna', 'Zaměření strojovny', 'volba', { ock: 'zamereniStrojovna' }, 'zapis'),
+  D('situacniFoto', 'Situační fotografie', 'volba', { ock: 'situacniFoto' }, 'zapis'),
+  D('dokumentace', 'Dokumentace v rozsahu', 'volby', { ock: ['dsp', 'provadeciDok'] }, 'zapis',
+    { prevod: 'dokumentace' }),
+  D('cenaNezahrnuje', 'Cena nezahrnuje', 'text', { ock: 'cenaNezahrnuje', proj: 'cenaNezahrnuje' }, 'zapis'),
+  D('rozsahJine', 'Jiné dohodnuté činnosti', 'text', { proj: 'rozsahJine' }, 'zapis'),
+  /* Osm pevných plateb nese jen nabídka PROJ odeslaná před plánem plateb
+   * (`stary`); nové nabídky mají proměnný plán (rozbor 6. 10., #38–#45). */
+  D('platba1', 'Platba 1 – po podpisu smlouvy', 'mena', { proj: 'sodpPlatba1' }, 'zapis', { stary: ['proj'] }),
+  D('platba2', 'Platba 2 – při předání 2D výstupů ze zaměření', 'mena', { proj: 'sodpPlatba2' }, 'zapis', { stary: ['proj'] }),
+  D('platba3', 'Platba 3 – DPZ pro podání na dotčené orgány', 'mena', { proj: 'sodpPlatba3' }, 'zapis', { stary: ['proj'] }),
+  D('platba4', 'Platba 4 – DPZ pro podání na stavební úřad', 'mena', { proj: 'sodpPlatba4' }, 'zapis', { stary: ['proj'] }),
+  D('platba5', 'Platba 5 – po vydání pravomocného povolení záměru', 'mena', { proj: 'sodpPlatba5' }, 'zapis', { stary: ['proj'] }),
+  D('platba6', 'Platba 6 – po předání kompletní DPS', 'mena', { proj: 'sodpPlatba6' }, 'zapis', { stary: ['proj'] }),
+  D('platba7', 'Platba 7 – po dokončení ekonomické zadávací části', 'mena', { proj: 'sodpPlatba7' }, 'zapis', { stary: ['proj'] }),
+  D('platba8', 'Platba 8 – po doporučení dodavatele realizace', 'mena', { proj: 'sodpPlatba8' }, 'zapis', { stary: ['proj'] }),
+  D('spravniPoplatky', 'Správní poplatky stavebnímu úřadu (nad rámec ceny)', 'mena',
+    { proj: 'sodpSpravniPoplatky' }, 'zapis'),
+  D('pokutaSoucinnost', 'Pokuta za prodlení zákazníka se součinností (Kč / den)', 'mena',
+    { ock: 'sodPokutaDenni', proj: 'sodpPokutaDenni' }, 'zapis'),
+  D('podpisFirma', 'Podepisující firma (pokud jiná)', 'organizace',
+    { ock: 'objPodpisFirma', proj: 'objPodpisFirma' }, 'cteni'),
+  D('podpis2', 'Druhý podepisující za zákazníka', 'osoba', { ock: 'objPodpis2Jmeno', proj: 'objPodpis2Jmeno' }, 'cteni'),
+  D('kopie1', 'Faktury v kopii na (1)', 'text', { ock: 'objKopie1', proj: 'objKopie1' }, 'zapis'),
+  D('kopie2', 'Faktury v kopii na (2)', 'text', { ock: 'objKopie2', proj: 'objKopie2' }, 'zapis'),
+  /* Datum narození a bydliště zmocnitele jsou osobní údaje plné moci — do CRM
+   * je kalkulátor nekopíruje (rozbor 6. 10., P6). */
+  D('zmocnitel', 'Zmocnitel (plná moc)', 'osoba', null, 'nic'),
+  /* Krycí list drží, KDO byl informován (text); datum plní automatizace. */
+  D('informovanoBo', 'Informováno Backoffice', 'datum', null, 'nic'),
+  D('informovanoTech', 'Informováno Technické odd.', 'datum', null, 'nic'),
 ];
 
-/* Pole organizace. Zajímá nás jediné — IČO; adresa a DIČ v CRM nejsou. */
+/* Pole organizace. IČ je v účtu číselné; „IČO" se bere taky, kdyby se pole
+ * jednou založilo pod tímhle jménem. */
 export const POLE_ORGANIZACE = [
-  { klic: 'ico', popis: 'IČO', vzor: /^\s*(i[čc]o?|ic)\b/i, typ: 'cislo' },
-  { klic: 'typOrganizace', popis: 'Role organizace', vzor: /(typ|role|kategorie)/i, typ: 'vyber' },
+  Object.assign(D('ico', 'IČ', 'cislo', null, 'cteni'), { nazvy: ['IČ', 'IČO'], typ: ['double', 'varchar', 'text'] }),
+  D('typOrganizace', 'Role', 'volba', null, 'cteni'),
 ];
+
+/* Verze tvaru uložené mapy (cache v pd_pole.mjs). Mapa z doby párování
+ * podle vzorů (do 21. 10. 2026) nesla tři pole spárovaná se špatným polem
+ * CRM — po nasazení se nesmí číst ani do konce své jednodenní platnosti. */
+export const PD_POLE_VERZE = 2;
+
+/* Vlastní pole, která čte detail dealu (pdDealNaNase). Jen o těchhle má
+ * obchodník slyšet, když v CRM chybí — chybějící pole pro zápis řeší
+ * přehled mapy. Zákazník a kontakt jsou standardní pole dealu, mapu nepotřebují. */
+export const PD_CTENI = ['typZakazky', 'adresaStavby', 'terminPlneni'];
+
+/* Název pole pro porovnání: velikost písmen, mezery a druh pomlčky (‐ – — -)
+ * nerozhodují; diakritika ano („Typ zakázky" není „Typ zakazky"). */
+export function pdNazevNorm(n) {
+  return String(n == null ? '' : n).normalize('NFC').trim().toLocaleLowerCase('cs')
+    .replace(/[\u2010-\u2015\u2212]/g, '-').replace(/\s+/g, ' ');
+}
 
 /* Z odpovědi `dealFields` / `organizationFields` udělá mapu klíč → hash.
- * Bere JEN vlastní pole (u standardních je `edit_flag` false a jejich klíč
- * není hash) a první shodu vzoru — kdyby účet měl „Splatnost" i „Splatnost
- * dodatku", vyhraje kratší název, protože se řadí podle délky. */
+ * Bere JEN vlastní pole (jejich klíč je čtyřicetiznakový hash) a páruje
+ * PŘESNĚ podle názvu a typu:
+ *   chybi          pole s tím názvem v CRM není,
+ *   typNesedi      název sedí, typ ne (do pole se nezapisuje — zápis čísla
+ *                  do výběru by Pipedrive odmítl, nebo hůř přijal),
+ *   nejednoznacne  pole s tím názvem je v CRM víckrát,
+ *   nezarazeno     vlastní pole CRM, která mapa nezná (pro přehled #114).
+ * Ani jeden z prvních tří případů se do mapy nedostane. */
 export function pdMapaZPoli(pole, definice = POLE_DEALU) {
   const vlastni = (pole || [])
-    .filter((p) => p && (p.edit_flag === true || p.edit_flag === undefined))
-    .filter((p) => /^[0-9a-f]{40}$/.test(String(p.key || p.field_code || '')))
+    .filter((p) => p && p.is_custom_field !== false && p.edit_flag !== false)
+    .filter((p) => /^[0-9a-f]{40}$/.test(String(p.field_code || p.key || '')))
     .map((p) => ({
-      hash: String(p.key || p.field_code),
-      nazev: String(p.name || p.field_name || ''),
+      hash: String(p.field_code || p.key),
+      nazev: String(p.field_name || p.name || ''),
       typ: String(p.field_type || ''),
       volby: Array.isArray(p.options) ? p.options : null,
-    }))
-    .sort((a, b) => a.nazev.length - b.nazev.length);
+      zapisovatelne: p.is_writable !== false,
+    }));
+  const podleNazvu = new Map();
+  for (const p of vlastni) {
+    const k = pdNazevNorm(p.nazev);
+    podleNazvu.set(k, (podleNazvu.get(k) || []).concat([p]));
+  }
 
-  const mapa = {}, popisy = {}, pouzite = new Set();
+  const mapa = {}, popisy = {}, chybi = [], typNesedi = [], nejednoznacne = [], pouzite = new Set();
   for (const d of definice) {
-    const nalez = vlastni.find((p) => !pouzite.has(p.hash)
-      && (!d.pdTyp || d.pdTyp.includes(p.typ))
-      && d.vzor.test(p.nazev));
-    if (!nalez) continue;
-    mapa[d.klic] = nalez.hash;
-    popisy[d.klic] = { nazev: nalez.nazev, typ: nalez.typ, volby: nalez.volby };
-    pouzite.add(nalez.hash);
+    const nazvy = d.nazvy || [d.nazev];
+    const kandidati = [...new Set(nazvy.flatMap((n) => podleNazvu.get(pdNazevNorm(n)) || []))];
+    const zaznam = { klic: d.klic, popis: d.popis, nazev: d.nazev };
+    if (!kandidati.length) { chybi.push(zaznam); continue; }
+    if (kandidati.length > 1) { nejednoznacne.push(Object.assign(zaznam, { pocet: kandidati.length })); continue; }
+    const p = kandidati[0];
+    if (d.typ && !d.typ.includes(p.typ)) {
+      typNesedi.push(Object.assign(zaznam, { ocekavano: d.typ.join(' / '), je: p.typ }));
+      continue;
+    }
+    mapa[d.klic] = p.hash;
+    popisy[d.klic] = { nazev: p.nazev, typ: p.typ, volby: p.volby, zapisovatelne: p.zapisovatelne };
+    pouzite.add(p.hash);
   }
   return {
-    mapa,
-    popisy,
-    chybi: definice.filter((d) => !mapa[d.klic]).map((d) => ({ klic: d.klic, popis: d.popis })),
+    mapa, popisy, chybi, typNesedi, nejednoznacne,
     nezarazeno: vlastni.filter((p) => !pouzite.has(p.hash))
       .map((p) => ({ hash: p.hash, nazev: p.nazev, typ: p.typ })),
   };
@@ -103,6 +280,17 @@ export function pdHodnota(surova) {
   return String(surova);
 }
 
+/* IČO z pole organizace. V účtu je to pole typu ČÍSLO, takže IČO s nulami
+ * na začátku (00064581) Pipedrive drží jako 64581 — a takové by neprošlo
+ * kontrolním součtem ani ARES. České IČO má vždy osm číslic, nuly se tedy
+ * doplní zleva. Co číslem není (nebo je delší), se vrátí, jak je — nic se
+ * nevymýšlí. */
+export function pdIco(surova) {
+  const t = pdHodnota(surova).replace(/\s+/g, '');
+  const m = /^(\d{1,8})(?:\.0+)?$/.exec(t);
+  return m ? m[1].padStart(8, '0') : t;
+}
+
 /* Číslo nabídky z názvu dealu. Na skutečném účtu tenhle tvar splňuje
  * 92,9 % dealů (`CN-84 …`), dalších 4,5 % má tvar `OPR12-2025`.
  * Když se netrefíme, vrátíme prázdno a číslo si obchodník doplní sám —
@@ -119,8 +307,11 @@ export function pdNazevAkce(nazev) {
   return (m && m[1].trim()) || t;
 }
 
-/* Sestaví z dealu (a volitelně z navázané organizace a osoby) hodnoty
- * pro hlavičku kalkulace a krycí list.
+/* Sestaví z dealu (a z jeho organizace a osoby) zadání pro hlavičku nové
+ * kalkulace: číslo a název akce, adresu, zákazníka, IČO, kontakt a typ
+ * zakázky. Podmínky krycího listu (splatnost, zálohy, záruka, pokuty) se
+ * z CRM NEČTOU — jejich vlastníkem je kalkulace a do Pipedrive se zapisují
+ * (pravidlo J. V. 21. 10. 2026, viz hlavička).
  *
  * Zásada: cena se NEPŘEBÍRÁ do výpočtu. `hodnotaCrm` se vrací jen pro
  * porovnání „v CRM je X, spočítali jste Y" — cena je vždycky výsledek
@@ -146,16 +337,9 @@ export function pdDealNaNase(deal, mapa, dopln = {}) {
     nazevAkce: pdNazevAkce(d.title),
     adresa: ber('adresaStavby'),
     objednatel: (org && org.name) || '',
-    ico: (org && icoHash && pdHodnota((org.custom_fields || {})[icoHash])) || '',
+    ico: (org && icoHash && pdIco((org.custom_fields || {})[icoHash])) || '',
     kontakt: osoba ? [osoba.first_name, osoba.last_name].filter(Boolean).join(' ') : '',
     kontaktObjednatel: kontakty(osoba),
-    /* --- krycí list --- */
-    splatnostDni: ber('splatnostDni'),
-    zaloha1Proc: ber('zaloha1Proc'),
-    faktura2Proc: ber('faktura2Proc'),
-    zarukaMesicu: ber('zarukaMesicu'),
-    pokutaProcDen: ber('pokutaProcDen'),
-    zadrzne: ber('zadrzneProc'),
     typZakazky: ber('typZakazky'),
     terminPlneni: ber('terminPlneni'),
     /* --- informativní, do výpočtu nevstupuje --- */
@@ -167,8 +351,10 @@ export function pdDealNaNase(deal, mapa, dopln = {}) {
   };
 }
 
-/* Konečná faktura v CRM není — dopočítá se do sta procent. Vrací prázdno,
- * když zálohy nedávají smysl, ať se do krycího listu nedostane nesmysl. */
+/* Konečná faktura, když chybí třetí splátka — dopočítá se do sta procent.
+ * Vrací prázdno, když zálohy nedávají smysl, ať se do krycího listu
+ * nedostane nesmysl. (Detail dealu ji od 21. 10. 2026 nevolá: podmínky
+ * se z CRM nečtou.) */
 export function pdZbytekDoSta(zaloha, faktura2) {
   /* Prázdno není nula (pravidlo projektu). `Number('')` je nula, takže bez
    * téhle kontroly by z chybějící zálohy vyšla konečná faktura 60 % — číslo,

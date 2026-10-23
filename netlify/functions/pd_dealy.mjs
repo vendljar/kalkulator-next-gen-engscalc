@@ -10,9 +10,10 @@
  * je objem, který stejně nikdo nečte. Detail si vyzvedne `/api/pd/deal`.
  *
  * Proč se hledá až na serveru a ne přes `Search API` Pipedrive: hledání tam
- * stojí 40 tokenů denního rozpočtu (dvojnásobek seznamu) a má vlastní přísný
- * krátkodobý limit 10 požadavků za 2 vteřiny. Při 308 dealech je levnější
- * a rychlejší přinést otevřené případy jednou a filtrovat je tady. */
+ * stojí 20 tokenů denního rozpočtu (dvojnásobek stránky seznamu, x-token-cost
+ * ve specifikaci v2) a má vlastní přísný krátkodobý limit 10 požadavků za
+ * 2 vteřiny. Při 308 dealech je levnější a rychlejší přinést otevřené případy
+ * jednou a filtrovat je tady. */
 import { uloziste, json } from '../lib/sdilene.mjs';
 const PD_CACHE_MS = 90 * 1000;
 import { pdNastaveno, pdVsechny, PdChyba, pdPristup, PD_CACHE_ULOZISTE } from '../lib/pipedrive.mjs';
@@ -44,10 +45,12 @@ export default async (req) => {
 
   try {
     /* Krátká cache seznamu (audit 22. 8. 2026, B19): každé volání stojí až
-     * 10 stránek × 200 dealů (~20 tokenů denního rozpočtu Pipedrive). Bez
-     * cache mohl kterýkoli přihlášený účet opakovaným hledáním odstavit
-     * integraci všem. 90 s stačí — hledání a filtr se dělají nad cache, do
-     * Pipedrive jde dotaz jednou za okno na každý stav. */
+     * 10 stránek × 10 tokenů, tedy až 100 tokenů denního rozpočtu Pipedrive
+     * (cena je za každý požadavek, ne za volání; při 308 dealech jsou to
+     * reálně 1–2 stránky). Bez cache mohl kterýkoli přihlášený účet
+     * opakovaným hledáním odstavit integraci všem. 90 s stačí — hledání
+     * a filtr se dělají nad cache, do Pipedrive jde dotaz jednou za okno
+     * na každý stav. */
     const cache = await uloziste(PD_CACHE_ULOZISTE);
     const klic = 'dealy:' + (stav || 'open');
     const ulozene = await cache.cti(klic);
