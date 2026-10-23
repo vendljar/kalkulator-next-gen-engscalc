@@ -7914,7 +7914,7 @@
     }
    ],
    "hotovoV": "v22.10.2 (claude/eager-carson-1xznt2)",
-   "pozn": "Zadání podklady/PIPEDRIVE_STAV_DEALU_22_10.md (claude/integrace-16-10), náhled https://claude.ai/artifact/UHqdUv62Kax3NCLGHWXcb1. Číslo může slučování přečíslovat."
+   "pozn": "Zadání podklady/PIPEDRIVE_STAV_DEALU_22_10.md (claude/integrace-16-10), náhled https://claude.ai/artifact/UHqdUv62Kax3NCLGHWXcb1. Číslo může slučování přečíslovat. Rozhodnutí J. V. 23. 10.: stav dealu dělá dvakrát i P1 (claude/integrace-16-10) — platí verze P1, tahle se vrátí a do P1 se převedou tři opravy (Sazba DPH na konec sloupce, smazaný deal po 404 přes seznam smazaných, obnova stavu po otevření ze souboru, obnově zálohy a přihlášení)."
   }
  ],
  "meta" : {

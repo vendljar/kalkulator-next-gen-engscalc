@@ -48,21 +48,34 @@ Verze v22.10.2 nese i #114 z 21. 10. (oddíl CHANGELOG pod ním).
   `netlify/test_prava.mjs` (matice: `pd_stav.mjs`), `manual/obsah.json` (Co je nového v22.10.2), tento oddíl.
 - **DUPLICITA (zjištěno 22. 10. po dokončení):** P1 ve větvi `claude/integrace-16-10` udělala Stav Pipedrive také
   (`GET /api/pd/stav?soubor=`, úložiště `pd_stav`, bez práva `crm.pipedrive`, sloupce „Stav Pipedrive“ / „Stav Pipedrive
-  načten“) a obsazuje také v22.10.2. Navrženo J. V. (bez odpovědi se nic nedělá): revert mých commitů Stav Pipedrive
+  načten“) a obsazuje také v22.10.2. **Rozhodnuto J. V. 23. 10.: platí verze P1** — revert mých commitů Stav Pipedrive
   (4b63ad7, 2da16e1, část 252c49f), sloučit integraci a do ní převést opravy, které P1 nemá — Sazba DPH `na-konec`
   (38 px u zahraniční zakázky), smazaný deal při 404 přes seznam `status=deleted`, obnova stavu i po otevření ze
   souboru, obnově zálohy a přihlášení.
-- **Mimo repozitář (pro J. V. / integrátora):** souhrnný dokument k 22. 10. https://claude.ai/artifact/XSFa1QVnFCWXoLpzx7yD8u;
-  mapovací tabulka `Pipedrive_Kalkulator_mapa_poli_2026-10-22.xlsx` (Přehled, Mapa polí 81 řádků, Převody hodnot,
-  Otázky 1–17 se sloupcem pro odpověď) — poslaná J. V. v sezení, generátor jen ve scratchpadu (čte `POLE_DEALU` a
-  popisky krycích listů z commitu). Do repa nejde (jméno integrátora, firemní podklad).
-- **Další krok:** dokončit mutace serveru (GitHub Actions → Testy → Run workflow na větvi `claude/eager-carson-1xznt2`,
-  job mutace-server — spustí J. V.; jinak v sezení po částech pod 2 h); po rozhodnutí o duplicitě s P1 revert / sloučení; pak jako 21. 10. — po potvrzení §12 dotáhnout #113, pak #115 a #502.
+- **Mimo repozitář (pro J. V. / integrátora):** souhrnný dokument https://claude.ai/artifact/XSFa1QVnFCWXoLpzx7yD8u
+  (rozhodnutí 23. 10., schéma „Platby 1–8 a plán plateb“, upravené vyjádření pro Ing. Drdu s 8 prosbami);
+  mapovací tabulka `Pipedrive_Kalkulator_mapa_poli_2026-10-23.xlsx` (Přehled, Mapa polí 81 řádků, Převody hodnot,
+  Otázky 1–17 se stanoviskem ENGINEERS CZ a sloupcem pro odpověď) — poslaná J. V. v sezení, generátor jen ve
+  scratchpadu (čte `POLE_DEALU` a popisky krycích listů z commitu); formulář otázek s odpověďmi J. V.
+  https://claude.ai/artifact/SVr2vABm81nq5LDs7jGezs (úložiště `odpovedi/jv`). Do repa nic z toho nejde (jméno
+  integrátora, firemní podklad).
+- **Další krok (nové sezení):** 1. výsledek Testy #194 (run 39932239909: joby mutace-server a mutace-jadro; job testy
+  spadl na instalaci Playwrightu na Ubuntu 26.04 — opraví koordinace, `runs-on: ubuntu-24.04`) zapsat do CHANGELOG,
+  roadmapy a sem; 2. Stav Pipedrive podle rozhodnutí: revert mé verze, převod tří oprav do P1 (kde a kdy určí
+  koordinace); 3. #113 čtení zadání (směr dat §12 schválen), #115 zápis včetně hodnoty dealu; 4. po odpovědi
+  integrátora: „Hlavní projektant“ jako text (`pd_mapa.mjs` druh `uzivatel` → `text`), nové pole „Platební kalendář
+  SoD PROJ“ (řádky jako `planSodKalendar`), čtyři volby „Způsob fakturace“ pro PROJ (synonyma k větám
+  `planZpusobFakturace`).
 
-**Otázky pro J. V.** (z 21. 10. platí): 1. souhlas s návrhem směru dat (`podklady/NAVRH…` §12) → doporučuji ano;
-2. zapisovat z kalkulace hodnotu dealu → doporučuji ano.
-3. duplicita Stav Pipedrive s P1 → doporučuji revert mé verze, sloučení integrace a převod tří oprav (viz výše);
-4. dokončení mutací serveru → doporučuji ruční běh workflow Testy na této větvi (sezení ho samo nespouští).
+**Rozhodnutí J. V. 23. 10. (formulář otázek, vše podle doporučení kromě bodu 6):** 1. směr dat §12 — souhlas;
+2. hodnota dealu se zapisuje (cena řídící varianty bez DPH, u kombinované OCK + PROJ, potvrzení „stará → nová“);
+3. Stav Pipedrive: platí P1, moje verze se vrátí, tři opravy se převedou; 4. vyjádření Ing. Drdovi odeslat
+s tabulkou xlsx (odešle J. V.); 5. mutace serveru doběhnou v Testy #194; 6. pád jobu „testy“ na Ubuntu 26.04
+opraví koordinace v integrační větvi; 7. nové sezení po zapsání výsledku Testy #194. Stanovisko k otázkám
+integrátora: Typ zakázky nahrazuje pole #10; pole vždy viditelná v sekci „Krycí list“; Hlavní projektant → Text;
+nové pole „Platební kalendář SoD PROJ“, Platby 1–8 jen staré nabídky; zádržné volby stačí; neuplatněný limit = 0;
+čtyři volby Způsob fakturace pro PROJ; webhook až po #115; Informováno BO / Tech kalkulátor nepíše; číslo nabídky
+nevalidovat.
 
 ---
 
