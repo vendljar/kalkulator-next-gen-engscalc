@@ -989,13 +989,23 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   se nežádá (rozhodnutí J. V. 21. 10. 2026, bod 4; export nic nemění).
   Parametry se ověří (`ctrlHromadnyFiltr`: datum RRRR-MM-DD, období ≤ 400
   dní, oblast a řada z výčtu — neznámá hodnota je 400, ne „obojí“).
-  **Meze `CTRL_HROMADNY`:** ≤ 600 zakázek k přečtení, ≤ 150 zakázek v souboru,
-  odpověď ≤ 5 MB (Netlify vrací nejvýš 6 MB) — jinak 413 s výzvou zúžit
-  období, soubor se nikdy neořízne potichu. Nečitelná zakázka se vypíše
-  v Popisu jako přeskočená. **Protokol:** každý export zapíše server
-  (`program/controlling_exporty`, posledních 200; kdo z relace, kdy z hodin
-  serveru, rozsah z ověřeného filtru). Protokol není v záloze — je to stopa
-  přístupu, ne data k obnově. **Mez:** stažený XLSX je dál přenosný soubor
+  **Meze `CTRL_HROMADNY` (stav po #504, v22.10.6; K7-W3):** strop počtu
+  zakázek k přečtení ani v souboru NENÍ (600/150 z C3 zrušeny). Export běží
+  po dávkách: dávka ≤ 150 zakázek, ≤ 3 MB dat a ≤ 5 s (rozebraná čtení
+  doběhnou), souběžně 12 čtení; odpověď jedné dávky ≤ 5 MB, jinak 413
+  s výzvou zúžit období — soubor se nikdy neořízne potichu. Počet dávek
+  (≤ 1000) hlídá jen prohlížeč. Navazující dávka nese `export` (id záznamu
+  protokolu) a kurzor `po` (jméno posledního souboru) **od klienta**: server
+  ověří, že export patří témuž správci, filtr i mapování se nezměnily
+  (jinak 409), ale kurzor nepřepočítává — mez K7-S8 níž. Kandidáti se
+  vybírají z rejstříku (dny zámků a prodeje `ctrlDny`, rezerva ±2 dny)
+  a od v23.10.1 i ze seznamu uložených zakázek `z/` (samooprava K7-S1).
+  Nečitelná zakázka se vypíše v Popisu jako přeskočená. **Protokol:** každý
+  export zapíše server (`program/controlling_exporty`, posledních 200; kdo
+  z relace, kdy z hodin serveru, rozsah z ověřeného filtru); přerušený
+  vícedávkový export zůstane v protokolu se stavem `probiha`. Protokol není
+  v záloze — je to stopa přístupu, ne data k obnově. **Mez:** stažený XLSX je
+  dál přenosný soubor
   s nákupními cenami a marží celé firmy za období; kam ho správce pošle
   (controlling), protokol nehlídá.
 - **Pipedrive deal id zakázky (C4, 21. 10. 2026):** `zak.pdDealId` mění jen
@@ -1040,3 +1050,59 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
 - **Tlačítko „Export pro controlling“ v Přehledu (C3)** kreslí jen
   administrátorovi online a ne v rolovém náhledu; export jedné varianty běží
   dál v prohlížeči (mez jako u C2 výše).
+
+## Audit K7 — opravy O-K7 (roadmapa #507, v23.10.1, 23. 10. 2026)
+
+Nálezy `podklady/K7_AUDIT_22_10.md`, které nepotřebovaly rozhodnutí J. V.
+
+- **K7-K1 — tisk během běžícího ukládání (Z1-4) — OPRAVENO v23.10.1.**
+  Uložení po tisku jde do fronty (`onlineUloz({ tiche, fronta })`) a po
+  doběhnutí běžícího zápisu se provede, není-li zakázka už uložená celá.
+  „Naposledy uloženo" (`ONLINE_STAV.posledni`) se bere z odeslaného těla
+  (+ razítko serveru), změnila-li se zakázka během zápisu — autosave ji
+  zapíše příště. **Mez:** zavře-li obchodník okno dřív, než fronta doběhne
+  (sekundy), zámek zůstane jen v prohlížeči (koncept v historii) — jako
+  každá neuložená změna.
+- **K7-K2 — snímek odeslané nabídky do prvního uložení — OPRAVENO v23.10.1.**
+  Snímek z okamžiku tisku se už nepřepočítává. Dokud zámek neleží na serveru
+  (poslední verze ze serveru ho nemá), drží prohlížeč krycí listy a DPH té
+  varianty zmrazené (bublina „čeká na uložení") a před odesláním srovná data
+  podle snímku (`zamekSnimkyVrat`). Server snímek nového zámku ověřuje dál
+  proti datům (409 radí otevřít zakázku znovu ze serveru). **Mez:** ze
+  souboru (bez serveru) se snímek neověřuje — beze změny Z1.
+- **K7-S1 — rejstřík zakázek při souběžném uložení — OPRAVENO v23.10.1
+  (zbytková mez).** Rejstřík (`zakazky/_rejstrik`) je čtení–změna–zápis.
+  Souběžná uložení a smazání v TÉŽE instanci funkce se řadí za sebe
+  (`vyhradne`). Mezi instancemi podmíněný zápis (etag Blobs) naše vrstva
+  úložiště nemá a náhrada pro testy ho neumí (stejně jako B4) — proto
+  **samooprava exportu**: hromadný export doplní kandidáty o uložené zakázky
+  (`seznam('z/')`), které v rejstříku chybí, čte je vždy a počet hlásí
+  (`mimoRejstrik`). **Mez:** při souběhu dvou instancí může záznam rejstříku
+  dál chybět v Přehledu (do příštího uložení té zakázky) nebo nést starší
+  `ctrlDny` — zakázka zamčená v tom okně se pak v exportu `podle=zamceni`
+  vybere podle starších dnů (rezerva ±2 dny, starší záznam bez dnů jde
+  hrubým předvýběrem). Převod autora v `uzivatele.mjs` přepisuje rejstřík
+  mimo frontu (jiná funkce, vzácná akce správce). Každé čtení `seznam('z/')`
+  stojí jeden výpis úložiště na dávku exportu.
+- **K7-S3 — protokol exportů** a **K7-S5 — čas nového zámku**: viz oddíl
+  Controlling výš a CHANGELOG v23.10.1.
+- **K7-S4, K7-S11 — tvar polí → 400 — OPRAVENO v23.10.1.** Objekt nebo pole
+  v `data.cenikRazitko` (kterékoli pole razítka), v `data.cenikRada` a v textech
+  hlavičky (`nazevAkce`, `adresa`, `objednatel`, `adresaObjednatele`, `ico`,
+  `dic`, `kontakt`, `datum`) odmítne server 400 (`uloTypyProblemy`), dřív 500
+  nebo tiché uložení. Čísla a texty starších dat (IČO jako číslo) projdou.
+- **P1 — `/api/pd/stav` (K7-W3):** stav dealu čte každý přihlášený, který
+  zakázku smí otevřít (bez práva `crm.pipedrive` — prozradí jen
+  won/open/lost/deleted a čas načtení, totéž co GET zakázky); každé volání
+  smí dotázat Pipedrive, strop 120 dotazů za hodinu na uživatele
+  (`PD_STAV_MAX`, `lib/pd_stav.mjs`), firemní rozpočet = uživatelé × strop;
+  mezi instancemi B158. Souběžné dotazy na týž zastaralý stav se nespojují
+  (K7-S6, informativní).
+- **Z1-2 — hlavička po odeslání CN přes přepnutí řídící varianty (K7-S2,
+  K7-S7):** čeká na rozhodnutí J. V. (audit K7, oddíl „Nálezy — rozhodnutí
+  J. V."); do té doby vědomá mez B161.
+- **K7-S8 — export není snímek (informativní):** kandidáti se počítají
+  v každé dávce znovu a kurzor `po` přichází od klienta — zakázka nově
+  zamčená mezi dávkami se jménem před kurzorem v souboru nebude (okno
+  sekund); týž správce může vlastní export kurzorem „dokončit" dřív.
+

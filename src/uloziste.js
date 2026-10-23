@@ -1003,6 +1003,8 @@ function uloTypyKryci(d, sd) {
   return out;
 }
 
+/* Textová pole hlavičky zakázky (K7-S11) — jen jednoduchá hodnota. */
+const ULO_TYPY_HLAVICKA = ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt', 'datum'];
 function uloTypyProblemy(zak, stara) {
   const out = [];
   if (!zak || !Array.isArray(zak.varianty)) return out;
@@ -1011,10 +1013,21 @@ function uloTypyProblemy(zak, stara) {
   const vzCen = (typeof DEFAULT_CENIK !== 'undefined') ? DEFAULT_CENIK : g('DEFAULT_CENIK');
   const vzCenP = (typeof DEFAULT_CENIK_PROJ !== 'undefined') ? DEFAULT_CENIK_PROJ : g('DEFAULT_CENIK_PROJ');
   const stare = (stara && Array.isArray(stara.varianty)) ? stara.varianty : [];
+  /* Objekt nebo pole tam, kde je text či číslo (K7-S4, K7-S11, audit
+   * 23. 10. 2026): `{"toString":1}` shodil převod na text (500), pole
+   * `["zahr"]` prošlo jako „zahr". Textová pole hlavičky i razítko a řada
+   * ceníku proto jen jako jednoduchá hodnota — i u zamčené varianty
+   * (neplatný tvar není doklad). */
+  const slozene = (x) => x !== null && typeof x === 'object';
+  ULO_TYPY_HLAVICKA.forEach(k => { if (slozene(zak[k])) out.push({ kde: k, duvod: 'typ' }); });
   zak.varianty.forEach(v => {
     if (!v || !v.data || typeof v.data !== 'object') return;
     const sv = stare.find(x => x && x.id === v.id);
     const d = v.data, pred = 'varianta ' + String(v.nazev || v.id || '?') + ': ';
+    if (d.cenikRada != null && typeof d.cenikRada !== 'string') out.push({ kde: pred + 'cenikRada', duvod: 'typ' });
+    const rz = d.cenikRazitko;
+    if (rz != null && (typeof rz !== 'object' || Array.isArray(rz) || Object.keys(rz).some(k => slozene(rz[k]))))
+      out.push({ kde: pred + 'cenikRazitko', duvod: 'typ' });
     /* Ruční hodnoty krycího listu (B152) — i u zamčené varianty, protože
      * volná pole odeslané nabídky se doplňují dál (v14.10.5). */
     uloTypyKryci(d, sv && sv.data).forEach(k => out.push({ kde: pred + k, duvod: 'typ' }));

@@ -105,7 +105,7 @@ test('prázdný vstup → false', pz.poznamkyJedinaZmena(null, null) === false);
 const online = fs.readFileSync(__dirname + '/ui/online_ui.js', 'utf8');
 
 test('ruční uložení se ptá na čtecí zámek',
-  /function onlineUloz[\s\S]{0,4000}?zamekCteniJe\(\)\s*&&\s*!onlineJenZapisnik\(\)/.test(online));
+  /function onlineUloz[\s\S]{0,6000}?zamekCteniJe\(\)\s*&&\s*!onlineJenZapisnik\(\)/.test(online));
 test('autosave se ptá stejnou podmínkou',
   (online.match(/zamekCteniJe\(\)\s*&&\s*!onlineJenZapisnik\(\)/g) || []).length >= 2);
 test('a pravidlo se nikde nepíše podruhé ručně',

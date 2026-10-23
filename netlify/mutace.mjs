@@ -62,6 +62,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_rejstrik.mjs',
      /* #507 / K7-S1 (23. 10. 2026): rejstřík při souběžném uložení, samooprava exportu. */
      'test_rejstrik_soubeh.mjs',
+     /* #507 / K7-S4, K7-S11 (23. 10. 2026): tvar razítka a řady ceníku, texty hlavičky. */
+     'test_typy_k7.mjs',
      /* B111 (29. 9. 2026): záporná částka, množství a hodiny. */
      'test_zaporne.mjs',
      /* #398 (12. 10. 2026): koncová cena 2 — B133–B137, B145. */
@@ -3901,6 +3903,19 @@ const MUTACE = [
     hledej: "    mimoRejstrik: kandidati.filter(k => k.mimoRejstrik).length };",
     nahrad: "    mimoRejstrik: 0 };",
     proc: "správce by nevěděl, že rejstřík nesedí s úložištěm" },
+  /* #507 K7-S4, K7-S11: objekt místo textu/čísla → 400, ne 500. Hlídá netlify/test_typy_k7.mjs. */
+  { nazev: "#507 K7-S11: texty hlavičky bez kontroly tvaru", soubor: "../src/uloziste.js",
+    hledej: "  ULO_TYPY_HLAVICKA.forEach(k => { if (slozene(zak[k])) out.push({ kde: k, duvod: 'typ' }); });",
+    nahrad: "",
+    proc: "název akce jako objekt by se uložil a export by zakázku přeskočil" },
+  { nazev: "#507 K7-S4: řada ceníku bez kontroly tvaru", soubor: "../src/uloziste.js",
+    hledej: "    if (d.cenikRada != null && typeof d.cenikRada !== 'string') out.push({ kde: pred + 'cenikRada', duvod: 'typ' });",
+    nahrad: "",
+    proc: "objekt v cenikRada by shodil uložení na 500" },
+  { nazev: "#507 K7-S4: razítko ceníku bez kontroly tvaru", soubor: "../src/uloziste.js",
+    hledej: "Object.keys(rz).some(k => slozene(rz[k]))",
+    nahrad: "false",
+    proc: "objekt ve verzi razítka by shodil uložení na 500" },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------

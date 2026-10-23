@@ -127,9 +127,12 @@ test('P15: dávkou doplněná adresa sedí na svou zakázku',
   const z1 = await zaznam('2026-OPR-CN-0901.json', cA);
   test('B121: dlouhá adresa se uloží, v rejstříku jen se stropem',
     u.ok === true && !!z1 && z1.adresa.length === 300 && z1.adresa === DLOUHA.slice(0, 300), z1 && z1.adresa.length);
-  await uloz(nova('2026 - OPR - CN - 0902', { ulice: 'objekt místo textu' }));
-  const z2 = await zaznam('2026-OPR-CN-0902.json', cA);
-  test('B121: adresa jiného typu než text dá prázdnou adresu', !!z2 && z2.adresa === '', z2 && z2.adresa);
+  /* Od K7-S11 (v23.10.1) server adresu jiného typu odmítne 400 rovnou;
+   * rejstřík ji u starších uložených dat dál převede na prázdnou. */
+  const u2 = await uloz(nova('2026 - OPR - CN - 0902', { ulice: 'objekt místo textu' }));
+  test('B121 + K7-S11: adresa jiného typu než text → 400, do rejstříku nejde',
+    u2.ok === false && !(await zaznam('2026-OPR-CN-0902.json', cA)), u2);
+  test('B121: adresa jiného typu než text dá v rejstříku prázdnou adresu', ULO.uloRejstrikAdresa({ ulice: 'x' }) === '');
   /* doplnění staršího záznamu z uložené zakázky prochází týmž stropem */
   const zak = JSON.parse(pamet.get('zakazky/z/2026-OPR-CN-0901.json'));
   test('příprava B121: zakázka sama nese celou adresu', zak.adresa === DLOUHA);
@@ -145,12 +148,17 @@ test('P15: dávkou doplněná adresa sedí na svou zakázku',
  * Před úpravou 1 / 2, po ní 3 / 0. */
 {
   const z = nova('2026 - OPR - CN - 0904', 'Nová 10, Kolín');
-  z.nazevAkce = 'Akce '.repeat(3000); z.objednatel = { jmeno: 'objekt' };
+  z.nazevAkce = 'Akce '.repeat(3000);
   const u = await uloz(z);
   const r = await zaznam('2026-OPR-CN-0904.json', cA);
   test('příprava N4: zakázka s dlouhým názvem akce se uloží', u.ok === true, u);
   test('N4: název akce v rejstříku se stropem', !!r && r.nazevAkce.length === 300, r && r.nazevAkce.length);
-  test('N4: objednatel jiného typu než text = prázdný', !!r && r.objednatel === '', r && r.objednatel);
+  /* Objednatel jako objekt: od K7-S11 400 na serveru; záznam rejstříku
+   * ze starších dat ho dál převede na prázdný text. */
+  const zo = nova('2026 - OPR - CN - 0905', 'Nová 11, Kolín'); zo.objednatel = { jmeno: 'objekt' };
+  test('K7-S11: objednatel jiného typu než text → 400', (await uloz(zo)).ok === false);
+  test('N4: objednatel jiného typu než text = prázdný',
+    ULO.uloRejstrikZaznam(zo, { soubor: 'x.json', razitko: '' }).objednatel === '');
 }
 
 /* 7) #504 (22. 10. 2026): dny zámků v rejstříku pro hromadný export controllingu.
