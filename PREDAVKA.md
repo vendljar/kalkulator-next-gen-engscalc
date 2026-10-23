@@ -57,8 +57,10 @@ Verze v22.10.2 nese i #114 z 21. 10. (oddíl CHANGELOG pod ním).
   mapovací tabulka `Pipedrive_Kalkulator_mapa_poli_2026-10-23.xlsx` (Přehled, Mapa polí 81 řádků, Převody hodnot,
   Otázky 1–17 se stanoviskem ENGINEERS CZ a sloupcem pro odpověď) — poslaná J. V. v sezení, generátor jen ve
   scratchpadu (čte `POLE_DEALU` a popisky krycích listů z commitu); formulář otázek s odpověďmi J. V.
-  https://claude.ai/artifact/SVr2vABm81nq5LDs7jGezs (úložiště `odpovedi/jv`). Do repa nic z toho nejde (jméno
-  integrátora, firemní podklad).
+  https://claude.ai/artifact/SVr2vABm81nq5LDs7jGezs (úložiště `odpovedi/jv`); balík pro Ing. Drdu
+  `Pro_Ing_Drdu_Pipedrive_2026-10-23.zip` (text e-mailu, tabulka, schéma Platby 1–8) poslaný J. V. 23. 10. —
+  dokument „Výsledek testu polí“ z 21. 10. se už nepřikládá (zmiňuje Make a Platby 1–8 u starších nabídek). Do repa
+  nic z toho nejde (jméno integrátora, firemní podklad).
 - **Testy #194 (GitHub, 23. 10., c73770f, run 39932239909):** job testy spadl na instalaci Playwrightu (runner
   Ubuntu 26.04 — opraví koordinace, `runs-on: ubuntu-24.04`); mutace jádra i serveru ukončil `timeout-minutes: 45`
   (server zhruba 280 z 808, vše chycené). Mutace serveru 528–808 tak dál nikde celé neběžely; `netlify/mutace.mjs`
@@ -80,7 +82,9 @@ opraví koordinace v integrační větvi; 7. nové sezení po zapsání výsledk
 integrátora: zákazník je vždy Organizace dealu (potvrdil J. V., z e-mailu vypuštěno); API token bude z účtu J. V.,
 který vidí všechny dealy (z e-mailu vypuštěno; změny přes API se v historii dealu ukážou pod jeho jménem);
 generování cenové nabídky z Pipedrive — způsob necháváme na integrátorovi (o Make se nemluví); Typ zakázky nahrazuje pole #10; pole vždy viditelná v sekci „Krycí list“; Hlavní projektant → Text;
-nové pole „Platební kalendář SoD PROJ“, Platby 1–8 jen staré nabídky; zádržné volby stačí; neuplatněný limit = 0;
+nové pole „Platební kalendář SoD PROJ“; Platby 1–8 kalkulátor neplní vůbec, ani zpětně u starších nabídek
+(J. V. 23. 10.) — v kódu `pd_mapa.mjs` u `platba1`–`platba8` a PROJ části „První splátka (%)“ (`stary: ['proj']`)
+zápis vypnout spolu s #115; zádržné volby stačí; neuplatněný limit = 0;
 čtyři volby Způsob fakturace pro PROJ; webhook až po #115; Informováno BO / Tech kalkulátor nepíše; číslo nabídky
 nevalidovat.
 
