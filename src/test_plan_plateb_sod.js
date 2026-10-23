@@ -173,6 +173,23 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
   test('žádná oceněná činnost: seznam plateb se prázdným textem nesmaže (zůstane {{…}})', k3 === undefined, JSON.stringify(k3));
 }
 
+/* #512 (23. 10. 2026): pole „Platební kalendář SoD PROJ" v Pipedrive nese
+ * TENTÝŽ text jako {{SODP_PLATEBNI_KALENDAR}} české smlouvy řídící varianty. */
+{
+  const z = novaZ(), v = z.varianty[0];
+  for (const plan of [null, { v: 1, predvolba: 'std' }, { v: 1, predvolba: 'zaloha', zaloha: 30 }]) {
+    v.data.kryciProj.planPlateb = plan;
+    const smlouva = sod.sodProjData(z, v, 'cz', sablona('SODP_PLATEBNI_KALENDAR')).placeholders.SODP_PLATEBNI_KALENDAR;
+    const pd = PP.planPdKalendar(NP.nabidkaProjPlatby(z, v, 'cz'));
+    test('#512: kalendář pro Pipedrive = seznam plateb smlouvy o dílo (' + (plan ? plan.predvolba : 'výchozí') + ')',
+      !!smlouva && pd === smlouva, JSON.stringify({ pd, smlouva }));
+  }
+  v.data.kryciProj.planPlateb = { v: 1, prepis: { podpis: 1 } };
+  test('#512: plán se součtem jiným než cena díla kalendář do Pipedrive nepošle',
+    PP.planPdKalendar(NP.nabidkaProjPlatby(z, v, 'cz')) === '');
+  v.data.kryciProj.planPlateb = null;
+}
+
 /* 5) pravidla kontrol (etapa B, krok 6): zábrany a varování ve Wordu */
 {
   const KO = require('./kontroly.js');
