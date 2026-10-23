@@ -123,6 +123,12 @@ main{padding:0}
 .karta .nm{font-size:12.5px;margin:2px 0 0;line-height:1.35}
 .karta .sp{font-size:11px;color:var(--mut);margin-top:5px;display:flex;flex-wrap:wrap;gap:4px 9px}
 .slz-badge{border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:10.5px;font-weight:700;color:#5a6880;background:#f2f5fa}
+/* Plán práce (meta.planVikend, J. V. 23. 10. 2026): vlny a položky, kterých se plán týká, modře. */
+.sloup.plan{border:2px solid #2563eb;box-shadow:0 0 0 3px #dbeafe}
+.sloup.plan>h2{color:#1d4ed8}
+.sloup.plan>h2 .planstit{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;color:#fff;background:#2563eb;border-radius:99px;padding:1px 7px}
+.karta.plan{outline:2px solid #2563eb;outline-offset:1px;background:#eff6ff}
+.planinfo{margin-top:4px;font-size:12px;color:#1d4ed8;font-weight:600}
 .pruh{height:5px;background:#e8edf5;border-radius:3px;overflow:hidden;margin:6px 12px 8px}
 .pruh i{display:block;height:100%;background:var(--hot)}
 
@@ -156,6 +162,7 @@ footer{padding:10px 16px;font-size:11.5px;color:var(--mut);background:var(--pane
 <header>
   <h1>Roadmapa — Kalkulator Next Gen</h1>
   <div class="sub" id="podnadpis"></div>
+  <div class="planinfo" id="planinfo"></div>
   <div class="hdr-stats" id="statistiky"></div>
 </header>
 
@@ -603,6 +610,8 @@ function zavriModal() { $('#modal').classList.remove('on'); $('#zaclona').classL
 addEventListener('keydown', e => { if (e.key === 'Escape') zavriModal(); });
 
 /* ---------- vlny ---------- */
+/* Položky plánu práce (meta.planVikend.polozky) — modře ve Vlnách; chybějící id se ignorují. */
+const PLAN = new Set(((RM.meta.planVikend || {}).polozky || []).map(String));
 function kresliVlny() {
   const vyb = vybrane();
   $('#vlny-telo').innerHTML = RM.meta.vlny.map(v => {
@@ -611,8 +620,9 @@ function kresliVlny() {
     const hot = vse.filter(p => p.stav === 'hotovo').length;
     const poradiDul = { vys: 0, blok: 1, str: 2, niz: 3, hot: 4, sed: 5 };
     moje.sort((a, b) => poradiDul[barvaKlic(a)] - poradiDul[barvaKlic(b)]);
-    return `<div class="sloup">
-      <h2>${esc(v.nazev)} <span class="p">${esc(v.popis)}</span></h2>
+    const vPlanu = vse.some(p => PLAN.has(p.id));
+    return `<div class="sloup${vPlanu ? ' plan' : ''}">
+      <h2>${esc(v.nazev)}${vPlanu ? '<span class="planstit">v plánu</span>' : ''} <span class="p">${esc(v.popis)}</span></h2>
       <div class="pruh"><i style="width:${vse.length ? Math.round(hot / vse.length * 100) : 0}%"></i></div>
       <div style="font-size:11px;color:var(--mut);padding:0 12px 6px">hotovo ${hot} z ${vse.length}${moje.length !== vse.length ? ` · filtrem vidíš ${moje.length}` : ''}</div>
       <div class="telo">${moje.map(karta).join('') || '<div style="color:var(--mut);font-size:12px;padding:6px">Filtrům tu nic neodpovídá.</div>'}</div>
@@ -623,7 +633,7 @@ function kresliVlny() {
 function karta(p) {
   const k = barvaKlic(p);
   const cekaji = (p.zavisi || []).filter(z => MAPA[z.id] && MAPA[z.id].stav !== 'hotovo');
-  return `<div class="karta l-${k}" data-id="${esc(p.id)}">
+  return `<div class="karta l-${k}${PLAN.has(p.id) ? ' plan' : ''}" data-id="${esc(p.id)}">
     <div class="hl"><span class="id">#${esc(p.id)}</span>
       <span>${p.slozitost ? `<span class="slz-badge">${esc(p.slozitost)}</span>` : ''}
       ${pripravena(p) ? '<span class="pill hot" style="margin-left:4px">lze začít</span>' : ''}
@@ -711,6 +721,7 @@ function prekresli() {
   const podklad = P.filter(p => p.stav === 'blokovano' && !odlozena(p)).length;
   const odlozeno = P.filter(odlozena).length;
   const prip = P.filter(pripravena).length;
+  if (RM.meta.planVikend) $('#planinfo').textContent = '■ ' + RM.meta.planVikend.nazev + ' — vlny a položky v plánu jsou v pohledu Vlny modře.';
   $('#podnadpis').textContent = `Stav k ${RM.meta.stavKDatu}, build ${RM.meta.build}. ${RM.meta.legendaLegenda || RM.meta.legendaSlozitosti}`;
   $('#statistiky').innerHTML = `
     <div data-k="zpracovat" title="stav „čeká na nás“ – tohle je práce, kterou můžeme naplánovat do dávky"><b>${zpracovat}</b> ke zpracování</div>
