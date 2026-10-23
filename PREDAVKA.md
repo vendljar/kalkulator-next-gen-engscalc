@@ -10,7 +10,7 @@ Do integrace / test nic — slučuje koordinace.
   `vyhradne()` + samooprava exportu ze `seznam('z/')`), K7-S3, K7-S4 + K7-S11 (→ 400), K7-S5 (čas nového zámku),
   K7-K3 (ARES po SoD), K7-K4 (hlášky), K7-W2, K7-W3 (BEZPECNOST_MEZE), K7-W4, K7-W5, K7-W6, K7-W15.
 - **Testy:** Node část `spust_testy.sh` 248/0/1 (přeskočen jen test.js); statické 4/4; mutace jádra „#507" 19/19,
-  serveru „#507" viz zpráva koordinaci; `--kontrola` jádro 511/511, server 842/842.
+  serveru „#507" 13/13; `--kontrola` jádro 511/511, server 842/842.
 - **Upravené, NEPUŠTĚNÉ harnessy** (celé kolo pustí koordinace): `overit_kryci_po_tisku.mjs` (Z1: zámek „na
   serveru" přes `ONLINE_STAV.posledni`; Z1-4: `fronta: true`), `overit_sablona.mjs`, `overit_nabidka_proj_word.mjs`
   (bez `negativni_kontrola.json` kód 4 = přeskočeno).
