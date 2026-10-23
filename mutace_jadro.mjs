@@ -2480,6 +2480,19 @@ const MUTACE = [
     hledej: "  const oznac = v => { if (v && variantaUzamcena(v) && v.zamek.hlavicka !== true) { v.zamek.hlavicka = true; n++; } };",
     nahrad: "  const oznac = v => {};",
     proc: 'přepnutí řídící na klon by hlavičku uvolnilo' },
+  /* #508 — rozhodnutí J. V. 23. 10. k auditu K7 (K7-K5, K7-K6). */
+  { nazev: '#508 K7-K5: bublina EUR slibuje cenu nabídky', soubor: 'ui/common.js',
+    hledej: "const KPI_EUR_BUBLINA = 'přepočet základní ceny do eur kurzem z ceníku varianty (celá eura nahoru) — cena v cenové nabídce může být obchodně zaokrouhlená, a pak se od tohoto čísla liší';",
+    nahrad: "const KPI_EUR_BUBLINA = 'cena v eurech jako v cenové nabídce v eurech (kurz z ceníku varianty, celá eura nahoru)';",
+    proc: 'obchodník by v dlaždici čekal přesně částku nabídky, ta ale může být obchodně zaokrouhlená' },
+  { nazev: '#508 K7-K6: stav dealu po každém autosave', soubor: 'ui/online_ui.js',
+    hledej: "    if (ZAK.pdDealId && !ZAK.pdStav && ONLINE_STAV.pdStavDeal !== String(ZAK.pdDealId)) pdStavObnovUI(o.soubor);",
+    nahrad: "    if (ZAK.pdDealId && !ZAK.pdStav) pdStavObnovUI(o.soubor);",
+    proc: 'u dealu bez známého stavu by každý autosave dotazoval /api/pd/stav' },
+  { nazev: '#508 K7-K6: deal posledního dotazu se nezapíše', soubor: 'ui/online_ui.js',
+    hledej: "  ONLINE_STAV.pdStavDeal = String((typeof ZAK !== 'undefined' && ZAK && ZAK.pdDealId) || '');",
+    nahrad: "",
+    proc: 'stav dealu by se dotazoval při každém autosave' },
 ];
 
 /* ============================================================

@@ -154,7 +154,8 @@ export function negativniKontrola(klic, kandidati = []) {
   if (!cesta) return null;
   let d;
   try { d = JSON.parse(readFileSync(cesta, 'utf8')); }
-  catch (e) { throw new Error('negativni_kontrola.json nejde přečíst: ' + e.message); }
+  /* K7-W7 (#508, J. V. 23. 10. 2026): bez e.message — Node v něm opisuje začátek obsahu. */
+  catch (e) { throw new Error('negativni_kontrola.json není platný JSON.'); }
   const a = d && d[klic];
   return Array.isArray(a) ? a.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()) : [];
 }

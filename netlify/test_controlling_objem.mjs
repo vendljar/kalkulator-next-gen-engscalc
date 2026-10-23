@@ -71,11 +71,16 @@ for (let i = 0; i < 1400; i++) {
 pamet.set('zakazky/_rejstrik', JSON.stringify({ schema: 1, zakazky: rej }));
 
 const casy = [];
+/* K7-W10 (#508, J. V. 23. 10. 2026): dávky se měří počtem zakázek, ne reálným časem
+ * (na pomalém CI kolísal) — `davky` = kolik zakázek dávka zpracovala. */
+const davky = [];
+let kandidatu = 0;
 const api = async (cesta) => {
   const t0 = Date.now();
   const r = await controllingExport(new Request('http://x' + cesta, { headers: { cookie: cAdmin } }));
   casy.push(Date.now() - t0);
   const o = await r.json();
+  if (o && typeof o.zpracovano === 'number') { davky.push(o.zpracovano - davky.reduce((a, b) => a + b, 0)); kandidatu = o.kandidatu; }
   if (!r.ok || o.ok === false) { const e = new Error(o.chyba || ('server odpověděl ' + r.status)); e.stav = r.status; throw e; }
   return o;
 };
@@ -89,8 +94,9 @@ const cisla = (vysl.exporty || []).map(e => e.strany[0].cislo);
 test('#504 objem: výchozí volby (prodej + vyhrané) — 1000 zakázek za 1.–22. 10. (1400 kandidátů s hrubým předvýběrem) doběhne celý, bez duplicit',
   !vysl.chyba && cisla.length === 1000 && new Set(cisla).size === 1000 && !(vysl.preskoceno || []).length,
   vysl.chyba || { n: cisla.length, presk: (vysl.preskoceno || []).length });
-test('#504 objem: po dávkách, žádný dotaz nepřesáhne rozpočet + doběh rozebraných čtení (pod limitem funkce 10 s)',
-  casy.length > 1 && Math.max(...casy) < M.casMs + 2000, { davek: casy.length, max: Math.max(...casy), celkem });
+test('#504 objem (K7-W10): po dávkách, žádná dávka nečte víc než davkaMax zakázek (pod limitem funkce bez měření času)',
+  casy.length > 1 && davky.length === casy.length && davky.every(n => n >= 1 && n <= M.davkaMax)
+  && davky.reduce((a, b) => a + b, 0) === kandidatu && kandidatu >= 1000, { davek: casy.length, davky, kandidatu, celkem });
 const prot = (JSON.parse(pamet.get('program/controlling_exporty') || '{}').zaznamy) || [];
 test('#504 objem: protokol jeden záznam, dokončený, 1000 zakázek, filtr vyhrané',
   prot.length === 1 && prot[0].stav === 'hotovo' && prot[0].zakazek === 1000 && prot[0].pd === 'won' && prot[0].podle === 'prodej'
@@ -112,7 +118,7 @@ for (let i = 1400; i < 5000; i++) {
   rej.push(G.uloRejstrikZaznam(z, { soubor, razitko: '2026-10-21T10:00:00Z' }));
 }
 pamet.set('zakazky/_rejstrik', JSON.stringify({ schema: 1, zakazky: rej }));
-casy.length = 0;
+casy.length = 0; davky.length = 0;
 const fV = G.ctrlHromadnyFiltr({ vse: '1' });
 const t1 = Date.now();
 let vyslV;
@@ -120,7 +126,7 @@ try { vyslV = await G.ctrlHromadnyStahni(api, fV.filtr); } catch (e) { vyslV = {
 const cislaV = (vyslV.exporty || []).map(e => e.strany[0].cislo);
 test('#508 objem: celá databáze (5000 zakázek od dubna 2025, výchozí prodej + vyhrané) doběhne celá, bez duplicit, pod mezí dávek',
   fV.ok && !vyslV.chyba && cislaV.length === 5000 && new Set(cislaV).size === 5000 && casy.length < M.davek
-  && Math.max(...casy) < M.casMs + 2000,
+  && davky.every(n => n >= 1 && n <= M.davkaMax),
   vyslV.chyba || fV.chyba || { n: cislaV.length, davek: casy.length, max: Math.max(...casy) });
 const protV = (JSON.parse(pamet.get('program/controlling_exporty') || '{}').zaznamy) || [];
 test('#508 objem: protokol celé databáze — jeden dokončený záznam s vse, 5000 zakázek',

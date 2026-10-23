@@ -3971,6 +3971,15 @@ const MUTACE = [
     hledej: "zamcene.some(v => v === sr || (!!nr",
     nahrad: "zamcene.some(v => (!!nr",
     proc: 'přepnout + přejmenovat jedním uložením by prošlo (pokus z auditu K7-S2)' },
+  /* #508 — rozhodnutí J. V. 23. 10. k auditu K7 (K7-S6, K7-S9). */
+  { nazev: '#508 K7-S6: souběžné dotazy na stav dealu se nespojí', soubor: 'lib/pd_stav.mjs',
+    hledej: "  if (bezi) return bezi;",
+    nahrad: "",
+    proc: 'deset otevření téže zakázky naráz by stálo deset volání Pipedrive (tokeny)' },
+  { nazev: '#508 K7-S9: nečitelný záznam bez „čti vždy"', soubor: 'functions/zakazky.mjs',
+    hledej: "        catch (e) { return [soubor, { dny: { cist: true } }]; }",
+    nahrad: "        catch (e) { return null; }",
+    proc: 'záznam s trvale selhávajícím čtením by navždy blokoval doplňování dnů ostatních' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------

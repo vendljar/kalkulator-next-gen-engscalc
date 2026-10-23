@@ -83,6 +83,18 @@ export async function pdStavObnov(dealId, email) {
   const znamy = g.pdStavNorm(await s.cti(klic(id))) || null;
   if (!nastaveno) return { nastaveno, pdStav: znamy };
   if (znamy && (Date.now() - Date.parse(znamy.nacteno)) < PD_STAV_CERSTVY_MS) return { nastaveno, pdStav: znamy };
+  /* K7-S6 (#508, J. V. 23. 10. 2026): souběžné dotazy na zastaralý stav téhož
+   * dealu se v instanci funkce spojí do jednoho volání Pipedrive (sdílený
+   * promise); strop čerstvých dotazů platí jen tomu, kdo volání spustil.
+   * Mezi instancemi se nespojují (B158) — mez v BEZPECNOST_MEZE.md. */
+  const bezi = PD_STAV_BEZI.get(id);
+  if (bezi) return bezi;
+  const p = pdStavNacti(g, s, id, email, znamy, nastaveno);
+  PD_STAV_BEZI.set(id, p);
+  try { return await p; } finally { PD_STAV_BEZI.delete(id); }
+}
+const PD_STAV_BEZI = new Map();
+async function pdStavNacti(g, s, id, email, znamy, nastaveno) {
   if (!(await pdStropCerstvych(email, 'stav', PD_STAV_MAX))) return { nastaveno, pdStav: znamy };
   let deal;
   try { deal = await pdZavolej('/api/v2/deals/' + id); }

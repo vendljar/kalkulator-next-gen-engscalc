@@ -189,6 +189,11 @@ function funkceZeSkriptu() {
   fs.writeFileSync(path.join(tmp, 'negativni_kontrola.json'), '{ poškozené');
   const zle = zavolej(tmp, "H.negativniKontrola('proj')");
   test('D5-3: poškozený soubor je chyba, ne tiché přeskočení', zle.kod !== 0 && /negativni_kontrola\.json/.test(zle.err), zle.kod);
+  /* K7-W7 (#508): hláška bez obsahu souboru (Node 22 ho v e.message opisuje). Před opravou FAIL. */
+  fs.writeFileSync(path.join(tmp, 'negativni_kontrola.json'), '{ "proj": ["TajneJmeno123" ');
+  const zle2 = zavolej(tmp, "H.negativniKontrola('proj')");
+  test('K7-W7: vadný JSON → jen „není platný JSON", obsah souboru v hlášce není',
+    zle2.kod !== 0 && /není platný JSON/.test(zle2.err) && !/TajneJmeno123/.test(zle2.err), zle2.err.slice(0, 300));
   fs.rmSync(tmp, { recursive: true, force: true });
   const harn = ['overit_sablona.mjs', 'overit_nabidka_proj_word.mjs'].map(f => fs.readFileSync(path.join(KOREN, f), 'utf8'));
   test('D5-3: oba harnessy šablon berou seznam z negativniKontrola', harn.every(t => /negativniKontrola\(/.test(t) && /negativniNalezy\(/.test(t)));

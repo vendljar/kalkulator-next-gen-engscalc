@@ -7605,14 +7605,13 @@
    "hotovoKdyz": "J. V. rozhodl; první běh s jen_vypsat proběhl a Rulesets jsou zapnuté, nebo je mez zapsaná.",
    "kde": "`nastroje/sloucene_vetve.sh`, `.github/workflows/smazat_vetve.yml`",
    "zavisi": [],
-   "cekaNa": "rozhodnutí J. V. (audit K5, podklady/K5_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
-   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
-   "otazka": "Pustit první ostrý běh s jen_vypsat a zapnout Rulesets „Restrict deletions“? (doporučeno ano)"
+   "cekaNa": "J. V. ručně (rozhodnutí 23. 10. 2026): GitHub → Actions → „Smazat sloučené větve“ → Run workflow s jen_vypsat = true (souhrn ukáže důvod „GitHub“), pak Settings → Rules → Rulesets → New branch ruleset „Restrict deletions“ (main, test, test-draft, claude/integrace-*)",
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis). Rozhodnutí J. V. 23. 10. 2026 (dialog s koordinací), provedeno v E2 (#508). J. V. udělá ručně."
   },
   {
    "id": "487",
    "vlna": "B",
-   "stav": "blokovano",
+   "stav": "hotovo",
    "dulezitost": "nizka",
    "slozitost": "S",
    "nazev": "K5-K2: obsah snímku kapitol při zamčení server neověřuje",
@@ -7621,14 +7620,13 @@
    "hotovoKdyz": "Mez zapsaná, nebo server snímek porovná s Firmou (test + mutace).",
    "kde": "`src/kryci.js`, `netlify/lib/zakazka_kontrola.mjs`",
    "zavisi": [],
-   "cekaNa": "rozhodnutí J. V. (audit K5, podklady/K5_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
-   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
-   "otazka": "Zapsat jako mez, nebo ověřovat na serveru? (doporučeno mez)"
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis). Rozhodnutí J. V. 23. 10. 2026 (dialog s koordinací), provedeno v E2 (#508). Výsledek: mez zapsána v BEZPECNOST_MEZE.md (#487 / K5-K2).",
+   "hotovoV": "v23.10.2"
   },
   {
    "id": "488",
    "vlna": "B",
-   "stav": "blokovano",
+   "stav": "hotovo",
    "dulezitost": "nizka",
    "slozitost": "S",
    "nazev": "K5-S3: souběh potvrzení retence záloh a nočního běhu",
@@ -7637,14 +7635,13 @@
    "hotovoKdyz": "Mez zapsaná, nebo zápis s kontrolou kdy (test souběhu).",
    "kde": "`netlify/functions/zaloha_vynuceno.mjs`, `netlify/functions/controlling_export.mjs`",
    "zavisi": [],
-   "cekaNa": "rozhodnutí J. V. (audit K5, podklady/K5_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
-   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
-   "otazka": "Zapsat jako mez? (doporučeno ano)"
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis). Rozhodnutí J. V. 23. 10. 2026 (dialog s koordinací), provedeno v E2 (#508). Výsledek: mez zapsána v BEZPECNOST_MEZE.md (#488 / K5-S3).",
+   "hotovoV": "v23.10.2"
   },
   {
    "id": "489",
    "vlna": "B",
-   "stav": "blokovano",
+   "stav": "hotovo",
    "dulezitost": "nizka",
    "slozitost": "S",
    "nazev": "K5-S4: změřit hromadný export pro controlling na reálných datech",
@@ -7653,14 +7650,13 @@
    "hotovoKdyz": "Změřeno na ostrých datech, strop odpovídá limitu funkce.",
    "kde": "`netlify/functions/controlling_export.mjs`, `src/controlling.js` (CTRL_HROMADNY)",
    "zavisi": [],
-   "cekaNa": "rozhodnutí J. V. (audit K5, podklady/K5_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
-   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
-   "otazka": "Kdy a nad jakým obdobím změřit? (doporučeno při první ostré zkoušce)"
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis). Rozhodnutí J. V. 23. 10. 2026 (dialog s koordinací), provedeno v E2 (#508). Výsledek: uzavřeno — nahrazeno E1 (#504: dávky s časovým rozpočtem, bez stropu čtení; objem 5000 zakázek v #508).",
+   "hotovoV": "v23.10.2"
   },
   {
    "id": "490",
    "vlna": "B",
-   "stav": "blokovano",
+   "stav": "hotovo",
    "dulezitost": "nizka",
    "slozitost": "S",
    "nazev": "K5-K4: export jedné varianty pro controlling hlídá jen klient",
@@ -7669,9 +7665,8 @@
    "hotovoKdyz": "J. V. potvrdil ponechání.",
    "kde": "`src/ui/controlling_ui.js`, `BEZPECNOST_MEZE.md` (Controlling C2)",
    "zavisi": [],
-   "cekaNa": "rozhodnutí J. V. (audit K5, podklady/K5_AUDIT_21_10.md, zapsáno 22. 10. 2026)",
-   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis).",
-   "otazka": "Ponechat? (doporučeno ano)"
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis). Rozhodnutí J. V. 23. 10. 2026 (dialog s koordinací), provedeno v E2 (#508). Výsledek: ponechat (zapsaná mez Controlling C2).",
+   "hotovoV": "v23.10.2"
   },
   {
    "id": "491",
@@ -7941,7 +7936,7 @@
    "slozitost": "M",
    "nazev": "Kolo K7 + bezpečnostní audit nad v22.10.6 — podmínka posunu main z v22.10.1",
    "proc": "Zadání koordinace 22. 10. 2026 (noc 22./23. 10.): celé testovací kolo s mutacemi a audit změn v22.10.1 → v22.10.6 (P1 #501, Z1 #502, D5 #484/#485/#503, E1 #504, #505) před ranním posunem main.",
-   "detail": "Kolo nad 3394b2b: sady 306/0/6, mutace jádra 492/492, mutace serveru 829/829 (po dvou restartech kontejneru dopuštěno ve 3 frontách po souborech, úplnost po názvech), statické 4/4 — žádná přeživší mutace, žádný prázdný test. Audit (podklady/K7_AUDIT_22_10.md): VYHOVUJE S VÝHRADOU — 0 kritických, 0 vysokých, 3 střední (K7-K1 Z1-4 tisk během autosave, K7-K2 snímek do prvního uložení, K7-S1 rejstřík bez zámku → tiše neúplný export), 13 nízkých, 16 informativních; opravy K6 drží. Posun main na v22.10.6 doporučen, výhrady do první opravné dávky.",
+   "detail": "Kolo nad 3394b2b: sady 306/0/6, mutace jádra 492/492, mutace serveru 829/829 (po dvou restartech kontejneru dopuštěno ve 3 frontách po souborech, úplnost po názvech), statické 4/4 — žádná přeživší mutace, žádný prázdný test. Audit (podklady/K7_AUDIT_22_10.md): VYHOVUJE S VÝHRADOU — 0 kritických, 0 vysokých, 3 střední (K7-K1 Z1-4 tisk během autosave, K7-K2 snímek do prvního uložení, K7-S1 rejstřík bez zámku → tiše neúplný export), 13 nízkých, 16 informativních; opravy K6 drží. Posun main na v22.10.6 doporučen, výhrady do první opravné dávky. Rozhodnutí J. V. 23. 10. ke zbylým nálezům provedla E2 (#508): opraveno K7-S2, K7-W1, K7-S6, K7-S9, K7-K5, K7-K6, K7-W7, K7-W10, K7-W13; mez K7-S8, K7-S10 (ověřeno testem), K7-W8; ponecháno K7-W9, K7-W12, K7-W14 — viz audit, oddíl „Rozhodnutí J. V. 23. 10.“.",
    "hotovoKdyz": "Kolo celé zelené (úplnost mutací serveru po názvech) a audit zapsaný s rozdělením nálezů na opravu bez J. V. a rozhodnutí J. V. a s verdiktem pro posun main.",
    "kde": "`podklady/K7_AUDIT_22_10.md`, `CHANGELOG.md` (v22.10.6 — K7)",
    "zavisi": [],
@@ -7971,9 +7966,9 @@
    "slozitost": "M",
    "nazev": "E2: hromadný export controllingu — celá databáze, filtry čitelné; K7-S2 hlavička po CN; K7-W1 vzor odkazu",
    "proc": "Zadání J. V. 23. 10. 2026 (snímky Nastavení → Controlling → Export předkalkulace → Hromadně za období): vybraný stav dealu nebyl vidět (zúžený select „Stav Pipedrive:“), „podle data pro…“ useknuté; „Není možné stáhnout celou databázi … to bych potřeboval“ (mez 400 dní). K7-S2 „Zavřít“; K7-W1 dokončit.",
-   "detail": "Filtry hromadného exportu: selecty šířkou podle obsahu, okno Nastavení 1180 → 1280 px, zalomení bez vodorovného posuvníku; „Stav dealu“ (Vyhrané … Všechny stavy) bez slova Pipedrive v UI. Mez 400 dní zrušena; volba Celá databáze (vse=1, bez od/do; server ověří, protokol vse, list Popis „celá databáze“, soubor PREDKALKULACE_CELA-DB_<dnes>); simulace 5000 zakázek. K7-S2: stopa zamek.hlavicka u odeslané varianty, která byla řídící — název a adresa se přepnutím řídící na nezamčený klon neuvolní (server i prohlížeč), mez K7-S7 v BEZPECNOST_MEZE.md. K7-W1: kontrola_udaju.py pozná claude.ai/code/cshk_<id>.",
+   "detail": "Filtry hromadného exportu: selecty šířkou podle obsahu, okno Nastavení 1180 → 1280 px, zalomení bez vodorovného posuvníku; „Stav dealu“ (Vyhrané … Všechny stavy) bez slova Pipedrive v UI. Mez 400 dní zrušena; volba Celá databáze (vse=1, bez od/do; server ověří, protokol vse, list Popis „celá databáze“, soubor PREDKALKULACE_CELA-DB_<dnes>); simulace 5000 zakázek. K7-S2: stopa zamek.hlavicka u odeslané varianty, která byla řídící — název a adresa se přepnutím řídící na nezamčený klon neuvolní (server i prohlížeč), mez K7-S7 v BEZPECNOST_MEZE.md. K7-W1: kontrola_udaju.py pozná claude.ai/code/cshk_<id>. Doplnění koordinace (rozhodnutí J. V. 23. 10.): K7-S6 souběžné dotazy na stav dealu sloučené (sdílený promise), K7-S9 nečitelný záznam při doplňování ctrlDny → cist:true, K7-K5 text bubliny EUR, K7-K6 stav PD jen při otevření a změně dealu, K7-W7 hláška „není platný JSON“, K7-W10 test objemu bez reálného času, K7-W13 poznámka v příručce; meze K7-S8, K7-S10 (verze ceníku do exportu ověřena testem), K7-W8, #487, #488; ponecháno K7-W9, K7-W12, K7-W14, #490; #489 uzavřeno; #486 čeká na J. V.",
    "hotovoKdyz": "Testy s pojistkou (před opravou selžou), mutace #508 jádra i serveru chycené, --kontrola obou, Node sady zelené; overit_controlling.mjs upraven (šířka selectů, celá databáze) — celé kolo pouští koordinace.",
-   "kde": "`src/controlling.js`, `src/ui/controlling_ui.js`, `src/app_template.html`, `netlify/functions/controlling_export.mjs`, `src/zamek.js`, `src/zakazka.js`, `src/uloziste.js`, `netlify/lib/zakazka_kontrola.mjs`, `nastroje/kontrola_udaju.py`, `BEZPECNOST_MEZE.md`, `CHANGELOG.md` (v23.10.2)",
+   "kde": "`src/controlling.js`, `src/ui/controlling_ui.js`, `src/app_template.html`, `netlify/functions/controlling_export.mjs`, `src/zamek.js`, `src/zakazka.js`, `src/uloziste.js`, `netlify/lib/zakazka_kontrola.mjs`, `nastroje/kontrola_udaju.py`, `netlify/lib/pd_stav.mjs`, `netlify/functions/zakazky.mjs`, `src/ui/common.js`, `src/ui/online_ui.js`, `nastroje/harness_podklady.mjs`, `manual/obsah.json`, `podklady/K7_AUDIT_22_10.md`, `BEZPECNOST_MEZE.md`, `CHANGELOG.md` (v23.10.2)",
    "zavisi": [
     "504",
     "507"

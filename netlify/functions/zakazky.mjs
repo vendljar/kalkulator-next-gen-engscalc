@@ -217,14 +217,17 @@ export default async (req) => {
           catch (e) { dny = { cist: true }; }
           return [soubor, { adresa: ULO.uloRejstrikAdresa(z && z.adresa), dny }];
         }
-        catch (e) { return null; }
+        /* K7-S9 (#508, J. V. 23. 10. 2026): čtení vyhodilo — dny „čti vždy", ať
+         * záznam nezůstane navždy na začátku dávky a ostatní se doplní; export
+         * ho přečte a případně ohlásí. Adresa se zkusí příště. */
+        catch (e) { return [soubor, { dny: { cist: true } }]; }
       }));
       const doplnit = new Map(nalezene.filter(Boolean));
       const sAdresou = new Set(bezAdresy), sDny = new Set(bezDnu);
       stavajici = stavajici.map(z => {
         const d = z && doplnit.get(z.soubor);
         if (!d) return z;
-        return { ...z, ...(sAdresou.has(z.soubor) ? { adresa: d.adresa } : {}), ...(sDny.has(z.soubor) ? { ctrlDny: d.dny } : {}) };
+        return { ...z, ...(sAdresou.has(z.soubor) && d.adresa !== undefined ? { adresa: d.adresa } : {}), ...(sDny.has(z.soubor) ? { ctrlDny: d.dny } : {}) };
       });
     }
     const novy = ULO.uloRejstrikSloucit(stavajici,

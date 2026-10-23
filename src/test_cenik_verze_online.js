@@ -73,5 +73,23 @@ const uui = fs.readFileSync(path.join(__dirname, 'ui/uloziste_ui.js'), 'utf8');
 test('#505: uloSrovnejSPlatnymCenikem čte platnou verzi z progPlatnaVerzeInfo',
   /function uloSrovnejSPlatnymCenikem\(\)[\s\S]{0,400}progPlatnaVerzeInfo\(\)/.test(uui));
 
+/* K7-S10 (#508, J. V. 23. 10. 2026: „ponechat, ale potřebuji, aby se verze následně propisovala
+ * do exportu"): rozpracovaná varianta s platnou verzí online ceníku se zamkne (odeslání nabídky)
+ * a export pro controlling — jedna varianta i hromadný — nese sloupec „Verze ceníku" vyplněný.
+ * Ověřeno nad současným kódem (#505 to už dělá): 2 / 2. */
+nacti('controlling.js');
+G('PROG_STAV.db = null; progPouzij(PLATNY)'); otevri();   // zpět do online režimu (bloky výš přepnuly na složku)
+G(`var JEKLY_T = ${JSON.stringify(require('./jekly.json'))};
+  var V3 = JSON.parse(JSON.stringify(ZAK.varianty[0])); V3.id = 'v-k7s10'; V3.ridici = false; ZAK.varianty.push(V3);
+  Object.assign(V3.data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 });
+  zamkniVariantu(V3, { cislo: 'Y', kdo: 'admin@priklad.cz', typ: 'nabidka', vysledek: zamekVysledekSpocti(V3, JEKLY_T, 'test') });`);
+test('K7-S10: zamčená varianta drží verzi online ceníku v razítku', G(`(V3.data.cenikRazitko || {}).verze`) === 7);
+const exp = G(`(() => { const e = ctrlExportVarianty(ZAK, V3, { jekly: JEKLY_T, povolitNeridici: true });
+  const l = e.ok ? ctrlExportListy([e], null, {}) : [];
+  const r = (l.find(x => x.nazev === 'Řádky') || { rows: [[]] }).rows;
+  const i = r[0].indexOf('Verze ceníku');
+  return { ok: e.ok, hl: e.ok ? e.hlavicka.cenikVerze : null, bunka: i >= 0 && r[1] ? r[1][i] : undefined, chyba: e.chyba }; })()`);
+test('K7-S10: export (hlavička i sloupec „Verze ceníku" listu Řádky) nese verzi 7', exp.ok && exp.hl === '7' && String(exp.bunka) === '7', exp);
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 if (fail) process.exit(1);

@@ -30,6 +30,15 @@ Export předkalkulace → Hromadně za období) a rozhodnutí J. V. k auditu K7 
   `nastavRidici`). Odeslaná varianta, která řídící nikdy nebyla, hlavičku nezmrazí (Z1-2). Mez K7-S7
   v `BEZPECNOST_MEZE.md`.
 - **K7-W1:** `nastroje/kontrola_udaju.py` pozná sdílecí odkaz `claude.ai/code/cshk_<id>`.
+- **Doplnění koordinace — rozhodnutí J. V. 23. 10. ke zbylým nálezům K7/K5** (audit, oddíl „Rozhodnutí J. V. 23. 10.“):
+  K7-S6 souběžné dotazy na stav téhož dealu sdílí jedno volání Pipedrive; K7-S9 nečitelný záznam při doplňování
+  `ctrlDny` dostane „čti vždy“; K7-K5 bublina EUR v dlaždici říká „přepočet základní ceny“ (nabídka může být obchodně
+  zaokrouhlená); K7-K6 stav dealu se dotazuje jen při otevření zakázky a změně dealu, ne po každém autosave; K7-W7
+  vadný `negativni_kontrola.json` hlásí jen „není platný JSON“; K7-W10 test objemu měří zakázky v dávce, ne čas;
+  K7-W13 poznámka v příručce u v22.10.2. Meze v `BEZPECNOST_MEZE.md`: K7-S8, K7-S10 (verze ceníku se do exportu
+  propisuje — ověřeno testem, oprava nebyla potřeba), K7-W8, #487, #488. Ponecháno K7-W9, K7-W12, K7-W14, #490;
+  #489 uzavřeno (nahrazeno E1); #486 čeká na J. V. (ruční běh `jen_vypsat` + Rulesets). Nový test
+  `src/test_pd_stav_autosave.js`; mutace „#508“ jádro +3 (K7-K5, K7-K6), server +2 (K7-S6, K7-S9).
 - **Testy (pojistky v commitech):** `src/test_controlling.js` 229/0, `netlify/test_controlling.mjs` 75/0,
   `netlify/test_controlling_objem.mjs` 5/0, `src/test_zmrazeni_kl.js` 113/0, `netlify/test_kryci_po_tisku.mjs` 48/0,
   `src/test_kontrola_udaju.js` 7/0. Mutace „#508“ jádro 13/13, server 7/7 (+ upravené „Z1-2“ 3/3).

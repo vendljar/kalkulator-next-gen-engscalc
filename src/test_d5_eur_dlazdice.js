@@ -24,7 +24,7 @@ const vytahniFn = jm => { const m = src.match(new RegExp('function ' + jm + '\\(
 let F = null;
 try {
   F = (0, eval)('(() => { let JAZYK_TISKU = "cz"; const tiskJazyk = () => JAZYK_TISKU; ' + vytahniConst('esc') + vytahniConst('STRANA_NULOVANI')
-    + vytahniFn('zakazkaZahranicni') + vytahniFn('kpiEurHtml')
+    + (/const KPI_EUR_BUBLINA = '[^']*';/.exec(src) || [''])[0] + vytahniFn('zakazkaZahranicni') + vytahniFn('kpiEurHtml')
     + '; return { kpiEurHtml, zakazkaZahranicni, STRANA_NULOVANI, jazyk: j => { JAZYK_TISKU = j; } }; })()');   // eslint-disable-line no-eval
 } catch (e) { test('kpiEurHtml a zakazkaZahranicni jsou v ui/common.js', false, e.message); }
 
@@ -55,5 +55,12 @@ test('Kalkulace PROJ: dlaždice Základní cena bez DPH nese EUR (kpiEurHtml(r.s
   /<div class="kpi main"><div class="l">Základní cena bez DPH<\/div><div class="v">\$\{fmt0\(r\.souhrn\.cena\)\}<\/div>\$\{kpiEurHtml\(r\.souhrn\.cena, aktivniVarianta\(ZAK\), PC\.kurzEurKc\)\}<\/div>/.test(proj));
 const tpl = fs.readFileSync(__dirname + '/app_template.html', 'utf8');
 test('styl: malé písmo zarovnané doprava', /\.kpi \.v-eur \{[^}]*font-size:12px[^}]*text-align:right/.test(tpl));
+/* K7-K5 (#508, J. V. 23. 10. 2026): bublina říká „přepočet základní ceny" a že nabídka může být
+ * obchodně zaokrouhlená — ne „jako v cenové nabídce". Před opravou FAIL, po ní OK. */
+if (F) {
+  const b = (/title="([^"]*)"/.exec(F.kpiEurHtml(1000, { id: 'x', data: { cenikRada: 'zahr', cenik: {} } }, 25)) || [])[1] || '';
+  test('K7-K5: bublina EUR = přepočet základní ceny, nabídka může být obchodně zaokrouhlená',
+    /přepočet základní ceny/.test(b) && /obchodně zaokrouhlen/.test(b) && !/jako v cenové nabídce/.test(b), b);
+}
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

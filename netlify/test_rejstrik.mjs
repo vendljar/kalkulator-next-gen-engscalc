@@ -14,8 +14,12 @@ process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
 process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
 process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'spravce@priklad.cz';
 const pamet = new Map();
+/* K7-S9: klíče, jejichž čtení vyhodí výjimku. */
+const HAZI = new Set();
 globalThis.__TEST_ULOZISTE = (nazev) => ({
-  async cti(k) { return pamet.has(nazev + '/' + k) ? JSON.parse(pamet.get(nazev + '/' + k)) : null; },
+  async cti(k) {
+    if (HAZI.has(nazev + '/' + k)) throw new Error('čtení selhalo (test K7-S9)');
+    return pamet.has(nazev + '/' + k) ? JSON.parse(pamet.get(nazev + '/' + k)) : null; },
   async zapis(k, v) { pamet.set(nazev + '/' + k, JSON.stringify(v)); },
   async seznam(prefix) { return [...pamet.keys()].filter(x => x.startsWith(nazev + '/' + (prefix || '')))
     .map(x => x.slice(nazev.length + 1)); },
@@ -191,6 +195,23 @@ test('P15: dávkou doplněná adresa sedí na svou zakázku',
   test('#504: dopočtené dny sedí na zakázku (den v Praze, řada) a sirotek dostane „čti vždy"',
     po.every(z => !!z.ctrlDny) && !!z6 && JSON.stringify(z6.ctrlDny) === JSON.stringify({ zamky: [{ den: '2026-11-01', rada: 'zahr' }], prodej: null })
     && (po.find(z => z.soubor === 'zmizela.json') || {}).ctrlDny.cist === true, { z6, bez: po.filter(z => !z.ctrlDny).map(z => z.soubor) });
+}
+
+/* 8) K7-S9 (#508, J. V. 23. 10. 2026): záznam, jehož čtení trvale vyhazuje, dostane při
+ * doplňování dnů „čti vždy" a nezůstane navždy na začátku dávky. Před opravou FAIL
+ * (záznam bez ctrlDny), po ní OK. */
+{
+  pamet.set('zakazky/z/vadna-k7s9.json', JSON.stringify({ x: 1 }));
+  HAZI.add('zakazky/z/vadna-k7s9.json');
+  const rj = JSON.parse(pamet.get('zakazky/_rejstrik'));
+  rj.zakazky.unshift({ soubor: 'vadna-k7s9.json', cislo: 'VADNA', odeslane: 1, adresa: '' });
+  pamet.set('zakazky/_rejstrik', JSON.stringify(rj));
+  await uloz(nova('2026 - OPR - CN - 0920', 'Nová 14, Kolín'));
+  const po = await rejstrik(cA);
+  const v = po.find(z => z.soubor === 'vadna-k7s9.json');
+  test('K7-S9: nečitelný záznam dostane při doplňování dnů „čti vždy" (nezůstane bez dnů)',
+    !!v && !!v.ctrlDny && v.ctrlDny.cist === true, v);
+  HAZI.clear();
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

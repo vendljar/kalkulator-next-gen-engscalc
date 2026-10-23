@@ -62,8 +62,10 @@ const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 let volani = [];
 const DEALY = { 4711: { status: 'won' }, 4712: { status: 'open' } };
 let rezim = 'ok';   // ok | chyba500 | sit
+let zpozdeniPd = 0;   // K7-S6: zpoždění odpovědi Pipedrive (ms)
 globalThis.fetch = async (url, init) => {
   volani.push({ url: String(url), metoda: (init && init.method) || 'GET' });
+  if (zpozdeniPd) await new Promise(r => setTimeout(r, zpozdeniPd));
   if (rezim === 'sit') throw new Error('ECONNRESET');
   if (rezim === 'chyba500') return new Response('{"success":false}', { status: 500 });
   const u = new URL(String(url));
@@ -169,6 +171,15 @@ const st1 = await stav(sDeal, cO);
 test('nad stropem se do Pipedrive nejde, stav zůstane', volani.length === 0 && st1.telo.pdStav.status === 'lost', st1.telo);
 pamet.delete('pd_cache/strop:stav:obch@priklad.cz');
 test('strop stavu má vlastní počítadlo (detail dealu se nezapočítal)', !pamet.has('pd_cache/strop:obch@priklad.cz'));
+/* K7-S6 (#508, J. V. 23. 10. 2026): souběžné dotazy na zastaralý stav téhož dealu
+ * se spojí do jednoho volání Pipedrive. Před opravou 10 volání (FAIL), po ní 1. */
+zastarej(4711); volani = []; zpozdeniPd = 30;
+const soubezne = await Promise.all(Array.from({ length: 10 }, () => stav(sDeal, cO)));
+zpozdeniPd = 0;
+test('K7-S6: 10 souběžných dotazů na zastaralý stav = 1 volání Pipedrive, všichni dostanou nový stav',
+  volani.length === 1 && soubezne.every(x => x.status === 200 && x.telo.pdStav && x.telo.pdStav.status === 'won'
+    && x.telo.pdStav.nacteno === soubezne[0].telo.pdStav.nacteno), { volani: volani.length, st: soubezne.map(x => x.telo.pdStav && x.telo.pdStav.status) });
+DEALY[4711].status = 'lost'; zastarej(4711); await stav(sDeal, cO);   // zpět na „lost" pro další bloky
 
 console.log('\n===== 3) ZAKÁZKA: ČTENÍ A ULOŽENÍ =====\n');
 let g = await nacti(sDeal, cO);

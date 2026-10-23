@@ -1100,8 +1100,12 @@ Nálezy `podklady/K7_AUDIT_22_10.md`, které nepotřebovaly rozhodnutí J. V.
   won/open/lost/deleted a čas načtení, totéž co GET zakázky); každé volání
   smí dotázat Pipedrive, strop 120 dotazů za hodinu na uživatele
   (`PD_STAV_MAX`, `lib/pd_stav.mjs`), firemní rozpočet = uživatelé × strop;
-  mezi instancemi B158. Souběžné dotazy na týž zastaralý stav se nespojují
-  (K7-S6, informativní).
+  mezi instancemi B158. **K7-S6 — OPRAVENO v23.10.2 (#508):** souběžné dotazy
+  na týž zastaralý stav se v instanci funkce spojí do jednoho volání
+  Pipedrive (sdílený promise v `pdStavObnov`); **mez:** mezi instancemi funkce
+  se nespojují (B158) a strop čerstvých dotazů se počítá jen tomu, kdo volání
+  spustil. Prohlížeč se ptá jen při otevření zakázky a při změně dealu, ne po
+  každém autosave (K7-K6, v23.10.2).
 - **K7-S2 — hlavička po odeslání CN přes přepnutí řídící varianty —
   OPRAVENO v23.10.2 (#508, J. V. 23. 10. 2026 „Zavřít").** Odeslaná varianta,
   která byla zamčená jako řídící, nese stopu `zamek.hlavicka` (mimo klíč
@@ -1125,4 +1129,27 @@ Nálezy `podklady/K7_AUDIT_22_10.md`, které nepotřebovaly rozhodnutí J. V.
   v každé dávce znovu a kurzor `po` přichází od klienta — zakázka nově
   zamčená mezi dávkami se jménem před kurzorem v souboru nebude (okno
   sekund); týž správce může vlastní export kurzorem „dokončit" dřív.
+  **Rozhodnutí J. V. 23. 10. 2026: vědomá mez** — export po dávkách (i celé
+  databáze, #508) není snímek jednoho okamžiku.
+- **K7-S9 — doplňování `ctrlDny` — OPRAVENO v23.10.2 (#508):** záznam, jehož
+  čtení při doplňování vyhodí, dostane „čti vždy" (`cist: true`) a nezůstane
+  navždy na začátku dávky; export ho přečte a případně ohlásí jako přeskočený.
+  Adresa takového záznamu se zkusí příště (beze změny P15).
+- **K7-S10 — verze ceníku z prohlížeče (vědomá mez, J. V. 23. 10. 2026
+  „ponechat"):** sloupec „Verze ceníku" je `data.cenikRazitko.verze` od klienta,
+  server ji proti `cenikOtisk` neověřuje (B181); u zamčené varianty je zmrazená
+  s daty. Že se verze nově uložené a zamčené varianty do exportu propisuje,
+  hlídá `src/test_cenik_verze_online.js` (K7-S10, #505).
+- **K7-W8 — historie gitu (vědomá mez, J. V. 23. 10. 2026):** údaje odstraněné
+  ze stromu (telefon a e-mail z D5-3, částky K6-W6) ve veřejné historii
+  zůstávají; historie se nepřepisuje (jako B79).
+- **#487 / K5-K2 — snímek kapitol při zamčení (vědomá mez, J. V. 23. 10. 2026):**
+  snímek kapitol IV.–VI. a doložek skládá prohlížeč, server ho proti online
+  Firmě neporovnává; upravený klient může zamknout variantu s upravenými texty
+  a dotisk je pak reprodukuje (papír, který odešel, nese týž text).
+- **#488 / K5-S3 — souběh potvrzení retence záloh a nočního běhu (vědomá mez,
+  J. V. 23. 10. 2026):** potvrzení retence dělá přečti–uprav–zapiš; zapíše-li
+  noční běh mezi tím nové varování, přepíše se (následující noc ho zapíše
+  znovu). Protokol exportů controllingu je od v23.10.1 ve `vyhradne()` (K7-S3),
+  mezi instancemi B158.
 

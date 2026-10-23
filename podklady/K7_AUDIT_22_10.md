@@ -69,6 +69,31 @@ nepouštěny — celé kolo pouští koordinace.
 | K7-W1 | ✅ odkaz odstraněn (koordinace 3c04445); v23.10.2 vzor `claude.ai/code/cshk_<id>` v `kontrola_udaju.py` | větev `claude/e2-export-cela-db` | `src/test_kontrola_udaju.js` (1 FAIL → 7/0) |
 | informativní | ⬜ beze změny (audit opravu nedoporučuje) | — | — |
 
+## Rozhodnutí J. V. 23. 10.
+
+Rozhodnutí J. V. (dialog s koordinací 23. 10. 2026) ke zbylým nálezům K7 a K5; provedeno v dávce E2 (#508, v23.10.2,
+větev `claude/e2-export-cela-db`). Každá oprava v kódu má test s pojistkou (před opravou selže) a mutaci „#508“.
+
+| ID | Rozhodnutí | Provedení v v23.10.2 | Test (pojistka) |
+|----|----|----|----|
+| K7-S2 | **zavřít** | stopa `zamek.hlavicka` u odeslané varianty, která byla řídící; přepnutí řídící hlavičku neuvolní; mez K7-S7 | `src/test_zmrazeni_kl.js` (6 FAIL → OK), `netlify/test_kryci_po_tisku.mjs` (3 FAIL → OK) |
+| K7-W1 | **dokončit** | vzor `claude.ai/code/cshk_<id>` v `kontrola_udaju.py` (odkaz odstranila koordinace) | `src/test_kontrola_udaju.js` (1 FAIL → OK) |
+| K7-S6 | **opravit** | souběžné dotazy na stav téhož dealu sdílí jeden promise (`pdStavObnov`); mez mezi instancemi | `netlify/test_pd_stav.mjs` (10 volání → 1) |
+| K7-S9 | **opravit** | nečitelný záznam při doplňování `ctrlDny` → `cist: true` | `netlify/test_rejstrik.mjs` (FAIL → OK) |
+| K7-K5 | **opravit** | bublina EUR: „přepočet základní ceny … nabídka může být obchodně zaokrouhlená“ | `src/test_d5_eur_dlazdice.js` (FAIL → OK) |
+| K7-K6 | **opravit** | stav PD jen při otevření zakázky a změně dealu, ne po každém autosave | `src/test_pd_stav_autosave.js` (3 FAIL → OK) |
+| K7-W7 | **opravit** | hláška vadného `negativni_kontrola.json` jen „není platný JSON“ | `src/test_harness_podklady.js` (FAIL → OK) |
+| K7-W10 | **opravit** | test objemu měří zakázky v dávce (≤ `davkaMax`), ne reálný čas | `netlify/test_controlling_objem.mjs` (bez stropu dávky FAIL) |
+| K7-W13 | **opravit** | poznámka v příručce u v22.10.2: od v22.10.6 výchozí filtr Vyhrané | — (text) |
+| K7-S8 | **mez** | zapsáno v `BEZPECNOST_MEZE.md` (export po dávkách není snímek) | — |
+| K7-S10 | **mez** („ponechat, ale verze se musí propisovat do exportu“) | ověřeno testem — zamčená varianta nese v exportu „Verze ceníku“ (#505), oprava nebyla potřeba | `src/test_cenik_verze_online.js` (K7-S10 2/2 nad současným kódem) |
+| K7-W8 | **mez** | historie gitu se nepřepisuje — `BEZPECNOST_MEZE.md` | — |
+| #487 (K5-K2) | **mez** | snímek kapitol neověřuje server — `BEZPECNOST_MEZE.md` | — |
+| #488 (K5-S3) | **mez** | souběh potvrzení retence a nočního běhu — `BEZPECNOST_MEZE.md` | — |
+| K7-W9, K7-W12, K7-W14, #490 (K5-K4) | **ponechat** | beze změny | — |
+| #489 (K5-S4) | **uzavřít** | nahrazeno E1 (#504: dávky, bez stropu čtení) | — |
+| #486 (K5-W3) | **J. V. ručně** | první běh „Smazat sloučené větve“ s `jen_vypsat` + Rulesets „Restrict deletions“ — roadmapa „čeká na J. V.“ | — |
+
 ## Nálezy — opravit bez J. V.
 
 Jasné a malé; doporučeno jednou opravnou dávkou (jedna verze, testy s pojistkou před/po, mutace). Nic z toho nebrání posunu `main` (viz Verdikt), K7-K1 a K7-K2 ale patří do první opravné dávky.

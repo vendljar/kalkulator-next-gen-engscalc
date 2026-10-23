@@ -62,7 +62,7 @@
         "**Stav Pipedrive v hlavičce zakázky.** Úplně nahoře v pravém sloupci hlavičky (Kalkulace OCK i PROJ) je nový řádek **Stav Pipedrive** — barevný štítek a pole se stavem obchodu v Pipedrive: **Otevřené, Ztracené, Vyhrané** nebo **Smazané**. Ostatní řádky (Otevřená varianta, Režim výpočtu, Globální přirážka, Ceník) se posunuly o řádek níž.",
         "Stav se načte sám při otevření zakázky z dealu, se kterým je zakázka propojená. **V kalkulaci ho nikdo nemění** — pole je jen ke čtení, mění se v Pipedrive. Stav **nic neovlivňuje** (cenu, zámek nabídky ani smlouvu); je to informace pro vás a pro controlling. Zakázka bez propojeného dealu má šedé pole **„— zakázka nemá deal —“**.",
         "Když Pipedrive zrovna neodpovídá, ukáže se poslední známý stav. Smazaný deal Pipedrive po 30 dnech odstraní úplně — kalkulace pak dál ukazuje **Smazané**.",
-        "**Jen pro administrátora.** Export pro controlling (jedna zakázka i hromadně za období, Excel i CSV) má za sloupcem „Pipedrive deal“ dva nové sloupce: **Stav Pipedrive** (česky, prázdný bez dealu) a **Stav Pipedrive načten** (datum). Jde jen o informaci, výběr zakázek do exportu se nemění. Verze struktury souboru je 3."
+        "**Jen pro administrátora.** Export pro controlling (jedna zakázka i hromadně za období, Excel i CSV) má za sloupcem „Pipedrive deal“ dva nové sloupce: **Stav Pipedrive** (česky, prázdný bez dealu) a **Stav Pipedrive načten** (datum). Jde jen o informaci, výběr zakázek do exportu se nemění. Verze struktury souboru je 3. *(Od v22.10.6 má hromadný export výběr stavu dealu s výchozí hodnotou Vyhrané — viz novinky v22.10.6.)*"
       ]
     },
     {

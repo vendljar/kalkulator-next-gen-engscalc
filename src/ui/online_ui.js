@@ -1353,8 +1353,9 @@ function onlineUloz(opts) {
      * i za měsíc („V prohlížeči je rozpracovaná kalkulace…"). */
     if (typeof historieZalohaHotovo === 'function') historieZalohaHotovo();
     /* Nově propojený deal (správce zadal deal id) — stav dealu se načte hned
-     * po uložení, ne až při příštím otevření (P1). */
-    if (ZAK.pdDealId && !ZAK.pdStav) pdStavObnovUI(o.soubor);
+     * po uložení, ne až při příštím otevření (P1). K7-K6 (#508, J. V. 23. 10.):
+     * jen při změně dealu — dřív se při neznámém stavu ptal každý autosave. */
+    if (ZAK.pdDealId && !ZAK.pdStav && ONLINE_STAV.pdStavDeal !== String(ZAK.pdDealId)) pdStavObnovUI(o.soubor);
     /* Liší-li se hlavička od karty zákazníka, aplikace to NABÍDNE (#162,
      * 20. 8. 2026) — nikdy nezapíše potichu. Selhání nabídky nesmí shodit
      * uložení zakázky, proto .catch(() => {}). */
@@ -1631,6 +1632,8 @@ async function onlineOtevri(soubor) {
  * stejně dosazuje server (lib/pd_stav.mjs). */
 function pdStavObnovUI(soubor) {
   if (!soubor || typeof onlineApi !== 'function' || typeof pdStavNorm !== 'function') return Promise.resolve(false);
+  /* K7-K6: pro který deal se stav naposledy ptal (otevření zakázky nebo změna dealu). */
+  ONLINE_STAV.pdStavDeal = String((typeof ZAK !== 'undefined' && ZAK && ZAK.pdDealId) || '');
   return onlineApi('/api/pd/stav?soubor=' + encodeURIComponent(soubor)).then(o => {
     if (ONLINE_STAV.soubor !== soubor || !o || o.ok !== true) return false;
     const novy = pdStavNorm(o.pdStav);

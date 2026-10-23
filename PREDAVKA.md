@@ -10,8 +10,12 @@ session_013yuBUKmpUYvEnjxWjGi5kj. Do integrace / test nic — slučuje koordinac
   `PREDKALKULACE_CELA-DB_<dnes>`), simulace 5000 zakázek; (3) K7-S2 — stopa `zamek.hlavicka` (odeslaná varianta,
   která byla řídící), přepnutí řídící hlavičku neuvolní (server i prohlížeč), mez K7-S7 v BEZPECNOST_MEZE;
   (4) K7-W1 — vzor `claude.ai/code/cshk_<id>` v `kontrola_udaju.py`.
-- **Testy:** `spust_testy.sh` 248/0/1 (přeskočen jen test.js); statická kontrola údajů čistá; mutace „#508“
-  jádro 13/13, server 7/7, upravené „Z1-2“ server 3/3; `--kontrola` jádro 524/524, server 849/849.
+- **Doplnění koordinace (rozhodnutí J. V. 23. 10. ke K7/K5, zpráva 09:09 UTC):** opraveno K7-S6, K7-S9, K7-K5,
+  K7-K6, K7-W7, K7-W10, K7-W13; meze K7-S8, K7-S10 (ověřeno testem — verze ceníku se do exportu propisuje), K7-W8,
+  #487, #488; ponecháno K7-W9, K7-W12, K7-W14, #490; #489 uzavřeno; #486 čeká na J. V. (postup v roadmapě).
+  Audit: oddíl „Rozhodnutí J. V. 23. 10.“.
+- **Testy:** `spust_testy.sh` 249/0/1 (přeskočen jen test.js); statická kontrola údajů čistá; mutace „#508“
+  jádro 16/16, server 9/9 (+ upravené „Z1-2“ 3/3); `--kontrola` jádro 527/527, server 851/851.
 - **Upravené, NEPUŠTĚNÉ harnessy:** `overit_controlling.mjs` (šířka selectů / viditelnost hodnoty při 1400,
   1100 a 820 px, bez vodorovného posuvníku, zalomení, bez „Pipedrive“, Celá databáze — dotaz, název, Popis).
 - **Pozor pro kolo:** (1) `.modal.wide` je 1280 px (všechny záložky Nastavení) — harnessy šířky okna to mohou

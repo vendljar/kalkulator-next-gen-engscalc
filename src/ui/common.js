@@ -565,13 +565,16 @@ function zakazkaZahranicni(v) {
   if (v && v.data && String(v.data.cenikRada || 'cr') === 'zahr') return true;
   return typeof tiskJazyk === 'function' && tiskJazyk() !== 'cz';
 }
+const KPI_EUR_BUBLINA = 'přepočet základní ceny do eur kurzem z ceníku varianty (celá eura nahoru) — cena v cenové nabídce může být obchodně zaokrouhlená, a pak se od tohoto čísla liší';
 function kpiEurHtml(castkaKc, v, kurzZaklad) {
   if (!zakazkaZahranicni(v)) return '';
   const kurz = (typeof kurzEurZ === 'function') ? kurzEurZ(v, kurzZaklad) : kurzZaklad;
   let t;
   try { const m = menaDokumentu('en', kurz); t = m.fmt(m.na(STRANA_NULOVANI.aktivni ? 0 : castkaKc)); }
   catch (e) { t = '€ — chybí kurz EUR'; }
-  return `<div class="v-eur" title="cena v eurech jako v cenové nabídce v eurech (kurz z ceníku varianty, celá eura nahoru)">${esc(t)}</div>`;
+  /* K7-K5 (#508, J. V. 23. 10. 2026): bublina nesmí slibovat „jako v nabídce" — dlaždice
+   * převádí základní cenu, nabídka může být obchodně zaokrouhlená (zakladZaokr). */
+  return `<div class="v-eur" title="${esc(KPI_EUR_BUBLINA)}">${esc(t)}</div>`;
 }
 function stranaNulujKresli(strana, kresli) {
   const pred = STRANA_NULOVANI.aktivni;
