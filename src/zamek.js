@@ -526,6 +526,27 @@ function zamekDataPorovnani(data, v) {
  * Každý další tisk téže (už zamčené) varianty se jen připíše do seznamu
  * tisky[]; původní záznam se nepřepisuje, jinak by se ztratilo datum
  * skutečného odeslání. */
+/* ČAS NOVÉHO ZÁMKU (K7-S5, audit 23. 10. 2026). Čas odeslání nabídky píše
+ * prohlížeč (toISOString) a hromadný export pro controlling podle něj vybírá
+ * zakázky za období — `kdy:"xx"` zakázku z exportu tiše vyřadil, „2099"
+ * ji poslal do budoucího období. Server proto u NOVÉHO zámku žádá ISO čas
+ * v UTC, nejvýš pár minut napřed (hodiny počítače) a ne starší než 400 dní
+ * (tisk bez sítě uložený později). Spodní mez NENÍ čas uložené verze: tisk
+ * během běžícího autosave (K7-K1) se ukládá až po verzi, která doběhla po
+ * tisku. Vrací důvod, nebo ''. */
+const ZAMEK_KDY_TVAR = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
+const ZAMEK_KDY_NAPRED_MS = 10 * 60 * 1000;
+const ZAMEK_KDY_STARI_DNI = 400;
+function zamekKdyProblem(kdy, ted) {
+  ted = (typeof ted === 'number' && isFinite(ted)) ? ted : Date.now();
+  const t = (typeof kdy === 'string' && ZAMEK_KDY_TVAR.test(kdy)) ? Date.parse(kdy) : NaN;
+  if (!isFinite(t) || new Date(t).toISOString().slice(0, 19) !== kdy.slice(0, 19))
+    return 'čas odeslání nabídky nemá platný tvar';
+  if (t > ted + ZAMEK_KDY_NAPRED_MS) return 'čas odeslání nabídky je v budoucnosti (zkontrolujte datum a čas v počítači)';
+  if (t < ted - ZAMEK_KDY_STARI_DNI * 86400000) return 'čas odeslání nabídky je starší než ' + ZAMEK_KDY_STARI_DNI + ' dní';
+  return '';
+}
+
 function zamkniVariantu(v, info) {
   if (!v) return null;
   info = info || {};
@@ -1084,7 +1105,7 @@ if (typeof module !== 'undefined')
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,
                      PRIPONY_SCHEMA, variantaPriponaVZakazce, zamekCisloZakladSedi,
                      klonujVariantu, zamekInfo, variantaUzamcena,
-                     variantaEditovatelna, zamkniVariantu, odemkniVariantu,
+                     variantaEditovatelna, zamkniVariantu, odemkniVariantu, zamekKdyProblem,
                      ZAMEK_OTISK_POLE, zamekOtisk, zamekOtiskZPorovnani,
                      zajistiZamek, ZAMEK_KRYCI_SMLOUVY, zamekTiskyTypy, zamekKryciOtevreny, zamekPrvniSmlouva,
                      zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani,

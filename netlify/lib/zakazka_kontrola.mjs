@@ -539,6 +539,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       }
       continue;
     }
+    /* Čas nového zámku (K7-S5): tvar ISO, ne v budoucnosti, ne starší než 400 dní. */
+    const kdyProblem = globalThis.zamekKdyProblem ? globalThis.zamekKdyProblem(v.zamek.kdy) : '';
+    if (kdyProblem) return odmitni(400, 'Neuloženo: ' + kdyProblem + '. Obnovte stránku (Ctrl+F5) a nabídku vytiskněte znovu.');
     const cisloMaBy = cisloVarianty(zak, v);
     if (String(v.zamek.cislo || '') !== cisloMaBy || v.zamek.cisloPapir !== true)
       return odmitni(409, 'Neuloženo: nová odeslaná (uzamčená) nabídka nese jiné číslo ('

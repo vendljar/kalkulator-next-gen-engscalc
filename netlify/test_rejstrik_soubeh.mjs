@@ -13,6 +13,7 @@
  *  3) samooprava exportu: zamčená zakázka, jejíž záznam rejstřík ztratil
  *     (souběh dvou instancí — tam výhradní úsek nevidí), v exportu je
  *     a odpověď hlásí `mimoRejstrik`.
+ *  4) K7-S3: dva souběžné exporty zapíšou do protokolu oba záznamy.
  *
  * Paměťové úložiště, zkušební ceník. Spuštění: node netlify/test_rejstrik_soubeh.mjs */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
@@ -27,7 +28,7 @@ let zpozdeni = 0;
 let cekajici = null;
 globalThis.__TEST_ULOZISTE = (nazev) => ({
   async cti(k) {
-    if (zpozdeni && nazev === 'zakazky' && k === '_rejstrik') {
+    if (zpozdeni && ((nazev === 'zakazky' && k === '_rejstrik') || (nazev === 'program' && k === 'controlling_exporty'))) {
       if (cekajici) { cekajici(); cekajici = null; }
       else await new Promise(r => { cekajici = r; setTimeout(() => { if (cekajici === r) cekajici = null; r(); }, zpozdeni); });
     }
@@ -112,6 +113,18 @@ test('K7-S1: smazaná zmizela, nově uložená zůstala',
   test('K7-S1: export najde zakázku, kterou rejstřík ztratil', r.status === 200 && /0904/.test(cisla), [r.status, cisla, o.chyba]);
   test('K7-S1: odpověď hlásí, kolik zakázek chybělo v rejstříku', o.mimoRejstrik === 1, o.mimoRejstrik);
   test('K7-S1: zakázky z rejstříku mimo období se nepřidaly', !/0902|0903/.test(cisla), cisla);
+}
+
+/* 4) K7-S3: dva souběžné exporty → dva záznamy v protokolu */
+{
+  const URL_E = 'http://x/api/controlling/export?od=2026-10-01&do=2026-10-31&podle=zamceni&pd=vse';
+  const prot = () => { const p = pamet.get('program/controlling_exporty'); return p ? (JSON.parse(p).zaznamy || []) : []; };
+  const pred = prot().length;
+  zpozdeni = 500;
+  const [r1, r2] = await Promise.all([get(controllingExport, URL_E, cA), get(controllingExport, URL_E, cA)]);
+  zpozdeni = 0;
+  test('K7-S3: oba souběžné exporty prošly', r1.status === 200 && r2.status === 200, [r1.status, r2.status]);
+  test('K7-S3: protokol má oba záznamy (žádný export bez stopy)', prot().length === pred + 2, [pred, prot().length]);
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

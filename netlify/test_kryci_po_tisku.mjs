@@ -315,5 +315,24 @@ console.log('===== Z1-2 / Z1-3 (odpovědi J. V. 22. 10. 2026) =====');
   test('Z1-3: po SoD změna IČO vedle kontaktu dál 409', r.status === 409 && /ico/.test(r.chyba || ''), r);
 }
 
+/* K7-S5 (#507, audit 23. 10. 2026): čas nového zámku ověřuje server — tvar
+ * ISO, ne v budoucnosti, ne starší než 400 dní. Před opravou všechny 200
+ * (`kdy:"xx"` zakázku z exportu za období tiše vyřadil, „2099" ji poslal
+ * do budoucího). Pojistka: nad v22.10.6 pět FAIL. */
+for (const [nazev, kdy] of [['nesmysl', 'xx'], ['budoucnost', '2099-01-01T00:00:00.000Z'],
+  ['objekt', { toString: 1 }], ['neplatný den', '2026-02-30T10:00:00.000Z'],
+  ['starší než 400 dní', new Date(Date.now() - 401 * 86400000).toISOString()]]) {
+  const z = zamkni(nova('K7-S5 ' + nazev)); z.varianty[0].zamek.kdy = kdy;
+  const r = await uloz(z, cO);
+  test('K7-S5: nový zámek s časem „' + nazev + '" → 400', r.status === 400 && /čas odeslání/.test(r.chyba || ''), r);
+}
+{
+  const z = zamkni(nova('K7-S5 před chvílí')); z.varianty[0].zamek.kdy = new Date(Date.now() - 3 * 86400000).toISOString();
+  test('K7-S5: nový zámek vytištěný před třemi dny (bez sítě) se uloží', (await uloz(z, cO)).status === 200);
+  test('K7-S5: model — hodiny počítače 5 min napřed projdou, 11 min ne',
+    zam.zamekKdyProblem(new Date(Date.now() + 5 * 60000).toISOString()) === ''
+    && /budoucnosti/.test(zam.zamekKdyProblem(new Date(Date.now() + 11 * 60000).toISOString())));
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

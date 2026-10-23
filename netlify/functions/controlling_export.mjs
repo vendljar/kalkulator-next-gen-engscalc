@@ -29,7 +29,7 @@
  * z ověřeného filtru; export po dávkách má jeden záznam (stav probiha →
  * hotovo). Strop počtu zakázek není (#504) — meze CTRL_HROMADNY (src/controlling.js) — při
  * překročení 413 s výzvou zúžit období, nikdy potichu oříznutý soubor. */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, vyhradne } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { pdStavPripoj } from '../lib/pd_stav.mjs';
 import { randomUUID } from 'node:crypto';
@@ -136,12 +136,17 @@ export default async (req) => {
   const davka = { zakazek: exporty.length, radku: exporty.reduce((a, e) => a + e.radky.length, 0), preskoceno: preskoceno.length,
     vyrazenoPd: vyrazenoPd.jiny, vyrazenoBez: vyrazenoPd.bez };
   const stav = hotovo ? 'hotovo' : 'probiha';
-  const prot = await sProg.cti('controlling_exporty');
-  await sProg.zapis('controlling_exporty', navaz ? G.ctrlProtokolDavka(prot, id, davka, stav)
-    : G.ctrlProtokolPridej(prot, { id, kdy, kdo: relace.email,
-      od: filtr.od, do: filtr.do, oblast: filtr.oblast, rada: filtr.rada, podle: filtr.podle, pd: filtr.pd,
-      zakazek: davka.zakazek, radku: davka.radku, preskoceno: davka.preskoceno,
-      vyrazenoPd: davka.vyrazenoPd, vyrazenoBez: davka.vyrazenoBez, davek: 1, stav, verzeMapovani }));
+  /* Čtení–změna–zápis protokolu ve výhradním úseku (K7-S3, audit 23. 10. 2026):
+   * dva souběžné exporty dřív zapsaly jen jeden záznam — export nákupních cen
+   * bez stopy, navazující dávka ztraceného 409. Mez mezi instancemi: B158. */
+  await vyhradne('program/controlling_exporty', async () => {
+    const prot = await sProg.cti('controlling_exporty');
+    await sProg.zapis('controlling_exporty', navaz ? G.ctrlProtokolDavka(prot, id, davka, stav)
+      : G.ctrlProtokolPridej(prot, { id, kdy, kdo: relace.email,
+        od: filtr.od, do: filtr.do, oblast: filtr.oblast, rada: filtr.rada, podle: filtr.podle, pd: filtr.pd,
+        zakazek: davka.zakazek, radku: davka.radku, preskoceno: davka.preskoceno,
+        vyrazenoPd: davka.vyrazenoPd, vyrazenoBez: davka.vyrazenoBez, davek: 1, stav, verzeMapovani }));
+  });
   return new Response(telo, { status: 200, headers: { 'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store' } });
 };
