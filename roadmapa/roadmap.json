@@ -2701,7 +2701,7 @@
    "id" : "115",
    "dulezitost" : "vysoka",
    "proc" : "Dnes se částka a platební podmínky zadávají dvakrát — v kalkulačce a v CRM — a nikdo nehlídá, že se shodují. Trojice splatnost 14 dní, záloha 50 %, dílčí faktura 40 % je v CRM vyplněná u 306 z 308 případů a je to přesně to, co od v5.8.15 plníme do šablony nabídky.",
-   "detail" : "Zápis je JEDNOSMĚRNÝ a POTVRZENÝ: obchodník uvidí tabulku pole / stará hodnota / nová hodnota a teprve pak klikne. Posílají se jen skutečně změněná pole (PATCH je částečná aktualizace, takže se kolize zúží na tentýž údaj). Posun fáze na Nabídka odeslána je zaškrtávátko, ne automatika — někdy se počítá jen na zkoušku.\nTiché zápisy na pozadí se dělat nebudou: jednak je nikdo neuhlídá, jednak by posouvaly čas poslední změny u případů a rozbily pozdější inkrementální synchronizaci.\nHOTOVO 21. 10. 2026 (claude/eager-carson-1xznt2): převod hodnot krycího listu na hodnoty Pipedrive (`netlify/lib/pd_prevod.mjs`) — číslo, datum ISO, ID volby, vícevýběr, částka s měnou, uživatel; celá zakázka jedním PATCH (5 tokenů). Prázdné se neposílá, nejednoznačné se neposílá s důvodem, u kombinované zakázky rozhoduje OCK. Tabulka převodů v podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md §11.4.\nZBÝVÁ: serverový zápis (POST /api/pd/deal), potvrzovací tabulka v UI, kontrola update_time proti souběhu.",
+   "detail" : "Zápis je JEDNOSMĚRNÝ a POTVRZENÝ: obchodník uvidí tabulku pole / stará hodnota / nová hodnota a teprve pak klikne. Posílají se jen skutečně změněná pole (PATCH je částečná aktualizace, takže se kolize zúží na tentýž údaj). Posun fáze na Nabídka odeslána je zaškrtávátko, ne automatika — někdy se počítá jen na zkoušku.\nTiché zápisy na pozadí se dělat nebudou: jednak je nikdo neuhlídá, jednak by posouvaly čas poslední změny u případů a rozbily pozdější inkrementální synchronizaci.\nHOTOVO 21. 10. 2026 (claude/eager-carson-1xznt2): převod hodnot krycího listu na hodnoty Pipedrive (`netlify/lib/pd_prevod.mjs`) — číslo, datum ISO, ID volby, vícevýběr, částka s měnou, uživatel; celá zakázka jedním PATCH (5 tokenů). Prázdné se neposílá, nejednoznačné se neposílá s důvodem, u kombinované zakázky rozhoduje OCK. Tabulka převodů v podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md §11.4.\nZBÝVÁ: serverový zápis (POST /api/pd/deal), potvrzovací tabulka v UI, kontrola update_time proti souběhu.\nPLATBY A HODNOTA DEALU (23. 10. 2026, rozhodnutí J. V.) → #512, hotovo ve v23.10.4: Platby 1–8 a záloha PROJ se nezapisují (ani u starší nabídky), nové pole „Platební kalendář SoD PROJ“, hodnota dealu = cena řídící varianty bez DPH (kombinovaná = součet) s potvrzením „stará → nová“.",
    "kde" : "netlify/functions/pd_deal.mjs (POST), src/ui/zakazka_ui.js",
    "cekaNa" : "rozhodnutí z kontrolní tabulky — kolize dvou kalkulací nad jedním polem v CRM (odsunuto 10. 8. 2026)",
    "hotovoKdyz" : "Z hotové kalkulace se do případu zapíše částka, měna a platební podmínky až po potvrzení, zapíšou se jen změněná pole, a při chybě spojení se to řekne nahlas místo tichého selhání.",
@@ -2717,7 +2717,8 @@
      "id" : "114",
      "typ" : "doporuceno"
     }
-   ]
+   ],
+   "pozn" : "Platby v zápisu (#115 bod „platby“) vedené a uzavřené jako #512."
   },
   {
    "detail" : "Po vygenerování .docx přibude tlačítko Odeslat do Pipedrivu: soubor půjde přes serverovou funkci na POST /api/v1/files s parametrem deal_id (v2 protějšek zatím neexistuje, ale files nejsou na seznamu zastaralých endpointů), k tomu poznámka s číslem nabídky, částkou a platností.\nDvě věci k pohlídání: dokument se generuje v prohlížeči, takže se musí poslat na server — kdyby to naráželo na strop velikosti požadavku, je náhradní cesta vyrobit .docx rovnou na serveru. A dokumentace neuvádí maximální velikost nahrávaného souboru, takže chybová větev musí být napsaná pořádně.",
@@ -7594,17 +7595,17 @@
   {
    "id": "486",
    "vlna": "B",
-   "stav": "blokovano",
+   "stav": "hotovo",
    "dulezitost": "nizka",
    "slozitost": "S",
    "nazev": "K5-W3 (+K5-W5): mazání větví bez API — první běh „jen vypsat“ a Rulesets",
    "proc": "Audit K5, nízký: čerstvá větev založená přesně na špičce už sloučené dávkové větve se bez času z API smaže; pojistka „jen z main“ chrání jen před omylem.",
    "detail": "Doporučení auditu: první ostrý běh „Smazat sloučené větve“ s jen_vypsat (souhrn ukáže důvod „GitHub“) a zapnout Rulesets „Restrict deletions“ (K4-N20) jako druhou vrstvu.",
-   "hotovoKdyz": "J. V. rozhodl; první běh s jen_vypsat proběhl a Rulesets jsou zapnuté, nebo je mez zapsaná.",
+   "hotovoKdyz": "J. V. rozhodl; první běh s jen_vypsat proběhl a Rulesets jsou zapnuté, nebo je mez zapsaná. Splněno: Rules jsou nastavené (J. V. 23. 10. 2026).",
    "kde": "`nastroje/sloucene_vetve.sh`, `.github/workflows/smazat_vetve.yml`",
    "zavisi": [],
-   "cekaNa": "J. V. ručně (rozhodnutí 23. 10. 2026): GitHub → Actions → „Smazat sloučené větve“ → Run workflow s jen_vypsat = true (souhrn ukáže důvod „GitHub“), pak Settings → Rules → Rulesets → New branch ruleset „Restrict deletions“ (main, test, test-draft, claude/integrace-*)",
-   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis). Rozhodnutí J. V. 23. 10. 2026 (dialog s koordinací), provedeno v E2 (#508). J. V. udělá ručně."
+   "pozn": "Zapsala D1 22. 10. 2026 (J. V. celý den pryč — jen zápis). Rozhodnutí J. V. 23. 10. 2026 (dialog s koordinací), provedeno v E2 (#508). J. V. udělá ručně. UZAVŘENO 23. 10. 2026 (J. V.): GitHub Rules pro main, test, test-draft a claude/integrace-* má nastavené dávno — druhá vrstva ochrany je zapnutá.",
+   "hotovoV": "v23.10.4"
   },
   {
    "id": "487",
@@ -8037,27 +8038,24 @@
   },
   {
    "id" : "512",
+   "nazev" : "Pipedrive: platby v zápisu — kalendář SoD PROJ a hodnota dealu",
    "vlna" : "D",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "dulezitost" : "vysoka",
    "slozitost" : "M",
-   "nazev" : "B1: platby v zápisu do Pipedrive — Platby 1–8 nic, Platební kalendář SoD PROJ, hodnota dealu",
-   "proc" : "Rozhodnutí J. V. 23. 10. 2026 (zadání podklady/PROMPT_koordinace_kontrola_vetve_platby_23_10.md, úkol B): kalkulátor Platby 1–8 neplní ani zpětně, místo nich nové pole „Platební kalendář SoD PROJ“ (Velký text); hodnota dealu se zapisuje.",
-   "detail" : "Úkol B zadání: platba1–8 a PROJ část zaloha1Proc v pd_mapa.mjs na směr „nic“; nové pole Platební kalendář SoD PROJ (text z planSodKalendar, stejný dopočet jako SoD řídící varianty; dokud ho integrátor nezaloží, přehled ho hlásí jako chybějící); hodnota dealu value+currency = cena řídící varianty bez DPH (kombinovaná = OCK+PROJ), v potvrzení „stará → nová“. Hlavní projektant jako text a volby Způsob fakturace až po odpovědi integrátora. Do živého Pipedrive nic bez J. V.",
-   "hotovoKdyz" : "Testy s pojistkou v test_pd_prevod.mjs a test_pipedrive.mjs (Platby 1–8 se nepošlou ani u starší nabídky, kalendář = text dopočtu, hodnota dealu OCK/PROJ/kombinovaná), mutace ke každému pravidlu, kolo zelené, v test.",
-   "kde" : "`netlify/lib/pd_mapa.mjs`, `netlify/lib/pd_prevod.mjs`, `src/plan_plateb.js`",
+   "proc" : "Osm pevných plateb (Platby 1–8) neodpovídá proměnnému plánu plateb projekce a hodnotu dealu dnes obchodníci píšou do CRM ručně. Rozhodnutí J. V. 23. 10. 2026: pevné platby se neplní vůbec, místo nich jeden textový kalendář; hodnota dealu se zapisuje z kalkulace.",
+   "detail" : "(1) Platby 1–8 mají v mapě polí směr `nic` (zůstávají v mapě, aby je přehled nehlásil jako nezařazené) — nepošlou se ani u nabídky PROJ z doby před plánem plateb; „První splátka (%)“ jen z OCK. (2) Nové pole „Platební kalendář SoD PROJ“ (Velký text, zápis, zdroj PROJ): planPdKalendar() v src/plan_plateb.js = planSodKalendar(dopočet, formát měny) — tentýž text jako {{SODP_PLATEBNI_KALENDAR}} české smlouvy řídící varianty; stará nabídka a plán se součtem jiným než cena díla kalendář nemají. Dokud pole integrátor nezaloží, přehled mapy ho hlásí jako chybějící a nic se nezapisuje. (3) Hodnota dealu (`value` + `currency`, pdHodnotaDealu v netlify/lib/pd_prevod.mjs): cena řídící varianty bez DPH v měně zakázky, u kombinované zakázky součet OCK a PROJ; chybí-li cena strany nebo se liší měny, nepošle se nic (s důvodem); potvrzení „stará → nová“. Zbývá napojení na serverový zápis a potvrzovací tabulku (#115). „Hlavní projektant“ (text) a volby „Způsob fakturace“ pro PROJ čekají na integrátora.",
+   "hotovoKdyz" : "Splněno: testy v netlify/test_pd_prevod.mjs, netlify/test_pipedrive.mjs a src/test_plan_plateb_sod.js (pojistka: na kódu z 8c7ba3d selžou), mutace „#512 platby-115“ v netlify/mutace.mjs 18/18.",
+   "kde" : "netlify/lib/pd_mapa.mjs, netlify/lib/pd_prevod.mjs, src/plan_plateb.js",
+   "hotovoV" : "v23.10.4",
    "zavisi" : [
     {
+     "typ" : "mekka",
      "id" : "115",
-     "typ" : "tvrda",
-     "proc" : "zápis do obchodního případu"
-    },
-    {
-     "id" : "114",
-     "typ" : "tvrda",
-     "proc" : "mapa polí #114 (převzetí P2)"
+     "proc" : "část potvrzeného zápisu do dealu"
     }
-   ]
+   ],
+   "pozn" : "Dávka B1 (claude/b1-platby-115), zadání úkol B podklady/PROMPT_koordinace_kontrola_vetve_platby_23_10.md."
   },
   {
    "id" : "513",
@@ -8088,7 +8086,7 @@
    "stav" : "ceka",
    "dulezitost" : "stredni",
    "slozitost" : "S–M",
-   "nazev" : "O-K8: opravy nálezů K8 a S1 (kritické/vysoké) bez rozhodnutí J. V.",
+   "nazev" : "O-K8: opravy nálezů K8 a S1 bez rozhodnutí J. V. (S1: vše, co nemění chování, vzhled ani výpočet — J. V. 23. 10.)",
    "proc" : "Plán J. V. 23. 10. 2026: v pondělí ráno návrh main s opravenými nálezy.",
    "detail" : "Opravy nálezů auditu K8, které nepotřebují rozhodnutí J. V.; testy s pojistkou, cílené mutace, kolo → test. Otázky k rozhodnutí do dialogu.",
    "hotovoKdyz" : "Opravy v test, kolo zelené, otázky v dialogu.",

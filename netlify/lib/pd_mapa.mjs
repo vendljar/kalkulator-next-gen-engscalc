@@ -97,9 +97,10 @@ export const POLE_DEALU = [
     synonyma: { 'po milnicich': 'Náš standard', 'nas standard mesicni': 'Náš standard',
       'po dokonceni jednotlivych stupnu dokumentace': 'Po dokončení stupňů dokumentace' } }),
   D('splatnostDni', 'Splatnost faktur (dny)', 'cislo', { ock: 'splatnostDni', proj: 'splatnostDni' }, 'zapis'),
-  /* PROJ: záloha je pole `stary` — platí jen u nabídky z doby před plánem
-   * plateb; nová nabídka má proměnný plán a první splátku z něj neposílá. */
-  D('zaloha1Proc', 'První splátka (%)', 'procento', { ock: 'zaloha1', proj: 'zaloha' }, 'zapis', { stary: ['proj'] }),
+  /* Jen OCK. PROJ má proměnný plán plateb a jeho platby nese „Platební
+   * kalendář SoD PROJ"; zálohu PROJ kalkulátor neposílá ani u nabídky
+   * z doby před plánem (rozhodnutí J. V. 23. 10. 2026, #512). */
+  D('zaloha1Proc', 'První splátka (%)', 'procento', { ock: 'zaloha1' }, 'zapis'),
   D('faktura2Proc', 'Druhá splátka (%)', 'procento', { ock: 'faktura2' }, 'zapis'),
   D('fakturaKoncProc', 'Třetí splátka (%)', 'procento', { ock: 'fakturaKonc' }, 'zapis'),
   D('zarukaMesicu', 'Doba trvání záruky (počet měsíců)', 'cislo', { ock: 'zarukaMesicu' }, 'zapis'),
@@ -165,16 +166,24 @@ export const POLE_DEALU = [
     { prevod: 'dokumentace' }),
   D('cenaNezahrnuje', 'Cena nezahrnuje', 'text', { ock: 'cenaNezahrnuje', proj: 'cenaNezahrnuje' }, 'zapis'),
   D('rozsahJine', 'Jiné dohodnuté činnosti', 'text', { proj: 'rozsahJine' }, 'zapis'),
-  /* Osm pevných plateb nese jen nabídka PROJ odeslaná před plánem plateb
-   * (`stary`); nové nabídky mají proměnný plán (rozbor 6. 10., #38–#45). */
-  D('platba1', 'Platba 1 – po podpisu smlouvy', 'mena', { proj: 'sodpPlatba1' }, 'zapis', { stary: ['proj'] }),
-  D('platba2', 'Platba 2 – při předání 2D výstupů ze zaměření', 'mena', { proj: 'sodpPlatba2' }, 'zapis', { stary: ['proj'] }),
-  D('platba3', 'Platba 3 – DPZ pro podání na dotčené orgány', 'mena', { proj: 'sodpPlatba3' }, 'zapis', { stary: ['proj'] }),
-  D('platba4', 'Platba 4 – DPZ pro podání na stavební úřad', 'mena', { proj: 'sodpPlatba4' }, 'zapis', { stary: ['proj'] }),
-  D('platba5', 'Platba 5 – po vydání pravomocného povolení záměru', 'mena', { proj: 'sodpPlatba5' }, 'zapis', { stary: ['proj'] }),
-  D('platba6', 'Platba 6 – po předání kompletní DPS', 'mena', { proj: 'sodpPlatba6' }, 'zapis', { stary: ['proj'] }),
-  D('platba7', 'Platba 7 – po dokončení ekonomické zadávací části', 'mena', { proj: 'sodpPlatba7' }, 'zapis', { stary: ['proj'] }),
-  D('platba8', 'Platba 8 – po doporučení dodavatele realizace', 'mena', { proj: 'sodpPlatba8' }, 'zapis', { stary: ['proj'] }),
+  /* Platby 1–8 kalkulátor NEPLNÍ — ani u nabídky PROJ z doby před plánem
+   * plateb (rozhodnutí J. V. 23. 10. 2026, #512). Nové nabídky mají proměnný
+   * plán, osm pevných částek by u nich lhalo. Pole zůstávají v mapě, aby je
+   * přehled nehlásil jako nezařazená; platby nese kalendář níž. */
+  D('platba1', 'Platba 1 – po podpisu smlouvy', 'mena', null, 'nic'),
+  D('platba2', 'Platba 2 – při předání 2D výstupů ze zaměření', 'mena', null, 'nic'),
+  D('platba3', 'Platba 3 – DPZ pro podání na dotčené orgány', 'mena', null, 'nic'),
+  D('platba4', 'Platba 4 – DPZ pro podání na stavební úřad', 'mena', null, 'nic'),
+  D('platba5', 'Platba 5 – po vydání pravomocného povolení záměru', 'mena', null, 'nic'),
+  D('platba6', 'Platba 6 – po předání kompletní DPS', 'mena', null, 'nic'),
+  D('platba7', 'Platba 7 – po dokončení ekonomické zadávací části', 'mena', null, 'nic'),
+  D('platba8', 'Platba 8 – po doporučení dodavatele realizace', 'mena', null, 'nic'),
+  /* Seznam plateb smlouvy o dílo PROJ, jedna věta na platbu („Platba ve výši
+   * … Kč + DPH proběhne <milník>.") — tentýž text jako {{SODP_PLATEBNI_KALENDAR}}
+   * ze stejného dopočtu (planPdKalendar v src/plan_plateb.js). Jen Velký
+   * text: krátký text pojme 255 znaků a delší plán by se nevešel. Dokud pole
+   * integrátor nezaloží, přehled ho hlásí jako chybějící a nic se nezapisuje. */
+  D('platebniKalendar', 'Platební kalendář SoD PROJ', 'text', { proj: '@kalendar' }, 'zapis', { typ: ['text'] }),
   D('spravniPoplatky', 'Správní poplatky stavebnímu úřadu (nad rámec ceny)', 'mena',
     { proj: 'sodpSpravniPoplatky' }, 'zapis'),
   D('pokutaSoucinnost', 'Pokuta za prodlení zákazníka se součinností (Kč / den)', 'mena',

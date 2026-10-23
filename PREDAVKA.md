@@ -1,3 +1,54 @@
+# Předávka — 23. 10. 2026 večer: B1 #512 — platby v zápisu do Pipedrive (#115), v23.10.4, větev `claude/b1-platby-115`
+
+Nad `8c7ba3d` (P2, v23.10.3 — výsledky mutací P2 ještě doběhnou; **P2 do této větve slučovaná není**, srovná
+koordinace). Verze **23.10.4** (CHANGELOG `## v23.10.4 — B1 #512`, příručka „Co je nového ve verzi v23.10.4“,
+`build.py --kontrola-verze` ✓). Zadání: úkol B `podklady/PROMPT_koordinace_kontrola_vetve_platby_23_10.md`
+a `NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§12 z `claude/eager-carson-1xznt2` — jen přečteno, nic
+nesloučeno ani necherry-pickováno (kořen deb9551 nepřibyl). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx.
+Do živého Pipedrive se nic nezapisovalo ani nečetlo. Do integrace / test nic.
+
+- **Platby 1–8** (`netlify/lib/pd_mapa.mjs`): směr `nic`, bez `kl` — v mapě zůstávají (přehled je nehlásí jako
+  nezařazené), nepošlou se ani u nabídky PROJ z doby před plánem. `zaloha1Proc` jen `{ ock: 'zaloha1' }`, bez
+  `stary`. Mechanismus `stary` / `planStary` v `pdDoPd` zrušen (žádné pole ho už nemá); zastaralá mutace #114
+  „platby PROJ se posílají i s plánem plateb“ odstraněna.
+- **Platební kalendář SoD PROJ** (`platebniKalendar`, druh `text`, typ jen `text` = Velký text, `zapis`,
+  `{ proj: '@kalendar' }`): hodnotu nese `zdroj.kalendar`; vyrábí ji `planPdKalendar(nabidkaProjPlatby(zak, v, 'cz'))`
+  v `src/plan_plateb.js` = `planSodKalendar(pl.dopocet, pl.mena.fmt)` — test v `src/test_plan_plateb_sod.js` ověřuje
+  shodu se `SODP_PLATEBNI_KALENDAR` ze `sodProjData` (výchozí plán, Standard, Záloha). Stará nabídka a nesedící
+  součet → '' (nic se nepošle). Pole v CRM zatím není → `chybi` v přehledu mapy, zápis jen důvod.
+- **Hodnota dealu** (`pdHodnotaDealu`, `pdKcText` v `netlify/lib/pd_prevod.mjs`): `zdroj.cena` (číslo bez DPH
+  z kalkulace) + `zdroj.mena`; kombinovaná = součet; chybí / ≤ 0 / jiná měna → nic + důvod. `pdZapisDealu` vrací
+  navíc `deal: { value, currency }` a `potvrzeni: [{ klic: 'hodnotaDealu', text: 'stará → nová', zmena }]`
+  (stará z `spolecne.deal`).
+- **Testy:** `test_pd_prevod` 130/0 (bylo 102), `test_pipedrive` 96/0 (bylo 91), `test_plan_plateb_sod` 58/0,
+  všechny `netlify/test_*.mjs` zelené, `test_prava` 932/0, statické 4/4, `mutace.mjs --kontrola` 897/897.
+  Pojistka: proti knihovnám z 8c7ba3d nové testy selžou. Mutace **„#512 platby-115“ 18/18** a #114 21/21
+  (obojí se `KNG_MUTACE_SADY=test_pipedrive.mjs,test_pd_prevod.mjs`; plný běh se všemi sadami trval > 10 min
+  a byl ukončen, kód čistý). Prohlížečové sady ani celé kolo nepuštěny — pustí koordinace.
+
+**Otevřené (čeká na integrátora / J. V.):**
+- „Hlavní projektant“ z `uzivatel` na `text` a čtyři volby „Způsob fakturace“ pro PROJ (bod 4 úkolu B) — **nedělá
+  se**, čeká na odpověď integrátora (e-mail 23. 10.).
+- Integrátor má založit pole „Platební kalendář SoD PROJ“ jako **Velký text** (krátký text by se nespároval).
+- Napojení na klienta: kdo naplní `zdroj.kalendar` / `zdroj.cena` / `zdroj.mena` (cena řídící varianty bez DPH
+  OCK a PROJ) — přijde se serverovým zápisem a potvrzovací tabulkou (#115, zbývá).
+- K potvrzení J. V.: stará nabídka PROJ (před plánem plateb) nepošle ani kalendář — dopočet nemá; kdyby měla
+  posílat kalendář z ručních splátek (jako SoD), je to jedna podmínka v `planPdKalendar`.
+
+| úkol | stav |
+|---|---|
+| Platby 1–8 → `nic`, záloha PROJ pryč (ani u starší nabídky) | ✅ |
+| Pole „Platební kalendář SoD PROJ“ = text dopočtu SoD | ✅ |
+| Hodnota dealu (OCK, PROJ, kombinovaná, „stará → nová“) | ✅ |
+| Testy s pojistkou + mutace #512 platby-115 (18/18) | ✅ |
+| CHANGELOG v23.10.4, příručka, roadmapa #512, #115 odkaz, #486 uzavřena | ✅ |
+| Hlavní projektant (text), volby Způsob fakturace PROJ | ⬜ čeká na integrátora |
+| Pole kalendáře v Pipedrive založit (Velký text) | ⬜ integrátor |
+| Serverový zápis + potvrzovací tabulka v UI (#115) | ⬜ další dávka |
+| Celé testovací kolo a sloučení | ⬜ koordinace |
+
+---
+
 # Předávka — 23. 10. 2026 odpoledne: P2 — převzetí #114 z `claude/eager-carson-1xznt2`, tři opravy Stavu Pipedrive do P1, mutace po částech, v23.10.3, větev `claude/p2-pd114-prevzeti`
 
 Nad `f3b5d42` (test = integrace v23.10.2). Verze **23.10.3** (CHANGELOG `## v23.10.3 — P2`, příručka „Co je nového

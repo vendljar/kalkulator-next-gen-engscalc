@@ -422,6 +422,17 @@ function planSodKalendar(dopocet, fmt, P) {
   return ((dopocet && dopocet.platby) || []).map(x => 'Platba ve výši ' + f(x.castka) + ' + DPH proběhne '
     + milnik(x) + '.').join('\n');
 }
+/* Text pole „Platební kalendář SoD PROJ" v Pipedrive (#512) — TENTÝŽ text,
+ * jaký dostane {{SODP_PLATEBNI_KALENDAR}} česká smlouva o dílo řídící
+ * varianty (sodProjPlatby): stejný dopočet, stejný formát částky.
+ * `pl` = nabidkaProjPlatby(zak, varianta, 'cz'). Prázdno (nic se nepošle):
+ * zakázka bez PROJ, nabídka z doby před plánem plateb (Platby 1–8 ani
+ * kalendář se z ní do CRM neposílají — J. V. 23. 10. 2026) a plán, jehož
+ * součet nesedí s cenou díla (smlouva by z něj nevznikla). */
+function planPdKalendar(pl) {
+  if (!pl || pl.stary || !pl.dopocet || !pl.dopocet.sedi) return '';
+  return planSodKalendar(pl.dopocet, (pl.mena && pl.mena.fmt) || null);
+}
 /* Stará šablona SoD PROJ má osm pevných plateb s milníky napsanými v šabloně
  * (PLAN_SODP_STARE). Symboly SODP_PLATBAn_KC se plní z plateb plánu se
  * stejným milníkem; `navic` = platby, které stará šablona vyjádřit neumí. */
@@ -512,4 +523,4 @@ if (typeof module !== 'undefined')
     planPlatebKontrola, planCastkaZTextu, planPlatebZeStarych, planPlatebFirmaVady, planPlatebFirmaCisty,
     planPlatebVarianty, planPlatebSnimek, planCinnostUpravena, planUpraveno, planZalohaEf, planPopisPredvolby,
     PLAN_PROJ_MAX_SPLATEK, PLAN_PROJ_STARE_BLOKY, planShodaSeStarouSablonou,
-    planRadekText, planCinnostText, planZpusobFakturace, planKlicPlatby, planSodKalendar, planSodStareSymboly };
+    planRadekText, planCinnostText, planZpusobFakturace, planKlicPlatby, planSodKalendar, planPdKalendar, planSodStareSymboly };
