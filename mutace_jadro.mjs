@@ -2391,6 +2391,15 @@ const MUTACE = [
     hledej: "    .filter(k => k && !vRejstriku.has(k));",
     nahrad: "    .filter(k => k);",
     proc: 'zakázka by v exportu byla dvakrát' },
+  /* #507 K7-W4: nehlídané pojistky #504. Hlídá src/test_controlling.js. */
+  { nazev: '#507 K7-W4: víc než 50 dnů zámků v rejstříku', soubor: 'controlling.js',
+    hledej: "    if (zamky.length > 50) return { cist: true };",
+    nahrad: "",
+    proc: 'rejstřík by rostl se zakázkou o stovkách variant' },
+  { nazev: '#507 K7-W4: navázat jde cizí nebo dokončený export', soubor: 'controlling.js',
+    hledej: "  if (!z || z.stav !== 'probiha' || z.kdo !== kdo) return null;",
+    nahrad: "  if (!z) return null;",
+    proc: 'jiný správce by navázal na cizí export a dopsal mu dávky' },
   /* #507 K7-K4: hlášky po tisku. Hlídá src/test_tisk_behem_ulozeni.js. */
   { nazev: '#507 K7-K4: výpadek sítě anglicky', soubor: 'ui/online_ui.js',
     hledej: "  if ((e && e.name === 'TypeError') || /failed to fetch|networkerror|load failed|network request failed/i.test(m))",

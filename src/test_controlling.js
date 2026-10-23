@@ -566,6 +566,14 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     && C.ctrlRejstrikDny(zak([varianta('v1', '2026-10-01T09:00:00Z')], { varianta: 'v1', klice: ['a'], datum: '25. 10. 2026' })).cist === true
     && C.ctrlRejstrikDny(zak([varianta('v1', '2026-10-01T09:00:00Z')], { varianta: 'v1', klice: ['a'], datum: { toString: 1 } })).cist === true
     && C.ctrlRejstrikDny({ varianty: 'nesmysl' }).cist === true && C.ctrlRejstrikDny(null).cist === true);
+  /* K7-W4 (#507): víc než 50 různých dnů zámků se do rejstříku nepíše — „čti vždy". */
+  {
+    const den = i => new Date(Date.UTC(2026, 0, 1 + i, 9)).toISOString();
+    const mnoho = n => zak(Array.from({ length: n }, (_, i) => varianta('v' + (i + 1), den(i))));
+    test('K7-W4: 50 dnů zámků se zapíše, 51 → „čti vždy"',
+      C.ctrlRejstrikDny(mnoho(50)).zamky.length === 50 && C.ctrlRejstrikDny(mnoho(51)).cist === true,
+      [C.ctrlRejstrikDny(mnoho(50)).zamky && C.ctrlRejstrikDny(mnoho(50)).zamky.length, C.ctrlRejstrikDny(mnoho(51))]);
+  }
 
   /* 700 zakázek upravených včera (hromadné přeuložení), zamčených v září; 30 v říjnu. */
   const F = (q) => C.ctrlHromadnyFiltr(Object.assign({ pd: 'vse', podle: 'zamceni' }, q));   // #504: výchozí je prodej + vyhrané

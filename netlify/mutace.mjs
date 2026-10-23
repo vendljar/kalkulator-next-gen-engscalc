@@ -3907,6 +3907,11 @@ const MUTACE = [
     hledej: "  await vyhradne('program/controlling_exporty', async () => {",
     nahrad: "  await (async (k, fn) => fn())('program/controlling_exporty', async () => {",
     proc: "dva souběžné exporty nákupních cen by v protokolu nechaly jen jednu stopu" },
+  /* #507 K7-W4: strop bajtů dávky exportu. Hlídá netlify/test_controlling.mjs. */
+  { nazev: "#507 K7-W4: dávka exportu bez stropu bajtů", soubor: "functions/controlling_export.mjs",
+    hledej: " || bajty > M.davkaBajty",
+    nahrad: "",
+    proc: "dávka s velkými zakázkami by přerostla limit odpovědi a skončila 413" },
   /* #507 K7-S5: čas nového zámku. Hlídá netlify/test_kryci_po_tisku.mjs. */
   { nazev: "#507 K7-S5: čas nového zámku se neověřuje", soubor: "lib/zakazka_kontrola.mjs",
     hledej: "    if (kdyProblem) return odmitni(400,",

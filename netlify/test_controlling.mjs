@@ -342,6 +342,11 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     const soubVolani = volani;
     zpozdeni = 0;
     Object.assign(M, puvodne);
+    /* K7-W4 (#507): strop bajtů dávky — po zakázce nad strop se další bere až v nové dávce. */
+    Object.assign(M, { soubeh: 1, davkaMax: 100000, casMs: 1e9, davkaBajty: 1 });
+    const poBajtech = await stahni(fKratke);
+    const poBajtechVolani = volani;
+    Object.assign(M, puvodne);
     test('#504: dávky po 7 i souběh 12 se zpožděným úložištěm a rozpočtem 15 ms = tentýž obsah jako sekvenční běh',
       !sekv.chyba && sekv.exporty.length > 30 && sekvVolani === 1 && davkyVolani > 1 && soubVolani > 1
       && obsah(davky) === obsah(sekv) && obsah(soub) === obsah(sekv),
@@ -361,6 +366,9 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     test('#504: navazující dávka s jiným filtrem než první → 409', !!prvni.dalsi
       && await st('?od=2026-10-01&do=2026-10-04&podle=zamceni&pd=vse&export=' + prvni.export + '&po=' + encodeURIComponent(prvni.dalsi)) === 409, prvni.dalsi);
 
+    test('K7-W4: strop bajtů dávky dělí export (aspoň dávka na zakázku), obsah stejný jako sekvenční běh',
+      !poBajtech.chyba && poBajtechVolani >= (poBajtech.exporty || []).length && poBajtechVolani > 1
+      && obsah(poBajtech) === obsah(sekv), { chyba: poBajtech.chyba, volani: poBajtechVolani, n: (poBajtech.exporty || []).length });
     test('#504: všechny dávky jednoho exportu nesou týž čas exportu (z první dávky)',
       new Set((davky.exporty || []).map(e => e.kdy)).size === 1 && new Set((soub.exporty || []).map(e => e.kdy)).size === 1);
     /* #504 (doplnění J. V. 22. 10.): žádný strop počtu — rejstřík s 3001 kandidáty (dřív 413 nad 600)
