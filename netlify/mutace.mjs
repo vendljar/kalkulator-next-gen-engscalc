@@ -4264,6 +4264,10 @@ const MUTACE = [
     hledej: "    const vstup = await vyhradne('zalohy/obnova', async () => {",
     nahrad: "    const vstup = await (async (k, fn) => fn())('zalohy/obnova', async () => {",
     proc: 'dvě souběžné obnovy by pořídily dva otisky „před obnovou"' },
+  { nazev: '#514 K8-W5: textové pole hlavičky „kontakt" bez typové kontroly', soubor: '../src/uloziste.js',
+    hledej: "const ULO_TYPY_HLAVICKA = ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt', 'datum'];",
+    nahrad: "const ULO_TYPY_HLAVICKA = ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'datum'];",
+    proc: 'objekt v kontaktní osobě by shodil uložení na 500 (dřív test zkoušel jen 3 z 8 polí)' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
@@ -4334,6 +4338,11 @@ async function spustSady() {
 const vyber = mutaceCast(MUTACE, process.argv.slice(2), process.env, (m) => !filtr
   || m.nazev.toLowerCase().includes(filtr) || m.soubor.toLowerCase().includes(filtr));
 if (vyber.chyba && !process.argv.includes('--kontrola')) { console.log('CHYBA VOLBY: ' + vyber.chyba); process.exit(2); }
+if (!process.argv.includes('--kontrola')) {                        // K8-W9
+  const { navazaniChyba } = await import('../nastroje/mutace_cast.mjs');
+  const ch = navazaniChyba(resolve(KOREN, '..'), vyber, process.env);
+  if (ch) { console.log('CHYBA VOLBY: ' + ch); process.exit(2); }
+}
 const vybrane = vyber.vybrane;
 
 /* RYCHLÁ KONTROLA ZADÁNÍ (`--kontrola`) — bez jediného spuštění sad.
@@ -4416,7 +4425,7 @@ console.log('\n============================================================');
 console.log('Chycených ' + chycene + ' z ' + (chycene + nechycene.length)
   + (chybne.length ? '   (chybně zadaných mutací: ' + chybne.length + ')' : ''));
 /* Část běhu nikdy netvrdí, že prošlo všech N (zadání mutačního běhu). */
-if (vyber.popis) console.log('Pokryto: ' + vyber.popis + ' — NE celý běh.');
+if (!vyber.cely) console.log('Pokryto: ' + vyber.popis + ' — NE celý běh.');   // K8-W8
 if (nechycene.length) {
   console.log('\nNECHYCENÉ MUTACE — tohle by dnes testy nezachytily:');
   for (const m of nechycene) console.log(' - ' + m.nazev + ' (' + m.soubor + ')\n     ' + m.proc);

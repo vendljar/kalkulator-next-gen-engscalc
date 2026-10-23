@@ -22,14 +22,16 @@
 #                          smoke + VŠECHNY overit_*.mjs globem, statické
 #                          kontroly: verze = den commitu, CRLF, osobní údaje
 #                          a tajemství)
-#   job „mutace-server"  = testovaci_kolo.sh --jen mutace-server, matrix 6 částí
+#   job „mutace-server"  = testovaci_kolo.sh --jen mutace-server, matrix 10 částí
 #   job „mutace-jadro"   = testovaci_kolo.sh --jen mutace-jadro, matrix 3 části
 # Mutace běží v samostatných jobech, aby jely souběžně. OD 23. 10. 2026 (P2,
 # podklady/PROMPT_mutacni_beh_23_10.md) PO ČÁSTECH: celý běh se do jednoho
 # jobu nevešel (Testy #194: server ~280 z 808 za 45 min, jádro taky
 # nedoběhlo). Část K/N = každá N-tá mutace od K-té (KNG_MUTACE_CAST,
 # nastroje/mutace_cast.mjs); části dohromady pokryjí každou mutaci právě
-# jednou. Celé kolo = všechny joby matrixu zelené. Přeskočené sady vypíše souhrn skriptu; přeskočená kontrola,
+# jednou. Celé kolo = všechny joby matrixu zelené. Testy #195 (23. 10. 2026):
+# server v 6 částech po ~150 mutacích — 5 z 6 zrušil limit 75 min (nejrychlejší
+# část 63 min); od 24. 10. (#514) 10 částí po ~92 mutacích, limit 90 min. Přeskočené sady vypíše souhrn skriptu; přeskočená kontrola,
 # o které se mlčí, je totéž co kontrola, která neexistuje.
 name: Testy
 
@@ -42,6 +44,10 @@ on:
 # nesmí víc. Akce jsou připnuté na celý SHA commitu (značka v komentáři):
 # značka se dá přesunout, SHA ne. Playwright má pevnou verzi, aby CI
 # nestahovalo pokaždé jinou (stejná verze jako v cloudovém sezení).
+# Checkout bez uložených přihlašovacích údajů (SEC-N7, #514): workflow nic
+# nepushuje, token tedy nemusí ležet v .git/config, když se instaluje cizí
+# balíček (Playwright). Zámek balíčku s integritou (ci/package-lock.json)
+# čeká — vyrobit ho jde jen s přístupem k registru npm (PREDAVKA).
 permissions:
   contents: read
 
@@ -56,6 +62,8 @@ jobs:
       ADMIN_EMAIL: spravce@priklad.cz
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false   # SEC-N7 (#514): token nezůstane v .git/config při instalaci balíčků
 
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
@@ -90,22 +98,25 @@ jobs:
   # auditu: kdyby někdo kontrolu odstranil, testy by to musely chytit — tohle
   # ověřuje, že by to opravdu chytily. Rychlá kontrola zadání (--kontrola)
   # běží už v jobu „testy" uvnitř spust_testy.sh.
-  # Časy (odhad 23. 10. 2026 z Testy #194: ~6 mutací serveru za minutu):
-  # 880 / 6 ≈ 147 mutací ≈ 25–30 min na část, limit 75 min s rezervou na růst.
-  # Po prvním běhu po částech časy změřit a limit upravit (PREDAVKA).
+  # Časy (Testy #195, 23. 10. 2026, změřeno): ~150 mutací na část trvalo
+  # 63 min a víc (5 z 6 částí zrušil limit 75 min) → ~0,45 min na mutaci.
+  # 917 / 10 ≈ 92 mutací ≈ 40–60 min na část; limit 90 min = rezerva ~50 %
+  # i na další růst. Při ~1100 mutacích přidat části (K8-W7).
   mutace-server:
     runs-on: ubuntu-24.04  # pevně: ubuntu-latest = 26.04 od 19. 10. 2026, Playwright tam Chromium neinstaluje
-    timeout-minutes: 75
+    timeout-minutes: 90
     strategy:
       fail-fast: false   # jedna červená část nesmí zrušit ostatní — chceme vidět všechny nechycené
       matrix:
-        cast: ['1/6', '2/6', '3/6', '4/6', '5/6', '6/6']
+        cast: ['1/10', '2/10', '3/10', '4/10', '5/10', '6/10', '7/10', '8/10', '9/10', '10/10']
     name: mutace-server (část ${{ matrix.cast }})
     env:
       ADMIN_EMAIL: spravce@priklad.cz
       KNG_MUTACE_CAST: ${{ matrix.cast }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false   # SEC-N7 (#514): token nezůstane v .git/config při instalaci balíčků
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22.23.2'
@@ -127,6 +138,8 @@ jobs:
       KNG_MUTACE_CAST: ${{ matrix.cast }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false   # SEC-N7 (#514): token nezůstane v .git/config při instalaci balíčků
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22.23.2'

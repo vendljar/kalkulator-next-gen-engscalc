@@ -578,6 +578,21 @@ bude i třeba; pokud je to tak dnes nastavené, tak to neměň." Chování dokl�
 
 ### B156 — odhlášení a uložení profilu zapisují celý účet
 
+**Stav po SEC-S2 (#514, v23.10.5):** audit S1 ukázal, že mez byla horší, než
+se psalo — změna vlastního hesla (`mojeheslo`) zapisovala celý účet přečtený
+před počítadly, čekáním brzdy (okno si útočník roztáhl sám neúspěšnými
+pokusy) a scryptem, takže vracela snížení role, vypnutí i **smazání** účtu
+(smazaný účet ožil jako Administrátor). **Opraveno:** `mojeheslo` účet
+těsně před zápisem přečte znovu (ve `vyhradne('uzivatele/<e-mail>')`);
+chybí, je vypnutý, archivovaný nebo má jinou verzi či otisk hesla → 409 a nic
+se nezapíše, jinak se na čerstvý záznam přepíšou jen pole hesla. Uložení
+profilu přepisuje na čerstvý záznam jen pole profilu; odhlášení čte znovu
+a zvyšuje jen verzi hesla (od 13. 10.). **Zbývá:** akce správce (role,
+zapnutí, reset hesla, archiv) dál zapisují celý účet přečtený na začátku —
+souběžná změna hesla uživatelem se tak může přepsat zásahem správce
+(bezpečný směr: platí zásah správce). Mezi instancemi funkce jen druhé
+čtení (B158). Text níž popisuje stav před v23.10.5.
+
 **Co dělá:** odhlášení (`netlify/functions/odhlaseni.mjs`) a uložení profilu
 nebo podpisu (`netlify/functions/uzivatele.mjs`, akce `profil`/`podpis`)
 přečtou celý záznam účtu, změní své pole a zapíšou ho celý zpět.
@@ -1152,4 +1167,61 @@ Nálezy `podklady/K7_AUDIT_22_10.md`, které nepotřebovaly rozhodnutí J. V.
   noční běh mezi tím nové varování, přepíše se (následující noc ho zapíše
   znovu). Protokol exportů controllingu je od v23.10.1 ve `vyhradne()` (K7-S3),
   mezi instancemi B158.
+
+## O-K8 #514 — opravy auditů K8 a S1 bez změny chování (v23.10.5, 24. 10. 2026)
+
+Pokyn J. V. (dialog S1, SEC-7): opravit vše, co nemění fungování, vzhled ani
+výpočet. Přehled oprav je v CHANGELOG v23.10.5; sem patří zbytkové meze.
+
+- **SEC-S1 — souběh uložení nad `z/<soubor>` — OPRAVENO, zbytek mezi
+  instancemi.** POST `/api/zakazky` čte, kontroluje a zapisuje zakázku
+  ve `vyhradne('zakazky/z/<soubor>')` a těsně před zápisem ji přečte znovu:
+  jiné razítko než u verze, ze které kontroly vyšly → 409 kolize (nic se
+  nepřepíše). DELETE a převod/smazání účtu (`uzivatele.mjs`) sahají na
+  zakázku v témže úseku. **Mez:** dvě instance funkce se výhradním úsekem
+  nevidí; druhé čtení zužuje okno na dobu mezi čtením a zápisem Blobs
+  (milisekundy), podmíněný zápis (`onlyIfMatch`) naše vrstva nemá (B4, B158).
+  Obnova ze zálohy zapisuje zakázky mimo úsek (běží za zámkem obnovy).
+- **SEC-N2 — dva začátky obnovy — OPRAVENO:** kontrola zámku a zápis tokenu
+  ve `vyhradne('zalohy/obnova')`; po zápisu se ověří, že token je jediný živý,
+  mezi instancemi ustoupí mladší (čas začátku, pak id) s 409.
+- **SEC-I4 — klíč z adresy:** `soubor`/`klic` v GET a DELETE zakázek
+  a zákazníků nesmí nést lomítko, zpětné lomítko ani řídicí znak a mít víc
+  než 200 znaků (`klicZAdresyPlatny`). Přísný tvar z `uloKlicSouboru` se
+  nepoužívá vědomě: obnova ze zálohy zapisuje klíče v původním znění a takové
+  zakázky musí jít otevřít i smazat.
+- **SEC-I9 — CSP s `'unsafe-inline'` (vědomá mez):** `script-src` povoluje
+  vložené skripty a obsluhy (`onclick="…"`), takže proti vloženému HTML
+  s obsluhou CSP nechrání; drží `eval`, `connect-src` a `img-src` ven.
+  **Obranou je escapování** — `esc()` / `escJs()` u každého vkládaného údaje
+  (hlídají `src/test_escape.js` a `overit_xss.mjs`). Dlouhodobě: delegované
+  posluchače místo inline obsluh a hash skriptu v `build.py`.
+- **SEC-I6 — `server/server.js`:** hlavičky srovnané s `netlify.toml`
+  (HSTS, `Permissions-Policy`, `form-action`), tělo se skládá po bajtech,
+  překročení stropu dostane 413. **Mez:** `/api/vypocet` kostry je bez
+  přihlášení — poslech jen na 127.0.0.1 (B12); přihlášení by změnilo chování.
+- **SEC-I3 — prototypové klíče:** server zahodí v přijaté zakázce `__proto__`
+  vždy, `constructor`/`prototype` jen s objektem v hodnotě (text pod takovým
+  klíčem — třeba název položky — zůstane).
+- **K8-S4 — rozpočet tokenů stavu dealu:** strop `PD_STAV_MAX` = 120 je na
+  **volání** `/api/pd/stav` za hodinu, ne na tokeny Pipedrive. Deal, který
+  detail v2 nevrátí (404), stojí dvě volání Pipedrive (detail + seznam
+  smazaných, ≈ 11 tokenů) → horní mez na uživatele ≈ 120 × 11 tokenů za
+  hodinu. Deal id zadává jen administrátor.
+- **K8-S5 — adresy v rejstříku u nečitelné zakázky (vědomá mez):** záznam,
+  jehož čtení při doplňování vyhodí, adresu nedostane a zůstává mezi prvními
+  25 záznamy bez adresy; při ≥ 25 trvale nečitelných se adresy ostatních
+  nedoplní. Oprava by buď přidala do rejstříku nový klíč, nebo adresu vzdala
+  i při přechodné chybě úložiště (zakázka by se podle adresy nenašla) — to
+  je změna chování, čeká na J. V.
+- **K8-S6 — `_rejstrik` mimo výhradní úsek:** rejstřík dál zapisují bez
+  `vyhradne('zakazky/_rejstrik')` převod zakázek účtu a smazání účtu
+  (`uzivatele.mjs`, akce `prevod` a `smaz`) a přestavba při obnově
+  (`obnova.mjs`). Ztracený záznam opraví export (`mimoRejstrik`), Přehled ho
+  neukáže do dalšího uložení zakázky.
+- **SEC-N7 — supply chain CI:** checkout v `testy.yml` bez uložených
+  přihlašovacích údajů (`persist-credentials: false`). **Zbývá:** Playwright
+  se instaluje `npm i --no-save playwright@1.56.1` bez zámku s integritou —
+  `ci/package.json` + `package-lock.json` vyrobí až sezení s přístupem
+  k registru npm.
 

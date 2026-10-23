@@ -48,11 +48,6 @@ Komunikace česky. Know-how projektu je ve skillech `kalkulator-next-gen`,
   sám (`git ls-remote --tags`): u existujícího tagu odkaz nevyrobí (kód 3)
   a vypíše odkaz na vydaný release. Verze bez tagu:
   `python3 nastroje/release_odkaz.py --chybejici`.
-- **Před každým odkazem na nový release ověřit, že tag ještě neexistuje**
-  (J. V. 15. 10. 2026 — „tag už zase existuje"). `release_odkaz.py` to dělá
-  sám (`git ls-remote --tags`): u existujícího tagu odkaz nevyrobí (kód 3)
-  a vypíše odkaz na vydaný release. Verze bez tagu:
-  `python3 nastroje/release_odkaz.py --chybejici`.
 - Tagy jsou jednoduché (lightweight) ve tvaru `vDEN.MĚSÍC.pořadí`.
 - **Sloučené pomocné větve maže J. V. tlačítkem v Actions (W2, 20. 10. 2026):**
   GitHub → Actions → „Smazat sloučené větve“ → Run workflow
@@ -100,7 +95,12 @@ Cloudové sezení může spadnout (25. 9. 2026: „Prompt is too long“ po
   přímo `node netlify/mutace.mjs --cast K/N`; přerušený běh naváže
   `--od <číslo>` podle posledního řádku `[pořadí/celkem]` v logu. Kolo
   s částí hlásí „ZELENÁ ČÁST", nikdy „VŠE ZELENÉ". Actions běží v matrixu
-  (server 6 částí, jádro 3). **Po restartu kontejneru** nejdřív `git status`:
+  (server 10 částí s limitem 90 min, jádro 3 — #514 po Testy #195, kde
+  6 serverových částí narazilo na 75 min). Neznámá volba (i `--help`)
+  a prázdný výběr skončí chybou s kódem 2 (K8-W2, K8-W3); `--od` navazuje
+  jen na pracovní kopii bez zbytku mutace (K8-W9). `KNG_MUTACE_OD` patří
+  k jednomu kroku kola (číslování jádra a serveru se liší).
+  **Po restartu kontejneru** nejdřív `git status`:
   změněný soubor v `src/` nebo `netlify/` bez běžícího mutačního procesu je
   zbytek mutace → `git checkout -- <soubor>`.
 - N46 (nástupiště A ↔ C u zrcadlové šachty) se neopravuje bez pokynu J. V. —

@@ -13,8 +13,18 @@
  *                volba na příkazové řádce má přednost.
  * Pořadí je GLOBÁLNÍ (pozice v MUTACE od 1) — z řádku „[528/880]" v logu je
  * vidět, kde běh skončil, a `--od 529` naváže. Filtr podle názvu se uplatní
- * až po výběru. Neplatný zápis vrátí `chyba` a nic nevybere: překlep nesmí
- * spustit celý běh (ten by v Actions jen tiše vypršel). */
+ * až po výběru. Neplatný zápis, neznámá volba i prázdný výběr vrátí `chyba`
+ * a nic nevyberou: překlep nesmí spustit celý běh (ten by v Actions jen tiše
+ * vypršel) ani prázdný běh vydávat za zelený. */
+
+/* Povolené volby (K8-W3, #514, audit K8 24. 10. 2026). Do v23.10.4 se
+ * neznámá volba (`--help`, `--cast2/4`) tiše ignorovala a spustila CELÝ
+ * běh — hodiny přepisování zdrojáků v pracovní kopii; `--cats 2/4` se stal
+ * filtrem „2/4". Teď je jiná volba než tyto chyba (nápověda, kód 2). */
+export const MUTACE_VOLBY = ['--cast', '--od', '--kontrola'];
+export const MUTACE_NAPOVEDA = 'Použití: [filtr podle názvu] [--cast K/N] [--od N] [--kontrola]';
+
+import { spawnSync } from 'node:child_process';
 
 const CAST_TVAR = /^([1-9][0-9]{0,4})\/([1-9][0-9]{0,4})$/;
 const OD_TVAR = /^[1-9][0-9]{0,5}$/;
@@ -47,6 +57,8 @@ export function filtrZArgv(argv) {
 export function mutaceCast(mutace, argv = [], env = {}, filtr = null) {
   const celkem = mutace.length;
   const nic = (chyba) => ({ vybrane: [], popis: '', cely: false, chyba });
+  const neznama = argv.find(a => a.startsWith('-') && !MUTACE_VOLBY.includes(a.split('=')[0]) && !/^-[0-9]/.test(a));
+  if (neznama !== undefined) return nic('Neznámá volba „' + neznama + '". ' + MUTACE_NAPOVEDA);
   let castTxt = volba(argv, '--cast');
   if (castTxt === undefined && env.KNG_MUTACE_CAST) castTxt = String(env.KNG_MUTACE_CAST);
   let odTxt = volba(argv, '--od');
@@ -75,6 +87,37 @@ export function mutaceCast(mutace, argv = [], env = {}, filtr = null) {
   const casti = [];
   if (N > 1) casti.push('část ' + K + '/' + N);
   if (od > 1) casti.push('od ' + od + '.');
-  const popis = casti.length ? casti.join(', ') + ': ' + vybrane.length + ' z ' + celkem + ' mutací' : '';
-  return { vybrane, popis, cely: vybrane.length === celkem, chyba: null };
+  /* Prázdný výběr je chyba (K8-W2, #514): „Chycených 0 z 0" s kódem 0
+   * a „ZELENÁ ČÁST" by tvrdily ověření, které neproběhlo. */
+  if (!vybrane.length)
+    return nic((casti.length ? 'Ve výběru „' + casti.join(', ') + '"' : 'Ve výběru')
+      + (filtr ? ' s filtrem' : '') + ' není žádná mutace — nic by se neověřilo.');
+  /* Popis i u samotného filtru (K8-W8): souhrn podle `cely` pak u každého
+   * neúplného běhu řekne „NE celý běh". */
+  const cely = vybrane.length === celkem;
+  const popis = casti.length ? casti.join(', ') + ': ' + vybrane.length + ' z ' + celkem + ' mutací'
+    : (cely ? '' : 'filtr: ' + vybrane.length + ' z ' + celkem + ' mutací');
+  return { vybrane, popis, cely, od, chyba: null };
+}
+
+/* NAVÁZÁNÍ JEN NA ČISTOU KOPII (K8-W9, #514, audit K8 24. 10. 2026). Po
+ * restartu kontejneru (SIGKILL) zůstane mutant v souboru a běh `--od N` by
+ * si ho přečetl jako „původní" znění — ekvivalentní mutant by prošel tiše.
+ * Před navázáním se proto ověří, že `git diff` nad src/ a netlify/ je
+ * prázdný; jinak → text chyby s radou. Vědomé obejití (rozpracované změny,
+ * které se mají měřit): KNG_MUTACE_SPINAVE=1. Bez gitu se nekontroluje. */
+export function navazaniChyba(koren, vyber, env = {}, spust = null) {
+  if (!vyber || !(vyber.od > 1) || env.KNG_MUTACE_SPINAVE === '1') return '';
+  let kod = 0;
+  try {
+    const run = spust || ((args) => {
+      const r = spawnSync('git', args, { cwd: koren, encoding: 'utf8' });
+      return r.status === null ? 2 : r.status;
+    });
+    kod = run(['diff', '--quiet', '--', 'src', 'netlify']);
+  } catch (e) { return ''; }
+  if (kod === 1)
+    return 'Navázání --od na pracovní kopii se změnami v src/ nebo netlify/ — může to být zbytek přerušené '
+      + 'mutace. Zkontrolujte `git status` a vraťte ho (`git checkout -- <soubor>`); vědomě: KNG_MUTACE_SPINAVE=1.';
+  return '';
 }

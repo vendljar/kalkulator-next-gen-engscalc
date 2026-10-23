@@ -90,3 +90,14 @@ roadmapa/ROADMAPA.md
 # výstupy nastroje/vyrob_sablony.js. Patří na Disk, ne do repozitáře (W1, 19. 10. 2026).
 podklady/sablony_vstup/
 podklady/sablony_vystup/
+
+# Soubory prostředí, exporty a seznam negativní kontroly (SEC-N5, #514, audit
+# S1 24. 10. 2026). Omylem uložený .env s tokenem Pipedrive nebo export ceníku
+# v kořeni by jinak šel do veřejného repa jedním `git add -A`. Ukázkové
+# sešity v podklady/ukazky/ se verzují dál (vzor jen pro kořen).
+.env
+.env.*
+/*.xlsx
+/*.docx
+/*.csv
+negativni_kontrola.json

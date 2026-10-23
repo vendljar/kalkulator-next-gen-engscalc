@@ -4,19 +4,47 @@
 # zápisem *@domena, nebo telefonní číslo. Cokoli jiného ve stromu hlásí kontrola
 # jako nález a pred_pushem.sh / testovaci_kolo.sh skončí červeně.
 #
-# Smyšlené domény testů a příkladů (RFC 2606 example.*; priklad.cz, zkusebni.cz
-# a krátké domény jsou zkušební účty serverových sad a harnessů):
+# Smyšlené domény testů a příkladů — celou doménou JEN rezervovaná example.com
+# (RFC 2606) a naše zkušební priklad.cz, zkusebni.cz:
 *@example.com
-*@example.cz
 *@priklad.cz
 *@zkusebni.cz
-*@x.cz
-*@b.cz
-*@d.cz
-*@y.cz
-*@eng.cz
-*@svj.cz
-*@firma.cz
+# Krátké domény (x.cz, b.cz, eng.cz, svj.cz, firma.cz, example.cz …) mohou být
+# skutečné — od SEC-N4 (#514, audit S1 24. 10. 2026) jen přesné adresy, které
+# testy dnes používají (smyšlené účty serverových sad a harnessů). Nový
+# zkušební účet pište raději na @priklad.cz.
+a@b.cz
+a@x.cz
+admin@eng.cz
+admin@x.cz
+anna@example.cz
+bob@example.cz
+c@b.cz
+c@d.cz
+clen1@svj.cz
+faktury@svj.cz
+info@example.cz
+jan@firma.cz
+jiny@eng.cz
+jiny@x.cz
+kdo@x.cz
+kolega@eng.cz
+monter@firma.cz
+nabidky@example.cz
+o@b.cz
+o@x.cz
+obchod@eng.cz
+obchodnik@x.cz
+sedlak@svj.cz
+technik@svj.cz
+test@x.cz
+v@b.cz
+v@eng.cz
+v@x.cz
+vedouci@firma.cz
+vybor1@svj.cz
+x@b.cz
+x@y.cz
 
 # Ponecháno rozhodnutím J. V. 24. 9. 2026 (nález B79 „osobní údaje v repu":
 # nechat, jak je). Adresa hlavního správce v návodu k nasazení (NASAZENI_NETLIFY.md),

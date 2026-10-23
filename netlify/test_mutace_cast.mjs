@@ -70,6 +70,32 @@ for (const [popis, argv, env] of [['0/4', ['--cast', '0/4']], ['5/4', ['--cast',
   test('neplatné ' + popis + ' → chyba a nic vybráno', typeof r.chyba === 'string' && r.chyba.length > 0 && r.vybrane.length === 0, r);
 }
 
+/* K8-W3 (#514): neznámá volba → chyba s nápovědou, nikdy celý běh. */
+for (const argv of [['--help'], ['-h'], ['--cast2/4'], ['--cats', '2/4'], ['pd', '--od5']]) {
+  const r = vyber(argv);
+  test('neznámá volba ' + argv.join(' ') + ' → chyba a nic vybráno', typeof r.chyba === 'string' && /Neznámá volba/.test(r.chyba) && r.vybrane.length === 0, r);
+}
+test('--kontrola je povolená volba', vyber(['--kontrola']).chyba === null);
+/* K8-W2 (#514): prázdný výběr → chyba (ne „Chycených 0 z 0" s kódem 0). */
+for (const [popis, argv, f] of [['--cast 2/4 --od 23', ['--cast', '2/4', '--od', '23']], ['filtr bez shody', [], 'nic-takoveho'],
+  ['část bez shody s filtrem', ['--cast', '2/4', '--od', '7'], 'pd']]) {
+  const r = vyber(argv, {}, f);
+  test('prázdný výběr (' + popis + ') → chyba', typeof r.chyba === 'string' && r.chyba.length > 0 && r.vybrane.length === 0, r);
+}
+/* K8-W8 (#514): samotný filtr má popis, aby souhrn řekl „NE celý běh". */
+test('filtr bez části: popis „filtr: 5 z 23 mutací"', vyber([], {}, 'pd').popis === 'filtr: 5 z 23 mutací', vyber([], {}, 'pd').popis);
+
+/* K8-W9 (#514): --od jen nad čistou kopií (git diff src netlify). */
+{
+  const { navazaniChyba } = await import('../nastroje/mutace_cast.mjs');
+  const spinave = () => 1, ciste = () => 0;
+  test('--od nad změněnou kopií → chyba', /zbytek přerušené/.test(navazaniChyba('.', vyber(['--od', '5']), {}, spinave)));
+  test('--od nad čistou kopií → bez chyby', navazaniChyba('.', vyber(['--od', '5']), {}, ciste) === '');
+  test('bez --od se kopie nekontroluje', navazaniChyba('.', vyber(['--cast', '2/4']), {}, spinave) === '');
+  test('KNG_MUTACE_SPINAVE=1 kontrolu vědomě vypne', navazaniChyba('.', vyber(['--od', '5']), { KNG_MUTACE_SPINAVE: '1' }, spinave) === '');
+  test('KNG_MUTACE_OD z prostředí se kontroluje taky', /zbytek/.test(navazaniChyba('.', vyber([], { KNG_MUTACE_OD: '3' }), {}, spinave)));
+}
+
 /* Filtr se nesmí plést s hodnotou volby: `--cast 2/4 pd` → filtr „pd", ne „2/4". */
 const { filtrZArgv } = await import('../nastroje/mutace_cast.mjs');
 test('filtr z argumentů přeskočí hodnoty voleb', filtrZArgv(['--cast', '2/4', 'pd']) === 'pd' && filtrZArgv(['--od', '5']) === ''

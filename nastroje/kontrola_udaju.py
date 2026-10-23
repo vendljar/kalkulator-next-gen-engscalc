@@ -27,11 +27,19 @@ kontakt v testu — zápisem do povoleného seznamu s důvodem v komentáři.
 import os
 import re
 import sys
+import zipfile
 
 KOREN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SLOZKY = ['src', 'netlify', 'server', 'nastroje', 'manual', 'roadmapa', '.github', 'podklady', '.claude']
-KORENOVE_PRIPONY = ('.md', '.toml', '.yml', '.yaml', '.mjs', '.js', '.py', '.sh', '.json', '.txt')
-PRIPONY = ('.js', '.mjs', '.cjs', '.py', '.sh', '.md', '.toml', '.yml', '.yaml', '.json', '.html', '.txt', '.svg')
+# K8-W4, SEC-N4 (#514, audity K8 a S1 24. 10. 2026): i záplaty, výpisy, CSV,
+# konfigurace a soubory prostředí (.env*), v kořeni i .html; sešity a dokumenty
+# Office se rozbalí (ZIP_PRIPONY) a čte se jejich XML.
+KORENOVE_PRIPONY = ('.md', '.toml', '.yml', '.yaml', '.mjs', '.js', '.py', '.sh', '.json', '.txt', '.html',
+                    '.patch', '.diff', '.csv', '.env', '.ini', '.cfg')
+PRIPONY = ('.js', '.mjs', '.cjs', '.py', '.sh', '.md', '.toml', '.yml', '.yaml', '.json', '.html', '.txt', '.svg',
+           '.patch', '.diff', '.csv', '.env', '.ini', '.cfg')
+ZIP_PRIPONY = ('.xlsx', '.docx')
+ZIP_XML = re.compile(r'^(word/(document|header\d*|footer\d*|comments)\.xml|xl/(sharedStrings|worksheets/sheet\d+)\.xml|docProps/core\.xml)$')
 VYNECHAT_SLOZKY = {'node_modules', 'dist', '.git', '_soukrome', '_DB', '__pycache__'}
 VYNECHAT_SOUBORY = {'roadmapa/ROADMAPA.html', 'roadmapa/ROADMAPA.md', 'manual/nahled.html',
                     'manual/snimky.json', 'nastroje/povolene_kontakty.txt'}
@@ -40,6 +48,10 @@ EMAIL = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
 # +420 602 590 945 / +420602590945 / 602 590 945 / 602590945 (mobil 6xx/7xx, ne uvnitř delšího čísla)
 TELEFON = re.compile(r'(?<![\w.,/-])(?:\+420[  ]?)?[67]\d{2}[  ]?\d{3}[  ]?\d{3}(?![\w])')
 TELEFON_PEVNA = re.compile(r'\+420[  ]?[2-5]\d{2}[  ]?\d{3}[  ]?\d{3}(?![\w])')
+# SEC-N4 (#514): mobil s pomlčkami (602-590-945) a čísla s jinou evropskou
+# předvolbou (+421 9xx xxx xxx …).
+TELEFON_POMLCKY = re.compile(r'(?<![\w.,/-])(?:\+420[ -]?)?[67]\d{2}-\d{3}-\d{3}(?![\w-])')
+TELEFON_ZAHR = re.compile(r'\+4(?!20)\d{2}[  -]?\d{3}[  -]?\d{3}[  -]?\d{3}(?![\w])')
 TAJEMSTVI = [
     ('privátní klíč', re.compile(r'-----BEGIN [A-Z ]*PRIVATE KEY-----')),
     ('token GitHub', re.compile(r'\bgh[pousr]_[A-Za-z0-9]{30,}\b')),
@@ -54,6 +66,15 @@ TAJEMSTVI = [
     # (claude.ai/code/cshk_<id>) otevře celý přepis vlákna — do repa patří jen
     # ID sezení. Zmínka bez ID („cshk_…") nálezem není.
     ('sdílecí odkaz na sezení Claude', re.compile(r'claude\.ai/code/cshk_[A-Za-z0-9_-]{6,}')),
+    # K8-W4, SEC-N4 (#514): další tvary tokenu Pipedrive (JSON, YAML, bez
+    # uvozovek, apiToken, URL-kódované), jemný token GitHubu, klíč Anthropic
+    # a veřejný sdílecí odkaz claude.ai/share/<id>.
+    ('token Pipedrive v přiřazení',
+     re.compile(r'(api[_-]?token|apitoken|PIPEDRIVE_API_TOKEN)[\'"]?\s*[:=]\s*[\'"]?[0-9a-fA-F]{40}\b', re.I)),
+    ('token Pipedrive v kódované adrese', re.compile(r'api_token%3D[0-9a-fA-F]{40}\b', re.I)),
+    ('token GitHub (jemný)', re.compile(r'\bgithub_pat_[A-Za-z0-9_]{20,}')),
+    ('klíč Anthropic', re.compile(r'\bsk-ant-[A-Za-z0-9_-]{20,}')),
+    ('sdílecí odkaz claude.ai/share', re.compile(r'claude\.ai/share/[0-9A-Za-z-]{8,}')),
     ('tajemství serveru doslova v kódu',
      re.compile(r'\b(TAJEMSTVI_RELACE|ADMIN_INIT_HESLO|PIPEDRIVE_API_TOKEN|ADMIN_EMAIL)\s*=\s*[\'"][^\'"]{4,}[\'"]')),
 ]
@@ -92,7 +113,7 @@ def soubory():
     out = []
     for jm in sorted(os.listdir(KOREN)):
         cesta = os.path.join(KOREN, jm)
-        if os.path.isfile(cesta) and jm.endswith(KORENOVE_PRIPONY):
+        if os.path.isfile(cesta) and (jm.endswith(KORENOVE_PRIPONY + ZIP_PRIPONY) or jm.startswith('.env')):
             out.append(cesta)
     for sl in SLOZKY:
         koren_sl = os.path.join(KOREN, sl)
@@ -101,9 +122,27 @@ def soubory():
         for adresar, podslozky, jmena in os.walk(koren_sl):
             podslozky[:] = [p for p in podslozky if p not in VYNECHAT_SLOZKY]
             for jm in sorted(jmena):
-                if jm.endswith(PRIPONY):
+                if jm.endswith(PRIPONY + ZIP_PRIPONY) or jm.startswith('.env'):
                     out.append(os.path.join(adresar, jm))
     return [c for c in out if os.path.relpath(c, KOREN).replace(os.sep, '/') not in VYNECHAT_SOUBORY]
+
+
+def precti(cesta):
+    """Text souboru; u .xlsx/.docx text z XML uvnitř (K8-W4, #514) — značky
+    se nahradí mezerou, aby se e-mail rozdělený do dvou běhů textu neslepil
+    s okolím."""
+    if cesta.endswith(ZIP_PRIPONY):
+        casti = []
+        try:
+            with zipfile.ZipFile(cesta) as z:
+                for jm in z.namelist():
+                    if ZIP_XML.match(jm):
+                        xml = z.read(jm).decode('utf-8', 'replace')
+                        casti.append(re.sub(r'<[^>]+>', ' ', xml))
+        except (OSError, zipfile.BadZipFile):
+            return '[nečitelný soubor Office]'
+        return '\n'.join(casti)
+    return open(cesta, encoding='utf-8', errors='replace').read()
 
 
 def main():
@@ -114,7 +153,7 @@ def main():
     for cesta in soubory():
         rel = os.path.relpath(cesta, KOREN).replace(os.sep, '/')
         try:
-            text = open(cesta, encoding='utf-8', errors='replace').read()
+            text = precti(cesta)
         except OSError:
             continue
         for i, radek in enumerate(text.split('\n'), 1):
@@ -125,7 +164,7 @@ def main():
                 if e in emaily or dom in domeny:
                     continue
                 nalezy.append((rel, i, 'e-mail mimo povolený seznam', m.group(0)))
-            for vzor in (TELEFON, TELEFON_PEVNA):
+            for vzor in (TELEFON, TELEFON_PEVNA, TELEFON_POMLCKY, TELEFON_ZAHR):
                 for m in vzor.finditer(radek):
                     t = normalizuj_telefon(m.group(0))
                     videno['telefon'].add(t)

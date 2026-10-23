@@ -71,6 +71,17 @@ const pripady = [
   ['K7-S11: adresa stavby jako objekt → 400', (z) => { z.adresa = PODVRH; }],
   ['K7-S11: zákazník jako pole → 400', (z) => { z.objednatel = ['Firma']; }],
 ];
+/* K8-W5 (#514, audit K8): KAŽDÉ pole ULO_TYPY_HLAVICKA — objekt i pole → 400.
+ * Seznam se bere z jádra, aby nové pole nezůstalo bez kontroly; dřív se
+ * zkoušela jen 3 z 8 a vypadlé `kontakt` test nepoznal. */
+const { createRequire: crK8 } = await import('node:module');
+const HLAVICKA = crK8(import.meta.url)('../src/uloziste.js').ULO_TYPY_HLAVICKA || [];
+for (const k of ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt', 'datum'])
+  test('K8-W5: textové pole hlavičky „' + k + '" je v ULO_TYPY_HLAVICKA', HLAVICKA.includes(k), HLAVICKA);
+for (const k of HLAVICKA) {
+  pripady.push(['K8-W5: ' + k + ' jako objekt → 400', (z) => { z[k] = PODVRH; }]);
+  pripady.push(['K8-W5: ' + k + ' jako pole → 400', (z) => { z[k] = ['x']; }]);
+}
 for (const [nazev, uprav] of pripady) {
   const r = await uloz(nova(uprav));
   test(nazev, r.st === 400 && /typ|tvar|Zakázka nese/.test(r.o.chyba || ''), [r.st, r.o.chyba]);
