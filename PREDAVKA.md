@@ -9,11 +9,11 @@ kontrola verze ✓). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Do integrace 
   repo); úplnost po pořadí a názvech ✓; statické 4/4; žádná přeživší mutace.
 - **Audit** `podklady/K8_AUDIT_24_10.md`: vyhovuje s výhradou, posun `main` doporučen. 0 kritických, 0 vysokých,
   1 střední (**K8-K1** — import zakázky ze souboru se zámkem CN uloženým na serveru → zmrazení a tiché vrácení
-  krycího listu na stav z tisku), 11 nízkých, 15 informativních. Opravy K7 drží. Do Pipedrive se v23.10.4 nic
+  krycího listu na stav z tisku), 12 nízkých, 14 informativních. Opravy K7 drží. Actions „Testy“ #195: sady ✓, jádro 3/3 ✓, server jen 5/6 — ostatní části timeout 75 min → **K8-W7** (8–10 částí nebo ~100 min). Do Pipedrive se v23.10.4 nic
   nezapisuje (B1 jen knihovna) — podmínky pro #115 v K8-S3.
 - **Pro O-K8 (#514) bez J. V.** (mění chování: ne): K8-S1 (500 → 400 u `cislo`, `varianty[].nazev/id`), K8-S2
   (kvadratický regex v `pd_prevod.mjs:67`), K8-W1 (prázdný test K7-W2), K8-W2/W3 (prázdný výběr a neznámá volba
-  mutací), K8-W4 (vzory tajemství), K8-W5 (test K7-S11 jen 3 z 8 polí), K8-W11 (`overit_verzi` dědí prostředí)
+  mutací), K8-W4 (vzory tajemství), K8-W7 (matrix serveru v CI), K8-W5 (test K7-S11 jen 3 z 8 polí), K8-W11 (`overit_verzi` dědí prostředí)
   + informativní dle uvážení.
 - **K rozhodnutí J. V.** (mění chování): K8-K1, K8-K2, K8-K3, K8-K4, K8-K5 (text).
 
@@ -23,7 +23,7 @@ kontrola verze ✓). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Do integrace 
 | Mutace jádra 527/527, serveru 897/897, úplnost | ✅ |
 | Audit tří čoček + vlastní ověření K8-K1, K8-W11 | ✅ |
 | CHANGELOG (zápis K8 pod v23.10.4), roadmapa #513 hotovo | ✅ |
-| Výsledek Actions „Testy“ nad ca4f2d1 jako druhé ověření | ⬜ pošle koordinace |
+| Výsledek Actions „Testy“ #195 v auditu (K8-W7) | ✅ |
 | Opravy nálezů | ⬜ O-K8 #514 / J. V. |
 
 ---
