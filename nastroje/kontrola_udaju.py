@@ -48,10 +48,12 @@ TAJEMSTVI = [
     ('token Slack', re.compile(r'\bxox[baprs]-[A-Za-z0-9-]{20,}\b')),
     # K7-W5 (#507): token Pipedrive mimo zápis PIPEDRIVE_API_TOKEN = '…' —
     # v adrese dotazu (?api_token=<40 hex>) nebo v hlavičce x-api-token.
-    # (Sdílený odkaz na sezení claude.ai/code/cshk_… čeká na rozhodnutí
-    # J. V. k nálezu K7-W1 — dnes ho repozitář nese, kontrola by padala.)
     ('token Pipedrive v adrese', re.compile(r'api_token=[0-9a-fA-F]{40}\b')),
     ('token Pipedrive v hlavičce', re.compile(r'x-api-token[\'"]?\s*[:=,]\s*[\'"]?[0-9a-fA-F]{40}\b', re.I)),
+    # K7-W1 (#508, E2 23. 10. 2026): sdílecí odkaz na sezení Claude Code
+    # (claude.ai/code/cshk_<id>) otevře celý přepis vlákna — do repa patří jen
+    # ID sezení. Zmínka bez ID („cshk_…") nálezem není.
+    ('sdílecí odkaz na sezení Claude', re.compile(r'claude\.ai/code/cshk_[A-Za-z0-9_-]{6,}')),
     ('tajemství serveru doslova v kódu',
      re.compile(r'\b(TAJEMSTVI_RELACE|ADMIN_INIT_HESLO|PIPEDRIVE_API_TOKEN|ADMIN_EMAIL)\s*=\s*[\'"][^\'"]{4,}[\'"]')),
 ]

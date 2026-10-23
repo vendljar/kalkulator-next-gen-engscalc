@@ -33,5 +33,12 @@ const pd = py('h = "ab12" * 10\nvz = ["https://x.pipedrive.com/api/v1/deals?api"
 test('K7-W5: token Pipedrive v adrese i v hlavičce kontrola pozná, krátký text ne',
   (pd.stdout || '').trim() === '[True, True, False]', [pd.stdout, pd.stderr]);
 
+/* K7-W1 (#508): sdílecí odkaz na sezení Claude Code (smyšlený, skládá se za běhu). Před doplněním
+ * vzoru 1 FAIL ([False, False, False]), po něm OK. Zmínka bez ID („cshk_…") nálezem není. */
+const sh = py('vz = ["https://claude.ai/code/" + "cshk" + "_" + "Ab3dE5fG7h", "claude.ai/code/" + "cshk" + "_\u2026", "https://claude.ai/code/session_01ABCDEFGH"]\n'
+  + 'print([any(r.search(v) for _, r in K.TAJEMSTVI) for v in vz])');
+test('K7-W1: sdílecí odkaz claude.ai/code/cshk_<id> kontrola pozná, zmínku bez ID a ID sezení ne',
+  (sh.stdout || '').trim() === '[True, False, False]', [sh.stdout, sh.stderr]);
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 if (fail) process.exit(1);
