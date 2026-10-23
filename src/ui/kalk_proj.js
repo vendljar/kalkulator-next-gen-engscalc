@@ -572,7 +572,7 @@ function pjVyjezdPrepis(el) {
   set('PJ.vyjezdKcPrepis', v === '' ? null : +v);
 }
 
-/* VOLBY VARIANTY PROJ Z ŠABLONY D. SIKORY (D2, rozhodnutí J. V. 20. 10. 2026).
+/* VOLBY VARIANTY PROJ Z ŠABLONY OBCHODNÍKA (D2, rozhodnutí J. V. 20. 10. 2026).
  * „Akce mimo Prahu" přičte cenu 1 výjezdu technika k zaměření, studii, DPZ
  * a kolaudaci a nabídka to řekne větou (u IČ a AD jen uvede cenu výjezdu);
  * cena je z ceníku PROJ, u zakázky jde přepsat (prázdno = ceník).

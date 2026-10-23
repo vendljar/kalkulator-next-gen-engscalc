@@ -27,6 +27,11 @@ test('src/ a nastroje/ čte dál', cte.includes('src/objednane.js') && cte.inclu
  * nebyl nálezem) — kontrola ho musí poznat. */
 const t = py('vzor = "gh" + "p_" + "A" * 36\nprint(any(r.search(vzor) for _, r in K.TAJEMSTVI))');
 test('token tvaru ghp_… kontrola pozná', (t.stdout || '').trim() === 'True', t.stderr);
+/* K7-W5 (#507): token Pipedrive v adrese i v hlavičce (smyšlený, skládá se za běhu). */
+const pd = py('h = "ab12" * 10\nvz = ["https://x.pipedrive.com/api/v1/deals?api" + "_token=" + h, "headers: { \'x-api" + "-token\': \'" + h + "\' }", "api" + "_token=kratky"]\n'
+  + 'print([any(r.search(v) for _, r in K.TAJEMSTVI) for v in vz])');
+test('K7-W5: token Pipedrive v adrese i v hlavičce kontrola pozná, krátký text ne',
+  (pd.stdout || '').trim() === '[True, True, False]', [pd.stdout, pd.stderr]);
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 if (fail) process.exit(1);

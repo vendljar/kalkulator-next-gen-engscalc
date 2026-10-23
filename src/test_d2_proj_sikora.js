@@ -1,4 +1,4 @@
-/* D2 (v20.10.4) — ŠABLONA NABÍDKY PROJ D. SIKORY (OVP-CN „online calkulak",
+/* D2 (v20.10.4) — ŠABLONA NABÍDKY PROJ OBCHODNÍKA (OVP-CN „online calkulak",
  * rev. 33, 15. 9. 2026; rozhodnutí J. V. 20. 10. 2026):
  *   1. Akce mimo Prahu: přepínač v zadání PROJ + cena 1 výjezdu technika
  *      v ceníku PROJ (u zakázky přepsatelná). ZA / SP / DPZ / KOLAUDACE —

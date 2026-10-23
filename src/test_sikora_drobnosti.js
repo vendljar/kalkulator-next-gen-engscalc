@@ -1,4 +1,4 @@
-/* ===== DROBNOSTI Z MAILŮ D. SIKORY (2. a 3. 10. 2026, „online kalkulak") =====
+/* ===== DROBNOSTI Z MAILŮ OBCHODNÍKA (2. a 3. 10. 2026, „online kalkulak") =====
  *
  * S1 — nabídka PROJ jen se zaměřením a studií tiskla pod TERMÍNY poznámku
  *      „*) Termíny pro vyjádření dotčených orgánů …", která patří k

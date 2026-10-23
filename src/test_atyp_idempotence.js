@@ -79,7 +79,7 @@ const snimek = (Z) => P.map(k => k + '=' + JSON.stringify(Z[k])).join(' ');
 /* CELÝ SLED TAK, JAK HO J. V. NAPSAL 16. 9. 2026. Tohle je hlavní test
  * pravidla; ostatní jen rozebírají jeho jednotlivé kroky.
  *
- * ODPORUJE SI TO SE SIKOROVOU PŘIPOMÍNKOU z 10. 9. 2026 („pokud se ta částka
+ * ODPORUJE SI TO SE PŘIPOMÍNKOU OBCHODNÍKA z 10. 9. 2026 („pokud se ta částka
  * změní, tak by ji to tlačítko ATYP měnit zpět na 25 000 nemělo"). Rozpor
  * rozhodl J. V. jako pozdější zadání. Hlavní důvod té stížnosti ale zůstává
  * splněný a hlídá ho test „opakované klikání cenu neposouvá" níž: předloha
@@ -121,7 +121,7 @@ const snimek = (Z) => P.map(k => k + '=' + JSON.stringify(Z[k])).join(' ');
 
 /* Opakované klikání nesmí hodnoty posouvat — to byl ten úbytek 64 000. */
 {
-  /* TOHLE JE JÁDRO SIKOROVY STÍŽNOSTI a platí dál: opakované klikání nesmí
+  /* TOHLE JE JÁDRO STÍŽNOSTI OBCHODNÍKA a platí dál: opakované klikání nesmí
    * cenou POHYBOVAT. Na 2026-OPR-CN-0290 ubralo několikeré prokliknutí
    * 64 000 — a to je něco jiného než „vrátit předlohu". Základ se proto bere
    * až PO prvním úplném cyklu: první cyklus ruční číslo vědomě přepíše
