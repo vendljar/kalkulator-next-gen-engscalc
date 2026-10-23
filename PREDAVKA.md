@@ -64,7 +64,9 @@ Verze v22.10.2 nese i #114 z 21. 10. (oddíl CHANGELOG pod ním).
   (server zhruba 280 z 808, vše chycené). Mutace serveru 528–808 tak dál nikde celé neběžely; `netlify/mutace.mjs`
   umí vybírat jen podle názvu, ne podle pořadí.
 - **Další krok (nové sezení):** 1. dokončit mutace serveru — buď koordinace zvedne `timeout-minutes` mutačních
-  jobů (server ~2,5 h, GitHub dovolí až 360 min), nebo `mutace.mjs` dostane volbu `--od N` pro běh po částech pod 2 h; 2. Stav Pipedrive podle rozhodnutí: revert mé verze, převod tří oprav do P1 (kde a kdy určí
+  jobů (server ~2,5 h, GitHub dovolí až 360 min), nebo `mutace.mjs` dostane volbu `--od N` pro běh po částech pod 2 h —
+  zadání pro samostatné sezení: `podklady/PROMPT_mutacni_beh_23_10.md` (výběr části `--cast K/N` / `--od N`, matrix
+  v Actions, Ubuntu 24.04); 2. Stav Pipedrive podle rozhodnutí: revert mé verze, převod tří oprav do P1 (kde a kdy určí
   koordinace); 3. #113 čtení zadání (směr dat §12 schválen), #115 zápis včetně hodnoty dealu; 4. po odpovědi
   integrátora: „Hlavní projektant“ jako text (`pd_mapa.mjs` druh `uzivatel` → `text`), nové pole „Platební kalendář
   SoD PROJ“ (řádky jako `planSodKalendar`), čtyři volby „Způsob fakturace“ pro PROJ (synonyma k větám
@@ -75,7 +77,9 @@ Verze v22.10.2 nese i #114 z 21. 10. (oddíl CHANGELOG pod ním).
 3. Stav Pipedrive: platí P1, moje verze se vrátí, tři opravy se převedou; 4. vyjádření Ing. Drdovi odeslat
 s tabulkou xlsx (odešle J. V.); 5. mutace serveru doběhnou v Testy #194; 6. pád jobu „testy“ na Ubuntu 26.04
 opraví koordinace v integrační větvi; 7. nové sezení po zapsání výsledku Testy #194. Stanovisko k otázkám
-integrátora: Typ zakázky nahrazuje pole #10; pole vždy viditelná v sekci „Krycí list“; Hlavní projektant → Text;
+integrátora: zákazník je vždy Organizace dealu (potvrdil J. V., z e-mailu vypuštěno); API token bude z účtu J. V.,
+který vidí všechny dealy (z e-mailu vypuštěno; změny přes API se v historii dealu ukážou pod jeho jménem);
+generování cenové nabídky z Pipedrive — způsob necháváme na integrátorovi (o Make se nemluví); Typ zakázky nahrazuje pole #10; pole vždy viditelná v sekci „Krycí list“; Hlavní projektant → Text;
 nové pole „Platební kalendář SoD PROJ“, Platby 1–8 jen staré nabídky; zádržné volby stačí; neuplatněný limit = 0;
 čtyři volby Způsob fakturace pro PROJ; webhook až po #115; Informováno BO / Tech kalkulátor nepíše; číslo nabídky
 nevalidovat.
