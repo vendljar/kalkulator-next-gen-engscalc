@@ -1,18 +1,16 @@
-# Předávka — 22./23. 10. 2026 noc: K7 — celé kolo + audit nad v22.10.6 (#506), větev `claude/k7-kolo`
+# Předávka — 23. 10. 2026 ~03:00 UTC: K7 — celé kolo + audit nad v22.10.6 (#506) HOTOVO, větev `claude/k7-kolo`
 
-Kód `3394b2b` (v22.10.6, integrace) beze změny; výstup jen dokumentace. Koordinace: session_013yuBUKmpUYvEnjxWjGi5kj.
+Kód `3394b2b` (v22.10.6, integrace) beze změny; výstup jen dokumentace (audit, roadmapa #506 hotovo, poznámka K7
+v CHANGELOG v22.10.6). Koordinace: session_013yuBUKmpUYvEnjxWjGi5kj. Do integrace / test nic — slučuje koordinace.
 
-- **Kolo:** sady 306/0/6 (přeskočeno `test.js` + 5 harnessů bez `KNG_PODKLADY`), mutace jádra 492/492 (otisky souhlasí),
-  statické 4/4. Mutace serveru: první běh v hlavní kopii přerušil restart kontejneru ~19:18 UTC po 347 chycených
-  (0 přeživších; zbylý mutant `src/zamek.js` vrácen `git checkout`). Zbylých 482 (+ opakování v týchž souborech,
-  728 spuštění) běží ve třech frontách po souborech ve worktree `/home/user/k7mut0..2` (detached 3394b2b), skript
-  `scratchpad/fronta.sh`, logy `scratchpad/kolo/logy/server_fronta{0,1,2}.log`. Úplnost se ověří po názvech
-  (829 unikátních) — seznam `scratchpad/mut_vse.json`.
-- **Audit:** `podklady/K7_AUDIT_22_10.md` — 0 kritických, 0 vysokých, 3 střední (K7-K1, K7-K2, K7-S1), 12 nízkých,
-  16 info; K7-W1 (sdílecí odkaz na sezení ve veřejném repu) k ověření J. V. Předběžný verdikt VYHOVUJE S VÝHRADOU.
-- **Po restartu kontejneru:** `ps` → běží-li `fronta.sh`, čekat; jinak z logů zjistit hotové části a pustit zbytek
-  (`bash fronta.sh <worktree> <soubor se zbylými cestami>`); nikdy `mutace.mjs --help`.
-- **Další krok:** po doběhu doplnit oddíl „Testovací kolo“ a Verdikt v auditu, #506 → hotovo, finální hlášení koordinaci.
+- **Kolo:** sady 306/0/6, mutace jádra 492/492, mutace serveru 829/829 (úplnost po názvech), statické 4/4.
+  Kontejner se dvakrát uvolnil (19:18 a 21:28 UTC — po nečinnosti sezení); zbytek mutací serveru doběhl ve 3 frontách
+  po souborech ve worktree `/home/user/k7mut0..2`. Poučení: při dlouhém běhu čekat v popředí (smyčka po ≤ 9 min).
+- **Audit `podklady/K7_AUDIT_22_10.md`:** VYHOVUJE S VÝHRADOU — 0 kritických, 0 vysokých, 3 střední (K7-K1 Z1-4 tisk
+  během autosave, K7-K2 snímek do prvního uložení, K7-S1 rejstřík bez zámku → tiše neúplný export), 13 nízkých
+  (mj. K7-W15 nestabilní test `test_pd_stav.mjs:116` — „123“ v čase), 16 info. Posun main doporučen.
+- **Čeká na J. V.:** K7-W1 (sdílecí odkaz na sezení ve veřejném repu — ověřit přístupnost), K7-S2 (hlavička po CN).
+- **Další krok:** koordinace založí opravnou dávku (K7-K1, K7-K2, K7-S1, …, viz Doporučení v auditu).
 
 # Předávka — 22. 10. 2026 večer: E1 — hromadný export controllingu (#504) a verze ceníku online (#505), větev `claude/e1-export-obdobi`
 

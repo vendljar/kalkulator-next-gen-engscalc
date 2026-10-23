@@ -7936,16 +7936,16 @@
   {
    "id": "506",
    "vlna": "B",
-   "stav": "ceka",
+   "stav": "hotovo",
    "dulezitost": "",
    "slozitost": "M",
    "nazev": "Kolo K7 + bezpečnostní audit nad v22.10.6 — podmínka posunu main z v22.10.1",
    "proc": "Zadání koordinace 22. 10. 2026 (noc 22./23. 10.): celé testovací kolo s mutacemi a audit změn v22.10.1 → v22.10.6 (P1 #501, Z1 #502, D5 #484/#485/#503, E1 #504, #505) před ranním posunem main.",
-   "detail": "Kolo nad 3394b2b: sady 306/0/6, mutace jádra 492/492, statické 4/4; mutace serveru po restartu kontejneru (19:18 UTC, 347 chycených) dobíhají ve třech frontách po souborech. Audit (podklady/K7_AUDIT_22_10.md): 0 kritických, 0 vysokých, 3 střední (K7-K1 Z1-4 tisk během autosave, K7-K2 snímek do prvního uložení, K7-S1 rejstřík bez zámku → tiše neúplný export), 12 nízkých, 16 informativních; opravy K6 drží.",
+   "detail": "Kolo nad 3394b2b: sady 306/0/6, mutace jádra 492/492, mutace serveru 829/829 (po dvou restartech kontejneru dopuštěno ve 3 frontách po souborech, úplnost po názvech), statické 4/4 — žádná přeživší mutace, žádný prázdný test. Audit (podklady/K7_AUDIT_22_10.md): VYHOVUJE S VÝHRADOU — 0 kritických, 0 vysokých, 3 střední (K7-K1 Z1-4 tisk během autosave, K7-K2 snímek do prvního uložení, K7-S1 rejstřík bez zámku → tiše neúplný export), 13 nízkých, 16 informativních; opravy K6 drží. Posun main na v22.10.6 doporučen, výhrady do první opravné dávky.",
    "hotovoKdyz": "Kolo celé zelené (úplnost mutací serveru po názvech) a audit zapsaný s rozdělením nálezů na opravu bez J. V. a rozhodnutí J. V. a s verdiktem pro posun main.",
-   "kde": "`podklady/K7_AUDIT_22_10.md`",
+   "kde": "`podklady/K7_AUDIT_22_10.md`, `CHANGELOG.md` (v22.10.6 — K7)",
    "zavisi": [],
-   "hotovoV": "",
+   "hotovoV": "v22.10.6",
    "pozn": "Id přidělila koordinace (dávka K7, větev claude/k7-kolo). Kód se neměnil."
   }
  ],

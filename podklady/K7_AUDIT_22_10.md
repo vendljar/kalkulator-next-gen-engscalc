@@ -9,18 +9,36 @@
 
 ## Testovací kolo
 
-<!-- KOLO -->
+Celé kolo nad `3394b2b` (v22.10.6), 22. 10. 2026 15:13 – 23. 10. 02:53 UTC, po částech; `ADMIN_EMAIL=spravce@priklad.cz`, `node_modules` → `$(npm root -g)` (playwright ověřen), `KNG_NEZVYSOVAT_VERZI=1` (verze beze změny, strom po kole čistý):
+
+| Krok | Výsledek | Pozn. |
+|---|---|---|
+| Kontrola verze + sestavení | ✓ | `bash nastroje/testovaci_kolo.sh` (celé kolo), v22.10.6 = den commitu |
+| Sady (`spust_testy.sh --smoke`) | **306 prošlo / 0 selhalo / 6 přeskočeno** (312 sad) | 15:13–15:33 UTC; přeskočené `test.js` (ostrý ceník) + 5 harnessů bez `KNG_PODKLADY` (`overit_manual`, `overit_nabidka_proj_word`, `overit_sablona`, `overit_sablony_online`, `overit_sod`) — prohlížečové harnessy (~44) proběhly |
+| Mutace jádra (`mutace_jadro.mjs`) | **492/492** | 15:33–16:52 UTC v hlavní kopii; otisky obou jader po běhu souhlasí, strom čistý |
+| Mutace serveru (`netlify/mutace.mjs`) | **829/829**, 0 nechycených, 0 chybně zadaných | Běh v hlavní kopii od 16:52 přerušil **restart kontejneru ~19:18 UTC** po 347 chycených (zbylý mutant `src/zamek.js` vrácen `git checkout`); druhý restart 21:28 (sezení nečinné) zastavil první dopouštění po 4 nových. Zbytek 23:31–02:53 UTC ve 3 frontách po souborech (filtr = cesta souboru, 3 samostatné `git worktree` nad `3394b2b`, 728 spuštění vč. opakování v týchž souborech). Úplnost ověřena po názvech proti zadání: 829 unikátních chycených, žádná chybějící ani navíc; `--kontrola` 829/829. Jednou „sady nejsou zelené ani bez mutace“ — příčinou je K7-W15 (nestabilní test), opakování části `functions/odhlaseni.mjs` 3/3. Stromy po běhu čisté na `3394b2b`. |
+| Statické kontroly | **4/4** | verze, CRLF, osobní údaje a tajemství, test výběru větví W2 59/0 |
+
+**Přeživší mutace: žádná** (jádro 492/492, server 829/829) → **prázdné testy (přeživší mutace s funkčním kódem): žádné.** Nechycené ruční mutanty auditní čočky 3 (mimo `testovaci_kolo.sh`) viz K7-W2 a K7-W4.
+
+Zbývá jen J. V. lokálně: sady s firemními podklady (šablony z Disku; negativní kontrola harnessů čeká na `negativni_kontrola.json` — K7-W2) a `test.js` s ostrým ceníkem.
 
 ## Verdikt
 
-<!-- VERDIKT -->
+**VYHOVUJE S VÝHRADOU — 0 kritických, 0 vysokých, 3 střední, 13 nízkých, 16 informativních.** Kolo je celé zelené (sady 306/0/6, jádro 492/492, server 829/829, statické 4/4) a žádná mutace nepřežila. Opravy K6 drží (K6-K1 … K6-K9, K6-S1, K6-S3, K6-S4, K6-S6, K6-S7, K6-W1 … K6-W4, K6-W6), regrese K6 ani K5 není. Hranice rolí drží: hromadný export s nákupními cenami jen Administrátor, navázání cizí dávky 409, stav Pipedrive jen z whitelistu a deal id ze serveru, server zámků a snímků Z1 jako autorita (nové zámky se snímkem neplatného tvaru 409, nic 500), XSS v novém kódu žádné.
+
+Posun `main` z v22.10.1 na v22.10.6 **doporučuji** — nové funkce opravují ostré chyby (413/504 exportu, prázdná verze ceníku) a žádný nález neotvírá přístup k datům ani nemění odeslanou nabídku na serveru bez stopy. Výhrady (první opravná dávka):
+- **K7-K1 (střední):** tisk během běžícího autosave → záznam odeslání zůstane jen v prohlížeči (Z1-4 to slibuje opačně). Do opravy: po tisku CN/SoD počkat na „Uloženo“.
+- **K7-K2 (střední):** snímek odeslané nabídky se do prvního úspěšného uložení přepočítává (DPH/podmínky změněné po selhaném uložení) a po obnovení stránky naopak 409 bez cesty ven.
+- **K7-S1 (střední):** souběžná uložení ztratí záznam rejstříku → zakázka tiše chybí v hromadném exportu (mechanismus starší, #504 na rejstříku nově staví výběr). Do opravy: u exportu pro controlling porovnat počet zakázek s Přehledem.
+- **K7-W1 (J. V.):** sdílecí odkaz na sezení ve veřejném repu — ověřit přístupnost.
 
 | | Počet | Nálezy |
 |---|---|---|
 | Kritické | 0 | — |
 | Vysoké | 0 | — |
 | Střední | 3 | K7-S1, K7-K1, K7-K2 |
-| Nízké | 12 | K7-S2 … K7-S5, K7-K3, K7-K4, K7-W1 … K7-W6 |
+| Nízké | 13 | K7-S2 … K7-S5, K7-K3, K7-K4, K7-W1 … K7-W6, K7-W15 |
 | Informativní | 16 | K7-S6 … K7-S11, K7-K5, K7-K6, K7-W7 … K7-W14 |
 
 ## Nálezy — opravit bez J. V.
@@ -42,6 +60,7 @@ Jasné a malé; doporučeno jednou opravnou dávkou (jedna verze, testy s pojist
 | K7-W4 | nízká | Mutace/testy #504 | Nehlídané pojistky: (a) strop bajtů dávky `bajty > M.davkaBajty` — ruční mutant prošel `test_controlling.mjs` i `test_controlling_objem.mjs`; (b) `zamky.length > 50 → {cist:true}` — mutant prošel `test_controlling.js`, `test_controlling.mjs`, `test_rejstrik.mjs`. (`ctrlProtokolNavaz` kdo/stav chytí test, mutace chybí.) | `netlify/functions/controlling_export.mjs:112`; `src/controlling.js:735`, `:845` | test + mutace pro (a), (b); mutace pro `ctrlProtokolNavaz` |
 | K7-W5 | nízká | Detekce tajemství | `kontrola_udaju.py` nepozná token Pipedrive mimo zápis `PIPEDRIVE_API_TOKEN = '…'` (např. `?api_token=<40 hex>` v URL; pokus s podvrženým souborem v `podklady/` prošel jako čistý) ani odkaz na sdílené sezení (K7-W1). | `nastroje/kontrola_udaju.py:44-52` | vzory `api_token=[0-9a-f]{40}`, `x-api-token`, `claude.ai/code/cshk_` |
 | K7-W6 | nízká (zbytek K6-W5) | Jména v repu | Jméno pracovnice controllingu (46 → 0) a dodavatele lakovny jsou pryč. Příjmení obchodníka zůstává i mimo jména souborů a větví, která CHANGELOG uvádí jako ponechaná: komentáře `src/ui/kalk_proj.js:575`, `src/test_atyp_idempotence.js:82`, `:124`, `src/preklad.js:1039`, 11× `roadmapa/roadmap.json` — CHANGELOG přitom píše „obchodník … v komentářích → role“. | viz Nález | nahradit rolí; jména souborů a větví podle J. V. |
+| K7-W15 | nízká | Test — nestabilní kontrola | `netlify/test_pd_stav.mjs:116` hledá v odpovědi regexem `/zkusebni-token|123|Zkušební/`; odpověď nese čas načtení `nacteno` (ISO s milisekundami), takže test selže, kdykoli čas obsahuje „123“ (v kole K7: `…T01:52:46.123Z` → mutační běh části `functions/odhlaseni.mjs` skončil „sady nejsou zelené ani bez mutace“; opakování prošlo). Pravděpodobnost řádově desetiny procenta na běh — v CI i v mutacích (sada běží u každé mutace) to dělá náhodné červené. | `netlify/test_pd_stav.mjs:116` | hledat jen v polích mimo `nacteno` (nebo `"123"` s hranicemi / hodnotu dealu jako číslo `:123`); pojistka: s pevným `nacteno` obsahujícím 123 dnes selže |
 | K7-S6 | informativní | P1 — `pd_stav` | Souběžné dotazy na zastaralý stav se nespojují (pokus: 30 souběžných → 30 volání Pipedrive). Strop drží (125 dotazů → 120 volání/h) a je na uživatele — cizí vyčerpat nejde. Firemní rozpočet tokenů = uživatelé × 120 × 2 / h; mezi instancemi B158. | `netlify/lib/pd_stav.mjs:78-97` | sdílený promise / `vyhradne('pd_stav/deal:id')`; mez |
 | K7-S7 | informativní | Z1-2 — mez nezapsaná | Viz K7-S2 — rozhodnutí J. V. přepnutí řídící varianty dovoluje; `BEZPECNOST_MEZE.md` Z1 nezmiňuje a B161 neupřesňuje. | `src/zamek.js:480-494`; `src/test_zmrazeni_kl.js:257-258` | doplnit mez (případně řeší K7-S2) |
 | K7-S8 | informativní | E1 — export není snímek | Kandidáti se v každé dávce počítají z rejstříku znovu, kurzor `po` stojí na jménu souboru a přichází od klienta. Zakázka nově zamčená/prodaná mezi dávkami se jménem před kurzorem v souboru nebude, nic se nehlásí (okno sekundy). Týž admin s `po=zzzz` export „dokončí“ (protokol `hotovo`, 1 ze 4 kandidátů) — jen vlastní export, cizí navázat nejde. | `src/controlling.js:777-779`; `netlify/functions/controlling_export.mjs:79-80` | do protokolu `kandidatu` z první dávky, rozdíl hlásit; mez |
@@ -106,6 +125,6 @@ Trvají (beze změny, čekají na J. V.): **K6-S5** (datum prodeje bez spodní m
 
 ## Doporučení
 
-1. **Opravná dávka (bez J. V.):** K7-K1 a K7-K2 (Z1 — integrita záznamu a snímku odeslání; nejdřív), K7-S1 (rejstřík: export doplní kandidáty z `seznam('z/')` + výhradní zápis), K7-S3, K7-S4 + K7-S11 (typy → 400), K7-S5, K7-K3, K7-K4, K7-W2 … K7-W6; mutace pro Z1-4 a #504 pojistky.
+1. **Opravná dávka (bez J. V.):** K7-K1 a K7-K2 (Z1 — integrita záznamu a snímku odeslání; nejdřív), K7-S1 (rejstřík: export doplní kandidáty z `seznam('z/')` + výhradní zápis), K7-S3, K7-S4 + K7-S11 (typy → 400), K7-S5, K7-K3, K7-K4, K7-W2 … K7-W6, K7-W15; mutace pro Z1-4 a #504 pojistky.
 2. **J. V.:** ověřit odkaz K7-W1 (ráno, před posunem `main` nebo hned po něm — nezávisí na kódu aplikace), rozhodnout K7-S2 (snímek hlavičky vs. mez).
 3. **Meze** (`BEZPECNOST_MEZE.md`): přepsat C3 na stav po #504, doplnit P1, Z1-2, K7-S1, K7-S8.

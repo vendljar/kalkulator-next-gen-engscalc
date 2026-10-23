@@ -13,6 +13,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 Nad integrací 4ce35d2 (v22.10.5, tag) + 9abed07. Hlášení J. V. 22. 10. 2026 z ostré verze: export 1.–22. 10. → „muselo by se
 přečíst 633 zakázek (strop 600)", 12.–22. 10. → „server odpověděl 504". Roadmapa #504.
 
+- **K7 (#506, kolo + audit nad 3394b2b, kód beze změny):** sady 306/0/6, mutace jádra 492/492, serveru 829/829, statické 4/4;
+  audit `podklady/K7_AUDIT_22_10.md` — VYHOVUJE S VÝHRADOU (0 kritických, 0 vysokých, 3 střední K7-K1, K7-K2, K7-S1).
+
 - **Přesný předvýběr:** záznam rejstříku nese `ctrlDny` — dny zámků zamčených variant (v Praze, s řadou té varianty)
   a den prodeje z objednaných příplatků (`ctrlRejstrikDny`; nejasný tvar → `{ cist: true }`, zakázku přečte server).
   `ctrlHromadnyKandidati` vybírá podle dne zámku / prodeje v období ± 2 dny, ne podle poslední úpravy — hromadné
