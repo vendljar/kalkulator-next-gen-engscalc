@@ -30,6 +30,7 @@ import pdDeal from './functions/pd_deal.mjs';
 import { ADMIN_EMAIL } from './lib/sdilene.mjs';
 import { pdCisloZNazvu, pdNazevAkce, pdMapaZPoli, pdHodnota, pdZbytekDoSta, pdIco,
          pdDealNaNase, POLE_DEALU, POLE_ORGANIZACE } from './lib/pd_mapa.mjs';
+import { pdZapisDealu } from './lib/pd_prevod.mjs';
 import { pdZaklad, pdOdkazNaDeal, PD_TOKEN_PROMENNA, PD_DOMENA_PROMENNA } from './lib/pipedrive.mjs';
 
 let ok = 0, fail = 0; const selhalo = [];
@@ -56,7 +57,7 @@ const HASH = {
   splatnost: h(1), zaloha: h(2), faktura2: h(3), adresa: h(4), termin: h(5), typ: h(6),
   firma: h(7), osoba: h(8), zaruka: h(9), pokuta: h(10), zadrzne: h(11), neznamé: h(12),
   ico: h(13), typOrg: h(14), treti: h(15),
-  zadrzneZaruka: h(16), limit: h(17), podpisFirma: h(18),
+  zadrzneZaruka: h(16), limit: h(17), podpisFirma: h(18), platba1: h(19),
 };
 const V2 = (field_code, field_name, field_type, options) =>
   ({ field_code, field_name, field_type, is_custom_field: true, is_writable: true, options: options || null });
@@ -78,6 +79,8 @@ const POLE_ODPOVED = [
   V2(HASH.pokuta, 'Smluvní pokuta – prodlení dodávky / odevzdání (% / den)', 'double'),
   V2(HASH.zadrzne, 'Zádržné – do odstranění VaN', 'enum', [{ id: 71, label: 'Ne' }, { id: 73, label: '10%' }]),
   V2(HASH.neznamé, 'Interní příznak XYZ', 'varchar'),
+  /* #512: pole z doby osmi pevných plateb — v CRM je, kalkulátor ho neplní */
+  V2(HASH.platba1, 'Platba 1 – po podpisu smlouvy', 'monetary'),
   { field_code: 'title', field_name: 'Název', field_type: 'varchar', is_custom_field: false, is_writable: true },
 ];
 
@@ -406,6 +409,26 @@ test('obnovit mapu polí smí jen administrátor',
 const predAdmin = naPole();
 await get(pdPole, 'http://x/api/pd/pole?obnovit=1', cAdmin);
 test('administrátor si vynucené obnovení vyžádá', naPole() > predAdmin);
+
+/* #512 (J. V. 23. 10. 2026): „Platební kalendář SoD PROJ" integrátor ještě
+ * nezaložil — přehled mapy ho hlásí jako chybějící. Platba 1 v CRM je, mapa
+ * ji zná (není nezařazená), ale nezapisuje se ani u nabídky před plánem. */
+const prehled = await (await get(pdPole, 'http://x/api/pd/pole', cAdmin)).json();
+test('#512: přehled mapy hlásí kalendář SoD PROJ jako chybějící pole',
+  prehled.ok && prehled.chybi.some(x => x.klic === 'platebniKalendar' && x.nazev === 'Platební kalendář SoD PROJ'),
+  JSON.stringify(prehled.chybi.map(x => x.klic)));
+test('#512: Platba 1 z CRM je v mapě, ne mezi nezařazenými',
+  prehled.mapa.platba1 === HASH.platba1 && !prehled.nezarazeno.some(x => x.hash === HASH.platba1));
+const KAL = 'Platba ve výši 100 000,00 Kč + DPH proběhne po podpisu smlouvy / objednávky.';
+const zapisStare = pdZapisDealu(POLE_DEALU, { proj: { hodnoty: { sodpPlatba1: '95 880 Kč', zaloha: 'Záloha 50 %' },
+  planStary: true, kalendar: KAL, cena: 100000, mena: 'CZK' } }, prehled, { deal: { value: 487500, currency: 'CZK' } });
+test('#512: Platby 1–8 ani záloha PROJ se nepošlou ani u nabídky z doby před plánem',
+  !(HASH.platba1 in zapisStare.custom_fields) && !(HASH.zaloha in zapisStare.custom_fields), JSON.stringify(zapisStare.custom_fields));
+test('#512: kalendář bez pole v CRM se nezapíše, jen ohlásí',
+  !Object.values(zapisStare.custom_fields).includes(KAL) && zapisStare.duvody.some(d => d.klic === 'platebniKalendar'));
+test('#512: hodnota dealu = cena PROJ, potvrzení „stará → nová"',
+  JSON.stringify(zapisStare.deal) === JSON.stringify({ value: 100000, currency: 'CZK' })
+  && zapisStare.potvrzeni.some(x => x.text === '487 500 CZK → 100 000 CZK'), JSON.stringify(zapisStare.potvrzeni));
 
 test('token jde v hlavičce, ne v adrese (adresa se zapisuje do logů)',
   volani.every(v => !v.url.includes(process.env[PD_TOKEN_PROMENNA]))

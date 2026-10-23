@@ -142,19 +142,20 @@ function rucne(zdroj, id) {
  *              kryciHodnota / kryciProjHodnota),
  *   rucne      ruční přepisy (data.kryci.hodnoty) — kvůli `jenRucne`,
  *   atyp       true/false z kalkulace OCK (pole „ATYP"),
- *   planStary  PROJ: nabídka z doby před plánem plateb (`stary` pole platí).
+ *   kalendar   PROJ: seznam plateb smlouvy o dílo (planPdKalendar, #512),
+ *   cena, mena cena řídící varianty bez DPH a měna (hodnota dealu, #512).
  * `popis` = popisy[klic] z mapy polí (typ, volby, zapisovatelnost).
  * `spolecne` = { uzivatele, mena } pro celou zakázku. */
 export function pdDoPd(def, strana, zdroj, popis, spolecne = {}) {
   if (!def || !PD_SMER_ZAPIS.includes(def.smer)) return { prazdne: true };
   const kl = def.kl && def.kl[strana];
   if (!kl) return { prazdne: true };
-  if (def.stary && def.stary.includes(strana) && !(zdroj && zdroj.planStary)) return { prazdne: true };
   if (def.jenRucne && def.jenRucne.includes(strana) && !rucne(zdroj, kl)) return { prazdne: true };
 
   const ids = [].concat(kl);
   const cti = (id) => {
     if (id === '@atyp') return (zdroj && zdroj.atyp === true) ? 'Ano' : (zdroj && zdroj.atyp === false) ? 'Ne' : '';
+    if (id === '@kalendar') return String((zdroj && typeof zdroj.kalendar === 'string') ? zdroj.kalendar : '').trim();
     const h = zdroj && zdroj.hodnoty;
     return String(h && h[id] != null ? h[id] : '').trim();
   };
@@ -218,9 +219,43 @@ export function pdDoPd(def, strana, zdroj, popis, spolecne = {}) {
   }
 }
 
+/* HODNOTA DEALU (#512, rozhodnutí J. V. 23. 10. 2026). Nativní pole dealu
+ * `value` + `currency`, ne vlastní pole: cena řídící varianty BEZ DPH
+ * v měně zakázky, u kombinované zakázky součet OCK a PROJ. Cena je vždy
+ * výsledek kalkulace (`zdroj.cena`), nikdy převzaté ani odhadnuté číslo:
+ * chybí-li u kterékoli strany, nebo mají strany různou měnu, hodnota se
+ * NEPOŠLE vůbec — poloviční součet by v CRM vypadal jako celá zakázka.
+ * `stara` = { value, currency } dealu před zápisem (pro „stará → nová"). */
+export function pdKcText(h) {
+  if (!h || typeof h.value !== 'number' || !isFinite(h.value)) return '(prázdná)';
+  const [cele, des] = Math.abs(h.value).toFixed(2).split('.');
+  const t = cele.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + (des === '00' ? '' : ',' + des);
+  return (h.value < 0 ? '−' : '') + t + ' ' + (h.currency || '');
+}
+export function pdHodnotaDealu(strany, stara) {
+  const casti = ['ock', 'proj'].filter((k) => strany && strany[k]);
+  if (!casti.length) return { prazdne: true };
+  let soucet = 0, mena = null;
+  for (const k of casti) {
+    const c = strany[k].cena;
+    if (typeof c !== 'number' || !isFinite(c) || c <= 0)
+      return { duvod: 'cena ' + k.toUpperCase() + ' bez DPH z kalkulace chybí — hodnota dealu se nezapíše' };
+    const m = String(strany[k].mena || 'CZK').toUpperCase();
+    if (mena && m !== mena) return { duvod: 'OCK a PROJ mají různou měnu (' + mena + ' / ' + m + ') — hodnota dealu se nezapíše' };
+    mena = m; soucet += c;
+  }
+  const nova = { value: Math.round(soucet * 100) / 100, currency: mena };
+  const s = (stara && typeof stara.value === 'number') ? { value: stara.value, currency: stara.currency || '' } : null;
+  return { hodnota: nova, stara: s,
+    zmena: !s || s.value !== nova.value || s.currency !== nova.currency,
+    text: pdKcText(s) + ' → ' + pdKcText(nova) };
+}
+
 /* Celý zápis jedné zakázky do `custom_fields` dealu — jeden PATCH (5 tokenů)
  * bez ohledu na počet polí. `strany` = { ock?: zdroj, proj?: zdroj },
- * `pole` = mapa z pdPoleMapa() ({ mapa, popisy }).
+ * `pole` = mapa z pdPoleMapa() ({ mapa, popisy }). Hodnota dealu jde do
+ * `deal` (value + currency vedle custom_fields v témže PATCH) a do
+ * `potvrzeni` jako „stará → nová"; `spolecne.deal` = deal před zápisem.
  *
  * Kombinovaná zakázka: u polí, která mají OCK i PROJ, rozhoduje OCK
  * (realizace je smluvně nosná část). PROJ se použije, jen když OCK pro to
@@ -240,5 +275,12 @@ export function pdZapisDealu(definice, strany, pole, spolecne = {}) {
       break;
     }
   }
-  return { custom_fields, duvody, zapsano };
+  const deal = {}, potvrzeni = [];
+  const hd = pdHodnotaDealu(strany, spolecne.deal);
+  if (hd.duvod) duvody.push({ klic: 'hodnotaDealu', nazev: 'Hodnota dealu', strana: '', duvod: hd.duvod });
+  else if (hd.hodnota) {
+    Object.assign(deal, hd.hodnota);
+    potvrzeni.push({ klic: 'hodnotaDealu', nazev: 'Hodnota dealu', text: hd.text, zmena: hd.zmena });
+  }
+  return { custom_fields, deal, duvody, zapsano, potvrzeni };
 }

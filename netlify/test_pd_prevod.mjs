@@ -11,7 +11,7 @@
  *      Kdo přejmenuje volbu v krycím listu, dozví se to tady — ne až z CRM.
  * ============================================================ */
 import { createRequire } from 'node:module';
-import { pdNorm, pdCisla, pdVolba, pdDoPd, pdZapisDealu } from './lib/pd_prevod.mjs';
+import { pdNorm, pdCisla, pdVolba, pdDoPd, pdZapisDealu, pdHodnotaDealu, pdKcText } from './lib/pd_prevod.mjs';
 import { pdMapaZPoli, POLE_DEALU } from './lib/pd_mapa.mjs';
 
 let ok = 0, fail = 0; const selhalo = [];
@@ -179,12 +179,26 @@ test('částka: měna z textu má přednost', P('spravniPoplatky', 'proj', { sod
 test('částka: bez měny v textu platí měna zakázky',
   P('pokutaSoucinnost', 'ock', { sodPokutaDenni: '500' }, {}, { mena: 'EUR' }).hodnota.currency === 'EUR');
 test('částka: procento do pole s měnou nepatří', !!P('pokutaSoucinnost', 'ock', { sodPokutaDenni: '0,05 % z ceny díla' }).duvod);
-test('platby 1–8 PROJ: s plánem plateb se neposílají',
-  P('platba1', 'proj', { sodpPlatba1: '95 880 Kč' }).prazdne === true);
-test('platby 1–8 PROJ: nabídka z doby před plánem je pošle',
-  P('platba1', 'proj', { sodpPlatba1: '95 880 Kč' }, { planStary: true }).hodnota.value === 95880);
-test('záloha PROJ: s plánem plateb se neposílá (pole `stary`)',
-  P('zaloha1Proc', 'proj', { zaloha: 'Záloha 50 %' }).prazdne === true);
+/* #512 (J. V. 23. 10. 2026): Platby 1–8 kalkulátor neplní vůbec, ani zpětně
+ * u nabídky PROJ z doby před plánem plateb; PROJ neposílá ani zálohu. */
+const PLATBY = POLE_DEALU.filter((d) => /^platba[1-8]$/.test(d.klic));
+const sPlatbami = Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8].map((i) => ['sodpPlatba' + i, '95 880 Kč']));
+test('#512: Platby 1–8 jsou v mapě (přehled je nehlásí jako nezařazené), směr „nic"',
+  PLATBY.length === 8 && PLATBY.every((d) => d.smer === 'nic' && !(d.kl && d.kl.proj)) && PLATBY.every((d) => pole.mapa[d.klic]),
+  J(PLATBY.map((d) => [d.klic, d.smer, d.kl])));
+test('#512: Platby 1–8 se nepošlou s plánem plateb',
+  PLATBY.every((d) => P(d.klic, 'proj', sPlatbami).prazdne === true));
+test('#512: Platby 1–8 se nepošlou ani u nabídky z doby před plánem',
+  PLATBY.every((d) => P(d.klic, 'proj', sPlatbami, { planStary: true }).prazdne === true));
+test('#512: záloha PROJ se nepošle s plánem ani u nabídky z doby před plánem',
+  P('zaloha1Proc', 'proj', { zaloha: 'Záloha 50 %' }).prazdne === true
+  && P('zaloha1Proc', 'proj', { zaloha: 'Záloha 50 %' }, { planStary: true }).prazdne === true
+  && DEF.zaloha1Proc.kl.proj === undefined && DEF.zaloha1Proc.stary === undefined);
+test('#512: záloha OCK se posílá dál', P('zaloha1Proc', 'ock', { zaloha1: '50 % – po podpisu smlouvy' }).hodnota === 50);
+test('#512: celý zápis staré nabídky PROJ nenese ani jednu platbu ani zálohu',
+  (() => { const r = pdZapisDealu(POLE_DEALU, { proj: { hodnoty: { ...sPlatbami, zaloha: 'Záloha 50 %' }, planStary: true } }, pole);
+    return PLATBY.concat([DEF.zaloha1Proc]).every((d) => !(pole.mapa[d.klic] in r.custom_fields))
+      && !r.zapsano.some((k) => /^platba|^zaloha/.test(k)); })());
 
 const LIDE = [{ id: 7, name: 'Jan Vzorový', email: 'jan.vzorovy@priklad.cz' },
   { id: 8, name: 'Eva Zkušební', email: 'eva@priklad.cz' }];
@@ -228,6 +242,80 @@ test('OCK s nepřevoditelnou hodnotou nenahradí hodnota PROJ',
 test('pole, které v CRM chybí, se ohlásí',
   (() => { const bez = { mapa: { ...pole.mapa }, popisy: pole.popisy }; delete bez.mapa.splatnostDni;
     return pdZapisDealu(POLE_DEALU, { ock }, bez).duvody.some((d) => d.klic === 'splatnostDni'); })());
+
+console.log('\n===== #512: PLATEBNÍ KALENDÁŘ SoD PROJ =====\n');
+
+const KAL = 'Platba ve výši 30 000,00 Kč + DPH proběhne po podpisu smlouvy / objednávky.\n'
+  + 'Platba ve výši 70 000,00 Kč + DPH proběhne po předání kompletní DPS.';
+test('#512: kalendář je Velký text, zapisuje se, zdrojem je PROJ',
+  DEF.platebniKalendar && DEF.platebniKalendar.nazev === 'Platební kalendář SoD PROJ' && DEF.platebniKalendar.smer === 'zapis'
+  && J(DEF.platebniKalendar.typ) === '["text"]' && DEF.platebniKalendar.kl.proj === '@kalendar' && !DEF.platebniKalendar.kl.ock);
+test('#512: kalendář se zapíše přesně jako text dopočtu', P('platebniKalendar', 'proj', {}, { kalendar: KAL }).hodnota === KAL);
+test('#512: bez kalendáře (stará nabídka, nesedící plán) se nic nepošle',
+  P('platebniKalendar', 'proj', {}, { kalendar: '' }).prazdne === true && P('platebniKalendar', 'proj', {}).prazdne === true);
+test('#512: OCK kalendář nemá', P('platebniKalendar', 'ock', {}, { kalendar: KAL }).prazdne === true);
+test('#512: kalendář v celém zápisu kombinované zakázky',
+  pdZapisDealu(POLE_DEALU, { ock: { hodnoty: {} }, proj: { hodnoty: {}, kalendar: KAL } }, pole).custom_fields[pole.mapa.platebniKalendar] === KAL);
+{
+  const bezPole = pdMapaZPoli(POLE.filter((p) => p.field_name !== 'Platební kalendář SoD PROJ'), POLE_DEALU);
+  const r = pdZapisDealu(POLE_DEALU, { proj: { hodnoty: {}, kalendar: KAL } }, bezPole);
+  test('#512: dokud integrátor pole nezaloží, přehled ho hlásí jako chybějící a nic se nezapíše',
+    bezPole.chybi.some((x) => x.klic === 'platebniKalendar') && !Object.values(r.custom_fields).includes(KAL)
+    && r.duvody.some((d) => d.klic === 'platebniKalendar'), J(r));
+  const kratke = pdMapaZPoli(POLE.map((p) => p.field_name === 'Platební kalendář SoD PROJ' ? { ...p, field_type: 'varchar' } : p), POLE_DEALU);
+  test('#512: kalendář v krátkém textu (255 znaků) se nespáruje',
+    !kratke.mapa.platebniKalendar && kratke.typNesedi.some((x) => x.klic === 'platebniKalendar'));
+}
+{
+  /* Text = planPdKalendar ze stejného dopočtu jako smlouva o dílo (src/plan_plateb.js). */
+  const PP = createRequire(new URL('..', import.meta.url).pathname + 'netlify/x.mjs')(new URL('../src/plan_plateb.js', import.meta.url).pathname);
+  const fmt = (n) => (+n).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kč';
+  const ceny = { dpz: 100000, dps: 50000 };
+  const dop = PP.planPlatebDopocet(ceny, { v: 1, predvolba: 'std' }, PP.PLAN_PROJ_VYCHOZI);
+  const pl = { ceny, dopocet: dop, mena: { fmt } };
+  const text = PP.planPdKalendar(pl);
+  test('#512: planPdKalendar = planSodKalendar(dopočet, formát měny)',
+    dop.sedi && text !== '' && text === PP.planSodKalendar(dop, fmt) && text.split('\n').length === dop.platby.length
+    && text.split('\n').every((r) => /^Platba ve výši .+ Kč \+ DPH proběhne .+\.$/.test(r)), text);
+  test('#512: zápis pošle text dopočtu beze změny', P('platebniKalendar', 'proj', {}, { kalendar: text }).hodnota === text);
+  test('#512: nabídka z doby před plánem kalendář nemá', PP.planPdKalendar({ ...pl, stary: true }) === '');
+  test('#512: plán se součtem jiným než cena kalendář nemá',
+    PP.planPdKalendar({ ...pl, dopocet: { ...dop, sedi: false } }) === '' && PP.planPdKalendar(null) === '');
+}
+
+console.log('\n===== #512: HODNOTA DEALU =====\n');
+
+test('#512: OCK — cena bez DPH v měně zakázky',
+  J(pdHodnotaDealu({ ock: { cena: 487500, mena: 'CZK' } }).hodnota) === J({ value: 487500, currency: 'CZK' }));
+test('#512: PROJ v EUR', J(pdHodnotaDealu({ proj: { cena: 12345.678, mena: 'eur' } }).hodnota) === J({ value: 12345.68, currency: 'EUR' }));
+test('#512: kombinovaná zakázka = součet OCK a PROJ',
+  J(pdHodnotaDealu({ ock: { cena: 400000, mena: 'CZK' }, proj: { cena: 150000.5, mena: 'CZK' } }).hodnota)
+    === J({ value: 550000.5, currency: 'CZK' }));
+test('#512: bez měny platí CZK', pdHodnotaDealu({ ock: { cena: 1000 } }).hodnota.currency === 'CZK');
+test('#512: kombinovaná, jedné straně chybí cena — nic se nepošle (žádný poloviční součet)',
+  !!pdHodnotaDealu({ ock: { cena: 400000 }, proj: {} }).duvod && !pdHodnotaDealu({ ock: { cena: 400000 }, proj: {} }).hodnota);
+test('#512: různé měny OCK a PROJ se nesčítají',
+  /různou měnu/.test(pdHodnotaDealu({ ock: { cena: 1, mena: 'CZK' }, proj: { cena: 1, mena: 'EUR' } }).duvod || ''));
+test('#512: cena se nevymýšlí — text, nula ani záporná cena se nepošlou',
+  ['400 000', 0, -5, NaN, null].every((c) => !!pdHodnotaDealu({ ock: { cena: c } }).duvod));
+test('#512: bez zakázky není co poslat', pdHodnotaDealu({}).prazdne === true);
+{
+  const r = pdHodnotaDealu({ ock: { cena: 400000, mena: 'CZK' }, proj: { cena: 150000, mena: 'CZK' } }, { value: 487500, currency: 'CZK' });
+  test('#512: potvrzení „stará → nová"', r.text === '487 500 CZK → 550 000 CZK' && r.zmena === true, r.text);
+  const bez = pdHodnotaDealu({ ock: { cena: 1250.5, mena: 'EUR' } }, { value: null, currency: 'EUR' });
+  test('#512: prázdná stará hodnota', bez.text === '(prázdná) → 1 250,50 EUR' && bez.zmena === true, bez.text);
+  test('#512: stejná hodnota = beze změny', pdHodnotaDealu({ ock: { cena: 10, mena: 'CZK' } }, { value: 10, currency: 'CZK' }).zmena === false);
+  test('#512: formát částky', pdKcText({ value: 1234567.8, currency: 'CZK' }) === '1 234 567,80 CZK');
+  const z2 = pdZapisDealu(POLE_DEALU, { ock: { hodnoty: { splatnostDni: '14' }, cena: 400000, mena: 'CZK' },
+    proj: { hodnoty: {}, cena: 150000, mena: 'CZK' } }, pole, { deal: { value: 487500, currency: 'CZK' } });
+  test('#512: celý zápis nese hodnotu dealu vedle custom_fields a v potvrzení',
+    J(z2.deal) === J({ value: 550000, currency: 'CZK' }) && z2.custom_fields[pole.mapa.splatnostDni] === 14
+    && z2.potvrzeni.some((x) => x.klic === 'hodnotaDealu' && x.text === '487 500 CZK → 550 000 CZK')
+    && !Object.values(z2.custom_fields).includes(550000), J(z2));
+  const z3 = pdZapisDealu(POLE_DEALU, { ock: { hodnoty: {}, cena: 400000 }, proj: { hodnoty: {} } }, pole);
+  test('#512: bez ceny jedné strany zápis hodnotu dealu nenese a ohlásí důvod',
+    J(z3.deal) === '{}' && z3.duvody.some((d) => d.klic === 'hodnotaDealu'));
+}
 
 console.log('\n===== KŘÍŽOVÁ KONTROLA S KRYCÍMI LISTY =====\n');
 
@@ -290,9 +378,8 @@ test('pojištění PROJ: výchozí „ANO – dle…" je „Ano – dle…"',
 test('způsob fakturace PROJ: výchozí věta „po dokončení jednotlivých stupňů…" má protějšek',
   P('zpusobFakturace', 'proj', { zpusobFakturace: 'po dokončení jednotlivých stupňů dokumentace' }).hodnota
     === idVolby('zpusobFakturace', 'Po dokončení stupňů dokumentace'));
-test('zálohy PROJ z doby před plánem se převedou',
-  J(volbyListu('proj', 'zaloha').map((t) => P('zaloha1Proc', 'proj', { zaloha: t }, { planStary: true }).hodnota))
-    === '[0,30,50,70]');
+test('#512: zálohy PROJ z doby před plánem se do CRM neposílají (žádná volba)',
+  volbyListu('proj', 'zaloha').every((t) => P('zaloha1Proc', 'proj', { zaloha: t }, { planStary: true }).prazdne === true));
 test('termín dodání s ATYP z krycího listu se převede na jedno číslo',
   P('terminDodaniTydny', 'ock', { terminDodani: kr.kryciTerminDodaniText('12', true, 4) }).hodnota === 16,
   kr.kryciTerminDodaniText('12', true, 4));
