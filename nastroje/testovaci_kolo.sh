@@ -31,6 +31,9 @@
 #                                                      jen část mutací (každá 4. od 2.)
 #   KNG_MUTACE_OD=529 bash nastroje/testovaci_kolo.sh --jen mutace-server
 #                                                      pokračování přerušeného běhu
+#   KNG_MUTACE_OD patří k JEDNOMU kroku (--jen mutace-server, nebo --jen mutace-jadro):
+#   číslování serveru a jádra se liší. Navázání nad pracovní kopií se zbytkem
+#   mutace v src/ nebo netlify/ skončí chybou (K8-W9, #514; vědomě KNG_MUTACE_SPINAVE=1).
 #   (P2, 23. 10. 2026; podklady/PROMPT_mutacni_beh_23_10.md. Proměnné předá oběma
 #   mutačním skriptům prostředí, výběr dělá nastroje/mutace_cast.mjs. Kolo
 #   s částí mutací nikdy nehlásí „VŠE ZELENÉ" — jen „ZELENÁ ČÁST".)

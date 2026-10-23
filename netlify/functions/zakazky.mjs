@@ -7,7 +7,7 @@
  *   stejná kontrola jako ve složce (uloKontrolaZamku není v modelu, ale
  *   zámky hlídá porovnání razítek: server odmítne zápis, který by změnil
  *   variantu zamčenou v uložené verzi). */
-import { uloziste, vyzadujRoli, json, serverVerze, vyhradne } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, serverVerze, vyhradne, klicZAdresyPlatny } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B, zakazkaVelikostHlaska } from '../lib/zakazka_kontrola.mjs';
 import { pdStavPripoj, pdStavUlozeni } from '../lib/pd_stav.mjs';
@@ -39,6 +39,7 @@ export default async (req) => {
       const rejstrik = await s.cti('_rejstrik');
       return json({ ok: true, rejstrik: rejstrik || { schema: 1, zakazky: [] } });
     }
+    if (!klicZAdresyPlatny(soubor)) return json({ ok: false, chyba: 'Neplatné jméno zakázky.' }, 400);   // SEC-I4
     const zak = await s.cti('z/' + soubor);
     /* Stav dealu Pipedrive (P1): poslední známý z úložiště pd_stav. */
     return zak ? json({ ok: true, zakazka: await pdStavPripoj(zak) })
@@ -61,16 +62,25 @@ export default async (req) => {
       return json({ ok: false, chyba: 'Mazat zakázky smí jen administrátor.' }, 403);
     const soubor = url.searchParams.get('soubor');
     if (!soubor) return json({ ok: false, chyba: 'Chybí jméno zakázky.' }, 400);
-    const zak = await s.cti('z/' + soubor);
-    if (zak) {
-      const zamcenych = (zak.varianty || [])
-        .filter(v => globalThis.variantaUzamcena && globalThis.variantaUzamcena(v)).length;
-      if (zamcenych && url.searchParams.get('ismazatOdeslane') !== '1')
-        return json({ ok: false, zamcenych,
-          chyba: 'Zakázka obsahuje ' + zamcenych + ' odeslanou (uzamčenou) nabídku. '
-            + 'Smazání je potřeba potvrdit zvlášť.' }, 409);
-      await s.smaz('z/' + soubor);
-    }
+    if (!klicZAdresyPlatny(soubor)) return json({ ok: false, chyba: 'Neplatné jméno zakázky.' }, 400);   // SEC-I4
+    /* SEC-S1 (#514): kontrola zámků a smazání v témže výhradním úseku jako
+     * uložení — souběžný tisk nesmí zamknout zakázku, kterou kontrola viděla
+     * nezamčenou. */
+    const smazani = await vyhradne('zakazky/z/' + soubor, async () => {
+      const zak = await s.cti('z/' + soubor);
+      if (zak) {
+        const zamcenych = (zak.varianty || [])
+          .filter(v => globalThis.variantaUzamcena && globalThis.variantaUzamcena(v)).length;
+        if (zamcenych && url.searchParams.get('ismazatOdeslane') !== '1')
+          return { odpoved: json({ ok: false, zamcenych,
+            chyba: 'Zakázka obsahuje ' + zamcenych + ' odeslanou (uzamčenou) nabídku. '
+              + 'Smazání je potřeba potvrdit zvlášť.' }, 409) };
+        await s.smaz('z/' + soubor);
+      }
+      return { zak };
+    });
+    if (smazani.odpoved) return smazani.odpoved;
+    const zak = smazani.zak;
     await vyhradne('zakazky/_rejstrik', async () => {   // K7-S1, viz POST
       const rej = (await s.cti('_rejstrik')) || { schema: 1, zakazky: [] };
       const zbytek = ULO.uloRejstrikOdeber(Array.isArray(rej.zakazky) ? rej.zakazky : [], soubor);
@@ -104,6 +114,16 @@ export default async (req) => {
   const prijem = zakazkaPrijmi(t.zakazka, ULO);
   if (!prijem.ok) return json({ ok: false, chyba: prijem.chyba }, prijem.status);
   const { zak, jmeno } = prijem;
+  /* ČTENÍ, KONTROLY A ZÁPIS ZAKÁZKY V JEDNOM VÝHRADNÍM ÚSEKU (SEC-S1, #514,
+   * audit S1 23. 10. 2026). Do v23.10.4 se `stara` přečetla jednou a zápis
+   * nehlídal nic: souběžné uložení starší kopie (autosave z jiného okna,
+   * kolega), které četlo dřív, než tisk zapsal zámek, prošlo kolizí razítka
+   * i kontrolou zámků proti staré verzi a zámek odeslané nabídky tiše smazalo
+   * (podklady/S1_pokusy/server/p3_zamek_soubeh.mjs). Teď se uložení téže
+   * zakázky v instanci funkce řadí za sebe a těsně před zápisem se zakázka
+   * přečte znovu — jiné razítko než u `stara` (zápis jiné instance nebo jiné
+   * cesty) = 409 kolize, nic se nepřepíše. Mimo souběh beze změny. */
+  const vysledek = await vyhradne('zakazky/z/' + jmeno, async () => {
   const stara = await s.cti('z/' + jmeno);
 
   /* Razítko verze (audit 22. 8. 2026, B10). Klient posílá razítko verze, ze
@@ -125,13 +145,13 @@ export default async (req) => {
       const ulozeneJmeno = String((t.ocekavaneRazitko ? stara.upravilJmeno : stara.autorJmeno) || '');
       const kdo = ulozeneJmeno || (await jmenoUctu(kdoEmail)) || kdoEmail;
       const kdoVy = !!kdoEmail && kdoEmail.toLowerCase() === String(relace.email || '').toLowerCase();
-      return json({ ok: false, kolize: true, naDisku: kol.naDisku,
+      return { odpoved: json({ ok: false, kolize: true, naDisku: kol.naDisku,
         kdo, kdoEmail, kdoVy,
         chyba: t.ocekavaneRazitko
           ? 'Zakázku mezitím uložil(a) ' + (kdo || 'někdo jiný') + (kdoVy ? ' (váš účet — jiné okno nebo záložka)' : '')
             + '. Načtěte ji znovu, nebo změny vědomě přepište.'
           : 'Stejné číslo nabídky už používá uložená zakázka ' + jmeno + (kdo ? ' (' + kdo + ')' : '')
-            + '. Zvolte vlastní číslo, nebo ji vědomě přepište.' }, 409);
+            + '. Zvolte vlastní číslo, nebo ji vědomě přepište.' }, 409) };
     }
   }
 
@@ -145,14 +165,26 @@ export default async (req) => {
   const kontrola = zakazkaServerKontrola(stara, zak, relace,
     { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni',
       program: prog, matice: (zobr && zobr.matice) || null });
-  if (!kontrola.ok) return json({ ok: false, chyba: kontrola.chyba }, kontrola.status);
-  const sporne = kontrola.sporne;
+  if (!kontrola.ok) return { odpoved: json({ ok: false, chyba: kontrola.chyba }, kontrola.status) };
   /* Stav dealu Pipedrive dosazuje server (P1) — z prohlížeče jen tvar. */
   await pdStavUlozeni(zak, stara);
 
+  /* SEC-S1: druhé čtení těsně před zápisem (viz začátek úseku). */
+  const tesne = await s.cti('z/' + jmeno);
+  if (!!tesne !== !!stara || ULO.uloRazitko(tesne) !== ULO.uloRazitko(stara)) {
+    const kdoEmail = String((tesne && (tesne.upravil || tesne.autor)) || '');
+    const kdo = String((tesne && (tesne.upravilJmeno || tesne.autorJmeno)) || '') || kdoEmail;
+    return { odpoved: json({ ok: false, kolize: true, naDisku: ULO.uloRazitko(tesne),
+      kdo, kdoEmail, kdoVy: !!kdoEmail && kdoEmail.toLowerCase() === String(relace.email || '').toLowerCase(),
+      chyba: 'Zakázku právě uložil(a) ' + (kdo || 'někdo jiný') + '. Načtěte ji znovu, nebo změny vědomě přepište.' }, 409) };
+  }
   const razitko = ULO.uloRazitkoNove();
   zak.uloRazitko = razitko;
   await s.zapis('z/' + jmeno, zak);
+  return { sporne: kontrola.sporne, razitko };
+  });
+  if (vysledek.odpoved) return vysledek.odpoved;
+  const { sporne, razitko } = vysledek;
   /* REJSTŘÍK JE ČTENÍ–ZMĚNA–ZÁPIS (K7-S1, audit 23. 10. 2026). Dvě souběžná
    * uložení v téže instanci funkce se řadí za sebe (vyhradne) — jinak pozdější
    * zápis tiše vypustil záznam dřívějšího a zakázka chyběla v Přehledu

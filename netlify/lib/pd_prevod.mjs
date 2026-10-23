@@ -63,8 +63,26 @@ const nabidka = (volby) => (volby || []).map((o) => '„' + o.label + '"').join(
 
 /* Právě jedno číslo, jinak důvod. Text v závorce se nepočítá — „16 týdnů
  * (vč. 4 týdnů za ATYP)" je šestnáct týdnů, ne dvě čísla. */
+/* Závorky pryč LINEÁRNĚ (K8-S2, #514, audit K8 24. 10. 2026). Regulár
+ * `/\([^)]*\)/g` byl u textu s mnoha „(" bez „)" kvadratický (200 000× „("
+ * = 18 s CPU v jednom požadavku). Průchod dává TÝŽ výsledek jako regulár:
+ * od „(" k nejbližší „)" se nahradí mezerou, „(" bez „)" za sebou zůstane. */
+export function pdBezZavorek(text) {
+  const t = String(text);
+  let out = '', i = 0;
+  while (i < t.length) {
+    const z = t.indexOf('(', i);
+    if (z < 0) { out += t.slice(i); break; }
+    const k = t.indexOf(')', z + 1);
+    if (k < 0) { out += t.slice(i); break; }
+    out += t.slice(i, z) + ' ';
+    i = k + 1;
+  }
+  return out;
+}
+
 function jedno(text, bezZavorek) {
-  const t = bezZavorek ? String(text).replace(/\([^)]*\)/g, ' ') : String(text);
+  const t = bezZavorek ? pdBezZavorek(text) : String(text);
   const c = pdCisla(t);
   if (c.length === 1) return { hodnota: c[0] };
   return { duvod: c.length ? 'v hodnotě „' + text + '" je víc čísel' : 'v hodnotě „' + text + '" není číslo' };

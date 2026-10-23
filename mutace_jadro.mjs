@@ -179,6 +179,11 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* #514 (O-K8, 24. 10. 2026): SEC-N3 — konec řádku v argumentu obsluhy. Hlídá src/test_escape.js. */
+  { nazev: '#514 SEC-N3: escJs neescapuje konec řádku', soubor: 'ui/common.js',
+    hledej: "  .replace(/\\r/g, '\\\\r').replace(/\\n/g, '\\\\n').replace(/\\u2028/g, '\\\\u2028').replace(/\\u2029/g, '\\\\u2029'));",
+    nahrad: "  );",
+    proc: 'karta zákazníka s koncem řádku v názvu by v našeptávači mlčky nefungovala (neplatný JS v onclick)' },
   /* ---------- B183: plocha v obsahu cenové výjimky na 0,1 m² (20. 10. 2026, v20.10.5) ---------- */
   { nazev: 'B183: plocha v obsahu výjimky zpět na celé m²', soubor: 'vyjimky.js',
     hledej: "  return typeof x === 'number' && isFinite(x) ? Math.ceil(x * 10 - 1e-6) / 10 : null;",
@@ -2596,6 +2601,9 @@ if (JEN_KONTROLA) {
 const vyber = mutaceCast(MUTACE, process.argv.slice(2), process.env, (m) => !filtr
   || m.nazev.toLowerCase().includes(filtr) || m.soubor.toLowerCase().includes(filtr));
 if (vyber.chyba) { console.log('CHYBA VOLBY: ' + vyber.chyba); process.exit(2); }
+{ const { navazaniChyba } = await import('./nastroje/mutace_cast.mjs');   // K8-W9
+  const ch = navazaniChyba(dirname(fileURLToPath(import.meta.url)), vyber, process.env);
+  if (ch) { console.log('CHYBA VOLBY: ' + ch); process.exit(2); } }
 
 const vsechnySady = najdiSady();
 
@@ -2633,11 +2641,8 @@ console.log('\nVýchozí stav: ' + zelene.length + ' sad zelených'
 const vybrane = vyber.vybrane;
 console.log('Mutací k ověření: ' + vybrane.length + (filtr ? ' (filtr: „' + filtr + '")' : '')
   + (vyber.popis ? ' (' + vyber.popis + ')' : '') + '\n');
-if (filtr && !vybrane.length) {
-  /* Překlep ve filtru by jinak vypadal jako čistý běh bez jediného nálezu. */
-  console.log('Filtr „' + filtr + '" neodpovídá žádné mutaci — nic se neověřilo.');
-  process.exit(1);
-}
+/* Prázdný výběr (i překlep ve filtru) hlásí už mutaceCast jako chybu volby
+ * (K8-W2, #514) — dřív tu stála vlastní kontrola jen pro filtr. */
 
 let chycene = 0;
 const nechycene = [];
@@ -2680,7 +2685,7 @@ console.log('\n============================================================');
 console.log('Chycených ' + chycene + ' z ' + (chycene + nechycene.length)
   + (chybne.length ? '   (chybně zadaných mutací: ' + chybne.length + ')' : ''));
 /* Část běhu nikdy netvrdí, že prošlo všech N (zadání mutačního běhu). */
-if (vyber.popis) console.log('Pokryto: ' + vyber.popis + ' — NE celý běh.');
+if (!vyber.cely) console.log('Pokryto: ' + vyber.popis + ' — NE celý běh.');   // K8-W8
 
 if (nechycene.length) {
   console.log('\nNECHYCENÉ MUTACE — tohle by dnes testy nezachytily:');

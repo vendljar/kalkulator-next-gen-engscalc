@@ -28,6 +28,7 @@
  * Log (#151 N2): každý běh zapíše trvání a velikost otisku, chyba jde do logu
  * celá. Limit plánované funkce je 30 s — v Netlify → Logs → Functions →
  * zaloha_nocni je vidět, jak blízko je. */
+import { JSON_HLAVICKY } from '../lib/sdilene.mjs';
 import { porizOtisk, retenceProved } from '../lib/zalohovani.mjs';
 import { nocniUklid } from '../lib/uklid.mjs';
 
@@ -54,6 +55,6 @@ export default async () => {
   let uklid;
   try { uklid = await nocniUklid(); } catch (e) { uklid = { chyba: String(e && e.message || e) }; }
   return new Response(JSON.stringify({ ok: true, ...v, retence, uklid }), {
-    headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+    headers: JSON_HLAVICKY });   // no-store a nosniff (SEC-I1, #514)
 };
 export const config = { schedule: '0 2 * * *' };

@@ -90,13 +90,44 @@ export function ocistiZnacky(z) {
   }
 }
 
+/* PROTOTYPOVÉ KLÍČE (SEC-I3, #514, audit S1 23. 10. 2026). JSON.parse z těla
+ * udělá z `"__proto__"` vlastní vlastnost a ta se uložila; `Object.prototype`
+ * zůstal čistý, ale klient, který by takový objekt slil přes `Object.assign`,
+ * by si prototyp přepsal. `__proto__` se proto zahazuje vždy, `constructor`
+ * a `prototype` jen s objektem v hodnotě (vektor `constructor.prototype`) —
+ * text pod takovým klíčem (třeba název položky) zůstane. Do hloubky, na místě. */
+export function zakazkaBezPrototypovychKlicu(x, hloubka = 0) {
+  if (!x || typeof x !== 'object' || hloubka > 64) return x;
+  for (const k of Object.keys(x)) {
+    const v = x[k];
+    if (k === '__proto__' || ((k === 'constructor' || k === 'prototype') && v !== null && typeof v === 'object')) {
+      delete x[k]; continue;
+    }
+    if (v && typeof v === 'object') zakazkaBezPrototypovychKlicu(v, hloubka + 1);
+  }
+  return x;
+}
+
 /* PŘIJETÍ ZAKÁZKY: migrace (importZakazka), jméno souboru, délka čísla, tvar
  * a jedinečnost identifikátorů (B1, B26, B29, B45, B82). importZakazka na
  * nesmyslném vstupu vyhodí výjimku — bez obalu by z ní byla holá 502. */
 export function zakazkaPrijmi(telo, ULO) {
+  /* Číslo nabídky a název/id varianty jen jako jednoduchá hodnota (K8-S1,
+   * #514, audit K8 24. 10. 2026) — zbytek třídy K7-S4/K7-S11: `{"toString":1}`
+   * shodil převod na text v uloCisloVyplneno, uloIdBezpecne a typové kontrole
+   * na HTTP 500, pole v `cislo` prošlo jako text. Kontrola stojí před
+   * importem, protože ten už s hodnotami pracuje. */
+  const slozene = (x) => x !== null && typeof x === 'object';
+  if (telo && typeof telo === 'object') {
+    if (slozene(telo.cislo)) return { ok: false, status: 400, chyba: 'Číslo nabídky musí být text.' };
+    if (Array.isArray(telo.varianty) && telo.varianty.some(v => v && typeof v === 'object' && (slozene(v.nazev) || slozene(v.id))))
+      return { ok: false, status: 400, chyba: 'Název a označení varianty musí být text.' };
+  }
   let zak;
   try { zak = globalThis.importZakazka(telo || {}); }
-  catch (e) { return { ok: false, status: 400, chyba: 'Zakázku se nepodařilo přečíst: ' + e.message }; }
+  /* Interní text výjimky do odpovědi nepatří (K8-S8, #514) — jen obecná věta. */
+  catch (e) { return { ok: false, status: 400, chyba: 'Zakázku se nepodařilo přečíst — zakázka má neplatný tvar.' }; }
+  zakazkaBezPrototypovychKlicu(zak);
   const jmeno = ULO.uloJmenoSouboru(zak);
   if (!jmeno) return { ok: false, status: 400, chyba: 'Zakázka nemá vyplněné číslo nabídky.' };
   if (String(zak.cislo || '').length > CISLO_MAX)

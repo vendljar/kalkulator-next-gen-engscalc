@@ -200,7 +200,9 @@ function funkceZeSkriptu() {
   /* K7-W2 (#507): chybějící negativni_kontrola.json nesmí skončit „prošlo" —
    * harness si to zapamatuje a na konci (bez selhání) skončí přes preskoc (kód 4). */
   test('K7-W2: bez negativni_kontrola.json končí harness jako PŘESKOČENO, ne prošlo',
-    harn.every(t => /if \(negativni === null\) \{\s*negPreskocena = [^;]+;/.test(t)
+    /* K8-W1 (#514, audit K8): přiřazení musí nést seznam míst se souborem —
+     * `negPreskocena = null;` (mutant z auditu) dřív regulárem prošlo. */
+    harn.every(t => /if \(negativni === null\) \{\s*negPreskocena = (?!(?:null|false|undefined|0|''|"")\s*;)[^;]*negativni_kontrola\.json[^;]*;/.test(t)
       && /if \(negPreskocena && !fail\)\s*preskoc\(/.test(t)
       && t.indexOf('if (negPreskocena && !fail)') < t.lastIndexOf('process.exit(fail ? 1 : 0);')));
 }

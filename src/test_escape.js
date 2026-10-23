@@ -114,6 +114,10 @@ test('escJs přežije uvozovky', vyzkousej('Profil "40x40"') === 'Profil "40x40"
 test('escJs přežije ostrou závorku', vyzkousej('<b>tučně</b>') === '<b>tučně</b>');
 test('escJs nezanechá holý apostrof v HTML', !/[^\\&]'/.test(escJs("a'b")), escJs("a'b"));
 test('escJs escapuje i pro HTML', escJs('<x>').indexOf('<') === -1, escJs('<x>'));
+/* SEC-N3 (#514): konec řádku v argumentu obsluhy — před opravou SyntaxError. */
+const vyzkousejBezpecne = vstup => { try { return vyzkousej(vstup); } catch (e) { return 'CHYBA: ' + e.message; } };
+for (const v of ['a\nb', 'a\rb', 'a\r\nb', 'a\u2028b', 'a\u2029b'])
+  test('escJs přežije konec řádku ' + JSON.stringify(v), vyzkousejBezpecne(v) === v, vyzkousejBezpecne(v));
 
 /* ---- kontrola, že se ve zdrojích neobjeví holá entita &#39; jako „ochrana" ----
  * Právě tenhle vzorec byl původní chybou (keyAttr v kalk_ock.js): entita se

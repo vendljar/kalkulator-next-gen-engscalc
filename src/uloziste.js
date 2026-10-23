@@ -1004,6 +1004,12 @@ function uloTypyKryci(d, sd) {
   return out;
 }
 
+/* Popis varianty do hlášky (K8-S1, #514): jen text nebo číslo — objekt
+ * `{"toString":1}` v názvu shodil převod na text a s ním celé uložení (500). */
+function uloVariantaPopis(v) {
+  const jedn = (x) => (typeof x === 'string' || typeof x === 'number') ? x : '';
+  return String(jedn(v && v.nazev) || jedn(v && v.id) || '?');
+}
 /* Textová pole hlavičky zakázky (K7-S11) — jen jednoduchá hodnota. */
 const ULO_TYPY_HLAVICKA = ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt', 'datum'];
 function uloTypyProblemy(zak, stara) {
@@ -1024,7 +1030,7 @@ function uloTypyProblemy(zak, stara) {
   zak.varianty.forEach(v => {
     if (!v || !v.data || typeof v.data !== 'object') return;
     const sv = stare.find(x => x && x.id === v.id);
-    const d = v.data, pred = 'varianta ' + String(v.nazev || v.id || '?') + ': ';
+    const d = v.data, pred = 'varianta ' + uloVariantaPopis(v) + ': ';
     if (d.cenikRada != null && typeof d.cenikRada !== 'string') out.push({ kde: pred + 'cenikRada', duvod: 'typ' });
     const rz = d.cenikRazitko;
     if (rz != null && (typeof rz !== 'object' || Array.isArray(rz) || Object.keys(rz).some(k => slozene(rz[k]))))
@@ -1089,7 +1095,7 @@ function uloProVarianty(zak, stara, fn) {
     if (sv && sv.zamek && sv.zamek.zamceno) return;                // doklad — nesahat
     const vlastni = [];
     fn(v, sv, vlastni);
-    const pred = 'varianta ' + String(v.nazev || v.id || '?') + ': ';
+    const pred = 'varianta ' + uloVariantaPopis(v) + ': ';
     vlastni.forEach(p => out.push(Object.assign({}, p, { kde: pred + p.kde })));
   });
   return out;
@@ -2104,7 +2110,7 @@ function uloRetenceVarovani(v, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { uloRetenceVarovani, ULO_RETENCE_VAROVANI_DNU, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { ULO_TYPY_HLAVICKA, uloRetenceVarovani, ULO_RETENCE_VAROVANI_DNU, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,

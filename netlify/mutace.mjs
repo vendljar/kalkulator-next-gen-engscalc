@@ -64,6 +64,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_rejstrik_soubeh.mjs',
      /* #507 / K7-S4, K7-S11 (23. 10. 2026): tvar razítka a řady ceníku, texty hlavičky. */
      'test_typy_k7.mjs',
+     /* #514 / O-K8 (24. 10. 2026): souběh zakázky a hesla, typy, hlavičky, klíče z adresy, obnova. */
+     'test_ok8.mjs',
      /* B111 (29. 9. 2026): záporná částka, množství a hodiny. */
      'test_zaporne.mjs',
      /* #398 (12. 10. 2026): koncová cena 2 — B133–B137, B145. */
@@ -470,8 +472,8 @@ const MUTACE = [
     proc: 'ukradená cookie by fungovala i po změně hesla až do vypršení' },
 
   { nazev: 'B6: změna vlastního hesla verzi nezvedne', soubor: 'functions/uzivatele.mjs',
-    hledej: "      ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;\n      ucet.hesloZmeneno",
-    nahrad: "      ucet.hesloVerze = hesloVerzeUctu(ucet);\n      ucet.hesloZmeneno",
+    hledej: "        cerstvy.hesloVerze = hesloVerzeUctu(cerstvy) + 1;",
+    nahrad: "        cerstvy.hesloVerze = hesloVerzeUctu(cerstvy);",
     proc: 'po změně hesla by staré relace žily dál' },
 
   { nazev: 'B6: reset hesla správcem verzi nezvedne', soubor: 'functions/uzivatele.mjs',
@@ -2580,8 +2582,8 @@ const MUTACE = [
     proc: 'vypnutý účet by po obnovení stránky pořád vypadal jako přihlášený' },
 
   { nazev: '/api/zdravi prozradí prostředí serveru', soubor: 'functions/zdravi.mjs',
-    hledej: 'cas: new Date().toISOString(), beh: \'netlify\' });',
-    nahrad: 'cas: new Date().toISOString(), beh: \'netlify\', prostredi: process.env });',
+    hledej: 'cas: new Date().toISOString(), beh: \'netlify\' },',
+    nahrad: 'cas: new Date().toISOString(), beh: \'netlify\', prostredi: process.env },',
     proc: 'veřejná cesta by vydala tajemství relace i zaváděcí heslo' },
 
   { nazev: 'noční záloha dostane veřejnou cestu', soubor: 'functions/zaloha_nocni.mjs',
@@ -4180,6 +4182,99 @@ const MUTACE = [
     hledej: "        catch (e) { return [soubor, { dny: { cist: true } }]; }",
     nahrad: "        catch (e) { return null; }",
     proc: 'záznam s trvale selhávajícím čtením by navždy blokoval doplňování dnů ostatních' },
+  /* #514 (O-K8, 24. 10. 2026): opravy auditů K8 a S1 bez změny chování.
+   * Hlídá netlify/test_ok8.mjs. */
+  { nazev: '#514 SEC-S1: uložení zakázky bez výhradního úseku', soubor: 'functions/zakazky.mjs',
+    hledej: "  const vysledek = await vyhradne('zakazky/z/' + jmeno, async () => {",
+    nahrad: "  const vysledek = await (async (k, fn) => fn())('zakazky/z/' + jmeno, async () => {",
+    proc: 'souběžné uložení starší kopie by smazalo zámek odeslané nabídky (SEC-S1)' },
+  { nazev: '#514 SEC-S1: bez druhého čtení před zápisem', soubor: 'functions/zakazky.mjs',
+    hledej: "  if (!!tesne !== !!stara || ULO.uloRazitko(tesne) !== ULO.uloRazitko(stara)) {",
+    nahrad: "  if (false) {",
+    proc: 'zápis jiné instance mezi čtením a zápisem by se tiše přepsal i se zámkem' },
+  { nazev: '#514 SEC-S1: smazání bez výhradního úseku', soubor: 'functions/zakazky.mjs',
+    hledej: "    const smazani = await vyhradne('zakazky/z/' + soubor, async () => {",
+    nahrad: "    const smazani = await (async (k, fn) => fn())('zakazky/z/' + soubor, async () => {",
+    proc: 'smazání souběžné s tiskem by smazalo právě odeslanou nabídku bez potvrzení' },
+  { nazev: '#514 SEC-S2: mojeheslo zapíše účet přečtený na začátku', soubor: 'functions/uzivatele.mjs',
+    hledej: "        const cerstvy = await u.cti(relace.email);\n        if (!cerstvy || cerstvy.aktivni === false",
+    nahrad: "        const cerstvy = ucet;\n        if (!cerstvy || cerstvy.aktivni === false",
+    proc: 'změna hesla v souběhu by vrátila snížení role, vypnutí i smazání účtu (SEC-S2)' },
+  { nazev: '#514 SEC-S2: čerstvý záznam bez kontroly verze hesla', soubor: 'functions/uzivatele.mjs',
+    hledej: "            || hesloVerzeUctu(cerstvy) !== hesloVerzeUctu(ucet) || cerstvy.heslo !== ucet.heslo) return null;",
+    nahrad: "            ) return null;",
+    proc: 'souběžná změna hesla by přepsala heslo, které právě nastavil reset správce' },
+  { nazev: '#514 SEC-N1: účty bez kontroly textových polí', soubor: 'functions/uzivatele.mjs',
+    hledej: "    { const stop = textovaPoleChyba(t, ['akce', 'email',",
+    nahrad: "    { const stop = null && textovaPoleChyba(t, ['akce', 'email',",
+    proc: 'objekt v poli účtu by shodil funkci na HTTP 500' },
+  { nazev: '#514 SEC-N1: šablony bez kontroly textových polí', soubor: 'functions/sablony.mjs',
+    hledej: "  { const stop = textovaPoleChyba(t, ['akce', 'rezim',",
+    nahrad: "  { const stop = null && textovaPoleChyba(t, ['akce', 'rezim',",
+    proc: 'objekt v datech šablony by shodil funkci na HTTP 500' },
+  { nazev: '#514 SEC-N1: program bez kontroly textových polí', soubor: 'functions/program.mjs',
+    hledej: "  { const stop = textovaPoleChyba(t, ['poznamka', 'build', 'rada']);",
+    nahrad: "  { const stop = null && textovaPoleChyba(t, ['poznamka', 'build', 'rada']);",
+    proc: 'objekt v poznámce ceníku by shodil funkci na HTTP 500' },
+  { nazev: '#514 SEC-N1: kontrola textových polí pustí objekt', soubor: 'lib/sdilene.mjs',
+    hledej: "    if (v !== null && typeof v === 'object')\n      return json({ ok: false, chyba: 'Pole „'",
+    nahrad: "    if (false)\n      return json({ ok: false, chyba: 'Pole „'",
+    proc: 'všechny tři funkce by na objekt v textu odpověděly 500' },
+  { nazev: '#514 K8-S1: objekt v čísle nabídky projde', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "    if (slozene(telo.cislo)) return",
+    nahrad: "    if (false) return",
+    proc: 'objekt v čísle by shodil uložení na 500, pole by prošlo jako text' },
+  { nazev: '#514 K8-S1: objekt v názvu či id varianty projde', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "(slozene(v.nazev) || slozene(v.id))))",
+    nahrad: "false))",
+    proc: 'objekt v id varianty by shodil uložení na 500' },
+  { nazev: '#514 K8-S8: hláška opisuje text výjimky', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "chyba: 'Zakázku se nepodařilo přečíst — zakázka má neplatný tvar.' }; }",
+    nahrad: "chyba: 'Zakázku se nepodařilo přečíst: ' + e.message }; }",
+    proc: 'odpověď by opisovala interní text výjimky jádra' },
+  { nazev: '#514 SEC-I1: odpovědi API bez no-store', soubor: 'lib/sdilene.mjs',
+    hledej: "  'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });",
+    nahrad: "  });",
+    proc: 'odpověď s účty či zakázkami by mohla zůstat v mezipaměti' },
+  { nazev: '#514 SEC-I1: /api/zdravi bez hlaviček', soubor: 'functions/zdravi.mjs',
+    hledej: "    { headers: JSON_HLAVICKY });",
+    nahrad: "    {});",
+    proc: 'hlídka verze by mohla dostat odpověď z mezipaměti a nové nasazení přehlédnout' },
+  { nazev: '#514 SEC-I3: prototypové klíče se uloží', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  zakazkaBezPrototypovychKlicu(zak);\n",
+    nahrad: "",
+    proc: 'klíč __proto__ by se uložil a klient by ho mohl slít přes Object.assign' },
+  { nazev: '#514 SEC-I4: zakázka z adresy bez kontroly klíče', soubor: 'functions/zakazky.mjs',
+    hledej: "    if (!klicZAdresyPlatny(soubor)) return json({ ok: false, chyba: 'Neplatné jméno zakázky.' }, 400);   // SEC-I4\n    const zak = await s.cti",
+    nahrad: "    const zak = await s.cti",
+    proc: 'klíč s lomítkem by sáhl mimo z/…' },
+  { nazev: '#514 SEC-I4: zákazník z adresy bez kontroly klíče', soubor: 'functions/zakaznici.mjs',
+    hledej: "      if (!klicZAdresyPlatny(klic)) return json({ ok: false, chyba: 'Neplatný klíč zákazníka.' }, 400);   // SEC-I4\n",
+    nahrad: "",
+    proc: 'klíč s lomítkem by sáhl mimo z/…' },
+  { nazev: '#514 SEC-I4: tvar klíče pustí lomítko', soubor: 'lib/sdilene.mjs',
+    hledej: "    && !/[\\/\\\\\\u0000-\\u001f\\u007f]/.test(k);",
+    nahrad: "    && !/[\\u0000-\\u001f\\u007f]/.test(k);",
+    proc: 'klíč s lomítkem by sáhl mimo z/…' },
+  { nazev: '#514 SEC-I5: výpočet opisuje text výjimky', soubor: 'functions/vypocet.mjs',
+    hledej: "chyba: 'Vstup se nepodařilo zpracovat — zkontrolujte tvar zakázky.' }, 400);",
+    nahrad: "chyba: 'Vstup se nepodařilo zpracovat: ' + e.message }, 400);",
+    proc: 'odpověď by opisovala interní text výjimky jádra' },
+  /* Výhradní úsek SEC-N2 v instanci plně zastoupí kontrola jediného tokenu
+   * (mutace úseku je vůči testům ekvivalentní — běh #514 23. 10.); hlídá se
+   * kontrola, která drží i mezi instancemi. */
+  { nazev: '#514 SEC-N2: začátek obnovy nekontroluje token jiné instance', soubor: 'functions/obnova.mjs',
+    hledej: "      if (String(z.zacatek) < ted || (String(z.zacatek) === ted && String(z.id) < id)) {",
+    nahrad: "      if (false) {",
+    proc: 'dvě souběžné obnovy (dvě instance funkce) by pořídily dva otisky „před obnovou"' },
+  { nazev: '#514 K8-W5: textové pole hlavičky „kontakt" bez typové kontroly', soubor: '../src/uloziste.js',
+    hledej: "const ULO_TYPY_HLAVICKA = ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt', 'datum'];",
+    nahrad: "const ULO_TYPY_HLAVICKA = ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'datum'];",
+    proc: 'objekt v kontaktní osobě by shodil uložení na 500 (dřív test zkoušel jen 3 z 8 polí)' },
+  { nazev: '#514 K8-S2: převod maže závorky kvadratickým regulárem', soubor: 'lib/pd_prevod.mjs',
+    hledej: "  const t = bezZavorek ? pdBezZavorek(text) : String(text);",
+    nahrad: "  const t = bezZavorek ? String(text).replace(/\\([^)]*\\)/g, ' ') : String(text);",
+    proc: 'hodnota s 200 000× „(" by v převodu do Pipedrive stála 18 s CPU v jednom požadavku (#115)' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
@@ -4249,7 +4344,10 @@ async function spustSady() {
 
 const vyber = mutaceCast(MUTACE, process.argv.slice(2), process.env, (m) => !filtr
   || m.nazev.toLowerCase().includes(filtr) || m.soubor.toLowerCase().includes(filtr));
-if (vyber.chyba && !process.argv.includes('--kontrola')) { console.log('CHYBA VOLBY: ' + vyber.chyba); process.exit(2); }
+/* KNG_MUTACE_JEN_VYCHOZI=1: jen výchozí běh sad pod zámkem, žádná mutace
+ * (test zámku netlify/test_mutace_zamek.mjs) — jediný případ, kdy prázdný
+ * výběr není chyba (K8-W2, #514). */
+const JEN_VYCHOZI = process.env.KNG_MUTACE_JEN_VYCHOZI === '1';
 const vybrane = vyber.vybrane;
 
 /* RYCHLÁ KONTROLA ZADÁNÍ (`--kontrola`) — bez jediného spuštění sad.
@@ -4286,6 +4384,14 @@ if (process.argv.includes('--kontrola')) {
   const drzi = zamkniMutace('netlify/mutace.mjs ' + process.argv.slice(2).join(' '));
   if (drzi) { console.log(zamekHlaska(drzi)); process.exit(2); } }
 
+/* Chyba výběru až po zámku (jako mutace_jadro.mjs): souběžný běh se ohlásí
+ * dřív než překlep. Neznámá volba (K8-W3), prázdný výběr (K8-W2) i navázání
+ * nad zbytkem mutace (K8-W9) = kód 2. */
+if (vyber.chyba && !(JEN_VYCHOZI && vyber.prazdny)) { console.log('CHYBA VOLBY: ' + vyber.chyba); process.exit(2); }
+{ const { navazaniChyba } = await import('../nastroje/mutace_cast.mjs');
+  const ch = navazaniChyba(resolve(KOREN, '..'), vyber, process.env);
+  if (ch) { console.log('CHYBA VOLBY: ' + ch); process.exit(2); } }
+
 console.log('MUTAČNÍ TESTOVÁNÍ SERVEROVÉ VRSTVY');
 console.log('Mutací k ověření: ' + vybrane.length + (vyber.popis ? '   (' + vyber.popis + ')' : '')
   + '   (sady: ' + SADY.join(', ') + ')\n');
@@ -4302,6 +4408,7 @@ if (vychozi.chycena) {
   process.exit(1);
 }
 console.log('Výchozí stav: obě sady zelené.\n');
+if (JEN_VYCHOZI) { console.log('Jen výchozí stav (KNG_MUTACE_JEN_VYCHOZI=1) — žádná mutace se neověřila.'); process.exit(0); }
 
 let chycene = 0;
 const nechycene = [];
@@ -4332,7 +4439,7 @@ console.log('\n============================================================');
 console.log('Chycených ' + chycene + ' z ' + (chycene + nechycene.length)
   + (chybne.length ? '   (chybně zadaných mutací: ' + chybne.length + ')' : ''));
 /* Část běhu nikdy netvrdí, že prošlo všech N (zadání mutačního běhu). */
-if (vyber.popis) console.log('Pokryto: ' + vyber.popis + ' — NE celý běh.');
+if (!vyber.cely) console.log('Pokryto: ' + vyber.popis + ' — NE celý běh.');   // K8-W8
 if (nechycene.length) {
   console.log('\nNECHYCENÉ MUTACE — tohle by dnes testy nezachytily:');
   for (const m of nechycene) console.log(' - ' + m.nazev + ' (' + m.soubor + ')\n     ' + m.proc);

@@ -17,7 +17,7 @@
  * Soubory se ukládají v base64 uvnitř JSONu (klíč data/<typ>/<verze>).
  * Otisk, verze i historii skládá jádro (src/sablony_online.js) — žádná
  * druhá pravda: tentýž kód běží v prohlížeči i tady. */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, textovaPoleChyba } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
 export default async (req) => {
@@ -56,6 +56,8 @@ export default async (req) => {
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
   /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
+  /* SEC-N1 (#514): objekt v textovém poli → 400, ne 500. */
+  { const stop = textovaPoleChyba(t, ['akce', 'rezim', 'data', 'typ', 'nazev', 'poznamka', 'zdrojOtisk']); if (stop) return stop; }
   const rej = (await s.cti('rejstrik')) || g.sablonyNovyRejstrik();
 
   if (t.akce === 'rezim') {

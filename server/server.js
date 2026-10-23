@@ -48,6 +48,10 @@ const HLAVICKY = {
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Cache-Control': 'no-store',
+  /* SEC-I6 (#514): zbytek hlaviček z netlify.toml. HSTS prohlížeč na http
+   * (poslech jen 127.0.0.1) ignoruje — je tu kvůli shodě, ne účinku. */
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 };
 function posliJson(res, kod, data) {
   const text = JSON.stringify(data);
@@ -59,7 +63,7 @@ function posliSoubor(res, soubor) {
   fs.readFile(soubor, (chyba, obsah) => {
     if (chyba) { posliJson(res, 404, { chyba: 'Soubor nenalezen.' }); return; }
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', ...HLAVICKY,
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://ares.gov.cz; frame-ancestors 'none'; object-src 'none'; base-uri 'none'" });
+      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://ares.gov.cz; frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self'" });
     res.end(obsah);
   });
 }
@@ -79,12 +83,26 @@ const server = http.createServer((req, res) => {
     if ((+req.headers['content-length'] || 0) > VYPOCET_MAX_B) {
       posliJson(res, 413, { ok: false, chyba: 'Vstup je příliš velký.' }); return;
     }
-    let telo = '';
+    /* Bloky se skládají jako bajty a na text se převádí až celé tělo
+     * (SEC-I6, #514): `telo += d` rozbilo vícebajtový znak UTF-8 na hranici
+     * bloku. Překročení stropu dostane odpověď 413 (dřív jen useknuté
+     * spojení bez odpovědi). */
+    const bloky = [];
+    let delka = 0, prilisVelke = false;
     req.on('data', d => {
-      telo += d;
-      if (telo.length > VYPOCET_MAX_B) req.destroy();   // pojistka velikosti
+      if (prilisVelke) return;
+      delka += d.length;
+      if (delka > VYPOCET_MAX_B) {                        // pojistka velikosti
+        prilisVelke = true;
+        posliJson(res, 413, { ok: false, chyba: 'Vstup je příliš velký.' });
+        req.destroy();
+        return;
+      }
+      bloky.push(d);
     });
     req.on('end', () => {
+      if (prilisVelke) return;
+      const telo = Buffer.concat(bloky).toString('utf8');
       try {
         const vstup = JSON.parse(telo || '{}');
         /* importZakazka provede stejné migrace jako aplikace (role, jenProj,

@@ -10,11 +10,11 @@
  * (esbuild) neumí vystopovat, zdrojáky se do balíčku nedostaly a funkce
  * padala hned při načtení chybou 502. Podrobný rozbor je v lib/jadro_moduly.cjs. */
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
-import { vyzadujRoli } from '../lib/sdilene.mjs';
+import { vyzadujRoli, json } from '../lib/sdilene.mjs';
 
 export default async (req) => {
   if (req.method !== 'POST')
-    return Response.json({ ok: false, chyba: 'Použijte POST s tělem { zakazka, program }.' }, { status: 405 });
+    return json({ ok: false, chyba: 'Použijte POST s tělem { zakazka, program }.' }, 405);
 
   /* Přihlášení se vyžaduje od 5. 8. 2026 (bezpečnostní audit). Dosud tahle
    * cesta jako jediná nikoho nekontrolovala — kdokoli z internetu si mohl
@@ -31,9 +31,12 @@ export default async (req) => {
     const vstup = await req.json();
     const zak = globalThis.importZakazka(vstup.zakazka || {});
     const vysledek = globalThis.sluzbaVypocet(zak, vstup.program || {}, JEKLY);
-    return Response.json({ ok: true, vysledek });
+    return json({ ok: true, vysledek });   // json() nese no-store a nosniff (SEC-I1)
   } catch (e) {
-    return Response.json({ ok: false, chyba: 'Vstup se nepodařilo zpracovat: ' + e.message }, { status: 400 });
+    /* Bez e.message (SEC-I5, #514; jako server.js B23): vnitřní text výjimky
+     * jádra nepatří do odpovědi — jen do logu funkce. */
+    console.error('vypocet:', e && e.message);
+    return json({ ok: false, chyba: 'Vstup se nepodařilo zpracovat — zkontrolujte tvar zakázky.' }, 400);
   }
 };
 

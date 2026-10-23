@@ -40,9 +40,15 @@ const cti = () => readFileSync(verzeTxt, 'utf8').trim();
  * narazil na blokující překryv „nesoulad verzí". Vědomé obejití pojistky je
  * tu správně: vrací se přesně ta verze, která v gitu je. */
 const VRACENI = { ...process.env, KNG_VERZE_MIMO_DEN: '1' };
-const build = (env = {}) => execFileSync('python3', ['build.py'], {
-  cwd: koren, encoding: 'utf8', env: { ...process.env, ...env },
-});
+/* PROSTŘEDÍ KOLA SE NEDĚDÍ (K8-W11, #514, audit K8 24. 10. 2026): kolo K8
+ * exportovalo `KNG_NEZVYSOVAT_VERZI=1` pro celé sezení, lokální build pak
+ * verzi nezvýšil a kontrola „lokální build verzi zvýšil" selhala, ačkoli
+ * kód byl v pořádku. Proměnná platí jen tehdy, když ji sada předá sama. */
+const build = (env = {}) => {
+  const prostredi = { ...process.env };
+  delete prostredi.KNG_NEZVYSOVAT_VERZI;
+  return execFileSync('python3', ['build.py'], { cwd: koren, encoding: 'utf8', env: { ...prostredi, ...env } });
+};
 
 /* Původní stav se na konci vrátí bit po bitu — sada nesmí posunout verzi
  * projektu jen tím, že se spustila. */

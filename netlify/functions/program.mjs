@@ -6,7 +6,7 @@
  *        může zveřejňovat jen administrátor"). Verzování, otisky i odkládání
  *        starých verzí dělá stejný kód jako v aplikaci (src/program.js +
  *        cenik_stari.js) — žádná druhá pravda. */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, textovaPoleChyba } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
 export default async (req) => {
@@ -44,6 +44,8 @@ export default async (req) => {
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
   /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
+  /* SEC-N1 (#514): objekt v textovém poli → 400, ne 500. */
+  { const stop = textovaPoleChyba(t, ['poznamka', 'build', 'rada']); if (stop) return stop; }
 
   /* Zahraniční odchylky (#181, 31. 8. 2026) jdou se stejnou verzí jako
    * tuzemský ceník. Očistu (jen známé cesty, jen čísla) dělá jádro

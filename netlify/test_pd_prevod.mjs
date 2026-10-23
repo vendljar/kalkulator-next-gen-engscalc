@@ -12,6 +12,7 @@
  * ============================================================ */
 import { createRequire } from 'node:module';
 import { pdNorm, pdCisla, pdVolba, pdDoPd, pdZapisDealu, pdHodnotaDealu, pdKcText } from './lib/pd_prevod.mjs';
+import * as PDP from './lib/pd_prevod.mjs';
 import { pdMapaZPoli, POLE_DEALU } from './lib/pd_mapa.mjs';
 
 let ok = 0, fail = 0; const selhalo = [];
@@ -384,6 +385,30 @@ test('termín dodání s ATYP z krycího listu se převede na jedno číslo',
   P('terminDodaniTydny', 'ock', { terminDodani: kr.kryciTerminDodaniText('12', true, 4) }).hodnota === 16,
   kr.kryciTerminDodaniText('12', true, 4));
 test('platnost nabídky PROJ („2 měsíce") se převede', P('platnostMesicu', 'proj', { platnostNabidky: kp.kryciProjMesicu(2) }).hodnota === 2);
+
+/* K8-S2 (#514, audit K8): mazání závorek lineárně a se stejným výsledkem jako
+ * dosavadní regulár. Před opravou funkce chybí (FAIL) a 200 000× „(" stálo 18 s. */
+{
+  const bez = PDP.pdBezZavorek;
+  test('K8-S2: pdBezZavorek existuje', typeof bez === 'function');
+  if (typeof bez === 'function') {
+    const stary = (t) => String(t).replace(/\([^)]*\)/g, ' ');
+    const vzorky = ['16 týdnů (vč. 4 týdnů za ATYP)', 'a (b (c) d) 5', '((x)', '(bez konce 7', 'x) (y', '', '()()', 'a(1)b(2', '12 (3) (4'];
+    let nahodne = 0;
+    for (let n = 0; n < 2000; n++) {
+      let t = ''; for (let i = 0; i < 12; i++) t += '(()a 1'[Math.floor(Math.random() * 6)];
+      vzorky.push(t);
+    }
+    const lisi = vzorky.filter(t => bez(t) !== stary(t));
+    test('K8-S2: týž výsledek jako regulár /\\([^)]*\\)/g (vzorky + 2000 náhodných)', lisi.length === 0, lisi.slice(0, 3));
+    const t0 = Date.now(); bez('('.repeat(200000) + ' 16 týdnů'); const ms = Date.now() - t0;
+    test('K8-S2: 200 000× „(" pod 1 s', ms < 1000, ms + ' ms');
+    const t1 = Date.now();
+    const v = P('terminDodaniTydny', 'ock', { terminDodani: '('.repeat(200000) + ' 16 týdnů' });
+    const ms1 = Date.now() - t1;
+    test('K8-S2: převod pole „Termín dodání" s 200 000× „(" pod 1 s (dřív 18 s)', ms1 < 1000 && v.hodnota === 16, [ms1, v.hodnota, v.duvod && v.duvod.slice(0, 40)]);
+  }
+}
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 if (fail) console.log('\nSelhalo:\n - ' + selhalo.join('\n - '));

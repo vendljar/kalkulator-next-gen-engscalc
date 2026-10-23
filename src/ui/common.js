@@ -608,7 +608,11 @@ const num = (n, d = 2) => formatCislo(n, d);
 const esc = s => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-const escJs = s => esc(String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+/* Konce řádků a U+2028/2029 (SEC-N3, #514, audit S1 23. 10. 2026): holý
+ * `\n` v řetězci obsluhy je neplatný JavaScript — tlačítko (třeba výběr
+ * karty zákazníka s koncem řádku v názvu) mlčky nefungovalo. */
+const escJs = s => esc(String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+  .replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029'));
 
 /* Nadpis bez informativních závorek. Od 17. 8. 2026 večer platí UŽŠÍ pravidlo
  * (oprava zadání): u NÁZVŮ SEKCÍ kalkulace závorky ZŮSTÁVAJÍ („pro 1 ks

@@ -8,6 +8,54 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.10.5 — O-K8 #514: opravy nálezů auditů K8 a S1 bez změny chování, vzhledu a výpočtu, větev claude/ok8-opravy
+
+Nad 4496f52 (integrace: v23.10.4 + `podklady/K8_AUDIT_24_10.md`, `podklady/SEC_AUDIT_24_10.md`,
+`podklady/S1_pokusy/`). Pokyn J. V. k dialogu S1 (SEC-7): „Pokud opravy nebudou zasahovat do fungování
+programu, vizuálu nebo výpočtové logiky, můžeš opravit vše.“ Mimo souběh a vadný vstup se aplikace chová stejně.
+
+- **SEC-S1 — souběžné uložení zakázky nesmaže zámek odeslané nabídky.** POST `/api/zakazky` čte, kontroluje
+  a zapisuje zakázku ve výhradním úseku nad `z/<soubor>` a těsně před zápisem ji přečte znovu — jiné razítko
+  (zápis jiné instance) = 409 kolize, nic se nepřepíše. DELETE a převod / smazání účtu v témže úseku.
+- **SEC-S2 — změna vlastního hesla v souběhu nevrátí zásah správce** (snížení role, vypnutí, smazání, reset
+  hesla): `mojeheslo` zapisuje jen pole hesla na čerstvě přečtený účet, změněný účet → 409. Uložení profilu
+  přepisuje jen pole profilu (B156 upraven v `BEZPECNOST_MEZE.md`).
+- **500 → 400 u vadného vstupu:** objekt v textových polích účtů, šablon a programu (SEC-N1), v čísle nabídky
+  a názvu či id varianty (K8-S1); hláška bez textu výjimky u neplatné zakázky (K8-S8) a v `/api/vypocet`
+  (SEC-I5).
+- **SEC-N2:** dva souběžné začátky obnovy ze zálohy — projde jen jeden (výhradní úsek + kontrola jediného tokenu).
+- **SEC-I1:** odpovědi API nesou `Cache-Control: no-store` a `X-Content-Type-Options: nosniff` samy
+  (`json()`, `/api/zdravi`, `/api/vypocet`, noční záloha). **SEC-I3:** klíč `__proto__` (a `constructor`
+  / `prototype` s objektem) se do uložené zakázky nedostane. **SEC-I4:** klíč z adresy (`soubor`, `klic`)
+  s lomítkem nebo řídicím znakem → 400. **SEC-I6:** `server/server.js` — hlavičky jako `netlify.toml`, tělo
+  po bajtech (UTF-8 na hranici bloku), nad stropem 413.
+- **SEC-N3:** `escJs()` escapuje konec řádku a U+2028/2029 — tlačítko s takovým textem v `onclick` už mlčky
+  nepadá (karta zákazníka s koncem řádku v názvu).
+- **K8-S2:** regulár mazání závorek v převodu do Pipedrive (`pd_prevod.mjs`) lineární (200 000× „(“ za
+  milisekundy místo 18 s). Převod dnes nemá volajícího (#115).
+- **Nástroje a testy:** `overit_verzi.mjs` nedědí `KNG_NEZVYSOVAT_VERZI` (K8-W11); mutační běhy — neznámá
+  volba i `--help` a prázdný výběr = chyba s kódem 2 (K8-W3, K8-W2), souhrn „NE celý běh“ i u filtru (K8-W8),
+  `--od` jen nad kopií bez zbytku mutace (K8-W9); test harnessů s podklady chytí `negPreskocena = null`
+  (K8-W1); `test_typy_k7.mjs` zkouší všechna pole hlavičky (K8-W5); kontrola tajemství a osobních údajů
+  pozná další tvary tokenu Pipedrive, `github_pat_`, `sk-ant-`, `claude.ai/share/`, telefony s pomlčkami
+  a +421, čte `.patch`, `.diff`, `.csv`, `.env*`, `.xlsx`, `.docx`; celou doménou povolené jen
+  example.com, priklad.cz, zkusebni.cz (K8-W4, SEC-N4); `.gitignore` zná `.env*`, kořenové exporty
+  a `negativni_kontrola.json` (SEC-N5).
+- **CI:** mutace serveru v **10 částech s limitem 90 min** (Testy #195: 5 z 6 částí zrušil limit 75 min);
+  checkout bez uložených přihlašovacích údajů (SEC-N7). `CLAUDE.md`: oddíl Testy sjednocen, zdvojený odstavec
+  o tazích sloučen (K8-W10).
+- **Meze zapsané do `BEZPECNOST_MEZE.md`:** zbytek SEC-S1 mezi instancemi, SEC-I9 (CSP s `'unsafe-inline'` —
+  obranou je escapování), K8-S4 (rozpočet tokenů stavu dealu), K8-S5, K8-S6 (`_rejstrik` mimo výhradní úsek),
+  SEC-N7 (zámek Playwrightu).
+- **Testy:** nová sada `netlify/test_ok8.mjs` (69; před opravou 49 selhalo), `src/test_escape.js` +5,
+  `src/test_kontrola_udaju.js` +7, `netlify/test_mutace_cast.mjs` +16, `netlify/test_typy_k7.mjs` +24,
+  `netlify/test_pd_prevod.mjs` +4. Mutace „#514“: server 22/22, jádro 1/1 chycených.
+- **Neopraveno (mění chování → J. V.):** K8-K1 … K8-K5, SEC-S3, SEC-S5, SEC-S6, SEC-N8, SEC-I7, SEC-I8,
+  SEC-S7, SEC-N9, SEC-I15 … I17; repo SEC-V1, SEC-V2, SEC-S4. K8-S5 zapsán jako mez (oprava by měnila
+  hledání podle adresy); K8-K6, K8-K7 souvisí s K8-K1; K8-W6, K8-S7 informativní, neopravovány.
+
+---
+
 ## v23.10.4 — B1 #512: platby v zápisu do Pipedrive (Platby 1–8, Platební kalendář SoD PROJ, hodnota dealu), větev claude/b1-platby-115
 
 Nad 8c7ba3d (P2, v23.10.3). Zadání: `podklady/PROMPT_koordinace_kontrola_vetve_platby_23_10.md` úkol B
