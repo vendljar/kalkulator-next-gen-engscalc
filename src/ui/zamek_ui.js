@@ -425,11 +425,13 @@ function zamekPoTisku(typ, varId, sablona, navic) {
  * se zapíše do databáze rovnou, ne až autosavem — mezi tiskem a uložením tak
  * nevznikne okno, ve kterém by se změna podmínek dostala do snímku zámku.
  * Jen online a přihlášeně; ze souboru z disku beze změny (onlineMozne).
- * Souběh se zápisem, který už běží, řeší fronta v onlineUloz. */
+ * Souběh se zápisem, který už běží, řeší fronta v onlineUloz (`fronta: true`,
+ * K7-K1 — bez ní se tiché uložení během autosave zahodilo a zámek zůstal jen
+ * v prohlížeči). */
 function zamekPoTiskuUloz() {
   if (typeof onlineMozne !== 'function' || !onlineMozne()) return false;
   if (typeof ONLINE_STAV === 'undefined' || !ONLINE_STAV.ja || typeof onlineUloz !== 'function') return false;
-  try { onlineUloz({ tiche: true }); } catch (e) { return false; }
+  try { onlineUloz({ tiche: true, fronta: true }); } catch (e) { return false; }
   return true;
 }
 

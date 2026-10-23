@@ -1208,6 +1208,15 @@ function onlineJenZapisnik() {
   catch (e) { return false; }
 }
 
+/* Otisk odeslané zakázky doplněný o razítko, které vrátil server (K7-K1) —
+ * stejně, jako ho onlineUloz vtiskne do ZAK. Zbytek změn provedených během
+ * zápisu tak zůstane rozdílem a autosave ho zapíše příště. */
+function onlineOdeslanoSRazitkem(text, razitko) {
+  if (!razitko) return text;
+  try { const z = JSON.parse(text); z.uloRazitko = razitko; return JSON.stringify(z); }
+  catch (e) { return text; }
+}
+
 function onlineUloz(opts) {
   opts = opts || {};
   if (!ONLINE_STAV.ja) {
@@ -1245,9 +1254,14 @@ function onlineUloz(opts) {
    * modálem, který nikdo neviděl — tlačítko zůstalo v „Ukládám…" a autosave
    * sypal 409 dál. Autosave do rozpracovaného zápisu nevstupuje vůbec
    * (ozve se příště), ruční uložení počká, až předchozí doběhne. */
+  /* VÝJIMKA `fronta` (K7-K1, audit 23. 10. 2026): tiché uložení po tisku
+   * (Z1-4) se zahodit nesmí — nese zámek a záznam odeslání. Počká, až běžící
+   * zápis doběhne, a uloží, pokud mezitím zakázku neuložil někdo jiný. */
   if (ONLINE_STAV.ukladaBeh) {
-    if (opts.tiche) return Promise.resolve(false);
-    return ONLINE_STAV.ukladaBeh.then(() => onlineUloz(opts), () => onlineUloz(opts));
+    if (opts.tiche && !opts.fronta) return Promise.resolve(false);
+    const znovu = () => (opts.tiche && ONLINE_STAV.posledni && JSON.stringify(ZAK) === ONLINE_STAV.posledni)
+      ? true : onlineUloz(opts);
+    return ONLINE_STAV.ukladaBeh.then(znovu, znovu);
   }
   /* Po kolizi verzí se nic neukládá, dokud uživatel nezvolí jednu z cest
    * (načíst znovu / přepsat) — jinak by se 409 sypaly do konzole dál. */
@@ -1295,9 +1309,14 @@ function onlineUloz(opts) {
    * `prepsat: true` zůstává jako výslovná cesta pro volajícího. */
   const snimkyNove = (typeof zamekSnimkyObnov === 'function') ? zamekSnimkyObnov() : [];   // Z1
   const telo = { zakazka: ZAK, ocekavaneRazitko: ONLINE_STAV.razitko || '' };
+  /* CO SE SKUTEČNĚ ODESLALO (K7-K1). „Naposledy uloženo" se bere z tohohle
+   * otisku, ne z ZAK v okamžiku odpovědi — změna provedená během letícího
+   * zápisu (typicky zámek po tisku) by se jinak tvářila jako uložená. */
+  const odeslanoText = JSON.stringify(ZAK);
   if (opts.prepsat) telo.prepsat = true;
   const slevyOdeslane = onlineSlevyOtisk(ZAK);
   const beh = onlineApi('/api/zakazky', telo).then(o => {
+    const zmenaBehem = JSON.stringify(ZAK) !== odeslanoText;   // K7-K1
     ONLINE_STAV.soubor = o.soubor; ONLINE_STAV.razitko = o.razitko || '';
     if (typeof zamekSnimkyUlozeno === 'function') zamekSnimkyUlozeno(snimkyNove);
     onlineSlevyZeServeru(o.slevy, slevyOdeslane);
@@ -1306,7 +1325,7 @@ function onlineUloz(opts) {
     if (o.razitko) ZAK.uloRazitko = o.razitko;
     ONLINE_STAV.kolize = null;
     onlinePoslednizapamatuj(o.soubor);   // po refreshi se sem vrátíme
-    ONLINE_STAV.posledni = JSON.stringify(ZAK);
+    ONLINE_STAV.posledni = zmenaBehem ? onlineOdeslanoSRazitkem(odeslanoText, o.razitko) : JSON.stringify(ZAK);
     ONLINE_STAV.kdyUlozeno = new Date();
     /* Server může uložení přijmout s varováním — typicky rozpor zmrazeného
      * výsledku nově odeslané nabídky s jeho přepočtem (B59). Takové varování

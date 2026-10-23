@@ -103,7 +103,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* ui/program_ui.js (#505, 22. 10. 2026): platná verze ceníku, kterou
    * razítko varianty zapisuje — v online režimu se mazala. Hlídá ji
    * src/test_cenik_verze_online.js. */
-  'ui/program_ui.js'];
+  'ui/program_ui.js',
+  /* ui/online_ui.js a ui/zamek_ui.js (#507, O-K7 23. 10. 2026): uložení zámku
+   * a záznamu odeslání po tisku (Z1-4, K7-K1) a snímek odeslané nabídky
+   * (K7-K2). Hlídají src/test_tisk_behem_ulozeni.js a src/test_snimek_po_tisku.js. */
+  'ui/online_ui.js', 'ui/zamek_ui.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -136,6 +140,8 @@ const PRIORITA = [
   'test_pd_stav.js',
   /* verze ceníku v razítku (#505) — rychlá sada, chytá mutace ui/program_ui.js */
   'test_cenik_verze_online.js',
+  /* tisk během ukládání a snímek odeslané nabídky (#507) — chytají mutace ui/online_ui.js a ui/zamek_ui.js */
+  'test_tisk_behem_ulozeni.js', 'test_snimek_po_tisku.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -2330,6 +2336,24 @@ const MUTACE = [
     hledej: "const CTRL_EXPORT_VERZE = 3;",
     nahrad: "const CTRL_EXPORT_VERZE = 2;",
     proc: "převodník controllingu by nepoznal posunuté sloupce" },
+  /* #507 (O-K7, 23. 10. 2026): K7-K1 — tisk během běžícího ukládání. Hlídá
+   * src/test_tisk_behem_ulozeni.js. */
+  { nazev: '#507 K7-K1: uložení po tisku bez fronty', soubor: 'ui/zamek_ui.js',
+    hledej: "onlineUloz({ tiche: true, fronta: true })",
+    nahrad: "onlineUloz({ tiche: true })",
+    proc: 'tisk během autosave by zámek a záznam odeslání nechal jen v prohlížeči' },
+  { nazev: '#507 K7-K1: fronta tichého uložení zahozena', soubor: 'ui/online_ui.js',
+    hledej: "    if (opts.tiche && !opts.fronta) return Promise.resolve(false);",
+    nahrad: "    if (opts.tiche) return Promise.resolve(false);",
+    proc: 'uložení po tisku by se během běžícího zápisu zahodilo' },
+  { nazev: '#507 K7-K1: „uloženo" z ZAK po odpovědi', soubor: 'ui/online_ui.js',
+    hledej: "    ONLINE_STAV.posledni = zmenaBehem ? onlineOdeslanoSRazitkem(odeslanoText, o.razitko) : JSON.stringify(ZAK);",
+    nahrad: "    ONLINE_STAV.posledni = JSON.stringify(ZAK);",
+    proc: 'změna provedená během zápisu by se tvářila jako uložená' },
+  { nazev: '#507 K7-K1: otisk odeslaného bez razítka', soubor: 'ui/online_ui.js',
+    hledej: "  try { const z = JSON.parse(text); z.uloRazitko = razitko; return JSON.stringify(z); }",
+    nahrad: "  try { const z = JSON.parse(text); return JSON.stringify(z); }",
+    proc: 'autosave by po každém zápisu ukládal znovu jen kvůli razítku' },
 ];
 
 /* ============================================================
