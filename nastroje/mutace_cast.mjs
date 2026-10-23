@@ -57,6 +57,7 @@ export function filtrZArgv(argv) {
 export function mutaceCast(mutace, argv = [], env = {}, filtr = null) {
   const celkem = mutace.length;
   const nic = (chyba) => ({ vybrane: [], popis: '', cely: false, chyba });
+  const prazdny = (chyba) => ({ ...nic(chyba), prazdny: true });
   const neznama = argv.find(a => a.startsWith('-') && !MUTACE_VOLBY.includes(a.split('=')[0]) && !/^-[0-9]/.test(a));
   if (neznama !== undefined) return nic('Neznámá volba „' + neznama + '". ' + MUTACE_NAPOVEDA);
   let castTxt = volba(argv, '--cast');
@@ -90,7 +91,7 @@ export function mutaceCast(mutace, argv = [], env = {}, filtr = null) {
   /* Prázdný výběr je chyba (K8-W2, #514): „Chycených 0 z 0" s kódem 0
    * a „ZELENÁ ČÁST" by tvrdily ověření, které neproběhlo. */
   if (!vybrane.length)
-    return nic((casti.length ? 'Ve výběru „' + casti.join(', ') + '"' : 'Ve výběru')
+    return prazdny((casti.length ? 'Ve výběru „' + casti.join(', ') + '"' : 'Ve výběru')
       + (filtr ? ' s filtrem' : '') + ' není žádná mutace — nic by se neověřilo.');
   /* Popis i u samotného filtru (K8-W8): souhrn podle `cely` pak u každého
    * neúplného běhu řekne „NE celý běh". */

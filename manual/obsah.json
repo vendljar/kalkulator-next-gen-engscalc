@@ -14,6 +14,14 @@
       ]
     },
     {
+      "nadpis": "Co je nového ve verzi v23.10.5 (23. 10. 2026)",
+      "odstavce": [
+        "**Bezpečnostní opravy bez změny práce s aplikací.** Když dva lidé (nebo dvě okna) uloží tutéž zakázku ve stejném okamžiku, ten druhý dostane hlášku, že zakázku mezitím uložil někdo jiný — dřív mohl starší kopií tiše přepsat právě vytištěnou nabídku i s jejím uzamčením. Postup je stejný jako u každé kolize: načíst znovu, nebo vědomě přepsat.",
+        "**Změna vlastního hesla už nevrátí zásah správce.** Když správce účet právě vypíná, mění roli nebo heslo resetuje, souběžná změna hesla se odmítne s prosbou o nové přihlášení.",
+        "Ostatní opravy jsou uvnitř serveru a v kontrolách (lepší chybové hlášky místo „chyby serveru“, hlavičky proti ukládání odpovědí do mezipaměti, přísnější hlídání tajemství v repozitáři). Výpočet, ceny, dokumenty ani vzhled se nemění."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v23.10.4 (23. 10. 2026)",
       "odstavce": [
         "**Příprava zápisu do Pipedrive — platby projekce.** Do polí Platba 1–8 kalkulátor nic zapisovat nebude, ani u starších nabídek. Platby projekce půjdou do jednoho nového pole **Platební kalendář SoD PROJ** stejným textem jako ve smlouvě o dílo („Platba ve výši … Kč + DPH proběhne …“). Dokud pole v Pipedrive není založené, kalkulátor ho jen ohlásí jako chybějící.",

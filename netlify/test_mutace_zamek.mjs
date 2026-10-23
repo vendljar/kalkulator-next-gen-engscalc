@@ -73,7 +73,10 @@ try {
   /* 2) zámek po mrtvém procesu */
   const mrtvy = spawnSync('node', ['-e', 'console.log(process.pid)'], { encoding: 'utf8' });
   writeFileSync(ZAMEK, JSON.stringify({ pid: Number(mrtvy.stdout.trim()), beh: 'mrtvý běh', od: '' }));
-  const r2 = spust('netlify/mutace.mjs', ['zzz-zadna-mutace-b194']);
+  /* Prázdný výběr je od K8-W2 (#514) chyba — výchozí běh pod zámkem jen
+   * s KNG_MUTACE_JEN_VYCHOZI=1. */
+  const r2 = spawnSync('node', [resolve(REPO, 'netlify/mutace.mjs'), 'zzz-zadna-mutace-b194'],
+    { cwd: REPO, env: { ...env, KNG_MUTACE_JEN_VYCHOZI: '1' }, encoding: 'utf8', timeout: 60000 });
   test('zámek mrtvého běhu se převezme, výchozí stav zelený (zámek během běhu drží tento běh)',
     r2.status === 0 && /Výchozí stav/.test(vystup(r2)), vystup(r2).slice(-300));
   test('po skončení běhu zámek zmizel', !existsSync(ZAMEK));

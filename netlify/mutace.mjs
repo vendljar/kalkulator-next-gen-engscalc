@@ -4260,14 +4260,21 @@ const MUTACE = [
     hledej: "chyba: 'Vstup se nepodařilo zpracovat — zkontrolujte tvar zakázky.' }, 400);",
     nahrad: "chyba: 'Vstup se nepodařilo zpracovat: ' + e.message }, 400);",
     proc: 'odpověď by opisovala interní text výjimky jádra' },
-  { nazev: '#514 SEC-N2: začátek obnovy bez výhradního úseku', soubor: 'functions/obnova.mjs',
-    hledej: "    const vstup = await vyhradne('zalohy/obnova', async () => {",
-    nahrad: "    const vstup = await (async (k, fn) => fn())('zalohy/obnova', async () => {",
-    proc: 'dvě souběžné obnovy by pořídily dva otisky „před obnovou"' },
+  /* Výhradní úsek SEC-N2 v instanci plně zastoupí kontrola jediného tokenu
+   * (mutace úseku je vůči testům ekvivalentní — běh #514 23. 10.); hlídá se
+   * kontrola, která drží i mezi instancemi. */
+  { nazev: '#514 SEC-N2: začátek obnovy nekontroluje token jiné instance', soubor: 'functions/obnova.mjs',
+    hledej: "      if (String(z.zacatek) < ted || (String(z.zacatek) === ted && String(z.id) < id)) {",
+    nahrad: "      if (false) {",
+    proc: 'dvě souběžné obnovy (dvě instance funkce) by pořídily dva otisky „před obnovou"' },
   { nazev: '#514 K8-W5: textové pole hlavičky „kontakt" bez typové kontroly', soubor: '../src/uloziste.js',
     hledej: "const ULO_TYPY_HLAVICKA = ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt', 'datum'];",
     nahrad: "const ULO_TYPY_HLAVICKA = ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'datum'];",
     proc: 'objekt v kontaktní osobě by shodil uložení na 500 (dřív test zkoušel jen 3 z 8 polí)' },
+  { nazev: '#514 K8-S2: převod maže závorky kvadratickým regulárem', soubor: 'lib/pd_prevod.mjs',
+    hledej: "  const t = bezZavorek ? pdBezZavorek(text) : String(text);",
+    nahrad: "  const t = bezZavorek ? String(text).replace(/\\([^)]*\\)/g, ' ') : String(text);",
+    proc: 'hodnota s 200 000× „(" by v převodu do Pipedrive stála 18 s CPU v jednom požadavku (#115)' },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
@@ -4337,12 +4344,10 @@ async function spustSady() {
 
 const vyber = mutaceCast(MUTACE, process.argv.slice(2), process.env, (m) => !filtr
   || m.nazev.toLowerCase().includes(filtr) || m.soubor.toLowerCase().includes(filtr));
-if (vyber.chyba && !process.argv.includes('--kontrola')) { console.log('CHYBA VOLBY: ' + vyber.chyba); process.exit(2); }
-if (!process.argv.includes('--kontrola')) {                        // K8-W9
-  const { navazaniChyba } = await import('../nastroje/mutace_cast.mjs');
-  const ch = navazaniChyba(resolve(KOREN, '..'), vyber, process.env);
-  if (ch) { console.log('CHYBA VOLBY: ' + ch); process.exit(2); }
-}
+/* KNG_MUTACE_JEN_VYCHOZI=1: jen výchozí běh sad pod zámkem, žádná mutace
+ * (test zámku netlify/test_mutace_zamek.mjs) — jediný případ, kdy prázdný
+ * výběr není chyba (K8-W2, #514). */
+const JEN_VYCHOZI = process.env.KNG_MUTACE_JEN_VYCHOZI === '1';
 const vybrane = vyber.vybrane;
 
 /* RYCHLÁ KONTROLA ZADÁNÍ (`--kontrola`) — bez jediného spuštění sad.
@@ -4379,6 +4384,14 @@ if (process.argv.includes('--kontrola')) {
   const drzi = zamkniMutace('netlify/mutace.mjs ' + process.argv.slice(2).join(' '));
   if (drzi) { console.log(zamekHlaska(drzi)); process.exit(2); } }
 
+/* Chyba výběru až po zámku (jako mutace_jadro.mjs): souběžný běh se ohlásí
+ * dřív než překlep. Neznámá volba (K8-W3), prázdný výběr (K8-W2) i navázání
+ * nad zbytkem mutace (K8-W9) = kód 2. */
+if (vyber.chyba && !(JEN_VYCHOZI && vyber.prazdny)) { console.log('CHYBA VOLBY: ' + vyber.chyba); process.exit(2); }
+{ const { navazaniChyba } = await import('../nastroje/mutace_cast.mjs');
+  const ch = navazaniChyba(resolve(KOREN, '..'), vyber, process.env);
+  if (ch) { console.log('CHYBA VOLBY: ' + ch); process.exit(2); } }
+
 console.log('MUTAČNÍ TESTOVÁNÍ SERVEROVÉ VRSTVY');
 console.log('Mutací k ověření: ' + vybrane.length + (vyber.popis ? '   (' + vyber.popis + ')' : '')
   + '   (sady: ' + SADY.join(', ') + ')\n');
@@ -4395,6 +4408,7 @@ if (vychozi.chycena) {
   process.exit(1);
 }
 console.log('Výchozí stav: obě sady zelené.\n');
+if (JEN_VYCHOZI) { console.log('Jen výchozí stav (KNG_MUTACE_JEN_VYCHOZI=1) — žádná mutace se neověřila.'); process.exit(0); }
 
 let chycene = 0;
 const nechycene = [];

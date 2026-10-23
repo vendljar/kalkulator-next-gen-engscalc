@@ -297,6 +297,23 @@ const zamcena = (soubor) => { const z = JSON.parse(pamet.get('zakazky/z/' + soub
   const tokeny = [...pamet.keys()].filter(k => k.startsWith('zalohy/obnova-'));
   test('N2: z dvou souběžných začátků projde jeden', [a.status, b.status].sort().join(',') === '200,409', [a.status, b.status]);
   test('N2: v úložišti je jediný token obnovy', tokeny.length === 1, tokeny);
+  /* b) jiná instance (výhradní úsek ji nevidí) zapsala starší token mezi
+   *    kontrolou zámku a naším zápisem → náš začátek ustoupí s 409. */
+  for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/obnova-')) pamet.delete(k);
+  const CIZI = 'f'.repeat(32);
+  let jednou = true;
+  hacky.predZapisem = async (n, k, v) => {
+    if (n === 'zalohy' && k.startsWith('obnova-') && k !== 'obnova-' + CIZI && jednou && v && v.otiskSePorizuje) {
+      jednou = false;
+      pamet.set('zalohy/obnova-' + CIZI, JSON.stringify({ ...v, id: CIZI, kdo: 'jina.instance@priklad.cz',
+        zacatek: new Date(Date.now() - 1000).toISOString(), naposled: new Date().toISOString() }));
+    }
+  };
+  const c = await req(F.obnova, 'POST', '/api/obnova', telo, cA);
+  hacky.predZapisem = null;
+  const tokeny2 = [...pamet.keys()].filter(k => k.startsWith('zalohy/obnova-'));
+  test('N2b: starší token jiné instance → náš začátek 409', c.status === 409, c.status);
+  test('N2b: zůstal jen token jiné instance', tokeny2.length === 1 && tokeny2[0] === 'zalohy/obnova-' + CIZI, tokeny2);
 }
 
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
