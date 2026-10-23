@@ -1,3 +1,27 @@
+# Předávka — 23. 10. 2026 ~03:50 UTC: O-K7 — opravy auditu K7 bez J. V. (#507), v23.10.1, větev `claude/ok7-opravy`
+
+Nad `c5dbfbc` (test v22.10.6 3394b2b + dokumentace K7). Verze **23.10.1** (CHANGELOG `## v23.10.1 — O-K7`, příručka
+„Co je nového ve verzi v23.10.1", `build.py --kontrola-verze` ✓). Koordinace: session_013yuBUKmpUYvEnjxWjGi5kj.
+Do integrace / test nic — slučuje koordinace.
+
+- **Hotovo (každá oprava s testem s pojistkou a mutacemi „#507"; přehled v auditu, oddíl „Opraveno v v23.10.1"):**
+  K7-K1 (fronta uložení po tisku, `posledni` z odeslaného těla), K7-K2 (snímek se nepřepočítává; do uložení zámku
+  zmrazená pole snímku i po obnovení stránky; srovnání dat podle snímku; ze souboru nic), K7-S1 (rejstřík ve
+  `vyhradne()` + samooprava exportu ze `seznam('z/')`), K7-S3, K7-S4 + K7-S11 (→ 400), K7-S5 (čas nového zámku),
+  K7-K3 (ARES po SoD), K7-K4 (hlášky), K7-W2, K7-W3 (BEZPECNOST_MEZE), K7-W4, K7-W5, K7-W6, K7-W15.
+- **Testy:** Node část `spust_testy.sh` 248/0/1 (přeskočen jen test.js); statické 4/4; mutace jádra „#507" 19/19,
+  serveru „#507" viz zpráva koordinaci; `--kontrola` jádro 511/511, server 842/842.
+- **Upravené, NEPUŠTĚNÉ harnessy** (celé kolo pustí koordinace): `overit_kryci_po_tisku.mjs` (Z1: zámek „na
+  serveru" přes `ONLINE_STAV.posledni`; Z1-4: `fronta: true`), `overit_sablona.mjs`, `overit_nabidka_proj_word.mjs`
+  (bez `negativni_kontrola.json` kód 4 = přeskočeno).
+- **Pozor pro kolo:** (1) `mutace_jadro.mjs` má v JADRA nově `ui/online_ui.js`, `ui/zamek_ui.js`, `zamek.js`,
+  `ui/ares_ui.js` → víc sad v jádrovém běhu (195); (2) `test_rejstrik.mjs` B121/N4 teď čeká 400 u objektu v adrese /
+  objednateli (K7-S11); (3) nový zámek s `kdy` mimo [teď − 400 dní, teď + 10 min] je 400 — harness, který by
+  posílal nový zámek s pevným starým časem přes POST, by narazil (v Node sadách žádný).
+- **Čeká na J. V.:** K7-S2 (hlavička po CN přes přepnutí řídící), K7-W1 (sdílecí odkaz na sezení — po rozhodnutí
+  lze do `kontrola_udaju.py` přidat vzor `claude.ai/code/cshk_`).
+- **Další krok:** koordinace — celé kolo nad hlavou větve, sloučení.
+
 # Předávka — 23. 10. 2026 ~03:00 UTC: K7 — celé kolo + audit nad v22.10.6 (#506) HOTOVO, větev `claude/k7-kolo`
 
 Kód `3394b2b` (v22.10.6, integrace) beze změny; výstup jen dokumentace (audit, roadmapa #506 hotovo, poznámka K7
