@@ -16,8 +16,9 @@ Roadmapa: položky plánu jsou v `meta.planVikend` a v pohledu Vlny modře (vlny
 | pá ~15:00–16:00 | P2 → integrace, kolo + mutace → **test v23.10.3** + release | koordinace |
 | pá ~17:00–18:00 | B1 → integrace, kolo + mutace → **test v23.10.4** + release | koordinace |
 | pá ~18:00 – so ~04:00 | **K8 #513**: celé kolo s mutacemi + audit 3394b2b..test (mutace serveru v Actions s matrix, pokud P2 připraví; jinak v cloudu s čekáním v popředí) | nová dávka |
+| pá ~18:00 – so ~06:00 | **S1 #515** (souběžně s K8): hloubkový security test kódu a funkční logiky nad `test` — lokální instance v kontejneru; živý testengscalc.netlify.app jen šetrně a jen po povolení domény (dialog https://claude.ai/artifact/VTamxkz2Xum9uMq7nuBRiM, nevyplněné = návrh) → `podklady/SEC_AUDIT_24_10.md` | nová dávka |
 | so 05:00 | obnova týdenního limitu | — |
-| so ~05:30–09:00 | **O-K8 #514**: opravy nálezů K8 bez J. V. → kolo → **test v24.10.1** + release; otázky do dialogu | nová dávka |
+| so ~05:30–09:00 | **O-K8 #514**: opravy nálezů K8 a kritických/vysokých nálezů S1 bez J. V. → kolo → **test v24.10.1** + release; otázky do dialogu | nová dávka |
 | so–ne | kontroly koordinace po ~2–3 h; další práce jen na rozhodnutí J. V. (rezerva: #367 P10, #425) | koordinace |
 | ne 21:00 | naplánovaná aktualizace příručky (trig_01FdyoZ7vGPSnvyQoCPuSfbW) — nic nedělat | samostatné sezení |
 | **po 05:00** (6:00 Praha) | souhrn víkendu (artefakt), návrh main, co čeká na J. V. | koordinace |
@@ -26,3 +27,6 @@ Roadmapa: položky plánu jsou v `meta.planVikend` a v pohledu Vlny modře (vlny
 - Dlouhé běhy (mutace) v popředí, tah nekončit — kontejner nečinného sezení se uvolní za ~4 min.
 - Koordinační kontejner: `ln -s $(npm root -g) node_modules`, jinak se prohlížečové harnessy přeskočí.
 - Cílová verze vždy v promptu; release odkaz krátký + text popisu zvlášť.
+
+## Předání koordinace (J. V. 23. 10. ~12:20)
+Koordinace „ŘÍDÍCÍ 22.10“ měla kontext ~62 % → předáno novému sezení „ŘÍDÍCÍ víkend 23.–26. 10.“ podle `podklady/PROMPT_koordinace_vikend_23_10.md`. Naplánované kontroly přesunuty do nového sezení.

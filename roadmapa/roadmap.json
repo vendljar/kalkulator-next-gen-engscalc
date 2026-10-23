@@ -8029,7 +8029,7 @@
    "stav" : "ceka",
    "dulezitost" : "stredni",
    "slozitost" : "S–M",
-   "nazev" : "O-K8: opravy nálezů K8 bez rozhodnutí J. V.",
+   "nazev" : "O-K8: opravy nálezů K8 a S1 (kritické/vysoké) bez rozhodnutí J. V.",
    "proc" : "Plán J. V. 23. 10. 2026: v pondělí ráno návrh main s opravenými nálezy.",
    "detail" : "Opravy nálezů auditu K8, které nepotřebují rozhodnutí J. V.; testy s pojistkou, cílené mutace, kolo → test. Otázky k rozhodnutí do dialogu.",
    "hotovoKdyz" : "Opravy v test, kolo zelené, otázky v dialogu.",
@@ -8040,10 +8040,28 @@
      "proc" : "nálezy K8"
     }
    ]
+  },
+  {
+   "id" : "515",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "vysoka",
+   "slozitost" : "L",
+   "nazev" : "S1: hloubkový security test kódu a funkční logiky nad test (víkend 24.–25. 10.)",
+   "proc" : "Zadání J. V. 23. 10. 2026: zařadit do víkendového plánu hloubkový security test kódu a funkční logiky aplikace nad testovacím rozhraním.",
+   "detail" : "Rozsah podle dialogu https://claude.ai/artifact/VTamxkz2Xum9uMq7nuBRiM (nevyplněné = návrh): lokální instance větve test v kontejneru (serverové funkce, role, zápisy) + živý testengscalc.netlify.app jen šetrně a jen po povolení domény v síťové politice prostředí; bez živého Pipedrive, bez zátěže. Bezpečnost (autorizace a role, vstupy serveru, XSS, zámky a souběh, únik údajů, hlavičky, tajemství) i funkční logika (ceny OCK/PROJ, DPH, zaokrouhlení, měna, zámky po tisku, plán plateb, SoD, export controllingu). Výstup podklady/SEC_AUDIT_24_10.md; kritické a vysoké opraví O-K8 (#514).",
+   "hotovoKdyz" : "Zpráva SEC_AUDIT_24_10.md s důkazy a verdiktem, kritické/vysoké opravené v test, ostatní v dialogu.",
+   "zavisi" : [
+    {
+     "id" : "512",
+     "typ" : "doporuceno",
+     "proc" : "testuje se test po B1"
+    }
+   ]
   }
  ],
  "meta" : {
-  "planVikend" : {"nazev" : "Plán práce 23. 10. odpoledne – po 26. 10. 6:00 Praha (J. V. 23. 10. 2026)","polozky" : ["16","113","114","115","117","501","509","510","511","512","513","514"]},
+  "planVikend" : {"nazev" : "Plán práce 23. 10. odpoledne – po 26. 10. 6:00 Praha (J. V. 23. 10. 2026)","polozky" : ["16","113","114","115","117","501","509","510","511","512","513","514","515"]},
   "projekt" : "Kalkulator Next Gen",
   "legendaSlozitosti" : "S = hodiny · M = 1–2 dny · L = týden · XL = víc než týden",
   "poradi" : [
