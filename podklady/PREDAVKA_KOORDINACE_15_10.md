@@ -10,6 +10,14 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 23. 10. ~04:10 UTC — koordinace „ŘÍDÍCÍ 22.10“ session_013yuBUKmpUYvEnjxWjGi5kj (kontext ~44 %) — PLÁN DO PÁTKU SPLNĚN
+
+- **test = integrace = f0d42ed (v23.10.1)** = v22.10.6 (E1: #504 hromadný export controllingu bez stropu, filtr Stav PD výchozí Vyhrané, výchozí podle data prodeje; #505 verze ceníku online) + audit K7 (#506, `podklady/K7_AUDIT_22_10.md`, VYHOVUJE S VÝHRADOU, 0 krit./0 vys.) + O-K7 (#507: K7-K1, K7-K2, K7-S1 + 10 nízkých). Kolo nad v23.10.1 311/0/6, mutace #507 19/19 + 13/13; K7 nad v22.10.6 sady 306/0/6, mutace 492/492 + 829/829, statické 4/4. **main = v22.10.1** (jen na pokyn J. V.; návrh v23.10.1).
+- **Releasy:** v22.10.5 vydán; v22.10.6 (3394b2b) a v23.10.1 (f0d42ed) čekají — odkazy v kokpitu.
+- **Čeká na J. V.:** main; K7-S2 (hlavička po CN obejde Z1-2 dvěma uloženími); K7-W1 (sdílecí odkaz cshk_… v repu — veřejný?); E1 rozhodnutí (1)–(3) potvrdit; negativni_kontrola.json do KNG_PODKLADY; slovník SoD v4.
+- **Všechny dávky archivovány** (Z1, E1, K7, O-K7). Odhad limitu ~87 % → do obnovy (so 24. 10. 7:00 Praha) nic nového.
+- **Poučení 22./23. 10.:** (a) kontejner NEČINNÉHO sezení se uvolní ~4 min po konci tahu a zabije procesy na pozadí (K7 2×) → dlouhé běhy čekat v popředí a do promptu dávek to psát; (b) koordinační kontejner potřebuje odkaz `node_modules -> $(npm root -g)`, jinak se ~44 prohlížečových harnessů přeskočí; (c) dávka si verzi sama nezvedne — v promptu uvádět cílovou verzi; (d) dlouhý release odkaz s `&body=` (2 000+ znaků) J. V. neotevřel → posílat krátký odkaz + text popisu zvlášť.
+
 ## STAV 22. 10. ~14:35 UTC — koordinace „ŘÍDÍCÍ 22.10“ session_013yuBUKmpUYvEnjxWjGi5kj (kontext ~30 %)
 
 - **test = integrace (kód) = 4ce35d2 (v22.10.5), release v22.10.5 vydán J. V.** (Z1 + D5; kolo 303/1/6 → overit_online opraven 271/0, mutace jádro 30/30, server 71/71). Integrace = 69f5e8b (+ roadmapa #504, #505). main = v22.10.1 (jen na pokyn J. V.). Z1 a stará koordinace archivovány.
