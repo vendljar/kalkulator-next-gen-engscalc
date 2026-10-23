@@ -8034,9 +8034,93 @@
    "kde" : "netlify/lib/pd_mapa.mjs, netlify/lib/pd_prevod.mjs",
    "hotovoV" : "v22.10.2 (claude/eager-carson-1xznt2)",
    "pozn" : "Do sloučení s test v22.10.1 (22. 10. 2026) vedeno jako #475 (odtud citace „proč mám rozhodovat 475?“) — to číslo v test patří kolu K6. Ve větvi claude/eager-carson-1xznt2 vedeno jako #503; při převzetí do P2 (23. 10. 2026) přečíslováno na #511 — #501–#503 v test patří P1, Z1 a ceně v EUR."
+  },
+  {
+   "id" : "512",
+   "vlna" : "D",
+   "stav" : "ceka",
+   "dulezitost" : "vysoka",
+   "slozitost" : "M",
+   "nazev" : "B1: platby v zápisu do Pipedrive — Platby 1–8 nic, Platební kalendář SoD PROJ, hodnota dealu",
+   "proc" : "Rozhodnutí J. V. 23. 10. 2026 (zadání podklady/PROMPT_koordinace_kontrola_vetve_platby_23_10.md, úkol B): kalkulátor Platby 1–8 neplní ani zpětně, místo nich nové pole „Platební kalendář SoD PROJ“ (Velký text); hodnota dealu se zapisuje.",
+   "detail" : "Úkol B zadání: platba1–8 a PROJ část zaloha1Proc v pd_mapa.mjs na směr „nic“; nové pole Platební kalendář SoD PROJ (text z planSodKalendar, stejný dopočet jako SoD řídící varianty; dokud ho integrátor nezaloží, přehled ho hlásí jako chybějící); hodnota dealu value+currency = cena řídící varianty bez DPH (kombinovaná = OCK+PROJ), v potvrzení „stará → nová“. Hlavní projektant jako text a volby Způsob fakturace až po odpovědi integrátora. Do živého Pipedrive nic bez J. V.",
+   "hotovoKdyz" : "Testy s pojistkou v test_pd_prevod.mjs a test_pipedrive.mjs (Platby 1–8 se nepošlou ani u starší nabídky, kalendář = text dopočtu, hodnota dealu OCK/PROJ/kombinovaná), mutace ke každému pravidlu, kolo zelené, v test.",
+   "kde" : "`netlify/lib/pd_mapa.mjs`, `netlify/lib/pd_prevod.mjs`, `src/plan_plateb.js`",
+   "zavisi" : [
+    {
+     "id" : "115",
+     "typ" : "tvrda",
+     "proc" : "zápis do obchodního případu"
+    },
+    {
+     "id" : "114",
+     "typ" : "tvrda",
+     "proc" : "mapa polí #114 (převzetí P2)"
+    }
+   ]
+  },
+  {
+   "id" : "513",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "vysoka",
+   "slozitost" : "M",
+   "nazev" : "K8: celé kolo s mutacemi + audit v22.10.6 → test po B1 (podklad pro main)",
+   "proc" : "Plán J. V. 23. 10. 2026 na víkend: před posunem main ověřit vše od posledního auditu K7 (O-K7, E2, P2 převzetí #114, B1 platby).",
+   "detail" : "Celé testovací kolo s mutacemi nad test po B1 (mutace serveru v Actions s matrix, pokud je P2 připraví, jinak v cloudu s čekáním v popředí) a audit diffu 3394b2b..test → podklady/K8_AUDIT_24_10.md, verdikt pro main.",
+   "hotovoKdyz" : "Kolo s mutacemi zelené, audit s verdiktem, nálezy bez J. V. předané do O-K8.",
+   "zavisi" : [
+    {
+     "id" : "506",
+     "typ" : "doporuceno",
+     "proc" : "navazuje na audit K7"
+    },
+    {
+     "id" : "512",
+     "typ" : "doporuceno",
+     "proc" : "audituje i B1"
+    }
+   ]
+  },
+  {
+   "id" : "514",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S–M",
+   "nazev" : "O-K8: opravy nálezů K8 a S1 (kritické/vysoké) bez rozhodnutí J. V.",
+   "proc" : "Plán J. V. 23. 10. 2026: v pondělí ráno návrh main s opravenými nálezy.",
+   "detail" : "Opravy nálezů auditu K8, které nepotřebují rozhodnutí J. V.; testy s pojistkou, cílené mutace, kolo → test. Otázky k rozhodnutí do dialogu.",
+   "hotovoKdyz" : "Opravy v test, kolo zelené, otázky v dialogu.",
+   "zavisi" : [
+    {
+     "id" : "513",
+     "typ" : "tvrda",
+     "proc" : "nálezy K8"
+    }
+   ]
+  },
+  {
+   "id" : "515",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "vysoka",
+   "slozitost" : "L",
+   "nazev" : "S1: hloubkový security test kódu a funkční logiky nad test (víkend 24.–25. 10.)",
+   "proc" : "Zadání J. V. 23. 10. 2026: zařadit do víkendového plánu hloubkový security test kódu a funkční logiky aplikace nad testovacím rozhraním.",
+   "detail" : "Rozsah podle dialogu https://claude.ai/artifact/VTamxkz2Xum9uMq7nuBRiM (nevyplněné = návrh): lokální instance větve test v kontejneru (serverové funkce, role, zápisy) + živý testengscalc.netlify.app jen šetrně a jen po povolení domény v síťové politice prostředí; bez živého Pipedrive, bez zátěže. Bezpečnost (autorizace a role, vstupy serveru, XSS, zámky a souběh, únik údajů, hlavičky, tajemství) i funkční logika (ceny OCK/PROJ, DPH, zaokrouhlení, měna, zámky po tisku, plán plateb, SoD, export controllingu). Výstup podklady/SEC_AUDIT_24_10.md; kritické a vysoké opraví O-K8 (#514).",
+   "hotovoKdyz" : "Zpráva SEC_AUDIT_24_10.md s důkazy a verdiktem, kritické/vysoké opravené v test, ostatní v dialogu.",
+   "zavisi" : [
+    {
+     "id" : "512",
+     "typ" : "doporuceno",
+     "proc" : "testuje se test po B1"
+    }
+   ]
   }
  ],
  "meta" : {
+  "planVikend" : {"nazev" : "Plán práce 23. 10. odpoledne – po 26. 10. 6:00 Praha (J. V. 23. 10. 2026)","polozky" : ["16","113","114","115","117","501","509","510","511","512","513","514","515"]},
   "projekt" : "Kalkulator Next Gen",
   "legendaSlozitosti" : "S = hodiny · M = 1–2 dny · L = týden · XL = víc než týden",
   "poradi" : [
@@ -8794,8 +8878,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v22.10.5 (engscalc, test = 4ce35d2)",
-  "stavKDatu" : "22. 10. 2026"
+  "build" : "v23.10.2 (engscalc, test = f3b5d42)",
+  "stavKDatu" : "23. 10. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
