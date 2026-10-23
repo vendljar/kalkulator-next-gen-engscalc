@@ -1208,6 +1208,21 @@ function onlineJenZapisnik() {
   catch (e) { return false; }
 }
 
+/* CHYBA ULOŽENÍ ČESKY (K7-K4, audit 23. 10. 2026). Výpadek sítě hlásí
+ * prohlížeč anglicky („Failed to fetch", „NetworkError…", „Load failed") jako
+ * TypeError — obchodník z toho nepoznal, co se stalo. Hláška serveru jde
+ * dál doslova. */
+function onlineChybaText(e) {
+  const m = (e && e.message) ? String(e.message) : String(e || '');
+  if ((e && e.name === 'TypeError') || /failed to fetch|networkerror|load failed|network request failed/i.test(m))
+    return 'server je teď nedostupný (výpadek sítě nebo přerušené spojení). Zakázka zůstává v tomto okně; '
+      + 'uložte ji znovu, až bude připojení.';
+  return m;
+}
+const ONLINE_TISK_NEULOZEN = 'Dokument se vytiskl, ale zakázka se se záznamem odeslání nabídky do databáze neuložila. '
+  + 'Nezavírejte okno a uložte zakázku znovu (tlačítko Uložit zakázku), jakmile bude server dostupný — '
+  + 'do té doby jsou podmínky a DPH odeslané nabídky zmrazené.';
+
 /* Otisk odeslané zakázky doplněný o razítko, které vrátil server (K7-K1) —
  * stejně, jako ho onlineUloz vtiskne do ZAK. Zbytek změn provedených během
  * zápisu tak zůstane rozdílem a autosave ho zapíše příště. */
@@ -1363,7 +1378,13 @@ function onlineUloz(opts) {
     /* Server odmítá i pokus přepsat odeslanou (uzamčenou) nabídku – jeho
      * zdůvodnění se ukáže doslova, je z téhož kódu jako hláška u složky.
      * Selhání zápisu nikdy nekončí tichem. */
-    onlineZprava('Neuloženo online: ' + e.message, 'varovani');
+    onlineZprava('Neuloženo online: ' + onlineChybaText(e), 'varovani');
+    /* Uložení po tisku (Z1-4) nevyšlo (K7-K4): vytištěný dokument zatím nemá
+     * v databázi záznam odeslání — obchodník to musí vědět hned, ne z panelu. */
+    if (opts.fronta && typeof hlaska === 'function') {
+      try { Promise.resolve(hlaska(ONLINE_TISK_NEULOZEN + ' (' + onlineChybaText(e) + ')',
+        { nadpis: 'Odeslaná nabídka není uložená' })).catch(() => {}); } catch (x) { /* nevadí */ }
+    }
     return false;
   }).then(v => { ONLINE_STAV.pracuje = false; ONLINE_STAV.ukladaBeh = null; render(); return v; },
           e => { ONLINE_STAV.pracuje = false; ONLINE_STAV.ukladaBeh = null; render(); throw e; });

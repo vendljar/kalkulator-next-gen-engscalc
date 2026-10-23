@@ -11,7 +11,8 @@
  *  2) změna během letícího zápisu se nepočítá za uloženou (`posledni`
  *     = odeslané tělo + razítko serveru);
  *  3) bez změny během zápisu zůstává `posledni` = ZAK (žádný zbytečný zápis);
- *  4) obyčejný tichý autosave do běžícího zápisu dál nevstupuje.
+ *  4) obyčejný tichý autosave do běžícího zápisu dál nevstupuje;
+ *  5) K7-K4: výpadek sítě česky, po neuloženém tisku dialog s krokem.
  */
 const fs = require('fs');
 const vm = require('vm');
@@ -26,7 +27,11 @@ const vyrez = (zdroj, jm) => {
 };
 const online = fs.readFileSync(__dirname + '/ui/online_ui.js', 'utf8');
 const zamekUi = fs.readFileSync(__dirname + '/ui/zamek_ui.js', 'utf8');
-const kod = vyrez(online, 'onlineOdeslanoSRazitkem') + vyrez(online, 'onlineUloz') + vyrez(zamekUi, 'zamekPoTiskuUloz');
+/* K7-K4: převod chyby a text dialogu po neuloženém tisku (funkce + konstanta). */
+const chybaOd = online.indexOf('function onlineChybaText(');
+const chybaDo = online.indexOf('/* Otisk odeslané zakázky', chybaOd);
+const kod = (chybaOd > 0 && chybaDo > chybaOd ? online.slice(chybaOd, chybaDo) : '')
+  + vyrez(online, 'onlineOdeslanoSRazitkem') + vyrez(online, 'onlineUloz') + vyrez(zamekUi, 'zamekPoTiskuUloz');
 test('funkce jsou ve zdrojích', /function onlineUloz\(/.test(kod) && /function zamekPoTiskuUloz\(/.test(kod));
 
 const tik = () => new Promise(r => setImmediate(r));
@@ -44,7 +49,9 @@ function prostredi() {
     onlineSlevyOtisk: () => ({}),
     onlineSlevyZeServeru: () => 0,
     onlinePoslednizapamatuj: () => {},
-    onlineZprava: () => {},
+    zpravy: [], dialogy: [],
+    onlineZprava: (t) => { ctx.zpravy.push(t); },
+    hlaska: (t) => { ctx.dialogy.push(t); return Promise.resolve(); },
     onlineNactiRejstrik: () => Promise.resolve(true),
     onlineKolizeText: () => '',
     render: () => {},
@@ -117,6 +124,28 @@ function prostredi() {
     posty[0].vyres({ soubor: 'zk.json', razitko: 'r1' });
     await dobehni();
     test('zámek už byl v letícím zápisu → druhý POST není potřeba', posty.length === 1, posty.length);
+  }
+  /* 6) K7-K4: výpadek sítě při uložení po tisku → česká věta a dialog s krokem */
+  {
+    const { ctx, posty } = prostredi();
+    ctx.ZAK.varianty[0].zamek = { typ: 'nabidka', kdy: '2026-10-23T03:00:00.000Z' };
+    ctx.zamekPoTiskuUloz();
+    const e = new TypeError('Failed to fetch');
+    posty[0].zamitni(e);
+    await dobehni();
+    const z = ctx.zpravy.join(' | ');
+    test('K7-K4: výpadek sítě se hlásí česky, ne „Failed to fetch"', /nedostupný/.test(z) && !/Failed to fetch/.test(z), z);
+    test('K7-K4: po neuloženém tisku vyskočí dialog s krokem (uložit znovu)', ctx.dialogy.length === 1
+      && /neuložila/.test(ctx.dialogy[0]) && /Uložit zakázku/.test(ctx.dialogy[0]), ctx.dialogy);
+  }
+  /* 7) chyba autosave bez tisku dialog nevyvolá, hláška serveru jde doslova */
+  {
+    const { ctx, posty } = prostredi();
+    ctx.onlineUloz({ tiche: true });
+    posty[0].zamitni(new Error('Neuloženo: hláška serveru.'));
+    await dobehni();
+    test('K7-K4: chyba autosave dialog nevyvolá a hláška serveru zůstává', ctx.dialogy.length === 0
+      && ctx.zpravy.some(t => /hláška serveru/.test(t)), [ctx.dialogy, ctx.zpravy]);
   }
   console.log(`\n${ok} OK, ${fail} FAIL`);
   process.exit(fail ? 1 : 0);

@@ -2391,6 +2391,15 @@ const MUTACE = [
     hledej: "    .filter(k => k && !vRejstriku.has(k));",
     nahrad: "    .filter(k => k);",
     proc: 'zakázka by v exportu byla dvakrát' },
+  /* #507 K7-K4: hlášky po tisku. Hlídá src/test_tisk_behem_ulozeni.js. */
+  { nazev: '#507 K7-K4: výpadek sítě anglicky', soubor: 'ui/online_ui.js',
+    hledej: "  if ((e && e.name === 'TypeError') || /failed to fetch|networkerror|load failed|network request failed/i.test(m))",
+    nahrad: "  if (false)",
+    proc: 'obchodník by dostal „Failed to fetch" bez vysvětlení' },
+  { nazev: '#507 K7-K4: neuložený tisk bez dialogu', soubor: 'ui/online_ui.js',
+    hledej: "    if (opts.fronta && typeof hlaska === 'function') {",
+    nahrad: "    if (false) {",
+    proc: 'vytištěná nabídka bez záznamu odeslání by se hlásila jen v panelu' },
   /* #507 K7-K3: ARES po SoD. Hlídá src/test_ares_po_sod.js. */
   { nazev: '#507 K7-K3: ARES po SoD přepíše hlavičku', soubor: 'ui/ares_ui.js',
     hledej: "  if (zmrazeno) {\n    ARES.kde = '';",
