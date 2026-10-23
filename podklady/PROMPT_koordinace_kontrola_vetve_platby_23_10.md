@@ -26,7 +26,7 @@ Pracuj česky a podle `CLAUDE.md`. Nejdřív si přečti `PREDAVKA.md` ve větvi
    v historii dealu ukážou pod jeho jménem.
 5. Platby 1–8 kalkulátor neplní vůbec, ani zpětně u starších nabídek. Místo nich nové pole „Platební kalendář SoD
    PROJ“ (Velký text).
-6. Integrátorovi (Ing. Drda) odešel 23. 10. e-mail se šesti prosbami: volba „Zjišťuje se“, návrh vyvolání cenové
+6. Integrátorovi odešel 23. 10. e-mail se šesti prosbami: volba „Zjišťuje se“, návrh vyvolání cenové
    nabídky z Pipedrive (způsob necháváme na něm, o Make se nemluví), sekce „Krycí list“, čtyři volby „Způsob
    fakturace“ pro projekci, „Hlavní projektant“ jako Text, pole „Platební kalendář SoD PROJ“.
 

@@ -1,3 +1,122 @@
+# Předávka — 23. 10. 2026 odpoledne: P2 — převzetí #114 z `claude/eager-carson-1xznt2`, tři opravy Stavu Pipedrive do P1, mutace po částech, v23.10.3, větev `claude/p2-pd114-prevzeti`
+
+Nad `f3b5d42` (test = integrace v23.10.2). Verze **23.10.3** (CHANGELOG `## v23.10.3 — P2`, příručka „Co je nového
+ve verzi v23.10.3“, `build.py --kontrola-verze` ✓). Zadání: `podklady/PROMPT_koordinace_kontrola_vetve_platby_23_10.md`,
+úkol A (úkol B — platby #115 — dělá jiná dávka). Koordinace: session_013yuBUKmpUYvEnjxWjGi5kj. Do integrace / test
+nic — slučuje koordinace. Do `claude/eager-carson-1xznt2` se nepushovalo.
+
+- **Převzetí bez staré historie (úkol 1):** větev `claude/eager-carson-1xznt2` se nesloučila ani necherry-pickovala.
+  `aea832a` (integrace v22.10.1) **je předek `test`** (ověřeno po `git fetch --shallow-since=2026-10-20`), takže
+  `git diff aea832a 4957b61` obsahuje přesně jen změny větve proti v22.10.1 = #114 (13 souborů, `pd_prevod.mjs`
+  a `test_pd_prevod.mjs` nové — v `test` nebyly, nic dvakrát). `git apply -3` čistě, konflikt jen v `SADY`
+  (`netlify/mutace.mjs`: Z1 i #114 ponechány). Z commitů po 4957b61 převzaty jen `podklady/PROMPT_koordinace_…`
+  a `PROMPT_mutacni_beh_23_10.md`. **#286–#293** jsou ve větvi pod jinými SHA (stará historie; `git cherry` je
+  kvůli jiné historii hlásí všechny jako „+“) — do P2 nepřišly, patch se jich netýká. **Stav Pipedrive větve**
+  (4b63ad7, 2da16e1, 252c49f: `functions/pd_stav.mjs ?deal=`, `pipedrive/stav/<id>`, `controlling_modul.cjs`,
+  `ctrlPdStavPrijmi`, `pdStavHlidej`, sloupce v exportu, Co je nového v22.10.2, #504 větve) **nepřevzat** — v kódu
+  nic z toho není (`grep` čistý), platí P1 (#501).
+- **Tři opravy do P1 (úkol 2):**
+  1. *Smazaný deal* (`netlify/lib/pd_stav.mjs`): detail 404 → `GET /api/v2/deals?ids=<id>&status=deleted`
+     (koš) → „deleted“; jen deal s týmž id. Odstraněný úplně → poslední známý stav + `pd_stav/overeno:<id>`
+     (další dotaz až za 10 min). Záznam stavu zůstává `{ status, nacteno }` (pdStavNorm je přísný).
+  2. *Obnova po souboru / záloze / přihlášení* (`pdStavObnovZak` v `src/ui/online_ui.js`; volá `nactiZakazku`,
+     `historieObnovZalohu`, `onlinePoPrihlaseni` za `onlineObnovPosledni`). P1 API zachované (`?soubor=`), jméno
+     `ONLINE_STAV.soubor || uloJmenoSouboru(ZAK)`, nově `&deal=<id>` — server stav vrátí jen pro deal uložené
+     zakázky (jinak `pdStav: null` bez Pipedrive, neplatné → 400). **K7-K6:** jednou pro zakázku a deal
+     (`ONLINE_STAV.pdStavZak` + `pdStavDeal`), z `render()` ani autosave se neptá (na rozdíl od větve, kde
+     `pdStavHlidej` visel v `render()`); krok zpět (historieObnov) se neptá. **K7-S6:** souběžné žádosti v prohlížeči
+     sdílí jeden promise (`ONLINE_STAV.pdStavBezi`), server spojuje dál sám.
+  3. *Sazba DPH `na-konec`* (`src/ui/common.js`).
+- **#114 zachováno (úkol 3):** `test_pipedrive` 91/0, `test_pd_prevod` 102/0, `test_pd_pristup` 54/0, `test_prava`
+  932/0 (matice bez `pd_stav.mjs` větve); mutace #114 v `netlify/mutace.mjs`, `--kontrola` 880/880.
+- **Roadmapa (úkol 4):** #501–#503 větve → **#509, #510, #511** (pozn. o přečíslování), #504 větve nezaložena,
+  detail #501 (P1) doplněn; #16, #113–#115, #117 podle větve (odkazy přečíslované). `roadmapa.py --kontrola` ✓.
+- **Mutace po částech (úkol 6 — hotovo, ~1 h):** `nastroje/mutace_cast.mjs`, `--cast K/N` / `--od N` /
+  `KNG_MUTACE_CAST` / `KNG_MUTACE_OD` v obou mutačních skriptech, `[pořadí/celkem]`, „Pokryto … NE celý běh“,
+  kolo „ZELENÁ ČÁST“; workflow matrix server 6 × / jádro 3 ×, `fail-fast: false`, limit 75 min (**odhad — po
+  prvním běhu v Actions změřit a upravit**); CLAUDE.md oddíl Testy. Test `netlify/test_mutace_cast.mjs` 38/0.
+- **Testy (úkol 5):** `spust_testy.sh` 250 prošlo / 0 selhalo / 1 přeskočeno (test.js); `test_pd_stav` 51/0;
+  `--kontrola` jádro 527/527, server 880/880; cílené mutace: **P2 7/7**, **#114 MUT114**, **„P1: chyba API“ MUTP1**
+  (upravený hledaný úsek); jádro `--cast 3/527` 1/1 (ověření výběru části).
+- **Upravené / nové, NEPUŠTĚNÉ harnessy:** `overit_pd_stav.mjs` (převzatý z větve, přepsaný na P1: rozvržení
+  Sazba DPH × Datum vytvoření vč. zahraniční zakázky s kurzem, otevření ze souboru, obnova zálohy, přihlášení,
+  sdílený dotaz, chyba, pozdní odpověď). Pojistka v hlavičce harnessu (na f3b5d42 mají selhat rozvržení
+  u zahraniční zakázky a kontroly po souboru/záloze/přihlášení) — **doložit v kole**.
+- **Pozor pro kolo:** (1) `overit_online.mjs` volá `/api/pd/stav` — po přihlášení se nově může ptát i
+  `pdStavObnovZak` (jen zakázka s dealem); (2) harnessy, které počítají dotazy na server po přihlášení nebo po
+  otevření ze souboru, mohou vidět jeden navíc; (3) mutace serveru v sezení po částech (viz CLAUDE.md).
+- **Otevřené / pro J. V.:** nic nového; rozhodnutí 23. 10. viz převzatý odstavec níž.
+- **Další krok:** koordinace — celé kolo nad hlavou větve (Actions po částech, nebo v sezení
+  `KNG_MUTACE_CAST=K/N`), sloučení; pak úkol B (#115 platby) nad commitem, který určí koordinace.
+
+## Převzato z `claude/eager-carson-1xznt2` (PREDAVKA té větve, 23. 10.) — jen #114 a rozhodnutí J. V.; zápisy o „Stav Pipedrive“ té větve vynechány (platí P1), #501–#503 přečíslováno na #509–#511
+
+**Rozhodnutí J. V. 23. 10. (formulář otázek, vše podle doporučení kromě bodu 6):** 1. směr dat §12 — souhlas;
+2. hodnota dealu se zapisuje (cena řídící varianty bez DPH, u kombinované OCK + PROJ, potvrzení „stará → nová“);
+3. Stav Pipedrive: platí P1, moje verze se vrátí, tři opravy se převedou; 4. vyjádření integrátorovi odeslat
+s tabulkou xlsx (odešle J. V.); 5. mutace serveru doběhnou v Testy #194; 6. pád jobu „testy“ na Ubuntu 26.04
+opraví koordinace v integrační větvi; 7. nové sezení po zapsání výsledku Testy #194. Stanovisko k otázkám
+integrátora: zákazník je vždy Organizace dealu (potvrdil J. V., z e-mailu vypuštěno); API token bude z účtu J. V.,
+který vidí všechny dealy (z e-mailu vypuštěno; změny přes API se v historii dealu ukážou pod jeho jménem);
+generování cenové nabídky z Pipedrive — způsob necháváme na integrátorovi (o Make se nemluví); Typ zakázky nahrazuje pole #10; pole vždy viditelná v sekci „Krycí list“; Hlavní projektant → Text;
+nové pole „Platební kalendář SoD PROJ“; Platby 1–8 kalkulátor neplní vůbec, ani zpětně u starších nabídek
+(J. V. 23. 10.) — v kódu `pd_mapa.mjs` u `platba1`–`platba8` a PROJ části „První splátka (%)“ (`stary: ['proj']`)
+zápis vypnout spolu s #115; zádržné volby stačí; neuplatněný limit = 0;
+čtyři volby Způsob fakturace pro PROJ; webhook až po #115; Informováno BO / Tech kalkulátor nepíše; číslo nabídky
+nevalidovat.
+
+---
+
+### Předávka větve — 21. 10. 2026 odpoledne: #114 Pipedrive — párování polí podle přesného názvu, převod hodnot, jediný vlastník pole (bez verze), větev `claude/eager-carson-1xznt2`
+
+Nad `test` v21.10.2 (merge a5f0308). **Do test / main / test-draft / integrace nic.** Podklad:
+`podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11, CHANGELOG oddíl „(bez verze) — #114“, roadmapa #16, #114, #115,
+#117 a nové #509–#511 (do sloučení s test v22.10.1 #473–#475; #511 uzavřená).
+
+- **Hotovo (0db8476):** test polí, která integrátor založil 21. 10. (jen čtením: 53/54 nových + 4/4 úprav sedí, #10
+  nahrazuje „Typ zakázky“ — k potvrzení). Párování v `netlify/lib/pd_mapa.mjs`: přesný název + typ místo vzorů (vzory
+  by spárovaly záruku se zádržným, pokutu s limitem a podepisující firmu), 66 polí dealu se zdrojem v krycím listu,
+  IČ s nulami (`pdIco`), verze mapy v cache, `typNesedi` / `nejednoznacne`. Nový `netlify/lib/pd_prevod.mjs`: převod
+  hodnot krycího listu pro zápis #115 (`pdZapisDealu` = 1 PATCH, 5 tokenů).
+- **Hotovo (odpoledne, po připomínkách J. V.):**
+  - **zákazník = organizace a osoba dealu**, ne „Zdroj poptávky“ (J. V.: „zdroj poptávky není vždy výtahová firma“;
+    role 194 organizací: zdroj 119× výtahovka, 19× jiná role; organizace dealu všech rolí — §11.11),
+  - **každé pole má jediného vlastníka, nic obousměrně** (J. V.: „do pipedrive by se mělo přenášet to, co je
+    v kalkulačním nástroji“): 35 polí krycího listu `oba` → `zapis`, detail dealu vrací jen zadání (podmínky
+    krycího listu z CRM nečte) — §11.10,
+  - **návrh směru dat podle 85 vyhraných dealů** (J. V.: „hlavičku dealu a kontaktní údaje, které obchodník
+    standardně vyplňuje“ z Pipedrive do kalkulace) — §12, čeká na potvrzení; „Předpokládané datum ukončení
+    realizace“ vyplňují obchodníci (85/85) → čte se a předvyplní Konečné předání díla, nezapisuje se,
+  - **#511 (dřív #475) uzavřena** (otázky na J. V. byly špatně položené: co kalkulace má, to se zapíše; kde to Pipedrive neumí
+    uložit, upraví se Pipedrive — otázky 13 a 15 pro integrátora).
+- **Přejímka na skutečných datech (jen v kontejneru, nic v repu):** 66/66 polí, 0 špatně.
+- **Testy:** `test_pipedrive.mjs` 91/0 (pojistky: na kódu před opravou 26 z 94 selže; na 0db8476 selže 6 z 90),
+  `test_pd_prevod.mjs` 102/0 (test předpokládaného ukončení chytá mutace „přepisuje se z kalkulace"; na 0db8476, kde se pole jen četlo, projde), `test_pd_pristup.mjs` 54/0; mutace „#114“ 21/21 v plném běhu
+  + 2/2 cílené po poslední úpravě (předpokládané ukončení, čtení podmínek); kolo `--bez-mutaci` 256 prošlo / 0 selhalo / 43 přeskočeno (40 prohlížečových sad — v kontejneru chybí balíček playwright, klient se nemění; 3 bez firemních podkladů), statické 4/4;
+  kontrola osobních údajů čistá.
+- **Mimo repozitář (pro J. V.):** dokument pro integrátora — Claude Doc https://claude.ai/artifact/RCVznN7Dn2goRM8TmuAZfz
+  (upravený: zákazník, žádná obousměrná synchronizace, otázka 15) + export `.docx`; koncept e-mailu jako text (Outlook
+  konektor nemá `Mail.ReadWrite`).
+- **Čeká:** odpovědi integrátora (#509), zkušební zápis (#510 — po potvrzení automatizací v Make; přes konektor kdykoli,
+  z aplikace až po #115 a z testovacího webu s vlastním `PIPEDRIVE_TOKEN` / `PIPEDRIVE_DOMENA`).
+- **Ke slučování:** CHANGELOG (oddíl nahoře), `netlify/mutace.mjs` (blok #114 před blokem S5 + `test_pipedrive.mjs`,
+  `test_pd_prevod.mjs` na konci `SADY`), roadmapa (#16, #114, #115, #117 upravené; nové #509–#511 (dřív #473–#475) — integrace má už
+  #470–#472, čísla přidělí sloučení), `podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11.
+- **Další krok:** po potvrzení §12 dotáhnout čtení zadání (#113: telefon a e-mail zvlášť, obchodník, zástupci,
+  specifikace, druh kalkulace podle Typu zakázky), pak serverový zápis řídící varianty (#115: POST `/api/pd/deal`
+  nad `pdZapisDealu`, potvrzení „stará → nová“, kontrola `update_time`) a zkouška z testovacího webu (#510).
+
+**Otázky pro J. V.:**
+1. Souhlasí návrh směru dat v `podklady/NAVRH…` §12 (hlavička a kontakty z Pipedrive, krycí list do Pipedrive)? →
+   doporučuji ano.
+2. Zapisovat z kalkulace i hodnotu dealu (cena řídící varianty bez DPH; nativní pole, dnes ruční 85/85)? →
+   doporučuji ano, srovná pipeline s nabídkami.
+Z dřívějška platí token a doména v Netlify (#113, pro testovací web vlastní) a #117 (nedopsaná pole v CRM).
+
+---
+
+---
+
 # Předávka — 23. 10. 2026 ~09:30 UTC: E2 — export celé databáze, čitelné filtry, K7-S2, K7-W1 (#508), v23.10.2, větev `claude/e2-export-cela-db`
 
 Nad `3c04445` (test v23.10.1 f0d42ed + dokumentace). Verze **23.10.2** (CHANGELOG `## v23.10.2 — E2`, příručka

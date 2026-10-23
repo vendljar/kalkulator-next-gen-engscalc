@@ -8,6 +8,93 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.10.3 — P2: převzetí #114 Pipedrive z větve claude/eager-carson-1xznt2 a tři opravy Stavu Pipedrive do P1, větev claude/p2-pd114-prevzeti
+
+Nad f3b5d42 (test = integrace v23.10.2). Zadání: `podklady/PROMPT_koordinace_kontrola_vetve_platby_23_10.md`,
+úkol A. Větev `claude/eager-carson-1xznt2` má jinou, starou historii repozitáře — **nesloučena**, převzat jen
+obsah: #114 = `git diff aea832a 4957b61` (původní commity 091a775…6ba5ece) přes `git apply -3`, zadání
+22.–23. 10. do `podklady/`. Její „Stav Pipedrive“ (4b63ad7, 2da16e1, 252c49f; v22.10.2, #504 větve) se
+**nepřebírá** — platí P1 (#501), rozhodnutí J. V. 23. 10.; tím je revert splněn bez přepisu historie.
+
+- **Smazaný deal v koši (server, `netlify/lib/pd_stav.mjs`):** detail v2 vrátí u dealu v koši 404 — nově se
+  zeptá seznamu smazaných `GET /api/v2/deals?ids=<id>&status=deleted` a deal z koše ukáže „Smazané“ (dřív zůstal
+  poslední známý stav, třeba „Vyhrané“). Deal odstraněný úplně (ani v koši) si nechá poslední známý stav a server
+  si zapíše čas dotazu (`pd_stav/overeno:<id>`) — další otevření do 10 minut nestojí 11 tokenů znovu. Záznam
+  stavu zůstává v tvaru `{ status, nacteno }`.
+- **Stav po otevření ze souboru, po obnově zálohy a po přihlášení (prohlížeč, `src/ui/online_ui.js`):**
+  `pdStavObnovZak()` se zeptá serveru na stav dealu otevřené zakázky (`/api/pd/stav?soubor=<jméno podle čísla>&deal=<id>`)
+  po otevření ze souboru (`nactiZakazku`), po obnově zálohy z prohlížeče (`historieObnovZalohu`) a po přihlášení
+  (za návratem k poslední zakázce). Jednou pro zakázku a deal — překreslení ani autosave se neptají (K7-K6);
+  souběžné žádosti sdílí jeden dotaz (jako K7-S6 na serveru); odpověď k jiné zakázce se zahodí; načtený stav není
+  neuložená změna. Server nově přijme volitelné `deal` a když nesedí s dealem uložené zakázky, vrátí `pdStav: null`
+  a do Pipedrive nejde (zakázka ze souboru mohla mít jiný deal než ta v databázi).
+- **Sazba DPH na konci sloupce hlavičky** (`na-konec`, `src/ui/common.js`): řádek „Stav Pipedrive“ prodlužuje pravý
+  sloupec; u zahraniční zakázky s kurzem datum vytvoření sjelo o 38 px pod úroveň sazby DPH.
+- **Mutační běh po částech** (bod 6 zadání, `podklady/PROMPT_mutacni_beh_23_10.md`): `nastroje/mutace_cast.mjs`
+  — `--cast K/N` (každá N-tá mutace od K-té) a `--od N` v `netlify/mutace.mjs` i `mutace_jadro.mjs`, také přes
+  `KNG_MUTACE_CAST` / `KNG_MUTACE_OD` (`nastroje/testovaci_kolo.sh`); řádek výsledku `[pořadí/celkem]`, souhrn
+  „Pokryto: část K/N … — NE celý běh“, kolo s částí končí „ZELENÁ ČÁST“, nikdy „VŠE ZELENÉ“; neplatný zápis
+  skončí chybou (kód 2) a nic nespustí. Actions: `mutace-server` matrix 6 částí, `mutace-jadro` 3 části,
+  `fail-fast: false`, limit 75 min (odhad — změřit po prvním běhu). `CLAUDE.md` (Testy): mutace po částech
+  v cloudovém sezení a `git status` po restartu kontejneru.
+- **Testy:** `netlify/test_pd_stav.mjs` 43 → 51 kontrol (pojistky: koš, odstraněný deal a opakovaný dotaz před
+  převodem 3 FAIL; cizí deal v seznamu smazaných s mutací 2 FAIL; `deal` z prohlížeče před úpravou 2 FAIL); nový
+  `netlify/test_mutace_cast.mjs` 38/0 (před úpravou modul neexistoval); nový harness `overit_pd_stav.mjs`
+  (převzatý z větve, přepsaný na API P1; v sezení nespuštěn — kolo pouští koordinace). Mutace „P2“ v
+  `netlify/mutace.mjs` 7/7. #114: `test_pipedrive.mjs` 91/0, `test_pd_prevod.mjs` 102/0, `test_pd_pristup.mjs`
+  54/0, `test_prava.mjs` 932/0. `spust_testy.sh` 250/0/1.
+- **Roadmapa:** #509–#511 (ve větvi #501–#503), #16, #113–#115, #117 podle větve, #501 doplněno o převzetí.
+
+### #114 (převzato z větve, původně v22.10.2): párování polí Pipedrive podle přesného názvu, převod hodnot krycího listu (větev claude/eager-carson-1xznt2)
+
+Nad `test` v21.10.2 (merge a5f0308); 22. 10. 2026 sloučeno s `test` v22.10.1 a vydáno spolu s dávkou „Stav Pipedrive“
+jako v22.10.2 (sloučení do `test` může verzi přečíslovat). Položky roadmapy #473–#475 z téhle větve mají od sloučení
+čísla #509–#511 (v `test` se mezitím obsadila). Podklad: `podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md`
+§11 (test polí založených integrátorem 21. 10. 2026, jen čtením).
+
+- **Oprava — párování polí dealu se s novými poli rozbilo.** Párovalo se podle vzorů a vyhrával nejkratší název:
+  na skutečném účtu by se doba záruky spárovala se „Zádržné – po dobu záruky" (výběr), pokuta za den s „Limit
+  smluvních pokut (%)", objednatel s „Podepisující firma (pokud jiná)" a první/druhá splátka s ničím. Teď
+  `netlify/lib/pd_mapa.mjs` páruje **přesně podle názvu z tabulky s integrátorem a podle typu** (velikost písmen,
+  mezery a druh pomlčky nerozhodují, diakritika ano); jiný typ (`typNesedi`) a dvojí název (`nejednoznacne`) se
+  nespárují a ohlásí. 66 polí dealu s údajem, odkud se hodnota bere v krycím listu OCK / PROJ, a s jediným
+  vlastníkem (čte se, nebo zapisuje se). Přejímka nad skutečnými definicemi: 66/66, žádné špatně.
+- **Oprava — IČ organizace.** Pole se jmenuje „IČ" (vzor ho nechytil, `\b` bez `/u` nebere „Č") a je číselné:
+  `pdIco` doplní nuly na osm číslic (00064581 místo 64581).
+- **Mapa polí v cache nese verzi** (`PD_POLE_VERZE`) — mapa z doby vzorů se po nasazení nepoužije ani do konce své
+  denní platnosti. `/api/pd/pole` vrací i `typNesedi` a `nejednoznacne`.
+- **Každé pole má jediného vlastníka, nic se nesynchronizuje oběma směry** (pravidlo J. V. 21. 10. 2026: „do
+  pipedrive by se mělo přenášet to, co je v kalkulačním nástroji"). Zadání z Pipedrive (zákazník, adresa
+  realizace, typ zakázky) se čte do kalkulace; co vznikne v kalkulaci (krycí list řídící varianty), se zapisuje
+  a zpátky se nečte. V mapě zmizel směr „oba" (35 polí krycího listu → `zapis`). Otázky #511 (dřív #475) tím odpadly.
+- **Kdo co vyplňuje — podle 85 vyhraných dealů** (`podklady/NAVRH…` §12, návrh k potvrzení): hlavičku a kontakty
+  obchodníci vyplňují v Pipedrive (název dealu, organizace, osoba s telefonem a e-mailem, Typ zakázky, Adresa
+  realizace, Předpokládané datum ukončení realizace — vše 84–85/85), podmínky krycího listu jsou v CRM 84× jen
+  výchozí 14/50/40. „Předpokládané datum ukončení realizace" se proto čte (předvyplní Konečné předání díla)
+  a kalkulace ho nepřepisuje.
+- **Zákazník = organizace a osoba dealu, ne „Zdroj poptávky".** Zdroj je ten, kdo poptávku přinesl: ze 138
+  vyplněných 119× výtahová společnost, 19× jiná role (poptávkový server, stavební, správcovská, investor,
+  konzultant, projektant). Dosavadní přednost zdroje by u 49 dealů projekce dala na nabídku výtahovku místo
+  investora (`podklady/NAVRH…` §11.11).
+- **Detail dealu** (`/api/pd/deal`): vrací zadání (číslo a název akce, adresu, zákazníka, IČO, kontakt, typ
+  zakázky, předpokládané ukončení realizace), podmínky krycího listu už ne; varování o chybějících polích jen pro pole, která detail čte
+  (`PD_CTENI`), nově i o poli jiného typu a o dvojím názvu.
+- **Nové — převod hodnot pro zápis** (`netlify/lib/pd_prevod.mjs`, zápis #115 ho jen zavolá): krycí list → číslo,
+  datum ISO, ID volby, vícevýběr, `{ value, currency }`, uživatel; celá zakázka jedním PATCH (5 tokenů). Prázdné se
+  neposílá (zápis v CRM nic nemaže), nejednoznačné se neposílá s důvodem („NEUPLATNĚN limit 10 %" ≠ 10, rozsah
+  „10–12 týdnů" se nehádá), volba podle textu, ne pořadí. U kombinované zakázky rozhoduje OCK. Datum podpisu OCK jen
+  ručně zadané (předvyplněné je datum tisku); Platby 1–8 a záloha PROJ jen u nabídky z doby před plánem plateb.
+- **Testy:** `netlify/test_pipedrive.mjs` — testovací data se skutečnými názvy polí ve tvaru API v2 a třemi pastmi
+  (pojistka první části: na kódu před opravou 26 z 94 selže — záruka „Ne" ze zádržného, pokuta 10 z limitu,
+  zákazník z podepisující firmy, IČ nenalezeno, stará cache použita; pojistka druhé části: na 0db8476 selže 6 z 90
+  — zákazník ze zdroje poptávky, obousměrná pole, podmínky čtené z CRM; 91 kontrol po úpravě). Nový
+  `netlify/test_pd_prevod.mjs`
+  (102 kontrol; před změnou modul neexistoval) včetně křížové kontroly s `src/kryci.js` a `src/kryci_proj.js`:
+  každé zdrojové pole existuje a výchozí znění aplikace se převede. Mutace „#114" v `netlify/mutace.mjs`
+  chycené 21/21 v plném běhu a 2/2 cílené po poslední úpravě, obě sady v `SADY`.
+- **Ke slučování:** CHANGELOG (tento oddíl), `netlify/mutace.mjs` (blok #114 před S5 + dvě sady na konci `SADY`),
+  roadmapa, `PREDAVKA.md` (oddíl nahoře), `podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §10–§11.
+
 ## v23.10.2 — E2: hromadný export celé databáze, čitelné filtry; K7-S2 a K7-W1 (#508), větev claude/e2-export-cela-db
 
 Nad 3c04445 (test v23.10.1 f0d42ed + dokumentace). Zadání J. V. 23. 10. 2026 (snímky Nastavení → Controlling →
