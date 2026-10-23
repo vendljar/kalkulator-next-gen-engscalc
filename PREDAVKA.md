@@ -59,9 +59,12 @@ Verze v22.10.2 nese i #114 z 21. 10. (oddíl CHANGELOG pod ním).
   scratchpadu (čte `POLE_DEALU` a popisky krycích listů z commitu); formulář otázek s odpověďmi J. V.
   https://claude.ai/artifact/SVr2vABm81nq5LDs7jGezs (úložiště `odpovedi/jv`). Do repa nic z toho nejde (jméno
   integrátora, firemní podklad).
-- **Další krok (nové sezení):** 1. výsledek Testy #194 (run 39932239909: joby mutace-server a mutace-jadro; job testy
-  spadl na instalaci Playwrightu na Ubuntu 26.04 — opraví koordinace, `runs-on: ubuntu-24.04`) zapsat do CHANGELOG,
-  roadmapy a sem; 2. Stav Pipedrive podle rozhodnutí: revert mé verze, převod tří oprav do P1 (kde a kdy určí
+- **Testy #194 (GitHub, 23. 10., c73770f, run 39932239909):** job testy spadl na instalaci Playwrightu (runner
+  Ubuntu 26.04 — opraví koordinace, `runs-on: ubuntu-24.04`); mutace jádra i serveru ukončil `timeout-minutes: 45`
+  (server zhruba 280 z 808, vše chycené). Mutace serveru 528–808 tak dál nikde celé neběžely; `netlify/mutace.mjs`
+  umí vybírat jen podle názvu, ne podle pořadí.
+- **Další krok (nové sezení):** 1. dokončit mutace serveru — buď koordinace zvedne `timeout-minutes` mutačních
+  jobů (server ~2,5 h, GitHub dovolí až 360 min), nebo `mutace.mjs` dostane volbu `--od N` pro běh po částech pod 2 h; 2. Stav Pipedrive podle rozhodnutí: revert mé verze, převod tří oprav do P1 (kde a kdy určí
   koordinace); 3. #113 čtení zadání (směr dat §12 schválen), #115 zápis včetně hodnoty dealu; 4. po odpovědi
   integrátora: „Hlavní projektant“ jako text (`pd_mapa.mjs` druh `uzivatel` → `text`), nové pole „Platební kalendář
   SoD PROJ“ (řádky jako `planSodKalendar`), čtyři volby „Způsob fakturace“ pro PROJ (synonyma k větám

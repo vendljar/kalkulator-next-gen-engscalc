@@ -8583,7 +8583,7 @@
    {
     "text": "22. 10. 2026 — dávka Stav Pipedrive (claude/eager-carson-1xznt2, v22.10.2, se #114 z 21. 10.): pole „Stav Pipedrive“ v hlavičce OCK i PROJ (jen ke čtení), čtení stavu dealu /api/pd/stav, stav jako údaj serveru při uložení zakázky, sloupce Stav Pipedrive v exportu pro controlling (verze struktury 3). #504; položky #473–#475 z této větve přečíslovány na #501–#503.",
     "hotovo": true,
-    "pozn": "Kolo na 252c49f NEÚPLNÉ: sady 302/0/6, mutace jádra 432/432, statické 4/4, mutace serveru 527 z 808 chycených (0 přežilo; přerušeno restartem kontejneru, opakování ukončil limit 2 h úlohy na pozadí); mutace 528–808 neběžely — blok „Stav Pipedrive“ cíleně 24/24. Dokončit jobem mutace-server v GitHub Actions nebo v dalším sezení."
+    "pozn": "Kolo na 252c49f NEÚPLNÉ: sady 302/0/6, mutace jádra 432/432, statické 4/4, mutace serveru 527 z 808 chycených (0 přežilo; přerušeno restartem kontejneru, opakování ukončil limit 2 h úlohy na pozadí); mutace 528–808 neběžely — blok „Stav Pipedrive“ cíleně 24/24. Testy #194 v GitHub Actions (23. 10.) je nedoplnily: job testy spadl na Playwrightu (Ubuntu 26.04), mutační joby ukončil limit 45 min (server zhruba 280 z 808, vše chycené)."
    }
   ],
   "pravidla" : [

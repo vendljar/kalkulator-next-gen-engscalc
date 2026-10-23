@@ -50,7 +50,9 @@ roadmapy může slučování přečíslovat.
   **Celé kolo na 252c49f NEÚPLNÉ:** sestavení ✓, sady 302 prošlo / 0 selhalo / 6 přeskočeno, mutace jádra 432/432,
   statické kontroly 4/4; mutace serveru 527 z 808 chycených, 0 přežilo — běh přerušil restart kontejneru, opakovaný
   běh (303/303) ukončil dvouhodinový limit úlohy na pozadí. Mutace 528–808 (mezi nimi blok „Stav Pipedrive“, ten
-  cíleně 24/24) v celém kole neběžely; dokončí je job mutace-server v GitHub Actions nebo další sezení.
+  cíleně 24/24) v celém kole neběžely. Testy #194 v GitHub Actions (23. 10., c73770f) je nedoplnily: job „testy“
+  spadl na instalaci Playwrightu (runner Ubuntu 26.04), mutace jádra i serveru ukončil limit `timeout-minutes: 45`
+  (server zhruba 280 z 808, vše chycené) — mutace 528–808 zůstávají neověřené.
   Kotva mutace B80 („strop čerstvých načtení“) posunuta na `>= max`.
 - **Ke slučování:** CHANGELOG (tento oddíl), roadmapa #504 (+ záznam dávky), `netlify/mutace.mjs` (blok „Stav
   Pipedrive“ za #114, `test_pd_stav.mjs` na konci `SADY`), `manual/obsah.json` (Co je nového v22.10.2), PREDAVKA.
