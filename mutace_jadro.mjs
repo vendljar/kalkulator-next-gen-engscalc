@@ -110,7 +110,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'ui/online_ui.js', 'ui/zamek_ui.js',
   /* zamek.js (#507): jen prohlížečové zmrazení polí snímku před uložením
    * zámku (K7-K2); serverová pravidla zámku hlídá netlify/mutace.mjs. */
-  'zamek.js'];
+  'zamek.js',
+  /* ui/ares_ui.js (#507, K7-K3): ARES po tisku SoD hlavičku nepřepíše.
+   * Hlídá src/test_ares_po_sod.js. */
+  'ui/ares_ui.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -144,7 +147,7 @@ const PRIORITA = [
   /* verze ceníku v razítku (#505) — rychlá sada, chytá mutace ui/program_ui.js */
   'test_cenik_verze_online.js',
   /* tisk během ukládání a snímek odeslané nabídky (#507) — chytají mutace ui/online_ui.js a ui/zamek_ui.js */
-  'test_tisk_behem_ulozeni.js', 'test_snimek_po_tisku.js',
+  'test_tisk_behem_ulozeni.js', 'test_snimek_po_tisku.js', 'test_ares_po_sod.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -2388,6 +2391,19 @@ const MUTACE = [
     hledej: "    .filter(k => k && !vRejstriku.has(k));",
     nahrad: "    .filter(k => k);",
     proc: 'zakázka by v exportu byla dvakrát' },
+  /* #507 K7-K3: ARES po SoD. Hlídá src/test_ares_po_sod.js. */
+  { nazev: '#507 K7-K3: ARES po SoD přepíše hlavičku', soubor: 'ui/ares_ui.js',
+    hledej: "  if (zmrazeno) {\n    ARES.kde = '';",
+    nahrad: "  if (false) {\n    ARES.kde = '';",
+    proc: 'po SoD by ARES přepsal zákazníka a každé další uložení by skončilo 409' },
+  { nazev: '#507 K7-K3: tlačítko ARES po SoD aktivní', soubor: 'ui/ares_ui.js',
+    hledej: "  const muze = !zmrazeno && typeof icoVyplneno",
+    nahrad: "  const muze = typeof icoVyplneno",
+    proc: 'obchodník by se po SoD dozvěděl o zámku až po dotazu do rejstříku' },
+  { nazev: '#507 K7-K3: zmrazení hlavičky se pro ARES nezjistí', soubor: 'ui/ares_ui.js',
+    hledej: "    const d = zamekZakCestaZmrazena(ZAK, 'ZAK.' + p.klic);",
+    nahrad: "    const d = '';",
+    proc: 'ARES by po SoD přepisoval zmrazená pole' },
 ];
 
 /* ============================================================

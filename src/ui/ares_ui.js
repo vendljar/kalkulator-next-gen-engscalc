@@ -30,6 +30,20 @@ function aresHlavicka(kde) {
   return ZAK;
 }
 
+/* ZMRAZENÁ HLAVIČKA (K7-K3, audit 23. 10. 2026). Po tisku smlouvy o dílo
+ * jsou údaje zákazníka v hlavičce zmrazené (zamekZakCestaZmrazena, Z1-3).
+ * ARES je do v22.10.6 přepisoval přímo — server pak každé další uložení
+ * odmítl 409 a pole nešla vrátit. Vrací důvod, nebo ''. Karta zákazníka
+ * (`kde === 'zakaznik'`) zakázku nemění, tam se nehlídá nic. */
+function aresZmrazeno(kde) {
+  if (kde === 'zakaznik' || typeof zamekZakCestaZmrazena !== 'function' || typeof ZAK === 'undefined') return '';
+  for (const p of ARES_POLE) {
+    const d = zamekZakCestaZmrazena(ZAK, 'ZAK.' + p.klic);
+    if (d) return d;
+  }
+  return '';
+}
+
 function aresZavri() { ARES.kde = ''; ARES.subjekt = null; ARES.chyba = ''; ARES.hleda = false; render(); }
 
 async function aresHledej(kde) {
@@ -73,6 +87,13 @@ async function aresHledej(kde) {
 function aresPrepisPotvrd(kde) {
   const hl = aresHlavicka(kde);
   if (!ARES.subjekt) return;
+  const zmrazeno = aresZmrazeno(kde);   // K7-K3
+  if (zmrazeno) {
+    ARES.kde = ''; ARES.subjekt = null; ARES.chyba = '';
+    if (typeof hlaska === 'function') hlaska(zmrazeno);
+    render();
+    return;
+  }
   const pocet = aresPrepis(hl, ARES.subjekt);
   if (pocet) aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   ARES.kde = ''; ARES.subjekt = null; ARES.chyba = '';
@@ -94,13 +115,14 @@ function aresPrepisPotvrd(kde) {
  * sebe, ne pod sebe. */
 function aresRadek(kde, sJednotkou, navic) {
   const hl = aresHlavicka(kde);
-  const muze = typeof icoVyplneno === 'function' && icoVyplneno(hl.ico);
+  const zmrazeno = aresZmrazeno(kde);   // K7-K3: po SoD se hlavička nemění
+  const muze = !zmrazeno && typeof icoVyplneno === 'function' && icoVyplneno(hl.ico);
   /* `margin-left:auto` drží ARES u PRAVÉ hrany řádku, ať jsou vedle něj dvě
    * tlačítka databáze zákazníků, nebo žádné. Zarovnání pravé hrany s polem
    * IČO hlídá overit_lista.mjs. */
   const tlacitko = `<button class="mini noprint" style="margin-left:auto" onclick="aresHledej('${kde}')"
-    title="${muze ? 'zeptat se rejstříku ARES, jaká firma pod tímto IČO je'
-                  : 'nejdřív vyplňte IČO zákazníka'}"${muze ? '' : ' disabled'}>🔎 Najít firmu v ARES</button>`;
+    title="${esc(zmrazeno ? '🔒 ' + zmrazeno : muze ? 'zeptat se rejstříku ARES, jaká firma pod tímto IČO je'
+                  : 'nejdřív vyplňte IČO zákazníka')}"${muze ? '' : ' disabled'}>🔎 Najít firmu v ARES</button>`;
   const panel = (ARES.kde === kde) ? aresPanel(kde) : '';
   /* Prázdný sloupeček „jednotka" se kreslí jen tam, kde ho mají i řádky
    * s poli — jinak by tlačítková řada končila o 42 px JINDE než pole nad ní.
