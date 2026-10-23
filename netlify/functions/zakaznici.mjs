@@ -13,7 +13,7 @@
  * Očistu vstupu dělá `zakaznikOciste` ze src/zakaznici.js — týž kód, jaký
  * si čistí prohlížeč. Server nikdy neuloží, co mu kdo pošle.
  */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, klicZAdresyPlatny } from '../lib/sdilene.mjs';
 /* SCHVÁLNĚ ne `jadro()`: to natáhne celé jádro (engine, preklad, docxgen…)
  * a při studeném startu se na prázdný seznam čekaly vteřiny (nález J. V.
  * 21. 8. 2026). Tady stačí jeden malý modul bez závislostí — proč jde přes
@@ -30,6 +30,7 @@ export default async (req) => {
   if (req.method === 'GET') {
     const klic = url.searchParams.get('klic');
     if (klic) {
+      if (!klicZAdresyPlatny(klic)) return json({ ok: false, chyba: 'Neplatný klíč zákazníka.' }, 400);   // SEC-I4
       const z = await s.cti('z/' + klic);
       return z ? json({ ok: true, zakaznik: z })
                : json({ ok: false, chyba: 'Zákazník nenalezen: ' + klic }, 404);
@@ -51,6 +52,7 @@ export default async (req) => {
     if (ch) return ch;
     const klic = url.searchParams.get('klic');
     if (!klic) return json({ ok: false, chyba: 'Chybí klíč zákazníka.' }, 400);
+    if (!klicZAdresyPlatny(klic)) return json({ ok: false, chyba: 'Neplatný klíč zákazníka.' }, 400);   // SEC-I4
     if (typeof s.smaz === 'function') await s.smaz('z/' + klic);
     return json({ ok: true, smazano: klic });
   }

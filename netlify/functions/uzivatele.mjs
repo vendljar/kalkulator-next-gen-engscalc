@@ -35,7 +35,8 @@ import { uloziste, otiskHesla, hesloSedi, vyzadujRoli, json, ROLE, ADMIN_EMAIL,
          PODPIS_ULOZISTE, podpisZkontroluj, hesloVerzeUctu, relaceCookie,
          emailPlatny, hesloPlatne, HESLO_PRAVIDLO, SMAZANI_ULOZISTE,
          bezHlavnihoUctu, POKUSY_MAX, zpozdeniMs, pockej, pokusyZacatek, pokusyUspech,
-         pokusyAdresaNadLimit, adresaKlienta, potvrdHesloSpravce } from '../lib/sdilene.mjs';
+         pokusyAdresaNadLimit, adresaKlienta, potvrdHesloSpravce, vyhradne,
+         textovaPoleChyba } from '../lib/sdilene.mjs';
 
 /* VERZE HESLA NOVÉHO ÚČTU (B76, hloubkový test 24. 9. 2026). Relace nese
  * verzi hesla účtu a účet bez pole má verzi 0 (B6). Smazaný a znovu založený
@@ -92,6 +93,9 @@ export default async (req) => {
     let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
     /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
     if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
+    /* SEC-N1 (#514): objekt v textovém poli → 400, ne 500. */
+    { const stop = textovaPoleChyba(t, ['akce', 'email', 'stare', 'nove', 'heslo', 'hesloSpravce', 'jmeno',
+        'titul', 'funkce', 'telefon', 'role', 'na', 'obrazek']); if (stop) return stop; }
 
     if (t.akce === 'mojeheslo') {
       const ucet = await u.cti(relace.email);
@@ -117,13 +121,31 @@ export default async (req) => {
       await pokusyUspech(relace.email, ip);
       if (!hesloPlatne(t.nove))
         return json({ ok: false, chyba: HESLO_PRAVIDLO }, 400);
-      ucet.heslo = otiskHesla(t.nove);
-      /* Změna hesla zneplatní všechny dosavadní relace (B6) — i tuhle,
-       * proto se hned vydá nová cookie, ať se uživatel nemusí přihlašovat. */
-      ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;
-      ucet.hesloZmeneno = new Date().toISOString(); ucet.hesloZmenil = relace.email;
-      await u.zapis(relace.email, ucet);
-      return json({ ok: true, email: ucet.email }, 200, { 'Set-Cookie': relaceCookie(ucet) });
+      const otisk = otiskHesla(t.nove);
+      /* ZÁPIS NA ČERSTVÝ ZÁZNAM (SEC-S2, #514, audit S1 23. 10. 2026). Účet
+       * přečtený na začátku se dřív zapsal celý — mezi čtením a zápisem leží
+       * počítadla pokusů, čekání brzdy (okno si útočník roztáhne sám
+       * neúspěšnými pokusy) a scrypt. Souběžné snížení role, vypnutí nebo
+       * smazání účtu správcem se tak vrátilo zpět (smazaný účet ožil).
+       * Teď se účet těsně před zápisem přečte znovu: chybí, je vypnutý,
+       * archivovaný nebo má jinou verzi či otisk hesla → 409 a nic se
+       * nezapíše; jinak se na čerstvý záznam přepíšou jen pole hesla. */
+      const zmeneny = await vyhradne('uzivatele/' + relace.email, async () => {
+        const cerstvy = await u.cti(relace.email);
+        if (!cerstvy || cerstvy.aktivni === false || cerstvy.archiv
+            || hesloVerzeUctu(cerstvy) !== hesloVerzeUctu(ucet) || cerstvy.heslo !== ucet.heslo) return null;
+        cerstvy.heslo = otisk;
+        /* Změna hesla zneplatní všechny dosavadní relace (B6) — i tuhle,
+         * proto se hned vydá nová cookie, ať se uživatel nemusí přihlašovat. */
+        cerstvy.hesloVerze = hesloVerzeUctu(cerstvy) + 1;
+        cerstvy.hesloZmeneno = new Date().toISOString(); cerstvy.hesloZmenil = relace.email;
+        await u.zapis(relace.email, cerstvy);
+        return cerstvy;
+      });
+      if (!zmeneny)
+        return json({ ok: false, chyba: 'Účet se během změny hesla změnil (zásah správce nebo jiné okno). '
+          + 'Heslo se nezměnilo — přihlaste se znovu a zkuste to ještě jednou.' }, 409);
+      return json({ ok: true, email: zmeneny.email }, 200, { 'Set-Cookie': relaceCookie(zmeneny) });
     }
 
     /* --- vlastní profil a podpis: svůj každý, cizí jen administrátor ---
@@ -161,9 +183,14 @@ export default async (req) => {
          * nedalo dohledat, kdo telefon pod nabídkami přepsal. Jako u podpisu:
          * kdo z relace, ne z těla požadavku. */
         ucet.zmenil = { kdo: relace.email, kdy: new Date().toISOString() };
-        await u2.zapis(cil, ucet);
-        return json({ ok: true, email: ucet.email, jmeno: ucet.jmeno || '',
-          titul: ucet.titul || '', funkce: ucet.funkce || '', telefon: ucet.telefon || '' });
+        /* Jen pole profilu na čerstvý záznam (SEC-S2 / B156, #514): celý účet
+         * přečtený výš by vrátil souběžný zásah správce nebo změnu hesla. */
+        const cerstvy = await u2.cti(cil);
+        if (!cerstvy) return json({ ok: false, chyba: 'Účet neexistuje.' }, 404);
+        for (const k of ['jmeno', 'titul', 'funkce', 'telefon', 'zmenil']) if (k in ucet) cerstvy[k] = ucet[k];
+        await u2.zapis(cil, cerstvy);
+        return json({ ok: true, email: cerstvy.email, jmeno: cerstvy.jmeno || '',
+          titul: cerstvy.titul || '', funkce: cerstvy.funkce || '', telefon: cerstvy.telefon || '' });
       }
 
       const kontrola = podpisZkontroluj(t.obrazek);
@@ -329,14 +356,21 @@ export default async (req) => {
       const klice = (await sz.seznam('z/')) || [];
       let prevedeno = 0, preskoceno = 0;
       for (const k of klice) {
-        let zak = null;
-        /* Jedna poškozená zakázka nesmí zastavit převod zbytku — správce by
-         * netušil, kde skončil, a spustil by to znovu. */
-        try { zak = await sz.cti(k); } catch (e) { zak = null; }
-        if (!zak) { preskoceno++; continue; }
-        if (String(zak.autor || '').toLowerCase() !== email) continue;
-        zak.autor = na;
-        try { await sz.zapis(k, zak); prevedeno++; } catch (e) { preskoceno++; }
+        /* Čtení a zápis zakázky ve výhradním úseku uložení (SEC-S1, #514) —
+         * jinak by převod vrátil zakázku do stavu před souběžným uložením
+         * (i se zámkem odeslané nabídky). */
+        const vysl = await vyhradne('zakazky/' + k, async () => {
+          let zak = null;
+          /* Jedna poškozená zakázka nesmí zastavit převod zbytku — správce by
+           * netušil, kde skončil, a spustil by to znovu. */
+          try { zak = await sz.cti(k); } catch (e) { zak = null; }
+          if (!zak) return 'preskoceno';
+          if (String(zak.autor || '').toLowerCase() !== email) return '';
+          zak.autor = na;
+          try { await sz.zapis(k, zak); return 'prevedeno'; } catch (e) { return 'preskoceno'; }
+        });
+        if (vysl === 'prevedeno') prevedeno++;
+        else if (vysl === 'preskoceno') preskoceno++;
       }
       /* Rejstřík se přestavuje ze zakázek, ne obráceně — aby v něm zůstal
        * jediný zdroj pravdy, přepíše se autor i v něm. */
@@ -410,11 +444,14 @@ export default async (req) => {
        * schválně není: kdo přepínač použije, musí ho poslat vědomě. */
       let odepsano = 0, preskoceno = 0;
       for (const k of moje) {
-        let zak = null;
-        try { zak = await sz.cti(k); } catch (e) { zak = null; }
-        if (!zak) { preskoceno++; continue; }
-        zak.autor = '';
-        try { await sz.zapis(k, zak); odepsano++; } catch (e) { preskoceno++; }
+        const vysl = await vyhradne('zakazky/' + k, async () => {   // SEC-S1, viz převod
+          let zak = null;
+          try { zak = await sz.cti(k); } catch (e) { zak = null; }
+          if (!zak) return false;
+          zak.autor = '';
+          try { await sz.zapis(k, zak); return true; } catch (e) { return false; }
+        });
+        if (vysl) odepsano++; else preskoceno++;
       }
       if (odepsano) {
         const rej = await sz.cti('_rejstrik');

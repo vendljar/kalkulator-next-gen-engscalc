@@ -392,9 +392,41 @@ export function relaceOver(cookieHlavicka) {
 }
 
 /* ---------- pomůcky pro funkce ---------- */
+/* Hlavičky odpovědí API (SEC-I1, #514, audit S1 23. 10. 2026): `no-store`
+ * a `nosniff` stojí v netlify.toml pro /api/*, jenže vlastní hlavičky Netlify
+ * se na odpovědi funkcí s `config.path` uplatnit nemusí — odpověď s účty,
+ * zakázkami či zálohou by mohla zůstat v mezipaměti. Proto je nese každá
+ * odpověď sama; volající je smí přebít (`hlavicky`). */
+export const JSON_HLAVICKY = Object.freeze({ 'Content-Type': 'application/json; charset=utf-8',
+  'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
 export function json(data, status = 200, hlavicky = {}) {
   return new Response(JSON.stringify(data), { status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8', ...hlavicky } });
+    headers: { ...JSON_HLAVICKY, ...hlavicky } });
+}
+/* KLÍČ ZÁZNAMU Z ADRESY (SEC-I4, #514, audit S1 23. 10. 2026). `soubor`
+ * a `klic` z URL šly do úložiště bez kontroly tvaru (na rozdíl od pd_stav).
+ * Dnes bez dopadu, ale klíč s lomítkem by sáhl mimo `z/…`. Přísný tvar
+ * z uloKlicSouboru se tu NEPOUŽÍVÁ: obnova ze zálohy zapisuje klíče
+ * v původním znění (do 200 znaků) a takové zakázky musí jít dál otevřít
+ * i smazat. Odmítá se jen lomítko, řídicí znaky a nadměrná délka. */
+export const KLIC_Z_ADRESY_MAX = 200;
+export function klicZAdresyPlatny(k) {
+  return typeof k === 'string' && k.length > 0 && k.length <= KLIC_Z_ADRESY_MAX
+    && !/[\/\\\u0000-\u001f\u007f]/.test(k);
+}
+
+/* TEXTOVÁ POLE TĚLA (SEC-N1, #514, audit S1 23. 10. 2026). Objekt typu
+ * `{"toString":1}` v poli, které server převádí `String(…)`, shodil funkci
+ * na HTTP 500 („Cannot convert object to primitive value"). Data se nezměnila,
+ * ale 500 je špatná odpověď na vadný vstup (třída K5-S1/K7-S4). Pole, která
+ * jsou text (nebo číslo), proto nesmí nést objekt ani pole → 400. */
+export function textovaPoleChyba(t, klice) {
+  for (const k of klice) {
+    const v = t ? t[k] : undefined;
+    if (v !== null && typeof v === 'object')
+      return json({ ok: false, chyba: 'Pole „' + k + '" musí být text.' }, 400);
+  }
+  return null;
 }
 /* Adresa webu, na kterém funkce právě běží — z hlavičky požadavku, ne
  * z konstanty: tentýž kód obsluhuje engscalc.netlify.app i sesterský

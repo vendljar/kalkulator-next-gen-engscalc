@@ -2,7 +2,7 @@
  * Odpovídá { ok, verze, cas }; verze se čte z verze.txt přibalené k funkci. */
 /* Čtení verze.txt je od 22. 9. 2026 ve sdilene.mjs — potřebuje ho i /api/zakazky
  * (razítko ověření odeslané nabídky, B59). */
-import { serverVerze as verze } from '../lib/sdilene.mjs';
+import { serverVerze as verze, JSON_HLAVICKY } from '../lib/sdilene.mjs';
 
 /* Prostředí (20. 8. 2026): TESTOVACÍ web má vlastní Netlify site, a tedy
  * i vlastní úložiště Blobs — data se s ostrým provozem nikdy nepotkají.
@@ -25,6 +25,9 @@ function prostredi() {
 export default async () =>
   Response.json({ ok: true, verze: verze(), prostredi: prostredi(),
     popisProstredi: String(process.env.PROSTREDI_POPIS || '').trim(),
-    cas: new Date().toISOString(), beh: 'netlify' });
+    cas: new Date().toISOString(), beh: 'netlify' },
+    /* Hlídka verze se ptá každých 10 minut — odpověď z mezipaměti by
+     * schovala nové nasazení (SEC-I1, #514). */
+    { headers: JSON_HLAVICKY });
 
 export const config = { path: '/api/zdravi' };

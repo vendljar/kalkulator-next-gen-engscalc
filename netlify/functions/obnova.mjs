@@ -84,7 +84,7 @@
 import { randomBytes } from 'node:crypto';
 import { potvrdHesloSpravce, uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hostitel, emailPlatny,
          podpisZkontroluj, hesloVerzeUctu, SMAZANI_ULOZISTE,
-         bezHlavnihoUctu, serverVerze } from '../lib/sdilene.mjs';
+         bezHlavnihoUctu, serverVerze, vyhradne } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola } from '../lib/zakazka_kontrola.mjs';
 import { porizOtisk, klicPredObnovou, OTISK_KLIC } from '../lib/zalohovani.mjs';
@@ -351,8 +351,14 @@ export default async (req) => {
   if (faze === 'zacatek') {
     if (t.potvrzeni !== OBNOVA_POTVRZENI)
       return json({ ok: false, chyba: 'Obnova se provede jen s výslovným potvrzením po náhledu.' }, 428);
+    /* SOUBĚŽNÝ ZAČÁTEK (SEC-N2, #514, audit S1 23. 10. 2026): kontrola zámku
+     * a zápis tokenu nebyly v jednom výhradním úseku — dva souběžné začátky
+     * prošly oba (dva tokeny, dva otisky „před obnovou"). Teď se v instanci
+     * řadí za sebe a po zápisu se ověří, že token je jediný živý; mezi
+     * instancemi ustoupí ten mladší (čas začátku, pak id) a 409. */
+    const vstup = await vyhradne('zalohy/obnova', async () => {
     const zamek = await zamekObnovy();
-    if (zamek) return zamek;
+    if (zamek) return { odpoved: zamek };
     /* TOKEN SE ZAPÍŠE HNED PO KONTROLE ZÁMKU (nález B48, 14. 9. 2026).
      *
      * Do 14. 9. bylo pořadí zámek → otisk → token, jenže pořízení otisku
@@ -370,6 +376,19 @@ export default async (req) => {
     await s.zapis(tokenKlic(id), { id, kdo: relace.email, zacatek: ted, naposled: ted,
       rezim, otiskPred: null, otiskSePorizuje: true, davek: 0,
       souhrn: { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0 } });
+    for (const k of (await s.seznam(TOKEN_PREDPONA)) || []) {
+      if (k === tokenKlic(id)) continue;
+      const z = await s.cti(k);
+      if (!z || tokenVyprsel(z)) continue;
+      if (String(z.zacatek) < ted || (String(z.zacatek) === ted && String(z.id) < id)) {
+        await s.smaz(tokenKlic(id));
+        return { odpoved: obnovaBeziOdpoved(z) };
+      }
+    }
+    return { id, s, ted };
+    });
+    if (vstup.odpoved) return vstup.odpoved;
+    const { id, s, ted } = vstup;
     let otiskPred;
     try { otiskPred = (await porizOtisk('pred-obnovou', relace.email, klicPredObnovou())).den; }
     catch (e) {
