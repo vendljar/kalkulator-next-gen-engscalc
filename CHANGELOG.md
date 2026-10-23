@@ -47,9 +47,9 @@ programu, vizuálu nebo výpočtové logiky, můžeš opravit vše.“ Mimo soub
 - **Meze zapsané do `BEZPECNOST_MEZE.md`:** zbytek SEC-S1 mezi instancemi, SEC-I9 (CSP s `'unsafe-inline'` —
   obranou je escapování), K8-S4 (rozpočet tokenů stavu dealu), K8-S5, K8-S6 (`_rejstrik` mimo výhradní úsek),
   SEC-N7 (zámek Playwrightu).
-- **Testy:** nová sada `netlify/test_ok8.mjs` (67; před opravou 49 selhalo), `src/test_escape.js` +5,
+- **Testy:** nová sada `netlify/test_ok8.mjs` (69; před opravou 49 selhalo), `src/test_escape.js` +5,
   `src/test_kontrola_udaju.js` +7, `netlify/test_mutace_cast.mjs` +16, `netlify/test_typy_k7.mjs` +24,
-  `netlify/test_pd_prevod.mjs` +4. Mutace „#514“: server 22, jádro 1.
+  `netlify/test_pd_prevod.mjs` +4. Mutace „#514“: server 22/22, jádro 1/1 chycených.
 - **Neopraveno (mění chování → J. V.):** K8-K1 … K8-K5, SEC-S3, SEC-S5, SEC-S6, SEC-N8, SEC-I7, SEC-I8,
   SEC-S7, SEC-N9, SEC-I15 … I17; repo SEC-V1, SEC-V2, SEC-S4. K8-S5 zapsán jako mez (oprava by měnila
   hledání podle adresy); K8-K6, K8-K7 souvisí s K8-K1; K8-W6, K8-S7 informativní, neopravovány.

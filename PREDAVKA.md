@@ -1,3 +1,68 @@
+# Předávka — 23. 10. 2026 večer: O-K8 #514 — opravy nálezů K8 a S1 bez změny chování, větev `claude/ok8-opravy`
+
+Nad `4496f52` (integrace: test v23.10.4 + `podklady/K8_AUDIT_24_10.md`, `podklady/SEC_AUDIT_24_10.md`,
+`podklady/S1_pokusy/`). **Verze 23.10.5** (všechny commity 23. 10. UTC; `build.py --kontrola-verze` ✓).
+Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Do integrace / test nic, do Pipedrive nic, na Disk nic.
+Pokyn J. V. (dialog S1, SEC-7): opravit vše, co nemění fungování, vzhled ani výpočet.
+
+- **Testy:** nová sada `netlify/test_ok8.mjs` 69/0 (proti kódu 4496f52 **49 selhalo**); pojistky dalších testů
+  v commitech. `./spust_testy.sh` (Node, bez prohlížeče): 252 prošlo, 0 selhalo, 1 přeskočeno (test.js).
+  Prohlížečové harnessy a celé kolo pouští koordinace.
+- **Mutace jen „#514“ (filtrem, ve dvou `git worktree` /home/user/ok8-mut a /home/user/ok8-jadro — dočasné,
+  mimo repo):** server **22/22** (první běh 19/20 — výhradní úsek SEC-N2 je vůči testům ekvivalentní, mutace přesměrována na kontrolu tokenu jiné instance + test N2b); upravené úseky starších mutací B6 a /api/zdravi dál chycené, jádro 1/1 (`SEC-N3 escJs`). `--kontrola` server 919, jádro 528.
+- **CI:** `testy.yml` mutace serveru v 10 částech, limit 90 min (Testy #195: 5 z 6 částí zrušil limit 75 min);
+  `persist-credentials: false`. Výsledek prvního běhu po částech zapsat sem a případně upravit limit.
+- **Pozor pro slučování:** prázdný výběr mutací je od K8-W2 chyba (kód 2) — výchozí běh bez mutací jen
+  s `KNG_MUTACE_JEN_VYCHOZI=1` (server). `--od` nad pracovní kopií se změnami v `src/`/`netlify/` odmítne
+  (K8-W9; vědomě `KNG_MUTACE_SPINAVE=1`). Povolené kontakty: celou doménou jen example.com, priklad.cz,
+  zkusebni.cz — nový zkušební účet na jiné doméně kontrola ohlásí (zapsat přesnou adresu nebo použít priklad.cz).
+
+| nález | stav | poznámka |
+|---|---|---|
+| SEC-S1 souběh uložení × zámek odeslané nabídky | ✅ | `vyhradne('zakazky/z/…')` + druhé čtení před zápisem → 409; DELETE, převod/smazání účtu v úseku; zbytek mezi instancemi v mezích |
+| SEC-S2 mojeheslo × zásah správce | ✅ | zápis jen polí hesla na čerstvý účet, změněný → 409; profil jen pole profilu; B156 upraven |
+| SEC-N1 500 → 400 (účty, šablony, program) | ✅ | `textovaPoleChyba` |
+| SEC-N2 souběžná obnova | ✅ | `vyhradne('zalohy/obnova')` + jediný živý token |
+| SEC-N3 escJs konce řádků | ✅ | `\r \n U+2028/2029`; mutace jádra |
+| SEC-N4 detekce tajemství, domény | ✅ | vzory, přípony, .xlsx/.docx; domény → přesné adresy |
+| SEC-N5 .gitignore | ✅ | `.env*`, kořenové xlsx/docx/csv, negativni_kontrola.json |
+| SEC-N6 CI ve starých větvích | ⬜ | J. V. (mazání větví, Workflow permissions) — repo |
+| SEC-N7 supply chain CI | ✅ částečně | `persist-credentials: false`; zámek Playwrightu (`ci/package-lock.json`) potřebuje registr npm → další sezení |
+| SEC-I1 hlavičky API | ✅ | `json()`, zdravi, vypocet, noční záloha; živé ověření `curl -sI` po povolení domény |
+| SEC-I3 prototypové klíče | ✅ | `__proto__` vždy, constructor/prototype s objektem |
+| SEC-I4 klíč z adresy | ✅ | lomítko, řídicí znaky, > 200 → 400 (přísný tvar ne — klíče z obnovy) |
+| SEC-I5 vypocet bez výjimky | ✅ | |
+| SEC-I6 server.js | ✅ | hlavičky, Buffer.concat, 413; `/api/vypocet` bez přihlášení = mez (změna chování) |
+| K8-S1 500 → 400 (číslo, varianta) | ✅ | + popis varianty v hlášce jen text/číslo |
+| K8-S2 kvadratický regex pd_prevod | ✅ | lineární průchod, stejný výsledek (2000 náhodných); strop délky hodnoty neděláno (mění převod) |
+| K8-S4 rozpočet tokenů | ✅ | zapsáno v mezích |
+| K8-S5 adresy nečitelných v rejstříku | ⬜ | mez zapsána — oprava by měnila hledání podle adresy → J. V. |
+| K8-S6 `_rejstrik` mimo úsek | ✅ | výčet v mezích |
+| K8-S7 export celé DB — výkon | ⬜ | informativní, neopraveno |
+| K8-S8 hláška s výjimkou | ✅ | |
+| K8-K6, K8-K7 | ⬜ | souvisí s K8-K1 (J. V.) |
+| K8-W1 test harnessů | ✅ | regulár chytí `= null` |
+| K8-W2 prázdný výběr mutací | ✅ | chyba, kód 2 |
+| K8-W3 neznámá volba | ✅ | i `--help`, kód 2 |
+| K8-W4 vzory tajemství | ✅ | s SEC-N4 |
+| K8-W5 test K7-S11 | ✅ | všech 8 polí, objekt i pole |
+| K8-W6 nestabilní testy (čas) | ⬜ | informativní; delší čekání by zpomalilo každou mutaci |
+| K8-W7 timeouty CI | ✅ | 10 částí, 90 min, komentář 917 |
+| K8-W8 souhrn části | ✅ | „NE celý běh“ i u filtru |
+| K8-W9 navázání po restartu | ✅ | `--od` jen nad čistou kopií |
+| K8-W10 hygiena (CLAUDE.md) | ✅ | zdvojený odstavec sloučen; odkazy artifact ponechány |
+| K8-W11 overit_verzi | ✅ | proměnná se nedědí |
+| CI matrix (koordinace) | ✅ | 10 částí, hlavička i CLAUDE.md |
+| Dokumentace (CHANGELOG, příručka, roadmapa #514, meze) | ✅ | |
+
+**Čeká na J. V. (beze změny):** K8-K1 … K8-K5, SEC-S3, SEC-S5, SEC-S6, SEC-N8, SEC-I7, SEC-I8, SEC-S7, SEC-N9,
+SEC-I15 … I17, SEC-V1/V2/S4 (repo). N46 neopraveno. Nově k rozhodnutí: K8-S5 (vzdát adresu nečitelné zakázky,
+nebo nový klíč v rejstříku), `/api/vypocet` kostry `server.js` s přihlášením (SEC-I6), strop délky hodnoty
+v převodu do Pipedrive (K8-S2, s #115).
+
+**Další krok:** koordinace — celé kolo nad `claude/ok8-opravy` (prohlížečové harnessy, mutace po částech /
+Actions s 10 částmi), sloučení do integrace; release v23.10.5 až po sloučení.
+
 # Předávka — 23. 10. 2026 večer: K8 #513 — celé kolo s mutacemi + audit v23.10.4, větev `claude/k8-kolo`
 
 Nad `ca4f2d1` (integrace v23.10.4, kandidát `test`). Kód aplikace beze změny, verze **23.10.4** (commity 23. 10.,
