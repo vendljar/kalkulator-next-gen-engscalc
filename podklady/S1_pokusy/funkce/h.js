@@ -1,0 +1,15 @@
+const path = require('path');
+const S = path.join(__dirname, '..', '..', '..', 'src');
+const nacti = (f) => { const m = require(path.join(S, f)); Object.keys(m).forEach(k => { if (global[k] === undefined) global[k] = m[k]; }); return m; };
+const ZC = require(path.join(S, 'zkusebni_cenik.js'));
+const M = {};
+M.ZC = ZC;
+nacti('format.js'); nacti('preklad.js'); M.dg = nacti('docxgen.js');
+M.eng = nacti('engine.js'); global.DEFAULT_CENIK = ZC.zkusebniCenik();
+M.ep = nacti('engine_proj.js'); global.DEFAULT_CENIK_PROJ = ZC.zkusebniCenikProj();
+nacti('techspec.js'); M.sl = nacti('sleva.js'); M.zo = nacti('zaokrouhleni.js'); nacti('firma.js');
+M.PP = nacti('plan_plateb.js'); M.N = nacti('nabidka.js'); M.NP = nacti('nabidka_proj.js'); M.zk = nacti('zakazka.js');
+M.ZM = nacti('zamek.js'); M.obj = nacti('objednane.js'); M.K = nacti('kryci.js'); M.KP = nacti('kryci_proj.js'); nacti('kontroly.js');
+M.dok = nacti('dokumenty.js'); M.sod = nacti('sod.js'); M.ctrl = nacti('controlling.js'); M.marze = nacti('marze.js');
+global.NAST = { firma: global.firmaDefault() };
+module.exports = M;

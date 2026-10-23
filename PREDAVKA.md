@@ -1,3 +1,38 @@
+# Předávka — 23. 10. 2026 večer: S1 #515 — hloubkový security test kódu a funkční logiky, větev `claude/s1-security`
+
+Nad `ca4f2d1` (integrace v23.10.4 po B1 #512, kandidát `test`). **Verze beze změny (23.10.4)** — commit 23. 10.,
+kód aplikace se neměnil. Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx (ŘÍDÍCÍ víkend 23.–26. 10.). Souběžně K8 #513
+(kolo s mutacemi + audit diffu) — S1 kolo ani mutace nepouštěla. Bez sítě: živý web, Pipedrive ani ARES se nevolaly.
+
+- **Výstup:** `podklady/SEC_AUDIT_24_10.md` (formát K7): **VYHOVUJE S VÝHRADOU — 0 kritických, 2 vysoké, 7 středních,
+  9 nízkých, 18 informativních.** Kód aplikace bez kritického a vysokého nálezu (role 40/40, XSS 342/0, DOCX 36/0,
+  ceny CN = SoD = KL = controlling v 1200 porovnáních bez neshody, zámek drží po změně ceníku/kurzu, žádné tajemství
+  v historii).
+- **Vysoké (repo, ne kód — J. V.):** SEC-V1 osobní údaje kolegy (D5-3) dál ve výchozí `main`, v `test-draft`,
+  ~19 větvích a 49/53 tazích (v `test` 0) → posun `test → main` / `test-draft`, mazání větví, rozhodnutí o tazích;
+  SEC-V2 osobní e-mail na tipu `claude/testovani-po-opravach` → smazat větev. SEC-S4: odkaz K7-W1 dál ve 4 větvích
+  a tazích v22.10.5, v22.10.6, v23.10.1 → zrušit sdílení v claude.ai.
+- **Pro O-K8 #514 (mění chování: ne):** SEC-S1 souběh `POST /api/zakazky` nad `z/<soubor>` smaže zámek odeslané
+  nabídky; SEC-S2 souběh `mojeheslo` vrátí snížení role / vypnutí / smazání účtu (obojí reprodukováno, ověřeno);
+  SEC-N1 … SEC-N7, SEC-I1, SEC-I3 … SEC-I6. Pokusy s cestami do stromu repa: `podklady/S1_pokusy/` (před opravou
+  vypisují vadu — podklad pro testy s pojistkou).
+- **Dialog J. V. (mění chování: ano):** SEC-S3 úprava textu tiskového náhledu CN přepíše cenu bez stopy (A/B/C),
+  SEC-S5 splátky OCK bez kontroly 100 %, SEC-S6 + SEC-N8 plán PROJ po CN, SEC-I7, SEC-I8; před #115 SEC-S7
+  (tečka tisíců v `pdCisla`), SEC-N9, SEC-I15 … SEC-I17.
+- **Živá část čeká na povolení domény:** SEC-I1 (hlavičky odpovědí funkcí), SEC-I2 (`/.netlify/functions/zaloha_nocni`).
+
+| úkol | stav |
+|---|---|
+| Čtyři čočky (server, klient, funkce, repo) s reprodukcemi | ✅ |
+| Vlastní ověření SEC-V1, V2, S1, S2, S5, S7, N3, N9 | ✅ |
+| `podklady/SEC_AUDIT_24_10.md` + `podklady/S1_pokusy/` | ✅ |
+| Roadmapa #515 hotovo | ✅ |
+| Živá část (hlavičky, zaloha_nocni) | ⬜ po povolení domény |
+| Opravy „ne“ | ⬜ O-K8 #514 |
+| Rozhodnutí „ano“, větve/tagy, sdílení K7-W1 | ⬜ J. V. |
+
+---
+
 # Předávka — 23. 10. 2026 večer: B1 #512 — platby v zápisu do Pipedrive (#115), v23.10.4, větev `claude/b1-platby-115`
 
 Nad `8c7ba3d` (P2, v23.10.3 — výsledky mutací P2 ještě doběhnou; **P2 do této větve slučovaná není**, srovná

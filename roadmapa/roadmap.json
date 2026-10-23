@@ -8101,13 +8101,16 @@
   {
    "id" : "515",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "dulezitost" : "vysoka",
    "slozitost" : "L",
    "nazev" : "S1: hloubkový security test kódu a funkční logiky nad test (víkend 24.–25. 10.)",
    "proc" : "Zadání J. V. 23. 10. 2026: zařadit do víkendového plánu hloubkový security test kódu a funkční logiky aplikace nad testovacím rozhraním.",
-   "detail" : "Rozsah podle dialogu https://claude.ai/artifact/VTamxkz2Xum9uMq7nuBRiM (nevyplněné = návrh): lokální instance větve test v kontejneru (serverové funkce, role, zápisy) + živý testengscalc.netlify.app jen šetrně a jen po povolení domény v síťové politice prostředí; bez živého Pipedrive, bez zátěže. Bezpečnost (autorizace a role, vstupy serveru, XSS, zámky a souběh, únik údajů, hlavičky, tajemství) i funkční logika (ceny OCK/PROJ, DPH, zaokrouhlení, měna, zámky po tisku, plán plateb, SoD, export controllingu). Výstup podklady/SEC_AUDIT_24_10.md; kritické a vysoké opraví O-K8 (#514).",
+   "detail" : "Rozsah podle dialogu https://claude.ai/artifact/VTamxkz2Xum9uMq7nuBRiM (nevyplněné = návrh): lokální instance větve test v kontejneru (serverové funkce, role, zápisy) + živý testengscalc.netlify.app jen šetrně a jen po povolení domény v síťové politice prostředí; bez živého Pipedrive, bez zátěže. Bezpečnost (autorizace a role, vstupy serveru, XSS, zámky a souběh, únik údajů, hlavičky, tajemství) i funkční logika (ceny OCK/PROJ, DPH, zaokrouhlení, měna, zámky po tisku, plán plateb, SoD, export controllingu). Výstup podklady/SEC_AUDIT_24_10.md; kritické a vysoké opraví O-K8 (#514). VÝSLEDEK 23. 10.: Audit nad ca4f2d1 (v23.10.4), 23. 10. 2026, čtyři čočky (server, klient, funkční logika, repo) jen lokálně, bez sítě a bez kola: VYHOVUJE S VÝHRADOU — 0 kritických, 2 vysoké (SEC-V1 osobní údaje kolegy dál v main, test-draft, starších větvích a 49/53 tazích — oprava D5-3 jen na linii test; SEC-V2 osobní e-mail na tipu jedné staré větve — obojí repo, ne kód, řeší J. V. posunem větví a mazáním), 7 středních (SEC-S1 souběžné uložení smaže zámek odeslané nabídky, SEC-S2 souběh mojeheslo vrátí zásah správce — obojí reprodukováno, pro O-K8; SEC-S3 úprava textu tiskového náhledu přepíše cenu bez stopy, SEC-S4 odkaz K7-W1 dál ve větvích a tazích, SEC-S5 splátky OCK bez kontroly 100 %, SEC-S6 plán PROJ po CN, SEC-S7 tečka tisíců v převodu do Pipedrive — k rozhodnutí J. V.), 9 nízkých, 18 informativních. Kód aplikace bez kritického a vysokého nálezu: role 40/40, XSS 342/0, DOCX 36/0, ceny 1200 porovnání 0 neshod, zámek drží po změně ceníku a kurzu, žádné tajemství v historii. Pokusy k nálezům v podklady/S1_pokusy/.",
    "hotovoKdyz" : "Zpráva SEC_AUDIT_24_10.md s důkazy a verdiktem, kritické/vysoké opravené v test, ostatní v dialogu.",
+   "kde" : "`podklady/SEC_AUDIT_24_10.md`, `podklady/S1_pokusy/`",
+   "hotovoV" : "v23.10.4",
+   "pozn" : "Dávka S1, větev claude/s1-security. Kód aplikace se neměnil; opravy s „mění chování: ne“ dělá O-K8 (#514), „ano“ jde J. V. do dialogu. Živá část (hlavičky funkcí, /.netlify/functions/zaloha_nocni) po povolení domény.",
    "zavisi" : [
     {
      "id" : "512",
