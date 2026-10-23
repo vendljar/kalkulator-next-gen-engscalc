@@ -60,6 +60,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_prihlaseni.mjs',
      /* Dávka B kola 16 (25. 9. 2026): adresa stavby v rejstříku (P15). */
      'test_rejstrik.mjs',
+     /* #507 / K7-S1 (23. 10. 2026): rejstřík při souběžném uložení, samooprava exportu. */
+     'test_rejstrik_soubeh.mjs',
      /* B111 (29. 9. 2026): záporná částka, množství a hodiny. */
      'test_zaporne.mjs',
      /* #398 (12. 10. 2026): koncová cena 2 — B133–B137, B145. */
@@ -3881,6 +3883,24 @@ const MUTACE = [
     hledej: "  if (v.potvrzeno) return null;",
     nahrad: "",
     proc: "správce by nevěděl, že potvrzení prošlo" },
+  /* #507 (O-K7, 23. 10. 2026): K7-S1 — rejstřík při souběžném uložení. Hlídá
+   * netlify/test_rejstrik_soubeh.mjs. */
+  { nazev: "#507 K7-S1: zápis rejstříku bez výhradního úseku", soubor: "functions/zakazky.mjs",
+    hledej: "  await vyhradne('zakazky/_rejstrik', async () => {\n    const rejstrik",
+    nahrad: "  await (async (k, fn) => fn())('zakazky/_rejstrik', async () => {\n    const rejstrik",
+    proc: "souběžné uložení by tiše vypustilo zakázku z rejstříku i z exportu" },
+  { nazev: "#507 K7-S1: smazání bez výhradního úseku", soubor: "functions/zakazky.mjs",
+    hledej: "    await vyhradne('zakazky/_rejstrik', async () => {   // K7-S1, viz POST",
+    nahrad: "    await (async (k, fn) => fn())('zakazky/_rejstrik', async () => {",
+    proc: "smazání souběžné s uložením by vrátilo smazanou zakázku nebo vypustilo uloženou" },
+  { nazev: "#507 K7-S1: export bez seznamu uložených zakázek", soubor: "functions/controlling_export.mjs",
+    hledej: "filtr, await s.seznam('z/'));",
+    nahrad: "filtr);",
+    proc: "zakázka ztracená z rejstříku by v exportu tiše chyběla" },
+  { nazev: "#507 K7-S1: odpověď exportu nehlásí doplněné", soubor: "functions/controlling_export.mjs",
+    hledej: "    mimoRejstrik: kandidati.filter(k => k.mimoRejstrik).length };",
+    nahrad: "    mimoRejstrik: 0 };",
+    proc: "správce by nevěděl, že rejstřík nesedí s úložištěm" },
 ];
 
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------

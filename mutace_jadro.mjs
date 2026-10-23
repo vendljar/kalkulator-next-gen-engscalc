@@ -2378,6 +2378,16 @@ const MUTACE = [
     hledej: "    if (!prvni && zamekSnimekCekaNaServer(v)) v.zamek.snimek = zamekSnimekSpocti(v);",
     nahrad: "",
     proc: 'smlouva vytištěná před uložením zámku by skončila 409' },
+  /* #507 K7-S1: samooprava kandidátů hromadného exportu ze seznamu z/. Hlídá
+   * src/test_controlling.js (a serverově netlify/test_rejstrik_soubeh.mjs). */
+  { nazev: '#507 K7-S1: export bez samoopravy rejstříku', soubor: 'controlling.js',
+    hledej: "    .concat([...new Set(chybi)].map(k => ({ soubor: k, cislo: '', stary: true, mimoRejstrik: true })))\n",
+    nahrad: "",
+    proc: 'zakázka ztracená z rejstříku by v exportu pro controlling tiše chyběla' },
+  { nazev: '#507 K7-S1: samooprava zdvojí známé zakázky', soubor: 'controlling.js',
+    hledej: "    .filter(k => k && !vRejstriku.has(k));",
+    nahrad: "    .filter(k => k);",
+    proc: 'zakázka by v exportu byla dvakrát' },
 ];
 
 /* ============================================================

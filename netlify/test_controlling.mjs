@@ -288,6 +288,9 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     const puvodne = { ...M };
     const vzor = zamcena('2026 - OPR - CN - 5000', '2026-10-01T09:00:00Z');
     const rej504 = [];
+    /* Úložiště odpovídá rejstříku: zakázky sad C3 výš zmizí i ze z/ — jinak by
+     * je samooprava exportu (K7-S1, #507) jako ztracené z rejstříku přidala. */
+    for (const k of [...pamet.keys()]) if (k.startsWith('zakazky/z/')) pamet.delete(k);
     /* Kopie vzoru náhradou v textu (rychlejší než 700× klonovat objekt — sada běží v každé mutaci). */
     const tpl = JSON.stringify(vzor);
     for (let i = 0; i < 700; i++) {

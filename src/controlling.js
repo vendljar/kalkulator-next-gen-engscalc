@@ -754,8 +754,14 @@ function ctrlRejstrikDny(zak) {
  * varianta nemůže být mladší než razítko úpravy; čas zámku bere prohlížeč,
  * razítko server). Záznam bez razítka se čte vždy. Konečné rozhodnutí dělá
  * ctrlHromadnyZakazka nad přečtenou zakázkou. Pořadí podle jména souboru —
- * kurzor dávek (`po`) na něm stojí. `stary` = záznam bez dnů. */
-function ctrlHromadnyKandidati(rejstrik, filtr) {
+ * kurzor dávek (`po`) na něm stojí. `stary` = záznam bez dnů.
+ *
+ * SAMOOPRAVA (K7-S1, audit 23. 10. 2026): `klice` = jména uložených zakázek
+ * (seznam úložiště `z/`, s předponou i bez). Zakázka, jejíž záznam rejstřík
+ * ztratil (souběžné uložení ve dvou instancích funkce — čtení–změna–zápis
+ * rejstříku nad Blobs nemá podmíněný zápis), se přidá jako kandidát „čti
+ * vždy" (`mimoRejstrik`) — do souboru, nebo mezi přeskočené, nikdy tiše pryč. */
+function ctrlHromadnyKandidati(rejstrik, filtr, klice) {
   const pole = (typeof uloRejstrikNormalizuj === 'function') ? uloRejstrikNormalizuj(rejstrik)
     : (Array.isArray(rejstrik) ? rejstrik : ((rejstrik && rejstrik.zakazky) || []));
   const posun = (den, dni) => new Date(Date.parse(den + 'T00:00:00Z') + dni * 86400000).toISOString().slice(0, 10);
@@ -769,8 +775,12 @@ function ctrlHromadnyKandidati(rejstrik, filtr) {
     if (filtr.rada !== 'obe' && (filtr.rada === 'zahr') !== (z.rada === 'zahr')) return false;
     return !z.upraveno || !ctrlDenPraha(z.upraveno) || ctrlDenPraha(z.upraveno) >= mez;
   };
+  const vRejstriku = new Set(pole.map(z => z && z.soubor));
+  const chybi = (Array.isArray(klice) ? klice : []).map(k => String(k || '').replace(/^z\//, ''))
+    .filter(k => k && !vRejstriku.has(k));
   return pole.filter(z => z && vyber(z))
     .map(z => ({ soubor: z.soubor, cislo: z.cislo || '', stary: !z.ctrlDny }))
+    .concat([...new Set(chybi)].map(k => ({ soubor: k, cislo: '', stary: true, mimoRejstrik: true })))
     .sort((a, b) => (a.soubor < b.soubor ? -1 : (a.soubor > b.soubor ? 1 : 0)));
 }
 /* Kandidáti za kurzorem dávky (#504): jen jména souborů větší než `po`. */

@@ -76,7 +76,9 @@ export default async (req) => {
 
   const s = await uloziste('zakazky');
   /* Bez stropu počtu (#504, J. V. 22. 10.): počet čtení na jeden dotaz drží dávka. */
-  const kandidati = G.ctrlHromadnyKandidati(await s.cti('_rejstrik'), filtr);
+  /* Samooprava (K7-S1): zakázky, které v rejstříku chybí (ztracený zápis
+   * při souběžném uložení), se doplní ze seznamu úložiště a čtou se vždy. */
+  const kandidati = G.ctrlHromadnyKandidati(await s.cti('_rejstrik'), filtr, await s.seznam('z/'));
   const zbyva = G.ctrlHromadnyZa(kandidati, po);
 
   /* Čas exportu je jeden pro všechny dávky (z první dávky v protokolu). */
@@ -123,7 +125,8 @@ export default async (req) => {
   const id = navaz ? navaz.id : randomUUID().replace(/-/g, '');
   const odpoved = { ok: true, exporty, data, verzeMapovani, preskoceno, vyrazenoPd, kdy, kdo: relace.email, filtr,
     export: id, dalsi: hotovo ? null : zbyva[vzato - 1].soubor,
-    kandidatu: kandidati.length, zpracovano: kandidati.length - zbyva.length + vzato };
+    kandidatu: kandidati.length, zpracovano: kandidati.length - zbyva.length + vzato,
+    mimoRejstrik: kandidati.filter(k => k.mimoRejstrik).length };
   const telo = JSON.stringify(odpoved);
   if (G.ctrlBajty(telo) > M.odpoved)
     return json({ ok: false, chyba: 'Export za zvolené období je příliš velký (' + Math.round(G.ctrlBajty(telo) / 1048576)

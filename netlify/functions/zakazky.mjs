@@ -7,7 +7,7 @@
  *   stejná kontrola jako ve složce (uloKontrolaZamku není v modelu, ale
  *   zámky hlídá porovnání razítek: server odmítne zápis, který by změnil
  *   variantu zamčenou v uložené verzi). */
-import { uloziste, vyzadujRoli, json, serverVerze } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, serverVerze, vyhradne } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B, zakazkaVelikostHlaska } from '../lib/zakazka_kontrola.mjs';
 import { pdStavPripoj, pdStavUlozeni } from '../lib/pd_stav.mjs';
@@ -71,10 +71,12 @@ export default async (req) => {
             + 'Smazání je potřeba potvrdit zvlášť.' }, 409);
       await s.smaz('z/' + soubor);
     }
-    const rej = (await s.cti('_rejstrik')) || { schema: 1, zakazky: [] };
-    const zbytek = ULO.uloRejstrikOdeber(Array.isArray(rej.zakazky) ? rej.zakazky : [], soubor);
-    await s.zapis('_rejstrik', { schema: 1, zakazky: ULO.uloRejstrikSerad(zbytek),
-                                 kdo: relace.email, upraveno: new Date().toISOString() });
+    await vyhradne('zakazky/_rejstrik', async () => {   // K7-S1, viz POST
+      const rej = (await s.cti('_rejstrik')) || { schema: 1, zakazky: [] };
+      const zbytek = ULO.uloRejstrikOdeber(Array.isArray(rej.zakazky) ? rej.zakazky : [], soubor);
+      await s.zapis('_rejstrik', { schema: 1, zakazky: ULO.uloRejstrikSerad(zbytek),
+                                   kdo: relace.email, upraveno: new Date().toISOString() });
+    });
     return json({ ok: true, soubor, existovala: !!zak });
   }
 
@@ -151,77 +153,85 @@ export default async (req) => {
   const razitko = ULO.uloRazitkoNove();
   zak.uloRazitko = razitko;
   await s.zapis('z/' + jmeno, zak);
-  const rejstrik = (await s.cti('_rejstrik')) || { schema: 1, zakazky: [] };
-  /* Doplnění jmen obchodníků u STARŠÍCH záznamů (21. 8. 2026 večer).
-   *
-   * První verze uměla doplnit jen jméno právě přihlášeného, takže seznam
-   * ukazoval u cizích zakázek e-mail, dokud si je jejich autor sám neuložil
-   * (hlášeno J. V.: „obchodník měl být uveden jménem, ne e-mailem").
-   * Teď se u chybějících jmen jednou přečtou účty a doplní se všechna.
-   *
-   * Je to bezpečně omezené: čte se JEN tehdy, když nějaké jméno chybí,
-   * a po prvním takovém uložení už rejstřík jména má, takže se to
-   * neopakuje. Účtů jsou jednotky. Nikdy se nic nevymýšlí — účet bez
-   * vyplněného jména zůstane v seznamu e-mailem. */
-  let stavajici = (Array.isArray(rejstrik.zakazky) ? rejstrik.zakazky : []).map(z => {
-    if (z && !z.autorJmeno && relace.jmeno
-        && String(z.autor || '').toLowerCase() === String(relace.email).toLowerCase())
-      return { ...z, autorJmeno: relace.jmeno };
-    return z;
-  });
-  if (stavajici.some(z => z && z.autor && !z.autorJmeno)) {
-    try {
-      const u = await uloziste('uzivatele');
-      const mapa = {};
-      for (const k of await u.seznam()) {
-        const ucet = await u.cti(k);
-        if (ucet && ucet.email && ucet.jmeno)
-          mapa[String(ucet.email).toLowerCase()] = String(ucet.jmeno);
-      }
-      stavajici = stavajici.map(z => (z && !z.autorJmeno && mapa[String(z.autor || '').toLowerCase()])
-        ? { ...z, autorJmeno: mapa[String(z.autor).toLowerCase()] } : z);
-    } catch (e) { /* jména jsou pohodlí, ne podmínka uložení zakázky */ }
-  }
-  /* ADRESY STAVEB U STARŠÍCH ZÁZNAMŮ (P15 / K16-N85, 25. 9. 2026).
-   *
-   * Hledání umí adresu stavby, jenže záznamy uložené dřív ji v rejstříku
-   * nemají — a zakázky, které se už neotevírají, by se podle adresy nenašly
-   * nikdy. Doplňují se proto po dávkách při ukládání: nejvýš
-   * ULO_ADRESY_DAVKA zakázek najednou, čtou se souběžně a jen dokud nějaký
-   * záznam klíč `adresa` nenese (pak se tahle větev přestane spouštět sama).
-   * Nečitelná zakázka se zkusí příště; zmizelá dostane prázdnou adresu. */
-  const bezAdresy = ULO.uloRejstrikBezAdresy(stavajici).filter(x => x !== jmeno);
-  /* DNY ZÁMKŮ U STARŠÍCH ZÁZNAMŮ (#504, 22. 10. 2026) — touž cestou: hromadný
-   * export controllingu podle nich vybírá zakázky z období; záznam bez nich
-   * jde hrubým předvýběrem. Jedno čtení zakázky doplní adresu i dny. */
-  const G = globalThis;
-  const bezDnu = (typeof G.ctrlRejstrikDny === 'function')
-    ? ULO.uloRejstrikBezDnu(stavajici).filter(x => x !== jmeno) : [];
-  const kDoplneni = [...new Set(bezAdresy.concat(bezDnu))];
-  if (kDoplneni.length) {
-    const nalezene = await Promise.all(kDoplneni.map(async (soubor) => {
-      try {
-        const z = await s.cti('z/' + soubor);
-        let dny;
-        /* Zmizelá nebo nečitelná zakázka: „čti vždy" — export ji ohlásí jako přeskočenou. */
-        try { dny = z ? G.ctrlRejstrikDny(G.importZakazka(z)) : { cist: true }; }
-        catch (e) { dny = { cist: true }; }
-        return [soubor, { adresa: ULO.uloRejstrikAdresa(z && z.adresa), dny }];
-      }
-      catch (e) { return null; }
-    }));
-    const doplnit = new Map(nalezene.filter(Boolean));
-    const sAdresou = new Set(bezAdresy), sDny = new Set(bezDnu);
-    stavajici = stavajici.map(z => {
-      const d = z && doplnit.get(z.soubor);
-      if (!d) return z;
-      return { ...z, ...(sAdresou.has(z.soubor) ? { adresa: d.adresa } : {}), ...(sDny.has(z.soubor) ? { ctrlDny: d.dny } : {}) };
+  /* REJSTŘÍK JE ČTENÍ–ZMĚNA–ZÁPIS (K7-S1, audit 23. 10. 2026). Dvě souběžná
+   * uložení v téže instanci funkce se řadí za sebe (vyhradne) — jinak pozdější
+   * zápis tiše vypustil záznam dřívějšího a zakázka chyběla v Přehledu
+   * i v hromadném exportu. Mezi instancemi Blobs podmíněný zápis v naší
+   * vrstvě nemá (náhrada pro testy ho neumí, viz B4); tam drží export
+   * samooprava ze seznamu `z/` (ctrlHromadnyKandidati) — BEZPECNOST_MEZE.md. */
+  await vyhradne('zakazky/_rejstrik', async () => {
+    const rejstrik = (await s.cti('_rejstrik')) || { schema: 1, zakazky: [] };
+    /* Doplnění jmen obchodníků u STARŠÍCH záznamů (21. 8. 2026 večer).
+     *
+     * První verze uměla doplnit jen jméno právě přihlášeného, takže seznam
+     * ukazoval u cizích zakázek e-mail, dokud si je jejich autor sám neuložil
+     * (hlášeno J. V.: „obchodník měl být uveden jménem, ne e-mailem").
+     * Teď se u chybějících jmen jednou přečtou účty a doplní se všechna.
+     *
+     * Je to bezpečně omezené: čte se JEN tehdy, když nějaké jméno chybí,
+     * a po prvním takovém uložení už rejstřík jména má, takže se to
+     * neopakuje. Účtů jsou jednotky. Nikdy se nic nevymýšlí — účet bez
+     * vyplněného jména zůstane v seznamu e-mailem. */
+    let stavajici = (Array.isArray(rejstrik.zakazky) ? rejstrik.zakazky : []).map(z => {
+      if (z && !z.autorJmeno && relace.jmeno
+          && String(z.autor || '').toLowerCase() === String(relace.email).toLowerCase())
+        return { ...z, autorJmeno: relace.jmeno };
+      return z;
     });
-  }
-  const novy = ULO.uloRejstrikSloucit(stavajici,
-    ULO.uloRejstrikZaznam(zak, { soubor: jmeno, razitko }));
-  await s.zapis('_rejstrik', { schema: 1, zakazky: ULO.uloRejstrikSerad(novy), kdo: relace.email,
-                               upraveno: new Date().toISOString() });
+    if (stavajici.some(z => z && z.autor && !z.autorJmeno)) {
+      try {
+        const u = await uloziste('uzivatele');
+        const mapa = {};
+        for (const k of await u.seznam()) {
+          const ucet = await u.cti(k);
+          if (ucet && ucet.email && ucet.jmeno)
+            mapa[String(ucet.email).toLowerCase()] = String(ucet.jmeno);
+        }
+        stavajici = stavajici.map(z => (z && !z.autorJmeno && mapa[String(z.autor || '').toLowerCase()])
+          ? { ...z, autorJmeno: mapa[String(z.autor).toLowerCase()] } : z);
+      } catch (e) { /* jména jsou pohodlí, ne podmínka uložení zakázky */ }
+    }
+    /* ADRESY STAVEB U STARŠÍCH ZÁZNAMŮ (P15 / K16-N85, 25. 9. 2026).
+     *
+     * Hledání umí adresu stavby, jenže záznamy uložené dřív ji v rejstříku
+     * nemají — a zakázky, které se už neotevírají, by se podle adresy nenašly
+     * nikdy. Doplňují se proto po dávkách při ukládání: nejvýš
+     * ULO_ADRESY_DAVKA zakázek najednou, čtou se souběžně a jen dokud nějaký
+     * záznam klíč `adresa` nenese (pak se tahle větev přestane spouštět sama).
+     * Nečitelná zakázka se zkusí příště; zmizelá dostane prázdnou adresu. */
+    const bezAdresy = ULO.uloRejstrikBezAdresy(stavajici).filter(x => x !== jmeno);
+    /* DNY ZÁMKŮ U STARŠÍCH ZÁZNAMŮ (#504, 22. 10. 2026) — touž cestou: hromadný
+     * export controllingu podle nich vybírá zakázky z období; záznam bez nich
+     * jde hrubým předvýběrem. Jedno čtení zakázky doplní adresu i dny. */
+    const G = globalThis;
+    const bezDnu = (typeof G.ctrlRejstrikDny === 'function')
+      ? ULO.uloRejstrikBezDnu(stavajici).filter(x => x !== jmeno) : [];
+    const kDoplneni = [...new Set(bezAdresy.concat(bezDnu))];
+    if (kDoplneni.length) {
+      const nalezene = await Promise.all(kDoplneni.map(async (soubor) => {
+        try {
+          const z = await s.cti('z/' + soubor);
+          let dny;
+          /* Zmizelá nebo nečitelná zakázka: „čti vždy" — export ji ohlásí jako přeskočenou. */
+          try { dny = z ? G.ctrlRejstrikDny(G.importZakazka(z)) : { cist: true }; }
+          catch (e) { dny = { cist: true }; }
+          return [soubor, { adresa: ULO.uloRejstrikAdresa(z && z.adresa), dny }];
+        }
+        catch (e) { return null; }
+      }));
+      const doplnit = new Map(nalezene.filter(Boolean));
+      const sAdresou = new Set(bezAdresy), sDny = new Set(bezDnu);
+      stavajici = stavajici.map(z => {
+        const d = z && doplnit.get(z.soubor);
+        if (!d) return z;
+        return { ...z, ...(sAdresou.has(z.soubor) ? { adresa: d.adresa } : {}), ...(sDny.has(z.soubor) ? { ctrlDny: d.dny } : {}) };
+      });
+    }
+    const novy = ULO.uloRejstrikSloucit(stavajici,
+      ULO.uloRejstrikZaznam(zak, { soubor: jmeno, razitko }));
+    await s.zapis('_rejstrik', { schema: 1, zakazky: ULO.uloRejstrikSerad(novy), kdo: relace.email,
+                                 upraveno: new Date().toISOString() });
+  });
   /* Sporné razítko (B59) se hlásí hned — uložení prošlo, ale obchodník se
    * musí dozvědět, že čísla odeslané nabídky server z dat nedostal. */
   const varovani = sporne.map(x => 'Pozor, nabídka ' + x.cislo + ': '

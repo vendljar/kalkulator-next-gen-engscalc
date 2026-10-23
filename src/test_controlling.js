@@ -391,6 +391,17 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   test('C3 předvýběr: řada ZAHR / ČR podle rejstříku',
     C.ctrlHromadnyKandidati(rej, Object.assign({}, fo, { rada: 'zahr' })).map(z => z.soubor).join(',') === 'c.json'
     && C.ctrlHromadnyKandidati(rej, Object.assign({}, fo, { rada: 'cr' })).map(z => z.soubor).join(',') === 'a.json,e.json,f.json');
+  /* K7-S1 (#507): samooprava — zakázka uložená v `z/`, kterou rejstřík ztratil
+   * (souběžné uložení), je kandidát „čti vždy"; známé se nezdvojí. */
+  {
+    const k = C.ctrlHromadnyKandidati(rej, fo, ['z/a.json', 'z/b.json', 'z/g.json', 'z/g.json', 'h.json']);
+    test('K7-S1 předvýběr: zakázky chybějící v rejstříku se přidají (čti vždy), jednou a seřazené',
+      k.map(z => z.soubor).join(',') === 'a.json,c.json,e.json,f.json,g.json,h.json'
+      && k.filter(z => z.mimoRejstrik).map(z => z.soubor).join(',') === 'g.json,h.json'
+      && k.find(z => z.soubor === 'g.json').stary === true, k);
+    test('K7-S1 předvýběr: bez seznamu klíčů beze změny',
+      C.ctrlHromadnyKandidati(rej, fo, undefined).map(z => z.soubor).join(',') === 'a.json,c.json,e.json,f.json');
+  }
 
   if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     const zak = zakazkaZamcena();
