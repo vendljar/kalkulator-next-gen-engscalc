@@ -8,6 +8,40 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.10.1 — O-K7: opravy auditu K7 bez rozhodnutí J. V. (#507), větev claude/ok7-opravy
+
+Nad c5dbfbc (test v22.10.6 3394b2b + dokumentace K7). Nálezy `podklady/K7_AUDIT_22_10.md` (oddíl „opravit bez J. V.");
+K7-S2 a K7-W1 čekají na J. V. Každá oprava má test s pojistkou (před opravou selže — počty ve zprávách commitů)
+a mutace s filtrem „#507" (jádro `mutace_jadro.mjs`, server `netlify/mutace.mjs`).
+
+- **K7-K1 (střední) — tisk během běžícího ukládání:** uložení po tisku (Z1-4) jde do fronty `onlineUloz({ tiche,
+  fronta })` a provede se po doběhnutí běžícího zápisu; „naposledy uloženo" (`ONLINE_STAV.posledni`) se bere
+  z odeslaného těla + razítka serveru, změnila-li se zakázka během zápisu. Test `src/test_tisk_behem_ulozeni.js`.
+- **K7-K2 (střední) — snímek odeslané nabídky:** snímek z okamžiku tisku se už nepřepočítává. Dokud zámek neleží
+  na serveru (`zamekSnimekCekaNaServer`: paměť tisků, po obnovení stránky poslední verze ze serveru; ze souboru
+  nic), jsou krycí listy a DPH té varianty zmrazené a před odesláním se data srovnají podle snímku
+  (`zamekSnimkyVrat`) — server snímek přijme, žádná 409 smyčka. SoD vytištěná před uložením doplní snímek o číslo
+  SoD a datum podpisu. Test `src/test_snimek_po_tisku.js`.
+- **K7-S1 (střední) — rejstřík při souběžném uložení:** POST/DELETE `/api/zakazky` mění `_rejstrik` ve `vyhradne()`;
+  mezi instancemi (Blobs bez podmíněného zápisu v naší vrstvě) samooprava exportu — kandidáti doplnění ze
+  `seznam('z/')`, odpověď `mimoRejstrik`. Zbytková mez v `BEZPECNOST_MEZE.md`. Test `netlify/test_rejstrik_soubeh.mjs`.
+- **K7-S3:** protokol exportů ve `vyhradne()` (dva souběžné exporty = dva záznamy).
+- **K7-S4, K7-S11:** objekt/pole v `data.cenikRazitko`, `data.cenikRada` a textech hlavičky → 400 (dřív 500 nebo
+  uložení). Test `netlify/test_typy_k7.mjs`; `netlify/test_rejstrik.mjs` (B121/N4) upraven na 400.
+- **K7-S5:** čas nového zámku (`zamekKdyProblem`): ISO v UTC, nejvýš 10 min napřed, ne starší než 400 dní → jinak 400.
+- **K7-K3:** ARES po tisku SoD hlavičku nepřepíše (tlačítko neaktivní s důvodem). Test `src/test_ares_po_sod.js`.
+- **K7-K4:** výpadek sítě při uložení česky (`onlineChybaText`), neuložený tisk hlásí dialog s krokem; 409 snímku
+  radí otevřít zakázku znovu ze serveru.
+- **K7-W2:** harnessy šablon bez `negativni_kontrola.json` končí jako PŘESKOČENO (kód 4), ne „prošlo".
+- **K7-W3:** `BEZPECNOST_MEZE.md` — C3 přepsán na stav po #504 (bez stropů 600/150), nový oddíl Audit K7 (Z1, P1, K7-S1, K7-S8).
+- **K7-W4:** testy a mutace pro strop bajtů dávky, > 50 dnů zámků a navázání exportu.
+- **K7-W5:** `kontrola_udaju.py` pozná token Pipedrive v adrese (`api_token=`) a hlavičce (`x-api-token`);
+  vzor pro sdílený odkaz na sezení záměrně ne (K7-W1 čeká na J. V.).
+- **K7-W6:** příjmení obchodníka v komentářích nahrazeno rolí (jména souborů a větví beze změny).
+- **K7-W15:** `netlify/test_pd_stav.mjs` hledá únik mimo čas načtení (dřív náhodně padal na „…46.123Z").
+
+---
+
 ## v22.10.6 — E1: hromadný export controllingu za období (#504) a verze ceníku v razítku online (#505), větev claude/e1-export-obdobi
 
 Nad integrací 4ce35d2 (v22.10.5, tag) + 9abed07. Hlášení J. V. 22. 10. 2026 z ostré verze: export 1.–22. 10. → „muselo by se
