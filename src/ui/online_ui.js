@@ -1307,7 +1307,7 @@ function onlineUloz(opts) {
   /* Razítko verze jde se zakázkou (B10, 22. 8. 2026): server odmítne přepsat
    * verzi, ze které jsme nevyšli. Kolizi řeší hláška s dvěma tlačítky (V27);
    * `prepsat: true` zůstává jako výslovná cesta pro volajícího. */
-  const snimkyNove = (typeof zamekSnimkyObnov === 'function') ? zamekSnimkyObnov() : [];   // Z1
+  const snimkyNove = (typeof zamekSnimkyVrat === 'function') ? zamekSnimkyVrat() : [];   // Z1, K7-K2
   const telo = { zakazka: ZAK, ocekavaneRazitko: ONLINE_STAV.razitko || '' };
   /* CO SE SKUTEČNĚ ODESLALO (K7-K1). „Naposledy uloženo" se bere z tohohle
    * otisku, ne z ZAK v okamžiku odpovědi — změna provedená během letícího

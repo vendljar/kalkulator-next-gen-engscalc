@@ -382,6 +382,11 @@ function zamekKryciPoleStav(v, list, id) {
   if (!variantaUzamcena(v)) return 'editovatelne';
   const tab = ZAMEK_KRYCI_PO_CN[list];
   if (tab && tab.jenAdmin.indexOf(id) >= 0) return 'jen_admin';
+  /* K7-K2 (23. 10. 2026): dokud nový zámek se snímkem neleží na serveru,
+   * drží se v prohlížeči zmrazený celý krycí list i DPH — snímek z okamžiku
+   * tisku se pak shoduje s daty a server ho přijme. Funkce žije jen
+   * v prohlížeči (ui/zamek_ui.js); server ji nemá a pravidlo se ho netýká. */
+  if (typeof zamekSnimekCekaNaServer === 'function' && zamekSnimekCekaNaServer(v)) return 'zmrazeno';
   if (!zamekKryciOtevreny(v))
     return (zamekKryciPolePlnaMoc(list, id) || (tab && ZAMEK_KRYCI_PO_SOD_VOLNE.indexOf(id) >= 0)) ? 'editovatelne' : 'zmrazeno';
   if (!tab || tab.zmrazeno.indexOf(id) >= 0) return 'zmrazeno';

@@ -141,12 +141,16 @@ function zamekKryciPoznamka(sekce) {
  * nemění — šedé, neaktivní a s důvodem v bublině, ať obchodník nenaráží až
  * na dialog klonu. Vrací '' u volného pole. */
 const ZAMEK_POLE_DUVOD = 'Nabídka už odešla — pole se po tisku cenové nabídky nemění (pokračujte klonem varianty).';
+/* K7-K2: odeslaná nabídka, jejíž zámek ještě není v databázi. */
+const ZAMEK_POLE_CEKA = 'Odeslaná nabídka se ještě neuložila do databáze — podmínky a DPH nabídky se do té doby nemění. '
+  + 'Uložte zakázku (tlačítko Uložit zakázku); po uložení půjdou pole, která to dovolují, zase upravit.';
 function zamekPoleAttr(list, id) {
   const v = (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined') ? aktivniVarianta(ZAK) : null;
   if (!v || typeof zamekKryciPoleStav !== 'function' || !variantaUzamcena(v)) return '';
   const st = zamekKryciPoleStav(v, list, id);
   if (st === 'editovatelne') return '';
   const duvod = st === 'jen_admin' ? 'Číslo odeslané nabídky mění jen administrátor.'
+    : zamekSnimekCekaNaServer(v) ? ZAMEK_POLE_CEKA
     : (zamekKryciOtevreny(v) ? ZAMEK_POLE_DUVOD
       : 'Ze zakázky odešla smlouva o dílo — krycí list se už nemění (pokračujte klonem varianty).');
   return ` disabled class="zmrazeno" title="${esc('🔒 ' + duvod)}"`;
@@ -158,7 +162,7 @@ function zamekZakAttr(cesta) {
 function zamekDphAttr(cesta) {
   const v = (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined') ? aktivniVarianta(ZAK) : null;
   if (!v || !variantaUzamcena(v) || typeof zamekDphVolna !== 'function' || zamekDphVolna(v, cesta)) return '';
-  return ` disabled class="zmrazeno" title="${esc('🔒 ' + ZAMEK_POLE_DUVOD)}"`;
+  return ` disabled class="zmrazeno" title="${esc('🔒 ' + (zamekSnimekCekaNaServer(v) ? ZAMEK_POLE_CEKA : ZAMEK_POLE_DUVOD))}"`;
 }
 
 let _zamekNainstalovan = false;
@@ -356,19 +360,53 @@ async function tiskZamekCteniPovol(typ, varianta) {
   return !zamekCteniJe();   // odemknutí mohl zastavit náhled (nahledStop)
 }
 
-/* SNÍMEK, KTERÝ JEŠTĚ NENÍ NA SERVERU (Z1). Server snímek nového zámku
- * ověří proti ukládaným datům; kdyby obchodník mezi tiskem a prvním uložením
- * změnil editovatelné pole nabídky, snímek by nesedil a uložení by spadlo.
- * Dokud zámek na serveru není, obnoví se proto snímek těsně před odesláním
- * (online_ui.js) — stejně, jak ho spočítá server. Vrací id obnovených. */
+/* SNÍMEK, KTERÝ JEŠTĚ NENÍ NA SERVERU (Z1; K7-K2, audit 23. 10. 2026).
+ * Server snímek nového zámku ověří proti ukládaným datům. Do v22.10.6 se
+ * snímek proto před každým odesláním PŘEPOČÍTAL z aktuálních dat — po
+ * selhaném prvním uložení tak změna DPH či podmínek přepsala to, co zákazník
+ * dostal, a po obnovení stránky naopak server vracel 409 bez cesty ven.
+ * Nově je snímek z okamžiku tisku pravda:
+ *   – dokud zámek na serveru neleží (zamekSnimekCekaNaServer), jsou pole
+ *     snímku (krycí listy, DPH) zmrazená — zamekKryciPoleStav v zamek.js;
+ *   – před odesláním se data varianty srovnají PODLE snímku
+ *     (zamekSnimkyVrat), kdyby se mezitím přece jen rozešla (starší koncept,
+ *     obnovená záloha). Snímek sám se nikdy nepřepočítává. */
 const ZAMEK_SNIMEK_NEULOZENY = new Set();
-function zamekSnimkyObnov() {
+const _zamekServerZamky = { text: null, ids: null };
+/* Id variant, které jsou zamčené v poslední verzi ze serveru (uložené nebo
+ * načtené — ONLINE_STAV.posledni). Parsuje se jen při změně textu. */
+function zamekServerZamcene() {
+  const t = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.posledni) || '';
+  if (_zamekServerZamky.text === t) return _zamekServerZamky.ids;
+  const ids = new Set();
+  try {
+    const z = t ? JSON.parse(t) : null;
+    ((z && Array.isArray(z.varianty)) ? z.varianty : []).forEach(x => { if (x && variantaUzamcena(x)) ids.add(x.id); });
+  } catch (e) { /* nečitelné = nic zamčeného */ }
+  _zamekServerZamky.text = t; _zamekServerZamky.ids = ids;
+  return ids;
+}
+function zamekSnimekCekaNaServer(v) {
+  if (!v || !variantaUzamcena(v) || !v.zamek.snimek) return false;
+  if (ZAMEK_SNIMEK_NEULOZENY.has(v.id)) return true;
+  /* Ze souboru se nic neukládá — server snímek neověřuje (Z1 beze změny). */
+  if (typeof onlineMozne !== 'function' || !onlineMozne()) return false;
+  return !zamekServerZamcene().has(v.id);
+}
+/* Srovná data čekajících variant podle snímku; vrací id čekajících (po
+ * úspěšném uložení je zamekSnimkyUlozeno vyřadí). */
+function zamekSnimkyVrat() {
   const ids = [];
-  ZAMEK_SNIMEK_NEULOZENY.forEach(id => {
-    const v = ((typeof ZAK !== 'undefined' && ZAK.varianty) || []).find(x => x && x.id === id);
-    if (!v || !variantaUzamcena(v) || !v.zamek.snimek) { ZAMEK_SNIMEK_NEULOZENY.delete(id); return; }
-    v.zamek.snimek = zamekSnimekSpocti(v);
-    ids.push(id);
+  ((typeof ZAK !== 'undefined' && ZAK.varianty) || []).forEach(v => {
+    if (!zamekSnimekCekaNaServer(v)) { if (v) ZAMEK_SNIMEK_NEULOZENY.delete(v.id); return; }
+    ids.push(v.id);
+    const s = v.zamek.snimek;
+    if (JSON.stringify(zamekSnimekSpocti(v)) === JSON.stringify(s)) return;
+    const kopie = x => JSON.parse(JSON.stringify(x));
+    v.data = v.data || {};
+    ['kryci', 'kryciProj'].forEach(k => { if (s[k] == null) delete v.data[k]; else v.data[k] = kopie(s[k]); });
+    if (typeof s.dph === 'number' && v.data.cenik) v.data.cenik.dph = s.dph;
+    if (typeof s.dphProj === 'number' && v.data.proj && v.data.proj.cenik) v.data.proj.cenik.dph = s.dphProj;
   });
   return ids;
 }
@@ -388,6 +426,10 @@ function zamekPoTisku(typ, varId, sablona, navic) {
   if (typeof zamekPrvniSmlouva === 'function' && zamekPrvniSmlouva(v, typ)) {
     try { if (typeof kryciZmrazSod === 'function') kryciZmrazSod(ZAK, v, JEKLY); } catch (e) {}
     try { if (typeof kryciProjZmrazSod === 'function') kryciProjZmrazSod(ZAK, v); } catch (e) {}
+    /* Smlouva vytištěná dřív, než se zámek nabídky uložil (K7-K2): opsané
+     * číslo SoD a datum podpisu nejsou v nabídce, snímek je ale nese celý —
+     * jinak by se data od snímku rozešla a server by uložení odmítl. */
+    if (!prvni && zamekSnimekCekaNaServer(v)) v.zamek.snimek = zamekSnimekSpocti(v);
   }
   if (prvni) {
     try { otisk = zamekOtiskZPorovnani(porovnaniData(), v.id); } catch (e) { otisk = null; }

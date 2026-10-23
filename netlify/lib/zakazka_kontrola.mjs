@@ -552,7 +552,10 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     if (v.zamek.snimek != null && typeof globalThis.zamekSnimekSpocti === 'function'
       && JSON.stringify(v.zamek.snimek) !== JSON.stringify(globalThis.zamekSnimekSpocti(v)))
       return odmitni(409, 'Neuloženo: snímek podmínek nové odeslané nabídky nesedí s daty varianty. '
-        + 'Obnovte stránku (Ctrl+F5) a nabídku vytiskněte znovu.');
+        /* K7-K4: „vytiskněte znovu" u lokálně zamčené varianty nejde — cesta
+         * ven vede přes verzi ze serveru (bez neuloženého tisku). */
+        + 'Otevřete zakázku znovu ze serveru (Přehled cenových nabídek; neuložený tisk se tím zahodí) '
+        + 'a nabídku vytiskněte znovu.');
     /* P6 (D6g): nový zámek dokumentu vyřazené strany se nepustí. */
     const vyrProblem = zamekVyrazenaStranaProblem(zak, [v.zamek.typ].concat((Array.isArray(v.zamek.tisky) ? v.zamek.tisky : []).map(t => t && t.typ)));
     if (vyrProblem) return odmitni(403, 'Neuloženo: ' + vyrProblem + '.');

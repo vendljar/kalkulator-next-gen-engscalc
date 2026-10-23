@@ -157,6 +157,8 @@ await p.evaluate(([c, cp]) => {
   const v = aktivniVarianta(ZAK);
   zamkniVariantu(v, { typ: 'nabidkaProjTisk', snimek: zamekSnimekSpocti(v) });
   if (typeof ONLINE_STAV !== 'undefined') ONLINE_STAV.ja = { email: 'autor.kryci@priklad.cz', role: 'Obchodník' };
+  /* Zámek už leží na serveru (K7-K2: do té doby jsou pole snímku zmrazená). */
+  if (typeof ONLINE_STAV !== 'undefined') ONLINE_STAV.posledni = JSON.stringify(ZAK);
   prepniTab('kryciProj'); render();
 }, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj()]);
 await p.evaluate(() => klSet('zaloha1', '10 % – po podpisu smlouvy'));
@@ -200,15 +202,18 @@ const z14 = await p.evaluate(() => {
   window.onlineMozne = () => true;
   priprava(); zamekPoTisku('nabidkaTisk');
   const online = volani.length - offline, tiche = volani.length ? volani[volani.length - 1].tiche === true : false;
+  /* K7-K1: uložení po tisku jde do fronty — během běžícího autosave se nezahodí. */
+  const fronta = volani.length ? volani[volani.length - 1].fronta === true : false;
   priprava(); zamekPoTisku('techspec');                 // nezamykající dokument nic neukládá
   const techspec = volani.length - offline - online;
   priprava(); ONLINE_STAV.ja = null; zamekPoTisku('nabidkaTisk');
   const odhlaseny = volani.length - offline - online - techspec;
   window.onlineMozne = puvodni.mozne; window.onlineUloz = puvodni.uloz;
-  return { offline, online, tiche, techspec, odhlaseny };
+  return { offline, online, tiche, fronta, techspec, odhlaseny };
 });
 ok('Z1-4: ze souboru z disku tisk nic neukládá', z14.offline === 0, z14);
 ok('Z1-4: online a přihlášeně tisk nabídky hned uloží (jednou, tiše)', z14.online === 1 && z14.tiche, z14);
+ok('K7-K1: uložení po tisku čeká ve frontě na běžící zápis (nezahodí se)', z14.fronta, z14);
 ok('Z1-4: nezamykající dokument ani nepřihlášený uživatel nic neukládá', z14.techspec === 0 && z14.odhlaseny === 0, z14);
 
 await b.close();

@@ -107,7 +107,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* ui/online_ui.js a ui/zamek_ui.js (#507, O-K7 23. 10. 2026): uložení zámku
    * a záznamu odeslání po tisku (Z1-4, K7-K1) a snímek odeslané nabídky
    * (K7-K2). Hlídají src/test_tisk_behem_ulozeni.js a src/test_snimek_po_tisku.js. */
-  'ui/online_ui.js', 'ui/zamek_ui.js'];
+  'ui/online_ui.js', 'ui/zamek_ui.js',
+  /* zamek.js (#507): jen prohlížečové zmrazení polí snímku před uložením
+   * zámku (K7-K2); serverová pravidla zámku hlídá netlify/mutace.mjs. */
+  'zamek.js'];
 /* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
 const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
@@ -2354,6 +2357,27 @@ const MUTACE = [
     hledej: "  try { const z = JSON.parse(text); z.uloRazitko = razitko; return JSON.stringify(z); }",
     nahrad: "  try { const z = JSON.parse(text); return JSON.stringify(z); }",
     proc: 'autosave by po každém zápisu ukládal znovu jen kvůli razítku' },
+  /* #507 K7-K2: snímek odeslané nabídky do prvního uložení. Hlídá src/test_snimek_po_tisku.js. */
+  { nazev: '#507 K7-K2: pole snímku volná před uložením zámku', soubor: 'zamek.js',
+    hledej: "  if (typeof zamekSnimekCekaNaServer === 'function' && zamekSnimekCekaNaServer(v)) return 'zmrazeno';",
+    nahrad: "",
+    proc: 'DPH a podmínky by šly změnit dřív, než server snímek přijme' },
+  { nazev: '#507 K7-K2: po obnovení stránky se nečeká', soubor: 'ui/zamek_ui.js',
+    hledej: "  return !zamekServerZamcene().has(v.id);",
+    nahrad: "  return false;",
+    proc: 'po obnovení stránky by šlo DPH změnit a server by vracel 409 bez cesty ven' },
+  { nazev: '#507 K7-K2: data se podle snímku nesrovnají', soubor: 'ui/zamek_ui.js',
+    hledej: "    if (typeof s.dph === 'number' && v.data.cenik) v.data.cenik.dph = s.dph;",
+    nahrad: "",
+    proc: 'rozešlá data by server odmítl 409' },
+  { nazev: '#507 K7-K2: snímek se před odesláním přepočte', soubor: 'ui/zamek_ui.js',
+    hledej: "    if (JSON.stringify(zamekSnimekSpocti(v)) === JSON.stringify(s)) return;",
+    nahrad: "    v.zamek.snimek = zamekSnimekSpocti(v); return;",
+    proc: 'dotisk CN by nesl DPH a podmínky změněné po tisku' },
+  { nazev: '#507 K7-K2: SoD před uložením nedoplní snímek', soubor: 'ui/zamek_ui.js',
+    hledej: "    if (!prvni && zamekSnimekCekaNaServer(v)) v.zamek.snimek = zamekSnimekSpocti(v);",
+    nahrad: "",
+    proc: 'smlouva vytištěná před uložením zámku by skončila 409' },
 ];
 
 /* ============================================================
