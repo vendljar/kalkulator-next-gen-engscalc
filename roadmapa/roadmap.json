@@ -8068,7 +8068,7 @@
    "proc" : "Plán J. V. 23. 10. 2026 na víkend: před posunem main ověřit vše od posledního auditu K7 (O-K7, E2, P2 převzetí #114, B1 platby).",
    "detail" : "Celé testovací kolo s mutacemi nad test po B1 (mutace serveru v Actions s matrix, pokud je P2 připraví, jinak v cloudu s čekáním v popředí) a audit diffu 3394b2b..test → podklady/K8_AUDIT_24_10.md, verdikt pro main.",
    "hotovoKdyz" : "Kolo s mutacemi zelené, audit s verdiktem, nálezy bez J. V. předané do O-K8.",
-   "pozn" : "K8 23. 10. 2026 nad ca4f2d1 (claude/k8-kolo): sady 315/0/6 (overit_verzi selhal jen kvůli exportované KNG_NEZVYSOVAT_VERZI — K8-W11), mutace jádra 527/527, serveru 897/897 (po částech ve worktree, úplnost ověřena), statické 4/4. Audit podklady/K8_AUDIT_24_10.md: vyhovuje s výhradou, main doporučen; 0 kritických, 0 vysokých, 1 střední (K8-K1), 11 nízkých, 15 informativních; opravy K7 drží. Pro O-K8 bez J. V.: K8-S1, S2, W1–W5, W11 (+ informativní); J. V.: K8-K1–K5.",
+   "pozn" : "K8 23. 10. 2026 nad ca4f2d1 (claude/k8-kolo): sady 315/0/6 (overit_verzi selhal jen kvůli exportované KNG_NEZVYSOVAT_VERZI — K8-W11), mutace jádra 527/527, serveru 897/897 (po částech ve worktree, úplnost ověřena), statické 4/4. Audit podklady/K8_AUDIT_24_10.md: vyhovuje s výhradou, main doporučen; 0 kritických, 0 vysokých, 1 střední (K8-K1), 12 nízkých, 14 informativních; opravy K7 drží; Actions #195: jádro ✓, server jen 5/6 (ostatní timeout 75 min → K8-W7). Pro O-K8 bez J. V.: K8-S1, S2, W1–W5, W7, W11 (+ informativní); J. V.: K8-K1–K5.",
    "zavisi" : [
     {
      "id" : "506",

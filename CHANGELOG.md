@@ -44,7 +44,7 @@ serverový zápis a potvrzovací tabulka v UI jsou dál #115.
 jádra 527/527, serveru 897/897, úplnost ověřena po pořadí a názvech; statické 4/4) a bezpečnostní audit diffu
 v22.10.6 → v23.10.4 ve třech čočkách → `podklady/K8_AUDIT_24_10.md`. Verdikt: vyhovuje s výhradou, posun `main`
 doporučen — 0 kritických, 0 vysokých, 1 střední (K8-K1: po otevření zakázky ze souboru se uložený zámek CN
-považuje za neuložený a krycí list se před odesláním vrátí na stav z tisku), 11 nízkých, 15 informativních; opravy
+považuje za neuložený a krycí list se před odesláním vrátí na stav z tisku), 12 nízkých (vč. K8-W7: matrix serveru v Actions #195 se do 75 min nevejde), 14 informativních; opravy
 K7 drží. Nálezy, které nemění chování, předány do O-K8 (#514), ostatní k rozhodnutí J. V.
 
 ## v23.10.3 — P2: převzetí #114 Pipedrive z větve claude/eager-carson-1xznt2 a tři opravy Stavu Pipedrive do P1, větev claude/p2-pd114-prevzeti
