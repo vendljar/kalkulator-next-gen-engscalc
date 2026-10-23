@@ -796,7 +796,8 @@ for (const podvrh of ['../_rejstrik', '_rejstrik', '../../uzivatele/' + ADMIN_EM
   const o = await get(zakazky, 'http://x/api/zakazky?soubor=' + encodeURIComponent(podvrh), cObch);
   const t = await o.json();
   test('podvržené jméno souboru nic nevydá: ' + podvrh,
-    o.status === 404 || (t.ok === true && t.zakazka === null), JSON.stringify(t).slice(0, 160));
+    /* 400 = klíč z adresy odmítnutý už tvarem (SEC-I4, #514) — taky nic nevydá. */
+    o.status === 404 || (o.status === 400 && !t.zakazka) || (t.ok === true && t.zakazka === null), JSON.stringify(t).slice(0, 160));
 }
 
 /* ============================================================
