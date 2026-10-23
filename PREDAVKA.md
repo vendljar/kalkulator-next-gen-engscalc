@@ -1,3 +1,27 @@
+# Předávka — 23. 10. 2026 ~09:30 UTC: E2 — export celé databáze, čitelné filtry, K7-S2, K7-W1 (#508), v23.10.2, větev `claude/e2-export-cela-db`
+
+Nad `3c04445` (test v23.10.1 f0d42ed + dokumentace). Verze **23.10.2** (CHANGELOG `## v23.10.2 — E2`, příručka
+„Co je nového ve verzi v23.10.2“ + odstavec hromadného exportu, `build.py --kontrola-verze` ✓). Koordinace:
+session_013yuBUKmpUYvEnjxWjGi5kj. Do integrace / test nic — slučuje koordinace.
+
+- **Hotovo:** (1) filtry hromadného exportu — selecty `ctrl-hrom-sel` šířkou podle obsahu, okno Nastavení
+  1280 px, „Stav dealu“ (Vyhrané … Všechny stavy) bez „Pipedrive“ v UI; (2) mez 400 dní pryč, volba **Celá
+  databáze** (`vse=1` bez od/do, server ověří, protokol `vse`, Popis „celá databáze“, soubor
+  `PREDKALKULACE_CELA-DB_<dnes>`), simulace 5000 zakázek; (3) K7-S2 — stopa `zamek.hlavicka` (odeslaná varianta,
+  která byla řídící), přepnutí řídící hlavičku neuvolní (server i prohlížeč), mez K7-S7 v BEZPECNOST_MEZE;
+  (4) K7-W1 — vzor `claude.ai/code/cshk_<id>` v `kontrola_udaju.py`.
+- **Testy:** `spust_testy.sh` 248/0/1 (přeskočen jen test.js); statická kontrola údajů čistá; mutace „#508“
+  jádro 13/13, server 7/7, upravené „Z1-2“ server 3/3; `--kontrola` jádro 524/524, server 849/849.
+- **Upravené, NEPUŠTĚNÉ harnessy:** `overit_controlling.mjs` (šířka selectů / viditelnost hodnoty při 1400,
+  1100 a 820 px, bez vodorovného posuvníku, zalomení, bez „Pipedrive“, Celá databáze — dotaz, název, Popis).
+- **Pozor pro kolo:** (1) `.modal.wide` je 1280 px (všechny záložky Nastavení) — harnessy šířky okna to mohou
+  vidět; (2) text hlášky hlavičky po CN „Řídící varianta zakázky je (nebo byla) odeslaná…“; (3) zámek nově nese
+  `hlavicka: true` (mimo klíč zámku) — harness porovnávající celý `zamek` by ho viděl.
+- **Rozhodnutí v sezení (ověřit s J. V.):** odeslaná varianta, která řídící nikdy nebyla, hlavičku dál nezmrazí
+  (Z1-2 „v rozumné míře“); starší zakázka přepnutá před v23.10.2 stopu nemá (mez K7-S7). `nastavRidici`
+  (zakazka.js) mutaci nemá — zakazka.js není v JADRA (hlídá test_zmrazeni_kl.js).
+- **Další krok:** koordinace — celé kolo nad hlavou větve, sloučení.
+
 # Předávka — 23. 10. 2026 ~03:50 UTC: O-K7 — opravy auditu K7 bez J. V. (#507), v23.10.1, větev `claude/ok7-opravy`
 
 Nad `c5dbfbc` (test v22.10.6 3394b2b + dokumentace K7). Verze **23.10.1** (CHANGELOG `## v23.10.1 — O-K7`, příručka
