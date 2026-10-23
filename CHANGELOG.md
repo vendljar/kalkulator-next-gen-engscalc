@@ -41,7 +41,7 @@ obsah: #114 = `git diff aea832a 4957b61` (původní commity 091a775…6ba5ece) p
   převodem 3 FAIL; cizí deal v seznamu smazaných s mutací 2 FAIL; `deal` z prohlížeče před úpravou 2 FAIL); nový
   `netlify/test_mutace_cast.mjs` 38/0 (před úpravou modul neexistoval); nový harness `overit_pd_stav.mjs`
   (převzatý z větve, přepsaný na API P1; v sezení nespuštěn — kolo pouští koordinace). Mutace „P2“ v
-  `netlify/mutace.mjs` 7/7. #114: `test_pipedrive.mjs` 91/0, `test_pd_prevod.mjs` 102/0, `test_pd_pristup.mjs`
+  `netlify/mutace.mjs` 7/7, cíleně „#114“ 22/22 a upravená „P1: chyba API“ 1/1. #114: `test_pipedrive.mjs` 91/0, `test_pd_prevod.mjs` 102/0, `test_pd_pristup.mjs`
   54/0, `test_prava.mjs` 932/0. `spust_testy.sh` 250/0/1.
 - **Roadmapa:** #509–#511 (ve větvi #501–#503), #16, #113–#115, #117 podle větve, #501 doplněno o převzetí.
 

@@ -36,7 +36,7 @@ nic — slučuje koordinace. Do `claude/eager-carson-1xznt2` se nepushovalo.
   kolo „ZELENÁ ČÁST“; workflow matrix server 6 × / jádro 3 ×, `fail-fast: false`, limit 75 min (**odhad — po
   prvním běhu v Actions změřit a upravit**); CLAUDE.md oddíl Testy. Test `netlify/test_mutace_cast.mjs` 38/0.
 - **Testy (úkol 5):** `spust_testy.sh` 250 prošlo / 0 selhalo / 1 přeskočeno (test.js); `test_pd_stav` 51/0;
-  `--kontrola` jádro 527/527, server 880/880; cílené mutace: **P2 7/7**, **#114 MUT114**, **„P1: chyba API“ MUTP1**
+  `--kontrola` jádro 527/527, server 880/880; cílené mutace: **P2 7/7**, **#114 22/22**, **„P1: chyba API“ 1/1**
   (upravený hledaný úsek); jádro `--cast 3/527` 1/1 (ověření výběru části).
 - **Upravené / nové, NEPUŠTĚNÉ harnessy:** `overit_pd_stav.mjs` (převzatý z větve, přepsaný na P1: rozvržení
   Sazba DPH × Datum vytvoření vč. zahraniční zakázky s kurzem, otevření ze souboru, obnova zálohy, přihlášení,
