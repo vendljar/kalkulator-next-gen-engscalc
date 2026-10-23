@@ -133,7 +133,10 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_zmrazeni_kl.js',
      /* #114 (21. 10. 2026): párování polí Pipedrive podle přesného názvu a převod hodnot. */
      'test_pipedrive.mjs', 'test_pd_prevod.mjs'];
-const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
+/* Filtr podle názvu; `--cast K/N` a `--od N` vybírají část běhu podle pořadí
+ * (P2, 23. 10. 2026 — nastroje/mutace_cast.mjs). */
+const { mutaceCast, filtrZArgv } = await import('../nastroje/mutace_cast.mjs');
+const filtr = filtrZArgv(process.argv.slice(2));
 
 /* Každá mutace: soubor, hledaný úsek (musí být v souboru PRÁVĚ JEDNOU),
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
@@ -4171,8 +4174,10 @@ async function spustSady() {
   return { chycena: false };
 }
 
-const vybrane = MUTACE.filter(m => !filtr
+const vyber = mutaceCast(MUTACE, process.argv.slice(2), process.env, (m) => !filtr
   || m.nazev.toLowerCase().includes(filtr) || m.soubor.toLowerCase().includes(filtr));
+if (vyber.chyba && !process.argv.includes('--kontrola')) { console.log('CHYBA VOLBY: ' + vyber.chyba); process.exit(2); }
+const vybrane = vyber.vybrane;
 
 /* RYCHLÁ KONTROLA ZADÁNÍ (`--kontrola`) — bez jediného spuštění sad.
  *
@@ -4209,7 +4214,8 @@ if (process.argv.includes('--kontrola')) {
   if (drzi) { console.log(zamekHlaska(drzi)); process.exit(2); } }
 
 console.log('MUTAČNÍ TESTOVÁNÍ SERVEROVÉ VRSTVY');
-console.log('Mutací k ověření: ' + vybrane.length + '   (sady: ' + SADY.join(', ') + ')\n');
+console.log('Mutací k ověření: ' + vybrane.length + (vyber.popis ? '   (' + vyber.popis + ')' : '')
+  + '   (sady: ' + SADY.join(', ') + ')\n');
 
 /* Nejdřív se ověří, že je před zásahem všechno zelené — jinak by „chycená"
  * mutace znamenala jen to, že testy padaly už předtím. */
@@ -4228,21 +4234,22 @@ let chycene = 0;
 const nechycene = [];
 const chybne = [];
 
-for (const m of vybrane) {
+for (const { m, poradi } of vybrane) {
+  const kde = '[' + poradi + '/' + MUTACE.length + '] ';
   const cesta = resolve(KOREN, m.soubor);
   const puvodni = readFileSync(cesta, 'utf8');
   const pocet = puvodni.split(m.hledej).length - 1;
   if (pocet !== 1) {
     chybne.push(m.nazev + ' — hledaný úsek v ' + m.soubor + ' nalezen ' + pocet + '×');
-    console.log('CHYBA ZADÁNÍ  ' + m.nazev + ' (úsek nalezen ' + pocet + '×)');
+    console.log(kde + 'CHYBA ZADÁNÍ  ' + m.nazev + ' (úsek nalezen ' + pocet + '×)');
     continue;
   }
   try {
     aktivni = { cesta, puvodni };                // od téhle chvíle ho vrací i obsluha signálu
     writeFileSync(cesta, puvodni.replace(m.hledej, m.nahrad), 'utf8');
     const v = await spustSady();
-    if (v.chycena) { chycene++; console.log('chycená      ' + m.nazev + '   → ' + v.kde); }
-    else { nechycene.push(m); console.log('NECHYCENÁ    ' + m.nazev + '   → ' + m.proc); }
+    if (v.chycena) { chycene++; console.log(kde + 'chycená      ' + m.nazev + '   → ' + v.kde); }
+    else { nechycene.push(m); console.log(kde + 'NECHYCENÁ    ' + m.nazev + '   → ' + m.proc); }
   } finally {
     vratMutaci();                                // vrátit vždy, i při pádu
   }
@@ -4251,6 +4258,8 @@ for (const m of vybrane) {
 console.log('\n============================================================');
 console.log('Chycených ' + chycene + ' z ' + (chycene + nechycene.length)
   + (chybne.length ? '   (chybně zadaných mutací: ' + chybne.length + ')' : ''));
+/* Část běhu nikdy netvrdí, že prošlo všech N (zadání mutačního běhu). */
+if (vyber.popis) console.log('Pokryto: ' + vyber.popis + ' — NE celý běh.');
 if (nechycene.length) {
   console.log('\nNECHYCENÉ MUTACE — tohle by dnes testy nezachytily:');
   for (const m of nechycene) console.log(' - ' + m.nazev + ' (' + m.soubor + ')\n     ' + m.proc);

@@ -93,5 +93,15 @@ Cloudové sezení může spadnout (25. 9. 2026: „Prompt is too long“ po
 - Statická kontrola osobních údajů a tajemství: `nastroje/kontrola_udaju.py`,
   povolený seznam `nastroje/povolene_kontakty.txt` (nový smyšlený kontakt v
   testu se tam zapíše s důvodem; skutečný do repa nepatří).
+- **Mutace po částech (P2, 23. 10. 2026):** celé mutace se v cloudovém sezení
+  do 2 h úlohy na pozadí nevejdou (server ~5 h). Pouštět po částech:
+  `KNG_MUTACE_CAST=K/N bash nastroje/testovaci_kolo.sh --jen mutace-server`
+  (K = 1…N, např. N = 4 pro jádro a 8 pro server — každá část pod 2 h), nebo
+  přímo `node netlify/mutace.mjs --cast K/N`; přerušený běh naváže
+  `--od <číslo>` podle posledního řádku `[pořadí/celkem]` v logu. Kolo
+  s částí hlásí „ZELENÁ ČÁST", nikdy „VŠE ZELENÉ". Actions běží v matrixu
+  (server 6 částí, jádro 3). **Po restartu kontejneru** nejdřív `git status`:
+  změněný soubor v `src/` nebo `netlify/` bez běžícího mutačního procesu je
+  zbytek mutace → `git checkout -- <soubor>`.
 - N46 (nástupiště A ↔ C u zrcadlové šachty) se neopravuje bez pokynu J. V. —
   fuzz `src/test_fuzz_invarianty.js` rozdíl jen hlásí jako INFO.

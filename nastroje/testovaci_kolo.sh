@@ -27,6 +27,13 @@
 #   bash nastroje/testovaci_kolo.sh                    celé kolo (mutace trvají dohromady kolem 40 minut)
 #   bash nastroje/testovaci_kolo.sh --bez-mutaci       bez mutací (dávka, která nesáhla do jádra ani serveru)
 #   bash nastroje/testovaci_kolo.sh --jen mutace-server,staticke   jen vybrané kroky
+#   KNG_MUTACE_CAST=2/4 bash nastroje/testovaci_kolo.sh --jen mutace-server
+#                                                      jen část mutací (každá 4. od 2.)
+#   KNG_MUTACE_OD=529 bash nastroje/testovaci_kolo.sh --jen mutace-server
+#                                                      pokračování přerušeného běhu
+#   (P2, 23. 10. 2026; podklady/PROMPT_mutacni_beh_23_10.md. Proměnné předá oběma
+#   mutačním skriptům prostředí, výběr dělá nastroje/mutace_cast.mjs. Kolo
+#   s částí mutací nikdy nehlásí „VŠE ZELENÉ" — jen „ZELENÁ ČÁST".)
 #
 # CI (.github/workflows/testy.yml) volá TENTÝŽ skript — druhý seznam kroků
 # neexistuje. Firemní podklady mimo repozitář: KNG_PODKLADY=<složka>.
@@ -48,7 +55,7 @@ while [ $# -gt 0 ]; do
     --bez-mutaci) KROKY="build,sady,staticke" ;;
     --jen) shift; KROKY="${1:-}" ;;
     --jen=*) KROKY="${1#--jen=}" ;;
-    -h|--help) sed -n '2,33p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,40p' "$0"; exit 0 ;;
     *) echo "neznámá volba: $1 (viz --help)"; exit 2 ;;
   esac
   shift
@@ -117,13 +124,18 @@ preskocene_ze_sady() {
 }
 
 mutace_jadro() { node mutace_jadro.mjs; }
-poznamka_mutace_jadro() { grep -o 'Chycených [0-9]* z [0-9]*' "$1" | tail -1 | sed 's/^Chycených/chycených/'; }
+poznamka_mutace_jadro() {
+  local r; r="$(grep -o 'Chycených [0-9]* z [0-9]*' "$1" | tail -1 | sed 's/^Chycených/chycených/')"
+  local c; c="$(grep -o 'Pokryto: .* — NE celý běh' "$1" | tail -1 | sed 's/^Pokryto: //; s/ — NE celý běh$//')"
+  printf '%s%s' "${r:-bez souhrnu}" "${c:+ ($c)}"
+}
 
 mutace_server() { node netlify/mutace.mjs; }
 poznamka_mutace_server() {
   local r; r="$(grep -o 'Chycených [0-9]* z [0-9]*' "$1" | tail -1 | sed 's/^Chycených/chycených/')"
   local ch; ch="$(grep -o 'chybně zadaných mutací: [0-9]*' "$1" | tail -1)"
-  printf '%s%s' "${r:-bez souhrnu}" "${ch:+, $ch}"
+  local c; c="$(grep -o 'Pokryto: .* — NE celý běh' "$1" | tail -1 | sed 's/^Pokryto: //; s/ — NE celý běh$//')"
+  printf '%s%s%s' "${r:-bez souhrnu}" "${ch:+, $ch}" "${c:+ ($c)}"
 }
 
 staticke() {
@@ -168,7 +180,13 @@ if [ "${#preskocene[@]}" -gt 0 ]; then
     echo "::warning title=Přeskočené sady (nic neověřily)::${preskocene[*]}"
   fi
 fi
-if [ "$selhalo" -eq 0 ]; then
+cast_mutaci=""
+if { chce mutace-jadro || chce mutace-server; } && [ -n "${KNG_MUTACE_CAST:-}${KNG_MUTACE_OD:-}" ]; then
+  cast_mutaci="${KNG_MUTACE_CAST:+část $KNG_MUTACE_CAST}${KNG_MUTACE_CAST:+${KNG_MUTACE_OD:+, }}${KNG_MUTACE_OD:+od $KNG_MUTACE_OD.}"
+fi
+if [ "$selhalo" -eq 0 ] && [ -n "$cast_mutaci" ]; then
+  echo "Výsledek: ZELENÁ ČÁST (mutace: $cast_mutaci) — ne celé kolo."
+elif [ "$selhalo" -eq 0 ]; then
   echo "Výsledek: VŠE ZELENÉ."
 else
   echo "Výsledek: SELHALO ($selhalo z kroků). Nic nenahrávat, dokud není zeleno."

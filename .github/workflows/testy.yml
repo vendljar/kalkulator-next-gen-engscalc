@@ -22,10 +22,14 @@
 #                          smoke + VŠECHNY overit_*.mjs globem, statické
 #                          kontroly: verze = den commitu, CRLF, osobní údaje
 #                          a tajemství)
-#   job „mutace-server"  = testovaci_kolo.sh --jen mutace-server
-#   job „mutace-jadro"   = testovaci_kolo.sh --jen mutace-jadro
-# Mutace běží v samostatných jobech, aby jely souběžně — každý trvá kolem
-# dvaceti minut. Přeskočené sady vypíše souhrn skriptu; přeskočená kontrola,
+#   job „mutace-server"  = testovaci_kolo.sh --jen mutace-server, matrix 6 částí
+#   job „mutace-jadro"   = testovaci_kolo.sh --jen mutace-jadro, matrix 3 části
+# Mutace běží v samostatných jobech, aby jely souběžně. OD 23. 10. 2026 (P2,
+# podklady/PROMPT_mutacni_beh_23_10.md) PO ČÁSTECH: celý běh se do jednoho
+# jobu nevešel (Testy #194: server ~280 z 808 za 45 min, jádro taky
+# nedoběhlo). Část K/N = každá N-tá mutace od K-té (KNG_MUTACE_CAST,
+# nastroje/mutace_cast.mjs); části dohromady pokryjí každou mutaci právě
+# jednou. Celé kolo = všechny joby matrixu zelené. Přeskočené sady vypíše souhrn skriptu; přeskočená kontrola,
 # o které se mlčí, je totéž co kontrola, která neexistuje.
 name: Testy
 
@@ -86,11 +90,20 @@ jobs:
   # auditu: kdyby někdo kontrolu odstranil, testy by to musely chytit — tohle
   # ověřuje, že by to opravdu chytily. Rychlá kontrola zadání (--kontrola)
   # běží už v jobu „testy" uvnitř spust_testy.sh.
+  # Časy (odhad 23. 10. 2026 z Testy #194: ~6 mutací serveru za minutu):
+  # 880 / 6 ≈ 147 mutací ≈ 25–30 min na část, limit 75 min s rezervou na růst.
+  # Po prvním běhu po částech časy změřit a limit upravit (PREDAVKA).
   mutace-server:
     runs-on: ubuntu-24.04  # pevně: ubuntu-latest = 26.04 od 19. 10. 2026, Playwright tam Chromium neinstaluje
-    timeout-minutes: 45
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false   # jedna červená část nesmí zrušit ostatní — chceme vidět všechny nechycené
+      matrix:
+        cast: ['1/6', '2/6', '3/6', '4/6', '5/6', '6/6']
+    name: mutace-server (část ${{ matrix.cast }})
     env:
       ADMIN_EMAIL: spravce@priklad.cz
+      KNG_MUTACE_CAST: ${{ matrix.cast }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
@@ -101,9 +114,17 @@ jobs:
 
   # Mutační testování VÝPOČETNÍHO JÁDRA (nález N19, 23. 9. 2026): mutace_jadro.mjs
   # pouští sady, které se na jádro odkazují, pro každou ze ~76 mutací.
+  # 527 / 3 ≈ 176 mutací na část; limit 75 min (celé jádro se do 45 min nevešlo).
   mutace-jadro:
     runs-on: ubuntu-24.04  # pevně: ubuntu-latest = 26.04 od 19. 10. 2026, Playwright tam Chromium neinstaluje
-    timeout-minutes: 45
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        cast: ['1/3', '2/3', '3/3']
+    name: mutace-jadro (část ${{ matrix.cast }})
+    env:
+      KNG_MUTACE_CAST: ${{ matrix.cast }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0

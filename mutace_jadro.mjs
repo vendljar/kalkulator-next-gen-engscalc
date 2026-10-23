@@ -114,8 +114,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* ui/ares_ui.js (#507, K7-K3): ARES po tisku SoD hlavičku nepřepíše.
    * Hlídá src/test_ares_po_sod.js. */
   'ui/ares_ui.js'];
-/* Filtr = první argument, který není přepínač (stejně jako netlify/mutace.mjs). */
-const filtr = (process.argv.slice(2).find(a => !a.startsWith('--')) || '').toLowerCase();
+/* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
+ * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
+ * nastroje/mutace_cast.mjs). */
+const { mutaceCast, filtrZArgv } = await import('./nastroje/mutace_cast.mjs');
+const filtr = filtrZArgv(process.argv.slice(2));
 /* --kontrola (23. 9. 2026, nález N19): jen ověří, že každý hledaný úsek je
  * v jádře právě jednou — bez spouštění sad, za zlomek vteřiny. Pouští ji CI
  * i spust_testy.sh, aby mutace nemířily do prázdna, když se jádro změní. */
@@ -2588,6 +2591,12 @@ if (JEN_KONTROLA) {
   process.exit(0);
 }
 
+/* Výběr části běhu se ověří PŘED výchozím během sad — neplatný zápis
+ * (0/4, 5/4, abc) skončí hned a nikdy nespustí celý běh. */
+const vyber = mutaceCast(MUTACE, process.argv.slice(2), process.env, (m) => !filtr
+  || m.nazev.toLowerCase().includes(filtr) || m.soubor.toLowerCase().includes(filtr));
+if (vyber.chyba) { console.log('CHYBA VOLBY: ' + vyber.chyba); process.exit(2); }
+
 const vsechnySady = najdiSady();
 
 console.log('MUTAČNÍ TESTOVÁNÍ VÝPOČETNÍHO JÁDRA');
@@ -2621,9 +2630,9 @@ if (rozbite.length) {
 console.log('\nVýchozí stav: ' + zelene.length + ' sad zelených'
   + (preskocene.length ? ', ' + preskocene.length + ' přeskočeno' : '') + '.');
 
-const vybrane = MUTACE.filter(m => !filtr
-  || m.nazev.toLowerCase().includes(filtr) || m.soubor.toLowerCase().includes(filtr));
-console.log('Mutací k ověření: ' + vybrane.length + (filtr ? ' (filtr: „' + filtr + '")' : '') + '\n');
+const vybrane = vyber.vybrane;
+console.log('Mutací k ověření: ' + vybrane.length + (filtr ? ' (filtr: „' + filtr + '")' : '')
+  + (vyber.popis ? ' (' + vyber.popis + ')' : '') + '\n');
 if (filtr && !vybrane.length) {
   /* Překlep ve filtru by jinak vypadal jako čistý běh bez jediného nálezu. */
   console.log('Filtr „' + filtr + '" neodpovídá žádné mutaci — nic se neověřilo.');
@@ -2634,25 +2643,26 @@ let chycene = 0;
 const nechycene = [];
 const chybne = [];
 
-for (const m of vybrane) {
+for (const { m, poradi } of vybrane) {
+  const kde = '[' + poradi + '/' + MUTACE.length + '] ';
   const cesta = resolve(SRC, m.soubor);
   const puvodni = ZALOHA.get(m.soubor);
   if (puvodni == null) {
     chybne.push(m.nazev + ' — soubor ' + m.soubor + ' není mezi jádry');
-    console.log('CHYBA ZADÁNÍ  ' + m.nazev + ' (neznámý soubor ' + m.soubor + ')');
+    console.log(kde + 'CHYBA ZADÁNÍ  ' + m.nazev + ' (neznámý soubor ' + m.soubor + ')');
     continue;
   }
   const pocet = puvodni.split(m.hledej).length - 1;
   if (pocet !== 1) {
     chybne.push(m.nazev + ' — hledaný úsek v src/' + m.soubor + ' nalezen ' + pocet + '×');
-    console.log('CHYBA ZADÁNÍ  ' + m.nazev + ' (úsek nalezen ' + pocet + '×)');
+    console.log(kde + 'CHYBA ZADÁNÍ  ' + m.nazev + ' (úsek nalezen ' + pocet + '×)');
     continue;
   }
   try {
     writeFileSync(cesta, puvodni.replace(m.hledej, m.nahrad), 'utf8');
     const v = spustSady(zelene);
-    if (v.chycena) { chycene++; console.log('chycená      ' + m.nazev + '   → ' + v.kde); }
-    else { nechycene.push(m); console.log('NECHYCENÁ    ' + m.nazev + '   → ' + m.proc); }
+    if (v.chycena) { chycene++; console.log(kde + 'chycená      ' + m.nazev + '   → ' + v.kde); }
+    else { nechycene.push(m); console.log(kde + 'NECHYCENÁ    ' + m.nazev + '   → ' + m.proc); }
   } finally {
     zapisPuvodni(m.soubor);                      // vrátit vždy, i při pádu
   }
@@ -2669,6 +2679,8 @@ for (const j of JADRA) {
 console.log('\n============================================================');
 console.log('Chycených ' + chycene + ' z ' + (chycene + nechycene.length)
   + (chybne.length ? '   (chybně zadaných mutací: ' + chybne.length + ')' : ''));
+/* Část běhu nikdy netvrdí, že prošlo všech N (zadání mutačního běhu). */
+if (vyber.popis) console.log('Pokryto: ' + vyber.popis + ' — NE celý běh.');
 
 if (nechycene.length) {
   console.log('\nNECHYCENÉ MUTACE — tohle by dnes testy nezachytily:');
