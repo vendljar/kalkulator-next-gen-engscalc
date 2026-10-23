@@ -118,8 +118,7 @@ const tiskni = (typ) => { const v = global.ZAK.varianty[0]; global.zamekPoTisku(
 /* ---- 4) ze souboru se nic nečeká ---- */
 {
   global.ZAK = nova(); global.ONLINE_STAV.posledni = ''; global.ONLINE_MOZNE = false;
-  const v = tiskni('nabidka');
-  if (typeof ZAMEK_SNIMEK_NEULOZENY !== 'undefined') ZAMEK_SNIMEK_NEULOZENY.clear();   // eslint-disable-line no-undef
+  const v = tiskni('nabidka');   // paměť tisků se ze souboru nikdy nevyprázdní (nic se neukládá)
   test('ze souboru zámek na server nečeká', !ceka(v));
   test('ze souboru DPH volná jako dřív (Z1)', ZM.zamekDphVolna(v, 'C.dph'));
   global.ONLINE_MOZNE = true;

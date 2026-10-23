@@ -388,9 +388,10 @@ function zamekServerZamcene() {
 }
 function zamekSnimekCekaNaServer(v) {
   if (!v || !variantaUzamcena(v) || !v.zamek.snimek) return false;
-  if (ZAMEK_SNIMEK_NEULOZENY.has(v.id)) return true;
-  /* Ze souboru se nic neukládá — server snímek neověřuje (Z1 beze změny). */
+  /* Ze souboru se nic neukládá — server snímek neověřuje (Z1 beze změny);
+   * paměť tisků by se tu nikdy nevyprázdnila, proto se ptá první. */
   if (typeof onlineMozne !== 'function' || !onlineMozne()) return false;
+  if (ZAMEK_SNIMEK_NEULOZENY.has(v.id)) return true;
   return !zamekServerZamcene().has(v.id);
 }
 /* Srovná data čekajících variant podle snímku; vrací id čekajících (po
