@@ -113,7 +113,14 @@ test('stav = won, čas načtení ISO', o1.telo.pdStav && o1.telo.pdStav.status =
 test('ven jde jen { ok, nastaveno, pdStav: { status, nacteno } }',
   JSON.stringify(Object.keys(o1.telo).sort()) === '["nastaveno","ok","pdStav"]'
   && JSON.stringify(Object.keys(o1.telo.pdStav).sort()) === '["nacteno","status"]', o1.telo);
-test('token ani hodnota dealu v odpovědi nejsou', !/zkusebni-token|123|Zkušební/.test(JSON.stringify(o1.telo)), o1.telo);
+/* K7-W15 (#507): čas načtení (`nacteno`, ISO s milisekundami) smí obsahovat
+ * „123" — hledá se jen mimo něj, jinak test náhodně padal (…T01:52:46.123Z). */
+const unik = (telo) => /zkusebni-token|123|Zkušební/.test(JSON.stringify(Object.assign({}, telo,
+  { pdStav: Object.assign({}, telo && telo.pdStav, { nacteno: '' }) })));
+test('K7-W15: čas načtení s „123" se za únik nepovažuje, hodnota dealu ano',
+  !unik({ ok: true, nastaveno: true, pdStav: { status: 'won', nacteno: '2026-10-23T01:52:46.123Z' } })
+  && unik({ ok: true, nastaveno: true, pdStav: { status: 'won', nacteno: '', hodnota: 123 } }));
+test('token ani hodnota dealu v odpovědi nejsou', !unik(o1.telo), o1.telo);
 test('do Pipedrive jeden GET na deal ze zakázky (4711)', volani.length === 1 && /\/api\/v2\/deals\/4711$/.test(new URL(volani[0].url).pathname)
   && volani[0].metoda === 'GET', volani);
 const v1 = await stav(sDeal, cV);

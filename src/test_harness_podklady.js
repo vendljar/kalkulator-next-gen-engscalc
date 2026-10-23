@@ -192,6 +192,12 @@ function funkceZeSkriptu() {
   fs.rmSync(tmp, { recursive: true, force: true });
   const harn = ['overit_sablona.mjs', 'overit_nabidka_proj_word.mjs'].map(f => fs.readFileSync(path.join(KOREN, f), 'utf8'));
   test('D5-3: oba harnessy šablon berou seznam z negativniKontrola', harn.every(t => /negativniKontrola\(/.test(t) && /negativniNalezy\(/.test(t)));
+  /* K7-W2 (#507): chybějící negativni_kontrola.json nesmí skončit „prošlo" —
+   * harness si to zapamatuje a na konci (bez selhání) skončí přes preskoc (kód 4). */
+  test('K7-W2: bez negativni_kontrola.json končí harness jako PŘESKOČENO, ne prošlo',
+    harn.every(t => /if \(negativni === null\) \{\s*negPreskocena = [^;]+;/.test(t)
+      && /if \(negPreskocena && !fail\)\s*preskoc\(/.test(t)
+      && t.indexOf('if (negPreskocena && !fail)') < t.lastIndexOf('process.exit(fail ? 1 : 0);')));
 }
 
 console.log('\n' + (fail ? 'SELHALO ' + fail + ' z ' + (ok + fail) : 'OK ' + ok));

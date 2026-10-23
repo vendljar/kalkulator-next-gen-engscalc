@@ -41,6 +41,7 @@ console.log('Šablona: ' + sablona);
 console.log('šablona: ' + sablona + '\n');
 
 let ok = 0, fail = 0;
+let negPreskocena = null;   // K7-W2: kde se hledal chybějící negativni_kontrola.json
 const test = (n, podm, info) => {
   if (podm) { ok++; console.log('  ✓ ' + n); }
   else { fail++; console.log('  ✗ ' + n, info === undefined ? '' : info); }
@@ -99,8 +100,12 @@ console.log('šablona obsahuje symboly zpracovatele');
   /* D5-3: skutečné údaje kolegy nejsou v repozitáři — seznam je ve firemních
    * podkladech (negativni_kontrola.json, formát v nastroje/harness_podklady.mjs). */
   const negativni = negativniKontrola('cn', KDE.map(k => k + '/negativni_kontrola.json'));
-  if (negativni === null)
+  /* K7-W2 (#507): bez souboru se zbytek harnessu dokončí, ale celek končí
+   * jako PŘESKOČENO (kód 4), ne „prošlo" — viz konec souboru. */
+  if (negativni === null) {
+    negPreskocena = KDE.map(k => k + '/negativni_kontrola.json');
     console.log('  – negativní kontrola jmen a kontaktů PŘESKOČENA: chybí negativni_kontrola.json ($KNG_PODKLADY)');
+  }
   else test('v šabloně nezůstal žádný údaj z negativní kontroly (' + negativni.length + ' položek)',
     negativni.length > 0 && !negativniNalezy(vse, negativni).length, 'položky č. ' + negativniNalezy(vse, negativni).join(', '));
   /* Platební podmínky (#147) – navázané na kalkulaci ve v6, nesmí se ztratit.
@@ -447,4 +452,7 @@ function atobDelka(dataUrl) {
 
 console.log('\n' + (fail ? fail + ' KONTROL SELHALO (z ' + (ok + fail) + ')'
   : 'VŠECHNY KONTROLY (' + ok + ') OK'));
+/* Negativní kontrola chyběla (K7-W2): přeskočeno, ne prošlo (selhání má přednost). */
+if (negPreskocena && !fail)
+  preskoc('negativni_kontrola.json (negativní kontrola jmen a kontaktů)', negPreskocena, { ok, fail });
 process.exit(fail ? 1 : 0);
