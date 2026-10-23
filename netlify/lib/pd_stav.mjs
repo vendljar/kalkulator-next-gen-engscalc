@@ -16,6 +16,11 @@
  *
  * Chyba API, deal nenalezen (smazaný deal Pipedrive po 30 dnech odstraní),
  * vyčerpaný strop i nenastavené napojení jen ponechají poslední známý stav.
+ * Smazaný deal v koši (do 30 dnů) detail v2 vrátit nemusí (404) — pak se
+ * zeptáme seznamu smazaných `status=deleted&ids=<id>` (P2, převzato z větve
+ * claude/eager-carson-1xznt2). Když deal není ani tam, zapíše se jen čas
+ * dotazu (`overeno:<id>`), ať další otevření do PD_STAV_CERSTVY_MS nestojí
+ * 11 tokenů znovu; záznam stavu zůstává v čistém tvaru { status, nacteno }.
  * Do Pipedrive se nic nezapisuje.
  * ============================================================ */
 import { uloziste } from './sdilene.mjs';
@@ -31,6 +36,7 @@ export const PD_STAV_CERSTVY_MS = 10 * 60 * 1000;
 export const PD_STAV_MAX = 120;
 
 const klic = (id) => 'deal:' + id;
+const klicOvereno = (id) => 'overeno:' + id;
 
 async function G() { await jadro(); return globalThis; }
 
@@ -83,6 +89,8 @@ export async function pdStavObnov(dealId, email) {
   const znamy = g.pdStavNorm(await s.cti(klic(id))) || null;
   if (!nastaveno) return { nastaveno, pdStav: znamy };
   if (znamy && (Date.now() - Date.parse(znamy.nacteno)) < PD_STAV_CERSTVY_MS) return { nastaveno, pdStav: znamy };
+  const ov = await s.cti(klicOvereno(id));
+  if (ov && (Date.now() - Date.parse(ov.cas)) < PD_STAV_CERSTVY_MS) return { nastaveno, pdStav: znamy };
   /* K7-S6 (#508, J. V. 23. 10. 2026): souběžné dotazy na zastaralý stav téhož
    * dealu se v instanci funkce spojí do jednoho volání Pipedrive (sdílený
    * promise); strop čerstvých dotazů platí jen tomu, kdo volání spustil.
@@ -96,13 +104,23 @@ export async function pdStavObnov(dealId, email) {
 const PD_STAV_BEZI = new Map();
 async function pdStavNacti(g, s, id, email, znamy, nastaveno) {
   if (!(await pdStropCerstvych(email, 'stav', PD_STAV_MAX))) return { nastaveno, pdStav: znamy };
-  let deal;
-  try { deal = await pdZavolej('/api/v2/deals/' + id); }
+  let status;
+  try { status = g.pdStavZDealu(await pdZavolej('/api/v2/deals/' + id)); }
   catch (e) {
-    if (e instanceof PdChyba) return { nastaveno, pdStav: znamy };
-    throw e;
+    if (!(e instanceof PdChyba)) throw e;
+    if (e.stav !== 404) return { nastaveno, pdStav: znamy };
+    try {
+      const smazane = await pdZavolej('/api/v2/deals', { dotaz: { ids: id, status: 'deleted', limit: 1 } });
+      status = (Array.isArray(smazane) && smazane.some(d => d && String(d.id) === String(id))) ? 'deleted' : '';
+    } catch (e2) {
+      if (!(e2 instanceof PdChyba)) throw e2;
+      return { nastaveno, pdStav: znamy };
+    }
+    if (!status) {
+      await s.zapis(klicOvereno(id), { cas: new Date().toISOString() });
+      return { nastaveno, pdStav: znamy };
+    }
   }
-  const status = g.pdStavZDealu(deal);
   if (!status) return { nastaveno, pdStav: znamy };
   const novy = { status, nacteno: new Date().toISOString() };
   await s.zapis(klic(id), novy);

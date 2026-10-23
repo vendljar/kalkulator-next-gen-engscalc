@@ -61,6 +61,10 @@ const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 /* ---------- náhradní Pipedrive ---------- */
 let volani = [];
 const DEALY = { 4711: { status: 'won' }, 4712: { status: 'open' } };
+/* P2 (převzato z claude/eager-carson-1xznt2, 23. 10. 2026): deal v koši —
+ * detail v2 vrátí 404, seznam `status=deleted&ids=<id>` ho najde. */
+const KOS = new Set();
+let ciziVKosi = false;   // seznam smazaných vrátí jen cizí deal (9999)
 let rezim = 'ok';   // ok | chyba500 | sit
 let zpozdeniPd = 0;   // K7-S6: zpoždění odpovědi Pipedrive (ms)
 globalThis.fetch = async (url, init) => {
@@ -70,6 +74,12 @@ globalThis.fetch = async (url, init) => {
   if (rezim === 'chyba500') return new Response('{"success":false}', { status: 500 });
   const u = new URL(String(url));
   const md = /^\/api\/v2\/deals\/(\d+)$/.exec(u.pathname);
+  if (u.pathname === '/api/v2/deals' && u.searchParams.get('status') === 'deleted') {
+    const ids = String(u.searchParams.get('ids') || '').split(',').map(Number);
+    return new Response(JSON.stringify({ success: true, data: (ciziVKosi ? [9999] : ids.filter(i => KOS.has(i)))
+      .map(i => ({ id: i, title: 'CN-' + i + ' Zkušební', status: 'lost', is_deleted: true })) }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }
   if (md && DEALY[md[1]]) return new Response(JSON.stringify({ success: true,
     data: Object.assign({ id: Number(md[1]), title: 'CN-' + md[1] + ' Zkušební', value: 123 }, DEALY[md[1]]) }),
     { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -97,7 +107,9 @@ const zalozit = async (cislo, dealId) => {
 const sDeal = await zalozit('2026 - OPR - CN - 0961', '4711');
 const sBez = await zalozit('2026 - OPR - CN - 0962', '');
 const sSmaz = await zalozit('2026 - OPR - CN - 0963', '4713');
-test('příprava: zakázky uložené', !!(sDeal && sBez && sSmaz), [sDeal, sBez, sSmaz]);
+const sKos = await zalozit('2026 - OPR - CN - 0964', '4714');
+const sZmiz = await zalozit('2026 - OPR - CN - 0965', '4715');
+test('příprava: zakázky uložené', !!(sDeal && sBez && sSmaz && sKos && sZmiz), [sDeal, sBez, sSmaz, sKos, sZmiz]);
 
 console.log('\n===== 1) PŘÍSTUP =====\n');
 test('nepřihlášený → 401', (await stav(sDeal)).status === 401);
@@ -154,6 +166,35 @@ test('smazaný deal (is_deleted) → deleted', s1.telo.pdStav && s1.telo.pdStav.
 delete DEALY[4713]; zastarej(4713);
 const s2 = await stav(sSmaz, cO);
 test('deal po 30 dnech v API není (404) → zůstane deleted', s2.status === 200 && s2.telo.pdStav.status === 'deleted', s2);
+/* P2 (oprava z claude/eager-carson-1xznt2): detail smazaného dealu v koši
+ * vrátí 404 → dotaz na seznam smazaných (status=deleted&ids=<id>) ho najde.
+ * Před převodem: stav null, jen 1 volání (FAIL). */
+KOS.add(4714); volani = [];
+const k1 = await stav(sKos, cO);
+const k1u = volani.map(v => new URL(v.url));
+test('P2: detail 404 → seznam smazaných (status=deleted&ids=4714) → deleted',
+  k1.status === 200 && k1.telo.pdStav && k1.telo.pdStav.status === 'deleted' && ISO.test(k1.telo.pdStav.nacteno)
+  && volani.length === 2 && k1u[1].pathname === '/api/v2/deals' && k1u[1].searchParams.get('status') === 'deleted'
+  && k1u[1].searchParams.get('ids') === '4714' && volani.every(v => v.metoda === 'GET'), { telo: k1.telo, volani });
+/* Deal odstraněný úplně (ani v koši): zůstane poslední známý stav a další
+ * dotaz do 10 minut do Pipedrive nejde (bez toho každé otevření = 11 tokenů). */
+DEALY[4715] = { status: 'won' };
+const z0 = await stav(sZmiz, cO);
+delete DEALY[4715]; zastarej(4715); volani = [];
+const z2 = await stav(sZmiz, cO);
+test('P2: deal zmizel i z koše → poslední známý stav (won), ptalo se detailem i seznamem',
+  z0.telo.pdStav && z0.telo.pdStav.status === 'won' && z2.status === 200 && z2.telo.pdStav && z2.telo.pdStav.status === 'won'
+  && volani.length === 2, { z2: z2.telo, volani: volani.length });
+/* Odpověď seznamu s cizím smazaným dealem zakázku za smazanou neoznačí. */
+pamet.delete('pd_stav/overeno:4715'); zastarej(4715); ciziVKosi = true;
+const z2b = await stav(sZmiz, cO);
+ciziVKosi = false;
+test('P2: cizí deal v seznamu smazaných stav nezmění (zůstane won)', z2b.telo.pdStav && z2b.telo.pdStav.status === 'won', z2b.telo);
+volani = [];
+const z3 = await stav(sZmiz, cO);
+test('P2: … další dotaz do 10 minut už do Pipedrive nejde', z3.telo.pdStav && z3.telo.pdStav.status === 'won' && volani.length === 0, volani);
+test('P2: záznam stavu zůstal v čistém tvaru { status, nacteno }',
+  JSON.stringify(Object.keys(JSON.parse(pamet.get('pd_stav/deal:4715'))).sort()) === '["nacteno","status"]');
 volani = [];
 const b1 = await stav(sBez, cO);
 test('zakázka bez dealu → pdStav null, do Pipedrive se nejde', b1.status === 200 && b1.telo.pdStav === null && volani.length === 0, b1);
