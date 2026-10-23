@@ -8,6 +8,36 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.10.4 — B1 #512: platby v zápisu do Pipedrive (Platby 1–8, Platební kalendář SoD PROJ, hodnota dealu), větev claude/b1-platby-115
+
+Nad 8c7ba3d (P2, v23.10.3). Zadání: `podklady/PROMPT_koordinace_kontrola_vetve_platby_23_10.md` úkol B
+(z větve `claude/eager-carson-1xznt2`, převzato ručně jako obsah), rozhodnutí J. V. 23. 10. 2026. Do živého
+Pipedrive se nic nezapisovalo ani nečetlo. Zápis zůstává čistou logikou (`netlify/lib/pd_prevod.mjs`) —
+serverový zápis a potvrzovací tabulka v UI jsou dál #115.
+
+- **Platby 1–8 se nezapisují** (`netlify/lib/pd_mapa.mjs`): směr `nic` — ani u nabídky PROJ z doby před plánem
+  plateb. Pole zůstávají v mapě, takže je přehled nehlásí jako nezařazená. „První splátka (%)“ jen z OCK (PROJ
+  zálohu neposílá ani u starší nabídky). Mechanismus polí `stary` / `planStary` v převodu zrušen (neměl už
+  žádné pole).
+- **Nové pole „Platební kalendář SoD PROJ“** (Velký text `text`, zápis, zdroj PROJ `@kalendar`): text dodá
+  `planPdKalendar(nabidkaProjPlatby(…))` v `src/plan_plateb.js` = `planSodKalendar(dopočet, formát měny)`,
+  tentýž text jako `{{SODP_PLATEBNI_KALENDAR}}` české smlouvy řídící varianty. Nabídka z doby před plánem a plán,
+  jehož součet nesedí s cenou díla, kalendář nemají (nic se nepošle). Krátký text (255 znaků) se nespáruje.
+  Dokud pole integrátor nezaloží, přehled mapy ho hlásí jako chybějící a nic se nezapisuje.
+- **Hodnota dealu** (`pdHodnotaDealu`, `pdZapisDealu` → `deal: { value, currency }` vedle `custom_fields`):
+  cena řídící varianty bez DPH v měně zakázky, u kombinované zakázky součet OCK a PROJ, zaokrouhlená na haléře.
+  Cena je vždy z kalkulace — chybí-li u kterékoli strany (nebo je nulová), nebo mají strany různou měnu, nepošle
+  se nic a zápis vrátí důvod. V `potvrzeni` řádek „stará → nová“ (např. `487 500 CZK → 550 000 CZK`).
+- **Testy:** `netlify/test_pd_prevod.mjs` 102 → 130, `netlify/test_pipedrive.mjs` 91 → 96,
+  `src/test_plan_plateb_sod.js` +4 (kalendář pro Pipedrive = seznam plateb smlouvy o dílo u výchozího plánu,
+  Standardu a Zálohy). Pojistka: proti knihovnám z 8c7ba3d nové testy selžou (test_pd_prevod neimportuje,
+  test_pipedrive 4 FAIL). Mutace „#512 platby-115“ v `netlify/mutace.mjs` 18/18 chycených (sady test_pipedrive
+  a test_pd_prevod); zastaralá mutace „#114: platby PROJ se posílají i s plánem plateb“ odstraněna (cíl zrušen),
+  mutace #114 dál 21/21.
+- **Nedělá se (čeká na integrátora):** „Hlavní projektant“ jako Text a čtyři volby „Způsob fakturace“ pro PROJ.
+- Roadmapa: #512 hotovo, #115 odkazuje na #512, **#486 uzavřena** (J. V. 23. 10.: GitHub Rules pro main, test,
+  test-draft a claude/integrace-* jsou nastavené dávno).
+
 ## v23.10.3 — P2: převzetí #114 Pipedrive z větve claude/eager-carson-1xznt2 a tři opravy Stavu Pipedrive do P1, větev claude/p2-pd114-prevzeti
 
 Nad f3b5d42 (test = integrace v23.10.2). Zadání: `podklady/PROMPT_koordinace_kontrola_vetve_platby_23_10.md`,
