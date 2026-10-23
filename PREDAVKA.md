@@ -1,3 +1,33 @@
+# Předávka — 23. 10. 2026 večer: K8 #513 — celé kolo s mutacemi + audit v23.10.4, větev `claude/k8-kolo`
+
+Nad `ca4f2d1` (integrace v23.10.4, kandidát `test`). Kód aplikace beze změny, verze **23.10.4** (commity 23. 10.,
+kontrola verze ✓). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Do integrace / test nic, do Pipedrive nic.
+
+- **Kolo** (14:25–18:22 UTC, po částech): sady 314/1/6 → jediné selhání `overit_verzi.mjs` způsobila
+  `KNG_NEZVYSOVAT_VERZI=1` exportovaná do celého prostředí (zadání), samostatně 7/0 → nález K8-W11; mutace jádra
+  **527/527** (3 části), serveru **897/897** (6 částí ve 3–4 `git worktree` `/home/user/wt1…wt4` — dočasné, mimo
+  repo); úplnost po pořadí a názvech ✓; statické 4/4; žádná přeživší mutace.
+- **Audit** `podklady/K8_AUDIT_24_10.md`: vyhovuje s výhradou, posun `main` doporučen. 0 kritických, 0 vysokých,
+  1 střední (**K8-K1** — import zakázky ze souboru se zámkem CN uloženým na serveru → zmrazení a tiché vrácení
+  krycího listu na stav z tisku), 11 nízkých, 15 informativních. Opravy K7 drží. Do Pipedrive se v23.10.4 nic
+  nezapisuje (B1 jen knihovna) — podmínky pro #115 v K8-S3.
+- **Pro O-K8 (#514) bez J. V.** (mění chování: ne): K8-S1 (500 → 400 u `cislo`, `varianty[].nazev/id`), K8-S2
+  (kvadratický regex v `pd_prevod.mjs:67`), K8-W1 (prázdný test K7-W2), K8-W2/W3 (prázdný výběr a neznámá volba
+  mutací), K8-W4 (vzory tajemství), K8-W5 (test K7-S11 jen 3 z 8 polí), K8-W11 (`overit_verzi` dědí prostředí)
+  + informativní dle uvážení.
+- **K rozhodnutí J. V.** (mění chování): K8-K1, K8-K2, K8-K3, K8-K4, K8-K5 (text).
+
+| úkol | stav |
+|---|---|
+| Sady + statické | ✅ |
+| Mutace jádra 527/527, serveru 897/897, úplnost | ✅ |
+| Audit tří čoček + vlastní ověření K8-K1, K8-W11 | ✅ |
+| CHANGELOG (zápis K8 pod v23.10.4), roadmapa #513 hotovo | ✅ |
+| Výsledek Actions „Testy“ nad ca4f2d1 jako druhé ověření | ⬜ pošle koordinace |
+| Opravy nálezů | ⬜ O-K8 #514 / J. V. |
+
+---
+
 # Předávka — 23. 10. 2026 večer: B1 #512 — platby v zápisu do Pipedrive (#115), v23.10.4, větev `claude/b1-platby-115`
 
 Nad `8c7ba3d` (P2, v23.10.3 — výsledky mutací P2 ještě doběhnou; **P2 do této větve slučovaná není**, srovná

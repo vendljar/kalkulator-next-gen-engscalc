@@ -9,11 +9,32 @@
 
 ## Testovací kolo
 
-<!-- KOLO -->
+Celé kolo nad `ca4f2d1` (v23.10.4), 23. 10. 2026 14:25–18:22 UTC, po částech; `ADMIN_EMAIL=spravce@priklad.cz`, `node_modules` → `$(npm root -g)` (playwright ověřen — prohlížečové harnessy proběhly), verze beze změny, stromy po kole čisté:
+
+| Krok | Výsledek | Pozn. |
+|---|---|---|
+| Kontrola verze + sestavení | ✓ | `bash nastroje/testovaci_kolo.sh --bez-mutaci` v hlavní kopii, v23.10.4 = den commitu |
+| Sady (`spust_testy.sh --smoke`) | **314 prošlo / 1 selhalo / 6 přeskočeno** (321 sad) → po vysvětlení **315/0/6** | 14:25–14:46 UTC. Jediné selhání `overit_verzi.mjs` („lokální build verzi zvýšil“) způsobila proměnná `KNG_NEZVYSOVAT_VERZI=1` exportovaná do celého prostředí kola (podle zadání) — test ji předává buildům (K8-W11). Týž harness samostatně bez proměnné 7/0. Přeskočené: `test.js` (ostrý ceník) + 5 harnessů bez `KNG_PODKLADY` (`overit_manual`, `overit_nabidka_proj_word`, `overit_sablona`, `overit_sablony_online`, `overit_sod`). |
+| Mutace jádra (`mutace_jadro.mjs`) | **527/527** | části 1/3, 2/3, 3/3 (176 + 176 + 175) za sebou v samostatném `git worktree` nad `ca4f2d1`, 14:46–16:13 UTC; otisky obou jader po každé části souhlasí |
+| Mutace serveru (`netlify/mutace.mjs`) | **897/897**, 0 nechycených, 0 chybně zadaných | části 1/6 … 6/6 (150 + 150 + 150 + 149 + 149 + 149) ve třech, později čtyřech samostatných `git worktree` nad `ca4f2d1` (nikdy dva běhy v jedné kopii), 14:46–18:22 UTC; každá část „Chycených N z N“, výchozí běh sad zelený. Bez restartu kontejneru, bez opakování. |
+| Statické kontroly | **4/4** | verze, CRLF, osobní údaje a tajemství, test výběru větví W2 59/0 |
+
+**Úplnost mutací ověřena po pořadí a názvech** (jako K7): z logů všech částí server 897 řádků s pořadím 1…897 — každé právě jednou, žádné chybějící ani navíc, 897 unikátních názvů; jádro 527 řádků s pořadím 1…527 právě jednou, 527 unikátních názvů; počty sedí s `--kontrola` (897 / 527 úseků nalezených právě jednou).
+
+**Přeživší mutace: žádná** (jádro 527/527, server 897/897) → **prázdné testy (přeživší mutace s funkčním kódem): žádné.** Nechycené ruční mutanty auditní čočky 3 (mimo `testovaci_kolo.sh`) viz K8-W1 a K8-W5.
+
+Workflow „Testy“ v GitHub Actions nad týmž SHA (matrix 6 + 3) pouští koordinace — výsledek do auditu zatím nedorazil (druhé ověření, ne náhrada).
+
+Zbývá jen J. V. lokálně: sady s firemními podklady (šablony z Disku; negativní kontrola harnessů čeká na `negativni_kontrola.json`) a `test.js` s ostrým ceníkem.
 
 ## Verdikt
 
-<!-- VERDIKT -->
+**VYHOVUJE S VÝHRADOU — 0 kritických, 0 vysokých, 1 střední, 11 nízkých, 15 informativních.** Kolo je celé zelené (sady 315/0/6 po vysvětlení jediného selhání prostředím, jádro 527/527, server 897/897, statické 4/4) a žádná mutace nepřežila. Opravy K7 drží (K7-S1 … S6, S9, S11, K7-K1 … K6, K7-W1, W2, W4 … W7, W10, W15), regrese původních chyb není. Hranice rolí drží: export s nákupními cenami a „Celá databáze“ jen Administrátor, stav Pipedrive jen ze stavového whitelistu a deal id ze serveru, server zámků a snímků jako autorita, nové typové kontroly 400 místo 500. **Do Pipedrive v23.10.4 nic nezapisuje** — B1 #512 je jen knihovna převodu bez volajícího; podmínky pro zapnutí zápisu (#115) v K8-S3. XSS v novém kódu žádné, tajemství ani osobní údaje v diffu žádné.
+
+Posun `main` na v23.10.4 **doporučuji** — žádný nález neotvírá přístup k datům jiné role ani nemění odeslanou nabídku na serveru bez možnosti si toho všimnout v běžné cestě. Výhrady:
+- **K8-K1 (střední, mění chování → J. V.):** po **otevření zakázky ze souboru** (nebo obnově zálohy) se zámkem CN, který už na serveru je, klient zámek považuje za „čekající na uložení“ — krycí list se zmrazí a před odesláním se tiše vrátí na stav z tisku CN; po „Přepsat serverovou verzi“ zmizí úpravy podmínek provedené po CN. Do opravy: zakázku se zámkem neotevírat ze souboru, ale ze serveru (Přehled); při kolizi po importu nepřepisovat serverovou verzi.
+- **K8-K2, K8-K3 (nízké, mění chování → J. V.):** tisk během kolize verzí / v náhledu role nechá zámek jen v prohlížeči bez dialogu; po zápisu se změnou během letu mlčí varování při zavření okna. Do opravy: po tisku CN/SoD počkat na „Uloženo“ (jako po K7).
+- Ostatní nízké (K8-S1, K8-S2, K8-W1 … K8-W5, K8-W11) nemění chování — patří do O-K8 (#514).
 
 | | Počet | Nálezy |
 |---|---|---|
