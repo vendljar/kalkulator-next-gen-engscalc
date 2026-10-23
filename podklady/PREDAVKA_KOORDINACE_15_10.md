@@ -10,6 +10,13 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 23. 10. ~20:15 UTC — koordinace „ŘÍDÍCÍ víkend 23.–26. 10.“ session_01TMQ5bLDJuS5k5NWWYy7jLx — PLÁN VÍKENDU SPLNĚN
+
+- **test = integrace = 7e2bfbb (v23.10.5)**: v23.10.4 (P2 + B1) + K8 (celé kolo nad v23.10.4 zelené: sady 315/0/6, jádro 527/527, server 897/897, statické 4/4; `podklady/K8_AUDIT_24_10.md` VYHOVUJE S VÝHRADOU, 0/0/1/12/14, posun main doporučen) + S1 (`podklady/SEC_AUDIT_24_10.md`, VYHOVUJE S VÝHRADOU, 0 K/2 V repo/7 S/9 N/18 I) + O-K8 #514 (opravy „mění chování: ne“, mutace serveru v Actions 10 částí/90 min). Kolo nad v23.10.5 316/0/6, mutace #514 22/22 + 1/1. Všechny dávky archivovány.
+- Actions Testy nad 7e2bfbb spuštěny ~19:30 (ověření nového matrixu + plné mutace v23.10.5).
+- **Čeká na J. V.:** dialog https://claude.ai/artifact/V288Ytg33SpoYPfp3aTw3L (K8-K1…K5, SEC-S3, S5, S6+N8, Pipedrive před #115, I7, I8, repo V1/V2/S4); releasy v23.10.3/4/5; návrh main = v23.10.5; B1 potvrzení (stará nabídka PROJ bez kalendáře).
+- Další: kontroly po 2–3 h; ne 21:00 příručka (samostatně); po 05:00 UTC souhrn (trig_01XAj6x5EqYLdx3hiBaPDPyD).
+
 ## STAV 23. 10. ~14:50 UTC — koordinace „ŘÍDÍCÍ víkend 23.–26. 10.“ session_01TMQ5bLDJuS5k5NWWYy7jLx
 
 - **test = integrace = ca4f2d1 (v23.10.4)**: P2 (fa3281a, v23.10.3: #114 převzato jako diff z eager-carson, 3 opravy Stavu PD, mutace po částech + matrix v Actions) + B1 #512 (Platby 1–8 nic, Platební kalendář SoD PROJ, hodnota dealu; #486 uzavřena). Kola 315/0/6 obě, --kontrola 897/897 + 527/527, mutace P2 7/7 + #114 22/22, #512 18/18. P2 i B1 archivovány. Release v23.10.3 a v23.10.4 čekají (odkazy v kokpitu).
