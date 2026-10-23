@@ -4,6 +4,7 @@
  * GET /api/controlling/export?od=RRRR-MM-DD&do=RRRR-MM-DD&oblast=obe|ock|proj&rada=obe|cr|zahr&podle=zamceni|prodej
  *     &pd=won|open|lost|deleted|bez|vse   (#504: poslední známý stav Pipedrive, výchozí won)
  *   (podle=prodej — C6: datum prodeje z objednaných příplatků místo data zamčení)
+ *   #508: místo od/do &vse=1 = celá databáze (bez omezení obdobím; mez délky období zrušena)
  *   → { ok, exporty: [ export jedné zakázky (ctrlExportVarianty) ], data, verzeMapovani,
  *       preskoceno: [ { soubor, cislo, duvod } ], kdy, kdo, filtr }
  *   #504: odpověď nese i { export: id, dalsi: soubor | null, kandidatu, zpracovano };
@@ -52,7 +53,7 @@ export default async (req) => {
 
   const f = G.ctrlHromadnyFiltr({ od: url.searchParams.get('od'), do: url.searchParams.get('do'),
     oblast: url.searchParams.get('oblast'), rada: url.searchParams.get('rada'), podle: url.searchParams.get('podle'),
-    pd: url.searchParams.get('pd') });
+    pd: url.searchParams.get('pd'), vse: url.searchParams.get('vse') });
   if (!f.ok) return json({ ok: false, chyba: f.chyba }, 400);
   const filtr = f.filtr;
 
@@ -143,7 +144,7 @@ export default async (req) => {
     const prot = await sProg.cti('controlling_exporty');
     await sProg.zapis('controlling_exporty', navaz ? G.ctrlProtokolDavka(prot, id, davka, stav)
       : G.ctrlProtokolPridej(prot, { id, kdy, kdo: relace.email,
-        od: filtr.od, do: filtr.do, oblast: filtr.oblast, rada: filtr.rada, podle: filtr.podle, pd: filtr.pd,
+        od: filtr.od, do: filtr.do, ...(filtr.vse ? { vse: true } : {}), oblast: filtr.oblast, rada: filtr.rada, podle: filtr.podle, pd: filtr.pd,
         zakazek: davka.zakazek, radku: davka.radku, preskoceno: davka.preskoceno,
         vyrazenoPd: davka.vyrazenoPd, vyrazenoBez: davka.vyrazenoBez, davek: 1, stav, verzeMapovani }));
   });

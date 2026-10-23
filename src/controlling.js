@@ -660,8 +660,13 @@ function ctrlExportVarianty(zak, v, opts) {
  * Doplnění J. V. 22. 10. („nejsme schopni stahovat víc než 600 zakázek?"):
  * strop počtu zakázek (dřív `cteni` 600 na dotaz a `zakazek` 150 v souboru)
  * zmizel — zbývají jen technické pojistky: délka období `dni`, velikost
- * jedné odpovědi `odpoved` a počet dávek `davek` proti zacyklení. */
-const CTRL_HROMADNY = { dni: 400, odpoved: 5 * 1024 * 1024, protokol: 200, rezervaDni: 2,
+ * jedné odpovědi `odpoved` a počet dávek `davek` proti zacyklení.
+ * #508 (E2, J. V. 23. 10. 2026: „Není možné stáhnout celou databázi … to bych
+ * potřeboval"): mez délky období (400 dní) zrušena — objem drží dávky; volba
+ * „Celá databáze" (`vse`) vybírá bez omezení obdobím. `davek` 1000 × `davkaMax`
+ * 150 = 150 000 zakázek (simulace celé databáze 5 000 zakázek
+ * v netlify/test_controlling_objem.mjs). */
+const CTRL_HROMADNY = { odpoved: 5 * 1024 * 1024, protokol: 200, rezervaDni: 2,
   soubeh: 12, casMs: 5000, davkaMax: 150, davkaBajty: 3 * 1024 * 1024, davek: 1000 };
 const CTRL_DATUM_TVAR = /^\d{4}-\d{2}-\d{2}$/;
 const CTRL_FILTR_OBLAST = ['obe', 'ock', 'proj'];
@@ -671,6 +676,10 @@ const CTRL_FILTR_PODLE = ['zamceni', 'prodej'];
  * Pipedrive; 'bez' = bez dealu nebo bez známého stavu. Výchozí = vyhrané. */
 const CTRL_FILTR_PD = ['won', 'open', 'lost', 'deleted', 'bez', 'vse'];
 const CTRL_FILTR_PD_TEXT = { won: 'Vyhrané', open: 'Otevřené', lost: 'Ztracené', deleted: 'Smazané', bez: 'Bez stavu', vse: 'Všechny' };
+/* #508: „Celá databáze" — rozsah dnů, do kterého padne každý zámek i prodej
+ * (od nejstaršího po dnešek i s rezervou předvýběru); v souboru, protokolu
+ * a hláškách se místo něj píše „celá databáze". */
+const CTRL_CELA_DB = { od: '1970-01-01', do: '2999-12-31' };
 
 function ctrlDatumPlatne(x) {
   if (typeof x !== 'string' || !CTRL_DATUM_TVAR.test(x)) return false;
@@ -691,15 +700,21 @@ function ctrlDenPraha(iso) {
   } catch (e) { return d.toISOString().slice(0, 10); }
 }
 
-/* Kontrola dotazu: { od, do, oblast, rada } → { ok, filtr } | { ok:false, chyba }.
- * Server parametrům nevěří — neznámá hodnota je chyba, ne „obojí". */
+/* Kontrola dotazu: { od, do, oblast, rada, podle, pd, vse } → { ok, filtr } | { ok:false, chyba }.
+ * Server parametrům nevěří — neznámá hodnota je chyba, ne „obojí".
+ * #508: `vse` = '1' (nebo true) je celá databáze — od a do pak musí být
+ * prázdné (nebo meze CTRL_CELA_DB); filtr nese `vse: true` a meze CTRL_CELA_DB. */
 function ctrlHromadnyFiltr(q) {
   const x = q || {};
-  const od = x.od, d = x.do;
+  const vse = x.vse === true || x.vse === '1' || x.vse === 'true';
+  if (!vse && !(x.vse == null || x.vse === '' || x.vse === false || x.vse === '0' || x.vse === 'false'))
+    return { ok: false, chyba: 'Neznámá volba celé databáze (1 nebo nic).' };
+  const prazdne = (h, m) => h == null || h === '' || h === m;
+  if (vse && !(prazdne(x.od, CTRL_CELA_DB.od) && prazdne(x.do, CTRL_CELA_DB.do)))
+    return { ok: false, chyba: 'Celá databáze se nekombinuje s obdobím od–do.' };
+  const od = vse ? CTRL_CELA_DB.od : x.od, d = vse ? CTRL_CELA_DB.do : x.do;
   if (!ctrlDatumPlatne(od) || !ctrlDatumPlatne(d)) return { ok: false, chyba: 'Zadejte období od–do ve tvaru RRRR-MM-DD.' };
   if (od > d) return { ok: false, chyba: 'Začátek období je po jeho konci.' };
-  const dni = (Date.parse(d) - Date.parse(od)) / 86400000 + 1;
-  if (dni > CTRL_HROMADNY.dni) return { ok: false, chyba: 'Období je delší než ' + CTRL_HROMADNY.dni + ' dní — rozdělte export.' };
   const oblast = x.oblast == null || x.oblast === '' ? 'obe' : x.oblast;
   const rada = x.rada == null || x.rada === '' ? 'obe' : x.rada;
   if (!CTRL_FILTR_OBLAST.includes(oblast)) return { ok: false, chyba: 'Neznámá oblast (ock, proj, obe).' };
@@ -709,8 +724,20 @@ function ctrlHromadnyFiltr(q) {
   const podle = x.podle == null || x.podle === '' ? 'prodej' : x.podle;
   if (!CTRL_FILTR_PODLE.includes(podle)) return { ok: false, chyba: 'Neznámý výběr (zamceni, prodej).' };
   const pd = x.pd == null || x.pd === '' ? 'won' : x.pd;
-  if (!CTRL_FILTR_PD.includes(pd)) return { ok: false, chyba: 'Neznámý stav Pipedrive (won, open, lost, deleted, bez, vse).' };
-  return { ok: true, filtr: { od, do: d, oblast, rada, podle, pd } };
+  if (!CTRL_FILTR_PD.includes(pd)) return { ok: false, chyba: 'Neznámý stav dealu (won, open, lost, deleted, bez, vse).' };
+  const filtr = { od, do: d, oblast, rada, podle, pd };
+  if (vse) filtr.vse = true;
+  return { ok: true, filtr };
+}
+/* #508: dotaz na server z ověřeného filtru — celá databáze bez od/do. */
+function ctrlHromadnyDotaz(filtr) {
+  const q = Object.assign({}, filtr);
+  if (q.vse) { delete q.od; delete q.do; q.vse = '1'; } else delete q.vse;
+  return new URLSearchParams(q).toString();
+}
+/* #508: období pro texty (Popis, hlášky, jméno souboru). */
+function ctrlHromadnyObdobiText(filtr) {
+  return filtr && filtr.vse ? 'celá databáze' : String(filtr.od) + ' – ' + String(filtr.do);
 }
 
 /* Dny, podle kterých hromadný export zakázku vybírá (#504) — do rejstříku
@@ -853,7 +880,7 @@ const CTRL_EXPORT_ID = /^[a-z0-9]{8,40}$/;
 function ctrlProtokolNavaz(db, id, filtr, kdo) {
   const z = (db && Array.isArray(db.zaznamy)) ? db.zaznamy.find(x => x && x.id === id) : null;
   if (!z || z.stav !== 'probiha' || z.kdo !== kdo) return null;
-  return ['od', 'do', 'oblast', 'rada', 'podle', 'pd'].every(k => z[k] === filtr[k]) ? z : null;
+  return ['od', 'do', 'oblast', 'rada', 'podle', 'pd'].every(k => z[k] === filtr[k]) && !z.vse === !filtr.vse ? z : null;
 }
 /* Přičte dávku k záznamu `id` (počty spočítal server) a nastaví stav. */
 function ctrlProtokolDavka(db, id, davka, stav) {
@@ -869,7 +896,7 @@ function ctrlProtokolDavka(db, id, davka, stav) {
  * výsledek je tentýž jako z jednoho dotazu. `prubeh(hotovo, celkem)`
  * hlásí postup. Server, který neposune kurzor, je chyba — ne nekonečná smyčka. */
 async function ctrlHromadnyStahni(api, filtr, prubeh) {
-  const zaklad = '/api/controlling/export?' + new URLSearchParams(filtr).toString();
+  const zaklad = '/api/controlling/export?' + ctrlHromadnyDotaz(filtr);
   let po = '', id = '', vysl = null;
   for (let i = 0; i < CTRL_HROMADNY.davek; i++) {
     const o = await api(zaklad + (id ? '&export=' + encodeURIComponent(id) : '') + (po ? '&po=' + encodeURIComponent(po) : ''));
@@ -1073,7 +1100,8 @@ function ctrlExportListy(exp, data, opts) {
     ['Verze aplikace', hr ? String(o.build || prvni.build || '') : prvni.build],
     ['Verze mapování', hr ? (o.verzeMapovani != null ? String(o.verzeMapovani) : 'výchozí') : prvni.hlavicka.verzeMapovani]];
   if (hr) {
-    popis.push([hr.podle === 'prodej' ? 'Období prodeje (podpisu SoD)' : 'Období zamčení (odeslání)', String(hr.od) + ' – ' + String(hr.do)]);
+    popis.push([hr.podle === 'prodej' ? 'Období prodeje (podpisu SoD)' : 'Období zamčení (odeslání)',
+      hr.vse ? 'celá databáze — bez omezení obdobím' : String(hr.od) + ' – ' + String(hr.do)]);
     popis.push(['Oblast', { ock: 'jen OCK', proj: 'jen PROJ' }[hr.oblast] || 'OCK i PROJ']);
     popis.push(['Číselná řada', { cr: 'jen ČR', zahr: 'jen zahraničí' }[hr.rada] || 'ČR i zahraničí']);
     /* #504: filtr stavu Pipedrive — poslední známý stav, při exportu se z Pipedrive nedotahuje. */
@@ -1225,5 +1253,5 @@ if (typeof module !== 'undefined' && module.exports)
     CTRL_RADKY_HLAVICKA, CTRL_LIST_PRIPLATKY, ctrlExportListy, ctrlCsvBunka, ctrlExportCsv, ctrlVZakladuText, ctrlHromadnyVarianta,
     CTRL_PD_ID_MAX, ctrlPdDealIdNorm, ctrlPdDealKontrola,
     PD_STAVY, PD_STAV_TEXT, pdStavNorm, pdStavKontrola, pdStavZDealu, pdStavText, pdStavNactenoText,
-    CTRL_HROMADNY, CTRL_FILTR_PD, CTRL_FILTR_PD_TEXT, ctrlPdStavZakazky, ctrlDatumPlatne, ctrlDenPraha, ctrlHromadnyFiltr, ctrlHromadnyKandidati, ctrlHromadnyZakazka, ctrlProtokolPridej,
+    CTRL_HROMADNY, CTRL_CELA_DB, ctrlHromadnyDotaz, ctrlHromadnyObdobiText, CTRL_FILTR_PD, CTRL_FILTR_PD_TEXT, ctrlPdStavZakazky, ctrlDatumPlatne, ctrlDenPraha, ctrlHromadnyFiltr, ctrlHromadnyKandidati, ctrlHromadnyZakazka, ctrlProtokolPridej,
     ctrlRejstrikDny, ctrlHromadnyZa, CTRL_EXPORT_ID, ctrlProtokolNavaz, ctrlProtokolDavka, ctrlHromadnyStahni, ctrlHromadnyChybaText, CTRL_MAPA_HLAVICKA, ctrlMapaListy, ctrlImportZListu };

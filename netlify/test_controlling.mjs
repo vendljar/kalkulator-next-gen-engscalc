@@ -262,6 +262,22 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
       && radek('Vyřazeno filtrem stavu — jiný stav') === 0 && radek('Vyřazeno filtrem stavu — bez stavu (bez dealu nebo stav neznámý)') === 1,
       { p: pPd[0], st: radek('Stav Pipedrive') });
   }
+  /* #508 (E2, J. V. 23. 10. 2026: „Není možné stáhnout celou databázi"): mez 400 dní zrušena,
+   * volba celé databáze vse=1. Před opravou 0 / 4 (400 „delší než 400 dní", vse server neznal
+   * a bez od/do odmítl), po opravě 4 / 4. */
+  {
+    const eDlouhe = await ex('?od=2025-04-01&do=2026-10-23', cAdmin);
+    test('#508: období 1. 4. 2025 – 23. 10. 2026 (přes 400 dní) projde', eDlouhe.st === 200
+      && cisla(eDlouhe.o) === '2026 - OPR - CN - 0801,2026 - OPR - CN - 0803,2026 - OPR - CN - 0804', { st: eDlouhe.st, c: cisla(eDlouhe.o), ch: eDlouhe.o.chyba });
+    const eVse = await ex('?vse=1', cAdmin);
+    test('#508: celá databáze (vse=1) = všechny zamčené bez omezení obdobím, filtr nese vse',
+      eVse.st === 200 && eVse.o.filtr.vse === true
+      && cisla(eVse.o) === ['0801', '0802', '0803', '0804', '0806'].map(c => '2026 - OPR - CN - ' + c).join(','), { st: eVse.st, c: cisla(eVse.o), ch: eVse.o.chyba });
+    const pV = (((await ulz('program').cti('controlling_exporty')) || {}).zaznamy || [])[0] || {};
+    test('#508: protokol u celé databáze nese vse', pV.vse === true && pV.zakazek === 5 && pV.stav === 'hotovo', pV);
+    test('#508: celá databáze s obdobím nebo s neznámou hodnotou → 400',
+      (await ex('?vse=1&od=2026-10-01&do=2026-10-31', cAdmin)).st === 400 && (await ex('?vse=ano', cAdmin)).st === 400);
+  }
   /* K6-S6 (D3): nečekaný tvar uložené zakázky (sem podstrčený mimo server —
    * datum prodeje jako objekt, String() vyhodí výjimku) shodil celý export na
    * 500; má jít mezi přeskočené a zbytek se vyveze. */

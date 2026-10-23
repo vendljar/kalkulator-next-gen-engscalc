@@ -261,11 +261,19 @@ function ctrlUiDenLokal(d) {
 function ctrlUiHrom() {
   if (!CTRL_STAV.hrom) {
     const d = new Date();
-    CTRL_STAV.hrom = { od: ctrlUiDenLokal(new Date(d.getFullYear(), d.getMonth(), 1)), do: ctrlUiDenLokal(d), oblast: 'obe', rada: 'obe', podle: 'prodej', pd: 'won' };
+    CTRL_STAV.hrom = { od: ctrlUiDenLokal(new Date(d.getFullYear(), d.getMonth(), 1)), do: ctrlUiDenLokal(d), oblast: 'obe', rada: 'obe', podle: 'prodej', pd: 'won', vse: false };
   }
   return CTRL_STAV.hrom;
 }
 function ctrlUiHromSet(pole, hodnota) { ctrlUiHrom()[pole] = String(hodnota || ''); CTRL_STAV.hlaska = ''; ctrlUiPrekresli(); }
+/* #508: „Celá databáze" — pole od–do se zakážou a do filtru nejdou. */
+function ctrlUiHromVse(zap) { ctrlUiHrom().vse = !!zap; CTRL_STAV.hlaska = ''; ctrlUiPrekresli(); }
+/* Dotaz z karty: při celé databázi bez od/do (server je s ní nepřijme). */
+function ctrlUiHromDotaz(h) {
+  return h.vse ? Object.assign({}, h, { od: '', do: '', vse: '1' }) : Object.assign({}, h, { vse: '' });
+}
+/* Popisky voleb stavu dealu v kartě (#508: bez slova „Pipedrive", J. V. 23. 10.). */
+function ctrlUiPdVolba(k) { return k === 'vse' ? 'Všechny stavy' : CTRL_FILTR_PD_TEXT[k]; }
 function ctrlUiProtokolNacti() {
   if (!ctrlUiSmi() || !ctrlUiServer()) return Promise.resolve();
   return onlineApi('/api/controlling/export?protokol=1')
@@ -276,24 +284,26 @@ function ctrlUiProtokolNacti() {
 async function ctrlUiHromadny(format) {
   if (!ctrlUiSmi()) return ctrlUiZprava('Hromadný export smí jen administrátor přihlášený online.', true);
   const h = ctrlUiHrom();
-  const f = ctrlHromadnyFiltr(h);
+  const f = ctrlHromadnyFiltr(ctrlUiHromDotaz(h));
   if (!f.ok) return ctrlUiZprava(f.chyba, true);
-  CTRL_STAV.pracuje = true; ctrlUiZprava('Server počítá export za období ' + h.od + ' – ' + h.do + '…');
+  const obdobi = f.filtr.vse ? 'celou databázi' : 'období ' + ctrlHromadnyObdobiText(f.filtr);
+  const vObdobi = f.filtr.vse ? 'V celé databázi' : 'V období ' + ctrlHromadnyObdobiText(f.filtr);
+  CTRL_STAV.pracuje = true; ctrlUiZprava('Server počítá export za ' + obdobi + '…');
   try {
     /* #504: server vrací export po dávkách, prohlížeč je složí do jednoho souboru. */
     const o = await ctrlHromadnyStahni(onlineApi, f.filtr, (hotovo, celkem) => {
-      if (celkem > 0 && hotovo < celkem) ctrlUiZprava('Server počítá export za období ' + h.od + ' – ' + h.do
+      if (celkem > 0 && hotovo < celkem) ctrlUiZprava('Server počítá export za ' + obdobi
         + '… zpracováno ' + hotovo + ' z ' + celkem + ' zakázek.');
     });
     const vy = o.vyrazenoPd || { jiny: 0, bez: 0 };
     if ((!o.exporty || !o.exporty.length) && f.filtr.pd !== 'vse') {
-      /* #504: prázdný výsledek kvůli filtru stavu Pipedrive řekne, co zkusit. */
-      ctrlUiZprava('V období ' + f.filtr.od + ' – ' + f.filtr.do + ' není žádná zakázka se stavem Pipedrive „'
+      /* #504: prázdný výsledek kvůli filtru stavu dealu řekne, co zkusit. */
+      ctrlUiZprava(vObdobi + ' není žádná zakázka se stavem dealu „'
         + (CTRL_FILTR_PD_TEXT[f.filtr.pd] || f.filtr.pd).toLowerCase() + '“ odpovídající filtru'
         + (vy.jiny + vy.bez ? ' (filtr stavu vyřadil ' + (vy.jiny + vy.bez) + ', z toho bez stavu ' + vy.bez + ')' : '')
-        + ' — zkuste filtr Stav Pipedrive: Všechny.');
+        + ' — zkuste Stav dealu: Všechny stavy.');
     } else if (!o.exporty || !o.exporty.length) {
-      ctrlUiZprava('V období ' + f.filtr.od + ' – ' + f.filtr.do + ' není žádná zamčená řídící varianta odpovídající filtru'
+      ctrlUiZprava(vObdobi + ' není žádná zamčená řídící varianta odpovídající filtru'
         + (o.preskoceno && o.preskoceno.length ? ' (přeskočeno ' + o.preskoceno.length + ': ' + o.preskoceno.slice(0, 3).map(p => p.cislo || p.soubor).join(', ') + ')' : '') + '.');
     } else {
       const opts = { kdy: o.kdy, kdo: o.kdo, verzeMapovani: o.verzeMapovani,
@@ -301,14 +311,15 @@ async function ctrlUiHromadny(format) {
         hromadny: Object.assign({}, o.filtr || f.filtr, { preskoceno: o.preskoceno || [], vyrazenoPd: vy }) };
       const zuz = (f.filtr.oblast !== 'obe' ? '_' + f.filtr.oblast.toUpperCase() : '') + (f.filtr.rada !== 'obe' ? '_' + f.filtr.rada.toUpperCase() : '')
         + (f.filtr.pd && f.filtr.pd !== 'vse' ? '_PD-' + f.filtr.pd.toUpperCase() : '');
-      const jmeno = 'PREDKALKULACE_' + f.filtr.od + '_' + f.filtr.do + zuz;
+      /* #508: celá databáze nese v názvu „CELA-DB" a den exportu. */
+      const jmeno = 'PREDKALKULACE_' + (f.filtr.vse ? 'CELA-DB_' + ctrlUiDenLokal(new Date()) : f.filtr.od + '_' + f.filtr.do) + zuz;
       if (format === 'csv') ctrlUiStahni(new Blob([ctrlExportCsv(o.exporty, o.data, opts)], { type: 'text/csv;charset=utf-8' }), jmeno + '.csv');
       else ctrlUiStahni(xlsxZapis(ctrlExportListy(o.exporty, o.data, opts)), jmeno + '.xlsx');
       const radku = o.exporty.reduce((a, e) => a + e.radky.filter(r => r.vZakladu).length, 0);
       ctrlUiZprava('Staženo ' + jmeno + '.' + format + ' — ' + o.exporty.length + ' '
         + (o.exporty.length === 1 ? 'zakázka' : (o.exporty.length < 5 ? 'zakázky' : 'zakázek')) + ', ' + radku + ' řádků v ceně nabídky'
         + (o.preskoceno && o.preskoceno.length ? '; přeskočeno ' + o.preskoceno.length + ' (důvody v listu Popis)' : '')
-        + (vy.jiny + vy.bez ? '; filtr stavu Pipedrive vyřadil ' + (vy.jiny + vy.bez) + ' (bez stavu ' + vy.bez + ')' : '') + '.');
+        + (vy.jiny + vy.bez ? '; filtr stavu dealu vyřadil ' + (vy.jiny + vy.bez) + ' (bez stavu ' + vy.bez + ')' : '') + '.');
     }
     await ctrlUiProtokolNacti();
   } catch (e) { ctrlUiZprava('Hromadný export se nepovedl: ' + ctrlHromadnyChybaText(e), true); }
@@ -317,33 +328,36 @@ async function ctrlUiHromadny(format) {
 function ctrlUiKartaHromadny() {
   const h = ctrlUiHrom();
   if (CTRL_STAV.protokol === null) { CTRL_STAV.protokol = []; setTimeout(ctrlUiProtokolNacti, 0); }
-  const sel = (id, pole, volby) => `<select id="${esc(id)}" onchange="ctrlUiHromSet('${escJs(pole)}', this.value)">${volby.map(([v, t]) =>
+  /* #508: select tak široký, aby byla vybraná hodnota celá vidět (globální šířka 130 px ji ořezávala). */
+  const sel = (id, pole, volby) => `<select id="${esc(id)}" class="ctrl-hrom-sel" onchange="ctrlUiHromSet('${escJs(pole)}', this.value)">${volby.map(([v, t]) =>
     `<option value="${v}"${h[pole] === v ? ' selected' : ''}>${t}</option>`).join('')}</select>`;
   const prot = (CTRL_STAV.protokol || []).slice(0, 10).map(z => `<tr><td>${esc(new Date(z.kdy).toLocaleString('cs-CZ'))}</td>
-      <td>${esc(z.kdo || '')}</td><td>${esc(z.od || '')} – ${esc(z.do || '')}</td>
+      <td>${esc(z.kdo || '')}</td><td>${z.vse ? 'celá databáze' : esc(z.od || '') + ' – ' + esc(z.do || '')}</td>
       <td>${esc({ ock: 'OCK', proj: 'PROJ' }[z.oblast] || 'obě')}</td><td>${esc({ cr: 'ČR', zahr: 'ZAHR' }[z.rada] || 'obě')}</td>
-      <td>${esc(CTRL_FILTR_PD_TEXT[z.pd] || 'Všechny')}</td>
+      <td>${esc(ctrlUiPdVolba(z.pd) || 'Všechny stavy')}</td>
       <td>${+z.zakazek || 0}${z.stav === 'probiha' ? ' (nedokončen)' : (z.stav === 'odmitnuto' ? ' (odmítnut)' : '')}</td><td>${+z.radku || 0}</td></tr>`).join('');
   return `<div class="sec-title" style="margin-top:14px">Hromadně za období</div>
-    <div class="note">Výchozí výběr je <b>podle data prodeje</b> a <b>Stav Pipedrive: Vyhrané</b>.
+    <div class="note">Výchozí výběr je <b>podle data prodeje</b> a <b>Stav dealu: Vyhrané</b>.
       Podle data zamčení: <b>zamčené řídící varianty</b> (není-li řídící zamčená, poslední zamčená v období),
       jejichž nabídka byla zamčena (odeslána) v zadaném období. Podle data prodeje: zakázky s <b>objednanými příplatky</b>
       (krycí list → Smlouva o dílo) s datem prodeje v období —
       částky ze zmrazeného výsledku tisku. Počítá server; soubor má stejné listy a sloupce jako export jedné zakázky.
-      Každý export se zapíše do protokolu. <b>Stav Pipedrive</b> (výchozí Vyhrané) je poslední známý stav dealu
+      Každý export se zapíše do protokolu. <b>Stav dealu</b> (výchozí Vyhrané) je poslední známý stav dealu
       v kalkulátoru — při exportu se z Pipedrive nedotahuje; „Bez stavu“ = zakázka bez dealu nebo stav neznámý.
+      <b>Celá databáze</b> vybere bez omezení obdobím (od nejstarší zakázky po dnešek).
       Velký export se stahuje po částech, výsledkem je jeden soubor.</div>
-    <div class="btns" style="margin:8px 0;align-items:center">
-      <label>od <input type="date" id="ctrlHromOd" value="${esc(h.od)}" onchange="ctrlUiHromSet('od', this.value)"></label>
-      <label>do <input type="date" id="ctrlHromDo" value="${esc(h.do)}" onchange="ctrlUiHromSet('do', this.value)"></label>
+    <div class="btns ctrl-hrom-filtry" id="ctrlHromFiltry" style="margin:8px 0;align-items:center">
+      <label><input type="checkbox" id="ctrlHromVse" ${h.vse ? 'checked' : ''} onchange="ctrlUiHromVse(this.checked)"> Celá databáze</label>
+      <label>od <input type="date" id="ctrlHromOd" value="${esc(h.od)}" ${h.vse ? 'disabled' : ''} onchange="ctrlUiHromSet('od', this.value)"></label>
+      <label>do <input type="date" id="ctrlHromDo" value="${esc(h.do)}" ${h.vse ? 'disabled' : ''} onchange="ctrlUiHromSet('do', this.value)"></label>
       ${sel('ctrlHromPodle', 'podle', [['prodej', 'podle data prodeje (SoD)'], ['zamceni', 'podle data zamčení (odeslání)']])}
       ${sel('ctrlHromOblast', 'oblast', [['obe', 'OCK i PROJ'], ['ock', 'jen OCK'], ['proj', 'jen PROJ']])}
       ${sel('ctrlHromRada', 'rada', [['obe', 'ČR i ZAHR'], ['cr', 'jen ČR'], ['zahr', 'jen ZAHR']])}
-      ${sel('ctrlHromPd', 'pd', CTRL_FILTR_PD.map(k => [k, 'Stav Pipedrive: ' + CTRL_FILTR_PD_TEXT[k]]))}
+      <label title="Poslední známý stav dealu v Pipedrive">Stav dealu ${sel('ctrlHromPd', 'pd', CTRL_FILTR_PD.map(k => [k, ctrlUiPdVolba(k)]))}</label>
       <button class="primary" id="ctrlHromXlsx" onclick="ctrlUiHromadny('xlsx')" ${CTRL_STAV.pracuje ? 'disabled' : ''}>⤓ Za období (.xlsx)</button>
       <button id="ctrlHromCsv" onclick="ctrlUiHromadny('csv')" ${CTRL_STAV.pracuje ? 'disabled' : ''}>⤓ CSV</button></div>
     ${prot ? `<div class="note">Poslední exporty za období:</div><div style="overflow-x:auto"><table class="ceniktbl" id="ctrlProtokol">
-      <tr><th>Kdy</th><th>Kdo</th><th>Období</th><th>Oblast</th><th>Řada</th><th>Stav PD</th><th>Zakázek</th><th>Řádků</th></tr>${prot}</table></div>`
+      <tr><th>Kdy</th><th>Kdo</th><th>Období</th><th>Oblast</th><th>Řada</th><th>Stav dealu</th><th>Zakázek</th><th>Řádků</th></tr>${prot}</table></div>`
       : '<div class="note" id="ctrlProtokolPrazdny">Protokol exportů je zatím prázdný.</div>'}`;
 }
 

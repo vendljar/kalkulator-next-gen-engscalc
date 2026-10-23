@@ -288,6 +288,59 @@ await stranka.click('#ctrlHromXlsx');
 await stranka.waitForTimeout(100);
 const zle = await stranka.evaluate(() => ({ stav: document.getElementById('ctrlStav').textContent, dotazu: window.__srv.exportDotazy.length }));
 zkus('neplatné období se na server vůbec nepošle a hlásí chybu', /po jeho konci/.test(zle.stav) && zle.dotazu === 2, JSON.stringify(zle));
+
+/* #508 (E2, J. V. 23. 10. 2026): řádek filtrů — vybraná hodnota každého selectu celá vidět
+ * (dřív 130 px: „Stav Pipedrive:" bez hodnoty, „podle data pro"), v UI bez slova Pipedrive,
+ * na užším okně se zalomí bez vodorovného posuvníku. */
+const filtry = async () => stranka.evaluate(() => {
+  const box = document.getElementById('ctrlHromFiltry');
+  const panel = document.getElementById('nastaveni-panel');
+  const cv = document.createElement('canvas').getContext('2d');
+  const orez = [...box.querySelectorAll('select')].map(s => {
+    const cs = getComputedStyle(s); cv.font = cs.font;
+    const text = s.options[s.selectedIndex].text;
+    const potreba = cv.measureText(text).width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 14;
+    return { id: s.id, text, potreba: Math.ceil(potreba), sirka: s.offsetWidth };
+  }).filter(x => x.potreba > x.sirka);
+  const pr = panel.getBoundingClientRect();
+  const venku = [...box.children].filter(el => { const r = el.getBoundingClientRect(); return r.right > pr.right + 0.5 || r.left < pr.left - 0.5; })
+    .map(el => el.id || el.textContent.trim().slice(0, 20));
+  return { orez, venku, pipedrive: /Pipedrive/.test(box.textContent),
+    posuvnik: document.documentElement.scrollWidth > document.documentElement.clientWidth || panel.scrollWidth > panel.clientWidth + 1,
+    radku: new Set([...box.children].map(el => Math.round(el.getBoundingClientRect().top))).size };
+});
+await stranka.evaluate(() => { CTRL_STAV.hrom.pd = 'deleted'; CTRL_STAV.hrom.podle = 'zamceni'; render(); });
+for (const sirka of [1400, 1100, 820]) {
+  await stranka.setViewportSize({ width: sirka, height: 900 });
+  await stranka.waitForTimeout(50);
+  const fl = await filtry();
+  zkus('#508 (' + sirka + ' px): vybraná hodnota každého selectu celá vidět, nic mimo okno, bez vodorovného posuvníku',
+    !fl.orez.length && !fl.venku.length && !fl.posuvnik, JSON.stringify(fl));
+  if (sirka === 1400) zkus('#508: v řádku filtrů není slovo „Pipedrive" (popisek „Stav dealu")', !fl.pipedrive
+    && await stranka.evaluate(() => [...document.getElementById('ctrlHromPd').options].map(o => o.text).join('|'))
+      === 'Vyhrané|Otevřené|Ztracené|Smazané|Bez stavu|Všechny stavy');
+  if (sirka === 820) zkus('#508: na užším okně se filtry zalomí do víc řádků', fl.radku > 1, String(fl.radku));
+}
+await stranka.setViewportSize({ width: 1280, height: 720 });
+await stranka.evaluate(() => { CTRL_STAV.hrom.pd = 'vse'; render(); });
+/* #508: Celá databáze — od–do zakázané, dotaz vse=1 bez od/do, název souboru a list Popis. */
+await stranka.check('#ctrlHromVse');
+zkus('#508: Celá databáze zakáže pole od–do', await stranka.evaluate(() => document.getElementById('ctrlHromOd').disabled
+  && document.getElementById('ctrlHromDo').disabled && CTRL_STAV.hrom.vse === true));
+const [stVse] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#ctrlHromXlsx')]);
+const jmVse = stVse.suggestedFilename();
+const vse = await stranka.evaluate(async (b) => {
+  const sheets = await xlsxPrecti(new Uint8Array(b));
+  const p = sheets.find(s => s.nazev === 'Popis');
+  return { dotaz: window.__srv.exportDotazy.slice(-1)[0], obdobi: (p.rows.find(x => /^Období/.test(String(x[0]))) || [])[1],
+    zakazek: String((p.rows.find(x => x[0] === 'Zakázek v exportu') || [])[1]) };
+}, Array.from(readFileSync(await stVse.path())));
+zkus('#508: stáhne se PREDKALKULACE_CELA-DB_<dnes>_OCK.xlsx', /^PREDKALKULACE_CELA-DB_\d{4}-\d{2}-\d{2}_OCK\.xlsx$/.test(jmVse), jmVse);
+zkus('#508: dotaz celé databáze nese vse=1 bez od/do; Popis „celá databáze", 1 zakázka',
+  vse.dotaz && vse.dotaz.vse === '1' && !('od' in vse.dotaz) && !('do' in vse.dotaz) && /^celá databáze/.test(vse.obdobi || '') && vse.zakazek === '1',
+  JSON.stringify(vse));
+await stranka.uncheck('#ctrlHromVse');
+zkus('#508: vypnutí Celé databáze pole od–do zase povolí', await stranka.evaluate(() => !document.getElementById('ctrlHromOd').disabled));
 await stranka.evaluate(() => { CTRL_STAV.hrom = null; CTRL_STAV.karta = 'skupiny'; render(); });
 
 console.log('\nImport mapování ze souboru');

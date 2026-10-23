@@ -372,7 +372,9 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   test('C3 filtr: neplatné datum (31. 2.) odmítne', !F({ od: '2026-02-31', do: '2026-03-01' }).ok);
   test('C3 filtr: datum v jiném tvaru odmítne', !F({ od: '1. 10. 2026', do: '2026-10-31' }).ok && !F({ do: '2026-10-31' }).ok);
   test('C3 filtr: od po do odmítne', !F({ od: '2026-11-01', do: '2026-10-01' }).ok);
-  test('C3 filtr: období nad strop dní odmítne', !F({ od: '2024-01-01', do: '2026-10-01' }).ok);
+  /* #508 (E2, J. V. 23. 10. 2026): mez 400 dní zrušena — 1. 4. 2025 – 23. 10. 2026 dřív „delší než 400 dní". */
+  test('#508 filtr: období delší než 400 dní projde (1. 4. 2025 – 23. 10. 2026)', F({ od: '2025-04-01', do: '2026-10-23' }).ok
+    && F({ od: '2020-01-01', do: '2026-10-23' }).ok, F({ od: '2025-04-01', do: '2026-10-23' }));
   test('C3 filtr: neznámá oblast a řada odmítne (ne „obojí")', !F({ od: '2026-10-01', do: '2026-10-02', oblast: 'vse' }).ok
     && !F({ od: '2026-10-01', do: '2026-10-02', rada: 'ZAHR' }).ok);
   test('C3 den zámku v českém čase (23:30 UTC 31. 10. = 1. 11.)', C.ctrlDenPraha('2026-10-31T23:30:00Z') === '2026-11-01'
@@ -507,7 +509,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   test('#504 PD: výchozí stav Pipedrive = vyhrané, všechny hodnoty platí, cizí → chyba',
     C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31' }).filtr.pd === 'won'
     && ['won', 'open', 'lost', 'deleted', 'bez', 'vse'].every(x => Fq({ od: '2026-10-01', do: '2026-10-31', pd: x }).ok)
-    && !Fq({ od: '2026-10-01', do: '2026-10-31', pd: 'Won' }).ok && /stav Pipedrive/.test(Fq({ od: '2026-10-01', do: '2026-10-31', pd: 'x' }).chyba || ''));
+    && !Fq({ od: '2026-10-01', do: '2026-10-31', pd: 'Won' }).ok && /stav dealu/.test(Fq({ od: '2026-10-01', do: '2026-10-31', pd: 'x' }).chyba || ''));
   const zak = zakazkaZamcena();
   const den = C.ctrlDenPraha(zak.varianty[0].zamek.kdy);
   const f = (pd) => C.ctrlHromadnyFiltr({ od: den, do: den, pd, podle: 'zamceni' }).filtr;
@@ -636,8 +638,37 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
       && JSON.stringify(C.ctrlProtokolDavka(P, 'abcdefgh1234', { zakazek: 3, radku: 5, preskoceno: 0, vyrazenoPd: 2, vyrazenoBez: 1 }, 'hotovo').zaznamy[0])
         === JSON.stringify(Object.assign({}, P.zaznamy[0], { zakazek: 5, radku: 15, preskoceno: 1, davek: 2, stav: 'hotovo', vyrazenoPd: 2, vyrazenoBez: 1 })));
     test('#504: žádný strop počtu zakázek (cteni ani zakazek), zbývají technické pojistky pod limitem funkce',
-      !('cteni' in C.CTRL_HROMADNY) && !('zakazek' in C.CTRL_HROMADNY) && C.CTRL_HROMADNY.dni === 400
+      !('cteni' in C.CTRL_HROMADNY) && !('zakazek' in C.CTRL_HROMADNY) && !('dni' in C.CTRL_HROMADNY)
       && C.CTRL_HROMADNY.odpoved <= 6 * 1024 * 1024 && C.CTRL_HROMADNY.casMs < 10000 && C.CTRL_HROMADNY.davek >= 500);
+    /* #508 (E2, J. V. 23. 10. 2026: „Není možné stáhnout celou databázi … to bych potřeboval"):
+     * volba Celá databáze. Před opravou 0 / 7 (volba neexistovala, `vse` se ignorovalo
+     * a bez od/do filtr odmítl), po opravě 7 / 7. */
+    const fV = C.ctrlHromadnyFiltr({ vse: '1', pd: 'vse', podle: 'zamceni' });
+    test('#508: celá databáze — vse=1 bez od/do projde, filtr nese vse a meze, které pokryjí každý den',
+      fV.ok && fV.filtr.vse === true && fV.filtr.od <= '2000-01-01' && fV.filtr.do >= '2100-01-01'
+      && C.ctrlHromadnyFiltr({ vse: true }).ok && C.ctrlHromadnyFiltr({ vse: '1', od: '', do: '' }).ok, fV);
+    test('#508: celá databáze se nekombinuje s obdobím; neznámá hodnota vse → chyba; bez vse beze změny',
+      !C.ctrlHromadnyFiltr({ vse: '1', od: '2026-10-01', do: '2026-10-22' }).ok && !C.ctrlHromadnyFiltr({ vse: 'ano' }).ok
+      && !C.ctrlHromadnyFiltr({}).ok && !('vse' in C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-22', vse: '' }).filtr));
+    const kV = C.ctrlHromadnyKandidati(rej.concat(stare.slice(0, 3).map(z => Object.assign({}, z, { soubor: 's' + z.soubor, upraveno: '2025-04-02T10:00:00Z' }))), fV.filtr);
+    test('#508: celá databáze vybere všechny zamčené (700 z dnů + 3 starší záznamy)', kV.length === 703, kV.length);
+    const cestyV = [];
+    await C.ctrlHromadnyStahni(async (c) => { cestyV.push(c); return { export: 'abcdefgh1234', exporty: [], dalsi: null }; }, fV.filtr);
+    test('#508: dotaz celé databáze nese vse=1 a žádné od/do (server je s ní nepřijme)',
+      /[?&]vse=1(&|$)/.test(cestyV[0]) && !/[?&](od|do)=/.test(cestyV[0])
+      && C.ctrlHromadnyFiltr(Object.fromEntries(new URLSearchParams(cestyV[0].split('?')[1]))).ok
+      && !/vse=/.test(C.ctrlHromadnyDotaz(fR)), cestyV);
+    const PV = { zaznamy: [Object.assign({}, P.zaznamy[0], { od: fV.filtr.od, do: fV.filtr.do, vse: true, pd: fV.filtr.pd })] };
+    test('#508: navazující dávka celé databáze patří jen k exportu celé databáze',
+      !!C.ctrlProtokolNavaz(PV, 'abcdefgh1234', fV.filtr, 'a@b.cz')
+      && !C.ctrlProtokolNavaz(PV, 'abcdefgh1234', Object.assign({}, fV.filtr, { vse: undefined }), 'a@b.cz')
+      && !C.ctrlProtokolNavaz(P, 'abcdefgh1234', Object.assign({}, fR, { vse: true }), 'a@b.cz'));
+    test('#508: text období — „celá databáze", jinak od – do',
+      C.ctrlHromadnyObdobiText(fV.filtr) === 'celá databáze' && C.ctrlHromadnyObdobiText(fR) === '2026-10-01 – 2026-10-22');
+    const popisV = (C.ctrlExportListy([], null, { hromadny: fV.filtr }).find(l => l.nazev === 'Popis') || { rows: [] }).rows;
+    test('#508: list Popis u celé databáze píše „celá databáze", ne meze 1970–2999',
+      popisV.some(r => /^Období/.test(String(r[0])) && /^celá databáze/.test(String(r[1])))
+      && !popisV.some(r => /1970|2999/.test(String(r[1]))), popisV.slice(6, 9));
     console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
     if (fail) process.exit(1);
   })().catch(e => { console.log('FAIL #504 výjimka ' + e.message); process.exit(1); });

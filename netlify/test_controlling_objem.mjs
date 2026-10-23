@@ -8,6 +8,7 @@
  * rozpočet o víc než doběh rozebraných čtení (funkce Netlify má 10 s), že
  * soubor nese všech 1000 zakázek bez duplicit a protokol jeden záznam.
  * Před opravou 0 / 3 (413: 1400 kandidátů nad strop 600), po opravě 3 / 3.
+ * #508: navíc celá databáze 5000 zakázek (viz níž).
  *
  * Sada je samostatná (není v seznamu netlify/mutace.mjs), aby mutační běh
  * nezdržovala; pouští ji spust_testy.sh. Spuštění: node netlify/test_controlling_objem.mjs */
@@ -95,6 +96,36 @@ test('#504 objem: protokol jeden záznam, dokončený, 1000 zakázek, filtr vyhr
   prot.length === 1 && prot[0].stav === 'hotovo' && prot[0].zakazek === 1000 && prot[0].pd === 'won' && prot[0].podle === 'prodej'
   && prot[0].davek === casy.length, prot[0]);
 console.log('dávek ' + casy.length + ', nejdelší ' + Math.max(...casy) + ' ms, celkem ' + celkem + ' ms');
+
+/* #508 (E2, J. V. 23. 10. 2026: „Není možné stáhnout celou databázi … to bych potřeboval"):
+ * celá databáze — dalších 3600 zakázek prodaných od dubna 2025 (celkem 5000 přes 400 dní),
+ * výchozí volby (prodej, vyhrané) + Celá databáze. Před opravou 0 / 2 (filtr bez od/do
+ * odmítl, období nad 400 dní taky), po opravě 2 / 2. */
+for (let i = 1400; i < 5000; i++) {
+  const cislo = '2026 - OPR - CN - ' + (10000 + i);
+  const d = new Date(Date.UTC(2025, 3, 1) + ((i - 1400) % 540) * 86400000);
+  const kdy = d.toISOString().slice(0, 10) + 'T09:00:00Z';
+  const z = JSON.parse(tpl.split('2026 - OPR - CN - 9000').join(cislo).split('2026-10-01T09:00:00Z').join(kdy));
+  z.objednane = { varianta: z.varianty[0].id, klice: [KLIC], datum: kdy.slice(0, 10) };
+  const soubor = G.uloJmenoSouboru(z);
+  pamet.set('zakazky/z/' + soubor, JSON.stringify(z));
+  rej.push(G.uloRejstrikZaznam(z, { soubor, razitko: '2026-10-21T10:00:00Z' }));
+}
+pamet.set('zakazky/_rejstrik', JSON.stringify({ schema: 1, zakazky: rej }));
+casy.length = 0;
+const fV = G.ctrlHromadnyFiltr({ vse: '1' });
+const t1 = Date.now();
+let vyslV;
+try { vyslV = await G.ctrlHromadnyStahni(api, fV.filtr); } catch (e) { vyslV = { chyba: e.message || (fV.chyba) }; }
+const cislaV = (vyslV.exporty || []).map(e => e.strany[0].cislo);
+test('#508 objem: celá databáze (5000 zakázek od dubna 2025, výchozí prodej + vyhrané) doběhne celá, bez duplicit, pod mezí dávek',
+  fV.ok && !vyslV.chyba && cislaV.length === 5000 && new Set(cislaV).size === 5000 && casy.length < M.davek
+  && Math.max(...casy) < M.casMs + 2000,
+  vyslV.chyba || fV.chyba || { n: cislaV.length, davek: casy.length, max: Math.max(...casy) });
+const protV = (JSON.parse(pamet.get('program/controlling_exporty') || '{}').zaznamy) || [];
+test('#508 objem: protokol celé databáze — jeden dokončený záznam s vse, 5000 zakázek',
+  protV[0] && protV[0].vse === true && protV[0].stav === 'hotovo' && protV[0].zakazek === 5000 && protV.length === 2, protV[0]);
+console.log('celá databáze: dávek ' + casy.length + ', nejdelší ' + Math.max(...casy) + ' ms, celkem ' + (Date.now() - t1) + ' ms');
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 if (fail) process.exit(1);

@@ -289,7 +289,11 @@
      poslední sloupce vysunuly za okraj okna a tlačítko „Smazat…" nešlo trefit.
      Okno je proto širší a tabulka uvnitř umí vodorovně rolovat, aby se to
      neopakovalo na užším monitoru nebo po přidání dalšího sloupce. */
-  .modal.wide { max-width:1180px; }
+  /* #508 (J. V. 23. 10. 2026): o kousek širší, aby se řádek filtrů hromadného exportu controllingu vešel. */
+  .modal.wide { max-width:1280px; }
+  /* #508: filtry hromadného exportu — select podle obsahu (vybraná hodnota celá vidět), na užším okně se zalomí. */
+  .ctrl-hrom-filtry select.ctrl-hrom-sel, .ctrl-hrom-filtry input[type=date] { width:auto; max-width:100%; }
+  .ctrl-hrom-filtry label { white-space:nowrap; }
   .modal .tab-scroll { overflow-x:auto; }
   .modal .tab-scroll > table { min-width:900px; }
   .modal h2 { font-size:16px; margin:0; padding:16px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px; }
