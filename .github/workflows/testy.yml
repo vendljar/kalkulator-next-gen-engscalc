@@ -43,7 +43,7 @@ permissions:
 
 jobs:
   testy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pevně: ubuntu-latest = 26.04 od 19. 10. 2026, Playwright tam Chromium neinstaluje
     timeout-minutes: 45
     # Adresa hlavního správce se bere z proměnné prostředí, ne z konstanty
     # v repozitáři (ten je veřejný). Testům stačí SMYŠLENÁ adresa — ověřují
@@ -87,7 +87,7 @@ jobs:
   # ověřuje, že by to opravdu chytily. Rychlá kontrola zadání (--kontrola)
   # běží už v jobu „testy" uvnitř spust_testy.sh.
   mutace-server:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pevně: ubuntu-latest = 26.04 od 19. 10. 2026, Playwright tam Chromium neinstaluje
     timeout-minutes: 45
     env:
       ADMIN_EMAIL: spravce@priklad.cz
@@ -102,7 +102,7 @@ jobs:
   # Mutační testování VÝPOČETNÍHO JÁDRA (nález N19, 23. 9. 2026): mutace_jadro.mjs
   # pouští sady, které se na jádro odkazují, pro každou ze ~76 mutací.
   mutace-jadro:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pevně: ubuntu-latest = 26.04 od 19. 10. 2026, Playwright tam Chromium neinstaluje
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
