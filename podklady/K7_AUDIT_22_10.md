@@ -41,6 +41,33 @@ Posun `main` z v22.10.1 na v22.10.6 **doporučuji** — nové funkce opravují o
 | Nízké | 13 | K7-S2 … K7-S5, K7-K3, K7-K4, K7-W1 … K7-W6, K7-W15 |
 | Informativní | 16 | K7-S6 … K7-S11, K7-K5, K7-K6, K7-W7 … K7-W14 |
 
+## Opraveno v v23.10.1 (dávka O-K7, roadmapa #507, větev `claude/ok7-opravy`)
+
+Opravná dávka nad `c5dbfbc` (23. 10. 2026). Každá oprava má test s pojistkou (před opravou selže, po ní projde —
+počty ve zprávách commitů) a mutace s filtrem „#507" (jádro `mutace_jadro.mjs`, server `netlify/mutace.mjs`).
+Prohlížečové harnessy (`overit_kryci_po_tisku.mjs`, `overit_sablona.mjs`, `overit_nabidka_proj_word.mjs`) upraveny,
+nepouštěny — celé kolo pouští koordinace.
+
+| ID | Opraveno v v23.10.1 | Commit | Test (pojistka) |
+|----|----|----|----|
+| K7-K1 | ✅ fronta tichého uložení po tisku (`fronta: true`), „uloženo" z odeslaného těla + razítka | `2bb4297` | `src/test_tisk_behem_ulozeni.js` (6 FAIL → 14/0) |
+| K7-K2 | ✅ snímek se nepřepočítává; do uložení zámku zmrazená pole snímku (i po obnovení stránky), data se srovnají podle snímku; SoD před uložením doplní snímek; ze souboru nic | `8e8fc9d`, `1e23639`, `a52d25b` | `src/test_snimek_po_tisku.js` (9 FAIL → 19/0; +1, +2 doplněné) |
+| K7-S1 | ✅ rejstřík ve `vyhradne()` (POST i DELETE) + samooprava exportu ze `seznam('z/')` (`mimoRejstrik`); zbytková mez mezi instancemi v `BEZPECNOST_MEZE.md` | `3cc7336` | `netlify/test_rejstrik_soubeh.mjs` (4 FAIL → 9/0), `src/test_controlling.js` |
+| K7-S3 | ✅ protokol exportů ve `vyhradne()` | `8292075` | `netlify/test_rejstrik_soubeh.mjs` (1 FAIL → 11/0) |
+| K7-S4 | ✅ `cenikRazitko` / `cenikRada` objekt či pole → 400 | `ded565d` | `netlify/test_typy_k7.mjs` (8 FAIL → 12/0) |
+| K7-S5 | ✅ čas nového zámku: ISO v UTC, ≤ teď + 10 min, ≥ teď − 400 dní (spodní mez záměrně ne čas uložené verze — K7-K1) | `8292075` | `netlify/test_kryci_po_tisku.mjs` (5 FAIL → 43/0) |
+| K7-S11 | ✅ texty hlavičky jako objekt/pole → 400 (s K7-S4) | `ded565d` | `netlify/test_typy_k7.mjs` |
+| K7-K3 | ✅ ARES po SoD neaktivní s důvodem, potvrzení nic nezapíše | `c4e2e4a` | `src/test_ares_po_sod.js` (3 FAIL + pád → 7/0) |
+| K7-K4 | ✅ výpadek sítě česky, neuložený tisk = dialog s krokem, 409 snímku radí otevřít ze serveru | `6fcea69`, `8e8fc9d` | `src/test_tisk_behem_ulozeni.js` (2 FAIL → 17/0) |
+| K7-W2 | ✅ bez `negativni_kontrola.json` harness končí přes `preskoc` (kód 4) | `bbc0e4f` | `src/test_harness_podklady.js` (1 FAIL → 31/0) |
+| K7-W3 | ✅ C3 po #504, oddíl Audit K7 (Z1, P1, K7-S1, K7-S8) | `ded565d` | — (dokumentace) |
+| K7-W4 | ✅ testy + mutace: strop bajtů dávky, > 50 dnů zámků, `ctrlProtokolNavaz` | `021fcd7` | ruční mutanty 1 FAIL / 1 FAIL |
+| K7-W5 | ✅ `api_token=<40 hex>`, `x-api-token`; vzor `cshk_` záměrně ne (K7-W1) | `9418bb2` | `src/test_kontrola_udaju.js` (1 FAIL → 6/0) |
+| K7-W6 | ✅ komentáře → role; jména souborů a větví ponechána (J. V.) | `9418bb2` | — |
+| K7-W15 | ✅ únik se hledá mimo `nacteno` | `bbc0e4f` | stará kontrola nad `…46.123Z` hlásí únik, nová ne |
+| K7-S2, K7-W1 | ⬜ rozhodne J. V. | — | — |
+| informativní | ⬜ beze změny (audit opravu nedoporučuje) | — | — |
+
 ## Nálezy — opravit bez J. V.
 
 Jasné a malé; doporučeno jednou opravnou dávkou (jedna verze, testy s pojistkou před/po, mutace). Nic z toho nebrání posunu `main` (viz Verdikt), K7-K1 a K7-K2 ale patří do první opravné dávky.

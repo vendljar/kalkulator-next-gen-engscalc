@@ -7947,6 +7947,21 @@
    "zavisi": [],
    "hotovoV": "v22.10.6",
    "pozn": "Id přidělila koordinace (dávka K7, větev claude/k7-kolo). Kód se neměnil."
+  },
+  {
+   "id": "507",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "M",
+   "nazev": "O-K7: opravy auditu K7 bez rozhodnutí J. V. (Z1 tisk během ukládání, snímek nabídky, rejstřík, typy, meze)",
+   "proc": "Zadání koordinace 23. 10. 2026 (ŘÍDÍCÍ 22.10): opravit nálezy podklady/K7_AUDIT_22_10.md, které nepotřebují rozhodnutí J. V. — nejdřív tři střední (K7-K1, K7-K2, K7-S1), pak nízké.",
+   "detail": "K7-K1 fronta tichého uložení po tisku + „uloženo“ z odeslaného těla; K7-K2 snímek se po tisku nepřepočítává, do uložení zámku zmrazená pole snímku a srovnání dat podle snímku (žádná 409 smyčka); K7-S1 rejstřík ve vyhradne() + samooprava hromadného exportu ze seznamu z/; K7-S3 protokol exportů ve vyhradne(); K7-S4/S11 objekt v razítku/řadě ceníku a v textech hlavičky → 400; K7-S5 čas nového zámku ověřuje server; K7-K3 ARES po SoD; K7-K4 hlášky po tisku; K7-W2 harnessy šablon bez negativní kontroly = přeskočeno; K7-W3 BEZPECNOST_MEZE po #504 a K7; K7-W4 testy a mutace pojistek #504; K7-W5 token Pipedrive v kontrole tajemství; K7-W6 příjmení v komentářích; K7-W15 nestabilní test_pd_stav. Každá oprava s testem s pojistkou a mutacemi „#507“. Neřešeno (J. V.): K7-S2, K7-W1.",
+   "hotovoKdyz": "Opravy s testy (před opravou selžou), mutace #507 jádra i serveru chycené, --kontrola obou mutací, Node sady zelené; audit doplněn o „opraveno v v23.10.1“. Celé kolo (prohlížečové harnessy) pouští koordinace.",
+   "kde": "`src/ui/online_ui.js`, `src/ui/zamek_ui.js`, `src/zamek.js`, `src/ui/ares_ui.js`, `src/controlling.js`, `src/uloziste.js`, `netlify/functions/zakazky.mjs`, `netlify/functions/controlling_export.mjs`, `netlify/lib/zakazka_kontrola.mjs`, `BEZPECNOST_MEZE.md`, `podklady/K7_AUDIT_22_10.md`, `CHANGELOG.md` (v23.10.1)",
+   "zavisi": ["506"],
+   "hotovoV": "v23.10.1",
+   "pozn": "Id přidělila koordinace (dávka O-K7, větev claude/ok7-opravy nad c5dbfbc)."
   }
  ],
  "meta" : {
