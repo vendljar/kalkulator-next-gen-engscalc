@@ -134,6 +134,9 @@ const tiskni = (typ) => { const v = global.ZAK.varianty[0]; global.zamekPoTisku(
   test('SoD před uložením: snímek sedí s daty (server nevrátí 409)',
     JSON.stringify(ZM.zamekSnimekSpocti(v)) === JSON.stringify(v.zamek.snimek));
   test('SoD před uložením: DPH snímku zůstala z tisku CN', v.zamek.snimek.dph === 0.21);
+  const h = (v.data.kryci && v.data.kryci.hodnoty) || {};
+  test('SoD před uložením: opsané číslo SoD a datum podpisu v datech zůstaly (srovnání podle snímku je nesmaže)',
+    !!h.cisloSod && !!h.sodDatumPodpisu, h);
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
