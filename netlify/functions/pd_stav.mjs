@@ -8,10 +8,16 @@
  * CRM podle čísel. Vidí ho každý přihlášený, kdo vidí zakázku (právo
  * `crm.pipedrive` se nevyžaduje, původ ano). Ven jde jen stav z whitelistu
  * a čas načtení; token zůstává na serveru. Chyby API ani nenastavené
- * napojení se nehlásí — vrátí se poslední známý stav (lib/pd_stav.mjs). */
+ * napojení se nehlásí — vrátí se poslední známý stav (lib/pd_stav.mjs).
+ *
+ * `&deal=<id>` (volitelné, P2 23. 10. 2026): deal, který má zakázka otevřená
+ * v prohlížeči (třeba ze souboru nebo ze zálohy — ta může nést jiný deal než
+ * uložená verze). Nesedí-li s dealem uložené zakázky, vrátí se pdStav null
+ * a do Pipedrive se nejde. Server se jím jen ZÚŽÍ, nikdy nerozšíří: deal id
+ * pro Pipedrive dál bere z uložené zakázky. */
 import { uloziste, json } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
-import { pdPristup } from '../lib/pipedrive.mjs';
+import { pdPristup, pdNastaveno } from '../lib/pipedrive.mjs';
 import { pdStavObnov } from '../lib/pd_stav.mjs';
 
 /* Jméno souboru zakázky má tvar z uloKlicSouboru + „.json". */
@@ -28,6 +34,12 @@ export default async (req) => {
   if (!SOUBOR_TVAR.test(soubor)) return json({ ok: false, chyba: 'Chybí jméno zakázky.' }, 400);
   const zak = await (await uloziste('zakazky')).cti('z/' + soubor);
   if (!zak || typeof zak !== 'object') return json({ ok: false, chyba: 'Zakázka nenalezena.' }, 404);
+  const dealTxt = new URL(req.url).searchParams.get('deal');
+  if (dealTxt !== null) {
+    const deal = g.ctrlPdDealIdNorm(dealTxt);
+    if (!deal) return json({ ok: false, chyba: 'Neplatné číslo obchodního případu.' }, 400);
+    if (deal !== g.ctrlPdDealIdNorm(zak.pdDealId)) return json({ ok: true, nastaveno: pdNastaveno(), pdStav: null });
+  }
 
   const { nastaveno, pdStav } = await pdStavObnov(zak.pdDealId, relace.email);
   /* Bez záznamu v úložišti (např. zakázka obnovená ze zálohy) platí stav,

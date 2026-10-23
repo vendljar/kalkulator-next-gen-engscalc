@@ -374,6 +374,10 @@ function onlinePoPrihlaseni(ja) {
       if (!byloOdUzivatele && typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
     })
     .then(() => onlineObnovPosledni())
+    /* P2 (23. 10. 2026): stav dealu zakázky, která byla otevřená už před
+     * přihlášením (ze souboru, ze zálohy). Návrat k poslední zakázce se ptá
+     * sám; tady se pak druhý dotaz nepošle (pdStavObnovZak, K7-K6). */
+    .then(() => { pdStavObnovZak(); })
     .then(() => { if (jeAdminOnline()) onlineZalohaAuto(); });
 }
 
@@ -1630,12 +1634,19 @@ async function onlineOtevri(soubor) {
  * zakázka čistá, otisky pro autosave i „neuloženo" se posunou s ní
  * (stejná zásada jako u přepočtu na dnešní ceník, V35). Do uložení stav
  * stejně dosazuje server (lib/pd_stav.mjs). */
-function pdStavObnovUI(soubor) {
+function pdStavObnovUI(soubor, deal) {
   if (!soubor || typeof onlineApi !== 'function' || typeof pdStavNorm !== 'function') return Promise.resolve(false);
   /* K7-K6: pro který deal se stav naposledy ptal (otevření zakázky nebo změna dealu). */
   ONLINE_STAV.pdStavDeal = String((typeof ZAK !== 'undefined' && ZAK && ZAK.pdDealId) || '');
-  return onlineApi('/api/pd/stav?soubor=' + encodeURIComponent(soubor)).then(o => {
-    if (ONLINE_STAV.soubor !== soubor || !o || o.ok !== true) return false;
+  ONLINE_STAV.pdStavZak = (typeof ZAK !== 'undefined') ? ZAK : null;
+  /* P2: s `deal` (zakázka ze souboru nebo zálohy) rozhoduje, že je otevřená
+   * TATÁŽ zakázka se stejným dealem — ne jméno online souboru, ten nemusí
+   * být nastavený. Server stav vrátí jen pro deal, který má uložená verze. */
+  const zak = ONLINE_STAV.pdStavZak;
+  const dotaz = '/api/pd/stav?soubor=' + encodeURIComponent(soubor) + (deal ? '&deal=' + encodeURIComponent(deal) : '');
+  return onlineApi(dotaz).then(o => {
+    if (!o || o.ok !== true) return false;
+    if (deal ? (ZAK !== zak || String(ctrlPdDealIdNorm(ZAK.pdDealId) || '') !== deal) : ONLINE_STAV.soubor !== soubor) return false;
     const novy = pdStavNorm(o.pdStav);
     if (!novy) return false;
     if (JSON.stringify(pdStavNorm(ZAK.pdStav) || null) === JSON.stringify(novy)) return false;
@@ -1648,6 +1659,27 @@ function pdStavObnovUI(soubor) {
     render();
     return true;
   }).catch(() => false);
+}
+
+/* STAV I PO OTEVŘENÍ ZE SOUBORU, OBNOVĚ ZÁLOHY A PŘIHLÁŠENÍ (P2, 23. 10. 2026;
+ * oprava převzatá z větve claude/eager-carson-1xznt2, tam `pdStavHlidej`).
+ * P1 se ptala jen při otevření z online databáze a po uložení se změnou
+ * dealu. Zakázka otevřená ze souboru nebo obnovená ze zálohy (nebo otevřená
+ * ještě před přihlášením) tak ukazovala stav z doby, kdy se naposledy
+ * uložila. Teď se zeptá i v těchto chvílích — pod jménem, pod kterým by se
+ * zakázka uložila (uloJmenoSouboru), a s dealem, aby server stav cizího
+ * dealu nevrátil. Jednou pro zakázku a deal (K7-K6: ne po překreslení ani
+ * po autosave); souběžné žádosti sdílí jeden dotaz. Bez přihlášení ticho. */
+function pdStavObnovZak() {
+  if (typeof ZAK === 'undefined' || !ZAK || typeof ONLINE_STAV === 'undefined' || !ONLINE_STAV.ja
+      || typeof ctrlPdDealIdNorm !== 'function') return Promise.resolve(false);
+  const deal = String(ctrlPdDealIdNorm(ZAK.pdDealId) || '');
+  if (!deal) return Promise.resolve(false);
+  if (ONLINE_STAV.pdStavZak === ZAK && ONLINE_STAV.pdStavDeal === deal) return ONLINE_STAV.pdStavBezi || Promise.resolve(false);
+  const soubor = ONLINE_STAV.soubor || (typeof uloJmenoSouboru === 'function' ? uloJmenoSouboru(ZAK) : '');
+  const p = pdStavObnovUI(soubor, deal);
+  ONLINE_STAV.pdStavBezi = p;
+  return p.then(v => { if (ONLINE_STAV.pdStavBezi === p) ONLINE_STAV.pdStavBezi = null; return v; });
 }
 
 /* ---------- záloha („odlévání" na Disk Google) ---------- */

@@ -305,6 +305,10 @@ function historieObnovZalohu() {
       if (typeof uloPrepocetDialog === 'function') uloPrepocetDialog(prep, { zdroj: 'zaloha' });
     }
   }
+  /* Stav dealu Pipedrive i u zakázky ze zálohy (P2, 23. 10. 2026) — záloha
+   * mohla v prohlížeči ležet dny. Jen tady, ne v historieObnov(): krok zpět
+   * se na server neptá (K7-K6). */
+  if (typeof pdStavObnovZak === 'function') pdStavObnovZak();
 }
 async function historieZahodZalohu() {
   if (!await potvrd('Opravdu zahodit zálohu rozpracované kalkulace uloženou v prohlížeči?')) return;

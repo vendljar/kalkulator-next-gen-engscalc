@@ -1454,7 +1454,11 @@ function zakazkaHlavicka(ock) {
   /* Bez klíče v popisku schválně: hlavička má pevné rozvržení a klíč v tomhle
    * řádku posunul „Datum vytvoření" o čtyři pixely (chytil overit_lista.mjs).
    * Vazba je zřejmá z ceníku, kde sekce SAZBY DPH klíče nese. */
-  const dphSelect = (cesta, c, sazba) => `<div class="row"><label>Sazba DPH</label>
+  /* Na konci sloupce (`na-konec`, P2 23. 10. 2026, oprava z větve
+   * claude/eager-carson-1xznt2) jako datum vytvoření: od řádku „Stav
+   * Pipedrive" bývá nejvyšší třetí sloupec a u zahraniční zakázky s kurzem
+   * by datum sjelo o 38 px pod úroveň sazby DPH. */
+  const dphSelect = (cesta, c, sazba) => `<div class="row na-konec"><label>Sazba DPH</label>
     <select onchange="set('${cesta}', +this.value)"${typeof zamekDphAttr === 'function' ? zamekDphAttr(cesta) : ''}>${dphPredvolby(c, sazba).map(o =>
       /* Sazba ze zakázky jde do value jen jako ČÍSLO (B69, 24. 9. 2026):
        * uložená zakázka může nést v sazbě řetězec s HTML. */
@@ -2564,6 +2568,8 @@ function nactiZakazku(ev) {
       if (typeof seznamReset === 'function') seznamReset();
       render();
       if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+      /* Stav dealu Pipedrive i u zakázky ze souboru (P2, 23. 10. 2026). */
+      if (typeof pdStavObnovZak === 'function') pdStavObnovZak();
       // #35: nejčastější případ starého ceníku je právě tenhle – otevřel se
       // soubor odložený před půl rokem. Věta jde do stavového řádku nabídky,
       // opravit se to dá na záložce Ceník; nic se neblokuje.

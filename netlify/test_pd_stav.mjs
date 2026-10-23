@@ -54,7 +54,8 @@ const login = async (e, h) => ((await post(prihlaseni, 'http://x/api/prihlaseni'
 const nacti = async (soubor, c) => (await (await get(zakazky, 'http://x/api/zakazky?soubor=' + encodeURIComponent(soubor), c)).json()).zakazka;
 const uloz = async (zak, razitko, c) => { const r = await post(zakazky, 'http://x/api/zakazky', { zakazka: zak, ocekavaneRazitko: razitko }, c);
   return { status: r.status, ...(await r.json().catch(() => ({}))) }; };
-const stav = async (soubor, c, hlavicky) => { const r = await get(pdStavFn, 'http://x/api/pd/stav?soubor=' + encodeURIComponent(soubor), c, hlavicky);
+const stav = async (soubor, c, hlavicky, deal) => { const r = await get(pdStavFn, 'http://x/api/pd/stav?soubor=' + encodeURIComponent(soubor)
+  + (deal === undefined ? '' : '&deal=' + encodeURIComponent(deal)), c, hlavicky);
   return { status: r.status, telo: await r.json().catch(() => ({})) }; };
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
@@ -195,6 +196,17 @@ const z3 = await stav(sZmiz, cO);
 test('P2: … další dotaz do 10 minut už do Pipedrive nejde', z3.telo.pdStav && z3.telo.pdStav.status === 'won' && volani.length === 0, volani);
 test('P2: záznam stavu zůstal v čistém tvaru { status, nacteno }',
   JSON.stringify(Object.keys(JSON.parse(pamet.get('pd_stav/deal:4715'))).sort()) === '["nacteno","status"]');
+/* P2: zakázka otevřená ze souboru může nést jiný deal než uložená verze —
+ * prohlížeč pošle i `deal`; nesedí-li, server stav nevrátí a do Pipedrive
+ * nejde. Shoda (i s číslem v jiném zápisu) stav vrátí. Před převodem server
+ * `deal` ignoroval a vrátil stav dealu uložené zakázky (FAIL). */
+volani = [];
+const jd = await stav(sZmiz, cO, {}, '4711');
+test('P2: deal z prohlížeče nesedí s uloženou zakázkou → pdStav null, bez Pipedrive',
+  jd.status === 200 && jd.telo.ok === true && jd.telo.pdStav === null && volani.length === 0, { jd, volani });
+const sd = await stav(sZmiz, cO, {}, '4715');
+test('P2: deal sedí → stav dealu (won)', sd.status === 200 && sd.telo.pdStav && sd.telo.pdStav.status === 'won', sd.telo);
+test('P2: neplatný deal z prohlížeče → 400', (await stav(sZmiz, cO, {}, 'abc')).status === 400);
 volani = [];
 const b1 = await stav(sBez, cO);
 test('zakázka bez dealu → pdStav null, do Pipedrive se nejde', b1.status === 200 && b1.telo.pdStav === null && volani.length === 0, b1);
