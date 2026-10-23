@@ -276,7 +276,7 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     const pV = (((await ulz('program').cti('controlling_exporty')) || {}).zaznamy || [])[0] || {};
     test('#508: protokol u celé databáze nese vse', pV.vse === true && pV.zakazek === 5 && pV.stav === 'hotovo', pV);
     test('#508: celá databáze s obdobím nebo s neznámou hodnotou → 400',
-      (await ex('?vse=1&od=2026-10-01&do=2026-10-31', cAdmin)).st === 400 && (await ex('?vse=ano', cAdmin)).st === 400);
+      (await ex('?vse=1&od=2026-10-01&do=2026-10-31', cAdmin)).st === 400 && (await ex('?vse=ano', cAdmin)).st === 400 && (await ex('?vse=ano&od=2026-10-01&do=2026-10-31', cAdmin)).st === 400);
   }
   /* K6-S6 (D3): nečekaný tvar uložené zakázky (sem podstrčený mimo server —
    * datum prodeje jako objekt, String() vyhodí výjimku) shodil celý export na

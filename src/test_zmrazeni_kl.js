@@ -255,9 +255,43 @@ test('neznámé pole se po tisku CN bere jako zmrazené', (() => { const v = zam
   const st2 = kopie(z); const no2 = kopie(z); no2.nazevAkce = 'Přejmenováno';
   test('Z1-2: server změnu názvu u odeslané řídící varianty odmítne', ZM.zamekZakZmeny(st2, no2).indexOf('ZAK.nazevAkce') >= 0);
   const no3 = kopie(z); no3.nazevAkce = 'Přejmenováno'; no3.varianty.forEach(v => { v.ridici = v.id === v1.id; });
-  test('Z1-2: server pustí, když se v témže uložení řídící přepne na nezamčenou variantu', !ZM.zamekZakZmeny(st2, no3).length);
-  z.varianty.forEach(v => { delete v.ridici; });             // bez příznaku je řídící první (V1, nezamčená)
-  test('Z1-2: bez příznaku řídící rozhoduje první varianta', !ZM.zamekZakCestaZmrazena(z, 'ZAK.nazevAkce'));
+  /* K7-S2 (#508, J. V. 23. 10. 2026 „Zavřít"): přepnutí řídící na nezamčený klon hlavičku neuvolní. */
+  test('K7-S2: server odmítne, když se v témže uložení řídící přepne na nezamčenou variantu a změní název',
+    ZM.zamekZakZmeny(st2, no3).indexOf('ZAK.nazevAkce') >= 0, ZM.zamekZakZmeny(st2, no3));
+  { const zb = kopie(z); zb.varianty.forEach(v => { delete v.ridici; delete (v.zamek || {}).hlavicka; });   // bez příznaku je řídící první (V1, nezamčená)
+    test('Z1-2: bez příznaku řídící rozhoduje první varianta', !ZM.zamekZakCestaZmrazena(zb, 'ZAK.nazevAkce')); }
+}
+
+/* ---- 4c) K7-S2 (#508, audit K7, J. V. 23. 10. 2026 „Zavřít"): hlavičku po CN nejde obejít
+ * přepnutím řídící na nezamčený klon ve dvou (třech) uloženích. Před opravou 0 / 6
+ * (server i prohlížeč obcházení pustily, příznak neexistoval), po opravě 6 / 6. ---- */
+{
+  const OZN = ZM.zamekZakHlavickaOznac || (() => 0);   // před opravou neexistuje
+  const z = nova(); const v1 = z.varianty[0];
+  zamkni(z, 'nabidka', v1);                        // odeslaná řídící V1
+  const v2 = ZM.klonujVariantu(z, v1.id, { aktivovat: true });
+  /* Uložená verze: V1 řídící, odeslaná; server doplní stopu „byla řídící". */
+  const ulozena = kopie(z); OZN(ulozena, null);
+  test('K7-S2: server stopu u odeslané řídící doplní (zamek.hlavicka)', ulozena.varianty[0].zamek.hlavicka === true);
+  /* Krok 1: jen přepnout řídící na klon (hlavička beze změny) — smí. */
+  const k1 = kopie(ulozena); k1.varianty.forEach(v => { v.ridici = v.id === v2.id; });
+  test('K7-S2: samotné přepnutí řídící na nezamčený klon projde', !ZM.zamekZakZmeny(ulozena, k1).length, ZM.zamekZakZmeny(ulozena, k1));
+  /* Krok 2: řídící je nezamčený klon, přejmenovat — dřív 200, teď odmítne (V1 nese stopu). */
+  const k2 = kopie(k1); k2.nazevAkce = 'Obejito'; k2.adresa = 'Jinde 2';
+  test('K7-S2: po přepnutí řídící název ani adresu změnit nejde (stopa odeslané řídící)',
+    ['ZAK.nazevAkce', 'ZAK.adresa'].every(c => ZM.zamekZakZmeny(k1, k2).indexOf(c) >= 0), ZM.zamekZakZmeny(k1, k2));
+  test('K7-S2: prohlížeč drží hlavičku zmrazenou i po přepnutí řídící na klon',
+    !!ZM.zamekZakCestaZmrazena(k1, 'ZAK.nazevAkce') && !!ZM.zamekZakCestaZmrazena(k1, 'ZAK.adresa'));
+  /* Klient bez stopy (starší data): nastavRidici ji doplní před přepnutím. */
+  const st = kopie(z); delete st.varianty[0].zamek.hlavicka;
+  zk.nastavRidici(st, v2.id);
+  test('K7-S2: přepnutí řídící v prohlížeči (nastavRidici) dá odeslané řídící stopu',
+    st.varianty[0].zamek.hlavicka === true && !!ZM.zamekZakCestaZmrazena(st, 'ZAK.nazevAkce'));
+  /* Server: stopu starších dat doplní i nad uloženou řídící (klient ji neposlal). */
+  const bezStopy = kopie(z); delete bezStopy.varianty[0].zamek.hlavicka;
+  const prepnuta = kopie(bezStopy); prepnuta.varianty.forEach(v => { v.ridici = v.id === v2.id; });
+  OZN(prepnuta, bezStopy);
+  test('K7-S2: server stopu doplní i podle uložené řídící (přepnutí v témže uložení)', prepnuta.varianty[0].zamek.hlavicka === true);
 }
 
 /* ---- 5) dotisk odeslané CN po změně DPH a podmínek ---- */

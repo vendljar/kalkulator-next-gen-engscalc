@@ -987,8 +987,12 @@ Podklad `podklady/K3_AUDIT_19_10.md` (K3-N14: tyto meze tu chyběly).
   `GET /api/controlling/export` jen Administrátor (`vyzadujRoli`, matice
   `test_prava`, mutace „#447 C3“); export i protokol exportů. Heslo správce
   se nežádá (rozhodnutí J. V. 21. 10. 2026, bod 4; export nic nemění).
-  Parametry se ověří (`ctrlHromadnyFiltr`: datum RRRR-MM-DD, období ≤ 400
-  dní, oblast a řada z výčtu — neznámá hodnota je 400, ne „obojí“).
+  Parametry se ověří (`ctrlHromadnyFiltr`: datum RRRR-MM-DD, oblast a řada
+  z výčtu — neznámá hodnota je 400, ne „obojí“). Mez délky období (400 dní)
+  zrušil #508 (v23.10.2); volba **celá databáze** `vse=1` (bez od/do,
+  s obdobím nebo jinou hodnotou 400) čte všechny zakázky z rejstříku —
+  objem drží dávky (1000 × 150 = 150 000 zakázek; simulace 5 000 zakázek
+  `test_controlling_objem.mjs`), protokol nese `vse`.
   **Meze `CTRL_HROMADNY` (stav po #504, v22.10.6; K7-W3):** strop počtu
   zakázek k přečtení ani v souboru NENÍ (600/150 z C3 zrušeny). Export běží
   po dávkách: dávka ≤ 150 zakázek, ≤ 3 MB dat a ≤ 5 s (rozebraná čtení
@@ -1098,9 +1102,25 @@ Nálezy `podklady/K7_AUDIT_22_10.md`, které nepotřebovaly rozhodnutí J. V.
   (`PD_STAV_MAX`, `lib/pd_stav.mjs`), firemní rozpočet = uživatelé × strop;
   mezi instancemi B158. Souběžné dotazy na týž zastaralý stav se nespojují
   (K7-S6, informativní).
-- **Z1-2 — hlavička po odeslání CN přes přepnutí řídící varianty (K7-S2,
-  K7-S7):** čeká na rozhodnutí J. V. (audit K7, oddíl „Nálezy — rozhodnutí
-  J. V."); do té doby vědomá mez B161.
+- **K7-S2 — hlavička po odeslání CN přes přepnutí řídící varianty —
+  OPRAVENO v23.10.2 (#508, J. V. 23. 10. 2026 „Zavřít").** Odeslaná varianta,
+  která byla zamčená jako řídící, nese stopu `zamek.hlavicka` (mimo klíč
+  zámku; u uloženého zámku ji drží server — `uloZamekRazitkaDrz` —
+  a doplňuje ji sám nad ukládanou i uloženou řídící, `zamekZakHlavickaOznac`).
+  Název akce a adresa (cesty `poCn`) zůstanou zmrazené, dokud taková varianta
+  existuje — přepnutí řídící na nezamčený klon je neuvolní ani v témže
+  uložení, ani dalším (`zamekZakZmeny` na serveru, `zamekZakStav` / `set()`
+  v prohlížeči; `nastavRidici` stopu doplní i u starších dat).
+- **K7-S7 — mez Z1-2 po opravě K7-S2 (vědomá mez, doplněno v23.10.2):**
+  (1) odeslaná varianta, která řídící **nikdy nebyla** (CN klonu poslaná
+  vedle nezamčené řídící), hlavičku nezmrazí — rozhodnutí J. V. Z1-2; její
+  dotisk CN tiskne aktuální název a adresu (B161). Udělá-li se taková varianta
+  řídící, hlavička se od toho uložení zmrazí, změna provedená předtím zůstane.
+  (2) Starší zakázka, u které se řídící přepnula na klon **před** v23.10.2
+  a od té doby se uložila, stopu nemá (server ji doplní jen podle řídící
+  ukládané nebo uložené verze) — její hlavička je volná jako dřív.
+  (3) Odemčení odeslané varianty správcem stopu ruší s ní (varianta už
+  zamčená není). (4) Obnova ze souboru zálohy bere stopu ze souboru (B98).
 - **K7-S8 — export není snímek (informativní):** kandidáti se počítají
   v každé dávce znovu a kurzor `po` přichází od klienta — zakázka nově
   zamčená mezi dávkami se jménem před kurzorem v souboru nebude (okno

@@ -459,9 +459,27 @@ function zamekZakRidici(zak) {
   const vs = (zak && Array.isArray(zak.varianty)) ? zak.varianty : [];
   return vs.find(v => v && v.ridici) || vs[0] || null;
 }
+/* K7-S2 (#508, J. V. 23. 10. 2026 „Zavřít"): hlavičku zmrazí odeslaná řídící
+ * varianta a zůstane zmrazená, dokud ta odeslaná varianta existuje — i po
+ * přepnutí řídící na nezamčený klon (dřív to šlo obejít dvěma uloženími:
+ * přepnout + přejmenovat, přepnout zpět). Stopa je příznak `zamek.hlavicka`
+ * u zámku varianty, která byla zamčená jako řídící; odeslaná neřídící varianta,
+ * která řídící nikdy nebyla, hlavičku dál nezmrazí (Z1-2). Příznak je mimo
+ * klíč zámku; u uloženého zámku ho drží server (uloZamekRazitkaDrz) a doplní ho
+ * sám (zamekZakHlavickaOznac nad ukládanou i uloženou řídící). */
+function zamekZakHlavickaOznac(zak, stara) {
+  const vs = (zak && Array.isArray(zak.varianty)) ? zak.varianty : [];
+  let n = 0;
+  const oznac = v => { if (v && variantaUzamcena(v) && v.zamek.hlavicka !== true) { v.zamek.hlavicka = true; n++; } };
+  oznac(zamekZakRidici(zak));
+  const sr = stara ? zamekZakRidici(stara) : null;
+  if (sr && variantaUzamcena(sr)) oznac(vs.find(v => v && v.id === sr.id));
+  return n;
+}
 function zamekZakStav(zak) {
   const zam = ((zak && zak.varianty) || []).filter(v => variantaUzamcena(v));
-  return { cn: variantaUzamcena(zamekZakRidici(zak)), sod: zam.some(v => !zamekKryciOtevreny(v)) };
+  return { cn: variantaUzamcena(zamekZakRidici(zak)) || zam.some(v => v.zamek.hlavicka === true),
+           sod: zam.some(v => !zamekKryciOtevreny(v)) };
 }
 
 /* Důvod, proč se cesta hlavičky nesmí změnit, nebo ''. */
@@ -472,16 +490,16 @@ function zamekZakCestaZmrazena(zak, cesta) {
   if (st.sod && c.poSod.indexOf(cesta) >= 0)
     return 'Ze zakázky odešla smlouva o dílo — údaje zákazníka v hlavičce se už nemění. Pokračujte novou zakázkou.';
   if (st.cn && c.poCn.indexOf(cesta) >= 0)
-    return 'Řídící varianta zakázky je odeslaná cenová nabídka — název akce a adresa stavby jsou v ní vytištěné, a proto se už nemění.';
+    return 'Řídící varianta zakázky je (nebo byla) odeslaná cenová nabídka — název akce a adresa stavby jsou v ní vytištěné, a proto se už nemění.';
   return '';
 }
 
 /* Serverová pojistka hlavičky: cesty, které se změnily, ač nesmějí.
  * Zámek se bere z ULOŽENÉ verze (`stara`); varianta, kterou v témže uložení
- * odemkl správce (v nové verzi už zamčená není), se nepočítá. Řídící
- * varianta (Z1-2) hlídá název a adresu jen tehdy, když je odeslaná v uložené
- * verzi I v ukládané — přepnutí řídící na nezamčený klon hlavičku uvolní
- * stejně jako v prohlížeči. */
+ * odemkl správce (v nové verzi už zamčená není), se nepočítá. Název a adresu
+ * (Z1-2) hlídá odeslaná řídící varianta uložené nebo ukládané verze a každá
+ * odeslaná varianta s příznakem `hlavicka` (K7-S2, #508) — přepnutí řídící na
+ * nezamčený klon hlavičku neuvolní. */
 function zamekZakZmeny(stara, nova) {
   const nove = (nova && nova.varianty) || [];
   const zamcene = ((stara && stara.varianty) || []).filter(sv => {
@@ -489,7 +507,8 @@ function zamekZakZmeny(stara, nova) {
     return variantaUzamcena(sv) && (!nv || variantaUzamcena(nv));
   });
   const sr = zamekZakRidici(stara);
-  const st = { cn: !!sr && zamcene.indexOf(sr) >= 0 && variantaUzamcena(zamekZakRidici(nova)),
+  const nr = zamekZakRidici(nova);
+  const st = { cn: zamcene.some(v => v === sr || (!!nr && v.id === nr.id) || v.zamek.hlavicka === true),
                sod: zamcene.some(v => !zamekKryciOtevreny(v)) };
   if (!st.cn && !st.sod) return [];
   const c = zamekZakCesty();
@@ -1110,5 +1129,5 @@ if (typeof module !== 'undefined')
                      zajistiZamek, ZAMEK_KRYCI_SMLOUVY, zamekTiskyTypy, zamekKryciOtevreny, zamekPrvniSmlouva,
                      zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani,
                      ZAMEK_KRYCI_PO_CN, zamekKryciPoleStav, zamekKryciPoleZname, zamekSnimekSpocti, zamekSnimek,
-                     zamekDphVolna, zamekNabidkaPohled, zamekZakCesty, zamekZakCestaZmrazena, zamekZakZmeny,
+                     zamekDphVolna, zamekNabidkaPohled, zamekZakCesty, zamekZakCestaZmrazena, zamekZakZmeny, zamekZakHlavickaOznac,
                      zamekZakRidici, ZAMEK_KRYCI_PO_SOD_VOLNE };

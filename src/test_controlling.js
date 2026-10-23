@@ -648,7 +648,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
       fV.ok && fV.filtr.vse === true && fV.filtr.od <= '2000-01-01' && fV.filtr.do >= '2100-01-01'
       && C.ctrlHromadnyFiltr({ vse: true }).ok && C.ctrlHromadnyFiltr({ vse: '1', od: '', do: '' }).ok, fV);
     test('#508: celá databáze se nekombinuje s obdobím; neznámá hodnota vse → chyba; bez vse beze změny',
-      !C.ctrlHromadnyFiltr({ vse: '1', od: '2026-10-01', do: '2026-10-22' }).ok && !C.ctrlHromadnyFiltr({ vse: 'ano' }).ok
+      !C.ctrlHromadnyFiltr({ vse: '1', od: '2026-10-01', do: '2026-10-22' }).ok && !C.ctrlHromadnyFiltr({ vse: 'ano' }).ok && !C.ctrlHromadnyFiltr({ vse: 'ano', od: '2026-10-01', do: '2026-10-22' }).ok
       && !C.ctrlHromadnyFiltr({}).ok && !('vse' in C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-22', vse: '' }).filtr));
     const kV = C.ctrlHromadnyKandidati(rej.concat(stare.slice(0, 3).map(z => Object.assign({}, z, { soubor: 's' + z.soubor, upraveno: '2025-04-02T10:00:00Z' }))), fV.filtr);
     test('#508: celá databáze vybere všechny zamčené (700 z dnů + 3 starší záznamy)', kV.length === 703, kV.length);

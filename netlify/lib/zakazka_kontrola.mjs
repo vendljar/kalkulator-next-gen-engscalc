@@ -406,6 +406,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
      * se u existujícího zámku berou z uložené verze (B62). */
     ULO.uloZamekRazitkaDrz(stara, zak);
   }
+  /* K7-S2 (#508): stopa „zámek byl řídící" (zamek.hlavicka) — server ji doplní
+   * sám nad ukládanou i uloženou řídící variantou, klientovi nevěří. */
+  if (typeof globalThis.zamekZakHlavickaOznac === 'function') globalThis.zamekZakHlavickaOznac(zak, stara ? staraPorovnani : null);
   /* Záznam tisku SoD (K6-K4): otisk objednaných a cenu díla u NOVĚ připsaného
    * tisku `sod` spočítá server sám (klient dodá jen měnu dokumentu). Obnova
    * z otisku záznamy přebírá; ze souboru se počítají znovu (B98). */

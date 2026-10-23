@@ -303,6 +303,37 @@ console.log('===== Z1-2 / Z1-3 (odpovědi J. V. 22. 10. 2026) =====');
   const r = await poTisku(z, (d, a) => { a.adresa = 'Jiná 3'; }, cO);
   test('Z1-2: odeslaná ŘÍDÍCÍ varianta adresu zmrazí (409)', r.status === 409 && /adresa/.test(r.chyba || ''), r);
 }
+/* K7-S2 (#508, J. V. 23. 10. 2026 „Zavřít"): hlavička po odeslání řídící varianty nejde obejít
+ * přepnutím řídící na nezamčený klon. Pokus z auditu: (1) přepnout + přejmenovat, (2) přepnout zpět;
+ * a třikrokově: přepnout, přejmenovat, přepnout zpět. Před opravou 0 / 4 (obě cesty 200, stopa
+ * v uložené verzi nebyla), po opravě 5 / 5. */
+{
+  const z = nova('K7-S2 řídící'); const v1 = z.varianty[0];
+  zamkniZ1(z, 'nabidka', v1);
+  const v2 = zam.klonujVariantu(z, v1.id, { aktivovat: true });
+  z.varianty.forEach(v => { v.ridici = v.id === v1.id; });
+  const r0 = await uloz(z, cO);
+  const g0 = await nacti(r0.soubor, cO);
+  test('K7-S2: uložená odeslaná řídící nese stopu zamek.hlavicka (doplní server)', r0.status === 200
+    && g0.varianty.find(v => v.id === v1.id).zamek.hlavicka === true, r0);
+  const a1 = zk.importZakazka(kopie(g0)); a1.varianty.forEach(v => { v.ridici = v.id === v2.id; }); a1.nazevAkce = 'TEST K7-S2 obejito';
+  const r1 = await uloz(a1, cO, g0.uloRazitko);
+  test('K7-S2: přepnout řídící na nezamčený klon a přejmenovat v jednom uložení → 409', r1.status === 409 && /nazevAkce/.test(r1.chyba || ''), r1);
+  const b1 = zk.importZakazka(kopie(g0)); b1.varianty.forEach(v => { v.ridici = v.id === v2.id; });
+  b1.varianty.find(v => v.id === v1.id).zamek.hlavicka = false;          // upravený klient stopu sundá
+  const rb1 = await uloz(b1, cO, g0.uloRazitko);
+  const gb1 = await nacti(rb1.soubor, cO);
+  test('K7-S2: samotné přepnutí projde, stopu klient nesundá', rb1.status === 200
+    && gb1.varianty.find(v => v.id === v1.id).zamek.hlavicka === true, { st: rb1.status, ch: rb1.chyba });
+  const b2 = zk.importZakazka(kopie(gb1)); b2.adresa = 'Jinde 7';
+  const rb2 = await uloz(b2, cO, gb1.uloRazitko);
+  test('K7-S2: po přepnutí řídící adresu změnit nejde (409)', rb2.status === 409 && /adresa/.test(rb2.chyba || ''), rb2);
+  const b3 = zk.importZakazka(kopie(gb1)); b3.varianty.find(v => v.id === v1.id).zamek.hlavicka = false;   // jen sundat stopu
+  const rb3 = await uloz(b3, cO, gb1.uloRazitko);
+  const gb3 = rb3.status === 200 ? await nacti(rb3.soubor, cO) : null;
+  test('K7-S2: uložení, které jen sundá stopu (řídící už je klon), ji na serveru nesundá', rb3.status === 200
+    && gb3.varianty.find(v => v.id === v1.id).zamek.hlavicka === true, { st: rb3.status, ch: rb3.chyba });
+}
 {
   const z = zamkniZ1(nova('Z1-3 kontakt')); zamkniZ1(z, 'sod');
   const r = await poTisku(z, (d, a) => { a.kontakt = 'Ukázková Kontaktní';

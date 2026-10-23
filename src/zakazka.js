@@ -796,7 +796,11 @@ function zakazkaHlavickyShodne(zak) {
 
 /* Právě jedna řídící varianta */
 function nastavRidici(zak, id) {
+  /* K7-S2 (#508): odeslaná řídící si před přepnutím i nová řídící po něm
+   * nesou stopu „hlavička zmrazená" (zamek.js) — přepnutí ji neuvolní. */
+  if (typeof zamekZakHlavickaOznac === 'function') zamekZakHlavickaOznac(zak);
   zak.varianty.forEach(v => { v.ridici = v.id === id; });
+  if (typeof zamekZakHlavickaOznac === 'function') zamekZakHlavickaOznac(zak);
 }
 function ridiciVarianta(zak) {
   return zak.varianty.find(v => v.ridici) || zak.varianty[0];
