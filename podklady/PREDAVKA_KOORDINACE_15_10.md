@@ -10,6 +10,12 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 23. 10. ~12:20 UTC — PŘEVZETÍ: koordinace „ŘÍDÍCÍ víkend 23.–26. 10.“ session_01TMQ5bLDJuS5k5NWWYy7jLx
+
+- Převzat kokpit, stará koordinace session_013yuBUKmpUYvEnjxWjGi5kj archivována, P2 hlásí sem. Kontroly řetězem send_later, pondělní souhrn 2026-10-26T05:00Z (trig_01XAj6x5EqYLdx3hiBaPDPyD).
+- J. V. (přes starou koordinaci): dialog S1 — SEC-7 = A + „pokud opravy nebudou zasahovat do fungování programu, vizuálu nebo výpočtové logiky, můžeš opravit vše“; ostatní = návrh A (jen lokálně). **O-K8 opraví VŠECHNY nálezy S1, které nemění chování/vzhled/výpočet**, ostatní do dialogu. #486 hotovo (Rules nastavené) → uzavřít v roadmapě (zadáno B1).
+- J. V. 23. 10. ~12:20: „všechno rozběhni, na viděnou v pondělí“ — plán harmonogramu jede bez dalších dotazů.
+
 ## STAV 23. 10. ~12:20 UTC — koordinace „ŘÍDÍCÍ 22.10“ session_013yuBUKmpUYvEnjxWjGi5kj
 
 - **test = v23.10.2 (f3b5d42, release vydán)**: E2 (#508) + CI ubuntu-24.04. Integrace 81a647e (+ roadmapa: plán víkendu, #512–#514).
