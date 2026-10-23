@@ -7962,6 +7962,24 @@
    "zavisi": ["506"],
    "hotovoV": "v23.10.1",
    "pozn": "Id přidělila koordinace (dávka O-K7, větev claude/ok7-opravy nad c5dbfbc)."
+  },
+  {
+   "id": "508",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "M",
+   "nazev": "E2: hromadný export controllingu — celá databáze, filtry čitelné; K7-S2 hlavička po CN; K7-W1 vzor odkazu",
+   "proc": "Zadání J. V. 23. 10. 2026 (snímky Nastavení → Controlling → Export předkalkulace → Hromadně za období): vybraný stav dealu nebyl vidět (zúžený select „Stav Pipedrive:“), „podle data pro…“ useknuté; „Není možné stáhnout celou databázi … to bych potřeboval“ (mez 400 dní). K7-S2 „Zavřít“; K7-W1 dokončit.",
+   "detail": "Filtry hromadného exportu: selecty šířkou podle obsahu, okno Nastavení 1180 → 1280 px, zalomení bez vodorovného posuvníku; „Stav dealu“ (Vyhrané … Všechny stavy) bez slova Pipedrive v UI. Mez 400 dní zrušena; volba Celá databáze (vse=1, bez od/do; server ověří, protokol vse, list Popis „celá databáze“, soubor PREDKALKULACE_CELA-DB_<dnes>); simulace 5000 zakázek. K7-S2: stopa zamek.hlavicka u odeslané varianty, která byla řídící — název a adresa se přepnutím řídící na nezamčený klon neuvolní (server i prohlížeč), mez K7-S7 v BEZPECNOST_MEZE.md. K7-W1: kontrola_udaju.py pozná claude.ai/code/cshk_<id>.",
+   "hotovoKdyz": "Testy s pojistkou (před opravou selžou), mutace #508 jádra i serveru chycené, --kontrola obou, Node sady zelené; overit_controlling.mjs upraven (šířka selectů, celá databáze) — celé kolo pouští koordinace.",
+   "kde": "`src/controlling.js`, `src/ui/controlling_ui.js`, `src/app_template.html`, `netlify/functions/controlling_export.mjs`, `src/zamek.js`, `src/zakazka.js`, `src/uloziste.js`, `netlify/lib/zakazka_kontrola.mjs`, `nastroje/kontrola_udaju.py`, `BEZPECNOST_MEZE.md`, `CHANGELOG.md` (v23.10.2)",
+   "zavisi": [
+    "504",
+    "507"
+   ],
+   "hotovoV": "v23.10.2",
+   "pozn": "Id přidělila koordinace (dávka E2, větev claude/e2-export-cela-db nad 3c04445)."
   }
  ],
  "meta" : {

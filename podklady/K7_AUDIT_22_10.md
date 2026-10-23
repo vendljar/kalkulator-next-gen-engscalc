@@ -65,7 +65,8 @@ nepouštěny — celé kolo pouští koordinace.
 | K7-W5 | ✅ `api_token=<40 hex>`, `x-api-token`; vzor `cshk_` záměrně ne (K7-W1) | `9418bb2` | `src/test_kontrola_udaju.js` (1 FAIL → 6/0) |
 | K7-W6 | ✅ komentáře → role; jména souborů a větví ponechána (J. V.) | `9418bb2` | — |
 | K7-W15 | ✅ únik se hledá mimo `nacteno` | `bbc0e4f` | stará kontrola nad `…46.123Z` hlásí únik, nová ne |
-| K7-S2, K7-W1 | ⬜ rozhodne J. V. | — | — |
+| K7-S2 | ✅ v23.10.2 (#508, J. V. „Zavřít“): stopa `zamek.hlavicka` u odeslané varianty, která byla řídící — přepnutí řídící hlavičku neuvolní; mez K7-S7 zapsána | větev `claude/e2-export-cela-db` | `src/test_zmrazeni_kl.js` (6 FAIL → 113/0), `netlify/test_kryci_po_tisku.mjs` (3 FAIL → 48/0) |
+| K7-W1 | ✅ odkaz odstraněn (koordinace 3c04445); v23.10.2 vzor `claude.ai/code/cshk_<id>` v `kontrola_udaju.py` | větev `claude/e2-export-cela-db` | `src/test_kontrola_udaju.js` (1 FAIL → 7/0) |
 | informativní | ⬜ beze změny (audit opravu nedoporučuje) | — | — |
 
 ## Nálezy — opravit bez J. V.

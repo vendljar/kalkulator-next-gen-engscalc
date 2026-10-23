@@ -8,6 +8,34 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v23.10.2 — E2: hromadný export celé databáze, čitelné filtry; K7-S2 a K7-W1 (#508), větev claude/e2-export-cela-db
+
+Nad 3c04445 (test v23.10.1 f0d42ed + dokumentace). Zadání J. V. 23. 10. 2026 (snímky Nastavení → Controlling →
+Export předkalkulace → Hromadně za období) a rozhodnutí J. V. k auditu K7 (K7-S2 „Zavřít“, K7-W1 dokončit).
+
+- **Filtry hromadného exportu čitelné:** selecty šířkou podle obsahu (dřív globálních 130 px — „Stav Pipedrive:“
+  bez vybrané hodnoty, „podle data pro“), okno Nastavení 1180 → 1280 px, řádek filtrů se na užším okně zalomí
+  bez vodorovného posuvníku. Stav dealu má popisek **„Stav dealu“** mimo select a volby Vyhrané / Otevřené /
+  Ztracené / Smazané / Bez stavu / Všechny stavy; hlášky a protokol bez slova „Pipedrive“ (nápověda, list Popis
+  a `_PD-WON` v názvu souboru zůstávají).
+- **Celá databáze:** mez délky období 400 dní zrušena (objem drží dávky z #504: 1000 × 150 zakázek); nová volba
+  **Celá databáze** (zaškrtávátko, pole od–do zakáže) → dotaz `vse=1` bez od/do. `ctrlHromadnyFiltr` ji ověří
+  (s obdobím nebo jinou hodnotou → 400), jde do protokolu (`vse`), listu Popis („celá databáze — bez omezení
+  obdobím“), názvu souboru (`PREDKALKULACE_CELA-DB_<dnes>…`) a hlášek. Navazující dávka hlídá i `vse`.
+  Simulace celé databáze 5000 zakázek (`netlify/test_controlling_objem.mjs`): 34 dávek, nejdelší ~0,4 s.
+  Hromadný export dál jen pro administrátora.
+- **K7-S2 (hlavička po CN):** odeslaná varianta, která byla zamčená jako řídící, nese stopu `zamek.hlavicka`;
+  název akce a adresa zůstanou zmrazené, dokud existuje — přepnutí řídící na nezamčený klon je neuvolní (server
+  `zamekZakZmeny` + `zamekZakHlavickaOznac`, stopu drží `uloZamekRazitkaDrz`; prohlížeč `zamekZakStav`,
+  `nastavRidici`). Odeslaná varianta, která řídící nikdy nebyla, hlavičku nezmrazí (Z1-2). Mez K7-S7
+  v `BEZPECNOST_MEZE.md`.
+- **K7-W1:** `nastroje/kontrola_udaju.py` pozná sdílecí odkaz `claude.ai/code/cshk_<id>`.
+- **Testy (pojistky v commitech):** `src/test_controlling.js` 229/0, `netlify/test_controlling.mjs` 75/0,
+  `netlify/test_controlling_objem.mjs` 5/0, `src/test_zmrazeni_kl.js` 113/0, `netlify/test_kryci_po_tisku.mjs` 48/0,
+  `src/test_kontrola_udaju.js` 7/0. Mutace „#508“ jádro 13/13, server 7/7 (+ upravené „Z1-2“ 3/3).
+  `overit_controlling.mjs` doplněn (šířka selectů při 1400/1100/820 px, bez „Pipedrive“, celá databáze) —
+  nespuštěn, celé kolo pouští koordinace.
+
 ## v23.10.1 — O-K7: opravy auditu K7 bez rozhodnutí J. V. (#507), větev claude/ok7-opravy
 
 Nad c5dbfbc (test v22.10.6 3394b2b + dokumentace K7). Nálezy `podklady/K7_AUDIT_22_10.md` (oddíl „opravit bez J. V.");
