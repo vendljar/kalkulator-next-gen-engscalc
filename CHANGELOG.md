@@ -8,6 +8,25 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v25.10.1 — M1: Příručka aktualizována (kapitoly 5, 6, 8, 24, 28), větev claude/manual-25-10
+
+Nad 7e2bfbb (test, v23.10.5). Kód aplikace beze změny — jen `manual/obsah.json`, verze a zápis. Náhrada nočního
+běhu 25. 10. (jeho commit se nepushnul). Do kapitol se propsaly změny v22.10.2–v23.10.5, které byly jen v „Co je nového“:
+
+- **Kap. 5:** Stav Pipedrive se načte jednou po otevření i u zakázky ze souboru, ze zálohy v prohlížeči a po
+  přihlášení; deal v koši = „Smazané“, deal odstraněný úplně a nedostupný Pipedrive = poslední známý stav (v23.10.3).
+- **Kap. 6:** souběžné uložení ve dvou oknech / ve stejném okamžiku → hláška o kolizi (v23.10.5), výpadek sítě česky.
+- **Kap. 8:** tisk nabídky počká na běžící uložení; platební podmínky a DPH zmrazené do uložení vytištěné nabídky
+  („čeká na uložení“, okno při nezdaru); ARES v hlavičce po tisku SoD neaktivní (v23.10.1).
+- **Kap. 24:** kdo a do kdy mění Objednané příplatky (obchodník zakázky, vedoucí, administrátor; po podpisu SoD
+  — datum podpisu ≤ dnes, i zapsané tiskem SoD — jen administrátor; datum prodeje ne v budoucnosti); šablona SoD
+  realizace v4 CZ/EN/DE/FR s rozpisem objednaných příplatků, jazykové verze k platné češtině (v21.10.5, v22.10.4).
+- **Kap. 28:** nový oddíl Controlling a export pro controlling (jen administrátor): export z Přehledu, hromadný
+  export podle data prodeje / odeslání, OCK/PROJ, ČR/ZAHR, Stav dealu (výchozí Vyhrané), Celá databáze, protokol.
+- Hlavička příručky (v25.10.1, nahrazuje v23.10.4) a „Co je nového ve verzi v25.10.1“.
+
+---
+
 ## v23.10.5 — O-K8 #514: opravy nálezů auditů K8 a S1 bez změny chování, vzhledu a výpočtu, větev claude/ok8-opravy
 
 Nad 4496f52 (integrace: v23.10.4 + `podklady/K8_AUDIT_24_10.md`, `podklady/SEC_AUDIT_24_10.md`,

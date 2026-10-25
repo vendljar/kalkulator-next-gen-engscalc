@@ -1,3 +1,23 @@
+# Předávka — 25. 10. 2026 večer: M1 — příručka aktualizována, větev `claude/manual-25-10`
+
+Nad `7e2bfbb68f790ef7e27853aec05758115eb60445` (test, v23.10.5). **Verze 25.10.1** (commity 25. 10. UTC,
+`build.py --kontrola-verze` ✓). Kód aplikace beze změny. Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx.
+Do integrace / test nic, žádný PR, na Disk nic. Náhrada nočního běhu (commit ab61468 ztracený).
+
+- **Hotovo (`manual/obsah.json`):** kap. 5 Stav Pipedrive (soubor, záloha, po přihlášení, deal v koši „Smazané“,
+  poslední známý stav); kap. 6 souběžné uložení ve dvou oknech; kap. 8 tisk čeká na uložení, platební podmínky
+  a DPH zmrazené do uložení vytištěné nabídky, ARES po tisku SoD neaktivní; kap. 24 kdo a do kdy mění Objednané
+  příplatky, šablona SoD realizace v4 CZ/EN/DE/FR s rozpisem, jazykové verze k platné češtině; kap. 28 nový oddíl
+  Controlling a export (jen administrátor). Hlavička příručky + „Co je nového ve verzi v25.10.1“; CHANGELOG, verze.txt.
+- **Kontroly:** `kontrola_udaju.py` čisté; `testovaci_kolo.sh --jen build,staticke` zelené (statické 4/4);
+  snímky `manual/snimky_auto.mjs` 22/22 (v25.10.1, prostředí test) a `manual/sestav.sh` do scratchpadu sezení
+  (mimo repo); `overit_manual.mjs` nad hotovou příručkou **48/0**. Sady a mutace nespuštěny (kód beze změny).
+- **Chybí / na J. V.:** hotová příručka a `snimky.json` nejsou na Disku (zápis na Disk zakázán) — vyrobit znovu
+  `snimky_auto.mjs` + `sestav.sh` z této větve; snímky se do repa neukládají. Sloučení do test-draft / test a tag
+  v25.10.1 rozhoduje J. V.
+
+---
+
 # Předávka — 23. 10. 2026 večer: O-K8 #514 — opravy nálezů K8 a S1 bez změny chování, větev `claude/ok8-opravy`
 
 Nad `4496f52` (integrace: test v23.10.4 + `podklady/K8_AUDIT_24_10.md`, `podklady/SEC_AUDIT_24_10.md`,
