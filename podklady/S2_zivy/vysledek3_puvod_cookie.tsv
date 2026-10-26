@@ -1,0 +1,17 @@
+1	POST	/api/zakazky	401	{"ok":false,"chyba":"Nepřihlášen."}		
+2	POST	/api/zakazky	401	{"ok":false,"chyba":"Nepřihlášen."}		
+3	POST	/api/zakazky	401	{"ok":false,"chyba":"Nepřihlášen."}		
+4	DELETE	/api/zakazky?soubor=x	401	{"ok":false,"chyba":"Nepřihlášen."}		
+5	PUT	/api/zakazky	401	{"ok":false,"chyba":"Nepřihlášen."}		
+6	HEAD	/api/ja	401			
+7	GET	/api/ja	401	{"ok":false,"chyba":"Nepřihlášen."}		
+8	GET	/api/ja	401	{"ok":false,"chyba":"Nepřihlášen."}		
+9	GET	/api/zdravi	200	{"ok":true,"verze":"25.10.1","prostredi":"test","popisProstredi":"","cas":"2026-10-26T09:11:22.447Z","beh":"netlify"}		
+10	POST	/api/prihlaseni	403	{"ok":false,"chyba":"Přihlášení je možné jen z aplikace."}		
+11	POST	/api/prihlaseni	403	{"ok":false,"chyba":"Přihlášení je možné jen z aplikace."}		
+12	POST	/api/prihlaseni	403	{"ok":false,"chyba":"Přihlášení je možné jen z aplikace."}		
+13	POST	/api/prihlaseni	400	{"ok":false,"chyba":"Zadejte e-mail i heslo."}		
+14	POST	/api/prihlaseni	400	{"ok":false,"chyba":"Vstup není platný JSON."}		
+15	POST	/api/prihlaseni	401	{"ok":false,"chyba":"Nesprávný e-mail nebo heslo."}		
+16	POST	/api/odhlaseni	200	{"ok":true}	set-cookie: relace=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0 	
+17	POST	/api/odhlaseni	403	{"ok":false,"chyba":"Odhlášení je možné jen z aplikace."}		
