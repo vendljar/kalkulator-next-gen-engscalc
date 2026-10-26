@@ -8798,7 +8798,12 @@
     "text" : "22. 10. 2026 — v22.10.5: Z1 odpovědi J. V. (Z1-1 ceny činností PROJ zmrazené, Z1-2 hlavička podle řídící varianty, Z1-3 kontakt po SoD volný, Z1-4 tisk CN hned uloží), plán plateb PROJ po CN se propisuje do KL/SoD/exportu, D5-3 údaje negativní kontroly šablon mimo repozitář (#501–#503). Do test 22. 10. 14:03.",
     "hotovo" : true,
     "pozn" : "Kolo --bez-mutaci 303/1/6 (overit_online opraven → 271/0), mutace jádro 30/30, server 71/71."
-   }
+   },
+   {"text" : "23. 10. 2026 — v23.10.3: P2 převzetí #114 Pipedrive (párování polí, převod hodnot) z větve se starou historií jako diff; 3 opravy Stavu Pipedrive; mutace po částech + matrix v Actions.", "hotovo" : true, "pozn" : "Kolo 315/0/6, mutace P2 7/7, #114 22/22."},
+   {"text" : "23. 10. 2026 — v23.10.4: B1 #512 Platby 1–8 se nezapisují, pole Platební kalendář SoD PROJ, hodnota dealu; #486 uzavřena.", "hotovo" : true, "pozn" : "Kolo 315/0/6, mutace #512 18/18."},
+   {"text" : "23. 10. 2026 — K8 #513 celé kolo s mutacemi + audit v22.10.6 → v23.10.4 (VYHOVUJE S VÝHRADOU, main doporučen); S1 #515 hloubkový security test a funkční logika (0 kritických, 2 vysoké v repu).", "hotovo" : true, "pozn" : "Jádro 527/527, server 897/897; S1 role 40/40, XSS 342/0, ceny 1200× bez neshody."},
+   {"text" : "23. 10. 2026 — v23.10.5: O-K8 #514 opravy K8 a S1 bez změny chování (souběh uložení × zámek, souběh změny hesla, chybové kódy, hlavičky, CI 10 částí).", "hotovo" : true, "pozn" : "Kolo 316/0/6, mutace #514 22/22 + 1/1, Actions Testy #196 celé zelené."},
+   {"text" : "25. 10. 2026 — v25.10.1: aktualizace uživatelské příručky (M1, náhrada nočního běhu bez přístupu k repu).", "hotovo" : true, "pozn" : "Kolo 316/0/6, overit_manual 48/0. Releasy v23.10.3–v25.10.1 vydány 26. 10."}
   ],
   "pravidla" : [
    "GitHub (INFRA-14), rosti.cz (INFRA-15) a Apps Script se bez výslovného pokynu nespouští ani neaktualizují.",
@@ -8884,8 +8889,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v23.10.2 (engscalc, test = f3b5d42)",
-  "stavKDatu" : "23. 10. 2026"
+  "build" : "v25.10.1 (engscalc, test = efa61c1)",
+  "stavKDatu" : "26. 10. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
