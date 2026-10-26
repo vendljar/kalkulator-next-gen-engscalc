@@ -947,6 +947,20 @@ const KONTROLY = [
     },
   },
   {
+    /* SPLÁTKY OCK = 100 % (SEC-S5, rozhodnutí J. V. 26. 10. 2026 = A, #517;
+     * vzor planPlateb100). Varování před nabídkou — skutečná zábrana je
+     * u smlouvy o dílo realizace (kryciSodPlatby → chyba). Pravidlo samo
+     * bydlí v kryci.js (kryciPlatbyOck100), ať krycí list, SoD i kontroly
+     * čtou totéž. */
+    kod: 'platbyOck100', kde: 'Krycí list OCK', nazev: 'Splátky OCK nedávají 100 %',
+    zjisti(ctx) {
+      if (ctx.jenProj || (ctx.zak && ctx.zak.jenProj)) return null;
+      if (typeof kryciPlatbyOck100 !== 'function') return null;
+      const t = kryciPlatbyOck100(ctx.platbyOck);
+      return t ? { text: t } : null;
+    },
+  },
+  {
     /* SLEVA PROJEKCE VE WORDU (P4 / K15-N66, 25. 9. 2026). Aplikace posílá
      * do Wordu PROJ_CENA_PRED_SLEVOU, PROJ_SLEVA_PROC, PROJ_SLEVA_KC
      * i součty, ale šablona nabídky PROJ v2 nemá ani jeden — zákazník vidí
