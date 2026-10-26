@@ -8230,12 +8230,38 @@
    "detail" : "VÝSLEDEK 26. 10.: testovací web VYHOVUJE. v25.10.1 = test (dist/ shodný až na datum sestavení); hlavičky HTML = netlify.toml; 74 dotazů na 25 cest /api bez relace → 401/405/400, nikde 500 ani data, CORS žádné; cizí Origin/null/text-plain odmítnuty; cookie HttpOnly+Secure+SameSite=Lax; /.netlify/functions/* 404, zaloha_nocni 403 od platformy; 44 cest mimo dist/ 404; Playwright: jen vlastní doména, 0 porušení CSP, rámování zablokované. SEC-I1 a SEC-I2 z S1 ověřeny. Nálezy: ostrý engscalc.netlify.app (main v22.10.1) pasivně v pořádku; SEC-Z1 vysoký (opuštěné veřejné nasazení schaftscalc.netlify.app vrací v7.9.2 ze 7. 9. bez CSP/XFO/nosniff/Referrer/Permissions; vypnout nebo převést rozhodne J. V.), SEC-Z2 nízký (odpovědi funkcí bez CSP a Referrer-Policy), SEC-Z3–Z6 informativní. Celkem ≈ 175 dotazů po 1,1 s, 1 pokus přihlášení se smyšleným účtem.",
    "hotovoKdyz" : "Zpráva podklady/SEC_AUDIT_ZIVY_26_10.md s důkazy (sondy v podklady/S2_zivy/), odkaz z SEC_AUDIT_24_10.md, vysoké nálezy nahlášené koordinaci hned.",
    "kde" : "`podklady/SEC_AUDIT_ZIVY_26_10.md`, `podklady/S2_zivy/`",
-   "pozn" : "Dávka S2, větev claude/s2-zivy-test nad 6076128. Jen dokumentace, verze se nezvyšovala (srovná integrace). SEC-Z1 řeší J. V. (provoz), SEC-Z2 opravná dávka (mění chování: ne).",
+   "pozn" : "Dávka S2, větev claude/s2-zivy-test nad 6076128. Jen dokumentace, verze se nezvyšovala (srovná integrace). SEC-Z1 řeší J. V. (provoz), SEC-Z2 opravná dávka (mění chování: ne) → hotovo v #521 (v26.10.7).",
    "zavisi" : [
     {
      "id" : "515",
      "typ" : "tvrda",
      "proc" : "živá část S1"
+    }
+   ]
+  },
+  {
+   "id": "521",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "",
+   "slozitost": "S",
+   "nazev": "O3: dorovnání po sloučení dávek 26. 10. — příručka, odkazy hlášek kontrol, SEC-Z2",
+   "proc": "Po sloučení O1 #516, #518, #114, #519, O2 #517, S2 #520 a příručky M3 do integrace v26.10.6 mohly v příručce zůstat zdvojené nebo zastaralé odstavce (M3 je psala dopředu), hlášky kontrol posílaly do Nastavení → Firma (nález M3) a odpovědi funkcí nenesly CSP ani Referrer-Policy (SEC-Z2 z S2 #520, nízký, mění chování: ne).",
+   "detail": "PŘÍRUČKA: kap. 8, 13, 21, 23, 24, 28 a slovníček ověřeny proti kódu integrace — žádný zdvojený odstavec (Mapa polí CRM po sloučení jen jednou), kap. 26 „Kotvení přes můstky“ přepsána podle skutečného chování (tsKotveniPoloha: výchozí věta + „… a přes můstky/můstek“, štítek z kalkulace, ruční přepis vyhrává, i EN/DE/FR), kap. 23 ceny v náhledu šedé (od v26.10.6), kap. 14 lhůta ve smluvních standardech, slovníček nové znění hlášky; novinky v pořadí v26.10.7 → v26.10.1 (blok „Příručka aktualizována“ M3 je součástí v26.10.7), hlavička v26.10.7. HLÁŠKY: src/kontroly.js — kapitoly, termín „dle dohody“, ATYP bez lhůty, dvě čísla → Nastavení → Smlouvy / Šablony (jen text). SEC-Z2: JSON_HLAVICKY/json() v netlify/lib/sdilene.mjs + export pro controlling (dřív vlastní hlavičky bez nosniff).",
+   "hotovoKdyz": "Příručka bez zdvojení a s hlavičkou v26.10.7; hlášky jmenují Nastavení → Smlouvy / Šablony; každá odpověď funkce nese CSP default-src 'none'; frame-ancestors 'none' a Referrer-Policy no-referrer; testy s pojistkou a mutace #521.",
+   "kde": "`manual/obsah.json`, `src/kontroly.js`, `src/test_kontroly.js` (blok #521), `netlify/lib/sdilene.mjs`, `netlify/functions/controlling_export.mjs`, `netlify/test_sec_z2.mjs`, `netlify/mutace.mjs`, `mutace_jadro.mjs`",
+   "hotovoV": "v26.10.7",
+   "pozn": "Dávka O3, větev claude/o3-dorovnani nad abc23d1 (integrace v26.10.6). Testy: test_kontroly 10 FAIL → 159/0, test_sec_z2 17 FAIL → 40/0; mutace server #521 3/3, jádro #521 3/3.",
+   "zavisi": [
+    {
+     "id": "520",
+     "typ": "tvrda",
+     "proc": "SEC-Z2 ze živého testu S2"
+    },
+    {
+     "id": "517",
+     "typ": "doporuceno",
+     "proc": "odstavce příručky psané dopředu (M3)"
     }
    ]
   }
@@ -9007,7 +9033,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v26.10.2 (engscalc, claude/o2-rozhodnuti)",
+  "build" : "v26.10.7 (engscalc, claude/o3-dorovnani)",
   "stavKDatu" : "26. 10. 2026"
  },
  "_comment" : [

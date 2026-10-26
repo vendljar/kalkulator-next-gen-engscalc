@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v26.10.6 · sestaveno 26. 10. 2026 · nahrazuje příručku z 25. 10. 2026 (v25.10.1)",
+  "verze": "Platí pro aplikaci v26.10.7 · sestaveno 26. 10. 2026 · nahrazuje příručku z 25. 10. 2026 (v25.10.1)",
 
   "uvod": [
     {
@@ -14,9 +14,10 @@
       ]
     },
     {
-      "nadpis": "Příručka aktualizována (26. 10. 2026)",
+      "nadpis": "Co je nového ve verzi v26.10.7 (26. 10. 2026)",
       "odstavce": [
-        "**Kapitoly doplněné o poslední změny — aplikace se tím nemění.** Odeslaná nabídka otevřená ze souboru a plán plateb PROJ po odeslání nabídky (kapitoly 8 a 24), co kalkulace z Pipedrive čte a co se do něj teprve chystá zapisovat (kapitola 5), cenová nabídka v cizím jazyce shrnutá na jednom místě a ruční úprava textu v tiskovém náhledu (kapitola 23) a přehled Nastavení — kde administrátor mění firemní údaje, texty nabídek, smluvní standardy, šablony a ceník (kapitola 28).",
+        "**Hlášky kontrol před nabídkou ukazují správné místo v Nastavení.** Upozornění „Nevyplněné kapitoly nabídky“ a „Termín dodání u atypické zakázky“ posílala administrátora do Nastavení → Firma; kapitoly nabídky i smluvní standardy (standardní lhůta dodání) jsou ale na záložce **Nastavení → Smlouvy / Šablony** a hlášky to teď říkají. Nabídka, výpočet ani to, kdy se kontrola ozve, se nemění.",
+        "**Příručka aktualizována.** Do kapitol se propsaly poslední změny: odeslaná nabídka otevřená ze souboru, dialog po tisku a plán plateb PROJ po odeslání nabídky (kapitoly 8 a 24), splátky OCK na 100 % (kapitoly 21 a 24), co kalkulace z Pipedrive čte a co se do něj teprve chystá zapisovat (kapitola 5), Izolační dvojsklo (kapitola 13), cenová nabídka v cizím jazyce na jednom místě se zvýrazněním textů bez překladu a ruční úprava textu v tiskovém náhledu (kapitola 23), kotvení přes můstky ve specifikaci (kapitola 26) a přehled Nastavení — kde administrátor mění firemní údaje, texty nabídek, smluvní standardy, šablony, ceník a mapu polí CRM (kapitola 28).",
         "**Opravené odkazy:** kapitoly nabídky III.–VI., smluvní standardy, skladné, termín dodání a výchozí plán plateb PROJ vyplňuje administrátor v **Nastavení → Smlouvy / Šablony** (ne ve Firmě); francouzská nabídka má kapitoly IV.–VI. a doložky francouzsky (výchozí znění od v19.10.7); příznak „cena dle nabídky“ se nastavuje v **Ceníku nákladů OCK**."
       ]
     },
@@ -737,7 +738,7 @@
           "typ": "seznam",
           "polozky": [
             { "pojem": "V nabídce by byly dva různé termíny", "vyklad": "Text kapitoly V. z Nastavení → Smlouvy / Šablony uvádí standardní lhůtu, kdežto termín ze zakázky je prodloužený za ATYP. Text kapitoly opravuje administrátor — řekněte mu o tom a nabídku do té doby neposílejte." },
-            { "pojem": "Nabídka neuvede termín dodání", "vyklad": "Termín v zakázce je prázdný: ve Firmě chybí standardní lhůta, nebo ho někdo v podmínkách smazal. Napište termín ručně do pole **Termín dodání OCK** v podmínkách u nabídky a dejte vědět administrátorovi, ať lhůtu doplní." }
+            { "pojem": "Nabídka neuvede termín dodání", "vyklad": "Termín v zakázce je prázdný: ve smluvních standardech (Nastavení → Smlouvy / Šablony) chybí standardní lhůta, nebo ho někdo v podmínkách smazal. Napište termín ručně do pole **Termín dodání OCK** v podmínkách u nabídky a dejte vědět administrátorovi, ať lhůtu doplní." }
           ]
         }
       ]
@@ -946,7 +947,7 @@
           ]
         },
         { "typ": "text", "text": "Tiskové náhledy se otevírají v novém okně. **Když prohlížeč okno zablokuje**, aplikace to řekne hláškou „Prohlížeč zablokoval okno s náhledem…“. Povolte pro stránku kalkulačky vyskakovací okna (ikona v adresním řádku prohlížeče) a klikněte znovu. Dřív se v takové chvíli nestalo nic a nebylo jasné proč." },
-        { "typ": "text", "text": "**Ruční úprava textu v náhledu.** V liště tiskového náhledu nabídky (OCK i PROJ) je **✏️ Upravit text před tiskem** — text dokumentu pak doladíte přímo v náhledu a vytisknete; **Vrátit původní znění** úpravy zahodí. Úprava platí jen pro ten výtisk, do zakázky se nezapisuje. **Ceny a částky nabídky, jejíž tisk variantu zamyká (odesílá), ručně přepsat nejdou** — bublina řekne, že se mění v kalkulaci: tisk je zmrazí v zámku varianty a dotisk musí ukázat totéž, co dostal zákazník." },
+        { "typ": "text", "text": "**Ruční úprava textu v náhledu.** V liště tiskového náhledu nabídky (OCK i PROJ) je **✏️ Upravit text před tiskem** — text dokumentu pak doladíte přímo v náhledu a vytisknete; **Vrátit původní znění** úpravy zahodí. Úprava platí jen pro ten výtisk, do zakázky se nezapisuje. **Ceny a částky nabídky, jejíž tisk variantu zamyká (odesílá), ručně přepsat nejdou** (od v26.10.6) — buňky s cenami jsou v režimu úprav šedé a bublina řekne, že se mění v kalkulaci: tisk je zmrazí v zámku varianty a dotisk musí ukázat totéž, co dostal zákazník." },
         { "typ": "podnadpis", "text": "Nabídka se řídí kalkulací" },
         { "typ": "text", "text": "**Co v kalkulaci nepočítáte, nabídka neslibuje.** Dřív stačilo, že měla sekce cenu, a vytiskl se celý její text — tedy i části, které jste vyřadil. Když teď v Kalkulaci PROJ odškrtnete třeba *Elektro projekt*, zmizí z nabídky celá jeho část včetně podnadpisu. Nula místo ceny funguje stejně jako odškrtnutí." },
         { "typ": "text", "text": "**DPH se do nabídky netiskne.** Dokument se generuje v cenách bez DPH; nad ním je zaškrtávátko *Zobrazit DPH a cenu s DPH*, kterým si řádky kdykoli přidáte. Volba se týká jen toho jednoho výtisku. U nulové sazby (zahraniční zakázka) se píše „DPH 0 % (nulová)“." },
@@ -1119,7 +1120,7 @@
         { "typ": "podnadpis", "text": "Specifikace se řídí cenou" },
         { "typ": "text", "text": "Některá pole specifikace už nejdou přepsat, protože by mohla odporovat ceně. **OVĚŘOVACÍ STATICKÝ VÝPOČET KONSTRUKCE** je „ano“, když je v Kalkulaci OCK položka STATICKÉ POSOUZENÍ s nenulovým množstvím, jinak „ne“. Na obrazovce je jen ke čtení a říká, kde se statika vypíná (množstvím 0). Statika zdarma — cena nula, množství nenulové — je pořád „ano“, protože se dělá. Od 30. 9. 2026 platí totéž pro **ZAMĚŘENÍ PROSTORŮ 3D SKENEREM**: řídí se položkou ZAMĚŘENÍ 3D SKENEREM v Režii Kalkulace OCK (množství 0 = „ne“) a stejně se chová i řádek **Zaměření strojovna** v krycím listu OCK — jen ke čtení, dřívější ruční „Ano“ tam už neplatí." },
         { "typ": "text", "text": "U **lešení kolem OCK** rozhoduje cena jen v jednom případě: je-li vnější lešení v základní ceně, řádek „zajistí objednatel“ se vynechá (kapitola 17). Jinak text volíte dál vy. Ruční hodnota, kterou cena přebila, se nesmaže — zůstane v datech a obrazovka ukáže, že se nepoužije." },
-        { "typ": "text", "text": "**Kotvení přes můstky.** U šachty s můstky (kapitola 11) nabízí Technická specifikace OCK v řádku **KOTVENÍ KONSTRUKCE (POLOHA)** i kotvení konstrukce do budovy přes můstky v nástupištích. Je to popis řešení pro zákazníka — cenu můstků určuje kalkulace, specifikace na ni nesahá. Volbu zkontrolujte, než specifikaci pošlete jako přílohu smlouvy." }
+        { "typ": "text", "text": "**Kotvení přes můstky** (od v26.10.5). U šachty s můstky (kapitola 11) se řádek **KOTVENÍ KONSTRUKCE (POLOHA)** v Technické specifikaci OCK doplní sám: k výchozí větě přibude „… a přes můstky“, u jednoho můstku „… a přes můstek“ — třeba „prohlubeň, podesty ve všech nástupištích, hlava šachty a přes můstky“. Štítek u řádku pak říká *z kalkulace*; když počet můstků změníte nebo můstky zrušíte, věta se změní s nimi. Totéž jde do anglické, německé i francouzské nabídky. **Ručně přepsaný řádek zůstane, jak jste ho napsali**, a věta, která můstek už zmiňuje, se nedoplňuje. Je to popis řešení pro zákazníka — cenu můstků určuje kalkulace, specifikace na ni nesahá." }
       ]
     },
     {
@@ -1222,7 +1223,7 @@
             { "pojem": "Model 1 (1:1 jako Excel) je zmrazený…", "vyklad": "Pokusil jste se přepnout zakázku na Model 1. To smí jen administrátor; nabídky se počítají Modelem 2. Kapitola 10." },
             { "pojem": "Ceník se od posledního uložení změnil", "vyklad": "Rozpracovaná zakázka se přepočítala na platný ceník. Dialog ukáže, o kolik se hnula cena, a nabídne vrácení původních cen. Kapitola 22." },
             { "pojem": "Než nabídku odešlete – …", "vyklad": "Kontroly před nabídkou něco našly. Varování opravte, nebo potvrďte, že o něm víte. Nález označený ⛔ je zábrana — dokument nevznikne, dokud ji neopravíte. Kapitola 23." },
-            { "pojem": "Nabídka odejde bez … — v Nastavení → Firma → Kapitoly nabídky nejsou vyplněné", "vyklad": "(Kapitoly se dnes vyplňují v Nastavení → Smlouvy / Šablony.) Některá kapitola IV.–VI. nebo doložky chybí pro jazyk tisku a z nabídky by se vypustila. Řekněte administrátorovi. Kapitola 23." },
+            { "pojem": "Nabídka odejde bez … — v Nastavení → Smlouvy / Šablony → Kapitoly nabídky nejsou vyplněné", "vyklad": "Některá kapitola IV.–VI. nebo doložky chybí pro jazyk tisku a z nabídky by se vypustila. Řekněte administrátorovi. Kapitola 23." },
             { "pojem": "V nabídce budou dva různé termíny…", "vyklad": "Atypová zakázka má prodloužený termín dodání, ale text kapitoly V. uvádí standardní lhůtu. Kapitola 14." },
             { "pojem": "Prohlížeč zablokoval okno s náhledem…", "vyklad": "Povolte pro stránku kalkulačky vyskakovací okna a klikněte znovu. Kapitola 23." },
             { "pojem": "Splátky OCK nedávají 100 %", "vyklad": "Záloha, dílčí faktura č. 2 a konečná faktura v krycím listu OCK nedávají dohromady 100 %. Opravte je; do té doby smlouva o dílo nevznikne. Kapitola 21." },

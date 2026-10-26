@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v26.10.7 — O3 #521: dorovnání po sloučení dávek 26. 10. (příručka, odkazy hlášek kontrol, SEC-Z2), větev claude/o3-dorovnani
+
+Nad abc23d1 (integrace v26.10.6 = O1 #516, #518, #114, #519, O2 #517, S2 #520, příručka M3).
+
+- **Hlášky kontrol před nabídkou vedou do Nastavení → Smlouvy / Šablony** (nález M3, jen text). „Nevyplněné
+  kapitoly nabídky“ a „Termín dodání u atypické zakázky“ (termín „dle dohody“, ATYP bez standardní lhůty,
+  ATYP se smazaným termínem, dvě různá čísla) posílaly do „Nastavení → Firma → Kapitoly nabídky / Smluvní
+  standardy“ a mluvily o lhůtě „z Firmy“; obě sekce jsou od 20. 8. 2026 na záložce Smlouvy / Šablony.
+  Kdy se kontrola ozve, se nemění. Test `src/test_kontroly.js` blok #521 (před opravou 10 FAIL, po 159/0).
+- **SEC-Z2 — CSP a Referrer-Policy v odpovědích serverových funkcí** (živý test S2 #520, nízký, mění chování:
+  ne). `[[headers]]` z `netlify.toml` se na funkce s `config.path` neuplatní, proto společné `JSON_HLAVICKY`
+  / `json()` (`netlify/lib/sdilene.mjs`) nově nesou `Content-Security-Policy: default-src 'none';
+  frame-ancestors 'none'` a `Referrer-Policy: no-referrer`. Všechny odpovědi jsou JSON — nic se nerozbije.
+  Export pro controlling (vlastní `Response`) bere `JSON_HLAVICKY`, takže nově nese i `nosniff`. Test
+  `netlify/test_sec_z2.mjs` (před opravou 17 FAIL, po 40/0) a mutace serveru #521 3/3; upravený úsek mutace
+  #514 SEC-I1 (1/1).
+- **Příručka po sloučení sjednocena** (`manual/obsah.json`): odstavce psané M3 dopředu ověřeny proti kódu
+  integrace — kap. 8 (dialog po tisku, otevření ze souboru), 13 (Izolační dvojsklo), 21/24 (splátky OCK
+  100 %), 23 (ceny v náhledu, žluté zvýraznění), 28 (Mapa polí CRM) jsou jednou a sedí; přepsáno: kap. 26
+  „Kotvení přes můstky“ podle skutečného řádku specifikace (dřív „znění odhadem“), kap. 23 ceny šedé,
+  kap. 14 a slovníček (nové znění hlášky, bez vysvětlující závorky). Novinky v pořadí v26.10.7 → v26.10.1,
+  blok „Příručka aktualizována“ M3 je součástí novinky v26.10.7, hlavička „Platí pro aplikaci v26.10.7“.
+- Mutace jádra #521 3/3 (texty hlášek); `--kontrola` jádro 570, server 936.
+
 ## v26.10.6 — O2 #517: zbylá rozhodnutí J. V. z dialogu K8/S1 + uzavření #319 (T4), větev claude/o2-rozhodnuti
 
 Nad 6076128 (integrace po sloučení O1 #516, v26.10.1). Dialog J. V. 26. 10. 2026 („ostatní podle návrhu“):
