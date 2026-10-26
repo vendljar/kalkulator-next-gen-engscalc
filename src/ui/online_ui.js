@@ -1944,8 +1944,12 @@ async function onlineOtiskDopor(prvni, prubeh) {
  * Obsah (J. V.): BEZ otisků hesel a BEZ podpisů — server ho vydá očištěný
  * (GET /api/zaloha?zdroj=nocni). Soubor `otisk_YYYY-MM-DD.json` (den
  * nočního otisku) + `posledni_kopie.json` (datum, velikost, SHA-256);
- * stejný záznam si poznamená server, aby hlídka fungovala všude. Na Disku
- * se nic nemaže. */
+ * stejný záznam si poznamená server, aby hlídka fungovala všude.
+ * Od #523 Z2 (J. V. 26. 10. 2026) je kopie komprimovaná —
+ * `otisk_YYYY-MM-DD.json.gz` (gzip, umí ho načíst obnova ze souboru) —
+ * a po každé ÚSPĚŠNÉ kopii se staré kopie ve složce uklidí podle pravidla
+ * src/retence_zaloh.js (7 dní, týdenní 8 týdnů, měsíční 6 měsíců), viz
+ * kopieDiskUklid. */
 /* ZÁLOHA PO STRÁNKÁCH (#522 Z1). Server vydá nejvýš ~4 MB na odpověď;
  * stránky se skládají uloZalohaSloz (src/uloziste.js) do tvaru dřívější
  * celé zálohy. U kopie na Disk drží první odpověď klíč otisku a další
@@ -1992,18 +1996,61 @@ function kopieDiskSlozka() {
   });
 }
 
-async function kopieDiskSha256(text) {
+async function kopieDiskSha256(data) {
   if (typeof crypto === 'undefined' || !crypto.subtle) return '';
-  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  const b = await crypto.subtle.digest('SHA-256', typeof data === 'string' ? new TextEncoder().encode(data) : data);
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
-async function kopieDiskZapisSoubor(h, jmeno, text) {
+async function kopieDiskZapisSoubor(h, jmeno, data) {
   const fh = await h.getFileHandle(jmeno, { create: true });
   const w = await fh.createWritable();
-  await w.write(text); await w.close();
+  await w.write(data); await w.close();
   const f = await fh.getFile();
   return f.size;
+}
+
+/* KOMPRESE KOPIE (#523 Z2). Měření (nastroje/mereni_komprese_otisku.mjs):
+ * gzip zmenší kopii blízkou engscalc o 32–41 % (text zakázek o ~99 %,
+ * base64 příloh o ~25 %). Prohlížeč bez CompressionStream zapíše kopii
+ * jako dřív nekomprimovanou (.json). Vrací { data: Uint8Array, gzip }. */
+async function kopieDiskData(text) {
+  const surova = new TextEncoder().encode(text);
+  if (typeof CompressionStream !== 'function' || typeof Blob !== 'function' || typeof Response !== 'function')
+    return { data: surova, gzip: false };
+  const gz = await new Response(new Blob([surova]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+  return { data: new Uint8Array(gz), gzip: true };
+}
+
+/* ÚKLID STARÝCH KOPIÍ NA DISKU (#523 Z2, rozhodnutí J. V. 26. 10. 2026).
+ * Volá se JEN po úspěšné kopii, kterou server přijal. Pojistky:
+ *   - jen ve složce „_Zaloha Netlify DB" (jméno se ověří znovu);
+ *   - nejdřív se znovu přečte právě zapsaný soubor a musí sedět velikost
+ *     i SHA-256 — neúplná nebo neověřitelná kopie = nic se nemaže;
+ *   - maže se jen soubor přesně tvaru otisk_RRRR-MM-DD.json(.gz) podle
+ *     retenceZalohDiskVyber (src/retence_zaloh.js); nikdy právě zapsaná
+ *     kopie, nikdy nejnovější, nikdy nic jiného (podsložky, posledni_kopie,
+ *     „otisk_… (1).json").
+ * Disk Google smazané soubory drží 30 dní v koši. Vrací { smazano, chyby }
+ * nebo { smazano: [], duvod } — chyba úklidu kopii nezpochybní. */
+async function kopieDiskUklid(h, kopie, ted) {
+  const nic = (duvod) => ({ smazano: [], chyby: [], duvod });
+  if (String(h && h.name || '') !== ULO_KOPIE_DISK_SLOZKA) return nic('složka se nejmenuje „' + ULO_KOPIE_DISK_SLOZKA + '"');
+  if (!kopie || !/^[0-9a-f]{64}$/.test(String(kopie.sha256 || '')) || !(kopie.velikostB > 0))
+    return nic('kopii nejde ověřit (chybí SHA-256 nebo velikost)');
+  if (typeof h.values !== 'function' || typeof h.removeEntry !== 'function') return nic('prohlížeč neumí procházet složku');
+  const f = await (await h.getFileHandle(kopie.soubor)).getFile();
+  if (f.size !== kopie.velikostB) return nic('zapsaný soubor má ' + f.size + ' B místo ' + kopie.velikostB + ' B');
+  if ((await kopieDiskSha256(new Uint8Array(await f.arrayBuffer()))) !== kopie.sha256) return nic('kontrolní součet zapsaného souboru nesedí');
+  const jmena = [];
+  for await (const e of h.values()) if (e && e.kind === 'file') jmena.push(String(e.name));
+  const dnes = new Date(+ted || Date.now()).toISOString().slice(0, 10);
+  const smazano = [], chyby = [];
+  for (const j of retenceZalohDiskVyber(jmena, dnes, [kopie.soubor])) {
+    try { await h.removeEntry(j); smazano.push(j); }
+    catch (e) { chyby.push(j + ': ' + (e && e.message || e)); }
+  }
+  return { smazano, chyby };
 }
 
 /* Vlastní kopie do složky `h` (právo zápisu už musí být udělené).
@@ -2027,11 +2074,11 @@ async function kopieDiskProved(h, heslo) {
   if (!hesloSpravce) throw new Error('bez vašeho hesla se kopie nepořídila');
   const o = await onlineZalohaStrankami('/api/zaloha?zdroj=nocni', null);
   if (!o || !o.ok || !o.zaloha) throw new Error((o && o.chyba) || 'server zálohu nevydal');
-  const jmeno = uloKopieDiskJmeno(o.otisk || new Date().toISOString().slice(0, 10));
-  const text = JSON.stringify(o.zaloha);
-  const ocekavano = new TextEncoder().encode(text).length;
-  const sha256 = await kopieDiskSha256(text);
-  const velikostB = await kopieDiskZapisSoubor(h, jmeno, text);
+  const { data, gzip } = await kopieDiskData(JSON.stringify(o.zaloha));
+  const jmeno = uloKopieDiskJmeno(o.otisk || new Date().toISOString().slice(0, 10), gzip);
+  const ocekavano = data.length;
+  const sha256 = await kopieDiskSha256(data);
+  const velikostB = await kopieDiskZapisSoubor(h, jmeno, data);
   /* Kontrola zápisu: soubor na Disku musí mít celou délku, jinak se kopie
    * nezapočítá (hlídka by jinak mlčela nad useknutým souborem). */
   if (velikostB !== ocekavano) throw new Error('soubor ' + jmeno + ' se nezapsal celý (' + velikostB + ' z ' + ocekavano + ' B)');
@@ -2043,7 +2090,22 @@ async function kopieDiskProved(h, heslo) {
   ONLINE_STAV.kopieDisk = (z && z.kopieDisk) || ONLINE_STAV.kopieDisk;
   await kopieDiskZapisSoubor(h, 'posledni_kopie.json',
     JSON.stringify(Object.assign({ kdy: (z && z.kopieDisk && z.kopieDisk.kdy) || new Date().toISOString() }, kopie), null, 1));
-  return kopie;
+  /* #523 Z2: úklid starých kopií — jen když server kopii přijal. */
+  let uklid;
+  if (!z || !z.ok) uklid = { smazano: [], chyby: [], duvod: 'server kopii nepotvrdil' };
+  else { try { uklid = await kopieDiskUklid(h, kopie); } catch (e) { uklid = { smazano: [], chyby: [String(e && e.message || e)] }; } }
+  return Object.assign({}, kopie, { uklid });
+}
+
+/* Věta o úklidu do hlášky po kopii (#523). */
+function kopieDiskUklidText(u) {
+  if (!u) return '';
+  if (u.duvod) return ' Staré kopie na Disku se nemazaly: ' + u.duvod + '.';
+  const n = u.smazano.length;
+  return (n ? ' Na Disku smazáno ' + n + ' ' + (n === 1 ? 'starší kopie' : (n < 5 ? 'starší kopie' : 'starších kopií'))
+      + ' podle pravidla (7 dní, týdenní 8 týdnů, měsíční 6 měsíců): ' + u.smazano.join(', ') + '.'
+    : ' Starší kopie na Disku: nic ke smazání.')
+    + (u.chyby.length ? ' Nepodařilo se smazat: ' + u.chyby.join('; ') + '.' : '');
 }
 
 function kopieDiskVelikost(b) {
@@ -2069,7 +2131,8 @@ async function onlineKopieDiskTed() {
     if (!(await uloPravo(h, false))) throw new Error('prohlížeč nepovolil zápis do složky „' + h.name + '"');
     const k = await kopieDiskProved(h);
     onlineZprava('Záloha zkopírována na Disk: ' + h.name + '/' + k.soubor + ' (' + kopieDiskVelikost(k.velikostB) + ', '
-      + (k.puvod === 'nocni-otisk' ? 'noční otisk ' + k.otisk : 'aktuální stav — noční otisk za posledních 7 dní chybí') + ').');
+      + (k.puvod === 'nocni-otisk' ? 'noční otisk ' + k.otisk : 'aktuální stav — noční otisk za posledních 7 dní chybí') + ').'
+      + kopieDiskUklidText(k.uklid));
     return true;
   } catch (e) {
     onlineZprava('Kopii zálohy na Disk se nepodařilo pořídit: ' + (e && e.message || e), 'varovani');
@@ -3041,20 +3104,29 @@ function onlineObnovaSoubor(ev) {
   o.soubor = null; o.souborJmeno = ''; o.nahled = null;
   o.hlaska = 'Načítám soubor ' + f.name + ' (' + (f.size / 1048576).toFixed(1) + ' MB)…'; o.hlaskaTyp = '';
   render();
-  const fr = new FileReader();
-  fr.onload = () => {
-    try {
-      let z = JSON.parse(fr.result);
-      if (z && z.zaloha && typeof z.zaloha === 'object') z = z.zaloha;
-      if (!z || typeof z !== 'object' || typeof z.porizena !== 'string') throw new Error('chybí razítko pořízení');
-      o.soubor = z; o.souborJmeno = f.name; o.hlaska = '';
-    } catch (e) {
-      o.soubor = null; o.souborJmeno = '';
-      o.hlaska = 'Soubor nevypadá jako záloha kalkulátoru (' + e.message + ').'; o.hlaskaTyp = 'varovani';
-    }
-    o.nahled = null; render();
-  };
-  fr.readAsText(f);
+  return onlineObnovaSouborText(f).then(text => {
+    let z = JSON.parse(text);
+    if (z && z.zaloha && typeof z.zaloha === 'object') z = z.zaloha;
+    if (!z || typeof z !== 'object' || typeof z.porizena !== 'string') throw new Error('chybí razítko pořízení');
+    o.soubor = z; o.souborJmeno = f.name; o.hlaska = '';
+  }).catch(e => {
+    o.soubor = null; o.souborJmeno = '';
+    o.hlaska = 'Soubor nevypadá jako záloha kalkulátoru (' + (e && e.message || e) + ').'; o.hlaskaTyp = 'varovani';
+  }).then(() => { o.nahled = null; render(); });
+}
+
+/* Text souboru zálohy. Kopie na Disku je od #523 Z2 komprimovaná
+ * (`otisk_RRRR-MM-DD.json.gz`) — pozná se podle prvních dvou bajtů gzip
+ * (1f 8b), ne podle přípony (Disk ani prohlížeč příponu nehlídají), a rozbalí
+ * se v prohlížeči. Nekomprimovaná záloha (Stáhnout zálohu, starší kopie
+ * na Disku) se čte jako dřív. */
+async function onlineObnovaSouborText(f) {
+  const b = new Uint8Array(await f.arrayBuffer());
+  if (b.length >= 2 && b[0] === 0x1f && b[1] === 0x8b) {
+    if (typeof DecompressionStream !== 'function') throw new Error('prohlížeč neumí rozbalit komprimovanou zálohu .gz — použijte Chrome nebo Edge');
+    return await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  }
+  return new TextDecoder().decode(b);
 }
 
 function onlineObnovaPripraveno() {
@@ -3418,7 +3490,7 @@ function renderOnlineObnova() {
       ? `<select onchange="onlineObnovaZmena('otiskDen', this.value)" ${dis}>${volby}</select>`
       : `<span class="note">${ONLINE_STAV.otiskyNacteno
         ? 'Na serveru zatím žádný otisk není – pořiďte ho tlačítkem „Zálohovat teď".' : 'Zjišťuje se…'}</span>`)
-    : `<input type="file" accept=".json,application/json" onchange="onlineObnovaSoubor(event)" ${dis}>
+    : `<input type="file" accept=".json,.gz,application/json,application/gzip" onchange="onlineObnovaSoubor(event)" ${dis}>
        ${o.souborJmeno ? `<span class="note">${esc(o.souborJmeno)}${o.soubor && o.soubor.porizena
     ? ' · pořízena ' + esc(new Date(o.soubor.porizena).toLocaleString('cs-CZ')) : ''}${o.soubor && o.soubor.zdroj
     ? ' · z webu ' + esc(o.soubor.zdroj) : ''}</span>` : ''}`;

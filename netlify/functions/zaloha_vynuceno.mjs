@@ -68,7 +68,7 @@ export default async (req) => {
   if (telo.akce === 'kopie-disk') {
     const k = (telo.kopie && typeof telo.kopie === 'object') ? telo.kopie : {};
     const soubor = txt(k.soubor);
-    if (!/^otisk_\d{4}-\d{2}-\d{2}\.json$/.test(soubor))
+    if (!/^otisk_\d{4}-\d{2}-\d{2}\.json(\.gz)?$/.test(soubor))   // #523: komprimovaná kopie .json.gz
       return json({ ok: false, chyba: 'Neplatné jméno souboru kopie.' }, 400);
     /* K3-N1 (rozhodnutí J. V. 20. 10. 2026): záznam odemyká retenci, proto
      * jen kopie do složky „_Zaloha Netlify DB" a jen s heslem správce —

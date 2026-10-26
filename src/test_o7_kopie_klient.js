@@ -56,7 +56,8 @@ const novyCtx = () => {
 };
 const slozka = (ctx, name) => ({ name, getFileHandle: async (jm) => {
   ctx.zapsano[jm] = '';
-  return { createWritable: async () => ({ write: async (t) => { ctx.zapsano[jm] += t; }, close: async () => {} }),
+  /* #523: od v26.10.9 se zapisují bajty (Uint8Array), dřív text */
+  return { createWritable: async () => ({ write: async (t) => { ctx.zapsano[jm] += typeof t === 'string' ? t : new TextDecoder().decode(t); }, close: async () => {} }),
     getFile: async () => ({ size: new TextEncoder().encode(ctx.zapsano[jm]).length }) };
 } });
 

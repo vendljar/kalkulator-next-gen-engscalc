@@ -902,7 +902,8 @@ export function kopieDiskPodlozena(zaznam, klice) {
   const nejnovejsi = klice.filter(k => typeof k === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(k))
     .sort().reverse().slice(0, KOPIE_DISK_NEJNOVEJSICH);
   if (!nejnovejsi.includes(otisk)) return false;
-  if (zaznam.soubor !== 'otisk_' + otisk + '.json') return false;
+  /* #523 Z2: kopie je od v26.10.9 komprimovaná (.json.gz); starší .json platí dál */
+  if (zaznam.soubor !== 'otisk_' + otisk + '.json' && zaznam.soubor !== 'otisk_' + otisk + '.json.gz') return false;
   /* K3-N1 (rozhodnutí J. V. 20. 10. 2026): jen záznam potvrzený heslem
    * správce a jen kopie do složky „_Zaloha Netlify DB". Záznamy zapsané
    * před v20.10.2 tyhle značky nemají — retence počká na novou kopii. */

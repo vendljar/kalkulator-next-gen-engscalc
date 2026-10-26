@@ -327,5 +327,30 @@ await zkus('komprese', async () => {
   test('#523 komprese: chybí-li gzip část, čtení selže s číslem části', /neúplný: chybí část/.test(chyba), chyba);
 });
 
+/* ---------------- 7) záznam kopie na Disk .json.gz (server) ---------------- */
+await zkus('kopie .json.gz', async () => {
+  vycisti();
+  const { default: prihlaseni } = await import('./functions/prihlaseni.mjs');
+  const { default: zalohaVynuceno } = await import('./functions/zaloha_vynuceno.mjs');
+  const { ADMIN_EMAIL } = await import('./lib/sdilene.mjs');
+  const r = await prihlaseni(new Request('http://x/api/prihlaseni', { method: 'POST', body: J({ email: ADMIN_EMAIL, heslo: 'Docasne.Heslo.123' }) }));
+  const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
+  test('#523 kopie: správce se přihlásí', r.status === 200, r.status);
+  const posli = async (soubor) => (await zalohaVynuceno(new Request('http://x/api/zaloha_vynuceno', { method: 'POST', headers: { cookie },
+    body: J({ akce: 'kopie-disk', hesloSpravce: 'Docasne.Heslo.123', kopie: { soubor, velikostB: 1234, sha256: 'c'.repeat(64),
+      otisk: '2026-10-26', puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' } }) }))).status;
+  test('#523 kopie: server přijme záznam komprimované kopie otisk_<den>.json.gz', (await posli('otisk_2026-10-26.json.gz')) === 200
+    && (await ulz('zalohy').cti(Z.KOPIE_DISK_KLIC)).soubor === 'otisk_2026-10-26.json.gz');
+  test('#523 kopie: starý tvar .json platí dál, jiná jména ne', (await posli('otisk_2026-10-26.json')) === 200
+    && (await posli('otisk_2026-10-26.gz')) === 400 && (await posli('otisk_2026-10-26.json.gz.exe')) === 400 && (await posli('otisk_2026-10-26.zip')) === 400);
+  const klice = ['2026-10-26', '2026-10-25'];
+  const z = { kdy: new Date().toISOString(), soubor: 'otisk_2026-10-26.json.gz', velikostB: 1234, sha256: 'c'.repeat(64), otisk: '2026-10-26',
+    puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', potvrzeno: 'heslo-spravce' };
+  test('#523 kopie: záznam .json.gz podloží retenci (kopieDiskPodlozena)', Z.kopieDiskPodlozena(z, klice)
+    && Z.kopieDiskPodlozena({ ...z, soubor: 'otisk_2026-10-26.json' }, klice));
+  test('#523 kopie: .json.gz k jinému dni retenci nepodloží', !Z.kopieDiskPodlozena({ ...z, soubor: 'otisk_2026-10-25.json.gz' }, klice)
+    && !Z.kopieDiskPodlozena({ ...z, soubor: 'otisk_2026-10-26.gz' }, klice));
+});
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

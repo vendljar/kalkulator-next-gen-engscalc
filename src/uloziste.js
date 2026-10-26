@@ -2084,15 +2084,17 @@ function uloZalohaHlidka(otisky, ted) {
  * správce do vybrané složky „_Zaloha Netlify DB" (sourozenec složky _DB).
  * Jednou za 7 dní sama po přihlášení (je-li složka vybraná a právo
  * udělené), kdykoli tlačítkem; hlídka varuje, je-li poslední kopie starší
- * než 14 dní. Na Disku se nic nemaže (retence N5 platí jen pro Blobs).
+ * než 14 dní. Od #523 Z2 (26. 10. 2026) je kopie komprimovaná
+ * (`otisk_RRRR-MM-DD.json.gz`) a po úspěšné kopii prohlížeč ve složce
+ * uklidí staré kopie (src/retence_zaloh.js, kopieDiskUklid v online_ui.js).
  * Čisté funkce nad záznamem ze serveru (GET /api/zaloha_vynuceno →
  * kopieDisk), `ted` v ms. */
 const ULO_KOPIE_DISK_SLOZKA = '_Zaloha Netlify DB';
 const ULO_KOPIE_DISK_INTERVAL_DNU = 7;
 const ULO_KOPIE_DISK_HLIDKA_DNU = 14;
-function uloKopieDiskJmeno(den) {
+function uloKopieDiskJmeno(den, gzip) {
   const d = /^\d{4}-\d{2}-\d{2}$/.test(String(den || '')) ? String(den) : new Date().toISOString().slice(0, 10);
-  return 'otisk_' + d + '.json';
+  return 'otisk_' + d + '.json' + (gzip ? '.gz' : '');
 }
 function uloKopieDiskStav(kopie, ted) {
   const t = kopie && Date.parse(kopie.kdy || '');
