@@ -1,9 +1,13 @@
 /* Mapa vlastních polí Pipedrive (9. 8. 2026, #16).
  *
  * GET /api/pd/pole            → { ok, nastaveno, mapa, popisy, chybi, typNesedi,
- *                                 nejednoznacne, nezarazeno, poridano, … }
+ *                                 nejednoznacne, nezarazeno, poridano, prehled, … }
  * GET /api/pd/pole?obnovit=1  → totéž, ale s vynuceným dotazem do Pipedrive
- *                               (jen Administrátor)
+ *
+ * JEN ADMINISTRÁTOR (#114, 26. 10. 2026). Odpověď slouží jedinému místu —
+ * přehledu mapy v Nastavení — a nese hashe polí CRM; ostatní funkce si mapu
+ * berou přímo přes pdPoleMapa(). Obchodník (i s právem crm.pipedrive) 403.
+ * `prehled` = řádky pro přehled (pdPrehledMapy v lib/pd_mapa.mjs).
  *
  * Proč cache: seznam vlastních polí se mění jednou za rok, ale potřebuje ho
  * KAŽDÉ načtení dealu. Obnovení jsou dva dotazy po 10 tokenech (dealFields
@@ -20,7 +24,7 @@
 import { uloziste, json } from '../lib/sdilene.mjs';
 import { pdNastaveno, pdZavolej, PdChyba, PD_TOKEN_PROMENNA, PD_DOMENA_PROMENNA,
          pdPristup } from '../lib/pipedrive.mjs';
-import { pdMapaZPoli, POLE_DEALU, POLE_ORGANIZACE, PD_POLE_VERZE } from '../lib/pd_mapa.mjs';
+import { pdMapaZPoli, pdPrehledMapy, POLE_DEALU, POLE_ORGANIZACE, PD_POLE_VERZE } from '../lib/pd_mapa.mjs';
 
 const ULOZISTE = 'pipedrive';
 const KLIC = 'pole';
@@ -56,6 +60,9 @@ export default async (req) => {
   /* Přihlášení, původ a právo z matice (B80) — lib/pipedrive.mjs. */
   const { chyba, relace } = await pdPristup(req);
   if (chyba) return chyba;
+  /* Přehled mapy je nástroj správce (#114) — dřív, než se cokoli zjišťuje. */
+  if (relace.role !== 'Administrátor')
+    return json({ ok: false, chyba: 'Mapu polí Pipedrive vidí jen administrátor.' }, 403);
 
   if (!pdNastaveno())
     return json({ ok: true, nastaveno: false, mapa: {}, chybi: [], typNesedi: [], nejednoznacne: [], nezarazeno: [],
@@ -64,16 +71,14 @@ export default async (req) => {
 
   const url = new URL(req.url);
   const obnovit = url.searchParams.get('obnovit') === '1';
-  /* Obnovení stojí dotaz do Pipedrive, takže ho smí spustit jen správce —
-   * jinak by stačilo držet prst na F5 a rozpočet je pryč. */
-  if (obnovit && relace.role !== 'Administrátor')
-    return json({ ok: false, chyba: 'Obnovit mapu polí smí jen administrátor.' }, 403);
-
   try {
     const m = await pdPoleMapa(obnovit);
-    return json({ ok: true, nastaveno: true, ...m });
+    return json({ ok: true, nastaveno: true, ...m, prehled: pdPrehledMapy(m) });
   } catch (e) {
-    if (e instanceof PdChyba) return json({ ok: false, chyba: e.message }, e.stav >= 500 ? 502 : e.stav);
+    /* Odmítnutý token Pipedrive (401) nesmí odejít jako 401 — klient by ho
+     * vzal za vypršelé přihlášení a správce odhlásil (#114). */
+    if (e instanceof PdChyba)
+      return json({ ok: false, chyba: e.message }, (e.stav >= 500 || e.stav === 401) ? 502 : e.stav);
     throw e;
   }
 };

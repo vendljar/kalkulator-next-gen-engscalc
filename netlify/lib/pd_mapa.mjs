@@ -375,3 +375,70 @@ export function pdZbytekDoSta(zaloha, faktura2) {
   const z = 100 - a - b;
   return (z > 0 && z < 100) ? String(Math.round(z * 100) / 100) : '';
 }
+
+/* ============================================================
+ * PŘEHLED MAPY POLÍ PRO NASTAVENÍ (#114, 26. 10. 2026)
+ *
+ * Z uložené mapy (pdPoleMapa) složí řádky pro administrátora: každé pole
+ * kalkulace jedním řádkem se stavem
+ *   sparovano      pole v CRM je, název i typ sedí,
+ *   chybi          pole s dohodnutým názvem v CRM není (i přejmenované),
+ *   typNesedi      název sedí, typ ne — nečte se ani nezapisuje,
+ *   nejednoznacne  název je v CRM víckrát — nečte se ani nezapisuje,
+ * a k tomu seznam nezařazených vlastních polí CRM. Ruční přiřazení se
+ * nedělá: název je dohoda s integrátorem (hlavička souboru).
+ *
+ * Skládá se při každé odpovědi z mapy v cache a z definic v kódu — změna
+ * definic se tak v přehledu ukáže hned, ne až po vypršení cache.
+ * ============================================================ */
+export const PD_PREHLED_STAVY = ['sparovano', 'chybi', 'typNesedi', 'nejednoznacne'];
+
+/* Zdroj podle krycího listu: OCK, PROJ, obojí, nebo nic (pole jen čte CRM). */
+function pdPrehledZdroj(kl) {
+  if (!kl) return [];
+  return ['ock', 'proj'].filter((k) => kl[k] != null && kl[k] !== '').map((k) => k.toUpperCase());
+}
+
+function pdPrehledOblast(oblast, definice, m) {
+  const najdi = (s, klic) => (s || []).find((x) => x && x.klic === klic) || null;
+  return definice.map((d) => {
+    const r = {
+      oblast, klic: d.klic, nazev: d.nazev, druh: d.druh,
+      typ: (d.typ || []).join(' / '), smer: d.smer, zdroj: pdPrehledZdroj(d.kl),
+      stav: 'chybi', crmNazev: '', crmTyp: '', pocet: 0, zapisovatelne: null,
+    };
+    const hash = m.mapa && m.mapa[d.klic];
+    if (hash) {
+      const p = (m.popisy && m.popisy[d.klic]) || {};
+      r.stav = 'sparovano';
+      r.crmNazev = p.nazev || d.nazev;
+      r.crmTyp = p.typ || '';
+      r.zapisovatelne = p.zapisovatelne !== false;
+      return r;
+    }
+    const t = najdi(m.typNesedi, d.klic);
+    if (t) { r.stav = 'typNesedi'; r.crmNazev = t.nazev || d.nazev; r.crmTyp = t.je || ''; return r; }
+    const n = najdi(m.nejednoznacne, d.klic);
+    if (n) { r.stav = 'nejednoznacne'; r.pocet = n.pocet || 2; return r; }
+    /* Ani v mapě, ani v žádném seznamu (mapa z jiné sady definic) = chybí:
+     * nečte se ani nezapisuje, takže to administrátor vidět musí. */
+    return r;
+  });
+}
+
+export function pdPrehledMapy(m, defDealu = POLE_DEALU, defOrg = POLE_ORGANIZACE) {
+  const x = m || {};
+  const radky = pdPrehledOblast('deal', defDealu, x).concat(pdPrehledOblast('organizace', defOrg, {
+    mapa: x.mapaOrganizace, popisy: x.popisyOrganizace, typNesedi: x.typNesediOrganizace,
+    nejednoznacne: x.nejednoznacneOrganizace,
+  }));
+  /* Pole, jehož název definice zná, je už v řádcích jako „jiný typ" nebo
+   * „dvakrát" — mezi nezařazenými by se hlásilo podruhé. */
+  const zname = new Set(defDealu.flatMap((d) => d.nazvy || [d.nazev]).map(pdNazevNorm));
+  const nezarazeno = (x.nezarazeno || []).filter((p) => !zname.has(pdNazevNorm(p.nazev)))
+    .map((p) => ({ nazev: String(p.nazev || ''), typ: String(p.typ || '') }))
+    .sort((a, b) => a.nazev.localeCompare(b.nazev, 'cs'));
+  const souhrn = { celkem: radky.length, nezarazeno: nezarazeno.length };
+  for (const s of PD_PREHLED_STAVY) souhrn[s] = radky.filter((r) => r.stav === s).length;
+  return { radky, nezarazeno, souhrn, poridano: x.poridano || null, verze: x.verze || null };
+}
