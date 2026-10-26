@@ -5553,7 +5553,7 @@
   {
    "id" : "350",
    "vlna" : "B",
-   "stav" : "blokovano",
+   "stav" : "hotovo",
    "dulezitost" : "stredni",
    "slozitost" : "M",
    "nazev" : "Slovník šablon: smlouvy o dílo (nabídka PROJ hotová ve v25.9.3)",
@@ -5561,7 +5561,8 @@
    "detail" : "Doplnit slovník pevných textů nabídky PROJ a obou SoD (návrh Claude, odborná a smluvní kontrola J. V. — smluvní texty se nepřekládají strojově bez kontroly), test pokrytí jako u nabídky OCK. — ČÁST PROJ HOTOVÁ 25. 9. 2026 (v25.9.3): 162 hesel šablony nabídky PROJ v2, pokrytí EN/DE/FR 100 % (test v overit_nabidka_proj_word). Zbývají obě smlouvy o dílo. 25. 9. 2026 večer (v25.9.5): překladač šablon nově přeloží i odstavec se symbolem {{…}}, když ho slovník zná a překlad nese tytéž symboly — ve smlouvách jsou to články s cenou, platbami a pokutami; neznámé vypíše průvodce zvlášť. ZBÝVÁ: slovník obou SoD (čeká na soubory Sablona_SOD_REALIZACE/PROJEKCE od J. V. a smluvní kontrolu překladu).",
    "hotovoKdyz" : "Průvodce ukáže u PROJ a SoD pokrytí přes 90 %; test.",
    "kde" : "`src/preklad.js`, test překladů šablon",
-   "cekaNa" : "J. V. — nahrát do sezení Sablona_SOD_REALIZACE.docx a Sablona_SOD_PROJEKCE.docx; smluvní kontrola návrhu překladu"
+   "hotovoV" : "v22.10.1",
+   "pozn" : "UZAVŘENO 26. 10. 2026 (kontrola vlny B): slovníky obou smluv o dílo hotové — nastroje/preklad_sod.js (slovník z revidovaného znění, D4 v22.10.1, test_preklad_sod.js), šablony SoD realizace v4 CZ/EN/DE/FR nahrané J. V. 22. 10. 2026. Stav „blokováno“ zůstal z 25. 9. omylem."
   },
   {
    "id": "352",
@@ -5806,8 +5807,8 @@
   {
    "id" : "367",
    "vlna" : "B",
-   "stav" : "ceka",
-   "dulezitost" : "vysoka",
+   "stav" : "hotovo",
+   "dulezitost" : "",
    "slozitost" : "L",
    "nazev" : "P10: platební podmínky z krycího listu — 2 měsíce, splatnost, „bez DPH\", po milnících, záruka + návrh plánu plateb",
    "proc" : "K15-N71: platební podmínky žijí na devíti místech a v sedmi bodech si odporují. Rozhodnutí J. V. 29. 9. 2026: vše se dotahuje z krycího listu, při rozporu má přednost krycí list; standard 50 / 40 / 10; platnost 2 měsíce; splatnost z krycího listu; znění „bez DPH\"; fakturace většinou po milnících, může být i měsíční; pro plán plateb PROJ (4 znění) a „vše z krycího listu\" připravit návrh.",
@@ -5821,7 +5822,8 @@
      "proc" : "rozhodnutí P10"
     }
    ],
-   "pozn" : "Etapa C (číslo smlouvy) je #366. Prototyp: https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a. Etapa B hotová ve v30.9.2 — výchozí návrhy Q1, Q2, Q4, Q5, Q8, Q10–Q12 čekají na potvrzení J. V.; šablony PROJ v4 (+EN/DE/FR) a SoD PROJ v2 k nahrání do aplikace (vyrábí je nastroje/vyrob_sablony.js). Revize před sloučením (dvě nezávislé): opravy F1–F9 v 843ff63 (snímek plánu u klonu a po odemčení, brána dokumentu podle varianty, sedm menších); celé kolo nad opravami VŠE ZELENÉ (mutace jádra 87 z 87, serveru 207 z 207); převedeno do test-draft. Rozhodnutí J. V. 30. 9.: Q5 dřívější záloha se přepne na předvolbu automaticky (v30.9.3), Q9 a Q10 potvrzeny, Q1/Q2/Q4/Q11/Q12 bez námitky, body revize a/b zatím OK; Q8 (úprava firemního Standardu převzetím ze zakázky, nebo přímý editor v Nastavení) vysvětleno — čeká na odpověď. Q8 „ponechat“ (J. V. 30. 9.) — otázky etapy B uzavřené. v30.9.3: celé kolo VŠE ZELENÉ (mutace jádra 88 z 88, serveru 207 z 207), převedeno do test-draft."
+   "pozn" : "UZAVŘENO 26. 10. 2026 (kontrola vlny B): etapy A i B hotové (OCK i PROJ — náhled, Word i SoD z krycího listu, Firma jako zdroj podmínek, šablona PROJ v6). Mimo vývoj zůstává jen kontrola cizojazyčných vět rodilými mluvčími (podklady/367_PREKLADY_KONTROLA.md) — zajistí J. V. podle potřeby. Etapa C (číslo smlouvy) je #366. Prototyp: https://claude.ai/artifact/6sbxbaAsBpphfPfE2wnM3a. Etapa B hotová ve v30.9.2 — výchozí návrhy Q1, Q2, Q4, Q5, Q8, Q10–Q12 čekají na potvrzení J. V.; šablony PROJ v4 (+EN/DE/FR) a SoD PROJ v2 k nahrání do aplikace (vyrábí je nastroje/vyrob_sablony.js). Revize před sloučením (dvě nezávislé): opravy F1–F9 v 843ff63 (snímek plánu u klonu a po odemčení, brána dokumentu podle varianty, sedm menších); celé kolo nad opravami VŠE ZELENÉ (mutace jádra 87 z 87, serveru 207 z 207); převedeno do test-draft. Rozhodnutí J. V. 30. 9.: Q5 dřívější záloha se přepne na předvolbu automaticky (v30.9.3), Q9 a Q10 potvrzeny, Q1/Q2/Q4/Q11/Q12 bez námitky, body revize a/b zatím OK; Q8 (úprava firemního Standardu převzetím ze zakázky, nebo přímý editor v Nastavení) vysvětleno — čeká na odpověď. Q8 „ponechat“ (J. V. 30. 9.) — otázky etapy B uzavřené. v30.9.3: celé kolo VŠE ZELENÉ (mutace jádra 88 z 88, serveru 207 z 207), převedeno do test-draft.",
+   "hotovoV" : "v19.10.9"
   },
   {
    "id" : "368",
