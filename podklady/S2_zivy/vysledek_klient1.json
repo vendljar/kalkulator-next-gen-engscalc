@@ -1,0 +1,38 @@
+{
+ "status": 200,
+ "hosty": {
+  "testengscalc.netlify.app": 3
+ },
+ "pozadavky": [
+  {
+   "m": "GET",
+   "u": "https://testengscalc.netlify.app/",
+   "t": "document"
+  },
+  {
+   "m": "GET",
+   "u": "https://testengscalc.netlify.app/api/zdravi",
+   "t": "fetch"
+  },
+  {
+   "m": "GET",
+   "u": "https://testengscalc.netlify.app/api/ja",
+   "t": "fetch"
+  }
+ ],
+ "konzole": [
+  "error: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ ],
+ "chyby": [],
+ "csp": [],
+ "selhane": [
+  "401 https://testengscalc.netlify.app/api/ja"
+ ],
+ "title": "[TEST] Kalkulátor OCK + PROJ",
+ "cookie": "",
+ "ls": [],
+ "viditelne": "Kalkulačka v25.10.1\nvýpočet: Model 2 – opravený\n↶ Zpět\n↷ Znovu\nPřihlásit se\n⚙\n🧪\nTESTOVACÍ PROSTŘEDÍ — vlastní databáze, ostrých dat se nedotkne. Nabídky odsud neposílejte zákazníkům.\n⛔\nCeník není nahraný a firemní údaje nejsou skutečné. Platný ceník zveřejňuje do online databáze administrátor. Požádejte ho o zveřejnění – hodnoty se pak načtou samy.\nceník OCK, ceník projekce, slevová politika a fi",
+ "skriptyExt": [],
+ "linkyExt": [],
+ "iframe": 0
+}

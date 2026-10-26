@@ -59,6 +59,30 @@ hlásí „z kalkulace“ místo „výchozí“ (text bez můstku stejný). Adm
 u zakázky s můstkem tu svou větu + „a přes můstky“ — taková složená věta ve slovníku není a v cizí nabídce
 zůstane česky (#518 ji zvýrazní).
 
+# Předávka — 26. 10. 2026: S2 #520 — živý security test testengscalc.netlify.app, větev `claude/s2-zivy-test`
+
+Nad `6076128acf312de14841ebd129c0b3074cafc728` (integrace po O1 #516). **Jen dokumentace, kód aplikace beze
+změny, verze se nezvyšovala** (srovná integrace). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Pravidla dialogu
+https://claude.ai/artifact/VTamxkz2Xum9uMq7nuBRiM (SEC-3/4/5/6 = A). Do integrace / test nic, Pipedrive ani Disk nic.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| Hlavičky HTML / API / funkcí | ✅ | HTML = `netlify.toml`; API jen `no-store` + `nosniff` z kódu (SEC-I1 ověřeno), bez CSP/Referrer → SEC-Z2 |
+| Endpointy bez relace (25 cest × 3 metody) | ✅ | 401/405/400, nikde 500 ani data, žádné CORS; cizí Origin → 401/403 |
+| Cookies | ✅ | `HttpOnly; Secure; SameSite=Lax`; neplatné přihlášení (1 pokus, smyšlený účet) cookie nenastaví |
+| Veřejný obsah nasazení | ✅ | 44 cest mimo `dist/` → 404 |
+| Verze = `test` | ✅ | v25.10.1, `dist/` shodný až na `BUILD_DATUM_ZNACKA` |
+| `zaloha_nocni` | ✅ | `/.netlify/functions/zaloha_nocni` → 403 platformy (SEC-I2 ověřeno); ostatní `/.netlify/functions/*` 404 |
+| Klient Playwright | ✅ | jen vlastní doména, 0 porušení CSP, rámování blokuje `frame-ancestors` |
+| Ostrý web pasivně | ✅/⚠️ | ostrý **engscalc** = `main` v22.10.1, hlavičky v pořádku; **SEC-Z1 vysoký:** opuštěné veřejné nasazení schaftscalc.netlify.app = v7.9.2 (7. 9.) bez bezpečnostních hlaviček; hlášeno koordinaci hned |
+| Zpráva + odkaz | ✅ | `podklady/SEC_AUDIT_ZIVY_26_10.md`, oddíl „Živá část (S2…)“ v `SEC_AUDIT_24_10.md`, sondy `podklady/S2_zivy/` |
+| Roadmapa #520 (vlna B, hotovo) + historie | ✅ | `roadmapa.py --kontrola` čisté |
+| `testovaci_kolo.sh --jen staticke` | ✅ | 4/4 |
+
+**Otevřené pro J. V.:** SEC-Z1: opuštěný schaftscalc vypnout, nebo převést na `main` (ostrý je engscalc, v pořádku).
+Opravná dávka (mění chování: ne): SEC-Z2 (CSP `default-src 'none'` + `Referrer-Policy` v `JSON_HLAVICKY` + test),
+volitelně SEC-Z4. Příští živá kontrola: po posunu `test → main` pasivně hlavičky a verze engscalc.
+
 ---
 
 # Předávka — 26. 10. 2026: O1 #516 — zámek CN po otevření ze souboru (K8-K1) a plán plateb PROJ po CN (SEC-S6 + SEC-N8), větev `claude/o1-zamek-plan`
