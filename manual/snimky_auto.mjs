@@ -93,7 +93,27 @@ catch (e) {
   process.exit(2);
 }
 const ZC = require(path.join(KOREN, 'src/zkusebni_cenik.js'));
-const SNIMAC_JS = readFileSync(path.join(KOREN, 'manual/snimac.js'), 'utf8');
+/* K sběrači se přibalí pomocník na výřez sekce (#524): krycí list nebo
+ * technická specifikace je jeden dlouhý dokument a postup ukazuje jen tu
+ * sekci, o které krok mluví. Výřez je dočasná kopie vedle originálu
+ * (viditelná, aby ji sběrač neuklidil jako skrytou) a po snímku zmizí. */
+const POMOCNIK_JS = `
+window.vyrezSekce = function (rodic, od, po) {
+  if (typeof rodic === 'string') rodic = document.querySelector(rodic);
+  if (!rodic) return null;
+  var deti = [].slice.call(rodic.children);
+  var i0 = deti.findIndex(function (d) { return new RegExp(od).test(d.textContent); });
+  if (i0 < 0) return null;
+  var i1 = po ? deti.findIndex(function (d, i) { return i > i0 && new RegExp(po).test(d.textContent); }) : -1;
+  if (i1 < 0) i1 = deti.length;
+  var obal = rodic.cloneNode(false);
+  obal.removeAttribute('id');
+  obal.setAttribute('data-mn-docasny', '');
+  deti.slice(i0, i1).forEach(function (d) { obal.appendChild(d.cloneNode(true)); });
+  rodic.parentNode.insertBefore(obal, rodic.nextSibling);
+  return obal;
+};`;
+const SNIMAC_JS = readFileSync(path.join(KOREN, 'manual/snimac.js'), 'utf8') + '\n' + POMOCNIK_JS;
 
 /* ---------- vymyšlené údaje ----------
  *
@@ -159,8 +179,9 @@ await ctx.route('**/api/**', async route => {
   const odp = await fn(new Request(r.url(), init));
   const setc = odp.headers.get('set-cookie');
   if (setc) cookieJar = setc.split(';')[0];
-  route.fulfill({ status: odp.status, contentType: 'application/json; charset=utf-8',
-    body: await odp.text() });
+  const telo = await odp.text();
+  if (odp.status >= 400 && process.env.KNG_SNIMKY_LADENI) console.log('  API ' + url.pathname + ' ' + odp.status + ' ' + telo.slice(0, 300));
+  route.fulfill({ status: odp.status, contentType: 'application/json; charset=utf-8', body: telo });
 });
 
 const krok = (t) => console.log('· ' + t);
@@ -170,6 +191,10 @@ const cekej = (ms) => page.waitForTimeout(ms);
  * je nikdo neodklepl, proto se nahradí odpovědí „ano" — stejně jako
  * v harnessech. Na snímcích žádný dialog není, takže to vzhled neovlivní. */
 const dlgStub = () => page.evaluate(() => {
+  /* Pravé dialogy se schovají stranou: postup krok za krokem (#524) si je
+   * na chvíli vrátí, aby se dal vyfotit dialog, na který obchodník odpovídá. */
+  if (!window.__dlgPuv) window.__dlgPuv = { potvrd: window.potvrd, hlaska: window.hlaska,
+    dotaz: window.dotaz, volba: window.volba };
   window.__dlg = [];
   window.potvrd = (t) => { window.__dlg.push(String(t)); return Promise.resolve(true); };
   window.hlaska = (t) => { window.__dlg.push(String(t)); return Promise.resolve(); };
@@ -196,9 +221,55 @@ const prihlas = async (email, heslo) => {
  * přípravy by v příručce ukazoval něco jiného, než o čem píše. */
 const api = (cesta, telo) => page.evaluate(([c, t]) => onlineApi(c, t), [cesta, telo]);
 
-/* ---------- 1) administrátor připraví prostředí ---------- */
+/* Snímek: selektor (řetězec) nebo funkce vracející prvek, která běží ve
+ * stránce. `uprav` dostává klon a SNIMAC stejně jako v ruční cestě. */
+const pozadovane = [];
+const vezmi = async (id, cil, volby = {}) => {
+  pozadovane.push(id);
+  const vysl = await page.evaluate(([id, cil, volby]) => {
+    const el = cil.fn ? (new Function('return (' + cil.fn + ')()'))() : document.querySelector(cil.sel);
+    if (!el) return 'NENALEZENO';
+    if (el.scrollIntoView) el.scrollIntoView();
+    const v = { tema: volby.tema, popis: volby.popis };
+    if (volby.uprav) v.uprav = new Function('klon', 'S', volby.uprav);
+    const vysl = SNIMAC.vezmi(id, el, v);
+    document.querySelectorAll('[data-mn-docasny]').forEach(e => e.remove());
+    return vysl;
+  }, [id, typeof cil === 'function' ? { fn: cil.toString() } : { sel: cil },
+      { tema: volby.tema, popis: volby.popis || '', uprav: volby.uprav || '' }]);
+  console.log('  ' + (vysl === 'NENALEZENO' ? '✕ ' + id + ' — prvek nenalezen (' + cil + ')' : '✓ ' + vysl));
+};
+
+/* ---------- 0) před přihlášením (#524) ----------
+ *
+ * Přihlašovací okno a červená lišta „Ceník není nahraný" se dají vyfotit
+ * jen nepřihlášeně. Sběrač se proto vloží už teď a hotové snímky se před
+ * přihlášením (které stránku načte znovu) odloží stranou. */
 
 await nacti();
+await page.addScriptTag({ content: SNIMAC_JS });
+krok('před přihlášením: přihlašovací okno a červená lišta');
+await page.waitForFunction(() => {
+  const e = document.querySelector('#ukazkoveLista');
+  return e && e.textContent.trim().length > 0;
+}, null, { timeout: 15000 }).catch(() => {});
+await vezmi('k4-cervena-lista', '#ukazkoveLista');
+await vezmi('k1-prihlaseni', '#prihlaseni-box');
+/* Heslo na snímku je výplň, ne skutečné heslo — do příručky se hodnota
+ * pole zapéká jako atribut. */
+await page.fill('#onlineEmail', OBCHODNIK.email);
+await page.fill('#onlineHeslo', 'xxxxxxxxxx');
+await vezmi('k1-prihlaseni-vyplneno', '#prihlaseni-box');
+await page.fill('#onlineEmail', '');
+await page.fill('#onlineHeslo', '');
+/* Snímky z dřívějších načtení stránky (každé přihlášení stránku načte
+ * znovu a sběrač s ní) — na konci se přidají k ostatním. */
+const ODLOZENE = [];
+const odloz = async () => { ODLOZENE.push(...await page.evaluate(() => SNIMAC.snimky.splice(0))); };
+await odloz();
+
+/* ---------- 1) administrátor připraví prostředí ---------- */
+
 krok('přihlášení administrátora');
 await prihlas('spravce@priklad.cz', 'Zkusebni.Heslo.123');
 
@@ -210,14 +281,32 @@ await prihlas('spravce@priklad.cz', 'Zkusebni.Heslo.123');
  * a kontrola před nabídkou by kvůli ní na každém snímku hlásila
  * „spočítaný z UKÁZKOVÝCH cen". */
 krok('zveřejnění zkušebního ceníku');
-await page.evaluate(async ([cenik, cenikProj]) => {
+/* `zdrazeni` (#524): druhé zveřejnění se zdraženou montáží — kapitola 22
+ * ukazuje dialog „Ceník se od posledního uložení změnil", který se objeví
+ * po otevření zakázky spočítané podle staršího ceníku. */
+const zverejniCenik = (zdrazeni = 1) => page.evaluate(async ([cenik, cenikProj, zdrazeni]) => {
+  if (zdrazeni !== 1) cenik.montazHodKc = Math.round(cenik.montazHodKc * zdrazeni);
   Object.assign(cenik, { atypZamecnikKc: 50000, atypRezervaZakladPct: 0.30,
     atypRezervaPriplatkyPct: 0.30, atypMontazPct: 0.30, atypProjekcePct: 0.30 });
   const slevy = JSON.parse(JSON.stringify(NAST.slevy || {}));
   delete slevy.ukazkove; delete slevy.prazdny;
-  await onlineApi('/api/program', { cenik, cenikProj, slevy,
+  /* Stropy slev a minimální marže jako ve výchozím nastavení firmy
+   * (kapitola 19: Obchodník 5 %, Vedoucí 15 %), ať snímky slevy ukážou
+   * schválení automaticky i žádost nad strop. */
+  slevy.stropy = Object.assign({}, slevy.stropy || {}, { 'Obchodník': 0.05, 'Vedoucí': 0.15 });
+  if (!(slevy.minMarze > 0)) slevy.minMarze = 0.10;
+  /* Kurz EUR a pár zahraničních odchylek (#524): bez nich přepínač
+   * ČR / Zahraničí jen ohlásí, že by se nic nezměnilo, a kapitola 9 by
+   * neměla co ukázat. Čísla jsou vymyšlená jako celý zkušební ceník. */
+  cenik.kurzEurKc = 25;
+  cenikProj.kurzEurKc = 25;
+  const zahranicni = { ceny: { 'C.montazHodKc': Math.round((+cenik.montazHodKc || 800) * 1.2),
+    'C.cestovniKc': 15000, 'C.prekladyKc': 8000 }, jenZahr: { 'C.prekladyKc': true } };
+  const r = await onlineApi('/api/program', { cenik, cenikProj, slevy, zahranicni,
     poznamka: 'zkušební ceník pro snímky příručky' });
-}, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj()]);
+  if (!r || r.ok === false) throw new Error('zveřejnění zkušebního ceníku selhalo: ' + JSON.stringify(r).slice(0, 300));
+}, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj(), zdrazeni]);
+await zverejniCenik();
 
 /* Firma: ukázkové údaje ze sestavení server nezveřejní (značka `ukazkove`),
  * proto se vezmou, značka se sundá a název se nahradí vymyšleným. Termín
@@ -277,23 +366,6 @@ for (const z of ZAKAZNICI) await api('/api/zakaznici', { zakaznik: z });
 
 await page.addScriptTag({ content: SNIMAC_JS });
 
-/* Snímek: selektor (řetězec) nebo funkce vracející prvek, která běží ve
- * stránce. `uprav` dostává klon a SNIMAC stejně jako v ruční cestě. */
-const pozadovane = [];
-const vezmi = async (id, cil, volby = {}) => {
-  pozadovane.push(id);
-  const vysl = await page.evaluate(([id, cil, volby]) => {
-    const el = cil.fn ? (new Function('return (' + cil.fn + ')()'))() : document.querySelector(cil.sel);
-    if (!el) return 'NENALEZENO';
-    if (el.scrollIntoView) el.scrollIntoView();
-    const v = { tema: volby.tema, popis: volby.popis };
-    if (volby.uprav) v.uprav = new Function('klon', 'S', volby.uprav);
-    return SNIMAC.vezmi(id, el, v);
-  }, [id, typeof cil === 'function' ? { fn: cil.toString() } : { sel: cil },
-      { tema: volby.tema, popis: volby.popis || '', uprav: volby.uprav || '' }]);
-  console.log('  ' + (vysl === 'NENALEZENO' ? '✕ ' + id + ' — prvek nenalezen (' + cil + ')' : '✓ ' + vysl));
-};
-
 /* Nová zakázka touž cestou jako tlačítko „✚ Nová zakázka" (výchozí
  * zaškrtnutí z matice, odpojení od uložené zakázky). */
 const novaZakazka = (hlavicka, zadani) => page.evaluate(async ([h, z]) => {
@@ -310,7 +382,13 @@ const novaZakazka = (hlavicka, zadani) => page.evaluate(async ([h, z]) => {
   Object.keys(z).filter(k => k !== 'typSachty').forEach(k => set('Z.' + k, z[k]));
   prepniTab('kalk'); render();
 }, [hlavicka, zadani]);
-const uloz = () => page.evaluate(() => onlineUloz());
+/* Uložení zakázky. Neuložená zakázka by v přehledu nabídek chyběla a snímky
+ * z ní by nesly cizí stav — proto se selhání hlásí hned (důvod ukáže
+ * KNG_SNIMKY_LADENI=1 u odpovědi serveru). */
+const uloz = async () => {
+  const ok = await page.evaluate(() => onlineUloz());
+  if (!ok) console.log('  ✕ zakázka se neuložila: ' + await page.evaluate(() => ZAK.cislo));
+};
 const zalozka = async (tab) => { await page.evaluate(t => { prepniTab(t); render(); window.scrollTo(0, 0); }, tab); await cekej(300); };
 
 /* ---- pruh testovacího prostředí ---- */
@@ -445,8 +523,40 @@ const kapitola = await okno.evaluate(() => {
   obal.remove();
   return s;
 });
+/* Lišta tiskového náhledu (#524, kapitola 23): tlačítka tisku a ruční
+ * úpravy textu. Náhled má vlastní stylopis, který v příručce není — lišta se
+ * proto obalí jeho pravidly pro tlačítka a omezí na obal. */
+const listaNahledu = await okno.evaluate(() => {
+  const b = [...document.querySelectorAll('button, label')].find(x => /Upravit text před tiskem/.test(x.textContent));
+  let el = b && b.parentElement;
+  while (el && el.parentElement && el.parentElement !== document.body && el.getBoundingClientRect().width < 500) el = el.parentElement;
+  if (!el) return null;
+  /* Bez @media print (lišta je v tisku schovaná — v PDF příručky by
+   * zmizela) a bez pravidel pro html/body. */
+  let css = [...document.querySelectorAll('style')].map(x => x.textContent).join('\n')
+    .replace(/(^|\})\s*(html|body)\s*\{[^}]*\}/g, '$1');
+  for (let m; (m = /@media\s+print\s*\{/.exec(css));) {
+    let j = m.index + m[0].length, h = 1;
+    while (j < css.length && h) { if (css[j] === '{') h++; else if (css[j] === '}') h--; j++; }
+    css = css.slice(0, m.index) + css.slice(j);
+  }
+  const obal = document.createElement('div');
+  obal.className = 'nahled-lista-obal';
+  obal.style.cssText = 'background:#fff;padding:6px 10px;font:13px/1.5 "Segoe UI",sans-serif';
+  const st = document.createElement('style');
+  st.textContent = css;
+  obal.appendChild(st);
+  obal.appendChild(el.cloneNode(true));
+  document.body.insertBefore(obal, document.body.firstChild);
+  SNIMAC.snimky.length = 0;
+  SNIMAC.vezmi('k23-nahled-lista', obal, { popis: 'Lišta tiskového náhledu nabídky OCK' });
+  obal.remove();
+  return SNIMAC.snimky[0];
+});
 await okno.close();
-pozadovane.push('nabidka-kapitoly');
+pozadovane.push('nabidka-kapitoly', 'k23-nahled-lista');
+if (listaNahledu) await page.evaluate((s) => { SNIMAC.snimky.push(s); }, listaNahledu);
+else console.log('  ✕ k23-nahled-lista — v náhledu chybí tlačítko Upravit text před tiskem');
 if (kapitola) {
   await page.evaluate((s) => { SNIMAC.snimky.push(s); }, kapitola);
   console.log('  ✓ nabidka-kapitoly ' + Math.round(kapitola.html.length / 1024) + ' kB ' + kapitola.sirka + 'x' + kapitola.vyska);
@@ -467,9 +577,394 @@ await page.evaluate(() => render());
 await cekej(300);
 await vezmi('zakaznici', '#page-zakaznici');
 
+/* ---------- 3) postupy krok za krokem (#524, pokyn J. V. 26. 10. 2026) ----------
+ *
+ * Každá kapitola, ve které obchodník něco dělá, má v příručce číslované kroky
+ * a u každého kroku vlastní snímek. Kam kliknout, příručka vyznačí sama
+ * (obsah.json → kroky[].klik hledá prvek ve snímku podle popisku), takže
+ * snímek musí ukazovat obrazovku TĚSNĚ PŘED tím kliknutím — a po něm další
+ * snímek, co obchodník uvidí. Snímky se pojmenovávají k<kapitola>-<co>. */
+
+krok('postupy krok za krokem');
+/* Viditelné modální okno aplikace (Můj profil, Změnit heslo …). */
+const MODAL = () => {
+  const o = [...document.querySelectorAll('.modal-overlay')]
+    .find(x => getComputedStyle(x).display !== 'none');
+  return o && (o.querySelector('.modal') || o);
+};
+/* Dialog aplikace (potvrzení, volba) se na chvíli vrátí, vyfotí a odklepne
+ * zvolenou odpovědí; pak zase platí náhrada z dlgStub(). */
+const sDialogem = async (id, akce, odpoved = 'ano') => {
+  await page.evaluate(() => { Object.assign(window, window.__dlgPuv); });
+  await page.evaluate('setTimeout(() => { (' + akce + ')(); }, 0)');
+  const je = await page.waitForSelector('#dlg .dlg-box', { timeout: 10000 }).then(() => true, () => false);
+  if (je) {
+    await cekej(200);
+    await vezmi(id, '#dlg .dlg-box');
+    await page.click('#dlg [data-dlg="' + odpoved + '"]');
+  } else { pozadovane.push(id); console.log('  ✕ ' + id + ' — dialog se neobjevil'); }
+  await cekej(500);
+  await dlgStub();
+};
+const nahoru = () => page.evaluate(() => window.scrollTo(0, 0));
+
+/* ---- kap. 1 a 3: přihlášený obchodník, Můj profil, Změnit heslo ---- */
+krok('kap. 1 a 3: hlavička aplikace, Můj profil, Změnit heslo');
+await zalozka('kalk');
+await vezmi('k1-hlavicka-app', 'header');
+await page.evaluate(() => otevriMujProfil());
+await cekej(400);
+await vezmi('k3-profil-prazdny', MODAL);
+await page.evaluate(() => {
+  const m = [...document.querySelectorAll('.modal-overlay')].find(x => getComputedStyle(x).display !== 'none');
+  const pole = [...m.querySelectorAll('input')].filter(i => i.type === 'text' || i.type === 'tel' || !i.type);
+  const najdi = (re) => pole.find(i => re.test(((i.closest('.row,label,div') || {}).textContent || '') + ' ' + (i.placeholder || '')));
+  const vypln = (re, v) => { const i = najdi(re); if (i) { i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); } };
+  vypln(/Titul/i, 'Ing.');
+  vypln(/Funkce/i, 'Obchodní technik');
+  vypln(/Telefon/i, '+420 000 000 001');
+});
+await cekej(200);
+await vezmi('k3-profil-vyplneny', MODAL);
+await page.evaluate(() => { if (typeof zavriMujProfil === 'function') zavriMujProfil(); });
+await page.evaluate(() => otevriZmenaHesla());
+await cekej(400);
+await vezmi('k3-zmena-hesla', MODAL);
+await page.evaluate(() => { if (typeof zavriZmenaHesla === 'function') zavriZmenaHesla(); });
+await cekej(200);
+
+/* ---- kap. 5 a 6: nová zakázka, hlavička, ukládání ---- */
+krok('kap. 5 a 6: nová zakázka a ukládání');
+await novaZakazka(ZAKAZKY.hlavni, Object.assign({}, ZADANI_ZAKLAD, { mustek: true }));
+await zalozka('kalk');
+/* Výchozí stav pro krok 1: otevřená (uložená) zakázka, nad kterou se
+ * začíná nová. Vrací se ukázková 9100 z přehledu. */
+await page.evaluate(async (c) => {
+  const r = (ONLINE_STAV.rejstrik || []).find(x => (x.cislo || '') === c);
+  if (r && r.soubor) await onlineOtevri(r.soubor);
+}, ZAKAZKY.hlavni.cislo).catch(() => {});
+await cekej(600);
+await zalozka('kalk');
+await vezmi('k5-pred-novou', '#page-kalk .card.zak-bar');
+await page.evaluate(async () => { await novaZakazkaUI(); prepniTab('kalk'); render(); });
+await cekej(400);
+await vezmi('k5-prazdna-hlavicka', '#page-kalk .card.zak-bar');
+await page.evaluate(() => {
+  set('ZAK.cislo', '2026 - OPR - CN - 9105');
+  set('ZAK.nazevAkce', 'výměna výtahu v bytovém domě');
+  render();
+});
+await cekej(200);
+/* Našeptávač zákazníka: napsaný začátek názvu a rozbalená nabídka. */
+await page.evaluate(() => {
+  const i = [...document.querySelectorAll('#page-kalk .card.zak-bar input')]
+    .find(x => /naseptavacZakKresli/.test(x.getAttribute('oninput') || ''));
+  if (i) { i.value = 'Vzorov'; naseptavacZakKresli('ock', 'Vzorov'); }
+});
+await cekej(400);
+await vezmi('k5-naseptavac', '#page-kalk .card.zak-bar');
+await page.evaluate(() => {
+  if (typeof naseptavacZakVyber === 'function') naseptavacZakVyber('Vzorové bytové družstvo', 'ock');
+  else set('ZAK.objednatel', 'Vzorové bytové družstvo');
+  set('ZAK.adresa', 'Modelová 7, Brno');
+  render();
+});
+await cekej(300);
+await vezmi('k5-vyplnena-hlavicka', '#page-kalk .card.zak-bar');
+await uloz();
+await cekej(600);
+await page.evaluate(() => render());
+await vezmi('k6-ulozeno', '#page-kalk .card.zak-bar');
+
+/* ---- kap. 7: Zákazníci ---- */
+krok('kap. 7: zákazníci');
+await vezmi('k7-zalozky', 'nav.tabs');
+await zalozka('zakaznici');
+await page.waitForFunction(() => { try { return ZAK_DB.nacteno; } catch (e) { return false; } }, null, { timeout: 15000 }).catch(() => {});
+await page.evaluate(() => render());
+await cekej(300);
+await vezmi('k7-seznam', '#page-zakaznici');
+await page.evaluate(() => { zakaznikNovyUI(); });
+await cekej(300);
+await vezmi('k7-nova-karta', '#page-zakaznici');
+await page.evaluate(() => { zakaznikZavri(); });
+await cekej(200);
+/* Přenesení karty do otevřené zakázky: otevřená karta s tlačítkem. */
+await page.evaluate(() => {
+  const k = (ZAK_DB.seznam || []).find(z => /Modelová development/.test(z.nazev || ''));
+  if (k) zakaznikOtevri(zakaznikKlic(k));
+});
+await cekej(400);
+await vezmi('k7-karta-prenest', '#page-zakaznici');
+await page.evaluate(() => { zakaznikZavri(); });
+
+/* ---- kap. 8: Přehled cenových nabídek, otevření zakázky ---- */
+krok('kap. 8: přehled a otevření zakázky');
+await zalozka('kalk');
+await vezmi('k8-tlacitko-prehled', '#page-kalk .card.zak-bar');
+await zalozka('zakazka');
+await cekej(600);
+await vezmi('k8-hledani', () => {
+  const h = [...document.querySelectorAll('#page-zakazka h2')].find(x => /Vyhledání nabídek/.test(x.textContent));
+  return h && h.closest('.card');
+});
+/* Otevření uložené zakázky 9100 — otevírá se jen ke čtení a nad ní je žlutá
+ * lišta rozpracované kalkulace. */
+await page.evaluate(async (c) => {
+  const r = (ONLINE_STAV.rejstrik || []).find(x => (x.cislo || '') === c);
+  if (r && r.soubor) await onlineOtevri(r.soubor);
+}, ZAKAZKY.hlavni.cislo);
+await cekej(800);
+await zalozka('kalk');
+await vezmi('k8-rozpracovana-lista', '#obnovaLista');
+await vezmi('k8-souhrn-varianty', () => {
+  prepniTab('zakazka'); render();
+  const h = [...document.querySelectorAll('#page-zakazka h2')].find(x => /Kalkulace v zakázce/.test(x.textContent));
+  return h && h.closest('.card');
+});
+await vezmi('k8-soubor', () => {
+  const h = [...document.querySelectorAll('#page-zakazka h2')].find(x => /Zakázka jako soubor/.test(x.textContent));
+  return h && h.closest('.card');
+});
+await page.evaluate(() => { listaPokracujUI(); });
+await cekej(400);
+/* Odeslaná nabídka: zakázka 9102 má vytištěnou (zamčenou) variantu. */
+await page.evaluate(async (c) => {
+  const r = (ONLINE_STAV.rejstrik || []).find(x => (x.cislo || '') === c);
+  if (r && r.soubor) await onlineOtevri(r.soubor);
+}, ZAKAZKY.zaskleni.cislo);
+await cekej(800);
+await zalozka('kalk');
+await vezmi('k8-odeslana-lista', '#zamekLista');
+/* Zpět na ukázkovou 9100 a odemknout ji (pokračovat v rozpracované). */
+await page.evaluate(async (c) => {
+  const r = (ONLINE_STAV.rejstrik || []).find(x => (x.cislo || '') === c);
+  if (r && r.soubor) await onlineOtevri(r.soubor);
+}, ZAKAZKY.hlavni.cislo);
+await cekej(800);
+await page.evaluate(() => { listaPokracujUI(); });
+await cekej(400);
+
+/* ---- kap. 9: ČR / Zahraničí ---- */
+krok('kap. 9: ceník Zahraničí');
+await zalozka('kalk');
+await vezmi('k9-cr', '#page-kalk .card.zak-bar');
+await sDialogem('k9-dialog', "() => cenikRadaPrepniUI('zahr')", 'ano');
+await page.evaluate(() => render());
+await cekej(300);
+await vezmi('k9-zahranici', '#page-kalk .card.zak-bar');
+/* Zpět do ČR, ať další snímky ukazují tuzemskou zakázku. */
+await sDialogem('k9-dialog-zpet', "() => cenikRadaPrepniUI('cr')", 'ano');
+await uloz();
+
+
+/* Otevře uloženou zakázku podle čísla a odemkne ji (Pokračovat v rozpracované). */
+const otevriZakazku = async (cislo) => {
+  await page.evaluate(async (c) => {
+    const r = (ONLINE_STAV.rejstrik || []).find(x => (x.cislo || '') === c);
+    if (r && r.soubor) await onlineOtevri(r.soubor);
+  }, cislo);
+  await cekej(800);
+  await page.evaluate(() => { try { listaPokracujUI(); } catch (e) { /* nic */ } });
+  await cekej(400);
+};
+const KARTA = (h2re) => new Function('return (function () { var h = [].slice.call(document.querySelectorAll("h2"))'
+  + '.filter(function (x) { return x.offsetParent && ' + h2re + '.test(x.textContent); })[0];'
+  + ' return h && h.closest(".card"); })()');
+const SEKCE = (rodic, od, po) => new Function('return vyrezSekce(' + JSON.stringify(rodic) + ', '
+  + JSON.stringify(od) + ', ' + JSON.stringify(po || '') + ')');
+
+/* ---- kap. 10: Kalkulace OCK — záložky a lišta sekcí ---- */
+krok('kap. 10: kalkulace OCK');
+await otevriZakazku(ZAKAZKY.hlavni.cislo);
+await zalozka('kalk');
+await vezmi('k10-lista-sekci', '#page-kalk .kalk-lista');
+
+/* ---- kap. 11: Zadání šachty ---- */
+krok('kap. 11: zadání šachty');
+await vezmi('k11-zadani', '#ock-zadani');
+await page.evaluate(() => { nadDvermiSet('sklo'); mustkySet(2); render(); });
+await cekej(300);
+await vezmi('k11-zadani-mustky', '#ock-zadani');
+await page.evaluate(() => { nadDvermiSet('plech'); mustkySet(1); render(); });
+
+/* ---- kap. 12: průchozí šachta (před zaškrtnutím = k11-zadani) ---- */
+
+/* ---- kap. 13: zasklení a opláštění po stěnách ---- */
+krok('kap. 13: opláštění po stěnách');
+await page.evaluate(() => { oplRezimSet('poStenach'); render(); });
+await cekej(400);
+await vezmi('k13-zadani-po-stenach', '#ock-zadani');
+await vezmi('k13-steny', '#ock-oplasteni-steny');
+await page.evaluate(() => {
+  const ch = [...document.querySelectorAll('#ock-oplasteni-steny input[type=checkbox]')]
+    .find(i => /po celé výšce/.test((i.closest('label') || i.parentElement || {}).textContent || ''));
+  if (ch && ch.checked) ch.click();
+});
+await cekej(400);
+await vezmi('k13-steny-pasy', '#ock-oplasteni-steny');
+await page.evaluate(() => { oplRezimSet('standard'); render(); });
+await cekej(300);
+
+/* ---- kap. 14: ATYP a Standard OCK ---- */
+krok('kap. 14: ATYP');
+await page.evaluate(() => { set('Z.rohoveSloupky', 5); render(); });
+await cekej(400);
+await vezmi('k14-souhrn-atyp', '#kalk-souhrn');
+await page.evaluate(() => { if (!STD_ROZPIS) standardRozpisPrepni(); });
+await cekej(300);
+await vezmi('k14-rozpis-atyp', '#kalk-souhrn');
+await page.evaluate(() => { if (STD_ROZPIS) standardRozpisPrepni(); set('Z.rohoveSloupky', 4); atypPrepni(false); render(); });
+await cekej(300);
+
+/* ---- kap. 15 a 16: volitelné položky a přechodové plechy ---- */
+krok('kap. 15 a 16: volitelné a plechy');
+await page.evaluate(() => { set('Z.prechodovePlechy', false); render(); });
+await cekej(200);
+await vezmi('k16-zadani-plechy', '#ock-zadani');
+
+/* ---- kap. 17 a 18: příplatky, vlastní položka, vypnutý řádek ---- */
+krok('kap. 17 a 18: příplatky a vlastní položka');
+/* Jen začátek tabulky příplatků (hlavička a první čtyři položky s řádkem
+ * dodatkového textu) — celá tabulka měří skoro 2 000 px. */
+const PRVNI_RADKY = (n) => "[].slice.call(klon.querySelectorAll('tr')).forEach(function (t, i) { if (i > " + n + ") t.remove(); });";
+await vezmi('k17-priplatky', '#ock-priplatky', { uprav: PRVNI_RADKY(8) });
+await page.evaluate(() => {
+  vlastniAdd('rezie');
+});
+await cekej(300);
+await vezmi('k18-vlastni-polozka', '#ock-kalkulace table', {
+  uprav: "S.vyrez(klon, '^\\\\s*REŽIE', 'REŽIE CELKEM');" });
+
+/* ---- kap. 19: sleva ---- */
+krok('kap. 19: sleva');
+await page.evaluate(() => { slevaSet('schema', 'standard'); slevaSet('procenta', 3); render(); });
+await cekej(300);
+await vezmi('k19-sleva-auto', '#ock-sleva');
+await page.evaluate(() => { slevaSet('procenta', 6); render(); });
+await cekej(300);
+await vezmi('k19-sleva-zadost', '#ock-sleva');
+await page.evaluate(() => { slevaZrus(); render(); });
+
+/* ---- kap. 20: zaokrouhlení ---- */
+krok('kap. 20: zaokrouhlení');
+await vezmi('k20-zaokrouhleni', '#ock-zaokr');
+
+/* ---- kap. 21: smluvní a platební podmínky ---- */
+krok('kap. 21: podmínky');
+await vezmi('k21-podminky', () => {
+  const b = document.querySelector('#page-kalk .kl-podminky-ock');
+  return b && b.closest('.card');
+});
+
+/* ---- kap. 23: cenová nabídka, kontroly, tisk ---- */
+krok('kap. 23: nabídka a tisk');
+await vezmi('k23-karta-nabidka', SEKCE('#ock-nabidka > .body', 'Přejít na technickou specifikaci', ''));
+await zalozka('spec');
+await vezmi('k23-spec-nabidka', KARTA('/Cenová nabídka \\(OCK\\)/'));
+
+/* ---- kap. 24: krycí list a smlouva o dílo ---- */
+krok('kap. 24: krycí list');
+await zalozka('kryci');
+await vezmi('k24-zakladni-udaje', SEKCE('#page-kryci .kl-doc', 'Základní údaje', 'Dodavatel'));
+await vezmi('k24-zastupci', SEKCE('#page-kryci .kl-doc', 'Zástupci a kontakty zákazníka', 'Typ smlouvy'));
+await vezmi('k24-sod-realizace', SEKCE('#page-kryci .kl-doc', 'Smlouva o dílo \\(SoD realizace\\)', 'Ostatní'));
+await vezmi('k24-sod-karta', KARTA('/Smlouva o dílo \\(OCK\\)/'));
+
+/* ---- kap. 25: kalkulace PROJ (zakázka 9104, číslo OVP) ---- */
+krok('kap. 25: kalkulace PROJ');
+await zalozka('proj');
+await vezmi('k25-zamek-strany', '#page-proj .zamek-lista[data-strana-vyrazena="proj"]');
+await otevriZakazku(ZAKAZKY.projekce.cislo);
+await zalozka('proj');
+await vezmi('k25-volby', () => {
+  const i = document.querySelector('#projAkceMimoPrahu');
+  return i && i.closest('.card');
+});
+/* Z kalkulace PROJ jen první dvě sekce (Zaměření, Studie). */
+await vezmi('k25-kalkulace', '#proj-kalkulace', { uprav:
+  "var tr = [].slice.call(klon.querySelectorAll('tr')); var k = tr.findIndex(function (t) { return t.id === 'proj-sek-2'; });"
+  + " if (k > 0) tr.slice(k).forEach(function (t) { t.remove(); });" });
+await vezmi('k25-nabidka-volby', SEKCE('#proj-nabidka > .body', 'Nabízet autorský dozor', 'Úvodní fotka nabídky'));
+await vezmi('k25-nabidka-tisk', SEKCE('#proj-nabidka > .body', 'Než nabídku odešlete|Kompletní náhled a tisk nabídky', 'centrální šablon'));
+
+/* ---- kap. 27: interní poznámky ---- */
+krok('kap. 27: poznámky');
+await otevriZakazku(ZAKAZKY.hlavni.cislo);
+await zalozka('kalk');
+await vezmi('k27-poznamky', '#ock-poznamky');
+
+
+/* ---- kap. 30 (administrátor) a kap. 22 (dialog po změně ceníku) ----
+ *
+ * Obojí potřebuje jiné přihlášení: Nastavení → Databáze vidí jen
+ * administrátor a dialog „Ceník se od posledního uložení změnil" se objeví
+ * obchodníkovi, když mezitím vyšel nový ceník. Každé přihlášení stránku
+ * načte znovu, proto se hotové snímky nejdřív odloží. */
+krok('kap. 30: Nastavení → Databáze (administrátor)');
+await odloz();
+await page.evaluate(() => onlineOdhlas());
+await page.waitForFunction(() => { try { return ONLINE_STAV.ja === null; } catch (e) { return false; } });
+await nacti();
+await prihlas('spravce@priklad.cz', 'Zkusebni.Heslo.123');
+await page.addScriptTag({ content: SNIMAC_JS });
+await page.evaluate(() => { otevriNastaveni(); nastPanel('databaze'); });
+await cekej(800);
+await vezmi('k30-nastaveni-databaze', '#nastaveni-panel', { admin: true });
+await page.evaluate(() => zavriNastaveni());
+krok('nový ceník (zdražená montáž) pro dialog v kapitole 22');
+await zverejniCenik(1.1);
+await odloz();
+await page.evaluate(() => onlineOdhlas());
+await page.waitForFunction(() => { try { return ONLINE_STAV.ja === null; } catch (e) { return false; } });
+
+krok('kap. 22: dialog Ceník se od posledního uložení změnil');
+await nacti();
+/* Pravé dialogy hned od přihlášení: aplikace po přihlášení sama otevře
+ * zakázku, na které se naposledy pracovalo, a dialog může vyskočit už tam. */
+await page.evaluate(() => { Object.assign(window, window.__dlgPuv); });
+await page.addScriptTag({ content: SNIMAC_JS });
+await prihlas(OBCHODNIK.email, OBCHODNIK.heslo);
+/* Jiné dialogy (rozpracovaná práce v prohlížeči, neuložené změny) se
+ * odklepnou cestou „zahodit" — fotí se jen dialog o přepočtu ceníku. */
+const odklepniJiny = async () => {
+  const kod = await page.evaluate(() => {
+    const d = document.querySelector('#dlg');
+    if (!d) return null;
+    if (/Ceník se od posledního uložení změnil/.test(d.textContent)) return 'cenik';
+    const b = [...d.querySelectorAll('button')];
+    const t = b.find(x => /Zahodit/.test(x.textContent)) || b.find(x => x.dataset.dlg === 'ne') || b[0];
+    t.click();
+    return 'jiny';
+  });
+  return kod;
+};
+await cekej(1500);
+for (let i = 0; i < 4 && await odklepniJiny() === 'jiny'; i++) await cekej(500);
+await page.evaluate((c) => {
+  const r = (ONLINE_STAV.rejstrik || []).find(x => (x.cislo || '') === c);
+  if (r && r.soubor) setTimeout(() => onlineOtevri(r.soubor), 0);
+}, ZAKAZKY.hlavni.cislo);
+let dialog22 = false;
+for (let i = 0; i < 5 && !dialog22; i++) {
+  await page.waitForSelector('#dlg .dlg-box', { timeout: 6000 }).catch(() => {});
+  const k = await odklepniJiny();
+  if (k === 'cenik') dialog22 = true;
+  else if (k === null) break;
+  else await cekej(500);
+}
+if (dialog22) {
+  await cekej(200);
+  await vezmi('k22-dialog-cenik', '#dlg .dlg-box');
+  await page.click('#dlg [data-dlg="v0"]');
+} else { pozadovane.push('k22-dialog-cenik'); console.log('  ✕ k22-dialog-cenik — dialog se neobjevil'); }
+await cekej(500);
+await dlgStub();
+
 /* ---------- odevzdání ---------- */
 
 const data = await page.evaluate(() => SNIMAC.data());
+data.snimky.push(...ODLOZENE.filter(o => !data.snimky.some(s => s.id === o.id)));
 writeFileSync(VYSTUP, JSON.stringify(data));
 
 const mame = new Set(data.snimky.map(s => s.id));

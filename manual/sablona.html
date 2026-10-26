@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kalkulátor Next Gen — co se změnilo</title>
+<title>Kalkulátor Next Gen — příručka obchodníka</title>
 <!--
   PŘÍRUČKA OBCHODNÍKA — JEDEN SOUBOR, ŽÁDNÝ INTERNET
 
@@ -42,6 +42,9 @@
   h1 { font-size:30px; line-height:1.25; margin:0 0 6px; letter-spacing:-.01em; }
   .podtitul { color:var(--mut); font-size:17px; margin:0 0 4px; }
   .verze { color:var(--mut); font-size:14px; margin:0 0 28px; }
+  /* Úvodní strana nese jen název, verzi aplikace a datum (pokyn J. V.
+   * 26. 10. 2026, #524) — příručka začíná obsahem. Novinky jednotlivých
+   * verzí žijí v CHANGELOG, ne tady. */
   h2 { font-size:22px; margin:52px 0 14px; padding-bottom:8px;
        border-bottom:2px solid var(--line); scroll-margin-top:16px; }
   h3 { font-size:17px; margin:26px 0 8px; }
@@ -86,6 +89,20 @@
                  border-radius:50%; background:var(--odznak); color:#fff;
                  font:700 12px/21px system-ui; text-align:center; }
 
+  /* ---------- postup krok za krokem (#524) ----------
+   * Každý krok = věta, co udělat, a vlastní snímek, na kterém je červeným
+   * rámečkem a šipkou vyznačeno, kam kliknout nebo co vyplnit. Odsazení
+   * je v px, ne v em: tisk mění velikost písma a odsazení se počítá do
+   * šířky snímku na papíře (srovnej()). */
+  ol.kroky { list-style:none; margin:12px 0 24px; padding:0; }
+  li.krok { position:relative; padding-left:40px; margin:0 0 20px; }
+  li.krok > p { margin:0 0 6px; }
+  .krok-cis { position:absolute; left:0; top:1px; width:28px; height:28px; border-radius:50%;
+              background:var(--akcent); color:#fff; font:700 14px/28px system-ui, sans-serif;
+              text-align:center; }
+  li.krok figure.snimek { margin:8px 0 4px; }
+  h3.postup { color:var(--akcent); }
+
   /* ---------- dvousloupcový výklad ---------- */
   dl.vyklad { margin:16px 0 20px; display:grid; grid-template-columns:minmax(150px,260px) 1fr;
               gap:1px; background:var(--line); border:1px solid var(--line); border-radius:8px;
@@ -107,8 +124,16 @@
     * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     body { font-size:11pt; }
     .stranka { max-width:none; padding:0; }
-    h2 { page-break-after:avoid; }
+    h2, h3 { page-break-after:avoid; }
     figure.snimek { page-break-inside:avoid; }
+    li.krok { break-inside:avoid; page-break-inside:avoid; }
+    /* Měřítko snímku na papíře (nález M4, 26. 10. 2026): srovnej() počítá
+     * se šířkou okna, a tiskne-li se ze širokého okna, snímek se na A4
+     * ořízl (Detail výpočtu PROJ, 1360 px). Tisková šířka A4 je pevná,
+     * takže měřítko pro papír se spočítá dopředu (--k-tisk) a tady jen
+     * nasadí — nezáleží na tom, jestli prohlížeč stihne `beforeprint`. */
+    .snimek-plocha { transform:scale(var(--k-tisk, 1)) !important; --mn-m:var(--mn-m-tisk, 1) !important; }
+    .snimek-ram { height:var(--h-tisk, auto) !important; }
     #obsah { break-after:page; }
     .nahoru { display:none; }
     a { color:inherit; text-decoration:none; }
@@ -216,12 +241,22 @@
     return nalez;
   }
 
-  function vykresliSnimek(obr) {
+  /* Tisková šířka A4: 210 mm minus okraje 2 × 12 mm (@page) = 186 mm
+   * = 702 px při 96 dpi. Pevné číslo je tu schválně — snímek se má na
+   * papír vejít bez ohledu na to, jak široké bylo okno při tisku (M4). */
+  var PAPIR = 702;
+
+  /* `rodic` — kam se obrázek vloží (kapitola, nebo krok postupu).
+   * `obr.klik` — prvek, na který se v kroku kliká: dostane rámeček a šipku
+   * s popiskem (výchozí „klikněte"). Hledá se stejně jako vysvětlivky,
+   * takže nenalezený cíl skončí v PRIRUCKA.nesedi a kontrola zčervená. */
+  function vykresliSnimek(obr, rodic) {
+    rodic = rodic || cil;
     var s = podleId[obr.snimek];
     var fig = el('figure', 'snimek');
     if (!s) {
       fig.appendChild(el('div', 'ram varovne', 'Snímek „' + obr.snimek + '" v datech chybí.'));
-      cil.appendChild(fig);
+      rodic.appendChild(fig);
       nesedi.push('chybí snímek ' + obr.snimek);
       return;
     }
@@ -235,8 +270,52 @@
     fig.appendChild(ram);
 
     var sr = plocha.attachShadow({ mode: 'open' });
-    sr.innerHTML = '<style>' + SNIMKY.css + '</style>'
-      + '<style>' + STYL_ODZNAKU + '</style>' + s.html;
+    /* Firemní CSS je jedno pro všechny snímky (stovky kB). S postupy krok
+     * za krokem je snímků přes sto, a kdyby si každý parsoval vlastní
+     * kopii, příručka by se otevírala desítky vteřin. Sdílený stylopis
+     * (adoptedStyleSheets) se parsuje jednou; starší prohlížeč dostane
+     * <style> jako dřív. */
+    if (SDILENY_STYL) {
+      sr.adoptedStyleSheets = SDILENY_STYL;
+      sr.innerHTML = s.html;
+    } else {
+      sr.innerHTML = '<style>' + CSS_SNIMKU + '</style>'
+        + '<style>' + STYL_ODZNAKU + '</style>' + s.html;
+    }
+    /* Měřítko při vykreslení (k) — souřadnice odznaků se měří na obrazovce
+     * už zmenšené a do snímku se musí přepočítat zpět. */
+    function meritko() {
+      var w = plocha.getBoundingClientRect().width;
+      return w > 0 ? w / s.sirka : 1;
+    }
+
+    if (obr.klik) {
+      var tk = najdiCil(sr, obr.klik);
+      if (!tk) nesedi.push(obr.snimek + ' → klik: ' + (obr.klik.popisek || obr.klik.obsahuje || obr.klik.pole || obr.klik.sel));
+      else {
+        tk.classList.add('mn-klik');
+        var sipka = document.createElement('span');
+        sipka.className = 'mn-sipka';
+        sipka.textContent = '➜ ' + (obr.klik.stitek || 'klikněte');
+        sr.appendChild(sipka);
+        requestAnimationFrame(function () {
+          var k = meritko();
+          var rk = plocha.getBoundingClientRect();
+          var rc = tk.getBoundingClientRect();
+          var x = (rc.left - rk.left) / k, y = (rc.top - rk.top) / k;
+          var h = rc.height / k, w = sipka.offsetWidth;
+          /* Šipka vlevo od cíle; když tam není místo, pod něj. */
+          if (x - w - 8 >= 0) {
+            sipka.style.left = (x - w - 8) + 'px';
+            sipka.style.top = Math.max(0, y + h / 2 - sipka.offsetHeight / 2) + 'px';
+          } else {
+            sipka.textContent = '⬆ ' + (obr.klik.stitek || 'klikněte');
+            sipka.style.left = Math.max(0, x) + 'px';
+            sipka.style.top = (y + h + 6) + 'px';
+          }
+        });
+      }
+    }
 
     /* Kolečka se kreslí DOVNITŘ snímku, do jeho vlastní souřadné soustavy.
      * V HTML okolo by se při tisku i při jiné šířce okna rozešla s tím,
@@ -253,10 +332,11 @@
        * a zvětšuje se jedním `transform`, takže uvnitř se nic nepřelije
        * a jednou spočítaná poloha platí dál — i na papíře. */
       requestAnimationFrame(function () {
+        var k = meritko();
         var rk = plocha.getBoundingClientRect();
         var rc = t.getBoundingClientRect();
-        odznak.style.left = Math.max(0, rc.left - rk.left - 9) + 'px';
-        odznak.style.top = Math.max(0, rc.top - rk.top - 9) + 'px';
+        odznak.style.left = Math.max(0, (rc.left - rk.left) / k - 9) + 'px';
+        odznak.style.top = Math.max(0, (rc.top - rk.top) / k - 9) + 'px';
       });
     });
 
@@ -278,15 +358,31 @@
       });
       fig.appendChild(ul);
     }
-    cil.appendChild(fig);
+    rodic.appendChild(fig);
 
     /* Zmenšení na šířku stránky. Uvnitř snímku se tím nic nepřeskládá —
      * mění se měřítko, ne rozvržení, takže obrazovka vypadá přesně jako
      * na monitoru, kde vznikla. */
+    /* Úzký snímek (dialog, lišta) se neroztahuje přes celou šířku —
+     * rámeček obepne jen to, co se vyfotilo. Šířky se proto měří na
+     * obrázku (figure), ne na rámečku. */
+    ram.style.maxWidth = (s.sirka + 2) + 'px';
     function srovnej() {
-      var k = Math.min(1, ram.clientWidth / s.sirka);
+      var k = Math.min(1, fig.clientWidth / s.sirka);
       plocha.style.transform = k < 1 ? 'scale(' + k + ')' : 'none';
       ram.style.height = Math.ceil(plocha.offsetHeight * k) + 'px';
+      /* Rámeček a šipka kroku mají na obrazovce i na papíře stejnou
+       * velikost — uvnitř snímku se proto zvětšují opačně, než se snímek
+       * zmenšuje (nejvýš 2,5×, ať malý snímek nepřekryjí). */
+      plocha.style.setProperty('--mn-m', String(Math.min(2.5, 1 / k)));
+      /* Tisk (M4): odsazení snímku od kraje sloupce (krok postupu) je
+       * v px a na papíře zůstává stejné, takže šířka snímku na A4 je
+       * PAPIR minus totéž odsazení — nezávisle na šířce okna. */
+      var odsazeni = Math.max(0, cil.clientWidth - fig.clientWidth);
+      var kt = Math.min(1, (PAPIR - odsazeni) / s.sirka);
+      plocha.style.setProperty('--k-tisk', String(kt));
+      plocha.style.setProperty('--mn-m-tisk', String(Math.min(2.5, 1 / kt)));
+      ram.style.setProperty('--h-tisk', Math.ceil(plocha.offsetHeight * kt) + 'px');
     }
     requestAnimationFrame(srovnej);
     window.addEventListener('resize', srovnej);
@@ -301,26 +397,78 @@
     }
   }
 
+  /* --mn-m: zvětšení značek, aby po zmenšení snímku zůstaly čitelné
+   * (nastavuje srovnej(), v tisku tiskové měřítko). Proměnná se dědí
+   * z hostitele do shadow DOM. */
   var STYL_ODZNAKU = [
     '.mn-vyznac { outline:2px solid #dc2626 !important; outline-offset:2px;',
     '  border-radius:3px; background:rgba(220,38,38,.06) !important; }',
     '.mn-odznak { position:absolute; z-index:50; width:19px; height:19px;',
     '  border-radius:50%; background:#dc2626; color:#fff; font:700 11px/19px',
-    '  system-ui, sans-serif; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.35); }',
+    '  system-ui, sans-serif; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.35);',
+    '  transform:scale(var(--mn-m, 1)); transform-origin:center; }',
+    '.mn-klik { outline:calc(3px * var(--mn-m, 1)) solid #dc2626 !important;',
+    '  outline-offset:calc(2px * var(--mn-m, 1)); border-radius:4px;',
+    '  box-shadow:0 0 0 calc(7px * var(--mn-m, 1)) rgba(220,38,38,.22) !important; }',
+    '.mn-sipka { position:absolute; z-index:60; white-space:nowrap; background:#dc2626; color:#fff;',
+    '  font:700 calc(13px * var(--mn-m, 1))/1.35 system-ui, sans-serif;',
+    '  padding:calc(2px * var(--mn-m, 1)) calc(8px * var(--mn-m, 1));',
+    '  border-radius:calc(12px * var(--mn-m, 1)); box-shadow:0 1px 4px rgba(0,0,0,.35); }',
   ].join('\n');
+
+  /* Tiskový stylopis aplikace se do snímků nesmí dostat: schovává
+   * `button`, `header`, `.tabs` a `.noprint` — v PDF příručky by pak ze
+   * snímků zmizela právě tlačítka, na která postup ukazuje. Snímek má na
+   * papíře vypadat jako obrazovka, ne jako vytištěná aplikace. */
+  function bezTisku(css) {
+    var ven = '', i = 0, m;
+    var vzor = /@media\s+print\s*\{/g;
+    while ((m = vzor.exec(css))) {
+      ven += css.slice(i, m.index);
+      var hloubka = 1, j = vzor.lastIndex;
+      while (j < css.length && hloubka) {
+        if (css.charAt(j) === '{') hloubka++;
+        else if (css.charAt(j) === '}') hloubka--;
+        j++;
+      }
+      i = j; vzor.lastIndex = j;
+    }
+    return ven + css.slice(i);
+  }
+  var CSS_SNIMKU = bezTisku(SNIMKY.css);
+
+  var SDILENY_STYL = null;
+  try {
+    var st1 = new CSSStyleSheet(); st1.replaceSync(CSS_SNIMKU);
+    var st2 = new CSSStyleSheet(); st2.replaceSync(STYL_ODZNAKU);
+    SDILENY_STYL = [st1, st2];
+  } catch (e) { SDILENY_STYL = null; }
+
+  /* ---------- postup krok za krokem (#524) ---------- */
+  function vykresliKroky(b) {
+    if (b.nadpis) cil.appendChild(el('h3', 'postup', b.nadpis));
+    var ol = el('ol', 'kroky');
+    cil.appendChild(ol);
+    (b.polozky || []).forEach(function (k, i) {
+      var li = el('li', 'krok');
+      li.appendChild(el('span', 'krok-cis', String(i + 1)));
+      li.appendChild(bohatyText(k.text));
+      ol.appendChild(li);
+      if (k.snimek) {
+        vykresliSnimek({ snimek: k.snimek, klik: k.klik, odkazy: k.odkazy,
+          titulek: 'Krok ' + (i + 1) + (k.titulek ? ': ' + k.titulek : '.') }, li);
+      }
+      if (k.pak) li.appendChild(bohatyText(k.pak));
+    });
+    kroku += (b.polozky || []).length;
+  }
+  var kroku = 0;
 
   /* ---------- stavba stránky ---------- */
 
+  /* Úvodní strana: název, verze aplikace a datum — nic víc (#524). */
   cil.appendChild(el('h1', null, OBSAH.titul));
-  cil.appendChild(el('p', 'podtitul', OBSAH.podtitul));
   cil.appendChild(el('p', 'verze', OBSAH.verze));
-
-  (OBSAH.uvod || []).forEach(function (u) {
-    var d = el('div', 'ram' + (u.druh === 'varovne' ? ' varovne' : ''));
-    if (u.nadpis) d.appendChild(el('span', 'nadpisek', u.nadpis));
-    (u.odstavce || []).forEach(function (o) { d.appendChild(bohatyText(o)); });
-    cil.appendChild(d);
-  });
 
   var obsahBlok = el('nav', null);
   obsahBlok.id = 'obsah';
@@ -336,6 +484,15 @@
   obsahBlok.appendChild(seznam);
   cil.appendChild(obsahBlok);
 
+  /* Upozornění k příručce (částky na snímcích, vymyšlená jména, jak číst
+   * postupy) stojí až ZA obsahem — příručka začíná seznamem kapitol. */
+  (OBSAH.uvod || []).forEach(function (u) {
+    var d = el('div', 'ram' + (u.druh === 'varovne' ? ' varovne' : ''));
+    if (u.nadpis) d.appendChild(el('span', 'nadpisek', u.nadpis));
+    (u.odstavce || []).forEach(function (o) { d.appendChild(bohatyText(o)); });
+    cil.appendChild(d);
+  });
+
   OBSAH.kapitoly.forEach(function (k) {
     var h = el('h2', null, k.nadpis);
     h.id = k.id;
@@ -348,6 +505,7 @@
       if (b.typ === 'text') cil.appendChild(bohatyText(b.text));
       else if (b.typ === 'podnadpis') cil.appendChild(el('h3', null, b.text));
       else if (b.typ === 'obrazek') vykresliSnimek(b);
+      else if (b.typ === 'kroky') vykresliKroky(b);
       else if (b.typ === 'seznam') {
         /* Dvousloupcový výklad (slovníček hlášek, přehled dokumentů).
          * Tabulka by se na užší obrazovce rozsypala, definiční seznam ne. */
@@ -379,6 +537,7 @@
     castkyUpraveny: SNIMKY.castkyUpraveny,
     snimku: SNIMKY.snimky.length,
     obrazku: cisloObrazku,
+    kroku: kroku,
     kapitol: OBSAH.kapitoly.length,
     nesedi: nesedi,
   };
