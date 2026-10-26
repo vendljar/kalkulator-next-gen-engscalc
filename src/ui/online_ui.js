@@ -2090,6 +2090,18 @@ async function onlineHesloSpravce(co) {
   return h;
 }
 
+/* Je účet JINÝ správce než přihlášený? Smazání, vypnutí, archivace a snížení
+ * role takového účtu chtějí na serveru heslo správce (SEC-I7, J. V.
+ * 26. 10. 2026, #517). Vrací {} (heslo netřeba), { hesloSpravce }, nebo null
+ * (správce dialog zrušil — nic se neposílá). */
+async function onlineUzHesloJinySpravce(email, co) {
+  const ucet = (ONLINE_STAV.uzivatele || []).find(u => u.email === email);
+  const ja = ONLINE_STAV.ja && ONLINE_STAV.ja.email;
+  if (!(ucet && ucet.role === 'Administrátor' && email !== ja)) return {};
+  const h = await onlineHesloSpravce(co + ' správcovského účtu ' + email);
+  return h === null ? null : { hesloSpravce: h };
+}
+
 async function onlineUzZaloz() {
   const f = ONLINE_STAV.uzForm;
   const email = String(f.email || '').trim().toLowerCase();
@@ -2176,6 +2188,10 @@ async function onlineUzRoleZmen(email, role) {
   if (role === 'Administrátor' && !(ucet && ucet.role === 'Administrátor')) {
     hesloSpravce = await onlineHesloSpravce('povýšení účtu ' + email + ' na správce');
     if (hesloSpravce === null) return false;
+  } else if (role !== 'Administrátor') {
+    const h = await onlineUzHesloJinySpravce(email, 'snížení role');   // SEC-I7
+    if (h === null) return false;
+    hesloSpravce = h.hesloSpravce;
   }
   return onlineUzAkce({ akce: 'role', email, role, ...(hesloSpravce ? { hesloSpravce } : {}) },
     'Účet ' + email + ' má roli ' + role + '.');
@@ -2202,7 +2218,9 @@ async function onlineUzArchiv(email, archiv) {
   if (!await potvrd('Archivovat účet ' + email + '?\n\n'
     + 'Účet se nesmaže — jen zmizí z běžného seznamu a nepůjde se jím přihlásit. '
     + 'Razítka pod odeslanými nabídkami zůstanou beze změny.')) return;
-  onlineApi('/api/uzivatele', { akce: 'archiv', email, archiv: true })
+  const heslo = await onlineUzHesloJinySpravce(email, 'archivace');   // SEC-I7
+  if (heslo === null) return;
+  onlineApi('/api/uzivatele', Object.assign({ akce: 'archiv', email, archiv: true }, heslo))
     .then(() => {
       onlineZprava('Účet ' + email + ' je v archivu.');
       onlineUzivateleNacti();
@@ -2251,7 +2269,9 @@ async function onlineUzSmaz(email) {
     + 'o slevách — ta říkají, kdo co tehdy udělal, a nepřepisují se. Zakázky '
     + 'zůstanou taky; server smazání odmítne, dokud je nepřevedete na kolegu.\n\n'
     + 'Jde-li jen o odchod kolegy, zvolte raději „Archivovat…" — to je vratné.')) return;
-  onlineUzAkce({ akce: 'smaz', email },
+  const heslo = await onlineUzHesloJinySpravce(email, 'smazání');   // SEC-I7
+  if (heslo === null) return;
+  onlineUzAkce(Object.assign({ akce: 'smaz', email }, heslo),
     'Účet ' + email + ' je smazaný i s podpisem. Razítka pod odeslanými nabídkami '
     + 'a pod rozhodnutími o slevách zůstala beze změny.',
     { priChybe: async (e) => {
@@ -2263,8 +2283,10 @@ async function onlineUzSmaz(email) {
     } });
 }
 
-function onlineUzAktivni(email, aktivni) {
-  onlineUzAkce({ akce: 'aktivni', email, aktivni },
+async function onlineUzAktivni(email, aktivni) {
+  const heslo = aktivni ? {} : await onlineUzHesloJinySpravce(email, 'vypnutí');   // SEC-I7
+  if (heslo === null) return;
+  return onlineUzAkce(Object.assign({ akce: 'aktivni', email, aktivni }, heslo),
     aktivni ? 'Účet ' + email + ' je zapnutý.' : 'Účet ' + email + ' je vypnutý – přihlášení mu nepůjde.');
 }
 
