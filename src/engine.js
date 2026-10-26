@@ -231,7 +231,7 @@ function patraProVypocet(z) {
  * `kde` říká, kde se typ nabízí — pravidla interiér/exteriér jsou táž jako
  * u `skloVolba()`. Cetris a „jiné" jsou vždy. */
 const OPLASTENI_TYPY = [
-  { id: 'C.skloBokyKc', nazev: 'Dvojsklo (boky + záda)', kde: 'ext' },
+  { id: 'C.skloBokyKc', nazev: 'Izolační dvojsklo', kde: 'ext' },   // do 26. 10. 2026 „Dvojsklo (boky + záda)" (#517)
   { id: 'C.skloCelniKc', nazev: 'Sklo VSG 4.4.1', kde: 'vse' },
   { id: 'C.skloVsg442Kc', nazev: 'Sklo VSG 4.4.2', kde: 'int' },
   { id: 'C.cetrisKc', nazev: 'Cetris', kde: 'vse' },

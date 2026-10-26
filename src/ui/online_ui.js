@@ -1226,6 +1226,17 @@ function onlineChybaText(e) {
 const ONLINE_TISK_NEULOZEN = 'Dokument se vytiskl, ale zakázka se se záznamem odeslání nabídky do databáze neuložila. '
   + 'Nezavírejte okno a uložte zakázku znovu (tlačítko Uložit zakázku), jakmile bude server dostupný — '
   + 'do té doby jsou podmínky a DPH odeslané nabídky zmrazené.';
+/* Uložení po tisku (`fronta`) skončilo bez zápisu jinak než chybou serveru —
+ * kolizí verzí nebo v náhledu role (K8-K2, #517). Zámek a záznam odeslání
+ * jsou zatím jen v okně; obchodník to musí vědět hned, ne z panelu. */
+function onlineTiskNeulozenDialog(duvod) {
+  if (typeof hlaska !== 'function') return;
+  try { Promise.resolve(hlaska(ONLINE_TISK_NEULOZEN + ' (' + duvod + ')',
+    { nadpis: 'Odeslaná nabídka není uložená' })).catch(() => {}); } catch (x) { /* nevadí */ }
+}
+const ONLINE_TISK_KOLIZE = 'zakázku mezitím uložil někdo jiný nebo jiné okno — zvolte „Přepsat serverovou verzi", '
+  + 'jinak se záznam odeslání vytištěné nabídky ztratí';
+const ONLINE_TISK_NAHLED = 'díváte se na aplikaci v náhledu — ukončete náhled a uložte zakázku';
 
 /* Otisk odeslané zakázky doplněný o razítko, které vrátil server (K7-K1) —
  * stejně, jako ho onlineUloz vtiskne do ZAK. Zbytek změn provedených během
@@ -1247,7 +1258,10 @@ function onlineUloz(opts) {
    * v rolovém náhledu se zeptá: zapíše se pod administrátorem, ne pod rolí,
    * kterou se právě díváte. (Náhled účtu zápis blokuje celý, nahledStop.) */
   if (typeof nahledJakykoli === 'function' && nahledJakykoli()) {
-    if (opts.tiche) return Promise.resolve(false);
+    if (opts.tiche) {
+      if (opts.fronta) onlineTiskNeulozenDialog(ONLINE_TISK_NAHLED);   // K8-K2
+      return Promise.resolve(false);
+    }
     if (NAST.nahledRole && !opts.nahledPotvrzeno && typeof potvrd === 'function')
       return potvrd('Díváte se na aplikaci jako role „' + NAST.nahledRole + '", ale zakázka se uloží '
         + 'pod vaším administrátorským účtem. Uložit?')
@@ -1286,6 +1300,7 @@ function onlineUloz(opts) {
    * (načíst znovu / přepsat) — jinak by se 409 sypaly do konzole dál. */
   if (ONLINE_STAV.kolize) {
     if (!opts.tiche) { onlineZprava(onlineKolizeText(), 'varovani'); render(); }
+    if (opts.fronta) onlineTiskNeulozenDialog(ONLINE_TISK_KOLIZE);   // K8-K2
     return Promise.resolve(false);
   }
   /* ČTECÍ ZÁMEK PLATÍ I NA RUČNÍ ULOŽENÍ (nález V41, 15. 9. 2026).
@@ -1351,11 +1366,14 @@ function onlineUloz(opts) {
      * nesmí zaniknout pod běžným „Uloženo". */
     onlineZprava('Uloženo online jako ' + o.soubor + ' (' + new Date().toLocaleTimeString('cs-CZ') + ').'
       + (o.varovani ? ' ' + o.varovani : ''), o.varovani ? 'varovani' : '');
-    if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+    /* „Uloženo" = co skutečně odešlo (K8-K3, #517). Změna během letu (typicky
+     * zámek po tisku) na serveru neleží: varování při zavření okna musí dál
+     * platit a záloha v prohlížeči zůstat. */
+    if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno(zmenaBehem ? ONLINE_STAV.posledni : undefined);
     /* Zakázka je v databázi – nouzová záloha v prohlížeči už nemá co chránit.
      * Kdyby se nechala ležet, ptá se na ni aplikace při každém dalším spuštění
      * i za měsíc („V prohlížeči je rozpracovaná kalkulace…"). */
-    if (typeof historieZalohaHotovo === 'function') historieZalohaHotovo();
+    if (!zmenaBehem && typeof historieZalohaHotovo === 'function') historieZalohaHotovo();
     /* Nově propojený deal (správce zadal deal id) — stav dealu se načte hned
      * po uložení, ne až při příštím otevření (P1). K7-K6 (#508, J. V. 23. 10.):
      * jen při změně dealu — dřív se při neznámém stavu ptal každý autosave. */
@@ -1379,6 +1397,7 @@ function onlineUloz(opts) {
       if (ONLINE_STAV.timer) { clearTimeout(ONLINE_STAV.timer); ONLINE_STAV.timer = null; }
       ONLINE_STAV.kolize.kdoVy = e.data.kdoVy === true;   // týž účet, jiné okno (P7 / K16-N87)
       onlineZprava(onlineKolizeText(), 'varovani');
+      if (opts.fronta) onlineTiskNeulozenDialog(ONLINE_TISK_KOLIZE);   // K8-K2
       return false;
     }
     /* Server odmítá i pokus přepsat odeslanou (uzamčenou) nabídku – jeho
@@ -1387,10 +1406,7 @@ function onlineUloz(opts) {
     onlineZprava('Neuloženo online: ' + onlineChybaText(e), 'varovani');
     /* Uložení po tisku (Z1-4) nevyšlo (K7-K4): vytištěný dokument zatím nemá
      * v databázi záznam odeslání — obchodník to musí vědět hned, ne z panelu. */
-    if (opts.fronta && typeof hlaska === 'function') {
-      try { Promise.resolve(hlaska(ONLINE_TISK_NEULOZEN + ' (' + onlineChybaText(e) + ')',
-        { nadpis: 'Odeslaná nabídka není uložená' })).catch(() => {}); } catch (x) { /* nevadí */ }
-    }
+    if (opts.fronta) onlineTiskNeulozenDialog(onlineChybaText(e));
     return false;
   }).then(v => { ONLINE_STAV.pracuje = false; ONLINE_STAV.ukladaBeh = null; render(); return v; },
           e => { ONLINE_STAV.pracuje = false; ONLINE_STAV.ukladaBeh = null; render(); throw e; });
@@ -1427,10 +1443,33 @@ function onlineKolizeTlacitka() {
       title="uloží moje změny přes verzi na serveru (s jejím aktuálním razítkem)">Přepsat serverovou verzi</button></div>`;
 }
 
-/* Vědomá volba: neuložené změny se zahazují bez další otázky. */
+/* Varianty zamčené v okně, které v naposledy uložené / načtené verzi zamčené
+ * nejsou — typicky tisk během kolize (K8-K2, #517). Jejich záznam odeslání
+ * by „Načíst znovu ze serveru" zahodil. */
+function onlineKolizeNoveZamky() {
+  let p = null;
+  try { p = ONLINE_STAV.posledni ? JSON.parse(ONLINE_STAV.posledni) : null; } catch (e) { p = null; }
+  const ulozene = new Set(((p && Array.isArray(p.varianty)) ? p.varianty : [])
+    .filter(v => v && variantaUzamcena(v)).map(v => v.id));
+  return ((ZAK && ZAK.varianty) || []).filter(v => v && variantaUzamcena(v) && !ulozene.has(v.id))
+    .map(v => v.nazev || v.id);
+}
+
+/* Vědomá volba: neuložené změny se zahazují bez další otázky — kromě
+ * záznamu odeslání vytištěné nabídky, který na serveru není (K8-K2). */
 function onlineKolizeNacti() {
   const k = ONLINE_STAV.kolize;
   if (!k) return Promise.resolve(false);
+  const nove = (typeof variantaUzamcena === 'function') ? onlineKolizeNoveZamky() : [];
+  if (nove.length && typeof potvrd === 'function') {
+    return Promise.resolve(potvrd('V tomto okně je vytištěná (odeslaná) nabídka, jejíž záznam odeslání na serveru '
+      + 'není — varianta ' + nove.join(', ') + '. Načtením ze serveru se zámek i záznam odeslání zahodí '
+      + '(dokument už ale u zákazníka může být). Raději zvolte „Přepsat serverovou verzi". Přesto načíst ze serveru?'))
+      .then(ano => ano ? onlineKolizeNactiTed(k) : false);
+  }
+  return onlineKolizeNactiTed(k);
+}
+function onlineKolizeNactiTed(k) {
   ONLINE_STAV.kolize = null;
   ONLINE_STAV.posledni = JSON.stringify(ZAK);
   if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
@@ -2051,6 +2090,18 @@ async function onlineHesloSpravce(co) {
   return h;
 }
 
+/* Je účet JINÝ správce než přihlášený? Smazání, vypnutí, archivace a snížení
+ * role takového účtu chtějí na serveru heslo správce (SEC-I7, J. V.
+ * 26. 10. 2026, #517). Vrací {} (heslo netřeba), { hesloSpravce }, nebo null
+ * (správce dialog zrušil — nic se neposílá). */
+async function onlineUzHesloJinySpravce(email, co) {
+  const ucet = (ONLINE_STAV.uzivatele || []).find(u => u.email === email);
+  const ja = ONLINE_STAV.ja && ONLINE_STAV.ja.email;
+  if (!(ucet && ucet.role === 'Administrátor' && email !== ja)) return {};
+  const h = await onlineHesloSpravce(co + ' správcovského účtu ' + email);
+  return h === null ? null : { hesloSpravce: h };
+}
+
 async function onlineUzZaloz() {
   const f = ONLINE_STAV.uzForm;
   const email = String(f.email || '').trim().toLowerCase();
@@ -2137,6 +2188,10 @@ async function onlineUzRoleZmen(email, role) {
   if (role === 'Administrátor' && !(ucet && ucet.role === 'Administrátor')) {
     hesloSpravce = await onlineHesloSpravce('povýšení účtu ' + email + ' na správce');
     if (hesloSpravce === null) return false;
+  } else if (role !== 'Administrátor') {
+    const h = await onlineUzHesloJinySpravce(email, 'snížení role');   // SEC-I7
+    if (h === null) return false;
+    hesloSpravce = h.hesloSpravce;
   }
   return onlineUzAkce({ akce: 'role', email, role, ...(hesloSpravce ? { hesloSpravce } : {}) },
     'Účet ' + email + ' má roli ' + role + '.');
@@ -2163,7 +2218,9 @@ async function onlineUzArchiv(email, archiv) {
   if (!await potvrd('Archivovat účet ' + email + '?\n\n'
     + 'Účet se nesmaže — jen zmizí z běžného seznamu a nepůjde se jím přihlásit. '
     + 'Razítka pod odeslanými nabídkami zůstanou beze změny.')) return;
-  onlineApi('/api/uzivatele', { akce: 'archiv', email, archiv: true })
+  const heslo = await onlineUzHesloJinySpravce(email, 'archivace');   // SEC-I7
+  if (heslo === null) return;
+  onlineApi('/api/uzivatele', Object.assign({ akce: 'archiv', email, archiv: true }, heslo))
     .then(() => {
       onlineZprava('Účet ' + email + ' je v archivu.');
       onlineUzivateleNacti();
@@ -2212,7 +2269,9 @@ async function onlineUzSmaz(email) {
     + 'o slevách — ta říkají, kdo co tehdy udělal, a nepřepisují se. Zakázky '
     + 'zůstanou taky; server smazání odmítne, dokud je nepřevedete na kolegu.\n\n'
     + 'Jde-li jen o odchod kolegy, zvolte raději „Archivovat…" — to je vratné.')) return;
-  onlineUzAkce({ akce: 'smaz', email },
+  const heslo = await onlineUzHesloJinySpravce(email, 'smazání');   // SEC-I7
+  if (heslo === null) return;
+  onlineUzAkce(Object.assign({ akce: 'smaz', email }, heslo),
     'Účet ' + email + ' je smazaný i s podpisem. Razítka pod odeslanými nabídkami '
     + 'a pod rozhodnutími o slevách zůstala beze změny.',
     { priChybe: async (e) => {
@@ -2224,8 +2283,10 @@ async function onlineUzSmaz(email) {
     } });
 }
 
-function onlineUzAktivni(email, aktivni) {
-  onlineUzAkce({ akce: 'aktivni', email, aktivni },
+async function onlineUzAktivni(email, aktivni) {
+  const heslo = aktivni ? {} : await onlineUzHesloJinySpravce(email, 'vypnutí');   // SEC-I7
+  if (heslo === null) return;
+  return onlineUzAkce(Object.assign({ akce: 'aktivni', email, aktivni }, heslo),
     aktivni ? 'Účet ' + email + ' je zapnutý.' : 'Účet ' + email + ' je vypnutý – přihlášení mu nepůjde.');
 }
 

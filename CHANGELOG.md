@@ -8,6 +8,51 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v26.10.6 — O2 #517: zbylá rozhodnutí J. V. z dialogu K8/S1 + uzavření #319 (T4), větev claude/o2-rozhodnuti
+
+Nad 6076128 (integrace po sloučení O1 #516, v26.10.1). Dialog J. V. 26. 10. 2026 („ostatní podle návrhu“):
+K8-K2 + K8-K3 = A, K8-K4 = A, SEC-S3 = A, SEC-S5 = A, SEC-I7 = A; název položky dvojskla (jen text).
+
+- **K8-K2 — tisk při kolizi verzí nebo v náhledu role ukáže dialog.** Uložení po tisku (`fronta`) skončilo
+  u `ONLINE_STAV.kolize`, v náhledu role i po 409 letícího autosave tiše — teď `onlineTiskNeulozenDialog`
+  (`ONLINE_TISK_NEULOZEN` + důvod: u kolize rada „Přepsat serverovou verzi“). `onlineKolizeNacti` se zeptá,
+  je-li v okně zámek, který v `posledni` není (`onlineKolizeNoveZamky`) — záznam odeslání by se zahodil.
+- **K8-K3 — „uloženo“ = odeslaný otisk.** Po zápisu se změnou během letu se nevolá `historieZalohaHotovo`
+  a `historieOznacUlozeno(text)` dostane odeslané tělo s razítkem — varování při zavření okna a záloha
+  v prohlížeči zůstanou, dokud změna (typicky zámek po tisku) neleží na serveru.
+- **K8-K4 — bez přihlášení se po tisku nečeká.** `zamekSnimekCekaNaServer` bez `ONLINE_STAV.ja` vrací false
+  (jako ze souboru; režim složky je vypnutý, takže taky); hláška `ZAMEK_POLE_CEKA` zmiňuje přihlášení.
+- **SEC-S3 — ceny v tiskovém náhledu nabídky se zámkem nejdou přepsat.** Skript náhledu (`tiskListaSkript`)
+  u dokumentů, které zamykají (`nabidkaTisk`, `nabidkaProjTisk`), dá hned při otevření buňkám `.castka`
+  a buňkám tabulek s částkou v měně `contenteditable="false"` (drží i „Vrátit původní znění“); ostatní text
+  zůstává upravitelný. Mez v `BEZPECNOST_MEZE.md`.
+- **SEC-S5 — splátky OCK musí dát 100 %.** `kryciPlatbyOck100` (kryci.js) nad platebním kalendářem OCK;
+  mlčí u měsíční fakturace, staré odeslané varianty a nečitelného procenta. Upozornění pod konečnou fakturou
+  v krycím listu i v podmínkách u nabídky (`klPlatby100Html`), kontrola před nabídkou `platbyOck100`
+  (varování, 44. pravidlo) a `kryciSodPlatby` vrátí chybu → SoD realizace nevznikne. Dílčí faktura č. 2 se
+  už neztratí tiše.
+- **SEC-I7 — zásah do jiného správce jen s heslem správce.** `uzivatele.mjs`: smazání, vypnutí, archivace
+  a snížení role účtu s rolí Administrátor (ne vlastního) chtějí `hesloSpravce` (`potvrdHesloSpravce`);
+  klient se v Nastavení → Uživatelé zeptá (`onlineUzHesloJinySpravce`).
+- **Ceník — „Izolační dvojsklo“ (jen text).** OPLÁŠTĚNÍ: „Izolační dvojsklo – typ“, „Izolační dvojsklo“
+  s poznámkou „exteriérová: boky a zadní stěna ve standardu · po stěnách: volitelně u kterékoli stěny“;
+  `OPLASTENI_TYPY` „Izolační dvojsklo“ (výběr typu stěny, specifikace po stěnách — EN „Insulating double
+  glazing“ z existujícího hesla). Klíče `C.skloBokyKc` / `C.skloBokyNazev` a řádek „MATERIÁL boční + zadní
+  stěna (…)“ beze změny; výpočet beze změny.
+- **#319 T4 uzavřen.** Tři místa z revize v22.9.9 (karta poznámek, automat ATYP + sazba hodin P11, nová
+  zakázka P15) ověřuje chováním `overit_t4.mjs` (28 kontrol); regexy nad zdrojákem z `test_poznamky.js`,
+  `test_standard_atyp.js` a `test_zamek_prepnuti.js` odstraněny.
+- **Jen zapsáno:** SEC-S7, SEC-N9, SEC-I15, SEC-I16, SEC-I17 jako podmínky zadání #115 (hodnota dealu po SoD =
+  cena díla, jinak cena nabídky); SEC-I8 (`__Host-` až při vlastní doméně) do `BEZPECNOST_MEZE.md`;
+  SEC-V1/V2/S4 jako ruční kroky J. V. v `PREDAVKA.md`.
+- Testy s pojistkou: `test_tisk_kolize_k8.js` (11 FAIL → 19/0), `test_snimek_po_tisku.js` 4b (3 FAIL → 40/0),
+  `test_platby_ock100.js` (7 FAIL → 19/0), `test_tisk_ceny_skript.js` (5 FAIL → 9/0), `test_sec_i7_klient.js`
+  (13 FAIL → 17/0), `test_dvojsklo_nazev.js` (7 FAIL → 13/0), `netlify/test_sec_i7.mjs` (18 FAIL → 32/0);
+  harnessy `overit_tisk_ceny.mjs` (6 FAIL → 12/0) a `overit_t4.mjs` (sabotáž 5 FAIL → 28/0). Mutace #517:
+  jádro 13/13, server 5/5; upravené hledané úseky #507 K7-K2 a K7-K4 (1/1, 1/1).
+
+---
+
 ## v26.10.5 — M2 #519: kotvení přes můstky ve specifikaci (bod 5 z rozboru K13, #354), větev claude/519-kotveni-mustky
 
 Nad 6076128 (integrace v26.10.1). Rozhodnutí J. V. 26. 10. 2026: „rozběhni hned“.
@@ -24,6 +69,58 @@ Nad 6076128 (integrace v26.10.1). Rozhodnutí J. V. 26. 10. 2026: „rozběhni h
 - Testy: `src/test_mustky.js` blok #519 (0 / 1 / 2 / 5 můstků, stará zakázka se zaškrtnutým můstkem, ruční
   přepis, výchozí věta z dat, překlady EN/DE/FR, nabídka CZ/EN/DE, cena) — před změnou 15 FAIL, po ní 125/125.
   Mutace jádra „#519“ 6/6 chycených.
+
+## v26.10.4 — P3 #114: přehled mapy polí Pipedrive v Nastavení (CRM-15), větev claude/114-prehled-mapy-poli
+
+Nad e9aed72 (test-draft). Párování polí podle přesného názvu a typu (v21.10.x) zůstává beze změny — přibyl
+přehled pro administrátora.
+
+- **Nastavení → Mapa polí CRM (jen administrátor):** souhrn nahoře (počty a barevné štítky: spárováno, chybí
+  v CRM, jiný typ, dvakrát, nezařazená v CRM), tabulka polí kalkulace × pole CRM (dohodnutý název, typ, směr
+  čte se / zapisuje se / jen zná, zdroj OCK / PROJ, stav, název a typ pole v CRM; spárované pole, které v CRM
+  nejde zapisovat, nese štítek „jen ke čtení“), seznam nezařazených vlastních polí CRM, filtr „jen pole
+  s problémem“ a tlačítko **Obnovit z CRM** (`?obnovit=1`, obejde denní cache; mapa v cache nese verzi).
+  Ruční přiřazení se nedělá — přejmenované pole se ukáže jako „chybí v CRM“ (např. „Platební kalendář SoD
+  PROJ“ z #512, dokud ho integrátor nezaloží). `src/ui/pd_mapa_ui.js`.
+- **Řádky přehledu skládá server** (`pdPrehledMapy` v `netlify/lib/pd_mapa.mjs`) při každé odpovědi z mapy
+  v cache a z definic v kódu; pole jiného typu nebo zdvojené se mezi nezařazenými nehlásí podruhé, hashe
+  polí přehled nenese.
+- **`/api/pd/pole` jen pro administrátora** (obchodník i vedoucí 403 i s právem `crm.pipedrive`; žádná
+  obrazovka jim ho nevolala, ostatní funkce berou mapu přes `pdPoleMapa()`). Nenastavený token = hláška
+  „Napojení na Pipedrive zatím není nastavené…“; chyba Pipedrive = hláška bez pádu, poslední mapa zůstane
+  vidět. Odmítnutý token Pipedrive (401) odchází jako **502** — klient by 401 vzal za vypršelé přihlášení
+  a správce odhlásil.
+- **Testy:** `netlify/test_pd_mapa_prehled.mjs` 46/0 (všechny stavy, organizace, souhrn, práva, nenastavený
+  token, chyba API, cache a obnovení; proti e9aed72 padá), `netlify/test_pd_pristup.mjs` (oddíl 0: mapa
+  polí jen administrátor; proti e9aed72 4 selhání), `netlify/test_prava.mjs` (JEN_ADMIN), prohlížečový
+  `overit_pd_mapa.mjs` 26/0 (proti e9aed72 padá); `./spust_testy.sh` 253/0/1. Mutace „#114 přehled“ **9/9** chycené (`--kontrola` 928 úseků).
+- Příručka: kapitola 28 (oddíl Mapa polí CRM) a „Co je nového ve verzi v26.10.4“; roadmapa #114 hotovo.
+
+---
+
+## v26.10.3 — #518: zvýraznění nepřeložených a ručně zapsaných textů v náhledu cizojazyčné nabídky, větev claude/518-zvyrazneni-prekladu
+
+Nad e9aed72 (integrace, test v25.10.1 + dokumentace). Podnět obchodníka 24. 10. 2026, zadání J. V. 26. 10.:
+v PRICE QUOTATION EN zůstal ručně zapsaný název akce česky a nikdo si toho před tiskem nevšiml.
+
+- **Nové:** náhled cenové nabídky v EN/DE/FR (OCK tisková stránka `nabidkaOckDokument`, podklady OCK `nabidkaNahled`,
+  nabídka PROJ `nabidkaProjNahled`) žlutě podbarví každý text, který nepochází z překladu — ručně zapsané údaje
+  hlavičky (zákazník, kontakt, název akce, adresa, vlastní popis záměru), texty bez hesla ve slovníku a odstavce
+  ručně upravené tlačítkem „Upravit text před tiskem“. Značka nese `title` s vysvětlením (ruční údaj / bez
+  překladu / ručně upraveno).
+- **Kde se rozhoduje:** `trStav` v `src/preklad.js` — jediné místo, kde překlad padá na češtinu. Náhled si zapne
+  sledování (`prekladSledujZacni` / `prekladSledujKonec`) až po všech otázkách a sebrané originály předá
+  značkovacímu skriptu (`neprelozenoSkript` v `src/ui/common.js`). Texty bez písmene („12 %“) se nehlásí,
+  ruční údaje hlavičky jen celým textem (adresa „Praha“ neobarví patičku firmy).
+- **Legenda** nad náhledem s počtem míst („5 textů bez překladu — zkontrolujte“), tlačítko Přejít na první / Další;
+  počet se přepočítá po ruční úpravě, přepnutí DPH i po „Vrátit původní znění“.
+- **Tisk a export beze změny:** `@media print` značku i legendu ruší, značka je jen `<span>` v okně náhledu (žádný
+  znak navíc). Data nabídky (placeholders), Word/DOCX a snímek zámku se nemění (Z1/SEC-S3 nedotčeno). Česká
+  nabídka nedostane CSS, legendu ani skript.
+- **Testy:** `src/test_neprelozene.js` (22 OK; před změnou 0 OK / 2 FAIL), harness `overit_neprelozene.mjs`
+  (22 / 0; na sestavení před změnou 10 / 12) — EN OCK s ručním názvem akce zvýrazněn, print médium bez
+  zvýraznění, ručně upravený odstavec, EN PROJ a podklady, CZ OCK i PROJ bez značek, data nabídky a DOCX beze
+  změny. Mutace `#518` 7/7 chycených (`preklad.js` přidán mezi jádra mutací, žádná nová sada).
 
 ## v26.10.1 — O1 #516: zámek CN uložený na serveru a plán plateb PROJ po CN (rozhodnutí J. V. 26. 10. 2026), větev claude/o1-zamek-plan
 
@@ -53,56 +150,6 @@ před posunem `main`), SEC-S6 + SEC-N8 = A (opravit obojí), K8-K5 = B (text pon
   (`ui/plan_plateb_ui.js` nově mezi hlídanými soubory), upravené #507 K7-K2 6/6 a #508 K7-K6 2/2.
 - Potvrzeno J. V. 26. 10.: u staré nabídky PROJ (před plánem plateb) se do Pipedrive nepošle ani Platební
   kalendář (#512 beze změny).
-## v26.10.3 — #518: zvýraznění nepřeložených a ručně zapsaných textů v náhledu cizojazyčné nabídky, větev claude/518-zvyrazneni-prekladu
-
-Nad e9aed72 (integrace, test v25.10.1 + dokumentace). Podnět obchodníka 24. 10. 2026, zadání J. V. 26. 10.:
-v PRICE QUOTATION EN zůstal ručně zapsaný název akce česky a nikdo si toho před tiskem nevšiml.
-
-- **Nové:** náhled cenové nabídky v EN/DE/FR (OCK tisková stránka `nabidkaOckDokument`, podklady OCK `nabidkaNahled`,
-  nabídka PROJ `nabidkaProjNahled`) žlutě podbarví každý text, který nepochází z překladu — ručně zapsané údaje
-  hlavičky (zákazník, kontakt, název akce, adresa, vlastní popis záměru), texty bez hesla ve slovníku a odstavce
-  ručně upravené tlačítkem „Upravit text před tiskem“. Značka nese `title` s vysvětlením (ruční údaj / bez
-  překladu / ručně upraveno).
-- **Kde se rozhoduje:** `trStav` v `src/preklad.js` — jediné místo, kde překlad padá na češtinu. Náhled si zapne
-  sledování (`prekladSledujZacni` / `prekladSledujKonec`) až po všech otázkách a sebrané originály předá
-  značkovacímu skriptu (`neprelozenoSkript` v `src/ui/common.js`). Texty bez písmene („12 %“) se nehlásí,
-  ruční údaje hlavičky jen celým textem (adresa „Praha“ neobarví patičku firmy).
-- **Legenda** nad náhledem s počtem míst („5 textů bez překladu — zkontrolujte“), tlačítko Přejít na první / Další;
-  počet se přepočítá po ruční úpravě, přepnutí DPH i po „Vrátit původní znění“.
-- **Tisk a export beze změny:** `@media print` značku i legendu ruší, značka je jen `<span>` v okně náhledu (žádný
-  znak navíc). Data nabídky (placeholders), Word/DOCX a snímek zámku se nemění (Z1/SEC-S3 nedotčeno). Česká
-  nabídka nedostane CSS, legendu ani skript.
-- **Testy:** `src/test_neprelozene.js` (22 OK; před změnou 0 OK / 2 FAIL), harness `overit_neprelozene.mjs`
-  (22 / 0; na sestavení před změnou 10 / 12) — EN OCK s ručním názvem akce zvýrazněn, print médium bez
-  zvýraznění, ručně upravený odstavec, EN PROJ a podklady, CZ OCK i PROJ bez značek, data nabídky a DOCX beze
-  změny. Mutace `#518` 7/7 chycených (`preklad.js` přidán mezi jádra mutací, žádná nová sada).
-## v26.10.4 — P3 #114: přehled mapy polí Pipedrive v Nastavení (CRM-15), větev claude/114-prehled-mapy-poli
-
-Nad e9aed72 (test-draft). Párování polí podle přesného názvu a typu (v21.10.x) zůstává beze změny — přibyl
-přehled pro administrátora.
-
-- **Nastavení → Mapa polí CRM (jen administrátor):** souhrn nahoře (počty a barevné štítky: spárováno, chybí
-  v CRM, jiný typ, dvakrát, nezařazená v CRM), tabulka polí kalkulace × pole CRM (dohodnutý název, typ, směr
-  čte se / zapisuje se / jen zná, zdroj OCK / PROJ, stav, název a typ pole v CRM; spárované pole, které v CRM
-  nejde zapisovat, nese štítek „jen ke čtení“), seznam nezařazených vlastních polí CRM, filtr „jen pole
-  s problémem“ a tlačítko **Obnovit z CRM** (`?obnovit=1`, obejde denní cache; mapa v cache nese verzi).
-  Ruční přiřazení se nedělá — přejmenované pole se ukáže jako „chybí v CRM“ (např. „Platební kalendář SoD
-  PROJ“ z #512, dokud ho integrátor nezaloží). `src/ui/pd_mapa_ui.js`.
-- **Řádky přehledu skládá server** (`pdPrehledMapy` v `netlify/lib/pd_mapa.mjs`) při každé odpovědi z mapy
-  v cache a z definic v kódu; pole jiného typu nebo zdvojené se mezi nezařazenými nehlásí podruhé, hashe
-  polí přehled nenese.
-- **`/api/pd/pole` jen pro administrátora** (obchodník i vedoucí 403 i s právem `crm.pipedrive`; žádná
-  obrazovka jim ho nevolala, ostatní funkce berou mapu přes `pdPoleMapa()`). Nenastavený token = hláška
-  „Napojení na Pipedrive zatím není nastavené…“; chyba Pipedrive = hláška bez pádu, poslední mapa zůstane
-  vidět. Odmítnutý token Pipedrive (401) odchází jako **502** — klient by 401 vzal za vypršelé přihlášení
-  a správce odhlásil.
-- **Testy:** `netlify/test_pd_mapa_prehled.mjs` 46/0 (všechny stavy, organizace, souhrn, práva, nenastavený
-  token, chyba API, cache a obnovení; proti e9aed72 padá), `netlify/test_pd_pristup.mjs` (oddíl 0: mapa
-  polí jen administrátor; proti e9aed72 4 selhání), `netlify/test_prava.mjs` (JEN_ADMIN), prohlížečový
-  `overit_pd_mapa.mjs` 26/0 (proti e9aed72 padá); `./spust_testy.sh` 253/0/1. Mutace „#114 přehled“ **9/9** chycené (`--kontrola` 928 úseků).
-- Příručka: kapitola 28 (oddíl Mapa polí CRM) a „Co je nového ve verzi v26.10.4“; roadmapa #114 hotovo.
-
----
 
 ## v25.10.1 — M1: Příručka aktualizována (kapitoly 5, 6, 8, 24, 28), větev claude/manual-25-10
 

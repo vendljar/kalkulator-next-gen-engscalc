@@ -172,16 +172,17 @@ const zamcena = (soubor) => { const z = JSON.parse(pamet.get('zakazky/z/' + soub
     test('S2 ' + nazev + ': zásah správce prošel', z.ok === true, z);
     test('S2 ' + nazev + ': zásah drží (změna hesla ho nevrátila)', !(await ztraceno(po, ja)), [r.status, po && { role: po.role, aktivni: po.aktivni }, ja.ok]);
   }
+  /* Zásah do jiného správce s heslem správce (SEC-I7, #517). */
   /* Reset hesla správcem: platí heslo ze resetu, ne to ze souběžné změny. */
   await scenar('reset hesla', { akce: 'heslo', email: U.admin2.email, heslo: 'Ok8Reset-Heslo1', hesloSpravce: HESLO_ADMIN },
     async () => !(await prihlas(U.admin2.email, 'Ok8Reset-Heslo1')));
   U.admin2.heslo = 'Ok8Reset-Heslo1'; U.admin2.cookie = await prihlas(U.admin2.email, U.admin2.heslo);
-  await scenar('snížení role', { akce: 'role', email: U.admin2.email, role: 'Obchodník' }, (po) => !po || po.role === 'Administrátor');
-  await scenar('vypnutí', { akce: 'aktivni', email: U.admin2.email, aktivni: false }, (po, ja) => !po || po.aktivni !== false || ja.ok);
+  await scenar('snížení role', { akce: 'role', email: U.admin2.email, role: 'Obchodník', hesloSpravce: HESLO_ADMIN }, (po) => !po || po.role === 'Administrátor');
+  await scenar('vypnutí', { akce: 'aktivni', email: U.admin2.email, aktivni: false, hesloSpravce: HESLO_ADMIN }, (po, ja) => !po || po.aktivni !== false || ja.ok);
   /* Smazání: účet znovu zapnout, ať mojeheslo projde až k zápisu. */
   await req(F.uzivatele, 'POST', '/api/uzivatele', { akce: 'aktivni', email: U.admin2.email, aktivni: true }, cA);
   U.admin2.cookie = await prihlas(U.admin2.email, U.admin2.heslo);
-  await scenar('smazání', { akce: 'smaz', email: U.admin2.email }, (po, ja) => !!po || ja.ok);
+  await scenar('smazání', { akce: 'smaz', email: U.admin2.email, hesloSpravce: HESLO_ADMIN }, (po, ja) => !!po || ja.ok);
   hacky.predZapisem = null;
   /* Mimo souběh beze změny: heslo se změní, nová cookie platí. */
   const r = await req(F.uzivatele, 'POST', '/api/uzivatele', { akce: 'mojeheslo', stare: U.obch.heslo, nove: 'Ok8NoveHeslo-1' }, U.obch.cookie);

@@ -19,6 +19,16 @@ function klSet(id, v) {
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }
+/* Upozornění pod konečnou fakturou, když splátky OCK nedávají 100 %
+ * (SEC-S5, #517) — dílčí faktura č. 2 se při záporném zbytku nedopočítá
+ * a dřív to nebylo nikde vidět. Kreslí se v krycím listu i v bloku
+ * podmínek u nabídky (oba jdou přes klRow). */
+function klPlatby100Html() {
+  if (typeof kryciPlatbyOck100 !== 'function' || typeof kryciPlatebniKalendar !== 'function') return '';
+  let t = '';
+  try { t = kryciPlatbyOck100(kryciPlatebniKalendar(ZAK, aktivniVarianta(ZAK), JEKLY)); } catch (e) { t = ''; }
+  return t ? `<div class="kl-row"><div></div><div class="warn kl-platby100" role="alert">⚠ ${esc(t)}</div><div></div></div>` : '';
+}
 function klReset(id) { if (KL.hodnoty) delete KL.hodnoty[id]; render(); }
 function klManual(id) { const h = KL.hodnoty || {}; return h[id] !== undefined && h[id] !== ''; }
 function klVal(id, prefill) {
@@ -170,7 +180,8 @@ function klRow(id, label, opts = {}) {
   }
   const reset = (manual && opts.prefill != null)
     ? ` <button class="mini noprint" title="vrátit automatiku (${esc(pref)})" onclick="klReset('${escJs(id)}')">↺</button>` : '';
-  return `<div class="kl-row"><div class="lbl">${label}</div><div>${field}</div><div class="src">${meta}${reset}</div></div>`;
+  return `<div class="kl-row"><div class="lbl">${label}</div><div>${field}</div><div class="src">${meta}${reset}</div></div>`
+    + (id === 'fakturaKonc' ? klPlatby100Html() : '');
 }
 
 /* ---- Smluvní a platební podmínky v souhrnu cenové nabídky OCK (5. 8. 2026) ----

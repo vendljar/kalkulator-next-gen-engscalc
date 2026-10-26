@@ -311,14 +311,14 @@ const NB = nacti('./nabidka.js');
   const ps = zadaniPoStenach();
   const cz = hodnota(ps.z, ps.c, ps.r, 'cz').text;
   test('N97: po stěnách vyjmenuje materiály se stěnami (CZ)',
-    cz === 'Sklo VSG 4.4.1 (stěna A); Dvojsklo (boky + záda) (stěny B, D); Cetris (stěna B); bez — dodá stavba (stěna C)', cz);
+    /* název dvojskla od #517 „Izolační dvojsklo" */ cz === 'Sklo VSG 4.4.1 (stěna A); Izolační dvojsklo (stěny B, D); Cetris (stěna B); bez — dodá stavba (stěna C)', cz);
   ['en', 'de', 'fr'].forEach(L => {
     const h = hodnota(ps.z, ps.c, ps.r, L);
     test('N97 ' + L.toUpperCase() + ': materiály po stěnách přeložené a hlášené jako přeložené', h.prelozeno === true
       && !CZ_CHARS.test(h.text) && /\bA\)/.test(h.text) && /B, D\)/.test(h.text) && h.text.split('; ').length === 4, h);
   });
   test('N97 EN: znění („Wall A", „Walls B, D", názvy typů ze slovníku)', hodnota(ps.z, ps.c, ps.r, 'en').text
-    === 'Laminated safety glass VSG 4.4.1 (Wall A); Double glazing (sides + rear) (Walls B, D); Cement-bonded particle board (Wall B); None — supplied by the building contractor (Wall C)',
+    === 'Laminated safety glass VSG 4.4.1 (Wall A); Insulating double glazing (Walls B, D); Cement-bonded particle board (Wall B); None — supplied by the building contractor (Wall C)',
     hodnota(ps.z, ps.c, ps.r, 'en').text);
   /* Ruční název typu „jiné" projde beze změny (napsal ho obchodník). */
   const psJ = zadaniPoStenach(z => { z.oplasteni.steny.D.pasy = [{ typ: 'jine', nazev: 'Trapézový plech', naklad: 1200, doM: null }]; });
@@ -330,7 +330,7 @@ const NB = nacti('./nabidka.js');
     z.oplasteni.steny.B.pasy = [{ typ: 'C.skloBokyKc', doM: H + 5 }, { typ: 'C.cetrisKc', doM: null }];
   });
   test('N97: pás, který jádro nezapočítá (N41b), se mezi materiály neobjeví', !/Cetris/.test(hodnota(psN.z, psN.c, psN.r, 'cz').text)
-    && /Dvojsklo \(boky \+ záda\) \(stěny B, D\)/.test(hodnota(psN.z, psN.c, psN.r, 'cz').text),
+    && /Izolační dvojsklo \(stěny B, D\)/.test(hodnota(psN.z, psN.c, psN.r, 'cz').text),
     hodnota(psN.z, psN.c, psN.r, 'cz').text);
   test('N97: ruční hodnota ve specifikaci má dál přednost', hodnota(ps.z, ps.c, ps.r, 'cz', { materialOplasteni: 'dle výkresu' }).text === 'dle výkresu');
 

@@ -19,7 +19,9 @@
  * povyšující na Administrátora a u 'heslo' (reset cizího hesla) — bez něj
  * by kdo má cookie správce založil či povýšil vlastní správcovský účet nebo
  * převzal účet kolegy resetem. Ověřuje lib/sdilene.mjs potvrdHesloSpravce
- * (stejná brzda jako 'mojeheslo').
+ * (stejná brzda jako 'mojeheslo'). Od #517 (SEC-I7, J. V. 26. 10. 2026) i u
+ * 'smaz', 'aktivni' (vypnutí), 'archiv' (archivace) a 'role' (snížení),
+ * míří-li na jiný účet s rolí Administrátor.
  *
  * Proč 'mojeheslo' vyžaduje staré heslo: relace je cookie. Kdyby stačila
  * cookie sama, kdokoli u odemčeného počítače by tiše změnil heslo a účet
@@ -216,6 +218,14 @@ export default async (req) => {
     if (t.akce === 'zaloz' && !emailPlatny(email))
       return json({ ok: false, chyba: 'E-mail nemá platný tvar.' }, 400);
     let ucet = await u.cti(email);
+    /* ZÁSAH DO JINÉHO SPRÁVCE JEN S HESLEM (SEC-I7, rozhodnutí J. V.
+     * 26. 10. 2026, #517). Smazání, vypnutí, archivace a snížení role
+     * účtu, který je Administrátor, chtějí vlastní heslo přihlášeného
+     * správce jako B77 — jinak by s ukradenou cookie správce šlo smazat
+     * všechny účty kromě hlavního. Hlavní účet chrání pojistky níž;
+     * zapnutí, návrat z archivu a zásah do ostatních rolí heslo nechtějí. */
+    const jinySpravce = !!ucet && ucet.role === 'Administrátor' && email !== relace.email;
+    const hesloJinySpravce = () => potvrdHesloSpravce(req, relace, t.hesloSpravce);
 
     if (t.akce === 'zaloz') {
       if (ucet) return json({ ok: false, chyba: 'Účet už existuje.' }, 400);
@@ -286,6 +296,9 @@ export default async (req) => {
         const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce);
         if (stop) return stop;
       }
+      if (jinySpravce && t.role !== 'Administrátor') {   // SEC-I7
+        const stop = await hesloJinySpravce(); if (stop) return stop;
+      }
       ucet.role = t.role;
     } else if (t.akce === 'aktivni') {
       /* Jen skutečné true/false (nález B74 hloubkového testu 24. 9. 2026).
@@ -301,6 +314,9 @@ export default async (req) => {
        * účet nikdy nepřihlásí. Nejdřív zrušit archiv, pak zapnout. */
       if (t.aktivni && ucet.archiv)
         return json({ ok: false, chyba: 'Účet je archivovaný. Nejdřív zrušte archivaci, pak ho zapněte.' }, 400);
+      if (jinySpravce && t.aktivni === false) {   // SEC-I7
+        const stop = await hesloJinySpravce(); if (stop) return stop;
+      }
       /* Vypnutí zneplatní dosavadní relace i pro dobu po případném zapnutí
        * (B76): vypnutý účet server nepustí (vyzadujRoli), ale cookie z doby
        * před vypnutím by po zapnutí zase platila. */
@@ -323,6 +339,9 @@ export default async (req) => {
        * nastaví aktivni=false, takže by se sám zamkl (jako B15 u vypnutí). */
       if (email === relace.email && t.archiv)
         return json({ ok: false, chyba: 'Vlastní účet si nearchivujte — zamkl byste si dveře.' }, 400);
+      if (jinySpravce && t.archiv) {   // SEC-I7
+        const stop = await hesloJinySpravce(); if (stop) return stop;
+      }
       ucet.archiv = !!t.archiv;
       if (ucet.archiv) {
         if (ucet.aktivni !== false) ucet.hesloVerze = hesloVerzeUctu(ucet) + 1;   // B76
@@ -425,6 +444,7 @@ export default async (req) => {
       if (email === relace.email)
         return json({ ok: false, chyba: 'Sám sebe smazat nemůžete. Ať vás smaže jiný '
           + 'administrátor — jinak byste se odřízli uprostřed práce.' }, 400);
+      if (jinySpravce) { const stop = await hesloJinySpravce(); if (stop) return stop; }   // SEC-I7
 
       /* Zakázky napřed. Účet podepsaný pod prací se nesmí ztratit dřív, než
        * práce dostane nového hospodáře: jinak by zakázky zůstaly podepsané

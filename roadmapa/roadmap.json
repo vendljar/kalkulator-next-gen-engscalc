@@ -439,14 +439,15 @@
   {
    "id": "319",
    "vlna": "B",
-   "stav": "ceka",
+   "stav": "hotovo",
+   "hotovoV": "v26.10.6",
    "dulezitost": "vysoka",
    "slozitost": "L",
    "nazev": "Revize změn 21.–22. 9. (v22.9.9): posouzené nálezy B59–B68, N31–N41, T1–T5",
    "proc": "Nezávislá revize nad main v22.9.9 (dokument 2026-09-22_kalkulator_REVIZE_zmen_21-22_9_v22.9.9.md). J. V. 22. 9. večer: „prověř ještě postřehy a úpravy v přiložených md a posuď, zda dávají smysl.\" Každý nález prověřen proti větvi test (v22.9.16) — revize běžela před večerními dávkami.",
    "detail": "UŽ OPRAVENO NA TEST: N31 (pás světlíku nad zadními dveřmi v režimu po stěnách propadal z ceny) — odstranila ho #296. Změřeno na stejném zadání: v22.9.9 zadní stěna 8,01 m² se světlíkem, na test 33,06 m² s i bez něj. Na main vada trvá, dokud se test nesloučí.\n\nPLATÍ, STŘEDNÍ — navrženo opravit: N32 + B60 (duplikace: všechny varianty s příponou 0, kopíruje interní poznámku — B60 zavedla #311), N33 (vynulovaný ceník ztrácí značku „prázdný\" kvůli nenulovým sazbám DPH, tedy i zábranu tisku), N34 (po ručním přihlášení se neotevře poslední zakázka), N35 (společné dodatkové texty smaže nasazení online ceníku — zavedla #310), N36 (duplikace online zahodí neuložené změny), N37 („vrátit původní ceny\" po obnově zálohy z prohlížeče označí neuloženou práci za uloženou), B59 (výsledek NOVÉHO zámku server přebírá od klienta), T1 (cenový test režimu po stěnách chybí — proto prošel N31), T2 (overit_sablony_online končí kódem 0 i se selháním), T3 (5 harnessů se pro chybějící šablony přeskakuje a souhrn je počítá jako prošlé).\n\nPLATÍ, DROBNÉ: B61, B62, B63 (popisSet mimo ZAMEK_CHRANENE), N38 (změřeno: položka jen pro zahraničí po cestě ČR→zahr→ČR drží 50 000 místo 0), N39, N41 (pásy ve specifikaci, FR kapitoly, protokol × poznamkyText), T4, T5 (mimo jiné chybí obsluha SIGINT v mutace.mjs).\n\nINFORMATIVNÍ, BEZ ZÁSAHU NEBO JEN KOSMETIKA: B64 (obnova popisů bez očisty), B65, B66, B67 (režim složky je vypnutý), B68.\n\nDOPORUČENO NECHAT: N40 (nulovou sazbu ATYP nejde vyjádřit — vynulované sestavení na té náhradě stojí).",
    "hotovoKdyz": "J. V. rozhodl pořadí dávek a každá odešla s testem.",
-   "pozn": "HOTOVO v22.9.17 — dávka R1: N32 + B60, B63, N39, N41 část protokol × poznámka, B64, T1.\n\nHOTOVO v22.9.18 — dávka R2: N34, N35, N36, N37 (změřeno v prohlížeči).\n\nHOTOVO v22.9.19 — dávka R3: N33 (sazby DPH, přirážka, procenta a kurz se za důkaz cen nepočítají; test nad výchozími ceníky ze sestavení), N38 (návrat do tuzemska bere složenou tuzemskou řadu).\n\nHOTOVO v22.9.20 — dávka R4: B59 (server ověří výsledek nově odeslané nabídky a zapíše razítko shoda / nesouhlasí; rozpor uložení neodmítne, hlásí ho a drží v zámku), mutace větve role u B56 a čtyři mutace B59 (141 serverových mutací), obsluha SIGINT/SIGTERM/SIGHUP v mutace.mjs + sada test_mutace.mjs (část T5).\n\nHOTOVO v22.9.21 — dávka R5: T2 (selhání před přeskočením = selhání), T3 (přeskočení kódem 4, v souhrnu i v CI zvlášť a s důvodem), T5 (kód 2 a chybějící playwright pro import = přeskočení, obnova ADMIN_EMAIL v test_prava) + sada test_harness_podklady.js.\n\nNEŘEŠENO V R1–R5 (k rozhodnutí): mutace_jadro.mjs do repozitáře (N19); B57 a B58 z ranního auditu; drobné N41 (pásy ve specifikaci, FR kapitoly), B61, B62, B65–B68 a T4; N40 doporučeno nechat.\n\nHOTOVO v23.9.3 (noční dávky D1–D3): N41b, B57, B58, B61, B62, B68; B65–B67 zapsány v BEZPECNOST_MEZE.md; T4 první krok (zaokrouhlení). Zbývá N41c (FR znění), N41d (neověřeno) a T4 postupně.\n\nv24.9.3 (E4): N41d ověřen a opraven (vykreslení nezapisuje do zamčené varianty), N41c — FR pole kapitol ve Firmě (prázdné → čeština s upozorněním), T4 další krok (overit_zadani_detail.mjs). Zbývá T4 postupně (26 souborů)."
+   "pozn": "HOTOVO v22.9.17 — dávka R1: N32 + B60, B63, N39, N41 část protokol × poznámka, B64, T1.\n\nHOTOVO v22.9.18 — dávka R2: N34, N35, N36, N37 (změřeno v prohlížeči).\n\nHOTOVO v22.9.19 — dávka R3: N33 (sazby DPH, přirážka, procenta a kurz se za důkaz cen nepočítají; test nad výchozími ceníky ze sestavení), N38 (návrat do tuzemska bere složenou tuzemskou řadu).\n\nHOTOVO v22.9.20 — dávka R4: B59 (server ověří výsledek nově odeslané nabídky a zapíše razítko shoda / nesouhlasí; rozpor uložení neodmítne, hlásí ho a drží v zámku), mutace větve role u B56 a čtyři mutace B59 (141 serverových mutací), obsluha SIGINT/SIGTERM/SIGHUP v mutace.mjs + sada test_mutace.mjs (část T5).\n\nHOTOVO v22.9.21 — dávka R5: T2 (selhání před přeskočením = selhání), T3 (přeskočení kódem 4, v souhrnu i v CI zvlášť a s důvodem), T5 (kód 2 a chybějící playwright pro import = přeskočení, obnova ADMIN_EMAIL v test_prava) + sada test_harness_podklady.js.\n\nNEŘEŠENO V R1–R5 (k rozhodnutí): mutace_jadro.mjs do repozitáře (N19); B57 a B58 z ranního auditu; drobné N41 (pásy ve specifikaci, FR kapitoly), B61, B62, B65–B68 a T4; N40 doporučeno nechat.\n\nHOTOVO v23.9.3 (noční dávky D1–D3): N41b, B57, B58, B61, B62, B68; B65–B67 zapsány v BEZPECNOST_MEZE.md; T4 první krok (zaokrouhlení). Zbývá N41c (FR znění), N41d (neověřeno) a T4 postupně.\n\nv24.9.3 (E4): N41d ověřen a opraven (vykreslení nezapisuje do zamčené varianty), N41c — FR pole kapitol ve Firmě (prázdné → čeština s upozorněním), T4 další krok (overit_zadani_detail.mjs). Zbývá T4 postupně (26 souborů).\n\nHOTOVO v26.10.2 (O2 #517) — T4 poslední krok: tři místa z revize v22.9.9 (test_poznamky.js — karta bez příloh, test_standard_atyp.js — automat ATYP a sjednocená sazba hodin P11, test_zamek_prepnuti.js — P15) ověřuje chováním harness overit_t4.mjs (28 kontrol; sabotáž čtyř chování → 5 selhání); regexy nad zdrojákem odstraněny. Spolu s krokem 1 (overit_zaokrouhleni.mjs, v23.9.3) a 2 (overit_zadani_detail.mjs, v24.9.3) je T4 uzavřený. Dřívější poznámka „26 souborů“ počítala všechny sady, které čtou zdroják (většinou kvůli načtení funkcí do vm — to není tvar zdrojáku); revize jmenovala tři. #319 uzavřena (N40 dál doporučeno nechat)."
   },
   {
    "id": "320",
@@ -2701,7 +2702,7 @@
    "id" : "115",
    "dulezitost" : "vysoka",
    "proc" : "Dnes se částka a platební podmínky zadávají dvakrát — v kalkulačce a v CRM — a nikdo nehlídá, že se shodují. Trojice splatnost 14 dní, záloha 50 %, dílčí faktura 40 % je v CRM vyplněná u 306 z 308 případů a je to přesně to, co od v5.8.15 plníme do šablony nabídky.",
-   "detail" : "Zápis je JEDNOSMĚRNÝ a POTVRZENÝ: obchodník uvidí tabulku pole / stará hodnota / nová hodnota a teprve pak klikne. Posílají se jen skutečně změněná pole (PATCH je částečná aktualizace, takže se kolize zúží na tentýž údaj). Posun fáze na Nabídka odeslána je zaškrtávátko, ne automatika — někdy se počítá jen na zkoušku.\nTiché zápisy na pozadí se dělat nebudou: jednak je nikdo neuhlídá, jednak by posouvaly čas poslední změny u případů a rozbily pozdější inkrementální synchronizaci.\nHOTOVO 21. 10. 2026 (claude/eager-carson-1xznt2): převod hodnot krycího listu na hodnoty Pipedrive (`netlify/lib/pd_prevod.mjs`) — číslo, datum ISO, ID volby, vícevýběr, částka s měnou, uživatel; celá zakázka jedním PATCH (5 tokenů). Prázdné se neposílá, nejednoznačné se neposílá s důvodem, u kombinované zakázky rozhoduje OCK. Tabulka převodů v podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md §11.4.\nZBÝVÁ: serverový zápis (POST /api/pd/deal), potvrzovací tabulka v UI, kontrola update_time proti souběhu.\nPLATBY A HODNOTA DEALU (23. 10. 2026, rozhodnutí J. V.) → #512, hotovo ve v23.10.4: Platby 1–8 a záloha PROJ se nezapisují (ani u starší nabídky), nové pole „Platební kalendář SoD PROJ“, hodnota dealu = cena řídící varianty bez DPH (kombinovaná = součet) s potvrzením „stará → nová“.",
+   "detail" : "Zápis je JEDNOSMĚRNÝ a POTVRZENÝ: obchodník uvidí tabulku pole / stará hodnota / nová hodnota a teprve pak klikne. Posílají se jen skutečně změněná pole (PATCH je částečná aktualizace, takže se kolize zúží na tentýž údaj). Posun fáze na Nabídka odeslána je zaškrtávátko, ne automatika — někdy se počítá jen na zkoušku.\nTiché zápisy na pozadí se dělat nebudou: jednak je nikdo neuhlídá, jednak by posouvaly čas poslední změny u případů a rozbily pozdější inkrementální synchronizaci.\nHOTOVO 21. 10. 2026 (claude/eager-carson-1xznt2): převod hodnot krycího listu na hodnoty Pipedrive (`netlify/lib/pd_prevod.mjs`) — číslo, datum ISO, ID volby, vícevýběr, částka s měnou, uživatel; celá zakázka jedním PATCH (5 tokenů). Prázdné se neposílá, nejednoznačné se neposílá s důvodem, u kombinované zakázky rozhoduje OCK. Tabulka převodů v podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md §11.4.\nZBÝVÁ: serverový zápis (POST /api/pd/deal), potvrzovací tabulka v UI, kontrola update_time proti souběhu.\nPLATBY A HODNOTA DEALU (23. 10. 2026, rozhodnutí J. V.) → #512, hotovo ve v23.10.4: Platby 1–8 a záloha PROJ se nezapisují (ani u starší nabídky), nové pole „Platební kalendář SoD PROJ“, hodnota dealu = cena řídící varianty bez DPH (kombinovaná = součet) s potvrzením „stará → nová“.\n\nPODMÍNKY ZADÁNÍ ZE SEC AUDITU (rozhodnutí J. V. 26. 10. 2026, „ostatní podle návrhu“, zapsáno v #517 — zatím nic neprogramovat): (1) SEC-S7 — pdCisla bere tečku vždy jako desetinnou („1.000 Kč / den“ → 1): tečka/čárka a přesně tři číslice bez další desetinné části = nejednoznačné → { duvod } (test netlify/test_pd_prevod.mjs, čtyři tvary; pokus podklady/S1_pokusy/funkce/p3_pd_cisla.mjs); (2) SEC-N9 — planPdKalendar vrátí '' a sodProjPlatby chybu, když plán plateb PROJ nese jinou kontrolu než součet (140 % / záporná splátka; pokus p10_pd_kalendar_kontrola.js); (3) SEC-I15 — kalendář pro Pipedrive v měně zakázky (dnes vždy Kč z nabidkaProjPlatby(…,'cz')), shodně se SoD EN v €; (4) SEC-I16 — DPH do CRM podle režimu přenesené daňové povinnosti (OCK 0 % / PROJ 21 % / kombinovaná) — J. V. ověří šablonu SoD; (5) SEC-I17 — hodnota dealu: po SoD = cena díla (objCenaDila / ctrlCenaDilaSod, s objednanými příplatky), jinak cena nabídky (řídící varianta). Dál platí K8-S3 (hodnotu a kalendář počítá server z uložené řídící varianty, deal id jen z uložené zakázky, zápis oddělený od práva čtení, duvody přes esc, e-maily uživatelů PD klientovi nevracet).",
    "kde" : "netlify/functions/pd_deal.mjs (POST), src/ui/zakazka_ui.js",
    "cekaNa" : "rozhodnutí z kontrolní tabulky — kolize dvou kalkulací nad jedním polem v CRM (odsunuto 10. 8. 2026)",
    "hotovoKdyz" : "Z hotové kalkulace se do případu zapíše částka, měna a platební podmínky až po potvrzení, zapíšou se jen změněná pole, a při chybě spojení se to řekne nahlas místo tichého selhání.",
@@ -8152,6 +8153,37 @@
    ]
   },
   {
+   "id": "517",
+   "vlna": "B",
+   "stav": "hotovo",
+   "hotovoV": "v26.10.6",
+   "dulezitost": "vysoka",
+   "slozitost": "M",
+   "nazev": "O2: zbylá rozhodnutí J. V. z dialogu K8/S1 (K8-K2…K4, SEC-S3, SEC-S5, SEC-I7, název dvojskla) + dokončení #319 (T4)",
+   "proc": "Rozhodnutí J. V. 26. 10. 2026 (dialog https://claude.ai/artifact/V288Ytg33SpoYPfp3aTw3L, „ostatní podle návrhu“): K8-K2 + K8-K3 = A, K8-K4 = A, SEC-S3 = A, SEC-S5 = A, SEC-I7 = A; název položky dvojskla v ceníku (jen text); SEC-PD do #115, SEC-I8 do mezí, REPO ruční kroky J. V.",
+   "detail": "K8-K2: tisk při kolizi verzí, v náhledu role i po 409 letícího autosave → dialog ONLINE_TISK_NEULOZEN s důvodem; „Načíst znovu ze serveru“ se zeptá, je-li v okně zámek, který server nemá. K8-K3: po zápisu se změnou během letu se záloha v prohlížeči nemaže a „uloženo“ = odeslaný otisk (varování při zavření okna platí). K8-K4: bez přihlášení (i v režimu složky) se po tisku na uložení nečeká; hláška zmiňuje přihlášení. SEC-S3: v náhledu CN OCK a PROJ se zámkem mají buňky s částkou contenteditable=false (i po „Vrátit původní znění“), ostatní text upravitelný. SEC-S5: kryciPlatbyOck100 — součet splátek OCK ≠ 100 % → upozornění pod konečnou fakturou v krycím listu i v podmínkách nabídky, kontrola před nabídkou platbyOck100 (varování), SoD realizace nevznikne. SEC-I7: smazání, vypnutí, archivace a snížení role jiného správce chce heslo správce (server i dotaz v Nastavení → Uživatelé). 6a: ceník „Izolační dvojsklo – typ“ / „Izolační dvojsklo“ s poznámkou, výběr typu stěny „Izolační dvojsklo“; klíče a výpočet beze změny. #319 T4 uzavřen (overit_t4.mjs). Zapsáno: SEC-S7, SEC-N9, SEC-I15, SEC-I16, SEC-I17 do #115; SEC-I8 do BEZPECNOST_MEZE.md; SEC-V1/V2/S4 jako ruční kroky J. V. v PREDAVKA.",
+   "hotovoKdyz": "Splněno: nové sady test_tisk_kolize_k8 (před 11 FAIL → 19/0), test_platby_ock100 (7 FAIL → 19/0), test_tisk_ceny_skript (5 FAIL → 9/0), test_sec_i7_klient (13 FAIL → 17/0), test_dvojsklo_nazev (7 FAIL → 13/0), netlify/test_sec_i7 (18 FAIL → 32/0); test_snimek_po_tisku 4b (3 FAIL → 40/0); harnessy overit_tisk_ceny (6 FAIL → 12/0) a overit_t4 (sabotáž 5 FAIL → 28/0); mutace #517 jádro 13/13, server 5/5; Node sady zelené; kolo build,staticke.",
+   "kde": "src/ui/online_ui.js, src/ui/historie.js, src/ui/zamek_ui.js, src/ui/common.js, src/kryci.js, src/kontroly.js, src/ui/kryci_ui.js, netlify/functions/uzivatele.mjs, src/cenik.js, src/engine.js, src/techspec.js",
+   "pozn": "Dávka O2, větev claude/o2-rozhodnuti nad 6076128. Celé kolo (prohlížečové sady, celé mutace) pouští koordinace.",
+   "zavisi": [
+    {
+     "id": "513",
+     "typ": "tvrda",
+     "proc": "nálezy K8-K2…K4"
+    },
+    {
+     "id": "515",
+     "typ": "tvrda",
+     "proc": "nálezy SEC-S3, SEC-S5, SEC-I7"
+    },
+    {
+     "id": "319",
+     "typ": "doporuceno",
+     "proc": "T4 dokončen v téže dávce"
+    }
+   ]
+  },
+  {
    "id" : "518",
    "vlna" : "B",
    "stav" : "hotovo",
@@ -8867,7 +8899,8 @@
    {"text" : "23. 10. 2026 — v23.10.4: B1 #512 Platby 1–8 se nezapisují, pole Platební kalendář SoD PROJ, hodnota dealu; #486 uzavřena.", "hotovo" : true, "pozn" : "Kolo 315/0/6, mutace #512 18/18."},
    {"text" : "23. 10. 2026 — K8 #513 celé kolo s mutacemi + audit v22.10.6 → v23.10.4 (VYHOVUJE S VÝHRADOU, main doporučen); S1 #515 hloubkový security test a funkční logika (0 kritických, 2 vysoké v repu).", "hotovo" : true, "pozn" : "Jádro 527/527, server 897/897; S1 role 40/40, XSS 342/0, ceny 1200× bez neshody."},
    {"text" : "23. 10. 2026 — v23.10.5: O-K8 #514 opravy K8 a S1 bez změny chování (souběh uložení × zámek, souběh změny hesla, chybové kódy, hlavičky, CI 10 částí).", "hotovo" : true, "pozn" : "Kolo 316/0/6, mutace #514 22/22 + 1/1, Actions Testy #196 celé zelené."},
-   {"text" : "25. 10. 2026 — v25.10.1: aktualizace uživatelské příručky (M1, náhrada nočního běhu bez přístupu k repu).", "hotovo" : true, "pozn" : "Kolo 316/0/6, overit_manual 48/0. Releasy v23.10.3–v25.10.1 vydány 26. 10."}
+   {"text" : "25. 10. 2026 — v25.10.1: aktualizace uživatelské příručky (M1, náhrada nočního běhu bez přístupu k repu).", "hotovo" : true, "pozn" : "Kolo 316/0/6, overit_manual 48/0. Releasy v23.10.3–v25.10.1 vydány 26. 10."},
+   {"text" : "26. 10. 2026 — v26.10.2: O2 #517 — zbylá rozhodnutí J. V. z dialogu K8/S1 (dialog po tisku při kolizi, 100 % splátek OCK, needitovatelné ceny v náhledu, heslo u zásahu do jiného správce, název Izolační dvojsklo) a uzavření #319 (T4).", "hotovo" : true, "pozn" : "Větev claude/o2-rozhodnuti; celé kolo pouští koordinace."}
   ],
   "pravidla" : [
    "GitHub (INFRA-14), rosti.cz (INFRA-15) a Apps Script se bez výslovného pokynu nespouští ani neaktualizují.",
@@ -8953,7 +8986,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v25.10.1 (engscalc, test = efa61c1)",
+  "build" : "v26.10.2 (engscalc, claude/o2-rozhodnuti)",
   "stavKDatu" : "26. 10. 2026"
  },
  "_comment" : [

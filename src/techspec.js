@@ -254,7 +254,12 @@ function tsOplTypNazev(p, T) {
   if (p.typ === 'jine') return (p.nazev || T('jiné opláštění'));
   const nazvy = (typeof OPLASTENI_TYPY !== 'undefined') ? OPLASTENI_TYPY : [];
   const d = nazvy.find(t => t.id === p.typ);
-  return d ? T(d.nazev) : String(p.typ);
+  /* Název typu je v číselníku s velkým písmenem; slovník má některá hesla
+   * jen malými (heslo „izolační dvojsklo" slouží i větě standardního režimu,
+   * #517) — v překladu se drží velké první písmeno názvu z číselníku. */
+  if (!d) return String(p.typ);
+  const n = T(d.nazev), c = d.nazev.charAt(0);
+  return (c !== c.toLowerCase()) ? n.charAt(0).toUpperCase() + n.slice(1) : n;
 }
 /* Pásy stěn A–D, jak je popisuje specifikace: podle jádra
  * (`r.oplasteni.pasy`, N41b), bez výsledku výpočtu ze zadání. Stěna bez
@@ -357,7 +362,7 @@ function tsOplasteniRozsah(Z, jazyk, r) {
  * z různých materiálů — nabídka a specifikace tak uváděly jiný plášť, než
  * jaký se naceňoval. Po stěnách teď vyjmenuje materiály v pořadí, v jakém
  * se na stěnách A–D objeví, a ke každému stěny: „Sklo VSG 4.4.1 (stěna A);
- * Dvojsklo (boky + záda) (stěny B, D); Cetris (stěna B)". Výšky pásů uvádí
+ * Izolační dvojsklo (stěny B, D); Cetris (stěna B)". Výšky pásů uvádí
  * řádek ROZSAH OPLÁŠTĚNÍ, pásy se berou stejně jako tam (podle jádra).
  * „bez — dodá stavba" se uvádí taky — i to je odpověď na otázku, z čeho
  * je stěna. Větu skládá rovnou v cílovém jazyce (kusy slovníkem); ve

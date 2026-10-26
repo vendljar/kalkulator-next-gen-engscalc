@@ -689,7 +689,7 @@ const cDegrad = await prihlas('degradovany@example.com', 'DegradHeslo1');
 test('správce zálohu stáhne, dokud správcem je',
   (await get(zaloha, 'http://x/api/zaloha', cDegrad)).status === 200);
 await post(uzivatele, 'http://x/api/uzivatele',
-  { akce: 'role', email: 'degradovany@example.com', role: 'Obchodník' }, cAdmin);
+  { akce: 'role', email: 'degradovany@example.com', role: 'Obchodník', hesloSpravce: HESLO_ADMIN }, cAdmin);   // SEC-I7
 test('po snížení role stará relace na zálohu už nesmí',
   (await get(zaloha, 'http://x/api/zaloha', cDegrad)).status === 403);
 test('po snížení role stará relace nesmí ani zveřejnit ceník',
@@ -2567,8 +2567,11 @@ console.log('\n===== AUDIT B77: CITLIVÉ AKCE SPRÁVCE S VLASTNÍM HESLEM =====\
     && ((await ucty.cti('b77.obch@example.com')) || {}).role === 'Administrátor', bOk.status);
   const bZnovu = await akce({ akce: 'role', email: 'b77.obch@example.com', role: 'Administrátor' });
   test('B77 (b): správce zůstává správcem i bez hesla (nic se nezvyšuje, 200)', bZnovu.status === 200, bZnovu.status);
-  const bDolu = await akce({ akce: 'role', email: 'b77.obch@example.com', role: 'Obchodník' });
-  test('B77 (b): snížení role heslo nechce (200)', bDolu.status === 200, bDolu.status);
+  /* Od SEC-I7 (#517, J. V. 26. 10. 2026) chce snížení role SPRÁVCE heslo. */
+  const bDoluBez = await akce({ akce: 'role', email: 'b77.obch@example.com', role: 'Obchodník' });
+  test('SEC-I7: snížení role jiného správce bez hesla → 401', bDoluBez.status === 401, bDoluBez.status);
+  const bDolu = await akce({ akce: 'role', email: 'b77.obch@example.com', role: 'Obchodník', hesloSpravce: HS });
+  test('B77 (b): snížení role s heslem správce projde (200)', bDolu.status === 200, bDolu.status);
 
   /* (c) reset cizího hesla */
   const cBez = await akce({ akce: 'heslo', email: 'b77.obch@example.com', heslo: 'PrevzateHeslo7' });

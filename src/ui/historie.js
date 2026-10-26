@@ -341,9 +341,11 @@ function historieNeulozeno() {
   if (HIST.ulozenoJako === null) return false;
   try { return JSON.stringify(ZAK) !== HIST.ulozenoJako; } catch (e) { return false; }
 }
-/* Volá se po „Uložit zakázku" a po načtení souboru – tehdy je stav na disku. */
-function historieOznacUlozeno() {
-  try { HIST.ulozenoJako = JSON.stringify(ZAK); } catch (e) {}
+/* Volá se po „Uložit zakázku" a po načtení souboru – tehdy je stav na disku.
+ * `text` = otisk, který skutečně odešel (K8-K3, #517: změna během letícího
+ * zápisu se za uloženou nepočítá); bez něj aktuální ZAK. */
+function historieOznacUlozeno(text) {
+  try { HIST.ulozenoJako = (typeof text === 'string') ? text : JSON.stringify(ZAK); } catch (e) {}
 }
 
 /* ---------- start ---------- */

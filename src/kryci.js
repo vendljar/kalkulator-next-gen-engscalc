@@ -1099,6 +1099,28 @@ function kryciPlatebniKalendar(zak, varianta, jekly) {
   return { stary, mesicne, splatky, vynechane, necitelne, hodnoty, podmEf: kryciPodmEfVarianty(varianta) };
 }
 
+/* SPLÁTKY OCK = 100 % (SEC-S5, rozhodnutí J. V. 26. 10. 2026 = A, #517).
+ * Záloha + dílčí faktura č. 2 + konečná faktura musí dát 100 % (jako
+ * planPlateb100 u PROJ). Dopočet dílčí faktury č. 2 (kryciFaktura2Dopocet)
+ * při záporném zbytku nic nepřepíše a ruční přepis se nedopočítává —
+ * CN a SoD by si odporovaly (např. 70 / 40 / 40). Vrací hlášku, nebo ''.
+ * Mlčí u měsíční fakturace, u nabídky odeslané před pravidly plateb
+ * a když některé procento nejde přečíst (nic se neodhaduje). Konečná
+ * faktura bez procenta („zbývající část") se hlásí jen při součtu nad 100 %. */
+function kryciPlatbyOck100(kal) {
+  if (!kal || kal.stary || kal.mesicne || !Array.isArray(kal.splatky)) return '';
+  if ((kal.necitelne || []).length) return '';
+  const konc = kal.splatky.find(s => s.id === 'fakturaKonc');
+  const soucet = Math.round(kal.splatky.reduce((a, s) => a + (typeof s.pct === 'number' ? s.pct : 0), 0) * 100) / 100;
+  if (konc && konc.pct === null ? soucet <= 100 : soucet === 100) return '';
+  const p = id => { const s = kal.splatky.find(x => x.id === id); return s ? (s.pct === null ? '?' : String(s.pct).replace('.', ',')) : '0'; };
+  const cislo = String(soucet).replace('.', ',');
+  return 'Splátky OCK dávají ' + cislo + ' %, ne 100 % (záloha ' + p('zaloha1') + ' % + dílčí faktura č. 2 '
+    + p('faktura2') + ' % + konečná faktura ' + p('fakturaKonc') + ' %). Dílčí faktura č. 2 se nedopočítala — '
+    + 'upravte zálohu, dílčí fakturu č. 2 nebo konečnou fakturu v krycím listu OCK. '
+    + 'Nabídka by si odporovala a smlouva o dílo nevznikne, dokud součet nebude 100 %.';
+}
+
 /* Symboly pro šablonu CN v14 (a online náhled) z kalendáře. P = překlad
  * hodnot do jazyka nabídky (tr), lang jen kvůli francouzské dvojtečce.
  * Konečný doklad nese větu „na zbývající část" — procento nepotřebuje;
@@ -1200,8 +1222,9 @@ function kryciSodPlatby(zak, varianta, jekly, sablona, lang) {
     if (f2 && f2.pct !== null) symboly.SOD_SPLATKA2_PROC = cislo(f2.proc);
     if (k && k.pct !== null) symboly.SOD_SPLATKA4_PROC = cislo(k.proc);
   }
-  let chyba = '';
-  if (stara) {
+  /* Součet splátek ≠ 100 % (SEC-S5, #517): smlouva nevznikne. */
+  let chyba = kryciPlatbyOck100(kal);
+  if (stara && !chyba) {
     if (kal.mesicne)
       chyba = 'Šablona smlouvy o dílo realizace má čtyři pevné splátky a měsíční fakturaci z krycího listu OCK vyjádřit neumí. '
         + 'Nahrajte šablonu SoD realizace se seznamem plateb {{SOD_PLATEBNI_KALENDAR}} (Nastavení → Smlouvy / Šablony), nebo změňte způsob fakturace v krycím listu OCK.';
@@ -1256,7 +1279,7 @@ function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { kryciHodiny, kryciHodinySekce, KRYCI_HODINY_OCK, kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_ZALOHY, KRYCI_LIMIT_POKUT, kryciPokutySazby, kryciLimitVolby, kryciPodmEf, kryciPodmEfVarianty, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
+  module.exports = { kryciPlatbyOck100, kryciHodiny, kryciHodinySekce, KRYCI_HODINY_OCK, kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_ZALOHY, KRYCI_LIMIT_POKUT, kryciPokutySazby, kryciLimitVolby, kryciPodmEf, kryciPodmEfVarianty, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
     kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
     kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,

@@ -273,14 +273,11 @@ test('generátory dokumentů o poznámkách vůbec nevědí',
 /* Obrazovka od 22. 9. 2026 přílohy nenabízí. Model je umí dál (starší
  * zakázky je nesou a musí jít stáhnout), ale v UI nesmí zůstat cesta, jak
  * novou nahrát — jinak by se zadání minulo účinkem. */
-{
-  const ui = fs.readFileSync(__dirname + '/ui/poznamky_ui.js', 'utf8');
-  test('obrazovka nenabízí nahrání přílohy', !/prilohyPridej|input.*type.*file|inp\.click/.test(ui));
-  test('ani vkládání obrázku ze schránky', !/vlozObrazekCil/.test(ui));
-  test('ale stažení existující přílohy zůstalo', /prilohyStahni/.test(ui));
-  test('štítky druhu poznámky z obrazovky zmizely', !/POZN_DRUHY/.test(ui));
-  test('a zůstalo jedno textové pole', (ui.match(/<textarea/g) || []).length === 1);
-}
+/* Do 26. 10. 2026 to tu hlídaly regulární výrazy nad ui/poznamky_ui.js
+ * (revize v22.9.9, nález T4: tvar zdrojáku, ne chování). Od #517 (uzavírá
+ * #319) to ověřuje vykreslená karta v prohlížeči — `overit_t4.mjs`, oddíl A:
+ * jedno textové pole, žádné nahrání přílohy ani vkládání obrázku, žádné
+ * štítky druhu poznámky, existující příloha jde stáhnout. */
 
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

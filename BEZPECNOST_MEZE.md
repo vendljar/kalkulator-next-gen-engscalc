@@ -1225,3 +1225,33 @@ výpočet. Přehled oprav je v CHANGELOG v23.10.5; sem patří zbytkové meze.
   `ci/package.json` + `package-lock.json` vyrobí až sezení s přístupem
   k registru npm.
 
+
+## O2 #517 — rozhodnutí J. V. z dialogu K8/S1 (v26.10.2, 26. 10. 2026)
+
+- **SEC-I7 — rozsah B77 rozšířen (OPRAVENO v26.10.2):** smazání, vypnutí,
+  archivace a snížení role účtu, který je **Administrátor** (a není to účet
+  přihlášeného), chtějí v `uzivatele.mjs` pole `hesloSpravce`
+  (`potvrdHesloSpravce`, stejná brzda pokusů). S ukradenou cookie správce
+  tak už nejde nevratně smazat ostatní správce. **Mez:** zapnutí, návrat
+  z archivu a zásah do účtů s jinou rolí heslo dál nechtějí (vratné, nebo
+  bez správcovských práv); převod zakázek (`prevod`) heslo nechce — účet
+  nemění. Hlídá `netlify/test_sec_i7.mjs` a 5 mutací „#517 SEC-I7“.
+- **SEC-S3 — ruční úprava tiskového náhledu (zmírněno v26.10.2, vědomá
+  mez):** v náhledu CN OCK a PROJ se zámkem mají buňky s částkou
+  `contenteditable="false"` (od otevření, i po „Vrátit původní znění“).
+  **Mez:** ostatní text dokumentu zůstává ručně upravitelný (záměrná funkce
+  „Upravit text před tiskem“) a do zámku ani do `tisky[]` se úprava
+  nezapisuje; částka v souvislém textu (věta, ne buňka tabulky) a úpravy
+  přes vývojářské nástroje prohlížeče nebo hotového PDF ochranu obejdou —
+  server je poznat nemůže (třída úpravy PDF po stažení). Hlídá
+  `overit_tisk_ceny.mjs` a `src/test_tisk_ceny_skript.js`.
+- **SEC-I8 — cookie relace bez prefixu `__Host-` (vědomá mez, až při
+  vlastní doméně):** na `*.netlify.app` (Public Suffix List) cookie jiná
+  subdoména podstrčit nemůže, takže dnes v pořádku. **Až aplikace dostane
+  vlastní doménu** (s možnými dalšími subdoménami), přejmenovat cookie na
+  `__Host-…` (`Secure`, `Path=/`, bez `Domain`) v `netlify/lib/sdilene.mjs`
+  (`relaceCookie`) — jednorázově to odhlásí všechny uživatele, proto až při
+  té změně (rozhodnutí J. V. 26. 10. 2026).
+- **SEC-PD (SEC-S7, SEC-N9, SEC-I15, SEC-I16, SEC-I17):** podmínky pro zápis
+  do Pipedrive jsou zapsané v zadání roadmapy #115 (hodnota dealu po SoD =
+  cena díla, jinak cena nabídky). Dokud zápis neběží, nejsou útočnou plochou.
