@@ -37,6 +37,12 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
     const t = JSON.stringify(v);
     if (nazev === 'zalohy' && t.length > nejvetsiZapisB) { nejvetsiZapisB = t.length; nejvetsiZapisKlic = k; }
     pamet.set(nazev + '/' + k, t); },
+  /* #523 Z2: binární záznamy jako Netlify Blobs — části otisku jdou gzip */
+  async ctiBin(k) { await cekej(); hlid(); const v = pamet.get(nazev + '/' + k); return v === undefined ? null : Buffer.from(v); },
+  async zapisBin(k, b) { await cekej(); hlid();
+    if (nazev === 'zalohy' && k.startsWith('casti/') && zabijPoCastech-- <= 0) { zabito = true; hlid(); }
+    if (nazev === 'zalohy' && b.length > nejvetsiZapisB) { nejvetsiZapisB = b.length; nejvetsiZapisKlic = k; }
+    pamet.set(nazev + '/' + k, Buffer.from(b)); },
   async seznam(prefix) { await cekej(); hlid(); return [...pamet.keys()].filter(x => x.startsWith(nazev + '/' + (prefix || '')))
     .map(x => x.slice(nazev.length + 1)); },
   async smaz(k) { await cekej(); hlid(); pamet.delete(nazev + '/' + k); },
@@ -123,6 +129,9 @@ await zkus('vynucený', async () => {
     && Object.keys(otisk.sablony).length === 4 && Object.keys(otisk.podpisy).length === 6
     && Object.keys(otisk.zakaznici).length === 60 && otisk.firma.udaje.nazev === 'Zkušební firma s.r.o.',
     otisk && { z: Object.keys(otisk.zakazky || {}).length });
+  const man = JSON.parse(pamet.get('zalohy/' + vynKlic) || 'null');
+  test('#523: otisk při objemu ostrého provozu se uloží komprimovaný (gzip) a menší, v limitech kroků',
+    !!man && man.komprese === 'gzip' && man.ulozenoB > 0 && man.ulozenoB < man.velikostB, man && { velikostB: man.velikostB, ulozenoB: man.ulozenoB });
   test('žádný zapsaný blob zálohy není nad stropem části (4 MB)', nejvetsiZapisB <= Z.OTISK_CAST_MAX_B + 64 * 1024,
     { nejvetsiZapisB, nejvetsiZapisKlic });
   test('rezervace vynuceného otisku po dokončení zmizí', ![...pamet.keys()].some(k => k.startsWith('zalohy/vynucene-rezervace/')));

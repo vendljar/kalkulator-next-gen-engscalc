@@ -72,7 +72,12 @@ automatické otisky přibývají při každém přihlášení správce a otisky 
   (zápis bajtů, 20/0). Mutace: #151 N5 přecíleny na nový modul, nové #523 (pravidlo, staré otisky, rozpočet,
   komprese, úklid Disku, obnova .gz, server .json.gz, pojistka úbytku). Doplnění: `test_z2_retence.mjs` nad stavem
   před doplněním 69 OK / 20 FAIL → 89/0, `src/test_z2_disk_retence.js` 35/8 → 43/0; `test_zalohy` a `test_o7_kopie_klient`
-  upraveny na prahy 95 % a bez uvolnění po 30 dnech; mutace O7/O11 přecíleny.
+  upraveny na prahy 95 % a bez uvolnění po 30 dnech; mutace O7/O11 přecíleny. `test_zalohy_objem.mjs` (Z1) nově
+  s binárním úložištěm — otisk 900 zakázek / 20 MB se pořídí komprimovaný v simulovaných limitech kroků (30/0).
+  `overit_online.mjs` (prohlížeč): kopie `.json.gz`, úklid Disku, obnova z `.gz`, hlídka bez 30denního zhasnutí — 273/0.
+- **Výsledky:** mutace serveru filtr „#523" **64/64 chycených**, přecílené „#151 N5:" 5/5, „#151 N6: záznam kopie…"
+  1/1, „O5: K3-N1 jméno…" 1/1; `--kontrola` 999 úseků; `spust_testy.sh` 265 / 0 / 1 přeskočeno;
+  `testovaci_kolo.sh --jen build,staticke` VŠE ZELENÉ (statické 4/4).
 
 ## v26.10.8 — Z1 #522 (kritické): ostrý web bez záloh — otisk databáze po částech, záloha po stránkách, větev claude/z1-zalohy-oprava
 

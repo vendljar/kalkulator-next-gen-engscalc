@@ -993,7 +993,8 @@ test('N6: kopie starší než 14 dní → varování v Nastavení → Databáze'
   /id="online-kopie-disk" class="seznam-varovani"[^>]*>[^<]*stará 15 dní/.test(await page.locator('#nastaveni-panel').innerHTML()));
 /* K3-N13 (O7): pojistka retence přeskočila mazání → hlídka v Databázi */
 pamet.set('zalohy/retence-varovani', JSON.stringify({ kdy: new Date(Date.now() - 3600000).toISOString(), den: '2026-10-21',
-  predchozi: '2026-10-20', pred: { pocetZakazek: 100, pocetUctu: 10 }, nove: { pocetZakazek: 40, pocetUctu: 10 }, text: 'x' }));
+  predchozi: '2026-10-20', pred: { pocetZakazek: 100, pocetUctu: 10 }, nove: { pocetZakazek: 40, pocetUctu: 10 },
+  text: 'noční otisk 2026-10-21 má proti 2026-10-20 méně dat (zakázek 100 → 40)' }));   // #523: text píše server
 await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
 await page.waitForTimeout(150);
 test('K3-N13 O7: varování pojistky retence svítí v Nastavení → Databáze',
@@ -1003,7 +1004,7 @@ test('K3-N13 O7: varování pojistky retence svítí v Nastavení → Databáze'
  * (#online-retence-potvrdit) neexistovalo → test selže. */
 await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__dlgTexty = []; });
 test('K4-N13 O11: u varování je tlačítko „Úbytek byl záměrný"',
-  (await page.locator('#online-retence-potvrdit').count()) === 1 && /Mazání starých záloh stojí/.test(await page.locator('#online-retence-varovani').innerText()));
+  (await page.locator('#online-retence-potvrdit').count()) === 1 && /Mazání starých záloh v Netlify i na Disku stojí/.test(await page.locator('#online-retence-varovani').innerText()));
 await page.click('#online-retence-potvrdit');
 await page.waitForTimeout(400);
 test('K4-N13 O11: po potvrzení (dotaz + heslo správce) server zapíše potvrzeno a hlídka zhasne',
@@ -1016,7 +1017,9 @@ pamet.set('zalohy/retence-varovani', JSON.stringify({ kdy: new Date(Date.now() -
   pred: { pocetZakazek: 100 }, nove: { pocetZakazek: 1 } }));
 await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
 await page.waitForTimeout(150);
-test('K3-N13 O7: varování starší 30 dní už nesvítí', !(await page.locator('#nastaveni-panel').innerHTML()).includes('online-retence-varovani'));
+/* #523 Z2 (pokyn J. V. 26. 10. 2026): bez potvrzení svítí i po 30 dnech — mazání pořád stojí */
+test('#523: nepotvrzené varování svítí i po 31 dnech', (await page.locator('#nastaveni-panel').innerHTML()).includes('online-retence-varovani')
+  && /stojí už 31 dní/.test(await page.locator('#online-retence-varovani').innerText()));
 pamet.delete('zalohy/retence-varovani');
 /* K3-N4 (O7): limit vynucených otisků — ruční záloha hned po jiné ukáže, kdy to půjde */
 uvolniLimitZaloh();
