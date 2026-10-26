@@ -53,6 +53,29 @@ před posunem `main`), SEC-S6 + SEC-N8 = A (opravit obojí), K8-K5 = B (text pon
   (`ui/plan_plateb_ui.js` nově mezi hlídanými soubory), upravené #507 K7-K2 6/6 a #508 K7-K6 2/2.
 - Potvrzeno J. V. 26. 10.: u staré nabídky PROJ (před plánem plateb) se do Pipedrive nepošle ani Platební
   kalendář (#512 beze změny).
+## v26.10.3 — #518: zvýraznění nepřeložených a ručně zapsaných textů v náhledu cizojazyčné nabídky, větev claude/518-zvyrazneni-prekladu
+
+Nad e9aed72 (integrace, test v25.10.1 + dokumentace). Podnět obchodníka 24. 10. 2026, zadání J. V. 26. 10.:
+v PRICE QUOTATION EN zůstal ručně zapsaný název akce česky a nikdo si toho před tiskem nevšiml.
+
+- **Nové:** náhled cenové nabídky v EN/DE/FR (OCK tisková stránka `nabidkaOckDokument`, podklady OCK `nabidkaNahled`,
+  nabídka PROJ `nabidkaProjNahled`) žlutě podbarví každý text, který nepochází z překladu — ručně zapsané údaje
+  hlavičky (zákazník, kontakt, název akce, adresa, vlastní popis záměru), texty bez hesla ve slovníku a odstavce
+  ručně upravené tlačítkem „Upravit text před tiskem“. Značka nese `title` s vysvětlením (ruční údaj / bez
+  překladu / ručně upraveno).
+- **Kde se rozhoduje:** `trStav` v `src/preklad.js` — jediné místo, kde překlad padá na češtinu. Náhled si zapne
+  sledování (`prekladSledujZacni` / `prekladSledujKonec`) až po všech otázkách a sebrané originály předá
+  značkovacímu skriptu (`neprelozenoSkript` v `src/ui/common.js`). Texty bez písmene („12 %“) se nehlásí,
+  ruční údaje hlavičky jen celým textem (adresa „Praha“ neobarví patičku firmy).
+- **Legenda** nad náhledem s počtem míst („5 textů bez překladu — zkontrolujte“), tlačítko Přejít na první / Další;
+  počet se přepočítá po ruční úpravě, přepnutí DPH i po „Vrátit původní znění“.
+- **Tisk a export beze změny:** `@media print` značku i legendu ruší, značka je jen `<span>` v okně náhledu (žádný
+  znak navíc). Data nabídky (placeholders), Word/DOCX a snímek zámku se nemění (Z1/SEC-S3 nedotčeno). Česká
+  nabídka nedostane CSS, legendu ani skript.
+- **Testy:** `src/test_neprelozene.js` (22 OK; před změnou 0 OK / 2 FAIL), harness `overit_neprelozene.mjs`
+  (22 / 0; na sestavení před změnou 10 / 12) — EN OCK s ručním názvem akce zvýrazněn, print médium bez
+  zvýraznění, ručně upravený odstavec, EN PROJ a podklady, CZ OCK i PROJ bez značek, data nabídky a DOCX beze
+  změny. Mutace `#518` 7/7 chycených (`preklad.js` přidán mezi jádra mutací, žádná nová sada).
 
 ---
 

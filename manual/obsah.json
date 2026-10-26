@@ -27,6 +27,13 @@
       ]
     },
     {
+      "nadpis": "Co je nového ve verzi v26.10.3 (26. 10. 2026)",
+      "odstavce": [
+        "**Náhled cizojazyčné nabídky ukáže, co zůstalo česky.** V náhledu cenové nabídky v angličtině, němčině nebo francouzštině (OCK i PROJ, tisková stránka i podklady nabídky) jsou **žlutě podbarvené** texty, které nepocházejí z překladu: ručně zapsané údaje hlavičky (zákazník, kontaktní osoba, název akce, adresa stavby, vlastní popis záměru), texty, pro které aplikace nemá překlad, a odstavce, které jste ručně upravili tlačítkem „Upravit text před tiskem“. Po najetí myší se ukáže, proč je text označený.",
+        "Nad náhledem je řádek s počtem označených míst („5 textů bez překladu — zkontrolujte“) a tlačítko **Přejít na první** (dalším klepnutím na další). Označení je jen na obrazovce — **do tisku, do PDF ani do Wordu se nedostane** a dokument se jím nemění. Česká nabídka zůstává beze změny."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v25.10.1 (25. 10. 2026)",
       "odstavce": [
         "**Příručka aktualizována — aplikace se nemění.** Do kapitol se propsaly změny posledních verzí, které dosud byly jen tady v novinkách: Stav Pipedrive i u zakázky ze souboru nebo ze zálohy a „Smazané“ u dealu v koši (kapitola 5), souběžné uložení ve dvou oknech (kapitola 6), zmrazené platební podmínky a DPH do uložení vytištěné nabídky a neaktivní ARES po tisku smlouvy (kapitola 8), kdo a do kdy mění objednané příplatky a šablona smlouvy v4 s jejich rozpisem (kapitola 24) a Controlling s exportem pro administrátora (kapitola 28)."

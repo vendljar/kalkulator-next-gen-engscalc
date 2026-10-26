@@ -2419,6 +2419,115 @@ function dokPatickaHtml(prekl) {
     ? '<br>' + esc(P('Vypracoval') + ': ' + kontakt) : ''}</div>`;
 }
 
+/* ============================================================================
+ * ZVÝRAZNĚNÍ NEPŘELOŽENÝCH A RUČNĚ ZAPSANÝCH TEXTŮ V NÁHLEDU (#518)
+ *
+ * Podnět obchodníka 24. 10. 2026, zadání J. V. 26. 10.: v cizojazyčné nabídce
+ * zůstal ručně zapsaný název akce česky a nikdo si toho před tiskem nevšiml.
+ * Náhled nabídky v EN/DE/FR proto žlutě podbarví každý text, který nepochází
+ * z překladu:
+ *   – ručně zapsané údaje hlavičky (zákazník, kontakt, název akce, adresa,
+ *     vlastní popis záměru) — ty se nepřekládají nikdy,
+ *   – texty, pro které slovník ani vzor neměly překlad (sbírá je trStav
+ *     v preklad.js, jediné místo, kde překlad padá na češtinu),
+ *   – odstavce ručně upravené v náhledu („Upravit text před tiskem").
+ *
+ * JEN NA OBRAZOVCE. Značka je <span> kolem textového uzlu v okně náhledu
+ * (žádný znak navíc), @media print ji zruší a legenda nese noprint. Data
+ * nabídky (placeholders), Word ani snímek zámku se nemění — snímek se bere
+ * z dat varianty, ne z HTML náhledu. Česká nabídka značky nedostane vůbec.
+ * ============================================================================ */
+function neprelozenoZacni(L) {
+  if (!L || L === 'cz' || typeof prekladSledujZacni !== 'function') return false;
+  prekladSledujZacni();
+  return true;
+}
+function neprelozenoKonec() {
+  return (typeof prekladSledujKonec === 'function') ? prekladSledujKonec() : [];
+}
+
+/* Ručně zapsané údaje hlavičky dokumentu. Prázdné pole („…") a čísla či kódy
+ * (prekladNeutral) se nehlásí — nemají jazyk. */
+function neprelozenoRucne(hodnoty) {
+  return (hodnoty || []).map(x => String(x == null ? '' : x).trim())
+    .filter(x => x && x !== '…' && !(typeof prekladNeutral === 'function' && prekladNeutral(x)));
+}
+
+function neprelozenoCss() {
+  return `.neprelozeno{background:#fef08a;box-shadow:0 0 0 1px #facc15;border-radius:2px;cursor:help}
+    .neprelozeno.nepr-aktivni{outline:3px solid #f59e0b;outline-offset:1px}
+    .nepr-legenda{background:#fefce8;border:1px solid #facc15;color:#713f12;border-radius:6px;
+      padding:7px 11px;margin:0 0 8px;font-size:12.5px;line-height:1.5;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .nepr-legenda b{white-space:nowrap}
+    .nepr-legenda button{font:12px "Segoe UI",sans-serif;padding:3px 10px;border:1px solid #ca8a04;background:#fff;
+      color:#713f12;border-radius:5px;cursor:pointer}
+    .nepr-legenda .vzor{background:#fef08a;box-shadow:0 0 0 1px #facc15;border-radius:2px;padding:0 4px}
+    @media print{.neprelozeno{background:none!important;box-shadow:none!important;outline:0!important}
+      .nepr-legenda{display:none!important}}`;
+}
+
+/* Prázdný rámeček legendy; plní ho skript podle skutečného počtu značek. */
+function neprelozenoLegendaHtml(L) {
+  if (!L || L === 'cz') return '';
+  return '<div class="nepr-legenda noprint" id="neprLegenda" style="display:none"></div>';
+}
+
+/* Skript do okna náhledu. nepr = české originály bez překladu (hledají se
+ * jako celá slova uvnitř textu), rucne = ručně zapsané hodnoty hlavičky
+ * (jen celý text uzlu — adresa stavby „Praha" nesmí obarvit patičku firmy).
+ * Česká nabídka dostane prázdný řetězec. */
+function neprelozenoSkript(L, nepr, rucne) {
+  if (!L || L === 'cz') return '';
+  const js = (x) => JSON.stringify(x).replace(/</g, '\\u003c');
+  return '<scr' + 'ipt>(function(){'
+    /* Bez písmene („12 %", „3×") to není jazyk — značka by jen strašila. */
+    + 'var NEPR=' + js((nepr || []).filter(x => String(x).length >= 2 && /\p{L}/u.test(x))) + ';'
+    + 'var RUCNE=' + js(rucne || []) + ';'
+    + 'var T_NEPR=' + js('Text bez překladu – v nabídce zůstal tak, jak byl zapsán (nejspíš česky). Před tiskem ho zkontrolujte nebo upravte.') + ';'
+    + 'var T_RUCNE=' + js('Ručně zapsaný údaj – do cizího jazyka se nepřekládá. Zkontrolujte, že je napsaný v jazyce nabídky.') + ';'
+    + 'var T_UPRAV=' + js('Ručně upravený text – do cizího jazyka se nepřekládá. Zkontrolujte ho před tiskem.') + ';'
+    + 'function rx(s){return s.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\$&");}'
+    + 'NEPR.sort(function(a,b){return b.length-a.length;});'
+    + 'var RE=NEPR.length?new RegExp("(^|[^\\\\p{L}\\\\p{N}])("+NEPR.map(rx).join("|")+")(?=$|[^\\\\p{L}\\\\p{N}])","u"):null;'
+    + 'var hlid=false,idx=-1;'
+    + 'function koren(){return document.getElementById("dok")||document.body;}'
+    + 'function oznac(){var k=koren();if(!k)return;hlid=true;'
+    + 'var w=document.createTreeWalker(k,NodeFilter.SHOW_TEXT,null),u,uzly=[];'
+    + 'while((u=w.nextNode()))uzly.push(u);'
+    + 'uzly.forEach(function(n){var t=(n.nodeValue||"").trim();if(!t)return;var p=n.parentNode;'
+    + 'if(!p||!p.closest||p.closest(".noprint,script,style,.neprelozeno"))return;'
+    + 'var titul=RUCNE.indexOf(t)>=0?T_RUCNE:(RE&&RE.test(n.nodeValue)?T_NEPR:"");if(!titul)return;'
+    + 'var s=document.createElement("span");s.className="neprelozeno";s.title=titul;'
+    + 'p.insertBefore(s,n);s.appendChild(n);});'
+    + 'hlid=false;}'
+    + 'function viditelne(){return Array.prototype.filter.call(koren().querySelectorAll(".neprelozeno"),'
+    + 'function(e){return e.getClientRects().length>0;});}'
+    + 'function tvar(n){return n===1?"text":(n>=2&&n<=4?"texty":"textů");}'
+    + 'function legenda(){var l=document.getElementById("neprLegenda");if(!l)return;var v=viditelne();'
+    + 'if(!v.length){l.style.display="none";l.innerHTML="";return;}l.style.display="flex";'
+    + 'l.innerHTML="<b>⚠ "+v.length+" "+tvar(v.length)+" bez překladu — zkontrolujte</b>"'
+    + '+"<span><span class=\\"vzor\\">žlutě</span> jsou texty zapsané ručně nebo bez překladu; do tisku se označení nedostane.</span>"'
+    + '+"<button type=\\"button\\" id=\\"neprSkok\\">"+(idx<0?"Přejít na první":"Další")+" ▸</button>";'
+    + 'document.getElementById("neprSkok").onclick=skok;}'
+    + 'function skok(){var v=viditelne();if(!v.length)return;idx=(idx+1)%v.length;'
+    + 'Array.prototype.forEach.call(document.querySelectorAll(".nepr-aktivni"),function(e){e.classList.remove("nepr-aktivni");});'
+    + 'var e=v[idx];e.classList.add("nepr-aktivni");e.scrollIntoView({block:"center"});legenda();}'
+    + 'window.neprSkok=skok;window.neprLegenda=legenda;'
+    /* Ručně upravený odstavec: blok, do kterého se v náhledu píše, dostane
+     * značku celý (td, odstavec, položka seznamu, nadpis). */
+    + 'document.addEventListener("input",function(ev){var k=koren();if(!k||!k.isContentEditable)return;'
+    + 'var sel=window.getSelection(),n=sel&&sel.anchorNode;if(!n)return;var el=n.nodeType===1?n:n.parentNode;'
+    + 'var b=el&&el.closest?el.closest("td,p,li,h1,h2,h3,figcaption"):null;'
+    + 'if(!b||!k.contains(b)||b.classList.contains("neprelozeno")||b.closest(".neprelozeno"))return;'
+    + 'b.classList.add("neprelozeno");b.title=T_UPRAV;legenda();},true);'
+    + 'oznac();legenda();'
+    /* Přepínač DPH a „Vrátit původní znění" mění, co je vidět — legenda
+     * se po každé změně dokumentu přepočítá. */
+    + 'if(window.MutationObserver){var k=koren();if(k)new MutationObserver(function(){if(!hlid)legenda();})'
+    + '.observe(k,{attributes:true,attributeFilter:["class"],childList:true,subtree:false});}'
+    + '})();<\/scr' + 'ipt>';
+}
+
 /* Podpisový blok obchodníka na KONEC tiskové nabídky (zadání 17. 8. 2026):
  * jméno, funkce a kontakt PŘIHLÁŠENÉHO zpracovatele + sken podpisu s razítkem,
  * je-li nahraný v profilu (Můj profil). Ve Wordu totéž dělají symboly ZPRAC_*

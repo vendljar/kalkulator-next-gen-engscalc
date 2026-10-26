@@ -663,7 +663,12 @@ async function nabidkaNahled() {
   }
   const L = (typeof jazyk === 'function') ? jazyk() : 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
-  const data = nabidkaData(ZAK, await nabidkaVarianta(), JEKLY, L);
+  const varianta = await nabidkaVarianta();
+  /* #518: od téhle chvíle se sbírají texty, které zůstaly česky —
+   * až po všech otázkách (await), ať se nepřimíchá nic z aplikace. */
+  const sleduj = typeof neprelozenoZacni === 'function' && neprelozenoZacni(L);
+  let data;
+  try { data = nabidkaData(ZAK, varianta, JEKLY, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
   const p = data.placeholders;
   const radek = (l, v) => `<tr><td style="font-weight:600">${esc(l)}</td><td>${esc(v)}</td></tr>`;
   /* platební kalendář OCK: splátky a měsíční fakturace podle týchž pravidel jako Word (D1/D2) */
@@ -681,7 +686,7 @@ async function nabidkaNahled() {
   const patickaHtml = dokPatickaHtml(P);
 
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
-  if (!w) return;
+  if (!w) { if (sleduj) neprelozenoKonec(); return; }
   w.document.write(`<!DOCTYPE html><html lang="${esc(L === 'cz' ? 'cs' : L)}"><head><meta charset="utf-8">
     <title>${esc(data.nazevSouboru)}</title>
     <style>body{font:13px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}
@@ -689,6 +694,7 @@ async function nabidkaNahled() {
     table{width:100%;border-collapse:collapse} td{border-bottom:1px solid #eee;padding:4px 8px;vertical-align:top}
     td:first-child{width:46%}
     ${dokHlavickaCss()}
+    ${sleduj ? neprelozenoCss() : ''}
     .bar{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e9f0;padding:8px 0;margin-bottom:8px}
     .bar button{font:13px "Segoe UI";padding:6px 14px;border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:6px;cursor:pointer}
     /* margin:0 — Chrome tiskne svou hlavičku (čas, název stránky) a patičku
@@ -696,13 +702,18 @@ async function nabidkaNahled() {
        dokumentu proto dělá padding uvnitř body (5. 9. 2026, zadání J. V.). */
     @page{size:A4;margin:0} @media print{.noprint{display:none} body{margin:0;padding:14mm}}</style></head><body>
     <div class="bar noprint"><button onclick="window.print()">🖨 ${esc(P('Tisk / Uložit jako PDF'))}</button></div>
+    ${sleduj ? neprelozenoLegendaHtml(L) : ''}
     ${logoHtml}
     <h1>${esc(P('Podklady nabídky'))} ${esc(p.CISLO_NABIDKY)}</h1>
     <p class="noprint">${esc(P('Přesně tyto hodnoty se vyplní do šablony nabídky. Tlačítkem výše vytisknete do PDF.'))}</p>
     ${sekceHtml}
     ${priplatkyHtml}
-    ${patickaHtml}
-    </body></html>`);
+    ${patickaHtml}`);
+  /* Seznam se uzavírá až po sestavení celého HTML — popisky P() výše
+   * patří do dokumentu stejně jako hodnoty. */
+  w.document.write((sleduj ? neprelozenoSkript(L, neprelozenoKonec(), neprelozenoRucne([
+    p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, ZAK.popisZameru])) : '')
+    + '</body></html>');
   w.document.close();
 }
 
@@ -845,7 +856,10 @@ async function nabidkaOckDokument() {
   if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidkaTisk', varianta, nabidkaStavText)) return;
   /* Ptát se PŘED otevřením okna náhledu (P2): tisk z náhledu zamyká. */
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaTisk', varianta))) { return; }   // P2 (K13-N54)
-  const data = nabidkaData(ZAK, varianta, JEKLY, L);
+  /* #518: sběr textů bez překladu až po všech otázkách (await). */
+  const sleduj = typeof neprelozenoZacni === 'function' && neprelozenoZacni(L);
+  let data;
+  try { data = nabidkaData(ZAK, varianta, JEKLY, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
   const p = data.placeholders;
 
   /* sekce z nabidka.js: [0] hlavička (tiskne se jako tabulka nahoře),
@@ -886,7 +900,7 @@ async function nabidkaOckDokument() {
   const patickaHtml = dokPatickaHtml(P);
 
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
-  if (!w) return;
+  if (!w) { if (sleduj) neprelozenoKonec(); return; }
   w.document.write(`<!DOCTYPE html><html lang="${esc(L === 'cz' ? 'cs' : L)}"><head><meta charset="utf-8">
     <title>${esc(data.nazevSouboru)}</title>
     <style>body{font:13px/1.55 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}
@@ -909,6 +923,7 @@ async function nabidkaOckDokument() {
     .bar button{font:13px "Segoe UI";padding:6px 14px;border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:6px;cursor:pointer}
     ${dokHlavickaCss()}
     ${tiskListaCss()}
+    ${sleduj ? neprelozenoCss() : ''}
     /* margin:0 — Chrome tiskne svou hlavičku (čas, název stránky) a patičku
        (about:blank) DO OKRAJE STRÁNKY; s nulovým okrajem nemá kam. Okraj
        dokumentu proto dělá padding uvnitř body (5. 9. 2026, zadání J. V.). */
@@ -920,6 +935,7 @@ async function nabidkaOckDokument() {
       pozn: P('Nabídku lze před uložením do PDF ručně upravit; do kalkulace se změny nepropíšou.'),
       zamekTyp: 'nabidkaTisk',
     })}
+    ${sleduj ? neprelozenoLegendaHtml(L) : ''}
     <div id="dok" class="bez-dph">
     ${logoHtml}
     <h1>${esc(P('CENOVÁ NABÍDKA'))} ${esc(p.CISLO_NABIDKY)}</h1>
@@ -950,7 +966,9 @@ async function nabidkaOckDokument() {
       vyp: P('Úpravy vypnuté. Ruční změny zůstávají, jen se do dokumentu už nedá psát.'),
       vraceno: P('Vráceno původní znění z kalkulace.'),
       zamceno: P('Varianta byla uzamčena jako odeslaná nabídka. Další úpravy provádějte v jejím klonu.'),
-    }, { typ: 'nabidkaTisk', varId: varianta.id })}
-    </body></html>`);
+    }, { typ: 'nabidkaTisk', varId: varianta.id })}`);
+  w.document.write((sleduj ? neprelozenoSkript(L, neprelozenoKonec(), neprelozenoRucne([
+    p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, ZAK.popisZameru])) : '')
+    + '</body></html>');
   w.document.close();
 }

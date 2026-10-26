@@ -8154,7 +8154,8 @@
   {
    "id" : "518",
    "vlna" : "B",
-   "stav" : "ceka",
+   "stav" : "hotovo",
+   "hotovoV" : "v26.10.3",
    "dulezitost" : "stredni",
    "slozitost" : "S–M",
    "nazev" : "Cizojazyčná nabídka: zvýraznit nepřeložené a ručně zapsané texty v náhledu",
@@ -8162,6 +8163,7 @@
    "detail" : "V náhledu cenové nabídky v cizím jazyce (EN/DE/FR, OCK i PROJ) označit zvýrazňovačem každý text, který nepochází ze slovníku/překladu: ručně zapsané údaje hlavičky (název akce, adresa, kontakt…), ručně upravené odstavce a texty bez překladu (fallback na češtinu). Zvýraznění jen na obrazovce — v tisku a v PDF/Wordu se nezobrazí (@media print / exportní cesta bez značek). Krátká legenda nad náhledem („žlutě = text bez překladu, zkontrolujte“), u české nabídky beze změny. Zvážit i počítadlo „N nepřeložených míst“ a skok na první.",
    "hotovoKdyz" : "V náhledu CN v cizím jazyce jsou ručně zapsané a nepřeložené texty zvýrazněné, v tisku/PDF/Wordu ne; česká nabídka beze změny; test (prohlížečový harness) s pojistkou.",
    "kde" : "`src/preklad.js`, `src/slovnik.js`, náhled nabídky (`nabidkaTisk`, `nabidkaProjTisk`), tiskové CSS",
+   "pozn" : "Dávka #518 26. 10. 2026 nad e9aed72, větev claude/518-zvyrazneni-prekladu (v26.10.3). Sledování v trStav (preklad.js, prekladSledujZacni/Konec), značkovací skript a legenda v ui/common.js (neprelozeno*), napojeno do nabidkaOckDokument, nabidkaNahled a nabidkaProjNahled. Tisk, Word i snímek zámku beze změny. Testy src/test_neprelozene.js (22) a overit_neprelozene.mjs (22) s pojistkou, mutace #518 7/7.",
    "zavisi" : []
   },
   {
