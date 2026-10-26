@@ -40,7 +40,9 @@ const TS_C = { /* číselníky z listů _data (bez úvodní pomlčky) */
   profily: ['jekl 80x40', 'jekl 80x50', 'jekl 80x60', 'jekl 80x80', 'jekl 100x60', 'jekl 100x80', 'jekl 100x100'],
   roztec: ['cca 1000 mm', 'cca 1250 mm', '1250-1500 mm', 'max 1500 mm', 'rovnoměrné rozdělení dle podlaží', 'individuální řešení'],
   kotveniPoloha: ['prohlubeň, podesty ve všech nástupištích a hlava šachty',
-    'prohlubeň, všechny podesty, hlava šachty a sloupky zadní stěny do schodnic'],
+    'prohlubeň, všechny podesty, hlava šachty a sloupky zadní stěny do schodnic',
+    'prohlubeň, podesty ve všech nástupištích, hlava šachty a přes můstky',
+    'prohlubeň, podesty ve všech nástupištích, hlava šachty a přes můstek'],
   kotveniTyp: ['kontaktní, přes chemické kotvy do zdiva', 'kontaktní, hmoždiny do ŽB konstrukcí',
     'kontaktní, přivařením k ocelovým nosníkům', 'kontaktní, přes antivibrační podložky'],
   portalyProstor: ['bez předsazených portálů', 'portál mezi sloupky šachty (nepředsazený na podestu)',
@@ -168,6 +170,21 @@ function tsMustky(Z) {
 function tsNastupiste(Z) {
   if (typeof nastupisteCelkem === 'function') return nastupisteCelkem(Z || {});
   return +(Z && Z.nastupiste) || 0;
+}
+/* Kotvení přes můstky (#519, bod 5 z rozboru K13): kde je můstek, kotví se
+ * OCK přes něj, ne přímo do podesty. K výchozí větě řádku (i té z dat admina)
+ * se připojí „… a přes můstky" (1 můstek: „… a přes můstek"); poslední „ a "
+ * výčtu se změní na čárku, ať věta nemá dvě „a". Věta, která můstek už
+ * zmiňuje, nebo prázdná zůstane. Bez můstku vrací výchozí větu beze změny. */
+function tsPoleDef(id) {
+  for (const s of TECHSPEC_DEF) for (const p of s.pole) if (p.id === id) return p.def;
+  return undefined;
+}
+function tsKotveniPoloha(zaklad, Z) {
+  const s = String(zaklad == null ? '' : zaklad);
+  const n = tsMustky(Z);
+  if (!n || !s.trim() || s.trim() === '-' || /můst/i.test(s)) return s;
+  return s.replace(/ a (?=[^,]*$)/, ', ') + (n === 1 ? ' a přes můstek' : ' a přes můstky');
 }
 
 /* OD #375 (30. 9. 2026) čte specifikace z VÝSLEDKU JÁDRA, čím se světlíky
@@ -430,8 +447,11 @@ const TECHSPEC_DEF = [
       prefill: (r, Z) => `cca ${tsNum(Z.roztec * 1000)} mm` },
     { id: 'profilPricniku', label: 'PROFIL PŘÍČNÍKŮ **', ciselnik: TS_C.profily,
       prefill: (r, Z) => `jekl ${Z.profily.precnikBok.dim}` },
+    /* #519: s můstky „… a přes můstky" — viz tsKotveniPoloha. Výchozí věta
+     * se čte z pole až při volání (admin ji může změnit v datech, konfigurace.js). */
     { id: 'kotveniPoloha', label: 'KOTVENÍ KONSTRUKCE (POLOHA)', ciselnik: TS_C.kotveniPoloha,
-      def: 'prohlubeň, podesty ve všech nástupištích a hlava šachty' },
+      def: 'prohlubeň, podesty ve všech nástupištích a hlava šachty',
+      prefill: (r, Z) => tsKotveniPoloha(tsPoleDef('kotveniPoloha'), Z) },
     { id: 'kotveniTyp', label: 'KOTVENÍ KONSTRUKCE (TYP)', ciselnik: TS_C.kotveniTyp,
       def: 'kontaktní, přes chemické kotvy do zdiva' },
     { id: 'portalyProstor', label: 'ŘEŠENÍ PORTÁLŮ (PROSTOROVÉ)', ciselnik: TS_C.portalyProstor,

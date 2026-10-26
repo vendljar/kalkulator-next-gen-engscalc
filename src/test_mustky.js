@@ -291,5 +291,68 @@ for (const fixes of [true, false]) {
   }
 }
 
+/* #519 (bod 5 z rozboru K13, roadmapa #354): kde je můstek, kotví se OCK
+ * přes něj — řádek KOTVENÍ KONSTRUKCE (POLOHA) se doplní „… a přes můstky"
+ * (1 můstek: „… a přes můstek"). Ruční přepis řádku vyhrává, cena se
+ * nemění. Před změnou selže 15 kontrol (věta s 1 / 2 / 5 můstky, číselník,
+ * výchozí věta z dat admina, překlady EN/DE/FR, nabídka CZ/EN/DE). */
+{
+  const pole = id => { let p = null; tsm.TECHSPEC_DEF.forEach(s => s.pole.forEach(x => { if (x.id === id) p = x; })); return p; };
+  const kp = pole('kotveniPoloha');
+  const VYCHOZI = 'prohlubeň, podesty ve všech nástupištích a hlava šachty';
+  const MUSTKY = 'prohlubeň, podesty ve všech nástupištích, hlava šachty a přes můstky';
+  const MUSTEK = 'prohlubeň, podesty ve všech nástupištích, hlava šachty a přes můstek';
+  const ts0 = { hodnoty: {}, extra: [] };
+  const hod = (x, ts, j) => { const { r, z } = spocti(x); return tsm.tsHodnota(kp, ts || ts0, r, z, CENIK, j).text; };
+  test('#519: bez můstku věta beze změny', hod({}) === VYCHOZI && hod({ mustkyKs: 0 }) === VYCHOZI, hod({}));
+  test('#519: bez výsledku kalkulace výchozí věta', tsm.tsHodnota(kp, ts0, null, {}, CENIK).text === VYCHOZI);
+  test('#519: 1 můstek → „… a přes můstek"', hod({ mustkyKs: 1 }) === MUSTEK, hod({ mustkyKs: 1 }));
+  test('#519: stará zakázka se zaškrtnutým můstkem → „… a přes můstek"', hod({ mustek: true }) === MUSTEK);
+  test('#519: 2 můstky → „… a přes můstky"', hod({ mustkyKs: 2 }) === MUSTKY, hod({ mustkyKs: 2 }));
+  test('#519: 5 můstků (všechna nadzemní) → „… a přes můstky"', hod({ mustkyKs: 5 }) === MUSTKY);
+  const rucne = { hodnoty: { kotveniPoloha: 'kotvení dle statika' }, extra: [] };
+  test('#519: ruční přepis řádku zůstane', hod({ mustkyKs: 2 }, rucne) === 'kotvení dle statika');
+  test('#519: obě nové věty jsou v číselníku', tsm.TS_C.kotveniPoloha.includes(MUSTKY) && tsm.TS_C.kotveniPoloha.includes(MUSTEK));
+  const puv = kp.def;
+  try {
+    kp.def = 'prohlubeň, všechny podesty, hlava šachty a sloupky zadní stěny do schodnic';
+    test('#519: výchozí věta z dat (admin) se doplní taky', hod({ mustkyKs: 3 })
+      === 'prohlubeň, všechny podesty, hlava šachty, sloupky zadní stěny do schodnic a přes můstky', hod({ mustkyKs: 3 }));
+    kp.def = 'kotví se přes můstky';
+    test('#519: věta, která můstky už zmiňuje, se nezdvojí', hod({ mustkyKs: 2 }) === 'kotví se přes můstky');
+    kp.def = ' -';
+    test('#519: prázdná výchozí věta zůstane prázdná', hod({ mustkyKs: 2 }) === ' -');
+  } finally { kp.def = puv; }
+  const pr = require('./preklad.js');
+  const OCEK = {
+    en: ['Pit, landings at all floors, shaft head and via the access bridges', 'Pit, landings at all floors, shaft head and via the access bridge'],
+    de: ['Schachtgrube, Podeste an allen Zugangsstellen, Schachtkopf und über die Brücken', 'Schachtgrube, Podeste an allen Zugangsstellen, Schachtkopf und über die Brücke'],
+    fr: ['Cuvette, paliers à tous les arrêts, tête de gaine et par les passerelles', 'Cuvette, paliers à tous les arrêts, tête de gaine et par la passerelle'],
+  };
+  for (const j of ['en', 'de', 'fr']) {
+    test('#519: překlad ' + j.toUpperCase() + ' (můstky i můstek)', pr.tr(MUSTKY, j) === OCEK[j][0] && pr.tr(MUSTEK, j) === OCEK[j][1],
+      [pr.tr(MUSTKY, j), pr.tr(MUSTEK, j)]);
+    test('#519: překlad ' + j.toUpperCase() + ' i u druhé věty číselníku',
+      pr.trStav('prohlubeň, všechny podesty, hlava šachty, sloupky zadní stěny do schodnic a přes můstky', j).zdroj === 'slovník'
+      && pr.trStav('prohlubeň, všechny podesty, hlava šachty, sloupky zadní stěny do schodnic a přes můstek', j).zdroj === 'slovník');
+  }
+  /* Nabídka (online náhled, Word i PDF berou tentýž zástupce). */
+  global.tr = pr.tr;
+  const { nabidkaData } = require('./nabidka.js');
+  const zk = require('./zakazka.js');
+  const zak = zk.novaZakazka();
+  const zad = zak.varianty[0].data.ock.zadani;
+  const ph = (j) => nabidkaData(zak, zak.varianty[0], J, j || 'cz').placeholders.TS_KOTVENI_POLOHA;
+  test('#519: nabídka bez můstku beze změny', ph() === VYCHOZI, ph());
+  const cena0 = E.vypocet(kop(zad), kop(CENIK), J, true).souhrn.zakladCena;
+  zad.mustkyKs = 2;
+  test('#519: nabídka se 2 můstky', ph() === MUSTKY, ph());
+  test('#519: nabídka EN se 2 můstky přeložená', ph('en') === OCEK.en[0], ph('en'));
+  zad.mustkyKs = 1;
+  test('#519: nabídka DE s 1 můstkem přeložená', ph('de') === OCEK.de[1], ph('de'));
+  zad.mustkyKs = 0;
+  test('#519: cena se kotvením nemění (0 můstků = stejná cena jako výchozí)', E.vypocet(kop(zad), kop(CENIK), J, true).souhrn.zakladCena === cena0);
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);
