@@ -122,6 +122,42 @@ v PRICE QUOTATION EN zůstal ručně zapsaný název akce česky a nikdo si toho
   zvýraznění, ručně upravený odstavec, EN PROJ a podklady, CZ OCK i PROJ bez značek, data nabídky a DOCX beze
   změny. Mutace `#518` 7/7 chycených (`preklad.js` přidán mezi jádra mutací, žádná nová sada).
 
+## Příručka aktualizována (M3, bez nové verze aplikace) — větev claude/manual-26-10
+
+Nad 6076128 (integrace = v26.10.1). Kód aplikace beze změny — jen `manual/obsah.json` a zápis; verze zůstává
+26.10.1 (kontrola verze ✓), číslo verze srovná koordinace při slučování. Pokyn J. V. 26. 10. 2026
+(„rozběhni tvorbu aktuální příručky“).
+
+- **Kap. 5:** co kalkulace z Pipedrive čte (stav dealu) a že zápis zatím nedělá; co se chystá — hodnota dealu
+  z ceny řídící varianty („stará → nová“), Platební kalendář SoD PROJ, Platby 1–8 se nezapisují (v23.10.4).
+- **Kap. 8:** odeslaná nabídka otevřená ze souboru / ze zálohy se chová jako z databáze, hláška při vrácení
+  krycího listu na stav z tisku (v26.10.1).
+- **Kap. 23:** ruční úprava textu v tiskovém náhledu (✏️ Upravit text před tiskem); nový oddíl Nabídka
+  v angličtině, němčině a francouzštině (Jazyk tisku, eura nahoru, bez kurzu nevznikne, ručně psané texty);
+  FR kapitoly mají výchozí znění (od v19.10.7, text o „česky s upozorněním“ zastaral).
+- **Kap. 24:** plán plateb PROJ upravitelný po odeslání nabídky až do tisku SoD (v26.10.1); odkazy na
+  Nastavení → Smlouvy / Šablony (výchozí předvolba, skladné, šablony).
+- **Kap. 28:** nový oddíl Co je v Nastavení (Firma, Smlouvy / Šablony s přepínačem OCK | PROJ, ceníky,
+  ostatní záložky).
+- **Opravené odkazy:** kapitoly nabídky III.–VI. a smluvní standardy jsou v Nastavení → Smlouvy / Šablony
+  (kap. 14, 23, 31), příznak „cena dle nabídky“ v Ceníku nákladů OCK (kap. 17), kap. 32 bez zastaralého
+  „platí k v25.9.3“. Novinky: „Příručka aktualizována (26. 10. 2026)“, hlavička příručky v26.10.1.
+- **Připraveno pro souběžné dávky — ověřit po sloučení:** #517 (kap. 8 dialog „Odeslaná nabídka není
+  uložená“ a bez přihlášení se nečeká; kap. 13 Izolační dvojsklo; kap. 21 a 24 splátky OCK = 100 %; kap. 23
+  needitovatelné ceny v náhledu se zámkem), #518 (kap. 23 žluté zvýraznění v náhledu cizojazyčné nabídky),
+  #519 (kap. 26 kotvení přes můstky — znění odhadem, položka v roadmapě této větve není), #114 (kap. 28
+  Mapa polí CRM — text totožný s větví claude/114-prehled-mapy-poli); slovníček (kap. 31) o čtyři hlášky.
+- **Kontroly:** `testovaci_kolo.sh --jen build,staticke` zelené (statické 4/4); `kontrola_udaju.py` čisté;
+  `src/test_termin_kapitola.js` 44/0, `src/test_zamek_strany.js` 51/0, `src/test_oplastit_prohluben.js` 6/0;
+  snímky `manual/snimky_auto.mjs` 22/22 (v26.10.1, prostředí test) a `manual/sestav.sh` do scratchpadu
+  sezení (mimo repo, na Disk nic); `overit_manual.mjs` nad hotovou příručkou 48/0, `manual/overit.js`
+  v Playwrightu bez chyby.
+- **Nález pro aplikaci (neopraveno, kód se neměnil):** hlášky kontroly před nabídkou (`src/kontroly.js`
+  ř. 802, 875, 885, 899) odkazují na „Nastavení → Firma → Kapitoly nabídky / Smluvní standardy“, obě sekce
+  jsou ale na záložce Nastavení → Smlouvy / Šablony.
+
+---
+
 ## v26.10.1 — O1 #516: zámek CN uložený na serveru a plán plateb PROJ po CN (rozhodnutí J. V. 26. 10. 2026), větev claude/o1-zamek-plan
 
 Nad 9bc4965 (integrace: test v25.10.1 + dokumentace). Dialog J. V. 26. 10. 2026: K8-K1 = A (opravit hned,

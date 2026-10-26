@@ -1,3 +1,46 @@
+# Předávka — 26. 10. 2026: M3 — aktuální příručka obchodníka, větev `claude/manual-26-10`
+
+Nad `6076128acf312de14841ebd129c0b3074cafc728` (integrace = v26.10.1). **Verze beze změny (26.10.1)** — kontrola
+verze ji přijala, číslo srovná koordinace. Kód aplikace beze změny, jen `manual/obsah.json`, CHANGELOG
+(oddíl „Příručka aktualizována (M3…)“) a tato předávka. Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx.
+Neslučováno, žádný PR, na Disk nic, snímky ani hotová příručka v repu nejsou.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| Projít příručku proti v26.10.1 a CHANGELOG | ✅ | kap. 5, 8, 13, 14, 17, 21, 23, 24, 26, 28, 31, 32 + novinka „Příručka aktualizována (26. 10. 2026)“, hlavička v26.10.1 |
+| v26.10.1: zámek CN ze souboru, plán plateb PROJ po CN | ✅ | kap. 8, kap. 24 (Plán plateb), slovníček |
+| Pipedrive (stav, zápis plateb a hodnoty — jen co vidí uživatel) | ✅ | kap. 5: čte jen stav, zápis zatím ne; co se chystá (hodnota dealu, Platební kalendář SoD PROJ, Platby 1–8 ne) |
+| Zmrazení KL po tisku, controlling a export, objednané příplatky | ✅ | už v kap. 8, 24, 28 (M1) — zkontrolováno, beze změny |
+| Jazykové verze nabídek a SoD | ✅ | kap. 23 nový oddíl; FR kapitoly mají výchozí znění (zastaralý text opraven); SoD v kap. 24 platí |
+| Nastavení (Firma, Smlouvy / Šablony, ceník) | ✅ | kap. 28 „Co je v Nastavení“; odkazy Firma → Smlouvy / Šablony opraveny (kap. 14, 23, 24, 31), „Nastavení → Ceník“ → Ceník nákladů OCK (kap. 17) |
+| Odstavce pro #517, #518, #519, #114 | ✅ | **ověřit po sloučení dávek** — viz níže |
+| Snímky | ✅ | UI snímků se nezměnilo; `snimky_auto.mjs` 22/22 (v26.10.1, test) jen kvůli ověření, do scratchpadu |
+| Kontroly | ✅ | `testovaci_kolo.sh --jen build,staticke` zelené (4/4); `kontrola_udaju.py` čisté; `test_termin_kapitola` 44/0, `test_zamek_strany` 51/0, `test_oplastit_prohluben` 6/0; `overit_manual.mjs` 48/0 (`KNG_PODKLADY`=scratchpad); `manual/overit.js` v Playwrightu bez chyby |
+| CHANGELOG, PREDAVKA, push | ✅ | větev `claude/manual-26-10` |
+
+**Ověřit po sloučení dávky (koordinace):**
+- **#517 O2** (`claude/o2-rozhodnuti`): kap. 8 odstavec „Tisk ve chvíli, kdy zakázku mezitím uložil někdo jiný…“
+  (okno „Odeslaná nabídka není uložená“, Přepsat serverovou verzi, varování při načtení, bez přihlášení se nečeká);
+  kap. 13 „Izolační dvojsklo“ (v O2 zatím necommitnuto — ověřit název v ceníku a v typu stěny); kap. 21
+  „Splátky OCK musí dát dohromady 100 %“ a kap. 24 „Splátky smlouvy realizace“; kap. 23 věta o needitovatelných
+  cenách v „Ruční úprava textu v náhledu“; slovníček „Splátky OCK nedávají 100 %“, „Odeslaná nabídka není uložená“.
+- **#518** (`claude/518-zvyrazneni-prekladu`): kap. 23 odstavec „Nejčastější past…“ (žluté podbarvení, počet míst,
+  Přejít na první); slovníček „… textů bez překladu — zkontrolujte“. Větev #518 přidává jen „Co je nového“.
+- **#519** (kotvení přes můstky ve specifikaci): kap. 26 odstavec „Kotvení přes můstky“ — **znění odhadem**,
+  položka #519 v roadmapě ani v žádné větvi nebyla; po sloučení přepsat podle skutečného řádku specifikace.
+- **#114** (`claude/114-prehled-mapy-poli`): kap. 28 „Mapa polí CRM (jen administrátor)“ — dva bloky **totožné**
+  s větví #114 na stejném místě (sloučení by mělo projít bez konfliktu); kap. 28 „Co je v Nastavení“ záložku
+  Mapa polí CRM zmiňuje.
+- Při slučování se střetne řádek `"verze"` hlavičky příručky a první novinka (větev #114 i #518 je mění také) —
+  srovnat na výslednou verzi integrace.
+
+**Nález pro aplikaci (neopraveno):** hlášky kontrol v `src/kontroly.js` (ř. 802, 875, 885, 899) posílají do
+„Nastavení → Firma → Kapitoly nabídky / Smluvní standardy“, obě sekce jsou na záložce Nastavení → Smlouvy / Šablony.
+Slovníček (kap. 31) to zatím vysvětluje závorkou.
+
+**Na J. V.:** hotová příručka není na Disku (zápis zakázán) — vyrobit `manual/snimky_auto.mjs` + `manual/sestav.sh`
+z integrace po sloučení. Sloučení a tag rozhoduje J. V.
+
 # Předávka — 26. 10. 2026: O2 #517 — zbylá rozhodnutí J. V. z dialogu K8/S1 + uzavření #319 (T4), větev `claude/o2-rozhodnuti`
 
 Nad `6076128acf312de14841ebd129c0b3074cafc728` (integrace po sloučení O1 #516, v26.10.1). **Verze 26.10.2**
