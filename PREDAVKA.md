@@ -1,3 +1,29 @@
+# Předávka — 26. 10. 2026: M2 #519 — kotvení přes můstky ve specifikaci, větev `claude/519-kotveni-mustky`
+
+Nad `6076128acf312de14841ebd129c0b3074cafc728` (integrace v26.10.1). **Cílová verze 26.10.5** (verze.txt; pořadí
+sloučení O2 .2, #518 .3, #114 .4, tahle .5). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Do integrace / test nic,
+na Disk nic.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| Řádek KOTVENÍ KONSTRUKCE (POLOHA) s můstky | ✅ | `tsKotveniPoloha` + `tsPoleDef` v `src/techspec.js`; prefill nad výchozí větou pole (i z dat admina); 1 můstek „… a přes můstek“, víc „… a přes můstky“, poslední „ a “ → čárka; ruční přepis vyhrává |
+| Číselník + slovník EN/DE/FR | ✅ | 2 nové věty v `TS_C.kotveniPoloha`; 4 hesla v `src/preklad.js` (obě věty číselníku × můstek/můstky) |
+| Testy s pojistkou | ✅ | `src/test_mustky.js` blok #519 — bez změny techspec.js + preklad.js 15 FAIL, po změně 125/125 |
+| Mutace „#519“ | ✅ | jádro 6/6 chycených (`mutace_jadro.mjs`, za blokem #356); `--kontrola` 547 úseků v pořádku; server mutace nemá |
+| Node sady | ✅ | src všechny zelené, netlify všechny zelené (s `ADMIN_EMAIL=spravce@priklad.cz`) |
+| `testovaci_kolo.sh --jen build,staticke` | ✅ | build ✓, statické 4/4 |
+| Dokumentace | ✅ | CHANGELOG v26.10.5, příručka „Co je nového ve verzi v26.10.5“, roadmapa #519 (nová, hotovo) + #354 „bod 5 → #519“, verze.txt |
+| Celé kolo (prohlížečové sady, celé mutace) | ⬜ | pouští koordinace |
+
+**Pro slučování:** souběžně O2 (#517, techspec.js — názvy dvojskla) a #518 (preklad.js) — tahle dávka mění
+v techspec.js jen číselník `kotveniPoloha`, nové funkce za `tsNastupiste` a pole `kotveniPoloha`; v preklad.js jen
+4 hesla za „prohlubeň, všechny podesty…“. Pole `kotveniPoloha` má nově `prefill`, takže zdroj řádku v rozhraní
+hlásí „z kalkulace“ místo „výchozí“ (text bez můstku stejný). Admin, který výchozí větu v datech změní, dostane
+u zakázky s můstkem tu svou větu + „a přes můstky“ — taková složená věta ve slovníku není a v cizí nabídce
+zůstane česky (#518 ji zvýrazní).
+
+---
+
 # Předávka — 26. 10. 2026: O1 #516 — zámek CN po otevření ze souboru (K8-K1) a plán plateb PROJ po CN (SEC-S6 + SEC-N8), větev `claude/o1-zamek-plan`
 
 Nad `9bc4965e2f1f70d6cb1671fee5c7ab9f12d14096` (integrace: test v25.10.1 + dokumentace). **Verze 26.10.1**

@@ -8,6 +8,23 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v26.10.5 — M2 #519: kotvení přes můstky ve specifikaci (bod 5 z rozboru K13, #354), větev claude/519-kotveni-mustky
+
+Nad 6076128 (integrace v26.10.1). Rozhodnutí J. V. 26. 10. 2026: „rozběhni hned“.
+
+- **Nové — řádek KOTVENÍ KONSTRUKCE (POLOHA) zná můstky.** Kde je můstek, kotví se OCK přes něj, ne přímo
+  do podesty. Při `mustkyPocet(z) > 0` se k výchozí větě připojí „… a přes můstky“ (1 můstek: „… a přes
+  můstek“), poslední „ a “ výčtu se změní na čárku: „prohlubeň, podesty ve všech nástupištích, hlava šachty
+  a přes můstky“ (`tsKotveniPoloha` v `src/techspec.js`). Základem je výchozí věta pole, i když ji admin
+  upravil v datech; věta, která můstek už zmiňuje, nebo pomlčka zůstane. Ruční přepis řádku vyhrává (stejné
+  pravidlo prefill jako u ostatních řádků). Projeví se v online specifikaci, nabídce i Wordu (`TS_KOTVENI_POLOHA`).
+- Obě nové věty jsou v číselníku `TS_C.kotveniPoloha`; slovník EN/DE/FR (`src/preklad.js`) má hesla pro obě
+  věty číselníku s můstky i s jedním můstkem — cizojazyčná nabídka nezůstane česky.
+- **Beze změny:** cena a výpočet; zakázka bez můstku (věta i nabídka).
+- Testy: `src/test_mustky.js` blok #519 (0 / 1 / 2 / 5 můstků, stará zakázka se zaškrtnutým můstkem, ruční
+  přepis, výchozí věta z dat, překlady EN/DE/FR, nabídka CZ/EN/DE, cena) — před změnou 15 FAIL, po ní 125/125.
+  Mutace jádra „#519“ 6/6 chycených.
+
 ## v26.10.1 — O1 #516: zámek CN uložený na serveru a plán plateb PROJ po CN (rozhodnutí J. V. 26. 10. 2026), větev claude/o1-zamek-plan
 
 Nad 9bc4965 (integrace: test v25.10.1 + dokumentace). Dialog J. V. 26. 10. 2026: K8-K1 = A (opravit hned,

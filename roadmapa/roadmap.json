@@ -5601,7 +5601,7 @@
    "cekaNa": "J. V.: až podle toho, jak se můstky skutečně oceňují (body 3 a 4 vyčleněny do #355 a #356, rozhodnutí 25. 9. 2026)",
    "nazev": "Můstky — další zpřesnění výpočtu: body 1, 2 a 5 z rozboru K13 (cena podle plochy, rozpad materiál/montáž, kotvení)",
    "proc": "Počet můstků otevírá přesnější výpočet: přechodový plech v nástupišti s můstkem odpadá, střecha přetažená přes můstek má plochu navíc, cena podle plochy, rozpad materiál/montáž, kotvení přes můstky.",
-   "detail": "Viz podklady/K13_ROZBOR_2026-09-24.md, P7 — Další možný dopad, body 1, 2 a 5. Body 3 (přechodové plechy) a 4 (zastřešení) J. V. 25. 9. 2026 doporučil udělat — rozpracované v #355 a #356.",
+   "detail": "Viz podklady/K13_ROZBOR_2026-09-24.md, P7 — Další možný dopad, body 1, 2 a 5. Body 3 (přechodové plechy) a 4 (zastřešení) J. V. 25. 9. 2026 doporučil udělat — rozpracované v #355 a #356. Bod 5 (kotvení přes můstky) → #519 (J. V. 26. 10. 2026: „rozběhni hned“, hotovo ve v26.10.5).",
    "hotovoKdyz": "Schválené body promítnuté do výpočtu s testy.",
    "kde": "`src/engine.js`, `src/techspec.js`"
   },
@@ -8163,6 +8163,27 @@
    "hotovoKdyz" : "V náhledu CN v cizím jazyce jsou ručně zapsané a nepřeložené texty zvýrazněné, v tisku/PDF/Wordu ne; česká nabídka beze změny; test (prohlížečový harness) s pojistkou.",
    "kde" : "`src/preklad.js`, `src/slovnik.js`, náhled nabídky (`nabidkaTisk`, `nabidkaProjTisk`), tiskové CSS",
    "zavisi" : []
+  },
+  {
+   "id" : "519",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "hotovoV" : "v26.10.5",
+   "dulezitost" : "stredni",
+   "slozitost" : "S",
+   "nazev" : "Specifikace: kotvení konstrukce přes můstky (bod 5 z rozboru K13)",
+   "proc" : "Kde je můstek, kotví se OCK přes něj, ne přímo do podesty (podklady/K13_ROZBOR_2026-09-24.md, P7 bod 5). Rozhodnutí J. V. 26. 10. 2026: „rozběhni hned“.",
+   "detail" : "Řádek KOTVENÍ KONSTRUKCE (POLOHA) (techspec.js, kotveniPoloha) při mustkyPocet(z) > 0: k výchozí větě pole (i upravené adminem v datech) „… a přes můstky“, u 1 můstku „… a přes můstek“; poslední „ a “ výčtu → čárka (tsKotveniPoloha). Ruční přepis vyhrává, věta s můstkem nebo pomlčka zůstává. Nové věty v číselníku TS_C.kotveniPoloha, hesla EN/DE/FR v preklad.js. Online specifikace, nabídka i Word (TS_KOTVENI_POLOHA). Cena ani výpočet beze změny, zakázka bez můstku beze změny.",
+   "hotovoKdyz" : "Splněno: test_mustky.js blok #519 (0/1/2/5 můstků, ruční přepis, výchozí věta z dat, překlad EN/DE/FR, nabídka CZ/EN/DE, cena; před změnou 15 FAIL → 125/125); mutace jádra #519 6/6; Node sady src a netlify zelené; kolo build,staticke.",
+   "kde" : "src/techspec.js, src/preklad.js",
+   "pozn" : "Dávka M2, větev claude/519-kotveni-mustky nad 6076128. Celé kolo (prohlížečové sady, mutace celé) pouští koordinace.",
+   "zavisi" : [
+    {
+     "id" : "354",
+     "typ" : "doporuceno",
+     "proc" : "bod 5 z rozboru K13"
+    }
+   ]
   }
  ],
  "meta" : {

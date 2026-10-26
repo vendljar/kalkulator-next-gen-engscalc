@@ -14,6 +14,12 @@
       ]
     },
     {
+      "nadpis": "Co je nového ve verzi v26.10.5 (26. 10. 2026)",
+      "odstavce": [
+        "**Specifikace u zakázky s můstky kotví OCK i přes můstky.** Řádek „Kotvení konstrukce (poloha)“ se u zakázky s můstkem sám doplní o „… a přes můstky“ (u jednoho můstku „… a přes můstek“), i v anglické, německé a francouzské nabídce; ručně přepsaný řádek zůstane, jak jste ho napsali, a cena se nemění."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v26.10.1 (26. 10. 2026)",
       "odstavce": [
         "**Odeslaná nabídka otevřená ze souboru už nevrací úpravy krycího listu.** Když jste zakázku s vytištěnou nabídkou otevřeli ze souboru (nebo obnovili zálohu z prohlížeče), aplikace si mohla myslet, že nabídka na uložení teprve čeká: krycí list se zamkl a při uložení se tiše vrátil na stav z tisku — úpravy podmínek po odeslání zmizely. Nabídka, která už v databázi je, se teď takhle nechová. Pokud se krycí list před uložením opravdu vrací na stav z tisku (nabídka se ještě neuložila), aplikace to napíše.",
