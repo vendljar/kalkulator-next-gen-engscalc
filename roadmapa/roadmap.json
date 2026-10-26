@@ -5483,16 +5483,16 @@
   {
    "id": "346",
    "vlna": "B",
-   "stav": "blokovano",
-   "dulezitost": "stredni",
+   "stav": "hotovo",
+   "dulezitost": "",
    "slozitost": "S",
-   "cekaNa": "J. V.: projít postup ověření Netlify (6 kroků v podkladu z 24. 9.) a sdělit výsledek; praktickou zkoušku s větví zkouska-netlify udělá Claude na pokyn",
    "nazev": "Nastavení Netlify: náhledy, nasazení větví a tajné proměnné (B85); B79 ponecháno",
    "proc": "Hloubkový test 24. 9. 2026 (20. kolo, v24.9.2; ověřeno na v24.9.3): v rámci jednoho webu sdílí náhledy nasazení a nasazení jiných větví ostré úložiště Blobs i proměnné; u veřejného repa může pull request poslat kdokoli. B79 (osobní údaje v repu): J. V. 24. 9. večer rozhodl nechat, jak je.",
    "detail": "Branch deploys jen produkční větev, Deploy Previews vypnuté, Sensitive variable policy = Require approval, tajné proměnné jen v kontextu Production, rozdílné TAJEMSTVI_RELACE test × ostrý; výsledek zapsat do NASAZENI_NETLIFY.md.",
    "hotovoKdyz": "Nastavení ověřené na obou webech a zapsané.",
    "kde": "`NASAZENI_NETLIFY.md`, nastavení Netlify",
-   "pozn": "J. V. 24. 9. večer: ponechat v roadmapě k prověření, podle něj by nastavení mělo být v pořádku. Postup ověření (6 kroků) je v podkladu z 24. 9. 26. 9. 2026 (A4, #364): statická kontrola nastroje/kontrola_udaju.py hlídá e-maily, telefony a tajemství mimo povolený seznam nastroje/povolene_kontakty.txt; dosavadní výskyty (rozhodnutí B79) jsou v seznamu. NOVÝ NÁLEZ k rozhodnutí J. V.: skutečný telefon kolegy (a jeho jméno) v harnessu overit_nabidka_proj_word.mjs jako kontrola „v šabloně nezůstal\" — dočasně v povoleném seznamu."
+   "pozn": "UZAVŘENO 26. 10. 2026 (J. V.): nastavení Netlify je v pořádku. J. V. 24. 9. večer: ponechat v roadmapě k prověření, podle něj by nastavení mělo být v pořádku. Postup ověření (6 kroků) je v podkladu z 24. 9. 26. 9. 2026 (A4, #364): statická kontrola nastroje/kontrola_udaju.py hlídá e-maily, telefony a tajemství mimo povolený seznam nastroje/povolene_kontakty.txt; dosavadní výskyty (rozhodnutí B79) jsou v seznamu. NOVÝ NÁLEZ k rozhodnutí J. V.: skutečný telefon kolegy (a jeho jméno) v harnessu overit_nabidka_proj_word.mjs jako kontrola „v šabloně nezůstal\" — dočasně v povoleném seznamu.",
+   "hotovoV": "v25.10.1"
   },
   {
    "id": "347",
