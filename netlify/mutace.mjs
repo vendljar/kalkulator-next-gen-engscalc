@@ -68,6 +68,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_ok8.mjs',
      /* #517 / SEC-I7 (26. 10. 2026): zásah do jiného správce jen s heslem správce. */
      'test_sec_i7.mjs',
+     /* #521 / SEC-Z2 (26. 10. 2026): CSP a Referrer-Policy v odpovědích funkcí. */
+     'test_sec_z2.mjs',
      /* B111 (29. 9. 2026): záporná částka, množství a hodiny. */
      'test_zaporne.mjs',
      /* #398 (12. 10. 2026): koncová cena 2 — B133–B137, B145. */
@@ -4297,9 +4299,23 @@ const MUTACE = [
     nahrad: "chyba: 'Zakázku se nepodařilo přečíst: ' + e.message }; }",
     proc: 'odpověď by opisovala interní text výjimky jádra' },
   { nazev: '#514 SEC-I1: odpovědi API bez no-store', soubor: 'lib/sdilene.mjs',
-    hledej: "  'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });",
-    nahrad: "  });",
+    hledej: "  'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',\n",
+    nahrad: "\n",
     proc: 'odpověď s účty či zakázkami by mohla zůstat v mezipaměti' },
+  /* #521 (O3, 26. 10. 2026): SEC-Z2 — CSP a Referrer-Policy v odpovědích
+   * funkcí. Hlídá netlify/test_sec_z2.mjs. */
+  { nazev: '#521 SEC-Z2: odpovědi API bez CSP', soubor: 'lib/sdilene.mjs',
+    hledej: "  'Content-Security-Policy': \"default-src 'none'; frame-ancestors 'none'\", ",
+    nahrad: "  ",
+    proc: 'odpověď otevřená jako stránka by směla spouštět a načítat obsah a jít vložit do cizího rámu' },
+  { nazev: '#521 SEC-Z2: odpovědi API bez Referrer-Policy', soubor: 'lib/sdilene.mjs',
+    hledej: ", 'Referrer-Policy': 'no-referrer' });",
+    nahrad: " });",
+    proc: 'odkaz z odpovědi by prozradil adresu s parametry dotazu' },
+  { nazev: '#521 SEC-Z2: export pro controlling s vlastními hlavičkami', soubor: 'functions/controlling_export.mjs',
+    hledej: "  return new Response(telo, { status: 200, headers: JSON_HLAVICKY });",
+    nahrad: "  return new Response(telo, { status: 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });",
+    proc: 'export nákupních cen by šel bez nosniff, CSP i Referrer-Policy' },
   { nazev: '#514 SEC-I1: /api/zdravi bez hlaviček', soubor: 'functions/zdravi.mjs',
     hledej: "    { headers: JSON_HLAVICKY });",
     nahrad: "    {});",

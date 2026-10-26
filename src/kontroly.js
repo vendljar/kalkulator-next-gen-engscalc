@@ -799,7 +799,7 @@ const KONTROLY = [
       const chybi = firmaKapitolyPrazdne(f, jaz);
       if (!chybi.length) return null;
       return { text: 'Nabídka odejde bez ' + kontrolyVyctem(chybi.map(k => k.popis))
-        + ' — v Nastavení → Firma → Kapitoly nabídky nejsou vyplněné'
+        + ' — v Nastavení → Smlouvy / Šablony → Kapitoly nabídky nejsou vyplněné'
         + (jaz !== 'cz' ? ' (jazyk ' + jaz.toUpperCase() + ')' : '') + '. Prázdná kapitola se z online nabídky '
         /* Word ji vypustí jen se šablonou CN v13 a novější (značky kapitol,
          * P8A 29. 9. 2026); starší šablona nechá nadpis a prázdný rámeček. */
@@ -872,17 +872,17 @@ const KONTROLY = [
         if (termin) return null;
         if (!hodn('terminDodaniOck'))
           return { text: 'Nabídka uvede v kapitole V. místo termínu dodání „dle dohody“: termín dodání '
-            + 'není v krycím listu ani jako standardní lhůta v Nastavení → Firma → Smluvní standardy'
+            + 'není v krycím listu ani jako standardní lhůta v Nastavení → Smlouvy / Šablony → Smluvní standardy'
             + (z.atyp ? ' (u atypické zakázky se navíc prodlužuje o ATYP)' : '') + '.' };
         if (!z.atyp) return null;
         return { text: 'Zakázka je atypická, ale termín dodání v krycím listu je smazaný — kapitola V. '
-          + 'uvede standardní lhůtu z Firmy („' + hodn('terminDodaniOck') + '“) bez prodloužení za ATYP. '
+          + 'uvede standardní lhůtu ze Smluvních standardů („' + hodn('terminDodaniOck') + '“) bez prodloužení za ATYP. '
           + 'Doplňte termín v krycím listu (sekce Termín dodání).' };
       }
       if (!z.atyp) return null;
       if (!termin) {
         return { text: 'Zakázka je atypická, ale nabídka neuvede termín dodání s prodloužením za ATYP — '
-          + 'v Nastavení → Firma → Smluvní standardy není vyplněná standardní lhůta dodání OCK '
+          + 'v Nastavení → Smlouvy / Šablony → Smluvní standardy není vyplněná standardní lhůta dodání OCK '
           + '(nebo je v krycím listu smazaná).' };
       }
       const cislo = t => { const m = String(t).match(/\d+/); return m ? parseInt(m[0], 10) : null; };
@@ -895,8 +895,8 @@ const KONTROLY = [
       while ((m = re.exec(kap))) if (parseInt(m[1], 10) === zaklad) koliduje = true;
       if (!koliduje) return null;
       return { text: 'V nabídce budou dva různé termíny: termín dodání „' + termin + '" a v textu kapitoly V. '
-        + 'z Firmy standardní lhůta ' + zaklad + ' týdnů. Nahraďte číslo v textu kapitoly V. značkou {TERMIN} '
-        + '(Nastavení → Firma → Kapitoly nabídky) — dosadí se za ni termín dodání ze zakázky.' };
+        + 'standardní lhůta ' + zaklad + ' týdnů. Nahraďte číslo v textu kapitoly V. značkou {TERMIN} '
+        + '(Nastavení → Smlouvy / Šablony → Kapitoly nabídky) — dosadí se za ni termín dodání ze zakázky.' };
     },
   },
   {

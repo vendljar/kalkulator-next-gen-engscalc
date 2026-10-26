@@ -30,7 +30,7 @@
  * z ověřeného filtru; export po dávkách má jeden záznam (stav probiha →
  * hotovo). Strop počtu zakázek není (#504) — meze CTRL_HROMADNY (src/controlling.js) — při
  * překročení 413 s výzvou zúžit období, nikdy potichu oříznutý soubor. */
-import { uloziste, vyzadujRoli, json, vyhradne } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, vyhradne, JSON_HLAVICKY } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { pdStavPripoj } from '../lib/pd_stav.mjs';
 import { randomUUID } from 'node:crypto';
@@ -148,7 +148,6 @@ export default async (req) => {
         zakazek: davka.zakazek, radku: davka.radku, preskoceno: davka.preskoceno,
         vyrazenoPd: davka.vyrazenoPd, vyrazenoBez: davka.vyrazenoBez, davek: 1, stav, verzeMapovani }));
   });
-  return new Response(telo, { status: 200, headers: { 'content-type': 'application/json; charset=utf-8',
-    'cache-control': 'no-store' } });
+  return new Response(telo, { status: 200, headers: JSON_HLAVICKY });   // + nosniff, CSP, Referrer (SEC-Z2, #521)
 };
 export const config = { path: '/api/controlling/export' };

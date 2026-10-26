@@ -396,9 +396,14 @@ export function relaceOver(cookieHlavicka) {
  * a `nosniff` stojí v netlify.toml pro /api/*, jenže vlastní hlavičky Netlify
  * se na odpovědi funkcí s `config.path` uplatnit nemusí — odpověď s účty,
  * zakázkami či zálohou by mohla zůstat v mezipaměti. Proto je nese každá
- * odpověď sama; volající je smí přebít (`hlavicky`). */
+ * odpověď sama; volající je smí přebít (`hlavicky`).
+ * Ze stejného důvodu nese odpověď i CSP a Referrer-Policy (SEC-Z2, #521, živý
+ * test S2 26. 10. 2026): odpovědi jsou jen JSON, takže `default-src 'none'`
+ * nic nerozbije — prohlížeč jen nic nespustí, kdyby se odpověď otevřela jako
+ * stránka, a `frame-ancestors 'none'` ji nedovolí vložit do rámu. */
 export const JSON_HLAVICKY = Object.freeze({ 'Content-Type': 'application/json; charset=utf-8',
-  'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+  'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
+  'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer' });
 export function json(data, status = 200, hlavicky = {}) {
   return new Response(JSON.stringify(data), { status,
     headers: { ...JSON_HLAVICKY, ...hlavicky } });

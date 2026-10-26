@@ -993,6 +993,20 @@ const MUTACE = [
     hledej: "tsKotveniPoloha(tsPoleDef('kotveniPoloha'), Z)",
     nahrad: "tsKotveniPoloha('prohlubeň, podesty ve všech nástupištích a hlava šachty', Z)",
     proc: 'úprava výchozí věty v datech by u zakázek s můstkem přestala platit' },
+  /* #521 (O3, 26. 10. 2026, nález M3): hlášky kontrol vedou do Nastavení →
+   * Smlouvy / Šablony, ne do Firmy. Hlídá src/test_kontroly.js blok #521. */
+  { nazev: '#521: kapitoly nabídky hlásí starou záložku Firma', soubor: 'kontroly.js',
+    hledej: "' — v Nastavení → Smlouvy / Šablony → Kapitoly nabídky nejsou vyplněné'",
+    nahrad: "' — v Nastavení → Firma → Kapitoly nabídky nejsou vyplněné'",
+    proc: 'administrátor by kapitoly hledal na záložce Firma, kde nejsou' },
+  { nazev: '#521: ATYP bez lhůty hlásí starou záložku Firma', soubor: 'kontroly.js',
+    hledej: "'v Nastavení → Smlouvy / Šablony → Smluvní standardy není vyplněná standardní lhůta dodání OCK '",
+    nahrad: "'v Nastavení → Firma → Smluvní standardy není vyplněná standardní lhůta dodání OCK '",
+    proc: 'standardní lhůta dodání by se hledala na záložce Firma, kde není' },
+  { nazev: '#521: dvě čísla — rada vede do Firmy', soubor: 'kontroly.js',
+    hledej: "'(Nastavení → Smlouvy / Šablony → Kapitoly nabídky) — dosadí",
+    nahrad: "'(Nastavení → Firma → Kapitoly nabídky) — dosadí",
+    proc: 'značku {TERMIN} by administrátor hledal na záložce Firma' },
   /* K29-N1 (rozhodnutí J. V. 20. 10. 2026): měď jen se zastřešením v nabídce. */
   { nazev: 'K29-N1: měď se nabízí i bez zastřešení v nabídce', soubor: 'engine.js',
     hledej: "    ext ? ((zastreseniVNabidce || medStrechaPrepsana)",

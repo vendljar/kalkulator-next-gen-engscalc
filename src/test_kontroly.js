@@ -474,7 +474,7 @@ test('nekompletní kontext nic neshodí a nálezy dorazí',
   const n = s(bez).nalezy.find(x => x.kod === 'kapitoly');
   test('K9-N32: prázdné IV.–VI. se hlásí před nabídkou', !!n, JSON.stringify(kody(s(bez))));
   test('K9-N32: text jmenuje chybějící kapitoly a kde se vyplňují',
-    !!n && /IV\. /.test(n.text) && /V\. termíny/.test(n.text) && /VI\. /.test(n.text) && /Nastavení → Firma/.test(n.text), n && n.text);
+    !!n && /IV\. /.test(n.text) && /V\. termíny/.test(n.text) && /VI\. /.test(n.text) && /Nastavení → Smlouvy \/ Šablony/.test(n.text), n && n.text);
   test('K9-N32: doložky vyplněné, tak je text nejmenuje', !!n && !/doložky/.test(n.text), n && n.text);
   test('K9-N32: je to varování, ne zábrana', !!n && n.uroven === KONTROLY_UROVEN);
   const en = Object.assign({}, plna, { kapTerminyEn: '' });
@@ -533,6 +533,39 @@ test('nekompletní kontext nic neshodí a nálezy dorazí',
     !kody(s(firma, { terminDodani: '20 týdnů' }, false)).includes('terminAtyp'));
   test('O3/TD1: EN text se značkou (jazyk en) — nic nehlásí',
     !kody(s(znacka, { jazyk: 'en' })).includes('terminAtyp'));
+}
+
+/* #521 (26. 10. 2026, nález M3): hlášky kontrol posílaly do „Nastavení → Firma →
+ * Kapitoly nabídky / Smluvní standardy“, obě sekce jsou ale od 20. 8. 2026 na
+ * záložce Nastavení → Smlouvy / Šablony. Všechny čtyři hlášky (kapitoly, termín
+ * „dle dohody“, ATYP bez lhůty, dvě čísla) musí vést tam a Firmu nejmenovat. */
+{
+  const fm = require('./firma.js');
+  global.firmaKapitolyPrazdne = fm.firmaKapitolyPrazdne;
+  global.firmaKapitola = fm.firmaKapitola;
+  const txt = (firma, extra) => (kontrolyProved(Object.assign({ nast: Object.assign({}, NAST, { firma }) }, extra || {}))
+    .nalezy.find(x => x.kod === (extra && extra.zadani ? 'terminAtyp' : 'kapitoly')) || {}).text || '';
+  const z = atyp => Object.assign(kopie(eng.DEFAULT_ZADANI), { atyp });
+  const zaklad = Object.assign(fm.firmaDefault(), { terminDodaniOck: 'cca 12 týdnů', terminAtypTydny: '4' });
+  const stary = Object.assign({}, zaklad, { kapTerminy: fm.DEFAULT_FIRMA.kapTerminy.replace('{TERMIN}', 'cca 12 týdnů') });
+  const hlasky = {
+    kapitoly: txt(Object.assign({}, zaklad, { kapPredani: '' })),
+    dleDohody: txt(Object.assign({}, zaklad, { terminDodaniOck: '' }), { zadani: z(false), terminDodani: '' }),
+    atypBezLhuty: txt(Object.assign({}, stary, { terminDodaniOck: '' }), { zadani: z(true), terminDodani: '' }),
+    dveCisla: txt(stary, { zadani: z(true), terminDodani: 'cca 16 týdnů (vč. 4 týdnů za ATYP)' }),
+  };
+  /* ATYP se smazaným termínem v krycím listu: rada je krycí list, místo lhůty jen „z Nastavení“. */
+  const smazany = txt(zaklad, { zadani: z(true), terminDodani: '' });
+  test('#521: ATYP se smazaným termínem — lhůta „ze Smluvních standardů“, ne „z Firmy“',
+    /ze Smluvních standardů/.test(smazany) && !/Firmy/.test(smazany), smazany);
+  for (const [k, t] of Object.entries(hlasky)) {
+    test('#521: hláška ' + k + ' vede do Nastavení → Smlouvy / Šablony', /Nastavení → Smlouvy \/ Šablony/.test(t), t);
+    test('#521: hláška ' + k + ' neposílá do Nastavení → Firma ani „z Firmy“', !!t && !/Firma|Firmy/.test(t), t);
+  }
+  test('#521: kapitoly a dvě čísla jmenují sekci Kapitoly nabídky',
+    /Kapitoly nabídky/.test(hlasky.kapitoly) && /Kapitoly nabídky/.test(hlasky.dveCisla), hlasky);
+  test('#521: dle dohody a ATYP bez lhůty jmenují sekci Smluvní standardy',
+    /Smluvní standardy/.test(hlasky.dleDohody) && /Smluvní standardy/.test(hlasky.atypBezLhuty), hlasky);
 }
 
 /* B111 (29. 9. 2026) — záporná vlastní položka, množství nebo hodiny je
