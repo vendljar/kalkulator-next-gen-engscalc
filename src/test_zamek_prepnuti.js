@@ -140,28 +140,10 @@ test('jeden zápis najednou — druhý počká, než první doběhne',
 test('neúspěch se vrací jako false, aby se dal poznat', /return false;/.test(uloz));
 
 /* ---------- NOVÁ ZAKÁZKA SHODÍ ZÁMEK ČTENÍ (P15, nález N29) ----------
- *
- * Při otevřené zakázce jen ke čtení nezaložilo „✚ Nová zakázka" novou
- * zakázku: zůstala ta původní i se zámkem a pomohlo až přenačtení stránky.
- * Dnes to funguje — změřeno v prohlížeči 21. 9. 2026: po `novaZakazkaUI()`
- * je zámek pryč, číslo zpátky na předloze a vazba na soubor zrušená.
- *
- * Tady se hlídá ŘETĚZ, na kterém to stojí: `novaZakazkaUI` → `zakOdpojUlozeni`
- * → `zamekCteniVypni`. Kdyby z něj někdo vyndal článek, zámek by po založení
- * nové zakázky zůstal a tichá ztráta práce by se vrátila. Je to kontrola
- * zdroje, ne chování — chování měří prohlížeč. */
-{
-  const zakUi = fs.readFileSync(__dirname + '/ui/zakazka_ui.js', 'utf8');
-  const zakUlo = fs.readFileSync(__dirname + '/ui/zakulozeni_ui.js', 'utf8');
-  const nova = (zakUi.match(/async function novaZakazkaUI\(\)[\s\S]*?\n\}/) || [''])[0];
-  const odpoj = (zakUlo.match(/function zakOdpojUlozeni\(\)[\s\S]*?\n\}/) || [''])[0];
-  test('kontrola není prázdná — obě funkce se ve zdroji našly',
-    nova.length > 100 && odpoj.length > 100, { nova: nova.length, odpoj: odpoj.length });
-  test('P15: nová zakázka odpojí uložení', /zakOdpojUlozeni\(\)/.test(nova));
-  test('P15: a odpojení shodí zámek čtení', /zamekCteniVypni\(\)/.test(odpoj));
-  test('P15: zruší se i vazba na otevřený soubor',
-    /ONLINE_STAV\.soubor = ''/.test(odpoj) && /ULO_STAV\.soubor = ''/.test(odpoj));
-}
+ * Řetěz novaZakazkaUI → zakOdpojUlozeni → zamekCteniVypni hlídaly do
+ * 26. 10. 2026 regulární výrazy nad zdrojákem. Od #517 (T4, uzavírá #319)
+ * to ověřuje CHOVÁNÍM `overit_t4.mjs`, oddíl D: nad zakázkou jen ke čtení
+ * „Nová zakázka" zámek shodí a vazbu na soubor (online i složka) zruší. */
 
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

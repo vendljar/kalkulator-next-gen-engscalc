@@ -89,36 +89,15 @@ test('vyplněné rozměry chybějící nehlásí', !S.standardRozmeryChybi({ sir
   test('zaškrtnutý ATYP výsledek kontroly nemění', v2.stav === v.stav, v2.stav);
 }
 
-/* ---------- 3) pravidla automatu na zdroji ----------
- * Automat sedí v ui/common.js, které v Node nejde načíst (je to část
- * jednosouborové aplikace). Hlídají se proto pravidla, na kterých stojí. */
-const ui = fs.readFileSync(__dirname + '/ui/common.js', 'utf8');
-
-test('automat mlčí nad rozdělaným zadáním', /if \(v\.rozmeryChybi\) return false;/.test(ui));
-test('automat vypíná jen to, co sám zaškrtl (Z.atypAutomat)',
-  /Z\.atyp && Z\.atypAutomat/.test(ui));
-test('automat umí režim „jen vypnout" pro otevřenou zakázku',
-  /jenVypnout/.test(ui) && /if \(jenVypnout\) return false;/.test(ui));
-test('úklid po otevření zakázky existuje', /function standardAtypUklid\(\)/.test(ui));
-test('úklid sahá jen na automatem zaškrtnutý ATYP',
-  /standardAtypUklid[\s\S]{0,400}?!Z\.atypAutomat\) return false/.test(ui));
-test('úklid změnu ceny říká nahlas', /standardAtypUklid[\s\S]{0,600}?progZprava/.test(ui));
-test('u standardní šachty se ručně zaškrtnutý ATYP označí',
-  /ATYP zaškrtnut ručně/.test(ui));
-test('to označení se týká JEN ručního ATYPu',
-  /v\.stav === 'standard' && Z && Z\.atyp && !Z\.atypAutomat/.test(ui));
-
-const online = fs.readFileSync(__dirname + '/ui/online_ui.js', 'utf8');
-test('otevření zakázky ze serveru úklid pouští', /standardAtypUklid\(\)/.test(online));
-
-const kalk = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
-{
-  const prepni = (kalk.match(/function typSachtyPrepni\([\s\S]*?\n\}/) || [''])[0];
-  test('přepnutí typu šachty pouští kontrolu znovu', /standardAtypAutomat\(\)/.test(prepni), prepni.length);
-  test('a pouští ji AŽ po dosazení profilů',
-    prepni.indexOf('Z.profily = JSON.parse') < prepni.indexOf('standardAtypAutomat()'),
-    [prepni.indexOf('Z.profily = JSON.parse'), prepni.indexOf('standardAtypAutomat()')]);
-}
+/* ---------- 3) pravidla automatu ----------
+ * Do 26. 10. 2026 se tu hlídala čtením zdrojáku ui/common.js, online_ui.js
+ * a kalk_ock.js (regulárními výrazy). Revize v22.9.9 (nález T4): takový test
+ * pozná změněný TVAR kódu, ne změněné chování. Od #517 (uzavírá #319) je
+ * ověřuje CHOVÁNÍM v prohlížeči `overit_t4.mjs`, oddíl B: automat mlčí nad
+ * rozdělaným zadáním, vypíná jen svoje zaškrtnutí, ruční ATYP nechá
+ * a označí, úklid po otevření jen vypíná (s hláškou) a přepnutí typu šachty
+ * pouští kontrolu až nad dosazenými profily. */
+const kalk = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');   // oddíl 4 (N10)
 
 /* ---------- 4) zaškrtávátka reagují na klik i mezerník (N10) ----------
  * Mezerník vyvolá `change`, ne `click`. Zaškrtávátko obsluhované přes
@@ -157,76 +136,12 @@ const kalk = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
 }
 
 /* ---------- P11: DVĚ CESTY K HODINÁM ATYP (nález N24) ----------
- *
- * Hlášení ze 3. kola: automatické zapnutí ATYP dalo „Montáž – atyp navíc"
- * 5 hodin, ruční zaškrtnutí 6 hodin — rozdíl 2 000 Kč v ceně.
- *
- * Měřením 22. 9. 2026 se ukázalo, že VZOREC je v obou cestách týž:
- *   Math.round(sazba × (montazZakladHod + hodinyNavicCelkem))
- * Liší se ale ZDROJ SAZBY, a to způsobem, který dokáže dát jiné číslo:
- *
- *   · `atypPrepni` (ui/kalk_ock.js) — zaškrtnutí, ruční i automatické:
- *       S(klic) = cenikVychozi(C, klic, ATYP_NAHRADA[klic])
- *     Když ceník sazbu nemá, POUŽIJE SE NÁHRADA ZE SESTAVENÍ.
- *
- *   · `cenikDoZadani` (ui/kalk_ock.js) — přepočet na platný ceník při
- *     otevření zakázky:
- *       cenikVychozi(c, 'atypMontazPct', null)
- *     Když ceník sazbu nemá, vrátí null a hodiny se VŮBEC NEPŘEPOČÍTAJÍ.
- *
- * Jedna cesta tedy má záchrannou hodnotu a druhá ne. U ceníku BEZ té sazby
- * se proto hodiny podle cesty buď dopočítají z náhrady, nebo zůstanou, jak
- * byly — a to jsou dvě různá čísla u téže zakázky.
- *
- * Změřená citlivost zaokrouhlení (zkušební šachta, základ 24 h,
- * hodinyNavicCelkem −3,25): sazba 0,30 → 6 h, sazba 0,25 → 5 h. Přesně ten
- * hlášený rozdíl tedy vznikne i při nezměněné geometrii, jen jiným zdrojem
- * sazby.
- *
- * ROZHODNUTO 22. 9. 2026 (J. V.): „sazba by se měla brát vždy z ceníku,
- * ať už se atyp spustí automaticky nebo manuálně. To, že si to pak obchodník
- * přepíše, už je jeho věc."
- *
- * Obě cesty proto od v22.9.9 čtou sazbu týmž způsobem, včetně téže záchranné
- * hodnoty. Když ceník sazbu MÁ — a to je normální stav — dávají obě cesty
- * totéž a rozdíl 5 vs 6 hodin nemá jak vzniknout. Ruční přepis obchodníka
- * zůstává nedotčený (`zadaniRucniJe`) a uzamčené ani kvitované varianty se
- * do přepočtu vůbec nedostanou, takže odeslanými nabídkami to nehne.
- *
- * Tenhle test drží sjednocení na místě, aby se cesty zase nerozešly. Je to
- * kontrola zdroje, ne chování — logika je v UI, které v Node nejde načíst. */
-{
-  const kalk = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
-  const prepni = (kalk.match(/function atypPrepni\(zap, opts\)[\s\S]*?\n\}/) || [''])[0];
-  const doZadani = (kalk.match(/function cenikDoZadani\(v\)[\s\S]*?\n\}/) || [''])[0];
-
-  test('P11: kontrola není prázdná — obě funkce se ve zdroji našly',
-    prepni.length > 200 && doZadani.length > 200,
-    { prepni: prepni.length, doZadani: doZadani.length });
-
-  /* Vzorec je týž — kdyby se rozešel i ten, rozdíl by přestal být jen
-   * v záchranné hodnotě a tenhle popis by přestal platit. */
-  const vzorec = /Math\.round\([\s\S]{0,60}?\(\(\+[zZ]\.montazZakladHod \|\| 0\) \+ navic\)\)/;
-  test('P11: obě cesty počítají hodiny týmž vzorcem',
-    vzorec.test(prepni) && vzorec.test(doZadani),
-    { prepni: vzorec.test(prepni), doZadani: vzorec.test(doZadani) });
-
-  /* Sjednocený zdroj sazby (#298, rozhodnuto 22. 9. 2026). Obě cesty čtou
-   * ceník a obě mají touž záchrannou hodnotu — jinak by se zase rozešly. */
-  test('P11: zaškrtnutí bere sazbu z ceníku se záchrannou hodnotou',
-    /ATYP_NAHRADA\[klic\]/.test(kalk) && /vych\(klic, ATYP_NAHRADA\[klic\]\)/.test(kalk));
-  test('P11: přepočet ceníku bere sazbu z TÉHOŽ zdroje',
-    /cenikVychozi\(c, 'atypMontazPct', ATYP_NAHRADA\.atypMontazPct\)/.test(doZadani)
-    && /cenikVychozi\(c, 'atypProjekcePct', ATYP_NAHRADA\.atypProjekcePct\)/.test(doZadani),
-    doZadani.slice(0, 200));
-  test('P11: záchranná hodnota už nikde není null (to byl ten rozdíl)',
-    !/cenikVychozi\(c, 'atyp[A-Za-z]+Pct', null\)/.test(kalk));
-  /* Ruční přepis obchodníka přepočet nepřepíše — to byla podmínka
-   * rozhodnutí („že si to pak obchodník přepíše, už je jeho věc"). */
-  test('P11: ruční přepis zůstává nedotčený',
-    /!zadaniRucniJe\(d, 'montazAtypHod'\)/.test(doZadani)
-    && /!zadaniRucniJe\(d, 'projekceAtypHod'\)/.test(doZadani));
-}
+ * Zaškrtnutí ATYP (atypPrepni) a přepočet na platný ceník (cenikDoZadani)
+ * berou sazbu hodin týmž způsobem, včetně záchranné hodnoty (rozhodnutí
+ * J. V. 22. 9. 2026, #298). Do 26. 10. 2026 to tu hlídaly regulární výrazy
+ * nad ui/kalk_ock.js; od #517 (T4, uzavírá #319) to ověřuje CHOVÁNÍM
+ * `overit_t4.mjs`, oddíl C: obě cesty dají tytéž hodiny s ceníkovou sazbou
+ * i bez ní a ruční přepis obchodníka přepočet nepřepíše. */
 
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);
