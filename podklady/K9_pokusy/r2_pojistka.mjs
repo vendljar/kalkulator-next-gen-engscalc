@@ -112,7 +112,7 @@ const noc = (den) => Z.retenceProved(den, den, Date.parse(den + 'T02:30:00Z'));
   vlozOtisk('2026-11-21', { pocetZakazek: 10, velikostB: 1e6 });
   kopieDisk('2026-11-21', '2026-11-21T01:00:00.000Z');
   const r2 = await noc('2026-11-21');
-  nalez('K9-S3', 'bez předchozího NOČNÍHO otisku (první noc, nebo jen vynucené) se nový otisk neporovná s ničím — 10 zakázek proti 800 ve vynucených projde a vynucené starší 7 dní se smažou',
+  nalez('K9-N7', 'bez předchozího NOČNÍHO otisku (první noc, nebo jen vynucené) se nový otisk neporovná s ničím — 10 zakázek proti 800 ve vynucených projde a vynucené starší 7 dní se smažou',
     !r2.varovani && r2.smazano.length > 0, { smazano: r2.smazano.length });
 }
 

@@ -92,7 +92,7 @@ const DNES = new Date().toISOString().slice(0, 10);
 }
 
 /* ---------- 3) kopie na Disk po stránkách ---------- */
-{
+if (!process.env.JEN_OTISK) {
   rssReset();
   let kopie = {}, dalsi = '', otisk = null, stran = 0, nejvic = 0, maxMs = 0;
   do {
@@ -111,7 +111,7 @@ const DNES = new Date().toISOString().slice(0, 10);
 }
 
 /* ---------- 4) obnova z otisku po částech (náhled, výřezy po 15) ---------- */
-{
+if (!process.env.JEN_OTISK) {
   const telo = (x) => obnova(new Request('http://x/api/obnova', { method: 'POST', headers: { cookie }, body: JSON.stringify(x) }));
   const m = JSON.parse(pamet.get('zalohy/' + DNES));
   let pozadavku = 0, maxMs = 0, celkemMs = 0;
@@ -130,7 +130,7 @@ const DNES = new Date().toISOString().slice(0, 10);
 }
 
 /* ---------- 5) starý jednolitý otisk 114 MB ---------- */
-{
+if (!process.env.JEN_OTISK) {
   nastaveni.latenceMs = 0; nastaveni.msNaMB = 0;
   const cely = await Z.ctiOtisk(globalThis.__TEST_ULOZISTE('zalohy'), DNES);
   cely.zdroj = 'nocni-otisk'; cely.porizena = '2026-10-15T02:00:00.000Z';

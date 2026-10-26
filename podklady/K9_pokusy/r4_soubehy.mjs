@@ -95,10 +95,12 @@ const puvMax = Z.OTISK_CAST_MAX_B;
   let kroky = 0;
   const puv = Z.OTISK_ROZPOCET.synchronniMs;
   /* počítá zápisy částí otisku před obnovou v jednom požadavku */
-  nastaveni.hookZapis = async (ul, k) => { if (ul === 'zalohy' && /-pred-obnovou$/.test(k.split('/')[1] || '') ) kroky++; };
-  const o = await telo({ zdroj: { otisk: '2026-11-10T000000-pred-obnovou' }, rezim: 'doplnit', casti: ['firma'], potvrzeni: 'OBNOVIT' });
+  nastaveni.hookZapis = async (ul, k) => { if (ul === 'zalohy' && k.startsWith('casti/') && /-pred-obnovou$/.test(k.split('/')[1] || '')) kroky++; };
+  const o = await telo({ zdroj: { otisk: '2026-11-05' }, rezim: 'doplnit', casti: ['firma'], potvrzeni: 'OBNOVIT' });
+  const predObn = o.otiskPred && JSON.parse(pamet.get('zalohy/' + o.otiskPred) || 'null');
   nastaveni.hookZapis = null;
   nalez('K9-N5', 'jednorázová obnova (POST bez faze/obnovaId) pořizuje otisk před obnovou porizOtisk() celý v jednom požadavku — u velké databáze nad limit 10 s (pak 5xx; nic se nezapíše, zůstane rozpracovaný otisk)',
-    true, { castiZapsanoVJednomPozadavku: kroky, odpoved: o.ok === false ? o.chyba : 'ok' });
+    o.ok === true && !!predObn && predObn.kroku === 1 && kroky === predObn.casti,
+    { castiZapsanoVJednomPozadavku: kroky, manifest: predObn && { casti: predObn.casti, kroku: predObn.kroku }, odpoved: o.ok === false ? o.chyba : 'ok' });
 }
 konec();
