@@ -12,7 +12,7 @@
 
 **Testovací web VYHOVUJE. Skutečný ostrý web engscalc.netlify.app (`main`, v22.10.1) má pasivně v pořádku hlavičky i verzi. Vysoký nález SEC-Z1 se týká opuštěného veřejného nasazení schaftscalc.netlify.app (rozhodne J. V.), dál je 1 nízký a 4 informativní.**
 
-- **Ostrý web engscalc (pasivně, 1 dotaz 09:2x UTC):** „Kalkulačka v22.10.1“, `BUILD_DATUM_ZNACKA` 2026-10-22 = `main` (`aea832a`, commit 22. 10.). Obsah se s lokálním sestavením nad `origin/main` liší jen ve 3 řádcích data sestavení. Hlavičky CSP (shodná s `netlify.toml` na `main` znak po znaku), X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy a HSTS jsou na místě. `/api` se na ostrém webu nezkoušelo.
+- **Ostrý web engscalc (pasivně, 1 dotaz 09:19:39 UTC):** „Kalkulačka v22.10.1“, `BUILD_DATUM_ZNACKA` 2026-10-22 = `main` (`aea832a`, commit 22. 10.). Obsah se s lokálním sestavením nad `origin/main` liší jen ve 3 řádcích data sestavení. Hlavičky CSP (shodná s `netlify.toml` na `main` znak po znaku), X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy a HSTS jsou na místě. `/api` se na ostrém webu nezkoušelo.
 
 - **Nasazení = `test`:** `/api/zdravi` hlásí `25.10.1`, prostředí `test`. `dist/index.html` z lokálního sestavení nad `efa61c1` (`KNG_NEZVYSOVAT_VERZI=1 python3 build.py`) se s živým `/`, `/index.html`, `/kalkulacka.html` a `/kalkulacka_v25.10.1.html` (4 soubory se stejným SHA-256 `787add6c…`) liší jen ve **3 řádcích s datem sestavení** (`BUILD_DATUM_ZNACKA` 2026-10-25 živě, 2026-10-26 lokálně, protože build bere den sestavení). Jiný rozdíl není.
 - **Hlavičky HTML** sedí s `netlify.toml`: CSP shodná znak po znaku, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy, HSTS.
