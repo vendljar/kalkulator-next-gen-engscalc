@@ -17,9 +17,10 @@
  * úložišti jako ostrá data a nikdy neopouští server, takže obnova nevyžaduje
  * reset všech hesel (otisk hesla není heslo: scrypt se solí).
  *
- * Otisk nese i šablony, podpisy a přílohy — u schaftscalc kolem 20 MB.
- * Bez mazání by to bylo ~7 GB za rok; od 19. 10. 2026 proto běží RETENCE
- * (#151 N5, pravidlo J. V. v lib/zalohovani.mjs → retenceVyber): až po
+ * Otisk nese i šablony, podpisy a přílohy — u engscalc ~114 MB za den.
+ * Bez mazání by to bylo desítky GB za rok; od 19. 10. 2026 proto běží RETENCE
+ * (#151 N5, od #523 Z2 nové pravidlo J. V.: 14 dní, 8 týdnů, 6 měsíců —
+ * lib/zalohovani.mjs → retenceVyber, src/retence_zaloh.js): až po
  * úspěšném zápisu dnešního otisku, nikdy když selže, a (v19.10.8) jen když
  * je kopie otisků na Disku Google mladší než 7 dní. Od v20.10.2 (K3-N13)
  * se přeskočí, když nový otisk nese méně než polovinu zakázek nebo účtů
@@ -45,6 +46,10 @@ export const NOCNI_DOKONCENO_KLIC = 'nocni-dokonceno';
 /* Dokončil-li se otisk až pozdě v běhu, retence a úklid počkají na další
  * běh (mají vlastní čtení a zápisy a limit je 30 s). */
 const NOCNI_DOKONCENI_DO_MS = 22000;
+/* #523 Z2: retence maže do 20 s od začátku běhu (nejméně 1 s), zbytek
+ * dokončí další běh téže noci — limit funkce je 30 s. */
+const NOCNI_RETENCE_DO_MS = 20000;
+const NOCNI_RETENCE_MIN_MS = 1000;
 const odpoved = (x) => new Response(JSON.stringify(x), { headers: JSON_HLAVICKY });   // no-store a nosniff (SEC-I1, #514)
 
 export default async () => {
@@ -63,7 +68,8 @@ export default async () => {
       return odpoved({ ok: true, ...v });
     }
     console.log('zaloha_nocni: otisk ' + v.den + ' — ' + v.trvaniMs + ' ms, '
-      + Math.round(v.velikostB / 1024) + ' kB, ' + v.pocetZakazek + ' zakázek, ' + v.pocetUctu + ' účtů'
+      + Math.round(v.velikostB / 1024) + ' kB'
+      + (v.ulozenoB && v.ulozenoB !== v.velikostB ? ' (uloženo gzip ' + Math.round(v.ulozenoB / 1024) + ' kB)' : '') + ', ' + v.pocetZakazek + ' zakázek, ' + v.pocetUctu + ' účtů'
       + ' (' + v.casti + ' částí, ' + v.kroku + ' běhů)');
     if (Date.now() - start > NOCNI_DOKONCENI_DO_MS) {
       console.log('zaloha_nocni: retence a úklid poběží v dalším běhu');
@@ -75,7 +81,8 @@ export default async () => {
   /* Retence (#151 N5) — sem se dojde jen po úspěšném dnešním otisku (výše
    * při chybě vyhodí, nedokončený vrátí). Její chyba otisk neohrozí. */
   let retence;
-  try { retence = await retenceProved(den); } catch (e) { retence = { smazano: [], chyby: [String(e && e.message || e)] }; }
+  try { retence = await retenceProved(den, undefined, undefined, { rozpocetMs: Math.max(NOCNI_RETENCE_MIN_MS, NOCNI_RETENCE_DO_MS - (Date.now() - start)) }); }
+  catch (e) { retence = { smazano: [], chyby: [String(e && e.message || e)] }; }
   /* K3-N13: pokles zakázek nebo účtů pod polovinu → retence stojí, varování
    * do logu (a do hlídky v administraci přes záznam retence-varovani). */
   if (retence.varovani) console.warn('zaloha_nocni: VAROVÁNÍ — ' + retence.ceka + ' — nic se nesmazalo, zkontrolujte data');
@@ -84,6 +91,13 @@ export default async () => {
   else console.log('zaloha_nocni: retence smazala ' + retence.smazano.length + ' otisků'
     + (retence.smazano.length ? ': ' + retence.smazano.join(', ') : '')
     + (retence.chyby.length ? ' · chyby: ' + retence.chyby.join('; ') : ''));
+  /* #523 Z2: retence nestihla smazat všechno (první noc po novém pravidle,
+   * stovky částí) → den se neuzavře, další běh téže noci (po 15 min)
+   * pokračuje; úklid počká, až retence doběhne. */
+  if (retence.zbyva) {
+    console.log('zaloha_nocni: retence pokračuje v dalším běhu — zbývá ' + retence.zbyva + ' otisků');
+    return odpoved({ ok: true, den, ...(v || {}), retence });
+  }
   /* #522: opuštěné rozpracované otisky (24 h bez pohybu) a osiřelé části. */
   let rozpracovane;
   try { rozpracovane = await uklidRozpracovane(); } catch (e) { rozpracovane = { chyba: String(e && e.message || e) }; }

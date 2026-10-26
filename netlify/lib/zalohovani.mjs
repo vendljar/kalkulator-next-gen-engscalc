@@ -18,6 +18,8 @@
  * ============================================================ */
 import { uloziste, SMAZANI_ULOZISTE, vyhradne } from './sdilene.mjs';
 import { randomBytes } from 'node:crypto';
+import { gzipSync, gunzipSync } from 'node:zlib';
+import RZ from './retence_modul.cjs';
 
 const DEN_MS = 86400000;
 export function denDnes(kdy) {
@@ -276,6 +278,35 @@ export const OTISK_ROZPOCET = { synchronniMs: 5000, nocniMs: 20000 };
  * otiskem by zapisovaly tytéž části. Krok si stav „zamkne" na dobu svého
  * rozpočtu; kdo přijde mezitím, dostane `bezi: true` a zkusí to za chvíli. */
 const OTISK_ZAMEK_NAVIC_MS = 20000;
+/* KOMPRESE ČÁSTÍ (#523 Z2, 26. 10. 2026). Měření (nastroje/
+ * mereni_komprese_otisku.mjs, smyšlená data v tvaru aplikace): text zakázek
+ * gzip zmenší o ~99 %, base64 příloh o ~25 %, směs blízká engscalc
+ * (~123 MB) o 32–41 % — nad prahem 30 %, který J. V. určil. Nová část se
+ * proto ukládá jako gzip JSON (binární blob; base64 by úsporu u příloh
+ * snědl) a manifest nese `komprese: 'gzip'`. Čtení umí obojí: otisk bez
+ * pole `komprese` (Z1, v26.10.8) má části jako JSON. Úložiště bez binárního
+ * zápisu (starší náhrady v testech) dostane části jako JSON. Čas: ~100 ms
+ * CPU na 4MB část, rozbalení ~20 ms — v rozpočtu kroku. */
+export const OTISK_KOMPRESE = 'gzip';
+async function zapisCast(s, klic, i, cast, komprese) {
+  const text = JSON.stringify(cast);
+  if (komprese === OTISK_KOMPRESE) {
+    const gz = gzipSync(Buffer.from(text, 'utf8'));
+    await s.zapisBin(castKlic(klic, i), gz);
+    return { velikostB: Buffer.byteLength(text), ulozenoB: gz.length };
+  }
+  await s.zapis(castKlic(klic, i), cast);
+  return { velikostB: Buffer.byteLength(text), ulozenoB: Buffer.byteLength(text) };
+}
+/* Část podle manifestu `m`: null, když chybí. Neznámá komprese = výjimka
+ * (radši žádná obnova než tichý nesmysl). */
+async function ctiCast(s, klic, i, m) {
+  if (!m.komprese) return await s.cti(castKlic(klic, i));
+  if (m.komprese !== OTISK_KOMPRESE || typeof s.ctiBin !== 'function')
+    throw new Error('otisk ' + klic + ' má části v neznámém formátu (' + String(m.komprese) + ')');
+  const b = await s.ctiBin(castKlic(klic, i));
+  return b == null ? null : JSON.parse(gunzipSync(b).toString('utf8'));
+}
 
 /* SEKCE OTISKU — jediné místo, odkud pořizování čte. Jednozáznamové (klic)
  * a mapy (celé úložiště, případně s předponou). Úplnost hlídá
@@ -331,7 +362,7 @@ export async function ctiOtisk(s, klic) {
   const o = otiskZaklad(m);
   const klice = Array.from({ length: m.casti }, (_, i) => castKlic(klic, i));
   for (let i = 0; i < klice.length; i += 4) {
-    const casti = await Promise.all(klice.slice(i, i + 4).map(k => s.cti(k)));
+    const casti = await Promise.all(klice.slice(i, i + 4).map((k, j) => ctiCast(s, klic, i + j, m)));
     casti.forEach((c, j) => {
       if (!c) throw new Error('otisk ' + klic + ' je neúplný: chybí část ' + (i + j + 1) + ' z ' + m.casti);
       otiskSloz(o, c);
@@ -347,7 +378,7 @@ export async function ctiOtiskCast(s, klic, i) {
   if (!m) return null;
   if (!jeOtiskPoCastech(m)) return i === 0 ? m : null;
   if (!Number.isInteger(i) || i < 0 || i >= m.casti) return null;
-  const c = await s.cti(castKlic(klic, i));
+  const c = await ctiCast(s, klic, i, m);
   if (!c) throw new Error('otisk ' + klic + ' je neúplný: chybí část ' + (i + 1) + ' z ' + m.casti);
   const o = { porizena: String(m.porizena || ''), zdroj: String(m.zdroj || ''), kdo: String(m.kdo || '') };
   for (const [n, v] of Object.entries(c)) {
@@ -384,14 +415,15 @@ export function otiskVyrez(o, od, kolik) {
 }
 
 /* Plán nového otisku: klíče všech map (seznam je levný, čtou se jen klíče). */
-async function otiskPlan(klic, zdroj, kdo) {
+async function otiskPlan(klic, zdroj, kdo, sZal) {
   const ul = {};
   for (const x of OTISK_SEKCE) if (!ul[x.ul]) ul[x.ul] = await uloziste(x.ul);
   const plan = await Promise.all(OTISK_SEKCE.map(async x => ({ n: x.nazev,
     k: x.klic ? [x.klic] : (await ul[x.ul].seznam(x.prefix)).filter(k => !x.prefix || k.startsWith(x.prefix)).sort() })));
   const ted = new Date().toISOString();
   return { klic, zdroj: String(zdroj || 'nocni-otisk'), kdo: String(kdo || ''), porizena: ted, naposled: ted,
-    plan, pos: { i: 0, j: 0 }, casti: 0, velikostB: 0, pocetUctu: 0, praceMs: 0, kroku: 0,
+    plan, pos: { i: 0, j: 0 }, casti: 0, velikostB: 0, ulozenoB: 0, pocetUctu: 0, praceMs: 0, kroku: 0,
+    komprese: typeof sZal.zapisBin === 'function' && typeof sZal.ctiBin === 'function' ? OTISK_KOMPRESE : '',   // #523
     pocetZakazek: (plan.find(p => p.n === 'zakazky') || { k: [] }).k.length };
 }
 const otiskPostup = (st) => {
@@ -427,7 +459,7 @@ export async function porizOtiskKrok(klic, zdroj, kdo, opt = {}) {
      * porizOtisk. Starý manifest jde pryč HNED: jinak by po dobu pořizování
      * ukazoval na části, které se právě přepisují. */
     if (hotovy) { await sZal.smaz(klic); try { await sZal.smaz(souhrnKlic(klic)); } catch (e) { /* bez souhrnu */ } }
-    st = await otiskPlan(klic, zdroj, kdo);
+    st = await otiskPlan(klic, zdroj, kdo, sZal);
   } else if (st.beziDo && Date.parse(st.beziDo) > zacatek) {
     return { den: klic, hotovo: false, bezi: true, postup: otiskPostup(st) };
   }
@@ -439,9 +471,8 @@ export async function porizOtiskKrok(klic, zdroj, kdo, opt = {}) {
   let cast = {}, castB = 0;
   const uloz = async (pos) => {
     if (Object.keys(cast).length) {
-      const text = JSON.stringify(cast);
-      await sZal.zapis(castKlic(klic, st.casti), cast);
-      st.casti++; st.velikostB += Buffer.byteLength(text);
+      const v = await zapisCast(sZal, klic, st.casti, cast, st.komprese);
+      st.casti++; st.velikostB += v.velikostB; st.ulozenoB = (st.ulozenoB || 0) + v.ulozenoB;
       cast = {}; castB = 0;
     }
     st.pos = pos; st.naposled = new Date().toISOString();
@@ -477,19 +508,20 @@ export async function porizOtiskKrok(klic, zdroj, kdo, opt = {}) {
     const praceMs = (st.praceMs || 0) + (Date.now() - zacatek);
     const manifest = { format: OTISK_FORMAT, porizena: st.porizena, dokoncena: new Date().toISOString(),
       zdroj: st.zdroj, kdo: st.kdo, casti: st.casti, pocetZakazek: st.pocetZakazek, pocetUctu: st.pocetUctu,
-      velikostB: st.velikostB, kroku: st.kroku };
+      velikostB: st.velikostB, kroku: st.kroku,
+      ...(st.komprese ? { komprese: st.komprese, ulozenoB: st.ulozenoB || 0 } : {}) };   // #523: formát částí
     await sZal.zapis(klic, manifest);         // AŽ TEĎ otisk existuje
     /* SOUHRN VEDLE OTISKU (#151 N3). Zapisuje se AŽ PO otisku: když se
      * nepovede, přehled si počty vezme z manifestu. */
     const souhrn = { den: klic, porizena: st.porizena, zdroj: st.zdroj, kdo: st.kdo,
       pocetZakazek: st.pocetZakazek, pocetUctu: st.pocetUctu, velikostB: st.velikostB, trvaniMs: praceMs,
-      casti: st.casti, kroku: st.kroku };
+      casti: st.casti, kroku: st.kroku, ...(st.komprese ? { komprese: st.komprese, ulozenoB: st.ulozenoB || 0 } : {}) };
     try { await sZal.zapis(souhrnKlic(klic), souhrn); } catch (e) { /* přehled má záložní cestu */ }
     try { await sZal.smaz(stavKlic); } catch (e) { /* uklidí uklidRozpracovane */ }
     await otiskStavZapis(sZal, { klic, zdroj: st.zdroj, kdo: st.kdo, stav: 'hotovo',
       postup: otiskPostup({ ...st, pos: { i: st.plan.length, j: 0 } }) });
     return { den: klic, hotovo: true, pocetZakazek: st.pocetZakazek, pocetUctu: st.pocetUctu,
-      velikostB: st.velikostB, trvaniMs: praceMs, casti: st.casti, kroku: st.kroku };
+      velikostB: st.velikostB, ulozenoB: st.ulozenoB || st.velikostB, trvaniMs: praceMs, casti: st.casti, kroku: st.kroku };
   } catch (e) {
     const chyba = String(e && e.message || e);
     try { st.beziDo = null; st.chyba = chyba; await sZal.zapis(stavKlic, st); } catch (e2) { /* stav zůstane zamčený do beziDo */ }
@@ -617,58 +649,48 @@ export async function seznamOtisku(kolik) {
 }
 
 /* ============================================================
- * RETENCE OTISKŮ (#151 N5, rozhodnutí J. V. 19. 10. 2026)
+ * RETENCE OTISKŮ (#151 N5 19. 10. 2026; od #523 Z2 26. 10. 2026 nové
+ * pravidlo J. V.)
  *
- * Do 19. 10. se nemazalo nic: ~20 MB za noc ≈ 7 GB za rok v Blobs. Pravidlo
- * J. V.: noční otisky posledních 30 dní + první otisk každého měsíce 12
- * měsíců zpět; vynucené (ruční, při přihlášení) 90 dní. Výchozí volby
- * dávky O4 (J. V. se neptal):
- *   - „posledních 30 dní" = věk 0–29 dní (dnešek je den 0), 30. den se maže;
- *   - „12 měsíců zpět" = měsíc dneška + 12 předchozích; z každého se drží
- *     NEJSTARŠÍ noční otisk měsíce (první, který v něm vznikl);
- *   - vynucené: věk 0–89 dní;
+ * Do 19. 10. se nemazalo nic; pak (N5) 30 dní + první v měsíci 12 měsíců,
+ * vynucené 90 dní a otisky před 20. 10. nikdy (RETENCE_OD). Ostrý engscalc
+ * ale nese ~114 MB za den a automatické otisky přibývají při každém
+ * přihlášení správce — rozhodnutí J. V. 26. 10. 2026:
+ *   - noční (denní klíč) 14 dní, týdenní (neděle, jinak nejbližší starší
+ *     v týdnu) 8 týdnů, měsíční (první v měsíci) 6 měsíců;
+ *   - vynucené (`-rucne`, `-auto`) 7 dní;
  *   - otisky PŘED OBNOVOU se nemažou nikdy (cesta zpátky, maže jen člověk);
- *   - klíče mimo OTISK_KLIC (souhrny, tokeny, záznam kopie) výběr nevidí —
- *     souhrn odchází jen spolu se svým otiskem;
+ *   - výjimka RETENCE_OD je ZRUŠENÁ: ze starých otisků (do 19. 10. 2026)
+ *     zůstane jen první z každého měsíce, i ten po 6 měsících odejde;
  *   - nejnovější otisk se nesmaže nikdy, ať je jakkoli starý;
- *   - otisky s datem před RETENCE_OD (2026-10-20) se nesmažou nikdy (J. V.).
+ *   - klíče mimo OTISK_KLIC (souhrny, části, tokeny, záznam kopie) výběr
+ *     nevidí — souhrn a části odcházejí jen se svým otiskem.
+ * Pravidlo samo (dny, týdny, měsíce) žije v src/retence_zaloh.js — totéž
+ * používá prohlížeč pro kopie na Disku. Pojistky kolem (nový otisk musí
+ * existovat, pokles dat, kopie na Disk) jsou v retenceProved.
  * Čistá funkce: `dnes` je 'YYYY-MM-DD' (UTC), vrací klíče ke smazání.
  * ============================================================ */
-/* HRANICE RETENCE (rozhodnutí J. V. 19. 10. 2026 ~13:20 UTC: „Staré zálohy
- * všechny ponech."). Otisk (a jeho souhrn) s datem PŘED touto hranicí
- * retence nikdy nesmaže — všechno, co existuje do nasazení v19.10.8, zůstane
- * navždy. Pravidlo níž platí jen pro otisky od 20. 10. 2026. Jediné místo,
- * kde se hranice nastavuje. */
-export const RETENCE_OD = '2026-10-20';
-export const RETENCE_DENNI_DNU = 30;
-export const RETENCE_MESICU = 12;
-export const RETENCE_VYNUCENE_DNU = 90;
+export const RETENCE_DENNI_DNU = RZ.RETENCE_ZALOH_BLOBS.dnu;
+export const RETENCE_TYDNU = RZ.RETENCE_ZALOH_BLOBS.tydnu;
+export const RETENCE_MESICU = RZ.RETENCE_ZALOH_BLOBS.mesicu;
+export const RETENCE_VYNUCENE_DNU = RZ.RETENCE_ZALOH_BLOBS.vynuceneDnu;
+export const RETENCE_STARE_PRED = RZ.RETENCE_ZALOH_STARE_PRED;
 export function retenceVyber(klice, dnes) {
-  const dnesMs = Date.parse(String(dnes || '') + 'T00:00:00Z');
+  const dnesMs = RZ.retenceZalohDenMs(String(dnes || ''));
   if (!Number.isFinite(dnesMs)) return [];
-  const vek = (k) => Math.round((dnesMs - Date.parse(k.slice(0, 10) + 'T00:00:00Z')) / DEN_MS);
   const otisky = [...new Set((klice || []).map(String))]
-    .filter(k => OTISK_KLIC.test(k) && Number.isFinite(Date.parse(k.slice(0, 10) + 'T00:00:00Z')));
+    .filter(k => OTISK_KLIC.test(k) && Number.isFinite(RZ.retenceZalohDenMs(k.slice(0, 10))));
   if (!otisky.length) return [];
   const nejnovejsi = otisky.slice().sort().pop();
   const denni = otisky.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
   const vynucene = otisky.filter(k => /T\d{6}-(rucne|auto)$/.test(k));
-  /* měsíce, ze kterých se drží první otisk: dnešní + 12 předchozích */
-  const d = new Date(dnesMs);
-  const mesice = new Set();
-  for (let i = 0; i <= RETENCE_MESICU; i++)
-    mesice.add(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - i, 1)).toISOString().slice(0, 7));
-  const prvniVMesici = new Set();
-  const videno = new Set();
-  for (const k of denni) {                       // seřazené vzestupně → první je nejstarší
-    const m = k.slice(0, 7);
-    if (!videno.has(m)) { videno.add(m); if (mesice.has(m)) prvniVMesici.add(k); }
-  }
+  const drz = RZ.retenceZalohDrz(denni, dnes, RZ.RETENCE_ZALOH_BLOBS, { stareJenMesicni: RETENCE_STARE_PRED });
+  if (!drz) return [];
+  const vek = (k) => Math.round((dnesMs - RZ.retenceZalohDenMs(k.slice(0, 10))) / DEN_MS);
   const smazat = [];
-  const chraneny = (k) => k.slice(0, 10) < RETENCE_OD;   // staré zálohy J. V. ponechal
-  for (const k of denni.filter(k => !chraneny(k)))
-    if (vek(k) >= RETENCE_DENNI_DNU && !prvniVMesici.has(k) && k !== nejnovejsi) smazat.push(k);
-  for (const k of vynucene.filter(k => !chraneny(k)))
+  for (const k of denni)
+    if (!drz.has(k) && k !== nejnovejsi) smazat.push(k);
+  for (const k of vynucene)
     if (vek(k) >= RETENCE_VYNUCENE_DNU && k !== nejnovejsi) smazat.push(k);
   return smazat.sort();
 }
@@ -737,7 +759,7 @@ async function retencePokles(s, klice, novyKlic) {
  * (zápis se nepovedl, nebo ho nejde přečíst), nesmaže se nic. Vrací
  * { smazano: [klíče], chyby: [..] }; chyba mazání jednoho klíče ostatní
  * nezastaví a otisk nikdy neohrozí. */
-export async function retenceProved(novyKlic, dnes, ted) {
+export async function retenceProved(novyKlic, dnes, ted, opt = {}) {
   const s = await uloziste('zalohy');
   const klice = await s.seznam();
   if (!novyKlic || !klice.includes(novyKlic) || !(await s.cti(souhrnKlic(novyKlic)) || await s.cti(novyKlic)))
@@ -778,17 +800,29 @@ export async function retenceProved(novyKlic, dnes, ted) {
    * a otiskem SHA-256 (kopieDiskPodlozena). */
   if (!kopieDiskPodlozena(kopie, klice))
     return { smazano: [], chyby: [], ceka: 'retence čeká na podloženou kopii nočního otisku na Disk' };
+  /* ČASOVÝ ROZPOČET (#523 Z2). Otisk po částech má desítky částí a první
+   * noc po novém pravidle maže i staré otisky ze září — sekvenčně by to
+   * plánovaná funkce (limit 30 s) nestihla. Maže se proto do vyčerpání
+   * `opt.rozpocetMs` a zbytek (`zbyva`) dokončí další běh téže noci (noční
+   * funkce pak den neuzavře). Pořadí u otisku: nejdřív manifest (otisk
+   * přestane existovat celý naráz), pak souhrn, pak části po dávkách —
+   * když funkci ukončí uprostřed, osiřelé části uklidí uklidRozpracovane. */
+  const zacatek = Date.now();
+  const rozpocet = opt.rozpocetMs > 0 ? opt.rozpocetMs : Infinity;
+  const vybrane = retenceVyber(klice, dnes || denDnes()).filter(k => k !== novyKlic);
   const smazano = [], chyby = [];
-  for (const k of retenceVyber(klice, dnes || denDnes())) {
-    if (k === novyKlic) continue;
+  let zbyva = 0;
+  for (const k of vybrane) {
+    if (Date.now() - zacatek > rozpocet) { zbyva = vybrane.length - smazano.length - chyby.length; break; }
     try {
       await s.smaz(k);
       if (klice.includes(souhrnKlic(k))) await s.smaz(souhrnKlic(k));
-      for (const c of klice.filter(x => x.startsWith(OTISK_CASTI + k + '/'))) await s.smaz(c);   // #522: části otisku
+      const casti = klice.filter(x => x.startsWith(OTISK_CASTI + k + '/'));   // #522: části otisku
+      for (let i = 0; i < casti.length; i += DAVKA_CTENI) await Promise.all(casti.slice(i, i + DAVKA_CTENI).map(c => s.smaz(c)));
       smazano.push(k);
     } catch (e) { chyby.push(k + ': ' + String(e && e.message || e)); }
   }
-  return { smazano, chyby };
+  return { smazano, chyby, ...(zbyva ? { zbyva } : {}) };
 }
 
 /* ============================================================
