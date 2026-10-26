@@ -8290,6 +8290,25 @@
     "proc": "větev nad integrací v26.10.7"
    }
   ]
+ },
+ {
+  "id": "525",
+  "vlna": "F",
+  "stav": "ceka",
+  "dulezitost": "stredni",
+  "slozitost": "M",
+  "nazev": "Přeuspořádání ceníku OCK: sekce Montáž a práce + stávající sekce jen s materiálem",
+  "proc": "Pokyn J. V. 26. 10. 2026 (při návrhu ceny můstků #354): všechny náklady montáže a práce na jednom místě, stávající sekce ceníku nově jen materiál — snazší úprava sazeb práce a porovnání práce a materiálu v controllingu.",
+  "detail": "Nová sekce „Montáž a práce“ (C.montazHodKc, výchozí hodiny montáže a oplechování z Režie, montáž můstků, oplechování – práce, práce opláštění, zámečník, montáž přechodových plechů, demontáže); stávající sekce (Hrubá OCK, Opláštění, Volitelné, Příplatkové …) nesou jen materiál. Smíšené položky (zastřešení, oplechování k fasádě, sokl, tmelení, lešení, lakování, transport, položky „za akci“) buď rozdělit na materiál + práci (nové hodnoty od J. V.), nebo ponechat v sekci „Smíšené a služby“. Kódy buněk (C.…) beze změny — jen přesun mezi skupinami; ověřit a přenastavit matici zobrazení (práva po skupinách), párování ATYP podle názvu skupiny, export/import ceníku a příručku. Náhled varianty: artefakt #354 (sekce B).",
+  "zavisi": [
+   {
+    "id": "354",
+    "typ": "doporuceno",
+    "proc": "montáž můstků jako samostatná položka vzniká v #354"
+   }
+  ],
+  "otazka": "Které smíšené položky rozdělit na materiál + práci (a s jakými hodnotami), a které ponechat jako služby?",
+  "pozn": "Rozhodnutí J. V. 26. 10. 2026: připravit do vlny F."
  }
  ],
  "meta" : {
