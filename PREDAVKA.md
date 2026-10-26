@@ -1,3 +1,42 @@
+# Předávka — 26. 10. 2026: O2 #517 — zbylá rozhodnutí J. V. z dialogu K8/S1 + uzavření #319 (T4), větev `claude/o2-rozhodnuti`
+
+Nad `6076128acf312de14841ebd129c0b3074cafc728` (integrace po sloučení O1 #516, v26.10.1). **Verze 26.10.2**
+(commity 26. 10. UTC, `build.py --kontrola-verze` ✓). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Rozhodnutí
+J. V. 26. 10. 2026 („ostatní podle návrhu“, dialog https://claude.ai/artifact/V288Ytg33SpoYPfp3aTw3L).
+Do integrace / test nic, do Pipedrive nic, na Disk nic (z Disku jen přečtena revize v22.9.9 kvůli rozsahu T4).
+
+| úkol | stav | poznámka |
+|---|---|---|
+| 1 K8-K2 = A: dialog po tisku při kolizi / v náhledu, varování v „Načíst znovu“ | ✅ | `onlineTiskNeulozenDialog` (kolize, náhled, 409 letícího autosave), `onlineKolizeNoveZamky` + potvrd; `test_tisk_kolize_k8.js` 11 FAIL → 19/0 |
+| 1 K8-K3 = A: „uloženo“ = odeslaný otisk, záloha zůstane | ✅ | `historieOznacUlozeno(text)`, bez `historieZalohaHotovo` při změně během letu |
+| 2 K8-K4 = A: bez přihlášení se po tisku nečeká, hláška zmíní přihlášení | ✅ | `zamekSnimekCekaNaServer` + `ZAMEK_POLE_CEKA`; `test_snimek_po_tisku.js` 4b 3 FAIL → 40/0 |
+| 3 SEC-S3 = A: ceny v náhledu se zámkem `contenteditable=false` | ✅ | `tiskListaSkript` (`tiskCenyZamkni`); harness `overit_tisk_ceny.mjs` 6 FAIL → 12/0, Node `test_tisk_ceny_skript.js` 5 FAIL → 9/0 |
+| 4 SEC-S5 = A: splátky OCK = 100 % | ✅ | `kryciPlatbyOck100`, upozornění v krycím listu i podmínkách nabídky, kontrola `platbyOck100` (44. pravidlo), SoD realizace se zastaví; `test_platby_ock100.js` 7 FAIL → 19/0 |
+| 5 SEC-I7 = A: heslo správce u zásahu do jiného správce | ✅ | server `uzivatele.mjs` + klient `onlineUzHesloJinySpravce`; `netlify/test_sec_i7.mjs` 18 FAIL → 32/0, `test_sec_i7_klient.js` 13 FAIL → 17/0; upraveny `test_ok8` 69/0, `test_prava` 933/0 |
+| 6a Izolační dvojsklo (jen text) | ✅ | `cenik.js`, `engine.js` OPLASTENI_TYPY, specifikace po stěnách (EN z existujícího hesla, preklad.js NEDOTČEN kvůli #518); `test_dvojsklo_nazev.js` 7 FAIL → 13/0; výpočet beze změny |
+| 6 #319 T4 — uzavřít | ✅ | `overit_t4.mjs` 28/0 (sabotáž 5 FAIL): poznámky, automat ATYP + P11, P15; regexy z `test_poznamky`, `test_standard_atyp`, `test_zamek_prepnuti` pryč; #319 = hotovo v26.10.2 |
+| 7 SEC-PD → #115, SEC-I8 → meze, REPO → PREDAVKA | ✅ | roadmapa #115 detail (podmínky 1–5), `BEZPECNOST_MEZE.md` oddíl O2 #517, ruční kroky níže |
+| Mutace #517 | ✅ | jádro 13/13, server 5/5; upravené #507 K7-K2 a K7-K4 (1/1, 1/1); `--kontrola` jádro 554, server 924 |
+| Node sady | ✅ | `spust_testy.sh` 258 prošlo / 0 / 1 přeskočeno (test.js); netlify vše zelené (`ADMIN_EMAIL=spravce@priklad.cz`) |
+| `testovaci_kolo.sh --jen build,staticke` | ✅ | VŠE ZELENÉ (statické 4/4) |
+| CHANGELOG, příručka „Co je nového v26.10.2“, roadmapa #517 (+ #319, #115), verze.txt | ✅ | hlavička příručky („Platí pro v25.10.1“) neměněna, stejně jako v O1 |
+| Celé kolo (prohlížečové sady, celé mutace) | ⬜ | pouští koordinace; nové harnessy `overit_tisk_ceny.mjs`, `overit_t4.mjs` jsem pustil cíleně (zelené) |
+
+**Ruční kroky J. V. (REPO — SEC-V1, SEC-V2, SEC-S4; nic se neprogramuje):**
+1. **SEC-S4:** zrušit sdílení odkazu na vlákno „Pipedrive API integrace“ v claude.ai (jediná účinná náprava).
+2. **SEC-V1:** posunout `test → main` a `test → test-draft` (osobní údaje kolegy jsou ve stromu `main` a `test-draft`).
+3. **SEC-V2:** smazat větev `claude/testovani-po-opravach` ručně (workflow „Smazat sloučené větve“ ji nevezme — není celá v `test`).
+4. Staré tagy a releasy **ponechat** (rozhodnutí J. V. 26. 10. 2026; vědomá mez historie).
+
+**Pozor pro slučování:**
+- `onlineUloz` volá `historieOznacUlozeno(text)` s volitelným parametrem (ui/historie.js) — souběžná práce v historie.js musí parametr zachovat.
+- Kontroly: 44 pravidel (`test_kontroly.js`, `overit_lista.mjs` čekají 44).
+- SoD realizace OCK se nově zastaví při součtu splátek ≠ 100 % — fixtura `test_zmrazeni_kl.js` (Bez zálohy) má dopočtenou dílčí fakturu 90 %.
+- `preklad.js` nedotčen (#518); `src/test_preklad*` beze změny. Název typu stěny v cizím jazyce bere heslo „izolační dvojsklo“ s velkým prvním písmenem (`tsOplTypNazev`).
+- Release v26.10.2: odkaz připraví koordinace po sloučení (`python3 nastroje/release_odkaz.py 26.10.2 <SHA>`).
+
+---
+
 # Předávka — 26. 10. 2026: O1 #516 — zámek CN po otevření ze souboru (K8-K1) a plán plateb PROJ po CN (SEC-S6 + SEC-N8), větev `claude/o1-zamek-plan`
 
 Nad `9bc4965e2f1f70d6cb1671fee5c7ab9f12d14096` (integrace: test v25.10.1 + dokumentace). **Verze 26.10.1**

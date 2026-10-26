@@ -8,6 +8,51 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v26.10.2 — O2 #517: zbylá rozhodnutí J. V. z dialogu K8/S1 + uzavření #319 (T4), větev claude/o2-rozhodnuti
+
+Nad 6076128 (integrace po sloučení O1 #516, v26.10.1). Dialog J. V. 26. 10. 2026 („ostatní podle návrhu“):
+K8-K2 + K8-K3 = A, K8-K4 = A, SEC-S3 = A, SEC-S5 = A, SEC-I7 = A; název položky dvojskla (jen text).
+
+- **K8-K2 — tisk při kolizi verzí nebo v náhledu role ukáže dialog.** Uložení po tisku (`fronta`) skončilo
+  u `ONLINE_STAV.kolize`, v náhledu role i po 409 letícího autosave tiše — teď `onlineTiskNeulozenDialog`
+  (`ONLINE_TISK_NEULOZEN` + důvod: u kolize rada „Přepsat serverovou verzi“). `onlineKolizeNacti` se zeptá,
+  je-li v okně zámek, který v `posledni` není (`onlineKolizeNoveZamky`) — záznam odeslání by se zahodil.
+- **K8-K3 — „uloženo“ = odeslaný otisk.** Po zápisu se změnou během letu se nevolá `historieZalohaHotovo`
+  a `historieOznacUlozeno(text)` dostane odeslané tělo s razítkem — varování při zavření okna a záloha
+  v prohlížeči zůstanou, dokud změna (typicky zámek po tisku) neleží na serveru.
+- **K8-K4 — bez přihlášení se po tisku nečeká.** `zamekSnimekCekaNaServer` bez `ONLINE_STAV.ja` vrací false
+  (jako ze souboru; režim složky je vypnutý, takže taky); hláška `ZAMEK_POLE_CEKA` zmiňuje přihlášení.
+- **SEC-S3 — ceny v tiskovém náhledu nabídky se zámkem nejdou přepsat.** Skript náhledu (`tiskListaSkript`)
+  u dokumentů, které zamykají (`nabidkaTisk`, `nabidkaProjTisk`), dá hned při otevření buňkám `.castka`
+  a buňkám tabulek s částkou v měně `contenteditable="false"` (drží i „Vrátit původní znění“); ostatní text
+  zůstává upravitelný. Mez v `BEZPECNOST_MEZE.md`.
+- **SEC-S5 — splátky OCK musí dát 100 %.** `kryciPlatbyOck100` (kryci.js) nad platebním kalendářem OCK;
+  mlčí u měsíční fakturace, staré odeslané varianty a nečitelného procenta. Upozornění pod konečnou fakturou
+  v krycím listu i v podmínkách u nabídky (`klPlatby100Html`), kontrola před nabídkou `platbyOck100`
+  (varování, 44. pravidlo) a `kryciSodPlatby` vrátí chybu → SoD realizace nevznikne. Dílčí faktura č. 2 se
+  už neztratí tiše.
+- **SEC-I7 — zásah do jiného správce jen s heslem správce.** `uzivatele.mjs`: smazání, vypnutí, archivace
+  a snížení role účtu s rolí Administrátor (ne vlastního) chtějí `hesloSpravce` (`potvrdHesloSpravce`);
+  klient se v Nastavení → Uživatelé zeptá (`onlineUzHesloJinySpravce`).
+- **Ceník — „Izolační dvojsklo“ (jen text).** OPLÁŠTĚNÍ: „Izolační dvojsklo – typ“, „Izolační dvojsklo“
+  s poznámkou „exteriérová: boky a zadní stěna ve standardu · po stěnách: volitelně u kterékoli stěny“;
+  `OPLASTENI_TYPY` „Izolační dvojsklo“ (výběr typu stěny, specifikace po stěnách — EN „Insulating double
+  glazing“ z existujícího hesla). Klíče `C.skloBokyKc` / `C.skloBokyNazev` a řádek „MATERIÁL boční + zadní
+  stěna (…)“ beze změny; výpočet beze změny.
+- **#319 T4 uzavřen.** Tři místa z revize v22.9.9 (karta poznámek, automat ATYP + sazba hodin P11, nová
+  zakázka P15) ověřuje chováním `overit_t4.mjs` (28 kontrol); regexy nad zdrojákem z `test_poznamky.js`,
+  `test_standard_atyp.js` a `test_zamek_prepnuti.js` odstraněny.
+- **Jen zapsáno:** SEC-S7, SEC-N9, SEC-I15, SEC-I16, SEC-I17 jako podmínky zadání #115 (hodnota dealu po SoD =
+  cena díla, jinak cena nabídky); SEC-I8 (`__Host-` až při vlastní doméně) do `BEZPECNOST_MEZE.md`;
+  SEC-V1/V2/S4 jako ruční kroky J. V. v `PREDAVKA.md`.
+- Testy s pojistkou: `test_tisk_kolize_k8.js` (11 FAIL → 19/0), `test_snimek_po_tisku.js` 4b (3 FAIL → 40/0),
+  `test_platby_ock100.js` (7 FAIL → 19/0), `test_tisk_ceny_skript.js` (5 FAIL → 9/0), `test_sec_i7_klient.js`
+  (13 FAIL → 17/0), `test_dvojsklo_nazev.js` (7 FAIL → 13/0), `netlify/test_sec_i7.mjs` (18 FAIL → 32/0);
+  harnessy `overit_tisk_ceny.mjs` (6 FAIL → 12/0) a `overit_t4.mjs` (sabotáž 5 FAIL → 28/0). Mutace #517:
+  jádro 13/13, server 5/5; upravené hledané úseky #507 K7-K2 a K7-K4 (1/1, 1/1).
+
+---
+
 ## v26.10.1 — O1 #516: zámek CN uložený na serveru a plán plateb PROJ po CN (rozhodnutí J. V. 26. 10. 2026), větev claude/o1-zamek-plan
 
 Nad 9bc4965 (integrace: test v25.10.1 + dokumentace). Dialog J. V. 26. 10. 2026: K8-K1 = A (opravit hned,

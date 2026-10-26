@@ -14,6 +14,17 @@
       ]
     },
     {
+      "nadpis": "Co je nového ve verzi v26.10.2 (26. 10. 2026)",
+      "odstavce": [
+        "**Nový dialog po tisku, když se nabídka neuloží.** Tisk nabídky ji uzamkne a hned se ukládá do databáze. Když to nejde — zakázku mezitím uložil kolega nebo vaše druhé okno, nebo se na aplikaci díváte v náhledu role — vyskočí okno **„Odeslaná nabídka není uložená“** s tím, co udělat (u souběhu zvolit **„Přepsat serverovou verzi“**). Dřív to bylo vidět jen v panelu. Kdybyste v takové chvíli klikli na „Načíst znovu ze serveru“, aplikace se nejdřív zeptá — záznam o odeslání vytištěné nabídky by se jinak zahodil. A dokud vytištěná nabídka na serveru neleží, prohlížeč při zavírání okna varuje a záloha v prohlížeči zůstává.",
+        "**Bez přihlášení se po tisku na uložení nečeká.** Kdo pracuje nepřihlášený, má po tisku podmínky a DPH volné jako u zakázky ze souboru — do databáze se stejně nic neukládá. Hláška u zamčeného pole nově připomíná, že se po vypršení přihlášení musíte znovu přihlásit.",
+        "**Kontrola 100 % splátek OCK.** Záloha + dílčí faktura č. 2 + konečná faktura musí dát 100 %. Když ne (třeba záloha 70 % a konečná 40 %), krycí list i blok podmínek u nabídky to pod konečnou fakturou ukážou a řeknou, že se dílčí faktura č. 2 nedopočítala; upozorní na to i kontrola před nabídkou. **Smlouva o dílo realizace se v takovém případě nevytvoří**, dokud součet neopravíte. Měsíční fakturace a vlastní znění bez procent se nehodnotí.",
+        "**Ceny v tiskovém náhledu nabídky nejde přepsat.** Po zapnutí „Upravit text před tiskem“ v náhledu cenové nabídky OCK i PROJ jsou **buňky s cenami šedé a needitovatelné** — tisk nabídku uzamyká s cenou z kalkulace, a ručně přepsaná částka by se od ní lišila. Ostatní text upravíte jako dřív; cenu změňte v kalkulaci.",
+        "**Nový název v ceníku: Izolační dvojsklo.** Položka „Sklo boky + zadní stěna“ se v ceníku jmenuje **„Izolační dvojsklo“** (s poznámkou: u exteriérové šachty boky a zadní stěna ve standardu, v opláštění po stěnách volitelně u kterékoli stěny) a ve výběru typu stěny „Izolační dvojsklo“ místo „Dvojsklo (boky + záda)“. Ceny ani výpočet se nemění.",
+        "**Jen pro administrátora — zásah do jiného správce s heslem.** Smazání, vypnutí, archivace a snížení role jiného administrátora teď potvrdíte svým heslem (jako už dřív založení správce nebo reset hesla)."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v26.10.1 (26. 10. 2026)",
       "odstavce": [
         "**Odeslaná nabídka otevřená ze souboru už nevrací úpravy krycího listu.** Když jste zakázku s vytištěnou nabídkou otevřeli ze souboru (nebo obnovili zálohu z prohlížeče), aplikace si mohla myslet, že nabídka na uložení teprve čeká: krycí list se zamkl a při uložení se tiše vrátil na stav z tisku — úpravy podmínek po odeslání zmizely. Nabídka, která už v databázi je, se teď takhle nechová. Pokud se krycí list před uložením opravdu vrací na stav z tisku (nabídka se ještě neuložila), aplikace to napíše.",
