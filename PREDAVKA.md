@@ -13,14 +13,14 @@ https://claude.ai/artifact/VTamxkz2Xum9uMq7nuBRiM (SEC-3/4/5/6 = A). Do integrac
 | Verze = `test` | ✅ | v25.10.1, `dist/` shodný až na `BUILD_DATUM_ZNACKA` |
 | `zaloha_nocni` | ✅ | `/.netlify/functions/zaloha_nocni` → 403 platformy (SEC-I2 ověřeno); ostatní `/.netlify/functions/*` 404 |
 | Klient Playwright | ✅ | jen vlastní doména, 0 porušení CSP, rámování blokuje `frame-ancestors` |
-| Ostrý web pasivně | ⚠️ | **SEC-Z1 vysoký:** schaftscalc.netlify.app = v7.9.2 (7. 9.) bez bezpečnostních hlaviček; hlášeno koordinaci hned |
+| Ostrý web pasivně | ✅/⚠️ | ostrý **engscalc** = `main` v22.10.1, hlavičky v pořádku; **SEC-Z1 vysoký:** opuštěné veřejné nasazení schaftscalc.netlify.app = v7.9.2 (7. 9.) bez bezpečnostních hlaviček; hlášeno koordinaci hned |
 | Zpráva + odkaz | ✅ | `podklady/SEC_AUDIT_ZIVY_26_10.md`, oddíl „Živá část (S2…)“ v `SEC_AUDIT_24_10.md`, sondy `podklady/S2_zivy/` |
 | Roadmapa #520 (vlna B, hotovo) + historie | ✅ | `roadmapa.py --kontrola` čisté |
 | `testovaci_kolo.sh --jen staticke` | ✅ | 4/4 |
 
-**Otevřené pro J. V.:** SEC-Z1 — který web je ostrý (linie `main`), a schaftscalc vypnout, nebo převést na `main`.
+**Otevřené pro J. V.:** SEC-Z1: opuštěný schaftscalc vypnout, nebo převést na `main` (ostrý je engscalc, v pořádku).
 Opravná dávka (mění chování: ne): SEC-Z2 (CSP `default-src 'none'` + `Referrer-Policy` v `JSON_HLAVICKY` + test),
-volitelně SEC-Z4. Příští živá kontrola: po posunu `test → main` pasivně hlavičky a verze ostrého webu.
+volitelně SEC-Z4. Příští živá kontrola: po posunu `test → main` pasivně hlavičky a verze engscalc.
 
 ---
 
