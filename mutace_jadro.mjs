@@ -113,7 +113,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'zamek.js',
   /* ui/ares_ui.js (#507, K7-K3): ARES po tisku SoD hlavičku nepřepíše.
    * Hlídá src/test_ares_po_sod.js. */
-  'ui/ares_ui.js'];
+  'ui/ares_ui.js',
+  /* preklad.js (#518, 26. 10. 2026): sledování textů, které v cizojazyčné
+   * nabídce zůstaly česky — podklad žluté značky v náhledu. Hlídá
+   * src/test_neprelozene.js. */
+  'preklad.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -151,6 +155,8 @@ const PRIORITA = [
   'test_cenik_verze_online.js',
   /* tisk během ukládání a snímek odeslané nabídky (#507) — chytají mutace ui/online_ui.js a ui/zamek_ui.js */
   'test_tisk_behem_ulozeni.js', 'test_snimek_po_tisku.js', 'test_ares_po_sod.js',
+  /* zvýraznění nepřeložených textů (#518) — rychlá sada, chytá mutace preklad.js a bloku #518 v ui/common.js */
+  'test_neprelozene.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -184,6 +190,35 @@ const MUTACE = [
     hledej: "  .replace(/\\r/g, '\\\\r').replace(/\\n/g, '\\\\n').replace(/\\u2028/g, '\\\\u2028').replace(/\\u2029/g, '\\\\u2029'));",
     nahrad: "  );",
     proc: 'karta zákazníka s koncem řádku v názvu by v našeptávači mlčky nefungovala (neplatný JS v onclick)' },
+  /* ---------- #518: zvýraznění nepřeložených textů v náhledu (26. 10. 2026). Hlídá src/test_neprelozene.js. ---------- */
+  { nazev: '#518: text bez překladu se do sledování nezapíše', soubor: 'preklad.js',
+    hledej: "  if (PREKLAD_SLEDOVANI) PREKLAD_SLEDOVANI.add(orig.trim());",
+    nahrad: "",
+    proc: 'český text bez hesla by v náhledu EN/DE/FR nabídky nesvítil a obchodník by ho vytiskl' },
+  { nazev: '#518: konec sledování ho nevypne', soubor: 'preklad.js',
+    hledej: "  PREKLAD_SLEDOVANI = null;\n  return s ?",
+    nahrad: "  return s ?",
+    proc: 'sledování by po náhledu běželo dál a sbíralo texty z celé aplikace' },
+  { nazev: '#518: česká nabídka zapne sledování', soubor: 'ui/common.js',
+    hledej: "  if (!L || L === 'cz' || typeof prekladSledujZacni !== 'function') return false;",
+    nahrad: "  if (!L || typeof prekladSledujZacni !== 'function') return false;",
+    proc: 'česká nabídka by dostala legendu a značky, i když se nic nepřekládá' },
+  { nazev: '#518: česká nabídka dostane značkovací skript', soubor: 'ui/common.js',
+    hledej: "function neprelozenoSkript(L, nepr, rucne) {\n  if (!L || L === 'cz') return '';",
+    nahrad: "function neprelozenoSkript(L, nepr, rucne) {",
+    proc: 'zadání: česká nabídka beze změny' },
+  { nazev: '#518: tisk značku nezruší', soubor: 'ui/common.js',
+    hledej: "    @media print{.neprelozeno{background:none!important;box-shadow:none!important;outline:0!important}",
+    nahrad: "    @media print{.neprelozeno-x{background:none!important;box-shadow:none!important;outline:0!important}",
+    proc: 'žluté podbarvení by se vytisklo do PDF pro zákazníka' },
+  { nazev: '#518: číslo bez písmene se hlásí jako nepřeložené', soubor: 'ui/common.js',
+    hledej: "String(x).length >= 2 && /\\p{L}/u.test(x)",
+    nahrad: "String(x).length >= 2",
+    proc: 'přeložený řádek „VAT 12 %" by svítil jako text bez překladu' },
+  { nazev: '#518: ruční údaje hlavičky propustí prázdné „…"', soubor: 'ui/common.js',
+    hledej: "    .filter(x => x && x !== '…' && !(typeof prekladNeutral === 'function' && prekladNeutral(x)));",
+    nahrad: "    .filter(x => x);",
+    proc: 'nevyplněné pole a číslo nabídky by se počítaly mezi texty bez překladu' },
   /* ---------- B183: plocha v obsahu cenové výjimky na 0,1 m² (20. 10. 2026, v20.10.5) ---------- */
   { nazev: 'B183: plocha v obsahu výjimky zpět na celé m²', soubor: 'vyjimky.js',
     hledej: "  return typeof x === 'number' && isFinite(x) ? Math.ceil(x * 10 - 1e-6) / 10 : null;",

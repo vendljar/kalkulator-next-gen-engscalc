@@ -1444,6 +1444,9 @@ function prekladNeutral(s) {
 
 /* evidence chybějících hesel – podklad pro překladatele i pro report */
 const PREKLAD_CHYBI = {};
+/* zapnuté sledování pro náhled nabídky (#518, viz prekladSledujZacni) —
+ * deklarace před trStav, aby volání při načítání nenarazilo na TDZ */
+let PREKLAD_SLEDOVANI = null;
 function prekladZaznamChybi(cz, lang) {
   const k = lang + '\u0000' + cz;
   PREKLAD_CHYBI[k] = { jazyk: lang, cz: cz, pocet: (PREKLAD_CHYBI[k] ? PREKLAD_CHYBI[k].pocet : 0) + 1 };
@@ -1473,7 +1476,21 @@ function trStav(cz, lang) {
   }
 
   prekladZaznamChybi(orig, lang);
+  if (PREKLAD_SLEDOVANI) PREKLAD_SLEDOVANI.add(orig.trim());
   return { text: orig, prelozeno: false, zdroj: 'nepřeloženo' };
+}
+
+/* ---- sledování textů, které v dokumentu zůstaly česky (#518) ----
+ * Náhled cizojazyčné nabídky si před sestavením zapne sledování a po něm
+ * dostane seznam českých originálů, pro které slovník ani vzor neměly
+ * překlad. Náhled je pak na obrazovce zvýrazní (ne v tisku, ne ve Wordu).
+ * Rozhoduje se TADY, v jediném místě, kde překlad padá na češtinu — žádné
+ * hádání podle diakritiky. Data dokumentu se tím nemění. */
+function prekladSledujZacni() { PREKLAD_SLEDOVANI = new Set(); }
+function prekladSledujKonec() {
+  const s = PREKLAD_SLEDOVANI;
+  PREKLAD_SLEDOVANI = null;
+  return s ? Array.from(s).filter(Boolean) : [];
 }
 
 /* ---- údržba slovníku (admin) ---- */
@@ -1550,5 +1567,5 @@ function prekladImport(data) {
 
 if (typeof module !== 'undefined')
   module.exports = { JAZYKY, JAZYK_IDX, PREKLAD, PREKLAD_IDX, PREKLAD_ZABUDOVANY, PREKLAD_VZORY, PREKLAD_CHYBI,
-    tr, trStav, prekladNorm, prekladNeutral, prekladKlicPovolen, PREKLAD_ZAKAZANE, prekladNastav, prekladSmaz, prekladPocet,
+    tr, trStav, prekladSledujZacni, prekladSledujKonec, prekladNorm, prekladNeutral, prekladKlicPovolen, PREKLAD_ZAKAZANE, prekladNastav, prekladSmaz, prekladPocet,
     prekladPokryti, prekladExport, prekladImport };

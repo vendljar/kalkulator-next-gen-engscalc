@@ -1,3 +1,29 @@
+# Předávka — 26. 10. 2026: #518 — zvýraznění nepřeložených textů v náhledu cizojazyčné nabídky, větev `claude/518-zvyrazneni-prekladu`
+
+Nad `e9aed72bc454f0d45dc74b8cfd0e588585c7c53c` (integrace, test v25.10.1 + dokumentace). **Verze 26.10.3**
+(pořadí sloučení O1 v26.10.1, O2 v26.10.2, tahle v26.10.3). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx.
+Do integrace / test nic, žádný PR, na Disk ani do Pipedrive nic.
+
+- **Hotovo:** sledování textů bez překladu v `trStav` (`src/preklad.js`, `prekladSledujZacni/Konec`); blok
+  `neprelozeno*` v `src/ui/common.js` (CSS s `@media print`, legenda, značkovací skript do okna náhledu);
+  napojeno do `nabidkaOckDokument`, `nabidkaNahled` (`src/ui/zakazka_ui.js`) a `nabidkaProjNahled`
+  (`src/ui/nabidka_proj_ui.js`). Značí se ruční údaje hlavičky (celým textem), texty bez hesla (celým slovem)
+  a ručně upravené odstavce v náhledu. Data nabídky, Word/DOCX a snímek zámku beze změny (Z1/SEC-S3 nedotčeno),
+  česká nabídka beze změny. CHANGELOG, příručka „Co je nového ve verzi v26.10.3“, roadmapa #518 hotovo.
+- **Testy:** `src/test_neprelozene.js` 22/0 (před změnou 0/2); `overit_neprelozene.mjs` 22/0 (na sestavení
+  před změnou 10/12); `overit_nabidky_dph.mjs` 24/0; všech 218 Node sad `src/test*.js` zelených; mutace
+  jádra filtrem `#518` **7/7** (výchozí stav 197 sad zelených), `--kontrola` 535 úseků; `preklad.js` přidán
+  mezi jádra mutací (žádná nová sada se tím nepřidala). Ostatní prohlížečové sady a celé kolo pouští koordinace.
+- **`testovaci_kolo.sh --jen build,staticke`:** build ✓, statické 3/4 — jediný nález `kontrola_udaju.py` je
+  **mimo tuto dávku**: `.claude/skills/kokpit-koordinace/kokpit_sablona.html:194` nese sdílecí odkaz na vlákno
+  (`claude.ai/code/cshk_…`), vrácený commitem koordinace 9bc4965 po odstranění v 3c04445 (K7-W1, pokyn J. V.
+  23. 10.). Nahlášeno koordinaci, soubor koordinace jsem neměnil.
+- **Otevřené pro J. V.:** jestli značit i jméno zákazníka a kontaktní osobu (dnes ano — zadání „ručně zapsané
+  údaje hlavičky“; vlastní jména se ale nepřekládají nikdy, takže legenda u EN nabídky ukáže vždy aspoň 2–3
+  místa). Výchozí: nechat, jak je.
+
+---
+
 # Předávka — 25. 10. 2026 večer: M1 — příručka aktualizována, větev `claude/manual-25-10`
 
 Nad `7e2bfbb68f790ef7e27853aec05758115eb60445` (test, v23.10.5). **Verze 25.10.1** (commity 25. 10. UTC,

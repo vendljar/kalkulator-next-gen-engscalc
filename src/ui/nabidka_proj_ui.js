@@ -244,7 +244,10 @@ async function nabidkaProjNahled() {
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   /* Ptát se PŘED otevřením okna náhledu (P2): tisk z náhledu zamyká. */
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaProjTisk', akt))) return;   // P2 (K13-N54)
-  const d = nabidkaProjData(ZAK, akt, L);
+  /* #518: sběr textů bez překladu až po všech otázkách (await). */
+  const sleduj = typeof neprelozenoZacni === 'function' && neprelozenoZacni(L);
+  let d;
+  try { d = nabidkaProjData(ZAK, akt, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
   const p = d.placeholders;
 
   const html = d.bloky.map(b => {
@@ -300,7 +303,7 @@ async function nabidkaProjNahled() {
   const patickaHtml = dokPatickaHtml(P);
 
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
-  if (!w) return;
+  if (!w) { if (sleduj) neprelozenoKonec(); return; }
   w.document.write(`<!DOCTYPE html><html lang="${esc(L === 'cz' ? 'cs' : L)}"><head><meta charset="utf-8">
     <title>${esc(d.nazevSouboru)}</title>
     <style>body{font:13px/1.55 "Segoe UI",sans-serif;color:#1a2332;max-width:860px;margin:24px auto;padding:0 16px}
@@ -326,6 +329,7 @@ async function nabidkaProjNahled() {
     .bar{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e9f0;padding:8px 0;margin-bottom:8px;z-index:5}
     .bar button{font:13px "Segoe UI";padding:6px 14px;border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:6px;cursor:pointer}
     ${tiskListaCss()}
+    ${sleduj ? neprelozenoCss() : ''}
     /* margin:0 — Chrome tiskne svou hlavičku (čas, název stránky) a patičku
        (about:blank) DO OKRAJE STRÁNKY; s nulovým okrajem nemá kam. Okraj
        dokumentu proto dělá padding uvnitř body (5. 9. 2026, zadání J. V.). */
@@ -337,6 +341,7 @@ async function nabidkaProjNahled() {
       pozn: P('Nabídku lze před uložením do PDF ručně upravit; do kalkulace se změny nepropíšou.'),
       zamekTyp: 'nabidkaProjTisk',
     })}
+    ${sleduj ? neprelozenoLegendaHtml(L) : ''}
     <div id="dok" class="bez-dph">
     ${logoHtml}
     <h1>${esc(P('CENOVÁ NABÍDKA'))} ${esc(p.CISLO_NABIDKY)}</h1>
@@ -358,7 +363,9 @@ async function nabidkaProjNahled() {
       vyp: P('Úpravy vypnuté. Ruční změny zůstávají, jen se do dokumentu už nedá psát.'),
       vraceno: P('Vráceno původní znění z kalkulace.'),
       zamceno: P('Varianta byla uzamčena jako odeslaná nabídka. Další úpravy provádějte v jejím klonu.'),
-    }, { typ: 'nabidkaProjTisk', varId: akt && akt.id })}
-    </body></html>`);
+    }, { typ: 'nabidkaProjTisk', varId: akt && akt.id })}`);
+  w.document.write((sleduj ? neprelozenoSkript(L, neprelozenoKonec(), neprelozenoRucne([
+    p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, p.POPIS_ZAMERU])) : '')
+    + '</body></html>');
   w.document.close();
 }
