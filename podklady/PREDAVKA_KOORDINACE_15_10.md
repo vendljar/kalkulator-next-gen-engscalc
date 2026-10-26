@@ -10,6 +10,15 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 26. 10. 05:05 UTC — koordinace „ŘÍDÍCÍ víkend 23.–26. 10.“ session_01TMQ5bLDJuS5k5NWWYy7jLx — PONDĚLNÍ SOUHRN
+
+- **Souhrn víkendu:** https://claude.ai/artifact/VgmPoPQdjotnKNxyLPYSgr . Kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2 .
+- **test = efa61c1 (v25.10.1)** = kód v23.10.5 (P2, B1 #512, O-K8 #514) + zprávy K8/S1 + příručka M1 (náhrada nočního běhu — naplánovaná úloha neměla repo ve zdrojích, push 403). Kolo 316/0/6; Actions Testy #196 nad v23.10.5 celé zelené (server 10/10 částí). Integrace = test + tento zápis + roadmapa (planVikend uzavřen → meta.planVikendHistorie). **Pozn.:** zápis z 26. 10. bez nové verze — statická kontrola verze v integraci chce v26.10.x; zvednout s nejbližší dávkou, do test samostatně nesahat.
+- **main = v22.10.1** — návrh posunu na v25.10.1 (jen na pokyn J. V.).
+- **Releasy bez tagu:** v23.10.3 (fa3281a), v23.10.4 (ca4f2d1), v23.10.5 (7e2bfbb), v25.10.1 (efa61c1) — odkazy v kokpitu.
+- **Čeká na J. V.:** dialog https://claude.ai/artifact/V288Ytg33SpoYPfp3aTw3L (11 otázek, bez odpovědí); osobní údaje v historii repa (SEC-V1/V2/S4); B1 stará nabídka PROJ bez kalendáře; integrátor (pole kalendáře, Hlavní projektant, Způsob fakturace); repo do zdrojů naplánovaných úloh.
+- Všechny dávky archivovány (P2, B1, K8, S1, O-K8, M1). Žádné naplánované kontroly koordinace nezůstaly.
+
 ## STAV 23. 10. ~20:15 UTC — koordinace „ŘÍDÍCÍ víkend 23.–26. 10.“ session_01TMQ5bLDJuS5k5NWWYy7jLx — PLÁN VÍKENDU SPLNĚN
 
 - **test = integrace = 7e2bfbb (v23.10.5)**: v23.10.4 (P2 + B1) + K8 (celé kolo nad v23.10.4 zelené: sady 315/0/6, jádro 527/527, server 897/897, statické 4/4; `podklady/K8_AUDIT_24_10.md` VYHOVUJE S VÝHRADOU, 0/0/1/12/14, posun main doporučen) + S1 (`podklady/SEC_AUDIT_24_10.md`, VYHOVUJE S VÝHRADOU, 0 K/2 V repo/7 S/9 N/18 I) + O-K8 #514 (opravy „mění chování: ne“, mutace serveru v Actions 10 částí/90 min). Kolo nad v23.10.5 316/0/6, mutace #514 22/22 + 1/1. Všechny dávky archivovány.

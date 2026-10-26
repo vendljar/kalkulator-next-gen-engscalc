@@ -8125,7 +8125,8 @@
   }
  ],
  "meta" : {
-  "planVikend" : {"nazev" : "Plán práce 23. 10. odpoledne – po 26. 10. 6:00 Praha (J. V. 23. 10. 2026)","polozky" : ["16","113","114","115","117","501","509","510","511","512","513","514","515"]},
+  "planVikendHistorie" : {"nazev" : "Plán práce 23. 10. odpoledne – po 26. 10. 6:00 Praha (J. V. 23. 10. 2026)","polozky" : ["16","113","114","115","117","501","509","510","511","512","513","514","515"]},
+  "planVikendUzavreno" : "26. 10. 2026 05:00 UTC — splněno: P2 v23.10.3, B1 #512 v23.10.4, K8 #513 + S1 #515 (zprávy), O-K8 #514 v23.10.5, příručka v25.10.1; souhrn https://claude.ai/artifact/VgmPoPQdjotnKNxyLPYSgr",
   "projekt" : "Kalkulator Next Gen",
   "legendaSlozitosti" : "S = hodiny · M = 1–2 dny · L = týden · XL = víc než týden",
   "poradi" : [

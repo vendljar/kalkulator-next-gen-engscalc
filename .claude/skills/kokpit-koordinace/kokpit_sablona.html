@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Kokpit dávek KNG</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Barlow+Condensed:wght@600;700&display=swap">
@@ -108,20 +107,24 @@ a{color:var(--steel);overflow-wrap:anywhere}
 
 <script id="data" type="application/json">
 {
- "aktualizace": "23. 10. 2026 04:08 UTC",
+ "aktualizace": "26. 10. 2026 05:06 UTC",
  "koordinace": {
-  "id": "session_013yuBUKmpUYvEnjxWjGi5kj",
-  "kontext": 30
+  "id": "session_01TMQ5bLDJuS5k5NWWYy7jLx",
+  "kontext": 41
  },
- "releasy": "vydáno v22.10.5 a starší; čeká v22.10.6 a v23.10.1 (tagy ověřeny, neexistují)",
+ "releasy": "vydáno v23.10.2 a starší; čekají v23.10.3, v23.10.4, v23.10.5, v25.10.1",
  "cekaNaJV": [
-  "Návrh main = v23.10.1 (f0d42ed): K7 audit VYHOVUJE S VÝHRADOU nad v22.10.6, 3 střední nálezy opraveny v O-K7, kolo + mutace zelené — posun jen na váš pokyn.",
-  "Release v23.10.1 (text v chatu koordinace): https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v23.10.1&target=f0d42ed7aa32628e6fefc10a904866a500d25183&title=v23.10.1 ; volitelně i v22.10.6: https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v22.10.6&target=3394b2bb681433b2ef0e1f29d5fec18e4dadd00e&title=v22.10.6",
-  "Audit K7 (v22.10.1 → v22.10.6): VYHOVUJE S VÝHRADOU, 0 kritických/0 vysokých — https://github.com/vendljar/kalkulator-next-gen-engscalc/blob/claude/k7-kolo/podklady/K7_AUDIT_22_10.md ; K7-S2 (hlavička po CN obejde Z1-2 dvěma uloženími) k rozhodnutí.",
-  "Roadmapa (aktuální, v22.10.5): https://claude.ai/artifact/5D6wt2R6PQDdwLXP4rkvjS",
-  "Soubor negativni_kontrola.json do KNG_PODKLADY (D5-3) a import slovníku SoD v4 (+3 hesla) — až budete mít čas.",
-  "E1 rozhodnuto podle návrhu (k potvrzení): (1) dny zámků v rejstříku se dopočítají jen při uložení zakázky — starší zakázky jdou hrubým předvýběrem; (2) rejstřík nenese Pipedrive deal id — filtr stavu čte zakázku; (3) dotaz bez filtru = Vyhrané i na serveru.",
-  "K7-W1: v repozitáři je sdílecí odkaz na vlákno „Pipedrive API integrace“ (claude.ai/code/cshk_…) — ověřte, zda je odkaz neveřejný; jinak ho odstraníme."
+  "Pondělní souhrn víkendu: https://claude.ai/artifact/VgmPoPQdjotnKNxyLPYSgr",
+  "Dialog rozhodnutí po K8 a S1 (11 otázek, nevyplněné = návrh): https://claude.ai/artifact/V288Ytg33SpoYPfp3aTw3L — zámky (K8-K1…K5, SEC-S3), splátky OCK 100 %, plán PROJ po CN, Pipedrive před #115, heslo správce, osobní údaje v historii repa.",
+  "Release v23.10.3 (tag neexistuje, ověřeno): https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v23.10.3&target=fa3281a7b1aa725f16418d4210dc5f134a3099ee&title=v23.10.3 — popis: P2 — převzetí #114 Pipedrive (párování polí podle názvu a typu, převod hodnot krycího listu, jediný vlastník pole, zákazník = organizace dealu); opravy Stavu Pipedrive: smazaný deal v koši, obnova stavu po otevření ze souboru / obnově zálohy / přihlášení, Sazba DPH na konci hlavičky; mutační běh po částech + matrix v Actions. Roadmapa #509–#511. Kolo 315/0/6, mutace zelené.",
+  "Release v23.10.4 (tag neexistuje, ověřeno): https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v23.10.4&target=ca4f2d1cb2cc0e46eb81941d694ed8fa7d2b5898&title=v23.10.4 — popis: B1 #512 — Platby 1–8 se do Pipedrive nezapisují (ani u starších nabídek), záloha PROJ také ne; nové pole „Platební kalendář SoD PROJ“ (text kalendáře plateb ze SoD řídící varianty; integrátor ho musí založit jako Velký text); hodnota dealu = cena řídící varianty bez DPH (kombinovaná OCK+PROJ součet), v potvrzení stará → nová. Roadmapa #512, #486 uzavřena. Kolo 315/0/6, mutace #512 18/18.",
+  "Release v23.10.5 (tag neexistuje, ověřeno): https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v23.10.5&target=7e2bfbb68f790ef7e27853aec05758115eb60445&title=v23.10.5 — popis: O-K8 #514 — opravy auditu K8 a security testu S1 bez změny chování: souběžné uložení zakázky už nesmaže zámek odeslané nabídky (SEC-S1), souběžná změna hesla nepřepíše zásah správce (SEC-S2), přesnější chybové kódy a hlášky, ochrana hlaviček odpovědí, kontrola osobních údajů a tajemství, mutace serveru v Actions v 10 částech. Zprávy K8 (kolo s mutacemi zelené) a S1 (security test). Kolo 316/0/6, mutace #514 22/22.",
+  "Release v25.10.1 (tag neexistuje, ověřeno): https://github.com/vendljar/kalkulator-next-gen-engscalc/releases/new?tag=v25.10.1&target=efa61c1375ffd9688fbf845264469013b4d2fe4b&title=v25.10.1 — popis: Aktualizace uživatelské příručky podle v23.10.5 (Stav Pipedrive u souboru/zálohy a smazaný deal, souběžné uložení ve dvou oknech, zmrazení podmínek a DPH po tisku nabídky, Objednané příplatky u SoD, šablony a jazykové verze SoD, nová kapitola Controlling a export). Kód aplikace beze změny. Kolo 316/0/6, kontrola příručky 48/0.",
+  "Plán do po 26. 10. 6:00 Praha: https://github.com/vendljar/kalkulator-next-gen-engscalc/blob/claude/integrace-16-10/podklady/HARMONOGRAM_23_26_10.md ; roadmapa (vlny v plánu modře): https://claude.ai/artifact/5D6wt2R6PQDdwLXP4rkvjS",
+  "Dialog S1 https://claude.ai/artifact/VTamxkz2Xum9uMq7nuBRiM — zpracováno: SEC-7 A (opravit vše, co nemění chování, vzhled ani výpočet), ostatní návrh A (jen lokálně). Pro živý test by bylo třeba povolit doménu testengscalc.netlify.app.",
+  "B1 k potvrzení: u staré nabídky PROJ (před plánem plateb) se do Pipedrive nepošle ani Platební kalendář. Hlavní projektant (text) a volby Způsob fakturace PROJ dál čekají na integrátora.",
+  "Návrh main = v25.10.1 (efa61c1 = kód v23.10.5 + příručka): K8 nad v23.10.4 celé kolo zelené + audit doporučuje posun; O-K8 jen opravy bez změny chování; Actions Testy #196 nad v23.10.5 celé zelené včetně všech mutací (https://github.com/vendljar/kalkulator-next-gen-engscalc/actions/runs/40011659698). Rozhodnutí K8/S1 v dialogu.",
+  "Naplánovaná úloha příručky běžela v sezení bez repozitáře → push 403 (práce ztracena, zopakována dávkou M1 → v25.10.1). Při příštím plánování přidat repozitář do zdrojů úlohy."
  ],
  "dlazdice": [
   {
@@ -132,20 +135,20 @@ a{color:var(--steel);overflow-wrap:anywhere}
   },
   {
    "k": "test",
-   "v": "v23.10.1",
-   "d": "f0d42ed · O-K7 opravy auditu K7 (fast-forward 04:06)",
+   "v": "v25.10.1",
+   "d": "efa61c1 · v23.10.5 + aktualizace příručky (M1: kap. 5, 6, 8, 24, 28, Co je nového) — fast-forward 22:59",
    "s": "ok"
   },
   {
    "k": "integrace",
-   "v": "v23.10.1",
-   "d": "f0d42ed = test",
+   "v": "v25.10.1",
+   "d": "efa61c1 = test",
    "s": "ok"
   },
   {
    "k": "sady + mutace",
    "v": "zelené",
-   "d": "v23.10.1: kolo 311/0/6, mutace #507 19/19 + 13/13; K7 nad v22.10.6: 306/0/6, 492/492 + 829/829, statické 4/4",
+   "d": "v25.10.1 (jen příručka): kolo 316/0/6, overit_manual 48/0; kód = v23.10.5 (Actions #196 celé zelené vč. mutací)",
    "s": "ok"
   }
  ],
@@ -160,24 +163,24 @@ a{color:var(--steel);overflow-wrap:anywhere}
  ],
  "sezeni": [
   {
-   "nazev": "ŘÍDÍCÍ 22.10 - Koordinace v22.10.5 → test, příprava pátku",
-   "id": "session_013yuBUKmpUYvEnjxWjGi5kj",
+   "nazev": "ŘÍDÍCÍ víkend 23.–26. 10. – P2, B1, K8, S1, O-K8, pondělní souhrn",
+   "id": "session_01TMQ5bLDJuS5k5NWWYy7jLx",
    "role": "koordinace",
-   "stav": "run",
-   "stavText": "běží",
+   "stav": "ok",
+   "stavText": "souhrn hotov",
    "faze": null,
    "eta": "—",
-   "kontext": 44,
-   "kontextTok": 422,
-   "bezi": "2,7 h",
-   "hlaseni": "15:58",
-   "konec": "pá ~06:00 UTC",
-   "co": "Plán do pátku SPLNĚN: v23.10.1 v test, K7 + O-K7 hotové a archivované. Limit ~87 % → nic nového do obnovy (so 7:00 Praha); čeká se na pokyn J. V. (main).",
-   "dalsi": "Na pokyn J. V.: main, K7-S2, K7-W1."
+   "kontext": 41,
+   "kontextTok": 409,
+   "bezi": "právě",
+   "hlaseni": "po 05:06",
+   "konec": "—",
+   "co": "Koordinace víkendu podle podklady/PROMPT_koordinace_vikend_23_10.md a HARMONOGRAM_23_26_10.md; kontroly po ~60 min (v noci 2–3 h), pondělní souhrn 05:00 UTC.",
+   "dalsi": "Čeká na pokyny J. V.; žádné další naplánované kontroly"
   },
   {
    "nazev": "Pipedrive API integrace",
-   "id": "vlakno-pipedrive",
+   "id": "cshk_01HpevFD8dLfB4Keo5veExeGEhtv23KrtAz9tA8Y6NrzUz",
    "role": "jiné",
    "stav": "run",
    "stavText": "vede J. V.",
@@ -188,63 +191,63 @@ a{color:var(--steel);overflow-wrap:anywhere}
    "bezi": null,
    "hlaseni": "—",
    "konec": null,
-   "co": "Vlákno integrace Pipedrive (předáno J. V. 22. 10.): (odkaz jen v soukromém kokpitu — K7-W1) — zadání stavu dealu https://github.com/vendljar/kalkulator-next-gen-engscalc/blob/claude/integrace-16-10/podklady/PIPEDRIVE_STAV_DEALU_22_10.md",
+   "co": "Vlákno integrace Pipedrive (předáno J. V. 22. 10.): https://claude.ai/code/cshk_01HpevFD8dLfB4Keo5veExeGEhtv23KrtAz9tA8Y6NrzUz — zadání stavu dealu https://github.com/vendljar/kalkulator-next-gen-engscalc/blob/claude/integrace-16-10/podklady/PIPEDRIVE_STAV_DEALU_22_10.md",
    "dalsi": "Nearchivovat"
   }
  ],
  "log": [
   [
-   "04:06",
-   "v23.10.1 OVĚŘENA a v test: fast-forward 3394b2b → f0d42ed (O-K7 #507 + audit K7). Kolo 311/0/6, mutace #507 jádro 19/19, server 13/13. O-K7 archivována. Plán do pátku splněn; odhad limitu ~87 % → nic nového."
+   "po 05:05",
+   "Pondělní souhrn: https://claude.ai/artifact/VgmPoPQdjotnKNxyLPYSgr — test v25.10.1, návrh main v25.10.1, 4 releasy k vydání, dialog 11 rozhodnutí. Roadmapa: plán víkendu uzavřen."
   ],
   [
-   "03:36",
-   "O-K7 HOTOVÁ (f0d42ed, v23.10.1): opraveny K7-K1, K7-K2, K7-S1 + 10 nízkých; Node 248/0/1, mutace 19/19 + 13/13. Fast-forward integrace, --kontrola 842/511, kolo --bez-mutaci + mutace #507 běží."
+   "ne 22:59",
+   "M1 HOTOVÁ (705ed70, v25.10.1): příručka aktualizována (kap. 5, 6, 8, 24, 28), overit_manual 48/0. Sloučena do integrace efa61c1, kolo 316/0/6 → fast-forward test 7e2bfbb → efa61c1. M1 archivována. Snímky příručky na Disk J. V. vyrobí z větve."
   ],
   [
-   "02:56",
-   "K7 HOTOVÁ (c5dbfbc): sady 306/0/6, mutace jádro 492/492, server 829/829 (po 2 uvolněních kontejneru dopuštěno), statické 4/4; audit VYHOVUJE S VÝHRADOU — 0 krit./0 vys./3 stř./13 nízkých/16 info. K7 archivována. Založena O-K7 session_014yMP5yuvYQrayBtoK6aJm5 (#507, v23.10.1). Odhad limitu ~85 %."
+   "ne 22:31",
+   "Noční aktualizace příručky doběhla, ale nepushla (403 — repozitář nebyl ve zdrojích sezení úlohy). Založena náhradní dávka M1 session_01WFsaCsNAA8WjoytY2jkbg4 (claude/manual-25-10 nad v23.10.5). Dialog bez odpovědí."
   ],
   [
-   "02:16",
-   "K7 běží (čeká v popředí): mutace serveru 575/728 spuštění chyceno, 0 přeživších; konec ~03:15 UTC."
+   "ne 08:01",
+   "Kontrola: beze změn — test = v23.10.5, main v22.10.1, tagy v23.10.3–5 zatím nejsou, dialog bez odpovědí."
   ],
   [
-   "23:31",
-   "K7: kontejner se uvolnil podruhé (21:28, 4 min po konci tahu — mutace na pozadí nepřežijí nečinné sezení); 351/829 chycených, 0 přeživších; zbytek od 23:33, K7 čeká v popředí, konec ~01:40–02:00 UTC."
+   "so 08:01",
+   "Kontrola: beze změn — test = v23.10.5, dialog bez odpovědí, žádná nová sezení. Kontext koordinace 41 %."
   ],
   [
-   "21:22",
-   "K7: restart kontejneru ~19:18 přerušil mutace serveru (347 chycených, 0 přeživších, strom čistý) → zbytek po skupinách, konec ~00:30 UTC."
+   "21:47",
+   "Actions Testy #196 nad 7e2bfbb (v23.10.5) CELÉ ZELENÉ — sady, mutace jádra 3/3 a serveru 10/10 částí (nový matrix stačí). Dialog zatím bez odpovědí. Další kontroly so 08:00, ne 08:00, ne 22:30, po 05:00 souhrn."
   ],
   [
-   "17:04",
-   "K7: sady 306/0/6, mutace jádra 492/492 chycených; mutace serveru běží (konec ~21:00 UTC)."
+   "20:10",
+   "v23.10.5 OVĚŘENA a v test: fast-forward ca4f2d1 → 7e2bfbb (O-K8 #514 + zprávy K8/S1). Kolo 316/0/6, mutace #514 22/22 + 1/1. O-K8 archivována. Actions Testy s matrixem 10 částí běží."
   ],
   [
-   "15:56",
-   "v22.10.6 OVĚŘENA a v test: fast-forward 4ce35d2 → 3394b2b (E1 #504 + #505). Kolo 306/0/6, statické OK; mutace jádro #504 19/19, #505 4/4, server #504 17/17; overit_verzi 7/0, test_controlling 219/0. Release odkaz v Čeká na vás. E1 archivována."
+   "19:21",
+   "O-K8 HOTOVÁ (c1fcaa5, v23.10.5): opravy K8 + S1 bez změny chování (mj. SEC-S1, SEC-S2 souběhy), CI matrix serveru 10 částí. Sloučena do integrace 7e2bfbb bez konfliktu; --kontrola 919/528, kolo běží."
   ],
   [
-   "15:27",
-   "K7 průběžně: audit v návrhu — 0 krit./0 vys./3 stř. (K7-K1, K7-K2, K7-S1), 12 nízkých, 16 info; předběžně VYHOVUJE S VÝHRADOU. Kandidáti na ranní O-K7."
+   "18:27",
+   "K8 HOTOVÁ: celé kolo nad v23.10.4 zelené (sady 315/0/6, jádro 527/527, server 897/897, statické 4/4); audit VYHOVUJE S VÝHRADOU (0/0/1 stř./11 níz./15 info), posun main doporučen. Sloučeno do integrace 4496f52. K8 a S1 archivovány. Založena O-K8 #514 session_014asSzHqXzFNHwFzZN9rVAK. Dialog pro J. V.: https://claude.ai/artifact/V288Ytg33SpoYPfp3aTw3L"
   ],
   [
-   "15:22",
-   "J. V.: týdenní limit pro pátek posunut na 90 %. Rezerva (~3 %) → ranní opravná dávka nálezů K7 (O-K7, #507), aby šel main v pátek s opravami."
+   "16:18",
+   "Actions Testy #195 nad ca4f2d1: testy ✓, mutace jádra 3/3 ✓, server jen 5/6 ✓ — ostatní části zrušil timeout 75 min (matrix 6 nestačí → O-K8). K8: mutace jádra 527/527, server ~18:30."
   ],
   [
-   "15:13",
-   "Založena K7 session_012ZkLyeymxAPzuKqwXGZny4 (#506) nad 3394b2b (integrace v22.10.6, E1 doplněk textu): celé kolo s mutacemi + audit aea832a..3394b2b. Moje kolo nad 40f4323 běží dál (rozdíl 2 řádky textu)."
+   "14:55",
+   "S1 HOTOVÁ (cd2dd41): VYHOVUJE S VÝHRADOU — 0 K / 2 V (repo: osobní údaje v main/test-draft/větvích/tazích) / 7 S / 9 N / 18 I. Do O-K8: SEC-S1, S2, N1–N7 aj.; do dialogu J. V.: S3, S5, S6, S7… Sloučeno do integrace 1d6158a."
   ],
   [
-   "15:03",
-   "E1 HOTOVÁ (40f4323, v22.10.6) vč. výchozího „podle data prodeje“. Fast-forward integrace, --kontrola 829/492, kolo --bez-mutaci + mutace #504/#505 běží."
+   "14:48",
+   "K8 milník: sady 314/1/6 (overit_verzi jen kvůli proměnné prostředí ze zadání, samostatně 7/0), statické 4/4; audit předběžně 1 střední; mutace po částech běží, konec ~19:00."
   ]
  ],
  "celkem": {
   "eta": "hotovo",
-  "detail": "Plán 22./23. 10. splněn: test = v23.10.1 (E1 + K7 + O-K7). Čeká jen na J. V. (main, releasy, K7-S2, K7-W1). Odhad limitu ~87 % → žádné nové dávky do obnovy so 24. 10. 7:00 Praha."
+  "detail": "Plán víkendu splněn: test = v25.10.1 (kód v23.10.5 + příručka). Čeká se jen na rozhodnutí J. V. (main, dialog, releasy)."
  }
 }
 </script>
@@ -307,5 +310,3 @@ a{color:var(--steel);overflow-wrap:anywhere}
   document.getElementById('log').innerHTML=D.log.map(function(r){return '<tr><td class="cas">'+esc(r[0])+'</td><td>'+lnk(r[1])+'</td></tr>'}).join('');
 })();
 </script>
-
-</body></html>
