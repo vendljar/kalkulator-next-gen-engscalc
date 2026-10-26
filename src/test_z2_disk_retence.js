@@ -334,14 +334,15 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
     const h2 = slozka('_Zaloha Netlify DB', STARE);
     const k2 = await ctx2.proved(h2);
     test('O-K9 K9-S6: server nevrátil platný čas → úklid nesmaže nic', h2.smazane.length === 0 && /čas serveru/.test(k2.uklid.duvod || ''), k2.uklid);
-    /* počítač o 20 h pozadu (pořád v toleranci): dnešek je den serveru 27. 10. — 13. 10. a 5. 4. odejdou jako se správnými hodinami */
+    /* počítač o 20 h pozadu (26. 10., pořád v toleranci): dnešek je den serveru 27. 10. — úterý 20. 10. má věk 7
+     * a jeho týden drží neděle 25. 10. → smaže se; podle hodin počítače (26. 10., věk 6) by zůstal */
     const ctx3 = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: new Date(serverTed).toISOString() } }) });
-    const h3 = slozka('_Zaloha Netlify DB', STARE);
+    const h3 = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-01.json': 'prvni', 'otisk_2026-10-20.json': 'utery', 'otisk_2026-10-25.json': 'nedele', 'otisk_2026-10-26.json': 'vcera' });
     Date.now = () => serverTed - 20 * 3600000;
     let k3;
     try { k3 = await ctx3.proved(h3); } finally { Date.now = () => Date.parse('2026-10-27T09:00:00Z'); }
-    test('O-K9 K9-S6: hodiny v toleranci (−20 h) → úklid podle dne serveru jako se správnými hodinami',
-      J(h3.smazane.slice().sort()) === J(['otisk_2026-04-05.json', 'otisk_2026-10-13.json']), { smazane: h3.smazane, uklid: k3.uklid });
+    test('O-K9 K9-S6: hodiny v toleranci (−20 h) → úklid podle dne serveru (27. 10.), ne podle počítače',
+      J(h3.smazane) === J(['otisk_2026-10-20.json']), { smazane: h3.smazane, uklid: k3.uklid });
   }
   /* ---- server přijme záznam .json.gz a podloží jím retenci ---- */
   {

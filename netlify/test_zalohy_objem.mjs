@@ -297,7 +297,7 @@ await zkus('K9-V1', async () => {
   const zdroj = readFileSync(new URL('../src/ui/online_ui.js', import.meta.url), 'utf8');
   const a = zdroj.indexOf('function onlineObnovaPripraveno'), b = zdroj.indexOf('async function onlineObnovaBeziciDokonci');
   const kod = zdroj.slice(zdroj.indexOf('const OBNOVA_CASTI = ['), zdroj.indexOf('function onlineObnovaStav')) + zdroj.slice(a, b);
-  let pozadavku = 0, nejdele = 0;
+  let pozadavku = 0, nejdele = 0, zdrojVTokenu = undefined;
   const funkce = { '/api/obnova': obnova, '/api/zaloha_vynuceno': zalohaVynuceno };
   const ctx = { Promise, JSON, String, Error, Date, Object, Array, Math, Number, Set, Map, console, TextEncoder,
     ONLINE_STAV: { otisky: prehled.otisky, ja: { role: 'Administrátor' } }, ONLINE_OTISK_KROKU_MAX: 400,
@@ -309,6 +309,9 @@ await zkus('K9-V1', async () => {
     onlineObnovaVelikost: (x) => JSON.stringify(x === undefined ? null : x).length,
     onlineApi: async (cesta, telo) => {
       pozadavku++;
+      /* K9-S5: zdroj musí být v tokenu už před první dávkou (poslala ho obrazovka v začátku) */
+      if (telo && telo.obnovaId && telo.zdroj && zdrojVTokenu === undefined)
+        zdrojVTokenu = (JSON.parse(pamet.get('zalohy/obnova-' + telo.obnovaId) || '{}')).zdrojOtisk || null;
       const t0 = Date.now();
       const r = await post(funkce[cesta], 'http://x' + cesta, telo);
       nejdele = Math.max(nejdele, Date.now() - t0);
@@ -331,6 +334,7 @@ await zkus('K9-V1', async () => {
   const p = await ctx.proved();
   test('K9-V1: obnova ze starého otisku po výřezech doplní smazané zakázky (každý požadavek v limitu)', p === true
     && smazane.every(i => pamet.has('zakazky/z/' + KLIC(i))) && pozadavku > 10 && nejdele < LIMIT_MS, { p, hlaska: o.hlaska, pozadavku, nejdele });
+  test('K9-S5: obrazovka poslala zdroj obnovy už v začátku (token ho nese před první dávkou)', zdrojVTokenu === STARY, zdrojVTokenu);
   const tk = [...pamet.keys()].filter(k => k.startsWith('zalohy/obnova-'));
   test('K9-V1: po obnově žádný token nezůstal (konec proběhl)', tk.length === 0, tk);
 });

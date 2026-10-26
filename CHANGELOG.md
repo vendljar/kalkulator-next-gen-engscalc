@@ -8,6 +8,56 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v26.10.11 — O-K9 #527: opravy nálezů nezávislého auditu záloh K9 #526, větev claude/o-k9-zalohy
+
+Nad integrací bab9a7c (v26.10.10 = Z1 #522 + Z2 #523 + zpráva K9 + příručka M5). Zpráva auditu
+`podklady/K9_AUDIT_ZALOH_26_10.md`; opraveno v pořadí auditu. Na ostrém webu, Disku ani v Pipedrive nic.
+
+- **K9-V1 (V) — obnova ze starého jednolitého otisku po výřezech.** Otisk do v26.10.7 (bez `casti`) bere
+  obrazovka jako jednu část 0 a náhled i obnovu posílá po 15 záznamech (server výřez `cast: 0` uměl). Do teď
+  šel jedním požadavkem — u 792 zakázek 54 s, funkce spadla na limitu 10 s a náhled nevznikl. Přehled nese
+  u takového otisku `stary: true`.
+- **Pojistka úbytku jako celek (K9-S1, S2, S2b, N1, N2, N7; výchozí volby koordinace).** Noční otisk se
+  porovnává s předchozím nočním **i s maximem každého údaje za posledních 30 dní** (`RETENCE_ZALOH_POJISTKA.oknoDnu`,
+  prahy beze změny 90 % / 95 % / šablony a podpisy) — „salám" −4 % zakázek za noc dřív prošel 14 nocí, teď
+  zastaví retenci první noc. Bez nočního otisku se porovná s vynucenými (N7), otisky „před obnovou" se neberou.
+  Nepotvrzené varování se **nepřepisuje**: další (noc i Disk) se přidá do `dalsi` (bez duplicit téhož dne
+  a zdroje), hlídka řekne, kolik jich čeká; potvrzuje se nejstarší a retence stojí, dokud nejsou potvrzená
+  všechna. Potvrzení zapíše **základ** (`retence-zaklad` = den potvrzeného úbytku) — od něj se porovnává,
+  takže záměrný úbytek se nehlásí znovu. Potvrzení po ověření hesla záznam čte znovu a zapíše jen při shodě
+  dne, času a zdroje, jinak 409 (N1; klient posílá i `kdy`). Nepotvrzený záznam bez platného `kdy` retenci
+  drží (fail-closed, N2) a hlídka ho ukáže.
+- **Volby koordinace (konstanty `ZALOHY_VOLBY` v `netlify/lib/zalohovani.mjs`, J. V. je může změnit):**
+  úbytek potvrzuje **jen hlavní správce** (ADMIN_EMAIL) se svým heslem — ostatní správci 403 a v kartě
+  „Potvrdit úbytek může jen hlavní správce" (K9-I7); otisk **„před obnovou" smaže jen ručně** správce s heslem
+  (Obnovit ze zálohy… → Smazat tento otisk…, akce `smazat-pred-obnovou`, ne během obnovy), jinak nikdy
+  (K9-I3); `zaloha_nocni` je plánovaná funkce bez `path` a bez přesměrování (test, K9-I9 — na ostrém ověří J. V.).
+  Přehled vrací `smi` (co přihlášený správce smí).
+- **K9-S5 — retence nesmaže zdroj rozběhnuté obnovy.** Token obnovy nese `zdrojOtisk` / `zdrojSoubor`
+  (obrazovka ho posílá už v `zacatek`, dávka ho doplní); retence klíč živé obnovy vynechá (`chranene`), živý
+  token bez zdroje ji zastaví celou, vypršelý (hodina nečinnosti) nedrží nic. Předpona a platnost tokenu
+  žijí v `lib/zalohovani.mjs`.
+- **K9-S6 — úklid Disku podle času serveru** (`z.kopieDisk.kdy`); bez něj, nebo když se hodiny počítače
+  liší o víc než den, nesmaže nic a řekne proč (dřív hodiny o rok napřed smazaly 31 z 33 kopií).
+- **K9-S4 — přehled nečte staré otisky celé:** `otiskSouhrn` starému otisku při prvním čtení zapíše souhrn
+  (počty, `stary: true`, bez velikosti) a dál se čte jen souhrn (přehled, pojistka, poslední noční).
+  Retence maže souhrn vždy se svým otiskem.
+- **Malé opravy N:** K9-N3 hotový otisk se bez `prepsatHotovy` nepřepisuje (druhý noční běh ho už nesmaže;
+  `porizOtisk` a otisk před obnovou přepořizují jako dřív); K9-N4 retence čeká, když novému otisku chybí
+  část; K9-N5 jednorázová obnova (bez `faze`) pořizuje otisk před obnovou v rozpočtu a u velké DB odmítne
+  **409 `obnovaPoFazich`** (rozpracovaný otisk uklidí, nic nezapíše); K9-N6 rozpočet kroku otisku se hlídá
+  i po každé zapsané části. Informativní K9-I2, I5, I6 (a známé meze I1, I4, I8) zůstávají — roadmapa #527.
+- **Roadmapa:** #526 omylem ležela v poli `_comment` (nevykreslovala se) — přesunuta do položek, nálezy
+  označené; nová #527.
+- **Testy:** nový `netlify/test_o_k9_zalohy.mjs` 55/0 (pojistka: nad lib/funkcemi z bab9a7c 25 FAIL);
+  `test_zalohy_objem` +5 (K9-V1 ve vm nad funkcemi pod limitem; pojistka: s online_ui.js z bab9a7c 3 FAIL),
+  `test_zalohy` +3 (K9-S4), `src/test_z2_disk_retence` +3 (K9-S6), `src/test_o7_kopie_klient` +3 (K9-N2, S2);
+  přizpůsobené záměrné změny (seznam varování, fail-closed, okno v prazích). Mutace: 35 nových `#527`
+  + 14 přecílených (#151 N3/N5/N6, O7, O11, #522, #523 — značka „[#527]"), filtr „#527" 49/49 chycených.
+  Reprodukce K9 (`podklady/K9_pokusy/spust_vse.sh --objem`): viz PREDAVKA.
+
+---
+
 ## v26.10.10 — M5 #524: příručka obchodníka bez „Co je nového", postupy krok za krokem se snímky, tisk podle A4, větev claude/m5-prirucka-obrazky
 
 Nad integrací 48ab0a4 (v26.10.8) se sloučenou Z2 #523 (v26.10.9). Pokyn J. V. 26. 10. 2026: „odstraň z příručky

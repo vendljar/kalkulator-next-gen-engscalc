@@ -395,6 +395,9 @@ await zkus('smazat-pred-obnovou', async () => {
   test('smazat-pred-obnovou: noční ani vynucený otisk tudy smazat nejde (400)', nocni.status === 400 && vynuc.status === 400 && pamet.has('zalohy/2026-11-02'));
   const neni = await vynuceno({ akce: 'smazat-pred-obnovou', klic: '2026-11-03T101010-pred-obnovou', hesloSpravce: HESLO });
   test('smazat-pred-obnovou: neexistující otisk 404', neni.status === 404);
+  const primo = await Z.smazatPredObnovou('2026-11-02'), primo2 = await Z.smazatPredObnovou('2026-11-02T101010-rucne');
+  test('smazat-pred-obnovou: knihovna sama odmítne jiný než otisk před obnovou (400, nic nesmaže)', primo.kod === 400 && primo2.kod === 400
+    && pamet.has('zalohy/2026-11-02'), { primo, primo2 });
   pamet.set('zalohy/obnova-' + 'a'.repeat(32), J({ id: 'a'.repeat(32), kdo: ADMIN_EMAIL, zacatek: new Date().toISOString(), naposled: new Date().toISOString() }));
   const bezi = await vynuceno({ akce: 'smazat-pred-obnovou', klic: K, hesloSpravce: HESLO });
   pamet.delete('zalohy/obnova-' + 'a'.repeat(32));

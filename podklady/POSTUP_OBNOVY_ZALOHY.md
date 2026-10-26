@@ -22,24 +22,33 @@
 |---|---|---|
 | Netlify — noční otisky | posledních **14 dní**; z každého týdne nedělní (chybí-li, nejbližší starší v týdnu) **8 týdnů**; z každého měsíce první **6 měsíců** | ostatní, každou noc po hotovém otisku |
 | Netlify — „Zálohovat teď" a otisky při přihlášení | **7 dní** | starší |
-| Netlify — otisky před obnovou | **navždy** (smaže jen člověk) | nikdy |
+| Netlify — otisky před obnovou | **navždy** (smaže jen člověk) | nikdy automaticky; ručně správce s heslem: *Obnovit ze zálohy…* → vybrat otisk → *Smazat tento otisk…* (od v26.10.11, ne během obnovy) |
 | Netlify — staré otisky do 19. 10. 2026 | jen **první z každého měsíce**, i ten nejvýš 6 měsíců | ostatní (výjimka „staré nikdy" je zrušená) |
 | Disk Google — kopie | posledních **7 dní**; z týdne nedělní **8 týdnů**; z měsíce první **6 měsíců** | ostatní, po každé úspěšné kopii (jen soubory `otisk_RRRR-MM-DD.json(.gz)`; Disk je drží 30 dní v koši) |
 
 Nejnovější záloha se nesmaže nikdy. V Netlify se maže jen tehdy, když je na
 Disku podložená kopie mladší než 7 dní. Na Disku se maže jen po úspěšné kopii,
 kterou server přijal a jejíž soubor sedí velikostí i kontrolním součtem —
-výsledek („Na Disku smazáno N starších kopií…") ukáže hláška po kopii.
+výsledek („Na Disku smazáno N starších kopií…") ukáže hláška po kopii. Den pro
+úklid Disku bere aplikace ze serveru; liší-li se hodiny počítače od serveru
+o víc než den, nesmaže nic (od v26.10.11). Otisk, ze kterého právě běží
+obnova, retence nesmaže, a když novému nočnímu otisku chybí část, nesmaže nic.
 
 **Zálohy se mají zvětšovat (pokyn J. V. 26. 10. 2026).** Mazání (v Netlify
 i na Disku) se zastaví, když nová noční záloha proti předchozí má **méně než
 90 % dat**, **méně než 95 % zakázek nebo účtů**, nebo **méně šablon či
 podpisů**; totéž, když nová kopie na Disku nese méně než 90 % dat předchozí
-kopie. Nastavení → Databáze pak červeně ukáže, co ubylo a z kolika na kolik
-(a hláška hned po přihlášení), v logu `zaloha_nocni` je řádek „VAROVÁNÍ".
-**Bez potvrzení se nemaže nic — ani po měsících.** Když data ubyla záměrně
-(smazané zakázky, šablona), správce klikne na *Úbytek byl záměrný* a potvrdí
-heslem; jinak je to signál, že se data ztratila — obnovte je podle A).
+kopie. Od v26.10.11 (#527) se noční záloha porovnává i **s nejvyšším stavem
+za posledních 30 dní** — pozvolný úbytek po pár procentech za noc tak taky
+zastaví mazání (bez nočních záloh se porovná s ručními). Nastavení → Databáze
+pak červeně ukáže, co ubylo a z kolika na kolik (a hláška hned po
+přihlášení), v logu `zaloha_nocni` je řádek „VAROVÁNÍ". **Bez potvrzení se
+nemaže nic — ani po měsících.** Když data ubyla záměrně (smazané zakázky,
+šablona), **hlavní správce** (hlavní administrátorský účet) klikne na
+*Úbytek byl záměrný* a potvrdí svým heslem; jinak je to signál, že se data
+ztratila — obnovte je podle A). Další varování nepřepíše nepotvrzené: přidá
+se za něj a potvrzují se postupně od nejstaršího (karta řekne, kolik jich
+zbývá). Po potvrzení se porovnává až od potvrzeného dne.
 
 **Komprese (od v26.10.9).** Části nočních otisků v Netlify se ukládají
 komprimované (gzip, o 30–40 % méně místa) — obnova a stažení je čtou samy,
@@ -57,7 +66,12 @@ je celý. Když se pokus nepovede, Nastavení → Databáze ukáže **poslední 
 o zálohu** s důvodem; v Netlify → Logs → Functions → `zaloha_nocni` /
 `zaloha_vynuceno` je chyba celá. Stažení zálohy a kopie na Disk se stahují po
 stránkách a skládají v prohlížeči — soubor má stejný tvar jako dřív.
-Obnova z otisku po částech běží po dávkách (15 záznamů) sama.
+Obnova z otisku po částech běží po dávkách (15 záznamů) sama. Od v26.10.11
+(#527) totéž platí pro **staré otisky uložené jedním kusem** (do v26.10.7):
+dřív šel jejich náhled i obnova jedním požadavkem a u velké databáze spadly na
+limitu funkce — teď běží po dávkách jako nové (u ~800 zakázek několik minut).
+Obnova přes API jedním požadavkem (bez `faze`) u velké databáze odmítne 409
+`obnovaPoFazich` — použijte `faze: 'zacatek'` → dávky → `faze: 'konec'`.
 
 Že noční otisky vznikají, hlídá aplikace sama: administrátor dostane po
 přihlášení varování, když poslední noční otisk chybí nebo je starší než
