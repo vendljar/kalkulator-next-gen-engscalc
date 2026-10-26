@@ -15,7 +15,7 @@ session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno (rozhoduje J. V.), na ostrém, n
 | 4 Hlídač záloh koordinace | ✅ | oznámeno (send_message): hledat `^otisk_\d{4}-\d{2}-\d{2}\.json(\.gz)?$`, staré kopie mizí |
 | Doplnění: zálohy se mají zvětšovat (J. V. ~13:35) | ✅ | pojistka: velikost < 90 %, zakázky/účty < 95 %, šablony/podpisy méně (`RETENCE_ZALOH_POJISTKA`); bez potvrzení se nemaže nikdy (**zrušeno i uvolnění po 30 dnech** — výchozí volba Z2); Disk porovná data nové kopie s předchozí a úbytek hlásí serveru (`retence-varovani-disk`) |
 | Testy s pojistkou | ✅ | `netlify/test_z2_retence.mjs` 25/34 FAIL → 64/0, doplnění 69/20 → 89/0; `src/test_z2_disk_retence.js` 9/2 + výjimka → 33/0, doplnění 35/8 → 43/0; `test_zalohy` 162/0, `test_o7_kopie_klient` 21/0 |
-| Mutace „#523" | ✅ | 64/64; přecílené „#151 N5:" 5/5, N6 jméno 1/1, O5 jméno 1/1; `--kontrola` 999 |
+| Mutace „#523" | ✅ | 64/64; přecílené „#151 N5:" 5/5, N6 jméno 1/1, O5 jméno 1/1; „#522" 16/16 (přeživší z čistého Z1 „výřez části" chycen novou kontrolou v `test_zalohy_objem`); `--kontrola` 999 |
 | Node sady, kolo, prohlížeč | ✅ | `spust_testy.sh` 265/0/1; `testovaci_kolo.sh --jen build,staticke` VŠE ZELENÉ; `overit_online.mjs` 273/0; `test_zalohy_objem` s gzip 30/0 |
 | Celé kolo (celé mutace po částech) | ⬜ | pouští koordinace |
 | Dokumentace | ✅ | CHANGELOG, příručka kap. 30 + novinka v26.10.9, `podklady/POSTUP_OBNOVY_ZALOHY.md` (tabulka „kolik záloh se drží"), roadmapa #523 |

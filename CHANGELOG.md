@@ -75,6 +75,9 @@ automatické otisky přibývají při každém přihlášení správce a otisky 
   upraveny na prahy 95 % a bez uvolnění po 30 dnech; mutace O7/O11 přecíleny. `test_zalohy_objem.mjs` (Z1) nově
   s binárním úložištěm — otisk 900 zakázek / 20 MB se pořídí komprimovaný v simulovaných limitech kroků (30/0).
   `overit_online.mjs` (prohlížeč): kopie `.json.gz`, úklid Disku, obnova z `.gz`, hlídka bez 30denního zhasnutí — 273/0.
+- **Nález u Z1:** mutace „#522: výřez části otisku bere celou část" přežívala už na čistém Z1 (48ab0a4) — test objemu
+  hlídal jen čas, a celá část se v simulaci do limitu vešla. `test_zalohy_objem.mjs` nově ověří, že dávka obnovy
+  nese nejvýš 15 záznamů → chycená; filtr „#522" teď 16/16 (31/0).
 - **Výsledky:** mutace serveru filtr „#523" **64/64 chycených**, přecílené „#151 N5:" 5/5, „#151 N6: záznam kopie…"
   1/1, „O5: K3-N1 jméno…" 1/1; `--kontrola` 999 úseků; `spust_testy.sh` 265 / 0 / 1 přeskočeno;
   `testovaci_kolo.sh --jen build,staticke` VŠE ZELENÉ (statické 4/4).

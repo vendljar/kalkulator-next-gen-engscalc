@@ -256,7 +256,7 @@ await zkus('obnova', async () => {
   test('obnova: otisk před obnovou se dopořídí po krocích', zac.ok && zac.otiskHotovo === true, zac);
   const casti = (await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno')).json()).otisky.find(x => x.den === vynKlic).casti;
   let nove = 0;
-  let davek = 0;
+  let davek = 0, nejvicVDavce = 0;
   for (let i = 0; i < casti; i++) {
     for (let od = 0, zaznamu = 1; od < zaznamu; od += 15) {
       const d = await (await telo({ obnovaId: zac.obnovaId, zdroj: { otisk: vynKlic, cast: i, od, kolik: 15 }, rezim: 'doplnit',
@@ -264,10 +264,14 @@ await zkus('obnova', async () => {
       if (!d.ok) throw new Error('dávka ' + i + '/' + od + ': ' + JSON.stringify(d).slice(0, 300));
       zaznamu = d.zdroj.zaznamu; davek++;
       nove += (d.casti && d.casti.zakazky && d.casti.zakazky.nove) || 0;
+      /* #523 (mezera po Z1): výřez musí nést nejvýš 15 záznamů — v simulaci by i celá část stihla limit */
+      { const z = (d.casti && d.casti.zakazky) || {};
+        nejvicVDavce = Math.max(nejvicVDavce, (z.nove || 0) + (z.prepsane || 0) + (z.bezeZmeny || 0) + (z.preskocene || 0)); }
       if (process.env.DBG && d.casti.zakazky && d.casti.zakazky.preskocene) console.log(JSON.stringify(d.casti.zakazky.duvody.slice(0,2)));
     }
   }
   const kon = await (await telo({ faze: 'konec', obnovaId: zac.obnovaId })).json();
+  test('#523: dávka obnovy z otisku zpracuje nejvýš 15 záznamů (výřez, ne celou část)', nejvicVDavce > 0 && nejvicVDavce <= 15, { nejvicVDavce, davek });
   test('obnova po částech doplní smazané zakázky (každá dávka v limitu)', kon.ok && nove === 3
     && !!(await sZak.cti('z/' + KLIC(450))), { nove, davek, kon: kon.ok });
 });
