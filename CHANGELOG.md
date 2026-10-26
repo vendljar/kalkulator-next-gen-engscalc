@@ -37,9 +37,11 @@ kopie na Disk žádná.
 - **Selhání řekne proč:** záznam posledního pokusu `otisk-stav` (hotovo / rozpracováno / chyba s důvodem)
   v přehledu záloh a v Nastavení → Databáze; chyba vynuceného otisku vrací 500 s důvodem, do logu celá;
   hláška automatické zálohy po přihlášení se už nepřepíše varováním hlídky.
-- Testy: nový `netlify/test_zalohy_objem.mjs` (900 zakázek, 20 MB, simulovaný limit funkce) — před
-  opravou 4 OK / 13 FAIL, po opravě 28/0; upravené sady čtou otisk přes `ctiOtisk` a každé volání noční
-  funkce je v nich nová noc. Mutace serveru #522 (14) a přecílené #151/B9/O7/O9.
+- Testy: nový `netlify/test_zalohy_objem.mjs` (900 zakázek, 20 MB, simulovaný limit a ukončení funkce) —
+  před opravou 4 OK / 13 FAIL, po opravě 29/0; `src/test_zaloha_strany.js` (klient: skládání stránek,
+  pokračování otisku) před 0/3, po 11/0; upravené sady čtou otisk přes `ctiOtisk` a každé volání noční
+  funkce je v nich nová noc. Mutace serveru #522 16/16, jádra #522 3/3, přecílené #151/B9/O7/O9 8/8;
+  `spust_testy.sh` 263 / 0 / 1 přeskočeno, `testovaci_kolo.sh --jen build,staticke` VŠE ZELENÉ.
 
 ## v26.10.7 — O3 #521: dorovnání po sloučení dávek 26. 10. (příručka, odkazy hlášek kontrol, SEC-Z2), větev claude/o3-dorovnani
 

@@ -8275,9 +8275,9 @@
   "proc": "Ostrý engscalc (main v25.10.1, 792 zakázek) neměl 26. 10. 2026 ani jednu zálohu: otisk četl celou databázi a zapsal ji jedním blobem, takže nestihl limit funkce (10 s synchronní, 30 s plánovaná); stažení zálohy a kopie na Disk vracely celou DB jednou odpovědí přes limit ~6 MB; obnova nešla ani zahájit. Selhání nebylo nikde vidět.",
   "detail": "Otisk po částech (≤ 4 MB) s manifestem až nakonec a stavem rozpracovaného otisku po každé části; noční funkce 2:00–3:45 UTC po 15 min navazuje, retence a úklid jednou za den; vynucený otisk a otisk před obnovou po krocích (prohlížeč pokračuje); stažení a kopie na Disk po stránkách (uloZalohaSloz); obnova z otisku po částech a výřezech 15 záznamů, rejstřík po dávkách; záznam posledního pokusu (otisk-stav) v přehledu a obrazovce, chyba s důvodem. ctiOtisk čte nový i starý formát.",
   "hotovoKdyz": "Otisk vznikne při 800+ zakázkách v limitu každého požadavku i po přerušení; stažení i kopie na Disk pod 6 MB na odpověď; obnova z nového i starého otisku; selhání má důvod v aplikaci i logu; test s pojistkou a mutace #522.",
-  "kde": "`netlify/lib/zalohovani.mjs`, `netlify/functions/zaloha_nocni.mjs`, `zaloha_vynuceno.mjs`, `zaloha.mjs`, `obnova.mjs`, `src/ui/online_ui.js`, `src/uloziste.js`, `netlify/test_zalohy_objem.mjs`, `netlify/mutace.mjs`, `podklady/POSTUP_OBNOVY_ZALOHY.md`",
+  "kde": "`netlify/lib/zalohovani.mjs`, `netlify/functions/zaloha_nocni.mjs`, `zaloha_vynuceno.mjs`, `zaloha.mjs`, `obnova.mjs`, `src/ui/online_ui.js`, `src/uloziste.js`, `netlify/test_zalohy_objem.mjs`, `src/test_zaloha_strany.js`, `netlify/mutace.mjs`, `mutace_jadro.mjs`, `podklady/POSTUP_OBNOVY_ZALOHY.md`",
   "hotovoV": "v26.10.8",
-  "pozn": "Dávka Z1, větev claude/z1-zalohy-oprava nad 4f2cc86 (integrace v26.10.7). Ověření na ostrém po nasazení: J. V. (Zálohovat teď, Netlify → Logs → Functions → zaloha_nocni, Scheduled */15 2-3 * * *).",
+  "pozn": "Dávka Z1, větev claude/z1-zalohy-oprava nad 4f2cc86 (integrace v26.10.7). Testy: test_zalohy_objem 4 OK / 13 FAIL → 29/0, test_zaloha_strany 0/3 → 11/0; mutace server #522 16/16, jádro #522 3/3. Ověření na ostrém po nasazení: J. V. (Zálohovat teď, Netlify → Logs → Functions → zaloha_nocni, Scheduled */15 2-3 * * *).",
   "zavisi": [
    {
     "id": "151",

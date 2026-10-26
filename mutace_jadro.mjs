@@ -164,6 +164,8 @@ const PRIORITA = [
   'test_neprelozene.js',
   /* #517 (O2) — rychlé sady k mutacím K8-K2…K4, SEC-S3, SEC-S5, SEC-I7 */
   'test_tisk_kolize_k8.js', 'test_tisk_ceny_skript.js', 'test_platby_ock100.js', 'test_sec_i7_klient.js',
+  /* #522 Z1 — záloha po stránkách a otisk po krocích v klientu */
+  'test_zaloha_strany.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -192,6 +194,19 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* #522 Z1 (26. 10. 2026): záloha po stránkách a otisk po krocích v klientu. Hlídá src/test_zaloha_strany.js. */
+  { nazev: '#522: stahování skončí po první stránce', soubor: 'ui/online_ui.js',
+    hledej: "    po = o.dalsi || '';\n  } while (po);",
+    nahrad: "    po = '';\n  } while (po);",
+    proc: 'stažená záloha a kopie na Disk by byly neúplné' },
+  { nazev: '#522: další stránky kopie nenesou klíč otisku', soubor: 'ui/online_ui.js',
+    hledej: "      + (otisk ? '&otisk=' + encodeURIComponent(otisk) : '')",
+    nahrad: "      + ''",
+    proc: 'kopie na Disk by mohla složit dva různé otisky' },
+  { nazev: '#522: vynucený otisk se nedopořídí', soubor: 'ui/online_ui.js',
+    hledej: "  while (o && o.hotovo === false) {",
+    nahrad: "  while (false) {",
+    proc: '„Zálohovat teď" by hlásilo hotovo po prvním kroku a otisk by nevznikl' },
   /* #514 (O-K8, 24. 10. 2026): SEC-N3 — konec řádku v argumentu obsluhy. Hlídá src/test_escape.js. */
   { nazev: '#514 SEC-N3: escJs neescapuje konec řádku', soubor: 'ui/common.js',
     hledej: "  .replace(/\\r/g, '\\\\r').replace(/\\n/g, '\\\\n').replace(/\\u2028/g, '\\\\u2028').replace(/\\u2029/g, '\\\\u2029'));",

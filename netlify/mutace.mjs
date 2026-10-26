@@ -144,7 +144,7 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* #522 Z1 (26. 10. 2026): otisk po částech a záloha po stránkách při objemu
       * ostrého provozu (simulovaný limit funkce). Na konci: chytá jen to, co
       * předchozí sady pustí (mutace #522), ostatním běh neprodlouží. */
-     'test_zalohy_objem.mjs'];
+     'test_zalohy_objem.mjs', '../src/test_zaloha_strany.js'];
 /* Filtr podle názvu; `--cast K/N` a `--od N` vybírají část běhu podle pořadí
  * (P2, 23. 10. 2026 — nastroje/mutace_cast.mjs). */
 const { mutaceCast, filtrZArgv } = await import('../nastroje/mutace_cast.mjs');
@@ -3997,8 +3997,8 @@ const MUTACE = [
     nahrad: "",
     proc: "správce by po přihlášení viděl falešnou chybu" },
   { nazev: "O7: K3-N13 varování retence se po přihlášení neohlásí", soubor: "../src/ui/online_ui.js",
-    hledej: "      const varovani = [rv ? rv.text : '',",
-    nahrad: "      const varovani = ['',",
+    hledej: "      const varovani = [chybaZalohy, rv ? rv.text : '',",
+    nahrad: "      const varovani = [chybaZalohy, '',",
     proc: "správce by o poklesu dat nevěděl" },
   { nazev: "O7: K3-N13 hlídka varování svítí napořád", soubor: "../src/uloziste.js",
     hledej: "  if (dnu < 0 || dnu >= ULO_RETENCE_VAROVANI_DNU) return null;",
@@ -4412,6 +4412,15 @@ const MUTACE = [
     hledej: "      for (const c of klice.filter(x => x.startsWith(OTISK_CASTI + k + '/'))) await s.smaz(c);   // #522: části otisku",
     nahrad: "",
     proc: 'retence by mazala jen manifesty a úložiště by rostlo dál' },
+  /* #522: skládání stránek zálohy v klientu (src/uloziste.js). Hlídá src/test_zaloha_strany.js. */
+  { nazev: '#522: skládání stránek přepíše mapu místo sloučení', soubor: '../src/uloziste.js',
+    hledej: "      if (v && typeof v === 'object') o[k] = Object.assign(o[k] && typeof o[k] === 'object' ? o[k] : {}, v);",
+    nahrad: "      if (v && typeof v === 'object') o[k] = v;",
+    proc: 'stažená záloha by nesla jen zakázky z poslední stránky' },
+  { nazev: '#522: účty z dalších stránek se zahodí', soubor: '../src/uloziste.js',
+    hledej: "    if (k === 'uzivatele') { o[k] = (Array.isArray(o[k]) ? o[k] : []).concat(Array.isArray(v) ? v : []); return; }",
+    nahrad: "    if (k === 'uzivatele') { o[k] = Array.isArray(v) ? v : []; return; }",
+    proc: 'záloha by nesla jen část účtů' },
   { nazev: '#514 K8-S2: převod maže závorky kvadratickým regulárem', soubor: 'lib/pd_prevod.mjs',
     hledej: "  const t = bezZavorek ? pdBezZavorek(text) : String(text);",
     nahrad: "  const t = bezZavorek ? String(text).replace(/\\([^)]*\\)/g, ' ') : String(text);",

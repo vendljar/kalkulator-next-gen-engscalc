@@ -1,3 +1,44 @@
+# Předávka — 26. 10. 2026: Z1 #522 (kritické) — ostrý web bez záloh, větev `claude/z1-zalohy-oprava`
+
+Nad `4f2cc86` (integrace v26.10.7). **Verze 26.10.8.** Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx.
+Neslučováno (rozhoduje J. V.), na ostrém nic nezapsáno (jen pasivní GET /api/zdravi = 25.10.1).
+
+**Příčina:** otisk četl celou DB a zapsal ji jedním blobem → u engscalc (792 zakázek, desítky MB) nestihl
+limit funkce (vynucený 10 s, noční 30 s), zápis na konci se nestal; `/api/zaloha` i `?zdroj=nocni`
+vracely celou DB jednou odpovědí přes limit ~6 MB (proto ani kopie na Disk); obnova nešla zahájit
+(otisk před obnovou synchronně), konec obnovy četl zakázky po jedné. Retence a stránkování seznamu
+Blobs vyloučeny. Měření: syntetická DB 800 zakázek / 64 MB = 3,3 s CPU, s latencí Blobs 12–22 s.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| Diagnóza → koordinace | ✅ | do 45 min |
+| Otisk po částech + navazování | ✅ | `lib/zalohovani.mjs` (části ≤ 4 MB, `rozpracovany/<klíč>`, manifest nakonec, `ctiOtisk` nový i starý formát) |
+| Noční funkce | ✅ | `*/15 2-3 * * *`, 20 s práce/běh, retence + úklid 1× denně (`nocni-dokonceno`) |
+| Vynucený / před obnovou | ✅ | po krocích 5 s, klient pokračuje; dávky obnovy do hotového otisku 409 |
+| Stažení a kopie na Disk | ✅ | `?strana=1&po=…` ≤ 4 MB, `uloZalohaSloz`; bez `strana` dřívější odpověď |
+| Obnova z otisku | ✅ | po částech a výřezech 15 záznamů; starý otisk jako dřív; rejstřík po dávkách |
+| Hlášení selhání | ✅ | `otisk-stav` v GET přehledu a v Nastavení → Databáze; 500 s důvodem; log |
+| Testy | ✅ | `test_zalohy_objem.mjs` 4 OK / 13 FAIL → 29/0; `src/test_zaloha_strany.js` 0/3 → 11/0; obnova nanečisto 20/0; `spust_testy.sh` 263/0/1 |
+| Mutace #522 | ✅ | server 16/16, jádro 3/3, přecílené #151/B9/O7/O9 8/8; `--kontrola` server 952, jádro 573 |
+| `testovaci_kolo.sh --jen build,staticke` | ✅ | VŠE ZELENÉ (statické 4/4) |
+| Celé kolo | ⬜ | pouští koordinace |
+
+**Ověření po nasazení na ostrém (J. V.):**
+1. Netlify → Functions → `zaloha_nocni`: značka *Scheduled*, rozvrh `*/15 2-3 * * *`.
+2. Nastavení → Databáze → **Zálohovat teď**: zprávy „Zálohuji databázi po částech… X z Y“, nakonec
+   „Záloha databáze pořízena (…, 792 zakázek …)“; přehled ukáže zálohu. Netlify → Logs → Functions →
+   `zaloha_vynuceno`: bez „Task timed out“ / „otisk se nepořídil“.
+3. **Stáhnout zálohu** → soubor `zaloha_online_<den>.json` (desítky MB); **Zkopírovat zálohu na Disk teď**
+   (po první noci, jinak aktuální stav).
+4. Ráno po 2:00–3:45 UTC: Logs → `zaloha_nocni` — řádky „rozpracován — X/Y záznamů“, pak
+   „otisk <den> — … ms, … kB, 792 zakázek“ a řádek retence; v aplikaci noční záloha v přehledu.
+5. Obnovu na ostrém nezkoušet; na testovacím webu jen náhled z otisku.
+
+**Rizika / otevřené:** konec obnovy přestavuje rejstřík čtením všech zakázek (po dávkách 20) v jednom
+požadavku — u ~800 zakázek jednotky sekund, při velkém růstu (tisíce) se vrátí riziko limitu;
+starší otevřená aplikace (před obnovením stránky) ukáže po prvním kroku „pořízena“, ač je otisk
+rozpracovaný — dopořídí ho noc nebo nové „Zálohovat teď“ po obnovení stránky.
+
 # Souhrn stavu 26. 10. 2026 (po O3 #521) — čti nejdřív
 
 **Integrace 26. 10.** (abc23d1, v26.10.6) = O1 #516 (v26.10.1) + #518 (v26.10.3) + P3 #114 (v26.10.4) + M2 #519

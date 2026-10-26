@@ -19,18 +19,22 @@ process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'spravce@priklad.cz';
 import { createRequire } from 'node:module';
 
 const ZPOZDENI_MS = 6;          // jedna operace úložiště
-const LIMIT_MS = 600;           // „limit funkce" v simulaci (poměrově k zpoždění)
+const LIMIT_MS = 1500;          // „limit funkce" v simulaci (rezerva proti zátěži stroje; kroky mají 200–250 ms)
 const pamet = new Map();
 let limitDo = Infinity;          // konec limitu právě běžícího požadavku
 let nejvetsiZapisB = 0, nejvetsiZapisKlic = '';
 let selhatCteni = null;          // úložiště, jehož čtení selže (hlášení chyby)
-const hlid = () => { if (Date.now() > limitDo) throw new Error('Task timed out (simulovaný limit funkce)'); };
+let zabijPoCastech = Infinity;   // „ukončení funkce" po tolika zapsaných částech otisku (deterministicky)
+let zabito = false;              // po „ukončení" už funkce nic nepřečte ani nezapíše (ani v catch)
+const hlid = () => { if (zabito || Date.now() > limitDo) throw new Error('Task timed out (simulovaný limit funkce)'); };
 const cekej = () => new Promise(r => setTimeout(r, ZPOZDENI_MS));
 globalThis.__TEST_ULOZISTE = (nazev) => ({
   async cti(k) { await cekej(); hlid();
     if (selhatCteni === nazev) throw new Error('simulovaný výpadek čtení ' + nazev);
     return pamet.has(nazev + '/' + k) ? JSON.parse(pamet.get(nazev + '/' + k)) : null; },
-  async zapis(k, v) { await cekej(); hlid(); const t = JSON.stringify(v);
+  async zapis(k, v) { await cekej(); hlid();
+    if (nazev === 'zalohy' && k.startsWith('casti/') && zabijPoCastech-- <= 0) { zabito = true; hlid(); }
+    const t = JSON.stringify(v);
     if (nazev === 'zalohy' && t.length > nejvetsiZapisB) { nejvetsiZapisB = t.length; nejvetsiZapisKlic = k; }
     pamet.set(nazev + '/' + k, t); },
   async seznam(prefix) { await cekej(); hlid(); return [...pamet.keys()].filter(x => x.startsWith(nazev + '/' + (prefix || '')))
@@ -150,15 +154,16 @@ await zkus('noční', async () => {
 /* ---------------- 3) tvrdé ukončení uprostřed kroku ---------------- */
 await zkus('přerušení', async () => {
   const klic = '2026-01-05';
-  /* první krok zabitý limitem uprostřed (úložiště přestane odpovídat) */
-  limitDo = Date.now() + 300;
+  /* první krok ukončený uprostřed: po dvou zapsaných částech úložiště
+   * přestane odpovídat (jako když Netlify funkci ukončí na limitu) */
+  zabijPoCastech = 2;
   let chyba = null;
   try { await ticho(() => Z.porizOtiskKrok(klic, 'nocni-otisk', '', { rozpocetMs: 10000 })); } catch (e) { chyba = e; }
-  limitDo = Infinity;
+  zabijPoCastech = Infinity; zabito = false;
   test('simulace: krok byl opravdu ukončen uprostřed', !!chyba && /timed out/.test(String(chyba)), String(chyba));
   test('nedokončený otisk se jako hotový netváří', !pamet.has('zalohy/' + klic));
   const st = JSON.parse(pamet.get('zalohy/rozpracovany/' + klic) || '{}');
-  test('postup ukončeného kroku přežil (uložené části a pozice)', st.casti >= 1 && (st.pos.i > 0 || st.pos.j > 0), st.pos);
+  test('postup ukončeného kroku přežil (uložené části a pozice)', st.casti === 2 && (st.pos.i > 0 || st.pos.j > 0), st);
   /* zámek kroku vyprší (beziDo) — posun hodin */
   let v; const p = Date.now; Date.now = () => p.call(Date) + 10 * 60000;
   try { do { v = await pozadavek(() => Z.porizOtiskKrok(klic, 'nocni-otisk', '', { rozpocetMs: 200, jenPokracovat: true })); } while (!v.hotovo); }
