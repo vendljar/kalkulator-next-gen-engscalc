@@ -92,7 +92,8 @@ const slozka = (name, soubory) => {
             close: async () => { m.set(jm, { kind: 'file', data: Buffer.concat(casti) }); } }; },
         getFile: async () => { let d = m.get(jm).data;
           if (h.zmenaPoZapisu && /^otisk_/.test(jm)) d = h.zmenaPoZapisu(d);
-          return { size: d.length, arrayBuffer: async () => d.buffer.slice(d.byteOffset, d.byteOffset + d.length) }; },
+          return { size: d.length, arrayBuffer: async () => d.buffer.slice(d.byteOffset, d.byteOffset + d.length),
+            stream: () => new Blob([d]).stream() }; },
       };
     },
     async *values() { for (const [jm, v] of m) yield { kind: v.kind, name: jm }; },
@@ -110,7 +111,7 @@ const novyCtx = (opt) => {
     CompressionStream: o.bezKomprese ? undefined : CompressionStream, DecompressionStream: o.bezKomprese ? undefined : DecompressionStream,
     volani: [], zpravy: [], heslo: 'Heslo.Spravce.1',
     ULO_KOPIE_DISK_SLOZKA: U.ULO_KOPIE_DISK_SLOZKA, uloKopieDiskJmeno: U.uloKopieDiskJmeno, uloZalohaSloz: U.uloZalohaSloz,
-    retenceZalohDiskVyber: R.retenceZalohDiskVyber,
+    retenceZalohDiskVyber: R.retenceZalohDiskVyber, retenceZalohPokles: R.retenceZalohPokles, RETENCE_ZALOH_DISK_JMENO: R.RETENCE_ZALOH_DISK_JMENO,
     ONLINE_STAV: { otisky: [], kopieDisk: null }, jeAdminOnline: () => true, render: () => {}, uloPravo: async () => true,
     onlineZprava: (t, typ) => { ctx.zpravy.push([String(t), typ || '']); },
     dotazHeslo: () => Promise.resolve(ctx.heslo), uloDb: () => Promise.reject(new Error('bez IndexedDB')),
@@ -261,6 +262,60 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
     let chyba = '';
     try { await ctx2.obnovaText(soubor(gz)); } catch (e) { chyba = e.message; }
     test('#523 obnova: prohlížeč bez rozbalování řekne proč (ne tichý nesmysl)', /neumí rozbalit/.test(chyba), chyba);
+  }
+  /* ---- pojistka: nová kopie menší než předchozí (doplnění Z2, pokyn J. V. 26. 10.) ---- */
+  /* Předchozí kopie (20. 10.) nese víc dat; nová (27. 10.) je o 15 % menší → nic
+   * se nesmaže, server dostane hlášení s velikostmi DAT (ne souborů). */
+  {
+    const dataNove = Buffer.byteLength(J(ZALOHA));
+    const vetsi = (pomer) => 'x'.repeat(Math.round(dataNove / pomer));
+    for (const [popis, predchozi] of [['.json', { 'otisk_2026-10-20.json': vetsi(0.85) }],
+      ['.json.gz (velikost dat po rozbalení)', { 'otisk_2026-10-20.json.gz': { kind: 'file', data: gzipSync(Buffer.from(vetsi(0.85))) } }]]) {
+      const ctx = novyCtx({ serverOdpoved: async (cesta, telo) => {
+        if (telo && telo.akce === 'retence-varovani-disk') return { ok: true, retenceVarovani: { kdy: 'x', den: telo.disk.den, zdroj: 'disk', text: 'úbytek' } };
+        return { ok: true, kopieDisk: { kdy: new Date().toISOString() }, retenceVarovani: null }; } });
+      const h = slozka('_Zaloha Netlify DB', Object.assign({ 'otisk_2026-10-13.json': 'stara', 'otisk_2026-10-01.json': 'prvni', 'otisk_2026-04-05.json': 'duben' }, predchozi));
+      const k = await ctx.proved(h);
+      const hlaseni = (ctx.volani.find(v => v[1] && v[1].akce === 'retence-varovani-disk') || [])[1];
+      test('#523 pojistka Disk (' + popis + '): nová kopie −15 % → nic se nesmaže, úklid řekne proč', h.smazane.length === 0
+        && /méně dat \(velikost .* \(85 %\)\)/.test(k.uklid.duvod || ''), { smazane: h.smazane, uklid: k.uklid });
+      test('#523 pojistka Disk (' + popis + '): server dostane hlášení s velikostmi dat a dnem kopie', !!hlaseni
+        && hlaseni.disk.den === '2026-10-27' && hlaseni.disk.novySoubor === 'otisk_2026-10-27.json.gz'
+        && hlaseni.disk.novaVelikostB === dataNove && Math.abs(hlaseni.disk.predVelikostB - dataNove / 0.85) < 2
+        && /^otisk_2026-10-20\.json/.test(hlaseni.disk.predSoubor), hlaseni);
+      test('#523 pojistka Disk (' + popis + '): varování ze serveru se ukáže v hlídce', !!ctx.ONLINE_STAV.retenceVarovani && ctx.ONLINE_STAV.retenceVarovani.zdroj === 'disk');
+    }
+  }
+  {
+    const dataNove = Buffer.byteLength(J(ZALOHA));
+    const ctx = novyCtx();
+    const h = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-20.json': 'x'.repeat(Math.round(dataNove / 0.95)), 'otisk_2026-10-13.json': 'stara',
+      'otisk_2026-10-18.json': 'nedele', 'otisk_2026-10-01.json': 'prvni', 'otisk_2026-04-05.json': 'duben' });
+    const k = await ctx.proved(h);
+    test('#523 pojistka Disk: nová kopie −5 % → úklid proběhne', J(h.smazane.slice().sort()) === J(['otisk_2026-04-05.json', 'otisk_2026-10-13.json'])
+      && !ctx.volani.some(v => v[1] && v[1].akce === 'retence-varovani-disk'), k.uklid);
+  }
+  {
+    /* nepotvrzené varování (z noci) zastaví i úklid Disku; potvrzené pro tentýž den mazání pustí i při úbytku */
+    const ctx = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: 'x' },
+      retenceVarovani: { kdy: '2026-10-27T03:00:00Z', den: '2026-10-27', text: 'noční otisk 2026-10-27 má proti 2026-10-26 méně dat (zakázek 100 → 90)' } }) });
+    const h = slozka('_Zaloha Netlify DB', STARE);
+    const k = await ctx.proved(h);
+    test('#523 pojistka Disk: nepotvrzené varování ze serveru → úklid Disku stojí', h.smazane.length === 0 && /nepotvrzený úbytek/.test(k.uklid.duvod || ''), k.uklid);
+    const dataNove = Buffer.byteLength(J(ZALOHA));
+    const ctx2 = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: 'x' },
+      retenceVarovani: { kdy: '2026-10-27T03:00:00Z', den: '2026-10-27', zdroj: 'disk', text: 'x', potvrzeno: { kdy: 'y', kdo: 'spravce' } } }) });
+    const h2 = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-20.json': 'x'.repeat(Math.round(dataNove / 0.8)), 'otisk_2026-10-13.json': 'stara',
+      'otisk_2026-10-18.json': 'nedele', 'otisk_2026-10-01.json': 'prvni', 'otisk_2026-04-05.json': 'duben' });
+    const k2 = await ctx2.proved(h2);
+    test('#523 pojistka Disk: úbytek potvrzený správcem pro tentýž den → úklid proběhne', h2.smazane.length === 2
+      && !ctx2.volani.some(v => v[1] && v[1].akce === 'retence-varovani-disk'), k2.uklid);
+    const ctx3 = novyCtx({ serverOdpoved: async (cesta, telo) => (telo && telo.akce === 'retence-varovani-disk') ? { ok: true, retenceVarovani: { kdy: 'x' } }
+      : { ok: true, kopieDisk: { kdy: 'x' }, retenceVarovani: { kdy: '2026-10-20T03:00:00Z', den: '2026-10-20', text: 'x', potvrzeno: { kdy: 'y' } } } });
+    const h3 = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-20.json': 'x'.repeat(Math.round(dataNove / 0.8)), 'otisk_2026-10-13.json': 'stara', 'otisk_2026-10-01.json': 'prvni' });
+    await ctx3.proved(h3);
+    test('#523 pojistka Disk: potvrzení jiného dne úbytek nové kopie neodemkne', h3.smazane.length === 0
+      && ctx3.volani.some(v => v[1] && v[1].akce === 'retence-varovani-disk'));
   }
   /* ---- server přijme záznam .json.gz a podloží jím retenci ---- */
   {

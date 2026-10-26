@@ -573,10 +573,11 @@ await zkus('K3-N4', async () => {
 /* ---------------- K3-N13 (O7): pojistka retence proti tiché ztrátě dat ---------------- */
 await zkus('K3-N13', async () => {
   const P = Z.retencePoklesPocty;
-  test('K3-N13: práh 50 %', Z.RETENCE_POKLES_PRAH === 0.5);
-  test('K3-N13: zakázek 100 → 49 je pokles', JSON.stringify(P({ pocetZakazek: 100, pocetUctu: 10 }, { pocetZakazek: 49, pocetUctu: 10 }))
-    === JSON.stringify(['zakázek 100 → 49']));
-  test('K3-N13: hranice — přesně 50 % pokles není', P({ pocetZakazek: 100, pocetUctu: 10 }, { pocetZakazek: 50, pocetUctu: 5 }) === null);
+  /* #523 Z2 (pokyn J. V. 26. 10. 2026): práh zakázek a účtů 95 % (do #523 50 %) */
+  test('#523 K3-N13: práh počtů 95 %, velikosti 90 %', Z.RETENCE_POKLES_PRAH === 0.95 && Z.RETENCE_POKLES_VELIKOST === 0.9);
+  test('#523 K3-N13: zakázek 100 → 94 je pokles', JSON.stringify(P({ pocetZakazek: 100, pocetUctu: 10 }, { pocetZakazek: 94, pocetUctu: 10 }))
+    === JSON.stringify(['zakázek 100 → 94']));
+  test('#523 K3-N13: hranice — přesně 95 % pokles není', P({ pocetZakazek: 100, pocetUctu: 20 }, { pocetZakazek: 95, pocetUctu: 19 }) === null);
   test('K3-N13: účtů 10 → 4 je pokles i při stejných zakázkách',
     JSON.stringify(P({ pocetZakazek: 100, pocetUctu: 10 }, { pocetZakazek: 100, pocetUctu: 4 })) === JSON.stringify(['účtů 10 → 4']));
   test('K3-N13: z nuly se pokles nepočítá; nárůst není pokles',
@@ -606,9 +607,9 @@ await zkus('K3-N13', async () => {
   test('K3-N13: varování nese dny a počty a uloží se pro hlídku',
     !!r.varovani && !!zaznam && zaznam.den === D && zaznam.predchozi === '2028-10-18' && zaznam.pred.pocetZakazek === 100
     && zaznam.nove.pocetZakazek === 40 && /zakázek 100 → 40/.test(zaznam.text) && !!Date.parse(zaznam.kdy), zaznam);
-  await pripravit({ pocetZakazek: 60, pocetUctu: 6 }, { '2028-10-18': nocni(100, 10) });
+  await pripravit({ pocetZakazek: 96, pocetUctu: 10 }, { '2028-10-18': nocni(100, 10) });
   const r2 = await Z.retenceProved(D, D, ted);
-  test('K3-N13: pokles nad polovinou → retence proběhne', JSON.stringify(r2.smazano) === JSON.stringify(['2028-08-08', '2028-08-09']), r2);
+  test('#523 K3-N13: pokles zakázek o 4 % → retence proběhne', JSON.stringify(r2.smazano) === JSON.stringify(['2028-08-08', '2028-08-09']), r2);
   await pripravit({ pocetZakazek: 100, pocetUctu: 4 }, { '2028-10-18': nocni(100, 10) });
   test('K3-N13: pokles účtů pod polovinu → přeskočí', (await Z.retenceProved(D, D, ted)).smazano.length === 0);
   /* porovnává se s předchozím NOČNÍM, vynucený / jiný zdroj se přeskočí */
@@ -791,11 +792,13 @@ await zkus('O11', async () => {
   test('K4-N13: 29. den po varování retence pořád stojí', r29.smazano.length === 0 && !!r29.drzeno, r29);
   const t30 = Date.parse(r0.varovani.kdy) + 30 * 86400000;
   const r30 = await noc('2028-11-18', t30);
-  test('K4-N13: po 30 dnech bez potvrzení retence běží normálně', !r30.drzeno && r30.smazano.includes('2028-09-02'), r30);
-  test('K4-N13: čistá funkce — potvrzené / staré / nečitelné varování retenci nedrží, čerstvé drží',
+  /* #523 Z2 (pokyn J. V. 26. 10. 2026): bez potvrzení se nemaže NIKDY — do #523 se retence po 30 dnech uvolnila */
+  test('#523 K4-N13: ani po 30 dnech bez potvrzení se nic nesmaže', !!r30.drzeno && r30.smazano.length === 0, r30);
+  test('#523 K4-N13: čistá funkce — potvrzené / nečitelné varování retenci nedrží, čerstvé i staré (30 a 400 dní) drží',
     Z.retenceDrzena({ kdy: new Date(ted0).toISOString(), potvrzeno: { kdy: 'x' } }, ted0) === null
     && Z.retenceDrzena({ kdy: 'x' }, ted0) === null && Z.retenceDrzena(null, ted0) === null
-    && Z.retenceDrzena({ kdy: new Date(ted0 - 30 * 86400000).toISOString() }, ted0) === null
+    && Z.retenceDrzena({ kdy: new Date(ted0 - 30 * 86400000).toISOString() }, ted0).dnu === 30
+    && Z.retenceDrzena({ kdy: new Date(ted0 - 400 * 86400000).toISOString() }, ted0).dnu === 400
     && Z.retenceDrzena({ kdy: new Date(ted0 - 3600000).toISOString() }, ted0).dnu === 0);
 
   /* potvrzení správcem: endpoint */

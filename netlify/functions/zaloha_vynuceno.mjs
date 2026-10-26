@@ -9,6 +9,8 @@
  *   J. V.) jen s heslem správce a jen ze složky „_Zaloha Netlify DB".
  * Vynucený otisk má limit 1 za 10 min a 20 za 24 h (K3-N4) → jinak 429.
  * GET vrací i `retenceVarovani` (K3-N13) pro hlídku v administraci.
+ * POST { akce: 'retence-varovani-disk', disk } → prohlížeč ohlásí menší kopii
+ *   na Disku (#523); zapíše se varování a retence stojí do potvrzení.
  * POST { akce: 'retence-potvrdit', den, hesloSpravce } → správce potvrdí, že
  *   úbytek dat byl záměrný; retence pak zase maže (K4-N13, O11).
  * GET  /api/zaloha_vynuceno → { ok, otisky: [ { den, porizena, zdroj, kdo,
@@ -33,7 +35,7 @@
  * /api/zaloha, která otisky hesel nenese. */
 import { vyzadujRoli, json, uloziste, potvrdHesloSpravce } from '../lib/sdilene.mjs';
 import { seznamOtisku, KOPIE_DISK_KLIC, KOPIE_DISK_SLOZKA, porizVynuceny,
-  RETENCE_VAROVANI_KLIC, retenceDrzena, vynucenyPokracuj, seznamRozpracovanych,
+  RETENCE_VAROVANI_KLIC, retenceDrzena, retencePoklesPocty, vynucenyPokracuj, seznamRozpracovanych,
   OTISK_STAV_KLIC, OTISK_ROZPOCET } from '../lib/zalohovani.mjs';
 
 /* K4-N12 (O9): pole z těla jen jako text / číslo. String() nad objektem
@@ -84,19 +86,46 @@ export default async (req) => {
       otisk: /^\d{4}-\d{2}-\d{2}$/.test(txt(k.otisk)) ? txt(k.otisk) : null,
       puvod: k.puvod === 'nocni-otisk' ? 'nocni-otisk' : 'aktualni-stav',
       slozka: KOPIE_DISK_SLOZKA, potvrzeno: 'heslo-spravce' };
-    await (await uloziste('zalohy')).zapis(KOPIE_DISK_KLIC, zaznam);
-    return json({ ok: true, kopieDisk: zaznam });
+    const sZal = await uloziste('zalohy');
+    await sZal.zapis(KOPIE_DISK_KLIC, zaznam);
+    /* #523: prohlížeč před úklidem Disku potřebuje čerstvý stav pojistky */
+    return json({ ok: true, kopieDisk: zaznam, retenceVarovani: (await sZal.cti(RETENCE_VAROVANI_KLIC)) || null });
+  }
+  /* ÚBYTEK NA DISKU (#523 Z2, pokyn J. V. 26. 10. 2026). Prohlížeč před
+   * úklidem starých kopií porovná velikost nové kopie s předchozí; je-li
+   * menší než 90 %, nemaže a ohlásí to sem. Server porovnání přepočítá
+   * (text varování píše on, ne prohlížeč) a zapíše varování — tím stojí
+   * i retence v Netlify, dokud to správce nepotvrdí (`retence-potvrdit`).
+   * Nepotvrzené varování, které už je, se nepřepíše (správce potvrzuje to,
+   * které vidí). Zápis jen zastavuje mazání, proto stačí relace správce. */
+  if (telo.akce === 'retence-varovani-disk') {
+    const d = (telo.disk && typeof telo.disk === 'object') ? telo.disk : {};
+    const den = txt(d.den), predSoubor = txt(d.predSoubor), novySoubor = txt(d.novySoubor);
+    const jmeno = /^otisk_\d{4}-\d{2}-\d{2}\.json(\.gz)?$/;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(den) || !jmeno.test(predSoubor) || !jmeno.test(novySoubor))
+      return json({ ok: false, chyba: 'Neplatné údaje o kopii na Disku.' }, 400);
+    const pred = { velikostB: Math.max(0, Math.floor(cislo(d.predVelikostB))) };
+    const nove = { velikostB: Math.max(0, Math.floor(cislo(d.novaVelikostB))) };
+    const co = retencePoklesPocty(pred, nove);
+    if (!co) return json({ ok: false, chyba: 'Nová kopie není menší než předchozí — není co hlásit.' }, 409);
+    const sZal = await uloziste('zalohy');
+    const byl = await sZal.cti(RETENCE_VAROVANI_KLIC);
+    if (retenceDrzena(byl)) return json({ ok: true, retenceVarovani: byl });
+    const zaznam = { kdy: new Date().toISOString(), den, predchozi: predSoubor, zdroj: 'disk', pred, nove,
+      text: 'kopie zálohy na Disku ' + novySoubor + ' má proti ' + predSoubor + ' méně dat (' + co.join(', ') + ')' };
+    await sZal.zapis(RETENCE_VAROVANI_KLIC, zaznam);
+    return json({ ok: true, retenceVarovani: zaznam });
   }
   /* POTVRZENÍ ÚBYTKU DAT (K4-N13, O11, rozhodnutí J. V. 21. 10. 2026).
-   * Po poklesu pod polovinu stojí retence, dokud správce nepotvrdí, že byl
-   * záměrný (nejdéle 30 dní). Potvrzení odemyká mazání, proto jako záznam
+   * Po úbytku dat stojí retence, dokud správce nepotvrdí, že byl
+   * záměrný (od #523 bez časového uvolnění). Potvrzení odemyká mazání, proto jako záznam
    * kopie jen s heslem správce. `den` = den varování, které správce viděl:
    * novější varování se starým potvrzením neodemkne (409). */
   if (telo.akce === 'retence-potvrdit') {
     const sZal = await uloziste('zalohy');
     const v = await sZal.cti(RETENCE_VAROVANI_KLIC);
     if (!retenceDrzena(v))
-      return json({ ok: false, chyba: 'Není co potvrdit — retence záloh nestojí (varování chybí, je potvrzené nebo starší než 30 dní).' }, 409);
+      return json({ ok: false, chyba: 'Není co potvrdit — retence záloh nestojí (varování chybí nebo je potvrzené).' }, 409);
     if (txt(telo.den) !== String(v.den || ''))
       return json({ ok: false, chyba: 'Varování se mezitím změnilo — načtěte přehled záloh znovu a zkontrolujte ho.' }, 409);
     const stopHeslo = await potvrdHesloSpravce(req, relace, telo.hesloSpravce);

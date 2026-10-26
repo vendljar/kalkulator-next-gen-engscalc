@@ -107,6 +107,39 @@ function retenceZalohDiskVyber(jmena, dnes, chranit) {
   return soubory.filter(x => !drz.has(x.d) && !chranene.has(x.j) && !chraneneDny.has(x.d)).map(x => x.j).sort();
 }
 
+/* POJISTKA PROTI TICHÉ ZTRÁTĚ DAT (K3-N13 20. 10. 2026; rozšířeno #523 Z2,
+ * pokyn J. V. 26. 10. 2026: „Zálohy se musí v čase zvětšovat; nenadálé
+ * zmenšení musí být oznámené a schválené, jinak se staré zálohy nesmí
+ * mazat."). Nová záloha proti předchozí je ÚBYTEK, když má
+ *   - velikost dat < 90 % (nekomprimovaná velikost — gzip ji nezkreslí),
+ *   - zakázek nebo účtů < 95 %,
+ *   - šablon nebo podpisů méně (jakýkoli pokles).
+ * Do 26. 10. platil jen pokles zakázek/účtů pod 50 %. Prahy jsou výchozí
+ * volba koordinace — mění se JEN tady. Údaj, který některá záloha nenese
+ * (starší otisk bez počtu šablon), se neporovnává. Vrací seznam textů
+ * („zakázek 100 → 94") nebo null. Používá server (noční otisk proti
+ * předchozímu nočnímu) i prohlížeč (kopie na Disku proti předchozí kopii). */
+const RETENCE_ZALOH_POJISTKA = { velikost: 0.9, pocty: 0.95 };
+function retenceZalohMB(b) { return (b / 1048576).toFixed(1).replace('.', ',') + ' MB'; }
+function retenceZalohPokles(pred, nove) {
+  if (!pred || !nove) return null;
+  const c = (x) => (typeof x === 'number' && Number.isFinite(x) && x >= 0 ? x : null);
+  const P = RETENCE_ZALOH_POJISTKA;
+  const co = [];
+  const pv = c(pred.velikostB), nv = c(nove.velikostB);
+  if (pv !== null && pv > 0 && nv !== null && nv < pv * P.velikost)
+    co.push('velikost ' + retenceZalohMB(pv) + ' → ' + retenceZalohMB(nv) + ' (' + Math.round(100 * nv / pv) + ' %)');
+  for (const [k, nazev] of [['pocetZakazek', 'zakázek'], ['pocetUctu', 'účtů']]) {
+    const a = c(pred[k]), b = c(nove[k]);
+    if (a !== null && a > 0 && b !== null && b < a * P.pocty) co.push(nazev + ' ' + a + ' → ' + b);
+  }
+  for (const [k, nazev] of [['pocetSablon', 'šablon'], ['pocetPodpisu', 'podpisů']]) {
+    const a = c(pred[k]), b = c(nove[k]);
+    if (a !== null && b !== null && b < a) co.push(nazev + ' ' + a + ' → ' + b);
+  }
+  return co.length ? co : null;
+}
+
 /* Text pro obrazovku a příručku — ať se nerozejde s čísly výš. */
 function retenceZalohPopis() {
   const b = RETENCE_ZALOH_BLOBS, d = RETENCE_ZALOH_DISK;
@@ -119,5 +152,5 @@ function retenceZalohPopis() {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { RETENCE_ZALOH_BLOBS, RETENCE_ZALOH_DISK, RETENCE_ZALOH_STARE_PRED, RETENCE_ZALOH_DISK_JMENO,
+  module.exports = { RETENCE_ZALOH_POJISTKA, retenceZalohPokles, RETENCE_ZALOH_BLOBS, RETENCE_ZALOH_DISK, RETENCE_ZALOH_STARE_PRED, RETENCE_ZALOH_DISK_JMENO,
     retenceZalohDenMs, retenceZalohMesicuZpet, retenceZalohDrz, retenceZalohDiskVyber, retenceZalohPopis };

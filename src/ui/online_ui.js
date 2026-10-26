@@ -1756,14 +1756,14 @@ function onlineZaloha(doSlozky) {
 
 /* ---------- otisky databáze na serveru (vynucená i noční záloha) ---------- */
 
-/* POTVRZENÍ ÚBYTKU DAT (K4-N13, O11, rozhodnutí J. V. 21. 10. 2026). Po
- * poklesu dat v noční záloze pod polovinu stojí mazání starých záloh, dokud
- * to správce nepotvrdí (nejdéle 30 dní). Potvrzení odemyká mazání, proto
+/* POTVRZENÍ ÚBYTKU DAT (K4-N13, O11, rozhodnutí J. V. 21. 10. 2026; #523).
+ * Po úbytku dat v noční záloze nebo v kopii na Disku stojí mazání starých
+ * záloh, dokud to správce nepotvrdí (od #523 bez časového uvolnění). Potvrzení odemyká mazání, proto
  * heslem správce; server ověří, že jde o totéž varování (`den`). */
 async function onlineRetencePotvrd() {
   const v = ONLINE_STAV.retenceVarovani;
   if (!v || !jeAdminOnline()) return false;
-  const ano = await potvrd('Opravdu data ubyla záměrně (smazané zakázky nebo účty)? Po potvrzení se mazání starých záloh '
+  const ano = await potvrd('Opravdu data ubyla záměrně (smazané zakázky, účty, šablony, podpisy nebo přílohy)? Po potvrzení se mazání starých záloh '
     + 'znovu rozběhne a zálohy z doby před úbytkem začnou postupně mizet podle pravidel retence.',
     { nadpis: 'Úbytek dat v noční záloze', ano: 'Ano, úbytek byl záměrný', ne: 'Zpět' });
   if (!ano) return false;
@@ -2017,9 +2017,23 @@ async function kopieDiskZapisSoubor(h, jmeno, data) {
 async function kopieDiskData(text) {
   const surova = new TextEncoder().encode(text);
   if (typeof CompressionStream !== 'function' || typeof Blob !== 'function' || typeof Response !== 'function')
-    return { data: surova, gzip: false };
+    return { data: surova, gzip: false, velikostDatB: surova.length };
   const gz = await new Response(new Blob([surova]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
-  return { data: new Uint8Array(gz), gzip: true };
+  return { data: new Uint8Array(gz), gzip: true, velikostDatB: surova.length };
+}
+
+/* Nekomprimovaná velikost kopie na Disku (#523): u .json velikost souboru,
+ * u .json.gz se soubor rozbalí proudem a jen se sečtou bajty (do paměti se
+ * nebere celý). Pojistka porovnává DATA, ne soubory — gzip a JSON by se
+ * jinak srovnávaly nesrovnatelně. */
+async function kopieDiskDatB(h, jmeno) {
+  const f = await (await h.getFileHandle(jmeno)).getFile();
+  if (!/\.gz$/.test(jmeno)) return f.size;
+  if (typeof DecompressionStream !== 'function') throw new Error('prohlížeč neumí rozbalit ' + jmeno);
+  const cteni = f.stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+  let n = 0;
+  for (;;) { const { done, value } = await cteni.read(); if (done) break; n += value.length; }
+  return n;
 }
 
 /* ÚKLID STARÝCH KOPIÍ NA DISKU (#523 Z2, rozhodnutí J. V. 26. 10. 2026).
@@ -2044,6 +2058,25 @@ async function kopieDiskUklid(h, kopie, ted) {
   if ((await kopieDiskSha256(new Uint8Array(await f.arrayBuffer()))) !== kopie.sha256) return nic('kontrolní součet zapsaného souboru nesedí');
   const jmena = [];
   for await (const e of h.values()) if (e && e.kind === 'file') jmena.push(String(e.name));
+  /* POJISTKA PROTI ÚBYTKU (#523, pokyn J. V. 26. 10. 2026): nepotvrzené
+   * varování (z noci nebo z Disku) zastaví i úklid Disku; nová kopie s daty
+   * pod 90 % předchozí kopie se ohlásí serveru a nic se nesmaže. Varování
+   * potvrzené pro tentýž den mazání pustí. */
+  const v = ONLINE_STAV.retenceVarovani;
+  const den = String(kopie.otisk || (kopie.soubor.match(/\d{4}-\d{2}-\d{2}/) || [''])[0]);
+  if (v && !v.potvrzeno) return nic('nepotvrzený úbytek dat (' + String(v.text || v.den || '') + ') — mazání stojí, dokud ho nepotvrdíte');
+  const datum = (j) => (RETENCE_ZALOH_DISK_JMENO.exec(j) || [])[1] || '';
+  const predchozi = jmena.filter(j => datum(j) && datum(j) !== den && j !== kopie.soubor).sort((a, b) => datum(a) < datum(b) ? -1 : 1).pop();
+  if (predchozi && kopie.velikostDatB > 0) {
+    const predB = await kopieDiskDatB(h, predchozi);
+    const co = retenceZalohPokles({ velikostB: predB }, { velikostB: kopie.velikostDatB });
+    if (co && !(v && v.potvrzeno && v.den === den)) {
+      const o = await onlineApi('/api/zaloha_vynuceno', { akce: 'retence-varovani-disk',
+        disk: { den, predSoubor: predchozi, novySoubor: kopie.soubor, predVelikostB: predB, novaVelikostB: kopie.velikostDatB } });
+      ONLINE_STAV.retenceVarovani = (o && o.retenceVarovani) || ONLINE_STAV.retenceVarovani;
+      return nic('nová kopie má proti ' + predchozi + ' méně dat (' + co.join(', ') + ') — nic se nesmazalo, úbytek potvrďte v Nastavení → Databáze');
+    }
+  }
   const dnes = new Date(+ted || Date.now()).toISOString().slice(0, 10);
   const smazano = [], chyby = [];
   for (const j of retenceZalohDiskVyber(jmena, dnes, [kopie.soubor])) {
@@ -2074,7 +2107,7 @@ async function kopieDiskProved(h, heslo) {
   if (!hesloSpravce) throw new Error('bez vašeho hesla se kopie nepořídila');
   const o = await onlineZalohaStrankami('/api/zaloha?zdroj=nocni', null);
   if (!o || !o.ok || !o.zaloha) throw new Error((o && o.chyba) || 'server zálohu nevydal');
-  const { data, gzip } = await kopieDiskData(JSON.stringify(o.zaloha));
+  const { data, gzip, velikostDatB } = await kopieDiskData(JSON.stringify(o.zaloha));
   const jmeno = uloKopieDiskJmeno(o.otisk || new Date().toISOString().slice(0, 10), gzip);
   const ocekavano = data.length;
   const sha256 = await kopieDiskSha256(data);
@@ -2088,12 +2121,13 @@ async function kopieDiskProved(h, heslo) {
    * zálohy na Disku zůstane (je to platná záloha), jen se nezapočítá. */
   const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });
   ONLINE_STAV.kopieDisk = (z && z.kopieDisk) || ONLINE_STAV.kopieDisk;
+  if (z && z.retenceVarovani !== undefined) ONLINE_STAV.retenceVarovani = z.retenceVarovani;   // #523: čerstvá pojistka
   await kopieDiskZapisSoubor(h, 'posledni_kopie.json',
     JSON.stringify(Object.assign({ kdy: (z && z.kopieDisk && z.kopieDisk.kdy) || new Date().toISOString() }, kopie), null, 1));
   /* #523 Z2: úklid starých kopií — jen když server kopii přijal. */
   let uklid;
   if (!z || !z.ok) uklid = { smazano: [], chyby: [], duvod: 'server kopii nepotvrdil' };
-  else { try { uklid = await kopieDiskUklid(h, kopie); } catch (e) { uklid = { smazano: [], chyby: [String(e && e.message || e)] }; } }
+  else { try { uklid = await kopieDiskUklid(h, Object.assign({ velikostDatB }, kopie)); } catch (e) { uklid = { smazano: [], chyby: [String(e && e.message || e)] }; } }
   return Object.assign({}, kopie, { uklid });
 }
 

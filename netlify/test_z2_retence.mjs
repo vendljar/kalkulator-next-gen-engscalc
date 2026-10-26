@@ -352,5 +352,123 @@ await zkus('kopie .json.gz', async () => {
     && !Z.kopieDiskPodlozena({ ...z, soubor: 'otisk_2026-10-26.gz' }, klice));
 });
 
+/* ---------------- 8) pojistka: zálohy se mají zvětšovat (doplnění Z2, pokyn J. V. 26. 10. ~13:35) ---------------- */
+/* „Zálohy se musí v čase zvětšovat; nenadálé zmenšení musí být oznámené
+ * a schválené, jinak se staré zálohy nesmí mazat." Pojistka: před doplněním
+ * pokles velikosti o 15 % ani úbytek šablony retenci nezastavil a varování
+ * se po 30 dnech samo uvolnilo. */
+await zkus('pojistka', async () => {
+  const P = Z.retencePoklesPocty;
+  const MB = 1048576;
+  test('#523 pojistka: prahy na jednom místě — velikost 90 %, zakázky a účty 95 %', J(R.RETENCE_ZALOH_POJISTKA) === J({ velikost: 0.9, pocty: 0.95 }));
+  test('#523 pojistka: velikost −15 % je úbytek s textem', J(P({ velikostB: 100 * MB }, { velikostB: 85 * MB })) === J(['velikost 100,0 MB → 85,0 MB (85 %)']));
+  test('#523 pojistka: velikost −5 % a přesně −10 % úbytek není', P({ velikostB: 100 * MB }, { velikostB: 95 * MB }) === null
+    && P({ velikostB: 100 * MB }, { velikostB: 90 * MB }) === null);
+  test('#523 pojistka: zakázek −6 % ano, −5 % ne; účtů 20 → 18 ano', J(P({ pocetZakazek: 100 }, { pocetZakazek: 94 })) === J(['zakázek 100 → 94'])
+    && P({ pocetZakazek: 100 }, { pocetZakazek: 95 }) === null && J(P({ pocetUctu: 20 }, { pocetUctu: 18 })) === J(['účtů 20 → 18']));
+  test('#523 pojistka: jakýkoli úbytek šablon nebo podpisů', J(P({ pocetSablon: 4, pocetPodpisu: 6 }, { pocetSablon: 3, pocetPodpisu: 5 }))
+    === J(['šablon 4 → 3', 'podpisů 6 → 5']) && P({ pocetSablon: 4 }, { pocetSablon: 4 }) === null);
+  test('#523 pojistka: chybějící údaj (starší otisk) se neporovnává; nárůst není úbytek',
+    P({ pocetZakazek: 100, velikostB: 10 * MB }, { pocetZakazek: 100 }) === null && P({ pocetSablon: 3 }, {}) === null
+    && P({ velikostB: 10 * MB, pocetZakazek: 10 }, { velikostB: 20 * MB, pocetZakazek: 20 }) === null);
+
+  /* otisk nese počty šablon a podpisů */
+  vycisti();
+  for (const n of ['sablony', 'podpisy', 'zakazky']) for (const k of [...pamet.keys()]) if (k.startsWith(n + '/')) pamet.delete(k);
+  for (let i = 0; i < 3; i++) await ulz('sablony').zapis('data/cn/' + i, { soubor: 'x' + i });
+  for (let i = 0; i < 2; i++) await ulz('podpisy').zapis('p' + i + '@priklad.cz', { obrazek: 'y' });
+  await Z.porizOtisk('nocni-otisk', '', '2026-11-01');
+  const m = await ulz('zalohy').cti('2026-11-01'), sh = await ulz('zalohy').cti(Z.souhrnKlic('2026-11-01'));
+  test('#523 pojistka: manifest i souhrn nesou počty šablon a podpisů', m.pocetSablon === 3 && m.pocetPodpisu === 2
+    && sh.pocetSablon === 3 && sh.pocetPodpisu === 2, { m, sh });
+
+  /* provedení: pokles velikosti o 15 % → stojí; po potvrzení maže; pokles o 5 % → maže */
+  const ted = Date.parse('2026-12-20T03:00:00Z');
+  const pripravit = async (velPred, velNova, navic) => {
+    vycisti();
+    for (const k of ['2026-11-03', '2026-11-04']) { await ulz('zalohy').zapis(k, { zdroj: 'nocni-otisk' });
+      await ulz('zalohy').zapis(Z.souhrnKlic(k), { porizena: 'x', zdroj: 'nocni-otisk', pocetZakazek: 100, pocetUctu: 5, velikostB: velPred }); }
+    await ulz('zalohy').zapis('2026-11-01', { zdroj: 'nocni-otisk' });
+    await ulz('zalohy').zapis('2026-11-08', { zdroj: 'nocni-otisk' });      // neděle drží týden — 3. a 4. 11. jdou pryč
+    await ulz('zalohy').zapis('2026-12-19', { zdroj: 'nocni-otisk' });
+    await ulz('zalohy').zapis(Z.souhrnKlic('2026-12-19'), { porizena: 'x', zdroj: 'nocni-otisk', pocetZakazek: 100, pocetUctu: 5, velikostB: velPred,
+      pocetSablon: 4, pocetPodpisu: 6 });
+    await ulz('zalohy').zapis('2026-12-20', { zdroj: 'nocni-otisk' });
+    await ulz('zalohy').zapis(Z.souhrnKlic('2026-12-20'), { porizena: 'x', zdroj: 'nocni-otisk', pocetZakazek: 100, pocetUctu: 5, velikostB: velNova,
+      pocetSablon: 4, pocetPodpisu: 6, ...(navic || {}) });
+    await ulz('zalohy').zapis(Z.KOPIE_DISK_KLIC, kopie('2026-12-19', ted));
+  };
+  await pripravit(100 * MB, 85 * MB);
+  const r1 = await Z.retenceProved('2026-12-20', '2026-12-20', ted);
+  const v1 = await ulz('zalohy').cti(Z.RETENCE_VAROVANI_KLIC);
+  test('#523 pojistka: velikost −15 % → retence stojí, nic se nesmaže', r1.smazano.length === 0 && !!r1.varovani && pamet.has('zalohy/2026-11-04'), r1);
+  test('#523 pojistka: varování nese co ubylo, z kolika na kolik, a dny', !!v1 && v1.den === '2026-12-20' && v1.predchozi === '2026-12-19'
+    && /velikost 100,0 MB → 85,0 MB \(85 %\)/.test(v1.text) && v1.pred.velikostB === 100 * MB && v1.nove.velikostB === 85 * MB, v1);
+  const r1b = await Z.retenceProved('2026-12-20', '2026-12-20', ted + 3600000);
+  test('#523 pojistka: další běh téže noci dál stojí (varování nepotvrzené)', r1b.smazano.length === 0, r1b);
+  await ulz('zalohy').zapis(Z.RETENCE_VAROVANI_KLIC, { ...v1, potvrzeno: { kdy: new Date(ted).toISOString(), kdo: 'spravce@priklad.cz' } });
+  const r2 = await Z.retenceProved('2026-12-20', '2026-12-20', ted + 7200000);
+  test('#523 pojistka: po potvrzení téhož dne retence maže (potvrzení se nepřepíše novým varováním)',
+    J(r2.smazano) === J(['2026-11-03', '2026-11-04']) && !!(await ulz('zalohy').cti(Z.RETENCE_VAROVANI_KLIC)).potvrzeno, r2);
+  await pripravit(100 * MB, 95 * MB);
+  const r3 = await Z.retenceProved('2026-12-20', '2026-12-20', ted);
+  test('#523 pojistka: velikost −5 % → retence maže', J(r3.smazano) === J(['2026-11-03', '2026-11-04']) && !r3.varovani, r3);
+  await pripravit(100 * MB, 120 * MB, { pocetSablon: 3 });
+  const r4 = await Z.retenceProved('2026-12-20', '2026-12-20', ted);
+  test('#523 pojistka: ubyla šablona (velikost roste) → stojí', r4.smazano.length === 0 && /šablon 4 → 3/.test(r4.ceka || ''), r4);
+  await pripravit(100 * MB, 120 * MB, { pocetPodpisu: 5 });
+  test('#523 pojistka: ubyl podpis → stojí', (await Z.retenceProved('2026-12-20', '2026-12-20', ted)).smazano.length === 0);
+  await pripravit(100 * MB, 120 * MB, { pocetZakazek: 94 });
+  test('#523 pojistka: zakázek 100 → 94 → stojí', (await Z.retenceProved('2026-12-20', '2026-12-20', ted)).smazano.length === 0);
+  /* noční funkce: řádek VAROVÁNÍ v logu */
+  await pripravit(100 * MB, 85 * MB);
+  const realNow = Date.now; Date.now = () => ted;
+  const varovani = [];
+  const w = console.warn, l = console.log; console.warn = (...a) => varovani.push(a.join(' ')); console.log = () => {};
+  let noc; try { noc = await (await zalohaNocni()).json(); } finally { console.warn = w; console.log = l; Date.now = realNow; }
+  test('#523 pojistka: noční funkce zaloguje VAROVÁNÍ s poklesem velikosti a nic nesmaže', noc.ok && noc.retence.smazano.length === 0
+    && varovani.some(x => /VAROVÁNÍ — retence přeskočena — noční otisk 2026-12-20 má proti 2026-12-19 méně dat \(velikost 100,0 MB → 85,0 MB/.test(x)), varovani);
+  /* bez potvrzení nikdy: ani po roce */
+  const r5 = await Z.retenceProved('2026-12-20', '2026-12-20', ted + 400 * DEN);
+  test('#523 pojistka: bez potvrzení se nemaže ani po 400 dnech (žádné automatické uvolnění)', r5.smazano.length === 0 && !!(r5.drzeno || r5.varovani), r5);
+});
+
+/* ---------------- 9) úbytek na Disku hlášený prohlížečem ---------------- */
+await zkus('úbytek Disk', async () => {
+  vycisti();
+  const { default: prihlaseni } = await import('./functions/prihlaseni.mjs');
+  const { default: zalohaVynuceno } = await import('./functions/zaloha_vynuceno.mjs');
+  const { ADMIN_EMAIL } = await import('./lib/sdilene.mjs');
+  const r = await prihlaseni(new Request('http://x/api/prihlaseni', { method: 'POST', body: J({ email: ADMIN_EMAIL, heslo: 'Docasne.Heslo.123' }) }));
+  const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
+  const posli = async (telo, ck) => { const o = await zalohaVynuceno(new Request('http://x/api/zaloha_vynuceno', { method: 'POST',
+    headers: ck === null ? {} : { cookie }, body: J(telo) })); return { status: o.status, telo: await o.json() }; };
+  const disk = (pred, nova, den) => ({ akce: 'retence-varovani-disk', disk: { den: den || '2026-12-20', predSoubor: 'otisk_2026-12-13.json.gz',
+    novySoubor: 'otisk_' + (den || '2026-12-20') + '.json.gz', predVelikostB: pred, novaVelikostB: nova } });
+  test('#523 Disk: bez přihlášení správce odmítnuto', (await posli(disk(100, 80), null)).status === 401 && !pamet.has('zalohy/' + Z.RETENCE_VAROVANI_KLIC));
+  test('#523 Disk: neplatná jména souborů → 400', (await posli({ ...disk(100, 80), disk: { ...disk(100, 80).disk, predSoubor: 'posledni_kopie.json' } })).status === 400);
+  test('#523 Disk: bez úbytku (−5 %) → 409 a nic se nezapíše', (await posli(disk(100, 95))).status === 409 && !pamet.has('zalohy/' + Z.RETENCE_VAROVANI_KLIC));
+  const o = await posli(disk(100 * 1048576, 80 * 1048576));
+  const v = await ulz('zalohy').cti(Z.RETENCE_VAROVANI_KLIC);
+  test('#523 Disk: úbytek −20 % → varování od serveru (text píše server)', o.status === 200 && v.zdroj === 'disk' && v.den === '2026-12-20'
+    && /kopie zálohy na Disku otisk_2026-12-20\.json\.gz má proti otisk_2026-12-13\.json\.gz méně dat \(velikost 100,0 MB → 80,0 MB \(80 %\)\)/.test(v.text), v);
+  const o2 = await posli(disk(100 * 1048576, 50 * 1048576, '2026-12-27'));
+  test('#523 Disk: nepotvrzené varování se dalším hlášením nepřepíše', o2.status === 200 && (await ulz('zalohy').cti(Z.RETENCE_VAROVANI_KLIC)).den === '2026-12-20');
+  /* retence v Netlify stojí kvůli varování z Disku */
+  const ted = Date.parse('2026-12-21T03:00:00Z');
+  for (const k of ['2026-11-03', '2026-11-04', '2026-11-08', '2026-11-01', '2026-12-21'])
+    { await ulz('zalohy').zapis(k, { zdroj: 'nocni-otisk' }); await ulz('zalohy').zapis(Z.souhrnKlic(k), { porizena: 'x', zdroj: 'nocni-otisk', pocetZakazek: 1 }); }
+  await ulz('zalohy').zapis(Z.KOPIE_DISK_KLIC, kopie('2026-12-21', ted));
+  const rr = await Z.retenceProved('2026-12-21', '2026-12-21', ted);
+  test('#523 Disk: varování z Disku zastaví i retenci v Netlify', rr.smazano.length === 0 && !!rr.drzeno, rr);
+  const potvrd = await posli({ akce: 'retence-potvrdit', den: '2026-12-20', hesloSpravce: 'Docasne.Heslo.123' });
+  test('#523 Disk: správce potvrdí heslem → retence v Netlify zase maže', potvrd.status === 200
+    && J((await Z.retenceProved('2026-12-21', '2026-12-21', ted)).smazano) === J(['2026-11-03', '2026-11-04']), potvrd.telo);
+  const kd = await posli({ akce: 'kopie-disk', hesloSpravce: 'Docasne.Heslo.123', kopie: { soubor: 'otisk_2026-12-21.json.gz', velikostB: 5,
+    sha256: 'd'.repeat(64), otisk: '2026-12-21', puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' } });
+  test('#523 Disk: odpověď na záznam kopie nese čerstvý stav pojistky (pro úklid Disku)', kd.status === 200
+    && !!kd.telo.retenceVarovani && !!kd.telo.retenceVarovani.potvrzeno, kd.telo);
+});
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

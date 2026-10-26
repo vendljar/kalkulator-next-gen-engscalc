@@ -23,8 +23,9 @@
  * lib/zalohovani.mjs → retenceVyber, src/retence_zaloh.js): až po
  * úspěšném zápisu dnešního otisku, nikdy když selže, a (v19.10.8) jen když
  * je kopie otisků na Disku Google mladší než 7 dní. Od v20.10.2 (K3-N13)
- * se přeskočí, když nový otisk nese méně než polovinu zakázek nebo účtů
- * proti předchozímu nočnímu.
+ * se přeskočí, když nový otisk nese proti předchozímu nočnímu méně dat — od
+ * #523 Z2 velikost < 90 %, zakázek / účtů < 95 %, šablon / podpisů méně —
+ * a stojí, dokud úbytek nepotvrdí správce.
  *
  * Log (#151 N2): každý běh zapíše trvání a velikost otisku, chyba jde do logu
  * celá. Limit plánované funkce je 30 s — v Netlify → Logs → Functions →
@@ -83,7 +84,7 @@ export default async () => {
   let retence;
   try { retence = await retenceProved(den, undefined, undefined, { rozpocetMs: Math.max(NOCNI_RETENCE_MIN_MS, NOCNI_RETENCE_DO_MS - (Date.now() - start)) }); }
   catch (e) { retence = { smazano: [], chyby: [String(e && e.message || e)] }; }
-  /* K3-N13: pokles zakázek nebo účtů pod polovinu → retence stojí, varování
+  /* K3-N13, #523: úbytek dat (velikost, počty, šablony, podpisy) → retence stojí, varování
    * do logu (a do hlídky v administraci přes záznam retence-varovani). */
   if (retence.varovani) console.warn('zaloha_nocni: VAROVÁNÍ — ' + retence.ceka + ' — nic se nesmazalo, zkontrolujte data');
   else if (retence.drzeno) console.warn('zaloha_nocni: ' + retence.ceka + ' — nic se nesmazalo (K4-N13)');

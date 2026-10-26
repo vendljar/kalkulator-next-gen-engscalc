@@ -2113,31 +2113,32 @@ function uloKopieDiskStav(kopie, ted) {
       : 'Poslední kopie záloh na Disku Google: ' + kdy + ' (' + String(kopie.soubor || '') + ').' };
 }
 
-/* POJISTKA RETENCE (K3-N13, rozhodnutí J. V. 20. 10. 2026). Noční funkce
- * přeskočí mazání starých otisků, když nový noční otisk nese méně než
- * polovinu zakázek nebo účtů proti předchozímu nočnímu, a zapíše záznam
- * (GET /api/zaloha_vynuceno → retenceVarovani). Hlídka ho ukazuje
- * ULO_RETENCE_VAROVANI_DNU dní — od O11 (K4-N13) tak dlouho retence STOJÍ,
- * pokud správce úbytek dřív nepotvrdí (tlačítko „Úbytek byl záměrný"; pak
- * hlídka zhasne). Vrací null nebo { text }. */
-const ULO_RETENCE_VAROVANI_DNU = 30;
+/* POJISTKA RETENCE (K3-N13, rozhodnutí J. V. 20. 10. 2026; #523 Z2
+ * 26. 10. 2026). Noční funkce přeskočí mazání starých otisků, když nový
+ * noční otisk nese proti předchozímu méně dat (velikost < 90 %, zakázek či
+ * účtů < 95 %, šablon či podpisů méně — src/retence_zaloh.js); totéž hlásí
+ * prohlížeč, když je kopie na Disku menší než předchozí. Záznam ze serveru
+ * (GET /api/zaloha_vynuceno → retenceVarovani) hlídka ukazuje, DOKUD ho
+ * správce nepotvrdí tlačítkem „Úbytek byl záměrný" — do #523 zhasla sama po
+ * 30 dnech, teď mazání stojí bez časového omezení (pokyn J. V.). Vrací null
+ * nebo { dnu, text }. */
 function uloRetenceVarovani(v, ted) {
   const t = v && Date.parse(v.kdy || '');
   if (!v || !isFinite(t)) return null;
   /* K4-N13 (O11): potvrzený úbytek už nesvítí — retence zase maže. */
   if (v.potvrzeno) return null;
-  const dnu = Math.floor(((+ted || Date.now()) - t) / 86400000);
-  if (dnu < 0 || dnu >= ULO_RETENCE_VAROVANI_DNU) return null;
+  const dnu = Math.max(0, Math.floor(((+ted || Date.now()) - t) / 86400000));
   const pocty = (a, b) => [a && b && a.pocetZakazek !== b.pocetZakazek ? 'zakázek ' + (+a.pocetZakazek || 0) + ' → ' + (+b.pocetZakazek || 0) : '',
     a && b && a.pocetUctu !== b.pocetUctu ? 'účtů ' + (+a.pocetUctu || 0) + ' → ' + (+b.pocetUctu || 0) : ''].filter(Boolean).join(', ');
-  return { dnu, text: 'Pozor: noční záloha ' + String(v.den || '') + ' nese proti ' + String(v.predchozi || '') + ' méně než polovinu dat ('
-    + pocty(v.pred, v.nove) + '). Mazání starých záloh stojí, dokud úbytek nepotvrdíte tlačítkem „Úbytek byl záměrný" '
-    + '(nejdéle ' + (ULO_RETENCE_VAROVANI_DNU - dnu) + ' dní). Zkontrolujte, jestli se data neztratila — '
+  const co = typeof v.text === 'string' && v.text ? v.text
+    : 'noční záloha ' + String(v.den || '') + ' nese proti ' + String(v.predchozi || '') + ' méně dat (' + pocty(v.pred, v.nove) + ')';
+  return { dnu, text: 'Pozor: ' + co + '. Mazání starých záloh v Netlify i na Disku stojí, dokud úbytek nepotvrdíte tlačítkem '
+    + '„Úbytek byl záměrný"' + (dnu > 0 ? ' (stojí už ' + dnu + (dnu === 1 ? ' den' : dnu < 5 ? ' dny' : ' dní') + ')' : '') + '. Zkontrolujte, jestli se data neztratila — '
     + 'starší zálohy jsou pro obnovu k dispozici (Obnovit ze zálohy…).' };
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { uloZalohaSloz, ULO_TYPY_HLAVICKA, uloRetenceVarovani, ULO_RETENCE_VAROVANI_DNU, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloZalohaSloz, ULO_TYPY_HLAVICKA, uloRetenceVarovani, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,
