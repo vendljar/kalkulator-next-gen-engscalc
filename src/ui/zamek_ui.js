@@ -372,19 +372,35 @@ async function tiskZamekCteniPovol(typ, varianta) {
  *     (zamekSnimkyVrat), kdyby se mezitím přece jen rozešla (starší koncept,
  *     obnovená záloha). Snímek sám se nikdy nepřepočítává. */
 const ZAMEK_SNIMEK_NEULOZENY = new Set();
-const _zamekServerZamky = { text: null, ids: null };
-/* Id variant, které jsou zamčené v poslední verzi ze serveru (uložené nebo
- * načtené — ONLINE_STAV.posledni). Parsuje se jen při změně textu. */
+const _zamekServerZamky = { text: null, jmeno: null, ids: null };
+/* Co víme o zámcích otevřené zakázky na serveru (K8-K1, #516):
+ *   – Set id variant zamčených v poslední verzi ze serveru (uložené nebo
+ *     načtené — ONLINE_STAV.posledni), ale JEN když ta verze patří téže
+ *     zakázce (stejné jméno souboru, uloJmenoSouboru). Po otevření jiné
+ *     zakázky ze souboru nebo obnově zálohy může `posledni` patřit zakázce,
+ *     která byla v okně předtím — do v25.10.1 se podle ní zámek uložený na
+ *     serveru tvářil jako čekající a krycí list se před odesláním tiše vrátil
+ *     na stav z tisku CN;
+ *   – prázdný Set, když zakázka v rejstříku serveru vůbec není (nic z ní na
+ *     serveru neleží, každý zámek je nový);
+ *   – null = nevíme (rejstřík nenačtený, zakázka v něm je, poslední verze je
+ *     cizí). Pak se nečeká: zmrazení a vrácení by smazalo úpravy po CN,
+ *     kdežto nový zámek s rozešlými daty server sám odmítne (409). */
 function zamekServerZamcene() {
   const t = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.posledni) || '';
-  if (_zamekServerZamky.text === t) return _zamekServerZamky.ids;
-  const ids = new Set();
-  try {
-    const z = t ? JSON.parse(t) : null;
+  const jmeno = (typeof uloJmenoSouboru === 'function' && typeof ZAK !== 'undefined' && ZAK) ? uloJmenoSouboru(ZAK) : '';
+  if (_zamekServerZamky.text !== t) {
+    let z = null;
+    try { z = t ? JSON.parse(t) : null; } catch (e) { z = null; }   // nečitelné = nic nevíme
+    const ids = new Set();
     ((z && Array.isArray(z.varianty)) ? z.varianty : []).forEach(x => { if (x && variantaUzamcena(x)) ids.add(x.id); });
-  } catch (e) { /* nečitelné = nic zamčeného */ }
-  _zamekServerZamky.text = t; _zamekServerZamky.ids = ids;
-  return ids;
+    _zamekServerZamky.text = t; _zamekServerZamky.ids = ids;
+    _zamekServerZamky.jmeno = (z && typeof uloJmenoSouboru === 'function') ? uloJmenoSouboru(z) : null;
+  }
+  if (_zamekServerZamky.jmeno && _zamekServerZamky.jmeno === jmeno) return _zamekServerZamky.ids;
+  const rej = (typeof ONLINE_STAV !== 'undefined' && Array.isArray(ONLINE_STAV.rejstrik)) ? ONLINE_STAV.rejstrik : [];
+  if (jmeno && rej.length && !rej.some(r => r && r.soubor === jmeno)) return new Set();
+  return null;
 }
 function zamekSnimekCekaNaServer(v) {
   if (!v || !variantaUzamcena(v) || !v.zamek.snimek) return false;
@@ -392,24 +408,50 @@ function zamekSnimekCekaNaServer(v) {
    * paměť tisků by se tu nikdy nevyprázdnila, proto se ptá první. */
   if (typeof onlineMozne !== 'function' || !onlineMozne()) return false;
   if (ZAMEK_SNIMEK_NEULOZENY.has(v.id)) return true;
-  return !zamekServerZamcene().has(v.id);
+  const ids = zamekServerZamcene();
+  return !!ids && !ids.has(v.id);
 }
 /* Srovná data čekajících variant podle snímku; vrací id čekajících (po
  * úspěšném uložení je zamekSnimkyUlozeno vyřadí). */
 function zamekSnimkyVrat() {
-  const ids = [];
+  const ids = [], vraceno = [];
   ((typeof ZAK !== 'undefined' && ZAK.varianty) || []).forEach(v => {
     if (!zamekSnimekCekaNaServer(v)) { if (v) ZAMEK_SNIMEK_NEULOZENY.delete(v.id); return; }
     ids.push(v.id);
     const s = v.zamek.snimek;
     if (JSON.stringify(zamekSnimekSpocti(v)) === JSON.stringify(s)) return;
     const kopie = x => JSON.parse(JSON.stringify(x));
+    vraceno.push(v.nazev || v.id);
     v.data = v.data || {};
     ['kryci', 'kryciProj'].forEach(k => { if (s[k] == null) delete v.data[k]; else v.data[k] = kopie(s[k]); });
     if (typeof s.dph === 'number' && v.data.cenik) v.data.cenik.dph = s.dph;
     if (typeof s.dphProj === 'number' && v.data.proj && v.data.proj.cenik) v.data.proj.cenik.dph = s.dphProj;
   });
+  /* Srovnání podle snímku se ohlásí (K8-K1) — nikdy potichu. */
+  if (vraceno.length && typeof onlineZprava === 'function')
+    try { onlineZprava(ZAMEK_SNIMEK_VRACENO + vraceno.join(', ') + '.', 'varovani'); } catch (e) { /* nevadí */ }
   return ids;
+}
+const ZAMEK_SNIMEK_VRACENO = 'Odeslaná nabídka ještě není na serveru: krycí list a DPH se před uložením vrátily '
+  + 'na stav z tisku cenové nabídky (server jinak zámek nepřijme) — varianta ';
+/* Smlouva vytištěná dřív, než se zámek nabídky uložil (K7-K2, K8-K6): do
+ * snímku se opíšou JEN pole, která SoD do krycích listů doplnila (číslo SoD,
+ * datum podpisu) — zbytek snímku zůstává z tisku CN. */
+function zamekSnimekDoplnSod(v) {
+  const s = v && v.zamek && v.zamek.snimek;
+  if (!s || !v.data) return;
+  const kopie = x => JSON.parse(JSON.stringify(x));
+  [['kryci', typeof KRYCI_SOD_OPIS !== 'undefined' ? KRYCI_SOD_OPIS : []],
+   ['kryciProj', typeof KRYCI_PROJ_SOD_OPIS !== 'undefined' ? KRYCI_PROJ_SOD_OPIS : []]].forEach(([list, opis]) => {
+    const h = v.data[list] && v.data[list].hodnoty;
+    if (!h) return;
+    opis.forEach(id => {
+      if (h[id] === undefined) return;
+      if (!s[list] || typeof s[list] !== 'object') s[list] = { hodnoty: {} };
+      if (!s[list].hodnoty || typeof s[list].hodnoty !== 'object') s[list].hodnoty = {};
+      s[list].hodnoty[id] = kopie(h[id]);
+    });
+  });
 }
 function zamekSnimkyUlozeno(ids) { (ids || []).forEach(id => ZAMEK_SNIMEK_NEULOZENY.delete(id)); }
 
@@ -430,7 +472,7 @@ function zamekPoTisku(typ, varId, sablona, navic) {
     /* Smlouva vytištěná dřív, než se zámek nabídky uložil (K7-K2): opsané
      * číslo SoD a datum podpisu nejsou v nabídce, snímek je ale nese celý —
      * jinak by se data od snímku rozešla a server by uložení odmítl. */
-    if (!prvni && zamekSnimekCekaNaServer(v)) v.zamek.snimek = zamekSnimekSpocti(v);
+    if (!prvni && zamekSnimekCekaNaServer(v)) zamekSnimekDoplnSod(v);
   }
   if (prvni) {
     try { otisk = zamekOtiskZPorovnani(porovnaniData(), v.id); } catch (e) { otisk = null; }

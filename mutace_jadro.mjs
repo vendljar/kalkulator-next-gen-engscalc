@@ -113,7 +113,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'zamek.js',
   /* ui/ares_ui.js (#507, K7-K3): ARES po tisku SoD hlavičku nepřepíše.
    * Hlídá src/test_ares_po_sod.js. */
-  'ui/ares_ui.js'];
+  'ui/ares_ui.js',
+  /* ui/plan_plateb_ui.js (#516, SEC-N8): karta plánu plateb PROJ po tisku CN
+   * editovatelná podle Z1, po SoD zamčená. Hlídá src/test_zmrazeni_kl.js blok 5c. */
+  'ui/plan_plateb_ui.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -151,6 +154,8 @@ const PRIORITA = [
   'test_cenik_verze_online.js',
   /* tisk během ukládání a snímek odeslané nabídky (#507) — chytají mutace ui/online_ui.js a ui/zamek_ui.js */
   'test_tisk_behem_ulozeni.js', 'test_snimek_po_tisku.js', 'test_ares_po_sod.js',
+  /* plán plateb PROJ po CN (#516) — chytá mutace plan_plateb.js a ui/plan_plateb_ui.js */
+  'test_zmrazeni_kl.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -2374,7 +2379,7 @@ const MUTACE = [
     nahrad: "",
     proc: 'DPH a podmínky by šly změnit dřív, než server snímek přijme' },
   { nazev: '#507 K7-K2: po obnovení stránky se nečeká', soubor: 'ui/zamek_ui.js',
-    hledej: "  return !zamekServerZamcene().has(v.id);",
+    hledej: "  return !!ids && !ids.has(v.id);",
     nahrad: "  return false;",
     proc: 'po obnovení stránky by šlo DPH změnit a server by vracel 409 bez cesty ven' },
   { nazev: '#507 K7-K2: ze souboru čeká na server navždy', soubor: 'ui/zamek_ui.js',
@@ -2390,9 +2395,66 @@ const MUTACE = [
     nahrad: "    v.zamek.snimek = zamekSnimekSpocti(v); return;",
     proc: 'dotisk CN by nesl DPH a podmínky změněné po tisku' },
   { nazev: '#507 K7-K2: SoD před uložením nedoplní snímek', soubor: 'ui/zamek_ui.js',
-    hledej: "    if (!prvni && zamekSnimekCekaNaServer(v)) v.zamek.snimek = zamekSnimekSpocti(v);",
+    hledej: "    if (!prvni && zamekSnimekCekaNaServer(v)) zamekSnimekDoplnSod(v);",
     nahrad: "",
     proc: 'smlouva vytištěná před uložením zámku by skončila 409' },
+  /* #516 (O1, J. V. 26. 10. 2026): K8-K1 — zámek, který už je na serveru, se
+   * nebere jako čekající; K8-K6 — SoD přepíše ve snímku jen opsaná pole;
+   * K8-K7 — deal se pamatuje normalizovaně. Hlídají src/test_snimek_po_tisku.js
+   * a src/test_pd_stav_autosave.js. */
+  { nazev: '#516 K8-K1: poslední verze cizí zakázky rozhoduje o čekání', soubor: 'ui/zamek_ui.js',
+    hledej: "  if (_zamekServerZamky.jmeno && _zamekServerZamky.jmeno === jmeno) return _zamekServerZamky.ids;",
+    nahrad: "  return _zamekServerZamky.ids;",
+    proc: 'po importu zakázky ze souboru by se krycí list zmrazil a úpravy po CN by se před odesláním tiše vrátily' },
+  { nazev: '#516 K8-K1: neznámý stav serveru = čeká', soubor: 'ui/zamek_ui.js',
+    hledej: "  return !!ids && !ids.has(v.id);",
+    nahrad: "  return !ids || !ids.has(v.id);",
+    proc: 'zámek uložený na serveru by se po otevření ze souboru tvářil jako čekající' },
+  { nazev: '#516 K8-K1: zakázka mimo rejstřík serveru nečeká', soubor: 'ui/zamek_ui.js',
+    hledej: "  if (jmeno && rej.length && !rej.some(r => r && r.soubor === jmeno)) return new Set();",
+    nahrad: "",
+    proc: 'nový zámek obnovené zakázky by šel upravit a server by uložení vracel 409' },
+  { nazev: '#516 K8-K1: srovnání podle snímku potichu', soubor: 'ui/zamek_ui.js',
+    hledej: "    try { onlineZprava(ZAMEK_SNIMEK_VRACENO + vraceno.join(', ') + '.', 'varovani'); } catch (e) { /* nevadí */ }",
+    nahrad: "    { /* potichu */ }",
+    proc: 'obchodník by nevěděl, že se krycí list vrátil na stav z tisku CN' },
+  { nazev: '#516 K8-K1: číslo nabídky jen pro správce při čekání volné', soubor: 'zamek.js',
+    hledej: "  if (typeof zamekSnimekCekaNaServer === 'function' && zamekSnimekCekaNaServer(v)) return 'zmrazeno';\n  if (tab && tab.jenAdmin.indexOf(id) >= 0) return 'jen_admin';",
+    nahrad: "  if (tab && tab.jenAdmin.indexOf(id) >= 0) return 'jen_admin';\n  if (typeof zamekSnimekCekaNaServer === 'function' && zamekSnimekCekaNaServer(v)) return 'zmrazeno';",
+    proc: 'změnu čísla nabídky správcem by srovnání podle snímku před odesláním tiše vrátilo' },
+  { nazev: '#516 K8-K6: SoD před uložením přepočte celý snímek', soubor: 'ui/zamek_ui.js',
+    hledej: "    if (!prvni && zamekSnimekCekaNaServer(v)) zamekSnimekDoplnSod(v);",
+    nahrad: "    if (!prvni && zamekSnimekCekaNaServer(v)) v.zamek.snimek = zamekSnimekSpocti(v);",
+    proc: 'snímek CN by převzal podmínky z doby SoD, ne z tisku nabídky' },
+  { nazev: '#516 K8-K6: SoD neopíše do snímku číslo SoD', soubor: 'ui/zamek_ui.js',
+    hledej: "      s[list].hodnoty[id] = kopie(h[id]);",
+    nahrad: "",
+    proc: 'smlouva vytištěná před uložením zámku by skončila 409' },
+  /* #516 SEC-S6 + SEC-N8: plán plateb PROJ po tisku CN. Hlídá src/test_zmrazeni_kl.js blok 5c. */
+  { nazev: '#516 SEC-S6: splátky ze snímku i při jiné záloze', soubor: 'plan_plateb.js',
+    hledej: "      const cin = Object.assign({}, stejnaPredvolba && stejnaZaloha ? cinnosti : {},",
+    nahrad: "      const cin = Object.assign({}, stejnaPredvolba ? cinnosti : {},",
+    proc: 'změna zálohy po CN by zůstala jen v popisu, smlouva by tiskla splátky z odeslání' },
+  { nazev: '#516 SEC-S6: katalog jen z milníků snímku', soubor: 'plan_plateb.js',
+    hledej: "               firemni: Object.assign({}, fir, { milniky: katalog }), zmrazeny: false, stary: false, zeStarych };",
+    nahrad: "               firemni, zmrazeny: false, stary: false, zeStarych };",
+    proc: 'po přepnutí předvolby by chyběly milníky a SoD by byla zablokovaná' },
+  { nazev: '#516 SEC-S6: text firemního milníku před textem snímku', soubor: 'plan_plateb.js',
+    hledej: "zeSnimku.has(m.id) ? Object.assign({}, m, zeSnimku.get(m.id)) : m",
+    nahrad: "m",
+    proc: 'smlouva by po změně plánu tiskla jiné znění milníku, než odešlo v nabídce' },
+  { nazev: '#516 SEC-N8: karta plánu po CN zablokovaná', soubor: 'ui/plan_plateb_ui.js',
+    hledej: "  return typeof zamekKryciVolnePole === 'function' && zamekKryciVolnePole('kryciProj', 'planPredvolba');",
+    nahrad: "  return false;",
+    proc: 'plán plateb, který Z1 po CN povoluje, by v krycím listu nešel změnit' },
+  { nazev: '#516 SEC-N8: karta plánu po SoD editovatelná', soubor: 'ui/plan_plateb_ui.js',
+    hledej: "  return typeof zamekKryciVolnePole === 'function' && zamekKryciVolnePole('kryciProj', 'planPredvolba');",
+    nahrad: "  return true;",
+    proc: 'karta by po tisku smlouvy nabízela úpravu, kterou server odmítne' },
+  { nazev: '#516 K8-K7: deal se pamatuje syrově', soubor: 'ui/online_ui.js',
+    hledej: "ctrlPdDealIdNorm(dealZak) : dealZak",
+    nahrad: "dealZak : dealZak",
+    proc: 'u dealu s mezerou by se stav Pipedrive dotazoval při každém otevření znovu' },
   /* #507 K7-S1: samooprava kandidátů hromadného exportu ze seznamu z/. Hlídá
    * src/test_controlling.js (a serverově netlify/test_rejstrik_soubeh.mjs). */
   { nazev: '#507 K7-S1: export bez samoopravy rejstříku', soubor: 'controlling.js',
@@ -2494,11 +2556,11 @@ const MUTACE = [
     nahrad: "const KPI_EUR_BUBLINA = 'cena v eurech jako v cenové nabídce v eurech (kurz z ceníku varianty, celá eura nahoru)';",
     proc: 'obchodník by v dlaždici čekal přesně částku nabídky, ta ale může být obchodně zaokrouhlená' },
   { nazev: '#508 K7-K6: stav dealu po každém autosave', soubor: 'ui/online_ui.js',
-    hledej: "    if (ZAK.pdDealId && !ZAK.pdStav && ONLINE_STAV.pdStavDeal !== String(ZAK.pdDealId)) pdStavObnovUI(o.soubor);",
-    nahrad: "    if (ZAK.pdDealId && !ZAK.pdStav) pdStavObnovUI(o.soubor);",
+    hledej: "    if (ZAK.pdDealId && !ZAK.pdStav && ONLINE_STAV.pdStavDeal\n",
+    nahrad: "    if (ZAK.pdDealId && !ZAK.pdStav && true\n",
     proc: 'u dealu bez známého stavu by každý autosave dotazoval /api/pd/stav' },
   { nazev: '#508 K7-K6: deal posledního dotazu se nezapíše', soubor: 'ui/online_ui.js',
-    hledej: "  ONLINE_STAV.pdStavDeal = String((typeof ZAK !== 'undefined' && ZAK && ZAK.pdDealId) || '');",
+    hledej: "  ONLINE_STAV.pdStavDeal = String((typeof ctrlPdDealIdNorm === 'function' ? ctrlPdDealIdNorm(dealZak) : dealZak) || '');",
     nahrad: "",
     proc: 'stav dealu by se dotazoval při každém autosave' },
 ];

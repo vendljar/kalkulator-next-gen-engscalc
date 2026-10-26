@@ -246,6 +246,12 @@ const poUprave = await p.evaluate(() => ({ zamceno: variantaUzamcena(aktivniVari
   zive: nabidkaProjPlatby(ZAK, aktivniVarianta(ZAK), 'cz').dopocet.cinnosti.dpz.map(r => r.p).join() }));
 zkus('Z1: zamčená varianta — zápis do plánu projde, krycí list nese nový plán, dotisk CN beze změny',
   poUprave.zamceno && /^10/.test(poUprave.dpz) && /^10/.test(poUprave.zive) && poUprave.cn === cnPred, JSON.stringify(Object.assign({ cnPred }, poUprave)));
+/* SEC-N8 (#516): karta plánu se po CN kreslí editovatelná (dřív `disabled`,
+ * harness volal planKlp… přímo, a proto to nechytil). */
+const selPoCn = await p.evaluate(() => { render(); const el = document.getElementById('page-kryciproj');
+  const s = el && [...el.querySelectorAll('select')].find(x => /planKlpPredvolba/.test(x.getAttribute('onchange') || ''));
+  return s ? (s.disabled ? 'disabled' : 'aktivni') : 'chybi'; });
+zkus('SEC-N8: výběr předvolby plánu po tisku CN není zablokovaný', selPoCn === 'aktivni', selPoCn);
 await p.evaluate(() => { KLP.planPlateb = JSON.parse(JSON.stringify(aktivniVarianta(ZAK).zamek.snimek.kryciProj.planPlateb)); render(); });
 /* odeslaná nabídka z doby před plánem plateb (bez snímku): krycí list jako dřív */
 /* klon odeslané varianty (revize etapy B): první tisk klonu zamkne JEHO plán,

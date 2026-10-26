@@ -362,6 +362,81 @@ test('neznámé pole se po tisku CN bere jako zmrazené', (() => { const v = zam
   test('plán vrácený na stav ze snímku: zase zmrazený plán', planPlatebVarianty(v, null).zmrazeny === true && radky(v) === zivePred);
 }
 
+/* ---- 5c) SEC-S6 + SEC-N8 (#516, rozhodnutí J. V. 26. 10. 2026): plán plateb PROJ po CN ----
+ * Snímek zmrazenoPlan nese jen milníky použité při odeslání. Po přepnutí
+ * předvolby chyběly milníky („milník chybí", SoD zablokovaná); při stejné
+ * předvolbě a jiné záloze se splátky braly ze snímku (změna 70 → 30 % se
+ * neprojevila). Karta plánu byla po CN `disabled`, ač ji Z1 povoluje.
+ * Pojistka: nad 9bc4965 selžou kontroly milníků, splátky 30 % i karta. */
+{
+  const zamcena = (plan) => {
+    const z = nova(); z.cislo = '2026 - OVP - CN - 4775'; const v = z.varianty[0];
+    v.data.kryciProj = { hodnoty: {}, planPlateb: plan };
+    zamkni(z, 'nabidkaProj');
+    return { z, v };
+  };
+  const castky = (z, v) => NP.nabidkaProjPlatby(z, v, 'cz').dopocet.platby.map(x => x.klic + ':' + x.castka).join('|');
+  [[{ v: 1, predvolba: 'zaloha', zaloha: 70 }, { v: 1, predvolba: 'std', prepis: {} }],
+   [{ v: 1, predvolba: 'sto' }, { v: 1, predvolba: 'std', prepis: {} }]].forEach(([pred, po]) => {
+    const { z, v } = zamcena(pred);
+    v.data.kryciProj.planPlateb = po;
+    const pl = NP.nabidkaProjPlatby(z, v, 'cz');
+    test('SEC-S6: ' + pred.predvolba + ' → std po CN — žádný chybějící milník',
+      !pl.kontrola.some(k => k.kod === 'milnik'), pl.kontrola);
+    const sod = SD.sodProjData(z, v, 'cz', { symboly: new Set(['SODP_PLATEBNI_KALENDAR']) }).placeholders.SODP_PLATEBNI_KALENDAR;
+    test('SEC-S6: ' + pred.predvolba + ' → std po CN — SoD bez „(milník chybí)"', !/milník chybí/.test(String(sod)), sod);
+    /* stejně jako nezamčená varianta se Standardem */
+    const zn = nova(); zn.cislo = z.cislo; zn.varianty[0].data.kryciProj = { hodnoty: {}, planPlateb: { v: 1, predvolba: 'std' } };
+    test('SEC-S6: ' + pred.predvolba + ' → std po CN — splátky jako u nezamčené', castky(z, v) === castky(zn, zn.varianty[0]),
+      [castky(z, v), castky(zn, zn.varianty[0])]);
+  });
+  {
+    const { z, v } = zamcena({ v: 1, predvolba: 'zaloha', zaloha: 70 });
+    const odeslano = castky(z, v);
+    v.data.kryciProj.planPlateb = { v: 1, predvolba: 'zaloha', zaloha: 30, prepis: {} };
+    const zn = nova(); zn.cislo = z.cislo; zn.varianty[0].data.kryciProj = { hodnoty: {}, planPlateb: { v: 1, predvolba: 'zaloha', zaloha: 30 } };
+    test('SEC-S6: záloha 70 → 30 % po CN — splátky podle 30 % (ne ze snímku)', castky(z, v) === castky(zn, zn.varianty[0]) && castky(z, v) !== odeslano,
+      [odeslano, castky(z, v), castky(zn, zn.varianty[0])]);
+    test('SEC-S6: … dotisk CN dál ze snímku (70 %)', castky(z, ZM.zamekNabidkaPohled(v)) === odeslano);
+    /* text milníku ze snímku má přednost před firemním katalogem */
+    const z2 = zamcena({ v: 1, predvolba: 'zaloha', zaloha: 70 });
+    const zm = z2.v.data.kryciProj.zmrazenoPlan;
+    const mid = zm.milniky[0].id; zm.milniky[0].cz = 'text milníku z odeslané nabídky';
+    z2.v.data.kryciProj.planPlateb = { v: 1, predvolba: 'std', prepis: {} };
+    const ef = planPlatebVarianty(z2.v, NAST.firma);
+    const m = ef.firemni.milniky.filter(x => x.id === mid);
+    test('SEC-S6: katalog po změně předvolby — milník ze snímku jednou a s textem snímku',
+      m.length === 1 && m[0].cz === 'text milníku z odeslané nabídky', m);
+    test('SEC-S6: katalog doplněný o milníky firemního plánu', ef.firemni.milniky.length > zm.milniky.length);
+    test('SEC-S6: stejná předvolba i záloha — splátky dál ze snímku', (() => {
+      const z3 = zamcena({ v: 1, predvolba: 'zaloha', zaloha: 70 });
+      const pred = castky(z3.z, z3.v);
+      z3.v.data.kryciProj.planPlateb = { v: 1, predvolba: 'zaloha', zaloha: 70, prepis: {} };
+      return castky(z3.z, z3.v) === pred;
+    })());
+  }
+  /* SEC-N8: karta plánu (ui/plan_plateb_ui.js) po CN editovatelná, po SoD ne */
+  {
+    const vm = require('vm');
+    const ui = fs.readFileSync(path.join(__dirname, 'ui', 'plan_plateb_ui.js'), 'utf8');
+    const zui = fs.readFileSync(path.join(__dirname, 'ui', 'zamek_ui.js'), 'utf8');
+    const vyrez = (zdroj, jm) => { const i = zdroj.indexOf('function ' + jm + '('); const j = zdroj.indexOf('\n}\n', i); return i < 0 ? '' : zdroj.slice(i, j + 2); };
+    global.esc = (x) => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    global.escJs = (x) => String(x == null ? '' : x).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    vm.runInThisContext(ui + '\n' + vyrez(zui, 'zamekKryciVolnePole'));
+    const { z, v } = zamcena({ v: 1, predvolba: 'zaloha', zaloha: 70 });
+    global.ZAK = z;
+    const karta = () => { const c = KP.kryciProjCtx(z, v); return planKlpKarta(c) + planKlpPlatbyKarta(c); };
+    const k1 = karta();
+    test('SEC-N8: karta plánu po CN — volba předvolby bez disabled',
+      /onchange="planKlpPredvolba\([^"]*"(?![^>]*disabled)/.test(k1), k1.slice(0, 300));
+    zamkni(z, 'sodProj', v);
+    const k2 = karta();
+    test('SEC-N8: karta plánu po SoD — zamčená (disabled)', /onchange="planKlpPredvolba\([^>]*disabled/.test(k2));
+    delete global.ZAK;
+  }
+}
+
 /* ---- 5b) ceny činností v krycím listu PROJ jako v nabídce (Z1, podnět obchodníka) ----
  * Pojistka: nad v22.10.2 nesl krycí list nezaokrouhlené ceny činností, součet
  * řádků neseděl s „Celkem bez DPH" nabídky (oba případy níž selžou). */

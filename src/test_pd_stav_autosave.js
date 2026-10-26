@@ -36,6 +36,7 @@ const ctx = {
   onlinePoslednizapamatuj: () => {}, onlineZprava: () => {}, hlaska: () => Promise.resolve(),
   onlineNactiRejstrik: () => Promise.resolve(true), onlineKolizeText: () => '', render: () => {},
   pdStavNorm: (x) => (x && x.status ? x : null),
+  ctrlPdDealIdNorm: (x) => String(x == null ? '' : x).trim(),
   onlineApi: (url, telo) => {
     if (String(url).startsWith('/api/pd/stav')) { dotazy.push(url); return Promise.resolve({ ok: true, nastaveno: true, pdStav: null }); }
     return Promise.resolve({ soubor: 'zk.json', razitko: 'r' + Date.now() });
@@ -58,6 +59,15 @@ vm.runInContext(kod, ctx);
   await ctx.onlineUloz({ tiche: true });
   await dobehni();
   test('K7-K6: další autosave se stejným dealem už ne', dotazy.length === 2, dotazy);
+  /* K8-K7 (#516): deal s mezerou se pamatuje normalizovaně — pdStavObnovZak
+   * porovnává normalizované id a dotaz při otevření by se jinak opakoval. */
+  ctx.ZAK.pdDealId = ' 79 ';
+  await ctx.onlineUloz({ tiche: true });
+  await dobehni();
+  test('K8-K7: deal s mezerou se pamatuje normalizovaně', ctx.ONLINE_STAV.pdStavDeal === '79', ctx.ONLINE_STAV.pdStavDeal);
+  await ctx.onlineUloz({ tiche: true });
+  await dobehni();
+  test('K8-K7: … a další autosave se znovu neptá', dotazy.length === 3, dotazy);
   console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
   process.exit(fail ? 1 : 0);
 })();
