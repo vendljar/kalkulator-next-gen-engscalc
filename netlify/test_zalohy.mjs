@@ -183,8 +183,20 @@ await zkus('N3', async () => {
   test('N3: souhrny se v přehledu neobjeví jako otisky', !seznam.some(o => o.den.startsWith('souhrn/')));
   /* #522: otisk po částech nese navíc počet částí (obnova po částech). */
   test('N3: přehled nese jen souhrnná pole', seznam.every(o =>
-    JSON.stringify(Object.keys(o).filter(k => k !== 'casti').sort()) === JSON.stringify(['den', 'kdo', 'pocetUctu', 'pocetZakazek', 'porizena', 'zdroj'])
-    && (o.casti === undefined || Number.isInteger(o.casti))));
+    JSON.stringify(Object.keys(o).filter(k => k !== 'casti' && k !== 'stary').sort()) === JSON.stringify(['den', 'kdo', 'pocetUctu', 'pocetZakazek', 'porizena', 'zdroj'])
+    && (o.casti === undefined || Number.isInteger(o.casti)) && (o.stary === undefined || o.stary === true)));
+  /* O-K9 #527 (K9-S4): starý otisk bez souhrnu se dočte JEDNOU — souhrn se mu
+   * zapíše a další přehled čte jen souhrny. Pojistka: do O-K9 četl každý GET
+   * starý otisk celý znovu (druhé čtení níž = 1, souhrn chyběl). */
+  const shStary = await ulz('zalohy').cti(Z.souhrnKlic('2026-01-02'));
+  test('O-K9 K9-S4: starému otisku se při prvním přehledu zapíše souhrn (stary: true, počty)', !!shStary && shStary.stary === true
+    && shStary.pocetZakazek === 2 && shStary.pocetUctu === 1 && !JSON.stringify(shStary).includes('"email"'), shStary);
+  cteni.length = 0;
+  const seznam2 = await Z.seznamOtisku(30);
+  const celaCteni2 = cteni.filter(k => k.startsWith('zalohy/') && Z.OTISK_KLIC.test(k.slice(7)));
+  test('O-K9 K9-S4: druhý přehled už žádný otisk celý nečte', celaCteni2.length === 0, celaCteni2);
+  test('O-K9 K9-V1: starý otisk má v přehledu příznak stary (obnova po výřezech části 0)',
+    (seznam2.find(o => o.den === '2026-01-02') || {}).stary === true && seznam2.filter(o => o.stary).length === 1, seznam2);
 });
 
 /* ---------------- N4: úplnost zálohy ---------------- */
@@ -219,6 +231,7 @@ const KLICE = {
   pole: ['pipedrive', false],
   'kopie-disk': ['zalohy', false],         // záznam o kopii na Disk (#151 N6), ne data
   'retence-varovani': ['zalohy', false],   // varování pojistky retence (K3-N13, O7), ne data
+  'retence-zaklad': ['zalohy', false],     // den potvrzeného úbytku — základ kumulativní pojistky (O-K9 #527), ne data
   'otisk-stav': ['zalohy', false],         // poslední pokus o otisk (#522), ne data
   'nocni-dokonceno': ['zalohy', false],    // den, kdy noc doběhla celá (#522), ne data
 };
@@ -784,19 +797,24 @@ await zkus('O11', async () => {
   const r0 = await Z.retenceProved(D0, D0, ted0);
   test('K4-N13: noc s poklesem — retence přeskočena, varování zapsáno', r0.smazano.length === 0 && !!r0.varovani, r0);
   const r1 = await noc(D1, Date.parse('2028-10-20T03:00:00Z'));
+  /* O-K9 #527 (K9-S1, K9-S2): druhá noc se porovná i s maximem za 30 dní (100
+   * z 18. 10.) — přidá druhé varování ZA první, první (nejstarší) zůstává hlavní */
+  const vz1 = await s.cti(Z.RETENCE_VAROVANI_KLIC);
   test('K4-N13: druhá noc po poklesu (otisk se srovná s „chudým") — retence DÁL STOJÍ, nic se nesmaže',
-    r1.smazano.length === 0 && !!r1.drzeno && /retence stojí do potvrzení/.test(r1.ceka || '')
-    && pamet.has('zalohy/2028-09-02') && pamet.has('zalohy/2028-09-03'), r1);
+    r1.smazano.length === 0 && (!!r1.drzeno || !!r1.varovani)
+    && vz1.den === D0 && Array.isArray(vz1.dalsi) && vz1.dalsi.length === 1 && vz1.dalsi[0].den === D1
+    && pamet.has('zalohy/2028-09-02') && pamet.has('zalohy/2028-09-03'), { r1, vz1 });
   const t29 = Date.parse(r0.varovani.kdy) + 29 * 86400000 + 3600000;
   const r29 = await noc('2028-11-17', t29);
-  test('K4-N13: 29. den po varování retence pořád stojí', r29.smazano.length === 0 && !!r29.drzeno, r29);
+  test('K4-N13: 29. den po varování retence pořád stojí', r29.smazano.length === 0 && (!!r29.drzeno || !!r29.varovani), r29);
   const t30 = Date.parse(r0.varovani.kdy) + 30 * 86400000;
   const r30 = await noc('2028-11-18', t30);
   /* #523 Z2 (pokyn J. V. 26. 10. 2026): bez potvrzení se nemaže NIKDY — do #523 se retence po 30 dnech uvolnila */
   test('#523 K4-N13: ani po 30 dnech bez potvrzení se nic nesmaže', !!r30.drzeno && r30.smazano.length === 0, r30);
-  test('#523 K4-N13: čistá funkce — potvrzené / nečitelné varování retenci nedrží, čerstvé i staré (30 a 400 dní) drží',
+  /* O-K9 #527 (K9-N2): nepotvrzené bez platného data = drží (fail-closed); do O-K9 null */
+  test('#523 K4-N13: čistá funkce — potvrzené varování retenci nedrží, bez platného data (K9-N2), čerstvé i staré (30 a 400 dní) drží',
     Z.retenceDrzena({ kdy: new Date(ted0).toISOString(), potvrzeno: { kdy: 'x' } }, ted0) === null
-    && Z.retenceDrzena({ kdy: 'x' }, ted0) === null && Z.retenceDrzena(null, ted0) === null
+    && JSON.stringify(Z.retenceDrzena({ kdy: "x" }, ted0)) === JSON.stringify({ dnu: 0, bezCasu: true }) && Z.retenceDrzena(null, ted0) === null
     && Z.retenceDrzena({ kdy: new Date(ted0 - 30 * 86400000).toISOString() }, ted0).dnu === 30
     && Z.retenceDrzena({ kdy: new Date(ted0 - 400 * 86400000).toISOString() }, ted0).dnu === 400
     && Z.retenceDrzena({ kdy: new Date(ted0 - 3600000).toISOString() }, ted0).dnu === 0);

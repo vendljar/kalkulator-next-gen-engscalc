@@ -119,7 +119,28 @@ function retenceZalohDiskVyber(jmena, dnes, chranit) {
  * (starší otisk bez počtu šablon), se neporovnává. Vrací seznam textů
  * („zakázek 100 → 94") nebo null. Používá server (noční otisk proti
  * předchozímu nočnímu) i prohlížeč (kopie na Disku proti předchozí kopii). */
-const RETENCE_ZALOH_POJISTKA = { velikost: 0.9, pocty: 0.95 };
+/* KUMULATIVNĚ (O-K9 #527, nález auditu K9-S1, výchozí volba koordinace
+ * 26. 10. 2026): noční otisk se porovnává nejen s předchozím, ale
+ * s MAXIMEM každého údaje za posledních `oknoDnu` dní — pozvolný úbytek
+ * (4 % zakázek za noc) by jinak noc od noci prošel pod prahy. Prahy jsou
+ * tytéž (90 % velikosti, 95 % zakázek a účtů, šablony a podpisy jakkoli). */
+const RETENCE_ZALOH_POJISTKA = { velikost: 0.9, pocty: 0.95, oknoDnu: 30 };
+/* Maximum každého údaje z několika záloh (`otisky` = pole údajů, např.
+ * ze souhrnů) — pro kumulativní porovnání. Vrací { udaje, odkud }: údaje
+ * s maximem a pro každý údaj, ze které zálohy (`klic`) pochází. Údaj, který
+ * žádná záloha nenese, ve výsledku chybí. */
+function retenceZalohMaximum(otisky) {
+  const udaje = {}, odkud = {};
+  for (const o of otisky || []) {
+    if (!o) continue;
+    for (const k of ['velikostB', 'pocetZakazek', 'pocetUctu', 'pocetSablon', 'pocetPodpisu']) {
+      const x = o[k];
+      if (typeof x !== 'number' || !Number.isFinite(x) || x < 0) continue;
+      if (!(k in udaje) || x > udaje[k]) { udaje[k] = x; odkud[k] = String(o.klic || ''); }
+    }
+  }
+  return { udaje, odkud };
+}
 function retenceZalohMB(b) { return (b / 1048576).toFixed(1).replace('.', ',') + ' MB'; }
 function retenceZalohPokles(pred, nove) {
   if (!pred || !nove) return null;
@@ -152,5 +173,5 @@ function retenceZalohPopis() {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { RETENCE_ZALOH_POJISTKA, retenceZalohPokles, RETENCE_ZALOH_BLOBS, RETENCE_ZALOH_DISK, RETENCE_ZALOH_STARE_PRED, RETENCE_ZALOH_DISK_JMENO,
+  module.exports = { RETENCE_ZALOH_POJISTKA, retenceZalohPokles, retenceZalohMaximum, RETENCE_ZALOH_BLOBS, RETENCE_ZALOH_DISK, RETENCE_ZALOH_STARE_PRED, RETENCE_ZALOH_DISK_JMENO,
     retenceZalohDenMs, retenceZalohMesicuZpet, retenceZalohDrz, retenceZalohDiskVyber, retenceZalohPopis };

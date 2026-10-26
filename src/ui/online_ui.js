@@ -55,6 +55,7 @@ const ONLINE_STAV = {
   otiskyNacteno: false,
   kopieDisk: null,   // záznam poslední kopie otisku na Disk (#151 N6) — ze serveru, bez dat
   retenceVarovani: null,   // pojistka retence přeskočila mazání (K3-N13) — ze serveru
+  zalohySmi: null,   // O-K9 #527: { potvrditUbytek, smazatPredObnovou } — rozhoduje server
   soubor: '',        // pod jakým jménem je otevřená zakázka online
   razitko: '',
   /* Kolize verzí při zápisu (nález V27, 8. 9. 2026): { soubor, kdo, naDisku,
@@ -1772,9 +1773,13 @@ async function onlineRetencePotvrd() {
   if (!hesloSpravce) return false;
   ONLINE_STAV.pracuje = true; render();
   try {
-    const o = await onlineApi('/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: String(v.den || ''), hesloSpravce });
+    /* `kdy` (O-K9, K9-N1): server potvrdí jen přesně to varování, které správce viděl */
+    const o = await onlineApi('/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: String(v.den || ''),
+      ...(typeof v.kdy === 'string' ? { kdy: v.kdy } : {}), hesloSpravce });
     ONLINE_STAV.retenceVarovani = (o && o.retenceVarovani) || null;
-    onlineZprava('Úbytek dat potvrzen — mazání starých záloh poběží zase podle pravidel retence.', '');
+    const dalsi = ONLINE_STAV.retenceVarovani && !ONLINE_STAV.retenceVarovani.potvrzeno;
+    onlineZprava(dalsi ? 'Varování potvrzeno. Čeká další varování o úbytku dat — zkontrolujte ho a potvrďte také, jinak mazání starých záloh stojí dál.'
+      : 'Úbytek dat potvrzen — mazání starých záloh poběží zase podle pravidel retence.', dalsi ? 'varovani' : '');
     return true;
   } catch (e) {
     onlineZprava('Potvrzení se nepovedlo: ' + e.message, 'varovani');
@@ -1793,6 +1798,7 @@ function onlineOtiskyNacti() {
     ONLINE_STAV.retenceVarovani = o.retenceVarovani || null;
     ONLINE_STAV.otiskStav = o.otiskStav || null;          // #522: poslední pokus o zálohu
     ONLINE_STAV.rozpracovane = o.rozpracovane || [];
+    ONLINE_STAV.zalohySmi = o.smi || null;                // O-K9 #527: potvrdit úbytek / smazat otisk před obnovou
     ONLINE_STAV.otiskyNacteno = true;
     return true;
   }).catch(e => {
@@ -2047,6 +2053,7 @@ async function kopieDiskDatB(h, jmeno) {
  *     „otisk_… (1).json").
  * Disk Google smazané soubory drží 30 dní v koši. Vrací { smazano, chyby }
  * nebo { smazano: [], duvod } — chyba úklidu kopii nezpochybní. */
+const KOPIE_DISK_HODINY_TOLERANCE_MS = 86400000;
 async function kopieDiskUklid(h, kopie, ted) {
   const nic = (duvod) => ({ smazano: [], chyby: [], duvod });
   if (String(h && h.name || '') !== ULO_KOPIE_DISK_SLOZKA) return nic('složka se nejmenuje „' + ULO_KOPIE_DISK_SLOZKA + '"');
@@ -2077,7 +2084,16 @@ async function kopieDiskUklid(h, kopie, ted) {
       return nic('nová kopie má proti ' + predchozi + ' méně dat (' + co.join(', ') + ') — nic se nesmazalo, úbytek potvrďte v Nastavení → Databáze');
     }
   }
-  const dnes = new Date(+ted || Date.now()).toISOString().slice(0, 10);
+  /* DNEŠEK ZE SERVERU (O-K9 #527, nález K9-S6). Do O-K9 bral úklid dnešek
+   * z hodin počítače správce — hodiny o rok napřed smazaly 31 z 33 kopií.
+   * `ted` = čas serveru z přijatého záznamu kopie; bez něj, nebo když se
+   * hodiny počítače od serveru liší o víc než KOPIE_DISK_HODINY_TOLERANCE_MS,
+   * se nesmaže nic. */
+  const tedServer = +ted;
+  if (!Number.isFinite(tedServer) || tedServer <= 0) return nic('chybí čas serveru — staré kopie se tentokrát nemažou');
+  if (Math.abs(Date.now() - tedServer) > KOPIE_DISK_HODINY_TOLERANCE_MS)
+    return nic('hodiny tohoto počítače se liší od serveru o víc než den — staré kopie se nemažou, zkontrolujte datum a čas v počítači');
+  const dnes = new Date(tedServer).toISOString().slice(0, 10);
   const smazano = [], chyby = [];
   for (const j of retenceZalohDiskVyber(jmena, dnes, [kopie.soubor])) {
     try { await h.removeEntry(j); smazano.push(j); }
@@ -2127,7 +2143,8 @@ async function kopieDiskProved(h, heslo) {
   /* #523 Z2: úklid starých kopií — jen když server kopii přijal. */
   let uklid;
   if (!z || !z.ok) uklid = { smazano: [], chyby: [], duvod: 'server kopii nepotvrdil' };
-  else { try { uklid = await kopieDiskUklid(h, Object.assign({ velikostDatB }, kopie)); } catch (e) { uklid = { smazano: [], chyby: [String(e && e.message || e)] }; } }
+  else { try { uklid = await kopieDiskUklid(h, Object.assign({ velikostDatB }, kopie), Date.parse((z.kopieDisk && z.kopieDisk.kdy) || '')); }   // K9-S6: čas serveru
+    catch (e) { uklid = { smazano: [], chyby: [String(e && e.message || e)] }; } }
   return Object.assign({}, kopie, { uklid });
 }
 
@@ -3038,8 +3055,10 @@ function renderOnlineKarta() {
         + (hlidka ? `<div id="online-zalohy-nocni" class="${hlidka.stara ? 'seznam-varovani' : 'note'}">${esc(hlidka.text)}</div>` : '')
         + (kopieHl ? `<div id="online-kopie-disk" class="${kopieHl.stara ? 'seznam-varovani' : 'note'}">${esc(kopieHl.text)}</div>` : '')
         + (retenceHl ? `<div id="online-retence-varovani" class="seznam-varovani">${esc(retenceHl.text)}
-            <button class="mini" id="online-retence-potvrdit" onclick="onlineRetencePotvrd()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}
-              title="potvrdí, že data ubyla záměrně (smazané zakázky, účty) — mazání starých záloh se znovu rozběhne">Úbytek byl záměrný</button></div>` : '')
+            ${ONLINE_STAV.zalohySmi && ONLINE_STAV.zalohySmi.potvrditUbytek === false
+              ? `<span class="note" id="online-retence-jen-hlavni">Potvrdit úbytek může jen hlavní správce.</span>`
+              : `<button class="mini" id="online-retence-potvrdit" onclick="onlineRetencePotvrd()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}
+              title="potvrdí, že data ubyla záměrně (smazané zakázky, účty) — mazání starých záloh se znovu rozběhne">Úbytek byl záměrný</button>`}</div>` : '')
       : '';
     telo = `${hlaska}${onlineKolizeTlacitka()}${zalohaRadek}
       <div class="btns" style="margin-top:10px">
@@ -3267,15 +3286,20 @@ function onlineObnovaSouhrn(d) {
 }
 
 /* OBNOVA Z OTISKU PO ČÁSTECH (#522 Z1). Otisk pořízený od v26.10.8 má
- * v přehledu počet částí (`casti`); starý jednolitý ho nemá a obnovuje se
- * jednou dávkou jako dřív. Každá část (≤ 4 MB) se posílá po výřezech
- * 15 záznamů — tolik, kolik nese dávka souboru (OBNOVA_DAVKA_MAX_ZAZNAMU);
- * server vrátí, kolik záznamů část má (`zdroj.zaznamu`). */
+ * v přehledu počet částí (`casti`). Každá část (≤ 4 MB) se posílá po
+ * výřezech 15 záznamů — tolik, kolik nese dávka souboru
+ * (OBNOVA_DAVKA_MAX_ZAZNAMU); server vrátí, kolik záznamů část má
+ * (`zdroj.zaznamu`).
+ * STARÝ JEDNOLITÝ OTISK (do v26.10.7, v přehledu bez `casti`, od O-K9
+ * `stary: true`) = jedna „část" 0 — server ji vydá celou a výřez z ní
+ * ukrojí (O-K9 #527, nález K9-V1). Do O-K9 šel náhled i obnova starého
+ * otisku jedním požadavkem: u 792 zakázek 54 s, funkce spadla na limitu
+ * 10 s a náhled nevznikl. 0 = otisk v přehledu není (jeden požadavek). */
 function onlineObnovaCastiOtisku() {
   const o = onlineObnovaStav();
   if (o.zdrojTyp === 'soubor') return 0;
   const ot = (ONLINE_STAV.otisky || []).find(x => x && x.den === o.otiskDen);
-  return ot && +ot.casti > 0 ? +ot.casti : 0;
+  return ot ? (+ot.casti > 0 ? +ot.casti : 1) : 0;
 }
 async function onlineObnovaPoCastech(casti, posli) {
   const o = onlineObnovaStav();
@@ -3290,7 +3314,9 @@ async function onlineObnovaPoCastech(casti, posli) {
 /* Začátek obnovy: token a otisk před obnovou — u velké databáze po
  * krocích ({ faze: 'otisk' }), dokud není hotový (bez něj se neobnovuje). */
 async function onlineObnovaZacni(o) {
-  let zac = await onlineApi('/api/obnova', { faze: 'zacatek', rezim: o.rezim, potvrzeni: 'OBNOVIT' });
+  /* K9-S5 (O-K9 #527): zdroj do tokenu — noční retence ho po dobu obnovy nesmaže */
+  const zdroj = o.zdrojTyp === 'soubor' ? { zdrojSoubor: true } : { zdrojOtisk: String(o.otiskDen || '') };
+  let zac = await onlineApi('/api/obnova', { faze: 'zacatek', rezim: o.rezim, potvrzeni: 'OBNOVIT', ...zdroj });
   let kroku = 0;
   while (zac && zac.otiskHotovo === false) {
     if (++kroku > ONLINE_OTISK_KROKU_MAX) throw new Error('otisk před obnovou se nedokončil — obnova se neprovedla');
@@ -3509,6 +3535,37 @@ async function onlineObnovaBeziciZahod() {
   } finally { o.pracuje = false; render(); }
 }
 
+/* RUČNÍ SMAZÁNÍ OTISKU „PŘED OBNOVOU" (O-K9 #527, nález K9-I3, výchozí
+ * volba koordinace). Otisky stavu před obnovou retence nemaže nikdy (cesta
+ * zpátky); každá obnova velké databáze ale nechá v Netlify ~80 MB. Smazat
+ * je jde jen tady, po jednom, s heslem správce — server odmítne, když
+ * zrovna běží obnova. */
+async function onlineOtiskPredObnovouSmaz() {
+  const o = onlineObnovaStav();
+  const klic = String(o.otiskDen || '');
+  if (!jeAdminOnline() || o.pracuje || !/-pred-obnovou$/.test(klic)) return false;
+  const ano = await potvrd('Smazat otisk ' + klic + ' (stav databáze před obnovou)?\n\nJe to cesta zpátky k obnově, která ho pořídila. '
+    + 'Smazání je nevratné — ze serveru zmizí celý i se všemi částmi. Ostatní zálohy zůstanou.',
+    { nadpis: 'Smazat otisk před obnovou', ano: 'Ano, smazat', ne: 'Zpět' });
+  if (!ano) return false;
+  const hesloSpravce = await dotazHeslo('Smazání otisku před obnovou je nevratné. Potvrďte ho svým heslem '
+    + '(tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
+  if (!hesloSpravce) return false;
+  o.pracuje = true; render();
+  try {
+    const d = await onlineApi('/api/zaloha_vynuceno', { akce: 'smazat-pred-obnovou', klic, hesloSpravce });
+    if (d && Array.isArray(d.otisky)) ONLINE_STAV.otisky = d.otisky;
+    const dalsi = (ONLINE_STAV.otisky || [])[0];
+    o.otiskDen = dalsi ? dalsi.den : '';
+    o.nahled = null;
+    o.hlaska = 'Otisk ' + klic + ' je smazaný.'; o.hlaskaTyp = '';
+    return true;
+  } catch (e) {
+    o.hlaska = 'Otisk se nesmazal: ' + e.message; o.hlaskaTyp = 'varovani';
+    return false;
+  } finally { o.pracuje = false; render(); }
+}
+
 function renderOnlineObnova() {
   const o = onlineObnovaStav();
   if (!o.otevreno || !jeAdminOnline()) return '';
@@ -3519,9 +3576,14 @@ function renderOnlineObnova() {
       : /vynuc/.test(x.zdroj) ? 'ručně' : 'noční')
     + ' · ' + onlinePocetText(x.pocetZakazek) + ', ' + x.pocetUctu + ' účtů';
   const volby = otisky.map(x => `<option value="${esc(x.den)}" ${x.den === o.otiskDen ? 'selected' : ''}>${esc(popisOtisku(x))}</option>`).join('');
+  /* O-K9 #527 (K9-I3): ruční smazání vybraného otisku „před obnovou" */
+  const smazPred = o.zdrojTyp === 'otisk' && /-pred-obnovou$/.test(String(o.otiskDen || ''))
+    && ONLINE_STAV.zalohySmi && ONLINE_STAV.zalohySmi.smazatPredObnovou
+    ? ` <button class="mini" id="online-smazat-pred-obnovou" onclick="onlineOtiskPredObnovouSmaz()" ${dis}
+         title="smaže tento otisk stavu před obnovou (cesta zpátky) — jen ručně a s vaším heslem; nevratné">Smazat tento otisk…</button>` : '';
   const zdrojTelo = o.zdrojTyp === 'otisk'
     ? (otisky.length
-      ? `<select onchange="onlineObnovaZmena('otiskDen', this.value)" ${dis}>${volby}</select>`
+      ? `<select onchange="onlineObnovaZmena('otiskDen', this.value)" ${dis}>${volby}</select>${smazPred}`
       : `<span class="note">${ONLINE_STAV.otiskyNacteno
         ? 'Na serveru zatím žádný otisk není – pořiďte ho tlačítkem „Zálohovat teď".' : 'Zjišťuje se…'}</span>`)
     : `<input type="file" accept=".json,.gz,application/json,application/gzip" onchange="onlineObnovaSoubor(event)" ${dis}>

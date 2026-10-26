@@ -11,8 +11,13 @@
  * GET vrací i `retenceVarovani` (K3-N13) pro hlídku v administraci.
  * POST { akce: 'retence-varovani-disk', disk } → prohlížeč ohlásí menší kopii
  *   na Disku (#523); zapíše se varování a retence stojí do potvrzení.
- * POST { akce: 'retence-potvrdit', den, hesloSpravce } → správce potvrdí, že
- *   úbytek dat byl záměrný; retence pak zase maže (K4-N13, O11).
+ * POST { akce: 'retence-potvrdit', den, kdy, hesloSpravce } → správce potvrdí,
+ *   že úbytek dat byl záměrný; retence pak zase maže (K4-N13, O11). Od O-K9
+ *   (#527) jen hlavní správce (ZALOHY_VOLBY.potvrditUbytek) a potvrzuje se
+ *   nejstarší nepotvrzené varování — další v pořadí (`dalsi`) drží dál.
+ * POST { akce: 'smazat-pred-obnovou', klic, hesloSpravce } → ruční smazání
+ *   otisku „před obnovou" (O-K9 #527, K9-I3; ZALOHY_VOLBY.smazatPredObnovou).
+ *   Jinak se tyhle otisky nemažou nikdy.
  * GET  /api/zaloha_vynuceno → { ok, otisky: [ { den, porizena, zdroj, kdo,
  *   pocetZakazek, pocetUctu, casti? } … ] } – souhrn posledních otisků BEZ dat,
  *   aby bylo v obrazovce vidět, kdy záloha naposledy vznikla. Od #522 i
@@ -33,10 +38,11 @@
  *
  * Otisk míří do Blobs (úložiště `zalohy`), NE ke stažení – ven se stahuje
  * /api/zaloha, která otisky hesel nenese. */
-import { vyzadujRoli, json, uloziste, potvrdHesloSpravce } from '../lib/sdilene.mjs';
+import { vyzadujRoli, json, uloziste, potvrdHesloSpravce, ADMIN_EMAIL, vyhradne } from '../lib/sdilene.mjs';
 import { seznamOtisku, KOPIE_DISK_KLIC, KOPIE_DISK_SLOZKA, porizVynuceny,
   RETENCE_VAROVANI_KLIC, retenceDrzena, retencePoklesPocty, vynucenyPokracuj, seznamRozpracovanych,
-  OTISK_STAV_KLIC, OTISK_ROZPOCET } from '../lib/zalohovani.mjs';
+  OTISK_STAV_KLIC, OTISK_ROZPOCET, ZALOHY_VOLBY, zalohySmi, retenceVarovaniPridej, retenceVarovaniPotvrd,
+  RETENCE_ZAKLAD_KLIC, smazatPredObnovou } from '../lib/zalohovani.mjs';
 
 /* K4-N12 (O9): pole z těla jen jako text / číslo. String() nad objektem
  * z JSON s klíčem „toString", který není funkce, vyhodil výjimku → 500. */
@@ -53,7 +59,10 @@ export default async (req) => {
       kopieDisk: (await sZal.cti(KOPIE_DISK_KLIC)) || null,
       retenceVarovani: (await sZal.cti(RETENCE_VAROVANI_KLIC)) || null,
       otiskStav: (await sZal.cti(OTISK_STAV_KLIC)) || null,              // #522
-      rozpracovane: await seznamRozpracovanych() });
+      rozpracovane: await seznamRozpracovanych(),
+      /* O-K9 #527: co smí přihlášený správce (rozhoduje server, ZALOHY_VOLBY) */
+      smi: { potvrditUbytek: zalohySmi(ZALOHY_VOLBY.potvrditUbytek, relace.email, ADMIN_EMAIL),
+             smazatPredObnovou: zalohySmi(ZALOHY_VOLBY.smazatPredObnovou, relace.email, ADMIN_EMAIL) } });
   }
 
   if (req.method !== 'POST')
@@ -109,11 +118,15 @@ export default async (req) => {
     const co = retencePoklesPocty(pred, nove);
     if (!co) return json({ ok: false, chyba: 'Nová kopie není menší než předchozí — není co hlásit.' }, 409);
     const sZal = await uloziste('zalohy');
-    const byl = await sZal.cti(RETENCE_VAROVANI_KLIC);
-    if (retenceDrzena(byl)) return json({ ok: true, retenceVarovani: byl });
-    const zaznam = { kdy: new Date().toISOString(), den, predchozi: predSoubor, zdroj: 'disk', pred, nove,
+    const varovani = { kdy: new Date().toISOString(), den, predchozi: predSoubor, zdroj: 'disk', pred, nove,
       text: 'kopie zálohy na Disku ' + novySoubor + ' má proti ' + predSoubor + ' méně dat (' + co.join(', ') + ')' };
-    await sZal.zapis(RETENCE_VAROVANI_KLIC, zaznam);
+    /* K9-S2 (O-K9 #527): nepotvrzené varování se nepřepíše, Diskové se
+     * přidá za něj (do O-K9 se zahodilo a po potvrzení nočního zmizelo). */
+    const zaznam = await vyhradne('zalohy-varovani', async () => {
+      const novy = retenceVarovaniPridej(await sZal.cti(RETENCE_VAROVANI_KLIC), varovani);
+      if (novy) await sZal.zapis(RETENCE_VAROVANI_KLIC, novy);
+      return novy || await sZal.cti(RETENCE_VAROVANI_KLIC);
+    });
     return json({ ok: true, retenceVarovani: zaznam });
   }
   /* POTVRZENÍ ÚBYTKU DAT (K4-N13, O11, rozhodnutí J. V. 21. 10. 2026).
@@ -122,17 +135,58 @@ export default async (req) => {
    * kopie jen s heslem správce. `den` = den varování, které správce viděl:
    * novější varování se starým potvrzením neodemkne (409). */
   if (telo.akce === 'retence-potvrdit') {
+    /* O-K9 #527 (K9-I7, výchozí volba koordinace): potvrzení odemyká mazání
+     * záloh — jen hlavní správce (ZALOHY_VOLBY.potvrditUbytek). */
+    if (!zalohySmi(ZALOHY_VOLBY.potvrditUbytek, relace.email, ADMIN_EMAIL))
+      return json({ ok: false, kod: 'jenHlavniSpravce', chyba: 'Úbytek dat potvrzuje jen hlavní správce (hlavní administrátorský účet). '
+        + 'Požádejte ho, ať varování zkontroluje a potvrdí.' }, 403);
     const sZal = await uloziste('zalohy');
     const v = await sZal.cti(RETENCE_VAROVANI_KLIC);
     if (!retenceDrzena(v))
       return json({ ok: false, chyba: 'Není co potvrdit — retence záloh nestojí (varování chybí nebo je potvrzené).' }, 409);
-    if (txt(telo.den) !== String(v.den || ''))
+    const stejne = (a) => !!a && txt(telo.den) === String(a.den || '')
+      && (telo.kdy === undefined || txt(telo.kdy) === String(a.kdy || '')) && !a.potvrzeno;
+    if (!stejne(v))
       return json({ ok: false, chyba: 'Varování se mezitím změnilo — načtěte přehled záloh znovu a zkontrolujte ho.' }, 409);
     const stopHeslo = await potvrdHesloSpravce(req, relace, telo.hesloSpravce);
     if (stopHeslo) return stopHeslo;
-    const zaznam = { ...v, potvrzeno: { kdy: new Date().toISOString(), kdo: relace.email } };
-    await sZal.zapis(RETENCE_VAROVANI_KLIC, zaznam);
-    return json({ ok: true, retenceVarovani: zaznam });
+    /* K9-N1 (O-K9 #527): ověření hesla trvá (čtení účtu, zpoždění pokusů)
+     * a noc mezitím mohla zapsat nové varování. Záznam se proto čte znovu
+     * a zapíše se jen při shodě dne i času — jinak 409. */
+    const vysl = await vyhradne('zalohy-varovani', async () => {
+      const v2 = await sZal.cti(RETENCE_VAROVANI_KLIC);
+      if (!stejne(v2) || String(v2.kdy || '') !== String(v.kdy || '') || String(v2.zdroj || '') !== String(v.zdroj || '')) return null;
+      const potvrzeno = { kdy: new Date().toISOString(), kdo: relace.email };
+      const zaznam = retenceVarovaniPotvrd(v2, potvrzeno);
+      await sZal.zapis(RETENCE_VAROVANI_KLIC, zaznam);
+      /* K9-S1: základ kumulativního porovnání = den potvrzeného úbytku */
+      const zakl = await sZal.cti(RETENCE_ZAKLAD_KLIC);
+      const den = /^\d{4}-\d{2}-\d{2}$/.test(String(v2.den || '').slice(0, 10)) ? String(v2.den).slice(0, 10) : '';
+      if (den && !(zakl && String(zakl.den || '') >= den))
+        await sZal.zapis(RETENCE_ZAKLAD_KLIC, { den, kdy: potvrzeno.kdy, kdo: relace.email, zdroj: String(v2.zdroj || '') });
+      return zaznam;
+    });
+    if (!vysl)
+      return json({ ok: false, chyba: 'Varování se mezitím změnilo — načtěte přehled záloh znovu a zkontrolujte ho.' }, 409);
+    return json({ ok: true, retenceVarovani: vysl });
+  }
+  /* RUČNÍ SMAZÁNÍ OTISKU „PŘED OBNOVOU" (O-K9 #527, K9-I3, výchozí volba
+   * koordinace). Retence tyhle otisky nevidí (cesta zpátky) a každá obnova
+   * velké databáze nechá ~80 MB navždy. Smazat ho smí jen správce podle
+   * ZALOHY_VOLBY.smazatPredObnovou, se svým heslem, a ne během obnovy. */
+  if (telo.akce === 'smazat-pred-obnovou') {
+    if (!zalohySmi(ZALOHY_VOLBY.smazatPredObnovou, relace.email, ADMIN_EMAIL))
+      return json({ ok: false, kod: 'nesmi', chyba: 'Otisky před obnovou smí mazat jen ' + (ZALOHY_VOLBY.smazatPredObnovou === 'hlavni'
+        ? 'hlavní správce.' : 'správce určený v nastavení záloh.') }, 403);
+    const klic = txt(telo.klic);
+    if (!/^\d{4}-\d{2}-\d{2}(-pred-obnovou|T\d{6}-pred-obnovou)$/.test(klic))
+      return json({ ok: false, chyba: 'Ručně jde smazat jen otisk „před obnovou".' }, 400);
+    const stopHeslo = await potvrdHesloSpravce(req, relace, telo.hesloSpravce);
+    if (stopHeslo) return stopHeslo;
+    const r = await smazatPredObnovou(klic);
+    if (r.chyba) return json({ ok: false, chyba: r.chyba }, r.kod || 409);
+    console.log('zaloha_vynuceno: ' + relace.email + ' smazal otisk před obnovou ' + klic + ' (' + r.casti + ' částí)');
+    return json({ ok: true, smazano: klic, casti: r.casti, otisky: await seznamOtisku(14) });
   }
   /* #522: pokračování rozpracovaného vynuceného otisku. */
   if (telo.akce === 'pokracovat') {

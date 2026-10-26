@@ -297,13 +297,13 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
   }
   {
     /* nepotvrzené varování (z noci) zastaví i úklid Disku; potvrzené pro tentýž den mazání pustí i při úbytku */
-    const ctx = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: 'x' },
+    const ctx = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString() },
       retenceVarovani: { kdy: '2026-10-27T03:00:00Z', den: '2026-10-27', text: 'noční otisk 2026-10-27 má proti 2026-10-26 méně dat (zakázek 100 → 90)' } }) });
     const h = slozka('_Zaloha Netlify DB', STARE);
     const k = await ctx.proved(h);
     test('#523 pojistka Disk: nepotvrzené varování ze serveru → úklid Disku stojí', h.smazane.length === 0 && /nepotvrzený úbytek/.test(k.uklid.duvod || ''), k.uklid);
     const dataNove = Buffer.byteLength(J(ZALOHA));
-    const ctx2 = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: 'x' },
+    const ctx2 = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString() },
       retenceVarovani: { kdy: '2026-10-27T03:00:00Z', den: '2026-10-27', zdroj: 'disk', text: 'x', potvrzeno: { kdy: 'y', kdo: 'spravce' } } }) });
     const h2 = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-20.json': 'x'.repeat(Math.round(dataNove / 0.8)), 'otisk_2026-10-13.json': 'stara',
       'otisk_2026-10-18.json': 'nedele', 'otisk_2026-10-01.json': 'prvni', 'otisk_2026-04-05.json': 'duben' });
@@ -311,11 +311,37 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
     test('#523 pojistka Disk: úbytek potvrzený správcem pro tentýž den → úklid proběhne', h2.smazane.length === 2
       && !ctx2.volani.some(v => v[1] && v[1].akce === 'retence-varovani-disk'), k2.uklid);
     const ctx3 = novyCtx({ serverOdpoved: async (cesta, telo) => (telo && telo.akce === 'retence-varovani-disk') ? { ok: true, retenceVarovani: { kdy: 'x' } }
-      : { ok: true, kopieDisk: { kdy: 'x' }, retenceVarovani: { kdy: '2026-10-20T03:00:00Z', den: '2026-10-20', text: 'x', potvrzeno: { kdy: 'y' } } } });
+      : { ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString() }, retenceVarovani: { kdy: '2026-10-20T03:00:00Z', den: '2026-10-20', text: 'x', potvrzeno: { kdy: 'y' } } } });
     const h3 = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-20.json': 'x'.repeat(Math.round(dataNove / 0.8)), 'otisk_2026-10-13.json': 'stara', 'otisk_2026-10-01.json': 'prvni' });
     await ctx3.proved(h3);
     test('#523 pojistka Disk: potvrzení jiného dne úbytek nové kopie neodemkne', h3.smazane.length === 0
       && ctx3.volani.some(v => v[1] && v[1].akce === 'retence-varovani-disk'));
+  }
+  /* ---- O-K9 #527 (K9-S6): dnešek pro úklid ze serveru, ne z hodin počítače ----
+   * Pojistka: s online_ui.js z v26.10.10 hodiny o rok napřed smažou ze složky
+   * STARE i 18. 10., 20. 10. a 1. 10. (dnešek z hodin prohlížeče) a bez času
+   * serveru se maže taky — obě kontroly níž selžou. */
+  {
+    const serverTed = Date.parse('2026-10-27T09:00:00Z');
+    const ctx = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: new Date(serverTed).toISOString() } }) });
+    const h = slozka('_Zaloha Netlify DB', STARE);
+    Date.now = () => serverTed + 365 * 86400000;           // hodiny počítače o rok napřed
+    let k;
+    try { k = await ctx.proved(h); } finally { Date.now = () => Date.parse('2026-10-27T09:00:00Z'); }
+    test('O-K9 K9-S6: hodiny počítače o rok napřed → úklid Disku nesmaže nic a řekne proč', h.smazane.length === 0
+      && /hodiny tohoto počítače se liší od serveru/.test(k.uklid.duvod || ''), { smazane: h.smazane, uklid: k.uklid });
+    const ctx2 = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: 'neplatné' } }) });
+    const h2 = slozka('_Zaloha Netlify DB', STARE);
+    const k2 = await ctx2.proved(h2);
+    test('O-K9 K9-S6: server nevrátil platný čas → úklid nesmaže nic', h2.smazane.length === 0 && /čas serveru/.test(k2.uklid.duvod || ''), k2.uklid);
+    /* počítač o 20 h pozadu (pořád v toleranci): dnešek je den serveru 27. 10. — 13. 10. a 5. 4. odejdou jako se správnými hodinami */
+    const ctx3 = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: new Date(serverTed).toISOString() } }) });
+    const h3 = slozka('_Zaloha Netlify DB', STARE);
+    Date.now = () => serverTed - 20 * 3600000;
+    let k3;
+    try { k3 = await ctx3.proved(h3); } finally { Date.now = () => Date.parse('2026-10-27T09:00:00Z'); }
+    test('O-K9 K9-S6: hodiny v toleranci (−20 h) → úklid podle dne serveru jako se správnými hodinami',
+      J(h3.smazane.slice().sort()) === J(['otisk_2026-04-05.json', 'otisk_2026-10-13.json']), { smazane: h3.smazane, uklid: k3.uklid });
   }
   /* ---- server přijme záznam .json.gz a podloží jím retenci ---- */
   {

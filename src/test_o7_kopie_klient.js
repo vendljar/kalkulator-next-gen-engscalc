@@ -153,7 +153,13 @@ const slozka = (ctx, name) => ({ name, getFileHandle: async (jm) => {
     test('#523: hlídka převezme text varování ze serveru (velikost, Disk)', /kopie zálohy na Disku otisk_2026-11-09\.json\.gz má proti otisk_2026-11-02\.json\.gz méně dat \(velikost 100,0 MB → 80,0 MB \(80 %\)\)/
       .test((U.uloRetenceVarovani({ kdy: '2026-11-09T09:00:00Z', den: '2026-11-09', zdroj: 'disk',
         text: 'kopie zálohy na Disku otisk_2026-11-09.json.gz má proti otisk_2026-11-02.json.gz méně dat (velikost 100,0 MB → 80,0 MB (80 %))' }, ted) || {}).text || ''));
-    test('K3-N13: bez záznamu nebo s nečitelným časem nic', U.uloRetenceVarovani(null, ted) === null && U.uloRetenceVarovani({ kdy: 'x' }, ted) === null);
+    /* O-K9 #527 (K9-N2): záznam bez platného času retenci drží (server) — hlídka ho proto ukáže (do O-K9 null) */
+    test('K3-N13: bez záznamu nic; s nečitelným časem svítí (K9-N2, drží retenci)', U.uloRetenceVarovani(null, ted) === null
+      && /Pozor: .*Mazání starých záloh/.test((U.uloRetenceVarovani({ kdy: 'x', den: '2026-10-27', text: 'poškozený záznam' }, ted) || {}).text || ''));
+    const sDalsimi = U.uloRetenceVarovani({ kdy: '2026-10-27T03:00:00Z', den: '2026-10-27', text: 'A', dalsi: [{ den: '2026-10-28', text: 'B' }, { den: '2026-10-29', text: 'C' }] }, ted);
+    test('O-K9 K9-S2: hlídka řekne, kolik dalších varování čeká na potvrzení', !!sDalsimi && sDalsimi.dalsi === 2
+      && /čeká ještě 2 další varování/.test(sDalsimi.text), sDalsimi);
+    test('O-K9 K9-S2: potvrzené nejstarší bez dalších nesvítí', U.uloRetenceVarovani({ kdy: '2026-10-27T03:00:00Z', potvrzeno: { kdy: 'x' } }, ted) === null);
     /* K4-N13 (O11): retence stojí do potvrzení; potvrzené varování nesvítí.
      * Pojistka: před O11 obě kontroly selžou (text „se ten den přeskočilo",
      * potvrzené varování svítilo dál). */

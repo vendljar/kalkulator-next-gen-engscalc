@@ -2123,18 +2123,24 @@ function uloKopieDiskStav(kopie, ted) {
  * 30 dnech, teď mazání stojí bez časového omezení (pokyn J. V.). Vrací null
  * nebo { dnu, text }. */
 function uloRetenceVarovani(v, ted) {
-  const t = v && Date.parse(v.kdy || '');
-  if (!v || !isFinite(t)) return null;
-  /* K4-N13 (O11): potvrzený úbytek už nesvítí — retence zase maže. */
+  if (!v || typeof v !== 'object') return null;
+  /* K4-N13 (O11): potvrzený úbytek už nesvítí — retence zase maže.
+   * O-K9 #527 (K9-S2): nepotvrzená další varování (`dalsi`) za ním ano —
+   * server je po potvrzení posune na místo nejstaršího. */
+  const dalsi = Array.isArray(v.dalsi) ? v.dalsi.filter(x => x && typeof x === 'object').length : 0;
   if (v.potvrzeno) return null;
-  const dnu = Math.max(0, Math.floor(((+ted || Date.now()) - t) / 86400000));
+  /* K9-N2: záznam bez platného data retenci drží (server), proto svítí taky */
+  const t = Date.parse(typeof v.kdy === 'string' ? v.kdy : '');
+  const dnu = isFinite(t) ? Math.max(0, Math.floor(((+ted || Date.now()) - t) / 86400000)) : 0;
   const pocty = (a, b) => [a && b && a.pocetZakazek !== b.pocetZakazek ? 'zakázek ' + (+a.pocetZakazek || 0) + ' → ' + (+b.pocetZakazek || 0) : '',
     a && b && a.pocetUctu !== b.pocetUctu ? 'účtů ' + (+a.pocetUctu || 0) + ' → ' + (+b.pocetUctu || 0) : ''].filter(Boolean).join(', ');
   const co = typeof v.text === 'string' && v.text ? v.text
     : 'noční záloha ' + String(v.den || '') + ' nese proti ' + String(v.predchozi || '') + ' méně dat (' + pocty(v.pred, v.nove) + ')';
   return { dnu, text: 'Pozor: ' + co + '. Mazání starých záloh v Netlify i na Disku stojí, dokud úbytek nepotvrdíte tlačítkem '
     + '„Úbytek byl záměrný"' + (dnu > 0 ? ' (stojí už ' + dnu + (dnu === 1 ? ' den' : dnu < 5 ? ' dny' : ' dní') + ')' : '') + '. Zkontrolujte, jestli se data neztratila — '
-    + 'starší zálohy jsou pro obnovu k dispozici (Obnovit ze zálohy…).' };
+    + 'starší zálohy jsou pro obnovu k dispozici (Obnovit ze zálohy…).'
+    + (dalsi ? ' Po potvrzení čeká ještě ' + dalsi + (dalsi === 1 ? ' další varování' : dalsi < 5 ? ' další varování' : ' dalších varování')
+      + ' — potvrzují se postupně od nejstaršího.' : ''), dalsi };
 }
 
 if (typeof module !== 'undefined')
