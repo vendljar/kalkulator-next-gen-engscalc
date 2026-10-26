@@ -33,6 +33,7 @@ import zakazky from './functions/zakazky.mjs';
 import zaloha from './functions/zaloha.mjs';
 import zalohaVynuceno from './functions/zaloha_vynuceno.mjs';
 import obnova from './functions/obnova.mjs';
+import { ctiOtisk } from './lib/zalohovani.mjs';
 import odhlaseni from './functions/odhlaseni.mjs';
 import ja from './functions/ja.mjs';
 import slovnikFn from './functions/slovnik.mjs';
@@ -58,6 +59,8 @@ const post = (fn, url, telo, cookie) => fn(new Request(url, { method: 'POST',
   headers: cookie ? { cookie } : {}, body: JSON.stringify(telo) }));
 const get = (fn, url, cookie) => fn(new Request(url, { headers: cookie ? { cookie } : {} }));
 const ulz = (n) => globalThis.__TEST_ULOZISTE(n);
+/* #522: otisk je od v26.10.8 manifest + části — test čte otisk složený (ctiOtisk). */
+const ctiOt = (k) => ctiOtisk(ulz('zalohy'), k);
 /* K3-N4 (O7, 20. 10. 2026): vynucený otisk má limit 1 za 10 minut. Sada
  * jich pořizuje několik za sebou — každý „o 11 minut později": hodiny se
  * posunou jen na dobu požadavku (klíč otisku i limit počítají z Date.now). */
@@ -117,7 +120,7 @@ const vyn = await postVynuceny(cookie);
 test('serverový otisk pořízen pod dnešním dnem (vlastní slot s časem, #151 N1)',
   vyn.ok && /^\d{4}-\d{2}-\d{2}T\d{6}-rucne$/.test(vyn.den) && vyn.den.startsWith(denPosunuty + 'T'), [vyn, denPosunuty]);
 const otiskDen = vyn.den;
-const otiskPuvodni = kopie(await ulz('zalohy').cti(otiskDen));
+const otiskPuvodni = kopie(await ctiOt(otiskDen));
 
 /* ---- 2) ochrany vstupu ---- */
 const platnyNahled = { zdroj: { soubor: zalSoubor }, rezim: 'doplnit', nahled: true };
@@ -177,13 +180,13 @@ test('rejstřík se přestavil ze skutečného obsahu (2 zakázky, A i B)',
   && o1.rejstrik.prestaven === true, rej1);
 test('rejstřík nese číslo a název obnovené zakázky',
   rej1.zakazky.some(z => z.soubor === ulA.soubor && z.cislo === zakA.cislo && z.nazevAkce === 'Zakázka A'));
-const pred = await ulz('zalohy').cti(String(o1.otiskPred));
+const pred = await ctiOt(String(o1.otiskPred));
 test('před obnovou vznikl otisk pod vlastním klíčem s časem (B28) a hlásí se v odpovědi',
   !!pred && PRED_OBNOVOU.test(o1.otiskPred) && o1.otiskPred.startsWith(dnes() + 'T'), o1.otiskPred);
 test('otisk před obnovou nese stav PŘED obnovou (firma „Po havárii", bez zakázky A)',
   pred.firma.udaje.nazev === 'Po havárii s.r.o.' && !(ulA.soubor in pred.zakazky) && pred.zdroj === 'pred-obnovou' && pred.kdo === ADMIN_EMAIL);
 test('dnešní otisk zůstal nedotčený (žádná kolize klíčů)',
-  JSON.stringify(await ulz('zalohy').cti(otiskDen)) === JSON.stringify(otiskPuvodni));
+  JSON.stringify(await ctiOt(otiskDen)) === JSON.stringify(otiskPuvodni));
 const seznamOt = await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', cookie)).json();
 test('přehled otisků ukazuje i otisk před obnovou',
   seznamOt.otisky.some(o => o.den === o1.otiskPred && o.zdroj === 'pred-obnovou'), seznamOt.otisky.map(o => o.den));
@@ -282,7 +285,7 @@ test('bez otisku se obnova neprovede (500) a řekne to', o11.status === 500 && /
 test('a databáze zůstala, jak byla', (await ulz('program').cti('firma')).udaje.nazev === 'Druhá havárie s.r.o.');
 
 /* ---- 12) hlavní administrátor se obnovou nedá vypnout ---- */
-const otiskVypnuty = kopie(await ulz('zalohy').cti(otiskDen));
+const otiskVypnuty = kopie(await ctiOt(otiskDen));
 otiskVypnuty.uzivatele = otiskVypnuty.uzivatele.map(u => (u.email === ADMIN_EMAIL ? { ...u, aktivni: false } : u));
 await ulz('zalohy').zapis('2026-01-01', otiskVypnuty);
 await obnovJson({ zdroj: { otisk: '2026-01-01' }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'], hesloSpravce: 'Docasne.Heslo.123' }, cookie);
@@ -305,7 +308,7 @@ test('zacatek bez potvrzení se odmítne (428)',
 const zac = await obnovJson({ faze: 'zacatek', rezim: 'prepsat', potvrzeni: 'OBNOVIT' }, cookie);
 test('zacatek vydá token a pořídí otisk před obnovou', zac.ok && /^[0-9a-f]{32}$/.test(zac.obnovaId)
   && PRED_OBNOVOU.test(zac.otiskPred), zac);
-const predDavkami = kopie(await ulz('zalohy').cti(zac.otiskPred));
+const predDavkami = kopie(await ctiOt(zac.otiskPred));
 test('otisk před obnovou nese stav před dávkami (firma „Třetí havárie", bez A)',
   predDavkami.firma.udaje.nazev === HAV3.nazev && !(ulA.soubor in predDavkami.zakazky));
 test('dávka s cizím tokenem 403',
@@ -318,7 +321,7 @@ const d1 = await obnovJson({ obnovaId: zac.obnovaId, zdroj: { soubor: { ...hlava
 test('dávka 1 (firma) zapsala a hlásí pořadí', d1.ok && d1.davka === 1 && d1.casti.firma.prepsane === 1
   && (await ulz('program').cti('firma')).udaje.nazev === SKUT.nazev, d1);
 test('dávka nepořizuje další otisk (stav před obnovou zůstal)',
-  JSON.stringify(await ulz('zalohy').cti(zac.otiskPred)) === JSON.stringify(predDavkami));
+  JSON.stringify(await ctiOt(zac.otiskPred)) === JSON.stringify(predDavkami));
 const d2 = await obnovJson({ obnovaId: zac.obnovaId, zdroj: { soubor: { ...hlava, zakazky: { [ulA.soubor]: zalSoubor.zakazky[ulA.soubor] } } }, rezim: 'prepsat', casti: ['zakazky'], potvrzeni: 'OBNOVIT' }, cookie);
 test('dávka 2 (zakázka A) zapsala, rejstřík ještě nestaví', d2.ok && d2.davka === 2 && d2.casti.zakazky.nove === 1
   && d2.rejstrik.prestaven === false && (await ulz('zakazky').cti(A)) !== null
@@ -418,7 +421,7 @@ test('B27: účet ze souboru nevznikne ani hlavnímu správci',
   (await obnovJson({ zdroj: { soubor: podvrh }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['uzivatele'] }, cookie)).casti.uzivatele.nove === 0
   && (await ulz('uzivatele').cti('novy@priklad.cz')) === null);
 
-const otiskPodvrh = kopie(await ulz('zalohy').cti(otiskDen));
+const otiskPodvrh = kopie(await ctiOt(otiskDen));
 otiskPodvrh.uzivatele = otiskPodvrh.uzivatele
   .map(u => (u.email === ADMIN_EMAIL ? { ...u, heslo: 'aa:bb', jmeno: 'Podvrh' } : u))
   .concat([{ email: 'buh@priklad.cz', jmeno: 'X', role: 'Bůh', aktivni: true, heslo: 'aa:bb' },
@@ -557,7 +560,7 @@ console.log('\n===== B58: kniha smazaných účtů jde se zálohou (23. 9. 2026)
   const zal = (await (await get(zaloha, 'http://x/api/zaloha', cookie)).json()).zaloha;
   test('B58: záloha ke stažení nese knihu smazaných', !!(zal.smazani && zal.smazani['byvaly@priklad.cz']), Object.keys(zal.smazani || {}));
   const v2 = await postVynuceny(cookie);
-  const ot = await ulz('zalohy').cti(v2.den);
+  const ot = await ctiOt(v2.den);
   test('B58: serverový otisk nese knihu smazaných', !!(ot && ot.smazani && ot.smazani['byvaly@priklad.cz']));
   /* Havárie: kniha zmizela. Obnova ze serverového otisku ji doplní. */
   await kniha.smaz('byvaly@priklad.cz');
@@ -668,12 +671,15 @@ console.log('\n===== B47–B49, B52: dotažení obnovy po dávkách (19. kolo, 1
    * a −1 je menší než cokoli, takže by kontrola prošla i u kódu, kde se
    * token nezapisuje. Existence se proto ověřuje zvlášť. */
   const iZapis = zac.indexOf('await s.zapis(tokenKlic(id)');
-  const iOtisk = zac.indexOf('porizOtisk(');
+  /* #522: otisk před obnovou pořizuje po krocích otiskPredKrok (první krok
+   * hned v začátku); úklid tokenu po nepovedeném otisku je v něm. */
+  const iOtisk = zac.indexOf('otiskPredKrok(');
+  const krok = zdrojObnovy.slice(zdrojObnovy.indexOf('async function otiskPredKrok('), zdrojObnovy.indexOf('export default async'));
   test('B48: zápis tokenu ve zdroji vůbec je', iZapis >= 0, iZapis);
   test('B48: token se zapisuje PŘED pořízením otisku',
     iZapis >= 0 && iOtisk >= 0 && iZapis < iOtisk, [iZapis, iOtisk]);
   test('B48: nepovedený otisk token uklidí, aby zámek nezůstal viset',
-    /catch \(e\) \{\s*await s\.smaz\(tokenKlic\(id\)\);/.test(zac));
+    /catch \(e\) \{\s*console\.error\([^;]*\);\s*await s\.smaz\(tokenKlic\(token\.id\)\);/.test(krok));
   await obnovJson({ faze: 'zrusit', obnovaId: z.obnovaId, rezim: 'prepsat' }, cookie);
 }
 

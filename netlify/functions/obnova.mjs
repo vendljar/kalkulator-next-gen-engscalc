@@ -87,7 +87,8 @@ import { potvrdHesloSpravce, uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hos
          bezHlavnihoUctu, serverVerze, vyhradne } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola } from '../lib/zakazka_kontrola.mjs';
-import { porizOtisk, klicPredObnovou, OTISK_KLIC } from '../lib/zalohovani.mjs';
+import { porizOtisk, porizOtiskKrok, klicPredObnovou, OTISK_KLIC, OTISK_ROZPOCET, ctiOtisk, ctiOtiskCast, otiskVyrez,
+  ctiPoDavkach } from '../lib/zalohovani.mjs';
 
 export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'controlling', 'zakazky', 'uzivatele',
                              'sablony', 'zakaznici', 'podpisy'];
@@ -193,10 +194,14 @@ async function prestavRejstrikSam(kdo) {
 
 async function prestavRejstrik(ULO, s, kdo) {
   const zaznamy = [];
-  for (const k of await s.seznam('z/')) {
-    const z = await s.cti(k);
+  /* Po dávkách (#522): po jedné to u 800 zakázek trvalo déle než limit
+   * požadavku a konec obnovy by spadl s rejstříkem ze stavu před ní. */
+  const klice = await s.seznam('z/');
+  const hodnoty = await ctiPoDavkach(s, klice);
+  klice.forEach((k, i) => {
+    const z = hodnoty[i];
     if (z && typeof z === 'object') zaznamy.push(ULO.uloRejstrikZaznam(z, { soubor: k.slice(2) }));
-  }
+  });
   await s.zapis('_rejstrik', { schema: 1, zakazky: ULO.uloRejstrikSerad(zaznamy),
                                kdo, upraveno: new Date().toISOString() });
   return { zakazek: zaznamy.length, existujicich: zaznamy.length, prestaven: true };
@@ -286,6 +291,27 @@ function stavUctuDrziServer(novy, stary) {
   });
 }
 
+/* Jeden krok otisku před obnovou (#522). `zacatek` = první krok (chyba →
+ * token pryč, obnova se neprovede); jinak pokračování. Token drží
+ * `otiskSePorizuje`, dokud otisk není hotový. */
+async function otiskPredKrok(s, token, zacatek) {
+  let v;
+  try { v = await porizOtiskKrok(token.otiskPred, 'pred-obnovou', token.kdo,
+    { rozpocetMs: OTISK_ROZPOCET.synchronniMs, jenPokracovat: !zacatek }); }
+  catch (e) {
+    console.error('obnova: otisk před obnovou se nepořídil', e);
+    await s.smaz(tokenKlic(token.id));
+    return json({ ok: false, chyba: 'Otisk současného stavu se nepovedl (' + (e && e.message ? e.message : e)
+      + ') — obnova se NEPROVEDLA, nic se nezměnilo. Bez cesty zpátky se neobnovuje.' }, 500);
+  }
+  const hotovo = !!v.hotovo;
+  await s.zapis(tokenKlic(token.id), { id: token.id, kdo: token.kdo, zacatek: token.zacatek, naposled: new Date().toISOString(),
+    rezim: token.rezim, otiskPred: token.otiskPred, ...(hotovo ? {} : { otiskSePorizuje: true }),
+    davek: token.davek || 0, souhrn: token.souhrn || { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0 } });
+  return json({ ok: true, faze: zacatek ? 'zacatek' : 'otisk', obnovaId: token.id, otiskPred: token.otiskPred,
+    otiskHotovo: hotovo, ...(hotovo ? {} : { postup: v.postup || null }), upozorneni: [] });
+}
+
 export default async (req) => {
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte POST.' }, 405);
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
@@ -334,6 +360,15 @@ export default async (req) => {
                   otiskPred: z.otiskPred, rejstrik,
                   upozorneni: ['Rozpracovaná obnova (' + z.kdo + ') je zahozená. Co stihla zapsat, zůstává zapsané; '
                     + 'stav před ní leží v otisku ' + z.otiskPred + '.'] });
+  }
+
+  /* --- dopořízení otisku před obnovou (#522) --- */
+  if (faze === 'otisk') {
+    const tk = await nactiToken(relace, t.obnovaId);
+    if (tk.chyba) return tk.chyba;
+    if (!tk.token.otiskSePorizuje)
+      return json({ ok: true, faze: 'otisk', obnovaId: tk.token.id, otiskPred: tk.token.otiskPred, otiskHotovo: true, upozorneni: [] });
+    return otiskPredKrok(tk.s, tk.token, false);
   }
 
   /* --- vstupy --- */
@@ -389,16 +424,14 @@ export default async (req) => {
     });
     if (vstup.odpoved) return vstup.odpoved;
     const { id, s, ted } = vstup;
-    let otiskPred;
-    try { otiskPred = (await porizOtisk('pred-obnovou', relace.email, klicPredObnovou())).den; }
-    catch (e) {
-      await s.smaz(tokenKlic(id));
-      return json({ ok: false, chyba: 'Otisk současného stavu se nepovedl (' + (e && e.message ? e.message : e)
-        + ') — obnova se NEPROVEDLA, nic se nezměnilo. Bez cesty zpátky se neobnovuje.' }, 500);
-    }
-    await s.zapis(tokenKlic(id), { id, kdo: relace.email, zacatek: ted, naposled: new Date().toISOString(),
-      rezim, otiskPred, davek: 0, souhrn: { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0 } });
-    return json({ ok: true, faze: 'zacatek', obnovaId: id, otiskPred, upozorneni: [] });
+    /* OTISK PŘED OBNOVOU PO KROCÍCH (#522 Z1, 26. 10. 2026). U velké
+     * databáze se otisk do limitu požadavku nevejde — do #522 proto obnova
+     * nešla ani zahájit. Teď začátek udělá první krok; nedokončený otisk
+     * vrátí `otiskHotovo: false` a prohlížeč posílá { faze: 'otisk',
+     * obnovaId }, dokud není hotový. Dávky se do té doby odmítají (409):
+     * bez cesty zpátky se neobnovuje. */
+    const otiskPred = klicPredObnovou();
+    return otiskPredKrok(s, { id, kdo: relace.email, zacatek: ted, rezim, otiskPred }, true);
   }
   if (faze) return json({ ok: false, chyba: 'Neznámá fáze obnovy.' }, 400);
 
@@ -408,9 +441,22 @@ export default async (req) => {
   if (zd.otisk !== undefined) {
     const klic = String(zd.otisk || '');
     if (!OTISK_KLIC.test(klic)) return json({ ok: false, chyba: 'Otisk se udává dnem (YYYY-MM-DD).' }, 400);
-    zaloha = await (await uloziste('zalohy')).cti(klic);
-    if (!zaloha) return json({ ok: false, chyba: 'Otisk ' + klic + ' na serveru není.' }, 404);
+    /* #522: otisk po částech se obnovuje po částech (`cast` = pořadí části,
+     * každá je jedna dávka); bez `cast` se složí celý (malé databáze). */
+    const sZal = await uloziste('zalohy');
+    if (zd.cast !== undefined && !Number.isInteger(zd.cast))
+      return json({ ok: false, chyba: 'Část otisku se udává pořadím (0, 1, 2 …).' }, 400);
+    try { zaloha = zd.cast !== undefined ? await ctiOtiskCast(sZal, klic, zd.cast) : await ctiOtisk(sZal, klic); }
+    catch (e) { return json({ ok: false, chyba: 'Otisk ' + klic + ' nejde přečíst: ' + String(e && e.message || e) + '.' }, 500); }
+    if (!zaloha) return json({ ok: false, chyba: 'Otisk ' + klic + (zd.cast !== undefined ? ' (část ' + zd.cast + ')' : '') + ' na serveru není.' }, 404);
     zdrojPopis = { typ: 'otisk', klic };
+    /* výřez části po záznamech (`od`, `kolik` ≤ 50), viz otiskVyrez */
+    if (zd.od !== undefined) {
+      if (!Number.isInteger(zd.od) || zd.od < 0) return json({ ok: false, chyba: 'Začátek výřezu otisku se udává pořadím záznamu.' }, 400);
+      const v = otiskVyrez(zaloha, zd.od, Math.min(50, Math.max(1, Number.isInteger(zd.kolik) ? zd.kolik : 15)));
+      zaloha = v.otisk;
+      Object.assign(zdrojPopis, { cast: zd.cast === undefined ? null : zd.cast, od: zd.od, zaznamu: v.celkem });
+    }
   } else if (zd.soubor !== undefined) {
     zaloha = zd.soubor;
     if (!vypadaJakoZaloha(zaloha))
@@ -459,6 +505,10 @@ export default async (req) => {
     if (tk.chyba) return tk.chyba;
     if (tk.token.rezim !== rezim)
       return json({ ok: false, chyba: 'Dávka má jiný režim než zahájená obnova (' + tk.token.rezim + ').' }, 400);
+    /* #522: dávka až po hotovém otisku před obnovou (cesta zpátky). */
+    if (tk.token.otiskSePorizuje)
+      return json({ ok: false, kod: 'otiskPredObnovou', chyba: 'Otisk současného stavu (cesta zpátky) ještě není hotový — '
+        + 'obnova zatím nic nezapsala. Dokončete ho ({ faze: \'otisk\' }), pak pošlete dávky.' }, 409);
     otiskPred = tk.token.otiskPred;
   } else if (!nahled) {
     /* Pojistka 1: ostrá obnova jen s výslovným potvrzením (428 = chybí

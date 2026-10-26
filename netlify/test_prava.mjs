@@ -46,7 +46,14 @@ import firma from './functions/firma.mjs';
 import zakazky from './functions/zakazky.mjs';
 import vypocet from './functions/vypocet.mjs';
 import zaloha from './functions/zaloha.mjs';
-import zalohaNocni from './functions/zaloha_nocni.mjs';
+import zalohaNocniBeh from './functions/zaloha_nocni.mjs';
+/* #522: noční funkce pořizuje od v26.10.8 otisk jednou za den (běhy v okně
+ * 2:00–3:45 navazují). Sada volá „noc" opakovaně a čeká pokaždé nový otisk
+ * i retenci — každé volání je tu proto nová noc. Navazování hlídá
+ * test_zalohy_objem.mjs. */
+const NOVA_NOC = async () => { const z = globalThis.__TEST_ULOZISTE('zalohy');
+  await z.smaz(new Date(Date.now()).toISOString().slice(0, 10)); await z.smaz('nocni-dokonceno'); };
+const zalohaNocni = async (...a) => { await NOVA_NOC(); return zalohaNocniBeh(...a); };
 import zalohaVynuceno from './functions/zaloha_vynuceno.mjs';
 import obnova from './functions/obnova.mjs';
 import zdravi from './functions/zdravi.mjs';
@@ -2321,7 +2328,7 @@ console.log('\n===== AUDIT B9: ÚPLNOST ZÁLOHY =====\n');
   test('B9: záloha pořád nenese otisky hesel', !JSON.stringify(z.uzivatele).includes('heslo'));
   const { porizOtisk } = await import('./lib/zalohovani.mjs');
   const o = await porizOtisk('test', 'test');
-  const otisk = await (await uloziste('zalohy')).cti(o.den);
+  const otisk = await (await import('./lib/zalohovani.mjs')).ctiOtisk(await uloziste('zalohy'), o.den);
   test('B9: noční otisk nese zákazníky, podpisy i zobrazení',
     !!otisk.zakaznici && !!otisk.podpisy && 'zobrazeni' in otisk);
   test('B9: a taky dodatkové texty', 'popisy' in otisk && !!otisk.popisy);

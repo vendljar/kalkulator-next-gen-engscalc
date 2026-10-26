@@ -4,11 +4,18 @@
  * připojené složky na Disku (File System Access), takže záloha končí tam,
  * kde ji chce uživatel mít — verzovaná jménem s datem. */
 import { uloziste, vyzadujRoli, json, hostitel } from '../lib/sdilene.mjs';
-import { zalohaDoplnky, posledniNocniOtisk, otiskProDisk } from '../lib/zalohovani.mjs';
+import { zalohaDoplnky, posledniNocniOtisk, otiskProDisk, posledniNocniKlic, zalohaStrana, zdrojZivy,
+  zdrojZObjektu, jeOtiskPoCastech, ctiOtiskCast, ctiOtisk } from '../lib/zalohovani.mjs';
 
 export default async (req) => {
   const { chyba } = await vyzadujRoli(req, 'Administrátor');
   if (chyba) return chyba;
+  /* PO STRÁNKÁCH (#522 Z1): `?strana=1[&po=…]` — celá databáze se do jedné
+   * odpovědi (~6 MB) u engscalc nevejde. Bez `strana` zůstává dřívější
+   * celá odpověď (malé databáze a starší aplikace: ta by stránku nesložila
+   * a uložila by neúplnou zálohu — radši ať selže celá). */
+  const q = new URL(req.url).searchParams;
+  if (q.get('strana')) return strankovane(req, q);
   /* KOPIE NA DISK (#151 N6, 19. 10. 2026): `?zdroj=nocni` vrátí poslední
    * NOČNÍ otisk očištěný pro Disk (bez otisků hesel a bez podpisů —
    * rozhodnutí J. V.). Není-li za posledních 7 dní žádný, vrátí aktuální
@@ -22,6 +29,48 @@ export default async (req) => {
   }
   return zalohaTed(req);
 };
+
+/* Stránka zálohy (#522). Ke stažení: aktuální stav bez otisků hesel (jako
+ * zalohaTed). `zdroj=nocni`: poslední noční otisk očištěný pro Disk
+ * (otiskProDisk), u otisku po částech jedna část = jedna stránka; klíč
+ * otisku přijde v první odpovědi a další stránky ho posílají (`otisk=`),
+ * aby se mezi stránkami nepřeskočilo na jiný otisk. */
+async function strankovane(req, q) {
+  const po = q.get('po') || '';
+  const web = hostitel(req) || 'neznámý web';
+  if (q.get('zdroj') === 'nocni') {
+    const zadany = q.get('otisk');
+    if (zadany && !/^\d{4}-\d{2}-\d{2}$/.test(zadany)) return json({ ok: false, chyba: 'Neplatný klíč otisku.' }, 400);
+    const klic = zadany || (po ? null : await posledniNocniKlic());
+    if (klic) {
+      const s = await uloziste('zalohy');
+      const m = await s.cti(klic);
+      if (!m) return json({ ok: false, chyba: 'Otisk ' + klic + ' mezitím zmizel — začněte kopii znovu.' }, 404);
+      if (jeOtiskPoCastech(m)) {
+        const i = po ? parseInt(po, 10) : 0;
+        if (!Number.isInteger(i) || i < 0 || i >= m.casti) return json({ ok: false, chyba: 'Neplatná stránka otisku.' }, 400);
+        const cast = await ctiOtiskCast(s, klic, i);
+        /* otiskProDisk doplní účty [] a podpisy null i do části, která je
+         * nenese — složení by je přepsalo; vrací se jen to, co část nese. */
+        const c = otiskProDisk(cast);
+        const zaloha = {};
+        for (const k of Object.keys(c)) if (Object.prototype.hasOwnProperty.call(cast, k) && k !== 'podpisy') zaloha[k] = c[k];
+        if (i === 0) Object.assign(zaloha, { podpisy: null, web });
+        return json({ ok: true, puvod: 'nocni-otisk', otisk: klic, zaloha,
+          dalsi: i + 1 < m.casti ? String(i + 1) : null, stran: m.casti });
+      }
+      const st = await zalohaStrana(zdrojZObjektu(otiskProDisk(await ctiOtisk(s, klic))), po, { proDisk: true });
+      if (!po) Object.assign(st.zaloha, { porizena: m.porizena, zdroj: m.zdroj, kdo: m.kdo || '', web });
+      return json({ ok: true, puvod: 'nocni-otisk', otisk: klic, ...st });
+    }
+    const st = await zalohaStrana(zdrojZivy(), po, { proDisk: true });
+    if (!po) Object.assign(st.zaloha, { porizena: new Date().toISOString(), zdroj: web });
+    return json({ ok: true, puvod: 'aktualni-stav', otisk: null, ...st });
+  }
+  const st = await zalohaStrana(zdrojZivy(), po);
+  if (!po) Object.assign(st.zaloha, { porizena: new Date().toISOString(), zdroj: web });
+  return json({ ok: true, ...st });
+}
 
 async function zalohaTed(req) {
   const sProg = await uloziste('program');

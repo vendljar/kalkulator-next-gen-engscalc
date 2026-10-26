@@ -32,7 +32,14 @@ import program from './functions/program.mjs';
 import firma from './functions/firma.mjs';
 import zakazky from './functions/zakazky.mjs';
 import zaloha from './functions/zaloha.mjs';
-import zalohaNocni from './functions/zaloha_nocni.mjs';
+import zalohaNocniBeh from './functions/zaloha_nocni.mjs';
+/* #522: noční funkce pořizuje od v26.10.8 otisk jednou za den (běhy v okně
+ * 2:00–3:45 navazují). Sada volá „noc" opakovaně a čeká pokaždé nový otisk
+ * i retenci — každé volání je tu proto nová noc. Navazování hlídá
+ * test_zalohy_objem.mjs. */
+const NOVA_NOC = async () => { const z = globalThis.__TEST_ULOZISTE('zalohy');
+  await z.smaz(new Date(Date.now()).toISOString().slice(0, 10)); await z.smaz('nocni-dokonceno'); };
+const zalohaNocni = async (...a) => { await NOVA_NOC(); return zalohaNocniBeh(...a); };
 import obnova from './functions/obnova.mjs';
 import { ADMIN_EMAIL } from './lib/sdilene.mjs';
 import { createRequire } from 'node:module';

@@ -56,7 +56,14 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
 });
 
 import prihlaseni from './functions/prihlaseni.mjs';
-import zalohaNocni from './functions/zaloha_nocni.mjs';
+import zalohaNocniBeh from './functions/zaloha_nocni.mjs';
+/* #522: noční funkce pořizuje od v26.10.8 otisk jednou za den (běhy v okně
+ * 2:00–3:45 navazují). Sada volá „noc" opakovaně a čeká pokaždé nový otisk
+ * i retenci — každé volání je tu proto nová noc. Navazování hlídá
+ * test_zalohy_objem.mjs. */
+const NOVA_NOC = async () => { const z = globalThis.__TEST_ULOZISTE('zalohy');
+  await z.smaz(new Date(Date.now()).toISOString().slice(0, 10)); await z.smaz('nocni-dokonceno'); };
+const zalohaNocni = async (...a) => { await NOVA_NOC(); return zalohaNocniBeh(...a); };
 import zalohaVynuceno from './functions/zaloha_vynuceno.mjs';
 import zalohaFn from './functions/zaloha.mjs';
 import * as Z from './lib/zalohovani.mjs';
@@ -95,17 +102,17 @@ await ulz('program').zapis('firma', { udaje: { nazev: 'Před ruční zálohou s.
 await zkus('N1', async () => {
   const noc = await ticho(async () => (await zalohaNocni()).json());
   test('N1: noční otisk míří pod dnešní datum', noc.ok && noc.den === dnes(), noc);
-  const nocniPred = await ulz('zalohy').cti(dnes());
+  const nocniPred = await Z.ctiOtisk(ulz('zalohy'), dnes());
   /* Dopoledne se data pokazí a správce zmáčkne „Zálohovat teď". */
   await ulz('program').zapis('firma', { udaje: { nazev: 'POKAŽENO' } });
   const ruc = await postVynuceny({ duvod: 'rucne' });
   test('N1: ruční otisk má vlastní klíč s časem (<den>T<hhmmss>-rucne)',
     ruc.ok && /^\d{4}-\d{2}-\d{2}T\d{6}-rucne$/.test(ruc.den) && ruc.den.startsWith(dnes() + 'T'), ruc);
-  const nocniPo = await ulz('zalohy').cti(dnes());
+  const nocniPo = await Z.ctiOtisk(ulz('zalohy'), dnes());
   test('N1: noční otisk dne zůstal (zdroj, čas i stav před pokažením)',
     !!nocniPo && nocniPo.zdroj === 'nocni-otisk' && nocniPo.porizena === nocniPred.porizena
     && nocniPo.firma.udaje.nazev === 'Před ruční zálohou s.r.o.', nocniPo && { zdroj: nocniPo.zdroj, firma: nocniPo.firma });
-  const rucni = await ulz('zalohy').cti(ruc.den);
+  const rucni = await Z.ctiOtisk(ulz('zalohy'), ruc.den);
   test('N1: ruční otisk nese aktuální stav, zdroj „vynuceno" a kdo', !!rucni && rucni.firma.udaje.nazev === 'POKAŽENO'
     && rucni.zdroj === 'vynuceno' && rucni.kdo === ADMIN_EMAIL);
   const aut = await postVynuceny({ duvod: 'auto' });
@@ -137,14 +144,17 @@ await zkus('N2', async () => {
   const v = await Z.porizOtisk('nocni-otisk', '', '2000-01-01');
   test('N2: otisk čte souběžně (víc než jedno čtení naráz)', nejvicSoubezne > 1, nejvicSoubezne);
   test('N2: souběh je omezený velikostí dávky', nejvicSoubezne <= Z.DAVKA_CTENI, nejvicSoubezne);
-  const o = await ulz('zalohy').cti('2000-01-01');
+  const o = await Z.ctiOtisk(ulz('zalohy'), '2000-01-01');
   test('N2: po dávkách se nic neztratí (61 zakázek, správné hodnoty)', Object.keys(o.zakazky).length === 61
     && o.zakazky['D07.json'].i === 7 && o.zakazky['D59.json'].i === 59, Object.keys(o.zakazky).length);
   const poradi = await Z.ctiPoDavkach(ulz('zakazky'), ['z/D03.json', 'neni', 'z/D41.json']);
   test('N2: ctiPoDavkach drží pořadí klíčů a chybějící vrátí jako null',
     poradi[0].i === 3 && poradi[1] === null && poradi[2].i === 41, poradi);
+  /* #522: velikost = součet zapsaných částí otisku (manifest + části). */
+  const velikostCasti = [...pamet.keys()].filter(k => k.startsWith('zalohy/casti/2000-01-01/'))
+    .reduce((a, k) => a + Buffer.byteLength(pamet.get(k)), 0);
   test('N2: odpověď nese trvání a velikost otisku', Number.isFinite(v.trvaniMs) && v.trvaniMs >= 0
-    && v.velikostB === Buffer.byteLength(JSON.stringify(o)), v);
+    && velikostCasti > 0 && v.velikostB === velikostCasti, [v, velikostCasti]);
   const logy = [];
   const l = console.log; console.log = (...a) => logy.push(a.join(' '));
   try { await zalohaNocni(); } finally { console.log = l; }
@@ -171,8 +181,10 @@ await zkus('N3', async () => {
   const novy = seznam.find(o => o.den === dnes());
   test('N3: počty ze souhrnu', !!novy && novy.pocetZakazek === 61 && novy.zdroj === 'nocni-otisk', novy);
   test('N3: souhrny se v přehledu neobjeví jako otisky', !seznam.some(o => o.den.startsWith('souhrn/')));
+  /* #522: otisk po částech nese navíc počet částí (obnova po částech). */
   test('N3: přehled nese jen souhrnná pole', seznam.every(o =>
-    JSON.stringify(Object.keys(o).sort()) === JSON.stringify(['den', 'kdo', 'pocetUctu', 'pocetZakazek', 'porizena', 'zdroj'])));
+    JSON.stringify(Object.keys(o).filter(k => k !== 'casti').sort()) === JSON.stringify(['den', 'kdo', 'pocetUctu', 'pocetZakazek', 'porizena', 'zdroj'])
+    && (o.casti === undefined || Number.isInteger(o.casti))));
 });
 
 /* ---------------- N4: úplnost zálohy ---------------- */
@@ -207,11 +219,15 @@ const KLICE = {
   pole: ['pipedrive', false],
   'kopie-disk': ['zalohy', false],         // záznam o kopii na Disk (#151 N6), ne data
   'retence-varovani': ['zalohy', false],   // varování pojistky retence (K3-N13, O7), ne data
+  'otisk-stav': ['zalohy', false],         // poslední pokus o otisk (#522), ne data
+  'nocni-dokonceno': ['zalohy', false],    // den, kdy noc doběhla celá (#522), ne data
 };
 /* Dynamické výrazy v uloziste(…), které nejsou nové úložiště. */
 const DYNAMICKE = {
   'mapy[cast]': 'obnova zapisuje zpět do úložišť z otisku',
   nazev: 'sdilene.mjs: samotná definice uloziste()',
+  'x.ul': 'zalohovani.mjs: úložiště sekcí otisku (OTISK_SEKCE) — každé je v tabulce výš',
+  n: 'zalohovani.mjs: mezipaměť úložišť sekcí otisku (OTISK_SEKCE)',
 };
 
 await zkus('N4', async () => {
@@ -253,7 +269,7 @@ await zkus('N4', async () => {
   for (const [ul, druh] of Object.entries(ULOZISTE)) if (druh === 'cele') await vloz(ul, 'uplnost-' + ul);
   for (const [klic, [ul, zal]] of Object.entries(KLICE)) if (zal === true) await vloz(ul, /\/$/.test(klic) ? klic + 'uplnost' : klic);
   await Z.porizOtisk('test', '', '2000-01-02');
-  const text = JSON.stringify(await ulz('zalohy').cti('2000-01-02'));
+  const text = JSON.stringify(await Z.ctiOtisk(ulz('zalohy'), '2000-01-02'));
   const chybi = znacky.filter(([, z]) => !text.includes('"' + z + '"')).map(([k]) => k);
   test('N4: otisk opravdu nese všechna úložiště a klíče, které tabulka vede jako zálohované', chybi.length === 0, chybi);
   /* Kontrola testu samotného: výjimka se do otisku nedostane (jinak by
@@ -261,7 +277,7 @@ await zkus('N4', async () => {
   await ulz('analytika').zapis('rezim', { znacka: 'ZNACKA-VYJIMKA' });
   await Z.porizOtisk('test', '', '2000-01-03');
   test('N4: kontrola testu — výjimka (analytika) v otisku není',
-    !JSON.stringify(await ulz('zalohy').cti('2000-01-03')).includes('ZNACKA-VYJIMKA'));
+    !JSON.stringify(await Z.ctiOtisk(ulz('zalohy'), '2000-01-03')).includes('ZNACKA-VYJIMKA'));
 });
 
 

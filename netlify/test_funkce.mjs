@@ -19,7 +19,14 @@ import firma from './functions/firma.mjs';
 import zakazky from './functions/zakazky.mjs';
 import zaloha from './functions/zaloha.mjs';
 import analytika from './functions/analytika.mjs';
-import zalohaNocni from './functions/zaloha_nocni.mjs';
+import zalohaNocniBeh from './functions/zaloha_nocni.mjs';
+/* #522: noční funkce pořizuje od v26.10.8 otisk jednou za den (běhy v okně
+ * 2:00–3:45 navazují). Sada volá „noc" opakovaně a čeká pokaždé nový otisk
+ * i retenci — každé volání je tu proto nová noc. Navazování hlídá
+ * test_zalohy_objem.mjs. */
+const NOVA_NOC = async () => { const z = globalThis.__TEST_ULOZISTE('zalohy');
+  await z.smaz(new Date(Date.now()).toISOString().slice(0, 10)); await z.smaz('nocni-dokonceno'); };
+const zalohaNocni = async (...a) => { await NOVA_NOC(); return zalohaNocniBeh(...a); };
 import zalohaVynuceno from './functions/zaloha_vynuceno.mjs';
 import { ADMIN_EMAIL } from './lib/sdilene.mjs';
 import { createRequire } from 'node:module';
@@ -283,7 +290,7 @@ test('záloha neobsahuje otisky hesel', !JSON.stringify(zal.zaloha.uzivatele).in
  * aby obnova nevyžadovala reset všech hesel) */
 const noc = await (await zalohaNocni()).json();
 test('noční otisk proběhne a vrátí dnešní den', noc.ok && noc.den === new Date().toISOString().slice(0, 10));
-const otisk = await (await globalThis.__TEST_ULOZISTE('zalohy')).cti(noc.den);
+const otisk = await (await import('./lib/zalohovani.mjs')).ctiOtisk(await globalThis.__TEST_ULOZISTE('zalohy'), noc.den);
 test('otisk nese program, zakázky i rejstřík', !!otisk && otisk.program.platny.verze === 2
   && Object.keys(otisk.zakazky).length === 1 && otisk.rejstrik.zakazky.length === 1);
 test('noční otisk nese i firemní údaje', !!otisk.firma && otisk.firma.udaje.ico === SKUT.ico);
@@ -305,7 +312,7 @@ const vyn = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', {}
 test('administrátor vynutí otisk', vyn.ok === true && vyn.den.startsWith(new Date().toISOString().slice(0, 10) + 'T')
   && vyn.den.endsWith('-rucne'), JSON.stringify(vyn));
 test('vynucený otisk hlásí, kolik zakázek uložil', vyn.pocetZakazek === 1, JSON.stringify(vyn));
-const vynOtisk = await (await globalThis.__TEST_ULOZISTE('zalohy')).cti(vyn.den);
+const vynOtisk = await (await import('./lib/zalohovani.mjs')).ctiOtisk(await globalThis.__TEST_ULOZISTE('zalohy'), vyn.den);
 test('vynucený otisk nese celou databázi', !!vynOtisk && vynOtisk.program.platny.verze === 2
   && Object.keys(vynOtisk.zakazky).length === 1 && !!vynOtisk.firma);
 test('vynucený otisk je poznat od nočního podle zdroje',
@@ -322,8 +329,9 @@ test('seznam otisků nese zdroj i čas pořízení',
 const seznamText = JSON.stringify(seznamOt);
 test('seznam otisků neveze data zakázek', !seznamText.includes('Online test'), seznamText.slice(0, 200));
 test('seznam otisků neveze otisky hesel', !seznamText.includes('heslo'), seznamText.slice(0, 200));
+/* #522: + počet částí otisku (číslo, žádná data) pro obnovu po částech */
 test('seznam otisků nese jen souhrn (den, čas, zdroj, počty)',
-  Object.keys(seznamOt.otisky[0]).every(k => ['den', 'porizena', 'zdroj', 'kdo', 'pocetZakazek', 'pocetUctu'].includes(k)),
+  Object.keys(seznamOt.otisky[0]).every(k => ['den', 'porizena', 'zdroj', 'kdo', 'pocetZakazek', 'pocetUctu', 'casti'].includes(k)),
   Object.keys(seznamOt.otisky[0]).join(','));
 
 /* ============================================================
@@ -457,7 +465,7 @@ const DOCX2 = await docxB64('verze 2');   // jiná data = jiný otisk
   const { porizOtisk } = await import('./lib/zalohovani.mjs');
   await porizOtisk('test', ADMIN_EMAIL);
   const den = new Date().toISOString().slice(0, 10);
-  const otisk = await (await (await import('./lib/sdilene.mjs')).uloziste('zalohy')).cti(den);
+  const otisk = await (await import('./lib/zalohovani.mjs')).ctiOtisk(await (await import('./lib/sdilene.mjs')).uloziste('zalohy'), den);
   test('noční otisk nese šablony včetně souborů',
     otisk && otisk.sablony && otisk.sablony['data/nabidka/2']
     && otisk.sablony['data/nabidka/2'].data === DOCX2);

@@ -1,0 +1,250 @@
+/* ZÁLOHY PŘI OBJEMU OSTRÉHO PROVOZU (#522 Z1, 26. 10. 2026).
+ *
+ * Ostrý engscalc (792 zakázek) neměl ani jednu zálohu: otisk četl celou
+ * databázi a zapsal ji jedním blobem, takže nestihl limit funkce (10 s
+ * synchronní, 30 s plánovaná) — a „Stáhnout zálohu" i kopie na Disk vracely
+ * celou databázi jednou odpovědí přes limit ~6 MB.
+ *
+ * Simulace: paměťové úložiště se zpožděním každé operace a LIMITEM FUNKCE —
+ * po uplynutí limitu požadavku každá další operace vyhodí („Task timed out"),
+ * jako když Netlify funkci ukončí. Zkušební data (smyšlená), 900 zakázek,
+ * několik s přílohou, šablony, podpisy, účty.
+ *
+ * Pojistka: nad kódem před #522 sada selže (vynucený i noční otisk nevznikne,
+ * blob otisku i odpověď zálohy jsou nad stropem); po opravě projde.
+ * Spuštění: node netlify/test_zalohy_objem.mjs */
+process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
+process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
+process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'spravce@priklad.cz';
+import { createRequire } from 'node:module';
+
+const ZPOZDENI_MS = 6;          // jedna operace úložiště
+const LIMIT_MS = 600;           // „limit funkce" v simulaci (poměrově k zpoždění)
+const pamet = new Map();
+let limitDo = Infinity;          // konec limitu právě běžícího požadavku
+let nejvetsiZapisB = 0, nejvetsiZapisKlic = '';
+let selhatCteni = null;          // úložiště, jehož čtení selže (hlášení chyby)
+const hlid = () => { if (Date.now() > limitDo) throw new Error('Task timed out (simulovaný limit funkce)'); };
+const cekej = () => new Promise(r => setTimeout(r, ZPOZDENI_MS));
+globalThis.__TEST_ULOZISTE = (nazev) => ({
+  async cti(k) { await cekej(); hlid();
+    if (selhatCteni === nazev) throw new Error('simulovaný výpadek čtení ' + nazev);
+    return pamet.has(nazev + '/' + k) ? JSON.parse(pamet.get(nazev + '/' + k)) : null; },
+  async zapis(k, v) { await cekej(); hlid(); const t = JSON.stringify(v);
+    if (nazev === 'zalohy' && t.length > nejvetsiZapisB) { nejvetsiZapisB = t.length; nejvetsiZapisKlic = k; }
+    pamet.set(nazev + '/' + k, t); },
+  async seznam(prefix) { await cekej(); hlid(); return [...pamet.keys()].filter(x => x.startsWith(nazev + '/' + (prefix || '')))
+    .map(x => x.slice(nazev.length + 1)); },
+  async smaz(k) { await cekej(); hlid(); pamet.delete(nazev + '/' + k); },
+});
+
+const { default: prihlaseni } = await import('./functions/prihlaseni.mjs');
+const { default: zalohaNocni } = await import('./functions/zaloha_nocni.mjs');
+const { default: zalohaVynuceno } = await import('./functions/zaloha_vynuceno.mjs');
+const { default: zalohaFn } = await import('./functions/zaloha.mjs');
+const { default: obnova } = await import('./functions/obnova.mjs');
+const Z = await import('./lib/zalohovani.mjs');
+const { ADMIN_EMAIL } = await import('./lib/sdilene.mjs');
+const require = createRequire(import.meta.url);
+const { uloZalohaSloz, uloJmenoSouboru } = require('../src/uloziste.js');
+Object.assign(globalThis, require('../src/format.js'), require('../src/engine.js'), require('../src/engine_proj.js'),
+  require('../src/techspec.js'), require('../src/sleva.js'), require('../src/zaokrouhleni.js'), require('../src/zamek.js'));
+const zk = require('../src/zakazka.js');
+
+let ok = 0, fail = 0;
+const test = (n, cond, info) => { if (cond) { ok++; console.log('OK  ' + n); }
+  else { fail++; console.log('FAIL ' + n, info === undefined ? '' : (typeof info === 'string' ? info : JSON.stringify(info).slice(0, 600))); } };
+const zkus = async (n, fn) => { try { await fn(); } catch (e) { test(n + ' (výjimka)', false, String(e && e.stack || e)); } };
+const ticho = async (fn) => { const l = console.log, w = console.warn, e = console.error;
+  console.log = console.warn = console.error = () => {}; try { return await fn(); } finally { console.log = l; console.warn = w; console.error = e; } };
+/* Jeden „požadavek" = jedno volání funkce pod limitem. */
+const pozadavek = async (fn) => { limitDo = Date.now() + LIMIT_MS;
+  try { return await fn(); } finally { limitDo = Infinity; } };
+let cookie = '';
+const post = (fn, url, telo) => pozadavek(() => fn(new Request(url, { method: 'POST', headers: { cookie }, body: JSON.stringify(telo) })));
+const get = (fn, url) => pozadavek(() => fn(new Request(url, { headers: { cookie } })));
+/* Limit vynucených otisků (K3-N4) — každý další „o 11 minut později". */
+let posun = 0;
+const pozdeji = async (fn) => { posun += 11 * 60000; const p = Date.now; Date.now = () => p.call(Date) + posun;
+  try { return await fn(); } finally { Date.now = p; } };
+/* Rozpočty kroků zkrácené v poměru k limitu simulace (ostré: 6 s / 20 s). */
+if (Z.OTISK_ROZPOCET) { Z.OTISK_ROZPOCET.synchronniMs = 200; Z.OTISK_ROZPOCET.nocniMs = 250; }
+
+/* ---------------- zkušební databáze ---------------- */
+const text = (n, z) => (z + ' Příliš žluťoučký kůň úpěl ďábelské ódy. ').repeat(Math.ceil(n / 40)).slice(0, n);
+const N = 900;
+/* Zakázka v tvaru aplikace (novaZakazka), ~10 kB textu; každá 150. s přílohou
+ * 700 kB. Klíč úložiště podle čísla nabídky (uloJmenoSouboru), jako ukládá server. */
+const KLIC = (i) => uloJmenoSouboru({ cislo: '2026 - OBJ - CN - ' + String(i).padStart(4, '0') });
+for (let i = 0; i < N; i++) {
+  const z = zk.novaZakazka(); z.cislo = '2026 - OBJ - CN - ' + String(i).padStart(4, '0');
+  z.nazevAkce = 'Zkušební zakázka ' + i + ' ' + text(9000, 'Z' + i);
+  if (i % 150 === 7) z.prilohy = [{ id: 'pr' + i, nazev: 'vykres.pdf', typ: 'application/pdf', velikost: 700000,
+    data: text(700000, 'P' + i), kdy: '2026-10-01T08:00:00.000Z', kdo: 'Test', popis: '' }];
+  pamet.set('zakazky/z/' + KLIC(i), JSON.stringify(z));
+}
+pamet.set('zakazky/_rejstrik', JSON.stringify({ zakazky: [], pozn: text(50000, 'R') }));
+pamet.set('program/firma', JSON.stringify({ udaje: { nazev: 'Zkušební firma s.r.o.' } }));
+for (let i = 0; i < 4; i++) pamet.set('sablony/data/cn/' + (i + 1), JSON.stringify({ soubor: text(300000, 'S' + i) }));
+for (let i = 0; i < 6; i++) pamet.set('podpisy/obch' + i + '@priklad.cz', JSON.stringify({ obrazek: text(50000, 'G' + i) }));
+for (let i = 0; i < 60; i++) pamet.set('zakaznici/z/K' + i, JSON.stringify({ nazev: 'Zákazník ' + i }));
+const velikostDb = [...pamet.values()].reduce((a, v) => a + v.length, 0);
+console.log('zkušební databáze: ' + N + ' zakázek, ' + (velikostDb / 1048576).toFixed(1) + ' MB');
+
+const r = await pozadavek(() => prihlaseni(new Request('http://x/api/prihlaseni', { method: 'POST',
+  body: JSON.stringify({ email: ADMIN_EMAIL, heslo: 'Docasne.Heslo.123' }) })));
+cookie = (r.headers.get('set-cookie') || '').split(';')[0];
+test('administrátor se přihlásí', r.status === 200, r.status);
+for (let i = 0; i < 5; i++) pamet.set('uzivatele/obch' + i + '@priklad.cz', JSON.stringify({ email: 'obch' + i + '@priklad.cz',
+  jmeno: 'Obchodník ' + i, role: 'Obchodník', aktivni: true, heslo: 'aa:bb' }));
+
+/* ---------------- 1) vynucený otisk („Zálohovat teď") ---------------- */
+let vynKlic = '';
+await zkus('vynucený', async () => {
+  let o = await pozdeji(async () => (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { duvod: 'rucne' })).json().catch(() => ({})));
+  test('vynucený otisk: první požadavek odpoví v limitu (ne pád funkce)', o.ok === true, o);
+  let pozadavku = 1;
+  while (o.ok && o.hotovo === false && pozadavku < 200) {
+    o = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'pokracovat', klic: o.den })).json();
+    pozadavku++;
+  }
+  test('vynucený otisk se dokončí navazujícími požadavky (každý v limitu)', o.ok === true && o.hotovo === true
+    && o.pocetZakazek === N, { o, pozadavku });
+  test('vynucený otisk potřeboval víc požadavků (jeden by limit nestihl)', pozadavku > 1, pozadavku);
+  vynKlic = o.den || '';
+  const otisk = await Z.ctiOtisk(globalThis.__TEST_ULOZISTE('zalohy'), vynKlic);
+  test('otisk složený z částí nese všech ' + N + ' zakázek i přílohy, účty s hesly, šablony, podpisy, zákazníky',
+    !!otisk && Object.keys(otisk.zakazky).length === N && otisk.zakazky[KLIC(7)].prilohy[0].data.length === 700000
+    && otisk.uzivatele.some(u => u.email === 'obch3@priklad.cz' && u.heslo === 'aa:bb')
+    && Object.keys(otisk.sablony).length === 4 && Object.keys(otisk.podpisy).length === 6
+    && Object.keys(otisk.zakaznici).length === 60 && otisk.firma.udaje.nazev === 'Zkušební firma s.r.o.',
+    otisk && { z: Object.keys(otisk.zakazky || {}).length });
+  test('žádný zapsaný blob zálohy není nad stropem části (4 MB)', nejvetsiZapisB <= Z.OTISK_CAST_MAX_B + 64 * 1024,
+    { nejvetsiZapisB, nejvetsiZapisKlic });
+  test('rezervace vynuceného otisku po dokončení zmizí', ![...pamet.keys()].some(k => k.startsWith('zalohy/vynucene-rezervace/')));
+  test('rozpracovaný stav po dokončení zmizí', ![...pamet.keys()].some(k => k.startsWith('zalohy/rozpracovany/')));
+  const seznam = await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno')).json();
+  test('přehled ukáže hotový otisk s počtem částí a stav posledního pokusu „hotovo"',
+    seznam.ok && seznam.otisky.some(x => x.den === vynKlic && x.pocetZakazek === N && x.casti > 1)
+    && seznam.otiskStav && seznam.otiskStav.stav === 'hotovo', { otisky: seznam.otisky, stav: seznam.otiskStav });
+});
+
+/* ---------------- 2) noční otisk: běhy v okně navazují ---------------- */
+await zkus('noční', async () => {
+  const dnes = new Date().toISOString().slice(0, 10);
+  const behy = [];
+  for (let i = 0; i < 8; i++) behy.push(await ticho(async () => (await pozadavek(() => zalohaNocni())).json().catch(e => ({ chyba: String(e) }))));
+  const hotovo = behy.findIndex(b => b.hotovo === true);
+  test('noční otisk vznikne během okna (8 běhů po 15 min), každý běh v limitu', hotovo >= 0 && !behy.some(b => b.chyba),
+    behy.map(b => ({ hotovo: b.hotovo, p: b.postup, ch: b.chyba })));
+  test('noční otisk potřeboval víc běhů (jeden by 30 s nestihl)', hotovo > 0, hotovo);
+  const sh = await Z.ctiOtisk(globalThis.__TEST_ULOZISTE('zalohy'), dnes);
+  test('noční otisk je celý (zdroj nocni-otisk, ' + N + ' zakázek)', !!sh && sh.zdroj === 'nocni-otisk' && Object.keys(sh.zakazky).length === N);
+  test('retence a úklid proběhly jednou za den (záznam dokončení)', behy.filter(b => b.retence).length === 1
+    && JSON.parse(pamet.get('zalohy/nocni-dokonceno') || '{}').den === dnes, behy.map(b => !!b.retence));
+  const zapisuPred = [...pamet.keys()].length;
+  const dalsi = await ticho(async () => (await pozadavek(() => zalohaNocni())).json());
+  test('další běh téže noci nic nepořizuje', dalsi.ok && dalsi.hotovo === true && [...pamet.keys()].length === zapisuPred, dalsi);
+});
+
+/* ---------------- 3) tvrdé ukončení uprostřed kroku ---------------- */
+await zkus('přerušení', async () => {
+  const klic = '2026-01-05';
+  /* první krok zabitý limitem uprostřed (úložiště přestane odpovídat) */
+  limitDo = Date.now() + 150;
+  let chyba = null;
+  try { await ticho(() => Z.porizOtiskKrok(klic, 'nocni-otisk', '', { rozpocetMs: 10000 })); } catch (e) { chyba = e; }
+  limitDo = Infinity;
+  test('simulace: krok byl opravdu ukončen uprostřed', !!chyba && /timed out/.test(String(chyba)), String(chyba));
+  test('nedokončený otisk se jako hotový netváří', !pamet.has('zalohy/' + klic));
+  /* zámek kroku vyprší (beziDo) — posun hodin */
+  let v; const p = Date.now; Date.now = () => p.call(Date) + 10 * 60000;
+  try { do { v = await pozadavek(() => Z.porizOtiskKrok(klic, 'nocni-otisk', '', { rozpocetMs: 200, jenPokracovat: true })); } while (!v.hotovo); }
+  finally { Date.now = p; }
+  const o = await Z.ctiOtisk(globalThis.__TEST_ULOZISTE('zalohy'), klic);
+  test('po přerušení další kroky navážou a otisk je celý, bez ztracených zakázek', v.hotovo && Object.keys(o.zakazky).length === N
+    && o.zakazky[KLIC(899)].nazevAkce.startsWith('Zkušební zakázka 899 '), { v, n: Object.keys(o.zakazky).length });
+});
+
+/* ---------------- 4) selhání otisku řekne proč ---------------- */
+await zkus('chyba', async () => {
+  selhatCteni = 'sablony';
+  const o = await pozdeji(async () => ticho(async () => (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { duvod: 'rucne' })).json()));
+  selhatCteni = null;
+  let posl = o;
+  for (let i = 0; i < 50 && posl.ok && posl.hotovo === false; i++) {
+    selhatCteni = 'sablony';
+    posl = await ticho(async () => (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'pokracovat', klic: posl.den })).json());
+    selhatCteni = null;
+  }
+  test('selhání otisku vrátí hlášku s důvodem (ne tiché „žádná záloha")', posl.ok === false && /Záloha se nepořídila: .*výpadek čtení sablony/.test(posl.chyba), posl);
+  const s = await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno')).json();
+  test('přehled nese poslední pokus „chyba" s důvodem', s.otiskStav && s.otiskStav.stav === 'chyba' && /sablony/.test(s.otiskStav.chyba), s.otiskStav);
+});
+
+/* ---------------- 5) stažení zálohy a kopie na Disk po stránkách ---------------- */
+await zkus('stažení', async () => {
+  let zaloha = {}, po = '', stran = 0, nejvic = 0, res;
+  do {
+    res = await get(zalohaFn, 'http://x/api/zaloha?strana=1' + (po ? '&po=' + encodeURIComponent(po) : ''));
+    const t = await res.text(); nejvic = Math.max(nejvic, t.length);
+    const o = JSON.parse(t);
+    if (!o.ok) throw new Error('stránka: ' + t.slice(0, 200));
+    uloZalohaSloz(zaloha, o.zaloha); po = o.dalsi; stran++;
+  } while (po && stran < 500);
+  test('stažení po stránkách: každá odpověď pod limitem ~6 MB', nejvic < 6 * 1024 * 1024 && stran > 1, { nejvic, stran });
+  test('složená záloha nese všechno a účty bez otisků hesel', Object.keys(zaloha.zakazky).length === N
+    && zaloha.zakazky[KLIC(757)].prilohy[0].data.length === 700000 && Object.keys(zaloha.sablony).length === 4
+    && Object.keys(zaloha.podpisy).length === 6 && zaloha.uzivatele.length === 6 && !JSON.stringify(zaloha.uzivatele).includes('heslo')
+    && typeof zaloha.porizena === 'string' && zaloha.firma.udaje.nazev === 'Zkušební firma s.r.o.', { z: Object.keys(zaloha.zakazky || {}).length, u: zaloha.uzivatele });
+  /* kopie na Disk: poslední noční otisk po částech */
+  let kopie = {}, dalsi = '', otisk = null, puvod = '';
+  stran = 0; nejvic = 0;
+  do {
+    const t = await (await get(zalohaFn, 'http://x/api/zaloha?zdroj=nocni&strana=1' + (otisk ? '&otisk=' + otisk : '')
+      + (dalsi ? '&po=' + encodeURIComponent(dalsi) : ''))).text();
+    nejvic = Math.max(nejvic, t.length);
+    const o = JSON.parse(t);
+    if (!o.ok) throw new Error('kopie: ' + t.slice(0, 200));
+    if (!stran) { otisk = o.otisk; puvod = o.puvod; }
+    uloZalohaSloz(kopie, o.zaloha); dalsi = o.dalsi; stran++;
+  } while (dalsi && stran < 500);
+  test('kopie na Disk: poslední noční otisk po stránkách pod limitem', puvod === 'nocni-otisk' && otisk === new Date().toISOString().slice(0, 10)
+    && nejvic < 6 * 1024 * 1024 && stran > 1, { puvod, otisk, nejvic, stran });
+  test('kopie na Disk: celá, bez otisků hesel a bez podpisů', Object.keys(kopie.zakazky).length === N && kopie.podpisy === null
+    && kopie.uzivatele.length === 6 && !JSON.stringify(kopie).includes('aa:bb') && kopie.zdroj === 'nocni-otisk', { p: kopie.podpisy });
+});
+
+/* ---------------- 6) obnova z otisku po částech ---------------- */
+await zkus('obnova', async () => {
+  const sZak = globalThis.__TEST_ULOZISTE('zakazky');
+  for (const i of [3, 450, 899]) pamet.delete('zakazky/z/' + KLIC(i));
+  const telo = (x) => post(obnova, 'http://x/api/obnova', x);
+  let zac = await (await telo({ faze: 'zacatek', rezim: 'doplnit', potvrzeni: 'OBNOVIT' })).json();
+  test('obnova: začátek odpoví v limitu', zac.ok === true, zac);
+  const davkaPred = await (await telo({ obnovaId: zac.obnovaId, zdroj: { otisk: vynKlic, cast: 0 }, rezim: 'doplnit',
+    casti: ['zakazky'], potvrzeni: 'OBNOVIT' })).json();
+  test('obnova: dávka před dokončením otisku před obnovou se odmítne', zac.otiskHotovo === true || davkaPred.ok === false, davkaPred);
+  let n = 0;
+  while (zac.ok && zac.otiskHotovo === false && n++ < 200) zac = await (await telo({ faze: 'otisk', obnovaId: zac.obnovaId })).json();
+  test('obnova: otisk před obnovou se dopořídí po krocích', zac.ok && zac.otiskHotovo === true, zac);
+  const casti = (await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno')).json()).otisky.find(x => x.den === vynKlic).casti;
+  let nove = 0;
+  let davek = 0;
+  for (let i = 0; i < casti; i++) {
+    for (let od = 0, zaznamu = 1; od < zaznamu; od += 15) {
+      const d = await (await telo({ obnovaId: zac.obnovaId, zdroj: { otisk: vynKlic, cast: i, od, kolik: 15 }, rezim: 'doplnit',
+        casti: ['zakazky'], potvrzeni: 'OBNOVIT' })).json();
+      if (!d.ok) throw new Error('dávka ' + i + '/' + od + ': ' + JSON.stringify(d).slice(0, 300));
+      zaznamu = d.zdroj.zaznamu; davek++;
+      nove += (d.casti && d.casti.zakazky && d.casti.zakazky.nove) || 0;
+      if (process.env.DBG && d.casti.zakazky && d.casti.zakazky.preskocene) console.log(JSON.stringify(d.casti.zakazky.duvody.slice(0,2)));
+    }
+  }
+  const kon = await (await telo({ faze: 'konec', obnovaId: zac.obnovaId })).json();
+  test('obnova po částech doplní smazané zakázky (každá dávka v limitu)', kon.ok && nove === 3
+    && !!(await sZak.cti('z/' + KLIC(450))), { nove, davek, kon: kon.ok });
+});
+
+console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
+process.exit(fail ? 1 : 0);

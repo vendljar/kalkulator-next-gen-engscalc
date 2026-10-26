@@ -2018,6 +2018,31 @@ function uloIdProblemyText(problemy) {
   return casti.join('; ');
 }
 
+/* SKLÁDÁNÍ ZÁLOHY ZE STRÁNEK (#522 Z1, 26. 10. 2026). Server vydává zálohu
+ * po stránkách (/api/zaloha?strana=1…, nejvýš ~4 MB na odpověď — Netlify
+ * víc nevydá). Stránka nese mapy (zakázky, šablony, zákazníci, podpisy,
+ * kniha smazaných) jako dílčí mapy a účty jako dílčí pole; jednozáznamové
+ * části a razítko celé. Složený objekt má tvar dřívější celé zálohy.
+ * Razítko (porizena, zdroj, kdo, web) platí z PRVNÍ stránky. Čistá funkce:
+ * `cil` doplní a vrátí. */
+const ULO_ZALOHA_MAPY = ['zakazky', 'sablony', 'zakaznici', 'podpisy', 'smazani'];
+const ULO_ZALOHA_RAZITKO = ['porizena', 'zdroj', 'kdo', 'web'];
+function uloZalohaSloz(cil, strana) {
+  const o = cil && typeof cil === 'object' ? cil : {};
+  Object.keys(strana && typeof strana === 'object' ? strana : {}).forEach(k => {
+    const v = strana[k];
+    if (ULO_ZALOHA_RAZITKO.includes(k)) { if (o[k] === undefined) o[k] = v; return; }
+    if (k === 'uzivatele') { o[k] = (Array.isArray(o[k]) ? o[k] : []).concat(Array.isArray(v) ? v : []); return; }
+    if (ULO_ZALOHA_MAPY.includes(k)) {
+      if (v && typeof v === 'object') o[k] = Object.assign(o[k] && typeof o[k] === 'object' ? o[k] : {}, v);
+      else if (o[k] === undefined) o[k] = v;
+      return;
+    }
+    o[k] = v;
+  });
+  return o;
+}
+
 /* HLÍDKA NOČNÍ ZÁLOHY (#152, 24. 9. 2026).
  *
  * Noční funkce (zaloha_nocni) pořizuje otisk databáze sama. Kdyby přestala
@@ -2110,7 +2135,7 @@ function uloRetenceVarovani(v, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { ULO_TYPY_HLAVICKA, uloRetenceVarovani, ULO_RETENCE_VAROVANI_DNU, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloZalohaSloz, ULO_TYPY_HLAVICKA, uloRetenceVarovani, ULO_RETENCE_VAROVANI_DNU, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,

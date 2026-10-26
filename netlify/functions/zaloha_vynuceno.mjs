@@ -12,8 +12,16 @@
  * POST { akce: 'retence-potvrdit', den, hesloSpravce } → správce potvrdí, že
  *   úbytek dat byl záměrný; retence pak zase maže (K4-N13, O11).
  * GET  /api/zaloha_vynuceno → { ok, otisky: [ { den, porizena, zdroj, kdo,
- *   pocetZakazek, pocetUctu } … ] } – souhrn posledních otisků BEZ dat,
- *   aby bylo v obrazovce vidět, kdy záloha naposledy vznikla.
+ *   pocetZakazek, pocetUctu, casti? } … ] } – souhrn posledních otisků BEZ dat,
+ *   aby bylo v obrazovce vidět, kdy záloha naposledy vznikla. Od #522 i
+ *   `otiskStav` (poslední pokus: hotovo / rozpracováno / chyba s důvodem)
+ *   a `rozpracovane` (nedokončené otisky s postupem).
+ *
+ * PO KROCÍCH (#522 Z1, 26. 10. 2026): otisk se pořizuje po částech a jeden
+ * požadavek udělá jen tolik, kolik stihne za OTISK_ROZPOCET.synchronniMs.
+ * Odpověď nese `hotovo`; když je false, prohlížeč posílá
+ * POST { akce: 'pokracovat', klic: <den z odpovědi> }, dokud není hotovo.
+ * Chyba otisku vrací 500 s důvodem (dřív padla funkce bez hlášky).
  *
  * Proč to nedělá rovnou zaloha_nocni.mjs: plánovaná funkce v Netlify vyváží
  * `config = { schedule: … }`. Přidat k ní cestu není spolehlivé (funkce je
@@ -25,7 +33,8 @@
  * /api/zaloha, která otisky hesel nenese. */
 import { vyzadujRoli, json, uloziste, potvrdHesloSpravce } from '../lib/sdilene.mjs';
 import { seznamOtisku, KOPIE_DISK_KLIC, KOPIE_DISK_SLOZKA, porizVynuceny,
-  RETENCE_VAROVANI_KLIC, retenceDrzena } from '../lib/zalohovani.mjs';
+  RETENCE_VAROVANI_KLIC, retenceDrzena, vynucenyPokracuj, seznamRozpracovanych,
+  OTISK_STAV_KLIC, OTISK_ROZPOCET } from '../lib/zalohovani.mjs';
 
 /* K4-N12 (O9): pole z těla jen jako text / číslo. String() nad objektem
  * z JSON s klíčem „toString", který není funkce, vyhodil výjimku → 500. */
@@ -40,7 +49,9 @@ export default async (req) => {
     const sZal = await uloziste('zalohy');
     return json({ ok: true, otisky: await seznamOtisku(14),
       kopieDisk: (await sZal.cti(KOPIE_DISK_KLIC)) || null,
-      retenceVarovani: (await sZal.cti(RETENCE_VAROVANI_KLIC)) || null });
+      retenceVarovani: (await sZal.cti(RETENCE_VAROVANI_KLIC)) || null,
+      otiskStav: (await sZal.cti(OTISK_STAV_KLIC)) || null,              // #522
+      rozpracovane: await seznamRozpracovanych() });
   }
 
   if (req.method !== 'POST')
@@ -94,11 +105,27 @@ export default async (req) => {
     await sZal.zapis(RETENCE_VAROVANI_KLIC, zaznam);
     return json({ ok: true, retenceVarovani: zaznam });
   }
+  /* #522: pokračování rozpracovaného vynuceného otisku. */
+  if (telo.akce === 'pokracovat') {
+    let v;
+    try { v = await vynucenyPokracuj(txt(telo.klic), { rozpocetMs: OTISK_ROZPOCET.synchronniMs }); }
+    catch (e) { return otiskChyba(e); }
+    if (v.chyba) return json({ ok: false, chyba: v.chyba }, 404);
+    return json({ ok: true, ...v });
+  }
   const duvod = txt(telo.duvod);
   /* K3-N4: limit vynucených otisků; 429 řekne, kdy to půjde znovu.
    * K4-N5 (O9): kontrola i rezervace slotu před pořízením (porizVynuceny). */
-  const v = await porizVynuceny(duvod, relace.email);
+  let v;
+  try { v = await porizVynuceny(duvod, relace.email, { rozpocetMs: OTISK_ROZPOCET.synchronniMs }); }
+  catch (e) { return otiskChyba(e); }
   if (v.limit) return json({ ok: false, kod: 'limitZalohy', chyba: v.limit.chyba, dalsi: new Date(v.limit.dalsiMs).toISOString() }, 429);
   return json({ ok: true, ...v });
 };
+/* #522: selhání otisku řekne proč — do logu celé, do obrazovky důvod. */
+function otiskChyba(e) {
+  console.error('zaloha_vynuceno: otisk se nepořídil', e);
+  return json({ ok: false, kod: 'otiskChyba',
+    chyba: 'Záloha se nepořídila: ' + String(e && e.message || e) + '. Podrobnosti jsou v Netlify → Logs → Functions → zaloha_vynuceno.' }, 500);
+}
 export const config = { path: '/api/zaloha_vynuceno' };

@@ -25,7 +25,14 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
 });
 
 const U = await import('./lib/uklid.mjs');
-const { default: nocni } = await import('./functions/zaloha_nocni.mjs');
+const { default: nocniBeh } = await import('./functions/zaloha_nocni.mjs');
+/* #522: noční funkce pořizuje od v26.10.8 otisk jednou za den (běhy v okně
+ * 2:00–3:45 navazují). Sada volá „noc" opakovaně a čeká pokaždé nový otisk
+ * i retenci — každé volání je tu proto nová noc. Navazování hlídá
+ * test_zalohy_objem.mjs. */
+const NOVA_NOC = async () => { const z = globalThis.__TEST_ULOZISTE('zalohy');
+  await z.smaz(new Date(Date.now()).toISOString().slice(0, 10)); await z.smaz('nocni-dokonceno'); };
+const nocni = async (...a) => { await NOVA_NOC(); return nocniBeh(...a); };
 
 let ok = 0, fail = 0;
 const test = (n, cond, info) => {
