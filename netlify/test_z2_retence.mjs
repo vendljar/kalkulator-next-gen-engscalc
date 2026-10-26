@@ -360,7 +360,7 @@ await zkus('kopie .json.gz', async () => {
 await zkus('pojistka', async () => {
   const P = Z.retencePoklesPocty;
   const MB = 1048576;
-  test('#523 pojistka: prahy na jednom místě — velikost 90 %, zakázky a účty 95 %', J(R.RETENCE_ZALOH_POJISTKA) === J({ velikost: 0.9, pocty: 0.95 }));
+  test('#523 pojistka: prahy na jednom místě — velikost 90 %, zakázky a účty 95 %', J(R.RETENCE_ZALOH_POJISTKA) === J({ velikost: 0.9, pocty: 0.95, oknoDnu: 30 }));   // O-K9 #527: + kumulativní okno 30 dní
   test('#523 pojistka: velikost −15 % je úbytek s textem', J(P({ velikostB: 100 * MB }, { velikostB: 85 * MB })) === J(['velikost 100,0 MB → 85,0 MB (85 %)']));
   test('#523 pojistka: velikost −5 % a přesně −10 % úbytek není', P({ velikostB: 100 * MB }, { velikostB: 95 * MB }) === null
     && P({ velikostB: 100 * MB }, { velikostB: 90 * MB }) === null);
@@ -462,8 +462,14 @@ await zkus('úbytek Disk', async () => {
   const rr = await Z.retenceProved('2026-12-21', '2026-12-21', ted);
   test('#523 Disk: varování z Disku zastaví i retenci v Netlify', rr.smazano.length === 0 && !!rr.drzeno, rr);
   const potvrd = await posli({ akce: 'retence-potvrdit', den: '2026-12-20', hesloSpravce: 'Docasne.Heslo.123' });
-  test('#523 Disk: správce potvrdí heslem → retence v Netlify zase maže', potvrd.status === 200
-    && J((await Z.retenceProved('2026-12-21', '2026-12-21', ted)).smazano) === J(['2026-11-03', '2026-11-04']), potvrd.telo);
+  /* O-K9 #527 (K9-S2): druhé hlášení (12-27) se nezahodilo — po potvrzení prvního je na řadě ono a retence stojí dál */
+  const poPrvnim = await Z.retenceProved('2026-12-21', '2026-12-21', ted);
+  test('O-K9 K9-S2: po potvrzení prvního varování z Disku čeká druhé — retence dál stojí', potvrd.status === 200
+    && potvrd.telo.retenceVarovani.den === '2026-12-27' && !potvrd.telo.retenceVarovani.potvrzeno
+    && poPrvnim.smazano.length === 0 && !!poPrvnim.drzeno, { potvrd: potvrd.telo, poPrvnim });
+  const potvrd2 = await posli({ akce: 'retence-potvrdit', den: '2026-12-27', hesloSpravce: 'Docasne.Heslo.123' });
+  test('#523 Disk: správce potvrdí heslem → retence v Netlify zase maže', potvrd2.status === 200
+    && J((await Z.retenceProved('2026-12-21', '2026-12-21', ted)).smazano) === J(['2026-11-03', '2026-11-04']), potvrd2.telo);
   const kd = await posli({ akce: 'kopie-disk', hesloSpravce: 'Docasne.Heslo.123', kopie: { soubor: 'otisk_2026-12-21.json.gz', velikostB: 5,
     sha256: 'd'.repeat(64), otisk: '2026-12-21', puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' } });
   test('#523 Disk: odpověď na záznam kopie nese čerstvý stav pojistky (pro úklid Disku)', kd.status === 200

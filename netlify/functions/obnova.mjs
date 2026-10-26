@@ -87,17 +87,19 @@ import { potvrdHesloSpravce, uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hos
          bezHlavnihoUctu, serverVerze, vyhradne } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola } from '../lib/zakazka_kontrola.mjs';
-import { porizOtisk, porizOtiskKrok, klicPredObnovou, OTISK_KLIC, OTISK_ROZPOCET, ctiOtisk, ctiOtiskCast, otiskVyrez,
-  ctiPoDavkach } from '../lib/zalohovani.mjs';
+import { porizOtiskKrok, klicPredObnovou, OTISK_KLIC, OTISK_ROZPOCET, ctiOtisk, ctiOtiskCast, otiskVyrez,
+  ctiPoDavkach, OBNOVA_TOKEN_PREDPONA, OBNOVA_TOKEN_PLATNOST_MS as TOKEN_PLATNOST_MS, OTISK_ROZPRACOVANY, OTISK_CASTI } from '../lib/zalohovani.mjs';
 
 export const OBNOVA_CASTI = ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'controlling', 'zakazky', 'uzivatele',
                              'sablony', 'zakaznici', 'podpisy'];
 export const OBNOVA_REZIMY = ['doplnit', 'prepsat'];
 export const OBNOVA_POTVRZENI = 'OBNOVIT';
-export const OBNOVA_TOKEN_PLATNOST_MS = 60 * 60 * 1000;
+/* Předpona a platnost tokenu žijí v lib/zalohovani.mjs — retence podle
+ * nich pozná rozběhnutou obnovu a nesmaže její zdroj (K9-S5). */
+export const OBNOVA_TOKEN_PLATNOST_MS = TOKEN_PLATNOST_MS;
 const TOKEN_TVAR = /^[0-9a-f]{32}$/;
 const KLIC_MAX = 200;
-const TOKEN_PREDPONA = 'obnova-';
+const TOKEN_PREDPONA = OBNOVA_TOKEN_PREDPONA;
 const tokenKlic = (id) => TOKEN_PREDPONA + id;
 const maVlastni = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 /* Nese záloha matici zobrazení tak, že by ji obnova zapsala (B188)? Prázdná
@@ -291,13 +293,21 @@ function stavUctuDrziServer(novy, stary) {
   });
 }
 
+/* ZDROJ OBNOVY V TOKENU (O-K9 #527, nález K9-S5). Retence (lib/
+ * zalohovani.mjs → retenceProved) nesmaže otisk, ze kterého živá obnova
+ * obnovuje; token bez zdroje zastaví retenci celou. Zdroj posílá
+ * obrazovka už v `zacatek` (`zdrojOtisk` = klíč, `zdrojSoubor` = soubor);
+ * dávka ho doplní, když chybí. */
+const tokenZdroj = (z) => (z && typeof z.zdrojOtisk === 'string' && z.zdrojOtisk ? { zdrojOtisk: z.zdrojOtisk }
+  : z && z.zdrojSoubor === true ? { zdrojSoubor: true } : {});
+
 /* Jeden krok otisku před obnovou (#522). `zacatek` = první krok (chyba →
  * token pryč, obnova se neprovede); jinak pokračování. Token drží
  * `otiskSePorizuje`, dokud otisk není hotový. */
 async function otiskPredKrok(s, token, zacatek) {
   let v;
   try { v = await porizOtiskKrok(token.otiskPred, 'pred-obnovou', token.kdo,
-    { rozpocetMs: OTISK_ROZPOCET.synchronniMs, jenPokracovat: !zacatek }); }
+    { rozpocetMs: OTISK_ROZPOCET.synchronniMs, jenPokracovat: !zacatek, prepsatHotovy: zacatek }); }   // K9-N3: hotový otisk téže vteřiny se pořídí znovu
   catch (e) {
     console.error('obnova: otisk před obnovou se nepořídil', e);
     await s.smaz(tokenKlic(token.id));
@@ -306,7 +316,7 @@ async function otiskPredKrok(s, token, zacatek) {
   }
   const hotovo = !!v.hotovo;
   await s.zapis(tokenKlic(token.id), { id: token.id, kdo: token.kdo, zacatek: token.zacatek, naposled: new Date().toISOString(),
-    rezim: token.rezim, otiskPred: token.otiskPred, ...(hotovo ? {} : { otiskSePorizuje: true }),
+    rezim: token.rezim, otiskPred: token.otiskPred, ...(hotovo ? {} : { otiskSePorizuje: true }), ...tokenZdroj(token),
     davek: token.davek || 0, souhrn: token.souhrn || { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0 } });
   return json({ ok: true, faze: zacatek ? 'zacatek' : 'otisk', obnovaId: token.id, otiskPred: token.otiskPred,
     otiskHotovo: hotovo, ...(hotovo ? {} : { postup: v.postup || null }), upozorneni: [] });
@@ -386,6 +396,10 @@ export default async (req) => {
   if (faze === 'zacatek') {
     if (t.potvrzeni !== OBNOVA_POTVRZENI)
       return json({ ok: false, chyba: 'Obnova se provede jen s výslovným potvrzením po náhledu.' }, 428);
+    /* K9-S5: zdroj obnovy do tokenu (retence ho nesmaže) */
+    if (t.zdrojOtisk !== undefined && (typeof t.zdrojOtisk !== 'string' || !OTISK_KLIC.test(t.zdrojOtisk)))
+      return json({ ok: false, chyba: 'Otisk se udává dnem (YYYY-MM-DD).' }, 400);
+    const zdrojZacatku = tokenZdroj({ zdrojOtisk: t.zdrojOtisk, zdrojSoubor: t.zdrojSoubor === true });
     /* SOUBĚŽNÝ ZAČÁTEK (SEC-N2, #514, audit S1 23. 10. 2026): kontrola zámku
      * a zápis tokenu nebyly v jednom výhradním úseku — dva souběžné začátky
      * prošly oba (dva tokeny, dva otisky „před obnovou"). Teď se v instanci
@@ -409,7 +423,7 @@ export default async (req) => {
     const s = await uloziste('zalohy');
     const ted = new Date().toISOString();
     await s.zapis(tokenKlic(id), { id, kdo: relace.email, zacatek: ted, naposled: ted,
-      rezim, otiskPred: null, otiskSePorizuje: true, davek: 0,
+      rezim, otiskPred: null, otiskSePorizuje: true, davek: 0, ...zdrojZacatku,
       souhrn: { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0 } });
     for (const k of (await s.seznam(TOKEN_PREDPONA)) || []) {
       if (k === tokenKlic(id)) continue;
@@ -431,7 +445,7 @@ export default async (req) => {
      * obnovaId }, dokud není hotový. Dávky se do té doby odmítají (409):
      * bez cesty zpátky se neobnovuje. */
     const otiskPred = klicPredObnovou();
-    return otiskPredKrok(s, { id, kdo: relace.email, zacatek: ted, rezim, otiskPred }, true);
+    return otiskPredKrok(s, { id, kdo: relace.email, zacatek: ted, rezim, otiskPred, ...zdrojZacatku }, true);
   }
   if (faze) return json({ ok: false, chyba: 'Neznámá fáze obnovy.' }, 400);
 
@@ -519,12 +533,30 @@ export default async (req) => {
     const zamek = await zamekObnovy();
     if (zamek) return zamek;
     /* Pojistka 2: otisk současného stavu DŘÍV, než se sáhne na první záznam.
-     * Vlastní slot s časem, aby obnova nepřepsala svůj zdroj ani cestu zpátky. */
-    try { otiskPred = (await porizOtisk('pred-obnovou', relace.email, klicPredObnovou())).den; }
+     * Vlastní slot s časem, aby obnova nepřepsala svůj zdroj ani cestu zpátky.
+     * K9-N5 (O-K9 #527): i tady s časovým rozpočtem synchronní funkce. Do
+     * O-K9 se otisk pořizoval naráz — u velké databáze (~15–20 s) funkce
+     * spadla na limitu 10 s bez odpovědi. Nestihne-li se otisk v rozpočtu,
+     * obnova se odmítne 409 s odkazem na obnovu po fázích (obrazovka ji
+     * používá vždy) a rozpracovaný otisk se uklidí. */
+    const klicPred = klicPredObnovou();
+    let v;
+    try { v = await porizOtiskKrok(klicPred, 'pred-obnovou', relace.email, { rozpocetMs: OTISK_ROZPOCET.synchronniMs, prepsatHotovy: true }); }
     catch (e) {
       return json({ ok: false, chyba: 'Otisk současného stavu se nepovedl (' + (e && e.message ? e.message : e)
         + ') — obnova se NEPROVEDLA, nic se nezměnilo. Bez cesty zpátky se neobnovuje.' }, 500);
     }
+    if (!v.hotovo) {
+      const sZal = await uloziste('zalohy');
+      try {
+        for (const k of await sZal.seznam(OTISK_CASTI + klicPred + '/')) await sZal.smaz(k);
+        await sZal.smaz(OTISK_ROZPRACOVANY + klicPred);
+      } catch (e) { /* zbytek uklidí noční úklid rozpracovaných */ }
+      return json({ ok: false, kod: 'obnovaPoFazich', chyba: 'Databáze je na jednorázovou obnovu velká — otisk současného '
+        + 'stavu se nestihl v jednom požadavku. Obnova se NEPROVEDLA, nic se nezměnilo. Použijte obnovu po fázích '
+        + "({ faze: 'zacatek' } → dávky s obnovaId → { faze: 'konec' }), jako obrazovka Nastavení → Databáze." }, 409);
+    }
+    otiskPred = v.den;
   }
 
   const zapisovat = !nahled;
@@ -852,6 +884,8 @@ export default async (req) => {
     Object.values(vysledek).forEach(b => { so.nove += b.nove; so.prepsane += b.prepsane; so.bezeZmeny += b.bezeZmeny; so.preskocene += b.preskocene; });
     stale.souhrn = so;
     stale.davek = (+stale.davek || 0) + 1;
+    if (!tokenZdroj(stale).zdrojOtisk && !stale.zdrojSoubor)       // K9-S5: starší obrazovka zdroj v začátku neposlala
+      Object.assign(stale, zdrojPopis.typ === 'otisk' ? { zdrojOtisk: zdrojPopis.klic } : { zdrojSoubor: true });
     /* Každá dávka posouvá lhůtu — platnost je hodina NEČINNOSTI (B49). */
     stale.naposled = new Date().toISOString();
     await tk.s.zapis(tk.klic, stale);

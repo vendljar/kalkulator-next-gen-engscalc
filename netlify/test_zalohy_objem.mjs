@@ -276,5 +276,68 @@ await zkus('obnova', async () => {
     && !!(await sZak.cti('z/' + KLIC(450))), { nove, davek, kon: kon.ok });
 });
 
+/* ---------------- 7) O-K9 #527 (K9-V1): STARÝ JEDNOLITÝ OTISK z obrazovky ----------------
+ * Otisk do v26.10.7 = jeden blob bez `casti`. Do O-K9 poslala obrazovka náhled
+ * i obnovu jedním požadavkem (u 792 zakázek 54 s, limit 10 s). Teď ho bere
+ * jako jednu část 0 a jede po výřezech. Klientský kód (src/ui/online_ui.js,
+ * náhled + obnova) běží ve vm nad funkcemi pod simulovaným limitem.
+ * Pojistka: s online_ui.js z v26.10.10 náhled skončí „Task timed out"
+ * (jediný požadavek) a obnova nedoplní nic. */
+await zkus('K9-V1', async () => {
+  const vm = await import('node:vm');
+  const { readFileSync } = await import('node:fs');
+  const STARY = '2025-12-01';
+  const cely = await Z.ctiOtisk(globalThis.__TEST_ULOZISTE('zalohy'), vynKlic);
+  pamet.set('zalohy/' + STARY, JSON.stringify({ ...cely, zdroj: 'nocni-otisk' }));       // tvar do v26.10.7: bez format/casti
+  const smazane = [5, 451, 898];
+  for (const i of smazane) pamet.delete('zakazky/z/' + KLIC(i));
+  const prehled = await (await get(zalohaVynuceno, 'http://x/api/zaloha_vynuceno')).json();
+  const st = (prehled.otisky || []).find(x => x.den === STARY);
+  test('K9-V1: přehled označí starý jednolitý otisk (stary: true, bez casti)', !!st && st.stary === true && !st.casti, st);
+  const zdroj = readFileSync(new URL('../src/ui/online_ui.js', import.meta.url), 'utf8');
+  const a = zdroj.indexOf('function onlineObnovaPripraveno'), b = zdroj.indexOf('async function onlineObnovaBeziciDokonci');
+  const kod = zdroj.slice(zdroj.indexOf('const OBNOVA_CASTI = ['), zdroj.indexOf('function onlineObnovaStav')) + zdroj.slice(a, b);
+  let pozadavku = 0, nejdele = 0, zdrojVTokenu = undefined;
+  const funkce = { '/api/obnova': obnova, '/api/zaloha_vynuceno': zalohaVynuceno };
+  const ctx = { Promise, JSON, String, Error, Date, Object, Array, Math, Number, Set, Map, console, TextEncoder,
+    ONLINE_STAV: { otisky: prehled.otisky, ja: { role: 'Administrátor' } }, ONLINE_OTISK_KROKU_MAX: 400,
+    jeAdminOnline: () => true, render: () => {}, potvrd: async () => true, dotazHeslo: async () => 'Docasne.Heslo.123',
+    onlineZprava: () => {}, onlineZobrazeniHesloPlatne: () => false, onlineZobrazeniHeslo: async () => 'Docasne.Heslo.123',
+    onlineZobrazeniHesloPoObnove: () => {}, onlineZobrazeniHesloZapomen: () => {}, onlinePocetText: (n) => n + ' zakázek',
+    onlineNactiProgram: async () => true, onlineNactiFirmu: async () => true, onlineNactiRejstrik: async () => true,
+    onlineNactiSablony: async () => true, onlineNactiZobrazeni: async () => true, onlineOtiskyNacti: async () => true,
+    onlineObnovaVelikost: (x) => JSON.stringify(x === undefined ? null : x).length,
+    onlineApi: async (cesta, telo) => {
+      pozadavku++;
+      /* K9-S5: zdroj musí být v tokenu už před první dávkou (poslala ho obrazovka v začátku) */
+      if (telo && telo.obnovaId && telo.zdroj && zdrojVTokenu === undefined)
+        zdrojVTokenu = (JSON.parse(pamet.get('zalohy/obnova-' + telo.obnovaId) || '{}')).zdrojOtisk || null;
+      const t0 = Date.now();
+      const r = await post(funkce[cesta], 'http://x' + cesta, telo);
+      nejdele = Math.max(nejdele, Date.now() - t0);
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || d.ok === false) { const e = new Error(d.chyba || ('server odpověděl ' + r.status)); e.data = d; e.stav = r.status; throw e; }
+      return d;
+    } };
+  vm.createContext(ctx);
+  vm.runInContext(kod + '\nfunction onlineObnovaStav() { return ONLINE_STAV.obnova; }'
+    + '\nthis.nahled = onlineObnovaNahled; this.proved = onlineObnovaProved; this.casti = onlineObnovaCastiOtisku;', ctx);
+  ctx.ONLINE_STAV.obnova = { otevreno: true, zdrojTyp: 'otisk', otiskDen: STARY, soubor: null, souborJmeno: '', rezim: 'doplnit',
+    casti: { zakazky: true }, nahled: null, pracuje: false, hlaska: '', hlaskaTyp: '' };
+  test('K9-V1: obrazovka počítá starý otisk jako 1 část (výřezy), ne 0 (jeden požadavek)', ctx.casti() === 1, ctx.casti());
+  const n = await ctx.nahled();
+  const o = ctx.ONLINE_STAV.obnova;
+  test('K9-V1: náhled ze starého otisku po výřezech projde, každý požadavek v limitu, ukáže 3 nové zakázky', n === true
+    && !!o.nahled && o.nahled.casti.zakazky && o.nahled.casti.zakazky.nove === 3 && pozadavku > 10 && nejdele < LIMIT_MS,
+    { n, hlaska: o.hlaska, pozadavku, nejdele, z: o.nahled && o.nahled.casti && o.nahled.casti.zakazky && o.nahled.casti.zakazky.nove });
+  pozadavku = 0; nejdele = 0;
+  const p = await ctx.proved();
+  test('K9-V1: obnova ze starého otisku po výřezech doplní smazané zakázky (každý požadavek v limitu)', p === true
+    && smazane.every(i => pamet.has('zakazky/z/' + KLIC(i))) && pozadavku > 10 && nejdele < LIMIT_MS, { p, hlaska: o.hlaska, pozadavku, nejdele });
+  test('K9-S5: obrazovka poslala zdroj obnovy už v začátku (token ho nese před první dávkou)', zdrojVTokenu === STARY, zdrojVTokenu);
+  const tk = [...pamet.keys()].filter(k => k.startsWith('zalohy/obnova-'));
+  test('K9-V1: po obnově žádný token nezůstal (konec proběhl)', tk.length === 0, tk);
+});
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

@@ -8357,6 +8357,62 @@
     "proc": "kapitola 30 příručky popisuje zálohy po Z2 (v26.10.9)"
    }
   ]
+ },
+ {
+  "id": "526",
+  "vlna": "A",
+  "stav": "hotovo",
+  "dulezitost": "vysoka",
+  "slozitost": "M",
+  "nazev": "K9: nezávislý audit zálohování po Z1 a Z2 (retence, pojistka úbytku, otisk po částech, obnova, Disk, práva)",
+  "proc": "Mazání záloh je nevratné a Z1 + Z2 (#522, #523) přepsaly otisk, retenci i úklid Disku během jednoho dne. Noční plán J. V. 26. 10. 2026 (bod 3): nezávislý audit s reprodukcí, bez oprav.",
+  "detail": "Verdikt: kritický nález žádný; 1 V (obnova i náhled ze starého jednolitého otisku jedním požadavkem — 54 s na 792 zakázek), 6 S (pojistka úbytku porovnává jen se včerejškem a nepotvrzené varování přepíše další, retence smaže zdroj rozběhnuté obnovy, přehled čte staré otisky bez souhrnu celé, úklid Disku podle hodin prohlížeče), 7 N, 9 I. Výběr retence ověřen simulací 15 měsíců (nejnovější a před obnovou nikdy, stabilita, přelomy roku/týdne/času). Měření na 792 zakázkách / 118 MB: noční otisk 1 běh ~15 s, vynucený ≤ 5,7 s na požadavek, kopie na Disk ≤ 3,7 MB na stránku, obnova po výřezech ~1 s.",
+  "hotovoKdyz": "Zpráva s verdiktem, nálezy K/V/S/N/I s reprodukcí, místem v kódu, návrhem opravy a testu a údajem „mění chování“; reprodukce spustitelné lokálně na paměťovém úložišti.",
+  "kde": "`podklady/K9_AUDIT_ZALOH_26_10.md`, `podklady/K9_pokusy/`",
+  "pozn": "Dávka K9, větev claude/k9-audit-zaloh nad 67f4d3b (Z2; finální Z2 beze změny proti 67f4d3b). Opravy nejsou součástí — návrhy s testy ve zprávě, pořadí: K9-V1, pojistka úbytku (S1, S2, N1, N2), S5, S6, S4. Otázky pro J. V.: kumulativní prahy pojistky, nástroj na mazání otisků před obnovou, kdo smí potvrzovat úbytek, URL plánované funkce. OPRAVENO v O-K9 #527 (v26.10.11, větev claude/o-k9-zalohy): K9-V1, K9-S1, K9-S2 (+S2b), K9-S4, K9-S5, K9-S6, K9-N1 až K9-N7; otázky K9-I3, K9-I7, K9-I9 výchozími volbami koordinace (ZALOHY_VOLBY). Informativní K9-I1, I2, I4, I5, I6, I8 zůstávají (důvody v #527). Položka do O-K9 omylem ležela v poli _comment (nevykreslovala se) — přesunuto do polozky.",
+  "zavisi": [
+   {
+    "id": "523",
+    "typ": "tvrda",
+    "proc": "audituje stav Z2 (retence, pojistka, Disk)"
+   },
+   {
+    "id": "522",
+    "typ": "tvrda",
+    "proc": "audituje otisk po částech a obnovu z Z1"
+   }
+  ]
+ },
+ {
+  "id": "527",
+  "vlna": "A",
+  "stav": "hotovo",
+  "dulezitost": "vysoka",
+  "slozitost": "M",
+  "hotovoV": "v26.10.12",
+  "nazev": "O-K9: opravy nálezů auditu záloh K9 (obnova starého otisku, kumulativní pojistka úbytku, souběhy retence)",
+  "proc": "Audit K9 #526: obnova i náhled ze starého jednolitého otisku jdou jedním požadavkem (54 s na 792 zakázek, limit 10 s); pojistka „zálohy se mají zvětšovat“ jde obejít pozvolným úbytkem a nepotvrzené varování přepíše další; retence smaže zdroj rozběhnuté obnovy; přehled čte staré otisky celé; úklid Disku věří hodinám prohlížeče.",
+  "detail": "K9-V1: obrazovka bere starý otisk jako 1 část (výřezy cast: 0), přehled nese stary: true. K9-S1: noční otisk proti předchozímu i proti MAXIMU za 30 dní (RETENCE_ZALOH_POJISTKA.oknoDnu; prahy 90 % / 95 % / šablony a podpisy), bez nočního proti vynuceným (K9-N7); základ retence-zaklad = den potvrzeného úbytku. K9-S2: nepotvrzené varování se nepřepíše — další do `dalsi` (bez duplicit), potvrzuje se nejstarší, retence stojí do potvrzení všech (i Disk × noc). K9-N1: potvrzení po ověření hesla znovu čte záznam (den + kdy + zdroj), jinak 409. K9-N2: nepotvrzené bez platného kdy = drženo, hlídka ho ukáže. K9-S5: token obnovy nese zdroj (zdrojOtisk / zdrojSoubor z obrazovky v začátku, dávka doplní), retence ho nesmaže, token bez zdroje ji zastaví. K9-S4: otiskSouhrn — starý otisk se dočte jednou a dostane souhrn. K9-S6: úklid Disku podle času serveru, při rozdílu hodin > 1 den nemaže. K9-N3 hotový otisk se bez prepsatHotovy nepřepisuje; K9-N4 retence ověří počet částí nového otisku; K9-N5 jednorázová obnova velké DB 409 obnovaPoFazich; K9-N6 rozpočet kroku po každé části. Volby koordinace (ZALOHY_VOLBY): úbytek potvrzuje jen hlavní správce (ADMIN_EMAIL) s heslem; otisk „před obnovou“ smaže ručně správce s heslem (Obnovit ze zálohy… → Smazat tento otisk…), jinak nikdy; zaloha_nocni bez path (test).",
+  "hotovoKdyz": "Každá oprava s testem s pojistkou (před opravou selže); mutace #527 (+ přecílené #151/#523/O7/O11/#522) chycené; reprodukce K9 nereprodukují opravené nálezy; dokumentace (CHANGELOG, příručka kap. 30, POSTUP_OBNOVY_ZALOHY).",
+  "kde": "`netlify/lib/zalohovani.mjs`, `netlify/functions/zaloha_vynuceno.mjs`, `netlify/functions/obnova.mjs`, `src/retence_zaloh.js`, `src/ui/online_ui.js`, `src/uloziste.js`, `netlify/test_o_k9_zalohy.mjs`, `netlify/test_zalohy.mjs`, `netlify/test_zalohy_objem.mjs`, `netlify/test_z2_retence.mjs`, `src/test_z2_disk_retence.js`, `src/test_o7_kopie_klient.js`, `netlify/mutace.mjs`, `manual/obsah.json`, `podklady/POSTUP_OBNOVY_ZALOHY.md`",
+  "pozn": "Dávka O-K9, větev claude/o-k9-zalohy nad bab9a7c (integrace v26.10.10). Nezařazeno (informativní, mimo rozsah — samostatnou položku rozhodne koordinace): K9-I2 kontrola velikosti záznamu kopie proti otisku (mění chování), K9-I5 složka „_Zaloha Netlify DB“ se pozná jen podle jména (API prohlížeče víc neřekne), K9-I6 osiřelý souhrn po retenci ukončené uprostřed (úklid souhrnů bez otisku); K9-I1, I4, I8 jsou známé meze bez opravy. Ověřit na ostrém (J. V.): K9-I9 — že /.netlify/functions/zaloha_nocni v produkci nejde spustit.",
+  "zavisi": [
+   {
+    "id": "526",
+    "typ": "tvrda",
+    "proc": "opravuje nálezy auditu K9"
+   },
+   {
+    "id": "523",
+    "typ": "tvrda",
+    "proc": "pojistka a retence Z2"
+   },
+   {
+    "id": "522",
+    "typ": "tvrda",
+    "proc": "otisk po částech a obnova Z1"
+   }
+  ]
  }
  ],
  "meta" : {
@@ -9148,31 +9204,6 @@
   "  pozn         – text do sloupce Poznámka / blokace v markdownu",
   "  kde          – kde to v kódu je (jen u hotových)",
   "  hotovoV      – ve kterém buildu"
-,
- {
-  "id": "526",
-  "vlna": "A",
-  "stav": "hotovo",
-  "dulezitost": "vysoka",
-  "slozitost": "M",
-  "nazev": "K9: nezávislý audit zálohování po Z1 a Z2 (retence, pojistka úbytku, otisk po částech, obnova, Disk, práva)",
-  "proc": "Mazání záloh je nevratné a Z1 + Z2 (#522, #523) přepsaly otisk, retenci i úklid Disku během jednoho dne. Noční plán J. V. 26. 10. 2026 (bod 3): nezávislý audit s reprodukcí, bez oprav.",
-  "detail": "Verdikt: kritický nález žádný; 1 V (obnova i náhled ze starého jednolitého otisku jedním požadavkem — 54 s na 792 zakázek), 6 S (pojistka úbytku porovnává jen se včerejškem a nepotvrzené varování přepíše další, retence smaže zdroj rozběhnuté obnovy, přehled čte staré otisky bez souhrnu celé, úklid Disku podle hodin prohlížeče), 7 N, 9 I. Výběr retence ověřen simulací 15 měsíců (nejnovější a před obnovou nikdy, stabilita, přelomy roku/týdne/času). Měření na 792 zakázkách / 118 MB: noční otisk 1 běh ~15 s, vynucený ≤ 5,7 s na požadavek, kopie na Disk ≤ 3,7 MB na stránku, obnova po výřezech ~1 s.",
-  "hotovoKdyz": "Zpráva s verdiktem, nálezy K/V/S/N/I s reprodukcí, místem v kódu, návrhem opravy a testu a údajem „mění chování“; reprodukce spustitelné lokálně na paměťovém úložišti.",
-  "kde": "`podklady/K9_AUDIT_ZALOH_26_10.md`, `podklady/K9_pokusy/`",
-  "pozn": "Dávka K9, větev claude/k9-audit-zaloh nad 67f4d3b (Z2; finální Z2 beze změny proti 67f4d3b). Opravy nejsou součástí — návrhy s testy ve zprávě, pořadí: K9-V1, pojistka úbytku (S1, S2, N1, N2), S5, S6, S4. Otázky pro J. V.: kumulativní prahy pojistky, nástroj na mazání otisků před obnovou, kdo smí potvrzovat úbytek, URL plánované funkce.",
-  "zavisi": [
-   {
-    "id": "523",
-    "typ": "tvrda",
-    "proc": "audituje stav Z2 (retence, pojistka, Disk)"
-   },
-   {
-    "id": "522",
-    "typ": "tvrda",
-    "proc": "audituje otisk po částech a obnovu z Z1"
-   }
-  ]
- }
+
 ]
 }

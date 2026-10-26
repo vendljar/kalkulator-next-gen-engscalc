@@ -1,3 +1,52 @@
+# Předávka — 26. 10. 2026: O-K9 #527 — opravy nálezů auditu záloh K9 #526, větev `claude/o-k9-zalohy`
+
+Nad `bab9a7c` (integrace v26.10.10). **Verze 26.10.11** (souběžně #354 — koordinace přečísluje). Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrém webu, Disku ani v Pipedrive nic.
+
+| nález | stav | jak |
+|---|---|---|
+| K9-V1 (V) | ✅ | obrazovka bere starý jednolitý otisk jako 1 část (`cast: 0`, výřezy 15); přehled `stary: true` |
+| K9-S1 + N7 | ✅ | noční otisk i proti **maximu za 30 dní** (`RETENCE_ZALOH_POJISTKA.oknoDnu`), bez nočního proti vynuceným; základ `retence-zaklad` po potvrzení |
+| K9-S2 (+S2b) | ✅ | nepotvrzené se nepřepíše → `dalsi`; potvrzuje se nejstarší, retence stojí do potvrzení všech; Disk i noc |
+| K9-N1 | ✅ | potvrzení po hesle čte záznam znovu (den + kdy + zdroj), jinak 409; klient posílá `kdy` |
+| K9-N2 | ✅ | bez platného `kdy` = drženo (fail-closed), hlídka ho ukáže |
+| K9-S5 | ✅ | token obnovy nese `zdrojOtisk`/`zdrojSoubor` (obrazovka v `zacatek`, dávka doplní); retence ho vynechá, token bez zdroje ji zastaví |
+| K9-S6 | ✅ | úklid Disku podle času serveru; rozdíl hodin > 1 den = nemaže |
+| K9-S4 | ✅ | `otiskSouhrn` — starý otisk dočten jednou, souhrn zapsán |
+| K9-N3, N4, N5, N6 | ✅ | hotový otisk bez `prepsatHotovy` nepřepisuje; retence ověří části; jednorázová obnova velké DB 409 `obnovaPoFazich`; rozpočet po každé části |
+| volby koordinace | ✅ | `ZALOHY_VOLBY` (lib/zalohovani.mjs): potvrzení úbytku jen hlavní správce; ruční mazání otisků „před obnovou" správcem s heslem (Obnovit ze zálohy… → Smazat tento otisk…); `zaloha_nocni` bez `path` (test) |
+| K9-I2, I5, I6 | do roadmapy | v #527 pozn — mimo rozsah (I2 mění chování, I5 API prohlížeče, I6 malé) |
+
+**Testy:** nový `netlify/test_o_k9_zalohy.mjs` 55/0 (pojistka nad bab9a7c 25 FAIL); `test_zalohy_objem` 37/0 (K9-V1 ve vm;
+pojistka s online_ui.js z bab9a7c 3 FAIL); `test_zalohy` 165/0, `test_z2_retence` 90/0, `test_obnova` 235/0,
+`src/test_z2_disk_retence` 46/0 (pojistka 2 FAIL), `src/test_o7_kopie_klient` 23/0 (pojistka 2 FAIL).
+`spust_testy.sh` 267/0 (1 přeskočeno test.js), `testovaci_kolo.sh --jen build,staticke` VŠE ZELENÉ (4/4).
+**Mutace** filtr „#527" (35 nových + 14 přecílených #151 N3/N5/N6, O7, O11, #522, #523 se značkou „[#527]"):
+**49/49 chycených**, `--cast 1/4…4/4`, sady zúžené přes `KNG_MUTACE_SADY` na zálohové (test_zalohy, test_o_k9_zalohy,
+test_z2_retence, test_obnova, src/test_z2_disk_retence, src/test_o7_kopie_klient, src/test_uloziste,
+src/test_kopie_disk, test_zalohy_objem) — plný běh nad všemi sadami udělá CI / kolo. `--kontrola` 1034/1034.
+**Reprodukce K9** (`spust_vse.sh --objem`): S1, S2, S2b, N1, N2, N7, S5, N3, N4, N6 → „nereprodukováno"; kontroly
+„co drží" 31 OK / 0 FAIL. Dál „REPRODUKOVÁNO" z povahy pokusu, ne kvůli chybě: **N5** (r4e měří malou DB, kde
+otisk před obnovou stihne rozpočet — velká DB teď 409, test K9-N5), **S6** (r5 volá čistou funkci s posunutým
+dnem, ne klienta — klient bere den ze serveru, test K9-S6), **V1** (r3 posílá náhled jedním požadavkem rovnou
+na server — obrazovka už jde po výřezech, test K9-V1), **S4** (r3 měří PRVNÍ čtení přehledu — souhrn se tím
+zapíše, další GET čte jen souhrn, test K9-S4); informativní I1, I2.
+
+**Pozor při nasazení:** první noc pojistka dočte staré otisky bez souhrnu v okně 30 dní (schaftscalc ~19 MB
+každý); stihne-li to funkce jen zčásti, retence ten běh nic nesmaže a další běh (po 15 min) pokračuje se
+souhrny už zapsanými — bezpečné, jen pomalejší první noc. Engscalc staré otisky nemá.
+
+**Roadmapa:** #526 omylem ležela v poli `_comment` (nevykreslovala se) → přesunuta do `polozky`, nálezy
+označené; nová #527 hotovo v26.10.12. `overit_roadmapu.mjs` 12/1 — FAIL „každé odložené nese důvod" už před změnou.
+**Příručka** kap. 30 (styl M5, jen v kapitole): pojistka 30 dní, potvrzení jen hlavní správce, postupné
+potvrzování, krok „Smazat tento otisk…", obnova ze starších záloh, úklid Disku podle serveru; verze 26.10.11.
+Nová scéna snímku nepřidána (krok bez snímku jako sousední krok o úbytku). `podklady/POSTUP_OBNOVY_ZALOHY.md`
+doplněn.
+
+**Čeká na J. V.:** výchozí volby (`ZALOHY_VOLBY`, okno 30 dní) potvrdit nebo změnit; K9-I9 ověřit na ostrém
+(`/.netlify/functions/zaloha_nocni` nesmí jít spustit). Release/tag až po sloučení (koordinace).
+
+---
 # Předávka — 26. 10. 2026: R1 rozbor přeuspořádání ceníku OCK (#525), větev `claude/r1-rozbor-ceniku`
 
 Nad `919b3b7`. Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **V kódu aplikace nic nezměněno**, verze se nezvyšuje.
