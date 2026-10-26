@@ -151,6 +151,41 @@ const hvezdicky = proza.match(/.{0,20}\*[^\s*].{0,20}/g) || [];
 test('v próze nejsou holé hvězdičky (kurzíva i tučné se vykreslily)', hvezdicky.length === 0,
   hvezdicky.length + ': ' + hvezdicky.slice(0, 2).join(' | '));
 
+/* #524 (pokyn J. V. 26. 10. 2026): příručka nemá sekce „Co je nového",
+ * začíná obsahem (úvodní strana = název, verze, datum) a kapitoly s akcí
+ * mají postup krok za krokem se snímkem u kroku. */
+test('#524: příručka nemá sekci „Co je nového"', !/Co je nového/i.test(proza));
+const stavba = await stranka.evaluate(() => {
+  const deti = [...document.getElementById('cil').children];
+  const kroky = [...document.querySelectorAll('ol.kroky > li.krok')];
+  return {
+    obsahTreti: deti.findIndex(e => e.id === 'obsah') === 2,
+    kroku: kroky.length,
+    kapitolSPostupem: new Set(kroky.map(li => { let e = li.closest('ol'); while (e && !(e.tagName === 'H2' && e.id)) e = e.previousElementSibling; return e && e.id; })).size,
+    bezSnimku: kroky.filter(li => !li.querySelector('figure.snimek')).length,
+    klik: kroky.filter(li => { const p = li.querySelector('.snimek-plocha'); return p && p.shadowRoot.querySelector('.mn-klik'); }).length,
+  };
+});
+test('#524: pod názvem a verzí je hned obsah', stavba.obsahTreti);
+test('#524: postupy krok za krokem — aspoň 60 kroků ve 20 kapitolách', stavba.kroku >= 60 && stavba.kapitolSPostupem >= 20,
+  stavba.kroku + ' kroků, ' + stavba.kapitolSPostupem + ' kapitol');
+test('#524: krok bez snímku jen výjimečně (nejvýš 3)', stavba.bezSnimku <= 3, stavba.bezSnimku);
+test('#524: kroky ukazují, kam kliknout (rámeček + šipka aspoň u 50 kroků)', stavba.klik >= 50, stavba.klik);
+
+/* M4 (26. 10. 2026): tisk ze ŠIROKÉHO okna — snímky se zmenší podle šířky
+ * A4 (702 px tiskové plochy), ne okna, a nepřetékají rámeček (jinak Chrome
+ * zmenší celou stránku nebo snímek ořízne). */
+await stranka.emulateMedia({ media: 'print' });
+await stranka.setViewportSize({ width: 702, height: 1000 });
+await stranka.waitForTimeout(300);
+const tisk = await stranka.evaluate(() => {
+  const ramy = [...document.querySelectorAll('.snimek-ram')];
+  return { pretece: ramy.filter(r => r.scrollWidth > r.clientWidth + 1).length, ramu: ramy.length,
+    sirka: document.documentElement.scrollWidth };
+});
+test('M4: v tisku žádný snímek nepřetéká rámeček a stránka šířku A4', tisk.pretece === 0 && tisk.sirka <= 703, tisk);
+await stranka.emulateMedia({ media: 'screen' });
+
 const vyska = await stranka.evaluate(() => document.body.scrollHeight);
 test('stránka není prázdná', vyska > 3000, vyska);
 

@@ -127,6 +127,12 @@
     h2, h3 { page-break-after:avoid; }
     figure.snimek { page-break-inside:avoid; }
     li.krok { break-inside:avoid; page-break-inside:avoid; }
+    /* overflow:hidden (kvůli zaobleným rohům) brání rozdělení výkladu na
+     * dvě strany — slovníček pak nechával za nadpisem skoro prázdnou stranu. */
+    dl.vyklad { overflow:visible; background:none; gap:0; }
+    dl.vyklad dt, dl.vyklad dd { border-bottom:1px solid var(--line); }
+    .ram { break-inside:avoid; }
+    dl.vyklad dt, dl.vyklad dd { break-inside:avoid; }
     /* Měřítko snímku na papíře (nález M4, 26. 10. 2026): srovnej() počítá
      * se šířkou okna, a tiskne-li se ze širokého okna, snímek se na A4
      * ořízl (Detail výpočtu PROJ, 1360 px). Tisková šířka A4 je pevná,
@@ -297,6 +303,7 @@
       return w > 0 ? w / s.sirka : 1;
     }
 
+    var umisti = null;
     if (obr.klik) {
       var tk = najdiCil(sr, obr.klik, true);
       if (!tk) nesedi.push(obr.snimek + ' → klik: ' + (obr.klik.popisek || obr.klik.obsahuje || obr.klik.pole || obr.klik.sel));
@@ -306,7 +313,8 @@
         sipka.className = 'mn-sipka';
         sipka.textContent = '➜ ' + (obr.klik.stitek || 'klikněte');
         sr.appendChild(sipka);
-        requestAnimationFrame(function () { umistiSipku(sr, plocha, tk, sipka, obr.klik.stitek, meritko(), s.sirka); });
+        /* Až po srovnej(): velikost šipky závisí na měřítku snímku. */
+        umisti = function () { umistiSipku(sr, plocha, tk, sipka, obr.klik.stitek, meritko(), s.sirka); };
       }
     }
 
@@ -376,6 +384,7 @@
       var kt = Math.min(1, (PAPIR - odsazeni - 2) / s.sirka);
       plocha.style.setProperty('--k-tisk', String(kt));
       plocha.style.setProperty('--mn-m-tisk', String(Math.min(2.5, 1 / kt)));
+      if (umisti) umisti();
     }
     requestAnimationFrame(srovnej);
     window.addEventListener('resize', srovnej);
@@ -453,7 +462,12 @@
       var r = e.getBoundingClientRect();
       return { x: (r.left - rk.left) / k, y: (r.top - rk.top) / k, w: r.width / k, h: r.height / k };
     };
-    var c = obd(tk), sw = sipka.offsetWidth, sh = sipka.offsetHeight, g = 8;
+    /* Na papíře bývá šipka o kus větší než na obrazovce (jiné měřítko
+     * snímku) — místo se proto počítá pro tu větší, ať nepřeteče okraj. */
+    var m = parseFloat(plocha.style.getPropertyValue('--mn-m')) || 1;
+    var mt = parseFloat(plocha.style.getPropertyValue('--mn-m-tisk')) || m;
+    var f = Math.max(1, mt / m);
+    var c = obd(tk), sw = sipka.offsetWidth * f, sh = sipka.offsetHeight * f, g = 8;
     var vyska = plocha.offsetHeight;
     var text = ' ' + (stitek || 'klikněte');
     var kandidati = [

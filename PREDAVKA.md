@@ -1,3 +1,28 @@
+# Předávka — 26. 10. 2026: M5 #524 — příručka bez „Co je nového", postupy krok za krokem, tisk A4, větev `claude/m5-prirucka-obrazky`
+
+Nad `48ab0a4` (integrace v26.10.8) + **sloučená Z2 #523** (`origin/claude/z2-retence-zaloh` 67f4d3b, v26.10.9 —
+v její větvi zůstal `verze.txt` 26.10.8, upozornit koordinaci). **Verze 26.10.10.** Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno do integrace (rozhoduje J. V.). Aplikace se nemění, jen příručka.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| 1 Bez „Co je nového" | ✅ | 47 bloků pryč, úvodní strana = název + verze + datum, obsah hned pod ní; chování jen z novinek přešlo do kapitol (seznam v CHANGELOG) |
+| 1 Pravidlo | ✅ | `manual/sestav.sh`: hlavička + sestavení s „Co je nového" zastaví; řádek „verze" musí nést aktuální verzi. Ve `.claude/skills/*`, CLAUDE.md ani šablonách promptů v `podklady/` povinnost psát „Co je nového" nebyla (jen historické zmínky) — **koordinace: v nových promptech psát „změnu popsat v kapitole příručky, novinky jen v CHANGELOG"**; synchronizovaný skill kalkulator-next-gen (mimo repo) pravidlo nemá |
+| 2 Postupy krok za krokem | ✅ | blok `kroky` v šabloně (rámeček + šipka mimo popisky), 90 kroků ve 27 kapitolách, ~50 nových scén v `snimky_auto.mjs` (78 snímků, 405 kB) |
+| 2 Bez postupu | ✅ | kap. 2 role, 28 co nevidíte, 31 slovníček, 32 kontakt — není v nich co dělat (seznam i v testu) |
+| 3 Kap. 30 | ✅ | po sloučení Z2: text Z2 + odstavec Z1 (po částech, po stránkách, limit 10 min) + postup správce se 3 snímky Nastavení → Databáze |
+| 4 Tisk M4 | ✅ | `zoom` podle A4 místo `transform` (Chrome zmenšoval celou stránku), bez tiskového a max-width CSS aplikace ve snímcích; PDF z okna 794 i 1400 px shodné |
+| 5 Výstup | ✅ | HTML 639 kB + PDF A4 92 stran 3 MB poslány J. V. (SendUserFile), do repa ani na Disk nic |
+| Testy | ✅ | `src/test_prirucka_postupy.js` 22/0 (pojistka nad 48ab0a4: 14 FAIL), `overit_manual.mjs` 57/0, `spust_testy.sh` 266/0/1, `testovaci_kolo.sh --jen build,staticke` VŠE ZELENÉ |
+| Celé kolo | ⬜ | pouští koordinace |
+
+**Jak příručku vyrobit znovu:** `KNG_NEZVYSOVAT_VERZI=1 python3 build.py`, `NODE_PATH=$(npm root -g) node manual/snimky_auto.mjs <mimo-repo>/snimky.json`
+(~1 min), `bash manual/sestav.sh <snimky.json> <výstup>`, PDF: Playwright `page.pdf({format:'A4', printBackground:true,
+preferCSSPageSize:true})` s oknem 794 px. Ladění odpovědí serveru ve skriptu: `KNG_SNIMKY_LADENI=1`.
+
+**Pro slučování:** konflikt v `manual/obsah.json` s každou větví, která přidala „Co je nového" — novinku zahodit
+a změnu popsat v kapitole; řádek „verze" nastavit na výslednou verzi integrace.
+
 # Předávka — 26. 10. 2026: Z2 #523 — retence záloh (Blobs i Disk) a komprese otisku, větev `claude/z2-retence-zaloh`
 
 Nad `48ab0a4` (Z1 #522, v26.10.8 — finální HEAD Z1, sloučeno jako předek). **Verze 26.10.9.** Koordinace:

@@ -754,7 +754,8 @@ await page.evaluate(() => render());
 await cekej(300);
 await vezmi('k9-zahranici', '#page-kalk .card.zak-bar');
 /* Zpět do ČR, ať další snímky ukazují tuzemskou zakázku. */
-await sDialogem('k9-dialog-zpet', "() => cenikRadaPrepniUI('cr')", 'ano');
+await page.evaluate(() => cenikRadaPrepniUI('cr'));   // náhrada dialogu odpoví „ano"
+await cekej(300);
 await uloz();
 
 
@@ -794,7 +795,6 @@ await page.evaluate(() => { nadDvermiSet('plech'); mustkySet(1); render(); });
 krok('kap. 13: opláštění po stěnách');
 await page.evaluate(() => { oplRezimSet('poStenach'); render(); });
 await cekej(400);
-await vezmi('k13-zadani-po-stenach', '#ock-zadani');
 await vezmi('k13-steny', '#ock-oplasteni-steny');
 await page.evaluate(() => {
   const ch = [...document.querySelectorAll('#ock-oplasteni-steny input[type=checkbox]')]
@@ -906,9 +906,26 @@ await page.waitForFunction(() => { try { return ONLINE_STAV.ja === null; } catch
 await nacti();
 await prihlas('spravce@priklad.cz', 'Zkusebni.Heslo.123');
 await page.addScriptTag({ content: SNIMAC_JS });
+/* Jméno účtu správce dosazuje server (skutečné) a hlavička karty nese adresu
+ * místního serveru — na snímku se nahradí vymyšleným jménem a adresou webu. */
+const ANON_SPRAVCE = "klon.innerHTML = klon.innerHTML.replace(/Jaroslav Vendl/g, 'Správce Ukázkový')"
+  + ".replace(/127\\.0\\.0\\.1:\\d+/g, 'engscalc.netlify.app');";
 await page.evaluate(() => { otevriNastaveni(); nastPanel('databaze'); });
 await cekej(800);
-await vezmi('k30-nastaveni-databaze', '#nastaveni-panel', { admin: true });
+await vezmi('k30-zalozky', () => {
+  const b = [...document.querySelectorAll('#nastaveni-panel button')].find(x => x.textContent.trim() === 'Databáze');
+  return b && b.parentElement;
+}, { admin: true });
+await vezmi('k30-online-pred', KARTA('/Online databáze/i'), { admin: true, uprav: ANON_SPRAVCE });
+/* Vynucená záloha má odstup 10 minut a jedna vznikla při přihlášení
+ * správce — serverovým funkcím (běží tady v Node) se proto posunou hodiny,
+ * jinak by snímek ukázal jen „Zálohu teď pořídit nejde". */
+const datumNyni = Date.now;
+Date.now = () => datumNyni() + 11 * 60 * 1000;
+await page.evaluate(() => onlineZalohaTed());
+Date.now = datumNyni;
+await cekej(800);
+await vezmi('k30-online-po', KARTA('/Online databáze/i'), { admin: true, uprav: ANON_SPRAVCE });
 await page.evaluate(() => zavriNastaveni());
 krok('nový ceník (zdražená montáž) pro dialog v kapitole 22');
 await zverejniCenik(1.1);

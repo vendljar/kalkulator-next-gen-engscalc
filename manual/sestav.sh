@@ -27,10 +27,22 @@ done
 # Příručka se hlídá proti verze.txt, ne proti číslu napsanému v obsahu.
 # Poučení z 20. 8. 2026: pevně zapsané číslo znamenalo, že zastaralá příručka
 # procházela zeleně ještě dva týdny po vydání nové aplikace.
+#
+# PRAVIDLO OD 26. 10. 2026 (#524, pokyn J. V.): příručka NEMÁ sekce „Co je
+# nového". Začíná obsahem, úvodní strana nese jen název, verzi aplikace
+# a datum (řádek „verze" v obsah.json). Změna chování se popíše přímo
+# v kapitole, které se týká (a postup krok za krokem se přefotí
+# manual/snimky_auto.mjs); novinky verzí patří jen do CHANGELOG.md.
 VERZE="$(tr -d ' \r\n' < "$KDE/../verze.txt")"
-if ! grep -q "v$VERZE" "$OBSAH"; then
-  echo "CHYBA: obsah.json nemluví o aktuální verzi aplikace (v$VERZE)." >&2
-  echo "       Buď doplňte, co se ve v$VERZE změnilo, nebo verzi v obsahu opravte." >&2
+if ! grep -q "\"verze\": \"Platí pro aplikaci v$VERZE " "$OBSAH"; then
+  echo "CHYBA: řádek „verze\" v obsah.json neříká, že příručka platí pro v$VERZE." >&2
+  echo "       Změny chování popište v příslušných kapitolách a řádek verze opravte" >&2
+  echo "       (Platí pro aplikaci v$VERZE · sestaveno …). Novinky patří jen do CHANGELOG." >&2
+  exit 1
+fi
+if grep -qi 'Co je nového' "$OBSAH"; then
+  echo "CHYBA: obsah.json má sekci „Co je nového\" — příručka ji nemá (#524, J. V. 26. 10. 2026)." >&2
+  echo "       Změnu popište v kapitole, novinku v CHANGELOG.md." >&2
   exit 1
 fi
 if ! grep -q "\"verze\":\"Kalkulačka v$VERZE\"" "$SNIMKY"; then
