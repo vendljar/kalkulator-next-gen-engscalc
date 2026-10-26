@@ -15,6 +15,35 @@ Nad `919b3b7`. Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **V kódu aplikace 
 `overit_roadmapu.mjs` hlásí 1 FAIL („každé odložené nese důvod“) už před touto změnou.
 
 ---
+# Předávka — 26. 10. 2026: Z2 #523 — retence záloh (Blobs i Disk) a komprese otisku, větev `claude/z2-retence-zaloh`
+
+Nad `48ab0a4` (Z1 #522, v26.10.8 — finální HEAD Z1, sloučeno jako předek). **Verze 26.10.9.** Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno (rozhoduje J. V.), na ostrém, na Disku ani v Pipedrive nic.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| 1 Blobs: 14 dní / 8 týdnů / 6 měsíců, vynucené 7 dní, před obnovou nikdy | ✅ | pravidlo v `src/retence_zaloh.js` (server přes `netlify/lib/retence_modul.cjs`), `retenceVyber` v `lib/zalohovani.mjs` |
+| 1 Zrušená výjimka RETENCE_OD | ✅ | ze starých (do 19. 10.) jen první v měsíci, i ten 6 měsíců — **doslovně**: staré denní a nedělní odejdou i v 14denní / 8týdenní lhůtě |
+| 1 Pojistky (nejnovější, pokles < 50 %, kopie < 7 dní, části a souhrny) | ✅ | beze změny; nově rozpočet mazání 20 s/běh, zbytek dokončí další běh téže noci (`zbyva`, den se neuzavře) |
+| 2 Disk: úklid ve složce po úspěšné kopii | ✅ | `kopieDiskUklid` (online_ui.js): jen „_Zaloha Netlify DB", jen `otisk_RRRR-MM-DD.json(.gz)`, ověří velikost + SHA-256 znovu přečteného souboru, jen když server kopii přijal; nikdy nejnovější ani právě zapsanou; výsledek v hlášce |
+| 3 Komprese — měření | ✅ | `nastroje/mereni_komprese_otisku.mjs`: text −99 %, base64 −25 %, směs ~engscalc −31,9 %, víc textu −40,8 %, víc příloh −28,3 %; gzip 4MB části ~100 ms |
+| 3 Blobs gzip | ✅ | části jako binární gzip, manifest `komprese: 'gzip'`, `ulozenoB`; čtení umí starý formát; neznámý = výjimka |
+| 3 Disk `.json.gz` | ✅ | obnova „ze souboru" pozná gzip podle bajtů a rozbalí; server přijme a podloží retenci i `.json.gz` |
+| 4 Hlídač záloh koordinace | ✅ | oznámeno (send_message): hledat `^otisk_\d{4}-\d{2}-\d{2}\.json(\.gz)?$`, staré kopie mizí |
+| Doplnění: zálohy se mají zvětšovat (J. V. ~13:35) | ✅ | pojistka: velikost < 90 %, zakázky/účty < 95 %, šablony/podpisy méně (`RETENCE_ZALOH_POJISTKA`); bez potvrzení se nemaže nikdy (**zrušeno i uvolnění po 30 dnech** — výchozí volba Z2); Disk porovná data nové kopie s předchozí a úbytek hlásí serveru (`retence-varovani-disk`) |
+| Testy s pojistkou | ✅ | `netlify/test_z2_retence.mjs` 25/34 FAIL → 64/0, doplnění 69/20 → 89/0; `src/test_z2_disk_retence.js` 9/2 + výjimka → 33/0, doplnění 35/8 → 43/0; `test_zalohy` 162/0, `test_o7_kopie_klient` 21/0 |
+| Mutace „#523" | ✅ | 64/64; přecílené „#151 N5:" 5/5, N6 jméno 1/1, O5 jméno 1/1; „#522" 16/16 (přeživší z čistého Z1 „výřez části" chycen novou kontrolou v `test_zalohy_objem`); `--kontrola` 999 |
+| Node sady, kolo, prohlížeč | ✅ | `spust_testy.sh` 265/0/1; `testovaci_kolo.sh --jen build,staticke` VŠE ZELENÉ; `overit_online.mjs` 273/0; `test_zalohy_objem` s gzip 30/0 |
+| Celé kolo (celé mutace po částech) | ⬜ | pouští koordinace |
+| Dokumentace | ✅ | CHANGELOG, příručka kap. 30 + novinka v26.10.9, `podklady/POSTUP_OBNOVY_ZALOHY.md` (tabulka „kolik záloh se drží"), roadmapa #523 |
+
+**Ověření po nasazení (J. V.):** první noc smaže v Blobs zářijové a říjnové otisky mimo 4. 9. a 1. 10. (jen
+s podloženou kopií na Disku < 7 dní!) — Logs → `zaloha_nocni`: „retence smazala N otisků…" případně
+„retence pokračuje v dalším běhu". Pak „Zkopírovat zálohu na Disk teď": soubor `otisk_<den>.json.gz`, hláška
+„Na Disku smazáno N starších kopií…" (smazané jsou 30 dní v koši Disku). Obnova ze souboru `.json.gz` na
+testovacím webu jen náhledem.
+
+**Pro slučování:** `build.py` CORE má nový `retence_zaloh.js`; mutace #151 N5 jsou přecílené na nový modul.
 
 # Předávka — 26. 10. 2026: Z1 #522 (kritické) — ostrý web bez záloh, větev `claude/z1-zalohy-oprava`
 

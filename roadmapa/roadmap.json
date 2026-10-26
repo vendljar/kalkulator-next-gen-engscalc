@@ -8310,6 +8310,33 @@
   "otazka": "Které smíšené položky rozdělit na materiál + práci (a s jakými hodnotami), a které ponechat jako služby? 15 otázek s doporučením: rozbor R1 (podklady/R1_ROZBOR_CENIKU_26_10.md, oddíl 4).",
   "pozn": "Rozhodnutí J. V. 26. 10. 2026: připravit do vlny F."
  }
+,
+ {
+  "id": "523",
+  "vlna": "A",
+  "stav": "hotovo",
+  "dulezitost": "vysoka",
+  "slozitost": "M",
+  "nazev": "Z2: nová pravidla mazání záloh (Netlify Blobs i Disk Google) + komprese otisku",
+  "proc": "Ostrý engscalc nese ~114 MB otisku za den (přílohy, šablony, podpisy), automatické otisky přibývají při každém přihlášení správce a otisky do 19. 10. 2026 retence nesměla smazat nikdy; na Disku se nemazalo vůbec. Rozhodnutí J. V. 26. 10. 2026: kratší lhůty a úklid i na Disku.",
+  "detail": "Pravidlo v jednom modulu src/retence_zaloh.js (server přes netlify/lib/retence_modul.cjs, prohlížeč v buildu): Blobs noční 14 dní, týdenní (neděle / nejbližší starší v týdnu) 8 týdnů, měsíční (první v měsíci) 6 měsíců, vynucené 7 dní, před obnovou nikdy; výjimka RETENCE_OD zrušená — ze starých otisků do 19. 10. 2026 jen první v měsíci. Pojistky beze změny (nejnovější, pokles < 50 %, kopie na Disk < 7 dní, části a souhrny s otiskem); mazání s časovým rozpočtem, zbytek dokončí další běh téže noci. Disk: po úspěšné kopii (server přijal, zapsaný soubor sedí velikostí i SHA-256) úklid ve složce _Zaloha Netlify DB — 7 dní, 8 týdnů, 6 měsíců, jen otisk_RRRR-MM-DD.json(.gz), nikdy nejnovější ani právě zapsaná; výsledek v hlášce. Komprese: měření (nastroje/mereni_komprese_otisku.mjs) 32–41 % u směsi blízké engscalc → části otisku v Blobs gzip (binární blob, manifest komprese: 'gzip', čtení umí i starý formát), kopie na Disk otisk_RRRR-MM-DD.json.gz, obnova ze souboru ji rozbalí. Doplnění (pokyn J. V. 26. 10. ~13:35, zálohy se mají zvětšovat): retence v Netlify i na Disku stojí při úbytku velikosti dat < 90 %, zakázek/účtů < 95 % nebo šablon/podpisů (RETENCE_ZALOH_POJISTKA), varování v hlídce, logu i po přihlášení, schválení retence-potvrdit heslem; bez schválení se nemaže nikdy (zrušeno uvolnění po 30 dnech); úbytek kopie na Disku hlásí prohlížeč serveru (retence-varovani-disk).",
+  "hotovoKdyz": "Tabulkový test přesného výběru klíčů (přelomy týdnů, měsíců a roku, zářijové klíče, simulace nocí) a test úklidu Disku se simulovanou složkou s pojistkou; mutace #523; obnova z .json.gz i ze starého .json; dokumentace.",
+  "kde": "`src/retence_zaloh.js`, `netlify/lib/retence_modul.cjs`, `netlify/lib/zalohovani.mjs`, `netlify/lib/sdilene.mjs`, `netlify/functions/zaloha_nocni.mjs`, `zaloha_vynuceno.mjs`, `src/ui/online_ui.js`, `src/uloziste.js`, `build.py`, `netlify/test_z2_retence.mjs`, `src/test_z2_disk_retence.js`, `nastroje/mereni_komprese_otisku.mjs`, `netlify/mutace.mjs`, `podklady/POSTUP_OBNOVY_ZALOHY.md`, `manual/obsah.json` kap. 30",
+  "hotovoV": "v26.10.9",
+  "pozn": "Dávka Z2, větev claude/z2-retence-zaloh nad Z1 (48ab0a4, v26.10.8). Hlídač záloh koordinace musí hledat na Disku i otisk_RRRR-MM-DD.json.gz (oznámeno koordinaci). První noc po nasazení retence smaže zářijové a říjnové otisky mimo první v měsíci — jen s čerstvou podloženou kopií na Disku.",
+  "zavisi": [
+   {
+    "id": "522",
+    "typ": "tvrda",
+    "proc": "otisk po částech, noční funkce po krocích (Z1)"
+   },
+   {
+    "id": "151",
+    "typ": "tvrda",
+    "proc": "retence, pojistky a kopie na Disk (N5, N6, K3, K4)"
+   }
+  ]
+ }
  ],
  "meta" : {
   "planVikendHistorie" : {"nazev" : "Plán práce 23. 10. odpoledne – po 26. 10. 6:00 Praha (J. V. 23. 10. 2026)","polozky" : ["16","113","114","115","117","501","509","510","511","512","513","514","515"]},

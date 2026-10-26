@@ -95,6 +95,10 @@ export async function uloziste(nazev) {
   return {
     async cti(klic) { return await s.get(klic, { type: 'json' }); },
     async zapis(klic, hodnota) { await s.setJSON(klic, hodnota); },
+    /* Binární záznam (#523 Z2: části otisku komprimované gzip). Vrací
+     * Buffer nebo null. JSON v base64 by úsporu u příloh snědl. */
+    async ctiBin(klic) { const b = await s.get(klic, { type: 'arrayBuffer' }); return b == null ? null : Buffer.from(b); },
+    async zapisBin(klic, data) { await s.set(klic, data); },
     async seznam(prefix) {
       const { blobs } = await s.list(prefix ? { prefix } : {});
       return blobs.map(b => b.key);

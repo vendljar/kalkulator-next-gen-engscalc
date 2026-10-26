@@ -27,6 +27,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
   async smaz(k) { pamet.delete(nazev + '/' + k); },
 });
 
+import { gzipSync } from 'node:zlib';
 import { createRequire } from 'module';
 import { createServer } from 'http';
 import { readFileSync } from 'fs';
@@ -876,10 +877,14 @@ await page.evaluate(() => {
     queryPermission: async () => window.__diskPravo, requestPermission: async () => window.__diskPravo,
     getFileHandle: async (jmeno, o) => {
       if (!soubory.has(jmeno) && !(o && o.create)) throw new DOMException('není', 'NotFoundError');
-      return { createWritable: async () => { let buf = '';
-          return { write: async (t) => { buf += t; }, close: async () => { soubory.set(jmeno, buf); } }; },
-        getFile: async () => new Blob([soubory.get(jmeno) || '']) };
-    } };
+      /* #523: zapisují se bajty (.json.gz) — soubor drží Blob */
+      return { createWritable: async () => { const casti = [];
+          return { write: async (t) => { casti.push(t); }, close: async () => { soubory.set(jmeno, new Blob(casti)); } }; },
+        getFile: async () => soubory.get(jmeno) || new Blob([]) };
+    },
+    /* #523: úklid starých kopií prochází složku a maže */
+    values: async function* () { for (const jm of [...soubory.keys()]) yield { kind: 'file', name: jm }; },
+    removeEntry: async (jmeno) => { soubory.delete(jmeno); } };
   window.showDirectoryPicker = async () => { window.__diskVyber++;
     /* K3-N1 (O7): harness umí podstrčit jednou složku s jiným jménem */
     if (window.__diskJinaSlozka) { window.__diskJinaSlozka = false; return Object.assign({}, slozka, { name: 'Stažené soubory' }); }
@@ -917,7 +922,10 @@ test('K3-N1 O7: po špatném hesle server záznam nemá a přihlášení trvá',
   !pamet.has('zalohy/kopie-disk') && await page.evaluate(() => !!ONLINE_STAV.ja));
 test('K4-N15: po špatném hesle posledni_kopie.json na Disku nevznikne (netvrdí kopii, o které server neví)',
   await page.evaluate(() => !window.__diskSoubory.has('posledni_kopie.json')), await page.evaluate(() => [...window.__diskSoubory.keys()]));
-await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__diskSoubory.clear(); });
+await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__diskSoubory.clear();
+  /* #523: stará kopie (první v dubnu 2025, starší 6 měsíců) a cizí soubor ve složce */
+  window.__diskSoubory.set('otisk_2025-04-01.json', new Blob(['stara']));
+  window.__diskSoubory.set('poznamka.txt', new Blob(['cizi'])); });
 test('N6: tlačítko kopii pořídí', await page.evaluate(() => onlineKopieDiskTed()) === true,
   await page.evaluate(() => ONLINE_STAV.hlaska));
 test('K3-N1 O7: záznam na serveru nese složku a potvrzení heslem',
@@ -928,21 +936,26 @@ test('K3-N1 O7: záznam na serveru nese složku a potvrzení heslem',
     const s = window.__diskSoubory;
     const jm = [...s.keys()];
     const otisk = jm.find(j => /^otisk_/.test(j));
-    const text = otisk ? s.get(otisk) : '';
-    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    /* #523: kopie je .json.gz — SHA-256 a velikost ze zapsaných bajtů, obsah po rozbalení */
+    const bajty = otisk ? new Uint8Array(await s.get(otisk).arrayBuffer()) : new Uint8Array(0);
+    const text = otisk ? await new Response(s.get(otisk).stream().pipeThrough(new DecompressionStream('gzip'))).text() : '';
+    const velikost = bajty.length;
+    const b = await crypto.subtle.digest('SHA-256', bajty);
     const sha = [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
-    return { jm, otisk, text, sha, posledni: JSON.parse(s.get('posledni_kopie.json') || 'null'),
+    return { jm, otisk, text, sha, velikost, posledni: JSON.parse(s.get('posledni_kopie.json') ? await s.get('posledni_kopie.json').text() : 'null'),
       hlaska: ONLINE_STAV.hlaska, kopie: ONLINE_STAV.kopieDisk, vyber: window.__diskVyber };
   });
-  test('N6: soubor otisk_<den nočního otisku>.json + posledni_kopie.json', r.otisk === 'otisk_' + nocniDen + '.json'
+  test('N6 #523: soubor otisk_<den nočního otisku>.json.gz + posledni_kopie.json', r.otisk === 'otisk_' + nocniDen + '.json.gz'
     && r.jm.includes('posledni_kopie.json'), r.jm);
+  test('#523: po kopii stará kopie zmizela, cizí soubor zůstal, hláška hlásí úklid', !r.jm.includes('otisk_2025-04-01.json')
+    && r.jm.includes('poznamka.txt') && /Na Disku smazáno 1 starší kopie/.test(r.hlaska), [r.jm, r.hlaska]);
   const z = JSON.parse(r.text || '{}');
   test('N6: kopie je noční otisk bez otisků hesel a bez podpisů', z.zdroj === 'nocni-otisk' && z.podpisy === null
     && !/"heslo"|scrypt/.test(r.text) && Array.isArray(z.uzivatele) && z.uzivatele.length > 0);
   test('N6: kopie nese zakázky a ceník', Object.keys(z.zakazky || {}).length > 0 && !!z.program);
   test('N6: posledni_kopie.json nese datum, velikost a SHA-256 shodné se souborem',
-    !!r.posledni && !!r.posledni.kdy && r.posledni.velikostB === new TextEncoder().encode(r.text).length && r.posledni.sha256 === r.sha, r.posledni);
-  test('N6: hláška ukáže cestu a velikost', /_Zaloha Netlify DB\/otisk_\d{4}-\d{2}-\d{2}\.json \(\d/.test(r.hlaska), r.hlaska);
+    !!r.posledni && !!r.posledni.kdy && r.posledni.velikostB === r.velikost && r.posledni.sha256 === r.sha, r.posledni);
+  test('N6: hláška ukáže cestu a velikost', /_Zaloha Netlify DB\/otisk_\d{4}-\d{2}-\d{2}\.json\.gz \(\d/.test(r.hlaska), r.hlaska);
   test('N6: server si kopii poznamenal (hlídka všude)', !!r.kopie && r.kopie.soubor === r.otisk
     && JSON.parse(pamet.get('zalohy/kopie-disk')).sha256 === r.sha);
   const html = await page.locator('#nastaveni-panel').innerHTML();
@@ -980,7 +993,8 @@ test('N6: kopie starší než 14 dní → varování v Nastavení → Databáze'
   /id="online-kopie-disk" class="seznam-varovani"[^>]*>[^<]*stará 15 dní/.test(await page.locator('#nastaveni-panel').innerHTML()));
 /* K3-N13 (O7): pojistka retence přeskočila mazání → hlídka v Databázi */
 pamet.set('zalohy/retence-varovani', JSON.stringify({ kdy: new Date(Date.now() - 3600000).toISOString(), den: '2026-10-21',
-  predchozi: '2026-10-20', pred: { pocetZakazek: 100, pocetUctu: 10 }, nove: { pocetZakazek: 40, pocetUctu: 10 }, text: 'x' }));
+  predchozi: '2026-10-20', pred: { pocetZakazek: 100, pocetUctu: 10 }, nove: { pocetZakazek: 40, pocetUctu: 10 },
+  text: 'noční otisk 2026-10-21 má proti 2026-10-20 méně dat (zakázek 100 → 40)' }));   // #523: text píše server
 await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
 await page.waitForTimeout(150);
 test('K3-N13 O7: varování pojistky retence svítí v Nastavení → Databáze',
@@ -990,7 +1004,7 @@ test('K3-N13 O7: varování pojistky retence svítí v Nastavení → Databáze'
  * (#online-retence-potvrdit) neexistovalo → test selže. */
 await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__dlgTexty = []; });
 test('K4-N13 O11: u varování je tlačítko „Úbytek byl záměrný"',
-  (await page.locator('#online-retence-potvrdit').count()) === 1 && /Mazání starých záloh stojí/.test(await page.locator('#online-retence-varovani').innerText()));
+  (await page.locator('#online-retence-potvrdit').count()) === 1 && /Mazání starých záloh v Netlify i na Disku stojí/.test(await page.locator('#online-retence-varovani').innerText()));
 await page.click('#online-retence-potvrdit');
 await page.waitForTimeout(400);
 test('K4-N13 O11: po potvrzení (dotaz + heslo správce) server zapíše potvrzeno a hlídka zhasne',
@@ -1003,7 +1017,9 @@ pamet.set('zalohy/retence-varovani', JSON.stringify({ kdy: new Date(Date.now() -
   pred: { pocetZakazek: 100 }, nove: { pocetZakazek: 1 } }));
 await page.evaluate(() => onlineOtiskyNacti().then(() => render()));
 await page.waitForTimeout(150);
-test('K3-N13 O7: varování starší 30 dní už nesvítí', !(await page.locator('#nastaveni-panel').innerHTML()).includes('online-retence-varovani'));
+/* #523 Z2 (pokyn J. V. 26. 10. 2026): bez potvrzení svítí i po 30 dnech — mazání pořád stojí */
+test('#523: nepotvrzené varování svítí i po 31 dnech', (await page.locator('#nastaveni-panel').innerHTML()).includes('online-retence-varovani')
+  && /stojí už 31 dní/.test(await page.locator('#online-retence-varovani').innerText()));
 pamet.delete('zalohy/retence-varovani');
 /* K3-N4 (O7): limit vynucených otisků — ruční záloha hned po jiné ukáže, kdy to půjde */
 uvolniLimitZaloh();
@@ -1132,8 +1148,17 @@ test('dělení na dávky drží limit a neztratí žádný záznam',
 const zalohaText = await page.evaluate(() => onlineApi('/api/zaloha').then(o => JSON.stringify(o.zaloha)));
 await page.evaluate(() => onlineObnovaZmena('zdrojTyp', 'soubor'));
 await page.waitForTimeout(200);
+/* #523 Z2: kopie z Disku je .json.gz — obnova ze souboru ji rozbalí sama. */
+await page.setInputFiles('#online-obnova input[type=file]',
+  { name: 'otisk_2026-10-27.json.gz', mimeType: 'application/gzip', buffer: gzipSync(Buffer.from(zalohaText)) });
+await page.waitForFunction(() => { try { return !!ONLINE_STAV.obnova.soubor || !!ONLINE_STAV.obnova.hlaska; } catch (e) { return false; } }, null, { timeout: 8000 });
+test('#523: obnova ze souboru načte komprimovanou kopii otisk_….json.gz',
+  await page.evaluate((t) => !!ONLINE_STAV.obnova.soubor && JSON.stringify(ONLINE_STAV.obnova.soubor) === t
+    && ONLINE_STAV.obnova.souborJmeno === 'otisk_2026-10-27.json.gz', zalohaText),
+  await page.evaluate(() => ONLINE_STAV.obnova.hlaska));
 await page.setInputFiles('#online-obnova input[type=file]',
   { name: 'zaloha_online_test.json', mimeType: 'application/json', buffer: Buffer.from(zalohaText) });
+await page.waitForFunction(() => { try { return ONLINE_STAV.obnova.souborJmeno === 'zaloha_online_test.json'; } catch (e) { return false; } }, null, { timeout: 8000 });
 await page.waitForFunction(() => { try { return !!ONLINE_STAV.obnova.soubor; } catch (e) { return false; } }, null, { timeout: 8000 });
 test('nahraný soubor zálohy se načte a panel ukáže jeho jméno a razítko',
   /zaloha_online_test\.json/.test(await dbPanel()) && /pořízena/.test(await dbPanel()));

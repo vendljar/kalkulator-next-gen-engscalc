@@ -56,7 +56,8 @@ const novyCtx = () => {
 };
 const slozka = (ctx, name) => ({ name, getFileHandle: async (jm) => {
   ctx.zapsano[jm] = '';
-  return { createWritable: async () => ({ write: async (t) => { ctx.zapsano[jm] += t; }, close: async () => {} }),
+  /* #523: od v26.10.9 se zapisují bajty (Uint8Array), dřív text */
+  return { createWritable: async () => ({ write: async (t) => { ctx.zapsano[jm] += typeof t === 'string' ? t : new TextDecoder().decode(t); }, close: async () => {} }),
     getFile: async () => ({ size: new TextEncoder().encode(ctx.zapsano[jm]).length }) };
 } });
 
@@ -135,7 +136,7 @@ const slozka = (ctx, name) => ({ name, getFileHandle: async (jm) => {
     ctx.ONLINE_STAV.retenceVarovani = { kdy: new Date(Date.now() - 3600000).toISOString(), den: '2026-10-21', predchozi: '2026-10-20',
       pred: { pocetZakazek: 100, pocetUctu: 10 }, nove: { pocetZakazek: 40, pocetUctu: 10 } };
     await ctx.auto();
-    test('K3-N13: varování pojistky retence se po přihlášení ohlásí', ctx.zpravy.some(z => /méně než polovinu dat \(zakázek 100 → 40\)/.test(z[0]) && z[1] === 'varovani'), ctx.zpravy);
+    test('K3-N13: varování pojistky retence se po přihlášení ohlásí', ctx.zpravy.some(z => /méně dat \(zakázek 100 → 40\)/.test(z[0]) && z[1] === 'varovani'), ctx.zpravy);
   }
   /* ---- K3-N13: čistá funkce hlídky ---- */
   {
@@ -145,15 +146,20 @@ const slozka = (ctx, name) => ({ name, getFileHandle: async (jm) => {
     const r = U.uloRetenceVarovani(v, ted);
     test('K3-N13: hlídka jmenuje dny a pokles účtů', !!r && /2026-11-09/.test(r.text) && /2026-11-08/.test(r.text) && /účtů 12 → 3/.test(r.text)
       && !/zakázek/.test(r.text), r);
-    test('K3-N13: hlídka svítí 30 dní (29 dní ano, 30 ne)', U.ULO_RETENCE_VAROVANI_DNU === 30
-      && !!U.uloRetenceVarovani(Object.assign({}, v, { kdy: new Date(ted - 29 * 86400000 - 3600000).toISOString() }), ted)
-      && !U.uloRetenceVarovani(Object.assign({}, v, { kdy: new Date(ted - 30 * 86400000).toISOString() }), ted));
+    /* #523 Z2 (pokyn J. V. 26. 10. 2026): bez potvrzení svítí hlídka trvale — do #523 zhasla po 30 dnech */
+    test('#523: hlídka svítí, dokud úbytek nikdo nepotvrdí (i po 30 a 400 dnech)', U.ULO_RETENCE_VAROVANI_DNU === undefined
+      && /stojí už 30 dní/.test((U.uloRetenceVarovani(Object.assign({}, v, { kdy: new Date(ted - 30 * 86400000).toISOString() }), ted) || {}).text || '')
+      && !!U.uloRetenceVarovani(Object.assign({}, v, { kdy: new Date(ted - 400 * 86400000).toISOString() }), ted));
+    test('#523: hlídka převezme text varování ze serveru (velikost, Disk)', /kopie zálohy na Disku otisk_2026-11-09\.json\.gz má proti otisk_2026-11-02\.json\.gz méně dat \(velikost 100,0 MB → 80,0 MB \(80 %\)\)/
+      .test((U.uloRetenceVarovani({ kdy: '2026-11-09T09:00:00Z', den: '2026-11-09', zdroj: 'disk',
+        text: 'kopie zálohy na Disku otisk_2026-11-09.json.gz má proti otisk_2026-11-02.json.gz méně dat (velikost 100,0 MB → 80,0 MB (80 %))' }, ted) || {}).text || ''));
     test('K3-N13: bez záznamu nebo s nečitelným časem nic', U.uloRetenceVarovani(null, ted) === null && U.uloRetenceVarovani({ kdy: 'x' }, ted) === null);
     /* K4-N13 (O11): retence stojí do potvrzení; potvrzené varování nesvítí.
      * Pojistka: před O11 obě kontroly selžou (text „se ten den přeskočilo",
      * potvrzené varování svítilo dál). */
-    test('K4-N13: hlídka řekne, že mazání stojí do potvrzení tlačítkem, a kolik dní nejdéle',
-      !!r && /Mazání starých záloh stojí, dokud úbytek nepotvrdíte tlačítkem „Úbytek byl záměrný"/.test(r.text) && /nejdéle 29 dní/.test(r.text), r);
+    test('K4-N13 #523: hlídka řekne, že mazání v Netlify i na Disku stojí do potvrzení tlačítkem, a jak dlouho už',
+      !!r && /Mazání starých záloh v Netlify i na Disku stojí, dokud úbytek nepotvrdíte tlačítkem „Úbytek byl záměrný"/.test(r.text)
+      && /stojí už 1 den\)/.test(r.text) && !/nejdéle/.test(r.text), r);
     test('K4-N13: potvrzené varování už nesvítí',
       U.uloRetenceVarovani(Object.assign({}, v, { potvrzeno: { kdy: '2026-11-10T07:00:00Z', kdo: 'spravce' } }), ted) === null);
   }

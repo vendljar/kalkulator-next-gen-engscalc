@@ -1,6 +1,6 @@
 # Postup obnovy databáze ze zálohy — pro případ nouze
 
-> Sepsáno 24. 9. 2026 (#152, 2. část), doplněno 26. 10. 2026 (#522 — velká databáze). Každý krok je ověřený automatickou
+> Sepsáno 24. 9. 2026 (#152, 2. část), doplněno 26. 10. 2026 (#522 — velká databáze; #523 — kolik záloh se drží, kopie na Disku `.json.gz`). Každý krok je ověřený automatickou
 > zkouškou `netlify/test_obnova_nanecisto.mjs`, která simuluje úplnou havárii
 > a běží při každé kontrole před nahráním (`nastroje/pred_pushem.sh`). Když
 > se postup a aplikace rozejdou, zkouška spadne dřív, než se na to přijde
@@ -13,7 +13,39 @@
 | **Noční otisk** | Netlify Blobs, úložiště `zalohy`, klíč = datum (od v26.10.8 manifest + části `casti/<datum>/…`) | celá databáze **včetně účtů a otisků hesel** | každou noc sám, 2:00–3:45 UTC po 15 min (funkce `zaloha_nocni` — běhy navazují, dokud není hotový) |
 | **Otisk při přihlášení** | totéž | totéž | administrátor se přihlásí a dnešní otisk ještě není |
 | **Otisk před obnovou** | totéž, klíč `…-pred-obnovou` | stav těsně před každou obnovou | automaticky při obnově |
+| **Kopie na Disku Google** | složka **_Zaloha Netlify DB**, soubor `otisk_RRRR-MM-DD.json.gz` (od v26.10.9 komprimovaný; starší `otisk_…json`) | poslední noční otisk — **účty bez hesel, bez podpisů** | tlačítko „Zkopírovat zálohu na Disk teď" (jednou týdně připomene) |
 | **Stažená záloha** | u vás v počítači / na Disku (tlačítko „Stáhnout zálohu", „Odlít zálohu do složky") | zakázky, ceník, firma, šablony, matice — **účty bez hesel** | ručně |
+
+**Kolik záloh se drží (od v26.10.9, #523, rozhodnutí J. V. 26. 10. 2026).**
+
+| Kde | Drží se | Maže se |
+|---|---|---|
+| Netlify — noční otisky | posledních **14 dní**; z každého týdne nedělní (chybí-li, nejbližší starší v týdnu) **8 týdnů**; z každého měsíce první **6 měsíců** | ostatní, každou noc po hotovém otisku |
+| Netlify — „Zálohovat teď" a otisky při přihlášení | **7 dní** | starší |
+| Netlify — otisky před obnovou | **navždy** (smaže jen člověk) | nikdy |
+| Netlify — staré otisky do 19. 10. 2026 | jen **první z každého měsíce**, i ten nejvýš 6 měsíců | ostatní (výjimka „staré nikdy" je zrušená) |
+| Disk Google — kopie | posledních **7 dní**; z týdne nedělní **8 týdnů**; z měsíce první **6 měsíců** | ostatní, po každé úspěšné kopii (jen soubory `otisk_RRRR-MM-DD.json(.gz)`; Disk je drží 30 dní v koši) |
+
+Nejnovější záloha se nesmaže nikdy. V Netlify se maže jen tehdy, když je na
+Disku podložená kopie mladší než 7 dní. Na Disku se maže jen po úspěšné kopii,
+kterou server přijal a jejíž soubor sedí velikostí i kontrolním součtem —
+výsledek („Na Disku smazáno N starších kopií…") ukáže hláška po kopii.
+
+**Zálohy se mají zvětšovat (pokyn J. V. 26. 10. 2026).** Mazání (v Netlify
+i na Disku) se zastaví, když nová noční záloha proti předchozí má **méně než
+90 % dat**, **méně než 95 % zakázek nebo účtů**, nebo **méně šablon či
+podpisů**; totéž, když nová kopie na Disku nese méně než 90 % dat předchozí
+kopie. Nastavení → Databáze pak červeně ukáže, co ubylo a z kolika na kolik
+(a hláška hned po přihlášení), v logu `zaloha_nocni` je řádek „VAROVÁNÍ".
+**Bez potvrzení se nemaže nic — ani po měsících.** Když data ubyla záměrně
+(smazané zakázky, šablona), správce klikne na *Úbytek byl záměrný* a potvrdí
+heslem; jinak je to signál, že se data ztratila — obnovte je podle A).
+
+**Komprese (od v26.10.9).** Části nočních otisků v Netlify se ukládají
+komprimované (gzip, o 30–40 % méně místa) — obnova a stažení je čtou samy,
+starší nekomprimované otisky taky. Kopie na Disku je soubor `.json.gz`:
+**obnova „ze souboru" ho načte přímo** (Chrome, Edge). Kdo ho chce otevřít
+mimo aplikaci, rozbalí ho běžným programem (7-Zip, `gunzip`) na `.json`.
 
 **Velká databáze (od v26.10.8, #522).** Do v26.10.8 se otisk pořizoval
 najednou a u ostrého engscalc (~800 zakázek) se do limitu funkce nevešel —
@@ -66,8 +98,10 @@ Odeslané (uzamčené) nabídky se obnovou nikdy nepřepíšou — jsou to dokla
 
 ## C) Zmizelo všechno včetně nočních otisků
 
-Zbývá soubor stažený přes „Stáhnout zálohu" nebo odlitý na Disk
-(`zaloha_online_*.json`).
+Zbývá kopie na Disku Google ve složce **_Zaloha Netlify DB**
+(`otisk_RRRR-MM-DD.json.gz`, starší `otisk_…json`) nebo soubor stažený přes
+„Stáhnout zálohu" či odlitý na Disk (`zaloha_online_*.json`). Komprimovaný
+`.json.gz` se vybírá stejně jako `.json` — aplikace ho sama rozbalí.
 
 1. Přihlášení náhradním heslem jako v B).
 2. Obnovit ze zálohy… → zdroj **stažený soubor** → vyberte poslední
@@ -85,7 +119,9 @@ Zbývá soubor stažený přes „Stáhnout zálohu" nebo odlitý na Disk
    (u ~800 zakázek desítky vteřin, víc požadavků za sebou). Okno nechte otevřené.
 3. Netlify → Logs → Functions → `zaloha_nocni`: v noci 2:00–3:45 UTC má být
    řádek `otisk <datum> rozpracován — X/Y záznamů …` (pokračuje další běh)
-   a nakonec `otisk <datum> — … ms, … kB, … zakázek` a řádek retence.
+   a nakonec `otisk <datum> — … ms, … kB (uloženo gzip … kB), … zakázek` a řádek retence
+   (`retence smazala N otisků: …`; když toho je hodně — první noc po v26.10.9 —
+   `retence pokračuje v dalším běhu — zbývá N otisků` a další běh téže noci dokončí).
    „Task timed out" u nového kódu znamená, že jeden krok nestihl 30 s — postup
    se neztratí, další běh naváže; opakuje-li se každou noc, ozvěte se vývoji.
 4. U funkce musí být v Netlify značka **Scheduled** s rozvrhem `*/15 2-3 * * *`.
@@ -96,7 +132,9 @@ Zbývá soubor stažený přes „Stáhnout zálohu" nebo odlitý na Disk
   projde případy B) a C) nad paměťovou databází (20 kontrol);
   `netlify/test_zalohy_objem.mjs` (#522) totéž při objemu ostrého provozu
   (900 zakázek, ~20 MB, simulovaný limit funkce): otisk po krocích, přerušení,
-  hlášení chyby, stažení po stránkách, kopie na Disk a obnova po částech.
+  hlášení chyby, stažení po stránkách, kopie na Disk a obnova po částech;
+  `netlify/test_z2_retence.mjs` a `src/test_z2_disk_retence.js` (#523) přesný
+  výběr mazaných záloh v Netlify i na Disku, komprese a obnova z `.json.gz`.
 - **Ručně jednou za čtvrt roku** na testovacím webu (ne na ostrém):
   Nastavení → Databáze → Obnovit ze zálohy… → poslední noční otisk →
   **jen Zobrazit náhled**. Počty zakázek a verze ceníku v náhledu mají odpovídat
@@ -105,4 +143,4 @@ Zbývá soubor stažený přes „Stáhnout zálohu" nebo odlitý na Disk
 ## Kontakty a přístupy, které jsou k obnově potřeba
 
 - přístup do Netlify (proměnné `ADMIN_EMAIL`, `ADMIN_INIT_HESLO`, Blobs),
-- poslední stažená záloha (Disk / počítač administrátora).
+- poslední kopie na Disku Google (složka _Zaloha Netlify DB) nebo stažená záloha (počítač administrátora).
