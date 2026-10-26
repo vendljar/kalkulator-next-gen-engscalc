@@ -16,6 +16,9 @@
  *   K9-N6  rozpočet kroku i po každé zapsané části
  *   volby koordinace: úbytek potvrzuje jen hlavní správce; otisk „před
  *          obnovou" smaže jen správce ručně s heslem; zaloha_nocni bez cesty.
+ *   T1 #528 (přeživší mutace Testy #198): noční běh nad hotovým otiskem
+ *          se zbylým stavem; rozpočet po dávce čtení (simulované hodiny);
+ *          potvrzení poškozeného záznamu varování.
  * K9-V1 (obnova starého otisku po výřezech) je v test_zalohy_objem.mjs,
  * K9-S4 (souhrn starého otisku) v test_zalohy.mjs, K9-S6 (čas serveru při
  * úklidu Disku) v src/test_z2_disk_retence.js.
@@ -33,7 +36,7 @@ const require = createRequire(import.meta.url);
 
 /* Paměťové úložiště s binárními záznamy a háčky (čtení, zápis části). */
 const pamet = new Map();
-const hacky = { cti: null, zapisBin: null };
+const hacky = { cti: null, zapisBin: null, smaz: null };
 globalThis.__TEST_ULOZISTE = (nazev) => ({
   async cti(k) { if (hacky.cti) await hacky.cti(nazev, k); const v = pamet.get(nazev + '/' + k);
     if (v === undefined) return null; return JSON.parse(Buffer.isBuffer(v) ? v.toString('utf8') : v); },
@@ -41,7 +44,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
   async ctiBin(k) { const v = pamet.get(nazev + '/' + k); return v === undefined ? null : (Buffer.isBuffer(v) ? v : Buffer.from(v)); },
   async zapisBin(k, b) { if (hacky.zapisBin) await hacky.zapisBin(nazev, k); pamet.set(nazev + '/' + k, Buffer.from(b)); },
   async seznam(prefix) { return [...pamet.keys()].filter(x => x.startsWith(nazev + '/' + (prefix || ''))).map(x => x.slice(nazev.length + 1)); },
-  async smaz(k) { pamet.delete(nazev + '/' + k); },
+  async smaz(k) { if (hacky.smaz) await hacky.smaz(nazev, k); pamet.delete(nazev + '/' + k); },
 });
 const ulz = (n) => globalThis.__TEST_ULOZISTE(n);
 
@@ -407,6 +410,94 @@ await zkus('smazat-pred-obnovou', async () => {
     && ![...pamet.keys()].some(k => k.includes(K)) && pamet.has('zalohy/2026-11-02T101010-pred-obnovou') && pamet.has('zalohy/2026-11-02')
     && druhy.telo.casti === 2 && Array.isArray(druhy.telo.otisky), druhy);
   test('smazat-pred-obnovou: retence otisky před obnovou dál nevybírá nikdy', Z.retenceVyber(['2020-01-01T101010-pred-obnovou', '2026-11-02'], '2030-01-01').length === 0);
+});
+
+/* ---------------- T1 #528: přeživší mutace úplného běhu Testy #198 ----------------
+ * Po O-K9 je hlídaly jiné pojistky, takže je stávající scénáře přestaly
+ * rozlišovat (ne rychlost stroje — přežily lokálně i v Actions):
+ *  - „noční funkce otisk dne pořizuje znovu": od K9-N3 krok hotový otisk sám
+ *    nepřepíše; rozdíl je jen u hotového otisku se ZBYLÝM stavem
+ *    (smazání stavu po zápisu manifestu selhalo nebo funkci ukončil limit).
+ *  - „krok otisku bez časového rozpočtu": od K9-N6 se rozpočet hlídá i po
+ *    každé části a velká data v test_zalohy_objem končí krok tam; kontrolu
+ *    po dávce čtení rozliší jen malé záznamy (žádná část neplná).
+ *  - „K4-N13 potvrzení bez kontroly varování": od O-K9 potvrzené varování
+ *    odmítne i porovnání `stejne` (!potvrzeno); retenceDrzena navíc odmítá
+ *    záznam, který není objekt (poškozený). */
+await zkus('T1 #528 noční', async () => {
+  vycistiZalohy();
+  for (const k of [...pamet.keys()]) if (k.startsWith('zakazky/')) pamet.delete(k);
+  naplnZakazky(3, 1000);
+  /* simulované hodiny: noc dneška 2:00 UTC, běhy po 15 min (den se nezmění ani kolem půlnoci) */
+  const p = Date.now, den = Z.denDnes(), stav = 'zalohy/' + Z.OTISK_ROZPRACOVANY + den;
+  let cas = Date.parse(den + 'T02:00:00.000Z');
+  Date.now = () => cas;
+  const beh = () => ticho(async () => (await nocniModul.default()).json());
+  try {
+    /* smazání stavu po dokončení selže (krok ho jen přejde — uklidí úklid po 24 h) */
+    hacky.smaz = async (ul, k) => { if (ul === 'zalohy' && k === Z.OTISK_ROZPRACOVANY + den) throw new Error('simulovaný výpadek mazání'); };
+    let prvni;
+    try { prvni = await beh(); } finally { hacky.smaz = null; }
+    const m = pamet.get('zalohy/' + den), s = pamet.get('zalohy/' + Z.souhrnKlic(den));
+    test('T1 #528: první noční běh otisk dokončí, stav po něm zůstal (simulace)', prvni.ok && prvni.hotovo === true && !!m && pamet.has(stav), prvni);
+    pamet.delete('zalohy/nocni-dokonceno');          // dokončení dne ještě neproběhlo (retence spadla, Run now)
+    cas += 15 * 60000;                                 // další běh v okně (zámek kroku mezitím vypršel)
+    const druhy = await beh();
+    test('T1 #528: další běh v nočním okně hotový otisk dne nepořizuje znovu (manifest i souhrn beze změny)',
+      druhy.ok && pamet.get('zalohy/' + den) === m && pamet.get('zalohy/' + Z.souhrnKlic(den)) === s && druhy.kroku === undefined, druhy);
+    test('T1 #528: … a dokončení dne (retence) proběhne nad hotovým otiskem', !!druhy.retence
+      && JSON.parse(pamet.get('zalohy/nocni-dokonceno') || '{}').den === den, druhy);
+    /* bez hotového otisku retence neběží: rozpracovaný otisk (rozpočet vyčerpaný) */
+    vycistiZalohy();
+    const puv = Z.OTISK_ROZPOCET.nocniMs;
+    hacky.cti = async (ul) => { if (ul === 'zakazky') cas += 1000; };
+    Z.OTISK_ROZPOCET.nocniMs = 500;
+    let r;
+    try { r = await beh(); } finally { hacky.cti = null; Z.OTISK_ROZPOCET.nocniMs = puv; }
+    test('T1 #528: rozpracovaný noční otisk — retence ani úklid neběží, den se neuzavře', r.ok && r.hotovo === false && !r.retence
+      && !pamet.has('zalohy/' + den) && !pamet.has('zalohy/nocni-dokonceno'), r);
+  } finally { Date.now = p; hacky.smaz = null; hacky.cti = null; }
+  vycistiZalohy();
+});
+
+await zkus('T1 #528 rozpočet po dávce', async () => {
+  for (const k of [...pamet.keys()]) if (k.startsWith('zakazky/')) pamet.delete(k);
+  naplnZakazky(45, 2000);                              // 3 dávky čtení (po 20), dohromady ~100 kB — žádná část se nenaplní
+  const klic = '2026-11-25T101010-rucne';
+  /* simulované hodiny: každé čtení zakázky „trvá" 100 ms → první dávka 2 s */
+  const p = Date.now; let posun = 0;
+  Date.now = () => p.call(Date) + posun;
+  hacky.cti = async (ul) => { if (ul === 'zakazky') posun += 100; };
+  let v, st, w, kroku = 1;
+  try {
+    v = await Z.porizOtiskKrok(klic, 'vynuceno', ADMIN_EMAIL, { rozpocetMs: 1000 });
+    st = JSON.parse(pamet.get('zalohy/' + Z.OTISK_ROZPRACOVANY + klic) || 'null');
+    w = v;
+    while (!w.hotovo && kroku < 50) { w = await Z.porizOtiskKrok(klic, 'vynuceno', ADMIN_EMAIL, { rozpocetMs: 1000, jenPokracovat: true }); kroku++; }
+  } finally { Date.now = p; hacky.cti = null; }
+  test('T1 #528: krok skončí po první dávce čtení, když vyčerpá rozpočet (bez plné části)', v.hotovo === false && !!st
+    && st.pos && st.pos.j === 20 && st.casti === 1, { v, pos: st && st.pos, casti: st && st.casti });
+  const o = await Z.ctiOtisk(ulz('zalohy'), klic);
+  test('T1 #528: další kroky navážou po dávkách a otisk je celý (45 zakázek)', w.hotovo && kroku >= 3
+    && Object.keys(o.zakazky).length === 45, { kroku, zakazek: Object.keys((o && o.zakazky) || {}).length });
+  for (const k of [...pamet.keys()]) if (k.startsWith('zakazky/')) pamet.delete(k);
+  vycistiZalohy();
+});
+
+await zkus('T1 #528 potvrzení', async () => {
+  vycistiZalohy();
+  const potvrzene = { kdy: '2026-11-19T02:30:00.000Z', den: '2026-11-19', zdroj: 'nocni', text: 'zakázek 800 → 400',
+    potvrzeno: { kdy: '2026-11-19T08:00:00.000Z', kdo: ADMIN_EMAIL } };
+  for (const [popis, zaznam, den] of [['poškozený záznam (text)', 'poškozený záznam', ''], ['poškozený záznam (true)', true, ''],
+    ['poškozený záznam (číslo)', 7, ''], ['už potvrzené varování', potvrzene, '2026-11-19']]) {
+    pamet.set('zalohy/' + Z.RETENCE_VAROVANI_KLIC, J(zaznam));
+    const pred = pamet.get('zalohy/' + Z.RETENCE_VAROVANI_KLIC);
+    const r = await vynuceno({ akce: 'retence-potvrdit', den, hesloSpravce: HESLO });
+    test('T1 #528: potvrzení bez platného nepotvrzeného varování — ' + popis + ' → 409, záznam ani čas potvrzení se nepřepíše',
+      r.status === 409 && /Není co potvrdit/.test(r.telo.chyba || '') && pamet.get('zalohy/' + Z.RETENCE_VAROVANI_KLIC) === pred
+      && !pamet.has('zalohy/' + Z.RETENCE_ZAKLAD_KLIC), r);
+  }
+  vycistiZalohy();
 });
 
 /* ---------------- volba: zaloha_nocni nejde zavolat přes URL ---------------- */
