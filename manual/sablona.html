@@ -131,9 +131,14 @@
      * se šířkou okna, a tiskne-li se ze širokého okna, snímek se na A4
      * ořízl (Detail výpočtu PROJ, 1360 px). Tisková šířka A4 je pevná,
      * takže měřítko pro papír se spočítá dopředu (--k-tisk) a tady jen
-     * nasadí — nezáleží na tom, jestli prohlížeč stihne `beforeprint`. */
-    .snimek-plocha { transform:scale(var(--k-tisk, 1)) !important; --mn-m:var(--mn-m-tisk, 1) !important; }
-    .snimek-ram { height:var(--h-tisk, auto) !important; }
+     * nasadí — nezáleží na tom, jestli prohlížeč stihne `beforeprint`.
+     * V tisku je to `zoom`, ne `transform`: transform rozvržení nemění,
+     * snímek dál zabírá svých 1 316 px a Chrome kvůli tomu „přetečení"
+     * zmenšil při tisku CELOU stránku na dvě třetiny (text i obrázky).
+     * Zoom zmenší i rozvržení, takže se snímek do sloupce opravdu vejde. */
+    .snimek-plocha { transform:none !important; zoom:var(--k-tisk, 1);
+                     --mn-m:var(--mn-m-tisk, 1) !important; }
+    .snimek-ram { height:auto !important; }
     #obsah { break-after:page; }
     .nahoru { display:none; }
     a { color:inherit; text-decoration:none; }
@@ -207,7 +212,9 @@
   /* Cíl vysvětlivky se hledá POPISKEM, ne pozicí. Selektor typu
    * `.row:nth-child(7)` by po prvním přeskládání obrazovky ukazoval na jiné
    * pole a nikdo by si toho nevšiml — popisek se drží svého prvku. */
-  function najdiCil(koren, odkaz) {
+  /* `sirsi` — u kroku postupu se kliká i na tlačítka, odkazy a pole,
+   * takže se hledá i mezi nimi (vysvětlivky obrázků hledají jen popisky). */
+  function najdiCil(koren, odkaz, sirsi) {
     var nalez = null;
     if (odkaz.sel) {
       nalez = koren.querySelector(odkaz.sel);
@@ -223,7 +230,8 @@
     } else if (odkaz.obsahuje || odkaz.popisek) {
       var hledany = (odkaz.obsahuje || odkaz.popisek).trim().toLowerCase();
       var presne = !odkaz.obsahuje;
-      var vse = koren.querySelectorAll('label, th, td, h2, h3, b, span, div, option, li');
+      var vse = koren.querySelectorAll('label, th, td, h2, h3, b, span, div, option, li'
+        + (sirsi ? ', button, a, summary, p, h4, select' : ''));
       /* U hledání podle části textu vyhrává NEJKRATŠÍ shoda: každý rodič
        * obsahuje totéž co potomek, a zvýraznit celou kartu místo jedné
        * buňky je horší než neukázat nic. */
@@ -290,7 +298,7 @@
     }
 
     if (obr.klik) {
-      var tk = najdiCil(sr, obr.klik);
+      var tk = najdiCil(sr, obr.klik, true);
       if (!tk) nesedi.push(obr.snimek + ' → klik: ' + (obr.klik.popisek || obr.klik.obsahuje || obr.klik.pole || obr.klik.sel));
       else {
         tk.classList.add('mn-klik');
@@ -298,22 +306,7 @@
         sipka.className = 'mn-sipka';
         sipka.textContent = '➜ ' + (obr.klik.stitek || 'klikněte');
         sr.appendChild(sipka);
-        requestAnimationFrame(function () {
-          var k = meritko();
-          var rk = plocha.getBoundingClientRect();
-          var rc = tk.getBoundingClientRect();
-          var x = (rc.left - rk.left) / k, y = (rc.top - rk.top) / k;
-          var h = rc.height / k, w = sipka.offsetWidth;
-          /* Šipka vlevo od cíle; když tam není místo, pod něj. */
-          if (x - w - 8 >= 0) {
-            sipka.style.left = (x - w - 8) + 'px';
-            sipka.style.top = Math.max(0, y + h / 2 - sipka.offsetHeight / 2) + 'px';
-          } else {
-            sipka.textContent = '⬆ ' + (obr.klik.stitek || 'klikněte');
-            sipka.style.left = Math.max(0, x) + 'px';
-            sipka.style.top = (y + h + 6) + 'px';
-          }
-        });
+        requestAnimationFrame(function () { umistiSipku(sr, plocha, tk, sipka, obr.klik.stitek, meritko(), s.sirka); });
       }
     }
 
@@ -368,7 +361,8 @@
      * obrázku (figure), ne na rámečku. */
     ram.style.maxWidth = (s.sirka + 2) + 'px';
     function srovnej() {
-      var k = Math.min(1, fig.clientWidth / s.sirka);
+      /* −2 px: rámeček snímku má okraj 1 px po obou stranách. */
+      var k = Math.min(1, (fig.clientWidth - 2) / s.sirka);
       plocha.style.transform = k < 1 ? 'scale(' + k + ')' : 'none';
       ram.style.height = Math.ceil(plocha.offsetHeight * k) + 'px';
       /* Rámeček a šipka kroku mají na obrazovce i na papíře stejnou
@@ -379,10 +373,9 @@
        * v px a na papíře zůstává stejné, takže šířka snímku na A4 je
        * PAPIR minus totéž odsazení — nezávisle na šířce okna. */
       var odsazeni = Math.max(0, cil.clientWidth - fig.clientWidth);
-      var kt = Math.min(1, (PAPIR - odsazeni) / s.sirka);
+      var kt = Math.min(1, (PAPIR - odsazeni - 2) / s.sirka);
       plocha.style.setProperty('--k-tisk', String(kt));
       plocha.style.setProperty('--mn-m-tisk', String(Math.min(2.5, 1 / kt)));
-      ram.style.setProperty('--h-tisk', Math.ceil(plocha.offsetHeight * kt) + 'px');
     }
     requestAnimationFrame(srovnej);
     window.addEventListener('resize', srovnej);
@@ -419,10 +412,15 @@
   /* Tiskový stylopis aplikace se do snímků nesmí dostat: schovává
    * `button`, `header`, `.tabs` a `.noprint` — v PDF příručky by pak ze
    * snímků zmizela právě tlačítka, na která postup ukazuje. Snímek má na
-   * papíře vypadat jako obrazovka, ne jako vytištěná aplikace. */
+   * papíře vypadat jako obrazovka, ne jako vytištěná aplikace.
+   * Totéž platí pro `@media (max-width: …)`: uvnitř snímku se ptají na
+   * šířku OKNA PŘÍRUČKY (na papíře ~700 px), ne na šířku, při které snímek
+   * vznikl (1360 px, kdy žádné z nich neplatilo). Hlavička zakázky se pak
+   * v PDF přeskládala do úzkého rozvržení a tlačítka nestála tam, kam
+   * ukazuje šipka (nalezeno 26. 10. 2026 při kontrole PDF). */
   function bezTisku(css) {
     var ven = '', i = 0, m;
-    var vzor = /@media\s+print\s*\{/g;
+    var vzor = /@media\s+(?:print|\(\s*max-width\s*:[^)]*\))\s*\{/g;
     while ((m = vzor.exec(css))) {
       ven += css.slice(i, m.index);
       var hloubka = 1, j = vzor.lastIndex;
@@ -443,6 +441,51 @@
     var st2 = new CSSStyleSheet(); st2.replaceSync(STYL_ODZNAKU);
     SDILENY_STYL = [st1, st2];
   } catch (e) { SDILENY_STYL = null; }
+
+  /* Šipka ke kliknutí: zkusí se vlevo od cíle, vpravo, pod ním a nad ním
+   * a vyhraje první místo, kde nepřekryje žádný popisek ani pole snímku
+   * (jinak to s nejmenším překryvem). Šipka vlevo od pole by jinak ležela
+   * přes jeho popisek — a čtenář by nevěděl, co se tam vyplňuje.
+   * Vše v souřadnicích snímku (před zmenšením). */
+  function umistiSipku(sr, plocha, tk, sipka, stitek, k, sirka) {
+    var rk = plocha.getBoundingClientRect();
+    var obd = function (e) {
+      var r = e.getBoundingClientRect();
+      return { x: (r.left - rk.left) / k, y: (r.top - rk.top) / k, w: r.width / k, h: r.height / k };
+    };
+    var c = obd(tk), sw = sipka.offsetWidth, sh = sipka.offsetHeight, g = 8;
+    var vyska = plocha.offsetHeight;
+    var text = ' ' + (stitek || 'klikněte');
+    var kandidati = [
+      ['➜' + text, c.x - sw - g, c.y + c.h / 2 - sh / 2],
+      ['⬅' + text, c.x + c.w + g, c.y + c.h / 2 - sh / 2],
+      ['⬆' + text, c.x, c.y + c.h + g],
+      ['⬇' + text, c.x, c.y - sh - g],
+    ];
+    var prekazky = [].slice.call(sr.querySelectorAll(
+      'label, button, input, select, textarea, a, span, b, td, th, p, h2, h3, li, img, option'))
+      .filter(function (e) {
+        if (e === sipka || e.contains(tk) || tk.contains(e) || !e.getClientRects().length) return false;
+        if (e.classList.contains('mn-odznak')) return false;
+        return /^(INPUT|SELECT|TEXTAREA|IMG|BUTTON)$/.test(e.tagName) || (e.textContent || '').trim();
+      }).map(obd);
+    var nejlepsi = null;
+    kandidati.forEach(function (kd) {
+      var x = Math.max(0, Math.min(kd[1], sirka - sw)), y = Math.max(0, Math.min(kd[2], vyska - sh));
+      var mimo = Math.abs(x - kd[1]) + Math.abs(y - kd[2]);
+      var prekryv = 0;
+      prekazky.forEach(function (o) {
+        var dx = Math.min(x + sw, o.x + o.w) - Math.max(x, o.x);
+        var dy = Math.min(y + sh, o.y + o.h) - Math.max(y, o.y);
+        if (dx > 0 && dy > 0) prekryv += dx * dy;
+      });
+      var cena = prekryv + mimo * 50;
+      if (!nejlepsi || cena < nejlepsi.cena) nejlepsi = { cena: cena, x: x, y: y, t: kd[0] };
+    });
+    sipka.textContent = nejlepsi.t;
+    sipka.style.left = nejlepsi.x + 'px';
+    sipka.style.top = nejlepsi.y + 'px';
+  }
 
   /* ---------- postup krok za krokem (#524) ---------- */
   function vykresliKroky(b) {

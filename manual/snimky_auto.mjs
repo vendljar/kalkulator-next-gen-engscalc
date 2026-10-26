@@ -810,7 +810,8 @@ await cekej(300);
 krok('kap. 14: ATYP');
 await page.evaluate(() => { set('Z.rohoveSloupky', 5); render(); });
 await cekej(400);
-await vezmi('k14-souhrn-atyp', '#kalk-souhrn');
+/* Štítek standardu stojí vpravo v liště sekcí nad kalkulací. */
+await vezmi('k14-lista-atyp', '#page-kalk .kalk-lista');
 await page.evaluate(() => { if (!STD_ROZPIS) standardRozpisPrepni(); });
 await cekej(300);
 await vezmi('k14-rozpis-atyp', '#kalk-souhrn');
@@ -829,12 +830,13 @@ krok('kap. 17 a 18: příplatky a vlastní položka');
  * dodatkového textu) — celá tabulka měří skoro 2 000 px. */
 const PRVNI_RADKY = (n) => "[].slice.call(klon.querySelectorAll('tr')).forEach(function (t, i) { if (i > " + n + ") t.remove(); });";
 await vezmi('k17-priplatky', '#ock-priplatky', { uprav: PRVNI_RADKY(8) });
+const VYREZ_REZIE = "S.vyrez(klon, '^\\\\s*REŽIE', 'REŽIE CELKEM');";
+await vezmi('k18-pred', '#ock-kalkulace table', { uprav: VYREZ_REZIE });
 await page.evaluate(() => {
   vlastniAdd('rezie');
 });
 await cekej(300);
-await vezmi('k18-vlastni-polozka', '#ock-kalkulace table', {
-  uprav: "S.vyrez(klon, '^\\\\s*REŽIE', 'REŽIE CELKEM');" });
+await vezmi('k18-vlastni-polozka', '#ock-kalkulace table', { uprav: VYREZ_REZIE });
 
 /* ---- kap. 19: sleva ---- */
 krok('kap. 19: sleva');
@@ -888,11 +890,7 @@ await vezmi('k25-kalkulace', '#proj-kalkulace', { uprav:
 await vezmi('k25-nabidka-volby', SEKCE('#proj-nabidka > .body', 'Nabízet autorský dozor', 'Úvodní fotka nabídky'));
 await vezmi('k25-nabidka-tisk', SEKCE('#proj-nabidka > .body', 'Než nabídku odešlete|Kompletní náhled a tisk nabídky', 'centrální šablon'));
 
-/* ---- kap. 27: interní poznámky ---- */
-krok('kap. 27: poznámky');
-await otevriZakazku(ZAKAZKY.hlavni.cislo);
-await zalozka('kalk');
-await vezmi('k27-poznamky', '#ock-poznamky');
+/* Kapitola 27 používá snímek poznamky-prilohy z ukázkové zakázky. */
 
 
 /* ---- kap. 30 (administrátor) a kap. 22 (dialog po změně ceníku) ----
