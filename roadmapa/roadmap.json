@@ -8336,6 +8336,27 @@
     "proc": "retence, pojistky a kopie na Disk (N5, N6, K3, K4)"
    }
   ]
+ },
+ {
+  "id": "524",
+  "vlna": "B",
+  "stav": "hotovo",
+  "dulezitost": "stredni",
+  "slozitost": "M",
+  "nazev": "M5: příručka obchodníka bez „Co je nového“, postupy krok za krokem se snímky, tisk podle A4",
+  "proc": "Pokyn J. V. 26. 10. 2026: „odstraň z příručky sekce ‚co je nového‘, začni až seznamem. přidej do všech sekcí obrázky na vysvětlenou krok za krokem.“ Nález M4: široké snímky se při tisku ze širokého okna ořezávaly.",
+  "detail": "obsah.json bez 47 bloků Co je nového (chování, které bylo jen v novinkách, přešlo do kapitol: {TERMIN} v kap. 14/23, Akce mimo Prahu, jednostupňová dokumentace, úvod a autorský dozor PROJ v kap. 25, můstky nad 6 m a střecha přes můstek v kap. 11, měď v kap. 17, zábrana pod 0,6 m a dotisk s uloženými texty v kap. 23, velká zakázka v kap. 6); úvodní strana = název + verze + datum, obsah hned pod ní; nový blok `kroky` v šabloně (číslo kroku, snímek, červený rámeček a šipka na cíl kliknutí, šipka mimo popisky); 90 kroků ve 27 kapitolách, ~50 nových scén v manual/snimky_auto.mjs (přihlášení a červená lišta před přihlášením, dialogy aplikace, Nastavení → Databáze jako správce, dialog po změně ceníku); kap. 30 dorovnaná na v26.10.9 (Z2) a v26.10.8 (Z1); tisk: snímky přes zoom podle šířky A4, bez tiskového a max-width CSS aplikace; pravidlo „změnu popsat v kapitole, novinky jen v CHANGELOG“ v sestav.sh (sestavení s Co je nového zastaví).",
+  "hotovoKdyz": "Příručka začíná obsahem, nemá Co je nového, kapitoly s akcí mají kroky se snímky; overit_manual a test_prirucka_postupy zelené; PDF A4 stejné z úzkého i širokého okna.",
+  "kde": "manual/obsah.json, manual/sablona.html, manual/snimky_auto.mjs, manual/sestav.sh, manual/overit.js, overit_manual.mjs, src/test_prirucka_postupy.js",
+  "hotovoV": "v26.10.10",
+  "pozn": "Větev claude/m5-prirucka-obrazky (obsahuje sloučenou Z2 #523). Kapitoly bez postupu: 2 (role), 28 (co nevidíte), 31 (slovníček), 32 (kontakt).",
+  "zavisi": [
+   {
+    "id": "523",
+    "typ": "doporuceno",
+    "proc": "kapitola 30 příručky popisuje zálohy po Z2 (v26.10.9)"
+   }
+  ]
  }
  ],
  "meta" : {

@@ -8,6 +8,42 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v26.10.10 — M5 #524: příručka obchodníka bez „Co je nového", postupy krok za krokem se snímky, tisk podle A4, větev claude/m5-prirucka-obrazky
+
+Nad integrací 48ab0a4 (v26.10.8) se sloučenou Z2 #523 (v26.10.9). Pokyn J. V. 26. 10. 2026: „odstraň z příručky
+sekce ‚co je nového', začni až seznamem. přidej do všech sekcí obrázky na vysvětlenou krok za krokem."
+Aplikace se nemění — jen příručka (`manual/`) a její kontroly.
+
+- **Bez „Co je nového":** z `manual/obsah.json` odešlo 47 bloků novinek; úvodní strana nese jen název, verzi
+  aplikace a datum, hned pod ní je obsah, upozornění k příručce (zkušební ceník, vymyšlená jména, jak číst
+  postupy) až za ním. Chování popsané jen v novinkách přešlo do kapitol: značka {TERMIN} v kapitole V.
+  (kap. 14, 23), Akce mimo Prahu, jednostupňová dokumentace, úvod nabídky PROJ, autorský dozor a nabídka bez
+  studie (kap. 25), můstek nad 6 000 mm a střecha přes nejvyšší můstek (kap. 11), měď (kap. 17), zábrana pod
+  0,6 m, dotisk s uloženými texty a název akce ve specifikaci (kap. 23), velká zakázka nad 4 MB (kap. 6),
+  zálohy po částech a stahování po stránkách (kap. 30); opravy textu podle snímků (kap. 3 tlačítka v hlavičce,
+  kap. 9 kurz v hlavičce jen s právem pole Globální přirážka). **Pravidlo:** změnu chování popsat v příslušné
+  kapitole, novinky jen v CHANGELOG — `manual/sestav.sh` příručku s „Co je nového" nesestaví.
+- **Postupy krok za krokem:** nový blok `kroky` v `manual/sablona.html` — číslo kroku, věta, vlastní snímek
+  a na něm červený rámeček se šipkou na prvek, na který se kliká (šipka si najde místo mimo popisky; velikost
+  stejná na obrazovce i na papíře). 90 kroků ve 27 kapitolách; bez postupu jen kap. 2 (role), 28 (co nevidíte),
+  31 (slovníček hlášek), 32 (kontakt) — není v nich co dělat. Nenalezený cíl kliknutí hlásí `PRIRUCKA.nesedi`.
+- **Snímky:** `manual/snimky_auto.mjs` má ~50 nových scén (přihlašovací okno a červená lišta před přihlášením,
+  Můj profil, změna hesla, nová zakázka a našeptávač, zákazníci, přehled a lišty rozpracované i odeslané
+  zakázky, přepnutí na Zahraničí s dialogem, zadání, opláštění po stěnách, ATYP, příplatky, vlastní položka,
+  sleva, podmínky, tisk nabídky a lišta náhledu, krycí list a SoD, PROJ, dialog po změně ceníku, Nastavení →
+  Databáze jako správce). Zkušební ceník nese kurz EUR a tři zahraniční odchylky, stropy slev 5/15 %; jméno
+  správce a adresa serveru se na snímku nahrazují vymyšlenými. Dialogy aplikace se na snímek vrací pravé.
+- **Tisk (nález M4):** snímek se v tisku zmenšuje přes `zoom` podle šířky A4 (702 px), ne okna — `transform`
+  nechával snímek v rozvržení v plné šířce a Chrome při tisku zmenšil CELOU stránku na dvě třetiny, ze širšího
+  okna snímky ořízl. Do snímků nejde tiskový stylopis aplikace (schovával tlačítka) ani její `@media
+  (max-width)`. Výklad (slovníček) se dělí přes stránky. PDF z okna 794 i 1400 px je stejné (92 stran, 3 MB).
+- **Testy:** nový `src/test_prirucka_postupy.js` 22/0 (pojistka: nad šablonou a obsahem z 48ab0a4 14 FAIL);
+  `overit_manual.mjs` +5 kontrol (bez Co je nového, obsah první, ≥ 60 kroků, kroky se snímkem a cílem, M4 tisk)
+  57/0; `manual/overit.js` +3 kontroly; `test_termin_kapitola` 44/0, `test_zamek_strany` 52/0,
+  `test_oplastit_prohluben` 7/0.
+
+---
+
 ## v26.10.9 — Z2 #523: nová pravidla mazání záloh (Netlify Blobs i Disk Google) a komprese otisku, větev claude/z2-retence-zaloh
 
 Nad 48ab0a4 (Z1 #522, v26.10.8). Rozhodnutí J. V. 26. 10. 2026: ostrý engscalc nese ~114 MB otisku za den,

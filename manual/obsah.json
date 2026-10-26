@@ -1,7 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
-  "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v26.10.9 · sestaveno 26. 10. 2026 · nahrazuje příručku z 25. 10. 2026 (v25.10.1)",
+    "verze": "Platí pro aplikaci v26.10.10 · sestaveno 26. 10. 2026",
 
   "uvod": [
     {
@@ -10,385 +9,8 @@
       "odstavce": [
         "Snímky obrazovky v téhle příručce jsou pořízené z běžící aplikace, ale nad **zkušebním ceníkem** s vymyšlenými sazbami. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Neberte je jako vodítko pro nabídku a nesrovnávejte s nimi svou kalkulaci — sledujte, kde co je a jak se to chová, ne kolik to stojí.",
         "Jména zákazníků na snímcích jsou taky **vymyšlená**. Celá ukázková zakázka **2026 - OPR - CN - 9100** je smyšlená a vznikla jen kvůli téhle příručce.",
-        "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v26.10.9 (26. 10. 2026)",
-      "odstavce": [
-        "**Pro administrátora — méně záloh, menší zálohy.** Zálohy v Netlify se nově drží 14 dní (noční), 8 týdnů (nedělní) a 6 měsíců (první v měsíci), ruční a přihlašovací 7 dní; zálohy před obnovou zůstávají. Ze starých záloh do 19. 10. 2026 zůstává jen první z každého měsíce. Kopie na Disku Google je komprimovaný soubor **otisk_RRRR-MM-DD.json.gz** a po každé úspěšné kopii se ve složce _Zaloha Netlify DB staré kopie uklidí (7 dní, 8 týdnů, 6 měsíců) — kolik, ukáže hláška. Obnova *ze souboru* `.json.gz` načte přímo. **Zálohy se mají zvětšovat:** když nová záloha nese proti předchozí méně dat (velikost pod 90 %, zakázky či účty pod 95 %, méně šablon či podpisů), mazání stojí, dokud úbytek nepotvrdíte tlačítkem *Úbytek byl záměrný* — dřív se mazání po 30 dnech rozběhlo samo. Podrobnosti v kapitole 30. Pro práci obchodníka se nic nemění."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v26.10.7 (26. 10. 2026)",
-      "odstavce": [
-        "**Hlášky kontrol před nabídkou ukazují správné místo v Nastavení.** Upozornění „Nevyplněné kapitoly nabídky“ a „Termín dodání u atypické zakázky“ posílala administrátora do Nastavení → Firma; kapitoly nabídky i smluvní standardy (standardní lhůta dodání) jsou ale na záložce **Nastavení → Smlouvy / Šablony** a hlášky to teď říkají. Nabídka, výpočet ani to, kdy se kontrola ozve, se nemění.",
-        "**Příručka aktualizována.** Do kapitol se propsaly poslední změny: odeslaná nabídka otevřená ze souboru, dialog po tisku a plán plateb PROJ po odeslání nabídky (kapitoly 8 a 24), splátky OCK na 100 % (kapitoly 21 a 24), co kalkulace z Pipedrive čte a co se do něj teprve chystá zapisovat (kapitola 5), Izolační dvojsklo (kapitola 13), cenová nabídka v cizím jazyce na jednom místě se zvýrazněním textů bez překladu a ruční úprava textu v tiskovém náhledu (kapitola 23), kotvení přes můstky ve specifikaci (kapitola 26) a přehled Nastavení — kde administrátor mění firemní údaje, texty nabídek, smluvní standardy, šablony, ceník a mapu polí CRM (kapitola 28).",
-        "**Opravené odkazy:** kapitoly nabídky III.–VI., smluvní standardy, skladné, termín dodání a výchozí plán plateb PROJ vyplňuje administrátor v **Nastavení → Smlouvy / Šablony** (ne ve Firmě); francouzská nabídka má kapitoly IV.–VI. a doložky francouzsky (výchozí znění od v19.10.7); příznak „cena dle nabídky“ se nastavuje v **Ceníku nákladů OCK**."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v26.10.6 (26. 10. 2026)",
-      "odstavce": [
-        "**Nový dialog po tisku, když se nabídka neuloží.** Tisk nabídky ji uzamkne a hned se ukládá do databáze. Když to nejde — zakázku mezitím uložil kolega nebo vaše druhé okno, nebo se na aplikaci díváte v náhledu role — vyskočí okno **„Odeslaná nabídka není uložená“** s tím, co udělat (u souběhu zvolit **„Přepsat serverovou verzi“**). Dřív to bylo vidět jen v panelu. Kdybyste v takové chvíli klikli na „Načíst znovu ze serveru“, aplikace se nejdřív zeptá — záznam o odeslání vytištěné nabídky by se jinak zahodil. A dokud vytištěná nabídka na serveru neleží, prohlížeč při zavírání okna varuje a záloha v prohlížeči zůstává.",
-        "**Bez přihlášení se po tisku na uložení nečeká.** Kdo pracuje nepřihlášený, má po tisku podmínky a DPH volné jako u zakázky ze souboru — do databáze se stejně nic neukládá. Hláška u zamčeného pole nově připomíná, že se po vypršení přihlášení musíte znovu přihlásit.",
-        "**Kontrola 100 % splátek OCK.** Záloha + dílčí faktura č. 2 + konečná faktura musí dát 100 %. Když ne (třeba záloha 70 % a konečná 40 %), krycí list i blok podmínek u nabídky to pod konečnou fakturou ukážou a řeknou, že se dílčí faktura č. 2 nedopočítala; upozorní na to i kontrola před nabídkou. **Smlouva o dílo realizace se v takovém případě nevytvoří**, dokud součet neopravíte. Měsíční fakturace a vlastní znění bez procent se nehodnotí.",
-        "**Ceny v tiskovém náhledu nabídky nejde přepsat.** Po zapnutí „Upravit text před tiskem“ v náhledu cenové nabídky OCK i PROJ jsou **buňky s cenami šedé a needitovatelné** — tisk nabídku uzamyká s cenou z kalkulace, a ručně přepsaná částka by se od ní lišila. Ostatní text upravíte jako dřív; cenu změňte v kalkulaci.",
-        "**Nový název v ceníku: Izolační dvojsklo.** Položka „Sklo boky + zadní stěna“ se v ceníku jmenuje **„Izolační dvojsklo“** (s poznámkou: u exteriérové šachty boky a zadní stěna ve standardu, v opláštění po stěnách volitelně u kterékoli stěny) a ve výběru typu stěny „Izolační dvojsklo“ místo „Dvojsklo (boky + záda)“. Ceny ani výpočet se nemění.",
-        "**Jen pro administrátora — zásah do jiného správce s heslem.** Smazání, vypnutí, archivace a snížení role jiného administrátora teď potvrdíte svým heslem (jako už dřív založení správce nebo reset hesla)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v26.10.5 (26. 10. 2026)",
-      "odstavce": [
-        "**Specifikace u zakázky s můstky kotví OCK i přes můstky.** Řádek „Kotvení konstrukce (poloha)“ se u zakázky s můstkem sám doplní o „… a přes můstky“ (u jednoho můstku „… a přes můstek“), i v anglické, německé a francouzské nabídce; ručně přepsaný řádek zůstane, jak jste ho napsali, a cena se nemění."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v26.10.4 (26. 10. 2026)",
-      "odstavce": [
-        "**Mapa polí CRM v Nastavení (jen administrátor).** Administrátor vidí, které pole kalkulace se spárovalo s polem v Pipedrive, které v CRM chybí, má jiný typ nebo je tam dvakrát, a která vlastní pole CRM kalkulátor nezná. Vaší práce se to netýká — jen víte, kde administrátor hledá, když se z Pipedrive něco nenačte nebo nezapíše (kapitola 28)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v26.10.3 (26. 10. 2026)",
-      "odstavce": [
-        "**Náhled cizojazyčné nabídky ukáže, co zůstalo česky.** V náhledu cenové nabídky v angličtině, němčině nebo francouzštině (OCK i PROJ, tisková stránka i podklady nabídky) jsou **žlutě podbarvené** texty, které nepocházejí z překladu: ručně zapsané údaje hlavičky (zákazník, kontaktní osoba, název akce, adresa stavby, vlastní popis záměru), texty, pro které aplikace nemá překlad, a odstavce, které jste ručně upravili tlačítkem „Upravit text před tiskem“. Po najetí myší se ukáže, proč je text označený.",
-        "Nad náhledem je řádek s počtem označených míst („5 textů bez překladu — zkontrolujte“) a tlačítko **Přejít na první** (dalším klepnutím na další). Označení je jen na obrazovce — **do tisku, do PDF ani do Wordu se nedostane** a dokument se jím nemění. Česká nabídka zůstává beze změny."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v26.10.1 (26. 10. 2026)",
-      "odstavce": [
-        "**Odeslaná nabídka otevřená ze souboru už nevrací úpravy krycího listu.** Když jste zakázku s vytištěnou nabídkou otevřeli ze souboru (nebo obnovili zálohu z prohlížeče), aplikace si mohla myslet, že nabídka na uložení teprve čeká: krycí list se zamkl a při uložení se tiše vrátil na stav z tisku — úpravy podmínek po odeslání zmizely. Nabídka, která už v databázi je, se teď takhle nechová. Pokud se krycí list před uložením opravdu vrací na stav z tisku (nabídka se ještě neuložila), aplikace to napíše.",
-        "**Plán plateb PROJ jde po odeslání nabídky upravit i v krycím listu.** Předvolbu a zálohu plánu plateb můžete změnit až do tisku smlouvy o dílo, jak bylo dohodnuté — dosud byla karta po tisku nabídky šedá. Po přepnutí předvolby (např. ze zálohy na Standard) už ve smlouvě nechybí milníky a změna zálohy (např. 70 → 30 %) se propíše do splátek. Znění milníků z odeslané nabídky zůstává; dotisk odeslané nabídky se nemění."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v25.10.1 (25. 10. 2026)",
-      "odstavce": [
-        "**Příručka aktualizována — aplikace se nemění.** Do kapitol se propsaly změny posledních verzí, které dosud byly jen tady v novinkách: Stav Pipedrive i u zakázky ze souboru nebo ze zálohy a „Smazané“ u dealu v koši (kapitola 5), souběžné uložení ve dvou oknech (kapitola 6), zmrazené platební podmínky a DPH do uložení vytištěné nabídky a neaktivní ARES po tisku smlouvy (kapitola 8), kdo a do kdy mění objednané příplatky a šablona smlouvy v4 s jejich rozpisem (kapitola 24) a Controlling s exportem pro administrátora (kapitola 28)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v23.10.5 (23. 10. 2026)",
-      "odstavce": [
-        "**Bezpečnostní opravy bez změny práce s aplikací.** Když dva lidé (nebo dvě okna) uloží tutéž zakázku ve stejném okamžiku, ten druhý dostane hlášku, že zakázku mezitím uložil někdo jiný — dřív mohl starší kopií tiše přepsat právě vytištěnou nabídku i s jejím uzamčením. Postup je stejný jako u každé kolize: načíst znovu, nebo vědomě přepsat.",
-        "**Změna vlastního hesla už nevrátí zásah správce.** Když správce účet právě vypíná, mění roli nebo heslo resetuje, souběžná změna hesla se odmítne s prosbou o nové přihlášení.",
-        "Ostatní opravy jsou uvnitř serveru a v kontrolách (lepší chybové hlášky místo „chyby serveru“, hlavičky proti ukládání odpovědí do mezipaměti, přísnější hlídání tajemství v repozitáři). Výpočet, ceny, dokumenty ani vzhled se nemění."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v23.10.4 (23. 10. 2026)",
-      "odstavce": [
-        "**Příprava zápisu do Pipedrive — platby projekce.** Do polí Platba 1–8 kalkulátor nic zapisovat nebude, ani u starších nabídek. Platby projekce půjdou do jednoho nového pole **Platební kalendář SoD PROJ** stejným textem jako ve smlouvě o dílo („Platba ve výši … Kč + DPH proběhne …“). Dokud pole v Pipedrive není založené, kalkulátor ho jen ohlásí jako chybějící.",
-        "**Hodnota dealu půjde z kalkulace:** cena řídící varianty bez DPH v měně zakázky, u kombinované zakázky součet realizace a projekce. Před zápisem uvidíte „stará → nová“. Když cena některé části chybí, hodnota se nezapíše. Samotný zápis do Pipedrive zatím v aplikaci není — připravuje se."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v23.10.3 (23. 10. 2026)",
-      "odstavce": [
-        "**Stav Pipedrive v hlavičce se načte i u zakázky otevřené ze souboru, obnovené ze zálohy v prohlížeči nebo otevřené ještě před přihlášením** — dřív ukazoval stav z doby posledního uložení. Ptá se jen jednou po otevření, ne při každé úpravě.",
-        "**Deal smazaný v Pipedrive (v koši) se v hlavičce ukáže jako „Smazané“** — dřív mohl zůstat původní stav, třeba „Vyhrané“. Deal, který Pipedrive odstranil úplně, si nechá poslední známý stav.",
-        "**Datum vytvoření v hlavičce je zase na úrovni sazby DPH** i u zahraniční zakázky s kurzem (dřív sjelo o kus níž)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v23.10.2 (23. 10. 2026)",
-      "odstavce": [
-        "**Název akce a adresa stavby zůstanou po odeslání řídící varianty zmrazené, i když řídící přepnete na jinou (neodeslanou) variantu.** Jsou vytištěné v odeslané cenové nabídce, a proto se nemění, dokud ta odeslaná varianta v zakázce je. Odeslaná varianta, která řídící nikdy nebyla, hlavičku dál nezmrazí.",
-        "**Jen pro administrátora — hromadný export pro controlling umí celou databázi.** V Nastavení → Controlling → Export předkalkulace → „Hromadně za období“ zaškrtněte **Celá databáze** (pole od–do se zakážou) — export vezme všechny zakázky bez omezení obdobím. Období může být i delší než 400 dní. Výběry v řádku filtrů jsou široké tak, aby byla vybraná hodnota celá vidět, a výběr stavu se jmenuje **Stav dealu** (Vyhrané, Otevřené, Ztracené, Smazané, Bez stavu, Všechny stavy)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v23.10.1 (23. 10. 2026)",
-      "odstavce": [
-        "**Tisk nabídky se uloží i ve chvíli, kdy aplikace zrovna ukládá.** Dřív se mohlo stát, že tisk během automatického ukládání zůstal zapsaný jen v prohlížeči. Teď počká, až běžící uložení doběhne, a zakázku se záznamem odeslání uloží hned po něm.",
-        "**Dokud se vytištěná nabídka neuloží do databáze, jsou její platební podmínky a DPH zmrazené** (šedá pole s 🔒 a bublinou „čeká na uložení“). Po uložení — obvykle za vteřinu — je zase upravíte jako dosud. Když uložení po tisku nevyjde (výpadek sítě), aplikace to řekne oknem: nezavírejte ho a uložte zakázku znovu, až bude server dostupný. Výpadek sítě se hlásí česky, ne „Failed to fetch“.",
-        "**Po tisku smlouvy o dílo je tlačítko Najít firmu v ARES v hlavičce neaktivní** — údaje zákazníka jsou ve smlouvě vytištěné a nemění se (důvod ukáže bublina). Na kartě zákazníka funguje ARES dál.",
-        "**Jen pro administrátora — hromadný export za období** najde i zakázku, kterou by v seznamu zakázek ztratilo souběžné uložení dvou lidí ve stejnou chvíli; dva exporty spuštěné naráz mají v protokolu oba svůj řádek."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v22.10.6 (22. 10. 2026)",
-      "odstavce": [
-        "**Jen pro administrátora — hromadný export za období funguje i pro delší období.** Server vybírá jen zakázky, jejichž nabídka byla v období odeslaná (nebo prodaná), a ne všechny, které někdo v období upravil. Velký export se stahuje po částech — pod formulářem běží „zpracováno N z M zakázek“ a výsledkem je dál jeden soubor; v protokolu exportů je jeden řádek („nedokončen“, když se stahování přerušilo). Počet zakázek v exportu už není omezený. Výchozí výběr je nově **podle data prodeje** (dřív podle data zamčení — to zůstává volbou) a nový výběr **Stav Pipedrive** má výchozí hodnotu **Vyhrané** — chcete-li všechny odeslané nabídky, zvolte „Všechny“. Kdyby server přesto nestihl odpovědět, aplikace napíše, ať zvolíte kratší období (třeba týden). Sloupec **Verze ceníku** v exportu se u nových a znovu otevřených rozpracovaných nabídek zase vyplňuje; u nabídek odeslaných dřív zůstává prázdný (verze neznámá, ceník doloží otisk)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v22.10.4 (22. 10. 2026)",
-      "odstavce": [
-        "**Objednané příplatky zaškrtněte před tiskem smlouvy o dílo.** Smlouva si při tisku zapamatuje objednané příplatky a cenu díla; **dotisk smlouvy nese stav z tisku**, ne pozdější změnu. Když administrátor objednané po tisku smlouvy změní, aplikace si zapíše kdo a kdy a v rámečku Objednané příplatky to oranžově řekne.",
-        "**Přechodové plechy jsou v rámečku Objednané příplatky i ve smlouvě jednou položkou** — stejně jako v nabídce (materiál a montáž dohromady, cena součtem). Objednat jdou jen celé.",
-        "**Ceny v rámečku Objednané příplatky jsou v měně smlouvy:** při Jazyku tisku anglicky / německy / francouzsky v eurech (stejně jako ve smlouvě), česky v korunách.",
-        "**Rámeček Objednané příplatky se zeptá**, když zakázka už nese objednané příplatky jiné odeslané varianty: „Objednané příplatky varianty X budou nahrazeny…“. Bez potvrzení se nic nezmění.",
-        "**Upozornění u smlouvy o dílo:** když platná šablona smlouvy nemá rozpis objednaných příplatků a zakázka objednané příplatky má, aplikace po vytvoření smlouvy upozorní: „Šablona nemá rozpis objednaných příplatků — ve smlouvě bude jen celková cena.“",
-        "**Cena v eurech v kalkulaci.** U zahraniční zakázky (ceník Zahraničí, nebo Jazyk tisku jiný než česky) je v dlaždici **Základní cena bez DPH** (Kalkulace OCK i PROJ) pod částkou malým písmem vpravo i **cena v EUR** — stejným kurzem a zaokrouhlením (celá eura nahoru) jako cenová nabídka v eurech. U tuzemské zakázky tam nic není; bez kurzu EUR v ceníku se eura neukážou."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v22.10.5 (22. 10. 2026)",
-      "odstavce": [
-        "**Krycí list po odeslání nabídky se zamyká po polích, ne po celých sekcích.** Po vytištění cenové nabídky jsou zmrazená jen pole, která se po odeslání nemají měnit: **jméno obchodníka, název akce, adresa stavby, hodnota zakázky bez DPH, údaje zhotovitele (naše firma), typ smlouvy a produktu a platnost nabídky** (v krycím listu PROJ navíc hlavní projektant, památková ochrana, autorská práva a **ceny jednotlivých činností** v rozsahu prací — popis dalších činností doplníte dál). Zmrazená pole jsou **šedá s ikonou 🔒** a důvod ukáže bublina nad polem. Číslo nabídky dál mění jen administrátor.",
-        "**Platební podmínky, sazbu DPH, termín dodání a plán plateb upravíte i po odeslání.** Změna se projeví v krycím listu, ve smlouvě o dílo a v exportu. **Odeslaná nabídka zůstává, jak odešla:** dotisk vytištěné cenové nabídky ukáže původní ceny, DPH a podmínky. Nabídky odeslané před touto verzí drží platební podmínky a DPH zmrazené jako dřív.",
-        "**Název akce a adresa stavby v hlavičce kalkulace** se nemění, když je odeslaná **řídící varianta** zakázky; pokračujete-li v klonu a uděláte z něj řídící, hlavička se zase uvolní. Po vytištění **smlouvy o dílo** se v hlavičce zamknou i údaje zákazníka (zákazník, IČO, DIČ, sídlo, zástupci, banka) — stejně jako zbytek krycího listu. **Kontaktní osobu zákazníka** (jméno, telefon, e-mail) a plnou moc v krycím listu PROJ upravíte i po smlouvě.",
-        "**Tisk cenové nabídky zakázku hned uloží** do online databáze (přihlášeně), takže odeslaný stav je zapsaný okamžitě. V aplikaci spuštěné ze souboru z disku se nic neukládá jako dřív.",
-        "**Zaměření strojovna** po odeslání nabídky drží hodnotu z kalkulace jako předvyplnění; přepsat ji jde ručně a ↺ vrátí hodnotu z kalkulace. Dřívější ruční přepis z doby před odesláním už neožije."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v22.10.2 (22. 10. 2026)",
-      "odstavce": [
-        "**Stav Pipedrive v hlavičce zakázky.** Úplně nahoře v pravém sloupci hlavičky (Kalkulace OCK i PROJ) je nový řádek **Stav Pipedrive** — barevný štítek a pole se stavem obchodu v Pipedrive: **Otevřené, Ztracené, Vyhrané** nebo **Smazané**. Ostatní řádky (Otevřená varianta, Režim výpočtu, Globální přirážka, Ceník) se posunuly o řádek níž.",
-        "Stav se načte sám při otevření zakázky z dealu, se kterým je zakázka propojená. **V kalkulaci ho nikdo nemění** — pole je jen ke čtení, mění se v Pipedrive. Stav **nic neovlivňuje** (cenu, zámek nabídky ani smlouvu); je to informace pro vás a pro controlling. Zakázka bez propojeného dealu má šedé pole **„— zakázka nemá deal —“**.",
-        "Když Pipedrive zrovna neodpovídá, ukáže se poslední známý stav. Smazaný deal Pipedrive po 30 dnech odstraní úplně — kalkulace pak dál ukazuje **Smazané**.",
-        "**Jen pro administrátora.** Export pro controlling (jedna zakázka i hromadně za období, Excel i CSV) má za sloupcem „Pipedrive deal“ dva nové sloupce: **Stav Pipedrive** (česky, prázdný bez dealu) a **Stav Pipedrive načten** (datum). Jde jen o informaci, výběr zakázek do exportu se nemění. Verze struktury souboru je 3. *(Od v22.10.6 má hromadný export výběr stavu dealu s výchozí hodnotou Vyhrané — viz novinky v22.10.6.)*"
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v21.10.5 (21. 10. 2026)",
-      "odstavce": [
-        "**Když zákazník k nabídce objedná příplatky:** v krycím listu OCK dole u **Smlouvy o dílo** je nový rámeček **Objednané příplatky**. Zaškrtněte příplatky z odeslané nabídky, které zákazník objednal, a zkontrolujte datum prodeje (předvyplní se datum podpisu smlouvy). Odeslaná nabídka se tím nemění.",
-        "**Smlouva o dílo** pak nese cenu díla = cena nabídky + objednané příplatky (příplatky v ceně z nabídky, bez slevy; DPH z celku). V krycím listu je vidět řádek **Objednané příplatky**.",
-        "Objednané příplatky zapisuje obchodník, který zakázku založil, vedoucí a administrátor. **Jakmile je v krycím listu vyplněné datum podpisu smlouvy (dnes nebo dřív), mění je už jen administrátor.**",
-        "**Jen pro administrátora.** Export předkalkulace (jedna zakázka i za období) má nově list **Řádky jen s náklady v ceně nabídky** — součet sedí na náklad nabídky bez filtrování. Příplatky nabídnuté jako volba jsou zvlášť na listu **„Příplatky – volby“**. Řádky nesou i sloupce **Řídící varianta** a **Výsledek** (zmrazený při tisku / přepočtený). Hromadný export vezme zamčenou řídící variantu, a když řídící zamčená není, poslední zamčenou variantu v období. Pro práci obchodníka se nic nemění.",
-        "**Jen pro administrátora — šablony dokumentů.** Jazykové verze (EN, DE, FR) jde přidat i k české šabloně, která už platí: spusťte průvodce „Nahrát novou českou verzi…“ se stejným českým souborem. Průvodce pozná, že čeština je shodná s platnou verzí, znovu ji nezveřejní a zveřejní jen zaškrtnuté jazykové verze (tlačítko „Zveřejnit jazykové verze k platné češtině…“). Jednotlivý jazyk jde doplnit i bez průvodce tlačítkem „Nahrát doladěný soubor“ u jazyka. Pro práci obchodníka se nic nemění."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v21.10.4 (21. 10. 2026)",
-      "odstavce": [
-        "**Jen pro administrátora.** V Přehledu cenových nabídek má zamčená řídící varianta otevřené zakázky tlačítko **„Export pro controlling“** — stáhne předkalkulaci do Excelu stejně jako Nastavení → Controlling.",
-        "**Hromadný export za období:** Nastavení → Controlling → Export předkalkulace → „Hromadně za období“. Zadáte období — ve výchozím stavu **podle data prodeje** (objednané příplatky / podpis SoD), volitelně podle data zamčení (odeslání) nabídky — OCK / PROJ / obojí a číselnou řadu ČR / ZAHR / obojí; server vybere všechny zamčené řídící varianty a stáhne jeden sešit (Řádky, Kapitoly, Popis) nebo CSV. Každý export se zapíše do protokolu, posledních deset je vidět pod formulářem. Velký export se stahuje po částech (průběh „zpracováno N z M zakázek“), soubor je jeden a počet zakázek není omezený. Výběr **Stav dealu** (poslední známý stav dealu v Pipedrive) je ve výchozím stavu **Vyhrané**; dále Otevřené, Ztracené, Smazané, **Bez stavu** (zakázka bez dealu nebo se stavem neznámým) a Všechny stavy. Zaškrtávátko **Celá databáze** vybere všechny zakázky bez omezení obdobím (pole od–do se zakážou; soubor se jmenuje PREDKALKULACE_CELA-DB_ a dnešní datum, list Popis uvede „celá databáze“); délka období omezená není. Platí poslední známý stav v kalkulátoru — při exportu se z Pipedrive nedotahuje. List Popis uvede, kolik zakázek z období filtr stavu vyřadil. Pro práci obchodníka se nic nemění.",
-        "**Pipedrive deal id zakázky** zadáte tamtéž (Export předkalkulace, pole nad tlačítky) — jde do sloupce „Pipedrive deal“ exportu. Zadat a opravit ho smí jen administrátor; obchodník zakázku s deal id normálně uloží, jen ho nezmění. Duplikát zakázky deal id nepřebírá."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v21.10.3 (21. 10. 2026)",
-      "odstavce": [
-        "**Odeslaná nabídka OCK si drží kapitoly IV.–VI. a doložky.** Při prvním tisku (zamčení varianty) se s platebními podmínkami uloží i texty kapitol Požadavky pro provedení realizace, Termíny realizace, Předání díla a doložek ve všech jazycích. Dotisk odeslané nabídky je proto stejný, i když administrátor mezitím texty v Nastavení → Firma změní. Rozpracované (nezamčené) nabídky berou vždy aktuální texty. Nabídky odeslané před touto verzí se tisknou jako dosud, tedy s aktuálními texty z Firmy.",
-        "**Cena výjezdu technika u akce mimo Prahu (kalkulace PROJ).** Zaškrtávátko „Akce mimo Prahu“ zapínáte dál sami — k ceně zaměření, studie, DPZ a kolaudace se přičte cena 1 výjezdu technika z ceníku PROJ. **Cenu výjezdu ale přepisuje jen ten, kdo smí vidět náklady** (administrátor, případně role, které to administrátor povolí); obchodník ji vidí jako číslo. Potřebujete-li u zakázky jinou cenu cesty, požádejte administrátora.",
-        "Zadá-li se do ceny výjezdu číslo s desetinnou čárkou nebo jiný nečitelný údaj, aplikace upozorní a hodnotu nezmění — dřív se takové číslo tiše počítalo jako nula.",
-        "**Měděná střecha podle ručně přepsané plochy zastřešení (OCK, exteriér).** Když u řádku ZASTŘEŠENÍ ŠACHTY (EXT) ručně přepíšete množství, PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) teď počítá s touto plochou (dřív s vypočtenou). Stříška nad můstkem je v přepsané ploše už zahrnutá. Vlastní ruční množství mědi má dál přednost; odeslané (zamčené) nabídky se nemění.",
-        "**Pro administrátora — zálohy:** když noční záloha nese méně než polovinu zakázek nebo účtů proti předchozí noci, mazání starých záloh se zastaví a **zůstane zastavené, dokud v Nastavení → Databáze nestisknete „Úbytek byl záměrný“** (potvrzení svým heslem), nejdéle 30 dní. Než potvrdíte, zkontrolujte, že se data opravdu neztratila — starší zálohy jsou pro obnovu k dispozici."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v21.10.2 (21. 10. 2026)",
-      "odstavce": [
-        "**Zapsat výchozí hodnoty zveřejní jen platební podmínky** (Nastavení → Smlouvy / Šablony, jen administrátor). Máte-li v Nastavení → Firma ještě nezveřejněné úpravy jiných údajů (název, kapitoly nabídky…), zůstanou jen u vás — hláška je vyjmenuje a zveřejníte je tlačítkem v Nastavení → Firma.",
-        "**Týdenní kopie zálohy na Disk se po přihlášení už sama nepořizuje** — aplikace jen připomene tlačítko Nastavení → Databáze → „Zkopírovat zálohu na Disk teď“, kde kopii potvrdíte svým heslem. Na heslo se po přihlášení nikdo neptá.",
-        "**Srozumitelnější hláška u příliš velké zakázky.** Když zakázka přeroste strop 4 MB, aplikace řekne, z čeho se skládá (přílohy a fotky, odeslané varianty, ostatní) a co s tím: u příloh je zmenšit, u mnoha odeslaných variant založit další nabídku jako novou zakázku."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v21.10.1 (21. 10. 2026)",
-      "odstavce": [
-        "**Nastavení → Controlling (jen administrátor).** Nová záložka pro controlling: nákladové skupiny (účty Helios, přímý/nepřímý, variabilní/fixní), mapování položek ceníku do skupin (s filtrem nezařazených a stažením / nahráním v Excelu) a export předkalkulace zamčené řídící varianty otevřené zakázky do Excelu nebo CSV. Karta Platný ceník programu upozorní na trvalé položky bez skupiny a nabídne je rovnou zařadit; zveřejnění ceníku neblokuje. Pro práci obchodníka se nic nemění."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v20.10.8 (20. 10. 2026)",
-      "odstavce": [
-        "**Příplatek za střechu v mědi jen se zastřešením šachty.** Když u exteriérové šachty zastřešení v nabídce není (řádek ZASTŘEŠENÍ ŠACHTY (EXT) vyřadíte, nebo mu ručně dáte množství 0), aplikace už nenabízí ani PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) a kontrola před nabídkou nežádá rozměry stříšky nad můstkem. Kdo mědi ručně zadá vlastní množství, tomu řádek zůstane. Zakázky se zastřešením v nabídce se nemění."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v20.10.7 (20. 10. 2026)",
-      "odstavce": [
-        "**Platební podmínky se zveřejňují přímo v Nastavení → Smlouvy / Šablony.** Tlačítko **Zapsat výchozí hodnoty** (dřív „… do Firmy“) zapíše výchozí podmínky a na serveru je rovnou zveřejní online; výsledek se ukáže hned pod ním. Když na záložce něco změníte, svítí tam **Neuloženo online** a tlačítko **Zveřejnit změny online**. Bez serveru se změny jen zapíšou v aplikaci a záložka řekne proč. Týká se administrátora; pro práci obchodníka se nic nemění.",
-        "**Pole Limit smluvních pokut je zarovnané s ostatními** — jednotky (dní, měsíců, %) mají v oddílu vlastní sloupec."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v20.10.6 (20. 10. 2026)",
-      "odstavce": [
-        "**Režim DPH ve smlouvě o dílo realizace: v ČR výchozí přenesená daňová povinnost.** Krycí list OCK, sekce Smlouva o dílo, předvyplní u zákazníka s českým DIČ **i bez DIČ** režim **přenesená daňová povinnost (tuzemsko)** — dřív dostal zákazník bez DIČ českou DPH. Když je potřeba jiný režim (např. nepodnikatel), přepněte ho v rozbalovátku *Režim DPH ve smlouvě*; ↺ vrátí výchozí. Volba se propíše do smlouvy česky, anglicky, německy i francouzsky. U zákazníka s DIČ z jiného státu se nic nemění — režim vyberete sami. Zakázky s už uloženou volbou zůstávají, jak jsou."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v20.10.5 (20. 10. 2026)",
-      "odstavce": [
-        "**Schválení cenové výjimky hlídá plochu pásu „jiné“ na desetiny m².** Dřív drželo celé m², takže pás zvětšený po schválení třeba z 2,50 na 3,49 m² prošel bez nového schválení. Teď se plocha zaokrouhluje na desetiny m² **nahoru** (2,51 i 2,60 m² je „2,6 m²“, 2,61 m² už „2,7 m²“) — schvalovatel tak vždy vidí horší variantu a výjimku vrátí do „čeká“ už nárůst o desetinu m². Karta Cenové výjimky ukazuje plochu ve stejném tvaru (např. „2,6 m² (zaokrouhleno pro schválení)“). **Výjimky schválené dřív platí dál**, dokud se na variantě nic nezmění — karta u nich ukáže plochu na celé m², jak byla schválena, s poznámkou (kapitola 19)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v20.10.4 (20. 10. 2026)",
-      "odstavce": [
-        "**Akce mimo Prahu v nabídce PROJ.** V Kalkulaci PROJ nahoře zaškrtněte **Akce mimo Prahu**. K ceně zaměření, studie, DPZ a kolaudace se přičte cena jednoho výjezdu technika (z Ceníku nákladů PROJ; u zakázky ji můžete přepsat, ↺ vrátí ceník) a nabídka u nich napíše „Cena zahrnuje i cestovní náklady na 1 výjezd technika na stavbu (… Kč bez DPH)“ — u DPZ a kolaudace navíc „Případné další cesty budou fakturovány individuálně“. U inženýrské činnosti a autorského dozoru se cena výjezdu jen uvede (cesty se fakturují zvlášť). Když se zaměření nabízí samostatně, výjezd je jen u něj (studie zaměření obsahuje). V Praze nechte nezaškrtnuté — nic se nepřičte ani netiskne. Ve Wordu věty tiskne šablona nabídky PROJ v8 (nahrává administrátor).",
-        "**Úvod nabídky PROJ můžete upravit.** V kartě Cenová nabídka (PROJ) je pod popisem záměru pole **Naše NABÍDKA a doporučení** — předvyplní se podle nabízených činností, přepsat ho můžete jako popis záměru a **↺ Vrátit výchozí** vrátí původní znění. Když po úpravě změníte nabízené činnosti, aplikace upozorní, že ruční text nemusí sedět. Odeslaná (zamčená) varianta si svůj text drží. Ruční text platí pro český dokument; anglická, německá a francouzská nabídka mají výchozí úvod.",
-        "**Jednostupňová dokumentace.** Když DPZ a DPS zpracováváte v jednom stupni, zaškrtněte v Kalkulaci PROJ **Jednostupňová dokumentace**. Aplikace nic nepřepočítá ani nepřepíše — kontrola před nabídkou vám připomene, že nabídku je nutné upravit ve Wordu ručně (popis DPZ+DPS, ceny, plán plateb, termíny)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v20.10.3 (20. 10. 2026)",
-      "odstavce": [
-        "**Nabídka PROJ bez studie proveditelnosti.** Když studii nenabízíte a začínáte rovnou dokumentací pro povolení záměru (DPZ), nabídka už nepíše, že DPZ „navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI“ — úvod DPZ zní „Dokumentace pro povolení záměru (DPZ) rozpracovává dokumentaci dle platné vyhlášky…“. Platí pro online nabídku hned, pro Word po nahrání šablony nabídky PROJ v7 (nahrává administrátor v Nastavení → Šablony). Bez studie se vynechá i hvězdička u ceny DPZ („Cena je platná v případě návaznosti na STUDII PROVEDITELNOSTI“) a termín hrubopisu DPZ zní „do 12-ti týdnů od objednání a předání podkladů“. Wordová šablona PROJ v7 navíc bez studie vynechá bloky studie a v titulu nepíše „STUDIE PROVEDITELNOSTI“. Se starší šablonou vás na větu upozorní kontrola u nabídky PROJ."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v20.10.2 (20. 10. 2026)",
-      "odstavce": [
-        "**Odeslaná nabídka se nezmění ani po změně firemních textů.** Věty platebního kalendáře nabídky OCK, splátky smlouvy o dílo a texty nabídky PROJ (Cena nezahrnuje, Požadováno od investora, Termíny a doložky) se při odeslání nabídky uloží do varianty. Dotisk odeslané nabídky i smlouva z ní je tisknou tak, jak odešly, i když administrátor znění v Nastavení mezitím změní. Nabídky odeslané před touto verzí se tisknou jako dosud.",
-        "**Upozornění na velký rozměr můstku.** Zadáte-li šířku nebo hloubku můstku větší než 6 000 mm (nejspíš nula navíc), kontrola před nabídkou upozorní; hodnota se přesto započte. Nečíselný rozměr se bere jako nevyplněný a kontrola to řekne. Tisk to nezastaví.",
-        "**Pro administrátora — zálohy.** Kopii zálohy na Disk potvrzujete svým heslem a ukládá se jen do složky **_Zaloha Netlify DB**. Ruční zálohu (*Zálohovat teď*) jde pořídit nejvýš jednou za 10 minut a 20× za den — jinak aplikace řekne, kdy to půjde znovu. Když noční záloha nese méně než polovinu zakázek nebo účtů proti předchozí noci, mazání starých záloh se ten den přeskočí a Nastavení → Databáze varuje. Firemní podmínky smí mít dohromady nejvýš 500 kB."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v19.10.9 (19. 10. 2026)",
-      "odstavce": [
-        "**Wordová nabídka PROJ tiskne texty z Nastavení.** S novou šablonou nabídky PROJ v6 se bloky Cena nezahrnuje, Požadováno od investora a Termíny tisknou ve Wordu tak, jak je administrátor nastaví (Nastavení → Smlouvy / Šablony → PROJ → Texty nabídky PROJ) — stejně jako v online nabídce. Termíny se vypíšou jen u činností, které nabízíte. Doložky PROJ se ve Wordu objeví, až je administrátor zapne. Šablonu nahrává administrátor v Nastavení → Šablony; do té doby tiskne Word původní pevné texty."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v19.10.8 (19. 10. 2026)",
-      "odstavce": [
-        "**Zálohy databáze i mimo Netlify.** Jednou týdně se poslední noční záloha zkopíruje na Disk Google do složky **_Zaloha Netlify DB** — bez hesel a bez podpisů; administrátor ji poprvé spustí tlačítkem *Zkopírovat zálohu na Disk teď* (kapitola 30). Nové zálohy v Netlify se nově uklízejí: noční se drží 30 dní a z každého měsíce první záloha rok zpět, ruční 90 dní — ale jen tehdy, když je čerstvá kopie na Disku. Všechny zálohy pořízené do 19. 10. 2026 zůstávají natrvalo. Pro práci obchodníka se nic nemění."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v19.10.7 (19. 10. 2026)",
-      "odstavce": [
-        "**Znění platebních podmínek v nabídce a ve smlouvě nastavuje administrátor** (Nastavení → Smlouvy / Šablony → OCK → Věty platebního kalendáře), česky i v cizích jazycích. Ve francouzské nabídce se kapitoly IV.–VI. tisknou nově francouzsky. Z kapitoly Termíny realizace zmizela věta o pětileté záruce, záruku uvádí krycí list. Texty nabídky PROJ (Cena nezahrnuje, Požadováno od investora, Termíny), typ smlouvy, licence a pojištění se nastavují tamtéž na kartě PROJ."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v19.10.6 (19. 10. 2026)",
-      "odstavce": [
-        "**Výchozí platební podmínky jsou firemní nastavení.** Splatnost faktur, záloha a další splátky, zádržné, záruka, smluvní pokuty a limit pokut, které se předvyplňují v krycím listu OCK i PROJ, nastavuje administrátor v **Nastavení → Smlouvy / Šablony** (přepínač **OCK | PROJ**). Dnešní hodnoty zůstaly stejné. V zakázce je dál můžete přepsat a tlačítko ↺ vrátí hodnotu z Nastavení. Odeslané nabídky se nemění."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v19.10.5 (19. 10. 2026)",
-      "odstavce": [
-        "**Zálohy databáze jsou spolehlivější.** Ruční záloha administrátora (*Zálohovat teď*) i záloha při jeho přihlášení se ukládají každá zvlášť s časem a **noční zálohu dne už nepřepíšou** — stav z noci zůstane, i když se data přes den pokazí a někdo pak zálohuje. Noční záloha se pořizuje rychleji a přehled záloh v Nastavení → Databáze se načítá bez stahování celých záloh. Pro práci obchodníka se nic nemění (kapitola 30)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v19.10.4 (19. 10. 2026)",
-      "odstavce": [
-        "**Plocha pásu „jiné“ v kartě Cenové výjimky na celé m².** Karta teď ukazuje plochu pásu a světlíku tak, jak ji drží schválení — zaokrouhlenou na celé m² (třeba „3 m² (zaokrouhleno pro schválení)“ místo 2,61 m²). Pravidlo se nemění: posun o necelý 1 m² schválení shodit nemusí (kapitola 19).",
-        "**Smlouva o dílo projekce z poškozené šablony nevznikne.** Když administrátor šablonu upraví ve Wordu tak, že se rozpadnou značky nenabízené činnosti, smlouva místo tichého vyjmenování té činnosti nevznikne a hláška řekne, že je potřeba opravit šablonu.",
-        "**Heslo pro uložení Nastavení → Zobrazení se ptá nejpozději po 10 minutách od zadání** — průběžné ukládání už lhůtu neprodlužuje."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v19.10.3 (19. 10. 2026)",
-      "odstavce": [
-        "**Kapitoly nabídky mají zase výchozí texty.** Firemní údaje uložené dřív, než aplikace kapitoly nabídky znala, kapitoly IV. Požadavky, V. Termíny, VI. Předání a Doložky neměly — v Nastavení → Smlouvy / Šablony → **Kapitoly nabídky III.–VI.** byla prázdná pole. Aplikace je teď při načtení firmy **sama doplní výchozím zněním** (česky, anglicky, německy) — nabídka je tak už nevypustí. Administrátor texty zkontroluje a v Nastavení → Firma je **zveřejní**.",
-        "**Kapitolu vypustíte vědomě tak, že její pole vymažete.** Prázdné pole se už nedoplňuje a nabídka kapitolu vynechá i s nadpisem (kontrola před nabídkou na to dál upozorní). U každé kapitoly a jazyka je tlačítko **↺ Doplnit výchozí text**, pod kapitolami **↺ Doplnit všechny prázdné** — doplní výchozí znění do prázdných polí (česky, anglicky, německy), vlastní texty nemění; francouzština výchozí text nemá.",
-        "**Termín dodání přímo ve větě kapitoly V.** Výchozí text kapitoly V. nese místo pevného „cca 12 týdnů“ značku **{TERMIN}** — nabídka za ni dosadí termín dodání z krycího listu, u atypické zakázky i s prodloužením (např. „Zahájení montáže 16 týdnů (vč. 4 týdnů za ATYP) po podpisu SoD…“), v angličtině a němčině přeložený. Samostatná odrážka „Termín dodání“ pak odpadá, takže nabídka už nemůže nést dvě různé lhůty. Máte-li ve Firmě starší text s pevným číslem, kontrola před nabídkou poradí číslo nahradit značkou {TERMIN}. Bez termínu v krycím listu i ve Firmě se vytiskne „dle dohody“ a kontrola na to upozorní."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v19.10.2 (19. 10. 2026)",
-      "odstavce": [
-        "**Střecha přes nejvyšší můstek se započítá.** U exteriérové šachty s můstkem i v nejvyšším nástupišti připočte kalkulace k zastřešení (a k příplatku za střechu v mědi) plochu nad můstkem až k fasádě: (šířka můstku + 0,2 m) × hloubka můstku. Šachty bez můstku nebo s můstky jen v nižších nástupištích se nemění. Chybí-li rozměry můstku, kontrola před nabídkou to řekne; tisk to nezastaví (kapitola 11)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v19.10.1 (19. 10. 2026)",
-      "odstavce": [
-        "**Režim DPH ve smlouvě o dílo realizace se předvyplňuje nově.** České DIČ zákazníka → **přenesená daňová povinnost (tuzemsko)**, jako dřív v šabloně; bez DIČ → **česká DPH**. U zákazníka s DIČ z jiného státu EU i mimo EU se nepředvyplní nic — režim vyberete sami podle místa stavby a **bez zvoleného režimu smlouva nevznikne**: tlačítko zhasne a pod ním svítí důvod s tlačítkem *Přejít na volbu režimu DPH*. Vaše ruční volba má vždy přednost a u zakázek, kde je volba už uložená, se nic nemění. Znění vět o DPH je předběžné, dokud ho nezkontroluje účetní (kapitola 24)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v18.10.11 (18. 10. 2026)",
-      "odstavce": [
-        "**Smlouva o dílo projekce v cizím jazyce vyjmenuje činnosti v jazyce smlouvy.** Výčet nabízených činností v příloze č. 1 (šablona SoD projekce v4) je v anglické, německé i francouzské smlouvě přeložený; připravené jsou i anglická, německá a francouzská šablona SoD projekce v4 (kapitola 24)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v18.10.8 (18. 10. 2026)",
-      "odstavce": [
-        "**Smlouva o dílo projekce podle nabídky.** S novou šablonou SoD projekce v4 obsahuje předmět díla (čl. II) i termíny plnění (čl. III) jen činnosti, které nabízíte v Kalkulaci PROJ, a věta přílohy č. 1 je vyjmenuje místo pevného „DPZ+DSP“. Platí, jakmile správce šablonu v4 zveřejní (kapitola 24)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v18.10.7 (18. 10. 2026)",
-      "odstavce": [
-        "**Režim DPH ve smlouvě o dílo volbou.** V krycím listu OCK, sekce Smlouva o dílo, vyberete **Režim DPH ve smlouvě** — česká DPH v zákonné sazbě, přenesená daňová povinnost (tuzemsko), nebo reverse charge EU. Předvyplní se podle DIČ zákazníka (od v19.10.1: české → přenesená povinnost, žádné → česká DPH, cizí → vyberete sami) a jde přepsat. Do smlouvy se propíše příslušná věta; prohlášení o snížené sazbě DPH pro bydlení se objeví jen u české DPH a místa plnění bytový nebo rodinný dům. Platí s novou šablonou smlouvy realizace v3 (kapitola 24).",
-        "**Skladné ve smlouvě z Nastavení.** Skladovací poplatek za den při prodlení zákazníka se stavební připraveností zadává administrátor v **Nastavení → Firma** (Kč za den). Česká smlouva ho uvede v korunách, cizojazyčná v eurech kurzem ceníku (celá eura nahoru). Dokud částka v Nastavení není, zůstane ve smlouvě `{{SOD_SKLADNE}}` k doplnění.",
-        "**Smlouva o dílo i v němčině a francouzštině.** Vedle anglické jsou připravené německá a francouzská šablona smlouvy o dílo (realizace i projekce) — opět věrný překlad české šablony ke kontrole rodilými mluvčími. Jazyk zvolíte u tlačítka smlouvy (**Jazyk tisku**); dokud administrátor šablonu v daném jazyce nezveřejní (Nastavení → Šablony → DE / FR), smlouva v tom jazyce nevznikne a hláška řekne proč (kapitola 24)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v17.10.6 (17. 10. 2026)",
-      "odstavce": [
-        "**Smlouva o dílo v angličtině.** U tlačítek smlouvy o dílo (krycí list OCK i PROJ) je **Jazyk tisku** jako u nabídek. Anglicky vznikne smlouva z anglické šablony smlouvy — překladu české šablony, který kontrolují rodilí mluvčí — s cenou a platbami v eurech; seznam splátek, platby projekce a druh místa plnění jsou anglicky. Dokud administrátor anglickou šablonu nezveřejní (Nastavení → Šablony → EN), smlouva v angličtině **nevznikne** a hláška řekne proč — smlouva s českým právním textem a anglickými hodnotami by nešla podepsat (kapitola 24)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v17.10.5 (17. 10. 2026)",
-      "odstavce": [
-        "**Schvalovatel vidí, kolik cenová výjimka stojí.** Kdo o výjimkách rozhoduje, vidí v kartě Cenové výjimky u každé položky **použitou a ceníkovou sazbu** a **dopad na cenu** strany varianty v % a v Kč, u pásu „jiné“ i plochu v m² a nakonec dopad celkem. Obchodník bez práva rozhodovat vidí dál jen názvy položek a pásů (kapitola 19).",
-        "**Schválení pásu „jiné“ hlídá i jeho plochu.** Schválení teď sedí i na ploše pásu z výpočtu (na celé m²) a na **světlících u dveří**, které berou materiál „jiné“ ze stěn. Když po schválení změníte zasklení nebo profily tak, že se plocha zaokrouhlená na celé m² změní (posun o desetiny m² schválení většinou nechá, takže nárůst bez nového schválení může dosáhnout téměř 1 m²), nebo přidáte nástupiště (víc světlíků), výjimka se vrátí do stavu **čeká znovu**. **Výjimky s pásem „jiné“ schválené před v17.10.5 se musí schválit znovu**; výjimky jen se směsí ceníku platí dál."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzích v17.10.1–v17.10.4 (17. 10. 2026)",
-      "odstavce": [
-        "**Schválený pás „jiné“ nejde po schválení zvětšit změnou šachty.** Schválení ruční sazby pásu opláštění „jiné“ teď hlídá i skutečnou výšku pásu po ořezu na šachtu a délku stěny: když po schválení změníte zdvih, přejezd, šířku nebo hloubku šachty tak, že se pás zvětší nebo zmenší, výjimka se vrátí do stavu **čeká znovu** a před tiskem ji nadřízený musí schválit znovu. Schvalovatel v kartě Cenové výjimky vidí u pásu i jeho **plochu v m²** (kapitola 19). **Výjimky s pásem „jiné“ schválené před v17.10.4 se musí schválit znovu.**",
-        "**Cena dle nabídky jen u příplatků.** Příznak „cena dle nabídky“ jde nastavit jen u položek sekce příplatků; hodinová sazba montáže, profily ani opláštění ho nemají nikdy. Při zveřejnění ceníku se zveřejní zaškrtnutí, jak je vidět ve sloupci Nastavení → Ceník (platný ceník a změny správce), nikdy příznaky uložené v otevřené zakázce (kapitola 17).",
-        "**Upozornění na přechodové plechy u můstků.** Má-li šachta můstky a přechodové plechy jsou v základní ceně nebo v příplatcích nabídky, kontrola před nabídkou upozorní, že se plechy počítají za všechna nástupiště i tam, kde je můstek — zvažte ruční úpravu množství. Výpočet se nemění a tisk to nezastaví (kapitola 11).",
-        "**Návrh čísla SoD.** Pole **Číslo SoD** v krycím listu OCK i PROJ se předvyplní z čísla nabídky — z **2026 - OPR - CN - 0412** je **2026 - OPR - SOD - 0412**. Návrh můžete přepsat, ↺ ho vrátí (kapitola 24).",
-        "**Tisk smlouvy o dílo zamkne číslo SoD i datum podpisu.** Při tisku se obojí zapíše do zakázky; krycí list ani další tisk smlouvy pak neukáže jiné číslo ani dnešní datum místo data podpisu.",
-        "**Správce:** potvrzení před zveřejněním ceníku vypíše i **změny příznaků „cena dle nabídky“** (které položky přibyly a které ubyly) — ceník se změnou jen v příznacích už nehlásí „beze změny“ (v17.10.1)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzích v16.10.1–v16.10.5 (16. 10. 2026)",
-      "odstavce": [
-        "**Cena dle nabídky.** U nabídkových příplatků za akci (např. prosklená stěna vedle šachty) zadává obchodník vlastní cenu bez cenové výjimky a bez schválení; v řádku příplatku je štítek **cena dle nabídky** nebo **vlastní cena**. Které položky to jsou, určuje správce v Nastavení → Ceník (sloupec „Cena dle nabídky“, osm položek je předzaškrtnutých) a platí to po zveřejnění ceníku (kapitola 17).",
-        "**Lešení v technické specifikaci se řídí kalkulací.** V tabulce SOUČÁSTÍ DODÁVKY NENÍ jsou dva řádky: **LEŠENÍ VNITŘNÍ PRO STAVBU OCK** (nový) a **LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ**. Když je lešení mezi příplatky v nabídce, stojí u něj „nabízeno jako příplatek“ se štítkem **z kalkulace**; když je v základní ceně, řádek se do dokumentu nedává. Text můžete přepsat (štítek **ručně**) a tlačítkem ↺ vrátit návrh z kalkulace (kapitola 17).",
-        "**Vlastní řádky technické specifikace jdou do cenové nabídky.** Co přidáte tlačítkem *+ přidat vlastní řádek* (sekce DALŠÍ UJEDNÁNÍ), objeví se v náhledu, tisku i ve Wordu nabídky OCK jako sekce DALŠÍ UJEDNÁNÍ za tím, co součástí dodávky není (kapitola 23).",
-        "**Schválení pásu „jiné“ nese i jeho rozsah.** Karta Cenové výjimky ukazuje u pásu, odkud kam sahá (např. „stěna B (Deska, 0–1 m)“ nebo „od 2,2 m až nahoru“); když po schválení pás roztáhnete nebo posunete, výjimka se vrátí do stavu **čeká znovu**. **Výjimky s pásem „jiné“ schválené před v16.10.1 se musí schválit znovu**; výjimky jen se směsí ceníku platí dál (kapitola 19).",
-        "**Plnou moc doplníte i po smlouvě o dílo.** Tisk smlouvy o dílo zamkne krycí list PROJ, ale údaje zmocnitele plné moci (jméno, datum narození, trvale bytem, kdo jedná za nás) zůstávají volné — plná moc se často dělá až po smlouvě (v16.10.4, kapitola 24).",
-        "**Nabídka PROJ v angličtině, němčině a francouzštině** má v rekapitulaci přeložené i sekce **EZC – ekonomická zadávací část** a **Kolaudace** (dřív zůstávaly česky; v16.10.5)."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v15.10.14 (15. 10. 2026)",
-      "odstavce": [
-        "**Schválení cenové výjimky platí jen pro přesně to, co nadřízený schválil** — každá změna směsi ceníku nebo pásu „jiné“ (i jediný znak v názvu pásu) ho zruší. **Výjimky schválené před v15.10.8 se musí schválit znovu** (karta Cenové výjimky v Schvalování, kapitola 19).",
-        "**Dokument druhé strany do odeslané nabídky** (třeba nabídka OCK po vypnutí „jen projekce“) potřebuje stejné schválení výjimky a slevu nad minimální marží jako nová nabídka. Když chybí, aplikace dokument nevytvoří a poradí pokračovat klonem varianty.",
-        "**Krycí list zakázky OCK** — tak se teď jmenuje i nadpis listu a dokumentu (dřív „Krycí list objednávky / SoD“); záložka se tak jmenovala už dřív.",
-        "**Číslo SoD** v obou krycích listech (OCK i PROJ), v Základních údajích hned pod číslem nabídky. Zapisujete ho ručně, nic se nepředvyplňuje (od v17.10.2 se předvyplní návrh z čísla nabídky — viz výše); doplnit ho jde i po odeslání nabídky, zamkne ho až tisk smlouvy o dílo. Ve smlouvě o dílo se objeví jako číslo smlouvy — krycí list OCK pro smlouvu realizace, krycí list PROJ pro smlouvu projekce (kapitola 24).",
-        "**Čtení z Pipedrive mají nově všichni uživatelé** (obchodník i vedoucí). Správce může právo odebrat v Nastavení → Zobrazení.",
-        "**Nákladové sazby v Kalkulaci PROJ může administrátor skrýt** (Nastavení → Zobrazení). Zatím je vidíte jako dřív; když je skryje, uvidíte místo nich **Prodejní sazbu Kč/h · cenu** — sazbu a fixní částku už včetně přirážky sekce (kapitola 28).",
-        "**Červená lišta „Ceník není nahraný“ při spuštění pár vteřin počká**, než se ceník z online databáze načte — zbytečně neblikne. Z prázdného ceníku přitom dokument nevznikne ani během čekání (kapitola 4).",
-        "**Jméno v profilu** se ukládá bez ostrých závorek < > — pod odeslanou nabídkou stojí razítko „jméno <e-mail>“ a jméno ho nesmí napodobit. **Správce** v Nastavení → Analytika čte pravdivě, že se kliknutí a záložky ukládají i po uživatelích.",
-        "**Nabídka PROJ v angličtině, němčině a francouzštině** má přeložené i popisy cen DPZ a DPS, hvězdičku u ceny DPZ, řádky inženýrské činnosti a CENA NEZAHRNUJE. Souvislé odstavce o rozsahu studie, DPZ a DPS zůstávají zatím česky.",
-        "**Krycí list doplníte i po odeslání nabídky.** Po vytištění cenové nabídky zůstávají zamčená jen pole, která jsou v nabídce (typ smlouvy, platební podmínky, termín dodání, u projekce i plán plateb); kontakty, termíny, atypy a další údaje pro backoffice doplňujete dál. Po vytištění smlouvy o dílo je krycí list zamčený celý (od v16.10.4 kromě údajů zmocnitele plné moci).",
-        "**Autorský dozor v nabídce PROJ jen když ho nabízíte.** V kartě Cenová nabídka (PROJ) je zaškrtávátko **Nabízet autorský dozor**; nová zakázka ho má vypnuté. Bez něj nabídka ani krycí list PROJ autorský dozor neuvádějí (kapitola 25). Už uložené a odeslané nabídky se nemění.",
-        "**Název akce v technické specifikaci se bere z hlavičky zakázky.** Přepsat ho jde dál — pak u pole svítí štítek **ručně** a tlačítkem ↺ se vrátíte k názvu z hlavičky (kapitola 23).",
-        "**Oplechování soklu prohlubně** má řádek i v technické specifikaci: mezi doplňkovými konstrukcemi, když je v ceně, jinak mezi tím, co součástí dodávky není — stejně jako v nabídce.",
-        "**Zápis v obchodním rejstříku** jde do anglické, německé i francouzské nabídky přesně tak, jak je zadaný v Nastavení → Firma — nepřekládá se.",
-        "Na konci krycího listu OCK i PROJ (verze Backoffice) je tabulka **Hodiny z kalkulace** — celé hodiny z položek, které nabízíte. Od v15.10.10 **každý krycí list jen svou stranu**: OCK hodiny z Kalkulace OCK, PROJ z Kalkulace PROJ; uzamčená strana tabulku nemá (kapitola 24).",
-        "**„Opláštit i prohlubeň“ jde zase uložit a vytisknout.** Opláštění smí začínat až na dně prohlubně (kapitoly 11 a 13). Když by začínalo ještě níž, aplikace řekne „Opláštění stěny X začíná níž, než je dno prohlubně“."
-      ]
-    },
-    {
-      "nadpis": "Co je nového ve verzi v13.10 (říjen 2026)",
-      "odstavce": [
-        "**Jedna zakázka = jedna strana.** Podle čísla nabídky se druhá strana zakázky **uzamkne a vynuluje**: u čísla OPR (a jiných mimo řadu OVP) projekce, u čísla OVP ocelová konstrukce. Projekci k ocelové konstrukci nabízíte samostatnou zakázkou (kapitola 25).",
-        "**„Opláštit i prohlubeň“** — zaškrtávátko pod polem Prohlubeň nastaví všem stěnám opláštění až na dno prohlubně (kapitoly 11 a 13).",
-        "**Rozhodnutí o slevě vrací zpět jen nadřízený** (kapitola 19). **Odhlášení odhlásí všechna vaše zařízení** (kapitola 1).",
-        "Administrátor má v cenících **probarvené buňky** (nula a prázdné světle červeně, vysoké částky světle oranžově, kapitola 28).",
-"**Jedna žlutá lišta u rozpracované kalkulace** s tlačítky Pokračovat v rozpracované kalkulaci a Založit novou kalkulaci; u odeslané nabídky aplikace nic nepřipomíná a odemknout ji k úpravám může jen administrátor (kapitoly 8 a 29).",
-"**Rozměry šachty pod 0,6 m** (zdvih, šířka, hloubka) nabídku OCK nevytisknou. **Cenové výjimky** — ceník varianty jiný než platný nebo ruční sazba pásu „jiné“ pod ceníkem — potřebují před tiskem schválení nadřízeného (karta Cenové výjimky v Schvalování).",
-"Založení účtu administrátora, reset hesla a obnovu účtů i nastavení zobrazení ze zálohy správce potvrzuje svým heslem."
-      ]
-    },
-    {
-      "nadpis": "Co je nového od příručky ze 17. 9. 2026",
-      "odstavce": [
-        "**Model 1 je zmrazený.** Nové nabídky se počítají jen Modelem 2; starou zakázku v Modelu 1 smíte převést na Model 2, zpátky ne (kapitola 10).",
-        "**Nabídka OCK nekončí cenou.** Tiskne kapitoly III.–VI. a doložky, v kapitole V. jako první odrážku termín dodání ze zakázky včetně prodloužení za ATYP. Když něco chybí nebo si to odporuje, ozvou se kontroly před nabídkou (kapitoly 14, 22 a 24).",
-        "**Opláštění po stěnách A–D** s pásy a nákresem stěny (kapitola 13).",
-        "**Zahraniční zakázka má po přepnutí DPH 0 %** (kapitola 9). **Vnější lešení** je u interiérové šachty vždy jen příplatek a pod každou položku jde napsat **dodatkový text do nabídky** (kapitola 17).",
-        "**Jedno číslo varianty** — to, které je na papíře (kapitola 8). **Interní poznámky** jsou jedno textové pole hned pod cenovým pásem (kapitola 27). Skrývání a srolování mají **všechny karty** kalkulace (kapitola 28).",
-        "**Po obnovení stránky se rozdělaná práce vrátí** i s vaší přirážkou (kapitola 29). Po změně ceníku se otevře **dialog s dopadem na cenu** (kapitola 22)."
+        "Příručka je určená obchodníkům ENGINEERS CZ. Popisuje, jak firma počítá nabídky, takže ji zákazníkům ani nikomu mimo firmu neposílejte.",
+        "**Postupy krok za krokem:** u každého kroku je snímek obrazovky a na něm **červený rámeček se šipkou** — tam kliknete nebo to vyplníte. Číslo kroku vlevo říká pořadí."
       ]
     }
   ],
@@ -399,6 +21,14 @@
       "nadpis": "1. Přihlášení",
       "bloky": [
         { "typ": "text", "text": "Kalkulačka se otevírá v prohlížeči na adrese **engscalc.netlify.app**. Dokud se nepřihlásíte, nedostanete se k ničemu — a to je záměr. Aplikace pracuje se společnou databází zakázek a s platným ceníkem firmy; obojí se nesmí otevřít jen tím, že někdo zná adresu." },
+        {
+          "typ": "kroky", "nadpis": "Postup: přihlášení",
+          "polozky": [
+            {"text": "Otevřete v prohlížeči **engscalc.netlify.app**. Uvidíte přihlašovací okno.", "snimek": "k1-prihlaseni", "klik": {"sel": "#onlineEmail", "stitek": "sem e-mail"}},
+            {"text": "Napište svůj e-mail a heslo, které vám předal administrátor, a klikněte na **Přihlásit**.", "snimek": "k1-prihlaseni-vyplneno", "klik": {"obsahuje": "Přihlásit"}},
+            {"text": "Po přihlášení vidíte vpravo nahoře své jméno a roli. Ceník i zakázky se teď načítají z online databáze.", "snimek": "k1-hlavicka-app", "klik": {"sel": "#onlineLista b", "stitek": "vaše jméno"}}
+          ]
+        },
         { "typ": "text", "text": "Účet si nezakládáte sami a heslo si sami neobnovujete. Žádná samoobslužná registrace ani obnova hesla e-mailem neexistuje — účet vám založí administrátor a počáteční heslo předá osobně. Když ho zapomenete, resetuje vám ho zase on. Je to o jeden telefonát navíc, ale zase se nikdo nedostane dovnitř tím, že se zmocní vaší schránky." },
         { "typ": "text", "text": "Když se přihlášení nepovede, důvod stojí přímo pod poli. Aplikace schválně **nerozlišuje, jestli je špatně e-mail, nebo heslo** — kdyby to říkala, prozradila by komukoli zvenčí, které e-maily u nás účet mají. Nejčastější příčinou bývá přepnutá klávesnice nebo velké písmeno na začátku hesla z automatické opravy na mobilu." },
         { "typ": "text", "text": "Přihlášení platí **dvanáct hodin**. Ranní přihlášení vám vydrží celý pracovní den a večer vyprší samo. Pokud se aplikace během dne začne chovat, jako byste přihlášený nebyl (zmizí vaše jméno v pravém horním rohu), stačí obnovit stránku a přihlásit se znovu; zakázka, která už jednou byla uložena, je v databázi." },
@@ -419,11 +49,26 @@
       "id": "kap-profil",
       "nadpis": "3. Váš roh hlavičky a Můj profil",
       "bloky": [
-        { "typ": "text", "text": "Vpravo nahoře je všechno, co se týká vás osobně: jméno, role v závorce a nabídka s položkami **Můj profil**, **Změnit heslo** a **Odhlásit**. Odhlášení platí pro všechna vaše zařízení najednou (kapitola 1)." },
+        { "typ": "text", "text": "Vpravo nahoře je všechno, co se týká vás osobně: jméno, role v závorce a tlačítka **Můj profil**, **Změnit heslo** a **Odhlásit**. Odhlášení platí pro všechna vaše zařízení najednou (kapitola 1)." },
         { "typ": "text", "text": "Heslo si můžete změnit sám, administrátora k tomu nepotřebujete — jen musíte znát to staré. Nové musí mít alespoň osm znaků; kratší server odmítne. Je to jediná cesta, jak se zbavit počátečního hesla, které vám někdo nadiktoval na chodbě, takže ji doporučuji použít hned první den." },
+        {
+          "typ": "kroky", "nadpis": "Postup: změna hesla",
+          "polozky": [
+            {"text": "Vpravo nahoře klikněte na **Změnit heslo**.", "snimek": "k1-hlavicka-app", "klik": {"obsahuje": "Změnit heslo"}},
+            {"text": "Napište **staré heslo** a dvakrát **nové** (aspoň 8 znaků) a klikněte na **Změnit heslo**. Ostatní přihlášení se tím odhlásí.", "snimek": "k3-zmena-hesla", "klik": {"sel": "button.primary"}}
+          ]
+        },
         { "typ": "podnadpis", "text": "Co se o vás vytiskne v nabídce" },
         { "typ": "text", "text": "Blok „Vypracoval“ v cenové nabídce se plní z vašeho účtu, takže na nabídce je ten, kdo ji skutečně počítal. Své údaje si spravujete sám v okně **Můj profil**. E-mail a roli měnit nemůžete (to je věc administrátora), ale titul, jméno, funkci a telefon ano." },
         { "typ": "text", "text": "Vyplatí se to vyplnit hned první den, protože **prázdné pole se v nabídce prostě neobjeví**: bez telefonu bude v bloku „Vypracoval“ jen jméno a e-mail. Titul patří před jméno (Ing., Bc.), do funkce se obvykle píše *Obchodní technik* a telefon uveďte v mezinárodním tvaru `+420 602 000 000` — tak, jak ho chcete mít vytištěný, aplikace formát nijak neupravuje." },
+        {
+          "typ": "kroky", "nadpis": "Postup: vyplnit Můj profil",
+          "polozky": [
+            {"text": "Vpravo nahoře klikněte na **Můj profil**.", "snimek": "k1-hlavicka-app", "klik": {"obsahuje": "Můj profil"}},
+            {"text": "Otevře se okno se jménem a e-mailem. Doplňte **Titul před jménem**, **Funkci** a **Telefon** tak, jak je chcete mít vytištěné.", "snimek": "k3-profil-prazdny", "klik": {"obsahuje": "Titul před jménem", "stitek": "vyplňte"}},
+            {"text": "Podpis s razítkem nahrajete výběrem obrázku (PNG nebo JPEG) pod textem *Podpis s razítkem*. Nakonec klikněte na **Uložit profil**.", "snimek": "k3-profil-vyplneny", "klik": {"obsahuje": "Uložit profil"}}
+          ]
+        },
         { "typ": "podnadpis", "text": "Podpis s razítkem" },
         { "typ": "text", "text": "Druhá polovina okna je podpis s razítkem. Nahrajete jeden obrázek — obvykle sken papíru, na kterém je podpis přes firemní razítko — a aplikace ho zmenší a uloží k vašemu účtu na server. Do každé další nabídky se pak vloží na místo, kde ve Wordu býval prázdný rámeček. Praktický důsledek: **nabídku můžete poslat rovnou v PDF**, aniž byste ji tiskl, podepisoval a znovu skenoval." },
         { "typ": "text", "text": "Na sken stačí mobil — obrázek se ukládá zmenšený, takže velikost souboru řešit nemusíte. Doporučuji ale bílý papír a rovné nasvícení: co nasnímáte, to bude v dokumentu, včetně stínu okraje papíru. Podpis vidíte jen vy a je vázaný na váš účet; kolegové mají svůj vlastní a nikdo ho za vás nahrát ani použít nemůže." },
@@ -435,6 +80,14 @@
       "nadpis": "4. Vidím červenou lištu. Co mám dělat?",
       "bloky": [
         { "typ": "text", "text": "Tohle je nejčastější dotaz a má krátkou odpověď: **nic nerozbíjíte, nic jste neudělal špatně a sami s tím nic nezmůžete** — zavolejte administrátorovi, ať zveřejní ceník. Zbytek kapitoly vysvětluje proč, ať víte, co po něm chcete." },
+        {
+          "typ": "kroky", "nadpis": "Postup, když lišta svítí",
+          "polozky": [
+            {"text": "Lišta svítí pod hlavičkou aplikace a vypadá takhle. Počítat můžete dál, jen dokument z ní nevznikne.", "snimek": "k4-cervena-lista"},
+            {"text": "Zavolejte administrátorovi, ať zveřejní platný ceník a firemní údaje (kapitola 32)."},
+            {"text": "Po zveřejnění obnovte stránku (`F5`), nebo se přihlaste znovu — lišta zhasne sama.", "snimek": "k1-prihlaseni-vyplneno", "klik": {"obsahuje": "Přihlásit"}}
+          ]
+        },
         { "typ": "text", "text": "Do sestavení aplikace se žádný ceník nezapéká. Dřív v ní ležel ukázkový vzorek s kulatými čísly, aby se dala předvést i bez připojených dat — jenže to znamenalo, že existovala cesta, jak zákazníkovi poslat nabídku spočítanou z vymyšlených sazeb. Rozhodnutí bylo tvrdé a je správné: buď se z databáze natáhne ostrý ceník, anebo svítí všude nuly a není z čeho počítat. **Varování se dá přehlédnout, nula se přehlédnout nedá.**" },
         { "typ": "text", "text": "Požádejte administrátora, aby zveřejnil platný ceník a firemní údaje do online databáze. Je to u něj otázka dvou tlačítek. Jakmile to udělá, načtou se vám hodnoty samy — stačí obnovit stránku nebo se znovu přihlásit a lišta zhasne. Všimněte si, že vás lišta nikam neposílá pro složku `_DB`: složku má správce, vy k ní přístup nemáte a chyba nebyla u vás." },
         {
@@ -453,6 +106,16 @@
       "bloky": [
         { "typ": "text", "text": "Novou zakázku založíte tlačítkem **✚ Nová zakázka**. Hned pod trojicí tlačítek se objeví řádek, který řekne, v jakém stavu zakázka je — u čerstvě založené zní jasně: hlavička není vyplněná, a proto zakázka ještě není v databázi." },
         { "typ": "text", "text": "Povinná jsou dvě pole, **Číslo nabídky (CN)** a **Název akce**, a jsou povinná ze zcela praktického důvodu: z čísla nabídky vzniká název souboru v databázi. Kdyby stačila samotná předloha `2026 - OPR - CN - `, mířily by všechny nové zakázky na jeden a týž soubor a přepisovaly by se navzájem." },
+        {
+          "typ": "kroky", "nadpis": "Postup: nová zakázka",
+          "polozky": [
+            {"text": "V Kalkulaci OCK klikněte v kartě **Zakázka a varianta** na **✚ Nová zakázka**. Otevřená zakázka zůstane uložená tak, jak byla.", "snimek": "k5-pred-novou", "klik": {"obsahuje": "Nová zakázka"}},
+            {"text": "Objeví se prázdná hlavička a pod tlačítky řádek, že zakázka ještě není v databázi. Do pole **Číslo nabídky (CN)** dopište číslo za předlohu `2026 - OPR - CN - `.", "snimek": "k5-prazdna-hlavicka", "klik": {"popisek": "Číslo nabídky (CN)", "cely": ".row", "stitek": "vyplňte"}},
+            {"text": "Vyplňte **Název akce** a začněte psát jméno do pole **Zákazník** — pod polem se nabídnou firmy z databáze zákazníků a z dřívějších zakázek. Klikněte na tu správnou.", "snimek": "k5-naseptavac", "klik": {"obsahuje": "Vzorové bytové družstvo", "stitek": "vyberte"}},
+            {"text": "Z karty zákazníka se doplní prázdná pole (kontaktní osoba, IČO). Doplňte **Adresu stavby** — sídlo zákazníka to není.", "snimek": "k5-vyplnena-hlavicka", "klik": {"popisek": "Adresa stavby", "cely": ".row", "stitek": "vyplňte"}},
+            {"text": "Jakmile je vyplněné číslo nabídky i název akce, zakázka se uloží sama a pod tlačítky se objeví **Uloženo v databázi jako … v HH:MM**.", "snimek": "k6-ulozeno", "klik": {"obsahuje": "Uloženo v databázi jako", "stitek": "hotovo"}}
+          ]
+        },
         { "typ": "podnadpis", "text": "Hlavička je nově ve čtyřech sloupcích" },
         { "typ": "text", "text": "Karta **Zakázka a varianta** se v září 2026 přeskládala do čtyř sloupců. Všechna pole zůstala, jen stojí jinde — vlevo se vyplňuje zakázka, vpravo se řídí varianta a ceník. Kdo znal starou hlavičku, hledá první den, potom je to rychlejší." },
         {
@@ -482,6 +145,14 @@
         { "typ": "text", "text": "V zakázce otevřené **jen ke čtení** (kapitola 8) se tlačítko uložení **nezobrazuje vůbec** a lišta začíná tlačítkem **Načíst zakázku**. Není to porucha: v zamčené zakázce není co ukládat. Chcete-li ji měnit, odemkněte ji v pruhu nad kalkulací — to je jediné místo, kde se odemyká." },
         { "typ": "text", "text": "Nejužitečnější údaj celé lišty je **čas posledního uložení**. Bez něj vypadala věta celý den stejně a z obrazovky nešlo poznat, jestli se poslední úprava opravdu dostala na server, nebo jestli tam visí hlášení z rána. Když jste na pochybách, koukněte na čas." },
         {
+          "typ": "kroky", "nadpis": "Postup: uložit hned a ověřit uložení",
+          "polozky": [
+            {"text": "Chcete-li uložit hned, klikněte na **💾 Uložit zakázku**. Jinak se zakázka uloží sama po chvíli klidu.", "snimek": "k6-ulozeno", "klik": {"obsahuje": "Uložit zakázku"}},
+            {"text": "Podívejte se na řádek pod tlačítky: **Uloženo v databázi jako … v HH:MM** znamená, že je všechno na serveru. Čas je čas posledního uložení.", "snimek": "k6-ulozeno", "klik": {"obsahuje": "Uloženo v databázi jako", "stitek": "čas uložení"}},
+            {"text": "Při výpadku sítě si zakázku uložte do souboru: v **Přehledu cenových nabídek** dole v kartě *Zakázka jako soubor* klikněte na **Uložit do souboru (JSON)**. Po obnovení spojení ji načtete tlačítkem **Načíst ze souboru**.", "snimek": "k8-soubor", "klik": {"obsahuje": "Uložit do souboru (JSON)"}}
+          ]
+        },
+        {
           "typ": "seznam",
           "polozky": [
             { "pojem": "Jmenuje chybějící pole", "vyklad": "Hlavička není hotová, zakázka není v databázi. Doplňte je; uloží se pak sama." },
@@ -498,7 +169,8 @@
         },
         { "typ": "podnadpis", "text": "Když na téže zakázce pracuje někdo další" },
         { "typ": "text", "text": "Když tutéž zakázku uloží mezitím kolega, aplikace se **zeptá**, místo aby jeho práci tiše přepsala — hláška má dvě tlačítka a po dobu rozhodování se automatické ukládání zastaví, aby se nezapisovalo dvěma směry naráz. Než uložíte přes kolegu, domluvte se s ním. Totéž platí, když tutéž zakázku uložíte **ve dvou oknech** nebo ji dva lidé uloží **ve stejném okamžiku**: druhé uložení dostane hlášku, že zakázku mezitím uložil někdo jiný — starší kopie tak nemůže přepsat třeba právě vytištěnou nabídku. Vyberte, jestli zakázku načíst znovu, nebo vědomě přepsat. Když uložení nevyjde kvůli výpadku sítě, hláška to řekne česky; po obnovení spojení stačí uložit znovu." },
-        { "typ": "text", "text": "A když se během vaší práce nasadí nová verze aplikace, dozvíte se to a **rozpracovaná nabídka se nejdřív uloží**; teprve pak se stránka obnoví. Dřív se při obnovení dalo o rozdělanou kalkulaci přijít." }
+        { "typ": "text", "text": "A když se během vaší práce nasadí nová verze aplikace, dozvíte se to a **rozpracovaná nabídka se nejdřív uloží**; teprve pak se stránka obnoví. Dřív se při obnovení dalo o rozdělanou kalkulaci přijít." },
+        { "typ": "text", "text": "**Příliš velká zakázka.** Zakázka se do databáze ukládá jako jeden soubor do 4 MB. Když ho přeroste, aplikace řekne, z čeho se skládá (přílohy a fotky, odeslané varianty, ostatní) a co s tím: přílohy zmenšit, u mnoha odeslaných variant založit další nabídku jako novou zakázku." }
       ]
     },
     {
@@ -517,6 +189,15 @@
         { "typ": "text", "text": "Nejrychlejší cesta vede z hotové zakázky: v hlavičce pod polem IČO je tlačítko **Uložit jako zákazníka** — karta se předvyplní z toho, co v zakázce už máte, vy ji projdete a uložíte. Novou kartu jde založit i přímo na záložce Zákazníci tlačítkem *+ Nový zákazník*. Nic se nikam nedoplňuje zpětně, databáze poroste s novými zakázkami." },
         { "typ": "podnadpis", "text": "Jak ji použít" },
         { "typ": "text", "text": "U nové zakázky klikněte v hlavičce na **Vybrat z databáze zákazníků…**, najděte firmu (hledá se podle názvu, IČO i města) a dejte *Přenést do otevřené zakázky*. Přenese se hlavička i celá sekce *Zástupci a kontakty zákazníka* v krycích listech, takže smlouva má rovnou všechno. Tlačítko je i v Kalkulaci PROJ, takže se kvůli zákazníkovi nemusíte přepínat do OCK." },
+        {
+          "typ": "kroky", "nadpis": "Postup: založit kartu a přenést ji do zakázky",
+          "polozky": [
+            {"text": "Klikněte na záložku **Zákazníci** (nebo v hlavičce zakázky na **Vybrat z databáze zákazníků** — vede sem).", "snimek": "k7-zalozky", "klik": {"obsahuje": "Zákazníci"}},
+            {"text": "Novou kartu založíte tlačítkem **+ Nový zákazník**. Rychlejší je **Založit z otevřené zakázky** — karta se předvyplní z hlavičky.", "snimek": "k7-seznam", "klik": {"obsahuje": "+ Nový zákazník"}},
+            {"text": "Vyplňte kartu — název, sídlo, IČO, zástupce a kontakty — a klikněte na **Uložit zákazníka**.", "snimek": "k7-nova-karta", "klik": {"obsahuje": "Uložit zákazníka"}},
+            {"text": "Do otevřené zakázky zákazníka přenesete tak, že u něj v seznamu kliknete na **Otevřít** a v kartě na **Přenést do otevřené zakázky**.", "snimek": "k7-karta-prenest", "klik": {"obsahuje": "Přenést do otevřené zakázky"}}
+          ]
+        },
         {
           "typ": "ram", "nadpis": "Dvě pravidla, kterými se to řídí",
           "odstavce": [
@@ -542,6 +223,15 @@
           ]
         },
         { "typ": "text", "text": "Protože zakázky žijí na serveru, dostanete se ke stejným datům z libovolného počítače — stačí se přihlásit. Kalkulaci rozdělanou v kanceláři tedy dopočítáte večer doma, aniž byste cokoli přenášel." },
+        {
+          "typ": "kroky", "nadpis": "Postup: najít a otevřít zakázku",
+          "polozky": [
+            {"text": "V kartě **Zakázka a varianta** klikněte na **Přehled cenových nabídek →** (nebo na stejnojmennou záložku).", "snimek": "k8-tlacitko-prehled", "klik": {"obsahuje": "Přehled cenových nabídek"}},
+            {"text": "Do hledání napište část čísla, názvu akce nebo jména zákazníka. U nalezené zakázky klikněte na **Otevřít**.", "snimek": "k8-hledani", "klik": {"obsahuje": "Otevřít"}},
+            {"text": "Zakázka se otevře jen ke čtení. Chcete-li v ní pokračovat, klikněte ve žluté liště na **Pokračovat v rozpracované kalkulaci**.", "snimek": "k8-rozpracovana-lista", "klik": {"obsahuje": "Pokračovat v rozpracované kalkulaci"}},
+            {"text": "U odeslané nabídky žlutá lišta není — je tam řádek **Odeslaná nabídka … — needituje se**. Pokračujete tlačítkem **Klonovat a pokračovat** (nová varianta jako kopie, rovnou odemčená).", "snimek": "k8-odeslana-lista", "klik": {"obsahuje": "Klonovat a pokračovat"}}
+          ]
+        },
         { "typ": "podnadpis", "text": "Otevřená zakázka: rozpracovaná, nebo odeslaná" },
         { "typ": "text", "text": "Když otevřete uloženou zakázku, je **jen ke čtení**: pole nejdou přepisovat. Prohlédnout si starší nabídku tak nemůže nic pokazit — a samotné otevření se ani neukládá, do databáze se zapisuje teprve tehdy, když opravdu něco změníte. Co nad zakázkou uvidíte, záleží na tom, jestli už odešla zákazníkovi (od 13. 10. 2026 je to vždy jediná lišta, dřív se jich vrstvilo několik)." },
         { "typ": "text", "text": "**Rozpracovaná zakázka** (ještě nevytištěná): nahoře svítí žlutá lišta **„Rozpracovaná kalkulace“** s číslem, názvem a časem poslední práce. Tlačítkem **Pokračovat v rozpracované kalkulaci** zakázku odemknete k úpravám — a leží-li v prohlížeči novější rozpracovaná práce téže zakázky (kapitola 29), rovnou se vrátí. Tlačítkem **Založit novou kalkulaci** začnete novou. Zámek platí na jedno otevření; příště bude zakázka zase jen ke čtení. Svoji zakázku odemkne každý obchodník, cizí vedoucí nebo administrátor; u cizí zakázky lišta nabídne jen Založit novou kalkulaci a napíše, kdo ji založil, ať víte, koho požádat. Nová zakázka je odemčená rovnou." },
@@ -561,6 +251,12 @@
         { "typ": "text", "text": "**Číslo smazané varianty se znovu nepoužije.** Po smazání .3 dostane další nová varianta .4, protože číslo, které jednou odešlo ven, nesmí patřit jiné nabídce. Odeslané nabídce zůstává číslo, se kterým odešla, a přečíslovat ji nejde. Starší zakázky se při prvním otevření jednou srovnaly na číslo, které jim tiskly dokumenty; od té doby se nemění." },
         { "typ": "podnadpis", "text": "Nová zakázka podle staré" },
         { "typ": "text", "text": "Když přijde poptávka podobná té, kterou už máte, nepřepisujte starou zakázku. V Přehledu cenových nabídek je v kartě s variantami tlačítko **⧉⧉ Duplikovat jako novou zakázku…**. Zkopíruje hlavičku, zadání a ceníky a vy jí dáte vlastní číslo CN. **Nekopíruje** zámky odeslaných nabídek, interní poznámky, schválení slevy (procento zůstane, schválit se musí znovu) ani číslo nabídky PROJ. Má-li otevřená zakázka neuložené změny, aplikace se nejdřív zeptá, jestli je uložit, zahodit, nebo zůstat." },
+        {
+          "typ": "kroky", "nadpis": "Postup: nová zakázka podle staré",
+          "polozky": [
+            {"text": "Otevřete starou zakázku a v **Přehledu cenových nabídek** klikněte v kartě s variantami na **⧉⧉ Duplikovat jako novou zakázku…**. Pak jí dejte vlastní číslo nabídky.", "snimek": "k8-souhrn-varianty", "klik": {"obsahuje": "Duplikovat jako novou zakázku"}}
+          ]
+        },
         { "typ": "text", "text": "Dvě dvojice tlačítek bývají zdrojem nedorozumění, takže na rovinu: **Uložit zakázku / Načíst zakázku** pracuje s online databází. **Uložit do souboru (JSON) / Načíst ze souboru** pracuje se souborem na vašem disku. Soubor obsahuje celou zakázku včetně všech variant, zadání OCK, technické specifikace i kalkulace PROJ — hodí se, když chcete zakázku poslat mailem nebo si ji odložit stranou. **Pokud vám administrátor skryl náklady, soubor nenese ceníky rozpracovaných variant** — jen to, čím se varianta od platného ceníku liší (vaše přirážka, sazba DPH, dohodnuté ceny). Při načtení se ceník doplní z ceníku, který právě platí, takže cena zůstane stejná; odeslané (uzamčené) varianty jdou do souboru celé." },
         { "typ": "text", "text": "**Mazat online zakázky smí jen administrátor.** Před smazáním se aplikace zeptá a vypíše, čeho se to týká; je-li ve výběru odeslaná nabídka, přijde ještě druhá otázka, protože odeslaná nabídka je doklad o tom, co odešlo zákazníkovi. Smazaná zakázka je pryč i s historií cen a variant a vrátit ji jde jen ze zálohy databáze." }
       ]
@@ -571,11 +267,19 @@
       "bloky": [
         { "typ": "text", "text": "V pravé části hlavičky kalkulace OCK je přepínač **ČR / Zahraničí**. Nová zakázka je vždycky tuzemská; na zahraniční ceny se přepíná vědomě. Jakmile přepnete, hlavička se jemně podbarví do okrové a u nadpisu svítí štítek *zahraniční ceník* — na zakázce je to tedy vidět i letmým pohledem a v Přehledu cenových nabídek má taková zakázka štítek *Zahraničí*." },
         { "typ": "text", "text": "Přepnutí se nejdřív **zeptá a vypíše, kolika ceníkových položek se to dotkne**. Ruční přepisy cen v zakázce zůstávají. Globální přirážka se vymění za zahraniční (kapitola 22) a sazba DPH se přepne podle zahraničního ceníku — jen pokud jste si je v téhle nabídce nenastavil sám. Uzamčená nabídka se nepřepne vůbec." },
+        {
+          "typ": "kroky", "nadpis": "Postup: přepnout zakázku na zahraniční ceník",
+          "polozky": [
+            {"text": "V kartě **Zakázka a varianta** klikněte vpravo v řádku **Ceník** na **Zahraničí**.", "snimek": "k9-cr", "klik": {"obsahuje": "Zahraničí"}},
+            {"text": "Aplikace vypíše, kterých ceníkových položek se přepnutí dotkne. Potvrďte **Ano**.", "snimek": "k9-dialog", "klik": {"obsahuje": "Ano"}},
+            {"text": "Hlavička se podbarví do okrové a nese štítek **zahraniční ceník**, sazba DPH je **0 %**. Zpátky se vrátíte tlačítkem **ČR** stejným postupem.", "snimek": "k9-zahranici", "klik": {"obsahuje": "zahraniční ceník", "stitek": "tohle uvidíte"}}
+          ]
+        },
         { "typ": "podnadpis", "text": "Zahraniční zakázka má DPH 0 %" },
         { "typ": "text", "text": "Po přepnutí na **Zahraničí** se sazba DPH nastaví na **0 %**, protože dodávka s montáží do zahraničí se běžně fakturuje bez české daně. Pokud administrátor zadal v ceníku pro zahraničí jinou sazbu, platí ta. Návrat zakázky do ČR vrátí tuzemskou sazbu. **Sazbu, kterou jste vybral ručně, přepnutí nikdy nepřepíše.** V nabídce se nulová sazba tiskne jako **„DPH 0 % (nulová)“**, ne jako snížená." },
         { "typ": "text", "text": "Zakázky přepnuté do zahraničí před 22. 9. 2026 si nechaly původní sazbu. Nulu jim dáte výběrem v hlavičce, nebo přepnutím zpět do ČR a znovu do zahraničí." },
         { "typ": "text", "text": "Řada patří **variantě, ne zakázce**. Jde tak udělat variantu 1 tuzemskou a variantu 2 zahraniční a postavit je v porovnání vedle sebe." },
-        { "typ": "text", "text": "Ceny zůstávají v korunách; na eura se cizojazyčná nabídka převádí kurzem z ceníku. U zahraniční zakázky je kurz vidět přímo v hlavičce, ať víte, s čím se počítá — ale je to **jen údaj ke čtení**. Kurz je ceníková hodnota a mění ho administrátor; kdyby ho šlo přepsat u zakázky, měla by každá nabídka svůj vlastní kurz a nikde by to nebylo znát." },
+        { "typ": "text", "text": "Ceny zůstávají v korunách; na eura se cizojazyčná nabídka převádí kurzem z ceníku. U zahraniční zakázky je kurz v hlavičce vidět tomu, komu administrátor povolil pole *Globální přirážka* — ale i tam je to **jen údaj ke čtení**. Kurz je ceníková hodnota a mění ho administrátor; kdyby ho šlo přepsat u zakázky, měla by každá nabídka svůj vlastní kurz a nikde by to nebylo znát." },
         { "typ": "text", "text": "Položky, které v tuzemsku nejsou (cestovní náklady a logistika, překlady CZ→DE), se v tuzemské kalkulaci vůbec nezobrazují — ani s nulou. Objeví se, až přepnete na *Zahraničí*." }
       ]
     },
@@ -584,6 +288,13 @@
       "nadpis": "10. Kalkulace OCK: co kde je",
       "bloky": [
         { "typ": "text", "text": "Vlastní kalkulace ocelové konstrukce šachty má nahoře cenový pás, pod ním navigaci po sekcích (*Zadání šachty, Dimenze profilů, Práce a režie, Cenová kalkulace, Hrubá OCK, Opláštění, Volitelné, Režie, Příplatky, Sleva, Cenová nabídka*) a hned pod tím samotné zadání." },
+        {
+          "typ": "kroky", "nadpis": "Postup: pohyb po kalkulaci",
+          "polozky": [
+            {"text": "Klikněte na záložku **Kalkulace OCK**.", "snimek": "k7-zalozky", "klik": {"obsahuje": "Kalkulace OCK"}},
+            {"text": "Pod hlavičkou je lišta s odkazy na sekce. Kliknutím na název (třeba **Sleva**) skočíte rovnou na ni. Vpravo v liště svítí štítek standardu (kapitola 14).", "snimek": "k10-lista-sekci", "klik": {"obsahuje": "Sleva"}}
+          ]
+        },
         {
           "typ": "obrazek", "snimek": "souhrn-ceny",
           "titulek": "Cenový pás nad kalkulací u ukázkové zakázky.",
@@ -629,9 +340,19 @@
           ]
         },
         { "typ": "text", "text": "Mezi způsobem zasklení a typem portálů přibyl přepínač **Opláštění**: **jednotné (standard)**, nebo **po stěnách A–D**. Většina zakázek zůstává u jednotného; co umí režim po stěnách, je v kapitole 13." },
+        {
+          "typ": "kroky", "nadpis": "Postup: zadání šachty",
+          "polozky": [
+            {"text": "V kartě **Zadání šachty** nejdřív vyberte **Typ šachty** (exteriérová / interiérová) — podle něj se dosadí dimenze profilů.", "snimek": "k11-zadani", "klik": {"popisek": "Typ šachty", "cely": ".row", "stitek": "vyberte"}},
+            {"text": "Vyplňte rozměry — **Zdvih**, **Horní přejezd**, **Prohlubeň**, **Vnitřní šířku** a **hloubku** — a **Počet nástupišť**.", "snimek": "k11-zadani", "klik": {"popisek": "Zdvih", "cely": ".row", "stitek": "vyplňte"}},
+            {"text": "Ve třetím sloupci zvolte, co bude **nad dveřmi** a **na bocích dveří** (bez, sklo, plech, materiál opláštění, zajistí stavba).", "snimek": "k11-zadani-mustky", "klik": {"popisek": "Světlík nad šachetními dveřmi", "cely": ".row", "stitek": "vyberte"}},
+            {"text": "Má-li šachta můstky, napište do **Můstky mezi budovou a OCK** jejich počet. Pod polem přibude **Hloubka** a **Šířka můstku** — vyplňte je, jinak kontrola standardu hlásí „nelze posoudit“.", "snimek": "k11-zadani-mustky", "klik": {"popisek": "Můstky mezi budovou a OCK", "cely": ".row", "stitek": "počet můstků"}}
+          ]
+        },
         { "typ": "podnadpis", "text": "Co je nad dveřmi a vedle nich" },
         { "typ": "text", "text": "**Světlík nad šachetními dveřmi** už není zaškrtávátko. Stojí ve třetím sloupci mezi *Typem portálů* a *Světlíky na bocích dveří* a je to rolovací menu s volbami **bez, sklo, plech, materiál opláštění, zajistí stavba**. Pole nad dveřmi (šířka stěny × výška od horní hrany dveří ke stropu) se tak vždycky ocení tím, co tam opravdu bude: *sklo* je dřívější světlík, *plech* je lakované plechové nadpraží, *materiál opláštění* je převažující materiál stěn B, C, D a *zajistí stavba* se neoceňuje, ale uvede se ve specifikaci (montáž se tím od 30. 9. 2026 nezkracuje). Při volbě *bez* upozorní kontrola před nabídkou, že nad dveřmi zůstane otvor; montáž se tím od 1. 10. 2026 nezkracuje ani tady — o 0,2 h na nástupiště ji jako excelová předloha zkrátí jen zmrazený Model 1. Nová nabídka začíná s plechem." },
         { "typ": "text", "text": "**Světlíky na bocích dveří** mají od 30. 9. 2026 tytéž volby jako světlík nad dveřmi — **bez, sklo, plech, materiál opláštění, zajistí stavba** — a nová nabídka začíná na *bez*. Pod nimi je pole **Celkem světlíků na bocích dveří**: samo předvyplní počet nástupišť × 2, a když stavba potřebuje jiný počet (třeba jen jeden světlík u dveří v rohu), přepište ho; pole pak nese štítek *ručně* a šipkou ↺ se vrátíte k automatickému počtu. Cena se počítá z tohoto počtu: *sklo* je sklo stěny s dveřmi (není-li ta stěna ze skla, sklo čelní stěny ze standardu), *materiál opláštění* je převažující materiál stěn B, C, D, *plech* je lakované plechové pole a *zajistí stavba* se neoceňuje, jen se uvede ve specifikaci. Technická specifikace má nový řádek **SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ** s počtem a materiálem. Při volbě *bez* upozorní kontrola před nabídkou, že vedle dveří zůstane mezera, a hlídá i počet světlíků, který se k počtu dveří nehodí. **Šířka skla bočního světlíku (přes sloupky)** (od 1. 10. 2026, jen v *Modelu 2*): když počet světlíků přepíšete ručně, objeví se hned pod ním pole se šířkou skla jednoho světlíku v milimetrech. Je to šířka tabule skla, která přesahuje přes sloupky — světlo mezi rámem dveří a stojkou je proto užší (šachta 1 500 mm, čistý vstup 800 mm a rám 100 mm dá předpočítanou šířku skla 600 mm; tak se sklo i oceňuje, rozhodnutí J. V. 20. 10. 2026). Je předpočítaná tak, aby plocha vyšla stejně jako dřív — dveře s jedním světlíkem stojí u sloupku a světlík vyplní celou mezeru vedle dveří, u dveří se dvěma má každý polovinu, u smíšeného rozložení je to průměr (nápověda pod polem to rozepíše, třeba „předpočítáno z mezery vedle dveří 600 mm: 5 dveří s jedním (600 mm)“). Dokud šířku nepřepíšete, cena se nemění. Přepíšete-li ji, pole nese štítek *ručně* a plocha výplně boků je počet × šířka × 2,2 m — pro sklo, plech, materiál opláštění i *zajistí stavba*; konstrukce (sloupky, příčníky, terče) a montáž se počítají dál po kusech. Šipka ↺ u šířky vrátí předpočítanou šířku, ↺ u počtu vrátí automatický počet a ruční šířku zahodí. Kontrola před nabídkou hlídá šířku proti mezeře vedle dveří: světlík širší než mezera nebo světlíky, které se vedle dveří nevejdou, jsou **zábrana** — nabídka, smlouva o dílo i krycí list OCK nevzniknou, dokud šířku neopravíte (červená věta je i přímo pod polem); když po zúžení vedle dveří zůstane neoceněná šířka, kontrola jen upozorní, kolik metrů zbylo. Ruční šířku uvede i technická specifikace a nabídka („Světlíky na bocích dveří: 5 ks, šířka 300 mm, …“). V Modelu 1 se pole neukazuje a výpočet zůstává beze změny. **Můstky mezi budovou a OCK** jsou ve čtvrtém sloupci hned pod *Čistým vstupem* a zadávají se **počtem kusů** (0 = žádný můstek). Každý můstek je v kalkulaci řádkem za ceníkovou cenu za kus a propíše se do technické specifikace i nabídky; když cena v ceníku chybí, upozorní na to kontrola před nabídkou. Od 25. 9. je ve druhém sloupci pod sebou *Počet nástupišť*, *Počet sloupků* a *Stříška*, *Typ portálů* je ve třetím sloupci hned pod *Opláštěním* a *Přechodové plechy* ve čtvrtém pod *Můstky*. Starší zakázky se nemění: zaškrtnutý světlík je teď *sklo*, nezaškrtnutý *bez*." },
+        { "typ": "text", "text": "**Rozměr můstku nad 6 000 mm** (šířka nebo hloubka — nejspíš nula navíc) ohlásí kontrola před nabídkou; hodnota se přesto započte a tisk to nezastaví. Nečíselný rozměr se bere jako nevyplněný. **U exteriérové šachty s můstkem i v nejvyšším nástupišti** připočte kalkulace k zastřešení (a k příplatku za střechu v mědi) plochu nad můstkem až k fasádě: (šířka můstku + 0,2 m) × hloubka můstku. Chybí-li rozměry můstku, kontrola to řekne." },
         { "typ": "podnadpis", "text": "Tři drobnosti při psaní čísel" },
         { "typ": "text", "text": "**Číselná pole už nemají klikací šipky.** Malé šipečky nahoru/dolů se daly trefit omylem při rolování a hodnota se tiše změnila. Číslo se teď píše, nebo se mění šipkami na klávesnici." },
         { "typ": "text", "text": "**Nula se v poli sama označí.** Kliknete do pole s nulou a nula se vybere celá — můžete rovnou psát, nemusíte ji mazat." },
@@ -645,12 +366,10 @@
       "bloky": [
         { "typ": "text", "text": "Zaškrtnutí **Průchozí šachta** teď obrazovku změní: přibydou pole, která u neprůchozí šachty nedávají smysl, a aplikace rovnou napíše, co po vás chce." },
         {
-          "typ": "obrazek", "snimek": "zadani-pruchozi",
-          "titulek": "Po zaškrtnutí průchozí šachty přibyla dvě pole a vysvětlující věta.",
-          "odkazy": [
-            { "popisek": "Průchozí šachta", "cely": ".row", "text": "Zaškrtnutí přepíná celé zadání — nejde jen o příznak v datech, mění se, co se počítá." },
-            { "obsahuje": "Zadejte počet pater", "text": "Tuhle větu si přečtěte. **Bez počtu pater vycházejí rozměry nulové** a kalkulace je k ničemu — aplikace nemá z čeho spočítat výšku podlaží." },
-            { "popisek": "Počet pater", "cely": ".row", "text": "Zadává se **ručně**, aplikace ho z ničeho neodvozuje. Nejmíň dvě." }
+          "typ": "kroky", "nadpis": "Postup: průchozí šachta",
+          "polozky": [
+            {"text": "V **Zadání šachty** zaškrtněte **Průchozí šachta**.", "snimek": "k11-zadani", "klik": {"popisek": "Průchozí šachta", "cely": ".row", "stitek": "zaškrtněte"}},
+            {"text": "Přibudou pole pro **počet nástupišť strany A a strany C** a **Počet pater**. Vyplňte je — dokud počet pater chybí, svítí pod nimi výzva.", "snimek": "zadani-pruchozi", "odkazy": [{"popisek": "Průchozí šachta", "cely": ".row", "text": "Zaškrtnutí přepíná celé zadání — nejde jen o příznak v datech, mění se, co se počítá."}, {"obsahuje": "Zadejte počet pater", "text": "Tuhle větu si přečtěte. **Bez počtu pater vycházejí rozměry nulové** a kalkulace je k ničemu — aplikace nemá z čeho spočítat výšku podlaží."}, {"popisek": "Počet pater", "cely": ".row", "text": "Zadává se **ručně**, aplikace ho z ničeho neodvozuje. Nejmíň dvě."}]}
           ]
         },
         { "typ": "text", "text": "Druhá novinka je **počet nástupišť zvlášť pro stranu A a stranu C**. U průchozí šachty nemusí být na obou stranách stejně — dřív se to muselo obcházet." },
@@ -665,10 +384,10 @@
         { "typ": "podnadpis", "text": "Zasklení mezi příčníky přičte 4 hodiny projekce" },
         { "typ": "text", "text": "Když přepnete **Způsob zasklení** na *mezi příčníky (lišty)*, aplikace sama přidá **4 hodiny projekčních prací**. Není to přirážka, kterou byste zadával — je to práce navíc, kterou takové řešení skutečně stojí, a dosud se na ni zapomínalo." },
         {
-          "typ": "obrazek", "snimek": "zadani-zaskleni",
-          "titulek": "Přepnutí na zasklení mezi příčníky.",
-          "odkazy": [
-            { "popisek": "Způsob zasklení", "cely": ".row", "text": "Volba *mezi příčníky (lišty)* přepne způsob výpočtu opláštění a přidá hodiny projekce." }
+          "typ": "kroky", "nadpis": "Postup: zasklení mezi příčníky",
+          "polozky": [
+            {"text": "V **Zadání šachty** přepněte **Způsob zasklení** na *mezi příčníky (lišty)*.", "snimek": "k11-zadani", "klik": {"popisek": "Způsob zasklení", "cely": ".row", "stitek": "vyberte"}},
+            {"text": "Hotovo — projekce se sama zvedne o 4 hodiny a lišty se počítají v metrech (Detail mezivýpočtů níž).", "snimek": "zadani-zaskleni", "odkazy": [{"popisek": "Způsob zasklení", "cely": ".row", "text": "Volba *mezi příčníky (lišty)* přepne způsob výpočtu opláštění a přidá hodiny projekce."}]}
           ]
         },
         { "typ": "podnadpis", "text": "Lišty se měří v metrech, terče v kusech" },
@@ -685,6 +404,14 @@
         { "typ": "podnadpis", "text": "Opláštění po stěnách A–D" },
         { "typ": "text", "text": "Když má každá stěna šachty jiný plášť (třeba čelní sklo, boky Cetris a zadní stěnu dodá stavba), přepněte v Zadání šachty **Opláštění** na **po stěnách A–D**. Teprve pak se objeví karta se čtyřmi stěnami; v jednotném režimu ji neuvidíte a nemusíte o ní vědět." },
         {
+          "typ": "kroky", "nadpis": "Postup: opláštění po stěnách",
+          "polozky": [
+            {"text": "V **Zadání šachty** přepněte **Opláštění** na *po stěnách A–D*.", "snimek": "k11-zadani", "klik": {"popisek": "Opláštění", "cely": ".row", "stitek": "vyberte"}},
+            {"text": "Pod zadáním přibude karta **Opláštění po stěnách (A–D)**. U každé stěny vyberte typ opláštění.", "snimek": "k13-steny", "klik": {"sel": "select", "stitek": "typ stěny A"}},
+            {"text": "Má-li stěna víc materiálů, odškrtněte **po celé výšce** — stěna se rozdělí na pásy. U pásu vyplňte **dělicí výšku**; další pás přidáte tlačítkem **+ přidat pás**. Žluté varování říká, co ještě chybí.", "snimek": "k13-steny-pasy", "klik": {"obsahuje": "+ přidat pás"}}
+          ]
+        },
+        {
           "typ": "seznam",
           "polozky": [
             { "pojem": "Typ a „po celé výšce“", "vyklad": "U každé stěny vyberete typ opláštění z ceníku. Většina stěn je celá stejná, proto je zaškrtnuté **po celé výšce**. Odškrtnutím stěnu rozdělíte na pásy." },
@@ -697,6 +424,12 @@
         { "typ": "text", "text": "Typ opláštění **Izolační dvojsklo** se dřív jmenoval „Dvojsklo (boky + záda)“ (v ceníku „Sklo boky + zadní stěna“). Změnil se jen název — cena ani výpočet ne. U exteriérové šachty jsou boky a zadní stěna z dvojskla ve standardu, v opláštění po stěnách ho zvolíte u kterékoli stěny." },
         { "typ": "podnadpis", "text": "Opláštit i prohlubeň" },
         { "typ": "text", "text": "Pod polem **Prohlubeň** v Zadání šachty je zaškrtávátko **Opláštit i prohlubeň** (dřívější název mluvil o skle — opláštění stěny ale sklo být nemusí, může to být třeba plech). Zaškrtnutím nastavíte **všem čtyřem stěnám** „Opláštění začíná“ = minus hloubka prohlubně, tedy plášť až na dno prohlubně. Je-li zakázka v jednotném opláštění, přepne se tím na **po stěnách A–D** s výchozími typy stěn — proto to není úplně cenově neutrální a dělá se jen vědomým zaškrtnutím. Dokud je zaškrtnuto, změna hloubky prohlubně meze stěn posune s sebou; ruční změna „Opláštění začíná“ u jedné stěny zkratku zruší. U nulové prohlubně není co opláštit — aplikace to řekne a zaškrtnutí vrátí. V Detailu výpočtu je k tomu řádek **Opláštěná prohlubeň**." },
+        {
+          "typ": "kroky", "nadpis": "Postup: opláštit i prohlubeň",
+          "polozky": [
+            {"text": "V **Zadání šachty** zaškrtněte pod polem *Prohlubeň* **Opláštit i prohlubeň**. Zakázka v jednotném opláštění se přepne na *po stěnách A–D*.", "snimek": "k11-zadani", "klik": {"popisek": "Opláštit i prohlubeň", "cely": ".row", "stitek": "zaškrtněte"}}
+          ]
+        },
         { "typ": "text", "text": "Vedle každé stěny je **nákres**: pruh rozdělený na pásy v poměru skutečných výšek, barva podle materiálu, kóty u rozhraní, čárkovaná čára úrovně nástupiště a šrafa u úseků „bez“. Pod nákresem je plocha stěny a pod kartou legenda s plochami podle typu. Jsou to tatáž čísla, ze kterých vychází cena." },
         { "typ": "text", "text": "**Varování si přečtěte.** Obrazovka upozorní na chybějící dělicí výšku nebo na dělicí výšky, které zdola nahoru nerostou, na dolní mez nad horní hranou stěny nebo pod dnem prohlubně, na dělicí výšku nad horní hranou a na typ „jiné“ bez sazby. Výpočet by takový pás jinak mlčky přeskočil a přišlo by se na to až u zákazníka." },
         {
@@ -725,6 +458,13 @@
           ]
         },
         { "typ": "text", "text": "**Nic to neblokuje.** Vyjde-li ale šachta jako nestandardní, zaškrtne se ATYP sám (a s ním se předvyplní rezervy a hodiny navíc). Když potřeba atypu pomine — vrátíte rozměr zpátky do standardu — aplikace svoje zaškrtnutí zase sama vypne. Platí to **jen pro to, co zaškrtla ona**: ATYP zaškrtnutý vámi zůstane, protože důvodů k atypu je víc než rozměry a ty aplikace nezná. A odškrtnete-li ATYP ručně u nestandardní šachty, zapamatuje si to a znovu vám ho v té zakázce nezapne." },
+        {
+          "typ": "kroky", "nadpis": "Postup: když svítí ATYP",
+          "polozky": [
+            {"text": "Vpravo v liště nad kalkulací svítí štítek **✕ ATYP OCK**. Klikněte na něj.", "snimek": "k14-lista-atyp", "klik": {"obsahuje": "ATYP OCK"}},
+            {"text": "Rozbalí se tabulka **pravidlo × standard × co je v zadání** — hned vidíte, čím to je (tady pět sloupků místo čtyř). Opravte zadání, nebo nechte ATYP zapnutý.", "snimek": "k14-rozpis-atyp", "klik": {"obsahuje": "Počet sloupků", "stitek": "důvod"}}
+          ]
+        },
         { "typ": "text", "text": "Mezi kontrolovaná pravidla patří od 17. 9. 2026 i **počet sloupků**: ve standardu jsou čtyři a jakýkoli jiný počet je atyp. Není to strop jako u rozměrů, ale přesná hodnota — tři sloupky jsou stejně nestandardní jako pět, protože nejde o velikost, ale o konstrukční řešení. Za atyp se považuje i **opláštění po stěnách A–D** (kapitola 13): standard zná jen jednotné opláštění." },
         { "typ": "podnadpis", "text": "Přirážka za ATYP se už nezadává, bere se z ceníku" },
         { "typ": "text", "text": "V Zadání šachty bývalo vedle zaškrtávátka ATYP políčko, do kterého se psala procenta přirážky. **To políčko je pryč.** Sazby pro atypickou montáž a projekci se berou výhradně z ceníku, kde je nastavuje administrátor. Zaškrtávátko samo funguje dál a je na ceně vidět okamžitě. Sazba se bere z ceníku vždy stejně, ať ATYP zaškrtne aplikace, nebo vy — obě cesty tedy dají tytéž hodiny navíc. Hodiny, které si přepíšete ručně, zůstávají vaše." },
@@ -738,12 +478,12 @@
         },
         { "typ": "podnadpis", "text": "Atyp se dělá déle: termín dodání" },
         { "typ": "text", "text": "Firma má v Nastavení standardní lhůtu dodání OCK a počet týdnů, o které ji atyp prodlouží (ve výchozím stavu 4 týdny). **Termín dodání OCK** se z toho předvyplní v bloku Smluvní a platební podmínky u cenové nabídky i v krycím listu (je to totéž pole) — u atypové zakázky rovnou prodloužený, například „16 týdnů (vč. 4 týdnů za ATYP)“. Přepsat ho jde jako každé jiné pole. Dokud lhůta v Nastavení není vyplněná, zůstane termín prázdný: **aplikace si žádné datum nevymýšlí.**" },
-        { "typ": "text", "text": "**Od 24. 9. 2026 jde termín i do nabídky.** Je první odrážkou kapitoly V. TERMÍNY REALIZACE („Termín dodání: …“), a to včetně prodloužení za ATYP i vašeho ručního přepisu. V cizojazyčné nabídce se přeloží. Když termín prázdný zůstane, odrážka se vynechá." },
+        { "typ": "text", "text": "**Od 24. 9. 2026 jde termín i do nabídky.** Text kapitoly V. TERMÍNY REALIZACE nese ve výchozím znění značku **{TERMIN}** a nabídka za ni dosadí termín dodání ze zakázky — včetně prodloužení za ATYP i vašeho ručního přepisu, například „Zahájení montáže 16 týdnů (vč. 4 týdnů za ATYP) po podpisu SoD…“. V cizojazyčné nabídce se přeloží. Bez termínu v zakázce se dosadí standardní lhůta z Nastavení, a není-li ani ta, „dle dohody“ (kontrola to ohlásí). Jen starší text kapitoly bez značky dostane termín jako samostatnou první odrážku „Termín dodání: …“." },
         { "typ": "text", "text": "U atypové zakázky na termín hlídá kontrola před nabídkou **„Termín dodání u atypické zakázky“** (kapitola 23). Ozve se ve dvou případech:" },
         {
           "typ": "seznam",
           "polozky": [
-            { "pojem": "V nabídce by byly dva různé termíny", "vyklad": "Text kapitoly V. z Nastavení → Smlouvy / Šablony uvádí standardní lhůtu, kdežto termín ze zakázky je prodloužený za ATYP. Text kapitoly opravuje administrátor — řekněte mu o tom a nabídku do té doby neposílejte." },
+            { "pojem": "V nabídce by byly dva různé termíny", "vyklad": "Jen u staršího textu kapitoly V. bez značky {TERMIN}: text uvádí standardní lhůtu, kdežto termín ze zakázky je prodloužený za ATYP. Administrátor v Nastavení → Smlouvy / Šablony nahradí číslo v textu značkou {TERMIN} — řekněte mu o tom a nabídku do té doby neposílejte." },
             { "pojem": "Nabídka neuvede termín dodání", "vyklad": "Termín v zakázce je prázdný: ve smluvních standardech (Nastavení → Smlouvy / Šablony) chybí standardní lhůta, nebo ho někdo v podmínkách smazal. Napište termín ručně do pole **Termín dodání OCK** v podmínkách u nabídky a dejte vědět administrátorovi, ať lhůtu doplní." }
           ]
         }
@@ -756,11 +496,9 @@
         { "typ": "text", "text": "Sekce **Volitelné položky do základní ceny** je největší změna v kalkulaci. Zaškrtávátko u položky dřív fungovalo nespolehlivě; dnes rozhoduje jednoznačně: **zaškrtnutá položka je v základní ceně, odškrtnutá není.**" },
         { "typ": "text", "text": "A hlavně je to na první pohled vidět. Nezahrnutá položka nemá nulu — má **pomlčku**. Nula totiž vypadá jako spočítaná cena a dala se přehlédnout; pomlčka říká „tohle se nepočítá“ a splést se s ní nedá." },
         {
-          "typ": "obrazek", "snimek": "volitelne-pred",
-          "titulek": "Sekce Volitelné — přechodové plechy nejsou zahrnuté.",
-          "odkazy": [
-            { "pole": "PŘECHODOVÉ PLECHY - NEREZ", "cely": "tr", "text": "Odškrtnutá položka: místo částky je ve všech cenových sloupcích **pomlčka**. Jednotková cena přitom zůstane vidět — víte, kolik by stála, kdybyste ji zahrnul." },
-            { "obsahuje": "VOLITELNÉ CELKEM", "cely": "tr", "text": "Součet sečte **jen zaškrtnuté** položky. Proto v něm plechy nejsou." }
+          "typ": "kroky", "nadpis": "Postup: položka do základní ceny",
+          "polozky": [
+            {"text": "V **Cenové kalkulaci**, v sekci **Volitelné položky do základní ceny**, zaškrtněte položku, kterou má základní cena obsahovat. Nezaškrtnutá má místo ceny pomlčku.", "snimek": "volitelne-pred", "klik": {"sel": "input[type=checkbox]", "stitek": "zaškrtněte"}, "odkazy": [{"pole": "PŘECHODOVÉ PLECHY - NEREZ", "cely": "tr", "text": "Odškrtnutá položka: místo částky je ve všech cenových sloupcích **pomlčka**. Jednotková cena přitom zůstane vidět — víte, kolik by stála, kdybyste ji zahrnul."}, {"obsahuje": "VOLITELNÉ CELKEM", "cely": "tr", "text": "Součet sečte **jen zaškrtnuté** položky. Proto v něm plechy nejsou."}]}
           ]
         },
         { "typ": "text", "text": "Druhá věc, kterou je potřeba vědět: **položka umí být na dvou místech.** Co je zaškrtnuté tady, se už nenabízí mezi příplatky — jinak by se do nabídky dostalo dvakrát. Když položku tady odškrtnete, objeví se dole v příplatcích jako volba pro zákazníka. Aplikace na to pod tabulkou sama upozorní." }
@@ -772,18 +510,11 @@
       "bloky": [
         { "typ": "text", "text": "Přechodové plechy jsou v kalkulaci **vždycky dvě položky** — materiál a montáž. Ovládají se ale **jedním zaškrtávátkem** v Zadání šachty. Na statickém obrázku je to nepochopitelné, proto tu jsou dva vedle sebe." },
         {
-          "typ": "obrazek", "snimek": "volitelne-pred",
-          "titulek": "PŘED kliknutím — oba řádky plechů mají pomlčku a nulové množství.",
-          "odkazy": [
-            { "pole": "PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)", "cely": "tr", "text": "Montáž plechů je samostatný řádek. Bez materiálu nedává smysl, proto se nepřepíná zvlášť." }
-          ]
-        },
-        {
-          "typ": "obrazek", "snimek": "volitelne-po",
-          "titulek": "PO zaškrtnutí „Přechodové plechy“ v Zadání šachty — přepnuly se oba řádky naráz.",
-          "odkazy": [
-            { "pole": "PŘECHODOVÉ PLECHY - NEREZ", "cely": "tr", "text": "Materiál: aplikace dosadila množství **7,752** i cenu. Množství spočítala z rozměrů šachty, nepíšete ho." },
-            { "pole": "PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)", "cely": "tr", "text": "Montáž se zaškrtla **spolu s materiálem**, aniž byste na ni sáhl. Tohle je ta změna: dřív šlo omylem naúčtovat materiál bez montáže." }
+          "typ": "kroky", "nadpis": "Postup: přechodové plechy",
+          "polozky": [
+            {"text": "V **Zadání šachty** zaškrtněte **Přechodové plechy**.", "snimek": "k16-zadani-plechy", "klik": {"popisek": "Přechodové plechy", "cely": ".row", "stitek": "zaškrtněte"}},
+            {"text": "**Před** zaškrtnutím mají oba řádky plechů v sekci Volitelné pomlčku a nulové množství.", "snimek": "volitelne-pred", "odkazy": [{"pole": "PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)", "cely": "tr", "text": "Montáž plechů je samostatný řádek. Bez materiálu nedává smysl, proto se nepřepíná zvlášť."}]},
+            {"text": "**Po** zaškrtnutí se přepnou oba řádky naráz — materiál i montáž.", "snimek": "volitelne-po", "odkazy": [{"pole": "PŘECHODOVÉ PLECHY - NEREZ", "cely": "tr", "text": "Materiál: aplikace dosadila množství **7,752** i cenu. Množství spočítala z rozměrů šachty, nepíšete ho."}, {"pole": "PŘECHODOVÉ PLECHY - NEREZ (MONTÁŽ)", "cely": "tr", "text": "Montáž se zaškrtla **spolu s materiálem**, aniž byste na ni sáhl. Tohle je ta změna: dřív šlo omylem naúčtovat materiál bez montáže."}]}
           ]
         },
         { "typ": "text", "text": "Do **cenové nabídky** jdou plechy naopak jako **jedna položka** — zákazníka nezajímá, že si je uvnitř vedeme na dvou řádcích." },
@@ -795,6 +526,14 @@
       "nadpis": "17. Příplatkové položky: ceník variant pro zákazníka",
       "bloky": [
         { "typ": "text", "text": "Příplatkové položky jsou **ceník variant pro zákazníka** — do základní ceny se nezapočítávají. Sloupec **Nabídka** rozhoduje, které z nich se propíší do generované cenové nabídky. Název, množství i jednotkovou cenu lze přepsat (tlačítko ↺ vrátí vypočtené množství) a vlastní příplatek jde přidat." },
+        {
+          "typ": "kroky", "nadpis": "Postup: příplatek do nabídky",
+          "polozky": [
+            {"text": "Ve sloupci **Nabídka** zaškrtněte příplatky, které má zákazník v nabídce vidět.", "snimek": "k17-priplatky", "klik": {"obsahuje": "Nabídka", "stitek": "sloupec Nabídka"}},
+            {"text": "Množství i jednotkovou cenu jde přepsat přímo v řádku; ↺ vrátí vypočtené množství.", "snimek": "k17-priplatky", "klik": {"sel": "td:nth-child(3) input", "stitek": "přepište"}},
+            {"text": "Do pole **dodatkový text do cenové nabídky** pod položkou napište, co si zákazník kupuje — vytiskne se v nabídce místo množství.", "snimek": "k17-priplatky", "klik": {"sel": "[placeholder*=\"dodatkový\"]", "stitek": "text do nabídky"}}
+          ]
+        },
         { "typ": "text", "text": "Mezi nabídkovými položkami najdete i osm převzatých z naší excelové předlohy: zábrany proti pádu do šachty, demontáž stávajícího ohrazení, malba schodnic, nátěr celého ohrazení, nátěr pouze okopových plechů, prosklená stěna vedle šachty, demontáž stávajícího výtahu a dešťový svod. Většina se počítá jako **množství 1 × cena z ceníku** — jsou to položky „za akci“. Výjimkou jsou zábrany proti pádu, které se počítají na každé nástupiště." },
         { "typ": "text", "text": "Dokud jim administrátor nezadá v ceníku cenu, mají nulu a kontrola je označí jako **položku bez ceny**. Neoceněná práce, která se tiše sečte jako nula, je ta nejdražší chyba — přijde se na ni až při fakturaci." },
         { "typ": "podnadpis", "text": "Cena dle nabídky" },
@@ -806,6 +545,7 @@
         { "typ": "podnadpis", "text": "Vnější lešení a oplechování soklu" },
         { "typ": "text", "text": "**U interiérové šachty je vnější lešení vždycky jen příplatek.** Do základní ceny se tam dostat nemůže, zákazník si ho ale může doobjednat; příplatek se počítá stejně jako u exteriérové šachty. Dokud si ho neobjedná, žádá kapitola IV. nabídky lešení po objednateli a technická specifikace uvádí „lze doplnit viz příplatkové ceny“." },
         { "typ": "text", "text": "U **exteriérové šachty s lešením v základní ceně** nabídka lešení po objednateli nežádá a specifikace vynechá řádek „zajistí objednatel“. Dokument si tak neodporuje a zákazník si nemůže vybrat výklad, který je pro něj levnější." },
+        { "typ": "text", "text": "**Střecha v mědi** (exteriérová šachta): když u řádku ZASTŘEŠENÍ ŠACHTY (EXT) ručně přepíšete množství, PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) počítá s touto plochou; stříška nad můstkem je v přepsané ploše už zahrnutá. Vlastní ruční množství mědi má dál přednost. Příplatek za měď se nabízí jen se zastřešením šachty." },
         { "typ": "text", "text": "**V tabulce SOUČÁSTÍ DODÁVKY NENÍ** má specifikace pro lešení dva řádky — **LEŠENÍ VNITŘNÍ PRO STAVBU OCK** a **LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ** (od v16.10.2). Text navrhuje kalkulace (štítek **z kalkulace**): je-li lešení mezi příplatky v nabídce, „nabízeno jako příplatek“; je-li příplatek ze sloupce **Nabídka** vyřazený, „zajistí objednatel v rámci SP“; je-li lešení v základní ceně, řádek se do dokumentu nedává. Text můžete vybrat nebo napsat jiný (štítek **ručně**) a tlačítkem ↺ se vrátíte k návrhu. Totéž stojí v nabídce — v náhledu, tisku i ve Wordu, česky i v překladech." },
         { "typ": "text", "text": "Podobně **oplechování soklu prohlubně**: je-li nabízené jako příplatek, specifikace u něj píše „nabízeno jako příplatek“, ne „není součástí nabídky“. Rozhoduje o tom týž sloupec **Nabídka**, ze kterého se skládá kapitola II." },
         { "typ": "podnadpis", "text": "Dodatkový text místo množství" },
@@ -824,6 +564,13 @@
       "nadpis": "18. Položka, kterou ceník nezná — a vypnutý řádek",
       "bloky": [
         { "typ": "text", "text": "V každé sekci kalkulace OCK i PROJ najdete dole tlačítko **+ přidat položku** (v projekci *+ přidat hodinovou položku* a *+ přidat fixní položku*). Vloží prázdný řádek, kterému rovnou napíšete název, množství a cenu. **Platí jen v téhle zakázce** — do ceníku se nic nezapíše a další nabídka o něm nebude vědět. Částka, množství ani hodiny **nesmějí být záporné** — kdo potřebuje cenu snížit, zadá slevu, a ta jde přes schvalování." },
+        {
+          "typ": "kroky", "nadpis": "Postup: položka, kterou ceník nezná",
+          "polozky": [
+            {"text": "Na konci sekce (tady Režie) klikněte na **+ přidat položku**.", "snimek": "k18-pred", "klik": {"obsahuje": "+ přidat položku"}},
+            {"text": "Přibude řádek **Nová položka** se štítkem *ruční položka*. Přepište název, množství a jednotkovou cenu; křížkem řádek smažete.", "snimek": "k18-vlastni-polozka", "klik": {"pole": "Nová položka", "stitek": "přepište"}}
+          ]
+        },
         { "typ": "text", "text": "Položku, která má být v **každé nové nabídce** (trvalou), zakládá administrátor v ceníku — v *Ceníku nákladů OCK* tlačítkem „+ přidat trvalou položku do sekce“, v *Ceníku nákladů PROJ* v kartě *Trvalé položky projekce*. Když potřebujete, aby se něco počítalo pořád, řekněte si o to; ceník je na to správné místo, kalkulace ne." },
         { "typ": "podnadpis", "text": "Vypnutý řádek je vidět na první pohled" },
         { "typ": "text", "text": "Do pole **Množství** můžete napsat `0` — položka se pak v téhle nabídce neúčtuje. **Prázdné pole je něco jiného**: to znamená „drž se vypočteného“. Takový řádek zešedne a dostane žlutý štítek *vypnuto (množství 0)*, takže ho v dlouhé kalkulaci nepřehlédnete, a u součtu sekce přibude tichá poznámka *· 2 položky vypnuty* — vidíte to i tehdy, když máte sekci sbalenou." },
@@ -845,6 +592,14 @@
           ]
         },
         { "typ": "text", "text": "Strop role *Obchodník* je ve výchozím nastavení **5 %**, *Vedoucí* **15 %**; nastavuje je administrátor, takže se čísla u vás mohou lišit." },
+        {
+          "typ": "kroky", "nadpis": "Postup: zadat slevu",
+          "polozky": [
+            {"text": "V kartě **Sleva na nabídku OCK** vyberte **Schéma slevy** a do pole **Sleva** napište procenta.", "snimek": "sleva", "klik": {"popisek": "Sleva", "cely": ".row", "stitek": "procenta"}},
+            {"text": "Je-li sleva ve stropu vaší role, svítí **schváleno automaticky** a sleva se propíše do ceny nabídky. Pod tím vidíte cenu po slevě a marži.", "snimek": "k19-sleva-auto", "klik": {"obsahuje": "schváleno automaticky", "stitek": "stav"}},
+            {"text": "Nad strop vznikne **žádost** — do nabídky se nepropíše, dokud ji nadřízený neschválí v záložce *Schvalování slev*. Stav uvidíte tamtéž.", "snimek": "k19-sleva-zadost", "klik": {"sel": ".pill", "stitek": "stav"}}
+          ]
+        },
         { "typ": "podnadpis", "text": "Pět stavů, které stojí za to rozeznat" },
         {
           "typ": "seznam",
@@ -868,11 +623,10 @@
       "bloky": [
         { "typ": "text", "text": "Koncovou cenu jde obchodně zaokrouhlit — na stokoruny, pětistovky, tisíce, pět tisíc nebo desetitisíce, a to dolů, nahoru nebo na nejbližší. Zaokrouhlení OCK a PROJ se nastavuje zvlášť." },
         {
-          "typ": "obrazek", "snimek": "zaokrouhleni",
-          "titulek": "Obchodní zaokrouhlení koncové ceny OCK.",
-          "odkazy": [
-            { "obsahuje": "Zaokrouhlit koncovou cenu", "cely": ".row", "text": "Krok zaokrouhlení. *Bez zaokrouhlení* nechá cenu přesně tak, jak vyšla." },
-            { "obsahuje": "CENA NABÍDKY", "text": "Tabulka ukazuje spočtenou cenu, rozdíl a výslednou cenu nabídky — takže je vždycky vidět, o kolik se zaokrouhlilo." }
+          "typ": "kroky", "nadpis": "Postup: zaokrouhlit cenu nabídky",
+          "polozky": [
+            {"text": "V kartě **Obchodní zaokrouhlení koncové ceny OCK** vyberte, na co zaokrouhlit (stokoruny až desetitisíce), a **Směr** (dolů, na nejbližší, nahoru).", "snimek": "k20-zaokrouhleni", "klik": {"popisek": "Zaokrouhlit koncovou cenu", "cely": ".row", "stitek": "vyberte"}},
+            {"text": "Zaokrouhlená cena se ukáže hned v řádku **CENA NABÍDKY**.", "snimek": "zaokrouhleni", "odkazy": [{"obsahuje": "Zaokrouhlit koncovou cenu", "cely": ".row", "text": "Krok zaokrouhlení. *Bez zaokrouhlení* nechá cenu přesně tak, jak vyšla."}, {"obsahuje": "CENA NABÍDKY", "text": "Tabulka ukazuje spočtenou cenu, rozdíl a výslednou cenu nabídky — takže je vždycky vidět, o kolik se zaokrouhlilo."}]}
           ]
         },
         { "typ": "text", "text": "**V nabídce ani v krycím listu se rozdíl neuvádí vlastním řádkem** — zákazník čte ceny, ne naše zaokrouhlovací pravidlo. Dohledatelný zůstává tady a v protokolu o kalkulaci. Ceny jednotlivých položek kalkulace zůstávají beze změny; do nabídky jde zaokrouhlený základ i koncová cena." }
@@ -893,6 +647,13 @@
         },
         { "typ": "text", "text": "Podstatné je, že to **není kopie**. Co změníte tady, uvidíte v krycím listu, a naopak. Nemůže se tedy stát, že byste v nabídce slíbil splatnost 30 dnů a v krycím listu by zůstalo 14. OCK se páruje s krycím listem OCK a PROJ s krycím listem PROJ — obojí zvlášť, protože ocelová konstrukce a projekční práce mívají jiné platební podmínky i jinou sazbu DPH." },
         { "typ": "text", "text": "**Prázdné pole neznamená „nic“: znamená automatiku.** Aplikace si dosadí firemní standard nebo hodnotu spočítanou ze zakázky a poznámka vpravo řekne, odkud je. Jakmile do pole napíšete vlastní text, platí váš." },
+        {
+          "typ": "kroky", "nadpis": "Postup: upravit podmínky nabídky",
+          "polozky": [
+            {"text": "Pod kartou **Cenová nabídka** v Kalkulaci OCK najdete blok **Smluvní a platební podmínky (OCK)**. Projděte ho shora dolů.", "snimek": "k21-podminky", "klik": {"obsahuje": "Typ smlouvy a produktu", "stitek": "začátek bloku"}},
+            {"text": "Chcete-li jinou hodnotu, než navrhuje aplikace, vyberte ji v seznamu, nebo zvolte *jiné znění…* a napište vlastní text. Co změníte, platí i v krycím listu.", "snimek": "k21-podminky", "klik": {"sel": "select", "stitek": "vyberte"}}
+          ]
+        },
         { "typ": "text", "text": "Ve stejném bloku se rozhoduje i o věcech, které nejsou peníze, ale ovlivní je: typ smlouvy, zádržné ano/ne, plátce DPH ano/ne a sazba DPH. **Vybraná volba je zřetelně zvýrazněná**, takže je poznat, co je zvolené — dřív se přepínač přepnul, ale vypadal stejně jako ten druhý." },
         { "typ": "text", "text": "**Splátky OCK musí dát dohromady 100 %** — záloha, dílčí faktura č. 2 a konečná faktura. Dílčí fakturu č. 2 aplikace normálně dopočítá sama (100 % − záloha − konečná). Když ale součet nesedí (třeba po ruční změně zálohy a konečné faktury nad 100 %), krycí list OCK pod konečnou fakturou upozorní, kontrola před nabídkou ohlásí **„Splátky OCK nedávají 100 %“** a **smlouva o dílo nevznikne**, dokud zálohu, dílčí fakturu č. 2 nebo konečnou fakturu neopravíte. U projekce hlídá totéž plán plateb (kapitola 24)." },
         { "typ": "podnadpis", "text": "Kam podmínky v nabídce jdou" },
@@ -916,6 +677,12 @@
         { "typ": "text", "text": "Když se zakázka otevře, aplikace srovná rozpracované varianty s ceníkem, který právě platí — **stará cena v nabídce je past, ne doklad**. Vaše přirážka a sazba DPH se ale nesrovnávají. Držíte-li schválně i ceny (dohodnutá cena skla, sleva od dodavatele), zaškrtněte u varianty **„ceny jsou dohodnuté“**; takovou variantu automatika vynechá a jen upozorní, že se ceník změnil." },
         { "typ": "podnadpis", "text": "Dialog: Ceník se od posledního uložení změnil" },
         { "typ": "text", "text": "Přepočet se už neděje potichu. Když se při otevření zakázky (i při obnovení zálohy z prohlížeče) nějaká cena změní, otevře se dialog. Řekne, **na kterou verzi ceníku** se přepočítalo, **kolik cen** se změnilo a hlavně **o kolik se hnula cena nabídky** — v korunách bez DPH, před a po. „12 změněných položek“ totiž může znamenat stokorunu i sto tisíc. Počítá se jen ta část, která jde do nabídky: u zakázky jen OCK vám změna sazby projektanta cenu nepohne." },
+        {
+          "typ": "kroky", "nadpis": "Postup: zakázka se otevřela s novým ceníkem",
+          "polozky": [
+            {"text": "Okno řekne, na kterou verzi ceníku se zakázka přepočítala a o kolik se hnula cena nabídky. Běžná volba je **Počítat s dnešním ceníkem**; **Vrátit původní ceny** platí jen pro tohle otevření.", "snimek": "k22-dialog-cenik", "klik": {"obsahuje": "Počítat s dnešním ceníkem"}}
+          ]
+        },
         {
           "typ": "seznam",
           "polozky": [
@@ -941,6 +708,7 @@
           ]
         },
         { "typ": "text", "text": "**Vlastní řádky technické specifikace** (tlačítko *+ přidat vlastní řádek*, sekce DALŠÍ UJEDNÁNÍ) se od v16.10.2 propisují i do nabídky OCK — v náhledu, tisku i ve Wordu jako sekce **DALŠÍ UJEDNÁNÍ** hned za tím, co součástí dodávky není. V anglické, německé a francouzské nabídce se přeloží jen věty, které zná slovník aplikace (třeba „zajistí objednatel v rámci SP“); vlastní text zůstane, jak jste ho napsali." },
+        { "typ": "text", "text": "**Název akce v technické specifikaci** se bere z hlavičky zakázky. Přepsat ho jde dál — pak u pole svítí štítek *ručně* a tlačítkem ↺ se vrátíte k názvu z hlavičky." },
         { "typ": "podnadpis", "text": "Kde se který dokument vytváří" },
         {
           "typ": "seznam",
@@ -953,6 +721,16 @@
           ]
         },
         { "typ": "text", "text": "Tiskové náhledy se otevírají v novém okně. **Když prohlížeč okno zablokuje**, aplikace to řekne hláškou „Prohlížeč zablokoval okno s náhledem…“. Povolte pro stránku kalkulačky vyskakovací okna (ikona v adresním řádku prohlížeče) a klikněte znovu. Dřív se v takové chvíli nestalo nic a nebylo jasné proč." },
+        {
+          "typ": "kroky", "nadpis": "Postup: vytisknout cenovou nabídku OCK",
+          "polozky": [
+            {"text": "Na konci karty **Cenová nabídka** v Kalkulaci OCK klikněte na **Přejít na technickou specifikaci**.", "snimek": "k23-karta-nabidka", "klik": {"obsahuje": "Přejít na technickou specifikaci"}},
+            {"text": "Projděte specifikaci shora dolů. Na jejím konci, v kartě **Cenová nabídka (OCK)**, si přečtěte panel **Než nabídku odešlete**: nález opravte, nebo klikněte na **Beru na vědomí, pokračovat**.", "snimek": "k23-spec-nabidka", "klik": {"obsahuje": "Beru na vědomí, pokračovat"}},
+            {"text": "Vyberte **Jazyk tisku** (česky, anglicky, německy, francouzsky).", "snimek": "k23-spec-nabidka", "klik": {"sel": "select", "stitek": "jazyk"}},
+            {"text": "Klikněte na **Kompletní náhled a tisk nabídky**. Otevře se nové okno s náhledem.", "snimek": "k23-spec-nabidka", "klik": {"obsahuje": "Kompletní náhled a tisk nabídky"}},
+            {"text": "V liště náhledu můžete zaškrtnout **✏️ Upravit text před tiskem** a text doladit. Nakonec klikněte na **Tisk / Uložit jako PDF** — tiskem se nabídka uzamkne jako odeslaná.", "snimek": "k23-nahled-lista", "klik": {"obsahuje": "Tisk / Uložit jako PDF"}}
+          ]
+        },
         { "typ": "text", "text": "**Ruční úprava textu v náhledu.** V liště tiskového náhledu nabídky (OCK i PROJ) je **✏️ Upravit text před tiskem** — text dokumentu pak doladíte přímo v náhledu a vytisknete; **Vrátit původní znění** úpravy zahodí. Úprava platí jen pro ten výtisk, do zakázky se nezapisuje. **Ceny a částky nabídky, jejíž tisk variantu zamyká (odesílá), ručně přepsat nejdou** (od v26.10.6) — buňky s cenami jsou v režimu úprav šedé a bublina řekne, že se mění v kalkulaci: tisk je zmrazí v zámku varianty a dotisk musí ukázat totéž, co dostal zákazník." },
         { "typ": "podnadpis", "text": "Nabídka se řídí kalkulací" },
         { "typ": "text", "text": "**Co v kalkulaci nepočítáte, nabídka neslibuje.** Dřív stačilo, že měla sekce cenu, a vytiskl se celý její text — tedy i části, které jste vyřadil. Když teď v Kalkulaci PROJ odškrtnete třeba *Elektro projekt*, zmizí z nabídky celá jeho část včetně podnadpisu. Nula místo ceny funguje stejně jako odškrtnutí." },
@@ -976,6 +754,7 @@
         { "typ": "text", "text": "Kapitoly IV.–VI. a doložky **vyplňuje administrátor** v Nastavení, které obchodník nevidí; jeden řádek je jedna odrážka. Vy je v zakázce neměníte. Když je potřebujete u konkrétní nabídky upravit, udělejte to ve Wordu." },
         { "typ": "text", "text": "**Každý jazyk má vlastní text** — smluvní podmínky se strojově nepřekládají. Čeština, angličtina, němčina i francouzština mají výchozí znění (francouzské od v19.10.7). Kdyby administrátor text některého jazyka vymazal, nabídka v tom jazyce vytiskne kapitolu česky **s viditelným upozorněním**, aby se to nestalo potichu. A **prázdná kapitola se z nabídky vypustí i s nadpisem**; proto na ni upozorní kontrola před nabídkou „Nevyplněné kapitoly nabídky“ (níž). Nabídka PROJ tyhle kapitoly nemá." },
         { "typ": "text", "text": "Náhled i Word berou kapitoly ze stejného zdroje, pokud administrátor nahrál aktuální šablonu nabídky (CN v11). Uvidíte-li ve Wordu jiné znění kapitol než v náhledu, dejte mu vědět." },
+        { "typ": "text", "text": "**Odeslaná nabídka se nemění ani po změně firemních textů.** Při prvním tisku (zamčení varianty) se s platebními podmínkami uloží i texty kapitol IV.–VI. a doložek ve všech jazycích, věty platebního kalendáře a splátky smlouvy o dílo. Dotisk odeslané nabídky i smlouva z ní je tisknou tak, jak odešly. Rozpracované nabídky berou vždy aktuální texty." },
         { "typ": "podnadpis", "text": "Nabídka v angličtině, němčině a francouzštině" },
         { "typ": "text", "text": "Jazyk dokumentu volíte u tlačítek tisku výběrem **Jazyk tisku** (česky, anglicky, německy, francouzsky; „dle Nastavení“ = jazyk aplikace). Volba platí pro jeden výtisk, zakázku nemění. Pevný text dokumentu dodá jazyková verze šablony, kterou zveřejňuje administrátor; údaje ze zakázky přeloží aplikace." },
         {
@@ -997,7 +776,7 @@
           "titulek": "Panel kontrol před nabídkou s varováním."
         },
         { "typ": "text", "text": "**Varování se neblokují.** Nález buď opravíte, nebo tlačítkem **Beru na vědomí, pokračovat** potvrdíte, že o něm víte. Potvrzení se uloží k variantě i s vaším jménem, aby bylo dohledatelné, že se na to někdo díval. Přibude-li potom nový nález, panel se rozsvítí znovu." },
-        { "typ": "text", "text": "**Zábrana (⛔) je výjimka: dokument nevznikne, dokud zábrana trvá** (od 1. 10. 2026). Zábranou je nesmyslný rozměr (třeba zdvih záporný nebo nad 99 m), rozměr profilu mimo katalog jeklů, záporná částka, množství nebo hodiny, nulová cena nabídky, sleva označená jako schválená automaticky nad stropem role a v Modelu 2 ruční šířka bočního světlíku, která se vedle dveří nevejde (širší než mezera vedle dveří, nebo všechny světlíky dohromady širší než mezery u všech dveří). Tlačítka dokumentů, kterých se zábrana týká, jsou zhasnutá a bublina nad nimi (i hláška při pokusu o tisk) řekne, co opravit. Zábrana v kalkulaci OCK zastaví nabídku OCK (náhled i Word), smlouvu o dílo OCK a krycí list OCK; zábrana v kalkulaci PROJ totéž u projekce. Plnou moc nezastaví žádná. Odklepnout zábranu nejde — po opravě se tlačítka sama rozsvítí. Hlídá se varianta, ze které dokument vzniká (i řídící, když tisknete z ní)." },
+        { "typ": "text", "text": "**Zábrana (⛔) je výjimka: dokument nevznikne, dokud zábrana trvá** (od 1. 10. 2026). Zábranou je nesmyslný rozměr (třeba zdvih záporný nebo nad 99 m, nebo zdvih, šířka či hloubka šachty pod 0,6 m), rozměr profilu mimo katalog jeklů, záporná částka, množství nebo hodiny, nulová cena nabídky, sleva označená jako schválená automaticky nad stropem role a v Modelu 2 ruční šířka bočního světlíku, která se vedle dveří nevejde (širší než mezera vedle dveří, nebo všechny světlíky dohromady širší než mezery u všech dveří). Tlačítka dokumentů, kterých se zábrana týká, jsou zhasnutá a bublina nad nimi (i hláška při pokusu o tisk) řekne, co opravit. Zábrana v kalkulaci OCK zastaví nabídku OCK (náhled i Word), smlouvu o dílo OCK a krycí list OCK; zábrana v kalkulaci PROJ totéž u projekce. Plnou moc nezastaví žádná. Odklepnout zábranu nejde — po opravě se tlačítka sama rozsvítí. Hlídá se varianta, ze které dokument vzniká (i řídící, když tisknete z ní)." },
         { "typ": "text", "text": "Od 23. a 24. 9. 2026 přibyla dvě pravidla, která se týkají textu nabídky:" },
         {
           "typ": "seznam",
@@ -1014,6 +793,16 @@
       "bloky": [
         { "typ": "text", "text": "Smlouva o dílo nese cenu z nabídky a k tomu zástupce a kontakty zákazníka, bankovní spojení a zápis v rejstříku. Ty se vyplňují v krycím listu v sekci **Zástupci a kontakty zákazníka** — a stačí jednou: krycí list OCK a PROJ sdílejí tatáž pole. Osoba ve věcech smluvních je zároveň ta, která smlouvu podepisuje, proto má i kolonku pozice." },
         { "typ": "text", "text": "Co nevyplníte, **zůstane ve Wordu vidět jako `{{…}}`** a doplníte to ručně. Je to schválně: prázdné pole by symbol beze stopy smazalo a chybějící údaj by si nikdo nevšiml." },
+        {
+          "typ": "kroky", "nadpis": "Postup: krycí list a smlouva o dílo OCK",
+          "polozky": [
+            {"text": "Klikněte na záložku **Krycí list zakázky OCK**.", "snimek": "k7-zalozky", "klik": {"obsahuje": "Krycí list zakázky OCK"}},
+            {"text": "V **Základních údajích** zkontrolujte **Číslo SoD** — aplikace ho navrhne z čísla nabídky (CN → SOD).", "snimek": "k24-zakladni-udaje", "klik": {"obsahuje": "Číslo SoD"}},
+            {"text": "V sekci **Zástupci a kontakty zákazníka** vyplňte osoby ve věcech smluvních, obchodních a technických. Stačí jednou — krycí list PROJ sdílí tatáž pole.", "snimek": "k24-zastupci", "klik": {"obsahuje": "Ve věcech smluvních", "stitek": "vyplňte"}},
+            {"text": "V sekci **Smlouva o dílo (SoD realizace)** vyberte **Režim DPH ve smlouvě** a druh místa plnění, doplňte pokutu a datum podpisu. Termíny jsou v sekci *Termíny* výš.", "snimek": "k24-sod-realizace", "klik": {"obsahuje": "Režim DPH ve smlouvě"}},
+            {"text": "Pod krycím listem, v kartě **Smlouva o dílo (OCK)**, vyberte **Jazyk tisku** a klikněte na **Vytvořit smlouvu o dílo (Word)**. Tisk smlouvy zamkne číslo SoD i datum podpisu.", "snimek": "k24-sod-karta", "klik": {"obsahuje": "Vytvořit smlouvu o dílo (Word)"}}
+          ]
+        },
         { "typ": "text", "text": "**Číslo SoD** zapíšete v Základních údajích každého krycího listu hned pod číslem nabídky — v **Krycím listu zakázky OCK** číslo smlouvy realizace, v **Krycím listu zakázky PROJ** číslo smlouvy projekce. Od v17.10.2 aplikace pole předvyplní **návrhem** z čísla nabídky — kód CN vymění za SOD a zbytek nechá (z **2026 - OPR - CN - 0412** je **2026 - OPR - SOD - 0412**, varianta 2 si nechá příponu **.2**); vedle pole stojí „návrh z čísla nabídky“. Návrh můžete přepsat — ruční číslo má přednost, je označené „ručně“ a tlačítko ↺ vrátí návrh. Zakázka bez čísla nabídky návrh nedostane. Doplnit nebo přepsat číslo jde i po odeslání nabídky; **tisk smlouvy o dílo ho zamkne** i s datem podpisu smlouvy — obojí se při tisku zapíše do zakázky, takže krycí list i každý další tisk smlouvy nesou totéž číslo a datum jako podepsaná smlouva. Ve smlouvě se vypíše jako číslo smlouvy; prázdné pole (bez čísla nabídky) nechá ve Wordu `{{…}}`." },
         { "typ": "podnadpis", "text": "Co si smlouva o dílo realizace (OCK) bere z krycího listu" },
         { "typ": "text", "text": "**Termíny, místo plnění, denní pokuta a datum podpisu** se do smlouvy o dílo realizace berou z **Krycího listu zakázky OCK** — ve Wordu je dopisovat nemusíte. Termíny vyplníte v sekci **Termíny** (podklady od dodavatele výtahu, stavební připravenost zákazníka, montáž a opláštění od–do, předání montáži výtahu, osazení šachetních dveří, konečné předání), místo plnění (bytový dům, rodinný dům, administrativní budova nebo vlastní znění), denní pokutu za prodlení zákazníka a datum podpisu v sekci **Smlouva o dílo (SoD realizace)**. Datum podpisu je předvyplněné dnešním dnem, tedy dnem tisku smlouvy — i když nabídka odešla dřív; jiné datum zapíšete ručně. Pokuta za prodlení zhotovitele se ve smlouvě řídí pokutou za prodlení dodávky z platebních podmínek: při „0“ věta ve smlouvě nebude." },
@@ -1057,6 +846,17 @@
       "nadpis": "25. Kalkulace PROJ",
       "bloky": [
         { "typ": "text", "text": "Projekční práce mají vlastní záložku a vlastní sekce (*Zaměření, Studie, Projednání studie, DPZ, IČ, DPS, EZC, Kolaudace, Geodetické zaměření*). **Hlavičku mají ale společnou s OCK** — číslo nabídky, název akce, adresa stavby, zákazník, jeho sídlo, IČO, DIČ i kontaktní osoba se zadávají jednou a platí pro obě části." },
+        {
+          "typ": "kroky", "nadpis": "Postup: kalkulace a nabídka PROJ",
+          "polozky": [
+            {"text": "Klikněte na záložku **Kalkulace PROJ**.", "snimek": "k7-zalozky", "klik": {"obsahuje": "Kalkulace PROJ"}},
+            {"text": "U zakázky s číslem OPR je projekce uzamčená — lišta to řekne a tlačítkem **Přejít do počítané kalkulace** se vrátíte do OCK. Projekci naceníte v samostatné zakázce řady OVP.", "snimek": "k25-zamek-strany", "klik": {"obsahuje": "Přejít do počítané kalkulace"}},
+            {"text": "U zakázky řady OVP pod souhrnem zaškrtněte, jde-li o **Akci mimo Prahu** (přičte se výjezd technika) nebo o **Jednostupňovou dokumentaci**.", "snimek": "k25-volby", "klik": {"obsahuje": "Akce mimo Prahu", "stitek": "zaškrtněte"}},
+            {"text": "V **Cenové kalkulaci PROJ** vyplňte u činností hodiny. Sloupec **Počítat** rozhoduje, které činnosti se počítají a nabízejí.", "snimek": "k25-kalkulace", "klik": {"popisek": "Počítat", "stitek": "sloupec Počítat"}},
+            {"text": "V kartě **Cenová nabídka (PROJ)** zaškrtněte **Nabízet autorský dozor**, pokud ho nabízíte, a zkontrolujte úvod **Naše NABÍDKA a doporučení**.", "snimek": "k25-nabidka-volby", "klik": {"obsahuje": "Nabízet autorský dozor"}},
+            {"text": "Nabídku PROJ vytisknete tlačítkem **Kompletní náhled a tisk nabídky** (nebo do Wordu) — stejně jako u OCK.", "snimek": "k25-nabidka-tisk", "klik": {"obsahuje": "Kompletní náhled a tisk nabídky"}}
+          ]
+        },
         { "typ": "text", "text": "Sloučení hlaviček je vědomé rozhodnutí. Dvě hlavičky měly řešit případ, kdy se projekce fakturuje jinému subjektu než ocelová konstrukce — v praxi se ale mnohem častěji stávalo, že jedna zůstala nevyplněná nebo zastaralá a do nabídky odešlo jiné číslo, než jaké bylo na smlouvě. **Když je zákazník opravdu jiný, založte na projekci samostatnou zakázku**; je to čistší než dvě hlavičky v jedné." },
         { "typ": "text", "text": "Sazba DPH, sleva i obchodní zaokrouhlení zůstávají u OCK a u projekce **samostatné**. Sleva OCK a sleva PROJ se nikdy nesjednocují: jsou to dvě samostatná obchodní rozhodnutí a aplikace to hlídá zvláštním testem, aby to nikdo omylem nespojil." },
         { "typ": "text", "text": "**Cena v eurech:** u zahraniční zakázky (ceník Zahraničí, nebo Jazyk tisku jiný než česky) ukazuje dlaždice **Základní cena bez DPH** v Kalkulaci OCK i PROJ pod částkou malým písmem vpravo i cenu v EUR — stejným kurzem a zaokrouhlením (celá eura nahoru) jako cenová nabídka v eurech; u odeslané nabídky kurzem, se kterým odešla. Bez kurzu EUR v ceníku se eura neukážou (dlaždice napíše, že kurz chybí)." },
@@ -1088,7 +888,10 @@
             "Zahraniční zakázka bez čísla může mít příznak **Zakázka je jen realizace (bez PROJ)** — zaškrtávátko je pak v liště nad projekcí a jeho odškrtnutím se projekce zase počítá (pokud ji nevyřazuje číslo nabídky)."
           ]
         },
-        { "typ": "text", "text": "Praktická drobnost z ceníku projekce: u dopravy je zaškrtávátko **„mimo Prahu“**, které přičte paušál z ceníku a při změně ceníku se přepočítá. Ruční pole v Kč vedle něj je **příplatek navíc, ne tatáž věc**." }
+        { "typ": "text", "text": "Praktická drobnost z ceníku projekce: u dopravy je zaškrtávátko **„mimo Prahu“**, které přičte paušál z ceníku a při změně ceníku se přepočítá. Ruční pole v Kč vedle něj je **příplatek navíc, ne tatáž věc**." },
+        { "typ": "text", "text": "**Akce mimo Prahu** (zaškrtávátko pod souhrnem Kalkulace PROJ): k ceně zaměření, studie, DPZ a kolaudace se přičte cena jednoho výjezdu technika z Ceníku nákladů PROJ a nabídka u nich napíše „Cena zahrnuje i cestovní náklady na 1 výjezd technika na stavbu (… Kč bez DPH)“ — u DPZ a kolaudace navíc „Případné další cesty budou fakturovány individuálně“. U inženýrské činnosti a autorského dozoru se cena výjezdu jen uvede. Cenu výjezdu přepisuje jen ten, kdo smí vidět náklady; obchodník ji vidí jako číslo. V Praze nechte nezaškrtnuté." },
+        { "typ": "text", "text": "**Jednostupňová dokumentace** (DPZ a DPS v jednom stupni): aplikace nic nepřepočítá ani nepřepíše — kontrola před nabídkou připomene, že nabídku PROJ je nutné upravit ve Wordu ručně (popis DPZ+DPS, ceny, plán plateb, termíny)." },
+        { "typ": "text", "text": "**Úvod nabídky PROJ** je v kartě *Cenová nabídka (PROJ)* v poli **Naše NABÍDKA a doporučení** — předvyplní se podle nabízených činností, přepsat ho můžete a **↺ Vrátit výchozí** vrátí původní znění. Ruční text platí pro českou nabídku; anglická, německá a francouzská mají výchozí úvod. **Autorský dozor** nabídka i krycí list PROJ uvádějí jen se zaškrtnutým **Nabízet autorský dozor** (nová zakázka ho má vypnutý). **Bez studie proveditelnosti** (začínáte rovnou DPZ) nabídka nepíše, že DPZ navazuje na studii, vynechá hvězdičku u ceny DPZ a termín hrubopisu DPZ zní „do 12-ti týdnů od objednání a předání podkladů“." }
       ]
     },
     {
@@ -1098,6 +901,12 @@
         { "typ": "text", "text": "Nejčastější otázka nad hotovou kalkulací zní „proč je tam zrovna tohle číslo“. Odpovídá na ni sama aplikace, a to na dvou místech." },
         { "typ": "podnadpis", "text": "Detail výpočtu vysvětluje každý řádek" },
         { "typ": "text", "text": "Popisné texty, které dřív zabíraly místo v Zadání šachty, se přestěhovaly do **Detailu výpočtu** — a je jich tam víc. U každého řádku stojí, odkud se hodnota bere: jestli je to sazba z ceníku, něco spočítaného, nebo to, co jste zadal." },
+        {
+          "typ": "kroky", "nadpis": "Postup: podívat se, odkud číslo je",
+          "polozky": [
+            {"text": "Klikněte na záložku **Detail výpočtu PROJ** — u každého řádku stojí, odkud se hodnota bere.", "snimek": "k7-zalozky", "klik": {"obsahuje": "Detail výpočtu PROJ"}}
+          ]
+        },
         {
           "typ": "obrazek", "snimek": "detail-proj-vysvetleni",
           "titulek": "Začátek Detailu výpočtu PROJ.",
@@ -1135,10 +944,9 @@
       "bloky": [
         { "typ": "text", "text": "Karta **Interní poznámky k zakázce (netisknou se)** stojí od 22. 9. 2026 **nahoře**: v Kalkulaci OCK hned pod cenovým pásem, v Kalkulaci PROJ pod souhrnem. Patří sem to, co se jinak ztratí v e-mailu: proč se dala sleva, co jsme slíbili, na čem se čeká." },
         {
-          "typ": "obrazek", "snimek": "poznamky-prilohy",
-          "titulek": "Interní poznámky k zakázce.",
-          "odkazy": [
-            { "obsahuje": "netisknou se", "text": "Nic z téhle karty se **netiskne**: text se neobjeví v nabídce, krycím listu ani ve specifikaci." }
+          "typ": "kroky", "nadpis": "Postup: zapsat poznámku",
+          "polozky": [
+            {"text": "Klikněte do pole karty **Interní poznámky k zakázce** a pište jako do zápisníku. Ukládá se samo, i v zakázce otevřené jen ke čtení.", "snimek": "poznamky-prilohy", "klik": {"sel": "textarea", "stitek": "pište sem"}, "odkazy": [{"obsahuje": "netisknou se", "text": "Nic z téhle karty se **netiskne**: text se neobjeví v nabídce, krycím listu ani ve specifikaci."}]}
           ]
         },
         { "typ": "text", "text": "Poznámky jsou **jedno textové pole** — píšete do něj jako do zápisníku, odstavec pod odstavec. Štítky druhu poznámky a jednotlivé záznamy s autorem a časem zmizely; v provozu je nikdo nepoužíval. Je to **jeden zápisník zakázky**: co napíšete v OCK, uvidíte i v PROJ." },
@@ -1188,6 +996,13 @@
       "nadpis": "29. Rozpracovanou kalkulaci neztratíte",
       "bloky": [
         { "typ": "text", "text": "Aplikace si průběžně odkládá zálohu rozpracované kalkulace **přímo ve vašem prohlížeči** — nezávisle na tom, jestli je zakázka uložená online. Když prohlížeč spadne, zavřete omylem panel nebo vám vyprší přihlášení, po dalším otevření se nahoře objeví žlutá lišta **„Rozpracovaná kalkulace“**. Kliknutím na **Pokračovat v rozpracované kalkulaci** se práce vrátí přesně tam, kde jste skončil; **Založit novou kalkulaci** začne novou a malý odkaz **Zahodit zálohu** zálohu smaže. Záloha **odeslané** (vytištěné) nabídky se nenabízí — do ní se stejně psát nedá — a aplikace ji tiše uklidí. Zakázka otevřená jen ke čtení zálohu v prohlížeči nepřepíše." },
+        {
+          "typ": "kroky", "nadpis": "Postup: vrátit se k rozpracované práci",
+          "polozky": [
+            {"text": "Po otevření aplikace svítí nahoře žlutá lišta **Rozpracovaná kalkulace**. Klikněte na **Pokračovat v rozpracované kalkulaci** — práce se vrátí tam, kde jste skončil.", "snimek": "k8-rozpracovana-lista", "klik": {"obsahuje": "Pokračovat v rozpracované kalkulaci"}},
+            {"text": "Chcete-li začít znovu, klikněte na **Založit novou kalkulaci**. Zálohu z prohlížeče smažete odkazem *Zahodit zálohu*, když ho lišta nabízí.", "snimek": "k8-rozpracovana-lista", "klik": {"obsahuje": "Založit novou kalkulaci"}}
+          ]
+        },
         { "typ": "text", "text": "Platí přitom pravidlo: **prázdná zakázka nikdy nepřepíše zálohu, ve které něco je.** Dokud se nerozhodnete, záloha čeká. Když obnovu nechcete, prostě pokračujte v práci; lišta zhasne sama, jakmile začnete psát do nové zakázky." },
         { "typ": "text", "text": "Aplikace si navíc pamatuje, na čem jste pracoval, a **po přihlášení tu zakázku sama otevře** — v liště se objeví „Otevřena zakázka, na které jste naposledy pracoval…“. Tlačítkem *✚ Nová zakázka* se návrat odpojí, takže po příštím obnovení začnete načisto." },
         {
@@ -1206,7 +1021,19 @@
       "nadpis": "30. Zálohy a výpadky",
       "bloky": [
         { "typ": "text", "text": "O zálohy se starat nemusíte a ani je nemáte čím spustit — jsou celé v rukou administrátora. Databáze se zálohuje sama, navíc denně automaticky, a administrátor si může kdykoli stáhnout otisk celého obsahu. Noční záloha každého dne zůstává nedotčená — ruční záloha administrátora se od v19.10.5 ukládá vedle ní, ne přes ni. Umí ji i **nalít zpátky**, přičemž se nejdřív zobrazí náhled s tím, kolik záznamů přibude, kolik se přepíše a co se přeskočí a proč." },
+        {
+          "typ": "kroky", "nadpis": "Postup pro administrátora: ruční záloha a kopie na Disk",
+          "polozky": [
+            {"text": "Vpravo nahoře klikněte na ozubené kolo **⚙** a v Nastavení na záložku **Databáze**.", "snimek": "k30-zalozky", "klik": {"obsahuje": "Databáze"}},
+            {"text": "V kartě **Online databáze** klikněte na **Zálohovat teď**. Záloha se pořizuje po částech — aplikace průběžně píše „Zálohuji databázi po částech… zpracováno X z Y záznamů“. Okno nezavírejte.", "snimek": "k30-online-pred", "klik": {"obsahuje": "Zálohovat teď"}},
+            {"text": "Hotovo: „Záloha databáze pořízena (…, N zakázek, M účtů)“ a pod tím řádek **Poslední záloha databáze**.", "snimek": "k30-online-po", "klik": {"obsahuje": "Záloha databáze pořízena", "stitek": "hotovo"}},
+            {"text": "Kopii na Disk Google pořídíte tlačítkem **Zkopírovat zálohu na Disk teď**. Poprvé vyberte složku **_Zaloha Netlify DB** a povolte zápis. Uloží se soubor `otisk_RRRR-MM-DD.json.gz` a hláška řekne, kolik starších kopií ve složce uklidila.", "snimek": "k30-online-po", "klik": {"obsahuje": "Zkopírovat zálohu na Disk teď"}},
+            {"text": "Soubor se zálohou do počítače stáhnete tlačítkem **Stáhnout zálohu** — stahuje se ze serveru po stránkách („Stahuji zálohu… stránka N“), u velké databáze to chvíli trvá.", "snimek": "k30-online-po", "klik": {"obsahuje": "Stáhnout zálohu"}},
+            {"text": "Když karta červeně hlásí **úbytek dat** (nová záloha nese méně než předchozí), mazání starých záloh stojí. Zkontrolujte, co ubylo; byl-li úbytek záměrný (smazané zakázky či účty), klikněte na **Úbytek byl záměrný** a potvrďte heslem správce."}
+          ]
+        },
         { "typ": "text", "text": "**Pro administrátora — kopie záloh na Disk Google (od v19.10.8).** V kartě Online databáze je tlačítko **Zkopírovat zálohu na Disk teď**. Poprvé se prohlížeč zeptá na složku: vyberte na Disku Google složku **_Zaloha Netlify DB** (leží vedle složky _DB) a povolte zápis. Do složky se uloží poslední noční záloha jako soubor **otisk_RRRR-MM-DD.json.gz** (od v26.10.9 komprimovaný, o 30–40 % menší; bez otisků hesel a bez podpisů) a vedle něj **posledni_kopie.json** s datem, velikostí a kontrolním součtem; aplikace ukáže cestu a velikost. Jednou týdně (po přihlášení, když je poslední kopie starší než 7 dní) aplikace kopii připomene; je-li kopie starší než 14 dní, v kartě svítí varování. Kopii `.json.gz` načte obnova *ze souboru* přímo; mimo aplikaci ji rozbalí běžný program (7-Zip)." },
+        { "typ": "text", "text": "**Záloha po částech (od v26.10.8).** Velká databáze se nezálohuje jedním zápisem, ale po částech: *Zálohovat teď* ukazuje průběh („Zálohuji databázi po částech… zpracováno X z Y záznamů“), noční záloha se mezi 2:00 a 3:45 UTC dopořizuje po krocích každých 15 minut a hotová záloha se v přehledu objeví, až je celá. Ručně jde zálohovat nejvýš jednou za 10 minut a 20× za den. *Stáhnout zálohu* i kopie na Disk čtou zálohu ze serveru po stránkách; soubor `.json.gz` zabírá o 30–40 % méně místa. Když se záloha nepořídí, karta i hláška řeknou proč." },
         { "typ": "text", "text": "**Kolik záloh se drží (od v26.10.9, rozhodnutí J. V. 26. 10. 2026).** *V Netlify:* noční zálohy posledních **14 dní**, z každého týdne nedělní (chybí-li, nejbližší starší v týdnu) **8 týdnů** a z každého měsíce první **6 měsíců**; ruční a přihlašovací zálohy **7 dní**; zálohy pořízené před obnovou se nemažou nikdy. Ze záloh do 19. 10. 2026 zůstává jen první z každého měsíce (i ta nejvýš 6 měsíců). Mazat se smí jen tehdy, když je na Disku kopie mladší než 7 dní. **Zálohy se mají zvětšovat:** když nová noční záloha (nebo nová kopie na Disku) nese proti předchozí méně než 90 % dat, méně než 95 % zakázek či účtů, nebo méně šablon či podpisů, mazání v Netlify i na Disku stojí a Nastavení → Databáze červeně ukáže, co ubylo. Bez potvrzení tlačítkem *Úbytek byl záměrný* (heslem správce) se nesmaže nic — ani po měsících. *Na Disku:* po každé úspěšné kopii aplikace ve složce _Zaloha Netlify DB smaže staré kopie podle pravidla: posledních **7 dní**, z týdne nedělní **8 týdnů**, z měsíce první **6 měsíců**. Maže jen soubory přesně tvaru otisk_RRRR-MM-DD.json(.gz), nikdy nejnovější a nikdy, když kopie nevyšla celá; hláška po kopii řekne, kolik starších kopií smazala (Disk Google je ještě 30 dní drží v koši). Nejnovější záloha se nesmaže nikdy." },
         { "typ": "text", "text": "**Vaše vytištěné nabídky jsou i při obnově v bezpečí.** Zakázku, které by obnova změnila data uzamčené varianty nebo jí sundala zámek, aplikace přeskočí a vypíše — a to i v režimu „přepsat vším ze zálohy“. Obnova také nikdy nemaže: zakázka, která vznikla až po záloze, na serveru zůstane. Obnovu účtů a **nastavení zobrazení** (to řídí i to, kam vás server pustí — CRM, náklady, ceník v zakázce) potvrzuje administrátor svým heslem, stejně jako změnu zobrazení v Nastavení." },
         { "typ": "text", "text": "Prakticky vás to zajímá ve dvou situacích. **Když vypadne internet**, přestane se ukládat a lišta zakázky to napíše; rozpracovanou zakázku si v takové chvíli uložte do souboru a po obnovení spojení ji načtěte zpět. **Když si nejste jistý, že se něco uložilo**, podívejte se na čas na liště — a když ani to nestačí, otevřete *Načíst zakázku* a zkontrolujte sloupec *Uloženo* u své zakázky." },

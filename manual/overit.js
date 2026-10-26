@@ -88,6 +88,15 @@
   test('od každé kapitoly vede šipka zpět na obsah',
     document.querySelectorAll('a.nahoru').length === id.length);
 
+  /* #524 (J. V. 26. 10. 2026): bez „Co je nového", postupy krok za krokem. */
+  test('příručka nemá sekci „Co je nového"', !/Co je nového/i.test(document.body.innerText));
+  var kroky = [].slice.call(document.querySelectorAll('ol.kroky > li.krok'));
+  test('postupy krok za krokem jsou v příručce', kroky.length > 0 && P.kroku === kroky.length,
+    kroky.length + ' / ' + P.kroku);
+  test('kroky každého postupu jdou od 1 bez děr', [].every.call(document.querySelectorAll('ol.kroky'), function (ol) {
+    return [].every.call(ol.querySelectorAll(':scope > li.krok > .krok-cis'), function (c, i) { return c.textContent === String(i + 1); });
+  }));
+
   /* Popisky obrázků musí jít od 1 bez děr — čísluje je renderer, takže díra
    * znamená, že se nějaký snímek nevykreslil. */
   var popisky = [].map.call(document.querySelectorAll('figcaption b'),
