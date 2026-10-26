@@ -1,0 +1,23 @@
+databáze: 792 zakázek, 118.1 MB (přílohy 102.8 MB); Blobs model 40 ms/operace + 20 ms/MB
+noční: 1 běhů, kroky ms 15348/6395cpu; RSS max 457.8 MB; 38 částí, data 120.5 MB, uloženo gzip 79.8 MB (66 %)
+OK   noční otisk vznikne v okně 8 běhů
+nereprodukováno K9-V-cas-nocni — krok nočního otisku přesáhne limit plánované funkce 30 s
+    {"maxMs":15348}
+vynucený: 3 požadavků, nejdelší 5647 ms, RSS max 543.7 MB
+nereprodukováno K9-cas-vynuceny — požadavek vynuceného otisku přesáhne limit synchronní funkce 10 s
+    {"maxMs":5647,"pozadavku":3}
+kopie na Disk: 38 stránek, největší odpověď 3.7 MB, nejdelší 567 ms, soubor 117.8 MB
+OK   kopie na Disk: každá stránka < 6 MB a < 10 s
+náhled obnovy po výřezech: 105 požadavků, nejdelší 1071 ms, celkem 65 s
+OK   náhled obnovy z otisku po částech: každý požadavek < 10 s
+starý otisk 118.1 MB: přehled záloh (seznamOtisku) 3341 ms, RSS max 1244.0 MB
+REPRODUKOVÁNO K9-S4 — přehled záloh čte starý jednolitý otisk bez souhrnu celý (118.1 MB) — každý GET přehledu
+    {"ms":3341,"rss":"1244.0 MB"}
+náhled obnovy ze starého otisku jedním požadavkem: 53867 ms, RSS max 1485.6 MB, ok=true
+  … tentýž náhled bez latence úložiště (čisté CPU): 3418 ms
+REPRODUKOVÁNO K9-V1 — náhled (i obnova) ze starého jednolitého otisku jde jedním požadavkem — u 792 zakázek trvá 54 s, nad limitem synchronní funkce 10 s
+    {"ms":53867,"msBezLatence":3418,"rss":"1485.6 MB"}
+výřez starého otisku (cast 0, 15 záznamů): 3421 ms, RSS max 1431.3 MB, záznamů 1120
+SOUHRN {"LAT":40,"MSMB":20,"nocni":{"kroky":1,"maxMs":15348,"casti":38,"velikostB":126323936,"ulozenoB":83645235,"rss":480059392},"vynuceny":{"pozadavku":3,"maxMs":5647,"rss":570114048},"disk":{"stran":38,"nejvicB":3928625,"maxMs":567,"souborB":123557499},"obnova":{"pozadavku":105,"maxMs":1071,"celkemS":65},"stary":{"velB":123878191,"msSeznam":3341,"msObnova":53867,"msObnovaBezLatence":3418,"msVyrez":3421,"pozadavkuVyrezu":75}}
+
+kontrol: 3 OK, 0 FAIL; nálezů reprodukováno: 2/4

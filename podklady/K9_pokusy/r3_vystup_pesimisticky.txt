@@ -1,0 +1,11 @@
+databáze: 792 zakázek, 118.1 MB (přílohy 102.8 MB); Blobs model 60 ms/operace + 100 ms/MB
+noční: 2 běhů, kroky ms 20682/4412cpu, 12015/2400cpu; RSS max 457.6 MB; 38 částí, data 120.5 MB, uloženo gzip 79.8 MB (66 %)
+OK   noční otisk vznikne v okně 8 běhů
+nereprodukováno K9-V-cas-nocni — krok nočního otisku přesáhne limit plánované funkce 30 s
+    {"maxMs":20682}
+vynucený: 6 požadavků, nejdelší 6572 ms, RSS max 540.9 MB
+nereprodukováno K9-cas-vynuceny — požadavek vynuceného otisku přesáhne limit synchronní funkce 10 s
+    {"maxMs":6572,"pozadavku":6}
+SOUHRN {"LAT":60,"MSMB":100,"nocni":{"kroky":2,"maxMs":20682,"casti":38,"velikostB":126323936,"ulozenoB":83645692,"rss":479875072},"vynuceny":{"pozadavku":6,"maxMs":6572,"rss":567136256}}
+
+kontrol: 1 OK, 0 FAIL; nálezů reprodukováno: 0/2

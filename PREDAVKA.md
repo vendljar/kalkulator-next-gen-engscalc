@@ -15,6 +15,38 @@ Nad `919b3b7`. Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **V kódu aplikace 
 `overit_roadmapu.mjs` hlásí 1 FAIL („každé odložené nese důvod“) už před touto změnou.
 
 ---
+# Předávka — 26. 10. 2026: K9 #526 — nezávislý audit zálohování, větev `claude/k9-audit-zaloh`
+
+Nad `67f4d3b` (Z2 #523, obsahuje Z1 #522). Finální `origin/claude/z2-retence-zaloh` proti 67f4d3b beze
+změny. Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Jen audit + reprodukce, **žádná oprava kódu**,
+neslučováno; na ostrém, na Disku ani v Pipedrive nic.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| Zpráva | ✅ | `podklady/K9_AUDIT_ZALOH_26_10.md` — verdikt, nálezy s reprodukcí, místem, návrhem opravy a testu, „mění chování" |
+| Reprodukce | ✅ | `podklady/K9_pokusy/` (`bash podklady/K9_pokusy/spust_vse.sh [--objem]`), vše na paměťovém úložišti; kontroly 31 OK / 0 FAIL, všechny nálezy reprodukovány |
+| Roadmapa | ✅ | #526 (hotovo — audit; opravy budou samostatné položky) |
+| Hlášení koordinaci | ✅ | K9-V1 hned po nálezu, závěr po dokončení |
+
+**Verdikt:** K 0, V 1, S 6, N 7, I 9. Kritický nález žádný — retence nesmaže nejnovější ani „před obnovou",
+nemaže bez hotového nočního otisku a podložené kopie na Disku (simulace 15 měsíců).
+**K9-V1 (V):** obnova i náhled ze starého jednolitého otisku (bez `casti`) jdou z klienta jedním
+požadavkem → 54 s na 792 zakázek (limit 10 s); server výřez `cast: 0` umí, klient ne.
+**S:** pojistka úbytku jen proti včerejšku (salám 4 %/noc projde), nepotvrzené varování přepíše další
+(i z Disku), retence smaže zdroj rozběhnuté obnovy, přehled čte staré otisky bez souhrnu celé
+(3,3 s / ~525 MB každý), úklid Disku podle hodin prohlížeče.
+
+**Měření (792 zakázek / 118 MB, Blobs 40 ms/op + 20 ms/MB):** noční otisk 1 běh 15,3 s (pesimisticky
+2 běhy, max 20,7 s), vynucený 3 požadavky ≤ 5,6 s, gzip 66 %, kopie na Disk 38 stránek ≤ 3,7 MB,
+náhled obnovy po výřezech 105 požadavků ≤ 1,1 s.
+
+**Otevřené otázky pro J. V.:** kumulativní prahy pojistky (K9-S1); nástroj na ruční mazání otisků
+„před obnovou" (K9-I3); kdo smí potvrzovat úbytek — kterýkoli správce, nebo jen hlavní účet (K9-I7);
+ověřit, že plánovaná `zaloha_nocni` nejde na ostrém zavolat přes URL (K9-I9).
+
+**Další krok:** dávka oprav v pořadí K9-V1 → pojistka (S2, S1, N1, N2) → S5, S6, S4 → N; každá
+s testem z reprodukce (před opravou selže, po ní projde).
+
 # Předávka — 26. 10. 2026: Z2 #523 — retence záloh (Blobs i Disk) a komprese otisku, větev `claude/z2-retence-zaloh`
 
 Nad `48ab0a4` (Z1 #522, v26.10.8 — finální HEAD Z1, sloučeno jako předek). **Verze 26.10.9.** Koordinace:

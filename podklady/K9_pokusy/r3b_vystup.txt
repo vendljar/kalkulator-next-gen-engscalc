@@ -1,0 +1,2 @@
+jednolitý otisk 112 MB: text + JSON.parse 1397 ms, RSS základ 536 MB (Buffer už v něm), špička 888 MB, nárůst 352 MB; zakázek 792
+odhad funkce: Buffer 112 MB + nárůst 352 MB + běh Node ~60 MB = 525 MB z limitu 1024 MB
