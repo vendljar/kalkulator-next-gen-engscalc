@@ -2264,6 +2264,8 @@ function tiskListaCss() {
     #dok.bez-dph .dph-radek{display:none}
     #dok.editace{outline:2px dashed #93b4f7;outline-offset:8px;border-radius:6px;background:#fdfeff}
     #dok.editace:focus{outline-color:#1d4ed8}
+    #dok.editace .cena-zamcena{background:#f3f4f6;cursor:not-allowed}
+    @media print{#dok.editace .cena-zamcena{background:transparent}}
     .bar .stav{margin-left:12px;color:#6b7686;font-size:11.5px}
     .bar label.edit{margin-left:12px;font-size:12.5px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none}
     .bar button.sek{background:#fff;color:#1d4ed8}
@@ -2341,6 +2343,7 @@ function tiskListaSkript(hlasky, zamek) {
     vyp: 'Úpravy vypnuté. Ruční změny zůstávají, jen se do dokumentu už nedá psát.',
     vraceno: 'Vráceno původní znění z kalkulace.',
     zamceno: 'Varianta byla uzamčena jako odeslaná nabídka. Další úpravy provádějte v jejím klonu.',
+    cena: 'Částky odeslané nabídky se ručně neupravují — tisk je zmrazí v zámku varianty. Změňte je v kalkulaci.',
   }, hlasky || {});
   const z = (zamek && zamek.typ && typeof dokumentZamyka === 'function' && dokumentZamyka(zamek.typ))
     ? { typ: zamek.typ, varId: zamek.varId || '' } : null;
@@ -2365,7 +2368,21 @@ function tiskListaSkript(hlasky, zamek) {
     + 'window.addEventListener("beforeprint",tiskZamkni);\n'
     + 'function tiskDph(zap){var d=document.getElementById("dok");if(!d)return;'
     + 'if(zap)d.classList.remove("bez-dph");else d.classList.add("bez-dph");}\n'
+    /* CENY SE V NÁHLEDU SE ZÁMKEM NEPŘEPISUJÍ (SEC-S3, J. V. 26. 10. 2026, A).
+     * Tisk nabídky zamyká variantu se zmrazeným výsledkem; ručně přepsaná
+     * částka by odešla zákazníkovi a zámek, dotisk, controlling i Pipedrive
+     * by nesly jinou. Buňky s částkou (.castka a buňky tabulek s měnou)
+     * dostanou contenteditable="false" hned při otevření — takže je nese
+     * i „původní znění" pro návrat. Ostatní text zůstává upravitelný. */
+    + 'var TISK_CENA_RE=/\\d[\\s\\u00a0\\u202f]*(Kč|€|EUR)|(EUR|€)[\\s\\u00a0\\u202f]*\\d/;\n'
+    + 'function tiskCenyZamkni(){if(!TISK_ZAMEK)return;var d=document.getElementById("dok");if(!d)return;'
+    + 'var el=d.querySelectorAll(".castka,td,th");for(var i=0;i<el.length;i++){var e=el[i];'
+    + 'if(e.classList.contains("castka")||(!e.querySelector("td,table")&&TISK_CENA_RE.test(e.textContent||""))){'
+    + 'e.setAttribute("contenteditable","false");e.classList.add("cena-zamcena");'
+    + 'e.title=TISK_HLASKY.cena||"";}}}\n'
+    + 'tiskCenyZamkni();\n'
     + 'function tiskEditace(zap){var d=document.getElementById("dok");if(!d)return;'
+    + 'tiskCenyZamkni();'
     + 'if(TISK_PUVODNI===null)TISK_PUVODNI=d.innerHTML;'
     + 'd.contentEditable=zap?"true":"false";'
     + 'if(zap)d.classList.add("editace");else d.classList.remove("editace");'
