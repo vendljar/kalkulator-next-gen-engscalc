@@ -1,6 +1,6 @@
 # Postup obnovy databáze ze zálohy — pro případ nouze
 
-> Sepsáno 24. 9. 2026 (#152, 2. část). Každý krok je ověřený automatickou
+> Sepsáno 24. 9. 2026 (#152, 2. část), doplněno 26. 10. 2026 (#522 — velká databáze). Každý krok je ověřený automatickou
 > zkouškou `netlify/test_obnova_nanecisto.mjs`, která simuluje úplnou havárii
 > a běží při každé kontrole před nahráním (`nastroje/pred_pushem.sh`). Když
 > se postup a aplikace rozejdou, zkouška spadne dřív, než se na to přijde
@@ -10,10 +10,22 @@
 
 | Záloha | Kde | Co obsahuje | Kdy vzniká |
 |---|---|---|---|
-| **Noční otisk** | Netlify Blobs, úložiště `zalohy`, klíč = datum | celá databáze **včetně účtů a otisků hesel** | každou noc ve 2:00 UTC sám (funkce `zaloha_nocni`) |
+| **Noční otisk** | Netlify Blobs, úložiště `zalohy`, klíč = datum (od v26.10.8 manifest + části `casti/<datum>/…`) | celá databáze **včetně účtů a otisků hesel** | každou noc sám, 2:00–3:45 UTC po 15 min (funkce `zaloha_nocni` — běhy navazují, dokud není hotový) |
 | **Otisk při přihlášení** | totéž | totéž | administrátor se přihlásí a dnešní otisk ještě není |
 | **Otisk před obnovou** | totéž, klíč `…-pred-obnovou` | stav těsně před každou obnovou | automaticky při obnově |
 | **Stažená záloha** | u vás v počítači / na Disku (tlačítko „Stáhnout zálohu", „Odlít zálohu do složky") | zakázky, ceník, firma, šablony, matice — **účty bez hesel** | ručně |
+
+**Velká databáze (od v26.10.8, #522).** Do v26.10.8 se otisk pořizoval
+najednou a u ostrého engscalc (~800 zakázek) se do limitu funkce nevešel —
+nevznikl žádný. Teď se otisk skládá z částí (nejvýš 4 MB) a pořizuje se po
+krocích: noční funkce běží v okně 2:00–3:45 UTC každých 15 minut a navazuje,
+„Zálohovat teď" i otisk před obnovou dopořizuje aplikace sama (vidíte průběh
+„zpracováno X z Y záznamů"). Otisk existuje (a je vidět v přehledu) až když
+je celý. Když se pokus nepovede, Nastavení → Databáze ukáže **poslední pokus
+o zálohu** s důvodem; v Netlify → Logs → Functions → `zaloha_nocni` /
+`zaloha_vynuceno` je chyba celá. Stažení zálohy a kopie na Disk se stahují po
+stránkách a skládají v prohlížeči — soubor má stejný tvar jako dřív.
+Obnova z otisku po částech běží po dávkách (15 záznamů) sama.
 
 Že noční otisky vznikají, hlídá aplikace sama: administrátor dostane po
 přihlášení varování, když poslední noční otisk chybí nebo je starší než
@@ -65,10 +77,26 @@ Zbývá soubor stažený přes „Stáhnout zálohu" nebo odlitý na Disk
    (kdo by ho našel, nesmí z něj hádat hesla). Administrátor obchodníkům
    založí účty znovu (Nastavení → Uživatelé) a předá jim nová hesla.
 
+## D) Záloha nevzniká (přehled „Zálohy databáze: zatím žádná")
+
+1. Nastavení → Databáze → řádek **Poslední pokus o zálohu**: hotovo /
+   rozpracováno (kolik záznamů z kolika) / chyba s důvodem.
+2. **Zálohovat teď** — aplikace pokračuje sama, dokud otisk není celý
+   (u ~800 zakázek desítky vteřin, víc požadavků za sebou). Okno nechte otevřené.
+3. Netlify → Logs → Functions → `zaloha_nocni`: v noci 2:00–3:45 UTC má být
+   řádek `otisk <datum> rozpracován — X/Y záznamů …` (pokračuje další běh)
+   a nakonec `otisk <datum> — … ms, … kB, … zakázek` a řádek retence.
+   „Task timed out" u nového kódu znamená, že jeden krok nestihl 30 s — postup
+   se neztratí, další běh naváže; opakuje-li se každou noc, ozvěte se vývoji.
+4. U funkce musí být v Netlify značka **Scheduled** s rozvrhem `*/15 2-3 * * *`.
+
 ## Zkouška nanečisto
 
 - **Automaticky** při každém nahrání na test: `netlify/test_obnova_nanecisto.mjs`
-  projde případy B) a C) nad paměťovou databází (20 kontrol).
+  projde případy B) a C) nad paměťovou databází (20 kontrol);
+  `netlify/test_zalohy_objem.mjs` (#522) totéž při objemu ostrého provozu
+  (900 zakázek, ~20 MB, simulovaný limit funkce): otisk po krocích, přerušení,
+  hlášení chyby, stažení po stránkách, kopie na Disk a obnova po částech.
 - **Ručně jednou za čtvrt roku** na testovacím webu (ne na ostrém):
   Nastavení → Databáze → Obnovit ze zálohy… → poslední noční otisk →
   **jen Zobrazit náhled**. Počty zakázek a verze ceníku v náhledu mají odpovídat

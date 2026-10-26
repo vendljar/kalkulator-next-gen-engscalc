@@ -151,12 +151,14 @@ await zkus('noční', async () => {
 await zkus('přerušení', async () => {
   const klic = '2026-01-05';
   /* první krok zabitý limitem uprostřed (úložiště přestane odpovídat) */
-  limitDo = Date.now() + 150;
+  limitDo = Date.now() + 300;
   let chyba = null;
   try { await ticho(() => Z.porizOtiskKrok(klic, 'nocni-otisk', '', { rozpocetMs: 10000 })); } catch (e) { chyba = e; }
   limitDo = Infinity;
   test('simulace: krok byl opravdu ukončen uprostřed', !!chyba && /timed out/.test(String(chyba)), String(chyba));
   test('nedokončený otisk se jako hotový netváří', !pamet.has('zalohy/' + klic));
+  const st = JSON.parse(pamet.get('zalohy/rozpracovany/' + klic) || '{}');
+  test('postup ukončeného kroku přežil (uložené části a pozice)', st.casti >= 1 && (st.pos.i > 0 || st.pos.j > 0), st.pos);
   /* zámek kroku vyprší (beziDo) — posun hodin */
   let v; const p = Date.now; Date.now = () => p.call(Date) + 10 * 60000;
   try { do { v = await pozadavek(() => Z.porizOtiskKrok(klic, 'nocni-otisk', '', { rozpocetMs: 200, jenPokracovat: true })); } while (!v.hotovo); }
@@ -164,6 +166,16 @@ await zkus('přerušení', async () => {
   const o = await Z.ctiOtisk(globalThis.__TEST_ULOZISTE('zalohy'), klic);
   test('po přerušení další kroky navážou a otisk je celý, bez ztracených zakázek', v.hotovo && Object.keys(o.zakazky).length === N
     && o.zakazky[KLIC(899)].nazevAkce.startsWith('Zkušební zakázka 899 '), { v, n: Object.keys(o.zakazky).length });
+});
+
+/* ---------------- 3b) pokračování jen vynuceného slotu ---------------- */
+await zkus('pokračování', async () => {
+  const spatne = [];
+  for (const klic of ['2026-01-05', 'souhrn/x', '2026-10-26T101010-pred-obnovou', '']) {
+    const o = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'pokracovat', klic })).json();
+    if (o.ok !== false || !/Neplatný klíč rozpracované zálohy/.test(o.chyba || '')) spatne.push([klic, o]);
+  }
+  test('pokračování přijme jen klíč vynuceného slotu (ne noční, ne před obnovou, ne cizí klíč)', spatne.length === 0, spatne);
 });
 
 /* ---------------- 4) selhání otisku řekne proč ---------------- */

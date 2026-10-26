@@ -381,10 +381,18 @@ await zkus('N5', async () => {
   }
   test('K3-N1: podložený záznam retenci odemkne', Z.kopieDiskPodlozena(dobra, [...pamet.keys()].map(k => k.slice(7))));
   await s.zapis(Z.KOPIE_DISK_KLIC, dobra);
+  /* #522: otisk po částech (manifest + casti/…) — retence smaže i části. */
+  await s.zapis('2028-09-18', { format: Z.OTISK_FORMAT, porizena: '2028-09-18T02:00:00.000Z', zdroj: 'test', kdo: '',
+    casti: 2, pocetZakazek: 0, pocetUctu: 0 });
+  await s.zapis(Z.castKlic('2028-09-18', 0), { program: null });
+  await s.zapis(Z.castKlic('2028-09-18', 1), { zakazky: {} });
+  const castiPred = [...pamet.keys()].filter(k => k.startsWith('zalohy/casti/2028-09-18/')).length;
   const r = await Z.retenceProved('2028-10-19', D);
   test('N5: smaže jen vybrané otisky i s jejich souhrny',
-    JSON.stringify(r.smazano) === JSON.stringify(['2028-07-01T101010-rucne', '2028-09-02', '2028-09-19'])
+    JSON.stringify(r.smazano) === JSON.stringify(['2028-07-01T101010-rucne', '2028-09-02', '2028-09-18', '2028-09-19'])
     && !pamet.has('zalohy/2028-09-19') && !pamet.has('zalohy/souhrn/2028-09-19'), r);
+  test('#522: retence smaže i části otisku po částech', castiPred > 0
+    && ![...pamet.keys()].some(k => k.startsWith('zalohy/casti/2028-09-18/')) && !pamet.has('zalohy/souhrn/2028-09-18'), castiPred);
   test('N5: dnešní, první v měsíci, před obnovou a záznam kopie zůstaly',
     ['2028-10-19', '2028-09-01', '2028-01-01T101010-pred-obnovou', 'kopie-disk', 'souhrn/2028-09-01'].every(k => pamet.has('zalohy/' + k)));
   /* Noční funkce běží „dnes"; aby šlo zkoušet mazání za hranicí RETENCE_OD,

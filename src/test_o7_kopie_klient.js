@@ -21,7 +21,8 @@ const U = require('./uloziste.js');
 const zdroj = fs.readFileSync(__dirname + '/ui/online_ui.js', 'utf8');
 const usek = (od, po) => { const a = zdroj.indexOf(od), b = zdroj.indexOf(po, a + 1); return a > 0 && b > a ? zdroj.slice(a, b) : ''; };
 const auto = usek('function onlineZalohaAuto()', '/* ---------- KOPIE ZÁLOH NA DISK');
-const kopie = usek('const KOPIE_DISK = ', 'function kopieDiskVelikost');
+/* #522: od v26.10.8 úsek začíná stahováním po stránkách (onlineZalohaStrankami). */
+const kopie = usek('/* ZÁLOHA PO STRÁNKÁCH (#522 Z1)', 'function kopieDiskVelikost');
 
 let ok = 0, fail = 0;
 const test = (n, cond, info) => { if (cond) { ok++; console.log('OK  ' + n); } else { fail++; console.log('FAIL ' + n, info === undefined ? '' : JSON.stringify(info)); } };
@@ -31,7 +32,7 @@ const novyCtx = () => {
   const ctx = { Promise, JSON, String, Error, Date, TextEncoder, Object, Array, Math, Uint8Array,
     volani: [], zpravy: [], dotazu: 0, heslo: 'Heslo.Spravce.1', zapsano: {},
     ULO_KOPIE_DISK_SLOZKA: U.ULO_KOPIE_DISK_SLOZKA, uloKopieDiskJmeno: U.uloKopieDiskJmeno,
-    uloKopieDiskStav: U.uloKopieDiskStav, uloZalohaHlidka: U.uloZalohaHlidka, uloRetenceVarovani: U.uloRetenceVarovani,
+    uloKopieDiskStav: U.uloKopieDiskStav, uloZalohaSloz: U.uloZalohaSloz, encodeURIComponent, setTimeout, uloZalohaHlidka: U.uloZalohaHlidka, uloRetenceVarovani: U.uloRetenceVarovani,
     ONLINE_STAV: { otisky: [], kopieDisk: null, retenceVarovani: null },
     jeAdminOnline: () => true, render: () => {}, uloPravo: async () => true,
     onlineZprava: (t, typ) => { ctx.zpravy.push([String(t), typ || '']); },
@@ -46,7 +47,7 @@ const novyCtx = () => {
   ctx.onlineApi = async (cesta, telo) => {
     ctx.volani.push([cesta, telo]);
     if (ctx.odpoved) return ctx.odpoved(cesta, telo);
-    if (cesta === '/api/zaloha?zdroj=nocni') return { ok: true, zaloha: { zdroj: 'nocni-otisk' }, otisk: '2026-10-19', puvod: 'nocni-otisk' };
+    if (cesta === '/api/zaloha?zdroj=nocni&strana=1') return { ok: true, zaloha: { zdroj: 'nocni-otisk' }, otisk: '2026-10-19', puvod: 'nocni-otisk' };
     return { ok: true, kopieDisk: { kdy: 'x' } };
   };
   vm.createContext(ctx);
@@ -87,7 +88,7 @@ const slozka = (ctx, name) => ({ name, getFileHandle: async (jm) => {
     test('K3-N1: s heslem se kopie zapíše a záznam jde na server s heslem správce',
       !!k && !!ctx.zapsano['otisk_2026-10-19.json'] && !!zaznam && zaznam[1].akce === 'kopie-disk'
       && zaznam[1].hesloSpravce === 'Heslo.Spravce.1' && zaznam[1].kopie.slozka === '_Zaloha Netlify DB', zaznam);
-    test('K3-N1: heslo se ptá jednou a dřív, než se stahuje záloha', ctx.dotazu === 1 && ctx.volani[0][0] === '/api/zaloha?zdroj=nocni');
+    test('K3-N1: heslo se ptá jednou a dřív, než se stahuje záloha', ctx.dotazu === 1 && ctx.volani[0][0] === '/api/zaloha?zdroj=nocni&strana=1');
     test('K3-N1: heslo nejde do souboru na Disku', !JSON.stringify(ctx.zapsano).includes('Heslo.Spravce.1'));
   }
   {
@@ -100,7 +101,7 @@ const slozka = (ctx, name) => ({ name, getFileHandle: async (jm) => {
   {
     const ctx = novyCtx();
     ctx.odpoved = async (cesta) => {
-      if (cesta === '/api/zaloha?zdroj=nocni') return { ok: true, zaloha: { zdroj: 'nocni-otisk' }, otisk: '2026-10-19', puvod: 'nocni-otisk' };
+      if (cesta === '/api/zaloha?zdroj=nocni&strana=1') return { ok: true, zaloha: { zdroj: 'nocni-otisk' }, otisk: '2026-10-19', puvod: 'nocni-otisk' };
       const e = new Error('Vaše heslo nesouhlasí — akce se neprovedla.'); e.stav = 401; throw e; };
     let chyba = '';
     try { await ctx.proved(slozka(ctx, '_Zaloha Netlify DB')); } catch (e) { chyba = e.message; }

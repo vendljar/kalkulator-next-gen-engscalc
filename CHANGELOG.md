@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v26.10.8 — Z1 #522 (kritické): ostrý web bez záloh — otisk databáze po částech, záloha po stránkách, větev claude/z1-zalohy-oprava
+
+Nad 4f2cc86 (integrace v26.10.7). Hlášení J. V. 26. 10.: ostrý engscalc (main v25.10.1, 792 zakázek)
+neměl ani jednu zálohu — přehled „zatím žádná", noční „mezi 0 posledními zálohami není žádná noční",
+kopie na Disk žádná.
+
+- **Příčina:** otisk četl celou databázi do paměti a zapsal ji jedním blobem. Čas i paměť rostly
+  s databází (měření na syntetické DB 800 zakázek / 64 MB: 3,3 s CPU, s latencí Blobs 12–22 s) —
+  vynucený otisk (synchronní funkce, limit 10 s) i noční (30 s) se do limitu nevešly a zápis na konci
+  se nestal. „Stáhnout zálohu" i „Zkopírovat zálohu na Disk teď" vracely celou DB jednou odpovědí přes
+  limit ~6 MB. Obnova nešla ani zahájit (otisk před obnovou synchronně) a konec obnovy četl zakázky
+  po jedné. Selhání nikde nebylo vidět. Retence vyloučena (bez záznamu kopie nemaže), stránkování
+  seznamu Blobs také (knihovna sbírá všechny stránky).
+- **Otisk po částech s navazováním** (`netlify/lib/zalohovani.mjs`): části `casti/<klíč>/<n>` nejvýš
+  4 MB, stav `rozpracovany/<klíč>` (plán klíčů, pozice) se ukládá po každé části, takže ani tvrdé
+  ukončení funkce postup nezahodí. Manifest pod klíčem otisku až nakonec — přehled, hlídka, retence
+  a kopie na Disk beze změny; `ctiOtisk` čte nový i starý jednolitý formát.
+- **Noční funkce** běží 2:00–3:45 UTC každých 15 min (`*/15 2-3 * * *`), každý běh nejvýš 20 s práce,
+  retence a úklid jednou za den po hotovém otisku (`nocni-dokonceno`); úklid opuštěných rozpracovaných
+  otisků a osiřelých částí. **Vynucený otisk** a **otisk před obnovou** po krocích (5 s), aplikace
+  pokračuje sama (`akce: 'pokracovat'`, `faze: 'otisk'`); dávky obnovy se do hotového otisku před
+  obnovou odmítají (409). Limity vynuceného otisku (K3-N4) beze změny — rezervace drží do dokončení.
+- **Stažení zálohy a kopie na Disk po stránkách** (`/api/zaloha?strana=1&po=…`, ≤ 4 MB), aplikace je
+  skládá (`uloZalohaSloz`) do tvaru dřívější celé zálohy; bez `strana` zůstává dřívější odpověď.
+- **Obnova z otisku po částech** a výřezech po 15 záznamech (`zdroj: { otisk, cast, od, kolik }`);
+  starý otisk se obnovuje jako dřív. Rejstřík se po obnově přestavuje čtením po dávkách.
+- **Selhání řekne proč:** záznam posledního pokusu `otisk-stav` (hotovo / rozpracováno / chyba s důvodem)
+  v přehledu záloh a v Nastavení → Databáze; chyba vynuceného otisku vrací 500 s důvodem, do logu celá;
+  hláška automatické zálohy po přihlášení se už nepřepíše varováním hlídky.
+- Testy: nový `netlify/test_zalohy_objem.mjs` (900 zakázek, 20 MB, simulovaný limit funkce) — před
+  opravou 4 OK / 13 FAIL, po opravě 28/0; upravené sady čtou otisk přes `ctiOtisk` a každé volání noční
+  funkce je v nich nová noc. Mutace serveru #522 (14) a přecílené #151/B9/O7/O9.
+
 ## v26.10.7 — O3 #521: dorovnání po sloučení dávek 26. 10. (příručka, odkazy hlášek kontrol, SEC-Z2), větev claude/o3-dorovnani
 
 Nad abc23d1 (integrace v26.10.6 = O1 #516, #518, #114, #519, O2 #517, S2 #520, příručka M3).

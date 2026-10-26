@@ -269,8 +269,9 @@ export const castKlic = (klic, i) => OTISK_CASTI + klic + '/' + String(i).padSta
 export const OTISK_STAV_KLIC = 'otisk-stav';
 /* Časové rozpočty kroku: synchronní funkce má limit 10 s (požadavek nese
  * i přihlášení a čtení stavu), plánovaná 30 s. Objekt, ne konstanty —
- * testy je zkracují. */
-export const OTISK_ROZPOCET = { synchronniMs: 6000, nocniMs: 20000 };
+ * testy je zkracují. Synchronní 5 s: krok překročí rozpočet nejvýš o jednu
+ * dávku čtení a zápis jedné části (≤ 4 MB). */
+export const OTISK_ROZPOCET = { synchronniMs: 5000, nocniMs: 20000 };
 /* Zámek kroku: dva prohlížeče (nebo dva běhy) nad týmž rozpracovaným
  * otiskem by zapisovaly tytéž části. Krok si stav „zamkne" na dobu svého
  * rozpočtu; kdo přijde mezitím, dostane `bezi: true` a zkusí to za chvíli. */

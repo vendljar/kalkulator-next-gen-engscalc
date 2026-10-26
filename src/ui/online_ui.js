@@ -1736,7 +1736,8 @@ function onlineZalohaJmeno() {
 function onlineZaloha(doSlozky) {
   if (!jeAdminOnline()) { onlineZprava('Zálohu smí pořídit jen administrátor.', 'varovani'); render(); return Promise.resolve(false); }
   ONLINE_STAV.pracuje = true; render();
-  return onlineApi('/api/zaloha').then(o => {
+  /* Po stránkách (#522): celá databáze se do jedné odpovědi serveru nevejde. */
+  return onlineZalohaStrankami('/api/zaloha', (n) => { onlineZprava('Stahuji zálohu… stránka ' + n + '.'); render(); }).then(o => {
     const jmeno = onlineZalohaJmeno();
     const text = JSON.stringify(o.zaloha, null, 1);
     if (doSlozky && typeof ULO_STAV !== 'undefined' && ULO_STAV.pripraveno) {
@@ -1790,6 +1791,8 @@ function onlineOtiskyNacti() {
     ONLINE_STAV.otisky = o.otisky || [];
     ONLINE_STAV.kopieDisk = o.kopieDisk || null;
     ONLINE_STAV.retenceVarovani = o.retenceVarovani || null;
+    ONLINE_STAV.otiskStav = o.otiskStav || null;          // #522: poslední pokus o zálohu
+    ONLINE_STAV.rozpracovane = o.rozpracovane || [];
     ONLINE_STAV.otiskyNacteno = true;
     return true;
   }).catch(e => {
@@ -1799,15 +1802,34 @@ function onlineOtiskyNacti() {
   });
 }
 
+/* POSLEDNÍ POKUS O ZÁLOHU (#522 Z1). Do v26.10.8 obrazovka u nepovedené
+ * zálohy říkala jen „zatím žádná" — ostrý engscalc tak týdny neměl zálohu
+ * a nebylo vidět proč. Server si pamatuje poslední pokus (hotovo /
+ * rozpracováno / chyba s důvodem); ukáže se, když je novější než poslední
+ * hotová záloha. */
+function onlineOtiskPokusText() {
+  const st = ONLINE_STAV.otiskStav;
+  if (!st || !st.stav || st.stav === 'hotovo') return '';
+  const posledni = (ONLINE_STAV.otisky || [])[0];
+  if (posledni && posledni.porizena && String(st.kdy || '') <= String(posledni.porizena)) return '';
+  const kdy = st.kdy ? new Date(st.kdy).toLocaleString('cs-CZ') : '';
+  const p = st.postup || {};
+  if (st.stav === 'chyba') return 'Poslední pokus o zálohu (' + kdy + ') selhal: ' + String(st.chyba || 'bez udaného důvodu')
+    + ' — podrobnosti v Netlify → Logs → Functions.';
+  return 'Záloha se pořizuje po částech (' + kdy + ', zpracováno ' + (p.hotovo || 0) + ' z ' + (p.celkem || 0)
+    + ' záznamů) — noční se dokončí sama v dalším běhu, ruční tlačítkem „Zálohovat teď".';
+}
+
 function onlineOtiskPopis() {
   if (!ONLINE_STAV.otiskyNacteno) return 'Zálohy databáze: zjišťuje se…';
   const o = (ONLINE_STAV.otisky || [])[0];
-  if (!o) return 'Zálohy databáze: zatím žádná – pořiďte ji tlačítkem „Zálohovat teď".';
+  const pokus = onlineOtiskPokusText();
+  if (!o) return 'Zálohy databáze: zatím žádná – pořiďte ji tlačítkem „Zálohovat teď".' + (pokus ? ' ' + pokus : '');
   const kdy = o.porizena ? new Date(o.porizena).toLocaleString('cs-CZ') : o.den;
   const zdroj = /vynuc/.test(o.zdroj) ? 'ručně' : 'sama v noci';
   return 'Poslední záloha databáze: ' + kdy + ' (' + zdroj + ', '
     + onlinePocetText(o.pocetZakazek) + ', ' + o.pocetUctu + ' účtů) · '
-    + 'v přehledu ' + (ONLINE_STAV.otisky.length) + ' posledních.';
+    + 'v přehledu ' + (ONLINE_STAV.otisky.length) + ' posledních.' + (pokus ? ' ' + pokus : '');
 }
 
 /* VYNUCENÁ ZÁLOHA (4. 8. 2026). Do té doby otisk uměla jen plánovaná funkce
@@ -1816,11 +1838,13 @@ function onlineOtiskPopis() {
 function onlineZalohaTed() {
   if (!jeAdminOnline()) { onlineZprava('Zálohu smí pořídit jen administrátor.', 'varovani'); render(); return Promise.resolve(false); }
   ONLINE_STAV.pracuje = true; render();
-  return onlineApi('/api/zaloha_vynuceno', { duvod: 'rucne' }).then(o => {
+  return onlineOtiskDopor(onlineApi('/api/zaloha_vynuceno', { duvod: 'rucne' }),
+    (p) => { onlineZprava('Zálohuji databázi po částech… zpracováno ' + p.hotovo + ' z ' + p.celkem + ' záznamů.'); render(); }).then(o => {
     onlineZprava('Záloha databáze pořízena (' + o.den + ', ' + onlinePocetText(o.pocetZakazek)
       + ', ' + o.pocetUctu + ' účtů). Leží na serveru; na Disk Google ji odlije tlačítko vedle.');
     return onlineOtiskyNacti();
-  }).catch(e => { onlineZprava('Zálohu se nepodařilo pořídit: ' + e.message, 'varovani'); return false; })
+  }).catch(e => { onlineZprava('Zálohu se nepodařilo pořídit: ' + e.message, 'varovani');
+    return onlineOtiskyNacti().then(() => false); })
     .then(v => { ONLINE_STAV.pracuje = false; render(); return v; });
 }
 
@@ -1839,6 +1863,7 @@ function onlineZalohaTed() {
 function onlineZalohaAuto() {
   if (!jeAdminOnline()) return Promise.resolve(false);
   const dnes = new Date().toISOString().slice(0, 10);
+  let chybaZalohy = '';
   return onlineOtiskyNacti().then(() => {
     /* Od 19. 10. 2026 (#151 N1) má vynucený otisk vlastní klíč s časem
      * (`<den>T<hhmmss>-rucne|-auto`); dnešní je tedy noční i vynucený,
@@ -1846,7 +1871,12 @@ function onlineZalohaAuto() {
     const mameDnesni = (ONLINE_STAV.otisky || []).some(o => String(o.den || '').slice(0, 10) === dnes
       && !/pred-obnovou/.test(o.den));
     if (mameDnesni) return false;
-    return onlineApi('/api/zaloha_vynuceno', { duvod: 'auto' })
+    /* #522: rozpracovaný dnešní vynucený otisk (zavřená karta, limit
+     * požadavku) se dopořídí, nový se nezakládá (limit by ho stejně odmítl). */
+    const roz = (ONLINE_STAV.rozpracovane || []).find(r => r && r.zdroj === 'vynuceno' && String(r.den || '').slice(0, 10) === dnes);
+    const prvni = roz ? onlineApi('/api/zaloha_vynuceno', { akce: 'pokracovat', klic: roz.den })
+      : onlineApi('/api/zaloha_vynuceno', { duvod: 'auto' });
+    return onlineOtiskDopor(prvni, null)
       .then(o => onlineOtiskyNacti().then(() => {
         onlineZprava('Dnešní záloha databáze se pořídila sama (' + o.den + ', '
           + onlinePocetText(o.pocetZakazek) + ').');
@@ -1856,7 +1886,9 @@ function onlineZalohaAuto() {
         /* K3-N4: limit vynucených otisků (429) není porucha — dnešní záloha
          * vznikla před chvílí jinde (jiná karta, jiný správce); mlčí se. */
         if (e && e.stav === 429) return false;
-        onlineZprava('Dnešní zálohu databáze se nepodařilo pořídit: ' + e.message, 'varovani'); return false;
+        /* #522: hláška o selhání se nesmí ztratit pod varováním hlídky níž. */
+        chybaZalohy = 'Dnešní zálohu databáze se nepodařilo pořídit: ' + e.message;
+        onlineZprava(chybaZalohy, 'varovani'); return false;
       });
   }).then(v => onlineZalohaDoSlozkyAuto().then(() => {
     /* Hlídka noční zálohy (#152). Dopořízený dnešní otisk je „vynucený",
@@ -1870,11 +1902,30 @@ function onlineZalohaAuto() {
       const kd = (typeof uloKopieDiskStav === 'function') ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now()) : null;
       /* Pojistka retence (K3-N13): pokles dat v noční záloze. */
       const rv = (typeof uloRetenceVarovani === 'function') ? uloRetenceVarovani(ONLINE_STAV.retenceVarovani, Date.now()) : null;
-      const varovani = [rv ? rv.text : '', hl && hl.stara ? hl.text : '', kd && kd.stara ? kd.text : ''].filter(Boolean);
+      const varovani = [chybaZalohy, rv ? rv.text : '', hl && hl.stara ? hl.text : '', kd && kd.stara ? kd.text : ''].filter(Boolean);
       if (varovani.length) onlineZprava(varovani.join(' '), 'varovani');
       render(); return v;
     });
   }));
+}
+
+/* DOPOŘÍZENÍ OTISKU PO KROCÍCH (#522 Z1). Server udělá v jednom požadavku
+ * jen tolik, kolik stihne do limitu funkce, a vrátí `hotovo: false`
+ * s postupem; prohlížeč posílá { akce: 'pokracovat' }, dokud není hotovo.
+ * Odpověď bez `hotovo` (starší server) se bere jako hotová. Strop počtu
+ * kroků brání nekonečné smyčce, kdyby server přestal postupovat. */
+const ONLINE_OTISK_KROKU_MAX = 400;
+async function onlineOtiskDopor(prvni, prubeh) {
+  let o = await prvni, kroku = 1;
+  while (o && o.hotovo === false) {
+    if (++kroku > ONLINE_OTISK_KROKU_MAX) throw new Error('záloha se nedokončila ani po ' + ONLINE_OTISK_KROKU_MAX
+      + ' krocích (zpracováno ' + ((o.postup && o.postup.hotovo) || 0) + ' z ' + ((o.postup && o.postup.celkem) || 0) + ' záznamů)');
+    if (prubeh && o.postup) prubeh(o.postup);
+    /* běží-li krok jinde (druhá karta), chvíli počkat */
+    if (o.bezi) await new Promise(r => setTimeout(r, 3000));
+    o = await onlineApi('/api/zaloha_vynuceno', { akce: 'pokracovat', klic: o.den });
+  }
+  return o;
 }
 
 /* ---------- KOPIE ZÁLOH NA DISK GOOGLE (#151 N6, 19. 10. 2026) ----------
@@ -1895,6 +1946,28 @@ function onlineZalohaAuto() {
  * nočního otisku) + `posledni_kopie.json` (datum, velikost, SHA-256);
  * stejný záznam si poznamená server, aby hlídka fungovala všude. Na Disku
  * se nic nemaže. */
+/* ZÁLOHA PO STRÁNKÁCH (#522 Z1). Server vydá nejvýš ~4 MB na odpověď;
+ * stránky se skládají uloZalohaSloz (src/uloziste.js) do tvaru dřívější
+ * celé zálohy. U kopie na Disk drží první odpověď klíč otisku a další
+ * stránky ho posílají, aby se nepřeskočilo na jiný otisk. Vrací
+ * { ok, zaloha, puvod, otisk } jako dřív jedna odpověď. */
+const ONLINE_ZALOHA_STRAN_MAX = 2000;
+async function onlineZalohaStrankami(adresa, prubeh) {
+  const zaloha = {};
+  let po = '', otisk = null, puvod, n = 0;
+  do {
+    if (++n > ONLINE_ZALOHA_STRAN_MAX) throw new Error('záloha má víc než ' + ONLINE_ZALOHA_STRAN_MAX + ' stránek');
+    if (prubeh) prubeh(n);
+    const o = await onlineApi(adresa + (adresa.includes('?') ? '&' : '?') + 'strana=1'
+      + (otisk ? '&otisk=' + encodeURIComponent(otisk) : '') + (po ? '&po=' + encodeURIComponent(po) : ''));
+    if (!o || !o.ok || !o.zaloha) throw new Error((o && o.chyba) || 'server zálohu nevydal');
+    if (n === 1) { otisk = o.otisk || null; puvod = o.puvod; }
+    uloZalohaSloz(zaloha, o.zaloha);
+    po = o.dalsi || '';
+  } while (po);
+  return { ok: true, zaloha, puvod, otisk };
+}
+
 const KOPIE_DISK = { slozka: null, nacteno: false };
 const KOPIE_DISK_IDB_KLIC = 'zalohaDisk';
 
@@ -1952,7 +2025,7 @@ async function kopieDiskProved(h, heslo) {
   const hesloSpravce = heslo || await dotazHeslo('Kopie zálohy na Disk odemyká na serveru mazání starých záloh. '
     + 'Potvrďte ji svým heslem (tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
   if (!hesloSpravce) throw new Error('bez vašeho hesla se kopie nepořídila');
-  const o = await onlineApi('/api/zaloha?zdroj=nocni');
+  const o = await onlineZalohaStrankami('/api/zaloha?zdroj=nocni', null);
   if (!o || !o.ok || !o.zaloha) throw new Error((o && o.chyba) || 'server zálohu nevydal');
   const jmeno = uloKopieDiskJmeno(o.otisk || new Date().toISOString().slice(0, 10));
   const text = JSON.stringify(o.zaloha);
@@ -2026,7 +2099,7 @@ function onlineZalohaDoSlozkyAuto() {
   const jmeno = onlineZalohaJmeno();
   return uloCtiSoubor(jmeno).then(t => {
     if (t != null) return false;
-    return onlineApi('/api/zaloha')
+    return onlineZalohaStrankami('/api/zaloha', null)
       .then(o => uloZapisSoubor(jmeno, JSON.stringify(o.zaloha, null, 1)))
       .then(() => {
         onlineZprava('Dnešní záloha online databáze se sama odlila do složky „'
@@ -3087,13 +3160,59 @@ function onlineObnovaSouhrn(d) {
   return s;
 }
 
+/* OBNOVA Z OTISKU PO ČÁSTECH (#522 Z1). Otisk pořízený od v26.10.8 má
+ * v přehledu počet částí (`casti`); starý jednolitý ho nemá a obnovuje se
+ * jednou dávkou jako dřív. Každá část (≤ 4 MB) se posílá po výřezech
+ * 15 záznamů — tolik, kolik nese dávka souboru (OBNOVA_DAVKA_MAX_ZAZNAMU);
+ * server vrátí, kolik záznamů část má (`zdroj.zaznamu`). */
+function onlineObnovaCastiOtisku() {
+  const o = onlineObnovaStav();
+  if (o.zdrojTyp === 'soubor') return 0;
+  const ot = (ONLINE_STAV.otisky || []).find(x => x && x.den === o.otiskDen);
+  return ot && +ot.casti > 0 ? +ot.casti : 0;
+}
+async function onlineObnovaPoCastech(casti, posli) {
+  const o = onlineObnovaStav();
+  for (let i = 0; i < casti; i++) {
+    for (let od = 0, zaznamu = 1; od < zaznamu; od += OBNOVA_DAVKA_MAX_ZAZNAMU) {
+      const d = await posli({ otisk: o.otiskDen, cast: i, od, kolik: OBNOVA_DAVKA_MAX_ZAZNAMU },
+        'část ' + (i + 1) + ' z ' + casti + (od ? ', od záznamu ' + (od + 1) : ''));
+      zaznamu = (d && d.zdroj && +d.zdroj.zaznamu) || 0;
+    }
+  }
+}
+/* Začátek obnovy: token a otisk před obnovou — u velké databáze po
+ * krocích ({ faze: 'otisk' }), dokud není hotový (bez něj se neobnovuje). */
+async function onlineObnovaZacni(o) {
+  let zac = await onlineApi('/api/obnova', { faze: 'zacatek', rezim: o.rezim, potvrzeni: 'OBNOVIT' });
+  let kroku = 0;
+  while (zac && zac.otiskHotovo === false) {
+    if (++kroku > ONLINE_OTISK_KROKU_MAX) throw new Error('otisk před obnovou se nedokončil — obnova se neprovedla');
+    const p = zac.postup || {};
+    o.hlaska = 'Obnova: pořizuji otisk současného stavu (cesta zpátky)… ' + (p.hotovo || 0) + ' z ' + (p.celkem || 0) + ' záznamů';
+    o.hlaskaTyp = ''; render();
+    zac = await onlineApi('/api/obnova', { faze: 'otisk', obnovaId: zac.obnovaId });
+  }
+  return zac;
+}
+
 async function onlineObnovaNahled() {
   const o = onlineObnovaStav();
   if (!jeAdminOnline() || !onlineObnovaPripraveno() || o.pracuje) return false;
   o.pracuje = true; o.nahled = null; o.hlaska = ''; render();
   try {
-    if (o.zdrojTyp !== 'soubor') {
+    const castiOtisku = onlineObnovaCastiOtisku();
+    if (o.zdrojTyp !== 'soubor' && !castiOtisku) {
       o.nahled = await onlineApi('/api/obnova', onlineObnovaTelo(true));
+    } else if (o.zdrojTyp !== 'soubor') {
+      /* #522: otisk po částech — náhled po výřezech (jako dávky souboru) */
+      const cil = { nahled: true, casti: {}, upozorneni: [], zdroj: null, rejstrik: null, otiskPred: null, davek: 0 };
+      await onlineObnovaPoCastech(castiOtisku, (zdroj, popis) => {
+        o.hlaska = 'Náhled: ' + popis + '…'; o.hlaskaTyp = ''; render();
+        return onlineApi('/api/obnova', onlineObnovaTelo(true, zdroj)).then(d => { onlineObnovaSecti(cil, d); cil.davek++; return d; });
+      });
+      o.hlaska = '';
+      o.nahled = cil;
     } else {
       const { davky, prilisVelke } = onlineObnovaDavky(o.soubor, onlineObnovaCasti());
       const cil = { nahled: true, casti: {}, upozorneni: [], zdroj: null, rejstrik: null, otiskPred: null, davek: davky.length };
@@ -3162,14 +3281,33 @@ function onlineObnovaProved() {
     try {
       let r, upoz, otiskPred;
       if (o.zdrojTyp !== 'soubor') {
-        const d = await onlineApi('/api/obnova', { ...onlineObnovaTelo(false), ...sHeslem });
-        r = onlineObnovaSouhrn(d); upoz = d.upozorneni || []; otiskPred = d.otiskPred || '';
+        /* #522: i obnova z otisku jde přes začátek → dávky → konec. Otisk
+         * před obnovou se u velké databáze pořizuje po krocích a jedna
+         * obnova celého otisku by limit požadavku nestihla. */
+        const zac = await onlineObnovaZacni(o);
+        otiskPred = zac.otiskPred || '';
+        const castiOtisku = onlineObnovaCastiOtisku();
+        let chybaDavky = null, hotovo = 0;
+        try {
+          if (castiOtisku) await onlineObnovaPoCastech(castiOtisku, (zdroj, popis) => {
+            o.hlaska = 'Obnova: ' + popis + '…'; o.hlaskaTyp = ''; render();
+            return onlineApi('/api/obnova', { ...onlineObnovaTelo(false, zdroj), obnovaId: zac.obnovaId, ...sHeslem }).then(d => { hotovo++; return d; });
+          });
+          else { await onlineApi('/api/obnova', { ...onlineObnovaTelo(false), obnovaId: zac.obnovaId, ...sHeslem }); hotovo++; }
+        } catch (e) { chybaDavky = e; }
+        o.hlaska = 'Obnova: přestavuji rejstřík…'; render();
+        const kon = await onlineApi('/api/obnova', { faze: 'konec', obnovaId: zac.obnovaId });
+        o.hlaska = '';
+        r = { ...kon.souhrn }; upoz = [...(kon.upozorneni || [])];
+        if (chybaDavky && chybaDavky.data && chybaDavky.data.kod === 'hesloSpravce') onlineZobrazeniHesloZapomen();
+        if (chybaDavky) throw new Error('dávka ' + (hotovo + 1) + ' selhala (' + chybaDavky.message
+          + '); zapsáno bylo ' + hotovo + ' dávek, rejstřík je přestavený a stav před obnovou leží v otisku ' + otiskPred + '.');
       } else {
         /* Po dávkách: začátek (otisk + token) → dávky → konec (rejstřík).
          * Když dávka selže, 'konec' se zavolá stejně, aby rejstřík odpovídal
          * tomu, co se stihlo zapsat — a chyba řekne, kde to skončilo. */
         const { davky, prilisVelke } = onlineObnovaDavky(o.soubor, onlineObnovaCasti());
-        const zac = await onlineApi('/api/obnova', { faze: 'zacatek', rezim: o.rezim, potvrzeni: 'OBNOVIT' });
+        const zac = await onlineObnovaZacni(o);
         otiskPred = zac.otiskPred || '';
         let hotovo = 0, chybaDavky = null;
         try {
