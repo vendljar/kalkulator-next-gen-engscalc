@@ -286,32 +286,38 @@ await zkus('N5', async () => {
   const V = Z.retenceVyber;
   const D = '2028-10-19';
   const v = (klice) => V(klice, D);
-  test('N5: hranice 30. dne — věk 29 dní zůstane, 30 dní se smaže',
-    JSON.stringify(v(['2028-10-19', '2028-09-20', '2028-09-19', '2028-09-05'])) === JSON.stringify(['2028-09-19']), v(['2028-10-19', '2028-09-20', '2028-09-19', '2028-09-05']));
-  test('N5: z měsíce se drží první (nejstarší) otisk, ostatní staré se smažou',
-    JSON.stringify(v(['2028-10-19', '2028-08-03', '2028-08-04', '2028-08-31'])) === JSON.stringify(['2028-08-04', '2028-08-31']));
-  test('N5: hranice 12. měsíce — měsíc dneška + 12 zpět (říjen 2025) drží, září 2025 se smaže',
-    JSON.stringify(v(['2028-10-19', '2027-10-01', '2027-09-01'])) === JSON.stringify(['2027-09-01']));
-  test('N5: vynucené — 89 dní zůstane, 90 dní se smaže (ruční i při přihlášení)',
-    JSON.stringify(v(['2028-10-19', '2028-07-22T101010-rucne', '2028-07-21T101010-rucne', '2028-07-21T090000-auto']))
-      === JSON.stringify(['2028-07-21T090000-auto', '2028-07-21T101010-rucne']));
+  /* #523 Z2 (J. V. 26. 10. 2026): noční 14 dní, týdenní 8 týdnů, měsíční
+   * 6 měsíců, vynucené 7 dní. Podrobná tabulka přes přelomy týdnů a měsíců
+   * je v netlify/test_z2_retence.mjs; tady jen hranice a pojistky. */
+  test('#523 N5: hranice 14. dne — věk 13 dní zůstane, 14 dní se smaže (pondělí–středa, týden je pokrytý jinak)',
+    JSON.stringify(v(['2028-10-19', '2028-10-06', '2028-10-05', '2028-10-07', '2028-10-01']))
+      === JSON.stringify(['2028-10-05']), v(['2028-10-19', '2028-10-06', '2028-10-05', '2028-10-07', '2028-10-01']));
+  test('#523 N5: z měsíce se drží první (nejstarší) otisk, ostatní staré se smažou',
+    JSON.stringify(v(['2028-10-19', '2028-06-03', '2028-06-04', '2028-06-30'])) === JSON.stringify(['2028-06-04', '2028-06-30']));
+  test('#523 N5: hranice 6 měsíců — první v měsíci z 20. 4. zůstane, z 19. 4. se smaže',
+    JSON.stringify(v(['2028-10-19', '2028-04-20'])) === '[]' && JSON.stringify(v(['2028-10-19', '2028-04-19'])) === JSON.stringify(['2028-04-19']));
+  test('#523 N5: vynucené — 6 dní zůstane, 7 dní se smaže (ruční i při přihlášení)',
+    JSON.stringify(v(['2028-10-19', '2028-10-13T101010-rucne', '2028-10-12T101010-rucne', '2028-10-12T090000-auto']))
+      === JSON.stringify(['2028-10-12T090000-auto', '2028-10-12T101010-rucne']));
   test('N5: otisky před obnovou se nemažou nikdy (oba tvary)',
     v(['2028-10-19', '2026-01-01T101010-pred-obnovou', '2026-01-01-pred-obnovou']).length === 0);
   test('N5: nejnovější otisk se nesmaže, i když je starý',
     v(['2027-01-05']).length === 0 && JSON.stringify(v(['2027-01-05', '2027-01-06'])) === JSON.stringify(['2027-01-05']));
-  test('N5: cizí klíče (souhrny, tokeny, kopie-disk) výběr nevidí',
-    v(['2028-10-19', 'souhrn/2020-01-02', 'obnova-abc', 'kopie-disk', 'nesmysl']).length === 0);
-  /* HRANICE (J. V. 19. 10. 2026: „Staré zálohy všechny ponech.") */
-  test('N5 hranice: RETENCE_OD je 2026-10-20', Z.RETENCE_OD === '2026-10-20');
-  test('N5 hranice: otisky 2026-08-01 a 2026-10-19 zůstanou, 2026-10-20 a dál podle pravidla',
-    JSON.stringify(V(['2026-08-01', '2026-08-02', '2026-10-19', '2026-10-20', '2026-10-21', '2027-11-29'], '2027-11-30'))
-      === JSON.stringify(['2026-10-20', '2026-10-21']), V(['2026-08-01', '2026-08-02', '2026-10-19', '2026-10-20', '2026-10-21', '2027-11-29'], '2027-11-30'));
-  test('N5 hranice: staré otisky se nesmažou ani po letech (denní i vynucené)',
-    V(['2026-08-01', '2026-10-19', '2026-10-19T235959-rucne', '2026-01-01T101010-auto', '2031-01-01'], '2031-01-02').length === 0);
-  test('N5 hranice: vynucený 2026-10-20 a dál se po 90 dnech smaže',
-    JSON.stringify(V(['2026-10-19T120000-rucne', '2026-10-20T000000-rucne', '2027-03-01'], '2027-03-01'))
-      === JSON.stringify(['2026-10-20T000000-rucne']));
-  test('N5: neplatný dnešek = nemaže se nic', V(['2020-01-01', '2020-01-02'], 'x').length === 0);
+  test('N5: cizí klíče (souhrny, tokeny, kopie-disk, části) výběr nevidí',
+    v(['2028-10-19', 'souhrn/2020-01-02', 'obnova-abc', 'kopie-disk', 'nesmysl', 'casti/2020-01-02/00000']).length === 0);
+  /* #523: výjimka RETENCE_OD zrušená — ze starých zůstane první v měsíci (6 měsíců) */
+  test('#523 hranice: RETENCE_OD už není, staré otisky mají jen měsíční výjimku', Z.RETENCE_OD === undefined
+    && Z.RETENCE_STARE_PRED === '2026-10-20');
+  test('#523 hranice: 26. 10. 2026 — ze starých (do 19. 10.) zůstane jen první v měsíci (4. 9., 1. 10.), od 20. 10. denní',
+    JSON.stringify(V(['2026-09-04', '2026-09-05', '2026-09-06', '2026-09-30', '2026-10-01', '2026-10-11', '2026-10-12', '2026-10-13',
+      '2026-10-18', '2026-10-19', '2026-10-20', '2026-10-26'], '2026-10-26'))
+      === JSON.stringify(['2026-09-05', '2026-09-06', '2026-09-30', '2026-10-11', '2026-10-12', '2026-10-13', '2026-10-18', '2026-10-19']),
+    V(['2026-09-04', '2026-09-05', '2026-09-06', '2026-09-30', '2026-10-01', '2026-10-11', '2026-10-12', '2026-10-13',
+      '2026-10-18', '2026-10-19', '2026-10-20', '2026-10-26'], '2026-10-26'));
+  test('#523 hranice: staré otisky po půl roce odejdou i měsíční (vynucené staré po 7 dnech)',
+    JSON.stringify(V(['2026-08-01', '2026-10-19T235959-rucne', '2026-01-01T101010-auto', '2027-06-01'], '2027-06-01'))
+      === JSON.stringify(['2026-01-01T101010-auto', '2026-08-01', '2026-10-19T235959-rucne']));
+  test('N5: neplatný dnešek = nemaže se nic', V(['2020-01-01', '2020-01-02'], 'x').length === 0 && V(['2020-01-01', '2020-01-02'], '2028-02-31').length === 0);
 
   /* Provedení nad úložištěm */
   const s = ulz('zalohy');
@@ -389,12 +395,13 @@ await zkus('N5', async () => {
   const castiPred = [...pamet.keys()].filter(k => k.startsWith('zalohy/casti/2028-09-18/')).length;
   const r = await Z.retenceProved('2028-10-19', D);
   test('N5: smaže jen vybrané otisky i s jejich souhrny',
-    JSON.stringify(r.smazano) === JSON.stringify(['2028-07-01T101010-rucne', '2028-09-02', '2028-09-18', '2028-09-19'])
-    && !pamet.has('zalohy/2028-09-19') && !pamet.has('zalohy/souhrn/2028-09-19'), r);
+    JSON.stringify(r.smazano) === JSON.stringify(['2028-07-01T101010-rucne', '2028-09-18'])
+    && !pamet.has('zalohy/2028-07-01T101010-rucne') && !pamet.has('zalohy/souhrn/2028-07-01T101010-rucne'), r);
   test('#522: retence smaže i části otisku po částech', castiPred > 0
     && ![...pamet.keys()].some(k => k.startsWith('zalohy/casti/2028-09-18/')) && !pamet.has('zalohy/souhrn/2028-09-18'), castiPred);
-  test('N5: dnešní, první v měsíci, před obnovou a záznam kopie zůstaly',
-    ['2028-10-19', '2028-09-01', '2028-01-01T101010-pred-obnovou', 'kopie-disk', 'souhrn/2028-09-01'].every(k => pamet.has('zalohy/' + k)));
+  test('#523 N5: dnešní, první v měsíci (1. 9.), týdenní (2. 9., 19. 9.), před obnovou a záznam kopie zůstaly',
+    ['2028-10-19', '2028-09-01', '2028-09-02', '2028-09-19', '2028-01-01T101010-pred-obnovou', 'kopie-disk', 'souhrn/2028-09-01',
+      'souhrn/2028-09-19'].every(k => pamet.has('zalohy/' + k)));
   /* Noční funkce běží „dnes"; aby šlo zkoušet mazání za hranicí RETENCE_OD,
    * posune se Date.now (denDnes i pojistka kopie z něj počítají). */
   const realNow = Date.now;
@@ -431,11 +438,14 @@ await zkus('N5', async () => {
   try { await zalohaNocni(); } catch (e) { padla = true; } finally { globalThis.__TEST_ULOZISTE = puvodni; console.error = ce; }
   test('N5: když zápis otisku selže, funkce skončí chybou a nic se nesmaže',
     padla && pamet.has('zalohy/2028-01-03T101010-rucne'));
-  /* staré zálohy (před RETENCE_OD) noční funkce nesmaže ani v roce 2028 */
+  /* #523: výjimka RETENCE_OD zrušená — staré zálohy z roku 2026 noční funkce
+   * v roce 2028 smaže (měsíční po 6 měsících, vynucené po 7 dnech). Den je
+   * už uzavřený (nocni-dokonceno) — nový den otevře další noc. */
   await s.zapis('2026-08-01', { zdroj: 'nocni-otisk' }); await s.zapis('2026-09-15T101010-rucne', { zdroj: 'vynuceno' });
+  pamet.delete('zalohy/nocni-dokonceno');
   await ticho(async () => zalohaNocni());
-  test('N5 hranice: noční funkce v roce 2028 staré zálohy z roku 2026 nesmaže',
-    pamet.has('zalohy/2026-08-01') && pamet.has('zalohy/2026-09-15T101010-rucne'));
+  test('#523 hranice: noční funkce v roce 2028 staré zálohy z roku 2026 smaže (výjimka RETENCE_OD zrušená)',
+    !pamet.has('zalohy/2026-08-01') && !pamet.has('zalohy/2026-09-15T101010-rucne'));
   } finally { Date.now = realNow; }
 });
 
@@ -563,10 +573,11 @@ await zkus('K3-N4', async () => {
 /* ---------------- K3-N13 (O7): pojistka retence proti tiché ztrátě dat ---------------- */
 await zkus('K3-N13', async () => {
   const P = Z.retencePoklesPocty;
-  test('K3-N13: práh 50 %', Z.RETENCE_POKLES_PRAH === 0.5);
-  test('K3-N13: zakázek 100 → 49 je pokles', JSON.stringify(P({ pocetZakazek: 100, pocetUctu: 10 }, { pocetZakazek: 49, pocetUctu: 10 }))
-    === JSON.stringify(['zakázek 100 → 49']));
-  test('K3-N13: hranice — přesně 50 % pokles není', P({ pocetZakazek: 100, pocetUctu: 10 }, { pocetZakazek: 50, pocetUctu: 5 }) === null);
+  /* #523 Z2 (pokyn J. V. 26. 10. 2026): práh zakázek a účtů 95 % (do #523 50 %) */
+  test('#523 K3-N13: práh počtů 95 %, velikosti 90 %', Z.RETENCE_POKLES_PRAH === 0.95 && Z.RETENCE_POKLES_VELIKOST === 0.9);
+  test('#523 K3-N13: zakázek 100 → 94 je pokles', JSON.stringify(P({ pocetZakazek: 100, pocetUctu: 10 }, { pocetZakazek: 94, pocetUctu: 10 }))
+    === JSON.stringify(['zakázek 100 → 94']));
+  test('#523 K3-N13: hranice — přesně 95 % pokles není', P({ pocetZakazek: 100, pocetUctu: 20 }, { pocetZakazek: 95, pocetUctu: 19 }) === null);
   test('K3-N13: účtů 10 → 4 je pokles i při stejných zakázkách',
     JSON.stringify(P({ pocetZakazek: 100, pocetUctu: 10 }, { pocetZakazek: 100, pocetUctu: 4 })) === JSON.stringify(['účtů 10 → 4']));
   test('K3-N13: z nuly se pokles nepočítá; nárůst není pokles',
@@ -577,12 +588,13 @@ await zkus('K3-N13', async () => {
   const ted = Date.parse('2028-10-19T03:00:00Z');
   const pripravit = async (nove, predchozi) => {
     for (const k of [...pamet.keys()]) if (k.startsWith('zalohy/')) pamet.delete(k);
-    /* staré otisky, které by retence smazala */
-    for (const k of ['2028-09-02', '2028-09-03'])
+    /* staré otisky, které by retence smazala (#523: úterý a středa téhož
+     * týdne starší 8 týdnů, první v srpnu je 2028-08-01) */
+    for (const k of ['2028-08-08', '2028-08-09'])
       { await s.zapis(k, { zdroj: 'x' }); await s.zapis(Z.souhrnKlic(k), { porizena: 'x', zdroj: 'x', pocetZakazek: 100, pocetUctu: 10 }); }
     for (const [k, v] of Object.entries(predchozi)) { await s.zapis(k, { zdroj: v.zdroj }); await s.zapis(Z.souhrnKlic(k), { porizena: 'x', ...v }); }
     await s.zapis(D, { zdroj: 'nocni-otisk' }); await s.zapis(Z.souhrnKlic(D), { porizena: 'x', zdroj: 'nocni-otisk', ...nove });
-    await s.zapis('2028-09-01', { zdroj: 'nocni-otisk' });
+    await s.zapis('2028-09-01', { zdroj: 'nocni-otisk' }); await s.zapis('2028-08-01', { zdroj: 'nocni-otisk' });
     await s.zapis(Z.KOPIE_DISK_KLIC, { kdy: new Date(ted - 3600000).toISOString(), soubor: 'otisk_2028-09-01.json', velikostB: 1234,
       sha256: 'b'.repeat(64), otisk: '2028-09-01', puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', potvrzeno: 'heslo-spravce' });
   };
@@ -591,13 +603,13 @@ await zkus('K3-N13', async () => {
   const r = await Z.retenceProved(D, D, ted);
   const zaznam = await s.cti(Z.RETENCE_VAROVANI_KLIC);
   test('K3-N13: pokles zakázek pod polovinu → retence se přeskočí, nic se nesmaže (i s podloženou kopií)',
-    r.smazano.length === 0 && /retence přeskočena/.test(r.ceka || '') && pamet.has('zalohy/2028-09-02') && pamet.has('zalohy/2028-09-03'), r);
+    r.smazano.length === 0 && /retence přeskočena/.test(r.ceka || '') && pamet.has('zalohy/2028-08-08') && pamet.has('zalohy/2028-08-09'), r);
   test('K3-N13: varování nese dny a počty a uloží se pro hlídku',
     !!r.varovani && !!zaznam && zaznam.den === D && zaznam.predchozi === '2028-10-18' && zaznam.pred.pocetZakazek === 100
     && zaznam.nove.pocetZakazek === 40 && /zakázek 100 → 40/.test(zaznam.text) && !!Date.parse(zaznam.kdy), zaznam);
-  await pripravit({ pocetZakazek: 60, pocetUctu: 6 }, { '2028-10-18': nocni(100, 10) });
+  await pripravit({ pocetZakazek: 96, pocetUctu: 10 }, { '2028-10-18': nocni(100, 10) });
   const r2 = await Z.retenceProved(D, D, ted);
-  test('K3-N13: pokles nad polovinou → retence proběhne', JSON.stringify(r2.smazano) === JSON.stringify(['2028-09-02', '2028-09-03']), r2);
+  test('#523 K3-N13: pokles zakázek o 4 % → retence proběhne', JSON.stringify(r2.smazano) === JSON.stringify(['2028-08-08', '2028-08-09']), r2);
   await pripravit({ pocetZakazek: 100, pocetUctu: 4 }, { '2028-10-18': nocni(100, 10) });
   test('K3-N13: pokles účtů pod polovinu → přeskočí', (await Z.retenceProved(D, D, ted)).smazano.length === 0);
   /* porovnává se s předchozím NOČNÍM, vynucený / jiný zdroj se přeskočí */
@@ -780,11 +792,13 @@ await zkus('O11', async () => {
   test('K4-N13: 29. den po varování retence pořád stojí', r29.smazano.length === 0 && !!r29.drzeno, r29);
   const t30 = Date.parse(r0.varovani.kdy) + 30 * 86400000;
   const r30 = await noc('2028-11-18', t30);
-  test('K4-N13: po 30 dnech bez potvrzení retence běží normálně', !r30.drzeno && r30.smazano.includes('2028-09-02'), r30);
-  test('K4-N13: čistá funkce — potvrzené / staré / nečitelné varování retenci nedrží, čerstvé drží',
+  /* #523 Z2 (pokyn J. V. 26. 10. 2026): bez potvrzení se nemaže NIKDY — do #523 se retence po 30 dnech uvolnila */
+  test('#523 K4-N13: ani po 30 dnech bez potvrzení se nic nesmaže', !!r30.drzeno && r30.smazano.length === 0, r30);
+  test('#523 K4-N13: čistá funkce — potvrzené / nečitelné varování retenci nedrží, čerstvé i staré (30 a 400 dní) drží',
     Z.retenceDrzena({ kdy: new Date(ted0).toISOString(), potvrzeno: { kdy: 'x' } }, ted0) === null
     && Z.retenceDrzena({ kdy: 'x' }, ted0) === null && Z.retenceDrzena(null, ted0) === null
-    && Z.retenceDrzena({ kdy: new Date(ted0 - 30 * 86400000).toISOString() }, ted0) === null
+    && Z.retenceDrzena({ kdy: new Date(ted0 - 30 * 86400000).toISOString() }, ted0).dnu === 30
+    && Z.retenceDrzena({ kdy: new Date(ted0 - 400 * 86400000).toISOString() }, ted0).dnu === 400
     && Z.retenceDrzena({ kdy: new Date(ted0 - 3600000).toISOString() }, ted0).dnu === 0);
 
   /* potvrzení správcem: endpoint */

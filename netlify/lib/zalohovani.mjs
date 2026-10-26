@@ -18,6 +18,8 @@
  * ============================================================ */
 import { uloziste, SMAZANI_ULOZISTE, vyhradne } from './sdilene.mjs';
 import { randomBytes } from 'node:crypto';
+import { gzipSync, gunzipSync } from 'node:zlib';
+import RZ from './retence_modul.cjs';
 
 const DEN_MS = 86400000;
 export function denDnes(kdy) {
@@ -276,6 +278,35 @@ export const OTISK_ROZPOCET = { synchronniMs: 5000, nocniMs: 20000 };
  * otiskem by zapisovaly tytéž části. Krok si stav „zamkne" na dobu svého
  * rozpočtu; kdo přijde mezitím, dostane `bezi: true` a zkusí to za chvíli. */
 const OTISK_ZAMEK_NAVIC_MS = 20000;
+/* KOMPRESE ČÁSTÍ (#523 Z2, 26. 10. 2026). Měření (nastroje/
+ * mereni_komprese_otisku.mjs, smyšlená data v tvaru aplikace): text zakázek
+ * gzip zmenší o ~99 %, base64 příloh o ~25 %, směs blízká engscalc
+ * (~123 MB) o 32–41 % — nad prahem 30 %, který J. V. určil. Nová část se
+ * proto ukládá jako gzip JSON (binární blob; base64 by úsporu u příloh
+ * snědl) a manifest nese `komprese: 'gzip'`. Čtení umí obojí: otisk bez
+ * pole `komprese` (Z1, v26.10.8) má části jako JSON. Úložiště bez binárního
+ * zápisu (starší náhrady v testech) dostane části jako JSON. Čas: ~100 ms
+ * CPU na 4MB část, rozbalení ~20 ms — v rozpočtu kroku. */
+export const OTISK_KOMPRESE = 'gzip';
+async function zapisCast(s, klic, i, cast, komprese) {
+  const text = JSON.stringify(cast);
+  if (komprese === OTISK_KOMPRESE) {
+    const gz = gzipSync(Buffer.from(text, 'utf8'));
+    await s.zapisBin(castKlic(klic, i), gz);
+    return { velikostB: Buffer.byteLength(text), ulozenoB: gz.length };
+  }
+  await s.zapis(castKlic(klic, i), cast);
+  return { velikostB: Buffer.byteLength(text), ulozenoB: Buffer.byteLength(text) };
+}
+/* Část podle manifestu `m`: null, když chybí. Neznámá komprese = výjimka
+ * (radši žádná obnova než tichý nesmysl). */
+async function ctiCast(s, klic, i, m) {
+  if (!m.komprese) return await s.cti(castKlic(klic, i));
+  if (m.komprese !== OTISK_KOMPRESE || typeof s.ctiBin !== 'function')
+    throw new Error('otisk ' + klic + ' má části v neznámém formátu (' + String(m.komprese) + ')');
+  const b = await s.ctiBin(castKlic(klic, i));
+  return b == null ? null : JSON.parse(gunzipSync(b).toString('utf8'));
+}
 
 /* SEKCE OTISKU — jediné místo, odkud pořizování čte. Jednozáznamové (klic)
  * a mapy (celé úložiště, případně s předponou). Úplnost hlídá
@@ -331,7 +362,7 @@ export async function ctiOtisk(s, klic) {
   const o = otiskZaklad(m);
   const klice = Array.from({ length: m.casti }, (_, i) => castKlic(klic, i));
   for (let i = 0; i < klice.length; i += 4) {
-    const casti = await Promise.all(klice.slice(i, i + 4).map(k => s.cti(k)));
+    const casti = await Promise.all(klice.slice(i, i + 4).map((k, j) => ctiCast(s, klic, i + j, m)));
     casti.forEach((c, j) => {
       if (!c) throw new Error('otisk ' + klic + ' je neúplný: chybí část ' + (i + j + 1) + ' z ' + m.casti);
       otiskSloz(o, c);
@@ -347,7 +378,7 @@ export async function ctiOtiskCast(s, klic, i) {
   if (!m) return null;
   if (!jeOtiskPoCastech(m)) return i === 0 ? m : null;
   if (!Number.isInteger(i) || i < 0 || i >= m.casti) return null;
-  const c = await s.cti(castKlic(klic, i));
+  const c = await ctiCast(s, klic, i, m);
   if (!c) throw new Error('otisk ' + klic + ' je neúplný: chybí část ' + (i + 1) + ' z ' + m.casti);
   const o = { porizena: String(m.porizena || ''), zdroj: String(m.zdroj || ''), kdo: String(m.kdo || '') };
   for (const [n, v] of Object.entries(c)) {
@@ -383,16 +414,23 @@ export function otiskVyrez(o, od, kolik) {
   return { otisk: out, celkem: i };
 }
 
+/* Počty šablon a podpisů do manifestu a souhrnu (#523) — rozpracovaný
+ * otisk ze Z1 je nemá, pak se nezapíšou (pojistka je neporovná). */
+const pocetSP = (st) => (Number.isInteger(st.pocetSablon) ? { pocetSablon: st.pocetSablon, pocetPodpisu: st.pocetPodpisu } : {});
 /* Plán nového otisku: klíče všech map (seznam je levný, čtou se jen klíče). */
-async function otiskPlan(klic, zdroj, kdo) {
+async function otiskPlan(klic, zdroj, kdo, sZal) {
   const ul = {};
   for (const x of OTISK_SEKCE) if (!ul[x.ul]) ul[x.ul] = await uloziste(x.ul);
   const plan = await Promise.all(OTISK_SEKCE.map(async x => ({ n: x.nazev,
     k: x.klic ? [x.klic] : (await ul[x.ul].seznam(x.prefix)).filter(k => !x.prefix || k.startsWith(x.prefix)).sort() })));
   const ted = new Date().toISOString();
   return { klic, zdroj: String(zdroj || 'nocni-otisk'), kdo: String(kdo || ''), porizena: ted, naposled: ted,
-    plan, pos: { i: 0, j: 0 }, casti: 0, velikostB: 0, pocetUctu: 0, praceMs: 0, kroku: 0,
-    pocetZakazek: (plan.find(p => p.n === 'zakazky') || { k: [] }).k.length };
+    plan, pos: { i: 0, j: 0 }, casti: 0, velikostB: 0, ulozenoB: 0, pocetUctu: 0, praceMs: 0, kroku: 0,
+    komprese: typeof sZal.zapisBin === 'function' && typeof sZal.ctiBin === 'function' ? OTISK_KOMPRESE : '',   // #523
+    pocetZakazek: (plan.find(p => p.n === 'zakazky') || { k: [] }).k.length,
+    /* #523: pojistka retence hlídá i úbytek šablon a podpisů */
+    pocetSablon: (plan.find(p => p.n === 'sablony') || { k: [] }).k.length,
+    pocetPodpisu: (plan.find(p => p.n === 'podpisy') || { k: [] }).k.length };
 }
 const otiskPostup = (st) => {
   let celkem = 0, hotovo = 0;
@@ -427,7 +465,7 @@ export async function porizOtiskKrok(klic, zdroj, kdo, opt = {}) {
      * porizOtisk. Starý manifest jde pryč HNED: jinak by po dobu pořizování
      * ukazoval na části, které se právě přepisují. */
     if (hotovy) { await sZal.smaz(klic); try { await sZal.smaz(souhrnKlic(klic)); } catch (e) { /* bez souhrnu */ } }
-    st = await otiskPlan(klic, zdroj, kdo);
+    st = await otiskPlan(klic, zdroj, kdo, sZal);
   } else if (st.beziDo && Date.parse(st.beziDo) > zacatek) {
     return { den: klic, hotovo: false, bezi: true, postup: otiskPostup(st) };
   }
@@ -439,9 +477,8 @@ export async function porizOtiskKrok(klic, zdroj, kdo, opt = {}) {
   let cast = {}, castB = 0;
   const uloz = async (pos) => {
     if (Object.keys(cast).length) {
-      const text = JSON.stringify(cast);
-      await sZal.zapis(castKlic(klic, st.casti), cast);
-      st.casti++; st.velikostB += Buffer.byteLength(text);
+      const v = await zapisCast(sZal, klic, st.casti, cast, st.komprese);
+      st.casti++; st.velikostB += v.velikostB; st.ulozenoB = (st.ulozenoB || 0) + v.ulozenoB;
       cast = {}; castB = 0;
     }
     st.pos = pos; st.naposled = new Date().toISOString();
@@ -477,19 +514,20 @@ export async function porizOtiskKrok(klic, zdroj, kdo, opt = {}) {
     const praceMs = (st.praceMs || 0) + (Date.now() - zacatek);
     const manifest = { format: OTISK_FORMAT, porizena: st.porizena, dokoncena: new Date().toISOString(),
       zdroj: st.zdroj, kdo: st.kdo, casti: st.casti, pocetZakazek: st.pocetZakazek, pocetUctu: st.pocetUctu,
-      velikostB: st.velikostB, kroku: st.kroku };
+      velikostB: st.velikostB, kroku: st.kroku, ...pocetSP(st),
+      ...(st.komprese ? { komprese: st.komprese, ulozenoB: st.ulozenoB || 0 } : {}) };   // #523: formát částí
     await sZal.zapis(klic, manifest);         // AŽ TEĎ otisk existuje
     /* SOUHRN VEDLE OTISKU (#151 N3). Zapisuje se AŽ PO otisku: když se
      * nepovede, přehled si počty vezme z manifestu. */
     const souhrn = { den: klic, porizena: st.porizena, zdroj: st.zdroj, kdo: st.kdo,
       pocetZakazek: st.pocetZakazek, pocetUctu: st.pocetUctu, velikostB: st.velikostB, trvaniMs: praceMs,
-      casti: st.casti, kroku: st.kroku };
+      casti: st.casti, kroku: st.kroku, ...pocetSP(st), ...(st.komprese ? { komprese: st.komprese, ulozenoB: st.ulozenoB || 0 } : {}) };
     try { await sZal.zapis(souhrnKlic(klic), souhrn); } catch (e) { /* přehled má záložní cestu */ }
     try { await sZal.smaz(stavKlic); } catch (e) { /* uklidí uklidRozpracovane */ }
     await otiskStavZapis(sZal, { klic, zdroj: st.zdroj, kdo: st.kdo, stav: 'hotovo',
       postup: otiskPostup({ ...st, pos: { i: st.plan.length, j: 0 } }) });
     return { den: klic, hotovo: true, pocetZakazek: st.pocetZakazek, pocetUctu: st.pocetUctu,
-      velikostB: st.velikostB, trvaniMs: praceMs, casti: st.casti, kroku: st.kroku };
+      velikostB: st.velikostB, ulozenoB: st.ulozenoB || st.velikostB, trvaniMs: praceMs, casti: st.casti, kroku: st.kroku };
   } catch (e) {
     const chyba = String(e && e.message || e);
     try { st.beziDo = null; st.chyba = chyba; await sZal.zapis(stavKlic, st); } catch (e2) { /* stav zůstane zamčený do beziDo */ }
@@ -617,106 +655,100 @@ export async function seznamOtisku(kolik) {
 }
 
 /* ============================================================
- * RETENCE OTISKŮ (#151 N5, rozhodnutí J. V. 19. 10. 2026)
+ * RETENCE OTISKŮ (#151 N5 19. 10. 2026; od #523 Z2 26. 10. 2026 nové
+ * pravidlo J. V.)
  *
- * Do 19. 10. se nemazalo nic: ~20 MB za noc ≈ 7 GB za rok v Blobs. Pravidlo
- * J. V.: noční otisky posledních 30 dní + první otisk každého měsíce 12
- * měsíců zpět; vynucené (ruční, při přihlášení) 90 dní. Výchozí volby
- * dávky O4 (J. V. se neptal):
- *   - „posledních 30 dní" = věk 0–29 dní (dnešek je den 0), 30. den se maže;
- *   - „12 měsíců zpět" = měsíc dneška + 12 předchozích; z každého se drží
- *     NEJSTARŠÍ noční otisk měsíce (první, který v něm vznikl);
- *   - vynucené: věk 0–89 dní;
+ * Do 19. 10. se nemazalo nic; pak (N5) 30 dní + první v měsíci 12 měsíců,
+ * vynucené 90 dní a otisky před 20. 10. nikdy (RETENCE_OD). Ostrý engscalc
+ * ale nese ~114 MB za den a automatické otisky přibývají při každém
+ * přihlášení správce — rozhodnutí J. V. 26. 10. 2026:
+ *   - noční (denní klíč) 14 dní, týdenní (neděle, jinak nejbližší starší
+ *     v týdnu) 8 týdnů, měsíční (první v měsíci) 6 měsíců;
+ *   - vynucené (`-rucne`, `-auto`) 7 dní;
  *   - otisky PŘED OBNOVOU se nemažou nikdy (cesta zpátky, maže jen člověk);
- *   - klíče mimo OTISK_KLIC (souhrny, tokeny, záznam kopie) výběr nevidí —
- *     souhrn odchází jen spolu se svým otiskem;
+ *   - výjimka RETENCE_OD je ZRUŠENÁ: ze starých otisků (do 19. 10. 2026)
+ *     zůstane jen první z každého měsíce, i ten po 6 měsících odejde;
  *   - nejnovější otisk se nesmaže nikdy, ať je jakkoli starý;
- *   - otisky s datem před RETENCE_OD (2026-10-20) se nesmažou nikdy (J. V.).
+ *   - klíče mimo OTISK_KLIC (souhrny, části, tokeny, záznam kopie) výběr
+ *     nevidí — souhrn a části odcházejí jen se svým otiskem.
+ * Pravidlo samo (dny, týdny, měsíce) žije v src/retence_zaloh.js — totéž
+ * používá prohlížeč pro kopie na Disku. Pojistky kolem (nový otisk musí
+ * existovat, pokles dat, kopie na Disk) jsou v retenceProved.
  * Čistá funkce: `dnes` je 'YYYY-MM-DD' (UTC), vrací klíče ke smazání.
  * ============================================================ */
-/* HRANICE RETENCE (rozhodnutí J. V. 19. 10. 2026 ~13:20 UTC: „Staré zálohy
- * všechny ponech."). Otisk (a jeho souhrn) s datem PŘED touto hranicí
- * retence nikdy nesmaže — všechno, co existuje do nasazení v19.10.8, zůstane
- * navždy. Pravidlo níž platí jen pro otisky od 20. 10. 2026. Jediné místo,
- * kde se hranice nastavuje. */
-export const RETENCE_OD = '2026-10-20';
-export const RETENCE_DENNI_DNU = 30;
-export const RETENCE_MESICU = 12;
-export const RETENCE_VYNUCENE_DNU = 90;
+export const RETENCE_DENNI_DNU = RZ.RETENCE_ZALOH_BLOBS.dnu;
+export const RETENCE_TYDNU = RZ.RETENCE_ZALOH_BLOBS.tydnu;
+export const RETENCE_MESICU = RZ.RETENCE_ZALOH_BLOBS.mesicu;
+export const RETENCE_VYNUCENE_DNU = RZ.RETENCE_ZALOH_BLOBS.vynuceneDnu;
+export const RETENCE_STARE_PRED = RZ.RETENCE_ZALOH_STARE_PRED;
 export function retenceVyber(klice, dnes) {
-  const dnesMs = Date.parse(String(dnes || '') + 'T00:00:00Z');
+  const dnesMs = RZ.retenceZalohDenMs(String(dnes || ''));
   if (!Number.isFinite(dnesMs)) return [];
-  const vek = (k) => Math.round((dnesMs - Date.parse(k.slice(0, 10) + 'T00:00:00Z')) / DEN_MS);
   const otisky = [...new Set((klice || []).map(String))]
-    .filter(k => OTISK_KLIC.test(k) && Number.isFinite(Date.parse(k.slice(0, 10) + 'T00:00:00Z')));
+    .filter(k => OTISK_KLIC.test(k) && Number.isFinite(RZ.retenceZalohDenMs(k.slice(0, 10))));
   if (!otisky.length) return [];
   const nejnovejsi = otisky.slice().sort().pop();
   const denni = otisky.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
   const vynucene = otisky.filter(k => /T\d{6}-(rucne|auto)$/.test(k));
-  /* měsíce, ze kterých se drží první otisk: dnešní + 12 předchozích */
-  const d = new Date(dnesMs);
-  const mesice = new Set();
-  for (let i = 0; i <= RETENCE_MESICU; i++)
-    mesice.add(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - i, 1)).toISOString().slice(0, 7));
-  const prvniVMesici = new Set();
-  const videno = new Set();
-  for (const k of denni) {                       // seřazené vzestupně → první je nejstarší
-    const m = k.slice(0, 7);
-    if (!videno.has(m)) { videno.add(m); if (mesice.has(m)) prvniVMesici.add(k); }
-  }
+  const drz = RZ.retenceZalohDrz(denni, dnes, RZ.RETENCE_ZALOH_BLOBS, { stareJenMesicni: RETENCE_STARE_PRED });
+  if (!drz) return [];
+  const vek = (k) => Math.round((dnesMs - RZ.retenceZalohDenMs(k.slice(0, 10))) / DEN_MS);
   const smazat = [];
-  const chraneny = (k) => k.slice(0, 10) < RETENCE_OD;   // staré zálohy J. V. ponechal
-  for (const k of denni.filter(k => !chraneny(k)))
-    if (vek(k) >= RETENCE_DENNI_DNU && !prvniVMesici.has(k) && k !== nejnovejsi) smazat.push(k);
-  for (const k of vynucene.filter(k => !chraneny(k)))
+  for (const k of denni)
+    if (!drz.has(k) && k !== nejnovejsi) smazat.push(k);
+  for (const k of vynucene)
     if (vek(k) >= RETENCE_VYNUCENE_DNU && k !== nejnovejsi) smazat.push(k);
   return smazat.sort();
 }
 
-/* Pojistka retence (K3-N13). Práh a klíč záznamu pro hlídku. */
-export const RETENCE_POKLES_PRAH = 0.5;
+/* Pojistka retence (K3-N13; od #523 Z2 přísnější a bez časového uvolnění).
+ * Prahy žijí v src/retence_zaloh.js (RETENCE_ZALOH_POJISTKA): velikost
+ * < 90 %, zakázek / účtů < 95 %, šablon / podpisů méně. Klíč záznamu pro
+ * hlídku. */
+export const RETENCE_POKLES_PRAH = RZ.RETENCE_ZALOH_POJISTKA.pocty;
+export const RETENCE_POKLES_VELIKOST = RZ.RETENCE_ZALOH_POJISTKA.velikost;
 export const RETENCE_VAROVANI_KLIC = 'retence-varovani';
-export const RETENCE_VAROVANI_DNU = 30;
-/* DRŽENÍ RETENCE DO POTVRZENÍ (K4-N13, dávka O11, rozhodnutí J. V.
- * 21. 10. 2026). Do O11 pojistka zastavila retenci jen na jednu noc: další
- * noc se nový otisk porovnal s už „chudým" a retence mazala dobré otisky
- * z doby před ztrátou, jak dosáhly 30 dní. Teď retence po poklesu stojí,
- * dokud správce varování v administraci nepotvrdí (POST
- * /api/zaloha_vynuceno { akce: 'retence-potvrdit' }, heslo správce),
- * nejdéle RETENCE_VAROVANI_DNU dní od varování; pak běží normálně.
- * Čistá funkce: vrací null (retence smí běžet), nebo { dnu, doKdy }. */
+/* DRŽENÍ RETENCE DO POTVRZENÍ (K4-N13, dávka O11, 21. 10. 2026; #523 Z2).
+ * Po úbytku dat retence stojí, dokud správce varování v administraci
+ * nepotvrdí (POST /api/zaloha_vynuceno { akce: 'retence-potvrdit' }, heslo
+ * správce). Do #523 se retence sama uvolnila po 30 dnech; pokyn J. V.
+ * 26. 10. 2026 („nenadálé zmenšení musí být oznámené a schválené, jinak se
+ * staré zálohy nesmí mazat") — výchozí volba Z2: ŽÁDNÉ automatické uvolnění,
+ * ani u velikosti, ani u počtů. Úložiště mezitím roste, ale nic se neztratí
+ * a hlídka svítí, dokud to správce nevyřeší.
+ * Čistá funkce: vrací null (retence smí běžet), nebo { dnu }. */
 export function retenceDrzena(varovani, ted) {
   if (!varovani || typeof varovani !== 'object' || varovani.potvrzeno) return null;
   const t = Date.parse(typeof varovani.kdy === 'string' ? varovani.kdy : '');
   if (!Number.isFinite(t)) return null;
   const nyni = Number.isFinite(+ted) && ted ? +ted : Date.now();
-  const dnu = Math.floor((nyni - t) / DEN_MS);
-  if (dnu >= RETENCE_VAROVANI_DNU) return null;
-  return { dnu, doKdy: new Date(t + RETENCE_VAROVANI_DNU * DEN_MS).toISOString() };
+  return { dnu: Math.max(0, Math.floor((nyni - t) / DEN_MS)) };
 }
-/* Počty zakázek a účtů otisku: ze souhrnu (#151 N3), u otisku bez souhrnu
- * z otisku samého. Vrací null, když otisk není. */
+/* Údaje otisku pro pojistku: počty zakázek a účtů, velikost dat
+ * (nekomprimovaná) a počty šablon a podpisů (#523; starší otisky je nemají
+ * — pak se neporovnávají). Ze souhrnu (#151 N3), z manifestu, u starého
+ * jednolitého otisku z otisku samého (velikost se tam neporovnává — jiný
+ * způsob měření). Vrací null, když otisk není. */
+const cisloNeboNic = (x) => (typeof x === 'number' && Number.isFinite(x) ? x : undefined);
+const otiskUdaje = (z) => ({ zdroj: String(z.zdroj || ''), pocetZakazek: +z.pocetZakazek || 0, pocetUctu: +z.pocetUctu || 0,
+  velikostB: cisloNeboNic(z.velikostB), pocetSablon: cisloNeboNic(z.pocetSablon), pocetPodpisu: cisloNeboNic(z.pocetPodpisu) });
 async function otiskPocty(s, klic) {
   const sh = await s.cti(souhrnKlic(klic));
-  if (sh && sh.porizena) return { zdroj: String(sh.zdroj || ''), pocetZakazek: +sh.pocetZakazek || 0, pocetUctu: +sh.pocetUctu || 0 };
+  if (sh && sh.porizena) return otiskUdaje(sh);
   const o = await s.cti(klic);
   if (!o) return null;
-  if (jeOtiskPoCastech(o)) return { zdroj: String(o.zdroj || ''), pocetZakazek: +o.pocetZakazek || 0, pocetUctu: +o.pocetUctu || 0 };
+  if (jeOtiskPoCastech(o)) return otiskUdaje(o);
   return { zdroj: String(o.zdroj || ''), pocetZakazek: Object.keys(o.zakazky || {}).length,
-    pocetUctu: (Array.isArray(o.uzivatele) ? o.uzivatele : []).filter(Boolean).length };
+    pocetUctu: (Array.isArray(o.uzivatele) ? o.uzivatele : []).filter(Boolean).length,
+    pocetSablon: o.sablony && typeof o.sablony === 'object' ? Object.keys(o.sablony).length : 0,
+    pocetPodpisu: o.podpisy && typeof o.podpisy === 'object' ? Object.keys(o.podpisy).length : 0 };
 }
-/* Čistá část: pokles pod práh u zakázek NEBO účtů. `pred`/`nove` = počty. */
-export function retencePoklesPocty(pred, nove) {
-  if (!pred || !nove) return null;
-  const co = [];
-  if (pred.pocetZakazek > 0 && nove.pocetZakazek < pred.pocetZakazek * RETENCE_POKLES_PRAH)
-    co.push('zakázek ' + pred.pocetZakazek + ' → ' + nove.pocetZakazek);
-  if (pred.pocetUctu > 0 && nove.pocetUctu < pred.pocetUctu * RETENCE_POKLES_PRAH)
-    co.push('účtů ' + pred.pocetUctu + ' → ' + nove.pocetUctu);
-  return co.length ? co : null;
-}
+/* Čistá část: co ubylo (seznam textů) nebo null — src/retence_zaloh.js. */
+export function retencePoklesPocty(pred, nove) { return RZ.retenceZalohPokles(pred, nove); }
 /* Předchozí NOČNÍ otisk (denní klíč před novým, zdroj nocni-otisk; nejvýš
- * 7 dní zpátky jako posledniNocniOtisk) a porovnání počtů. */
+ * 7 dní zpátky jako posledniNocniOtisk) a porovnání. */
+const POKLES_POLE = ['pocetZakazek', 'pocetUctu', 'velikostB', 'pocetSablon', 'pocetPodpisu'];
+const vyber = (o) => Object.fromEntries(POKLES_POLE.filter(k => o[k] !== undefined).map(k => [k, o[k]]));
 async function retencePokles(s, klice, novyKlic) {
   const nove = await otiskPocty(s, novyKlic);
   const predchozi = klice.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k) && k < novyKlic).sort().reverse().slice(0, 7);
@@ -725,9 +757,8 @@ async function retencePokles(s, klice, novyKlic) {
     if (!pred || pred.zdroj !== 'nocni-otisk') continue;
     const co = retencePoklesPocty(pred, nove);
     if (!co) return null;
-    return { den: novyKlic, predchozi: k, pred: { pocetZakazek: pred.pocetZakazek, pocetUctu: pred.pocetUctu },
-      nove: { pocetZakazek: nove.pocetZakazek, pocetUctu: nove.pocetUctu },
-      text: 'noční otisk ' + novyKlic + ' má proti ' + k + ' méně než polovinu (' + co.join(', ') + ')' };
+    return { den: novyKlic, predchozi: k, zdroj: 'nocni', pred: vyber(pred), nove: vyber(nove),
+      text: 'noční otisk ' + novyKlic + ' má proti ' + k + ' méně dat (' + co.join(', ') + ')' };
   }
   return null;
 }
@@ -737,7 +768,7 @@ async function retencePokles(s, klice, novyKlic) {
  * (zápis se nepovedl, nebo ho nejde přečíst), nesmaže se nic. Vrací
  * { smazano: [klíče], chyby: [..] }; chyba mazání jednoho klíče ostatní
  * nezastaví a otisk nikdy neohrozí. */
-export async function retenceProved(novyKlic, dnes, ted) {
+export async function retenceProved(novyKlic, dnes, ted, opt = {}) {
   const s = await uloziste('zalohy');
   const klice = await s.seznam();
   if (!novyKlic || !klice.includes(novyKlic) || !(await s.cti(souhrnKlic(novyKlic)) || await s.cti(novyKlic)))
@@ -749,27 +780,35 @@ export async function retenceProved(novyKlic, dnes, ted) {
    * logu jde „retence čeká na první kopii na Disk". Platí trvale: když se
    * kopie na Disk přestanou dělat, retence se zastaví (úložiště poroste, ale
    * nic se neztratí). */
-  /* POJISTKA PROTI TICHÉ ZTRÁTĚ DAT (K3-N13, rozhodnutí J. V. 20. 10. 2026).
-   * Nese-li nový noční otisk méně než 50 % zakázek nebo účtů proti
-   * předchozímu nočnímu, retence se ten den přeskočí, zaloguje se varování
-   * a záznam `retence-varovani` ukáže hlídka v administraci (30 dní).
-   * Od O11 (K4-N13) retence stojí i další noci, dokud správce úbytek
-   * nepotvrdí — viz retenceDrzena. */
-  const pokles = await retencePokles(s, klice, novyKlic);
+  /* POJISTKA PROTI TICHÉ ZTRÁTĚ DAT (K3-N13 20. 10. 2026, #523 Z2 26. 10.).
+   * Nese-li nový noční otisk proti předchozímu nočnímu méně dat (velikost
+   * < 90 %, zakázek / účtů < 95 %, šablon / podpisů méně —
+   * src/retence_zaloh.js), retence se přeskočí, zaloguje se VAROVÁNÍ
+   * a záznam `retence-varovani` ukáže hlídka v administraci. Retence pak
+   * stojí, dokud správce úbytek nepotvrdí — viz retenceDrzena. */
+  let pokles = await retencePokles(s, klice, novyKlic);
+  /* Úbytek téhož dne, který správce už potvrdil, se znovu nehlásí (další
+   * běh téže noci by potvrzení přepsal). */
+  if (pokles) {
+    let byl = null;
+    try { byl = await s.cti(RETENCE_VAROVANI_KLIC); } catch (e) { /* níž se hlásí znovu */ }
+    if (byl && byl.potvrzeno && byl.den === pokles.den && byl.zdroj !== 'disk') pokles = null;
+  }
   if (pokles) {
     const varovani = { kdy: new Date(Number.isFinite(+ted) && ted ? +ted : Date.now()).toISOString(), ...pokles };
     try { await s.zapis(RETENCE_VAROVANI_KLIC, varovani); } catch (e) { /* varování je navíc, retence stejně stojí */ }
     return { smazano: [], chyby: [], ceka: 'retence přeskočena — ' + pokles.text, varovani };
   }
-  /* K4-N13 (O11): nepotvrzené varování z dřívější noci drží retenci dál
-   * (nejdéle 30 dní). Nečitelný záznam = radši nemazat. */
+  /* K4-N13 (O11): nepotvrzené varování z dřívější noci (i z kopie na Disk,
+   * #523) drží retenci dál — od #523 bez časového omezení. Nečitelný
+   * záznam = radši nemazat. */
   let drzeno;
   try { drzeno = retenceDrzena(await s.cti(RETENCE_VAROVANI_KLIC), ted); }
-  catch (e) { drzeno = { dnu: 0, doKdy: '', chyba: String(e && e.message || e) }; }
+  catch (e) { drzeno = { dnu: 0, chyba: String(e && e.message || e) }; }
   if (drzeno)
     return { smazano: [], chyby: [], drzeno, ceka: drzeno.chyba
       ? 'retence stojí — záznam varování pojistky nejde přečíst (' + drzeno.chyba + ')'
-      : 'retence stojí do potvrzení úbytku dat správcem (varování před ' + drzeno.dnu + ' dny, nejdéle do ' + drzeno.doKdy.slice(0, 10) + ')' };
+      : 'retence stojí do potvrzení úbytku dat správcem (varování před ' + drzeno.dnu + ' dny)' };
   const kopie = await s.cti(KOPIE_DISK_KLIC);
   if (!kopieDiskCerstva(kopie, ted))
     return { smazano: [], chyby: [], ceka: 'retence čeká na první kopii na Disk' };
@@ -778,17 +817,29 @@ export async function retenceProved(novyKlic, dnes, ted) {
    * a otiskem SHA-256 (kopieDiskPodlozena). */
   if (!kopieDiskPodlozena(kopie, klice))
     return { smazano: [], chyby: [], ceka: 'retence čeká na podloženou kopii nočního otisku na Disk' };
+  /* ČASOVÝ ROZPOČET (#523 Z2). Otisk po částech má desítky částí a první
+   * noc po novém pravidle maže i staré otisky ze září — sekvenčně by to
+   * plánovaná funkce (limit 30 s) nestihla. Maže se proto do vyčerpání
+   * `opt.rozpocetMs` a zbytek (`zbyva`) dokončí další běh téže noci (noční
+   * funkce pak den neuzavře). Pořadí u otisku: nejdřív manifest (otisk
+   * přestane existovat celý naráz), pak souhrn, pak části po dávkách —
+   * když funkci ukončí uprostřed, osiřelé části uklidí uklidRozpracovane. */
+  const zacatek = Date.now();
+  const rozpocet = opt.rozpocetMs > 0 ? opt.rozpocetMs : Infinity;
+  const vybrane = retenceVyber(klice, dnes || denDnes()).filter(k => k !== novyKlic);
   const smazano = [], chyby = [];
-  for (const k of retenceVyber(klice, dnes || denDnes())) {
-    if (k === novyKlic) continue;
+  let zbyva = 0;
+  for (const k of vybrane) {
+    if (Date.now() - zacatek > rozpocet) { zbyva = vybrane.length - smazano.length - chyby.length; break; }
     try {
       await s.smaz(k);
       if (klice.includes(souhrnKlic(k))) await s.smaz(souhrnKlic(k));
-      for (const c of klice.filter(x => x.startsWith(OTISK_CASTI + k + '/'))) await s.smaz(c);   // #522: části otisku
+      const casti = klice.filter(x => x.startsWith(OTISK_CASTI + k + '/'));   // #522: části otisku
+      for (let i = 0; i < casti.length; i += DAVKA_CTENI) await Promise.all(casti.slice(i, i + DAVKA_CTENI).map(c => s.smaz(c)));
       smazano.push(k);
     } catch (e) { chyby.push(k + ': ' + String(e && e.message || e)); }
   }
-  return { smazano, chyby };
+  return { smazano, chyby, ...(zbyva ? { zbyva } : {}) };
 }
 
 /* ============================================================
@@ -868,7 +919,8 @@ export function kopieDiskPodlozena(zaznam, klice) {
   const nejnovejsi = klice.filter(k => typeof k === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(k))
     .sort().reverse().slice(0, KOPIE_DISK_NEJNOVEJSICH);
   if (!nejnovejsi.includes(otisk)) return false;
-  if (zaznam.soubor !== 'otisk_' + otisk + '.json') return false;
+  /* #523 Z2: kopie je od v26.10.9 komprimovaná (.json.gz); starší .json platí dál */
+  if (zaznam.soubor !== 'otisk_' + otisk + '.json' && zaznam.soubor !== 'otisk_' + otisk + '.json.gz') return false;
   /* K3-N1 (rozhodnutí J. V. 20. 10. 2026): jen záznam potvrzený heslem
    * správce a jen kopie do složky „_Zaloha Netlify DB". Záznamy zapsané
    * před v20.10.2 tyhle značky nemají — retence počká na novou kopii. */

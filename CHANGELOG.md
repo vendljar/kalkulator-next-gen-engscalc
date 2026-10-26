@@ -8,6 +8,72 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v26.10.9 — Z2 #523: nová pravidla mazání záloh (Netlify Blobs i Disk Google) a komprese otisku, větev claude/z2-retence-zaloh
+
+Nad 48ab0a4 (Z1 #522, v26.10.8). Rozhodnutí J. V. 26. 10. 2026: ostrý engscalc nese ~114 MB otisku za den,
+automatické otisky přibývají při každém přihlášení správce a otisky do 19. 10. 2026 se dosud nesměly smazat nikdy.
+
+- **Jedno pravidlo pro server i prohlížeč** — nový modul `src/retence_zaloh.js` (server ho bere přes
+  `netlify/lib/retence_modul.cjs`, do aplikace jde buildem). Věk = dny od data zálohy (dnes = 0); týden
+  pondělí–neděle, týdenní záloha = nedělní, chybí-li, nejbližší starší v týdnu (= nejnovější záloha týdne);
+  měsíční = první záloha kalendářního měsíce, drží se, dokud není starší než 6 kalendářních měsíců
+  (z 26. 4. se maže záloha z 26. 10.); záloha s datem v budoucnosti se nemaže; nejnovější nikdy.
+- **Netlify Blobs:** noční otisky 14 dní, týdenní 8 týdnů, měsíční 6 měsíců; vynucené (`-rucne`, `-auto`)
+  7 dní; „před obnovou" nikdy. **Výjimka RETENCE_OD zrušená:** ze starých otisků (do 19. 10. 2026) zůstává
+  jen první z každého měsíce (měsíční lhůta 6 měsíců platí i pro ně) — staré denní a nedělní odejdou,
+  i když by je jinak držela 14denní / 8týdenní lhůta (doslovné znění rozhodnutí). Pojistky beze změny:
+  nový otisk musí existovat, pokles zakázek/účtů pod 50 % zastaví retenci (K3-N13, K4-N13), maže se jen
+  s podloženou kopií na Disk mladší 7 dní (N6, K3-N1, K4-N14), s otiskem odchází souhrn i části.
+  **Rozpočet mazání:** retence v noční funkci maže nejvýš do 20 s od začátku běhu (první noc po nasazení
+  maže desítky zářijových otisků po desítkách částí); zbytek (`zbyva`) dokončí další běh téže noci,
+  den (`nocni-dokonceno`) se uzavře až po celé retenci. Pořadí u otisku: manifest → souhrn → části po dávkách.
+- **Disk Google:** po každé ÚSPĚŠNÉ kopii aplikace ve vybrané složce „_Zaloha Netlify DB" smaže staré kopie:
+  posledních 7 dní + týdenní 8 týdnů + měsíční 6 měsíců. Maže jen soubory přesně tvaru
+  `otisk_RRRR-MM-DD.json` / `.json.gz` (ne podsložky, `posledni_kopie.json`, `otisk_… (1).json`), nikdy
+  nejnovější ani právě zapsanou kopii; nic, když server záznam kopie nepřijal, když složka nemá to jméno,
+  nebo když znovu přečtený zapsaný soubor nesedí velikostí či SHA-256. Hláška po kopii řekne, kolik a které
+  kopie smazala (`kopieDiskUklid` / `kopieDiskUklidText` v `src/ui/online_ui.js`).
+- **Komprese — měření** (`nastroje/mereni_komprese_otisku.mjs`, smyšlená data v tvaru aplikace, 792 zakázek):
+  text zakázek gzip −99 %, base64 příloh −25 %, směs blízká engscalc (123 MB) **−31,9 %**, s fotkou u každé
+  druhé zakázky −40,8 %, s 300 kB příloh u každé −28,3 %. Gzip 4MB části ~100 ms CPU, rozbalení ~20 ms.
+  Nad prahem 30 % → zavedeno:
+  - **části otisku v Blobs** jako gzip JSON v binárním blobu (`ctiBin`/`zapisBin` v `sdilene.mjs`; base64
+    by úsporu u příloh snědl), manifest a souhrn nesou `komprese: 'gzip'` a `ulozenoB`; čtení umí starý
+    nekomprimovaný otisk (Z1) i jednolitý; neznámý formát = výjimka s důvodem. Noční log ukazuje i uloženou
+    velikost. Paměť a čas: jedna část 4 MB naráz, komprese ~0,1 s na část — kroky (5 s / 20 s) i limity
+    (1 GB, 10 s / 30 s) platí dál.
+  - **kopie na Disk** `otisk_RRRR-MM-DD.json.gz` (CompressionStream; prohlížeč bez něj zapíše `.json` jako
+    dřív); SHA-256 a velikost se počítají ze zapsaných bajtů. **Obnova „ze souboru" `.json.gz` načte**
+    (pozná gzip podle prvních bajtů, rozbalí DecompressionStream). Server přijme záznam `.json.gz`
+    (`zaloha_vynuceno`) a podloží jím retenci (`kopieDiskPodlozena`); starý `.json` platí dál.
+  - **Hlídač záloh koordinace** musí na Disku hledat i `otisk_RRRR-MM-DD.json.gz` (oznámeno).
+- **Zálohy se mají zvětšovat (doplnění zadání, pokyn J. V. 26. 10. ~13:35):** „nenadálé zmenšení musí být
+  oznámené a schválené, jinak se staré zálohy nesmí mazat." Pojistka K3-N13/K4-N13 rozšířena: retence
+  (Netlify i Disk) stojí, když nový noční otisk proti předchozímu nočnímu má **velikost dat < 90 %**, **zakázek
+  nebo účtů < 95 %** (dřív < 50 %) nebo **méně šablon či podpisů** (jakýkoli úbytek). Prahy na jednom místě
+  (`RETENCE_ZALOH_POJISTKA`, `retenceZalohPokles` v `src/retence_zaloh.js`); velikost se bere nekomprimovaná,
+  otisk nově nese `pocetSablon` a `pocetPodpisu` (starší otisky bez nich se v tom neporovnávají). Oznámení:
+  záznam `retence-varovani` s textem, co kleslo a z kolika na kolik, hlídka v Nastavení → Databáze
+  a hláška po přihlášení správce, řádek „VAROVÁNÍ" v logu `zaloha_nocni`. Schválení: stávající
+  `retence-potvrdit` s heslem správce pro konkrétní den. **Výchozí volba Z2: bez potvrzení se nemaže nikdy —
+  zrušeno i dosavadní samovolné uvolnění po 30 dnech** (pro velikost i počty; úložiště mezitím roste,
+  hlídka svítí). Potvrzený úbytek téhož dne se dalším během noci znovu nehlásí.
+  **Disk:** před úklidem prohlížeč porovná nekomprimovanou velikost nové kopie s předchozí kopií ve složce
+  (u `.json.gz` rozbalí proudem a sečte bajty); pod 90 % nic nesmaže a ohlásí to serveru
+  (`POST retence-varovani-disk` — server úbytek přepočítá a text napíše sám, nepotvrzené varování nepřepíše),
+  takže stojí i retence v Netlify; nepotvrzené varování z noci zastaví i úklid Disku; potvrzení pro tentýž
+  den ho pustí. Záznam kopie (`kopie-disk`) vrací čerstvý stav pojistky.
+- Testy: nový `netlify/test_z2_retence.mjs` (tabulka 20 případů přes přelomy týdnů, měsíců a roku, staré
+  zářijové klíče; simulace nocí 27. 10. 2026 – 10. 5. 2027 s ručně sestaveným stavem ke 4 dnům; provedení
+  nad úložištěm s pojistkami; rozpočet a navázání v noční funkci; komprese; záznam `.json.gz`) — nad kódem
+  v26.10.8 25 OK / 34 FAIL, po změně 64/0; nový `src/test_z2_disk_retence.js` (tabulka jmen na Disku,
+  simulovaná složka File System Access, pojistky, obnova `.gz`) — se Z1 9/2 + výjimka, po změně 33/0.
+  Upravené: `netlify/test_zalohy.mjs` (N5 a K3-N13 na nové pravidlo, 162/0), `src/test_o7_kopie_klient.js`
+  (zápis bajtů, 20/0). Mutace: #151 N5 přecíleny na nový modul, nové #523 (pravidlo, staré otisky, rozpočet,
+  komprese, úklid Disku, obnova .gz, server .json.gz, pojistka úbytku). Doplnění: `test_z2_retence.mjs` nad stavem
+  před doplněním 69 OK / 20 FAIL → 89/0, `src/test_z2_disk_retence.js` 35/8 → 43/0; `test_zalohy` a `test_o7_kopie_klient`
+  upraveny na prahy 95 % a bez uvolnění po 30 dnech; mutace O7/O11 přecíleny.
+
 ## v26.10.8 — Z1 #522 (kritické): ostrý web bez záloh — otisk databáze po částech, záloha po stránkách, větev claude/z1-zalohy-oprava
 
 Nad 4f2cc86 (integrace v26.10.7). Hlášení J. V. 26. 10.: ostrý engscalc (main v25.10.1, 792 zakázek)
