@@ -377,21 +377,15 @@ function standardVyhodnot(z, vyskaM, std, pripl) {
 
   /* --- můstek --- (od 25. 9. 2026 počet kusů; zaškrtnuté staré = 1) */
   const mustkyKs = (typeof mustkyPocet === 'function') ? mustkyPocet(zad) : (zad.mustek ? 1 : 0);
+  /* #354 (J. V. 26. 10. 2026): šířka můstku = šířka šachty, proto se už
+   * nehlídá (limity sirkaMaxMm / sirkaJakoOck zůstávají v datech, nic je
+   * nečte). Délka (dřív „hloubka") max 1 000 mm jako standard zůstává. */
   if (mustkyKs > 0) {
-    kontrol += 2;
+    kontrol += 1;
     const h = _cislo(zad.mustekHloubkaMm);
-    const sir = _cislo(zad.mustekSirkaMm);
-    if (h === null) nalezy.push(_nalez('Hloubka můstku', 'max ' + s.mustek.hloubkaMaxMm + ' mm', 'nevyplněno', 'nelze'));
+    if (h === null) nalezy.push(_nalez('Délka můstku', 'max ' + s.mustek.hloubkaMaxMm + ' mm', 'nevyplněno', 'nelze'));
     else if (h > s.mustek.hloubkaMaxMm)
-      nalezy.push(_nalez('Hloubka můstku', 'max ' + s.mustek.hloubkaMaxMm + ' mm', h + ' mm'));
-
-    const sirkaOckMm = _cislo(zad.sirka) === null ? null : Math.round(_cislo(zad.sirka) * 1000);
-    const strop = s.mustek.sirkaJakoOck && sirkaOckMm !== null
-      ? Math.min(sirkaOckMm, s.mustek.sirkaMaxMm) : s.mustek.sirkaMaxMm;
-    if (sir === null) nalezy.push(_nalez('Šířka můstku', 'max ' + strop + ' mm', 'nevyplněno', 'nelze'));
-    else if (sir > strop)
-      nalezy.push(_nalez('Šířka můstku',
-        'max ' + strop + ' mm' + (s.mustek.sirkaJakoOck ? ' (na šířku OCK)' : ''), sir + ' mm'));
+      nalezy.push(_nalez('Délka můstku', 'max ' + s.mustek.hloubkaMaxMm + ' mm', h + ' mm'));
   }
 
   const nelze = nalezy.some(n => n.stav === 'nelze');

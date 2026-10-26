@@ -46,6 +46,35 @@ ověřit, že plánovaná `zaloha_nocni` nejde na ostrém zavolat přes URL (K9-
 
 **Další krok:** dávka oprav v pořadí K9-V1 → pojistka (S2, S1, N1, N2) → S5, S6, S4 → N; každá
 s testem z reprodukce (před opravou selže, po ní projde).
+# Předávka — 26. 10. 2026: M6 #354 — cena můstků podle rozměru, větev `claude/354-mustky-cena`
+
+Nad `9484ef4` (M5 #524, v26.10.10). **Verze 26.10.11** (koordinace případně přečísluje). Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno (rozhoduje J. V.), na ostrém, Disku ani v Pipedrive nic.
+Návrh schválený J. V. 26. 10. 2026: artefakt „Můstky #354 — návrh" (JacYzAjvr8KY1FCtAqfuaY).
+
+| úkol | stav | poznámka |
+|---|---|---|
+| 1 Ceník HRUBÁ OCK | ✅ | `C.mustekKc` = materiál vč. zábradlí Kč/bm při ref. šířce; nové `C.mustekRefSirkaMm`, `C.mustekMontazHodKc`, `C.mustekMontazZakladHod`, `C.mustekMontazBmHod`, `C.mustekMontazMinHod` (`cenik.js`, `DEFAULT_CENIK` nulou) |
+| 2 Výpočet | ✅ | `mustkyRozpad` v `engine.js`; dva řádky MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL / MONTÁŽ MŮSTKŮ; příklady 23 560 / 35 000 / 50 900 / 66 800 / 98 600 sedí |
+| 3 Historie | ✅ | rozlišení podle `C.mustekRefSirkaMm > 0`; starý ceník = paušál × počet (i střecha a věta specifikace) — bajt po bajtu proti 9484ef4 nad fixturou 23. 9. (zamčená) s doplněnými můstky; migrace při zveřejnění v `progKontext` (`cenikMigraceMustku`, online i složka) |
+| 4 Nabídka/dokumenty | ✅ | TS_MUSTKY „N ks, rozměr Š × D mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže", EN/DE/FR vzorem; střecha nad můstkem ze šířky šachty; standard bez šířky, délka max 1 000 mm zůstává |
+| 5 Testy | ✅ | `src/test_354_mustky.js` 62/0 (pojistka nad 9484ef4: 14 FAIL + pád); `spust_testy.sh` 267/0/1; mutace jádra „#354" 13/13, „P7:" 4/4; server „#354" 3/3; kolo `--jen build,staticke` VŠE ZELENÉ; `overit_zadani_detail.mjs` přecílen (Délka můstku) 53/0 |
+| Prohlížeč | ✅ | `spust_testy.sh --smoke` 334/1/6 před úpravou harnessu; jediné selhání `overit_online.mjs` — po úpravě 270/3, **totéž co základ 9484ef4** (3× K3-N13/K4-N13 retence záloh — nese už základ, ne #354; hlášeno koordinaci). Úprava harnessu: P2 skládal ceník varianty ze dvou verzí (prohlížeč měl starší verzi zveřejněnou přes UI s buňkami můstků, server novější zapsanou přímo bez nich) a server ho právem odmítl (B128) — buňky, které platná verze nemá, teď nuluje jako import. Příručka: 78 snímků, postup „Délka můstku" trefí cíl (`PRIRUCKA.nesedi` prázdné) |
+| 6 Dokumentace | ✅ | CHANGELOG v26.10.11, příručka kap. 11 (+ krok postupu „Délka můstku"), roadmapa #354 hotovo |
+| Celé kolo | ⬜ | pouští koordinace |
+
+**Po nasazení (J. V.):** do prvního zveřejnění ceníku se počítá dál paušálem (zveřejněný ceník nové buňky
+nemá). V Ceníku nákladů OCK cokoli zveřejnit → dialog vypíše C.mustekKc → 28 600 a nové buňky (1 600 mm,
+400 Kč/h, 8 h, 8 h/bm, 16 h); rozpracované varianty s můstky se pak přepočítají samy, zamčené ne.
+
+**Rozhodnutí sezení (výchozí volby, J. V. může změnit):** délka nad 1 000 mm zůstává „mimo standard" jako dřív
+(ATYP); prázdná délka ve standardu „nelze posoudit" jako dřív; popisek řádku specifikace/nabídky zůstal
+„MŮSTKY MEZI BUDOVOU A OCK" (kvůli šablonám Word), „vč. zábradlí a montáže" nese text; zkušební ceník zůstal
+ve starém tvaru (paušál 40 000) — nový tvar testy skládají z `MUSTKY_CENIK_VYCHOZI`.
+
+**Pro slučování:** konflikt čekat v `manual/obsah.json` (kap. 11, řádek „verze"), `CHANGELOG.md`, `mutace_jadro.mjs`
+(blok P7/#354), `roadmapa/roadmap.json` (#354).
+
 # Předávka — 26. 10. 2026: M5 #524 — příručka bez „Co je nového", postupy krok za krokem, tisk A4, větev `claude/m5-prirucka-obrazky`
 
 Nad `48ab0a4` (integrace v26.10.8) + **sloučená Z2 #523** (`origin/claude/z2-retence-zaloh` 67f4d3b, v26.10.9 —

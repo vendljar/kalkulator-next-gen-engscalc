@@ -501,9 +501,15 @@ const KONTROLY = [
       if (isFinite(nast) && nast > 0 && n > nast)
         potize.push('zadaných můstků (' + n + ') je víc než nástupišť (' + nast + ')');
       const c = ctx.cenik;
+      /* #354: s novým ceníkem dvě ceny — materiál za bm a montáž za hodinu. */
+      const novy = typeof mustkyCenikNovy === 'function' && mustkyCenikNovy(c);
       if (c && !(+c.mustekKc > 0))
-        potize.push('v ceníku chybí cena můstku (Ceník → Hrubá OCK → Můstek mezi budovou a OCK), '
+        potize.push('v ceníku chybí cena můstku (Ceník → Hrubá OCK → Můstek mezi budovou a OCK'
+          + (novy ? ' vč. zábradlí – materiál' : '') + '), '
           + 'takže ' + (n === 1 ? 'můstek jde' : 'můstky jdou') + ' do nabídky za 0 Kč');
+      if (c && novy && !(+c.mustekMontazHodKc > 0))
+        potize.push('v ceníku chybí sazba montáže můstků (Ceník → Hrubá OCK → Montáž můstků), '
+          + 'takže montáž jde do nabídky za 0 Kč');
       if (!potize.length) return null;
       return { text: 'Můstky mezi budovou a OCK: ' + kontrolyVyctem(potize) + '.' };
     },
@@ -568,7 +574,17 @@ const KONTROLY = [
       const n = (typeof mustkyPocet === 'function') ? mustkyPocet(z) : (+z.mustkyKs || (z.mustek ? 1 : 0));
       if (!n) return null;
       const potize = [];
-      [['mustekSirkaMm', 'šířka'], ['mustekHloubkaMm', 'hloubka']].forEach(([k, jm]) => {
+      /* #354: s novým ceníkem je šířka můstku šířka šachty (nezadává se)
+       * a z délky se počítá cena — prázdná délka se řekne, počítá se 1 000 mm. */
+      const novy = typeof mustkyCenikNovy === 'function' && mustkyCenikNovy(ctx.cenik);
+      if (novy) {
+        const v = z.mustekHloubkaMm;
+        if (v === undefined || v === null || String(v).trim() === '')
+          return { text: 'Doplňte délku můstku (zadání šachty → Délka můstku). Do doplnění se počítá '
+            + (typeof MUSTEK_DELKA_VYCHOZI_MM !== 'undefined' ? MUSTEK_DELKA_VYCHOZI_MM : 1000).toLocaleString('cs-CZ')
+            + ' mm. Tisk to nezastaví.' };
+      }
+      (novy ? [['mustekHloubkaMm', 'délka']] : [['mustekSirkaMm', 'šířka'], ['mustekHloubkaMm', 'hloubka']]).forEach(([k, jm]) => {
         const v = z[k];
         if (v === undefined || v === null || String(v).trim() === '') return;
         const c = +v;

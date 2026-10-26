@@ -38,7 +38,15 @@ const CENIK_DEF = [
     ['C.vetraciMrizkaKc', 'Větrací mřížka (ext)', 'Kč/ks', ''],
     ['C.transportKc', 'Interní transport', 'Kč/cesta', ''],
     ['C.zastreseniM2Kc', 'Zastřešení šachty (ext)', 'Kč/m²', ''],
-    ['C.mustekKc', 'Můstek mezi budovou a OCK', 'Kč/ks', 'jeden můstek včetně montáže; počet se zadává v Zadání šachty'],
+    /* Můstky podle rozměru (#354, J. V. 26. 10. 2026): materiál za metr délky
+     * při referenční šířce, montáž zvlášť v hodinách. Do 26. 10. Kč/ks vč. montáže. */
+    ['C.mustekKc', 'Můstek mezi budovou a OCK vč. zábradlí – materiál', 'Kč/bm délky při ref. šířce',
+     'bez montáže, přepočte se úměrně šířce šachty'],
+    ['C.mustekRefSirkaMm', 'Můstky – referenční šířka', 'mm', 'šířka, pro kterou platí cena za bm'],
+    ['C.mustekMontazHodKc', 'Montáž můstků', 'Kč/hod', 'za hodinu práce (člověkohodinu), nezávisle na montáži na stavbě'],
+    ['C.mustekMontazZakladHod', 'Montáž můstků – základ', 'hod/ks', 'hodiny celkem (všechny osoby) na kus'],
+    ['C.mustekMontazBmHod', 'Montáž můstků – za metr délky', 'hod/bm', 'hodiny celkem za každý metr délky'],
+    ['C.mustekMontazMinHod', 'Montáž můstků – minimum', 'hod/ks', 'nejméně tolik hodin bez ohledu na velikost můstku'],
     ['C.oplechFasadaBmKc', 'Oplechování k fasádě (ext)', 'Kč/bm', ''],
   ]],
   /* ATYP (#7). Skupina se jmenuje stejně jako katalogová sekce `atyp` –

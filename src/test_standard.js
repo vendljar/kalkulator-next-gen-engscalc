@@ -153,13 +153,17 @@ test('můstek bez rozměrů = NELZE POSOUDIT, ne atyp',
   bezRozmeru.stav === 'nelze', bezRozmeru.stav);
 test('a řekne, který údaj chybí',
   bezRozmeru.nalezy.every(n => n.stav === 'nelze')
-  && bezRozmeru.nalezy.some(n => /Hloubka můstku/.test(n.co)));
+  && bezRozmeru.nalezy.some(n => /Délka můstku/.test(n.co)));
 test('vyplněný můstek v limitu projde',
   S.standardVyhodnot(int({ mustek: true, mustekHloubkaMm: 800, mustekSirkaMm: 1400 }), 20, std()).stav === 'standard');
 test('hloubka můstku nad 1000 mm je atyp',
   S.standardVyhodnot(int({ mustek: true, mustekHloubkaMm: 1200, mustekSirkaMm: 1400 }), 20, std()).stav === 'atyp');
-test('šířka můstku nad šířku OCK je atyp',
-  S.standardVyhodnot(int({ mustek: true, mustekHloubkaMm: 800, mustekSirkaMm: 1600 }), 20, std()).stav === 'atyp');
+/* #354 (J. V. 26. 10. 2026): šířka můstku = šířka šachty, kontrola šířky
+ * „na šířku OCK" odpadla — staré pole mustekSirkaMm standard nečte. */
+test('#354: šířka můstku se už nehlídá (staré mustekSirkaMm nad šířku OCK projde)',
+  S.standardVyhodnot(int({ mustek: true, mustekHloubkaMm: 800, mustekSirkaMm: 1600 }), 20, std()).stav === 'standard');
+test('#354: délka bez šířky v limitu projde (šířka se nezadává)',
+  S.standardVyhodnot(int({ mustek: true, mustekHloubkaMm: 1000 }), 20, std()).stav === 'standard');
 /* Klíčové pravidlo: chybějící údaj nesmí zakrýt skutečný prohřešek. */
 const skryvani = S.standardVyhodnot(int({ hloubka: 9, mustek: true }), 20, std());
 test('„mimo standard" přebíjí „nelze posoudit" (atyp se nedá schovat)',

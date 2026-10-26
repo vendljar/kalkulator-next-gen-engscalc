@@ -8,6 +8,44 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v26.10.11 — M6 #354: cena můstků mezi budovou a OCK podle rozměru (materiál vč. zábradlí + montáž), větev claude/354-mustky-cena
+
+Nad M5 (9484ef4, v26.10.10). Návrh schválil J. V. 26. 10. 2026 (artefakt „Můstky #354 — návrh"). Body 3 a 4
+rozboru K13 zůstávají vyčleněné (#355, #356), bod 5 je #519.
+
+- **Ceník (HRUBÁ OCK):** `C.mustekKc` zůstává, nově **„Můstek mezi budovou a OCK vč. zábradlí – materiál"**,
+  Kč/bm délky při referenční šířce, bez montáže. Nové buňky `C.mustekRefSirkaMm` (Můstky – referenční šířka, mm),
+  `C.mustekMontazHodKc` (Montáž můstků, Kč/hod — za člověkohodinu, nezávislá na `C.montazHodKc`),
+  `C.mustekMontazZakladHod` (hod/ks), `C.mustekMontazBmHod` (hod/bm), `C.mustekMontazMinHod` (hod/ks).
+  Controlling: materiál zámečníci, montáž stavební práce, hodiny a referenční šířka „není náklad".
+- **Výpočet** (`mustkyRozpad` v `engine.js`): šířka můstku = šířka šachty, délka = `mustekHloubkaMm`
+  (prázdná/neplatná = 1 000 mm). Na kus materiál = délka × `C.mustekKc` × šířka / ref. šířka, hodiny =
+  max(min, základ + za bm × délka), montáž = hodiny × sazba; × počet. Kalkulace dva řádky
+  **MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL** a **MONTÁŽ MŮSTKŮ** (ceníková vazba obou). Příklady (šířka 1,6 m):
+  0,6 m = 23 560, 1 m = 35 000, 1,5 m = 50 900, 2 m = 66 800, 3 m = 98 600 Kč náklad. Zastřešení nad
+  nejvyšším můstkem ze šířky šachty × délky.
+- **Historie (podmínka J. V.):** nový vzorec platí jen u ceníku s kladnou referenční šířkou. Ceník varianty je
+  zamrzlý a import chybějící klíč doplní nulou, takže **zamčené varianty a ceník zveřejněný před #354 počítají
+  dál paušál × počet** (jeden řádek, střecha ze starého pole šířky, specifikace starou větou) — test bajt po
+  bajtu proti jádru 9484ef4. **Zveřejnění ceníku** (online i složka, `progKontext`) starý ceník migruje
+  (`cenikMigraceMustku`): nové buňky výchozí 1 600 mm / 400 Kč/h / 8 h / 8 h/bm / 16 h, `C.mustekKc` = 28 600
+  (ponechá, co správce vyplnil nebo proti platnému ceníku změnil); dialog změny vypíše. Rozpracované varianty se
+  pak přepočítají samy (pravidlo 31. 7.). **Po nasazení je potřeba ceník jednou zveřejnit** — do té doby paušál.
+- **Zadání šachty:** pole **Délka můstku (mm)**, šířka jen zobrazená (= šířka šachty); `mustekSirkaMm` se už
+  nezadává a nový výpočet ho ignoruje. Kontrola před nabídkou: prázdná délka → „Doplňte délku můstku… počítá se
+  1 000 mm", chybějící sazba montáže → upozornění. **Standard OCK:** kontrola šířky (max / na šířku OCK) odpadla
+  (i z Nastavení), délka max 1 000 mm zůstává („Délka můstku").
+- **Specifikace a nabídka:** jeden řádek „N ks, rozměr Š × D mm (šířka × délka), ocelová konstrukce vč. zábradlí
+  a montáže" (TS_MUSTKY), cena v základu OCK = náklad + přirážka; překlad EN/DE/FR vzorem v `preklad.js`.
+- **Testy:** nový `src/test_354_mustky.js` 61/0 (pojistka: nad 9484ef4 14 FAIL a pád); upravené
+  `test_standard.js` (šířka se nehlídá), `test_mustky.js` (Délka můstku), `test_cenik_barvy.js` (jednotky mm,
+  hod/ks, hod/bm), `test_profil_neznamy.js` (popisné pole `mustky` mimo otisk), `test_controlling.js` beze změny
+  (mapování doplněno). Mutace jádra „#354" (13 nových, P7 přecílená).
+- **Příručka:** kap. 11 — délka a šířka můstku, „Jak se počítá cena můstku", ceník pro správce a zveřejnění,
+  nový krok postupu (Délka můstku); slovníček „nelze posoudit".
+
+---
+
 ## v26.10.10 — M5 #524: příručka obchodníka bez „Co je nového", postupy krok za krokem se snímky, tisk podle A4, větev claude/m5-prirucka-obrazky
 
 Nad integrací 48ab0a4 (v26.10.8) se sloučenou Z2 #523 (v26.10.9). Pokyn J. V. 26. 10. 2026: „odstraň z příručky
@@ -2275,8 +2313,6 @@ a `podklady/AUDIT28_pokus_sod.mjs`, meze v `BEZPECNOST_MEZE.md`.
   v podkladech): 270 prošlo, 0 selhalo, 2 přeskočeno (po doplnění `cekaNa` k #430).
 - Roadmapa #428 (hotovo), #429 B188, #430 B189 (čeká) — předběžná id.
 - `podklady/AUDIT27_pokus_vyjimky.mjs`: zápis matice s heslem správce (po B168 padal na 401).
-
----
 
 ---
 

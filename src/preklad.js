@@ -1392,6 +1392,12 @@ const PREKLAD_VZORY = [
     en: (m, n, h, s) => n + ' pcs' + (h ? ', depth ' + h + ' mm' : '') + (s ? ', width ' + s + ' mm' : ''),
     de: (m, n, h, s) => n + ' Stk.' + (h ? ', Tiefe ' + h + ' mm' : '') + (s ? ', Breite ' + s + ' mm' : ''),
     fr: (m, n, h, s) => n + ' pcs' + (h ? ', profondeur ' + h + ' mm' : '') + (s ? ', largeur ' + s + ' mm' : '') },
+  /* Můstky podle rozměru (#354, 26. 10. 2026): „1 ks, rozměr 1600 × 1000 mm
+   * (šířka × délka), ocelová konstrukce vč. zábradlí a montáže". */
+  { re: /^(\d+) ks, rozměr (\d+) × (\d+) mm \(šířka × délka\), ocelová konstrukce vč\. zábradlí a montáže$/i,
+    en: '$1 pcs, size $2 × $3 mm (width × length), steel structure incl. railing and installation',
+    de: '$1 Stk., Abmessung $2 × $3 mm (Breite × Länge), Stahlkonstruktion inkl. Geländer und Montage',
+    fr: '$1 pcs, dimensions $2 × $3 mm (largeur × longueur), structure en acier y compris garde-corps et montage' },
   { re: /^přisazena k (fasádě|podestám), v (\d+) nástupištích přes můstky$/i,
     en: (m, k, n) => 'Attached to the ' + (k === 'fasádě' ? 'facade' : 'landings') + ', at ' + n + ' landings via access bridges',
     de: (m, k, n) => 'An ' + (k === 'fasádě' ? 'die Fassade' : 'die Podeste') + ' angebaut, an ' + n + ' Zugangsstellen über Brücken',
