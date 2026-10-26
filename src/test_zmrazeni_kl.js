@@ -305,7 +305,7 @@ test('neznámé pole se po tisku CN bere jako zmrazené', (() => { const v = zam
       .every(k => tisk1[k] === pred[k]), ['DPH_SAZBA', 'DPH_KC', 'CENA_S_DPH', 'PODM_ZALOHA1'].map(k => [pred[k], tisk1[k]]));
   const novaSazba = Math.abs(v.data.cenik.dph - 0.12) < 1e-9 ? 0.21 : 0.12;
   v.data.cenik.dph = novaSazba;
-  v.data.kryci.hodnoty = Object.assign({}, v.data.kryci.hodnoty, { zaloha1: 'Bez zálohy', splatnostDni: '60', terminDodani: '30 týdnů' });
+  v.data.kryci.hodnoty = Object.assign({}, v.data.kryci.hodnoty, { zaloha1: 'Bez zálohy', faktura2: '90 % – po zahájení montáže', splatnostDni: '60', terminDodani: '30 týdnů' });   // faktura2 dopočtená jako klSet (SEC-S5 #517)
   const tisk2 = NB.nabidkaData(z, v, JEKLY).placeholders;
   test('dotisk CN po změně DPH: sazba, DPH i cena s DPH původní',
     tisk2.DPH_SAZBA === tisk1.DPH_SAZBA && tisk2.DPH_KC === tisk1.DPH_KC && tisk2.CENA_S_DPH === tisk1.CENA_S_DPH,

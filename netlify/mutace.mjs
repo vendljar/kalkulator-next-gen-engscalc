@@ -66,6 +66,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_typy_k7.mjs',
      /* #514 / O-K8 (24. 10. 2026): souběh zakázky a hesla, typy, hlavičky, klíče z adresy, obnova. */
      'test_ok8.mjs',
+     /* #517 / SEC-I7 (26. 10. 2026): zásah do jiného správce jen s heslem správce. */
+     'test_sec_i7.mjs',
      /* B111 (29. 9. 2026): záporná částka, množství a hodiny. */
      'test_zaporne.mjs',
      /* #398 (12. 10. 2026): koncová cena 2 — B133–B137, B145. */
@@ -4184,6 +4186,28 @@ const MUTACE = [
     proc: 'záznam s trvale selhávajícím čtením by navždy blokoval doplňování dnů ostatních' },
   /* #514 (O-K8, 24. 10. 2026): opravy auditů K8 a S1 bez změny chování.
    * Hlídá netlify/test_ok8.mjs. */
+  /* #517 (O2, J. V. 26. 10. 2026): SEC-I7 — smazání, vypnutí, archivace
+   * a snížení role jiného správce jen s heslem správce. Hlídá test_sec_i7.mjs. */
+  { nazev: '#517 SEC-I7: jiný správce se pozná podle role', soubor: 'functions/uzivatele.mjs',
+    hledej: "    const jinySpravce = !!ucet && ucet.role === 'Administrátor' && email !== relace.email;",
+    nahrad: "    const jinySpravce = false;",
+    proc: 's ukradenou cookie správce by šlo smazat všechny ostatní správce' },
+  { nazev: '#517 SEC-I7: snížení role jiného správce bez hesla', soubor: 'functions/uzivatele.mjs',
+    hledej: "      if (jinySpravce && t.role !== 'Administrátor') {   // SEC-I7",
+    nahrad: "      if (false) {",
+    proc: 'správce by šel bez hesla degradovat a pak smazat' },
+  { nazev: '#517 SEC-I7: vypnutí jiného správce bez hesla', soubor: 'functions/uzivatele.mjs',
+    hledej: "      if (jinySpravce && t.aktivni === false) {   // SEC-I7",
+    nahrad: "      if (false) {",
+    proc: 'cookie správce by stačila k vypnutí ostatních správců' },
+  { nazev: '#517 SEC-I7: archivace jiného správce bez hesla', soubor: 'functions/uzivatele.mjs',
+    hledej: "      if (jinySpravce && t.archiv) {   // SEC-I7",
+    nahrad: "      if (false) {",
+    proc: 'cookie správce by stačila k archivaci ostatních správců' },
+  { nazev: '#517 SEC-I7: smazání jiného správce bez hesla', soubor: 'functions/uzivatele.mjs',
+    hledej: "      if (jinySpravce) { const stop = await hesloJinySpravce(); if (stop) return stop; }   // SEC-I7",
+    nahrad: "",
+    proc: 'cookie správce by stačila k nevratnému smazání ostatních správců' },
   { nazev: '#514 SEC-S1: uložení zakázky bez výhradního úseku', soubor: 'functions/zakazky.mjs',
     hledej: "  const vysledek = await vyhradne('zakazky/z/' + jmeno, async () => {",
     nahrad: "  const vysledek = await (async (k, fn) => fn())('zakazky/z/' + jmeno, async () => {",

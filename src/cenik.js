@@ -73,8 +73,11 @@ const CENIK_DEF = [
     ['C.atypRezervaPriplatkyPct', 'ATYP: rezerva příplatky', '%', 'předvyplní pole „REZERVA příplatky"', 'pct'],
   ]],
   ['OPLÁŠTĚNÍ', [
-    ['C.skloBokyNazev', 'Sklo boky + zadní stěna – typ', '', '', 'text'],
-    ['C.skloBokyKc', 'Sklo boky + zadní stěna', 'Kč/m²', ''],
+    /* Název „Izolační dvojsklo" (J. V. 26. 10. 2026, #517): dřívější „Sklo boky
+     * + zadní stěna" popisoval jen standardní exteriér, po stěnách jde dvojsklo
+     * na kteroukoli stěnu. Klíče zůstávají (uložené ceníky a zakázky platí). */
+    ['C.skloBokyNazev', 'Izolační dvojsklo – typ', '', '', 'text'],
+    ['C.skloBokyKc', 'Izolační dvojsklo', 'Kč/m²', 'exteriérová: boky a zadní stěna ve standardu · po stěnách: volitelně u kterékoli stěny'],
     ['C.skloCelniNazev', 'Sklo VSG 4.4.1 – typ', '', '', 'text'],
     /* Poznámky u obou VSG sjednoceny 14. 9. 2026 (nález V33/V38): sazbu řídí
      * TYP ŠACHTY (interiér = VSG, exteriér = dvojsklo na bocích), uvnitř
