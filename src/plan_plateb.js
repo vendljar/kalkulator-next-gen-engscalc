@@ -309,11 +309,27 @@ function planPlatebVarianty(varianta, firma) {
      * JE snímek, takže se sem nedostane a tiskne zmrazený plán. */
     const sn = varianta.zamek.snimek && varianta.zamek.snimek.kryciProj;
     if (sn && plan && JSON.stringify(plan) !== JSON.stringify(sn.planPlateb || null)) {
+      /* SEC-S6 (#516, J. V. 26. 10. 2026): splátky ze snímku platí jen při
+       * stejné předvolbě I záloze — jinak by změna zálohy (70 → 30 %) zůstala
+       * jen v popisu a smlouva tiskla splátky z odeslání. */
       const stejnaPredvolba = !plan.predvolba || plan.predvolba === z.predvolba;
-      const cin = Object.assign({}, stejnaPredvolba ? cinnosti : {},
+      const stejnaZaloha = plan.zaloha == null || plan.zaloha === '' || +plan.zaloha === +z.zaloha;
+      const cin = Object.assign({}, stejnaPredvolba && stejnaZaloha ? cinnosti : {},
         (plan.cinnosti && typeof plan.cinnosti === 'object') ? plan.cinnosti : {});
+      /* Katalog milníků: snímek nese jen milníky použité při odeslání. Po
+       * přepnutí předvolby (Záloha → Standard …) by nové řádky neměly milník
+       * („milník chybí", SoD zablokovaná) — chybějící se doplní z firemního
+       * plánu (planFirmaPlan, bez něj PLAN_PROJ_VYCHOZI); texty snímku mají
+       * přednost, odeslaná formulace se nemění. */
+      const fir = planFirmaPlan(firma);
+      const zeSnimku = new Map(milniky.map(m => [m.id, m]));
+      const firMilniky = (Array.isArray(fir.milniky) ? fir.milniky : []).filter(m => m && typeof m.id === 'string');
+      const veFirme = new Set(firMilniky.map(m => m.id));
+      /* pořadí podle firemního katalogu (platby smlouvy jdou v pořadí milníků) */
+      const katalog = firMilniky.map(m => zeSnimku.has(m.id) ? Object.assign({}, m, zeSnimku.get(m.id)) : m)
+        .concat(milniky.filter(m => !veFirme.has(m.id)));
       return { plan: Object.assign({ v: 1, predvolba: z.predvolba, zaloha: z.zaloha }, plan, { cinnosti: cin, prepis }),
-               firemni, zmrazeny: false, stary: false, zeStarych };
+               firemni: Object.assign({}, fir, { milniky: katalog }), zmrazeny: false, stary: false, zeStarych };
     }
     return { plan: { v: 1, predvolba: z.predvolba, zaloha: z.zaloha, cinnosti, prepis, upravene },
              firemni, zmrazeny: true, stary: false, zeStarych };

@@ -315,12 +315,20 @@ function planKlpPrepisZrus(klic) {
   planKlpUlozeno();
 }
 
+/* Smí se plán plateb upravovat? Rozpracovaná varianta ano; odeslaná podle
+ * Z1 (tabulka J. V. 22. 10. 2026) až do tisku SoD — pole `planPredvolba` je
+ * po CN editovatelné a obal zámku (ZAMEK_KRYCI_PLAN v zamek_ui.js) zápis
+ * pustí. Do v25.10.1 karta po CN zůstala `disabled` (SEC-N8, #516). */
+function planKlpEditovatelny(v) {
+  if (typeof variantaEditovatelna !== 'function' || variantaEditovatelna(v)) return true;
+  return typeof zamekKryciVolnePole === 'function' && zamekKryciVolnePole('kryciProj', 'planPredvolba');
+}
 /* Karta plánu plateb v krycím listu PROJ (a v podmínkách u nabídky PROJ). */
 function planKlpKarta(c) {
   const ef = c && c.planEf;
   if (!ef || ef.stary) return '';
   const v = aktivniVarianta(ZAK);
-  const edit = typeof variantaEditovatelna !== 'function' || variantaEditovatelna(v);
+  const edit = planKlpEditovatelny(v);
   const dis = edit ? '' : ' disabled';
   const plan = ef.plan || {};
   const f = ef.firemni;
@@ -396,7 +404,7 @@ function planKlpPlatbyKarta(c) {
   const ef = c && c.planEf;
   if (!ef || ef.stary) return '';
   const v = aktivniVarianta(ZAK);
-  const edit = typeof variantaEditovatelna !== 'function' || variantaEditovatelna(v);
+  const edit = planKlpEditovatelny(v);
   const dis = edit ? '' : ' disabled';
   const d = ef.dopocet;
   const fmt = ef.mena.fmt;

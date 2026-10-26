@@ -113,7 +113,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'zamek.js',
   /* ui/ares_ui.js (#507, K7-K3): ARES po tisku SoD hlavičku nepřepíše.
    * Hlídá src/test_ares_po_sod.js. */
-  'ui/ares_ui.js'];
+  'ui/ares_ui.js',
+  /* ui/plan_plateb_ui.js (#516, SEC-N8): karta plánu plateb PROJ po tisku CN
+   * editovatelná podle Z1, po SoD zamčená. Hlídá src/test_zmrazeni_kl.js blok 5c. */
+  'ui/plan_plateb_ui.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -151,6 +154,8 @@ const PRIORITA = [
   'test_cenik_verze_online.js',
   /* tisk během ukládání a snímek odeslané nabídky (#507) — chytají mutace ui/online_ui.js a ui/zamek_ui.js */
   'test_tisk_behem_ulozeni.js', 'test_snimek_po_tisku.js', 'test_ares_po_sod.js',
+  /* plán plateb PROJ po CN (#516) — chytá mutace plan_plateb.js a ui/plan_plateb_ui.js */
+  'test_zmrazeni_kl.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -2425,6 +2430,27 @@ const MUTACE = [
     hledej: "      s[list].hodnoty[id] = kopie(h[id]);",
     nahrad: "",
     proc: 'smlouva vytištěná před uložením zámku by skončila 409' },
+  /* #516 SEC-S6 + SEC-N8: plán plateb PROJ po tisku CN. Hlídá src/test_zmrazeni_kl.js blok 5c. */
+  { nazev: '#516 SEC-S6: splátky ze snímku i při jiné záloze', soubor: 'plan_plateb.js',
+    hledej: "      const cin = Object.assign({}, stejnaPredvolba && stejnaZaloha ? cinnosti : {},",
+    nahrad: "      const cin = Object.assign({}, stejnaPredvolba ? cinnosti : {},",
+    proc: 'změna zálohy po CN by zůstala jen v popisu, smlouva by tiskla splátky z odeslání' },
+  { nazev: '#516 SEC-S6: katalog jen z milníků snímku', soubor: 'plan_plateb.js',
+    hledej: "               firemni: Object.assign({}, fir, { milniky: katalog }), zmrazeny: false, stary: false, zeStarych };",
+    nahrad: "               firemni, zmrazeny: false, stary: false, zeStarych };",
+    proc: 'po přepnutí předvolby by chyběly milníky a SoD by byla zablokovaná' },
+  { nazev: '#516 SEC-S6: text firemního milníku před textem snímku', soubor: 'plan_plateb.js',
+    hledej: "zeSnimku.has(m.id) ? Object.assign({}, m, zeSnimku.get(m.id)) : m",
+    nahrad: "m",
+    proc: 'smlouva by po změně plánu tiskla jiné znění milníku, než odešlo v nabídce' },
+  { nazev: '#516 SEC-N8: karta plánu po CN zablokovaná', soubor: 'ui/plan_plateb_ui.js',
+    hledej: "  return typeof zamekKryciVolnePole === 'function' && zamekKryciVolnePole('kryciProj', 'planPredvolba');",
+    nahrad: "  return false;",
+    proc: 'plán plateb, který Z1 po CN povoluje, by v krycím listu nešel změnit' },
+  { nazev: '#516 SEC-N8: karta plánu po SoD editovatelná', soubor: 'ui/plan_plateb_ui.js',
+    hledej: "  return typeof zamekKryciVolnePole === 'function' && zamekKryciVolnePole('kryciProj', 'planPredvolba');",
+    nahrad: "  return true;",
+    proc: 'karta by po tisku smlouvy nabízela úpravu, kterou server odmítne' },
   { nazev: '#516 K8-K7: deal se pamatuje syrově', soubor: 'ui/online_ui.js',
     hledej: "ctrlPdDealIdNorm(dealZak) : dealZak",
     nahrad: "dealZak : dealZak",
