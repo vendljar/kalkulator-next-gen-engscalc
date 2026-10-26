@@ -1,3 +1,21 @@
+# Předávka — 26. 10. 2026: R1 rozbor přeuspořádání ceníku OCK (#525), větev `claude/r1-rozbor-ceniku`
+
+Nad `919b3b7`. Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **V kódu aplikace nic nezměněno**, verze se nezvyšuje.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| Tabulka všech položek OCK (99 + 5 z #354) i PROJ (16) | ✅ | `podklady/R1_ROZBOR_CENIKU_26_10.md` oddíl 1; 22 položek „ověřit u J. V.“ |
+| Kde skupiny hrají roli | ✅ | oddíl 2 — skupina je jen zobrazení; vazba na název jen u párování trvalých položek (`CENIK_GRP_SEKCE` ← `KATALOG_SEKCE_NAZEV`); dotčené testy `test_controlling.js:248`, `overit_cenik_barvy.mjs:142` |
+| Návrh, kroky, rizika, testy | ✅ | oddíl 3 — fáze 1 přesun S (po sloučení #354), rozdělení tmelení M |
+| Otázky pro J. V. | ✅ | oddíl 4 — 15 otázek s doporučením |
+| Stránka | ✅ | https://claude.ai/artifact/FcujxfqjghFmhHTpgVdFDf (filtr podle navržené sekce) |
+| Roadmapa #525 | ✅ | odkaz v `detail` a `otazka`, stav dál `ceka` |
+
+**Čeká na J. V.:** odpovědi na otázky (oddíl 4). **Další krok:** po sloučení #354 a odpovědích dávka #525 krok 1.
+`overit_roadmapu.mjs` hlásí 1 FAIL („každé odložené nese důvod“) už před touto změnou.
+
+---
+
 # Předávka — 26. 10. 2026: Z1 #522 (kritické) — ostrý web bez záloh, větev `claude/z1-zalohy-oprava`
 
 Nad `4f2cc86` (integrace v26.10.7). **Verze 26.10.8.** Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx.
