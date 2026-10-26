@@ -80,6 +80,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_slovnik.js',
      /* #447 / C1 (20. 10. 2026): controlling — číselník skupin a mapování. */
      'test_controlling.mjs', '../src/test_controlling.js',
+     /* #354 (26. 10. 2026): mapování materiálu a montáže můstků. */
+     '../src/test_354_mustky.js',
      /* #447 C6 (21. 10. 2026): objednané příplatky. */
      '../src/test_objednane.js', '../src/test_sod.js',
      /* D5 (22. 10. 2026): rozhodnutí J. V. k auditu K6 (K6-K2…K9). */
@@ -827,6 +829,19 @@ const MUTACE = [
     hledej: "           controlling: controlling || null,",
     nahrad: "",
     proc: 'obnova po havárii by vrátila controlling na výchozí rozvržení a úpravy controllingu by zmizely' },
+  /* #354 (26. 10. 2026): montáž můstků má vlastní řádek a skupinu. */
+  { nazev: '#354: montáž můstků bez skupiny controllingu', soubor: '../src/controlling.js',
+    hledej: "  dej('sl-stavebni', ['C.mustekMontazHodKc']);",
+    nahrad: "",
+    proc: 'montáž můstků by v controllingu skončila mezi nezařazenými' },
+  { nazev: '#354: montáž můstků mezi zámečníky', soubor: '../src/controlling.js',
+    hledej: "  dej('sl-stavebni', ['C.mustekMontazHodKc']);",
+    nahrad: "  dej('sl-zamecnici', ['C.mustekMontazHodKc']);",
+    proc: 'controlling by materiál a montáž můstků neviděl zvlášť' },
+  { nazev: '#354: hodiny montáže můstků jako náklad', soubor: '../src/controlling.js',
+    hledej: "    'C.mustekRefSirkaMm', 'C.mustekMontazZakladHod', 'C.mustekMontazBmHod', 'C.mustekMontazMinHod']);",
+    nahrad: "    ]);",
+    proc: 'počty hodin a šířka by se v mapování tvářily jako nezařazený náklad' },
   { nazev: '#447: prototypové klíče v mapování controllingu projdou', soubor: '../src/controlling.js',
     hledej: "    if (CTRL_ZAKAZANE_KLICE.includes(k) || !CTRL_KLIC_TVAR.test(k))\n      return",
     nahrad: "    if (!CTRL_KLIC_TVAR.test(k))\n      return",

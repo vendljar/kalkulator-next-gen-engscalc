@@ -118,8 +118,10 @@ const CTRL_MAPA_VYCHOZI = (() => {
   dej('sl-projekce', ['C.sken3dKc', 'C.vystupZamereniKc', 'C.engineeringKc', 'C.projekceHodKc', 'C.statikaKc',
     'C.prekladyKc', 'R.atypPrirazka']);
   dej('sl-leseni', ['C.leseniVnitrniKc', 'C.leseniFix', 'C.leseniVnejsiKc', 'C.priplatky.leseniHlavaKc']);
-  /* J10: můstek (dodávka vč. montáže) → zámečníci. */
+  /* J10: můstek → zámečníci. Od #354 (26. 10. 2026) je C.mustekKc jen
+   * materiál vč. zábradlí; montáž můstků má vlastní řádek → stavební práce. */
   dej('sl-zamecnici', ['C.spodniRamKc', 'C.cilkoKc', 'C.nytKc', 'C.zamecnikAtypKc', 'Z.zamecnikAtypKc', 'C.mustekKc']);
+  dej('sl-stavebni', ['C.mustekMontazHodKc']);
   dej('mat-ostatni', ['C.montazniNosnik', 'C.lemovaniKgKc', 'C.vetraciMrizkaKc', 'C.zastreseniM2Kc',
     'C.oplechFasadaBmKc', 'C.plastKotvyKc', 'C.striskaDvurKc', 'C.hakyKc', 'C.priplatky.medStrechaM2',
     'C.priplatky.ventilatorKc', 'C.priplatky.zabranyDvereKc', 'C.priplatky.madlaBmKc', 'C.priplatky.zabranyPadKc',
@@ -150,7 +152,9 @@ const CTRL_MAPA_VYCHOZI = (() => {
     'C.kurzEurKc', 'PC.kurzEurKc', 'C.statikaHod', 'C.statikaOplHod', 'C.stavbyvedouciHod', 'C.zaskleniListyProjHod',
     'C.vychMontazZakladHod', 'C.vychProjekceZakladHod', 'C.vychOplechOstatniKg', 'C.vychOplechOstatniHod',
     'C.lak.rezim', 'C.skloBokyNazev', 'C.skloCelniNazev', 'C.atypPrirazka', 'C.atypMontazPct', 'C.atypProjekcePct',
-    'C.atypZamecnikKc', 'C.atypRezervaZakladPct', 'C.atypRezervaPriplatkyPct']);
+    'C.atypZamecnikKc', 'C.atypRezervaZakladPct', 'C.atypRezervaPriplatkyPct',
+    /* #354: referenční šířka a hodiny montáže můstků (náklad nese sazba). */
+    'C.mustekRefSirkaMm', 'C.mustekMontazZakladHod', 'C.mustekMontazBmHod', 'C.mustekMontazMinHod']);
   return m;
 })();
 

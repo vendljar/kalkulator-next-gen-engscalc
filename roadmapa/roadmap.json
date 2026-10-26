@@ -5596,15 +5596,14 @@
   {
    "id": "354",
    "vlna": "B",
-   "stav": "blokovano",
+   "stav": "hotovo",
    "dulezitost": "stredni",
    "slozitost": "S",
-   "cekaNa": "J. V.: až podle toho, jak se můstky skutečně oceňují (body 3 a 4 vyčleněny do #355 a #356, rozhodnutí 25. 9. 2026)",
    "nazev": "Můstky — další zpřesnění výpočtu: body 1, 2 a 5 z rozboru K13 (cena podle plochy, rozpad materiál/montáž, kotvení)",
    "proc": "Počet můstků otevírá přesnější výpočet: přechodový plech v nástupišti s můstkem odpadá, střecha přetažená přes můstek má plochu navíc, cena podle plochy, rozpad materiál/montáž, kotvení přes můstky.",
-   "detail": "Viz podklady/K13_ROZBOR_2026-09-24.md, P7 — Další možný dopad, body 1, 2 a 5. Body 3 (přechodové plechy) a 4 (zastřešení) J. V. 25. 9. 2026 doporučil udělat — rozpracované v #355 a #356. Bod 5 (kotvení přes můstky) → #519 (J. V. 26. 10. 2026: „rozběhni hned“, hotovo ve v26.10.5).",
+   "detail": "Viz podklady/K13_ROZBOR_2026-09-24.md, P7 — body 1, 2 a 5. Body 3 (přechodové plechy) a 4 (zastřešení) zůstávají vyčleněné v #355 a #356, bod 5 (kotvení) v #519. HOTOVO ve v26.10.11 (M6, schváleno J. V. 26. 10. 2026, návrh v artefaktu „Můstky #354 — návrh“): šířka můstku = šířka šachty, zadává se jen délka (prázdná = 1 000 mm + kontrola „Doplňte délku můstku“); materiál vč. zábradlí = délka × C.mustekKc (Kč/bm při ref. šířce C.mustekRefSirkaMm) × šířka/ref.; montáž = max(min, základ + za bm × délka) h × C.mustekMontazHodKc; kalkulace dva řádky (materiál, montáž), nabídka a specifikace jeden řádek Š × D vč. zábradlí a montáže (CZ/EN/DE/FR); zastřešení můstku ze šířky šachty; standard hlídá jen délku. Historie: ceník bez kladné referenční šířky (zamčené varianty, ceník před zveřejněním) počítá paušál × počet jako dřív — test bajt po bajtu proti jádru 9484ef4; při zveřejnění se starý ceník migruje (výchozí 28 600 / 1 600 / 400 / 8 / 8 / 16). Test src/test_354_mustky.js.",
    "hotovoKdyz": "Schválené body promítnuté do výpočtu s testy.",
-   "kde": "`src/engine.js`, `src/techspec.js`"
+   "kde": "`src/engine.js` (mustkyRozpad, cenikMigraceMustku), `src/cenik.js`, `src/kontroly.js`, `src/standard_ock.js`, `src/techspec.js`, `src/preklad.js`, `src/ui/kalk_ock.js`, `src/ui/program_ui.js`"
   },
   {
    "id": "355",

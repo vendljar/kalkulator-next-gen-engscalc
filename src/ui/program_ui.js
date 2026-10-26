@@ -281,8 +281,13 @@ function progKontext(poznamka) {
     else delete o.dleNabidky;
     return o;
   };
+  /* MŮSTKY PODLE ROZMĚRU (#354): ceník ve starém tvaru (paušál Kč/ks) dostane
+   * při zveřejnění nové buňky s výchozími hodnotami a C.mustekKc jako Kč/bm.
+   * Do KOPIE — ceník varianty zůstává; dialog zveřejnění změny vypíše. */
+  const platnyCenik = (typeof DEFAULT_CENIK !== 'undefined') ? DEFAULT_CENIK : null;   // platný (po progPouzij)
+  const sMustky = o => { if (typeof cenikMigraceMustku === 'function') cenikMigraceMustku(o, platnyCenik); return o; };
   return {
-    cenik: bezRady(sNavrhem(bez(doplneno(d.cenik || {}, VZOR_OCK)))),
+    cenik: bezRady(sNavrhem(sMustky(bez(doplneno(d.cenik || {}, VZOR_OCK))))),
     cenikProj: bez(doplneno((d.proj && d.proj.cenik) || {}, VZOR_PROJ)),
     /* Řada VARIANTY, ze které podklad vznikl. Nezapisuje se do databáze
      * programu (programZaznam bere jen jmenovaná pole) — slouží kontrole

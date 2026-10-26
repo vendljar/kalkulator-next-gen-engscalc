@@ -349,15 +349,10 @@ function nastStandard() {
     <div class="note" style="margin-top:0">Platí pro <b>venkovní i vnitřní</b> šachtu — limity jsou
       společné, proto stojí mimo obě tabulky (rozhodnutí J. V. 17. 9. 2026). Hlídá se jen tehdy,
       když má zakázka v zadání šachty aspoň jeden můstek (pole Můstky mezi budovou a OCK).</div>
-    <div class="row"><label>Hloubka max <span class="note">(mezi budovou a OCK)</span></label>
+    <div class="row"><label>Délka max <span class="note">(mezi budovou a OCK)</span></label>
       <input type="number" step="10" style="width:100px" value="${esc(s.mustek.hloubkaMaxMm)}"
         onchange="stdSet('mustek.hloubkaMaxMm', +this.value)"><span class="u">mm</span></div>
-    <div class="row"><label>Šířka max <span class="note">(strop, i když je „na šířku OCK")</span></label>
-      <input type="number" step="10" style="width:100px" value="${esc(s.mustek.sirkaMaxMm)}"
-        onchange="stdSet('mustek.sirkaMaxMm', +this.value)"><span class="u">mm</span></div>
-    <label style="display:flex;align-items:center;gap:8px;margin:6px 0">
-      <input type="checkbox" ${s.mustek.sirkaJakoOck ? 'checked' : ''}
-        onchange="stdSet('mustek.sirkaJakoOck', this.checked)"> Šířka můstku nesmí přesáhnout šířku OCK</label>
+    <div class="note" style="margin-top:0">Šířka můstku je šířka šachty, proto se nehlídá (#354, 26. 10. 2026).</div>
     <div class="row"><label>Konstrukční řešení ${stdNehlidame(STD_NEHLIDAME.mustekReseni)}</label>
       <input type="text" value="jedno řešení, mění se pouze hloubkový rozměr" disabled><span class="u"></span></div>
 

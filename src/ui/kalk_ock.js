@@ -225,15 +225,17 @@ function renderInputs() {
         + `<div class="row"><label>Můstky mezi budovou a OCK</label>
             <input type="number" step="1" min="0" value="${esc(mustkyPocet(Z))}"
               title="počet můstků; 0 = šachta nemá žádný" onchange="mustkySet(this.value)"><span class="u">ks</span></div>`
+        /* #354 (26. 10. 2026): zadává se jen DÉLKA (data `mustekHloubkaMm`);
+         * šířka je šířka šachty a jen se ukazuje. Staré `mustekSirkaMm` se
+         * nečte (jen zamčené varianty se starým ceníkem — střecha). */
         + (mustkyPocet(Z) > 0
-          ? `<div class="row"><label>Hloubka můstku</label>
+          ? `<div class="row"><label>Délka můstku</label>
                <input type="number" step="10" min="0" value="${esc(Z.mustekHloubkaMm == null ? '' : Z.mustekHloubkaMm)}"
-                 placeholder="mm" title="vzdálenost mezi budovou a OCK; standard max 1 000 mm"
+                 placeholder="1000" title="vzdálenost mezi budovou a OCK; prázdné = počítá se 1 000 mm; standard max 1 000 mm"
                  onchange="set('Z.mustekHloubkaMm', this.value)"><span class="u">mm</span></div>
              <div class="row"><label>Šířka můstku</label>
-               <input type="number" step="10" min="0" value="${esc(Z.mustekSirkaMm == null ? '' : Z.mustekSirkaMm)}"
-                 placeholder="mm" title="standard: max na šířku OCK"
-                 onchange="set('Z.mustekSirkaMm', this.value)"><span class="u">mm</span></div>`
+               <input type="text" disabled value="${esc(Math.round((+Z.sirka || 0) * 1000))}"
+                 title="šířka můstku = šířka šachty; nezadává se"><span class="u">mm = šířka šachty</span></div>`
           : '')
         + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
 

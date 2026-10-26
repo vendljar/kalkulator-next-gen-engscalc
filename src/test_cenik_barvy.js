@@ -50,7 +50,8 @@ test('„Kč…" jednotky jsou Kč', ['Kč', 'Kč/ks', 'Kč/kg', 'Kč/hod', 'Kč
 test('%, hod, kg, ks a prázdná jednotka nejsou Kč', ['%', 'hod', 'kg', 'ks', '', null, undefined].every(j => !cenikJednotkaKc(j)));
 const jednotky = new Set();
 [CENIK_DEF, CENIK_DEF_PROJ].forEach(def => def.forEach(([, it]) => it.forEach(([, , u, , typ]) => { if (!typ || typ === 'pct') jednotky.add(u); })));
-const nezname = [...jednotky].filter(u => !cenikJednotkaKc(u) && ['%', 'hod', 'kg'].indexOf(u) < 0);
+/* #354: referenční šířka (mm) a hodiny montáže můstků (hod/ks, hod/bm). */
+const nezname = [...jednotky].filter(u => !cenikJednotkaKc(u) && ['%', 'hod', 'kg', 'mm', 'hod/ks', 'hod/bm'].indexOf(u) < 0);
 test('každá číselná jednotka ceníku je rozpoznaná (Kč, %, hod, kg)', nezname.length === 0, nezname);
 test('procentní položky ceníku nejsou „Kč"', CENIK_DEF.every(([, it]) => it.every(([, , u, , typ]) => typ !== 'pct' || !cenikJednotkaKc(u))));
 

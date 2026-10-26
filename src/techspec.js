@@ -584,6 +584,13 @@ const TECHSPEC_DEF = [
       prefill: (r, Z) => {
         const n = tsMustky(Z);
         if (!n) return ' -';
+        /* #354: s novým ceníkem (r.mustky.novy) rozměr Š × D — šířka šachty
+         * × délka (prázdná = 1 000 mm, jako v ceně). Starý ceník (zamčené
+         * varianty) a volání bez výsledku jádra dávají větu jako dřív. */
+        const m = r && r.mustky;
+        if (m && m.novy)
+          return n + ' ks, rozměr ' + m.sirkaMm + ' × ' + m.delkaMm
+            + ' mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže';
         const h = +Z.mustekHloubkaMm || 0, s = +Z.mustekSirkaMm || 0;
         return n + ' ks' + (h ? ', hloubka ' + h + ' mm' : '') + (s ? ', šířka ' + s + ' mm' : '');
       } },

@@ -108,7 +108,7 @@ for (const fixes of [true, false]) {
   const std = Object.assign(so.standardOciste({}), { zapnuto: true });
   const z = Object.assign(kop(E.DEFAULT_ZADANI), { mustkyKs: 2, mustekHloubkaMm: 1500, mustekSirkaMm: 800 });
   const v = so.standardVyhodnot(z, 20, std, {});
-  test('standard: hloubka můstku nad limit se hlásí i při zadání počtem', (v.nalezy || []).some(n => /Hloubka můstku/.test(n.co || n.nazev || JSON.stringify(n))), v.nalezy);
+  test('standard: hloubka můstku nad limit se hlásí i při zadání počtem', (v.nalezy || []).some(n => /Délka můstku/.test(n.co || n.nazev || JSON.stringify(n))), v.nalezy);
   const v0 = so.standardVyhodnot(Object.assign(kop(E.DEFAULT_ZADANI), { mustkyKs: 0, mustekHloubkaMm: 1500 }), 20, std, {});
   test('standard: 0 můstků = rozměry se nehlídají', !(v0.nalezy || []).some(n => /můstku/.test(JSON.stringify(n))));
 }
