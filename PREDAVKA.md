@@ -1,3 +1,42 @@
+# Souhrn stavu 26. 10. 2026 (po O3 #521) — čti nejdřív
+
+**Integrace 26. 10.** (abc23d1, v26.10.6) = O1 #516 (v26.10.1) + #518 (v26.10.3) + P3 #114 (v26.10.4) + M2 #519
+(v26.10.5) + O2 #517 (přečíslováno na v26.10.6) + S2 #520 (jen zpráva) + M3 (příručka). Nad ní dorovnání
+**O3 #521 → v26.10.7**, větev `claude/o3-dorovnani` (neslučováno, rozhoduje J. V.). Oddíly jednotlivých dávek
+níž platí dál jako podrobnost; oddíl M3 „Ověřit po sloučení“ a nález hlášek kontrol jsou **vyřešené v O3**.
+
+**Na J. V. (souhrn ze všech dávek 26. 10.):**
+1. Sloučení `claude/o3-dorovnani` do integrace / test, tagy a releasy — bez tagu jsou v26.10.7, .6, .5, .4, .3, .1
+   (a starší v22.10.4); odkazy `python3 nastroje/release_odkaz.py <verze> <SHA>` připraví koordinace po sloučení.
+2. **SEC-Z1 (vysoký, S2):** opuštěné veřejné nasazení schaftscalc.netlify.app (v7.9.2 bez hlaviček) vypnout,
+   nebo převést na `main` (ostrý engscalc je v pořádku).
+3. Ruční kroky z O2 (REPO): SEC-S4 zrušit sdílení vlákna „Pipedrive API integrace“; SEC-V1 posunout `test → main`
+   a `test → test-draft`; SEC-V2 smazat `claude/testovani-po-opravach` ručně; staré tagy ponechat.
+4. #518 otevřená otázka: značit v náhledu i jméno zákazníka a kontaktní osobu (dnes ano; výchozí: nechat).
+5. Hotová příručka na Disk (zápis z cloudu zakázán): `manual/snimky_auto.mjs` + `manual/sestav.sh` z integrace.
+6. Celé kolo (prohlížečové sady, celé mutace po částech) nad v26.10.7 pouští koordinace.
+
+# Předávka — 26. 10. 2026: O3 #521 — dorovnání po sloučení dávek, větev `claude/o3-dorovnani`
+
+Nad `abc23d1e044da9698644ceb8e58c10ffcc18fa90` (integrace v26.10.6). **Verze 26.10.7** (commity 26. 10. UTC,
+kontrola verze ✓). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Do integrace / test nic, Pipedrive ani Disk nic.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| 1 Příručka po sloučení | ✅ | kap. 8, 13, 21, 23, 24, 28 a slovníček ověřeny proti kódu — žádné zdvojení (strojová kontrola vět > 60 znaků: 0); Mapa polí CRM jen jednou; kap. 26 „Kotvení přes můstky“ přepsána podle `tsKotveniPoloha`; kap. 23 ceny šedé (od v26.10.6); kap. 14 lhůta ve smluvních standardech; slovníček nové znění hlášky |
+| 1 Novinky a hlavička | ✅ | pořadí v26.10.7 → .6 → .5 → .4 → .3 → .1; blok M3 „Příručka aktualizována“ přešel do novinky v26.10.7; hlavička v26.10.7 |
+| 1 Kontroly příručky | ✅ | `overit_manual.mjs` 48/0 (snímky `snimky_auto.mjs` 22/22 v26.10.7 + `sestav.sh` do scratchpadu); `test_termin_kapitola` 44/0, `test_zamek_strany` 52/0, `test_oplastit_prohluben` 7/0 |
+| 2 Odkazy v hláškách kontrol | ✅ | `src/kontroly.js` (jen text): kapitoly, „dle dohody“, ATYP bez lhůty, ATYP se smazaným termínem, dvě čísla → Nastavení → Smlouvy / Šablony; `test_kontroly.js` blok #521 10 FAIL → 159/0 (upravena i aserce K9-N32) |
+| 3 SEC-Z2 | ✅ | `JSON_HLAVICKY`/`json()` + CSP `default-src 'none'; frame-ancestors 'none'` + `Referrer-Policy: no-referrer`; export controllingu bere `JSON_HLAVICKY` (dřív bez nosniff); `netlify/test_sec_z2.mjs` 17 FAIL → 40/0 |
+| Mutace #521 | ✅ | server 3/3 (sada `test_sec_z2.mjs` zařazena do běhu), upravená #514 SEC-I1 1/1; jádro 3/3; `--kontrola` server 936, jádro 570 |
+| Node sady | ✅ | `spust_testy.sh` 261 / 0 / 1 přeskočeno (test.js) |
+| `testovaci_kolo.sh --jen build,staticke` | ✅ | VŠE ZELENÉ (statické 4/4) |
+| CHANGELOG, roadmapa #521, verze.txt, PREDAVKA | ✅ | roadmapa `--kontrola` čistá (521 položek), #520 pozn. → #521 |
+| Celé kolo | ⬜ | pouští koordinace |
+
+**Pro slučování:** `JSON_HLAVICKY` má dvě hlavičky navíc — kdo v jiné větvi mění tentýž řádek nebo mutaci
+#514 SEC-I1, musí srovnat hledaný úsek (`'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',\n`).
+
 # Předávka — 26. 10. 2026: M3 — aktuální příručka obchodníka, větev `claude/manual-26-10`
 
 Nad `6076128acf312de14841ebd129c0b3074cafc728` (integrace = v26.10.1). **Verze beze změny (26.10.1)** — kontrola
@@ -18,7 +57,7 @@ Neslučováno, žádný PR, na Disk nic, snímky ani hotová příručka v repu 
 | Kontroly | ✅ | `testovaci_kolo.sh --jen build,staticke` zelené (4/4); `kontrola_udaju.py` čisté; `test_termin_kapitola` 44/0, `test_zamek_strany` 51/0, `test_oplastit_prohluben` 6/0; `overit_manual.mjs` 48/0 (`KNG_PODKLADY`=scratchpad); `manual/overit.js` v Playwrightu bez chyby |
 | CHANGELOG, PREDAVKA, push | ✅ | větev `claude/manual-26-10` |
 
-**Ověřit po sloučení dávky (koordinace):**
+**Ověřit po sloučení dávky (koordinace):** — *vyřešeno v O3 #521 (v26.10.7), viz nahoře.*
 - **#517 O2** (`claude/o2-rozhodnuti`): kap. 8 odstavec „Tisk ve chvíli, kdy zakázku mezitím uložil někdo jiný…“
   (okno „Odeslaná nabídka není uložená“, Přepsat serverovou verzi, varování při načtení, bez přihlášení se nečeká);
   kap. 13 „Izolační dvojsklo“ (v O2 zatím necommitnuto — ověřit název v ceníku a v typu stěny); kap. 21
@@ -34,7 +73,7 @@ Neslučováno, žádný PR, na Disk nic, snímky ani hotová příručka v repu 
 - Při slučování se střetne řádek `"verze"` hlavičky příručky a první novinka (větev #114 i #518 je mění také) —
   srovnat na výslednou verzi integrace.
 
-**Nález pro aplikaci (neopraveno):** hlášky kontrol v `src/kontroly.js` (ř. 802, 875, 885, 899) posílají do
+**Nález pro aplikaci (opraveno v O3 #521):** hlášky kontrol v `src/kontroly.js` (ř. 802, 875, 885, 899) posílají do
 „Nastavení → Firma → Kapitoly nabídky / Smluvní standardy“, obě sekce jsou na záložce Nastavení → Smlouvy / Šablony.
 Slovníček (kap. 31) to zatím vysvětluje závorkou.
 
