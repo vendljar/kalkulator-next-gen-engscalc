@@ -14,6 +14,13 @@
       ]
     },
     {
+      "nadpis": "Co je nového ve verzi v26.10.1 (26. 10. 2026)",
+      "odstavce": [
+        "**Odeslaná nabídka otevřená ze souboru už nevrací úpravy krycího listu.** Když jste zakázku s vytištěnou nabídkou otevřeli ze souboru (nebo obnovili zálohu z prohlížeče), aplikace si mohla myslet, že nabídka na uložení teprve čeká: krycí list se zamkl a při uložení se tiše vrátil na stav z tisku — úpravy podmínek po odeslání zmizely. Nabídka, která už v databázi je, se teď takhle nechová. Pokud se krycí list před uložením opravdu vrací na stav z tisku (nabídka se ještě neuložila), aplikace to napíše.",
+        "**Plán plateb PROJ jde po odeslání nabídky upravit i v krycím listu.** Předvolbu a zálohu plánu plateb můžete změnit až do tisku smlouvy o dílo, jak bylo dohodnuté — dosud byla karta po tisku nabídky šedá. Po přepnutí předvolby (např. ze zálohy na Standard) už ve smlouvě nechybí milníky a změna zálohy (např. 70 → 30 %) se propíše do splátek. Znění milníků z odeslané nabídky zůstává; dotisk odeslané nabídky se nemění."
+      ]
+    },
+    {
       "nadpis": "Co je nového ve verzi v25.10.1 (25. 10. 2026)",
       "odstavce": [
         "**Příručka aktualizována — aplikace se nemění.** Do kapitol se propsaly změny posledních verzí, které dosud byly jen tady v novinkách: Stav Pipedrive i u zakázky ze souboru nebo ze zálohy a „Smazané“ u dealu v koši (kapitola 5), souběžné uložení ve dvou oknech (kapitola 6), zmrazené platební podmínky a DPH do uložení vytištěné nabídky a neaktivní ARES po tisku smlouvy (kapitola 8), kdo a do kdy mění objednané příplatky a šablona smlouvy v4 s jejich rozpisem (kapitola 24) a Controlling s exportem pro administrátora (kapitola 28)."

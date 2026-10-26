@@ -1,3 +1,32 @@
+# Předávka — 26. 10. 2026: O1 #516 — zámek CN po otevření ze souboru (K8-K1) a plán plateb PROJ po CN (SEC-S6 + SEC-N8), větev `claude/o1-zamek-plan`
+
+Nad `9bc4965e2f1f70d6cb1671fee5c7ab9f12d14096` (integrace: test v25.10.1 + dokumentace). **Verze 26.10.1**
+(commity 26. 10. UTC). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Rozhodnutí J. V. 26. 10. 2026 (dialog
+https://claude.ai/artifact/V288Ytg33SpoYPfp3aTw3L). Do integrace / test nic, do Pipedrive nic, na Disk nic.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| K8-K1 = A: zámek CN už na serveru není „čekající“ | ✅ | `zamekServerZamcene` jen u téže zakázky (`uloJmenoSouboru`); mimo rejstřík = čeká; jinak nečeká; hláška při srovnání; `cisloCN` při čekání zmrazené |
+| K8-K6 (s K8-K1): SoD nepřepíše snímek CN | ✅ | do snímku jen číslo SoD a datum podpisu (`zamekSnimekDoplnSod`) |
+| K8-K7 (s K8-K1): deal normalizovaně | ✅ | `pdStavObnovUI`, `onlineUloz`; jméno souboru u importu NEměněno (dopad žádný, riziko změny chování) |
+| SEC-S6 = A: katalog milníků + záloha po CN | ✅ | `planPlatebVarianty`: snímek + firemní plán (texty snímku přednost, pořadí firemní); splátky ze snímku jen při stejné předvolbě i záloze |
+| SEC-N8 = A: karta plánu po CN editovatelná | ✅ | `planKlpEditovatelny` (Z1 `planPredvolba`); po SoD zamčená; harness `overit_plan_plateb.mjs` doplněn (nepouštěn) |
+| K8-K5 = B | ✅ | nic se neměnilo |
+| #512 — potvrzení J. V. 26. 10. | ✅ | zapsáno do roadmapy (stará nabídka PROJ: bez Platebního kalendáře) |
+| Testy s pojistkou | ✅ | `test_snimek_po_tisku.js` 9 FAIL → 35/0; `test_pd_stav_autosave.js` 1 FAIL → 6/0; `test_zmrazeni_kl.js` 5c 9 FAIL → 126/0 |
+| Mutace #516 | ✅ | jádro 13/13; upravené #507 K7-K2 6/6, #508 K7-K6 2/2; `--kontrola` jádro 541, server 919; `ui/plan_plateb_ui.js` nově hlídaný |
+| Node sady | ✅ | src 217/217, netlify 34/34 (s `ADMIN_EMAIL=spravce@priklad.cz` jako v kole) |
+| `testovaci_kolo.sh --jen build,staticke` | ⬜ | build ✓; statické **3/4** — jediný nález `kontrola_udaju.py`: sdílecí odkaz na sezení v `.claude/skills/kokpit-koordinace/kokpit_sablona.html:194`, soubor ze základu 9bc4965 (koordinace), touto dávkou nedotčen |
+| Dokumentace | ✅ | CHANGELOG v26.10.1, příručka „Co je nového ve verzi v26.10.1“, roadmapa #516 (+ uzavření v #513–#515), verze.txt |
+| Celé kolo (prohlížečové sady, celé mutace) | ⬜ | pouští koordinace |
+
+**Pozor pro slučování:** mutace jádra teď hlídají i `ui/plan_plateb_ui.js` (víc sad v běhu jádra);
+změnily se hledané úseky mutací #507 K7-K2 („po obnovení stránky“, „SoD před uložením“) a #508 K7-K6.
+Chování K8-K1 při neznámém stavu serveru (rejstřík nenačtený / zakázka v něm je, poslední verze cizí): zámek
+**nečeká** — kdyby šlo o nový neuložený zámek s rozešlými daty, server uložení odmítne 409 se známou hláškou.
+
+---
+
 # Předávka — 25. 10. 2026 večer: M1 — příručka aktualizována, větev `claude/manual-25-10`
 
 Nad `7e2bfbb68f790ef7e27853aec05758115eb60445` (test, v23.10.5). **Verze 25.10.1** (commity 25. 10. UTC,

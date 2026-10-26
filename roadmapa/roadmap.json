@@ -8055,7 +8055,7 @@
      "proc" : "část potvrzeného zápisu do dealu"
     }
    ],
-   "pozn" : "Dávka B1 (claude/b1-platby-115), zadání úkol B podklady/PROMPT_koordinace_kontrola_vetve_platby_23_10.md."
+   "pozn" : "Dávka B1 (claude/b1-platby-115), zadání úkol B podklady/PROMPT_koordinace_kontrola_vetve_platby_23_10.md. Potvrzeno J. V. 26. 10. 2026 (dialog O1): u staré nabídky PROJ (před plánem plateb) se do Pipedrive nepošle ani Platební kalendář — beze změny."
   },
   {
    "id" : "513",
@@ -8068,7 +8068,7 @@
    "proc" : "Plán J. V. 23. 10. 2026 na víkend: před posunem main ověřit vše od posledního auditu K7 (O-K7, E2, P2 převzetí #114, B1 platby).",
    "detail" : "Celé testovací kolo s mutacemi nad test po B1 (mutace serveru v Actions s matrix, pokud je P2 připraví, jinak v cloudu s čekáním v popředí) a audit diffu 3394b2b..test → podklady/K8_AUDIT_24_10.md, verdikt pro main.",
    "hotovoKdyz" : "Kolo s mutacemi zelené, audit s verdiktem, nálezy bez J. V. předané do O-K8.",
-   "pozn" : "K8 23. 10. 2026 nad ca4f2d1 (claude/k8-kolo): sady 315/0/6 (overit_verzi selhal jen kvůli exportované KNG_NEZVYSOVAT_VERZI — K8-W11), mutace jádra 527/527, serveru 897/897 (po částech ve worktree, úplnost ověřena), statické 4/4. Audit podklady/K8_AUDIT_24_10.md: vyhovuje s výhradou, main doporučen; 0 kritických, 0 vysokých, 1 střední (K8-K1), 12 nízkých, 14 informativních; opravy K7 drží; Actions #195: jádro ✓, server jen 5/6 (ostatní timeout 75 min → K8-W7). Pro O-K8 bez J. V.: K8-S1, S2, W1–W5, W7, W11 (+ informativní); J. V.: K8-K1–K5.",
+   "pozn" : "K8 23. 10. 2026 nad ca4f2d1 (claude/k8-kolo): sady 315/0/6 (overit_verzi selhal jen kvůli exportované KNG_NEZVYSOVAT_VERZI — K8-W11), mutace jádra 527/527, serveru 897/897 (po částech ve worktree, úplnost ověřena), statické 4/4. Audit podklady/K8_AUDIT_24_10.md: vyhovuje s výhradou, main doporučen; 0 kritických, 0 vysokých, 1 střední (K8-K1), 12 nízkých, 14 informativních; opravy K7 drží; Actions #195: jádro ✓, server jen 5/6 (ostatní timeout 75 min → K8-W7). Pro O-K8 bez J. V.: K8-S1, S2, W1–W5, W7, W11 (+ informativní); J. V.: K8-K1–K5. K8-K1 (s K8-K6, K8-K7) opraveno v #516 (v26.10.1, rozhodnutí J. V. 26. 10. 2026: A); K8-K5 ponechán (B).",
    "zavisi" : [
     {
      "id" : "506",
@@ -8093,7 +8093,7 @@
    "proc" : "Plán J. V. 23. 10. 2026: v pondělí ráno návrh main s opravenými nálezy.",
    "detail" : "Opravy nálezů auditu K8, které nepotřebují rozhodnutí J. V.; testy s pojistkou, cílené mutace, kolo → test. Otázky k rozhodnutí do dialogu.",
    "hotovoKdyz" : "Opravy v test, kolo zelené, otázky v dialogu.",
-   "pozn" : "O-K8 23. 10. 2026 nad 4496f52, větev claude/ok8-opravy (v23.10.5). OPRAVENO (mění chování/vzhled/výpočet: ne): K8 — S1 (500→400 číslo a varianta), S2 (lineární mazání závorek v pd_prevod), S8 (hláška bez výjimky), W1 (test harnessů s podklady), W2 (prázdný výběr mutací = chyba), W3 (neznámá volba = chyba), W4 (vzory tajemství, .patch/.xlsx), W5 (všechna pole hlavičky), W7 (CI 10 částí, 90 min), W8 (souhrn NE celý běh), W9 (--od jen nad čistou kopií), W10 (CLAUDE.md), W11 (overit_verzi bez KNG_NEZVYSOVAT_VERZI); S1 — S1 (souběh uložení × zámek odeslané nabídky), S2 (mojeheslo × zásah správce), N1 (500→400 účty, šablony, program), N2 (souběžná obnova), N3 (escJs konce řádků), N4 (detekce tajemství, domény), N5 (.gitignore), N7 (persist-credentials), I1 (no-store, nosniff), I3 (prototypové klíče), I4 (klíč z adresy), I5 (vypocet bez výjimky), I6 (server.js). Zapsáno do BEZPECNOST_MEZE: K8-S4, K8-S5 (mez, oprava by měnila hledání), K8-S6, SEC-I9, zbytek SEC-S1 mezi instancemi, B156. Neopraveno: K8-K6, K8-K7 (s K8-K1), K8-W6, K8-S7 (informativní); čeká na J. V.: K8-K1…K5, SEC-S3, S5, S6, N8, I7, I8, S7, N9, I15…I17, SEC-V1/V2/S4. Testy: netlify/test_ok8.mjs 69 (před opravou 49 FAIL), mutace #514 server 22/22, jádro 1/1.",
+   "pozn" : "O-K8 23. 10. 2026 nad 4496f52, větev claude/ok8-opravy (v23.10.5). OPRAVENO (mění chování/vzhled/výpočet: ne): K8 — S1 (500→400 číslo a varianta), S2 (lineární mazání závorek v pd_prevod), S8 (hláška bez výjimky), W1 (test harnessů s podklady), W2 (prázdný výběr mutací = chyba), W3 (neznámá volba = chyba), W4 (vzory tajemství, .patch/.xlsx), W5 (všechna pole hlavičky), W7 (CI 10 částí, 90 min), W8 (souhrn NE celý běh), W9 (--od jen nad čistou kopií), W10 (CLAUDE.md), W11 (overit_verzi bez KNG_NEZVYSOVAT_VERZI); S1 — S1 (souběh uložení × zámek odeslané nabídky), S2 (mojeheslo × zásah správce), N1 (500→400 účty, šablony, program), N2 (souběžná obnova), N3 (escJs konce řádků), N4 (detekce tajemství, domény), N5 (.gitignore), N7 (persist-credentials), I1 (no-store, nosniff), I3 (prototypové klíče), I4 (klíč z adresy), I5 (vypocet bez výjimky), I6 (server.js). Zapsáno do BEZPECNOST_MEZE: K8-S4, K8-S5 (mez, oprava by měnila hledání), K8-S6, SEC-I9, zbytek SEC-S1 mezi instancemi, B156. Neopraveno: K8-K6, K8-K7 (s K8-K1), K8-W6, K8-S7 (informativní); čeká na J. V.: K8-K1…K5, SEC-S3, S5, S6, N8, I7, I8, S7, N9, I15…I17, SEC-V1/V2/S4. Testy: netlify/test_ok8.mjs 69 (před opravou 49 FAIL), mutace #514 server 22/22, jádro 1/1. K8-K1, K8-K6, K8-K7, SEC-S6 a SEC-N8 uzavřeny v #516 (v26.10.1).",
    "zavisi" : [
     {
      "id" : "513",
@@ -8114,12 +8114,38 @@
    "hotovoKdyz" : "Zpráva SEC_AUDIT_24_10.md s důkazy a verdiktem, kritické/vysoké opravené v test, ostatní v dialogu.",
    "kde" : "`podklady/SEC_AUDIT_24_10.md`, `podklady/S1_pokusy/`",
    "hotovoV" : "v23.10.4",
-   "pozn" : "Dávka S1, větev claude/s1-security. Kód aplikace se neměnil; opravy s „mění chování: ne“ dělá O-K8 (#514), „ano“ jde J. V. do dialogu. Živá část (hlavičky funkcí, /.netlify/functions/zaloha_nocni) po povolení domény.",
+   "pozn" : "Dávka S1, větev claude/s1-security. Kód aplikace se neměnil; opravy s „mění chování: ne“ dělá O-K8 (#514), „ano“ jde J. V. do dialogu. Živá část (hlavičky funkcí, /.netlify/functions/zaloha_nocni) po povolení domény. SEC-S6 + SEC-N8 opraveny v #516 (v26.10.1, rozhodnutí J. V. 26. 10. 2026: A).",
    "zavisi" : [
     {
      "id" : "512",
      "typ" : "doporuceno",
      "proc" : "testuje se test po B1"
+    }
+   ]
+  },
+  {
+   "id" : "516",
+   "vlna" : "B",
+   "stav" : "hotovo",
+   "hotovoV" : "v26.10.1",
+   "dulezitost" : "vysoka",
+   "slozitost" : "M",
+   "nazev" : "O1: zámek CN uložený na serveru po otevření ze souboru (K8-K1) a plán plateb PROJ po CN (SEC-S6 + SEC-N8)",
+   "proc" : "Rozhodnutí J. V. 26. 10. 2026 (dialog https://claude.ai/artifact/V288Ytg33SpoYPfp3aTw3L): K8-K1 = A — opravit hned, před posunem main; SEC-S6 + SEC-N8 = A — opravit obojí; K8-K5 = B (text ponechat).",
+   "detail" : "K8-K1: zamekServerZamcene (ui/zamek_ui.js) bere ONLINE_STAV.posledni jen u téže zakázky (uloJmenoSouboru), zakázka mimo rejstřík serveru = zámek čeká, jinak „nevíme“ = nečeká; srovnání podle snímku se ohlásí; při čekání zmrazené i cisloCN. K8-K6: SoD před uložením zámku opíše do snímku jen číslo SoD a datum podpisu. K8-K7: deal se pamatuje normalizovaně. SEC-S6: planPlatebVarianty zamčené varianty — katalog = milníky snímku + chybějící z firemního plánu (texty snímku přednost, pořadí firemní), splátky ze snímku jen při stejné předvolbě i záloze. SEC-N8: karta plánu plateb PROJ po CN editovatelná (planKlpEditovatelny), po SoD zamčená.",
+   "hotovoKdyz" : "Splněno: test_snimek_po_tisku.js (případy 6–8; před opravou 9 FAIL), test_pd_stav_autosave.js (K8-K7), test_zmrazeni_kl.js blok 5c (před opravou 9 FAIL), harness overit_plan_plateb.mjs (SEC-N8); mutace jádra #516 13/13; Node sady src 217/217, netlify 34/34; kolo build,staticke.",
+   "kde" : "src/ui/zamek_ui.js, src/zamek.js, src/ui/online_ui.js, src/plan_plateb.js, src/ui/plan_plateb_ui.js",
+   "pozn" : "Dávka O1, větev claude/o1-zamek-plan nad 9bc4965. Celé kolo (prohlížečové sady, mutace celé) pouští koordinace.",
+   "zavisi" : [
+    {
+     "id" : "513",
+     "typ" : "tvrda",
+     "proc" : "nález K8-K1"
+    },
+    {
+     "id" : "515",
+     "typ" : "tvrda",
+     "proc" : "nálezy SEC-S6, SEC-N8"
     }
    ]
   }

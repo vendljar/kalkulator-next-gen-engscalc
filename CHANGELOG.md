@@ -8,6 +8,37 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v26.10.1 — O1 #516: zámek CN uložený na serveru a plán plateb PROJ po CN (rozhodnutí J. V. 26. 10. 2026), větev claude/o1-zamek-plan
+
+Nad 9bc4965 (integrace: test v25.10.1 + dokumentace). Dialog J. V. 26. 10. 2026: K8-K1 = A (opravit hned,
+před posunem `main`), SEC-S6 + SEC-N8 = A (opravit obojí), K8-K5 = B (text ponechat — beze změny).
+
+- **K8-K1 — zámek CN, který už je na serveru, se nebere jako „čekající na uložení“.** Rozhodnutí o čekání
+  (`zamekServerZamcene` v `ui/zamek_ui.js`) bere poslední verzi ze serveru (`ONLINE_STAV.posledni`) jen tehdy,
+  když patří TÉŽE zakázce (`uloJmenoSouboru`). Zakázka, která v rejstříku serveru vůbec není → zámek čeká
+  (server ho ověří); jinak „nevíme“ → nečeká (nový zámek s rozešlými daty server sám odmítne 409). Do v25.10.1
+  se po otevření zakázky ze souboru (nebo obnově zálohy) krycí list zmrazil a `zamekSnimkyVrat` ho před odesláním
+  tiše vrátil na stav z tisku CN — po „Přepsat serverovou verzi“ úpravy po CN zmizely. Srovnání podle snímku se
+  nově ohlásí (`onlineZprava`), při čekání je zmrazené i pole jen pro správce (`cisloCN`, `zamek.js`).
+- **K8-K6 — SoD před uložením zámku nepřepočítá snímek CN.** Do snímku se opíšou jen pole, která SoD doplnila
+  (`KRYCI_SOD_OPIS`, `KRYCI_PROJ_SOD_OPIS` — číslo SoD, datum podpisu; `zamekSnimekDoplnSod`).
+- **K8-K7 — id dealu Pipedrive se pamatuje normalizovaně** (`pdStavObnovUI`, `onlineUloz`) — u dealu s mezerou
+  se stav při otevření nedotazuje znovu.
+- **SEC-S6 — plán plateb PROJ zamčené varianty po změně předvolby / zálohy.** Katalog = milníky snímku doplněné
+  o chybějící z firemního plánu (bez něj `PLAN_PROJ_VYCHOZI`), pořadí podle firemního katalogu, texty snímku mají
+  přednost; splátky ze snímku jen při stejné předvolbě **i** záloze (`planPlatebVarianty`). Dřív: „milník chybí“
+  a zablokovaná SoD po Záloha/100 % → Standard, změna zálohy 70 → 30 % jen v popisu.
+- **SEC-N8 — karta plánu plateb PROJ je po tisku CN editovatelná** podle Z1 (`planKlpEditovatelny`
+  v `ui/plan_plateb_ui.js`, `zamekKryciVolnePole('kryciProj', 'planPredvolba')`), po SoD dál zamčená.
+- Testy s pojistkou: `test_snimek_po_tisku.js` případy 6–8 (před opravou 9 FAIL, po 35/0),
+  `test_pd_stav_autosave.js` K8-K7 (1 FAIL → 6/0), `test_zmrazeni_kl.js` blok 5c (9 FAIL → 126/0); harness
+  `overit_plan_plateb.mjs` hlídá, že výběr předvolby po CN není `disabled`. Mutace jádra #516 13/13
+  (`ui/plan_plateb_ui.js` nově mezi hlídanými soubory), upravené #507 K7-K2 6/6 a #508 K7-K6 2/2.
+- Potvrzeno J. V. 26. 10.: u staré nabídky PROJ (před plánem plateb) se do Pipedrive nepošle ani Platební
+  kalendář (#512 beze změny).
+
+---
+
 ## v25.10.1 — M1: Příručka aktualizována (kapitoly 5, 6, 8, 24, 28), větev claude/manual-25-10
 
 Nad 7e2bfbb (test, v23.10.5). Kód aplikace beze změny — jen `manual/obsah.json`, verze a zápis. Náhrada nočního
