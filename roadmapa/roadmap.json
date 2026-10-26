@@ -8124,6 +8124,19 @@
      "proc" : "testuje se test po B1"
     }
    ]
+  },
+  {
+   "id" : "518",
+   "vlna" : "B",
+   "stav" : "ceka",
+   "dulezitost" : "stredni",
+   "slozitost" : "S–M",
+   "nazev" : "Cizojazyčná nabídka: zvýraznit nepřeložené a ručně zapsané texty v náhledu",
+   "proc" : "Podnět obchodníka (e-mail 24. 10. 2026, „online kalkulak – cizina“), zadal J. V. 26. 10. 2026: „cílem je zvýraznit ‚manuálně‘ přeložené nebo zapsané texty v konkrétní cenové nabídce ve fázi preview, ne v tisku.“ Ručně změněný nebo zapsaný text (např. název akce „Vestavba OCK výtahové šachty…“ v CN EN) se do cizího jazyka nepřeloží; obchodník si toho skoro vždy nevšimne a nabídku vytiskne s českým textem — v lepším případě to najde před odesláním e-mailem, oprava je práce navíc.",
+   "detail" : "V náhledu cenové nabídky v cizím jazyce (EN/DE/FR, OCK i PROJ) označit zvýrazňovačem každý text, který nepochází ze slovníku/překladu: ručně zapsané údaje hlavičky (název akce, adresa, kontakt…), ručně upravené odstavce a texty bez překladu (fallback na češtinu). Zvýraznění jen na obrazovce — v tisku a v PDF/Wordu se nezobrazí (@media print / exportní cesta bez značek). Krátká legenda nad náhledem („žlutě = text bez překladu, zkontrolujte“), u české nabídky beze změny. Zvážit i počítadlo „N nepřeložených míst“ a skok na první.",
+   "hotovoKdyz" : "V náhledu CN v cizím jazyce jsou ručně zapsané a nepřeložené texty zvýrazněné, v tisku/PDF/Wordu ne; česká nabídka beze změny; test (prohlížečový harness) s pojistkou.",
+   "kde" : "`src/preklad.js`, `src/slovnik.js`, náhled nabídky (`nabidkaTisk`, `nabidkaProjTisk`), tiskové CSS",
+   "zavisi" : []
   }
  ],
  "meta" : {
