@@ -107,7 +107,9 @@ await zkus('N1', async () => {
   await ulz('program').zapis('firma', { udaje: { nazev: 'POKAŽENO' } });
   const ruc = await postVynuceny({ duvod: 'rucne' });
   test('N1: ruční otisk má vlastní klíč s časem (<den>T<hhmmss>-rucne)',
-    ruc.ok && /^\d{4}-\d{2}-\d{2}T\d{6}-rucne$/.test(ruc.den) && ruc.den.startsWith(dnes() + 'T'), ruc);
+    ruc.ok && /^\d{4}-\d{2}-\d{2}T\d{6}-rucne$/.test(ruc.den)
+    /* den podle posunutých hodin požadavku (T1 #528: kolem půlnoci UTC padalo) */
+    && ruc.den.startsWith(new Date(Date.now() + posunHodin).toISOString().slice(0, 10) + 'T'), ruc);
   const nocniPo = await Z.ctiOtisk(ulz('zalohy'), dnes());
   test('N1: noční otisk dne zůstal (zdroj, čas i stav před pokažením)',
     !!nocniPo && nocniPo.zdroj === 'nocni-otisk' && nocniPo.porizena === nocniPred.porizena
