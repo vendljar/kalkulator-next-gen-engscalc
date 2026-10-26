@@ -143,7 +143,7 @@ function zamekKryciPoznamka(sekce) {
 const ZAMEK_POLE_DUVOD = 'Nabídka už odešla — pole se po tisku cenové nabídky nemění (pokračujte klonem varianty).';
 /* K7-K2: odeslaná nabídka, jejíž zámek ještě není v databázi. */
 const ZAMEK_POLE_CEKA = 'Odeslaná nabídka se ještě neuložila do databáze — podmínky a DPH nabídky se do té doby nemění. '
-  + 'Uložte zakázku (tlačítko Uložit zakázku); po uložení půjdou pole, která to dovolují, zase upravit.';
+  + 'Uložte zakázku (tlačítko Uložit zakázku; vypršelo-li přihlášení, nejdřív se znovu přihlaste); po uložení půjdou pole, která to dovolují, zase upravit.';
 function zamekPoleAttr(list, id) {
   const v = (typeof aktivniVarianta === 'function' && typeof ZAK !== 'undefined') ? aktivniVarianta(ZAK) : null;
   if (!v || typeof zamekKryciPoleStav !== 'function' || !variantaUzamcena(v)) return '';
@@ -407,6 +407,9 @@ function zamekSnimekCekaNaServer(v) {
   /* Ze souboru se nic neukládá — server snímek neověřuje (Z1 beze změny);
    * paměť tisků by se tu nikdy nevyprázdnila, proto se ptá první. */
   if (typeof onlineMozne !== 'function' || !onlineMozne()) return false;
+  /* Bez přihlášení (a tedy i v režimu složky) se do databáze nic neukládá —
+   * zmrazení „do uložení" by trvalo navždy (K8-K4, #517). Jako ze souboru. */
+  if (typeof ONLINE_STAV === 'undefined' || !ONLINE_STAV || !ONLINE_STAV.ja) return false;
   if (ZAMEK_SNIMEK_NEULOZENY.has(v.id)) return true;
   const ids = zamekServerZamcene();
   return !!ids && !ids.has(v.id);

@@ -55,7 +55,7 @@ const ui = fs.readFileSync(path.join(__dirname, 'ui', 'zamek_ui.js'), 'utf8');
 const vyrez = (jm) => { const i = ui.indexOf('function ' + jm + '('); if (i < 0) return ''; const j = ui.indexOf('\n}\n', i); return ui.slice(i, j + 2); };
 const blokOd = ui.indexOf('const ZAMEK_SNIMEK_NEULOZENY');
 const blokDo = ui.indexOf('\n}\n', ui.indexOf('function zamekSnimkyUlozeno(')) + 3;
-global.ONLINE_STAV = { ja: null, posledni: '' };
+global.ONLINE_STAV = { ja: { email: 'obchodnik@priklad.cz' }, posledni: '' };   // přihlášeně (K8-K4)
 global.ONLINE_MOZNE = true;
 global.onlineMozne = () => global.ONLINE_MOZNE;
 global.render = () => {};
@@ -63,7 +63,9 @@ global.porovnaniData = () => null;
 global.zamekKdo = () => 'Zkušební obchodník';
 global.zamekSlovnikTed = () => null;
 global.buildVerze = () => 'test';
-vm.runInThisContext(ui.slice(blokOd, blokDo) + vyrez('zamekPoTisku') + vyrez('zamekPoTiskuUloz'));
+const cekaOd = ui.indexOf('const ZAMEK_POLE_CEKA');   // K8-K4: text hlášky u zmrazeného pole
+const cekaText = cekaOd >= 0 ? ui.slice(cekaOd, ui.indexOf(';\n', cekaOd) + 2) : '';
+vm.runInThisContext(cekaText + ui.slice(blokOd, blokDo) + vyrez('zamekPoTisku') + vyrez('zamekPoTiskuUloz'));
 test('prohlížečová část snímku je v ui/zamek_ui.js', typeof global.zamekPoTisku === 'function');
 const vrat = () => (typeof zamekSnimkyVrat === 'function') ? zamekSnimkyVrat() : zamekSnimkyObnov();   // eslint-disable-line no-undef
 const ceka = (v) => (typeof zamekSnimekCekaNaServer === 'function') && zamekSnimekCekaNaServer(v);    // eslint-disable-line no-undef
@@ -126,6 +128,20 @@ const tiskni = (typ) => { const v = global.ZAK.varianty[0]; global.zamekPoTisku(
   test('ze souboru zámek na server nečeká', !ceka(v));
   test('ze souboru DPH volná jako dřív (Z1)', ZM.zamekDphVolna(v, 'C.dph'));
   global.ONLINE_MOZNE = true;
+}
+
+/* ---- 4b) K8-K4 (#517): bez přihlášení se nečeká (jako ze souboru) ---- */
+{
+  global.ZAK = nova(); global.ONLINE_STAV.posledni = ''; global.ONLINE_MOZNE = true;
+  const ja = global.ONLINE_STAV.ja; global.ONLINE_STAV.ja = null;
+  const v = tiskni('nabidka');
+  test('K8-K4: nepřihlášený tisk CN na uložení nečeká', !ceka(v));
+  test('K8-K4: nepřihlášeně DPH volná jako ze souboru', ZM.zamekDphVolna(v, 'C.dph'));
+  test('K8-K4: nepřihlášeně se uložení po tisku nespouští', global.zamekPoTiskuUloz() === false);
+  global.ONLINE_STAV.ja = ja;
+  test('K8-K4: po přihlášení zámek bez serveru zase čeká', ceka(v));
+  test('K8-K4: hláška u zmrazeného pole zmiňuje přihlášení',
+    typeof ZAMEK_POLE_CEKA === 'string' && /přihl/i.test(ZAMEK_POLE_CEKA), typeof ZAMEK_POLE_CEKA);   // eslint-disable-line no-undef
 }
 
 /* ---- 5) SoD vytištěná dřív, než se zámek nabídky uložil ---- */
