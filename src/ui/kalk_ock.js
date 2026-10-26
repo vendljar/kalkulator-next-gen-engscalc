@@ -235,7 +235,7 @@ function renderInputs() {
                  onchange="set('Z.mustekHloubkaMm', this.value)"><span class="u">mm</span></div>
              <div class="row"><label>Šířka můstku</label>
                <input type="text" disabled value="${esc(Math.round((+Z.sirka || 0) * 1000))}"
-                 title="šířka můstku = šířka šachty; nezadává se"><span class="u">mm = šířka šachty</span></div>`
+                 title="šířka můstku = šířka šachty; nezadává se"><span class="u">mm</span></div>`
           : '')
         + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
 

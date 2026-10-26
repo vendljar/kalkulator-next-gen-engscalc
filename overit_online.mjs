@@ -1930,6 +1930,12 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
     ZAK = novaZakazka(); ZAK.cislo = cislo; ZAK.nazevAkce = 'P2 tisk jen ke čtení';
     const d = ZAK.varianty[0].data;
     if (pl.cenik) Object.assign(d.cenik, JSON.parse(JSON.stringify(pl.cenik)));
+    /* #354: ceník prohlížeče je starší verze zveřejněná přes UI (migrovaná,
+     * s buňkami můstků); platná verze serveru je zapsaná přímo bez nich.
+     * Buňka, kterou platná verze nemá, dostane nulu jako při importu
+     * (cenikDoplnKlice) — jinak by ceník varianty byl směsí dvou verzí. */
+    if (pl.cenik) ['mustekRefSirkaMm', 'mustekMontazHodKc', 'mustekMontazZakladHod', 'mustekMontazBmHod', 'mustekMontazMinHod']
+      .forEach(k => { if (!(k in pl.cenik)) d.cenik[k] = 0; });
     if (pl.cenikProj) Object.assign(d.proj.cenik, JSON.parse(JSON.stringify(pl.cenikProj)));
     Object.assign(d.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 });
     syncVarianta(); render();
@@ -1941,6 +1947,8 @@ test('lišta uzamčené varianty nabízí za Klonovat i Založit novou zakázku 
      * přepočítala jeho (nulovým) — vrátit ceník, se kterým se uložila. */
     const d2 = ZAK.varianty[0].data;
     if (pl.cenik) Object.assign(d2.cenik, JSON.parse(JSON.stringify(pl.cenik)));
+    if (pl.cenik) ['mustekRefSirkaMm', 'mustekMontazHodKc', 'mustekMontazZakladHod', 'mustekMontazBmHod', 'mustekMontazMinHod']
+      .forEach(k => { if (!(k in pl.cenik)) d2.cenik[k] = 0; });   // #354, viz výš
     if (pl.cenikProj) Object.assign(d2.proj.cenik, JSON.parse(JSON.stringify(pl.cenikProj)));
     return { soubor, cteni: zamekCteniJe() };
   }, [cislo, platny()]);

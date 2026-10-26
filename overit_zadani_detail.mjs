@@ -248,7 +248,10 @@ const n58 = await p.evaluate(() => {
   out.poSklo = { nad: Z.nadDvermi, stary: Z.svetlikNadDvermi };
   nadDvermiSet('plech'); render();
   mustkySet(3);
-  out.mustky3 = { ks: Z.mustkyKs, stary: Z.mustek, rozmery: !!lbl('Hloubka můstku') };
+  /* #354: zadává se jen Délka můstku, Šířka můstku je jen zobrazení (= šířka šachty). */
+  const sirkaL = lbl('Šířka můstku'), sirkaMustku = sirkaL && sirkaL.parentElement.querySelector('input');
+  out.mustky3 = { ks: Z.mustkyKs, stary: Z.mustek, rozmery: !!lbl('Délka můstku') && !!sirkaMustku
+    && !!sirkaMustku.disabled && sirkaMustku.value === String(Math.round((+Z.sirka || 0) * 1000)) };
   mustkySet(-2);
   out.mustkyZap = Z.mustkyKs;
   mustkySet(0); render();
