@@ -41,6 +41,7 @@ const zk = nacti('./zakazka.js');
 const ZM = nacti('./zamek.js');
 const K = nacti('./kryci.js');
 const KP = nacti('./kryci_proj.js');
+const ULO = nacti('./uloziste.js');
 
 let ok = 0, fail = 0;
 const test = (n, cond, info) => { if (cond) { ok++; console.log('OK   ' + n); }
@@ -89,7 +90,10 @@ const tiskni = (typ) => { const v = global.ZAK.varianty[0]; global.zamekPoTisku(
   v.data.kryci = v.data.kryci || { hodnoty: {} };
   v.data.kryci.hodnoty = v.data.kryci.hodnoty || {};
   v.data.kryci.hodnoty.platebniPodminkyText = 'nové podmínky po tisku';
+  const zpravy = []; global.onlineZprava = (t) => zpravy.push(String(t));
   const ids = vrat();
+  delete global.onlineZprava;
+  test('K8-K1: srovnání podle snímku se ohlásí (ne potichu)', zpravy.some(t => /vrátily/.test(t)), zpravy);
   test('před odesláním se čekající varianta ohlásí', Array.isArray(ids) && ids.indexOf(v.id) >= 0);
   test('snímek se nepřepočítal — nese DPH z tisku', v.zamek.snimek.dph === 0.21, v.zamek.snimek.dph);
   test('data se srovnala podle snímku (DPH)', v.data.cenik.dph === 0.21, v.data.cenik.dph);
@@ -136,6 +140,71 @@ const tiskni = (typ) => { const v = global.ZAK.varianty[0]; global.zamekPoTisku(
   const h = (v.data.kryci && v.data.kryci.hodnoty) || {};
   test('SoD před uložením: opsané číslo SoD a datum podpisu v datech zůstaly (srovnání podle snímku je nesmaže)',
     !!h.cisloSod && !!h.sodDatumPodpisu, h);
+}
+
+/* ---- 6) K8-K1 (#516): zakázka ze SOUBORU se zámkem, který už na serveru je ----
+ * V okně byla otevřená jiná zakázka (ONLINE_STAV.posledni patří jí). Zámek
+ * nesmí „čekat na uložení" — jinak se krycí list zmrazí a zamekSnimkyVrat
+ * před odesláním tiše vrátí úpravy provedené po CN. */
+{
+  global.ZAK = nova(); global.ONLINE_MOZNE = true; global.ONLINE_STAV.rejstrik = [];
+  const v = tiskni('nabidka');
+  zamekSnimkyUlozeno([v.id]);                                   // eslint-disable-line no-undef
+  global.ONLINE_STAV.posledni = JSON.stringify(global.ZAK);     // zámek uložen na server
+  global.ONLINE_STAV.rejstrik = [{ soubor: ULO.uloJmenoSouboru(global.ZAK) }];
+  test('K8-K1: uložený zámek nečeká', !ceka(v));
+  v.data.kryci = v.data.kryci || { hodnoty: {} };
+  v.data.kryci.hodnoty = v.data.kryci.hodnoty || {};
+  test('K8-K1: splatnost je po CN editovatelná', ZM.zamekKryciPoleStav(v, 'kryci', 'splatnostDni') === 'editovatelne');
+  v.data.kryci.hodnoty.splatnostDni = '45';                      // dovolená úprava po CN, uložena
+  const soubor = zk.StorageAdapter.exportuj(global.ZAK);
+  const jina = nova(); jina.cislo = '2026 - OPR - CN - 5072';
+  global.ZAK = jina; global.ONLINE_STAV.posledni = JSON.stringify(jina);   // v okně jiná zakázka
+  global.ZAK = zk.StorageAdapter.importuj(soubor);               // import souboru
+  const vi = global.ZAK.varianty[0];
+  test('K8-K1: po importu ze souboru zámek na server nečeká', !ceka(vi));
+  test('K8-K1: … splatnost zůstává editovatelná (krycí list se nezmrazil)',
+    ZM.zamekKryciPoleStav(vi, 'kryci', 'splatnostDni') === 'editovatelne');
+  const ids = vrat();
+  test('K8-K1: před odesláním se nic nevrací', ids.length === 0, ids);
+  test('K8-K1: úprava po CN zůstala v odesílaných datech', vi.data.kryci.hodnoty.splatnostDni === '45',
+    vi.data.kryci.hodnoty);
+  test('K8-K1: snímek CN se nepřepsal (splatnost z tisku)', !(vi.zamek.snimek.kryci && vi.zamek.snimek.kryci.hodnoty
+    && vi.zamek.snimek.kryci.hodnoty.splatnostDni === '45'));
+  /* SoD po importu: snímek CN se nepřepočítá (K8-K6). */
+  const snimekPred = JSON.stringify(vi.zamek.snimek);
+  global.zamekPoTisku('sod', vi.id);
+  test('K8-K6: SoD u uloženého zámku snímek CN nepřepíše', JSON.stringify(vi.zamek.snimek) === snimekPred);
+}
+
+/* ---- 7) K8-K1: zakázka, která na serveru vůbec není → zámek čeká ---- */
+{
+  global.ZAK = nova(); global.ONLINE_MOZNE = true;
+  const v = tiskni('nabidka');
+  zamekSnimkyUlozeno([v.id]); ZAMEK_SNIMEK_NEULOZENY.clear();   // eslint-disable-line no-undef
+  const jina = nova(); jina.cislo = '2026 - OPR - CN - 5073';
+  global.ONLINE_STAV.posledni = JSON.stringify(jina);
+  global.ONLINE_STAV.rejstrik = [{ soubor: ULO.uloJmenoSouboru(jina) }];
+  test('K8-K1: zakázka mimo rejstřík serveru — zámek čeká (server ho ověří)', ceka(v));
+  test('K8-K1: … číslo nabídky (jen admin) je při čekání zmrazené', ZM.zamekKryciPoleStav(v, 'kryci', 'cisloCN') === 'zmrazeno');
+  global.ONLINE_STAV.rejstrik = [];
+  test('K8-K1: bez znalosti serveru (prázdný rejstřík, cizí poslední verze) se nečeká', !ceka(v));
+}
+
+/* ---- 8) K8-K6: SoD před uložením zámku přepíše ve snímku jen opsaná pole ---- */
+{
+  global.ZAK = nova(); global.ONLINE_MOZNE = true; global.ONLINE_STAV.posledni = ''; global.ONLINE_STAV.rejstrik = [];
+  const v = tiskni('nabidka');
+  /* data se od snímku rozešla (obnovená záloha) — SoD to nesmí vtisknout do snímku */
+  v.data.kryci = v.data.kryci || { hodnoty: {} }; v.data.kryci.hodnoty = v.data.kryci.hodnoty || {};
+  v.data.kryci.hodnoty.splatnostDni = '99';
+  tiskni('sod');
+  test('K8-K6: SoD před uložením nevtiskne do snímku jiné pole než opsané',
+    v.zamek.snimek.kryci.hodnoty.splatnostDni !== '99', v.zamek.snimek.kryci.hodnoty.splatnostDni);
+  test('K8-K6: … opsané číslo SoD ve snímku je', !!v.zamek.snimek.kryci.hodnoty.cisloSod);
+  vrat();
+  test('K8-K6: po srovnání podle snímku server snímek přijme',
+    JSON.stringify(ZM.zamekSnimekSpocti(v)) === JSON.stringify(v.zamek.snimek));
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
