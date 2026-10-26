@@ -73,6 +73,28 @@ Do integrace / test nic, žádný PR, na Disk ani do Pipedrive nic.
 - **Otevřené pro J. V.:** jestli značit i jméno zákazníka a kontaktní osobu (dnes ano — zadání „ručně zapsané
   údaje hlavičky“; vlastní jména se ale nepřekládají nikdy, takže legenda u EN nabídky ukáže vždy aspoň 2–3
   místa). Výchozí: nechat, jak je.
+# Předávka — 26. 10. 2026: P3 #114 — přehled mapy polí Pipedrive v Nastavení, větev `claude/114-prehled-mapy-poli`
+
+Nad `e9aed72bc454f0d45dc74b8cfd0e588585c7c53c` (test-draft). **Verze 26.10.4** (pořadí sloučení O1 v26.10.1,
+O2 v26.10.2, #518 v26.10.3, tahle v26.10.4; `build.py --kontrola-verze` ✓ — commit 26. 10. UTC).
+Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Do test-draft / test nic, do Pipedrive nic, na Disk nic.
+
+- **Hotovo:** Nastavení → **Mapa polí CRM** (jen administrátor; `src/ui/pd_mapa_ui.js`, panel `pdmapa`
+  v `NAST_PANELY`) — souhrn se štítky, tabulka polí kalkulace × pole CRM (název, typ, směr, zdroj OCK/PROJ,
+  spárováno / chybí v CRM / jiný typ / dvakrát, „jen ke čtení“ u nezapisovatelného), nezařazená pole CRM,
+  filtr „jen pole s problémem“, **Obnovit z CRM**. Ruční přiřazení není. Řádky skládá server
+  (`pdPrehledMapy`, `netlify/lib/pd_mapa.mjs`); `/api/pd/pole` **jen administrátor** (dřív každý s právem
+  `crm.pipedrive` — klient ho nevolal); odmítnutý token Pipedrive → 502 (ne 401, jinak odhlášení správce).
+- **Testy:** `netlify/test_pd_mapa_prehled.mjs` 46/0, `overit_pd_mapa.mjs` 26/0 (obojí proti e9aed72 padá),
+  `test_pd_pristup.mjs` (oddíl 0, proti e9aed72 4 FAIL), `test_prava.mjs` (JEN_ADMIN), `overit_nastaveni.mjs`
+  54/0, `overit_dialogy.mjs` 28/0. `./spust_testy.sh` 253/0/1 (test.js přeskočen). Mutace „#114 přehled“
+  **9/9**, `--kontrola` 928 úseků. `testovaci_kolo.sh --jen build,staticke`: build ✓, statické **3/4** —
+  jediný nález `kontrola_udaju.py` je PŘEVZATÝ ze základu: `.claude/skills/kokpit-koordinace/kokpit_sablona.html:194`
+  (sdílecí odkaz na sezení Claude, commit 9bc4965) — padá i na e9aed72; mimo zadání neopraveno → koordinace.
+- **Dokumentace:** CHANGELOG v26.10.4, příručka (kap. 28 oddíl Mapa polí CRM, „Co je nového v26.10.4“, hlavička),
+  roadmapa #114 hotovo.
+- **Čeká na J. V.:** sloučení do test-draft a tag v26.10.4. Prohlížečové harnessy celého kola a celé mutace
+  pouští koordinace.
 
 ---
 

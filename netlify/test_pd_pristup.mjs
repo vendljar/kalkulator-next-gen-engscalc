@@ -88,8 +88,29 @@ test('příprava: tři přihlášené účty', !!(cAdmin && cObch && cVed));
 const CESTY = [
   ['seznam', pdDealy, 'http://x/api/pd/dealy?stav=vse'],
   ['detail', pdDeal, 'http://x/api/pd/deal?id=1'],
-  ['mapa polí', pdPole, 'http://x/api/pd/pole'],
 ];
+
+console.log('\n===== 0) MAPA POLÍ JEN PRO ADMINISTRÁTORA (#114) =====\n');
+/* Od 26. 10. 2026 slouží /api/pd/pole jen přehledu mapy v Nastavení
+ * (administrátor) — obchodník ani vedoucí ji nedostanou ani s právem
+ * crm.pipedrive, a do Pipedrive se kvůli nim nejde. */
+for (const [kdo, c] of [['obchodník', cObch], ['vedoucí', cVed]]) {
+  for (const url of ['http://x/api/pd/pole', 'http://x/api/pd/pole?obnovit=1']) {
+    volani = [];
+    const r = await get(pdPole, url, c);
+    test('#114: ' + kdo + ' — ' + url.slice(8) + ' → 403', r.status === 403, r.status);
+    test('#114: … a do Pipedrive se nešlo (' + kdo + ')', volani.length === 0, volani);
+  }
+}
+{
+  const r = await get(pdPole, 'http://x/api/pd/pole', cAdmin);
+  const d = await r.json();
+  test('#114: administrátor mapu polí čte → 200 s přehledem', r.status === 200 && !!d.prehled
+    && Array.isArray(d.prehled.radky) && d.prehled.radky.length > 0, r.status);
+  test('#114: nepřihlášený — mapa polí → 401', (await get(pdPole, 'http://x/api/pd/pole')).status === 401);
+  const cizi = await get(pdPole, 'http://x/api/pd/pole', cAdmin, { origin: 'https://utocnik.example', host: 'kalkulator.example' });
+  test('#114: mapa polí z cizího původu → 403 (i administrátor)', cizi.status === 403, cizi.status);
+}
 
 console.log('\n===== 1) VÝCHOZÍ MATICE: ČTOU VŠICHNI PŘIHLÁŠENÍ =====\n');
 /* Rozhodnutí J. V. 15. 10. 2026: právo crm.pipedrive zatím mají všichni

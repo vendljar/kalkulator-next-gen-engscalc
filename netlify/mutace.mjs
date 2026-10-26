@@ -134,7 +134,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* Z1 (22. 10. 2026): zmrazení krycích listů po polích podle tabulky J. V. */
      '../src/test_zmrazeni_kl.js',
      /* #114 (21. 10. 2026): párování polí Pipedrive podle přesného názvu a převod hodnot. */
-     'test_pipedrive.mjs', 'test_pd_prevod.mjs'];
+     'test_pipedrive.mjs', 'test_pd_prevod.mjs',
+     /* #114 přehled (26. 10. 2026): přehled mapy polí v Nastavení, jen administrátor. */
+     'test_pd_mapa_prehled.mjs'];
 /* Filtr podle názvu; `--cast K/N` a `--od N` vybírají část běhu podle pořadí
  * (P2, 23. 10. 2026 — nastroje/mutace_cast.mjs). */
 const { mutaceCast, filtrZArgv } = await import('../nastroje/mutace_cast.mjs');
@@ -3213,6 +3215,44 @@ const MUTACE = [
     hledej: "  if (v.every((x) => x === '')) return { prazdne: true };",
     nahrad: "",
     proc: 'zápis z kalkulace by v CRM mazal, co tam kdo vyplnil' },
+  /* #114 přehled (26. 10. 2026): přehled mapy polí v Nastavení. Hlídají
+   * netlify/test_pd_mapa_prehled.mjs, test_pd_pristup.mjs a test_prava.mjs. */
+  { nazev: '#114 přehled: mapu polí čte i obchodník', soubor: 'functions/pd_pole.mjs',
+    hledej: "  if (relace.role !== 'Administrátor')\n    return json({ ok: false, chyba: 'Mapu polí Pipedrive vidí jen administrátor.' }, 403);",
+    nahrad: "",
+    proc: 'hashe polí CRM a vynucené obnovení (dotaz do Pipedrive) by měl každý přihlášený' },
+  { nazev: '#114 přehled: odmítnutý token odejde jako 401', soubor: 'functions/pd_pole.mjs',
+    hledej: "(e.stav >= 500 || e.stav === 401) ? 502 : e.stav",
+    nahrad: "e.stav >= 500 ? 502 : e.stav",
+    proc: 'klient by 401 vzal za vypršelé přihlášení a správce odhlásil' },
+  { nazev: '#114 přehled: odpověď bez přehledu', soubor: 'functions/pd_pole.mjs',
+    hledej: "    return json({ ok: true, nastaveno: true, ...m, prehled: pdPrehledMapy(m) });",
+    nahrad: "    return json({ ok: true, nastaveno: true, ...m });",
+    proc: 'Nastavení by nemělo z čeho kreslit' },
+  { nazev: '#114 přehled: jiný typ se hlásí jako chybějící', soubor: 'lib/pd_mapa.mjs',
+    hledej: "    if (t) { r.stav = 'typNesedi';",
+    nahrad: "    if (false) { r.stav = 'typNesedi';",
+    proc: 'administrátor by integrátora žádal o založení pole, které v CRM je — jen s jiným typem' },
+  { nazev: '#114 přehled: dvojí název se hlásí jako chybějící', soubor: 'lib/pd_mapa.mjs',
+    hledej: "    if (n) { r.stav = 'nejednoznacne';",
+    nahrad: "    if (false) { r.stav = 'nejednoznacne';",
+    proc: 'zdvojené pole v CRM by se v přehledu tvářilo, že chybí' },
+  { nazev: '#114 přehled: zdroj jen OCK', soubor: 'lib/pd_mapa.mjs',
+    hledej: "  return ['ock', 'proj'].filter(",
+    nahrad: "  return ['ock'].filter(",
+    proc: 'pole plněná z krycího listu PROJ by v přehledu neměla zdroj' },
+  { nazev: '#114 přehled: nezapisovatelné pole se neozve', soubor: 'lib/pd_mapa.mjs',
+    hledej: "      r.zapisovatelne = p.zapisovatelne !== false;",
+    nahrad: "      r.zapisovatelne = true;",
+    proc: 'pole, do kterého zápis neprojde, by vypadalo v pořádku' },
+  { nazev: '#114 přehled: pole jiného typu i mezi nezařazenými', soubor: 'lib/pd_mapa.mjs',
+    hledej: "  const nezarazeno = (x.nezarazeno || []).filter((p) => !zname.has(pdNazevNorm(p.nazev)))",
+    nahrad: "  const nezarazeno = (x.nezarazeno || [])",
+    proc: 'totéž pole by se hlásilo dvakrát — jako jiný typ a jako nezařazené' },
+  { nazev: '#114 přehled: bez polí organizace', soubor: 'lib/pd_mapa.mjs',
+    hledej: "  const radky = pdPrehledOblast('deal', defDealu, x).concat(pdPrehledOblast('organizace', defOrg, {",
+    nahrad: "  const radky = pdPrehledOblast('deal', defDealu, x).concat([], ({",
+    proc: 'chybějící IČ na organizaci by v přehledu nebylo vidět' },
   { nazev: '#114: zapisuje se i pole, které se má jen číst', soubor: 'lib/pd_prevod.mjs',
     hledej: "  if (!def || !PD_SMER_ZAPIS.includes(def.smer)) return { prazdne: true };",
     nahrad: "  if (!def) return { prazdne: true };",

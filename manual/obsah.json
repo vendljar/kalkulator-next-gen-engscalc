@@ -1,7 +1,7 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
   "podtitul": "ENGINEERS CZ s.r.o. · jak založit zakázku, spočítat ji a poslat nabídku",
-  "verze": "Platí pro aplikaci v25.10.1 · sestaveno 25. 10. 2026 · nahrazuje příručku z 23. 10. 2026 (v23.10.4)",
+  "verze": "Platí pro aplikaci v26.10.4 · sestaveno 26. 10. 2026 · nahrazuje příručku z 25. 10. 2026 (v25.10.1)",
 
   "uvod": [
     {
@@ -31,6 +31,12 @@
       "odstavce": [
         "**Náhled cizojazyčné nabídky ukáže, co zůstalo česky.** V náhledu cenové nabídky v angličtině, němčině nebo francouzštině (OCK i PROJ, tisková stránka i podklady nabídky) jsou **žlutě podbarvené** texty, které nepocházejí z překladu: ručně zapsané údaje hlavičky (zákazník, kontaktní osoba, název akce, adresa stavby, vlastní popis záměru), texty, pro které aplikace nemá překlad, a odstavce, které jste ručně upravili tlačítkem „Upravit text před tiskem“. Po najetí myší se ukáže, proč je text označený.",
         "Nad náhledem je řádek s počtem označených míst („5 textů bez překladu — zkontrolujte“) a tlačítko **Přejít na první** (dalším klepnutím na další). Označení je jen na obrazovce — **do tisku, do PDF ani do Wordu se nedostane** a dokument se jím nemění. Česká nabídka zůstává beze změny."
+      ]
+    },
+    {
+      "nadpis": "Co je nového ve verzi v26.10.4 (26. 10. 2026)",
+      "odstavce": [
+        "**Mapa polí CRM v Nastavení (jen administrátor).** Administrátor vidí, které pole kalkulace se spárovalo s polem v Pipedrive, které v CRM chybí, má jiný typ nebo je tam dvakrát, a která vlastní pole CRM kalkulátor nezná. Vaší práce se to netýká — jen víte, kde administrátor hledá, když se z Pipedrive něco nenačte nebo nezapíše (kapitola 28)."
       ]
     },
     {
@@ -1113,6 +1119,8 @@
         { "typ": "text", "text": "V **Nastavení → Controlling** připravuje administrátor podklady pro controlling: **export předkalkulace** do Excelu nebo CSV. Obchodník tuhle část nevidí a pro jeho práci se nic nemění. Jednu zakázku administrátor exportuje i z **Přehledu cenových nabídek** tlačítkem **Export pro controlling** u odeslané řídící varianty." },
         { "typ": "text", "text": "**Hromadný export** („Hromadně za období“) vezme odeslané nabídky ze zadaného období — ve výchozím stavu **podle data prodeje** (podpis smlouvy, datum objednaných příplatků), volitelně podle data odeslání nabídky. Dá se zúžit na OCK / PROJ, na číselnou řadu ČR / ZAHR a výběrem **Stav dealu** (poslední známý stav v Pipedrive): výchozí je **Vyhrané**, dál Otevřené, Ztracené, Smazané, Bez stavu a Všechny stavy. Zaškrtávátko **Celá databáze** vezme všechny zakázky bez ohledu na období. Velký export se stahuje po částech („zpracováno N z M zakázek“), výsledkem je jeden soubor a každý export se zapíše do protokolu pod formulářem." },
         { "typ": "text", "text": "Co se z toho týká vás: export bere údaje přímo ze zakázky — **objednané příplatky a datum prodeje** (kapitola 24), **Stav Pipedrive** (kapitola 5) a číslo dealu, které ke zakázce zadává administrátor. Když je máte vyplněné správně, controlling se nemusí doptávat." },
+        { "typ": "podnadpis", "text": "Mapa polí CRM (jen administrátor)" },
+        { "typ": "text", "text": "V **Nastavení → Mapa polí CRM** administrátor vidí, jak se pole kalkulace párují s vlastními poli Pipedrive: nahoře souhrn se štítky (**spárováno**, **chybí v CRM**, **jiný typ**, **dvakrát**, **nezařazená v CRM**), pod ním tabulka polí se směrem (čte se z CRM / zapisuje se do CRM) a zdrojem (OCK / PROJ) a seznam vlastních polí CRM, která kalkulátor nezná. Tlačítko **Obnovit z CRM** načte mapu znovu. Pole se párují **přesně podle názvu** dohodnutého s integrátorem — kdo pole v Pipedrive přejmenuje, uvidí ho tu jako „chybí v CRM“ a kalkulátor do něj nic nezapíše ani z něj nečte. Ručně se nic nepřiřazuje." },
         { "typ": "text", "text": "Administrátor také může nastavit, které volitelné položky a které projekční činnosti mají být v nové zakázce rovnou zaškrtnuté. **Nemění to nic na zakázkách, které už máte rozdělané** — jen na těch, které teprve založíte. Když vám v nové nabídce něco chybí nebo naopak přebývá, je to tohle nastavení, ne chyba." },
         { "typ": "text", "text": "A ještě jedna věc, o které je dobré vědět: administrátor si může **zapnout náhled a vidět aplikaci přesně tak, jak ji vidíte vy** — bez toho, aby se hlásil na váš účet. Vaše heslo tím nikdo nezná a do vaší zakázky se v náhledu nedá nic zapsat. Slouží to k jedinému: aby vám na dotaz „nevidím tam to tlačítko“ uměl odpovědět, aniž by si musel sedat k vašemu počítači." }
       ]

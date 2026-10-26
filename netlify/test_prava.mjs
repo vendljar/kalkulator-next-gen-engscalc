@@ -526,8 +526,8 @@ const MATICE = [
 
   { fn: pdPole, soubor: 'pd_pole.mjs', nazev: 'Pipedrive — mapa vlastních polí (GET /api/pd/pole)',
     metoda: 'GET', url: 'http://x/api/pd/pole',
-    proc: 'tvar CRM s právem crm.pipedrive (B80, výchozí všem); vynucené obnovení jen pro správce',
-    prava: PRIHLASENY_OK },
+    proc: 'přehled mapy polí v Nastavení — hashe polí CRM jen pro správce (#114, 26. 10. 2026)',
+    prava: JEN_ADMIN },
 
   /* Centrální šablony dokumentů (#139). Číst smí každý přihlášený — obchodník
    * z platné šablony tiskne. Zveřejnit a přepínat režim smí JEN administrátor:

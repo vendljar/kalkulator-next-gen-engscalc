@@ -76,6 +76,31 @@ v PRICE QUOTATION EN zůstal ručně zapsaný název akce česky a nikdo si toho
   (22 / 0; na sestavení před změnou 10 / 12) — EN OCK s ručním názvem akce zvýrazněn, print médium bez
   zvýraznění, ručně upravený odstavec, EN PROJ a podklady, CZ OCK i PROJ bez značek, data nabídky a DOCX beze
   změny. Mutace `#518` 7/7 chycených (`preklad.js` přidán mezi jádra mutací, žádná nová sada).
+## v26.10.4 — P3 #114: přehled mapy polí Pipedrive v Nastavení (CRM-15), větev claude/114-prehled-mapy-poli
+
+Nad e9aed72 (test-draft). Párování polí podle přesného názvu a typu (v21.10.x) zůstává beze změny — přibyl
+přehled pro administrátora.
+
+- **Nastavení → Mapa polí CRM (jen administrátor):** souhrn nahoře (počty a barevné štítky: spárováno, chybí
+  v CRM, jiný typ, dvakrát, nezařazená v CRM), tabulka polí kalkulace × pole CRM (dohodnutý název, typ, směr
+  čte se / zapisuje se / jen zná, zdroj OCK / PROJ, stav, název a typ pole v CRM; spárované pole, které v CRM
+  nejde zapisovat, nese štítek „jen ke čtení“), seznam nezařazených vlastních polí CRM, filtr „jen pole
+  s problémem“ a tlačítko **Obnovit z CRM** (`?obnovit=1`, obejde denní cache; mapa v cache nese verzi).
+  Ruční přiřazení se nedělá — přejmenované pole se ukáže jako „chybí v CRM“ (např. „Platební kalendář SoD
+  PROJ“ z #512, dokud ho integrátor nezaloží). `src/ui/pd_mapa_ui.js`.
+- **Řádky přehledu skládá server** (`pdPrehledMapy` v `netlify/lib/pd_mapa.mjs`) při každé odpovědi z mapy
+  v cache a z definic v kódu; pole jiného typu nebo zdvojené se mezi nezařazenými nehlásí podruhé, hashe
+  polí přehled nenese.
+- **`/api/pd/pole` jen pro administrátora** (obchodník i vedoucí 403 i s právem `crm.pipedrive`; žádná
+  obrazovka jim ho nevolala, ostatní funkce berou mapu přes `pdPoleMapa()`). Nenastavený token = hláška
+  „Napojení na Pipedrive zatím není nastavené…“; chyba Pipedrive = hláška bez pádu, poslední mapa zůstane
+  vidět. Odmítnutý token Pipedrive (401) odchází jako **502** — klient by 401 vzal za vypršelé přihlášení
+  a správce odhlásil.
+- **Testy:** `netlify/test_pd_mapa_prehled.mjs` 46/0 (všechny stavy, organizace, souhrn, práva, nenastavený
+  token, chyba API, cache a obnovení; proti e9aed72 padá), `netlify/test_pd_pristup.mjs` (oddíl 0: mapa
+  polí jen administrátor; proti e9aed72 4 selhání), `netlify/test_prava.mjs` (JEN_ADMIN), prohlížečový
+  `overit_pd_mapa.mjs` 26/0 (proti e9aed72 padá); `./spust_testy.sh` 253/0/1. Mutace „#114 přehled“ **9/9** chycené (`--kontrola` 928 úseků).
+- Příručka: kapitola 28 (oddíl Mapa polí CRM) a „Co je nového ve verzi v26.10.4“; roadmapa #114 hotovo.
 
 ---
 
