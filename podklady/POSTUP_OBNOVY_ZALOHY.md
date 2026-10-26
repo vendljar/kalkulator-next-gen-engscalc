@@ -27,11 +27,19 @@
 | Disk Google — kopie | posledních **7 dní**; z týdne nedělní **8 týdnů**; z měsíce první **6 měsíců** | ostatní, po každé úspěšné kopii (jen soubory `otisk_RRRR-MM-DD.json(.gz)`; Disk je drží 30 dní v koši) |
 
 Nejnovější záloha se nesmaže nikdy. V Netlify se maže jen tehdy, když je na
-Disku podložená kopie mladší než 7 dní a nová noční záloha nenese méně než
-polovinu zakázek nebo účtů než předchozí (jinak mazání stojí a Nastavení →
-Databáze varuje). Na Disku se maže jen po úspěšné kopii, kterou server přijal
-a jejíž soubor sedí velikostí i kontrolním součtem — výsledek („Na Disku
-smazáno N starších kopií…") ukáže hláška po kopii.
+Disku podložená kopie mladší než 7 dní. Na Disku se maže jen po úspěšné kopii,
+kterou server přijal a jejíž soubor sedí velikostí i kontrolním součtem —
+výsledek („Na Disku smazáno N starších kopií…") ukáže hláška po kopii.
+
+**Zálohy se mají zvětšovat (pokyn J. V. 26. 10. 2026).** Mazání (v Netlify
+i na Disku) se zastaví, když nová noční záloha proti předchozí má **méně než
+90 % dat**, **méně než 95 % zakázek nebo účtů**, nebo **méně šablon či
+podpisů**; totéž, když nová kopie na Disku nese méně než 90 % dat předchozí
+kopie. Nastavení → Databáze pak červeně ukáže, co ubylo a z kolika na kolik
+(a hláška hned po přihlášení), v logu `zaloha_nocni` je řádek „VAROVÁNÍ".
+**Bez potvrzení se nemaže nic — ani po měsících.** Když data ubyla záměrně
+(smazané zakázky, šablona), správce klikne na *Úbytek byl záměrný* a potvrdí
+heslem; jinak je to signál, že se data ztratila — obnovte je podle A).
 
 **Komprese (od v26.10.9).** Části nočních otisků v Netlify se ukládají
 komprimované (gzip, o 30–40 % méně místa) — obnova a stažení je čtou samy,
