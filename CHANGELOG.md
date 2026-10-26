@@ -50,7 +50,7 @@ Nad integrací bab9a7c (v26.10.10 = Z1 #522 + Z2 #523 + zpráva K9 + příručka
 - **Roadmapa:** #526 omylem ležela v poli `_comment` (nevykreslovala se) — přesunuta do položek, nálezy
   označené; nová #527.
 - **Testy:** nový `netlify/test_o_k9_zalohy.mjs` 55/0 (pojistka: nad lib/funkcemi z bab9a7c 25 FAIL);
-  `test_zalohy_objem` +5 (K9-V1 ve vm nad funkcemi pod limitem; pojistka: s online_ui.js z bab9a7c 3 FAIL),
+  `test_zalohy_objem` +6 (K9-V1 ve vm nad funkcemi pod limitem; pojistka: s online_ui.js z bab9a7c 3 FAIL),
   `test_zalohy` +3 (K9-S4), `src/test_z2_disk_retence` +3 (K9-S6), `src/test_o7_kopie_klient` +3 (K9-N2, S2);
   přizpůsobené záměrné změny (seznam varování, fail-closed, okno v prazích). Mutace: 35 nových `#527`
   + 14 přecílených (#151 N3/N5/N6, O7, O11, #522, #523 — značka „[#527]"), filtr „#527" 49/49 chycených.
