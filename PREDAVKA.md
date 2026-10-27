@@ -35,6 +35,36 @@ dávka verzi nezvyšuje; rozhodne koordinace při slučování).
 **Pro J. V. / koordinaci:** číslo roadmapy #529 přidělila dávka (případně přečíslovat). Sazba montáže můstků v manuálu
 je zkušební 500 Kč/h a referenční šířka 1 600 mm / 8 h + 8 h/bm / min 16 h ze schváleného návrhu — výchozí migrační
 cena 28 600 Kč/bm a 400 Kč/h se v manuálu záměrně neuvádí.
+# Předávka — 27. 10. 2026: M8 #532 — rozšířená příručka pro administrátora, větev `claude/m8-prirucka-admin`
+
+Nad `1820f81` (integrace v26.10.12 = test). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze
+změny, verze se nezvyšuje.** Neslučováno; na ostrém webu, Disku ani v Pipedrive nic. Souběžné O-T #529 a M7 —
+jejich soubory (`manual/obsah.json`, kap. 30, `manual_vypocet/`) netknuté.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| Struktura | ✅ | část **A** = 15 kapitol A1–A15 (přehled, role a práva, uživatelé, Nastavení: Obecné/Firma/Slevy, Šablony/Standard/Slovník/Konfigurace, Analytika/Controlling/Mapa CRM, ceník, zálohy a obnova, hlídání záloh, Netlify, GitHub, Disk + Pipedrive, testování, potíže, přístupy); část **B** = celá příručka obchodníka **beze změny** (kapitoly 1–32 nepřečíslované, jejich odkazy sedí) |
+| Postupy se snímky | ✅ | 62 kroků v 15 kapitolách A, 32 snímků správce (`manual/snimky_admin.mjs`, ~1 min): přihlášení, hlavička, záložky Nastavení, uživatelé (tabulka, reset, nový účet, archiv), matice + náhled, Databáze (karta po záloze a noční záloze, přenos ceníku, ukázkové zakázky, pojistka úbytku — **ukázkový záznam** vložený do stavu stránky, obnova + náhled), ceník (platný, tabulka, historie verzí, PROJ), Firma, Šablony, Standard, Slevy, Konfigurace, Slovník, Analytika, Controlling, Mapa CRM, Schvalování |
+| Sestavení | ✅ | `bash manual/admin/sestav.sh <snimky.json> <snimky_admin.json> <výstup mimo repo>` — awk jako u obchodníka, TÁŽ šablona `manual/sablona.html` (beze změny); spojení částí v prohlížeči `manual/admin/spojit.js`; hlídá verzi, „Co je nového“, prostředí test, `</script`, skutečné firmy, výstup v repu (kód 2) |
+| Bezpečnost | ✅ | jen NÁZVY proměnných; e-maily jen @priklad.cz; žádné částky; `kontrola_udaju.py` čisté; nejisté věci „ověřit“ (schaftscalc vypnutý?, tarif Netlify, naplánované úlohy hlídání záloh — komu a kdy, přístupy k Disku) |
+| Testy | ✅ | `src/test_prirucka_admin.js` 101/0 (obsah, snímky ↔ text oběma směry, bezpečnost, 14 témat zadání, sestav.sh se zástupnými snímky, vykreslení `manual/admin/overit.js` v Chromiu); pojistka: bez `manual/admin` 4 FAIL, rozbité číslování + chybějící snímek 4 FAIL. `overit_prirucka_admin.mjs` nad hotovou příručkou 51/0 (bez příručky PŘESKOČENO, kód 4); `spust_testy.sh --smoke` 294/0, 50 přeskočeno (harnessy bez Playwrightu v kořeni — nesouvisí) |
+| Výstup | ✅ | HTML ~0,9 MB + PDF A4 134 stran (okno 794 px) J. V. přes SendUserFile; do repa ani na Disk nic |
+| Roadmapa | ✅ | **#531** (vlna B, hotovo) — číslo zvoleno kvůli souběžným #529 a M7, koordinace případně přečísluje |
+
+**Jak příručku vyrobit znovu:** `KNG_NEZVYSOVAT_VERZI=1 python3 build.py`; `NODE_PATH=$(npm root -g) node
+manual/snimky_auto.mjs <mimo-repo>/snimky.json` a `… node manual/snimky_admin.mjs <mimo-repo>/snimky_admin.json`
+(volitelně `KNG_SNIMKY_TEXTY=<soubor>` vypíše texty panelů jako podklad k psaní); `bash manual/admin/sestav.sh …`;
+PDF Playwright `page.pdf({format:'A4', printBackground:true, preferCSSPageSize:true})` s oknem 794 px;
+kontrola `KNG_PODKLADY=<složka> node overit_prirucka_admin.mjs`. Řádek „verze“ v `manual/admin/obsah.json` se
+s každou verzí aplikace opravuje stejně jako u obchodníka (sestav.sh jinak zastaví).
+
+**Pozor:** `testovaci_kolo.sh --jen build,staticke` hlásí chybu verze (verze.txt 26.10.12, poslední commit 27. 10.)
+— **totéž platí už nad základem 1820f81**; aplikace se nemění, verzi řeší koordinace při integraci.
+Ostatní statické kontroly zelené.
+
+**Otázky pro J. V.:** potvrdit body „ověřit“ (A1/A10 schaftscalc vypnutý, tarif Netlify; A9 naplánované úlohy
+hlídání záloh — komu chodí e-mail a kdy; A12/A15 kdo má přístup ke složkám Disku a do Netlify). Kam ukládat
+hotovou příručku správce (složka Manual?).
 
 ---
 # Předávka — 27. 10. 2026: T1 #528 — testy na 3 přeživší mutace z Testy #198, větev `claude/t1-mutace-zalohy`
