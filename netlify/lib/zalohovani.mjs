@@ -154,7 +154,7 @@ export function vynuceneLimit(klice, ted, druh) {
   /* rezervace s doběhlým otiskem téhož slotu se nepočítá dvakrát */
   for (const s of [...sloty]) { const i = s.indexOf('~'); if (i > 0 && sloty.has(s.slice(0, i))) sloty.delete(s); }
   const zaznamy = [...sloty]
-    .map(k => { const m = /^(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(\d{2})-(rucne|auto)/.exec(k);     // sloty už jsou jen vynucené
+    .map(k => { const m = /^(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(\d{2})-([a-z-]+)/.exec(k);     // sloty už jsou jen vynucené
       return { t: m ? Date.parse(m[1] + 'T' + m[2] + ':' + m[3] + ':' + m[4] + 'Z') : NaN, druh: m ? m[5] : '', hotova: k.indexOf('~') < 0 }; })
     .filter(x => Number.isFinite(x.t) && x.t <= nyni && nyni - x.t < DEN_MS)
     .sort((a, b) => a.t - b.t);
