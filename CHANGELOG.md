@@ -34,6 +34,11 @@ Nad integrací 60f8fd2 (v27.10.2) + C3 #537 (sloučeno). Rozhodnutí J. V. z dia
 - **Stará ukázka smazána (otázka 11):** `podklady/ukazky/vyrob_controlling_export_v2.js` + `.xlsx`; `.md` odkazuje na
   `nastroje/ukazka_controlling_export.js`. Nová ukázka `podklady/controlling/UKAZKA_2026-CONTROLLING-EXPORT_v27.10.3.xlsx`
   (dvě zakázky s Prodáno), šablona podkladů přegenerovaná (verze 4, otázky Q4, Q6–Q8 podle rozhodnutí).
+- **Navázání na P3 #536 (sloučeno do větve):** karta Prodej ukazuje náhled zápisu ze suchého běhu P3
+  (`POST /api/pd/nanecisto` se `stav: 'won'`, podklad za prodávanou variantu, tabulka `pdnUiTabulka`); bez serveru nebo
+  bez práva `crm.pipedrive` zůstává místní shrnutí `prodPdZapis`. Do zakázky se neukládá hotové tělo PATCH — klientovi
+  se nevěří; odeslání (#510) ho spočítá na serveru ze zmrazených dat, zakázka nese jen stav „čeká na odeslání".
+  Harness `overit_pd_nanecisto` +3 (pojistka: s chybou předání strany 3 FAIL).
 - Bez kódu: záloha (otázka 3 — dělá O-T #529; sloučení s WIP O-T bez konfliktu), PROJ skupiny, účty Helios, termín
   šablony (listopad), sloupec „V nabídce" (nedělá se, #447/3 uzavřen).
 - Testy: nová sada `src/test_controlling_c4.js` 43/0 (pojistka: nad 2ad47f4 9 FAIL; s novým modelem a starým

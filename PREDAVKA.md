@@ -18,6 +18,14 @@ Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno do integrace; na ost
 | 12 verze 4 | ✅ | pravidlo u `CTRL_EXPORT_VERZE`, `CTRL_EXPORT_ZMENA` v listu Popis |
 | ukázka / příručky / CHANGELOG / roadmapa | ✅ | `UKAZKA_2026-CONTROLLING-EXPORT_v27.10.3.xlsx`; příručka obchodníka (Prodáno, filtr) a správce (Controlling); #540 hotovo, #500 zúženo na PROJ + účty Helios |
 
+**Navázání na P3 #536 (sloučeno `origin/claude/p3-pipedrive-simulator` 5a29efc, pokyn koordinace):** karta Prodej
+volá suchý běh P3 se `stav: 'won'` za prodávanou variantu; bez serveru místní `prodPdZapis`. Patch se do zakázky
+NEUKLÁDÁ (klientovi se nevěří) — odeslání #510 ho spočítá serverem (`pdZamyslenyZapis`) ze zmrazených dat.
+**Po sloučení P3 padá `src/test_nazvy_souboru.js` (1 FAIL):** CSV náhledu P3 `pdnNazevSouboru` není přes
+`nazevExportu` (E1 #533) a liší se předponou verze (`_v27.10.3` × `_27.10.3`) — sjednocení E1 × P3 si podle P3 bere
+koordinace; neměněno. Ostatní: `spust_testy` 276 / 1 (tento) / 1 přeskočeno, kolo build,staticke zelené, smoke 50/0,
+overit_controlling 63/0, overit_pd_nanecisto 21/0.
+
 **Datový model Prodáno:** `v.prodano = { datum, kdo, kdy, pipedrive: { stav: 'ceka', kdy } }` u zamčené varianty (jen
 jedna v zakázce); stopa `zak.prodejHistorie` [{ akce prodano/odemceno, varianta, cislo, datum, duvod, kdo, kdy }] — píše
 jen server; odemčení = klient smaže `v.prodano` a pošle `zak.prodejOdemknout = { varianta, duvod }` (server smaže).

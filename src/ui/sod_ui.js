@@ -299,7 +299,47 @@ function prodUiSmiOdemknout() { return PROD_ROLE_ODEMKNOUT.includes(prodUiRole()
 function prodUiDatumText(d) {
   return objDatumPlatne(d) ? d.split('-').reverse().map(x => String(+x)).join('. ') : String(d || '');
 }
-function prodUiNahledHtml(v) {
+/* Náhled zápisu prodeje (P3 #536): online se ptá suchého běhu
+ * POST /api/pd/nanecisto se stavem „won" — tatáž převodní logika jako
+ * budoucí zápis (pdZamyslenyZapis), nic se neodesílá. Podklad se skládá
+ * za PRODÁVANOU variantu (pdnPodklad bere řídící, proto kopie zakázky).
+ * Připravený zápis se do zakázky NEUKLÁDÁ jako hotové tělo PATCH — server
+ * ho při odeslání (#510) spočítá znovu ze zmrazených dat (klientovi se
+ * nevěří); zakázka nese jen stav „čeká na odeslání". */
+const PROD_UI = { nacita: false, chyba: '', data: null, zak: null, varianta: '' };
+function prodUiPodklad(v) {
+  const kopie = JSON.parse(JSON.stringify(ZAK));
+  (kopie.varianty || []).forEach(x => { x.ridici = !!x && x.id === v.id; });
+  kopie.aktivni = v.id;
+  return pdnPodklad(kopie, typeof JEKLY !== 'undefined' ? JEKLY : null, { stav: 'won' });
+}
+function prodUiNahledSpust() {
+  const v = aktivniVarianta(ZAK);
+  if (PROD_UI.nacita || !v) return Promise.resolve(false);
+  const p = prodUiPodklad(v);
+  if (!p.ok) { PROD_UI.chyba = p.chyba; render(); return Promise.resolve(false); }
+  PROD_UI.nacita = true; PROD_UI.chyba = ''; render();
+  return onlineApi('/api/pd/nanecisto', pdnTelo(p))
+    .then(d => { PROD_UI.data = d; PROD_UI.zak = ZAK; PROD_UI.varianta = v.id; return true; })
+    .catch(e => { PROD_UI.chyba = (e && e.message) || String(e); PROD_UI.data = null; return false; })
+    .then(x => { PROD_UI.nacita = false; render(); return x; });
+}
+function prodUiNahledP3(v, strana) {
+  if (typeof pdnPodklad !== 'function' || typeof pdnUiOnline !== 'function' || !pdnUiOnline()
+      || (typeof pdnUiSmi === 'function' && !pdnUiSmi())) return '';
+  if (PROD_UI.zak !== ZAK || PROD_UI.varianta !== v.id) { PROD_UI.data = null; PROD_UI.chyba = ''; }
+  const d = PROD_UI.data;
+  const btn = `<button class="mini" id="prodNahled_${esc(strana)}" onclick="prodUiNahledSpust()" ${PROD_UI.nacita ? 'disabled' : ''}>
+      ${PROD_UI.nacita ? '⏳ Skládám náhled…' : (d ? 'Spustit znovu' : 'Ukázat, co by se zapsalo (deal → Vyhráno)')}</button>`;
+  const chybaBlok = PROD_UI.chyba ? `<div class="note" style="color:var(--red, #c0392b)">${esc(PROD_UI.chyba)}</div>` : '';
+  const tab = d ? `<div class="note">Režim: ${esc((typeof PDN_REZIM !== 'undefined' && PDN_REZIM[d.rezim]) || d.rezim || '')}.
+      <b>Nic se neodeslalo.</b></div>${typeof pdnUiTabulka === 'function' ? pdnUiTabulka(d, 'prod_' + strana) : ''}` : '';
+  return `<details class="prod-nahled" style="margin-top:6px" open><summary>Co by se zapsalo do Pipedrive</summary>
+    ${chybaBlok}${tab}<div class="btns" style="margin:6px 0">${btn}</div></details>`;
+}
+function prodUiNahledHtml(v, strana) {
+  const p3 = prodUiNahledP3(v, strana);
+  if (p3) return p3;
   const z = prodPdZapis(ZAK, v, typeof JEKLY !== 'undefined' ? JEKLY : null);
   if (!z) return '';
   const kc = n => (typeof fmtKc === 'function') ? fmtKc(n) : (Math.round(n).toLocaleString('cs-CZ') + ' Kč');
@@ -331,7 +371,7 @@ function prodejKarta(strana) {
         <span class="note">${esc(p.prodano.kdo || '')}</span></div>
       <div class="note">Krycí list i hlavička zakázky jsou <b>definitivně zamčené</b>. Zápis do Pipedrive (deal → Vyhráno
         a data krycího listu): <b>${esc(pd)}</b> — napojení na Pipedrive zatím není zapnuté, nic se neodeslalo.</div>
-      ${prodUiNahledHtml(v)}
+      ${prodUiNahledHtml(v, strana)}
       ${prodUiSmiOdemknout() ? `<div class="btns" style="margin-top:6px"><button class="mini" onclick="prodejUiOdemkni()">Odemknout prodej</button></div>`
         : '<div class="note">Odemknout prodej smí vedoucí nebo administrátor.</div>'}
       ${stopa}</div>`;
@@ -347,7 +387,7 @@ function prodejKarta(strana) {
       <label class="note">Datum prodeje <input type="date" id="prodejDatum_${esc(strana)}" value="${esc(dnes)}" max="${esc(dnes)}"${proc ? ' disabled' : ''}></label>
       <button class="primary" ${proc ? 'disabled title="' + esc(proc) + '"' : ''} onclick="prodejUiProdej('${escJs(strana)}')">Prodáno</button>
     </div>
-    ${proc ? '' : prodUiNahledHtml(v)}
+    ${proc ? '' : prodUiNahledHtml(v, strana)}
     ${stopa}</div>`;
 }
 async function prodejUiProdej(strana) {
