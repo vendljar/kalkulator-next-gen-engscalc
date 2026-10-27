@@ -193,6 +193,11 @@ test('PATCH v simulátoru se drží v paměti', poZapisu.custom_fields[hSplatnos
 let nezname = null;
 try { await PD.pdZavolej('/api/v2/deals/1001', { metoda: 'PATCH', telo: { custom_fields: { ['f'.repeat(40)]: 1 } } }); } catch (e) { nezname = e; }
 test('PATCH do neznámého pole → 400', nezname && nezname.stav === 400);
+await PD.pdZavolej('/api/v2/deals/1001', { metoda: 'PATCH', telo: { status: 'won' } });
+test('PATCH stavu dealu (C4 „Prodáno") se drží', (await PD.pdZavolej('/api/v2/deals/1001')).status === 'won');
+let spatnyStav = null;
+try { await PD.pdZavolej('/api/v2/deals/1001', { metoda: 'PATCH', telo: { status: 'smazano' } }); } catch (e) { spatnyStav = e; }
+test('PATCH s neznámým stavem → 400', spatnyStav && spatnyStav.stav === 400);
 SIM.pdSimReset();
 test('reset vrátí výchozí data', (await PD.pdZavolej('/api/v2/deals/1001')).custom_fields[hSplatnost] !== 21);
 test('do sítě za celý běh nešlo nic', venku.length === 0, venku);

@@ -32,15 +32,23 @@ Nad integrací 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026 (vlna D, navazuje na
   z `pdZapisDealu`. Bez napojení podle dohodnuté tabulky (režim „dohoda"), se simulátorem i s porovnáním dealu.
   Funkce jen čte (mapa polí, uživatelé, deal) se stropem na uživatele. Export CSV pro integrátora
   `PIPEDRIVE_<rok>-<číslo nabídky>_v<verze>.csv` (konvence E1 #533 lokálně — koordinace po sloučení sjednotí).
+- **Pro C4 #540 („Prodáno"):** `pdZamyslenyZapis(definice, strany, pole, spolecne, { stav: 'won' })`
+  v `netlify/lib/pd_prevod.mjs` sestaví zamýšlený zápis bez sítě a bez UI — `patch` = přesné tělo
+  `PATCH /api/v2/deals/{id}` (custom_fields + value/currency + `status: 'won'`) a tabulka náhledu s řádkem „Stav dealu"
+  (kolize, je-li deal dnes prohraný; u smazaného „nelze"). V prohlížeči `pdnPodklad(ZAK, JEKLY, { stav: 'won' })` +
+  `pdnTelo()` → `POST /api/pd/nanecisto` (nový parametr `stav`, whitelist open/won/lost; odpověď nese `patch`).
+  Simulátor přijímá PATCH stavu dealu.
 - **Oprava (nález simulátoru):** `/api/pd/dealy` a `/api/pd/deal` vracely odmítnutý token Pipedrive jako HTTP 401 —
   klient (`onlineApi`) ho bere za vypršelé přihlášení a obchodníka by odhlásil. Nově 502 jako u `/api/pd/pole` (#114).
 - **Podklady pro J. V.:** `podklady/PIPEDRIVE_TOKEN_POSTUP.md` (kam vložit token a doménu na testengscalc, ověření bez
   prozrazení tokenu, výměna a zrušení, co se stane po zapnutí, simulátor), `podklady/PIPEDRIVE_UPOMINKA_INTEGRATOR.md`
   (koncept upomínky s otázkami z 21. 10., odesílá J. V.), `podklady/PIPEDRIVE_ROZHODNUTI_115.md` (dvě kalkulace
   na jednom dealu — 4 varianty, doporučení „vlastník podle Čísla nabídky v dealu", otázky s možnostmi).
-- **Testy:** `netlify/test_pd_simulator.mjs` (52), `netlify/test_pd_nanecisto.mjs` (62), matice práv
+- **Testy:** `netlify/test_pd_simulator.mjs` (54), `netlify/test_pd_nanecisto.mjs` (72), harness
+  `overit_pd_nanecisto.mjs` (karta v prohlížeči), matice práv
   (`test_prava.mjs`) s novou funkcí. Pojistka: nad 62ea0c8 obě sady nejdou načíst (simulátor ani funkce neexistují);
-  oprava 401 → 502 ověřena vrácením řádku (test spadne s 401). Mutace se značkou „#536" (15).
+  oprava 401 → 502 ověřena vrácením řádku (test spadne s 401). Mutace se značkou „#536" 15/15 chycených
+  (+2 pro stav dealu).
 ## v27.10.1 — A1 #530: poznámka o původním autorství v kódu, větev claude/a1-autorstvi
 
 Nad integrací 1820f81 (pokyn J. V. 27. 10. 2026: „stačí pouze v kódu, že jsem původním autorem této aplikace").

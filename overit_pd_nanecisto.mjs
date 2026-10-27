@@ -55,13 +55,13 @@ await stranka.evaluate(() => {
   };
 });
 
-const karta = () => stranka.evaluate(() => { const el = document.getElementById('pdnKarta'); return el ? el.innerHTML : null; });
+const karta = () => stranka.evaluate(() => { const el = document.getElementById('pdnKarta_ock'); return el ? el.innerHTML : null; });
 
 console.log('\nKarta bez přihlášení');
 const bez = await stranka.evaluate(() => {
   ONLINE_STAV.ja = null; ZAK.cislo = '2026 - OPR - CN - 0901'; ZAK.nazevAkce = 'Zkušební akce';
   prepniTab('kryci'); renderKryci();
-  const el = document.getElementById('pdnKarta');
+  const el = document.getElementById('pdnKarta_ock');
   return { je: !!el, text: el ? el.textContent : '', dotazy: window.__srv.dotazy.length };
 });
 zkus('karta je v krycím listu OCK', bez.je);
@@ -74,15 +74,15 @@ await stranka.evaluate(() => {
   renderKryci();
 });
 zkus('tlačítko „Ukázat, co by se zapsalo" a věta „Nic se neodesílá"', /Ukázat, co by se zapsalo/.test(await karta()) && /Nic se neodesílá/.test(await karta()));
-await stranka.click('#pdnSpust');
+await stranka.click('#pdnSpust_ock');
 await stranka.waitForTimeout(150);
 const po = await stranka.evaluate(() => ({
   dotazy: window.__srv.dotazy.map(d => d.cesta),
   telo: window.__srv.dotazy[0] && window.__srv.dotazy[0].telo,
-  radky: [...document.querySelectorAll('#pdnTabulka tbody tr')].map(tr => [tr.dataset.pdnPole, tr.dataset.pdnStav]),
+  radky: [...document.querySelectorAll('#pdnTabulka_ock tbody tr')].map(tr => [tr.dataset.pdnPole, tr.dataset.pdnStav]),
   kolize: document.querySelectorAll('[data-pdn-kolize]').length,
-  info: (document.getElementById('pdnInfo') || {}).textContent || '',
-  sim: !!document.getElementById('pdnSimulator'),
+  info: (document.getElementById('pdnInfo_ock') || {}).textContent || '',
+  sim: !!document.getElementById('pdnSimulator_ock'),
   xss: window.__xss || 0,
 }));
 zkus('jediný dotaz šel na /api/pd/nanecisto', JSON.stringify(po.dotazy) === '["/api/pd/nanecisto"]', JSON.stringify(po.dotazy));
@@ -96,7 +96,7 @@ zkus('červený pruh simulátoru', po.sim);
 zkus('texty ze serveru se escapují (žádný skript)', po.xss === 0 && /&lt;img/.test(await karta()));
 
 console.log('\nCSV ke stažení');
-await stranka.click('#pdnStahni');
+await stranka.click('#pdnStahni_ock');
 const st = await stranka.evaluate(() => window.__stazeno[0] || null);
 zkus('název PIPEDRIVE_<rok>-<číslo>_v<verze>.csv', st && /^PIPEDRIVE_\d{4}-OPR-CN-0901_v[\d.]+\.csv$/.test(st.jmeno), st && st.jmeno);
 zkus('CSV nese hlavičku, řádky a upozornění', st && /"Pole v Pipedrive";"Typ pole"/.test(st.text) && /Splatnost faktur/.test(st.text) && /SIMULÁTOR/.test(st.text));
@@ -106,26 +106,31 @@ const stare = await stranka.evaluate(() => {
   aktivniVarianta(ZAK).data.kryci = aktivniVarianta(ZAK).data.kryci || { hodnoty: {} };
   aktivniVarianta(ZAK).data.kryci.hodnoty.splatnostDni = '45';
   renderKryci();
-  return !!document.getElementById('pdnStare');
+  return !!document.getElementById('pdnStare_ock');
 });
 zkus('po úpravě krycího listu: „spusťte znovu"', stare);
 const prepnuto = await stranka.evaluate(() => {
   ZAK = novaZakazka(); renderKryci();
-  return { tabulka: !!document.getElementById('pdnTabulka'), tlacitko: /Ukázat, co by se zapsalo/.test(document.getElementById('pdnKarta').innerHTML) };
+  return { tabulka: !!document.getElementById('pdnTabulka_ock'), tlacitko: /Ukázat, co by se zapsalo/.test(document.getElementById('pdnKarta_ock').innerHTML) };
 });
 zkus('jiná zakázka: starý výsledek zmizí', !prepnuto.tabulka && prepnuto.tlacitko);
 
 console.log('\nKrycí list PROJ a práva');
-const proj = await stranka.evaluate(() => { prepniTab('kryciproj'); renderKryciProj(); return !!document.querySelector('#page-kryciproj #pdnKarta'); });
+const proj = await stranka.evaluate(() => { prepniTab('kryciproj'); renderKryciProj(); return !!document.querySelector('#page-kryciproj #pdnKarta_proj'); });
 zkus('karta je i v krycím listu PROJ', proj);
 const bezPrava = await stranka.evaluate(() => {
   const puvodni = window.smiZobrazit;
   window.smiZobrazit = (k) => k === 'crm.pipedrive' ? false : puvodni(k);
-  renderKryci(); const je = !!document.getElementById('pdnKarta');
+  renderKryci(); const je = !!document.getElementById('pdnKarta_ock');
   window.smiZobrazit = puvodni; return je;
 });
 zkus('bez práva crm.pipedrive se karta nekreslí', bezPrava === false);
 
+const dupl = await stranka.evaluate(() => { const ids = [...document.querySelectorAll('[id^="pdn"]')].map(e => e.id);
+  renderKryci(); renderKryciProj();
+  const vse = [...document.querySelectorAll('[id^="pdn"]')].map(e => e.id);
+  return vse.filter((x, i) => vse.indexOf(x) !== i); });
+zkus('žádné id karty není v dokumentu dvakrát (oba krycí listy najednou)', dupl.length === 0, dupl.join(', '));
 zkus('stránka bez chyb v konzoli', chyby.length === 0, chyby.join(' | '));
 await prohlizec.close();
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

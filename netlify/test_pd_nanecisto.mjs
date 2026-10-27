@@ -34,7 +34,7 @@ const { default: uzivatele } = await import('./functions/uzivatele.mjs');
 const { default: pdNanecistoFn, pdNanecistoStrana } = await import('./functions/pd_nanecisto.mjs');
 const { ADMIN_EMAIL } = await import('./lib/sdilene.mjs');
 const { POLE_DEALU, pdMapaZPoli, pdPoleDohodnuta } = await import('./lib/pd_mapa.mjs');
-const { pdZapisDealu, pdNanecisto } = await import('./lib/pd_prevod.mjs');
+const { pdZapisDealu, pdNanecisto, pdZamyslenyZapis } = await import('./lib/pd_prevod.mjs');
 const SIM = await import('./lib/pipedrive_simulator.mjs');
 const { jadro } = await import('./lib/jadro.mjs');
 await jadro();
@@ -184,6 +184,37 @@ const o3 = await post(URL_N, { ...telo, dealId: 999999 }, cObch);
 const d3 = await o3.json();
 test('neznámý deal: náhled projde s varováním, bez porovnání', o3.status === 200 && d3.deal === null
   && d3.varovani.some(t => /999999 se z Pipedrive nenačetl/.test(t)), d3.varovani);
+/* C4 #540 „Prodáno": zamýšlený zápis včetně přepnutí dealu na won. */
+{
+  const pw = G.pdnPodklad(zak, JEKLY, { stav: 'won' });
+  test('C4: podklad nese stav won a tělo ho posílá', pw.stav === 'won' && G.pdnTelo(pw).stav === 'won' && !('stav' in G.pdnTelo(p)));
+  const otevreny = SIM.pdSimStav().data.dealy.find(d => d.status === 'open');
+  const ow = await post(URL_N, { ...G.pdnTelo(pw), dealId: otevreny.id }, cObch);
+  const dw = await ow.json();
+  const rs = radek(dw, 'stavDealu');
+  test('C4: řádek „Stav dealu" → Vyhráno (won), z otevřeného bez kolize', ow.status === 200 && rs.stav === 'zapise'
+    && rs.hodnota === 'won' && /Otevřeno/.test(rs.vCrm) && rs.kolize.length === 0, J(rs));
+  test('C4: patch = custom_fields ze zápisu + value/currency + status won',
+    dw.patch && dw.patch.status === 'won' && dw.patch.currency === 'CZK'
+    && Object.keys(dw.patch.custom_fields).length === dw.radky.filter(r => r.stav === 'zapise' && !['hodnotaDealu', 'stavDealu'].includes(r.klic)).length,
+    J(dw.patch && Object.keys(dw.patch)));
+  test('C4: v simulátoru se stav dealu nezměnil (nic se neodeslalo)',
+    SIM.pdSimStav().data.dealy.find(d => d.id === otevreny.id).status === 'open'
+    && SIM.pdSimStav().pozadavky.every(x => /^GET /.test(x)));
+  const prohrany = SIM.pdSimStav().data.dealy.find(d => d.status === 'lost');
+  const dl = await (await post(URL_N, { ...G.pdnTelo(pw), dealId: prohrany.id }, cObch)).json();
+  test('C4: prohraný deal → kolize „přepne na Vyhráno"', radek(dl, 'stavDealu').kolize.some(k => /Prohráno.*Vyhráno/.test(k)), J(radek(dl, 'stavDealu')));
+  test('C4: neznámý stav → 400', (await post(URL_N, { ...telo, stav: 'deleted' }, cObch)).status === 400);
+  const bez = await (await post(URL_N, telo, cObch)).json();
+  test('C4: bez stavu žádný řádek ani status v patch', !bez.radky.some(r => r.klic === 'stavDealu') && !('status' in bez.patch));
+  let vyj = null; try { pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, {}, { stav: 'smazat' }); } catch (e) { vyj = e; }
+  test('C4: pdZamyslenyZapis odmítne neznámý stav', !!vyj);
+  const sm = pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, { deal: { status: 'deleted' } }, { stav: 'won' });
+  test('C4: smazaný deal → „nelze", status se nepošle', sm.radky.find(r => r.klic === 'stavDealu').stav === 'nelze' && !('status' in sm.patch));
+  const zw = pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, { mena: 'CZK' }, { stav: 'won' });
+  test('C4: patch bez sítě = pdZapisDealu + status', J(zw.patch.custom_fields) === J(zapis.custom_fields)
+    && zw.patch.value === zapis.deal.value && zw.patch.status === 'won');
+}
 SIM.pdSimNastav({ scenar: 'token' });
 pamet.delete('pipedrive/pole');   // mapa z cache by se do Pipedrive vůbec neptala
 const o4 = await post(URL_N, telo, cObch);
@@ -223,7 +254,7 @@ test('název souboru bez čísla zakázky', G.pdnNazevSouboru({}, '', new Date(2
 
 console.log('\n===== UI A SESTAVENÍ (statická kontrola) =====\n');
 const src = (f) => readFileSync(R + f, 'utf8');
-test('karta je v krycím listu OCK i PROJ', /pdnKarta\(\)/.test(src('src/ui/kryci_ui.js')) && /pdnKarta\(\)/.test(src('src/ui/kryci_proj_ui.js')));
+test('karta je v krycím listu OCK i PROJ (každá s vlastní příponou id)', /pdnKarta\('ock'\)/.test(src('src/ui/kryci_ui.js')) && /pdnKarta\('proj'\)/.test(src('src/ui/kryci_proj_ui.js')));
 test('build.py skládá model i UI', /'pd_nanecisto\.js'/.test(src('build.py')) && /'ui\/pd_nanecisto_ui\.js'/.test(src('build.py')));
 const ui = src('src/ui/pd_nanecisto_ui.js');
 test('UI volá jen /api/pd/nanecisto', J(ui.match(/\/api\/[a-z/_]+/g)) === J(['/api/pd/nanecisto']), ui.match(/\/api\/[a-z/_]+/g));
