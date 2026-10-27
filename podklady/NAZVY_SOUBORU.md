@@ -70,6 +70,7 @@ Příklady pro zakázku `2026 - OPR - CN - 555` (PROJ `2026 - OVP - CN - 77`), a
 | Šablony → nepřeložené fráze (CSV) | fráze šablony bez překladu | `sablona_nabidka_nepreloz_en.csv` | `NEPRELOZENE_2026-10-27-SABLONA-NABIDKA-EN_27.10.2.csv` |
 | Technická specifikace → nepřeložené (CSV) | fráze specifikace bez překladu | `neprelozene_en.csv` | `NEPRELOZENE_2026-10-27-SPECIFIKACE-EN_27.10.2.csv` |
 | Nastavení → data specifikace → Export | číselníky a výchozí hodnoty specifikace | `techspec_data.json` | `SPECIFIKACE_2026-10-27-CISELNIKY_27.10.2.json` |
+| Krycí list → Co by se zapsalo do Pipedrive → CSV | náhled zápisu do dealu (suchý běh) | — (nové v P3) | `PIPEDRIVE_2026-OPR-CN-555-NANECISTO_27.10.4.csv` |
 
 ## Výjimky — názvy se NEMĚNÍ
 

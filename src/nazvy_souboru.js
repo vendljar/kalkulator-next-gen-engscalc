@@ -127,6 +127,8 @@ const NAZVY_DRUHY = {
     obsah: [u.sablona ? 'SABLONA-' + String(u.sablona).toUpperCase() : 'SPECIFIKACE', nazevJazyk(u.jazyk)], pripona: 'csv' }),
   /* Data technické specifikace (číselníky a výchozí hodnoty, jen admin). */
   'specifikace-data': u => ({ typ: 'SPECIFIKACE', klic: nazevDen(u.datum), obsah: ['CISELNIKY'], pripona: 'json' }),
+  /* Náhled „Co by se zapsalo do Pipedrive“ (suchý běh) jako CSV pro integrátora. */
+  'pipedrive-nanecisto': u => ({ typ: 'PIPEDRIVE', klic: nazevCislo(u.cislo, 'NOVA'), obsah: ['NANECISTO'], pripona: 'csv' }),
 };
 
 /* nazevExportu('cenik', { ock: true, proj: true }) → 'CENIK_2026-OCK+PROJ_27.10.1.xlsx'.

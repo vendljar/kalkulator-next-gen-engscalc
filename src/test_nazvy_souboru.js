@@ -61,6 +61,7 @@ const TABULKA = [
   ['neprelozene', u({ sablona: 'nabidka_proj', jazyk: 'de' }), 'NEPRELOZENE_2026-10-27-SABLONA-NABIDKA-PROJ-DE_27.10.1.csv'],
   ['neprelozene', u({ jazyk: 'en' }), 'NEPRELOZENE_2026-10-27-SPECIFIKACE-EN_27.10.1.csv'],
   ['specifikace-data', u({}), 'SPECIFIKACE_2026-10-27-CISELNIKY_27.10.1.json'],
+  ['pipedrive-nanecisto', u({ cislo: '2026 - OPR - CN - 555' }), 'PIPEDRIVE_2026-OPR-CN-555-NANECISTO_27.10.1.csv'],
 ];
 TABULKA.forEach(([druh, udaje, cekam]) => {
   const n = N.nazevExportu(druh, udaje);
@@ -176,6 +177,12 @@ test('controlling jmenuje přes nazevExportu (jednotlivě i hromadně)',
   /nazevExportu\('predkalkulace', /.test(UI('controlling_ui.js')) && /nazevExportu\('predkalkulace-hromadna', /.test(UI('controlling_ui.js')));
 test('hláška controllingu nepřidává příponu podruhé (jméno už ji nese)', !/jmeno \+ '\.' \+ format/.test(UI('controlling_ui.js')));
 test('tisk specifikace navrhne jméno PDF (titulek okna)', (UI('techspec_ui.js').match(/tiskSNazvem\(nazevExportu\('specifikace'/g) || []).length === 2);
+
+/* Náhled zápisu do Pipedrive (P3 #536) jde přes konvenci, ne vlastním skládáním. */
+test('CSV náhledu Pipedrive: PIPEDRIVE_<číslo>-NANECISTO_<verze>.csv',
+  N.nazevExportu('pipedrive-nanecisto', { cislo: '2026 - OPR - CN - 0901', verze: 'v27.10.4' }) === 'PIPEDRIVE_2026-OPR-CN-0901-NANECISTO_27.10.4.csv');
+test('pdnNazevSouboru deleguje na nazevExportu',
+  require('./pd_nanecisto.js').pdnNazevSouboru({ cislo: '2026 - OPR - CN - 0901' }, 'v27.10.4') === 'PIPEDRIVE_2026-OPR-CN-0901-NANECISTO_27.10.4.csv');
 
 /* ---------- build: modul je v CORE před dokumenty ---------- */
 const build = fs.readFileSync(path.join(__dirname, '..', 'build.py'), 'utf8');

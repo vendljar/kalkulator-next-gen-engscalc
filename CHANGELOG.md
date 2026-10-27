@@ -13,6 +13,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 Nad integrací 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026 (vlna D, navazuje na #16, #113, #115, #116, #509, #510).
 **Do skutečného Pipedrive se nic nevolá ani nezapisuje**; na ostrém webu, Disku ani v Pipedrive nic.
 
+- **Sloučení s E1 #533 (koordinace):** CSV náhledu se jmenuje podle konvence `PIPEDRIVE_<číslo zakázky>-NANECISTO_<verze>.csv` (`nazevExportu('pipedrive-nanecisto')`, `pdnNazevSouboru` na ni deleguje); test `src/test_nazvy_souboru.js` 139/0 (pojistka: před úpravou 1 FAIL — tabulka nepokrývala druh).
+
 - **Simulátor API Pipedrive** (`netlify/lib/pipedrive_simulator.mjs`): zapne ho `PIPEDRIVE_SIMULATOR=1`; napojený
   v jediném místě sítě (`pdZavolej`), takže překlad chyb, opakování u 429 i stránkování jdou touž cestou jako proti
   Pipedrive; má přednost i před tokenem. Smyšlená data: 230 dealů (dvě stránky s kurzorem, stavy open/won/lost/deleted,

@@ -248,9 +248,9 @@ test('CSV: BOM, středník, hlavička a „nic se neodeslalo"', csv.startsWith('
   && csv.includes('nic se neodeslalo'));
 test('CSV: vzorec v buňce dostane apostrof (B83)', csv.includes('"\'=HYPERLINK(""x"")"'));
 test('CSV: kolize v jedné buňce, upozornění na konci', csv.includes('"a | b"') && csv.includes('"Upozornění";"pozor"'));
-test('název souboru TYP_rok-OBSAH_verze.přípona', G.pdnNazevSouboru({ cislo: '2026 - OPR - CN - 0901' }, 'v27.10.2', new Date(2026, 9, 27))
-  === 'PIPEDRIVE_2026-OPR-CN-0901_v27.10.2.csv', G.pdnNazevSouboru({ cislo: '2026 - OPR - CN - 0901' }, 'v27.10.2', new Date(2026, 9, 27)));
-test('název souboru bez čísla zakázky', G.pdnNazevSouboru({}, '', new Date(2026, 9, 27)) === 'PIPEDRIVE_2026-ZAKAZKA_v0.csv');
+test('název souboru podle konvence #533', G.pdnNazevSouboru({ cislo: '2026 - OPR - CN - 0901' }, 'v27.10.2')
+  === 'PIPEDRIVE_2026-OPR-CN-0901-NANECISTO_27.10.2.csv', G.pdnNazevSouboru({ cislo: '2026 - OPR - CN - 0901' }, 'v27.10.2'));
+test('název souboru bez čísla zakázky', /^PIPEDRIVE_NOVA-NANECISTO(_[0-9.]+)?\.csv$/.test(G.pdnNazevSouboru({}, '')), G.pdnNazevSouboru({}, ''));
 
 console.log('\n===== UI A SESTAVENÍ (statická kontrola) =====\n');
 const src = (f) => readFileSync(R + f, 'utf8');

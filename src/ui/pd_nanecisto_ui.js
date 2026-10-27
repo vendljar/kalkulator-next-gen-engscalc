@@ -44,7 +44,7 @@ function pdnUiStahni() {
     cislo: ZAK.cislo || '', nazevAkce: ZAK.nazevAkce || '', varianta: p.varianta.nazev || p.varianta.id,
     rezim: PDN_REZIM[d.rezim] || d.rezim, deal: d.deal ? d.deal.id : (p.dealId || ''), verze,
   });
-  souborKeStazeni(pdnNazevSouboru(ZAK, verze), csv, 'text/csv;charset=utf-8');
+  souborKeStazeni(nazevExportu('pipedrive-nanecisto', { cislo: ZAK.cislo }), csv, 'text/csv;charset=utf-8');
 }
 
 const PDN_REZIM = {

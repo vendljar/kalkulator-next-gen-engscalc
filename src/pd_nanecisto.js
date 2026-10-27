@@ -127,13 +127,10 @@ function pdnTelo(p) {
  * Konvence názvů souborů `TYP_rok-OBSAH_verze.přípona` (E1 #533 ji zavádí
  * souběžně — tady lokálně, koordinace po sloučení sjednotí): typ PIPEDRIVE,
  * rok, obsah = číslo nabídky bez roku (jen písmena, číslice a pomlčky), verze aplikace. */
-function pdnNazevSouboru(zak, verze, dnes) {
-  const d = dnes instanceof Date ? dnes : new Date();
-  const cislo = String((zak && zak.cislo) || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '').toUpperCase()
-    .replace(new RegExp('^' + d.getFullYear() + '-'), '');   // rok už v názvu je („2026 - OPR - CN - 0901")
-  const ver = String(verze || '').replace(/^v/i, '').replace(/[^0-9.]/g, '');
-  return 'PIPEDRIVE_' + d.getFullYear() + '-' + (cislo || 'ZAKAZKA') + '_v' + (ver || '0') + '.csv';
+function pdnNazevSouboru(zak, verze) {
+  /* Konvence názvů exportů (#533): PIPEDRIVE_<číslo zakázky>-NANECISTO_<verze>.csv */
+  const f = (typeof nazevExportu === 'function') ? nazevExportu : require('./nazvy_souboru.js').nazevExportu;
+  return f('pipedrive-nanecisto', { cislo: zak && zak.cislo, verze: verze || undefined });
 }
 
 /* CSV (středník, BOM kvůli Excelu, buňky přes csvBunka — B83). */
