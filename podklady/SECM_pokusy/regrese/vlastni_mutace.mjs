@@ -131,7 +131,9 @@ async function sady(typ) {
   return { padla: null };
 }
 
-const vyber = M.filter(m => !filtr || (m.id + ' ' + m.nazev + ' ' + m.soubor).toLowerCase().includes(filtr));
+/* filtr: část id/názvu/souboru; více částí oddělených čárkou = kterákoli (např. r-m5,r-m7) */
+const casti = filtr.split(',').map(s => s.trim()).filter(Boolean);
+const vyber = M.filter(m => !casti.length || casti.some(c => (m.id + ' ' + m.nazev + ' ' + m.soubor).toLowerCase().includes(c)));
 console.log('Vlastní mutace bezpečnostních strážců — strom ' + KOREN + ', mutací ' + vyber.length);
 const t0 = Date.now();
 for (const typ of new Set(vyber.map(m => m.typ))) {
