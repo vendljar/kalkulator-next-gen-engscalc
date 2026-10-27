@@ -8437,17 +8437,17 @@
  },
  {
   "id": "529",
-  "vlna": "A",
+  "vlna": "G",
   "stav": "hotovo",
   "dulezitost": "vysoka",
   "slozitost": "S",
   "hotovoV": "v27.10.1",
   "nazev": "O-T: nálezy J. V. z testu v26.10.12 — falešná hláška „Zálohu se nepodařilo pořídit“, pojistka retence fail-closed, skloňování počtů",
   "proc": "J. V. na testengscalc (1 420 zakázek) jednou klikl na „Zálohovat teď“ a dostal žlutě „Zálohu se nepodařilo pořídit: … mladší než 10 minut“, přestože záloha z 9:42:54 vznikla (v přehledu jako „ručně, 1 účtů“).",
-  "detail": "Příčina: automatická záloha po přihlášení správce (slot -auto) obsadila 10minutový odstup K3-N4 a první kliknutí do 10 minut dostalo 429; přehled každou vynucenou zálohu psal „ručně“. Oprava: odstup ruční zálohy jen od ručních (vynuceneLimit s druhem), denní strop 20/24 h dál všechny; přehled „automaticky po přihlášení“; 429 nese posledni + posledniHotova a karta šedě píše „Poslední záloha z HH:MM je hotová. Další ruční záloha půjde v HH:MM.“; druhé volání během běhu se připojí k prvnímu; automatika bez načteného přehledu nic nepořizuje. Pojistka retence (postřeh T1 #528): záznam varování, který není objekt, drží retenci i úklid Disku, potvrdí ho jen hlavní správce heslem a nahradí se čitelným. Skloňování účtů, záznamů, nových / přepsaných. Proč automatika 27. 10. běžela, ač noční záloha z 3:00:31 byla, z obrazovky nejde zjistit (logy funkcí testengscalc).",
-  "hotovoKdyz": "test_529_zalohy.mjs 33/0 (před opravou 20 FAIL), test_529_zaloha_klient.js 17/0 (před 12 FAIL), test_z2_disk_retence +4; mutace #529 17/17, #522 16/16, #523 64/64, #527 49/49, #528 3/3, O7 25/25, O11 10/10; --kontrola server i jádro.",
-  "kde": "`netlify/lib/zalohovani.mjs`, `netlify/functions/zaloha_vynuceno.mjs`, `src/ui/online_ui.js`, `src/uloziste.js`, `netlify/test_529_zalohy.mjs`, `src/test_529_zaloha_klient.js`, `src/test_z2_disk_retence.js`, `netlify/test_o_k9_zalohy.mjs`, `netlify/mutace.mjs` (značka [#529]), `manual/obsah.json` (kap. 30)",
-  "pozn": "Dávka O-T, větev claude/o-t-test-26-10-12 nad 95a1356. Na ostrém webu, Disku ani v Pipedrive nic. Rozhodnutí K3-N4 („ruční i při přihlášení dohromady“) změněno pokynem J. V. (#529) jen pro 10minutový odstup ruční zálohy; denní strop beze změny.",
+  "detail": "Příčina: automatická záloha po přihlášení správce (slot -auto) obsadila 10minutový odstup K3-N4 a první kliknutí do 10 minut dostalo 429; přehled každou vynucenou zálohu psal „ručně“. Oprava: odstup ruční zálohy jen od ručních (vynuceneLimit s druhem), denní strop 20/24 h dál všechny; přehled „automaticky po přihlášení“; 429 nese posledni + posledniHotova a karta šedě píše „Poslední záloha z HH:MM je hotová. Další ruční záloha půjde v HH:MM.“; druhé volání během běhu se připojí k prvnímu; automatika bez načteného přehledu nic nepořizuje. Pojistka retence (postřeh T1 #528): záznam varování, který není objekt, drží retenci i úklid Disku, potvrdí ho jen hlavní správce heslem a nahradí se čitelným. Skloňování účtů, záznamů, nových / přepsaných. Proč automatika 27. 10. běžela, ač noční záloha z 3:00:31 byla, z obrazovky nejde zjistit (logy funkcí testengscalc). Doplňky koordinace: B controlling null = výchozí rozvržení (náhled neutrálně, chování obnovy beze změny; sekce zálohy jako před Z1); C rozklad rejstříku v náhledu (na serveru X + nových Y); E migrace #354 nahradí u starého ceníku C.mustekKc vždy 28 600 Kč/bm + věta v dialogu, import starého Excelu do nového ceníku cenu můstku nezapíše; K9-I3 otisky před obnovou po 6 měsících, nejnovější vždy zůstává.",
+  "hotovoKdyz": "test_529_zalohy.mjs 33/0 (před opravou 20 FAIL), test_529_zaloha_klient.js 17/0 (před 12 FAIL), test_z2_disk_retence +4; mutace #529 17/17, #522 16/16, #523 64/64, #527 49/49, #528 3/3, O7 25/25, O11 10/10; --kontrola server i jádro. Doplňky: test_529 41/0, test_354_mustky +8; mutace server #529 23/23, #523 64/64, jádro #529 3/3, #354 13/13.",
+  "kde": "`netlify/lib/zalohovani.mjs`, `netlify/functions/zaloha_vynuceno.mjs`, `src/ui/online_ui.js`, `src/uloziste.js`, `netlify/test_529_zalohy.mjs`, `src/test_529_zaloha_klient.js`, `src/test_z2_disk_retence.js`, `netlify/test_o_k9_zalohy.mjs`, `netlify/mutace.mjs` (značka [#529]), `manual/obsah.json` (kap. 30), `netlify/functions/obnova.mjs`, `src/engine.js`, `src/cenik.js`, `src/ui/program_ui.js`, `src/retence_zaloh.js`, `src/test_354_mustky.js`, `mutace_jadro.mjs`",
+  "pozn": "Dávka O-T, větev claude/o-t-test-26-10-12 nad 95a1356. Na ostrém webu, Disku ani v Pipedrive nic. Rozhodnutí K3-N4 („ruční i při přihlášení dohromady“) změněno pokynem J. V. (#529) jen pro 10minutový odstup ruční zálohy; denní strop beze změny. Na testengscalc zůstává zveřejněný ceník s C.mustekKc 25 000 (nový tvar) — opraví správce ručně.",
   "zavisi": [
    {
     "id": "528",
@@ -9216,6 +9216,7 @@
     "popis" : "Práce se nedá začít bez cizího vstupu; dokud nepřijde, nemá smysl je plánovat do dávky.",
     "id" : "E"
    },
+   {"id": "G", "nazev": "Vlna G — průběžný rozvoj, opravy a dokumentace", "popis": "Nová práce od 27. 10. 2026, kdy se uzavřely vlny A a B: opravy z testů, dokumentace, drobné úpravy a provoz.", "sloupce": ["#", "Co", "Důležitost", "Složitost", "Poznámka / blokace"]},
    {
     "popis" : "Vědomě odsunuté položky. Nejsou zrušené a nic se z nich nemaže — leží tu s důvodem a datem, aby se za měsíc nikdo neptal, jestli se na ně zapomnělo, nebo se zamítly. Znovu se otevřou jen na výslovný pokyn.",
     "sloupce" : [

@@ -33,7 +33,29 @@ Nad integrací 95a1356 (= test 2c0d71a + předávka; v26.10.12). Na ostrém webu
 - **Texty v Nastavení → Databáze:** „1 účtů" → 1 účet / 2–4 účty / 5+ účtů (`onlineSklon`), „v přehledu
   N posledních", u obnovy „zapíše se N záznamů (N nových, N přepsaných)" a „N záznamů se nevešlo…" se
   skloňují. „Stáhnout zálohu" beze změny (J. V. ověřil, funguje).
-- **Testy:** `netlify/test_529_zalohy.mjs` (33, před opravou 20 FAIL), `src/test_529_zaloha_klient.js`
+- **Doplňky koordinace (test J. V. 27. 10.):**
+  - **B — Controlling v náhledu obnovy.** Řádek „Controlling – … záloha tuto část nenese" nebyla ztráta dat: na
+    serveru nebylo nic uloženého (platí výchozí rozvržení z kódu) a otisk nese `controlling: null`. Sekce zálohy jsou
+    stejné jako před Z1 (zobrazení, popisy, slovník, controlling, zákazníci, podpisy, kniha smazaných, šablony).
+    Náhled teď napíše neutrálně „výchozí rozvržení z kódu — na serveru není nic uloženého" (beze změny); má-li cíl
+    uloženou odchylku, přeskočí se jako dřív (nic se nesmaže), jen s důvodem místo „nenese".
+  - **C — rejstřík v náhledu.** Věta nově rozkládá počet: „rejstřík by pak měl N zakázek (na serveru teď X, nových ze
+    zálohy Y — obnova nic nemaže…)". Kód počítá zakázky v otisku i v náhledu stejně (klíče `z/`); rozdíl 1 492 proti
+    1 420 z testengscalc z obrazovky vysvětlit nejde — rozklad v náhledu ho při dalším pokusu ukáže.
+  - **E — migrace ceníku #354.** Ceník ve starém tvaru (bez referenční šířky) dostane při zveřejnění `C.mustekKc`
+    **vždy** 28 600 Kč/bm — dřív zůstal, když se lišil od platného, a paušál 25 000 Kč/ks se četl jako cena za bm
+    (můstek 1 m × 1,6 m 31 400 místo 35 000). Dialog zveřejnění řekne „Můstek: paušál 25 000 Kč/ks nahrazen cenou
+    28 600 Kč/bm materiálu…". Ceník v novém tvaru se nemění. Import z Excelu: soubor ze starého ceníku (bez kladné
+    ref. šířky) do ceníku v novém tvaru `C.mustekKc` nezapíše a řekne proč. **Na testengscalc už zveřejněný ceník
+    (nový tvar s 25 000 Kč/bm) oprava sama nepřepíše** — správce nastaví 28 600 v Nastavení → Ceník a zveřejní.
+  - **K9-I3 — otisky „před obnovou" po 6 měsících** (`RETENCE_ZALOH_BLOBS.predObnovouMesicu`, hranice jako
+    u měsíčních); nejnovější z nich zůstává vždy, nepotvrzená pojistka úbytku je drží jako ostatní, ruční smazání
+    správcem s heslem zůstává.
+- **Testy:** `netlify/test_529_zalohy.mjs` (41; doplňky před opravou 6 FAIL), `src/test_354_mustky.js` +8 (E; před
+  opravou 6 FAIL), `test_z2_retence` a `test_zalohy` N5 přepsané na nové pravidlo před obnovou. Mutace server „#529"
+  23/23, „#523" 64/64 znovu, „#447" obnova/záloha controllingu 2/2; jádro „#529" 3/3, „#354" 13/13 (`cenik.js` nově
+  v jádru mutací); `--kontrola` server 1060 / jádro 589. Node sady 268/0, prohlížečové dotčené zelené.
+- **Testy (hlavní nález):** `netlify/test_529_zalohy.mjs` (33, před opravou 20 FAIL), `src/test_529_zaloha_klient.js`
   (17 — simulace přihlášení správce + kliknutí proti skutečnému limitu, kroky, dvojklik; před opravou 12 FAIL
   a reprodukuje přesně hlášku z testengscalc včetně „ručně, 1 účtů"), `src/test_z2_disk_retence.js` +4.
   T1 #528 „poškozený záznam → 409" nahrazen novým chováním. Mutace „#529" 17/17; dotčené „#522" 16/16,

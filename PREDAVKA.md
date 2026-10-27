@@ -1,3 +1,34 @@
+# Předávka — 27. 10. 2026: O-T #529 — nálezy J. V. z testu v26.10.12, větev `claude/o-t-test-26-10-12`
+
+Nad `95a1356` (integrace = test 2c0d71a + předávka). **Verze 27.10.1** (koordinace při slučování přečísluje — hlášeno
+v27.10.5). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrém webu, Disku ani v Pipedrive nic.
+Roadmapa #529 hotovo, vlna G (definice vlny převzatá z claude/integrace-16-10).
+
+| bod | stav | jak |
+|---|---|---|
+| 1 falešná hláška zálohy | ✅ | příčina: automatická záloha po přihlášení (`-auto`) obsadila 10min odstup K3-N4 → první klik 429; přehled ji psal „ručně". Odstup ruční jen od ručních (`vynuceneLimit(klice, ted, druh)`), denní strop všechny; přehled „automaticky po přihlášení"; 429 nese `posledni`/`posledniHotova` → šedě „Poslední záloha z 9:42 je hotová. Další ruční záloha půjde v 9:52."; dvojí volání = jedna záloha; automatika bez načteného přehledu nic nepořizuje |
+| 2 pojistka retence | ✅ | `retenceVarovaniPoskozene`: ne-objekt (i false/0/'') = drženo v Netlify i na Disku, hlídka ho ukáže, potvrdí jen hlavní správce heslem (i při volbě „spravce"), potvrzení ho nahradí čitelným |
+| 3 texty | ✅ | `onlineSklon`: 1 účet / 2–4 účty / 5+ účtů, „v přehledu N poslední(ch)", obnova záznamy / nové / přepsané |
+| 4 Stáhnout zálohu | beze změny | |
+| B controlling | ✅ (bez regrese) | sekce zálohy = před Z1; null = výchozí rozvržení → náhled neutrálně „beze změny"; s odchylkou v cíli přeskočí jako dřív |
+| C rejstřík 1492/1420 | ⚠ vysvětleno jen částečně | kód počítá otisk i náhled stejně (klíče `z/`); náhled teď rozkládá „na serveru X, nových ze zálohy Y" — při příštím náhledu bude vidět, odkud rozdíl je |
+| E migrace můstků | ✅ | starý tvar → `C.mustekKc` vždy 28 600 Kč/bm + věta v dialogu zveřejnění; import starého Excelu do nového ceníku cenu můstku nezapíše. **testengscalc: zveřejněný ceník už je v novém tvaru s 25 000 — správce ručně 28 600 a zveřejnit** |
+| K9-I3 | ✅ | otisky před obnovou po 6 měsících (`predObnovouMesicu`), nejnovější vždy, pojistka je drží |
+
+**Testy:** `netlify/test_529_zalohy.mjs` 41/0 (pojistka: hlavní nález 20 FAIL nad 95a1356, doplňky 6 FAIL nad fda8807),
+`src/test_529_zaloha_klient.js` 17/0 (12 FAIL; reprodukuje „ručně, 1 účtů" i žlutou hlášku), `src/test_354_mustky.js`
+69/0 (+8, 6 FAIL), `src/test_z2_disk_retence.js` +4; přepsané: T1 #528 poškozený záznam, test_z2_retence a test_zalohy
+N5 (před obnovou), overit_online K3-N4 (šedá informace). Node 268 sad / 0 selhalo; prohlížečové všechny (s odkazem
+`node_modules` → globální playwright; kód 4 = chybí firemní podklady) zelené, overit_xss 383/0.
+**Mutace** (zúžené sady `KNG_MUTACE_SADY` na zálohové + test_354; nechycené ověřeny plnými sadami): server #529 23/23,
+#522 16/16, #523 64/64 (dvakrát), #527 49/49, #528 3/3, O7 25/25, O11 10/10, K3-N4 7/7, #447 obnova/záloha 2/2;
+jádro #529 3/3, #354 13/13. Přecílené zadání: 4× K3-N4, O11 K4-N13, #527 K9-N1, 4× #523 RETENCE_ZALOH_BLOBS, jádro
+#354 migrace. `--kontrola` server 1060 / jádro 589. Kolo `--jen build,staticke` VŠE ZELENÉ.
+
+**Otevřené pro J. V.:** proč automatika po přihlášení 27. 10. vůbec běžela, ač noční záloha z 3:00:31 byla (logy
+funkcí testengscalc); rozdíl rejstříku C (sloupec „Nové" v náhledu); ceník testengscalc s 25 000 Kč/bm (bod E).
+
+---
 # Předávka — 27. 10. 2026: T1 #528 — testy na 3 přeživší mutace z Testy #198, větev `claude/t1-mutace-zalohy`
 
 Nad `d2de07b` (test, v26.10.12). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze změny**, verze se
