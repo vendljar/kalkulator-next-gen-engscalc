@@ -10,6 +10,31 @@ session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; chování aplikace ani UI beze 
 - Test `src/test_autorstvi.js` (12 kontrol; bez `dist/` ověří jen vkládání v build.py — job mutací). Pojistka nad
   1820f81 0/12. Mutace „#530" jádro 1/1, server 1/1; sada je v PRIORITA jádra a první v SADY serveru.
 - Při slučování: hlavička je jen první řádek čtyř zdrojů — konflikt s M7/M8/O-T jen tehdy, když mění první řádek.
+# Předávka — 27. 10. 2026: M7 #531 — 3. vydání vizuálního manuálu výpočtu OCK, větev `claude/m7-manual-vypoctu`
+
+Nad `1820f81` (test, v26.10.12). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze změny**, verze se
+nezvyšuje (CHANGELOG „Dokumentace“). Neslučováno; na ostrém webu, Disku ani v Pipedrive nic.
+
+**Hotovo:** „Jak kalkulačka počítá OCK" — 3. vydání pro v26.10.12, 28 stran A4 (HTML + PDF), poslané J. V. přes
+SendUserFile (hotový manuál do repa nepatří). Kapitoly 1–17 aktualizované; nové: můstky podle rozměru (#354, kap. 11,
+vzorový můstek 1 000 mm, kap. 15 řádky MATERIÁL / MONTÁŽ MŮSTKŮ), střecha přes můstek, měď, cena dle nabídky,
+izolační dvojsklo, lakovna B, standard můstku, cenové výjimky; kap. 17 = změny v15.10.14 → v26.10.12 po verzích
++ co se chystá (#525, #500, #159).
+
+**Nástroj pro příští vydání:** `manual_vypocet/` — `data.js` (čísla z jádra, zkušební ceník + smyšlené doplnění
+`DOPLNENI_CENIKU`), `sablona.html`, `sestav.js` (`--out`, `--pdf`, `--snapshot`), `sestav.sh` (výroba + test),
+`cisla_vydani.json` (čísla vydaného 3. vydání). Test `src/test_manual_vypocet.js` 12/0 (s `KNG_MANUAL_HTML` 14/0) —
+**změní-li dávka výpočet, test spadne**: pak manuál vydat znovu (`bash manual_vypocet/sestav.sh <složka>`,
+`node manual_vypocet/sestav.js --snapshot`, kap. 17 doplnit). Pojistka: max → min v montáži můstků → FAIL.
+
+**Ověření:** `spust_testy.sh` 269 prošlo / 0 / 1 přeskočeno (test.js); `kontrola_udaju.py` čistá (nově i
+`manual_vypocet/`, ověřeno i nad hotovým HTML a textem PDF); roadmapa `--kontrola` 529 položek, `overit_roadmapu` 13/0.
+Statická kontrola verze hlásí „verze.txt 26.10.12 × commit z 27. 10." — totéž platí pro základ 1820f81 (dokumentační
+dávka verzi nezvyšuje; rozhodne koordinace při slučování).
+
+**Pro J. V. / koordinaci:** číslo roadmapy #529 přidělila dávka (případně přečíslovat). Sazba montáže můstků v manuálu
+je zkušební 500 Kč/h a referenční šířka 1 600 mm / 8 h + 8 h/bm / min 16 h ze schváleného návrhu — výchozí migrační
+cena 28 600 Kč/bm a 400 Kč/h se v manuálu záměrně neuvádí.
 
 ---
 # Předávka — 27. 10. 2026: T1 #528 — testy na 3 přeživší mutace z Testy #198, větev `claude/t1-mutace-zalohy`
