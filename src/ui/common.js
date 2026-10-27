@@ -293,9 +293,12 @@ function zobrazeniRole() {
     return NAST.jeAdmin ? 'Administrátor' : (NAST.nahledRole || 'Obchodník');
   return (ja && ja.role) ? ja.role : 'Obchodník';
 }
+/* Od #539 (27. 10. 2026) se ptá `zobrazeniVidi`: administrátor se řídí svým
+ * sloupcem matice (prvky nutné k návratu vidí vždy). Je to jen obrazovka —
+ * práva drží server přes `zobrazeniSmi`, kde administrátor smí vždy. */
 function smiZobrazit(klic) {
-  if (typeof zobrazeniSmi !== 'function') return true;   // pojistka při sestavení
-  return zobrazeniSmi(zobrazeniRole(), klic, NAST.zobrazeni);
+  if (typeof zobrazeniVidi !== 'function') return true;   // pojistka při sestavení
+  return zobrazeniVidi(zobrazeniRole(), klic, NAST.zobrazeni);
 }
 /* Některá místa skrývají celý blok až tehdy, když je skrytý každý jeho kus —
  * třeba řádek tlačítek ceníku nemá smysl kreslit prázdný. */

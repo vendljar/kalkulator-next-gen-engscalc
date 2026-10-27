@@ -159,10 +159,13 @@ await page.waitForTimeout(300);
 
 test('v liště Nastavení je záložka „Zobrazení"',
   await page.locator('.nast-tabs >> text=Zobrazení').isVisible());
+/* Od #539 (27. 10. 2026) má matice i sloupec Administrátor: přepínatelné
+ * políčko u každého prvku kromě zamčených (adminZamek). */
 test('panel vypíše všechny prvky matice',
   await page.evaluate(() => document.querySelectorAll(
     '#nastaveni-panel input[onchange^="zobrSet"]').length
-    === ZOBRAZENI_PRVKY.filter(p => !p.pevne).length * ZOBRAZENI_ROLE_PRIDELITELNE.length));
+    === ZOBRAZENI_PRVKY.filter(p => !p.pevne).length * ZOBRAZENI_ROLE_PRIDELITELNE.length
+      + ZOBRAZENI_PRVKY.filter(p => !p.adminZamek).length));
 test('prvky držené serverem nemají políčko k zaškrtnutí',
   await page.evaluate(() => {
     const pevne = ZOBRAZENI_PRVKY.filter(p => p.pevne).map(p => p.klic);
@@ -259,6 +262,111 @@ test('rychlé proklikání víc políček je jeden zápis',
 test('uložilo se všechno proklikané',
   await page.evaluate(() => ['tab.proj', 'tab.detailproj', 'tab.kryciproj']
     .every(k => (ONLINE_STAV.zobrazeni.matice[k] || {})['Vedoucí'] === true)));
+
+/* ---------- 3a) #539 sloupec Administrátor (27. 10. 2026) ----------
+ *
+ * Pokyn J. V.: „Do konfigurace zobrazení mi ještě přidej sloupec zobrazení
+ * Administrátora. Ani já už nepotřebuji zobrazovat některé položky." Správce
+ * si smí prvek skrýt, ale ne ten, bez kterého by se nevrátil (zámek); skrytí
+ * je jen obrazovka, práva se nemění; server matici, která by zamčený prvek
+ * odebrala, odmítne. Pojistka: před změnou (62ea0c8) sloupec v panelu není
+ * a oddíl padá; po změně projde. */
+const snimek539 = await page.evaluate(() => JSON.stringify(NAST.zobrazeni));
+await page.evaluate(() => { NAST.panel = 'zobrazeni'; otevriNastaveni(); });
+await page.waitForTimeout(200);
+test('#539 matice má sloupec Administrátor mezi Vedoucí a Doporučení',
+  await page.evaluate(() => {
+    const th = [...document.querySelectorAll('#nastaveni-panel table.sd-tbl thead tr')][0];
+    const t = th ? [...th.querySelectorAll('th')].map(x => x.textContent.trim()) : [];
+    const i = t.indexOf('Administrátor');
+    return i > 0 && t[i - 1] === 'Vedoucí' && t[i + 1] === 'Doporučení';
+  }));
+test('#539 výchozí stav: administrátorovi je zaškrtnuté všechno (dnešek se nemění)',
+  await page.evaluate(() => [...document.querySelectorAll(
+    '#nastaveni-panel input[onchange*="\'Administrátor\'"]')].every(x => x.checked)
+    && ZOBRAZENI_PRVKY.every(p => smiZobrazit(p.klic))));
+test('#539 zamčené prvky mají zašedlé zaškrtnuté políčko s vysvětlením a nejdou přepnout',
+  await page.evaluate(() => {
+    const zam = ZOBRAZENI_PRVKY.filter(p => p.adminZamek).map(p => p.klic);
+    const html = document.getElementById('nastaveni-panel').innerHTML;
+    const bunky = [...document.querySelectorAll('#nastaveni-panel td.zobr-zamek')];
+    return zam.length >= 5 && bunky.length === zam.length
+      && bunky.every(td => td.querySelector('input:checked:disabled') && /nedostal zpět/.test(td.title))
+      && zam.every(k => !html.includes(`zobrSet('${k}', 'Administrátor'`));
+  }));
+test('#539 zámek kryje Nastavení, Zobrazení, Uživatele, zveřejnění ceníku a zálohu',
+  await page.evaluate(() => ['nastaveni.otevrit', 'nastaveni.zobrazeni', 'nastaveni.uzivatele',
+    'cenik.zverejnit', 'zaloha.vynucena'].every(k => zobrazeniPrvek(k).adminZamek === true)));
+await page.evaluate(() => zobrSet('nastaveni.zobrazeni', 'Administrátor', false));
+test('#539 zamčený prvek nejde odškrtnout ani z konzole',
+  await page.evaluate(() => (NAST.zobrazeni['nastaveni.zobrazeni'] || {})['Administrátor'] !== false
+    && smiZobrazit('nastaveni.zobrazeni')));
+
+await page.evaluate(() => { ZOBR_ULOZ.stav = ''; zobrSet('tab.cenik', 'Administrátor', false); });
+await cekejUlozeno();
+test('#539 odškrtnutí ve sloupci Administrátor se uloží na server',
+  await page.evaluate(() => (ONLINE_STAV.zobrazeni.matice['tab.cenik'] || {})['Administrátor'] === false));
+test('#539 skutečný pohled administrátora záložku Ceník OCK skryje',
+  await page.evaluate(() => {
+    zavriNastaveni(); render();
+    const b = document.getElementById('tab-cenik');
+    return NAST.jeAdmin === true && !tabViditelny('cenik') && !!b && b.style.display === 'none';
+  }));
+test('#539 skrytí je jen zobrazení — právo administrátora (zobrazeniSmi) zůstává',
+  await page.evaluate(() => zobrazeniSmi('Administrátor', 'tab.cenik', NAST.zobrazeni) === true));
+test('#539 počet odchylek proti výchozímu rozdělení započítá i sloupec Administrátor',
+  await page.evaluate(() => {
+    NAST.panel = 'zobrazeni'; otevriNastaveni();
+    const z = zobrazeniZmeny(NAST.zobrazeni);
+    const txt = document.getElementById('nastaveni-panel').innerText;
+    return z.some(x => x.klic === 'tab.cenik' && x.role === 'Administrátor')
+      && txt.includes('máte v tabulce ' + z.length + ' odchylek');
+  }));
+
+/* Server: matice, která administrátorovi bere zamčený prvek, neprojde. */
+const odm539 = await page.evaluate(async () => {
+  const r = await fetch('/api/zobrazeni', { method: 'POST', body: JSON.stringify({
+    matice: { 'nastaveni.otevrit': { 'Administrátor': false } }, hesloSpravce: 'Zkusebni.Heslo.123' }) });
+  return { status: r.status, ...(await r.json()) };
+});
+test('#539 server odmítne uložit matici, která adminovi skryje Nastavení (400 adminZamek)',
+  odm539.status === 400 && odm539.kod === 'adminZamek', odm539);
+test('#539 po odmítnutí zůstala na serveru předchozí matice',
+  await page.evaluate(async () => {
+    const r = await fetch('/api/zobrazeni'); const t = await r.json();
+    return (t.zobrazeni.matice['tab.cenik'] || {})['Administrátor'] === false
+      && (t.zobrazeni.matice['nastaveni.otevrit'] || {})['Administrátor'] === true;
+  }));
+
+/* Skryje-li si správce všechno, co jde, cesta zpět zůstane. */
+test('#539 i po skrytí všeho nezamčeného zůstane Nastavení → Zobrazení i obě předlohy',
+  await page.evaluate(() => {
+    ZOBRAZENI_PRVKY.filter(p => !p.adminZamek).forEach(p => zobrSet(p.klic, 'Administrátor', false));
+    zavriNastaveni(); render();
+    const kolo = document.body.classList.contains('smi-nastaveni');
+    NAST.panel = 'zobrazeni'; otevriNastaveni();
+    const panel = nastPanelAktivni().id === 'zobrazeni';
+    const html = document.getElementById('nastaveni-panel').innerHTML;
+    return kolo && panel && html.includes("zobrPredloha('navrh')") && html.includes("zobrPredloha('vychozi')")
+      && nastPanelyViditelne().some(x => x.id === 'uzivatele') && nastPanelyViditelne().some(x => x.id === 'databaze');
+  }));
+await page.evaluate(() => zobrPredloha('vychozi'));
+await page.waitForTimeout(150);
+test('#539 „Vrátit na dnešní stav" vrátí administrátorovi všechno',
+  await page.evaluate(() => ZOBRAZENI_PRVKY.every(p => smiZobrazit(p.klic))
+    && zobrazeniZmeny(NAST.zobrazeni).length === 0));
+await page.evaluate(() => zobrPredloha('navrh'));
+await page.waitForTimeout(150);
+test('#539 „Použít doporučení" vyplní i sloupec Administrátor (složka _DB skrytá, zamčené vidí)',
+  await page.evaluate(() => !smiZobrazit('uloziste.slozka') && smiZobrazit('tab.cenik')
+    && ZOBRAZENI_PRVKY.filter(p => p.adminZamek).every(p => smiZobrazit(p.klic))));
+/* úklid: matice zpět na stav před oddílem, ať další oddíly počítají s tím, s čím dřív */
+await page.evaluate((m) => { NAST.zobrazeni = JSON.parse(m); ZOBR_ULOZ.stav = ''; return zobrUlozHned(); }, snimek539);
+await page.evaluate(() => { zavriNastaveni(); render(); });
+test('#539 úklid: matice je zpět a uložená', await page.evaluate(() =>
+  ONLINE_STAV.zobrazeni.matice['tab.cenik']['Administrátor'] === true
+  && (ONLINE_STAV.zobrazeni.matice['tab.detail'] || {})['Obchodník'] === true
+  && ZOBR_ULOZ.stav === 'ulozeno'));
 
 /* ---------- 3b) režimy sekcí kalkulace + přidávání položek (19. 8. 2026) ----------
  *

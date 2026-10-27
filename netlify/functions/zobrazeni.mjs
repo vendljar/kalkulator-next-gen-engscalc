@@ -9,7 +9,8 @@
  *
  * GET  /api/zobrazeni  → { ok, zobrazeni: { matice, kdo, kdy } | null } — každý přihlášený
  * POST /api/zobrazeni { matice, hesloSpravce } → uložit — JEN Administrátor
- *      s potvrzením vlastním heslem (B168, 18. 10. 2026)
+ *      s potvrzením vlastním heslem (B168, 18. 10. 2026); matice, která by
+ *      administrátorovi skryla zamčený prvek (#539), → 400 kod 'adminZamek'
  *
  * Ukládá se do úložiště `program` pod klíč `zobrazeni`, aby to noční otisk
  * i ruční záloha braly s sebou jedním čtením.
@@ -56,6 +57,17 @@ export default async (req) => {
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
   /* B168: matice řídí i serverová práva — jen s vlastním heslem správce. */
   { const stop = await potvrdHesloSpravce(req, relace, t.hesloSpravce); if (stop) return stop; }
+
+  /* #539 (27. 10. 2026): sloupec Administrátor smí správci prvky skrýt, ale
+   * ne ty, bez kterých by se nedostal zpět (Nastavení, Zobrazení, Uživatelé,
+   * Firma, Konfigurace, zveřejnění ceníku, záloha). Matici, která je odebírá,
+   * server odmítne celou — tichá oprava by klientovi zatajila, že jeho volba
+   * neplatí. Očista níž je druhá pojistka (zamčené vždy true). */
+  const zamcene = ZOB.zobrazeniAdminZamekPorusen(t.matice);
+  if (zamcene.length)
+    return json({ ok: false, kod: 'adminZamek', zamcene,
+      chyba: 'Tyto prvky nelze administrátorovi skrýt (bez nich by se nedostal zpět k nastavení): '
+        + zamcene.join(', ') + '.' }, 400);
 
   const matice = ZOB.zobrazeniOciste(t && t.matice);
   const zaznam = { matice, kdo: relace.email, kdy: new Date().toISOString() };

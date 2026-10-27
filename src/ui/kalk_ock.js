@@ -2050,7 +2050,9 @@ function renderOutputs() {
    * výjimka pro všechny („zviditelnit pro běžného uživatele") a smí ho jen
    * skutečný administrátor — ne kdokoli se sloupci nákladů. */
   const kpiAdmin = zobrazeniRole() === 'Administrátor';
-  const vidKpi = k => kpiAdmin || smiZobrazit('kpi.marze') || kv[k];
+  /* Administrátor se od #539 řídí svým sloupcem matice (výchozí = vidí);
+   * ruční výjimka kv[k] je pro ostatní, správci ukazatel nevrací. */
+  const vidKpi = k => kpiAdmin ? smiZobrazit('kpi.marze') : (smiZobrazit('kpi.marze') || kv[k]);
   const kpiChk = k => kpiAdmin ? `<input type="checkbox" class="kpi-chk" ${kv[k] ? 'checked' : ''} onchange="kpiVidSet('${k}', this.checked)" title="zviditelnit pro běžného uživatele">` : '';
   const kpiLine = (k, label, val) => vidKpi(k)
     ? `<div class="kpi-line"><span class="kl">${label}${kpiChk(k)}</span><span class="kv">${val}</span></div>` : '';

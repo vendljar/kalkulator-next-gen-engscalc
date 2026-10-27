@@ -1428,6 +1428,10 @@ function zobrUlozPopis() {
 
 function zobrSet(klic, role, v) {
   if (!jeAdmin()) return;
+  /* #539: prvek nutný k návratu administrátorovi skrýt nejde (zamčené
+   * zaškrtávátko; server by takovou matici stejně odmítl). */
+  const p = (typeof zobrazeniPrvek === 'function') ? zobrazeniPrvek(klic) : null;
+  if (role === ZOBRAZENI_ROLE_VZDY && p && p.adminZamek && !v) return;
   const m = zobrMatice();
   if (!m[klic]) m[klic] = {};
   m[klic][role] = !!v;
@@ -1439,16 +1443,14 @@ function zobrSet(klic, role, v) {
 async function zobrPredloha(ktera) {
   if (!jeAdmin()) return;
   if (!await potvrd(ktera === 'navrh'
-    ? 'Přepsat celou tabulku doporučením?\n\nDoporučení je návrh, co dát obchodníkovi a co vedoucímu. '
-      + 'Vaše dosavadní zaškrtnutí se ztratí. Zveřejnit se to musí zvlášť.'
+    ? 'Přepsat celou tabulku doporučením?\n\nDoporučení je návrh, co dát obchodníkovi, vedoucímu '
+      + 'a co nechat administrátorovi. Vaše dosavadní zaškrtnutí se ztratí a doporučení se hned uloží.'
     : 'Vrátit celou tabulku na stav před zavedením tohoto nastavení?\n\n'
       + 'Tedy: administrátor vidí všechno, obchodník i vedoucí nic navíc.')) return;
   const m = zobrMatice();
   ZOBRAZENI_PRVKY.forEach(p => {
     if (!m[p.klic]) m[p.klic] = {};
-    ZOBRAZENI_ROLE_PRIDELITELNE.forEach(r => {
-      m[p.klic][r] = p.pevne ? false : !!(ktera === 'navrh' ? p.navrh : p.vychozi)[r];
-    });
+    ZOBRAZENI_ROLE_MATICE.forEach(r => { m[p.klic][r] = zobrazeniPredloha(p, r, ktera); });
   });
   zobrUlozBrzy();
   nastRefresh();
@@ -1475,6 +1477,11 @@ function nastZobrazeni() {
   const online = typeof onlineZobrazeniPopis === 'function' ? onlineZobrazeniPopis() : '';
 
   const bunka = (p, r) => {
+    if (r === ZOBRAZENI_ROLE_VZDY && p.adminZamek)
+      return `<td style="text-align:center" class="zobr-zamek" title="Zamčeno: bez tohoto prvku by se administrátor nedostal zpět do Nastavení → Zobrazení, k účtům nebo k záloze a obnově."><input type="checkbox" checked disabled> 🔒</td>`;
+    if (r === ZOBRAZENI_ROLE_VZDY)
+      return `<td style="text-align:center"><input type="checkbox" ${zobrazeniVidi(r, p.klic, m) ? 'checked' : ''}
+      onchange="zobrSet('${escJs(p.klic)}', '${escJs(r)}', this.checked)"></td>`;
     if (p.pevne)
       return `<td style="text-align:center" title="Drží server – přidělit nejde">—</td>`;
     return `<td style="text-align:center"><input type="checkbox" ${m[p.klic] && m[p.klic][r] ? 'checked' : ''}
@@ -1486,25 +1493,28 @@ function nastZobrazeni() {
     if (!prvky.length) return '';
     const radky = prvky.map(p => `<tr>
       <td>
-        <b>${esc(p.nazev)}</b>${p.pevne ? ' <span class="note" style="display:inline">(drží server)</span>' : ''}
+        <b>${esc(p.nazev)}</b>${p.pevne ? ' <span class="note" style="display:inline">(drží server)</span>' : ''}${p.adminZamek ? ' <span class="note" style="display:inline">(administrátorovi nejde skrýt)</span>' : ''}
         <div class="note" style="margin:2px 0 0">${esc(p.kde)}</div>
         <div class="note" style="margin:2px 0 0">${esc(p.popis)}</div>
         <div class="note" style="margin:2px 0 0;font-style:italic">${esc(p.proc)}</div>
       </td>
-      ${ZOBRAZENI_ROLE_PRIDELITELNE.map(r => bunka(p, r)).join('')}
-      <td class="note" style="font-size:11.5px">${ZOBRAZENI_ROLE_PRIDELITELNE
-        .filter(r => p.navrh[r]).map(r => esc(r)).join(', ') || '—'}</td>
+      ${ZOBRAZENI_ROLE_MATICE.map(r => bunka(p, r)).join('')}
+      <td class="note" style="font-size:11.5px">${ZOBRAZENI_ROLE_MATICE
+        .filter(r => zobrazeniPredloha(p, r, 'navrh')).map(r => esc(r)).join(', ') || '—'}</td>
     </tr>`).join('');
     return `<div class="sec-title">${esc(s.nazev)}</div>
       <table class="sd-tbl"><thead><tr>
         <th style="width:52%">Prvek rozhraní</th>
-        ${ZOBRAZENI_ROLE_PRIDELITELNE.map(r => `<th style="text-align:center">${esc(r)}</th>`).join('')}
+        ${ZOBRAZENI_ROLE_MATICE.map(r => `<th style="text-align:center">${esc(r)}</th>`).join('')}
         <th>Doporučení</th>
       </tr></thead><tbody>${radky}</tbody></table>`;
   }).join('');
 
-  return `<div class="note" style="margin-top:0">Tabulka říká, co uvidí <b>obchodník</b> a co <b>vedoucí</b>.
-      Administrátor vidí vždycky všechno — kdyby si mohl něco odebrat, neměl by se jak dostat zpátky sem.
+  return `<div class="note" style="margin-top:0">Tabulka říká, co uvidí <b>obchodník</b>, <b>vedoucí</b>
+      a <b>administrátor</b>. Sloupec Administrátor je jen o tom, co máte na obrazovce — co smíte provést,
+      se skrytím nemění. Prvky se zámkem 🔒 administrátorovi skrýt nejde: bez nich by se nedostal zpátky
+      sem, k účtům ani k zálohám a obnově. Tlačítka <b>Použít doporučení</b> a <b>Vrátit na dnešní stav</b>
+      jsou tu proto vždy po ruce.
       Prvky označené <b>(drží server)</b> se nepřidělují: zveřejnit ceník, spravovat účty nebo pořídit
       otisk databáze hlídá i server, takže by tlačítko sice svítilo, ale skončilo by chybou.</div>
 
@@ -1545,7 +1555,9 @@ function nastZobrazeni() {
       Seznam účtů se bere z panelu <b>Uživatelé</b>; když je prázdný, otevřete ho jednou, ať se načte.</div>
     <div class="note">Náhled přepíná jen to, co je vidět na obrazovce, a je <b>jen ke čtení</b> —
       v cizím pohledu se nic nezapíše, aby v zakázce nezůstala změna bez jasného autora.
-      Co se smí skutečně provést, hlídá server podle role účtu — náhledem se práva nezískávají.</div>
+      Co se smí skutečně provést, hlídá server podle role účtu — náhledem se práva nezískávají.
+      <b>Administrátor (skutečný pohled)</b> se řídí sloupcem Administrátor — co v něm odškrtnete,
+      zmizí i vám.</div>
 
     ${skupiny}`;
 }
