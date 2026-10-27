@@ -21,6 +21,13 @@ Chování aplikace ani UI beze změny; na ostrém webu, Disku ani v Pipedrive ni
 - **Test `src/test_autorstvi.js`** ověří přesné znění ve všech výskytech i v sestavení — smazání nebo změna =
   test, kolo i Actions spadnou. Pojistka: nad 1820f81 0/12, po změně 12/0. Mutace se značkou [#530]
   (smazání hlavičky `engine.js`, změna textu v `lib/sdilene.mjs`) chycené 1/1 + 1/1.
+## Dokumentace (bez nové verze aplikace) — M8 #532: rozšířená příručka pro administrátora, větev claude/m8-prirucka-admin
+
+Nad 1820f81 (v26.10.12). Pokyn J. V. 27. 10. 2026: „rozšířený uživatelský manuál i s informacemi pro administrátora … kompletní balíček informací“. Kód aplikace beze změny.
+
+- Část A (15 kapitol, 62 kroků, 32 snímků správce): role a práva, Nastavení po záložkách, ceník a verze, zálohy a obnova, provoz (engscalc / testengscalc, Netlify, GitHub, Disk, Pipedrive), testování, řešení potíží; bez hesel, hodnot proměnných a skutečných cen. Část B: celá příručka obchodníka.
+- Zdroj `manual/admin/obsah.json`, sestavení `manual/admin/sestav.sh` + `spojit.js`, snímky `manual/snimky_admin.mjs`; test `src/test_prirucka_admin.js`, `overit_prirucka_admin.mjs`. Hotová příručka do repa nejde.
+
 ## Dokumentace (bez nové verze aplikace) — M7 #531: 3. vydání vizuálního manuálu výpočtu OCK pro v26.10.12, větev claude/m7-manual-vypoctu
 
 Nad 1820f81 (v26.10.12). Pokyn J. V. 27. 10. 2026: „kompletně aktualizovat manuál všech výpočtů o novinky mezi
