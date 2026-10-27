@@ -302,3 +302,182 @@ export function pdZapisDealu(definice, strany, pole, spolecne = {}) {
   }
   return { custom_fields, deal, duvody, zapsano, potvrzeni };
 }
+
+/* ============================================================
+ * SUCHÝ BĚH ZÁPISU (#536, 27. 10. 2026)
+ *
+ * „Co by se zapsalo do Pipedrive" — tabulka pole v Pipedrive → hodnota →
+ * zdroj v kalkulaci, s upozorněním na nedopsaná pole, hodnoty, které nejde
+ * převést, a kolize. NIC SE NEODESÍLÁ. Rozhoduje TÁŽ logika jako zápis
+ * (pdDoPd po stranách, OCK má přednost, PROJ nenahrazuje nepřevoditelnou
+ * hodnotu OCK) — test hlídá, že řádky „zapíše" jsou přesně custom_fields
+ * z pdZapisDealu. Náhled tak nemůže slibovat něco jiného, než pak odejde.
+ *
+ * Stav řádku:
+ *   zapise      hodnota se převedla a odešla by,
+ *   nelze       hodnota je vyplněná, ale převést ji nejde (důvod),
+ *   chybiPole   pole v Pipedrive chybí / má jiný typ — nic by se nezapsalo,
+ *   neovereno   uživatel Pipedrive se dohledá až při zápisu (bez seznamu
+ *               uživatelů, tedy bez napojení),
+ *   prazdne     v kalkulaci nevyplněno — do CRM nic (zápis nikdy nemaže).
+ * Kolize (seznam vět u řádku):
+ *   · OCK a PROJ mají pro totéž pole různé hodnoty — zapíše se OCK,
+ *   · v CRM je dnes jiná hodnota — zápis ji přepíše (jen když je deal znám).
+ * `zdroje` = { ock: { id → popis pole v kalkulaci }, proj: {…} } — popisky
+ * posílá klient (zná krycí list), server je jen opisuje.
+ * ============================================================ */
+export const PD_NANECISTO_STAVY = ['zapise', 'nelze', 'chybiPole', 'neovereno', 'prazdne'];
+
+/* Hodnota pole Pipedrive jako text pro člověka: volba podle ID → text,
+ * částka → „12 300 CZK", uživatel → jméno. Rozumí hodnotě k zápisu
+ * (ID, pole ID, { value, currency }) i hodnotě z dealu v API v2. */
+export function pdZobraz(hodnota, popis, spolecne = {}) {
+  if (hodnota === null || hodnota === undefined || hodnota === '') return '';
+  const volby = (popis && popis.volby) || [];
+  const typ = popis && popis.typ;
+  if (Array.isArray(hodnota)) return hodnota.map((h) => pdZobraz(h, popis, spolecne)).filter(Boolean).join(', ');
+  if (typeof hodnota === 'object') {
+    if (hodnota.label !== undefined) return String(hodnota.label);
+    if (typeof hodnota.value === 'number' && hodnota.currency !== undefined) return pdKcText(hodnota);
+    if (hodnota.name !== undefined) return String(hodnota.name);
+    if (hodnota.value !== undefined) return pdZobraz(hodnota.value, popis, spolecne);
+    if (hodnota.id !== undefined) return pdZobraz(hodnota.id, popis, spolecne);
+    return '';
+  }
+  if ((typ === 'enum' || typ === 'set') && volby.length) {
+    const o = volby.find((x) => String(x.id) === String(hodnota));
+    if (o) return String(o.label);
+  }
+  if (typ === 'user' && Array.isArray(spolecne.uzivatele)) {
+    const u = spolecne.uzivatele.find((x) => String(x.id) === String(hodnota));
+    if (u) return String(u.name || u.email || hodnota);
+  }
+  return String(hodnota);
+}
+
+function pdZdrojText(def, strana, zdroj, zdroje) {
+  const popisky = (zdroje && zdroje[strana]) || {};
+  return [].concat(def.kl[strana]).map((id) => {
+    const p = popisky[id] || (id === '@atyp' ? 'Kalkulace OCK › ATYP'
+      : id === '@kalendar' ? 'Plán plateb PROJ › platební kalendář smlouvy' : id);
+    return strana.toUpperCase() + ': ' + p;
+  }).join(' + ');
+}
+
+function pdHodnotaText(def, strana, zdroj) {
+  return [].concat(def.kl[strana]).map((id) => {
+    if (id === '@atyp') return (zdroj && zdroj.atyp === true) ? 'Ano' : (zdroj && zdroj.atyp === false) ? 'Ne' : '';
+    if (id === '@kalendar') return String((zdroj && zdroj.kalendar) || '').trim();
+    const h = zdroj && zdroj.hodnoty;
+    return String(h && h[id] != null ? h[id] : '').trim();
+  }).filter(Boolean).join(' / ');
+}
+
+export function pdNanecisto(definice, strany, pole, spolecne = {}, zdroje = {}) {
+  const mapa = (pole && pole.mapa) || {}, popisy = (pole && pole.popisy) || {};
+  const cf = (spolecne.deal && spolecne.deal.custom_fields) || null;
+  const s = strany || {};
+  const pritomne = ['ock', 'proj'].filter((k) => s[k]);
+  const radky = [];
+  for (const def of definice || []) {
+    if (!PD_SMER_ZAPIS.includes(def.smer) || !def.kl) continue;
+    const tykaSe = pritomne.filter((k) => def.kl[k]);
+    if (!tykaSe.length) continue;
+    const popis = mapa[def.klic] ? popisy[def.klic] : null;
+    const r = { klic: def.klic, nazev: def.nazev, typ: popis ? popis.typ : (def.typ || []).join(' / '),
+      strana: '', zdroj: pdZdrojText(def, tykaSe[0], s[tykaSe[0]], zdroje), hodnotaKalkulace: '',
+      hodnota: null, hodnotaText: '', stav: 'prazdne', duvod: '', kolize: [], vCrm: '' };
+    const texty = {};
+    let vybrano = null;
+    for (const strana of tykaSe) {
+      texty[strana] = pdHodnotaText(def, strana, s[strana]);
+      if (vybrano) continue;
+      const v = pdDoPd(def, strana, s[strana], popis, spolecne);
+      if (v.prazdne) continue;
+      vybrano = { strana, v };
+    }
+    if (vybrano) {
+      r.strana = vybrano.strana;
+      r.zdroj = pdZdrojText(def, vybrano.strana, s[vybrano.strana], zdroje);
+      r.hodnotaKalkulace = texty[vybrano.strana];
+      if (vybrano.v.duvod) {
+        r.duvod = vybrano.v.duvod;
+        r.stav = !popis ? 'chybiPole'
+          : (def.druh === 'uzivatel' && !Array.isArray(spolecne.uzivatele)) ? 'neovereno' : 'nelze';
+      } else {
+        r.stav = 'zapise';
+        r.hodnota = vybrano.v.hodnota;
+        r.hodnotaText = vybrano.v.hodnota === null ? '(vyprázdnit výběr)' : pdZobraz(vybrano.v.hodnota, popis, spolecne);
+      }
+    } else if (!mapa[def.klic]) {
+      r.duvod = 'pole „' + def.nazev + '" v Pipedrive chybí nebo má jiný typ';
+    }
+    /* Kolize OCK × PROJ: obě strany vyplněné a jiné — zapíše se OCK
+     * (pdZapisDealu), PROJ zůstane jen v kalkulaci. */
+    if (texty.ock && texty.proj && pdNorm(texty.ock) !== pdNorm(texty.proj))
+      r.kolize.push('OCK „' + texty.ock + '" × PROJ „' + texty.proj + '" — zapíše se hodnota OCK');
+    /* Kolize s CRM: v dealu je dnes něco jiného, zápis by to přepsal. */
+    if (cf && mapa[def.klic]) {
+      r.vCrm = pdZobraz(cf[mapa[def.klic]], popis, spolecne);
+      if (r.stav === 'zapise' && r.vCrm && pdNorm(r.vCrm) !== pdNorm(r.hodnotaText))
+        r.kolize.push('v Pipedrive je dnes „' + r.vCrm + '" — zápis ji přepíše');
+    }
+    radky.push(r);
+  }
+  /* Hodnota dealu (nativní pole value + currency, #512). */
+  const hd = pdHodnotaDealu(s, spolecne.deal ? { value: spolecne.deal.value, currency: spolecne.deal.currency } : null);
+  if (!hd.prazdne) {
+    const r = { klic: 'hodnotaDealu', nazev: 'Hodnota dealu', typ: 'monetary', strana: pritomne.join('+'),
+      zdroj: pritomne.map((k) => k.toUpperCase() + ': cena řídící varianty bez DPH').join(' + '),
+      hodnotaKalkulace: '', hodnota: null, hodnotaText: '', stav: 'zapise', duvod: '', kolize: [], vCrm: '' };
+    if (hd.duvod) { r.stav = 'nelze'; r.duvod = hd.duvod; }
+    else {
+      r.hodnota = hd.hodnota; r.hodnotaText = pdKcText(hd.hodnota); r.hodnotaKalkulace = r.hodnotaText;
+      if (hd.stara) { r.vCrm = pdKcText(hd.stara); if (hd.zmena) r.kolize.push('v Pipedrive je dnes „' + r.vCrm + '" — zápis ji přepíše'); }
+    }
+    radky.push(r);
+  }
+  const souhrn = { celkem: radky.length, kolize: radky.filter((r) => r.kolize.length).length };
+  for (const st of PD_NANECISTO_STAVY) souhrn[st] = radky.filter((r) => r.stav === st).length;
+  return { radky, souhrn };
+}
+
+/* ============================================================
+ * ZAMÝŠLENÝ ZÁPIS VČETNĚ STAVU DEALU (#536 pro C4 #540, 27. 10. 2026)
+ *
+ * Tlačítko „Prodáno" na konci krycího listu (C4, rozhodnutí J. V.
+ * 27. 10. 2026) zamkne krycí list a připraví zápis = data z krycího listu
+ * + přepnutí dealu na „Vyhráno". Bez tokenu se zápis jen uloží jako
+ * připravený a ukáže se „co by se zapsalo". Tahle funkce je jeho jediné
+ * jádro, oddělené od UI i od sítě:
+ *   pdZamyslenyZapis(definice, strany, pole, spolecne, { stav: 'won' })
+ *     → { patch: { custom_fields, value?, currency?, status? }, radky, souhrn, duvody }
+ * `patch` je přesně tělo PATCH /api/v2/deals/{id}, které by odešlo (a které
+ * C4 smí uložit jako připravené); `radky` a `souhrn` jsou tabulka náhledu
+ * (pdNanecisto) s řádkem „Stav dealu" navíc. Nic neodesílá.
+ * ============================================================ */
+export const PD_STAVY_DEALU = { open: 'Otevřeno', won: 'Vyhráno', lost: 'Prohráno' };
+
+export function pdZamyslenyZapis(definice, strany, pole, spolecne = {}, volby = {}, zdroje = {}) {
+  const z = pdZapisDealu(definice, strany, pole, spolecne);
+  const n = pdNanecisto(definice, strany, pole, spolecne, zdroje);
+  const patch = Object.assign({ custom_fields: z.custom_fields }, z.deal);
+  const stav = volby && volby.stav;
+  if (stav !== undefined && stav !== null && stav !== '') {
+    if (!Object.prototype.hasOwnProperty.call(PD_STAVY_DEALU, stav))
+      throw new Error('Neznámý stav dealu: ' + stav);
+    patch.status = stav;
+    const dnes = spolecne.deal ? String(spolecne.deal.status || '') : '';
+    const r = { klic: 'stavDealu', nazev: 'Stav dealu', typ: 'status', strana: '',
+      zdroj: volby.zdroj || 'Krycí list › Prodáno', hodnotaKalkulace: PD_STAVY_DEALU[stav],
+      hodnota: stav, hodnotaText: PD_STAVY_DEALU[stav] + ' (' + stav + ')', stav: 'zapise', duvod: '',
+      kolize: [], vCrm: dnes ? (PD_STAVY_DEALU[dnes] || dnes) + ' (' + dnes + ')' : '' };
+    if (dnes && dnes !== stav && dnes !== 'open')
+      r.kolize.push('deal je dnes „' + r.vCrm + '" — zápis ho přepne na „' + r.hodnotaText + '"');
+    if (dnes === 'deleted') { r.stav = 'nelze'; r.duvod = 'deal je v Pipedrive smazaný'; delete patch.status; }
+    n.radky.push(r);
+    n.souhrn.celkem++; n.souhrn[r.stav]++;
+    if (r.kolize.length) n.souhrn.kolize++;
+  }
+  return { patch, radky: n.radky, souhrn: n.souhrn, duvody: z.duvody };
+}

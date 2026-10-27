@@ -169,6 +169,7 @@ function renderKryciProj() {
   </div>
   ${typeof sodProjKarta === 'function'
     ? `<div class="noprint" style="margin-top:14px">${card('Smlouva o dílo a plná moc (PROJ)', sodProjKarta())}</div>` : ''}
+  ${typeof pdnKarta === 'function' ? pdnKarta('proj') : ''}
   ${typeof prodejKarta === 'function'
     ? `<div class="noprint" style="margin-top:14px">${card('Prodej', prodejKarta('proj'))}</div>` : ''}`;
 }

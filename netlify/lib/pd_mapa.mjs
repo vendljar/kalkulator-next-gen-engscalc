@@ -442,3 +442,82 @@ export function pdPrehledMapy(m, defDealu = POLE_DEALU, defOrg = POLE_ORGANIZACE
   for (const s of PD_PREHLED_STAVY) souhrn[s] = radky.filter((r) => r.stav === s).length;
   return { radky, nezarazeno, souhrn, poridano: x.poridano || null, verze: x.verze || null };
 }
+
+/* ============================================================
+ * DOHODNUTÁ POLE BEZ TOKENU (#536, 27. 10. 2026)
+ *
+ * Definice polí dealu a organizace ve tvaru odpovědi API v2
+ * (`dealFields` / `organizationFields`) složené z tabulky v kódu — tedy
+ * z toho, co je dohodnuté s integrátorem, ne z účtu. Používají ji dvě místa:
+ *   · simulátor Pipedrive (lib/pipedrive_simulator.mjs) jako odpověď API,
+ *   · suchý běh zápisu (/api/pd/nanecisto), když napojení není nastavené —
+ *     náhled pak říká „podle dohodnuté tabulky, neověřeno v CRM".
+ *
+ * Názvy a typy jsou z POLE_DEALU; volby výběrových polí jsou SKUTEČNÉ texty
+ * voleb z účtu (stav 21. 10. 2026, tytéž jako v netlify/test_pd_prevod.mjs).
+ * ID voleb ani hashe polí skutečné nejsou: hash je odvozený z názvu, takže
+ * je stálý a nikdy se nepotká se skutečným (skutečný je náhodný). Pole, které
+ * v Pipedrive dosud chybí (Platební kalendář SoD PROJ), se bez `vsechna`
+ * nevrací — simulátor tak ukazuje dnešní stav účtu.
+ * ============================================================ */
+export const PD_VOLBY_UCTU = {
+  typZakazky: ['Realizace', 'Projekce'],
+  zpusobFakturace: ['Náš standard', 'Měsíční', 'Po dokončení stupňů dokumentace'],
+  zadrzneProc: ['Ne', '5%', '10%', '15%', '20%'],
+  zadrzneZaruka: ['Ne', '5%', '10%', '15%', '20%'],
+  typSmlouvy: ['Naše bez úprav', 'Naše s úpravami', 'Smlouva zákazníka'],
+  typProjektu: ['Nový projekt (novostavba)', 'Rekonstrukce objektu'],
+  pamatkovaOchrana: ['Ano', 'Ne'],
+  licence: ['Nevýhradní – pro účel stavby dle smlouvy', 'Výhradní'],
+  sazbaDph: ['21 %', '12 %', '0 % – přenesená daňová povinnost'],
+  pojisteni: ['Ano – dle pojistné smlouvy zhotovitele', 'Ne'],
+  atyp: ['Ano', 'Ne'],
+  zamereniStrojovna: ['Ano', 'Ne'],
+  situacniFoto: ['Ve složce', 'Nejsou k dispozici'],
+  dokumentace: ['DSP', 'Prováděcí dokumentace'],
+  typOrganizace: ['Investor', 'Výtahová společnost', 'Stavební společnost', 'Správcovská společnost', 'Projektant'],
+};
+/* Pole, která má účet jako Velký text (ostatní textová jsou krátký text). */
+const PD_VELKY_TEXT = ['adresaStavby', 'podminkyJine', 'terminJine', 'odchylky', 'cenaNezahrnuje', 'rozsahJine',
+  'platebniKalendar'];
+/* Pole, která integrátor k 27. 10. 2026 ještě nezaložil. */
+export const PD_DOSUD_NEZALOZENA = ['platebniKalendar'];
+
+/* Stálý čtyřicetiznakový „hash" z názvu (FNV-1a po pěti kolech, bez
+ * závislosti na node:crypto — modul se smí načíst kdekoli). */
+export function pdHashZNazvu(nazev) {
+  let out = '';
+  for (let kolo = 0; kolo < 5; kolo++) {
+    let h = 0x811c9dc5 ^ (kolo * 0x9e3779b1);
+    for (const ch of 'kng-dohoda|' + kolo + '|' + String(nazev)) {
+      h ^= ch.codePointAt(0);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    out += h.toString(16).padStart(8, '0');
+  }
+  return out;
+}
+
+function pdPoleZDefinic(definice, volby, vsechna, idOd) {
+  let id = idOd;
+  return definice
+    .filter((d) => vsechna || !PD_DOSUD_NEZALOZENA.includes(d.klic))
+    .map((d) => {
+      const typ = PD_VELKY_TEXT.includes(d.klic) && (d.typ || []).includes('text') ? 'text' : (d.typ || ['varchar'])[0];
+      const labels = volby[d.klic];
+      return {
+        field_code: pdHashZNazvu(d.nazev), field_name: d.nazev, field_type: typ,
+        is_custom_field: true, is_writable: true,
+        options: labels ? labels.map((label) => ({ id: id++, label })) : null,
+      };
+    });
+}
+
+/* { deal: [...], organizace: [...] } — pole jako z API v2. */
+export function pdPoleDohodnuta(volby = {}) {
+  const vsechna = !!volby.vsechna;
+  return {
+    deal: pdPoleZDefinic(POLE_DEALU, PD_VOLBY_UCTU, vsechna, 100),
+    organizace: pdPoleZDefinic(POLE_ORGANIZACE, PD_VOLBY_UCTU, vsechna, 900),
+  };
+}

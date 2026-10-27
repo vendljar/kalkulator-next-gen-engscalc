@@ -21,10 +21,14 @@
  *   PIPEDRIVE_TOKEN   — osobní API token (Nastavení → Osobní předvolby → API)
  *   PIPEDRIVE_DOMENA  — doména firmy, např. `mojefirma` nebo celé
  *                       `mojefirma.pipedrive.com`
+ *   PIPEDRIVE_SIMULATOR=1 — místo Pipedrive odpovídá simulátor se smyšlenými
+ *                       daty (#536, lib/pipedrive_simulator.mjs); jen lokálně
+ *                       a na testovacím webu, na ostrém se odmítne zapnout.
  * ============================================================ */
 
 import { uloziste, vyzadujRoli, cizihoPuvodu, json, vyhradne } from './sdilene.mjs';
 import { jadro, jadroChyba } from './jadro.mjs';
+import { pdSimulatorStav, pdSimFetch, PD_SIM_ZAKLAD } from './pipedrive_simulator.mjs';
 
 export const PD_TOKEN_PROMENNA = 'PIPEDRIVE_TOKEN';
 export const PD_DOMENA_PROMENNA = 'PIPEDRIVE_DOMENA';
@@ -41,13 +45,27 @@ export const PD_STRANKA = 200;
  * neslibuje, takže se na ni nespoléháme a couváme po svém. */
 const POKUSU = 3;
 
+/* Simulátor (#536) má přednost před tokenem: kde je zapnutý, nejde nic do
+ * skutečného CRM, ani když token v prostředí zůstal. */
+export function pdSimulator() {
+  return pdSimulatorStav().zapnuto;
+}
+
 export function pdNastaveno() {
-  return !!(process.env[PD_TOKEN_PROMENNA] && process.env[PD_DOMENA_PROMENNA]);
+  return pdSimulator() || !!(process.env[PD_TOKEN_PROMENNA] && process.env[PD_DOMENA_PROMENNA]);
+}
+
+/* 'simulator' | 'pipedrive' | 'vypnuto' — co je za napojením (pro správce,
+ * nikdy s tokenem). */
+export function pdRezim() {
+  if (pdSimulator()) return 'simulator';
+  return (process.env[PD_TOKEN_PROMENNA] && process.env[PD_DOMENA_PROMENNA]) ? 'pipedrive' : 'vypnuto';
 }
 
 /* Doména se zadává různě — `mojefirma`, `mojefirma.pipedrive.com`
  * i `https://mojefirma.pipedrive.com/`. Ať se uživatel netrefuje. */
 export function pdZaklad() {
+  if (pdSimulator()) return PD_SIM_ZAKLAD;
   const d = String(process.env[PD_DOMENA_PROMENNA] || '').trim()
     .replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/\.pipedrive\.com$/, '');
   if (!d) throw new PdChyba('Není nastavená doména Pipedrive ('
@@ -93,7 +111,8 @@ function spanek(ms) { return new Promise((h) => setTimeout(h, ms)); }
 /* Jediné místo, kde se sahá na síť. `cesta` je bez domény, včetně /api/…
  * Vrací rozbalené `data`; stránkovací kurzor jde v `_kurzor`. */
 export async function pdZavolej(cesta, volby = {}) {
-  const token = process.env[PD_TOKEN_PROMENNA];
+  const sim = pdSimulator();
+  const token = sim ? 'simulator' : process.env[PD_TOKEN_PROMENNA];
   if (!token) throw new PdChyba('Není nastavený přístupový token Pipedrive ('
     + PD_TOKEN_PROMENNA + ').', 500);
 
@@ -112,7 +131,7 @@ export async function pdZavolej(cesta, volby = {}) {
   for (let pokus = 0; pokus < POKUSU; pokus++) {
     let odpoved;
     try {
-      odpoved = await fetch(url.toString(), init);
+      odpoved = await (sim ? pdSimFetch(url.toString(), init) : fetch(url.toString(), init));
     } catch (e) {
       /* Síť selhala úplně. Tohle se NESMÍ spolknout do prázdného seznamu —
        * obchodník by si myslel, že v Pipedrivu nic není. */
@@ -134,7 +153,7 @@ export async function pdZavolej(cesta, volby = {}) {
     /* Opakovat má smysl jen u přetížení a serverových chyb. U špatného
      * tokenu by opakování jen třikrát potvrdilo totéž. */
     if (odpoved.status !== 429 && odpoved.status < 500) throw posledni;
-    if (pokus < POKUSU - 1) await spanek(1000 * Math.pow(2, pokus));
+    if (pokus < POKUSU - 1) await spanek((sim ? 1 : 1000) * Math.pow(2, pokus));
   }
   throw posledni;
 }

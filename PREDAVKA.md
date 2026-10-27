@@ -97,6 +97,35 @@ PROJ → 1 FAIL. `kontrola_udaju.py` čistá; roadmapa `--kontrola` 532 položek
 
 **Čeká na J. V.:** odpovědi na otázky 1–12 (`podklady/CONTROLLING_ROZHODNUTI.md`); poslat šablonu controllingu
 (otázka 9). Při slučování: CHANGELOG oddíl „Podklady — C3", roadmapa #537 + pozn #500 — jinak nové soubory.
+---
+# Předávka — 27. 10. 2026: P3 #536 — příprava Pipedrive bez tokenu, větev `claude/p3-pipedrive-simulator`
+
+Nad `62ea0c8` (integrace v27.10.1). **Verze 27.10.2** (koordinace případně přečísluje). Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; **do skutečného Pipedrive nic nevoláno ani nezapsáno** (ani MCP),
+na ostrém webu ani na Disku nic.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| 1. Simulátor API | ✅ | `netlify/lib/pipedrive_simulator.mjs`, `PIPEDRIVE_SIMULATOR=1`; jediné napojení v `pdZavolej` (přednost i před tokenem); 230 smyšlených dealů, 2 stránky, 401/404/429/500, scénáře, rozpočet tokenů, PATCH v paměti. Pojistka: Netlify jen s `PROSTREDI=test`, odmítne `main` a schaftscalc (test) |
+| 2. Suchý běh zápisu | ✅ | karta na konci krycího listu OCK i PROJ (právo `crm.pipedrive`) → `POST /api/pd/nanecisto` (jen čte); stavy, kolize OCK×PROJ a „dnes v Pipedrive"; tatáž logika jako `pdZapisDealu` (test); CSV `PIPEDRIVE_<rok>-<číslo>_v<verze>.csv` |
+| 3. Kontrolní seznam tokenu | ✅ | `podklady/PIPEDRIVE_TOKEN_POSTUP.md` |
+| 4. Upomínka integrátorovi | ✅ | `podklady/PIPEDRIVE_UPOMINKA_INTEGRATOR.md` — odesílá J. V. |
+| 5. Podklad #115 | ✅ | `podklady/PIPEDRIVE_ROZHODNUTI_115.md` — 4 varianty, doporučení B, 5 otázek |
+| Nález | ✅ | `/api/pd/dealy` a `/api/pd/deal` vracely odmítnutý token jako 401 (klient by odhlásil) → 502 |
+| Testy | ✅ | `test_pd_simulator` 54/0, `test_pd_nanecisto` 72/0, `overit_pd_nanecisto.mjs` 18/0 (Chromium), `test_prava` 938/0, `test_funkce` 279/0, `test_pipedrive` 96/0; `spust_testy.sh` 273/0 + test.js přeskočen; mutace „#536" **17/17**; `testovaci_kolo.sh --jen build,staticke` zelené; `kontrola_udaju.py` čistá. Pojistka: nad 62ea0c8 nové sady nejdou načíst; 401→502 a CSV přes csvBunka ověřeny vrácením (FAIL) |
+| Pro C4 #540 „Prodáno" | ✅ | **`pdZamyslenyZapis(definice, strany, pole, spolecne, { stav: 'won' })`** v `netlify/lib/pd_prevod.mjs` → `{ patch, radky, souhrn, duvody }` (patch = tělo PATCH vč. `status`), bez sítě a UI; klient `pdnPodklad(ZAK, JEKLY, { stav: 'won' })` + `pdnTelo()` → `POST /api/pd/nanecisto` (parametr `stav`, odpověď nese `patch`); simulátor přijímá PATCH stavu |
+| CHANGELOG, roadmapa #536, PREDAVKA | ✅ | #536 vlna D hotovo; poznámky u #113, #115, #509 |
+
+**Pro koordinaci při slučování:** konvence názvu exportu je lokální (`pdnNazevSouboru` v `src/pd_nanecisto.js`) —
+po sloučení E1 #533 sjednotit. Nové sady jsou v `SADY` serverových mutací za `test_pd_prevod.mjs`. `build.py`: nové
+`pd_nanecisto.js` (CORE) a `ui/pd_nanecisto_ui.js` (UI). Do `test_prava` přibyl řádek matice pro novou funkci; `test_csv_vzorce` zná `pdnCsv`. Karta má id s příponou `_ock`/`_proj` (oba krycí listy jsou v DOM zároveň).
+
+**Otázky pro J. V. (#115, s navrženými odpověďmi):** viz `podklady/PIPEDRIVE_ROZHODNUTI_115.md` — 1) dvě zakázky na
+jednom dealu: **B — vlastník podle „Čísla nabídky (CN)" v dealu, převzetí tlačítkem**; 2) převzít smí **obchodník
+s potvrzením a protokolem**; 3) prázdné CN = **volný deal**; 4) při převzetí **poznámka k dealu**; 5) varování při
+zadání čísla dealu **později**.
+
+**Další krok:** po tokenu na testengscalc postup v `PIPEDRIVE_TOKEN_POSTUP.md`; #113 lze vyvíjet hned se simulátorem.
 
 ---
 # Předávka — 27. 10. 2026: A1 #530 — poznámka o původním autorství v kódu, větev `claude/a1-autorstvi`
