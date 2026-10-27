@@ -58,7 +58,7 @@ export async function kontext(b, { csp = true } = {}) {
 const KOD_STRANKY = `
   window.__XSS = [];
   const PAY = (c) => window.__PAYF(c);
-  const SKIP = window.__BEZ_SKIP ? new Set() : new Set(['schema', 'priponySchema', 'aktivni', 'cenikRada', 'typ', 'sazba', 'fixKey', 'rezim',
+  const SKIP = window.__BEZ_SKIP ? new Set(['schema']) : new Set(['schema', 'priponySchema', 'aktivni', 'cenikRada', 'typ', 'sazba', 'fixKey', 'rezim',
                         'smer', 'stav', 'druh', 'role', 'ridici', 'varianta', 'zapnuto', 'jazyk', 'cast', 'zamceno']);
   /* Projde strom a každý textový i číselný list nahradí payloadem se značkou
    * své cesty. Parametr jen omezuje cesty, jenText vynechá čísla (tam, kde je
@@ -349,20 +349,22 @@ const KOD_STRANKY = `
     over(ramy);
     let imgNahled = 0, hrefJsNahled = 0, vyskytuNahled = 0;
     for (const f of ramy) { const dd = f.contentDocument; if (!dd || !dd.documentElement) continue;
-      imgNahled += dd.querySelectorAll('img[src="x"], svg[onload], details[ontoggle], iframe[src^="javascript:"], a[href^="javascript:"], [src^="javascript:"]').length + [...dd.querySelectorAll('script')].filter(s => /__XSS\\.push/.test(s.textContent)).length;
-      hrefJsNahled += dd.querySelectorAll('a[href^="javascript:"], [src^="javascript:"]').length;
+      imgNahled += dd.querySelectorAll('img[src="x"], svg[onload], details[ontoggle], iframe:not(img)[src^="javascript:"], a[href^="javascript:"], :not(img)[src^="javascript:"]').length + [...dd.querySelectorAll('script')].filter(s => /^\\s*window\\.__XSS\\.push/.test(s.textContent)).length;
+      hrefJsNahled += dd.querySelectorAll('a[href^="javascript:"], :not(img)[src^="javascript:"]').length;
       vyskytuNahled += (dd.documentElement.innerHTML.match(/__XSS\.push/g) || []).length; }
-    const img = document.querySelectorAll('img[src="x"], svg[onload], details[ontoggle], iframe[src^="javascript:"], a[href^="javascript:"], [src^="javascript:"]').length + [...document.querySelectorAll('script')].filter(s => /__XSS\\.push/.test(s.textContent)).length + imgNahled;
+    window.__PRVKY = [];
+    for (const dd of [document, ...ramy.map(f => f.contentDocument).filter(Boolean)]) { dd.querySelectorAll('img[src="x"], svg[onload], details[ontoggle], iframe:not(img)[src^="javascript:"], a[href^="javascript:"], :not(img)[src^="javascript:"]').forEach(e => window.__PRVKY.push(e.outerHTML.slice(0, 160))); [...dd.querySelectorAll('script')].filter(x => /^\\s*window\\.__XSS\\.push/.test(x.textContent)).forEach(x => { const t = x.textContent; const i = t.indexOf('__XSS.push'); window.__PRVKY.push('SCRIPT…' + t.slice(Math.max(0, i - 200), i + 80)); }); }
+    const img = document.querySelectorAll('img[src="x"], svg[onload], details[ontoggle], iframe:not(img)[src^="javascript:"], a[href^="javascript:"], :not(img)[src^="javascript:"]').length + [...document.querySelectorAll('script')].filter(s => /^\\s*window\\.__XSS\\.push/.test(s.textContent)).length + imgNahled;
     const handlers = [];
     for (const el of [document, ...ramy.map(f => f.contentDocument).filter(Boolean)].flatMap(dd => [...dd.querySelectorAll('*')]))
       for (const a of el.attributes)
         if (/^on/i.test(a.name) && /(^|[^\\\\])'(\\);|-)window\\.__XSS\\.push\\(/.test(a.value))
           handlers.push(el.tagName.toLowerCase() + ' ' + a.name + '="' + a.value.slice(0, 100) + '…"');
-    const hrefJs = document.querySelectorAll('a[href^="javascript:"], [src^="javascript:"]').length + hrefJsNahled;
+    const hrefJs = document.querySelectorAll('a[href^="javascript:"], :not(img)[src^="javascript:"]').length + hrefJsNahled;
     /* Kolikrát se payload (escapovaný) ve stránce vůbec objevil. Nula by
      * znamenala, že se oblast nikde nekreslí — a kontrola by byla prázdná. */
     const vyskytu = (document.documentElement.innerHTML.match(/__XSS\.push/g) || []).length;
-    return { csp: (window.__CSP || []).slice(0, 4), cspN: (window.__CSP || []).length, ctrlHtml: (window.__CTRL_HTML || '').slice(0, 300), xss: [...new Set(window.__XSS)], img, handlers: handlers.slice(0, 5), hrefJs, chyby, vyskytu, vyskytuNahled, nahledu: ramy.length, nahledy: ramy.map(f => f.__fn), overeno };
+    return { imgJs: [document, ...ramy.map(f => f.contentDocument).filter(Boolean)].reduce((a, dd) => a + dd.querySelectorAll('img[src^="javascript:"]').length, 0), prvky: (window.__PRVKY || []).slice(0, 3), csp: (window.__CSP || []).slice(0, 4), cspN: (window.__CSP || []).length, ctrlHtml: (window.__CTRL_HTML || '').slice(0, 300), xss: [...new Set(window.__XSS)], img, handlers: handlers.slice(0, 5), hrefJs, chyby, vyskytu, vyskytuNahled, nahledu: ramy.length, nahledy: ramy.map(f => f.__fn), overeno };
   }
   return { OBLASTI: Object.keys(OBLASTI), DALSI: Object.keys(DALSI), pokus };
 `;
@@ -426,12 +428,16 @@ let hotovo = 0; const vysl = [];
 async function pracuj() { while (ulohy.length) { const u = ulohy.shift(); const r = await pokusV(b, ...u); vysl.push([u, r]); hotovo++; if (hotovo % 20 === 0) console.log(`  … ${hotovo} hotovo`); } }
 await Promise.all(Array.from({ length: SOUBEH }, pracuj));
 vysl.sort((a, b) => (a[0][0] + a[0][2] + a[0][1]).localeCompare(b[0][0] + b[0][2] + b[0][1]));
-let cspCelkem = 0; const cspVzorky = new Set();
+let cspCelkem = 0; const cspVzorky = new Set(); const imgJsOblasti = new Set();
 for (const [[v, oblast, admin], r] of vysl) {
   const role = admin ? 'administrátor' : 'obchodník';
   const jm = `${v} ${role}: ${oblast}`;
+  if (v === 'V3' && /^#401/.test(oblast)) {   // řídicí znaky ve slovníku: kontrola tvaru (onlineSlovnikPoloz) ho odmítne celý
+    zkus(`${jm} — slovník s řídicími znaky odmítla kontrola tvaru, nic se nevykreslilo ani nespustilo`, r.xss.length === 0 && r.chyby.length === 1 && /neprošel kontrolou tvaru/.test(r.chyby[0]), r.chyby.join(' | '));
+    continue;
+  }
   zkus(`${jm} — nic se nespustilo (značka, dialog)`, r.xss.length === 0 && r.dialogy.length === 0, 'spustilo se: ' + r.xss.join(', ') + ' | dialogy: ' + r.dialogy.join(', '));
-  zkus(`${jm} — v DOM ani v náhledech není vložený prvek z payloadu (img/svg/details/script/iframe/javascript:)`, r.img === 0 && r.hrefJs === 0, `prvky=${r.img}, javascript:=${r.hrefJs}`);
+  zkus(`${jm} — v DOM ani v náhledech není vložený prvek z payloadu (img/svg/details/script/iframe/javascript:)`, r.img === 0 && r.hrefJs === 0, `prvky=${r.img}, javascript:=${r.hrefJs} ` + JSON.stringify(r.prvky || []));
   zkus(`${jm} — žádný on*="…" s neescapovaným payloadem`, r.handlers.length === 0, r.handlers.join(' | '));
   zkus(`${jm} — žádný požadavek mimo kng.test`, r.venku.length === 0, r.venku.join(', '));
   zkus(`${jm} — vykreslení nespadlo`, r.chyby.length === 0, r.chyby.join(' | '));
@@ -441,9 +447,11 @@ for (const [[v, oblast, admin], r] of vysl) {
   if (r.overeno !== null && r.overeno !== undefined && (admin || !JEN_ADMIN.test(oblast)))
     zkus(`${jm} — otrávená pole se opravdu vykreslila`, r.overeno === true, r.overeno);
   if (/controlling/.test(oblast) && admin) zkus(`${jm} — karty controllingu vykreslily otrávená data`, /ctrl\.skupina|ctrl\.nova/.test(r.ctrlHtml || ''), r.ctrlHtml);
+  if (r.imgJs) imgJsOblasti.add(oblast);
   cspCelkem += (r.cspN || 0) + (r.konzoleCsp || []).length; (r.csp || []).concat(r.konzoleCsp || []).forEach(x => cspVzorky.add(x.slice(0, 120)));
 }
 console.log(`\nHlášení CSP během vykreslování: ${cspCelkem}${cspVzorky.size ? ' — ' + [...cspVzorky].slice(0, 8).join(' | ') : ''}`);
+console.log('<img src="javascript:…"> (nespouští se; CSP img-src hlásí) v oblastech: ' + [...imgJsOblasti].join(' | '));
 console.log('Požadavky mimo kng.test celkem: ' + venku.length + (venku.length ? ' — ' + [...new Set(venku)].slice(0, 5).join(', ') : ''));
 for (const v of VARIANTY) {
   const n = vysl.filter(x => x[0][0] === v).length;

