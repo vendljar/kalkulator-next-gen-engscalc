@@ -3357,29 +3357,27 @@
      "typ": "tvrda",
      "proc": "dokud se nerozhodne, co s osmi rozdíly, není co do třetího modelu přenášet",
      "vlna": "F",
-     "stav": "hotovo",
+     "stav": "blokovano",
      "cekaNa": "rozhodnutí J. V. 24. 9. 2026 — Model 3 se nezavádí, dál se rozvíjí jen Model 2"
     }
    ],
-   "hotovoV" : "zrušeno 27. 10. 2026",
-   "nazev" : "ZRUŠENO — Model 3 — třetí režim výpočtu po zmrazení Modelu 1",
-   "pozn" : "Zrušeno J. V. 27. 10. 2026: Model 3 se dělat nebude. Trvale otevřený bod. Nespouštět bez pokynu.",
+   "nazev" : "Model 3 — třetí režim výpočtu po zmrazení Modelu 1",
+   "pozn" : "Trvale otevřený bod. Nespouštět bez pokynu.",
    "id" : "159"
   },
   {
    "vlna" : "F",
    "slozitost" : "S",
-   "stav" : "hotovo",
+   "stav" : "blokovano",
    "id" : "160",
    "detail" : "Odloženo 22. 8. 2026 na výslovný pokyn („gdpr řešit nebudeme“). V aplikaci se tím nemění nic: konstanta ANALYTIKA_GDPR_TEXT zůstává prázdná, takže se uživatelům nezobrazuje žádné hlášení. Položka se vede dál jen proto, aby se vědělo, co se rozhodlo a proč — kdyby se k tomu firma vrátila, chybí jen text a jeho zobrazení v přehledu užívání.",
    "proc" : "Analytika drží rozpad šesti počítadel po jednotlivých uživatelích (filtr v přehledu užívání). Anonymní souhrn a jmenný přehled jsou z pohledu informování zaměstnanců dvě různé věci — proto se k tomu chystal informační text.",
-   "dulezitost" : "",
+   "dulezitost" : "nizka",
    "kde" : "src/analytika.js (ANALYTIKA_GDPR_TEXT), přehled užívání v Nastavení",
-   "hotovoV" : "zrušeno 27. 10. 2026",
-   "nazev" : "ZRUŠENO — GDPR text k analytice užívání",
+   "nazev" : "GDPR text k analytice užívání",
    "cekaNa" : "rozhodnutí J. V. 22. 8. 2026: GDPR se řešit nebude. Aplikace se tím nemění (ANALYTIKA_GDPR_TEXT zůstává prázdný).",
    "hotovoKdyz" : "Znovu otevřít jen na výslovný pokyn.",
-   "pozn" : "Zrušeno J. V. 27. 10. 2026: Model 3 se dělat nebude. **Odloženo** (vlna F), ne zrušeno. Znovu jen na výslovný pokyn. **Odloženo**, ne zrušeno. Stav se vede jako „čeká na podklad“, protože to není práce, kterou bychom si mohli naplánovat sami."
+   "pozn" : "**Odloženo** (vlna F), ne zrušeno. Znovu jen na výslovný pokyn. **Odloženo**, ne zrušeno. Stav se vede jako „čeká na podklad“, protože to není práce, kterou bychom si mohli naplánovat sami."
   },
   {
    "id" : "161",
@@ -3387,9 +3385,8 @@
    "hotovoV" : "v17.9.3",
    "slozitost" : "S",
    "vlna" : "B",
-   "pozn" : "Zrušeno J. V. 27. 10. 2026: Model 3 se dělat nebude. Dá se pustit kdykoliv samostatně, nic k tomu není potřeba. **Stav k 17. 9. 2026: OTEVŘENO a naléhavější než dřív.** Rozhraní se od vzniku snímků výrazně změnilo (zaškrtávátka volitelných položek, sloupec Výchozí, dvojice přechodových plechů), takže snímky ukazují chování, které už neplatí. POZOR na `kde` výš: `snimky_manual.mjs` ani `deploy/manual_obchodnik.html` v repozitáři NEJSOU — příručka i generátor snímků žijí v jiném coworku (potvrdil J. V. 17. 9. 2026). V repozitáři je jen kontrola `overit_manual.mjs`, takže se dnes verzuje kontrola, ale ne to, co kontroluje. **NAVRŽENO 17. 9. 2026: přenést sem GENERÁTOR, ale ne VÝSTUP.** Generátor je kód a patří k rozhraní, které fotí — stejná mašinerie jako třicítka harnessů `overit_*.mjs`, takže ho jde rovnou napsat tady místo portování. Výstup sem naopak nepatří ze dvou důvodů: hotová příručka je jeden zapečený soubor o 2 MB v base64 (v historii Gitu napořád) a snímky ukazují ceníkové řádky — `.gitignore` má kvůli tomu už teď pravidlo `snimek_*.png` s poznámkou, že se to 29. 7. 2026 jednou stalo. Přenos tedy znamená: generátor do repozitáře, `snímky/` i zabalené HTML do `.gitignore` jako `dist/`. **UZAVŘENO 17. 9. 2026 ve v17.9.2** — J. V. návrh schválil a generátor byl napsán znovu v repozitáři (`manual/`), výstup zůstává mimo něj. Starý `snimky_manual.mjs` ani `zabal_manual.py` se neportovaly a v repozitáři nejsou; snímky se dnes neberou jako PNG, ale jako živý DOM. Podrobnosti v **#266**.",
-   "hotovoV" : "zrušeno 27. 10. 2026",
-   "nazev" : "ZRUŠENO — Přegenerovat snímky obrazovky v příručce obchodníka",
+   "pozn" : "Dá se pustit kdykoliv samostatně, nic k tomu není potřeba. **Stav k 17. 9. 2026: OTEVŘENO a naléhavější než dřív.** Rozhraní se od vzniku snímků výrazně změnilo (zaškrtávátka volitelných položek, sloupec Výchozí, dvojice přechodových plechů), takže snímky ukazují chování, které už neplatí. POZOR na `kde` výš: `snimky_manual.mjs` ani `deploy/manual_obchodnik.html` v repozitáři NEJSOU — příručka i generátor snímků žijí v jiném coworku (potvrdil J. V. 17. 9. 2026). V repozitáři je jen kontrola `overit_manual.mjs`, takže se dnes verzuje kontrola, ale ne to, co kontroluje. **NAVRŽENO 17. 9. 2026: přenést sem GENERÁTOR, ale ne VÝSTUP.** Generátor je kód a patří k rozhraní, které fotí — stejná mašinerie jako třicítka harnessů `overit_*.mjs`, takže ho jde rovnou napsat tady místo portování. Výstup sem naopak nepatří ze dvou důvodů: hotová příručka je jeden zapečený soubor o 2 MB v base64 (v historii Gitu napořád) a snímky ukazují ceníkové řádky — `.gitignore` má kvůli tomu už teď pravidlo `snimek_*.png` s poznámkou, že se to 29. 7. 2026 jednou stalo. Přenos tedy znamená: generátor do repozitáře, `snímky/` i zabalené HTML do `.gitignore` jako `dist/`. **UZAVŘENO 17. 9. 2026 ve v17.9.2** — J. V. návrh schválil a generátor byl napsán znovu v repozitáři (`manual/`), výstup zůstává mimo něj. Starý `snimky_manual.mjs` ani `zabal_manual.py` se neportovaly a v repozitáři nejsou; snímky se dnes neberou jako PNG, ale jako živý DOM. Podrobnosti v **#266**.",
+   "nazev" : "Přegenerovat snímky obrazovky v příručce obchodníka",
    "zavisi" : [
     {
      "proc" : "navazuje na příručku samotnou",
