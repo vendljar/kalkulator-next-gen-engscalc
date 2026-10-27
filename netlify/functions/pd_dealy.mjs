@@ -92,8 +92,11 @@ export default async (req) => {
   } catch (e) {
     /* Chyba spojení se NESMÍ tvářit jako prázdný seznam — obchodník by si
      * myslel, že v Pipedrivu nic není, a založil by zakázku znovu. */
+    /* Odmítnutý token Pipedrive (401) nesmí odejít jako 401 — klient by ho
+     * vzal za vypršelé přihlášení a obchodníka odhlásil (vzor pd_pole, #114;
+     * ukázal to simulátor, #536). */
     if (e instanceof PdChyba)
-      return json({ ok: false, nastaveno: true, chyba: e.message }, e.stav >= 500 ? 502 : e.stav);
+      return json({ ok: false, nastaveno: true, chyba: e.message }, (e.stav >= 500 || e.stav === 401) ? 502 : e.stav);
     throw e;
   }
 };

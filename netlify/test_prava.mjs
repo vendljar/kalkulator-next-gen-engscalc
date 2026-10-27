@@ -69,6 +69,7 @@ import analytikaFn from './functions/analytika.mjs';
 import pdPole from './functions/pd_pole.mjs';
 import pdDealy from './functions/pd_dealy.mjs';
 import pdDeal from './functions/pd_deal.mjs';
+import pdNanecistoFn from './functions/pd_nanecisto.mjs';
 import pdStavFn from './functions/pd_stav.mjs';
 import { config as configNocni } from './functions/zaloha_nocni.mjs';
 import { ADMIN_EMAIL, ROLE, POKUSY_MAX, POKUSY_IP_MAX, zpozdeniMs, pokusyReset,
@@ -535,6 +536,15 @@ const MATICE = [
     metoda: 'GET', url: 'http://x/api/pd/pole',
     proc: 'přehled mapy polí v Nastavení — hashe polí CRM jen pro správce (#114, 26. 10. 2026)',
     prava: JEN_ADMIN },
+
+  /* Suchý běh zápisu do Pipedrive (#536, 27. 10. 2026): jen čte, nic
+   * neodesílá; s právem crm.pipedrive jako ostatní čtení z CRM. Bez napojení
+   * odpovídá podle dohodnuté tabulky polí. Podrobnosti test_pd_nanecisto.mjs. */
+  { fn: pdNanecistoFn, soubor: 'pd_nanecisto.mjs', nazev: 'Pipedrive — suchý běh zápisu (POST /api/pd/nanecisto)',
+    metoda: 'POST', url: 'http://x/api/pd/nanecisto',
+    telo: () => ({ strany: { ock: { hodnoty: { splatnostDni: '14', cisloCN: 'CN-1' } } } }),
+    proc: 'náhled „co by se zapsalo" k zakázce — s právem crm.pipedrive, výchozí všem; do CRM nic nepíše',
+    prava: PRIHLASENY_OK },
 
   /* Centrální šablony dokumentů (#139). Číst smí každý přihlášený — obchodník
    * z platné šablony tiskne. Zveřejnit a přepínat režim smí JEN administrátor:

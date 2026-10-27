@@ -121,13 +121,17 @@ function nastPdMapa() {
       ${PDM_STAV.nacita ? '⏳ Načítám z CRM…' : 'Obnovit z CRM'}</button>`;
   const d = PDM_STAV.data;
   if (!d) return `${pdmUiChyba(d)}<div class="btns">${tlacitko}</div>`;
-  if (d.nastaveno === false) return `<div class="note" id="pdmChyba">${esc(d.chyba || 'Napojení na Pipedrive zatím není nastavené.')}</div>`;
+  if (d.nastaveno === false) return `<div class="note" id="pdmChyba">${esc(d.chyba || 'Napojení na Pipedrive zatím není nastavené.')}</div>`
+    + (d.simulatorOdmitnut ? `<div class="note" id="pdmSimulator" style="color:var(--red, #c0392b)">${esc(d.simulatorOdmitnut)}</div>` : '');
   const p = d.prehled || { radky: [], nezarazeno: [], souhrn: {} };
   const kdy = d.poridano ? new Date(d.poridano) : null;
   const info = `Pole se párují <b>přesně podle názvu a typu</b> dohodnutého s integrátorem. Ruční přiřazení se nedělá:
       přejmenované pole v Pipedrive se tu ukáže jako „chybí v CRM". Mapa se drží den;
       ${kdy && !isNaN(kdy) ? 'načtena z CRM <b>' + esc(kdy.toLocaleString('cs-CZ')) + '</b>.' : ''}`;
-  return `<div class="note" id="pdmInfo">${info}</div>
+  /* Simulátor (#536): smyšlená data se nesmí splést se skutečným CRM. */
+  const sim = d.rezim === 'simulator'
+    ? `<div class="note" id="pdmSimulator" style="color:var(--red, #c0392b)"><b>SIMULÁTOR PIPEDRIVE</b> — mapa i data jsou smyšlené (PIPEDRIVE_SIMULATOR=1), skutečné CRM se nevolá.</div>` : '';
+  return `${sim}<div class="note" id="pdmInfo">${info}</div>
     ${pdmUiChyba(d)}
     ${pdmUiSouhrn(p)}
     <div class="btns" style="margin:8px 0">${tlacitko}

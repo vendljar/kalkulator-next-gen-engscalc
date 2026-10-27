@@ -23,7 +23,8 @@
  * hashe, což je informace o tvaru CRM, ne o datech zakázek. */
 import { uloziste, json } from '../lib/sdilene.mjs';
 import { pdNastaveno, pdZavolej, PdChyba, PD_TOKEN_PROMENNA, PD_DOMENA_PROMENNA,
-         pdPristup } from '../lib/pipedrive.mjs';
+         pdPristup, pdRezim } from '../lib/pipedrive.mjs';
+import { pdSimulatorStav } from '../lib/pipedrive_simulator.mjs';
 import { pdMapaZPoli, pdPrehledMapy, POLE_DEALU, POLE_ORGANIZACE, PD_POLE_VERZE } from '../lib/pd_mapa.mjs';
 
 const ULOZISTE = 'pipedrive';
@@ -64,8 +65,14 @@ export default async (req) => {
   if (relace.role !== 'Administrátor')
     return json({ ok: false, chyba: 'Mapu polí Pipedrive vidí jen administrátor.' }, 403);
 
+  /* Režim napojení (#536): 'pipedrive' | 'simulator' | 'vypnuto' — správce
+   * vidí, co za napojením je, a proč se simulátor nezapnul. Token ani
+   * doména se neposílají. */
+  const sim = pdSimulatorStav();
+  const simulatorOdmitnut = sim.pozadovano && !sim.zapnuto ? sim.duvod : '';
   if (!pdNastaveno())
-    return json({ ok: true, nastaveno: false, mapa: {}, chybi: [], typNesedi: [], nejednoznacne: [], nezarazeno: [],
+    return json({ ok: true, nastaveno: false, rezim: 'vypnuto', simulatorOdmitnut,
+      mapa: {}, chybi: [], typNesedi: [], nejednoznacne: [], nezarazeno: [],
       chyba: 'Napojení na Pipedrive zatím není nastavené. Administrátor doplní '
         + PD_TOKEN_PROMENNA + ' a ' + PD_DOMENA_PROMENNA + ' v Netlify.' });
 
@@ -73,12 +80,12 @@ export default async (req) => {
   const obnovit = url.searchParams.get('obnovit') === '1';
   try {
     const m = await pdPoleMapa(obnovit);
-    return json({ ok: true, nastaveno: true, ...m, prehled: pdPrehledMapy(m) });
+    return json({ ok: true, nastaveno: true, rezim: pdRezim(), simulatorOdmitnut, ...m, prehled: pdPrehledMapy(m) });
   } catch (e) {
     /* Odmítnutý token Pipedrive (401) nesmí odejít jako 401 — klient by ho
      * vzal za vypršelé přihlášení a správce odhlásil (#114). */
     if (e instanceof PdChyba)
-      return json({ ok: false, chyba: e.message }, (e.stav >= 500 || e.stav === 401) ? 502 : e.stav);
+      return json({ ok: false, rezim: pdRezim(), chyba: e.message }, (e.stav >= 500 || e.stav === 401) ? 502 : e.stav);
     throw e;
   }
 };

@@ -30,7 +30,7 @@ for (const f of fs.readdirSync(ui).filter(f => f.endsWith('.js'))) {
   const t = fs.readFileSync(path.join(ui, f), 'utf8');
   const kusy = t.split(/\nfunction |\nasync function /).filter(k => /text\/csv/.test(k));
   kusy.forEach(k => test('CSV export v ui/' + f + ' (' + k.slice(0, k.indexOf('(')) + ') jde přes csvBunka',
-    /csvBunka|slovnikCsvJenVApp|ctrlExportCsv/.test(k) && !/replace\(\/"\/g/.test(k)));
+    /csvBunka|slovnikCsvJenVApp|ctrlExportCsv|pdnCsv/.test(k) && !/replace\(\/"\/g/.test(k)));
 }
 
 /* Controlling (#447 C2): ctrlExportCsv (src/controlling.js) skládá CSV přes
@@ -44,6 +44,18 @@ for (const f of fs.readdirSync(ui).filter(f => f.endsWith('.js'))) {
       skupina: 'sl-dopravne', vZakladu: true, vlastni: false, zarazeno: true, mnozstvi: 1, cena: 2, naklad: 2, prodej: 3 }] });
   test('controlling: CSV exportu předkalkulace chrání buňky před vzorci',
     csv2.includes('"\'=1+1"') && csv2.includes('"\'@SUM(A1)"') && csv2.includes('"\'-2"') && csv2.includes('"\'+X"'), csv2.slice(0, 300));
+}
+
+/* Suchý běh zápisu do Pipedrive (#536): pdnCsv (src/pd_nanecisto.js) skládá
+ * CSV přes csvBunka — ověřeno tady, aby výjimka výš nebyla slepá. */
+{
+  const P = require('./pd_nanecisto.js');
+  global.csvBunka = csvBunka;
+  const csv3 = P.pdnCsv({ radky: [{ nazev: '=1+1', typ: '', hodnotaText: '@SUM(A1)', zdroj: '-2', hodnotaKalkulace: '',
+    stav: 'zapise', duvod: '', kolize: [], vCrm: '+X' }], varovani: [] }, { cislo: '=HYPERLINK("x")' });
+  test('Pipedrive: CSV náhledu zápisu chrání buňky před vzorci',
+    csv3.includes('"\'=1+1"') && csv3.includes('"\'@SUM(A1)"') && csv3.includes('"\'-2"') && csv3.includes('"\'+X"')
+    && csv3.includes('"\'=HYPERLINK(""x"")"'), csv3.slice(0, 300));
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);
