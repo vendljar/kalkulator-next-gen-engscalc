@@ -205,5 +205,5 @@ else {
   test('#540 bod 12: pravidlo „verze při každé změně exportu" je u konstanty', /PRAVIDLO[^]*KAŽDÉ změně exportu[^]*const CTRL_EXPORT_VERZE = /.test(zdroj));
 }
 
-console.log(`\n${ok} OK / ${fail} FAIL`);
+console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

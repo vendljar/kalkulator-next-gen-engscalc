@@ -1,3 +1,49 @@
+# Předávka — 27. 10. 2026: C4 #540 — kód controllingu podle rozhodnutí J. V., větev `claude/c4-controlling-rozhodnuti`
+
+Nad `60f8fd2` (integrace v27.10.2) + sloučená C3 #537 (`origin/claude/c3-controlling-priprava`, konflikty CHANGELOG /
+PREDAVKA / roadmapa — oddíly obou zachovány, #537 i #540 ve vlně G). **Verze 27.10.3** (koordinace může přečíslovat).
+Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno do integrace; na ostrém webu, Disku ani v Pipedrive nic.
+
+| bod rozhodnutí | stav | poznámka |
+|---|---|---|
+| 0 sloučení C3 + zápis rozhodnutí | ✅ | `podklady/CONTROLLING_ROZHODNUTI.md` oddíl „Rozhodnuto 27. 10. 2026" |
+| 1 Prodáno | ✅ | karta **Prodej** na konci krycího listu OCK i PROJ (`src/ui/sod_ui.js` `prodejKarta`); model + server `src/objednane.js` `prod*` (volá `netlify/lib/zakazka_kontrola.mjs`); zámek `src/zamek.js` `variantaProdana`; controlling `ctrlProdej`; Pipedrive jen „čeká na odeslání" + náhled `prodPdZapis` |
+| 2 výchozí filtr Všechny | ✅ | `ctrlHromadnyFiltr`, `controlling_ui.js` |
+| 3 záloha (hláška) | ✅ ověřeno | dělá O-T #529; `git merge-tree` s WIP O-T (bbe4269) bez konfliktu |
+| 4 zaokrouhlení | ✅ | souhrn Kapitol: obchodní zaokrouhlení + CEIL na tisíce (ze `souhrn.zakladMarze`, jádro beze změny) |
+| 5 podíly | ✅ | `ctrlPodilyNa100` (největší zbytek) |
+| 6 protokol exportů | ✅ | `OTISK_SEKCE` + `zalohaDoplnky` + `KOPIE_DISK_CASTI` (`controllingExporty`); obnova ho nepřepisuje (není v `OBNOVA_CASTI`); `test_zalohy` N4 ho vede jako zálohovaný |
+| 7–10 | ✅ bez kódu | 9: šablona přegenerovaná (verze 4, Q4/Q6–Q8); 10: #447/3 uzavřen |
+| 11 stará ukázka | ✅ | skript + sešit v2 smazány, `.md` odkazuje na nový nástroj, `test_kontrola_udaju` upraven |
+| 12 verze 4 | ✅ | pravidlo u `CTRL_EXPORT_VERZE`, `CTRL_EXPORT_ZMENA` v listu Popis |
+| ukázka / příručky / CHANGELOG / roadmapa | ✅ | `UKAZKA_2026-CONTROLLING-EXPORT_v27.10.3.xlsx`; příručka obchodníka (Prodáno, filtr) a správce (Controlling); #540 hotovo, #500 zúženo na PROJ + účty Helios |
+
+**Datový model Prodáno:** `v.prodano = { datum, kdo, kdy, pipedrive: { stav: 'ceka', kdy } }` u zamčené varianty (jen
+jedna v zakázce); stopa `zak.prodejHistorie` [{ akce prodano/odemceno, varianta, cislo, datum, duvod, kdo, kdy }] — píše
+jen server; odemčení = klient smaže `v.prodano` a pošle `zak.prodejOdemknout = { varianta, duvod }` (server smaže).
+Obnova z otisku bere prodej a historii ze zálohy (očista), ze souboru jde cestou uložení (B98). Odeslání do Pipedrive
+(#510) má číst `pipedrive.stav === 'ceka'` a převést `prodPdZapis` přes `pdZapisDealu` (P3 #536 — sjednotí koordinace).
+
+**Testy:** `spust_testy.sh` 275 / 0 / 1 přeskočeno; kolo `--jen build,staticke` VŠE ZELENÉ; smoke 50/0,
+overit_controlling 63/0, overit_online 273/0 (overit_manual bez firemních podkladů přeskočen, kód 4); test_prava 948/0;
+netlify/test_controlling 80/0; test_zalohy 165/0. Mutace „#540" jádra 10/10, serveru 12/12. Pojistky (nad 2ad47f4):
+test_controlling_c4 9 FAIL (s novým modelem a starým zamek.js 5 FAIL), test_prava 6 FAIL + výjimka,
+netlify/test_controlling 4 FAIL, test_zalohy 1 FAIL, test_ukazka_controlling 5 FAIL.
+
+**Nález pro koordinaci (neopraveno, mimo rozsah):** obnova s částí `zakazky` spadne v `prestavRejstrik`
+(`netlify/functions/obnova.mjs:205` → `uloRejstrikZaznam`, `varianty.forEach is not a function`), když v databázi leží
+zakázka s `varianty` jiného typu než pole (v `netlify/test_controlling.mjs` ji podstrčí test „nečitelná zakázka").
+Uložením se taková zakázka nedostane (server tvar hlídá), jen zásahem mimo server.
+
+**Při slučování:** konflikt hrozí v `CHANGELOG.md`, `roadmapa/roadmap.json`, `manual/*obsah.json` (řádek verze),
+`mutace_jadro.mjs` (JADRA + objednane.js, PRIORITA, začátek MUTACE; zrušena mutace „#504 PD: výchozí stav = všechny",
+„P1: verze zůstala 2" míří na 4), `netlify/mutace.mjs` (SADY + test_controlling_c4, začátek MUTACE),
+`netlify/lib/zalohovani.mjs` (O-T #529 tam také sahá — merge-tree bez konfliktu). Release v27.10.3 zatím není
+(větev neslučována) — odkaz vyrobí koordinace po sloučení (`nastroje/release_odkaz.py`).
+
+**Čeká na J. V.:** nic nového; poslat šablonu controllingu v listopadu (otázka 9).
+
+---
 # Předávka — 27. 10. 2026: E1 #533 — jednotná konvence názvů exportovaných souborů, větev `claude/e1-nazvy-exportu`
 
 Nad `62ea0c8` (integrace v27.10.1). **Verze 27.10.2** (souběžně O-T #529 — koordinace přečísluje). Koordinace:
