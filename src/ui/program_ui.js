@@ -481,7 +481,7 @@ function cenikPrenosStahni() {
     progZprava('Není co stahovat — platný ceník zatím není zveřejněný.', 'varovani');
     render(); return false;
   }
-  const jmeno = 'cenik_platny_v' + (d.verze || 0) + '.json';
+  const jmeno = nazevExportu('cenik-platny', { verzeCeniku: d.verze });   // #533: CENIK_<den>-PLATNY-V<n>-OCK+PROJ_<verze>.json
   souborKeStazeni(jmeno, JSON.stringify(d, null, 1));
   progZprava('Ceník ' + jmeno + ' je ve Staženích. Na testovacím webu ho nahrajte tlačítkem vedle.');
   render();

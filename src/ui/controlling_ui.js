@@ -149,14 +149,13 @@ function ctrlUiStahni(blob, jmeno) {
   a.href = URL.createObjectURL(blob); a.download = jmeno; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 10000);
 }
-const ctrlUiDnes = () => new Date().toISOString().slice(0, 10);
 function ctrlUiKatalogNazvy() {
   return ctrlKatalogNazvy(typeof KATALOG !== 'undefined' ? KATALOG : null, typeof PC !== 'undefined' ? PC : null);
 }
 function ctrlUiMapaXlsx() {
   if (!CTRL_STAV.data) return;
   try {
-    ctrlUiStahni(xlsxZapis(ctrlMapaListy(CTRL_STAV.data, ctrlUiKatalogNazvy())), 'CONTROLLING_MAPOVANI_' + ctrlUiDnes() + '.xlsx');
+    ctrlUiStahni(xlsxZapis(ctrlMapaListy(CTRL_STAV.data, ctrlUiKatalogNazvy())), nazevExportu('controlling-mapovani', {}));   // #533
     ctrlUiZprava('Mapování staženo — listy Mapování a Skupiny. Upravený soubor jde nahrát zpět.');
   } catch (e) { ctrlUiZprava('Stažení mapování se nepovedlo: ' + e.message, true); }
 }
@@ -200,17 +199,18 @@ function ctrlUiExport(format) {
     verzeMapovani: p ? p.verze : null, kdo: (ONLINE_STAV.ja && ONLINE_STAV.ja.email) || '',
     build: (typeof buildVerze === 'function' && buildVerze()) || '' });
   if (!exp.ok) return ctrlUiZprava(exp.chyba, true);
-  const cislo = String((exp.strany[0] && exp.strany[0].cislo) || 'zakazka').replace(/[^0-9A-Za-z.-]+/g, '_').replace(/^_+|_+$/g, '');
-  const jmeno = 'PREDKALKULACE_' + cislo + '_' + ctrlUiDnes();
+  /* #533: PREDKALKULACE_<číslo>-<OCK+PROJ>-<den>_<verze>.<xlsx|csv> */
+  const jmeno = nazevExportu('predkalkulace', { cislo: exp.strany[0] && exp.strany[0].cislo,
+    oblasti: exp.strany.map(s => s.oblast), format: 'csv' === format ? 'csv' : 'xlsx' });
   try {
-    if (format === 'csv') ctrlUiStahni(new Blob([ctrlExportCsv(exp, data)], { type: 'text/csv;charset=utf-8' }), jmeno + '.csv');
-    else ctrlUiStahni(xlsxZapis(ctrlExportListy(exp, data)), jmeno + '.xlsx');
+    if (format === 'csv') ctrlUiStahni(new Blob([ctrlExportCsv(exp, data)], { type: 'text/csv;charset=utf-8' }), jmeno);
+    else ctrlUiStahni(xlsxZapis(ctrlExportListy(exp, data)), jmeno);
     /* Do protokolu zakázky se export nezapisuje: zápis by zakázku změnil
      * (a spustil ukládání) jen kvůli tomu, že si ji někdo přečetl. Protokol
      * exportů vede hromadný export na serveru (C3); export jedné otevřené
      * varianty dělá prohlížeč z dat, která už má. */
     const vCene = exp.radky.filter(r => r.vZakladu).length;
-    ctrlUiZprava('Staženo ' + jmeno + '.' + format + ' — ' + vCene + ' řádků v ceně nabídky'
+    ctrlUiZprava('Staženo ' + jmeno + ' — ' + vCene + ' řádků v ceně nabídky'
       + (format !== 'csv' && exp.radky.length > vCene ? ', ' + (exp.radky.length - vCene) + ' příplatků-voleb' : '')
       + (ctrlUiZmeneno() ? '. Pozor: neuložené změny mapování se do exportu nepromítly — platí uložená verze.' : '.'));
   } catch (e) { ctrlUiZprava('Export se nepovedl: ' + e.message, true); }
@@ -309,14 +309,16 @@ async function ctrlUiHromadny(format) {
       const opts = { kdy: o.kdy, kdo: o.kdo, verzeMapovani: o.verzeMapovani,
         build: (typeof buildVerze === 'function' && buildVerze()) || '',
         hromadny: Object.assign({}, o.filtr || f.filtr, { preskoceno: o.preskoceno || [], vyrazenoPd: vy }) };
-      const zuz = (f.filtr.oblast !== 'obe' ? '_' + f.filtr.oblast.toUpperCase() : '') + (f.filtr.rada !== 'obe' ? '_' + f.filtr.rada.toUpperCase() : '')
-        + (f.filtr.pd && f.filtr.pd !== 'vse' ? '_PD-' + f.filtr.pd.toUpperCase() : '');
-      /* #508: celá databáze nese v názvu „CELA-DB" a den exportu. */
-      const jmeno = 'PREDKALKULACE_' + (f.filtr.vse ? 'CELA-DB_' + ctrlUiDenLokal(new Date()) : f.filtr.od + '_' + f.filtr.do) + zuz;
-      if (format === 'csv') ctrlUiStahni(new Blob([ctrlExportCsv(o.exporty, o.data, opts)], { type: 'text/csv;charset=utf-8' }), jmeno + '.csv');
-      else ctrlUiStahni(xlsxZapis(ctrlExportListy(o.exporty, o.data, opts)), jmeno + '.xlsx');
+      const zuzeni = [f.filtr.oblast !== 'obe' ? f.filtr.oblast.toUpperCase() : '', f.filtr.rada !== 'obe' ? f.filtr.rada.toUpperCase() : '',
+        f.filtr.pd && f.filtr.pd !== 'vse' ? 'PD-' + f.filtr.pd.toUpperCase() : ''];
+      /* #508: celá databáze nese v názvu „CELA-DB" a den exportu; #533 konvence:
+       * PREDKALKULACE_<od>-az-<do>[-OCK][-CR][-PD-…]_<verze>.<xlsx|csv>. */
+      const jmeno = nazevExportu('predkalkulace-hromadna', { vse: !!f.filtr.vse, od: f.filtr.od, do: f.filtr.do,
+        zuzeni, format: format === 'csv' ? 'csv' : 'xlsx' });
+      if (format === 'csv') ctrlUiStahni(new Blob([ctrlExportCsv(o.exporty, o.data, opts)], { type: 'text/csv;charset=utf-8' }), jmeno);
+      else ctrlUiStahni(xlsxZapis(ctrlExportListy(o.exporty, o.data, opts)), jmeno);
       const radku = o.exporty.reduce((a, e) => a + e.radky.filter(r => r.vZakladu).length, 0);
-      ctrlUiZprava('Staženo ' + jmeno + '.' + format + ' — ' + o.exporty.length + ' '
+      ctrlUiZprava('Staženo ' + jmeno + ' — ' + o.exporty.length + ' '
         + (o.exporty.length === 1 ? 'zakázka' : (o.exporty.length < 5 ? 'zakázky' : 'zakázek')) + ', ' + radku + ' řádků v ceně nabídky'
         + (o.preskoceno && o.preskoceno.length ? '; přeskočeno ' + o.preskoceno.length + ' (důvody v listu Popis)' : '')
         + (vy.jiny + vy.bez ? '; filtr stavu dealu vyřadil ' + (vy.jiny + vy.bez) + ' (bez stavu ' + vy.bez + ')' : '') + '.');

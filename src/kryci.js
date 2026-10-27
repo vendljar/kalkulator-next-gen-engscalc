@@ -784,8 +784,7 @@ function kryciData(zak, varianta, jekly, verze) {
   const hodiny = kryciHodinySekce(zak, varianta, jekly, verze, 'ock');   // konec listu BO, jen OCK (15. 10. 2026)
   if (hodiny) sekce.push(hodiny);
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
-  const cislo = (zak.cislo || 'CN').replace(/\s+/g, '');
-  const nazevSouboru = ('KRYCI_LIST_' + verzeNazev + '_' + cislo).replace(/[\\/:*?"<>|]+/g, '-');
+  const nazevSouboru = (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('kryci-list', { cislo: zak.cislo, oblast: 'ock', list: verzeNazev });   // #533
   return { nadpis: 'Krycí list zakázky OCK — ' + verzeNazev, sekce, nazevSouboru, verze, verzeNazev };
 }
 

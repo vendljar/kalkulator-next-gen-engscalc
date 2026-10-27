@@ -268,9 +268,12 @@ function konfiguraceImport(data, ctx, volby) {
   return { zmeneno, varovani };
 }
 
-/* název souboru pro stažení */
-function konfiguraceNazevSouboru(build) {
-  return 'konfigurace' + (build ? '_' + String(build).replace(/[^\w.]+/g, '') : '') + '.json';
+/* název souboru pro stažení (#533): KONFIGURACE_<den>-<sekce|VSE>_<verze>.json;
+ * `volby` = KONFIG_VOLBY (vybrané sekce), import jméno nekontroluje. */
+function konfiguraceNazevSouboru(build, volby, datum) {
+  const sekce = KONFIG_SEKCE.filter(s => !volby || volby[s.kod]).map(s => s.kod);
+  return (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('konfigurace', { datum, verze: build || undefined,
+    sekce, vse: sekce.length === KONFIG_SEKCE.length });
 }
 
 if (typeof module !== 'undefined')

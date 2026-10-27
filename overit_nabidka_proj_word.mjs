@@ -221,8 +221,8 @@ const polozky = await zipPrecti(new Uint8Array(Buffer.from(vysledek.docx, 'base6
 const dekoduj = u8 => new TextDecoder().decode(u8);
 const doc = dekoduj(polozky.find(x => x.nazev === 'word/document.xml').data);
 
-test('název souboru začíná NABÍDKA_PROJ_',
-  vysledek.nazevSouboru.indexOf('NABÍDKA_PROJ_') === 0, vysledek.nazevSouboru);
+test('název souboru NABIDKA_<číslo>-PROJ-… (#533)',
+  vysledek.nazevSouboru.indexOf('NABIDKA_') === 0 && /-PROJ-/.test(vysledek.nazevSouboru), vysledek.nazevSouboru);
 test('v dokumentu nezůstal žádný symbol {{…}}',
   !/\{\{[A-Z0-9_]+\}\}/.test(doc), (doc.match(/\{\{[A-Z0-9_]+\}\}/g) || []).slice(0, 6).join(' '));
 test('hlavička nese objednatele z hlavičky PROJ', doc.includes('SVJ Zkušební 7'));

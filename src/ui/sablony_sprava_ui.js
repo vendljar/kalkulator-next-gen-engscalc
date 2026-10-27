@@ -188,7 +188,7 @@ async function sablChybejici(typ, lang) {
       .concat((stat.symbolove || []).map(t => csvBunka(t) + ';(odstavec se symbolem)')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    a.download = 'sablona_' + typ + '_nepreloz_' + lang + '.csv';
+    a.download = nazevExportu('neprelozene', { sablona: typ, jazyk: lang });   // #533
     document.body.appendChild(a); a.click(); a.remove();
   } catch (e) { hlaska('Seznam nepřeložených frází se nepodařilo vytvořit: ' + e.message); }
 }

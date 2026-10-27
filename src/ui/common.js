@@ -2667,6 +2667,14 @@ function souborKeStazeni(jmeno, text, typ) {
   setTimeout(() => URL.revokeObjectURL(a.href), 30000);
 }
 
+/* Tisk hlavního okna s navrženým jménem PDF (#533): prohlížeč nabízí jako
+ * jméno souboru titulek stránky, takže se na dobu tisku vymění a vrátí. */
+function tiskSNazvem(nazev) {
+  const puvodni = document.title;
+  if (nazev) document.title = nazev;
+  try { window.print(); } finally { document.title = puvodni; }
+}
+
 /* ---------- uložit / načíst zakázku (StorageAdapter 'file') ---------- */
 function ulozZakazku() {
   // #41: co je rozepsané, se do protokolu dopíše ještě před exportem –
@@ -2681,7 +2689,7 @@ function ulozZakazku() {
     : StorageAdapter.exportuj(ZAK)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = StorageAdapter.nazevSouboru(ZAK);
+  a.download = StorageAdapter.nazevSouboru(ZAK, bezCeniku);   // #533: ZAKAZKA_<číslo>[-BEZ-CENIKU]_<verze>.json
   a.click();
   // od téhle chvíle je stav na disku – varování při odchodu už není na místě
   if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();

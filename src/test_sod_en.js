@@ -66,7 +66,7 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
     /^after completion of the entire Work .* – the remaining 10 % of the total price of the Work$/.test(radky[2] || ''), radky[2]);
   test('EN: druh místa plnění přeložený se členem', P.SOD_MISTO_PLNENI_DRUH === 'an apartment building', P.SOD_MISTO_PLNENI_DRUH);
   test('EN: cena v eurech', /^€ [\d\s ]+$/.test(P.CENA_BEZ_DPH || ''), P.CENA_BEZ_DPH);
-  test('EN: jméno souboru končí _EN', /_EN$/.test(d.nazevSouboru), d.nazevSouboru);
+  test('EN: jméno souboru končí -EN (#533)', /-EN$/.test(d.nazevSouboru), d.nazevSouboru);
   /* čeština beze změny */
   const c = fn(z, v, JEKLY, 'cz', sablona('SOD_PLATEBNI_KALENDAR')).placeholders;
   test('CZ: věty splátek beze změny', c.SOD_PLATEBNI_KALENDAR === 'při uzavření této smlouvy o dílo 50 % z celkové ceny díla\n'

@@ -199,9 +199,8 @@ function sodData(zak, varianta, jekly, lang, sablona) {
   const L = d.jazyk || 'cz';
   /* Objednané příplatky (#447 C6) — cena díla = nabídka + objednané. */
   const objPryc = sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona);
-  const nazev = ('SOD_' + (d.placeholders.CISLO_NABIDKY || 'CN')
-    + (varianta && varianta.zakaznik ? '_' + varianta.zakaznik : '')
-    + (L !== 'cz' ? '_' + L.toUpperCase() : ''));
+  const nazev = (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('sod', { cislo: d.placeholders.CISLO_NABIDKY, oblast: 'ock',
+    jazyk: L, zakaznik: varianta && varianta.zakaznik });   // #533
   sodObjednatelDoplna(d.placeholders, zak);
   sodVedouciMontaziDoplna(d.placeholders);
   /* Termíny, podpisy a kopie faktur z krycího listu OCK (P9.2, P9.4 —
@@ -315,9 +314,8 @@ function sodProjData(zak, varianta, lang, sablona) {
    * (sodProjRozsah); cizí jméno by u šablony SoD v4 zastavilo dokument. */
   d.blokyPryc = [];
   const L = d.jazyk || 'cz';
-  const nazev = ('SOD_PROJ_' + (d.placeholders.CISLO_NABIDKY || 'OVP-CN')
-    + (varianta && varianta.zakaznik ? '_' + varianta.zakaznik : '')
-    + (L !== 'cz' ? '_' + L.toUpperCase() : ''));
+  const nazev = (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('sod', { cislo: d.placeholders.CISLO_NABIDKY, oblast: 'proj',
+    jazyk: L, zakaznik: varianta && varianta.zakaznik });   // #533
   sodObjednatelDoplna(d.placeholders, zak);
   /* Splátky, správní poplatky, druhý podepisující a kopie faktur žijí
    * v krycím listu PROJ (23. 8. 2026) — smlouva si je odtud vyzvedne.
@@ -491,10 +489,8 @@ function plnaMocData(zak, varianta) {
    * zhotovitele se od 23. 8. 2026 berou z krycího listu PROJ — do té doby
    * je musel obchodník dopisovat ve Wordu do žlutě podbarvených míst. */
   if (typeof kryciProjSodSymboly === 'function') kryciProjSodSymboly(zak, varianta, placeholders);
-  const cislo = ((h.cislo || zak.cislo || '') + '').replace(/\s+/g, '');
   return { placeholders, jazyk: 'cz', obrazky: {},
-    nazevSouboru: ('PLNA_MOC' + (cislo ? '_' + cislo : ''))
-      .replace(/[\\/:*?"<>|]+/g, '-') };
+    nazevSouboru: (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('plna-moc', { cislo: h.cislo || zak.cislo }) };   // #533
 }
 
 /* registrace do jednotného registru dokumentů (dokumenty.js) */

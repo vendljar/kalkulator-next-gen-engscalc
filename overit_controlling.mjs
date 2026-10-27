@@ -178,7 +178,7 @@ zkus('zamčená řídící varianta: export povolený, výsledek zmrazený', !za
 const [stazeni] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#ctrlExportXlsx')]);
 const jmeno = stazeni.suggestedFilename();
 const bajty = Array.from(readFileSync(await stazeni.path()));
-zkus('stáhne se PREDKALKULACE_<číslo>_<datum>.xlsx', /^PREDKALKULACE_2026_-_OPR_-_CN_-_0902_\d{4}-\d{2}-\d{2}\.xlsx$/.test(jmeno), jmeno);
+zkus('stáhne se PREDKALKULACE_<číslo>-<strany>-<datum>_<verze>.xlsx (#533)', /^PREDKALKULACE_2026-OPR-CN-0902-[A-Z+]+-\d{4}-\d{2}-\d{2}_\d+\.\d+\.\d+\.xlsx$/.test(jmeno), jmeno);
 const obsah = await stranka.evaluate(async (b) => {
   const sheets = await xlsxPrecti(new Uint8Array(b));
   const r = sheets.find(s => s.nazev === 'Řádky');
@@ -203,7 +203,7 @@ const prehled = async () => stranka.evaluate(() => { zavriNastaveni(); prepniTab
 const pAdmin = await prehled();
 zkus('administrátor má u zamčené řídící varianty tlačítko „Export pro controlling"', pAdmin.pocet === 1 && pAdmin.text === 'Export pro controlling', JSON.stringify(pAdmin));
 const [stPrehled] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#page-zakazka [data-ctrl-prehled]')]);
-zkus('klik v Přehledu stáhne PREDKALKULACE_<číslo>_<datum>.xlsx', /^PREDKALKULACE_2026_-_OPR_-_CN_-_0902_\d{4}-\d{2}-\d{2}\.xlsx$/.test(stPrehled.suggestedFilename()), stPrehled.suggestedFilename());
+zkus('klik v Přehledu stáhne PREDKALKULACE_<číslo>-<strany>-<datum>_<verze>.xlsx (#533)', /^PREDKALKULACE_2026-OPR-CN-0902-[A-Z+]+-\d{4}-\d{2}-\d{2}_\d+\.\d+\.\d+\.xlsx$/.test(stPrehled.suggestedFilename()), stPrehled.suggestedFilename());
 const pObch = await stranka.evaluate(() => { ONLINE_STAV.ja = { email: 'obchodnik@priklad.cz', role: 'Obchodník', jmeno: 'O' }; render();
   const n = document.querySelectorAll('#page-zakazka [data-ctrl-prehled]').length;
   ONLINE_STAV.ja = { email: 'spravce@priklad.cz', role: 'Administrátor', jmeno: 'S' }; NAST.nahledRole = 'Obchodník'; render();
@@ -265,7 +265,7 @@ await stranka.selectOption('#ctrlHromPd', 'vse');
 await stranka.selectOption('#ctrlHromPodle', 'zamceni');   // blok níž ověřuje výběr podle dne zámku
 const [stHrom] = await Promise.all([stranka.waitForEvent('download'), stranka.click('#ctrlHromXlsx')]);
 const jmHrom = stHrom.suggestedFilename();
-zkus('stáhne se PREDKALKULACE_<od>_<do>_OCK.xlsx', /^PREDKALKULACE_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_OCK\.xlsx$/.test(jmHrom), jmHrom);
+zkus('stáhne se PREDKALKULACE_<od>-az-<do>-OCK_<verze>.xlsx (#533)', /^PREDKALKULACE_\d{4}-\d{2}-\d{2}-az-\d{4}-\d{2}-\d{2}-OCK_\d+\.\d+\.\d+\.xlsx$/.test(jmHrom), jmHrom);
 const hrom = await stranka.evaluate(async (b) => {
   const sheets = await xlsxPrecti(new Uint8Array(b));
   const p = sheets.find(s => s.nazev === 'Popis');
@@ -335,7 +335,7 @@ const vse = await stranka.evaluate(async (b) => {
   return { dotaz: window.__srv.exportDotazy.slice(-1)[0], obdobi: (p.rows.find(x => /^Období/.test(String(x[0]))) || [])[1],
     zakazek: String((p.rows.find(x => x[0] === 'Zakázek v exportu') || [])[1]) };
 }, Array.from(readFileSync(await stVse.path())));
-zkus('#508: stáhne se PREDKALKULACE_CELA-DB_<dnes>_OCK.xlsx', /^PREDKALKULACE_CELA-DB_\d{4}-\d{2}-\d{2}_OCK\.xlsx$/.test(jmVse), jmVse);
+zkus('#508/#533: stáhne se PREDKALKULACE_<dnes>-CELA-DB-OCK_<verze>.xlsx', /^PREDKALKULACE_\d{4}-\d{2}-\d{2}-CELA-DB-OCK_\d+\.\d+\.\d+\.xlsx$/.test(jmVse), jmVse);
 zkus('#508: dotaz celé databáze nese vse=1 bez od/do; Popis „celá databáze", 1 zakázka',
   vse.dotaz && vse.dotaz.vse === '1' && !('od' in vse.dotaz) && !('do' in vse.dotaz) && /^celá databáze/.test(vse.obdobi || '') && vse.zakazek === '1',
   JSON.stringify(vse));

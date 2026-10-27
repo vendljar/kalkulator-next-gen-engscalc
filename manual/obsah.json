@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
-    "verze": "Platí pro aplikaci v27.10.1 · sestaveno 27. 10. 2026",
+    "verze": "Platí pro aplikaci v27.10.2 · sestaveno 27. 10. 2026",
 
   "uvod": [
     {
@@ -257,7 +257,7 @@
             {"text": "Otevřete starou zakázku a v **Přehledu cenových nabídek** klikněte v kartě s variantami na **⧉⧉ Duplikovat jako novou zakázku…**. Pak jí dejte vlastní číslo nabídky.", "snimek": "k8-souhrn-varianty", "klik": {"obsahuje": "Duplikovat jako novou zakázku"}}
           ]
         },
-        { "typ": "text", "text": "Dvě dvojice tlačítek bývají zdrojem nedorozumění, takže na rovinu: **Uložit zakázku / Načíst zakázku** pracuje s online databází. **Uložit do souboru (JSON) / Načíst ze souboru** pracuje se souborem na vašem disku. Soubor obsahuje celou zakázku včetně všech variant, zadání OCK, technické specifikace i kalkulace PROJ — hodí se, když chcete zakázku poslat mailem nebo si ji odložit stranou. **Pokud vám administrátor skryl náklady, soubor nenese ceníky rozpracovaných variant** — jen to, čím se varianta od platného ceníku liší (vaše přirážka, sazba DPH, dohodnuté ceny). Při načtení se ceník doplní z ceníku, který právě platí, takže cena zůstane stejná; odeslané (uzamčené) varianty jdou do souboru celé." },
+        { "typ": "text", "text": "Dvě dvojice tlačítek bývají zdrojem nedorozumění, takže na rovinu: **Uložit zakázku / Načíst zakázku** pracuje s online databází. **Uložit do souboru (JSON) / Načíst ze souboru** pracuje se souborem na vašem disku. Soubor obsahuje celou zakázku včetně všech variant, zadání OCK, technické specifikace i kalkulace PROJ — hodí se, když chcete zakázku poslat mailem nebo si ji odložit stranou. Soubory se jmenují podle obsahu: zakázka `ZAKAZKA_2026-OPR-CN-0383_27.10.2.json` (číslo zakázky a verze aplikace), nabídka `NABIDKA_2026-OPR-CN-0383-OCK-CZ.docx` (anglicky `PRICE-QUOTATION_…-EN`, německy `ANGEBOT_…-DE`, francouzsky `DEVIS_…-FR`), smlouva `SOD_…`. Starší soubory `zakazka_….json` se načtou stejně. **Pokud vám administrátor skryl náklady, soubor nenese ceníky rozpracovaných variant** — jen to, čím se varianta od platného ceníku liší (vaše přirážka, sazba DPH, dohodnuté ceny). Při načtení se ceník doplní z ceníku, který právě platí, takže cena zůstane stejná; odeslané (uzamčené) varianty jdou do souboru celé." },
         { "typ": "text", "text": "**Mazat online zakázky smí jen administrátor.** Před smazáním se aplikace zeptá a vypíše, čeho se to týká; je-li ve výběru odeslaná nabídka, přijde ještě druhá otázka, protože odeslaná nabídka je doklad o tom, co odešlo zákazníkovi. Smazaná zakázka je pryč i s historií cen a variant a vrátit ji jde jen ze zálohy databáze." }
       ]
     },

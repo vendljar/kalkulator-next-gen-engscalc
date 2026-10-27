@@ -76,7 +76,7 @@ test('lešení vnější jako příplatek', /Kč$/.test(p.PRIP_LESENI_VNEJSI), p
  * ho zákazníkovi zároveň nabízela za cenu. Tři stavy hlídá test_nabidka_sokl.js. */
 test('sokl není v základní ceně, ale nabízí se jako příplatek',
   p.TS_NENI_SOKL === 'nabízeno jako příplatek', p.TS_NENI_SOKL);
-test('název souboru', d.nazevSouboru === 'NABÍDKA_2026-OPR-CN-9001', d.nazevSouboru);
+test('název souboru (#533)', d.nazevSouboru === 'NABIDKA_2026-OPR-CN-9001-OCK-CZ', d.nazevSouboru);
 
 // lešení vnější zvolené ve volitelných => „v základní ceně“
 const v2 = JSON.parse(JSON.stringify(v));

@@ -504,7 +504,7 @@ function detailTisk() {
   const logoHtml = f && f.logo ? `<img class="logo" src="${esc(f.logo)}" alt="">` : '';
   const patickaHtml = f && typeof firmaPaticka === 'function' && firmaPaticka(f)
     ? `<div class="paticka">${esc(firmaPaticka(f))}</div>` : '';
-  const nazev = `Detail vypoctu ${(ZAK.cislo || '').replace(/[^\w.-]+/g, '_')}`.trim();
+  const nazev = nazevExportu('detail-vypoctu', { cislo: ZAK.cislo });   // #533: titulek = navržený název PDF
 
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;

@@ -613,8 +613,7 @@ function kryciProjData(zak, varianta, jekly, verze) {
   const hodiny = (typeof kryciHodinySekce === 'function') ? kryciHodinySekce(zak, varianta, jekly, verze, 'proj') : null;
   if (hodiny) sekce.push(hodiny);
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
-  const cislo = ((c.hl && c.hl.cislo) || 'CN').replace(/\s+/g, '');
-  const nazevSouboru = ('KRYCI_LIST_PROJ_' + verzeNazev + '_' + cislo).replace(/[\\/:*?"<>|]+/g, '-');
+  const nazevSouboru = (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('kryci-list', { cislo: c.hl && c.hl.cislo, oblast: 'proj', list: verzeNazev });   // #533
   return { nadpis: 'Krycí list zakázky PROJ — ' + verzeNazev, sekce, nazevSouboru, verze, verzeNazev };
 }
 

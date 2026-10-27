@@ -120,7 +120,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* preklad.js (#518, 26. 10. 2026): sledování textů, které v cizojazyčné
    * nabídce zůstaly česky — podklad žluté značky v náhledu. Hlídá
    * src/test_neprelozene.js. */
-  'preklad.js'];
+  'preklad.js',
+  /* nazvy_souboru.js (#533, 27. 10. 2026): konvence názvů exportovaných
+   * souborů — obsah, verze aplikace, dokumenty pro zákazníka bez verze.
+   * Hlídá src/test_nazvy_souboru.js. */
+  'nazvy_souboru.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -168,6 +172,8 @@ const PRIORITA = [
   'test_zaloha_strany.js',
   /* #530 — autorská poznámka v hlavičce engine.js */
   'test_autorstvi.js',
+  /* #533 — názvy exportovaných souborů (nazvy_souboru.js, záloha v ui/online_ui.js) */
+  'test_nazvy_souboru.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -196,6 +202,23 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* #533 (27. 10. 2026): konvence názvů exportovaných souborů. Hlídá src/test_nazvy_souboru.js. */
+  { nazev: '#533: ceník varianty se jmenuje jen OCK, i když nese PROJ', soubor: 'nazvy_souboru.js',
+    hledej: "obsah: [nazevSoubeh([u.ock !== false && 'OCK', u.proj !== false && 'PROJ'])], pripona: 'xlsx' }),",
+    nahrad: "obsah: ['OCK'], pripona: 'xlsx' }),",
+    proc: 'přesně nález J. V.: soubor by tvrdil jiný obsah, než nese' },
+  { nazev: '#533: diakritika zůstane v názvu souboru', soubor: 'nazvy_souboru.js',
+    hledej: "    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')\n",
+    nahrad: "\n",
+    proc: 'NABÍDKA_… a jména zákazníků s háčky by se v e-mailu a na Disku rozpadly' },
+  { nazev: '#533: dokument pro zákazníka dostane verzi aplikace', soubor: 'nazvy_souboru.js',
+    hledej: "  if (uu.verze !== undefined && o.verze !== false) o.verze = uu.verze;",
+    nahrad: "  if (uu.verze !== undefined) o.verze = uu.verze;",
+    proc: 'zákazník by v názvu nabídky viděl číslo verze kalkulátoru a zaměnil ho s revizí' },
+  { nazev: '#533: záloha online databáze pod starým jménem', soubor: 'ui/online_ui.js',
+    hledej: "  return nazevExportu('zaloha', {});",
+    nahrad: "  return 'zaloha_online_' + new Date().toISOString().slice(0, 10) + '.json';",
+    proc: 'záloha by se vymkla konvenci a nenesla verzi aplikace' },
   /* #530 (27. 10. 2026): autorská poznámka v hlavičce jádra. Hlídá src/test_autorstvi.js. */
   { nazev: '#530: autorská poznámka z hlavičky engine.js smazaná', soubor: 'engine.js',
     hledej: '/* Autor programu Jaroslav Vendl (2026) */\n',

@@ -733,7 +733,7 @@ function sablonaChybejiciCsv(typ, lang) {
       .concat(stat.chybi.map(t => csvBunka(t) + ';')).join('\r\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    a.download = 'sablona_' + typ + '_nepreloz_' + lang + '.csv';
+    a.download = nazevExportu('neprelozene', { sablona: typ, jazyk: lang });   // #533
     a.click();
   }).catch(err => sablonaPrelozStav(typ, lang, 'Chyba: ' + err.message));
 }
@@ -1072,7 +1072,7 @@ function konfigExportSoubor() {
     const data = konfiguraceExport(konfigCtx(), KONFIG_VOLBY);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
-    a.download = konfiguraceNazevSouboru(konfigBuild());
+    a.download = konfiguraceNazevSouboru(konfigBuild(), KONFIG_VOLBY);   // #533: vybrané sekce v názvu
     a.click();
     konfigStav('Uloženo: ' + a.download + ' — ' + konfiguracePopis(data).map(r => r.text).join('; '));
   } catch (err) { konfigStav('Chyba exportu: ' + err.message, true); }
@@ -1225,7 +1225,7 @@ function slovCsvJenVApp() {
   const csv = slovnikCsvJenVApp(SLOV_STAV.rozdil.jenVApp);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = 'slovnik_jen_v_aplikaci.csv';
+  a.download = nazevExportu('slovnik-jen-v-aplikaci', {});   // #533
   a.click();
   slovStav('Uloženo: ' + a.download + ' — pošlete překladatelům k doplnění do tabulky.');
 }
@@ -1245,7 +1245,7 @@ function slovXlsxExport() {
     const p = slovnikPrehled(PREKLAD, JAZYKY.filter(j => j.kod !== 'cz'));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(xlsxZapis(sheets));
-    a.download = 'SLOVNIK_ENG_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+    a.download = nazevExportu('slovnik', { jazyky: p.jazyky.map(j => j.kod) });   // #533: SLOVNIK_<den>-CZ+EN+DE+FR_<verze>.xlsx
     a.click();
     slovStav('Uloženo: ' + a.download + ' — ' + p.hesel + ' hesel, '
       + p.jazyky.map(j => j.kod.toUpperCase() + ' ' + j.prelozeno).join(', ')

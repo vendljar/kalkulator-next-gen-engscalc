@@ -1109,12 +1109,10 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   if (typeof uvodniFotoSymboly === 'function')
     Object.assign(placeholders, uvodniFotoSymboly(zak, 'proj'));
 
-  /* Slovo „nabídka" v jazyce dokumentu (obchodník 3. 10. 2026), viz nabidka.js. */
-  const slovo = (typeof nabidkaSlovoSouboru === 'function') ? nabidkaSlovoSouboru(L)
-    : ({ en: 'PRICE_QUOTATION', de: 'ANGEBOT', fr: 'DEVIS' }[L] || 'NABÍDKA');
-  const nazevSouboru = (slovo + '_PROJ_' + (placeholders.CISLO_NABIDKY || 'OVP-CN')
-    + (varianta && varianta.zakaznik ? '_' + varianta.zakaznik : '')
-    + (L !== 'cz' ? '_' + L.toUpperCase() : '')).replace(/[\\/:*?"<>|]+/g, '-');
+  /* Slovo „nabídka" v jazyce dokumentu (obchodník 3. 10. 2026), tvar podle
+   * konvence #533: NABIDKA_<číslo>-PROJ[-zákazník]-<JAZYK> (nazvy_souboru.js). */
+  const nazevSouboru = (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('nabidka', { cislo: placeholders.CISLO_NABIDKY,
+    oblast: 'proj', jazyk: L, zakaznik: varianta && varianta.zakaznik });
 
   /* Bloky studie šablony PROJ v7 (D1, Q3) — pevný text bez symbolu, zmizí
    * výslovně (docxgen blokyPryc). Starší šablona bloky nemá a nic se nestane.

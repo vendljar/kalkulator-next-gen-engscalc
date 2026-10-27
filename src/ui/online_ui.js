@@ -1728,8 +1728,10 @@ function pdStavObnovZak() {
 
 /* ---------- záloha („odlévání" na Disk Google) ---------- */
 
+/* #533: ZALOHA_<den>-ONLINE-DB_<verze>.json (dřív zaloha_online_<den>.json).
+ * Obnova jméno nekontroluje; úklid Disku bere jen otisk_… (retence_zaloh.js). */
 function onlineZalohaJmeno() {
-  return 'zaloha_online_' + new Date().toISOString().slice(0, 10) + '.json';
+  return nazevExportu('zaloha', {});
 }
 
 /* doSlozky=true → zapsat do připojené složky (na Disku Google se pak

@@ -1,3 +1,27 @@
+# Předávka — 27. 10. 2026: E1 #533 — jednotná konvence názvů exportovaných souborů, větev `claude/e1-nazvy-exportu`
+
+Nad `62ea0c8` (integrace v27.10.1). **Verze 27.10.2** (souběžně O-T #529 — koordinace přečísluje). Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrém webu, Disku ani v Pipedrive nic. Výpočet beze změny.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| Inventura | ✅ | 25 druhů souborů (stažení, Word, tisk do PDF přes titulek okna) + 6 výjimek — `podklady/NAZVY_SOUBORU.md`; všechny `.xlsx` jsou skutečné OOXML (xlsx.js) |
+| Konvence | ✅ | `TYP_<klíč>-<obsah>_<verze>.<přípona>`; klíč = číslo zakázky / rok (ceník) / den; **dokumenty pro zákazníka bez verze aplikace** (k potvrzení J. V.) |
+| Implementace | ✅ | `src/nazvy_souboru.js` (`NAZVY_DRUHY`, `nazevExportu`), CORE v build.py za build_info.js; `tiskSNazvem()` v ui/common.js (tisk specifikace) |
+| Import | ✅ | nic nekontroluje jméno — staré `zakazka_….json`, `CENIK_….xlsx`, `zaloha_online_….json` … se načtou |
+| Testy | ✅ | `src/test_nazvy_souboru.js` 133/0 (pojistka: se starým kódem 18 FAIL); 15 sad a 4 harnessy upravené na nové názvy; `spust_testy.sh` 272/0/1 přeskočeno; `--jen build,staticke` zelené; mutace „#533" 4/4; overit_online 273/0, overit_controlling 60/0, smoke 50/0 (overit_sod a overit_nabidka_proj_word bez šablon přeskočeny) |
+| Dokumentace | ✅ | `podklady/NAZVY_SOUBORU.md`, příručka obchodníka (věta o názvech zakázky a nabídky) i správce (konfigurace, přenos ceníku), řádek verze v27.10.2, CHANGELOG, roadmapa #533 ve vlně **G** (pokyn koordinace; definice vlny G převzata z integrace 6c8cbf9) |
+
+**Výjimky (beze změny):** `otisk_RRRR-MM-DD.json(.gz)`, `posledni_kopie.json`, `_nastaveni.json`, `_program.json`,
+šablony `.docx` a jejich jazykové mutace, přílohy poznámek.
+
+**Při slučování:** konflikt hrozí v `CHANGELOG.md`, `roadmapa/roadmap.json`, `manual/*obsah.json` (řádek verze)
+a `mutace_jadro.mjs` (JADRA, PRIORITA, začátek MUTACE). Testy, které hlídaly staré názvy: test_nabidka,
+test_sikora_drobnosti, test_dokumenty, test_kryci(_docx), test_kryci_proj_docx/_model, test_sod, test_sod_en,
+test_docx_preklad, test_konfigurace, test_zakazka, test_slovnik_xlsx; harnessy overit_controlling, overit_online,
+overit_sod, overit_nabidka_proj_word. Nová větev, která přidá stažení souboru, musí jít přes `nazevExportu`
+(test_nazvy_souboru bod 5 ji jinak zastaví).
+
 # Předávka — 27. 10. 2026: A1 #530 — poznámka o původním autorství v kódu, větev `claude/a1-autorstvi`
 
 Nad `1820f81` (integrace). **Verze 27.10.1** (souběžně O-T #529, M7, M8 — koordinace přečísluje). Koordinace:

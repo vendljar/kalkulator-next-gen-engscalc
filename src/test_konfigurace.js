@@ -167,9 +167,12 @@ test('popis uvádí počty', popis.every(r => /\d/.test(r.text)), JSON.stringify
 test('popis prázdného souboru je prázdný', konfiguracePopis(null).length === 0);
 
 // ---- 12. NÁZEV SOUBORU --------------------------------------------------------
-test('název souboru nese build', konfiguraceNazevSouboru('v26.7.5') === 'konfigurace_v26.7.5.json',
-  konfiguraceNazevSouboru('v26.7.5'));
-test('název souboru bez buildu', konfiguraceNazevSouboru('') === 'konfigurace.json');
+/* #533: KONFIGURACE_<den>-<sekce|VSE>_<verze>.json */
+test('název souboru nese build', konfiguraceNazevSouboru('v26.7.5', null, '2026-10-27') === 'KONFIGURACE_2026-10-27-VSE_26.7.5.json',
+  konfiguraceNazevSouboru('v26.7.5', null, '2026-10-27'));
+test('název souboru bez buildu nese vybrané sekce',
+  konfiguraceNazevSouboru('', { nastaveni: true, katalog: true }, '2026-10-27') === 'KONFIGURACE_2026-10-27-NASTAVENI+KATALOG.json',
+  konfiguraceNazevSouboru('', { nastaveni: true, katalog: true }, '2026-10-27'));
 
 // ---- 13. Kolečko export → import → export je stabilní --------------------------
 const A = konfiguraceExport(ctx, { nastaveni: true, katalog: true });

@@ -62,7 +62,7 @@ function sdExport() {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'techspec_data.json';
+  a.download = nazevExportu('specifikace-data', {});   // #533: SPECIFIKACE_<den>-CISELNIKY_<verze>.json
   a.click();
 }
 
