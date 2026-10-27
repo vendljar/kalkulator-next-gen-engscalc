@@ -8,6 +8,26 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v27.10.2 — E1 #533: jednotná konvence názvů exportovaných souborů, větev claude/e1-nazvy-exportu
+
+Nad integrací 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026: soubory se mají jmenovat podle toho, co skutečně
+obsahují (ceník „Cenik_2026-OPR-CN-…" nese OCK i PROJ → `CENIK_2026-OCK+PROJ_27.10.1.xlsx`). Výpočet beze změny;
+na ostrém webu, Disku ani v Pipedrive nic.
+
+- **Nové — #533 konvence `TYP_<klíč>-<obsah>_<verze>.<přípona>`** pro všech 25 druhů souborů, které aplikace
+  stahuje nebo tiskne do PDF: ceník varianty `CENIK_2026-OCK+PROJ_27.10.2.xlsx`, platný ceník, zakázka
+  `ZAKAZKA_<číslo>_<verze>.json`, nabídky OCK/PROJ `NABIDKA_<číslo>-OCK-CZ.docx` (EN `PRICE-QUOTATION`, DE `ANGEBOT`,
+  FR `DEVIS`), smlouvy `SOD_<číslo>-OCK|PROJ-<jazyk>`, plná moc, krycí listy `KRYCI-LIST_<číslo>-OCK-BACKOFFICE_<verze>`,
+  tisk technické specifikace a detailů do PDF, protokol, controlling (`PREDKALKULACE_…`), záloha
+  `ZALOHA_<den>-ONLINE-DB_<verze>.json`, konfigurace, slovník, nepřeložené fráze, data specifikace. Bez mezer
+  a diakritiky. Dokumenty pro zákazníka verzi aplikace nenesou. Jediné místo: `src/nazvy_souboru.js`.
+- **Beze změny (výjimky):** kopie zálohy na Disk `otisk_RRRR-MM-DD.json(.gz)` a `posledni_kopie.json`,
+  `_nastaveni.json`, `_program.json`, šablony `.docx` a jejich jazykové mutace, přílohy poznámek.
+- **Import:** jméno souboru nekontroluje nic — staré soubory (`zakazka_….json`, `CENIK_….xlsx`,
+  `zaloha_online_….json`, `cenik_platny_v….json`, `konfigurace_….json`) se načtou dál.
+- Tabulka starý → nový název: `podklady/NAZVY_SOUBORU.md`. Test `src/test_nazvy_souboru.js` (133 kontrol, pojistka:
+  nad 62ea0c8 se starým kódem 18 FAIL); mutace se značkou [#533] (4).
+
 ## v27.10.1 — A1 #530: poznámka o původním autorství v kódu, větev claude/a1-autorstvi
 
 Nad integrací 1820f81 (pokyn J. V. 27. 10. 2026: „stačí pouze v kódu, že jsem původním autorem této aplikace").

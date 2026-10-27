@@ -8491,7 +8491,22 @@
     "proc": "vzor a šablona příručky (postupy krok za krokem, tisk A4)"
    }
   ]
- }
+ },
+  {
+   "id": "533",
+   "vlna": "B",
+   "stav": "hotovo",
+   "dulezitost": "stredni",
+   "slozitost": "M",
+   "hotovoV": "v27.10.2",
+   "nazev": "E1: jednotná konvence názvů souborů, které kalkulátor exportuje",
+   "proc": "Pokyn J. V. 27. 10. 2026: „nastav konvenci pojmenování souborů při exportu z kalkuláku, aby respektovaly to, co exportují, např. ceník dnes Cenik_2026-OPR-CN-.xls, přičemž ve skutečnosti obsahuje data OCK i PROJ a měl by tedy být pojmenován např. CENIK_2026-OCK+PROJ_27.10.1.xlsx“.",
+   "detail": "Tvar TYP_<klíč>-<obsah>_<verze>.<přípona>: klíč = číslo zakázky (soubor jedné zakázky), rok (ceník varianty) nebo den RRRR-MM-DD (záloha, slovník, konfigurace, controlling); obsah OCK / PROJ / OCK+PROJ, jazyk, verze listu…; verze aplikace jen u interních souborů — nabídka, SoD, plná moc a specifikace pro zákazníka ji nenesou. 25 druhů exportů (ceník varianty i platný, zakázka, nabídky OCK/PROJ ve 4 jazycích, SoD, plná moc, krycí listy, tisk specifikace a detailů do PDF, protokol, controlling, záloha, konfigurace, slovník, nepřeložené fráze, data specifikace). Výjimky beze změny: otisk_RRRR-MM-DD.json(.gz), posledni_kopie.json, _nastaveni.json, _program.json, šablony .docx, přílohy. Import jméno nekontroluje — staré soubory se načtou dál. Tabulka starý → nový: podklady/NAZVY_SOUBORU.md.",
+   "kde": "`src/nazvy_souboru.js` (NAZVY_DRUHY, nazevExportu; CORE v build.py), volání v `nabidka.js`, `nabidka_proj.js`, `sod.js`, `kryci.js`, `kryci_proj.js`, `zakazka.js`, `konfigurace.js` a v UI (`cenik_ui`, `common` — tiskSNazvem, `controlling_ui`, `online_ui`, `program_ui`, `nastaveni_ui`, `sablony_sprava_ui`, `techspec_ui`, `specdata_ui`, `protokol_ui`, `zakazka_ui`, `detail_ui`); test `src/test_nazvy_souboru.js`; mutace [#533] v `mutace_jadro.mjs`; `podklady/NAZVY_SOUBORU.md`",
+   "hotovoKdyz": "Tabulkový test všech druhů projde, každé a.download v UI jde přes konvenci nebo vyjmenovanou výjimku, import starých názvů funguje; mutace „#533“ chycené; příručky popisují nové názvy.",
+   "pozn": "Dávka E1, větev claude/e1-nazvy-exportu nad 62ea0c8 (v27.10.1); souběžně O-T #529 — verzi a číslo může koordinace přečíslovat. Rozhodnutí k potvrzení J. V.: dokumenty pro zákazníka bez verze aplikace (jeden řádek verze:false v nazvy_souboru.js).",
+   "zavisi": []
+  }
  ],
  "meta" : {
   "planVikendHistorie" : {"nazev" : "Plán práce 23. 10. odpoledne – po 26. 10. 6:00 Praha (J. V. 23. 10. 2026)","polozky" : ["16","113","114","115","117","501","509","510","511","512","513","514","515"]},

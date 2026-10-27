@@ -484,11 +484,10 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
 
   /* NÁZEV SOUBORU V JAZYCE NABÍDKY (obchodník 3. 10. 2026: „jeste by mohl
    * kalkulak generovat nazvy souboru v jazyce cenova nabidky — EN price
-   * quotation, DE angebot"). Přípona jazyka zůstává. */
-  const nazevSouboru = nabidkaSlovoSouboru(L) + '_' + (placeholders.CISLO_NABIDKY || 'CN')
-    + (varianta.zakaznik ? '_' + varianta.zakaznik : '')
-    + (varianta.ridici ? '' : '_' + varianta.nazev)
-    + (L !== 'cz' ? '_' + L.toUpperCase() : '');
+   * quotation, DE angebot"). Tvar podle konvence #533 (nazvy_souboru.js):
+   * NABIDKA_<číslo>-OCK[-zákazník][-varianta]-<JAZYK>. */
+  const nazevSouboru = (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('nabidka', { cislo: placeholders.CISLO_NABIDKY,
+    oblast: 'ock', jazyk: L, zakaznik: varianta.zakaznik, varianta: varianta.ridici ? '' : varianta.nazev });
   /* Úvodní fotka stavby (11. 8. 2026): obrázek do tvaru {{UVODNI_FOTO}}
    * a k němu název a popisek jako textové symboly, ať si je jde do šablony
    * dopsat pod obrázek. Do 11. 8. byla fotka jen v online náhledu a titulní
@@ -591,9 +590,6 @@ function usazeniBocniSloucene(ph, P) {
   if (ph.TS_USAZENI_PRAVA) casti.push(P('pravá') + ' – ' + ph.TS_USAZENI_PRAVA);
   return casti.join('; ');
 }
-/* Slovo „nabídka" na začátku názvu souboru podle jazyka dokumentu. */
-const NABIDKA_SOUBOR_SLOVO = { cz: 'NABÍDKA', en: 'PRICE_QUOTATION', de: 'ANGEBOT', fr: 'DEVIS' };
-function nabidkaSlovoSouboru(L) { return NABIDKA_SOUBOR_SLOVO[L] || NABIDKA_SOUBOR_SLOVO.cz; }
 /* `extra` (nepovinné, obchodník 15. 10. 2026) = data.tsExtra z nabidkaData —
  * vlastní řádky specifikace, už přeložené; tvoří sekci DALŠÍ UJEDNÁNÍ. */
 function nabidkaNahledSekce(ph, lang, platby, extra) {
@@ -777,4 +773,4 @@ if (typeof dokumentRegistruj === 'function')
     builder: (zak, varianta, jekly, lang, sablona) => nabidkaData(zak, varianta, jekly, lang, sablona),
   });
 
-if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaKapitolyFirma, usazeniBocniSloucene, nabidkaNahledSekce, nabidkaSlovoSouboru, NABIDKA_SOUBOR_SLOVO, nabidkaPopisZameru };
+if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaKapitolyFirma, usazeniBocniSloucene, nabidkaNahledSekce, nabidkaPopisZameru };

@@ -44,7 +44,7 @@ const v = zak.varianty[0];
     const res = await dokumentVygeneruj('nabidka', ab.slice(0), zak, v, JSON.parse(fs.readFileSync(__dirname + '/jekly.json', 'utf8')));
     const bytes = new Uint8Array(await res.blob.arrayBuffer());
     test('výstup je ZIP (PK signatura)', bytes[0] === 0x50 && bytes[1] === 0x4B, [bytes[0], bytes[1]].join(','));
-    test('název souboru dle CN', /NABÍDKA_2026-OPR-CN-9001/.test(res.nazevSouboru), res.nazevSouboru);
+    test('název souboru dle CN', /^NABIDKA_2026-OPR-CN-9001-OCK-CZ$/.test(res.nazevSouboru), res.nazevSouboru);
 
     // 3) shoda s přímým docxVyplnSablonu (stejná délka výstupu)
     const jekly = JSON.parse(fs.readFileSync(__dirname + '/jekly.json', 'utf8'));

@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v27.10.1 · sestaveno 27. 10. 2026",
+  "verze": "Platí pro aplikaci v27.10.2 · sestaveno 27. 10. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -460,7 +460,7 @@
         },
         {
           "typ": "text",
-          "text": "Export a import nastavení jedním souborem **konfigurace.json** (nastavení aplikace, data technické specifikace, trvalé položky katalogu, slovník, názvy šablon). Hodí se pro přenos mezi počítači; online databázi nenahrazuje. Šablony .docx se přenášejí jen názvem a **role administrátora se z konfigurace nikdy nepřebírá**."
+          "text": "Export a import nastavení jedním souborem **KONFIGURACE_<den>-<sekce>_<verze>.json**, např. `KONFIGURACE_2026-10-27-VSE_27.10.2.json` (nastavení aplikace, data technické specifikace, trvalé položky katalogu, slovník, názvy šablon). Hodí se pro přenos mezi počítači; online databázi nenahrazuje. Šablony .docx se přenášejí jen názvem a **role administrátora se z konfigurace nikdy nepřebírá**."
         },
         {
           "typ": "kroky",
@@ -615,7 +615,7 @@
           "nadpis": "Postup: přenést platný ceník do testovacího webu",
           "polozky": [
             {
-              "text": "Na **ostrém** webu: ⚙ → **Databáze** → karta *Přenos ceníku mezi ostrým a testovacím webem* → **Stáhnout platný ceník (JSON)**.",
+              "text": "Na **ostrém** webu: ⚙ → **Databáze** → karta *Přenos ceníku mezi ostrým a testovacím webem* → **Stáhnout platný ceník (JSON)**. Soubor se jmenuje `CENIK_<den>-PLATNY-V<verze ceníku>-OCK+PROJ_<verze aplikace>.json`.",
               "snimek": "a-db-prenos",
               "klik": {
                 "obsahuje": "Stáhnout platný ceník (JSON)"

@@ -440,7 +440,7 @@ test('nadpis říká, že jde o krycí list PROJ a o kterou verzi',
 /* Název souboru musí jít poznat od krycího listu OCK – jinak si
  * backoffice ve stažených souborech přepíše jeden druhým. */
 test('název souboru nese PROJ, verzi i číslo nabídky',
-  dBo.nazevSouboru.indexOf('KRYCI_LIST_PROJ_') === 0 && dBo.nazevSouboru.includes('Backoffice')
+  dBo.nazevSouboru.indexOf('KRYCI-LIST_') === 0 && dBo.nazevSouboru.includes('-PROJ-BACKOFFICE')
   && dBo.nazevSouboru.includes('401'), dBo.nazevSouboru);
 test('název souboru krycího listu PROJ se liší od názvu listu OCK',
   dBo.nazevSouboru !== kr.kryciData(zak, v, JEKLY, 'bo').nazevSouboru,

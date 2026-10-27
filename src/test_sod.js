@@ -49,7 +49,7 @@ test('SoD nese objednatele z hlavičky OCK', sod.placeholders.OBJEDNATEL === 'SV
 test('SoD nese platební podmínky z krycího listu (PODM_*)',
   'PODM_SPLATNOST_DNI_CISLO' in sod.placeholders && 'PODM_POKUTA_SPLATNOST_PROC' in sod.placeholders,
   Object.keys(sod.placeholders).filter(k => k.startsWith('PODM_')).length + ' PODM_ symbolů');
-test('SoD má vlastní jméno souboru', sod.nazevSouboru.indexOf('SOD_') === 0, sod.nazevSouboru);
+test('SoD má vlastní jméno souboru (#533 SOD_<číslo>-OCK-…)', sod.nazevSouboru.indexOf('SOD_') === 0 && /-OCK-[A-Z]{2}$/.test(sod.nazevSouboru), sod.nazevSouboru);
 test('jméno souboru SoD nenese zakázané znaky', !/[\\/:*?"<>|]/.test(sod.nazevSouboru));
 /* SOD_* symboly builder NEPLNÍ — mají v dokumentu zůstat vidět k doplnění.
  * Kdyby je plnil prázdnem, zmizely by a nikdo by nevěděl, že tam co chybí. */
@@ -71,7 +71,7 @@ test('SoD projekce nese cenu z nabídky PROJ',
 test('SoD projekce nese stejné číslo nabídky jako nabídka PROJ',
   sodP.placeholders.CISLO_NABIDKY === nabP.placeholders.CISLO_NABIDKY
   && sodP.placeholders.CISLO_NABIDKY === '2026-OPR-CN-0155', sodP.placeholders.CISLO_NABIDKY);
-test('SoD projekce má vlastní jméno souboru', sodP.nazevSouboru.indexOf('SOD_PROJ_') === 0,
+test('SoD projekce má vlastní jméno souboru (#533 SOD_<číslo>-PROJ-…)', sodP.nazevSouboru.indexOf('SOD_') === 0 && /-PROJ-[A-Z]{2}$/.test(sodP.nazevSouboru),
   sodP.nazevSouboru);
 test('symboly SODP_* se neplní (platby po fázích doplní obchodník)',
   !('SODP_PLATBA1_KC' in sodP.placeholders));
@@ -123,7 +123,7 @@ const pm = plnaMocData(zak, v);
 test('plná moc nese firemní údaje ({{FIRMA_*}})',
   'FIRMA_NAZEV' in pm.placeholders && 'FIRMA_SIDLO' in pm.placeholders && 'FIRMA_ICO' in pm.placeholders);
 test('plná moc nese adresu stavby z hlavičky PROJ', pm.placeholders.ADRESA === 'Zkušební 9, Praha');
-test('plná moc má vlastní jméno souboru', pm.nazevSouboru.indexOf('PLNA_MOC') === 0, pm.nazevSouboru);
+test('plná moc má vlastní jméno souboru (#533 PLNA-MOC_…)', pm.nazevSouboru.indexOf('PLNA-MOC_') === 0, pm.nazevSouboru);
 test('prázdné pole plné moci se neplní — ve Wordu zůstane {{…}} k dopsání',
   !('PM_ZMOCNITEL_NAROZEN' in pm.placeholders));
 

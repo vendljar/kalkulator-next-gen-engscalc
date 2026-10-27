@@ -72,7 +72,7 @@ function tsChybejiciExport() {
     .concat(chybi.map(t => q(t) + ';')).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = 'neprelozene_' + lang + '.csv';
+  a.download = nazevExportu('neprelozene', { jazyk: lang });   // #533: NEPRELOZENE_<den>-SPECIFIKACE-<JAZYK>
   a.click();
 }
 
@@ -161,7 +161,7 @@ function renderTechspecPreklad() {
       ${sekce}
       ${extra ? `<h3>${tsPrelozText('DALŠÍ UJEDNÁNÍ')}</h3>` + extra : ''}
       <div class="btns noprint" style="margin-top:14px">
-        <button onclick="prepniTab('spec'); window.print()">${esc(T('Tisk specifikace / PDF'))}</button>
+        <button onclick="prepniTab('spec'); tiskSNazvem(nazevExportu('specifikace', { cislo: ZAK.cislo, jazyk: jazyk() }))">${esc(T('Tisk specifikace / PDF'))}</button>
       </div>
       <div class="note noprint">Náhled v cizím jazyce je jen ke čtení – obsah se edituje v české verzi
       (přepněte na CZ). Tečkovaně zvýrazněné fráze zatím nemají překlad ve slovníku a zůstávají česky.</div>
@@ -279,7 +279,7 @@ function renderTechspec() {
       ${extra ? '<h3>DALŠÍ UJEDNÁNÍ</h3>' + extra : ''}
       <div class="btns noprint" style="margin-top:14px">
         <button onclick="tsExtraAdd()">+ přidat vlastní řádek</button>
-        <button onclick="prepniTab('spec'); window.print()">Tisk specifikace / PDF</button>
+        <button onclick="prepniTab('spec'); tiskSNazvem(nazevExportu('specifikace', { cislo: ZAK.cislo, jazyk: 'cz' }))">Tisk specifikace / PDF</button>
       </div>
       <div class="note noprint">Pole se štítkem „z kalkulace“ se přepočítávají podle zadání OCK.
       Jakmile pole přepíšete, platí ruční hodnota (štítek „ručně“); tlačítkem ↺ vrátíte automatiku.

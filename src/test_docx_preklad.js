@@ -147,7 +147,7 @@ P.prekladSmaz('test nepovolený znak');
   test('EN: sloučené přechodové plechy jsou přeložené, bez množství',
     bezMnozstvi.every(p => !/[ěščřžýáíéúůňťď]/i.test(p.popis)),
     bezMnozstvi.map(p => p.popis).join(' | '));
-  test('název souboru nese jazyk', en.nazevSouboru.endsWith('_EN') && !cz.nazevSouboru.endsWith('_EN'),
+  test('název souboru nese jazyk (#533)', en.nazevSouboru.endsWith('-EN') && cz.nazevSouboru.endsWith('-CZ'),
     en.nazevSouboru);
   test('data nesou informaci o jazyku', en.jazyk === 'en' && cz.jazyk === 'cz');
   /* Hlídá se ZTRÁTA, ne prázdnota: některé placeholdery jsou prázdné záměrně

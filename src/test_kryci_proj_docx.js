@@ -278,7 +278,7 @@ test('krycí list OCK zůstal se svým obchodníkem',
   const res = await dokumentVygeneruj('kryciproj_bo', null, zak, v, JEKLY);
   const bytes = new Uint8Array(await res.blob.arrayBuffer());
   test('BO .docx je ZIP (PK)', bytes[0] === 0x50 && bytes[1] === 0x4B);
-  test('název souboru BO', /KRYCI_LIST_PROJ_Backoffice_2026-OVP-CN-9002/.test(res.nazevSouboru), res.nazevSouboru);
+  test('název souboru BO', /^KRYCI-LIST_2026-OVP-CN-9002-PROJ-BACKOFFICE$/.test(res.nazevSouboru), res.nazevSouboru);
   const polozky = await docx.zipPrecti(bytes);
   const doc = polozky.find(p => p.nazev === 'word/document.xml');
   test('obsahuje word/document.xml', !!doc);
@@ -293,7 +293,7 @@ test('krycí list OCK zůstal se svým obchodníkem',
   const xml2 = new TextDecoder().decode((await docx.zipPrecti(b2)).find(p => p.nazev === 'word/document.xml').data);
   test('Techdata obsahuje Atypy a rizika PROJ', xml2.includes('Atypy a rizika PROJ'));
   test('Techdata obsahuje nadpis Techdata', xml2.includes('Techdata'));
-  test('název souboru Techdata', /KRYCI_LIST_PROJ_Techdata_/.test(res2.nazevSouboru), res2.nazevSouboru);
+  test('název souboru Techdata', /^KRYCI-LIST_.*-PROJ-TECHDATA$/.test(res2.nazevSouboru), res2.nazevSouboru);
 
   console.log(fail ? `\n${fail} CHYB` : '\nVŠECHNY TESTY KRYCÍ LIST PROJ OK');
   process.exit(fail ? 1 : 0);

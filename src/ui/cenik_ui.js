@@ -767,13 +767,15 @@ function cenikStav(t) { const el = document.getElementById('cenikStav'); if (el)
 
 function cenikExport() {
   try {
-    const blob = xlsxZapis(cenikToSheets(C, PC));
-    const cislo = (ZAK.cislo || '').replace(/\s+/g, '');
+    const listy = cenikToSheets(C, PC);
+    const blob = xlsxZapis(listy);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = ('CENIK_' + (cislo || 'ENG') + '.xlsx').replace(/[\\/:*?"<>|]+/g, '-');
+    /* #533: jméno podle obsahu (listy OCK a PROJ), ne podle čísla zakázky —
+     * CENIK_2026-OCK+PROJ_27.10.1.xlsx. Import jméno nekontroluje. */
+    a.download = nazevExportu('cenik', { ock: listy.some(l => /OCK/.test(l.nazev)), proj: listy.some(l => /PROJ/.test(l.nazev)) });
     a.click();
-    cenikStav('Export hotový – soubor je ve Stažených. Uprav ceny (sloupec Hodnota) a nahraj zpět Importem.');
+    cenikStav('Export hotový – soubor ' + a.download + ' je ve Stažených. Uprav ceny (sloupec Hodnota) a nahraj zpět Importem.');
   } catch (e) { cenikStav('Chyba exportu: ' + e.message); }
 }
 

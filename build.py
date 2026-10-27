@@ -24,7 +24,7 @@ Po změně enginů spusťte testy: cd src && node test.js && node test_proj.js
 import datetime, os, pathlib, re, shutil, subprocess, sys
 
 root = pathlib.Path(__file__).parent
-CORE = ['build_info.js',
+CORE = ['build_info.js', 'nazvy_souboru.js',
         'preklad.js', 'format.js', 'engine.js', 'engine_proj.js', 'techspec.js', 'zakazka.js', 'uloziste.js', 'retence_zaloh.js', 'zamek.js', 'seznam.js', 'archiv.js',
         'docxgen.js', 'xlsx.js',
         'dokumenty.js', 'sleva.js', 'schvalovani.js', 'zaokrouhleni.js', 'marze.js', 'kontroly.js', 'ares.js', 'poznamky.js', 'protokol.js', 'firma.js', 'zpracovatel.js', 'podminky.js', 'plan_plateb.js', 'nabidka.js', 'nabidka_proj.js', 'sod.js', 'kryci.js', 'kryci_proj.js',

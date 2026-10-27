@@ -1402,8 +1402,10 @@ const [stazeni] = await Promise.all([
   page.waitForEvent('download'),
   page.evaluate(() => onlineZaloha(false)),
 ]);
-test('záloha se stáhne pod jménem s dnešním datem',
-  stazeni.suggestedFilename() === 'zaloha_online_' + new Date().toISOString().slice(0, 10) + '.json');
+/* #533: ZALOHA_<místní den>-ONLINE-DB_<verze>.json */
+const dnesLok = (d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'))(new Date());
+test('záloha se stáhne pod jménem s dnešním datem a verzí (#533)',
+  new RegExp('^ZALOHA_' + dnesLok + '-ONLINE-DB_\\d+\\.\\d+\\.\\d+\\.json$').test(stazeni.suggestedFilename()), stazeni.suggestedFilename());
 
 /* ---- 8) relace přežije obnovení stránky ---- */
 await page.reload();

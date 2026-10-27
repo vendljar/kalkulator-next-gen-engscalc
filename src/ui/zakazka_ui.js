@@ -400,7 +400,7 @@ function porovnaniPolozkyTisk() {
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="${esc(L)}"><head><meta charset="utf-8">
-    <title>${esc(T('Detail položek'))} ${esc(ZAK.cislo || '')}</title>
+    <title>${esc(nazevExportu('detail-polozek', { cislo: ZAK.cislo }))}</title>
     <style>body{font:12px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:1100px;margin:24px auto;padding:0 16px}
     h1{font-size:19px;margin-bottom:2px} h2{font-size:15px;margin:18px 0 2px}
     .sub{color:#6b7686;margin-bottom:8px}
@@ -448,7 +448,7 @@ function porovnaniTisk() {
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="${esc(L)}"><head><meta charset="utf-8">
-    <title>${esc(T('Porovnání variant'))} ${esc(ZAK.cislo || '')}</title>
+    <title>${esc(nazevExportu('porovnani', { cislo: ZAK.cislo }))}</title>
     <style>body{font:13px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:1000px;margin:24px auto;padding:0 16px}
     h1{font-size:19px;margin-bottom:2px} .sub{color:#6b7686;margin-bottom:14px}
     table{width:100%;border-collapse:collapse;margin-top:10px}

@@ -490,11 +490,14 @@ test('zakázka bez variant se za zakázku nevydává', nesmysl({ schema: 2, vari
 /* Název souboru jde do stahování – nesmí v něm zůstat znak, který
  * operační systém nepřijme, ani mezery z předlohy čísla. */
 const nazev = zk.StorageAdapter.nazevSouboru(zEx);
-test('název souboru začíná „zakazka_" a končí „.json"',
-  /^zakazka_.*\.json$/.test(nazev), nazev);
+test('název souboru začíná „ZAKAZKA_" a končí „.json" (#533)',
+  /^ZAKAZKA_.*\.json$/.test(nazev), nazev);
 test('název souboru neobsahuje mezery ani lomítka', !/[\s/\\:*?"<>|]/.test(nazev), nazev);
 test('zakázka bez čísla dostane náhradní název souboru',
-  zk.StorageAdapter.nazevSouboru({}) === 'zakazka_nova.json', zk.StorageAdapter.nazevSouboru({}));
+  zk.StorageAdapter.nazevSouboru({}) === 'ZAKAZKA_NOVA.json', zk.StorageAdapter.nazevSouboru({}));
+test('soubor bez ceníků to nese v názvu (#533)',
+  zk.StorageAdapter.nazevSouboru({ cislo: '2026 - OPR - CN - 7' }, true) === 'ZAKAZKA_2026-OPR-CN-7-BEZ-CENIKU.json',
+  zk.StorageAdapter.nazevSouboru({ cislo: '2026 - OPR - CN - 7' }, true));
 test('úložiště se hlásí jako souborové', zk.StorageAdapter.typ === 'file');
 
 /* ---------- číslo nabídky s číslem varianty (19. 8. 2026) ---------- */

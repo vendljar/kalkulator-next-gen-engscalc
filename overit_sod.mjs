@@ -289,8 +289,8 @@ const docText = async typ => {
 {
   const doc = await docText('sodProj');
   const holy = doc.replace(/<[^>]+>/g, '');
-  test('SoD projekce: název souboru začíná SOD_PROJ_',
-    vysledek.sodProj.nazevSouboru.indexOf('SOD_PROJ_') === 0, vysledek.sodProj.nazevSouboru);
+  test('SoD projekce: název souboru SOD_<číslo>-PROJ-… (#533)',
+    vysledek.sodProj.nazevSouboru.indexOf('SOD_') === 0 && /-PROJ-/.test(vysledek.sodProj.nazevSouboru), vysledek.sodProj.nazevSouboru);
   test('SoD projekce nese cenu z nabídky PROJ', holy.includes(vysledek.cenaProj), vysledek.cenaProj);
   test('symboly SODP_* bez hodnoty (pokuta, správní poplatky) zůstaly viditelné',
     /\{\{SODP_[A-Z0-9_]+\}\}/.test(holy));
@@ -320,8 +320,8 @@ const docText = async typ => {
 {
   const doc = await docText('plnaMoc');
   const holy = doc.replace(/<[^>]+>/g, '');
-  test('plná moc: název souboru začíná PLNA_MOC',
-    vysledek.plnaMoc.nazevSouboru.indexOf('PLNA_MOC') === 0, vysledek.plnaMoc.nazevSouboru);
+  test('plná moc: název souboru začíná PLNA-MOC_ (#533)',
+    vysledek.plnaMoc.nazevSouboru.indexOf('PLNA-MOC_') === 0, vysledek.plnaMoc.nazevSouboru);
   test('plná moc nese adresu stavby', holy.includes('Zkušební 11, 100 00 Praha'));
   test('symboly PM_* (zmocnitel) zůstaly viditelné', /\{\{PM_[A-Z0-9_]+\}\}/.test(holy));
   test('firemní údaje zmocněnce jsou vyplněné', !/\{\{FIRMA_[A-Z0-9_]+\}\}/.test(holy));

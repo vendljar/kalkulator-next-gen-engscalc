@@ -331,7 +331,7 @@ test('verze Techdata neobsahuje sekci Atypy OCK navíc než Backoffice',
 test('nadpis říká, o kterou verzi jde',
   /Backoffice$/.test(dBo.nadpis) && /Techdata$/.test(dTd.nadpis), [dBo.nadpis, dTd.nadpis]);
 test('název souboru nese verzi i číslo nabídky',
-  dBo.nazevSouboru.includes('Backoffice') && dBo.nazevSouboru.includes('301'), dBo.nazevSouboru);
+  dBo.nazevSouboru.includes('BACKOFFICE') && dBo.nazevSouboru.includes('301'), dBo.nazevSouboru);   // #533 velkými
 /* Mezery z předlohy čísla („2026 - OPR - CN - 301") i znaky zakázané ve
  * jménech souborů se musí odstranit, jinak stahování selže. */
 test('název souboru nemá mezery ani znaky zakázané v názvu souboru',

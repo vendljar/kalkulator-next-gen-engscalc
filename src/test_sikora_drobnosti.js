@@ -74,12 +74,13 @@ for (const L of ['en', 'de', 'fr']) {
   const male = neni ? neni.radky.filter(r => /^\s*\p{Ll}/u.test(String(r[1]))) : null;
   test('S2 ' + L + ': hodnoty „co není součástí dodávky" začínají velkým písmenem',
     !!neni && neni.radky.length > 5 && male.length === 0, male);
-  const pfx = { en: 'PRICE_QUOTATION_', de: 'ANGEBOT_', fr: 'DEVIS_' }[L];
+  /* #533: slovo v jazyce dokumentu zůstává, úseky podle konvence (podtržítko jen mezi úseky). */
+  const pfx = { en: 'PRICE-QUOTATION_', de: 'ANGEBOT_', fr: 'DEVIS_' }[L];
   test('S4 ' + L + ': název souboru nabídky OCK v jazyce dokumentu (' + pfx + '…)',
-    d.nazevSouboru.indexOf(pfx + '2026-OPR-CN-0377') === 0 && /_[A-Z]{2}$/.test(d.nazevSouboru), d.nazevSouboru);
+    d.nazevSouboru === pfx + '2026-OPR-CN-0377-OCK-' + L.toUpperCase(), d.nazevSouboru);
   const dp = projNabidka(['zamereni', 'studie'], L);
-  test('S4 ' + L + ': název souboru nabídky PROJ v jazyce dokumentu (' + pfx + 'PROJ_…)',
-    dp.nazevSouboru.indexOf(pfx + 'PROJ_') === 0, dp.nazevSouboru);
+  test('S4 ' + L + ': název souboru nabídky PROJ v jazyce dokumentu (' + pfx + '…-PROJ-…)',
+    dp.nazevSouboru.indexOf(pfx) === 0 && new RegExp('-PROJ-' + L.toUpperCase() + '$').test(dp.nazevSouboru), dp.nazevSouboru);
 }
 /* česká nabídka beze změny */
 {
@@ -87,7 +88,7 @@ for (const L of ['en', 'de', 'fr']) {
   const neni = sekce.find(s => s.sekce === 'SOUČÁSTÍ DODÁVKY NENÍ');
   test('S2 cz: česká nabídka beze změny (hodnoty malým jako dosud)',
     !!neni && neni.radky.some(r => r[1] === 'není součástí nabídky'), neni && neni.radky);
-  test('S4 cz: česky dál NABÍDKA_…', d.nazevSouboru === 'NABÍDKA_2026-OPR-CN-0377', d.nazevSouboru);
+  test('S4 cz: česky NABIDKA_… (#533 bez diakritiky, s jazykem)', d.nazevSouboru === 'NABIDKA_2026-OPR-CN-0377-OCK-CZ', d.nazevSouboru);
 }
 
 /* ---------- S3: Po milnících ---------- */

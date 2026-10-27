@@ -1538,8 +1538,10 @@ const StorageAdapter = {
   /* P12 (#369): soubor pro roli bez práva na náklady — viz zakazkaBezCeniku. */
   exportujBezCeniku(zak, dnesniProVariantu) { return JSON.stringify(zakazkaBezCeniku(zak, dnesniProVariantu), null, 2); },
   importuj(text) { return importZakazka(JSON.parse(text)); },
-  nazevSouboru(zak) {
-    return `zakazka_${(zak.cislo || 'nova').replace(/[^\w-]+/g, '_')}.json`;
+  /* #533: ZAKAZKA_<číslo>[-BEZ-CENIKU]_<verze>.json; načtení jméno nekontroluje,
+   * takže staré „zakazka_….json" se otevřou dál. */
+  nazevSouboru(zak, bezCeniku) {
+    return (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('zakazka', { cislo: zak && zak.cislo, bezCeniku: !!bezCeniku });
   },
 };
 

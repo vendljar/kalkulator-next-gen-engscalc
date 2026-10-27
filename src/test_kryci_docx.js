@@ -158,7 +158,7 @@ test('ruční přepis obchodníka', najdi(kr.kryciData(zak, v, JEKLY, 'bo'), 'Jm
   const res = await dokumentVygeneruj('kryci_bo', null, zak, v, JEKLY);
   const bytes = new Uint8Array(await res.blob.arrayBuffer());
   test('BO .docx je ZIP (PK)', bytes[0] === 0x50 && bytes[1] === 0x4B);
-  test('název souboru BO', /KRYCI_LIST_Backoffice_2026-OPR-CN-9001/.test(res.nazevSouboru), res.nazevSouboru);
+  test('název souboru BO', /^KRYCI-LIST_2026-OPR-CN-9001-OCK-BACKOFFICE$/.test(res.nazevSouboru), res.nazevSouboru);
   const polozky = await docx.zipPrecti(bytes);
   const doc = polozky.find(p => p.nazev === 'word/document.xml');
   test('obsahuje word/document.xml', !!doc);
