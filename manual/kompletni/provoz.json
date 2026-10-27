@@ -16,7 +16,7 @@
    "nadpis": "Jak je dokument složený",
    "odstavce": [
     "**Část I — Obsluha:** kapitoly **A1–A15** popisují práci správce v aplikaci, kapitoly **1–32** práci obchodníka (postupy krok za krokem se snímky). Odkazy typu „kapitola 22“ nebo „kapitola A8“ míří sem.",
-    "**Část II — Výpočty:** kapitoly **V1–V16** vysvětlují, jak kalkulačka počítá ocelovou konstrukci šachty (OCK), na vzorové šachtě s čísly přímo z výpočetního jádra.",
+    "**Část II — Výpočty:** kapitoly **V1, V2 …** vysvětlují, jak kalkulačka počítá ocelovou konstrukci šachty (OCK), na vzorové šachtě s čísly přímo z výpočetního jádra.",
     "**Část III — Provoz systému:** kapitoly **P1–P13** a **přílohy 1–4** — architektura, prostředí, přístupy, data, zálohy, nasazení, testy, bezpečnost, dohled, havarijní postupy a předání systému."
    ]
   }
@@ -295,6 +295,21 @@
       [
        "PROSTREDI_POPIS",
        "nepovinný text do pruhu testovacího prostředí",
+       "jen testovací"
+      ],
+      [
+       "PIPEDRIVE_SIMULATOR",
+       "hodnota `1` zapne simulátor Pipedrive se smyšlenými daty místo skutečného CRM (přednost i před tokenem); na ostrém webu se nezapne nikdy",
+       "jen testovací"
+      ],
+      [
+       "PIPEDRIVE_SIMULATOR_SCENAR",
+       "nepovinný scénář chyb simulátoru (`token`, `limit`, `limitN`, `vypadek`)",
+       "jen testovací"
+      ],
+      [
+       "PIPEDRIVE_SIMULATOR_ROZPOCET",
+       "nepovinný denní rozpočet tokenů simulátoru (výchozí 30 000)",
        "jen testovací"
       ]
      ]
@@ -1272,9 +1287,9 @@
      "radky": [
       [
        "Pipedrive (CRM)",
-       "jen **čtení**",
+       "jen **čtení** (zápis zatím jen nanečisto)",
        "serverové funkce `/api/pd/*`; token jen na serveru",
-       "`PIPEDRIVE_TOKEN`, `PIPEDRIVE_DOMENA`; právo čtení v matici"
+       "`PIPEDRIVE_TOKEN`, `PIPEDRIVE_DOMENA` (na testu místo nich případně simulátor); právo čtení v matici"
       ],
       [
        "ARES",
@@ -1303,7 +1318,15 @@
       },
       {
        "pojem": "Co se nezapisuje",
-       "vyklad": "**Do Pipedrive aplikace nic nezapisuje.** Logika zápisu (hodnota dealu, platby) je připravená, ale nezapojená — zapojení rozhodne vlastník."
+       "vyklad": "**Do Pipedrive aplikace nic nezapisuje.** Logika zápisu (hodnota dealu, platby, stav) je připravená, ale nezapojená — zapojení rozhodne vlastník."
+      },
+      {
+       "pojem": "Suchý běh zápisu",
+       "vyklad": "U otevřené zakázky ukáže náhled **„Co by se zapsalo do Pipedrive“** (`/api/pd/nanecisto`): pole dealu, hodnoty z krycích listů a porovnání s tím, co je v CRM dnes. Funkce jen čte (mapu polí, uživatele, deal) a nic neodesílá; náhled jde uložit jako CSV."
+      },
+      {
+       "pojem": "Simulátor",
+       "vyklad": "Pro vývoj a zkoušky bez tokenu: proměnná `PIPEDRIVE_SIMULATOR=1` nahradí Pipedrive smyšlenými dealy, organizacemi a osobami (paměť funkce, nic se neukládá) a umí vyrobit chyby 401, 429 a 500. Zapne se jen lokálně nebo na testovacím webu s `PROSTREDI=test`, **nikdy na ostrém webu** (ani z větve `main`); zapnutý simulátor má přednost i před tokenem a náhled ho hlásí červeně. Stav ukazuje Nastavení → Mapa polí CRM."
       },
       {
        "pojem": "Limity",
@@ -1561,6 +1584,12 @@
        "stav dealu propojeného se zakázkou"
       ],
       [
+       "/api/pd/nanecisto",
+       "POST",
+       "přihlášený s právem matice na čtení Pipedrive (administrátor vždy); jen z vlastní stránky",
+       "suchý běh zápisu: co by se zapsalo do dealu (nic se neodesílá)"
+      ],
+      [
        "/api/pd/pole",
        "GET",
        "jen administrátor",
@@ -1669,6 +1698,27 @@
        "—",
        "nepovinně",
        "text do pruhu testovacího prostředí"
+      ],
+      [
+       "PIPEDRIVE_SIMULATOR",
+       "ne",
+       "— (nikdy)",
+       "nepovinně `1`",
+       "simulátor Pipedrive se smyšlenými daty; zapne se jen lokálně nebo na webu s `PROSTREDI=test`, nikdy z větve `main`"
+      ],
+      [
+       "PIPEDRIVE_SIMULATOR_SCENAR",
+       "ne",
+       "—",
+       "nepovinně",
+       "scénář chyb simulátoru: `token` (401), `limit` (429), `limitN`, `vypadek` (500)"
+      ],
+      [
+       "PIPEDRIVE_SIMULATOR_ROZPOCET",
+       "ne",
+       "—",
+       "nepovinně",
+       "denní rozpočet tokenů simulátoru (výchozí 30 000), po vyčerpání 429"
       ]
      ]
     },

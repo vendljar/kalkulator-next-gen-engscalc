@@ -37,12 +37,12 @@ nezvyšuje.** Neslučováno; na ostrém webu, Disku ani v Pipedrive nic. Zdroje 
 
 | úkol | stav | poznámka |
 |---|---|---|
-| Jeden dokument, 1 obsah na 1 straně A4 | ✅ | 80 kapitol: I (A1–A15 + 1–32), II (V1–V16), III (P1–P13) + přílohy 1–4; obsah 2 úrovně, 2 sloupce, čísla stran v PDF |
+| Jeden dokument, 1 obsah na 1 straně A4 | ✅ | po sloučení integrace v27.10.4: 81 kapitol: I (A1–A15 + 1–32), II (V1–V17), III (P1–P13) + přílohy 1–4; obsah 2 úrovně, 2 sloupce, čísla stran v PDF |
 | Část III (nový text) | ✅ | `manual/kompletni/provoz.json`; fakta z kódu (config.path/schedule, process.env, úložiště, konstanty retence a limitů) + naplánované úlohy účtu (hlídač záloh) |
 | Skládání | ✅ | `manual/kompletni/sestav.js` + `dokoncit.js` (prohlížeč) + `sestav.sh` (celý běh ~2 min) |
 | Sazba | ✅ | bez vynucených zalomení (kromě titulu s obsahem); nedělitelný jen obrázek s titulkem; zbylé řídké strany (6, vše část I) = snímek vyšší než zbytek strany |
 | Test | ✅ | `src/test_dokumentace_kompletni.js` 92/0; pojistka bez `manual/kompletni/` 0/2, bez 3 řádků 88/4 |
-| Výstup | ✅ | v27.10.1: **179 stran A4**, PDF ~9 MB, HTML ~1 MB — necommitováno |
+| Výstup | ✅ | v27.10.4: **173 stran A4**, PDF ~9 MB, HTML ~1 MB — necommitováno |
 | CHANGELOG, roadmapa #535 (vlna G), PREDAVKA | ✅ | `roadmapa.py --kontrola` 532 položek čistě |
 
 **Sestavení (koordinace):** `bash manual/kompletni/sestav.sh <složka mimo repo>` (sestavení s `KNG_NEZVYSOVAT_VERZI=1`

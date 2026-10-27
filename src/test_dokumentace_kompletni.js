@@ -191,7 +191,7 @@ for (const [re, jm] of ZAKAZANE) {
 }
 test('(c) žádný e-mail ani telefon', !/[\w.+-]+@[\w-]+\.[a-z]{2,}/i.test(TEXT) && !/\+?\d{3} ?\d{3} ?\d{3}\b/.test(TEXT));
 test('(c) žádná hodnota tajemství (PROMĚNNÁ=hodnota) ani částka v Kč',
-  ![...promenne].some(v => new RegExp(v + '\\s*[=:]\\s*\\S').test(TEXT.replace(/PROSTREDI=test/g, ''))) && !/\d[\d  ]* ?Kč/.test(TEXT));
+  ![...promenne].some(v => new RegExp(v + '\\s*[=:]\\s*\\S').test(TEXT.replace(/PROSTREDI=test|PIPEDRIVE_SIMULATOR=1/g, '') /* přepínače, ne tajemství */)) && !/\d[\d  ]* ?Kč/.test(TEXT));
 test('(c) dokument říká, že hesla a hodnoty proměnných nenese', /Neobsahuje hesla, tokeny ani hodnoty proměnných prostředí/.test(TEXT));
 test('(c) autorství: „Autor programu Jaroslav Vendl (2026)" a AUTORSTVI.md', TEXT.includes('Autor programu Jaroslav Vendl (2026)') && TEXT.includes('AUTORSTVI.md'));
 const nad = P.kapitoly.map(k => k.nadpis);
@@ -231,7 +231,9 @@ try {
   const f = fs.readdirSync(path.join(tmp, 'v')).find(x => /_MANUAL_VYPOCET_OCK\.html$/.test(x));
   vyp = S.rozdelVypocet(cti(path.join(tmp, 'v', f)));
 } catch (e) { console.log('INFO (d) manuál výpočtu nešel vyrobit: ' + e.message); }
-test('(d) manuál výpočtu se rozdělí na kapitoly V1–V16', !!vyp && vyp.kapitoly.length === 16 && vyp.kapitoly.every((k, i) => k.cislo === i + 1), vyp && vyp.kapitoly.map(k => k.cislo));
+/* Počet kapitol manuálu výpočtu se bere ze šablony (kapitoly s číslem kromě novinek). */
+const kapVypoctu = (cti(path.join(KOREN, 'manual_vypocet', 'sablona.html')).match(/<div class="kaph"><div class="cislo">\d+<\/div><h2>(?![^<]*Co je nového)/g) || []).length;
+test('(d) manuál výpočtu se rozdělí na kapitoly V1–V' + kapVypoctu + ' (podle šablony)', !!vyp && kapVypoctu >= 10 && vyp.kapitoly.length === kapVypoctu && vyp.kapitoly.every((k, i) => k.cislo === i + 1), vyp && vyp.kapitoly.map(k => k.cislo));
 test('(d) kapitola novinek a titulní strana manuálu výpočtu se do dokumentu neberou',
   !!vyp && !vyp.kapitoly.some(k => /Co je nového/i.test(k.nazev + k.html)) && !/class="titul"/.test(vyp.uvod) && !/class="obsah"/.test(vyp.uvod));
 test('(d) úvod části II nese vzorovou šachtu', !!vyp && /Vzorová šachta/.test(vyp.uvod));
@@ -244,7 +246,7 @@ const OB = JSON.parse(cti(path.join(KOREN, 'manual', 'obsah.json')));
 const sp = vyp && S.spojObsah(OA, OB, P, vyp);
 if (sp) {
   const ids = sp.obsah.kapitoly.map(k => k.id);
-  test('(d) pořadí: A1–A15, 1–32, V1–V16, P1–P13, přílohy', ids.length === OA.kapitoly.length + OB.kapitoly.length + 16 + P.kapitoly.length
+  test('(d) pořadí: A1–A' + OA.kapitoly.length + ', 1–' + OB.kapitoly.length + ', V1–V' + vyp.kapitoly.length + ', P1–P13, přílohy', ids.length === OA.kapitoly.length + OB.kapitoly.length + vyp.kapitoly.length + P.kapitoly.length
     && ids[0] === OA.kapitoly[0].id && ids[OA.kapitoly.length] === OB.kapitoly[0].id && ids[OA.kapitoly.length + OB.kapitoly.length] === 'kap-v-1'
     && ids[ids.length - 1] === 'kap-p-seznamy', ids.length);
   test('(d) id kapitol celého dokumentu se neopakují', ids.every((x, i) => ids.indexOf(x) === i));
@@ -315,7 +317,7 @@ function playwright() {
     test('(f) každá značka bloku je vyměněná', r.vymeneno === r.bloku && !r.znacky, [r.vymeneno, r.bloku]);
     test('(f) žádný snímek nechybí', !r.nesedi.some(n => /^chybí snímek/.test(n)), r.nesedi.filter(n => /^chybí/.test(n)));
     test('(f) obsah odkazuje na všechny kapitoly a jen na ně', r.odkazy.length === r.h2.length && r.odkazy.every((o, i) => o === r.h2[i]), [r.odkazy.length, r.h2.length]);
-    test('(f) část II: 17 kusů ve vlastním shadow DOM (úvod + 16 kapitol)', r.shadow === 17, r.shadow);
+    test('(f) část II: úvod + ' + (vyp ? vyp.kapitoly.length : '?') + ' kapitol, každá ve vlastním shadow DOM', !!vyp && r.shadow === vyp.kapitoly.length + 1, r.shadow);
     test('(f) tabulky části III vykreslené', r.tabulek >= 15, r.tabulek);
     test('(f) předěly 3 částí a 2 skupin', r.predelu === 5, r.predelu);
     test('(f) titulek okna', /kompletní dokumentace/.test(r.titul), r.titul);

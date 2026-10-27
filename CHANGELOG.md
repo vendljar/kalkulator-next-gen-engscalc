@@ -59,7 +59,7 @@ informacemi, podle kterého jde systém převzít. Kód aplikace beze změny; na
 
 - **Jeden dokument (HTML + PDF A4, v27.10.1: 179 stran) s jedním obsahem na jedné straně** (2 úrovně, 2 sloupce,
   čísla stran v PDF): **Část I Obsluha** = příručka správce A1–A15 + příručka obchodníka 1–32 se snímky;
-  **Část II Výpočty** = manuál výpočtu OCK V1–V16 (kapitola novinek vydání se nebere, odkazy „kap. N“ → „kap. VN“);
+  **Část II Výpočty** = manuál výpočtu OCK V1–Vn podle šablony (kapitola „Co je nového“ se nebere, odkazy „kap. N“ → „kap. VN“); suchý běh zápisu a simulátor Pipedrive v P12 a přílohách;
   **Část III Provoz systému** (nová, `manual/kompletni/provoz.json`) P1–P13 + přílohy 1–4: schéma systému,
   prostředí a adresy, přístupy a proměnné prostředí (jen názvy), matice práv, úložiště Blobs a doba držení,
   retence záloh Netlify × Disk a obnova, verze a nasazení, testy, bezpečnost a přijatá rizika, dohled a plánované

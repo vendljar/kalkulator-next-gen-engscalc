@@ -3,7 +3,7 @@
  *
  *   Část I   Obsluha   = příručka správce (manual/admin/obsah.json, kapitoly A1–A15)
  *                        + příručka obchodníka (manual/obsah.json, kapitoly 1–32), se snímky
- *   Část II  Výpočty   = vizuální manuál výpočtu OCK (manual_vypocet/, kapitoly V1–V16)
+ *   Část II  Výpočty   = vizuální manuál výpočtu OCK (manual_vypocet/, kapitoly V1–Vn podle šablony)
  *   Část III Provoz    = manual/kompletni/provoz.json (kapitoly P1–P13 a přílohy 1–4)
  *
  * Zdroje částí I a II se NEMĚNÍ — skládá se z nich až tady. Část I i III
