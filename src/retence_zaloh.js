@@ -11,7 +11,9 @@
  *
  * Pravidlo J. V. 26. 10. 2026 (nahrazuje #151 N5 z 19. 10.):
  *   Blobs: denní (noční) otisky 14 dní; týdenní 8 týdnů; měsíční 6 měsíců;
- *          vynucené (ruční, při přihlášení) 7 dní; „před obnovou" nikdy.
+ *          vynucené (ruční, při přihlášení) 7 dní; „před obnovou" 6 měsíců
+ *          (#529, J. V. 27. 10. 2026; do té doby nikdy), nejnovější z nich
+ *          zůstává vždy.
  *   Disk:  denní 7 dní; týdenní 8 týdnů; měsíční 6 měsíců.
  *
  * Výklad (výchozí volby dávky Z2, zdůvodnění v CHANGELOG):
@@ -33,7 +35,7 @@
  *
  * Čisté funkce, žádný přístup k úložišti ani k hodinám — dnešek se předává.
  * ============================================================ */
-const RETENCE_ZALOH_BLOBS = { dnu: 14, tydnu: 8, mesicu: 6, vynuceneDnu: 7 };
+const RETENCE_ZALOH_BLOBS = { dnu: 14, tydnu: 8, mesicu: 6, vynuceneDnu: 7, predObnovouMesicu: 6 };
 const RETENCE_ZALOH_DISK = { dnu: 7, tydnu: 8, mesicu: 6 };
 const RETENCE_ZALOH_STARE_PRED = '2026-10-20';
 const RETENCE_ZALOH_DEN_MS = 86400000;
@@ -166,7 +168,8 @@ function retenceZalohPopis() {
   const b = RETENCE_ZALOH_BLOBS, d = RETENCE_ZALOH_DISK;
   return {
     blobs: 'Netlify: noční zálohy ' + b.dnu + ' dní, z každého týdne nedělní ' + b.tydnu + ' týdnů, z každého měsíce první '
-      + b.mesicu + ' měsíců; ruční a automatické zálohy ' + b.vynuceneDnu + ' dní; zálohy před obnovou se nemažou.',
+      + b.mesicu + ' měsíců; ruční a automatické zálohy ' + b.vynuceneDnu + ' dní; zálohy před obnovou ' + b.predObnovouMesicu
+      + ' měsíců (nejnovější z nich zůstává vždy).',
     disk: 'Disk Google: kopie ' + d.dnu + ' dní, z každého týdne nedělní ' + d.tydnu + ' týdnů, z každého měsíce první '
       + d.mesicu + ' měsíců.',
   };

@@ -718,7 +718,8 @@ export async function seznamOtisku(kolik) {
  *   - noční (denní klíč) 14 dní, týdenní (neděle, jinak nejbližší starší
  *     v týdnu) 8 týdnů, měsíční (první v měsíci) 6 měsíců;
  *   - vynucené (`-rucne`, `-auto`) 7 dní;
- *   - otisky PŘED OBNOVOU se nemažou nikdy (cesta zpátky, maže jen člověk);
+ *   - otisky PŘED OBNOVOU 6 měsíců (#529, J. V. 27. 10. 2026; do té doby
+ *     nikdy), nejnovější z nich zůstává vždy; ručně je smí smazat správce;
  *   - výjimka RETENCE_OD je ZRUŠENÁ: ze starých otisků (do 19. 10. 2026)
  *     zůstane jen první z každého měsíce, i ten po 6 měsících odejde;
  *   - nejnovější otisk se nesmaže nikdy, ať je jakkoli starý;
@@ -743,6 +744,11 @@ export function retenceVyber(klice, dnes) {
   const nejnovejsi = otisky.slice().sort().pop();
   const denni = otisky.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
   const vynucene = otisky.filter(k => /T\d{6}-(rucne|auto)$/.test(k));
+  /* #529 (K9-I3): otisky „před obnovou" po 6 měsících (hranice jako u
+   * měsíčních: den o 6 měsíců zpět a starší), nejnovější z nich nikdy */
+  const pred = otisky.filter(k => /-pred-obnovou$/.test(k)).sort();
+  const predNejnovejsi = pred[pred.length - 1];
+  const hranicePred = RZ.retenceZalohMesicuZpet(dnesMs, RZ.RETENCE_ZALOH_BLOBS.predObnovouMesicu);
   const drz = RZ.retenceZalohDrz(denni, dnes, RZ.RETENCE_ZALOH_BLOBS, { stareJenMesicni: RETENCE_STARE_PRED });
   if (!drz) return [];
   const vek = (k) => Math.round((dnesMs - RZ.retenceZalohDenMs(k.slice(0, 10))) / DEN_MS);
@@ -751,6 +757,8 @@ export function retenceVyber(klice, dnes) {
     if (!drz.has(k) && k !== nejnovejsi) smazat.push(k);
   for (const k of vynucene)
     if (vek(k) >= RETENCE_VYNUCENE_DNU && k !== nejnovejsi) smazat.push(k);
+  for (const k of pred)
+    if (k !== predNejnovejsi && k !== nejnovejsi && RZ.retenceZalohDenMs(k.slice(0, 10)) <= hranicePred) smazat.push(k);
   return smazat.sort();
 }
 

@@ -314,8 +314,10 @@ await zkus('N5', async () => {
   test('#523 N5: vynucené — 6 dní zůstane, 7 dní se smaže (ruční i při přihlášení)',
     JSON.stringify(v(['2028-10-19', '2028-10-13T101010-rucne', '2028-10-12T101010-rucne', '2028-10-12T090000-auto']))
       === JSON.stringify(['2028-10-12T090000-auto', '2028-10-12T101010-rucne']));
-  test('N5: otisky před obnovou se nemažou nikdy (oba tvary)',
-    v(['2028-10-19', '2026-01-01T101010-pred-obnovou', '2026-01-01-pred-obnovou']).length === 0);
+  /* #529 (K9-I3): od 27. 10. 2026 po 6 měsících, nejnovější z nich zůstane (do té doby nikdy) */
+  test('N5 / #529: otisky před obnovou po 6 měsících (oba tvary), nejnovější z nich zůstane',
+    JSON.stringify(v(['2028-10-19', '2026-01-01T101010-pred-obnovou', '2026-01-01-pred-obnovou']))
+      === JSON.stringify(['2026-01-01-pred-obnovou']));
   test('N5: nejnovější otisk se nesmaže, i když je starý',
     v(['2027-01-05']).length === 0 && JSON.stringify(v(['2027-01-05', '2027-01-06'])) === JSON.stringify(['2027-01-05']));
   test('N5: cizí klíče (souhrny, tokeny, kopie-disk, části) výběr nevidí',

@@ -773,6 +773,7 @@ function cenikDiffZeSheets(sheets, C, PC) {
   const znameKlice = new Set(['C.marze', 'C.dph', 'PC.marze']);
   [CENIK_DEF, CENIK_DEF_PROJ].forEach(def => def.forEach(([, items]) => items.forEach(it => znameKlice.add(it[0]))));
   const zmeny = [], chyby = [], nezname = [];
+  let refSirkaSoubor = NaN;   // #529 E: má soubor ceník můstků v novém tvaru (Kč/bm)?
   (sheets || []).forEach(sh => {
     const rows = sh.rows || [];
     // najdi sloupce podle hlavičky (Klíč, Hodnota) – jinak předpokládej B a E
@@ -783,6 +784,7 @@ function cenikDiffZeSheets(sheets, C, PC) {
     for (let i = 1; i < rows.length; i++) {
       const r = rows[i] || []; const klic = String(r[ci] == null ? '' : r[ci]).trim();
       if (!klic) continue;
+      if (klic === 'C.mustekRefSirkaMm') refSirkaSoubor = +String(r[vi] == null ? '' : r[vi]).replace(/\s/g, '').replace(',', '.');
       if (!znameKlice.has(klic)) { nezname.push(klic); continue; }
       const prefix = klic.split('.')[0];
       const t = cil[prefix]; if (!t) { nezname.push(klic); continue; }
@@ -822,6 +824,14 @@ function cenikDiffZeSheets(sheets, C, PC) {
         zmeny.push({ cesta: klic, popis: String(r[2] == null ? '' : r[2]), stara, nova });
     }
   });
+  /* #529 E: soubor ze starého ceníku (bez kladné referenční šířky můstku)
+   * nese C.mustekKc jako paušál Kč/ks. Do ceníku v novém tvaru (Kč/bm) by se
+   * paušál četl jako cena za bm — takovou změnu import nezapíše. */
+  const iM = zmeny.findIndex(z => z.cesta === 'C.mustekKc');
+  if (iM >= 0 && !(refSirkaSoubor > 0) && +(C && C.mustekRefSirkaMm) > 0) {
+    zmeny.splice(iM, 1);
+    chyby.push('C.mustekKc: soubor je ze staršího ceníku, kde byl můstek paušál Kč/ks — do ceníku s cenou za bm materiálu se nepřevádí (cena zůstává, upravte ji ručně)');
+  }
   return { zmeny, chyby, nezname };
 }
 /* Aplikuje spočítané změny do ceníků (in-place). */

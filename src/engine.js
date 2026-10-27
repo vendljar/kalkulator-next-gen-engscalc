@@ -772,16 +772,22 @@ function mustkyRozpad(z, c) {
 }
 /* MIGRACE ZVEŘEJŇOVANÉHO CENÍKU (#354). Ceník ve starém tvaru (bez kladné
  * referenční šířky) dostane nové buňky s výchozími hodnotami a C.mustekKc
- * nově jako Kč/bm. Montážní buňky, které už správce vyplnil, zůstanou;
- * C.mustekKc zůstane, jen když ho správce proti platnému ceníku změnil
- * (`platny` = dosud platný ceník). Ceník v novém tvaru se nemění.
- * Vrací true, když migroval. */
-function cenikMigraceMustku(cenik, platny) {
+ * nově jako Kč/bm. Montážní buňky, které už správce vyplnil, zůstanou.
+ * C.mustekKc se u starého tvaru nahradí VŽDY (#529 E, test J. V. 27. 10.
+ * 2026): byl to paušál Kč/ks vč. montáže, takže jakákoli jeho hodnota
+ * (testengscalc 25 000) by se teď četla jako Kč/bm materiálu — můstek
+ * 1 m × 1,6 m vyšel 31 400 místo schválených 35 000. Do #529 zůstal, když
+ * se lišil od platného ceníku (`platny`, dnes nepoužitý). Ceník v novém
+ * tvaru (má referenční šířku) se nemění. `zpravy` (pole, nepovinné) dostane
+ * větu pro správce. Vrací true, když migroval. */
+function cenikMigraceMustku(cenik, platny, zpravy) {
   if (!cenik || typeof cenik !== 'object' || mustkyCenikNovy(cenik)) return false;
   const V = MUSTKY_CENIK_VYCHOZI;
-  const zmenenaCena = platny && typeof platny === 'object' && platny.mustekKc !== undefined
-    && +cenik.mustekKc !== +platny.mustekKc && +cenik.mustekKc > 0;
-  if (!zmenenaCena) cenik.mustekKc = V.mustekKc;
+  const fmt = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+  if (Array.isArray(zpravy))
+    zpravy.push('Můstek: ' + (+cenik.mustekKc > 0 ? 'paušál ' + fmt(+cenik.mustekKc) + ' Kč/ks nahrazen' : 'doplněna')
+      + ' cenou ' + fmt(V.mustekKc) + ' Kč/bm materiálu (při šířce ' + fmt(V.mustekRefSirkaMm) + ' mm) a montáží podle délky.');
+  cenik.mustekKc = V.mustekKc;
   cenik.mustekRefSirkaMm = V.mustekRefSirkaMm;
   ['mustekMontazHodKc', 'mustekMontazZakladHod', 'mustekMontazBmHod', 'mustekMontazMinHod'].forEach(k => {
     if (!(Number.isFinite(+cenik[k]) && +cenik[k] > 0)) cenik[k] = V[k];

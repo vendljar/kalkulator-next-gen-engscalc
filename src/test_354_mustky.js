@@ -196,14 +196,49 @@ const PRED = { zaklad: null };
     z0.mustekRefSirkaMm === 1600 && z0.mustekMontazMinHod === 16 && Number.isFinite(mustkyKc(spocti({ mustkyKs: 1 }, z0))));
   const vlastni = Object.assign(kop(STARY), { mustekMontazHodKc: 450, mustekKc: 30000 });
   E.cenikMigraceMustku(vlastni, STARY);
-  test('migrace: co správce už vyplnil (sazba montáže, změněná cena) zůstane',
-    vlastni.mustekMontazHodKc === 450 && vlastni.mustekKc === 30000 && vlastni.mustekRefSirkaMm === 1600);
+  /* #529 E: u starého tvaru je C.mustekKc paušál Kč/ks — nahradí se vždy (do #529 zůstal, když se lišil od platného) */
+  test('migrace: sazba montáže, kterou správce vyplnil, zůstane; paušál se nahradí 28 600 Kč/bm (#529 E)',
+    vlastni.mustekMontazHodKc === 450 && vlastni.mustekKc === 28600 && vlastni.mustekRefSirkaMm === 1600, vlastni);
+  /* #529 E — testengscalc 27. 10. 2026: platný ceník už v kódu nese 28 600, varianta starý paušál 25 000 */
+  {
+    const stary25 = Object.assign(kop(STARY), { mustekKc: 25000 });
+    ['mustekRefSirkaMm', 'mustekMontazHodKc', 'mustekMontazZakladHod', 'mustekMontazBmHod', 'mustekMontazMinHod'].forEach(k => delete stary25[k]);
+    const zpravy = [];
+    const platny = Object.assign(kop(STARY), E.MUSTKY_CENIK_VYCHOZI);
+    test('#529 E: starý ceník s paušálem 25 000 → po migraci 28 600 Kč/bm (i když se liší od platného)',
+      E.cenikMigraceMustku(stary25, platny, zpravy) === true && stary25.mustekKc === 28600 && stary25.mustekRefSirkaMm === 1600, stary25);
+    test('#529 E: … a správce dostane větu „paušál 25 000 Kč/ks nahrazen cenou 28 600 Kč/bm materiálu"',
+      zpravy.length === 1 && /^Můstek: paušál 25\u00a0000 Kč\/ks nahrazen cenou 28\u00a0600 Kč\/bm materiálu/.test(zpravy[0]), zpravy);
+    const z = { ...E.DEFAULT_ZADANI, sirka: 1.6, mustkyKs: 1, mustekHloubkaMm: 1000 };
+    const r = E.mustkyRozpad(z, stary25);
+    test('#529 E: můstek 1 m × 1,6 m po migraci = 35 000 Kč (28 600 materiál + 16 h × 400)',
+      Math.round(r.materialKs + r.montazKs) === 35000, r);
+    const novy = Object.assign(kop(STARY), E.MUSTKY_CENIK_VYCHOZI, { mustekKc: 31000 });
+    const zp2 = [];
+    test('#529 E: ceník, který nové buňky už má, se nemění (vlastní 31 000 Kč/bm zůstane, žádná věta)',
+      E.cenikMigraceMustku(novy, platny, zp2) === false && novy.mustekKc === 31000 && zp2.length === 0);
+  }
+  /* #529 E: import ceníku z Excelu — soubor ze starého ceníku nepřepíše cenu za bm paušálem */
+  {
+    const CEN = require('./cenik.js');
+    const PC0 = kop(E.DEFAULT_CENIK);
+    const sheet = (rows) => [{ rows: [['', 'Klíč', 'Položka', '', 'Hodnota']].concat(rows) }];
+    const cilNovy = Object.assign(kop(STARY), E.MUSTKY_CENIK_VYCHOZI);
+    const d1 = CEN.cenikDiffZeSheets(sheet([['', 'C.mustekKc', 'Můstek', '', 25000], ['', 'C.mustekRefSirkaMm', 'ref', '', '']]), cilNovy, PC0);
+    test('#529 E: import starého souboru (bez ref. šířky) do ceníku v novém tvaru → C.mustekKc se nezmění, hlásí proč',
+      !d1.zmeny.some(z => z.cesta === 'C.mustekKc') && d1.chyby.some(c => /C\.mustekKc: soubor je ze staršího ceníku/.test(c)), d1);
+    const d2 = CEN.cenikDiffZeSheets(sheet([['', 'C.mustekKc', 'Můstek', '', 30000], ['', 'C.mustekRefSirkaMm', 'ref', '', 1600]]), cilNovy, PC0);
+    test('#529 E: import souboru v novém tvaru změnu ceny za bm zapíše', d2.zmeny.some(z => z.cesta === 'C.mustekKc' && z.nova === 30000), d2);
+    const cilStary = Object.assign(kop(STARY), { mustekKc: 40000 });
+    const d3 = CEN.cenikDiffZeSheets(sheet([['', 'C.mustekKc', 'Můstek', '', 25000]]), cilStary, PC0);
+    test('#529 E: starý soubor do starého ceníku (oba paušál) se importuje jako dřív', d3.zmeny.some(z => z.cesta === 'C.mustekKc' && z.nova === 25000), d3);
+  }
   const bezKlicu = kop(STARY); delete bezKlicu.mustekKc;
   E.cenikMigraceMustku(bezKlicu, {});
   test('migrace: ceník bez C.mustekKc dostane 28 600', bezKlicu.mustekKc === 28600);
   /* Zveřejnění online i do složky jde přes progKontext → kopie se migruje. */
   const src = fs.readFileSync(path.join(__dirname, 'ui', 'program_ui.js'), 'utf8');
-  test('progKontext migruje kopii ceníku pro zveřejnění', /cenikMigraceMustku\(o, platnyCenik\)/.test(src)
+  test('progKontext migruje kopii ceníku pro zveřejnění', /cenikMigraceMustku\(o, platnyCenik, mustkyZpravy\)/.test(src) && /ctx\.mustkyZpravy\.join/.test(src)
     && /sMustky\(bez\(doplneno\(d\.cenik/.test(src));
 }
 

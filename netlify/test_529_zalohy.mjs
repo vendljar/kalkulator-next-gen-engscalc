@@ -37,6 +37,9 @@ const { default: prihlaseni } = await import('./functions/prihlaseni.mjs');
 const { default: zalohaVynuceno } = await import('./functions/zaloha_vynuceno.mjs');
 const { ADMIN_EMAIL, otiskHesla } = await import('./lib/sdilene.mjs');
 const U = require('../src/uloziste.js');
+const { default: obnova } = await import('./functions/obnova.mjs');
+Object.assign(globalThis, require('../src/format.js'), require('../src/engine.js'), require('../src/engine_proj.js'),
+  require('../src/techspec.js'), require('../src/sleva.js'), require('../src/zaokrouhleni.js'), require('../src/zamek.js'));
 
 let ok = 0, fail = 0;
 const test = (n, cond, info) => { if (cond) { ok++; console.log('OK  ' + n); }
@@ -159,6 +162,63 @@ await zkus('R1 pojistka', async () => {
   test('#529 R1: po potvrzení retence zase maže', Z.retenceDrzena(zaznam) === null && (await noc()).smazano.length > 0);
   test('#529 R1: nová noc po potvrzeném poškozeném záznamu varování přidá normálně',
     !!Z.retenceVarovaniPridej(zaznam, { kdy: 'x', den: '2026-11-21', zdroj: 'nocni', text: 'y' }));
+  vycistiZalohy();
+});
+
+/* ---------------- K9-I3: otisky „před obnovou" po 6 měsících (J. V. 27. 10. 2026) ---------------- */
+await zkus('K9-I3', async () => {
+  const V = Z.retenceVyber;
+  test('#529 K9-I3: hranice jako u měsíčních — z 27. 4. 2027 zůstane, z 26. 4. 2027 se smaže (dnes 26. 10. 2027)',
+    J(V(['2027-10-26', '2027-04-27T101010-pred-obnovou', '2027-04-26T101010-pred-obnovou', '2027-10-01T090000-pred-obnovou'], '2027-10-26'))
+      === J(['2027-04-26T101010-pred-obnovou']));
+  test('#529 K9-I3: nejnovější otisk před obnovou zůstane, i když je starší 6 měsíců',
+    J(V(['2027-10-26', '2026-01-01T101010-pred-obnovou', '2026-02-01T101010-pred-obnovou'], '2027-10-26')) === J(['2026-01-01T101010-pred-obnovou']));
+  test('#529 K9-I3: oba tvary klíče (bez času z 7. 9. 2026 i s časem)',
+    J(V(['2027-10-26', '2026-09-08-pred-obnovou', '2027-10-20T101010-pred-obnovou'], '2027-10-26')) === J(['2026-09-08-pred-obnovou']));
+  /* přes retenceProved: nepotvrzená pojistka drží i otisky před obnovou */
+  vycistiZalohy();
+  const vloz = (klic, zdroj) => { const m = { format: Z.OTISK_FORMAT, porizena: klic.slice(0, 10) + 'T02:00:00.000Z', zdroj, kdo: '', casti: 1,
+    pocetZakazek: 800, pocetUctu: 6, velikostB: 114e6, pocetSablon: 10, pocetPodpisu: 6 };
+    pamet.set('zalohy/' + klic, J(m)); pamet.set('zalohy/' + Z.souhrnKlic(klic), J({ den: klic, ...m })); pamet.set('zalohy/' + Z.castKlic(klic, 0), J({ program: null })); };
+  for (let d = 1; d <= 20; d++) vloz('2027-10-' + String(d).padStart(2, '0'), 'nocni-otisk');
+  vloz('2027-03-01T101010-pred-obnovou', 'pred-obnovou'); vloz('2027-10-05T101010-pred-obnovou', 'pred-obnovou');
+  pamet.set('zalohy/' + Z.KOPIE_DISK_KLIC, J({ kdy: '2027-10-20T01:00:00.000Z', kdo: ADMIN_EMAIL, soubor: 'otisk_2027-10-20.json.gz',
+    velikostB: 1000, sha256: 'a'.repeat(64), otisk: '2027-10-20', puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', potvrzeno: 'heslo-spravce' }));
+  const noc = () => Z.retenceProved('2027-10-20', '2027-10-20', Date.parse('2027-10-20T02:30:00Z'));
+  pamet.set('zalohy/' + Z.RETENCE_VAROVANI_KLIC, J({ kdy: '2027-10-19T02:30:00.000Z', den: '2027-10-19', zdroj: 'nocni', text: 'úbytek' }));
+  const r1 = await noc();
+  test('#529 K9-I3: nepotvrzená pojistka úbytku drží i otisk před obnovou starší 6 měsíců', r1.smazano.length === 0 && !!r1.drzeno
+    && pamet.has('zalohy/2027-03-01T101010-pred-obnovou'), r1);
+  pamet.delete('zalohy/' + Z.RETENCE_VAROVANI_KLIC);
+  const r2 = await noc();
+  test('#529 K9-I3: bez varování retence otisk před obnovou starší 6 měsíců smaže i s částmi, nejnovější (5. 10.) zůstane',
+    r2.smazano.includes('2027-03-01T101010-pred-obnovou') && !pamet.has('zalohy/2027-03-01T101010-pred-obnovou')
+    && !pamet.has('zalohy/' + Z.castKlic('2027-03-01T101010-pred-obnovou', 0)) && pamet.has('zalohy/2027-10-05T101010-pred-obnovou'), r2);
+  vycistiZalohy();
+});
+
+/* ---------------- B: controlling bez uloženého nastavení (test J. V. 27. 10.) ---------------- */
+await zkus('B controlling', async () => {
+  vycistiZalohy();
+  pamet.delete('program/controlling');
+  const v = await doporiz(await vynuceno({ duvod: 'rucne' }));
+  const o = await Z.ctiOtisk(ulz('zalohy'), v.telo.den);
+  test('#529 B: otisk prázdné DB nese controlling jako null (výchozí rozvržení z kódu)', !!o && 'controlling' in o && o.controlling === null, o && o.controlling);
+  const nahled = async () => { const r = await obnova(new Request('http://x/api/obnova', { method: 'POST', headers: { cookie },
+    body: J({ zdroj: { soubor: { porizena: '2026-10-27T08:42:54.000Z', zakazky: {}, controlling: null } }, rezim: 'prepsat', nahled: true, casti: ['controlling'] }) }));
+    return { status: r.status, telo: await r.json() }; };
+  const n = await nahled();
+  const c = n.telo.casti && n.telo.casti.controlling;
+  test('#529 B: náhled bez uloženého controllingu nehlásí „nenese", ale neutrálně „výchozí rozvržení" (beze změny)',
+    n.status === 200 && !!c && c.preskocene === 0 && c.bezeZmeny === 1 && !J(n.telo).includes('nenese')
+    && (c.poznamky || []).some(t => /výchozí rozvržení/.test(t)), n.telo);
+  await ulz('program').zapis('controlling', { skupiny: ['vlastni'] });
+  const n2 = await nahled();
+  const c2 = n2.telo.casti && n2.telo.casti.controlling;
+  test('#529 B: s uloženou odchylkou v cíli se chování nemění (přeskočí se, nic nesmaže) — důvod bez „nenese"',
+    n2.status === 200 && c2 && c2.preskocene === 1 && /výchozí rozvržení/.test(c2.duvody[0].duvod) && !/nenese/.test(c2.duvody[0].duvod)
+    && J(await ulz('program').cti('controlling')) === J({ skupiny: ['vlastni'] }), n2.telo);
+  pamet.delete('program/controlling');
   vycistiZalohy();
 });
 

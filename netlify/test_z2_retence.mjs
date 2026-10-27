@@ -60,7 +60,7 @@ const dnyOd = (od, po) => { const out = []; for (let t = Date.parse(od); t <= Da
 
 /* ---------------- 1) pravidlo: konstanty a výklad ---------------- */
 await zkus('pravidlo', async () => {
-  test('#523: Blobs 14 dní / 8 týdnů / 6 měsíců / vynucené 7 dní', J(R.RETENCE_ZALOH_BLOBS) === J({ dnu: 14, tydnu: 8, mesicu: 6, vynuceneDnu: 7 })
+  test('#523: Blobs 14 dní / 8 týdnů / 6 měsíců / vynucené 7 dní / před obnovou 6 měsíců (#529)', J(R.RETENCE_ZALOH_BLOBS) === J({ dnu: 14, tydnu: 8, mesicu: 6, vynuceneDnu: 7, predObnovouMesicu: 6 })
     && Z.RETENCE_DENNI_DNU === 14 && Z.RETENCE_TYDNU === 8 && Z.RETENCE_MESICU === 6 && Z.RETENCE_VYNUCENE_DNU === 7);
   test('#523: Disk 7 dní / 8 týdnů / 6 měsíců', J(R.RETENCE_ZALOH_DISK) === J({ dnu: 7, tydnu: 8, mesicu: 6 }));
   test('#523: staré otisky = před 20. 10. 2026; výjimka RETENCE_OD zrušená', R.RETENCE_ZALOH_STARE_PRED === '2026-10-20'
@@ -73,7 +73,7 @@ await zkus('pravidlo', async () => {
     && !Number.isFinite(R.retenceZalohDenMs('2027-2-1')) && R.retenceZalohDrz(['2027-01-01'], '2027-02-31', R.RETENCE_ZALOH_BLOBS) === null);
   const p = R.retenceZalohPopis();
   test('#523: popis pro obrazovku nese čísla pravidla', /14 dní/.test(p.blobs) && /8 týdnů/.test(p.blobs) && /6 měsíců/.test(p.blobs)
-    && /7 dní/.test(p.blobs) && /7 dní/.test(p.disk) && /před obnovou se nemažou/.test(p.blobs));
+    && /7 dní/.test(p.blobs) && /7 dní/.test(p.disk) && /před obnovou 6 měsíců \(nejnovější z nich zůstává vždy\)/.test(p.blobs));
 });
 
 /* ---------------- 2) tabulka: přesný výběr klíčů v Blobs ---------------- */
@@ -107,8 +107,12 @@ await zkus('tabulka', async () => {
     ['vynucené: 6 dní zůstane, 7 dní se smaže; do týdnů ani měsíců se nepočítají', '2027-03-18',
       ['2027-03-11T120000-rucne', '2027-03-12T000000-auto', '2027-03-01T080000-auto', '2027-03-18'],
       ['2027-03-01T080000-auto', '2027-03-11T120000-rucne']],
-    ['před obnovou se nemažou nikdy (oba tvary), ani staré', '2028-01-01',
-      ['2026-09-10T101010-pred-obnovou', '2026-09-10-pred-obnovou', '2027-12-31T235959-pred-obnovou', '2028-01-01'], []],
+    /* #529 (K9-I3, J. V. 27. 10. 2026): do té doby „nikdy" */
+    ['před obnovou po 6 měsících (oba tvary), nejnovější z nich zůstane', '2028-01-01',
+      ['2026-09-10T101010-pred-obnovou', '2026-09-10-pred-obnovou', '2027-12-31T235959-pred-obnovou', '2028-01-01'],
+      ['2026-09-10-pred-obnovou', '2026-09-10T101010-pred-obnovou']],
+    ['před obnovou: jediný (nejnovější) zůstane, i když je starší 6 měsíců', '2028-01-01',
+      ['2026-09-10T101010-pred-obnovou', '2028-01-01'], []],
     ['nejnovější otisk zůstane, i když je jediný a starý (vynucený)', '2028-01-01',
       ['2027-03-01T080000-auto'], []],
     ['nejnovější noční zůstane i po výpadku nocí delším než půl roku', '2028-01-01',

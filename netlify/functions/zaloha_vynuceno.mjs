@@ -17,7 +17,7 @@
  *   nejstarší nepotvrzené varování — další v pořadí (`dalsi`) drží dál.
  * POST { akce: 'smazat-pred-obnovou', klic, hesloSpravce } → ruční smazání
  *   otisku „před obnovou" (O-K9 #527, K9-I3; ZALOHY_VOLBY.smazatPredObnovou).
- *   Jinak se tyhle otisky nemažou nikdy.
+ *   Jinak je retence maže po 6 měsících, nejnovější nikdy (#529).
  * GET  /api/zaloha_vynuceno → { ok, otisky: [ { den, porizena, zdroj, kdo,
  *   pocetZakazek, pocetUctu, casti? } … ] } – souhrn posledních otisků BEZ dat,
  *   aby bylo v obrazovce vidět, kdy záloha naposledy vznikla. Od #522 i

@@ -79,6 +79,9 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
    * krycích listů z Nastavení → Firma — splatnost, splátky, záruka, pokuty
    * v každé nabídce a smlouvě. */
   'podminky.js',
+  /* cenik.js (#529 E, 27. 10. 2026): import ceníku z Excelu — ceny, které
+   * se zveřejní do všech nabídek. */
+  'cenik.js',
   /* nabidka_proj.js (W1, 19. 10. 2026): symboly textů nabídky PROJ pro
    * šablonu Wordu v6 — termíny jen nabízených činností, dvojice sloupců. */
   'nabidka_proj.js',
@@ -1000,9 +1003,22 @@ const MUTACE = [
     nahrad: "    cenik[k] = V[k];",
     proc: 'správcem vyplněná sazba by se zveřejněním ztratila' },
   { nazev: '#354: migrace nedá C.mustekKc výchozí cenu za metr', soubor: 'engine.js',
-    hledej: "  if (!zmenenaCena) cenik.mustekKc = V.mustekKc;",
+    hledej: "  cenik.mustekKc = V.mustekKc;",
     nahrad: "",
     proc: 'starý paušál za kus by se po zveřejnění počítal jako cena za metr' },
+  /* #529 E (test J. V. 27. 10. 2026): paušál 25 000 zůstal a četl se jako Kč/bm. */
+  { nazev: '#529: migrace nechá vyplněný paušál můstku [#529]', soubor: 'engine.js',
+    hledej: "  cenik.mustekKc = V.mustekKc;",
+    nahrad: "  if (!(+cenik.mustekKc > 0)) cenik.mustekKc = V.mustekKc;",
+    proc: 'můstek 1 m × 1,6 m by vyšel 31 400 místo 35 000 Kč (testengscalc 27. 10.)' },
+  { nazev: '#529: migrace nic neřekne správci [#529]', soubor: 'engine.js',
+    hledej: "  if (Array.isArray(zpravy))\n    zpravy.push('Můstek: '",
+    nahrad: "  if (false)\n    zpravy.push('Můstek: '",
+    proc: 'správce by v dialogu zveřejnění nevěděl, že se cena můstku změnila' },
+  { nazev: '#529: import starého Excelu přepíše cenu za bm paušálem [#529]', soubor: 'cenik.js',
+    hledej: "  if (iM >= 0 && !(refSirkaSoubor > 0) && +(C && C.mustekRefSirkaMm) > 0) {",
+    nahrad: "  if (false) {",
+    proc: 'starý export ceníku by do nového ceníku vrátil paušál jako cenu za bm' },
   { nazev: '#354: prázdná délka se nehlásí', soubor: 'kontroly.js',
     hledej: "        if (v === undefined || v === null || String(v).trim() === '')\n          return { text: 'Doplňte délku můstku",
     nahrad: "        if (false)\n          return { text: 'Doplňte délku můstku",

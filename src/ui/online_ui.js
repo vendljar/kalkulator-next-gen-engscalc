@@ -3296,11 +3296,13 @@ function onlineObnovaSecti(cil, d) {
     const c = cil.casti[k] || (cil.casti[k] = { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0, duvody: [] });
     c.nove += b.nove; c.prepsane += b.prepsane; c.bezeZmeny += b.bezeZmeny; c.preskocene += b.preskocene;
     c.duvody.push(...(b.duvody || []));
+    (b.poznamky || []).forEach(t => { c.poznamky = c.poznamky || []; if (!c.poznamky.includes(t)) c.poznamky.push(t); });   // #529
   });
   (d.upozorneni || []).forEach(u => { if (!cil.upozorneni.includes(u)) cil.upozorneni.push(u); });
   if (d.zdroj) cil.zdroj = d.zdroj;
   if (d.otiskPred) cil.otiskPred = d.otiskPred;
   if (d.rejstrik) cil.rejstrik = { existujicich: d.rejstrik.existujicich, prestaven: !!d.rejstrik.prestaven,
+    nove: cil.casti.zakazky ? cil.casti.zakazky.nove : 0,
     zakazek: d.rejstrik.existujicich + (cil.casti.zakazky ? cil.casti.zakazky.nove : 0) };
 }
 function onlineObnovaPrilisVelke(cil, prilisVelke) {
@@ -3573,10 +3575,10 @@ async function onlineObnovaBeziciZahod() {
 }
 
 /* RUČNÍ SMAZÁNÍ OTISKU „PŘED OBNOVOU" (O-K9 #527, nález K9-I3, výchozí
- * volba koordinace). Otisky stavu před obnovou retence nemaže nikdy (cesta
- * zpátky); každá obnova velké databáze ale nechá v Netlify ~80 MB. Smazat
- * je jde jen tady, po jednom, s heslem správce — server odmítne, když
- * zrovna běží obnova. */
+ * volba koordinace). Otisky stavu před obnovou retence maže až po 6 měsících
+ * (#529, nejnovější nikdy); každá obnova velké databáze ale nechá v Netlify
+ * ~80 MB. Dřív je jde smazat jen tady, po jednom, s heslem správce — server
+ * odmítne, když zrovna běží obnova. */
 async function onlineOtiskPredObnovouSmaz() {
   const o = onlineObnovaStav();
   const klic = String(o.otiskDen || '');
@@ -3646,19 +3648,26 @@ function renderOnlineObnova() {
       const b = n.casti[k];
       return `<tr><td ${td}>${esc(l)}</td><td ${td}>${b.nove}</td><td ${td}>${b.prepsane}</td><td ${td}>${b.bezeZmeny}</td><td ${td}>${b.preskocene}</td></tr>`;
     }).join('');
-    const duvody = [];
+    const duvody = [], poznamky = [];
     OBNOVA_CASTI.forEach(([k, l]) => {
       const b = n.casti && n.casti[k];
       if (b) b.duvody.forEach(d => duvody.push(l + ' – ' + d.klic + ': ' + d.duvod));
+      if (b && b.poznamky) b.poznamky.forEach(t => poznamky.push(l + ': ' + t));   // #529: neutrální, ne „přeskočeno"
     });
+    /* #529 (C): rejstřík = zakázky na serveru teď + nové ze zálohy (obnova nic
+     * nemaže, takže zakázky jen na serveru v něm zůstanou) */
+    const rj = n.rejstrik;
+    const rejText = rj ? '; rejstřík by pak měl ' + onlinePocetText(rj.zakazek)
+      + (typeof rj.existujicich === 'number' ? ' (na serveru teď ' + rj.existujicich + ', nových ze zálohy ' + (rj.zakazek - rj.existujicich)
+        + ' — obnova nic nemaže, zakázky, které má jen server, zůstanou)' : '') : '';
     const s = onlineObnovaSouhrn(n);
     nahled = `<table style="margin-top:8px;border-collapse:collapse"><thead><tr><th ${td}>Část</th><th ${td}>Nové</th><th ${td}>Přepsané</th><th ${td}>Beze změny</th><th ${td}>Přeskočené</th></tr></thead>
       <tbody>${radky}</tbody></table>
       <div class="note">Zdroj: ${esc(n.zdroj.typ === 'otisk' ? 'otisk ' + n.zdroj.klic : 'soubor')}${n.zdroj.porizena
     ? ', pořízen ' + esc(new Date(n.zdroj.porizena).toLocaleString('cs-CZ')) : ''}${n.zdroj.web ? ' na ' + esc(n.zdroj.web) : ''}.
-        Zapsalo by se ${s.nove + s.prepsane} záznamů, ${s.preskocene} se přeskočí${n.rejstrik
-    ? '; rejstřík by pak měl ' + onlinePocetText(n.rejstrik.zakazek) : ''}${n.davek > 1
+        Zapsalo by se ${s.nove + s.prepsane} záznamů, ${s.preskocene} se přeskočí${rejText}${n.davek > 1
     ? '; soubor se pošle po ' + n.davek + ' dávkách' : ''}.</div>
+      ${poznamky.length ? `<div class="note" id="online-obnova-poznamky">${poznamky.map(esc).join('<br>')}</div>` : ''}
       ${duvody.length ? `<div class="note" style="border-left:3px solid #f0b429;padding-left:8px"><b>Přeskočené a proč:</b><br>${duvody.slice(0, 20).map(esc).join('<br>')}${duvody.length > 20
     ? '<br>… a dalších ' + (duvody.length - 20) : ''}</div>` : ''}
       ${(o.rezim === 'doplnit' && duvody.some(d => /doplnit/.test(d)))
