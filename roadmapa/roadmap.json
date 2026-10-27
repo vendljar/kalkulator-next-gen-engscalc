@@ -3348,9 +3348,9 @@
    "detail" : "Nezakládá se dřív, než se uzavře #149 (projití osmi rozdílů a rozhodnutí, co s nimi). Teprve pak se Model 1 označí za zmrazený (žádná další změna výpočtu, jen opravy pádů), Model 2 zůstane tím, co dnes platí, a Model 3 vznikne jako jeho kopie, do které se pouštějí nové opravy. Podmínka: přepínač režimu v hlavičce a testovací sady musejí umět běžet ve všech třech, jinak se rozdíl mezi nimi nedá doložit.",
    "slozitost" : "L",
    "proc" : "Model 1 se má po dotestování zmrazit, aby staré nabídky šlo kdykoliv přepočítat do posledního haléře stejně jako v den, kdy vznikly. Jenže opravy se objevovat nepřestanou — a když se budou dopisovat do Modelu 2, rozejde se i ten. Třetí režim je místo, kam opravy půjdou, aniž by se sáhlo na oba předchozí.",
-   "dulezitost" : "nizka",
+   "dulezitost" : "",
    "hotovoKdyz" : "#149 je uzavřené, Model 1 je označený jako zmrazený, Model 3 existuje jako samostatný režim a testovací sady procházejí ve všech třech režimech.",
-   "stav" : "ceka",
+   "stav" : "hotovo",
    "zavisi" : [
     {
      "id": "149",
@@ -3361,8 +3361,9 @@
      "cekaNa": "rozhodnutí J. V. 24. 9. 2026 — Model 3 se nezavádí, dál se rozvíjí jen Model 2"
     }
    ],
-   "nazev" : "Model 3 — třetí režim výpočtu po zmrazení Modelu 1",
-   "pozn" : "Trvale otevřený bod. Nespouštět bez pokynu.",
+   "hotovoV" : "zrušeno 27. 10. 2026",
+   "nazev" : "ZRUŠENO — Model 3 — třetí režim výpočtu po zmrazení Modelu 1",
+   "pozn" : "Zrušeno J. V. 27. 10. 2026: Model 3 se dělat nebude. Trvale otevřený bod. Nespouštět bez pokynu.",
    "id" : "159"
   },
   {
