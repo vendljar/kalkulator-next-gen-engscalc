@@ -570,7 +570,17 @@ export default async (req) => {
     if (!casti.includes(cast) || !maVlastni(zaloha, cast)) continue;
     const b = bilance();
     const hodnota = zaloha[cast];
-    if (hodnota == null || typeof hodnota !== 'object') preskoc(b, jednoduche[cast], 'záloha tuto část nenese');
+    /* #529 (B, test J. V. 27. 10. 2026): controlling null = správce nic neuložil,
+     * platí výchozí rozvržení z kódu (src/controlling.js) — záloha ho „nese",
+     * jen jako nic. Náhled to řekne neutrálně; obnova uloženou odchylku v cíli
+     * dál nemaže (rozhodne J. V. přes C3). */
+    if (cast === 'controlling' && hodnota === null) {
+      if ((await sProg.cti('controlling')) == null) {
+        b.bezeZmeny++;
+        b.poznamky = ['výchozí rozvržení z kódu — na serveru není nic uloženého ani v záloze, ani teď'];
+      } else preskoc(b, 'controlling', 'záloha nese výchozí rozvržení z kódu (v době zálohy nebylo nic uložené) — uložené nastavení na serveru se nemění');
+    }
+    else if (hodnota == null || typeof hodnota !== 'object') preskoc(b, jednoduche[cast], 'záloha tuto část nenese');
     else if (cast === 'program' && ULO.uloKidProblemyProgramu(hodnota.platny && hodnota.platny.cenikProj,
                                                                hodnota.platny && hodnota.platny.katalog).length) {
       /* B26: platný ceník ze zálohy nese kid trvalé položky v nepovoleném

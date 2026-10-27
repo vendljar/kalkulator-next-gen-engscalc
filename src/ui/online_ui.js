@@ -110,7 +110,12 @@ const ONLINE_STAV = {
 
 /* Počet zakázek česky: 1 zakázka, 2–4 zakázky, jinak (i 0) zakázek. */
 function onlinePocetText(n) {
-  return n + ' ' + (n === 1 ? 'zakázka' : (n >= 2 && n < 5 ? 'zakázky' : 'zakázek'));
+  return onlineSklon(n, 'zakázka', 'zakázky', 'zakázek');
+}
+/* Počet s podstatným jménem česky (#529, „1 účtů" v Nastavení → Databáze):
+ * 1 → jedna, 2–4 → dve, jinak (0, 5+, záporné, desetinné) → pet. */
+function onlineSklon(n, jedna, dve, pet) {
+  return n + ' ' + (n === 1 ? jedna : (n >= 2 && n < 5 && n === Math.floor(n) ? dve : pet));
 }
 
 function onlineMozne() {
@@ -1765,10 +1770,14 @@ function onlineZaloha(doSlozky) {
  * heslem správce; server ověří, že jde o totéž varování (`den`). */
 async function onlineRetencePotvrd() {
   const v = ONLINE_STAV.retenceVarovani;
-  if (!v || !jeAdminOnline()) return false;
-  const ano = await potvrd('Opravdu data ubyla záměrně (smazané zakázky, účty, šablony, podpisy nebo přílohy)? Po potvrzení se mazání starých záloh '
+  if (v === null || v === undefined || !jeAdminOnline()) return false;
+  /* #529: poškozený záznam (není objekt) drží retenci taky; potvrdí ho jen hlavní správce */
+  const poskozeny = typeof v !== 'object' || Array.isArray(v);
+  const ano = await potvrd(poskozeny ? 'Záznam varování pojistky záloh je poškozený, takže mazání starých záloh stojí. '
+    + 'Zkontrolujte, že se data neztratila (přehled záloh, počty zakázek). Po potvrzení se záznam nahradí čitelným a mazání '
+    + 'starých záloh se znovu rozběhne podle pravidel retence.' : 'Opravdu data ubyla záměrně (smazané zakázky, účty, šablony, podpisy nebo přílohy)? Po potvrzení se mazání starých záloh '
     + 'znovu rozběhne a zálohy z doby před úbytkem začnou postupně mizet podle pravidel retence.',
-    { nadpis: 'Úbytek dat v noční záloze', ano: 'Ano, úbytek byl záměrný', ne: 'Zpět' });
+    { nadpis: poskozeny ? 'Poškozený záznam varování' : 'Úbytek dat v noční záloze', ano: poskozeny ? 'Ano, potvrdit' : 'Ano, úbytek byl záměrný', ne: 'Zpět' });
   if (!ano) return false;
   const hesloSpravce = await dotazHeslo('Potvrzení odemyká mazání starých záloh na serveru. '
     + 'Potvrďte ho svým heslem (tím, kterým se přihlašujete do aplikace).', { nadpis: 'Potvrzení heslem správce' });
@@ -1776,9 +1785,9 @@ async function onlineRetencePotvrd() {
   ONLINE_STAV.pracuje = true; render();
   try {
     /* `kdy` (O-K9, K9-N1): server potvrdí jen přesně to varování, které správce viděl */
-    const o = await onlineApi('/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: String(v.den || ''),
-      ...(typeof v.kdy === 'string' ? { kdy: v.kdy } : {}), hesloSpravce });
-    ONLINE_STAV.retenceVarovani = (o && o.retenceVarovani) || null;
+    const o = await onlineApi('/api/zaloha_vynuceno', { akce: 'retence-potvrdit', den: poskozeny ? '' : String(v.den || ''),
+      ...(!poskozeny && typeof v.kdy === 'string' ? { kdy: v.kdy } : {}), hesloSpravce });
+    ONLINE_STAV.retenceVarovani = (o && o.retenceVarovani !== undefined) ? o.retenceVarovani : null;
     const dalsi = ONLINE_STAV.retenceVarovani && !ONLINE_STAV.retenceVarovani.potvrzeno;
     onlineZprava(dalsi ? 'Varování potvrzeno. Čeká další varování o úbytku dat — zkontrolujte ho a potvrďte také, jinak mazání starých záloh stojí dál.'
       : 'Úbytek dat potvrzen — mazání starých záloh poběží zase podle pravidel retence.', dalsi ? 'varovani' : '');
@@ -1797,7 +1806,7 @@ function onlineOtiskyNacti() {
   return onlineApi('/api/zaloha_vynuceno').then(o => {
     ONLINE_STAV.otisky = o.otisky || [];
     ONLINE_STAV.kopieDisk = o.kopieDisk || null;
-    ONLINE_STAV.retenceVarovani = o.retenceVarovani || null;
+    ONLINE_STAV.retenceVarovani = o.retenceVarovani !== undefined ? o.retenceVarovani : null;   // #529: i poškozený záznam
     ONLINE_STAV.otiskStav = o.otiskStav || null;          // #522: poslední pokus o zálohu
     ONLINE_STAV.rozpracovane = o.rozpracovane || [];
     ONLINE_STAV.zalohySmi = o.smi || null;                // O-K9 #527: potvrdit úbytek / smazat otisk před obnovou
@@ -1834,10 +1843,11 @@ function onlineOtiskPopis() {
   const pokus = onlineOtiskPokusText();
   if (!o) return 'Zálohy databáze: zatím žádná – pořiďte ji tlačítkem „Zálohovat teď".' + (pokus ? ' ' + pokus : '');
   const kdy = o.porizena ? new Date(o.porizena).toLocaleString('cs-CZ') : o.den;
-  const zdroj = /vynuc/.test(o.zdroj) ? 'ručně' : 'sama v noci';
+  /* #529: otisk při přihlášení správce (`…-auto`) je „automaticky", ne „ručně" */
+  const zdroj = /-auto$/.test(String(o.den || '')) ? 'automaticky po přihlášení' : /vynuc/.test(o.zdroj) ? 'ručně' : 'sama v noci';
   return 'Poslední záloha databáze: ' + kdy + ' (' + zdroj + ', '
-    + onlinePocetText(o.pocetZakazek) + ', ' + o.pocetUctu + ' účtů) · '
-    + 'v přehledu ' + (ONLINE_STAV.otisky.length) + ' posledních.' + (pokus ? ' ' + pokus : '');
+    + onlinePocetText(o.pocetZakazek) + ', ' + onlineSklon(o.pocetUctu, 'účet', 'účty', 'účtů') + ') · '
+    + 'v přehledu ' + onlineSklon(ONLINE_STAV.otisky.length, 'poslední', 'poslední', 'posledních') + '.' + (pokus ? ' ' + pokus : '');
 }
 
 /* VYNUCENÁ ZÁLOHA (4. 8. 2026). Do té doby otisk uměla jen plánovaná funkce
@@ -1845,15 +1855,36 @@ function onlineOtiskPopis() {
  * nefunguje". Teď je to jeden POST; složka u toho nemusí být vůbec. */
 function onlineZalohaTed() {
   if (!jeAdminOnline()) { onlineZprava('Zálohu smí pořídit jen administrátor.', 'varovani'); render(); return Promise.resolve(false); }
+  /* #529: jedno kliknutí = jedna záloha — druhé volání během běhu se připojí k prvnímu */
+  if (ONLINE_STAV.zalohaTedBezi) return ONLINE_STAV.zalohaTedBezi;
   ONLINE_STAV.pracuje = true; render();
-  return onlineOtiskDopor(onlineApi('/api/zaloha_vynuceno', { duvod: 'rucne' }),
+  const p = onlineOtiskDopor(onlineApi('/api/zaloha_vynuceno', { duvod: 'rucne' }),
     (p) => { onlineZprava('Zálohuji databázi po částech… zpracováno ' + p.hotovo + ' z ' + p.celkem + ' záznamů.'); render(); }).then(o => {
     onlineZprava('Záloha databáze pořízena (' + o.den + ', ' + onlinePocetText(o.pocetZakazek)
-      + ', ' + o.pocetUctu + ' účtů). Leží na serveru; na Disk Google ji odlije tlačítko vedle.');
+      + ', ' + onlineSklon(o.pocetUctu, 'účet', 'účty', 'účtů') + '). Leží na serveru; na Disk Google ji odlije tlačítko vedle.');
     return onlineOtiskyNacti();
-  }).catch(e => { onlineZprava('Zálohu se nepodařilo pořídit: ' + e.message, 'varovani');
+  }).catch(e => {
+    const info = onlineZalohaLimitText(e);
+    onlineZprava(info || ('Zálohu se nepodařilo pořídit: ' + e.message), info ? '' : 'varovani');
     return onlineOtiskyNacti().then(() => false); })
-    .then(v => { ONLINE_STAV.pracuje = false; render(); return v; });
+    .then(v => { ONLINE_STAV.pracuje = false; ONLINE_STAV.zalohaTedBezi = null; render(); return v; });
+  ONLINE_STAV.zalohaTedBezi = p;
+  return p;
+}
+
+/* LIMIT RUČNÍ ZÁLOHY NENÍ PORUCHA (#529, nález J. V. 27. 10. 2026). Když
+ * server odmítne kvůli 10minutovému odstupu (429 limitZalohy) a záloha,
+ * kvůli které to nejde, je hotová (nebo se právě pořizuje), dostane správce
+ * informaci (šedě), ne „Zálohu se nepodařilo pořídit". Jinak (denní strop,
+ * starší server bez `posledni`) '' a platí varování. */
+function onlineZalohaLimitText(e) {
+  const d = e && e.stav === 429 && e.data;
+  if (!d || d.kod !== 'limitZalohy' || !d.posledni || !d.dalsi) return '';
+  const t = Date.parse(d.posledni), dalsi = Date.parse(d.dalsi);
+  if (!isFinite(t) || !isFinite(dalsi) || dalsi - t > 10 * 60 * 1000 + 1000) return '';
+  const hm = (x) => new Date(x).toLocaleTimeString('cs-CZ', { hour: 'numeric', minute: '2-digit' });
+  return (d.posledniHotova ? 'Poslední záloha z ' + hm(t) + ' je hotová.' : 'Záloha z ' + hm(t) + ' se právě pořizuje.')
+    + ' Další ruční záloha půjde v ' + hm(dalsi) + '.';
 }
 
 /* SAMOČINNÁ ZÁLOHA po přihlášení administrátora.
@@ -1872,7 +1903,10 @@ function onlineZalohaAuto() {
   if (!jeAdminOnline()) return Promise.resolve(false);
   const dnes = new Date().toISOString().slice(0, 10);
   let chybaZalohy = '';
-  return onlineOtiskyNacti().then(() => {
+  return onlineOtiskyNacti().then((nacteno) => {
+    /* #529: přehled záloh se nenačetl → nevíme, jestli dnešní záloha je;
+     * automatika radši nic nepořizuje (hláška o načtení už svítí). */
+    if (nacteno === false) return false;
     /* Od 19. 10. 2026 (#151 N1) má vynucený otisk vlastní klíč s časem
      * (`<den>T<hhmmss>-rucne|-auto`); dnešní je tedy noční i vynucený,
      * jen otisk před obnovou ne — ten stav databáze nezálohuje. */
@@ -2073,6 +2107,8 @@ async function kopieDiskUklid(h, kopie, ted) {
    * potvrzené pro tentýž den mazání pustí. */
   const v = ONLINE_STAV.retenceVarovani;
   const den = String(kopie.otisk || (kopie.soubor.match(/\d{4}-\d{2}-\d{2}/) || [''])[0]);
+  if (v !== null && v !== undefined && (typeof v !== 'object' || Array.isArray(v)))
+    return nic('záznam varování pojistky je poškozený — mazání stojí, dokud ho hlavní správce nepotvrdí');   // #529
   if (v && !v.potvrzeno) return nic('nepotvrzený úbytek dat (' + String(v.text || v.den || '') + ') — mazání stojí, dokud ho nepotvrdíte');
   const datum = (j) => (RETENCE_ZALOH_DISK_JMENO.exec(j) || [])[1] || '';
   const predchozi = jmena.filter(j => datum(j) && datum(j) !== den && j !== kopie.soubor).sort((a, b) => datum(a) < datum(b) ? -1 : 1).pop();
@@ -3262,11 +3298,13 @@ function onlineObnovaSecti(cil, d) {
     const c = cil.casti[k] || (cil.casti[k] = { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0, duvody: [] });
     c.nove += b.nove; c.prepsane += b.prepsane; c.bezeZmeny += b.bezeZmeny; c.preskocene += b.preskocene;
     c.duvody.push(...(b.duvody || []));
+    (b.poznamky || []).forEach(t => { c.poznamky = c.poznamky || []; if (!c.poznamky.includes(t)) c.poznamky.push(t); });   // #529
   });
   (d.upozorneni || []).forEach(u => { if (!cil.upozorneni.includes(u)) cil.upozorneni.push(u); });
   if (d.zdroj) cil.zdroj = d.zdroj;
   if (d.otiskPred) cil.otiskPred = d.otiskPred;
   if (d.rejstrik) cil.rejstrik = { existujicich: d.rejstrik.existujicich, prestaven: !!d.rejstrik.prestaven,
+    nove: cil.casti.zakazky ? cil.casti.zakazky.nove : 0,
     zakazek: d.rejstrik.existujicich + (cil.casti.zakazky ? cil.casti.zakazky.nove : 0) };
 }
 function onlineObnovaPrilisVelke(cil, prilisVelke) {
@@ -3373,7 +3411,7 @@ function onlineObnovaProved() {
   const s = onlineObnovaSouhrn(o.nahled);
   const text = 'Obnovit databázi ze zálohy (' + (o.zdrojTyp === 'soubor' ? o.souborJmeno : 'otisk ' + o.otiskDen)
     + ', režim „' + (o.rezim === 'prepsat' ? 'přepsat' : 'doplnit') + '")?\n\n'
-    + 'Zapíše se ' + (s.nove + s.prepsane) + ' záznamů (' + s.nove + ' nových, ' + s.prepsane + ' přepsaných), '
+    + 'Zapíše se ' + onlineSklon(s.nove + s.prepsane, 'záznam', 'záznamy', 'záznamů') + ' (' + onlineSklon(s.nove, 'nový', 'nové', 'nových') + ', ' + onlineSklon(s.prepsane, 'přepsaný', 'přepsané', 'přepsaných') + '), '
     + s.preskocene + ' se přeskočí. Před obnovou se pořídí otisk současného stavu na serveru (cesta zpátky). '
     + 'Uzamčené (odeslané) nabídky se nepřepíšou a nic se nemaže.';
   return potvrd(text).then(async ano => {
@@ -3456,7 +3494,8 @@ function onlineObnovaProved() {
         o.hlaska = '';
         r = { ...kon.souhrn, preskocene: (kon.souhrn.preskocene || 0) + prilisVelke.length };
         upoz = [...(kon.upozorneni || [])];
-        if (prilisVelke.length) upoz.push(prilisVelke.length + ' záznamů se nevešlo do jednoho požadavku a přeskočilo se: '
+        if (prilisVelke.length) upoz.push((prilisVelke.length === 1 ? '1 záznam se nevešel' : onlineSklon(prilisVelke.length, 'záznam', 'záznamy', 'záznamů')
+          + (prilisVelke.length < 5 ? ' se nevešly' : ' se nevešlo')) + ' do jednoho požadavku a ' + (prilisVelke.length === 1 ? 'přeskočil' : prilisVelke.length < 5 ? 'přeskočily' : 'přeskočilo') + ' se: '
           + prilisVelke.map(p => p.cast + '/' + p.klic).join(', ') + '.');
         if (chybaDavky && chybaDavky.data && chybaDavky.data.kod === 'hesloSpravce') onlineZobrazeniHesloZapomen();
         if (chybaDavky) throw new Error('dávka ' + (hotovo + 1) + ' z ' + davky.length + ' selhala (' + chybaDavky.message
@@ -3464,8 +3503,8 @@ function onlineObnovaProved() {
       }
       if (hesloMatice) onlineZobrazeniHesloPoObnove(hesloSpravce, hesloZPameti, hesloKdy);   // K3-N8, K4-N16
       o.nahled = null;
-      const zprava = 'Databáze obnovena: zapsáno ' + (r.nove + r.prepsane) + ' záznamů (' + r.nove + ' nových, '
-        + r.prepsane + ' přepsaných), ' + r.preskocene + ' přeskočeno. ' + upoz.join(' ');
+      const zprava = 'Databáze obnovena: zapsáno ' + onlineSklon(r.nove + r.prepsane, 'záznam', 'záznamy', 'záznamů') + ' (' + onlineSklon(r.nove, 'nový', 'nové', 'nových') + ', '
+        + onlineSklon(r.prepsane, 'přepsaný', 'přepsané', 'přepsaných') + '), ' + r.preskocene + ' přeskočeno. ' + upoz.join(' ');
       /* Výsledek zůstává ve stavu (panel ho ukáže i po překreslení) — hláška
        * karty je pomíjivá, přepíše ji první další načtení. */
       o.posledni = { kdy: new Date().toISOString(), souhrn: r, otiskPred, zprava };
@@ -3538,10 +3577,10 @@ async function onlineObnovaBeziciZahod() {
 }
 
 /* RUČNÍ SMAZÁNÍ OTISKU „PŘED OBNOVOU" (O-K9 #527, nález K9-I3, výchozí
- * volba koordinace). Otisky stavu před obnovou retence nemaže nikdy (cesta
- * zpátky); každá obnova velké databáze ale nechá v Netlify ~80 MB. Smazat
- * je jde jen tady, po jednom, s heslem správce — server odmítne, když
- * zrovna běží obnova. */
+ * volba koordinace). Otisky stavu před obnovou retence maže až po 6 měsících
+ * (#529, nejnovější nikdy); každá obnova velké databáze ale nechá v Netlify
+ * ~80 MB. Dřív je jde smazat jen tady, po jednom, s heslem správce — server
+ * odmítne, když zrovna běží obnova. */
 async function onlineOtiskPredObnovouSmaz() {
   const o = onlineObnovaStav();
   const klic = String(o.otiskDen || '');
@@ -3576,7 +3615,7 @@ function renderOnlineObnova() {
   const popisOtisku = (x) => x.den + ' · '
     + (/pred-obnovou/.test(x.zdroj) ? 'stav před obnovou' : /-auto$/.test(x.den) ? 'při přihlášení'
       : /vynuc/.test(x.zdroj) ? 'ručně' : 'noční')
-    + ' · ' + onlinePocetText(x.pocetZakazek) + ', ' + x.pocetUctu + ' účtů';
+    + ' · ' + onlinePocetText(x.pocetZakazek) + ', ' + onlineSklon(x.pocetUctu, 'účet', 'účty', 'účtů');
   const volby = otisky.map(x => `<option value="${esc(x.den)}" ${x.den === o.otiskDen ? 'selected' : ''}>${esc(popisOtisku(x))}</option>`).join('');
   /* O-K9 #527 (K9-I3): ruční smazání vybraného otisku „před obnovou" */
   const smazPred = o.zdrojTyp === 'otisk' && /-pred-obnovou$/.test(String(o.otiskDen || ''))
@@ -3611,19 +3650,26 @@ function renderOnlineObnova() {
       const b = n.casti[k];
       return `<tr><td ${td}>${esc(l)}</td><td ${td}>${b.nove}</td><td ${td}>${b.prepsane}</td><td ${td}>${b.bezeZmeny}</td><td ${td}>${b.preskocene}</td></tr>`;
     }).join('');
-    const duvody = [];
+    const duvody = [], poznamky = [];
     OBNOVA_CASTI.forEach(([k, l]) => {
       const b = n.casti && n.casti[k];
       if (b) b.duvody.forEach(d => duvody.push(l + ' – ' + d.klic + ': ' + d.duvod));
+      if (b && b.poznamky) b.poznamky.forEach(t => poznamky.push(l + ': ' + t));   // #529: neutrální, ne „přeskočeno"
     });
+    /* #529 (C): rejstřík = zakázky na serveru teď + nové ze zálohy (obnova nic
+     * nemaže, takže zakázky jen na serveru v něm zůstanou) */
+    const rj = n.rejstrik;
+    const rejText = rj ? '; rejstřík by pak měl ' + onlinePocetText(rj.zakazek)
+      + (typeof rj.existujicich === 'number' ? ' (na serveru teď ' + rj.existujicich + ', nových ze zálohy ' + (rj.zakazek - rj.existujicich)
+        + ' — obnova nic nemaže, zakázky, které má jen server, zůstanou)' : '') : '';
     const s = onlineObnovaSouhrn(n);
     nahled = `<table style="margin-top:8px;border-collapse:collapse"><thead><tr><th ${td}>Část</th><th ${td}>Nové</th><th ${td}>Přepsané</th><th ${td}>Beze změny</th><th ${td}>Přeskočené</th></tr></thead>
       <tbody>${radky}</tbody></table>
       <div class="note">Zdroj: ${esc(n.zdroj.typ === 'otisk' ? 'otisk ' + n.zdroj.klic : 'soubor')}${n.zdroj.porizena
     ? ', pořízen ' + esc(new Date(n.zdroj.porizena).toLocaleString('cs-CZ')) : ''}${n.zdroj.web ? ' na ' + esc(n.zdroj.web) : ''}.
-        Zapsalo by se ${s.nove + s.prepsane} záznamů, ${s.preskocene} se přeskočí${n.rejstrik
-    ? '; rejstřík by pak měl ' + onlinePocetText(n.rejstrik.zakazek) : ''}${n.davek > 1
+        Zapsalo by se ${s.nove + s.prepsane} záznamů, ${s.preskocene} se přeskočí${rejText}${n.davek > 1
     ? '; soubor se pošle po ' + n.davek + ' dávkách' : ''}.</div>
+      ${poznamky.length ? `<div class="note" id="online-obnova-poznamky">${poznamky.map(esc).join('<br>')}</div>` : ''}
       ${duvody.length ? `<div class="note" style="border-left:3px solid #f0b429;padding-left:8px"><b>Přeskočené a proč:</b><br>${duvody.slice(0, 20).map(esc).join('<br>')}${duvody.length > 20
     ? '<br>… a dalších ' + (duvody.length - 20) : ''}</div>` : ''}
       ${(o.rezim === 'doplnit' && duvody.some(d => /doplnit/.test(d)))

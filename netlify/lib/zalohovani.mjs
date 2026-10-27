@@ -135,7 +135,16 @@ export const VYNUCENE_ZA_DEN = 20;
  * otisk. Do O9 se klíč otisku objevil až na konci pořizování, takže souběžné
  * požadavky limit obešly. */
 export const VYNUCENE_REZERVACE = 'vynucene-rezervace/';
-export function vynuceneLimit(klice, ted) {
+/* RUČNÍ ZÁLOHU NEBLOKUJE AUTOMATICKÁ (#529, nález J. V. 27. 10. 2026).
+ * Automatická záloha po přihlášení správce (`-auto`) obsadila 10minutový
+ * odstup a první skutečné kliknutí na „Zálohovat teď" pak dostalo 429 —
+ * uživatel viděl „Zálohu se nepodařilo pořídit", ač žádnou ruční zálohu
+ * nespouštěl. `druh === 'rucne'` proto odstup počítá jen od ručních slotů;
+ * denní strop (20 za 24 h) dál počítá všechny vynucené dohromady. Bez
+ * `druh` (a pro `auto`) platí odstup od všech, jako dřív. Odmítnutí nese
+ * i `posledniMs` a `posledniHotova` (slot, kvůli kterému to nejde, a jestli
+ * je jeho otisk hotový) — prohlížeč z nich píše informativní hlášku. */
+export function vynuceneLimit(klice, ted, druh) {
   const nyni = Number.isFinite(+ted) && ted ? +ted : Date.now();
   const sloty = new Set();
   for (const k of (klice || []).map(String)) {
@@ -144,14 +153,19 @@ export function vynuceneLimit(klice, ted) {
   }
   /* rezervace s doběhlým otiskem téhož slotu se nepočítá dvakrát */
   for (const s of [...sloty]) { const i = s.indexOf('~'); if (i > 0 && sloty.has(s.slice(0, i))) sloty.delete(s); }
-  const casy = [...sloty]
-    .map(k => { const m = /^(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(\d{2})-/.exec(k);     // sloty už jsou jen vynucené
-      return m ? Date.parse(m[1] + 'T' + m[2] + ':' + m[3] + ':' + m[4] + 'Z') : NaN; })
-    .filter(t => Number.isFinite(t) && t <= nyni && nyni - t < DEN_MS)
-    .sort((a, b) => a - b);
-  let dalsi = 0;
-  if (casy.length && nyni - casy[casy.length - 1] < VYNUCENE_ODSTUP_MS) dalsi = casy[casy.length - 1] + VYNUCENE_ODSTUP_MS;
-  if (casy.length >= VYNUCENE_ZA_DEN) dalsi = Math.max(dalsi, casy[casy.length - VYNUCENE_ZA_DEN] + DEN_MS);
+  const zaznamy = [...sloty]
+    .map(k => { const m = /^(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(\d{2})-([a-z-]+)/.exec(k);     // sloty už jsou jen vynucené
+      return { t: m ? Date.parse(m[1] + 'T' + m[2] + ':' + m[3] + ':' + m[4] + 'Z') : NaN, druh: m ? m[5] : '', hotova: k.indexOf('~') < 0 }; })
+    .filter(x => Number.isFinite(x.t) && x.t <= nyni && nyni - x.t < DEN_MS)
+    .sort((a, b) => a.t - b.t);
+  const casy = zaznamy.map(x => x.t);
+  const odstupOd = zaznamy.filter(x => druh !== 'rucne' || x.druh === 'rucne');
+  const posl = odstupOd[odstupOd.length - 1];
+  let dalsi = 0, bran = null;
+  if (posl && nyni - posl.t < VYNUCENE_ODSTUP_MS) { dalsi = posl.t + VYNUCENE_ODSTUP_MS; bran = posl; }
+  if (casy.length >= VYNUCENE_ZA_DEN && casy[casy.length - VYNUCENE_ZA_DEN] + DEN_MS > dalsi) {
+    dalsi = casy[casy.length - VYNUCENE_ZA_DEN] + DEN_MS; bran = zaznamy[zaznamy.length - 1];
+  }
   if (!dalsi) return { ok: true };
   const kdy = new Date(dalsi);
   const hhmm = kdy.toLocaleTimeString('cs-CZ', { timeZone: 'Europe/Prague', hour: '2-digit', minute: '2-digit' });
@@ -160,7 +174,7 @@ export function vynuceneLimit(klice, ted) {
   const proc = casy.length >= VYNUCENE_ZA_DEN && dalsi >= casy[casy.length - VYNUCENE_ZA_DEN] + DEN_MS
     ? 'za posledních 24 hodin už vzniklo ' + VYNUCENE_ZA_DEN + ' vynucených záloh (víc denně nejde)'
     : 'poslední vynucená záloha je mladší než 10 minut';
-  return { ok: false, dalsiMs: dalsi,
+  return { ok: false, dalsiMs: dalsi, posledniMs: bran.t, posledniHotova: bran.hotova,
     chyba: 'Zálohu teď pořídit nejde: ' + proc + '. Znovu to půjde ' + (den === dnesDen ? 'dnes' : den)
       + ' v ' + hhmm + '. Noční záloha běží dál sama.' };
 }
@@ -177,7 +191,7 @@ export async function porizVynuceny(druh, kdo, opt = {}) {
   const rez = await vyhradne('zalohy-vynucene', async () => {
     const nyni = Date.now();
     const klice = await s.seznam();
-    const limit = vynuceneLimit(klice, nyni);
+    const limit = vynuceneLimit(klice, nyni, druh);
     if (!limit.ok) return { limit };
     for (const k of klice) {                    // úklid rezervací starších 24 h (best effort)
       const m = /^vynucene-rezervace\/(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})(\d{2})-/.exec(k);
@@ -188,7 +202,7 @@ export async function porizVynuceny(druh, kdo, opt = {}) {
     const klic = klicVynuceny(druh, nyni);
     const rezKlic = VYNUCENE_REZERVACE + klic + '~' + randomBytes(4).toString('hex');
     await s.zapis(rezKlic, { kdy: new Date(nyni).toISOString(), kdo: String(kdo || '') });
-    const znovu = vynuceneLimit((await s.seznam()).filter(k => k !== rezKlic), nyni);
+    const znovu = vynuceneLimit((await s.seznam()).filter(k => k !== rezKlic), nyni, druh);
     if (!znovu.ok) {
       try { await s.smaz(rezKlic); } catch (e) { /* počítá se nejvýš 24 h */ }
       return { limit: znovu };
@@ -704,7 +718,8 @@ export async function seznamOtisku(kolik) {
  *   - noční (denní klíč) 14 dní, týdenní (neděle, jinak nejbližší starší
  *     v týdnu) 8 týdnů, měsíční (první v měsíci) 6 měsíců;
  *   - vynucené (`-rucne`, `-auto`) 7 dní;
- *   - otisky PŘED OBNOVOU se nemažou nikdy (cesta zpátky, maže jen člověk);
+ *   - otisky PŘED OBNOVOU 6 měsíců (#529, J. V. 27. 10. 2026; do té doby
+ *     nikdy), nejnovější z nich zůstává vždy; ručně je smí smazat správce;
  *   - výjimka RETENCE_OD je ZRUŠENÁ: ze starých otisků (do 19. 10. 2026)
  *     zůstane jen první z každého měsíce, i ten po 6 měsících odejde;
  *   - nejnovější otisk se nesmaže nikdy, ať je jakkoli starý;
@@ -729,6 +744,11 @@ export function retenceVyber(klice, dnes) {
   const nejnovejsi = otisky.slice().sort().pop();
   const denni = otisky.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
   const vynucene = otisky.filter(k => /T\d{6}-(rucne|auto)$/.test(k));
+  /* #529 (K9-I3): otisky „před obnovou" po 6 měsících (hranice jako u
+   * měsíčních: den o 6 měsíců zpět a starší), nejnovější z nich nikdy */
+  const pred = otisky.filter(k => /-pred-obnovou$/.test(k)).sort();
+  const predNejnovejsi = pred[pred.length - 1];
+  const hranicePred = RZ.retenceZalohMesicuZpet(dnesMs, RZ.RETENCE_ZALOH_BLOBS.predObnovouMesicu);
   const drz = RZ.retenceZalohDrz(denni, dnes, RZ.RETENCE_ZALOH_BLOBS, { stareJenMesicni: RETENCE_STARE_PRED });
   if (!drz) return [];
   const vek = (k) => Math.round((dnesMs - RZ.retenceZalohDenMs(k.slice(0, 10))) / DEN_MS);
@@ -737,6 +757,8 @@ export function retenceVyber(klice, dnes) {
     if (!drz.has(k) && k !== nejnovejsi) smazat.push(k);
   for (const k of vynucene)
     if (vek(k) >= RETENCE_VYNUCENE_DNU && k !== nejnovejsi) smazat.push(k);
+  for (const k of pred)
+    if (k !== predNejnovejsi && k !== nejnovejsi && RZ.retenceZalohDenMs(k.slice(0, 10)) <= hranicePred) smazat.push(k);
   return smazat.sort();
 }
 
@@ -787,8 +809,17 @@ export function zalohySmi(volba, email, adminEmail) {
  * ani u velikosti, ani u počtů. Úložiště mezitím roste, ale nic se neztratí
  * a hlídka svítí, dokud to správce nevyřeší.
  * Čistá funkce: vrací null (retence smí běžet), nebo { dnu }. */
+/* Poškozený záznam varování (#529, postřeh T1 #528): uložená hodnota,
+ * která není objekt (text, číslo, true/false, pole). Chybějící záznam
+ * (null) poškozený není. */
+export function retenceVarovaniPoskozene(v) {
+  return v !== null && v !== undefined && (typeof v !== 'object' || Array.isArray(v));
+}
 export function retenceDrzena(varovani, ted) {
-  if (!varovani || typeof varovani !== 'object') return null;
+  if (varovani === null || varovani === undefined) return null;
+  /* #529: poškozený záznam dřív vracel „nedrženo" a retence by mazala
+   * (fail-open). Teď drží; potvrdit ho jde jen heslem hlavního správce. */
+  if (retenceVarovaniPoskozene(varovani)) return { dnu: 0, poskozeny: true };
   /* K9-S2: potvrzené nejstarší a další nepotvrzené za ním = drženo dál */
   const dalsi = Array.isArray(varovani.dalsi) ? varovani.dalsi.filter(x => x && typeof x === 'object') : [];
   if (varovani.potvrzeno && !dalsi.length) return null;
@@ -894,6 +925,10 @@ export function retenceVarovaniPridej(byl, nove) {
 /* Potvrzení nejstaršího nepotvrzeného varování (K4-N13, K9-S2). Vrací
  * nový záznam: další v pořadí (pořád nepotvrzené), nebo totéž s `potvrzeno`. */
 export function retenceVarovaniPotvrd(v, potvrzeno) {
+  /* #529: potvrzený poškozený záznam se nahradí čitelným (jinak by držel dál) */
+  if (retenceVarovaniPoskozene(v))
+    return { kdy: String(potvrzeno && potvrzeno.kdy || ''), den: '', zdroj: 'poskozeny', poskozeny: true,
+      text: 'poškozený záznam varování pojistky záloh', potvrzeno };
   const dalsi = Array.isArray(v.dalsi) ? v.dalsi.filter(x => x && typeof x === 'object') : [];
   const shrnuti = { den: String(v.den || ''), zdroj: String(v.zdroj || ''), text: String(v.text || ''), potvrzeno };
   if (!dalsi.length) { const out = { ...v, potvrzeno }; delete out.dalsi; return out; }
@@ -958,6 +993,7 @@ export async function retenceProved(novyKlic, dnes, ted, opt = {}) {
   if (drzeno)
     return { smazano: [], chyby: [], drzeno, ceka: drzeno.chyba
       ? 'retence stojí — záznam varování pojistky nejde přečíst (' + drzeno.chyba + ')'
+      : drzeno.poskozeny ? 'retence stojí — záznam varování pojistky je poškozený (není objekt); potvrdit ho může jen hlavní správce'
       : drzeno.bezCasu ? 'retence stojí — nepotvrzené varování pojistky nemá platné datum (poškozený záznam), potvrďte ho'
       : 'retence stojí do potvrzení úbytku dat správcem (varování před ' + drzeno.dnu + ' dny)' };
   const kopie = await s.cti(KOPIE_DISK_KLIC);

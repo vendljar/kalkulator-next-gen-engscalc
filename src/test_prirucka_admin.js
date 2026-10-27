@@ -127,8 +127,8 @@ const TEMATA = {
     && /přepočítají samy/.test(OBSAH_TXT) && /Nemění se nikdy/.test(OBSAH_TXT),
   'zálohy: noční 2:00–3:45 UTC, Zálohovat teď, Stáhnout, Disk .json.gz': /2:00–3:45 UTC/.test(OBSAH_TXT)
     && /Zálohovat teď/.test(OBSAH_TXT) && /Stáhnout zálohu/.test(OBSAH_TXT) && /_Zaloha Netlify DB/.test(OBSAH_TXT) && /\.json\.gz/.test(OBSAH_TXT),
-  'retence Netlify 14 d / 8 t / 6 m / 7 d / před obnovou nikdy; Disk 7 d': /14 dní/.test(OBSAH_TXT) && /8 týdnů/.test(OBSAH_TXT)
-    && /6 měsíců/.test(OBSAH_TXT) && /\*\*7 dní\*\*/.test(OBSAH_TXT) && /otisky před obnovou/.test(OBSAH_TXT),
+  'retence Netlify 14 d / 8 t / 6 m / 7 d / před obnovou 6 m; Disk 7 d': /14 dní/.test(OBSAH_TXT) && /8 týdnů/.test(OBSAH_TXT)
+    && /6 měsíců/.test(OBSAH_TXT) && /\*\*7 dní\*\*/.test(OBSAH_TXT) && /otisky před obnovou", "\*\*6 měsíců\*\*/.test(OBSAH_TXT),
   'pojistka úbytku a potvrzení hlavním správcem': /Úbytek byl záměrný/.test(OBSAH_TXT) && /Potvrdit úbytek může jen hlavní správce/.test(OBSAH_TXT),
   'obnova: náhled, doplnit/přepsat, části, scénáře A/B/C': /Zobrazit náhled/.test(OBSAH_TXT) && /doplnit/.test(OBSAH_TXT)
     && /přepsat/.test(OBSAH_TXT) && /A\) Pokazila/.test(OBSAH_TXT) && /B\) Zmizela/.test(OBSAH_TXT) && /C\) Zmizelo/.test(OBSAH_TXT)

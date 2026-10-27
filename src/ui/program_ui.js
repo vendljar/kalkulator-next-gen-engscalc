@@ -285,8 +285,10 @@ function progKontext(poznamka) {
    * při zveřejnění nové buňky s výchozími hodnotami a C.mustekKc jako Kč/bm.
    * Do KOPIE — ceník varianty zůstává; dialog zveřejnění změny vypíše. */
   const platnyCenik = (typeof DEFAULT_CENIK !== 'undefined') ? DEFAULT_CENIK : null;   // platný (po progPouzij)
-  const sMustky = o => { if (typeof cenikMigraceMustku === 'function') cenikMigraceMustku(o, platnyCenik); return o; };
+  const mustkyZpravy = [];   // #529 E: dialog zveřejnění řekne, co se s můstkem stalo
+  const sMustky = o => { if (typeof cenikMigraceMustku === 'function') cenikMigraceMustku(o, platnyCenik, mustkyZpravy); return o; };
   return {
+    mustkyZpravy,
     cenik: bezRady(sNavrhem(sMustky(bez(doplneno(d.cenik || {}, VZOR_OCK))))),
     cenikProj: bez(doplneno((d.proj && d.proj.cenik) || {}, VZOR_PROJ)),
     /* Řada VARIANTY, ze které podklad vznikl. Nezapisuje se do databáze
@@ -363,6 +365,7 @@ function progZverejniRozpis(db, ctx) {
     + radek('Tuzemská řada (ČR)', cr) + '\n'
     + radek('Zahraniční odchylky (ZAHR)', zahr)
     + (dn ? '\n' + dn : '')
+    + (ctx && Array.isArray(ctx.mustkyZpravy) && ctx.mustkyZpravy.length ? '\n' + ctx.mustkyZpravy.join('\n') : '')
     + ((!cr.length && !zahr.length && !dn) ? '\n\nCeník beze změny — mění se katalog nebo slevy.' : '');
 }
 

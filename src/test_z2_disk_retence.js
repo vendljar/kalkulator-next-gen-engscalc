@@ -316,6 +316,14 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
     await ctx3.proved(h3);
     test('#523 pojistka Disk: potvrzení jiného dne úbytek nové kopie neodemkne', h3.smazane.length === 0
       && ctx3.volani.some(v => v[1] && v[1].akce === 'retence-varovani-disk'));
+    /* #529 (postřeh T1 #528): poškozený záznam varování (není objekt) úklid Disku zastaví taky */
+    for (const vadny of [false, 'poškozený', 0, [1]]) {
+      const ctx4 = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString() }, retenceVarovani: vadny }) });
+      const h4 = slozka('_Zaloha Netlify DB', STARE);
+      const k4 = await ctx4.proved(h4);
+      test('#529 pojistka Disk: poškozený záznam varování (' + J(vadny) + ') → úklid Disku stojí', h4.smazane.length === 0
+        && /poškozený/.test((k4.uklid && k4.uklid.duvod) || ''), k4.uklid);
+    }
   }
   /* ---- O-K9 #527 (K9-S6): dnešek pro úklid ze serveru, ne z hodin počítače ----
    * Pojistka: s online_ui.js z v26.10.10 hodiny o rok napřed smažou ze složky

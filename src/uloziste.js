@@ -2123,7 +2123,13 @@ function uloKopieDiskStav(kopie, ted) {
  * 30 dnech, teď mazání stojí bez časového omezení (pokyn J. V.). Vrací null
  * nebo { dnu, text }. */
 function uloRetenceVarovani(v, ted) {
-  if (!v || typeof v !== 'object') return null;
+  if (v === null || v === undefined) return null;
+  /* #529 (postřeh T1 #528): záznam, který není objekt (poškozený), drží
+   * retenci na serveru i úklid Disku — dřív tu mlčel (fail-open). */
+  if (typeof v !== 'object' || Array.isArray(v))
+    return { dnu: 0, poskozeny: true, dalsi: 0, text: 'Pozor: záznam varování pojistky záloh je poškozený (nejde přečíst). '
+      + 'Mazání starých záloh v Netlify i na Disku proto stojí. Zkontrolujte, že se data neztratila, a záznam potvrďte '
+      + 'tlačítkem „Úbytek byl záměrný" — potvrdit ho může jen hlavní správce svým heslem.' };
   /* K4-N13 (O11): potvrzený úbytek už nesvítí — retence zase maže.
    * O-K9 #527 (K9-S2): nepotvrzená další varování (`dalsi`) za ním ano —
    * server je po potvrzení posune na místo nejstaršího. */

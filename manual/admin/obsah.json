@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v27.10.4 · sestaveno 27. 10. 2026",
+  "verze": "Platí pro aplikaci v27.10.5 · sestaveno 27. 10. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -728,7 +728,7 @@
           "typ": "podnadpis",
           "text": "Kolik záloh se drží (retence)"
         },
-        {"typ": "tabulka", "zahlavi": ["Záloha", "Netlify", "Disk Google"], "radky": [["noční (denní)", "posledních **14 dní**", "posledních **7 dní**"], ["týdenní — nedělní (chybí-li, nejbližší starší v týdnu)", "**8 týdnů**", "**8 týdnů**"], ["měsíční — první v měsíci", "**6 měsíců**", "**6 měsíců**"], ["*Zálohovat teď* a otisky při přihlášení", "**7 dní**", "—"], ["otisky před obnovou", "**nikdy** samy; ručně je smaže správce s heslem (*Obnovit ze zálohy…* → vybrat otisk → *Smazat tento otisk…*, ne během obnovy)", "—"]]},
+        {"typ": "tabulka", "zahlavi": ["Záloha", "Netlify", "Disk Google"], "radky": [["noční (denní)", "posledních **14 dní**", "posledních **7 dní**"], ["týdenní — nedělní (chybí-li, nejbližší starší v týdnu)", "**8 týdnů**", "**8 týdnů**"], ["měsíční — první v měsíci", "**6 měsíců**", "**6 měsíců**"], ["*Zálohovat teď* a otisky při přihlášení", "**7 dní**", "—"], ["otisky před obnovou", "**6 měsíců** (nejnovější zůstává vždy); dřív je smaže ručně správce s heslem (*Obnovit ze zálohy…* → vybrat otisk → *Smazat tento otisk…*, ne během obnovy)", "—"]]},
         {"typ": "odrazky", "polozky": ["Nejnovější záloha se nesmaže nikdy.", "V Netlify se maže jen tehdy, když je na Disku podložená kopie mladší než 7 dní.", "Na Disku se maže jen po úspěšné kopii; smazané kopie leží 30 dní v koši Disku."]},
         {
           "typ": "podnadpis",
