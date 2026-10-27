@@ -695,13 +695,7 @@
    "pozn" : "hotovo ve v30.7.10. Podle tvého pokynu z 30. 7. 2026 („pouze rozsviť varování před nabídkou\") se nikde nic netvrdě neblokuje — ani nejzávažnější nález nezabrání vytištění, jen se rozsvítí nad tlačítky. Odchylka od návrhu: místo vyskakovacího potvrzení je to stálý panel v kartě, aby se dal nález přečíst i bez pokusu o tisk. ÚKLID 16. 9. 2026: odsud zmizelo pole `cekaNa` — hotová položka nemůže na nic čekat a strašila v přehledu „Na co se čeká“. To, co se tím myslelo (seznam pravidel od J. V. a tabulka souvislostí z technické specifikace), drží vazba na #20 jako DOPORUČENÉ pořadí: kontroly jedou s výchozí sadou pravidel a #20 je jen rozšíří, nebrání jim. — 29. 9. 2026 (B111, v29.9.2): záporná částka, množství nebo hodiny je tvrdá zábrana (pravidlo zapornaPolozka) a hlídá ji i server — úroveň 1, jak #33 původně plánoval.",
    "hotovoV" : "v30.7.10",
    "nazev" : "Kontrola logických chyb při zadání — bránit zjevným pochybením, na sporné upozornit",
-   "zavisi" : [
-    {
-     "typ" : "doporuceno",
-     "id" : "20",
-     "proc" : "tabulka souvislostí z technické specifikace je materiál pro pravidla"
-    }
-   ],
+   "zavisi" : [],
     "stav" : "hotovo"
   },
   {
@@ -1021,16 +1015,10 @@
    "detail" : "Otočit pořadí práce: nejdřív se vyplní technická specifikace, z ní se předvyplní parametry kalkulace. Předvyplněná pole musí být viditelně označená („předvyplněno ze specifikace“), aby bylo poznat, co je z čeho, a musí jít přepsat. Navazuje na #20 — bez tabulky vzájemných vazeb ze schůzky s Jirkou není z čeho předvyplňovat.",
    "proc" : "Parametry se dnes zadávají dvakrát — jednou do technické specifikace a podruhé do kalkulace — a nikdo nehlídá, že jsou stejné. Rozdíl mezi specifikací a spočítanou nabídkou se pak najde až u zákazníka.",
    "dulezitost" : "vysoka",
-   "pozn" : "**Odloženo** (vlna F), ne zrušeno. Znovu jen na výslovný pokyn. navazuje na #20; mění pořadí práce v aplikaci",
+   "pozn" : "**Odloženo** (vlna F), ne zrušeno. Znovu jen na výslovný pokyn. Mění pořadí práce v aplikaci. (#20 odstraněno 27. 10. 2026.)",
    "hotovoKdyz" : "Z vyplněné technické specifikace se předvyplní parametry kalkulace, předvyplněná pole jsou označená a jdou přepsat, a při rozporu specifikace × kalkulace se rozsvítí varování (bez tvrdého blokování, viz pravidla).",
-   "cekaNa" : "rozhodnutí J. V. 23. 8. 2026 — odloženo. Mění pořadí práce v celé aplikaci (nejdřív specifikace, pak kalkulace) a stojí na #20, které samo čeká na schůzku s Jirkou.",
-   "zavisi" : [
-    {
-     "id" : "20",
-     "typ" : "tvrda",
-     "proc" : "bez tabulky souvislostí není co předvyplňovat"
-    }
-   ],
+   "cekaNa" : "rozhodnutí J. V. 23. 8. 2026 — odloženo. Mění pořadí práce v celé aplikaci (nejdřív specifikace, pak kalkulace).",
+   "zavisi" : [],
    "nazev" : "Technická specifikace předdefinuje parametry výpočtu (nejdřív specifikace → pak kalkulace)",
    "otazka" : "Má být předvyplnění závazné, nebo jen návrh, který jde přepsat? Doporučuju návrh s viditelnou značkou „předvyplněno ze specifikace“.",
    "vlna" : "F",
@@ -1265,20 +1253,6 @@
    "pozn" : "po #11; ověřit GDPR a informovat uživatele"
   },
   {
-   "id" : "20",
-   "stav" : "blokovano",
-   "vlna" : "E",
-   "slozitost" : "M (analýza)",
-   "pozn" : "schůzku s Jirkou; je to vstup pro #21 a pro #33",
-   "nazev" : "Vzájemné souvislosti v technické specifikaci — projít s Jirkou",
-   "hotovoKdyz" : "Existuje zapsaná a s Jirkou odsouhlasená tabulka pravidel v rozsahu, ze kterého se dá naprogramovat předvyplnění (#21) i kontrola (#33).",
-   "cekaNa" : "schůzku s Jirkou",
-   "kde" : "výstup patří do Claude Data; použije se v src/techspec.js a src/kontroly.js",
-   "detail" : "Projít s Jirkou, co se v technické specifikaci navzájem vylučuje nebo vynucuje, a zapsat to jako tabulku pravidel ve tvaru „když A, pak nesmí B / pak musí C“. Rozsah musí být takový, aby se z toho dalo naprogramovat předvyplnění (#21) i kontrola před nabídkou (#33) — tedy konkrétní pole a konkrétní hodnoty, ne obecné zásady.",
-   "dulezitost" : "vysoka",
-   "proc" : "Bez tabulky toho, co se v technické specifikaci navzájem vylučuje a co vynucuje, nemá #21 z čeho předvyplňovat a #33 nemá co kontrolovat. Jedna schůzka odemyká dvě věci najednou — proto se vyplatí ji popohnat dřív než cokoli jiného z vlny E."
-  },
-  {
    "zavisi" : [
     {
      "typ" : "tvrda",
@@ -1314,20 +1288,6 @@
    "hotovoKdyz" : "Ze zakázky se vygeneruje smlouva o dílo i plná moc podle dodaných šablon, všechny údaje jsou převzaté ze zakázky a z výpočtu, a šablony leží v _CN vedle nabídkových.",
    "nazev" : "DOC-11 smlouva o dílo + DOC-7 plné moci",
    "pozn" : "právní znění a šablony UZAVŘENO 19. 8. 2026 (postřeh uživatele: „není náhodou úkol č. 15 už hotový?\"): věcně naplněno položkou #143 (17. 8. 2026) — smlouva o dílo OCK, smlouva o dílo PROJ i plná moc se generují ze zakázky šablonami .docx se symboly {{...}}, ceny výhradně z výpočtu, vytištěná smlouva variantu zamyká (plná moc ne). Jediný rozdíl proti původnímu znění: šablony neleží ve složce _CN, ale v centrálním úložišti šablon na serveru (#139) — to je novější a lepší řešení, položka se tím považuje za splněnou."
-  },
-  {
-   "pozn" : "pravidla od statika",
-   "nazev" : "OCK-1 — přednastavené profily",
-   "hotovoKdyz" : "V kalkulaci OCK jde vybrat typový profil podle dodaných pravidel, výběr předvyplní parametry, jde ho přepsat a je vidět, že hodnota pochází z předvolby.",
-   "cekaNa" : "pravidla od statika",
-   "kde" : "src/katalog.js, src/engine.js (profily), src/ui/kalk_ock.js",
-   "dulezitost" : "stredni",
-   "proc" : "Volba profilu je dnes na kalkulantovi a opírá se o zkušenost. Přednastavené profily podle rozponu a zatížení kalkulaci zrychlí a hlavně srovnají výstupy mezi lidmi — dva kalkulanti nad stejnou šachtou dnes můžou skončit s jiným profilem.",
-   "detail" : "Připravit sadu typových profilů (podle rozponu, výšky šachty a zatížení), ze kterých se vybere místo ručního zadávání. Pravidla musí přijít od statika — aplikace je vymýšlet nesmí. Vybraný profil musí jít přepsat ručně a musí být poznat, že hodnota pochází z předvolby.",
-   "id" : "30",
-   "stav" : "blokovano",
-   "slozitost" : "M",
-   "vlna" : "E"
   },
   {
    "cekaNa" : "přeposlání seznamů",
@@ -4901,19 +4861,6 @@
    "hotovoKdyz" : "Splněno: rozhodnutí padlo, je zapsané v jádře i v Detailu výpočtu a drží ho sada.",
    "kde" : "`src/engine.js` (listyKs, listyKotviciBm), `src/ui/detail_ui.js` (řádek Lišty), `src/test_listy_kotvici.js`",
    "pozn" : "Rozhodnutí J. V. 15. 9. 2026: **opravu dělat jen v rámci modelu 2**, model 1 zůstává 1:1 s předlohou."
-  },
-  {
-   "id" : "259",
-   "vlna" : "E",
-   "stav" : "blokovano",
-   "dulezitost" : "stredni",
-   "slozitost" : "M",
-   "nazev" : "Revize překladů EN a DE (573 položek)",
-   "cekaNa" : "revize obchodníka — seznam předán 15. 9. 2026, termín tento týden",
-   "proc" : "Slovník obsahuje překlady, které nikdo neschválil. Nabídka odchází zákazníkovi v cizím jazyce, takže případná chyba jde ven.",
-   "detail" : "ZBÝVÁ: převzít zrevidovaný seznam a promítnout ho do slovníku. Podklad je vygenerovaný, viz #256.",
-   "hotovoKdyz" : "Zrevidované překlady jsou ve slovníku a stav u položek je schváleno.",
-   "pozn" : "Pokyn J. V.: **překlady zatím NEMĚNIT**, jen vypsat."
   },
   {
    "id": "260",
@@ -8535,11 +8482,6 @@
     "text" : "#35 stáří ceníku"
    },
    {
-    "pozn" : "paralelně; vstup pro #21 i #33",
-    "text" : "Schůzka k #20",
-    "hotovo" : false
-   },
-   {
     "hotovo" : false,
     "text" : "Rozhodnout #24 / #14, teprve pak otevřít #11",
     "pozn" : "potom je to dražší"
@@ -9197,8 +9139,7 @@
     ],
     "nazev" : "Vlna A — hotovo",
     "popis" : "Odbaveno v dávkách 28. a 29. 7. 2026. Testy: 24 sad (23 v Node + kouřový test v prohlížeči), všechny zelené.",
-    "id" : "A"
-   },
+    "id" : "A", "skryta": true},
    {
     "id" : "B",
     "popis" : "Věci, které cítíš při každé nabídce. Nezávisí na nasazení online. Od 30. 7. 2026 sem patří i oddělení dat od programu (#42–#45) — není to sice nic, co bys viděl v nabídce, ale je to podmínka zálohy kódu i pozdějšího přechodu do cloudu, a udělat se to dá bez serveru.",
@@ -9209,8 +9150,7 @@
      "Důležitost",
      "Složitost",
      "Poznámka / blokace"
-    ]
-   },
+    ], "skryta": true},
    {
     "nazev" : "Vlna C — velká rozhodnutí a architektura",
     "sloupce" : [
@@ -9247,7 +9187,7 @@
     "popis" : "Práce se nedá začít bez cizího vstupu; dokud nepřijde, nemá smysl je plánovat do dávky.",
     "id" : "E"
    },
-   {
+   {"id": "G", "nazev": "Vlna G — průběžný rozvoj, opravy a dokumentace", "popis": "Nová práce od 27. 10. 2026, kdy se uzavřely vlny A a B: opravy z testů, dokumentace, drobné úpravy a provoz.", "sloupce": ["#", "Co", "Důležitost", "Složitost", "Poznámka / blokace"]}, {
     "popis" : "Vědomě odsunuté položky. Nejsou zrušené a nic se z nich nemaže — leží tu s důvodem a datem, aby se za měsíc nikdo neptal, jestli se na ně zapomnělo, nebo se zamítly. Znovu se otevřou jen na výslovný pokyn.",
     "sloupce" : [
      "#",

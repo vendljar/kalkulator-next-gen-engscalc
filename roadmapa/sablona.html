@@ -180,6 +180,7 @@ footer{padding:10px 16px;font-size:11.5px;color:var(--mut);background:var(--pane
   <div class="fgrp" id="f-slz"><span class="lbl">Náročnost</span></div>
   <div class="fgrp" id="f-vlna"><span class="lbl">Vlna</span></div>
   <div class="fgrp"><span class="chip on" id="f-nehotove" title="trvale zapnuto: hotová práce se schová, ať je vidět jen to, co se má zpracovat. Vypnout se dá kliknutím, „Zrušit filtry“ ho zase zapne.">Jen ke zpracování</span>
+    <span class="chip on" id="f-vlny" title="vlny, kde je všechno hotové nebo které jsou uzavřené, se schovají (sloupec ve Vlnách i jejich položky). Vlna s rozpracovanou položkou zůstane vidět vždy. Kliknutím na písmeno vlny ji ukážete i tak.">Skrýt hotové vlny</span>
     <span class="chip" id="f-pripr" title="položky, kterým nic tvrdě nebrání – dá se do nich pustit hned">Jen připravené</span></div>
   <button class="tlac" id="reset">Zrušit filtry</button>
   <span class="pocet" id="pocet"></span>
@@ -290,7 +291,17 @@ const odlozena = p => p.vlna === 'F';
  * schovají"). Roadmapa se otevírá kvůli tomu, co se má udělat — hotová
  * polovina je archiv a při plánování jen přebíjí pohled. Skryté ale není
  * ztracené: chip jde vypnout a stavový filtr „hotovo" má nad ním přednost. */
-const F = { dul: new Set(), stav: new Set(), slz: new Set(), vlna: new Set(), text: '', pripr: false, nehotove: true };
+const F = { dul: new Set(), stav: new Set(), slz: new Set(), vlna: new Set(), text: '', pripr: false, nehotove: true, skrytVlny: true };
+
+/* Hotové vlny se schovávají: vlna uzavřená v meta (`skryta: true`) nebo vlna,
+ * kde je všechno hotové. Vlna s rozpracovanou položkou se neschová nikdy,
+ * aby otevřená práce nezmizela z očí. Písmeno vlny ve filtru ji ukáže i tak. */
+const HOTOVE_VLNY = new Set(RM.meta.vlny.filter(v => {
+  const vse = P.filter(p => p.vlna === v.id);
+  if (vse.some(p => p.stav !== 'hotovo')) return false;
+  return !!v.skryta || vse.length > 0;
+}).map(v => v.id));
+const vlnaSchovana = id => F.skrytVlny && HOTOVE_VLNY.has(id) && !F.vlna.has(id);
 
 function slzSkupina(s) {          // S–M spadne do S i do M, ať se nic neztratí
   const t = String(s || '').toUpperCase();
@@ -311,6 +322,7 @@ function projde(p) {
   if (F.stav.size && !F.stav.has(p.stav)) return false;
   if (F.slz.size && !slzSkupina(p.slozitost).some(g => F.slz.has(g))) return false;
   if (F.vlna.size && !F.vlna.has(p.vlna)) return false;
+  if (vlnaSchovana(p.vlna)) return false;
   if (F.pripr && !pripravena(p)) return false;
   if (F.text) {
     const t = (p.id + ' ' + p.nazev + ' ' + (p.pozn || '') + ' ' + (p.detail || '') + ' ' + (p.cekaNa || '')).toLowerCase();
@@ -335,6 +347,7 @@ function postavFiltry() {
   g($('#f-slz'), [['S', 'S'], ['M', 'M'], ['L', 'L'], ['XL', 'XL']], 'slz');
   g($('#f-vlna'), RM.meta.vlny.map(v => [v.id, v.id]), 'vlna');
   $('#f-pripr').onclick = function () { F.pripr = !F.pripr; this.classList.toggle('on'); prekresli(); };
+  $('#f-vlny').onclick = function () { F.skrytVlny = !F.skrytVlny; this.classList.toggle('on', F.skrytVlny); prekresli(); };
   $('#f-nehotove').onclick = function () { F.nehotove = !F.nehotove; this.classList.toggle('on', F.nehotove); prekresli(); };
   $('#hledej').oninput = e => { F.text = e.target.value.trim().toLowerCase(); prekresli(); };
   /* „Zrušit filtry" vrací výchozí stav, a výchozí stav je od 30. 7. 2026
@@ -342,10 +355,10 @@ function postavFiltry() {
    * po každém pročištění filtrů zapínat znovu — a tomu se říkalo „trvale". */
   $('#reset').onclick = () => {
     F.dul.clear(); F.stav.clear(); F.slz.clear(); F.vlna.clear(); F.pripr = false; F.text = '';
-    F.nehotove = true;
+    F.nehotove = true; F.skrytVlny = true;
     $('#hledej').value = '';
     document.querySelectorAll('.filtr .chip.on').forEach(c => c.classList.remove('on'));
-    $('#f-nehotove').classList.add('on');
+    $('#f-nehotove').classList.add('on'); $('#f-vlny').classList.add('on');
     prekresli();
   };
 }
@@ -614,7 +627,7 @@ addEventListener('keydown', e => { if (e.key === 'Escape') zavriModal(); });
 const PLAN = new Set(((RM.meta.planVikend || {}).polozky || []).map(String));
 function kresliVlny() {
   const vyb = vybrane();
-  $('#vlny-telo').innerHTML = RM.meta.vlny.map(v => {
+  $('#vlny-telo').innerHTML = RM.meta.vlny.filter(v => !vlnaSchovana(v.id)).map(v => {
     const vse = P.filter(p => p.vlna === v.id);
     const moje = vyb.filter(p => p.vlna === v.id);
     const hot = vse.filter(p => p.stav === 'hotovo').length;
@@ -706,7 +719,8 @@ function prekresli() {
   const v = vybrane();
   const skryto = F.nehotove && !F.stav.has('hotovo') ? P.filter(p => p.stav === 'hotovo').length : 0;
   $('#pocet').textContent = `zobrazeno ${v.length} z ${P.length} položek`
-    + (skryto ? ` · ${skryto} hotových je schovaných filtrem „Jen ke zpracování“` : '');
+    + (skryto ? ` · ${skryto} hotových je schovaných filtrem „Jen ke zpracování“` : '')
+    + (RM.meta.vlny.some(x => vlnaSchovana(x.id)) ? ` · schované hotové vlny: ${RM.meta.vlny.filter(x => vlnaSchovana(x.id)).map(x => x.id).join(', ')}` : '');
 }
 
 (function start() {

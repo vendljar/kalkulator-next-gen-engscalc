@@ -115,6 +115,25 @@ await page.waitForTimeout(200);
 test('reset filtrů vrátí výchozí pohled',
   await page.evaluate(() => document.getElementById('pocet').textContent.indexOf('zobrazeno') === 0));
 
+/* Hotové vlny (uzavřené v meta nebo celé hotové) se ve výchozím pohledu
+ * schovají; vlna s rozpracovanou položkou nikdy (27. 10. 2026). */
+const sloupce = () => page.evaluate(() => [...document.querySelectorAll('#vlny-telo .sloup h2')]
+  .map(h => (RM.meta.vlny.find(v => h.textContent.indexOf(v.nazev) === 0) || {}).id));
+const vychozi = await sloupce();
+test('vlny A a B jsou ve výchozím pohledu schované',
+  vychozi.indexOf('A') < 0 && vychozi.indexOf('B') < 0, vychozi.join(''));
+const otevrene = await page.evaluate(() =>
+  RM.meta.vlny.filter(v => RM.polozky.some(p => p.vlna === v.id && p.stav !== 'hotovo')).map(v => v.id));
+test('každá vlna s otevřenou prací má sloupec', otevrene.every(id => vychozi.indexOf(id) >= 0),
+  otevrene.join('') + ' × ' + vychozi.join(''));
+await page.click('#f-vlny');
+await page.waitForTimeout(200);
+const vse = await sloupce();
+test('vypnutím „Skrýt hotové vlny“ se ukážou všechny vlny', vse.length === cisla.vlny.length, vse.join(''));
+await page.click('#reset');
+await page.waitForTimeout(200);
+test('reset vrátí skrývání hotových vln', (await sloupce()).indexOf('A') < 0);
+
 test('žádná chyba JavaScriptu', chyby.length === 0, chyby.slice(0, 2).join(' | '));
 
 await prohlizec.close();
