@@ -2,6 +2,18 @@
 
 Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kvůli kontextu). Komunikace česky, nikdy AskUserQuestion. Platí `CLAUDE.md`. **Pokyny J. V. platné pro koordinaci:** dávky spouštět v samostatných sezeních (`create_session`), hlídat je průběžně a nenechat stát, hotové se zelenými sadami slučovat do `test` (po sadách nad sloučeným stavem), nakonec celé kolo s mutacemi nad `test`. **Do `main` nic, dokud to J. V. nepotvrdí.** `test-draft` beze změny.
 
+
+## STAV 27. 10. 16:35 UTC (koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx)
+
+- **test = v27.10.6** (`3a255d7`), main = v25.10.1. Integrace `claude/integrace-16-10` = test.
+- Dnes sloučeno: E1 #533 (v27.10.2, názvy exportů), ZA #539 (v27.10.3, sloupec Administrátor), M9 #534 + D1 #535 + P3 #536 (v27.10.4), O-T #529 (v27.10.5), C4 #540 + C3 #537 (v27.10.6). Sezení dávek archivována.
+- Roadmapa: #20, #30, #259 odstraněny; #159 zrušen; vlny A, B uzavřené (skryta), nová vlna G; filtr „Skrýt hotové vlny“.
+- Rozhodnutí J. V. v dialogu: K9 (30denní maximum, potvrzuje jen hlavní správce, „před obnovou“ 6 měsíců), controlling 1–12 (`podklady/CONTROLLING_ROZHODNUTI.md`), Pipedrive #115 (`podklady/PIPEDRIVE_ROZHODNUTI_115.md`), Prodáno odemyká vedoucí/admin, zápis do Pipedrive = data + deal Vyhráno.
+- Releasy bez tagu: v27.10.1 – v27.10.6 (odkazy poslány; ověřit `python3 nastroje/release_odkaz.py --chybejici`).
+- Čeká na J. V.: test v27.10.6 → main; po nasazení zveřejnit ceník + kopie na Disk; listopad šablona controllingu; upomínka integrátorovi Pipedrive; v dokumentaci D1 „ověřit“ (tarif Netlify, přístupy, schaftscalc) a zda ponechat kap. V17 „Rozdíly mezi verzemi“.
+- Naplánováno: SEC-M #538 security test nad main 20:00 UTC (send_later trig_011KSzNo2cjb86BTJM1xSFZG vytvoří sezení).
+- Hotové dokumenty se sestaví v pracovní kopii mimo repo (`git worktree`): `bash manual/kompletni/sestav.sh <složka>`, manuály `manual/sestav.sh`, `manual/admin/sestav.sh`, `manual_vypocet/sestav.sh`; PDF příruček přes Playwright (do_pdf.sh hledá Chrome).
+
 ## Stav při předání (15. 10. ~14:25 UTC)
 
 - `main` = eff7724 (v14.10.3). `test` = **8f7be40 (v15.10.4)**: S1 B80, S2 B89–B95, S3 P12, S5 červená lišta (sady 252/0/1).
