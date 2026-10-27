@@ -12,7 +12,7 @@
  *
  * Spuštění z kořene repa:  node podklady/SECM_pokusy/server_a/matice.mjs
  */
-import { F, S, req, prihlas, priprav, pripravData, HESLO_ADMIN } from '../../S1_pokusy/server/harness.mjs';
+import { F, S, req, prihlas, priprav, pripravData, zakazkaCislo, HESLO_ADMIN } from '../../S1_pokusy/server/harness.mjs';
 import { writeFileSync } from 'node:fs';
 const zaloha_nocni = (await import('../../../netlify/functions/zaloha_nocni.mjs')).default;
 
@@ -21,8 +21,8 @@ const U = await priprav();                 // admin(hlavní), admin2(vedlejší)
 await pripravData(U.admin.cookie);
 
 /* Vlastní zakázka obchodníka obch a cizí zakázka (autor obch2) + zákazníci. */
-async function ulozZakazku(cookie, cislo, autorCookie) {
-  const z = { cislo, nazevAkce: 'Pokus ' + cislo, varianty: [] };
+async function ulozZakazku(cookie, cislo) {
+  const z = zakazkaCislo(cislo);
   const r = await (await req(F.zakazky, 'POST', '/api/zakazky', { zakazka: z }, cookie)).json();
   return r;
 }
@@ -40,7 +40,17 @@ const zl = await (await req(F.zakaznici, 'GET', '/api/zakaznici', undefined, U.a
 const KLIC_ZAK = (zl.zakaznici && zl.zakaznici[0] && (zl.zakaznici[0].ico || zl.zakaznici[0].nazev)) ? (await (async()=>{ const g=(await import('../../../netlify/lib/zakaznici_modul.cjs')).default; return g.zakaznikKlic(zl.zakaznici[0]); })()) : '12345678';
 
 const ROLE_SLOUPCE = ['anon', 'obch', 'ved', 'admin2', 'admin'];
-const COOKIE = { anon: null, obch: U.obch.cookie, ved: U.ved.cookie, admin2: U.admin2.cookie, admin: U.admin.cookie };
+/* Čerstvá cookie pro roli — získá se před KAŽDÝM řádkem. Některé řádky
+ * relaci zneplatní (odhlášení zvedne hesloVerze, změna hesla…); čerstvé
+ * přihlášení zajistí, že řádky na sobě nezávisí. */
+const KRED = { anon: null,
+  obch: { e: U.obch.email, h: U.obch.heslo }, ved: { e: U.ved.email, h: U.ved.heslo },
+  admin2: { e: U.admin2.email, h: U.admin2.heslo }, admin: { e: S.ADMIN_EMAIL, h: HESLO_ADMIN } };
+async function cerstvaCookie(role) {
+  if (role === 'anon') return null;
+  const a = await prihlas(KRED[role].e, KRED[role].h);
+  return a.cookie;
+}
 
 /* Očekávané kódy podle záměru kódu.
  * typ:
@@ -78,9 +88,9 @@ add('zakazky GET rejstřík', F.zakazky, 'GET', '/api/zakazky', undefined, ocekF
 add('zakazky GET vlastní', F.zakazky, 'GET', '/api/zakazky?soubor=' + SOUBOR_VLASTNI, undefined, ocekFn('prihl'));
 add('zakazky GET CIZÍ (IDOR čtení)', F.zakazky, 'GET', '/api/zakazky?soubor=' + SOUBOR_CIZI, undefined, ocekFn('prihl'),
   'sdílená DB: čtení cizí zakázky je záměr (#103)');
-add('zakazky POST uložení', F.zakazky, 'POST', '/api/zakazky', { zakazka: { cislo: '2026-OCK-CN-0009', nazevAkce: 'X', varianty: [] } }, ocekFn('prihl'),
+add('zakazky POST uložení (nové číslo)', F.zakazky, 'POST', '/api/zakazky', { zakazka: zakazkaCislo('2026-OCK-CN-0009') }, ocekFn('prihl'),
   'zápis smí každý přihlášený (sdílená DB)');
-add('zakazky POST přepis CIZÍ (IDOR zápis)', F.zakazky, 'POST', '/api/zakazky', { zakazka: { cislo: '2026-OCK-CN-0002', nazevAkce: 'PREPSANO', varianty: [] } }, ocekFn('prihl'),
+add('zakazky POST přepis CIZÍ (IDOR zápis)', F.zakazky, 'POST', '/api/zakazky', { zakazka: Object.assign(zakazkaCislo('2026-OCK-CN-0002'), { nazevAkce: 'PREPSANO' }), prepsat: true }, ocekFn('prihl'),
   'přepis cizí zakázky obchodníkem je záměr (sdílená DB)');
 add('zakazky DELETE CIZÍ (IDOR mazání)', F.zakazky, 'DELETE', '/api/zakazky?soubor=' + SOUBOR_CIZI, undefined, ocekFn('admin'),
   'mazat smí jen admin → obch/ved 403');
@@ -100,26 +110,26 @@ add('uzivatele POST mojeheslo (špatné staré)', F.uzivatele, 'POST', '/api/uzi
   (role) => role === 'anon' ? 401 : 401, 'přihlášený: staré nesouhlasí → 401; anon → 401 (nepřihlášen)');
 add('uzivatele POST profil VLASTNÍ', F.uzivatele, 'POST', '/api/uzivatele', { akce: 'profil', jmeno: 'Novy Nazev' }, ocekFn('prihl'));
 add('uzivatele POST profil CIZÍ (IDOR)', F.uzivatele, 'POST', '/api/uzivatele', { akce: 'profil', email: U.obch2.email, jmeno: 'Hack' },
-  (role) => role === 'anon' ? 401 : (role === 'admin2' || role === 'admin') ? 200 : 403, 'cizí profil jen admin');
+  (role) => role === 'anon' ? 401 : (role === 'admin2' || role === 'admin') ? 200 : 403, 'cizí profil jen admin → obch/ved 403');
 add('uzivatele POST role (povýšení obch→admin bez hesla správce)', F.uzivatele, 'POST', '/api/uzivatele', { akce: 'role', email: U.obch.email, role: 'Administrátor' },
   (role) => role === 'anon' ? 401 : (role === 'obch' || role === 'ved') ? 403 : 401, 'admin bez hesloSpravce → 401 (kód hesloSpravce)');
-add('uzivatele POST zaloz (bez hesloSpravce admin role)', F.uzivatele, 'POST', '/api/uzivatele', { akce: 'zaloz', email: 'novy@example.com', role: 'Obchodník', heslo: 'HesloHeslo1', jmeno: 'N' },
-  ocekFn('admin'), 'obch/ved 403; admin založí Obchodníka (bez hesla správce)');
+add('uzivatele POST zaloz (bez hesloSpravce, role Obchodník)', F.uzivatele, 'POST', '/api/uzivatele', { akce: 'zaloz', email: 'novy@example.com', role: 'Obchodník', heslo: 'HesloHeslo1', jmeno: 'N' },
+  (role) => role === 'anon' ? 401 : (role === 'obch' || role === 'ved') ? 403 : (role === 'admin2' ? 200 : 400),
+  'obch/ved 403; admin2 založí (200), admin už existuje (400) — akce se potvrdila');
 add('uzivatele DELETE (špatná metoda)', F.uzivatele, 'DELETE', '/api/uzivatele', undefined, (role) => role === 'anon' ? 401 : 405);
 
 /* ===== OBNOVA / ZÁLOHY ===== */
-add('obnova POST', F.obnova, 'POST', '/api/obnova', { akce: 'stav' }, ocekFn('admin'));
-add('obnova GET (špatná metoda)', F.obnova, 'GET', '/api/obnova', undefined, (role) => role === 'anon' ? 401 : 405);
+add('obnova POST', F.obnova, 'POST', '/api/obnova', { akce: 'stav' }, (role) => role === 'anon' ? 401 : (role === 'obch' || role === 'ved') ? 403 : 400, 'admin: tělo bez platného režimu → 400 (auth prošla)');
+add('obnova GET (špatná metoda)', F.obnova, 'GET', '/api/obnova', undefined, ocekFn('metoda'), 'kontrola metody je PŘED auth → 405 i anonymovi');
 add('zaloha GET (stažení DB)', F.zaloha, 'GET', '/api/zaloha', undefined, ocekFn('admin'));
 add('zaloha_vynuceno GET', F.zaloha_vynuceno, 'GET', '/api/zaloha_vynuceno', undefined, ocekFn('admin'));
-add('zaloha_vynuceno POST (otisk)', F.zaloha_vynuceno, 'POST', '/api/zaloha_vynuceno', {}, ocekFn('admin'));
+add('zaloha_vynuceno POST (otisk)', F.zaloha_vynuceno, 'POST', '/api/zaloha_vynuceno', {}, (role) => role === 'anon' ? 401 : (role === 'obch' || role === 'ved') ? 403 : (role === 'admin2' ? 200 : 429), 'admin2 otisk (200), admin v tomtéž okně limit 1/10 min (429)');
 add('zaloha_nocni PŘÍMÉ zavolání (bez plánovače)', zaloha_nocni, 'GET', '/api/zaloha_nocni', undefined, () => 'N/A',
   'nemá config.path; handler nemá žádnou kontrolu — viz SEC-I2');
 
 /* ===== PROGRAM / FIRMA / ZOBRAZENÍ / POPISY / SLOVNÍK / ŠABLONY / CONTROLLING / ANALYTIKA ===== */
 add('program GET', F.program, 'GET', '/api/program', undefined, ocekFn('prihl'));
-add('program POST zveřejnit ceník', F.program, 'POST', '/api/program', { cenik: {} }, (role) => role === 'anon' ? 401 : (role === 'obch' || role === 'ved') ? 403 : 400,
-  'admin: tělo bez platného ceníku → 400 (auth prošla)');
+add('program POST zveřejnit ceník', F.program, 'POST', '/api/program', { cenik: {} }, (role) => role === 'anon' ? 401 : (role === 'obch' || role === 'ved') ? 403 : (role === 'admin2' ? 200 : 400), 'obch/ved 403; admin2 zveřejní prázdný ceník (200, mez B113), admin „neliší se" (400)');
 add('firma GET', F.firma, 'GET', '/api/firma', undefined, ocekFn('prihl'));
 add('firma POST', F.firma, 'POST', '/api/firma', { udaje: {} }, (role) => role === 'anon' ? 401 : (role === 'obch' || role === 'ved') ? 403 : 400);
 add('zobrazeni GET', F.zobrazeni, 'GET', '/api/zobrazeni', undefined, ocekFn('prihl'));
@@ -146,10 +156,10 @@ add('vypocet POST', F.vypocet, 'POST', '/api/vypocet', { zakazka: {}, program: {
 add('vypocet GET (špatná metoda)', F.vypocet, 'GET', '/api/vypocet', undefined, ocekFn('metoda'));
 
 /* ===== PIPEDRIVE (nastaveno:false, ale ověří auth/původ/matici) ===== */
-add('pd/deal GET', F.pd_deal, 'GET', '/api/pd/deal?id=1', undefined, (role) => role === 'anon' ? 401 : (role === 'admin2' || role === 'admin') ? 200 : 403,
-  'právo crm.pipedrive: admin vždy; obch/ved bez přidělení 403');
-add('pd/dealy GET', F.pd_dealy, 'GET', '/api/pd/dealy', undefined, (role) => role === 'anon' ? 401 : (role === 'admin2' || role === 'admin') ? 200 : 403);
-add('pd/pole GET', F.pd_pole, 'GET', '/api/pd/pole', undefined, (role) => role === 'anon' ? 401 : (role === 'admin2' || role === 'admin') ? 200 : 403);
+add('pd/deal GET', F.pd_deal, 'GET', '/api/pd/deal?id=1', undefined, (role) => role === 'anon' ? 401 : 200,
+  'právo crm.pipedrive výchozí = všichni (vychozi Obchodník/Vedoucí, rozhodnutí J. V. v15.10.7)');
+add('pd/dealy GET', F.pd_dealy, 'GET', '/api/pd/dealy', undefined, (role) => role === 'anon' ? 401 : 200);
+add('pd/pole GET', F.pd_pole, 'GET', '/api/pd/pole', undefined, (role) => role === 'anon' ? 401 : 200);
 add('pd/stav GET (bezPrava — vidí každý přihl.)', F.pd_stav, 'GET', '/api/pd/stav?soubor=' + SOUBOR_VLASTNI, undefined, ocekFn('prihl'),
   'bezPrava:true → stačí přihlášení + vidět zakázku');
 
@@ -162,7 +172,8 @@ for (const row of R) {
   for (const role of ROLE_SLOUPCE) {
     let kod;
     try {
-      const r = await req(row.fn, row.metoda, row.url, row.telo, COOKIE[role]);
+      const cookie = await cerstvaCookie(role);
+      const r = await req(row.fn, row.metoda, row.url, row.telo, cookie);
       kod = kodZ(r);
     } catch (e) { kod = 'ERR:' + (e && e.message || e).slice(0, 30); }
     const ocek = row.ocek(role);
