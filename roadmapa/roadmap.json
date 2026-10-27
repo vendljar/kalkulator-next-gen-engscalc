@@ -7824,7 +7824,7 @@
     }
    ],
    "cekaNa": "rozhodnutí J. V. (nálezy z ukázky 21. 10.) a podklady controllingu (po návratu v prosinci)",
-   "pozn": "Zapsala D1 22. 10. 2026 ze zbytku #447."
+   "pozn": "Zapsala D1 22. 10. 2026 ze zbytku #447. C3 #537 (27. 10. 2026): otázky pro J. V. v podklady/CONTROLLING_ROZHODNUTI.md (nálezy 1 a 4 ověřeny dnešním kódem — trvají; nově výchozí výběr podle prodeje a filtr vyhráno), šablona podkladů a ukázkový export v podklady/controlling/."
   },
   {
    "id": "501",
@@ -8489,6 +8489,27 @@
     "id": "524",
     "typ": "doporuceno",
     "proc": "vzor a šablona příručky (postupy krok za krokem, tisk A4)"
+   }
+  ]
+ },
+ {
+  "id": "537",
+  "vlna": "C",
+  "stav": "hotovo",
+  "dulezitost": "stredni",
+  "slozitost": "S",
+  "hotovoV": "podklady (bez verze aplikace)",
+  "nazev": "C3: příprava controllingu — rozhodovací podklad, šablona podkladů pro controlling, ukázkový export",
+  "proc": "Pokyn J. V. 27. 10. 2026: připravit dokončení #500 tak, aby J. V. rozhodl otevřené body klikem v dialogu a controlling po návratu v prosinci dodal data v jasné struktuře.",
+  "detail": "podklady/CONTROLLING_ROZHODNUTI.md — 12 otázek s variantami, doporučením, dopadem a odhadem (nové: výchozí výběr „podle prodeje“ nezná prodej bez objednaných příplatků; výchozí filtr „vyhráno“ potřebuje ručně zadané deal id; nález B zálohy; nálezy 1 a 4 z ukázky 21. 10. trvají). Šablona podkladů podklady/controlling/SABLONA_PODKLADU_CONTROLLING.xlsx (nastroje/sablona_podkladu_controlling.py, test src/test_sablona_controlling.js). Ukázkový export dnešním kódem podklady/controlling/UKAZKA_2026-CONTROLLING-EXPORT_v27.10.1.xlsx (nastroje/ukazka_controlling_export.js, test src/test_ukazka_controlling.js). Příčina nálezu B (náhled obnovy „Controlling – záloha tuto část nenese“) předána koordinaci pro O-T #529.",
+  "hotovoKdyz": "Podklad s otázkami, šablona a ukázka v repozitáři; testy zelené; kontrola_udaju čistá; příčina nálezu B poslaná koordinaci.",
+  "kde": "podklady/CONTROLLING_ROZHODNUTI.md, podklady/controlling/, nastroje/sablona_podkladu_controlling.py, nastroje/ukazka_controlling_export.js, src/test_sablona_controlling.js, src/test_ukazka_controlling.js",
+  "pozn": "Dávka C3, větev claude/c3-controlling-priprava nad 62ea0c8 (v27.10.1). Kód aplikace beze změny. Odpovědi J. V. na otázky 1–12 odblokují #500.",
+  "zavisi": [
+   {
+    "id": "500",
+    "typ": "doporuceno",
+    "proc": "připravuje rozhodnutí a podklady pro dokončení #500"
    }
   ]
  }

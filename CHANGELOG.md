@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## Podklady (bez nové verze aplikace) — C3 #537: příprava controllingu, větev claude/c3-controlling-priprava
+
+Nad 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026 — příprava dokončení #500. Kód aplikace beze změny; na ostrém webu,
+Disku ani v Pipedrive nic.
+
+- **Rozhodovací podklad `podklady/CONTROLLING_ROZHODNUTI.md`** — 12 otázek pro dialog (nadpis ≤ 12 znaků, 2–4
+  varianty, doporučení, dopad, odhad). Nálezy (1) zaokrouhlení OCK a (4) podíly Kapitol z ukázky 21. 10. dnešním
+  kódem ověřeny — trvají. Nově: výchozí výběr „podle data prodeje" bere jen zakázky se záznamem objednaných
+  příplatků (prodej bez příplatků z výchozího exportu vypadne); výchozí filtr „vyhráno" potřebuje deal id, které
+  zadává jen správce ručně.
+- **Šablona podkladů pro controlling** `podklady/controlling/SABLONA_PODKLADU_CONTROLLING.xlsx` + `POPIS.md`:
+  Skupiny (budoucí účty Helios), Mapování PROJ (16 klíčů, navržené skupiny), PROJ sazby a hodiny (za roli),
+  převodník CN–projekt, otázky Q1–Q10 k formátu a importu. Struktura z kódu, jen řádky VZOR se smyšlenými hodnotami.
+  Nástroj `nastroje/sablona_podkladu_controlling.py`, test `src/test_sablona_controlling.js` 13/0 (pojistka:
+  nový klíč ceníku PROJ → 1 FAIL; bez šablony 1 FAIL).
+- **Ukázkový export dnešním kódem** `podklady/controlling/UKAZKA_2026-CONTROLLING-EXPORT_v27.10.1.xlsx` (konvence
+  `TYP_rok-OBSAH_verze.přípona`, E1 #533) — 5 smyšlených zakázek, verze struktury 3. Nástroj
+  `nastroje/ukazka_controlling_export.js` (`--json` vypíše i zjištění k #500), test `src/test_ukazka_controlling.js`
+  22/0 (pojistka: výchozí filtr jako ukázka D1 → 2 FAIL, starý tvar slevy → 1 FAIL, bez nástroje 3 FAIL). Stará
+  ukázka D1 (`podklady/ukazky/vyrob_controlling_export_v2.js`) po #504 nic nevyveze — rozhodnutí 11.
+- **Nález B z testu J. V.** (náhled obnovy „Controlling – záloha tuto část nenese"): příčina — bez uloženého
+  záznamu `program/controlling` (výchozí rozvržení z kódu) nese záloha `controlling: null` a obnova část přeskočí
+  (`netlify/lib/zalohovani.mjs:80`, `netlify/functions/obnova.mjs:573`). Ověřeno pokusem, předáno koordinaci pro
+  O-T #529; neopravováno.
+
 ## v27.10.1 — A1 #530: poznámka o původním autorství v kódu, větev claude/a1-autorstvi
 
 Nad integrací 1820f81 (pokyn J. V. 27. 10. 2026: „stačí pouze v kódu, že jsem původním autorem této aplikace").

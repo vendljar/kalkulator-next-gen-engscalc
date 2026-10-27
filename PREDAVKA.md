@@ -1,3 +1,33 @@
+# Předávka — 27. 10. 2026: C3 #537 — příprava controllingu, větev `claude/c3-controlling-priprava`
+
+Nad `62ea0c8` (integrace v27.10.1). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze změny**, verze
+se nezvyšuje (CHANGELOG „Podklady"). Neslučováno; na ostrém webu, Disku ani v Pipedrive nic.
+
+| bod | stav | výstup |
+|---|---|---|
+| 1 rozhodovací podklad | ✅ | `podklady/CONTROLLING_ROZHODNUTI.md` — 12 otázek (Prodej, Deal id, Záloha, Zaokrouhlení, Podíly, Protokol, PROJ skupiny, Účty Helios, Šablona, V nabídce, Stará ukázka, Verze), varianty, doporučení, dopad, odhad; shrnutí pro dialog na konci |
+| 2 šablona podkladů | ✅ | `podklady/controlling/SABLONA_PODKLADU_CONTROLLING.xlsx` + `POPIS.md`; nástroj `nastroje/sablona_podkladu_controlling.py`; test `src/test_sablona_controlling.js` 13/0 |
+| 3 ukázkový export | ✅ | `podklady/controlling/UKAZKA_2026-CONTROLLING-EXPORT_v27.10.1.xlsx` (smyšlená data, commitnuto); nástroj `nastroje/ukazka_controlling_export.js`; test `src/test_ukazka_controlling.js` 22/0 |
+| 4 nález B zálohy | ✅ zjištěno | příčina poslána koordinaci (pro O-T #529), nic neopraveno — viz níž |
+
+**Nález B (náhled obnovy „Controlling – záloha tuto část nenese"):** správce controlling nikdy neuložil → záznam
+`program/controlling` neexistuje (aplikace jede na `ctrlVychozi`) → `zalohaDoplnky` nese `controlling: null`
+(`netlify/lib/zalohovani.mjs:80`; otisk totéž) → `obnova.mjs:567–573` část s `null` přeskočí „záloha tuto část
+nenese". Pokus: prázdná DB → náhled `preskocene 1`; po uložení výchozího → `bezeZmeny 1`. Mezera navíc: obnova
+zálohy z výchozího stavu nevrátí uloženou odchylku na výchozí. O-T WIP (bbe4269) controlling neřeší.
+
+**Nová zjištění (v podkladu otázky 1 a 2):** výchozí hromadný export (`podle=prodej`, `pd=won`) bere jen zakázky se
+záznamem objednaných příplatků a s ručně zadaným deal id — prodej bez příplatků vypadne; stará ukázka D1 proto
+po #504 nevyveze nic (skript končí chybou). Nálezy (1) a (4) z 21. 10. trvají (ukázka: Zaokrouhlení 0 u 3/3 OCK,
+podíly 100,02 / 99,98 %).
+
+**Testy:** pojistky — ukázka: filtr D1 → 2 FAIL, starý tvar slevy → 1 FAIL, bez nástroje 3 FAIL; šablona: nový klíč
+PROJ → 1 FAIL. `kontrola_udaju.py` čistá; roadmapa `--kontrola` 532 položek, `overit_roadmapu` 13/0. Kolo `--jen build,staticke` VŠE ZELENÉ (4/4); `spust_testy.sh` 273 prošlo / 0 / 1 přeskočeno (test.js).
+
+**Čeká na J. V.:** odpovědi na otázky 1–12 (`podklady/CONTROLLING_ROZHODNUTI.md`); poslat šablonu controllingu
+(otázka 9). Při slučování: CHANGELOG oddíl „Podklady — C3", roadmapa #537 + pozn #500 — jinak nové soubory.
+
+---
 # Předávka — 27. 10. 2026: A1 #530 — poznámka o původním autorství v kódu, větev `claude/a1-autorstvi`
 
 Nad `1820f81` (integrace). **Verze 27.10.1** (souběžně O-T #529, M7, M8 — koordinace přečísluje). Koordinace:
