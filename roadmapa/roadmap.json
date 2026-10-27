@@ -8434,6 +8434,27 @@
     "proc": "testy cílí na kód po O-K9"
    }
   ]
+ },
+ {
+  "id": "531",
+  "vlna": "B",
+  "stav": "hotovo",
+  "dulezitost": "stredni",
+  "slozitost": "M",
+  "hotovoV": "příručka (bez verze aplikace)",
+  "nazev": "M8: rozšířená příručka pro administrátora („kompletní balíček informací“)",
+  "proc": "Pokyn J. V. 27. 10. 2026: správce potřebuje na jednom místě všechno — obsah příručky obchodníka a k tomu role a práva, Nastavení po záložkách, ceník, zálohy a obnovu, provoz na Netlify a GitHubu, testování a řešení potíží.",
+  "detail": "Část A (15 kapitol A1–A15, postupy krok za krokem se snímky správce): role a práva (hlavní správce ADMIN_EMAIL, co drží server, heslo správce u zásahů, matice zobrazení a náhled), uživatelé (založení, reset hesla, vypnutí, archiv, převod, smazání), Nastavení po záložkách, ceník (verze, zveřejnění online i ze souboru, přenos ostrý → test, zahraniční ceny, migrace #354, přepočet rozpracovaných, zamčené), zálohy a obnova (noční otisk po částech 2:00–3:45 UTC, Zálohovat teď, Stáhnout, kopie na Disk .json.gz, retence, pojistka úbytku, scénáře A–D), hlídání záloh, Netlify (Deploys, vrácení, Logs, Blobs, jen NÁZVY proměnných), GitHub (větve, tagy, releasy, Actions), Disk a Pipedrive, testovací kolo a ruční postup před main, potíže, přístupy. Část B = celá příručka obchodníka beze změny (odkazy na čísla kapitol platí). Sestavení awkem do šablony manual/sablona.html, spojení obou částí v prohlížeči (manual/admin/spojit.js); snímky správce manual/snimky_admin.mjs nad zkušebními daty; nejisté provozní skutečnosti označené „ověřit“.",
+  "hotovoKdyz": "HTML + PDF A4 předané J. V.; manual/admin/overit.js nad hotovou příručkou bez chyby (cíle kliknutí sedí); src/test_prirucka_admin.js zelený; žádná hesla, hodnoty proměnných, osobní údaje ani ceny.",
+  "kde": "manual/admin/obsah.json, manual/admin/sestav.sh, manual/admin/spojit.js, manual/admin/overit.js, manual/snimky_admin.mjs, overit_prirucka_admin.mjs, src/test_prirucka_admin.js",
+  "pozn": "Dávka M8, větev claude/m8-prirucka-admin nad 1820f81 (v26.10.12). Hotová příručka ani snímky nejsou v repozitáři (rozhodnutí 17. 9. 2026). Číslo 531 zvoleno kvůli souběžným O-T #529 a M7 — koordinace případně přečísluje. K ověření J. V.: stav schaftscalc v Netlify, tarif Netlify, naplánované úlohy hlídání záloh (komu e-mail, kdy), přístupy ke složkám Disku.",
+  "zavisi": [
+   {
+    "id": "524",
+    "typ": "doporuceno",
+    "proc": "vzor a šablona příručky (postupy krok za krokem, tisk A4)"
+   }
+  ]
  }
  ],
  "meta" : {

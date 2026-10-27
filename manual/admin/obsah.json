@@ -1,0 +1,1396 @@
+{
+  "titul": "Kalkulátor Next Gen — příručka administrátora",
+  "verze": "Platí pro aplikaci v26.10.12 · sestaveno 27. 10. 2026",
+  "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
+  "uvod": [
+    {
+      "druh": "varovne",
+      "nadpis": "Interní dokument pro správce — bez hesel a bez našich cen",
+      "odstavce": [
+        "Snímky obrazovky jsou pořízené z běžící aplikace ve **zkušebním prostředí** nad **zkušebním ceníkem**. **Částky na obrázcích jsou ze zkušebního ceníku a nejsou naše ceny.** Jména lidí, firem a e-maily na snímcích jsou **vymyšlená**.",
+        "Příručka **neobsahuje hesla, tokeny ani hodnoty proměnných prostředí** — jen jejich názvy a k čemu slouží. Popisuje vnitřní provoz firmy, proto ji neposílejte mimo okruh správců.",
+        "**Postupy krok za krokem:** u kroku se snímkem je **červený rámeček se šipkou** — tam kliknete nebo to vyplníte. Kroky bez snímku se dělají mimo aplikaci (Netlify, GitHub, Disk)."
+      ]
+    }
+  ],
+  "kapitoly": [
+    {
+      "id": "kap-a-prehled",
+      "nadpis": "A1. Co správce spravuje a jak je příručka složená",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Tahle příručka je **kompletní balíček pro administrátora** Kalkulatoru Next Gen: část **A** (kapitoly A1–A15) popisuje všechno, co dělá správce a provozovatel — účty a práva, Nastavení po záložkách, ceník, zálohy a obnovu, provoz na Netlify a GitHubu, testování a řešení potíží. Část **B** je **celá příručka obchodníka beze změny** (kapitoly 1–32), protože správce musí znát i to, co dělají obchodníci, a odkazy typu „kapitola 22“ v ní dál sedí."
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Aplikace",
+              "vyklad": "Kalkulačka OCK a PROJ v prohlížeči — jeden soubor HTML sestavený z repozitáře (`build.py`) a serverové funkce `/api/…` na Netlify. Ceny ani firemní data v kódu nejsou; žijí v online databázi (Netlify Blobs)."
+            },
+            {
+              "pojem": "Ostrý web",
+              "vyklad": "**engscalc.netlify.app** — větev `main`, skutečné zakázky a skutečný ceník. Pracují v něm obchodníci."
+            },
+            {
+              "pojem": "Testovací web",
+              "vyklad": "**testengscalc.netlify.app** — větev `test`, **vlastní databáze** (jiné zakázky, jiný ceník, jiné účty). Na každé záložce svítí pruh **TESTOVACÍ PROSTŘEDÍ**; obchodníkům přístupný není."
+            },
+            {
+              "pojem": "Starý web",
+              "vyklad": "schaftscalc.netlify.app (sesterský repozitář) je **vypnutý** — nic se do něj nenasazuje; jeho staré zálohy jdou obnovit do engscalc (kapitola A8). Stav vypnutí v Netlify **ověřit**."
+            },
+            {
+              "pojem": "Hlavní správce",
+              "vyklad": "Účet, jehož e-mail je v proměnné prostředí `ADMIN_EMAIL` na Netlify. Jen on smí potvrdit úbytek dat v zálohách, měnit vlastní profil a podpis a nejde mu snížit role ani ho vypnout."
+            }
+          ]
+        },
+        {
+          "typ": "ram",
+          "nadpis": "Co v příručce záměrně není",
+          "odstavce": [
+            "**Žádná hesla, tokeny, hodnoty proměnných prostředí ani osobní údaje.** U proměnných je jen jejich název a k čemu slouží; hodnoty zná jen ten, kdo je zadal v Netlify. Částky na snímcích jsou ze **zkušebního ceníku** a nejsou naše ceny; jména lidí a firem jsou vymyšlená.",
+            "Kde příručka popisuje věc mimo aplikaci, kterou nelze ověřit z kódu (tarif Netlify, kdo má přístup k čemu), stojí u ní **„ověřit“**."
+          ]
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: první orientace po přihlášení správce",
+          "polozky": [
+            {
+              "text": "Přihlaste se na **engscalc.netlify.app** svým e-mailem a heslem. Správce se přihlašuje stejně jako obchodník — žádný zvláštní vstup neexistuje.",
+              "snimek": "a-prihlaseni",
+              "klik": {
+                "obsahuje": "Přihlásit"
+              }
+            },
+            {
+              "text": "Vpravo nahoře vidíte své jméno a roli **Administrátor** a ozubené kolo **⚙** — vstup do Nastavení. Na testovacím webu je pod hlavičkou navíc oranžový pruh testovacího prostředí.",
+              "snimek": "a-hlavicka",
+              "klik": {
+                "obsahuje": "⚙",
+                "stitek": "Nastavení"
+              }
+            },
+            {
+              "text": "V Nastavení jsou záložky **Obecné, Firma, Uživatelé, Databáze, Slevy, Smlouvy / Šablony, Standard OCK, Zobrazení, Konfigurace, Slovník, Analytika, Controlling** a **Mapa polí CRM**. Co je kde, popisují kapitoly A3–A6.",
+              "snimek": "a-nast-zalozky",
+              "klik": {
+                "obsahuje": "Databáze"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kap-a-role",
+      "nadpis": "A2. Role a práva",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Aplikace zná tři role. Roli určuje **účet na serveru** (záložka Uživatelé) — ne přepínač v prohlížeči. Co smí role **vidět**, nastavuje matice v Nastavení → **Zobrazení**; co smí **provést**, hlídá navíc server, takže skrytím ani zobrazením tlačítka se práva nezískávají ani neztrácejí."
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Obchodník",
+              "vyklad": "Kalkulace, nabídky, krycí listy, smlouvy, zákazníci. Nevidí ceníky nákladů ani Nastavení. Slevu do svého stropu si schválí sám, nad strop žádá vedoucího."
+            },
+            {
+              "pojem": "Vedoucí",
+              "vyklad": "Jako obchodník, navíc **schvaluje slevy** nad strop obchodníka (do vlastního stropu) a cenové výjimky; další práva (např. Standard OCK, Slevy, Detail výpočtu) mu může přidělit správce v matici."
+            },
+            {
+              "pojem": "Administrátor",
+              "vyklad": "Vidí vždy všechno: ceníky, Nastavení, zálohy, účty. Zveřejňuje ceník, firemní údaje, šablony a slovník. Takových účtů může být víc."
+            },
+            {
+              "pojem": "Hlavní správce",
+              "vyklad": "Administrátor s e-mailem z proměnné `ADMIN_EMAIL`. Navíc: **jediný potvrzuje úbytek dat v zálohách**, jeho účet nejde vypnout, archivovat, smazat ani snížit na nižší roli a jeho profil a podpis mění jen on sám. Je-li proměnná `ADMIN_EMAIL` prázdná, server správu účtů zastaví (hláška „Doplňte proměnnou ADMIN_EMAIL…“) a Uživatelé ukážou, že hlavní správce nastavený není."
+            }
+          ]
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-schvalovani",
+          "titulek": "Záložka Schvalování slev: fronta žádostí o slevu nad strop role a cenové výjimky — tady rozhoduje vedoucí (a správce)."
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Co drží server (nepřiděluje se)"
+        },
+        {
+          "typ": "text",
+          "text": "V matici zobrazení jsou některé řádky označené **(drží server)**: zveřejnění ceníku, správa účtů, firemní údaje, matice samotná a vynucená záloha. Ty smí jen role Administrátor bez ohledu na zaškrtnutí — server je odmítne i tomu, kdo by si tlačítko zobrazil z konzole prohlížeče. Analytika, Controlling a Mapa polí CRM jsou **natvrdo jen pro administrátora** a v matici vůbec nejsou."
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Heslo správce u citlivých zásahů"
+        },
+        {
+          "typ": "text",
+          "text": "Některé akce se potvrzují **vaším vlastním přihlašovacím heslem** (okno „Potvrzení heslem správce“): reset cizího hesla, založení účtu s rolí Administrátor, povýšení na správce, vypnutí / archivace / snížení role **jiného správce**, uložení matice zobrazení, potvrzení úbytku dat v zálohách a smazání zálohy „před obnovou“. Heslo se neukládá; bez něj se akce neprovede a aplikace to řekne."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: přidělit roli právo v matici zobrazení",
+          "polozky": [
+            {
+              "text": "Otevřete **⚙ → Zobrazení**. Nahoře je **náhled pohledem uživatele**, pod ním tabulka prvků po skupinách (záložky, náklady a marže, Nastavení, data a ceník, nabídky). Ke každému prvku je sloupec **Obchodník** a **Vedoucí** a doporučení, proč ano či ne.",
+              "snimek": "a-zobr-matice",
+              "klik": {
+                "obsahuje": "Prvek rozhraní"
+              }
+            },
+            {
+              "text": "Zaškrtněte nebo odškrtněte políčko u role. Zaškrtnutí se **ukládá samo** krátce po změně (tlačítko *Uložit teď* je jen pro jistotu); aplikace se zeptá na vaše heslo. Kdo má aplikaci otevřenou, dostane změnu při dalším načtení."
+            },
+            {
+              "text": "Zkontrolujte výsledek **náhledem**: v rozbalovacím seznamu *Prohlížet aplikaci jako konkrétní účet* vyberte účet, nebo klikněte na své jméno vpravo nahoře a vyberte účet z nabídky. Postavička 👤 se změní na oko 👁 a přes šířku svítí oranžový pruh. Náhled je **jen ke čtení** — nic se v něm nezapíše.",
+              "snimek": "a-nahled-menu",
+              "klik": {
+                "obsahuje": "Petr Vzorek · Obchodník"
+              }
+            },
+            {
+              "text": "Náhled ukončíte stejnou nabídkou volbou **Já (…) · skutečný pohled**."
+            }
+          ]
+        },
+        {
+          "typ": "ram",
+          "nadpis": "Pozor na přirážku a ceníky",
+          "odstavce": [
+            "Právo měnit **Globální přirážku** obchází slevové stropy (nižší přirážka je na výsledku k nerozeznání od slevy) a právo vidět **ceník nákladů** nebo **sloupce Náklad a Přirážka** prozradí nákupní ceny. Doporučení u každého řádku matice to vysvětluje; měňte je vědomě."
+          ],
+          "druh": "varovne"
+        }
+      ]
+    },
+    {
+      "id": "kap-a-uzivatele",
+      "nadpis": "A3. Uživatelé: zakládání, hesla, vypnutí, archiv",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "**Nastavení → Uživatelé** je jediné místo, kde vznikají účty. Žádná samoobslužná registrace ani obnova hesla e-mailem neexistuje — e-mailem aplikace nic neposílá. Tabulka ukazuje e-mail (u hlavního účtu „· hlavní“), titul, jméno a funkci, telefon, roli, zaškrtávátko **Aktivní** a tlačítka. Titul, funkce a telefon se tisknou v nabídce do bloku **„Vypracoval“** — v tabulce tedy hned vidíte, komu chybí telefon."
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-uz-tabulka",
+          "titulek": "Tabulka účtů: hlavní správce, obchodník, vedoucí, druhý správce a archivovaný účet."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: založit účet",
+          "polozky": [
+            {
+              "text": "Pod tabulkou vyplňte **E-mail**, případně titul, **Jméno a příjmení**, funkci a telefon, vyberte **Roli** a napište **Počáteční heslo** (nejméně 8 znaků — kratší server odmítne a účet nevznikne). Klikněte na **Založit účet**. U role Administrátor se aplikace zeptá na vaše heslo.",
+              "snimek": "a-uz-novy",
+              "klik": {
+                "obsahuje": "Založit účet"
+              }
+            },
+            {
+              "text": "Počáteční heslo předejte kolegovi **osobně** (ne e-mailem). Po přihlášení si ho změní sám v okně **Můj profil → Změnit heslo** (kapitola 3) a tam si doplní i sken podpisu."
+            }
+          ]
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: reset zapomenutého hesla",
+          "polozky": [
+            {
+              "text": "U účtu klikněte na **Nové heslo…**. Pod řádkem se otevře pole: napište nové heslo (nejméně 8 znaků) a klikněte na **Uložit heslo**. Potvrďte svým heslem.",
+              "snimek": "a-uz-reset",
+              "klik": {
+                "obsahuje": "Uložit heslo"
+              }
+            },
+            {
+              "text": "Nové heslo předejte osobně. Vlastní heslo si správce mění tlačítkem **Změnit heslo…** u svého řádku (zná staré heslo) — reset přes *Nové heslo…* je jen pro cizí účty."
+            }
+          ]
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: kolega odchází",
+          "polozky": [
+            {
+              "text": "Nejdřív **odškrtněte Aktivní** — účtem se pak nepůjde přihlásit (u jiného správce s vaším heslem). Hlavní účet vypnout nejde.",
+              "snimek": "a-uz-tabulka",
+              "klik": {
+                "obsahuje": "Aktivní",
+                "stitek": "Aktivní"
+              }
+            },
+            {
+              "text": "Pak **Archivovat…** — účet zmizí z běžného seznamu, nesmaže se a je to vratné (**Vrátit z archivu**). Po archivaci aplikace nabídne **převod zakázek** na jiného aktivního kolegu, aby rozpracovaná práce nezůstala na neexistujícím účtu.",
+              "snimek": "a-uz-tabulka",
+              "klik": {
+                "obsahuje": "Vrátit z archivu"
+              }
+            },
+            {
+              "text": "**Smazat…** odstraní účet z databáze i s podpisem a **vratné není**. Účet, na kterém jsou zakázky, server smazat nedá — nejdřív převod. Razítka pod odeslanými nabídkami a podpisy pod rozhodnutími o slevách zůstávají v obou případech beze změny."
+            }
+          ]
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Změna role",
+              "vyklad": "Rozbalovací seznam **Role** v řádku účtu. Povýšení na Administrátora chce vaše heslo; snížení role jiného správce také."
+            },
+            {
+              "pojem": "Kontakt…",
+              "vyklad": "Úprava titulu, funkce a telefonu kolegy pro blok „Vypracoval“. Profil hlavního správce mění jen on sám."
+            },
+            {
+              "pojem": "Hlášky nahoře",
+              "vyklad": "Řádek „✔ Hlavní správce je na serveru nastavený — ochrany hlavního účtu platí.“ a případná varování záloh (kapitola A8) se ukazují i tady, aby je správce neminul."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kap-a-nastaveni",
+      "nadpis": "A4. Nastavení: Obecné, Firma, Slevy",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Nastavení otevře ozubené kolo **⚙** vpravo nahoře. Správce vidí všechny záložky; vedoucímu se ukážou jen ty, které mu správce přidělil v matici (podtitulek pak říká „vidíte části, které vám přidělil administrátor“). Záložka **Databáze** je vidět každému přihlášenému, ale zálohy a obnova v ní jsou jen pro správce."
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Obecné",
+              "vyklad": "Přepínač **Administrátor / Běžný uživatel (náhled)** a vypínač **Moje obrazovka** (skrýt si sloupce Náklad a Přirážka, když u monitoru sedí zákazník — platí jen pro vaši obrazovku). Viditelnost záložek se tu už nenastavuje — je v Zobrazení."
+            },
+            {
+              "pojem": "Firma",
+              "vyklad": "Údaje naší firmy (zhotovitele) pro nabídky, krycí listy a smlouvy, zveřejnění online."
+            },
+            {
+              "pojem": "Uživatelé",
+              "vyklad": "Účty — kapitola A3."
+            },
+            {
+              "pojem": "Databáze",
+              "vyklad": "Online databáze, zálohy, obnova, přenos ceníku, ukázkové zakázky testovacího webu — kapitoly A7 a A8."
+            },
+            {
+              "pojem": "Slevy",
+              "vyklad": "Pojistka marže, stropy slev podle role, schémata slev."
+            },
+            {
+              "pojem": "Smlouvy / Šablony",
+              "vyklad": "Platební podmínky, smluvní standardy, kapitoly nabídky, logo, šablony dokumentů — kapitola A5."
+            },
+            {
+              "pojem": "Standard OCK",
+              "vyklad": "Limity firemního standardu (atyp ano / ne) — kapitola A5."
+            },
+            {
+              "pojem": "Zobrazení",
+              "vyklad": "Matice práv po rolích a náhled pohledem uživatele — kapitola A2."
+            },
+            {
+              "pojem": "Konfigurace, Slovník",
+              "vyklad": "Přenos nastavení souborem a údržba překladů — kapitola A5."
+            },
+            {
+              "pojem": "Analytika, Controlling, Mapa polí CRM",
+              "vyklad": "Jen administrátor — kapitola A6."
+            }
+          ]
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-nast-obecne",
+          "titulek": "Nastavení → Obecné: náhled role a vypínač sloupců nákladu pro vlastní obrazovku."
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Firma"
+        },
+        {
+          "typ": "text",
+          "text": "Údaje zhotovitele (název, IČO, DIČ, zápis v rejstříku, sídlo, korespondenční adresa, banka, kontakty, zástupci ve věcech smluvních a technických, vedoucí montáží). U každého pole je **zástupný symbol** `{{FIRMA_…}}`, který se dosazuje do šablon .docx. Obchodník ani vedoucí složku _DB nemapují — firemní údaje berou **jen z online databáze**, proto je po změně musíte **zveřejnit**."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: změnit firemní údaje",
+          "polozky": [
+            {
+              "text": "Na záložce **Firma** opravte pole (povinná mají hvězdičku).",
+              "snimek": "a-firma-identifikace",
+              "klik": {
+                "obsahuje": "Název firmy"
+              }
+            },
+            {
+              "text": "Dole v kartě **Firemní údaje v online databázi** klikněte na **Zveřejnit**. Karta pak řekne „✓ Online databáze má přesně tyhle údaje“; dokud údaje online nesouhlasí, ukazuje rozdíl.",
+              "snimek": "a-firma-online",
+              "klik": {
+                "obsahuje": "Zveřejnit znovu"
+              }
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Slevy"
+        },
+        {
+          "typ": "text",
+          "text": "Slevový model má tři vrstvy: **pojistka marže** (minimální marže po slevě — žádná sleva ani se schválením ji nesmí prorazit; maximální globální sleva PROJ), **stropy dle role** (sleva do stropu projde sama, nad strop čeká na schválení nadřízeným) a **schémata slev** (pojmenované typy slevy v % nebo pevnou částkou). Administrátor nemá strop, jen pojistku marže. Stropy a pojistka se zveřejňují spolu s ceníkem (kapitola A7) — po změně tedy ceník zveřejněte. Schvalování popisuje kapitola 19."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: změnit strop slevy role",
+          "polozky": [
+            {
+              "text": "Na záložce **Slevy** v části **Stropy slev dle role** přepište procento u role (případně *Minimální marže po slevě*).",
+              "snimek": "a-nast-slevy",
+              "klik": {
+                "obsahuje": "Obchodník",
+                "cely": "tr",
+                "stitek": "strop role"
+              }
+            },
+            {
+              "text": "Změna platí po **zveřejnění ceníku** (záložka Ceník nákladů OCK → *Zveřejnit ceník této varianty jako platný*), protože stropy jdou na server s ceníkem."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kap-a-sablony",
+      "nadpis": "A5. Smlouvy / Šablony, Standard OCK, Slovník, Konfigurace",
+      "bloky": [
+        {
+          "typ": "podnadpis",
+          "text": "Smlouvy / Šablony"
+        },
+        {
+          "typ": "text",
+          "text": "Záložka nese firemní **výchozí hodnoty dokumentů**: společné (platnost nabídky, sazby a limit smluvních pokut), **platební podmínky OCK a PROJ** (splatnost, záloha, dílčí a konečná faktura, zádržné, záruka, smluvní pokuty, typ smlouvy, co cena nezahrnuje), **věty platebního kalendáře**, **smluvní standardy** (způsob fakturace, rozsah díla, termín dodání a prodloužení za ATYP, skladné), **kapitoly nabídky III.–VI.** po jazycích, **logo firmy** a **šablony dokumentů**. Výchozí hodnoty se zveřejňují tlačítkem v kartě a propisují se do **rozpracovaných** variant; odeslané a zamčené nabídky mají podmínky zmrazené."
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-sablony-podminky",
+          "titulek": "Smlouvy / Šablony → Platební podmínky OCK: výchozí hodnoty krycího listu."
+        },
+        {
+          "typ": "text",
+          "text": "**Šablony dokumentů** (.docx): česká šablona je zdroj, jazykové verze (EN, DE, FR) se z ní vyrábějí tlačítkem **Vyrobit z češtiny** nebo se nahraje doladěný soubor; *Nepřeložené fráze (CSV)* vypíše, co slovník neumí. Každá verze se zveřejňuje na server a z ní tisknou všichni přihlášení; historie verzí zůstává. **Režim centrálních šablon**: *Přísný* (doporučeno) — bez serverové šablony dokument nevznikne; *Měkký* — při výpadku serveru lze tisknout z místního souboru a tisk se zapíše do zámku varianty jako „místní šablona“."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: zveřejnit novou šablonu nabídky",
+          "polozky": [
+            {
+              "text": "V tabulce **Šablony dokumentů** klikněte na dokument (např. *Šablona cenové nabídky OCK*). Pod tabulkou klikněte na **Nahrát novou českou verzi…** a vyberte .docx.",
+              "snimek": "a-sablony-dokumenty",
+              "klik": {
+                "obsahuje": "Nahrát novou českou verzi…"
+              }
+            },
+            {
+              "text": "Jazykové verze obnovte tlačítkem **Vyrobit z češtiny** u každého jazyka (nebo nahrajte doladěný překlad). Dokud jazyková verze chybí, dokument se tiskne česky.",
+              "snimek": "a-sablony-dokumenty",
+              "klik": {
+                "obsahuje": "Vyrobit z češtiny"
+              }
+            },
+            {
+              "text": "Vyzkoušejte tisk na **testovacím webu** (kapitola A13) a teprve pak šablonu zveřejněte na ostrém."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Standard OCK"
+        },
+        {
+          "typ": "text",
+          "text": "Tabulka limitů, podle které Kalkulace OCK i Technická specifikace rozhodují **standard / atyp**: pro exteriér a interiér zvlášť profily sloupků s maximální výškou, vnitřní šířkou a hloubkou, povolené způsoby zasklení a počet sloupků; společná pravidla (jeden typ zasklení) a **délka můstku**. Kontrola nic neblokuje — ukazuje štítek a u nálezu zaškrtne ATYP. Vyhodnocení se počítá vždy podle aktuálního znění, takže po změně se štítky u starších zakázek mohou změnit. Měnit standard smí administrátor a vedoucí, kterému to přidělíte. Z pohledu obchodníka viz kapitola 14."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: upravit limit standardu",
+          "polozky": [
+            {
+              "text": "Na záložce **Standard OCK** zkontrolujte, že **Kontrola STD** je *Aktivní*, a v tabulce exteriéru nebo interiéru přepište limit profilu (nebo *+ přidat profil*).",
+              "snimek": "a-nast-standard",
+              "klik": {
+                "obsahuje": "Kontrola STD"
+              }
+            },
+            {
+              "text": "Standard se ukládá do konfigurace aplikace stejně jako firemní údaje; *↺ Vrátit výchozí znění* vrátí původní tabulku."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Slovník"
+        },
+        {
+          "typ": "text",
+          "text": "Překlady EN / DE / FR pro dokumenty. Slovník aplikace se porovná s firemní tabulkou **Vocabulary** (sešit .xlsx): *Vybrat tabulku Vocabulary* ukáže rozdíly (nic se nezapíše samo), *Stáhnout celý slovník* vyrobí sešit s listem PŘEHLED a listy EN, DE, FR pro překladatele. Převzatou verzi slovníku zveřejníte online — do té doby všichni překládají slovníkem zabudovaným v aplikaci."
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-nast-slovnik",
+          "titulek": "Nastavení → Slovník."
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Konfigurace"
+        },
+        {
+          "typ": "text",
+          "text": "Export a import nastavení jedním souborem **konfigurace.json** (nastavení aplikace, data technické specifikace, trvalé položky katalogu, slovník, názvy šablon). Hodí se pro přenos mezi počítači; online databázi nenahrazuje. Šablony .docx se přenášejí jen názvem a **role administrátora se z konfigurace nikdy nepřebírá**."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: zálohovat nastavení do souboru",
+          "polozky": [
+            {
+              "text": "Na záložce **Konfigurace** zaškrtněte, co má soubor obsahovat, a klikněte na **⤓ Uložit konfiguraci do souboru**.",
+              "snimek": "a-nast-konfigurace",
+              "klik": {
+                "obsahuje": "Uložit konfiguraci do souboru"
+              }
+            },
+            {
+              "text": "Import (*⤒ Načíst konfiguraci ze souboru*) použije jen zaškrtnuté části. Importem se dá nastavení i přepsat — dělejte ho nejdřív na testovacím webu."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kap-a-analytika",
+      "nadpis": "A6. Analytika, Controlling a Mapa polí CRM",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Tři záložky **jen pro administrátora** (natvrdo, v matici zobrazení nejsou)."
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Analytika",
+              "vyklad": "Statistiky užívání: součty za den (nové kalkulace, tisky, přihlášení, chyby v prohlížeči), rozpad po uživatelích od 20. 8. 2026, nejotevíranější záložky a prvky, **čas nad kalkulacemi** (aktivní práce, OCK a PROJ zvlášť — podklad pro sazby, ne hodnocení lidí) a **heat mapa** (přepínač 🔥 v liště, vidí ho jen správce). Informační text pro uživatele o zpracování údajů se doplní po konzultaci s právníkem."
+            },
+            {
+              "pojem": "Controlling",
+              "vyklad": "Kapitoly nákladů pro porovnání předkalkulace se skutečností v Reporting CZ: id skupiny, název, položka v ManVysl, účty Helios nyní a budoucí, typ nákladu, chování, oblast. Úprava se ukládá **jako nová verze**; tlačítko **Export předkalkulace** vyrobí soubor pro controlling (filtry období, OCK / PROJ, řada ČR / ZAHR, stav dealu — popis v kapitole 28)."
+            },
+            {
+              "pojem": "Mapa polí CRM",
+              "vyklad": "Jak se pole kalkulace párují s vlastními poli Pipedrive (spárováno / chybí v CRM / jiný typ / dvakrát / nezařazená v CRM). Páruje se **přesně podle názvu** dohodnutého s integrátorem; ručně se nic nepřiřazuje. Bez proměnných `PIPEDRIVE_TOKEN` a `PIPEDRIVE_DOMENA` záložka hlásí, že napojení není nastavené (viz kapitola A12)."
+            }
+          ]
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-nast-analytika",
+          "titulek": "Nastavení → Analytika."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: nová verze rozvržení controllingu",
+          "polozky": [
+            {
+              "text": "Na záložce **Controlling** upravte řádek skupiny (např. účty Helios — oddělujte čárkou). Identifikátor skupiny se nemění.",
+              "snimek": "a-nast-controlling",
+              "klik": {
+                "obsahuje": "Účet Helios nyní"
+              }
+            },
+            {
+              "text": "Klikněte na **Uložit jako novou verzi**. Pod tlačítkem se ukáže, že tabulka odpovídá uložené verzi.",
+              "snimek": "a-nast-controlling",
+              "klik": {
+                "obsahuje": "Uložit jako novou verzi"
+              }
+            }
+          ]
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-nast-pdmapa",
+          "titulek": "Mapa polí CRM bez nastaveného napojení na Pipedrive (zkušební prostředí)."
+        }
+      ]
+    },
+    {
+      "id": "kap-a-cenik",
+      "nadpis": "A7. Ceník: verze, zveřejnění, přenos, migrace",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Ceník nákladů OCK a PROJ vidí a mění jen správce (záložky **Ceník nákladů OCK** a **Ceník nákladů PROJ**). Platí **jeden platný ceník pro OCK i PROJ** na serveru — z něj vychází každá nová nabídka všech přihlášených a platí i po nasazení nové verze aplikace. Ceny upravené v tabulce platí jen pro otevřenou variantu, **dokud je nezveřejníte**. S ceníkem se zveřejňují i stropy slev, katalog trvalých položek, kurz EUR a zahraniční ceny."
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-cenik-platny",
+          "titulek": "Karta Platný ceník programu: verze, datum, kdo zveřejnil, počet starších verzí."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: zveřejnit nový ceník (online)",
+          "polozky": [
+            {
+              "text": "Na záložce **Ceník nákladů OCK** (případně PROJ) upravte ceny. Ve sloupci **Cena ČR** je tuzemská cena, ve sloupci **Cena Zahraničí** odchylka pro zahraniční zakázky (prázdná = platí česká), zaškrtávátko **jen zahr.** položku nabídne jen v zahraničí. Šipka ↺ vrátí zahraniční cenu na českou.",
+              "snimek": "a-cenik-tabulka",
+              "klik": {
+                "obsahuje": "Cena Zahraničí"
+              }
+            },
+            {
+              "text": "Nahoře v kartě **Platný ceník programu** klikněte na **Zveřejnit ceník této varianty jako platný** a napište zdůvodnění (objeví se v historii). Dialog vypíše, co se mění.",
+              "snimek": "a-cenik-platny",
+              "klik": {
+                "obsahuje": "Zveřejnit ceník této varianty jako platný"
+              }
+            },
+            {
+              "text": "Historie: **Verze ceníku… (historie)** — každá verze s datem platnosti, zdůvodněním a autorem; **Rozdíly** ukážou, co se proti předchozí změnilo. Starou verzi lze nahrát zpět do varianty a zveřejnit znovu.",
+              "snimek": "a-cenik-verze",
+              "klik": {
+                "obsahuje": "Rozdíly"
+              }
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Co zveřejnění udělá s nabídkami"
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Nové nabídky",
+              "vyklad": "Počítají z nového ceníku hned."
+            },
+            {
+              "pojem": "Rozpracované nabídky",
+              "vyklad": "Po otevření se **přepočítají samy** (pravidlo 31. 7. 2026). Obchodník při otevření zakázky spočítané podle starší verze uvidí dialog „Ceník se od posledního uložení změnil“ (kapitola 22)."
+            },
+            {
+              "pojem": "Odeslané (zamčené) nabídky",
+              "vyklad": "**Nemění se nikdy** — mají zmrazený ceník varianty. Kdo je odemkne k úpravě, rozhodne o přepočtu sám (kapitola 23)."
+            },
+            {
+              "pojem": "Globální přirážka",
+              "vyklad": "Zveřejněním se z ní stane výchozí přirážka **nové** zakázky; rozpracovaným ani odeslaným ji nikdo nepřepíše."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Přenos ceníku ostrý → testovací web"
+        },
+        {
+          "typ": "text",
+          "text": "Testovací web má vlastní databázi, a tedy i vlastní ceník — bez přenosu by v něm nabídky vycházely jinak. Přenos je vždy **ruční** (automatické spojení webů by znamenalo, že se test umí přihlásit do ostrého). Soubor nese ceny, katalog a stropy slev, **ne** zakázky ani účty."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: přenést platný ceník do testovacího webu",
+          "polozky": [
+            {
+              "text": "Na **ostrém** webu: ⚙ → **Databáze** → karta *Přenos ceníku mezi ostrým a testovacím webem* → **Stáhnout platný ceník (JSON)**.",
+              "snimek": "a-db-prenos",
+              "klik": {
+                "obsahuje": "Stáhnout platný ceník (JSON)"
+              }
+            },
+            {
+              "text": "Na **testovacím** webu: táž karta → **Zveřejnit ceník ze souboru…** → vybrat stažený soubor → potvrdit. Ceník se zveřejní jako nová verze testovacího webu.",
+              "snimek": "a-db-prenos",
+              "klik": {
+                "obsahuje": "Zveřejnit ceník ze souboru…"
+              }
+            },
+            {
+              "text": "Soubor s ceníkem nese nákupní ceny — po přenosu ho z počítače smažte, nikam ho neposílejte a do repozitáře nepatří."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Migrace ceníku po nasazení nové verze"
+        },
+        {
+          "typ": "text",
+          "text": "Když nová verze aplikace přidá do ceníku buňky (naposledy **#354 — cena můstků podle rozměru**: referenční šířka, sazba a hodiny montáže můstků), platí pro **zveřejněný** ceník až po jeho dalším zveřejnění. Zveřejnění starý ceník samo **migruje** (doplní nové buňky výchozími hodnotami a ponechá, co jste vyplnili) a dialog změny je vypíše. **Po nasazení takové verze proto ceník jednou zveřejněte** — do té doby se počítá postaru (u můstků paušálem). Zamčené varianty a ceník zveřejněný před změnou počítají dál postaru. Které verze migraci potřebují, říká CHANGELOG (hledejte „Po nasazení je potřeba ceník jednou zveřejnit“)."
+        },
+        {
+          "typ": "ram",
+          "nadpis": "Ceník PROJ a kurz eura",
+          "odstavce": [
+            "Ceník nákladů PROJ (hodinové sazby, stupně dokumentace, přirážka PROJ) se zveřejňuje týmž tlačítkem jako OCK. Kurz EUR a zahraniční ceny jsou součástí ceníku; jak se projeví v nabídce, popisuje kapitola 9."
+          ]
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-cenikproj",
+          "titulek": "Ceník nákladů PROJ (výřez tabulky, zkušební ceník)."
+        }
+      ]
+    },
+    {
+      "id": "kap-a-zalohy",
+      "nadpis": "A8. Zálohy a obnova",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Data aplikace žijí v **Netlify Blobs** projektu (ostrý a testovací web každý svoje). Zálohování je automatické a vícevrstvé; správce ho hlídá a v nouzi obnovuje. Podrobný nouzový postup s kontrolami je v repozitáři v souboru `podklady/POSTUP_OBNOVY_ZALOHY.md` — tahle kapitola ho shrnuje a ukazuje obrazovky. Pohled obchodníka je v kapitole 30."
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Noční otisk",
+              "vyklad": "Celá databáze **včetně účtů a otisků hesel**. Vzniká každou noc sám: plánovaná funkce `zaloha_nocni` běží **2:00–3:45 UTC každých 15 minut** a otisk dopořizuje po částech (nejvýš 4 MB, komprimované gzip), dokud není celý. V přehledu se objeví, až je celý."
+            },
+            {
+              "pojem": "Otisk při přihlášení",
+              "vyklad": "Když se správce přihlásí a dnešní otisk ještě není."
+            },
+            {
+              "pojem": "Zálohovat teď",
+              "vyklad": "Ruční (vynucený) otisk, nejvýš jednou za 10 minut a 20× za den; aplikace ho dopořizuje po částech sama (průběh „zpracováno X z Y záznamů“)."
+            },
+            {
+              "pojem": "Otisk před obnovou",
+              "vyklad": "Vznikne automaticky při každé obnově (`…-pred-obnovou`) — cesta zpět."
+            },
+            {
+              "pojem": "Kopie na Disk Google",
+              "vyklad": "Tlačítko **Zkopírovat zálohu na Disk teď** uloží poslední noční otisk do složky **_Zaloha Netlify DB** jako `otisk_RRRR-MM-DD.json.gz` (účty bez hesel, bez podpisů) a vedle soubor `posledni_kopie.json`. Aplikace připomene kopii jednou týdně; kopie starší než 14 dní svítí jako varování."
+            },
+            {
+              "pojem": "Stáhnout zálohu",
+              "vyklad": "Soubor JSON do počítače (zakázky, ceník, firma, šablony, matice; účty bez hesel), stahuje se po stránkách."
+            }
+          ]
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-db-karta",
+          "titulek": "Karta Online databáze po ruční záloze: poslední záloha, poslední noční záloha, stav kopie na Disku a tlačítka."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: ruční záloha a kopie na Disk",
+          "polozky": [
+            {
+              "text": "⚙ → **Databáze** → karta **Online databáze** → **Zálohovat teď**. Okno nezavírejte, dokud hláška neřekne „Záloha databáze pořízena (…)“.",
+              "snimek": "a-db-karta",
+              "klik": {
+                "obsahuje": "Zálohovat teď"
+              }
+            },
+            {
+              "text": "**Zkopírovat zálohu na Disk teď** — poprvé vyberte na Disku Google složku **_Zaloha Netlify DB** a povolte zápis (prohlížeč Chrome nebo Edge). Hláška ukáže cestu, velikost a kolik starších kopií uklidila.",
+              "snimek": "a-db-karta",
+              "klik": {
+                "obsahuje": "Zkopírovat zálohu na Disk teď"
+              }
+            },
+            {
+              "text": "Soubor do počítače: **Stáhnout zálohu**.",
+              "snimek": "a-db-karta",
+              "klik": {
+                "obsahuje": "Stáhnout zálohu"
+              }
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Kolik záloh se drží (retence)"
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Netlify — noční otisky",
+              "vyklad": "posledních **14 dní**; z každého týdne nedělní **8 týdnů**; z každého měsíce první **6 měsíců**."
+            },
+            {
+              "pojem": "Netlify — Zálohovat teď a otisky při přihlášení",
+              "vyklad": "**7 dní**."
+            },
+            {
+              "pojem": "Netlify — otisky před obnovou",
+              "vyklad": "**nikdy** se nemažou samy; ručně je smaže správce s heslem (*Obnovit ze zálohy…* → vybrat otisk → *Smazat tento otisk…*, ne během obnovy)."
+            },
+            {
+              "pojem": "Disk Google — kopie",
+              "vyklad": "posledních **7 dní**; z týdne nedělní **8 týdnů**; z měsíce první **6 měsíců**; maže se jen po úspěšné kopii (smazané leží 30 dní v koši Disku)."
+            },
+            {
+              "pojem": "Vždy",
+              "vyklad": "Nejnovější záloha se nesmaže nikdy. V Netlify se maže jen tehdy, když je na Disku podložená kopie mladší než 7 dní."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Pojistka úbytku dat"
+        },
+        {
+          "typ": "text",
+          "text": "Zálohy se mají zvětšovat. Mazání starých záloh (v Netlify i na Disku) se **zastaví**, když nová noční záloha nese proti předchozí méně než 90 % dat, méně než 95 % zakázek nebo účtů nebo méně šablon či podpisů — a také proti **nejvyššímu stavu za 30 dní**. Karta Online databáze pak červeně řekne, co ubylo, a správce dostane hlášku po přihlášení. **Bez potvrzení se nemaže nic, ani po měsících.**"
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: úbytek dat v záloze",
+          "polozky": [
+            {
+              "text": "Přečtěte si varování (z kolika na kolik ubylo; na obrázku je ukázkové varování). **Nejdřív ověřte, jestli se data neztratila** — v Přehledu cenových nabídek, v Uživatelích. Pokud ano, obnovte je (scénář A níž) a nic nepotvrzujte.",
+              "snimek": "a-db-retence",
+              "klik": {
+                "obsahuje": "Pozor",
+                "stitek": "co ubylo"
+              }
+            },
+            {
+              "text": "Byl-li úbytek **záměrný** (smazané zakázky, účty, šablona), klikněte na **Úbytek byl záměrný** a potvrďte svým heslem. Smí jen **hlavní správce**; ostatní vidí „Potvrdit úbytek může jen hlavní správce“. Více varování se potvrzuje postupně od nejstaršího.",
+              "snimek": "a-db-retence",
+              "klik": {
+                "obsahuje": "Úbytek byl záměrný"
+              }
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Obnova ze zálohy"
+        },
+        {
+          "typ": "text",
+          "text": "**Obnovit ze zálohy…** (jen správce) nalije zálohu zpátky do online databáze. Zdroj je **otisk na serveru** (podle dne) nebo **stažený soubor** (.json i .json.gz). Režim **doplnit** vrátí jen to, co chybí; **přepsat** vrátí vybrané části přes stávající stav. Části (ceník, firma, matice, dodatkové texty, slovník, controlling, zakázky, účty) lze odškrtnout. Vždy se nejdřív ukáže **náhled** (nic nezapíše), teprve pak obnova s potvrzením. Před zápisem vznikne otisk „před obnovou“, **uzamčené (odeslané) nabídky se nepřepíšou** a nic se nemaže. Účty jdou obnovit jen ze serverového otisku. Velká databáze se obnovuje po dávkách sama."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: obnova (scénář A — pokazila se data, zálohy jsou)",
+          "polozky": [
+            {
+              "text": "⚙ → **Databáze** → **Obnovit ze zálohy…**. Vyberte zdroj — otisk ze dne, kdy bylo vše v pořádku — a režim **doplnit** (začněte vždy jím). Nechte zaškrtnuté části, které se mají vrátit, a klikněte na **Zobrazit náhled**.",
+              "snimek": "a-db-obnova",
+              "klik": {
+                "obsahuje": "Zobrazit náhled"
+              }
+            },
+            {
+              "text": "Zkontrolujte tabulku náhledu: kolik záznamů je nových, přepsaných, beze změny a přeskočených — a **proč** se přeskakují. Teprve pak **Obnovit databázi** a potvrďte.",
+              "snimek": "a-db-obnova-nahled",
+              "klik": {
+                "obsahuje": "Obnovit databázi"
+              }
+            },
+            {
+              "text": "Kdyby obnova dopadla špatně, vraťte stav obnovou z otisku **„před obnovou“**."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Nouzové scénáře"
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "A) Pokazila se data, zálohy jsou",
+              "vyklad": "Postup výše: otisk ze dne, kdy bylo vše v pořádku, režim doplnit, náhled, obnova."
+            },
+            {
+              "pojem": "B) Zmizela celá databáze, noční otisky zůstaly",
+              "vyklad": "Na přihlašovací stránce zadejte adresu hlavního správce (`ADMIN_EMAIL`) a **náhradní heslo z proměnné `ADMIN_INIT_HESLO`** (Netlify → Environment variables; dočasně ho tam nastavte a nasaďte znovu). Prázdná databáze účet správce založí. Pak jako A) — poslední noční otisk, doplnit. Vrátí se i účty: obchodníci se přihlásí svými hesly. Hned potom si správce změní heslo a `ADMIN_INIT_HESLO` z Netlify smaže."
+            },
+            {
+              "pojem": "C) Zmizelo všechno včetně nočních otisků",
+              "vyklad": "Přihlášení jako v B). Zdroj **stažený soubor** — kopie z Disku (`_Zaloha Netlify DB/otisk_…json.gz`) nebo stažená záloha. Vrátí se zakázky, ceník, firma, šablony a matice; **účty ne** (soubor nenese hesla) — založte je znovu (kapitola A3)."
+            },
+            {
+              "pojem": "D) Záloha nevzniká",
+              "vyklad": "Karta ukáže **Poslední pokus o zálohu** s důvodem. Zkuste *Zálohovat teď*. V Netlify → Logs → Functions → `zaloha_nocni` musí být v noci řádky „otisk <datum> rozpracován…“ a nakonec „otisk <datum> — … zakázek“ a řádek retence. U funkce musí být značka **Scheduled** s rozvrhem `*/15 2-3 * * *`. „Task timed out“ jednou nevadí (další běh naváže); opakuje-li se každou noc, ozvěte se vývoji."
+            }
+          ]
+        },
+        {
+          "typ": "ram",
+          "nadpis": "Zkouška nanečisto",
+          "odstavce": [
+            "Jednou za čtvrt roku na **testovacím** webu: Obnovit ze zálohy… → poslední noční otisk → **jen Zobrazit náhled**. Počty zakázek a verze ceníku v náhledu mají odpovídat tomu, co v aplikaci vidíte. Nic se nezapisuje. Automaticky totéž (scénáře B a C) prověřuje při každém testovacím kole `netlify/test_obnova_nanecisto.mjs`."
+          ]
+        },
+        {
+          "typ": "ram",
+          "nadpis": "Data z ostrého do testovacího webu",
+          "odstavce": [
+            "Testovací web se naplní zálohou z ostrého: ostrý → *Stáhnout zálohu*, testovací → *Obnovit ze zálohy…* → stažený soubor → režim přepsat → náhled → obnovit. Náhled upozorní, že záloha je z jiného webu — tady je to v pořádku. Účty a podpisy se ze souboru nepřenesou; v testu si založte vlastní."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kap-a-hlidani",
+      "nadpis": "A9. Hlídání záloh a naplánované úlohy",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Že zálohy vznikají, hlídá několik vrstev. Žádná z nich nepotřebuje, aby si správce něco pamatoval — stačí reagovat na varování."
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "V aplikaci — noční záloha",
+              "vyklad": "Po přihlášení správce a v kartě Online databáze: varování, když poslední noční otisk chybí nebo je **starší než 48 hodin** („Zkontrolujte v Netlify naplánovanou funkci zaloha_nocni…“)."
+            },
+            {
+              "pojem": "V aplikaci — kopie na Disku",
+              "vyklad": "Připomínka jednou týdně (kopie starší než 7 dní), varování při kopii starší než **14 dní** nebo když žádná není."
+            },
+            {
+              "pojem": "V aplikaci — úbytek dat",
+              "vyklad": "Červené varování pojistky retence (kapitola A8) — hláška po přihlášení i v kartě."
+            },
+            {
+              "pojem": "Netlify — plánované funkce",
+              "vyklad": "`zaloha_nocni` (rozvrh `*/15 2-3 * * *`, UTC) — noční otisk, retence a noční úklid (rozpracované otisky starší 24 h, cache Pipedrive, očista analytiky). V seznamu funkcí musí mít značku **Scheduled**."
+            },
+            {
+              "pojem": "Naplánované úlohy koordinace",
+              "vyklad": "Mimo aplikaci běží naplánované kontroly vývojového sezení: **denní e-mail**, když je poslední záloha starší než 5 dní nebo hlásí úbytek, a **ranní kontrola** stavu. Kdo e-mail dostává, v kolik hodin chodí a kde se úlohy vypínají — **ověřit** u koordinace (J. V.)."
+            }
+          ]
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-db-karta",
+          "titulek": "Řádky hlídání v kartě Online databáze: poslední záloha, poslední noční záloha, kopie na Disku."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: ranní kontrola záloh (2 minuty)",
+          "polozky": [
+            {
+              "text": "⚙ → **Databáze**: řádek **Poslední noční záloha** má dnešní datum, žádný řádek nesvítí červeně, kopie na Disku není starší než týden.",
+              "snimek": "a-db-karta",
+              "klik": {
+                "obsahuje": "Poslední noční záloha",
+                "stitek": "dnešní?"
+              }
+            },
+            {
+              "text": "Svítí-li varování o noční záloze: Netlify → projekt → **Logs → Functions → zaloha_nocni** a podle scénáře D v kapitole A8."
+            },
+            {
+              "text": "Jednou týdně: **Zkopírovat zálohu na Disk teď** (stačí, když to aplikace připomene)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kap-a-netlify",
+      "nadpis": "A10. Provoz: weby a Netlify",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Netlify neprovozuje trvale běžící server: při každém nasazení si **sám sestaví web** z GitHubu (`python3 build.py`, výstup `dist`) a adresy `/api/…` obsluhují serverové funkce ze složky `netlify/functions`. Konfigurace je v `netlify.toml` (příkaz sestavení, připnutá verze Node, bezpečnostní hlavičky). Tarif Netlify a limity účtu — **ověřit** v Netlify (Team → Billing)."
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Projekt engscalc",
+              "vyklad": "Ostrý web **https://engscalc.netlify.app**, produkční větev `main`."
+            },
+            {
+              "pojem": "Projekt testengscalc",
+              "vyklad": "Testovací web **https://testengscalc.netlify.app**, produkční větev `test`, vlastní databáze (Blobs jsou vázané na projekt), proměnná `PROSTREDI=test` zapíná pruh TESTOVACÍ PROSTŘEDÍ i v tisku."
+            },
+            {
+              "pojem": "schaftscalc",
+              "vyklad": "Starý web ze sesterského repozitáře — **vypnutý**, do provozu se nepoužívá (stav v Netlify **ověřit**)."
+            },
+            {
+              "pojem": "Kontrola webu",
+              "vyklad": "Adresa `/api/zdravi` musí odpovědět `ok: true` a verzí, kterou hlásí i hlavička aplikace. Verze se při nasazení **přebírá** z `verze.txt`, nezvyšuje se."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Kde co v Netlify je"
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Deploys",
+              "vyklad": "Seznam nasazení s větví a commitem. **Trigger deploy → Deploy project** nasadí znovu (potřeba po změně proměnných)."
+            },
+            {
+              "pojem": "Vrácení nasazení",
+              "vyklad": "Deploys → starší úspěšné nasazení → **Publish deploy**. Web okamžitě běží na starším kódu; data v Blobs se nemění. Další push do větve zase nasadí nový kód — vrácení je dočasné řešení, oprava patří do repozitáře."
+            },
+            {
+              "pojem": "Logs → Functions",
+              "vyklad": "Výpisy serverových funkcí (`zaloha_nocni`, `zaloha_vynuceno`, `obnova`, `program` …) — první místo při chybě serveru."
+            },
+            {
+              "pojem": "Data & storage → Blobs",
+              "vyklad": "Úložiště online databáze (zakázky, ceníky, účty, zálohy `zalohy`). **Ručně nic nemažte ani neměňte** — obnova a retence jdou výhradně přes aplikaci."
+            },
+            {
+              "pojem": "Project configuration → Environment variables",
+              "vyklad": "Proměnné prostředí (níž). Do funkcí se propíšou až **dalším nasazením**."
+            },
+            {
+              "pojem": "Site protection",
+              "vyklad": "Musí být vypnutá — aplikace má vlastní přihlašování (web by jinak odpovídal 401)."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Proměnné prostředí (jen názvy)"
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "TAJEMSTVI_RELACE",
+              "vyklad": "Podpis přihlašovacích relací (náhodný text, aspoň 16 znaků). **Na testovacím webu jiná než na ostrém.** Kdo ji zná, mohl by se vydávat za přihlášeného. Její změna odhlásí všechny."
+            },
+            {
+              "pojem": "ADMIN_EMAIL",
+              "vyklad": "E-mail hlavního správce. Bez něj server zastaví správu účtů."
+            },
+            {
+              "pojem": "ADMIN_INIT_HESLO",
+              "vyklad": "Jen jednorázově: počáteční (náhradní) heslo hlavního správce pro první přihlášení do prázdné databáze (scénáře B a C). **Po přihlášení smazat.**"
+            },
+            {
+              "pojem": "PIPEDRIVE_TOKEN, PIPEDRIVE_DOMENA",
+              "vyklad": "Napojení na Pipedrive (token dává přístup ke všem datům uživatele, žije jen na serveru). Bez nich CRM neběží, zbytek aplikace ano."
+            },
+            {
+              "pojem": "PROSTREDI, PROSTREDI_POPIS",
+              "vyklad": "Jen testovací web: `test` zapne pruh testovacího prostředí; popis je nepovinný text do pruhu."
+            }
+          ]
+        },
+        {
+          "typ": "ram",
+          "nadpis": "Hodnoty proměnných",
+          "odstavce": [
+            "Hodnoty se zadávají **výhradně v Netlify** — nikdy do konverzace, e-mailu, repozitáře ani do téhle příručky. Statická kontrola `nastroje/kontrola_udaju.py` hlídá, aby se tajemství do repozitáře nedostalo."
+          ],
+          "druh": "varovne"
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: vrátit pokažené nasazení",
+          "polozky": [
+            {
+              "text": "Netlify → projekt (engscalc) → **Deploys**."
+            },
+            {
+              "text": "V seznamu najděte poslední **úspěšné** nasazení před chybou (podle času a commitu) a otevřete ho."
+            },
+            {
+              "text": "Klikněte na **Publish deploy** a potvrďte. Ověřte `/api/zdravi` a přihlášení."
+            },
+            {
+              "text": "Dejte vědět vývoji (J. V.) — oprava se udělá v repozitáři a projde testovacím webem; vrácené nasazení přepíše až další nasazení z `main`."
+            }
+          ]
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: změna proměnné prostředí",
+          "polozky": [
+            {
+              "text": "Netlify → projekt → **Project configuration → Environment variables** → proměnnou upravte nebo přidejte."
+            },
+            {
+              "text": "**Deploys → Trigger deploy → Deploy project** — bez nového nasazení se změna do funkcí nepropíše (výjimka: smazání `ADMIN_INIT_HESLO` nasazení nepotřebuje)."
+            },
+            {
+              "text": "Ověřte přihlášení a v Nastavení → Uživatelé řádek o hlavním správci."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kap-a-github",
+      "nadpis": "A11. GitHub, větve, verze a tok změn",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Zdrojový kód je v repozitáři **vendljar/kalkulator-next-gen-engscalc** na GitHubu. Repozitář je veřejný — proto v něm nejsou ceny, hesla ani osobní údaje (ceník je jen zkušební a skutečný žije v online databázi)."
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "main",
+              "vyklad": "Ostrý web. Slučuje se do ní **až po odsouhlasení J. V.**"
+            },
+            {
+              "pojem": "test",
+              "vyklad": "Testovací web. Slučuje se do ní na pokyn J. V."
+            },
+            {
+              "pojem": "test-draft",
+              "vyklad": "Integrační / předávací větev — nové vývojové sezení bez jiného pokynu začíná z ní (`PREDAVKA.md`, `CLAUDE.md`)."
+            },
+            {
+              "pojem": "claude/integrace-*",
+              "vyklad": "Integrace dávek koordinací (slučování, konflikty, celé testovací kolo)."
+            },
+            {
+              "pojem": "claude/… (dávkové větve)",
+              "vyklad": "Každá úprava se dělá promptem v **paralelní větvi** nad commitem, který určí prompt; o sloučení rozhoduje J. V. Sloučené větve se mažou tlačítkem v Actions."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Verze, tagy a releasy"
+        },
+        {
+          "typ": "text",
+          "text": "Verze má tvar **vDEN.MĚSÍC.pořadí** (např. v26.10.12 = 12. verze 26. 10.) a je v souboru `verze.txt`; hlásí ji hlavička aplikace i `/api/zdravi`. Tagy jsou jednoduché (lightweight) ve stejném tvaru a ke každé verzi s tagem patří **release** s popisem změn z CHANGELOG. Z cloudového vývojového sezení tag ani mazání větve nejde (proxy vrací 403) — tag a release vytváří J. V. odkazem, který připraví `python3 nastroje/release_odkaz.py <verze> <plný SHA>` (sám ověří, že tag ještě neexistuje); verze bez tagu vypíše `--chybejici`."
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Tok změn a kdo co schvaluje"
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "1. Dávka",
+              "vyklad": "Vývoj ve větvi `claude/…` s testy; výsledek a `PREDAVKA.md` v té větvi."
+            },
+            {
+              "pojem": "2. Integrace",
+              "vyklad": "Koordinace sloučí dávky do `claude/integrace-*` / `test-draft`, vyřeší konflikty a pustí celé testovací kolo (kapitola A13)."
+            },
+            {
+              "pojem": "3. Test",
+              "vyklad": "Na pokyn J. V. do `test` → nasadí se testovací web; ruční ověření (kapitola A13)."
+            },
+            {
+              "pojem": "4. Ostrý",
+              "vyklad": "Po odsouhlasení J. V. `test` → `main` → nasadí se ostrý web. Po nasazení zkontrolovat migrace ceníku (kapitola A7) a zálohy (A9)."
+            },
+            {
+              "pojem": "Kdo schvaluje",
+              "vyklad": "Všechny posuny do `test` a `main`, tagy, releasy a mazání větví: **J. V.**"
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "GitHub Actions"
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Testy",
+              "vyklad": "Workflow `testy.yml`: **automaticky jen při pushi do `main`**, ručně nad libovolnou větví (Actions → Testy → *Run workflow*). Pustí testovací kolo — sady, statické kontroly a mutace v matrixu (server 10 částí, jádro 3). Celé kolo = všechny joby zelené. Nasazení na Netlify na testech nezávisí — Netlify staví samo."
+            },
+            {
+              "pojem": "Smazat sloučené větve",
+              "vyklad": "Workflow `smazat_vetve.yml`, ručně: GitHub → Actions → *Smazat sloučené větve* → **Run workflow**. Smaže větve celé obsažené v `test`, nikdy `main`, `test`, `test-draft`, `claude/integrace-*` ani větev mladší než `stari_hodin` (výchozí 24 h); vstupy `vynechat` a `jen_vypsat`."
+            }
+          ]
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: smazat sloučené větve",
+          "polozky": [
+            {
+              "text": "GitHub → repozitář → **Actions** → vlevo **Smazat sloučené větve** → **Run workflow**."
+            },
+            {
+              "text": "Poprvé zaškrtněte **Jen vypsat, nic nemazat** a výpis v logu zkontrolujte."
+            },
+            {
+              "text": "Pak spusťte znovu bez zaškrtnutí. Větve, které chcete nechat, napište do pole *vynechat*."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kap-a-disk-pd",
+      "nadpis": "A12. Google Disk a Pipedrive",
+      "bloky": [
+        {
+          "typ": "podnadpis",
+          "text": "Google Disk"
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "_Zaloha Netlify DB",
+              "vyklad": "Kopie nočních záloh (`otisk_RRRR-MM-DD.json.gz`, `posledni_kopie.json`). Aplikace do ní zapisuje přímo z prohlížeče (Chrome / Edge, povolený zápis do složky); maže v ní jen vlastní soubory záloh podle retence."
+            },
+            {
+              "pojem": "Manual",
+              "vyklad": "Hotové příručky (obchodníka, správce) — vyrábějí se mimo repozitář a kam je ukládat, rozhoduje J. V. Příručka nese snímky kalkulace, proto do repozitáře nepatří."
+            },
+            {
+              "pojem": "_DB",
+              "vyklad": "Dřívější složka databáze. Připojená složka má v aplikaci přednost před online databází; dnes se pracuje bez ní (obchodníci ji nemapují)."
+            }
+          ]
+        },
+        {
+          "typ": "text",
+          "text": "Kdo má ke složkám přístup a čí Disk to je — **ověřit** (sdílení složek se nastavuje v Google Disku, ne v aplikaci). Přístup ke složce záloh mějte jen správci: kopie nese celou databázi bez hesel."
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Pipedrive"
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Co funguje",
+              "vyklad": "Kalkulace **čte** stav dealu propojeného se zakázkou (Otevřené / Ztracené / Vyhrané / Smazané) — jen ke čtení, nic neovlivňuje (kapitola 5); seznam a detail obchodních případů přes `/api/pd/*` (strop 30 čerstvých načtení detailu za hodinu na uživatele); mapa polí v Nastavení."
+            },
+            {
+              "pojem": "Co se zatím nezapisuje",
+              "vyklad": "**Do Pipedrive se nic nezapisuje.** Logika zápisu (hodnota dealu, platby, platební kalendář) je připravená, ale nezapojená — čeká na rozhodnutí J. V. a integrátora."
+            },
+            {
+              "pojem": "Kdo smí číst",
+              "vyklad": "Administrátor a role s právem *Čtení obchodních případů z Pipedrive* v matici zobrazení (výchozí: všichni, rozhodnutí J. V. 15. 10. 2026). Stav dealu u zakázky vidí každý, kdo vidí zakázku."
+            },
+            {
+              "pojem": "Napojení",
+              "vyklad": "Proměnné `PIPEDRIVE_TOKEN` a `PIPEDRIVE_DOMENA` v Netlify; token zůstává na serveru. Číslo dealu ke zakázce zadává administrátor."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kap-a-testovani",
+      "nadpis": "A13. Testování před posunem do ostrého",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Automatické testy hlídají výpočet, server, zálohy i příručky; ruční ověření na testovacím webu hlídá to, co automat nevidí (vzhled dokumentů, skutečná data). Obojí patří ke každému posunu `test` → `main`."
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Testovací kolo",
+              "vyklad": "`bash nastroje/testovaci_kolo.sh` — sestavení bez zvýšení verze → `spust_testy.sh --smoke` (všechny sady a harnessy) → mutace jádra → mutace serveru → statické kontroly (verze, CRLF, osobní údaje a tajemství) → souhrn s počty; nenulový kód při selhání. `nastroje/pred_pushem.sh` je obal, CI volá tentýž skript."
+            },
+            {
+              "pojem": "Mutace",
+              "vyklad": "Testy testů: do kódu se schválně vnese chyba a sada ji musí chytit. Celé mutace trvají hodiny — pouštějí se po částech (`KNG_MUTACE_CAST=K/N`) a v Actions v matrixu. Kolo s částí hlásí „ZELENÁ ČÁST“, nikdy „VŠE ZELENÉ“."
+            },
+            {
+              "pojem": "Actions „Testy“",
+              "vyklad": "Totéž kolo na GitHubu (automaticky při pushi do `main`, jinak ručně); výsledek u commitu (zelená / červená fajfka)."
+            }
+          ]
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-prostredi-lista",
+          "titulek": "Pruh testovacího prostředí — svítí na každé záložce testovacího webu i v tisku."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: ruční ověření na testovacím webu před posunem do main",
+          "polozky": [
+            {
+              "text": "Ověřte, že je celé testovací kolo nad větví `test` zelené: buď ho hlásí koordinace, nebo GitHub → Actions → **Testy** → *Run workflow* → větev `test` (všechny joby zelené). Zkontrolujte, že CHANGELOG popisuje, co se mění."
+            },
+            {
+              "text": "Otevřete **testengscalc.netlify.app**, přihlaste se a zkontrolujte verzi v hlavičce a `/api/zdravi` (stejná verze jako v `verze.txt`)."
+            },
+            {
+              "text": "Vyžaduje-li verze migraci ceníku (CHANGELOG), zveřejněte na testu ceník (nebo ho přeneste z ostrého, kapitola A7) a zkontrolujte dialog změn."
+            },
+            {
+              "text": "Otevřete dvě až tři typické zakázky (běžná šachta, zasklení, PROJ) — ceny bez nečekaných skoků, kontroly před nabídkou bez nových hlášek."
+            },
+            {
+              "text": "Vytiskněte nabídku a krycí list / smlouvu do Wordu (česky a jednou cizím jazykem); pruh testovacího prostředí musí být v dokumentu."
+            },
+            {
+              "text": "⚙ → Databáze: *Zálohovat teď* a *Obnovit ze zálohy…* → **jen náhled** — počty sedí."
+            },
+            {
+              "text": "Projděte náhledem pohled obchodníka (kapitola A2) — vidí jen to, co má."
+            },
+            {
+              "text": "Teprve pak J. V. odsouhlasí `test` → `main`. Po nasazení ostrého: `/api/zdravi`, přihlášení, případná migrace ceníku a ráno kontrola noční zálohy."
+            }
+          ]
+        },
+        {
+          "typ": "obrazek",
+          "snimek": "a-db-ukazkove",
+          "titulek": "Testovací web: Založit ukázkové zakázky — šest smyšlených zakázek řady 9xxx pro proklikání."
+        }
+      ]
+    },
+    {
+      "id": "kap-a-potize",
+      "nadpis": "A14. Řešení potíží",
+      "bloky": [
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Nikdo se nemůže přihlásit",
+              "vyklad": "Chybí nebo se změnila `TAJEMSTVI_RELACE` (po změně se všichni přihlašují znovu). Web odpovídá 401 → zapnutá *Site protection* v Netlify. Ověřte `/api/zdravi` a Logs → Functions → `prihlaseni`."
+            },
+            {
+              "pojem": "Správa účtů hlásí „Doplňte proměnnou ADMIN_EMAIL…“",
+              "vyklad": "V Netlify chybí `ADMIN_EMAIL`. Doplňte a nasaďte znovu."
+            },
+            {
+              "pojem": "Kolega zapomněl heslo",
+              "vyklad": "Uživatelé → *Nové heslo…* (kapitola A3). Obnova e-mailem neexistuje."
+            },
+            {
+              "pojem": "Správce zapomněl heslo",
+              "vyklad": "Jiný administrátor mu heslo resetuje (u správcovského účtu se svým heslem). Proměnná `ADMIN_INIT_HESLO` **nepomůže** — založí účet hlavního správce jen tehdy, když v databázi ještě není (scénáře B a C). Hlavní správce bez druhého správce: obraťte se na vývoj (postup ověřit s J. V.) — proto mějte vždy **aspoň dva účty Administrátor**."
+            },
+            {
+              "pojem": "Přihlášení je pomalé nebo hlásí příliš mnoho pokusů",
+              "vyklad": "Brzda proti hádání hesel po opakovaných chybách zpomaluje a dočasně odmítá další pokusy; **správné heslo nikdy neblokuje**. Počkejte a zkuste správné heslo, případně heslo resetujte."
+            },
+            {
+              "pojem": "„Ceník není nahraný a firemní údaje nejsou skutečné“",
+              "vyklad": "Prázdná databáze (nový nebo testovací web): zveřejněte ceník a firemní údaje (kapitoly A7, A4), nebo obnovte zálohu."
+            },
+            {
+              "pojem": "Nabídky vycházejí jinak než včera",
+              "vyklad": "Někdo zveřejnil ceník — Ceník → *Verze ceníku… (historie)* → *Rozdíly*. Zamčené nabídky se nemění nikdy."
+            },
+            {
+              "pojem": "Po nasazení se můstky počítají postaru",
+              "vyklad": "Ceník ještě nebyl po nasazení zveřejněn — zveřejněte ho jednou (migrace, kapitola A7)."
+            },
+            {
+              "pojem": "Varování „noční záloha chybí / je starší než 48 hodin“",
+              "vyklad": "Scénář D v kapitole A8: Logs → Functions → `zaloha_nocni`, značka Scheduled."
+            },
+            {
+              "pojem": "„Zálohu teď pořídit nejde…“",
+              "vyklad": "Ruční záloha jde nejvýš jednou za 10 minut a 20× denně; hláška řekne, kdy znovu. Noční záloha běží dál sama."
+            },
+            {
+              "pojem": "Kopie na Disk nejde uložit",
+              "vyklad": "Prohlížeč bez přístupu ke složkám (jiný než Chrome / Edge) nebo odebrané povolení — při další kopii vyberte složku _Zaloha Netlify DB znovu."
+            },
+            {
+              "pojem": "Mapa polí CRM hlásí nenastavené napojení",
+              "vyklad": "Chybí `PIPEDRIVE_TOKEN` / `PIPEDRIVE_DOMENA`; odmítnutý token hlásí server jako chybu Pipedrive (502)."
+            },
+            {
+              "pojem": "Dokument se nevytiskne",
+              "vyklad": "V přísném režimu šablon chybí zveřejněná šablona (Smlouvy / Šablony). Krátkodobě lze přepnout na měkký režim — tisk z místního souboru se zapíše do zámku varianty."
+            },
+            {
+              "pojem": "Aplikace po nasazení nefunguje",
+              "vyklad": "Vraťte nasazení (kapitola A10) a dejte vědět vývoji."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kap-a-pristupy",
+      "nadpis": "A15. Přístupy a kontakty správce",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Seznam přístupů, které správce potřebuje. **Hesla a tokeny sem nepatří** — drží je každý sám (správce hesel) a předávají se osobně. Kdo konkrétně jaký přístup má, je třeba **ověřit** a vést mimo tuto příručku."
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Aplikace",
+              "vyklad": "Účet s rolí Administrátor na ostrém i testovacím webu (účty jsou na každém webu zvlášť)."
+            },
+            {
+              "pojem": "Netlify",
+              "vyklad": "Člen týmu s přístupem k projektům **engscalc** a **testengscalc** (Deploys, Logs, Blobs, Environment variables). Tarif a fakturace — ověřit."
+            },
+            {
+              "pojem": "GitHub",
+              "vyklad": "Přístup k repozitáři **vendljar/kalkulator-next-gen-engscalc** (Actions, Releases). Slučování do `test` a `main`, tagy a releasy dělá J. V."
+            },
+            {
+              "pojem": "Google Disk",
+              "vyklad": "Zápis do složky **_Zaloha Netlify DB**, čtení složky **Manual**."
+            },
+            {
+              "pojem": "Pipedrive",
+              "vyklad": "Účet, ze kterého je API token v Netlify (osobní předvolby → API); změna tokenu = změna proměnné a nové nasazení."
+            },
+            {
+              "pojem": "Kontakt — vývoj a schvalování",
+              "vyklad": "J. V. (rozhoduje o posunech do test / main, tazích, releasech a o všem, co mění chování aplikace). Vývojové dávky řídí koordinační sezení; pokyny a výsledky jdou přes J. V."
+            },
+            {
+              "pojem": "Kontakt — obchodníci",
+              "vyklad": "Dotazy obchodníků jdou na administrátora (kapitola 32)."
+            }
+          ]
+        },
+        {
+          "typ": "ram",
+          "nadpis": "Dokumenty v repozitáři, které se hodí",
+          "odstavce": [
+            "`NASAZENI_NETLIFY.md` (nasazení a proměnné), `podklady/POSTUP_OBNOVY_ZALOHY.md` (nouzová obnova), `BEZPECNOST_MEZE.md` (bezpečnostní meze a audity), `CHANGELOG.md` (co nového v každé verzi — příručky novinky nepopisují), `CLAUDE.md` a `PREDAVKA.md` (pravidla a stav vývoje), `roadmapa/roadmap.json` (pořadník úkolů)."
+          ]
+        }
+      ]
+    }
+  ]
+}
