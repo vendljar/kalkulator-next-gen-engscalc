@@ -1,0 +1,56 @@
+n	cas_utc	metoda	cesta	kod	bajty	typ	acao	zacatek_tela
+1	20:05:03	GET	/	200	3500543	text/html; charset=UTF-8	0	<!DOCTYPE html> <html lang="cs"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=
+2	20:05:06	GET	/kalkulacka.html	200	3500543	text/html; charset=UTF-8	0	<!DOCTYPE html> <html lang="cs"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=
+3	20:05:07	GET	/kalkulacka_v25.10.1.html	200	3500543	text/html; charset=UTF-8	0	<!DOCTYPE html> <html lang="cs"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=
+4	20:05:09	GET	/api/analytika	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+5	20:05:11	GET	/api/controlling	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+6	20:05:14	GET	/api/controlling/export	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+7	20:05:16	GET	/api/firma	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+8	20:05:18	GET	/api/ja	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+9	20:05:21	GET	/api/obnova	405	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Použijte POST."}
+10	20:05:23	GET	/api/odhlaseni	405	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Použijte POST."}
+11	20:05:25	GET	/api/pd/deal	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+12	20:05:27	GET	/api/pd/dealy	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+13	20:05:30	GET	/api/pd/pole	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+14	20:05:32	GET	/api/pd/stav	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+15	20:05:34	GET	/api/popisy	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+16	20:05:36	GET	/api/prihlaseni	405	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Použijte POST."}
+17	20:05:39	GET	/api/program	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+18	20:05:41	GET	/api/sablony	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+19	20:05:43	GET	/api/schvalovani	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+20	20:05:45	GET	/api/slovnik	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+21	20:05:48	GET	/api/uzivatele	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+22	20:05:50	GET	/api/vypocet	405	68	application/json; charset=utf-8	0	{"ok":false,"chyba":"Použijte POST s tělem { zakazka, program }."}
+23	20:05:52	GET	/api/zakazky	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+24	20:05:55	GET	/api/zakaznici	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+25	20:05:57	GET	/api/zaloha	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+26	20:05:59	GET	/api/zaloha_vynuceno	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+27	20:06:01	GET	/api/zdravi	200	118	application/json; charset=utf-8	0	{"ok":true,"verze":"25.10.1","prostredi":"ostre","popisProstredi":"","cas":"2026-10-27T20:06:02.907Z
+28	20:06:04	GET	/api/zobrazeni	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+29	20:06:06	OPTIONS	/api/zakazky	401	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Nepřihlášen."}
+30	20:06:07	OPTIONS	/api/prihlaseni	405	38	application/json; charset=utf-8	0	{"ok":false,"chyba":"Použijte POST."}
+31	20:06:09	GET	/.netlify/functions/zakazky	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+32	20:06:10	GET	/.netlify/functions/prihlaseni	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+33	20:06:11	GET	/.netlify/functions/ja	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+34	20:06:12	GET	/.netlify/functions/zaloha	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+35	20:06:14	GET	/.netlify/functions/zaloha_vynuceno	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+36	20:06:15	GET	/.netlify/functions/controlling_export	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+37	20:06:16	GET	/.netlify/functions/obnova	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+38	20:06:18	GET	/.netlify/functions/zaloha_nocni	403	0	text/plain; charset=utf-8	0	
+39	20:06:19	GET	/.netlify/functions/neexistuje	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+40	20:06:20	GET	/.git/HEAD	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+41	20:06:21	GET	/.git/config	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+42	20:06:23	GET	/.env	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+43	20:06:24	GET	/package.json	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+44	20:06:25	GET	/netlify.toml	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+45	20:06:27	GET	/PREDAVKA.md	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+46	20:06:28	GET	/podklady/SEC_AUDIT_24_10.md	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+47	20:06:29	GET	/netlify/functions/zaloha.mjs	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+48	20:06:30	GET	/netlify/lib/sdilene.mjs	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+49	20:06:32	GET	/src/engine.js	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+50	20:06:33	GET	/server/server.js	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+51	20:06:34	GET	/nastroje/kontrola_udaju.py	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+52	20:06:36	GET	/index.html.map	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+53	20:06:37	GET	/kalkulacka.html.map	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+54	20:06:38	GET	/_redirects	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con
+55	20:06:40	GET	/verze.txt	404	3449	text/html; charset=utf-8	0	<!DOCTYPE html> <html lang="en">   <head>     <meta charset="utf-8" />     <meta name="viewport" con

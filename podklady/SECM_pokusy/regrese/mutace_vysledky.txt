@@ -1,0 +1,89 @@
+SEC-M regrese — výsledky cílených mutačních běhů nad main efa61c1 (kopie stromu, 27. 10. 2026, 4 paralelní kopie, zatížený kontejner)
+Server: node netlify/mutace.mjs "<filtr>" [--cast K/2]; jádro: node mutace_jadro.mjs "<filtr>"; vlastní: vlastni_mutace.mjs
+
+== netlify/mutace.mjs (filtr: chycené z celkem, čas) ==
+functions/uzivatele: 44 z 44, 36 min
+functions/obnova: 46 z 46, 39 min
+functions/zakazky: 20 z 20, 22 min
+src/zamek.js: 43 z 43, 58 min
+'functions/prihlaseni': 362s 16 z 16
+'functions/odhlaseni': 169s 3 z 3
+'lib/sdilene': 1034s 36 z 36
+'functions/ja.mjs': 139s 2 z 2
+'functions/zaloha': 1764s 24 z 24
+'lib/uklid': 424s 4 z 4
+'functions/pd_': 874s 10 z 10
+'lib/pipedrive': 578s 7 z 7
+'lib/pd_stav': 836s 12 z 12
+'functions/sablony': 385s 10 z 10
+'functions/program': 441s 11 z 11
+'functions/firma': 125s 3 z 3
+'functions/slovnik': 212s 10 z 10
+'functions/popisy': 189s 8 z 8
+'functions/analytika': 195s 8 z 8
+'functions/zobrazeni': 148s 2 z 2
+'functions/zakaznici': 143s 3 z 3
+'functions/schvalovani': 153s 3 z 3
+'functions/vypocet': 129s 2 z 2
+'functions/zdravi': 128s 2 z 2
+functions/controlling: 27 z 27, ~27 min
+lib/zakazka_kontrola --cast 1/2: 41 z 41, 23 min
+lib/zakazka_kontrola --cast 2/2: 33 z 33, 23 min
+lib/zalohovani --cast 1/2: 37 z 37, ~41 min
+lib/zalohovani --cast 2/2: 30 z 30, ~31 min
+SOUČET SERVER: 497 z 497 chycených, 0 nechycených (z 919 mutací sady)
+
+== mutace_jadro.mjs ==
+'ui/common.js': 88s Chycených 12 z 12
+'zamek': 197s Chycených 12 z 12
+'online_ui': 81s Chycených 7 z 7
+'ares_ui': 48s Chycených 3 z 3
+SOUČET JÁDRO: 34 z 34
+
+== vlastní mutace (vlastni_mutace.mjs) nad main ==
+Vlastní mutace bezpečnostních strážců — strom /tmp/claude-0/-home-user-kalkulator-next-gen-engscalc/91e05b1c-9a9e-560e-955c-8ab1304a92e3/scratchpad/regrese_strom_E, mutací 29
+Výchozí stav zelený (244 s).
+R-M1  chycená     cizí profil smí měnit i obchodník  → netlify/test_profil.mjs: 2 selhalo  (106 s)
+R-M2  chycená     cizí profil bez kontroly nastavení hlavního účtu  → netlify/test_prava.mjs: 1 selhalo  (76 s)
+R-M3  chycená     správce si sníží vlastní roli (B15)  → netlify/test_prava.mjs: 14 selhalo  (69 s)
+R-M4  chycená     povýšení na Administrátora bez hesla správce (B77)  → netlify/test_prava.mjs: 2 selhalo  (82 s)
+R-M5  NECHYCENÁ   hlavní účet jde archivovat  (209 s)
+R-M6  chycená     správce smaže sám sebe  → netlify/test_prava.mjs: 1 selhalo  (87 s)
+R-M7  NECHYCENÁ   změna vlastního hesla bez zpoždění brzdy  (202 s)
+R-M8  chycená     přihlášení bez zpoždění brzdy  → netlify/test_prava.mjs: 1 selhalo  (71 s)
+R-M9  NECHYCENÁ   heslo správce bez zpoždění brzdy  (142 s)
+R-M10  chycená     odpovědi API bez nosniff (SEC-I1)  → netlify/test_ok8.mjs: 4 selhalo  (35 s)
+R-M11  chycená     Origin/Host podle X-Forwarded-Host z požadavku (bez Host)  → netlify/test_obnova.mjs: 1 selhalo  (34 s)
+R-M12  chycená     odhlášení přijme Origin null (B78)  → netlify/test_prihlaseni.mjs: 1 selhalo  (84 s)
+R-M13  chycená     obnovu spustí kdokoli přihlášený  → netlify/test_obnova.mjs (kód 1)  (32 s)
+R-M14  chycená     souhrn analytiky vidí kdokoli přihlášený  → netlify/test_funkce.mjs: 1 selhalo  (27 s)
+R-M15  chycená     režim sběru analytiky přepne kdokoli  → netlify/test_funkce.mjs (kód 1)  (31 s)
+R-M16  chycená     kartu zákazníka smaže kdokoli přihlášený  → netlify/test_prava.mjs: 2 selhalo  (71 s)
+R-M17  chycená     matici zobrazení uloží kdokoli přihlášený  → netlify/test_obchodnik.mjs: 1 selhalo  (35 s)
+R-M18  chycená     přehled/vynucený otisk záloh pro kohokoli (varianta role)  → netlify/test_funkce.mjs (kód 1)  (32 s)
+R-M19  chycená     obnovu mapy polí Pipedrive spustí kdokoli  → netlify/test_pipedrive.mjs: 1 selhalo  (58 s)
+R-M20  chycená     matice zobrazení se při uložení neuplatní ani obchodníkovi (B112 na serveru)  → netlify/test_koncova_cena.mjs: 1 selhalo  (30 s)
+R-M21  chycená     token obnovy jiného správce se přijme  → netlify/test_obnova.mjs: 2 selhalo  (37 s)
+R-M22  NECHYCENÁ   dávka obnovy po převzetí jiným správcem pokračuje  (163 s)
+R-M23  chycená     obnova účtů z otisku bez hesla správce  → netlify/test_obnova.mjs: 4 selhalo  (38 s)
+R-M24  NECHYCENÁ   obnova nechá hlavní účet vypnutý  (156 s)
+R-K1  chycená     esc() → identita  → src/test_escape.js: 12 selhalo  (5 s)
+R-K2  chycená     esc() bez apostrofu  → src/test_escape.js: 3 selhalo  (3 s)
+R-K3  chycená     esc() bez uvozovek  → src/test_escape.js: 4 selhalo  (4 s)
+R-K4  chycená     escJs() neescapuje apostrof  → src/test_escape.js (kód 1)  (5 s)
+R-K5  chycená     xmlEsc() bez &lt;  → src/test_docx_preklad.js (kód 1)  (6 s)
+
+Chycených 24 z 29, čas 36 min
+VÝSLEDEK: NECHYCENÉ R-M5, R-M7, R-M9, R-M22, R-M24
+
+== nechycené vlastní mutace nad integrací 3d76572 ==
+Vlastní mutace bezpečnostních strážců — strom /tmp/claude-0/-home-user-kalkulator-next-gen-engscalc/91e05b1c-9a9e-560e-955c-8ab1304a92e3/scratchpad/regrese_int, mutací 5
+Výchozí stav zelený (288 s).
+R-M5  NECHYCENÁ   hlavní účet jde archivovat  (286 s)
+R-M7  NECHYCENÁ   změna vlastního hesla bez zpoždění brzdy  (282 s)
+R-M9  NECHYCENÁ   heslo správce bez zpoždění brzdy  (283 s)
+R-M22  NECHYCENÁ   dávka obnovy po převzetí jiným správcem pokračuje  (260 s)
+R-M24  NECHYCENÁ   obnova nechá hlavní účet vypnutý  (227 s)
+
+Chycených 0 z 5, čas 27 min
+VÝSLEDEK: NECHYCENÉ R-M5, R-M7, R-M9, R-M22, R-M24

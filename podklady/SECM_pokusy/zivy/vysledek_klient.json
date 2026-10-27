@@ -1,0 +1,40 @@
+{
+ "kod": 200,
+ "titulek": "Kalkulátor OCK + PROJ",
+ "csp": [],
+ "verze": "v25.10.1",
+ "skripty_cizi": 0,
+ "ramy": 0,
+ "localStorage": 0,
+ "cookie": "",
+ "autocomplete": [
+  "off",
+  "off",
+  "off",
+  "username",
+  "current-password"
+ ],
+ "pozadavky": [
+  {
+   "cas": "20:08:47",
+   "metoda": "GET",
+   "url": "/"
+  },
+  {
+   "cas": "20:08:48",
+   "metoda": "GET",
+   "url": "/api/zdravi"
+  },
+  {
+   "cas": "20:08:48",
+   "metoda": "GET",
+   "url": "/api/ja"
+  }
+ ],
+ "cizi": [],
+ "selhane": [],
+ "konzole": [
+  "error: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+ ],
+ "chyby": []
+}
