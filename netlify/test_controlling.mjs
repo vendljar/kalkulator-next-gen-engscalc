@@ -226,6 +226,24 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
   test('C3: odmítnutý dotaz se do protokolu nezapíše', prot.o.zaznamy.every(z => z.od <= z.do));
   test('C3: protokol vedoucí nečte (403)', (await get(controllingExport, URL_E + '?protokol=1', cVed)).status === 403);
 
+  /* #540 (rozhodnutí J. V. 27. 10. 2026, otázka 6): protokol exportů jde do
+   * stažené zálohy i otisku (doklad, kdo si vyvezl nákupní ceny), obnova ho
+   * NEPŘEPISUJE. Pojistka: nad 2ad47f4 záloha protokol nenesla (2 FAIL). */
+  {
+    const protDb = await ulz('program').cti('controlling_exporty');
+    const zalP = (await (await get(zaloha, 'http://x/api/zaloha', cAdmin)).json()).zaloha;
+    test('#540: stažená záloha nese protokol exportů controllingu', !!zalP.controllingExporty
+      && JSON.stringify(zalP.controllingExporty) === JSON.stringify(protDb), zalP.controllingExporty && zalP.controllingExporty.zaznamy.length);
+    test('#540: kopie na Disk protokol nese (povolený seznam částí)', KOPIE_DISK_CASTI.includes('controllingExporty'));
+    const jina = kopie(zalP); jina.controllingExporty = { schema: 1, zaznamy: [{ id: 'podvrh0000', kdo: 'podvrh@priklad.cz', kdy: '2000-01-01T00:00:00Z' }] };
+    /* Všechny části kromě zakázek a účtů (sada výš podstrčila nečitelnou zakázku — přestavba rejstříku na ní padá). */
+    const oP = await (await post(obnova, 'http://x/api/obnova', { zdroj: { soubor: jina }, rezim: 'prepsat', potvrzeni: 'OBNOVIT',
+      casti: ['program', 'firma', 'zobrazeni', 'popisy', 'slovnik', 'controlling', 'sablony', 'zakaznici', 'podpisy'] }, cAdmin)).json();
+    test('#540: obnova (přepsat, i část controlling) protokol exportů nepřepíše', oP.ok === true
+      && JSON.stringify(await ulz('program').cti('controlling_exporty')) === JSON.stringify(protDb), oP.chyba || Object.keys(oP.casti || {}));
+    const oN = await post(obnova, 'http://x/api/obnova', { zdroj: { soubor: jina }, rezim: 'prepsat', potvrzeni: 'OBNOVIT', casti: ['controllingExporty'] }, cAdmin);
+    test('#540: protokol není část k obnově (400)', oN.status === 400);
+  }
   /* Strop čtení (dřív 413 nad 600 kandidátů) zrušen v #504 — viz blok #504 níž. */
 
   /* #504 (doplnění J. V. 22. 10.): filtr Stav Pipedrive, výchozí „vyhrané". 0801 má vyhraný
@@ -237,8 +255,12 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     z.pdDealId = '501'; z.pdStav = { status: 'won', nacteno: '2026-10-20T10:00:00.000Z' };
     await sZ.zapis('z/' + soub, z);
     const holy = async (q) => { const r = await get(controllingExport, URL_E + q + '&podle=zamceni', cAdmin); return { st: r.status, o: await r.json() }; };
-    const ePdV = await holy('?od=2026-10-01&do=2026-10-31');
-    test('#504 PD: výchozí filtr = vyhrané — jen 0801, 0804 bez dealu vyřazená jako „bez stavu"',
+    /* #540 (J. V. 27. 10. 2026): výchozí filtr je „Všechny" — „vyhrané" se volí výslovně. */
+    const ePdD = await holy('?od=2026-10-01&do=2026-10-31');
+    test('#540: výchozí filtr stavu = všechny (0801 i 0804, nic nevyřazeno)', ePdD.st === 200 && ePdD.o.filtr.pd === 'vse'
+      && cisla(ePdD.o) === '2026 - OPR - CN - 0801,2026 - OPR - CN - 0804', { c: cisla(ePdD.o), f: ePdD.o.filtr });
+    const ePdV = await holy('?od=2026-10-01&do=2026-10-31&pd=won');
+    test('#504 PD: filtr vyhrané — jen 0801, 0804 bez dealu vyřazená jako „bez stavu"',
       ePdV.st === 200 && cisla(ePdV.o) === '2026 - OPR - CN - 0801' && ePdV.o.filtr.pd === 'won'
       && ePdV.o.vyrazenoPd.bez === 1 && ePdV.o.vyrazenoPd.jiny === 0, { c: cisla(ePdV.o), v: ePdV.o.vyrazenoPd });
     const ePdB = await holy('?od=2026-10-01&do=2026-10-31&pd=bez');
@@ -257,7 +279,7 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
       .find(l => l.nazev === 'Popis').rows;
     const radek = (t) => (popis.find(r => r[0] === t) || [])[1];
     test('#504 PD: filtr a počty vyřazených v protokolu i v listu Popis (stav se z Pipedrive nedotahuje)',
-      pPd[0].pd === 'lost' && pPd[0].vyrazenoPd === 1 && pPd[0].vyrazenoBez === 1 && pPd[3].pd === 'won'
+      pPd[0].pd === 'lost' && pPd[0].vyrazenoPd === 1 && pPd[0].vyrazenoBez === 1 && pPd[3].pd === 'won' && pPd[4].pd === 'vse'
       && /^Vyhrané .*nedotahuje/.test(radek('Stav Pipedrive') || '')
       && radek('Vyřazeno filtrem stavu — jiný stav') === 0 && radek('Vyřazeno filtrem stavu — bez stavu (bez dealu nebo stav neznámý)') === 1,
       { p: pPd[0], st: radek('Stav Pipedrive') });

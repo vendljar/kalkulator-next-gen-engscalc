@@ -261,7 +261,7 @@ function ctrlUiDenLokal(d) {
 function ctrlUiHrom() {
   if (!CTRL_STAV.hrom) {
     const d = new Date();
-    CTRL_STAV.hrom = { od: ctrlUiDenLokal(new Date(d.getFullYear(), d.getMonth(), 1)), do: ctrlUiDenLokal(d), oblast: 'obe', rada: 'obe', podle: 'prodej', pd: 'won', vse: false };
+    CTRL_STAV.hrom = { od: ctrlUiDenLokal(new Date(d.getFullYear(), d.getMonth(), 1)), do: ctrlUiDenLokal(d), oblast: 'obe', rada: 'obe', podle: 'prodej', pd: 'vse', vse: false };   // #540: výchozí „Všechny"
   }
   return CTRL_STAV.hrom;
 }

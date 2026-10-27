@@ -127,7 +127,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* nazvy_souboru.js (#533, 27. 10. 2026): konvence názvů exportovaných
    * souborů — obsah, verze aplikace, dokumenty pro zákazníka bez verze.
    * Hlídá src/test_nazvy_souboru.js. */
-  'nazvy_souboru.js'];
+  'nazvy_souboru.js',
+  /* objednane.js (#540, 27. 10. 2026): náhled zápisu prodeje do Pipedrive
+   * (prodPdZapis). Serverová pravidla Prodáno (prodServer) hlídá netlify/mutace.mjs. */
+  'objednane.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -177,6 +180,8 @@ const PRIORITA = [
   'test_autorstvi.js',
   /* #533 — názvy exportovaných souborů (nazvy_souboru.js, záloha v ui/online_ui.js) */
   'test_nazvy_souboru.js',
+  /* #540 — Prodáno, výchozí filtr, zaokrouhlení, podíly, verze exportu (controlling.js, zamek.js, objednane.js) */
+  'test_controlling_c4.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -205,6 +210,47 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* #540 (27. 10. 2026): kód controllingu podle rozhodnutí J. V. Hlídá src/test_controlling_c4.js. */
+  { nazev: '#540: výchozí filtr stavu Pipedrive zase „vyhrané"', soubor: 'controlling.js',
+    hledej: "  const pd = x.pd == null || x.pd === '' ? 'vse' : x.pd;",
+    nahrad: "  const pd = x.pd == null || x.pd === '' ? 'won' : x.pd;",
+    proc: 'výchozí export by tiše vynechal zakázky bez dealu — deal zadává jen správce (otázka 2)' },
+  { nazev: '#540: podíly skupin bez dorovnání na 100 %', soubor: 'controlling.js',
+    hledej: "      const podily = ctrlPodilyNa100(nZ, celkem);",
+    nahrad: "      const podily = nZ.map(n => celkem ? ctrlZaokr(n / celkem * 100) : 0);",
+    proc: 'součet podílů v Kapitolách by zase dával 100,02 / 99,98 % (nález 4)' },
+  { nazev: '#540: setinu navíc dostane nejmenší zbytek', soubor: 'controlling.js',
+    hledej: ".sort((a, b) => (b.zb - a.zb) || (a.i - b.i))",
+    nahrad: ".sort((a, b) => (a.zb - b.zb) || (a.i - b.i))",
+    proc: 'dorovnání by šlo opačně, než říká metoda největšího zbytku — podíl by se posunul u nesprávné skupiny' },
+  { nazev: '#540: zaokrouhlení na tisíce chybí v souhrnu Kapitol', soubor: 'controlling.js',
+    hledej: "ctrlZaokr((+c.zaokrKc || 0) + zaokrZaklad)",
+    nahrad: "ctrlZaokr(c.zaokrKc)",
+    proc: 'sloupec Zaokrouhlení by zase ukazoval 0 a prodej řádků by nesouhlasil s cenou (nález 1)' },
+  { nazev: '#540: prodej jen z objednaných příplatků (Prodáno se nečte)', soubor: 'controlling.js',
+    hledej: "  if (v) return { varianta: v.id, datum:",
+    nahrad: "  if (false) return { varianta: v.id, datum:",
+    proc: 'prodaná zakázka bez objednaných příplatků by z výchozího exportu vypadla (otázka 1)' },
+  { nazev: '#540: neplatné datum prodeje tiše mimo období', soubor: 'controlling.js',
+    hledej: "  if (prodej && prodej.datum === null) return",
+    nahrad: "  if (false) return",
+    proc: 'zakázka s rozbitým datem prodeje by z exportu zmizela bez hlášky (K6-S6)' },
+  { nazev: '#540: verze struktury exportu zůstane 3', soubor: 'controlling.js',
+    hledej: "const CTRL_EXPORT_VERZE = 4;",
+    nahrad: "const CTRL_EXPORT_VERZE = 3;",
+    proc: 'controlling by nepoznal, že se export změnil (pravidlo otázky 12)' },
+  { nazev: '#540: volné pole krycího listu po Prodáno editovatelné', soubor: 'zamek.js',
+    hledej: "  if (variantaProdana(v)) return 'zmrazeno';",
+    nahrad: "",
+    proc: 'po prodeji by šlo měnit krycí list, ze kterého se připravuje zápis do Pipedrive' },
+  { nazev: '#540: hlavička prodané zakázky se mění', soubor: 'zamek.js',
+    hledej: "sod: zamcene.some(v => !zamekKryciOtevreny(v) || variantaProdana(v)) };   // #540",
+    nahrad: "sod: zamcene.some(v => !zamekKryciOtevreny(v)) };",
+    proc: 'po prodeji by šly přepsat IČO a sídlo zákazníka (server by změnu pustil)' },
+  { nazev: '#540: náhled Pipedrive bez stavu Vyhráno', soubor: 'objednane.js',
+    hledej: "stavDealu: 'won', stavDealuText: 'Vyhráno',",
+    nahrad: "stavDealu: '', stavDealuText: '',",
+    proc: 'připravený zápis by deal na „Vyhráno" nepřepnul' },
   /* #533 (27. 10. 2026): konvence názvů exportovaných souborů. Hlídá src/test_nazvy_souboru.js. */
   { nazev: '#533: ceník varianty se jmenuje jen OCK, i když nese PROJ', soubor: 'nazvy_souboru.js',
     hledej: "obsah: [nazevSoubeh([u.ock !== false && 'OCK', u.proj !== false && 'PROJ'])], pripona: 'xlsx' }),",
@@ -1911,10 +1957,8 @@ const MUTACE = [
     nahrad: "  const podle = x.podle == null || x.podle === '' ? 'zamceni' : x.podle;",
     proc: 'J. V. 22. 10.: výchozí export podle data prodeje „ať je to jistější"' },
   /* #504 doplnění J. V. 22. 10.: filtr Stav Pipedrive v hromadném exportu (výchozí vyhrané). */
-  { nazev: '#504 PD: výchozí stav = všechny', soubor: 'controlling.js',
-    hledej: "  const pd = x.pd == null || x.pd === '' ? 'won' : x.pd;",
-    nahrad: "  const pd = x.pd == null || x.pd === '' ? 'vse' : x.pd;",
-    proc: 'J. V.: „ve výchozí variantě by se mělo pracovat s vyhranými zakázkami"' },
+  /* „#504 PD: výchozí stav = všechny" zrušena v C4 #540 — výchozí je od 27. 10. 2026 právě
+   * „Všechny" (rozhodnutí J. V., otázka 2); opačný směr hlídá mutace „#540: výchozí filtr…". */
   { nazev: '#504 PD: neznámý stav se bere jako zadaný', soubor: 'controlling.js',
     hledej: "  if (!CTRL_FILTR_PD.includes(pd)) return",
     nahrad: "  if (false) return",
@@ -2545,7 +2589,7 @@ const MUTACE = [
     nahrad: "        '', h.pdStavNacteno || '',",
     proc: "controlling by stav dealu v CSV/XLSX nedostal" },
   { nazev: "P1: verze exportu zůstala 2", soubor: "controlling.js",
-    hledej: "const CTRL_EXPORT_VERZE = 3;",
+    hledej: "const CTRL_EXPORT_VERZE = 4;",   // #540: verze 4
     nahrad: "const CTRL_EXPORT_VERZE = 2;",
     proc: "převodník controllingu by nepoznal posunuté sloupce" },
   /* #507 (O-K7, 23. 10. 2026): K7-K1 — tisk během běžícího ukládání. Hlídá

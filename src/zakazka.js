@@ -1657,6 +1657,9 @@ function zakazkaDuplikuj(zak, noveCislo) {
    * administrátor). */
   delete nova.pdDealId;
   delete nova.pdStav;   // stav patří dealu (P1, 22. 10. 2026)
+  /* Prodej patří původní zakázce (#540): kopie není prodaná a stopu nedědí. */
+  delete nova.prodejHistorie;
+  delete nova.prodejOdemknout;
 
   /* Zápisy o jednání patří k původní akci, ne sem. */
   nova.poznamky = [];
@@ -1696,6 +1699,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
     const n = v && typeof v === 'object' ? v : {};
     n.zamek = null;          // nová zakázka nic neodeslala
     delete n.odemceni;       // ani nic neodemykala
+    delete n.prodano;        // ani neprodala (#540)
     delete n.klonZ;          // klon čeho? původní varianta tu není
     delete n.klonZCislo;
     /* KVITANCE „CENY JSOU DOHODNUTÉ" SE NEDĚDÍ (oprava 21. 9. 2026,

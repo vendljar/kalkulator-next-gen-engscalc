@@ -283,3 +283,153 @@ function sodProjKarta() {
     <div class="note sodStav_sodProj" style="margin-top:4px"></div>
     <div class="note sodStav_plnaMoc"></div>`;
 }
+
+/* ---------- PRODÁNO (#540, rozhodnutí J. V. 27. 10. 2026) ----------
+ * Karta na konci krycího listu OCK i PROJ. „Prodáno" u odeslané (zamčené)
+ * varianty zapíše datum prodeje a prodanou variantu (controlling bere prodej
+ * odsud), definitivně zamkne krycí list i hlavičku a připraví zápis do
+ * Pipedrive (deal → Vyhráno + data krycího listu). Napojení na Pipedrive
+ * zatím není (#510) — zápis se jen uloží jako „čeká na odeslání" a karta
+ * ukáže, co by se zapsalo. Odemknout smí vedoucí a administrátor s důvodem.
+ * Pravidla i razítka drží server (src/objednane.js prodServer). */
+function prodUiRole() {
+  return (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja && ONLINE_STAV.ja.role) ? String(ONLINE_STAV.ja.role) : '';
+}
+function prodUiSmiOdemknout() { return PROD_ROLE_ODEMKNOUT.includes(prodUiRole()); }
+function prodUiDatumText(d) {
+  return objDatumPlatne(d) ? d.split('-').reverse().map(x => String(+x)).join('. ') : String(d || '');
+}
+/* Náhled zápisu prodeje (P3 #536): online se ptá suchého běhu
+ * POST /api/pd/nanecisto se stavem „won" — tatáž převodní logika jako
+ * budoucí zápis (pdZamyslenyZapis), nic se neodesílá. Podklad se skládá
+ * za PRODÁVANOU variantu (pdnPodklad bere řídící, proto kopie zakázky).
+ * Připravený zápis se do zakázky NEUKLÁDÁ jako hotové tělo PATCH — server
+ * ho při odeslání (#510) spočítá znovu ze zmrazených dat (klientovi se
+ * nevěří); zakázka nese jen stav „čeká na odeslání". */
+const PROD_UI = { nacita: false, chyba: '', data: null, zak: null, varianta: '' };
+function prodUiPodklad(v) {
+  const kopie = JSON.parse(JSON.stringify(ZAK));
+  (kopie.varianty || []).forEach(x => { x.ridici = !!x && x.id === v.id; });
+  kopie.aktivni = v.id;
+  return pdnPodklad(kopie, typeof JEKLY !== 'undefined' ? JEKLY : null, { stav: 'won' });
+}
+function prodUiNahledSpust() {
+  const v = aktivniVarianta(ZAK);
+  if (PROD_UI.nacita || !v) return Promise.resolve(false);
+  const p = prodUiPodklad(v);
+  if (!p.ok) { PROD_UI.chyba = p.chyba; render(); return Promise.resolve(false); }
+  PROD_UI.nacita = true; PROD_UI.chyba = ''; render();
+  return onlineApi('/api/pd/nanecisto', pdnTelo(p))
+    .then(d => { PROD_UI.data = d; PROD_UI.zak = ZAK; PROD_UI.varianta = v.id; return true; })
+    .catch(e => { PROD_UI.chyba = (e && e.message) || String(e); PROD_UI.data = null; return false; })
+    .then(x => { PROD_UI.nacita = false; render(); return x; });
+}
+function prodUiNahledP3(v, strana) {
+  if (typeof pdnPodklad !== 'function' || typeof pdnUiOnline !== 'function' || !pdnUiOnline()
+      || (typeof pdnUiSmi === 'function' && !pdnUiSmi())) return '';
+  if (PROD_UI.zak !== ZAK || PROD_UI.varianta !== v.id) { PROD_UI.data = null; PROD_UI.chyba = ''; }
+  const d = PROD_UI.data;
+  const btn = `<button class="mini" id="prodNahled_${esc(strana)}" onclick="prodUiNahledSpust()" ${PROD_UI.nacita ? 'disabled' : ''}>
+      ${PROD_UI.nacita ? '⏳ Skládám náhled…' : (d ? 'Spustit znovu' : 'Ukázat, co by se zapsalo (deal → Vyhráno)')}</button>`;
+  const chybaBlok = PROD_UI.chyba ? `<div class="note" style="color:var(--red, #c0392b)">${esc(PROD_UI.chyba)}</div>` : '';
+  const tab = d ? `<div class="note">Režim: ${esc((typeof PDN_REZIM !== 'undefined' && PDN_REZIM[d.rezim]) || d.rezim || '')}.
+      <b>Nic se neodeslalo.</b></div>${typeof pdnUiTabulka === 'function' ? pdnUiTabulka(d, 'prod_' + strana) : ''}` : '';
+  return `<details class="prod-nahled" style="margin-top:6px" open><summary>Co by se zapsalo do Pipedrive</summary>
+    ${chybaBlok}${tab}<div class="btns" style="margin:6px 0">${btn}</div></details>`;
+}
+function prodUiNahledHtml(v, strana) {
+  const p3 = prodUiNahledP3(v, strana);
+  if (p3) return p3;
+  const z = prodPdZapis(ZAK, v, typeof JEKLY !== 'undefined' ? JEKLY : null);
+  if (!z) return '';
+  const kc = n => (typeof fmtKc === 'function') ? fmtKc(n) : (Math.round(n).toLocaleString('cs-CZ') + ' Kč');
+  const radky = [['Deal Pipedrive', z.dealId ? z.dealId : 'zakázka zatím nemá deal id — doplní správce (Nastavení → Controlling)'],
+    ['Stav dealu', z.stavDealuText], ['Prodaná varianta', z.varianta], ['Datum prodeje', prodUiDatumText(z.datumProdeje)]]
+    .concat(z.hodnota.map(h => ['Hodnota ' + h.oblast + ' bez DPH', kc(h.bezDphKc)]));
+  const kryci = z.kryci.map(k => `<div class="note" style="font-weight:600;margin-top:6px">Krycí list ${esc(k.list)} (Backoffice)</div>
+    <table class="tbl" style="font-size:11px">${k.sekce.map(s => `<tr><th colspan="2" style="text-align:left">${esc(s.sekce)}</th></tr>`
+      + s.radky.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')).join('')}</table>`).join('');
+  return `<details class="prod-nahled" style="margin-top:6px"><summary>Co by se zapsalo do Pipedrive</summary>
+    <table class="tbl" style="font-size:11px">${radky.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</table>
+    ${kryci}
+    <div class="note">Převod na pole Pipedrive udělá až zápis po zapnutí napojení; prázdná pole se nezapisují.</div></details>`;
+}
+function prodejKarta(strana) {
+  if (typeof ZAK === 'undefined' || !ZAK) return '';
+  const v = aktivniVarianta(ZAK);
+  if (!v) return '';
+  const p = prodStav(ZAK);
+  const historie = Array.isArray(ZAK.prodejHistorie) ? ZAK.prodejHistorie : [];
+  const stopa = historie.length ? `<details style="margin-top:6px"><summary>Historie prodeje (${historie.length})</summary>
+    <ul class="note">${historie.slice().reverse().map(h => `<li>${h.akce === 'prodano' ? 'Prodáno' : 'Odemčeno'}
+      ${esc(h.cislo || '')} ${h.datum ? '(' + esc(prodUiDatumText(h.datum)) + ')' : ''} — ${esc(h.kdo || '')}, ${esc(String(h.kdy || '').slice(0, 10))}
+      ${h.duvod ? ' — důvod: ' + esc(h.duvod) : ''}</li>`).join('')}</ul></details>` : '';
+  if (p && p.v.id === v.id) {
+    const pd = prodPdStavText(p.prodano) || 'čeká na odeslání';
+    return `<div id="prodejKarta_${esc(strana)}" class="prod-karta">
+      <div><span class="pill" style="background:#86e8ad;color:#0B2E6B">✔ Prodáno ${esc(prodUiDatumText(p.prodano.datum))}</span>
+        <span class="note">${esc(p.prodano.kdo || '')}</span></div>
+      <div class="note">Krycí list i hlavička zakázky jsou <b>definitivně zamčené</b>. Zápis do Pipedrive (deal → Vyhráno
+        a data krycího listu): <b>${esc(pd)}</b> — napojení na Pipedrive zatím není zapnuté, nic se neodeslalo.</div>
+      ${prodUiNahledHtml(v, strana)}
+      ${prodUiSmiOdemknout() ? `<div class="btns" style="margin-top:6px"><button class="mini" onclick="prodejUiOdemkni()">Odemknout prodej</button></div>`
+        : '<div class="note">Odemknout prodej smí vedoucí nebo administrátor.</div>'}
+      ${stopa}</div>`;
+  }
+  const proc = prodNelzeProdat(ZAK, v);
+  const dnes = objDnes();
+  return `<div id="prodejKarta_${esc(strana)}" class="prod-karta">
+    <div class="note">Až zákazník nabídku přijme, stiskněte <b>Prodáno</b>: zapíše se datum prodeje a prodaná varianta
+      (podle nich bere zakázku controlling), krycí list se <b>definitivně zamkne</b> a připraví se zápis do Pipedrive
+      (deal → Vyhráno a data krycího listu). Odemknout smí jen vedoucí nebo administrátor.</div>
+    ${proc ? `<div class="note"><b>${esc(proc)}</b></div>` : ''}
+    <div class="btns" style="margin-top:6px">
+      <label class="note">Datum prodeje <input type="date" id="prodejDatum_${esc(strana)}" value="${esc(dnes)}" max="${esc(dnes)}"${proc ? ' disabled' : ''}></label>
+      <button class="primary" ${proc ? 'disabled title="' + esc(proc) + '"' : ''} onclick="prodejUiProdej('${escJs(strana)}')">Prodáno</button>
+    </div>
+    ${proc ? '' : prodUiNahledHtml(v, strana)}
+    ${stopa}</div>`;
+}
+async function prodejUiProdej(strana) {
+  const v = aktivniVarianta(ZAK);
+  if (typeof nahledStop === 'function' && nahledStop('zápis prodeje')) return;
+  const el = document.getElementById('prodejDatum_' + strana);
+  const datum = el && el.value ? el.value : objDnes();
+  const proc = prodNelzeProdat(ZAK, v);
+  if (proc) { hlaska(proc); return; }
+  if (!await potvrd('Označit variantu ' + variantaCislo(ZAK, v) + ' jako PRODANOU k ' + prodUiDatumText(datum) + '?\n\n'
+    + '– krycí list i hlavička zakázky se definitivně zamknou (odemknout smí jen vedoucí nebo administrátor),\n'
+    + '– controlling vezme zakázku jako prodanou k tomuto datu,\n'
+    + '– připraví se zápis do Pipedrive (deal → Vyhráno a data krycího listu); napojení zatím není zapnuté, '
+    + 'zápis se jen uloží jako „čeká na odeslání".', { nadpis: 'Prodáno' })) return;
+  const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja) ? ONLINE_STAV.ja.email : '';
+  const chyba = prodNastav(ZAK, v, datum, { kdo: ja });
+  if (chyba) { hlaska(chyba); return; }
+  if (typeof onlineZmenaUzivatele === 'function') onlineZmenaUzivatele({});
+  const ok = typeof zakUlozUI === 'function' ? await zakUlozUI() : true;
+  if (ok === false) {
+    delete v.prodano;
+    hlaska('Prodej se neuložil' + (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.hlaska ? ': ' + ONLINE_STAV.hlaska : '.')
+      + '\n\nZakázka zůstává neprodaná.');
+  }
+  render();
+}
+async function prodejUiOdemkni() {
+  const p = prodStav(ZAK);
+  if (!p) return;
+  if (!prodUiSmiOdemknout()) { hlaska('Odemknout prodej smí vedoucí nebo administrátor.'); return; }
+  if (typeof nahledStop === 'function' && nahledStop('odemčení prodeje')) return;
+  const duvod = await dotaz('Odemčení prodeje varianty ' + variantaCislo(ZAK, p.v)
+    + '.\n\nUveďte důvod (uloží se do historie zakázky):', '');
+  if (duvod === null) return;
+  const zaloha = JSON.parse(JSON.stringify(p.prodano));
+  const chyba = prodOdemkni(ZAK, p.v, duvod);
+  if (chyba) { hlaska(chyba); return; }
+  if (typeof onlineZmenaUzivatele === 'function') onlineZmenaUzivatele({});
+  const ok = typeof zakUlozUI === 'function' ? await zakUlozUI() : true;
+  if (ok === false) {
+    p.v.prodano = zaloha; delete ZAK.prodejOdemknout;
+    hlaska('Odemčení prodeje se neuložilo' + (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.hlaska ? ': ' + ONLINE_STAV.hlaska : '.'));
+  }
+  render();
+}

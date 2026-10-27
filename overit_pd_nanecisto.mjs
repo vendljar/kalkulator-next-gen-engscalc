@@ -131,6 +131,28 @@ const dupl = await stranka.evaluate(() => { const ids = [...document.querySelect
   const vse = [...document.querySelectorAll('[id^="pdn"]')].map(e => e.id);
   return vse.filter((x, i) => vse.indexOf(x) !== i); });
 zkus('žádné id karty není v dokumentu dvakrát (oba krycí listy najednou)', dupl.length === 0, dupl.join(', '));
+console.log('\nKarta Prodej (C4 #540): náhled se stavem „won" za prodávanou variantu');
+const prod = await stranka.evaluate(async () => {
+  ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 0902'; ZAK.nazevAkce = 'Zkušební akce C4';
+  const v = aktivniVarianta(ZAK);
+  zamkniVariantu(v, { cislo: variantaCislo(ZAK, v), kdo: 'obchodnik@priklad.cz', typ: 'nabidka' });
+  window.__srv.dotazy = [];
+  prepniTab('kryci'); renderKryci();
+  const tl = document.getElementById('prodNahled_ock');
+  if (!tl) return { tl: false };
+  await prodUiNahledSpust();
+  renderKryci();
+  const d = window.__srv.dotazy[0] || {};
+  return { tl: true, cesty: window.__srv.dotazy.map(x => x.cesta), stav: d.telo && d.telo.stav,
+    cislo: d.telo && d.telo.strany && d.telo.strany.ock && d.telo.strany.ock.hodnoty.cisloCN,
+    tabulka: document.querySelectorAll('#pdnTabulka_prod_ock tbody tr').length,
+    karta: (document.getElementById('prodejKarta_ock') || {}).textContent || '' };
+});
+zkus('karta Prodej má tlačítko náhledu (online, s právem)', prod.tl);
+zkus('náhled jde jen na /api/pd/nanecisto se stavem won a číslem prodávané nabídky', JSON.stringify(prod.cesty) === '["/api/pd/nanecisto"]'
+  && prod.stav === 'won' && prod.cislo === '2026 - OPR - CN - 0902', JSON.stringify(prod));
+zkus('karta Prodej ukáže tabulku zápisu a „Nic se neodeslalo"', prod.tabulka === 3 && /Nic se neodeslalo/.test(prod.karta), String(prod.tabulka));
+
 zkus('stránka bez chyb v konzoli', chyby.length === 0, chyby.join(' | '));
 await prohlizec.close();
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

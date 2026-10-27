@@ -271,7 +271,9 @@ function renderKryci() {
   </div>
   ${typeof sodKarta === 'function'
     ? `<div class="noprint" style="margin-top:14px">${card('Smlouva o dílo (OCK)', sodKarta())}</div>` : ''}
-  ${typeof pdnKarta === 'function' ? pdnKarta('ock') : ''}`;
+  ${typeof pdnKarta === 'function' ? pdnKarta('ock') : ''}
+  ${typeof prodejKarta === 'function'
+    ? `<div class="noprint" style="margin-top:14px">${card('Prodej', prodejKarta('ock'))}</div>` : ''}`;
 }
 
 /* Tisková tlačítka krycího listu (20. 8. 2026, zadání J. V.).

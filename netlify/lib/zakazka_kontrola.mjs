@@ -309,6 +309,14 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       if (h.length) zak.objednaneZmeny = h; else delete zak.objednaneZmeny;
     } else globalThis.objZmenyServer(stara, zak, relace);
   }
+  /* PRODÁNO (#540, rozhodnutí J. V. 27. 10. 2026): prodej zapisuje, kdo smí
+   * ukládat, odemyká jen vedoucí a administrátor s důvodem; razítka, stav
+   * Pipedrive („čeká na odeslání") a stopu v prodejHistorie píše server.
+   * Zmrazení krycího listu prodané varianty hlídá porovnání níž (zamek.js). */
+  if (globalThis.prodServer) {
+    const prod = globalThis.prodServer(stara, zak, relace, { obnova, zeSouboru });
+    if (prod) return odmitni(prod.status, veta(prod.chyba));
+  }
   /* Rozměr šachty, který nedává smysl (B137, 12. 10. 2026) — záporný,
    * nečitelný pro jádro nebo zdvih nad 99 m — nikomu. Nulu a prázdno
    * (rozpracovaná zakázka) odmítne až nový zámek níž. */

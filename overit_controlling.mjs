@@ -257,7 +257,7 @@ zkus('C6: zaškrtnutí zapíše objednané do zakázky (dnešek, jen ten klíč)
 zkus('C6: krycí list i export objednaný příplatek vidí', /^1 – /.test(obj.text) && obj.objednanych >= 1, obj.text);
 zkus('C6: odškrtnutí posledního záznam smaže', obj.poZruseni === null);
 /* #504: výběr Stav Pipedrive má výchozí „Vyhrané"; zakázka harnessu deal nemá, proto „Všechny". */
-zkus('#504: Stav Pipedrive ve výchozím stavu Vyhrané', await stranka.evaluate(() => (document.getElementById('ctrlHromPd') || {}).value) === 'won');
+zkus('#540: Stav Pipedrive ve výchozím stavu Všechny', await stranka.evaluate(() => (document.getElementById('ctrlHromPd') || {}).value) === 'vse');
 zkus('#504: výchozí výběr podle data prodeje', await stranka.evaluate(() => (document.getElementById('ctrlHromPodle') || {}).value) === 'prodej');
 await stranka.evaluate(() => { const v = ridiciVarianta(ZAK); CTRL_STAV.hrom.od = ctrlDenPraha(v.zamek.kdy); CTRL_STAV.hrom.do = CTRL_STAV.hrom.od; render(); });
 await stranka.selectOption('#ctrlHromOblast', 'ock');
@@ -370,6 +370,30 @@ zkus('převzetí změní pracovní kopii a čeká na Uložit (server beze změny
 await stranka.evaluate(() => ctrlUiZahod());
 const zahozeno = await stranka.evaluate(() => CTRL_STAV.data.mapa['C.cisteniKc']);
 zkus('Zahodit změny vrátí uloženou verzi', zahozeno === 'sl-stavebni', zahozeno);
+
+/* #540: karta Prodej na konci krycího listu OCK — Prodáno u odeslané nabídky,
+ * po prodeji štítek, náhled zápisu do Pipedrive, zamčené volné pole a odemčení
+ * jen pro vedoucího / administrátora. */
+const prodej = await stranka.evaluate(() => {
+  zavriNastaveni(); prepniTab('kryci'); render();
+  const v = aktivniVarianta(ZAK);
+  const k = () => document.getElementById('prodejKarta_ock');
+  const tl = () => [...(k() ? k().querySelectorAll('button') : [])].find(b => b.textContent.trim() === 'Prodáno');
+  const pred = { karta: !!k(), tlacitko: !!tl() && !tl().disabled, volne: zamekKryciPoleStav(v, 'kryci', 'sodDatumPodpisu') };
+  ONLINE_STAV.ja = { email: 'obchodnik@priklad.cz', role: 'Obchodník', jmeno: 'O' };
+  prodNastav(ZAK, v, objDnes(), { kdo: 'obchodnik@priklad.cz' }); render();
+  const po = { text: k() ? k().textContent : '', volne: zamekKryciPoleStav(v, 'kryci', 'sodDatumPodpisu') };
+  ONLINE_STAV.ja = { email: 'vedouci@priklad.cz', role: 'Vedoucí', jmeno: 'V' }; render();
+  const ved = k() ? k().textContent : '';
+  delete v.prodano; render();
+  return { pred, po, ved };
+});
+zkus('#540: karta Prodej na konci krycího listu, Prodáno u odeslané nabídky povolené', prodej.pred.karta && prodej.pred.tlacitko
+  && prodej.pred.volne === 'editovatelne', JSON.stringify(prodej.pred));
+zkus('#540: po Prodáno štítek, „čeká na odeslání", náhled Pipedrive, volné pole zamčené, obchodník neodemkne',
+  /✔ Prodáno/.test(prodej.po.text) && /čeká na odeslání/.test(prodej.po.text) && /Co by se zapsalo do Pipedrive/.test(prodej.po.text)
+  && prodej.po.volne === 'zmrazeno' && !/Odemknout prodej(?! smí)/.test(prodej.po.text), prodej.po.text.slice(0, 300));
+zkus('#540: vedoucí má tlačítko Odemknout prodej', /Odemknout prodej(?! smí)/.test(prodej.ved), prodej.ved.slice(0, 200));
 
 zkus('bez chyb v konzoli', chyby.length === 0, chyby.slice(0, 3).join(' | '));
 await prohlizec.close();

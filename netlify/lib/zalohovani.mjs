@@ -58,7 +58,8 @@ async function ctiCele(s, prefix) {
  * nerozešly. */
 export async function zalohaDoplnky() {
   const sProg = await uloziste('program');
-  const [zobrazeni, popisy, slovnik, controlling] = await ctiPoDavkach(sProg, ['zobrazeni', 'popisy', 'slovnik', 'controlling']);
+  const [zobrazeni, popisy, slovnik, controlling, controllingExporty] = await ctiPoDavkach(sProg,
+    ['zobrazeni', 'popisy', 'slovnik', 'controlling', 'controlling_exporty']);
   /* Dodatkové texty položek (22. 9. 2026) leží ve stejném úložišti pod
    * vlastním klíčem. Bez tohohle řádku by je obnova ze zálohy tiše smazala —
    * přesně ta chyba, kvůli které vznikl nález B9 (`popisy` výše).
@@ -78,6 +79,10 @@ export async function zalohaDoplnky() {
            /* Controlling (#447): číselník skupin a mapování — bez něj by obnova
             * vrátila controlling na výchozí rozvržení z kódu. */
            controlling: controlling || null,
+           /* Protokol exportů controllingu (#540, rozhodnutí J. V. 27. 10. 2026):
+            * doklad, kdo si kdy vyvezl nákupní ceny — zálohuje se, obnova ho
+            * NEPŘEPISUJE (není v OBNOVA_CASTI; stopa v databázi zůstává). */
+           controllingExporty: controllingExporty || null,
            zakaznici: Object.keys(zakaznici).length ? zakaznici : null,
            podpisy: Object.keys(podpisy).length ? podpisy : null };
 }
@@ -333,6 +338,7 @@ export const OTISK_SEKCE = [
   { nazev: 'popisy', ul: 'program', klic: 'popisy' },        // dodatkové texty (22. 9. 2026)
   { nazev: 'slovnik', ul: 'program', klic: 'slovnik' },      // zveřejněný slovník (#401)
   { nazev: 'controlling', ul: 'program', klic: 'controlling' }, // #447
+  { nazev: 'controllingExporty', ul: 'program', klic: 'controlling_exporty' }, // #540: protokol exportů, obnova ho nepřepisuje
   { nazev: 'zakazky', ul: 'zakazky', prefix: 'z/' },
   { nazev: 'uzivatele', ul: 'uzivatele', pole: true },       // celé účty včetně otisků hesel; náhrobky (null) se vynechají
   { nazev: 'sablony', ul: 'sablony' },                       // #139, celé úložiště včetně souborů
@@ -1093,7 +1099,7 @@ export function obnovaTokenVyprsel(z, ted) {
  * (= stav 20. 10. 2026); novou část je třeba dopsat sem (test_zalohy N6
  * hlídá, že každá část zálohy je tu, nebo ji test vědomě vynechá). */
 export const KOPIE_DISK_CASTI = ['porizena', 'zdroj', 'kdo', 'program', 'firma', 'rejstrik', 'zakazky', 'uzivatele',
-  'sablony', 'zobrazeni', 'smazani', 'popisy', 'slovnik', 'controlling', 'zakaznici', 'podpisy'];
+  'sablony', 'zobrazeni', 'smazani', 'popisy', 'slovnik', 'controlling', 'controllingExporty', 'zakaznici', 'podpisy'];
 export function otiskProDisk(o) {
   if (!o || typeof o !== 'object') return null;
   const out = {};

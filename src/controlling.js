@@ -574,7 +574,32 @@ function ctrlKatalogNazvy(katalog, cenikProj) {
 /* Verze 3 (P1, 22. 10. 2026): za sloupcem „Pipedrive deal" nové sloupce
  * „Stav Pipedrive" a „Stav Pipedrive načten" (poslední známý stav dealu,
  * jen informace — filtry exportu se nemění). */
-const CTRL_EXPORT_VERZE = 3;
+/* Verze 4 (C4 #540, 27. 10. 2026): prodej = tlačítko „Prodáno" (objednané
+ * příplatky jen doplňují), výchozí filtr stavu Pipedrive „Všechny",
+ * „Zaokrouhlení (Kč)" v souhrnu Kapitol nese i zaokrouhlení základu OCK
+ * nahoru na tisíce, podíly skupin dorovnané na 100 % (největší zbytek).
+ *
+ * PRAVIDLO (rozhodnutí J. V. 27. 10. 2026, otázka 12): verze struktury se
+ * zvyšuje při KAŽDÉ změně exportu — sloupce, listy i výpočet hodnot nebo
+ * výběru — a CTRL_EXPORT_ZMENA (list Popis) řekne, co se změnilo. Test
+ * src/test_controlling_c4.js hlídá, že se verze a popis změny mění spolu. */
+const CTRL_EXPORT_VERZE = 4;
+const CTRL_EXPORT_ZMENA = 'proti verzi 3: prodej podle tlačítka „Prodáno" (objednané příplatky jen doplňují; starší zakázky '
+  + 'jen s objednanými příplatky platí jako prodej dál), výchozí filtr stavu Pipedrive „Všechny", sloupec Zaokrouhlení (Kč) '
+  + 'v souhrnu Kapitol nese i zaokrouhlení základní ceny OCK nahoru na tisíce, podíly skupin v Kapitolách dávají součet 100 %';
+/* PRODEJ ZAKÁZKY PRO CONTROLLING (#540): { varianta, datum, zdroj } | null.
+ * Rozhoduje tlačítko „Prodáno" (prodaná zamčená varianta, `v.prodano`);
+ * zakázka bez něj, ale se záznamem objednaných příplatků (C6, před #540)
+ * platí jako prodej dál — objednané jinak jen doplňují, co zákazník přiobjednal. */
+function ctrlProdej(zak) {
+  const vs = (zak && Array.isArray(zak.varianty)) ? zak.varianty : [];
+  const v = vs.find(x => x && x.prodano && typeof x.prodano === 'object' && !Array.isArray(x.prodano) && x.zamek && x.zamek.zamceno);
+  if (v) return { varianta: v.id, datum: typeof v.prodano.datum === 'string' ? v.prodano.datum : null, zdroj: 'prodano' };
+  const o = zak && zak.objednane;
+  if (o && Array.isArray(o.klice) && o.klice.length)
+    return { varianta: o.varianta, datum: typeof o.datum === 'string' ? o.datum : null, zdroj: 'objednane' };
+  return null;
+}
 function ctrlCenaDilaSod(v) {
   const z = (typeof objSodZaznam === 'function') ? objSodZaznam(v) : null;
   return z && z.bezDphKc !== null && isFinite(+z.bezDphKc) && z.bezDphKc !== '' ? +z.bezDphKc : null;
@@ -606,7 +631,12 @@ function ctrlExportVarianty(zak, v, opts) {
     ctrlRozvrhOck(vOck, { data: o.data, fixes: !!(d.ock && d.ock.fixes), rezervaPriplatkyPct: +z.rezervaPriplatkyPct || 0,
       marze: +((d.cenik && d.cenik.marze) || 0) }).forEach(r => radky.push(r));
     const cena = (typeof cenaNabidkyOck === 'function') ? cenaNabidkyOck(vOck, d.sleva, d.zaokr) : null;
-    strany.push({ oblast: 'ock', cislo: cislo(zak.cislo), naklad: +vOck.souhrn.zakladNaklad || 0, cena });
+    /* #540: zaokrouhlení základu nahoru na tisíce (zakladCena = CEIL, zakladMarze
+     * = cena před CEIL − náklad; engine.js). */
+    const s = vOck.souhrn;
+    const predCeil = (+s.zakladNaklad || 0) + (+s.zakladMarze || 0);
+    strany.push({ oblast: 'ock', cislo: cislo(zak.cislo), naklad: +s.zakladNaklad || 0, cena,
+      zaokrZakladu: isFinite(predCeil) && s.zakladMarze != null ? Math.round(((+s.zakladCena || 0) - predCeil) * 100) / 100 : 0 });
   }
   if (vProj && vProj.souhrn) {
     ctrlRozvrhProj(vProj, { data: o.data }).forEach(r => radky.push(r));
@@ -621,6 +651,7 @@ function ctrlExportVarianty(zak, v, opts) {
   const obj = zak.objednane && Array.isArray(zak.objednane.klice) && zak.objednane.varianta === v.id ? zak.objednane : null;
   if (obj) radky.forEach(r => { if (!r.vZakladu && r.pKey && obj.klice.includes(r.pKey)) r.objednano = true; });
   const razitko = d.cenikRazitko || {};
+  const prodej = ctrlProdej(zak);                    // #540: Prodáno, u starších objednané příplatky
   const hlavicka = {
     nazevAkce: String(zak.nazevAkce || ''), zakaznik: String(zak.objednatel || ''), ico: String(zak.ico || ''),
     datum: (typeof variantaDatum === 'function') ? String(variantaDatum(zak, v) || '') : String(zak.datum || ''),
@@ -631,7 +662,8 @@ function ctrlExportVarianty(zak, v, opts) {
     verzeMapovani: o.verzeMapovani != null ? String(o.verzeMapovani) : 'výchozí',
     pipedrive: String(zak.pdDealId || ''),
     pdStav: pdStavText(zak), pdStavNacteno: pdStavNactenoText(zak),
-    datumProdeje: obj ? String(obj.datum || '') : '',
+    datumProdeje: prodej && prodej.varianta === v.id ? String(prodej.datum || '') : '',
+    prodejZdroj: prodej && prodej.varianta === v.id ? prodej.zdroj : '',
     zmrazeno: !!(zamek.vysledek),
     /* K6-K4 (rozhodnutí J. V. 22. 10. 2026): cena díla z posledního záznamu
      * tisku SoD (Kč bez DPH, jak smlouva odešla) a zda se objednané od tisku
@@ -677,7 +709,7 @@ const CTRL_FILTR_OBLAST = ['obe', 'ock', 'proj'];
 const CTRL_FILTR_RADA = ['obe', 'cr', 'zahr'];
 const CTRL_FILTR_PODLE = ['zamceni', 'prodej'];
 /* #504 (doplnění J. V. 22. 10.): filtr podle posledního známého stavu dealu
- * Pipedrive; 'bez' = bez dealu nebo bez známého stavu. Výchozí = vyhrané. */
+ * Pipedrive; 'bez' = bez dealu nebo bez známého stavu. Výchozí = všechny (#540). */
 const CTRL_FILTR_PD = ['won', 'open', 'lost', 'deleted', 'bez', 'vse'];
 const CTRL_FILTR_PD_TEXT = { won: 'Vyhrané', open: 'Otevřené', lost: 'Ztracené', deleted: 'Smazané', bez: 'Bez stavu', vse: 'Všechny' };
 /* #508: „Celá databáze" — rozsah dnů, do kterého padne každý zámek i prodej
@@ -727,7 +759,9 @@ function ctrlHromadnyFiltr(q) {
    * je od #504 (J. V. 22. 10.: „ať je to jistější") PRODEJ — dřív zamčení. */
   const podle = x.podle == null || x.podle === '' ? 'prodej' : x.podle;
   if (!CTRL_FILTR_PODLE.includes(podle)) return { ok: false, chyba: 'Neznámý výběr (zamceni, prodej).' };
-  const pd = x.pd == null || x.pd === '' ? 'won' : x.pd;
+  /* #540 (rozhodnutí J. V. 27. 10. 2026, otázka 2): výchozí stav dealu je
+   * „Všechny" — deal id zadává jen správce, „vyhráno" zůstává volbou. */
+  const pd = x.pd == null || x.pd === '' ? 'vse' : x.pd;
   if (!CTRL_FILTR_PD.includes(pd)) return { ok: false, chyba: 'Neznámý stav dealu (won, open, lost, deleted, bez, vse).' };
   const filtr = { od, do: d, oblast, rada, podle, pd };
   if (vse) filtr.vse = true;
@@ -765,8 +799,8 @@ function ctrlRejstrikDny(zak) {
     });
     if (zamky.length > 50) return { cist: true };
     let prodej = null;
-    const o = zak.objednane;
-    if (o && Array.isArray(o.klice) && o.klice.length) {
+    const o = ctrlProdej(zak);                       // #540: Prodáno, jinak objednané příplatky
+    if (o) {
       if (typeof o.datum !== 'string') return { cist: true };
       if (o.datum !== '' && !ctrlDatumPlatne(o.datum)) return { cist: true };
       const v = zak.varianty.find(x => x && x.id === o.varianta);
@@ -838,11 +872,13 @@ function ctrlHromadnyVarianta(zak, filtr) {
 }
 function ctrlHromadnyZakazka(zak, filtr, opts) {
   if (!zak || !Array.isArray(zak.varianty) || !zak.varianty.length) return { ok: false, duvod: 'zakázka nemá varianty' };
-  /* C6: podle data prodeje rozhoduje záznam objednaných příplatků — jeho
-   * varianta a datum; zakázka bez prodeje do takového výběru nepatří. */
-  const prodej = filtr.podle === 'prodej'
-    ? (zak.objednane && Array.isArray(zak.objednane.klice) && zak.objednane.klice.length ? zak.objednane : null) : null;
+  /* C6 / #540: podle data prodeje rozhoduje „Prodáno" (jinak u starších
+   * zakázek záznam objednaných příplatků) — varianta a datum; zakázka bez
+   * prodeje do takového výběru nepatří. */
+  const prodej = filtr.podle === 'prodej' ? ctrlProdej(zak) : null;
   if (filtr.podle === 'prodej' && !prodej) return { ok: false, mimo: true, duvod: 'bez prodeje' };
+  /* K6-S6: nečitelné datum prodeje se hlásí mezi přeskočenými, nikdy tiše „mimo období". */
+  if (prodej && prodej.datum === null) return { ok: false, duvod: 'datum prodeje má neplatný tvar' };
   const v = prodej ? zak.varianty.find(x => x && x.id === prodej.varianta) : ctrlHromadnyVarianta(zak, filtr);
   const zamek = v && v.zamek && v.zamek.zamceno ? v.zamek : null;
   if (!zamek) return { ok: false, mimo: true, duvod: 'žádná zamčená varianta' };
@@ -1015,6 +1051,21 @@ function pdStavNactenoText(zak) {
 }
 
 const ctrlZaokr = (x) => Math.round((+x || 0) * 100) / 100;
+/* Podíly částek na celku v % na 2 místa se součtem PŘESNĚ 100 (#540, otázka 5):
+ * metoda největšího zbytku nad setinami procenta — kdo po zaokrouhlení dolů
+ * ztratil nejvíc, dostane setinu navíc. Částky se nemění. Celek 0 = samé
+ * nuly; záporná částka (nečekaná) = obyčejné zaokrouhlení každé zvlášť. */
+function ctrlPodilyNa100(castky, celkem) {
+  const c = (castky || []).map(x => +x || 0);
+  if (!celkem) return c.map(() => 0);
+  if (c.some(x => x < 0) || celkem < 0) return c.map(x => ctrlZaokr(x / celkem * 100));
+  const syrove = c.map(x => x / celkem * 10000);
+  const dolu = syrove.map(x => Math.floor(x + 1e-9));
+  let zbyva = 10000 - dolu.reduce((a, x) => a + x, 0);
+  syrove.map((x, i) => ({ i, zb: x - dolu[i] })).sort((a, b) => (b.zb - a.zb) || (a.i - b.i))
+    .forEach(o => { if (zbyva > 0) { dolu[o.i]++; zbyva--; } });
+  return dolu.map(x => x / 100);
+}
 const CTRL_RADKY_HLAVICKA = ['Číslo nabídky', 'Název akce', 'Zákazník', 'IČO', 'Datum varianty', 'Zamčeno', 'Zamkl',
   'Řada', 'Model výpočtu', 'Verze ceníku', 'Otisk ceníku', 'Verze mapování', 'Pipedrive deal',
   'Stav Pipedrive', 'Stav Pipedrive načten',
@@ -1074,19 +1125,25 @@ function ctrlExportListy(exp, data, opts) {
       const zaklad = e.radky.filter(r => r.oblast === st.oblast && r.vZakladu);
       const prip = e.radky.filter(r => r.oblast === st.oblast && !r.vZakladu);
       const celkem = zaklad.reduce((a, r) => a + r.naklad, 0);
-      ctrlKapitoly(zaklad.concat(prip), { data }).forEach(k => {
+      const kapSt = ctrlKapitoly(zaklad.concat(prip), { data });
+      const nZ = kapSt.map(k => zaklad.filter(r => r.skupina === k.skupina).reduce((a, r) => a + r.naklad, 0));
+      const podily = ctrlPodilyNa100(nZ, celkem);                       // #540: součet přesně 100 %
+      kapSt.forEach((k, i) => {
         const s = sk[k.skupina] || { manVysl: '', ucetNyni: [], ucetBudouci: [] };
-        const nZ = zaklad.filter(r => r.skupina === k.skupina).reduce((a, r) => a + r.naklad, 0);
         const pZ = zaklad.filter(r => r.skupina === k.skupina).reduce((a, r) => a + r.prodej, 0);
         const nP = prip.filter(r => r.skupina === k.skupina).reduce((a, r) => a + r.naklad, 0);
         kap.push([st.cislo, st.oblast.toUpperCase(), k.skupina, k.nazev, s.manVysl || '', (s.ucetNyni || []).join(', '),
           (s.ucetBudouci || []).join(', '), CTRL_TYP_TEXT[s.typ] || '', CTRL_CHOVANI_TEXT[s.chovani] || '',
-          ctrlZaokr(nZ), celkem ? ctrlZaokr(nZ / celkem * 100) : 0, ctrlZaokr(pZ), ctrlZaokr(nP)]);
+          ctrlZaokr(nZ[i]), podily[i], ctrlZaokr(pZ), ctrlZaokr(nP)]);
       });
       const c = st.cena || {};
       const cena = +c.cena || 0;
+      /* #540 (otázka 4): u OCK zaokrouhluje jádro základ nahoru na tisíce dřív,
+       * než ho vidí cena nabídky (engine.js, CEIL(zakladCena, 1000)) — rozdíl
+       * jde do sloupce Zaokrouhlení vedle obchodního zaokrouhlení nabídky. */
+      const zaokrZaklad = st.oblast === 'ock' ? (+st.zaokrZakladu || 0) : 0;
       souhrn.push([st.cislo, st.oblast.toUpperCase(), ctrlZaokr(st.naklad), ctrlZaokr(c.zaklad), ctrlZaokr((+c.slevaPct || 0) * 100),
-        ctrlZaokr(c.slevaKc), ctrlZaokr(c.zaokrKc), ctrlZaokr(cena), ctrlZaokr(cena - st.naklad),
+        ctrlZaokr(c.slevaKc), ctrlZaokr((+c.zaokrKc || 0) + zaokrZaklad), ctrlZaokr(cena), ctrlZaokr(cena - st.naklad),
         cena ? ctrlZaokr((cena - st.naklad) / cena * 100) : 0]);
     });
   });
@@ -1099,12 +1156,13 @@ function ctrlExportListy(exp, data, opts) {
     ['Export předkalkulace', hr ? 'Kalkulátor Next Gen — Nastavení → Controlling (hromadně za období)'
       : 'Kalkulátor Next Gen — Nastavení → Controlling'],
     ['Verze struktury souboru', CTRL_EXPORT_VERZE],
+    ['Změna struktury', CTRL_EXPORT_ZMENA],
     ['Exportováno', hr ? String(o.kdy || prvni.kdy || '') : prvni.kdy],
     ['Exportoval', hr ? String(o.kdo || prvni.kdo || '') : prvni.kdo],
     ['Verze aplikace', hr ? String(o.build || prvni.build || '') : prvni.build],
     ['Verze mapování', hr ? (o.verzeMapovani != null ? String(o.verzeMapovani) : 'výchozí') : prvni.hlavicka.verzeMapovani]];
   if (hr) {
-    popis.push([hr.podle === 'prodej' ? 'Období prodeje (podpisu SoD)' : 'Období zamčení (odeslání)',
+    popis.push([hr.podle === 'prodej' ? 'Období prodeje (Prodáno)' : 'Období zamčení (odeslání)',
       hr.vse ? 'celá databáze — bez omezení obdobím' : String(hr.od) + ' – ' + String(hr.do)]);
     popis.push(['Oblast', { ock: 'jen OCK', proj: 'jen PROJ' }[hr.oblast] || 'OCK i PROJ']);
     popis.push(['Číselná řada', { cr: 'jen ČR', zahr: 'jen zahraničí' }[hr.rada] || 'ČR i zahraničí']);
@@ -1125,15 +1183,18 @@ function ctrlExportListy(exp, data, opts) {
       : 'zámek bez zmrazeného výsledku (nabídka před 15. 9. 2026) — přepočteno dnešním výpočtem']);
   }
   popis.push(['Částky', 'Kč bez DPH (i u zahraniční řady); prodejní cena řádku je před slevou a zaokrouhlením']);
+  popis.push(['Zaokrouhlení (Kč)', 'v souhrnu Kapitol: u OCK zaokrouhlení základní ceny nahoru na tisíce + obchodní zaokrouhlení nabídky, u PROJ obchodní zaokrouhlení']);
+  popis.push(['Podíl na nákladu (%)', 'zaokrouhleno na 2 místa a dorovnáno na součet 100 % (největší zbytek); částky jsou přesné']);
   /* #505: varianty orazítkované online před v22.10.6 verzi ceníku nenesou — zpětně se nedoplňuje. */
   if (exps.some(e => e.hlavicka && e.hlavicka.cenikVerze === ''))
     popis.push(['Verze ceníku', 'prázdná = neznámá (varianta orazítkovaná v online režimu před opravou #505 ve v22.10.6); ceník doloží Otisk ceníku']);
   popis.push(['List Řádky', 'náklady v ceně nabídky a příplatky, které zákazník dodatečně objednal (sloupec Objednáno dodatečně = ano); bez nich součet sloupce Náklad celkem = náklad základní ceny nabídky']);
   const prodane = exps.filter(e => e.hlavicka.datumProdeje);
-  if (!hr && prodane.length) popis.push(['Datum prodeje (objednané příplatky)', prodane[0].hlavicka.datumProdeje]);
+  if (!hr && prodane.length) popis.push([prodane[0].hlavicka.prodejZdroj === 'objednane' ? 'Datum prodeje (objednané příplatky)'
+    : 'Datum prodeje (Prodáno)', prodane[0].hlavicka.datumProdeje]);
   if (!hr && prvni.hlavicka && prvni.hlavicka.cenaDilaSod != null) popis.push(['Cena díla dle SoD (Kč bez DPH)', ctrlZaokr(prvni.hlavicka.cenaDilaSod)]);
   if (!hr && prvni.hlavicka && prvni.hlavicka.objZmenenoPoSod) popis.push(['Objednané změněny po tisku SoD', prvni.hlavicka.objZmenenoPoSod]);
-  if (hr) popis.push(['Zakázek s objednanými příplatky', prodane.length]);
+  if (hr) popis.push(['Zakázek s datem prodeje (Prodáno, u starších objednané příplatky)', prodane.length]);
   popis.push(['List ' + CTRL_LIST_PRIPLATKY, 'příplatky nabídnuté jako volba (mimo cenu nabídky), stejné sloupce jako Řádky']);
   popis.push([]);
   popis.push(['Skupina (id)', 'Skupina', 'Položka v ManVysl', 'Účet Helios nyní', 'Účet Helios budoucí', 'Typ nákladu', 'Chování', 'Oblast']);
@@ -1253,7 +1314,7 @@ if (typeof module !== 'undefined' && module.exports)
     ctrlVychozi, ctrlKliceCeniku, ctrlPlatne, ctrlKlicRadku, ctrlSkupinaKlice, ctrlRozvrhOck, ctrlRozvrhProj,
     ctrlKapitoly, ctrlNezarazene, ctrlKliceKatalogu, ctrlBajty, ctrlDataKontrola, ctrlBezeZmeny,
     ctrlDbNovaVerze, ctrlDbOciste,
-    ctrlOdchylky, CTRL_PSEUDO_POPIS, ctrlPopisKlice, ctrlKatalogNazvy, CTRL_EXPORT_VERZE, ctrlExportVarianty,
+    ctrlOdchylky, CTRL_PSEUDO_POPIS, ctrlPopisKlice, ctrlKatalogNazvy, CTRL_EXPORT_VERZE, CTRL_EXPORT_ZMENA, ctrlExportVarianty, ctrlProdej, ctrlPodilyNa100,
     CTRL_RADKY_HLAVICKA, CTRL_LIST_PRIPLATKY, ctrlExportListy, ctrlCsvBunka, ctrlExportCsv, ctrlVZakladuText, ctrlHromadnyVarianta,
     CTRL_PD_ID_MAX, ctrlPdDealIdNorm, ctrlPdDealKontrola,
     PD_STAVY, PD_STAV_TEXT, pdStavNorm, pdStavKontrola, pdStavZDealu, pdStavText, pdStavNactenoText,

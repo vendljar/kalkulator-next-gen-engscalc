@@ -127,7 +127,7 @@ async function export3() {
   const H = C.CTRL_RADKY_HLAVICKA;
   const iDeal = H.indexOf('Pipedrive deal'), iSt = H.indexOf('Stav Pipedrive'), iNac = H.indexOf('Stav Pipedrive načten');
   test('sloupce „Stav Pipedrive" a „Stav Pipedrive načten" hned za „Pipedrive deal"', iDeal > 0 && iSt === iDeal + 1 && iNac === iDeal + 2, H);
-  test('verze struktury exportu 3', C.CTRL_EXPORT_VERZE === 3);
+  test('verze struktury exportu 4 (#540)', C.CTRL_EXPORT_VERZE === 4);
 
   const zS = kopie(zak); zS.pdDealId = '4711'; zS.pdStav = { status: 'won', nacteno: T };
   const eS = C.ctrlExportVarianty(zS, zS.varianty[0], { jekly: JEKLY });
@@ -137,7 +137,7 @@ async function export3() {
   const radky = L('Řádky').rows.slice(1), volby = L(C.CTRL_LIST_PRIPLATKY).rows.slice(1);
   test('Řádky: každý řádek nese „Vyhrané" a datum načtení', radky.length > 0 && radky.every(r => r[iSt] === 'Vyhrané' && r[iNac] === '2026-10-22'), radky[0]);
   test('Příplatky – volby: týž sloupec', volby.length === 0 || volby.every(r => r[iSt] === 'Vyhrané'));
-  test('Popis: verze struktury 3', (L('Popis').rows.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 3);
+  test('Popis: verze struktury 4 (#540)', (L('Popis').rows.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 4);
   const csv = C.ctrlExportCsv(eS);
   const hl = csv.replace(/^﻿/, '').split('\r\n')[0].split(';');
   test('CSV: hlavička nese oba sloupce', hl[iSt] === '"Stav Pipedrive"' && hl[iNac] === '"Stav Pipedrive načten"', hl.slice(iDeal, iDeal + 3));
@@ -161,8 +161,8 @@ async function export3() {
   /* Filtr hromadného exportu podle stavu je od #504 (doplnění J. V. 22. 10.) parametr `pd`
    * s výchozím „won"; neznámý parametr `stav` filtr dál nezná. */
   const f = C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31', stav: 'lost' });
-  test('filtr hromadného exportu: parametr „stav" nezná, stav Pipedrive je `pd` (výchozí won)', f.ok && !('stav' in f.filtr)
-    && JSON.stringify(Object.keys(f.filtr)) === '["od","do","oblast","rada","podle","pd"]' && f.filtr.pd === 'won', f);
+  test('filtr hromadného exportu: parametr „stav" nezná, stav Pipedrive je `pd` (výchozí vse od #540)', f.ok && !('stav' in f.filtr)
+    && JSON.stringify(Object.keys(f.filtr)) === '["od","do","oblast","rada","podle","pd"]' && f.filtr.pd === 'vse', f);
   ['lost', 'deleted', 'open'].forEach(s => {
     const z = kopie(zak); z.pdDealId = '4711'; z.pdStav = { status: s, nacteno: T };
     const e = C.ctrlExportVarianty(z, z.varianty[0], { jekly: JEKLY });

@@ -1794,6 +1794,62 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
       test('K6-K1: jiný tvar s dvojtečkou (vlastni:x) dál 400', oV2.status === 400 && /klíč/.test(oV2.chyba || ''), oV2);
     }
   }
+  /* C4 #540 (rozhodnutí J. V. 27. 10. 2026): tlačítko „Prodáno". Prodat smí,
+   * kdo smí ukládat (obchodník zakázky, vedoucí, administrátor), jen odeslanou
+   * nabídku; kdo/kdy a stav Pipedrive „čeká" píše server; po Prodáno server
+   * odmítne změnu krycího listu i volných polí; odemknout smí jen vedoucí
+   * a administrátor s důvodem, stopa v prodejHistorie. Pojistka: nad 2ad47f4
+   * (před C4) 6 FAIL (podvržené razítko projde, změna volného pole i hlavičky
+   * po Prodáno projde, prodej nezamčené nabídky projde) a výjimka (prodOdemkni chybí). */
+  {
+    const chyt = p => p.catch(e => ({ status: 500, chyba: e.message }));
+    const r0 = await uloz374(odesliB59(nova374()), cObch);
+    test('#540: příprava — obchodník uloží odeslanou nabídku (200)', r0.status === 200, r0);
+    const nacti = async () => { const g = await nactiB59(r0.soubor); return { g, a: zk.importZakazka(JSON.parse(JSON.stringify(g))) }; };
+    const zapis = async (zmena, c) => { const { g, a } = await nacti(); zmena(a); return chyt(uloz374(a, c, { ocekavaneRazitko: g.uloRazitko })); };
+    const dnes = globalThis.objDnes();
+    const volne = (a, hodnota) => { const d = a.varianty[0].data; d.kryci = Object.assign({ hodnoty: {} }, d.kryci);
+      d.kryci.hodnoty = Object.assign({}, d.kryci.hodnoty, { sodDatumPodpisu: hodnota }); };
+    const v0 = await zapis(a => volne(a, '2026-01-02'), cObch);
+    test('#540: před Prodáno se volné pole krycího listu odeslané nabídky doplní (200)', v0.status === 200, v0);
+    const nez = nova374(); nez.varianty[0].prodano = { datum: dnes };
+    const p0 = await chyt(uloz374(nez, cObch));
+    test('#540: prodej neodeslané (nezamčené) nabídky → 400', p0.status === 400 && /zamčen/.test(p0.chyba || ''), p0);
+    const p1 = await zapis(a => { a.varianty[0].prodano = { datum: dnes, kdo: 'podvrh@priklad.cz', kdy: '2000-01-01', pipedrive: { stav: 'odeslano' } }; }, cObch);
+    const u1 = (await nactiB59(r0.soubor));
+    const pr1 = u1.varianty[0].prodano || {};
+    test('#540: obchodník zakázky prodá (200), kdo/kdy z relace, Pipedrive „čeká na odeslání"', p1.status === 200
+      && pr1.kdo === UCTY['Obchodník'].email && pr1.kdy !== '2000-01-01' && pr1.pipedrive && pr1.pipedrive.stav === 'ceka', { p1, pr1 });
+    test('#540: stopa prodeje v historii zakázky (server)', Array.isArray(u1.prodejHistorie) && u1.prodejHistorie.length === 1
+      && u1.prodejHistorie[0].akce === 'prodano' && u1.prodejHistorie[0].kdo === UCTY['Obchodník'].email, u1.prodejHistorie);
+    const p2 = await zapis(a => volne(a, '2026-01-03'), cAdmin);
+    test('#540: po Prodáno server odmítne změnu volného pole krycího listu — i správci (409)', p2.status === 409, p2);
+    const p3 = await zapis(a => { a.ico = '87654321'; }, cVed);
+    test('#540: po Prodáno se hlavička (IČO) nemění (409)', p3.status === 409, p3);
+    const p4 = await zapis(a => { a.varianty[0].prodano.datum = '2026-01-01'; a.prodejHistorie = []; }, cAdmin);
+    const u4 = await nactiB59(r0.soubor);
+    test('#540: datum ani historii prodeje klient nepřepíše (uloží se uložené)', p4.status === 200
+      && u4.varianty[0].prodano.datum === dnes && u4.prodejHistorie.length === 1, { p4, d: u4.varianty[0].prodano, h: u4.prodejHistorie });
+    const o1 = await zapis(a => { globalThis.prodOdemkni(a, a.varianty[0], 'zákazník chce jinou variantu'); }, cObch);
+    test('#540: obchodník prodej neodemkne (403)', o1.status === 403 && /vedoucí/.test(o1.chyba || ''), o1);
+    const o2 = await zapis(a => { delete a.varianty[0].prodano; }, cVed);
+    test('#540: odemčení bez důvodu → 400', o2.status === 400 && /důvod/.test(o2.chyba || ''), o2);
+    const o3 = await zapis(a => { globalThis.prodOdemkni(a, a.varianty[0], 'zákazník chce jinou variantu'); }, cVed);
+    const u3 = await nactiB59(r0.soubor);
+    const h3 = (u3.prodejHistorie || [])[1] || {};
+    test('#540: vedoucí odemkne s důvodem (200), stopa „odemceno" s důvodem a kdo z relace', o3.status === 200 && !u3.varianty[0].prodano
+      && h3.akce === 'odemceno' && h3.duvod === 'zákazník chce jinou variantu' && h3.kdo === UCTY['Vedoucí'].email && !('prodejOdemknout' in u3), { o3, h: u3.prodejHistorie });
+    const o4 = await zapis(a => volne(a, '2026-01-04'), cObch);
+    test('#540: po odemčení se volné pole zase doplní (200)', o4.status === 200, o4);
+    const o5 = await zapis(a => { a.varianty[0].prodano = { datum: dnes }; }, cVed);
+    const o6 = await zapis(a => { globalThis.prodOdemkni(a, a.varianty[0], 'oprava data prodeje'); }, cAdmin);
+    test('#540: znovu prodáno vedoucím a odemčeno správcem (200, 200), stopa 4 záznamy', o5.status === 200 && o6.status === 200
+      && (await nactiB59(r0.soubor)).prodejHistorie.length === 4, { o5, o6 });
+    const s1 = await zapis(a => { a.varianty[0].prodano = { datum: { toString: 1 } }; }, cAdmin);
+    test('#540: datum prodeje jako objekt → 400, ne 500', s1.status === 400, s1);
+    const s2 = await zapis(a => { a.varianty[0].prodano = { datum: '2999-01-01' }; }, cAdmin);
+    test('#540: datum prodeje v budoucnosti → 400', s2.status === 400, s2);
+  }
   /* D5 (22. 10. 2026, rozhodnutí J. V. k auditu K6): K6-K3 přechodové plechy
    * jen celé, K6-K4 záznam tisku SoD a historie změn po něm drží server,
    * K6-S7 razítko objednaných z obnovy ze souboru jen při shodě s databází.

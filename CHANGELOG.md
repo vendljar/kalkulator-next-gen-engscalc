@@ -8,6 +8,69 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v27.10.6 — C4 #540: kód controllingu podle rozhodnutí J. V. 27. 10. 2026, větev claude/c4-controlling-rozhodnuti
+
+Nad integrací 60f8fd2 (v27.10.2) + C3 #537 (sloučeno). Rozhodnutí J. V. z dialogu nad `podklady/CONTROLLING_ROZHODNUTI.md`
+(oddíl „Rozhodnuto 27. 10. 2026"). Výpočet jádra beze změny; na ostrém webu, Disku ani v Pipedrive nic.
+
+- **Nové — tlačítko Prodáno (otázka 1)** na konci krycího listu OCK i PROJ (karta Prodej): u odeslané (zamčené) varianty
+  zapíše datum prodeje a prodanou variantu (`v.prodano`, v zakázce jen jedna), **definitivně zamkne krycí list** (i volná
+  pole a pole jen pro správce) a hlavičku jako po tisku SoD — hlídá server porovnáním s uloženou verzí; připraví zápis do
+  Pipedrive (deal → Vyhráno, hodnota bez DPH, krycí list Backoffice): bez tokenu jen stav „čeká na odeslání" a náhled
+  „Co by se zapsalo do Pipedrive" — do Pipedrive se nic nevolá (#510). Odemknout smí vedoucí a administrátor s důvodem;
+  razítka, stav Pipedrive a stopu `zak.prodejHistorie` píše server (`prodServer` v `src/objednane.js`, volá
+  `netlify/lib/zakazka_kontrola.mjs`). Potvrzovací dialog. Duplikát zakázky prodej ani stopu nedědí.
+- **Controlling bere prodej z Prodáno** (`ctrlProdej`: hromadný export, rejstřík `ctrlRejstrikDny`, Popis); objednané
+  příplatky jen doplní přiobjednané; starší zakázky jen s objednanými příplatky platí jako prodej dál. Nečitelné datum
+  prodeje jde mezi přeskočené (K6-S6), nikdy tiše „mimo období".
+- **Výchozí filtr stavu Pipedrive hromadného exportu = Všechny** (otázka 2); „Vyhrané" zůstává volbou.
+- **Zaokrouhlení (otázka 4):** sloupec „Zaokrouhlení (Kč)" v souhrnu Kapitol nese u OCK i zaokrouhlení základu nahoru na
+  tisíce (`CEIL` v `src/engine.js`); Řádky beze změny.
+- **Podíly (otázka 5):** podíly skupin v Kapitolách dorovnané na 100 % metodou největšího zbytku (`ctrlPodilyNa100`).
+- **Protokol exportů (otázka 6)** `program/controlling_exporty` je v otisku, ve stažené záloze i v kopii na Disk;
+  obnova ho nepřepisuje (není částí obnovy). Test úplnosti záloh (N4) ho vede jako zálohovaný.
+- **Verze struktury exportu 4 (otázka 12):** zvyšuje se při každé změně exportu (pravidlo u `CTRL_EXPORT_VERZE`);
+  list Popis nově řádek „Změna struktury" a vysvětlení sloupců Zaokrouhlení a Podíl.
+- **Stará ukázka smazána (otázka 11):** `podklady/ukazky/vyrob_controlling_export_v2.js` + `.xlsx`; `.md` odkazuje na
+  `nastroje/ukazka_controlling_export.js`. Nová ukázka `podklady/controlling/UKAZKA_2026-CONTROLLING-EXPORT_v27.10.3.xlsx`
+  (dvě zakázky s Prodáno), šablona podkladů přegenerovaná (verze 4, otázky Q4, Q6–Q8 podle rozhodnutí).
+- **Navázání na P3 #536 (sloučeno do větve):** karta Prodej ukazuje náhled zápisu ze suchého běhu P3
+  (`POST /api/pd/nanecisto` se `stav: 'won'`, podklad za prodávanou variantu, tabulka `pdnUiTabulka`); bez serveru nebo
+  bez práva `crm.pipedrive` zůstává místní shrnutí `prodPdZapis`. Do zakázky se neukládá hotové tělo PATCH — klientovi
+  se nevěří; odeslání (#510) ho spočítá na serveru ze zmrazených dat, zakázka nese jen stav „čeká na odeslání".
+  Harness `overit_pd_nanecisto` +3 (pojistka: s chybou předání strany 3 FAIL).
+- Bez kódu: záloha (otázka 3 — dělá O-T #529; sloučení s WIP O-T bez konfliktu), PROJ skupiny, účty Helios, termín
+  šablony (listopad), sloupec „V nabídce" (nedělá se, #447/3 uzavřen).
+- Testy: nová sada `src/test_controlling_c4.js` 43/0 (pojistka: nad 2ad47f4 9 FAIL; s novým modelem a starým
+  `zamek.js` 5 FAIL), `test_prava` blok #540 (15 kontrol; nad 2ad47f4 6 FAIL + výjimka), `netlify/test_controlling.mjs`
+  #540 (záloha, obnova, výchozí filtr; nad 2ad47f4 4 FAIL), `test_zalohy` N4 (nad 2ad47f4 1 FAIL),
+  `test_ukazka_controlling` +4 (nad 2ad47f4 5 FAIL), `overit_controlling` +4 (karta Prodej). Mutace se značkou [#540].
+
+## Podklady (bez nové verze aplikace) — C3 #537: příprava controllingu, větev claude/c3-controlling-priprava
+
+Nad 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026 — příprava dokončení #500. Kód aplikace beze změny; na ostrém webu,
+Disku ani v Pipedrive nic.
+
+- **Rozhodovací podklad `podklady/CONTROLLING_ROZHODNUTI.md`** — 12 otázek pro dialog (nadpis ≤ 12 znaků, 2–4
+  varianty, doporučení, dopad, odhad). Nálezy (1) zaokrouhlení OCK a (4) podíly Kapitol z ukázky 21. 10. dnešním
+  kódem ověřeny — trvají. Nově: výchozí výběr „podle data prodeje" bere jen zakázky se záznamem objednaných
+  příplatků (prodej bez příplatků z výchozího exportu vypadne); výchozí filtr „vyhráno" potřebuje deal id, které
+  zadává jen správce ručně.
+- **Šablona podkladů pro controlling** `podklady/controlling/SABLONA_PODKLADU_CONTROLLING.xlsx` + `POPIS.md`:
+  Skupiny (budoucí účty Helios), Mapování PROJ (16 klíčů, navržené skupiny), PROJ sazby a hodiny (za roli),
+  převodník CN–projekt, otázky Q1–Q10 k formátu a importu. Struktura z kódu, jen řádky VZOR se smyšlenými hodnotami.
+  Nástroj `nastroje/sablona_podkladu_controlling.py`, test `src/test_sablona_controlling.js` 13/0 (pojistka:
+  nový klíč ceníku PROJ → 1 FAIL; bez šablony 1 FAIL).
+- **Ukázkový export dnešním kódem** `podklady/controlling/UKAZKA_2026-CONTROLLING-EXPORT_v27.10.1.xlsx` (konvence
+  `TYP_rok-OBSAH_verze.přípona`, E1 #533) — 5 smyšlených zakázek, verze struktury 3. Nástroj
+  `nastroje/ukazka_controlling_export.js` (`--json` vypíše i zjištění k #500), test `src/test_ukazka_controlling.js`
+  22/0 (pojistka: výchozí filtr jako ukázka D1 → 2 FAIL, starý tvar slevy → 1 FAIL, bez nástroje 3 FAIL). Stará
+  ukázka D1 (`podklady/ukazky/vyrob_controlling_export_v2.js`) po #504 nic nevyveze — rozhodnutí 11.
+- **Nález B z testu J. V.** (náhled obnovy „Controlling – záloha tuto část nenese"): příčina — bez uloženého
+  záznamu `program/controlling` (výchozí rozvržení z kódu) nese záloha `controlling: null` a obnova část přeskočí
+  (`netlify/lib/zalohovani.mjs:80`, `netlify/functions/obnova.mjs:573`). Ověřeno pokusem, předáno koordinaci pro
+  O-T #529; neopravováno.
+
 ## v27.10.5 — #529 O-T: nálezy J. V. z testu v26.10.12 na testengscalc, větev claude/o-t-test-26-10-12
 
 Nad integrací 95a1356 (= test 2c0d71a + předávka; v26.10.12). Na ostrém webu, Disku ani v Pipedrive nic.
