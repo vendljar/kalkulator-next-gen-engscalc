@@ -9203,8 +9203,8 @@
     "id" : "F"
    }
   ],
-  "build" : "v26.10.7 (engscalc, claude/o3-dorovnani)",
-  "stavKDatu" : "26. 10. 2026"
+  "build" : "v26.10.12 (test = 2c0d71a; main = v25.10.1)",
+  "stavKDatu" : "27. 10. 2026"
  },
  "_comment" : [
   "JEDINÝ ZDROJ PRAVDY pro roadmapu Kalkulátoru Next Gen.",
