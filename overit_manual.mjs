@@ -129,8 +129,9 @@ test('P6: zámek strany — OPR → PROJ vynulovaná, OVP → OCK, obě čísla 
   && /vede OCK/.test(text) && /počítají se obě/.test(text));
 test('P6: upozornění „Zakázka dřív počítala projekci i OCK" u starších zakázek',
   /Zakázka dřív počítala projekci i OCK/.test(text));
-test('P6: zrušené tlačítko pro počítání vyřazené strany se už nenabízí',
-  !/Počítat i tuhle stranu/.test(text) && /zrušené/.test(text));
+/* M9 #534: příručka popisuje stav („vyřazenou stranu počítat nejde"), ne historii („zrušené"). */
+test('P6: tlačítko pro počítání vyřazené strany se nenabízí',
+  !/Počítat i tuhle stranu/.test(text) && /vyřazenou stranu počítat nejde/.test(text));
 test('P6: snímek lišty uzamčené strany (zamek-strany)',
   /Cenovka téhle zakázky vzniká/.test(text) && /Přejít do počítané kalkulace/.test(text));
 test('P2: „Opláštit i prohlubeň" (ne „Prosklít…")',

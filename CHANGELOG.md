@@ -8,6 +8,14 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## Dokumentace (bez nové verze aplikace) — M9 #534: manuály jako souhrn faktů, obsah na jednu stranu, sazba bez děr, větev claude/m9-manualy-fakta
+
+Nad integrací 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026: „odstraň z textu manuálu rozhodnutí a jeho historii … uprav velikost textu v obsahu tak, aby se obsah vešel na jednu stranu … ať zbytečně nevznikají prázdná místa.“ Kód aplikace beze změny.
+
+- **Text = aktuální stav.** Příručka obchodníka, příručka administrátora i manuál výpočtu bez jmen, dat rozhodnutí, „od verze…“, „dříve/nově“, čísel nálezů a roadmapy; dlouhé odstavce jako odrážky, retence záloh jako tabulka Netlify × Disk (ověřeno proti `src/retence_zaloh.js`: 14 dní / 8 týdnů / 6 měsíců, ruční 7 dní, před obnovou se nemaže; Disk 7 dní / 8 týdnů / 6 měsíců). Manuál výpočtu: kapitola 17 „Rozdíly mezi verzemi“ (verze bez kódů a jmen), bez značek „nové / změna“.
+- **Sazba.** Šablona příruček: bloky `odrazky` a `tabulka`; tiskový obsah menším písmem a bez vynuceného zalomení (obsah příručky správce se vešel z 2 stran na 1); snímek v tisku nejvýš ~½ strany; nadpisy drží s textem, celistvý jen rámeček snímku. Manuál výpočtu bez vynucené nové strany před každou kapitolou. PDF: obchodník 94 → 85 stran, správce 134 → 124, výpočet 28 → 21; stran zaplněných pod 50 % (mimo konec kapitoly) 2 / 4 / 0 → 0 / 0 / 0. Měření `manual/mereni_sazby.mjs`.
+- **Test `src/test_manual_fakta.js`** (14 kontrol): zakázané vzory ve všech třech manuálech, sazba šablon, obsah příručky správce na jedné straně A4 (Chromium). Pojistka: nad 62ea0c8 12 FAIL, 2 OK (jen kontroly samotných vzorů); po úpravě 14/0. `test_prirucka_admin.js` zná nové bloky a místo „#354“ hledá „cena můstků podle rozměru“; `overit_manual.mjs` P6 hledá stav („vyřazenou stranu počítat nejde“), ne „zrušené“.
+
 ## v27.10.1 — A1 #530: poznámka o původním autorství v kódu, větev claude/a1-autorstvi
 
 Nad integrací 1820f81 (pokyn J. V. 27. 10. 2026: „stačí pouze v kódu, že jsem původním autorem této aplikace").

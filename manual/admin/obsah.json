@@ -493,7 +493,7 @@
           "polozky": [
             {
               "pojem": "Analytika",
-              "vyklad": "Statistiky užívání: součty za den (nové kalkulace, tisky, přihlášení, chyby v prohlížeči), rozpad po uživatelích od 20. 8. 2026, nejotevíranější záložky a prvky, **čas nad kalkulacemi** (aktivní práce, OCK a PROJ zvlášť — podklad pro sazby, ne hodnocení lidí) a **heat mapa** (přepínač 🔥 v liště, vidí ho jen správce). Informační text pro uživatele o zpracování údajů se doplní po konzultaci s právníkem."
+              "vyklad": "Statistiky užívání: součty za den (nové kalkulace, tisky, přihlášení, chyby v prohlížeči), rozpad po uživatelích, nejotevíranější záložky a prvky, **čas nad kalkulacemi** (aktivní práce, OCK a PROJ zvlášť — podklad pro sazby, ne hodnocení lidí) a **heat mapa** (přepínač 🔥 v liště, vidí ho jen správce). Informační text pro uživatele o zpracování údajů se doplní po konzultaci s právníkem."
             },
             {
               "pojem": "Controlling",
@@ -590,7 +590,7 @@
             },
             {
               "pojem": "Rozpracované nabídky",
-              "vyklad": "Po otevření se **přepočítají samy** (pravidlo 31. 7. 2026). Obchodník při otevření zakázky spočítané podle starší verze uvidí dialog „Ceník se od posledního uložení změnil“ (kapitola 22)."
+              "vyklad": "Po otevření se **přepočítají samy**. Obchodník při otevření zakázky spočítané podle starší verze uvidí dialog „Ceník se od posledního uložení změnil“ (kapitola 22)."
             },
             {
               "pojem": "Odeslané (zamčené) nabídky",
@@ -639,7 +639,7 @@
         },
         {
           "typ": "text",
-          "text": "Když nová verze aplikace přidá do ceníku buňky (naposledy **#354 — cena můstků podle rozměru**: referenční šířka, sazba a hodiny montáže můstků), platí pro **zveřejněný** ceník až po jeho dalším zveřejnění. Zveřejnění starý ceník samo **migruje** (doplní nové buňky výchozími hodnotami a ponechá, co jste vyplnili) a dialog změny je vypíše. **Po nasazení takové verze proto ceník jednou zveřejněte** — do té doby se počítá postaru (u můstků paušálem). Zamčené varianty a ceník zveřejněný před změnou počítají dál postaru. Které verze migraci potřebují, říká CHANGELOG (hledejte „Po nasazení je potřeba ceník jednou zveřejnit“)."
+          "text": "Když nová verze aplikace přidá do ceníku buňky (například **cena můstků podle rozměru**: referenční šířka, sazba a hodiny montáže můstků), platí pro **zveřejněný** ceník až po jeho dalším zveřejnění. Zveřejnění starý ceník samo **migruje** (doplní nové buňky výchozími hodnotami a ponechá, co jste vyplnili) a dialog změny je vypíše. **Po nasazení takové verze proto ceník jednou zveřejněte** — do té doby se počítá postaru (u můstků paušálem). Zamčené varianty a ceník zveřejněný před změnou počítají dál postaru. Které verze migraci potřebují, říká CHANGELOG (hledejte „Po nasazení je potřeba ceník jednou zveřejnit“)."
         },
         {
           "typ": "ram",
@@ -728,31 +728,8 @@
           "typ": "podnadpis",
           "text": "Kolik záloh se drží (retence)"
         },
-        {
-          "typ": "seznam",
-          "polozky": [
-            {
-              "pojem": "Netlify — noční otisky",
-              "vyklad": "posledních **14 dní**; z každého týdne nedělní **8 týdnů**; z každého měsíce první **6 měsíců**."
-            },
-            {
-              "pojem": "Netlify — Zálohovat teď a otisky při přihlášení",
-              "vyklad": "**7 dní**."
-            },
-            {
-              "pojem": "Netlify — otisky před obnovou",
-              "vyklad": "**nikdy** se nemažou samy; ručně je smaže správce s heslem (*Obnovit ze zálohy…* → vybrat otisk → *Smazat tento otisk…*, ne během obnovy)."
-            },
-            {
-              "pojem": "Disk Google — kopie",
-              "vyklad": "posledních **7 dní**; z týdne nedělní **8 týdnů**; z měsíce první **6 měsíců**; maže se jen po úspěšné kopii (smazané leží 30 dní v koši Disku)."
-            },
-            {
-              "pojem": "Vždy",
-              "vyklad": "Nejnovější záloha se nesmaže nikdy. V Netlify se maže jen tehdy, když je na Disku podložená kopie mladší než 7 dní."
-            }
-          ]
-        },
+        {"typ": "tabulka", "zahlavi": ["Záloha", "Netlify", "Disk Google"], "radky": [["noční (denní)", "posledních **14 dní**", "posledních **7 dní**"], ["týdenní — nedělní (chybí-li, nejbližší starší v týdnu)", "**8 týdnů**", "**8 týdnů**"], ["měsíční — první v měsíci", "**6 měsíců**", "**6 měsíců**"], ["*Zálohovat teď* a otisky při přihlášení", "**7 dní**", "—"], ["otisky před obnovou", "**nikdy** samy; ručně je smaže správce s heslem (*Obnovit ze zálohy…* → vybrat otisk → *Smazat tento otisk…*, ne během obnovy)", "—"]]},
+        {"typ": "odrazky", "polozky": ["Nejnovější záloha se nesmaže nikdy.", "V Netlify se maže jen tehdy, když je na Disku podložená kopie mladší než 7 dní.", "Na Disku se maže jen po úspěšné kopii; smazané kopie leží 30 dní v koši Disku."]},
         {
           "typ": "podnadpis",
           "text": "Pojistka úbytku dat"
@@ -883,7 +860,7 @@
             },
             {
               "pojem": "Naplánované úlohy koordinace",
-              "vyklad": "Mimo aplikaci běží naplánované kontroly vývojového sezení: **denní e-mail**, když je poslední záloha starší než 5 dní nebo hlásí úbytek, a **ranní kontrola** stavu. Kdo e-mail dostává, v kolik hodin chodí a kde se úlohy vypínají — **ověřit** u koordinace (J. V.)."
+              "vyklad": "Mimo aplikaci běží naplánované kontroly vývojového sezení: **denní e-mail**, když je poslední záloha starší než 5 dní nebo hlásí úbytek, a **ranní kontrola** stavu. Kdo e-mail dostává, v kolik hodin chodí a kde se úlohy vypínají — **ověřit** u koordinace vývoje."
             }
           ]
         },
@@ -1027,7 +1004,7 @@
               "text": "Klikněte na **Publish deploy** a potvrďte. Ověřte `/api/zdravi` a přihlášení."
             },
             {
-              "text": "Dejte vědět vývoji (J. V.) — oprava se udělá v repozitáři a projde testovacím webem; vrácené nasazení přepíše až další nasazení z `main`."
+              "text": "Dejte vědět vývoji — oprava se udělá v repozitáři a projde testovacím webem; vrácené nasazení přepíše až další nasazení z `main`."
             }
           ]
         },
@@ -1061,15 +1038,15 @@
           "polozky": [
             {
               "pojem": "main",
-              "vyklad": "Ostrý web. Slučuje se do ní **až po odsouhlasení J. V.**"
+              "vyklad": "Ostrý web. Slučuje se do ní **až po odsouhlasení vlastníkem aplikace**."
             },
             {
               "pojem": "test",
-              "vyklad": "Testovací web. Slučuje se do ní na pokyn J. V."
+              "vyklad": "Testovací web. Slučuje se do ní, když to vlastník aplikace schválí."
             },
             {
               "pojem": "test-draft",
-              "vyklad": "Integrační / předávací větev — nové vývojové sezení bez jiného pokynu začíná z ní (`PREDAVKA.md`, `CLAUDE.md`)."
+              "vyklad": "Integrační / předávací větev — nové vývojové sezení začíná z ní (`PREDAVKA.md`, `CLAUDE.md`)."
             },
             {
               "pojem": "claude/integrace-*",
@@ -1077,7 +1054,7 @@
             },
             {
               "pojem": "claude/… (dávkové větve)",
-              "vyklad": "Každá úprava se dělá promptem v **paralelní větvi** nad commitem, který určí prompt; o sloučení rozhoduje J. V. Sloučené větve se mažou tlačítkem v Actions."
+              "vyklad": "Každá úprava se dělá promptem v **paralelní větvi** nad commitem, který určí prompt; o sloučení rozhoduje vlastník aplikace. Sloučené větve se mažou tlačítkem v Actions."
             }
           ]
         },
@@ -1087,7 +1064,7 @@
         },
         {
           "typ": "text",
-          "text": "Verze má tvar **vDEN.MĚSÍC.pořadí** (např. v26.10.12 = 12. verze 26. 10.) a je v souboru `verze.txt`; hlásí ji hlavička aplikace i `/api/zdravi`. Tagy jsou jednoduché (lightweight) ve stejném tvaru a ke každé verzi s tagem patří **release** s popisem změn z CHANGELOG. Z cloudového vývojového sezení tag ani mazání větve nejde (proxy vrací 403) — tag a release vytváří J. V. odkazem, který připraví `python3 nastroje/release_odkaz.py <verze> <plný SHA>` (sám ověří, že tag ještě neexistuje); verze bez tagu vypíše `--chybejici`."
+          "text": "Verze má tvar **vDEN.MĚSÍC.pořadí** (např. v26.10.12 = 12. verze 26. 10.) a je v souboru `verze.txt`; hlásí ji hlavička aplikace i `/api/zdravi`. Tagy jsou jednoduché (lightweight) ve stejném tvaru a ke každé verzi s tagem patří **release** s popisem změn z CHANGELOG. Z cloudového vývojového sezení tag ani mazání větve nejde (proxy vrací 403) — tag a release vytváří vlastník aplikace odkazem, který připraví `python3 nastroje/release_odkaz.py <verze> <plný SHA>` (sám ověří, že tag ještě neexistuje); verze bez tagu vypíše `--chybejici`."
         },
         {
           "typ": "podnadpis",
@@ -1106,15 +1083,15 @@
             },
             {
               "pojem": "3. Test",
-              "vyklad": "Na pokyn J. V. do `test` → nasadí se testovací web; ruční ověření (kapitola A13)."
+              "vyklad": "Po schválení vlastníkem aplikace do `test` → nasadí se testovací web; ruční ověření (kapitola A13)."
             },
             {
               "pojem": "4. Ostrý",
-              "vyklad": "Po odsouhlasení J. V. `test` → `main` → nasadí se ostrý web. Po nasazení zkontrolovat migrace ceníku (kapitola A7) a zálohy (A9)."
+              "vyklad": "Po odsouhlasení vlastníkem aplikace `test` → `main` → nasadí se ostrý web. Po nasazení zkontrolovat migrace ceníku (kapitola A7) a zálohy (A9)."
             },
             {
               "pojem": "Kdo schvaluje",
-              "vyklad": "Všechny posuny do `test` a `main`, tagy, releasy a mazání větví: **J. V.**"
+              "vyklad": "Všechny posuny do `test` a `main`, tagy, releasy a mazání větví: **vlastník aplikace**."
             }
           ]
         },
@@ -1169,7 +1146,7 @@
             },
             {
               "pojem": "Manual",
-              "vyklad": "Hotové příručky (obchodníka, správce) — vyrábějí se mimo repozitář a kam je ukládat, rozhoduje J. V. Příručka nese snímky kalkulace, proto do repozitáře nepatří."
+              "vyklad": "Hotové příručky (obchodníka, správce) — vyrábějí se mimo repozitář a kam je ukládat, určuje vlastník aplikace. Příručka nese snímky kalkulace, proto do repozitáře nepatří."
             },
             {
               "pojem": "_DB",
@@ -1194,11 +1171,11 @@
             },
             {
               "pojem": "Co se zatím nezapisuje",
-              "vyklad": "**Do Pipedrive se nic nezapisuje.** Logika zápisu (hodnota dealu, platby, platební kalendář) je připravená, ale nezapojená — čeká na rozhodnutí J. V. a integrátora."
+              "vyklad": "**Do Pipedrive se nic nezapisuje.** Logika zápisu (hodnota dealu, platby, platební kalendář) je připravená, ale nezapojená — zapne se až po dohodě vlastníka aplikace s integrátorem."
             },
             {
               "pojem": "Kdo smí číst",
-              "vyklad": "Administrátor a role s právem *Čtení obchodních případů z Pipedrive* v matici zobrazení (výchozí: všichni, rozhodnutí J. V. 15. 10. 2026). Stav dealu u zakázky vidí každý, kdo vidí zakázku."
+              "vyklad": "Administrátor a role s právem *Čtení obchodních případů z Pipedrive* v matici zobrazení (výchozí: všichni). Stav dealu u zakázky vidí každý, kdo vidí zakázku."
             },
             {
               "pojem": "Napojení",
@@ -1264,7 +1241,7 @@
               "text": "Projděte náhledem pohled obchodníka (kapitola A2) — vidí jen to, co má."
             },
             {
-              "text": "Teprve pak J. V. odsouhlasí `test` → `main`. Po nasazení ostrého: `/api/zdravi`, přihlášení, případná migrace ceníku a ráno kontrola noční zálohy."
+              "text": "Teprve pak vlastník aplikace odsouhlasí `test` → `main`. Po nasazení ostrého: `/api/zdravi`, přihlášení, případná migrace ceníku a ráno kontrola noční zálohy."
             }
           ]
         },
@@ -1296,7 +1273,7 @@
             },
             {
               "pojem": "Správce zapomněl heslo",
-              "vyklad": "Jiný administrátor mu heslo resetuje (u správcovského účtu se svým heslem). Proměnná `ADMIN_INIT_HESLO` **nepomůže** — založí účet hlavního správce jen tehdy, když v databázi ještě není (scénáře B a C). Hlavní správce bez druhého správce: obraťte se na vývoj (postup ověřit s J. V.) — proto mějte vždy **aspoň dva účty Administrátor**."
+              "vyklad": "Jiný administrátor mu heslo resetuje (u správcovského účtu se svým heslem). Proměnná `ADMIN_INIT_HESLO` **nepomůže** — založí účet hlavního správce jen tehdy, když v databázi ještě není (scénáře B a C). Hlavní správce bez druhého správce: obraťte se na vývoj (postup ověřit s vlastníkem aplikace) — proto mějte vždy **aspoň dva účty Administrátor**."
             },
             {
               "pojem": "Přihlášení je pomalé nebo hlásí příliš mnoho pokusů",
@@ -1363,7 +1340,7 @@
             },
             {
               "pojem": "GitHub",
-              "vyklad": "Přístup k repozitáři **vendljar/kalkulator-next-gen-engscalc** (Actions, Releases). Slučování do `test` a `main`, tagy a releasy dělá J. V."
+              "vyklad": "Přístup k repozitáři **vendljar/kalkulator-next-gen-engscalc** (Actions, Releases). Slučování do `test` a `main`, tagy a releasy dělá vlastník aplikace."
             },
             {
               "pojem": "Google Disk",
@@ -1375,7 +1352,7 @@
             },
             {
               "pojem": "Kontakt — vývoj a schvalování",
-              "vyklad": "J. V. (rozhoduje o posunech do test / main, tazích, releasech a o všem, co mění chování aplikace). Vývojové dávky řídí koordinační sezení; pokyny a výsledky jdou přes J. V."
+              "vyklad": "Vlastník aplikace — rozhoduje o posunech do test / main, tazích, releasech a o všem, co mění chování aplikace. Vývojové dávky řídí koordinační sezení; zadání a výsledky jdou přes vlastníka aplikace."
             },
             {
               "pojem": "Kontakt — obchodníci",
