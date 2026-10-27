@@ -1,0 +1,1894 @@
+{
+ "titul": "Kalkulátor Next Gen — kompletní dokumentace systému",
+ "verze": "Platí pro aplikaci v27.10.1 · sestaveno 27. 10. 2026",
+ "podtitul": "Obsluha · výpočty · provoz systému. Jeden dokument pro správce, nástupce i IT firmu, která má systém převzít.",
+ "uvod": [
+  {
+   "druh": "varovne",
+   "nadpis": "Interní dokument — bez hesel, tokenů a cen",
+   "odstavce": [
+    "Dokument popisuje celý systém Kalkulátor Next Gen: jak se s ním pracuje (část I), jak počítá (část II) a jak se provozuje, zálohuje a předává (část III a přílohy). **Neobsahuje hesla, tokeny ani hodnoty proměnných prostředí** — jen jejich názvy a účel. Hodnoty zná jen ten, kdo je zadal v Netlify.",
+    "Snímky obrazovky jsou z **testovacího prostředí** nad **zkušebním ceníkem**: částky na obrázcích ani v části II **nejsou ceny firmy**, jména lidí a firem jsou vymyšlená. Dokument nese postup výpočtu firmy a vnitřní provoz — neposílejte ho mimo okruh správců a smluvních dodavatelů.",
+    "Kde dokument popisuje věc mimo aplikaci, kterou nelze ověřit z kódu (tarif Netlify, kdo konkrétně má jaký přístup), stojí u ní **„ověřit“**."
+   ]
+  },
+  {
+   "nadpis": "Jak je dokument složený",
+   "odstavce": [
+    "**Část I — Obsluha:** kapitoly **A1–A15** popisují práci správce v aplikaci, kapitoly **1–32** práci obchodníka (postupy krok za krokem se snímky). Odkazy typu „kapitola 22“ nebo „kapitola A8“ míří sem.",
+    "**Část II — Výpočty:** kapitoly **V1–V16** vysvětlují, jak kalkulačka počítá ocelovou konstrukci šachty (OCK), na vzorové šachtě s čísly přímo z výpočetního jádra.",
+    "**Část III — Provoz systému:** kapitoly **P1–P13** a **přílohy 1–4** — architektura, prostředí, přístupy, data, zálohy, nasazení, testy, bezpečnost, dohled, havarijní postupy a předání systému."
+   ]
+  }
+ ],
+ "kapitoly": [
+  {
+   "id": "kap-p-prehled",
+   "nadpis": "P1. Přehled systému a schéma",
+   "bloky": [
+    {
+     "typ": "text",
+     "text": "Kalkulátor Next Gen je webová aplikace firmy pro ocenění **ocelových konstrukcí výtahových šachet (OCK)** a **projekčních prací (PROJ)**: kalkulace, cenové nabídky, krycí listy zakázek, smlouvy o dílo a plné moci, databáze zákazníků a přehled nabídek. Pracuje se v ní v prohlížeči; instalace na počítač není potřeba."
+    },
+    {
+     "typ": "svg",
+     "titulek": "Schéma systému: kudy tečou data",
+     "svg": "<svg viewBox='0 0 700 330' xmlns='http://www.w3.org/2000/svg' font-family='Segoe UI, Arial, sans-serif' font-size='11'><defs><marker id='sp' viewBox='0 0 10 10' refX='9' refY='5' markerWidth='7' markerHeight='7' orient='auto'><path d='M0,0 L10,5 L0,10 z' fill='#0b2e6b'/></marker></defs><g fill='#eff4ff' stroke='#1f5eff' stroke-width='1.4'><rect x='10' y='14' width='210' height='70' rx='8'/><rect x='255' y='14' width='200' height='70' rx='8'/><rect x='255' y='124' width='200' height='76' rx='8'/><rect x='255' y='240' width='200' height='76' rx='8'/></g><g fill='#f7f9fc' stroke='#5b6673' stroke-width='1.2' stroke-dasharray='4 3'><rect x='490' y='14' width='200' height='70' rx='8'/><rect x='490' y='124' width='200' height='76' rx='8'/><rect x='10' y='124' width='210' height='76' rx='8'/><rect x='10' y='240' width='210' height='76' rx='8'/></g><g fill='#1a2332'><text x='22' y='34' font-weight='700'>Uživatel — prohlížeč</text><text x='22' y='52'>aplikace = jeden soubor HTML</text><text x='22' y='68'>(Chrome / Edge doporučeny)</text><text x='267' y='34' font-weight='700'>Netlify — statický web</text><text x='267' y='52'>engscalc / testengscalc</text><text x='267' y='68'>obsah složky dist/</text><text x='267' y='144' font-weight='700'>Netlify Functions /api/*</text><text x='267' y='162'>serverová logika (Node 22)</text><text x='267' y='178'>přihlášení, role, kontroly</text><text x='267' y='194'>+ noční záloha zaloha_nocni</text><text x='267' y='260' font-weight='700'>Netlify Blobs</text><text x='267' y='278'>online databáze: zakázky, ceník,</text><text x='267' y='294'>účty, šablony, zálohy</text><text x='502' y='34' font-weight='700'>GitHub</text><text x='502' y='52'>repozitář, větve main / test</text><text x='502' y='68'>Actions (testy, úklid větví)</text><text x='502' y='144' font-weight='700'>Pipedrive (CRM)</text><text x='502' y='162'>jen čtení obchodních případů</text><text x='502' y='178'>token jen na serveru</text><text x='22' y='144' font-weight='700'>ARES</text><text x='22' y='162'>údaje firem podle IČO</text><text x='22' y='178'>volá přímo prohlížeč</text><text x='22' y='260' font-weight='700'>Google Disk</text><text x='22' y='278'>složka _Zaloha Netlify DB</text><text x='22' y='294'>kopie záloh z prohlížeče</text></g><g stroke='#0b2e6b' stroke-width='1.6' fill='none' marker-end='url(#sp)'><path d='M220,49 L253,49'/><path d='M355,84 L355,122'/><path d='M355,200 L355,238'/><path d='M455,162 L488,162'/><path d='M490,49 L457,49'/><path d='M115,84 L115,122'/><path d='M10,70 L4,70 L4,278 L8,278'/></g><g fill='#5b6673' font-size='9.5'><text x='222' y='42'>HTTPS</text><text x='362' y='106'>/api/…</text><text x='362' y='222'>čtení / zápis</text><text x='460' y='154'>API</text><text x='458' y='42'>build</text></g></svg>"
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Klient (prohlížeč)",
+       "vyklad": "Celá aplikace je **jeden soubor HTML** (`dist/kalkulacka.html`, kopie `index.html`), který sestavuje `python3 build.py` ze zdrojů ve složce `src/`. Obsahuje výpočetní jádro OCK a PROJ, uživatelské rozhraní i generátor dokumentů Word. Žádné cizí knihovny z internetu (CDN) nenačítá."
+      },
+      {
+       "pojem": "Statický web",
+       "vyklad": "Netlify při každém nasazení sám sestaví web z GitHubu (příkaz `python3 build.py`, výstup `dist`) a soubor rozdává přes HTTPS. Konfigurace je v `netlify.toml`: příkaz sestavení, připnutá verze Node pro funkce a bezpečnostní hlavičky."
+      },
+      {
+       "pojem": "Serverové funkce",
+       "vyklad": "Adresy `/api/…` obsluhují **Netlify Functions** ve složce `netlify/functions` (společný kód v `netlify/lib`). Server ověřuje přihlášení a roli, kontroluje data od klienta, počítá kontrolní výpočty a zapisuje do databáze. Jediná plánovaná funkce je `zaloha_nocni` (noční záloha)."
+      },
+      {
+       "pojem": "Databáze",
+       "vyklad": "**Netlify Blobs** — úložiště klíč–hodnota vázané na projekt Netlify. Ostrý a testovací web mají každý svoje. Obsah popisuje kapitola P5, zálohy kapitola P6."
+      },
+      {
+       "pojem": "Externí služby",
+       "vyklad": "**ARES** (veřejný registr firem, volá ho přímo prohlížeč — jediná cizí adresa povolená v CSP), **Pipedrive** (CRM, jen čtení přes serverové funkce), **Google Disk** (kopie záloh, zapisuje prohlížeč do vybrané složky). Podrobnosti v kapitole P12."
+      },
+      {
+       "pojem": "Místní vývojový server",
+       "vyklad": "`server/server.js` spouští aplikaci i serverové funkce na vlastním počítači nad paměťovým úložištěm (jen adresa 127.0.0.1). Slouží vývoji a testům, ne provozu."
+      }
+     ]
+    },
+    {
+     "typ": "podnadpis",
+     "text": "Zdrojový kód — kde co je"
+    },
+    {
+     "typ": "tabulka",
+     "hlavicka": [
+      "Složka / soubor",
+      "Obsah"
+     ],
+     "radky": [
+      [
+       "src/",
+       "výpočetní jádro (`engine.js` OCK, `engine_proj.js` PROJ), ceník, dokumenty, kontroly; `src/ui/` obrazovky; `src/test_*.js` testové sady"
+      ],
+      [
+       "netlify/functions/, netlify/lib/",
+       "serverové funkce `/api/*`, sdílený kód (přihlášení, relace, úložiště, zálohy, Pipedrive); `netlify/test_*.mjs` serverové sady, `netlify/mutace.mjs` mutace serveru"
+      ],
+      [
+       "build.py, verze.txt",
+       "sestavení jednoho souboru HTML; číslo verze aplikace"
+      ],
+      [
+       "netlify.toml",
+       "konfigurace Netlify: sestavení, Node, hlavičky (CSP, HSTS…)"
+      ],
+      [
+       "nastroje/",
+       "testovací kolo, kontrola osobních údajů a tajemství, odkazy na release, úklid větví"
+      ],
+      [
+       "manual/, manual_vypocet/, manual/kompletni/",
+       "zdroje příruček a tohoto dokumentu (hotové výstupy se do repozitáře neukládají)"
+      ],
+      [
+       "roadmapa/",
+       "pořadník úkolů (`roadmap.json`) a generátor stránky roadmapy"
+      ],
+      [
+       "podklady/",
+       "audity, rozbory, postupy (např. `POSTUP_OBNOVY_ZALOHY.md`)"
+      ],
+      [
+       ".github/workflows/",
+       "GitHub Actions: `testy.yml` (testy), `smazat_vetve.yml` (úklid sloučených větví)"
+      ],
+      [
+       "CHANGELOG.md, PREDAVKA.md, CLAUDE.md",
+       "změny po verzích; stav rozpracované práce; pravidla pro vývojová sezení"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-prostredi",
+   "nadpis": "P2. Prostředí a adresy",
+   "bloky": [
+    {
+     "typ": "tabulka",
+     "hlavicka": [
+      "Prostředí",
+      "Adresa",
+      "Větev",
+      "Databáze",
+      "Kdo v něm pracuje"
+     ],
+     "radky": [
+      [
+       "Ostrý",
+       "https://engscalc.netlify.app",
+       "`main`",
+       "vlastní Netlify Blobs — skutečné zakázky, ceník, účty",
+       "obchodníci, vedoucí, správci"
+      ],
+      [
+       "Testovací",
+       "https://testengscalc.netlify.app",
+       "`test`",
+       "vlastní Netlify Blobs — zkušební data; `PROSTREDI=test` zapne pruh TESTOVACÍ PROSTŘEDÍ (i v tisku)",
+       "správce a testeři; obchodníkům nepřístupný"
+      ],
+      [
+       "Starý web",
+       "schaftscalc.netlify.app",
+       "sesterský repozitář",
+       "—",
+       "nikdo; má být vypnutý nebo převedený na aktuální `main` (stav **ověřit**)"
+      ]
+     ]
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "GitHub — repozitář",
+       "vyklad": "**https://github.com/vendljar/kalkulator-next-gen-engscalc** — veřejný repozitář, proto v něm nejsou ceny, hesla ani osobní údaje. Ceník v kódu je jen zkušební."
+      },
+      {
+       "pojem": "GitHub — Actions",
+       "vyklad": "https://github.com/vendljar/kalkulator-next-gen-engscalc/actions — workflow **Testy** a **Smazat sloučené větve** (kapitola P8)."
+      },
+      {
+       "pojem": "GitHub — releasy",
+       "vyklad": "https://github.com/vendljar/kalkulator-next-gen-engscalc/releases — vydané verze s popisem změn (kapitola P7)."
+      },
+      {
+       "pojem": "Netlify",
+       "vyklad": "https://app.netlify.com — tým s projekty **engscalc** (ostrý) a **testengscalc** (testovací): nasazení, logy funkcí, Blobs, proměnné prostředí."
+      },
+      {
+       "pojem": "Google Disk",
+       "vyklad": "Složka **_Zaloha Netlify DB** (Můj disk › _Soukrome › _Dokumenty › _AI › Claude › Projekty › Kalkulator NextGen) — kopie nočních záloh ostrého webu. Ve složce **Manual** se drží hotové příručky. Komu Disk patří a kdo má ke složkám přístup — **ověřit**."
+      },
+      {
+       "pojem": "Ranní hlídač záloh",
+       "vyklad": "Naplánovaná úloha v účtu claude.ai **„Upozornění: záloha engscalc starší 5 dní“** běží denně v 8:47 (Praha). Čte jen metadata souborů ve složce _Zaloha Netlify DB a pošle **e-mail a oznámení do telefonu** vlastníkovi účtu, když je poslední kopie starší než 5 dní nebo menší než 90 % předchozí. Druhá úloha **„Kontrola záloh engscalc na Disku“** (pracovní dny 8:56) zapisuje stav do přehledu koordinace vývoje."
+      },
+      {
+       "pojem": "Kontrola stavu webu",
+       "vyklad": "Adresa **/api/zdravi** (např. https://engscalc.netlify.app/api/zdravi) odpoví bez přihlášení `ok: true`, verzí aplikace a prostředím. Verze musí sedět s hlavičkou aplikace a se souborem `verze.txt` nasazené větve."
+      }
+     ]
+    },
+    {
+     "typ": "ram",
+     "nadpis": "Prostředí se nemíchají",
+     "odstavce": [
+      "Každý web má **vlastní databázi, vlastní účty a vlastní podpisový klíč relací** (`TAJEMSTVI_RELACE` se na testu liší a podpis nese jméno prostředí), takže přihlášení z testu v ostrém provozu neplatí. Ceník se mezi weby přenáší **ručně souborem** (Nastavení → Databáze, kapitola A7), data zálohou (kapitola A8)."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-pristupy",
+   "nadpis": "P3. Přístupy a tajemství",
+   "bloky": [
+    {
+     "typ": "text",
+     "text": "Systém stojí na pěti účtech u cizích služeb a na účtech v samotné aplikaci. Kdo konkrétně jaký přístup má, se vede **mimo tento dokument** (seznam přístupů u vlastníka) — tady je, co který přístup umožňuje a k čemu je potřeba. Hesla a tokeny drží každý sám (správce hesel) a předávají se osobně, nikdy e-mailem ani chatem."
+    },
+    {
+     "typ": "tabulka",
+     "hlavicka": [
+      "Přístup",
+      "Co umožňuje",
+      "Kdo ho potřebuje"
+     ],
+     "radky": [
+      [
+       "Netlify — člen týmu",
+       "nasazení a jejich vrácení, logy funkcí, Blobs, proměnné prostředí, tarif",
+       "správce provozu, vlastník"
+      ],
+      [
+       "GitHub — repozitář",
+       "kód, větve, Actions, releasy a tagy; slučování do `test` a `main`",
+       "vlastník (schvaluje posuny), vývoj"
+      ],
+      [
+       "Google Disk — složka _Zaloha Netlify DB",
+       "zápis kopií záloh z aplikace, čtení pro obnovu",
+       "správce aplikace; složku sdílet jen správcům (nese celou databázi bez hesel)"
+      ],
+      [
+       "Pipedrive — účet tokenu",
+       "API token v proměnné `PIPEDRIVE_TOKEN` čte všechna data tohoto uživatele v CRM",
+       "vlastník / správce CRM"
+      ],
+      [
+       "claude.ai — účet vývoje",
+       "vývojová sezení Claude Code, naplánované úlohy (ranní hlídač záloh), konektory Disku a Pipedrive",
+       "vlastník"
+      ],
+      [
+       "Aplikace — role Administrátor",
+       "Nastavení, ceníky, účty, zálohy a obnova (kapitola A2); na každém webu zvláštní účet",
+       "správci; vždy **aspoň dva** účty Administrátor"
+      ]
+     ]
+    },
+    {
+     "typ": "podnadpis",
+     "text": "Proměnné prostředí Netlify"
+    },
+    {
+     "typ": "text",
+     "text": "Proměnné se nastavují v Netlify → projekt → **Project configuration → Environment variables**. Do funkcí se propíšou až **dalším nasazením** (Deploys → Trigger deploy → Deploy project). Úplný seznam s rozlišením webů je v příloze 2. Hodnoty se nikdy nezapisují do repozitáře, dokumentace, e-mailu ani konverzace — statická kontrola `nastroje/kontrola_udaju.py` hlídá, aby se tajemství do repozitáře nedostalo."
+    },
+    {
+     "typ": "tabulka",
+     "hlavicka": [
+      "Název",
+      "Účel",
+      "Web"
+     ],
+     "radky": [
+      [
+       "TAJEMSTVI_RELACE",
+       "podpis přihlašovacích relací (náhodný text, aspoň 16 znaků); kdo ho zná, mohl by se vydávat za přihlášeného",
+       "oba — **každý jiná hodnota**"
+      ],
+      [
+       "ADMIN_EMAIL",
+       "e-mail hlavního správce; bez něj server zastaví správu účtů",
+       "oba"
+      ],
+      [
+       "ADMIN_INIT_HESLO",
+       "jen dočasně: náhradní heslo hlavního správce pro první přihlášení do **prázdné** databáze; po přihlášení smazat",
+       "jen při zakládání nebo obnově"
+      ],
+      [
+       "PIPEDRIVE_TOKEN",
+       "API token Pipedrive (žije jen na serveru)",
+       "ostrý; na testu jen při zkoušce CRM"
+      ],
+      [
+       "PIPEDRIVE_DOMENA",
+       "doména firmy v Pipedrive",
+       "jako token"
+      ],
+      [
+       "PROSTREDI",
+       "hodnota `test` zapne testovací prostředí (pruh, titulek, oddělený podpis relací)",
+       "jen testovací"
+      ],
+      [
+       "PROSTREDI_POPIS",
+       "nepovinný text do pruhu testovacího prostředí",
+       "jen testovací"
+      ]
+     ]
+    },
+    {
+     "typ": "podnadpis",
+     "text": "Výměna hesla nebo tokenu"
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Postup: výměna podpisového klíče relací (TAJEMSTVI_RELACE)",
+     "polozky": [
+      {
+       "text": "Vyrobte nový náhodný text (aspoň 16 znaků, doporučeno 64 znaků z generátoru hesel). Ostrý a testovací web musí mít **různé** hodnoty."
+      },
+      {
+       "text": "Netlify → projekt → Environment variables → `TAJEMSTVI_RELACE` → upravit hodnotu → uložit."
+      },
+      {
+       "text": "Deploys → **Trigger deploy → Deploy project**. Po nasazení jsou **všichni odhlášeni** a přihlásí se znovu svým heslem — hesla se tím nemění. Upozorněte uživatele předem."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Postup: výměna tokenu Pipedrive",
+     "polozky": [
+      {
+       "text": "V Pipedrive (účet, ze kterého je token) → Osobní předvolby → API → vygenerovat nový token; starý tím přestane platit."
+      },
+      {
+       "text": "Netlify (ostrý projekt) → Environment variables → `PIPEDRIVE_TOKEN` → nová hodnota → uložit → Trigger deploy."
+      },
+      {
+       "text": "V aplikaci: Nastavení → **Mapa polí CRM** musí ukázat napojení bez chyby; v zakázce s dealem se načte jeho stav."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Postup: podezření na únik hesla uživatele",
+     "polozky": [
+      {
+       "text": "Nastavení → Uživatelé → u účtu **Nové heslo…** (potvrzení vaším heslem). Změna hesla **odhlásí všechny relace** toho účtu na všech zařízeních."
+      },
+      {
+       "text": "Nové heslo předejte osobně. Je-li podezření na zneužití, projděte v Přehledu cenových nabídek a v protokolu zakázek změny pod tím účtem."
+      }
+     ]
+    },
+    {
+     "typ": "ram",
+     "druh": "varovne",
+     "nadpis": "Účty u cizích služeb",
+     "odstavce": [
+      "Heslo do Netlify, GitHubu, Google a Pipedrive mění každý ve své službě. U Netlify a GitHubu mějte zapnuté **dvoufázové ověření** — kdo má přístup k Netlify, vidí a mění proměnné prostředí i celou databázi."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-uzivatele",
+   "nadpis": "P4. Uživatelé a role",
+   "bloky": [
+    {
+     "typ": "text",
+     "text": "Aplikace zná tři role — **Obchodník**, **Vedoucí** a **Administrátor**. Roli určuje účet na serveru; co role **vidí**, upravuje matice v Nastavení → Zobrazení, co smí **provést**, hlídá navíc server. Skrytím ani zobrazením tlačítka se práva nezískávají. **Hlavní správce** je administrátor, jehož e-mail je v proměnné `ADMIN_EMAIL`. Postupy se snímky jsou v kapitolách A2 a A3."
+    },
+    {
+     "typ": "tabulka",
+     "titulek": "Matice práv (výchozí stav; ✔ = smí, ○ = jen když ho přidělí matice zobrazení)",
+     "hlavicka": [
+      "Činnost",
+      "Obchodník",
+      "Vedoucí",
+      "Administrátor",
+      "Hlavní správce"
+     ],
+     "radky": [
+      [
+       "Kalkulace OCK a PROJ, nabídky, krycí listy, smlouvy, uložení zakázek",
+       "✔",
+       "✔",
+       "✔",
+       "✔"
+      ],
+      [
+       "Karta zákazníka — číst a zapisovat",
+       "✔",
+       "✔",
+       "✔",
+       "✔"
+      ],
+      [
+       "Sleva do vlastního stropu",
+       "✔",
+       "✔",
+       "✔",
+       "✔"
+      ],
+      [
+       "Schválit slevu nad strop obchodníka a cenovou výjimku",
+       "—",
+       "✔ (do svého stropu)",
+       "✔",
+       "✔"
+      ],
+      [
+       "Detail výpočtu, Standard OCK, sloupce nákladu",
+       "○",
+       "○",
+       "✔",
+       "✔"
+      ],
+      [
+       "Čtení obchodních případů z Pipedrive",
+       "○ (výchozí zapnuto)",
+       "○ (výchozí zapnuto)",
+       "✔",
+       "✔"
+      ],
+      [
+       "Smazat zakázku, smazat kartu zákazníka, odemknout odeslanou nabídku",
+       "—",
+       "—",
+       "✔",
+       "✔"
+      ],
+      [
+       "Zveřejnit ceník, firemní údaje, šablony, slovník",
+       "—",
+       "—",
+       "✔",
+       "✔"
+      ],
+      [
+       "Matice zobrazení (s heslem správce)",
+       "—",
+       "—",
+       "✔",
+       "✔"
+      ],
+      [
+       "Založit, vypnout, archivovat účet, reset hesla",
+       "—",
+       "—",
+       "✔ (citlivé zásahy s heslem)",
+       "✔"
+      ],
+      [
+       "Zálohovat teď, kopie na Disk, obnova ze zálohy",
+       "—",
+       "—",
+       "✔",
+       "✔"
+      ],
+      [
+       "Analytika, Controlling, Mapa polí CRM",
+       "—",
+       "—",
+       "✔",
+       "✔"
+      ],
+      [
+       "Potvrdit úbytek dat v zálohách",
+       "—",
+       "—",
+       "—",
+       "✔ (s heslem)"
+      ],
+      [
+       "Měnit vlastní profil a podpis hlavního účtu",
+       "—",
+       "—",
+       "—",
+       "✔ (jen sám)"
+      ]
+     ]
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Hlavní správce",
+       "vyklad": "Jeho účet nejde vypnout, archivovat, smazat ani snížit na nižší roli a jeho profil a podpis mění jen on sám. Jako jediný potvrzuje úbytek dat v zálohách. Změna hlavního správce: nový správce musí mít účet Administrátor, pak se v Netlify změní `ADMIN_EMAIL` a web se znovu nasadí."
+      },
+      {
+       "pojem": "Hesla",
+       "vyklad": "8 až 200 znaků; server ukládá jen otisk (scrypt), heslo samo nikde. Samoobslužná registrace ani obnova hesla e-mailem **neexistuje** — aplikace e-maily neposílá. Účty zakládá a hesla resetuje administrátor, počáteční heslo předá osobně."
+      },
+      {
+       "pojem": "Relace",
+       "vyklad": "Po přihlášení platí 12 hodin (cookie `HttpOnly`, `Secure`, `SameSite=Lax`). Odhlášení, změna hesla, reset správcem i vypnutí účtu zneplatní relace daného účtu na všech zařízeních."
+      },
+      {
+       "pojem": "Brzda proti hádání hesel",
+       "vyklad": "Po opakovaných neúspěšných pokusech se přihlášení zpomaluje a dočasně odmítá: nejvýš 10 neúspěchů na e-mail za 15 minut a 60 na adresu klienta. Správné heslo brzda neblokuje."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Postup: nový kolega",
+     "polozky": [
+      {
+       "text": "Nastavení → Uživatelé → pod tabulkou vyplnit e-mail, jméno, funkci, telefon, roli a počáteční heslo → **Založit účet** (u role Administrátor potvrdit svým heslem)."
+      },
+      {
+       "text": "Heslo předat osobně. Kolega si ho po přihlášení změní v okně **Můj profil** a nahraje sken podpisu (tiskne se pod nabídky)."
+      },
+      {
+       "text": "Potřebuje-li role víc než výchozí stav, přidělit právo v Nastavení → Zobrazení a ověřit **náhledem pohledem uživatele** (kapitola A2)."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Postup: kolega odchází",
+     "polozky": [
+      {
+       "text": "Odškrtnout **Aktivní** — účtem se už nepřihlásí a jeho relace přestanou platit."
+      },
+      {
+       "text": "**Archivovat…** a v nabídce **převést zakázky** na jiného aktivního kolegu. Archiv je vratný; razítka pod odeslanými nabídkami a schválenými slevami zůstávají."
+      },
+      {
+       "text": "Účet smazat (nevratně) jen tehdy, když na něm nezůstaly zakázky — jinak to server nedovolí."
+      }
+     ]
+    },
+    {
+     "typ": "ram",
+     "nadpis": "Zapomenuté heslo správce",
+     "odstavce": [
+      "Heslo správce resetuje **jiný administrátor** (u správcovského účtu potvrzuje svým heslem). Proměnná `ADMIN_INIT_HESLO` v tomto případě **nepomůže** — účet hlavního správce založí jen tehdy, když v databázi ještě není. Proto mějte vždy aspoň dva účty Administrátor; bez druhého správce je potřeba zásah vývoje do databáze (s vlastníkem)."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-data",
+   "nadpis": "P5. Data — co se ukládá a kde",
+   "bloky": [
+    {
+     "typ": "text",
+     "text": "Všechna data aplikace leží v **Netlify Blobs** projektu (ostrý a testovací web každý zvlášť), rozdělená do pojmenovaných úložišť. V repozitáři na GitHubu nejsou žádná provozní data — jen kód a zkušební ceník. Úložiště se nikdy neupravují ručně v Netlify; čtení, zápis, retence i obnova jdou výhradně přes aplikaci."
+    },
+    {
+     "typ": "tabulka",
+     "titulek": "Úložiště Netlify Blobs",
+     "hlavicka": [
+      "Úložiště",
+      "Co obsahuje",
+      "Osobní údaje",
+      "Doba držení"
+     ],
+     "radky": [
+      [
+       "program",
+       "platný ceník OCK a PROJ s historií verzí a slevovými stropy (`db`), firemní údaje (`firma`), matice zobrazení, dodatkové texty, slovník, nastavení controllingu",
+       "kontakty firmy a zástupců zhotovitele",
+       "do změny; verze ceníku se drží v historii"
+      ],
+      [
+       "zakazky",
+       "zakázky a jejich varianty (`z/…`), rejstřík zakázek pro hledání, zámky odeslaných nabídek, poznámky a přílohy",
+       "kontakty zákazníka, jméno obchodníka",
+       "dokud je administrátor nesmaže"
+      ],
+      [
+       "zakaznici",
+       "karty zákazníků (IČO, sídlo, kontaktní osoby)",
+       "jména, telefony, e-maily kontaktů",
+       "dokud je administrátor nesmaže"
+      ],
+      [
+       "uzivatele",
+       "účty: e-mail, jméno, titul, funkce, telefon, role, otisk hesla, stav",
+       "údaje zaměstnanců",
+       "do smazání účtu; archiv je vratný"
+      ],
+      [
+       "podpisy",
+       "skeny podpisů uživatelů pro nabídky",
+       "podpis",
+       "do smazání účtu"
+      ],
+      [
+       "smazani",
+       "kniha smazaných účtů (kdo a kdy byl smazán)",
+       "e-mail smazaného účtu",
+       "trvale"
+      ],
+      [
+       "sablony",
+       "zveřejněné šablony dokumentů Word (nabídky, smlouvy, plná moc)",
+       "—",
+       "do změny"
+      ],
+      [
+       "zalohy",
+       "otisky databáze (noční, ruční, před obnovou), stav pořizování a retence",
+       "vše výše včetně otisků hesel",
+       "podle retence, kapitola P6"
+      ],
+      [
+       "analytika",
+       "počítadla používání po dnech, část po uživatelích",
+       "e-mail uživatele u počítadel",
+       "24 měsíců"
+      ],
+      [
+       "pokusy",
+       "počítadla neúspěšných přihlášení",
+       "e-mail, adresa klienta",
+       "okno 15 minut"
+      ],
+      [
+       "pd_cache",
+       "krátkodobá kopie odpovědí Pipedrive (detail a seznam dealů, strop dotazů)",
+       "kontakty z CRM",
+       "platí 90 s; noční úklid maže záznamy starší 30 dní"
+      ],
+      [
+       "pd_stav",
+       "poslední známý stav dealu propojeného se zakázkou",
+       "—",
+       "do změny"
+      ],
+      [
+       "pipedrive",
+       "mapa polí CRM (Nastavení → Mapa polí CRM)",
+       "—",
+       "do změny"
+      ]
+     ]
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Prohlížeč uživatele",
+       "vyklad": "Záloha rozpracované kalkulace v místním úložišti prohlížeče (pro obnovu po zavření okna). Přežije i odhlášení — na sdíleném počítači ji uživatel smaže obnovením a uložením, nebo vymazáním dat webu."
+      },
+      {
+       "pojem": "Google Disk",
+       "vyklad": "Kopie nočních záloh ve složce _Zaloha Netlify DB (`otisk_RRRR-MM-DD.json.gz` a `posledni_kopie.json`) — **bez otisků hesel a bez podpisů**. Retence v kapitole P6."
+      },
+      {
+       "pojem": "Stažené soubory",
+       "vyklad": "*Stáhnout zálohu* a export controllingu uloží soubor do počítače správce; za jeho uložení odpovídá ten, kdo ho stáhl."
+      },
+      {
+       "pojem": "Pipedrive",
+       "vyklad": "Data CRM zůstávají v Pipedrive; aplikace z nich drží jen krátkodobou kopii (`pd_cache`) a stav dealu u zakázky."
+      }
+     ]
+    },
+    {
+     "typ": "ram",
+     "nadpis": "Osobní údaje",
+     "odstavce": [
+      "Aplikace zpracovává údaje **zaměstnanců** (jméno, e-mail, telefon, funkce, podpis, analytika používání po uživatelích) a **kontaktních osob zákazníků** (jména, telefony, e-maily v zakázkách a kartách zákazníků). Ceny a nabídky jsou obchodní tajemství firmy.",
+      "Informační text pro zaměstnance o analytice (Nastavení → Analytika) **zatím není doplněný** — čeká na právní znění. Výmaz osobních údajů zákazníka: upravit nebo smazat kartu zákazníka a dotčené zakázky; v zálohách údaje vymizí podle retence (nejdéle 6 měsíců)."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-zalohy",
+   "nadpis": "P6. Zálohy a obnova",
+   "bloky": [
+    {
+     "typ": "text",
+     "text": "Zálohování je automatické a vícevrstvé: noční otisk celé databáze na serveru, ruční otisky, otisk před každou obnovou, kopie na Google Disk a stažené soubory. Obrazovky a podrobné kroky jsou v kapitolách A8 a A9; nouzový postup s kontrolami je navíc v `podklady/POSTUP_OBNOVY_ZALOHY.md`."
+    },
+    {
+     "typ": "tabulka",
+     "titulek": "Kolik záloh se drží (retence)",
+     "hlavicka": [
+      "Druh zálohy",
+      "Netlify Blobs (úložiště zalohy)",
+      "Google Disk (_Zaloha Netlify DB)"
+     ],
+     "radky": [
+      [
+       "Denní (noční otisk / kopie)",
+       "posledních **14 dní**",
+       "posledních **7 dní**"
+      ],
+      [
+       "Týdenní (nedělní)",
+       "**8 týdnů**",
+       "**8 týdnů**"
+      ],
+      [
+       "Měsíční (první v měsíci)",
+       "**6 měsíců**",
+       "**6 měsíců**"
+      ],
+      [
+       "Ruční „Zálohovat teď“ a otisk při přihlášení",
+       "**7 dní**",
+       "—"
+      ],
+      [
+       "Otisk před obnovou",
+       "nemaže se sám; ručně správce s heslem",
+       "—"
+      ],
+      [
+       "Obsah",
+       "celá databáze včetně účtů a otisků hesel, komprimovaná (gzip), po částech nejvýš 4 MB",
+       "celá databáze **bez otisků hesel a bez podpisů**"
+      ]
+     ]
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Noční otisk",
+       "vyklad": "Plánovaná funkce `zaloha_nocni` běží v rozvrhu `*/15 2-3 * * *` (UTC, tedy každých 15 minut mezi 2:00 a 3:45) a dopořizuje otisk po částech, dokud není celý. Po dokončení provede retenci a noční úklid (rozpracované otisky starší 24 h, cache Pipedrive, očista analytiky)."
+      },
+      {
+       "pojem": "Ruční otisk",
+       "vyklad": "Nastavení → Databáze → *Zálohovat teď*: nejvýš jednou za 10 minut a 20× za den."
+      },
+      {
+       "pojem": "Pojistka úbytku",
+       "vyklad": "Mazání starých záloh (v Netlify i na Disku) se **zastaví**, když nová záloha nese proti předchozí méně než **90 %** dat, méně než **95 %** zakázek nebo účtů nebo méně šablon či podpisů — i proti **nejvyššímu stavu za 30 dní**. Bez potvrzení hlavním správcem se nemaže nic. Nejnovější záloha se nesmaže nikdy; v Netlify se maže jen tehdy, když je na Disku podložená kopie mladší než 7 dní."
+      },
+      {
+       "pojem": "Kopie na Disk",
+       "vyklad": "Tlačítko *Zkopírovat zálohu na Disk teď* (Chrome nebo Edge, povolený zápis do složky). Aplikace kopii připomene jednou týdně, kopie starší než 14 dní svítí jako varování. Po úspěšné kopii aplikace ve složce uklidí jen vlastní soubory záloh podle retence."
+      },
+      {
+       "pojem": "Ranní e-mail",
+       "vyklad": "Ranní hlídač (kapitola P2) pošle e-mail, když je kopie na Disku starší než 5 dní nebo nápadně menší než předchozí."
+      }
+     ]
+    },
+    {
+     "typ": "podnadpis",
+     "text": "Obnova krok za krokem"
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Postup: obnova ze zálohy (pokažená data, zálohy existují)",
+     "polozky": [
+      {
+       "text": "Přihlásit se jako administrátor → Nastavení → **Databáze** → **Obnovit ze zálohy…**."
+      },
+      {
+       "text": "Zdroj: otisk na serveru ze dne, kdy bylo vše v pořádku (nebo stažený soubor / kopie z Disku `.json.gz`). Režim **doplnit** (vrátí jen chybějící); části, které se nemají vracet, odškrtnout."
+      },
+      {
+       "text": "**Zobrazit náhled** — nic se nezapisuje. Zkontrolovat počty nových, přepsaných a přeskočených záznamů a důvody přeskočení."
+      },
+      {
+       "text": "**Obnovit databázi** a potvrdit. Před zápisem vznikne otisk „před obnovou“ (cesta zpět); uzamčené odeslané nabídky se nepřepíšou a nic se nemaže."
+      },
+      {
+       "text": "Ověřit v Přehledu cenových nabídek a v Uživatelích, že data jsou zpět. Kdyby obnova dopadla špatně, obnovit z otisku „před obnovou“."
+      }
+     ]
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Zmizela celá databáze, otisky zůstaly",
+       "vyklad": "Dočasně nastavit v Netlify `ADMIN_INIT_HESLO`, nasadit, přihlásit se adresou z `ADMIN_EMAIL` a tímto heslem (prázdná databáze účet založí), obnovit poslední noční otisk v režimu doplnit. Vrátí se i účty s hesly. Pak si správce změní heslo a `ADMIN_INIT_HESLO` smaže."
+      },
+      {
+       "pojem": "Zmizelo všechno včetně otisků",
+       "vyklad": "Přihlášení jako v předchozím bodě, zdroj **stažený soubor** — kopie z Disku nebo stažená záloha. Vrátí se zakázky, ceník, firma, šablony a matice; **účty ne** (soubor nenese hesla) — založit je znovu."
+      },
+      {
+       "pojem": "Záloha nevzniká",
+       "vyklad": "Karta Databáze ukáže poslední pokus a důvod. Netlify → Logs → Functions → `zaloha_nocni`: v noci řádky „otisk … rozpracován“ a nakonec „otisk … — … zakázek“. Funkce musí mít značku **Scheduled**. Jedno „Task timed out“ nevadí (další běh naváže)."
+      }
+     ]
+    },
+    {
+     "typ": "ram",
+     "nadpis": "Doporučený čtvrtletní zkušební test obnovy",
+     "odstavce": [
+      "Jednou za čtvrt roku na **testovacím webu**: na ostrém *Stáhnout zálohu*, na testu *Obnovit ze zálohy…* → stažený soubor → režim přepsat → náhled → obnovit. Pak na testu otevřít dvě až tři zakázky, vytisknout nabídku a porovnat počty zakázek a verzi ceníku s ostrým webem. Zároveň ověřit, že kopie na Disku jde otevřít jako zdroj obnovy (jen náhled). Výsledek zapsat do provozního deníku. Automaticky totéž prověřuje při každém testovacím kole sada `netlify/test_obnova_nanecisto.mjs`."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-verze",
+   "nadpis": "P7. Verze a nasazení",
+   "bloky": [
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Číslo verze",
+       "vyklad": "Tvar **vDEN.MĚSÍC.pořadí** (např. verze 27.10.1 = první verze 27. října). Je v souboru `verze.txt`, hlásí ho hlavička aplikace i `/api/zdravi`. `build.py` zvyšuje pořadí v rámci dne sám a odmítne verzi, která nesedí na dnešní den; ověřovací sestavení se pouští s `KNG_NEZVYSOVAT_VERZI=1`. Netlify verzi při nasazení jen přebírá."
+      },
+      {
+       "pojem": "CHANGELOG",
+       "vyklad": "`CHANGELOG.md` popisuje změny každé verze; z něj se skládá popis releasu. Příručky novinky verzí nepopisují."
+      },
+      {
+       "pojem": "Tagy a releasy",
+       "vyklad": "Ke každé vydané verzi patří jednoduchý tag `vD.M.N` a release na GitHubu s popisem změn. Odkaz na nový release s předvyplněným tagem, cílem a popisem vyrobí `python3 nastroje/release_odkaz.py <verze> <plný SHA>` (sám ověří, že tag ještě neexistuje); verze bez tagu vypíše `--chybejici`. Tag a release vytváří vlastník."
+      }
+     ]
+    },
+    {
+     "typ": "tabulka",
+     "titulek": "Cesta změny do ostrého provozu",
+     "hlavicka": [
+      "Krok",
+      "Kde",
+      "Kdo",
+      "Co se ověřuje"
+     ],
+     "radky": [
+      [
+       "1. Dávka",
+       "větev `claude/…` nad určeným commitem",
+       "vývojové sezení",
+       "testy dávky, `PREDAVKA.md` v té větvi"
+      ],
+      [
+       "2. Integrace",
+       "`claude/integrace-*`, `test-draft`",
+       "koordinace vývoje na pokyn vlastníka",
+       "sloučení, konflikty, **celé testovací kolo** (kapitola P8)"
+      ],
+      [
+       "3. Test",
+       "větev `test` → testengscalc.netlify.app",
+       "na pokyn vlastníka",
+       "nasazení na testovací web, ruční ověření (příloha 4)"
+      ],
+      [
+       "4. Ostrý",
+       "větev `main` → engscalc.netlify.app",
+       "po odsouhlasení vlastníkem",
+       "`/api/zdravi`, přihlášení, migrace ceníku, ráno noční záloha"
+      ],
+      [
+       "5. Release",
+       "GitHub → Releases",
+       "vlastník",
+       "tag `vD.M.N`, popis z CHANGELOG"
+      ]
+     ]
+    },
+    {
+     "typ": "text",
+     "text": "Netlify nasazuje **sám při každém pushi** do produkční větve projektu (`main` pro engscalc, `test` pro testengscalc); nasazení na výsledku testů v Actions nezávisí. Sloučené pomocné větve maže vlastník tlačítkem v Actions (kapitola P8)."
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Postup: vrácení verze (rollback) v Netlify",
+     "polozky": [
+      {
+       "text": "Netlify → projekt (engscalc) → **Deploys** → najít poslední úspěšné nasazení před chybou (podle času a commitu) a otevřít ho."
+      },
+      {
+       "text": "**Publish deploy** → potvrdit. Web okamžitě běží na starším kódu; data v Blobs se nemění."
+      },
+      {
+       "text": "Ověřit `/api/zdravi` (verze) a přihlášení. Oznámit vývoji — oprava patří do repozitáře a projde testovacím webem. Další push do `main` vrácené nasazení přepíše."
+      }
+     ]
+    },
+    {
+     "typ": "ram",
+     "druh": "varovne",
+     "nadpis": "Starší kód a novější data",
+     "odstavce": [
+      "Vrácení kódu nevrací data. Zveřejnil-li se po nasazení ceník v novém tvaru, starší kód ho může číst jinak — po rollbacku zkontrolujte jednu typickou zakázku a v případě potřeby zveřejněte ceník znovu ze starší verze (Ceník → Verze ceníku… → historie)."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-testovani",
+   "nadpis": "P8. Testování",
+   "bloky": [
+    {
+     "typ": "text",
+     "text": "Jediný seznam kroků je skript **`bash nastroje/testovaci_kolo.sh`** — pouští ho vývojové sezení před pushem (obal `nastroje/pred_pushem.sh`) i GitHub Actions. Kolo končí souhrnem s počty a nenulovým kódem při selhání."
+    },
+    {
+     "typ": "tabulka",
+     "hlavicka": [
+      "Krok kola",
+      "Co dělá"
+     ],
+     "radky": [
+      [
+       "build",
+       "sestavení aplikace bez zvýšení verze"
+      ],
+      [
+       "sady (`spust_testy.sh --smoke`)",
+       "testové sady jádra a UI v Node (`src/test_*.js`), serverové sady (`netlify/test_*.mjs`), smoke test a prohlížečové harnessy `overit_*.mjs` v Chromiu"
+      ],
+      [
+       "mutace jádra",
+       "do výpočetního jádra se schválně vnese chyba a sady ji musí chytit (`mutace_jadro.mjs`)"
+      ],
+      [
+       "mutace serveru",
+       "totéž pro serverové funkce (`netlify/mutace.mjs`)"
+      ],
+      [
+       "statické kontroly",
+       "verze = den commitu, konce řádků, osobní údaje a tajemství (`nastroje/kontrola_udaju.py`, povolený seznam `nastroje/povolene_kontakty.txt`)"
+      ]
+     ]
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Výběr kroků",
+       "vyklad": "`--jen build,staticke` (rychlá kontrola dokumentační změny), `--bez-mutaci` (vše kromě mutací), `--jen mutace-server` atd."
+      },
+      {
+       "pojem": "Mutace po částech",
+       "vyklad": "Celé mutace trvají hodiny, pouštějí se po částech: `KNG_MUTACE_CAST=K/N bash nastroje/testovaci_kolo.sh --jen mutace-server`. Kolo s částí hlásí „ZELENÁ ČÁST“, nikdy „VŠE ZELENÉ“. Přerušený mutační běh může nechat mutaci ve zdrojáku — po restartu nejdřív `git status` a změněný soubor v `src/` nebo `netlify/` vrátit (`git checkout -- <soubor>`)."
+      },
+      {
+       "pojem": "Actions — Testy",
+       "vyklad": "Workflow `testy.yml` běží **automaticky při pushi do `main`** a ručně nad libovolnou větví (Actions → Testy → *Run workflow*). Joby: testy bez mutací, mutace serveru v 10 částech (limit 90 min), mutace jádra ve 3 částech. Celé kolo = všechny joby zelené. Workflow má jen právo čtení repozitáře a akce připnuté na SHA."
+      },
+      {
+       "pojem": "Actions — Smazat sloučené větve",
+       "vyklad": "`smazat_vetve.yml`, ručně: smaže větve celé obsažené v `test`, nikdy `main`, `test`, `test-draft`, `claude/integrace-*` ani větev mladší než `stari_hodin` (výchozí 24 h). Poprvé spustit s volbou *jen vypsat*."
+      },
+      {
+       "pojem": "Pravidlo pro nové testy",
+       "vyklad": "Každý nový test musí doložit, že před opravou selže a po ní projde (pojistka proti prázdnému testu)."
+      },
+      {
+       "pojem": "Ruční ověření",
+       "vyklad": "Před posunem `test` → `main` se na testovacím webu ověřuje to, co automat nevidí — kontrolní seznam v příloze 4, postup se snímky v kapitole A13."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-bezpecnost",
+   "nadpis": "P9. Bezpečnost",
+   "bloky": [
+    {
+     "typ": "text",
+     "text": "Základní pravidlo systému: **server nevěří klientovi**. Prohlížeč může cokoli zobrazit či skrýt, ale přihlášení, role, slevové stropy, zámky odeslaných nabídek a tvar dat ověřuje serverová funkce."
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Přihlášení",
+       "vyklad": "Otisk hesla scrypt, porovnání v konstantním čase, brzda proti hádání hesel (na e-mail i na adresu klienta), podepsaná relace na 12 hodin vázaná na verzi hesla a na prostředí."
+      },
+      {
+       "pojem": "Role a práva",
+       "vyklad": "Roli bere server z relace, ne z požadavku; akce správce chtějí roli Administrátor, citlivé zásahy navíc heslo správce. Autora, razítka zámků a schválení slev píše server."
+      },
+      {
+       "pojem": "Ochrana požadavků",
+       "vyklad": "Zápis z cizího původu (Origin) server odmítne; identifikátory mají pevný tvar; strop velikosti zakázky 4 MB a dalších těl; hodnoty se v UI i dokumentech Word escapují."
+      },
+      {
+       "pojem": "Hlavičky webu",
+       "vyklad": "CSP (spojení jen na vlastní web a ARES, zákaz vložení do cizího rámu, zákaz objektů), HSTS, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy (`netlify.toml`); API odpovídá s `Cache-Control: no-store`."
+      },
+      {
+       "pojem": "Tajemství",
+       "vyklad": "Žádné heslo ani token v kódu; Pipedrive token jen na serveru; statická kontrola osobních údajů a tajemství při každém testovacím kole; CI s právem jen ke čtení."
+      }
+     ]
+    },
+    {
+     "typ": "podnadpis",
+     "text": "Výsledky auditů (souhrn)"
+    },
+    {
+     "typ": "tabulka",
+     "hlavicka": [
+      "Audit",
+      "Rozsah",
+      "Výsledek",
+      "Zpráva"
+     ],
+     "radky": [
+      [
+       "Bezpečnostní audity testovacích kol",
+       "revize změn kódu po každém kole, regrese dřívějších nálezů",
+       "nálezy opravené nebo zapsané jako vědomé meze",
+       "`podklady/AUDIT_*.md`, `podklady/K*_AUDIT_*.md`"
+      ],
+      [
+       "Hloubkový security test kódu a funkční logiky",
+       "lokální instance: relace, CSRF, role, XSS, injekce do Wordu, fuzz, výpočet cen",
+       "**0 kritických**, kód aplikace bez vysokého nálezu; hranice rolí drží; ceny nabídky = smlouva = krycí list = controlling",
+       "`podklady/SEC_AUDIT_24_10.md`"
+      ],
+      [
+       "Živý šetrný test testovacího webu",
+       "bez přihlášení a bez zátěže: hlavičky, API bez relace, cookies, veřejný obsah",
+       "testovací web **vyhovuje**; riziko provozu: opuštěné veřejné nasazení schaftscalc (vypnout nebo převést)",
+       "`podklady/SEC_AUDIT_ZIVY_26_10.md`"
+      ]
+     ]
+    },
+    {
+     "typ": "podnadpis",
+     "text": "Přijatá rizika (vědomé meze)"
+    },
+    {
+     "typ": "text",
+     "text": "Úplný soupis s důvody je v `BEZPECNOST_MEZE.md`. Nejdůležitější meze, se kterými provoz počítá:"
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Jednosouborová aplikace",
+       "vyklad": "CSP povoluje vložené skripty a styly (`'unsafe-inline'`), protože celá aplikace je jeden soubor. Proti odvodu dat drží `connect-src` jen na vlastní web a ARES."
+      },
+      {
+       "pojem": "Pojistka zveřejnění ceníku",
+       "vyklad": "Upozornění na velkou změnu ceníku je práh proti omylu, ne zábrana — administrátor ceník zveřejnit může."
+      },
+      {
+       "pojem": "Tiskový náhled",
+       "vyklad": "Text dokumentu jde před tiskem ručně upravit (záměrná funkce); částky v tabulkách jsou zamčené, ale úprava přes nástroje prohlížeče nebo hotového PDF se poznat nedá."
+      },
+      {
+       "pojem": "Záloha v prohlížeči",
+       "vyklad": "Rozpracovaná kalkulace v místním úložišti prohlížeče přežije odhlášení."
+      },
+      {
+       "pojem": "Obnova a hesla",
+       "vyklad": "Obnova účtů z otisku vrací hesla platná v době otisku."
+      },
+      {
+       "pojem": "Kopie na Disk",
+       "vyklad": "Zapisuje ji prohlížeč správce; server zná jen jeho hlášení o kopii (podkládá jím retenci)."
+      },
+      {
+       "pojem": "Cookie relace",
+       "vyklad": "Bez předpony `__Host-` — na doméně `*.netlify.app` to nevadí; při přechodu na vlastní doménu cookie přejmenovat (jednorázově odhlásí všechny)."
+      },
+      {
+       "pojem": "Strop Pipedrive",
+       "vyklad": "Strop dotazů se počítá v rámci instance funkce, při souběhu instancí může být o něco vyšší."
+      }
+     ]
+    },
+    {
+     "typ": "ram",
+     "nadpis": "Bezpečnostní testy v provozu",
+     "odstavce": [
+      "Hloubkový security test kódu (přes noc v izolovaném kontejneru) a šetrný živý test testovacího webu se spouštějí jako samostatné vývojové dávky; trvale naplánovaná bezpečnostní úloha v účtu zapnutá není. Doporučení: hloubkový test po každé větší změně serverových funkcí a nejméně jednou za čtvrtletí, živý test po změně `netlify.toml` nebo hostingu. Ostrý web se testuje jen pasivně (hlavičky a verze)."
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-dohled",
+   "nadpis": "P10. Provoz a dohled",
+   "bloky": [
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Logy funkcí",
+       "vyklad": "Netlify → projekt → **Logs → Functions** → vybrat funkci (`prihlaseni`, `zakazky`, `program`, `zaloha_nocni`, `obnova` …). První místo při chybě serveru; chyby uživatelů navíc počítá Analytika."
+      },
+      {
+       "pojem": "Stav a verze",
+       "vyklad": "`/api/zdravi` (bez přihlášení). Otevřená aplikace se na verzi ptá sama a při rozdílu ukáže červený štítek „Obnovte stránku“."
+      },
+      {
+       "pojem": "Nasazení",
+       "vyklad": "Netlify → Deploys: stav posledního sestavení (sestavení trvá jednotky minut; připnutá verze Node 22.23.2 v `netlify.toml` — povýšení dělat vědomě a hlídat první nasazení)."
+      },
+      {
+       "pojem": "Kvóty tarifu",
+       "vyklad": "Netlify účtuje podle tarifu týmu: volání a doba běhu funkcí, přenesená data, úložiště Blobs a minuty sestavení. Tarif a čerpání — **ověřit** v Netlify → Team → Billing / Usage. Při blížícím se limitu nejvíc ušetří méně zbytečných nasazení a úklid starých stažených souborů; zálohy se drží retencí samy."
+      },
+      {
+       "pojem": "Limity funkcí",
+       "vyklad": "Běžná funkce má na odpověď jednotky sekund, plánovaná zhruba 30 s — proto se noční otisk i velká obnova dělají po částech a navazují."
+      }
+     ]
+    },
+    {
+     "typ": "tabulka",
+     "titulek": "Plánované úlohy",
+     "hlavicka": [
+      "Úloha",
+      "Kde běží",
+      "Kdy",
+      "Co dělá"
+     ],
+     "radky": [
+      [
+       "`zaloha_nocni`",
+       "Netlify (plánovaná funkce ostrého i testovacího webu)",
+       "`*/15 2-3 * * *` UTC",
+       "noční otisk databáze, retence, noční úklid"
+      ],
+      [
+       "Upozornění: záloha engscalc starší 5 dní",
+       "claude.ai — naplánovaná úloha vlastníka (konektor Google Disk)",
+       "denně 8:47 Praha",
+       "kontrola stáří a velikosti kopie na Disku; e-mail a oznámení do telefonu při nálezu"
+      ],
+      [
+       "Kontrola záloh engscalc na Disku",
+       "claude.ai — úloha koordinace vývoje",
+       "pracovní dny 8:56 Praha",
+       "tatáž kontrola, zápis do přehledu koordinace"
+      ],
+      [
+       "Testy (GitHub Actions)",
+       "GitHub",
+       "při pushi do `main`, jinak ručně",
+       "testovací kolo"
+      ]
+     ]
+    },
+    {
+     "typ": "text",
+     "text": "Naplánované úlohy v claude.ai se spravují v účtu vlastníka (claude.ai → Naplánované úlohy); při předání systému je potřeba je převést nebo nahradit (kapitola P13). Měsíční a čtvrtletní kontrolní seznam je v příloze 4."
+    }
+   ]
+  },
+  {
+   "id": "kap-p-havarie",
+   "nadpis": "P11. Havarijní postupy",
+   "bloky": [
+    {
+     "typ": "text",
+     "text": "Co dělat, když… Každý scénář začíná krokem, který zjistí, kde je chyba, a končí ověřením. Při každém zásahu do provozu informujte vlastníka."
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Web nejde",
+     "polozky": [
+      {
+       "text": "Otevřít `/api/zdravi`. Neodpovídá-li ani ta, zkontrolovat stav služby Netlify (status.netlify.com) a v Netlify → Deploys, zda poslední nasazení neselhalo."
+      },
+      {
+       "text": "Selhalo nasazení → web dál běží na posledním úspěšném; opravu udělá vývoj. Běží chybný kód → **vrátit nasazení** (kapitola P7)."
+      },
+      {
+       "text": "Odpovídá web 401 všem včetně `/api/zdravi` → v Netlify je zapnutá *Site protection*; vypnout (aplikace má vlastní přihlašování)."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Nejde přihlášení",
+     "polozky": [
+      {
+       "text": "Jednomu uživateli: špatné heslo nebo brzda pokusů — počkat 15 minut, nebo heslo resetovat (Nastavení → Uživatelé)."
+      },
+      {
+       "text": "Nikomu: v Netlify chybí nebo se změnila `TAJEMSTVI_RELACE` (po změně se všichni přihlašují znovu), Logs → Functions → `prihlaseni`."
+      },
+      {
+       "text": "Správa účtů hlásí „Doplňte proměnnou ADMIN_EMAIL…“ → doplnit `ADMIN_EMAIL` a nasadit znovu. Zapomenuté heslo správce: kapitola P4."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Záloha selhala nebo přišel e-mail hlídače",
+     "polozky": [
+      {
+       "text": "Přihlásit se jako administrátor → Nastavení → Databáze: datum poslední noční zálohy, poslední pokus, varování úbytku."
+      },
+      {
+       "text": "Chybí noční otisk → Netlify → Logs → Functions → `zaloha_nocni` a značka Scheduled; mezitím *Zálohovat teď*."
+      },
+      {
+       "text": "E-mail hlásí starou kopii na Disku → *Zkopírovat zálohu na Disk teď* do složky _Zaloha Netlify DB."
+      },
+      {
+       "text": "E-mail hlásí menší zálohu → nejdřív ověřit, zda data nezmizela (Přehled nabídek, Uživatelé). Zmizela → obnova (kapitola P6). Úbytek byl záměrný → hlavní správce potvrdí v kartě Databáze."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Nasazen chybný ceník",
+     "polozky": [
+      {
+       "text": "Nastavení → Ceník → **Verze ceníku… (historie)** → *Rozdíly* proti předchozí verzi; zjistit, co se změnilo."
+      },
+      {
+       "text": "Zveřejnit znovu poslední správnou verzi (nebo opravit položku a zveřejnit). Uzamčené odeslané nabídky se nemění nikdy."
+      },
+      {
+       "text": "Rozpracované zakázky otevřené mezi oběma zveřejněními zkontrolovat — při otevření se srovnávají s platným ceníkem."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Ztráta Netlify (projekt nebo účet)",
+     "polozky": [
+      {
+       "text": "Kód je celý na GitHubu, data na Disku (_Zaloha Netlify DB) a ve stažených zálohách."
+      },
+      {
+       "text": "Založit nový projekt Netlify nad repozitářem (produkční větev `main`, příkaz a výstup bere z `netlify.toml`), nastavit proměnné z přílohy 2 včetně dočasného `ADMIN_INIT_HESLO`, nasadit. Postup propojení je v `NASAZENI_NETLIFY.md`."
+      },
+      {
+       "text": "Přihlásit se jako hlavní správce, obnovit ze **staženého souboru** (kopie z Disku) — vrátí se zakázky, ceník, firma, šablony a matice; účty založit znovu. Smazat `ADMIN_INIT_HESLO`."
+      },
+      {
+       "text": "Nová adresa webu: oznámit uživatelům; noční záloha běží sama. Totéž zopakovat pro testovací web."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Únik hesla nebo tokenu",
+     "polozky": [
+      {
+       "text": "Heslo uživatele → reset (odhlásí jeho relace). Heslo správce → změnit a projít protokol zakázek a Uživatele."
+      },
+      {
+       "text": "`TAJEMSTVI_RELACE` → vyměnit (kapitola P3), odhlásí všechny. `PIPEDRIVE_TOKEN` → vygenerovat nový v Pipedrive a vyměnit."
+      },
+      {
+       "text": "Přístup do Netlify nebo GitHubu → změnit heslo, zkontrolovat členy týmu a dvoufázové ověření, v Netlify zkontrolovat proměnné a poslední nasazení, na GitHubu poslední commity v `main` a `test`."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Vrácení verze aplikace",
+     "polozky": [
+      {
+       "text": "Rychle: Netlify → Deploys → starší úspěšné nasazení → **Publish deploy** (kapitola P7)."
+      },
+      {
+       "text": "Trvale: vývoj vrátí změnu v repozitáři (revert), projde testovacím webem a nasadí se do `main`."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-integrace",
+   "nadpis": "P12. Integrace",
+   "bloky": [
+    {
+     "typ": "tabulka",
+     "hlavicka": [
+      "Služba",
+      "Směr",
+      "Kudy",
+      "Co je potřeba"
+     ],
+     "radky": [
+      [
+       "Pipedrive (CRM)",
+       "jen **čtení**",
+       "serverové funkce `/api/pd/*`; token jen na serveru",
+       "`PIPEDRIVE_TOKEN`, `PIPEDRIVE_DOMENA`; právo čtení v matici"
+      ],
+      [
+       "ARES",
+       "čtení",
+       "přímo z prohlížeče na ares.gov.cz (povoleno v CSP)",
+       "nic; veřejná služba"
+      ],
+      [
+       "Google Disk",
+       "zápis kopií záloh, čtení pro obnovu",
+       "z prohlížeče do vybrané složky (Chrome / Edge)",
+       "přístup správce ke složce _Zaloha Netlify DB"
+      ]
+     ]
+    },
+    {
+     "typ": "podnadpis",
+     "text": "Pipedrive"
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Co funguje",
+       "vyklad": "Seznam obchodních případů a jejich detail, stav dealu propojeného se zakázkou (otevřený / vyhraný / ztracený / smazaný) a mapa polí v Nastavení. Číslo dealu k zakázce zadává administrátor."
+      },
+      {
+       "pojem": "Co se nezapisuje",
+       "vyklad": "**Do Pipedrive aplikace nic nezapisuje.** Logika zápisu (hodnota dealu, platby) je připravená, ale nezapojená — zapojení rozhodne vlastník."
+      },
+      {
+       "pojem": "Limity",
+       "vyklad": "Detail dealu nejvýš 30 čerstvých načtení za hodinu na uživatele, stav dealu u zakázky 120 dotazů za hodinu (načtený stav platí 10 minut); seznam a detail se drží 90 s v `pd_cache`, noční úklid je po 30 dnech maže; při přetížení Pipedrive se dotaz opakuje nejvýš třikrát. Odmítnutý token hlásí server jako chybu Pipedrive."
+      }
+     ]
+    },
+    {
+     "typ": "podnadpis",
+     "text": "ARES a Google Disk"
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "ARES",
+       "vyklad": "Tlačítko u IČO v hlavičce zakázky a v kartě zákazníka doplní název, DIČ a sídlo. Výpadek ARES aplikaci neomezí — údaje se vyplní ručně."
+      },
+      {
+       "pojem": "Google Disk",
+       "vyklad": "Prohlížeč zapisuje přes rozhraní pro práci se složkami; poprvé je potřeba vybrat složku a povolit zápis. Aplikace ve složce maže jen vlastní soubory `otisk_RRRR-MM-DD.json(.gz)` podle retence, nic jiného. Ranní hlídač čte jen metadata přes konektor Google Disku v claude.ai."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-odpovednosti",
+   "nadpis": "P13. Odpovědnosti a autorství",
+   "bloky": [
+    {
+     "typ": "ram",
+     "nadpis": "Autorství",
+     "odstavce": [
+      "**Autor programu Jaroslav Vendl (2026).** Poznámka o autorství je v `AUTORSTVI.md`, v hlavičkách hlavních zdrojových souborů a jako komentář v každém sestaveném souboru aplikace; nesmí se odstranit ani změnit (hlídá ji test `src/test_autorstvi.js`)."
+     ]
+    },
+    {
+     "typ": "tabulka",
+     "hlavicka": [
+      "Role",
+      "Odpovídá za"
+     ],
+     "radky": [
+      [
+       "Vlastník (J. V.)",
+       "rozhoduje o všem, co mění chování aplikace; schvaluje posuny do `test` a `main`, tagy a releasy; drží účty Netlify, GitHub, claude.ai a token Pipedrive"
+      ],
+      [
+       "Hlavní správce aplikace",
+       "účty a role, zálohy a jejich potvrzení, ceník a firemní údaje, první linie podpory obchodníků"
+      ],
+      [
+       "Další administrátoři",
+       "zástup hlavního správce (reset hesel, zálohy, ceník)"
+      ],
+      [
+       "Vývoj",
+       "vývojová sezení Claude Code řízená koordinací; pracují v paralelních větvích, testují a předávají přes `PREDAVKA.md`; pokyny a schválení jdou přes vlastníka"
+      ],
+      [
+       "Obchodníci a vedoucí",
+       "správnost zakázek a nabídek, hlášení chyb správci"
+      ]
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Postup: předání systému nástupci nebo IT firmě",
+     "polozky": [
+      {
+       "text": "Netlify: přidat nástupce do týmu (nebo převést tým), ověřit přístup k projektům engscalc a testengscalc, předat tarif a fakturaci."
+      },
+      {
+       "text": "GitHub: přidat nástupce do repozitáře s právem správce (nebo převést repozitář); ověřit Actions a releasy."
+      },
+      {
+       "text": "Google Disk: nasdílet složku _Zaloha Netlify DB (a Manual) nástupci, nebo zálohy přesměrovat do jeho Disku (v aplikaci vybrat novou složku stejného jména)."
+      },
+      {
+       "text": "Pipedrive: vystavit nový token z účtu nástupce a vyměnit `PIPEDRIVE_TOKEN` (kapitola P3)."
+      },
+      {
+       "text": "Aplikace: založit nástupci účet Administrátor na obou webech, změnit `ADMIN_EMAIL` na jeho adresu a nasadit; vyměnit `TAJEMSTVI_RELACE`."
+      },
+      {
+       "text": "Naplánované úlohy: ranní hlídač záloh založit v účtu nástupce (nebo nahradit vlastním dohledem) a staré úlohy vypnout."
+      },
+      {
+       "text": "Projít s nástupcem kontrolní seznamy z přílohy 4 a jednou spolu provést zkušební obnovu na testovacím webu."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-api",
+   "nadpis": "Příloha 1. API cesty a kdo je smí volat",
+   "bloky": [
+    {
+     "typ": "text",
+     "text": "Všechny cesty obsluhují serverové funkce ve složce `netlify/functions` (cesta je v `config.path` každé funkce). „Přihlášený“ znamená platnou relaci aktivního účtu; zápisy (jiné než GET) server přijme jen z vlastní stránky (ochrana proti cizímu původu), cesty Pipedrive i u čtení. Odpovědi API se neukládají do mezipaměti (`no-store`)."
+    },
+    {
+     "typ": "tabulka",
+     "hlavicka": [
+      "Cesta",
+      "Metody",
+      "Kdo smí",
+      "K čemu"
+     ],
+     "radky": [
+      [
+       "/api/prihlaseni",
+       "POST",
+       "bez přihlášení (jen z vlastní stránky)",
+       "přihlášení e-mailem a heslem; prvního hlavního správce založí heslem z `ADMIN_INIT_HESLO`"
+      ],
+      [
+       "/api/odhlaseni",
+       "POST",
+       "kdokoli (jen z vlastní stránky)",
+       "odhlášení a zneplatnění relací účtu na všech zařízeních"
+      ],
+      [
+       "/api/zdravi",
+       "GET",
+       "bez přihlášení",
+       "stav serveru, verze a prostředí"
+      ],
+      [
+       "/api/ja",
+       "GET",
+       "přihlášený",
+       "kdo je přihlášen: profil, podpis, příznak hlavního účtu"
+      ],
+      [
+       "/api/zakazky",
+       "GET, POST, DELETE",
+       "GET a POST přihlášený (odemknout odeslanou nabídku, změnit její číslo nebo ponechat cizího autora smí jen administrátor); DELETE jen administrátor",
+       "ukládání, čtení a mazání zakázek, rejstřík"
+      ],
+      [
+       "/api/zakaznici",
+       "GET, POST, DELETE",
+       "GET a POST přihlášený; DELETE jen administrátor",
+       "karty zákazníků"
+      ],
+      [
+       "/api/program",
+       "GET, POST",
+       "GET přihlášený (historie verzí s právem matice na ceníky); POST jen administrátor",
+       "platný ceník, katalog, slevy a jejich zveřejnění"
+      ],
+      [
+       "/api/firma",
+       "GET, POST",
+       "GET přihlášený; POST jen administrátor",
+       "firemní údaje"
+      ],
+      [
+       "/api/sablony",
+       "GET, POST",
+       "GET přihlášený; POST jen administrátor",
+       "šablony dokumentů Word, verze a režim"
+      ],
+      [
+       "/api/slovnik",
+       "GET, POST",
+       "GET přihlášený; POST jen administrátor",
+       "slovník překladů EN/DE/FR"
+      ],
+      [
+       "/api/popisy",
+       "GET, POST",
+       "GET přihlášený (sběr ze všech zakázek jen administrátor); POST jen administrátor",
+       "dodatkové texty položek a jejich překlady"
+      ],
+      [
+       "/api/zobrazeni",
+       "GET, POST",
+       "GET přihlášený; POST jen administrátor s heslem správce",
+       "matice zobrazení a práv rolí"
+      ],
+      [
+       "/api/schvalovani",
+       "GET",
+       "přihlášený",
+       "rejstřík žádostí o schválení slevy (bez částek)"
+      ],
+      [
+       "/api/vypocet",
+       "POST",
+       "přihlášený",
+       "serverový výpočet zakázky (aplikace ho zatím nevolá)"
+      ],
+      [
+       "/api/uzivatele",
+       "GET, POST",
+       "seznam a správa účtů jen administrátor (založení správce, reset cizího hesla, povýšení na správce a zásah do jiného správce s heslem správce); vlastní heslo, profil a podpis každý přihlášený; profil a podpis hlavního správce jen on sám",
+       "správa účtů a profilů"
+      ],
+      [
+       "/api/zaloha",
+       "GET",
+       "jen administrátor",
+       "stažení zálohy bez otisků hesel, po stránkách"
+      ],
+      [
+       "/api/zaloha_vynuceno",
+       "GET, POST",
+       "jen administrátor; kopie na Disk a smazání otisku před obnovou s heslem správce; potvrzení úbytku jen hlavní správce s heslem",
+       "ruční otisk, evidence kopií na Disk, retence"
+      ],
+      [
+       "/api/obnova",
+       "POST",
+       "jen administrátor; zápis účtů nebo matice z otisku s heslem správce; hlavní účet jen hlavní správce",
+       "náhled a obnova databáze ze zálohy"
+      ],
+      [
+       "/api/analytika",
+       "GET, POST",
+       "zápis událostí a čtení režimu přihlášený; souhrn a vypínač sběru jen administrátor",
+       "analytika používání"
+      ],
+      [
+       "/api/controlling",
+       "GET, POST",
+       "jen administrátor",
+       "číselník nákladových skupin a mapování ceníku"
+      ],
+      [
+       "/api/controlling/export",
+       "GET",
+       "jen administrátor",
+       "export předkalkulace za období"
+      ],
+      [
+       "/api/pd/dealy",
+       "GET",
+       "přihlášený s právem matice na čtení Pipedrive (administrátor vždy)",
+       "seznam a hledání obchodních případů"
+      ],
+      [
+       "/api/pd/deal",
+       "GET",
+       "jako /api/pd/dealy",
+       "detail obchodního případu"
+      ],
+      [
+       "/api/pd/stav",
+       "GET",
+       "přihlášený",
+       "stav dealu propojeného se zakázkou"
+      ],
+      [
+       "/api/pd/pole",
+       "GET",
+       "jen administrátor",
+       "mapa vlastních polí Pipedrive"
+      ]
+     ]
+    },
+    {
+     "typ": "tabulka",
+     "titulek": "Plánované funkce (bez adresy, zvenku nejdou zavolat)",
+     "hlavicka": [
+      "Funkce",
+      "Rozvrh (UTC)",
+      "Co dělá"
+     ],
+     "radky": [
+      [
+       "zaloha_nocni",
+       "*/15 2-3 * * *",
+       "noční otisk databáze po částech, retence záloh, noční úklid"
+      ]
+     ]
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "Limity serveru",
+       "vyklad": "zakázka nejvýš 4 MB; podpis asi 660 kB; ruční otisk 1× za 10 min a 20× za den; brzda přihlášení 10 neúspěchů na e-mail za 15 min a 60 na adresu klienta; obnova po dávkách (jeden požadavek Netlify přijme zhruba 6 MB)."
+      },
+      {
+       "pojem": "Limity Pipedrive",
+       "vyklad": "detail dealu 30 čerstvých načtení za hodinu na uživatele; stav dealu 120 dotazů za hodinu na uživatele, platí 10 min; seznam a detail se drží 90 s, mapa polí 24 h; opakování při přetížení nejvýš 3×."
+      },
+      {
+       "pojem": "ARES",
+       "vyklad": "volá prohlížeč, ne server; dotaz odejde jen pro IČO s platnou kontrolní číslicí, čeká nejvýš 12 s."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-promenne",
+   "nadpis": "Příloha 2. Proměnné prostředí",
+   "bloky": [
+    {
+     "typ": "text",
+     "text": "Proměnné serverových funkcí se nastavují v Netlify (Project configuration → Environment variables) zvlášť pro každý projekt a propíšou se dalším nasazením. Hodnoty se nikam nezapisují."
+    },
+    {
+     "typ": "tabulka",
+     "hlavicka": [
+      "Proměnná",
+      "Povinná",
+      "Ostrý web",
+      "Testovací web",
+      "Účel"
+     ],
+     "radky": [
+      [
+       "TAJEMSTVI_RELACE",
+       "ano",
+       "✔",
+       "✔ (jiná hodnota)",
+       "podpis relací, aspoň 16 znaků; změna odhlásí všechny"
+      ],
+      [
+       "ADMIN_EMAIL",
+       "ano",
+       "✔",
+       "✔",
+       "e-mail hlavního správce"
+      ],
+      [
+       "ADMIN_INIT_HESLO",
+       "jen dočasně",
+       "jen při zakládání / obnově",
+       "jen při zakládání / obnově",
+       "náhradní heslo hlavního správce do prázdné databáze (aspoň 8 znaků); po přihlášení smazat"
+      ],
+      [
+       "PIPEDRIVE_TOKEN",
+       "pro CRM",
+       "✔",
+       "jen při zkoušce CRM",
+       "API token Pipedrive"
+      ],
+      [
+       "PIPEDRIVE_DOMENA",
+       "pro CRM",
+       "✔",
+       "jen při zkoušce CRM",
+       "doména firmy v Pipedrive"
+      ],
+      [
+       "PROSTREDI",
+       "jen test",
+       "—",
+       "`test`",
+       "testovací prostředí (pruh, titulek, podpis relací)"
+      ],
+      [
+       "PROSTREDI_POPIS",
+       "ne",
+       "—",
+       "nepovinně",
+       "text do pruhu testovacího prostředí"
+      ]
+     ]
+    },
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "NODE_VERSION",
+       "vyklad": "Proměnná sestavení zapsaná přímo v `netlify.toml` (připnutá verze Node pro funkce), v Netlify se nenastavuje."
+      },
+      {
+       "pojem": "PORT, HOST",
+       "vyklad": "Jen místní vývojový server `server/server.js` (výchozí 127.0.0.1:8000); v Netlify se nepoužívají."
+      },
+      {
+       "pojem": "KNG_…",
+       "vyklad": "Přepínače testů a nástrojů (např. `KNG_NEZVYSOVAT_VERZI`, `KNG_MUTACE_CAST`, `KNG_PODKLADY`); v provozu se nenastavují."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-slovnik",
+   "nadpis": "Příloha 3. Slovník pojmů",
+   "bloky": [
+    {
+     "typ": "seznam",
+     "polozky": [
+      {
+       "pojem": "OCK",
+       "vyklad": "ocelová konstrukce výtahové šachty — hlavní předmět kalkulace (část II)"
+      },
+      {
+       "pojem": "PROJ",
+       "vyklad": "projekční práce (zaměření, studie, dokumentace) — samostatná kalkulace a nabídka"
+      },
+      {
+       "pojem": "CN, nabídka",
+       "vyklad": "cenová nabídka pro zákazníka; po odeslání se zamkne (uzamčená varianta)"
+      },
+      {
+       "pojem": "Varianta",
+       "vyklad": "jedna verze kalkulace uvnitř zakázky; číslo varianty ≥ 2 se tiskne s příponou (…555.2)"
+      },
+      {
+       "pojem": "Krycí list",
+       "vyklad": "souhrn zakázky pro firmu (zástupci, termíny, platby); zdroj údajů pro smlouvu o dílo"
+      },
+      {
+       "pojem": "SoD",
+       "vyklad": "smlouva o dílo (OCK realizace, PROJ projekce) generovaná do Wordu ze šablony"
+      },
+      {
+       "pojem": "Ceník, řada ceníku",
+       "vyklad": "sazby a ceny OCK a PROJ zveřejněné administrátorem; tuzemská a zahraniční řada (zahraniční = odchylky od tuzemské)"
+      },
+      {
+       "pojem": "Globální přirážka",
+       "vyklad": "procento z nákladu na cenu (v kódu „marže“)"
+      },
+      {
+       "pojem": "Model 1, Model 2",
+       "vyklad": "režimy výpočtu: Model 1 = shodně s původní excelovou předlohou, Model 2 = opravený (kapitola V16)"
+      },
+      {
+       "pojem": "ATYP",
+       "vyklad": "příznak nestandardní šachty s přirážkami k hodinám a rezervám"
+      },
+      {
+       "pojem": "Standard OCK",
+       "vyklad": "pravidla, zda šachta spadá do standardu (Nastavení → Standard OCK)"
+      },
+      {
+       "pojem": "Matice zobrazení",
+       "vyklad": "nastavení, co která role vidí (Nastavení → Zobrazení)"
+      },
+      {
+       "pojem": "Hlavní správce",
+       "vyklad": "administrátor s e-mailem z proměnné `ADMIN_EMAIL`"
+      },
+      {
+       "pojem": "Netlify Blobs",
+       "vyklad": "úložiště dat projektu Netlify — online databáze aplikace"
+      },
+      {
+       "pojem": "Netlify Functions",
+       "vyklad": "serverové funkce obsluhující adresy `/api/*`"
+      },
+      {
+       "pojem": "Otisk",
+       "vyklad": "záloha celé databáze uložená v úložišti `zalohy` (noční, ruční, před obnovou)"
+      },
+      {
+       "pojem": "Retence",
+       "vyklad": "pravidla, kolik záloh se drží a kdy se starší mažou"
+      },
+      {
+       "pojem": "Pojistka úbytku",
+       "vyklad": "zastavení mazání záloh, když nová záloha nese nápadně méně dat"
+      },
+      {
+       "pojem": "Relace",
+       "vyklad": "přihlášení uživatele (podepsaná cookie, 12 hodin)"
+      },
+      {
+       "pojem": "Dávka",
+       "vyklad": "ucelená vývojová změna v samostatné větvi `claude/…`"
+      },
+      {
+       "pojem": "Integrace",
+       "vyklad": "sloučení dávek a celé testovací kolo před posunem do `test`"
+      },
+      {
+       "pojem": "Testovací kolo",
+       "vyklad": "`nastroje/testovaci_kolo.sh`: sestavení, sady, mutace, statické kontroly"
+      },
+      {
+       "pojem": "Mutace",
+       "vyklad": "test testů: úmyslně vnesená chyba, kterou musí sady chytit"
+      },
+      {
+       "pojem": "Release, tag",
+       "vyklad": "vydaná verze na GitHubu (`vD.M.N`) s popisem změn"
+      },
+      {
+       "pojem": "CSP",
+       "vyklad": "Content-Security-Policy — hlavička, která prohlížeči říká, odkud smí stránka načítat a kam se připojovat"
+      },
+      {
+       "pojem": "Koordinace",
+       "vyklad": "řídicí vývojové sezení, které zadává a slučuje dávky a hlídá zálohy"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "kap-p-seznamy",
+   "nadpis": "Příloha 4. Kontrolní seznamy",
+   "bloky": [
+    {
+     "typ": "kroky",
+     "nadpis": "Každý měsíc (asi 15 minut)",
+     "polozky": [
+      {
+       "text": "Nastavení → Databáze na ostrém webu: noční záloha z dneška, žádné červené varování, kopie na Disku mladší než týden; ve složce _Zaloha Netlify DB přibývají soubory."
+      },
+      {
+       "text": "Netlify → Logs → Functions → `zaloha_nocni`: poslední noci bez opakovaných chyb; funkce má značku Scheduled."
+      },
+      {
+       "text": "Netlify → Team → Usage: čerpání tarifu (funkce, přenos, Blobs, sestavení) bez blížícího se limitu."
+      },
+      {
+       "text": "Nastavení → Uživatelé: odešlí kolegové vypnutí a archivovaní, aspoň dva aktivní administrátoři, hlavní správce nastavený."
+      },
+      {
+       "text": "Ranní hlídač záloh: v posledním měsíci přišly jen očekávané e-maily; úloha je zapnutá."
+      },
+      {
+       "text": "Nastavení → Analytika: neobvyklý počet chyb nebo přihlášení."
+      },
+      {
+       "text": "GitHub → Releases: vydané verze mají release; verze bez tagu vypíše `python3 nastroje/release_odkaz.py --chybejici`."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Každé čtvrtletí",
+     "polozky": [
+      {
+       "text": "Zkušební obnova na testovacím webu podle kapitoly P6 (záloha z ostrého → test → náhled → obnova → kontrola zakázek a tisku)."
+      },
+      {
+       "text": "Kontrola přístupů: členové týmu Netlify, přístupy do repozitáře, sdílení složky _Zaloha Netlify DB, účty Administrátor v aplikaci; dvoufázové ověření."
+      },
+      {
+       "text": "Bezpečnost: hloubkový security test kódu (vývojová dávka), kontrola, že opuštěná nasazení (schaftscalc) jsou vypnutá."
+      },
+      {
+       "text": "Celé testovací kolo s mutacemi nad `main` (Actions → Testy → Run workflow) — všechny joby zelené."
+      },
+      {
+       "text": "Projít `BEZPECNOST_MEZE.md` a tento dokument: platí přijatá rizika, sedí adresy a odpovědnosti."
+      }
+     ]
+    },
+    {
+     "typ": "kroky",
+     "nadpis": "Před každým nasazením do ostrého provozu",
+     "polozky": [
+      {
+       "text": "Celé testovací kolo nad větví `test` zelené; CHANGELOG popisuje, co se mění."
+      },
+      {
+       "text": "Testovací web: verze v hlavičce = `/api/zdravi` = `verze.txt`; přihlášení funguje."
+      },
+      {
+       "text": "Vyžaduje-li verze migraci ceníku, zveřejnit ceník na testu a zkontrolovat dialog změn."
+      },
+      {
+       "text": "Dvě až tři typické zakázky (běžná šachta, zasklení, PROJ): ceny bez nečekaných skoků, kontroly bez nových hlášek."
+      },
+      {
+       "text": "Tisk nabídky, krycího listu a smlouvy do Wordu (česky a jednou cizím jazykem)."
+      },
+      {
+       "text": "Nastavení → Databáze: Zálohovat teď a Obnovit ze zálohy… → jen náhled."
+      },
+      {
+       "text": "Náhled pohledem obchodníka: vidí jen to, co má."
+      },
+      {
+       "text": "Odsouhlasení vlastníkem → `test` → `main`. Po nasazení: `/api/zdravi`, přihlášení, migrace ceníku, druhý den ráno noční záloha; release a tag."
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

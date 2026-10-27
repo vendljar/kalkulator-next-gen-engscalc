@@ -8491,6 +8491,32 @@
     "proc": "vzor a šablona příručky (postupy krok za krokem, tisk A4)"
    }
   ]
+ },
+ {
+  "id": "535",
+  "vlna": "B",
+  "stav": "hotovo",
+  "dulezitost": "stredni",
+  "slozitost": "M",
+  "hotovoV": "dokumentace (bez verze aplikace)",
+  "nazev": "D1: kompletní dokumentace systému pro administrátora a nástupce (jeden dokument, části I–III)",
+  "proc": "Pokyn J. V. 27. 10. 2026: „Chci, aby se jednalo o JEDEN dokument rozdělený po sekcích a kapitolách obsahující všechny informace.“ Čtenář je i nástupce nebo IT firma, která systém nezná — podle dokumentu musí jít systém převzít.",
+  "detail": "Část I Obsluha = příručka správce (A1–A15) + příručka obchodníka (1–32) se snímky; část II Výpočty = manuál výpočtu OCK (V1–V16, bez kapitoly novinek); nová část III Provoz systému (P1–P13: schéma, prostředí a adresy, přístupy a proměnné prostředí bez hodnot, matice práv, data a doba držení, zálohy a retence Netlify × Disk, verze a nasazení, testy, bezpečnost a přijatá rizika, dohled a plánované úlohy, havarijní postupy, integrace, odpovědnosti a autorství) a přílohy 1–4 (API cesty a kdo je smí volat, proměnné prostředí, slovník, kontrolní seznamy). Jeden obsah na jedné straně A4 (2 úrovně, 2 sloupce, čísla stran v PDF). Zdroje částí I a II beze změny.",
+  "hotovoKdyz": "`bash manual/kompletni/sestav.sh <složka mimo repo>` vyrobí HTML + PDF (v27.10.1: 179 stran A4); test ověří API cesty, plánované funkce, proměnné prostředí a úložiště Blobs proti kódu oběma směry, čísla retence a limitů proti konstantám a zakázané vzory textu.",
+  "kde": "`manual/kompletni/provoz.json`, `manual/kompletni/sestav.js`, `manual/kompletni/dokoncit.js`, `manual/kompletni/sestav.sh`; test `src/test_dokumentace_kompletni.js`",
+  "pozn": "Dávka D1, větev claude/d1-kompletni-dokumentace nad 62ea0c8 (v27.10.1). Hotový dokument se do repa neukládá. Zdroje částí I a II (manual/obsah.json, manual/admin/, manual_vypocet/) netknuté kvůli souběžné M9 #534.",
+  "zavisi": [
+   {
+    "id": "532",
+    "typ": "doporuceno",
+    "proc": "část I = příručka správce a obchodníka"
+   },
+   {
+    "id": "531",
+    "typ": "doporuceno",
+    "proc": "část II = manuál výpočtu OCK"
+   }
+  ]
  }
  ],
  "meta" : {
