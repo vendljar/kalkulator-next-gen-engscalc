@@ -1024,9 +1024,11 @@ pamet.delete('zalohy/retence-varovani');
 /* K3-N4 (O7): limit vynucených otisků — ruční záloha hned po jiné ukáže, kdy to půjde */
 uvolniLimitZaloh();
 await page.evaluate(() => onlineZalohaTed());
-test('K3-N4 O7: druhá ruční záloha do 10 minut → hláška s časem, kdy to půjde',
-  await page.evaluate(async () => (await onlineZalohaTed()) === false && /Znovu to půjde dnes v \d{1,2}:\d{2}/.test(ONLINE_STAV.hlaska)),
-  await page.evaluate(() => ONLINE_STAV.hlaska));
+/* #529 (nález J. V. 27. 10. 2026): u hotové čerstvé zálohy informace (šedě), ne „nepodařilo" */
+test('K3-N4 O7 / #529: druhá ruční záloha do 10 minut → šedá informace s časem hotové zálohy a kdy půjde další',
+  await page.evaluate(async () => (await onlineZalohaTed()) === false && ONLINE_STAV.hlaskaTyp === ''
+    && /^Poslední záloha z \d{1,2}:\d{2} je hotová\. Další ruční záloha půjde v \d{1,2}:\d{2}\.$/.test(ONLINE_STAV.hlaska)),
+  await page.evaluate(() => [ONLINE_STAV.hlaska, ONLINE_STAV.hlaskaTyp]));
 test('K3-N4 O7: otisk při přihlášení je pod týmž limitem — klient dostane chybu se stavem 429 (onlineZalohaAuto ji zamlčí)',
   await page.evaluate(async () => (await onlineApi('/api/zaloha_vynuceno', { duvod: 'auto' }).then(() => 'ok', e => e.stav)) === 429));
 test('N6: obchodník tlačítko ani hlídku kopie nevidí', await page.evaluate(() => {

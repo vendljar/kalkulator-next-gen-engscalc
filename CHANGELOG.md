@@ -8,6 +8,38 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v27.10.1 — #529 O-T: nálezy J. V. z testu v26.10.12 na testengscalc, větev claude/o-t-test-26-10-12
+
+Nad integrací 95a1356 (= test 2c0d71a + předávka; v26.10.12). Na ostrém webu, Disku ani v Pipedrive nic.
+
+- **Falešná hláška „Zálohu se nepodařilo pořídit" (hlavní nález).** J. V. jednou klikl na *Zálohovat teď*
+  a dostal žlutě „… poslední vynucená záloha je mladší než 10 minut", ač záloha z 9:42:54 v přehledu byla.
+  Příčina: **automatická záloha po přihlášení správce** (`<den>T<hhmmss>-auto`) se počítala do 10minutového
+  odstupu K3-N4 stejně jako ruční, takže první skutečné kliknutí do 10 minut po přihlášení dostalo 429;
+  přehled navíc každou vynucenou zálohu (i automatickou) psal jako „ručně". Oprava: ruční zálohu blokuje
+  odstupem **jen ruční** (`vynuceneLimit(klice, ted, druh)`), denní strop 20 za 24 h počítá dál všechny
+  a automatickou blokuje každá. Přehled píše „automaticky po přihlášení". Když limit opravdu platí,
+  server vrací i `posledni` a `posledniHotova` a karta šedě napíše „Poslední záloha z 9:42 je hotová.
+  Další ruční záloha půjde v 9:52." (rozpracovaná: „… se právě pořizuje"); denní strop zůstává varováním.
+  Druhé volání *Zálohovat teď* během běhu se připojí k prvnímu (jedno kliknutí = jedna záloha) a automatika
+  po přihlášení nic nepořizuje, když se přehled záloh nenačetl. Proč automatika 27. 10. vůbec běžela, ač
+  noční záloha z 3:00:31 byla, z obrazovky nejde zpětně zjistit (logy funkcí na testengscalc) — oprava
+  falešnou hlášku odstraní v každém případě.
+- **Pojistka retence fail-closed (postřeh T1 #528).** Záznam varování, který není objekt (text, číslo,
+  true/false, pole — vzniknout může jen chybou zápisu), dřív `retenceDrzena` brala jako „nedrženo" a retence
+  by mazala. Teď retenci v Netlify i úklid kopií na Disku drží, karta ho ukáže jako poškozený záznam
+  a potvrdit ho jde **jen heslem hlavního správce** (i kdyby volba `ZALOHY_VOLBY.potvrditUbytek` dovolila
+  všem); potvrzení ho nahradí čitelným záznamem. Přehled záloh vrací záznam tak, jak je (i `false`, `0`).
+- **Texty v Nastavení → Databáze:** „1 účtů" → 1 účet / 2–4 účty / 5+ účtů (`onlineSklon`), „v přehledu
+  N posledních", u obnovy „zapíše se N záznamů (N nových, N přepsaných)" a „N záznamů se nevešlo…" se
+  skloňují. „Stáhnout zálohu" beze změny (J. V. ověřil, funguje).
+- **Testy:** `netlify/test_529_zalohy.mjs` (33, před opravou 20 FAIL), `src/test_529_zaloha_klient.js`
+  (17 — simulace přihlášení správce + kliknutí proti skutečnému limitu, kroky, dvojklik; před opravou 12 FAIL
+  a reprodukuje přesně hlášku z testengscalc včetně „ručně, 1 účtů"), `src/test_z2_disk_retence.js` +4.
+  T1 #528 „poškozený záznam → 409" nahrazen novým chováním. Mutace „#529" 17/17; dotčené „#522" 16/16,
+  „#523" 64/64, „#527" 49/49, „#528" 3/3, „O7" 25/25, „O11" 10/10 (čtyři mutace K3-N4 a dvě K4-N13 / K9-N1
+  přepsané na nový tvar kódu); `--kontrola` server 1054 a jádro 586 úseků v pořádku.
+
 ## v26.10.12 — O-K9 #527: opravy nálezů nezávislého auditu záloh K9 #526, větev claude/o-k9-zalohy
 
 Nad integrací bab9a7c (v26.10.10 = Z1 #522 + Z2 #523 + zpráva K9 + příručka M5). Zpráva auditu
