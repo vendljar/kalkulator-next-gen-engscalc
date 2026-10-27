@@ -8413,6 +8413,27 @@
     "proc": "otisk po částech a obnova Z1"
    }
   ]
+ },
+ {
+  "id": "528",
+  "vlna": "A",
+  "stav": "hotovo",
+  "dulezitost": "stredni",
+  "slozitost": "S",
+  "hotovoV": "testy (bez verze)",
+  "nazev": "T1: testy na 3 přeživší mutace záloh z úplného běhu Testy #198",
+  "proc": "Úplný mutační běh GitHub Actions Testy #198 nad test = d2de07b (v26.10.12): 1034/1037 chycených; přežily „#522: noční funkce otisk dne pořizuje znovu“, „#522: krok otisku bez časového rozpočtu“ a „O11: K4-N13 potvrzení bez kontroly varování“.",
+  "detail": "Příčina (přežily i lokálně, nejde o rychlost stroje): O-K9 #527 přidal pojistky, které hlídaný úsek překryly, a mutace bez značky [#527] se po O-K9 znovu nepouštěly (O-K9 ověřoval jen filtr „#527“). K9-N3: krok hotový otisk sám nepřepíše — rozdíl jen u hotového otisku se zbylým stavem (smazání stavu selhalo). K9-N6: rozpočet i po každé části — velká data v test_zalohy_objem končí krok tam; kontrolu po dávce čtení rozliší jen malé záznamy. O-K9 `stejne` odmítne potvrzené varování samo; retenceDrzena navíc odmítá záznam, který není objekt. Nové testy v netlify/test_o_k9_zalohy.mjs se simulovanými hodinami (Date.now) — deterministické. Navíc test_zalohy N1: den ručního klíče podle posunutých hodin (kolem půlnoci UTC padal výchozí stav mutací).",
+  "hotovoKdyz": "Mutace „#522“ a „O11“ dvakrát po sobě 100 %, „#527“ 100 %, --kontrola, pojistka (test proti mutovanému kódu selže).",
+  "kde": "`netlify/test_o_k9_zalohy.mjs`, `netlify/test_zalohy.mjs`, `netlify/mutace.mjs` (značka [#528])",
+  "pozn": "Dávka T1, větev claude/t1-mutace-zalohy nad d2de07b. Kód aplikace beze změny. Postřeh: retenceDrzena u záznamu varování, který není objekt (text, číslo), vrací „nedrženo“ — retence by běžela; vzniknout může jen chybou zápisu, neopravováno bez pokynu.",
+  "zavisi": [
+   {
+    "id": "527",
+    "typ": "tvrda",
+    "proc": "testy cílí na kód po O-K9"
+   }
+  ]
  }
  ],
  "meta" : {

@@ -1,3 +1,27 @@
+# Předávka — 27. 10. 2026: T1 #528 — testy na 3 přeživší mutace z Testy #198, větev `claude/t1-mutace-zalohy`
+
+Nad `d2de07b` (test, v26.10.12). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze změny**, verze se
+nezvyšuje (CHANGELOG „Testy“ doplní koordinace). Neslučováno; na ostrém webu, Disku ani v Pipedrive nic.
+
+**Proč přežily (i lokálně — ne rychlostí stroje):** O-K9 #527 přidal pojistky, které hlídaný úsek překryly, a mutace
+bez značky [#527] se po O-K9 nepouštěly (O-K9 ověřoval jen filtr „#527“ nad zúženými sadami).
+- *noční funkce otisk dne pořizuje znovu* — od K9-N3 krok hotový otisk sám nepřepíše; rozdíl jen u hotového otisku se
+  zbylým stavem (smazání `rozpracovany/<den>` selhalo) — další běh po 15 min ho „dopořídil“ znovu (nový manifest).
+- *krok otisku bez časového rozpočtu* — od K9-N6 se rozpočet hlídá i po každé části a velká data test_zalohy_objem
+  končí krok tam; kontrolu po dávce čtení rozliší jen malé záznamy (žádná část se nenaplní).
+- *K4-N13 potvrzení bez kontroly varování* — potvrzené varování odmítne už `stejne` (!potvrzeno); `retenceDrzena`
+  navíc odmítá záznam, který není objekt (poškozený text/číslo) — bez ní 200 a záznam přepsán.
+
+**Testy:** `netlify/test_o_k9_zalohy.mjs` oddíly „T1 #528“ (simulované hodiny `Date.now`, deterministické) 65/0;
+pojistka: každá ze 3 mutací ručně → 1 / 3 / 4 FAIL. `test_zalohy.mjs` N1: den ručního klíče podle posunutých hodin —
+ve 23:52 UTC padal výchozí stav mutací (před opravou 1 FAIL, po 165/0). Mutace (plné sady, po částech):
+„#522“ 16/16 **dvakrát**, „O11“ 10/10 **dvakrát**, „#527“ 49/49; `--kontrola` 1037/1037; `testovaci_kolo.sh --jen
+build,staticke` VŠE ZELENÉ. Tři mutace mají ve jménu značku [#528]. Roadmapa #528 hotovo (overit_roadmapu 13/0).
+
+**Postřeh pro J. V. (neopravováno):** `retenceDrzena` u záznamu varování, který není objekt, vrací „nedrženo“ —
+retence by běžela (fail-open); vzniknout může jen chybou zápisu.
+
+---
 # Předávka — 26. 10. 2026: O-K9 #527 — opravy nálezů auditu záloh K9 #526, větev `claude/o-k9-zalohy`
 
 Nad `bab9a7c` (integrace v26.10.10). **Verze 26.10.11** (souběžně #354 — koordinace přečísluje). Koordinace:
