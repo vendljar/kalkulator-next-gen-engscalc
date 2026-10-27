@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v27.10.3 — C4 #540: kód controllingu podle rozhodnutí J. V. 27. 10. 2026, větev claude/c4-controlling-rozhodnuti
+
+Nad integrací 60f8fd2 (v27.10.2) + C3 #537 (sloučeno). Rozhodnutí J. V. z dialogu nad `podklady/CONTROLLING_ROZHODNUTI.md`
+(oddíl „Rozhodnuto 27. 10. 2026"). Výpočet jádra beze změny; na ostrém webu, Disku ani v Pipedrive nic.
+
+- **Nové — tlačítko Prodáno (otázka 1)** na konci krycího listu OCK i PROJ (karta Prodej): u odeslané (zamčené) varianty
+  zapíše datum prodeje a prodanou variantu (`v.prodano`, v zakázce jen jedna), **definitivně zamkne krycí list** (i volná
+  pole a pole jen pro správce) a hlavičku jako po tisku SoD — hlídá server porovnáním s uloženou verzí; připraví zápis do
+  Pipedrive (deal → Vyhráno, hodnota bez DPH, krycí list Backoffice): bez tokenu jen stav „čeká na odeslání" a náhled
+  „Co by se zapsalo do Pipedrive" — do Pipedrive se nic nevolá (#510). Odemknout smí vedoucí a administrátor s důvodem;
+  razítka, stav Pipedrive a stopu `zak.prodejHistorie` píše server (`prodServer` v `src/objednane.js`, volá
+  `netlify/lib/zakazka_kontrola.mjs`). Potvrzovací dialog. Duplikát zakázky prodej ani stopu nedědí.
+- **Controlling bere prodej z Prodáno** (`ctrlProdej`: hromadný export, rejstřík `ctrlRejstrikDny`, Popis); objednané
+  příplatky jen doplní přiobjednané; starší zakázky jen s objednanými příplatky platí jako prodej dál. Nečitelné datum
+  prodeje jde mezi přeskočené (K6-S6), nikdy tiše „mimo období".
+- **Výchozí filtr stavu Pipedrive hromadného exportu = Všechny** (otázka 2); „Vyhrané" zůstává volbou.
+- **Zaokrouhlení (otázka 4):** sloupec „Zaokrouhlení (Kč)" v souhrnu Kapitol nese u OCK i zaokrouhlení základu nahoru na
+  tisíce (`CEIL` v `src/engine.js`); Řádky beze změny.
+- **Podíly (otázka 5):** podíly skupin v Kapitolách dorovnané na 100 % metodou největšího zbytku (`ctrlPodilyNa100`).
+- **Protokol exportů (otázka 6)** `program/controlling_exporty` je v otisku, ve stažené záloze i v kopii na Disk;
+  obnova ho nepřepisuje (není částí obnovy). Test úplnosti záloh (N4) ho vede jako zálohovaný.
+- **Verze struktury exportu 4 (otázka 12):** zvyšuje se při každé změně exportu (pravidlo u `CTRL_EXPORT_VERZE`);
+  list Popis nově řádek „Změna struktury" a vysvětlení sloupců Zaokrouhlení a Podíl.
+- **Stará ukázka smazána (otázka 11):** `podklady/ukazky/vyrob_controlling_export_v2.js` + `.xlsx`; `.md` odkazuje na
+  `nastroje/ukazka_controlling_export.js`. Nová ukázka `podklady/controlling/UKAZKA_2026-CONTROLLING-EXPORT_v27.10.3.xlsx`
+  (dvě zakázky s Prodáno), šablona podkladů přegenerovaná (verze 4, otázky Q4, Q6–Q8 podle rozhodnutí).
+- Bez kódu: záloha (otázka 3 — dělá O-T #529; sloučení s WIP O-T bez konfliktu), PROJ skupiny, účty Helios, termín
+  šablony (listopad), sloupec „V nabídce" (nedělá se, #447/3 uzavřen).
+- Testy: nová sada `src/test_controlling_c4.js` 43/0 (pojistka: nad 2ad47f4 9 FAIL; s novým modelem a starým
+  `zamek.js` 5 FAIL), `test_prava` blok #540 (15 kontrol; nad 2ad47f4 6 FAIL + výjimka), `netlify/test_controlling.mjs`
+  #540 (záloha, obnova, výchozí filtr; nad 2ad47f4 4 FAIL), `test_zalohy` N4 (nad 2ad47f4 1 FAIL),
+  `test_ukazka_controlling` +4 (nad 2ad47f4 5 FAIL), `overit_controlling` +4 (karta Prodej). Mutace se značkou [#540].
+
 ## v27.10.2 — E1 #533: jednotná konvence názvů exportovaných souborů, větev claude/e1-nazvy-exportu
 
 Nad integrací 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026: soubory se mají jmenovat podle toho, co skutečně

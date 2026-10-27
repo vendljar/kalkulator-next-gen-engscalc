@@ -56,7 +56,7 @@ const tel = py('vz = ["tel. 6" + "02-590-945", "+42" + "1 905 123 456", "+42" + 
 test('SEC-N4: telefon s pomlčkami a +421 pozná, datum ne (+420 hlídá dosavadní vzor)',
   (tel.stdout || '').trim() === '[True, True, True, False, False]', [tel.stdout, tel.stderr]);
 test('SEC-N4: čte .patch, .xlsx, .csv a .env (přípony)', /'\.patch'/.test(py('print(K.PRIPONY + K.ZIP_PRIPONY)').stdout)
-  && cte.includes('podklady/PIPEDRIVE_UPRAVY_SERVERU_2026-09-22.patch') && cte.includes('podklady/ukazky/controlling_export_v2_ukazka.xlsx')
+  && cte.includes('podklady/PIPEDRIVE_UPRAVY_SERVERU_2026-09-22.patch') && cte.some(f => /^podklady\/controlling\/UKAZKA_2026-CONTROLLING-EXPORT_v[\d.]+\.xlsx$/.test(f))
   && /'\.csv'/.test(py('print(K.PRIPONY)').stdout) && /'\.env'/.test(py('print(K.PRIPONY)').stdout));
 /* Sešit Office: e-mail uvnitř sharedStrings.xml kontrola přečte (dočasný soubor mimo repo). */
 const os = require('os'), fs = require('fs');
@@ -77,7 +77,9 @@ const ign = (f) => spawnSync('git', ['check-ignore', '-q', f], { cwd: KOREN }).s
 test('SEC-N5: .gitignore zná .env, .env.local, cenik.xlsx, nabidka.docx, export.csv, negativni_kontrola.json',
   ['.env', '.env.local', 'cenik.xlsx', 'nabidka.docx', 'export.csv', 'negativni_kontrola.json'].every(ign),
   ['.env', '.env.local', 'cenik.xlsx', 'nabidka.docx', 'export.csv', 'negativni_kontrola.json'].filter(f => !ign(f)));
-test('SEC-N5: ukázkový sešit v podklady/ukazky/ se neignoruje', !ign('podklady/ukazky/controlling_export_v2_ukazka.xlsx'));
+/* #540: stará ukázka v podklady/ukazky/ smazána — hlídá se nová v podklady/controlling/ a sešit v podklady/ukazky/ obecně. */
+test('SEC-N5: ukázkové sešity v podklady/ukazky/ a podklady/controlling/ se neignorují', !ign('podklady/ukazky/ukazka.xlsx')
+  && !ign('podklady/controlling/UKAZKA_2026-CONTROLLING-EXPORT_v1.1.1.xlsx'));
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 if (fail) process.exit(1);

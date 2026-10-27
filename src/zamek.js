@@ -397,8 +397,8 @@ function zamekKryciPoleStav(v, list, id) {
    * v prohlížeči (ui/zamek_ui.js); server ji nemá a pravidlo se ho netýká.
    * Platí i pro pole jen pro správce (K8-K1, #516) — jeho změnu by
    * zamekSnimkyVrat před odesláním stejně vrátila. */
-  if (typeof zamekSnimekCekaNaServer === 'function' && zamekSnimekCekaNaServer(v)) return 'zmrazeno';
   if (variantaProdana(v)) return 'zmrazeno';                         // #540: po Prodáno nic
+  if (typeof zamekSnimekCekaNaServer === 'function' && zamekSnimekCekaNaServer(v)) return 'zmrazeno';
   if (tab && tab.jenAdmin.indexOf(id) >= 0) return 'jen_admin';
   if (!zamekKryciOtevreny(v))
     return (zamekKryciPolePlnaMoc(list, id) || (tab && ZAMEK_KRYCI_PO_SOD_VOLNE.indexOf(id) >= 0)) ? 'editovatelne' : 'zmrazeno';

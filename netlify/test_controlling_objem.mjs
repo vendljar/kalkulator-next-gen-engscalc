@@ -98,8 +98,8 @@ test('#504 objem (K7-W10): po dávkách, žádná dávka nečte víc než davkaM
   casy.length > 1 && davky.length === casy.length && davky.every(n => n >= 1 && n <= M.davkaMax)
   && davky.reduce((a, b) => a + b, 0) === kandidatu && kandidatu >= 1000, { davek: casy.length, davky, kandidatu, celkem });
 const prot = (JSON.parse(pamet.get('program/controlling_exporty') || '{}').zaznamy) || [];
-test('#504 objem: protokol jeden záznam, dokončený, 1000 zakázek, filtr vyhrané',
-  prot.length === 1 && prot[0].stav === 'hotovo' && prot[0].zakazek === 1000 && prot[0].pd === 'won' && prot[0].podle === 'prodej'
+test('#504 objem: protokol jeden záznam, dokončený, 1000 zakázek, výchozí filtr všechny (#540)',
+  prot.length === 1 && prot[0].stav === 'hotovo' && prot[0].zakazek === 1000 && prot[0].pd === 'vse' && prot[0].podle === 'prodej'
   && prot[0].davek === casy.length, prot[0]);
 console.log('dávek ' + casy.length + ', nejdelší ' + Math.max(...casy) + ' ms, celkem ' + celkem + ' ms');
 

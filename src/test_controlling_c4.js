@@ -147,6 +147,9 @@ else {
     test('#540 controlling: datum prodeje bere z Prodáno, objednané jen doplní',
       C.ctrlProdej(obe).datum === DNES && C.ctrlHromadnyZakazka(obe, fP, { jekly: JEKLY }).ok
       && C.ctrlHromadnyZakazka(obe, fP, { jekly: JEKLY }).exp.radky.some(r => r.objednano), C.ctrlProdej && C.ctrlProdej(obe));
+    const rozb = kopie(ulozena); rozb.varianty[0].prodano.datum = { toString: 1 };
+    const rr = C.ctrlHromadnyZakazka(rozb, fP, { jekly: JEKLY });
+    test('#540 controlling: nečitelné datum prodeje jde mezi přeskočené (ne tiše mimo období)', !rr.ok && !rr.mimo && /datum prodeje/.test(rr.duvod || ''), rr);
     test('#540 rejstřík: den prodeje z Prodáno', JSON.stringify(C.ctrlRejstrikDny(ulozena).prodej) === JSON.stringify({ den: DNES, rada: 'cr' }),
       C.ctrlRejstrikDny(ulozena));
     const e1 = C.ctrlExportVarianty(ulozena, ulozena.varianty[0], { jekly: JEKLY });
@@ -184,6 +187,7 @@ else {
     Math.abs(radky.reduce((a, r) => a + r[iPr], 0) + rS[hS.indexOf('Zaokrouhlení (Kč)')] - rS[hS.indexOf('Cena před slevou (Kč)')]) < 0.01 * (radky.length + 1));
   test('#540 bod 5: podíly dorovnané metodou největšího zbytku', typeof C.ctrlPodilyNa100 === 'function'
     && JSON.stringify(C.ctrlPodilyNa100([1, 1, 1], 3)) === '[33.34,33.33,33.33]'
+    && JSON.stringify(C.ctrlPodilyNa100([1, 2], 3)) === '[33.33,66.67]'
     && JSON.stringify(C.ctrlPodilyNa100([0, 0], 0)) === '[0,0]');
   const podily = kap.slice(1, iS).filter(r => r.length === 13 && r[1] === 'OCK' && typeof r[10] === 'number');
   test('#540 bod 5: součet podílů skupin OCK v Kapitolách = přesně 100 %', Math.round(podily.reduce((a, r) => a + r[10], 0) * 100) === 10000,

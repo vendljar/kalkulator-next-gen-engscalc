@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v27.10.2 · sestaveno 27. 10. 2026",
+  "verze": "Platí pro aplikaci v27.10.3 · sestaveno 27. 10. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -497,7 +497,7 @@
             },
             {
               "pojem": "Controlling",
-              "vyklad": "Kapitoly nákladů pro porovnání předkalkulace se skutečností v Reporting CZ: id skupiny, název, položka v ManVysl, účty Helios nyní a budoucí, typ nákladu, chování, oblast. Úprava se ukládá **jako nová verze**; tlačítko **Export předkalkulace** vyrobí soubor pro controlling (filtry období, OCK / PROJ, řada ČR / ZAHR, stav dealu — popis v kapitole 28)."
+              "vyklad": "Kapitoly nákladů pro porovnání předkalkulace se skutečností v Reporting CZ: id skupiny, název, položka v ManVysl, účty Helios nyní a budoucí, typ nákladu, chování, oblast. Úprava se ukládá **jako nová verze**; tlačítko **Export předkalkulace** vyrobí soubor pro controlling (filtry období, OCK / PROJ, řada ČR / ZAHR, stav dealu — výchozí *Všechny stavy*; popis v kapitole 28). Prodej bere export z tlačítka **Prodáno** v krycím listu (odemknout ho smí vedoucí a administrátor s důvodem). Soubor nese **verzi struktury** (list Popis) — zvyšuje se při každé změně exportu a Popis říká, co se změnilo. **Protokol exportů** (kdo a kdy vyvážel) je v otisku i ve stažené záloze; obnova ho nepřepisuje."
             },
             {
               "pojem": "Mapa polí CRM",

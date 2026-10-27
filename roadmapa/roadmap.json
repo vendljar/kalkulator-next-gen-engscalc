@@ -7758,11 +7758,11 @@
    "stav": "blokovano",
    "dulezitost": "stredni",
    "slozitost": "S–M",
-   "nazev": "Controlling — co zbývá po #447: zaokrouhlení v exportu, Kapitoly, protokol v záloze, PROJ",
+   "nazev": "Controlling — co zbývá po #447: rozvržení PROJ a budoucí účty Helios od controllingu",
    "proc": "Po uzavření #447 (C1–C6) zůstaly otevřené nálezy koordinace z ukázky na 5 nabídkách (21. 10.) a body, které doplní controlling po návratu.",
-   "detail": "Čeká na J. V.: (1) zaokrouhlení OCK nahoru export neukazuje (sloupec Zaokrouhlení = 0); (4) Kapitoly zaokrouhlují po skupinách (podíl 100,01 %); výjimka zálohy pro protokol exportů program/controlling_exporty (není v otisku); rozvržení PROJ a budoucí účty Helios doplní controlling (mimo do prosince). Nálezy (2) a (3) vyřešila C5 (výběr varianty, sloupec Výsledek).",
-   "hotovoKdyz": "J. V. rozhodl u (1), (4) a protokolu; rozvržení PROJ a budoucí účty zapsané v číselníku.",
-   "kde": "`src/controlling.js`, `netlify/functions/controlling_export.mjs`, `netlify/test_zalohy.mjs`",
+   "detail": "Rozhodnuto J. V. 27. 10. 2026 (podklady/CONTROLLING_ROZHODNUTI.md) a hotovo v C4 #540 (v27.10.3): (1) zaokrouhlení OCK nahoru je v souhrnu Kapitol, (4) podíly Kapitol dorovnané na 100 %, protokol exportů je v záloze (obnova ho nepřepisuje), prodej podle tlačítka Prodáno, výchozí filtr Všechny, verze struktury 4. Zbývá: rozvržení PROJ (platí výchozí, potvrdí controlling) a budoucí účty Helios — controlling vyplní šablonu podkladů (pošle se v listopadu), J. V. nahraje import. Záloha výchozího controllingu (nález B) řeší O-T #529.",
+   "hotovoKdyz": "Rozvržení PROJ potvrzené controllingem a budoucí účty Helios zapsané v číselníku (import XLSX).",
+   "kde": "`src/controlling.js`, Nastavení → Controlling (import mapování), `podklady/controlling/SABLONA_PODKLADU_CONTROLLING.xlsx`",
    "zavisi": [
     {
      "id": "447",
@@ -7770,8 +7770,8 @@
      "proc": "navazuje na hotový controlling C1–C6"
     }
    ],
-   "cekaNa": "rozhodnutí J. V. (nálezy z ukázky 21. 10.) a podklady controllingu (po návratu v prosinci)",
-   "pozn": "Zapsala D1 22. 10. 2026 ze zbytku #447. C3 #537 (27. 10. 2026): otázky pro J. V. v podklady/CONTROLLING_ROZHODNUTI.md (nálezy 1 a 4 ověřeny dnešním kódem — trvají; nově výchozí výběr podle prodeje a filtr vyhráno), šablona podkladů a ukázkový export v podklady/controlling/."
+   "cekaNa": "podklady controllingu (šablona se pošle v listopadu, vyplní po návratu v prosinci)",
+   "pozn": "Zapsala D1 22. 10. 2026 ze zbytku #447. C3 #537 (27. 10. 2026): otázky pro J. V. v podklady/CONTROLLING_ROZHODNUTI.md (nálezy 1 a 4 ověřeny dnešním kódem — trvají; nově výchozí výběr podle prodeje a filtr vyhráno), šablona podkladů a ukázkový export v podklady/controlling/. C4 #540 (27. 10. 2026): body 1, 2, 4, 5, 6, 11, 12 hotové; bod #447/3 (sloupec V nabídce) uzavřen bez kódu."
   },
   {
    "id": "501",
@@ -8472,6 +8472,32 @@
     "id": "500",
     "typ": "doporuceno",
     "proc": "připravuje rozhodnutí a podklady pro dokončení #500"
+   }
+  ]
+ },
+ {
+  "id": "540",
+  "vlna": "G",
+  "stav": "hotovo",
+  "dulezitost": "stredni",
+  "slozitost": "M",
+  "hotovoV": "v27.10.3",
+  "nazev": "C4: kód controllingu podle rozhodnutí J. V. 27. 10. 2026 — tlačítko Prodáno, výchozí filtr, zaokrouhlení, podíly, protokol v záloze, verze exportu",
+  "proc": "J. V. 27. 10. 2026 rozhodl otázky 1–12 z podklady/CONTROLLING_ROZHODNUTI.md (C3 #537); dávka C4 je převádí do kódu.",
+  "detail": "Prodáno na konci krycího listu OCK i PROJ: datum prodeje a prodaná varianta (controlling bere prodej odsud, objednané příplatky jen doplňují, staré zakázky s objednanými platí dál), definitivní zámek krycího listu i volných polí a hlavičky (server), připravený zápis do Pipedrive (deal → Vyhráno + krycí list) jen jako „čeká na odeslání\" s náhledem — bez tokenu se nic neodesílá (#510); odemknout vedoucí a administrátor s důvodem, stopa prodejHistorie. Výchozí filtr stavu Pipedrive Všechny; Zaokrouhlení (Kč) v souhrnu Kapitol i s CEIL na tisíce; podíly na 100 % (největší zbytek); protokol exportů v otisku, stažené záloze i kopii na Disk, obnova ho nepřepisuje; verze struktury 4 a pravidlo „zvýšit při každé změně exportu\"; stará ukázka D1 smazána, nová ukázka a šablona přegenerované.",
+  "kde": "`src/objednane.js` (prod*), `src/zamek.js` (variantaProdana), `src/controlling.js` (ctrlProdej, ctrlPodilyNa100, CTRL_EXPORT_VERZE 4), `netlify/lib/zakazka_kontrola.mjs`, `netlify/lib/zalohovani.mjs`, `src/ui/sod_ui.js` (prodejKarta), `src/ui/kryci_ui.js`, `src/ui/kryci_proj_ui.js`, `src/ui/controlling_ui.js`; testy `src/test_controlling_c4.js`, `netlify/test_prava.mjs`, `netlify/test_controlling.mjs`, `netlify/test_zalohy.mjs`, `overit_controlling.mjs`; mutace [#540]",
+  "hotovoKdyz": "Testy s pojistkou pro body 1, 2, 4, 5, 6, 12 projdou; mutace „#540\" jádra i serveru chycené; ukázka a šablona přegenerované; příručky popisují Prodáno.",
+  "pozn": "Dávka C4, větev claude/c4-controlling-rozhodnuti nad 60f8fd2 (v27.10.2) + C3 #537. Souběžně P3 #536 (simulátor Pipedrive) — náhled zápisu je tu jednoduchý (prodPdZapis), koordinace sjednotí. Verzi může koordinace přečíslovat.",
+  "zavisi": [
+   {
+    "id": "537",
+    "typ": "tvrda",
+    "proc": "rozhodnutí J. V. nad podkladem C3"
+   },
+   {
+    "id": "500",
+    "typ": "doporuceno",
+    "proc": "dokončuje rozhodnuté body #500"
    }
   ]
  }

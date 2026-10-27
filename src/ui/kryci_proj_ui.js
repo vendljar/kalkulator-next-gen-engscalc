@@ -168,7 +168,9 @@ function renderKryciProj() {
     ${kryciProjTiskBlok(zab)}
   </div>
   ${typeof sodProjKarta === 'function'
-    ? `<div class="noprint" style="margin-top:14px">${card('Smlouva o dílo a plná moc (PROJ)', sodProjKarta())}</div>` : ''}`;
+    ? `<div class="noprint" style="margin-top:14px">${card('Smlouva o dílo a plná moc (PROJ)', sodProjKarta())}</div>` : ''}
+  ${typeof prodejKarta === 'function'
+    ? `<div class="noprint" style="margin-top:14px">${card('Prodej', prodejKarta('proj'))}</div>` : ''}`;
 }
 
 /* Tisková tlačítka krycího listu PROJ — stejné pravidlo jako v OCK

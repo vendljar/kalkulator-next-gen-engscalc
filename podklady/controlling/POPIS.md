@@ -38,32 +38,29 @@ postkalkulaci v Reporting CZ.
 ## 2. `UKAZKA_2026-CONTROLLING-EXPORT_v27.10.1.xlsx` — ukázkový export dnešním kódem
 
 Hromadný export za období 1.–31. 10. 2026 (OCK i PROJ, ČR i zahraničí, **výběr podle zamčení, všechny stavy
-Pipedrive** — s výchozími volbami by ukázka nevyvezla nic, viz rozhodnutí 1 a 2), vyrobený kódem aplikace
-v27.10.1: `ctrlHromadnyFiltr` + `ctrlHromadnyZakazka` + `ctrlExportListy` (`src/controlling.js`), `xlsxZapis`
-(`src/xlsx.js`). Verze struktury souboru **3**.
+Pipedrive** — výběr podle prodeje by vzal jen dvě prodané zakázky), vyrobený kódem aplikace (verze ve jméně
+souboru): `ctrlHromadnyFiltr` + `ctrlHromadnyZakazka` + `ctrlExportListy` (`src/controlling.js`), `xlsxZapis`
+(`src/xlsx.js`). Verze struktury souboru **4**.
 
 Vyrábí ho `node nastroje/ukazka_controlling_export.js [složka nebo soubor.xlsx] [--json]` (bez cíle sem);
 jméno podle konvence `TYP_rok-OBSAH_verze.přípona` (E1 #533) s verzí z `verze.txt`. Hlídá
-`src/test_ukazka_controlling.js` (22 kontrol) — změna exportu, která ukázku rozbije, spadne v kole hned
-(stará ukázka D1 `podklady/ukazky/vyrob_controlling_export_v2.js` se po #504 rozbila bez povšimnutí).
+`src/test_ukazka_controlling.js` — změna exportu, která ukázku rozbije, spadne v kole hned.
 
 **Data jsou smyšlená:** „Zkušební zákazník …", IČO 12345678, e-maily @priklad.cz, smyšlené deal id 9001–9005,
 zkušební ceník testů (`src/zkusebni_cenik.js` — kulatá, schválně nesmyslná čísla), výchozí mapování.
 
 | Číslo | Oblast | Pipedrive | Co předvádí |
 |---|---|---|---|
-| 2026 - OPR - CN - 0901 | OCK, ČR, Model 1 | vyhráno | zákazník objednal dva příplatky (C6) → v Řádcích „Objednáno dodatečně = ano", datum prodeje |
+| 2026 - OPR - CN - 0901 | OCK, ČR, Model 1 | vyhráno | **Prodáno** 14. 10. a zákazník přiobjednal dva příplatky (C6) → v Řádcích „Objednáno dodatečně = ano", datum prodeje |
 | 2026 - OPR - CN - 0902 | OCK, ČR, Model 2 | otevřeno | schválená sleva 5 % (souhrn Kapitol: Sleva 5 %) |
 | 2026 - OPR - CN - 0903 | OCK, zahraničí | bez dealu | řídící varianta B nezamčená → vyvezena zamčená A, „Řídící varianta = ne" (C5) |
-| 2026 - OVP - CN - 0904 | PROJ, Praha | vyhráno | běžná nabídka projekce; hodiny v Množství (Kč/hod) |
+| 2026 - OVP - CN - 0904 | PROJ, Praha | vyhráno | **Prodáno** 21. 10. bez objednaných příplatků; hodiny v Množství (Kč/hod) |
 | 2026 - OVP - CN - 0905 | PROJ, mimo Prahu | prohráno | zámek bez zmrazeného výsledku → „Výsledek = přepočtený" |
 
 Listy: **Řádky** 139 (jen náklady v ceně nabídky + objednané příplatky), **Příplatky – volby** 59,
-**Kapitoly** (po skupinách + souhrn zakázky), **Popis** (verze struktury 3, filtr, počty, číselník, zakázky).
+**Kapitoly** (po skupinách + souhrn zakázky), **Popis** (verze struktury 4 a co se v ní změnilo, filtr, počty,
+číselník, zakázky s datem prodeje).
 
-**Co ukázka ukazuje k otevřeným nálezům (#500):**
-- *Zaokrouhlení OCK (nález 1)* — souhrn Kapitol „Zaokrouhlení (Kč)" = 0 u všech 3 OCK; součet prodejních cen
-  řádků je pod „Cenou před slevou" o zaokrouhlení na tisíce (`CEIL` v `src/engine.js:2134`).
-- *Podíly Kapitol (nález 4)* — součet podílů 100,02 % a 99,98 % u dvou OCK zakázek.
-
-Nástroj obojí vypisuje (`--json` → `zjisteni`), takže po opravě je vidět, že zmizelo.
+**Zaokrouhlení a podíly:** souhrn Kapitol „Zaokrouhlení (Kč)" nese u OCK i zaokrouhlení základní ceny nahoru na
+tisíce (součet prodejních cen řádků + zaokrouhlení = Cena před slevou); podíly skupin dávají u každé strany
+součet přesně 100 %. Nástroj obojí vypisuje (`--json` → `zjisteni`).
