@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v27.10.2 — P3 #536: příprava Pipedrive bez tokenu (simulátor, suchý běh zápisu), větev claude/p3-pipedrive-simulator
+
+Nad integrací 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026 (vlna D, navazuje na #16, #113, #115, #116, #509, #510).
+**Do skutečného Pipedrive se nic nevolá ani nezapisuje**; na ostrém webu, Disku ani v Pipedrive nic.
+
+- **Simulátor API Pipedrive** (`netlify/lib/pipedrive_simulator.mjs`): zapne ho `PIPEDRIVE_SIMULATOR=1`; napojený
+  v jediném místě sítě (`pdZavolej`), takže překlad chyb, opakování u 429 i stránkování jdou touž cestou jako proti
+  Pipedrive; má přednost i před tokenem. Smyšlená data: 230 dealů (dvě stránky s kurzorem, stavy open/won/lost/deleted,
+  dealy bez organizace, osoby i čísla), organizace s číselným IČ, osoby (e-maily `@priklad.cz`, telefony +420 000 000 …),
+  uživatelé, pole dealu a organizace podle dohodnuté tabulky (`pdPoleDohodnuta` v `pd_mapa.mjs`, volby podle účtu
+  21. 10. 2026; „Platební kalendář SoD PROJ" chybí jako dnes v účtu). Chyby 401 / 404 / 429 / 500, scénáře
+  `PIPEDRIVE_SIMULATOR_SCENAR` (token, limit, limitN, vypadek), denní rozpočet tokenů `PIPEDRIVE_SIMULATOR_ROZPOCET`,
+  PATCH v paměti (vývoj #115). **Pojistka:** na Netlify jen s `PROSTREDI=test`; odmítne se u větve `main`
+  a webu schaftscalc — důvod vidí správce v Nastavení → Mapa polí CRM (`/api/pd/pole` nese `rezim`
+  a `simulatorOdmitnut`, nikdy token). Zapnutý simulátor hlásí červený pruh „SIMULÁTOR PIPEDRIVE".
+- **Suchý běh zápisu** — karta „Co by se zapsalo do Pipedrive (náhled, nic se neodesílá)" na konci krycího listu
+  OCK i PROJ (právo `crm.pipedrive`). `POST /api/pd/nanecisto` vrátí tabulku pole v Pipedrive → hodnota → zdroj
+  v kalkulaci se stavy *zapíše se / nelze převést / chybí pole v CRM / dohledá zápis / nevyplněno*, kolize
+  OCK × PROJ (zapíše se OCK) a „v Pipedrive je dnes …" u zakázky s číslem dealu. Podklad skládá prohlížeč
+  (`src/pd_nanecisto.js`) z krycích listů **řídící** varianty, jen vedoucí strany (P6); převod dělá `pdNanecisto`
+  (`pd_prevod.mjs`) **touž logikou jako zápis** — test hlídá, že řádky „zapíše se" = `custom_fields` + hodnota dealu
+  z `pdZapisDealu`. Bez napojení podle dohodnuté tabulky (režim „dohoda"), se simulátorem i s porovnáním dealu.
+  Funkce jen čte (mapa polí, uživatelé, deal) se stropem na uživatele. Export CSV pro integrátora
+  `PIPEDRIVE_<rok>-<číslo nabídky>_v<verze>.csv` (konvence E1 #533 lokálně — koordinace po sloučení sjednotí).
+- **Oprava (nález simulátoru):** `/api/pd/dealy` a `/api/pd/deal` vracely odmítnutý token Pipedrive jako HTTP 401 —
+  klient (`onlineApi`) ho bere za vypršelé přihlášení a obchodníka by odhlásil. Nově 502 jako u `/api/pd/pole` (#114).
+- **Podklady pro J. V.:** `podklady/PIPEDRIVE_TOKEN_POSTUP.md` (kam vložit token a doménu na testengscalc, ověření bez
+  prozrazení tokenu, výměna a zrušení, co se stane po zapnutí, simulátor), `podklady/PIPEDRIVE_UPOMINKA_INTEGRATOR.md`
+  (koncept upomínky s otázkami z 21. 10., odesílá J. V.), `podklady/PIPEDRIVE_ROZHODNUTI_115.md` (dvě kalkulace
+  na jednom dealu — 4 varianty, doporučení „vlastník podle Čísla nabídky v dealu", otázky s možnostmi).
+- **Testy:** `netlify/test_pd_simulator.mjs` (52), `netlify/test_pd_nanecisto.mjs` (62), matice práv
+  (`test_prava.mjs`) s novou funkcí. Pojistka: nad 62ea0c8 obě sady nejdou načíst (simulátor ani funkce neexistují);
+  oprava 401 → 502 ověřena vrácením řádku (test spadne s 401). Mutace se značkou „#536" (15).
 ## v27.10.1 — A1 #530: poznámka o původním autorství v kódu, větev claude/a1-autorstvi
 
 Nad integrací 1820f81 (pokyn J. V. 27. 10. 2026: „stačí pouze v kódu, že jsem původním autorem této aplikace").
