@@ -4753,7 +4753,7 @@ const MUTACE = [
     nahrad: '  { const out = { ...v, potvrzeno }; delete out.dalsi; return out; }',
     proc: 'další (neviděná) varování by zmizela s prvním potvrzením' },
   { nazev: '#527 K9-N1: potvrzení bez druhé kontroly záznamu', soubor: 'functions/zaloha_vynuceno.mjs',
-    hledej: "      if (!stejne(v2) || String(v2.kdy || '') !== String(v.kdy || '') || String(v2.zdroj || '') !== String(v.zdroj || '')) return null;",
+    hledej: "      if (!stejne(v2) || (!poskozeny && (String(v2.kdy || '') !== String(v.kdy || '') || String(v2.zdroj || '') !== String(v.zdroj || '')))) return null;",
     nahrad: '      if (!v2) return null;',
     proc: 'varování zapsané během ověření hesla by potvrzení přepsalo' },
   { nazev: '#527 K9-N1: potvrzení nehlídá čas varování', soubor: 'functions/zaloha_vynuceno.mjs',
