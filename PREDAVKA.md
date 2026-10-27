@@ -1,3 +1,30 @@
+# Předávka — 27. 10. 2026: D1 #535 — kompletní dokumentace systému (jeden dokument), větev `claude/d1-kompletni-dokumentace`
+
+Roadmapa #535 ve vlně G (průběžný rozvoj; vlny A a B uzavřené — zápis meta převzat z 6c8cbf9). Nad `62ea0c8` (integrace v27.10.1). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze změny, verze se
+nezvyšuje.** Neslučováno; na ostrém webu, Disku ani v Pipedrive nic. Zdroje částí I a II (`manual/obsah.json`,
+`manual/admin/`, `manual_vypocet/`, `manual/sablona.html`) netknuté kvůli souběžné M9 #534.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| Jeden dokument, 1 obsah na 1 straně A4 | ✅ | 80 kapitol: I (A1–A15 + 1–32), II (V1–V16), III (P1–P13) + přílohy 1–4; obsah 2 úrovně, 2 sloupce, čísla stran v PDF |
+| Část III (nový text) | ✅ | `manual/kompletni/provoz.json`; fakta z kódu (config.path/schedule, process.env, úložiště, konstanty retence a limitů) + naplánované úlohy účtu (hlídač záloh) |
+| Skládání | ✅ | `manual/kompletni/sestav.js` + `dokoncit.js` (prohlížeč) + `sestav.sh` (celý běh ~2 min) |
+| Sazba | ✅ | bez vynucených zalomení (kromě titulu s obsahem); nedělitelný jen obrázek s titulkem; zbylé řídké strany (6, vše část I) = snímek vyšší než zbytek strany |
+| Test | ✅ | `src/test_dokumentace_kompletni.js` 92/0; pojistka bez `manual/kompletni/` 0/2, bez 3 řádků 88/4 |
+| Výstup | ✅ | v27.10.1: **179 stran A4**, PDF ~9 MB, HTML ~1 MB — necommitováno |
+| CHANGELOG, roadmapa #535 (vlna G), PREDAVKA | ✅ | `roadmapa.py --kontrola` 532 položek čistě |
+
+**Sestavení (koordinace):** `bash manual/kompletni/sestav.sh <složka mimo repo>` (sestavení s `KNG_NEZVYSOVAT_VERZI=1`
+jen uvnitř skriptu, snímky obou sad z testovacího prostředí, manuál výpočtu, složení, PDF, test). Ze snímků, které už
+jsou: `node manual/kompletni/sestav.js <snimky.json> <snimky_admin.json> <složka> [--bez-pdf]`. Řádek „verze“
+v `manual/kompletni/provoz.json` se s každou verzí aplikace opravuje stejně jako u příruček (sestav.js jinak zastaví).
+
+**Pro koordinaci / J. V.:**
+- Části I a II nesou ještě historii (v PDF ~8× „rozhodnutí/pokyn J. V.“, ~25× „od vX“, ~85 dat, 15 čísel roadmapy;
+  kap. V16 má rámeček „Novinky…“) — čistí je M9 #534; po jejím sloučení dokument jen znovu sestavit.
+- Ověřit: tarif Netlify, kdo konkrétně má jaký přístup, stav schaftscalc (v dokumentu „ověřit“).
+- Trvale zapnutá bezpečnostní naplánovaná úloha v účtu není (jen hlídače záloh) — dokument doporučuje čtvrtletní test.
+
 # Předávka — 27. 10. 2026: M9 #534 — manuály jako souhrn faktů, obsah na 1 stranu, sazba bez děr, větev `claude/m9-manualy-fakta`
 
 Nad `62ea0c8` (integrace v27.10.1). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze změny, verze se

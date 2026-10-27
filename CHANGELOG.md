@@ -8,6 +8,28 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## Dokumentace (bez nové verze aplikace) — D1 #535: kompletní dokumentace systému (jeden dokument), větev claude/d1-kompletni-dokumentace
+
+Nad integrací 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026: jeden dokument rozdělený po částech a kapitolách se všemi
+informacemi, podle kterého jde systém převzít. Kód aplikace beze změny; na ostrém webu, Disku ani v Pipedrive nic.
+
+- **Jeden dokument (HTML + PDF A4, v27.10.1: 179 stran) s jedním obsahem na jedné straně** (2 úrovně, 2 sloupce,
+  čísla stran v PDF): **Část I Obsluha** = příručka správce A1–A15 + příručka obchodníka 1–32 se snímky;
+  **Část II Výpočty** = manuál výpočtu OCK V1–V16 (kapitola novinek vydání se nebere, odkazy „kap. N“ → „kap. VN“);
+  **Část III Provoz systému** (nová, `manual/kompletni/provoz.json`) P1–P13 + přílohy 1–4: schéma systému,
+  prostředí a adresy, přístupy a proměnné prostředí (jen názvy), matice práv, úložiště Blobs a doba držení,
+  retence záloh Netlify × Disk a obnova, verze a nasazení, testy, bezpečnost a přijatá rizika, dohled a plánované
+  úlohy, havarijní postupy, integrace, odpovědnosti a autorství; API cesty a kdo je smí volat, slovník, kontrolní
+  seznamy.
+- Skládání `manual/kompletni/sestav.js` (+ `dokoncit.js` v prohlížeči, `sestav.sh` celý běh): části I a III
+  vykresluje beze změny šablona `manual/sablona.html`, část II stojí ve vlastním shadow DOM; zdroje částí I a II
+  netknuté. Sazba: nadpis drží s odstavcem, nedělitelný je jen obrázek s titulkem, žádné vynucené zalomení
+  kromě titulní strany s obsahem.
+- Test `src/test_dokumentace_kompletni.js` (92): API cesty, plánované funkce, proměnné prostředí a úložiště Blobs
+  z kódu ↔ dokument oběma směry, retence a limity proti konstantám, zakázané vzory textu, skládání, vykreslení
+  v Chromiu (obsah ≤ 1 strana A4). Pojistka: bez `manual/kompletni/` 0/2; bez řádků `/api/pd/stav`,
+  `PIPEDRIVE_DOMENA` a `pd_stav` 88/4.
+
 ## Dokumentace (bez nové verze aplikace) — M9 #534: manuály jako souhrn faktů, obsah na jednu stranu, sazba bez děr, větev claude/m9-manualy-fakta
 
 Nad integrací 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026: „odstraň z textu manuálu rozhodnutí a jeho historii … uprav velikost textu v obsahu tak, aby se obsah vešel na jednu stranu … ať zbytečně nevznikají prázdná místa.“ Kód aplikace beze změny.
