@@ -240,6 +240,16 @@ function variantaUzamcena(v) {
   return !!zamekInfo(v);
 }
 
+/* PRODÁNO (#540, rozhodnutí J. V. 27. 10. 2026): prodaná varianta nese
+ * `v.prodano = { datum, kdo, kdy, pipedrive }` (src/objednane.js, prod*).
+ * Prodat jde jen odeslanou (zamčenou) nabídku; krycí list takové varianty
+ * je zmrazený celý — i volná pole a pole jen pro správce — a hlavička se
+ * zmrazí jako po tisku SoD. Odemknout smí vedoucí a administrátor. */
+function variantaProdana(v) {
+  const p = v && v.prodano;
+  return !!(p && typeof p === 'object' && !Array.isArray(p) && variantaUzamcena(v));
+}
+
 function variantaEditovatelna(v) {
   return !variantaUzamcena(v);
 }
@@ -388,6 +398,7 @@ function zamekKryciPoleStav(v, list, id) {
    * Platí i pro pole jen pro správce (K8-K1, #516) — jeho změnu by
    * zamekSnimkyVrat před odesláním stejně vrátila. */
   if (typeof zamekSnimekCekaNaServer === 'function' && zamekSnimekCekaNaServer(v)) return 'zmrazeno';
+  if (variantaProdana(v)) return 'zmrazeno';                         // #540: po Prodáno nic
   if (tab && tab.jenAdmin.indexOf(id) >= 0) return 'jen_admin';
   if (!zamekKryciOtevreny(v))
     return (zamekKryciPolePlnaMoc(list, id) || (tab && ZAMEK_KRYCI_PO_SOD_VOLNE.indexOf(id) >= 0)) ? 'editovatelne' : 'zmrazeno';
@@ -481,7 +492,7 @@ function zamekZakHlavickaOznac(zak, stara) {
 function zamekZakStav(zak) {
   const zam = ((zak && zak.varianty) || []).filter(v => variantaUzamcena(v));
   return { cn: variantaUzamcena(zamekZakRidici(zak)) || zam.some(v => v.zamek.hlavicka === true),
-           sod: zam.some(v => !zamekKryciOtevreny(v)) };
+           sod: zam.some(v => !zamekKryciOtevreny(v) || variantaProdana(v)) };
 }
 
 /* Důvod, proč se cesta hlavičky nesmí změnit, nebo ''. */
@@ -489,6 +500,8 @@ function zamekZakCestaZmrazena(zak, cesta) {
   const st = zamekZakStav(zak);
   if (!st.cn && !st.sod) return '';
   const c = zamekZakCesty();
+  if (st.sod && c.poSod.indexOf(cesta) >= 0 && ((zak && zak.varianty) || []).some(v => variantaProdana(v)))
+    return 'Zakázka je prodaná — údaje zákazníka v hlavičce se už nemění (odemknout smí vedoucí nebo administrátor).';
   if (st.sod && c.poSod.indexOf(cesta) >= 0)
     return 'Ze zakázky odešla smlouva o dílo — údaje zákazníka v hlavičce se už nemění. Pokračujte novou zakázkou.';
   if (st.cn && c.poCn.indexOf(cesta) >= 0)
@@ -511,7 +524,7 @@ function zamekZakZmeny(stara, nova) {
   const sr = zamekZakRidici(stara);
   const nr = zamekZakRidici(nova);
   const st = { cn: zamcene.some(v => v === sr || (!!nr && v.id === nr.id) || v.zamek.hlavicka === true),
-               sod: zamcene.some(v => !zamekKryciOtevreny(v)) };
+               sod: zamcene.some(v => !zamekKryciOtevreny(v) || variantaProdana(v)) };   // #540
   if (!st.cn && !st.sod) return [];
   const c = zamekZakCesty();
   const hodnota = (o, cesta) => {
@@ -1120,7 +1133,7 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { variantaProdana, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

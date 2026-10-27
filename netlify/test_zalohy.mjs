@@ -223,10 +223,10 @@ const KLICE = {
   slovnik: ['program', true],
   controlling: ['program', true],
   popisy_historie: ['program', 'výjimka: historie 30 verzí dodatkových textů, platné popisy jsou v otisku'],
-  /* C3 (#447, 21. 10. 2026): protokol hromadných exportů controllingu — stopa
-   * přístupu (kdo si kdy vyvezl náklady), ne data k obnově; po havárii začne
-   * od nuly. Výjimku má potvrdit J. V. (souhrn dávky C3). */
-  controlling_exporty: ['program', 'výjimka: protokol exportů controllingu (C3), stopa přístupu, ne data k obnově'],
+  /* #540 (rozhodnutí J. V. 27. 10. 2026, otázka 6): protokol hromadných exportů
+   * controllingu se ZÁLOHUJE (doklad, kdo si kdy vyvezl náklady), obnova ho
+   * nepřepisuje — viz blok #540 níž. Do C4 byl výjimkou (C3). */
+  controlling_exporty: ['program', true],
   'z/': ['zakazky', true], _rejstrik: ['zakazky', true],
   rejstrik: ['sablony', true],
   rezim: ['analytika', false], 'den/': ['analytika', false], 'ocista-b175': ['analytika', false],

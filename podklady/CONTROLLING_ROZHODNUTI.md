@@ -246,3 +246,22 @@ sloupců a listů?
 
 Při všech doporučených variantách: kódová dávka M (≈ 1,5 dne) — body 1–6 a 11; body 7–9 bez kódu; bod 8
 dokončí import po dodání vyplněné šablony (prosinec).
+
+---
+
+## Rozhodnuto 27. 10. 2026 (J. V., dialog nad tímto podkladem; kód v dávce C4 #540)
+
+| # | Nadpis | Rozhodnutí | Provedení |
+|---|---|---|---|
+| 1 | Prodej | **C — tlačítko „Prodáno" na konci krycího listu** (OCK i PROJ). Stisk definitivně zamkne krycí list i volná pole (hlídá server), zapíše datum prodeje a prodanou variantu (controlling bere prodej odsud; objednané příplatky jen doplní přiobjednané; staré zakázky s objednanými příplatky dál platí jako prodej) a připraví zápis do Pipedrive (data krycího listu + deal „Vyhráno") — bez tokenu jen uložený „čeká na odeslání" s náhledem, do Pipedrive se nic nevolá. Odemknout smí vedoucí a administrátor s důvodem (stopa v historii), obchodník ne. Potvrzovací dialog. | C4 #540 |
+| 2 | Deal id | **B — výchozí filtr hromadného exportu „Všechny"**; „vyhráno" zůstává volbou. | C4 #540 |
+| 3 | Záloha | **B — jen hláška**; opravuje O-T #529. | O-T #529 |
+| 4 | Zaokrouhlení | **A — v souhrnu zakázky**: „Zaokrouhlení (Kč)" v souhrnu Kapitol nese i rozdíl CEIL na tisíce; Řádky beze změny. | C4 #540 |
+| 5 | Podíly | **A — dorovnat na 100 %** metodou největšího zbytku; částky beze změny. | C4 #540 |
+| 6 | Protokol | **A — zálohovat, neobnovovat** (otisk i stažená záloha; obnova nepřepisuje, jako kniha smazaných účtů). | C4 #540 |
+| 7 | PROJ skupiny | **A — platí výchozí**, potvrdí controlling. | bez kódu |
+| 8 | Účty Helios | **A — šablona + import J. V.** | bez kódu teď (prosinec) |
+| 9 | Šablona | Pošle se controllingu **v listopadu**; šablona se udržuje v souladu se změnami (test `src/test_sablona_controlling.js`). | průběžně |
+| 10 | V nabídce | **A — nedělat**; bod #447/3 uzavřen. | — |
+| 11 | Stará ukázka | **A — smazat** (`podklady/ukazky/vyrob_controlling_export_v2.js` + `.xlsx`), v `.md` odkaz na `nastroje/ukazka_controlling_export.js`. | C4 #540 |
+| 12 | Verze | **B — při každé změně exportu** (i hodnot); C4 zvyšuje verzi struktury 3 → 4 a list Popis říká, co se změnilo. | C4 #540 |

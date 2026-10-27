@@ -77,6 +77,14 @@ const VERZE = fs.readFileSync(path.join(KOREN, 'verze.txt'), 'utf8').trim();
   const z = s.zjisteni || {};
   test('souhrn nese zjištění k #500 (Kapitoly, zaokrouhlení OCK)', Array.isArray(z.podilyMimo100) && !!z.zaokrouhleniOck
     && z.zaokrouhleniOck.stran === 3, z);
+  /* C4 #540 (pojistka: nad 2ad47f4 — před dávkou — 3 FAIL: podíly 100,02 / 99,98 %,
+   * zaokrouhlení OCK 0 ze 3, žádné datum prodeje z Prodáno). */
+  test('#540: podíly skupin v Kapitolách dávají u každé strany 100 %', Array.isArray(z.podilyMimo100) && z.podilyMimo100.length === 0, z.podilyMimo100);
+  test('#540: Zaokrouhlení (Kč) v souhrnu nese u OCK zaokrouhlení na tisíce (nenulové u 3 ze 3)',
+    !!z.zaokrouhleniOck && z.zaokrouhleniOck.nenulove === 3, z.zaokrouhleniOck);
+  test('#540: datum prodeje z tlačítka Prodáno (OCK s objednanými i PROJ bez nich)', Array.isArray(z.prodane)
+    && z.prodane.includes('2026 - OPR - CN - 0901 2026-10-14') && z.prodane.includes('2026 - OVP - CN - 0904 2026-10-21'), z.prodane);
+  test('#540: Popis říká, co se ve verzi struktury změnilo', popis.some(x => x[0] === 'Změna struktury' && /Prodáno/.test(String(x[1]))));
   finish(dir);
 })().catch(e => { fail++; console.log('FAIL výjimka', e && e.stack || e); console.log(`\n${ok} OK / ${fail} FAIL`); process.exit(1); });
 

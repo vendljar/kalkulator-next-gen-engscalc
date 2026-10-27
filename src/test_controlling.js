@@ -292,7 +292,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
       && JSON.stringify(L('Příplatky – volby').rows[0]) === JSON.stringify(C.CTRL_RADKY_HLAVICKA));
     const iRid = C.CTRL_RADKY_HLAVICKA.indexOf('Řídící varianta'), iVys = C.CTRL_RADKY_HLAVICKA.indexOf('Výsledek');
     test('C5 sloupce Řídící varianta a Výsledek', iRid > 0 && iVys > 0 && listy[0].rows.slice(1).every(r => r[iRid] === 'ano' && r[iVys] === 'zmrazený'));
-    test('C5 verze struktury souboru 3 (P1: sloupce Stav Pipedrive)', C.CTRL_EXPORT_VERZE === 3 && (listy[2].rows.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 3);
+    test('C5 verze struktury souboru 4 (P1: sloupce Stav Pipedrive; #540: Prodáno, zaokrouhlení, podíly)', C.CTRL_EXPORT_VERZE === 4 && (listy[2].rows.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 4);
     const iN = C.CTRL_RADKY_HLAVICKA.indexOf('Náklad celkem (Kč)');
     test('čísla v listu jsou čísla, ne text', listy[0].rows.slice(1).every(r => typeof r[iN] === 'number'));
     const souhrnRadek = listy[1].rows.find(r => r[0] === '2026 - OPR - CN - 0901' && r[1] === 'OCK' && typeof r[2] === 'number' && r.length === 10);
@@ -506,17 +506,19 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
   test('#504: bez parametru „podle" se vybírá podle data prodeje, zamčení zůstává volbou',
     C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31' }).filtr.podle === 'prodej'
     && C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31', podle: 'zamceni' }).filtr.podle === 'zamceni');
-  test('#504 PD: výchozí stav Pipedrive = vyhrané, všechny hodnoty platí, cizí → chyba',
-    C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31' }).filtr.pd === 'won'
+  /* #540 (J. V. 27. 10. 2026, otázka 2): výchozí stav je od C4 „Všechny" (dřív vyhrané);
+   * sady níž volí „vyhrané" výslovně (f() = pd won). */
+  test('#504 PD: výchozí stav Pipedrive = všechny (#540), všechny hodnoty platí, cizí → chyba',
+    C.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31' }).filtr.pd === 'vse'
     && ['won', 'open', 'lost', 'deleted', 'bez', 'vse'].every(x => Fq({ od: '2026-10-01', do: '2026-10-31', pd: x }).ok)
     && !Fq({ od: '2026-10-01', do: '2026-10-31', pd: 'Won' }).ok && /stav dealu/.test(Fq({ od: '2026-10-01', do: '2026-10-31', pd: 'x' }).chyba || ''));
   const zak = zakazkaZamcena();
   const den = C.ctrlDenPraha(zak.varianty[0].zamek.kdy);
-  const f = (pd) => C.ctrlHromadnyFiltr({ od: den, do: den, pd, podle: 'zamceni' }).filtr;
+  const f = (pd) => C.ctrlHromadnyFiltr({ od: den, do: den, pd: pd || 'won', podle: 'zamceni' }).filtr;
   const o = { jekly: JEKLY };
   const sDealem = (st) => { const z = kopie(zak); z.pdDealId = '77'; if (st) z.pdStav = { status: st, nacteno: '2026-10-20T10:00:00.000Z' }; return z; };
   const won = sDealem('won');
-  test('#504 PD: vyhraná projde výchozím filtrem i „všechny", ztracená ne (vyřazena jako jiný stav)',
+  test('#504 PD: vyhraná projde filtrem „vyhrané" i „všechny", ztracená ne (vyřazena jako jiný stav)',
     C.ctrlHromadnyZakazka(won, f(), o).ok && C.ctrlHromadnyZakazka(won, f('vse'), o).ok
     && C.ctrlHromadnyZakazka(sDealem('lost'), f(), o).pdVyrazeno === 'jiny' && C.ctrlHromadnyZakazka(sDealem('lost'), f('lost'), o).ok);
   test('#504 PD: bez dealu, deal bez stavu i stav bez platného dealu = „bez stavu"',

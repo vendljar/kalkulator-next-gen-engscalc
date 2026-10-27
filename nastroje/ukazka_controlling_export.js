@@ -1,4 +1,5 @@
-/* UKÁZKOVÝ EXPORT PRO CONTROLLING (C3 #537, 27. 10. 2026) — dnešním kódem.
+/* UKÁZKOVÝ EXPORT PRO CONTROLLING (C3 #537, 27. 10. 2026; C4 #540 — Prodáno,
+ * verze struktury 4) — dnešním kódem.
  *
  * Vyrobí hromadný export za období (Nastavení → Controlling → Export) z pěti
  * SMYŠLENÝCH zakázek kódem aplikace: src/controlling.js ctrlHromadnyFiltr +
@@ -78,7 +79,8 @@ function proj(zak, v, uprava) {
 
 function zakazky() {
   const out = [];
-  /* 1) OCK ČR, Model 1, deal vyhraný; zákazník objednal dva příplatky (C6). */
+  /* 1) OCK ČR, Model 1, deal vyhraný; prodáno 14. 10. (#540) a zákazník
+   *    přiobjednal dva příplatky (C6). */
   {
     const zak = zakladZakazky('2026 - OPR - CN - 0901', 'Zkušební bytový dům A', 'Zkušební zákazník s.r.o.', 9001, 'won');
     const v = zak.varianty[0];
@@ -87,6 +89,8 @@ function zakazky() {
     const nab = O.objNabidnute(v, JEKLY).map(p => p.key);
     const chyba = O.objNastav(zak, v, nab.slice(0, 2), '2026-10-14', { kdo: OBCH, ted: '2026-10-14T10:00:00Z' });
     if (chyba) throw new Error('objNastav: ' + chyba);
+    const prod = O.prodNastav(zak, v, '2026-10-14', { kdo: OBCH, kdy: '2026-10-14T10:00:00Z', ted: '2026-10-27T08:00:00Z' });
+    if (prod) throw new Error('prodNastav: ' + prod);
     out.push(zak);
   }
   /* 2) OCK ČR, Model 2, sleva 5 %, deal otevřený, bez objednaných příplatků. */
@@ -108,12 +112,14 @@ function zakazky() {
     zak.varianty.forEach(x => { x.ridici = false; }); v2.ridici = true; zak.varianty.push(v2);
     out.push(zak);
   }
-  /* 4) PROJ, Praha, deal vyhraný. */
+  /* 4) PROJ, Praha, deal vyhraný; prodáno bez objednaných příplatků (#540). */
   {
     const zak = zakladZakazky('2026 - OVP - CN - 0904', 'Zkušební rekonstrukce D', 'Zkušební zákazník s.r.o.', 9004, 'won');
     const v = zak.varianty[0];
     proj(zak, v, { nabizetAD: true });
     zamkni(zak, v, '2026-10-15T07:45:00Z', 'nabidkaProj');
+    const prod = O.prodNastav(zak, v, '2026-10-21', { kdo: OBCH, kdy: '2026-10-21T09:00:00Z', ted: '2026-10-27T08:00:00Z' });
+    if (prod) throw new Error('prodNastav: ' + prod);
     out.push(zak);
   }
   /* 5) PROJ mimo Prahu, deal prohraný; zámek bez zmrazeného výsledku (jako
@@ -141,7 +147,8 @@ function zjisteni(exporty, listy) {
   const hl = kap[iZaokr];
   const zaokrNenulove = kap.slice(iZaokr + 1).filter(r => r[1] === 'OCK' && +r[hl.indexOf('Zaokrouhlení (Kč)')] !== 0).length;
   const ockStran = kap.slice(iZaokr + 1).filter(r => r[1] === 'OCK').length;
-  return { podilyMimo100, zaokrouhleniOck: { stran: ockStran, nenulove: zaokrNenulove } };
+  const prodane = exporty.filter(e => e.hlavicka.datumProdeje).map(e => e.strany.map(x => x.cislo).join(' + ') + ' ' + e.hlavicka.datumProdeje);
+  return { podilyMimo100, zaokrouhleniOck: { stran: ockStran, nenulove: zaokrNenulove }, prodane };
 }
 
 function vyrob(cil) {

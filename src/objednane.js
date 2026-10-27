@@ -314,7 +314,206 @@ function objKontrola(stara, zak, relace, ctx) {
   return null;
 }
 
+/* ============================================================
+ * PRODÁNO (#540, rozhodnutí J. V. 27. 10. 2026)
+ *
+ * Tlačítko „Prodáno" na konci krycího listu OCK i PROJ. Stisk:
+ *   – zapíše u ODESLANÉ (zamčené) varianty `v.prodano = { datum, kdo, kdy,
+ *     pipedrive: { stav: 'ceka', kdy } }` — datum prodeje a tím i prodanou
+ *     variantu (v zakázce smí být prodaná jen jedna);
+ *   – definitivně zmrazí krycí list varianty i hlavičku (zamek.js,
+ *     variantaProdana — hlídá i server porovnáním s uloženou verzí);
+ *   – připraví zápis do Pipedrive (deal → Vyhráno + data krycího listu).
+ *     Bez tokenu se jen uloží stav „čeká na odeslání" a obrazovka ukáže,
+ *     co by se zapsalo (prodPdZapis); do Pipedrive se nevolá nic (#510).
+ * Odemknout smí jen vedoucí a administrátor, s důvodem; stopa je
+ * v `zak.prodejHistorie` = [{ akce: 'prodano' | 'odemceno', varianta, cislo,
+ * datum, duvod, kdo, kdy }] — historii i razítka píše SERVER (prodServer),
+ * klient posílá jen žádost `zak.prodejOdemknout = { varianta, duvod }`.
+ * Controlling bere prodej odsud (ctrlHromadnyZakazka, ctrlRejstrikDny);
+ * objednané příplatky jen doplní, co zákazník přiobjednal, a staré zakázky
+ * jen se záznamem objednaných platí jako prodej dál.
+ * ============================================================ */
+const PROD_ROLE_ODEMKNOUT = ['Vedoucí', 'Administrátor'];
+const PROD_PD_STAVY = ['ceka', 'odeslano', 'chyba'];
+const PROD_PD_STAV_TEXT = { ceka: 'čeká na odeslání', odeslano: 'odesláno', chyba: 'odeslání selhalo' };
+const PROD_DUVOD_MIN = 3, PROD_DUVOD_MAX = 500, PROD_HISTORIE_MAX = 50;
+const prodProdana = (v) => (typeof variantaProdana === 'function') ? variantaProdana(v)
+  : !!(v && v.prodano && typeof v.prodano === 'object' && !Array.isArray(v.prodano) && v.zamek && v.zamek.zamceno);
+
+/* Prodaná varianta zakázky → { v, prodano } | null (první, víc jich server nepustí). */
+function prodStav(zak) {
+  const v = ((zak && Array.isArray(zak.varianty)) ? zak.varianty : []).find(x => x && prodProdana(x));
+  return v ? { v, prodano: v.prodano } : null;
+}
+/* Proč variantu prodat nejde ('' = jde). */
+function prodNelzeProdat(zak, v) {
+  if (!zak || !v) return 'Není otevřená zakázka.';
+  if (!v.zamek || !v.zamek.zamceno) return 'Prodat jde jen odeslanou (zamčenou) nabídku — nejdřív ji vytiskněte.';
+  const p = prodStav(zak);
+  if (p && p.v.id === v.id) return 'Varianta je už prodaná.';
+  if (p) return 'Zakázka je už prodaná jinou variantou (' + (typeof variantaCislo === 'function' ? variantaCislo(zak, p.v) : p.v.id)
+    + ') — prodat jde jen jedna varianta; nejdřív ji musí vedoucí nebo administrátor odemknout.';
+  return '';
+}
+/* Klient: zapíše prodej (razítka jen předvyplní, přepíše je server). Vrací chybu nebo ''. */
+function prodNastav(zak, v, datum, ctx) {
+  const c = ctx || {};
+  const proc = prodNelzeProdat(zak, v);
+  if (proc) return proc;
+  const d = objDatumPlatne(datum) ? datum : objDnes(c.ted);
+  if (d > objDnes(c.ted)) return 'Datum prodeje nesmí být v budoucnosti.';
+  const kdy = c.kdy || new Date().toISOString();
+  v.prodano = { datum: d, kdo: String(c.kdo || ''), kdy, pipedrive: { stav: 'ceka', kdy } };
+  return '';
+}
+/* Klient: žádost o odemčení (vedoucí, administrátor) — prodej zmizí, důvod
+ * jde serveru, který zapíše stopu. Vrací chybu nebo ''. */
+function prodOdemkni(zak, v, duvod) {
+  if (!zak || !v || !prodProdana(v)) return 'Varianta není prodaná.';
+  const t = String(duvod == null ? '' : duvod).trim();
+  if (t.length < PROD_DUVOD_MIN) return 'Napište důvod odemčení prodeje.';
+  delete v.prodano;
+  zak.prodejOdemknout = { varianta: v.id, duvod: t.slice(0, PROD_DUVOD_MAX) };
+  return '';
+}
+function prodPdStavText(p) {
+  const s = p && p.pipedrive && p.pipedrive.stav;
+  return PROD_PD_STAV_TEXT[s] || '';
+}
+/* Tvar záznamu prodeje z požadavku (vzor objTvarPlatny). */
+function prodTvarPlatny(p) {
+  if (p === undefined || p === null) return true;
+  if (typeof p !== 'object' || Array.isArray(p)) return false;
+  return typeof p.datum === 'string';
+}
+/* Očista záznamu a historie (obnova z otisku, jen povolená pole). */
+function prodOciste(p) {
+  const t = x => (typeof x === 'string' ? x.slice(0, 200) : '');
+  if (!p || typeof p !== 'object' || Array.isArray(p) || !objDatumPlatne(p.datum)) return null;
+  const pd = p.pipedrive && typeof p.pipedrive === 'object' && PROD_PD_STAVY.includes(p.pipedrive.stav)
+    ? { stav: p.pipedrive.stav, kdy: t(p.pipedrive.kdy) } : { stav: 'ceka', kdy: t(p.kdy) };
+  return { datum: p.datum, kdo: t(p.kdo), kdy: t(p.kdy), pipedrive: pd };
+}
+function prodHistorieOciste(seznam) {
+  const t = (x, n) => (typeof x === 'string' ? x.slice(0, n || 200) : '');
+  return (Array.isArray(seznam) ? seznam : []).filter(z => z && typeof z === 'object' && !Array.isArray(z)
+    && (z.akce === 'prodano' || z.akce === 'odemceno')).slice(-PROD_HISTORIE_MAX)
+    .map(z => ({ akce: z.akce, varianta: t(z.varianta), cislo: t(z.cislo), datum: t(z.datum),
+      duvod: t(z.duvod, PROD_DUVOD_MAX), kdo: t(z.kdo), kdy: t(z.kdy) }));
+}
+
+/* SERVER (uložení i obnova): kontrola, razítka a stopa. Mění `zak`
+ * (prodano každé varianty, prodejHistorie, smaže prodejOdemknout).
+ * null = v pořádku, jinak { status, chyba }. ctx = { obnova, zeSouboru, ted }.
+ * Pravidla:
+ *   – tvar; prodat jde jen zamčenou variantu a jen jednu v zakázce;
+ *   – nový prodej zapíše, kdo smí ukládat (obchodník zakázky, vedoucí,
+ *     administrátor); datum platné a ne v budoucnosti; kdo/kdy a stav
+ *     Pipedrive „čeká" dosadí server;
+ *   – uložený prodej se nemění — razítka i stav Pipedrive z uložené verze;
+ *   – zmizení prodeje (i se smazáním varianty) = odemčení: jen vedoucí
+ *     a administrátor, s důvodem v `zak.prodejOdemknout`;
+ *   – obnova z OTISKU bere prodej i historii ze zálohy (doklad, jen očista);
+ *     obnova ze SOUBORU jde cestou uložení (B98 — soubor jde upravit). */
+function prodServer(stara, zak, relace, ctx) {
+  const c = ctx || {};
+  const vs = (zak && Array.isArray(zak.varianty)) ? zak.varianty : [];
+  const zadost = zak ? zak.prodejOdemknout : undefined;
+  if (zak) delete zak.prodejOdemknout;
+  for (const v of vs) if (v && !prodTvarPlatny(v.prodano)) return { status: 400, chyba: 'Záznam prodeje má neplatný tvar' };
+  for (const v of vs) if (v && v.prodano != null && !(v.zamek && v.zamek.zamceno))
+    return { status: 400, chyba: 'Prodaná varianta musí být odeslaná (zamčená) — nejdřív odemkněte prodej' };
+  if (vs.filter(v => v && v.prodano != null).length > 1)
+    return { status: 400, chyba: 'Prodat jde jen jednu variantu zakázky' };
+  if (c.obnova && !c.zeSouboru) {
+    vs.forEach(v => { if (!v || v.prodano == null) return; const p = prodOciste(v.prodano); if (p) v.prodano = p; else delete v.prodano; });
+    const h = prodHistorieOciste(zak && zak.prodejHistorie);
+    if (h.length) zak.prodejHistorie = h; else if (zak) delete zak.prodejHistorie;
+    return null;
+  }
+  const role = String((relace && relace.role) || '');
+  const email = String((relace && relace.email) || '');
+  const ted = c.kdy || new Date().toISOString();
+  const autor = !!stara && String(stara.autor || '').toLowerCase() === email.toLowerCase();
+  const sVar = (id) => (stara && Array.isArray(stara.varianty)) ? stara.varianty.find(x => x && x.id === id) : null;
+  const cislo = (z, v) => (typeof variantaCislo === 'function') ? String(variantaCislo(z, v) || '') : '';
+  const historie = prodHistorieOciste(stara && stara.prodejHistorie);
+  const pridej = (z) => historie.push(Object.assign({ kdo: email, kdy: ted }, z));
+  /* odemčení: uložený prodej, který v příchozí verzi není */
+  for (const sv of ((stara && stara.varianty) || [])) {
+    if (!sv || sv.prodano == null) continue;
+    const nv = vs.find(x => x && x.id === sv.id);
+    if (nv && nv.prodano != null) continue;
+    if (!PROD_ROLE_ODEMKNOUT.includes(role))
+      return { status: 403, chyba: 'Prodanou zakázku odemyká jen vedoucí nebo administrátor' };
+    const duvod = zadost && typeof zadost === 'object' && zadost.varianta === sv.id && typeof zadost.duvod === 'string'
+      ? zadost.duvod.trim() : '';
+    if (duvod.length < PROD_DUVOD_MIN) return { status: 400, chyba: 'Odemčení prodeje potřebuje důvod' };
+    pridej({ akce: 'odemceno', varianta: sv.id, cislo: cislo(stara, sv), datum: String(sv.prodano.datum || ''),
+      duvod: duvod.slice(0, PROD_DUVOD_MAX) });
+  }
+  for (const v of vs) {
+    if (!v || v.prodano == null) continue;
+    const sv = sVar(v.id);
+    if (sv && sv.prodano != null) {                                // uložený prodej se nemění
+      const p = prodOciste(sv.prodano);
+      if (p) { v.prodano = p; continue; }
+    }
+    if (!(PROD_ROLE_ODEMKNOUT.includes(role) || autor || !stara))
+      return { status: 403, chyba: 'Prodej zapisuje obchodník zakázky, vedoucí nebo administrátor' };
+    const d = v.prodano.datum;
+    if (!objDatumPlatne(d)) return { status: 400, chyba: 'Datum prodeje chybí nebo je neplatné' };
+    if (d > objDnes(c.ted)) return { status: 400, chyba: 'Datum prodeje nesmí být v budoucnosti' };
+    v.prodano = { datum: d, kdo: email, kdy: ted, pipedrive: { stav: 'ceka', kdy: ted } };
+    pridej({ akce: 'prodano', varianta: v.id, cislo: cislo(zak, v), datum: d, duvod: '' });
+  }
+  const h = historie.slice(-PROD_HISTORIE_MAX);
+  if (h.length) zak.prodejHistorie = h; else delete zak.prodejHistorie;
+  return null;
+}
+
+/* CO BY SE ZAPSALO DO PIPEDRIVE (náhled; odeslání až s tokenem, #510).
+ * Deal zakázky → stav „Vyhráno" (won), hodnota = cena nabídky prodané
+ * varianty bez DPH (Kč, u kombinované zakázky obě strany) a data krycích
+ * listů (verze Backoffice) — z odeslané nabídky a zmrazeného krycího listu,
+ * takže náhled je stejný dnes i při pozdějším odeslání. Převod na pole
+ * Pipedrive dělá až zápis (netlify/lib/pd_prevod.mjs, pdZapisDealu). */
+function prodPdZapis(zak, v, jekly) {
+  if (!zak || !v) return null;
+  const vyr = (typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(zak) : '';
+  const d = v.data || {};
+  const hodnota = [], kryci = [];
+  if (vyr !== 'ock') {
+    try {
+      const r = typeof vypocetZ === 'function' ? vypocetZ(v, jekly) : null;
+      const cn = r && typeof cenaNabidkyOck === 'function' ? cenaNabidkyOck(r, d.sleva, d.zaokr) : null;
+      if (cn) hodnota.push({ oblast: 'OCK', bezDphKc: Math.round(cn.cena * 100) / 100 });
+    } catch (e) { /* bez výsledku se cena neuvádí — nic se neodhaduje */ }
+    try { if (typeof kryciData === 'function') kryci.push(Object.assign({ list: 'OCK' }, kryciData(zak, v, jekly, 'bo'))); } catch (e) {}
+  }
+  if (vyr !== 'proj') {
+    try {
+      const r = typeof vypocetProjZ === 'function' ? vypocetProjZ(v) : null;
+      const cn = r && typeof cenaNabidkyProj === 'function' ? cenaNabidkyProj(r, d.slevaProj, d.zaokrProj) : null;
+      if (cn && cn.cena > 0) hodnota.push({ oblast: 'PROJ', bezDphKc: Math.round(cn.cena * 100) / 100 });
+    } catch (e) {}
+    try { if (typeof kryciProjData === 'function') kryci.push(Object.assign({ list: 'PROJ' }, kryciProjData(zak, v, jekly, 'bo'))); } catch (e) {}
+  }
+  const p = v.prodano || {};
+  return { dealId: String(zak.pdDealId || ''), stavDealu: 'won', stavDealuText: 'Vyhráno',
+    varianta: typeof variantaCislo === 'function' ? String(variantaCislo(zak, v) || '') : String(v.id),
+    datumProdeje: String(p.datum || ''), hodnota,
+    hodnotaKc: hodnota.reduce((a, h) => a + h.bezDphKc, 0),
+    kryci: kryci.map(k => ({ list: k.list, sekce: (k.sekce || []).map(s => ({ sekce: s.sekce,
+      radky: (s.radky || []).filter(r => r && r[1] !== '' && r[1] != null).map(r => [String(r[0]), String(r[1])]) }))
+      .filter(s => s.radky.length) })),
+    stav: prodPdStavText(p) || 'připraveno po stisku Prodáno' };
+}
+
 if (typeof module !== 'undefined' && module.exports)
   module.exports = { OBJ_DATUM_TVAR, OBJ_MAX_KLICU, OBJ_SKUPINY, OBJ_ZMENY_MAX, objPolozky, objPolozkyKlicu, objNeuplne, objCenaDila, objSodZaznam,
     objSodSnimek, objSodZaznamyServer, objZmenenoPoSod, objZmenyServer, objZmenyOciste, objDnes, objDatumPlatne, objStav, objDatumPodpisu, objPodepsano, objNabidnute,
-    objObjednaneVarianty, objText, objNastav, objOtisk, objTvarPlatny, objKontrola };
+    objObjednaneVarianty, objText, objNastav, objOtisk, objTvarPlatny, objKontrola,
+    PROD_ROLE_ODEMKNOUT, PROD_PD_STAVY, PROD_PD_STAV_TEXT, PROD_DUVOD_MIN, PROD_HISTORIE_MAX, prodStav, prodNelzeProdat, prodNastav,
+    prodOdemkni, prodPdStavText, prodTvarPlatny, prodOciste, prodHistorieOciste, prodServer, prodPdZapis };
