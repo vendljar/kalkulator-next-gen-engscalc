@@ -11,7 +11,7 @@ koordinace; CHANGELOG „Bez verze“). Neslučováno; na ostrém webu, Disku an
 | Migrace a odchylky | ✅ | stará matice = vše viditelné; `zobrazeniZmeny` počítá i nový sloupec |
 | Doporučení pro admina | ✅ | vše kromě `uloziste.slozka` a `uloziste.mazani` (složka _DB se nepřipojuje) |
 | Testy | ✅ | `src/test_zobrazeni_admin.js` 30/0, `netlify/test_zobrazeni_admin.mjs` 13/0, `overit_zobrazeni.mjs` 159/0 (oddíl #539); pojistky před změnou padají (viz CHANGELOG); mutace „#539“ 8/8; `testovaci_kolo.sh --jen build,staticke` zelené; `spust_testy.sh --smoke` 298/0 (50 přeskočeno bez Playwrightu v kořeni — 45 z nich pak puštěno ručně se symlinkem: 43 OK, 2 kód 4 bez firemních podkladů) |
-| Dokumentace | ✅ | `manual/admin/obsah.json` (A2: role, postup matice, náhled, slovníček), CHANGELOG, roadmapa #539 (`--kontrola` čistá) |
+| Dokumentace | ✅ | `manual/admin/obsah.json` (A2: role, postup matice, náhled, slovníček), CHANGELOG, roadmapa #539 ve vlně G (pokyn koordinace; definice vlny G převzatá beze změny z integrace 6c8cbf9, `--kontrola` čistá) |
 
 **Pro koordinaci:** nové sady jsou v `SADY` mutací serveru. Harnessy potřebují `ADMIN_EMAIL` (spust_testy ho
 nastaví sám) a Playwright v kořeni (`node_modules/playwright` → symlink na globální). Při slučování: konflikt
