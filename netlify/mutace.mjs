@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : ['test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs',
+  : [/* #530 (27. 10. 2026): autorská poznámka v hlavičce lib/sdilene.mjs — rychlá sada, první. */
+     '../src/test_autorstvi.js',
+     'test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs',
      /* F1 (24. 9. 2026): pojistky N43, N44 a B73 hlídají vlastní sady. */
      'test_stary_tvar.mjs', 'test_klon_sleva.mjs', 'test_autor.mjs',
      /* G1 (24. 9. 2026): zdroj jazykové verze a vrácení šablony. */
@@ -160,6 +162,12 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* ---------- #530: autorská poznámka (27. 10. 2026). Hlídá src/test_autorstvi.js. ---------- */
+  { nazev: '#530: autorská poznámka v lib/sdilene.mjs změněná', soubor: 'lib/sdilene.mjs',
+    hledej: '/* Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV).',
+    nahrad: '/* Původní autor aplikace Kalkulator Next Gen: neuveden.',
+    proc: 'poznámka o původním autorství by se dala mlčky přepsat (pokyn J. V. 27. 10. 2026)' },
+
   /* ---------- relace a hesla (lib/sdilene.mjs) ---------- */
   { nazev: 'podpis relace se neověřuje', soubor: 'lib/sdilene.mjs',
     hledej: '  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;',

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV). Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit.
 """Sestaví dist/kalkulacka.html a dist/index.html ze src/.
 
 Skládá jednosouborovou aplikaci (bez CDN, bez serveru):
@@ -166,6 +167,14 @@ html = (html.replace('/*__CORE__*/', core).replace('/*__JEKLY__*/', jekly)
             .replace('__IKONA_B64__', ikona_hlavicka_b64)
             .replace('__FAVICON_TEST_B64__', favicon_test_b64)
             .replace('__FAVICON_B64__', favicon_b64))
+
+# Autorská poznámka (#530, pokyn J. V. 27. 10. 2026): HTML komentář hned za
+# <!DOCTYPE html> — uživatel ho nevidí, ale nese ho každé nasazení. Hlídá
+# src/test_autorstvi.js (znění musí sedět s AUTORSTVI.md).
+AUTORSTVI = 'Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV). Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit.'
+html = re.sub(r'^(<!DOCTYPE html>\n?)', lambda m: m.group(1) + '<!-- ' + AUTORSTVI + ' -->\n', html, count=1)
+if not html.startswith('<!DOCTYPE html>\n<!-- ' + AUTORSTVI + ' -->'):
+    sys.exit('build.py: autorská poznámka se do dist/kalkulacka.html nevložila (#530)')
 
 (root / 'dist').mkdir(exist_ok=True)
 (root / 'dist/kalkulacka.html').write_text(html)

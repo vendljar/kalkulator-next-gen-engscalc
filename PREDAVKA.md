@@ -1,3 +1,16 @@
+# Předávka — 27. 10. 2026: A1 #530 — poznámka o původním autorství v kódu, větev `claude/a1-autorstvi`
+
+Nad `1820f81` (integrace). **Verze 27.10.1** (souběžně O-T #529, M7, M8 — koordinace přečísluje). Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; chování aplikace ani UI beze změny.
+
+- `AUTORSTVI.md` + hlavičky (první řádek; `build.py` za shebangem) v `src/engine.js`, `src/cenik.js`,
+  `src/ui/common.js`, `netlify/lib/sdilene.mjs`, `build.py`, `README_ZDROJAKY.md`; `build.py` vkládá HTML komentář
+  za `<!DOCTYPE html>` do `dist/kalkulacka.html`, `index.html` i verzovaného souboru.
+- Test `src/test_autorstvi.js` (12 kontrol; bez `dist/` ověří jen vkládání v build.py — job mutací). Pojistka nad
+  1820f81 0/12. Mutace „#530" jádro 1/1, server 1/1; sada je v PRIORITA jádra a první v SADY serveru.
+- Při slučování: hlavička je jen první řádek čtyř zdrojů — konflikt s M7/M8/O-T jen tehdy, když mění první řádek.
+
+---
 # Předávka — 27. 10. 2026: T1 #528 — testy na 3 přeživší mutace z Testy #198, větev `claude/t1-mutace-zalohy`
 
 Nad `d2de07b` (test, v26.10.12). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze změny**, verze se

@@ -1,3 +1,4 @@
+/* Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV). Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit. */
 /* ============================================================
  * CENÍK – definice položek (jeden zdroj pravdy) + import/export Excel.
  * CENIK_DEF / CENIK_DEF_PROJ: kategorie → [cesta, popis, jednotka, pozn, typ?].

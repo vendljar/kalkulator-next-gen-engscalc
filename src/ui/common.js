@@ -1,3 +1,4 @@
+/* Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV). Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit. */
 /* ================= SPOLEČNÝ ZÁKLAD UI =================
  * Stav aplikace: ZAK (zakázka) + reference na data aktivní varianty.
  * Z, C   – zadání a ceník OCK        OCK – {zadani, fixes}

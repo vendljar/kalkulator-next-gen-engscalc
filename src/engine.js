@@ -1,3 +1,4 @@
+/* Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV). Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit. */
 /* ============================================================
  * KALKULÁK – výpočetní jádro (přepis Excel šablony do JS)
  * Zdroj: Kalkulace montované OCK (VZOR v1.00 + aktualizace v22.7.1)

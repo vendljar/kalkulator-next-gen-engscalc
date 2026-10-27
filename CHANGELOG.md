@@ -8,6 +8,20 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v27.10.1 — A1 #530: poznámka o původním autorství v kódu, větev claude/a1-autorstvi
+
+Nad integrací 1820f81 (pokyn J. V. 27. 10. 2026: „stačí pouze v kódu, že jsem původním autorem této aplikace").
+Chování aplikace ani UI beze změny; na ostrém webu, Disku ani v Pipedrive nic.
+
+- **#530 — autorská poznámka.** Jednotné znění „Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV).
+  Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit." v novém `AUTORSTVI.md`, v hlavičkách
+  `src/engine.js`, `src/cenik.js`, `src/ui/common.js`, `netlify/lib/sdilene.mjs`, `build.py`, `README_ZDROJAKY.md`
+  a jako HTML komentář hned za `<!DOCTYPE html>` v každém sestaveném `dist/kalkulacka*.html` (vkládá `build.py`;
+  když se vložit nepodaří, sestavení skončí chybou).
+- **Test `src/test_autorstvi.js`** ověří přesné znění ve všech výskytech i v sestavení — smazání nebo změna =
+  test, kolo i Actions spadnou. Pojistka: nad 1820f81 0/12, po změně 12/0. Mutace se značkou [#530]
+  (smazání hlavičky `engine.js`, změna textu v `lib/sdilene.mjs`) chycené 1/1 + 1/1.
+
 ## v26.10.12 — O-K9 #527: opravy nálezů nezávislého auditu záloh K9 #526, větev claude/o-k9-zalohy
 
 Nad integrací bab9a7c (v26.10.10 = Z1 #522 + Z2 #523 + zpráva K9 + příručka M5). Zpráva auditu
