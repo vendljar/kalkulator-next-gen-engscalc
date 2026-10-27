@@ -488,8 +488,9 @@ await zkus('T1 #528 potvrzení', async () => {
   vycistiZalohy();
   const potvrzene = { kdy: '2026-11-19T02:30:00.000Z', den: '2026-11-19', zdroj: 'nocni', text: 'zakázek 800 → 400',
     potvrzeno: { kdy: '2026-11-19T08:00:00.000Z', kdo: ADMIN_EMAIL } };
-  for (const [popis, zaznam, den] of [['poškozený záznam (text)', 'poškozený záznam', ''], ['poškozený záznam (true)', true, ''],
-    ['poškozený záznam (číslo)', 7, ''], ['už potvrzené varování', potvrzene, '2026-11-19']]) {
+  /* #529: poškozený záznam (text, true, číslo) od v27.10 retenci drží a potvrzuje
+   * ho hlavní správce heslem — testy v netlify/test_529_zalohy.mjs. */
+  for (const [popis, zaznam, den] of [['už potvrzené varování', potvrzene, '2026-11-19']]) {
     pamet.set('zalohy/' + Z.RETENCE_VAROVANI_KLIC, J(zaznam));
     const pred = pamet.get('zalohy/' + Z.RETENCE_VAROVANI_KLIC);
     const r = await vynuceno({ akce: 'retence-potvrdit', den, hesloSpravce: HESLO });

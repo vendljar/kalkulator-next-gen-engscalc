@@ -42,7 +42,7 @@ import { vyzadujRoli, json, uloziste, potvrdHesloSpravce, ADMIN_EMAIL, vyhradne 
 import { seznamOtisku, KOPIE_DISK_KLIC, KOPIE_DISK_SLOZKA, porizVynuceny,
   RETENCE_VAROVANI_KLIC, retenceDrzena, retencePoklesPocty, vynucenyPokracuj, seznamRozpracovanych,
   OTISK_STAV_KLIC, OTISK_ROZPOCET, ZALOHY_VOLBY, zalohySmi, retenceVarovaniPridej, retenceVarovaniPotvrd,
-  RETENCE_ZAKLAD_KLIC, smazatPredObnovou } from '../lib/zalohovani.mjs';
+  RETENCE_ZAKLAD_KLIC, smazatPredObnovou, retenceVarovaniPoskozene } from '../lib/zalohovani.mjs';
 
 /* K4-N12 (O9): pole z těla jen jako text / číslo. String() nad objektem
  * z JSON s klíčem „toString", který není funkce, vyhodil výjimku → 500. */
@@ -57,7 +57,7 @@ export default async (req) => {
     const sZal = await uloziste('zalohy');
     return json({ ok: true, otisky: await seznamOtisku(14),
       kopieDisk: (await sZal.cti(KOPIE_DISK_KLIC)) || null,
-      retenceVarovani: (await sZal.cti(RETENCE_VAROVANI_KLIC)) || null,
+      retenceVarovani: zaznamNeboNic(await sZal.cti(RETENCE_VAROVANI_KLIC)),   // #529: i poškozený (false, 0, '')
       otiskStav: (await sZal.cti(OTISK_STAV_KLIC)) || null,              // #522
       rozpracovane: await seznamRozpracovanych(),
       /* O-K9 #527: co smí přihlášený správce (rozhoduje server, ZALOHY_VOLBY) */
@@ -98,7 +98,7 @@ export default async (req) => {
     const sZal = await uloziste('zalohy');
     await sZal.zapis(KOPIE_DISK_KLIC, zaznam);
     /* #523: prohlížeč před úklidem Disku potřebuje čerstvý stav pojistky */
-    return json({ ok: true, kopieDisk: zaznam, retenceVarovani: (await sZal.cti(RETENCE_VAROVANI_KLIC)) || null });
+    return json({ ok: true, kopieDisk: zaznam, retenceVarovani: zaznamNeboNic(await sZal.cti(RETENCE_VAROVANI_KLIC)) });
   }
   /* ÚBYTEK NA DISKU (#523 Z2, pokyn J. V. 26. 10. 2026). Prohlížeč před
    * úklidem starých kopií porovná velikost nové kopie s předchozí; je-li
@@ -144,7 +144,13 @@ export default async (req) => {
     const v = await sZal.cti(RETENCE_VAROVANI_KLIC);
     if (!retenceDrzena(v))
       return json({ ok: false, chyba: 'Není co potvrdit — retence záloh nestojí (varování chybí nebo je potvrzené).' }, 409);
-    const stejne = (a) => !!a && txt(telo.den) === String(a.den || '')
+    /* #529: poškozený záznam (není objekt) drží retenci; potvrdit ho smí
+     * jen hlavní správce, ať je volba ZALOHY_VOLBY.potvrditUbytek jakákoli. */
+    const poskozeny = retenceVarovaniPoskozene(v);
+    if (poskozeny && !zalohySmi('hlavni', relace.email, ADMIN_EMAIL))
+      return json({ ok: false, kod: 'jenHlavniSpravce', chyba: 'Poškozený záznam varování potvrzuje jen hlavní správce (hlavní administrátorský účet).' }, 403);
+    const stejne = (a) => poskozeny ? retenceVarovaniPoskozene(a) && JSON.stringify(a) === JSON.stringify(v) && txt(telo.den) === ''
+      : !!a && txt(telo.den) === String(a.den || '')
       && (telo.kdy === undefined || txt(telo.kdy) === String(a.kdy || '')) && !a.potvrzeno;
     if (!stejne(v))
       return json({ ok: false, chyba: 'Varování se mezitím změnilo — načtěte přehled záloh znovu a zkontrolujte ho.' }, 409);
@@ -155,13 +161,13 @@ export default async (req) => {
      * a zapíše se jen při shodě dne i času — jinak 409. */
     const vysl = await vyhradne('zalohy-varovani', async () => {
       const v2 = await sZal.cti(RETENCE_VAROVANI_KLIC);
-      if (!stejne(v2) || String(v2.kdy || '') !== String(v.kdy || '') || String(v2.zdroj || '') !== String(v.zdroj || '')) return null;
+      if (!stejne(v2) || (!poskozeny && (String(v2.kdy || '') !== String(v.kdy || '') || String(v2.zdroj || '') !== String(v.zdroj || '')))) return null;
       const potvrzeno = { kdy: new Date().toISOString(), kdo: relace.email };
       const zaznam = retenceVarovaniPotvrd(v2, potvrzeno);
       await sZal.zapis(RETENCE_VAROVANI_KLIC, zaznam);
       /* K9-S1: základ kumulativního porovnání = den potvrzeného úbytku */
       const zakl = await sZal.cti(RETENCE_ZAKLAD_KLIC);
-      const den = /^\d{4}-\d{2}-\d{2}$/.test(String(v2.den || '').slice(0, 10)) ? String(v2.den).slice(0, 10) : '';
+      const den = !poskozeny && /^\d{4}-\d{2}-\d{2}$/.test(String(v2.den || '').slice(0, 10)) ? String(v2.den).slice(0, 10) : '';
       if (den && !(zakl && String(zakl.den || '') >= den))
         await sZal.zapis(RETENCE_ZAKLAD_KLIC, { den, kdy: potvrzeno.kdy, kdo: relace.email, zdroj: String(v2.zdroj || '') });
       return zaznam;
@@ -202,9 +208,15 @@ export default async (req) => {
   let v;
   try { v = await porizVynuceny(duvod, relace.email, { rozpocetMs: OTISK_ROZPOCET.synchronniMs }); }
   catch (e) { return otiskChyba(e); }
-  if (v.limit) return json({ ok: false, kod: 'limitZalohy', chyba: v.limit.chyba, dalsi: new Date(v.limit.dalsiMs).toISOString() }, 429);
+  /* #529: `posledni` (kdy vznikl slot, kvůli kterému to nejde) a `posledniHotova`
+   * — prohlížeč u hotové čerstvé zálohy ukáže informaci, ne „nepodařilo". */
+  if (v.limit) return json({ ok: false, kod: 'limitZalohy', chyba: v.limit.chyba, dalsi: new Date(v.limit.dalsiMs).toISOString(),
+    ...(Number.isFinite(v.limit.posledniMs) ? { posledni: new Date(v.limit.posledniMs).toISOString(), posledniHotova: !!v.limit.posledniHotova } : {}) }, 429);
   return json({ ok: true, ...v });
 };
+/* #529: uložený záznam beze změny, jen chybějící (null/undefined) jako null —
+ * `|| null` by poškozený false / 0 / '' schoval a prohlížeč by nevaroval. */
+function zaznamNeboNic(x) { return x === undefined ? null : x; }
 /* #522: selhání otisku řekne proč — do logu celé, do obrazovky důvod. */
 function otiskChyba(e) {
   console.error('zaloha_vynuceno: otisk se nepořídil', e);

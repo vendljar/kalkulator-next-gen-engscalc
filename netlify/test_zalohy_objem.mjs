@@ -303,7 +303,7 @@ await zkus('K9-V1', async () => {
     ONLINE_STAV: { otisky: prehled.otisky, ja: { role: 'Administrátor' } }, ONLINE_OTISK_KROKU_MAX: 400,
     jeAdminOnline: () => true, render: () => {}, potvrd: async () => true, dotazHeslo: async () => 'Docasne.Heslo.123',
     onlineZprava: () => {}, onlineZobrazeniHesloPlatne: () => false, onlineZobrazeniHeslo: async () => 'Docasne.Heslo.123',
-    onlineZobrazeniHesloPoObnove: () => {}, onlineZobrazeniHesloZapomen: () => {}, onlinePocetText: (n) => n + ' zakázek',
+    onlineZobrazeniHesloPoObnove: () => {}, onlineZobrazeniHesloZapomen: () => {}, onlinePocetText: (n) => n + ' zakázek', onlineSklon: (n, a, b, c) => n + ' ' + c,
     onlineNactiProgram: async () => true, onlineNactiFirmu: async () => true, onlineNactiRejstrik: async () => true,
     onlineNactiSablony: async () => true, onlineNactiZobrazeni: async () => true, onlineOtiskyNacti: async () => true,
     onlineObnovaVelikost: (x) => JSON.stringify(x === undefined ? null : x).length,
