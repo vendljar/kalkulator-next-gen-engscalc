@@ -98,7 +98,7 @@ zkus('texty ze serveru se escapují (žádný skript)', po.xss === 0 && /&lt;img
 console.log('\nCSV ke stažení');
 await stranka.click('#pdnStahni_ock');
 const st = await stranka.evaluate(() => window.__stazeno[0] || null);
-zkus('název PIPEDRIVE_<rok>-<číslo>_v<verze>.csv', st && /^PIPEDRIVE_\d{4}-OPR-CN-0901_v[\d.]+\.csv$/.test(st.jmeno), st && st.jmeno);
+zkus('název PIPEDRIVE_<číslo>-NANECISTO_<verze>.csv (konvence #533)', st && /^PIPEDRIVE_\d{4}-OPR-CN-0901-NANECISTO(_[\d.]+)?\.csv$/.test(st.jmeno), st && st.jmeno);
 zkus('CSV nese hlavičku, řádky a upozornění', st && /"Pole v Pipedrive";"Typ pole"/.test(st.text) && /Splatnost faktur/.test(st.text) && /SIMULÁTOR/.test(st.text));
 
 console.log('\nZměna zakázky po spuštění a přepnutí zakázky');
