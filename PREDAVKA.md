@@ -3,6 +3,7 @@
 Nad `1820f81` (integrace). **Verze 27.10.1** (souběžně O-T #529, M7, M8 — koordinace přečísluje). Koordinace:
 session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; chování aplikace ani UI beze změny.
 
+- Znění (zkráceno na pokyn J. V. přes koordinaci): „Autor programu Jaroslav Vendl (2026)".
 - `AUTORSTVI.md` + hlavičky (první řádek; `build.py` za shebangem) v `src/engine.js`, `src/cenik.js`,
   `src/ui/common.js`, `netlify/lib/sdilene.mjs`, `build.py`, `README_ZDROJAKY.md`; `build.py` vkládá HTML komentář
   za `<!DOCTYPE html>` do `dist/kalkulacka.html`, `index.html` i verzovaného souboru.

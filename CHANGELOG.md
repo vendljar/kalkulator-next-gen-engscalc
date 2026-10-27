@@ -13,8 +13,8 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 Nad integrací 1820f81 (pokyn J. V. 27. 10. 2026: „stačí pouze v kódu, že jsem původním autorem této aplikace").
 Chování aplikace ani UI beze změny; na ostrém webu, Disku ani v Pipedrive nic.
 
-- **#530 — autorská poznámka.** Jednotné znění „Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV).
-  Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit." v novém `AUTORSTVI.md`, v hlavičkách
+- **#530 — autorská poznámka.** Jednotné znění „Autor programu Jaroslav Vendl (2026)" (zkrácené znění, pokyn J. V.
+  27. 10. 2026) v novém `AUTORSTVI.md`, v hlavičkách
   `src/engine.js`, `src/cenik.js`, `src/ui/common.js`, `netlify/lib/sdilene.mjs`, `build.py`, `README_ZDROJAKY.md`
   a jako HTML komentář hned za `<!DOCTYPE html>` v každém sestaveném `dist/kalkulacka*.html` (vkládá `build.py`;
   když se vložit nepodaří, sestavení skončí chybou).

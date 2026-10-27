@@ -1,6 +1,6 @@
 # Autorství
 
-Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV). Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit.
+Autor programu Jaroslav Vendl (2026)
 
 - **Od kdy:** aplikace vznikla v roce 2026; doklad průběhu je historie commitů v gitu a tagy
   verzí `vDEN.MĚSÍC.pořadí` v tomto repozitáři.
@@ -10,5 +10,6 @@ Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV). Autorstv�
 - **Kde je poznámka dál:** v hlavičkách `src/engine.js`, `src/cenik.js`, `src/ui/common.js`,
   `netlify/lib/sdilene.mjs`, `build.py`, `README_ZDROJAKY.md` a jako HTML komentář na začátku každého
   sestaveného `dist/kalkulacka.html` (vkládá ho `build.py`, uživatel ho nevidí).
+- **Poznámka se nesmí odstranit ani změnit.** Znění je záměrně krátké (pokyn J. V. 27. 10. 2026).
 - **Hlídá ji** `src/test_autorstvi.js` (roadmapa #530, pokyn J. V. 27. 10. 2026): smazání nebo změna
   kteréhokoli výskytu = test selže, testovací kolo i Actions spadnou.

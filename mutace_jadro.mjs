@@ -198,7 +198,7 @@ function najdiSady() {
 const MUTACE = [
   /* #530 (27. 10. 2026): autorská poznámka v hlavičce jádra. Hlídá src/test_autorstvi.js. */
   { nazev: '#530: autorská poznámka z hlavičky engine.js smazaná', soubor: 'engine.js',
-    hledej: '/* Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV). Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit. */\n',
+    hledej: '/* Autor programu Jaroslav Vendl (2026) */\n',
     nahrad: '',
     proc: 'poznámka o původním autorství by se dala mlčky odstranit (pokyn J. V. 27. 10. 2026)' },
   /* #522 Z1 (26. 10. 2026): záloha po stránkách a otisk po krocích v klientu. Hlídá src/test_zaloha_strany.js. */

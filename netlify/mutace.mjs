@@ -164,8 +164,8 @@ const filtr = filtrZArgv(process.argv.slice(2));
 const MUTACE = [
   /* ---------- #530: autorská poznámka (27. 10. 2026). Hlídá src/test_autorstvi.js. ---------- */
   { nazev: '#530: autorská poznámka v lib/sdilene.mjs změněná', soubor: 'lib/sdilene.mjs',
-    hledej: '/* Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV).',
-    nahrad: '/* Původní autor aplikace Kalkulator Next Gen: neuveden.',
+    hledej: '/* Autor programu Jaroslav Vendl (2026) */',
+    nahrad: '/* Autor programu neuveden (2026) */',
     proc: 'poznámka o původním autorství by se dala mlčky přepsat (pokyn J. V. 27. 10. 2026)' },
 
   /* ---------- relace a hesla (lib/sdilene.mjs) ---------- */

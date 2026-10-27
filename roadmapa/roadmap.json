@@ -8444,7 +8444,7 @@
   "hotovoV" : "v27.10.1",
   "nazev" : "A1: poznámka o původním autorství aplikace v kódu",
   "proc" : "Pokyn J. V. 27. 10. 2026: „stačí pouze v kódu, že jsem původním autorem této aplikace.“",
-  "detail" : "Jednotné znění „Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV). Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit.“ v AUTORSTVI.md, v hlavičkách hlavních zdrojů a jako HTML komentář za <!DOCTYPE html> v každém sestavení (build.py; uživatel ho nevidí). Chování aplikace ani UI beze změny.",
+  "detail" : "Jednotné znění „Autor programu Jaroslav Vendl (2026)“ v AUTORSTVI.md, v hlavičkách hlavních zdrojů a jako HTML komentář za <!DOCTYPE html> v každém sestavení (build.py; uživatel ho nevidí). Chování aplikace ani UI beze změny.",
   "kde" : "`AUTORSTVI.md`, hlavičky `src/engine.js`, `src/cenik.js`, `src/ui/common.js`, `netlify/lib/sdilene.mjs`, `build.py`, `README_ZDROJAKY.md`; test `src/test_autorstvi.js`; mutace [#530] v `mutace_jadro.mjs` a `netlify/mutace.mjs`",
   "hotovoKdyz" : "Test ověří přesné znění ve všech výskytech i v dist/; smazání nebo změna = test, kolo i Actions spadnou; mutace „#530“ chycené.",
   "pozn" : "Dávka A1, větev claude/a1-autorstvi nad 1820f81. Pojistka: test nad 1820f81 0/12, po změně 12/0."

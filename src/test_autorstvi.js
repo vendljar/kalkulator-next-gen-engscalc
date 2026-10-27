@@ -16,7 +16,7 @@ let ok = 0, fail = 0;
 const test = (n, cond, info) => { if (cond) { ok++; console.log('OK  ' + n); } else { fail++; console.log('FAIL ' + n, info || ''); } };
 
 const KOREN = path.join(__dirname, '..');
-const TEXT = 'Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV). Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit.';
+const TEXT = 'Autor programu Jaroslav Vendl (2026)';
 const cti = f => { try { return fs.readFileSync(path.join(KOREN, f), 'utf8'); } catch (e) { return null; } };
 const radky = f => (cti(f) || '').split('\n');
 

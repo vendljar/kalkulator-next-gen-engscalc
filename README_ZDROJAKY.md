@@ -1,4 +1,4 @@
-<!-- Původní autor aplikace Kalkulator Next Gen: Jaroslav Vendl (ENG-JV). Autorství vzniklo v roce 2026; tato poznámka se nesmí odstranit ani změnit. -->
+<!-- Autor programu Jaroslav Vendl (2026) -->
 # Kalkulačka OCK / PROJ – zdrojové soubory
 
 Verzi tohohle archivu nese soubor **`verze.txt`** — tam je vždycky pravda.
