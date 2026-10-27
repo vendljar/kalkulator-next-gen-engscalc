@@ -9,7 +9,7 @@ nezvyšuje** (CHANGELOG „Dokumentace“). Neslučováno; na ostrém webu, Disk
 | Obsah na 1 stranu A4 | ✅ | obchodník 1, správce 2 → 1, výpočet 1 (tiskový obsah 8,5 pt, bez `break-after:page`) |
 | Sazba bez děr | ✅ | PDF obchodník 94 → 85 stran, správce 134 → 124, výpočet 28 → 21; stran < 50 % mimo konec kapitoly 2/4/0 → 0/0/0 (výpočet měl 8 poloprázdných konců kapitol, teď 0) |
 | Pojistka | ✅ | `src/test_manual_fakta.js` 14/0; nad 62ea0c8 12 FAIL / 2 OK. Úpravy `src/test_prirucka_admin.js` (bloky odrazky/tabulka, „cena můstků podle rozměru“ místo „#354“), `overit_manual.mjs` P6 |
-| Kolo | ✅ | `testovaci_kolo.sh --jen build,staticke` zelené; `spust_testy.sh --smoke` viz commit |
+| Kolo | ✅ | `testovaci_kolo.sh --jen build,staticke` zelené (4/4); `spust_testy.sh --smoke` 297/0, 50 přeskočeno (harnessy bez Playwrightu v kořeni — nesouvisí); `overit_manual.mjs` 57/0 a `overit_prirucka_admin.mjs` 51/0 nad hotovými příručkami, `test_manual_vypocet.js` s hotovým HTML 14/0 |
 | Výstup | ✅ | HTML + PDF všech tří v `/tmp/kng_m9/` (necommitováno), koordinaci přes send_message |
 
 **Nástroje:** šablona příruček umí bloky `{"typ":"odrazky","uvod"?,"polozky":[…]}` a `{"typ":"tabulka","zahlavi":[…],"radky":[[…]]}`.
