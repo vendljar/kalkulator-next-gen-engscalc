@@ -10,7 +10,7 @@ session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrém webu, Disku ani v Pi
 | Implementace | ✅ | `src/nazvy_souboru.js` (`NAZVY_DRUHY`, `nazevExportu`), CORE v build.py za build_info.js; `tiskSNazvem()` v ui/common.js (tisk specifikace) |
 | Import | ✅ | nic nekontroluje jméno — staré `zakazka_….json`, `CENIK_….xlsx`, `zaloha_online_….json` … se načtou |
 | Testy | ✅ | `src/test_nazvy_souboru.js` 133/0 (pojistka: se starým kódem 18 FAIL); 15 sad a 4 harnessy upravené na nové názvy; `spust_testy.sh` 272/0/1 přeskočeno; `--jen build,staticke` zelené; mutace „#533" 4/4; overit_online 273/0, overit_controlling 60/0, smoke 50/0 (overit_sod a overit_nabidka_proj_word bez šablon přeskočeny) |
-| Dokumentace | ✅ | `podklady/NAZVY_SOUBORU.md`, příručka obchodníka (věta o názvech zakázky a nabídky) i správce (konfigurace, přenos ceníku), řádek verze v27.10.2, CHANGELOG, roadmapa #533 |
+| Dokumentace | ✅ | `podklady/NAZVY_SOUBORU.md`, příručka obchodníka (věta o názvech zakázky a nabídky) i správce (konfigurace, přenos ceníku), řádek verze v27.10.2, CHANGELOG, roadmapa #533 ve vlně **G** (pokyn koordinace; definice vlny G převzata z integrace 6c8cbf9) |
 
 **Výjimky (beze změny):** `otisk_RRRR-MM-DD.json(.gz)`, `posledni_kopie.json`, `_nastaveni.json`, `_program.json`,
 šablony `.docx` a jejich jazykové mutace, přílohy poznámek.
