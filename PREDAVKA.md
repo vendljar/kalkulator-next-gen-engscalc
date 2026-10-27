@@ -1,3 +1,28 @@
+# Předávka — 27. 10. 2026: M9 #534 — manuály jako souhrn faktů, obsah na 1 stranu, sazba bez děr, větev `claude/m9-manualy-fakta`
+
+Nad `62ea0c8` (integrace v27.10.1). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze změny, verze se
+nezvyšuje** (CHANGELOG „Dokumentace“). Neslučováno; na ostrém webu, Disku ani v Pipedrive nic. Souběžně O-T #529 a E1 #533.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| Text = aktuální stav | ✅ | `manual/obsah.json` (~45 bloků), `manual/admin/obsah.json` (J. V. → „vlastník aplikace“, 20 míst), `manual_vypocet/sablona.html` (značky nové/změna pryč, kap. 17 = „Rozdíly mezi verzemi“ bez kódů, odstavec o Modelu 3 vypuštěn — #159 zrušeno). Retence ověřena v `src/retence_zaloh.js` + `netlify/lib/zalohovani.mjs`. |
+| Obsah na 1 stranu A4 | ✅ | obchodník 1, správce 2 → 1, výpočet 1 (tiskový obsah 8,5 pt, bez `break-after:page`) |
+| Sazba bez děr | ✅ | PDF obchodník 94 → 85 stran, správce 134 → 124, výpočet 28 → 21; stran < 50 % mimo konec kapitoly 2/4/0 → 0/0/0 (výpočet měl 8 poloprázdných konců kapitol, teď 0) |
+| Pojistka | ✅ | `src/test_manual_fakta.js` 14/0; nad 62ea0c8 12 FAIL / 2 OK. Úpravy `src/test_prirucka_admin.js` (bloky odrazky/tabulka, „cena můstků podle rozměru“ místo „#354“), `overit_manual.mjs` P6 |
+| Kolo | ✅ | `testovaci_kolo.sh --jen build,staticke` zelené (4/4); `spust_testy.sh --smoke` 297/0, 50 přeskočeno (harnessy bez Playwrightu v kořeni — nesouvisí); `overit_manual.mjs` 57/0 a `overit_prirucka_admin.mjs` 51/0 nad hotovými příručkami, `test_manual_vypocet.js` s hotovým HTML 14/0 |
+| Výstup | ✅ | HTML + PDF všech tří v `/tmp/kng_m9/` (necommitováno), koordinaci přes send_message |
+
+**Nástroje:** šablona příruček umí bloky `{"typ":"odrazky","uvod"?,"polozky":[…]}` a `{"typ":"tabulka","zahlavi":[…],"radky":[[…]]}`.
+Měření: `NODE_PATH=$(npm root -g) node manual/mereni_sazby.mjs <příručka.html | manuál_výpočtu.pdf>` (strany, strany obsahu,
+strany < 50 %; potřebuje pdftotext/pdftoppm).
+
+**Po O-T #529 (mazání otisků „před obnovou“ po 6 měsících) upravit:** příručka obchodníka kap. 30, tabulka „Kolik záloh se
+drží“, řádek „před obnovou“ (`nemaže se sama (smaže jen správce)` → `6 měsíců (nejnovější zůstává)`); příručka správce
+kap. A8, tabulka retence, řádek „otisky před obnovou“; `src/test_prirucka_admin.js` téma retence (`/otisky před obnovou/`).
+
+**Při slučování:** `manual/obsah.json` mění i O-T/E1 (pár vět) — mé změny jsou cílené na jednotlivé řetězce (ruční
+formátování souboru zachované). Nové věty z O-T/E1 projede `test_manual_fakta.js` (žádné „od vD.M.N“, data rozhodnutí, J. V., kódy).
+
 # Předávka — 27. 10. 2026: ZA #539 — sloupec Administrátor v Nastavení → Zobrazení, větev `claude/za-zobrazeni-admin`
 
 Nad `62ea0c8` (integrace v27.10.1). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Verze se nezvyšuje** (přidělí

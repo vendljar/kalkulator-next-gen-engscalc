@@ -39,13 +39,14 @@ code,.mono{font-family:Consolas,"DejaVu Sans Mono",monospace;font-size:.92em;bac
 .legenda{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0;font-size:9.5px}
 .legenda span{display:inline-flex;align-items:center;gap:5px}
 .legenda i{width:16px;height:9px;border-radius:2px;display:inline-block}
-.kap{break-before:page;page-break-before:always;padding-top:20px}
-.kap.bez{break-before:auto;page-break-before:auto}
-.kaph{display:flex;align-items:center;gap:10px;border-bottom:2px solid var(--navy);padding-bottom:6px;margin-bottom:8px}
+/* Kapitola nezačíná vynuceně na nové straně (M9 #534: vynucené zalomení nechávalo
+   na konci kapitol půl strany prázdné). Nadpis drží s tím, co následuje. */
+.kap{padding-top:14px}
+.kaph{break-after:avoid;page-break-after:avoid;display:flex;align-items:center;gap:10px;border-bottom:2px solid var(--navy);padding-bottom:6px;margin-bottom:8px}
 .kaph .cislo{width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:none}
 .kaph h2{font-size:17px;flex:1}
 .kaph .detail{font-size:9px;color:var(--muted);font-weight:600;text-align:right}
-h3.sub{font-size:12.5px;margin:14px 0 6px}
+h3.sub{font-size:12.5px;margin:14px 0 6px;break-after:avoid;page-break-after:avoid}
 table{border-collapse:collapse;width:100%;margin:6px 0 8px;font-size:9.6px}
 th{background:var(--navy);color:#fff;text-align:left;padding:4px 6px;font-weight:600}
 td{border-bottom:1px solid var(--line);padding:3px 6px;vertical-align:top}
@@ -94,7 +95,7 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
   <h1>Jak kalkulačka počítá OCK</h1>
   <div class="pod">Vizuální manuál výpočtu jednotlivých prvků ocelové konstrukce výtahové šachty — od zadání šachty po cenu s DPH.</div>
   <div class="verze">Platí pro <b>v{{meta.verze}}</b> (základ {{meta.zaklad}}) · výpočet <b>Model 2</b> · <span class="vydani">3. vydání</span> · sestaveno {{meta.datum}}<br>
-  Co se změnilo od 2. vydání (v15.10.14) a co se chystá, shrnuje kapitola 17.</div>
+  Rozdíly mezi verzemi a co se chystá shrnuje kapitola 17.</div>
 </div>
 
 <div class="obsah">
@@ -102,9 +103,9 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
   <div>1 Mapa výpočtu</div><div>2 Rozměry šachty</div><div>3 Půdorys, stěny A–D a rám</div>
   <div>4 Nosná konstrukce</div><div>5 Portál a nástupiště</div><div>6 Konstrukční plechy a čílka</div>
   <div>7 Zasklení a opláštění</div><div>8 Spojovací materiál</div><div>9 Lakování</div>
-  <div>10 Montáž a projekce</div><div>11 Exteriérové prvky, střecha a můstky <span class="znacka zmena">změna</span></div>
+  <div>10 Montáž a projekce</div><div>11 Exteriérové prvky, střecha a můstky</div>
   <div>12 Volitelné, lešení, příplatky</div><div>13 Režie, ATYP, standard</div><div>14 Od nákladu k ceně</div>
-  <div>15 Všechny řádky kalkulace</div><div>16 Model 1 × Model 2</div><div>17 Co je nového, co se chystá</div>
+  <div>15 Všechny řádky kalkulace</div><div>16 Model 1 × Model 2</div><div>17 Rozdíly mezi verzemi</div>
 </div>
 
 <div class="ram warn">
@@ -118,7 +119,6 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
   Každý prvek má <b>kartu</b>: co to je · vzorec · dosazení pro vzorovou šachtu · řádek, pod kterým se objeví v Kalkulaci OCK, a sazbu z ceníku, kterou se násobí.
   Stejná čísla ukazuje živě záložka <b>Detail výpočtu</b> pro kteroukoli zakázku — u nadpisů kapitol je uvedeno, ve kterém kroku detailu je hledat.<br>
   Zápis vzorců: <b>⌈x⌉</b> = zaokrouhlení nahoru na celé číslo, <b>max(a; b)</b> = větší z obou čísel, <b>š</b> = vnitřní šířka, <b>hl</b> = vnitřní hloubka, <b>H</b> = výška šachty, <b>nást</b> = počet nástupišť.
-  Značka <span class="znacka nove">nové</span> / <span class="znacka zmena">změna</span> označuje, co je jinak než ve 2. vydání.
 </div>
 <div class="legenda">
   <span><i style="background:var(--sloupek)"></i>rohový sloupek</span><span><i style="background:var(--pricnik)"></i>příčník rámu</span>
@@ -131,7 +131,7 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 <!-- ============================ VZOR ============================ -->
 <div class="kap">
 <h3 class="sub" style="margin-top:0">Vzorová šachta</h3>
-<p>Příklady počítají šachtu ze vzorové excelové předlohy VZOR v1.00 (ve zdrojácích <code>DEFAULT_ZADANI</code>, na ní stojí i testy shody s Excelem). U interiérové varianty se mění jen typ šachty a výchozí profily. Vzorová šachta je <b>stejná jako ve 2. vydání</b>; nová je jen kapitola o můstcích, která k ní přidává vzorový můstek.</p>
+<p>Příklady počítají šachtu ze vzorové excelové předlohy VZOR v1.00 (ve zdrojácích <code>DEFAULT_ZADANI</code>, na ní stojí i testy shody s Excelem). U interiérové varianty se mění jen typ šachty a výchozí profily. Příklady v kapitole 11 k ní přidávají vzorový můstek.</p>
 <table>
 <tr><th>Údaj zadání</th><th>Vzor EXT</th><th>Vzor INT</th></tr>
 <tr><td>Typ šachty</td><td>exteriérová</td><td>interiérová</td></tr>
@@ -274,8 +274,8 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 <tr><td>Otvor šachetních dveří</td><td>(čistý vstup + 2 × rám + 2 × 20 mm) / 1000</td><td>({{z.vstup}} + 2 × {{z.ram}} + 40) / 1000 = <b>{{e.dvere}} m</b></td><td>oplechování dveří, přechodové plechy, příčníky portálu, otvory stěn</td></tr>
 <tr><td>Počet nástupišť</td><td>neprůchozí: zadaný počet<br><span class="mala">průchozí: nástupiště A + nástupiště C</span></td><td><b>{{z.nast}}</b></td><td>skoro všechno na čelní stěně, kotvení, spojovací materiál, kontrola můstků</td></tr>
 </table>
-<div class="ram info"><h4>Průchozí šachta</h4>U průchozí šachty se nástupiště zadávají zvlášť pro čelní stěnu A a zadní stěnu C; celkový počet je jejich součet. Protože jedno patro může mít dveře na obou stranách, zadává se zvlášť i počet pater — jen z něj jde spočítat výška podlaží. Bez průchozí šachty platí „nástupiště = patra" jako dřív.</div>
-<div class="ram"><h4>Čísla zadání uložená jako text <span class="znacka nove">nové</span></h4>Soubor ze starší verze nebo ručně upravený může nést rozměr jako text („9"). Od v18.10.13 (B186) ho import převede na číslo, jen když celý je číslo s desetinnou tečkou; desetinnou čárku server dál odmítne. Výpočet se tím nemění — jen se nezačne počítat s textem.</div>
+<div class="ram info"><h4>Průchozí šachta</h4>U průchozí šachty se nástupiště zadávají zvlášť pro čelní stěnu A a zadní stěnu C; celkový počet je jejich součet. Protože jedno patro může mít dveře na obou stranách, zadává se zvlášť i počet pater — jen z něj jde spočítat výška podlaží. Bez průchozí šachty platí „nástupiště = patra".</div>
+<div class="ram"><h4>Čísla zadání uložená jako text</h4>Soubor ze starší verze nebo ručně upravený může nést rozměr jako text („9"). Import ho převede na číslo, jen když celý je číslo s desetinnou tečkou; desetinnou čárku server odmítne. Výpočet se tím nemění — jen se nezačne počítat s textem.</div>
 </div>
 
 <!-- ============================ 3 ============================ -->
@@ -476,7 +476,7 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 <li><b>zajistí stavba</b> — naše konstrukce, výplň 0 Kč, věta v technické specifikaci.</li>
 </ul>
 <h3 class="sub">Světlíky na bocích dveří</h3>
-<p>Vedle každých dveří zbývá <b>mezera</b> = šířka tabule − otvor dveří − 0,04 m = {{e.tab.sir}} − {{e.dvere}} − 0,04 = <b>{{e.zs.mezera}} m</b>. Počet bočních světlíků <b>N</b> je automaticky <b>nástupiště × 2</b> (dva u každých dveří); obchodník ho může přepsat (štítek „ručně"). Aplikace pak rozdělí světlíky po dveřích. Pole v zadání se od v20.10.3 jmenuje <b>„Šířka skla bočního světlíku (přes sloupky)"</b> <span class="znacka zmena">změna</span> — tabule přesahuje sloupky, světlo vedle dveří je proto užší; výpočet se nezměnil (#442).</p>
+<p>Vedle každých dveří zbývá <b>mezera</b> = šířka tabule − otvor dveří − 0,04 m = {{e.tab.sir}} − {{e.dvere}} − 0,04 = <b>{{e.zs.mezera}} m</b>. Počet bočních světlíků <b>N</b> je automaticky <b>nástupiště × 2</b> (dva u každých dveří); obchodník ho může přepsat (štítek „ručně"). Aplikace pak rozdělí světlíky po dveřích. Pole v zadání se jmenuje <b>„Šířka skla bočního světlíku (přes sloupky)"</b> — tabule přesahuje sloupky, světlo vedle dveří je proto užší.</p>
 <div class="karty">
  <div class="karta k-sklo"><h4>Rozložení po dveřích a plocha <small>krok 8</small></h4><div class="co">Dveře se dvěma světlíky mají v každém půlku mezery; dveře s jedním stojí u sloupku a světlík vyplní celou mezeru.</div>
   <div class="vz"><b class="l">VZOREC</b><span class="vzorec">D = počet dveří · se dvěma = max(0; min(N; 2D) − D)<br>s jedním = min(N; D) − se dvěma · plocha = min(N; D) × mezera × 2,2 m</span></div>
@@ -603,19 +603,19 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 <h3 class="sub">Jaké sklo a jakou sazbou</h3>
 <table>
 <tr><th>Šachta a zasklení</th><th>Boky + zadní stěna (B, C, D)</th><th>Čelní stěna (A)</th></tr>
-<tr><td>exteriérová (terče i lišty)</td><td><b>Izolační dvojsklo</b> <span class="znacka zmena">název</span></td><td>Sklo VSG 4.4.1</td></tr>
+<tr><td>exteriérová (terče i lišty)</td><td><b>Izolační dvojsklo</b></td><td>Sklo VSG 4.4.1</td></tr>
 <tr><td>interiérová, na terče</td><td>Sklo VSG 4.4.2</td><td>Sklo VSG 4.4.2</td></tr>
 <tr><td>interiérová, mezi příčníky</td><td>Sklo VSG 4.4.1</td><td>Sklo VSG 4.4.1</td></tr>
 </table>
 <p>Ve vzoru EXT: <b>MATERIÁL boční + zadní stěna</b> {{e.matBoky}} m² a <b>MATERIÁL VSG 4.4.1</b> {{e.matCelo}} m²; ve vzoru INT (terče) oba řádky ze skla VSG 4.4.2: {{i.matBoky}} + {{i.matCelo}} m². Chybí-li sazba skla v ceníku, řádek ukáže nulu — nic se tiše nenahrazuje jiným sklem.</p>
-<div class="ram"><h4>Izolační dvojsklo <span class="znacka zmena">od v26.10.6</span></h4>Položka ceníku dřív nazvaná „Sklo boky + zadní stěna" se jmenuje <b>„Izolační dvojsklo"</b> (a „Izolační dvojsklo – typ"); stejně se jmenuje typ v opláštění po stěnách. Dřívější název popisoval jen standardní exteriér — po stěnách jde dvojsklo na kteroukoli stěnu. Klíče ceníku (<code>C.skloBokyKc</code>), název řádku kalkulace i výpočet se nezměnily (#517).</div>
+<div class="ram"><h4>Izolační dvojsklo</h4>Položka ceníku <b>„Izolační dvojsklo"</b> (a „Izolační dvojsklo – typ") je i typem v opláštění po stěnách — po stěnách jde dvojsklo na kteroukoli stěnu. Klíč ceníku je <code>C.skloBokyKc</code>.</div>
 <h3 class="sub">Opláštění po stěnách A–D</h3>
 <p>Přepínač <b>Opláštění: po stěnách A–D</b> v zadání šachty dovolí každé stěně jiný materiál a rozdělení na <b>pásy</b> podle výšky (i pod úroveň nástupu do prohlubně). Typy: izolační dvojsklo (jen ext), VSG 4.4.1, VSG 4.4.2 (jen int), Cetris, „{{ps2.bezNazev}}" a „jiné" s ruční sazbou. Zapnutí režimu beze změny stěn cenou nehne a režim po stěnách není ATYP — kontrola standardu ho posuzuje jako jednotné opláštění.</p>
 <ul style="margin:4px 0 4px 16px;padding:0">
 <li><b>Světlíky u dveří nejsou součástí pásů.</b> Pásy si dělí plochu stěny bez světlíků; světlíky nad dveřmi a na bocích se připočtou zvlášť materiálem své výplně. U neprůchozí šachty má proto stěna A v pásech plochu jen pod úrovní nástupu.</li>
 <li><b>Prosklená prohlubeň:</b> zkratka nastaví všem čtyřem stěnám „Opláštění začíná" na −hloubka prohlubně; každá stěna tím přibere hloubka prohlubně × šířka stěny. Vzor: <b>{{pp2.celkem}} m²</b> místo {{e.opl.celkem}} m². Při změně hloubky prohlubně se meze posunou samy.</li>
 <li>Dva pásy „jiné" stejného názvu s jinou sazbou dají dva řádky; druhý dostane v názvu pořadí „(2)", aby šel přepsat zvlášť.</li>
-<li><b>Meze pásu</b> počítá od v17.10.4 jediná funkce jádra (<code>oplasteniPasyMeze</code>) pro výpočet i pro obsah cenové výjimky: horní hrana = zdvih + přejezd, dělicí výška se nepustí pod předchozí pás ani nad horní hranu, pás nulové výšky vypadne. Změna rozměru šachty, která schválený pás „jiné" zvětší, vrátí výjimku ke schválení (kap. 14).</li>
+<li><b>Meze pásu</b> počítá jediná funkce jádra (<code>oplasteniPasyMeze</code>) pro výpočet i pro obsah cenové výjimky: horní hrana = zdvih + přejezd, dělicí výška se nepustí pod předchozí pás ani nad horní hranu, pás nulové výšky vypadne. Změna rozměru šachty, která schválený pás „jiné" zvětší, vrátí výjimku ke schválení (kap. 14).</li>
 </ul>
 <figure><div class="obr">
 <svg viewBox="0 0 720 190" width="100%">
@@ -697,7 +697,7 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 <div class="kap bez">
 <div class="kaph"><div class="cislo">9</div><h2>Lakování</h2><div class="detail">Detail výpočtu · krok 10</div></div>
 <p>Lakování je v kalkulaci jeden řádek. Ceník má dva režimy s jinými jednotkami; který platí, určuje přepínač v ceníku (sekce Lakování, výchozí <b>„lakovna B"</b>). Druhý režim Detail výpočtu jen ukazuje pro srovnání.</p>
-<div class="ram"><h4>Nový název režimu: „lakovna B" <span class="znacka zmena">od v22.10.4</span></h4>Režim, který 2. vydání nazývalo jménem dodavatele, se v ceníku, v Kalkulaci OCK i v Detailu výpočtu (krok 10) jmenuje <b>„Lakovna B"</b> — jména osob v aplikaci nahradily role (K6-W5). Klíče ceníku (<code>C.lak.tomas*</code>, režim <code>tomas</code>) ani výpočet se nezměnily.</div>
+<div class="ram"><h4>Režim „lakovna B"</h4>V ceníku, v Kalkulaci OCK i v Detailu výpočtu (krok 10) se režim jmenuje <b>„Lakovna B"</b>; aplikace u dodavatelů neuvádí jména osob. Klíče ceníku jsou <code>C.lak.tomas*</code>, režim <code>tomas</code>.</div>
 <table>
 <tr><th>Co se lakuje</th><th>Režim „lakovna B" (jednotka)</th><th>Režim „lakovna" (jednotka)</th><th>Vzor EXT</th></tr>
 <tr><td>profily (vč. lemování)</td><td>m²</td><td>bm</td><td>{{e.lak.profM2}} m² · {{e.lak.profBm}} bm</td></tr>
@@ -793,12 +793,12 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 <tr><td>vnější lešení</td><td>volitelné (základní cena / příplatek)</td><td>vždy jen příplatek</td></tr>
 </table>
 
-<h3 class="sub">Můstky mezi budovou a OCK <span class="znacka zmena">nový výpočet od v26.10.11</span></h3>
-<p>Můstek je lávka mezi nástupištěm budovy a šachtou (včetně zábradlí). Do v26.10.11 byl můstek <b>paušál za kus včetně montáže</b>. Nově (#354, schváleno J. V. 26. 10. 2026) se cena řídí <b>rozměrem</b> a dělí se na <b>materiál</b> a <b>montáž</b>:</p>
+<h3 class="sub">Můstky mezi budovou a OCK</h3>
+<p>Můstek je lávka mezi nástupištěm budovy a šachtou (včetně zábradlí). Cena se řídí <b>rozměrem</b> a dělí se na <b>materiál</b> a <b>montáž</b>:</p>
 <ul style="margin:4px 0 6px 16px;padding:0">
 <li><b>šířka můstku = šířka šachty</b> — nezadává se, v zadání se jen ukazuje ({{mu.sirka}} mm u vzoru);</li>
 <li><b>délka můstku</b> (vzdálenost budova – OCK) se zadává v mm v poli „Délka můstku"; prázdná nebo neplatná = <b>{{mu.delkaVych}} mm</b> a kontrola před nabídkou vyzve „Doplňte délku můstku";</li>
-<li>počet můstků se zadává jako dřív (kusy); všechny můstky zakázky mají tentýž rozměr.</li>
+<li>počet můstků se zadává v kusech; všechny můstky zakázky mají tentýž rozměr.</li>
 </ul>
 <figure><div class="obr">
 <svg viewBox="0 0 720 230" width="100%">
@@ -826,12 +826,12 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 </svg></div>
 <figcaption><b>Obr. 11</b> Můstek mezi budovou a OCK. Šířka je šířka šachty, zadává se jen délka. Je-li můstek i v nejvyšším nástupišti, pokračuje střecha EXT šachty nad ním až k fasádě.</figcaption></figure>
 <div class="karty">
- <div class="karta k-novy"><h4>Můstky – materiál vč. zábradlí <small>krok 11 · <span class="znacka nove">nové</span></small></h4><div class="co">Ocelová konstrukce můstku se zábradlím, bez montáže. Cena za běžný metr délky platí pro <b>referenční šířku</b> a přepočte se úměrně šířce šachty.</div>
+ <div class="karta k-novy"><h4>Můstky – materiál vč. zábradlí <small>krok 11</small></h4><div class="co">Ocelová konstrukce můstku se zábradlím, bez montáže. Cena za běžný metr délky platí pro <b>referenční šířku</b> a přepočte se úměrně šířce šachty.</div>
   <div class="vz"><b class="l">VZOREC</b><span class="vzorec">bm = počet × délka (m) × šířka šachty / referenční šířka<br>náklad = bm × Kč/bm</span></div>
   <div class="vz"><b class="l">VZOROVÝ MŮSTEK (1 ks, délka {{mu.delka}} mm)</b>1 × 1,0 × {{mu.sirka}} / {{mu.refSirka}} = <span class="vysl">{{mu.bmRef}} bm</span><br>× {{mu.cenaBm}}/bm = <span class="vysl">{{mu.matKs}}</span> (zkušební)</div>
   <div class="pozn">Množství řádku jsou „bm přepočtené na referenční šířku" — užší šachta má méně bm než skutečná délka, širší víc.</div>
   <div class="rad">Řádek kalkulace: <b>MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL</b><br>Sazba z ceníku: Můstek mezi budovou a OCK vč. zábradlí – materiál (Kč/bm délky při ref. šířce); Můstky – referenční šířka (mm)</div></div>
- <div class="karta k-novy"><h4>Montáž můstků <small>krok 11 · <span class="znacka nove">nové</span></small></h4><div class="co">Hodiny práce (člověkohodiny všech osob) na kus, s minimem. Sazba je <b>vlastní</b>, nezávislá na montáži na stavbě, a hodiny se nepřičítají k MONTÁŽI NA STAVBĚ.</div>
+ <div class="karta k-novy"><h4>Montáž můstků <small>krok 11</small></h4><div class="co">Hodiny práce (člověkohodiny všech osob) na kus, s minimem. Sazba je <b>vlastní</b>, nezávislá na montáži na stavbě, a hodiny se nepřičítají k MONTÁŽI NA STAVBĚ.</div>
   <div class="vz"><b class="l">VZOREC</b><span class="vzorec">hodiny na kus = max(minimum; základ + h/bm × délka (m))<br>náklad = počet × hodiny × Kč/hod</span></div>
   <div class="vz"><b class="l">VZOROVÝ MŮSTEK</b>max({{mu.minHod}}; {{mu.zakladHod}} + {{mu.bmHod}} × 1,0) = <span class="vysl">{{mu.hodKs}} h</span> × {{mu.hodKc}}/h = <span class="vysl">{{mu.montKs}}</span></div>
   <div class="pozn">Délka 1 500 mm: {{mu.d15.hod}} h; do 1 000 mm platí minimum {{mu.minHod}} h (např. 600 mm: {{mu.d06.hod}} h).</div>
@@ -846,18 +846,18 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 </table>
 <p>Vzorová šachta s jedním vzorovým můstkem: náklad můstků {{mu.naklad}}, s přirážkou {{c.marze}} % {{mu.cena}}; základní cena <b>{{mu.zakCena}}</b> místo {{e.zakCena}} (+{{mu.zakRozdil}} po zaokrouhlení na tisíce). Interiérová šachta stejné šířky má tytéž řádky ({{mu.int.matMn}} bm, {{mu.int.montMn}} h).</p>
 <div class="karty">
- <div class="karta k-novy"><h4>Střecha přes nejvyšší můstek <small>krok 11 · od v19.10.2</small></h4><div class="co">Je-li můstek i v nejvyšším nástupišti (počet můstků ≥ nadzemní nástupiště, tj. nást − 1), pokračuje střecha EXT šachty nad ním až k fasádě.</div>
+ <div class="karta k-novy"><h4>Střecha přes nejvyšší můstek <small>krok 11</small></h4><div class="co">Je-li můstek i v nejvyšším nástupišti (počet můstků ≥ nadzemní nástupiště, tj. nást − 1), pokračuje střecha EXT šachty nad ním až k fasádě.</div>
   <div class="vz"><b class="l">VZOREC</b><span class="vzorec">zastřešení = (š + 0,2) × (hl + 0,1) + (šířka můstku + 0,2) × délka můstku</span></div>
   <div class="vz"><b class="l">VZOROVÁ ŠACHTA, {{mu.n.ks}} můstků po {{mu.delka}} mm</b>{{e.strecha}} + {{mu.n.strechaMustek}} = <span class="vysl">{{mu.n.strecha}} m²</span>; příplatek za měď {{mu.n.med}} m²</div>
-  <div class="pozn">Jedna střecha = jedna položka zastřešení i příplatku za měď. Nižší můstky kryje můstek nad nimi; s jedním můstkem vzor zůstává na {{mu.strecha}} m². Od v26.10.11 je šířka můstku šířka šachty a délka táž jako v ceně můstku.</div>
+  <div class="pozn">Jedna střecha = jedna položka zastřešení i příplatku za měď. Nižší můstky kryje můstek nad nimi; s jedním můstkem vzor zůstává na {{mu.strecha}} m². Šířka můstku je šířka šachty, délka táž jako v ceně můstku.</div>
   <div class="rad">Řádek kalkulace: <b>ZASTŘEŠENÍ ŠACHTY (EXT)</b>; příplatek <b>PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)</b></div></div>
  <div class="karta k-novy"><h4>Kontroly a specifikace u můstků</h4><div class="co">Co aplikace hlídá a co napíše do nabídky.</div>
-  <div class="pozn"><b>Kontrola před nabídkou</b> (upozornění, tisk nezastaví): chybí cena materiálu nebo sazba montáže můstků v ceníku; prázdná délka (počítá se {{mu.delkaVych}} mm); neplatný nebo nezvykle velký rozměr (nad 6 000 mm); <b>přechodové plechy</b> se počítají za všech {{mu.n.prechodove}} nástupišť, i když v nástupišti s můstkem obvykle odpadají (#355); střecha přes nejvyšší můstek bez rozměru.</div>
-  <div class="pozn"><b>Standard OCK:</b> délka můstku max <b>{{mu.std.delkaMax}} mm</b>; šířka se od v26.10.11 nehlídá (je to šířka šachty).</div>
-  <div class="pozn"><b>Technická specifikace a nabídka:</b> jeden řádek „N ks, rozměr Š × D mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže", cena v základu OCK; řádek KOTVENÍ KONSTRUKCE (POLOHA) doplní „… a přes můstky" (#519, v26.10.5).</div>
+  <div class="pozn"><b>Kontrola před nabídkou</b> (upozornění, tisk nezastaví): chybí cena materiálu nebo sazba montáže můstků v ceníku; prázdná délka (počítá se {{mu.delkaVych}} mm); neplatný nebo nezvykle velký rozměr (nad 6 000 mm); <b>přechodové plechy</b> se počítají za všech {{mu.n.prechodove}} nástupišť, i když v nástupišti s můstkem obvykle odpadají; střecha přes nejvyšší můstek bez rozměru.</div>
+  <div class="pozn"><b>Standard OCK:</b> délka můstku max <b>{{mu.std.delkaMax}} mm</b>; šířka se nehlídá (je to šířka šachty).</div>
+  <div class="pozn"><b>Technická specifikace a nabídka:</b> jeden řádek „N ks, rozměr Š × D mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže", cena v základu OCK; řádek KOTVENÍ KONSTRUKCE (POLOHA) doplní „… a přes můstky".</div>
   <div class="rad">Pravidla kontrol: mustky · mustkyPrechodove · mustekStrecha · mustekRozmer</div></div>
 </div>
-<div class="ram warn"><h4>Starší varianty počítají můstky po staru</h4>Nový vzorec platí jen s ceníkem, který má kladnou <b>referenční šířku</b>. Zamčená (odeslaná) varianta a ceník zveřejněný před v26.10.11 počítají dál <b>paušál × počet</b> v jednom řádku MŮSTKY MEZI BUDOVOU A OCK (např. 2 můstky × zkušební {{mu.cenaBm}} = {{mu.stary.naklad}}) — ceny odeslaných nabídek se nemění. Zveřejnění ceníku starý tvar převede (doplní nové buňky výchozími hodnotami) a rozpracované varianty se pak přepočítají samy.</div>
+<div class="ram warn"><h4>Ceník bez referenční šířky počítá můstky paušálem</h4>Výpočet podle rozměru platí jen s ceníkem, který má kladnou <b>referenční šířku</b>. Zamčená (odeslaná) varianta a ceník bez referenční šířky počítají <b>paušál × počet</b> v jednom řádku MŮSTKY MEZI BUDOVOU A OCK (např. 2 můstky × zkušební {{mu.cenaBm}} = {{mu.stary.naklad}}) — ceny odeslaných nabídek se nemění. Zveřejnění ceníku starý tvar převede (doplní nové buňky výchozími hodnotami) a rozpracované varianty se pak přepočítají samy.</div>
 </div>
 
 <!-- ============================ 12 ============================ -->
@@ -890,7 +890,7 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 <b>Vnější</b> (U kolem stěn B, C, D): (š + 0,5 + 2 × (hl + 0,25)) × (zdvih + přejezd) m² × sazba + fixní část. Vzor: {{e.lesU}} m². U interiérové šachty je vždy jen příplatkem.
 <b>Dokončení hlavy šachty:</b> přejezd (m) × sazba, bez fixní části — je to nástavba postaveného lešení.
 Fixní část je v ceníku jedna (Lešení – fixní část) pro všechna lešení. Ručně přepsané množství: metry × sazba + celá fixní část; přepis na 0 m = 0 Kč i bez fixu.<br>
-<span class="znacka nove">od v16.10.2</span> Technická specifikace má řádky <b>LEŠENÍ VNITŘNÍ PRO STAVBU OCK</b> a LEŠENÍ KOLEM OCK řízené kalkulací: lešení v základní ceně → řádek se do „Součástí dodávky není" nedává; příplatek v nabídce → „nabízeno jako příplatek"; příplatek vyřazený z nabídky → „zajistí objednatel v rámci SP". Výpočet beze změny.</div>
+Technická specifikace má řádky <b>LEŠENÍ VNITŘNÍ PRO STAVBU OCK</b> a LEŠENÍ KOLEM OCK řízené kalkulací: lešení v základní ceně → řádek se do „Součástí dodávky není" nedává; příplatek v nabídce → „nabízeno jako příplatek"; příplatek vyřazený z nabídky → „zajistí objednatel v rámci SP". Výpočet beze změny.</div>
 <h3 class="sub">Příplatkové položky (ceník variant)</h3>
 <p>Příplatky jsou nabídkové menu pro zákazníka a do základní ceny nevstupují. Každá položka má cenu = náklad × (1 + přirážka), zaokrouhleno nahoru na tisíce. Kromě tabulky se sem dostanou nezaškrtnuté volitelné položky (lešení, přechodové plechy, háky, zábradlí, sokl) a vlastní položky obchodníka. Obchodník u příplatku smí přepsat množství i cenu; sloupec Nabídka řídí, zda se tiskne.</p>
 <table>
@@ -899,7 +899,7 @@ Fixní část je v ceníku jedna (Lešení – fixní část) pro všechna leše
 <tr><td>Sklo SKN 176 (Ug=1,1) (EXT)</td><td>plocha B + C + D (jen ext)</td><td>m²</td><td class="n">{{e.pp.skn}}</td><td class="n">—</td></tr>
 <tr><td>MADLA NA BOČNÍCH STĚNÁCH (dřevo, lak)</td><td>(nást − 1) × (hl + 0,16) × 1,2 × 2</td><td>bm</td><td class="n">{{e.pp.madlaBoky}}</td><td class="n">{{i.pp.madlaBoky}}</td></tr>
 <tr><td>MADLA NA ZADNÍ STĚNĚ (dřevo, lak)</td><td>(nást − 1) × (š + 0,16) × 1,2</td><td>bm</td><td class="n">{{e.pp.madlaZadni}}</td><td class="n">{{i.pp.madlaZadni}}</td></tr>
-<tr><td>PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) <span class="znacka zmena">změna</span></td><td>plocha zastřešení (vč. střechy přes nejvyšší můstek); jen se zastřešením v nabídce</td><td>m²</td><td class="n">{{e.pp.medStrecha}}</td><td class="n">—</td></tr>
+<tr><td>PŘÍPLATEK ZA STŘECHU V MĚDI (EXT)</td><td>plocha zastřešení (vč. střechy přes nejvyšší můstek); jen se zastřešením v nabídce</td><td>m²</td><td class="n">{{e.pp.medStrecha}}</td><td class="n">—</td></tr>
 <tr><td>VENTILÁTOR (EXT)</td><td>1 (jen ext)</td><td>ks</td><td class="n">{{e.pp.ventilator}}</td><td class="n">—</td></tr>
 <tr><td>ZÁBRANY DO DVEŘNÍCH VSTUPŮ</td><td>nást</td><td>ks</td><td class="n">{{e.pp.zabranyDvere}}</td><td class="n">{{i.pp.zabranyDvere}}</td></tr>
 <tr><td>ZÁBRANY PROTI PÁDU DO ŠACHTY ★</td><td>nást</td><td>ks</td><td class="n">{{e.pp.zabranyPad}}</td><td class="n">{{i.pp.zabranyPad}}</td></tr>
@@ -915,8 +915,8 @@ Fixní část je v ceníku jedna (Lešení – fixní část) pro všechna leše
 <tr><td>OPLECHOVÁNÍ SOKLU PROHLUBNĚ (EXT)</td><td>š + 2 × hl (jen ext)</td><td>bm</td><td class="n">{{e.pp.sokl}}</td><td class="n">—</td></tr>
 </table>
 <div class="dvoj">
-<div class="ram novy"><h4>★ Cena dle nabídky <span class="znacka nove">od v16.10.3</span></h4>Osm nabídkových položek „za akci" (★) nese v ceníku příznak <b>„cena dle nabídky"</b>: ceník má jen orientační cenu, skutečnou zadá obchodník podle nabídky dodavatele. Ruční cena u takové položky <b>není odchylka od ceníku</b> — nevznikne cenová výjimka, schválení ani zábrana tisku a automatický přepočet ji nepřepíše. V Příplatcích svítí štítek „cena dle nabídky" a po přepsání „vlastní cena" (netisknou se). Příznak nastavuje správce v Nastavení → Ceník, jen u příplatků, a bere se vždy z <b>platného</b> ceníku. Zkušební ceník tyto položky nenaceňuje (0 Kč).</div>
-<div class="ram novy"><h4>Měď jen se střechou <span class="znacka zmena">od v20.10.8 a v21.10.3</span></h4>PŘÍPLATEK ZA STŘECHU V MĚDI se nabízí jen tehdy, když je ZASTŘEŠENÍ ŠACHTY (EXT) v nabídce (není vyřazené a jeho ruční množství není nula; K29-N1). Je-li plocha zastřešení <b>ručně přepsaná</b>, bere měď tuto plochu (střecha nad můstkem už v ní je; #451). Vlastní ruční množství mědi má dál přednost. Platí v Modelu 1 i 2.</div>
+<div class="ram novy"><h4>★ Cena dle nabídky</h4>Osm nabídkových položek „za akci" (★) nese v ceníku příznak <b>„cena dle nabídky"</b>: ceník má jen orientační cenu, skutečnou zadá obchodník podle nabídky dodavatele. Ruční cena u takové položky <b>není odchylka od ceníku</b> — nevznikne cenová výjimka, schválení ani zábrana tisku a automatický přepočet ji nepřepíše. V Příplatcích svítí štítek „cena dle nabídky" a po přepsání „vlastní cena" (netisknou se). Příznak nastavuje správce v Nastavení → Ceník, jen u příplatků, a bere se vždy z <b>platného</b> ceníku. Zkušební ceník tyto položky nenaceňuje (0 Kč).</div>
+<div class="ram novy"><h4>Měď jen se střechou</h4>PŘÍPLATEK ZA STŘECHU V MĚDI se nabízí jen tehdy, když je ZASTŘEŠENÍ ŠACHTY (EXT) v nabídce (není vyřazené a jeho ruční množství není nula). Je-li plocha zastřešení <b>ručně přepsaná</b>, bere měď tuto plochu (střecha nad můstkem už v ní je). Vlastní ruční množství mědi má přednost. Platí v Modelu 1 i 2.</div>
 </div>
 </div>
 
@@ -958,7 +958,7 @@ Fixní část je v ceníku jedna (Lešení – fixní část) pro všechna leše
 <tr><td>Způsob zasklení</td><td>na terče</td><td>na terče nebo mezi příčníky</td></tr>
 <tr><td>Počet sloupků</td><td>přesně {{st.sloupky}}</td><td>přesně {{st.sloupky}}</td></tr>
 <tr><td>Jeden druh skla po celé šachtě</td><td>ano</td><td>ano</td></tr>
-<tr class="novy"><td>Můstek <span class="znacka zmena">změna</span></td><td colspan="2"><b>délka</b> (dřív „hloubka") ≤ {{mu.std.delkaMax}} mm; šířka se od v26.10.11 nehlídá — je to šířka šachty (limity šířky zůstávají v datech, nic je nečte)</td></tr>
+<tr class="novy"><td>Můstek</td><td colspan="2"><b>délka</b> ≤ {{mu.std.delkaMax}} mm; šířka se nehlídá — je to šířka šachty</td></tr>
 </table>
 <p class="mala">Opláštění po stěnách A–D samo o sobě ATYP není. Rozdělané zadání (chybí šířka, hloubka nebo zdvih) se neposuzuje — hlásí „nelze posoudit" a ATYP nezapíná. Termín dodání se u ATYP prodlouží o počet týdnů z Nastavení; je-li termín v krycím listu smazaný nebo standardní lhůta nevyplněná, kontrola „terminAtyp" upozorní, že kapitola V. nabídky uvede standardní lhůtu nebo „dle dohody".</p>
 </div>
@@ -1027,8 +1027,8 @@ Fixní část je v ceníku jedna (Lešení – fixní část) pro všechna leše
 <div class="ram"><h4>OCK, nebo PROJ — počítá se jen jedna strana</h4>Má-li zakázka číslo nabídky OCK, kalkulace projekce je uzamčená a vynulovaná (a naopak). Zadání vyřazené strany zůstává v datech, jen se nesčítá, netiskne ani nekontroluje; po smazání čísla se cena vrátí. Pipedrive vede OCK a projekci jako dvě nabídky s vlastním číslem.</div>
 <div class="ram"><h4>Kdy nabídka neodejde bez opravy nebo schválení</h4>Rozměr šachty pod 0,6 m (zdvih, šířka, hloubka), zdvih nad 99 m; profil mimo katalog jeklů (počítá se nulou a dokument se zastaví), nulová cena, záporná položka; <b>cenová výjimka</b>: ceník varianty se liší od platného ceníku (kromě položek „cena dle nabídky"), nebo pás „jiné" má sazbu nižší než nejlevnější ceníkové opláštění — bez práva na ceník je potřeba schválení nadřízeného (záložka Schvalování); sleva nad strop role nebo pod minimální marži.</div>
 </div>
-<div class="ram novy"><h4>Cenové výjimky a schvalovatel <span class="znacka zmena">v16.10.1 – v20.10.5</span></h4>Obsah schválené výjimky nese u pásu „jiné" jeho <b>rozsah</b> (od–do m po ořezu jádrem, délku stěny) a <b>plochu z výpočtu jádra</b> zaokrouhlenou na <b>0,1 m² nahoru</b>; stejně světlíky „jiné" u dveří. Schválený pás tak nejde zvětšit změnou šachty — výjimka se vrátí do „čeká znovu". Karta Schvalování → Cenové výjimky ukazuje tomu, kdo smí rozhodnout, použitou a ceníkovou sazbu a <b>dopad na cenu strany</b> v Kč a %. Výpočet ceny se tím nemění. Kontrol před nabídkou je dnes {{k.pocet}} (ve v15.10.14 35).</div>
-<p class="mala">Kalkulace se vždy počítá v korunách. U nabídky v EN/DE/FR se částky převádějí kurzem z ceníku po položkách, zaokrouhlují na celá eura nahoru a sčítají z převedených čísel; bez kurzu se cizojazyčný dokument nevytvoří. Od v22.10.4 ukazuje dlaždice „Základní cena bez DPH" u zahraniční zakázky pod částkou i cenu v EUR (celá eura nahoru, #503). Splátky OCK musí dát 100 % (kontrola „platbyOck100", v26.10.6).</p>
+<div class="ram novy"><h4>Cenové výjimky a schvalovatel</h4>Obsah schválené výjimky nese u pásu „jiné" jeho <b>rozsah</b> (od–do m po ořezu jádrem, délku stěny) a <b>plochu z výpočtu jádra</b> zaokrouhlenou na <b>0,1 m² nahoru</b>; stejně světlíky „jiné" u dveří. Schválený pás tak nejde zvětšit změnou šachty — výjimka se vrátí do „čeká znovu". Karta Schvalování → Cenové výjimky ukazuje tomu, kdo smí rozhodnout, použitou a ceníkovou sazbu a <b>dopad na cenu strany</b> v Kč a %. Výpočet ceny se tím nemění. Kontrol před nabídkou je {{k.pocet}}.</div>
+<p class="mala">Kalkulace se vždy počítá v korunách. U nabídky v EN/DE/FR se částky převádějí kurzem z ceníku po položkách, zaokrouhlují na celá eura nahoru a sčítají z převedených čísel; bez kurzu se cizojazyčný dokument nevytvoří. Dlaždice „Základní cena bez DPH" ukazuje u zahraniční zakázky pod částkou i cenu v EUR (celá eura nahoru). Splátky OCK musí dát 100 % (kontrola „platbyOck100").</p>
 </div>
 
 <!-- ============================ 15 ============================ -->
@@ -1045,7 +1045,7 @@ Fixní část je v ceníku jedna (Lešení – fixní část) pro všechna leše
 <!-- ============================ 16 ============================ -->
 <div class="kap">
 <div class="kaph"><div class="cislo">16</div><h2>Model 1 × Model 2</h2><div class="detail">přepínač v hlavičce kalkulace</div></div>
-<p>Model 2 (opravený výpočet) je výchozí pro všechny nové zakázky a jediný, který se dál rozvíjí. Model 1 počítá 1:1 jako excelová předloha VZOR včetně jejích chyb; od 24. 9. 2026 je zmrazený — přepnout na něj smí jen administrátor. Zakázka, která v Modelu 1 už je, se počítá beze změny; obchodník ji smí převést na Model 2, zpátky ne.</p>
+<p>Model 2 (opravený výpočet) je výchozí pro všechny nové zakázky a jediný, který se dál rozvíjí. Model 1 počítá 1:1 jako excelová předloha VZOR včetně jejích chyb; je zmrazený — přepnout na něj smí jen administrátor. Zakázka, která v Modelu 1 už je, se počítá beze změny; obchodník ji smí převést na Model 2, zpátky ne.</p>
 <table>
 <tr><th></th><th>Rozdíl</th><th>Model 1 (předloha)</th><th>Model 2 (opraveno)</th></tr>
 <tr><td>A</td><td>Konstrukční plechy — spodní rám a kotvení</td><td>obrácená podmínka int/ext u kusů, plocha kotvení vždy ext</td><td>hodnoty podle typu šachty</td></tr>
@@ -1061,39 +1061,39 @@ Fixní část je v ceníku jedna (Lešení – fixní část) pro všechna leše
 <tr><td>K</td><td>Ruční šířka skla bočního světlíku</td><td>nečte se</td><td>plocha = N × šířka × 2,2 m (při ručním počtu)</td></tr>
 </table>
 <div class="ram"><h4>Kolik to dělá</h4>Rozhodují rozdíly H a I (rezervy): Model 1 předražuje zakázky s rezervou zhruba o součin rezerva × přirážka. Vzorová šachta se zkušebním ceníkem: bez rezerv Model 1 <b>{{m1.e.zakCena}}</b> × Model 2 <b>{{e.zakCena}}</b>; s ATYP (rezervy 30 %) Model 1 <b>{{m1.at.zakCena}}</b> × Model 2 <b>{{at.zakCena}}</b>, tedy o {{m1.at.rozdilPct}} % víc; příplatky {{m1.at.pripCena}} × {{at.pripCena}}.</div>
-<div class="ram info"><h4>Novinky od 2. vydání platí v obou modelech</h4>Střecha přes nejvyšší můstek (#356), měď jen se zastřešením v nabídce (K29-N1) a podle přepsané plochy (#451) i můstky podle rozměru (#354) počítá Model 1 stejně jako Model 2 — předloha VZOR tyto volby nezná, takže není co zachovávat 1:1. Zakázka bez můstků a s výchozím zastřešením vychází v Modelu 1 na korunu stejně jako dřív.</div>
+<div class="ram info"><h4>Co počítají oba modely stejně</h4>Střechu přes nejvyšší můstek, měď jen se zastřešením v nabídce a podle přepsané plochy i můstky podle rozměru počítá Model 1 stejně jako Model 2 — předloha VZOR tyto volby nezná, takže není co zachovávat 1:1. Zakázka bez můstků a s výchozím zastřešením vychází v Modelu 1 na korunu podle předlohy.</div>
 </div>
 
 <!-- ============================ 17 ============================ -->
 <div class="kap">
-<div class="kaph"><div class="cislo">17</div><h2>Co je nového ve 3. vydání a co se chystá</h2><div class="detail">v15.10.14 → v{{meta.verze}}</div></div>
-<p>2. vydání manuálu popisovalo v15.10.14. Toto vydání popisuje <b>v{{meta.verze}}</b> (testovací web). Změny výpočtu OCK, sazeb, řádků kalkulace, kontrol standardu a Detailu výpočtu mezi oběma vydáními po verzích:</p>
+<div class="kaph"><div class="cislo">17</div><h2>Rozdíly mezi verzemi</h2><div class="detail">v15.10.14 → v{{meta.verze}}</div></div>
+<p>Manuál popisuje <b>v{{meta.verze}}</b>. Změny výpočtu OCK, sazeb, řádků kalkulace, kontrol standardu a Detailu výpočtu od v15.10.14 (2. vydání manuálu) po verzích:</p>
 <table>
 <tr><th>Verze</th><th>Co se změnilo</th><th>Kap.</th></tr>
-<tr><td>v16.10.1</td><td>Cenová výjimka s pásem „jiné": obsah schválení nese i rozsah pásu (od–do m), karta ho ukazuje (B155).</td><td>7, 14</td></tr>
+<tr><td>v16.10.1</td><td>Cenová výjimka s pásem „jiné": obsah schválení nese i rozsah pásu (od–do m), karta ho ukazuje.</td><td>7, 14</td></tr>
 <tr><td>v16.10.2</td><td>Technická specifikace: nový řádek LEŠENÍ VNITŘNÍ PRO STAVBU OCK; oba řádky lešení řídí kalkulace (v ceně / jako příplatek / zajistí objednatel). Výpočet beze změny.</td><td>12</td></tr>
 <tr><td>v16.10.3</td><td>Příznak ceníku <b>„cena dle nabídky"</b> u 8 nabídkových příplatků: ruční cena bez výjimky a schválení, štítky „cena dle nabídky" / „vlastní cena".</td><td>12, 14</td></tr>
-<tr><td>v17.10.3</td><td>Kontrola <b>mustkyPrechodove</b>: šachta s můstky a přechodovými plechy za všechna nástupiště dostane upozornění (#355). Výpočet beze změny.</td><td>11</td></tr>
-<tr><td>v17.10.4</td><td>Meze pásů opláštění jediným pravidlem jádra (<code>oplasteniPasyMeze</code>) pro výpočet i výjimku; schválený pás „jiné" nejde zvětšit změnou šachty (B178). Příznak „cena dle nabídky" jen u příplatků a jen z platného ceníku (B179).</td><td>7, 12, 14</td></tr>
-<tr><td>v17.10.5</td><td>Karta cenové výjimky: použitá × ceníková sazba, plocha z jádra a dopad na cenu strany v Kč a % (B165).</td><td>14</td></tr>
-<tr><td>v18.10.13</td><td>Čísla zadání uložená jako text se při importu převedou na číslo (B186).</td><td>2</td></tr>
-<tr><td>v19.10.2</td><td><b>Střecha přes nejvyšší můstek</b>: zastřešení EXT i příplatek za měď + (šířka můstku + 0,2) × hloubka můstku, Model 1 i 2; kontrola mustekStrecha (#356).</td><td>11, 12</td></tr>
-<tr><td>v20.10.2</td><td>Kontrola <b>mustekRozmer</b> (neplatný nebo nezvykle velký rozměr můstku); nekonečný rozměr = nevyplněný (K3-N17).</td><td>11</td></tr>
-<tr><td>v20.10.3</td><td>Popisek „Šířka skla bočního světlíku (přes sloupky)" v zadání, Detailu výpočtu (krok 8) a specifikaci; výpočet beze změny (#442).</td><td>5</td></tr>
-<tr><td>v20.10.5</td><td>Plocha v obsahu cenové výjimky na 0,1 m² nahoru (B183).</td><td>14</td></tr>
-<tr><td>v20.10.8</td><td><b>Měď jen se zastřešením</b> v nabídce (K29-N1).</td><td>12</td></tr>
-<tr><td>v21.10.3</td><td>Měď podle ručně přepsané plochy zastřešení (#451).</td><td>12</td></tr>
-<tr><td>v22.10.4</td><td>Lakování: režim pojmenovaný po dodavateli přejmenován na <b>„lakovna B"</b> (ceník, Kalkulace OCK, Detail výpočtu krok 10; klíče beze změny). Dlaždice základní ceny ukazuje u zahraniční zakázky i EUR (#503).</td><td>9, 14</td></tr>
-<tr><td>v26.10.5</td><td>Specifikace: KOTVENÍ KONSTRUKCE (POLOHA) „… a přes můstky" (#519). Výpočet beze změny.</td><td>11</td></tr>
-<tr><td>v26.10.6</td><td>Ceník: „Sklo boky + zadní stěna" → <b>„Izolační dvojsklo"</b>, i jako typ opláštění po stěnách (#517). Kontrola platbyOck100 (splátky OCK = 100 %).</td><td>7, 14</td></tr>
-<tr class="novy"><td>v26.10.11</td><td><b>Můstky podle rozměru (#354)</b>: šířka = šířka šachty, zadává se délka (prázdná = 1 000 mm); dva řádky <b>MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL</b> (bm × šířka / ref. šířka × Kč/bm) a <b>MONTÁŽ MŮSTKŮ</b> (max(min; základ + h/bm × délka) × Kč/h); 5 nových buněk ceníku; standard hlídá jen délku ≤ 1 000 mm; specifikace „Š × D mm"; starý ceník a zamčené varianty dál paušál × kusy.</td><td>11, 13, 15</td></tr>
-<tr><td>v26.10.12</td><td>Zálohy (O-K9) — výpočet beze změny.</td><td>—</td></tr>
+<tr><td>v17.10.3</td><td>Kontrola <b>mustkyPrechodove</b>: šachta s můstky a přechodovými plechy za všechna nástupiště dostane upozornění. Výpočet beze změny.</td><td>11</td></tr>
+<tr><td>v17.10.4</td><td>Meze pásů opláštění jediným pravidlem jádra (<code>oplasteniPasyMeze</code>) pro výpočet i výjimku; schválený pás „jiné" nejde zvětšit změnou šachty. Příznak „cena dle nabídky" jen u příplatků a jen z platného ceníku.</td><td>7, 12, 14</td></tr>
+<tr><td>v17.10.5</td><td>Karta cenové výjimky: použitá × ceníková sazba, plocha z jádra a dopad na cenu strany v Kč a %.</td><td>14</td></tr>
+<tr><td>v18.10.13</td><td>Čísla zadání uložená jako text se při importu převedou na číslo.</td><td>2</td></tr>
+<tr><td>v19.10.2</td><td><b>Střecha přes nejvyšší můstek</b>: zastřešení EXT i příplatek za měď + (šířka můstku + 0,2) × hloubka můstku, Model 1 i 2; kontrola mustekStrecha.</td><td>11, 12</td></tr>
+<tr><td>v20.10.2</td><td>Kontrola <b>mustekRozmer</b> (neplatný nebo nezvykle velký rozměr můstku); nekonečný rozměr = nevyplněný.</td><td>11</td></tr>
+<tr><td>v20.10.3</td><td>Popisek „Šířka skla bočního světlíku (přes sloupky)" v zadání, Detailu výpočtu (krok 8) a specifikaci; výpočet beze změny.</td><td>5</td></tr>
+<tr><td>v20.10.5</td><td>Plocha v obsahu cenové výjimky na 0,1 m² nahoru.</td><td>14</td></tr>
+<tr><td>v20.10.8</td><td><b>Měď jen se zastřešením</b> v nabídce.</td><td>12</td></tr>
+<tr><td>v21.10.3</td><td>Měď podle ručně přepsané plochy zastřešení.</td><td>12</td></tr>
+<tr><td>v22.10.4</td><td>Lakování: režim pojmenovaný po dodavateli přejmenován na <b>„lakovna B"</b> (ceník, Kalkulace OCK, Detail výpočtu krok 10; klíče beze změny). Dlaždice základní ceny ukazuje u zahraniční zakázky i EUR.</td><td>9, 14</td></tr>
+<tr><td>v26.10.5</td><td>Specifikace: KOTVENÍ KONSTRUKCE (POLOHA) „… a přes můstky". Výpočet beze změny.</td><td>11</td></tr>
+<tr><td>v26.10.6</td><td>Ceník: „Sklo boky + zadní stěna" → <b>„Izolační dvojsklo"</b>, i jako typ opláštění po stěnách. Kontrola platbyOck100 (splátky OCK = 100 %).</td><td>7, 14</td></tr>
+<tr class="novy"><td>v26.10.11</td><td><b>Můstky podle rozměru</b>: šířka = šířka šachty, zadává se délka (prázdná = 1 000 mm); dva řádky <b>MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL</b> (bm × šířka / ref. šířka × Kč/bm) a <b>MONTÁŽ MŮSTKŮ</b> (max(min; základ + h/bm × délka) × Kč/h); 5 nových buněk ceníku; standard hlídá jen délku ≤ 1 000 mm; specifikace „Š × D mm"; starý ceník a zamčené varianty dál paušál × kusy.</td><td>11, 13, 15</td></tr>
+<tr><td>v26.10.12</td><td>Zálohy — výpočet beze změny.</td><td>—</td></tr>
 </table>
-<p>Vzorová šachta vychází na <b>stejná množství i cenu jako ve 2. vydání</b> (zkušební ceník: základní cena {{e.zakCena}}, s ATYP {{at.zakCena}}). Nové jsou příklady se vzorovým můstkem (kap. 11). Starší zakázky se nepřecenily: zamčené varianty drží zmrazený výsledek a starý ceník počítá můstky paušálem.</p>
+<p>Vzorová šachta vychází na <b>stejná množství i cenu jako ve v15.10.14</b> (zkušební ceník: základní cena {{e.zakCena}}, s ATYP {{at.zakCena}}). Nové jsou příklady se vzorovým můstkem (kap. 11). Starší zakázky se nepřecenily: zamčené varianty drží zmrazený výsledek a starý ceník počítá můstky paušálem.</p>
 <div class="ram novy"><h4>Co se chystá (roadmapa, zatím není v aplikaci)</h4>
-<b>#525 Přeuspořádání ceníku OCK</b> (čeká): nová sekce „Montáž a práce" se všemi sazbami práce (montáž na stavbě, montáž můstků, oplechování – práce, práce opláštění, zámečník, montáž přechodových plechů, demontáže); stávající sekce jen materiál, smíšené položky rozdělit nebo do „Smíšené a služby". Vzorce se tím nemají měnit, změní se místo sazeb v ceníku — manuál pak upraví řádky „Sazba z ceníku".<br>
-<b>#500 Controlling — co zbývá po #447</b> (blokováno): zaokrouhlení OCK v exportu, Kapitoly, protokol exportů v záloze, PROJ. Výpočet ceny se nemění.<br>
-<b>#159 Model 3</b> (čeká): třetí režim výpočtu, do kterého půjdou další opravy, až se uzavře porovnání modelů.</div>
+<b>Přeuspořádání ceníku OCK</b> (čeká): nová sekce „Montáž a práce" se všemi sazbami práce (montáž na stavbě, montáž můstků, oplechování – práce, práce opláštění, zámečník, montáž přechodových plechů, demontáže); stávající sekce jen materiál, smíšené položky rozdělit nebo do „Smíšené a služby". Vzorce se tím nemají měnit, změní se místo sazeb v ceníku — manuál pak upraví řádky „Sazba z ceníku".<br>
+<b>Controlling — zbývající části</b> (čeká): zaokrouhlení OCK v exportu, Kapitoly, protokol exportů v záloze, PROJ. Výpočet ceny se nemění.<br>
+</div>
 <div class="ram"><h4>Odkud manuál je a jak byl ověřen</h4>
 Zdroj: repozitář kalkulator-next-gen-engscalc, základ {{meta.zaklad}} (v{{meta.verze}}), soubory <code>src/engine.js</code>, <code>src/cenik.js</code>, <code>src/techspec.js</code>, <code>src/standard_ock.js</code>, <code>src/kontroly.js</code>, <code>src/vyjimky.js</code>, <code>src/ui/detail_ui.js</code>, <code>src/ui/kalk_ock.js</code>, <code>src/jekly.json</code> a CHANGELOG v15.10.14 → v{{meta.verze}}.<br>
 Manuál vyrábí <code>manual_vypocet/sestav.js</code> ze šablony <code>manual_vypocet/sablona.html</code>; všech {{meta.pocetCisel}} čísel dosadil skript <code>manual_vypocet/data.js</code> přímo z výpočetního jádra (Node, zkušební ceník <code>src/zkusebni_cenik.js</code> + doplnění: {{meta.doplneni}}).

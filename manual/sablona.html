@@ -112,6 +112,18 @@
   dl.vyklad dd p { margin:0; }
   @media (max-width:640px) { dl.vyklad { grid-template-columns:1fr; } }
 
+  /* ---------- souhrn v odrážkách a malá tabulka (M9 #534) ----------
+   * Text kapitoly je souhrn faktů: co platí, co uvidíte, co udělat.
+   * Dlouhý odstavec se rozkládá na odrážky, srovnání (např. kolik záloh
+   * se kde drží) na malou tabulku. */
+  ul.odrazky { margin:0 0 14px; padding-left:22px; }
+  ul.odrazky li { margin:0 0 5px; }
+  ul.odrazky li > p { margin:0; }
+  table.tab { border-collapse:collapse; width:100%; margin:6px 0 16px; font-size:15px; }
+  table.tab th, table.tab td { border:1px solid var(--line); padding:6px 10px; text-align:left; vertical-align:top; }
+  table.tab th { background:#f7f9fc; font-weight:600; }
+  table.tab td > p { margin:0; }
+
   /* ---------- tisk ---------- */
   /* Bez tohohle vytiskne prohlížeč US Letter — to je jeho výchozí formát,
    * ne náš. Příručka se tiskne v kanceláři na A4. */
@@ -124,9 +136,26 @@
     * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     body { font-size:11pt; }
     .stranka { max-width:none; padding:0; }
-    h2, h3 { page-break-after:avoid; }
-    figure.snimek { page-break-inside:avoid; }
-    li.krok { break-inside:avoid; page-break-inside:avoid; }
+    /* Sazba bez děr (M9 #534): nadpis drží s tím, co následuje, ale nic
+     * nezačíná vynuceně na nové straně. Celistvý zůstává jen rámeček snímku
+     * (a krok postupu, který k němu patří) — titulek a vysvětlivky pod ním
+     * se smějí přelít na další stranu. */
+    h2 { margin:26px 0 10px; break-after:avoid; page-break-after:avoid; }
+    h3 { margin:16px 0 6px; break-after:avoid; page-break-after:avoid; }
+    p { margin:0 0 9px; }
+    figure.snimek { margin:12px 0 14px; }
+    .snimek-ram { break-inside:avoid; page-break-inside:avoid; }
+    figcaption { break-before:avoid; page-break-before:avoid; }
+    li.krok { break-inside:avoid; page-break-inside:avoid; margin-bottom:12px; }
+    table.tab { font-size:9.5pt; break-inside:avoid; }
+    ul.odrazky li { break-inside:avoid; }
+    /* Obsah se vejde na jednu stranu A4 i u příručky správce (47 kapitol). */
+    #obsah { padding:8px 14px; margin:0 0 10px; break-inside:avoid; }
+    #obsah h2 { font-size:9pt; margin:0 0 4px; }
+    .obsah-list { font-size:8.5pt; line-height:1.3; column-gap:20px; }
+    .obsah-list li { margin:0 0 2px; }
+    h1 { font-size:22pt; }
+    .verze { margin:0 0 12px; }
     /* overflow:hidden (kvůli zaobleným rohům) brání rozdělení výkladu na
      * dvě strany — slovníček pak nechával za nadpisem skoro prázdnou stranu. */
     dl.vyklad { overflow:visible; background:none; gap:0; }
@@ -144,8 +173,7 @@
      * Zoom zmenší i rozvržení, takže se snímek do sloupce opravdu vejde. */
     .snimek-plocha { transform:none !important; zoom:var(--k-tisk, 1);
                      --mn-m:var(--mn-m-tisk, 1) !important; }
-    .snimek-ram { height:auto !important; }
-    #obsah { break-after:page; }
+    .snimek-ram { height:auto !important; max-width:var(--sirka-tisk, none) !important; }
     .nahoru { display:none; }
     a { color:inherit; text-decoration:none; }
   }
@@ -259,6 +287,10 @@
    * = 702 px při 96 dpi. Pevné číslo je tu schválně — snímek se má na
    * papír vejít bez ohledu na to, jak široké bylo okno při tisku (M4). */
   var PAPIR = 702;
+  /* Nejvyšší snímek na papíře: zhruba polovina tiskové výšky A4 (297 mm
+   * minus okraje 2 × 14 mm = 1 016 px). Vyšší snímek se zmenší celý — jinak
+   * se nevešel za text na stránce a nechal za sebou půl strany prázdné. */
+  var PAPIR_VYSKA = 480;
 
   /* `rodic` — kam se obrázek vloží (kapitola, nebo krok postupu).
    * `obr.klik` — prvek, na který se v kroku kliká: dostane rámeček a šipku
@@ -381,8 +413,9 @@
        * v px a na papíře zůstává stejné, takže šířka snímku na A4 je
        * PAPIR minus totéž odsazení — nezávisle na šířce okna. */
       var odsazeni = Math.max(0, cil.clientWidth - fig.clientWidth);
-      var kt = Math.min(1, (PAPIR - odsazeni - 2) / s.sirka);
+      var kt = Math.min(1, (PAPIR - odsazeni - 2) / s.sirka, PAPIR_VYSKA / Math.max(1, plocha.offsetHeight));
       plocha.style.setProperty('--k-tisk', String(kt));
+      ram.style.setProperty('--sirka-tisk', Math.ceil(s.sirka * kt + 2) + 'px');
       plocha.style.setProperty('--mn-m-tisk', String(Math.min(2.5, 1 / kt)));
       if (umisti) umisti();
     }
@@ -574,6 +607,24 @@
           dl.appendChild(dd);
         });
         cil.appendChild(dl);
+      }
+      else if (b.typ === 'odrazky') {
+        if (b.uvod) cil.appendChild(bohatyText(b.uvod));
+        var ul = el('ul', 'odrazky');
+        (b.polozky || []).forEach(function (p) { var li = el('li'); li.appendChild(bohatyText(p)); ul.appendChild(li); });
+        cil.appendChild(ul);
+      }
+      else if (b.typ === 'tabulka') {
+        var tab = el('table', 'tab');
+        var tr = el('tr');
+        (b.zahlavi || []).forEach(function (h) { tr.appendChild(el('th', null, h)); });
+        tab.appendChild(tr);
+        (b.radky || []).forEach(function (r) {
+          var tr2 = el('tr');
+          r.forEach(function (c) { var td = el('td'); td.appendChild(bohatyText(c)); tr2.appendChild(td); });
+          tab.appendChild(tr2);
+        });
+        cil.appendChild(tab);
       }
       else if (b.typ === 'ram') {
         var d = el('div', 'ram' + (b.druh === 'varovne' ? ' varovne' : ''));

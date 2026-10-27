@@ -71,7 +71,7 @@ const BEZ_POSTUPU = {
 const bezKroku = kap.filter(k => !BEZ_POSTUPU[k.id] && !(k.bloky || []).some(b => b.typ === 'kroky')).map(k => k.id);
 test('(a) kapitoly s akcí mají postup krok za krokem', bezKroku.length === 0, bezKroku);
 test('(a) výjimky bez postupu jsou skutečné kapitoly', Object.keys(BEZ_POSTUPU).every(id => kap.some(k => k.id === id)));
-const typy = new Set(['text', 'podnadpis', 'obrazek', 'kroky', 'seznam', 'ram']);
+const typy = new Set(['text', 'podnadpis', 'obrazek', 'kroky', 'seznam', 'ram', 'odrazky', 'tabulka']);
 test('(a) bloky jsou jen typy, které šablona umí', kap.every(k => (k.bloky || []).every(b => typy.has(b.typ))));
 test('(a) úvod (varování) je jeden rámeček', (OBSAH.uvod || []).length === 1);
 test('(a) obsah nemá „</script" (rozbil by příručku)', !/<\/script/i.test(OBSAH_TXT));
@@ -123,7 +123,7 @@ const TEMATA = {
   'všechny záložky Nastavení': ['Obecné', 'Firma', 'Uživatelé', 'Databáze', 'Slevy', 'Smlouvy / Šablony', 'Standard OCK',
     'Zobrazení', 'Konfigurace', 'Slovník', 'Analytika', 'Controlling', 'Mapa polí CRM'].every(z => OBSAH_TXT.includes(z)),
   'ceník: verze, ze souboru, přenos, zahraničí, migrace, přepočet, zamčené': /Verze ceníku…/.test(OBSAH_TXT)
-    && /Zveřejnit ceník ze souboru…/.test(OBSAH_TXT) && /Cena Zahraničí/.test(OBSAH_TXT) && /#354/.test(OBSAH_TXT)
+    && /Zveřejnit ceník ze souboru…/.test(OBSAH_TXT) && /Cena Zahraničí/.test(OBSAH_TXT) && /cena můstků podle rozměru/.test(OBSAH_TXT)
     && /přepočítají samy/.test(OBSAH_TXT) && /Nemění se nikdy/.test(OBSAH_TXT),
   'zálohy: noční 2:00–3:45 UTC, Zálohovat teď, Stáhnout, Disk .json.gz': /2:00–3:45 UTC/.test(OBSAH_TXT)
     && /Zálohovat teď/.test(OBSAH_TXT) && /Stáhnout zálohu/.test(OBSAH_TXT) && /_Zaloha Netlify DB/.test(OBSAH_TXT) && /\.json\.gz/.test(OBSAH_TXT),
