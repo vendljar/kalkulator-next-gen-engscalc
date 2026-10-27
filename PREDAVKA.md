@@ -1,6 +1,6 @@
 # Předávka — 27. 10. 2026: D1 #535 — kompletní dokumentace systému (jeden dokument), větev `claude/d1-kompletni-dokumentace`
 
-Nad `62ea0c8` (integrace v27.10.1). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze změny, verze se
+Roadmapa #535 ve vlně G (průběžný rozvoj; vlny A a B uzavřené — zápis meta převzat z 6c8cbf9). Nad `62ea0c8` (integrace v27.10.1). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze změny, verze se
 nezvyšuje.** Neslučováno; na ostrém webu, Disku ani v Pipedrive nic. Zdroje částí I a II (`manual/obsah.json`,
 `manual/admin/`, `manual_vypocet/`, `manual/sablona.html`) netknuté kvůli souběžné M9 #534.
 
@@ -12,7 +12,7 @@ nezvyšuje.** Neslučováno; na ostrém webu, Disku ani v Pipedrive nic. Zdroje 
 | Sazba | ✅ | bez vynucených zalomení (kromě titulu s obsahem); nedělitelný jen obrázek s titulkem; zbylé řídké strany (6, vše část I) = snímek vyšší než zbytek strany |
 | Test | ✅ | `src/test_dokumentace_kompletni.js` 92/0; pojistka bez `manual/kompletni/` 0/2, bez 3 řádků 88/4 |
 | Výstup | ✅ | v27.10.1: **179 stran A4**, PDF ~9 MB, HTML ~1 MB — necommitováno |
-| CHANGELOG, roadmapa #535, PREDAVKA | ✅ | `roadmapa.py --kontrola` 532 položek čistě |
+| CHANGELOG, roadmapa #535 (vlna G), PREDAVKA | ✅ | `roadmapa.py --kontrola` 532 položek čistě |
 
 **Sestavení (koordinace):** `bash manual/kompletni/sestav.sh <složka mimo repo>` (sestavení s `KNG_NEZVYSOVAT_VERZI=1`
 jen uvnitř skriptu, snímky obou sad z testovacího prostředí, manuál výpočtu, složení, PDF, test). Ze snímků, které už

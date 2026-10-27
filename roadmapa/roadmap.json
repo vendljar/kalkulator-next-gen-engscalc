@@ -8494,7 +8494,7 @@
  },
  {
   "id": "535",
-  "vlna": "B",
+  "vlna": "G",
   "stav": "hotovo",
   "dulezitost": "stredni",
   "slozitost": "M",
@@ -9273,7 +9273,7 @@
     "popis" : "Práce se nedá začít bez cizího vstupu; dokud nepřijde, nemá smysl je plánovat do dávky.",
     "id" : "E"
    },
-   {
+   {"id": "G", "nazev": "Vlna G — průběžný rozvoj, opravy a dokumentace", "popis": "Nová práce od 27. 10. 2026, kdy se uzavřely vlny A a B: opravy z testů, dokumentace, drobné úpravy a provoz.", "sloupce": ["#", "Co", "Důležitost", "Složitost", "Poznámka / blokace"]}, {
     "popis" : "Vědomě odsunuté položky. Nejsou zrušené a nic se z nich nemaže — leží tu s důvodem a datem, aby se za měsíc nikdo neptal, jestli se na ně zapomnělo, nebo se zamítly. Znovu se otevřou jen na výslovný pokyn.",
     "sloupce" : [
      "#",
