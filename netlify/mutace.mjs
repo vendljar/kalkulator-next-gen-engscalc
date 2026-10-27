@@ -121,6 +121,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_cena_dle_nabidky.js', 'test_cena_dle_nabidky.mjs',
      /* B168, B176 (18. 10. 2026): matice jen s heslem správce, neznámé právo nepovoleno. */
      'test_zobrazeni_heslo.mjs', '../src/test_zobrazeni.js',
+     /* #539 (27. 10. 2026): sloupec Administrátor v matici, zámek proti zamčení se. */
+     'test_zobrazeni_admin.mjs', '../src/test_zobrazeni_admin.js',
      /* H1 (18. 10. 2026): B171 text odhlášení, B174/B175 noční úklid, B186 čísla textem. */
      '../src/test_odhlaseni_text.js', /* H2 B192 */ '../src/test_zobrazeni_heslo_okno.js', 'test_uklid.mjs', '../src/test_cisla_textem.js',
      /* B189 (19. 10. 2026): zábrana SoD bez režimu DPH v prohlížeči. */
@@ -3040,6 +3042,40 @@ const MUTACE = [
     hledej: "      if (zeSouboru || !v.zamek.overeni) {\n        const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);\n        if (ov) v.zamek.overeni = ov; else if (zeSouboru) delete v.zamek.overeni;\n        if (zeSouboru && ov && ov.stav !== 'shoda') sporne.push({ cislo: v.zamek.cislo || cisloVarianty(zak, v), ov });\n      }",
     nahrad: "      ;",
     proc: 'obnovená odeslaná nabídka by nesla neověřený zmrazený výsledek bez razítka' },
+  /* #539 (27. 10. 2026): sloupec Administrátor v matici zobrazení. Hlídají
+   * netlify/test_zobrazeni_admin.mjs a src/test_zobrazeni_admin.js. */
+  { nazev: '#539: server uloží matici, která adminovi skryje Nastavení', soubor: 'functions/zobrazeni.mjs',
+    hledej: "  if (zamcene.length)",
+    nahrad: "  if (false)",
+    proc: 'správce by si odškrtnutím (nebo podstrčeným POST) zavřel cestu zpět do Nastavení → Zobrazení' },
+  { nazev: '#539: porušení zámku se nehlásí', soubor: '../src/zobrazeni.js',
+    hledej: "    return !!r && typeof r === 'object' && r[ZOBRAZENI_ROLE_VZDY] !== undefined && !r[ZOBRAZENI_ROLE_VZDY];",
+    nahrad: "    return false;",
+    proc: 'server by matici odebírající adminovi Nastavení nebo Uživatele přijal' },
+  { nazev: '#539: zamčený prvek jde adminovi skrýt maticí', soubor: '../src/zobrazeni.js',
+    hledej: "  if (!p || p.adminZamek) return true;",
+    nahrad: "  if (!p) return true;",
+    proc: 'matice z obnovy nebo z konzole by správci schovala ozubené kolo a neměl by se jak vrátit' },
+  { nazev: '#539: očista nedrží zamčené prvky adminovi zaškrtnuté', soubor: '../src/zobrazeni.js',
+    hledej: "      if (role === ZOBRAZENI_ROLE_VZDY) out[p.klic][role] = p.adminZamek ? true : !!r[role];",
+    nahrad: "      if (role === ZOBRAZENI_ROLE_VZDY) out[p.klic][role] = !!r[role];",
+    proc: 'obnova ze zálohy by uložila matici, ve které správce nevidí Zobrazení ani Uživatele' },
+  { nazev: '#539: stará matice bez sloupce Administrátor skryje adminovi vše', soubor: '../src/zobrazeni.js',
+    hledej: "  if (!r || typeof r !== 'object' || r[role] === undefined) return true;",
+    nahrad: "  if (!r || typeof r !== 'object' || r[role] === undefined) return false;",
+    proc: 'po nasazení by správce se starou maticí přišel o záložky i ceníky, dokud by matici nepřeuložil' },
+  { nazev: '#539: skrytí ve sloupci Administrátor bere správci i práva', soubor: '../src/zobrazeni.js',
+    hledej: "  if (role === ZOBRAZENI_ROLE_VZDY) return true;\n  const p = zobrazeniPrvek(klic);\n  if (!p) return false;",
+    nahrad: "  if (role === ZOBRAZENI_ROLE_VZDY) return zobrazeniVidi(role, klic, mat);\n  const p = zobrazeniPrvek(klic);\n  if (!p) return false;",
+    proc: 'skrytí nákladů na obrazovce by správci zavřelo i čtení ceníku na serveru (zobrazení ≠ právo)' },
+  { nazev: '#539: odchylky nepočítají sloupec Administrátor', soubor: '../src/zobrazeni.js',
+    hledej: "  ZOBRAZENI_PRVKY.forEach(p => ZOBRAZENI_ROLE_MATICE.forEach(r => {",
+    nahrad: "  ZOBRAZENI_PRVKY.forEach(p => ZOBRAZENI_ROLE_PRIDELITELNE.forEach(r => {",
+    proc: 'panel by hlásil „žádná odchylka", i když si správce skryl půl aplikace' },
+  { nazev: '#539: prohlížeč se na obrazovku ptá práv místo sloupce', soubor: '../src/ui/common.js',
+    hledej: "  return zobrazeniVidi(zobrazeniRole(), klic, NAST.zobrazeni);",
+    nahrad: "  return zobrazeniSmi(zobrazeniRole(), klic, NAST.zobrazeni);",
+    proc: 'odškrtnutí ve sloupci Administrátor by se uložilo, ale správci by nic nezmizelo' },
   /* P12 / roadmapa #369 (15. 10. 2026): historie verzí ceníku jen s právem
    * na náklady. Hlídá netlify/test_p12_naklady.mjs. */
   { nazev: 'P12: historie ceníku jde i roli bez práva na náklady', soubor: 'functions/program.mjs',

@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v27.10.3 — ZA #539: sloupec Administrátor v Nastavení → Zobrazení, větev claude/za-zobrazeni-admin
+
+Nad integrací 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026: „Do konfigurace zobrazení mi ještě přidej sloupec
+zobrazení Administrátora. Ani já už nepotřebuji zobrazovat některé položky.“ Na ostrém webu, Disku ani v Pipedrive nic.
+
+- **#539 — nový sloupec Administrátor** v matici Zobrazení (mezi Vedoucí a Doporučení) u všech prvků. Výchozí stav
+  = vše zaškrtnuté, takže se nic nemění, dokud správce nic neodškrtne. Stará uložená matice bez sloupce = vše
+  viditelné; počet „odchylek proti výchozímu rozdělení“ počítá i nový sloupec.
+- **Skrytí je jen zobrazení.** Prohlížeč se ptá nové `zobrazeniVidi` (sloupec Administrátor); práva a server dál
+  `zobrazeniSmi` (administrátor smí vždy) — skrytím nákladů, ceníku apod. si správce žádné právo nevezme.
+  Náhled „Administrátor (skutečný pohled)“ ukazuje aplikaci podle sloupce. Ukazatele Náklad / Hrubý zisk / Marže
+  se správci řídí sloupcem (ruční výjimka „zviditelnit pro běžného uživatele“ mu je nevrací).
+- **Pojistka proti zamčení:** ozubené kolo Nastavení, Zobrazení, Uživatelé, Firma, Konfigurace, zveřejnění ceníku
+  a vynucená záloha jsou pro administrátora zašedlé se zámkem 🔒 a vysvětlením; záložka Databáze (zálohy, obnova)
+  v matici klíč nemá a skrýt nejde vůbec, tlačítka „Použít doporučení“ a „Vrátit na dnešní stav“ jsou tak vždy
+  dostupná. `POST /api/zobrazeni` matici, která by zamčený prvek adminovi odebrala, odmítne (400, `kod: 'adminZamek'`);
+  očista (i při obnově ze zálohy) drží zamčené prvky zaškrtnuté. Matice je po rolích, takže totéž platí pro
+  hlavního správce.
+- **Doporučení pro administrátora:** vše kromě složkové databáze `_DB` (karta úložiště a mazání ze složky —
+  nepřipojuje se).
+- **Testy:** `src/test_zobrazeni_admin.js` (30), `netlify/test_zobrazeni_admin.mjs` (13), oddíl #539 v
+  `overit_zobrazeni.mjs` (13 kontrol, harness 159/0). Pojistka: nad 62ea0c8 model padá hned (chybí `zobrazeniVidi`),
+  server bez změny `zobrazeni.mjs` 5 FAIL (matici se skrytým Nastavením uloží s 200), harness 12 FAIL. Cílené
+  mutace „#539“ chycené 8/8. Příručka správce (`manual/admin/obsah.json`, A2) doplněná.
+
 ## v27.10.2 — E1 #533: jednotná konvence názvů exportovaných souborů, větev claude/e1-nazvy-exportu
 
 Nad integrací 62ea0c8 (v27.10.1). Pokyn J. V. 27. 10. 2026: soubory se mají jmenovat podle toho, co skutečně

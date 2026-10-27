@@ -8453,7 +8453,28 @@
    "hotovoKdyz": "Tabulkový test všech druhů projde, každé a.download v UI jde přes konvenci nebo vyjmenovanou výjimku, import starých názvů funguje; mutace „#533“ chycené; příručky popisují nové názvy.",
    "pozn": "Dávka E1, větev claude/e1-nazvy-exportu nad 62ea0c8 (v27.10.1); souběžně O-T #529 — verzi a číslo může koordinace přečíslovat. Rozhodnutí k potvrzení J. V.: dokumenty pro zákazníka bez verze aplikace (jeden řádek verze:false v nazvy_souboru.js).",
    "zavisi": []
-  }
+  },
+ {
+  "id": "539",
+  "vlna": "G",
+  "stav": "hotovo",
+  "dulezitost": "stredni",
+  "slozitost": "M",
+  "hotovoV": "v27.10.3",
+  "nazev": "ZA: sloupec Administrátor v Nastavení → Zobrazení (správce si skryje, co nepotřebuje)",
+  "proc": "Pokyn J. V. 27. 10. 2026: „Do konfigurace zobrazení mi ještě přidej sloupec zobrazení Administrátora. Ani já už nepotřebuji zobrazovat některé položky.“ Do té doby viděl administrátor vždy vše.",
+  "detail": "Matice má sloupce Obchodník, Vedoucí, Administrátor, Doporučení. Výchozí = vše zaškrtnuté (dnešní chování). Skrytí je jen obrazovka: prohlížeč se ptá zobrazeniVidi (sloupec Administrátor), práva a server dál zobrazeniSmi (administrátor smí vždy). Prvky nutné k návratu (adminZamek: ozubené kolo Nastavení, Zobrazení, Uživatelé, Firma, Konfigurace, zveřejnění ceníku, vynucená záloha) jsou zašedlé se zámkem; záložka Databáze (zálohy, obnova) klíč v matici nemá a skrýt nejde vůbec. POST /api/zobrazeni matici, která by zamčený prvek adminovi odebrala, odmítne (400 kod adminZamek); očista (i při obnově ze zálohy) drží zamčené true. Platí pro všechny správce včetně hlavního (matice je po rolích). Stará matice bez sloupce = vše viditelné; počet odchylek počítá i nový sloupec. Doporučení pro administrátora: vše kromě složkové databáze _DB (karta úložiště, mazání ze složky). Ukazatele KPI se správci řídí sloupcem (ruční výjimka „zviditelnit pro běžného uživatele“ mu je nevrací).",
+  "hotovoKdyz": "Sloupec v matici, zámek v UI i na serveru, náhled „Administrátor (skutečný pohled)“ podle sloupce; testy src/test_zobrazeni_admin.js, netlify/test_zobrazeni_admin.mjs a oddíl #539 v overit_zobrazeni.mjs zelené a před změnou padají; cílené mutace #539 chycené.",
+  "kde": "`src/zobrazeni.js` (ZOBRAZENI_ROLE_MATICE, adminZamek, zobrazeniVidi, zobrazeniPredloha, zobrazeniAdminZamekPorusen), `src/ui/common.js` (smiZobrazit), `src/ui/nastaveni_ui.js` (matice), `src/ui/kalk_ock.js` + `kalk_proj.js` (KPI), `netlify/functions/zobrazeni.mjs`, testy a `netlify/mutace.mjs`, `manual/admin/obsah.json`",
+  "pozn": "Dávka ZA, větev claude/za-zobrazeni-admin nad 62ea0c8 (v27.10.1). Číslo 539 přidělila koordinace.",
+  "zavisi": [
+   {
+    "id": "136",
+    "typ": "tvrda",
+    "proc": "rozšiřuje matici zobrazení podle rolí"
+   }
+  ]
+ }
  ],
  "meta" : {
   "planVikendHistorie" : {"nazev" : "Plán práce 23. 10. odpoledne – po 26. 10. 6:00 Praha (J. V. 23. 10. 2026)","polozky" : ["16","113","114","115","117","501","509","510","511","512","513","514","515"]},

@@ -1,3 +1,22 @@
+# Předávka — 27. 10. 2026: ZA #539 — sloupec Administrátor v Nastavení → Zobrazení, větev `claude/za-zobrazeni-admin`
+
+Nad `62ea0c8` (integrace v27.10.1). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Verze se nezvyšuje** (přidělí
+koordinace; CHANGELOG „Bez verze“). Neslučováno; na ostrém webu, Disku ani v Pipedrive nic.
+
+| úkol | stav | poznámka |
+|---|---|---|
+| Sloupec Administrátor | ✅ | mezi Vedoucí a Doporučení, výchozí vše zaškrtnuté; `ZOBRAZENI_ROLE_MATICE`, `zobrazeniPredloha` v `src/zobrazeni.js` |
+| Jen zobrazení | ✅ | prohlížeč `smiZobrazit` → nová `zobrazeniVidi`; server a práva dál `zobrazeniSmi` (admin smí vždy). KPI (`kalk_ock.js`, `kalk_proj.js`) se správci řídí sloupcem |
+| Zámek proti zamčení | ✅ | `adminZamek`: nastaveni.otevrit, .zobrazeni, .uzivatele, .firma, .konfigurace, cenik.zverejnit, zaloha.vynucena — zašedlé 🔒 s vysvětlením; Databáze (zálohy, obnova) klíč nemá; předlohy vždy dostupné; server 400 `adminZamek`; očista (i obnova) drží true. Platí pro všechny správce vč. hlavního |
+| Migrace a odchylky | ✅ | stará matice = vše viditelné; `zobrazeniZmeny` počítá i nový sloupec |
+| Doporučení pro admina | ✅ | vše kromě `uloziste.slozka` a `uloziste.mazani` (složka _DB se nepřipojuje) |
+| Testy | ✅ | `src/test_zobrazeni_admin.js` 30/0, `netlify/test_zobrazeni_admin.mjs` 13/0, `overit_zobrazeni.mjs` 159/0 (oddíl #539); pojistky před změnou padají (viz CHANGELOG); mutace „#539“ 8/8; `testovaci_kolo.sh --jen build,staticke` zelené; `spust_testy.sh --smoke` 298/0 (50 přeskočeno bez Playwrightu v kořeni — 45 z nich pak puštěno ručně se symlinkem: 43 OK, 2 kód 4 bez firemních podkladů) |
+| Dokumentace | ✅ | `manual/admin/obsah.json` (A2: role, postup matice, náhled, slovníček), CHANGELOG, roadmapa #539 ve vlně G (pokyn koordinace; definice vlny G převzatá beze změny z integrace 6c8cbf9, `--kontrola` čistá) |
+
+**Pro koordinaci:** nové sady jsou v `SADY` mutací serveru. Harnessy potřebují `ADMIN_EMAIL` (spust_testy ho
+nastaví sám) a Playwright v kořeni (`node_modules/playwright` → symlink na globální). Při slučování: konflikt
+možný jen v `src/zobrazeni.js`, `src/ui/nastaveni_ui.js` (panel Zobrazení) a v hlavičce CHANGELOG/PREDAVKA.
+
 # Předávka — 27. 10. 2026: E1 #533 — jednotná konvence názvů exportovaných souborů, větev `claude/e1-nazvy-exportu`
 
 Nad `62ea0c8` (integrace v27.10.1). **Verze 27.10.2** (souběžně O-T #529 — koordinace přečísluje). Koordinace:

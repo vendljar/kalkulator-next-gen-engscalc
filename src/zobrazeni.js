@@ -11,8 +11,11 @@
  * jako jméno v seznamu uživatelů a jako vyšší strop slevy — v rozhraní
  * neznamenala nic. Tenhle soubor to mění: každý skrytý prvek dostal jméno
  * (klíč) a u každého se dá zvlášť říct, jestli ho vidí Obchodník a jestli ho
- * vidí Vedoucí. Administrátor vidí vždycky všechno; kdyby si mohl něco
- * odebrat, neměl by se jak dostat zpátky k přepínači.
+ * vidí Vedoucí. Od 27. 10. 2026 (#539) má matice i sloupec Administrátor:
+ * správce si smí skrýt, co nepotřebuje, kromě prvků nutných k návratu
+ * (`adminZamek`, viz níž). Skrytí je jen zobrazení — práva serveru se
+ * nemění, proto `zobrazeniSmi` (práva) a `zobrazeniVidi` (obrazovka) jsou
+ * dvě funkce.
  *
  * PROČ SEZNAM V KÓDU A NE JEN V NASTAVENÍ
  * Kdyby prvky existovaly jen jako klíče v uložené konfiguraci, nikdo by po
@@ -40,8 +43,13 @@
  * aplikace se podle `navrh` nikdy neřídí.
  * ============================================================ */
 
-const ZOBRAZENI_ROLE_VZDY = 'Administrátor';   // vidí vše, nepřepíná se
+const ZOBRAZENI_ROLE_VZDY = 'Administrátor';   // smí vše (práva); zobrazení řídí jeho sloupec
 const ZOBRAZENI_ROLE_PRIDELITELNE = ['Obchodník', 'Vedoucí'];
+/* Sloupce matice (#539, 27. 10. 2026): přidělitelné role + Administrátor.
+ * Sloupec Administrátor řídí JEN to, co správce vidí na obrazovce; práva
+ * (zobrazeniSmi, server) zůstávají „smí vždy". Chybějící hodnota = vidí,
+ * takže uložená matice z doby před sloupcem nic neskryje. */
+const ZOBRAZENI_ROLE_MATICE = ZOBRAZENI_ROLE_PRIDELITELNE.concat([ZOBRAZENI_ROLE_VZDY]);
 
 /* Skupiny jen kvůli přehlednosti matice i vygenerovaného souhrnu. */
 const ZOBRAZENI_SKUPINY = [
@@ -59,8 +67,13 @@ const ZOBRAZENI_SKUPINY = [
  *   kde      – kde ho uživatel v aplikaci najde (aby bylo co ukázat)
  *   popis    – co konkrétně se skryje/ukáže a co to znamená v praxi
  *   pevne    – true = drží server, přidělit nejde (viz hlavička)
+ *   adminZamek – true = administrátorovi nejde skrýt (#539): bez prvku by se
+ *              nedostal zpět k Nastavení → Zobrazení, k účtům nebo k záloze
+ *              a obnově; server matici, která ho odebírá, odmítne
  *   vychozi  – co která role vidí DNES; { 'Obchodník': bool, 'Vedoucí': bool }
- *   navrh    – doporučení k rozhodnutí; { 'Obchodník': bool, 'Vedoucí': bool }
+ *              (Administrátor neuveden = vidí)
+ *   navrh    – doporučení k rozhodnutí; { 'Obchodník': bool, 'Vedoucí': bool,
+ *              'Administrátor'?: bool } (Administrátor neuveden = vidí)
  *   proc     – proč to doporučení; text do souhrnu pro rozhodnutí
  */
 const ZOBRAZENI_PRVKY = [
@@ -294,6 +307,7 @@ const ZOBRAZENI_PRVKY = [
     kde: 'pravý horní roh',
     popis: 'Bez tohoto práva se do Nastavení nedostane vůbec nikdo mimo administrátora — '
          + 'ostatní práva ve skupině pak nemají co ovlivňovat.',
+    adminZamek: true,
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
     navrh: { 'Obchodník': false, 'Vedoucí': true },
     proc: 'Má smysl jen tehdy, když má vedoucí uvnitř aspoň jednu záložku (např. Slevy). '
@@ -315,6 +329,7 @@ const ZOBRAZENI_PRVKY = [
     kde: 'Nastavení, vnitřní záložka Uživatelé',
     popis: 'Seznam účtů, role, zakládání a deaktivace, reset cizího hesla.',
     pevne: true,
+    adminZamek: true,
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
     navrh: { 'Obchodník': false, 'Vedoucí': false },
     proc: 'Server (netlify/functions/uzivatele.mjs) pouští k seznamu i ke změnám jen roli '
@@ -326,6 +341,7 @@ const ZOBRAZENI_PRVKY = [
     kde: 'Nastavení, vnitřní záložka Firma',
     popis: 'IČO, DIČ, sídlo, bankovní spojení, logo — propisuje se do všech dokumentů.',
     pevne: true,
+    adminZamek: true,
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
     navrh: { 'Obchodník': false, 'Vedoucí': false },
     proc: 'Zveřejnění firemních údajů online drží server (netlify/functions/firma.mjs) na roli '
@@ -344,6 +360,7 @@ const ZOBRAZENI_PRVKY = [
     klic: 'nastaveni.konfigurace', skupina: 'nastaveni', nazev: 'Nastavení → Konfigurace (export/import)',
     kde: 'Nastavení, vnitřní záložka Konfigurace',
     popis: 'Export a import celé konfigurace aplikace jedním souborem.',
+    adminZamek: true,
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
     navrh: { 'Obchodník': false, 'Vedoucí': false },
     proc: 'Export konfigurace je nejrychlejší cesta, jak dostat nastavení firmy ven ze dveří; '
@@ -384,6 +401,7 @@ const ZOBRAZENI_PRVKY = [
     kde: 'Nastavení, vnitřní záložka Zobrazení',
     popis: 'Sama tato tabulka práv — tedy rozhodnutí o tom, co která role v aplikaci vidí.',
     pevne: true,
+    adminZamek: true,
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
     navrh: { 'Obchodník': false, 'Vedoucí': false },
     proc: 'Kdo mění práva, může si přidat všechna ostatní. Zůstává u administrátora, '
@@ -396,6 +414,7 @@ const ZOBRAZENI_PRVKY = [
     kde: 'Ceník nákladů OCK / PROJ – karta online databáze',
     popis: 'Nahrání ceníku jako platného pro celou firmu; od té chvíle podle něj počítají všichni.',
     pevne: true,
+    adminZamek: true,
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
     navrh: { 'Obchodník': false, 'Vedoucí': false },
     proc: 'Pravidlo dané zadáním („zveřejnit platný ceník smí jen administrátor") a hlídané '
@@ -415,18 +434,20 @@ const ZOBRAZENI_PRVKY = [
     kde: 'Přehled cenových nabídek – karta úložiště; lišta „Připojit složku _DB"',
     popis: 'Mapování místní složky s databází zakázek a ceníků.',
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
-    navrh: { 'Obchodník': false, 'Vedoucí': false },
+    navrh: { 'Obchodník': false, 'Vedoucí': false, 'Administrátor': false },
     proc: 'Obchodníkovi teče ceník z online databáze; složku na disku správce nemá a mít nemá '
-        + '(rozhodnuto 4. 8. 2026). U vedoucího by platilo totéž.',
+        + '(rozhodnuto 4. 8. 2026). U vedoucího by platilo totéž. Administrátorovi ji doporučuji '
+        + 'skrýt také: složková databáze se nepřipojuje, jediná databáze je online.',
   },
   {
     klic: 'uloziste.mazani', skupina: 'data', nazev: 'Mazání zakázek ze složky a přestavba rejstříku',
     kde: 'karta úložiště',
     popis: 'Odstranění uloženého souboru zakázky a znovuvytvoření rejstříku úložiště.',
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
-    navrh: { 'Obchodník': false, 'Vedoucí': false },
+    navrh: { 'Obchodník': false, 'Vedoucí': false, 'Administrátor': false },
     proc: 'Nevratné zásahy do dat. Drží se pravidla „nic se nemaže bez dotazu" — a mazat '
-        + 'smí jeden člověk.',
+        + 'smí jeden člověk. Týká se jen složkové databáze, která se nepřipojuje, proto '
+        + 'ji doporučuji skrýt i administrátorovi.',
   },
   /* B80 (15. 10. 2026): čtení z Pipedrive drží server (netlify/lib/pipedrive.mjs,
    * pdPristup) — na rozdíl od ostatních prvků tu matice NENÍ jen pohodlí,
@@ -449,6 +470,7 @@ const ZOBRAZENI_PRVKY = [
     kde: 'karta online databáze',
     popis: 'Okamžitý otisk celé databáze (zakázky, ceníky, uživatelé bez hesel).',
     pevne: true,
+    adminZamek: true,
     vychozi: { 'Obchodník': false, 'Vedoucí': false },
     navrh: { 'Obchodník': false, 'Vedoucí': false },
     proc: 'Server (netlify/functions/zaloha_vynuceno.mjs) vyžaduje roli Administrátor. '
@@ -497,9 +519,35 @@ function zobrazeniVychozi() {
   const m = {};
   ZOBRAZENI_PRVKY.forEach(p => {
     m[p.klic] = {};
-    ZOBRAZENI_ROLE_PRIDELITELNE.forEach(r => { m[p.klic][r] = !!(p.vychozi || {})[r]; });
+    ZOBRAZENI_ROLE_MATICE.forEach(r => { m[p.klic][r] = zobrazeniPredloha(p, r, 'vychozi'); });
   });
   return m;
+}
+
+/* Hodnota předlohy (`vychozi` = dnešek, `navrh` = doporučení) pro jednu
+ * buňku matice. Pevný prvek ostatním nikdy, zamčený administrátorovi vždy;
+ * administrátor bez uvedené hodnoty vidí (dnešek = vidí všechno). */
+function zobrazeniPredloha(p, role, ktera) {
+  const zdroj = (p && p[ktera === 'navrh' ? 'navrh' : 'vychozi']) || {};
+  if (role === ZOBRAZENI_ROLE_VZDY)
+    return (p && p.adminZamek) ? true : (zdroj[role] === undefined ? true : !!zdroj[role]);
+  return (p && p.pevne) ? false : !!zdroj[role];
+}
+
+/* Prvky, které administrátorovi skrýt nejde (#539). */
+function zobrazeniAdminZamcene() {
+  return ZOBRAZENI_PRVKY.filter(p => p.adminZamek).map(p => p.klic);
+}
+
+/* Které zamčené prvky by matice administrátorovi odebrala? Server podle
+ * toho uložení odmítne (prázdné pole = v pořádku). Chybějící hodnota
+ * odebrání není — stará matice sloupec vůbec nemá. */
+function zobrazeniAdminZamekPorusen(mat) {
+  if (!mat || typeof mat !== 'object') return [];
+  return zobrazeniAdminZamcene().filter(k => {
+    const r = mat[k];
+    return !!r && typeof r === 'object' && r[ZOBRAZENI_ROLE_VZDY] !== undefined && !r[ZOBRAZENI_ROLE_VZDY];
+  });
 }
 
 /* Klíč „práva na náklady" pro P12 (#369) — jedno jméno pro prohlížeč i server. */
@@ -531,18 +579,35 @@ function zobrazeniSmi(role, klic, mat) {
   return !!r[role];
 }
 
+/* Má se prvek roli UKÁZAT na obrazovce? (#539, 27. 10. 2026)
+ * Pro obchodníka a vedoucího totéž co zobrazeniSmi. Administrátor se řídí
+ * svým sloupcem matice — chybějící hodnota (stará matice) i neznámý klíč =
+ * vidí, zamčený prvek vidí vždy. Na tuhle funkci se ptá jen prohlížeč
+ * (smiZobrazit); server a práva dál volají zobrazeniSmi, takže skrytím si
+ * správce žádné právo nevezme. */
+function zobrazeniVidi(role, klic, mat) {
+  if (role !== ZOBRAZENI_ROLE_VZDY) return zobrazeniSmi(role, klic, mat);
+  const p = zobrazeniPrvek(klic);
+  if (!p || p.adminZamek) return true;
+  const r = mat && mat[klic];
+  if (!r || typeof r !== 'object' || r[role] === undefined) return true;
+  return !!r[role];
+}
+
 /* Uloženou matici je potřeba umět přijmout i starou/poškozenou: doplní chybějící
  * prvky výchozí hodnotou, zahodí neznámé klíče (přejmenovaný prvek by jinak
- * zůstal navěky) a u pevných prvků drží false. */
+ * zůstal navěky), u pevných prvků drží false a u prvků zamčených pro
+ * administrátora true (#539; stará matice bez sloupce = vše viditelné). */
 function zobrazeniOciste(mat) {
   const out = zobrazeniVychozi();
   if (!mat || typeof mat !== 'object') return out;
   ZOBRAZENI_PRVKY.forEach(p => {
     const r = mat[p.klic];
     if (!r || typeof r !== 'object') return;
-    ZOBRAZENI_ROLE_PRIDELITELNE.forEach(role => {
+    ZOBRAZENI_ROLE_MATICE.forEach(role => {
       if (r[role] === undefined) return;
-      out[p.klic][role] = p.pevne ? false : !!r[role];
+      if (role === ZOBRAZENI_ROLE_VZDY) out[p.klic][role] = p.adminZamek ? true : !!r[role];
+      else out[p.klic][role] = p.pevne ? false : !!r[role];
     });
   });
   /* volby sekcí kalkulace (19. 8. 2026): projdou jen platné volby platných
@@ -764,7 +829,7 @@ function zobrazeniVychoziNedotcene(zadaniOck, zadaniProj, vzorOck, vzorProj) {
  * na první pohled vidět, že někdo něco přenastavil. */
 function zobrazeniZmeny(mat) {
   const v = zobrazeniVychozi(), m = zobrazeniOciste(mat), zm = [];
-  ZOBRAZENI_PRVKY.forEach(p => ZOBRAZENI_ROLE_PRIDELITELNE.forEach(r => {
+  ZOBRAZENI_PRVKY.forEach(p => ZOBRAZENI_ROLE_MATICE.forEach(r => {
     if (v[p.klic][r] !== m[p.klic][r]) zm.push({ klic: p.klic, role: r, nyni: m[p.klic][r] });
   }));
   return zm;
@@ -773,7 +838,9 @@ function zobrazeniZmeny(mat) {
 if (typeof module !== 'undefined')
   module.exports = {
     ZOBRAZENI_PRVKY, ZOBRAZENI_SKUPINY, ZOBRAZENI_ROLE_VZDY, ZOBRAZENI_ROLE_PRIDELITELNE,
+    ZOBRAZENI_ROLE_MATICE,
     zobrazeniVychozi, zobrazeniPrvek, zobrazeniSmi, zobrazeniOciste, zobrazeniZmeny,
+    zobrazeniVidi, zobrazeniPredloha, zobrazeniAdminZamcene, zobrazeniAdminZamekPorusen,
     ZOBRAZENI_KLIC_NAKLADY,
     ZOBRAZENI_SEKCE_VOLBY, zobrazeniSekceVolba, zobrazeniSekceNastav,
     ZOBRAZENI_POCITAT, ZOBRAZENI_PRIPLATEK,
