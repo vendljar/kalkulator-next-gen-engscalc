@@ -8434,6 +8434,27 @@
     "proc": "testy cílí na kód po O-K9"
    }
   ]
+ },
+ {
+  "id": "529",
+  "vlna": "B",
+  "stav": "hotovo",
+  "dulezitost": "stredni",
+  "slozitost": "M",
+  "hotovoV": "dokumentace (bez verze)",
+  "nazev": "M7: 3. vydání vizuálního manuálu výpočtu OCK („Jak kalkulačka počítá OCK“) pro v26.10.12 — generátor a test",
+  "proc": "Pokyn J. V. 27. 10. 2026: „kompletně aktualizovat manuál všech výpočtů o novinky mezi jednotlivými verzemi“. 2. vydání (v15.10.14, 18. 10.) nezná můstky podle rozměru (#354), střechu přes můstek (#356), měď jen se střechou, cenu dle nabídky, izolační dvojsklo ani lakovnu B. Dosud se manuál skládal ručně — příští vydání má jít vyrobit znovu skriptem.",
+  "detail": "Nový adresář manual_vypocet/: data.js spočítá jádrem (zkušební ceník + smyšlené doplnění: 6 h statiky opláštění, můstky ref. šířka 1 600 mm, 8 h + 8 h/bm, min 16 h, 500 Kč/h) všechna čísla vzorové šachty VZOR v1.00 (ext i int) a variant; sablona.html (17 kapitol, karty, SVG schémata, kap. 17 Co je nového v15.10.14 → v26.10.12 + co se chystá); sestav.js dosadí čísla se značkou data-k a vyrobí HTML + PDF (A4, Chromium, okno 794 px); cisla_vydani.json = čísla vydaného manuálu. Test src/test_manual_vypocet.js porovná každé číslo HTML s jádrem a vydání s dnešním jádrem (změna jádra → test spadne). Hotový manuál ani PDF do repa nejdou.",
+  "hotovoKdyz": "Manuál 28 stran poslán J. V.; test 14/0 a pojistka (změna vzorce montáže můstků v jádře → FAIL); kontrola_udaju.py čistá i nad hotovým HTML/PDF.",
+  "kde": "`manual_vypocet/` (data.js, sablona.html, sestav.js, sestav.sh, cisla_vydani.json), `src/test_manual_vypocet.js`, `nastroje/kontrola_udaju.py` (složka manual_vypocet)",
+  "pozn": "Dávka M7, větev claude/m7-manual-vypoctu nad 1820f81 (v26.10.12). Kód aplikace beze změny. Číslo 529 přidělila dávka — při slučování ho koordinace může přečíslovat. Po změně výpočtu: node manual_vypocet/sestav.js --pdf --snapshot (nové vydání).",
+  "zavisi": [
+   {
+    "id": "354",
+    "typ": "tvrda",
+    "proc": "popisuje cenu můstků podle rozměru"
+   }
+  ]
  }
  ],
  "meta" : {

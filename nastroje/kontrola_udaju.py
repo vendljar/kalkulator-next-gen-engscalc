@@ -30,7 +30,7 @@ import sys
 import zipfile
 
 KOREN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SLOZKY = ['src', 'netlify', 'server', 'nastroje', 'manual', 'roadmapa', '.github', 'podklady', '.claude']
+SLOZKY = ['src', 'netlify', 'server', 'nastroje', 'manual', 'manual_vypocet', 'roadmapa', '.github', 'podklady', '.claude']
 # K8-W4, SEC-N4 (#514, audity K8 a S1 24. 10. 2026): i záplaty, výpisy, CSV,
 # konfigurace a soubory prostředí (.env*), v kořeni i .html; sešity a dokumenty
 # Office se rozbalí (ZIP_PRIPONY) a čte se jejich XML.

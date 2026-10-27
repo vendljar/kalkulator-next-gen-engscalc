@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## Dokumentace (bez nové verze aplikace) — M7 #529: 3. vydání vizuálního manuálu výpočtu OCK pro v26.10.12, větev claude/m7-manual-vypoctu
+
+Nad 1820f81 (v26.10.12). Pokyn J. V. 27. 10. 2026: „kompletně aktualizovat manuál všech výpočtů o novinky mezi
+jednotlivými verzemi". Kód aplikace beze změny.
+
+- **Dokumentace:** interní „Jak kalkulačka počítá OCK" — 3. vydání (28 stran A4, HTML + PDF), platí pro v26.10.12.
+  Proti 2. vydání (v15.10.14): můstky podle rozměru — materiál vč. zábradlí a montáž (#354, kap. 11 a 15, vzorový
+  můstek 1 000 mm), střecha přes nejvyšší můstek (#356), měď jen se zastřešením a podle přepsané plochy (K29-N1, #451),
+  příznak „cena dle nabídky" (S13), izolační dvojsklo (#517), lakovna B (K6-W5), standard můstku jen délka, cenové
+  výjimky s rozsahem a plochou pásu (B155, B178, B165, B183), kontroly můstků (#355, K3-N17), lešení ve specifikaci
+  (S12), kotvení přes můstky (#519), šířka skla bočního světlíku (#442); kap. 17 = přehled změn po verzích a co se
+  chystá (#525, #500, #159). Vzorová šachta vychází na stejná čísla jako ve 2. vydání (zkušební ceník 1 317 000 Kč).
+  Hotový manuál se do repozitáře neukládá.
+- **Nástroj `manual_vypocet/`:** `data.js` spočítá jádrem všechna čísla (vzor VZOR v1.00 ext/int a varianty;
+  zkušební ceník + smyšlené doplnění: 6 h statiky opláštění, můstky ref. šířka 1 600 mm, 8 h + 8 h/bm, min 16 h,
+  500 Kč/h), `sablona.html` (karty, SVG schémata, `{{klíč}}`), `sestav.js` (HTML s `data-k` u každého čísla, PDF
+  přes Playwright/Chromium, okno 794 px; `--snapshot` zapíše `cisla_vydani.json`), `sestav.sh` (výroba + test).
+- **Test `src/test_manual_vypocet.js`** 12/0 (s `KNG_MANUAL_HTML` 14/0): šablona celá dosazená, každé číslo HTML =
+  jádro, čísla vydání (`cisla_vydani.json`, 629) = dnešní jádro. Pojistka: změna vzorce montáže můstků v jádře
+  (max → min) → 1 FAIL; podvržené číslo a neznámý klíč chycené. `nastroje/kontrola_udaju.py` hlídá i `manual_vypocet/`.
+
+---
+
 ## v26.10.12 — O-K9 #527: opravy nálezů nezávislého auditu záloh K9 #526, větev claude/o-k9-zalohy
 
 Nad integrací bab9a7c (v26.10.10 = Z1 #522 + Z2 #523 + zpráva K9 + příručka M5). Zpráva auditu
