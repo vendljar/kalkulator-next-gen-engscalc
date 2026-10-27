@@ -10,6 +10,15 @@ Předchozí koordinační sezení: session_0191A71yUFarU952Vy7h2hc5 (končí kv�
 - **Ještě nesloučené zápisové commity** (jen CHANGELOG/PREDAVKA/verze/roadmapa, bez kódu): `claude/b80-pipedrive` 38996f2 (v15.10.7, roadmapa #345, NASAZENI), `claude/p12-naklady` 1f2a365 (výsledky po úpravě, mutace 13/13, smoke 248/0/2), `claude/kolo25-audit` dcc3d5f (smoke 247/0/6).
 - **Další krok:** do `claude/integrace-15-10` sloučit 38996f2, 1f2a365, dcc3d5f (konflikty jen v dokumentaci — novější oddíl nahoru, `verze.txt` = 15.10.7, příručka `manual/obsah.json` verze + nadpis „Co je nového ve verzi v15.10.7"), `--kontrola` mutací, sestavit, příručka ze snímků, `spust_testy.sh --smoke` s podklady → zelené → zápis do CHANGELOG → push `claude/integrace-15-10` a fast-forward `test` (`git merge-base --is-ancestor origin/test HEAD`).
 
+## STAV 27. 10. 05:10 UTC — koordinace session_01TMQ5bLDJuS5k5NWWYy7jLx — RANNÍ SOUHRN (noční plán 1–5 splněn)
+
+- **main = v25.10.1 (efa61c1)** — 26. 10. přepsán na čistou linii (SEC-V1, povolení J. V.); test-draft taktéž. Ostrý web engscalc běží v25.10.1. schaftscalc vypnut (SEC-Z1).
+- **test = integrace = v26.10.12 (2c0d71a)**: Z1 #522 zálohy po částech (v26.10.8) + Z2 #523 retence/komprese/pojistka úbytku (v26.10.9) + M5 #524 příručka bez „Co je nového“ s postupy (v26.10.10) + #354 můstky (v26.10.11) + O-K9 #527 opravy auditu K9 (v26.10.12) + T1 #528 testy (zprávy K9 #526 a R1 #525 v podkladech). Kolo 336/0/6, statické 4/4; Actions #198 úplné mutace: jádro OK, server 1034/1037 → 3 přeživší pokryla T1.
+- **Releasy bez tagu:** v26.10.8–12 (odkazy v kokpitu a souhrnu https://claude.ai/artifact/D7HatWBFqe5K64C7LQSMpj; v26.10.12 cíl 2c0d71a; popisy bez cen).
+- **Na J. V.:** otestovat v26.10.12 (zálohy, můstky po zveřejnění ceníku, příručka) → main; po nasazení zveřejnit ceník a jednou zkopírovat zálohu na Disk („_Zaloha Netlify DB“); výchozí volby záloh (ZALOHY_VOLBY, RETENCE_ZALOH_POJISTKA); otázky #525 (rozbor R1); postřeh T1: retenceDrzena u poškozeného záznamu = fail-open.
+- **Hlídání záloh:** naplánované úlohy „Upozornění: záloha engscalc starší 5 dní“ (trig_01LjWRTuBgWJ35jFjfijmreU, denně 8:47 Praha, e-mail, konektor Drive) a „Kontrola záloh engscalc na Disku“ (trig_01SLSGBgEoerzCAAv9DEPcWZ, po–pá 8:56, váže se na toto sezení — při nové koordinaci převést).
+- Žádné dávky neběží; všechna sezení archivována. Kontext koordinace ~50 %.
+
 ## STAV 26. 10. 05:05 UTC — koordinace „ŘÍDÍCÍ víkend 23.–26. 10.“ session_01TMQ5bLDJuS5k5NWWYy7jLx — PONDĚLNÍ SOUHRN
 
 - **Souhrn víkendu:** https://claude.ai/artifact/VgmPoPQdjotnKNxyLPYSgr . Kokpit https://claude.ai/artifact/LLLBVLxKcWDHhd8axapiU2 .
