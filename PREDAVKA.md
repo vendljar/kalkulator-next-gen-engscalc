@@ -13,6 +13,15 @@ session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrém webu, Disku ani v Pi
 | M10, M14–M22 | posouzeno | `BEZPECNOST_MEZE.md` oddíl O-SECM | — |
 | M16 | čeká na J. V. | — | — |
 
+**Testy:** `testovaci_kolo.sh --bez-mutaci` VŠE ZELENÉ (353 / 0 / 7 přeskočeno — firemní podklady; statické 5 z 5);
+mutace „#542" 31/31 chycených; `test_secm` 60/0 (nad v27.10.6 35 FAIL), `test_prava` 957/0, `test_obnova` 235/0,
+`test_zalohy` 165/0, `test_controlling` 80/0, `test_pre_push.sh` 14/0, `test_kontrola_udaju` 27/0. Pokusy SEC-M: p3 3/0,
+p4 31/2 (R2 = K9-S1 mimo dávku; O13b po #522 neměří — čte manifest otisku), `redos_server` bez dopadu, `pokus_puvod` [6]
+→ 403, `kontrola_mezery` 0/11. První běh kola měl 1 FAIL `overit_online` (#523 .json.gz, limit 8 s pod zátěží),
+izolovaně 273/0 na větvi i na `0cc9335` — nestabilita. Prohlížečové ESM harnessy chtějí `node_modules/playwright`
+(odkaz na globální `/opt/node22/lib/node_modules/playwright`, v .gitignore). Release v1.11.1 zatím ne (neslučováno) —
+odkaz vyrobí koordinace po sloučení (`nastroje/release_odkaz.py`).
+
 **Mimo rozsah, opraveno kvůli zelenému kolu:** `src/test_z2_disk_retence.js` byla časovaná past (podvržený server vracel
 `new Date()` = skutečné hodiny, test má `Date.now` na 27. 10.) — od 28. 10. 6 FAIL i na čistém `0cc9335`, zastavila by
 i mutace (výchozí běh). Teď `new Date(Date.now())`.
