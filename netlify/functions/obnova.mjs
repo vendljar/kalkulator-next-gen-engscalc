@@ -84,9 +84,9 @@
 import { randomBytes } from 'node:crypto';
 import { potvrdHesloSpravce, uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hostitel, emailPlatny,
          podpisZkontroluj, hesloVerzeUctu, SMAZANI_ULOZISTE,
-         bezHlavnihoUctu, serverVerze, vyhradne } from '../lib/sdilene.mjs';
+         bezHlavnihoUctu, serverVerze, vyhradne, hloubkaChyba, textovaPoleChyba, klicZAdresyPlatny } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
-import { zakazkaPrijmi, zakazkaServerKontrola } from '../lib/zakazka_kontrola.mjs';
+import { zakazkaPrijmi, zakazkaServerKontrola, zakazkaBezPrototypovychKlicu } from '../lib/zakazka_kontrola.mjs';
 import { porizOtiskKrok, klicPredObnovou, OTISK_KLIC, OTISK_ROZPOCET, ctiOtisk, ctiOtiskCast, otiskVyrez,
   ctiPoDavkach, OBNOVA_TOKEN_PREDPONA, OBNOVA_TOKEN_PLATNOST_MS as TOKEN_PLATNOST_MS, OTISK_ROZPRACOVANY, OTISK_CASTI } from '../lib/zalohovani.mjs';
 
@@ -99,6 +99,18 @@ export const OBNOVA_POTVRZENI = 'OBNOVIT';
 export const OBNOVA_TOKEN_PLATNOST_MS = TOKEN_PLATNOST_MS;
 const TOKEN_TVAR = /^[0-9a-f]{32}$/;
 const KLIC_MAX = 200;
+/* KLÍČ ZÁZNAMU ZE ZÁLOHY (SEC-M9, #542, security test SEC-M 28. 10. 2026).
+ * Do v27.10.6 se u klíčů zakázek a map (zákazníci …) z nahraného souboru
+ * hlídala jen délka: klíče `a/b.json`, `..` nebo s řídicím znakem se zapsaly
+ * do `z/…` i rejstříku, ale GET a DELETE je odmítnou (klicZAdresyPlatny) —
+ * zůstali sirotci, které nejde otevřít ani smazat (a `z/../…` by mohl sáhnout
+ * mimo předponu). Teď stejný tvar jako klíč z adresy, bez segmentů `.` a `..`;
+ * jiný klíč se přeskočí s důvodem v náhledu. */
+/* Jen u zakázek (klíč = jméno souboru v `z/`); mapy v obnovMapu nesou lomítka
+ * záměrně (šablony `data/plnaMoc/1`, zákazníci `z/<klíč>` s vlastní kontrolou). */
+const klicZeZalohyPlatny = (k) => klicZAdresyPlatny(k) && k.length <= KLIC_MAX && k !== '.' && k !== '..';
+const KLIC_ZE_ZALOHY_DUVOD = 'nepřijatelný klíč (lomítko, řídicí znak, „.“/„..“ nebo nad ' + KLIC_MAX + ' znaků) — '
+  + 'takový záznam by nešel otevřít ani smazat';
 const TOKEN_PREDPONA = OBNOVA_TOKEN_PREDPONA;
 const tokenKlic = (id) => TOKEN_PREDPONA + id;
 const maVlastni = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -322,7 +334,63 @@ async function otiskPredKrok(s, token, zacatek) {
     otiskHotovo: hotovo, ...(hotovo ? {} : { postup: v.postup || null }), upozorneni: [] });
 }
 
+/* ZALOŽENÍ TOKENU OBNOVY — ZÁMEK (SEC-N2 #514; SEC-M8 #542). Kontrola zámku
+ * a zápis tokenu v jednom výhradním úseku; po zápisu se ověří, že token je
+ * jediný živý (mezi instancemi ustoupí mladší → 409). Volá ho začátek obnovy
+ * po dávkách i JEDNORÁZOVÁ obnova: do v27.10.6 jednorázová token nezapsala
+ * (jen se podívala na zámek), takže během ní prošel `faze: 'zacatek'` jiného
+ * správce a obě obnovy zapisovaly souběžně (security test SEC-M, pokus
+ * p4 O13). `navic` = pole navíc do tokenu (`jednorazova: true`). */
+async function zalozTokenObnovy(relace, rezim, zdrojZacatku, navic = {}) {
+  return vyhradne('zalohy/obnova', async () => {
+    const zamek = await zamekObnovy();
+    if (zamek) return { odpoved: zamek };
+    /* TOKEN SE ZAPÍŠE HNED PO KONTROLE ZÁMKU (nález B48, 14. 9. 2026).
+     *
+     * Do 14. 9. bylo pořadí zámek → otisk → token, jenže pořízení otisku
+     * trvá sekundy. Dva požadavky `zacatek` v tomtéž okně tedy oba viděly
+     * prázdný zámek a oba prošly: vznikly dvě obnovy nad jednou databází
+     * a ta druhá pořídila „otisk před obnovou" ze stavu, který už byl napůl
+     * obnovený — tedy z cesty zpátky, která nikam nevede.
+     *
+     * Token teď vzniká jako první, ve stavu „pořizuje se otisk", takže
+     * druhý požadavek narazí na zámek. Klíč otisku se doplní, až otisk je.
+     * Když se otisk nepovede, token se uklidí a zámek nezůstane viset. */
+    const id = randomBytes(16).toString('hex');
+    const s = await uloziste('zalohy');
+    const ted = new Date().toISOString();
+    await s.zapis(tokenKlic(id), { id, kdo: relace.email, zacatek: ted, naposled: ted,
+      rezim, otiskPred: null, otiskSePorizuje: true, davek: 0, ...zdrojZacatku,
+      souhrn: { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0 }, ...navic });
+    for (const k of (await s.seznam(TOKEN_PREDPONA)) || []) {
+      if (k === tokenKlic(id)) continue;
+      const z = await s.cti(k);
+      if (!z || tokenVyprsel(z)) continue;
+      if (String(z.zacatek) < ted || (String(z.zacatek) === ted && String(z.id) < id)) {
+        await s.smaz(tokenKlic(id));
+        return { odpoved: obnovaBeziOdpoved(z) };
+      }
+    }
+    return { id, s, ted };
+  });
+}
+
+/* Obal handleru (SEC-M8, #542): token jednorázové obnovy se uvolní vždy,
+ * ať obnova skončí jakkoli (i chybou nebo výjimkou). Spadne-li funkce na
+ * limitu, token vyprší po hodině nečinnosti, nebo ho správce zahodí
+ * (`faze: 'zrusit'` s obnovaId z odpovědi 409). */
 export default async (req) => {
+  const uvolnit = {};
+  try { return await obsluha(req, uvolnit); }
+  finally {
+    if (uvolnit.klic) {
+      try { await (await uloziste('zalohy')).smaz(uvolnit.klic); }
+      catch (e) { console.error('obnova: token jednorázové obnovy se neuvolnil', e); }
+    }
+  }
+};
+
+async function obsluha(req, uvolnit) {
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte POST.' }, 405);
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
   if (chyba) return chyba;
@@ -335,9 +403,15 @@ export default async (req) => {
   try { ({ ULO, SCHV, JEKLY, fm, ZOB } = await jadro()); } catch (e) { return jadroChyba(e); }
 
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  { const stop = hloubkaChyba(t); if (stop) return stop; }   // SEC-M2 (#542): hluboké vnoření → 400, ne 500
   /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
 
+  /* SEC-M6 (#542, zbytek SEC-N1): `{"toString":1}` ve faze / obnovaId / rezim
+   * nebo v zdroj.otisk shodilo String(…) na 500 → teď 400. */
+  { const stop = textovaPoleChyba(t, ['faze', 'obnovaId', 'rezim'])
+      || (t.zdroj && typeof t.zdroj === 'object' ? textovaPoleChyba(t.zdroj, ['otisk']) : null);
+    if (stop) return stop; }
   const faze = String(t.faze || '');
   const nahled = t.nahled === true;
   const upozorneni = [];
@@ -405,37 +479,7 @@ export default async (req) => {
      * prošly oba (dva tokeny, dva otisky „před obnovou"). Teď se v instanci
      * řadí za sebe a po zápisu se ověří, že token je jediný živý; mezi
      * instancemi ustoupí ten mladší (čas začátku, pak id) a 409. */
-    const vstup = await vyhradne('zalohy/obnova', async () => {
-    const zamek = await zamekObnovy();
-    if (zamek) return { odpoved: zamek };
-    /* TOKEN SE ZAPÍŠE HNED PO KONTROLE ZÁMKU (nález B48, 14. 9. 2026).
-     *
-     * Do 14. 9. bylo pořadí zámek → otisk → token, jenže pořízení otisku
-     * trvá sekundy. Dva požadavky `zacatek` v tomtéž okně tedy oba viděly
-     * prázdný zámek a oba prošly: vznikly dvě obnovy nad jednou databází
-     * a ta druhá pořídila „otisk před obnovou" ze stavu, který už byl napůl
-     * obnovený — tedy z cesty zpátky, která nikam nevede.
-     *
-     * Token teď vzniká jako první, ve stavu „pořizuje se otisk", takže
-     * druhý požadavek narazí na zámek. Klíč otisku se doplní, až otisk je.
-     * Když se otisk nepovede, token se uklidí a zámek nezůstane viset. */
-    const id = randomBytes(16).toString('hex');
-    const s = await uloziste('zalohy');
-    const ted = new Date().toISOString();
-    await s.zapis(tokenKlic(id), { id, kdo: relace.email, zacatek: ted, naposled: ted,
-      rezim, otiskPred: null, otiskSePorizuje: true, davek: 0, ...zdrojZacatku,
-      souhrn: { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0 } });
-    for (const k of (await s.seznam(TOKEN_PREDPONA)) || []) {
-      if (k === tokenKlic(id)) continue;
-      const z = await s.cti(k);
-      if (!z || tokenVyprsel(z)) continue;
-      if (String(z.zacatek) < ted || (String(z.zacatek) === ted && String(z.id) < id)) {
-        await s.smaz(tokenKlic(id));
-        return { odpoved: obnovaBeziOdpoved(z) };
-      }
-    }
-    return { id, s, ted };
-    });
+    const vstup = await zalozTokenObnovy(relace, rezim, zdrojZacatku);
     if (vstup.odpoved) return vstup.odpoved;
     const { id, s, ted } = vstup;
     /* OTISK PŘED OBNOVOU PO KROCÍCH (#522 Z1, 26. 10. 2026). U velké
@@ -482,6 +526,13 @@ export default async (req) => {
   }
   if (!vypadaJakoZaloha(zaloha))
     return json({ ok: false, chyba: 'Otisk je poškozený (chybí razítko pořízení nebo známé části).' }, 400);
+  /* SEC-M7 (#542): prototypové klíče z části `program` zálohy (soubor prošel
+   * čímkoli) se nezapíšou — `"__proto__"` ve slevách by GET /api/program
+   * rozdal každému obchodníkovi (třída SEC-I3; stejně jako /api/program).
+   * Ostatní části mají vlastní, přísnější kontrolu: slovník a controlling
+   * verzi s takovým klíčem celou přeskočí (#401, C3), zakázky čistí
+   * zakazkaPrijmi, texty popisyOciste. */
+  if (zaloha.program && typeof zaloha.program === 'object') zakazkaBezPrototypovychKlicu(zaloha.program);
   zdrojPopis.porizena = String(zaloha.porizena || '');
   zdrojPopis.web = String(zaloha.zdroj || '');
   const tenhleWeb = hostitel(req);
@@ -529,9 +580,22 @@ export default async (req) => {
      * předpoklad). Obrazovka posílá potvrzení až po náhledu a dialogu. */
     if (t.potvrzeni !== OBNOVA_POTVRZENI)
       return json({ ok: false, chyba: 'Obnova se provede jen s výslovným potvrzením po náhledu.' }, 428);
-    /* B28: ani jednorázová obnova nesmí běžet přes rozpracovanou. */
-    const zamek = await zamekObnovy();
-    if (zamek) return zamek;
+    /* B28: ani jednorázová obnova nesmí běžet přes rozpracovanou — a od
+     * SEC-M8 (#542) drží po celou dobu vlastní token (zámek), takže přes ni
+     * neprojde ani začátek obnovy po dávkách, ani druhá jednorázová. Token
+     * nese i zdroj (retence ho nesmaže, K9-S5); uvolní ho obal handleru. */
+    let zamek;
+    try {
+      zamek = await zalozTokenObnovy(relace, rezim,
+        tokenZdroj({ zdrojOtisk: zd.otisk !== undefined ? String(zd.otisk) : undefined, zdrojSoubor: zd.soubor !== undefined }),
+        { jednorazova: true });
+    } catch (e) {
+      console.error('obnova: zámek jednorázové obnovy se nezapsal', e);
+      return json({ ok: false, chyba: 'Zámek obnovy se nepodařilo zapsat (' + (e && e.message ? e.message : e)
+        + ') — obnova se NEPROVEDLA, nic se nezměnilo.' }, 500);
+    }
+    if (zamek.odpoved) return zamek.odpoved;
+    uvolnit.klic = tokenKlic(zamek.id);
     /* Pojistka 2: otisk současného stavu DŘÍV, než se sáhne na první záznam.
      * Vlastní slot s časem, aby obnova nepřepsala svůj zdroj ani cestu zpátky.
      * K9-N5 (O-K9 #527): i tady s časovým rozpočtem synchronní funkce. Do
@@ -683,7 +747,7 @@ export default async (req) => {
       const ctx = { ULO, SCHV, JEKLY, slevyNast: (prog && prog.platny && prog.platny.slevy) || {},
                     verzeServeru: serverVerze(), rezim: 'obnova', zeSouboru: zdrojPopis.typ === 'soubor' };
       for (const [k, v] of Object.entries(mapa)) {
-        if (!k || k.length > KLIC_MAX) { preskoc(b, k, 'nepřijatelný klíč'); continue; }
+        if (!klicZeZalohyPlatny(k)) { preskoc(b, k, KLIC_ZE_ZALOHY_DUVOD); continue; }
         if (v == null || typeof v !== 'object') { preskoc(b, k, 'poškozený záznam (není objekt)'); continue; }
         const klic = 'z/' + k;
         const stary = await s.cti(klic);
@@ -906,5 +970,6 @@ export default async (req) => {
 
   return json({ ok: true, nahled, rezim, zdroj: zdrojPopis, casti: vysledek, rejstrik, otiskPred,
                 davka: tk ? tk.token.davek : undefined, upozorneni });
-};
+}
+
 export const config = { path: '/api/obnova' };

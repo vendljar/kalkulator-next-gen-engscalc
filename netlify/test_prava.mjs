@@ -2941,6 +2941,20 @@ test('účet se archivací nesmazal', !!zaznamA);
 test('hlavní administrátorský účet nejde archivovat',
   (await post(uzivatele, 'http://x/api/uzivatele',
     { akce: 'archiv', email: ADMIN_EMAIL, archiv: true }, cAdmin)).status === 400);
+/* SEC-M12 (#542, security test SEC-M 28. 10. 2026): test výš volá s cookie
+ * HLAVNÍHO správce, takže 400 vrátí už strážce „vlastní účet si nearchivujte"
+ * a strážce hlavního účtu (uzivatele.mjs) nehlídal nikdo — mutant R-M5 prošel.
+ * Tady VEDLEJŠÍ správce i se správným vlastním heslem (SEC-I7 ho pustí dál):
+ * 400 a účet zůstane nearchivovaný. S mutantem R-M5: 200 a archiv true. */
+{
+  const vedl = UCTY['Administrátor'];
+  vedl.cookie = (await prihlas(vedl.email, vedl.heslo)) || vedl.cookie;
+  const r = await post(uzivatele, 'http://x/api/uzivatele',
+    { akce: 'archiv', email: ADMIN_EMAIL, archiv: true, hesloSpravce: vedl.heslo }, vedl.cookie);
+  const hl = JSON.parse(pamet.get('uzivatele/' + ADMIN_EMAIL) || '{}');
+  test('SEC-M12: vedlejší správce hlavní účet nearchivuje ani s heslem (400)', r.status === 400, 'vrátil ' + r.status);
+  test('SEC-M12: hlavní účet zůstal nearchivovaný a zapnutý', !hl.archiv && hl.aktivni !== false, hl.archiv);
+}
 
 test('převádět sám na sebe nedává smysl a neprojde',
   (await post(uzivatele, 'http://x/api/uzivatele',
@@ -3399,6 +3413,20 @@ test('tajemství relace nemá záložní hodnotu v kódu',
 const kodPrihlaseni = readFileSync(resolve(KOREN, 'functions', 'prihlaseni.mjs'), 'utf8');
 test('přihlášení se u neúspěchu skutečně zdrží (pockej + zpozdeniMs)',
   /pockej\s*\([\s\S]{0,40}zpozdeniMs\s*\(/.test(kodPrihlaseni));
+/* SEC-M13 (#542): totéž u změny vlastního hesla (`mojeheslo`) a u ověření
+ * hesla správce (potvrdHesloSpravce) — mutanty R-M7 a R-M9 (bez čekání) do
+ * #542 prošly. Kontroluje se úsek kódu dané cesty, ne celý soubor. */
+{
+  const kodUziv = readFileSync(resolve(KOREN, 'functions', 'uzivatele.mjs'), 'utf8');
+  const i = kodUziv.indexOf("if (t.akce === 'mojeheslo')");
+  const usekMoje = i >= 0 ? kodUziv.slice(i, kodUziv.indexOf('hesloSedi(', i) + 1 || i + 1) : '';
+  test('SEC-M13: mojeheslo se u pokusu zdrží (await pockej(zpozdeniMs) před ověřením hesla)',
+    /await\s+pockej\s*\(\s*zpozdeniMs\s*\(/.test(usekMoje), usekMoje.length);
+  const j = sdilene.indexOf('export async function potvrdHesloSpravce(');
+  const usekSpr = j >= 0 ? sdilene.slice(j, sdilene.indexOf('hesloSedi(', j) + 1 || j + 1) : '';
+  test('SEC-M13: potvrdHesloSpravce se u pokusu zdrží (await pockej(zpozdeniMs) před ověřením hesla)',
+    /await\s+pockej\s*\(\s*zpozdeniMs\s*\(/.test(usekSpr), usekSpr.length);
+}
 /* Pořadí je celá podstata #92: rozhodnutí o ODMÍTNUTÍ (429) musí přijít až po
  * ověření hesla — jinak by se dal majitel účtu zamknout deseti špatnými
  * pokusy. Od 22. 8. 2026 (B4) se pokus ZAPOČÍTÁ a ČEKÁ ještě před ověřením

@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v1.11.1 — O-SECM #542: opravy nálezů security testu SEC-M, větev claude/o-secm-opravy
+
+Nad integrací 0cc9335 (v27.10.6). Schválil J. V. 1. 11. 2026; zpráva `podklady/SEC_AUDIT_MAIN_28_10.md` (oddíl „Stav
+oprav“), meze `BEZPECNOST_MEZE.md`. Chování aplikace pro uživatele beze změny; na ostrém webu, Disku ani v Pipedrive nic.
+Verze podle pravidla dne commitu (v1.11.N); koordinace může přečíslovat.
+
+- **SEC-M1 (střední, proces) — kontrola osobních údajů a tajemství před každým pushem:** hook `nastroje/hooky/pre-push`
+  (zapíná `nastroje/instaluj_hooky.sh`, volají ho `testovaci_kolo.sh` i `pred_pushem.sh`) zkontroluje každý pushovaný
+  commit (soubory i zprávu, i u tagu) a při nálezu push zastaví; workflow `.github/workflows/kontrola_udaju.yml` na push
+  do všech větví a tagů `v*`. Výpis nálezu tajemství je maskovaný. CLAUDE.md (oddíl Testy): `--no-verify` zakázané.
+- **SEC-M11 — mezery detekce:** `kontrola_udaju.py` čte vše, co Git verzuje (`git ls-files -co --exclude-standard`),
+  binární přeskočí; nové vzory npm, `_authToken`, Google `AIza`, JWT, `sk-`/`sk-proj-`, 40 hex v konstantě s názvem klíče.
+- **Opraveno (server, nízké):** hluboké vnoření těla → 400 místo 500 (M2, 12 funkcí); číslo nabídky — lineární jméno
+  souboru a délka před ním (M3), strop a tvar čísla PROJ (M4); GET exportu controllingu s cizím Origin → 403 (M5);
+  objekt v polích obnovy → 400 (M6); `__proto__` v programu a jeho obnově se neuloží (M7); jednorázová obnova drží zámek
+  (M8); klíče zakázek ze souboru zálohy s lomítkem, `..` nebo řídicím znakem se přeskočí (M9).
+- **Testy strážců:** archivace hlavního účtu vedlejším správcem (M12), zpoždění brzdy hesla v `mojeheslo`
+  a `potvrdHesloSpravce` (M13).
+- **Posouzeno bez kódu:** M10 (ref smaže J. V.), M14–M22; **M16 čeká na rozhodnutí J. V.**
+- **Testy:** nová sada `netlify/test_secm.mjs` (60/0, nad v27.10.6 35 FAIL), `nastroje/test_pre_push.sh` (14/0, statické
+  kontroly kola), `src/test_kontrola_udaju.js` (+12), `netlify/test_prava.mjs` (+4), `netlify/test_obnova.mjs` (B48 hledá
+  zápis tokenu ve společné funkci); 31 mutací „#542“.
+
+---
+
 ## v27.10.6 — C4 #540: kód controllingu podle rozhodnutí J. V. 27. 10. 2026, větev claude/c4-controlling-rozhodnuti
 
 Nad integrací 60f8fd2 (v27.10.2) + C3 #537 (sloučeno). Rozhodnutí J. V. z dialogu nad `podklady/CONTROLLING_ROZHODNUTI.md`

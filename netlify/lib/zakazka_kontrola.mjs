@@ -128,10 +128,21 @@ export function zakazkaPrijmi(telo, ULO) {
   /* Interní text výjimky do odpovědi nepatří (K8-S8, #514) — jen obecná věta. */
   catch (e) { return { ok: false, status: 400, chyba: 'Zakázku se nepodařilo přečíst — zakázka má neplatný tvar.' }; }
   zakazkaBezPrototypovychKlicu(zak);
-  const jmeno = ULO.uloJmenoSouboru(zak);
-  if (!jmeno) return { ok: false, status: 400, chyba: 'Zakázka nemá vyplněné číslo nabídky.' };
+  /* Délka čísla PŘED jménem souboru (SEC-M3, #542): uloJmenoSouboru číslo
+   * normalizuje regulárními výrazy — 200 000 znaků tam stálo sekundy času
+   * funkce, než přišlo 400. A strop i na číslo PROJ (SEC-M4): zakázka bez
+   * čísla OCK bere jméno souboru z `projHlavicka.cislo` a ten délku hlídanou
+   * neměl — klíč o 50 000 znacích se zapsal, GET ho pak odmítl (400), takže
+   * zakázku nešlo otevřít ani smazat. */
   if (String(zak.cislo || '').length > CISLO_MAX)
     return { ok: false, status: 400, chyba: 'Číslo nabídky je příliš dlouhé (nejvýš ' + CISLO_MAX + ' znaků).' };
+  const projCislo = zak.projHlavicka && typeof zak.projHlavicka === 'object' ? zak.projHlavicka.cislo : '';
+  if (projCislo !== null && typeof projCislo === 'object')
+    return { ok: false, status: 400, chyba: 'Číslo nabídky PROJ musí být text.' };
+  if (String(projCislo || '').length > CISLO_MAX)
+    return { ok: false, status: 400, chyba: 'Číslo nabídky PROJ je příliš dlouhé (nejvýš ' + CISLO_MAX + ' znaků).' };
+  const jmeno = ULO.uloJmenoSouboru(zak);
+  if (!jmeno) return { ok: false, status: 400, chyba: 'Zakázka nemá vyplněné číslo nabídky.' };
   const spatnaId = ULO.uloIdProblemy(zak);
   if (spatnaId.length)
     return { ok: false, status: 400, chyba: 'Zakázka nese ' + ULO.uloIdProblemyText(spatnaId) + '.' };

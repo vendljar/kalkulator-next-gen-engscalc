@@ -33,7 +33,7 @@
  * jako citlivé akce účtů (B77): pole `hesloSpravce`, odmítnutí 401/429
  * s `kod: 'hesloSpravce'`, tentýž limit pokusů. Heslo se ověří dřív, než
  * se čte matice, a do záznamu se neukládá. */
-import { uloziste, vyzadujRoli, json, potvrdHesloSpravce } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, potvrdHesloSpravce, hloubkaChyba } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
 export default async (req) => {
@@ -53,6 +53,7 @@ export default async (req) => {
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
   if (chyba) return chyba;
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  { const stop = hloubkaChyba(t); if (stop) return stop; }   // SEC-M2 (#542): hluboké vnoření → 400, ne 500
   /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
   /* B168: matice řídí i serverová práva — jen s vlastním heslem správce. */

@@ -18,7 +18,7 @@
  * Co server odmítne: údaje se značkou `ukazkove` a údaje bez povinných polí.
  * Rozhoduje o tom firmaLzeZverejnit() ze src/firma.js — týž kód, jaký si
  * kontrolu dělá prohlížeč, aby se obě strany nemohly rozejít. */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, hloubkaChyba } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
 export default async (req) => {
@@ -38,6 +38,7 @@ export default async (req) => {
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
   if (chyba) return chyba;
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  { const stop = hloubkaChyba(t); if (stop) return stop; }   // SEC-M2 (#542): hluboké vnoření → 400, ne 500
   /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
 

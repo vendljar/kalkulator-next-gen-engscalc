@@ -56,11 +56,17 @@ function uloCisloVyplneno(cislo) {
  * jen písmen bez diakritiky, číslic, tečky, pomlčky a podtržítka.
  * Tečka zůstává schválně: číslo klonované varianty má tvar …-0500.1. */
 function uloKlicSouboru(text) {
-  return String(text == null ? '' : text)
+  const k = String(text == null ? '' : text)
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^A-Za-z0-9._-]+/g, '-')
     .replace(/-{2,}/g, '-')
-    .replace(/^[-.]+/, '').replace(/[-.]+$/, '');
+    .replace(/^[-.]+/, '');
+  /* Koncové „-" a „." ořezat SMYČKOU, ne výrazem /[-.]+$/ (SEC-M3, #542):
+   * ten na textu „A-.-.-.…x" zkouší shodu od každé pozice znovu — kvadratický
+   * čas, 100 000 znaků čísla nabídky drželo funkci serveru 5 s. */
+  let konec = k.length;
+  while (konec > 0 && (k[konec - 1] === '-' || k[konec - 1] === '.')) konec--;
+  return k.slice(0, konec);
 }
 
 /* Zakázka bez čísla se ukládat musí (rozdělaná práce je taky práce), ale

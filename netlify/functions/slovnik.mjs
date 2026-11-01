@@ -22,7 +22,7 @@
  * Ukládá se do úložiště `program` pod klíč `slovnik` — vedle ceníku, aby ho
  * noční otisk i ruční záloha braly s sebou (lib/zalohovani.mjs →
  * zalohaDoplnky) a obnova vracela (functions/obnova.mjs, část `slovnik`). */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, hloubkaChyba } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
 export default async (req) => {
@@ -56,6 +56,7 @@ export default async (req) => {
   if (globalThis.slovnikBajty(text) > M.telo)
     return json({ ok: false, chyba: 'Slovník je příliš velký (strop ' + Math.round(M.telo / 1024) + ' kB).' }, 413);
   let t; try { t = JSON.parse(text); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  { const stop = hloubkaChyba(t); if (stop) return stop; }   // SEC-M2 (#542): hluboké vnoření → 400, ne 500
   /* Tělo JSON `null`, číslo nebo pole (B131). */
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
 

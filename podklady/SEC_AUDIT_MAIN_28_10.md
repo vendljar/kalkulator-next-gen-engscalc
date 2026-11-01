@@ -81,6 +81,37 @@ Pokusy se spouštějí z kořene repa (`node podklady/SECM_pokusy/<čočka>/<sou
 | SEC-M21 | info | Běhové prostředí | `netlify.toml:20` `NODE_VERSION = "22.23.2"` | `repo/dodavatelsky_retezec.sh`: v registru jsou novější 22.23.3 a 22.23.4 (zda bezpečnostní, neověřeno). Pevný patch opravy sám nedostane a Dependabot `netlify.toml` nehlídá. | ano | Pravidelně (kolo, měsíc) ověřit nejnovější 22.x a vědomě povýšit spolu s CI `node-version`. | ne |
 | SEC-M22 | info | Závislosti: rozsah verze | `package.json:5` `"@netlify/blobs": "^8.1.0"` | Zámek 8.2.0 (`registry.npmjs.org`, sha512 = registr, bez install skriptů), `npm audit` 0. 8.2.0 je nejvyšší verze v `^8`, takže dnes nic neujíždí. Poslední major 11.1.7. | ano | `"8.2.0"` přesně, aby přegenerovaný zámek nevzal jinou verzi. Major rozhodnout s Dependabotem (SEC-I13). | ne |
 
+## Stav oprav (O-SECM #542, 1. 11. 2026)
+
+Dávka O-SECM #542, větev `claude/o-secm-opravy` nad integrací `0cc9335` (v27.10.6), verze **v1.11.1**
+(koordinace může přečíslovat). Schválil J. V. 1. 11. 2026. Před každou opravou ověřeno pokusem nad v27.10.6, že nález trvá
+(p3 H/O/P, p4 O13/O15/O16, `redos_server.mjs`, `pokus_puvod.mjs` [6], `repo/kontrola_mezery.py`, `regrese/vlastni_mutace.mjs` R-M5/R-M7/R-M9).
+Podrobnosti a meze: `BEZPECNOST_MEZE.md`, oddíl „O-SECM #542“.
+
+| Nález | Stav | Oprava | Test (pojistka: před opravou → po ní) |
+|---|---|---|---|
+| SEC-M1 | **opraveno** (proces) | hook `nastroje/hooky/pre-push` (+ `instaluj_hooky.sh`, zapíná kolo i `pred_pushem.sh`), `kontrola_udaju.py --rozsah` nad každým pushovaným commitem a zprávou, workflow `.github/workflows/kontrola_udaju.yml` (push `**` a tagy `v*`), maskovaný výpis, CLAUDE.md | `nastroje/test_pre_push.sh` 14/0 (s prázdným hookem 6 FAIL; bez hooku push projde = pojistka v testu); `--rozsah` nad `9bc4965` incident najde |
+| SEC-M2 | **opraveno** | `hloubkaChyba` (`lib/sdilene.mjs`, hloubka bez rekurze, strop 64) ve 12 funkcích → 400 | `netlify/test_secm.mjs` M2 (v27.10.6: 5× výjimka 500 + 11 bez kontroly); p3 H OK |
+| SEC-M3 | **opraveno** | `uloKlicSouboru` ořez konce smyčkou; délka čísla před jménem souboru | `test_secm` M3 (v27.10.6: 35 s / 37 s → po opravě ms) |
+| SEC-M4 | **opraveno** | `CISLO_MAX` i na `projHlavicka.cislo`, objekt → 400 (bonus: objekt dřív 500) | `test_secm` M4 (v27.10.6: 200, 200, 500) |
+| SEC-M5 | **opraveno** | `cizihoPuvodu` v GET exportu controllingu → 403 | `test_secm` M5 (v27.10.6: 200 a protokol +1); pokus [6] |
+| SEC-M6 | **opraveno** | `textovaPoleChyba` pro `faze`, `obnovaId`, `rezim`, `zdroj.otisk` | `test_secm` M6 (v27.10.6: 5× 500); p3 O OK |
+| SEC-M7 | **opraveno** | `zakazkaBezPrototypovychKlicu` na těla `/api/program`, `/api/popisy` a část `program` obnovy (controlling a slovník odmítají celé už dřív) | `test_secm` M7 (v27.10.6: 3 FAIL); p3 P, p4 O16 OK |
+| SEC-M8 | **opraveno** | jednorázová obnova zakládá token (`zalozTokenObnovy`, výhradní úsek), uvolní ho obal handleru | `test_secm` M8 (v27.10.6: 2 FAIL — bez tokenu, začátek 200); p4 O13, O14 OK |
+| SEC-M9 | **opraveno** | klíč zakázky ze souboru přes `klicZAdresyPlatny`, bez `.`/`..` → přeskočeno s důvodem | `test_secm` M9 (v27.10.6: 2 FAIL); p4 O15 OK |
+| SEC-M10 | posouzeno | ref `refs/claude-teleport/…` smaže J. V. (proxy 403) | — |
+| SEC-M11 | **opraveno** | `git ls-files -co --exclude-standard` místo seznamu složek, nové vzory, výjimka bez dlouhého hexu | `src/test_kontrola_udaju.js` 27/0 (se starou kontrolou 11 FAIL); `kontrola_mezery.py` 10/11 → 0/11 |
+| SEC-M12 | **opraveno** (test) | — (strážce v kódu byl) | `test_prava` SEC-M12 (s mutantem R-M5: 2 FAIL) |
+| SEC-M13 | **opraveno** (test) | — | `test_prava` SEC-M13 (s mutanty R-M7, R-M9: 2 FAIL) |
+| SEC-M14, M15 | posouzeno | ošetřit se zápisem do Pipedrive #510 | — |
+| SEC-M16 | **čeká na J. V.** | neměněno (pokyn dávky) | — |
+| SEC-M17–M22 | posouzeno | viz `BEZPECNOST_MEZE.md` | — |
+
+Pokus p4 po opravě: 31/33 — zbývají R2 (K9-S1, mimo dávku) a O13b, který po #522 čte otisk „před obnovou“
+přímo z `zalohy/<klíč>` (od v26.10.8 je to manifest s částmi), takže `zakazky` nevidí („nese stav: undefined“, pořídil
+ho sám autor A — přepsán nebyl). Pokus O13b tedy na v27.10.6 neměří; souběh, kvůli kterému otisk A přepisovala obnova B,
+zámek vylučuje (O13, O14 OK, `test_secm` M8).
+
 ## Dřívější nálezy: stav na `main` a v integraci
 
 | Nález | Na `main` | V integraci | Doklad |

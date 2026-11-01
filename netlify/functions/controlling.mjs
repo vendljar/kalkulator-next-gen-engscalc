@@ -21,7 +21,7 @@
  * Ukládá se do úložiště `program` pod klíč `controlling` — noční otisk
  * i ruční záloha ho berou s sebou (lib/zalohovani.mjs → zalohaDoplnky)
  * a obnova vrací touž očistou (functions/obnova.mjs, část `controlling`). */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, hloubkaChyba } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
 export default async (req) => {
@@ -51,6 +51,7 @@ export default async (req) => {
   if (globalThis.ctrlBajty(text) > M.telo)
     return json({ ok: false, chyba: 'Záznam je příliš velký (strop ' + Math.round(M.telo / 1024) + ' kB).' }, 413);
   let t; try { t = JSON.parse(text); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  { const stop = hloubkaChyba(t); if (stop) return stop; }   // SEC-M2 (#542): hluboké vnoření → 400, ne 500
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
 
   const k = globalThis.ctrlDataKontrola(t.data);

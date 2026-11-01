@@ -30,7 +30,7 @@
  * z ověřeného filtru; export po dávkách má jeden záznam (stav probiha →
  * hotovo). Strop počtu zakázek není (#504) — meze CTRL_HROMADNY (src/controlling.js) — při
  * překročení 413 s výzvou zúžit období, nikdy potichu oříznutý soubor. */
-import { uloziste, vyzadujRoli, json, vyhradne, JSON_HLAVICKY } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, vyhradne, JSON_HLAVICKY, cizihoPuvodu } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { pdStavPripoj } from '../lib/pd_stav.mjs';
 import { randomUUID } from 'node:crypto';
@@ -41,6 +41,13 @@ export default async (req) => {
   if (req.method !== 'GET') return json({ ok: false, chyba: 'Použijte GET.' }, 405);
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
   if (chyba) return chyba;
+  /* PŮVOD I U GET (SEC-M5, #542, security test SEC-M 28. 10. 2026). Export
+   * zapisuje protokol (a čerpá limity) — GET s vedlejším účinkem. Cizí stránka
+   * odpověď nepřečte (bez CORS) a cookie SameSite=Lax pustí jen navigace
+   * nejvyšší úrovně, ale zápis do protokolu by vznikl. Stejně jako `pd/*`
+   * (pdPristup): cizí Origin → 403, bez Origin (navigace, curl, testy) projde. */
+  if (cizihoPuvodu(req))
+    return json({ ok: false, chyba: 'Požadavek z cizí stránky se odmítá.' }, 403);
   const G = globalThis;
   const M = G.CTRL_HROMADNY;
   const sProg = await uloziste('program');

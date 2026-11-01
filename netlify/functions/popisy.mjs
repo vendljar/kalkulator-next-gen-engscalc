@@ -35,8 +35,9 @@
  * POZOR NA ODESLANÉ NABÍDKY: tahle mapa se vlévá do VÝCHOZÍHO ceníku při
  * přihlášení, ne do uložených zakázek. Zakázka si nese vlastní kopii ceníku,
  * takže pozdější změna textu nemění to, co už odešlo zákazníkovi. */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, hloubkaChyba } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
+import { zakazkaBezPrototypovychKlicu } from '../lib/zakazka_kontrola.mjs';
 
 export default async (req) => {
   try { await jadro(); } catch (e) { return jadroChyba(e); }
@@ -96,8 +97,10 @@ export default async (req) => {
   const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');
   if (chyba) return chyba;
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  { const stop = hloubkaChyba(t); if (stop) return stop; }   // SEC-M2 (#542): hluboké vnoření → 400, ne 500
   /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
+  zakazkaBezPrototypovychKlicu(t);   // SEC-M7 (#542): `__proto__` z těla se neuloží (třída SEC-I3)
 
   const texty = globalThis.popisyOciste(t && t.texty);
   const puvodni = (await s.cti('popisy')) || null;

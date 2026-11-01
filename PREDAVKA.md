@@ -1,3 +1,34 @@
+# Předávka — 1. 11. 2026: O-SECM #542 — opravy security testu SEC-M, větev `claude/o-secm-opravy`
+
+Nad `0cc9335` (integrace v27.10.6). **Verze 1.11.1** — ne v27.10.7 ze zadání: `build.py --kontrola-verze` (statické
+kontroly kola) chce u commitu z 1. 11. tvar v1.11.N; koordinace může přečíslovat. Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrém webu, Disku ani v Pipedrive nic. Vzdálené refy nemazány.
+
+| nález | stav | kde | test |
+|---|---|---|---|
+| M1 (proces) | ✅ | `nastroje/hooky/pre-push`, `nastroje/instaluj_hooky.sh`, `kontrola_udaju.py --rozsah`, `.github/workflows/kontrola_udaju.yml`, CLAUDE.md | `nastroje/test_pre_push.sh` (statické kontroly kola, 5 z 5) |
+| M11 | ✅ | `kontrola_udaju.py` (git ls-files, vzory, maskování) | `src/test_kontrola_udaju.js` |
+| M2–M9 | ✅ | `lib/sdilene.mjs` (hloubkaChyba), `lib/zakazka_kontrola.mjs`, `src/uloziste.js`, `functions/obnova.mjs` (zalozTokenObnovy, klicZeZalohyPlatny), `controlling_export.mjs`, `program.mjs`, `popisy.mjs` | `netlify/test_secm.mjs` |
+| M12, M13 | ✅ testy | — | `netlify/test_prava.mjs` |
+| M10, M14–M22 | posouzeno | `BEZPECNOST_MEZE.md` oddíl O-SECM | — |
+| M16 | čeká na J. V. | — | — |
+
+**Mimo rozsah, opraveno kvůli zelenému kolu:** `src/test_z2_disk_retence.js` byla časovaná past (podvržený server vracel
+`new Date()` = skutečné hodiny, test má `Date.now` na 27. 10.) — od 28. 10. 6 FAIL i na čistém `0cc9335`, zastavila by
+i mutace (výchozí běh). Teď `new Date(Date.now())`.
+
+**Hooky v sezení:** `bash nastroje/instaluj_hooky.sh` na začátku (dělá to i kolo). `.claude/settings.json` je
+v `.gitignore` (místní nastavení) — SessionStart hook do repa nedán, rozhodne J. V.
+
+**Při slučování:** konflikt hrozí v `CHANGELOG.md`, `roadmapa/roadmap.json` (#542 za #540), `netlify/mutace.mjs`
+(SADY: `test_secm.mjs` za `test_autorstvi`; blok #542 na začátku MUTACE), `netlify/functions/obnova.mjs` (handler
+přejmenován na `obsluha` + obal `export default` kvůli uvolnění zámku), `nastroje/testovaci_kolo.sh` (statické kontroly
+„z 5“), `CLAUDE.md` (oddíl Testy), `BEZPECNOST_MEZE.md`, `podklady/SEC_AUDIT_MAIN_28_10.md`.
+
+**Čeká na J. V.:** smazat ref `refs/claude-teleport/83c754161ed65ad9` (SEC-M10); zrušit sdílení odkazu `cshk_` (SEC-S4)
+a případně vlastní vzor secret scanningu `claude\.ai/code/cshk_`; rozhodnout SEC-M16 (fotka jen `data:image`).
+
+---
 # Předávka — 27. 10. 2026: C4 #540 — kód controllingu podle rozhodnutí J. V., větev `claude/c4-controlling-rozhodnuti`
 
 Nad `60f8fd2` (integrace v27.10.2) + sloučená C3 #537 (`origin/claude/c3-controlling-priprava`, konflikty CHANGELOG /

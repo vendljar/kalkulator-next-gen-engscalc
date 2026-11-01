@@ -16,7 +16,7 @@
  * k zakázce, ne k účtu. Analytika NEJDE do záloh (viz zaloha.mjs — klíč
  * `analytika` tam schválně není). Retence: při každém zápisu se smažou dny
  * starší 24 měsíců. */
-import { uloziste, vyzadujRoli, json } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, hloubkaChyba } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 
 /* Jména souborů zakázek, ke kterým smí vzniknout klíč `cas/` (B35,
@@ -93,6 +93,7 @@ export default async (req) => {
 
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte GET nebo POST.' }, 405);
   let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  { const stop = hloubkaChyba(t); if (stop) return stop; }   // SEC-M2 (#542): hluboké vnoření → 400, ne 500
   /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
 

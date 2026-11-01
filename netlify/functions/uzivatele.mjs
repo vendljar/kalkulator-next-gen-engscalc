@@ -38,7 +38,7 @@ import { uloziste, otiskHesla, hesloSedi, vyzadujRoli, json, ROLE, ADMIN_EMAIL,
          emailPlatny, hesloPlatne, HESLO_PRAVIDLO, SMAZANI_ULOZISTE,
          bezHlavnihoUctu, POKUSY_MAX, zpozdeniMs, pockej, pokusyZacatek, pokusyUspech,
          pokusyAdresaNadLimit, adresaKlienta, potvrdHesloSpravce, vyhradne,
-         textovaPoleChyba } from '../lib/sdilene.mjs';
+         textovaPoleChyba, hloubkaChyba } from '../lib/sdilene.mjs';
 
 /* VERZE HESLA NOVÉHO ÚČTU (B76, hloubkový test 24. 9. 2026). Relace nese
  * verzi hesla účtu a účet bez pole má verzi 0 (B6). Smazaný a znovu založený
@@ -93,6 +93,7 @@ export default async (req) => {
   /* --- vlastní heslo: jediná akce dostupná bez role Administrátor --- */
   if (req.method === 'POST') {
     let t; try { t = await req.json(); } catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+    { const stop = hloubkaChyba(t); if (stop) return stop; }   // SEC-M2 (#542): hluboké vnoření → 400, ne 500
     /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
     if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
     /* SEC-N1 (#514): objekt v textovém poli → 400, ne 500. */

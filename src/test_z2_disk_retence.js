@@ -120,7 +120,9 @@ const novyCtx = (opt) => {
     ctx.volani.push([cesta, telo]);
     if (cesta === '/api/zaloha?zdroj=nocni&strana=1') return { ok: true, zaloha: JSON.parse(J(ZALOHA)), otisk: o.otisk || '2026-10-27', puvod: 'nocni-otisk' };
     if (o.serverOdpoved) return o.serverOdpoved(cesta, telo);
-    return { ok: true, kopieDisk: { kdy: new Date().toISOString(), ...(telo && telo.kopie) } };
+    /* Čas serveru z Date.now() (podvržený na 27. 10.), ne z new Date() — ta bere skutečné
+     * hodiny a od 28. 10. 2026 se test „rozešel se serverem o víc než den" (6 FAIL; #542). */
+    return { ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString(), ...(telo && telo.kopie) } };
   };
   vm.createContext(ctx);
   vm.runInContext(kopie + tlacitko + obnovaText + '\nthis.proved = kopieDiskProved; this.uklid = kopieDiskUklid; this.uklidText = kopieDiskUklidText;'
@@ -273,7 +275,7 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
       ['.json.gz (velikost dat po rozbalení)', { 'otisk_2026-10-20.json.gz': { kind: 'file', data: gzipSync(Buffer.from(vetsi(0.85))) } }]]) {
       const ctx = novyCtx({ serverOdpoved: async (cesta, telo) => {
         if (telo && telo.akce === 'retence-varovani-disk') return { ok: true, retenceVarovani: { kdy: 'x', den: telo.disk.den, zdroj: 'disk', text: 'úbytek' } };
-        return { ok: true, kopieDisk: { kdy: new Date().toISOString() }, retenceVarovani: null }; } });
+        return { ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString() }, retenceVarovani: null }; } });
       const h = slozka('_Zaloha Netlify DB', Object.assign({ 'otisk_2026-10-13.json': 'stara', 'otisk_2026-10-01.json': 'prvni', 'otisk_2026-04-05.json': 'duben' }, predchozi));
       const k = await ctx.proved(h);
       const hlaseni = (ctx.volani.find(v => v[1] && v[1].akce === 'retence-varovani-disk') || [])[1];

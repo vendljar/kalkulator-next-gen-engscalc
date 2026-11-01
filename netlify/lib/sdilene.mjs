@@ -438,6 +438,32 @@ export function textovaPoleChyba(t, klice) {
   }
   return null;
 }
+/* HLOUBKA VNOŘENÍ TĚLA (SEC-M2, #542, security test SEC-M 28. 10. 2026).
+ * Tělo `{"zakazka":[[[…10 000 úrovní…]]]}` má jen 20 kB, JSON.parse ho
+ * přečte, ale rekurzivní JSON.stringify (strop velikosti zakázky, náhled
+ * obnovy, program) spadne na „Maximum call stack size exceeded" → 500 —
+ * a stačil k tomu přihlášený obchodník. Hloubka se proto měří hned po
+ * přečtení, BEZ rekurze (zásobník polí), a nad stropem → 400. Skutečná data
+ * mají řádově do 15 úrovní (zakázka → varianty → zadání → řádky); záloha
+ * v obnově přidá 3. 64 je pojistka, ne provozní hranice. */
+export const TELO_HLOUBKA_MAX = 64;
+export function hloubkaTela(h, max = TELO_HLOUBKA_MAX) {
+  const zasobnik = [[h, 0]];
+  let nejvic = 0;
+  while (zasobnik.length) {
+    const [v, d] = zasobnik.pop();
+    if (v === null || typeof v !== 'object') continue;
+    if (d + 1 > nejvic) nejvic = d + 1;
+    if (nejvic > max) return nejvic;
+    for (const k in v) if (Object.prototype.hasOwnProperty.call(v, k)) zasobnik.push([v[k], d + 1]);
+  }
+  return nejvic;
+}
+export function hloubkaChyba(t, max = TELO_HLOUBKA_MAX) {
+  return hloubkaTela(t, max) > max
+    ? json({ ok: false, chyba: 'Vstup má příliš hluboké vnoření (nejvýš ' + max + ' úrovní).' }, 400)
+    : null;
+}
 /* Adresa webu, na kterém funkce právě běží — z hlavičky požadavku, ne
  * z konstanty: tentýž kód obsluhuje engscalc.netlify.app i sesterský
  * schaftscalc a případný testovací web. Za proxy Netlify je původní jméno

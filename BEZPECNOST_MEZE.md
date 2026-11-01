@@ -1255,3 +1255,89 @@ výpočet. Přehled oprav je v CHANGELOG v23.10.5; sem patří zbytkové meze.
 - **SEC-PD (SEC-S7, SEC-N9, SEC-I15, SEC-I16, SEC-I17):** podmínky pro zápis
   do Pipedrive jsou zapsané v zadání roadmapy #115 (hodnota dealu po SoD =
   cena díla, jinak cena nabídky). Dokud zápis neběží, nejsou útočnou plochou.
+
+## O-SECM #542 — opravy security testu SEC-M (v1.11.1, 1. 11. 2026)
+
+Zpráva `podklady/SEC_AUDIT_MAIN_28_10.md` (oddíl „Stav oprav“), testy
+`netlify/test_secm.mjs`, `nastroje/test_pre_push.sh`, `src/test_kontrola_udaju.js`,
+`netlify/test_prava.mjs` (SEC-M12, M13), 31 mutací „#542“.
+
+- **SEC-M1 — kontrola údajů před pushem (OPRAVENO, proces):** hook `pre-push`
+  (`nastroje/hooky/pre-push`, zapíná `nastroje/instaluj_hooky.sh` →
+  `core.hooksPath`) pouští `kontrola_udaju.py --rozsah` nad **každým**
+  pushovaným commitem (soubory i zprávy, i u tagu) a při nálezu push zastaví.
+  Druhá vrstva: workflow `kontrola_udaju.yml` (push do všech větví a tagů `v*`).
+  **Meze:** `git push --no-verify` hook obejde (v sezeních zakázané,
+  CLAUDE.md); hook zapíná `testovaci_kolo.sh` a `pred_pushem.sh`, ne samo
+  naklonování — `.claude/settings.json` (SessionStart) se záměrně neverzuje,
+  zapnout ho může J. V. Workflow přijde až PO pushi (údaj už je venku) —
+  jen ohlásí. Nálezy tajemství se ve výpisu maskují (log Actions je veřejný).
+  Push protection GitHubu tvar `cshk_` nezná — vlastní vzor secret scanningu
+  a zrušení sdílení odkazu jsou na J. V. (SEC-S4).
+- **SEC-M11 — mezery detekce (OPRAVENO):** kontrola čte vše, co Git verzuje
+  nebo by verzoval (`git ls-files -co --exclude-standard`), binární soubory
+  přeskočí; nové vzory `npm_`, `_authToken`, `AIza`, JWT, `sk-`/`sk-proj-`,
+  40 hex v konstantě s názvem klíče; výjimka zkušební hodnoty nekryje dlouhý
+  hex. **Mez:** 40 hex bez názvu klíče (např. SHA commitu) se nehlásí — jinak
+  by padaly odkazy na release a předávky; kořenové soubory v `.gitignore` se
+  nečtou (do repa nejdou).
+- **SEC-M2 (OPRAVENO):** hloubka těla nad 64 úrovní → 400 (`hloubkaChyba`
+  v `lib/sdilene.mjs`, měří bez rekurze) ve 12 funkcích s tělem JSON.
+- **SEC-M3, SEC-M4 (OPRAVENO):** `uloKlicSouboru` ořezává konec smyčkou
+  (lineárně); délka čísla OCK i PROJ (`CISLO_MAX`) a tvar čísla PROJ se
+  kontrolují před jménem souboru. **Mez:** ostatní kvadratické výrazy
+  SEC-M17 (šablony, vstupy správce) zůstávají — viz níže.
+- **SEC-M5 (OPRAVENO):** GET `/api/controlling/export` s cizím Origin → 403
+  (jako `pd/*`); bez Origin (navigace, curl) projde jako dřív.
+- **SEC-M6 (OPRAVENO):** objekt ve `faze` / `obnovaId` / `rezim` /
+  `zdroj.otisk` obnovy → 400.
+- **SEC-M7 (OPRAVENO):** prototypové klíče z těla `/api/program`, `/api/popisy`
+  a z části `program` souboru zálohy se zahodí (`zakazkaBezPrototypovychKlicu`).
+  `/api/controlling`, slovník a jejich obnova už takovou verzi odmítají celou
+  (C3, #401) — tam se nic neořezává. **Mez:** obnova programu ze souboru dál
+  nevolá `cenikZverejneniKontrola` ani `programZaznam` (strop obchodníka 1,
+  `minMarze` 0 ze souboru se obnoví) — obnova vrací stav ze zálohy záměrně
+  a smí ji jen správce s potvrzením; podvržený soubor správce = správce sám.
+- **SEC-M8 (OPRAVENO):** jednorázová obnova drží po celou dobu token (zámek)
+  jako obnova po dávkách (`zalozTokenObnovy`, týž výhradní úsek) a uvolní ho
+  obal handleru ve `finally`. **Mez:** spadne-li funkce na limitu, token
+  vyprší po hodině nečinnosti (nebo ho správce zahodí přes `zrusit`).
+  Klíč otisku „před obnovou“ má dál rozlišení na sekundu — souběh dvou obnov
+  zámek vylučuje; dvě obnovy po sobě v téže sekundě prakticky nevzniknou
+  (otisk sám trvá déle).
+- **SEC-M9 (OPRAVENO):** klíč zakázky ze souboru zálohy musí projít
+  `klicZAdresyPlatny` a nesmí být `.`/`..` — jinak „přeskočeno“ s důvodem.
+  Mapy (`obnovMapu`: šablony `data/plnaMoc/1`, zákazníci `z/<klíč>`) lomítka
+  nesou záměrně a mají vlastní kontroly — beze změny.
+- **SEC-M12, SEC-M13 (OPRAVENO, testy):** archivace hlavního účtu vedlejším
+  správcem (i s heslem) → 400; statická kontrola `await pockej(zpozdeniMs(`
+  v `mojeheslo` a `potvrdHesloSpravce`. Mutace R-M5, R-M7, R-M9 chycené.
+
+**Posouzeno bez změny kódu:**
+
+- **SEC-M10 (nízký, repo):** skrytý ref `refs/claude-teleport/83c754161ed65ad9`
+  nese telefon ze SEC-V1. Z cloudového sezení ref smazat nejde (proxy 403,
+  neobcházet) — **J. V.:** `git push origin --delete refs/claude-teleport/83c754161ed65ad9`.
+  Hook `pre-push` ani workflow staré refy neprocházejí (kontrolují jen nové
+  commity); `kontrola_udaju.py --vetve` přes `git ls-remote` nezavedeno.
+- **SEC-M14 (info):** `PIPEDRIVE_DOMENA` bez ověření tvaru — nastavuje jen
+  správce Netlify; přidat `^[a-z0-9-]{1,63}$` až s odesíláním do Pipedrive (#510).
+- **SEC-M15 (info):** id organizace/osoby z odpovědi Pipedrive do cesty
+  a `telo.error` do prohlížeče — skutečný Pipedrive vrací čísla a token
+  neozvěnuje; ošetřit spolu s #510 (zápis).
+- **SEC-M16 (info):** úvodní fotka s cizí adresou — **čeká na rozhodnutí
+  J. V.** (omezení na `data:image` by rozbilo fotky s webovou adresou).
+  Na webu požadavek blokuje CSP.
+- **SEC-M17 (info):** 33 kvadratických výrazů nad šablonami a vstupy správce
+  — jen při příležitosti (zpomalí vlastní prohlížeč).
+- **SEC-M18 (info):** kontrola autora tokenu obnovy po dávce bez testu —
+  okno úzké (jen správce, cizí token mezi dávkami). Test při příští změně obnovy.
+- **SEC-M19 (info):** zdvojená pojistka hlavního účtu v obnově — ekvivalentní,
+  nic.
+- **SEC-M20 (info):** falešný verdikt pokusu `S1_pokusy/server/p3_zamek_soubeh.mjs`
+  — platí náhrada `SECM_pokusy/regrese/r1_zamek_soubeh_main.mjs`; pokus S1 se
+  nepouští do sad.
+- **SEC-M21 (info):** `NODE_VERSION` pevně 22.23.2 — povýšit vědomě spolu
+  s CI (návrh: kontrola při měsíčním kole).
+- **SEC-M22 (info):** `@netlify/blobs` `^8.1.0`, zámek 8.2.0 = nejvyšší v `^8`
+  — dnes nic neujíždí; přesná verze a major s Dependabotem (SEC-I13).

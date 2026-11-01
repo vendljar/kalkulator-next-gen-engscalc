@@ -13,7 +13,7 @@
  * Očistu vstupu dělá `zakaznikOciste` ze src/zakaznici.js — týž kód, jaký
  * si čistí prohlížeč. Server nikdy neuloží, co mu kdo pošle.
  */
-import { uloziste, vyzadujRoli, json, klicZAdresyPlatny } from '../lib/sdilene.mjs';
+import { uloziste, vyzadujRoli, json, klicZAdresyPlatny, hloubkaChyba } from '../lib/sdilene.mjs';
 /* SCHVÁLNĚ ne `jadro()`: to natáhne celé jádro (engine, preklad, docxgen…)
  * a při studeném startu se na prázdný seznam čekaly vteřiny (nález J. V.
  * 21. 8. 2026). Tady stačí jeden malý modul bez závislostí — proč jde přes
@@ -62,6 +62,7 @@ export default async (req) => {
 
   let t; try { t = await req.json(); }
   catch (e) { return json({ ok: false, chyba: 'Vstup není platný JSON.' }, 400); }
+  { const stop = hloubkaChyba(t); if (stop) return stop; }   // SEC-M2 (#542): hluboké vnoření → 400, ne 500
   /* Tělo JSON `null`, číslo nebo pole (B131): dřív výjimka a 500. */
   if (!t || typeof t !== 'object' || Array.isArray(t)) return json({ ok: false, chyba: 'Vstup musí být objekt JSON.' }, 400);
 

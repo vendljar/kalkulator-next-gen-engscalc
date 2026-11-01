@@ -670,7 +670,12 @@ console.log('\n===== B47–B49, B52: dotažení obnovy po dávkách (19. kolo, 1
   /* Pozor na past: `indexOf` vrací −1, když zápis ve zdroji vůbec není —
    * a −1 je menší než cokoli, takže by kontrola prošla i u kódu, kde se
    * token nezapisuje. Existence se proto ověřuje zvlášť. */
-  const iZapis = zac.indexOf('await s.zapis(tokenKlic(id)');
+  /* SEC-M8 (#542): zámek (zápis tokenu) je ve společné zalozTokenObnovy,
+   * kterou volá začátek i jednorázová obnova — v začátku se hlídá její
+   * volání a v ní samotné zápis tokenu. */
+  const zaloz = zdrojObnovy.slice(zdrojObnovy.indexOf('async function zalozTokenObnovy('));
+  const iZapis = zaloz.indexOf('await s.zapis(tokenKlic(id)') >= 0 && zaloz.indexOf('await s.zapis(tokenKlic(id)') < zaloz.indexOf('\n}\n')
+    ? zac.indexOf('await zalozTokenObnovy(') : -1;
   /* #522: otisk před obnovou pořizuje po krocích otiskPredKrok (první krok
    * hned v začátku); úklid tokenu po nepovedeném otisku je v něm. */
   const iOtisk = zac.indexOf('otiskPredKrok(');
