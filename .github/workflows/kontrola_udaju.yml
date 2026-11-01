@@ -1,0 +1,60 @@
+# Kontrola osobních údajů a tajemství při KAŽDÉM pushi (SEC-M1, #542 —
+# security test SEC-M 28. 10. 2026).
+#
+# Proč: testy.yml běží při pushi jen na main; kontrola údajů se tak jinde
+# spouštěla jen v testovacím kole a 26. 10. odešel sdílecí odkaz cshk_ do dvou
+# tagů a tří větví. Hlavní pojistka je hook pre-push (nastroje/hooky/pre-push,
+# zapíná ho nastroje/instaluj_hooky.sh) — zastaví push dřív, než údaj odejde.
+# Tenhle workflow je druhá vrstva: když se hook obešel nebo nebyl zapnutý,
+# ohlásí to červeným během hned po pushi (údaj už je venku → J. V. rozhodne
+# o úklidu; viz podklady/SEC_AUDIT_MAIN_28_10.md).
+#
+# Rychlý (bez instalace balíčků, bez mutací): Python z obrazu runneru.
+#   1. celý strom špičky (kontrola_udaju.py),
+#   2. každý pushnutý commit (před..po; u nové větve nebo tagu commity, které
+#      na jiných větvích originu nejsou) — soubory i zprávy.
+# Výpis nálezu tajemství je zkrácený (log veřejného repa je veřejný).
+name: Kontrola údajů
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  kontrola:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false   # SEC-N7: workflow nic nepushuje
+          fetch-depth: 0               # rozsah pushe potřebuje historii
+
+      - name: Strom špičky
+        run: python3 nastroje/kontrola_udaju.py
+
+      - name: Pushnuté commity
+        env:
+          PRED: ${{ github.event.before }}
+          PO: ${{ github.sha }}
+          REF: ${{ github.ref }}
+        run: |
+          case "$PRED" in
+            ''|*[!0]*) ;;
+            *) PRED="" ;;
+          esac
+          if [ -n "$PRED" ] && git cat-file -e "$PRED^{commit}" 2>/dev/null; then
+            python3 nastroje/kontrola_udaju.py --rozsah "$PRED..$PO"
+          else
+            # Nová větev nebo tag: commity, které nejsou na jiném refu originu.
+            jine=$(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -vx "refs/remotes/origin/${REF#refs/heads/}" | grep -v '/HEAD$' || true)
+            if [ -n "$jine" ]; then
+              python3 nastroje/kontrola_udaju.py --rozsah "$PO" --not $jine
+            else
+              python3 nastroje/kontrola_udaju.py --rozsah "$PO"
+            fi
+          fi

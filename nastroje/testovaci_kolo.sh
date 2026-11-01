@@ -21,7 +21,8 @@
 #   mutace-server  netlify/mutace.mjs (serverové funkce)
 #   staticke       verze = den posledního commitu, žádné CRLF, osobní údaje
 #                  a tajemství mimo povolený seznam (nastroje/kontrola_udaju.py),
-#                  výběr sloučených větví ke smazání (nastroje/test_sloucene_vetve.sh)
+#                  výběr sloučených větví ke smazání (nastroje/test_sloucene_vetve.sh),
+#                  hook pre-push s kontrolou údajů (nastroje/test_pre_push.sh, SEC-M1)
 #
 # Použití:
 #   bash nastroje/testovaci_kolo.sh                    celé kolo (mutace trvají dohromady kolem 40 minut)
@@ -51,6 +52,10 @@ cd "$(dirname "$0")/.." || exit 1
 if [ -z "${NODE_PATH:-}" ] && command -v npm >/dev/null 2>&1; then
   NODE_PATH="$(npm root -g 2>/dev/null)"; export NODE_PATH
 fi
+
+# SEC-M1 (#542): hook pre-push s kontrolou údajů zapnout v každém klonu, kde
+# kolo běží (v CI se nepushuje — tam ne).
+if [ "${GITHUB_ACTIONS:-}" != "true" ]; then bash nastroje/instaluj_hooky.sh >/dev/null 2>&1 || true; fi
 
 KROKY="build,sady,mutace-jadro,mutace-server,staticke"
 while [ $# -gt 0 ]; do
@@ -153,10 +158,12 @@ staticke() {
   python3 nastroje/kontrola_udaju.py || chyb=$((chyb + 1))
   echo "— výběr sloučených větví ke smazání (nastroje/test_sloucene_vetve.sh, W2)"
   bash nastroje/test_sloucene_vetve.sh || chyb=$((chyb + 1))
-  echo "STATICKE_KONTROLY: $((4 - chyb)) z 4 prošly"
+  echo "— hook pre-push s kontrolou údajů (nastroje/test_pre_push.sh, SEC-M1 #542)"
+  bash nastroje/test_pre_push.sh || chyb=$((chyb + 1))
+  echo "STATICKE_KONTROLY: $((5 - chyb)) z 5 prošly"
   return "$chyb"
 }
-poznamka_staticke() { grep -o 'STATICKE_KONTROLY: [0-9]* z 4 prošly' "$1" | tail -1 | sed 's/^STATICKE_KONTROLY: //'; }
+poznamka_staticke() { grep -o 'STATICKE_KONTROLY: [0-9]* z 5 prošly' "$1" | tail -1 | sed 's/^STATICKE_KONTROLY: //'; }
 
 # ---------- běh ----------
 echo "TESTOVACÍ KOLO — kroky: $KROKY   (logy: $LOGY)"

@@ -81,5 +81,39 @@ test('SEC-N5: .gitignore zná .env, .env.local, cenik.xlsx, nabidka.docx, export
 test('SEC-N5: ukázkové sešity v podklady/ukazky/ a podklady/controlling/ se neignorují', !ign('podklady/ukazky/ukazka.xlsx')
   && !ign('podklady/controlling/UKAZKA_2026-CONTROLLING-EXPORT_v1.1.1.xlsx'));
 
+/* SEC-M11 (#542, security test SEC-M 28. 10. 2026): mezery detekce. Každý případ
+ * v čerstvém dočasném stromu (kopie nástroje a povoleného seznamu, mimo Git —
+ * soubory() pak čte celý strom) s JEDNÍM smyšleným údajem složeným za běhu.
+ * Před opravou 10 z 11 FAIL (kód 0), po ní kód 1 u všech; čistý strom 0. */
+const A36 = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJ', HEX40 = ('0123456789abcdef'.repeat(3)).slice(0, 40);
+const GH = 'gh' + 'p_' + A36, NPM = 'np' + 'm_' + A36;
+const JWT = 'ey' + 'JhbGciOiJIUzI1NiJ9.' + 'ey' + 'JzdWIiOiJwb2t1cyJ9.' + 'c2lnbmF0dXJhLXBva3VzLXNt';
+const mezera = (rel, obsah) => {
+  const d = fs.mkdtempSync(path.join(os.tmpdir(), 'ku-m11-'));
+  try {
+    fs.mkdirSync(path.join(d, 'nastroje'));
+    for (const f of ['kontrola_udaju.py', 'povolene_kontakty.txt']) fs.copyFileSync(path.join(KOREN, 'nastroje', f), path.join(d, 'nastroje', f));
+    if (rel) { fs.mkdirSync(path.dirname(path.join(d, rel)), { recursive: true }); fs.writeFileSync(path.join(d, rel), obsah); }
+    return spawnSync('python3', ['-I', path.join(d, 'nastroje', 'kontrola_udaju.py')], { encoding: 'utf8' }).status;
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
+};
+test('SEC-M11: čistý dočasný strom → kód 0 (test měří)', mezera(null) === 0);
+for (const [n, rel, obsah] of [
+  ['nová kořenová složka', 'novaslozka/poznamka.md', 'token: ' + GH + '\n'],
+  ['kořenový .npmrc s _authToken', '.npmrc', '//registry.npmjs.org/:_auth' + 'Token=' + NPM + '\n'],
+  ['vzor npm_', 'src/x.js', "const t = '" + NPM + "';\n"],
+  ['soubor bez přípony (Makefile)', 'Makefile', 'TOKEN=' + GH + '\n'],
+  ['přípona .ts', 'src/x.ts', "const t = '" + GH + "';\n"],
+  ['JWT', 'src/x.js', "const jwt = '" + JWT + "';\n"],
+  ['klíč Google AIza', 'src/x.js', "const k = '" + 'AI' + 'za' + 'SyA' + A36.slice(0, 32) + "';\n"],
+  ['klíč sk-proj-', 'src/x.js', "const k = '" + 's' + 'k-proj-' + A36 + A36 + "';\n"],
+  ['40 hex v konstantě s názvem klíče', 'netlify/x.mjs', "const PD_KLIC = '" + HEX40 + "';\n"],
+  ['hex ve „zkušební" hodnotě process.env', 'netlify/y.mjs', "process.env.PIPEDRIVE_API_TOKEN = 'pokus" + HEX40 + "';\n"],
+]) test('SEC-M11: ' + n + ' → nález (kód 1)', mezera(rel, obsah) === 1);
+test('SEC-M11: binární soubor s NUL se přeskočí (žádný nález ani pád)', mezera('obr.png', Buffer.concat([Buffer.from([0x89, 0, 0, 0]), Buffer.from(GH)])) === 0);
+/* SEC-M1: výpis nálezu tajemství ho celé neopakuje (log Actions je veřejný). */
+const mk = py('import re\nprint(K.maskuj("x " + "gh" + "p_" + "B" * 36 + " y", K.TAJEMSTVI[1][1]))');
+test('SEC-M1: maskuj() ukáže jen začátek tokenu', /skryto/.test(mk.stdout) && !/B{20}/.test(mk.stdout), mk.stdout);
+
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 if (fail) process.exit(1);

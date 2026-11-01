@@ -88,6 +88,15 @@ Cloudové sezení může spadnout (25. 9. 2026: „Prompt is too long“ po
 - Statická kontrola osobních údajů a tajemství: `nastroje/kontrola_udaju.py`,
   povolený seznam `nastroje/povolene_kontakty.txt` (nový smyšlený kontakt v
   testu se tam zapíše s důvodem; skutečný do repa nepatří).
+- **Kontrola údajů před každým pushem (SEC-M1, #542, 1. 11. 2026):** na začátku
+  sezení `bash nastroje/instaluj_hooky.sh` (zapne `core.hooksPath =
+  nastroje/hooky`; dělá to i `testovaci_kolo.sh` a `pred_pushem.sh`). Hook
+  `pre-push` pustí `kontrola_udaju.py --rozsah` nad každým pushovaným commitem
+  (i tagu, i zprávy commitů) a při nálezu push zastaví. **`git push --no-verify`
+  je zakázané.** Nález se opraví ve vlastní, ještě nepushnuté větvi; co už
+  odešlo, hlásit J. V. Druhá vrstva: workflow `kontrola_udaju.yml` na push do
+  všech větví a tagů `v*`. Test hooku `nastroje/test_pre_push.sh` (statické
+  kontroly kola).
 - **Mutace po částech (P2, 23. 10. 2026):** celé mutace se v cloudovém sezení
   do 2 h úlohy na pozadí nevejdou (server ~5 h). Pouštět po částech:
   `KNG_MUTACE_CAST=K/N bash nastroje/testovaci_kolo.sh --jen mutace-server`

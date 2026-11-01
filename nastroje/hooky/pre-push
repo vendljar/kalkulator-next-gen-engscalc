@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Hook pre-push: kontrola osobních údajů a tajemství v tom, co se pushuje
+# (SEC-M1, #542 — security test SEC-M 28. 10. 2026).
+#
+# Proč: repozitář je veřejný. Kontrola (nastroje/kontrola_udaju.py) se do
+# 1. 11. 2026 pouštěla jen v testovacím kole — 26. 10. tak sdílecí odkaz
+# claude.ai/code/cshk_… odešel do dvou tagů a tří větví, i když ho oprava
+# smazala o 9 minut později. Co jednou odejde, zůstane v historii.
+#
+# Co dělá: git předá na stdin řádky „<místní ref> <místní sha> <vzdálený ref>
+# <vzdálený sha>“. Zkontrolují se VŠECHNY commity, které vzdálené repo ještě
+# nemá (`<sha…> --not --remotes=<vzdálené>` a známé vzdálené sha), i když jde
+# o tag — soubory přidané nebo změněné v každém z nich a zprávy commitů.
+# Nález → push se zastaví (kód 1). Mazání refu se nekontroluje.
+#
+# Instalace: bash nastroje/instaluj_hooky.sh (nastaví core.hooksPath na
+# nastroje/hooky; samo ho volá testovaci_kolo.sh a pred_pushem.sh, sezení
+# podle CLAUDE.md hned na začátku). `git push --no-verify` hook
+# obejde — v sezeních Claude je ZAKÁZANÉ (CLAUDE.md, oddíl Testy).
+set -u
+vzdalene="${1:-origin}"
+koren="$(git rev-parse --show-toplevel)" || exit 1
+nastroj="$koren/nastroje/kontrola_udaju.py"
+revize=()
+while read -r mref msha vref vsha; do
+  [ -z "${msha:-}" ] && continue
+  case "$msha" in *[!0]*) ;; *) continue ;; esac          # mazání refu
+  revize+=("$msha")
+  case "${vsha:-0}" in
+    *[!0]*) git cat-file -e "$vsha^{commit}" 2>/dev/null && revize+=("^$vsha") ;;
+  esac
+done
+[ "${#revize[@]}" -eq 0 ] && exit 0
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "pre-push: chybí python3 — kontrolu údajů nejde spustit, push zastaven (SEC-M1)." >&2
+  exit 1
+fi
+if [ ! -f "$nastroj" ]; then
+  echo "pre-push: chybí $nastroj — push zastaven (SEC-M1)." >&2
+  exit 1
+fi
+# Vzdálené větve, které repo zná, už veřejné jsou — kontroluje se jen nové.
+# Push na adresu místo jména → všechny vzdálené větve.
+if git remote | grep -qx -- "$vzdalene"; then
+  revize+=(--not "--remotes=$vzdalene")
+else
+  revize+=(--not --remotes)
+fi
+echo "pre-push: kontrola osobních údajů a tajemství v pushovaných commitech (nastroje/kontrola_udaju.py)…" >&2
+if ! python3 "$nastroj" --rozsah "${revize[@]}" >&2; then
+  echo "pre-push: PUSH ZASTAVEN — údaj odstraňte (i z dřívějšího commitu téhož pushe: git rebase/amend" >&2
+  echo "          ve VLASTNÍ, ještě nepushnuté větvi), nebo smyšlený kontakt zapište do povolene_kontakty.txt." >&2
+  exit 1
+fi
+exit 0

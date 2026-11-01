@@ -24,5 +24,8 @@
 # Návratový kód 0 = vše zelené, jinak počet selhaných kroků.
 
 cd "$(dirname "$0")/.." || exit 1
+# SEC-M1 (#542): hook pre-push (kontrola osobních údajů a tajemství v tom, co
+# se pushuje) zapnout vždy — kdyby to sezení na začátku nezapnulo.
+bash nastroje/instaluj_hooky.sh || exit 1
 if [ "${1:-}" = "--mutace" ]; then shift; exec bash nastroje/testovaci_kolo.sh "$@"; fi
 exec bash nastroje/testovaci_kolo.sh --bez-mutaci "$@"
