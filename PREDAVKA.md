@@ -11,14 +11,18 @@ Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrý web, Disk
 | 4 hláška se skutečnou příčinou | ✅ | `prodNeulozenoText`, `prodUiUloz` (server / kolize / lišta / souběh; obecná rada) |
 | 5 texty #545 | ✅ v integraci už nové | harness ověřuje kartu i potvrzení; snímek J. V. byl z v27.10.6 |
 | 6 testy s pojistkou, mutace, kolo | viz níže | |
-| 7 verze, CHANGELOG, roadmapa, PREDAVKA | ✅ | v2.11.3; příručka beze změny (popis chování platí) |
+| 7 verze, CHANGELOG, roadmapa, PREDAVKA | ✅ | v2.11.3; příručka obchodníka (kap. Prodáno) doplněna |
+| 8 K37-N4 / K10-S1 dolní mez data prodeje (koordinace 10:12 UTC) | ✅ `1b528f3` | `prodDatumOd`, `prodDatumProblem` (`src/objednane.js`), `min`/`max` v kartě; server mez z uloženého zámku → 400 |
+| 9 K37-N2 pole SoD po Prodáno do prvního tisku SoD (koordinace 10:18 UTC) | ✅ `4cefb1d` + harness | `zamekProdanoSodVolne`, `ZAMEK_PRODANO_SOD_POLE` (`src/zamek.js`); testy #540 přepnuty z pole SoD na kontakt zákazníka |
 
 **Chování po opravě:** okno jen ke čtení zůstává; zápis projde, jen když je záznam prodeje (`v.prodano`,
 `prodejOdemknout`, `prodejHistorie`) JEDINOU změnou proti `ONLINE_STAV.posledni`. Jiná neuložená změna v okně jen ke
 čtení → „Prodej se neuložil: zakázka je otevřená jen ke čtení a kromě prodeje nese i jiné neuložené změny … Načtěte
 ji znovu“. Okno odemčené (rozpracované) ukládá jako dřív celé.
 
-**Testy:** `overit_prodano_zamek.mjs` 28/0 (skutečný klient proti skutečným funkcím; nad v2.11.2 13 OK / 12 FAIL
+**Testy (po K37-N4 a K37-N2):** `overit_prodano_zamek.mjs` 29/0, `src/test_prodano_zamek.js` 32/0, `netlify/test_prodano_zamek.mjs` 28/0, `test_prava` 957/0, `test_controlling_c4` 44/0, `overit_controlling` 63/0; mutace #547 server 11/11 (jedna ekvivalentní vyřazena s poznámkou), #540 server 12/12, jádro 9/9. Kolo `--bez-mutaci` po N2 (na `HEAD~` harness opraven, druhý běh): **VŠE ZELENÉ** 356 / 0 / 7, statické 5 z 5, 22 min 45 s.
+
+**Testy (hlavní oprava):** `overit_prodano_zamek.mjs` 28/0 (skutečný klient proti skutečným funkcím; nad v2.11.2 13 OK / 12 FAIL
 s hláškou „Prodej se neuložil: Otevřeno online: …json“), `src/test_prodano_zamek.js` 19/0 (před opravou FAIL),
 `netlify/test_prodano_zamek.mjs` 16/0. Mutace „#547“ server 6/6, `--kontrola` server 1144 a jádro 603 úseků OK.
 Kolo `--bez-mutaci`: **VŠE ZELENÉ** (356 / 0 / 7 přeskočeno — firemní podklady; statické 5 z 5; 22 min 49 s). Playwright: odkaz `node_modules/playwright(-core)` → `/opt/node22/lib/node_modules/…`.
