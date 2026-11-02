@@ -410,8 +410,9 @@ const predAdmin = naPole();
 await get(pdPole, 'http://x/api/pd/pole?obnovit=1', cAdmin);
 test('administrátor si vynucené obnovení vyžádá', naPole() > predAdmin);
 
-/* #512 (J. V. 23. 10. 2026): „Platební kalendář SoD PROJ" integrátor ještě
- * nezaložil — přehled mapy ho hlásí jako chybějící. Platba 1 v CRM je, mapa
+/* #512 (J. V. 23. 10. 2026): „Platební kalendář SoD PROJ" v tomhle
+ * podvrženém účtu chybí (stav před 2. 11. 2026; skutečný účet ho od té doby
+ * má) — přehled mapy ho hlásí jako chybějící. Platba 1 v CRM je, mapa
  * ji zná (není nezařazená), ale nezapisuje se ani u nabídky před plánem. */
 const prehled = await (await get(pdPole, 'http://x/api/pd/pole', cAdmin)).json();
 test('#512: přehled mapy hlásí kalendář SoD PROJ jako chybějící pole',

@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v2.11.7 — #509: Pipedrive po odpovědi integrátora (Hlavní projektant jako text, kalendář SoD PROJ založen, volby fakturace pro projekci) — větev claude/pd-odpoved-02-11
+
+Nad integrací 54a39fe (v2.11.6). Integrátor 2. 11. 2026 odpověděl na otázky z 21. 10.; stav účtu ověřen čtením
+v Pipedrive (bez zápisu, sezení claude/eager-carson-1xznt2) — mapa polí sedí u 66 ze 67, nesedí jen „Hlavní
+projektant“. Verze podle pravidla dne commitu; koordinace může přečíslovat. Do živého Pipedrive se nic nezapisuje.
+
+- **„Hlavní projektant“ jako text** (`netlify/lib/pd_mapa.mjs`): druh `text` místo `uzivatel` — účet má krátký
+  text (`varchar`), krycí list PROJ nese „jméno, autorizace“. Pošle se, jak je; nad 255 znaků se nepošle s důvodem
+  (jako ostatní krátké texty). „Nabídku vypracoval“ a „Odpovědná osoba za projekci“ zůstávají Uživatel.
+- **„Platební kalendář SoD PROJ“ je založený:** `PD_DOSUD_NEZALOZENA` je prázdné — simulátor i suchý běh bez
+  napojení ho berou jako existující Velký text, přehled mapy v simulátoru je celý spárovaný.
+- **Volby účtu v simulátoru** (`PD_VOLBY_UCTU`): Typ zakázky šest voleb, Způsob fakturace sedm voleb, Objekt
+  v památkové ochraně i se „Zjišťuje se“.
+- **Věty kalkulace PROJ → nové volby „Způsobu fakturace“** (`planZpusobFakturace` → `pdVolba`): „podle dohodnutého
+  plánu plateb“ (přesná shoda), „po předání jednotlivých stupňů dokumentace“, „záloha X % po podpisu smlouvy, zbytek
+  po předání…“ (X proměnné — nový `synonymaVzor`, ukotvený na celý text), „po milnících jednotlivých činností podle
+  plánu plateb“, „po dokončení jednotlivých stupňů dokumentace“. Věta PROJ „po milnících…“ se na OCK synonymum „po
+  milnicich“ → „Náš standard“ nechytí; neznámá věta se dál nepošle s důvodem.
+- **Roadmapa:** #509 hotovo; nová položka **#553 Webhook „Vygenerovat nabídku“** jako návrh k rozhodnutí J. V.
+  (doporučena varianta A — kalkulátor podle ID dealu deal sám načte, založí / aktualizuje kalkulaci a vrátí odkaz;
+  nabídku generuje obchodník, cena jen výpočtem). Bez kódu. `podklady/PIPEDRIVE_TOKEN_POSTUP.md`: očekávaný stav
+  mapy = všechna pole spárovaná.
+- **Testy:** `netlify/test_pd_prevod.mjs` 156/0 (na 54a39fe 11 FAIL), `test_pd_simulator.mjs` 62/0 (3 FAIL),
+  `test_pd_nanecisto.mjs` 92/0 (3 FAIL), `test_pipedrive.mjs` 96/0, `test_pd_mapa_prehled.mjs` 46/0. Mutace „#509“
+  (13) v `netlify/mutace.mjs`.
+
 ## v2.11.6 — PB #547: Prodáno u odeslané nabídky bez dialogu klonu, hláška se skutečnou příčinou — větev claude/pb-prodano-zamek
 
 Nad integrací 141b92f (v2.11.2). Nález J. V. při testu na testengscalc (v27.10.6) 2. 11. 2026: online otevřená

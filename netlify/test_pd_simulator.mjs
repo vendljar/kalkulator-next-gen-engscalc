@@ -130,9 +130,17 @@ test('smazaný deal detail nevrátí (404)', (await get(pdDeal, 'http://x/api/pd
 
 const mapa = await (await get(pdPole, 'http://x/api/pd/pole', cAdmin)).json();
 test('mapa polí: režim simulator', mapa.ok && mapa.rezim === 'simulator' && mapa.simulatorOdmitnut === '', [mapa.rezim, mapa.simulatorOdmitnut]);
-test('mapa polí: chybí jen dosud nezaložený Platební kalendář SoD PROJ',
-  J(mapa.prehled.radky.filter(r => r.stav !== 'sparovano').map(r => r.klic)) === '["platebniKalendar"]',
+/* Od 2. 11. 2026 má účet všechna dohodnutá pole (Platební kalendář SoD PROJ
+ * integrátor založil), Hlavní projektant je krátký text. */
+test('mapa polí: spárovaná všechna pole (i Platební kalendář SoD PROJ)',
+  mapa.prehled.radky.every(r => r.stav === 'sparovano') && mapa.prehled.souhrn.chybi === 0,
   mapa.prehled.radky.filter(r => r.stav !== 'sparovano').map(r => r.klic));
+{
+  const kal = mapa.prehled.radky.find(r => r.klic === 'platebniKalendar') || {};
+  test('mapa polí: Platební kalendář SoD PROJ existuje jako Velký text', kal.stav === 'sparovano' && kal.crmTyp === 'text', J(kal));
+  const hp = mapa.prehled.radky.find(r => r.klic === 'hlavniProjektant') || {};
+  test('mapa polí: Hlavní projektant je krátký text (varchar), ne uživatel', hp.stav === 'sparovano' && hp.crmTyp === 'varchar', J(hp));
+}
 test('mapa polí: IČ organizace spárované', mapa.mapaOrganizace && !!mapa.mapaOrganizace.ico);
 
 console.log('\n===== CHYBY A LIMITY =====\n');

@@ -43,8 +43,9 @@ export function pdCisla(t) {
     .map((x) => Number(x.replace(/ /g, '').replace(',', '.')));
 }
 
-/* ID volby podle textu. Pořadí: přesná shoda → synonymum z mapy → (jen kde
- * to mapa dovolí) shoda prvního slova. Víc kandidátů = žádný. */
+/* ID volby podle textu. Pořadí: přesná shoda → synonymum z mapy → vzor
+ * synonyma (věta s proměnným číslem, `synonymaVzor` = [[RegExp, volba]]) →
+ * (jen kde to mapa dovolí) shoda prvního slova. Víc kandidátů = žádný. */
 export function pdVolba(text, volby, def = {}) {
   const n = pdNorm(text);
   const vs = Array.isArray(volby) ? volby : [];
@@ -52,6 +53,10 @@ export function pdVolba(text, volby, def = {}) {
   const najdi = (cil) => vs.filter((o) => pdNorm(o.label) === pdNorm(cil));
   let hit = najdi(n);
   if (!hit.length && def.synonyma && def.synonyma[n]) hit = najdi(def.synonyma[n]);
+  if (!hit.length && Array.isArray(def.synonymaVzor)) {
+    const vzor = def.synonymaVzor.find(([re]) => re.test(n));
+    if (vzor) hit = najdi(vzor[1]);
+  }
   if (!hit.length && def.podleZacatku) {
     const slovo = n.split(' ')[0];
     hit = vs.filter((o) => pdNorm(o.label).split(' ')[0] === slovo);

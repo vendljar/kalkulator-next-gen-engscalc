@@ -176,7 +176,7 @@ test('stejná hodnota není kolize (první splátka 50 %)', radek(d2, 'zaloha1Pr
   && radek(d2, 'zaloha1Proc').kolize.length === 0, J(radek(d2, 'zaloha1Proc')));
 test('hodnota dealu: stará → nová jako kolize', radek(d2, 'hodnotaDealu').kolize.length === 1
   && radek(d2, 'hodnotaDealu').vCrm.replace(/\s/g, '').startsWith(String(deal.value)), J(radek(d2, 'hodnotaDealu')));
-test('Platební kalendář (v CRM dosud chybí) se u OCK neukazuje', !d2.radky.some(r => r.klic === 'platebniKalendar'));
+test('Platební kalendář (jen PROJ) se u OCK neukazuje', !d2.radky.some(r => r.klic === 'platebniKalendar'));
 const zapisy = SIM.pdSimStav().pozadavky.filter(x => !/^GET /.test(x));
 test('do simulátoru šly jen GET — nic se nezapsalo', zapisy.length === 0 && SIM.pdSimStav().pozadavky.length > 0, zapisy);
 test('deal v simulátoru beze změny', J(SIM.pdSimStav().data.dealy.find(d => d.id === 1002)) === J(deal));
@@ -293,6 +293,25 @@ const k5 = pdNanecisto(def, { ock: { hodnoty: {} } }, { mapa: {}, popisy: {} });
 test('prázdné pole, které v CRM chybí: nevyplněno + důvod', k5.radky[0].stav === 'prazdne' && /chybí/.test(k5.radky[0].duvod));
 const k6 = pdNanecisto(def, { ock: { hodnoty: { splatnostDni: '14' } } }, { mapa: {}, popisy: {} });
 test('vyplněné pole, které v CRM chybí: „chybí pole v CRM"', k6.radky[0].stav === 'chybiPole');
+
+console.log('\n===== ODPOVĚĎ INTEGRÁTORA 2. 11. 2026 (čistá logika, dohodnutá pole) =====\n');
+{
+  const defPd = POLE_DEALU.filter(d => ['hlavniProjektant', 'platebniKalendar', 'zpusobFakturace'].includes(d.klic));
+  const KAL = 'Platba ve výši 100 000,00 Kč + DPH proběhne po podpisu smlouvy / objednávky.';
+  const n1 = pdNanecisto(defPd, { proj: { hodnoty: { hlavniProjektant: 'Ing. Jan Vzorový, ČKAIT 0001234',
+    zpusobFakturace: 'po milnících jednotlivých činností podle plánu plateb' }, kalendar: KAL } }, poleDohoda);
+  const r = (k) => n1.radky.find(x => x.klic === k) || {};
+  test('Hlavní projektant: zapíše se jako text (bez dohledání uživatele)', r('hlavniProjektant').stav === 'zapise'
+    && r('hlavniProjektant').hodnotaText === 'Ing. Jan Vzorový, ČKAIT 0001234', J(r('hlavniProjektant')));
+  test('Platební kalendář SoD PROJ: pole v dohodnuté tabulce je, zapíše se', r('platebniKalendar').stav === 'zapise'
+    && r('platebniKalendar').hodnotaText === KAL, J(r('platebniKalendar')));
+  test('Způsob fakturace PROJ: „po milnících jednotlivých činností…" → „Po milnících činností (plán plateb)"',
+    r('zpusobFakturace').stav === 'zapise' && r('zpusobFakturace').hodnotaText === 'Po milnících činností (plán plateb)',
+    J(r('zpusobFakturace')));
+  const n2 = pdNanecisto(defPd, { proj: { hodnoty: { hlavniProjektant: 'x'.repeat(256) } } }, poleDohoda);
+  const hp = n2.radky.find(x => x.klic === 'hlavniProjektant') || {};
+  test('Hlavní projektant nad 255 znaků: nezapíše se, s důvodem', hp.stav === 'nelze' && /255/.test(hp.duvod || ''), J(hp));
+}
 
 console.log('\n===== CSV A NÁZEV SOUBORU =====\n');
 const csv = G.pdnCsv({ radky: [{ nazev: 'Číslo nabídky (CN)', typ: 'varchar', hodnotaText: '=HYPERLINK("x")', zdroj: 'OCK: Krycí list', hodnotaKalkulace: '', stav: 'zapise', duvod: '', kolize: ['a', 'b'], vCrm: '' }],

@@ -1,3 +1,34 @@
+# Předávka — 2. 11. 2026: #509 Pipedrive po odpovědi integrátora, větev `claude/pd-odpoved-02-11`
+
+Nad `54a39fe` (integrace v2.11.6, určila koordinace). **Verze 2.11.7** (pravidlo dne; koordinace může
+přečíslovat — souběžně ZN #552). Neslučováno; do živého Pipedrive nic (konektor nepoužit), na ostrý web ani Disk nic.
+Zadání `podklady/PROMPT_pipedrive_po_odpovedi_02_11.md` (větev `claude/eager-carson-1xznt2`).
+
+| úkol | stav | kde |
+|---|---|---|
+| 1 Hlavní projektant jako text (≤ 255 znaků, delší s důvodem) | ✅ | `netlify/lib/pd_mapa.mjs` (`hlavniProjektant` druh `text`) |
+| 2 Platební kalendář SoD PROJ založený | ✅ | `PD_DOSUD_NEZALOZENA = []` |
+| 3 volby účtu v simulátoru | ✅ | `PD_VOLBY_UCTU` (Typ zakázky 6, Způsob fakturace 7, památková ochrana + „Zjišťuje se“) |
+| 4 věty PROJ → volby Způsobu fakturace | ✅ | synonyma + `synonymaVzor` (zpusobFakturace v `pd_mapa.mjs`), `pdVolba` v `pd_prevod.mjs` |
+| 5 roadmapa | ✅ | #509 hotovo (v2.11.7); **#553** Webhook „Vygenerovat nabídku“ = návrh k rozhodnutí J. V., stav `ceka`, bez kódu |
+| testy, mutace, kolo | viz níže | |
+
+**Testy (pojistka na 54a39fe):** `test_pd_prevod` 156/0 (před opravou 11 FAIL), `test_pd_simulator` 62/0 (3 FAIL),
+`test_pd_nanecisto` 92/0 (3 FAIL), `test_pipedrive` 96/0, `test_pd_mapa_prehled` 46/0. `test_pipedrive` sám o sobě
+potřebuje `ADMIN_EMAIL` (spust_testy.sh ho nastaví) — bez něj padá i na 54a39fe. Mutace „#509“ (13): VÝSLEDEK_MUTACI.
+Kolo `--bez-mutaci`: VÝSLEDEK_KOLA.
+
+**Otevřené pro J. V.:** rozhodnutí #553 (varianta A doporučena / B nedoporučena); zkušební zápis na dealu „TEST –
+integrace kalkulačky“ (a) přes konektor s potvrzením J. V., (b) z testovacího webu po vložení tokenu; rozhodnutí o dvou
+kalkulacích na dealu (`podklady/PIPEDRIVE_ROZHODNUTI_115.md`, doporučeno B); koncept upomínky integrátorovi už není
+potřeba. Sekci „Krycí list“ a zrušení „důležitosti“ nových polí nastaví kolega integrátora — po té změně stačí v Nastavení
+obnovit mapu polí.
+
+**Při slučování:** dotčené `netlify/lib/pd_mapa.mjs`, `netlify/lib/pd_prevod.mjs`, pět sad `netlify/test_pd_*.mjs`
+/ `test_pipedrive.mjs`, `netlify/mutace.mjs` (blok #509 před blokem PB #547), CHANGELOG, roadmapa (#509 upraveno,
+#553 za #547), `podklady/PIPEDRIVE_TOKEN_POSTUP.md`, `verze.txt` + řádky verze příručky.
+
+---
 # Předávka — 2. 11. 2026: PB #547 — Prodáno u odeslané nabídky bez dialogu klonu, větev `claude/pb-prodano-zamek`
 
 Nad `141b92f` (integrace v2.11.2). **Verze 2.11.3** (pravidlo dne; koordinace může přečíslovat — souběžně LH #546).

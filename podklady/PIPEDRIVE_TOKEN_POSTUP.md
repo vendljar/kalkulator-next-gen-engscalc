@@ -59,9 +59,10 @@ Token se nikde nevypisuje — ani v odpovědích serveru, ani v aplikaci.
    - „Napojení na Pipedrive zatím není nastavené" → chybí jedna z proměnných
      nebo neproběhlo nové nasazení (bod 2).
    Obnovení mapy stojí 20 tokenů denního rozpočtu Pipedrive.
-3. Očekávaný stav mapy: spárované všechny pole kromě **„Platební kalendář
-   SoD PROJ"** (integrátor ho ještě nezaložil, #512). Jiné „chybí v CRM" nebo
-   „jiný typ" = otázka pro integrátora.
+3. Očekávaný stav mapy: spárovaná **všechna** pole (stav účtu 2. 11. 2026:
+   „Platební kalendář SoD PROJ" integrátor založil jako Velký text, „Hlavní
+   projektant" je krátký text, #509). Jakékoli „chybí v CRM" nebo „jiný typ"
+   = otázka pro integrátora.
 4. Krycí list zakázky → karta **„Co by se zapsalo do Pipedrive"** →
    „Ukázat, co by se zapsalo": režim má říkat „proti skutečnému Pipedrive
    (jen čtení)". U zakázky s vyplněným číslem obchodního případu

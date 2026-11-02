@@ -95,7 +95,19 @@ export const POLE_DEALU = [
      * milnících; dřívější výchozí „Náš standard / měsíční" aplikace čte
      * jako „Po milnících". */
     synonyma: { 'po milnicich': 'Náš standard', 'nas standard mesicni': 'Náš standard',
-      'po dokonceni jednotlivych stupnu dokumentace': 'Po dokončení stupňů dokumentace' } }),
+      /* Věty kalkulace PROJ (planZpusobFakturace v src/plan_plateb.js) →
+       * volby pro projekci, které integrátor založil 2. 11. 2026. „Podle
+       * dohodnutého plánu plateb" se shoduje přesně, synonymum nepotřebuje.
+       * Věta „po milnících jednotlivých činností…" je po normalizaci jiný
+       * klíč než OCK „po milnicich" — na „Náš standard" se nechytí. */
+      'po dokonceni jednotlivych stupnu dokumentace': 'Po dokončení stupňů dokumentace',
+      'po predani jednotlivych stupnu dokumentace': 'Po předání stupňů dokumentace',
+      'po milnicich jednotlivych cinnosti podle planu plateb': 'Po milnících činností (plán plateb)' },
+    /* Věta se zálohou nese proměnné procento („záloha 30 % po podpisu…",
+     * i desetinné „12,5 %" = po normalizaci „12 5%"). Vzor je ukotvený na
+     * celý text, jiná věta se zálohou se nepošle. */
+    synonymaVzor: [[/^zaloha \d{1,2}(?: \d{1,2})?% po podpisu smlouvy zbytek po predani jednotlivych stupnu dokumentace$/,
+      'Záloha, zbytek po předání stupňů dokumentace']] }),
   D('splatnostDni', 'Splatnost faktur (dny)', 'cislo', { ock: 'splatnostDni', proj: 'splatnostDni' }, 'zapis'),
   /* Jen OCK. PROJ má proměnný plán plateb a jeho platby nese „Platební
    * kalendář SoD PROJ"; zálohu PROJ kalkulátor neposílá ani u nabídky
@@ -113,10 +125,14 @@ export const POLE_DEALU = [
   D('cisloNabidky', 'Číslo nabídky (CN)', 'text', { ock: 'cisloCN', proj: 'cisloCN' }, 'zapis'),
   /* Uživatel, osoba, organizace: hodnotou je ID záznamu v Pipedrive. Krycí
    * list drží jména a kontakty jako text; uživatele dohledá až zápis (#115)
-   * podle e-mailu, osoby a organizace kalkulátor jen čte (vrstva 2, §5.2). */
+   * podle e-mailu, osoby a organizace kalkulátor jen čte (vrstva 2, §5.2).
+   * Hlavní projektant je od 2. 11. 2026 TEXT (integrátor ho založil jako
+   * krátký text, `varchar`): krycí list PROJ nese „jméno, autorizace" a hlavní
+   * projektant nemusí být uživatelem Pipedrive. Nad 255 znaků se nepošle
+   * (důvod jako u ostatních krátkých textů). */
   D('nabidkuVypracoval', 'Nabídku vypracoval', 'uzivatel', { ock: 'dodZpracoval', proj: 'dodZpracoval' }, 'zapis'),
   D('priplatkyNabidka', 'Příplatky v nabídce', 'text', { ock: 'priplatkyNabidka' }, 'zapis'),
-  D('hlavniProjektant', 'Hlavní projektant', 'uzivatel', { proj: 'hlavniProjektant' }, 'zapis'),
+  D('hlavniProjektant', 'Hlavní projektant', 'text', { proj: 'hlavniProjektant' }, 'zapis'),
   D('odpovednaOsoba', 'Odpovědná osoba za projekci', 'uzivatel', { proj: 'odpovednyEmail' }, 'zapis'),
   D('kontaktSmluvni', 'Kontakt – ve věcech smluvních', 'osoba',
     { ock: 'zastSmluvniJmeno', proj: 'zastSmluvniJmeno' }, 'cteni'),
@@ -181,8 +197,9 @@ export const POLE_DEALU = [
   /* Seznam plateb smlouvy o dílo PROJ, jedna věta na platbu („Platba ve výši
    * … Kč + DPH proběhne <milník>.") — tentýž text jako {{SODP_PLATEBNI_KALENDAR}}
    * ze stejného dopočtu (planPdKalendar v src/plan_plateb.js). Jen Velký
-   * text: krátký text pojme 255 znaků a delší plán by se nevešel. Dokud pole
-   * integrátor nezaloží, přehled ho hlásí jako chybějící a nic se nezapisuje. */
+   * text: krátký text pojme 255 znaků a delší plán by se nevešel. Integrátor
+   * ho založil (ověřeno čtením 2. 11. 2026, typ `text`); kdyby v účtu chyběl,
+   * přehled ho hlásí jako chybějící a nic se nezapisuje. */
   D('platebniKalendar', 'Platební kalendář SoD PROJ', 'text', { proj: '@kalendar' }, 'zapis', { typ: ['text'] }),
   D('spravniPoplatky', 'Správní poplatky stavebnímu úřadu (nad rámec ceny)', 'mena',
     { proj: 'sodpSpravniPoplatky' }, 'zapis'),
@@ -454,20 +471,25 @@ export function pdPrehledMapy(m, defDealu = POLE_DEALU, defOrg = POLE_ORGANIZACE
  *     náhled pak říká „podle dohodnuté tabulky, neověřeno v CRM".
  *
  * Názvy a typy jsou z POLE_DEALU; volby výběrových polí jsou SKUTEČNÉ texty
- * voleb z účtu (stav 21. 10. 2026, tytéž jako v netlify/test_pd_prevod.mjs).
- * ID voleb ani hashe polí skutečné nejsou: hash je odvozený z názvu, takže
- * je stálý a nikdy se nepotká se skutečným (skutečný je náhodný). Pole, které
- * v Pipedrive dosud chybí (Platební kalendář SoD PROJ), se bez `vsechna`
- * nevrací — simulátor tak ukazuje dnešní stav účtu.
+ * voleb z účtu (stav 2. 11. 2026 po odpovědi integrátora — Typ zakázky,
+ * Způsob fakturace a Objekt v památkové ochraně; tytéž jako
+ * v netlify/test_pd_prevod.mjs). ID voleb ani hashe polí skutečné nejsou:
+ * hash je odvozený z názvu, takže je stálý a nikdy se nepotká se skutečným
+ * (skutečný je náhodný). Pole, které by v Pipedrive dosud chybělo
+ * (PD_DOSUD_NEZALOZENA), se bez `vsechna` nevrací — simulátor tak ukazuje
+ * dnešní stav účtu.
  * ============================================================ */
 export const PD_VOLBY_UCTU = {
-  typZakazky: ['Realizace', 'Projekce'],
-  zpusobFakturace: ['Náš standard', 'Měsíční', 'Po dokončení stupňů dokumentace'],
+  typZakazky: ['Realizace', 'Realizace - OCK AKU', 'Realizace - Zahraničí', 'Projekce', 'Projekce - Výtah + OCK',
+    'Projekce - Velké projekty'],
+  zpusobFakturace: ['Náš standard', 'Měsíční', 'Po dokončení stupňů dokumentace', 'Po předání stupňů dokumentace',
+    'Záloha, zbytek po předání stupňů dokumentace', 'Po milnících činností (plán plateb)',
+    'Podle dohodnutého plánu plateb'],
   zadrzneProc: ['Ne', '5%', '10%', '15%', '20%'],
   zadrzneZaruka: ['Ne', '5%', '10%', '15%', '20%'],
   typSmlouvy: ['Naše bez úprav', 'Naše s úpravami', 'Smlouva zákazníka'],
   typProjektu: ['Nový projekt (novostavba)', 'Rekonstrukce objektu'],
-  pamatkovaOchrana: ['Ano', 'Ne'],
+  pamatkovaOchrana: ['Ano', 'Ne', 'Zjišťuje se'],
   licence: ['Nevýhradní – pro účel stavby dle smlouvy', 'Výhradní'],
   sazbaDph: ['21 %', '12 %', '0 % – přenesená daňová povinnost'],
   pojisteni: ['Ano – dle pojistné smlouvy zhotovitele', 'Ne'],
@@ -480,8 +502,9 @@ export const PD_VOLBY_UCTU = {
 /* Pole, která má účet jako Velký text (ostatní textová jsou krátký text). */
 const PD_VELKY_TEXT = ['adresaStavby', 'podminkyJine', 'terminJine', 'odchylky', 'cenaNezahrnuje', 'rozsahJine',
   'platebniKalendar'];
-/* Pole, která integrátor k 27. 10. 2026 ještě nezaložil. */
-export const PD_DOSUD_NEZALOZENA = ['platebniKalendar'];
+/* Pole, která integrátor ještě nezaložil. Platební kalendář SoD PROJ je
+ * založený (ověřeno čtením 2. 11. 2026) — dohodnutá pole má účet všechna. */
+export const PD_DOSUD_NEZALOZENA = [];
 
 /* Stálý čtyřicetiznakový „hash" z názvu (FNV-1a po pěti kolech, bez
  * závislosti na node:crypto — modul se smí načíst kdekoli). */

@@ -42,7 +42,8 @@ let pocitadlo = 0;
 const hash = () => (++pocitadlo).toString(16).padStart(40, 'a');
 const pole = (nazev, typ) => ({ field_code: hash(), field_name: nazev, field_type: typ, is_custom_field: true });
 const vsechnaDealu = () => POLE_DEALU.map((d) => pole(d.nazev, d.typ[0]));
-/* Výchozí sestava jako 23. 10. 2026: kalendář SoD PROJ chybí, „Typ zakázky"
+/* Výchozí sestava jako 23. 10. 2026 (skutečný účet má kalendář od 2. 11.
+ * 2026; tady slouží jako vzor chybějícího pole): kalendář SoD PROJ chybí, „Typ zakázky"
  * přejmenovaný, „Splatnost" má jiný typ, „ATYP" je dvakrát, „Priorita" nezařazená. */
 function poleDealu() {
   const p = vsechnaDealu().filter((x) => x.field_name !== 'Platební kalendář SoD PROJ');

@@ -13,7 +13,7 @@
 import { createRequire } from 'node:module';
 import { pdNorm, pdCisla, pdVolba, pdDoPd, pdZapisDealu, pdHodnotaDealu, pdKcText } from './lib/pd_prevod.mjs';
 import * as PDP from './lib/pd_prevod.mjs';
-import { pdMapaZPoli, POLE_DEALU } from './lib/pd_mapa.mjs';
+import { pdMapaZPoli, POLE_DEALU, PD_VOLBY_UCTU } from './lib/pd_mapa.mjs';
 
 let ok = 0, fail = 0; const selhalo = [];
 const test = (n, cond, info) => {
@@ -29,12 +29,16 @@ const V = (...labels) => labels.map((label, i) => ({ id: 100 + i, label }));
 const ANO_NE = V('Ano', 'Ne');
 const ZADRZNE = V('Ne', '5%', '10%', '15%', '20%');
 const VOLBY = {
-  typZakazky: V('Realizace', 'Projekce'),
-  zpusobFakturace: V('Náš standard', 'Měsíční', 'Po dokončení stupňů dokumentace'),
+  /* Stav účtu 2. 11. 2026 (po odpovědi integrátora, ověřeno čtením). */
+  typZakazky: V('Realizace', 'Realizace - OCK AKU', 'Realizace - Zahraničí', 'Projekce', 'Projekce - Výtah + OCK',
+    'Projekce - Velké projekty'),
+  zpusobFakturace: V('Náš standard', 'Měsíční', 'Po dokončení stupňů dokumentace', 'Po předání stupňů dokumentace',
+    'Záloha, zbytek po předání stupňů dokumentace', 'Po milnících činností (plán plateb)',
+    'Podle dohodnutého plánu plateb'),
   zadrzneProc: ZADRZNE, zadrzneZaruka: ZADRZNE,
   typSmlouvy: V('Naše bez úprav', 'Naše s úpravami', 'Smlouva zákazníka'),
   typProjektu: V('Nový projekt (novostavba)', 'Rekonstrukce objektu'),
-  pamatkovaOchrana: ANO_NE,
+  pamatkovaOchrana: V('Ano', 'Ne', 'Zjišťuje se'),
   licence: V('Nevýhradní – pro účel stavby dle smlouvy', 'Výhradní'),
   sazbaDph: V('21 %', '12 %', '0 % – přenesená daňová povinnost'),
   pojisteni: V('Ano – dle pojistné smlouvy zhotovitele', 'Ne'),
@@ -43,7 +47,8 @@ const VOLBY = {
   dokumentace: V('DSP', 'Prováděcí dokumentace'),
 };
 /* Velké textové pole (`text`) tam, kde ho má účet; jinak první dovolený typ. */
-const VELKY_TEXT = ['adresaStavby', 'podminkyJine', 'terminJine', 'odchylky', 'cenaNezahrnuje', 'rozsahJine'];
+const VELKY_TEXT = ['adresaStavby', 'podminkyJine', 'terminJine', 'odchylky', 'cenaNezahrnuje', 'rozsahJine',
+  'platebniKalendar'];
 const POLE = POLE_DEALU.map((d, i) => ({
   field_code: h(i + 1), field_name: d.nazev, is_custom_field: true, is_writable: true,
   field_type: VELKY_TEXT.includes(d.klic) ? 'text' : d.typ[0], options: VOLBY[d.klic] || null,
@@ -55,6 +60,8 @@ const idVolby = (klic, label) => (VOLBY[klic].find((o) => o.label === label) || 
 const P = (klic, strana, hodnoty, navic = {}, spolecne = {}) =>
   pdDoPd(DEF[klic], strana, { hodnoty, ...navic }, pole.popisy[klic], spolecne);
 
+test('fixture: volby účtu v simulátoru (PD_VOLBY_UCTU) = volby tohoto testu (Typ zakázky, Způsob fakturace, Památková ochrana)',
+  ['typZakazky', 'zpusobFakturace', 'pamatkovaOchrana'].every((k) => J(PD_VOLBY_UCTU[k]) === J(VOLBY[k].map((o) => o.label))));
 test('fixture: všechna pole mapy se spárovala', Object.keys(pole.mapa).length === POLE_DEALU.length,
   J({ chybi: pole.chybi, typNesedi: pole.typNesedi }));
 
@@ -204,8 +211,23 @@ test('#512: celý zápis staré nabídky PROJ nenese ani jednu platbu ani záloh
 const LIDE = [{ id: 7, name: 'Jan Vzorový', email: 'jan.vzorovy@priklad.cz' },
   { id: 8, name: 'Eva Zkušební', email: 'eva@priklad.cz' }];
 test('uživatel: podle e-mailu', P('odpovednaOsoba', 'proj', { odpovednyEmail: 'Eva@priklad.cz' }, {}, { uzivatele: LIDE }).hodnota === 8);
-test('uživatel: podle jména bez titulů a autorizace',
-  P('hlavniProjektant', 'proj', { hlavniProjektant: 'Ing. Jan Vzorový, ČKAIT 0001234' }, {}, { uzivatele: LIDE }).hodnota === 7);
+/* Hlavní projektant je od 2. 11. 2026 krátký text (`varchar`), ne uživatel:
+ * pošle se „jméno, autorizace" z krycího listu, jak je, nad 255 znaků nic. */
+test('Hlavní projektant: druh text, v účtu krátký text (varchar)',
+  DEF.hlavniProjektant.druh === 'text' && pole.popisy.hlavniProjektant.typ === 'varchar', J(pole.popisy.hlavniProjektant));
+test('Hlavní projektant: jméno a autorizace se pošlou textem (ne ID uživatele)',
+  P('hlavniProjektant', 'proj', { hlavniProjektant: 'Ing. Jan Vzorový, ČKAIT 0001234' }, {}, { uzivatele: LIDE }).hodnota
+    === 'Ing. Jan Vzorový, ČKAIT 0001234');
+test('Hlavní projektant: bez seznamu uživatelů se pošle taky (nejde o uživatele Pipedrive)',
+  P('hlavniProjektant', 'proj', { hlavniProjektant: 'Ing. Eva Zkušební' }).hodnota === 'Ing. Eva Zkušební');
+{
+  const r255 = P('hlavniProjektant', 'proj', { hlavniProjektant: 'x'.repeat(255) });
+  const r256 = P('hlavniProjektant', 'proj', { hlavniProjektant: 'x'.repeat(256) });
+  test('Hlavní projektant: 255 znaků se pošle, 256 ne (s důvodem)', r255.hodnota === 'x'.repeat(255)
+    && r256.hodnota === undefined && /256 znaků.*Hlavní projektant.*255/.test(r256.duvod || ''), J(r256));
+}
+test('Nabídku vypracoval a Odpovědná osoba zůstávají Uživatel',
+  DEF.nabidkuVypracoval.druh === 'uzivatel' && DEF.odpovednaOsoba.druh === 'uzivatel');
 test('uživatel: neznámé jméno = důvod, ne nejbližší shoda',
   !!P('nabidkuVypracoval', 'ock', { dodZpracoval: 'Jan Vzor' }, {}, { uzivatele: LIDE }).duvod);
 test('uživatel: bez seznamu uživatelů = důvod', !!P('nabidkuVypracoval', 'ock', { dodZpracoval: 'Jan Vzorový' }).duvod);
@@ -220,7 +242,9 @@ console.log('\n===== ZÁPIS CELÉ ZAKÁZKY (JEDEN PATCH) =====\n');
 
 const ock = { hodnoty: { splatnostDni: '14', zaloha1: '50 % – po podpisu smlouvy', typSmlouvy: 'Cizí',
   pokutaLimit: 'NEUPLATNĚN limit 10 %', cisloCN: '2026-OPR-CN-9001', odchylky: '' }, atyp: false };
-const proj = { hodnoty: { splatnostDni: '30', typSmlouvy: 'Naše bez úprav', pamatkovaOchrana: 'Zjišťuje se',
+/* „Částečně" Pipedrive nezná (od 2. 11. 2026 zná „Zjišťuje se", proto jiná
+ * nepřevoditelná hodnota). */
+const proj = { hodnoty: { splatnostDni: '30', typSmlouvy: 'Naše bez úprav', pamatkovaOchrana: 'Částečně',
   rozsahJine: 'Konzultace na stavbě', cisloCN: 'OVP-CN-9002' } };
 const z = pdZapisDealu(POLE_DEALU, { ock, proj }, pole, {});
 const H = (klic) => pole.mapa[klic];
@@ -231,7 +255,7 @@ test('kombinovaná zakázka: pole jen PROJ se vezme z PROJ', z.custom_fields[H('
 test('prázdné hodnoty v zápisu nejsou (ani jako null)', !(H('odchylky') in z.custom_fields));
 test('co nejde převést, v zápisu není a vrátí se s důvodem',
   !(H('pamatkovaOchrana') in z.custom_fields)
-  && z.duvody.some((d) => d.klic === 'pamatkovaOchrana' && /Zjišťuje se/.test(d.duvod)), J(z.duvody));
+  && z.duvody.some((d) => d.klic === 'pamatkovaOchrana' && /Částečně/.test(d.duvod)), J(z.duvody));
 test('pole čtená z CRM (typ zakázky, zdroj poptávky, kontakty) se nikdy nezapisují',
   !(H('typZakazky') in z.custom_fields) && !(H('zdrojFirma') in z.custom_fields)
   && !(H('kontaktSmluvni') in z.custom_fields));
@@ -352,11 +376,13 @@ for (const [klic, strana, id] of [['zpusobFakturace', 'ock', 'zpusobFakturace'],
   test('volby krycího listu ' + strana.toUpperCase() + ' „' + KL[strana].get(id).label + '" mají protějšek v Pipedrive',
     v.length === 0, v.join('; '));
 }
-/* Známá mezera: krycí list PROJ zná „Zjišťuje se", Pipedrive ne (požádáno
- * integrátora 21. 10. 2026). Až volbu doplní, změní se tenhle test. */
+/* „Zjišťuje se" integrátor doplnil 2. 11. 2026 — všechny tři volby krycího
+ * listu PROJ mají protějšek. */
 const pam = prevedeVse('pamatkovaOchrana', 'proj', 'pamatkovaOchrana');
-test('památková ochrana: Ano a Ne sedí, „Zjišťuje se" v Pipedrive (zatím) není',
-  vadne(pam).length === 1 && /^Zjišťuje se/.test(vadne(pam)[0]), vadne(pam).join('; '));
+test('památková ochrana: Ano, Ne i „Zjišťuje se" sedí',
+  vadne(pam).length === 0 && pam.length === 3
+  && P('pamatkovaOchrana', 'proj', { pamatkovaOchrana: 'Zjišťuje se' }).hodnota === idVolby('pamatkovaOchrana', 'Zjišťuje se'),
+  vadne(pam).join('; '));
 
 const ef = PM.podminkyEf({});
 const zalohy = PM.podminkyZalohyVolby(ef).map((t) => P('zaloha1Proc', 'ock', { zaloha1: t }).hodnota);
@@ -379,6 +405,55 @@ test('pojištění PROJ: výchozí „ANO – dle…" je „Ano – dle…"',
 test('způsob fakturace PROJ: výchozí věta „po dokončení jednotlivých stupňů…" má protějšek',
   P('zpusobFakturace', 'proj', { zpusobFakturace: 'po dokončení jednotlivých stupňů dokumentace' }).hodnota
     === idVolby('zpusobFakturace', 'Po dokončení stupňů dokumentace'));
+/* Věty kalkulace PROJ (planZpusobFakturace) → volby pro projekci, které
+ * integrátor založil 2. 11. 2026. Věty se berou ze SKUTEČNÉ funkce kalkulace
+ * (plán plateb v různém stavu), ne opsané. */
+{
+  const PP = require('../src/plan_plateb.js');
+  const fz = (t) => P('zpusobFakturace', 'proj', { zpusobFakturace: t });
+  const ocek = [
+    ['podle dohodnutého plánu plateb', 'Podle dohodnutého plánu plateb'],
+    ['po předání jednotlivých stupňů dokumentace', 'Po předání stupňů dokumentace'],
+    ['záloha 30 % po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace',
+      'Záloha, zbytek po předání stupňů dokumentace'],
+    ['záloha 12.5 % po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace',
+      'Záloha, zbytek po předání stupňů dokumentace'],
+    ['záloha 50 % po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace',
+      'Záloha, zbytek po předání stupňů dokumentace'],
+    ['po milnících jednotlivých činností podle plánu plateb', 'Po milnících činností (plán plateb)'],
+    ['po dokončení jednotlivých stupňů dokumentace', 'Po dokončení stupňů dokumentace'],
+  ];
+  for (const [veta, volba] of ocek)
+    test('PROJ fakturace: „' + veta + '" → „' + volba + '"', fz(veta).hodnota === idVolby('zpusobFakturace', volba), J(fz(veta)));
+  test('PROJ fakturace: „podle dohodnutého plánu plateb" sedí přesnou shodou (bez synonyma)',
+    pdVolba('podle dohodnutého plánu plateb', VOLBY.zpusobFakturace, {})
+      === idVolby('zpusobFakturace', 'Podle dohodnutého plánu plateb'));
+  test('PROJ fakturace: věta „po milnících jednotlivých činností…" NENÍ „Náš standard"',
+    fz('po milnících jednotlivých činností podle plánu plateb').hodnota !== idVolby('zpusobFakturace', 'Náš standard'));
+  test('OCK „Po milnících" zůstává „Náš standard"',
+    P('zpusobFakturace', 'ock', { zpusobFakturace: 'Po milnících' }).hodnota === idVolby('zpusobFakturace', 'Náš standard'));
+  for (const veta of ['záloha po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace',
+    'záloha 30 % po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace a ještě něco',
+    'předem záloha 30 % po podpisu smlouvy, zbytek po předání jednotlivých stupňů dokumentace',
+    'po milnících jednotlivých činností', 'něco úplně jiného'])
+    test('PROJ fakturace: neznámá věta „' + veta + '" se nepošle (důvod)',
+      fz(veta).hodnota === undefined && /nemá volbu|není/.test(fz(veta).duvod || ''), J(fz(veta)));
+  /* Skutečné věty z kalkulace: výchozí firemní plán, vlastní plán, záloha
+   * 30 %, bez zálohy, 100 % po dokončení. Každá musí mít volbu. */
+  const ZF = PP.planZpusobFakturace;
+  const firemni = {};
+  const vety = [];
+  for (const plan of [null, {}, { predvolba: 'vlastni' }, { predvolba: 'zaloha', zaloha: 30 }, { predvolba: 'zaloha', zaloha: 0 },
+    { predvolba: 'sto' }, { predvolba: 'std' }]) {
+    try { vety.push(ZF(plan, firemni)); } catch (e) { vety.push('výjimka: ' + e.message); }
+  }
+  const bezVolby = [...new Set(vety)].filter((v) => fz(v).hodnota === undefined);
+  test('PROJ fakturace: kalkulace dává všech pět druhů vět',
+    ['podle dohodnut', 'po předání jednotlivých', 'záloha 30 %', 'po milnících jednotlivých činností', 'po dokončení jednotlivých']
+      .every((z) => vety.some((v) => v.startsWith(z))), J(vety));
+  test('PROJ fakturace: každá věta planZpusobFakturace má volbu v Pipedrive', bezVolby.length === 0 && vety.length === 7,
+    J({ vety: [...new Set(vety)], bezVolby }));
+}
 test('#512: zálohy PROJ z doby před plánem se do CRM neposílají (žádná volba)',
   volbyListu('proj', 'zaloha').every((t) => P('zaloha1Proc', 'proj', { zaloha: t }, { planStary: true }).prazdne === true));
 test('termín dodání s ATYP z krycího listu se převede na jedno číslo',
