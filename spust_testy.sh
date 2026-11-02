@@ -44,6 +44,20 @@ export ADMIN_EMAIL
 
 cd "$(dirname "$0")/src" || exit 1
 
+# POSUN HODIN (K37-N5, 2. 11. 2026): s KNG_POSUN_DNU=N běží Node sady
+# s hodinami posunutými o N dní (nastroje/posun_hodin.cjs) — testovací kolo
+# tak pouští krok „hodiny" (+400 dní) proti časovaným bombám v testech.
+if [ -n "${KNG_POSUN_DNU:-}" ]; then
+  NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require $(cd .. && pwd)/nastroje/posun_hodin.cjs"
+  export NODE_OPTIONS KNG_POSUN_DNU
+  echo "Hodiny posunuté o ${KNG_POSUN_DNU} dní (nastroje/posun_hodin.cjs)."
+fi
+# Sady, které s posunutými hodinami běží BEZ posunu (s důvodem): porovnávají
+# čas procesu se skutečným časem mimo proces (mtime souboru) — posun by tam
+# vyrobil falešný pád, ne odhalil bombu.
+#   test_mutace_zamek.mjs — stáří zámku = Date.now() − mtime (nastroje/mutace_zamek.mjs)
+BEZ_POSUNU=" test_mutace_zamek.mjs "
+
 selhalo=0
 proslo=0
 preskoceno=0
@@ -56,7 +70,11 @@ seznam_preskocenych=()
 # nezdálo, že shodu s Excelem někdo ověřil.
 spust() {
   local f="$1"
-  node "$f" > /tmp/kng_test_out.txt 2>&1
+  if [ -n "${KNG_POSUN_DNU:-}" ] && [[ "$BEZ_POSUNU" == *" $(basename "$f") "* ]]; then
+    NODE_OPTIONS="${NODE_OPTIONS//--require *posun_hodin.cjs/}" node "$f" > /tmp/kng_test_out.txt 2>&1
+  else
+    node "$f" > /tmp/kng_test_out.txt 2>&1
+  fi
   local kod=$?
   if [ "$kod" -eq 0 ]; then
     proslo=$((proslo + 1))

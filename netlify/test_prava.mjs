@@ -3436,7 +3436,9 @@ console.log('\n===== MAZÁNÍ ZAKÁZEK =====\n');
 
   /* Odeslaná (uzamčená) nabídka je doklad — smaže se jen na druhé potvrzení. */
   const sZamkem = zakazkaCislo('2026 - OPR - CN - 0951');
-  sZamkem.varianty[0].zamek = { zamceno: true, kdy: '2026-08-21T10:00:00.000Z', kdo: ADMIN_EMAIL,
+  /* K37-N5: čas odeslání relativně k hodinám — pevné datum by po ZAMEK_KDY_STARI_DNI
+   * (zamekKdyProblem) server odmítl jako staré a test by kolem 25. 9. 2027 spadl. */
+  sZamkem.varianty[0].zamek = { zamceno: true, kdy: new Date(Date.now() - 86400000).toISOString(), kdo: ADMIN_EMAIL,
     cislo: zam.variantaCislo(sZamkem, sZamkem.varianty[0]), cisloPapir: true };   // jako z aplikace (B61)
   await post(zakazky, 'http://x/api/zakazky', { zakazka: sZamkem }, cAdmin);
   const odmitnuto = await smaz(zakazky, 'http://x/api/zakazky?soubor=2026-OPR-CN-0951.json', cAdmin);

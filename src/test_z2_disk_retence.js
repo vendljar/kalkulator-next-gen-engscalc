@@ -120,7 +120,7 @@ const novyCtx = (opt) => {
     ctx.volani.push([cesta, telo]);
     if (cesta === '/api/zaloha?zdroj=nocni&strana=1') return { ok: true, zaloha: JSON.parse(J(ZALOHA)), otisk: o.otisk || '2026-10-27', puvod: 'nocni-otisk' };
     if (o.serverOdpoved) return o.serverOdpoved(cesta, telo);
-    return { ok: true, kopieDisk: { kdy: new Date().toISOString(), ...(telo && telo.kopie) } };
+    return { ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString(), ...(telo && telo.kopie) } };
   };
   vm.createContext(ctx);
   vm.runInContext(kopie + tlacitko + obnovaText + '\nthis.proved = kopieDiskProved; this.uklid = kopieDiskUklid; this.uklidText = kopieDiskUklidText;'

@@ -17,6 +17,10 @@
 #   sady           spust_testy.sh --smoke: všechny src/test_*.js (včetně test.js),
 #                  všechny netlify/test_*.mjs, rychlé kontroly zadání mutací,
 #                  smoke.mjs a VŠECHNY overit_*.mjs — globem, žádný ruční seznam
+#   hodiny         Node a serverové sady znovu s hodinami posunutými o +400 dní
+#                  (KNG_POSUN_DNU, nastroje/posun_hodin.cjs) — pojistka proti
+#                  časovaným bombám v testech (K37-N5: test s pevným datem padl
+#                  po roce a zastavil celé kolo); bez prohlížečových sad
 #   mutace-jadro   mutace_jadro.mjs (výpočetní jádro)
 #   mutace-server  netlify/mutace.mjs (serverové funkce)
 #   staticke       verze = den posledního commitu, žádné CRLF, osobní údaje
@@ -52,13 +56,13 @@ if [ -z "${NODE_PATH:-}" ] && command -v npm >/dev/null 2>&1; then
   NODE_PATH="$(npm root -g 2>/dev/null)"; export NODE_PATH
 fi
 
-KROKY="build,sady,mutace-jadro,mutace-server,staticke"
+KROKY="build,sady,hodiny,mutace-jadro,mutace-server,staticke"
 while [ $# -gt 0 ]; do
   case "$1" in
-    --bez-mutaci) KROKY="build,sady,staticke" ;;
+    --bez-mutaci) KROKY="build,sady,hodiny,staticke" ;;
     --jen) shift; KROKY="${1:-}" ;;
     --jen=*) KROKY="${1#--jen=}" ;;
-    -h|--help) sed -n '2,40p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,44p' "$0"; exit 0 ;;
     *) echo "neznámá volba: $1 (viz --help)"; exit 2 ;;
   esac
   shift
@@ -107,6 +111,12 @@ build() {
 sady() {
   bash ./spust_testy.sh --smoke
 }
+# K37-N5 (2. 11. 2026): tytéž Node sady o 400 dní později. Bomba (pevné
+# datum, které za rok zestárne) tu spadne hned, ne za rok v CI.
+hodiny() {
+  KNG_POSUN_DNU="${KNG_POSUN_DNU:-400}" bash ./spust_testy.sh
+}
+poznamka_hodiny() { poznamka_sady "$1"; }
 poznamka_sady() {
   local r; r="$(grep -o 'Souhrn: [0-9]* prošlo, [0-9]* selhalo, [0-9]* přeskočeno' "$1" | tail -1 | sed 's/^Souhrn: //')"
   printf '%s' "${r:-bez souhrnu}"
@@ -162,10 +172,11 @@ poznamka_staticke() { grep -o 'STATICKE_KONTROLY: [0-9]* z 4 prošly' "$1" | tai
 echo "TESTOVACÍ KOLO — kroky: $KROKY   (logy: $LOGY)"
 chce build         && krok build         "kontrola verze + sestavení"         build
 chce sady          && krok sady          "sady: Node, server, prohlížeč"       sady
+chce hodiny        && krok hodiny        "sady s hodinami +400 dní"            hodiny
 chce mutace-jadro  && krok mutace_jadro  "mutace jádra (mutace_jadro.mjs)"     mutace_jadro
 chce mutace-server && krok mutace_server "mutace serveru (netlify/mutace.mjs)" mutace_server
 chce staticke      && krok staticke      "statické kontroly"                   staticke
-for k in build sady mutace-jadro mutace-server staticke; do
+for k in build sady hodiny mutace-jadro mutace-server staticke; do
   chce "$k" || souhrn+=("  – $(printf '%-34s' "$k") vynecháno (kroky: $KROKY)")
 done
 
