@@ -1,3 +1,32 @@
+# Předávka — 2. 11. 2026: odpověď integrátora, větev `claude/eager-carson-1xznt2` (jen dokumentace)
+
+Kód beze změny. Obsah této větve je mezitím převzatý do `claude/integrace-16-10` (P2: tři opravy Stavu Pipedrive
+fff14f7 a 6c0d036, #114 přes `claude/114-prehled-mapy-poli`, #512 platby, #543 mutace serveru v 16 částech) —
+koordinace ověří `git cherry` a větev uzavře. Statická kontrola verze tu zůstává červená (verze 22.10.2, commity
+s dokumentací z pozdějších dnů) — číslo verze se tu už nepřiděluje.
+
+- **Odpověď integrátora 2. 11.** (e-mail „Re: Pipedrive - dokumentace“, odpovědi „VD:“ v textu): Typ zakázky nahrazuje
+  #10 — ano; „Zjišťuje se“, čtyři volby Způsobu fakturace pro PROJ, Hlavní projektant jako Text a pole „Platební
+  kalendář SoD PROJ“ — hotovo; sekci „Krycí list“ a zrušení „důležitosti“ nových polí (blokovala překlopení zakázky do
+  prodejů) nastaví kolega integrátora; vyvolání cenové nabídky — návrh: vlastní pole „Vygenerovat nabídku“, automatizace
+  Pipedrive pošle webhook s ID dealu. K termínu zkušebního zápisu (J. V.: týden od 2. 11.) bez reakce.
+- **Ověřeno čtením v Pipedrive 2. 11.** (konektor, nic nezapsáno): všechny čtyři „hotovo“ sedí; mapa polí z integrace
+  (67 polí) se páruje u 66 ze 67 názvem i typem, nesedí jen Hlavní projektant (kalkulátor čeká `user`, účet má
+  `varchar`). Pole „Vygenerovat nabídku“ zatím není.
+- **Aktualizováno mimo repozitář:** souhrn https://claude.ai/artifact/XSFa1QVnFCWXoLpzx7yD8u (stav k 2. 11., tabulka
+  odpovědí, další kroky, schéma webhooku varianta A, koncept odpovědi integrátorovi), Výsledek testu polí
+  https://claude.ai/artifact/RCVznN7Dn2goRM8TmuAZfz (řádek stavu 2. 11.), mapovací tabulka
+  `Pipedrive_Kalkulator_mapa_poli_2026-11-02.xlsx` (z kódu integrace, sloupec „Odpověď integrátora“) — poslaná J. V.
+- **Zadání další dávky:** `podklady/PROMPT_pipedrive_po_odpovedi_02_11.md` (Hlavní projektant → text, kalendář už
+  založený, volby účtu v simulátoru, převod vět PROJ na nové volby fakturace, uzavřít #509, položka webhooku jako
+  návrh).
+- **Čeká na J. V.:** odeslání odpovědi integrátorovi (koncept v souhrnu, doplnit den zkušebního zápisu), rozhodnutí
+  o webhooku (doporučena varianta A: kalkulátor podle dealu založí / aktualizuje kalkulaci a vrátí odkaz, nabídku
+  generuje obchodník), rozhodnutí o dvou kalkulacích na jednom dealu (`PIPEDRIVE_ROZHODNUTI_115.md`, doporučeno B),
+  zkušební zápis (a) přes konektor s jeho potvrzením, (b) z testovacího webu po vložení tokenu do Netlify.
+
+---
+
 # Předávka — 22. 10. 2026: Stav Pipedrive v hlavičce kalkulace (v22.10.2, #504), větev `claude/eager-carson-1xznt2`
 
 Nad `test` v22.10.1 (sloučení 4957b61 — konflikty jen v evidenci; položky #473–#475 této větve mají od sloučení
