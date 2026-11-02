@@ -292,7 +292,7 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
       && JSON.stringify(L('Příplatky – volby').rows[0]) === JSON.stringify(C.CTRL_RADKY_HLAVICKA));
     const iRid = C.CTRL_RADKY_HLAVICKA.indexOf('Řídící varianta'), iVys = C.CTRL_RADKY_HLAVICKA.indexOf('Výsledek');
     test('C5 sloupce Řídící varianta a Výsledek', iRid > 0 && iVys > 0 && listy[0].rows.slice(1).every(r => r[iRid] === 'ano' && r[iVys] === 'zmrazený'));
-    test('C5 verze struktury souboru 4 (P1: sloupce Stav Pipedrive; #540: Prodáno, zaokrouhlení, podíly)', C.CTRL_EXPORT_VERZE === 4 && (listy[2].rows.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 4);
+    test('C5 verze struktury souboru 5 (P1: sloupce Stav Pipedrive; #540: Prodáno, zaokrouhlení, podíly; K37: cena před CEIL, datum prodeje)', C.CTRL_EXPORT_VERZE === 5 && (listy[2].rows.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 5);
     const iN = C.CTRL_RADKY_HLAVICKA.indexOf('Náklad celkem (Kč)');
     test('čísla v listu jsou čísla, ne text', listy[0].rows.slice(1).every(r => typeof r[iN] === 'number'));
     const souhrnRadek = listy[1].rows.find(r => r[0] === '2026 - OPR - CN - 0901' && r[1] === 'OCK' && typeof r[2] === 'number' && r.length === 10);

@@ -35,12 +35,12 @@ postkalkulaci v Reporting CZ.
 řádky VZOR, žádné číslo v převzaté struktuře, žádný e-mail. Přibude-li klíč ceníku PROJ nebo skupina, test spadne
 → šablonu vyrobit znovu.
 
-## 2. `UKAZKA_2026-CONTROLLING-EXPORT_v27.10.1.xlsx` — ukázkový export dnešním kódem
+## 2. `UKAZKA_2026-CONTROLLING-EXPORT_v2.11.1.xlsx` — ukázkový export dnešním kódem
 
 Hromadný export za období 1.–31. 10. 2026 (OCK i PROJ, ČR i zahraničí, **výběr podle zamčení, všechny stavy
 Pipedrive** — výběr podle prodeje by vzal jen dvě prodané zakázky), vyrobený kódem aplikace (verze ve jméně
 souboru): `ctrlHromadnyFiltr` + `ctrlHromadnyZakazka` + `ctrlExportListy` (`src/controlling.js`), `xlsxZapis`
-(`src/xlsx.js`). Verze struktury souboru **4**.
+(`src/xlsx.js`). Verze struktury souboru **5**.
 
 Vyrábí ho `node nastroje/ukazka_controlling_export.js [složka nebo soubor.xlsx] [--json]` (bez cíle sem);
 jméno podle konvence `TYP_rok-OBSAH_verze.přípona` (E1 #533) s verzí z `verze.txt`. Hlídá
@@ -58,9 +58,10 @@ zkušební ceník testů (`src/zkusebni_cenik.js` — kulatá, schválně nesmys
 | 2026 - OVP - CN - 0905 | PROJ, mimo Prahu | prohráno | zámek bez zmrazeného výsledku → „Výsledek = přepočtený" |
 
 Listy: **Řádky** 139 (jen náklady v ceně nabídky + objednané příplatky), **Příplatky – volby** 59,
-**Kapitoly** (po skupinách + souhrn zakázky), **Popis** (verze struktury 4 a co se v ní změnilo, filtr, počty,
+**Kapitoly** (po skupinách + souhrn zakázky), **Popis** (verze struktury 5 a co se v ní změnilo, filtr, počty,
 číselník, zakázky s datem prodeje).
 
 **Zaokrouhlení a podíly:** souhrn Kapitol „Zaokrouhlení (Kč)" nese u OCK i zaokrouhlení základní ceny nahoru na
-tisíce (součet prodejních cen řádků + zaokrouhlení = Cena před slevou); podíly skupin dávají u každé strany
+tisíce; „Cena před slevou (Kč)" je od verze 5 (K37-N3) před tímto zaokrouhlením, tj. součet prodejních cen řádků,
+a každý řádek souhrnu dává Cena před slevou − Sleva + Zaokrouhlení = Cena nabídky (u OCK i PROJ); podíly skupin dávají u každé strany
 součet přesně 100 %. Nástroj obojí vypisuje (`--json` → `zjisteni`).

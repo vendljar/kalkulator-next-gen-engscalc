@@ -184,6 +184,8 @@ const PRIORITA = [
   'test_controlling_c4.js',
   /* K37-N1 — vyřazené sklo po přepnutí typu šachty (ui/kalk_ock.js, ui/common.js) */
   'test_k37_sklo_prepnuti.js',
+  /* K37-N3, K37-N9 — souhrn Kapitol a nečitelné datum prodeje (controlling.js) */
+  'test_k37_controlling.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -214,6 +216,19 @@ function najdiSady() {
 const MUTACE = [
   /* K37-N1 (kolo 37, 2. 11. 2026): název skla boků po přepnutí typu šachty.
    * Hlídá src/test_k37_sklo_prepnuti.js (prohlížeč: overit_k37_sklo.mjs). */
+  /* K37-N3, K37-N9 (2. 11. 2026): controlling. Hlídá src/test_k37_controlling.js. */
+  { nazev: 'K37-N3: Cena před slevou v souhrnu Kapitol zase po CEIL', soubor: 'controlling.js',
+    hledej: "      const predSlevou = (+c.zaklad || 0) - zaokrZaklad;",
+    nahrad: "      const predSlevou = +c.zaklad || 0;",
+    proc: 'CEIL na tisíce by byl v řádku souhrnu dvakrát — Cena před slevou − Sleva + Zaokrouhlení by nedalo cenu nabídky' },
+  { nazev: 'K37-N9: nečitelné textové datum prodeje zase tiše mimo období', soubor: 'controlling.js',
+    hledej: "  if (prodej && !ctrlDatumPlatne(prodej.datum)) return",
+    nahrad: "  if (prodej && prodej.datum === null) return",
+    proc: "zakázka s datem prodeje 'xx' nebo '2026-13-45' by z exportu zmizela bez hlášky" },
+  { nazev: 'K37-N9: předvýběr z rejstříku nečte zakázku s prázdným datem prodeje', soubor: 'controlling.js',
+    hledej: "      if (!ctrlDatumPlatne(o.datum)) return { cist: true };",
+    nahrad: "      if (typeof o.datum !== 'string' || (o.datum !== '' && !ctrlDatumPlatne(o.datum))) return { cist: true };",
+    proc: 'zakázka s prázdným datem prodeje by se do hromadného exportu nenačetla a nikdo by se o ní nedozvěděl' },
   { nazev: 'K37-N1: typSachtyPrepni bez migrace skla', soubor: 'ui/kalk_ock.js',
     hledej: "  if (typeof skloMigraceAkt === 'function') skloMigraceAkt();\n  syncVarianta(); render();",
     nahrad: "  syncVarianta(); render();",
@@ -248,12 +263,12 @@ const MUTACE = [
     nahrad: "  if (false) return { varianta: v.id, datum:",
     proc: 'prodaná zakázka bez objednaných příplatků by z výchozího exportu vypadla (otázka 1)' },
   { nazev: '#540: neplatné datum prodeje tiše mimo období', soubor: 'controlling.js',
-    hledej: "  if (prodej && prodej.datum === null) return",
+    hledej: "  if (prodej && !ctrlDatumPlatne(prodej.datum)) return",
     nahrad: "  if (false) return",
     proc: 'zakázka s rozbitým datem prodeje by z exportu zmizela bez hlášky (K6-S6)' },
   { nazev: '#540: verze struktury exportu zůstane 3', soubor: 'controlling.js',
-    hledej: "const CTRL_EXPORT_VERZE = 4;",
-    nahrad: "const CTRL_EXPORT_VERZE = 3;",
+    hledej: "const CTRL_EXPORT_VERZE = 5;",
+    nahrad: "const CTRL_EXPORT_VERZE = 4;",
     proc: 'controlling by nepoznal, že se export změnil (pravidlo otázky 12)' },
   { nazev: '#540: volné pole krycího listu po Prodáno editovatelné', soubor: 'zamek.js',
     hledej: "  if (variantaProdana(v)) return 'zmrazeno';",
@@ -1920,7 +1935,7 @@ const MUTACE = [
     nahrad: "      if (o.datum) prodej =",
     proc: 'rejstřík by sliboval prodej, který export neuzná — čtení navíc a nesoulad' },
   { nazev: '#504: datum prodeje jiného tvaru se nečte', soubor: 'controlling.js',
-    hledej: "      if (o.datum !== '' && !ctrlDatumPlatne(o.datum)) return { cist: true };",
+    hledej: "      if (!ctrlDatumPlatne(o.datum)) return { cist: true };",   // K37-N9: i prázdné datum
     nahrad: "",
     proc: 'zakázka s datem „25. 10. 2026" by z exportu podle prodeje tiše vypadla místo přeskočení s důvodem' },
   { nazev: '#504: rozbitá zakázka nedostane „čti vždy"', soubor: 'controlling.js',
@@ -2605,7 +2620,7 @@ const MUTACE = [
     nahrad: "        '', h.pdStavNacteno || '',",
     proc: "controlling by stav dealu v CSV/XLSX nedostal" },
   { nazev: "P1: verze exportu zůstala 2", soubor: "controlling.js",
-    hledej: "const CTRL_EXPORT_VERZE = 4;",   // #540: verze 4
+    hledej: "const CTRL_EXPORT_VERZE = 5;",   // #540: verze 4, K37: verze 5
     nahrad: "const CTRL_EXPORT_VERZE = 2;",
     proc: "převodník controllingu by nepoznal posunuté sloupce" },
   /* #507 (O-K7, 23. 10. 2026): K7-K1 — tisk během běžícího ukládání. Hlídá

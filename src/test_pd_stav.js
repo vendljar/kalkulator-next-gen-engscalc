@@ -127,7 +127,7 @@ async function export3() {
   const H = C.CTRL_RADKY_HLAVICKA;
   const iDeal = H.indexOf('Pipedrive deal'), iSt = H.indexOf('Stav Pipedrive'), iNac = H.indexOf('Stav Pipedrive načten');
   test('sloupce „Stav Pipedrive" a „Stav Pipedrive načten" hned za „Pipedrive deal"', iDeal > 0 && iSt === iDeal + 1 && iNac === iDeal + 2, H);
-  test('verze struktury exportu 4 (#540)', C.CTRL_EXPORT_VERZE === 4);
+  test('verze struktury exportu 5 (#540, K37)', C.CTRL_EXPORT_VERZE === 5);
 
   const zS = kopie(zak); zS.pdDealId = '4711'; zS.pdStav = { status: 'won', nacteno: T };
   const eS = C.ctrlExportVarianty(zS, zS.varianty[0], { jekly: JEKLY });
@@ -137,7 +137,7 @@ async function export3() {
   const radky = L('Řádky').rows.slice(1), volby = L(C.CTRL_LIST_PRIPLATKY).rows.slice(1);
   test('Řádky: každý řádek nese „Vyhrané" a datum načtení', radky.length > 0 && radky.every(r => r[iSt] === 'Vyhrané' && r[iNac] === '2026-10-22'), radky[0]);
   test('Příplatky – volby: týž sloupec', volby.length === 0 || volby.every(r => r[iSt] === 'Vyhrané'));
-  test('Popis: verze struktury 4 (#540)', (L('Popis').rows.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 4);
+  test('Popis: verze struktury 5 (#540, K37)', (L('Popis').rows.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 5);
   const csv = C.ctrlExportCsv(eS);
   const hl = csv.replace(/^﻿/, '').split('\r\n')[0].split(';');
   test('CSV: hlavička nese oba sloupce', hl[iSt] === '"Stav Pipedrive"' && hl[iNac] === '"Stav Pipedrive načten"', hl.slice(iDeal, iDeal + 3));
