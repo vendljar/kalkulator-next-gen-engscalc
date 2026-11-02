@@ -93,12 +93,40 @@ function cenikZahrOciste(vstup) {
  * zakázky ji nemění ani přepočet (V23). */
 const CENIK_ZAHR_DPH_CESTY = ['C.dph', 'PC.dph'];
 function cenikZahrDphVychozi(cesta) { return CENIK_ZAHR_DPH_CESTY.indexOf(String(cesta)) >= 0; }
+/* MONTÁŽ MŮSTKŮ V ZAHRANIČÍ (#550, nález K36-N2, rozhodnutí J. V. 2. 11. 2026).
+ * Zahraniční zakázka brala u montáže můstků ČESKOU hodinovou sazbu, zatímco
+ * ostatní montáž na stavbě měla zahraniční odchylku. Buňka zahraniční řady
+ * `C.mustekMontazHodKc` je vlastní odchylka; NEVYPLNĚNÁ znamená „jako
+ * zahraniční montáž na stavbě" (`C.montazHodKc` ze zahraniční řady), ne „jako
+ * ČR". Sazba v kódu žádná není (K10-S2) — bez zahraniční montáže na stavbě
+ * platí dál tuzemská. Stejně jako u DPH se výchozí hodnota NEUKLÁDÁ, jen se
+ * doplňuje tam, kde se řada skládá; dialog zveřejnění na to upozorní
+ * (`cenikZahrMustkyUpozorneni`). */
+const CENIK_ZAHR_MUSTEK_MONTAZ = 'C.mustekMontazHodKc';
+const CENIK_ZAHR_MONTAZ = 'C.montazHodKc';
+function cenikZahrMustekVychozi(z) {
+  const c = (z && z.ceny) || {};
+  if (Object.prototype.hasOwnProperty.call(c, CENIK_ZAHR_MUSTEK_MONTAZ)) return null;
+  const m = c[CENIK_ZAHR_MONTAZ];
+  return (typeof m === 'number' && isFinite(m)) ? m : null;
+}
 function cenikZahrSVychozimi(zahr) {
   const z = cenikZahrOciste(zahr);
   CENIK_ZAHR_DPH_CESTY.forEach(c => {
     if (!Object.prototype.hasOwnProperty.call(z.ceny, c)) z.ceny[c] = 0;
   });
+  const mm = cenikZahrMustekVychozi(z);
+  if (mm !== null) z.ceny[CENIK_ZAHR_MUSTEK_MONTAZ] = mm;
   return z;
+}
+/* Věta do dialogu zveřejnění: zahraniční montáž můstků nevyplněná → platí
+ * zahraniční sazba montáže na stavbě. Prázdný řetězec, když není co říct. */
+function cenikZahrMustkyUpozorneni(zahr) {
+  const mm = cenikZahrMustekVychozi(cenikZahrOciste(zahr));
+  if (mm === null) return '';
+  return 'Zahraniční řada: montáž můstků (Kč/hod) není vyplněná — v zahraniční zakázce se použije zahraniční '
+    + 'sazba montáže na stavbě (' + String(Math.round(mm)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0')
+    + ' Kč/hod). Vlastní sazbu doplňte v Nastavení → Ceník, sloupec Zahraničí.';
 }
 
 function cenikZahrPrazdna(z) {
@@ -452,6 +480,7 @@ if (typeof module !== 'undefined')
                      cenikZahrPrazdny, cenikZahrOciste, cenikZahrPrazdna,
                      cenikSlozRadu, cenikRadaRozdily, cenikRadaPrepni, cenikRadaVarianty,
                      CENIK_ZAHR_DPH_CESTY, cenikZahrDphVychozi, cenikZahrSVychozimi,
+                     CENIK_ZAHR_MUSTEK_MONTAZ, cenikZahrMustekVychozi, cenikZahrMustkyUpozorneni,
                      cenikJenZahrCesty, cenikJenZahrVynuluj,
                      cenikRadaTuzemskaData, cenikDnesniProRadu,
                      CENIK_ZVEREJNENI_SHODA_MAX, cenikZverejneniOcisti, cenikZahrSluc,

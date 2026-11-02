@@ -385,6 +385,9 @@ function progZverejniRozpis(db, ctx) {
     + radek('Zahraniční odchylky (ZAHR)', zahr)
     + (dn ? '\n' + dn : '')
     + (ctx && Array.isArray(ctx.mustkyZpravy) && ctx.mustkyZpravy.length ? '\n' + ctx.mustkyZpravy.join('\n') : '')
+    /* #550 (K36-N2): nevyplněná zahraniční montáž můstků = zahraniční montáž na stavbě. */
+    + ((typeof cenikZahrMustkyUpozorneni === 'function' && ctx && cenikZahrMustkyUpozorneni(ctx.zahranicni))
+      ? '\n' + cenikZahrMustkyUpozorneni(ctx.zahranicni) : '')
     + ((!cr.length && !zahr.length && !dn) ? '\n\nCeník beze změny — mění se katalog nebo slevy.' : '');
 }
 

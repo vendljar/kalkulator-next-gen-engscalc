@@ -55,6 +55,9 @@ function zahranicniZakazka() {
   v.data.cenikRada = 'zahr';
   v.data.cenik = Object.assign(ZC.zkusebniCenik(), {
     marze: 0.44, montazHodKc: 1000, cestovniKc: 120000, rada: 'zahr',
+    /* #550 (K36-N2): nevyplněná zahraniční montáž můstků = zahraniční montáž
+     * na stavbě — varianta v souladu s dnešním ceníkem ji nese taky. */
+    mustekMontazHodKc: 1000,
   });
   v.data.proj.cenik = Object.assign(cenikProj(), { marze: 0.66 });
   v.data.cenikRucni = {};          // obchodník nic nepřepisoval ručně

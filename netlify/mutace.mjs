@@ -55,6 +55,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_controlling_c4.js',
      /* #548 (2. 11. 2026, K10-S2): migrace můstků na serveru bez sazeb v kódu — rychlá sada. */
      'test_548_mustky.mjs',
+     /* #550 (2. 11. 2026, K36-N2): zahraniční sazba montáže můstků — rychlá sada. */
+     '../src/test_550_zahr_mustky.js',
      'test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs',
      /* F1 (24. 9. 2026): pojistky N43, N44 a B73 hlídají vlastní sady. */
      'test_stary_tvar.mjs', 'test_klon_sleva.mjs', 'test_autor.mjs',
@@ -300,6 +302,19 @@ const MUTACE = [
     hledej: "  await pockej(zpozdeniMs(pokusy.email.n));\n  if (!ucet || !hesloSedi(heslo",
     nahrad: "  if (!ucet || !hesloSedi(heslo",
     proc: "hádání hesla správce bez zpomalení" },
+  /* ---------- #550 (K36-N2, 2. 11. 2026): zahraniční montáž můstků. Hlídá ../src/test_550_zahr_mustky.js. ---------- */
+  { nazev: '#550: nevyplněná zahraniční montáž můstků zůstane tuzemská', soubor: '../src/cenik_rady.js',
+    hledej: "  if (mm !== null) z.ceny[CENIK_ZAHR_MUSTEK_MONTAZ] = mm;",
+    nahrad: "",
+    proc: 'zahraniční zakázka by montáž můstků počítala českou sazbou (nález K36-N2)' },
+  { nazev: '#550: výchozí přebije vyplněnou zahraniční montáž můstků', soubor: '../src/cenik_rady.js',
+    hledej: "  if (Object.prototype.hasOwnProperty.call(c, CENIK_ZAHR_MUSTEK_MONTAZ)) return null;",
+    nahrad: "",
+    proc: 'sazba, kterou správce do zahraniční řady zapsal, by se ignorovala' },
+  { nazev: '#550: dialog zveřejnění neupozorní na nevyplněnou montáž můstků', soubor: '../src/cenik_rady.js',
+    hledej: "  if (mm === null) return '';\n  return 'Zahraniční řada: montáž můstků",
+    nahrad: "  return '';\n  return 'Zahraniční řada: montáž můstků",
+    proc: 'správce by nevěděl, že zahraniční montáž můstků bere sazbu montáže na stavbě' },
   /* ---------- #548 (K10-S2, 2. 11. 2026): migrace ceníku můstků na serveru, bez sazeb v kódu.
    * Hlídá test_548_mustky.mjs. ---------- */
   { nazev: '#548: server starý ceník nepřevede z platného', soubor: 'functions/program.mjs',
