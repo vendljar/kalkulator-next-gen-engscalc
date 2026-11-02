@@ -718,6 +718,8 @@ const PREKLAD = {
   "E-mail": ["E-mail","E-Mail","E-mail"],
   "Web": ["Website","Web","Site web"],
   "Česká republika": ["Czech Republic","Tschechische Republik","République tchèque"],
+  /* #551 (K37-I2): popisek IČ v patičce firmy cizojazyčné nabídky — zkratka zůstává v závorce. */
+  "IČ:": ["Company ID (IČ):", "Identifikationsnummer (IČ):", "Numéro d’identification (IČ) :"],
 
   /* ---- tiskový náhled celé cenové nabídky (N1 – jazykové mutace) ---- */
   "Podklady nabídky": ["Quotation data","Angebotsunterlagen","Données de l'offre"],

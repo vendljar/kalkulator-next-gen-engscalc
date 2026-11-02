@@ -507,10 +507,16 @@ function firmaIcoDic(f) {
  * Vrací řádky oddělené `\n`. Kdo je vykresluje, ať si je rozdělí — Word
  * z toho udělá dva odstavce, obrazovka dva řádky. Spojovat je do jednoho
  * řetězce s čárkou by druhý řádek schovalo doprostřed prvního. */
-function firmaPaticka(f) {
+/* CIZOJAZYČNÁ PATIČKA (#551, nález K37-I2, rozhodnutí J. V. 2. 11. 2026):
+ * v DE/EN/FR nabídce zůstávalo česky „IČ:". `prekl` = funkce překladu
+ * (P z nabídky); popisek jde přes slovník — „Company ID (IČ):",
+ * „Identifikationsnummer (IČ):", „Numéro d’identification (IČ) :". Číslo,
+ * název ani adresa se nepřekládají. Bez `prekl` (čeština) beze změny. */
+function firmaPaticka(f, prekl) {
+  const P = typeof prekl === 'function' ? prekl : (x => x);
   const ico = firmaHodnota(f, 'ico');
   const prvni = [firmaHodnota(f, 'nazev') + (firmaSidlo(f) ? ' ' + firmaSidlo(f) : ''),
-    ico ? 'IČ: ' + ico : ''].filter(Boolean).join(', ');
+    ico ? P('IČ:') + ' ' + ico : ''].filter(Boolean).join(', ');
   const druhy = firmaHodnota(f, 'oborCinnosti');
   return [prvni, druhy].filter(Boolean).join('\n');
 }
@@ -543,7 +549,7 @@ function firmaPlaceholders(f, prekl) {
   out.FIRMA_KORESPONDENCNI = firmaKorespondencni(f);
   out.FIRMA_BANKA_RADEK = firmaBankaRadek(f);
   out.FIRMA_ICO_DIC = firmaIcoDic(f);
-  out.FIRMA_PATICKA = firmaPaticka(f);
+  out.FIRMA_PATICKA = firmaPaticka(f, P);   // #551: „IČ:" v jazyce dokumentu
   return out;
 }
 /* seznam všech symbolů, které firma poskytuje (nápověda v Nastavení + testy) */

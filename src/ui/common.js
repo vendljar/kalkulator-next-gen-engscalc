@@ -2428,7 +2428,7 @@ function dokPatickaHtml(prekl) {
   const f = (typeof firmaAktualni === 'function') ? firmaAktualni() : null;
   if (!f) return '';
   const h = id => (typeof firmaHodnota === 'function') ? firmaHodnota(f, id) : (f[id] || '');
-  const text = ((typeof firmaPaticka === 'function') ? firmaPaticka(f) : '') || h('nazev');
+  const text = ((typeof firmaPaticka === 'function') ? firmaPaticka(f, P) : '') || h('nazev');   // #551
   if (!text) return '';
   const zprac = h('zpracoval');
   const kontakt = zprac ? [zprac, h('zpracovalTelefon'), h('zpracovalEmail')].filter(Boolean).join(', ') : '';
