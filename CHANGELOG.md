@@ -8,6 +8,24 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v2.11.2 — LH #546: lešení pro dokončení hlavy šachty jen u interiérové šachty, větev claude/lh-leseni-hlava
+
+Nad integrací 1fb09b2 (v2.11.1), požadavek obchodu 29. 10. 2026. Na ostrém webu, Disku ani v Pipedrive nic. Verze
+podle pravidla dne commitu; koordinace může přečíslovat.
+
+- **Nové:** u nové **exteriérové** šachty je položka „LEŠENÍ – dokončení hlavy šachty“ ve výchozím stavu nevybraná —
+  není v základní ceně ani v nabídce příplatků (ani když ji sloupec Výchozí zapíná). Interiérová šachta beze změny.
+  Pravidlo `zobrazeniLeseniHlavaTyp` v `src/zobrazeni.js`, volané z `zobrazeniVychoziAplikuj` (nová zakázka) a při
+  přepnutí typu šachty (`typSachtyPrepni`: interiér → exteriér položku odznačí, exteriér → interiér vrátí výchozí
+  stav interiéru; jen když se typ opravdu změnil, zamčená varianta beze změny).
+- **Ruční volba zůstává:** zaškrtnutí ve Volitelných nebo ve sloupci Nabídka si zakázka pamatuje (`leseniHlavaRucne`)
+  a přepnutí typu ho nemění.
+- **Uložené zakázky:** při otevření se nemění (stará nezamčená exteriérová varianta by jinak tiše změnila cenu);
+  uzamčené varianty beze změny. Klon varianty si nese svá data.
+- **Testy:** nový `src/test_leseni_hlava_typ.js` (pojistka: před změnou 14 FAIL, po ní 0), `test_vychozi_zaklad.js`
+  a `test_nepocitat.js` srovnány s pravidlem; mutace „#546“ (7) v `mutace_jadro.mjs`, jádro rozšířeno o `zobrazeni.js`.
+  Příručka obchodníka: věta u lešení.
+
 ## v2.11.1 — T2 #543: celé mutace v GitHub Actions do zelena, větev claude/t2-mutace-k6s6
 
 Nad integrací 48f5dad (v1.11.1), podle Actions „Testy“ run 41391649224. Chování aplikace beze změny; na ostrém webu,

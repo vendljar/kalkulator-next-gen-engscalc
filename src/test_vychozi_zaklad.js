@@ -116,10 +116,13 @@ function koleckoOck(key, zapnout, ctenyKlic) {
   const mat = {};
   ZOB.zobrazeniPolozkaVychoziNastav(mat, 'ock.' + key, zapnout, zk.vychoziZakladVolitelne(key));
   const ulozeno = mat.vychozi ? mat.vychozi['ock.' + key] : undefined;
-  for (const typ of ['exteriérová', 'interiérová']) {
+  /* #546: lešení pro dokončení hlavy šachty řídí sloupec Výchozí jen
+   * u interiérové šachty — u exteriérové je ve výchozím stavu nevybrané vždy. */
+  const typy = key === 'leseniHlava' ? ['interiérová'] : ['exteriérová', 'interiérová'];
+  for (const typ of typy) {
     const zad = novaZadani();
-    ZOB.zobrazeniVychoziAplikuj(mat, zad, null);
     zad.typSachty = typ;
+    ZOB.zobrazeniVychoziAplikuj(mat, zad, null);
     const r = eng.vypocet(JSON.parse(JSON.stringify(zad)), ZC.zkusebniCenik(), JEKLY, false);
     const k = r.volitelneKatalog.find(x => x.key === (ctenyKlic || key));
     if (k) return { ulozeno, typ, zahrnuto: k.zahrnuto, mnozstvi: +k.mnozstvi };

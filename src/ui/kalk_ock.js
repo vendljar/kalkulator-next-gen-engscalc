@@ -76,10 +76,24 @@ function zdvihVarovani() {
  * obchodník je dosud musel po přepnutí přenastavovat ručně — tedy na ně
  * pravidelně zapomínal. Změna se říká nahlas, protože mění cenu; kdo si
  * dimenze upravil po svém, přepíšou se mu, a musí to vědět. */
+/* LEŠENÍ – DOKONČENÍ HLAVY ŠACHTY PODLE TYPU (#546, požadavek obchodu
+ * 29. 10. 2026). Interiér → exteriér položku odznačí v základní ceně
+ * i v nabídce příplatků, exteriér → interiér vrátí výchozí stav interiéru
+ * (sloupec Výchozí). Ruční volbu obchodníka (`Z.leseniHlavaRucne`) nemění.
+ * Pravidlo je v jádře: zobrazeniLeseniHlavaTyp (zobrazeni.js). */
+function leseniHlavaPodleTypu() {
+  if (typeof zobrazeniLeseniHlavaTyp !== 'function') return;
+  zobrazeniLeseniHlavaTyp((typeof NAST !== 'undefined' && NAST) ? NAST.zobrazeni : null, Z);
+}
+
 function typSachtyPrepni(typ) {
   const t = (typ === 'interiérová') ? 'interiérová' : 'exteriérová';
   const puvodni = JSON.stringify(Z.profily);
+  const typPred = Z.typSachty;
   set('Z.typSachty', t);
+  /* #546: lešení hlavy šachty podle typu — jen když `set` typ opravdu změnil
+   * (zamčenou variantu nepustí, cena odeslané nabídky se nehne). */
+  if (Z.typSachty === t && typPred !== t) leseniHlavaPodleTypu();
   if (typeof PROFILY_VYCHOZI !== 'undefined' && PROFILY_VYCHOZI[t]) {
     Z.profily = JSON.parse(JSON.stringify(PROFILY_VYCHOZI[t]));
     if (JSON.stringify(Z.profily) !== puvodni && typeof progZprava === 'function')
@@ -1438,6 +1452,8 @@ function volitelneToggle(key, v) {
     return;
   }
   set('Z.volitelne.' + key, v);
+  /* #546: ruční volba lešení hlavy šachty — přepnutí typu ji pak nepřepíše. */
+  if (key === 'leseniHlava' && Z.volitelne && !!Z.volitelne.leseniHlava === !!v) Z.leseniHlavaRucne = true;
 }
 
 /* ---- buňky editovatelných sloupců (sdílené pro všechny sekce) ---- */
@@ -1941,6 +1957,7 @@ function priplatekNabidka(key, zahrnout) {
   if (!Z.priplatkyVynechat) Z.priplatkyVynechat = [];
   Z.priplatkyVynechat = Z.priplatkyVynechat.filter(k => k !== key);
   if (!zahrnout) Z.priplatkyVynechat.push(key);
+  if (key === 'leseniHlava') Z.leseniHlavaRucne = true;   // #546, viz volitelneToggle
   render();
 }
 /* Vlastní příplatkové položky */

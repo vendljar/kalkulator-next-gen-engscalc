@@ -118,8 +118,12 @@ test('vynechaný příplatek NEMĚNÍ cenu (jde jen o nabídku)',
   eng.vypocet(novaP, cenik(), JEKLY, true).souhrn.zakladCena === rBez.souhrn.zakladCena);
 const novaP2 = zadani();
 Zo.zobrazeniVychoziAplikuj({}, novaP2, null);
-test('bez odchylky zůstane seznam vynechaných příplatků prázdný',
-  (novaP2.priplatkyVynechat || []).length === 0);
+/* #546: u exteriérové šachty (výchozí typ) je lešení hlavy šachty mimo
+ * nabídku vždy — matice za to nemůže, jiný příplatek tam být nesmí. */
+test('bez odchylky zůstane seznam vynechaných příplatků prázdný (kromě lešení hlavy u exteriéru, #546)',
+  (novaP2.priplatkyVynechat || []).filter(k => k !== 'leseniHlava').length === 0
+  && (novaP2.typSachty !== 'exteriérová' || (novaP2.priplatkyVynechat || []).indexOf('leseniHlava') >= 0),
+  JSON.stringify(novaP2.priplatkyVynechat));
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);
