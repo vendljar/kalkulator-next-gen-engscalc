@@ -1,3 +1,35 @@
+# Předávka — 2. 11. 2026: T2 #543 — celé mutace v GitHub Actions do zelena, větev `claude/t2-mutace-k6s6`
+
+Nad `48f5dad` (integrace v1.11.1), podle Actions „Testy“ run 41391649224. **Verze 2.11.1** (pravidlo dne commitu).
+Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrém webu, Disku ani v Pipedrive nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| K6-S6 nechycená (část 6/10, 112/113) | ✅ test | `netlify/test_controlling.mjs` |
+| části 1, 2, 5 přes limit 90 min | ✅ 16 částí, limit 100 min | `.github/workflows/testy.yml`, CLAUDE.md |
+| job „testy“ — kontrola verze | ✅ v2.11.1 | `verze.txt`, CHANGELOG, roadmapa #543 |
+
+**Příčina K6-S6:** od C4 #540 `ctrlProdej` převede datum prodeje-objekt na `null` → zakázka se přeskočí s důvodem
+„neplatný tvar“ bez výjimky; test tak přestal volat záchranu (`catch`) v `functions/controlling_export.mjs`. Ochrana
+v kódu je v pořádku, opravený je jen test: výjimku teď vyvolá `cenikRada` jako objekt bez volatelného `toString`
+(poškozeno až v úložišti, záznam rejstříku z platné zakázky). Ověřuje přeskočení s důvodem a export ostatních zakázek
+podle prodeje i zamčení. Pojistka: ruční mutace 3 FAIL, bez ní 82/0; `mutace.mjs "K6-S6"` chycená 1 z 1.
+
+**Rozdělení mutací:** 1138 mutací serveru / 16 ≈ 71 na část (až ~0,85 min na mutaci → do ~60 min). K6-S6 je
+v číslování [256/1129], tedy v části 16/16 (dřív 6/10).
+
+**Testy:** VÝSLEDKY_KOLA
+
+**Prostředí:** prohlížečové ESM harnessy chtějí `node_modules/playwright` → `ln -s /opt/node22/lib/node_modules/playwright
+node_modules/playwright` (v .gitignore), jinak se 43 harnessů přeskočí.
+
+**Při slučování:** konflikt hrozí v `CHANGELOG.md`, `roadmapa/roadmap.json` (#543 za #542), `CLAUDE.md` (oddíl Mutace po
+částech), `.github/workflows/testy.yml`, `verze.txt`.
+
+**Další krok:** koordinace sloučí, pustí Actions „Testy“ (16 serverových částí) a vyrobí odkaz na release.
+
+---
+
 # Předávka — 1. 11. 2026: O-SECM #542 — opravy security testu SEC-M, větev `claude/o-secm-opravy`
 
 Nad `0cc9335` (integrace v27.10.6). **Verze 1.11.1** — ne v27.10.7 ze zadání: `build.py --kontrola-verze` (statické

@@ -945,7 +945,7 @@
       },
       {
        "pojem": "Actions — Testy",
-       "vyklad": "Workflow `testy.yml` běží **automaticky při pushi do `main`** a ručně nad libovolnou větví (Actions → Testy → *Run workflow*). Joby: testy bez mutací, mutace serveru v 10 částech (limit 90 min), mutace jádra ve 3 částech. Celé kolo = všechny joby zelené. Workflow má jen právo čtení repozitáře a akce připnuté na SHA."
+       "vyklad": "Workflow `testy.yml` běží **automaticky při pushi do `main`** a ručně nad libovolnou větví (Actions → Testy → *Run workflow*). Joby: testy bez mutací, mutace serveru v 16 částech (limit 100 min), mutace jádra ve 3 částech. Celé kolo = všechny joby zelené. Workflow má jen právo čtení repozitáře a akce připnuté na SHA."
       },
       {
        "pojem": "Actions — Smazat sloučené větve",

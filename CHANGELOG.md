@@ -20,7 +20,8 @@ Disku ani v Pipedrive nic. Verze podle pravidla dne commitu; koordinace může p
   (podle prodeje i zamčení) projde s ostatními zakázkami. Ochrana v kódu byla v pořádku. Pojistka: s mutací 3 FAIL,
   bez ní 82/0.
 - **Limit Actions:** `mutace-server` v 16 částech (~71 mutací) s limitem 100 min místo 10 částí s 90 min (části 1, 2
-  a 5 limit zrušil); CLAUDE.md oddíl Mutace po částech srovnán.
+  a 5 limit zrušil); CLAUDE.md oddíl Mutace po částech, kompletní dokumentace (`manual/kompletni/provoz.json`)
+  a její test `src/test_dokumentace_kompletni.js` srovnány.
 - **Kontrola verze:** verze v2.11.1 odpovídá dni commitu (job „testy“ padal jen na ní).
 
 ## v1.11.1 — O-SECM #542: opravy nálezů security testu SEC-M, větev claude/o-secm-opravy
