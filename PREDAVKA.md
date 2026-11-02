@@ -1,3 +1,27 @@
+# Předávka — 2. 11. 2026: T3 #549 — přeživší mutace B28 (zámek „obnova běží“), větev `claude/t3-mutace-b28`
+
+Nad `141b92f` (integrace v2.11.2). **Verze 2.11.3** (pravidlo dne commitu; koordinace může přečíslovat). Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrém webu, Disku ani v Pipedrive nic.
+
+**Zdroj:** Actions „Testy“ run 41413223863 nad 1fb09b2 (v2.11.1) — server část 5/16 chycených 70 z 71, nechycená
+jen „B28: zámek ‚obnova běží‘ se nekontroluje“ (`functions/obnova.mjs`, `zamekObnovy`).
+
+**Rozbor (a):** kontrola B28 **je potřebná**. SEC-M8 #542 přidala v `zalozTokenObnovy` kontrolu po zápisu tokenu,
+ta ale ustoupí jen tokenu se **starším** časem začátku. Dosavadní testy měly cizí token vždy starší → chytila ho
+i kontrola po zápisu a mutace přežila. Proti živému tokenu s pozdějším časem začátku (hodiny jiné instance napřed,
+tatáž ms s větším id) chrání jen předběžná kontrola. Kód ochrany beze změny.
+
+**Hotovo:** test `netlify/test_obnova.mjs` blok „T3 #549“ (cizí živý token +5 min → zacatek i jednorázová 409,
+žádný nový otisk před obnovou, token jen jeden); komentář u B28 v `netlify/mutace.mjs`; CHANGELOG v2.11.3; roadmapa
+#549 (vlna G, hotovo). Pojistka: se zmutovanou kontrolou bez testu 235 OK / 0 FAIL, s testem 2 FAIL.
+`node netlify/mutace.mjs "B28"` → **chycených 2 z 2**. `test_obnova.mjs` 238 OK / 0 FAIL.
+
+**Testy:** STAV_TESTU
+
+Release v2.11.3 zatím ne (neslučováno) — odkaz vyrobí koordinace po sloučení.
+
+---
+
 # Předávka — 2. 11. 2026: PF #545 — Prodáno mění fázi dealu, ne stav, větev `claude/pf-prodano-faze`
 
 Nad `48f5dad` (integrace v1.11.1). **Verze 2.11.1** (pravidlo dne commitu; koordinace může přečíslovat). Koordinace:
