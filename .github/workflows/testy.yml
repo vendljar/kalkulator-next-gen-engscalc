@@ -22,7 +22,7 @@
 #                          smoke + VŠECHNY overit_*.mjs globem, statické
 #                          kontroly: verze = den commitu, CRLF, osobní údaje
 #                          a tajemství)
-#   job „mutace-server"  = testovaci_kolo.sh --jen mutace-server, matrix 10 částí
+#   job „mutace-server"  = testovaci_kolo.sh --jen mutace-server, matrix 16 částí
 #   job „mutace-jadro"   = testovaci_kolo.sh --jen mutace-jadro, matrix 3 části
 # Mutace běží v samostatných jobech, aby jely souběžně. OD 23. 10. 2026 (P2,
 # podklady/PROMPT_mutacni_beh_23_10.md) PO ČÁSTECH: celý běh se do jednoho
@@ -31,7 +31,9 @@
 # nastroje/mutace_cast.mjs); části dohromady pokryjí každou mutaci právě
 # jednou. Celé kolo = všechny joby matrixu zelené. Testy #195 (23. 10. 2026):
 # server v 6 částech po ~150 mutacích — 5 z 6 zrušil limit 75 min (nejrychlejší
-# část 63 min); od 24. 10. (#514) 10 částí po ~92 mutacích, limit 90 min. Přeskočené sady vypíše souhrn skriptu; přeskočená kontrola,
+# část 63 min); od 24. 10. (#514) 10 částí po ~92 mutacích, limit 90 min; od 2. 11.
+# (T2 #543, Testy 41391649224: ~113 mutací na část, části 1, 2 a 5 přes 90 min)
+# 16 částí po ~71 mutacích, limit 100 min. Přeskočené sady vypíše souhrn skriptu; přeskočená kontrola,
 # o které se mlčí, je totéž co kontrola, která neexistuje.
 name: Testy
 
@@ -102,13 +104,18 @@ jobs:
   # 63 min a víc (5 z 6 částí zrušil limit 75 min) → ~0,45 min na mutaci.
   # 917 / 10 ≈ 92 mutací ≈ 40–60 min na část; limit 90 min = rezerva ~50 %
   # i na další růst. Při ~1100 mutacích přidat části (K8-W7).
+  # T2 #543 (2. 11. 2026, Testy 41391649224): 1138 mutací / 10 ≈ 113 na část,
+  # 55 až 90+ min (části 1, 2 a 5 zrušil limit 90 min) → až ~0,85 min na
+  # mutaci (sady mezitím zpomalily). 16 částí ≈ 71 mutací ≈ 35–60 min na část,
+  # limit 100 min = rezerva i na pomalý stroj. Při ~1450 mutacích přidat části.
   mutace-server:
     runs-on: ubuntu-24.04  # pevně: ubuntu-latest = 26.04 od 19. 10. 2026, Playwright tam Chromium neinstaluje
-    timeout-minutes: 90
+    timeout-minutes: 100
     strategy:
       fail-fast: false   # jedna červená část nesmí zrušit ostatní — chceme vidět všechny nechycené
       matrix:
-        cast: ['1/10', '2/10', '3/10', '4/10', '5/10', '6/10', '7/10', '8/10', '9/10', '10/10']
+        cast: ['1/16', '2/16', '3/16', '4/16', '5/16', '6/16', '7/16', '8/16',
+               '9/16', '10/16', '11/16', '12/16', '13/16', '14/16', '15/16', '16/16']
     name: mutace-server (část ${{ matrix.cast }})
     env:
       ADMIN_EMAIL: spravce@priklad.cz

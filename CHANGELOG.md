@@ -8,6 +8,21 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v2.11.1 — T2 #543: celé mutace v GitHub Actions do zelena, větev claude/t2-mutace-k6s6
+
+Nad integrací 48f5dad (v1.11.1), podle Actions „Testy“ run 41391649224. Chování aplikace beze změny; na ostrém webu,
+Disku ani v Pipedrive nic. Verze podle pravidla dne commitu; koordinace může přečíslovat.
+
+- **K6-S6 — test znovu chytá mutaci (serverová část 6/10 byla 112/113):** od C4 #540 `ctrlProdej` převede datum
+  prodeje-objekt na `null` a zakázka se přeskočí s důvodem „neplatný tvar“ bez výjimky, takže test přestal volat
+  záchranu v `functions/controlling_export.mjs`. `netlify/test_controlling.mjs` teď výjimku vyvolá číselnou řadou jako
+  objektem (poškozeno až v úložišti) a ověří, že poškozená zakázka je mezi přeskočenými s důvodem a export za období
+  (podle prodeje i zamčení) projde s ostatními zakázkami. Ochrana v kódu byla v pořádku. Pojistka: s mutací 3 FAIL,
+  bez ní 82/0.
+- **Limit Actions:** `mutace-server` v 16 částech (~71 mutací) s limitem 100 min místo 10 částí s 90 min (části 1, 2
+  a 5 limit zrušil); CLAUDE.md oddíl Mutace po částech srovnán.
+- **Kontrola verze:** verze v2.11.1 odpovídá dni commitu (job „testy“ padal jen na ní).
+
 ## v1.11.1 — O-SECM #542: opravy nálezů security testu SEC-M, větev claude/o-secm-opravy
 
 Nad integrací 0cc9335 (v27.10.6). Schválil J. V. 1. 11. 2026; zpráva `podklady/SEC_AUDIT_MAIN_28_10.md` (oddíl „Stav

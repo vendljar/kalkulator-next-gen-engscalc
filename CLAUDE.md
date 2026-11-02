@@ -100,12 +100,13 @@ Cloudové sezení může spadnout (25. 9. 2026: „Prompt is too long“ po
 - **Mutace po částech (P2, 23. 10. 2026):** celé mutace se v cloudovém sezení
   do 2 h úlohy na pozadí nevejdou (server ~5 h). Pouštět po částech:
   `KNG_MUTACE_CAST=K/N bash nastroje/testovaci_kolo.sh --jen mutace-server`
-  (K = 1…N, např. N = 4 pro jádro a 8 pro server — každá část pod 2 h), nebo
+  (K = 1…N, např. N = 4 pro jádro a 12 pro server — každá část pod 2 h), nebo
   přímo `node netlify/mutace.mjs --cast K/N`; přerušený běh naváže
   `--od <číslo>` podle posledního řádku `[pořadí/celkem]` v logu. Kolo
   s částí hlásí „ZELENÁ ČÁST", nikdy „VŠE ZELENÉ". Actions běží v matrixu
-  (server 10 částí s limitem 90 min, jádro 3 — #514 po Testy #195, kde
-  6 serverových částí narazilo na 75 min). Neznámá volba (i `--help`)
+  (server 16 částí s limitem 100 min, jádro 3 — T2 #543 po Testy
+  41391649224, kde 3 z 10 serverových částí narazily na 90 min; dřív #514
+  po Testy #195). Neznámá volba (i `--help`)
   a prázdný výběr skončí chybou s kódem 2 (K8-W2, K8-W3); `--od` navazuje
   jen na pracovní kopii bez zbytku mutace (K8-W9). `KNG_MUTACE_OD` patří
   k jednomu kroku kola (číslování jádra a serveru se liší).
