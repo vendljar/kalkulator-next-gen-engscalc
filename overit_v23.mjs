@@ -65,6 +65,7 @@ const ulozena = await p.evaluate(() => {
   v.data.cenikRada = 'zahr';
   v.data.cenik.rada = 'zahr';
   v.data.cenik.montazHodKc = 1000;
+  v.data.cenik.mustekMontazHodKc = 1000;   // #550: nevyplněná zahr. montáž můstků = zahr. montáž na stavbě
   v.data.cenik.cestovniKc = 120000;
   v.data.cenik.sken3dKc = 20000;
   v.data.cenik.marze = 0.40;
