@@ -740,10 +740,13 @@ function profilyNezname(zadani, jekly) {
  * NULOU (cenikDoplnKlice). Nový vzorec proto platí jen u ceníku s kladnou
  * referenční šířkou; starý ceník (zamčená varianta, ceník zveřejněný před
  * #354) počítá dál paušál × počet — ceny odeslaných nabídek se nemění. */
-const MUSTKY_CENIK_VYCHOZI = {
-  mustekKc: 28600, mustekRefSirkaMm: 1600, mustekMontazHodKc: 400,
-  mustekMontazZakladHod: 8, mustekMontazBmHod: 8, mustekMontazMinHod: 16,
-};
+/* Klíče ceníku můstků v novém tvaru. ŽÁDNÉ VÝCHOZÍ SAZBY V KÓDU (#548,
+ * nález K10-S2, 2. 11. 2026): do v2.11.2 tu stála konstanta se skutečnými
+ * sazbami (materiál za bm, referenční šířka, sazba a hodiny montáže) a se
+ * sestavením odcházela do veřejného `dist/*.html`. Sazby žijí jen
+ * v ceníku na serveru; kód zná jen jména klíčů. */
+const MUSTKY_CENIK_KLICE = ['mustekKc', 'mustekRefSirkaMm', 'mustekMontazHodKc',
+  'mustekMontazZakladHod', 'mustekMontazBmHod', 'mustekMontazMinHod'];
 const MUSTEK_DELKA_VYCHOZI_MM = 1000;
 function mustkyCenikNovy(c) {
   const r = c ? +c.mustekRefSirkaMm : NaN;
@@ -771,29 +774,69 @@ function mustkyRozpad(z, c) {
   out.montazKs = out.hodKs * num(c.mustekMontazHodKc);
   return out;
 }
-/* MIGRACE ZVEŘEJŇOVANÉHO CENÍKU (#354). Ceník ve starém tvaru (bez kladné
- * referenční šířky) dostane nové buňky s výchozími hodnotami a C.mustekKc
- * nově jako Kč/bm. Montážní buňky, které už správce vyplnil, zůstanou.
- * C.mustekKc se u starého tvaru nahradí VŽDY (#529 E, test J. V. 27. 10.
- * 2026): byl to paušál Kč/ks vč. montáže, takže jakákoli jeho hodnota
- * (testengscalc 25 000) by se teď četla jako Kč/bm materiálu — můstek
- * 1 m × 1,6 m vyšel 31 400 místo schválených 35 000. Do #529 zůstal, když
- * se lišil od platného ceníku (`platny`, dnes nepoužitý). Ceník v novém
- * tvaru (má referenční šířku) se nemění. `zpravy` (pole, nepovinné) dostane
- * větu pro správce. Vrací true, když migroval. */
+/* MIGRACE ZVEŘEJŇOVANÉHO CENÍKU (#354; od #548 bez sazeb v kódu).
+ *
+ * Ceník ve starém tvaru (bez kladné referenční šířky, C.mustekKc = paušál
+ * Kč/ks vč. montáže) se převede na nový tvar JEN z ceníku, který už nový
+ * tvar má — `platny` je platný ceník ze serveru (v prohlížeči DEFAULT_CENIK
+ * po progPouzij, na serveru db.platny.cenik). C.mustekKc a referenční šířka
+ * se převezmou VŽDY (#529 E: paušál čtený jako Kč/bm dával špatnou cenu),
+ * montážní buňky jen tam, kde je správce nevyplnil.
+ *
+ * Bez zdroje (ani platný ceník nový tvar nemá) se NIC nevymýšlí (K10-S2):
+ * ceník zůstane ve starém tvaru, můstek se počítá dál paušálem a dialog
+ * zveřejnění (a server) chce výslovné potvrzení — viz mustkyCenikKontrola.
+ * Ceník v novém tvaru se nemění. `zpravy` (pole, nepovinné) dostane větu
+ * pro správce. Vrací true, když migroval. */
 function cenikMigraceMustku(cenik, platny, zpravy) {
   if (!cenik || typeof cenik !== 'object' || mustkyCenikNovy(cenik)) return false;
-  const V = MUSTKY_CENIK_VYCHOZI;
+  if (!platny || typeof platny !== 'object' || !mustkyCenikNovy(platny)) return false;
+  const kladne = v => Number.isFinite(+v) && +v > 0;
   const fmt = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
   if (Array.isArray(zpravy))
-    zpravy.push('Můstek: ' + (+cenik.mustekKc > 0 ? 'paušál ' + fmt(+cenik.mustekKc) + ' Kč/ks nahrazen' : 'doplněna')
-      + ' cenou ' + fmt(V.mustekKc) + ' Kč/bm materiálu (při šířce ' + fmt(V.mustekRefSirkaMm) + ' mm) a montáží podle délky.');
-  cenik.mustekKc = V.mustekKc;
-  cenik.mustekRefSirkaMm = V.mustekRefSirkaMm;
-  ['mustekMontazHodKc', 'mustekMontazZakladHod', 'mustekMontazBmHod', 'mustekMontazMinHod'].forEach(k => {
-    if (!(Number.isFinite(+cenik[k]) && +cenik[k] > 0)) cenik[k] = V[k];
+    zpravy.push('Můstek: ' + (kladne(cenik.mustekKc) ? 'paušál ' + fmt(+cenik.mustekKc) + ' Kč/ks nahrazen' : 'doplněna')
+      + ' cenou ' + fmt(+platny.mustekKc || 0) + ' Kč/bm materiálu (při šířce ' + fmt(+platny.mustekRefSirkaMm)
+      + ' mm) z platného ceníku a montáží podle délky.');
+  cenik.mustekKc = kladne(platny.mustekKc) ? +platny.mustekKc : 0;
+  cenik.mustekRefSirkaMm = +platny.mustekRefSirkaMm;
+  MUSTKY_CENIK_KLICE.slice(2).forEach(k => {
+    if (!kladne(cenik[k])) cenik[k] = kladne(platny[k]) ? +platny[k] : 0;
   });
   return true;
+}
+
+/* KONTROLA CENY MŮSTKU PŘED ZVEŘEJNĚNÍM (#548, K10-S2).
+ * Vrací { ok, stary, chybi: [klíče], text }. ok = false, když by nové
+ * nabídky počítaly můstek za 0 Kč, nebo když ceník zůstal ve starém tvaru
+ * (převést nebylo z čeho). Zveřejnit pak jde jen s výslovným potvrzením
+ * správce (dialog v aplikaci; server chce `mustkyPotvrzeno: true`). */
+function mustkyCenikKontrola(cenik) {
+  const c = (cenik && typeof cenik === 'object') ? cenik : {};
+  const kladne = v => Number.isFinite(+v) && +v > 0;
+  const POPIS = { mustekKc: 'C.mustekKc (materiál, Kč/bm)', mustekRefSirkaMm: 'referenční šířka (mm)',
+    mustekMontazHodKc: 'sazba montáže (Kč/hod)', hodiny: 'hodiny montáže (základ, za bm nebo minimum)' };
+  if (!mustkyCenikNovy(c)) {
+    const chybi = MUSTKY_CENIK_KLICE.filter(k => !kladne(c[k]) && k !== 'mustekKc')
+      .filter(k => !/Hod$/.test(k) || k === 'mustekMontazHodKc');
+    if (!MUSTKY_CENIK_KLICE.slice(3).some(k => kladne(c[k]))) chybi.push('hodiny');
+    const pausal = kladne(c.mustekKc);
+    const text = 'Můstek je v ceníku ve STARÉM tvaru ('
+      + (pausal ? 'paušál za kus vč. montáže' : 'bez ceny — nové nabídky by počítaly můstek za 0 Kč')
+      + ') a platný ceník nový tvar nemá, takže převést není z čeho. '
+      + 'Pro výpočet podle rozměru vyplňte v Nastavení → Ceník: C.mustekKc (Kč/bm materiálu), '
+      + chybi.map(k => POPIS[k]).filter(Boolean).filter(t => !/^C\.mustekKc/.test(t)).join(', ') + '.'
+      + (pausal ? ' Zveřejní-li se ceník takto, počítá se můstek dál paušálem.' : '');
+    return { ok: false, stary: true, chybi: (pausal ? [] : ['mustekKc']).concat(chybi), text };
+  }
+  const chybi = [];
+  if (!kladne(c.mustekKc)) chybi.push('mustekKc');
+  if (!kladne(c.mustekMontazHodKc)) chybi.push('mustekMontazHodKc');
+  if (!MUSTKY_CENIK_KLICE.slice(3).some(k => kladne(c[k]))) chybi.push('hodiny');
+  if (!chybi.length) return { ok: true, stary: false, chybi, text: '' };
+  return { ok: false, stary: false, chybi,
+    text: 'Cena můstku není úplná — chybí ' + chybi.map(k => POPIS[k]).join(', ')
+      + '. Nové nabídky by ' + (chybi.includes('mustekKc') && chybi.length > 1 ? 'počítaly můstek za 0 Kč.' : 'tuto část můstku počítaly za 0 Kč.')
+      + ' Doplňte je v Nastavení → Ceník.' };
 }
 
 function vypocet(zadani, cenik, jekly, fixes = true) {
@@ -2467,4 +2510,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, cenikMigraceMustku, MUSTKY_CENIK_VYCHOZI, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, cenikMigraceMustku, mustkyCenikKontrola, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

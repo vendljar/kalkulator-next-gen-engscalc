@@ -53,6 +53,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_secm.mjs',
      /* #540 (27. 10. 2026): Prodáno — model prodServer a zmrazení; rychlá sada před maticí práv. */
      '../src/test_controlling_c4.js',
+     /* #548 (2. 11. 2026, K10-S2): migrace můstků na serveru bez sazeb v kódu — rychlá sada. */
+     'test_548_mustky.mjs',
      'test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs',
      /* F1 (24. 9. 2026): pojistky N43, N44 a B73 hlídají vlastní sady. */
      'test_stary_tvar.mjs', 'test_klon_sleva.mjs', 'test_autor.mjs',
@@ -298,6 +300,24 @@ const MUTACE = [
     hledej: "  await pockej(zpozdeniMs(pokusy.email.n));\n  if (!ucet || !hesloSedi(heslo",
     nahrad: "  if (!ucet || !hesloSedi(heslo",
     proc: "hádání hesla správce bez zpomalení" },
+  /* ---------- #548 (K10-S2, 2. 11. 2026): migrace ceníku můstků na serveru, bez sazeb v kódu.
+   * Hlídá test_548_mustky.mjs. ---------- */
+  { nazev: '#548: server starý ceník nepřevede z platného', soubor: 'functions/program.mjs',
+    hledej: "    globalThis.cenikMigraceMustku(ctx.cenik, platny && platny.cenik);",
+    nahrad: "    void 0;",
+    proc: 'paušál za kus ze starého klienta by se zveřejnil vedle platného nového tvaru a nové nabídky by počítaly paušálem' },
+  { nazev: '#548: server pustí nulovou cenu můstku bez potvrzení', soubor: 'functions/program.mjs',
+    hledej: "      && globalThis.mustkyCenikNovy(ctx.cenik) && t.mustkyPotvrzeno !== true) {",
+    nahrad: "      && globalThis.mustkyCenikNovy(ctx.cenik) && false) {",
+    proc: 'obejitím dialogu by se zveřejnil ceník s můstkem za 0 Kč' },
+  { nazev: '#548: potvrzení stačí jakákoli hodnota', soubor: 'functions/program.mjs',
+    hledej: "t.mustkyPotvrzeno !== true) {",
+    nahrad: "!t.mustkyPotvrzeno) {",
+    proc: 'potvrzení by šlo „vyrobit" libovolným neprázdným polem' },
+  { nazev: '#548: převod z platného ceníku bez referenční šířky [#548]', soubor: '../src/engine.js',
+    hledej: "  cenik.mustekRefSirkaMm = +platny.mustekRefSirkaMm;",
+    nahrad: "",
+    proc: 'převedený ceník by zůstal ve starém tvaru a paušál by se četl jako cena za metr' },
   /* ---------- #540: Prodáno a protokol exportů v záloze (27. 10. 2026). Hlídají
    * src/test_controlling_c4.js, test_prava.mjs (blok #540), test_controlling.mjs, test_zalohy.mjs. ---------- */
   { nazev: '#540: server prodej nekontroluje', soubor: 'lib/zakazka_kontrola.mjs',

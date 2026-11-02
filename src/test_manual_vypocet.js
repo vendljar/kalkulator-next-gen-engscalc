@@ -108,8 +108,12 @@ if (process.env.KNG_MANUAL_HTML) {
     && dopl.mustekMontazHodKc === ZC.montazHodKc, dopl);
   test('titul: 3. vydání a verze z verze.txt', /3\. vydání/.test(r.html)
     && r.html.indexOf('v' + fs.readFileSync(path.join(KOREN, 'verze.txt'), 'utf8').trim()) > 0);
-  test('manuál nemá řádek s vymyšlenou cenou můstku z výchozí migrace (28 600 / 400)',
-    !/28\u00a0600|28 600/.test(r.html) && !/400\u00a0Kč\/h/.test(r.html));
+  /* #548 (K10-S2): skutečná čísla už v testu nejsou — hlídá se zdroj čísel:
+   * manuál nesmí brát sazby můstku z jádra (to žádné nemá), jen ze zkušebního
+   * ceníku a jeho doplnění. */
+  test('manuál nebere sazby můstku z jádra (žádné výchozí hodnoty migrace)',
+    !/MUSTKY_CENIK/.test(fs.readFileSync(path.join(KOREN, 'manual_vypocet', 'data.js'), 'utf8'))
+    && !/MUSTKY_CENIK/.test(fs.readFileSync(path.join(KOREN, 'manual_vypocet', 'sestav.js'), 'utf8')));
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

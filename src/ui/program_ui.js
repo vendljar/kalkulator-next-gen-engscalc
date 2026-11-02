@@ -281,9 +281,12 @@ function progKontext(poznamka) {
     else delete o.dleNabidky;
     return o;
   };
-  /* MŮSTKY PODLE ROZMĚRU (#354): ceník ve starém tvaru (paušál Kč/ks) dostane
-   * při zveřejnění nové buňky s výchozími hodnotami a C.mustekKc jako Kč/bm.
-   * Do KOPIE — ceník varianty zůstává; dialog zveřejnění změny vypíše. */
+  /* MŮSTKY PODLE ROZMĚRU (#354; #548): ceník ve starém tvaru (paušál Kč/ks)
+   * dostane při zveřejnění buňky nového tvaru Z PLATNÉHO CENÍKU ZE SERVERU
+   * (DEFAULT_CENIK po progPouzij) — v kódu žádné sazby nejsou (K10-S2).
+   * Nemá-li ani platný ceník nový tvar, nic se nevymýšlí a správce to musí
+   * potvrdit (progMustkyPotvrd). Do KOPIE — ceník varianty zůstává; dialog
+   * zveřejnění změny vypíše. */
   const platnyCenik = (typeof DEFAULT_CENIK !== 'undefined') ? DEFAULT_CENIK : null;   // platný (po progPouzij)
   const mustkyZpravy = [];   // #529 E: dialog zveřejnění řekne, co se s můstkem stalo
   const sMustky = o => { if (typeof cenikMigraceMustku === 'function') cenikMigraceMustku(o, platnyCenik, mustkyZpravy); return o; };
@@ -332,6 +335,22 @@ function progZverejniPojistka(ctx) {
   progZprava('Zveřejnění zastaveno. ' + v.duvod + seznam, 'varovani');
   if (typeof render === 'function') render();
   return false;
+}
+
+/* NULOVÁ / NEPŘEVEDENÁ CENA MŮSTKU (#548, nález K10-S2, 2. 11. 2026).
+ * Výchozí sazby můstků z kódu zmizely (byly ve veřejném sestavení). Když se
+ * starý ceník nemá odkud převést, nebo nový tvar nemá cenu za metr či
+ * montáž, dialog to řekne a zveřejní se jen na výslovné potvrzení správce.
+ * Vrací Promise<boolean>; při potvrzení zapíše `ctx.mustkyPotvrzeno`. */
+async function progMustkyPotvrd(ctx) {
+  if (typeof mustkyCenikKontrola !== 'function' || !ctx) return true;
+  const k = mustkyCenikKontrola(ctx.cenik);
+  if (k.ok) return true;
+  const ano = await potvrd('Cena můstku v ceníku k zveřejnění:\n\n' + k.text
+    + '\n\nZveřejnit ceník i tak?',
+    { ano: 'Zveřejnit i tak', ne: 'Zpět — doplním ceník můstků' });
+  if (ano) ctx.mustkyPotvrzeno = true;
+  return !!ano;
 }
 
 /* Rozpis změn do dialogu — ZVLÁŠŤ tuzemská řada a zvlášť zahraniční.
@@ -388,6 +407,7 @@ async function progZverejni(preddanaPozn) {
     progZprava('Ceník této varianty se od platné verze neliší – není co zveřejňovat.');
     render(); return Promise.resolve(false);
   }
+  if (!await progMustkyPotvrd(ctx)) return Promise.resolve(false);   // #548
   const pozn = (typeof preddanaPozn === 'string') ? preddanaPozn
     : await dotaz('Zveřejnit ceník aktivní varianty jako platný pro celý program?\n\n'
     + progZverejniRozpis(PROG_STAV.db, ctx)

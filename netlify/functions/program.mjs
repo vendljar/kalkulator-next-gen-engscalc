@@ -1,7 +1,7 @@
 /* Databáze programu online — TÝŽ model jako _program.json ve složce.
  * GET  /api/program            → { db } (platný ceník + historie) — přihlášení;
  *      historie verzí jen s právem `naklady.ceniky` (P12, #369)
- * POST /api/program { cenik, cenikProj, katalog, slevy, poznamka }
+ * POST /api/program { cenik, cenikProj, katalog, slevy, poznamka, mustkyPotvrzeno }
  *      → zveřejnit jako platný — JEN Administrátor (pravidlo: „Platný ceník
  *        může zveřejňovat jen administrátor"). Verzování, otisky i odkládání
  *        starých verzí dělá stejný kód jako v aplikaci (src/program.js +
@@ -93,6 +93,21 @@ export default async (req) => {
   const zahrProKontrolu = (typeof globalThis.cenikZahrSluc === 'function')
     ? globalThis.cenikZahrSluc(platny && platny.zahranicni, ctx.zahranicni)
     : ctx.zahranicni;
+  /* MŮSTKY BEZ SAZEB V KÓDU (#548, nález K10-S2, 2. 11. 2026). Ceník ve
+   * starém tvaru (paušál za kus) se převede na nový tvar z PLATNÉHO ceníku
+   * na serveru — stejná funkce jako v prohlížeči, žádná sazba v kódu. Bez
+   * zdroje se nic nevymýšlí (ceník zůstane paušálem; dialog to správci řekl).
+   * Ceník v novém tvaru s nulovou cenou za metr nebo montáží se zveřejní jen
+   * s `mustkyPotvrzeno: true` — potvrzení z dialogu aplikace. Starý tvar
+   * s nulovým paušálem se tu nezastavuje: je to dosavadní stav prázdného
+   * sestavení (DEFAULT_CENIK) a výpočet ho zná. */
+  if (ctx.cenik && typeof ctx.cenik === 'object' && !Array.isArray(ctx.cenik) && typeof globalThis.cenikMigraceMustku === 'function')
+    globalThis.cenikMigraceMustku(ctx.cenik, platny && platny.cenik);
+  if (ctx.cenik && typeof globalThis.mustkyCenikKontrola === 'function'
+      && globalThis.mustkyCenikNovy(ctx.cenik) && t.mustkyPotvrzeno !== true) {
+    const km = globalThis.mustkyCenikKontrola(ctx.cenik);
+    if (!km.ok) return json({ ok: false, kod: 'mustky', chyba: km.text, chybi: km.chybi }, 400);
+  }
   const posudek = globalThis.cenikZverejneniKontrola(ctx, zahrProKontrolu, t.rada, platny);
   if (!posudek.ok)
     return json({ ok: false, kod: posudek.kod, chyba: posudek.duvod,
