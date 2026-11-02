@@ -18,7 +18,11 @@ podle prodeje i zamčení. Pojistka: ruční mutace 3 FAIL, bez ní 82/0; `mutac
 **Rozdělení mutací:** 1138 mutací serveru / 16 ≈ 71 na část (až ~0,85 min na mutaci → do ~60 min). K6-S6 je
 v číslování [256/1129], tedy v části 16/16 (dřív 6/10).
 
-**Testy:** VÝSLEDKY_KOLA
+**Testy:** `testovaci_kolo.sh --bez-mutaci` VŠE ZELENÉ (353 / 0 / 7 přeskočeno — firemní podklady; statické 5 z 5;
+19,5 min); mutace serveru část 16/16 (obsahuje K6-S6) **70 z 70 chycených za 47,6 min** (lokálně ~0,68 min na mutaci →
+v Actions s 16 částmi odhad 40–65 min, limit 100 min); `mutace.mjs "K6-S6"` 1 z 1; `test_controlling` 82/0;
+`test_dokumentace_kompletni` 77/0 (po změně matrixu hlásil 1 FAIL — `provoz.json` „mutace serveru v 16 částech“).
+Jádro se nemění (mutace jádra neopakovány, v Actions 3/3 zelené). Celé Actions „Testy“ s 16 částmi pustí koordinace.
 
 **Prostředí:** prohlížečové ESM harnessy chtějí `node_modules/playwright` → `ln -s /opt/node22/lib/node_modules/playwright
 node_modules/playwright` (v .gitignore), jinak se 43 harnessů přeskočí.
