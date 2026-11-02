@@ -182,6 +182,8 @@ const PRIORITA = [
   'test_nazvy_souboru.js',
   /* #540 — Prodáno, výchozí filtr, zaokrouhlení, podíly, verze exportu (controlling.js, zamek.js, objednane.js) */
   'test_controlling_c4.js',
+  /* K37-N1 — vyřazené sklo po přepnutí typu šachty (ui/kalk_ock.js, ui/common.js) */
+  'test_k37_sklo_prepnuti.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -210,6 +212,20 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* K37-N1 (kolo 37, 2. 11. 2026): název skla boků po přepnutí typu šachty.
+   * Hlídá src/test_k37_sklo_prepnuti.js (prohlížeč: overit_k37_sklo.mjs). */
+  { nazev: 'K37-N1: typSachtyPrepni bez migrace skla', soubor: 'ui/kalk_ock.js',
+    hledej: "  if (typeof skloMigraceAkt === 'function') skloMigraceAkt();\n  syncVarianta(); render();",
+    nahrad: "  syncVarianta(); render();",
+    proc: 'po přepnutí typu šachty by se vyřazené sklo boků znovu počítalo — vytištěná nabídka by nesla jinou cenu než po znovuotevření' },
+  { nazev: 'K37-N1: skloMigraceAkt nic nepřemapuje', soubor: 'ui/common.js',
+    hledej: "  return skloMigraceNazvu(v.data);",
+    nahrad: "  return 0;",
+    proc: 'vyřazení a přepisy skla by po změně typu, zasklení, řady i názvu v ceníku zůstaly pod starým názvem (K37-N1)' },
+  { nazev: 'K37-N1: skloMigraceAkt přemapuje i zamčenou variantu', soubor: 'ui/common.js',
+    hledej: "  if (typeof variantaUzamcena === 'function' && variantaUzamcena(v)) return 0;\n  return skloMigraceNazvu",
+    nahrad: "  return skloMigraceNazvu",
+    proc: 'data odeslané nabídky by se změnila bez odemčení — server by uložení odmítl' },
   /* #540 (27. 10. 2026): kód controllingu podle rozhodnutí J. V. Hlídá src/test_controlling_c4.js. */
   { nazev: '#540: výchozí filtr stavu Pipedrive zase „vyhrané"', soubor: 'controlling.js',
     hledej: "  const pd = x.pd == null || x.pd === '' ? 'vse' : x.pd;",

@@ -93,6 +93,10 @@ function typSachtyPrepni(typ) {
    * u šachty, kterou odznak hlásil jako STANDARD. Kontrola se proto pustí
    * znovu, až jsou profily na místě. */
   if (typeof standardAtypAutomat === 'function') standardAtypAutomat();
+  /* K37-N1: vyřazení a přepisy skla boků na název podle nového typu — stejně
+   * jako po znovuotevření (importZakazka). Bez toho se vyřazené sklo po
+   * přepnutí znovu počítalo a vytištěná nabídka nesla jinou cenu. */
+  if (typeof skloMigraceAkt === 'function') skloMigraceAkt();
   syncVarianta(); render();
 }
 
