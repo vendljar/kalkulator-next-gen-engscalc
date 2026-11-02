@@ -16,7 +16,9 @@ ani v Pipedrive nic. Roadmapa #544 (vlna G) hotovo.
 | 7 I1 / I5 / I6 | ✅ | `nazevDen` (TZ test 3 FAIL → OK), `csvBunka` = pravidlo ctrlCsvBunka (test_csv_vzorce, test_controlling K5-K1 upraven), komentář zalohovani.mjs |
 
 **Testy:** kolo `--jen build,sady,hodiny,staticke` VŠE ZELENÉ (sady 355/0/7 přeskočeno — firemní podklady a test.js;
-hodiny 285/0/1; statické 4/4). **Mutace po částech:** viz níže (doplňuje se).
+hodiny 285/0/1; statické 4/4). **Mutace po částech** (CLAUDE.md P2, vše nad ed97a36): jádro 4/4 části **609/609** chycených; server 8/8 částí
+**1102/1102** chycených (části přerušené limitem úlohy navázány `KNG_MUTACE_OD`; souběh ve dvou `git worktree`).
+Každá část „ZELENÁ ČÁST"; dohromady kolo kompletní a zelené. Pracovní kopie po mutacích čistá.
 
 **Nedělat bez J. V.:** K37-N2, K37-N4, K37-N6, K37-I4, K36-N2, K37-I2.
 **Při slučování:** konflikty hrozí v `CHANGELOG.md`, `roadmapa/roadmap.json`, `manual/*obsah.json` (řádek verze),
