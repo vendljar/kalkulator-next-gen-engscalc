@@ -130,7 +130,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'nazvy_souboru.js',
   /* objednane.js (#540, 27. 10. 2026): náhled zápisu prodeje do Pipedrive
    * (prodPdZapis). Serverová pravidla Prodáno (prodServer) hlídá netlify/mutace.mjs. */
-  'objednane.js'];
+  'objednane.js',
+  /* zobrazeni.js (#546, 2. 11. 2026): výchozí stav lešení pro dokončení hlavy
+   * šachty podle typu šachty — nová exteriérová zakázka ho nemá v základní
+   * ceně ani v nabídce příplatků. Hlídá src/test_leseni_hlava_typ.js. */
+  'zobrazeni.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -210,6 +214,36 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* #546 (2. 11. 2026, požadavek obchodu 29. 10. 2026): lešení pro dokončení
+   * hlavy šachty jen u interiérové šachty. Hlídá src/test_leseni_hlava_typ.js. */
+  { nazev: '#546: exteriér se nepozná — lešení hlavy dál podle matice', soubor: 'zobrazeni.js',
+    hledej: "  const ext = zadaniOck.typSachty === 'exteriérová';   // jako engine.js",
+    nahrad: "  const ext = false;",
+    proc: 'nová venkovní šachta by zase měla lešení hlavy v základní ceně nebo v nabídce' },
+  { nazev: '#546: nová zakázka pravidlo typu šachty nepouští', soubor: 'zobrazeni.js',
+    hledej: "    zmen += zobrazeniLeseniHlavaTyp(mat, zadaniOck);",
+    nahrad: "    zmen += 0;",
+    proc: 'pravidlo by platilo jen při přepnutí typu, ne u nové zakázky (výchozí typ je exteriér)' },
+  { nazev: '#546: ruční volba obchodníka se přepisuje', soubor: 'zobrazeni.js',
+    hledej: "typeof zadaniOck !== 'object' || zadaniOck.leseniHlavaRucne) return 0;",
+    nahrad: "typeof zadaniOck !== 'object') return 0;",
+    proc: 'přepnutí typu by tiše zrušilo lešení hlavy, které obchodník vědomě zaškrtl' },
+  { nazev: '#546: interiér — příplatek lešení hlavy mimo nabídku', soubor: 'zobrazeni.js',
+    hledej: "ZOBRAZENI_PRIPLATEK + 'leseniHlava', true);",
+    nahrad: "ZOBRAZENI_PRIPLATEK + 'leseniHlava', false);",
+    proc: 'interiérová šachta by přišla o příplatek v nabídce — změna proti dosavadnímu stavu' },
+  { nazev: '#546: přepnutí typu sahá na lešení i bez změny typu (zámek)', soubor: 'ui/kalk_ock.js',
+    hledej: "  if (Z.typSachty === t && typPred !== t) leseniHlavaPodleTypu();",
+    nahrad: "  leseniHlavaPodleTypu();",
+    proc: 'zamčená (odeslaná) varianta by změnila cenu, i když set() typ nepustil' },
+  { nazev: '#546: ruční zaškrtnutí ve Volitelných se nepamatuje', soubor: 'ui/kalk_ock.js',
+    hledej: "  if (key === 'leseniHlava' && Z.volitelne && !!Z.volitelne.leseniHlava === !!v) Z.leseniHlavaRucne = true;",
+    nahrad: "",
+    proc: 'přepnutí typu tam a zpět by ruční volbu obchodníka zrušilo' },
+  { nazev: '#546: ruční zařazení příplatku do nabídky se nepamatuje', soubor: 'ui/kalk_ock.js',
+    hledej: "  if (key === 'leseniHlava') Z.leseniHlavaRucne = true;   // #546, viz volitelneToggle",
+    nahrad: "",
+    proc: 'přepnutí typu by příplatek, který obchodník do nabídky vrátil, zase vyřadil' },
   /* #540 (27. 10. 2026): kód controllingu podle rozhodnutí J. V. Hlídá src/test_controlling_c4.js. */
   { nazev: '#540: výchozí filtr stavu Pipedrive zase „vyhrané"', soubor: 'controlling.js',
     hledej: "  const pd = x.pd == null || x.pd === '' ? 'vse' : x.pd;",

@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
-    "verze": "Platí pro aplikaci v2.11.2 · sestaveno 2. 11. 2026",
+    "verze": "Platí pro aplikaci v2.11.3 · sestaveno 2. 11. 2026",
 
   "uvod": [
     {
@@ -554,6 +554,7 @@
         { "typ": "text", "text": "**Montáž šachetních dveří** se mezi příplatky nepředpočítává, protože v předloze pod čarou není. Když ji potřebujete, přidáte si ji tlačítkem *+ přidat položku* a cenu za kus najdete v ceníku." },
         { "typ": "podnadpis", "text": "Vnější lešení a oplechování soklu" },
         { "typ": "text", "text": "**U interiérové šachty je vnější lešení vždycky jen příplatek.** Do základní ceny se tam dostat nemůže, zákazník si ho ale může doobjednat; příplatek se počítá stejně jako u exteriérové šachty. Dokud si ho neobjedná, žádá kapitola IV. nabídky lešení po objednateli a technická specifikace uvádí „lze doplnit viz příplatkové ceny“." },
+        { "typ": "text", "text": "**Lešení pro dokončení hlavy šachty** se používá jen u interiérové šachty. U nové **exteriérové** šachty je proto ve výchozím stavu nevybrané — v základní ceně ani mezi příplatky v nabídce; po přepnutí typu na interiérovou se vrátí výchozí stav interiéru. Když ho u venkovní šachty přesto potřebujete, zaškrtněte ho ručně — vaše volba se pak už nemění ani přepnutím typu." },
         { "typ": "text", "text": "U **exteriérové šachty s lešením v základní ceně** nabídka lešení po objednateli nežádá a specifikace vynechá řádek „zajistí objednatel“. Dokument si tak neodporuje a zákazník si nemůže vybrat výklad, který je pro něj levnější." },
         { "typ": "text", "text": "**Střecha v mědi** (exteriérová šachta): když u řádku ZASTŘEŠENÍ ŠACHTY (EXT) ručně přepíšete množství, PŘÍPLATEK ZA STŘECHU V MĚDI (EXT) počítá s touto plochou; stříška nad můstkem je v přepsané ploše už zahrnutá. Vlastní ruční množství mědi má dál přednost. Příplatek za měď se nabízí jen se zastřešením šachty." },
         { "typ": "text", "text": "**V tabulce SOUČÁSTÍ DODÁVKY NENÍ** má specifikace pro lešení dva řádky — **LEŠENÍ VNITŘNÍ PRO STAVBU OCK** a **LEŠENÍ KOLEM OCK PRO PROVEDENÍ OPLÁŠTĚNÍ**. Text navrhuje kalkulace (štítek **z kalkulace**): je-li lešení mezi příplatky v nabídce, „nabízeno jako příplatek“; je-li příplatek ze sloupce **Nabídka** vyřazený, „zajistí objednatel v rámci SP“; je-li lešení v základní ceně, řádek se do dokumentu nedává. Text můžete vybrat nebo napsat jiný (štítek **ručně**) a tlačítkem ↺ se vrátíte k návrhu. Totéž stojí v nabídce — v náhledu, tisku i ve Wordu, česky i v překladech." },

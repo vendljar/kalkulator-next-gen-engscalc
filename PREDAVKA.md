@@ -1,3 +1,39 @@
+# Předávka — 2. 11. 2026: LH #546 — lešení pro dokončení hlavy šachty jen u interiérové šachty, větev `claude/lh-leseni-hlava`
+
+Nad `1fb09b2` (integrace v2.11.1), požadavek obchodu 29. 10. 2026 (zadal J. V. 2. 11. 2026). **Verze 2.11.2**
+(pravidlo dne commitu; koordinace může přečíslovat). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno;
+na ostrém webu, Disku ani v Pipedrive nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. najít položku | ✅ | `engine.js` volitelne/příplatek `leseniHlava`; výchozí stav = matice Výchozí `ock.leseniHlava` (+ `ock.priplatek:leseniHlava`) |
+| 2. exteriér — nevybraná v základu i v příplatcích | ✅ | `zobrazeniLeseniHlavaTyp` v `src/zobrazeni.js`, volá `zobrazeniVychoziAplikuj` |
+| 3. přepnutí typu oběma směry | ✅ | `typSachtyPrepni` + `leseniHlavaPodleTypu` v `src/ui/kalk_ock.js` |
+| ruční volba respektována | ✅ | příznak `Z.leseniHlavaRucne` (volitelneToggle, priplatekNabidka) |
+| 4. uložené zakázky | ✅ | zamčené beze změny; nezamčené se při otevření NEMĚNÍ (viz rozhodnutí) |
+| 5. dokumenty | ✅ | nabídka / specifikace / krycí list čtou `zahrnuto` a `priplatkyVynechat` — ověřeno přes `tsPriplatekNabizen` |
+| 6. testy + mutace „#546“ | ✅ | `src/test_leseni_hlava_typ.js`, 7 mutací v `mutace_jadro.mjs` |
+| 7. příručka, verze, CHANGELOG, roadmapa | ✅ | `manual/obsah.json`, v2.11.2, #546 |
+
+**Rozhodnutí (bod 4):** pravidlo se pouští jen na čerstvé zadání (nová zakázka, startovní zakázka po přihlášení)
+a při přepnutí typu šachty, a to jen když `set()` typ opravdu změnil — zamčená varianta typ nezmění, takže ani lešení
+a cenu. Stará nezamčená exteriérová varianta se při otevření nemění (tichá změna ceny); kdo ji chce srovnat, odškrtne
+položku ručně. Klon varianty si nese data zdroje.
+
+**Pozor při slučování:** `typSachtyPrepni` mění i K37 #544 (`skloMigraceNazvu`) — tady jen `const typPred` a řádek
+s `leseniHlavaPodleTypu()` za `set('Z.typSachty', t)`. Konflikty dál v `CHANGELOG.md`, `roadmapa/roadmap.json`
+(#546 za #543), `verze.txt`, `mutace_jadro.mjs` (JADRA + `zobrazeni.js`, mutace na začátku seznamu MUTACE).
+Sloupec Výchozí u lešení hlavy šachty teď platí jen pro interiérovou šachtu (`test_vychozi_zaklad.js` zkouší tu
+položku na interiéru).
+
+**Testy:** `testovaci_kolo.sh --bez-mutaci` VŠE ZELENÉ (354 / 0 / 7 přeskočeno — firemní podklady; statické 5 z 5;
+25 min); mutace „#546“ 7 z 7 chycených (218 sad, kontrolní běh zelený); `test_leseni_hlava_typ.js` 39/0, pojistka
+nad původním kódem 14 FAIL. Celé mutace jádra neopakovány (přibylo jen `zobrazeni.js` do JADRA a 7 mutací).
+
+**Prostředí:** `node_modules/playwright` → odkaz na `/opt/node22/lib/node_modules/playwright` (v .gitignore).
+
+**Další krok:** koordinace sloučí (pozor na K37 #544) a pustí kolo.
+
 # Předávka — 2. 11. 2026: PF #545 — Prodáno mění fázi dealu, ne stav, větev `claude/pf-prodano-faze`
 
 Nad `48f5dad` (integrace v1.11.1). **Verze 2.11.1** (pravidlo dne commitu; koordinace může přečíslovat). Koordinace:
