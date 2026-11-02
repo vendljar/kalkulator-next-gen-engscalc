@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v2.11.3 — MS #548: sazby ceníku můstků pryč z kódu klienta (nález K10-S2) — větev claude/ms-mustky-sazby
+
+Nad integrací 141b92f (v2.11.2). Rozhodnutí J. V. 2. 11. 2026: „K10 oprav před main“. Na ostrém webu, Disku
+a v Pipedrive nic. Verze podle pravidla dne commitu (v2.11.N); koordinace může přečíslovat.
+
+- **Žádná sazba v sestavení:** konstanta s výchozími sazbami můstků (materiál za bm, referenční šířka, sazba a hodiny
+  montáže) z `src/engine.js` zmizela; jádro zná jen jména klíčů (`MUSTKY_CENIK_KLICE`). Ceny jsou jen v ceníku
+  na serveru.
+- **Zvolená varianta (bezpečnější): převod jen z platného ceníku, jinak nic nevymýšlet.** Ceník ve starém tvaru
+  (paušál za kus vč. montáže) se při zveřejnění převede na nový tvar **z platného ceníku na serveru** — v prohlížeči
+  z `DEFAULT_CENIK` po načtení platného ceníku, na serveru (`/api/program`) z `db.platny.cenik`, i když klient
+  převod vynechá. `C.mustekKc` a referenční šířka se převezmou vždy (#529 E: paušál se nesmí číst jako Kč/bm), montážní
+  buňky jen tam, kde je správce nevyplnil. **Nemá-li ani platný ceník nový tvar, převádět není z čeho:** ceník
+  zůstane paušálem (počítá správně jako dřív) a dialog zveřejnění vyzve správce k vyplnění `C.mustekKc` (Kč/bm),
+  referenční šířky, sazby a hodin montáže v Nastavení → Ceník. Varianta s nulami by naopak vyrobila můstek za 0 Kč.
+- **Nulová cena můstku jen na potvrzení:** `mustkyCenikKontrola` + dialog `progMustkyPotvrd` (zveřejnění do složky
+  i online) — starý tvar bez zdroje, nulový paušál, v novém tvaru nulová cena za bm, sazba montáže nebo všechny hodiny
+  → „Zveřejnit i tak“ / „Zpět — doplním ceník můstků“. Server ceník v novém tvaru s nulovou cenou bez
+  `mustkyPotvrzeno: true` odmítne (400, `kod: 'mustky'`).
+- **Testy (pojistka):** nová `src/test_548_mustky_bez_cen.js` (27; obecný test „dist bez cen“ — žádný klíč ceníku OCK
+  ani PROJ nemá v `dist/*.html` nenulovou hodnotu, výjimka zákonné DPH; migrace a kontrola na smyšleném ceníku;
+  před opravou 24 FAIL), `netlify/test_548_mustky.mjs` (13; před opravou 6 FAIL). `src/test_354_mustky.js` počítá na
+  smyšlených sazbách `zkusebniMustky()` (`src/zkusebni_cenik.js`, do sestavení nevede); test manuálu bez skutečných
+  čísel. Mutace „#548“: jádro 5/5, server 4/4; upravené mutace migrace #354/#529 3/3.
+- **Dokumentace:** skutečné sazby odstraněny i z textu CHANGELOG, PREDAVKA a roadmapy (nahrazeno „‹sazba›“).
+  **Historie gitu se nepřepisuje** — sazby nesou commity #354 / #529 a tagy v26.10.11 až v27.10.6 (rozhodne J. V.).
+
 ## v2.11.2 — PF #545: Prodáno přesune deal do fáze „Vyhrané k podpisu SoD“, stav nemění — větev claude/pf-prodano-faze
 
 Nad integrací 48f5dad (v1.11.1). Pokyn J. V. 2. 11. 2026: stav „Vyhrané“ rozbíhá v Pipedrive obchodně administrativní
@@ -174,11 +201,11 @@ Nad integrací 95a1356 (= test 2c0d71a + předávka; v26.10.12). Na ostrém webu
     zálohy Y — obnova nic nemaže…)". Kód počítá zakázky v otisku i v náhledu stejně (klíče `z/`); rozdíl 1 492 proti
     1 420 z testengscalc z obrazovky vysvětlit nejde — rozklad v náhledu ho při dalším pokusu ukáže.
   - **E — migrace ceníku #354.** Ceník ve starém tvaru (bez referenční šířky) dostane při zveřejnění `C.mustekKc`
-    **vždy** 28 600 Kč/bm — dřív zůstal, když se lišil od platného, a paušál 25 000 Kč/ks se četl jako cena za bm
-    (můstek 1 m × 1,6 m 31 400 místo 35 000). Dialog zveřejnění řekne „Můstek: paušál 25 000 Kč/ks nahrazen cenou
-    28 600 Kč/bm materiálu…". Ceník v novém tvaru se nemění. Import z Excelu: soubor ze starého ceníku (bez kladné
+    **vždy** ‹sazba› Kč/bm — dřív zůstal, když se lišil od platného, a paušál 25 000 Kč/ks se četl jako cena za bm
+    (můstek vycházel jinak než ve schváleném návrhu). Dialog zveřejnění řekne „Můstek: paušál 25 000 Kč/ks nahrazen cenou
+    ‹sazba› Kč/bm materiálu…". Ceník v novém tvaru se nemění. Import z Excelu: soubor ze starého ceníku (bez kladné
     ref. šířky) do ceníku v novém tvaru `C.mustekKc` nezapíše a řekne proč. **Na testengscalc už zveřejněný ceník
-    (nový tvar s 25 000 Kč/bm) oprava sama nepřepíše** — správce nastaví 28 600 v Nastavení → Ceník a zveřejní.
+    (nový tvar s 25 000 Kč/bm) oprava sama nepřepíše** — správce nastaví ‹sazba› v Nastavení → Ceník a zveřejní.
   - **K9-I3 — otisky „před obnovou" po 6 měsících** (`RETENCE_ZALOH_BLOBS.predObnovouMesicu`, hranice jako
     u měsíčních); nejnovější z nich zůstává vždy, nepotvrzená pojistka úbytku je drží jako ostatní, ruční smazání
     správcem s heslem zůstává.
@@ -422,7 +449,7 @@ rozboru K13 zůstávají vyčleněné (#355, #356), bod 5 je #519.
   zamrzlý a import chybějící klíč doplní nulou, takže **zamčené varianty a ceník zveřejněný před #354 počítají
   dál paušál × počet** (jeden řádek, střecha ze starého pole šířky, specifikace starou větou) — test bajt po
   bajtu proti jádru 9484ef4. **Zveřejnění ceníku** (online i složka, `progKontext`) starý ceník migruje
-  (`cenikMigraceMustku`): nové buňky výchozí 1 600 mm / 400 Kč/h / 8 h / 8 h/bm / 16 h, `C.mustekKc` = 28 600
+  (`cenikMigraceMustku`): nové buňky výchozími hodnotami z kódu (od #548 / K10-S2 v kódu nejsou), `C.mustekKc` = výchozí sazba
   (ponechá, co správce vyplnil nebo proti platnému ceníku změnil); dialog změny vypíše. Rozpracované varianty se
   pak přepočítají samy (pravidlo 31. 7.). **Po nasazení je potřeba ceník jednou zveřejnit** — do té doby paušál.
 - **Zadání šachty:** pole **Délka můstku (mm)**, šířka jen zobrazená (= šířka šachty); `mustekSirkaMm` se už
