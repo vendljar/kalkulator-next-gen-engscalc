@@ -10,6 +10,8 @@ session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrém webu, Disku ani v Pi
 | 3 testy s pojistkou, mutace #548, kolo, kontrola údajů | ✅ | `src/test_548_mustky_bez_cen.js` (před 24 FAIL), `netlify/test_548_mustky.mjs` (před 6 FAIL); mutace jádro 5/5, server 4/4; kolo viz níže |
 | 4 historie gitu | ⬜ rozhodne J. V. | nepřepisováno — viz níže |
 | 5 verze, CHANGELOG, roadmapa #548, stav v K10 | ✅ | v2.11.3 |
+| doplněk A — #550 (K36-N2) zahraniční sazba montáže můstků | ✅ | `src/cenik_rady.js` (`cenikZahrSVychozimi`, `cenikZahrMustkyUpozorneni`), `src/ui/cenik_ui.js`, `src/ui/program_ui.js`; test `src/test_550_zahr_mustky.js`, mutace 3/3 |
+| doplněk B — #551 (K37-I2) „IČ:" v DE/EN/FR patičce | ✅ | `src/firma.js` (`firmaPaticka(f, prekl)`), `src/preklad.js`, `src/ui/common.js`; test `src/test_551_ic_preklad.js`, mutace 4/4 |
 
 **Zvolená varianta:** převod jen z platného ceníku (server i prohlížeč); bez zdroje zůstane paušál (počítá správně)
 a dialog chce potvrzení + vyzve k vyplnění v Nastavení → Ceník. Nový tvar s nulovou cenou za bm / montáží / hodinami
@@ -27,7 +29,8 @@ změna = nové vydání manuálu. Nesahal jsem.
 
 **Při slučování:** `netlify/mutace.mjs` (sada `test_548_mustky.mjs` za c4, blok mutací #548 před #540),
 `mutace_jadro.mjs` (mutace migrace #354/#529 přepsané na nový kód + #548, priorita `test_548_mustky_bez_cen.js`),
-`src/test_354_mustky.js`, `src/zkusebni_cenik.js`, CHANGELOG, roadmapa (#548 za #545), PREDAVKA.
+`src/test_354_mustky.js`, `src/zkusebni_cenik.js`, `src/test_v23_zahranicni.js` (fixtura +montáž můstků zahr.), CHANGELOG,
+roadmapa (#548, #550, #551 za #545), PREDAVKA. K37-N6 a K37-I4 podle J. V. beze změny.
 
 # Předávka — 2. 11. 2026: PF #545 — Prodáno mění fázi dealu, ne stav, větev `claude/pf-prodano-faze`
 

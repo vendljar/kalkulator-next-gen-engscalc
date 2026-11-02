@@ -35,6 +35,18 @@ a v Pipedrive nic. Verze podle pravidla dne commitu (v2.11.N); koordinace může
 - **Dokumentace:** skutečné sazby odstraněny i z textu CHANGELOG, PREDAVKA a roadmapy (nahrazeno „‹sazba›“).
   **Historie gitu se nepřepisuje** — sazby nesou commity #354 / #529 a tagy v26.10.11 až v27.10.6 (rozhodne J. V.).
 
+- **Doplňky dávky (koordinace, rozhodnutí J. V. 2. 11. 2026), samostatné commity:**
+  - **#550 (K36-N2) — vlastní zahraniční sazba montáže můstků.** Buňka zahraniční řady `C.mustekMontazHodKc`;
+    nevyplněná = zahraniční sazba montáže na stavbě (`C.montazHodKc` zahraniční řady), bez ní tuzemská — v kódu žádná
+    sazba. Výchozí se neukládá, doplňuje se při skládání řady (jako výchozí nulová DPH), takže rozpracované zahraniční
+    varianty se při otevření přepočítají, zamčené ne. Dialog zveřejnění upozorní, buňka v ceníku má nápovědu
+    „jako montáž zahr.". Test `src/test_550_zahr_mustky.js` 13/0 (před změnou 3 FAIL), mutace 3/3.
+  - **#551 (K37-I2) — „IČ:" v cizojazyčné nabídce.** Patička firmy (`{{FIRMA_PATICKA}}` ve Wordu OCK i PROJ, patička
+    tiskového náhledu) nese EN „Company ID (IČ):", DE „Identifikationsnummer (IČ):", FR „Numéro d’identification
+    (IČ) :". Čeština, smlouvy a krycí listy beze změny. Test `src/test_551_ic_preklad.js` 10/0 (před 8 FAIL),
+    `overit_neprelozene.mjs` 22/0, mutace 4/4.
+  - K37-N6 (mez délky můstku) a K37-I4 (ruční mazání zálohy před obnovou) podle J. V. beze změny.
+
 ## v2.11.2 — PF #545: Prodáno přesune deal do fáze „Vyhrané k podpisu SoD“, stav nemění — větev claude/pf-prodano-faze
 
 Nad integrací 48f5dad (v1.11.1). Pokyn J. V. 2. 11. 2026: stav „Vyhrané“ rozbíhá v Pipedrive obchodně administrativní
