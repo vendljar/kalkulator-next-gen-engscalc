@@ -57,8 +57,15 @@ function nazevVerzeBuildu() {
   return nazevVerzeAplikace(typeof buildVerze === 'function' ? buildVerze() : '');
 }
 
-/* Místní den RRRR-MM-DD (toISOString by po půlnoci SELČ hlásil včerejšek). */
+/* Místní den RRRR-MM-DD (toISOString by po půlnoci SELČ hlásil včerejšek).
+ * K37-I1 (2. 11. 2026): řetězec, který UŽ je den RRRR-MM-DD, se vrací beze
+ * změny — new Date('2026-10-31') je půlnoc UTC a v pásmech západně od UTC
+ * by místní den vyšel o den dřív (30. 10.). */
 function nazevDen(d) {
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+    const u = new Date(d + 'T00:00:00Z');
+    return !isNaN(u) && u.toISOString().slice(0, 10) === d ? d : '';
+  }
   const x = d instanceof Date ? d : (d ? new Date(d) : new Date());
   if (isNaN(x)) return '';
   return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');

@@ -65,7 +65,7 @@ export async function zalohaDoplnky() {
    * přesně ta chyba, kvůli které vznikl nález B9 (`popisy` výše).
    * Zveřejněný slovník (#401, 12. 10. 2026) — totéž poučení jako B9 a B104:
    * co se ukládá, musí být v záloze, jinak ho obnova tiše smaže (`slovnik`).
-   * Úplnost hlídá netlify/test_zaloha_uplnost.mjs (#151 N4). */
+   * Úplnost hlídá netlify/test_zalohy.mjs, oddíl N4 (#151; odkaz opraven K37-I6). */
   const zakaznici = await ctiCele(await uloziste('zakaznici'));
   const podpisy = await ctiCele(await uloziste('podpisy'));
   /* KNIHA SMAZANÝCH ÚČTŮ (23. 9. 2026, nález B58). Kdo, kdy a koho smazal —

@@ -1244,8 +1244,8 @@ function ctrlExportListy(exp, data, opts) {
  * Čísla (i záporná) bez uvozovek. Texty s ochranou proti vzorcům PŘÍSNĚJŠÍ
  * než csvBunka (format.js): apostrof dostane každý text začínající =, +, -,
  * @, tabulátorem nebo CR — i „+ 1+1" a „-<TAB>X" (K5-K1, O13), protože sem
- * jdou texty obchodníka (název akce, zákazník, vlastní řádky). csvBunka
- * nechává „- položka" bez apostrofu kvůli odrážkám v CSV překladů. Vlastní
+ * jdou texty obchodníka (název akce, zákazník, vlastní řádky). Od K37-I5
+ * má csvBunka totéž pravidlo (do té doby nechávala „- položka" bez apostrofu). Vlastní
  * funkce bez závislosti na format.js — záložní cesta bez ochrany (K5-K3)
  * tím odpadla. */
 function ctrlCsvBunka(x) {

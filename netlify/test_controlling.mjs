@@ -300,17 +300,27 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
     test('#508: celá databáze s obdobím nebo s neznámou hodnotou → 400',
       (await ex('?vse=1&od=2026-10-01&do=2026-10-31', cAdmin)).st === 400 && (await ex('?vse=ano', cAdmin)).st === 400 && (await ex('?vse=ano&od=2026-10-01&do=2026-10-31', cAdmin)).st === 400);
   }
-  /* K6-S6 (D3): nečekaný tvar uložené zakázky (sem podstrčený mimo server —
-   * datum prodeje jako objekt, String() vyhodí výjimku) shodil celý export na
-   * 500; má jít mezi přeskočené a zbytek se vyveze. */
+  /* K6-S6 (D3): nečekaný tvar uložené zakázky (sem podstrčený mimo server)
+   * shodil celý export na 500; má jít mezi přeskočené a zbytek se vyveze.
+   * K37-N10 (2. 11. 2026): do #540 výjimku vyvolalo datum prodeje jako objekt;
+   * ctrlProdej ho od #540 bere jen jako řetězec, výjimka nevznikla a pojistka
+   * `catch` v controlling_export.mjs nebyla ničím vyzkoušená (mutace K6-S6
+   * přežila). Teď řada ceníku varianty jako objekt bez převodu na text —
+   * String() v ctrlHromadnyZakazka vyhodí TypeError (ověřeno níž). */
   {
     const z = zamcena('2026 - OPR - CN - 0807', '2026-10-06T09:00:00Z');
-    z.objednane = { varianta: z.varianty[0].id, klice: ['x'], datum: { toString: 1 } };
     const sb = await vloz(z);
-    const eS = await (async () => { try { return await ex('?od=2026-10-01&do=2026-10-31&podle=prodej', cAdmin); }
+    const ulozena = await sZ.cti('z/' + sb);
+    ulozena.varianty[0].data.cenikRada = { toString: 1 };
+    await sZ.zapis('z/' + sb, ulozena);
+    const zkus = G.importZakazka(JSON.parse(JSON.stringify(ulozena)));
+    test('K37-N10 příprava: zakázka v ctrlHromadnyZakazka opravdu vyhodí výjimku', (() => {
+      try { G.ctrlHromadnyZakazka(zkus, G.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31', podle: 'zamceni', pd: 'vse' }).filtr, { jekly: JEKLY }); return false; }
+      catch (e) { return true; } })());
+    const eS = await (async () => { try { return await ex('?od=2026-10-01&do=2026-10-31&podle=zamceni', cAdmin); }
       catch (e) { return { st: 500, o: { chyba: e.message } }; } })();
     test('K6-S6: výjimka u jedné zakázky v exportu → 200, zakázka mezi přeskočenými', eS.st === 200
-      && (eS.o.preskoceno || []).some(p => p.soubor === sb), eS);
+      && (eS.o.preskoceno || []).some(p => p.soubor === sb && /nepodařilo zpracovat/.test(p.duvod)), eS);
     rejstrik.pop(); await sZ.smaz('z/' + sb); await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
   }
 
