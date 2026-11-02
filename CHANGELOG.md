@@ -32,7 +32,7 @@ projektant“. Verze podle pravidla dne commitu; koordinace může přečíslova
   mapy = všechna pole spárovaná.
 - **Testy:** `netlify/test_pd_prevod.mjs` 156/0 (na 54a39fe 11 FAIL), `test_pd_simulator.mjs` 62/0 (3 FAIL),
   `test_pd_nanecisto.mjs` 92/0 (3 FAIL), `test_pipedrive.mjs` 96/0, `test_pd_mapa_prehled.mjs` 46/0. Mutace „#509“
-  (13) v `netlify/mutace.mjs`.
+  chycených 13 z 13. Kolo `--bez-mutaci` VŠE ZELENÉ (361 / 0 / 7 přeskočeno, statické 5 z 5).
 
 ## v2.11.6 — PB #547: Prodáno u odeslané nabídky bez dialogu klonu, hláška se skutečnou příčinou — větev claude/pb-prodano-zamek
 

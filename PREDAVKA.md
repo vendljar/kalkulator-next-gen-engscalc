@@ -15,8 +15,8 @@ Zadání `podklady/PROMPT_pipedrive_po_odpovedi_02_11.md` (větev `claude/eager-
 
 **Testy (pojistka na 54a39fe):** `test_pd_prevod` 156/0 (před opravou 11 FAIL), `test_pd_simulator` 62/0 (3 FAIL),
 `test_pd_nanecisto` 92/0 (3 FAIL), `test_pipedrive` 96/0, `test_pd_mapa_prehled` 46/0. `test_pipedrive` sám o sobě
-potřebuje `ADMIN_EMAIL` (spust_testy.sh ho nastaví) — bez něj padá i na 54a39fe. Mutace „#509“ (13): VÝSLEDEK_MUTACI.
-Kolo `--bez-mutaci`: VÝSLEDEK_KOLA.
+potřebuje `ADMIN_EMAIL` (spust_testy.sh ho nastaví) — bez něj padá i na 54a39fe. Mutace „#509“ **chycených 13 z 13** (`node netlify/mutace.mjs "#509"`, `--kontrola` 1173 úseků OK).
+Kolo `--bez-mutaci`: **VŠE ZELENÉ** (361 / 0 / 7 přeskočeno — firemní podklady; statické 5 z 5; 24 min 53 s). Celé mutace po částech proběhnou v Actions na integraci. Playwright: odkaz `node_modules/playwright(-core)` → `/opt/node22/lib/node_modules/…`.
 
 **Otevřené pro J. V.:** rozhodnutí #553 (varianta A doporučena / B nedoporučena); zkušební zápis na dealu „TEST –
 integrace kalkulačky“ (a) přes konektor s potvrzením J. V., (b) z testovacího webu po vložení tokenu; rozhodnutí o dvou
