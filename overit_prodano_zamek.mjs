@@ -197,12 +197,13 @@ test('…okno zůstalo jen ke čtení (prodej zámek čtení neodemyká)', await
 o = await otevri(soubor);
 const po = await page.evaluate(() => {
   const v = aktivniVarianta(ZAK);
-  return { prodano: !!prodStav(ZAK), volne: zamekKryciPoleStav(v, 'kryci', 'sodDatumPodpisu'),
+  return { prodano: !!prodStav(ZAK), volne: zamekKryciPoleStav(v, 'kryci', 'jmenoPrijmeni'), sod: zamekKryciPoleStav(v, 'kryci', 'cisloSod'),
     text: (document.getElementById('prodejKarta_ock') || {}).textContent || '',
     nazev: typeof zamekZakCestaZmrazena === 'function' ? !!zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel') : null };
 });
 test('po znovuotevření je varianta prodaná a karta to ukazuje', po.prodano && /✔ Prodáno/.test(po.text), po.text.slice(0, 200));
-test('…krycí list zamčený i ve volném poli (definitivně)', po.volne === 'zmrazeno', po.volne);
+test('…krycí list zamčený i ve volném poli (kontakt zákazníka, definitivně)', po.volne === 'zmrazeno', po.volne);
+test('…kromě čísla SoD, které jde doplnit do prvního tisku SoD (K37-N2)', po.sod === 'editovatelne', po.sod);
 test('…hlavička (zákazník) zmrazená', po.nazev === true, po.nazev);
 test('…obchodník prodej neodemkne (tlačítko jen pro vedoucího)', !/Odemknout prodej(?! smí)/.test(po.text), po.text.slice(0, 300));
 
