@@ -140,6 +140,13 @@ const zal = JSON.stringify(kap('kap-p-zalohy'));
 const B = RZ.RETENCE_ZALOH_BLOBS, Dk = RZ.RETENCE_ZALOH_DISK, PJ = RZ.RETENCE_ZALOH_POJISTKA;
 test('(b) retence Blobs: ' + B.dnu + ' dní / ' + B.tydnu + ' týdnů / ' + B.mesicu + ' měsíců / ruční ' + B.vynuceneDnu + ' dní',
   zal.includes('posledních **' + B.dnu + ' dní**') && zal.includes('**' + B.tydnu + ' týdnů**') && zal.includes('**' + B.mesicu + ' měsíců**') && zal.includes('**' + B.vynuceneDnu + ' dní**'));
+/* K37-N8 (2. 11. 2026): otisk před obnovou maže retence po predObnovouMesicu
+ * měsících (#529) — kapitola psala „nemaže se sám". Kontrola na řádku tabulky,
+ * ne kdekoli v kapitole (6 měsíců tam stojí i u měsíčních otisků). */
+test('(b) otisk před obnovou: ' + B.predObnovouMesicu + ' měsíců (řádek „Otisk před obnovou")',
+  typeof B.predObnovouMesicu === 'number'
+  && new RegExp('"Otisk před obnovou","[^"]*\\*\\*' + B.predObnovouMesicu + ' měsíců\\*\\*').test(zal)
+  && !/"Otisk před obnovou","nemaže se sám/.test(zal), (zal.match(/"Otisk před obnovou","[^"]*"/) || [])[0]);
 test('(b) retence Disk: ' + Dk.dnu + ' dní / ' + Dk.tydnu + ' týdnů / ' + Dk.mesicu + ' měsíců',
   zal.includes('posledních **' + Dk.dnu + ' dní**') && Dk.tydnu === B.tydnu && Dk.mesicu === B.mesicu);
 test('(b) pojistka úbytku: ' + PJ.velikost * 100 + ' % dat, ' + PJ.pocty * 100 + ' % zakázek, okno ' + PJ.oknoDnu + ' dní',

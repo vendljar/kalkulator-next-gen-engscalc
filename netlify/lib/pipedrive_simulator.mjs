@@ -53,12 +53,36 @@ export const PD_SIM_POCET_DEALU = 230;   // víc než stránka PD_STRANKA (200) 
  * byly z CRM. Zapne se proto jen tam, kde je jisté, že nejde o ostrý provoz:
  *   · lokálně (bez známek Netlify — testy, server/server.js),
  *   · na Netlify jen s `PROSTREDI=test` (testovací web testengscalc).
- * Odmítne se vždy, když nasazení pochází z větve `main` nebo jde o web
- * schaftscalc — i kdyby tam PROSTREDI=test omylem stálo. Odmítnutí se hlásí
+ * Odmítne se vždy, když nasazení pochází z větve `main` nebo jde o ostrý web
+ * (schaftscalc, engscalc — pdSimulatorOstryWeb) — i kdyby tam PROSTREDI=test
+ * omylem stálo. Odmítnutí se hlásí
  * (`duvod`) a správce ho vidí v Nastavení → Mapa polí CRM.
  * ============================================================ */
 const ZAPNUTO = ['1', 'ano', 'true', 'zapnuto'];
 const TEST = ['test', 'sandbox', 'testovaci'];
+
+/* OSTRÝ WEB engscalc (K37-N7, kolo 37, 2. 11. 2026). Pojistka hlídala jen
+ * podřetězec „schaftscalc", ostrý web je ale i engscalc.netlify.app. Tady se
+ * porovnává PŘESNĚ — podřetězec „engscalc" by zasáhl i testovací web
+ * testengscalc: jméno webu (SITE_NAME) a host adres URL / DEPLOY_PRIME_URL /
+ * DEPLOY_URL (i tvar „<nasazení>--engscalc.netlify.app"). Za běhu funkce
+ * nemusí být BRANCH/HEAD/URL vůbec nastavené — SITE_NAME tam je (Netlify ho
+ * předává i funkcím), proto se nespoléhá jen na větev. Vrací jméno ostrého
+ * webu, nebo ''. */
+const OSTRE_WEBY = ['engscalc'];   // schaftscalc hlídá podřetězec výš (jméno nemá testovací dvojče)
+export function pdSimulatorOstryWeb(env) {
+  const e = env || {};
+  const jmeno = String(e.SITE_NAME || '').trim().toLowerCase();
+  if (OSTRE_WEBY.includes(jmeno)) return jmeno;
+  for (const adresa of [e.URL, e.DEPLOY_PRIME_URL, e.DEPLOY_URL]) {
+    let host = '';
+    try { host = new URL(String(adresa || '').trim()).hostname.toLowerCase(); } catch (err) { continue; }
+    for (const w of OSTRE_WEBY) {
+      if (host === w + '.netlify.app' || host.endsWith('--' + w + '.netlify.app')) return w;
+    }
+  }
+  return '';
+}
 
 export function pdSimulatorStav(env = process.env) {
   const e = env || {};
@@ -70,6 +94,8 @@ export function pdSimulatorStav(env = process.env) {
     return odmitni('nasazení z větve main');
   const web = [e.URL, e.DEPLOY_PRIME_URL, e.DEPLOY_URL, e.SITE_NAME].map((v) => String(v || '')).join(' ').toLowerCase();
   if (web.includes('schaftscalc')) return odmitni('jde o ostrý web schaftscalc');
+  const ostry = pdSimulatorOstryWeb(e);
+  if (ostry) return odmitni('jde o ostrý web ' + ostry);
   const prostredi = String(e.PROSTREDI || '').trim().toLowerCase();
   const naNetlify = !!(e.NETLIFY || e.SITE_ID || e.SITE_NAME || e.DEPLOY_ID || e.CONTEXT
     || e.NETLIFY_BLOBS_CONTEXT || e.AWS_LAMBDA_FUNCTION_NAME);

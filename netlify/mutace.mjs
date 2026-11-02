@@ -170,6 +170,24 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* ---------- K37-N7 (2. 11. 2026): pojistka simulátoru Pipedrive na ostrém webu
+   * engscalc. Hlídá netlify/test_pd_simulator.mjs. ---------- */
+  { nazev: 'K37-N7: simulátor se zapne na ostrém webu engscalc', soubor: 'lib/pipedrive_simulator.mjs',
+    hledej: "  if (ostry) return odmitni('jde o ostrý web ' + ostry);",
+    nahrad: "",
+    proc: 'omylem nastavené PIPEDRIVE_SIMULATOR a PROSTREDI=test na engscalc by obchodníkům ukázalo smyšlené zakázky' },
+  { nazev: 'K37-N7: ostrý web se pozná podřetězcem (zasáhne testengscalc)', soubor: 'lib/pipedrive_simulator.mjs',
+    hledej: "  if (OSTRE_WEBY.includes(jmeno)) return jmeno;",
+    nahrad: "  const pod = OSTRE_WEBY.find((w) => [e.SITE_NAME, e.URL, e.DEPLOY_PRIME_URL, e.DEPLOY_URL].join(' ').toLowerCase().includes(w)); if (pod) return pod;",
+    proc: 'simulátor by se nezapnul ani na testovacím webu testengscalc' },
+  { nazev: 'K37-N7: ostrý web jen podle URL (za běhu funkce chybí)', soubor: 'lib/pipedrive_simulator.mjs',
+    hledej: "  if (OSTRE_WEBY.includes(jmeno)) return jmeno;",
+    nahrad: "",
+    proc: 'za běhu funkce, kde URL nemusí být, by pojistka ostrý web nepoznala' },
+  { nazev: 'K37-N7: nasazení ostrého webu (…--engscalc) se nepozná', soubor: 'lib/pipedrive_simulator.mjs',
+    hledej: " || host.endsWith('--' + w + '.netlify.app')) return w;",
+    nahrad: ") return w;",
+    proc: 'náhled nasazení ostrého webu by pustil simulátor' },
   /* ---------- #540: Prodáno a protokol exportů v záloze (27. 10. 2026). Hlídají
    * src/test_controlling_c4.js, test_prava.mjs (blok #540), test_controlling.mjs, test_zalohy.mjs. ---------- */
   { nazev: '#540: server prodej nekontroluje', soubor: 'lib/zakazka_kontrola.mjs',
