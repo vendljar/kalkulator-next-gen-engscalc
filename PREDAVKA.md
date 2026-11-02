@@ -1,4 +1,4 @@
-# Předávka — 2. 11. 2026: ZN #550 — názvy záloh na Disku s prostředím a časem, větev `claude/zn-nazvy-zaloh`
+# Předávka — 2. 11. 2026: ZN #552 — názvy záloh na Disku s prostředím a časem, větev `claude/zn-nazvy-zaloh`
 
 Nad `b22f5df` (integrace v2.11.3). **Verze ponechána 2.11.3** (koordinace přečísluje). Neslučováno; na ostrém webu
 ani na Disku nic.
@@ -10,7 +10,7 @@ ani na Disku nic.
 | 3. retence Disku jen vlastní prostředí, starý tvar nikdy, dny ne soubory | ✅ | `retenceZalohDiskVyber`, `retenceZalohDiskRozeber` (`src/retence_zaloh.js`) |
 | 4. server: kontroly jmen, starý tvar při čtení/podložení | ✅ | `zaloha_vynuceno.mjs`, `kopieDiskPodlozena`, `zaloha.mjs` |
 | 5. názvy + dokumentace | ✅ | `src/nazvy_souboru.js`, `podklady/NAZVY_SOUBORU.md`, `manual/admin`, `manual/obsah.json`, `manual/kompletni/provoz.json` |
-| 6. roadmapa #550 (vlna G, hotovo) | ✅ | `roadmapa/roadmap.json`, `overit_roadmapu.mjs` 17/0 |
+| 6. roadmapa #552 (vlna G, hotovo) | ✅ | `roadmapa/roadmap.json`, `overit_roadmapu.mjs` 17/0 |
 
 **Rozhodnutí:** prostředí ze serveru (PROSTREDI=test → test; CONTEXT ≠ production nebo mimo Netlify → jiny; jinak main),
 ne z hostname. Náhled nasazení sdílí Blobs s produkcí → záznam kopie pod `kopie-disk-nahled`. Čas v názvu = pořízení
@@ -23,7 +23,7 @@ engscalc starší 5 dní“, „Kontrola záloh engscalc na Disku“), aby četl
 — jinak budou porovnávat kopii testu s ostrou a hlásit falešný úbytek; (3) po nasazení na obou webech pořídit novou
 kopii tlačítkem (hlídka 14 dní a retence v Blobs dál běží i se starým záznamem).
 
-**Testy:** viz konec (kolo + mutace „#550“).
+**Testy:** viz konec (kolo + mutace „#552“).
 
 ---
 

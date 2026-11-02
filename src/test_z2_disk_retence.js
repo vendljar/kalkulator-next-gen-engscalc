@@ -10,8 +10,8 @@
  * kopii, nikdy když kopie selhala, server ji nepřijal nebo zapsaný soubor
  * nesedí velikostí či SHA-256, a jen ve složce „_Zaloha Netlify DB".
  * Kopie je komprimovaná (otisk_…json.gz) a obnova ze souboru ji načte.
- * #550: jména nesou prostředí a čas (otisk_main_RRRR-MM-DD_0310…); starý tvar
- * bez prostředí a cizí prostředí zkouší src/test_550_nazvy_zaloh.js.
+ * #552: jména nesou prostředí a čas (otisk_main_RRRR-MM-DD_0310…); starý tvar
+ * bez prostředí a cizí prostředí zkouší src/test_552_nazvy_zaloh.js.
  *
  * Mazání je nevratné → tabulka přesného výběru jmen a simulovaná složka
  * (File System Access: values / getFileHandle / removeEntry) ve vm
@@ -39,7 +39,7 @@ test('úseky online_ui.js nalezeny (kopie na Disk, úklid, obnova .gz)', !!kopie
 
 /* ---------------- 1) tabulka: které kopie na Disku odejdou ---------------- */
 {
-  /* #550: kopie nesou prostředí a čas (otisk_main_RRRR-MM-DD_HHMM…); úklid jen vlastního prostředí */
+  /* #552: kopie nesou prostředí a čas (otisk_main_RRRR-MM-DD_HHMM…); úklid jen vlastního prostředí */
   const V = (j, d, ch) => R.retenceZalohDiskVyber(j, d, ch, 'main');
   const nove = [];
   for (let d = 21; d <= 27; d++) nove.push('otisk_main_2026-10-' + d + '_0310.json.gz');
@@ -360,7 +360,7 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
   }
   /* ---- server přijme záznam .json.gz a podloží jím retenci ---- */
   {
-    test('#523 jméno kopie: uloKopieDiskJmeno umí .json.gz (#550: s prostředím a časem)',
+    test('#523 jméno kopie: uloKopieDiskJmeno umí .json.gz (#552: s prostředím a časem)',
       U.uloKopieDiskJmeno('2026-10-27', true, 'main', '2026-10-27T02:10:00Z') === 'otisk_main_2026-10-27_0310.json.gz'
       && U.uloKopieDiskJmeno('2026-10-27', false, 'main', '2026-10-27T02:10:00Z') === 'otisk_main_2026-10-27_0310.json');
   }

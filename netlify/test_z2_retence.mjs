@@ -343,7 +343,7 @@ await zkus('kopie .json.gz', async () => {
   const posli = async (soubor) => (await zalohaVynuceno(new Request('http://x/api/zaloha_vynuceno', { method: 'POST', headers: { cookie },
     body: J({ akce: 'kopie-disk', hesloSpravce: 'Docasne.Heslo.123', kopie: { soubor, velikostB: 1234, sha256: 'c'.repeat(64),
       otisk: '2026-10-26', puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' } }) }))).status;
-  /* #550: nový tvar s prostředím (mimo Netlify „jiny") a časem; starý tvar bez prostředí server do nového záznamu nebere */
+  /* #552: nový tvar s prostředím (mimo Netlify „jiny") a časem; starý tvar bez prostředí server do nového záznamu nebere */
   test('#523 kopie: server přijme záznam komprimované kopie otisk_<prostředí>_<den>_HHMM.json.gz', (await posli('otisk_jiny_2026-10-26_0310.json.gz')) === 200
     && (await ulz('zalohy').cti(Z.KOPIE_DISK_KLIC)).soubor === 'otisk_jiny_2026-10-26_0310.json.gz');
   test('#523 kopie: nekomprimovaná .json platí dál, jiná jména ne', (await posli('otisk_jiny_2026-10-26_0310.json')) === 200

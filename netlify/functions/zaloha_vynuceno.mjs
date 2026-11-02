@@ -56,7 +56,7 @@ export default async (req) => {
   if (req.method === 'GET') {
     const sZal = await uloziste('zalohy');
     return json({ ok: true, otisky: await seznamOtisku(14),
-      /* #550: jen kopie VLASTNÍHO prostředí (main / test / jiny) a prostředí,
+      /* #552: jen kopie VLASTNÍHO prostředí (main / test / jiny) a prostředí,
        * aby hláška v Nastavení → Databáze řekla, o čí kopii jde */
       kopieDisk: kopieDiskVlastni(await sZal.cti(kopieDiskKlic()), prostrediZalohy()),
       prostredi: prostrediZalohy(),
@@ -82,7 +82,7 @@ export default async (req) => {
   if (telo.akce === 'kopie-disk') {
     const k = (telo.kopie && typeof telo.kopie === 'object') ? telo.kopie : {};
     const soubor = txt(k.soubor);
-    /* #550: jen nový tvar otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz) a jen
+    /* #552: jen nový tvar otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz) a jen
      * prostředí tohoto webu — starý tvar bez prostředí by se v Disku
      * přepisoval s druhým webem (stará stránka v prohlížeči → obnovit). */
     const jm = kopieDiskRozeber(soubor);
@@ -121,7 +121,7 @@ export default async (req) => {
   if (telo.akce === 'retence-varovani-disk') {
     const d = (telo.disk && typeof telo.disk === 'object') ? telo.disk : {};
     const den = txt(d.den), predSoubor = txt(d.predSoubor), novySoubor = txt(d.novySoubor);
-    /* #550: obě kopie nového tvaru a vlastního prostředí (prohlížeč porovnává
+    /* #552: obě kopie nového tvaru a vlastního prostředí (prohlížeč porovnává
      * jen s kopií téhož webu — test proti ostrému by hlásil nesmyslný úbytek) */
     const vlastni = (j) => { const r = kopieDiskRozeber(j); return !!r && !r.stary && r.prostredi === prostrediZalohy(); };
     if (!/^\d{4}-\d{2}-\d{2}$/.test(den) || !vlastni(predSoubor) || !vlastni(novySoubor))

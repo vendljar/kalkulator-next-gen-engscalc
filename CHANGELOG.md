@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v2.11.3 — ZN #550: názvy záloh na Disku Google s prostředím a časem, větev claude/zn-nazvy-zaloh
+## v2.11.3 — ZN #552: názvy záloh na Disku Google s prostředím a časem, větev claude/zn-nazvy-zaloh
 
 Nad integrací b22f5df (v2.11.3), pokyn J. V. 2. 11. 2026. Na ostrém webu ani na Disku nic. Verze ponechána,
 koordinace přečísluje.
@@ -34,10 +34,10 @@ koordinace přečísluje.
   novou kopii jen s předchozí kopií téhož prostředí (test proti ostrému by hlásil nesmyslný úbytek).
 - **Hláška** „Poslední kopie záloh na Disku Google (prostředí …)“ v Nastavení → Databáze jen pro kopii vlastního webu.
 - **Obnova ze souboru** jméno nekontroluje — načte starý i nový tvar.
-- **Testy:** nové `src/test_550_nazvy_zaloh.js` (31) a `netlify/test_550_prostredi_zaloh.mjs` (24); pojistka nad
+- **Testy:** nové `src/test_552_nazvy_zaloh.js` (31) a `netlify/test_552_prostredi_zaloh.mjs` (24); pojistka nad
   b22f5df: klient 18 FAIL a pád, server pád na importu. Srovnány s novým tvarem `test_z2_disk_retence.js`,
   `test_o7_kopie_klient.js`, `test_kopie_disk.js`, `test_nazvy_souboru.js`, `netlify/test_zalohy.mjs`,
-  `test_o_k9_zalohy.mjs`, `test_z2_retence.mjs`, `overit_online.mjs`. Mutace „#550“ (24) + 10 starších přecílených
+  `test_o_k9_zalohy.mjs`, `test_z2_retence.mjs`, `overit_online.mjs`. Mutace „#552“ (24) + 10 starších přecílených
   na nový kód. Dokumentace: `podklady/NAZVY_SOUBORU.md`, `src/nazvy_souboru.js`, příručka správce, obchodníka
   a kompletní dokumentace.
 

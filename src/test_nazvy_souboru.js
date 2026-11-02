@@ -97,7 +97,7 @@ test('den je MÍSTNÍ (ne UTC)', N.nazevDen(new Date(2026, 9, 27, 0, 30)) === '2
 
 /* ---------- 3) výjimky beze změny ---------- */
 const ULO = require('./uloziste.js');
-/* #550: kopie na Disk nese prostředí a čas pořízení (Europe/Prague) */
+/* #552: kopie na Disk nese prostředí a čas pořízení (Europe/Prague) */
 test('výjimka: kopie na Disk otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz',
   ULO.uloKopieDiskJmeno('2026-10-27', true, 'main', '2026-10-27T02:10:00Z') === 'otisk_main_2026-10-27_0310.json.gz');
 test('výjimka: kopie na Disk otisk_<prostředí>_RRRR-MM-DD_HHMM.json',
@@ -110,7 +110,7 @@ test('výjimka: posledni_kopie_<prostředí>.json na Disku', UI('online_ui.js').
 {
   const R = require('./retence_zaloh.js');
   const re = R.RETENCE_ZALOH_DISK_JMENO;
-  test('retence_zaloh.js hledá jen otisk_<prostředí>_… (#550)', re.test('otisk_main_2026-10-27_0310.json.gz') && !re.test('otisk_2026-10-27.json.gz'));
+  test('retence_zaloh.js hledá jen otisk_<prostředí>_… (#552)', re.test('otisk_main_2026-10-27_0310.json.gz') && !re.test('otisk_2026-10-27.json.gz'));
   test('nová záloha ZALOHA_… není otisk (úklid ji nesmaže)', !re.test(N.nazevExportu('zaloha', u({}))));
 }
 

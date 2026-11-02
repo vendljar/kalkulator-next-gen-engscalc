@@ -1140,7 +1140,7 @@ export const KOPIE_DISK_KLIC = 'kopie-disk';
  * jméno nese klient (ULO_KOPIE_DISK_SLOZKA v src/uloziste.js). */
 export const KOPIE_DISK_SLOZKA = '_Zaloha Netlify DB';
 export const RETENCE_KOPIE_DISK_DNU = 7;
-/* PROSTŘEDÍ ZÁLOHY (#550, J. V. 2. 11. 2026). Ostrý (engscalc) i testovací
+/* PROSTŘEDÍ ZÁLOHY (#552, J. V. 2. 11. 2026). Ostrý (engscalc) i testovací
  * web (testengscalc) kopírují do téže složky na Disku, proto jméno kopie nese
  * main | test | jiny. Určuje to SERVER, ne adresa v prohlížeči: záznam kopie
  * přijímá a ověřuje server (prohlížeč by jméno mohl podvrhnout), adresa
@@ -1201,7 +1201,7 @@ export function kopieDiskPodlozena(zaznam, klice, prostredi = prostrediZalohy())
     .sort().reverse().slice(0, KOPIE_DISK_NEJNOVEJSICH);
   if (!nejnovejsi.includes(otisk)) return false;
   /* #523 Z2: kopie je od v26.10.9 komprimovaná (.json.gz); starší .json platí dál.
-   * #550: nový tvar otisk_<prostředí>_<den>_HHMM — den musí být tentýž otisk
+   * #552: nový tvar otisk_<prostředí>_<den>_HHMM — den musí být tentýž otisk
    * a prostředí to vlastní (kopie testu neodemkne retenci ostrého webu);
    * starý tvar otisk_<den>.json(.gz) ze záznamů před v2.11.3 platí dál. */
   const jm = kopieDiskRozeber(zaznam.soubor);

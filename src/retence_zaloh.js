@@ -7,7 +7,7 @@
  *     v Netlify Blobs (úložiště `zalohy`), přes netlify/lib/retence_modul.cjs;
  *   - prohlížeč správce (src/ui/online_ui.js → kopieDiskUklid) pro kopie
  *     `otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz)` ve složce „_Zaloha Netlify DB"
- *     na Disku (jen kopie vlastního prostředí, #550).
+ *     na Disku (jen kopie vlastního prostředí, #552).
  * Dvě kopie téhož pravidla by se časem rozešly — proto jeden modul.
  *
  * Pravidlo J. V. 26. 10. 2026 (nahrazuje #151 N5 z 19. 10.):
@@ -93,7 +93,7 @@ function retenceZalohDrz(dny, dnes, pravidlo, opt) {
   return drz;
 }
 
-/* KOPIE NA DISKU — JMÉNA SOUBORŮ (#550, J. V. 2. 11. 2026).
+/* KOPIE NA DISKU — JMÉNA SOUBORŮ (#552, J. V. 2. 11. 2026).
  * Ostrý i testovací web kopírují do TÉŽE složky „_Zaloha Netlify DB", proto
  * jméno nese prostředí a čas pořízení zálohy:
  *   otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz)

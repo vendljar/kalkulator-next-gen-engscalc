@@ -54,7 +54,7 @@ const ONLINE_STAV = {
   otisky: [],        // souhrny záloh databáze (jen administrátor; bez dat)
   otiskyNacteno: false,
   kopieDisk: null,   // záznam poslední kopie otisku na Disk (#151 N6) — ze serveru, bez dat
-  prostrediZalohy: null,   // #550: prostředí záloh main | test | jiny — ze serveru (GET /api/zaloha_vynuceno)
+  prostrediZalohy: null,   // #552: prostředí záloh main | test | jiny — ze serveru (GET /api/zaloha_vynuceno)
   retenceVarovani: null,   // pojistka retence přeskočila mazání (K3-N13) — ze serveru
   zalohySmi: null,   // O-K9 #527: { potvrditUbytek, smazatPredObnovou } — rozhoduje server
   soubor: '',        // pod jakým jménem je otevřená zakázka online
@@ -1807,7 +1807,7 @@ function onlineOtiskyNacti() {
   return onlineApi('/api/zaloha_vynuceno').then(o => {
     ONLINE_STAV.otisky = o.otisky || [];
     ONLINE_STAV.kopieDisk = o.kopieDisk || null;
-    ONLINE_STAV.prostrediZalohy = o.prostredi || null;   // #550: main | test | jiny (server)
+    ONLINE_STAV.prostrediZalohy = o.prostredi || null;   // #552: main | test | jiny (server)
     ONLINE_STAV.retenceVarovani = o.retenceVarovani !== undefined ? o.retenceVarovani : null;   // #529: i poškozený záznam
     ONLINE_STAV.otiskStav = o.otiskStav || null;          // #522: poslední pokus o zálohu
     ONLINE_STAV.rozpracovane = o.rozpracovane || [];
@@ -1987,7 +1987,7 @@ async function onlineOtiskDopor(prvni, prubeh) {
  *
  * Obsah (J. V.): BEZ otisků hesel a BEZ podpisů — server ho vydá očištěný
  * (GET /api/zaloha?zdroj=nocni). Soubor
- * `otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz` (#550: prostředí main | test |
+ * `otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz` (#552: prostředí main | test |
  * jiny ze serveru, den nočního otisku, čas jeho pořízení v Europe/Prague)
  * + `posledni_kopie_<prostředí>.json` (datum, velikost, SHA-256, prostředí);
  * stejný záznam si poznamená server, aby hlídka fungovala všude. Ostrý
@@ -2011,7 +2011,7 @@ async function onlineZalohaStrankami(adresa, prubeh) {
     const o = await onlineApi(adresa + (adresa.includes('?') ? '&' : '?') + 'strana=1'
       + (otisk ? '&otisk=' + encodeURIComponent(otisk) : '') + (po ? '&po=' + encodeURIComponent(po) : ''));
     if (!o || !o.ok || !o.zaloha) throw new Error((o && o.chyba) || 'server zálohu nevydal');
-    if (n === 1) { otisk = o.otisk || null; puvod = o.puvod; prostredi = o.prostredi || null; porizena = o.porizena || ''; }   // #550
+    if (n === 1) { otisk = o.otisk || null; puvod = o.puvod; prostredi = o.prostredi || null; porizena = o.porizena || ''; }   // #552
     uloZalohaSloz(zaloha, o.zaloha);
     po = o.dalsi || '';
   } while (po);
@@ -2088,7 +2088,7 @@ async function kopieDiskDatB(h, jmeno) {
  *   - nejdřív se znovu přečte právě zapsaný soubor a musí sedět velikost
  *     i SHA-256 — neúplná nebo neověřitelná kopie = nic se nemaže;
  *   - maže se jen soubor přesně tvaru otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz)
- *     VLASTNÍHO prostředí (#550) podle retenceZalohDiskVyber
+ *     VLASTNÍHO prostředí (#552) podle retenceZalohDiskVyber
  *     (src/retence_zaloh.js); nikdy právě zapsaná kopie, nikdy nejnovější
  *     kopie vlastního prostředí, nikdy kopie druhého webu, nikdy starý tvar
  *     otisk_RRRR-MM-DD.json(.gz) bez prostředí, nikdy nic jiného (podsložky,
@@ -2112,7 +2112,7 @@ async function kopieDiskUklid(h, kopie, ted) {
    * pod 90 % předchozí kopie se ohlásí serveru a nic se nesmaže. Varování
    * potvrzené pro tentýž den mazání pustí. */
   const v = ONLINE_STAV.retenceVarovani;
-  /* #550: jen kopie VLASTNÍHO prostředí v novém tvaru — test proti ostrému
+  /* #552: jen kopie VLASTNÍHO prostředí v novém tvaru — test proti ostrému
    * by hlásil nesmyslný úbytek, starý tvar nejde přiřadit žádnému webu. */
   const r = retenceZalohDiskRozeber(kopie.soubor);
   const prostredi = r && !r.stary ? r.prostredi : null;
@@ -2122,7 +2122,7 @@ async function kopieDiskUklid(h, kopie, ted) {
     return nic('záznam varování pojistky je poškozený — mazání stojí, dokud ho hlavní správce nepotvrdí');   // #529
   if (v && !v.potvrzeno) return nic('nepotvrzený úbytek dat (' + String(v.text || v.den || '') + ') — mazání stojí, dokud ho nepotvrdíte');
   const datum = (j) => { const x = retenceZalohDiskRozeber(j); return x && !x.stary && x.prostredi === prostredi ? x.den : ''; };
-  const predchozi = jmena.filter(j => datum(j) && datum(j) !== den && j !== kopie.soubor).sort().pop();   // #550: stejné prostředí → jméno řadí den i čas
+  const predchozi = jmena.filter(j => datum(j) && datum(j) !== den && j !== kopie.soubor).sort().pop();   // #552: stejné prostředí → jméno řadí den i čas
   if (predchozi && kopie.velikostDatB > 0) {
     const predB = await kopieDiskDatB(h, predchozi);
     const co = retenceZalohPokles({ velikostB: predB }, { velikostB: kopie.velikostDatB });
@@ -2172,7 +2172,7 @@ async function kopieDiskProved(h, heslo) {
   if (!hesloSpravce) throw new Error('bez vašeho hesla se kopie nepořídila');
   const o = await onlineZalohaStrankami('/api/zaloha?zdroj=nocni', null);
   if (!o || !o.ok || !o.zaloha) throw new Error((o && o.chyba) || 'server zálohu nevydal');
-  /* #550: prostředí hlásí server; bez něj (starší server) se nezapíše nic —
+  /* #552: prostředí hlásí server; bez něj (starší server) se nezapíše nic —
    * jméno bez prostředí by se přepisovalo s druhým webem. */
   const prostredi = uloKopieDiskProstredi(o.prostredi);
   if (!prostredi) throw new Error('server nehlásí prostředí zálohy (main / test) — obnovte stránku a zkuste to znovu');

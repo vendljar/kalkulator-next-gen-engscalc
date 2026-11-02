@@ -2091,14 +2091,14 @@ function uloZalohaHlidka(otisky, ted) {
  * Jednou za 7 dní sama po přihlášení (je-li složka vybraná a právo
  * udělené), kdykoli tlačítkem; hlídka varuje, je-li poslední kopie starší
  * než 14 dní. Od #523 Z2 (26. 10. 2026) je kopie komprimovaná
- * (`otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz`, #550) a po úspěšné kopii prohlížeč ve složce
+ * (`otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz`, #552) a po úspěšné kopii prohlížeč ve složce
  * uklidí staré kopie (src/retence_zaloh.js, kopieDiskUklid v online_ui.js).
  * Čisté funkce nad záznamem ze serveru (GET /api/zaloha_vynuceno →
  * kopieDisk), `ted` v ms. */
 const ULO_KOPIE_DISK_SLOZKA = '_Zaloha Netlify DB';
 const ULO_KOPIE_DISK_INTERVAL_DNU = 7;
 const ULO_KOPIE_DISK_HLIDKA_DNU = 14;
-/* JMÉNO KOPIE (#550, J. V. 2. 11. 2026): ostrý i testovací web píšou do téže
+/* JMÉNO KOPIE (#552, J. V. 2. 11. 2026): ostrý i testovací web píšou do téže
  * složky, proto `otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz)` — prostředí
  * main | test | jiny hlásí server (odpověď /api/zaloha?zdroj=nocni), čas je
  * pořízení zálohy v Europe/Prague. Rozbor a úklid: src/retence_zaloh.js
@@ -2131,12 +2131,12 @@ function uloKopieDiskJmeno(den, gzip, prostredi, kdy) {
   const d = /^\d{4}-\d{2}-\d{2}$/.test(String(den || '')) ? String(den) : cas.den;
   return 'otisk_' + p + '_' + d + '_' + cas.hhmm + '.json' + (gzip ? '.gz' : '');
 }
-/* Záznam o poslední kopii na Disku — jeden pro každé prostředí (#550). */
+/* Záznam o poslední kopii na Disku — jeden pro každé prostředí (#552). */
 function uloKopieDiskPosledniJmeno(prostredi) {
   const p = uloKopieDiskProstredi(prostredi);
   return p ? 'posledni_kopie_' + p + '.json' : '';
 }
-/* `prostredi` (#550) = prostředí tohoto webu ze serveru; záznam kopie JINÉHO
+/* `prostredi` (#552) = prostředí tohoto webu ze serveru; záznam kopie JINÉHO
  * prostředí se bere jako žádná kopie (hláška ukazuje jen vlastní kopii),
  * starý záznam bez prostředí platí (na webu ho psal jen ten web). */
 function uloKopieDiskStav(kopie, ted, prostredi) {

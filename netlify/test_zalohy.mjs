@@ -506,7 +506,7 @@ await zkus('N6', async () => {
   const bez = await (await get(zalohaFn, 'http://x/api/zaloha', cookie)).json();
   test('N6: běžná záloha ke stažení se nezměnila (podpisy v ní zůstávají)', bez.ok && !!bez.zaloha.podpisy);
   /* záznam o kopii — od O7 (K3-N1) jen s heslem správce a ze složky „_Zaloha Netlify DB" */
-  /* #550: testy běží mimo Netlify → prostředí „jiny" (prostrediZalohy) */
+  /* #552: testy běží mimo Netlify → prostředí „jiny" (prostrediZalohy) */
   const kopieTelo = { soubor: 'otisk_jiny_2026-10-19_0305.json', velikostB: 1234, sha256: 'a'.repeat(64), otisk: '2026-10-19',
     puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', data: 'NESMI' };
   const zaznamPred = pamet.get('zalohy/kopie-disk');

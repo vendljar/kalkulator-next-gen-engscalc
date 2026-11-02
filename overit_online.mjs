@@ -924,7 +924,7 @@ test('K4-N15: po špatném hesle posledni_kopie_<prostředí>.json na Disku nevz
   await page.evaluate(() => ![...window.__diskSoubory.keys()].some(j => /^posledni_kopie/.test(j))), await page.evaluate(() => [...window.__diskSoubory.keys()]));
 await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__diskSoubory.clear();
   /* #523: stará kopie (první v dubnu 2025, starší 6 měsíců) a cizí soubor ve složce.
-   * #550: harness běží mimo Netlify → prostředí „jiny"; kopie jiného prostředí
+   * #552: harness běží mimo Netlify → prostředí „jiny"; kopie jiného prostředí
    * a starý tvar bez prostředí musí zůstat. */
   window.__diskSoubory.set('otisk_jiny_2025-04-01_0300.json', new Blob(['stara']));
   window.__diskSoubory.set('otisk_main_2025-04-01_0300.json', new Blob(['ostry web']));
@@ -949,9 +949,9 @@ test('K3-N1 O7: záznam na serveru nese složku a potvrzení heslem',
     return { jm, otisk, text, sha, velikost, posledni: JSON.parse(s.get('posledni_kopie_jiny.json') ? await s.get('posledni_kopie_jiny.json').text() : 'null'),
       hlaska: ONLINE_STAV.hlaska, kopie: ONLINE_STAV.kopieDisk, vyber: window.__diskVyber };
   });
-  test('N6 #523 #550: soubor otisk_<prostředí>_<den nočního otisku>_HHMM.json.gz + posledni_kopie_<prostředí>.json',
+  test('N6 #523 #552: soubor otisk_<prostředí>_<den nočního otisku>_HHMM.json.gz + posledni_kopie_<prostředí>.json',
     !!r.otisk && r.otisk.startsWith('otisk_jiny_' + nocniDen + '_') && r.jm.includes('posledni_kopie_jiny.json'), r.jm);
-  test('#523 #550: po kopii stará kopie vlastního prostředí zmizela; kopie ostrého webu, starý tvar a cizí soubor zůstaly, hláška hlásí úklid',
+  test('#523 #552: po kopii stará kopie vlastního prostředí zmizela; kopie ostrého webu, starý tvar a cizí soubor zůstaly, hláška hlásí úklid',
     !r.jm.includes('otisk_jiny_2025-04-01_0300.json') && r.jm.includes('otisk_main_2025-04-01_0300.json') && r.jm.includes('otisk_2025-04-01.json')
     && r.jm.includes('poznamka.txt') && /Na Disku smazáno 1 starší kopie/.test(r.hlaska), [r.jm, r.hlaska]);
   const z = JSON.parse(r.text || '{}');

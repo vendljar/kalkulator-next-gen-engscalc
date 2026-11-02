@@ -22,7 +22,7 @@ export default async (req) => {
    * stav v témž tvaru; `puvod` říká, co to je. */
   if (new URL(req.url).searchParams.get('zdroj') === 'nocni') {
     const n = await posledniNocniOtisk();
-    /* #550: prostředí a čas pořízení — z nich prohlížeč skládá jméno kopie
+    /* #552: prostředí a čas pořízení — z nich prohlížeč skládá jméno kopie
      * otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz (src/uloziste.js) */
     if (n) return json({ ok: true, puvod: 'nocni-otisk', otisk: n.klic, prostredi: prostrediZalohy(), porizena: String(n.otisk.porizena || ''),
       zaloha: { ...otiskProDisk(n.otisk), web: hostitel(req) || 'neznámý web' } });

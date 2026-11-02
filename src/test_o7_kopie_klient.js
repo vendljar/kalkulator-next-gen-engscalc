@@ -14,7 +14,7 @@
  *
  * Pojistka: s online_ui.js a uloziste.js z v20.10.1 padá 9 kontrol a test pak
  * spadne na chybějící uloRetenceVarovani; po opravě 16 / 0.
- * #550: jména kopie nesou prostředí a čas (otisk_test_2026-10-19_0305.json,
+ * #552: jména kopie nesou prostředí a čas (otisk_test_2026-10-19_0305.json,
  * posledni_kopie_test.json) — prostředí a čas hlásí server v odpovědi zálohy.
  * ============================================================ */
 const fs = require('fs');

@@ -1,4 +1,4 @@
-/* #550 ZN — ZÁLOHY NA DISKU S PŘÍZNAKEM PROSTŘEDÍ A ČASEM (J. V. 2. 11. 2026)
+/* #552 ZN — ZÁLOHY NA DISKU S PŘÍZNAKEM PROSTŘEDÍ A ČASEM (J. V. 2. 11. 2026)
  *
  * Ostrý (engscalc) i testovací web (testengscalc) kopírují zálohu do téže
  * složky „_Zaloha Netlify DB". Do v2.11.3 se jmenovala otisk_RRRR-MM-DD.json.gz
@@ -16,7 +16,7 @@
  * (prostrediZalohy / kopieDiskKlic / kopieDiskVlastni v lib/zalohovani.mjs
  * nejsou); s náhradními funkcemi by selhaly všechny oddíly 2)–4)
  * (server bral jen otisk_RRRR-MM-DD.json(.gz) a prostředí nehlásil).
- * Spuštění: node netlify/test_550_prostredi_zaloh.mjs */
+ * Spuštění: node netlify/test_552_prostredi_zaloh.mjs */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
 process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
 process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'spravce@priklad.cz';
@@ -51,17 +51,17 @@ const vratEnv = () => { for (const k of ENV_KLICE) { if (puvodniEnv[k] === undef
 /* ---------------- 1) prostředí ---------------- */
 {
   const P = Z.prostrediZalohy;
-  test('#550 prostředí: mimo Netlify (místní běh, testy) → jiny', P({}) === 'jiny');
-  test('#550 prostředí: produkce ostrého webu → main', P({ NETLIFY: 'true', CONTEXT: 'production', SITE_NAME: 'engscalc' }) === 'main'
+  test('#552 prostředí: mimo Netlify (místní běh, testy) → jiny', P({}) === 'jiny');
+  test('#552 prostředí: produkce ostrého webu → main', P({ NETLIFY: 'true', CONTEXT: 'production', SITE_NAME: 'engscalc' }) === 'main'
     && P({ SITE_ID: 'x' }) === 'main' && P({ AWS_LAMBDA_FUNCTION_NAME: 'f' }) === 'main');
-  test('#550 prostředí: PROSTREDI=test → test (i v produkčním kontextu testovacího webu)', P({ PROSTREDI: 'test', CONTEXT: 'production', SITE_NAME: 'testengscalc' }) === 'test'
+  test('#552 prostředí: PROSTREDI=test → test (i v produkčním kontextu testovacího webu)', P({ PROSTREDI: 'test', CONTEXT: 'production', SITE_NAME: 'testengscalc' }) === 'test'
     && P({ PROSTREDI: ' Testovaci ' }) === 'test' && P({ PROSTREDI: 'sandbox' }) === 'test');
-  test('#550 prostředí: náhled nasazení, větev a netlify dev → jiny', P({ CONTEXT: 'deploy-preview', SITE_ID: 'x' }) === 'jiny'
+  test('#552 prostředí: náhled nasazení, větev a netlify dev → jiny', P({ CONTEXT: 'deploy-preview', SITE_ID: 'x' }) === 'jiny'
     && P({ CONTEXT: 'branch-deploy', NETLIFY: 'true' }) === 'jiny' && P({ CONTEXT: 'dev' }) === 'jiny');
-  test('#550 prostředí: PROSTREDI=ostre na Netlify → main; bez Netlify jiny', P({ PROSTREDI: 'ostre', NETLIFY: 'true' }) === 'main' && P({ PROSTREDI: 'ostre' }) === 'jiny');
-  test('#550 klíč záznamu: produkce i místně „kopie-disk", náhled vlastní klíč', Z.kopieDiskKlic({ CONTEXT: 'production' }) === 'kopie-disk'
+  test('#552 prostředí: PROSTREDI=ostre na Netlify → main; bez Netlify jiny', P({ PROSTREDI: 'ostre', NETLIFY: 'true' }) === 'main' && P({ PROSTREDI: 'ostre' }) === 'jiny');
+  test('#552 klíč záznamu: produkce i místně „kopie-disk", náhled vlastní klíč', Z.kopieDiskKlic({ CONTEXT: 'production' }) === 'kopie-disk'
     && Z.kopieDiskKlic({}) === 'kopie-disk' && Z.kopieDiskKlic({ CONTEXT: 'deploy-preview' }) === 'kopie-disk-nahled');
-  test('#550 záznam vlastního prostředí: cizí se neukáže, starý bez prostředí ano', Z.kopieDiskVlastni({ prostredi: 'test' }, 'main') === null
+  test('#552 záznam vlastního prostředí: cizí se neukáže, starý bez prostředí ano', Z.kopieDiskVlastni({ prostredi: 'test' }, 'main') === null
     && !!Z.kopieDiskVlastni({ prostredi: 'main' }, 'main') && !!Z.kopieDiskVlastni({ soubor: 'otisk_2026-10-01.json' }, 'main')
     && Z.kopieDiskVlastni(null, 'main') === null);
 }
@@ -72,14 +72,14 @@ const vratEnv = () => { for (const k of ENV_KLICE) { if (puvodniEnv[k] === undef
   const z = { kdy: '2026-11-02T08:00:00Z', puvod: 'nocni-otisk', otisk: '2026-11-02', velikostB: 10, sha256: 'a'.repeat(64),
     slozka: '_Zaloha Netlify DB', potvrzeno: 'heslo-spravce' };
   const pod = (soubor, p, navic) => Z.kopieDiskPodlozena({ ...z, soubor, ...(navic || {}) }, klice, p);
-  test('#550 podloženo: nový tvar vlastního prostředí (.json.gz i .json)', pod('otisk_main_2026-11-02_0310.json.gz', 'main')
+  test('#552 podloženo: nový tvar vlastního prostředí (.json.gz i .json)', pod('otisk_main_2026-11-02_0310.json.gz', 'main')
     && pod('otisk_test_2026-11-02_2359.json', 'test') && pod('otisk_main_2026-11-02_0310.json.gz', 'main', { prostredi: 'main' }));
-  test('#550 podloženo: kopie jiného prostředí retenci neodemkne', !pod('otisk_test_2026-11-02_0310.json.gz', 'main')
+  test('#552 podloženo: kopie jiného prostředí retenci neodemkne', !pod('otisk_test_2026-11-02_0310.json.gz', 'main')
     && !pod('otisk_main_2026-11-02_0310.json.gz', 'test') && !pod('otisk_jiny_2026-11-02_0310.json.gz', 'main'));
-  test('#550 podloženo: záznam s cizím prostředím neodemkne ani se správným jménem', !pod('otisk_main_2026-11-02_0310.json.gz', 'main', { prostredi: 'test' }));
-  test('#550 podloženo: starý tvar otisk_<den>.json(.gz) ze záznamů před v2.11.3 platí dál', pod('otisk_2026-11-02.json.gz', 'main')
+  test('#552 podloženo: záznam s cizím prostředím neodemkne ani se správným jménem', !pod('otisk_main_2026-11-02_0310.json.gz', 'main', { prostredi: 'test' }));
+  test('#552 podloženo: starý tvar otisk_<den>.json(.gz) ze záznamů před v2.11.3 platí dál', pod('otisk_2026-11-02.json.gz', 'main')
     && pod('otisk_2026-11-02.json', 'test'));
-  test('#550 podloženo: jiný den, neplatný čas nebo cizí jméno ne', !pod('otisk_main_2026-11-01_0310.json.gz', 'main')
+  test('#552 podloženo: jiný den, neplatný čas nebo cizí jméno ne', !pod('otisk_main_2026-11-01_0310.json.gz', 'main')
     && !pod('otisk_main_2026-11-02_2460.json.gz', 'main') && !pod('otisk_main_2026-11-02_031.json.gz', 'main')
     && !pod('otisk_main_2026-11-02_0310.json.gz.exe', 'main') && !pod('otisk_MAIN_2026-11-02_0310.json.gz', 'main'));
 }
@@ -91,7 +91,7 @@ let cookie = '';
 const prihlas = async () => { const r = await prihlaseni(new Request('http://x/api/prihlaseni', { method: 'POST', body: J({ email: ADMIN_EMAIL, heslo: HESLO }) }));
   cookie = (r.headers.get('set-cookie') || '').split(';')[0]; return r.status; };
 const nastavEnv = async (e) => { for (const k of ENV_KLICE) delete process.env[k]; Object.assign(process.env, e || {}); return prihlas(); };
-test('#550: správce se přihlásí', (await prihlas()) === 200);
+test('#552: správce se přihlásí', (await prihlas()) === 200);
 const posli = async (telo) => { const o = await zalohaVynuceno(new Request('http://x/api/zaloha_vynuceno', { method: 'POST', headers: { cookie }, body: J(telo) }));
   return { status: o.status, telo: await o.json() }; };
 const prehled = async () => (await zalohaVynuceno(new Request('http://x/api/zaloha_vynuceno', { headers: { cookie } }))).json();
@@ -100,25 +100,25 @@ const kopie = (soubor) => ({ akce: 'kopie-disk', hesloSpravce: HESLO, kopie: { s
 try {
   await nastavEnv({ PROSTREDI: 'test', CONTEXT: 'production', NETLIFY: 'true', SITE_NAME: 'testengscalc' });
   const spatne = await posli(kopie('otisk_main_2026-11-02_0310.json.gz'));
-  test('#550 kopie-disk: testovací web odmítne kopii pojmenovanou „main" (400) a nic nezapíše', spatne.status === 400
+  test('#552 kopie-disk: testovací web odmítne kopii pojmenovanou „main" (400) a nic nezapíše', spatne.status === 400
     && /prostředí „main", tento web je „test"/.test(spatne.telo.chyba) && !pamet.has('zalohy/kopie-disk'), spatne);
   const stare = await posli(kopie('otisk_2026-11-02.json.gz'));
-  test('#550 kopie-disk: starý tvar bez prostředí → 400 s radou obnovit stránku', stare.status === 400 && /obnovte stránku/.test(stare.telo.chyba)
+  test('#552 kopie-disk: starý tvar bez prostředí → 400 s radou obnovit stránku', stare.status === 400 && /obnovte stránku/.test(stare.telo.chyba)
     && !pamet.has('zalohy/kopie-disk'), stare);
   const dobre = await posli(kopie('otisk_test_2026-11-02_0310.json.gz'));
-  test('#550 kopie-disk: kopie „test" se zapíše s prostředím', dobre.status === 200 && dobre.telo.kopieDisk.prostredi === 'test'
+  test('#552 kopie-disk: kopie „test" se zapíše s prostředím', dobre.status === 200 && dobre.telo.kopieDisk.prostredi === 'test'
     && JSON.parse(pamet.get('zalohy/kopie-disk')).soubor === 'otisk_test_2026-11-02_0310.json.gz', dobre);
   const p1 = await prehled();
-  test('#550 GET: přehled hlásí prostředí „test" a vlastní kopii', p1.ok && p1.prostredi === 'test' && !!p1.kopieDisk
+  test('#552 GET: přehled hlásí prostředí „test" a vlastní kopii', p1.ok && p1.prostredi === 'test' && !!p1.kopieDisk
     && p1.kopieDisk.soubor === 'otisk_test_2026-11-02_0310.json.gz', p1);
   /* záznam jiného prostředí v úložišti (např. omylem sdílené Blobs) se neukáže */
   await nastavEnv({ NETLIFY: 'true', CONTEXT: 'production' });
   const p2 = await prehled();
-  test('#550 GET: ostrý web záznam kopie „test" neukáže (hláška jen vlastního prostředí)', p2.ok && p2.prostredi === 'main' && p2.kopieDisk === null, p2);
+  test('#552 GET: ostrý web záznam kopie „test" neukáže (hláška jen vlastního prostředí)', p2.ok && p2.prostredi === 'main' && p2.kopieDisk === null, p2);
   /* náhled nasazení píše pod vlastní klíč — záznam produkce nepřepíše */
   await nastavEnv({ NETLIFY: 'true', CONTEXT: 'deploy-preview' });
   const nahled = await posli(kopie('otisk_jiny_2026-11-02_0310.json.gz'));
-  test('#550 kopie-disk: náhled nasazení („jiny") píše pod kopie-disk-nahled, záznam produkce zůstane', nahled.status === 200
+  test('#552 kopie-disk: náhled nasazení („jiny") píše pod kopie-disk-nahled, záznam produkce zůstane', nahled.status === 200
     && JSON.parse(pamet.get('zalohy/kopie-disk-nahled')).prostredi === 'jiny' && JSON.parse(pamet.get('zalohy/kopie-disk')).prostredi === 'test', nahled);
   /* hlášení úbytku z Disku: jen jména vlastního prostředí */
   await nastavEnv({ NETLIFY: 'true', CONTEXT: 'production' });
@@ -126,25 +126,25 @@ try {
     predVelikostB: 100, novaVelikostB: 50 } });
   const cizi = await posli(disk('otisk_test_2026-10-26_0310.json.gz', 'otisk_main_2026-11-02_0310.json.gz'));
   const staryPred = await posli(disk('otisk_2026-10-26.json.gz', 'otisk_main_2026-11-02_0310.json.gz'));
-  test('#550 retence-varovani-disk: předchozí kopie jiného prostředí nebo starého tvaru → 400', cizi.status === 400 && staryPred.status === 400
+  test('#552 retence-varovani-disk: předchozí kopie jiného prostředí nebo starého tvaru → 400', cizi.status === 400 && staryPred.status === 400
     && !pamet.has('zalohy/retence-varovani'), [cizi, staryPred]);
   const vlastni = await posli(disk('otisk_main_2026-10-26_0310.json.gz', 'otisk_main_2026-11-02_0310.json.gz'));
-  test('#550 retence-varovani-disk: kopie vlastního prostředí se ohlásí', vlastni.status === 200 && !!vlastni.telo.retenceVarovani, vlastni);
+  test('#552 retence-varovani-disk: kopie vlastního prostředí se ohlásí', vlastni.status === 200 && !!vlastni.telo.retenceVarovani, vlastni);
   /* záloha pro Disk hlásí prostředí a čas pořízení */
   pamet.delete('zalohy/retence-varovani');
   const zal = await (await zalohaFn(new Request('http://x/api/zaloha?zdroj=nocni&strana=1', { headers: { cookie } }))).json();
-  test('#550 GET /api/zaloha?zdroj=nocni&strana=1: vrací prostředí a čas pořízení', zal.ok && zal.prostredi === 'main'
+  test('#552 GET /api/zaloha?zdroj=nocni&strana=1: vrací prostředí a čas pořízení', zal.ok && zal.prostredi === 'main'
     && Number.isFinite(Date.parse(zal.porizena)), { ok: zal.ok, prostredi: zal.prostredi, porizena: zal.porizena, chyba: zal.chyba });
   /* noční otisk: první stránka nese prostředí a čas pořízení otisku */
   const l = console.log; console.log = () => {};
   try { await zalohaNocni(); } finally { console.log = l; }
   const zalN = await (await zalohaFn(new Request('http://x/api/zaloha?zdroj=nocni&strana=1', { headers: { cookie } }))).json();
-  test('#550 GET /api/zaloha?zdroj=nocni&strana=1 (noční otisk): prostředí a čas pořízení otisku', zalN.ok && zalN.puvod === 'nocni-otisk'
+  test('#552 GET /api/zaloha?zdroj=nocni&strana=1 (noční otisk): prostředí a čas pořízení otisku', zalN.ok && zalN.puvod === 'nocni-otisk'
     && zalN.prostredi === 'main' && zalN.porizena === JSON.parse(pamet.get('zalohy/' + zalN.otisk)).porizena,
     { ok: zalN.ok, puvod: zalN.puvod, prostredi: zalN.prostredi, porizena: zalN.porizena, chyba: zalN.chyba });
   await nastavEnv({ PROSTREDI: 'test' });
   const zal2 = await (await zalohaFn(new Request('http://x/api/zaloha?zdroj=nocni', { headers: { cookie } }))).json();
-  test('#550 GET /api/zaloha?zdroj=nocni (celá): prostředí „test" a čas', zal2.ok && zal2.prostredi === 'test' && Number.isFinite(Date.parse(zal2.porizena)),
+  test('#552 GET /api/zaloha?zdroj=nocni (celá): prostředí „test" a čas', zal2.ok && zal2.prostredi === 'test' && Number.isFinite(Date.parse(zal2.porizena)),
     { ok: zal2.ok, prostredi: zal2.prostredi, porizena: zal2.porizena });
 } finally { vratEnv(); }
 

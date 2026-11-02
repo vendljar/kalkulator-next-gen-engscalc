@@ -24,7 +24,7 @@
  *
  * VÝJIMKY — názvy, které se NEMĚNÍ, protože je hledá jiný nástroj:
  *   otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz) a posledni_kopie_<prostředí>.json
- *   (kopie zálohy na Disk, #550 — prostředí main | test | jiny ze serveru,
+ *   (kopie zálohy na Disk, #552 — prostředí main | test | jiny ze serveru,
  *   čas Europe/Prague; hledá je naplánovaná úloha, hlídka i úklid Disku,
  *   retence_zaloh.js; starý tvar otisk_RRRR-MM-DD.json(.gz) úklid nemaže),
  *   _nastaveni.json a _program.json (složka _DB se čte podle jména),
