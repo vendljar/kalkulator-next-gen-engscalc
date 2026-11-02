@@ -1,3 +1,30 @@
+# Předávka — 2. 11. 2026: K37 #544 — opravy nálezů kola 37 (test v27.10.6), větev `claude/k37-opravy`
+
+Nad `origin/test` 3a255d7 (v27.10.6). **Verze 2.11.1** (koordinace může přečíslovat). Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Do `test-draft` / `test` / `main` nesloučeno — rozhodne J. V. Na ostrém webu, Disku
+ani v Pipedrive nic. Roadmapa #544 (vlna G) hotovo.
+
+| bod | stav | jak / testy (pojistka před → po) |
+|---|---|---|
+| 1 K37-N5 časované bomby | ✅ | `src/test_z2_disk_retence.js` = znění z integrace (O-SECM #542, 2038ef3); `netlify/test_prava.mjs` zámek s časem relativním k hodinám (s +400 dní 951/2 → 953/0); nový krok kola **`hodiny`** (`nastroje/posun_hodin.cjs`, `KNG_POSUN_DNU` ve `spust_testy.sh`, i v `--bez-mutaci`/CI); `test_mutace_zamek.mjs` běží bez posunu (porovnává s mtime) |
+| 2 K37-N1 sklo po přepnutí typu | ✅ | `skloMigraceAkt` (`src/ui/common.js`) v `typSachtyPrepni`, `set()` (Z.*/C.*), `syncVarianta()` (verze ceníku, přepočet, řada); zamčená varianta ne. `src/test_k37_sklo_prepnuti.js` 8 FAIL → 16/0; `overit_k37_sklo.mjs` (oba směry, zahr tam i zpět, zasklení, název v ceníku) 13 FAIL → 21/0; mutace jádra K37-N1 3/3 |
+| 3 K37-N3 CEIL dvakrát | ✅ | varianta „Cena před slevou před CEIL" (sloupec Zaokrouhlení dál podle #540 bod 4); verze struktury exportu **5**; ukázka `UKAZKA_…_v2.11.1.xlsx` (zbytek identity 0 u všech 5) a šablona přegenerované; `src/test_k37_controlling.js` |
+| 4 K37-N9 datum prodeje | ✅ | `ctrlDatumPlatne` v `ctrlHromadnyZakazka` i `ctrlRejstrikDny` (i '') — test_k37_controlling 10 FAIL → 15/0; mutace K37-N3/N9 3/3, #504 „datum jiného tvaru" upravena |
+| 5 K37-N8 D1 | ✅ | provoz.json „6 měsíců"; `test_dokumentace_kompletni` kontroluje řádek (1 FAIL → 78/0) |
+| 6 K37-N7 simulátor | ✅ | `pdSimulatorOstryWeb` přesně (SITE_NAME, host, `--engscalc.netlify.app`); test_pd_simulator 5 FAIL → 61/0; mutace serveru K37-N7 4/4, #536 3/3 |
+| 6b K37-N10 | ✅ převzato z T2 | blok K6-S6 v `netlify/test_controlling.mjs` doslova z integrace 1fb09b2 (pokyn koordinace) — 82/0; mutace K6-S6 chycená |
+| 7 I1 / I5 / I6 | ✅ | `nazevDen` (TZ test 3 FAIL → OK), `csvBunka` = pravidlo ctrlCsvBunka (test_csv_vzorce, test_controlling K5-K1 upraven), komentář zalohovani.mjs |
+
+**Testy:** kolo `--jen build,sady,hodiny,staticke` VŠE ZELENÉ (sady 355/0/7 přeskočeno — firemní podklady a test.js;
+hodiny 285/0/1; statické 4/4). **Mutace po částech:** viz níže (doplňuje se).
+
+**Nedělat bez J. V.:** K37-N2, K37-N4, K37-N6, K37-I4, K36-N2, K37-I2.
+**Při slučování:** konflikty hrozí v `CHANGELOG.md`, `roadmapa/roadmap.json`, `manual/*obsah.json` (řádek verze),
+`mutace_jadro.mjs` / `netlify/mutace.mjs` (začátek MUTACE, PRIORITA), `src/controlling.js` (CTRL_EXPORT_VERZE 5 — pokud
+integrace mezitím verzi zvýšila, sjednotit), `nastroje/testovaci_kolo.sh` (nový krok hodiny — O-SECM přidala hook pre-push).
+Release v2.11.1 zatím není (větev nesloučena).
+
+---
 # Předávka — 27. 10. 2026: C4 #540 — kód controllingu podle rozhodnutí J. V., větev `claude/c4-controlling-rozhodnuti`
 
 Nad `60f8fd2` (integrace v27.10.2) + sloučená C3 #537 (`origin/claude/c3-controlling-priprava`, konflikty CHANGELOG /
