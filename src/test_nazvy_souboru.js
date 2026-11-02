@@ -94,6 +94,19 @@ test('dokument pro zákazníka nenese verzi aplikace ani s buildVerze()', (() =>
   try { return N.nazevExportu('nabidka', { cislo: '1', jazyk: 'cz' }) === 'NABIDKA_1-OCK-CZ'; } finally { delete global.buildVerze; }
 })());
 test('den je MÍSTNÍ (ne UTC)', N.nazevDen(new Date(2026, 9, 27, 0, 30)) === '2026-10-27', N.nazevDen(new Date(2026, 9, 27, 0, 30)));
+/* K37-I1: den RRRR-MM-DD se vrací beze změny i západně od UTC (dřív v New Yorku
+ * '2026-10-31' → '2026-10-30'). Běží v podprocesu s TZ, aby pásmo opravdu platilo. */
+{
+  const { execFileSync } = require('child_process');
+  const kod = 'const N = require(' + JSON.stringify(require('path').join(__dirname, 'nazvy_souboru.js')) + ');'
+    + "console.log(JSON.stringify([N.nazevDen('2026-10-31'), N.nazevDen('2026-02-30'), N.nazevDen(new Date(2026, 9, 31, 23, 30))]));";
+  for (const tz of ['America/New_York', 'Pacific/Honolulu', 'Europe/Prague']) {
+    let out = '';
+    try { out = execFileSync(process.execPath, ['-e', kod], { env: Object.assign({}, process.env, { TZ: tz }), encoding: 'utf8' }).trim(); } catch (e) { out = String(e.message); }
+    test('K37-I1: nazevDen(\'2026-10-31\') v pásmu ' + tz + ' = 2026-10-31, neplatný den prázdně, místní Date beze změny',
+      out === '["2026-10-31","","2026-10-31"]', out);
+  }
+}
 
 /* ---------- 3) výjimky beze změny ---------- */
 const ULO = require('./uloziste.js');

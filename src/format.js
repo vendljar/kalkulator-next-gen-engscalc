@@ -108,14 +108,16 @@ function menaKc(lang, kurzEurKc) {
 
 /* BUŇKA CSV PRO EXCEL (B83, audit 9. 9. 2026; 13. 10. 2026). Text se dá
  * do uvozovek (uvnitř zdvojené) a když začíná znakem, kterým Excel začíná
- * vzorec (=, @, tabulátor, CR; + a − hned před dalším znakem), dostane
- * před sebe apostrof — jinak by fráze ze šablony nebo heslo slovníku jako
- * „=HYPERLINK(…)" u překladatele spustily vzorec. Apostrof zůstane v buňce
- * vidět (při otevření CSV ho Excel nebere jako značku textu) — překladatel
- * ho u takových řádků smaže; běžné „- položka" s mezerou ho nedostane. */
+ * vzorec (=, +, -, @, tabulátor, CR), dostane před sebe apostrof — jinak by
+ * fráze ze šablony nebo heslo slovníku jako „=HYPERLINK(…)" u překladatele
+ * spustily vzorec. Apostrof zůstane v buňce vidět (při otevření CSV ho Excel
+ * nebere jako značku textu) — překladatel ho u takových řádků smaže.
+ * K37-I5 (2. 11. 2026): do té doby + a − apostrof dostaly jen hned před
+ * dalším znakem, takže „+ 1+1" (Excel i s mezerou počítá vzorec) prošlo bez
+ * něj. Pravidlo je teď stejné jako ctrlCsvBunka (controlling.js) — i „- položka". */
 function csvBunka(t) {
   let s = String(t == null ? '' : t);
-  if (/^([=@\t\r]|[+\-][^\s])/.test(s)) s = "'" + s;
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
   return '"' + s.replace(/"/g, '""') + '"';
 }
 

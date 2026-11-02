@@ -63,10 +63,29 @@ for (const [n, env] of [
   ['SITE_NAME schaftscalc', { PROSTREDI: 'test', SITE_NAME: 'schaftscalc' }],
   ['lokálně s PROSTREDI=ostre', { PROSTREDI: 'ostre' }],
   ['běh v Lambdě bez PROSTREDI', { AWS_LAMBDA_FUNCTION_NAME: 'fn' }],
+  /* K37-N7 (kolo 37): ostrý web je i engscalc — pojistka hlídala jen schaftscalc.
+   * Pojistka testu: nad v27.10.6 první čtyři případy projdou jako „zapnuto". */
+  ['ostrý web engscalc (zadání K37-N7)', { PROSTREDI: 'test', SITE_NAME: 'engscalc', URL: 'https://engscalc.netlify.app', NETLIFY: 'true' }],
+  ['za běhu funkce jen SITE_NAME engscalc (bez BRANCH/HEAD/URL)', { PROSTREDI: 'test', SITE_NAME: 'engscalc' }],
+  ['jen URL https://engscalc.netlify.app', { PROSTREDI: 'test', URL: 'https://engscalc.netlify.app' }],
+  ['náhled nasazení ostrého webu (…--engscalc.netlify.app)', { PROSTREDI: 'test', DEPLOY_PRIME_URL: 'https://deploy-preview-7--engscalc.netlify.app' }],
 ]) {
   const s = st({ PIPEDRIVE_SIMULATOR: '1', ...env });
   test('odmítne se: ' + n, s.zapnuto === false && s.pozadovano === true && /nezapnul/.test(s.duvod), J(s));
 }
+
+/* Přesné porovnání: testovací web testengscalc (i jeho nasazení) se nesmí odmítnout jako „engscalc". */
+for (const [n, env] of [
+  ['testengscalc podle SITE_NAME a URL', { SITE_NAME: 'testengscalc', URL: 'https://testengscalc.netlify.app', NETLIFY: 'true' }],
+  ['nasazení testengscalc (…--testengscalc.netlify.app)', { SITE_NAME: 'testengscalc', DEPLOY_URL: 'https://abc123--testengscalc.netlify.app', NETLIFY: 'true' }],
+]) {
+  const s = st({ PIPEDRIVE_SIMULATOR: '1', PROSTREDI: 'test', ...env });
+  test('K37-N7: zapne se (ne podřetězec „engscalc"): ' + n, s.zapnuto === true, J(s));
+}
+test('K37-N7: pdSimulatorOstryWeb — engscalc ano, testengscalc ne, nesmyslná URL nespadne',
+  typeof SIM.pdSimulatorOstryWeb === 'function' && SIM.pdSimulatorOstryWeb({ SITE_NAME: 'ENGSCALC ' }) === 'engscalc'
+  && SIM.pdSimulatorOstryWeb({ SITE_NAME: 'testengscalc', URL: 'https://testengscalc.netlify.app' }) === ''
+  && SIM.pdSimulatorOstryWeb({ URL: 'není url' }) === '');
 
 console.log('\n===== PŘEDNOST PŘED TOKENEM =====\n');
 process.env.PIPEDRIVE_TOKEN = 'zkusebni-token-jen-pro-test';

@@ -55,6 +55,27 @@ function syncVarianta() {
   if (!zamcena) katalogAplikuj(KATALOG, Z);
   // totéž pro PROJ (19. 8. 2026): trvalé položky ceníku PROJ → do zadání PROJ
   if (!zamcena && typeof projKatalogAplikuj === 'function') projKatalogAplikuj(PC, PJ);
+  /* K37-N1: názvy řádků skla podle aktuálního typu šachty / zasklení / ceníku. */
+  if (!zamcena) skloMigraceAkt(v);
+}
+
+/* NÁZEV SKLA SE MĚNÍ I BEZ ZNOVUOTEVŘENÍ (K37-N1, kolo 37, 2. 11. 2026).
+ *
+ * Řádek skla boků se jmenuje podle typu šachty, zasklení a názvu výrobku
+ * v ceníku (skloVolba v engine.js) — a vyřazení (`nepocitat`) i ruční přepisy
+ * množství, ceny a názvu se klíčují NÁZVEM. Do 2. 11. 2026 je na nový název
+ * přemapovalo jen otevření zakázky (importZakazka → skloMigraceNazvu). Po
+ * přepnutí typu šachty se tak vyřazené sklo znovu počítalo (cena vyskočila
+ * o stovky tisíc, vytištěná nabídka ji nesla) a po znovuotevření se zase
+ * vyřadilo — ověření zámku pak hlásilo „nesouhlasí". Migrace se proto pouští
+ * po každé změně zadání nebo ceníku (set) a po každé výměně dat varianty
+ * (syncVarianta: přepnutí typu, převzetí verze ceníku, přepočet na dnešní
+ * ceník, řada ČR/zahr). Je idempotentní; zamčené varianty se nedotkne. */
+function skloMigraceAkt(v) {
+  v = v || aktivniVarianta(ZAK);
+  if (!v || !v.data || typeof skloMigraceNazvu !== 'function') return 0;
+  if (typeof variantaUzamcena === 'function' && variantaUzamcena(v)) return 0;
+  return skloMigraceNazvu(v.data);
 }
 syncVarianta();
 
@@ -764,6 +785,8 @@ function set(path, v) {
    * render se volá i z míst, kde se nic nemění, a zápis do dat uvnitř
    * vykreslování je cesta k nekonečné smyčce. */
   if (path.startsWith('Z.') && typeof standardAtypAutomat === 'function') standardAtypAutomat();
+  /* K37-N1: typ šachty, zasklení i název skla v ceníku mění název řádku skla. */
+  if (path.startsWith('Z.') || path.startsWith('C.')) skloMigraceAkt();
   render();
 }
 

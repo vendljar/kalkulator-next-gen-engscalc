@@ -583,8 +583,15 @@ function ctrlKatalogNazvy(katalog, cenikProj) {
  * zvyšuje při KAŽDÉ změně exportu — sloupce, listy i výpočet hodnot nebo
  * výběru — a CTRL_EXPORT_ZMENA (list Popis) řekne, co se změnilo. Test
  * src/test_controlling_c4.js hlídá, že se verze a popis změny mění spolu. */
-const CTRL_EXPORT_VERZE = 4;
-const CTRL_EXPORT_ZMENA = 'proti verzi 3: prodej podle tlačítka „Prodáno" (objednané příplatky jen doplňují; starší zakázky '
+/* Verze 5 (K37, 2. 11. 2026): „Cena před slevou (Kč)" v souhrnu Kapitol je
+ * u OCK před zaokrouhlením na tisíce (CEIL byl ve sloupci Zaokrouhlení
+ * podruhé — K37-N3); nečitelné textové datum prodeje se hlásí mezi
+ * přeskočenými místo tichého „mimo období" (K37-N9). */
+const CTRL_EXPORT_VERZE = 5;
+const CTRL_EXPORT_ZMENA = 'proti verzi 4: Cena před slevou (Kč) v souhrnu Kapitol je u OCK před zaokrouhlením na tisíce '
+  + '(zaokrouhlení základu je jen ve sloupci Zaokrouhlení, řádek souhrnu dává Cena před slevou − Sleva + Zaokrouhlení = Cena '
+  + 'nabídky), nečitelné datum prodeje se hlásí mezi přeskočenými; '
+  + 'proti verzi 3: prodej podle tlačítka „Prodáno" (objednané příplatky jen doplňují; starší zakázky '
   + 'jen s objednanými příplatky platí jako prodej dál), výchozí filtr stavu Pipedrive „Všechny", sloupec Zaokrouhlení (Kč) '
   + 'v souhrnu Kapitol nese i zaokrouhlení základní ceny OCK nahoru na tisíce, podíly skupin v Kapitolách dávají součet 100 %';
 /* PRODEJ ZAKÁZKY PRO CONTROLLING (#540): { varianta, datum, zdroj } | null.
@@ -801,8 +808,9 @@ function ctrlRejstrikDny(zak) {
     let prodej = null;
     const o = ctrlProdej(zak);                       // #540: Prodáno, jinak objednané příplatky
     if (o) {
-      if (typeof o.datum !== 'string') return { cist: true };
-      if (o.datum !== '' && !ctrlDatumPlatne(o.datum)) return { cist: true };
+      /* K37-N9: i prázdné datum je nečitelné — zakázka se přečte a hromadný
+       * export ji ohlásí mezi přeskočenými (ctrlHromadnyZakazka). */
+      if (!ctrlDatumPlatne(o.datum)) return { cist: true };
       const v = zak.varianty.find(x => x && x.id === o.varianta);
       if (o.datum && zamcena(v)) prodej = { den: o.datum, rada: rada(v) };
     }
@@ -877,8 +885,12 @@ function ctrlHromadnyZakazka(zak, filtr, opts) {
    * prodeje do takového výběru nepatří. */
   const prodej = filtr.podle === 'prodej' ? ctrlProdej(zak) : null;
   if (filtr.podle === 'prodej' && !prodej) return { ok: false, mimo: true, duvod: 'bez prodeje' };
-  /* K6-S6: nečitelné datum prodeje se hlásí mezi přeskočenými, nikdy tiše „mimo období". */
-  if (prodej && prodej.datum === null) return { ok: false, duvod: 'datum prodeje má neplatný tvar' };
+  /* K6-S6: nečitelné datum prodeje se hlásí mezi přeskočenými, nikdy tiše „mimo období".
+   * K37-N9 (2. 11. 2026): nečitelné je i textové datum, které není platný den
+   * RRRR-MM-DD ('xx', '2026-13-45', '') — dřív prošlo jen `null` a ostatní
+   * skončily tiše jako „zamčena mimo období". Totéž pravidlo jako předvýběr
+   * z rejstříku (ctrlRejstrikDny). */
+  if (prodej && !ctrlDatumPlatne(prodej.datum)) return { ok: false, duvod: 'datum prodeje má neplatný tvar' };
   const v = prodej ? zak.varianty.find(x => x && x.id === prodej.varianta) : ctrlHromadnyVarianta(zak, filtr);
   const zamek = v && v.zamek && v.zamek.zamceno ? v.zamek : null;
   if (!zamek) return { ok: false, mimo: true, duvod: 'žádná zamčená varianta' };
@@ -1142,7 +1154,16 @@ function ctrlExportListy(exp, data, opts) {
        * než ho vidí cena nabídky (engine.js, CEIL(zakladCena, 1000)) — rozdíl
        * jde do sloupce Zaokrouhlení vedle obchodního zaokrouhlení nabídky. */
       const zaokrZaklad = st.oblast === 'ock' ? (+st.zaokrZakladu || 0) : 0;
-      souhrn.push([st.cislo, st.oblast.toUpperCase(), ctrlZaokr(st.naklad), ctrlZaokr(c.zaklad), ctrlZaokr((+c.slevaPct || 0) * 100),
+      /* K37-N3 (kolo 37, 2. 11. 2026): CEIL se počítal dvakrát. `c.zaklad`
+       * (cenaNabidkyOck) je už PO zaokrouhlení na tisíce a sloupec
+       * Zaokrouhlení ho nese podruhé, takže řádek nesplňoval
+       * Cena před slevou − Sleva + Zaokrouhlení = Cena nabídky (rozdíl přesně
+       * CEIL). Sloupec Zaokrouhlení zůstává podle rozhodnutí J. V. (#540 bod 4:
+       * obchodní zaokrouhlení + CEIL); „Cena před slevou" je proto cena PŘED
+       * CEIL — tedy součet prodejních cen řádků. Sleva (Kč) se dál počítá
+       * ze základu po CEIL, jako v nabídce. */
+      const predSlevou = (+c.zaklad || 0) - zaokrZaklad;
+      souhrn.push([st.cislo, st.oblast.toUpperCase(), ctrlZaokr(st.naklad), ctrlZaokr(predSlevou), ctrlZaokr((+c.slevaPct || 0) * 100),
         ctrlZaokr(c.slevaKc), ctrlZaokr((+c.zaokrKc || 0) + zaokrZaklad), ctrlZaokr(cena), ctrlZaokr(cena - st.naklad),
         cena ? ctrlZaokr((cena - st.naklad) / cena * 100) : 0]);
     });
@@ -1223,8 +1244,8 @@ function ctrlExportListy(exp, data, opts) {
  * Čísla (i záporná) bez uvozovek. Texty s ochranou proti vzorcům PŘÍSNĚJŠÍ
  * než csvBunka (format.js): apostrof dostane každý text začínající =, +, -,
  * @, tabulátorem nebo CR — i „+ 1+1" a „-<TAB>X" (K5-K1, O13), protože sem
- * jdou texty obchodníka (název akce, zákazník, vlastní řádky). csvBunka
- * nechává „- položka" bez apostrofu kvůli odrážkám v CSV překladů. Vlastní
+ * jdou texty obchodníka (název akce, zákazník, vlastní řádky). Od K37-I5
+ * má csvBunka totéž pravidlo (do té doby nechávala „- položka" bez apostrofu). Vlastní
  * funkce bez závislosti na format.js — záložní cesta bez ochrany (K5-K3)
  * tím odpadla. */
 function ctrlCsvBunka(x) {

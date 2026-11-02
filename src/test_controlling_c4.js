@@ -186,8 +186,10 @@ else {
     Math.abs(rS[hS.indexOf('Zaokrouhlení (Kč)')] - Math.round(ceil * 100) / 100) < 0.011, { zaokr: rS[hS.indexOf('Zaokrouhlení (Kč)')], ceil });
   const iPr = C.CTRL_RADKY_HLAVICKA.indexOf('Prodejní cena před slevou a zaokrouhlením (Kč)');
   const radky = listy.find(l => l.nazev === 'Řádky').rows.slice(1);
-  test('#540 bod 4: Řádky beze změny — součet prodeje řádků + Zaokrouhlení = Cena před slevou',
-    Math.abs(radky.reduce((a, r) => a + r[iPr], 0) + rS[hS.indexOf('Zaokrouhlení (Kč)')] - rS[hS.indexOf('Cena před slevou (Kč)')]) < 0.01 * (radky.length + 1));
+  /* K37-N3: Cena před slevou je od verze 5 před CEIL — dřív tu stálo
+   * „prodej řádků + Zaokrouhlení = Cena před slevou", tedy CEIL dvakrát. */
+  test('#540 bod 4 / K37-N3: Řádky beze změny — součet prodeje řádků = Cena před slevou (před CEIL)',
+    Math.abs(radky.reduce((a, r) => a + r[iPr], 0) - rS[hS.indexOf('Cena před slevou (Kč)')]) < 0.01 * (radky.length + 1));
   test('#540 bod 5: podíly dorovnané metodou největšího zbytku', typeof C.ctrlPodilyNa100 === 'function'
     && JSON.stringify(C.ctrlPodilyNa100([1, 1, 1], 3)) === '[33.34,33.33,33.33]'
     && JSON.stringify(C.ctrlPodilyNa100([1, 2], 3)) === '[33.33,66.67]'
@@ -198,8 +200,8 @@ else {
 
   /* ---------- 12. verze struktury ---------- */
   const popis = listy.find(l => l.nazev === 'Popis').rows;
-  test('#540 bod 12: verze struktury 4 v konstantě i v listu Popis', C.CTRL_EXPORT_VERZE === 4
-    && (popis.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 4);
+  test('#540 bod 12: verze struktury 5 (K37 po #540) v konstantě i v listu Popis', C.CTRL_EXPORT_VERZE === 5
+    && (popis.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 5);
   test('#540 bod 12: Popis říká, co se ve verzi změnilo (Prodáno, Všechny, zaokrouhlení, 100 %)', (() => {
     const t = String((popis.find(r => r[0] === 'Změna struktury') || [])[1] || '');
     return /Prodáno/.test(t) && /Všechny/.test(t) && /tisíce/.test(t) && /100 %/.test(t); })());
