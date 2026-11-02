@@ -8,6 +8,23 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v2.11.3 — T3 #549: přeživší mutace B28 (zámek „obnova běží“) chycena — větev claude/t3-mutace-b28
+
+Nad integrací 141b92f (v2.11.2). Celé testy Actions „Testy“ run 41413223863 nad 1fb09b2 (v2.11.1): mutace serveru
+část 5/16 chycených 70 z 71 — nechycená jen „B28: zámek ‚obnova běží‘ se nekontroluje“ (`functions/obnova.mjs`).
+Kód aplikace beze změny, ochrana se neoslabuje.
+
+- **Rozbor:** od SEC-M8 #542 zapisuje token i jednorázová obnova (`zalozTokenObnovy`) a po zápisu ověří, že je jediný
+  živý — ustoupí ale jen tokenu se **starším** časem začátku. Všechny dosavadní testy souběhu měly cizí token starší,
+  takže je chytila i kontrola po zápisu a předběžná kontrola (`zamekObnovy`, cíl mutace B28) se neprojevila. Předběžná
+  kontrola je přitom **jediná** ochrana proti živému tokenu s pozdějším časem začátku (hodiny jiné instance napřed,
+  tatáž milisekunda s větším id): bez ní by se rozběhly dvě obnovy nad jednou databází a druhá by pořídila otisk
+  „před obnovou“ z napůl obnoveného stavu. Kontrola tedy zůstává.
+- **Test** (`netlify/test_obnova.mjs`, blok T3 #549): cizí živý token se začátkem o 5 min napřed → `faze: 'zacatek'`
+  i jednorázová obnova 409 s `obnovaBezi` toho tokenu, žádný nový otisk před obnovou, token jen jeden. Pojistka: se
+  zmutovanou kontrolou bez nového testu 235 OK / 0 FAIL (mutace přežije), s novým testem 2 FAIL (chycena).
+- **`netlify/mutace.mjs`:** komentář u mutace B28 (proč ji chytá právě tenhle test).
+
 ## v2.11.2 — PF #545: Prodáno přesune deal do fáze „Vyhrané k podpisu SoD“, stav nemění — větev claude/pf-prodano-faze
 
 Nad integrací 48f5dad (v1.11.1). Pokyn J. V. 2. 11. 2026: stav „Vyhrané“ rozbíhá v Pipedrive obchodně administrativní

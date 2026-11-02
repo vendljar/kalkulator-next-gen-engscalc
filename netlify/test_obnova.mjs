@@ -400,6 +400,31 @@ const zacC = await obnovJson({ faze: 'zacatek', rezim: 'doplnit', potvrzeni: 'OB
 test('B28: po konci jde zahájit znovu', konB.ok === true && zacC.ok === true, [konB, zacC]);
 test('B28: a uzavřít', (await obnovJson({ faze: 'konec', obnovaId: zacC.obnovaId }, cookie)).ok === true);
 
+/* T3 #549 (2. 11. 2026): kontrola zámku PŘED zápisem tokenu. Kontrola po
+ * zápisu (SEC-M8 #542) ustoupí jen tokenu se STARŠÍM časem začátku; živý
+ * token z instance s hodinami napřed (nebo z téže milisekundy s větším id)
+ * by prošel a vznikly by dvě obnovy nad jednou databází. Tyhle případy
+ * chytá jen předběžná kontrola — test ji vyvolá (mutace B28). */
+{
+  const s = await ulz('zalohy');
+  const cizi = 'f'.repeat(32);
+  const ted = new Date().toISOString();
+  await s.zapis('obnova-' + cizi, { id: cizi, kdo: 'spravce2@priklad.cz', zacatek: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+    naposled: ted, rezim: 'doplnit', otiskPred: zacC.otiskPred, davek: 1,
+    souhrn: { nove: 0, prepsane: 0, bezeZmeny: 0, preskocene: 0 } });
+  const predOtisky = (await otiskyPredObnovou()).length;
+  const r = await obnov({ faze: 'zacatek', rezim: 'doplnit', potvrzeni: 'OBNOVIT' }, cookie);
+  const t = await r.json();
+  test('B28: zacatek při živém tokenu s pozdějším časem začátku (hodiny jiné instance napřed) → 409',
+    r.status === 409 && !!t.obnovaBezi && t.obnovaBezi.obnovaId === cizi, t);
+  test('B28: jednorázová obnova při témže tokenu → 409',
+    (await obnov({ zdroj: { soubor: zalSoubor }, rezim: 'doplnit', potvrzeni: 'OBNOVIT', casti: ['firma'] }, cookie)).status === 409);
+  test('B28: žádný nový otisk před obnovou ani druhý token',
+    (await otiskyPredObnovou()).length === predOtisky
+    && JSON.stringify(await s.seznam('obnova-')) === JSON.stringify(['obnova-' + cizi]));
+  await s.smaz('obnova-' + cizi);
+}
+
 /* ---- B27) účty a podpisy jen ze serverového otisku; hlavní účet jen on sám ---- */
 console.log('\n===== B27: účty a podpisy =====');
 const PNG = 'data:image/png;base64,iVBORw0KGgo=';

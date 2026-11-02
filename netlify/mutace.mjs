@@ -2850,6 +2850,10 @@ const MUTACE = [
     nahrad: '        ;',
     proc: 'vznikl by účet s rolí, kterou matice práv nezná' },
 
+  /* T3 #549 (2. 11. 2026): po SEC-M8 #542 chytá starší živý token i kontrola
+   * po zápisu v zalozTokenObnovy — předběžná kontrola je jediná ochrana proti
+   * živému tokenu s POZDĚJŠÍM časem začátku (hodiny jiné instance napřed).
+   * test_obnova.mjs to vyvolá (blok „T3 #549"); do té doby mutace přežila. */
   { nazev: 'B28: zámek „obnova běží" se nekontroluje', soubor: 'functions/obnova.mjs',
     hledej: '  return z ? obnovaBeziOdpoved(z) : null;',
     nahrad: '  return null;',
