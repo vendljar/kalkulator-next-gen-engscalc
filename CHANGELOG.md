@@ -8,6 +8,36 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v2.11.1 — K37 #544: opravy nálezů kola 37 (test v27.10.6) bez rozhodnutí J. V., větev claude/k37-opravy
+
+Nad `origin/test` 3a255d7 (v27.10.6). Na ostrém webu, Disku ani v Pipedrive nic.
+
+- **Opraveno K37-N5 — časované bomby v testech, nový krok kola „hodiny“ (+400 dní).** Blokovaly celé testovací kolo: `src/test_z2_disk_retence.js` padal od
+  28. 10. 2026 (simulovaný server vracel skutečný čas místo podvrženého; shodně s O-SECM #542), `netlify/test_prava.mjs`
+  by kolem 25. 9. 2027 padl na pevném datu zámku. **Nový krok testovacího kola `hodiny`**: Node a serverové sady ještě
+  jednou s hodinami posunutými o +400 dní (`nastroje/posun_hodin.cjs`, `KNG_POSUN_DNU` ve `spust_testy.sh`; i v CI).
+- **Opraveno K37-N1 — vyřazené sklo boků po přepnutí typu šachty se znovu nepočítá.** Je i v main v25.10.1: po přepnutí interiér ↔
+  exteriér se vyřazené sklo znovu počítalo (cena o stovky tisíc výš, vytištěná nabídka ji nesla) a po znovuotevření se
+  zase vyřadilo („nesouhlasí" v ověření zámku). Vyřazení a přepisy množství, ceny a názvu se teď přemapují na nový název
+  hned — po přepnutí typu, změně zasklení, názvu skla v ceníku, převzetí verze ceníku, přepočtu na dnešní ceník
+  i přepnutí řady ČR/zahraničí (`skloMigraceAkt`); odeslané (zamčené) varianty se to netýká.
+- **Opraveno K37-N3 — controlling: souhrn Kapitol bez dvojího CEIL, verze exportu 5.** CEIL základu na tisíce byl v řádku OCK dvakrát. Sloupec
+  „Zaokrouhlení (Kč)" zůstává podle rozhodnutí J. V. (#540 bod 4: obchodní zaokrouhlení + CEIL), **„Cena před slevou
+  (Kč)" je nově před CEIL** (= součet prodejních cen řádků) — řádek dává Cena před slevou − Sleva + Zaokrouhlení = Cena
+  nabídky u OCK i PROJ. Ostatní sloupce beze změny. Verze struktury exportu **5**; přegenerovaná ukázka
+  `podklady/controlling/UKAZKA_2026-CONTROLLING-EXPORT_v2.11.1.xlsx` a šablona podkladů.
+- **Opraveno K37-N9 — nečitelné datum prodeje mezi přeskočenými.** Nečitelné textové datum prodeje (`'xx'`, `'2026-13-45'`, prázdné) jde v hromadném exportu mezi
+  přeskočené s důvodem, ne tiše „mimo období".
+- **Opraveno K37-N8 — příručka: retence otisku před obnovou.** Příručka (provoz, D1) — otisk před obnovou se maže po 6 měsících, nejnovější zůstává.
+- **Opraveno K37-N7 — simulátor Pipedrive odmítne ostrý web engscalc.** Simulátor Pipedrive odmítne i ostrý web engscalc (přesné jméno webu nebo host, testengscalc ne).
+- **Opraveno K37-N10 — pojistka K6-S6 zase vyzkoušená.** Test pojistky K6-S6 (výjimka jedné zakázky neshodí hromadný export) zase výjimku opravdu vyvolá.
+- **Drobnosti K37-I1, I5, I6.** K37-I1 název souboru s datem RRRR-MM-DD už neposouvá den západně od UTC; K37-I5 CSV buňka dostane
+  apostrof i u „+ x" / „- x" (jako CSV controllingu); K37-I6 opravený odkaz v komentáři.
+- **Nedělá se bez rozhodnutí J. V.: K37-N2, K37-N4, K37-N6, K37-I4, K36-N2, K37-I2.**
+- **Testy: nové sady s pojistkou, mutace K37 jádra i serveru chycené.** `src/test_k37_sklo_prepnuti.js`, `overit_k37_sklo.mjs`, `src/test_k37_controlling.js`, rozšířené
+  `netlify/test_pd_simulator.mjs`, `netlify/test_controlling.mjs`, `src/test_nazvy_souboru.js`, `src/test_csv_vzorce.js`,
+  `src/test_dokumentace_kompletni.js`; mutace jádra K37 (6) a serveru K37-N7 (4), K6-S6 chycená.
+
 ## v27.10.6 — C4 #540: kód controllingu podle rozhodnutí J. V. 27. 10. 2026, větev claude/c4-controlling-rozhodnuti
 
 Nad integrací 60f8fd2 (v27.10.2) + C3 #537 (sloučeno). Rozhodnutí J. V. z dialogu nad `podklady/CONTROLLING_ROZHODNUTI.md`
