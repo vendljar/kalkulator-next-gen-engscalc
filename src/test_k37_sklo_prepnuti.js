@@ -86,6 +86,9 @@ function pripad(odkud, kam, sPrepisem) {
     variantaUzamcena: () => false, JSON,
     set: (cesta, h) => { if (cesta === 'Z.typSachty') Z.typSachty = h; },
     progZprava: () => {}, standardAtypAutomat: () => {}, syncVarianta: () => {}, render: () => {},
+    /* LH #546 (sloučeno v integraci v2.11.8): typSachtyPrepni volá i pravidlo lešení hlavy —
+     * to tu nehraje roli (porovnává se řádek čísel po přepnutí × po kulaté cestě). */
+    leseniHlavaPodleTypu: () => {},
   };
   vm.createContext(ctx);
   vm.runInContext(fMigrace + '\n' + fPrepni + '\n typSachtyPrepni(' + JSON.stringify(kam) + ');', ctx);
