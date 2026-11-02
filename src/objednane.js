@@ -356,13 +356,33 @@ function prodNelzeProdat(zak, v) {
     + ') — prodat jde jen jedna varianta; nejdřív ji musí vedoucí nebo administrátor odemknout.';
   return '';
 }
+/* DOLNÍ MEZ DATA PRODEJE (K37-N4 / K10-S1, rozhodnutí J. V. 2. 11. 2026):
+ * prodat nejde dřív, než nabídka odešla — datum prodeje je ≥ den zámku
+ * (odeslání) prodávané varianty (pražský den času zámku) a ≤ dnes. Do v2.11.3
+ * prošlo i 2001-01-01 a controlling by zakázku vzal do dávno uzavřeného
+ * období. Zámek bez platného času (starší data) dolní mez nemá. Vrací
+ * 'RRRR-MM-DD' nebo ''. */
+function prodDatumOd(v) {
+  const kdy = v && v.zamek && v.zamek.zamceno ? v.zamek.kdy : '';
+  if (typeof kdy !== 'string' || !/^\d{4}-\d{2}-\d{2}T/.test(kdy) || isNaN(Date.parse(kdy))) return '';
+  return objDnes(kdy);
+}
+/* Proč datum prodeje neplatí ('' = platí); `v` = varianta, jejíž zámek dává dolní mez. */
+function prodDatumProblem(d, v, ted) {
+  if (!objDatumPlatne(d)) return 'Datum prodeje chybí nebo je neplatné.';
+  if (d > objDnes(ted)) return 'Datum prodeje nesmí být v budoucnosti.';
+  const od = prodDatumOd(v);
+  if (od && d < od) return 'Datum prodeje nesmí být dřív než odeslání nabídky (' + od.split('-').reverse().map(x => String(+x)).join('. ') + ').';
+  return '';
+}
 /* Klient: zapíše prodej (razítka jen předvyplní, přepíše je server). Vrací chybu nebo ''. */
 function prodNastav(zak, v, datum, ctx) {
   const c = ctx || {};
   const proc = prodNelzeProdat(zak, v);
   if (proc) return proc;
   const d = objDatumPlatne(datum) ? datum : objDnes(c.ted);
-  if (d > objDnes(c.ted)) return 'Datum prodeje nesmí být v budoucnosti.';
+  const zle = prodDatumProblem(d, v, c.ted);
+  if (zle) return zle;
   const kdy = c.kdy || new Date().toISOString();
   v.prodano = { datum: d, kdo: String(c.kdo || ''), kdy, pipedrive: { stav: 'ceka', kdy } };
   return '';
@@ -376,6 +396,47 @@ function prodOdemkni(zak, v, duvod) {
   delete v.prodano;
   zak.prodejOdemknout = { varianta: v.id, duvod: t.slice(0, PROD_DUVOD_MAX) };
   return '';
+}
+/* PRODÁNO NAD ODESLANOU NABÍDKOU OTEVŘENOU JEN KE ČTENÍ (PB #547, J. V.
+ * 2. 11. 2026: „Změna stavu na prodáno je legitimní další krok prodejního
+ * procesu odeslané cenové nabídky" — žádný klon). Zakázka s odeslanou
+ * nabídkou se online otevírá jen ke čtení (#404) a zápis z ní hlídá zámek
+ * čtení; do v2.11.2 proto stisk Prodáno skončil dialogem klonu a prodej se
+ * neuložil. Zápis prodeje (a odemčení prodeje) je povolená akce nad zamčenou
+ * variantou — stejně jako zápisník (poznamkyJedinaZmena): zámek čtení ho
+ * pustí, když je JEDINOU změnou proti naposledy uložené verzi záznam prodeje
+ * (`v.prodano`, žádost `prodejOdemknout`; `prodejHistorie` píše server).
+ * Cokoli jiného (cena, obsah varianty, krycí list) zápis zastaví dál.
+ * `ted`, `ulozeno` = zakázka nebo její JSON. */
+const PROD_POLE_ZAKAZKY = ['prodejOdemknout', 'prodejHistorie'];
+function prodBezProdeje(z) {
+  const k = JSON.parse(JSON.stringify(z));
+  PROD_POLE_ZAKAZKY.forEach(p => { delete k[p]; });
+  (Array.isArray(k.varianty) ? k.varianty : []).forEach(v => { if (v && typeof v === 'object') delete v.prodano; });
+  return JSON.stringify(k);
+}
+function prodJedinaZmena(ted, ulozeno) {
+  const rozbal = (x) => {
+    if (typeof x === 'string') { try { return JSON.parse(x); } catch (e) { return null; } }
+    return (x && typeof x === 'object' && !Array.isArray(x)) ? x : null;
+  };
+  const a = rozbal(ted), b = rozbal(ulozeno);
+  if (!a || !b) return false;
+  if (JSON.stringify(a) === JSON.stringify(b)) return false;          // nic se nezměnilo
+  return prodBezProdeje(a) === prodBezProdeje(b);
+}
+/* Hláška neuloženého prodeje / odemčení se SKUTEČNOU příčinou (PB #547:
+ * do v2.11.2 se za dvojtečku lepila poslední stavová zpráva databáze, typicky
+ * „Otevřeno online: ….json"). `duvod` = věta odmítnutí (server, zámek, síť);
+ * předpona „Neuloženo…" se odřízne, ať se neopakuje. */
+function prodNeulozenoText(akce, duvod) {
+  const d = String(duvod == null ? '' : duvod).trim()
+    .replace(/^Neuloženo( online)?:\s*/i, '').trim();
+  const proc = d || 'uložení do databáze neproběhlo a důvod se nepodařilo zjistit. Zkuste to znovu; '
+    + 'nepomůže-li to, zkontrolujte přihlášení a připojení (karta Nastavení → Databáze).';
+  return akce === 'odemceni'
+    ? 'Odemčení prodeje se neuložilo: ' + proc + '\n\nZakázka zůstává prodaná.'
+    : 'Prodej se neuložil: ' + proc + '\n\nZakázka zůstává neprodaná.';
 }
 function prodPdStavText(p) {
   const s = p && p.pipedrive && p.pipedrive.stav;
@@ -463,8 +524,10 @@ function prodServer(stara, zak, relace, ctx) {
     if (!(PROD_ROLE_ODEMKNOUT.includes(role) || autor || !stara))
       return { status: 403, chyba: 'Prodej zapisuje obchodník zakázky, vedoucí nebo administrátor' };
     const d = v.prodano.datum;
-    if (!objDatumPlatne(d)) return { status: 400, chyba: 'Datum prodeje chybí nebo je neplatné' };
-    if (d > objDnes(c.ted)) return { status: 400, chyba: 'Datum prodeje nesmí být v budoucnosti' };
+    /* Dolní mez z ULOŽENÉHO zámku (klient si čas odeslání neposune); nová
+     * zakázka nebo varianta bez uložené verze → zámek z příchozích dat. */
+    const zleD = prodDatumProblem(d, (sv && sv.zamek && sv.zamek.zamceno) ? sv : v, c.ted);
+    if (zleD) return { status: 400, chyba: zleD.replace(/\.$/, '') };
     v.prodano = { datum: d, kdo: email, kdy: ted, pipedrive: { stav: 'ceka', kdy: ted } };
     pridej({ akce: 'prodano', varianta: v.id, cislo: cislo(zak, v), datum: d, duvod: '' });
   }
@@ -518,4 +581,4 @@ if (typeof module !== 'undefined' && module.exports)
     objSodSnimek, objSodZaznamyServer, objZmenenoPoSod, objZmenyServer, objZmenyOciste, objDnes, objDatumPlatne, objStav, objDatumPodpisu, objPodepsano, objNabidnute,
     objObjednaneVarianty, objText, objNastav, objOtisk, objTvarPlatny, objKontrola,
     PROD_ROLE_ODEMKNOUT, PROD_PD_STAVY, PROD_PD_STAV_TEXT, PROD_DUVOD_MIN, PROD_HISTORIE_MAX, prodStav, prodNelzeProdat, prodNastav,
-    prodOdemkni, prodPdStavText, prodTvarPlatny, prodOciste, prodHistorieOciste, prodServer, prodPdZapis };
+    prodOdemkni, prodDatumOd, prodDatumProblem, prodJedinaZmena, prodNeulozenoText, prodPdStavText, prodTvarPlatny, prodOciste, prodHistorieOciste, prodServer, prodPdZapis };

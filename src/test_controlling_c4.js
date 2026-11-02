@@ -119,12 +119,15 @@ else {
     /* ---------- 1b. zmrazení krycího listu a hlavičky ---------- */
     const vz = ulozena.varianty[0];
     test('#540 zámek: prodaná varianta = variantaProdana', fn('variantaProdana') && variantaProdana(vz) && !variantaProdana(stara.varianty[0]));
+    /* Příklad volného pole je kontakt zákazníka: pole SoD (číslo, datum podpisu)
+     * zůstávají po Prodáno volná do prvního tisku SoD (K37-N2, PB #547 —
+     * hlídá src/test_prodano_zamek.js). */
     test('#540 zámek: volné pole krycího listu (po CN editovatelné) je po Prodáno zmrazené',
-      zamekKryciPoleStav(stara.varianty[0], 'kryci', 'sodDatumPodpisu') === 'editovatelne' && zamekKryciPoleStav(vz, 'kryci', 'sodDatumPodpisu') === 'zmrazeno',
-      [zamekKryciPoleStav(stara.varianty[0], 'kryci', 'sodDatumPodpisu'), zamekKryciPoleStav(vz, 'kryci', 'sodDatumPodpisu')]);
-    test('#540 zámek: i krycí list PROJ prodané varianty je zmrazený (číslo SoD — po CN jinak volné)',
-      zamekKryciPoleStav(stara.varianty[0], 'kryciProj', 'cisloSod') === 'editovatelne' && zamekKryciPoleStav(vz, 'kryciProj', 'cisloSod') === 'zmrazeno');
-    const d1 = kopie(vz.data); d1.kryci = { hodnoty: { sodDatumPodpisu: DNES } };
+      zamekKryciPoleStav(stara.varianty[0], 'kryci', 'jmenoPrijmeni') === 'editovatelne' && zamekKryciPoleStav(vz, 'kryci', 'jmenoPrijmeni') === 'zmrazeno',
+      [zamekKryciPoleStav(stara.varianty[0], 'kryci', 'jmenoPrijmeni'), zamekKryciPoleStav(vz, 'kryci', 'jmenoPrijmeni')]);
+    test('#540 zámek: i krycí list PROJ prodané varianty je zmrazený (odpovědná osoba — po CN jinak volná)',
+      zamekKryciPoleStav(stara.varianty[0], 'kryciProj', 'odpovednyJmeno') === 'editovatelne' && zamekKryciPoleStav(vz, 'kryciProj', 'odpovednyJmeno') === 'zmrazeno');
+    const d1 = kopie(vz.data); d1.kryci = { hodnoty: { jmenoPrijmeni: 'Jiný Kontakt' } };
     test('#540 zámek: serverové porovnání odeslané nabídky po Prodáno vidí změnu volného pole',
       zamekDataPorovnani(d1, vz) !== zamekDataPorovnani(vz.data, vz) && zamekDataPorovnani(d1, stara.varianty[0]) === zamekDataPorovnani(stara.varianty[0].data, stara.varianty[0]));
     const hl = kopie(ulozena); hl.ico = '87654321';

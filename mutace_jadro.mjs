@@ -276,7 +276,7 @@ const MUTACE = [
     nahrad: "const CTRL_EXPORT_VERZE = 3;",
     proc: 'controlling by nepoznal, že se export změnil (pravidlo otázky 12)' },
   { nazev: '#540: volné pole krycího listu po Prodáno editovatelné', soubor: 'zamek.js',
-    hledej: "  if (variantaProdana(v)) return 'zmrazeno';",
+    hledej: "  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id)) return 'zmrazeno';",
     nahrad: "",
     proc: 'po prodeji by šlo měnit krycí list, ze kterého se připravuje zápis do Pipedrive' },
   { nazev: '#540: hlavička prodané zakázky se mění', soubor: 'zamek.js',

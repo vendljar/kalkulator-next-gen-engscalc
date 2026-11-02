@@ -8,6 +8,45 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v2.11.6 — PB #547: Prodáno u odeslané nabídky bez dialogu klonu, hláška se skutečnou příčinou — větev claude/pb-prodano-zamek
+
+Nad integrací 141b92f (v2.11.2). Nález J. V. při testu na testengscalc (v27.10.6) 2. 11. 2026: online otevřená
+zakázka s vytištěnou CN → krycí list OCK → Prodej → Prodáno → Ano → dialog „Uzamčená varianta … Chcete pokračovat
+v klonu varianty?“ a po „Nechat beze změny“ hláška „Prodej se neuložil: Otevřeno online: ….json“. Pokyn J. V.:
+„Změna stavu na prodáno je legitimní další krok prodejního procesu odeslané cenové nabídky.“ Verze podle pravidla
+dne commitu; koordinace může přečíslovat.
+
+- **Příčina:** zakázka s odeslanou nabídkou se online otevírá jen ke čtení (#404). Prodáno zapsalo `v.prodano`
+  a volalo `zakUlozUI()` → `zamekCteniStop()` → u zamčené varianty dialog klonu (`zamekUpozorni`); `onlineUloz()`
+  zápis v režimu čtení odmítal také. Uložení vrátilo `false` a hláška lepila za dvojtečku poslední stavovou zprávu
+  databáze (`ONLINE_STAV.hlaska` = „Otevřeno online: …“), ne příčinu. Harness #540 to nechytil — prodej zapisoval
+  modelem mimo uložení.
+- **Oprava:** zápis prodeje a odemčení prodeje je **povolená akce nad zamčenou variantou** (vzor zápisníku):
+  model `prodJedinaZmena` (`src/objednane.js`) — jedinou změnou proti uložené verzi je záznam prodeje (`v.prodano`,
+  `prodejOdemknout`, `prodejHistorie`); `onlineJenProdej()` pustí takový zápis přes zámek čtení v `onlineUloz()`
+  i `zakUlozUI()` bez dialogu klonu. Okno zůstává jen ke čtení; cena, obsah varianty ani krycí list se nemění.
+  Nese-li okno jen ke čtení i jinou neuloženou změnu, prodej se neuloží a hláška řekne proč.
+- **Hlášky karty Prodej** (`prodUiUloz`, `prodNeulozenoText`): „Prodej se neuložil: <skutečná příčina>“ —
+  odmítnutí serveru (bez zdvojeného „Neuloženo online:“), kolize verzí, zpráva lišty, souběžné ukládání; bez příčiny
+  obecná rada. Totéž „Odemčení prodeje se neuložilo: … Zakázka zůstává prodaná.“
+- **Server beze změny** — prodej zamčené varianty přijímal (porovnává jen `data` zamčené varianty, `prodano` hlídá
+  `prodServer`); nový test to drží: autor prodá (200, razítka a „čeká“ píše server), po prodeji krycí list zmrazený
+  celý (409), prodej + změna kalkulace / pole nabídky / hlavičky → 409, cizí obchodník 403, budoucí datum 400,
+  neodeslaná varianta 400, odemčení obchodníkem 403, vedoucím s důvodem 200.
+- **Texty #545** v integraci už nové („fáze Vyhrané k podpisu SoD“, ne „deal → Vyhráno“) — ověřeno harnessem
+  (karta i potvrzení); snímek J. V. byl z v27.10.6.
+- **K37-N4 / K10-S1 — dolní mez data prodeje** (rozhodnutí J. V. 2. 11.): datum prodeje ≥ den odeslání nabídky
+  (pražský den času zámku prodávané varianty) a ≤ dnes — `prodDatumOd` / `prodDatumProblem` v `src/objednane.js`,
+  klient (`prodNastav`, `input type=date` s `min`/`max`) i server (`prodServer`, mez z ULOŽENÉHO zámku) → 400
+  „Datum prodeje nesmí být dřív než odeslání nabídky (…)“. Kolo 37: 2001-01-01 → 200, teď 400.
+- **K37-N2 — první tisk SoD po Prodáno se neukládal (409):** prodaná varianta měla zmrazený celý krycí list, tisk
+  SoD ale opisuje číslo SoD a datum podpisu. Pole SoD (`cisloSod`, `sodDatumPodpisu` OCK, `cisloSod` PROJ) zůstávají
+  po Prodáno zapisovatelná do prvního tisku smlouvy o dílo, pak se zamknou (`zamekProdanoSodVolne` v `src/zamek.js`;
+  server porovnává týmž modelem se zámkem uložené verze). Zbytek krycího listu prodané varianty zůstává zamčený.
+  Příručka obchodníka (kap. Prodáno) doplněna.
+- **Testy:** `src/test_prodano_zamek.js` 19/0 (před opravou padá — funkce chybí), `netlify/test_prodano_zamek.mjs`
+  16/0 (zábrana serveru, prochází před i po), `overit_prodano_zamek.mjs` 28/0 — skutečný klient proti skutečným
+  serverovým funkcím; nad v2.11.2 13 OK / 12 FAIL a reprodukuje přesně hlášku z nálezu. Mutace „#547“ (6).
 ## v2.11.5 — T3 #549: přeživší mutace B28 (zámek „obnova běží“) chycena — větev claude/t3-mutace-b28
 
 Nad integrací 141b92f (v2.11.2). Celé testy Actions „Testy“ run 41413223863 nad 1fb09b2 (v2.11.1): mutace serveru
