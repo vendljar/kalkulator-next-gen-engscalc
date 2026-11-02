@@ -302,26 +302,37 @@ test('vadná starší verze vypadne, platná se obnoví', o2.ok === true && poO2
   }
   /* K6-S6 (D3): nečekaný tvar uložené zakázky (sem podstrčený mimo server)
    * shodil celý export na 500; má jít mezi přeskočené a zbytek se vyveze.
-   * K37-N10 (2. 11. 2026): do #540 výjimku vyvolalo datum prodeje jako objekt;
-   * ctrlProdej ho od #540 bere jen jako řetězec, výjimka nevznikla a pojistka
-   * `catch` v controlling_export.mjs nebyla ničím vyzkoušená (mutace K6-S6
-   * přežila). Teď řada ceníku varianty jako objekt bez převodu na text —
-   * String() v ctrlHromadnyZakazka vyhodí TypeError (ověřeno níž). */
+   * T2 #543 (2. 11. 2026): datum prodeje jako objekt od C4 #540 vyřeší už
+   * ctrlProdej (datum null → „neplatný tvar") bez výjimky, takže test přestal
+   * volat záchranu v controlling_export.mjs a mutace K6-S6 prošla (Actions
+   * Testy 41391649224, část 6/10). Výjimku teď vyvolá číselná řada jako
+   * objekt bez volatelného toString (String() → TypeError) — cesta, kterou
+   * žádná dřívější kontrola nezachytí. Před úpravou testu mutace K6-S6
+   * přežila, po úpravě je chycená. */
   {
-    const z = zamcena('2026 - OPR - CN - 0807', '2026-10-06T09:00:00Z');
-    const sb = await vloz(z);
-    const ulozena = await sZ.cti('z/' + sb);
-    ulozena.varianty[0].data.cenikRada = { toString: 1 };
-    await sZ.zapis('z/' + sb, ulozena);
-    const zkus = G.importZakazka(JSON.parse(JSON.stringify(ulozena)));
-    test('K37-N10 příprava: zakázka v ctrlHromadnyZakazka opravdu vyhodí výjimku', (() => {
-      try { G.ctrlHromadnyZakazka(zkus, G.ctrlHromadnyFiltr({ od: '2026-10-01', do: '2026-10-31', podle: 'zamceni', pd: 'vse' }).filtr, { jekly: JEKLY }); return false; }
-      catch (e) { return true; } })());
-    const eS = await (async () => { try { return await ex('?od=2026-10-01&do=2026-10-31&podle=zamceni', cAdmin); }
-      catch (e) { return { st: 500, o: { chyba: e.message } }; } })();
-    test('K6-S6: výjimka u jedné zakázky v exportu → 200, zakázka mezi přeskočenými', eS.st === 200
-      && (eS.o.preskoceno || []).some(p => p.soubor === sb && /nepodařilo zpracovat/.test(p.duvod)), eS);
-    rejstrik.pop(); await sZ.smaz('z/' + sb); await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
+    const zD = zamcena('2026 - OPR - CN - 0807', '2026-10-06T09:00:00Z');
+    zD.objednane = { varianta: zD.varianty[0].id, klice: ['x'], datum: { toString: 1 } };
+    const sbD = await vloz(zD);
+    const zV = zamcena('2026 - OPR - CN - 0808', '2026-10-06T09:00:00Z');
+    zV.objednane = { varianta: zV.varianty[0].id, klice: ['x'], datum: '2026-10-06' };
+    const sbV = await vloz(zV);
+    /* Poškození až v úložišti (záznam rejstříku vznikl z platné zakázky). */
+    zV.varianty[0].data.cenikRada = { toString: 1 };
+    await sZ.zapis('z/' + sbV, zV);
+    const exB = async (q) => { try { return await ex(q, cAdmin); }
+      catch (e) { return { st: 500, o: { chyba: e.message } }; } };
+    const preskoc = (o, sb) => (o.preskoceno || []).find(p => p.soubor === sb);
+    const eS = await exB('?od=2026-10-01&do=2026-10-31&podle=prodej');
+    test('K6-S6: neplatné datum prodeje → 200, zakázka mezi přeskočenými s důvodem', eS.st === 200
+      && /neplatný tvar/.test((preskoc(eS.o, sbD) || {}).duvod || ''), eS);
+    test('K6-S6: výjimka u jedné zakázky v exportu (podle prodeje) → 200, přeskočena s důvodem', eS.st === 200
+      && /nepodařilo zpracovat/.test((preskoc(eS.o, sbV) || {}).duvod || ''), eS);
+    const eZ = await exB('?od=2026-10-01&do=2026-10-31');
+    test('K6-S6: výjimka u jedné zakázky (podle zamčení) → 200, ostatní zakázky období se vyvezou (i 0807 s neplatným datem prodeje)',
+      eZ.st === 200 && /nepodařilo zpracovat/.test((preskoc(eZ.o, sbV) || {}).duvod || '')
+      && cisla(eZ.o) === '2026 - OPR - CN - 0801,2026 - OPR - CN - 0804,2026 - OPR - CN - 0807', { st: eZ.st, c: cisla(eZ.o), p: eZ.o.preskoceno, ch: eZ.o.chyba });
+    rejstrik.pop(); rejstrik.pop(); await sZ.smaz('z/' + sbD); await sZ.smaz('z/' + sbV);
+    await sZ.zapis('_rejstrik', { schema: 1, zakazky: rejstrik });
   }
 
   /* #504 (22. 10. 2026, hlášení J. V.): „exporty od určité velikosti nefungují" —
