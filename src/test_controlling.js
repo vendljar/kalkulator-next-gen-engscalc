@@ -324,7 +324,8 @@ if (typeof novaZakazka === 'function' && typeof zamkniVariantu === 'function') {
     test('K5-K1: název akce „- 2+3" jde do CSV s apostrofem',
       C.ctrlExportCsv(C.ctrlExportVarianty(zak4, zak4.varianty[0], { jekly: JEKLY })).includes('"\'- 2+3"'));
     if (typeof csvBunka === 'function')
-      test('K5-K1: globální csvBunka nechá odrážku „- položka" bez apostrofu', csvBunka('- položka') === '"- položka"');
+      /* K37-I5 (2. 11. 2026): pravidla sjednocená — „- položka" dostane apostrof v obou funkcích. */
+      test('K5-K1 / K37-I5: globální csvBunka dá „- položka" apostrof jako CSV controllingu', csvBunka('- položka') === '"\'- položka"');
     if (typeof xlsxZapis === 'function') {
       let okX = true; try { xlsxZapis(listy); } catch (e) { okX = e.message; }
       test('XLSX se ze tří listů sestaví', okX === true, okX);
