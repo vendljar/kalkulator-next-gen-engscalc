@@ -22,7 +22,17 @@ dealů, `stage_id`/`pipeline_id` dealů (22–26, každý 10. deal pipeline 2), 
 validace PATCH přesunutá PŘED `Object.assign`. Dál `netlify/mutace.mjs` (dvě mutace #536 „stav“ nahrazeny blokem #545),
 `mutace_jadro.mjs` (#540 → #545 `fazeDealu`), CHANGELOG, roadmapa (#545 za #542), PREDAVKA.
 
-STAV_TESTU
+**Testy:** `testovaci_kolo.sh --bez-mutaci` **VŠE ZELENÉ** (353 / 0 / 7 přeskočeno — firemní podklady; statické 5 z 5;
+21 min). Mutace „#545“: server **11/11** chycených, jádro **1/1**. `test_pd_nanecisto` 88/0, `test_pd_simulator` 60/0,
+`test_controlling_c4` 44/0, `overit_pd_nanecisto.mjs` 22/0. Pojistka: nové testy #545 na starém kódu selhaly (nanecisto
+8 FAIL a pád na chybějící pipeline, simulátor stages/PATCH, c4 `fazeDealu`, harness `faze`). Prohlížečové harnessy
+chtějí `node_modules/playwright` → odkaz na `/opt/node22/lib/node_modules/playwright` (+ `-core`; v .gitignore) —
+bez něj kolo hlásí zelenou s 51 přeskočenými a harness Prodej by se neověřil.
+Release v2.11.1 zatím ne (neslučováno) — odkaz vyrobí koordinace po sloučení.
+
+**Návrhy / otevřené pro J. V.:** (1) nastavení fáze v Nastavení → Mapa polí CRM (dnes jen proměnná
+`PIPEDRIVE_FAZE_PRODANO`); (2) fáze vedle stavu v okně „Stav Pipedrive“ v hlavičce (rozšířit `pdStav` o `stage_id`
++ názvy fází s denní cache); (3) dovětek integrátorovi k bodu 4 upomínky (Make navazovat na won, ne na fázi).
 
 ---
 # Předávka — 1. 11. 2026: O-SECM #542 — opravy security testu SEC-M, větev `claude/o-secm-opravy`

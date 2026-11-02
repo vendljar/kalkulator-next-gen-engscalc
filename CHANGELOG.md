@@ -32,7 +32,8 @@ dál vypnuté. Verze podle pravidla dne commitu (v2.11.N); koordinace může př
 - **Controlling ověřen beze změny:** filtr „Vyhrané“ čte skutečný stav z Pipedrive (`pdStav`), prodej bere z Prodáno.
   Okno „Stav Pipedrive“ v hlavičce zůstává stav; fáze vedle něj jen jako **návrh** (roadmapa #545, pozn.).
 - **Testy (pojistka):** `netlify/test_pd_nanecisto.mjs` 88/0 (nové #545 na starém kódu selhaly), `netlify/test_pd_simulator.mjs`
-  60/0 (stages/PATCH na starém kódu selhaly), `src/test_controlling_c4.js` 44/0. Mutace „#545“: 11 serverových + 1 v jádru.
+  60/0 (stages/PATCH na starém kódu selhaly), `src/test_controlling_c4.js` 44/0, prohlížečový `overit_pd_nanecisto.mjs` 22/0 (karta Prodej posílá `faze`, ne `stav`;
+  texty bez „Vyhráno“). Mutace „#545“: serverové 11/11 a jádro 1/1 chycené.
 
 ## v1.11.1 — O-SECM #542: opravy nálezů security testu SEC-M, větev claude/o-secm-opravy
 
