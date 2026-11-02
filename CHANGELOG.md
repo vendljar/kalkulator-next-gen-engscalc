@@ -38,7 +38,7 @@ koordinace přečísluje.
   b22f5df: klient 18 FAIL a pád, server pád na importu. Srovnány s novým tvarem `test_z2_disk_retence.js`,
   `test_o7_kopie_klient.js`, `test_kopie_disk.js`, `test_nazvy_souboru.js`, `netlify/test_zalohy.mjs`,
   `test_o_k9_zalohy.mjs`, `test_z2_retence.mjs`, `overit_online.mjs`. Mutace „#552“ (24) + 10 starších přecílených
-  na nový kód. Dokumentace: `podklady/NAZVY_SOUBORU.md`, `src/nazvy_souboru.js`, příručka správce, obchodníka
+  na nový kód — 34 z 34 chycených; kolo `--bez-mutaci` VŠE ZELENÉ (356 / 0 / 7). Dokumentace: `podklady/NAZVY_SOUBORU.md`, `src/nazvy_souboru.js`, příručka správce, obchodníka
   a kompletní dokumentace.
 
 ## v2.11.3 — LH #546: lešení pro dokončení hlavy šachty jen u interiérové šachty, větev claude/lh-leseni-hlava

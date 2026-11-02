@@ -23,7 +23,9 @@ engscalc starší 5 dní“, „Kontrola záloh engscalc na Disku“), aby četl
 — jinak budou porovnávat kopii testu s ostrou a hlásit falešný úbytek; (3) po nasazení na obou webech pořídit novou
 kopii tlačítkem (hlídka 14 dní a retence v Blobs dál běží i se starým záznamem).
 
-**Testy:** viz konec (kolo + mutace „#552“).
+**Testy:** `testovaci_kolo.sh --bez-mutaci` **VŠE ZELENÉ** (356 / 0 / 7 přeskočeno — firemní podklady; statické 5 z 5;
+23,5 min); mutace „#552“ **34 z 34 chycených** (24 nových + 10 přecílených; `--kontrola` 1162 OK);
+`test_552_nazvy_zaloh.js` 31/0, `test_552_prostredi_zaloh.mjs` 24/0. Celé mutace neopakovány.
 
 ---
 
