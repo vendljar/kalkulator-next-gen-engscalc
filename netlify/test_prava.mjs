@@ -1809,7 +1809,8 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
     const zapis = async (zmena, c) => { const { g, a } = await nacti(); zmena(a); return chyt(uloz374(a, c, { ocekavaneRazitko: g.uloRazitko })); };
     const dnes = globalThis.objDnes();
     const volne = (a, hodnota) => { const d = a.varianty[0].data; d.kryci = Object.assign({ hodnoty: {} }, d.kryci);
-      d.kryci.hodnoty = Object.assign({}, d.kryci.hodnoty, { sodDatumPodpisu: hodnota }); };
+      /* Kontakt zákazníka, ne pole SoD: to zůstává po Prodáno volné do tisku SoD (K37-N2, PB #547). */
+      d.kryci.hodnoty = Object.assign({}, d.kryci.hodnoty, { jmenoPrijmeni: 'Kontakt ' + hodnota }); };
     const v0 = await zapis(a => volne(a, '2026-01-02'), cObch);
     test('#540: před Prodáno se volné pole krycího listu odeslané nabídky doplní (200)', v0.status === 200, v0);
     const nez = nova374(); nez.varianty[0].prodano = { datum: dnes };

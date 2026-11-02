@@ -379,10 +379,10 @@ const prodej = await stranka.evaluate(() => {
   const v = aktivniVarianta(ZAK);
   const k = () => document.getElementById('prodejKarta_ock');
   const tl = () => [...(k() ? k().querySelectorAll('button') : [])].find(b => b.textContent.trim() === 'Prodáno');
-  const pred = { karta: !!k(), tlacitko: !!tl() && !tl().disabled, volne: zamekKryciPoleStav(v, 'kryci', 'sodDatumPodpisu') };
+  const pred = { karta: !!k(), tlacitko: !!tl() && !tl().disabled, volne: zamekKryciPoleStav(v, 'kryci', 'jmenoPrijmeni') };
   ONLINE_STAV.ja = { email: 'obchodnik@priklad.cz', role: 'Obchodník', jmeno: 'O' };
   prodNastav(ZAK, v, objDnes(), { kdo: 'obchodnik@priklad.cz' }); render();
-  const po = { text: k() ? k().textContent : '', volne: zamekKryciPoleStav(v, 'kryci', 'sodDatumPodpisu') };
+  const po = { text: k() ? k().textContent : '', volne: zamekKryciPoleStav(v, 'kryci', 'jmenoPrijmeni') };
   ONLINE_STAV.ja = { email: 'vedouci@priklad.cz', role: 'Vedoucí', jmeno: 'V' }; render();
   const ved = k() ? k().textContent : '';
   delete v.prodano; render();

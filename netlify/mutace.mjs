@@ -5196,6 +5196,17 @@ const MUTACE = [
     hledej: "  return objDnes(kdy);\n}",
     nahrad: "  return kdy.slice(0, 10);\n}",
     proc: 'nabídka odeslaná po půlnoci pražského času by nešla prodat k témuž dni' },
+  { nazev: '#547 K37-N2: po Prodáno ani pole SoD', soubor: '../src/zamek.js',
+    hledej: "  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id)) return 'zmrazeno';",
+    nahrad: "  if (variantaProdana(v)) return 'zmrazeno';",
+    proc: 'první tisk SoD po Prodáno by se neuložil (409, nález K37-N2)' },
+  /* „Pole SoD volná i po tisku SoD" (bez zamekKryciOtevreny v zamekProdanoSodVolne)
+   * je EKVIVALENTNÍ mutace — po tisku SoD pole zamkne i běžné pravidlo „po SoD"
+   * v zamekKryciPoleStav; podmínka je jen druhá pojistka, proto tu mutace není. */
+  { nazev: '#547 K37-N2: po Prodáno volný i kontakt zákazníka', soubor: '../src/zamek.js',
+    hledej: "const ZAMEK_PRODANO_SOD_POLE = { kryci: ['cisloSod', 'sodDatumPodpisu'], kryciProj: ['cisloSod'] };",
+    nahrad: "const ZAMEK_PRODANO_SOD_POLE = { kryci: ['cisloSod', 'sodDatumPodpisu', 'jmenoPrijmeni'], kryciProj: ['cisloSod'] };",
+    proc: 'krycí list prodané varianty by šel měnit mimo pole SoD' },
   /* ---------- #545 (2. 11. 2026): Prodáno mění FÁZI dealu, ne stav ----------
    * Hlídají netlify/test_pd_nanecisto.mjs a netlify/test_pd_simulator.mjs. */
   { nazev: '#545: Prodáno přepne stav na won místo fáze', soubor: 'lib/pd_prevod.mjs',

@@ -35,6 +35,15 @@ dne commitu; koordinace může přečíslovat.
   neodeslaná varianta 400, odemčení obchodníkem 403, vedoucím s důvodem 200.
 - **Texty #545** v integraci už nové („fáze Vyhrané k podpisu SoD“, ne „deal → Vyhráno“) — ověřeno harnessem
   (karta i potvrzení); snímek J. V. byl z v27.10.6.
+- **K37-N4 / K10-S1 — dolní mez data prodeje** (rozhodnutí J. V. 2. 11.): datum prodeje ≥ den odeslání nabídky
+  (pražský den času zámku prodávané varianty) a ≤ dnes — `prodDatumOd` / `prodDatumProblem` v `src/objednane.js`,
+  klient (`prodNastav`, `input type=date` s `min`/`max`) i server (`prodServer`, mez z ULOŽENÉHO zámku) → 400
+  „Datum prodeje nesmí být dřív než odeslání nabídky (…)“. Kolo 37: 2001-01-01 → 200, teď 400.
+- **K37-N2 — první tisk SoD po Prodáno se neukládal (409):** prodaná varianta měla zmrazený celý krycí list, tisk
+  SoD ale opisuje číslo SoD a datum podpisu. Pole SoD (`cisloSod`, `sodDatumPodpisu` OCK, `cisloSod` PROJ) zůstávají
+  po Prodáno zapisovatelná do prvního tisku smlouvy o dílo, pak se zamknou (`zamekProdanoSodVolne` v `src/zamek.js`;
+  server porovnává týmž modelem se zámkem uložené verze). Zbytek krycího listu prodané varianty zůstává zamčený.
+  Příručka obchodníka (kap. Prodáno) doplněna.
 - **Testy:** `src/test_prodano_zamek.js` 19/0 (před opravou padá — funkce chybí), `netlify/test_prodano_zamek.mjs`
   16/0 (zábrana serveru, prochází před i po), `overit_prodano_zamek.mjs` 28/0 — skutečný klient proti skutečným
   serverovým funkcím; nad v2.11.2 13 OK / 12 FAIL a reprodukuje přesně hlášku z nálezu. Mutace „#547“ (6).

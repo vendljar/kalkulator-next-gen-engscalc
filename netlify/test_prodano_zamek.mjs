@@ -148,6 +148,50 @@ console.log('===== prodej není záminka ke změně dokladu =====');
   const r = await uloz(prodej(o.zak, '2999-01-01'), cO, o.razitko);
   test('datum prodeje v budoucnosti → 400', r.status === 400, r);
 }
+console.log('===== K37-N2: pole SoD po Prodáno do prvního tisku SoD =====');
+{
+  const o = await odeslana('prodej SoD');
+  const r0 = await uloz(prodej(o.zak), cO, o.razitko);
+  test('K37-N2: příprava — prodáno (200)', r0.status === 200, r0);
+  let g = await nacti(o.soubor, cO);
+  /* Obchodník po Prodáno doplní číslo SoD a datum podpisu (před tiskem smlouvy). */
+  let a = zk.importZakazka(kopie(g));
+  Object.assign(a.varianty[0].data.kryci.hodnoty, { cisloSod: 'SoD-8730/2026', sodDatumPodpisu: DNES });
+  const r1 = await uloz(a, cO, g.uloRazitko);
+  test('K37-N2: po Prodáno jdou číslo SoD a datum podpisu zapsat (200)', r1.status === 200, r1);
+  g = await nacti(o.soubor, cO);
+  test('…a uložila se', g.varianty[0].data.kryci.hodnoty.cisloSod === 'SoD-8730/2026', g.varianty[0].data.kryci.hodnoty);
+  /* První tisk smlouvy o dílo: záznam tisku + opis polí SoD (jako zamekPoTisku). */
+  a = zk.importZakazka(kopie(g));
+  const v = a.varianty[0];
+  delete v.data.kryci.hodnoty.sodDatumPodpisu;   // opíše ho až tisk (kryciZmrazSod)
+  if (typeof globalThis.kryciZmrazSod === 'function') globalThis.kryciZmrazSod(a, v, JEKLY);
+  if (!v.data.kryci.hodnoty.sodDatumPodpisu) v.data.kryci.hodnoty.sodDatumPodpisu = DNES;
+  zam.zamkniVariantu(v, { typ: 'sod', kdy: new Date().toISOString(), kdo: 'Test PB', cislo: zam.variantaCislo(a, v) });
+  const r2 = await uloz(a, cO, g.uloRazitko);
+  test('K37-N2: první tisk SoD po Prodáno se uloží (200, ne 409)', r2.status === 200, r2);
+  g = await nacti(o.soubor, cO);
+  test('…záznam tisku SoD je v zámku a varianta zůstala prodaná', (g.varianty[0].zamek.tisky || []).some(t => t && t.typ === 'sod')
+    && !!g.varianty[0].prodano, g.varianty[0].zamek.tisky);
+  a = zk.importZakazka(kopie(g));
+  a.varianty[0].data.kryci.hodnoty.cisloSod = 'SoD-JINE/2026';
+  const r3 = await uloz(a, cO, g.uloRazitko);
+  test('K37-N2: po tisku SoD změna čísla SoD → odmítnuto (409)', r3.status === 409, r3);
+  a = zk.importZakazka(kopie(g));
+  a.varianty[0].data.kryci.hodnoty.sodDatumPodpisu = '2026-10-28';
+  const r4 = await uloz(a, cO, g.uloRazitko);
+  test('K37-N2: po tisku SoD změna data podpisu → odmítnuto (409)', r4.status === 409, r4);
+}
+{
+  const o = await odeslana('prodej SoD jiné pole');
+  await uloz(prodej(o.zak), cO, o.razitko);
+  const g = await nacti(o.soubor, cO);
+  const a = zk.importZakazka(kopie(g));
+  Object.assign(a.varianty[0].data.kryci.hodnoty, { cisloSod: 'SoD-8731/2026', jmenoPrijmeni: 'Schovaný přepis' });
+  const r = await uloz(a, cO, g.uloRazitko);
+  test('K37-N2: číslo SoD nepropustí přepis jiného pole krycího listu (409)', r.status === 409, r);
+}
+
 console.log('===== K37-N4: dolní mez data prodeje =====');
 {
   const o = await odeslana('prodej 2001');

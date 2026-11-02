@@ -386,6 +386,18 @@ function zamekSnimek(v) {
   return (z && z.snimek && typeof z.snimek === 'object') ? z.snimek : null;
 }
 
+/* POLE SoD PRODANÉ VARIANTY (K37-N2, rozhodnutí J. V. 2. 11. 2026). Prodaná
+ * varianta má zmrazený celý krycí list (#540), jenže první tisk smlouvy o dílo
+ * do dat opisuje číslo SoD a datum podpisu (kryciZmrazSod / kryciProjZmrazSod,
+ * KRYCI_SOD_OPIS / KRYCI_PROJ_SOD_OPIS) — a server takové uložení odmítal (409).
+ * Pole SoD proto zůstávají po Prodáno zapisovatelná (podle běžných pravidel
+ * zámku), dokud z varianty neodešla smlouva o dílo; po prvním tisku SoD se
+ * zamknou. Ostatní krycí list prodané varianty zůstává zamčený. */
+const ZAMEK_PRODANO_SOD_POLE = { kryci: ['cisloSod', 'sodDatumPodpisu'], kryciProj: ['cisloSod'] };
+function zamekProdanoSodVolne(v, list, id) {
+  return (ZAMEK_PRODANO_SOD_POLE[list] || []).indexOf(String(id)) >= 0 && zamekKryciOtevreny(v);
+}
+
 /* Stav pole krycího listu: 'editovatelne' | 'zmrazeno' | 'jen_admin'. */
 function zamekKryciPoleStav(v, list, id) {
   id = String(id == null ? '' : id);
@@ -397,7 +409,8 @@ function zamekKryciPoleStav(v, list, id) {
    * v prohlížeči (ui/zamek_ui.js); server ji nemá a pravidlo se ho netýká.
    * Platí i pro pole jen pro správce (K8-K1, #516) — jeho změnu by
    * zamekSnimkyVrat před odesláním stejně vrátila. */
-  if (variantaProdana(v)) return 'zmrazeno';                         // #540: po Prodáno nic
+  /* #540: po Prodáno nic — kromě polí SoD do prvního tisku smlouvy (K37-N2). */
+  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id)) return 'zmrazeno';
   if (typeof zamekSnimekCekaNaServer === 'function' && zamekSnimekCekaNaServer(v)) return 'zmrazeno';
   if (tab && tab.jenAdmin.indexOf(id) >= 0) return 'jen_admin';
   if (!zamekKryciOtevreny(v))
@@ -1133,7 +1146,7 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { variantaProdana, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

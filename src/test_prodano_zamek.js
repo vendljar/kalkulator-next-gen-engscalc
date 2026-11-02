@@ -107,6 +107,28 @@ console.log('— 4. K37-N4: dolní mez data prodeje —');
   test('prodServer: 2001-01-01 → 400', !!s && s.status === 400 && /dřív než odeslání/.test(s.chyba), s);
 }
 
+console.log('— 5. K37-N2: pole SoD prodané varianty do prvního tisku SoD —');
+{
+  const p = kopie(v); p.prodano = { datum: '2026-11-02' };
+  const st = (w, list, id) => zamekKryciPoleStav(w, list, id);
+  test('po Prodáno: číslo SoD a datum podpisu (OCK) i číslo SoD (PROJ) zapisovatelné',
+    st(p, 'kryci', 'cisloSod') === 'editovatelne' && st(p, 'kryci', 'sodDatumPodpisu') === 'editovatelne'
+      && st(p, 'kryciProj', 'cisloSod') === 'editovatelne', [st(p, 'kryci', 'cisloSod'), st(p, 'kryci', 'sodDatumPodpisu'), st(p, 'kryciProj', 'cisloSod')]);
+  test('po Prodáno: ostatní krycí list zamčený (kontakt, záloha, PROJ odpovědná osoba)',
+    st(p, 'kryci', 'jmenoPrijmeni') === 'zmrazeno' && st(p, 'kryci', 'zaloha1') === 'zmrazeno' && st(p, 'kryciProj', 'odpovednyJmeno') === 'zmrazeno');
+  const q = kopie(p); zamkniVariantu(q, { typ: 'sod', kdy: '2026-11-02T10:00:00.000Z' });
+  test('po prvním tisku SoD: pole SoD zamčená', st(q, 'kryci', 'cisloSod') === 'zmrazeno' && st(q, 'kryci', 'sodDatumPodpisu') === 'zmrazeno');
+  const r = kopie(p); zamkniVariantu(r, { typ: 'sodProj', kdy: '2026-11-02T10:00:00.000Z' });
+  test('po tisku SoD PROJ: číslo SoD PROJ zamčené', st(r, 'kryciProj', 'cisloSod') === 'zmrazeno');
+  test('server porovná bez polí SoD (zamekDataPorovnani se zámkem uložené prodané varianty)', (() => {
+    const a = kopie(p.data), b = kopie(p.data);
+    b.kryci.hodnoty.cisloSod = 'SoD-1/2026'; b.kryci.hodnoty.sodDatumPodpisu = '2026-11-02';
+    const c = kopie(b); c.kryci.hodnoty.jmenoPrijmeni = 'Jiný';
+    return zamekDataPorovnani(a, p) === zamekDataPorovnani(b, p) && zamekDataPorovnani(a, p) !== zamekDataPorovnani(c, p)
+      && zamekDataPorovnani(a, q) !== zamekDataPorovnani(b, q);
+  })());
+}
+
 console.log('— 3. prodat jde jen odeslanou nabídku —');
 {
   const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 8722';
