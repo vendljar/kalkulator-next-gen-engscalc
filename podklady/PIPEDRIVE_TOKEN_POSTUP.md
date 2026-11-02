@@ -79,6 +79,11 @@ Na testovacím webu, s tokenem (stav kódu 27. 10. 2026):
   číslo obchodního případu.
 - **Zápis do Pipedrive v aplikaci není** — tlačítko pro zápis (#115) zatím
   neexistuje. Náhled „Co by se zapsalo" nic neodesílá.
+- Náhled u tlačítka **Prodáno** čte navíc fáze pipeline (`GET /api/v2/stages`,
+  #545): Prodáno přesune deal do fáze **„Vyhrané k podpisu SoD“** a stav dealu
+  nemění (won až po podpisu SoD, v Pipedrive). Jiný název či id fáze se
+  nastaví proměnnou `PIPEDRIVE_FAZE_PRODANO` (číslo = id fáze, text = název);
+  bez ní se hledá fáze toho názvu v pipeline dealu.
 - Testovací web má vlastní databázi zakázek, ale **Pipedrive je jeden** —
   co testovací web přečte, je skutečné CRM firmy.
 - Kdo smí číst: administrátor vždy, ostatní podle práva „Čtení obchodních
@@ -107,6 +112,10 @@ Kde token ještě není, jde napojení zkoušet se smyšlenými daty:
 | `PIPEDRIVE_SIMULATOR` | `1` | místo Pipedrive odpovídá simulátor (230 smyšlených dealů, organizace, osoby, uživatelé, pole podle dohodnuté tabulky) |
 | `PIPEDRIVE_SIMULATOR_SCENAR` | `token` / `limit` / `limit2` / `vypadek` | vyrobí chybu 401 / 429 / dvakrát 429 / 500 |
 | `PIPEDRIVE_SIMULATOR_ROZPOCET` | číslo | denní rozpočet tokenů simulátoru (výchozí 30 000) |
+| `PIPEDRIVE_FAZE_PRODANO` | id fáze nebo název | kam Prodáno přesune deal (výchozí fáze „Vyhrané k podpisu SoD“ v pipeline dealu; platí i mimo simulátor) |
+
+Simulátor zná pipeline „Obchod“ (1) s fázemi jako účet (22 Zkontaktováno …
+26 Vyhrané k podpisu SoD) a smyšlenou druhou pipeline bez té fáze (#545).
 
 - Simulátor se **odmítne zapnout na ostrém webu**: nasazení z větve `main`,
   web schaftscalc, nebo Netlify bez `PROSTREDI=test`. Odmítnutí vidí

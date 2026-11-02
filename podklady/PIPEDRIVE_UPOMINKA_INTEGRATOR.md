@@ -39,6 +39,13 @@ testovacím dealu. Prosím o krátké odpovědi, stačí k číslům.
 4. **Automatizace:** co v Make (nebo jinde) reaguje na **změnu dealu**
    nebo jeho vlastních polí? Před prvním zápisem potřebujeme vědět, jestli
    zápis z kalkulace něco nespustí (e-mail, úkol, posun fáze, kopii jinam).
+   **Doplněno 2. 11. 2026 (#545):** tlačítko „Prodáno" v kalkulátoru
+   **nemění stav dealu** (won) — jen ho přesune do **fáze „Vyhrané
+   k podpisu SoD"** (pipeline „Obchod") a zapíše údaje krycího listu. Stav
+   „Vyhrané" přepíná až člověk v Pipedrive po doručení podepsané SoD.
+   Prosíme tedy: reaguje Make na **změnu fáze** (`stage_id`), konkrétně na
+   vstup do „Vyhrané k podpisu SoD"? Navázaný proces má startovat až na
+   **změnu stavu na won**, ne na tuto fázi.
 5. **„Typ produktu / služby"** (č. 10 tabulky) se nezaložil — nahrazuje ho
    stávající „Typ zakázky" se stejnými volbami? Kalkulátor ho jen čte.
 6. **Viditelnost polí OCK / PROJ:** tabulka počítala s viditelností podle
@@ -87,6 +94,8 @@ S pozdravem
 - Body 1–3 jsou úkoly, 4–15 otázky z 21. 10. (č. 9 z §11.9 už rozhodnuto
   23. 10. — #512 — proto je teď úkolem v bodě 1), 16–17 souvisí s #510.
 - Na bodě 4 závisí #510 (zkušební zápis) i #115 (zápis z aplikace).
+- Bod 4 je od 2. 11. 2026 doplněný o #545 (Prodáno → fáze, ne stav). Pokud
+  e-mail už odešel, poslat dovětek jen s tímto odstavcem.
 - Bod 13: pokud integrátor řekne ne, změní se jen převod v
   `netlify/lib/pd_prevod.mjs` (`prevod: 'limit'`).
 - Odpovědi zapsat do #509 a promítnout do `netlify/lib/pd_mapa.mjs`

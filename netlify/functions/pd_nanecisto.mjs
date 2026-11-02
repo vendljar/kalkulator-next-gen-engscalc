@@ -1,11 +1,15 @@
 /* Suchý běh zápisu do Pipedrive (#536, 27. 10. 2026).
  *
- * POST /api/pd/nanecisto  { strany: { ock?: zdroj, proj?: zdroj }, zdroje?, dealId?, stav? }
- *   → { ok, rezim, radky: [...], souhrn, varovani: [...], deal: { id, nazev } | null, patch }
+ * POST /api/pd/nanecisto  { strany: { ock?: zdroj, proj?: zdroj }, zdroje?, dealId?, faze? }
+ *   → { ok, rezim, radky: [...], souhrn, varovani: [...], deal: { id, nazev } | null, patch, zastaveno }
  *
- * `stav` ('won' / 'lost' / 'open', volitelně) přidá přepnutí stavu dealu —
- * tlačítko „Prodáno" (C4 #540) posílá 'won'. `patch` = tělo PATCH, které by
- * odešlo (pdZamyslenyZapis); C4 ho smí uložit jako připravený zápis.
+ * `faze: 'prodano'` (tlačítko „Prodáno", C4 #540, od #545 2. 11. 2026) přidá
+ * přesun dealu do fáze „Vyhrané k podpisu SoD" — stav dealu (status) se
+ * NEMĚNÍ, won přepne člověk v Pipedrive až po doručení podepsané SoD. Fáze se
+ * čtou z Pipedrive (GET /api/v2/stages); cíl přenastaví proměnná
+ * PIPEDRIVE_FAZE_PRODANO (id nebo název). Starý parametr `stav` se odmítne
+ * (400) — Prodáno stav nemění. `patch` = tělo PATCH, které by odešlo
+ * (pdZamyslenyZapis), nebo null se `zastaveno` = proč by se nezapsalo nic.
  *
  * „Co by se zapsalo do Pipedrive" u otevřené zakázky. Do Pipedrive se NIC
  * NEZAPISUJE — žádný PATCH, žádný POST; funkce jen čte (mapu polí, seznam
@@ -28,7 +32,7 @@
 import { json } from '../lib/sdilene.mjs';
 import { pdNastaveno, pdRezim, pdZavolej, PdChyba, pdPristup, pdStropCerstvych, PD_DEAL_MAX } from '../lib/pipedrive.mjs';
 import { POLE_DEALU, pdMapaZPoli, pdPoleDohodnuta } from '../lib/pd_mapa.mjs';
-import { pdZamyslenyZapis, PD_STAVY_DEALU } from '../lib/pd_prevod.mjs';
+import { pdZamyslenyZapis, PD_FAZE_UCELY, pdFazeKonfigurace } from '../lib/pd_prevod.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 
 const TELO_MAX = 512 * 1024;
@@ -80,13 +84,15 @@ export default async (req) => {
   if (dealTxt && !/^[0-9]{1,10}$/.test(dealTxt))
     return json({ ok: false, chyba: 'Neplatné číslo obchodního případu.' }, 400);
 
-  const stav = telo.stav === undefined || telo.stav === null ? '' : String(telo.stav);
-  if (stav && !Object.prototype.hasOwnProperty.call(PD_STAVY_DEALU, stav))
-    return json({ ok: false, chyba: 'Neplatný stav dealu (open / won / lost).' }, 400);
+  if (telo.stav !== undefined && telo.stav !== null)
+    return json({ ok: false, chyba: 'Prodáno mění fázi dealu, ne jeho stav (#545) — obnovte stránku.' }, 400);
+  const faze = telo.faze === undefined || telo.faze === null ? '' : String(telo.faze);
+  if (faze && !Object.prototype.hasOwnProperty.call(PD_FAZE_UCELY, faze))
+    return json({ ok: false, chyba: 'Neplatný přesun fáze dealu (prodano).' }, 400);
 
   const rezim = pdNastaveno() ? pdRezim() : 'dohoda';
   const varovani = [];
-  let pole, uzivatele, deal = null;
+  let pole, uzivatele, deal = null, fazeSeznam;
   try {
     if (rezim === 'dohoda') {
       pole = pdMapaZPoli(pdPoleDohodnuta({ vsechna: true }).deal, POLE_DEALU);
@@ -112,6 +118,15 @@ export default async (req) => {
             + 'náhled neporovnává s tím, co je v CRM dnes.');
         }
       }
+      if (faze) {
+        /* Fáze pipeline (#545): kam Prodáno deal přesune. Bez nich se nezapíše nic. */
+        try {
+          const f = await pdZavolej('/api/v2/stages', { dotaz: { limit: 500 } });
+          fazeSeznam = Array.isArray(f) ? f.map((x) => ({ id: x.id, name: x.name, pipeline_id: x.pipeline_id })) : [];
+        } catch (e) {
+          varovani.push('Fáze pipeline se z Pipedrive nenačetly (' + (e && e.message) + ') — přesun fáze nejde ověřit.');
+        }
+      }
       if (rezim === 'simulator')
         varovani.unshift('Odpovídá SIMULÁTOR Pipedrive se smyšlenými daty — nic z toho není skutečné CRM.');
     }
@@ -121,8 +136,9 @@ export default async (req) => {
     throw e;
   }
   if (!dealTxt) varovani.push('Zakázka nemá číslo obchodního případu Pipedrive — není s čím porovnat.');
-  const v = pdZamyslenyZapis(POLE_DEALU, strany, pole, { uzivatele, mena: 'CZK', deal }, { stav }, zdroje);
+  const v = pdZamyslenyZapis(POLE_DEALU, strany, pole, { uzivatele, mena: 'CZK', deal },
+    { faze, fazeSeznam, fazeKonfigurace: pdFazeKonfigurace(), dealNenacten: rezim !== 'dohoda' && dealTxt && !deal ? dealTxt : '' }, zdroje);
   return json({ ok: true, rezim, nic: 'Do Pipedrive se nic neodeslalo.', ...v, varovani,
-    deal: deal ? { id: deal.id, nazev: deal.title || '', stav: deal.status || '' } : null });
+    deal: deal ? { id: deal.id, nazev: deal.title || '', stav: deal.status || '', faze: deal.stage_id || null } : null });
 };
 export const config = { path: '/api/pd/nanecisto' };

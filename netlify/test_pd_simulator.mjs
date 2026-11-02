@@ -194,7 +194,30 @@ let nezname = null;
 try { await PD.pdZavolej('/api/v2/deals/1001', { metoda: 'PATCH', telo: { custom_fields: { ['f'.repeat(40)]: 1 } } }); } catch (e) { nezname = e; }
 test('PATCH do neznámého pole → 400', nezname && nezname.stav === 400);
 await PD.pdZavolej('/api/v2/deals/1001', { metoda: 'PATCH', telo: { status: 'won' } });
-test('PATCH stavu dealu (C4 „Prodáno") se drží', (await PD.pdZavolej('/api/v2/deals/1001')).status === 'won');
+test('PATCH stavu dealu se drží (ruční změna stavu, Prodáno stav nemění — #545)', (await PD.pdZavolej('/api/v2/deals/1001')).status === 'won');
+/* #545: pipeline a fáze, přesun dealu do fáze „Vyhrané k podpisu SoD" (Prodáno). */
+{
+  const fz = await PD.pdZavolej('/api/v2/stages', { dotaz: { pipeline_id: 1 } });
+  test('#545: GET stages pipeline 1 = pět fází účtu včetně 26 „Vyhrané k podpisu SoD"', Array.isArray(fz) && fz.length === 5
+    && fz.every(f => f.pipeline_id === 1) && fz.some(f => f.id === 26 && f.name === 'Vyhrané k podpisu SoD'), fz);
+  const vse = await PD.pdZavolej('/api/v2/stages');
+  test('#545: GET stages bez filtru vrací i jinou pipeline (bez té fáze)', vse.some(f => f.pipeline_id === 2)
+    && !vse.some(f => f.pipeline_id === 2 && /Vyhrané/.test(f.name)));
+  const pl = await PD.pdZavolej('/api/v2/pipelines');
+  test('#545: GET pipelines zná „Obchod" (1)', pl.some(x => x.id === 1 && x.name === 'Obchod'));
+  test('#545: dealy stojí ve fázích svých pipeline', SIM.pdSimStav().data.dealy.every(d =>
+    SIM.pdSimStav().data.faze.some(f => f.id === d.stage_id && f.pipeline_id === d.pipeline_id)));
+  const d0 = SIM.pdSimStav().data.dealy.find(d => d.status === 'open' && d.pipeline_id === 1 && d.stage_id !== 26);
+  await PD.pdZavolej('/api/v2/deals/' + d0.id, { metoda: 'PATCH', telo: { stage_id: 26 } });
+  const d1 = await PD.pdZavolej('/api/v2/deals/' + d0.id);
+  test('#545: PATCH stage_id 26 přesune deal do fáze a stav zůstane open', d1.stage_id === 26 && d1.status === 'open', d1);
+  let spatnaFaze = null;
+  const cfPred = JSON.stringify(d1.custom_fields);
+  try { await PD.pdZavolej('/api/v2/deals/' + d0.id, { metoda: 'PATCH', telo: { stage_id: 999, value: 1 } }); } catch (e) { spatnaFaze = e; }
+  const d2 = await PD.pdZavolej('/api/v2/deals/' + d0.id);
+  test('#545: PATCH na neexistující fázi → 400 a deal beze změny', spatnaFaze && spatnaFaze.stav === 400
+    && d2.stage_id === 26 && d2.value === d1.value && JSON.stringify(d2.custom_fields) === cfPred);
+}
 let spatnyStav = null;
 try { await PD.pdZavolej('/api/v2/deals/1001', { metoda: 'PATCH', telo: { status: 'smazano' } }); } catch (e) { spatnyStav = e; }
 test('PATCH s neznámým stavem → 400', spatnyStav && spatnyStav.stav === 400);

@@ -123,3 +123,21 @@ Odpovězte jen tam, kde se chcete odchýlit.
 3. Prázdné CN v dealu = volný deal, zapíše se bez ptaní.
 4. Při převzetí se zapíše poznámka k dealu v Pipedrive (kdo, kdy, z jaké zakázky) i protokol v kalkulátoru.
 5. Varování už při zadání čísla dealu, které má jiná zakázka: až po zprovoznění skutečného zápisu (token).
+
+## Prodáno mění fázi, ne stav (#545, pokyn J. V. 2. 11. 2026)
+
+Tlačítko **Prodáno** (karta Prodej na konci krycího listu) připraví zápis
+údajů krycího listu a **přesun dealu do fáze „Vyhrané k podpisu SoD“**
+(`stage_id`, pipeline „Obchod“). **Stav dealu (`status`) neposílá** — deal
+zůstává otevřený. Stav „Vyhrané“ (won) rozbíhá v Pipedrive další obchodně
+administrativní proces, který má čekat na doručení podepsané SoD; přepne ho
+člověk v Pipedrive.
+
+- Fáze se hledá **podle názvu** v pipeline dealu (bez diakritiky a velikosti
+  písmen); jiný název nebo přímo id fáze nastaví proměnná
+  `PIPEDRIVE_FAZE_PRODANO` (číslo = id, text = název). V účtu je to dnes
+  fáze 26, ale natvrdo se nepíše.
+- Fáze nenalezena (deal v jiné pipeline, přejmenovaná fáze), deal ztracený,
+  smazaný nebo už vyhraný → **nezapíše se nic** a náhled řekne proč.
+- Kód: `netlify/lib/pd_prevod.mjs` (`pdZamyslenyZapis`, `pdFazeNajdi`),
+  `netlify/functions/pd_nanecisto.mjs`; test `netlify/test_pd_nanecisto.mjs`.

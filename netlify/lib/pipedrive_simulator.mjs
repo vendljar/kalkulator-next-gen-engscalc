@@ -148,6 +148,15 @@ export function pdSimVychoziData() {
     });
   }
 
+  /* Pipeline a fáze (#545, 2. 11. 2026): „Obchod" má fáze jako účet
+   * (metadata přečtená koordinací 2. 11. 2026, nic se nezapisovalo) včetně
+   * „Vyhrané k podpisu SoD", kam deal přesouvá Prodáno. Druhá pipeline je
+   * smyšlená a tu fázi záměrně nemá — zkouška „fáze nenalezena". */
+  const pipeline = [{ id: 1, name: 'Obchod', active: true }, { id: 2, name: 'Servis (smyšlená)', active: true }];
+  const faze = [[22, 'Zkontaktováno'], [23, 'Nabídka odeslána'], [24, 'Vyjednávání'], [25, 'Před podpisem'],
+    [26, 'Vyhrané k podpisu SoD']].map(([id, name], i) => ({ id, name, pipeline_id: 1, order_nr: i + 1 }))
+    .concat([[31, 'Poptávka servisu'], [32, 'Servis objednán']].map(([id, name], i) => ({ id, name, pipeline_id: 2, order_nr: i + 1 })));
+
   const dealy = [];
   for (let i = 0; i < PD_SIM_POCET_DEALU; i++) {
     const id = 1001 + i;
@@ -174,13 +183,13 @@ export function pdSimVychoziData() {
     dealy.push({
       id, title: (cislo ? cislo + ' ' : 'Poptávka ') + akce, status,
       value: 50000 + (i % 40) * 25000, currency: 'CZK',
-      stage_id: 1 + (i % 6), pipeline_id: 1, user_id: uzivatele[i % uzivatele.length].id,
+      ...(i % 10 === 9 ? { stage_id: 31 + (i % 2), pipeline_id: 2 } : { stage_id: 22 + (i % 5), pipeline_id: 1 }), user_id: uzivatele[i % uzivatele.length].id,
       org_id: org, person_id: osoba,
       add_time: datum(i) + 'T08:00:00Z', update_time: datum(60 + (i * 7) % 240) + 'T10:' + String(i % 60).padStart(2, '0') + ':00Z',
       custom_fields: cf,
     });
   }
-  return { uzivatele, organizace, osoby, dealy, pole };
+  return { uzivatele, organizace, osoby, dealy, pole, pipeline, faze };
 }
 
 /* ---------- stav simulátoru (paměť instance) ---------- */
@@ -265,6 +274,11 @@ export async function pdSimFetch(url, init = {}) {
   if (metoda === 'GET' && cesta === '/api/v2/dealFields') return strankuj(D.pole.deal, u.searchParams).odpoved;
   if (metoda === 'GET' && cesta === '/api/v2/organizationFields') return strankuj(D.pole.organizace, u.searchParams).odpoved;
   if (metoda === 'GET' && cesta === '/api/v1/users') return data(kopie(D.uzivatele));
+  if (metoda === 'GET' && cesta === '/api/v2/pipelines') return strankuj(kopie(D.pipeline), u.searchParams).odpoved;
+  if (metoda === 'GET' && cesta === '/api/v2/stages') {
+    const pip = parseInt(u.searchParams.get('pipeline_id'), 10);
+    return strankuj(kopie(D.faze.filter((f) => !(pip > 0) || f.pipeline_id === pip)), u.searchParams).odpoved;
+  }
 
   if (metoda === 'GET' && cesta === '/api/v2/deals') {
     const status = u.searchParams.get('status');
@@ -285,8 +299,13 @@ export async function pdSimFetch(url, init = {}) {
       const zname = new Set(D.pole.deal.map((p) => p.field_code));
       const nezname = Object.keys((telo && telo.custom_fields) || {}).filter((k) => !zname.has(k));
       if (nezname.length) return chyba(400, 'Unknown custom field: ' + nezname[0]);
-      Object.assign(deal.custom_fields, telo.custom_fields || {});
       if (telo.status !== undefined && !['open', 'won', 'lost'].includes(telo.status)) return chyba(400, 'Invalid status');
+      /* Fáze (#545): jen existující; deal se přesune i do její pipeline jako v API.
+       * Kontroluje se PŘED zápisem — odmítnutý PATCH nezmění nic. */
+      const fazeNova = telo.stage_id === undefined ? null : D.faze.find((x) => x.id === telo.stage_id);
+      if (telo.stage_id !== undefined && !fazeNova) return chyba(400, 'Invalid stage_id');
+      Object.assign(deal.custom_fields, telo.custom_fields || {});
+      if (fazeNova) { deal.stage_id = fazeNova.id; deal.pipeline_id = fazeNova.pipeline_id; }
       for (const k of ['value', 'currency', 'title', 'status']) if (telo[k] !== undefined) deal[k] = telo[k];
       deal.update_time = new Date().toISOString().slice(0, 19) + 'Z';
       return data(kopie(deal));

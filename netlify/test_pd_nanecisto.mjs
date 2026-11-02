@@ -184,36 +184,89 @@ const o3 = await post(URL_N, { ...telo, dealId: 999999 }, cObch);
 const d3 = await o3.json();
 test('neznámý deal: náhled projde s varováním, bez porovnání', o3.status === 200 && d3.deal === null
   && d3.varovani.some(t => /999999 se z Pipedrive nenačetl/.test(t)), d3.varovani);
-/* C4 #540 „Prodáno": zamýšlený zápis včetně přepnutí dealu na won. */
+/* #545 (2. 11. 2026, dřív C4 #540): „Prodáno" přesune deal do FÁZE
+ * „Vyhrané k podpisu SoD", stav (status) nemění — won až po podpisu SoD. */
 {
-  const pw = G.pdnPodklad(zak, JEKLY, { stav: 'won' });
-  test('C4: podklad nese stav won a tělo ho posílá', pw.stav === 'won' && G.pdnTelo(pw).stav === 'won' && !('stav' in G.pdnTelo(p)));
-  const otevreny = SIM.pdSimStav().data.dealy.find(d => d.status === 'open');
+  const pw = G.pdnPodklad(zak, JEKLY, { faze: 'prodano' });
+  test('#545: podklad nese fázi prodano a tělo ji posílá, stav ne', pw.faze === 'prodano' && G.pdnTelo(pw).faze === 'prodano'
+    && !('stav' in G.pdnTelo(pw)) && !('faze' in G.pdnTelo(p)));
+  const D = SIM.pdSimStav().data;
+  const cilSim = (D.faze || []).find(f => f.name === 'Vyhrané k podpisu SoD' && f.pipeline_id === 1);
+  test('#545: simulátor má pipeline „Obchod" s fází 26 „Vyhrané k podpisu SoD"', !!cilSim && cilSim.id === 26
+    && (D.pipeline || []).some(x => x.id === 1 && x.name === 'Obchod'), J(D.faze));
+  const otevreny = D.dealy.find(d => d.status === 'open' && d.pipeline_id === 1 && d.stage_id !== 26);
   const ow = await post(URL_N, { ...G.pdnTelo(pw), dealId: otevreny.id }, cObch);
   const dw = await ow.json();
-  const rs = radek(dw, 'stavDealu');
-  test('C4: řádek „Stav dealu" → Vyhráno (won), z otevřeného bez kolize', ow.status === 200 && rs.stav === 'zapise'
-    && rs.hodnota === 'won' && /Otevřeno/.test(rs.vCrm) && rs.kolize.length === 0, J(rs));
-  test('C4: patch = custom_fields ze zápisu + value/currency + status won',
-    dw.patch && dw.patch.status === 'won' && dw.patch.currency === 'CZK'
-    && Object.keys(dw.patch.custom_fields).length === dw.radky.filter(r => r.stav === 'zapise' && !['hodnotaDealu', 'stavDealu'].includes(r.klic)).length,
-    J(dw.patch && Object.keys(dw.patch)));
-  test('C4: v simulátoru se stav dealu nezměnil (nic se neodeslalo)',
-    SIM.pdSimStav().data.dealy.find(d => d.id === otevreny.id).status === 'open'
+  const rf = radek(dw, 'fazeDealu');
+  test('#545: řádek „Fáze dealu" → Vyhrané k podpisu SoD (26), dnešní fáze ve sloupci CRM', ow.status === 200 && rf.stav === 'zapise'
+    && rf.nazev === 'Fáze dealu' && rf.hodnota === 26 && /Vyhrané k podpisu SoD/.test(rf.hodnotaText) && !!rf.vCrm, J(rf));
+  test('#545: žádný řádek „Stav dealu"', !dw.radky.some(r => r.klic === 'stavDealu'));
+  test('#545: patch nese stage_id 26 a NEnese status', dw.patch && dw.patch.stage_id === 26 && !('status' in dw.patch)
+    && dw.patch.currency === 'CZK', J(dw.patch && Object.keys(dw.patch)));
+  test('#545: patch = custom_fields ze zápisu + value/currency + stage_id',
+    Object.keys(dw.patch.custom_fields).length === dw.radky.filter(r => r.stav === 'zapise' && !['hodnotaDealu', 'fazeDealu'].includes(r.klic)).length);
+  test('#545: náhled si přečetl fáze z Pipedrive (GET /api/v2/stages)', SIM.pdSimStav().pozadavky.some(x => /^GET \/api\/v2\/stages/.test(x)));
+  test('#545: v simulátoru se deal nezměnil (nic se neodeslalo)',
+    J(SIM.pdSimStav().data.dealy.find(d => d.id === otevreny.id)) === J(otevreny)
     && SIM.pdSimStav().pozadavky.every(x => /^GET /.test(x)));
-  const prohrany = SIM.pdSimStav().data.dealy.find(d => d.status === 'lost');
+  const prohrany = D.dealy.find(d => d.status === 'lost');
   const dl = await (await post(URL_N, { ...G.pdnTelo(pw), dealId: prohrany.id }, cObch)).json();
-  test('C4: prohraný deal → kolize „přepne na Vyhráno"', radek(dl, 'stavDealu').kolize.some(k => /Prohráno.*Vyhráno/.test(k)), J(radek(dl, 'stavDealu')));
-  test('C4: neznámý stav → 400', (await post(URL_N, { ...telo, stav: 'deleted' }, cObch)).status === 400);
+  const rl = radek(dl, 'fazeDealu');
+  test('#545: ztracený deal → „nelze, deal je ztracený", bez zápisu', rl.stav === 'nelze' && /nelze, deal je ztracený/.test(rl.duvod)
+    && dl.patch === null && /ztracený/.test(dl.zastaveno), J(rl));
+  const vyhrany = D.dealy.find(d => d.status === 'won');
+  const dv = await (await post(URL_N, { ...G.pdnTelo(pw), dealId: vyhrany.id }, cObch)).json();
+  test('#545: vyhraný deal → „nelze, deal je už vyhraný"', radek(dv, 'fazeDealu').stav === 'nelze'
+    && /už vyhraný/.test(radek(dv, 'fazeDealu').duvod) && dv.patch === null);
+  const jinde = D.dealy.find(d => d.status === 'open' && d.pipeline_id !== 1);
+  const dj = await (await post(URL_N, { ...G.pdnTelo(pw), dealId: jinde.id }, cObch)).json();
+  test('#545: deal v jiné pipeline bez této fáze → „fáze nenalezena", bez zápisu', radek(dj, 'fazeDealu').stav === 'nelze'
+    && /fáze nenalezena/.test(radek(dj, 'fazeDealu').duvod) && dj.patch === null, J(radek(dj, 'fazeDealu')));
+  const smazany = D.dealy.find(d => d.status === 'deleted');
+  const ds = await (await post(URL_N, { ...G.pdnTelo(pw), dealId: smazany.id }, cObch)).json();
+  test('#545: smazaný (nenačtený) deal → „nelze", bez zápisu — fáze se nehledá naslepo', radek(ds, 'fazeDealu').stav === 'nelze'
+    && /nenačetl/.test(radek(ds, 'fazeDealu').duvod) && ds.patch === null, J(radek(ds, 'fazeDealu')));
+  process.env.PIPEDRIVE_FAZE_PRODANO = '25';
+  const dk = await (await post(URL_N, { ...G.pdnTelo(pw), dealId: otevreny.id }, cObch)).json();
+  test('#545: PIPEDRIVE_FAZE_PRODANO = id fáze přenastaví cíl', dk.patch && dk.patch.stage_id === 25, J(dk.patch));
+  process.env.PIPEDRIVE_FAZE_PRODANO = 'Fáze, která není';
+  const dn = await (await post(URL_N, { ...G.pdnTelo(pw), dealId: otevreny.id }, cObch)).json();
+  test('#545: přejmenovaná fáze → „fáze nenalezena", bez zápisu', dn.patch === null && /fáze nenalezena/.test(radek(dn, 'fazeDealu').duvod));
+  delete process.env.PIPEDRIVE_FAZE_PRODANO;
+  test('#545: starý klient se stavem won → 400 (stav Prodáno nemění)', (await post(URL_N, { ...telo, stav: 'won' }, cObch)).status === 400);
+  test('#545: neznámý přesun fáze → 400', (await post(URL_N, { ...telo, faze: 'smazat' }, cObch)).status === 400);
   const bez = await (await post(URL_N, telo, cObch)).json();
-  test('C4: bez stavu žádný řádek ani status v patch', !bez.radky.some(r => r.klic === 'stavDealu') && !('status' in bez.patch));
-  let vyj = null; try { pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, {}, { stav: 'smazat' }); } catch (e) { vyj = e; }
-  test('C4: pdZamyslenyZapis odmítne neznámý stav', !!vyj);
-  const sm = pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, { deal: { status: 'deleted' } }, { stav: 'won' });
-  test('C4: smazaný deal → „nelze", status se nepošle', sm.radky.find(r => r.klic === 'stavDealu').stav === 'nelze' && !('status' in sm.patch));
-  const zw = pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, { mena: 'CZK' }, { stav: 'won' });
-  test('C4: patch bez sítě = pdZapisDealu + status', J(zw.patch.custom_fields) === J(zapis.custom_fields)
-    && zw.patch.value === zapis.deal.value && zw.patch.status === 'won');
+  test('#545: bez Prodáno žádný řádek fáze, patch bez stage_id i status', !bez.radky.some(r => r.klic === 'fazeDealu')
+    && !('stage_id' in bez.patch) && !('status' in bez.patch));
+  let vyj = null; try { pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, {}, { faze: 'won' }); } catch (e) { vyj = e; }
+  test('#545: pdZamyslenyZapis odmítne neznámý přesun', !!vyj);
+  const FZ = [{ id: 22, name: 'Zkontaktováno', pipeline_id: 1 }, { id: 26, name: 'Vyhrané k podpisu SoD', pipeline_id: 1 },
+    { id: 31, name: 'Poptávka', pipeline_id: 2 }];
+  const sm = pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, { deal: { status: 'deleted', pipeline_id: 1, stage_id: 22 } },
+    { faze: 'prodano', fazeSeznam: FZ });
+  test('#545: smazaný deal → „nelze, deal je smazaný", patch null', radek(sm, 'fazeDealu').stav === 'nelze'
+    && /smazaný/.test(radek(sm, 'fazeDealu').duvod) && sm.patch === null);
+  const zw = pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, { mena: 'CZK', deal: { status: 'open', pipeline_id: 1, stage_id: 22 } },
+    { faze: 'prodano', fazeSeznam: FZ });
+  test('#545: patch bez sítě = pdZapisDealu + stage_id 26, bez status', J(zw.patch.custom_fields) === J(zapis.custom_fields)
+    && zw.patch.value === zapis.deal.value && zw.patch.stage_id === 26 && !('status' in zw.patch)
+    && radek(zw, 'fazeDealu').vCrm === 'Zkontaktováno (22)');
+  const nz = pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, { deal: { status: 'open', pipeline_id: 2, stage_id: 31 } },
+    { faze: 'prodano', fazeSeznam: FZ });
+  test('#545: jiná pipeline (čistá logika) → fáze nenalezena', nz.patch === null && /fáze nenalezena/.test(radek(nz, 'fazeDealu').duvod));
+  const dh = pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, {}, { faze: 'prodano' });
+  test('#545: bez napojení (bez seznamu fází) → neověřeno a nic se nepřipraví', radek(dh, 'fazeDealu').stav === 'neovereno'
+    && dh.patch === null);
+  const bd = pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, {}, { faze: 'prodano', fazeSeznam: FZ });
+  test('#545: bez dealu se jediná fáze toho názvu najde', bd.patch && bd.patch.stage_id === 26);
+  const dvoji = FZ.concat([{ id: 40, name: 'vyhrane k podpisu sod', pipeline_id: 3 }]);
+  test('#545: bez dealu a se dvěma shodnými fázemi → nenalezena (nejednoznačné)',
+    pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, {}, { faze: 'prodano', fazeSeznam: dvoji }).patch === null);
+  test('#545: s dealem rozhodne pipeline dealu (bez diakritiky)', pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda,
+    { deal: { status: 'open', pipeline_id: 3, stage_id: 1 } }, { faze: 'prodano', fazeSeznam: dvoji }).patch.stage_id === 40);
+  const idJinde = pdZamyslenyZapis(POLE_DEALU, stranyServer, poleDohoda, { deal: { status: 'open', pipeline_id: 2, stage_id: 31 } },
+    { faze: 'prodano', fazeSeznam: FZ, fazeKonfigurace: { id: 26 } });
+  test('#545: id fáze z jiné pipeline než deal → nenalezena', idJinde.patch === null);
 }
 SIM.pdSimNastav({ scenar: 'token' });
 pamet.delete('pipedrive/pole');   // mapa z cache by se do Pipedrive vůbec neptala

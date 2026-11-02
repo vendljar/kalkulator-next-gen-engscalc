@@ -1,6 +1,6 @@
 {
  "titul": "Kalkulátor Next Gen — kompletní dokumentace systému",
- "verze": "Platí pro aplikaci v27.10.6 · sestaveno 27. 10. 2026",
+ "verze": "Platí pro aplikaci v2.11.2 · sestaveno 2. 11. 2026",
  "podtitul": "Obsluha · výpočty · provoz systému. Jeden dokument pro správce, nástupce i IT firmu, která má systém převzít.",
  "uvod": [
   {
@@ -311,6 +311,11 @@
        "PIPEDRIVE_SIMULATOR_ROZPOCET",
        "nepovinný denní rozpočet tokenů simulátoru (výchozí 30 000)",
        "jen testovací"
+      ],
+      [
+       "PIPEDRIVE_FAZE_PRODANO",
+       "nepovinná fáze, do které Prodáno přesune deal: číslo = id fáze, text = název (výchozí „Vyhrané k podpisu SoD“ v pipeline dealu)",
+       "oba weby"
       ]
      ]
     },
@@ -1322,7 +1327,7 @@
       },
       {
        "pojem": "Suchý běh zápisu",
-       "vyklad": "U otevřené zakázky ukáže náhled **„Co by se zapsalo do Pipedrive“** (`/api/pd/nanecisto`): pole dealu, hodnoty z krycích listů a porovnání s tím, co je v CRM dnes. Funkce jen čte (mapu polí, uživatele, deal) a nic neodesílá; náhled jde uložit jako CSV."
+       "vyklad": "U otevřené zakázky ukáže náhled **„Co by se zapsalo do Pipedrive“** (`/api/pd/nanecisto`): pole dealu, hodnoty z krycích listů a porovnání s tím, co je v CRM dnes. Funkce jen čte (mapu polí, uživatele, deal, u Prodáno i fáze pipeline) a nic neodesílá; náhled jde uložit jako CSV. U tlačítka **Prodáno** obsahuje zápis přesun dealu do fáze **Vyhrané k podpisu SoD** — stav dealu (Vyhrané) se nemění, ten se v Pipedrive přepíná až po doručení podepsané SoD; nenalezená fáze nebo deal, který není otevřený, zápis zastaví."
       },
       {
        "pojem": "Simulátor",
@@ -1719,6 +1724,13 @@
        "—",
        "nepovinně",
        "denní rozpočet tokenů simulátoru (výchozí 30 000), po vyčerpání 429"
+      ],
+      [
+       "PIPEDRIVE_FAZE_PRODANO",
+       "ne",
+       "nepovinně",
+       "nepovinně",
+       "kam Prodáno přesune deal: id fáze nebo název; bez ní fáze „Vyhrané k podpisu SoD“ v pipeline dealu (stav dealu Prodáno nemění)"
       ]
      ]
     },
