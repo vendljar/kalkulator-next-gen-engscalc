@@ -22,7 +22,7 @@ Kód aplikace beze změny, ochrana se neoslabuje.
   „před obnovou“ z napůl obnoveného stavu. Kontrola tedy zůstává.
 - **Test** (`netlify/test_obnova.mjs`, blok T3 #549): cizí živý token se začátkem o 5 min napřed → `faze: 'zacatek'`
   i jednorázová obnova 409 s `obnovaBezi` toho tokenu, žádný nový otisk před obnovou, token jen jeden. Pojistka: se
-  zmutovanou kontrolou bez nového testu 235 OK / 0 FAIL (mutace přežije), s novým testem 2 FAIL (chycena).
+  zmutovanou kontrolou bez nového testu 235 OK / 0 FAIL (mutace přežije), s novým testem 2 FAIL (chycena). Mutace B28 → 2 z 2, část 5/16 → 71 z 71; kolo --bez-mutaci VŠE ZELENÉ 353/0/7.
 - **`netlify/mutace.mjs`:** komentář u mutace B28 (proč ji chytá právě tenhle test).
 
 ## v2.11.2 — PF #545: Prodáno přesune deal do fáze „Vyhrané k podpisu SoD“, stav nemění — větev claude/pf-prodano-faze

@@ -16,7 +16,8 @@ tatáž ms s větším id) chrání jen předběžná kontrola. Kód ochrany bez
 #549 (vlna G, hotovo). Pojistka: se zmutovanou kontrolou bez testu 235 OK / 0 FAIL, s testem 2 FAIL.
 `node netlify/mutace.mjs "B28"` → **chycených 2 z 2**. `test_obnova.mjs` 238 OK / 0 FAIL.
 
-**Testy:** STAV_TESTU
+**Testy:** `node netlify/mutace.mjs --cast 5/16` **chycených 71 z 71** (ZELENÁ ČÁST; dřív 70/71).
+`testovaci_kolo.sh --bez-mutaci` **VŠE ZELENÉ** (353 / 0 / 7 přeskočeno — firemní podklady; statické 5 z 5; 22,5 min).
 
 Release v2.11.3 zatím ne (neslučováno) — odkaz vyrobí koordinace po sloučení.
 
