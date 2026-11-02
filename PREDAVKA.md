@@ -1,3 +1,40 @@
+# Předávka — 2. 11. 2026: MS #548 — sazby můstků pryč z kódu klienta (K10-S2), větev `claude/ms-mustky-sazby`
+
+Nad `141b92f` (integrace v2.11.2). **Verze 2.11.3** (pravidlo dne commitu; koordinace může přečíslovat). Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrém webu, Disku ani v Pipedrive nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1 sazby z kódu klienta pryč, převod starého ceníku z platného ceníku (klient i server), bez zdroje potvrzení | ✅ | `src/engine.js` (`MUSTKY_CENIK_KLICE`, `cenikMigraceMustku`, `mustkyCenikKontrola`), `src/ui/program_ui.js` (`progMustkyPotvrd`), `src/ui/online_ui.js`, `netlify/functions/program.mjs` |
+| 2 žádné ceny v repu ani testech | ✅ | testy na `zkusebniMustky()` (smyšlené), sazby vyňaty z CHANGELOG/PREDAVKA/roadmapy |
+| 3 testy s pojistkou, mutace #548, kolo, kontrola údajů | ✅ | `src/test_548_mustky_bez_cen.js` (před 24 FAIL), `netlify/test_548_mustky.mjs` (před 6 FAIL); mutace jádro 5/5, server 4/4; kolo viz níže |
+| 4 historie gitu | ⬜ rozhodne J. V. | nepřepisováno — viz níže |
+| 5 verze, CHANGELOG, roadmapa #548, stav v K10 | ✅ | v2.11.3 |
+| doplněk A — #550 (K36-N2) zahraniční sazba montáže můstků | ✅ | `src/cenik_rady.js` (`cenikZahrSVychozimi`, `cenikZahrMustkyUpozorneni`), `src/ui/cenik_ui.js`, `src/ui/program_ui.js`; test `src/test_550_zahr_mustky.js`, mutace 3/3 |
+| doplněk B — #551 (K37-I2) „IČ:" v DE/EN/FR patičce | ✅ | `src/firma.js` (`firmaPaticka(f, prekl)`), `src/preklad.js`, `src/ui/common.js`; test `src/test_551_ic_preklad.js`, mutace 4/4 |
+
+**Testy:** `testovaci_kolo.sh --bez-mutaci` **VŠE ZELENÉ** (357 / 0 / 7 přeskočeno — firemní podklady a test.js;
+statické 5 z 5; 23 min). Cílené mutace: #548 jádro 5/5 + server 4/4, upravené #354/#529 3/3, #550 3/3, #551 4/4.
+`kontrola_udaju.py` čistá. Prohlížečové harnessy potřebují odkaz `node_modules` → `/opt/node22/lib/node_modules`.
+
+**Zvolená varianta:** převod jen z platného ceníku (server i prohlížeč); bez zdroje zůstane paušál (počítá správně)
+a dialog chce potvrzení + vyzve k vyplnění v Nastavení → Ceník. Nový tvar s nulovou cenou za bm / montáží / hodinami
+→ dialog; server bez `mustkyPotvrzeno: true` vrací 400 `kod: 'mustky'`. Starý tvar s nulovým paušálem server
+nezastavuje (dosavadní prázdné sestavení, rozbilo by to i zkušební zveřejnění v testech) — jen dialog.
+
+**Historie gitu se sazbami (pro J. V.):** commity 8419789 a bc87f78 (#354, 26. 10.), 3ed3084 a 9b982aa (#529 E,
+27. 10.), 2599f3a (manuál výpočtu), 4d4557b (zpráva K10 jméno konstanty, bez čísel); tagy **v26.10.11, v26.10.12,
+v27.10.3, v27.10.4, v27.10.5, v27.10.6**; větev `test` je obsahuje, `main` ani `test-draft` ne. Sazby jsou i
+v sestavených `dist` těch verzí na testengscalc.
+
+**Otevřené:** manuál výpočtu 3. vydání (`manual_vypocet/data.js`, `DOPLNENI_CENIKU`) nese referenční šířku a hodiny
+montáže ze schváleného návrhu (Kč/bm a Kč/h jsou smyšlené); čísla vydání jsou zmrazená v `cisla_vydani.json` —
+změna = nové vydání manuálu. Nesahal jsem.
+
+**Při slučování:** `netlify/mutace.mjs` (sada `test_548_mustky.mjs` za c4, blok mutací #548 před #540),
+`mutace_jadro.mjs` (mutace migrace #354/#529 přepsané na nový kód + #548, priorita `test_548_mustky_bez_cen.js`),
+`src/test_354_mustky.js`, `src/zkusebni_cenik.js`, `src/test_v23_zahranicni.js` (fixtura +montáž můstků zahr.), CHANGELOG,
+roadmapa (#548, #550, #551 za #545), PREDAVKA. K37-N6 a K37-I4 podle J. V. beze změny.
 # Předávka — 2. 11. 2026: LH #546 — lešení pro dokončení hlavy šachty jen u interiérové šachty, větev `claude/lh-leseni-hlava`
 
 Nad `1fb09b2` (integrace v2.11.1), požadavek obchodu 29. 10. 2026 (zadal J. V. 2. 11. 2026). **Verze 2.11.2**
@@ -218,7 +255,7 @@ Roadmapa #529 hotovo, vlna G (definice vlny převzatá z claude/integrace-16-10)
 | 4 Stáhnout zálohu | beze změny | |
 | B controlling | ✅ (bez regrese) | sekce zálohy = před Z1; null = výchozí rozvržení → náhled neutrálně „beze změny"; s odchylkou v cíli přeskočí jako dřív |
 | C rejstřík 1492/1420 | ⚠ vysvětleno jen částečně | kód počítá otisk i náhled stejně (klíče `z/`); náhled teď rozkládá „na serveru X, nových ze zálohy Y" — při příštím náhledu bude vidět, odkud rozdíl je |
-| E migrace můstků | ✅ | starý tvar → `C.mustekKc` vždy 28 600 Kč/bm + věta v dialogu zveřejnění; import starého Excelu do nového ceníku cenu můstku nezapíše. **testengscalc: zveřejněný ceník už je v novém tvaru s 25 000 — správce ručně 28 600 a zveřejnit** |
+| E migrace můstků | ✅ | starý tvar → `C.mustekKc` vždy ‹sazba› Kč/bm + věta v dialogu zveřejnění; import starého Excelu do nového ceníku cenu můstku nezapíše. **testengscalc: zveřejněný ceník už je v novém tvaru s 25 000 — správce ručně ‹sazba› a zveřejnit** |
 | K9-I3 | ✅ | otisky před obnovou po 6 měsících (`predObnovouMesicu`), nejnovější vždy, pojistka je drží |
 
 **Testy:** `netlify/test_529_zalohy.mjs` 41/0 (pojistka: hlavní nález 20 FAIL nad 95a1356, doplňky 6 FAIL nad fda8807),
@@ -427,8 +464,8 @@ Statická kontrola verze hlásí „verze.txt 26.10.12 × commit z 27. 10." — 
 dávka verzi nezvyšuje; rozhodne koordinace při slučování).
 
 **Pro J. V. / koordinaci:** číslo roadmapy #529 přidělila dávka (případně přečíslovat). Sazba montáže můstků v manuálu
-je zkušební 500 Kč/h a referenční šířka 1 600 mm / 8 h + 8 h/bm / min 16 h ze schváleného návrhu — výchozí migrační
-cena 28 600 Kč/bm a 400 Kč/h se v manuálu záměrně neuvádí.
+je zkušební 500 Kč/h a referenční šířka a hodiny ze schváleného návrhu — výchozí migrační
+cena za bm a sazba montáže se v manuálu záměrně neuvádí.
 # Předávka — 27. 10. 2026: M8 #532 — rozšířená příručka pro administrátora, větev `claude/m8-prirucka-admin`
 
 Nad `1820f81` (integrace v26.10.12 = test). Koordinace: session_01TMQ5bLDJuS5k5NWWYy7jLx. **Kód aplikace beze
@@ -600,8 +637,7 @@ Návrh schválený J. V. 26. 10. 2026: artefakt „Můstky #354 — návrh" (Jac
 | Celé kolo | ⬜ | pouští koordinace |
 
 **Po nasazení (J. V.):** do prvního zveřejnění ceníku se počítá dál paušálem (zveřejněný ceník nové buňky
-nemá). V Ceníku nákladů OCK cokoli zveřejnit → dialog vypíše C.mustekKc → 28 600 a nové buňky (1 600 mm,
-400 Kč/h, 8 h, 8 h/bm, 16 h); rozpracované varianty s můstky se pak přepočítají samy, zamčené ne.
+nemá). V Ceníku nákladů OCK cokoli zveřejnit → dialog vypíše C.mustekKc a nové buňky (od #548 se berou z platného ceníku, ne z kódu); rozpracované varianty s můstky se pak přepočítají samy, zamčené ne.
 
 **Rozhodnutí sezení (výchozí volby, J. V. může změnit):** délka nad 1 000 mm zůstává „mimo standard" jako dřív
 (ATYP); prázdná délka ve standardu „nelze posoudit" jako dřív; popisek řádku specifikace/nabídky zůstal

@@ -200,7 +200,9 @@ function cenikRows(def, zahrSloupec) {
         const jen = jenZahrPolozka;
         zahr = typ ? '<td colspan="2" class="note">—</td>' : `<td class="zahr-bunka">
           <input type="number" step="any" class="zahr-cena${zv === '' ? '' : ' ma'}" value="${esc(zv)}"
-            placeholder="jako ČR" title="prázdné = platí tuzemská cena"${cenikBarvaAttr(u, { prazdnaOk: true })}
+            placeholder="${path === 'C.mustekMontazHodKc' ? 'jako montáž zahr.' : 'jako ČR'}" title="${path === 'C.mustekMontazHodKc'
+              ? 'prázdné = platí zahraniční sazba montáže na stavbě (bez ní tuzemská sazba montáže můstků) — #550'
+              : 'prázdné = platí tuzemská cena'}"${cenikBarvaAttr(u, { prazdnaOk: true })}
             onchange="cenikZahrSet('${path}', this.value)">
           ${zv === '' ? '' : `<button class="mini noprint" title="převzít tuzemskou cenu"
             onclick="cenikZahrSet('${path}', '')">↺</button>`}</td>

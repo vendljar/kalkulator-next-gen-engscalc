@@ -38,7 +38,7 @@ const test = (n, c, info) => { if (c) { ok++; console.log('OK  ' + n); }
   else { fail++; console.log('FAIL ' + n, info === undefined ? '' : JSON.stringify(info)); } };
 const blizko = (a, b) => Math.abs(a - b) < 1e-6;
 
-const V = E.MUSTKY_CENIK_VYCHOZI || {};
+const V = ZC.zkusebniMustky();   // smyšlené sazby nového tvaru (#548: jádro žádné nemá)
 const STARY = kop(Object.assign(kop(E.DEFAULT_CENIK), ZC.zkusebniCenik()));   // paušál 40 000 Kč/ks (smyšlený)
 const NOVY = Object.assign(kop(STARY), V);
 const MAT = 'MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL', MONT = 'MONTÁŽ MŮSTKŮ', PAUSAL = 'MŮSTKY MEZI BUDOVOU A OCK';
@@ -50,9 +50,9 @@ const mustkyKc = r => (r.sekce.hrubaOck || []).filter(i => [MAT, MONT, PAUSAL].i
   .reduce((s, i) => s + i.naklad, 0);
 
 /* --- ceník: výchozí hodnoty schváleného návrhu --- */
-test('výchozí hodnoty nových buněk (28 600 / 1 600 / 400 / 8 / 8 / 16)',
-  V.mustekKc === 28600 && V.mustekRefSirkaMm === 1600 && V.mustekMontazHodKc === 400
-  && V.mustekMontazZakladHod === 8 && V.mustekMontazBmHod === 8 && V.mustekMontazMinHod === 16, V);
+test('#548: jádro nenese výchozí sazby můstků (jen jména klíčů)',
+  E.MUSTKY_CENIK_VYCHOZI === undefined && Array.isArray(E.MUSTKY_CENIK_KLICE) && E.MUSTKY_CENIK_KLICE.length === 6
+  && Object.keys(V).every(k => E.MUSTKY_CENIK_KLICE.includes(k)), E.MUSTKY_CENIK_KLICE);
 test('DEFAULT_CENIK nese nové klíče nulou (vynulovaný ceník = starý tvar)',
   ['mustekRefSirkaMm', 'mustekMontazHodKc', 'mustekMontazZakladHod', 'mustekMontazBmHod', 'mustekMontazMinHod']
     .every(k => E.DEFAULT_CENIK[k] === 0));
@@ -71,40 +71,40 @@ test('rozpoznání tvaru ceníku: kladná referenční šířka = nový', typeof
       .every((k, i) => cesty.indexOf(k) === cesty.indexOf('C.mustekKc') + 1 + i), cesty);
 }
 
-/* --- vzorec a příklady návrhu (šířka 1,6 m, 1 ks) --- */
-for (const [delka, cekam] of [[600, 23560], [1000, 35000], [1500, 50900], [2000, 66800], [3000, 98600]]) {
+/* --- vzorec na smyšleném ceníku (šířka 1,6 m, 1 ks; 20 000 Kč/bm při 2 000 mm, 500 Kč/h, 6 + 10/bm, min 14 h) --- */
+for (const [delka, cekam] of [[600, 16600], [1000, 24000], [1500, 34500], [2000, 45000], [3000, 66000]]) {
   const r = spocti({ mustkyKs: 1, mustekHloubkaMm: delka }, NOVY);
   test('příklad ' + (delka / 1000).toLocaleString('cs-CZ') + ' m = ' + cekam + ' Kč (náklad)', blizko(mustkyKc(r), cekam), mustkyKc(r));
 }
 {
   const r = spocti({ mustkyKs: 1, mustekHloubkaMm: 600 }, NOVY);
-  test('minimum 16 h: 0,6 m → 8 + 4,8 = 12,8 h → 16 h', radek(r, MONT) && blizko(radek(r, MONT).mnozstvi, 16), radek(r, MONT));
+  test('minimum 14 h: 0,6 m → 6 + 6 = 12 h → 14 h', radek(r, MONT) && blizko(radek(r, MONT).mnozstvi, 14), radek(r, MONT));
   const r2 = spocti({ mustkyKs: 1, mustekHloubkaMm: 2000 }, NOVY);
-  test('nad minimem: 2 m → 8 + 16 = 24 h', radek(r2, MONT) && blizko(radek(r2, MONT).mnozstvi, 24));
+  test('nad minimem: 2 m → 6 + 20 = 26 h', radek(r2, MONT) && blizko(radek(r2, MONT).mnozstvi, 26));
   test('dva řádky: materiál (C.mustekKc) a montáž (C.mustekMontazHodKc), paušál není',
-    radek(r, MAT) && radek(r, MAT).cenaPath === 'C.mustekKc' && radek(r, MAT).cena === 28600
-    && radek(r, MONT).cenaPath === 'C.mustekMontazHodKc' && radek(r, MONT).cena === 400 && !radek(r, PAUSAL));
+    radek(r, MAT) && radek(r, MAT).cenaPath === 'C.mustekKc' && radek(r, MAT).cena === 20000
+    && radek(r, MONT).cenaPath === 'C.mustekMontazHodKc' && radek(r, MONT).cena === 500 && !radek(r, PAUSAL));
   const tri = spocti({ mustkyKs: 3, mustekHloubkaMm: 1500 }, NOVY);
-  test('× počet můstků: 3 × 50 900', blizko(mustkyKc(tri), 3 * 50900), mustkyKc(tri));
+  test('× počet můstků: 3 × 34 500', blizko(mustkyKc(tri), 3 * 34500), mustkyKc(tri));
   const sir = spocti({ mustkyKs: 1, mustekHloubkaMm: 1000, sirka: 2.4 }, NOVY);
   test('materiál úměrně šířce šachty: 2,4 m = 1,5× materiál, montáž stejná',
-    blizko(radek(sir, MAT).naklad, 1.5 * 28600) && blizko(radek(sir, MONT).naklad, 16 * 400), [radek(sir, MAT).naklad, radek(sir, MONT).naklad]);
+    blizko(radek(sir, MAT).naklad, 1.5 * 16000) && blizko(radek(sir, MONT).naklad, 16 * 500), [radek(sir, MAT).naklad, radek(sir, MONT).naklad]);
   const stare = spocti({ mustkyKs: 1, mustekHloubkaMm: 1000, mustekSirkaMm: 900 }, NOVY);
-  test('staré pole mustekSirkaMm se ignoruje (šířka = šachta)', blizko(mustkyKc(stare), 35000), mustkyKc(stare));
+  test('staré pole mustekSirkaMm se ignoruje (šířka = šachta)', blizko(mustkyKc(stare), 24000), mustkyKc(stare));
   for (const prazdna of ['', null, undefined, 'abc', 0, -5]) {
     const x = spocti({ mustkyKs: 1, mustekHloubkaMm: prazdna }, NOVY);
-    test('neplatná/prázdná délka ' + JSON.stringify(prazdna) + ' → počítá se 1 000 mm', blizko(mustkyKc(x), 35000), mustkyKc(x));
+    test('neplatná/prázdná délka ' + JSON.stringify(prazdna) + ' → počítá se 1 000 mm', blizko(mustkyKc(x), 24000), mustkyKc(x));
   }
   const m1 = spocti({ mustkyKs: 1, mustekHloubkaMm: 1500 }, NOVY, false);
-  test('Model 1 počítá můstky stejně', blizko(mustkyKc(m1), 50900), mustkyKc(m1));
+  test('Model 1 počítá můstky stejně', blizko(mustkyKc(m1), 34500), mustkyKc(m1));
   test('rozpad ve výsledku (r.mustky) pro specifikaci', r.mustky && r.mustky.novy && r.mustky.sirkaMm === 1600
     && r.mustky.delkaMm === 600 && r.mustky.ks === 1, r.mustky);
   const bez = spocti({}, NOVY), bezS = spocti({}, STARY);
   test('bez můstků: žádný řádek a stejná cena se starým i novým ceníkem',
     !radek(bez, MAT) && !radek(bez, MONT) && bez.souhrn.zakladCena === bezS.souhrn.zakladCena);
   const sMarzi = spocti({ mustkyKs: 1, mustekHloubkaMm: 1000 }, NOVY);
-  test('cena nabídky = náklad + přirážka (základ vzroste o 35 000 × (1 + přirážka))',
-    Math.abs(sMarzi.souhrn.zakladCena - bez.souhrn.zakladCena - 35000 * (1 + NOVY.marze)) <= 1000 + 1e-6,
+  test('cena nabídky = náklad + přirážka (základ vzroste o 24 000 × (1 + přirážka))',
+    Math.abs(sMarzi.souhrn.zakladCena - bez.souhrn.zakladCena - 24000 * (1 + NOVY.marze)) <= 1000 + 1e-6,
     [sMarzi.souhrn.zakladCena, bez.souhrn.zakladCena]);
 }
 
@@ -183,37 +183,38 @@ const PRED = { zaklad: null };
   test('zamčená varianta: zmrazený otisk ceny beze změny', JSON.stringify(v.zamek.otisk) === JSON.stringify(puvodni.otisk));
 }
 
-/* --- migrace zveřejňovaného ceníku --- */
+/* --- migrace zveřejňovaného ceníku (#548: zdrojem je PLATNÝ ceník, ne kód) --- */
 {
   const c = kop(STARY);
-  test('migrace: starý ceník → výchozí hodnoty a C.mustekKc 28 600', E.cenikMigraceMustku(c, STARY) === true
-    && c.mustekKc === 28600 && c.mustekRefSirkaMm === 1600 && c.mustekMontazHodKc === 400
-    && c.mustekMontazZakladHod === 8 && c.mustekMontazBmHod === 8 && c.mustekMontazMinHod === 16, c);
-  test('migrace: nový ceník se nemění', E.cenikMigraceMustku(c, STARY) === false && c.mustekKc === 28600);
+  test('migrace: starý ceník + platný v novém tvaru → hodnoty z platného ceníku', E.cenikMigraceMustku(c, NOVY) === true
+    && c.mustekKc === V.mustekKc && c.mustekRefSirkaMm === V.mustekRefSirkaMm && c.mustekMontazHodKc === V.mustekMontazHodKc
+    && c.mustekMontazZakladHod === V.mustekMontazZakladHod && c.mustekMontazBmHod === V.mustekMontazBmHod
+    && c.mustekMontazMinHod === V.mustekMontazMinHod, c);
+  test('migrace: nový ceník se nemění', E.cenikMigraceMustku(c, NOVY) === false && c.mustekKc === V.mustekKc);
   const z0 = Object.assign(kop(STARY), { mustekRefSirkaMm: 0, mustekMontazHodKc: 0, mustekMontazZakladHod: 0, mustekMontazBmHod: 0, mustekMontazMinHod: 0 });
-  E.cenikMigraceMustku(z0, STARY);
-  test('migrace: buňky doplněné nulou (import) dostanou výchozí hodnoty — žádné NaN',
-    z0.mustekRefSirkaMm === 1600 && z0.mustekMontazMinHod === 16 && Number.isFinite(mustkyKc(spocti({ mustkyKs: 1 }, z0))));
+  E.cenikMigraceMustku(z0, NOVY);
+  test('migrace: buňky doplněné nulou (import) dostanou hodnoty platného ceníku — žádné NaN',
+    z0.mustekRefSirkaMm === V.mustekRefSirkaMm && z0.mustekMontazMinHod === V.mustekMontazMinHod && Number.isFinite(mustkyKc(spocti({ mustkyKs: 1 }, z0))));
   const vlastni = Object.assign(kop(STARY), { mustekMontazHodKc: 450, mustekKc: 30000 });
-  E.cenikMigraceMustku(vlastni, STARY);
-  /* #529 E: u starého tvaru je C.mustekKc paušál Kč/ks — nahradí se vždy (do #529 zůstal, když se lišil od platného) */
-  test('migrace: sazba montáže, kterou správce vyplnil, zůstane; paušál se nahradí 28 600 Kč/bm (#529 E)',
-    vlastni.mustekMontazHodKc === 450 && vlastni.mustekKc === 28600 && vlastni.mustekRefSirkaMm === 1600, vlastni);
-  /* #529 E — testengscalc 27. 10. 2026: platný ceník už v kódu nese 28 600, varianta starý paušál 25 000 */
+  E.cenikMigraceMustku(vlastni, NOVY);
+  /* #529 E: u starého tvaru je C.mustekKc paušál Kč/ks — nahradí se vždy */
+  test('migrace: sazba montáže, kterou správce vyplnil, zůstane; paušál se nahradí cenou za bm z platného ceníku (#529 E)',
+    vlastni.mustekMontazHodKc === 450 && vlastni.mustekKc === V.mustekKc && vlastni.mustekRefSirkaMm === V.mustekRefSirkaMm, vlastni);
+  /* #529 E — paušál 25 000 (smyšlený) ve variantě, platný ceník už v novém tvaru */
   {
     const stary25 = Object.assign(kop(STARY), { mustekKc: 25000 });
     ['mustekRefSirkaMm', 'mustekMontazHodKc', 'mustekMontazZakladHod', 'mustekMontazBmHod', 'mustekMontazMinHod'].forEach(k => delete stary25[k]);
     const zpravy = [];
-    const platny = Object.assign(kop(STARY), E.MUSTKY_CENIK_VYCHOZI);
-    test('#529 E: starý ceník s paušálem 25 000 → po migraci 28 600 Kč/bm (i když se liší od platného)',
-      E.cenikMigraceMustku(stary25, platny, zpravy) === true && stary25.mustekKc === 28600 && stary25.mustekRefSirkaMm === 1600, stary25);
-    test('#529 E: … a správce dostane větu „paušál 25 000 Kč/ks nahrazen cenou 28 600 Kč/bm materiálu"',
-      zpravy.length === 1 && /^Můstek: paušál 25\u00a0000 Kč\/ks nahrazen cenou 28\u00a0600 Kč\/bm materiálu/.test(zpravy[0]), zpravy);
+    const platny = Object.assign(kop(STARY), V);
+    test('#529 E: starý ceník s paušálem 25 000 → po migraci 20 000 Kč/bm z platného ceníku',
+      E.cenikMigraceMustku(stary25, platny, zpravy) === true && stary25.mustekKc === 20000 && stary25.mustekRefSirkaMm === 2000, stary25);
+    test('#529 E: … a správce dostane větu „paušál 25 000 Kč/ks nahrazen cenou 20 000 Kč/bm materiálu … z platného ceníku"',
+      zpravy.length === 1 && /^Můstek: paušál 25\u00a0000 Kč\/ks nahrazen cenou 20\u00a0000 Kč\/bm materiálu \(při šířce 2\u00a0000 mm\) z platného ceníku/.test(zpravy[0]), zpravy);
     const z = { ...E.DEFAULT_ZADANI, sirka: 1.6, mustkyKs: 1, mustekHloubkaMm: 1000 };
     const r = E.mustkyRozpad(z, stary25);
-    test('#529 E: můstek 1 m × 1,6 m po migraci = 35 000 Kč (28 600 materiál + 16 h × 400)',
-      Math.round(r.materialKs + r.montazKs) === 35000, r);
-    const novy = Object.assign(kop(STARY), E.MUSTKY_CENIK_VYCHOZI, { mustekKc: 31000 });
+    test('#529 E: můstek 1 m × 1,6 m po migraci = 24 000 Kč (16 000 materiál + 16 h × 500)',
+      Math.round(r.materialKs + r.montazKs) === 24000, r);
+    const novy = Object.assign(kop(STARY), V, { mustekKc: 31000 });
     const zp2 = [];
     test('#529 E: ceník, který nové buňky už má, se nemění (vlastní 31 000 Kč/bm zůstane, žádná věta)',
       E.cenikMigraceMustku(novy, platny, zp2) === false && novy.mustekKc === 31000 && zp2.length === 0);
@@ -223,19 +224,19 @@ const PRED = { zaklad: null };
     const CEN = require('./cenik.js');
     const PC0 = kop(E.DEFAULT_CENIK);
     const sheet = (rows) => [{ rows: [['', 'Klíč', 'Položka', '', 'Hodnota']].concat(rows) }];
-    const cilNovy = Object.assign(kop(STARY), E.MUSTKY_CENIK_VYCHOZI);
+    const cilNovy = Object.assign(kop(STARY), V);
     const d1 = CEN.cenikDiffZeSheets(sheet([['', 'C.mustekKc', 'Můstek', '', 25000], ['', 'C.mustekRefSirkaMm', 'ref', '', '']]), cilNovy, PC0);
     test('#529 E: import starého souboru (bez ref. šířky) do ceníku v novém tvaru → C.mustekKc se nezmění, hlásí proč',
       !d1.zmeny.some(z => z.cesta === 'C.mustekKc') && d1.chyby.some(c => /C\.mustekKc: soubor je ze staršího ceníku/.test(c)), d1);
-    const d2 = CEN.cenikDiffZeSheets(sheet([['', 'C.mustekKc', 'Můstek', '', 30000], ['', 'C.mustekRefSirkaMm', 'ref', '', 1600]]), cilNovy, PC0);
+    const d2 = CEN.cenikDiffZeSheets(sheet([['', 'C.mustekKc', 'Můstek', '', 30000], ['', 'C.mustekRefSirkaMm', 'ref', '', 2000]]), cilNovy, PC0);
     test('#529 E: import souboru v novém tvaru změnu ceny za bm zapíše', d2.zmeny.some(z => z.cesta === 'C.mustekKc' && z.nova === 30000), d2);
     const cilStary = Object.assign(kop(STARY), { mustekKc: 40000 });
     const d3 = CEN.cenikDiffZeSheets(sheet([['', 'C.mustekKc', 'Můstek', '', 25000]]), cilStary, PC0);
     test('#529 E: starý soubor do starého ceníku (oba paušál) se importuje jako dřív', d3.zmeny.some(z => z.cesta === 'C.mustekKc' && z.nova === 25000), d3);
   }
   const bezKlicu = kop(STARY); delete bezKlicu.mustekKc;
-  E.cenikMigraceMustku(bezKlicu, {});
-  test('migrace: ceník bez C.mustekKc dostane 28 600', bezKlicu.mustekKc === 28600);
+  test('#548: bez zdroje (platný ceník prázdný) se nic nevymýšlí — ceník bez C.mustekKc zůstane bez něj',
+    E.cenikMigraceMustku(bezKlicu, {}) === false && bezKlicu.mustekKc === undefined && !E.mustkyCenikNovy(bezKlicu));
   /* Zveřejnění online i do složky jde přes progKontext → kopie se migruje. */
   const src = fs.readFileSync(path.join(__dirname, 'ui', 'program_ui.js'), 'utf8');
   test('progKontext migruje kopii ceníku pro zveřejnění', /cenikMigraceMustku\(o, platnyCenik, mustkyZpravy\)/.test(src) && /ctx\.mustkyZpravy\.join/.test(src)

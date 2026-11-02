@@ -53,6 +53,12 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_secm.mjs',
      /* #540 (27. 10. 2026): Prodáno — model prodServer a zmrazení; rychlá sada před maticí práv. */
      '../src/test_controlling_c4.js',
+     /* #548 (2. 11. 2026, K10-S2): migrace můstků na serveru bez sazeb v kódu — rychlá sada. */
+     'test_548_mustky.mjs',
+     /* #550 (2. 11. 2026, K36-N2): zahraniční sazba montáže můstků — rychlá sada. */
+     '../src/test_550_zahr_mustky.js',
+     /* #551 (2. 11. 2026, K37-I2): „IČ:" v cizojazyčné patičce — rychlá sada. */
+     '../src/test_551_ic_preklad.js',
      'test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs',
      /* F1 (24. 9. 2026): pojistky N43, N44 a B73 hlídají vlastní sady. */
      'test_stary_tvar.mjs', 'test_klon_sleva.mjs', 'test_autor.mjs',
@@ -298,6 +304,54 @@ const MUTACE = [
     hledej: "  await pockej(zpozdeniMs(pokusy.email.n));\n  if (!ucet || !hesloSedi(heslo",
     nahrad: "  if (!ucet || !hesloSedi(heslo",
     proc: "hádání hesla správce bez zpomalení" },
+  /* ---------- #551 (K37-I2, 2. 11. 2026): „IČ:" v DE/EN/FR patičce. Hlídá ../src/test_551_ic_preklad.js. ---------- */
+  { nazev: '#551: patička nepřekládá popisek IČ', soubor: '../src/firma.js',
+    hledej: "    ico ? P('IČ:') + ' ' + ico : ''].filter(Boolean).join(', ');",
+    nahrad: "    ico ? 'IČ: ' + ico : ''].filter(Boolean).join(', ');",
+    proc: 'v DE/EN/FR nabídce by zůstalo české „IČ:"' },
+  { nazev: '#551: symbol FIRMA_PATICKA bez překladu', soubor: '../src/firma.js',
+    hledej: "  out.FIRMA_PATICKA = firmaPaticka(f, P);",
+    nahrad: "  out.FIRMA_PATICKA = firmaPaticka(f);",
+    proc: 'Word nabídka by nesla české „IČ:" i v cizím jazyce' },
+  { nazev: '#551: slovník bez hesla „IČ:"', soubor: '../src/preklad.js',
+    hledej: "  \"IČ:\": [\"Company ID (IČ):\",",
+    nahrad: "  \"IČ-x:\": [\"Company ID (IČ):\",",
+    proc: 'popisek by se nepřeložil a zůstal česky' },
+  { nazev: '#551: tiskový náhled patičku nepřekládá', soubor: '../src/ui/common.js',
+    hledej: "firmaPaticka(f, P) : '') || h('nazev');   // #551",
+    nahrad: "firmaPaticka(f) : '') || h('nazev');   // #551",
+    proc: 'náhled cizojazyčné nabídky by ukazoval české „IČ:"' },
+  /* ---------- #550 (K36-N2, 2. 11. 2026): zahraniční montáž můstků. Hlídá ../src/test_550_zahr_mustky.js. ---------- */
+  { nazev: '#550: nevyplněná zahraniční montáž můstků zůstane tuzemská', soubor: '../src/cenik_rady.js',
+    hledej: "  if (mm !== null) z.ceny[CENIK_ZAHR_MUSTEK_MONTAZ] = mm;",
+    nahrad: "",
+    proc: 'zahraniční zakázka by montáž můstků počítala českou sazbou (nález K36-N2)' },
+  { nazev: '#550: výchozí přebije vyplněnou zahraniční montáž můstků', soubor: '../src/cenik_rady.js',
+    hledej: "  if (Object.prototype.hasOwnProperty.call(c, CENIK_ZAHR_MUSTEK_MONTAZ)) return null;",
+    nahrad: "",
+    proc: 'sazba, kterou správce do zahraniční řady zapsal, by se ignorovala' },
+  { nazev: '#550: dialog zveřejnění neupozorní na nevyplněnou montáž můstků', soubor: '../src/cenik_rady.js',
+    hledej: "  if (mm === null) return '';\n  return 'Zahraniční řada: montáž můstků",
+    nahrad: "  return '';\n  return 'Zahraniční řada: montáž můstků",
+    proc: 'správce by nevěděl, že zahraniční montáž můstků bere sazbu montáže na stavbě' },
+  /* ---------- #548 (K10-S2, 2. 11. 2026): migrace ceníku můstků na serveru, bez sazeb v kódu.
+   * Hlídá test_548_mustky.mjs. ---------- */
+  { nazev: '#548: server starý ceník nepřevede z platného', soubor: 'functions/program.mjs',
+    hledej: "    globalThis.cenikMigraceMustku(ctx.cenik, platny && platny.cenik);",
+    nahrad: "    void 0;",
+    proc: 'paušál za kus ze starého klienta by se zveřejnil vedle platného nového tvaru a nové nabídky by počítaly paušálem' },
+  { nazev: '#548: server pustí nulovou cenu můstku bez potvrzení', soubor: 'functions/program.mjs',
+    hledej: "      && globalThis.mustkyCenikNovy(ctx.cenik) && t.mustkyPotvrzeno !== true) {",
+    nahrad: "      && globalThis.mustkyCenikNovy(ctx.cenik) && false) {",
+    proc: 'obejitím dialogu by se zveřejnil ceník s můstkem za 0 Kč' },
+  { nazev: '#548: potvrzení stačí jakákoli hodnota', soubor: 'functions/program.mjs',
+    hledej: "t.mustkyPotvrzeno !== true) {",
+    nahrad: "!t.mustkyPotvrzeno) {",
+    proc: 'potvrzení by šlo „vyrobit" libovolným neprázdným polem' },
+  { nazev: '#548: převod z platného ceníku bez referenční šířky [#548]', soubor: '../src/engine.js',
+    hledej: "  cenik.mustekRefSirkaMm = +platny.mustekRefSirkaMm;",
+    nahrad: "",
+    proc: 'převedený ceník by zůstal ve starém tvaru a paušál by se četl jako cena za metr' },
   /* ---------- #540: Prodáno a protokol exportů v záloze (27. 10. 2026). Hlídají
    * src/test_controlling_c4.js, test_prava.mjs (blok #540), test_controlling.mjs, test_zalohy.mjs. ---------- */
   { nazev: '#540: server prodej nekontroluje', soubor: 'lib/zakazka_kontrola.mjs',

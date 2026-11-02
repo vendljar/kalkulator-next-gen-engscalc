@@ -90,5 +90,16 @@ const ZKUSEBNI_CENIK_PROJ = {
 const zkusebniCenik = () => JSON.parse(JSON.stringify(ZKUSEBNI_CENIK));
 const zkusebniCenikProj = () => JSON.parse(JSON.stringify(ZKUSEBNI_CENIK_PROJ));
 
+/* Můstky v NOVÉM tvaru (#354; #548 / K10-S2): smyšlené sazby pro testy.
+ * Do v2.11.2 testy četly výchozí hodnoty migrace z jádra — a ty byly
+ * skutečné a šly do sestavení. Jádro už žádné nemá; tyhle nejsou naše ceny.
+ * Na šířce šachty 1,6 m a délce 1 m: materiál 1 × 20 000 × 1600/2000
+ * = 16 000, hodiny max(14, 6 + 10 × 1) = 16, montáž 16 × 500 = 8 000. */
+const ZKUSEBNI_MUSTKY = {
+  mustekKc: 20000, mustekRefSirkaMm: 2000, mustekMontazHodKc: 500,
+  mustekMontazZakladHod: 6, mustekMontazBmHod: 10, mustekMontazMinHod: 14,
+};
+const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
+
 if (typeof module !== 'undefined')
-  module.exports = { ZKUSEBNI_CENIK, ZKUSEBNI_CENIK_PROJ, zkusebniCenik, zkusebniCenikProj };
+  module.exports = { ZKUSEBNI_CENIK, ZKUSEBNI_CENIK_PROJ, zkusebniCenik, zkusebniCenikProj, ZKUSEBNI_MUSTKY, zkusebniMustky };

@@ -507,6 +507,9 @@ async function onlineZverejni(preddanaPozn) {
     onlineZprava('Ceník této varianty se od online verze neliší – není co zveřejňovat.');
     render(); return Promise.resolve(false);
   }
+  /* #548 (K10-S2): nulová nebo nepřevedená cena můstku jen na potvrzení. */
+  if (typeof progMustkyPotvrd === 'function' && !await progMustkyPotvrd(ctx))
+    return Promise.resolve(false);
   const zahrPocet = (ctx.zahranicni && ctx.zahranicni.ceny)
     ? Object.keys(ctx.zahranicni.ceny).length : 0;
   const pozn = (typeof preddanaPozn === 'string') ? preddanaPozn
@@ -527,6 +530,7 @@ async function onlineZverejni(preddanaPozn) {
      * takže bez tohohle pole by serveru zbyla jen nepřímá pojistka (P1). */
     rada: ctx.rada,
     slevy: ctx.slevy, poznamka: pozn, build: ctx.build,
+    mustkyPotvrzeno: ctx.mustkyPotvrzeno === true,
   }).then(o => {
     onlineZprava('Zveřejněno online – platí verze ' + o.verze + '.');
     return onlineNactiProgram().then(() => true);
