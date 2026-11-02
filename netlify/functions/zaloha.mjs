@@ -5,7 +5,7 @@
  * kde ji chce uživatel mít — verzovaná jménem s datem. */
 import { uloziste, vyzadujRoli, json, hostitel } from '../lib/sdilene.mjs';
 import { zalohaDoplnky, posledniNocniOtisk, otiskProDisk, posledniNocniKlic, zalohaStrana, zdrojZivy,
-  zdrojZObjektu, jeOtiskPoCastech, ctiOtiskCast, ctiOtisk } from '../lib/zalohovani.mjs';
+  zdrojZObjektu, jeOtiskPoCastech, ctiOtiskCast, ctiOtisk, prostrediZalohy } from '../lib/zalohovani.mjs';
 
 export default async (req) => {
   const { chyba } = await vyzadujRoli(req, 'Administrátor');
@@ -22,10 +22,13 @@ export default async (req) => {
    * stav v témž tvaru; `puvod` říká, co to je. */
   if (new URL(req.url).searchParams.get('zdroj') === 'nocni') {
     const n = await posledniNocniOtisk();
-    if (n) return json({ ok: true, puvod: 'nocni-otisk', otisk: n.klic,
+    /* #552: prostředí a čas pořízení — z nich prohlížeč skládá jméno kopie
+     * otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz (src/uloziste.js) */
+    if (n) return json({ ok: true, puvod: 'nocni-otisk', otisk: n.klic, prostredi: prostrediZalohy(), porizena: String(n.otisk.porizena || ''),
       zaloha: { ...otiskProDisk(n.otisk), web: hostitel(req) || 'neznámý web' } });
     const ted = await (await zalohaTed(req)).json();
-    return json({ ok: true, puvod: 'aktualni-stav', otisk: null, zaloha: otiskProDisk(ted.zaloha) });
+    return json({ ok: true, puvod: 'aktualni-stav', otisk: null, prostredi: prostrediZalohy(), porizena: String((ted.zaloha && ted.zaloha.porizena) || ''),
+      zaloha: otiskProDisk(ted.zaloha) });
   }
   return zalohaTed(req);
 };
@@ -56,16 +59,17 @@ async function strankovane(req, q) {
         const zaloha = {};
         for (const k of Object.keys(c)) if (Object.prototype.hasOwnProperty.call(cast, k) && k !== 'podpisy') zaloha[k] = c[k];
         if (i === 0) Object.assign(zaloha, { podpisy: null, web });
-        return json({ ok: true, puvod: 'nocni-otisk', otisk: klic, zaloha,
+        return json({ ok: true, puvod: 'nocni-otisk', otisk: klic, prostredi: prostrediZalohy(), porizena: String(m.porizena || ''), zaloha,
           dalsi: i + 1 < m.casti ? String(i + 1) : null, stran: m.casti });
       }
       const st = await zalohaStrana(zdrojZObjektu(otiskProDisk(await ctiOtisk(s, klic))), po, { proDisk: true });
       if (!po) Object.assign(st.zaloha, { porizena: m.porizena, zdroj: m.zdroj, kdo: m.kdo || '', web });
-      return json({ ok: true, puvod: 'nocni-otisk', otisk: klic, ...st });
+      return json({ ok: true, puvod: 'nocni-otisk', otisk: klic, prostredi: prostrediZalohy(), porizena: String(m.porizena || ''), ...st });
     }
     const st = await zalohaStrana(zdrojZivy(), po, { proDisk: true });
     if (!po) Object.assign(st.zaloha, { porizena: new Date().toISOString(), zdroj: web });
-    return json({ ok: true, puvod: 'aktualni-stav', otisk: null, ...st });
+    return json({ ok: true, puvod: 'aktualni-stav', otisk: null, prostredi: prostrediZalohy(),
+      porizena: String(st.zaloha.porizena || ''), ...st });
   }
   const st = await zalohaStrana(zdrojZivy(), po);
   if (!po) Object.assign(st.zaloha, { porizena: new Date().toISOString(), zdroj: web });

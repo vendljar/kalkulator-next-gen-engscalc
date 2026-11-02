@@ -343,10 +343,12 @@ await zkus('kopie .json.gz', async () => {
   const posli = async (soubor) => (await zalohaVynuceno(new Request('http://x/api/zaloha_vynuceno', { method: 'POST', headers: { cookie },
     body: J({ akce: 'kopie-disk', hesloSpravce: 'Docasne.Heslo.123', kopie: { soubor, velikostB: 1234, sha256: 'c'.repeat(64),
       otisk: '2026-10-26', puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' } }) }))).status;
-  test('#523 kopie: server přijme záznam komprimované kopie otisk_<den>.json.gz', (await posli('otisk_2026-10-26.json.gz')) === 200
-    && (await ulz('zalohy').cti(Z.KOPIE_DISK_KLIC)).soubor === 'otisk_2026-10-26.json.gz');
-  test('#523 kopie: starý tvar .json platí dál, jiná jména ne', (await posli('otisk_2026-10-26.json')) === 200
-    && (await posli('otisk_2026-10-26.gz')) === 400 && (await posli('otisk_2026-10-26.json.gz.exe')) === 400 && (await posli('otisk_2026-10-26.zip')) === 400);
+  /* #552: nový tvar s prostředím (mimo Netlify „jiny") a časem; starý tvar bez prostředí server do nového záznamu nebere */
+  test('#523 kopie: server přijme záznam komprimované kopie otisk_<prostředí>_<den>_HHMM.json.gz', (await posli('otisk_jiny_2026-10-26_0310.json.gz')) === 200
+    && (await ulz('zalohy').cti(Z.KOPIE_DISK_KLIC)).soubor === 'otisk_jiny_2026-10-26_0310.json.gz');
+  test('#523 kopie: nekomprimovaná .json platí dál, jiná jména ne', (await posli('otisk_jiny_2026-10-26_0310.json')) === 200
+    && (await posli('otisk_jiny_2026-10-26_0310.gz')) === 400 && (await posli('otisk_jiny_2026-10-26_0310.json.gz.exe')) === 400
+    && (await posli('otisk_jiny_2026-10-26_0310.zip')) === 400 && (await posli('otisk_2026-10-26.json.gz')) === 400);
   const klice = ['2026-10-26', '2026-10-25'];
   const z = { kdy: new Date().toISOString(), soubor: 'otisk_2026-10-26.json.gz', velikostB: 1234, sha256: 'c'.repeat(64), otisk: '2026-10-26',
     puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', potvrzeno: 'heslo-spravce' };
@@ -447,15 +449,15 @@ await zkus('úbytek Disk', async () => {
   const cookie = (r.headers.get('set-cookie') || '').split(';')[0];
   const posli = async (telo, ck) => { const o = await zalohaVynuceno(new Request('http://x/api/zaloha_vynuceno', { method: 'POST',
     headers: ck === null ? {} : { cookie }, body: J(telo) })); return { status: o.status, telo: await o.json() }; };
-  const disk = (pred, nova, den) => ({ akce: 'retence-varovani-disk', disk: { den: den || '2026-12-20', predSoubor: 'otisk_2026-12-13.json.gz',
-    novySoubor: 'otisk_' + (den || '2026-12-20') + '.json.gz', predVelikostB: pred, novaVelikostB: nova } });
+  const disk = (pred, nova, den) => ({ akce: 'retence-varovani-disk', disk: { den: den || '2026-12-20', predSoubor: 'otisk_jiny_2026-12-13_0300.json.gz',
+    novySoubor: 'otisk_jiny_' + (den || '2026-12-20') + '_0300.json.gz', predVelikostB: pred, novaVelikostB: nova } });
   test('#523 Disk: bez přihlášení správce odmítnuto', (await posli(disk(100, 80), null)).status === 401 && !pamet.has('zalohy/' + Z.RETENCE_VAROVANI_KLIC));
   test('#523 Disk: neplatná jména souborů → 400', (await posli({ ...disk(100, 80), disk: { ...disk(100, 80).disk, predSoubor: 'posledni_kopie.json' } })).status === 400);
   test('#523 Disk: bez úbytku (−5 %) → 409 a nic se nezapíše', (await posli(disk(100, 95))).status === 409 && !pamet.has('zalohy/' + Z.RETENCE_VAROVANI_KLIC));
   const o = await posli(disk(100 * 1048576, 80 * 1048576));
   const v = await ulz('zalohy').cti(Z.RETENCE_VAROVANI_KLIC);
   test('#523 Disk: úbytek −20 % → varování od serveru (text píše server)', o.status === 200 && v.zdroj === 'disk' && v.den === '2026-12-20'
-    && /kopie zálohy na Disku otisk_2026-12-20\.json\.gz má proti otisk_2026-12-13\.json\.gz méně dat \(velikost 100,0 MB → 80,0 MB \(80 %\)\)/.test(v.text), v);
+    && /kopie zálohy na Disku otisk_jiny_2026-12-20_0300\.json\.gz má proti otisk_jiny_2026-12-13_0300\.json\.gz méně dat \(velikost 100,0 MB → 80,0 MB \(80 %\)\)/.test(v.text), v);
   const o2 = await posli(disk(100 * 1048576, 50 * 1048576, '2026-12-27'));
   test('#523 Disk: nepotvrzené varování se dalším hlášením nepřepíše', o2.status === 200 && (await ulz('zalohy').cti(Z.RETENCE_VAROVANI_KLIC)).den === '2026-12-20');
   /* retence v Netlify stojí kvůli varování z Disku */
@@ -474,7 +476,7 @@ await zkus('úbytek Disk', async () => {
   const potvrd2 = await posli({ akce: 'retence-potvrdit', den: '2026-12-27', hesloSpravce: 'Docasne.Heslo.123' });
   test('#523 Disk: správce potvrdí heslem → retence v Netlify zase maže', potvrd2.status === 200
     && J((await Z.retenceProved('2026-12-21', '2026-12-21', ted)).smazano) === J(['2026-11-03', '2026-11-04']), potvrd2.telo);
-  const kd = await posli({ akce: 'kopie-disk', hesloSpravce: 'Docasne.Heslo.123', kopie: { soubor: 'otisk_2026-12-21.json.gz', velikostB: 5,
+  const kd = await posli({ akce: 'kopie-disk', hesloSpravce: 'Docasne.Heslo.123', kopie: { soubor: 'otisk_jiny_2026-12-21_0300.json.gz', velikostB: 5,
     sha256: 'd'.repeat(64), otisk: '2026-12-21', puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' } });
   test('#523 Disk: odpověď na záznam kopie nese čerstvý stav pojistky (pro úklid Disku)', kd.status === 200
     && !!kd.telo.retenceVarovani && !!kd.telo.retenceVarovani.potvrzeno, kd.telo);

@@ -110,16 +110,20 @@ test('den je MÍSTNÍ (ne UTC)', N.nazevDen(new Date(2026, 9, 27, 0, 30)) === '2
 
 /* ---------- 3) výjimky beze změny ---------- */
 const ULO = require('./uloziste.js');
-test('výjimka: kopie na Disk otisk_RRRR-MM-DD.json.gz', ULO.uloKopieDiskJmeno('2026-10-27', true) === 'otisk_2026-10-27.json.gz');
-test('výjimka: kopie na Disk otisk_RRRR-MM-DD.json', ULO.uloKopieDiskJmeno('2026-10-27', false) === 'otisk_2026-10-27.json');
+/* #552: kopie na Disk nese prostředí a čas pořízení (Europe/Prague) */
+test('výjimka: kopie na Disk otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz',
+  ULO.uloKopieDiskJmeno('2026-10-27', true, 'main', '2026-10-27T02:10:00Z') === 'otisk_main_2026-10-27_0310.json.gz');
+test('výjimka: kopie na Disk otisk_<prostředí>_RRRR-MM-DD_HHMM.json',
+  ULO.uloKopieDiskJmeno('2026-10-27', false, 'test', '2026-10-27T02:10:00Z') === 'otisk_test_2026-10-27_0310.json');
 test('výjimka: _nastaveni.json a _program.json (složka _DB podle jména)',
   require('./nastaveni_db.js').NASTDB_SOUBOR === '_nastaveni.json' && require('./program.js').PROG_SOUBOR === '_program.json');
 const UI = f => fs.readFileSync(path.join(__dirname, 'ui', f), 'utf8');
-test('výjimka: posledni_kopie.json na Disku', UI('online_ui.js').includes("kopieDiskZapisSoubor(h, 'posledni_kopie.json',"));
+test('výjimka: posledni_kopie_<prostředí>.json na Disku', UI('online_ui.js').includes("kopieDiskZapisSoubor(h, uloKopieDiskPosledniJmeno(prostredi),")
+  && ULO.uloKopieDiskPosledniJmeno('main') === 'posledni_kopie_main.json');
 {
-  const re = /^otisk_(\d{4}-\d{2}-\d{2})\.json(\.gz)?$/;
-  const src = fs.readFileSync(path.join(__dirname, 'retence_zaloh.js'), 'utf8');
-  test('retence_zaloh.js pořád hledá jen otisk_…', src.includes('/^otisk_(\\d{4}-\\d{2}-\\d{2})\\.json(\\.gz)?$/'));
+  const R = require('./retence_zaloh.js');
+  const re = R.RETENCE_ZALOH_DISK_JMENO;
+  test('retence_zaloh.js hledá jen otisk_<prostředí>_… (#552)', re.test('otisk_main_2026-10-27_0310.json.gz') && !re.test('otisk_2026-10-27.json.gz'));
   test('nová záloha ZALOHA_… není otisk (úklid ji nesmaže)', !re.test(N.nazevExportu('zaloha', u({}))));
 }
 

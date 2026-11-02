@@ -1,3 +1,34 @@
+# Předávka — 2. 11. 2026: ZN #552 — názvy záloh na Disku s prostředím a časem, větev `claude/zn-nazvy-zaloh`
+
+Nad `b22f5df` (integrace v2.11.3). **Verze ponechána 2.11.3** (koordinace přečísluje). Neslučováno; na ostrém webu
+ani na Disku nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. jméno `otisk_<main\|test\|jiny>_RRRR-MM-DD_HHMM.json.gz`, prostředí ze serveru | ✅ | `prostrediZalohy` (`netlify/lib/zalohovani.mjs`), `uloKopieDiskJmeno` (`src/uloziste.js`) |
+| 2. `posledni_kopie_<prostředí>.json`, hláška jen vlastního prostředí | ✅ | `kopieDiskProved` (`src/ui/online_ui.js`), `uloKopieDiskStav`, `kopieDiskVlastni` |
+| 3. retence Disku jen vlastní prostředí, starý tvar nikdy, dny ne soubory | ✅ | `retenceZalohDiskVyber`, `retenceZalohDiskRozeber` (`src/retence_zaloh.js`) |
+| 4. server: kontroly jmen, starý tvar při čtení/podložení | ✅ | `zaloha_vynuceno.mjs`, `kopieDiskPodlozena`, `zaloha.mjs` |
+| 5. názvy + dokumentace | ✅ | `src/nazvy_souboru.js`, `podklady/NAZVY_SOUBORU.md`, `manual/admin`, `manual/obsah.json`, `manual/kompletni/provoz.json` |
+| 6. roadmapa #552 (vlna G, hotovo) | ✅ | `roadmapa/roadmap.json`, `overit_roadmapu.mjs` 17/0 |
+
+**Rozhodnutí:** prostředí ze serveru (PROSTREDI=test → test; CONTEXT ≠ production nebo mimo Netlify → jiny; jinak main),
+ne z hostname. Náhled nasazení sdílí Blobs s produkcí → záznam kopie pod `kopie-disk-nahled`. Čas v názvu = pořízení
+nočního otisku (Europe/Prague), datum = klíč otisku. Server nový záznam ve starém tvaru odmítne (stará stránka → obnovit).
+Pojistka úbytku na Disku porovnává jen s kopií téhož prostředí; bez ní se neporovnává (noční pojistka na serveru platí).
+
+**Čeká na J. V. po nasazení:** (1) ve složce ručně uklidit / přejmenovat staré `otisk_RRRR-MM-DD.json.gz`
+a `posledni_kopie.json` (aplikace je nemaže); (2) upravit dvě naplánované úlohy v claude.ai („Upozornění: záloha
+engscalc starší 5 dní“, „Kontrola záloh engscalc na Disku“), aby četly jen `otisk_main_…` a `posledni_kopie_main.json`
+— jinak budou porovnávat kopii testu s ostrou a hlásit falešný úbytek; (3) po nasazení na obou webech pořídit novou
+kopii tlačítkem (hlídka 14 dní a retence v Blobs dál běží i se starým záznamem).
+
+**Testy:** `testovaci_kolo.sh --bez-mutaci` **VŠE ZELENÉ** (356 / 0 / 7 přeskočeno — firemní podklady; statické 5 z 5;
+23,5 min); mutace „#552“ **34 z 34 chycených** (24 nových + 10 přecílených; `--kontrola` 1162 OK);
+`test_552_nazvy_zaloh.js` 31/0, `test_552_prostredi_zaloh.mjs` 24/0. Celé mutace neopakovány.
+
+---
+
 # Předávka — 2. 11. 2026: K37 #544 — opravy nálezů kola 37 (test v27.10.6), větev `claude/k37-opravy`
 
 Nad `origin/test` 3a255d7 (v27.10.6). **Verze 2.11.1** (koordinace může přečíslovat). Koordinace:

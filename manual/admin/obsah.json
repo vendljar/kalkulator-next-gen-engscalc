@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v2.11.8 · sestaveno 2. 11. 2026",
+  "verze": "Platí pro aplikaci v2.11.9 · sestaveno 2. 11. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -684,7 +684,7 @@
             },
             {
               "pojem": "Kopie na Disk Google",
-              "vyklad": "Tlačítko **Zkopírovat zálohu na Disk teď** uloží poslední noční otisk do složky **_Zaloha Netlify DB** jako `otisk_RRRR-MM-DD.json.gz` (účty bez hesel, bez podpisů) a vedle soubor `posledni_kopie.json`. Aplikace připomene kopii jednou týdně; kopie starší než 14 dní svítí jako varování."
+              "vyklad": "Tlačítko **Zkopírovat zálohu na Disk teď** uloží poslední noční otisk do složky **_Zaloha Netlify DB** jako `otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz` (účty bez hesel, bez podpisů) a vedle soubor `posledni_kopie_<prostředí>.json`. Prostředí je `main` (ostrý web), `test` (testovací web) nebo `jiny` (náhled nasazení); datum je den nočního otisku, čas jeho pořízení (český čas) — např. `otisk_main_2026-11-02_0315.json.gz`. Ostrý i testovací web kopírují do téže složky a díky prostředí v názvu se nepřepíšou. Hláška „Poslední kopie záloh na Disku Google“ ukazuje jen kopii vlastního webu. Aplikace připomene kopii jednou týdně; kopie starší než 14 dní svítí jako varování."
             },
             {
               "pojem": "Stáhnout zálohu",
@@ -1142,7 +1142,7 @@
           "polozky": [
             {
               "pojem": "_Zaloha Netlify DB",
-              "vyklad": "Kopie nočních záloh (`otisk_RRRR-MM-DD.json.gz`, `posledni_kopie.json`). Aplikace do ní zapisuje přímo z prohlížeče (Chrome / Edge, povolený zápis do složky); maže v ní jen vlastní soubory záloh podle retence."
+              "vyklad": "Kopie nočních záloh ostrého i testovacího webu (`otisk_main_…` / `otisk_test_…_RRRR-MM-DD_HHMM.json.gz`, `posledni_kopie_main.json` / `posledni_kopie_test.json`). Aplikace do ní zapisuje přímo z prohlížeče (Chrome / Edge, povolený zápis do složky); maže v ní jen kopie **vlastního** webu podle retence. Starší kopie bez prostředí v názvu (`otisk_RRRR-MM-DD.json.gz`) a starý `posledni_kopie.json` aplikace nemaže — uklidí je správce ručně."
             },
             {
               "pojem": "Manual",

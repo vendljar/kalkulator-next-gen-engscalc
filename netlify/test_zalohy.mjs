@@ -506,7 +506,8 @@ await zkus('N6', async () => {
   const bez = await (await get(zalohaFn, 'http://x/api/zaloha', cookie)).json();
   test('N6: běžná záloha ke stažení se nezměnila (podpisy v ní zůstávají)', bez.ok && !!bez.zaloha.podpisy);
   /* záznam o kopii — od O7 (K3-N1) jen s heslem správce a ze složky „_Zaloha Netlify DB" */
-  const kopieTelo = { soubor: 'otisk_2026-10-19.json', velikostB: 1234, sha256: 'a'.repeat(64), otisk: '2026-10-19',
+  /* #552: testy běží mimo Netlify → prostředí „jiny" (prostrediZalohy) */
+  const kopieTelo = { soubor: 'otisk_jiny_2026-10-19_0305.json', velikostB: 1234, sha256: 'a'.repeat(64), otisk: '2026-10-19',
     puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB', data: 'NESMI' };
   const zaznamPred = pamet.get('zalohy/kopie-disk');
   const bezHesla = await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie: kopieTelo }, cookie);
@@ -524,7 +525,7 @@ await zkus('N6', async () => {
     jinaSlozka.status === 400 && /_Zaloha Netlify DB/.test(jinaSlozkaJ.chyba) && pamet.get('zalohy/kopie-disk') === zaznamPred, jinaSlozkaJ);
   const zap = await (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', { akce: 'kopie-disk',
     kopie: kopieTelo, hesloSpravce: 'Docasne.Heslo.123' }, cookie)).json();
-  test('N6: záznam kopie se uloží a vrátí', zap.ok && zap.kopieDisk.soubor === 'otisk_2026-10-19.json'
+  test('N6: záznam kopie se uloží a vrátí', zap.ok && zap.kopieDisk.soubor === 'otisk_jiny_2026-10-19_0305.json' && zap.kopieDisk.prostredi === 'jiny'
     && zap.kopieDisk.kdo === ADMIN_EMAIL && zap.kopieDisk.velikostB === 1234, zap);
   test('K3-N1 O7: uložený záznam nese složku a značku potvrzení heslem (podložený, když otisk existuje)',
     zap.ok && zap.kopieDisk.slozka === '_Zaloha Netlify DB' && zap.kopieDisk.potvrzeno === 'heslo-spravce'
@@ -662,7 +663,7 @@ await zkus('O9', async () => {
   const stav = async (telo) => { try { return (await post(zalohaVynuceno, 'http://x/api/zaloha_vynuceno', telo, cookie)).status; }
     catch (e) { return 500; } };
   const OBJ = { toString: 1, valueOf: 1 };
-  const kopie = { soubor: 'otisk_2026-10-19.json', velikostB: 1, sha256: 'c'.repeat(64), otisk: '2026-10-19',
+  const kopie = { soubor: 'otisk_jiny_2026-10-19_0305.json', velikostB: 1, sha256: 'c'.repeat(64), otisk: '2026-10-19',
     puvod: 'nocni-otisk', slozka: '_Zaloha Netlify DB' };
   test('K4-N12: soubor jako objekt → 400, ne 500', await stav({ akce: 'kopie-disk', kopie: { ...kopie, soubor: OBJ },
     hesloSpravce: 'Docasne.Heslo.123' }) === 400);

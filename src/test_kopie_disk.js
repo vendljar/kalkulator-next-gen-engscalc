@@ -21,7 +21,8 @@ test('15 dní → varovat (starší než 14 dní)', S({ kdy: pred(15), soubor: '
   && /stará 15 dní/.test(S({ kdy: pred(15), soubor: 'otisk_2026-10-04.json' }).text)
   && /otisk_2026-10-04\.json/.test(S({ kdy: pred(15), soubor: 'otisk_2026-10-04.json' }).text));
 test('čerstvá kopie má klidný text se jménem souboru', /Poslední kopie/.test(S({ kdy: pred(1), soubor: 'otisk_x.json' }).text));
-test('jméno souboru podle dne otisku', U.uloKopieDiskJmeno('2026-10-18') === 'otisk_2026-10-18.json');
-test('neplatný den → dnešek, nikdy cesta', /^otisk_\d{4}-\d{2}-\d{2}\.json$/.test(U.uloKopieDiskJmeno('../../x')));
+test('jméno souboru podle dne otisku (#552: s prostředím a časem)', U.uloKopieDiskJmeno('2026-10-18', false, 'main', '2026-10-18T01:30:00Z') === 'otisk_main_2026-10-18_0330.json');
+test('neplatný den → dnešek, nikdy cesta', /^otisk_main_\d{4}-\d{2}-\d{2}_\d{4}\.json$/.test(U.uloKopieDiskJmeno('../../x', false, 'main')));
+test('#552: bez prostředí jméno nevznikne', U.uloKopieDiskJmeno('2026-10-18', true) === '' && U.uloKopieDiskJmeno('2026-10-18', true, '../x') === '');
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

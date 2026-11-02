@@ -1,6 +1,6 @@
 {
  "titul": "Kalkulátor Next Gen — kompletní dokumentace systému",
- "verze": "Platí pro aplikaci v2.11.8 · sestaveno 2. 11. 2026",
+ "verze": "Platí pro aplikaci v2.11.9 · sestaveno 2. 11. 2026",
  "podtitul": "Obsluha · výpočty · provoz systému. Jeden dokument pro správce, nástupce i IT firmu, která má systém převzít.",
  "uvod": [
   {
@@ -661,7 +661,7 @@
       },
       {
        "pojem": "Google Disk",
-       "vyklad": "Kopie nočních záloh ve složce _Zaloha Netlify DB (`otisk_RRRR-MM-DD.json.gz` a `posledni_kopie.json`) — **bez otisků hesel a bez podpisů**. Retence v kapitole P6."
+       "vyklad": "Kopie nočních záloh ve složce _Zaloha Netlify DB (`otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz` a `posledni_kopie_<prostředí>.json`; prostředí `main`, `test` nebo `jiny`, čas pořízení v českém čase) — **bez otisků hesel a bez podpisů**. Ostrý i testovací web kopírují do téže složky, prostředí v názvu je odliší. Retence v kapitole P6."
       },
       {
        "pojem": "Stažené soubory",
@@ -1352,7 +1352,7 @@
       },
       {
        "pojem": "Google Disk",
-       "vyklad": "Prohlížeč zapisuje přes rozhraní pro práci se složkami; poprvé je potřeba vybrat složku a povolit zápis. Aplikace ve složce maže jen vlastní soubory `otisk_RRRR-MM-DD.json(.gz)` podle retence, nic jiného. Ranní hlídač čte jen metadata přes konektor Google Disku v claude.ai."
+       "vyklad": "Prohlížeč zapisuje přes rozhraní pro práci se složkami; poprvé je potřeba vybrat složku a povolit zápis. Aplikace ve složce maže jen kopie vlastního prostředí tvaru `otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz)` podle retence, nic jiného — kopie druhého webu ani starší kopie bez prostředí v názvu (`otisk_RRRR-MM-DD.json(.gz)`) ne. Prostředí určuje server: `test` podle proměnné `PROSTREDI=test`, `jiny` u náhledu nasazení (Netlify `CONTEXT` jiný než production) a mimo Netlify, jinak `main`. Ranní hlídač čte jen metadata přes konektor Google Disku v claude.ai."
       }
      ]
     }

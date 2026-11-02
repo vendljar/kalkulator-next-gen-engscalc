@@ -76,8 +76,9 @@ Příklady pro zakázku `2026 - OPR - CN - 555` (PROJ `2026 - OVP - CN - 77`), a
 
 | soubor | proč |
 |---|---|
-| `otisk_RRRR-MM-DD.json` / `.json.gz` (kopie zálohy na Disk, složka `_Zaloha Netlify DB`) | hledá ji naplánovaná úloha, hlídka kopie na serveru (`zaloha_vynuceno.mjs`, `zalohovani.mjs`) i úklid Disku (`src/retence_zaloh.js`) — jiné jméno by úklid buď minul, nebo smazal cizí soubor |
-| `posledni_kopie.json` (tamtéž) | značka poslední kopie, kterou čte hlídka |
+| `otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz` (`.json` v prohlížeči bez komprese) — kopie zálohy na Disk, složka `_Zaloha Netlify DB` | vlastní tvar, ne konvence E1: hledá ji naplánovaná úloha (ranní hlídač), hlídka kopie na serveru (`zaloha_vynuceno.mjs`, `zalohovani.mjs`) i úklid Disku (`src/retence_zaloh.js`). **Prostředí** `main` (ostrý web), `test` (testovací web, `PROSTREDI=test`), `jiny` (náhled nasazení, místní běh) určuje server; datum = den nočního otisku, `HHMM` = čas pořízení zálohy v Europe/Prague. Ostrý i testovací web píšou do téže složky — prostředí v názvu je odliší. Úklid maže jen kopie vlastního prostředí. |
+| `otisk_RRRR-MM-DD.json` / `.json.gz` (starý tvar bez prostředí) | už nevzniká. Úklid ho nemaže nikdy (nejde poznat, který web ho zapsal); obnova ze souboru ho načte. Ručně ho smaže nebo přejmenuje jen správce. |
+| `posledni_kopie_<prostředí>.json` (tamtéž) | značka poslední kopie daného prostředí (datum, velikost, SHA-256, prostředí); starý společný `posledni_kopie.json` aplikace už nezapisuje ani nemaže |
 | `_nastaveni.json`, `_program.json`, `_rejstrik.json` (archivní složka `_DB`) | složka se čte podle jména (nouzové stažení „Stáhnout _nastaveni.json" musí jít nakopírovat zpět) |
 | šablony `.docx` a jejich jazykové mutace (`<název šablony>_EN.docx`) | nesou jméno nahraného souboru; rejstřík šablon ho ukazuje jako verzi (J. V. 25. 9. 2026: „nahrál CN v12 a tabulka hlásila v10") |
 | přílohy poznámek | původní jméno souboru od uživatele |

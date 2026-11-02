@@ -187,15 +187,15 @@ await zkus('K9-S2', async () => {
   vycistiZalohy();
   for (let d = 1; d <= 20; d++) vlozOtisk('2026-11-' + String(d).padStart(2, '0'), { pocetZakazek: 800, velikostB: 114e6 });
   kopieDisk('2026-11-20', '2026-11-20T01:00:00.000Z');
-  const disk = await vynuceno({ akce: 'retence-varovani-disk', disk: { den: '2026-11-19', predSoubor: 'otisk_2026-11-12.json.gz',
-    novySoubor: 'otisk_2026-11-19.json.gz', predVelikostB: 9e7, novaVelikostB: 3e7 } });
+  const disk = await vynuceno({ akce: 'retence-varovani-disk', disk: { den: '2026-11-19', predSoubor: 'otisk_jiny_2026-11-12_0300.json.gz',
+    novySoubor: 'otisk_jiny_2026-11-19_0300.json.gz', predVelikostB: 9e7, novaVelikostB: 3e7 } });
   vlozOtisk('2026-11-21', { pocetZakazek: 700, velikostB: 113e6 });
   await noc('2026-11-21');
   const vd = varovani();
   test('K9-S2b: noční varování nepřepíše nepotvrzené z Disku — Disk zůstává hlavní, noc čeká za ním', disk.status === 200
     && vd.zdroj === 'disk' && /Disku/.test(vd.text) && vd.dalsi && vd.dalsi.length === 1 && vd.dalsi[0].zdroj === 'nocni', vd);
-  const disk2 = await vynuceno({ akce: 'retence-varovani-disk', disk: { den: '2026-11-22', predSoubor: 'otisk_2026-11-19.json.gz',
-    novySoubor: 'otisk_2026-11-22.json.gz', predVelikostB: 3e7, novaVelikostB: 1e7 } });
+  const disk2 = await vynuceno({ akce: 'retence-varovani-disk', disk: { den: '2026-11-22', predSoubor: 'otisk_jiny_2026-11-19_0300.json.gz',
+    novySoubor: 'otisk_jiny_2026-11-22_0300.json.gz', predVelikostB: 3e7, novaVelikostB: 1e7 } });
   test('K9-S2b: další hlášení z Disku se přidá (do O-K9 se zahodilo)', disk2.status === 200 && varovani().dalsi.length === 2
     && varovani().dalsi[1].den === '2026-11-22', varovani().dalsi);
 });
