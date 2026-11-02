@@ -53,6 +53,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_secm.mjs',
      /* #540 (27. 10. 2026): Prodáno — model prodServer a zmrazení; rychlá sada před maticí práv. */
      '../src/test_controlling_c4.js',
+     /* PB #547 (2. 11. 2026): Prodáno nad odeslanou nabídkou bez klonu — rychlé sady. */
+     '../src/test_prodano_zamek.js', 'test_prodano_zamek.mjs',
      'test_prava.mjs', 'test_funkce.mjs', 'test_obnova.mjs',
      /* F1 (24. 9. 2026): pojistky N43, N44 a B73 hlídají vlastní sady. */
      'test_stary_tvar.mjs', 'test_klon_sleva.mjs', 'test_autor.mjs',
@@ -5156,6 +5158,32 @@ const MUTACE = [
     hledej: "    if (!ID_TVAR.test(k)) continue;",
     nahrad: "",
     proc: 'do odpovědi by šly neočištěné klíče z prohlížeče' },
+  /* ---------- PB #547 (2. 11. 2026): Prodáno nad odeslanou nabídkou bez klonu ----------
+   * Hlídají src/test_prodano_zamek.js a netlify/test_prodano_zamek.mjs. */
+  { nazev: '#547: zámek čtení pustí i změnu dat varianty spolu s prodejem', soubor: '../src/objednane.js',
+    hledej: "  (Array.isArray(k.varianty) ? k.varianty : []).forEach(v => { if (v && typeof v === 'object') delete v.prodano; });",
+    nahrad: "  (Array.isArray(k.varianty) ? k.varianty : []).forEach(v => { if (v && typeof v === 'object') { delete v.prodano; delete v.data; } });",
+    proc: 'pod záminkou prodeje by z okna jen ke čtení odešla i změněná kalkulace' },
+  { nazev: '#547: zámek čtení pustí i změnu hlavičky spolu s prodejem', soubor: '../src/objednane.js',
+    hledej: "const PROD_POLE_ZAKAZKY = ['prodejOdemknout', 'prodejHistorie'];",
+    nahrad: "const PROD_POLE_ZAKAZKY = ['prodejOdemknout', 'prodejHistorie', 'nazevAkce'];",
+    proc: 'z okna jen ke čtení by spolu s prodejem odešla přepsaná hlavička' },
+  { nazev: '#547: beze změny se zápis tváří jako prodej', soubor: '../src/objednane.js',
+    hledej: "  if (JSON.stringify(a) === JSON.stringify(b)) return false;          // nic se nezměnilo",
+    nahrad: "",
+    proc: 'zámek čtení by pouštěl prázdné zápisy' },
+  { nazev: '#547: hláška bez skutečné příčiny', soubor: '../src/objednane.js',
+    hledej: "  const proc = d || 'uložení do databáze neproběhlo",
+    nahrad: "  const proc = 'uložení do databáze neproběhlo",
+    proc: 'obchodník by nevěděl, proč se prodej neuložil (J. V.: „nesmyslný text")' },
+  { nazev: '#547: prodat jde i neodeslanou variantu (server)', soubor: '../src/objednane.js',
+    hledej: "  for (const v of vs) if (v && v.prodano != null && !(v.zamek && v.zamek.zamceno))",
+    nahrad: "  for (const v of vs) if (false)",
+    proc: 'prodaná by byla nabídka, kterou zákazník nikdy nedostal' },
+  { nazev: '#547: prodej projde i se změnou zamčených dat', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "      if (nv && porovnej(nv.data) !== porovnej(sv.data))",
+    nahrad: "      if (nv && !nv.prodano && porovnej(nv.data) !== porovnej(sv.data))",
+    proc: 'obchodník by pod záminkou prodeje změnil cenu odeslané nabídky' },
   /* ---------- #545 (2. 11. 2026): Prodáno mění FÁZI dealu, ne stav ----------
    * Hlídají netlify/test_pd_nanecisto.mjs a netlify/test_pd_simulator.mjs. */
   { nazev: '#545: Prodáno přepne stav na won místo fáze', soubor: 'lib/pd_prevod.mjs',

@@ -377,6 +377,47 @@ function prodOdemkni(zak, v, duvod) {
   zak.prodejOdemknout = { varianta: v.id, duvod: t.slice(0, PROD_DUVOD_MAX) };
   return '';
 }
+/* PRODÁNO NAD ODESLANOU NABÍDKOU OTEVŘENOU JEN KE ČTENÍ (PB #547, J. V.
+ * 2. 11. 2026: „Změna stavu na prodáno je legitimní další krok prodejního
+ * procesu odeslané cenové nabídky" — žádný klon). Zakázka s odeslanou
+ * nabídkou se online otevírá jen ke čtení (#404) a zápis z ní hlídá zámek
+ * čtení; do v2.11.2 proto stisk Prodáno skončil dialogem klonu a prodej se
+ * neuložil. Zápis prodeje (a odemčení prodeje) je povolená akce nad zamčenou
+ * variantou — stejně jako zápisník (poznamkyJedinaZmena): zámek čtení ho
+ * pustí, když je JEDINOU změnou proti naposledy uložené verzi záznam prodeje
+ * (`v.prodano`, žádost `prodejOdemknout`; `prodejHistorie` píše server).
+ * Cokoli jiného (cena, obsah varianty, krycí list) zápis zastaví dál.
+ * `ted`, `ulozeno` = zakázka nebo její JSON. */
+const PROD_POLE_ZAKAZKY = ['prodejOdemknout', 'prodejHistorie'];
+function prodBezProdeje(z) {
+  const k = JSON.parse(JSON.stringify(z));
+  PROD_POLE_ZAKAZKY.forEach(p => { delete k[p]; });
+  (Array.isArray(k.varianty) ? k.varianty : []).forEach(v => { if (v && typeof v === 'object') delete v.prodano; });
+  return JSON.stringify(k);
+}
+function prodJedinaZmena(ted, ulozeno) {
+  const rozbal = (x) => {
+    if (typeof x === 'string') { try { return JSON.parse(x); } catch (e) { return null; } }
+    return (x && typeof x === 'object' && !Array.isArray(x)) ? x : null;
+  };
+  const a = rozbal(ted), b = rozbal(ulozeno);
+  if (!a || !b) return false;
+  if (JSON.stringify(a) === JSON.stringify(b)) return false;          // nic se nezměnilo
+  return prodBezProdeje(a) === prodBezProdeje(b);
+}
+/* Hláška neuloženého prodeje / odemčení se SKUTEČNOU příčinou (PB #547:
+ * do v2.11.2 se za dvojtečku lepila poslední stavová zpráva databáze, typicky
+ * „Otevřeno online: ….json"). `duvod` = věta odmítnutí (server, zámek, síť);
+ * předpona „Neuloženo…" se odřízne, ať se neopakuje. */
+function prodNeulozenoText(akce, duvod) {
+  const d = String(duvod == null ? '' : duvod).trim()
+    .replace(/^Neuloženo( online)?:\s*/i, '').trim();
+  const proc = d || 'uložení do databáze neproběhlo a důvod se nepodařilo zjistit. Zkuste to znovu; '
+    + 'nepomůže-li to, zkontrolujte přihlášení a připojení (karta Nastavení → Databáze).';
+  return akce === 'odemceni'
+    ? 'Odemčení prodeje se neuložilo: ' + proc + '\n\nZakázka zůstává prodaná.'
+    : 'Prodej se neuložil: ' + proc + '\n\nZakázka zůstává neprodaná.';
+}
 function prodPdStavText(p) {
   const s = p && p.pipedrive && p.pipedrive.stav;
   return PROD_PD_STAV_TEXT[s] || '';
@@ -518,4 +559,4 @@ if (typeof module !== 'undefined' && module.exports)
     objSodSnimek, objSodZaznamyServer, objZmenenoPoSod, objZmenyServer, objZmenyOciste, objDnes, objDatumPlatne, objStav, objDatumPodpisu, objPodepsano, objNabidnute,
     objObjednaneVarianty, objText, objNastav, objOtisk, objTvarPlatny, objKontrola,
     PROD_ROLE_ODEMKNOUT, PROD_PD_STAVY, PROD_PD_STAV_TEXT, PROD_DUVOD_MIN, PROD_HISTORIE_MAX, prodStav, prodNelzeProdat, prodNastav,
-    prodOdemkni, prodPdStavText, prodTvarPlatny, prodOciste, prodHistorieOciste, prodServer, prodPdZapis };
+    prodOdemkni, prodJedinaZmena, prodNeulozenoText, prodPdStavText, prodTvarPlatny, prodOciste, prodHistorieOciste, prodServer, prodPdZapis };

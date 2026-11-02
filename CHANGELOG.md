@@ -8,6 +8,37 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v2.11.3 — PB #547: Prodáno u odeslané nabídky bez dialogu klonu, hláška se skutečnou příčinou — větev claude/pb-prodano-zamek
+
+Nad integrací 141b92f (v2.11.2). Nález J. V. při testu na testengscalc (v27.10.6) 2. 11. 2026: online otevřená
+zakázka s vytištěnou CN → krycí list OCK → Prodej → Prodáno → Ano → dialog „Uzamčená varianta … Chcete pokračovat
+v klonu varianty?“ a po „Nechat beze změny“ hláška „Prodej se neuložil: Otevřeno online: ….json“. Pokyn J. V.:
+„Změna stavu na prodáno je legitimní další krok prodejního procesu odeslané cenové nabídky.“ Verze podle pravidla
+dne commitu; koordinace může přečíslovat.
+
+- **Příčina:** zakázka s odeslanou nabídkou se online otevírá jen ke čtení (#404). Prodáno zapsalo `v.prodano`
+  a volalo `zakUlozUI()` → `zamekCteniStop()` → u zamčené varianty dialog klonu (`zamekUpozorni`); `onlineUloz()`
+  zápis v režimu čtení odmítal také. Uložení vrátilo `false` a hláška lepila za dvojtečku poslední stavovou zprávu
+  databáze (`ONLINE_STAV.hlaska` = „Otevřeno online: …“), ne příčinu. Harness #540 to nechytil — prodej zapisoval
+  modelem mimo uložení.
+- **Oprava:** zápis prodeje a odemčení prodeje je **povolená akce nad zamčenou variantou** (vzor zápisníku):
+  model `prodJedinaZmena` (`src/objednane.js`) — jedinou změnou proti uložené verzi je záznam prodeje (`v.prodano`,
+  `prodejOdemknout`, `prodejHistorie`); `onlineJenProdej()` pustí takový zápis přes zámek čtení v `onlineUloz()`
+  i `zakUlozUI()` bez dialogu klonu. Okno zůstává jen ke čtení; cena, obsah varianty ani krycí list se nemění.
+  Nese-li okno jen ke čtení i jinou neuloženou změnu, prodej se neuloží a hláška řekne proč.
+- **Hlášky karty Prodej** (`prodUiUloz`, `prodNeulozenoText`): „Prodej se neuložil: <skutečná příčina>“ —
+  odmítnutí serveru (bez zdvojeného „Neuloženo online:“), kolize verzí, zpráva lišty, souběžné ukládání; bez příčiny
+  obecná rada. Totéž „Odemčení prodeje se neuložilo: … Zakázka zůstává prodaná.“
+- **Server beze změny** — prodej zamčené varianty přijímal (porovnává jen `data` zamčené varianty, `prodano` hlídá
+  `prodServer`); nový test to drží: autor prodá (200, razítka a „čeká“ píše server), po prodeji krycí list zmrazený
+  celý (409), prodej + změna kalkulace / pole nabídky / hlavičky → 409, cizí obchodník 403, budoucí datum 400,
+  neodeslaná varianta 400, odemčení obchodníkem 403, vedoucím s důvodem 200.
+- **Texty #545** v integraci už nové („fáze Vyhrané k podpisu SoD“, ne „deal → Vyhráno“) — ověřeno harnessem
+  (karta i potvrzení); snímek J. V. byl z v27.10.6.
+- **Testy:** `src/test_prodano_zamek.js` 19/0 (před opravou padá — funkce chybí), `netlify/test_prodano_zamek.mjs`
+  16/0 (zábrana serveru, prochází před i po), `overit_prodano_zamek.mjs` 28/0 — skutečný klient proti skutečným
+  serverovým funkcím; nad v2.11.2 13 OK / 12 FAIL a reprodukuje přesně hlášku z nálezu. Mutace „#547“ (6).
+
 ## v2.11.2 — PF #545: Prodáno přesune deal do fáze „Vyhrané k podpisu SoD“, stav nemění — větev claude/pf-prodano-faze
 
 Nad integrací 48f5dad (v1.11.1). Pokyn J. V. 2. 11. 2026: stav „Vyhrané“ rozbíhá v Pipedrive obchodně administrativní

@@ -1217,6 +1217,15 @@ function onlineJenZapisnik() {
   try { return poznamkyJedinaZmena(JSON.stringify(ZAK), ONLINE_STAV.posledni); }
   catch (e) { return false; }
 }
+/* Jedinou změnou proti uložené verzi je záznam prodeje (PB #547) — zápis
+ * Prodáno / odemčení prodeje je povolená akce nad odeslanou nabídkou
+ * otevřenou jen ke čtení (model prodJedinaZmena v objednane.js; server
+ * hlídá zmrazená data i práva sám, prodServer + porovnání zamčených dat). */
+function onlineJenProdej() {
+  if (typeof prodJedinaZmena !== 'function' || !ONLINE_STAV.posledni) return false;
+  try { return prodJedinaZmena(JSON.stringify(ZAK), ONLINE_STAV.posledni); }
+  catch (e) { return false; }
+}
 
 /* CHYBA ULOŽENÍ ČESKY (K7-K4, audit 23. 10. 2026). Výpadek sítě hlásí
  * prohlížeč anglicky („Failed to fetch", „NetworkError…", „Load failed") jako
@@ -1326,7 +1335,7 @@ function onlineUloz(opts) {
    * a nález C6 byl přesně o tom, že ho autosave přes tenhle zámek zahazoval.
    * Rozhoduje `poznamkyJedinaZmena()` — ne „je mezi změnami poznámka?", ale
    * „je poznámka JEDINÁ změna?". */
-  if (typeof zamekCteniJe === 'function' && zamekCteniJe() && !onlineJenZapisnik()) {
+  if (typeof zamekCteniJe === 'function' && zamekCteniJe() && !onlineJenZapisnik() && !onlineJenProdej()) {
     if (!opts.tiche) {
       onlineZprava('Zakázka je otevřená jen ke čtení, takže se výpočet neukládá. '
         + 'Chcete-li změny zapsat, nejdřív ji vědomě odemkněte. '

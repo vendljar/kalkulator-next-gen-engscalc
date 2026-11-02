@@ -410,13 +410,40 @@ async function prodejUiProdej(strana) {
   const chyba = prodNastav(ZAK, v, datum, { kdo: ja });
   if (chyba) { hlaska(chyba); return; }
   if (typeof onlineZmenaUzivatele === 'function') onlineZmenaUzivatele({});
-  const ok = typeof zakUlozUI === 'function' ? await zakUlozUI() : true;
-  if (ok === false) {
+  const r = await prodUiUloz();
+  if (!r.ok) {
     delete v.prodano;
-    hlaska('Prodej se neuložil' + (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.hlaska ? ': ' + ONLINE_STAV.hlaska : '.')
-      + '\n\nZakázka zůstává neprodaná.');
+    hlaska(prodNeulozenoText('prodej', r.duvod));
   }
   render();
+}
+/* ULOŽENÍ PRODEJE / ODEMČENÍ (PB #547). Prodáno je povolená akce nad
+ * odeslanou (zamčenou) variantou: u zakázky otevřené jen ke čtení se uloží
+ * bez dialogu klonu, je-li záznam prodeje jedinou změnou (onlineJenProdej).
+ * Nese-li okno jen ke čtení i jiné neuložené změny, prodej se neuloží
+ * a hláška řekne proč (zámek čtení je sám neodemyká — zapsalo by se
+ * i něco, co obchodník neviděl). Vrací { ok, duvod } se SKUTEČNOU příčinou
+ * neúspěchu: odmítnutí serveru / zprávu lišty, ne poslední stavovou zprávu
+ * („Otevřeno online: …"). */
+async function prodUiUloz() {
+  if (typeof zakUlozUI !== 'function') return { ok: true, duvod: '' };
+  const online = typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja;
+  if (online && typeof zamekCteniJe === 'function' && zamekCteniJe()
+      && !(typeof onlineJenProdej === 'function' && onlineJenProdej()))
+    return { ok: false, duvod: 'zakázka je otevřená jen ke čtení a kromě prodeje nese i jiné neuložené změny '
+      + '(nebo ještě nebyla uložena do databáze). Načtěte ji znovu z databáze a stiskněte Prodáno znovu.' };
+  if (online) onlineZprava('');
+  if (typeof zakUlozeniZprava === 'function') zakUlozeniZprava('');
+  let ok;
+  try { ok = await zakUlozUI(); }
+  catch (e) { return { ok: false, duvod: (typeof onlineChybaText === 'function') ? onlineChybaText(e) : String((e && e.message) || e) }; }
+  if (ok !== false) return { ok: true, duvod: '' };
+  const kandidati = [
+    online && ONLINE_STAV.kolize && typeof onlineKolizeText === 'function' ? onlineKolizeText() : '',
+    online && ONLINE_STAV.hlaskaTyp === 'varovani' ? ONLINE_STAV.hlaska : '',
+    typeof ZAKULO_STAV !== 'undefined' && ZAKULO_STAV.hlaskaTyp === 'varovani' ? ZAKULO_STAV.hlaska : '',
+    typeof ZAKULO_STAV !== 'undefined' && ZAKULO_STAV.uklada ? 'zakázka se právě ukládá — počkejte na dokončení a zkuste to znovu' : ''];
+  return { ok: false, duvod: kandidati.find(Boolean) || '' };
 }
 async function prodejUiOdemkni() {
   const p = prodStav(ZAK);
@@ -430,10 +457,10 @@ async function prodejUiOdemkni() {
   const chyba = prodOdemkni(ZAK, p.v, duvod);
   if (chyba) { hlaska(chyba); return; }
   if (typeof onlineZmenaUzivatele === 'function') onlineZmenaUzivatele({});
-  const ok = typeof zakUlozUI === 'function' ? await zakUlozUI() : true;
-  if (ok === false) {
+  const r = await prodUiUloz();
+  if (!r.ok) {
     p.v.prodano = zaloha; delete ZAK.prodejOdemknout;
-    hlaska('Odemčení prodeje se neuložilo' + (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.hlaska ? ': ' + ONLINE_STAV.hlaska : '.'));
+    hlaska(prodNeulozenoText('odemceni', r.duvod));
   }
   render();
 }

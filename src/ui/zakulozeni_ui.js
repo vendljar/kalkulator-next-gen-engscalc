@@ -251,7 +251,10 @@ function zakUlozUI() {
    * čtení se nekreslí (viz zakTrojice). Kontrola ale zůstává: vede sem
    * i automatické ukládání a klávesnice, a zábrana zápisu má být pravidlo
    * v kódu, ne nedostupnost prvku. */
-  if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return Promise.resolve(false);
+  /* Výjimka PB #547: jedinou změnou je záznam prodeje (Prodáno, odemčení
+   * prodeje) — povolená akce nad odeslanou nabídkou, žádný dialog klonu. */
+  const jenProdej = typeof onlineJenProdej === 'function' && zakKanal() === 'online' && onlineJenProdej();
+  if (!jenProdej && typeof zamekCteniStop === 'function' && zamekCteniStop()) return Promise.resolve(false);
   const s = zakUlozeniStav();
   if (s.stav === 'vyplnit') {
     zakUlozeniZprava('Vyplňte v hlavičce: ' + s.chybi.join(', ')
