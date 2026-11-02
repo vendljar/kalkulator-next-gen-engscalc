@@ -6,7 +6,8 @@
  *   - server (netlify/lib/zalohovani.mjs → retenceVyber) pro otisky
  *     v Netlify Blobs (úložiště `zalohy`), přes netlify/lib/retence_modul.cjs;
  *   - prohlížeč správce (src/ui/online_ui.js → kopieDiskUklid) pro kopie
- *     `otisk_RRRR-MM-DD.json(.gz)` ve složce „_Zaloha Netlify DB" na Disku.
+ *     `otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz)` ve složce „_Zaloha Netlify DB"
+ *     na Disku (jen kopie vlastního prostředí, #550).
  * Dvě kopie téhož pravidla by se časem rozešly — proto jeden modul.
  *
  * Pravidlo J. V. 26. 10. 2026 (nahrazuje #151 N5 z 19. 10.):
@@ -92,15 +93,45 @@ function retenceZalohDrz(dny, dnes, pravidlo, opt) {
   return drz;
 }
 
-/* KOPIE NA DISKU. Bere se JEN soubor přesně tvaru otisk_RRRR-MM-DD.json
- * nebo otisk_RRRR-MM-DD.json.gz — cokoli jiného (posledni_kopie.json,
- * zaloha_online_…, otisk_2026-10-26 (1).json, podsložky) se nikdy nemaže. */
-const RETENCE_ZALOH_DISK_JMENO = /^otisk_(\d{4}-\d{2}-\d{2})\.json(\.gz)?$/;
+/* KOPIE NA DISKU — JMÉNA SOUBORŮ (#550, J. V. 2. 11. 2026).
+ * Ostrý i testovací web kopírují do TÉŽE složky „_Zaloha Netlify DB", proto
+ * jméno nese prostředí a čas pořízení zálohy:
+ *   otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz)
+ *   prostředí  main | test | jiny (náhled nasazení, místní běh) — hlásí ho
+ *              server (prostrediZalohy v netlify/lib/zalohovani.mjs);
+ *   datum      den nočního otisku (klíč v Blobs), u zálohy „aktuální stav"
+ *              dnešek v Europe/Prague;
+ *   HHMM       čas pořízení zálohy v Europe/Prague (noční otisk: kdy vznikl).
+ * Starý tvar otisk_RRRR-MM-DD.json(.gz) (do v2.11.3) prostředí nenese — nejde
+ * poznat, který web ho zapsal, proto ho úklid NIKDY nemaže; obnova ze souboru
+ * jméno nekontroluje, takže načte oba tvary. Cokoli jiného (posledni_kopie…,
+ * zaloha_online_…, „otisk_… (1).json", podsložky) se nemaže taky. */
+const RETENCE_ZALOH_DISK_PROSTREDI = ['main', 'test', 'jiny'];
+const RETENCE_ZALOH_DISK_JMENO_STARE = /^otisk_(\d{4}-\d{2}-\d{2})\.json(\.gz)?$/;
+const RETENCE_ZALOH_DISK_JMENO = /^otisk_(main|test|jiny)_(\d{4}-\d{2}-\d{2})_([01]\d|2[0-3])([0-5]\d)\.json(\.gz)?$/;
+/* Rozbor jména → { den, prostredi, hhmm, gzip, stary } nebo null. Starý tvar
+ * má prostredi a hhmm null a stary true. Neplatné datum (2026-02-31) = null. */
+function retenceZalohDiskRozeber(jmeno) {
+  const j = String(jmeno == null ? '' : jmeno);
+  let m = RETENCE_ZALOH_DISK_JMENO.exec(j);
+  if (m) return Number.isFinite(retenceZalohDenMs(m[2]))
+    ? { den: m[2], prostredi: m[1], hhmm: m[3] + m[4], gzip: !!m[5], stary: false } : null;
+  m = RETENCE_ZALOH_DISK_JMENO_STARE.exec(j);
+  if (m) return Number.isFinite(retenceZalohDenMs(m[1]))
+    ? { den: m[1], prostredi: null, hhmm: null, gzip: !!m[2], stary: true } : null;
+  return null;
+}
 /* `jmena` = jména souborů ve složce, `chranit` = jména, která se nesmažou
- * nikdy (právě zapsaná kopie). Vrací jména ke smazání (seřazená). */
-function retenceZalohDiskVyber(jmena, dnes, chranit) {
+ * nikdy (právě zapsaná kopie), `prostredi` = prostředí webu, který uklízí.
+ * Bere JEN soubory nového tvaru téhož prostředí — cizí prostředí ani starý
+ * tvar se nemažou nikdy; bez platného prostředí se nesmaže nic. Pravidlo
+ * počítá DNY, ne soubory: víc kopií z jednoho dne zůstane nebo odejde
+ * spolu a „nejnovější" je nejnovější den vlastního prostředí. Vrací jména
+ * ke smazání (seřazená). */
+function retenceZalohDiskVyber(jmena, dnes, chranit, prostredi) {
+  if (!RETENCE_ZALOH_DISK_PROSTREDI.includes(prostredi)) return [];
   const soubory = [...new Set((jmena || []).map(String))]
-    .map(j => { const m = RETENCE_ZALOH_DISK_JMENO.exec(j); return m && Number.isFinite(retenceZalohDenMs(m[1])) ? { j, d: m[1] } : null; })
+    .map(j => { const r = retenceZalohDiskRozeber(j); return r && !r.stary && r.prostredi === prostredi ? { j, d: r.den } : null; })
     .filter(Boolean);
   const drz = retenceZalohDrz(soubory.map(x => x.d), dnes, RETENCE_ZALOH_DISK);
   if (!drz) return [];
@@ -177,4 +208,5 @@ function retenceZalohPopis() {
 
 if (typeof module !== 'undefined')
   module.exports = { RETENCE_ZALOH_POJISTKA, retenceZalohPokles, retenceZalohMaximum, RETENCE_ZALOH_BLOBS, RETENCE_ZALOH_DISK, RETENCE_ZALOH_STARE_PRED, RETENCE_ZALOH_DISK_JMENO,
+    RETENCE_ZALOH_DISK_JMENO_STARE, RETENCE_ZALOH_DISK_PROSTREDI, retenceZalohDiskRozeber,
     retenceZalohDenMs, retenceZalohMesicuZpet, retenceZalohDrz, retenceZalohDiskVyber, retenceZalohPopis };

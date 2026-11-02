@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v2.11.3 — ZN #550: názvy záloh na Disku Google s prostředím a časem, větev claude/zn-nazvy-zaloh
+
+Nad integrací b22f5df (v2.11.3), pokyn J. V. 2. 11. 2026. Na ostrém webu ani na Disku nic. Verze ponechána,
+koordinace přečísluje.
+
+- **Problém:** ostrý (engscalc) i testovací web (testengscalc) kopírovaly zálohu do téže složky „_Zaloha Netlify DB“
+  pod jménem `otisk_RRRR-MM-DD.json.gz` a oba přepisovaly `posledni_kopie.json` — kopie téhož dne se přepsaly
+  a z názvu nešlo poznat, odkud a kdy záloha je.
+- **Nové jméno:** `otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz` + `posledni_kopie_<prostředí>.json` (nese i prostředí).
+  Prostředí `main` | `test` | `jiny` určuje **server** (`prostrediZalohy` v `netlify/lib/zalohovani.mjs`):
+  `PROSTREDI=test` → test (táž proměnná jako červený pruh a podpis relace), Netlify `CONTEXT` jiný než production
+  nebo běh mimo Netlify → jiny, jinak main. Ne z adresy v prohlížeči: záznam kopie přijímá a ověřuje server, adresa se
+  mění s doménou a náhled nasazení má jinou adresu nad týmiž daty. Datum = den nočního otisku, `HHMM` = čas jeho
+  pořízení v Europe/Prague (`uloPrahaCas`); u zálohy „aktuální stav“ dnešek a čas v Praze. Server vrací `prostredi`
+  a `porizena` v odpovědi `/api/zaloha?zdroj=nocni` a `prostredi` v přehledu `/api/zaloha_vynuceno`; bez prostředí
+  prohlížeč kopii nezapíše.
+- **Server:** záznam kopie (`kopie-disk`) jen v novém tvaru vlastního prostředí (starý tvar → 400 „obnovte stránku“,
+  cizí prostředí → 400), záznam nese `prostredi`; náhled nasazení (sdílí Blobs s produkcí) píše pod `kopie-disk-nahled`.
+  Retenci v Blobs podloží kopie vlastního prostředí nebo starý záznam `otisk_<den>.json(.gz)`. Hlášení úbytku z Disku
+  jen s kopiemi vlastního prostředí. Přehled záloh vrací záznam jen vlastního prostředí.
+- **Úklid Disku** (`retenceZalohDiskVyber`, `src/retence_zaloh.js`): maže jen kopie vlastního prostředí v novém tvaru;
+  kopie druhého webu ani starý tvar bez prostředí nikdy (nejde poznat, kdo ho zapsal); „nejnovější se nesmaže“ platí
+  per prostředí; pravidlo počítá dny — víc kopií z jednoho dne zůstane nebo odejde spolu. Pojistka úbytku porovnává
+  novou kopii jen s předchozí kopií téhož prostředí (test proti ostrému by hlásil nesmyslný úbytek).
+- **Hláška** „Poslední kopie záloh na Disku Google (prostředí …)“ v Nastavení → Databáze jen pro kopii vlastního webu.
+- **Obnova ze souboru** jméno nekontroluje — načte starý i nový tvar.
+- **Testy:** nové `src/test_550_nazvy_zaloh.js` (31) a `netlify/test_550_prostredi_zaloh.mjs` (24); pojistka nad
+  b22f5df: klient 18 FAIL a pád, server pád na importu. Srovnány s novým tvarem `test_z2_disk_retence.js`,
+  `test_o7_kopie_klient.js`, `test_kopie_disk.js`, `test_nazvy_souboru.js`, `netlify/test_zalohy.mjs`,
+  `test_o_k9_zalohy.mjs`, `test_z2_retence.mjs`, `overit_online.mjs`. Mutace „#550“ (24) + 10 starších přecílených
+  na nový kód. Dokumentace: `podklady/NAZVY_SOUBORU.md`, `src/nazvy_souboru.js`, příručka správce, obchodníka
+  a kompletní dokumentace.
+
 ## v2.11.3 — LH #546: lešení pro dokončení hlavy šachty jen u interiérové šachty, větev claude/lh-leseni-hlava
 
 Nad integrací 1fb09b2 (v2.11.1), požadavek obchodu 29. 10. 2026. Na ostrém webu, Disku ani v Pipedrive nic. Verze

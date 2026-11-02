@@ -920,11 +920,15 @@ test('K3-N1 O7: špatné heslo → server odmítne, kopie se nezapočítá',
   await page.evaluate(() => ONLINE_STAV.hlaska));
 test('K3-N1 O7: po špatném hesle server záznam nemá a přihlášení trvá',
   !pamet.has('zalohy/kopie-disk') && await page.evaluate(() => !!ONLINE_STAV.ja));
-test('K4-N15: po špatném hesle posledni_kopie.json na Disku nevznikne (netvrdí kopii, o které server neví)',
-  await page.evaluate(() => !window.__diskSoubory.has('posledni_kopie.json')), await page.evaluate(() => [...window.__diskSoubory.keys()]));
+test('K4-N15: po špatném hesle posledni_kopie_<prostředí>.json na Disku nevznikne (netvrdí kopii, o které server neví)',
+  await page.evaluate(() => ![...window.__diskSoubory.keys()].some(j => /^posledni_kopie/.test(j))), await page.evaluate(() => [...window.__diskSoubory.keys()]));
 await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__diskSoubory.clear();
-  /* #523: stará kopie (první v dubnu 2025, starší 6 měsíců) a cizí soubor ve složce */
-  window.__diskSoubory.set('otisk_2025-04-01.json', new Blob(['stara']));
+  /* #523: stará kopie (první v dubnu 2025, starší 6 měsíců) a cizí soubor ve složce.
+   * #550: harness běží mimo Netlify → prostředí „jiny"; kopie jiného prostředí
+   * a starý tvar bez prostředí musí zůstat. */
+  window.__diskSoubory.set('otisk_jiny_2025-04-01_0300.json', new Blob(['stara']));
+  window.__diskSoubory.set('otisk_main_2025-04-01_0300.json', new Blob(['ostry web']));
+  window.__diskSoubory.set('otisk_2025-04-01.json', new Blob(['stary tvar']));
   window.__diskSoubory.set('poznamka.txt', new Blob(['cizi'])); });
 test('N6: tlačítko kopii pořídí', await page.evaluate(() => onlineKopieDiskTed()) === true,
   await page.evaluate(() => ONLINE_STAV.hlaska));
@@ -935,27 +939,28 @@ test('K3-N1 O7: záznam na serveru nese složku a potvrzení heslem',
   const r = await page.evaluate(async () => {
     const s = window.__diskSoubory;
     const jm = [...s.keys()];
-    const otisk = jm.find(j => /^otisk_/.test(j));
+    const otisk = jm.find(j => /^otisk_jiny_\d{4}-\d{2}-\d{2}_\d{4}\.json\.gz$/.test(j));
     /* #523: kopie je .json.gz — SHA-256 a velikost ze zapsaných bajtů, obsah po rozbalení */
     const bajty = otisk ? new Uint8Array(await s.get(otisk).arrayBuffer()) : new Uint8Array(0);
     const text = otisk ? await new Response(s.get(otisk).stream().pipeThrough(new DecompressionStream('gzip'))).text() : '';
     const velikost = bajty.length;
     const b = await crypto.subtle.digest('SHA-256', bajty);
     const sha = [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
-    return { jm, otisk, text, sha, velikost, posledni: JSON.parse(s.get('posledni_kopie.json') ? await s.get('posledni_kopie.json').text() : 'null'),
+    return { jm, otisk, text, sha, velikost, posledni: JSON.parse(s.get('posledni_kopie_jiny.json') ? await s.get('posledni_kopie_jiny.json').text() : 'null'),
       hlaska: ONLINE_STAV.hlaska, kopie: ONLINE_STAV.kopieDisk, vyber: window.__diskVyber };
   });
-  test('N6 #523: soubor otisk_<den nočního otisku>.json.gz + posledni_kopie.json', r.otisk === 'otisk_' + nocniDen + '.json.gz'
-    && r.jm.includes('posledni_kopie.json'), r.jm);
-  test('#523: po kopii stará kopie zmizela, cizí soubor zůstal, hláška hlásí úklid', !r.jm.includes('otisk_2025-04-01.json')
+  test('N6 #523 #550: soubor otisk_<prostředí>_<den nočního otisku>_HHMM.json.gz + posledni_kopie_<prostředí>.json',
+    !!r.otisk && r.otisk.startsWith('otisk_jiny_' + nocniDen + '_') && r.jm.includes('posledni_kopie_jiny.json'), r.jm);
+  test('#523 #550: po kopii stará kopie vlastního prostředí zmizela; kopie ostrého webu, starý tvar a cizí soubor zůstaly, hláška hlásí úklid',
+    !r.jm.includes('otisk_jiny_2025-04-01_0300.json') && r.jm.includes('otisk_main_2025-04-01_0300.json') && r.jm.includes('otisk_2025-04-01.json')
     && r.jm.includes('poznamka.txt') && /Na Disku smazáno 1 starší kopie/.test(r.hlaska), [r.jm, r.hlaska]);
   const z = JSON.parse(r.text || '{}');
   test('N6: kopie je noční otisk bez otisků hesel a bez podpisů', z.zdroj === 'nocni-otisk' && z.podpisy === null
     && !/"heslo"|scrypt/.test(r.text) && Array.isArray(z.uzivatele) && z.uzivatele.length > 0);
   test('N6: kopie nese zakázky a ceník', Object.keys(z.zakazky || {}).length > 0 && !!z.program);
-  test('N6: posledni_kopie.json nese datum, velikost a SHA-256 shodné se souborem',
-    !!r.posledni && !!r.posledni.kdy && r.posledni.velikostB === r.velikost && r.posledni.sha256 === r.sha, r.posledni);
-  test('N6: hláška ukáže cestu a velikost', /_Zaloha Netlify DB\/otisk_\d{4}-\d{2}-\d{2}\.json\.gz \(\d/.test(r.hlaska), r.hlaska);
+  test('N6: posledni_kopie_jiny.json nese datum, velikost, SHA-256 shodné se souborem a prostředí',
+    !!r.posledni && !!r.posledni.kdy && r.posledni.velikostB === r.velikost && r.posledni.sha256 === r.sha && r.posledni.prostredi === 'jiny', r.posledni);
+  test('N6: hláška ukáže cestu a velikost', /_Zaloha Netlify DB\/otisk_jiny_\d{4}-\d{2}-\d{2}_\d{4}\.json\.gz \(\d/.test(r.hlaska), r.hlaska);
   test('N6: server si kopii poznamenal (hlídka všude)', !!r.kopie && r.kopie.soubor === r.otisk
     && JSON.parse(pamet.get('zalohy/kopie-disk')).sha256 === r.sha);
   const html = await page.locator('#nastaveni-panel').innerHTML();

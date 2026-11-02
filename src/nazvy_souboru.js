@@ -23,8 +23,10 @@
  * Bez mezer a diakritiky; podtržítko jen mezi úseky, uvnitř úseku pomlčka.
  *
  * VÝJIMKY — názvy, které se NEMĚNÍ, protože je hledá jiný nástroj:
- *   otisk_RRRR-MM-DD.json(.gz) a posledni_kopie.json (kopie zálohy na Disk —
- *   hledá je naplánovaná úloha, hlídka i úklid Disku, retence_zaloh.js),
+ *   otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz) a posledni_kopie_<prostředí>.json
+ *   (kopie zálohy na Disk, #550 — prostředí main | test | jiny ze serveru,
+ *   čas Europe/Prague; hledá je naplánovaná úloha, hlídka i úklid Disku,
+ *   retence_zaloh.js; starý tvar otisk_RRRR-MM-DD.json(.gz) úklid nemaže),
  *   _nastaveni.json a _program.json (složka _DB se čte podle jména),
  *   šablony .docx a jejich jazykové mutace (nesou jméno nahraného souboru,
  *   které rejstřík šablon ukazuje jako verzi), přílohy poznámek (původní

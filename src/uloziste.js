@@ -2091,22 +2091,62 @@ function uloZalohaHlidka(otisky, ted) {
  * Jednou za 7 dní sama po přihlášení (je-li složka vybraná a právo
  * udělené), kdykoli tlačítkem; hlídka varuje, je-li poslední kopie starší
  * než 14 dní. Od #523 Z2 (26. 10. 2026) je kopie komprimovaná
- * (`otisk_RRRR-MM-DD.json.gz`) a po úspěšné kopii prohlížeč ve složce
+ * (`otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz`, #550) a po úspěšné kopii prohlížeč ve složce
  * uklidí staré kopie (src/retence_zaloh.js, kopieDiskUklid v online_ui.js).
  * Čisté funkce nad záznamem ze serveru (GET /api/zaloha_vynuceno →
  * kopieDisk), `ted` v ms. */
 const ULO_KOPIE_DISK_SLOZKA = '_Zaloha Netlify DB';
 const ULO_KOPIE_DISK_INTERVAL_DNU = 7;
 const ULO_KOPIE_DISK_HLIDKA_DNU = 14;
-function uloKopieDiskJmeno(den, gzip) {
-  const d = /^\d{4}-\d{2}-\d{2}$/.test(String(den || '')) ? String(den) : new Date().toISOString().slice(0, 10);
-  return 'otisk_' + d + '.json' + (gzip ? '.gz' : '');
+/* JMÉNO KOPIE (#550, J. V. 2. 11. 2026): ostrý i testovací web píšou do téže
+ * složky, proto `otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz)` — prostředí
+ * main | test | jiny hlásí server (odpověď /api/zaloha?zdroj=nocni), čas je
+ * pořízení zálohy v Europe/Prague. Rozbor a úklid: src/retence_zaloh.js
+ * (RETENCE_ZALOH_DISK_JMENO). Do v2.11.3 bylo jméno otisk_RRRR-MM-DD.json(.gz)
+ * a jedna společná posledni_kopie.json — obě prostředí se přepisovala. */
+const ULO_KOPIE_DISK_PROSTREDI = ['main', 'test', 'jiny'];
+function uloKopieDiskProstredi(p) {
+  const x = String(p == null ? '' : p).trim().toLowerCase();
+  return ULO_KOPIE_DISK_PROSTREDI.includes(x) ? x : null;
 }
-function uloKopieDiskStav(kopie, ted) {
+/* Den a čas v Europe/Prague: { den: 'RRRR-MM-DD', hhmm: 'HHMM' } nebo null. */
+function uloPrahaCas(kdy) {
+  const t = kdy instanceof Date ? kdy.getTime() : (typeof kdy === 'number' ? kdy : Date.parse(String(kdy || '')));
+  if (!Number.isFinite(t)) return null;
+  try {
+    const c = {};
+    for (const x of new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Prague', year: 'numeric', month: '2-digit',
+      day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(t))) c[x.type] = x.value;
+    if (!c.year || !c.hour) return null;
+    return { den: c.year + '-' + c.month + '-' + c.day, hhmm: c.hour + c.minute };
+  } catch (e) { return null; }
+}
+/* `den` = den nočního otisku (klíč v Blobs; jinak dnešek v Praze), `prostredi`
+ * ze serveru, `kdy` = čas pořízení zálohy (noční otisk: porizena). Bez platného
+ * prostředí jméno nevznikne (vrací '') — kopie se pak nezapíše. */
+function uloKopieDiskJmeno(den, gzip, prostredi, kdy) {
+  const p = uloKopieDiskProstredi(prostredi);
+  if (!p) return '';
+  const cas = uloPrahaCas(kdy == null ? Date.now() : kdy) || uloPrahaCas(Date.now());
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(String(den || '')) ? String(den) : cas.den;
+  return 'otisk_' + p + '_' + d + '_' + cas.hhmm + '.json' + (gzip ? '.gz' : '');
+}
+/* Záznam o poslední kopii na Disku — jeden pro každé prostředí (#550). */
+function uloKopieDiskPosledniJmeno(prostredi) {
+  const p = uloKopieDiskProstredi(prostredi);
+  return p ? 'posledni_kopie_' + p + '.json' : '';
+}
+/* `prostredi` (#550) = prostředí tohoto webu ze serveru; záznam kopie JINÉHO
+ * prostředí se bere jako žádná kopie (hláška ukazuje jen vlastní kopii),
+ * starý záznam bez prostředí platí (na webu ho psal jen ten web). */
+function uloKopieDiskStav(kopie, ted, prostredi) {
+  const p = uloKopieDiskProstredi(prostredi);
+  if (kopie && p && kopie.prostredi !== undefined && kopie.prostredi !== p) kopie = null;
+  const kde = p ? ' (prostředí ' + p + ')' : '';
   const t = kopie && Date.parse(kopie.kdy || '');
   if (!kopie || !isFinite(t)) {
     return { dnu: null, potreba: true, stara: true,
-      text: 'Kopie záloh na Disku Google (složka „' + ULO_KOPIE_DISK_SLOZKA + '") zatím žádná není. '
+      text: 'Kopie záloh na Disku Google' + kde + ' (složka „' + ULO_KOPIE_DISK_SLOZKA + '") zatím žádná není. '
         + 'Pořiďte ji tlačítkem „Zkopírovat zálohu na Disk teď".' };
   }
   const dnu = Math.max(0, Math.floor(((+ted || Date.now()) - t) / 86400000));
@@ -2114,9 +2154,9 @@ function uloKopieDiskStav(kopie, ted) {
   const kdy = new Date(t).toLocaleString('cs-CZ');
   return { dnu, potreba: dnu >= ULO_KOPIE_DISK_INTERVAL_DNU, stara,
     text: stara
-      ? 'Kopie záloh na Disku Google je stará ' + dnu + ' dní (naposledy ' + kdy + ', ' + String(kopie.soubor || '') + '). '
+      ? 'Kopie záloh na Disku Google' + kde + ' je stará ' + dnu + ' dní (naposledy ' + kdy + ', ' + String(kopie.soubor || '') + '). '
         + 'Zkopírujte zálohu na Disk — tlačítko „Zkopírovat zálohu na Disk teď"; samo se to děje jen v prohlížeči s vybranou složkou.'
-      : 'Poslední kopie záloh na Disku Google: ' + kdy + ' (' + String(kopie.soubor || '') + ').' };
+      : 'Poslední kopie záloh na Disku Google' + kde + ': ' + kdy + ' (' + String(kopie.soubor || '') + ').' };
 }
 
 /* POJISTKA RETENCE (K3-N13, rozhodnutí J. V. 20. 10. 2026; #523 Z2
@@ -2156,7 +2196,7 @@ function uloRetenceVarovani(v, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { uloZalohaSloz, ULO_TYPY_HLAVICKA, uloRetenceVarovani, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloZalohaSloz, ULO_TYPY_HLAVICKA, uloRetenceVarovani, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, uloKopieDiskProstredi, uloKopieDiskPosledniJmeno, uloPrahaCas, ULO_KOPIE_DISK_PROSTREDI, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,

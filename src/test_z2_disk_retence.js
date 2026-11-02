@@ -10,6 +10,8 @@
  * kopii, nikdy když kopie selhala, server ji nepřijal nebo zapsaný soubor
  * nesedí velikostí či SHA-256, a jen ve složce „_Zaloha Netlify DB".
  * Kopie je komprimovaná (otisk_…json.gz) a obnova ze souboru ji načte.
+ * #550: jména nesou prostředí a čas (otisk_main_RRRR-MM-DD_0310…); starý tvar
+ * bez prostředí a cizí prostředí zkouší src/test_550_nazvy_zaloh.js.
  *
  * Mazání je nevratné → tabulka přesného výběru jmen a simulovaná složka
  * (File System Access: values / getFileHandle / removeEntry) ve vm
@@ -37,14 +39,15 @@ test('úseky online_ui.js nalezeny (kopie na Disk, úklid, obnova .gz)', !!kopie
 
 /* ---------------- 1) tabulka: které kopie na Disku odejdou ---------------- */
 {
-  const V = R.retenceZalohDiskVyber;
+  /* #550: kopie nesou prostředí a čas (otisk_main_RRRR-MM-DD_HHMM…); úklid jen vlastního prostředí */
+  const V = (j, d, ch) => R.retenceZalohDiskVyber(j, d, ch, 'main');
   const nove = [];
-  for (let d = 21; d <= 27; d++) nove.push('otisk_2026-10-' + d + '.json.gz');
-  const cizi = ['posledni_kopie.json', 'otisk_2026-01-01 (1).json', 'otisk_2026-01-01.json.bak', 'Otisk_2026-01-01.json',
-    'zaloha_online_2026-01-01.json', 'otisk_2026-02-31.json', 'otisk_2026-1-1.json', 'otisk_2026-01-01.JSON', 'otisk_2026-01-01.json.gz.tmp',
+  for (let d = 21; d <= 27; d++) nove.push('otisk_main_2026-10-' + d + '_0310.json.gz');
+  const cizi = ['posledni_kopie.json', 'otisk_2026-01-01 (1).json', 'otisk_main_2026-01-01_0310.json.bak', 'Otisk_2026-01-01.json',
+    'zaloha_online_2026-01-01.json', 'otisk_main_2026-02-31_0310.json', 'otisk_2026-1-1.json', 'otisk_2026-01-01.JSON', 'otisk_main_2026-01-01_0310.json.gz.tmp',
     'otisk_2026-01-01.zip', 'poznamka.txt'];
-  const slozka = nove.concat(['otisk_2026-10-20.json', 'otisk_2026-10-18.json', 'otisk_2026-10-13.json', 'otisk_2026-10-01.json',
-    'otisk_2026-09-06.json', 'otisk_2026-09-04.json', 'otisk_2026-08-30.json', 'otisk_2026-08-02.json', 'otisk_2026-04-05.json'], cizi);
+  const slozka = nove.concat(['otisk_main_2026-10-20_0310.json', 'otisk_main_2026-10-18_0310.json', 'otisk_main_2026-10-13_0310.json', 'otisk_main_2026-10-01_0310.json',
+    'otisk_main_2026-09-06_0310.json', 'otisk_main_2026-09-04_0310.json', 'otisk_main_2026-08-30_0310.json', 'otisk_main_2026-08-02_0310.json', 'otisk_main_2026-04-05_0310.json'], cizi);
   /* Ručně (dnes 27. 10. 2026, úterý):
    *  21.–27. 10. denní (věk 0–6); 20. 10. (úterý, věk 7) — týden 19.–25. 10. drží neděle 25. 10. → pryč;
    *  18. 10. neděle (věk 9) týdenní; 13. 10. úterý téhož týdne → pryč;
@@ -52,29 +55,29 @@ test('úseky online_ui.js nalezeny (kopie na Disk, úklid, obnova .gz)', !!kopie
    *  30. 8. neděle (věk 58) → pryč; 2. 8. první v srpnu (hranice 27. 4.) zůstane;
    *  5. 4. první v dubnu — starší 6 měsíců → pryč. Cizí jména nikdy. */
   test('#523 Disk tabulka: 27. 10. 2026 — přesně 4 kopie k smazání', J(V(slozka, '2026-10-27'))
-    === J(['otisk_2026-04-05.json', 'otisk_2026-08-30.json', 'otisk_2026-10-13.json', 'otisk_2026-10-20.json']), V(slozka, '2026-10-27'));
+    === J(['otisk_main_2026-04-05_0310.json', 'otisk_main_2026-08-30_0310.json', 'otisk_main_2026-10-13_0310.json', 'otisk_main_2026-10-20_0310.json']), V(slozka, '2026-10-27'));
   test('#523 Disk tabulka: cizí a podobná jména se nikdy nemažou (ani po letech)',
-    V(cizi, '2031-01-01').length === 0 && V(cizi.concat(['otisk_2030-12-31.json']), '2031-01-01').length === 0);
+    V(cizi, '2031-01-01').length === 0 && V(cizi.concat(['otisk_main_2030-12-31_0310.json']), '2031-01-01').length === 0);
   test('#523 Disk tabulka: 7 dní — věk 6 zůstane, 7 se smaže (středa, týden drží neděle)',
-    J(V(['otisk_2027-03-01.json', 'otisk_2027-03-10.json', 'otisk_2027-03-11.json', 'otisk_2027-03-14.json', 'otisk_2027-03-17.json'], '2027-03-17'))
-      === J(['otisk_2027-03-10.json']));
+    J(V(['otisk_main_2027-03-01_0310.json', 'otisk_main_2027-03-10_0310.json', 'otisk_main_2027-03-11_0310.json', 'otisk_main_2027-03-14_0310.json', 'otisk_main_2027-03-17_0310.json'], '2027-03-17'))
+      === J(['otisk_main_2027-03-10_0310.json']));
   test('#523 Disk tabulka: týden bez neděle drží sobotu; neděle stará 56 dní odejde',
-    J(V(['otisk_2027-01-01.json', 'otisk_2027-01-29.json', 'otisk_2027-01-30.json', 'otisk_2027-01-31.json', 'otisk_2027-02-06.json',
-      'otisk_2027-02-27.json', 'otisk_2027-03-28.json'], '2027-03-28'))
-      === J(['otisk_2027-01-29.json', 'otisk_2027-01-30.json', 'otisk_2027-01-31.json']));
+    J(V(['otisk_main_2027-01-01_0310.json', 'otisk_main_2027-01-29_0310.json', 'otisk_main_2027-01-30_0310.json', 'otisk_main_2027-01-31_0310.json', 'otisk_main_2027-02-06_0310.json',
+      'otisk_main_2027-02-27_0310.json', 'otisk_main_2027-03-28_0310.json'], '2027-03-28'))
+      === J(['otisk_main_2027-01-29_0310.json', 'otisk_main_2027-01-30_0310.json', 'otisk_main_2027-01-31_0310.json']));
   test('#523 Disk tabulka: týdenní kopie se dělají jen jednou týdně — všechny poslední týdny zůstanou',
-    V(['otisk_2026-09-06.json', 'otisk_2026-09-13.json', 'otisk_2026-09-20.json', 'otisk_2026-09-27.json', 'otisk_2026-10-04.json',
-      'otisk_2026-10-11.json', 'otisk_2026-10-18.json', 'otisk_2026-10-25.json'], '2026-10-27').length === 0);
+    V(['otisk_main_2026-09-06_0310.json', 'otisk_main_2026-09-13_0310.json', 'otisk_main_2026-09-20_0310.json', 'otisk_main_2026-09-27_0310.json', 'otisk_main_2026-10-04_0310.json',
+      'otisk_main_2026-10-11_0310.json', 'otisk_main_2026-10-18_0310.json', 'otisk_main_2026-10-25_0310.json'], '2026-10-27').length === 0);
   test('#523 Disk tabulka: .json i .json.gz téhož dne — odcházejí i zůstávají spolu',
-    J(V(['otisk_2027-01-05.json', 'otisk_2027-01-05.json.gz', 'otisk_2027-01-01.json', 'otisk_2027-03-01.json.gz', 'otisk_2027-04-01.json.gz'], '2027-04-01'))
-      === J(['otisk_2027-01-05.json', 'otisk_2027-01-05.json.gz']));
-  test('#523 Disk tabulka: nejnovější kopie zůstane, i když je stará', V(['otisk_2026-01-03.json'], '2028-01-01').length === 0
-    && J(V(['otisk_2026-01-03.json', 'otisk_2026-01-04.json'], '2028-01-01')) === J(['otisk_2026-01-03.json']));
+    J(V(['otisk_main_2027-01-05_0310.json', 'otisk_main_2027-01-05_0310.json.gz', 'otisk_main_2027-01-01_0310.json', 'otisk_main_2027-03-01_0310.json.gz', 'otisk_main_2027-04-01_0310.json.gz'], '2027-04-01'))
+      === J(['otisk_main_2027-01-05_0310.json', 'otisk_main_2027-01-05_0310.json.gz']));
+  test('#523 Disk tabulka: nejnovější kopie zůstane, i když je stará', V(['otisk_main_2026-01-03_0310.json'], '2028-01-01').length === 0
+    && J(V(['otisk_main_2026-01-03_0310.json', 'otisk_main_2026-01-04_0310.json'], '2028-01-01')) === J(['otisk_main_2026-01-03_0310.json']));
   test('#523 Disk tabulka: chráněné jméno (právě zapsaná kopie) se nesmaže ani se svým dnem',
-    J(V(['otisk_2027-03-02.json', 'otisk_2027-03-02.json.gz', 'otisk_2027-03-01.json', 'otisk_2027-03-07.json', 'otisk_2027-03-20.json'],
-      '2027-03-20', ['otisk_2027-03-02.json.gz'])) === '[]');
-  test('#523 Disk tabulka: neplatný dnešek = nic', V(['otisk_2020-01-01.json', 'otisk_2020-01-02.json'], '2027-02-31').length === 0
-    && V(['otisk_2020-01-01.json', 'otisk_2020-01-02.json'], '').length === 0);
+    J(V(['otisk_main_2027-03-02_0310.json', 'otisk_main_2027-03-02_0310.json.gz', 'otisk_main_2027-03-01_0310.json', 'otisk_main_2027-03-07_0310.json', 'otisk_main_2027-03-20_0310.json'],
+      '2027-03-20', ['otisk_main_2027-03-02_0310.json.gz'])) === '[]');
+  test('#523 Disk tabulka: neplatný dnešek = nic', V(['otisk_main_2020-01-01_0310.json', 'otisk_main_2020-01-02_0310.json'], '2027-02-31').length === 0
+    && V(['otisk_main_2020-01-01_0310.json', 'otisk_main_2020-01-02_0310.json'], '').length === 0);
 }
 
 /* ---------------- 2) simulovaná složka a průběh kopie ---------------- */
@@ -111,6 +114,7 @@ const novyCtx = (opt) => {
     CompressionStream: o.bezKomprese ? undefined : CompressionStream, DecompressionStream: o.bezKomprese ? undefined : DecompressionStream,
     volani: [], zpravy: [], heslo: 'Heslo.Spravce.1',
     ULO_KOPIE_DISK_SLOZKA: U.ULO_KOPIE_DISK_SLOZKA, uloKopieDiskJmeno: U.uloKopieDiskJmeno, uloZalohaSloz: U.uloZalohaSloz,
+    uloKopieDiskProstredi: U.uloKopieDiskProstredi, uloKopieDiskPosledniJmeno: U.uloKopieDiskPosledniJmeno, retenceZalohDiskRozeber: R.retenceZalohDiskRozeber,
     retenceZalohDiskVyber: R.retenceZalohDiskVyber, retenceZalohPokles: R.retenceZalohPokles, RETENCE_ZALOH_DISK_JMENO: R.RETENCE_ZALOH_DISK_JMENO,
     ONLINE_STAV: { otisky: [], kopieDisk: null }, jeAdminOnline: () => true, render: () => {}, uloPravo: async () => true,
     onlineZprava: (t, typ) => { ctx.zpravy.push([String(t), typ || '']); },
@@ -118,7 +122,7 @@ const novyCtx = (opt) => {
   };
   ctx.onlineApi = async (cesta, telo) => {
     ctx.volani.push([cesta, telo]);
-    if (cesta === '/api/zaloha?zdroj=nocni&strana=1') return { ok: true, zaloha: JSON.parse(J(ZALOHA)), otisk: o.otisk || '2026-10-27', puvod: 'nocni-otisk' };
+    if (cesta === '/api/zaloha?zdroj=nocni&strana=1') return { ok: true, zaloha: JSON.parse(J(ZALOHA)), otisk: o.otisk || '2026-10-27', puvod: 'nocni-otisk', prostredi: 'main' };
     if (o.serverOdpoved) return o.serverOdpoved(cesta, telo);
     /* Čas serveru z Date.now() (podvržený na 27. 10.), ne z new Date() — ta bere skutečné
      * hodiny a od 28. 10. 2026 se test „rozešel se serverem o víc než den" (6 FAIL; #542). */
@@ -130,9 +134,9 @@ const novyCtx = (opt) => {
   return ctx;
 };
 const sha = async (b) => [...new Uint8Array(await crypto.subtle.digest('SHA-256', b))].map(x => x.toString(16).padStart(2, '0')).join('');
-const STARE = { 'otisk_2026-10-13.json': 'stara', 'otisk_2026-10-18.json': 'nedele', 'otisk_2026-10-20.json': 'utery',
-  'otisk_2026-10-01.json': 'prvni', 'otisk_2026-04-05.json': 'duben', 'posledni_kopie.json': '{}', 'otisk_2026-04-05 (1).json': 'kopie',
-  'otisk_2026-01-01.json': { kind: 'directory' } };
+const STARE = { 'otisk_main_2026-10-13_0310.json': 'stara', 'otisk_main_2026-10-18_0310.json': 'nedele', 'otisk_main_2026-10-20_0310.json': 'utery',
+  'otisk_main_2026-10-01_0310.json': 'prvni', 'otisk_main_2026-04-05_0310.json': 'duben', 'posledni_kopie.json': '{}', 'otisk_2026-04-05 (1).json': 'kopie',
+  'otisk_main_2026-01-01_0310.json': { kind: 'directory' } };
 const realNow = Date.now;
 Date.now = () => Date.parse('2026-10-27T09:00:00Z');
 
@@ -142,33 +146,33 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
     const ctx = novyCtx();
     const h = slozka('_Zaloha Netlify DB', STARE);
     const k = await ctx.proved(h);
-    const zapsany = h.m.get('otisk_2026-10-27.json.gz');
+    const zapsany = h.m.get('otisk_main_2026-10-27_0310.json.gz');
     test('#523 kopie: soubor otisk_<den>.json.gz, gzip (1f 8b), rozbalí se na zálohu', !!zapsany && zapsany.data[0] === 0x1f && zapsany.data[1] === 0x8b
       && J(JSON.parse(gunzipSync(zapsany.data).toString('utf8'))) === J(ZALOHA), [...h.m.keys()]);
     test('#523 kopie: komprese je znát (gzip menší než JSON)', zapsany.data.length < J(ZALOHA).length / 3, zapsany && zapsany.data.length);
     const zaznam = (ctx.volani.find(v => v[0] === '/api/zaloha_vynuceno') || [])[1];
     test('#523 kopie: server dostane jméno .json.gz, velikost a SHA-256 zapsaných (komprimovaných) bajtů',
-      !!zaznam && zaznam.kopie.soubor === 'otisk_2026-10-27.json.gz' && zaznam.kopie.velikostB === zapsany.data.length
+      !!zaznam && zaznam.kopie.soubor === 'otisk_main_2026-10-27_0310.json.gz' && zaznam.kopie.velikostB === zapsany.data.length
       && zaznam.kopie.sha256 === await sha(zapsany.data), zaznam && zaznam.kopie);
     /* 20. 10. (úterý) zůstane: v jeho týdnu (19.–25. 10.) ve složce neděle není → nejbližší starší je on sám */
     test('#523 úklid: po kopii smazány přesně 13. 10. a 5. 4. (pravidlo), nic jiného; 20. 10. drží svůj týden',
-      J(h.smazane.slice().sort()) === J(['otisk_2026-04-05.json', 'otisk_2026-10-13.json']) && h.m.has('otisk_2026-10-20.json')
+      J(h.smazane.slice().sort()) === J(['otisk_main_2026-04-05_0310.json', 'otisk_main_2026-10-13_0310.json']) && h.m.has('otisk_main_2026-10-20_0310.json')
       && J(k.uklid.smazano.slice().sort()) === J(h.smazane.slice().sort()), { smazane: h.smazane, uklid: k.uklid });
     test('#523 úklid: zůstala nová kopie, neděle, první v měsíci, posledni_kopie.json, podobná jména i podsložka',
-      ['otisk_2026-10-27.json.gz', 'otisk_2026-10-18.json', 'otisk_2026-10-01.json', 'posledni_kopie.json', 'otisk_2026-04-05 (1).json',
-        'otisk_2026-01-01.json'].every(j => h.m.has(j)), [...h.m.keys()]);
+      ['otisk_main_2026-10-27_0310.json.gz', 'otisk_main_2026-10-18_0310.json', 'otisk_main_2026-10-01_0310.json', 'posledni_kopie.json', 'otisk_2026-04-05 (1).json',
+        'otisk_main_2026-01-01_0310.json'].every(j => h.m.has(j)), [...h.m.keys()]);
     test('#523 úklid: hláška řekne, kolik a které kopie smazala', /Na Disku smazáno 2 starší kopie podle pravidla \(7 dní, týdenní 8 týdnů, měsíční 6 měsíců\): /
       .test(ctx.uklidText(k.uklid)), ctx.uklidText(k.uklid));
   }
   /* ---- tlačítko: hláška v obrazovce nese výsledek úklidu ---- */
   {
     const ctx = novyCtx();
-    const h = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-13.json': 'x', 'otisk_2026-10-18.json': 'n', 'otisk_2026-10-01.json': 'y' });
+    const h = slozka('_Zaloha Netlify DB', { 'otisk_main_2026-10-13_0310.json': 'x', 'otisk_main_2026-10-18_0310.json': 'n', 'otisk_main_2026-10-01_0310.json': 'y' });
     ctx.KD.slozka = h;
     const vys = await ctx.ted();
     const z = ctx.zpravy.map(x => x[0]).join(' | ');
     test('#523 obrazovka: po kopii hláška ukáže cestu .json.gz a počet smazaných starých kopií', vys === true
-      && /_Zaloha Netlify DB\/otisk_2026-10-27\.json\.gz \(/.test(z) && /Na Disku smazáno 1 starší kopie .*otisk_2026-10-13\.json/.test(z), z);
+      && /_Zaloha Netlify DB\/otisk_main_2026-10-27_0310\.json\.gz \(/.test(z) && /Na Disku smazáno 1 starší kopie .*otisk_main_2026-10-13_0310\.json/.test(z), z);
   }
   /* ---- pojistky: kdy se NIC nemaže ---- */
   {
@@ -216,41 +220,41 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
   {
     const ctx = novyCtx();
     const h = slozka('Stažené soubory', STARE);
-    const u = await ctx.uklid(h, { soubor: 'otisk_2026-10-27.json.gz', velikostB: 10, sha256: 'a'.repeat(64) });
+    const u = await ctx.uklid(h, { soubor: 'otisk_main_2026-10-27_0310.json.gz', velikostB: 10, sha256: 'a'.repeat(64) });
     test('#523 pojistka: jiná složka než „_Zaloha Netlify DB" → úklid nic nesmaže', h.smazane.length === 0 && /nejmenuje/.test(u.duvod || ''), u);
-    const h2 = slozka('_Zaloha Netlify DB', Object.assign({}, STARE, { 'otisk_2026-10-27.json.gz': 'x' }));
-    const u2 = await ctx.uklid(h2, { soubor: 'otisk_2026-10-27.json.gz', velikostB: 1, sha256: '' });
+    const h2 = slozka('_Zaloha Netlify DB', Object.assign({}, STARE, { 'otisk_main_2026-10-27_0310.json.gz': 'x' }));
+    const u2 = await ctx.uklid(h2, { soubor: 'otisk_main_2026-10-27_0310.json.gz', velikostB: 1, sha256: '' });
     test('#523 pojistka: kopie bez SHA-256 → úklid nic nesmaže', h2.smazane.length === 0 && /ověřit/.test(u2.duvod || ''), u2);
     const h3 = slozka('_Zaloha Netlify DB', STARE);
     delete h3.values;
-    const u3 = await ctx.uklid(h3, { soubor: 'otisk_2026-10-13.json', velikostB: 5, sha256: await sha(Buffer.from('stara')) });
+    const u3 = await ctx.uklid(h3, { soubor: 'otisk_main_2026-10-13_0310.json', velikostB: 5, sha256: await sha(Buffer.from('stara')) });
     test('#523 pojistka: prohlížeč neumí procházet složku → nic', h3.smazane.length === 0 && /neumí procházet/.test(u3.duvod || ''), u3);
   }
   {
     /* právě zapsaná kopie je starý noční otisk (výpadek nocí) — sama sebe nesmaže */
     const ctx = novyCtx({ otisk: '2026-10-13' });
-    const h = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-18.json': 'nedele', 'otisk_2026-10-01.json': 'prvni', 'otisk_2026-10-26.json': 'vcera' });
+    const h = slozka('_Zaloha Netlify DB', { 'otisk_main_2026-10-18_0310.json': 'nedele', 'otisk_main_2026-10-01_0310.json': 'prvni', 'otisk_main_2026-10-26_0310.json': 'vcera' });
     const k = await ctx.proved(h);
     test('#523 pojistka: právě zapsaná kopie se nesmaže, i když by ji pravidlo vybralo (13. 10., týden drží 18. 10.)',
-      h.m.has('otisk_2026-10-13.json.gz') && h.smazane.length === 0 && k.uklid.smazano.length === 0, { smazane: h.smazane, uklid: k.uklid });
+      h.m.has('otisk_main_2026-10-13_0310.json.gz') && h.smazane.length === 0 && k.uklid.smazano.length === 0, { smazane: h.smazane, uklid: k.uklid });
   }
   {
     /* chyba mazání jednoho souboru nezastaví ostatní a kopii nezpochybní */
     const ctx = novyCtx();
     const h = slozka('_Zaloha Netlify DB', STARE);
     const puv = h.removeEntry.bind(h);
-    h.removeEntry = async (jm) => { if (jm === 'otisk_2026-10-13.json') throw new Error('zamčeno'); return puv(jm); };
+    h.removeEntry = async (jm) => { if (jm === 'otisk_main_2026-10-13_0310.json') throw new Error('zamčeno'); return puv(jm); };
     const k = await ctx.proved(h);
     test('#523 úklid: chyba jednoho mazání se ohlásí, ostatní proběhnou', k.uklid.chyby.length === 1 && k.uklid.smazano.length === 1
-      && /Nepodařilo se smazat: otisk_2026-10-13\.json: zamčeno/.test(ctx.uklidText(k.uklid)), k.uklid);
+      && /Nepodařilo se smazat: otisk_main_2026-10-13_0310\.json: zamčeno/.test(ctx.uklidText(k.uklid)), k.uklid);
   }
   /* ---- prohlížeč bez CompressionStream: .json jako dřív, úklid běží ---- */
   {
     const ctx = novyCtx({ bezKomprese: true });
     const h = slozka('_Zaloha Netlify DB', STARE);
     const k = await ctx.proved(h);
-    test('#523 bez komprese: kopie .json (text zálohy), úklid proběhne', k.soubor === 'otisk_2026-10-27.json'
-      && J(JSON.parse(h.m.get('otisk_2026-10-27.json').data.toString('utf8'))) === J(ZALOHA) && h.smazane.length === 2, { k, smazane: h.smazane });
+    test('#523 bez komprese: kopie .json (text zálohy), úklid proběhne', k.soubor === 'otisk_main_2026-10-27_0310.json'
+      && J(JSON.parse(h.m.get('otisk_main_2026-10-27_0310.json').data.toString('utf8'))) === J(ZALOHA) && h.smazane.length === 2, { k, smazane: h.smazane });
   }
   /* ---- obnova ze souboru umí .json.gz i .json ---- */
   {
@@ -271,30 +275,30 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
   {
     const dataNove = Buffer.byteLength(J(ZALOHA));
     const vetsi = (pomer) => 'x'.repeat(Math.round(dataNove / pomer));
-    for (const [popis, predchozi] of [['.json', { 'otisk_2026-10-20.json': vetsi(0.85) }],
-      ['.json.gz (velikost dat po rozbalení)', { 'otisk_2026-10-20.json.gz': { kind: 'file', data: gzipSync(Buffer.from(vetsi(0.85))) } }]]) {
+    for (const [popis, predchozi] of [['.json', { 'otisk_main_2026-10-20_0310.json': vetsi(0.85) }],
+      ['.json.gz (velikost dat po rozbalení)', { 'otisk_main_2026-10-20_0310.json.gz': { kind: 'file', data: gzipSync(Buffer.from(vetsi(0.85))) } }]]) {
       const ctx = novyCtx({ serverOdpoved: async (cesta, telo) => {
         if (telo && telo.akce === 'retence-varovani-disk') return { ok: true, retenceVarovani: { kdy: 'x', den: telo.disk.den, zdroj: 'disk', text: 'úbytek' } };
         return { ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString() }, retenceVarovani: null }; } });
-      const h = slozka('_Zaloha Netlify DB', Object.assign({ 'otisk_2026-10-13.json': 'stara', 'otisk_2026-10-01.json': 'prvni', 'otisk_2026-04-05.json': 'duben' }, predchozi));
+      const h = slozka('_Zaloha Netlify DB', Object.assign({ 'otisk_main_2026-10-13_0310.json': 'stara', 'otisk_main_2026-10-01_0310.json': 'prvni', 'otisk_main_2026-04-05_0310.json': 'duben' }, predchozi));
       const k = await ctx.proved(h);
       const hlaseni = (ctx.volani.find(v => v[1] && v[1].akce === 'retence-varovani-disk') || [])[1];
       test('#523 pojistka Disk (' + popis + '): nová kopie −15 % → nic se nesmaže, úklid řekne proč', h.smazane.length === 0
         && /méně dat \(velikost .* \(85 %\)\)/.test(k.uklid.duvod || ''), { smazane: h.smazane, uklid: k.uklid });
       test('#523 pojistka Disk (' + popis + '): server dostane hlášení s velikostmi dat a dnem kopie', !!hlaseni
-        && hlaseni.disk.den === '2026-10-27' && hlaseni.disk.novySoubor === 'otisk_2026-10-27.json.gz'
+        && hlaseni.disk.den === '2026-10-27' && hlaseni.disk.novySoubor === 'otisk_main_2026-10-27_0310.json.gz'
         && hlaseni.disk.novaVelikostB === dataNove && Math.abs(hlaseni.disk.predVelikostB - dataNove / 0.85) < 2
-        && /^otisk_2026-10-20\.json/.test(hlaseni.disk.predSoubor), hlaseni);
+        && /^otisk_main_2026-10-20_0310\.json/.test(hlaseni.disk.predSoubor), hlaseni);
       test('#523 pojistka Disk (' + popis + '): varování ze serveru se ukáže v hlídce', !!ctx.ONLINE_STAV.retenceVarovani && ctx.ONLINE_STAV.retenceVarovani.zdroj === 'disk');
     }
   }
   {
     const dataNove = Buffer.byteLength(J(ZALOHA));
     const ctx = novyCtx();
-    const h = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-20.json': 'x'.repeat(Math.round(dataNove / 0.95)), 'otisk_2026-10-13.json': 'stara',
-      'otisk_2026-10-18.json': 'nedele', 'otisk_2026-10-01.json': 'prvni', 'otisk_2026-04-05.json': 'duben' });
+    const h = slozka('_Zaloha Netlify DB', { 'otisk_main_2026-10-20_0310.json': 'x'.repeat(Math.round(dataNove / 0.95)), 'otisk_main_2026-10-13_0310.json': 'stara',
+      'otisk_main_2026-10-18_0310.json': 'nedele', 'otisk_main_2026-10-01_0310.json': 'prvni', 'otisk_main_2026-04-05_0310.json': 'duben' });
     const k = await ctx.proved(h);
-    test('#523 pojistka Disk: nová kopie −5 % → úklid proběhne', J(h.smazane.slice().sort()) === J(['otisk_2026-04-05.json', 'otisk_2026-10-13.json'])
+    test('#523 pojistka Disk: nová kopie −5 % → úklid proběhne', J(h.smazane.slice().sort()) === J(['otisk_main_2026-04-05_0310.json', 'otisk_main_2026-10-13_0310.json'])
       && !ctx.volani.some(v => v[1] && v[1].akce === 'retence-varovani-disk'), k.uklid);
   }
   {
@@ -307,14 +311,14 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
     const dataNove = Buffer.byteLength(J(ZALOHA));
     const ctx2 = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString() },
       retenceVarovani: { kdy: '2026-10-27T03:00:00Z', den: '2026-10-27', zdroj: 'disk', text: 'x', potvrzeno: { kdy: 'y', kdo: 'spravce' } } }) });
-    const h2 = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-20.json': 'x'.repeat(Math.round(dataNove / 0.8)), 'otisk_2026-10-13.json': 'stara',
-      'otisk_2026-10-18.json': 'nedele', 'otisk_2026-10-01.json': 'prvni', 'otisk_2026-04-05.json': 'duben' });
+    const h2 = slozka('_Zaloha Netlify DB', { 'otisk_main_2026-10-20_0310.json': 'x'.repeat(Math.round(dataNove / 0.8)), 'otisk_main_2026-10-13_0310.json': 'stara',
+      'otisk_main_2026-10-18_0310.json': 'nedele', 'otisk_main_2026-10-01_0310.json': 'prvni', 'otisk_main_2026-04-05_0310.json': 'duben' });
     const k2 = await ctx2.proved(h2);
     test('#523 pojistka Disk: úbytek potvrzený správcem pro tentýž den → úklid proběhne', h2.smazane.length === 2
       && !ctx2.volani.some(v => v[1] && v[1].akce === 'retence-varovani-disk'), k2.uklid);
     const ctx3 = novyCtx({ serverOdpoved: async (cesta, telo) => (telo && telo.akce === 'retence-varovani-disk') ? { ok: true, retenceVarovani: { kdy: 'x' } }
       : { ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString() }, retenceVarovani: { kdy: '2026-10-20T03:00:00Z', den: '2026-10-20', text: 'x', potvrzeno: { kdy: 'y' } } } });
-    const h3 = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-20.json': 'x'.repeat(Math.round(dataNove / 0.8)), 'otisk_2026-10-13.json': 'stara', 'otisk_2026-10-01.json': 'prvni' });
+    const h3 = slozka('_Zaloha Netlify DB', { 'otisk_main_2026-10-20_0310.json': 'x'.repeat(Math.round(dataNove / 0.8)), 'otisk_main_2026-10-13_0310.json': 'stara', 'otisk_main_2026-10-01_0310.json': 'prvni' });
     await ctx3.proved(h3);
     test('#523 pojistka Disk: potvrzení jiného dne úbytek nové kopie neodemkne', h3.smazane.length === 0
       && ctx3.volani.some(v => v[1] && v[1].akce === 'retence-varovani-disk'));
@@ -347,17 +351,18 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
     /* počítač o 20 h pozadu (26. 10., pořád v toleranci): dnešek je den serveru 27. 10. — úterý 20. 10. má věk 7
      * a jeho týden drží neděle 25. 10. → smaže se; podle hodin počítače (26. 10., věk 6) by zůstal */
     const ctx3 = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: new Date(serverTed).toISOString() } }) });
-    const h3 = slozka('_Zaloha Netlify DB', { 'otisk_2026-10-01.json': 'prvni', 'otisk_2026-10-20.json': 'utery', 'otisk_2026-10-25.json': 'nedele', 'otisk_2026-10-26.json': 'vcera' });
+    const h3 = slozka('_Zaloha Netlify DB', { 'otisk_main_2026-10-01_0310.json': 'prvni', 'otisk_main_2026-10-20_0310.json': 'utery', 'otisk_main_2026-10-25_0310.json': 'nedele', 'otisk_main_2026-10-26_0310.json': 'vcera' });
     Date.now = () => serverTed - 20 * 3600000;
     let k3;
     try { k3 = await ctx3.proved(h3); } finally { Date.now = () => Date.parse('2026-10-27T09:00:00Z'); }
     test('O-K9 K9-S6: hodiny v toleranci (−20 h) → úklid podle dne serveru (27. 10.), ne podle počítače',
-      J(h3.smazane) === J(['otisk_2026-10-20.json']), { smazane: h3.smazane, uklid: k3.uklid });
+      J(h3.smazane) === J(['otisk_main_2026-10-20_0310.json']), { smazane: h3.smazane, uklid: k3.uklid });
   }
   /* ---- server přijme záznam .json.gz a podloží jím retenci ---- */
   {
-    test('#523 jméno kopie: uloKopieDiskJmeno umí .json.gz', U.uloKopieDiskJmeno('2026-10-27', true) === 'otisk_2026-10-27.json.gz'
-      && U.uloKopieDiskJmeno('2026-10-27') === 'otisk_2026-10-27.json');
+    test('#523 jméno kopie: uloKopieDiskJmeno umí .json.gz (#550: s prostředím a časem)',
+      U.uloKopieDiskJmeno('2026-10-27', true, 'main', '2026-10-27T02:10:00Z') === 'otisk_main_2026-10-27_0310.json.gz'
+      && U.uloKopieDiskJmeno('2026-10-27', false, 'main', '2026-10-27T02:10:00Z') === 'otisk_main_2026-10-27_0310.json');
   }
   Date.now = realNow;
   console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');

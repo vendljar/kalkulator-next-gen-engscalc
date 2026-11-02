@@ -1002,13 +1002,14 @@ export async function retenceProved(novyKlic, dnes, ted, opt = {}) {
       : drzeno.poskozeny ? 'retence stojí — záznam varování pojistky je poškozený (není objekt); potvrdit ho může jen hlavní správce'
       : drzeno.bezCasu ? 'retence stojí — nepotvrzené varování pojistky nemá platné datum (poškozený záznam), potvrďte ho'
       : 'retence stojí do potvrzení úbytku dat správcem (varování před ' + drzeno.dnu + ' dny)' };
-  const kopie = await s.cti(KOPIE_DISK_KLIC);
+  const prostredi = prostrediZalohy();
+  const kopie = kopieDiskVlastni(await s.cti(kopieDiskKlic()), prostredi);
   if (!kopieDiskCerstva(kopie, ted))
     return { smazano: [], chyby: [], ceka: 'retence čeká na první kopii na Disk' };
   /* K3-N1 (20. 10. 2026): záznam píše prohlížeč, takže sám čas nestačí —
    * retenci odemkne jen kopie existujícího nočního otisku s velikostí
    * a otiskem SHA-256 (kopieDiskPodlozena). */
-  if (!kopieDiskPodlozena(kopie, klice))
+  if (!kopieDiskPodlozena(kopie, klice, prostredi))
     return { smazano: [], chyby: [], ceka: 'retence čeká na podloženou kopii nočního otisku na Disk' };
   /* ČASOVÝ ROZPOČET (#523 Z2). Otisk po částech má desítky částí a první
    * noc po novém pravidle maže i staré otisky ze září — sekvenčně by to
@@ -1139,6 +1140,45 @@ export const KOPIE_DISK_KLIC = 'kopie-disk';
  * jméno nese klient (ULO_KOPIE_DISK_SLOZKA v src/uloziste.js). */
 export const KOPIE_DISK_SLOZKA = '_Zaloha Netlify DB';
 export const RETENCE_KOPIE_DISK_DNU = 7;
+/* PROSTŘEDÍ ZÁLOHY (#550, J. V. 2. 11. 2026). Ostrý (engscalc) i testovací
+ * web (testengscalc) kopírují do téže složky na Disku, proto jméno kopie nese
+ * main | test | jiny. Určuje to SERVER, ne adresa v prohlížeči: záznam kopie
+ * přijímá a ověřuje server (prohlížeč by jméno mohl podvrhnout), adresa
+ * se mění s vlastní doménou a náhled nasazení má jinou adresu nad týmiž daty.
+ *   test  — PROSTREDI=test (táž proměnná jako červený pruh a podpis relace);
+ *   jiny  — Netlify CONTEXT jiný než production (deploy-preview, branch-deploy,
+ *           dev) nebo běh mimo Netlify (místní server, testy);
+ *   main  — jinak (produkční nasazení ostrého webu; CONTEXT tam je
+ *           „production", nebo ho runtime funkce nenese).
+ * `env` jde podstrčit kvůli testům. */
+export const KOPIE_DISK_PROSTREDI = RZ.RETENCE_ZALOH_DISK_PROSTREDI;
+export function prostrediZalohy(env = process.env) {
+  const e = env || {};
+  const p = String(e.PROSTREDI || '').trim().toLowerCase();
+  if (p === 'test' || p === 'sandbox' || p === 'testovaci') return 'test';
+  const ctx = String(e.CONTEXT || '').trim().toLowerCase();
+  if (ctx && ctx !== 'production') return 'jiny';
+  const naNetlify = !!(e.NETLIFY || e.SITE_ID || e.SITE_NAME || e.DEPLOY_ID || e.CONTEXT
+    || e.NETLIFY_BLOBS_CONTEXT || e.AWS_LAMBDA_FUNCTION_NAME);
+  return naNetlify ? 'main' : 'jiny';
+}
+/* Klíč záznamu kopie: main a test mají každý svůj web, a tedy svoje Blobs;
+ * náhled nasazení (CONTEXT ≠ production) sdílí Blobs s produkcí, proto má
+ * vlastní klíč — jeho kopie nesmí přepsat záznam ostrého webu. Místní běh
+ * má vlastní úložiště, klíč zůstává. */
+export function kopieDiskKlic(env = process.env) {
+  const ctx = String((env || {}).CONTEXT || '').trim().toLowerCase();
+  return ctx && ctx !== 'production' ? KOPIE_DISK_KLIC + '-nahled' : KOPIE_DISK_KLIC;
+}
+/* Záznam kopie vlastního prostředí, nebo null (záznam jiného prostředí se
+ * neukazuje; starý záznam bez prostředí platí — na webu ho psal jen ten web). */
+export function kopieDiskVlastni(zaznam, prostredi) {
+  if (!zaznam || typeof zaznam !== 'object') return null;
+  if (zaznam.prostredi !== undefined && zaznam.prostredi !== prostredi) return null;
+  return zaznam;
+}
+/* Jméno souboru kopie (rozbor sdílí prohlížeč: src/retence_zaloh.js). */
+export function kopieDiskRozeber(jmeno) { return RZ.retenceZalohDiskRozeber(jmeno); }
 /* K3-N1 (audit K3, 20. 10. 2026): záznam kopie odemyká retenci, jen když
  * popisuje skutečnou kopii NOČNÍHO otisku — původ `nocni-otisk`, klíč dne,
  * který v úložišti je (`klice` = seznam úložiště `zalohy`), jméno souboru
@@ -1152,7 +1192,7 @@ export const RETENCE_KOPIE_DISK_DNU = 7;
  * i libovolně starý otisk (staré se nemažou). Počítá se z klíčů, ne z času,
  * takže na hodinách nezávisí. */
 export const KOPIE_DISK_NEJNOVEJSICH = 7;
-export function kopieDiskPodlozena(zaznam, klice) {
+export function kopieDiskPodlozena(zaznam, klice, prostredi = prostrediZalohy()) {
   if (!zaznam || typeof zaznam !== 'object' || zaznam.puvod !== 'nocni-otisk') return false;
   const otisk = typeof zaznam.otisk === 'string' ? zaznam.otisk : '';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(otisk) || !Array.isArray(klice)) return false;
@@ -1160,8 +1200,13 @@ export function kopieDiskPodlozena(zaznam, klice) {
   const nejnovejsi = klice.filter(k => typeof k === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(k))
     .sort().reverse().slice(0, KOPIE_DISK_NEJNOVEJSICH);
   if (!nejnovejsi.includes(otisk)) return false;
-  /* #523 Z2: kopie je od v26.10.9 komprimovaná (.json.gz); starší .json platí dál */
-  if (zaznam.soubor !== 'otisk_' + otisk + '.json' && zaznam.soubor !== 'otisk_' + otisk + '.json.gz') return false;
+  /* #523 Z2: kopie je od v26.10.9 komprimovaná (.json.gz); starší .json platí dál.
+   * #550: nový tvar otisk_<prostředí>_<den>_HHMM — den musí být tentýž otisk
+   * a prostředí to vlastní (kopie testu neodemkne retenci ostrého webu);
+   * starý tvar otisk_<den>.json(.gz) ze záznamů před v2.11.3 platí dál. */
+  const jm = kopieDiskRozeber(zaznam.soubor);
+  if (!jm || jm.den !== otisk) return false;
+  if (!jm.stary && (jm.prostredi !== prostredi || (zaznam.prostredi !== undefined && zaznam.prostredi !== prostredi))) return false;
   /* K3-N1 (rozhodnutí J. V. 20. 10. 2026): jen záznam potvrzený heslem
    * správce a jen kopie do složky „_Zaloha Netlify DB". Záznamy zapsané
    * před v20.10.2 tyhle značky nemají — retence počká na novou kopii. */

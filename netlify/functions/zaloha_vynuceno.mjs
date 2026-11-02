@@ -39,7 +39,7 @@
  * Otisk míří do Blobs (úložiště `zalohy`), NE ke stažení – ven se stahuje
  * /api/zaloha, která otisky hesel nenese. */
 import { vyzadujRoli, json, uloziste, potvrdHesloSpravce, ADMIN_EMAIL, vyhradne } from '../lib/sdilene.mjs';
-import { seznamOtisku, KOPIE_DISK_KLIC, KOPIE_DISK_SLOZKA, porizVynuceny,
+import { seznamOtisku, KOPIE_DISK_SLOZKA, porizVynuceny, prostrediZalohy, kopieDiskKlic, kopieDiskVlastni, kopieDiskRozeber,
   RETENCE_VAROVANI_KLIC, retenceDrzena, retencePoklesPocty, vynucenyPokracuj, seznamRozpracovanych,
   OTISK_STAV_KLIC, OTISK_ROZPOCET, ZALOHY_VOLBY, zalohySmi, retenceVarovaniPridej, retenceVarovaniPotvrd,
   RETENCE_ZAKLAD_KLIC, smazatPredObnovou, retenceVarovaniPoskozene } from '../lib/zalohovani.mjs';
@@ -56,7 +56,10 @@ export default async (req) => {
   if (req.method === 'GET') {
     const sZal = await uloziste('zalohy');
     return json({ ok: true, otisky: await seznamOtisku(14),
-      kopieDisk: (await sZal.cti(KOPIE_DISK_KLIC)) || null,
+      /* #550: jen kopie VLASTNÍHO prostředí (main / test / jiny) a prostředí,
+       * aby hláška v Nastavení → Databáze řekla, o čí kopii jde */
+      kopieDisk: kopieDiskVlastni(await sZal.cti(kopieDiskKlic()), prostrediZalohy()),
+      prostredi: prostrediZalohy(),
       retenceVarovani: zaznamNeboNic(await sZal.cti(RETENCE_VAROVANI_KLIC)),   // #529: i poškozený (false, 0, '')
       otiskStav: (await sZal.cti(OTISK_STAV_KLIC)) || null,              // #522
       rozpracovane: await seznamRozpracovanych(),
@@ -79,8 +82,16 @@ export default async (req) => {
   if (telo.akce === 'kopie-disk') {
     const k = (telo.kopie && typeof telo.kopie === 'object') ? telo.kopie : {};
     const soubor = txt(k.soubor);
-    if (!/^otisk_\d{4}-\d{2}-\d{2}\.json(\.gz)?$/.test(soubor))   // #523: komprimovaná kopie .json.gz
-      return json({ ok: false, chyba: 'Neplatné jméno souboru kopie.' }, 400);
+    /* #550: jen nový tvar otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz) a jen
+     * prostředí tohoto webu — starý tvar bez prostředí by se v Disku
+     * přepisoval s druhým webem (stará stránka v prohlížeči → obnovit). */
+    const jm = kopieDiskRozeber(soubor);
+    const prostredi = prostrediZalohy();
+    if (!jm) return json({ ok: false, chyba: 'Neplatné jméno souboru kopie.' }, 400);
+    if (jm.stary)
+      return json({ ok: false, chyba: 'Jméno kopie je ve starém tvaru bez prostředí — obnovte stránku (Ctrl+F5) a kopii pořiďte znovu.' }, 400);
+    if (jm.prostredi !== prostredi)
+      return json({ ok: false, chyba: 'Kopie je pojmenovaná pro prostředí „' + jm.prostredi + '", tento web je „' + prostredi + '".' }, 400);
     /* K3-N1 (rozhodnutí J. V. 20. 10. 2026): záznam odemyká retenci, proto
      * jen kopie do složky „_Zaloha Netlify DB" a jen s heslem správce —
      * kdo má jen cookie, retenci neodemkne. Složka se kontroluje dřív než
@@ -94,9 +105,9 @@ export default async (req) => {
       sha256: /^[0-9a-f]{64}$/.test(txt(k.sha256)) ? txt(k.sha256) : '',
       otisk: /^\d{4}-\d{2}-\d{2}$/.test(txt(k.otisk)) ? txt(k.otisk) : null,
       puvod: k.puvod === 'nocni-otisk' ? 'nocni-otisk' : 'aktualni-stav',
-      slozka: KOPIE_DISK_SLOZKA, potvrzeno: 'heslo-spravce' };
+      slozka: KOPIE_DISK_SLOZKA, potvrzeno: 'heslo-spravce', prostredi };
     const sZal = await uloziste('zalohy');
-    await sZal.zapis(KOPIE_DISK_KLIC, zaznam);
+    await sZal.zapis(kopieDiskKlic(), zaznam);
     /* #523: prohlížeč před úklidem Disku potřebuje čerstvý stav pojistky */
     return json({ ok: true, kopieDisk: zaznam, retenceVarovani: zaznamNeboNic(await sZal.cti(RETENCE_VAROVANI_KLIC)) });
   }
@@ -110,8 +121,10 @@ export default async (req) => {
   if (telo.akce === 'retence-varovani-disk') {
     const d = (telo.disk && typeof telo.disk === 'object') ? telo.disk : {};
     const den = txt(d.den), predSoubor = txt(d.predSoubor), novySoubor = txt(d.novySoubor);
-    const jmeno = /^otisk_\d{4}-\d{2}-\d{2}\.json(\.gz)?$/;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(den) || !jmeno.test(predSoubor) || !jmeno.test(novySoubor))
+    /* #550: obě kopie nového tvaru a vlastního prostředí (prohlížeč porovnává
+     * jen s kopií téhož webu — test proti ostrému by hlásil nesmyslný úbytek) */
+    const vlastni = (j) => { const r = kopieDiskRozeber(j); return !!r && !r.stary && r.prostredi === prostrediZalohy(); };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(den) || !vlastni(predSoubor) || !vlastni(novySoubor))
       return json({ ok: false, chyba: 'Neplatné údaje o kopii na Disku.' }, 400);
     const pred = { velikostB: Math.max(0, Math.floor(cislo(d.predVelikostB))) };
     const nove = { velikostB: Math.max(0, Math.floor(cislo(d.novaVelikostB))) };
