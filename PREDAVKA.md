@@ -13,6 +13,10 @@ session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; na ostrém webu, Disku ani v Pi
 | doplněk A — #550 (K36-N2) zahraniční sazba montáže můstků | ✅ | `src/cenik_rady.js` (`cenikZahrSVychozimi`, `cenikZahrMustkyUpozorneni`), `src/ui/cenik_ui.js`, `src/ui/program_ui.js`; test `src/test_550_zahr_mustky.js`, mutace 3/3 |
 | doplněk B — #551 (K37-I2) „IČ:" v DE/EN/FR patičce | ✅ | `src/firma.js` (`firmaPaticka(f, prekl)`), `src/preklad.js`, `src/ui/common.js`; test `src/test_551_ic_preklad.js`, mutace 4/4 |
 
+**Testy:** `testovaci_kolo.sh --bez-mutaci` **VŠE ZELENÉ** (357 / 0 / 7 přeskočeno — firemní podklady a test.js;
+statické 5 z 5; 23 min). Cílené mutace: #548 jádro 5/5 + server 4/4, upravené #354/#529 3/3, #550 3/3, #551 4/4.
+`kontrola_udaju.py` čistá. Prohlížečové harnessy potřebují odkaz `node_modules` → `/opt/node22/lib/node_modules`.
+
 **Zvolená varianta:** převod jen z platného ceníku (server i prohlížeč); bez zdroje zůstane paušál (počítá správně)
 a dialog chce potvrzení + vyzve k vyplnění v Nastavení → Ceník. Nový tvar s nulovou cenou za bm / montáží / hodinami
 → dialog; server bez `mustkyPotvrzeno: true` vrací 400 `kod: 'mustky'`. Starý tvar s nulovým paušálem server
