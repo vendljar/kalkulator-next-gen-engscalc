@@ -86,6 +86,27 @@ console.log('— 2. hláška se skutečnou příčinou —');
     && /Zakázka zůstává prodaná\.$/.test(w), w);
 }
 
+console.log('— 4. K37-N4: dolní mez data prodeje —');
+{
+  test('prodDatumOd = pražský den zámku', O.prodDatumOd(v) === '2026-10-27', O.prodDatumOd(v));
+  const a = kopie(zak);
+  const e1 = O.prodNastav(a, a.varianty[0], '2001-01-01', { ted: '2026-11-02T10:00:00Z' });
+  test('2001-01-01 → odmítnuto (dřív než odeslání nabídky), prodej se nezapíše', /dřív než odeslání nabídky \(27\. 10\. 2026\)/.test(e1)
+    && !a.varianty[0].prodano, e1);
+  const e2 = O.prodNastav(a, a.varianty[0], '2026-10-26', { ted: '2026-11-02T10:00:00Z' });
+  test('den před odesláním → odmítnuto', /dřív než odeslání/.test(e2), e2);
+  test('den odeslání → projde', O.prodNastav(kopie(zak), kopie(zak).varianty[0], '2026-10-27', { ted: '2026-11-02T10:00:00Z' }) === '');
+  test('budoucnost → odmítnuto', /budoucnosti/.test(O.prodNastav(kopie(zak), kopie(zak).varianty[0], '2026-11-03', { ted: '2026-11-02T10:00:00Z' })));
+  /* Zámek ve 23:30 UTC 27. 10. = 28. 10. v Praze. */
+  const w = kopie(v); w.zamek.kdy = '2026-10-27T23:30:00.000Z';
+  test('mez je pražský den (23:30 UTC → další den)', O.prodDatumOd(w) === '2026-10-28', O.prodDatumOd(w));
+  const bez = kopie(v); delete bez.zamek.kdy;
+  test('zámek bez času (starší data) dolní mez nemá', O.prodDatumOd(bez) === '' && O.prodDatumProblem('2001-01-01', bez, '2026-11-02T10:00:00Z') === '');
+  const s = O.prodServer(null, (() => { const z = kopie(zak); z.varianty[0].prodano = { datum: '2001-01-01' }; return z; })(),
+    { email: 'obch@priklad.cz', role: 'Obchodník' }, { ted: '2026-11-02T10:00:00Z', kdy: '2026-11-02T10:00:00Z' });
+  test('prodServer: 2001-01-01 → 400', !!s && s.status === 400 && /dřív než odeslání/.test(s.chyba), s);
+}
+
 console.log('— 3. prodat jde jen odeslanou nabídku —');
 {
   const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 8722';

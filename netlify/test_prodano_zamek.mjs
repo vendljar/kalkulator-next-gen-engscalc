@@ -65,7 +65,8 @@ const cV = await prihlas('ved.pb547@priklad.cz', 'Heslo12345x');
 const platny = () => JSON.parse(pamet.get('program/db')).platny;
 const ROZMERY = { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2, nastupiste: 4 };
 let n = 8721;   // vlastní rozsah 8721–8760 (číslo z hlášení J. V.)
-const DNES = new Date().toISOString().slice(0, 10);
+const OBJ = require(R + 'src/objednane.js');
+const DNES = OBJ.objDnes();   // pražský dnešek (týž jako server)
 /* Odeslaná nabídka OCK uložená obchodníkem; vrací uloženou verzi tak, jak ji
  * načte prohlížeč (importZakazka) — výchozí bod Prodáno. */
 async function odeslana(nazev) {
@@ -146,6 +147,20 @@ console.log('===== prodej není záminka ke změně dokladu =====');
   const o = await odeslana('prodej budoucnost');
   const r = await uloz(prodej(o.zak, '2999-01-01'), cO, o.razitko);
   test('datum prodeje v budoucnosti → 400', r.status === 400, r);
+}
+console.log('===== K37-N4: dolní mez data prodeje =====');
+{
+  const o = await odeslana('prodej 2001');
+  const r = await uloz(prodej(o.zak, '2001-01-01'), cO, o.razitko);
+  test('K37-N4: datum prodeje 2001-01-01 (před odesláním nabídky) → 400 s důvodem', r.status === 400 && /dřív než odeslání nabídky/.test(r.chyba || ''), r);
+  test('…uložená verze zůstala neprodaná', !(await nacti(o.soubor, cO)).varianty[0].prodano);
+  /* Klient si čas odeslání neposune: dolní mez bere server z ULOŽENÉHO zámku. */
+  const z = prodej(kopie(o.zak), '2001-01-01'); z.varianty[0].zamek.kdy = '2000-01-01T00:00:00.000Z';
+  const r2 = await uloz(z, cO, o.razitko);
+  test('K37-N4: posunutý čas zámku v požadavku mez neobejde (400, mez z uloženého zámku)', r2.status === 400 && /dřív než odeslání nabídky/.test(r2.chyba || ''), r2);
+  const od = OBJ.prodDatumOd(o.zak.varianty[0]);
+  const r3 = await uloz(prodej(o.zak, od), cO, o.razitko);
+  test('K37-N4: datum prodeje = den odeslání nabídky → 200', r3.status === 200 && od === DNES, [r3.status, r3.chyba, od]);
 }
 {
   /* Neodeslaná varianta: prodat nejde ani přes server. */

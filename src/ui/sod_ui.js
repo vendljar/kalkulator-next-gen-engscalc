@@ -387,7 +387,8 @@ function prodejKarta(strana) {
       doručení podepsané SoD v Pipedrive. Odemknout smí jen vedoucí nebo administrátor.</div>
     ${proc ? `<div class="note"><b>${esc(proc)}</b></div>` : ''}
     <div class="btns" style="margin-top:6px">
-      <label class="note">Datum prodeje <input type="date" id="prodejDatum_${esc(strana)}" value="${esc(dnes)}" max="${esc(dnes)}"${proc ? ' disabled' : ''}></label>
+      <label class="note">Datum prodeje <input type="date" id="prodejDatum_${esc(strana)}" value="${esc(dnes)}" max="${esc(dnes)}"${prodDatumOd(v) ? ' min="' + esc(prodDatumOd(v)) + '"' : ''}${proc ? ' disabled' : ''}
+        title="${esc('Od odeslání nabídky' + (prodDatumOd(v) ? ' (' + prodUiDatumText(prodDatumOd(v)) + ')' : '') + ' do dneška')}"></label>
       <button class="primary" ${proc ? 'disabled title="' + esc(proc) + '"' : ''} onclick="prodejUiProdej('${escJs(strana)}')">Prodáno</button>
     </div>
     ${proc ? '' : prodUiNahledHtml(v, strana)}

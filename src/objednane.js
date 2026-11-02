@@ -356,13 +356,33 @@ function prodNelzeProdat(zak, v) {
     + ') — prodat jde jen jedna varianta; nejdřív ji musí vedoucí nebo administrátor odemknout.';
   return '';
 }
+/* DOLNÍ MEZ DATA PRODEJE (K37-N4 / K10-S1, rozhodnutí J. V. 2. 11. 2026):
+ * prodat nejde dřív, než nabídka odešla — datum prodeje je ≥ den zámku
+ * (odeslání) prodávané varianty (pražský den času zámku) a ≤ dnes. Do v2.11.3
+ * prošlo i 2001-01-01 a controlling by zakázku vzal do dávno uzavřeného
+ * období. Zámek bez platného času (starší data) dolní mez nemá. Vrací
+ * 'RRRR-MM-DD' nebo ''. */
+function prodDatumOd(v) {
+  const kdy = v && v.zamek && v.zamek.zamceno ? v.zamek.kdy : '';
+  if (typeof kdy !== 'string' || !/^\d{4}-\d{2}-\d{2}T/.test(kdy) || isNaN(Date.parse(kdy))) return '';
+  return objDnes(kdy);
+}
+/* Proč datum prodeje neplatí ('' = platí); `v` = varianta, jejíž zámek dává dolní mez. */
+function prodDatumProblem(d, v, ted) {
+  if (!objDatumPlatne(d)) return 'Datum prodeje chybí nebo je neplatné.';
+  if (d > objDnes(ted)) return 'Datum prodeje nesmí být v budoucnosti.';
+  const od = prodDatumOd(v);
+  if (od && d < od) return 'Datum prodeje nesmí být dřív než odeslání nabídky (' + od.split('-').reverse().map(x => String(+x)).join('. ') + ').';
+  return '';
+}
 /* Klient: zapíše prodej (razítka jen předvyplní, přepíše je server). Vrací chybu nebo ''. */
 function prodNastav(zak, v, datum, ctx) {
   const c = ctx || {};
   const proc = prodNelzeProdat(zak, v);
   if (proc) return proc;
   const d = objDatumPlatne(datum) ? datum : objDnes(c.ted);
-  if (d > objDnes(c.ted)) return 'Datum prodeje nesmí být v budoucnosti.';
+  const zle = prodDatumProblem(d, v, c.ted);
+  if (zle) return zle;
   const kdy = c.kdy || new Date().toISOString();
   v.prodano = { datum: d, kdo: String(c.kdo || ''), kdy, pipedrive: { stav: 'ceka', kdy } };
   return '';
@@ -504,8 +524,10 @@ function prodServer(stara, zak, relace, ctx) {
     if (!(PROD_ROLE_ODEMKNOUT.includes(role) || autor || !stara))
       return { status: 403, chyba: 'Prodej zapisuje obchodník zakázky, vedoucí nebo administrátor' };
     const d = v.prodano.datum;
-    if (!objDatumPlatne(d)) return { status: 400, chyba: 'Datum prodeje chybí nebo je neplatné' };
-    if (d > objDnes(c.ted)) return { status: 400, chyba: 'Datum prodeje nesmí být v budoucnosti' };
+    /* Dolní mez z ULOŽENÉHO zámku (klient si čas odeslání neposune); nová
+     * zakázka nebo varianta bez uložené verze → zámek z příchozích dat. */
+    const zleD = prodDatumProblem(d, (sv && sv.zamek && sv.zamek.zamceno) ? sv : v, c.ted);
+    if (zleD) return { status: 400, chyba: zleD.replace(/\.$/, '') };
     v.prodano = { datum: d, kdo: email, kdy: ted, pipedrive: { stav: 'ceka', kdy: ted } };
     pridej({ akce: 'prodano', varianta: v.id, cislo: cislo(zak, v), datum: d, duvod: '' });
   }
@@ -559,4 +581,4 @@ if (typeof module !== 'undefined' && module.exports)
     objSodSnimek, objSodZaznamyServer, objZmenenoPoSod, objZmenyServer, objZmenyOciste, objDnes, objDatumPlatne, objStav, objDatumPodpisu, objPodepsano, objNabidnute,
     objObjednaneVarianty, objText, objNastav, objOtisk, objTvarPlatny, objKontrola,
     PROD_ROLE_ODEMKNOUT, PROD_PD_STAVY, PROD_PD_STAV_TEXT, PROD_DUVOD_MIN, PROD_HISTORIE_MAX, prodStav, prodNelzeProdat, prodNastav,
-    prodOdemkni, prodJedinaZmena, prodNeulozenoText, prodPdStavText, prodTvarPlatny, prodOciste, prodHistorieOciste, prodServer, prodPdZapis };
+    prodOdemkni, prodDatumOd, prodDatumProblem, prodJedinaZmena, prodNeulozenoText, prodPdStavText, prodTvarPlatny, prodOciste, prodHistorieOciste, prodServer, prodPdZapis };
