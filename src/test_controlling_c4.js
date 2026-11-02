@@ -158,8 +158,8 @@ else {
 
     /* ---------- 1d. náhled zápisu do Pipedrive ---------- */
     const pz = O.prodPdZapis(Object.assign(kopie(ulozena), { pdDealId: '4711' }), ulozena.varianty[0], JEKLY);
-    test('#540 Pipedrive: náhled — deal, stav Vyhráno, prodaná varianta, datum, cena OCK bez DPH, krycí list, „čeká na odeslání"',
-      !!pz && pz.dealId === '4711' && pz.stavDealu === 'won' && pz.varianta === '2026 - OPR - CN - 0951' && pz.datumProdeje === DNES
+    test('#545 Pipedrive: náhled — deal, fáze Vyhrané k podpisu SoD (stav ne), prodaná varianta, datum, cena OCK bez DPH, krycí list, „čeká na odeslání"',
+      !!pz && pz.dealId === '4711' && pz.fazeDealu === 'Vyhrané k podpisu SoD' && !('stavDealu' in pz) && pz.varianta === '2026 - OPR - CN - 0951' && pz.datumProdeje === DNES
       && pz.hodnota.length === 1 && pz.hodnota[0].oblast === 'OCK' && pz.hodnota[0].bezDphKc > 0
       && pz.kryci.length === 1 && pz.kryci[0].list === 'OCK' && pz.kryci[0].sekce.length > 0 && /čeká/.test(pz.stav), pz && Object.assign({}, pz, { kryci: pz.kryci.length }));
   }

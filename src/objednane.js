@@ -323,7 +323,7 @@ function objKontrola(stara, zak, relace, ctx) {
  *     variantu (v zakázce smí být prodaná jen jedna);
  *   – definitivně zmrazí krycí list varianty i hlavičku (zamek.js,
  *     variantaProdana — hlídá i server porovnáním s uloženou verzí);
- *   – připraví zápis do Pipedrive (deal → Vyhráno + data krycího listu).
+ *   – připraví zápis do Pipedrive (data krycího listu + fáze dealu „Vyhrané k podpisu SoD“; stav se nemění, #545).
  *     Bez tokenu se jen uloží stav „čeká na odeslání" a obrazovka ukáže,
  *     co by se zapsalo (prodPdZapis); do Pipedrive se nevolá nic (#510).
  * Odemknout smí jen vedoucí a administrátor, s důvodem; stopa je
@@ -474,7 +474,8 @@ function prodServer(stara, zak, relace, ctx) {
 }
 
 /* CO BY SE ZAPSALO DO PIPEDRIVE (náhled; odeslání až s tokenem, #510).
- * Deal zakázky → stav „Vyhráno" (won), hodnota = cena nabídky prodané
+ * Deal zakázky → fáze „Vyhrané k podpisu SoD" (#545, J. V. 2. 11. 2026 —
+ * stav dealu se NEMĚNÍ, won až po doručení podepsané SoD), hodnota = cena nabídky prodané
  * varianty bez DPH (Kč, u kombinované zakázky obě strany) a data krycích
  * listů (verze Backoffice) — z odeslané nabídky a zmrazeného krycího listu,
  * takže náhled je stejný dnes i při pozdějším odeslání. Převod na pole
@@ -501,7 +502,8 @@ function prodPdZapis(zak, v, jekly) {
     try { if (typeof kryciProjData === 'function') kryci.push(Object.assign({ list: 'PROJ' }, kryciProjData(zak, v, jekly, 'bo'))); } catch (e) {}
   }
   const p = v.prodano || {};
-  return { dealId: String(zak.pdDealId || ''), stavDealu: 'won', stavDealuText: 'Vyhráno',
+  return { dealId: String(zak.pdDealId || ''), fazeDealu: 'Vyhrané k podpisu SoD',
+    fazeDealuText: 'Vyhrané k podpisu SoD (stav dealu zůstává otevřený)',
     varianta: typeof variantaCislo === 'function' ? String(variantaCislo(zak, v) || '') : String(v.id),
     datumProdeje: String(p.datum || ''), hodnota,
     hodnotaKc: hodnota.reduce((a, h) => a + h.bezDphKc, 0),

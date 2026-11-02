@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v2.11.1 — PF #545: Prodáno přesune deal do fáze „Vyhrané k podpisu SoD“, stav nemění — větev claude/pf-prodano-faze
+
+Nad integrací 48f5dad (v1.11.1). Pokyn J. V. 2. 11. 2026: stav „Vyhrané“ rozbíhá v Pipedrive obchodně administrativní
+proces, který má čekat na doručení podepsané SoD. Do Pipedrive se nic nevolá ani nezapisuje (jen simulátor), napojení
+dál vypnuté. Verze podle pravidla dne commitu (v2.11.N); koordinace může přečíslovat.
+
+- **Zamýšlený zápis Prodáno** (`pdZamyslenyZapis`, `netlify/lib/pd_prevod.mjs`): místo `status: 'won'` nese
+  `stage_id` fáze „Vyhrané k podpisu SoD“; `status` se nikdy neposílá (deal zůstává otevřený). Fáze se hledá podle
+  názvu v pipeline dealu (`pdFazeNajdi`), přenastaví ji proměnná `PIPEDRIVE_FAZE_PRODANO` (id nebo název). Řádek
+  náhledu „Stav dealu“ → **„Fáze dealu“** (dnešní fáze → Vyhrané k podpisu SoD). Deal ztracený / smazaný / už vyhraný
+  / nenačtený → „nelze, deal je …“; fáze nenalezena (jiná pipeline, přejmenovaná fáze, id z jiné pipeline) →
+  **zápis se nepřipraví vůbec** (`patch: null`, `zastaveno`) a náhled řekne proč.
+- **`/api/pd/nanecisto`:** parametr `faze: 'prodano'` místo `stav`; starý `stav` → 400 („obnovte stránku“); fáze čte
+  `GET /api/v2/stages`. Klient `pdnPodklad(…, { faze: 'prodano' })`, `prodPdZapis` nese `fazeDealu`.
+- **Texty:** karta Prodej, potvrzovací dialog, „čeká na odeslání“, příručka obchodníka a provozní příručka —
+  „údaje krycího listu a přesun dealu do fáze Vyhrané k podpisu SoD; stav dealu (Vyhrané) se mění až po doručení
+  podepsané SoD v Pipedrive“. Podklady `PIPEDRIVE_ROZHODNUTI_115.md`, `PIPEDRIVE_TOKEN_POSTUP.md`,
+  `PIPEDRIVE_UPOMINKA_INTEGRATOR.md` (otázka pro integrátora: Make má navazovat na won, ne na fázi).
+- **Simulátor:** pipeline „Obchod“ s fázemi 22–26 jako účet (26 = Vyhrané k podpisu SoD) a smyšlená pipeline bez té
+  fáze; `GET /api/v2/stages` (filtr `pipeline_id`), `GET /api/v2/pipelines`, PATCH `stage_id` (neznámá fáze → 400,
+  deal beze změny).
+- **Controlling ověřen beze změny:** filtr „Vyhrané“ čte skutečný stav z Pipedrive (`pdStav`), prodej bere z Prodáno.
+  Okno „Stav Pipedrive“ v hlavičce zůstává stav; fáze vedle něj jen jako **návrh** (roadmapa #545, pozn.).
+- **Testy (pojistka):** `netlify/test_pd_nanecisto.mjs` 88/0 (nové #545 na starém kódu selhaly), `netlify/test_pd_simulator.mjs`
+  60/0 (stages/PATCH na starém kódu selhaly), `src/test_controlling_c4.js` 44/0. Mutace „#545“: 11 serverových + 1 v jádru.
+
 ## v1.11.1 — O-SECM #542: opravy nálezů security testu SEC-M, větev claude/o-secm-opravy
 
 Nad integrací 0cc9335 (v27.10.6). Schválil J. V. 1. 11. 2026; zpráva `podklady/SEC_AUDIT_MAIN_28_10.md` (oddíl „Stav

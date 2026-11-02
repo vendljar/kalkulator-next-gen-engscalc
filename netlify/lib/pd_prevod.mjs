@@ -443,41 +443,114 @@ export function pdNanecisto(definice, strany, pole, spolecne = {}, zdroje = {}) 
 }
 
 /* ============================================================
- * ZAMÝŠLENÝ ZÁPIS VČETNĚ STAVU DEALU (#536 pro C4 #540, 27. 10. 2026)
+ * ZAMÝŠLENÝ ZÁPIS PRODÁNO — FÁZE DEALU, NE STAV (#545, 2. 11. 2026)
  *
- * Tlačítko „Prodáno" na konci krycího listu (C4, rozhodnutí J. V.
- * 27. 10. 2026) zamkne krycí list a připraví zápis = data z krycího listu
- * + přepnutí dealu na „Vyhráno". Bez tokenu se zápis jen uloží jako
- * připravený a ukáže se „co by se zapsalo". Tahle funkce je jeho jediné
- * jádro, oddělené od UI i od sítě:
- *   pdZamyslenyZapis(definice, strany, pole, spolecne, { stav: 'won' })
- *     → { patch: { custom_fields, value?, currency?, status? }, radky, souhrn, duvody }
- * `patch` je přesně tělo PATCH /api/v2/deals/{id}, které by odešlo (a které
- * C4 smí uložit jako připravené); `radky` a `souhrn` jsou tabulka náhledu
- * (pdNanecisto) s řádkem „Stav dealu" navíc. Nic neodesílá.
+ * Tlačítko „Prodáno" na konci krycího listu (C4 #540) zamkne krycí list
+ * a připraví zápis = data z krycího listu + přesun dealu do FÁZE
+ * „Vyhrané k podpisu SoD". Do 2. 11. 2026 (#536/#540) přepínalo STAV dealu
+ * na won — pokyn J. V. 2. 11. 2026: stav „Vyhrané" spouští v Pipedrive další
+ * obchodně administrativní proces, který má čekat až na doručení podepsané
+ * SoD. Prodáno proto `status` NIKDY neposílá (deal zůstává otevřený), mění
+ * jen `stage_id`; stav přepne až člověk v Pipedrive po podpisu SoD.
+ *
+ * Kterou fázi: výchozí je fáze s NÁZVEM „Vyhrané k podpisu SoD" v pipeline
+ * dealu (porovnání bez diakritiky a velikosti písmen). Proměnná prostředí
+ * PIPEDRIVE_FAZE_PRODANO ji přenastaví — číslo = id fáze, text = jiný název
+ * (pdFazeKonfigurace). ID se natvrdo nepíše: v účtu je dnes 26 v pipeline
+ * „Obchod", ale fáze se dá přejmenovat či přesunout. Když se fáze nenajde
+ * (deal v jiné pipeline, přejmenovaná fáze, id z jiné pipeline) nebo deal
+ * není otevřený, zápis se NEPROVEDE vůbec (patch = null) a řádek „Fáze
+ * dealu" řekne proč — data krycího listu bez přesunu fáze by v CRM vypadala
+ * jako neprodaná zakázka.
+ *
+ *   pdZamyslenyZapis(definice, strany, pole, spolecne, { faze: 'prodano', fazeSeznam, fazeKonfigurace, dealNenacten })
+ *     → { patch: { custom_fields, value?, currency?, stage_id } | null, radky, souhrn, duvody, zastaveno }
+ * `fazeSeznam` = fáze z Pipedrive ([{ id, name, pipeline_id }], GET
+ * /api/v2/stages); bez něj (napojení není nastavené) se fáze neověří
+ * a zápis se nepřipraví. Nic neodesílá.
  * ============================================================ */
-export const PD_STAVY_DEALU = { open: 'Otevřeno', won: 'Vyhráno', lost: 'Prohráno' };
+export const PD_FAZE_PRODANO_NAZEV = 'Vyhrané k podpisu SoD';
+export const PD_FAZE_PROMENNA = 'PIPEDRIVE_FAZE_PRODANO';
+export const PD_FAZE_UCELY = { prodano: 'Prodáno' };
+export const PD_STAVY_DEALU = { open: 'Otevřeno', won: 'Vyhráno', lost: 'Prohráno', deleted: 'Smazáno' };
+
+/* Cílová fáze z proměnné prostředí: číslo → id fáze, jiný text → název. */
+export function pdFazeKonfigurace(env = process.env) {
+  const t = String((env || {})[PD_FAZE_PROMENNA] || '').trim();
+  if (/^[0-9]{1,10}$/.test(t) && +t > 0) return { id: +t, nazev: '' };
+  return { id: null, nazev: t.slice(0, 120) || PD_FAZE_PRODANO_NAZEV };
+}
+
+const fazeText = (f) => (f ? String(f.name || '') + ' (' + f.id + ')' : '');
+
+/* Najde cílovou fázi → { faze } nebo { duvod }. Pipeline určuje deal;
+ * bez dealu musí být fáze toho názvu v účtu jediná. */
+export function pdFazeNajdi(fazeSeznam, deal, konf = {}) {
+  const seznam = (Array.isArray(fazeSeznam) ? fazeSeznam : [])
+    .filter((f) => f && Number.isFinite(+f.id) && +f.id > 0)
+    .map((f) => ({ id: +f.id, name: String(f.name || ''), pipeline_id: f.pipeline_id == null ? null : +f.pipeline_id }));
+  const pipeline = deal && deal.pipeline_id != null && deal.pipeline_id !== '' ? +deal.pipeline_id : null;
+  if (konf.id) {
+    const f = seznam.find((x) => x.id === +konf.id);
+    if (!f) return { duvod: 'fáze nenalezena: fáze id ' + konf.id + ' (' + PD_FAZE_PROMENNA + ') v Pipedrive není' };
+    if (pipeline !== null && f.pipeline_id !== pipeline)
+      return { duvod: 'fáze nenalezena: fáze „' + f.name + '" (' + f.id + ') patří do jiné pipeline než deal' };
+    return { faze: f };
+  }
+  const nazev = konf.nazev || PD_FAZE_PRODANO_NAZEV;
+  const shoda = seznam.filter((x) => pdNorm(x.name) === pdNorm(nazev));
+  if (pipeline !== null) {
+    const f = shoda.find((x) => x.pipeline_id === pipeline);
+    return f ? { faze: f } : { duvod: 'fáze nenalezena: pipeline dealu nemá fázi „' + nazev + '"' };
+  }
+  if (shoda.length === 1) return { faze: shoda[0] };
+  if (!shoda.length) return { duvod: 'fáze nenalezena: Pipedrive nemá fázi „' + nazev + '"' };
+  return { duvod: 'fáze nenalezena: fázi „' + nazev + '" má víc pipeline a zakázka nemá deal, podle kterého by se vybrala' };
+}
 
 export function pdZamyslenyZapis(definice, strany, pole, spolecne = {}, volby = {}, zdroje = {}) {
   const z = pdZapisDealu(definice, strany, pole, spolecne);
   const n = pdNanecisto(definice, strany, pole, spolecne, zdroje);
-  const patch = Object.assign({ custom_fields: z.custom_fields }, z.deal);
-  const stav = volby && volby.stav;
-  if (stav !== undefined && stav !== null && stav !== '') {
-    if (!Object.prototype.hasOwnProperty.call(PD_STAVY_DEALU, stav))
-      throw new Error('Neznámý stav dealu: ' + stav);
-    patch.status = stav;
-    const dnes = spolecne.deal ? String(spolecne.deal.status || '') : '';
-    const r = { klic: 'stavDealu', nazev: 'Stav dealu', typ: 'status', strana: '',
-      zdroj: volby.zdroj || 'Krycí list › Prodáno', hodnotaKalkulace: PD_STAVY_DEALU[stav],
-      hodnota: stav, hodnotaText: PD_STAVY_DEALU[stav] + ' (' + stav + ')', stav: 'zapise', duvod: '',
-      kolize: [], vCrm: dnes ? (PD_STAVY_DEALU[dnes] || dnes) + ' (' + dnes + ')' : '' };
-    if (dnes && dnes !== stav && dnes !== 'open')
-      r.kolize.push('deal je dnes „' + r.vCrm + '" — zápis ho přepne na „' + r.hodnotaText + '"');
-    if (dnes === 'deleted') { r.stav = 'nelze'; r.duvod = 'deal je v Pipedrive smazaný'; delete patch.status; }
+  let patch = Object.assign({ custom_fields: z.custom_fields }, z.deal);
+  let zastaveno = '';
+  const ucel = volby && volby.faze;
+  if (ucel !== undefined && ucel !== null && ucel !== '') {
+    if (!Object.prototype.hasOwnProperty.call(PD_FAZE_UCELY, ucel))
+      throw new Error('Neznámý přesun fáze dealu: ' + ucel);
+    const konf = volby.fazeKonfigurace || pdFazeKonfigurace({});
+    const cil = konf.id ? 'fáze id ' + konf.id : (konf.nazev || PD_FAZE_PRODANO_NAZEV);
+    const deal = spolecne.deal || null;
+    const dnes = deal ? String(deal.status || '') : '';
+    const seznam = Array.isArray(volby.fazeSeznam) ? volby.fazeSeznam : null;
+    const aktualni = deal && seznam ? seznam.find((f) => f && +f.id === +deal.stage_id) : null;
+    const r = { klic: 'fazeDealu', nazev: 'Fáze dealu', typ: 'stage', strana: '',
+      zdroj: volby.zdroj || 'Krycí list › Prodáno', hodnotaKalkulace: cil,
+      hodnota: null, hodnotaText: '', stav: 'zapise', duvod: '', kolize: [],
+      vCrm: deal ? (aktualni ? fazeText(aktualni) : (deal.stage_id ? 'fáze ' + deal.stage_id : '')) : '' };
+    if (dnes && dnes !== 'open') {
+      r.stav = 'nelze';
+      r.duvod = 'nelze, deal je ' + (dnes === 'won' ? 'už vyhraný' : dnes === 'lost' ? 'ztracený (prohraný)'
+        : dnes === 'deleted' ? 'smazaný' : 've stavu ' + dnes) + ' — Prodáno přesouvá jen otevřený deal';
+    } else if (!deal && volby.dealNenacten) {
+      r.stav = 'nelze';
+      r.duvod = 'nelze, deal ' + volby.dealNenacten + ' se z Pipedrive nenačetl (smazaný nebo neznámý)';
+    } else if (!seznam) {
+      r.stav = 'neovereno';
+      r.hodnotaText = cil;
+      r.duvod = 'fáze se ověří až s napojením na Pipedrive — bez ověřené fáze se nezapíše nic';
+    } else {
+      const f = pdFazeNajdi(seznam, deal, konf);
+      if (f.duvod) { r.stav = 'nelze'; r.duvod = f.duvod; }
+      else {
+        r.hodnota = f.faze.id; r.hodnotaText = fazeText(f.faze);
+        if (aktualni && aktualni.id === f.faze.id) r.kolize.push('deal už v této fázi je');
+      }
+    }
+    if (r.stav === 'zapise') patch.stage_id = r.hodnota;
+    else { zastaveno = 'Fáze dealu: ' + r.duvod; patch = null; }
     n.radky.push(r);
     n.souhrn.celkem++; n.souhrn[r.stav]++;
     if (r.kolize.length) n.souhrn.kolize++;
   }
-  return { patch, radky: n.radky, souhrn: n.souhrn, duvody: z.duvody };
+  return { patch, radky: n.radky, souhrn: n.souhrn, duvody: z.duvody, zastaveno };
 }

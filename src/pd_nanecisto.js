@@ -89,10 +89,12 @@ function pdnStranaProj(zak, v) {
   return out;
 }
 
-/* Podklad pro POST /api/pd/nanecisto. `volby.stav` ('won' / 'lost' / 'open')
- * přidá přepnutí stavu dealu — tlačítko „Prodáno" (C4 #540) volá
- * pdnPodklad(zak, jekly, { stav: 'won' }) a podklad pošle na tentýž endpoint;
- * odpověď nese `patch` (tělo zamýšleného PATCH) a tabulku náhledu. */
+/* Podklad pro POST /api/pd/nanecisto. `volby.faze: 'prodano'` přidá přesun
+ * dealu do fáze „Vyhrané k podpisu SoD" — tlačítko „Prodáno" (C4 #540) volá
+ * pdnPodklad(zak, jekly, { faze: 'prodano' }) a podklad pošle na tentýž
+ * endpoint; odpověď nese `patch` (tělo zamýšleného PATCH, nebo null se
+ * `zastaveno`) a tabulku náhledu. Stav dealu (won) Prodáno NEMĚNÍ (#545,
+ * J. V. 2. 11. 2026) — přepne se v Pipedrive až po doručení podepsané SoD. */
 function pdnPodklad(zak, jekly, volby) {
   if (!zak || !Array.isArray(zak.varianty) || !zak.varianty.length) return { ok: false, chyba: 'Není otevřená žádná zakázka.' };
   const v = (typeof ridiciVarianta === 'function') ? ridiciVarianta(zak) : zak.varianty[0];
@@ -112,14 +114,14 @@ function pdnPodklad(zak, jekly, volby) {
     + '", ne ta, která je právě otevřená.');
   const deal = (typeof ctrlPdDealIdNorm === 'function') ? ctrlPdDealIdNorm(zak.pdDealId) : pdnText(zak.pdDealId);
   const out = { ok: true, strany, zdroje, dealId: deal || null, upozorneni, varianta: { id: v.id, nazev: v.nazev || '' }, vedouci };
-  if (volby && volby.stav) out.stav = volby.stav;
+  if (volby && volby.faze) out.faze = volby.faze;
   return out;
 }
 
 /* Tělo POST /api/pd/nanecisto z podkladu (UI karty i C4 „Prodáno"). */
 function pdnTelo(p) {
   const t = { strany: p.strany, zdroje: p.zdroje, dealId: p.dealId };
-  if (p.stav) t.stav = p.stav;
+  if (p.faze) t.faze = p.faze;
   return t;
 }
 

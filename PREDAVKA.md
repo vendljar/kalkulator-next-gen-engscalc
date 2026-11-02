@@ -1,3 +1,30 @@
+# Předávka — 2. 11. 2026: PF #545 — Prodáno mění fázi dealu, ne stav, větev `claude/pf-prodano-faze`
+
+Nad `48f5dad` (integrace v1.11.1). **Verze 2.11.1** (pravidlo dne commitu; koordinace může přečíslovat). Koordinace:
+session_01TMQ5bLDJuS5k5NWWYy7jLx. Neslučováno; do Pipedrive nic (ani MCP), na ostrém webu ani Disku nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1 zamýšlený zápis Prodáno → `stage_id` fáze „Vyhrané k podpisu SoD“, bez `status`; řádek „Fáze dealu“; kolize | ✅ | `netlify/lib/pd_prevod.mjs` (`pdZamyslenyZapis`, `pdFazeNajdi`, `pdFazeKonfigurace`), `functions/pd_nanecisto.mjs` (`faze: 'prodano'`, `stav` → 400, `GET /api/v2/stages`), `src/pd_nanecisto.js`, `src/objednane.js` (`prodPdZapis.fazeDealu`) |
+| 2 texty UI a příručky | ✅ | `src/ui/sod_ui.js` (karta Prodej, potvrzení, „čeká na odeslání“, náhled + „Zápis by se neprovedl“), `manual/obsah.json`, `manual/kompletni/provoz.json` (proměnná `PIPEDRIVE_FAZE_PRODANO`); `manual/admin/obsah.json` Prodáno nepopisuje — beze změny |
+| 3 simulátor | ✅ | pipeline Obchod (22–26) + smyšlená bez té fáze, `GET stages/pipelines`, PATCH `stage_id` |
+| 4 podklady | ✅ | `PIPEDRIVE_ROZHODNUTI_115.md` (nový oddíl), `PIPEDRIVE_TOKEN_POSTUP.md`, `PIPEDRIVE_UPOMINKA_INTEGRATOR.md` (bod 4: Make má navazovat na won, ne na fázi) |
+| 5 controlling | ✅ ověřeno | filtr „Vyhrané“ čte `pdStav` z Pipedrive, prodej z Prodáno — beze změny. Fáze v okně „Stav Pipedrive“ jen **návrh** (pozn. #545: rozšířit pdStav o stage_id + názvy fází z cache) |
+| 6 testy, mutace, kolo, verze, CHANGELOG, roadmapa | viz níže | |
+
+**Konfigurace fáze:** výchozí = fáze s názvem „Vyhrané k podpisu SoD“ v pipeline dealu (bez diakritiky/velikosti
+písmen); proměnná `PIPEDRIVE_FAZE_PRODANO` = id (číslo) nebo jiný název. Nastavení přes UI (Mapa polí CRM) **neuděláno**
+— jen proměnná; případně další dávka. Bez napojení (režim dohoda) řádek „neověřeno“ a `patch: null`.
+Fáze nenalezena / deal ztracený, smazaný, vyhraný, nenačtený → `patch: null` + `zastaveno` (nezapíše se nic).
+
+**Při slučování:** K37 #544 mění `netlify/lib/pipedrive_simulator.mjs` — moje změny: blok pipeline/fáze před smyčkou
+dealů, `stage_id`/`pipeline_id` dealů (22–26, každý 10. deal pipeline 2), `return … pipeline, faze`, dvě cesty GET,
+validace PATCH přesunutá PŘED `Object.assign`. Dál `netlify/mutace.mjs` (dvě mutace #536 „stav“ nahrazeny blokem #545),
+`mutace_jadro.mjs` (#540 → #545 `fazeDealu`), CHANGELOG, roadmapa (#545 za #542), PREDAVKA.
+
+STAV_TESTU
+
+---
 # Předávka — 1. 11. 2026: O-SECM #542 — opravy security testu SEC-M, větev `claude/o-secm-opravy`
 
 Nad `0cc9335` (integrace v27.10.6). **Verze 1.11.1** — ne v27.10.7 ze zadání: `build.py --kontrola-verze` (statické
