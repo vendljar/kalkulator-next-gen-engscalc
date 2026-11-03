@@ -24,7 +24,7 @@ připomínka. Je-li to nepřijatelné, stačí vrátit `onlinePoPrihlaseni(o, he
 
 **Testy:** `src/test_kopie_disk.js` 24/0 (na 1bf1a3a 7 FAIL), `src/test_554_kopie_denne.js` 17/0 (na 1bf1a3a 10 FAIL),
 `overit_online.mjs` 275/0 (+2 kontroly #554); mutace „#554“ **12 z 12 chycených** (`--kontrola` 1211 OK).
-Kolo `--bez-mutaci`: VYSLEDEK_KOLA. Celé mutace neopakovány.
+Kolo `--bez-mutaci` **VŠE ZELENÉ** (sady 367 / 0 / 7 přeskočeno — firemní podklady; hodiny +400 dní 296 / 0 / 1; statické 5 z 5; 25,5 min). Pozn.: ESM harnessy potřebují místní `node_modules/playwright` (symlink na globální `/opt/node22/lib/node_modules/playwright`), jinak 52 přeskočí. Celé mutace neopakovány.
 
 ---
 
