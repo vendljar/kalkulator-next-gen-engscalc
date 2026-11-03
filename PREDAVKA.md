@@ -33,7 +33,8 @@ Liší-li se cena od papíru, který odešel zákazníkovi, poslat zákazníkovi
 
 **Testy:** `overit_klon_tisk.mjs` 28/0 (nad 6e4bf49 16 FAIL — mj. přesně oba dialogy z hlášení: po tisku i „Prodej se neuložil“),
 `netlify/test_555_klon_tisk.mjs` 13/0 (nad 6e4bf49 6 FAIL), `src/test_555_klon_tisk.js` 18/0 (nad 6e4bf49 padá).
-Mutace „#555“: jádro 8 z 8, server 5 z 5 chycených (`--kontrola` 628 / 1216 OK). Kolo `--bez-mutaci`: běží (doplním).
+Mutace „#555“: jádro 8 z 8, server 5 z 5 chycených (`--kontrola` 628 / 1216 OK). Kolo `--bez-mutaci` **VŠE ZELENÉ** (sady 370 / 0 / 7 přeskočeno — firemní podklady; hodiny +400 dní 298 / 0 / 1;
+statické 5 z 5; 28 min). Celé mutace neopakovány.
 
 ---
 

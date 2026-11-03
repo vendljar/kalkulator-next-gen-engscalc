@@ -32,6 +32,7 @@ Verzi může koordinace přečíslovat.
   `netlify/test_555_klon_tisk.mjs` (hláška, DPH se značkou, zámek bez snímku, obnova; nad 6e4bf49 6 FAIL),
   `src/test_555_klon_tisk.js` (vyříznuté `typSachtyPrepni` ve vm, cesta, DPH; 18/0, nad 6e4bf49 padá). Mutace „#555“
   jádro **8 z 8**, server **5 z 5** chycených (`--kontrola` 628 / 1216 OK); dvě mutace Z1 přecíleny na nový tvar bloku DPH.
+  Kolo `--bez-mutaci` VŠE ZELENÉ (370 / 0 / 7 přeskočeno, hodiny 298 / 0 / 1, statické 5 z 5).
 
 ## v3.11.1 — DK #554: samočinná kopie zálohy na Disk každý den, větev claude/dk-kopie-denne
 
