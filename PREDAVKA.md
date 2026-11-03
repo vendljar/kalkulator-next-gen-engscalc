@@ -10,6 +10,9 @@ Zpráva koordinace (session_01TMQ5bLDJuS5k5NWWYy7jLx, 3. 11.), ověřeno v gitu:
 - **Probíhá dávka PW #553** (větev `claude/pw-553-webhook`, nad 198ed4c): POST /api/pd/webhook, klíč
   `PIPEDRIVE_WEBHOOK_KLIC` v hlavičce `x-kalkulator-klic`, nová pole mapy „Vygenerovat nabídku“ a „Odkaz na
   kalkulaci“, podklad pro integrátora `podklady/PIPEDRIVE_WEBHOOK_553.md`. Slučuje koordinace.
+- **Pravidlo J. V. (23. 10. a znovu 3. 11.): Make se pro tento proces nepoužívá — v ničem, co jde integrátorovi
+  (e-maily, tabulky, podklady), ho nezmiňovat.** Podklad `podklady/PIPEDRIVE_WEBHOOK_553.md` (větev
+  `claude/pw-553-webhook`) ho v části 2 zmiňuje — před předáním integrátorovi opravit.
 - **Dělba práce:** nové úkoly k integraci Pipedrive API řeší tohle sezení s J. V.; kód jako paralelní větev nad
   aktuálním `test`, do `test-draft` / `test` / `main` nic, sloučení, verzi a kolo dělá koordinace (ozvat se jí přes
   send_message). Do živého Pipedrive nic bez výslovného souhlasu J. V.
