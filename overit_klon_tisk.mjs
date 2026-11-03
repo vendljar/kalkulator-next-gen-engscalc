@@ -357,9 +357,9 @@ await klonCenik('8762', (d) => { delete d.cenik.skloBokyNazev; delete d.cenik.ce
 /* Vnořený oddíl (spojovací materiál) — jiné pořadí uvnitř objektu. */
 await klonCenik('8763', (d) => { const sp = d.cenik.spojovaci; const k0 = Object.keys(sp)[0]; delete sp[k0]; delete d.cenik.kurzEurKc; delete d.cenik.atypMontazPct; },
   'chybí klíč vnořeného oddílu');
-/* Zahraniční řada odeslané varianty (nabídka v EUR — kurz nese odeslaná varianta;
- * zkušební zveřejněný ceník kurz nemá, proto bez přepočtu klonu). */
-await klonCenik('8764', (d) => { d.cenikRada = 'zahr'; d.cenik.kurzEurKc = 25; ['zamecnikAtypKc', 'atypMontazPct', 'dleNabidky'].forEach(k => delete d.cenik[k]); }, 'zahraniční řada', false);
+/* Zahraniční řada odeslané varianty (bez přepočtu klonu — zkušební zveřejněný
+ * ceník nemá zahraniční odchylky ani kurz EUR). */
+await klonCenik('8764', (d) => { d.cenikRada = 'zahr'; ['zamecnikAtypKc', 'atypMontazPct', 'dleNabidky'].forEach(k => delete d.cenik[k]); }, 'zahraniční řada', false);
 /* Bez přepočtu (klon s cenami odeslané varianty) — chybí jen klíče sestavení a ceníku PROJ. */
 await klonCenik('8765', (d) => { delete d.cenik.kurzEurKc; delete d.cenik.dleNabidky;
   const pk = Object.keys(d.proj.cenik).filter(k => typeof d.proj.cenik[k] === 'number').slice(0, 2); pk.forEach(k => delete d.proj.cenik[k]); },
@@ -389,7 +389,9 @@ await klonCenik('8765', (d) => { delete d.cenik.kurzEurKc; delete d.cenik.dleNab
   await prepoctiKlon();
   await page.evaluate(async () => { prepniTab('cenik'); render(); await cenikRadaPrepniUI('zahr'); await cenikRadaPrepniUI('cr'); });
   await page.evaluate(async () => { await resetCenik(); await resetCenikProj(); });
-  await page.evaluate(() => { set('C.montazHodKc', (+aktivniVarianta(ZAK).data.cenik.montazHodKc || 0) + 1); render(); });
+  /* Ruční cena v klonu a zpět (obchodník cenu měnit nesmí — B112 — tady jde jen o to, kam se zapíše). */
+  await page.evaluate(() => { const c0 = aktivniVarianta(ZAK).data.cenik.montazHodKc;
+    set('C.montazHodKc', (+c0 || 0) + 1); render(); set('C.montazHodKc', c0); render(); });
   await cekej(); await dlg();
   const st5 = await page.evaluate(() => ({ z: window.__zapisy.slice(0, 5), akt: ZAK.aktivni === ZAK.varianty[1].id,
     shoda: zamekDataPorovnani(JSON.parse(JSON.stringify(ZAK.varianty[0].data)), ZAK.varianty[0]) === window.__zakl555b }));
