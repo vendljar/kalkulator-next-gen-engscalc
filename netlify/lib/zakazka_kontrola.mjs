@@ -439,10 +439,18 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
        * z ULOŽENÉ verze (sv), takže si ho klient nemůže povolit sám. */
       const porovnej = typeof globalThis.zamekDataPorovnani === 'function'
         ? d => globalThis.zamekDataPorovnani(d, sv) : d => JSON.stringify(d);
-      if (nv && porovnej(nv.data) !== porovnej(sv.data))
+      if (nv && porovnej(nv.data) !== porovnej(sv.data)) {
+        /* #555: KTERÁ varianta a KDE (první rozdílná cesta, bez hodnot) —
+         * „změnila by se data" bez vodítka nikomu nepomohlo. */
+        const cesta = typeof globalThis.zamekDataRozdilCesta === 'function'
+          ? globalThis.zamekDataRozdilCesta(nv.data, sv.data, sv) : '';
+        const cislo = cisloVarianty(stara, sv);
+        const kdo = '„' + String(sv.nazev || sv.id || '').slice(0, 80) + '"' + (cislo ? ' (' + cislo + ')' : '');
+        const kde = cesta ? ', první rozdíl v datech: ' + cesta : '';
         return odmitni(409, obnova
-          ? 'změnila by se data uzamčené (odeslané) nabídky' + (cisloVarianty(stara, sv) ? ' (' + cisloVarianty(stara, sv) + ')' : '')
-          : 'Neuloženo: změnila by se data uzamčené (odeslané) nabídky. Pokračujte klonem varianty.');
+          ? 'změnila by se data uzamčené (odeslané) nabídky ' + kdo + kde
+          : 'Neuloženo: změnila by se data uzamčené (odeslané) nabídky ' + kdo + kde + '. Pokračujte klonem varianty.');
+      }
     }
     /* HLAVIČKA ODESLANÉ ZAKÁZKY (Z1, J. V. 22. 10. 2026): název akce
      * a adresa stavby po tisku CN, pole krycích listů v hlavičce po tisku

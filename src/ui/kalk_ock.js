@@ -91,6 +91,14 @@ function typSachtyPrepni(typ) {
   const puvodni = JSON.stringify(Z.profily);
   const typPred = Z.typSachty;
   set('Z.typSachty', t);
+  /* ZAMČENÁ VARIANTA SE NEMĚNÍ ANI V PROHLÍŽEČI (#555, hlášení J. V.
+   * 3. 11. 2026). `set` u odeslané nabídky změnu odmítne a jen NABÍDNE klon
+   * (dialog doběhne později) — výchozí profily se ale dosazovaly dál, přímo
+   * do zadání odeslané varianty. Klon pak vznikl už ze změněných dat
+   * a uložení po tisku klonu server odmítl („změnila by se data uzamčené
+   * nabídky"). Totéž u zakázky otevřené jen ke čtení. Když `set` typ
+   * nezměnil, nemění se nic dalšího. */
+  if (Z.typSachty !== t) return;
   /* #546: lešení hlavy šachty podle typu — jen když `set` typ opravdu změnil
    * (zamčenou variantu nepustí, cena odeslané nabídky se nehne). */
   if (Z.typSachty === t && typPred !== t) leseniHlavaPodleTypu();

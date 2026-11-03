@@ -1253,7 +1253,9 @@ const ONLINE_TISK_NEULOZEN = 'Dokument se vytiskl, ale zakázka se se záznamem 
  * jsou zatím jen v okně; obchodník to musí vědět hned, ne z panelu. */
 function onlineTiskNeulozenDialog(duvod) {
   if (typeof hlaska !== 'function') return;
-  try { Promise.resolve(hlaska(ONLINE_TISK_NEULOZEN + ' (' + duvod + ')',
+  /* #555: důvod na vlastním řádku — u odmítnutí zamčených dat nese server
+   * název a číslo zamčené varianty a první rozdílnou cestu v datech. */
+  try { Promise.resolve(hlaska(ONLINE_TISK_NEULOZEN + '\n\nDůvod: ' + duvod,
     { nadpis: 'Odeslaná nabídka není uložená' })).catch(() => {}); } catch (x) { /* nevadí */ }
 }
 const ONLINE_TISK_KOLIZE = 'zakázku mezitím uložil někdo jiný nebo jiné okno — zvolte „Přepsat serverovou verzi", '

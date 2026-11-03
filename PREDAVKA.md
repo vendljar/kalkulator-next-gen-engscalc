@@ -1,3 +1,40 @@
+# Předávka — 3. 11. 2026: ZO #555 — tisk klonu odeslané nabídky, větev `claude/zo-klon-tisk`
+
+Nad `6e4bf49` (`claude/integrace-16-10`, v3.11.1). **Verze 3.11.2** (koordinace přečísluje). Neslučováno; na ostrém
+ani testovacím webu nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. příčina reprodukcí | ✅ | `overit_klon_tisk.mjs` (hlídač zápisů — Proxy nad daty zamčené varianty, všechny vstupy a tlačítka záložek) |
+| 2. oprava příčiny (pojistka serveru beze změny) | ✅ | `typSachtyPrepni` (`src/ui/kalk_ock.js`); značka DPH v `zamekDataPorovnani` (`src/zamek.js`) |
+| 3. diagnostika hlášky (varianta + první rozdílná cesta, bez hodnot) | ✅ | `zamekDataRozdilCesta` (`src/zamek.js`), `netlify/lib/zakazka_kontrola.mjs`, dialog `onlineTiskNeulozenDialog` |
+| 4. roadmapa #555, CHANGELOG | ✅ | `roadmapa/roadmap.json` (`overit_roadmapu.mjs` 17/0) |
+
+**Příčina (pro J. V.):** na odeslané variantě 1 šel otevřít výběr „Typ šachty“. Aplikace změnu správně nepustila
+a nabídla „Založit klon a pokračovat v něm“ — jenže ještě před tím dosadila výchozí profily nového typu šachty
+přímo do odeslané varianty 1 (jen v okně prohlížeče). Klon (varianta 2) vznikl už z těchto změněných dat. Zakázka
+otevřená z databáze se do té doby neukládala, takže první uložení přišlo až po tisku klonu — a server ho odmítl,
+protože by se změnila data odeslané varianty 1. Pojistka serveru zafungovala: **v databázi je varianta 1 celá**;
+neuložil se klon ani záznam o jeho odeslání. Hlídač zápisů našel ještě druhou cestu k téže hlášce: povolená změna
+DPH na odeslané nabídce (po CN) zapsala značku „DPH nastavena ručně“, kterou porovnání zámku nevynechávalo.
+**Prodáno na klonu** (doplnění J. V. ~13:55, „Prodej se neuložil: … změnila by se data uzamčené …“) je tatáž příčina:
+v okně byla změněná varianta 1, takže selhalo každé uložení té zakázky (tisk, Prodáno, ruční uložení). Klon nemá
+id originálu (zakazkaUnikatniId) a zámek klonu, který zůstal jen v okně, Prodáno neblokuje — ověřeno harnessem
+(1c: tisk klonu při výpadku sítě → po obnovení Prodáno uloží klon i se zámkem a prodej).
+
+**Týká se i ostrého v27.10.6** (`typSachtyPrepni` tam má tentýž kód; DPH po CN od Z1 taky).
+
+**Už vytištěný klon (otázka pro J. V.):** v databázi není ani klon, ani zámek. Postup: okno zavřít bez uložení
+(„Zahodit“), zakázku otevřít znovu z databáze, klon založit tlačítkem „Klonovat a pokračovat“ (ne změnou pole na
+odeslané variantě — to po opravě funguje taky), v klonu nastavit totéž, co měl vytištěný (typ šachty, rozměry, …)
+a **zkontrolovat profily** (Kalkulace OCK → profily: klon mohl zdědit výchozí profily jiného typu šachty než
+odeslaná varianta) a cenu proti vytištěnému dokumentu; pak vytisknout znovu (zámek a záznam odeslání se uloží).
+Liší-li se cena od papíru, který odešel zákazníkovi, poslat zákazníkovi nový dokument.
+
+**Testy:** `overit_klon_tisk.mjs` 28/0 (nad 6e4bf49 16 FAIL — mj. přesně oba dialogy z hlášení: po tisku i „Prodej se neuložil“),
+`netlify/test_555_klon_tisk.mjs` 13/0 (nad 6e4bf49 6 FAIL), `src/test_555_klon_tisk.js` 18/0 (nad 6e4bf49 padá).
+Mutace „#555“: jádro 8 z 8, server 5 z 5 chycených (`--kontrola` 628 / 1216 OK). Kolo `--bez-mutaci` **VŠE ZELENÉ** (sady 370 / 0 / 7 přeskočeno — firemní podklady; hodiny +400 dní 298 / 0 / 1;
+statické 5 z 5; 28 min). Celé mutace neopakovány.
 # Předávka — 3. 11. 2026: SF #556 — rozpis objednaných příplatků ve SoD v4 bez číslování, větev `claude/sf-sod-rozpis`
 
 Nad `6e4bf49` (`claude/integrace-16-10`, v3.11.1). **Verze 3.11.2** (koordinace přečísluje). Neslučováno; na ostrém webu

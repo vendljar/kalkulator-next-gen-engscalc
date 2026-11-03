@@ -192,6 +192,8 @@ const PRIORITA = [
   'test_k37_sklo_prepnuti.js',
   /* K37-N3, K37-N9 — souhrn Kapitol a nečitelné datum prodeje (controlling.js) */
   'test_k37_controlling.js',
+  /* #555 — tisk klonu odeslané nabídky (ui/kalk_ock.js, zamek.js) */
+  'test_555_klon_tisk.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -220,6 +222,42 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* #555 ZO (3. 11. 2026, hlášení J. V.): tisk klonu odeslané nabídky —
+   * typSachtyPrepni nesmí po odmítnutém set dosadit profily do zamčené
+   * varianty; porovnání zámku bez značky DPH; cesta pro hlášku serveru.
+   * Hlídá src/test_555_klon_tisk.js (prohlížeč: overit_klon_tisk.mjs). */
+  { nazev: '#555: typ šachty dosadí profily i do odeslané varianty', soubor: 'ui/kalk_ock.js',
+    hledej: "  if (Z.typSachty !== t) return;",
+    nahrad: "  if (false) return;",
+    proc: 'změna typu šachty na odeslané nabídce by přepsala její profily — klon by vznikl ze změněných dat a uložení po tisku klonu by server odmítl' },
+  { nazev: '#555: po odmítnutém typu šachty běží lešení a ATYP dál', soubor: 'ui/kalk_ock.js',
+    hledej: "  if (Z.typSachty !== t) return;",
+    nahrad: "  if (Z.typSachty !== t) { Z.profily = Z.profily; }",
+    proc: 'odmítnutá změna typu by dál dosazovala profily a pouštěla automat ATYP nad odeslanou nabídkou' },
+  { nazev: '#555: značka DPH „ručně" zůstane v porovnání zámku', soubor: 'zamek.js',
+    hledej: "    if (rucni) delete rucni['C.dph'];",
+    nahrad: "    if (rucni) void 0;",
+    proc: 'povolená změna DPH odeslané nabídky po CN by shodila uložení („změnila by se data uzamčené nabídky")' },
+  { nazev: '#555: značka DPH PROJ zůstane v porovnání zámku', soubor: 'zamek.js',
+    hledej: "    if (rucni) delete rucni['PC.dph'];",
+    nahrad: "    if (rucni) void 0;",
+    proc: 'povolená změna DPH PROJ odeslané nabídky po CN by shodila uložení' },
+  { nazev: '#555: značka DPH se maže i bez editovatelné DPH', soubor: 'zamek.js',
+    hledej: "  const rucni = (kopie.cenikRucni && typeof kopie.cenikRucni === 'object') ? kopie.cenikRucni : null;",
+    nahrad: "  const rucni = (kopie.cenikRucni && typeof kopie.cenikRucni === 'object') ? kopie.cenikRucni : null;\n  if (rucni) { delete rucni['C.dph']; delete rucni['PC.dph']; }",
+    proc: 'u zámku bez snímku (DPH zmrazená) by porovnání přehlédlo změnu značky DPH' },
+  { nazev: '#555: rozdílná cesta končí na prvním objektu', soubor: 'zamek.js',
+    hledej: "        if (jdi(x[k], y[k])) return true;",
+    nahrad: "        if (JSON.stringify(x[k]) !== JSON.stringify(y[k])) return true;",
+    proc: 'hláška by ukázala jen „ock" místo ock.zadani.profily.sloupek.dim — J. V. by dál nevěděl, co se liší' },
+  { nazev: '#555: rozdílná cesta bez výjimek zámku (volná pole krycího listu)', soubor: 'zamek.js',
+    hledej: "  try { a = JSON.parse(zamekDataPorovnani(data, v)); b = JSON.parse(zamekDataPorovnani(ulozena, v)); }",
+    nahrad: "  try { a = JSON.parse(JSON.stringify(data)); b = JSON.parse(JSON.stringify(ulozena)); }",
+    proc: 'hláška by ukazovala povolenou změnu (kontakt v krycím listu) místo skutečné příčiny' },
+  { nazev: '#555: rozdílná cesta bez stropu délky', soubor: 'zamek.js',
+    hledej: "  return (t || '(celá data)').slice(0, 200);",
+    nahrad: "  return (t || '(celá data)');",
+    proc: 'neomezeně dlouhý klíč by nafoukl hlášku serveru' },
   /* #546 (2. 11. 2026, požadavek obchodu 29. 10. 2026): lešení pro dokončení
    * hlavy šachty jen u interiérové šachty. Hlídá src/test_leseni_hlava_typ.js. */
   { nazev: '#546: exteriér se nepozná — lešení hlavy dál podle matice', soubor: 'zobrazeni.js',

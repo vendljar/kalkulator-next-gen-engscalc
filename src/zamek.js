@@ -562,10 +562,50 @@ function zamekDataPorovnani(data, v) {
   });
   if (kopie.kryciProj && typeof kopie.kryciProj === 'object' && zamekKryciPoleVolne(v, 'kryciProj', 'planPredvolba'))
     delete kopie.kryciProj.planPlateb;
-  if (kopie.cenik && typeof kopie.cenik === 'object' && zamekDphVolna(v, 'C.dph')) delete kopie.cenik.dph;
-  if (kopie.proj && kopie.proj.cenik && typeof kopie.proj.cenik === 'object' && zamekDphVolna(v, 'PC.dph'))
+  /* S editovatelnou sazbou DPH i její značka „nastaveno ručně" (cenikRucni,
+   * #177) — `set` ji při změně DPH poznamená a bez téhle výjimky by povolená
+   * změna DPH odeslané nabídky shodila uložení (#555, nalezeno hlídačem
+   * zápisů v overit_klon_tisk.mjs). */
+  const rucni = (kopie.cenikRucni && typeof kopie.cenikRucni === 'object') ? kopie.cenikRucni : null;
+  if (kopie.cenik && typeof kopie.cenik === 'object' && zamekDphVolna(v, 'C.dph')) {
+    delete kopie.cenik.dph;
+    if (rucni) delete rucni['C.dph'];
+  }
+  if (kopie.proj && kopie.proj.cenik && typeof kopie.proj.cenik === 'object' && zamekDphVolna(v, 'PC.dph')) {
     delete kopie.proj.cenik.dph;
+    if (rucni) delete rucni['PC.dph'];
+  }
   return JSON.stringify(kopie);
+}
+
+/* KDE SE DATA ZAMČENÉ VARIANTY LIŠÍ (#555, hlášení J. V. 3. 11. 2026).
+ * Server odmítal uložení větou „změnila by se data uzamčené (odeslané)
+ * nabídky" bez jediného vodítka — J. V. nevěděl, proč, když měnil jen klon.
+ * Vrací první cestu (např. `ock.zadani.profily.sloupek.dim`), na které se
+ * `data` liší od `ulozena`, porovnáno týmž pravidlem jako zámek
+ * (zamekDataPorovnani se zámkem `v` z ULOŽENÉ verze). Jen klíče, nikdy
+ * hodnoty (ceny do hlášky nepatří). Shoda → ''. Délka cesty je omezená. */
+function zamekDataRozdilCesta(data, ulozena, v) {
+  let a, b;
+  try { a = JSON.parse(zamekDataPorovnani(data, v)); b = JSON.parse(zamekDataPorovnani(ulozena, v)); }
+  catch (e) { return ''; }
+  const cesta = [];
+  const jdi = (x, y) => {
+    if (JSON.stringify(x) === JSON.stringify(y)) return false;
+    if (x && y && typeof x === 'object' && typeof y === 'object' && Array.isArray(x) === Array.isArray(y)) {
+      const klice = Array.isArray(x) ? Array.from({ length: Math.max(x.length, y.length) }, (_, i) => String(i))
+        : Array.from(new Set(Object.keys(x).concat(Object.keys(y)))).sort();
+      for (const k of klice) {
+        cesta.push(k);
+        if (jdi(x[k], y[k])) return true;
+        cesta.pop();
+      }
+    }
+    return true;
+  };
+  if (!jdi(a, b)) return '';
+  const t = cesta.map(k => String(k).replace(/[\u0000-\u001f]/g, ' ')).join('.');
+  return (t || '(celá data)').slice(0, 200);
 }
 
 /* Uzamčení. První tisk je ten definitivní okamžik „odesláno" – uloží se
@@ -1155,7 +1195,7 @@ if (typeof module !== 'undefined')
                      variantaEditovatelna, zamkniVariantu, odemkniVariantu, zamekKdyProblem,
                      ZAMEK_OTISK_POLE, zamekOtisk, zamekOtiskZPorovnani,
                      zajistiZamek, ZAMEK_KRYCI_SMLOUVY, zamekTiskyTypy, zamekKryciOtevreny, zamekPrvniSmlouva,
-                     zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani,
+                     zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani, zamekDataRozdilCesta,
                      ZAMEK_KRYCI_PO_CN, zamekKryciPoleStav, zamekKryciPoleZname, zamekSnimekSpocti, zamekSnimek,
                      zamekDphVolna, zamekNabidkaPohled, zamekZakCesty, zamekZakCestaZmrazena, zamekZakZmeny, zamekZakHlavickaOznac,
                      zamekZakRidici, ZAMEK_KRYCI_PO_SOD_VOLNE };
