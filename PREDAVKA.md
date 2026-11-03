@@ -1,3 +1,24 @@
+# Předávka — 3. 11. 2026: stav od koordinace a dělba práce, větev `claude/eager-carson-1xznt2` (jen dokumentace)
+
+Zpráva koordinace (session_01TMQ5bLDJuS5k5NWWYy7jLx, 3. 11.), ověřeno v gitu:
+- **Zadání `podklady/PROMPT_pipedrive_po_odpovedi_02_11.md` je provedené** (dávka PO #509, větev
+  `claude/pd-odpoved-02-11`, v `test` v3.11.3 198ed4c, na `main` v27.10.6 zatím ne): Hlavní projektant jako text,
+  `PD_DOSUD_NEZALOZENA = []`, `PD_VOLBY_UCTU` podle účtu, věty PROJ → volby Způsobu fakturace; #509 hotovo.
+- **Rozhodnutí J. V. 3. 11. (dialog koordinace):** webhook „Vygenerovat nabídku“ = varianta A (#553); zkušební zápis
+  na dealu „TEST – integrace kalkulačky“ z testovacího webu po vložení tokenu (ne přes konektor); dvě kalkulace na
+  jednom dealu rozhodnuté už 27. 10. (`PIPEDRIVE_ROZHODNUTI_115.md`).
+- **Probíhá dávka PW #553** (větev `claude/pw-553-webhook`, nad 198ed4c): POST /api/pd/webhook, klíč
+  `PIPEDRIVE_WEBHOOK_KLIC` v hlavičce `x-kalkulator-klic`, nová pole mapy „Vygenerovat nabídku“ a „Odkaz na
+  kalkulaci“, podklad pro integrátora `podklady/PIPEDRIVE_WEBHOOK_553.md`. Slučuje koordinace.
+- **Dělba práce:** nové úkoly k integraci Pipedrive API řeší tohle sezení s J. V.; kód jako paralelní větev nad
+  aktuálním `test`, do `test-draft` / `test` / `main` nic, sloučení, verzi a kolo dělá koordinace (ozvat se jí přes
+  send_message). Do živého Pipedrive nic bez výslovného souhlasu J. V.
+- **Otevřené:** token na testovacím webu a zkušební zápis; pole a automatizace u integrátora; sekce „Krycí list“
+  a zrušení „důležitosti“; nová odpověď integrátorovi až po PW #553 (koncept v souhrnu je překonaný); mapovací
+  tabulka po #553 doplnit o dvě nová pole; nasazení do `main`.
+
+---
+
 # Předávka — 2. 11. 2026: odpověď integrátora, větev `claude/eager-carson-1xznt2` (jen dokumentace)
 
 Kód beze změny. Obsah této větve je mezitím převzatý do `claude/integrace-16-10` (P2: tři opravy Stavu Pipedrive
