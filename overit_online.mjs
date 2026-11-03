@@ -978,13 +978,22 @@ await page.evaluate(() => { window.__diskPravo = 'granted'; });
  * jen připomene tlačítko. Pojistka: před opravou automatika otevřela dialog
  * hesla a kopii pořídila (s kontrolou posledni_kopie.json níž 4 ✗; po opravě 268/0). */
 await page.evaluate(() => { window.__dlgHeslo = 'Zkusebni.Heslo.123'; window.__dlgTexty = []; ONLINE_STAV.hlaska = ''; });
-test('K4-N15: po 8 dnech automatika kopii nepořídí, na heslo se neptá a nic nezapíše',
+test('K4-N15 (#554): bez hesla z přihlášení (F5) automatika kopii nepořídí, na heslo se neptá a nic nezapíše',
   await page.evaluate(async () => (await onlineKopieDiskAuto()) === false && window.__diskSoubory.size === 0
     && window.__dlgTexty.length === 0), await page.evaluate(() => [window.__dlgTexty, [...window.__diskSoubory.keys()]]));
 test('K4-N15: …jen připomene tlačítko „Zkopírovat zálohu na Disk teď"',
-  await page.evaluate(() => /Týdenní kopie zálohy na Disk čeká.*Zkopírovat zálohu na Disk teď/.test(ONLINE_STAV.hlaska)),
+  await page.evaluate(() => /Denní kopie zálohy na Disk čeká.*Zkopírovat zálohu na Disk teď/.test(ONLINE_STAV.hlaska)),
   await page.evaluate(() => ONLINE_STAV.hlaska));
 test('K4-N15: záznam kopie na serveru se automatikou nezmění', JSON.parse(pamet.get('zalohy/kopie-disk')).soubor === 'otisk_stary.json');
+/* #554 (3. 11. 2026): s heslem z právě proběhlého přihlášení se kopie pořídí
+ * sama — bez dialogu; server záznam přijme. Pojistka: na 1bf1a3a automatika
+ * jen připomněla (2 ✗). */
+test('#554: s heslem z přihlášení automatika kopii pořídí sama, bez dialogu',
+  await page.evaluate(async () => { window.__dlgTexty = []; window.__diskSoubory.clear();
+    return (await onlineKopieDiskAuto('Zkusebni.Heslo.123')) === true && window.__dlgTexty.length === 0
+      && [...window.__diskSoubory.keys()].some(j => /^otisk_jiny_/.test(j)); }),
+  await page.evaluate(() => [ONLINE_STAV.hlaska, [...window.__diskSoubory.keys()]]));
+test('#554: …server záznam kopie přijal (nový soubor)', /^otisk_jiny_/.test(JSON.parse(pamet.get('zalohy/kopie-disk')).soubor));
 test('N6: kopii pak pořídí tlačítko (bez nového výběru složky)',
   await page.evaluate(async () => { const vyber = window.__diskVyber;
     return (await onlineKopieDiskTed()) === true && [...window.__diskSoubory.keys()].some(j => /^otisk_/.test(j)) && window.__diskVyber === vyber; }));

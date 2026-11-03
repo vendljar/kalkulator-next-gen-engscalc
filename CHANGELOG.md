@@ -31,7 +31,7 @@ přečíslovat.
   „Zkopírovat zálohu na Disk teď“, `manual/admin/obsah.json`, `manual/obsah.json`, `manual/kompletni/provoz.json`,
   komentáře serveru (hlídka 3 dny).
 - **Testy:** `src/test_kopie_disk.js` přepsán (24; na 1bf1a3a 7 FAIL), nový `src/test_554_kopie_denne.js` (17; na
-  1bf1a3a 10 FAIL). Úseky v `test_o7_kopie_klient.js` a `test_z2_disk_retence.js` srovnány s novými hlavičkami funkcí.
+  1bf1a3a 10 FAIL). Úseky v `test_o7_kopie_klient.js` a `test_z2_disk_retence.js` srovnány s novými hlavičkami funkcí; `overit_online.mjs`: text připomínky + 2 nové kontroly #554 (samočinná kopie s heslem z přihlášení, bez dialogu; 275/0).
   Mutace „#554“ 12 z 12 chycených (12 nových; 2 staré mutace týdenního intervalu zrušeny); `--kontrola` 1211 OK.
 
 ## v2.11.9 — ZN #552: názvy záloh na Disku Google s prostředím a časem, větev claude/zn-nazvy-zaloh
