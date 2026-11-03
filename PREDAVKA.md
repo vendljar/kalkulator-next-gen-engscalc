@@ -1,3 +1,33 @@
+# Předávka — 3. 11. 2026: DK #554 — samočinná kopie zálohy na Disk každý den, větev `claude/dk-kopie-denne`
+
+Nad `1bf1a3a` (integrace v2.11.9). **Verze 3.11.1** (koordinace přečísluje). Neslučováno; na ostrém webu ani na Disku nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. pravidlo: kopírovat, je-li v Netlify noční otisk novější než v poslední kopii prostředí | ✅ | `uloKopieDiskStav`, `uloKopieDiskNocni` (`src/uloziste.js`) |
+| 1b. samočinná kopie po přihlášení heslem (heslo z přihlášení, bez dialogu; F5 = připomínka) | ✅ | `onlinePrihlas` → `onlinePoPrihlaseni` → `onlineZalohaAuto` → `onlineKopieDiskAuto` (`src/ui/online_ui.js`) |
+| 2. hlídka stáří kopie 14 → 3 dny, text | ✅ | `ULO_KOPIE_DISK_HLIDKA_DNU` |
+| 3. retence Disku beze změny, test ≤ 21 souborů / prostředí | ✅ | `src/test_kopie_disk.js` |
+| 4. texty (Nastavení → Databáze, title, příručky) | ✅ | `online_ui.js`, `manual/admin/obsah.json`, `manual/obsah.json`, `manual/kompletni/provoz.json` |
+| 5. roadmapa #554, CHANGELOG | ✅ | `roadmapa/roadmap.json` (`overit_roadmapu.mjs` 17/0) |
+
+**Rozhodnutí:** porovnává se záznam kopie ze serveru (`kopieDisk`, = obsah `posledni_kopie_<prostředí>.json`, per
+prostředí), ne soubor na Disku — je k dispozici i bez práva čtení složky. Den otisku (`kopie.otisk`) vs. den
+nejnovějšího `nocni-otisk` v přehledu; kopie „aktuální stav“ (bez dne) se srovná časem. Vynucené otisky se nepočítají.
+Bez nového nočního otisku nic (hlásí hlídka noční zálohy).
+
+**Otevřené pro J. V.:** (1) **heslo pro samočinnou kopii se bere z právě proběhlého přihlášení** (předá se jen
+do `onlineKopieDiskAuto`, nikam se neukládá, dialog se neotevírá). Bez toho by „sama“ nešla — server záznam kopie
+(K3-N1) chce heslo a K4-N15 zakazuje dialog po přihlášení. Po F5 (obnovené sezení bez hesla) zůstává jen
+připomínka. Je-li to nepřijatelné, stačí vrátit `onlinePoPrihlaseni(o, heslo)` → `onlinePoPrihlaseni(o)`.
+(2) Ranní hlídač záloh v claude.ai může zpřísnit práh stáří kopie na 3 dny.
+
+**Testy:** `src/test_kopie_disk.js` 24/0 (na 1bf1a3a 7 FAIL), `src/test_554_kopie_denne.js` 17/0 (na 1bf1a3a 10 FAIL),
+`overit_online.mjs` 275/0 (+2 kontroly #554); mutace „#554“ **12 z 12 chycených** (`--kontrola` 1211 OK).
+Kolo `--bez-mutaci`: VYSLEDEK_KOLA. Celé mutace neopakovány.
+
+---
+
 # Předávka — 2. 11. 2026: ZN #552 — názvy záloh na Disku s prostředím a časem, větev `claude/zn-nazvy-zaloh`
 
 Nad `b22f5df` (integrace v2.11.3). **Verze ponechána 2.11.3** (koordinace přečísluje). Neslučováno; na ostrém webu
