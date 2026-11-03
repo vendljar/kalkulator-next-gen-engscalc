@@ -292,6 +292,128 @@ function rozvinOdstavceZaRadek(xml, ph) {
   });
   return xml;
 }
+/* ROZPIS CENY DÍLA VE SMLOUVĚ (SF #556, hlášení J. V. 3. 11. 2026).
+ * Šablona SoD realizace v4 nese pod celkovou cenou tři odstavce rozpisu
+ * (SOD_CENA_NABIDKY, SOD_PRIPLATKY_OBJEDNANE, SOD_PRIPLATKY_KC). Nástroj
+ * šablony je naklonoval z odrážky s cenou: styl „Normal (Web)" (Normlnweb)
+ * má v šabloně VLASTNÍ číslování (numId 7, upperRoman „I.") a mezery
+ * before 100 auto / after 240, odrážka ho přebíjela přímým numPr — nové
+ * odstavce ho jen smazaly, takže Word je očísloval I./II./III. A zarovnání
+ * do bloku (jc both) roztáhlo řádky ukončené ručním zalomením přes celou
+ * šířku. Oprava v generátoru platí pro jakoukoli šablonu (i už nahranou
+ * v4 CZ/EN/DE/FR): odstavec se symbolem rozpisu
+ *   – nemá číslování (numPr s numId 0 přebije i číslování stylu),
+ *   – je zarovnaný vlevo (jc left),
+ *   – má odsazení textu odrážky (přímé w:ind zůstane; bez prvního řádku
+ *     z něj hanging 0, ať prvek stylu „hanging 426" řádek neposune),
+ *   – víceřádková hodnota = odstavec na řádek (rozdělí se i u zalomení
+ *     z šablony, tj. popisek „objednané příplatky:" zvlášť),
+ *   – uvnitř souvislého bloku bez mezer (before 0 všude, after 0 kromě
+ *     posledního odstavce bloku, který si mezeru za sebou nechá).
+ * Symboly se nahradí tady (pak už je hlavní průchod nenajde). Odstavce
+ * z odstavcePryc jsou v té chvíli pryč. Symbol bez hodnoty (builder o něm
+ * nic neřekl) se nechá být — zůstane vidět. */
+const DOCX_ROZPIS_KLICE = ['SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_OBJEDNANE', 'SOD_PRIPLATKY_KC'];
+/* pořadí prvků w:pPr ve schématu OOXML (CT_PPrBase + rPr, sectPr, pPrChange) */
+const DOCX_PPR_PORADI = ['pStyle', 'keepNext', 'keepLines', 'pageBreakBefore', 'framePr', 'widowControl', 'numPr', 'suppressLineNumbers',
+  'pBdr', 'shd', 'tabs', 'suppressAutoHyphens', 'kinsoku', 'wordWrap', 'overflowPunct', 'topLinePunct', 'autoSpaceDE', 'autoSpaceDN',
+  'bidi', 'adjustRightInd', 'snapToGrid', 'spacing', 'ind', 'contextualSpacing', 'mirrorIndents', 'suppressOverlap', 'jc',
+  'textDirection', 'textAlignment', 'textboxTightWrap', 'outlineLvl', 'divId', 'cnfStyle', 'rPr', 'sectPr', 'pPrChange'];
+/* Přímé potomky fragmentu XML: [{ jmeno: 'w:r', xml }]. Text mezi prvky
+ * (u w:p a w:r jen bílé znaky) se zahodí. */
+function docxDeti(xml) {
+  const deti = [], re = /<(\/?)([A-Za-z0-9]+:[A-Za-z0-9]+)\b[^>]*?(\/?)>/g;
+  let hl = 0, zac = 0, jm = '', m;
+  while ((m = re.exec(xml))) {
+    if (m[1]) { hl--; if (hl === 0) deti.push({ jmeno: jm, xml: xml.slice(zac, re.lastIndex) }); continue; }
+    if (hl === 0) { zac = m.index; jm = m[2]; }
+    if (m[3]) { if (hl === 0) deti.push({ jmeno: jm, xml: xml.slice(zac, re.lastIndex) }); } else hl++;
+  }
+  return deti;
+}
+/* Nastaví (nahradí / vloží na místo podle schématu) prvek w:<jmeno> v w:pPr. */
+function docxPPrNastav(deti, jmeno, prvek) {
+  const i = deti.findIndex(d => d.jmeno === 'w:' + jmeno);
+  if (i >= 0) { deti[i] = { jmeno: 'w:' + jmeno, xml: prvek }; return deti; }
+  const cil = DOCX_PPR_PORADI.indexOf(jmeno);
+  const j = deti.findIndex(d => DOCX_PPR_PORADI.indexOf(String(d.jmeno).replace(/^w:/, '')) > cil);
+  deti.splice(j < 0 ? deti.length : j, 0, { jmeno: 'w:' + jmeno, xml: prvek });
+  return deti;
+}
+/* atributy prvku → upravené atributy (null = pryč) → prvek */
+function docxAtributy(prvek, jmeno, zmeny) {
+  const a = [];
+  String(prvek || '').replace(/\s([A-Za-z0-9]+:[A-Za-z0-9]+)="([^"]*)"/g, (_m, k, v) => { a.push([k, v]); return _m; });
+  Object.keys(zmeny).forEach(k => {
+    const i = a.findIndex(x => x[0] === k);
+    if (zmeny[k] === null) { if (i >= 0) a.splice(i, 1); } else if (i >= 0) a[i][1] = zmeny[k]; else a.push([k, zmeny[k]]);
+  });
+  return '<w:' + jmeno + a.map(x => ' ' + x[0] + '="' + x[1] + '"').join('') + '/>';
+}
+/* Odstavec → { otevreni, pPr (vnitřek, '' bez pPr), deti (bez pPr) } */
+function docxRozlozOdstavec(p) {
+  const m = p.match(/^(<w:p\b[^>]*?)(\/?)>([\s\S]*?)(?:<\/w:p>)?$/);
+  if (!m) return null;
+  const deti = docxDeti(m[2] ? '' : m[3]);
+  const ppr = deti.find(d => d.jmeno === 'w:pPr');
+  return { otevreni: m[1] + '>', pPr: ppr ? ppr.xml.replace(/^<w:pPr\b[^>]*>/, '').replace(/<\/w:pPr>$/, '').replace(/^<w:pPr\b[^>]*\/>$/, '') : '',
+    deti: deti.filter(d => d.jmeno !== 'w:pPr') };
+}
+/* Rozdělí odstavec na odstavce v místech ručního zalomení řádku (<w:br/>
+ * přímo v běhu; zalomení stránky / sloupce zůstává). Klony nemají w14:paraId
+ * ani w14:textId (musí být v dokumentu jedinečné). */
+function docxRozdelOdstavecNaRadky(p) {
+  const o = docxRozlozOdstavec(p);
+  if (!o) return [p];
+  const radky = [[]];
+  o.deti.forEach(d => {
+    const rm = d.jmeno === 'w:r' && d.xml.match(/^(<w:r\b[^>]*>)([\s\S]*)<\/w:r>$/);
+    if (!rm) { radky[radky.length - 1].push(d.xml); return; }
+    const casti = docxDeti(rm[2]);
+    const rPr = casti.filter(c => c.jmeno === 'w:rPr').map(c => c.xml).join('');
+    let cur = [];
+    const vypust = () => { if (cur.length) radky[radky.length - 1].push(rm[1] + rPr + cur.join('') + '</w:r>'); cur = []; };
+    casti.forEach(c => {
+      if (c.jmeno === 'w:rPr') return;
+      if ((c.jmeno === 'w:br' || c.jmeno === 'w:cr') && !/w:type="(?:page|column)"/.test(c.xml)) { vypust(); radky.push([]); return; }
+      cur.push(c.xml);
+    });
+    vypust();
+  });
+  if (radky.length < 2) return [p];
+  const pPr = o.pPr ? '<w:pPr>' + o.pPr + '</w:pPr>' : '';
+  const klon = o.otevreni.replace(/\sw14:(?:paraId|textId)="[^"]*"/g, '');
+  return radky.map((r, i) => (i ? klon : o.otevreni) + pPr + r.join('') + '</w:p>');
+}
+/* Vlastnosti odstavce rozpisu: bez číslování, vlevo, odsazení textu, bez mezer v bloku. */
+function docxRozpisPPr(p, posledni) {
+  const o = docxRozlozOdstavec(p);
+  if (!o) return p;
+  let deti = docxDeti(o.pPr);
+  deti = docxPPrNastav(deti, 'numPr', '<w:numPr><w:ilvl w:val="0"/><w:numId w:val="0"/></w:numPr>');
+  const sp = (deti.find(d => d.jmeno === 'w:spacing') || {}).xml;
+  deti = docxPPrNastav(deti, 'spacing', docxAtributy(sp, 'spacing', Object.assign({ 'w:before': '0', 'w:beforeAutospacing': '0', 'w:beforeLines': null },
+    posledni ? {} : { 'w:after': '0', 'w:afterAutospacing': '0', 'w:afterLines': null })));
+  const ind = (deti.find(d => d.jmeno === 'w:ind') || {}).xml;
+  if (ind && !/\sw:(?:hanging|firstLine|hangingChars|firstLineChars)="/.test(ind)) deti = docxPPrNastav(deti, 'ind', docxAtributy(ind, 'ind', { 'w:hanging': '0' }));
+  deti = docxPPrNastav(deti, 'jc', '<w:jc w:val="left"/>');
+  return o.otevreni + '<w:pPr>' + deti.map(d => d.xml).join('') + '</w:pPr>' + o.deti.map(d => d.xml).join('') + '</w:p>';
+}
+function docxRozpisOdstavce(xml, ph) {
+  if (!ph) return xml;
+  const re = /<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, nalez = [];
+  let m;
+  while ((m = re.exec(xml))) {
+    if (klicePlaceholderu(m[0]).some(k => DOCX_ROZPIS_KLICE.indexOf(k) >= 0 && ph[k] != null)) nalez.push({ zac: m.index, kon: m.index + m[0].length });
+  }
+  for (let i = nalez.length - 1; i >= 0; i--) {
+    const { zac, kon } = nalez[i];
+    const posledni = !(i + 1 < nalez.length && /^\s*$/.test(xml.slice(kon, nalez[i + 1].zac)));
+    const radky = docxRozdelOdstavecNaRadky(nahradPlaceholdery(xml.slice(zac, kon), ph));
+    xml = xml.slice(0, zac) + radky.map((r, j) => docxRozpisPPr(r, posledni && j === radky.length - 1)).join('') + xml.slice(kon);
+  }
+  return xml;
+}
 /* ŘÁDEK TABULKY ZA KAŽDÝ ŘÁDEK HODNOTY (etapa A platebních podmínek OCK,
  * 30. 9. 2026). V šabloně CN v13 stojí každá věta o dílčím daňovém dokladu
  * ve vlastním orámovaném řádku tabulky s písmenem a), b), c). Šablona v14 má
@@ -896,6 +1018,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
       po = odstranPrazdneBloky(po, placeholders, volby && volby.blokyPryc);   // prázdné kapitoly (P8A) a nenabízené činnosti SoD PROJ (#380)
       po = rozvinRadkyZaRadek(po, placeholders);        // věty o dílčích dokladech OCK: řádek tabulky za větu (etapa A)
       po = rozvinOdstavceZaRadek(po, placeholders);     // seznam plateb: odstavec za platbu (etapa B)
+      po = docxRozpisOdstavce(po, placeholders);       // rozpis ceny díla SoD: bez číslování, vlevo, odstavec na řádek (SF #556)
       po = nahradPlaceholdery(po, placeholders);
       if (po !== pred) nahrad++;
       p.data = enkoder.encode(po);
@@ -1269,4 +1392,5 @@ if (typeof module !== 'undefined')
     odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
-    docxPrelozSablonu, docxPrelozXml, odstavcoveSpany, odstavecText, xmlUnesc };
+    docxPrelozSablonu, docxPrelozXml, odstavcoveSpany, odstavecText, xmlUnesc,
+    docxRozpisOdstavce, DOCX_ROZPIS_KLICE, docxRozdelOdstavecNaRadky, docxRozpisPPr, docxDeti };

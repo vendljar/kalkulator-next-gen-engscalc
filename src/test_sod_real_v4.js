@@ -117,8 +117,10 @@ if (fail) { console.log(`\n${ok} prošlo, ${fail} selhalo`); process.exit(1); }
   const s = await vypln(Object.assign({}, zaklad, { CENA_BEZ_DPH: '130 000,00 Kč', SOD_CENA_NABIDKY: '100 000,00 Kč',
     SOD_PRIPLATKY_OBJEDNANE: 'Příplatek A – 10 000,00 Kč\nPříplatek B – 20 000,00 Kč', SOD_PRIPLATKY_KC: '30 000,00 Kč' }), { odstavcePryc: [] });
   const tS = dg.odstavcoveSpany(s).map(sp => dg.odstavecText(s.slice(sp.zac, sp.kon)));
-  test('s příplatky: tři odstavce navíc, seznam zalomený v jednom odstavci, žádný symbol',
-    tS.length === 7 && /CN 1/.test(tS[2]) && /Příplatek A – 10 000,00 Kč/.test(tS[3]) && /<w:br\/>/.test(s) && !/\{\{/.test(s), tS);
+  /* SF #556: popisek a každý příplatek jsou vlastní odstavec (dřív zalomení <w:br/> v jednom odstavci). */
+  test('s příplatky: rozpis navíc, popisek a příplatky na vlastních odstavcích, žádný symbol ani zalomení',
+    tS.length === 9 && /CN 1/.test(tS[2]) && tS[3] === 'objednané příplatky:' && tS[4] === 'Příplatek A – 10 000,00 Kč'
+    && tS[5] === 'Příplatek B – 20 000,00 Kč' && /^příplatky celkem/.test(tS[6]) && !/<w:br\/>/.test(s) && !/\{\{/.test(s), tS);
 
   /* překlad nových odstavců */
   test('nastroje/preklad_sod.js je k dispozici', !!PS);

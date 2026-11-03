@@ -58,6 +58,16 @@ Strojový překlad — ke kontrole rodilými mluvčími spolu s `SOD_EN_KONTROLA
 
 ## 3. Výroba
 
+> **Návrh opravy výroby (SF #556, 3. 11. 2026).** Odstavce rozpisu vznikají klonem odrážky s cenou se stylem
+> „Normal (Web)“ (`Normlnweb`), který má v šabloně vlastní číslování (`numId 7`, upperRoman), mezery before 100 auto /
+> after 240 a hanging 426; `sodRealV4` mazala jen přímé `numPr` → Word odstavce očísloval I./II./III. a `jc both`
+> roztáhl řádky se zalomením `<w:br/>`. Příští výroba šablony má u nových odstavců: `<w:numPr><w:ilvl w:val="0"/>
+> <w:numId w:val="0"/></w:numPr>`, `<w:jc w:val="left"/>`, `<w:ind w:left="1080" w:right="340" w:hanging="0"/>`,
+> `<w:spacing w:before="0" w:beforeAutospacing="0" w:after="0" w:afterAutospacing="0"/>` (u posledního bez `after`)
+> a seznam příplatků jako samostatný odstavec (popisek zvlášť, bez `<w:br/>`). **Není to nutné:** generátor
+> (`docxRozpisOdstavce`, `src/docxgen.js`) totéž udělá při každém vyplnění, i u už nahrané v4 — šablonu znovu nahrávat
+> netřeba. Nástroj `vyrob_sablony.js` proto zůstal beze změny (souběžná práce na šablonách by se jinak křížila).
+
 ```
 node nastroje/vyrob_sablony.js --sod-real-v4 <složka> [výstup]
 ```

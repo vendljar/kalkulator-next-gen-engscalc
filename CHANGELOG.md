@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v3.11.2 — SF #556: rozpis objednaných příplatků ve smlouvě o dílo bez číslování, větev claude/sf-sod-rozpis
+
+Nad integrací 6e4bf49 (v3.11.1), hlášení J. V. 3. 11. 2026 (šablona SoD realizace v4 na testu). Verzi může koordinace
+přečíslovat. Šablonu není třeba nahrávat znovu.
+
+- **Příčina:** nástroj šablony (`vyrob_sablony.js --sod-real-v4`) naklonoval odstavce rozpisu z odrážky s cenou se stylem
+  „Normal (Web)“ (`Normlnweb`). Ten má v šabloně **vlastní číslování** (`numId 7`, upperRoman „I.“), mezery before 100
+  auto / after 240 a hanging 426. Odrážka ho přebíjí přímým `numPr`; nové odstavce `numPr` jen smazaly → Word je
+  očísloval I./II./III. K tomu `jc both` z odrážky: řádek ukončený ručním zalomením `<w:br/>` Word roztáhne přes šířku.
+- **Oprava v generátoru** (`docxRozpisOdstavce`, `src/docxgen.js`), pro každou šablonu i už nahranou v4 CZ/EN/DE/FR:
+  odstavce se `SOD_CENA_NABIDKY` / `SOD_PRIPLATKY_OBJEDNANE` / `SOD_PRIPLATKY_KC` dostanou `numPr` s `numId 0` (přebije
+  i číslování stylu), `jc left`, přímé odsazení s `hanging 0` (text na odsazení odrážky), víceřádková hodnota i popisek
+  „objednané příplatky:“ jsou **samostatné odstavce** (žádné `<w:br/>`), uvnitř bloku before/after 0 (poslední odstavec
+  si mezeru za sebou nechá). Bez objednaných příplatků odstavce dál celé pryč (`odstavcePryc`). Zalomení stránky se
+  nedělí, symbol bez hodnoty zůstane, klony bez duplicitních `w14:paraId`.
+- **Ověřeno na skutečné v4 CZ/EN/DE/FR** (jen čtení z Disku, smyšlené částky): rozpis bez čísel, vlevo, příplatek na
+  řádek, XML bez vad; render LibreOffice odpovídá podkladu.
+- **Testy:** nový `src/test_sod_rozpis.js` 16/0 (na 6e4bf49 0/1, s vypnutým voláním 6/10); `src/test_sod_real_v4.js`
+  20/0 (kontrola „seznam zalomený v jednom odstavci“ změněna na „popisek a příplatky na vlastních odstavcích“).
+  Mutace jádra „#556“ 9 z 9 chycených.
+- **Šablona:** návrh opravy výroby v `podklady/SABLONA_SOD_REALIZACE_V4_21_10.md` §3 (nástroj beze změny).
+
+---
+
 ## v3.11.1 — DK #554: samočinná kopie zálohy na Disk každý den, větev claude/dk-kopie-denne
 
 Nad integrací 1bf1a3a (v2.11.9), pokyn J. V. 3. 11. 2026. Na ostrém webu ani na Disku nic. Verzi může koordinace
