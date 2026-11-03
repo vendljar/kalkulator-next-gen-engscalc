@@ -563,8 +563,9 @@ async function uloOtevriZeSlozky(soubor) {
      * Děje se to hned po načtení, ještě před renderem, aby uživatel neviděl
      * ani vteřinu ceny, se kterými se dál nepočítá. */
     const prep = uloSrovnejSPlatnymCenikem();
+    const fotoVar = (typeof uvodniFotoVarovani === 'function') ? uvodniFotoVarovani(zak.fotoZahozena) : '';   // SEC-M16
     uloZprava('Otevřeno ze složky: ' + soubor + '.'
-      + (prep && prep.prepocteno ? ' ' + uloPrepocetVeta(prep) : ''));
+      + (prep && prep.prepocteno ? ' ' + uloPrepocetVeta(prep) : '') + (fotoVar ? ' ' + fotoVar : ''), fotoVar ? 'varovani' : '');
     zavriUloziste();
     render();
     if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();

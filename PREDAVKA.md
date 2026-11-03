@@ -1,3 +1,25 @@
+# Předávka — 3. 11. 2026: SF16 #557 — SEC-M16 úvodní fotka jen jako `data:image`, větev `claude/sec-m16-foto`
+
+Nad `198ed4c` (`test`, v3.11.3). **Verze 3.11.4** (koordinace přečísluje, číslo #557 také). Neslučováno; na ostrém
+ani testovacím webu nic. Rozhodnutí J. V. 3. 11. 2026: „Ano, jen data:image“.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. společná kontrola tvaru (fotka PNG/JPEG/WEBP, logo PNG/JPEG) | ✅ | `obrazekDataUrlPlatny`, `uvodniFotoPlatna` (`src/zakazka.js`); `firma.js` (logo); podpis `podpisZkontroluj` má totéž pravidlo |
+| 2. server, obnova, import: jiná fotka se zahodí s hláškou | ✅ | `importZakazka` → `uvodniFotoOcisti`; `zakazka_kontrola.mjs` (`fotoZahozena`), `zakazky.mjs` (`varovani`), `obnova.mjs` (upozornění), `ui/common.js` a `ui/uloziste_ui.js` (hláška) |
+| 3. klient fotku s odkazem nevykreslí | ✅ | `nabidkaFotoSrc` (`src/ui/zakazka_ui.js`) — karta, tisk HTML; Word `uvodniFotoObrazky` |
+| 4. zamčená varianta se kvůli fotce neodmítne | ✅ | fotka je v hlavičce zakázky, ne v `varianta.data`; ověřeno testem (nová i stará uložená zakázka) |
+| 5. meze, audit, CHANGELOG, roadmapa #557 | ✅ | `BEZPECNOST_MEZE.md`, `podklady/SEC_AUDIT_MAIN_28_10.md` |
+
+**Rozhodnutí v dávce:** server fotku v jiném tvaru **zahodí s varováním** (200), neodmítá 400 — jako logo, ne jako
+podpis. Důvod: stará zakázka (i zamčená) s fotkou z odkazu se musí dát uložit. Nahrávání: GIF a SVG se odmítnou
+hláškou už při nahrání (dřív by se uložily a server by je teď stejně zahodil); PNG/JPEG/WEBP a strop 2 MB beze změny.
+
+**Testy:** @@TESTY@@
+
+**Otevřené body:** fotky s webovou adresou v uložených zakázkách zmizí při prvním otevření/uložení (obchodník je musí
+nahrát znovu ze souboru) — kolik takových zakázek je v databázi, nevím (do živých webů se nepřihlašuji).
+
 # Předávka — 3. 11. 2026: ZO #555 — tisk klonu odeslané nabídky, větev `claude/zo-klon-tisk`
 
 Nad `6e4bf49` (`claude/integrace-16-10`, v3.11.1). **Verze 3.11.2** (koordinace přečísluje). Neslučováno; na ostrém

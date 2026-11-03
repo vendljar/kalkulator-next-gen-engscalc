@@ -678,7 +678,13 @@ function firmaKZverejneni(f) {
   /* Logo jen jako datový zápis PNG/JPEG (audit 22. 8. 2026, B18) — stejné
    * pravidlo jako u podpisu: SVG umí nést skript, odkaz prozradí otevření
    * nabídky. Cokoli jiného se tiše zahodí (logo je volitelné). */
-  if (f && f.logo && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(f.logo)))
+  /* SEC-M16: společná kontrola tvaru se zakázkou (obrazekDataUrlPlatny
+   * v zakazka.js); Node testy načítají firma.js i samostatně — pak tatáž
+   * podmínka přímo. */
+  const logoOk = (typeof obrazekDataUrlPlatny === 'function')
+    ? obrazekDataUrlPlatny(f && f.logo, ['png', 'jpeg'])
+    : /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(f && f.logo));
+  if (f && f.logo && logoOk)
     { out.logo = f.logo; out.logoNazev = f.logoNazev || ''; }
   /* Platební podmínky jen platné a jen čistá kopie (známé klíče, #367). */
   if (f && f.podminky && !firmaPodmVady(f.podminky).length) {

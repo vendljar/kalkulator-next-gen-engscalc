@@ -1325,9 +1325,24 @@ Zpráva `podklady/SEC_AUDIT_MAIN_28_10.md` (oddíl „Stav oprav“), testy
 - **SEC-M15 (info):** id organizace/osoby z odpovědi Pipedrive do cesty
   a `telo.error` do prohlížeče — skutečný Pipedrive vrací čísla a token
   neozvěnuje; ošetřit spolu s #510 (zápis).
-- **SEC-M16 (info):** úvodní fotka s cizí adresou — **čeká na rozhodnutí
-  J. V.** (omezení na `data:image` by rozbilo fotky s webovou adresou).
-  Na webu požadavek blokuje CSP.
+- **SEC-M16 (OPRAVENO v3.11.4, #557, rozhodnutí J. V. 3. 11. 2026 „Ano, jen
+  data:image“):** úvodní fotka nabídky OCK i PROJ (`uvodniFoto`,
+  `uvodniFotoProj` — leží v **hlavičce zakázky**, ne v datech varianty) se
+  přijímá jen ve tvaru `^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$`.
+  Jedna kontrola `uvodniFotoPlatna` / `obrazekDataUrlPlatny` (`src/zakazka.js`,
+  sdílí ji i logo firmy ve `firma.js`; podpis má totéž pravidlo PNG/JPEG
+  v `podpisZkontroluj`). Jinou hodnotu (`http(s)://`, `javascript:`, SVG, GIF,
+  přilepený atribut) **zahodí `importZakazka`** — tedy uložení na serveru
+  (200 + `varovani`, neodmítá se 400), obnova ze zálohy (upozornění
+  v bilanci), otevření souboru i zakázky ze složky (hláška). Zahodí se i název
+  fotky, popisek zůstane. Klient fotku vykreslí (náhled karty, tisk HTML,
+  Word) jen po téže kontrole; nahrání souborem a Ctrl+V beze změny, jen GIF
+  a SVG odmítne hláškou, strop 2 MB beze změny. **Zámek:** fotka do dat
+  varianty nepatří, takže zamčená (odeslaná) varianta se kvůli ní nikdy
+  neodmítne; stará uložená zakázka s fotkou z odkazu se načte a uloží bez
+  chyby zámku (fotka zmizí). **Mez:** fotku s webovou adresou je nutné
+  nahrát znovu ze souboru. Testy `src/test_sec_m16_foto.js`,
+  `netlify/test_sec_m16.mjs`, mutace „#557 SEC-M16“.
 - **SEC-M17 (info):** 33 kvadratických výrazů nad šablonami a vstupy správce
   — jen při příležitosti (zpomalí vlastní prohlížeč).
 - **SEC-M18 (info):** kontrola autora tokenu obnovy po dávce bez testu —

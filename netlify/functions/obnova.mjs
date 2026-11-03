@@ -758,6 +758,9 @@ async function obsluha(req, uvolnit) {
         /* Kopie: importZakazka mění objekt na místě a záloha je zdroj. */
         const prijem = zakazkaPrijmi(JSON.parse(JSON.stringify(v)), ULO);
         if (!prijem.ok) { preskoc(b, klic, prijem.chyba); continue; }
+        if (prijem.fotoZahozena && prijem.fotoZahozena.length)   // SEC-M16: obnoví se bez fotky z odkazu
+          upozorneni.push('Zakázka ' + k + ': úvodní fotka nabídky ' + prijem.fotoZahozena.join(' a ')
+            + ' nebyla obrázek nahraný ze souboru a obnovila se bez ní.');
         const kontrola = zakazkaServerKontrola(stary, prijem.zak, relace, ctx);
         if (!kontrola.ok) { preskoc(b, klic, kontrola.chyba); continue; }
         /* Nesouhlas zmrazeného výsledku odeslané nabídky (B98 — ze souboru se

@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v3.11.4 — SF16 #557: SEC-M16 — úvodní fotka nabídky jen jako nahraný obrázek, větev claude/sec-m16-foto
+
+Nad 198ed4c (`test`, v3.11.3), rozhodnutí J. V. 3. 11. 2026 („Ano, jen data:image“). Verzi i číslo může koordinace
+přečíslovat. Na ostrém ani testovacím webu nic.
+
+- **Nález SEC-M16** (security test SEC-M 28. 10. 2026): server přijal úvodní fotku s webovou adresou (`https://…`)
+  a klient ji vykreslil do `<img src>` — v souboru otevřeném z disku (bez CSP) sledovací pixel. Logo a podpis už byly
+  omezené na `data:image`, fotka ne.
+- **Jedna kontrola tvaru** `uvodniFotoPlatna` / `obrazekDataUrlPlatny` (`src/zakazka.js`):
+  `^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$`. Logo firmy (`firma.js`) ji sdílí (PNG/JPEG), podpis má totéž
+  pravidlo v `podpisZkontroluj`.
+- **Import, uložení, obnova:** `importZakazka` fotku v jiném tvaru (odkaz, `javascript:`, SVG, GIF, přilepený atribut)
+  zahodí — OCK i PROJ, i s názvem; popisek zůstane. Server uloží zakázku bez ní (200 + `varovani`, neodmítá se),
+  obnova ze zálohy to uvede v upozorněních, otevření souboru a zakázky ze složky ukáže hlášku.
+- **Zámek:** fotka leží v hlavičce zakázky, ne v datech varianty — zamčená (odeslaná) varianta se kvůli ní nikdy
+  neodmítne; stará zakázka s fotkou z odkazu se načte a uloží bez chyby zámku.
+- **Klient:** náhled v kartě, tisk HTML i Word fotku vykreslí jen po kontrole. Nahrání souborem a Ctrl+V beze změny,
+  jen GIF a SVG odmítne hláškou; strop 2 MB beze změny.
+- **Testy:** `src/test_sec_m16_foto.js` 59/0 (na 198ed4c 44 FAIL), `netlify/test_sec_m16.mjs` 44/0 (na 198ed4c 25 FAIL).
+  Mutace „#557 SEC-M16“ jádro **4 z 4** chycených (`--kontrola` 641 OK), server @@SERVER@@ (`--kontrola` 1223 OK).
+  Kolo `--bez-mutaci` @@KOLO@@.
+- `BEZPECNOST_MEZE.md` (SEC-M16 opraveno, mez: fotku s odkazem nahrát znovu), audit `podklady/SEC_AUDIT_MAIN_28_10.md`
+  (SEC-M16 opraveno, otázka 4 rozhodnuta), roadmapa #557.
+
 ## v3.11.3 — ZO #555: tisk klonu odeslané nabídky („změnila by se data uzamčené nabídky“), větev claude/zo-klon-tisk
 
 Nad 6e4bf49 (`claude/integrace-16-10`, v3.11.1), hlášení J. V. 3. 11. 2026 z testu (v2.11.9). Na ostrém webu nic.

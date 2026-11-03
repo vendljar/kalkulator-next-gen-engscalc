@@ -127,6 +127,12 @@ export function zakazkaPrijmi(telo, ULO) {
   try { zak = globalThis.importZakazka(telo || {}); }
   /* Interní text výjimky do odpovědi nepatří (K8-S8, #514) — jen obecná věta. */
   catch (e) { return { ok: false, status: 400, chyba: 'Zakázku se nepodařilo přečíst — zakázka má neplatný tvar.' }; }
+  /* SEC-M16 (3. 11. 2026): úvodní fotku, která není datový obrázek
+   * PNG/JPEG/WEBP, zahodí už importZakazka (uvodniFotoOcisti) — zakázka se
+   * uloží bez ní a volající to ohlásí. Neodmítá se (400): starou zakázku
+   * s fotkou z odkazu, i zamčenou, musí jít uložit; fotka leží v hlavičce,
+   * ne v datech varianty, takže zámek se nemění. */
+  const fotoZahozena = Array.isArray(zak && zak.fotoZahozena) ? zak.fotoZahozena.slice() : [];
   zakazkaBezPrototypovychKlicu(zak);
   /* Délka čísla PŘED jménem souboru (SEC-M3, #542): uloJmenoSouboru číslo
    * normalizuje regulárními výrazy — 200 000 znaků tam stálo sekundy času
@@ -146,7 +152,7 @@ export function zakazkaPrijmi(telo, ULO) {
   const spatnaId = ULO.uloIdProblemy(zak);
   if (spatnaId.length)
     return { ok: false, status: 400, chyba: 'Zakázka nese ' + ULO.uloIdProblemyText(spatnaId) + '.' };
-  return { ok: true, zak, jmeno };
+  return { ok: true, zak, jmeno, fotoZahozena };
 }
 
 /* NOVÝ ZÁMEK Z CENÍKU BEZ CEN NEBO ZA NULU (#395 V3, 8. 10. 2026).
