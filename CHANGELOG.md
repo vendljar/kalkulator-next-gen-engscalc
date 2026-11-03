@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v3.11.2 — ZO #555: tisk klonu odeslané nabídky („změnila by se data uzamčené nabídky“), větev claude/zo-klon-tisk
+
+Nad 6e4bf49 (`claude/integrace-16-10`, v3.11.1), hlášení J. V. 3. 11. 2026 z testu (v2.11.9). Na ostrém webu nic.
+Verzi může koordinace přečíslovat.
+
+- **Příčina:** na odeslané (zamčené) variantě je výběr **Typ šachty** aktivní. `set('Z.typSachty')` změnu odmítne
+  a jen nabídne klon („Uzamčená varianta … Založit klon a pokračovat v něm“ — dialog doběhne později), jenže
+  `typSachtyPrepni` (`src/ui/kalk_ock.js`) pak dosadil výchozí profily nového typu **přímo do zadání odeslané
+  varianty**. Klon vznikl už ze změněných dat a první uložení — to po tisku klonu — server správně odmítl.
+  Data v databázi zůstala celá; klon a záznam jeho odeslání se neuložily. Týká se i ostrého v27.10.6.
+- **Oprava:** `typSachtyPrepni` skončí, když `set` typ nezměnil (zamčená varianta i zakázka jen ke čtení) — žádné
+  profily, lešení hlavy, ATYP ani sklo. Pojistka serveru beze změny.
+- **Druhá cesta k téže hlášce** (našel hlídač zápisů v harnessu): povolená změna DPH odeslané nabídky po CN (Z1)
+  poznamená `cenikRucni['C.dph']` / `['PC.dph']` a porovnání zámku tu značku nevynechávalo → uložení 409.
+  `zamekDataPorovnani` (`src/zamek.js`) ji teď vynechá spolu s DPH — jen když je DPH editovatelná (zámek se snímkem).
+- **Diagnostika:** server v hlášce uvede název a číslo zamčené varianty a **první rozdílnou cestu v datech**
+  (např. `ock.zadani.profily.sloupek.dim`), bez hodnot — `zamekDataRozdilCesta` (`src/zamek.js`), uložení i obnova
+  (`netlify/lib/zakazka_kontrola.mjs`). Dialog „Odeslaná nabídka není uložená“ ukáže důvod na vlastním řádku.
+- **Testy:** `overit_klon_tisk.mjs` (prohlížeč, skutečný klient proti serverovým funkcím: tok J. V., „Nechat beze
+  změny“, Prodáno na vytištěném klonu i po neuloženém tisku, diagnostika, hlídač zápisů přes všechny vstupy všech záložek;
+  28/0, nad 6e4bf49 16 FAIL),
+  `netlify/test_555_klon_tisk.mjs` (hláška, DPH se značkou, zámek bez snímku, obnova; nad 6e4bf49 6 FAIL),
+  `src/test_555_klon_tisk.js` (vyříznuté `typSachtyPrepni` ve vm, cesta, DPH; 18/0, nad 6e4bf49 padá). Mutace „#555“
+  jádro **8 z 8**, server **5 z 5** chycených (`--kontrola` 628 / 1216 OK); dvě mutace Z1 přecíleny na nový tvar bloku DPH.
+
 ## v3.11.1 — DK #554: samočinná kopie zálohy na Disk každý den, větev claude/dk-kopie-denne
 
 Nad integrací 1bf1a3a (v2.11.9), pokyn J. V. 3. 11. 2026. Na ostrém webu ani na Disku nic. Verzi může koordinace

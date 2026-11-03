@@ -174,7 +174,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* #552 ZN (2. 11. 2026): jména kopií na Disku s prostředím a časem. */
      '../src/test_552_nazvy_zaloh.js', 'test_552_prostredi_zaloh.mjs',
      /* #554 DK (3. 11. 2026): samočinná kopie na Disk každý den po přihlášení heslem. */
-     '../src/test_554_kopie_denne.js'];
+     '../src/test_554_kopie_denne.js',
+     /* #555 ZO (3. 11. 2026): hláška odmítnutí zamčených dat s variantou a cestou. */
+     'test_555_klon_tisk.mjs', '../src/test_555_klon_tisk.js'];
 /* Filtr podle názvu; `--cast K/N` a `--od N` vybírají část běhu podle pořadí
  * (P2, 23. 10. 2026 — nastroje/mutace_cast.mjs). */
 const { mutaceCast, filtrZArgv } = await import('../nastroje/mutace_cast.mjs');
@@ -184,6 +186,29 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* #555 ZO (3. 11. 2026, hlášení J. V.): hláška „změnila by se data uzamčené
+   * nabídky" jmenuje variantu a první rozdílnou cestu (bez hodnot); DPH po CN
+   * se značkou „ručně" projde. Hlídá netlify/test_555_klon_tisk.mjs. */
+  { nazev: '#555: hláška bez rozdílné cesty', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "        const kde = cesta ? ', první rozdíl v datech: ' + cesta : '';",
+    nahrad: "        const kde = '';",
+    proc: 'J. V. by po odmítnutí dál nevěděl, co se v odeslané nabídce liší' },
+  { nazev: '#555: hláška bez názvu zamčené varianty', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: `        const kdo = '„' + String(sv.nazev || sv.id || '').slice(0, 80) + '"' + (cislo ? ' (' + cislo + ')' : '');`,
+    nahrad: "        const kdo = '';",
+    proc: 'hláška by neřekla, KTERÁ odeslaná varianta se mění (J. V. tiskl klon a nevěděl proč)' },
+  { nazev: '#555: obnova hlásí jen obecný důvod', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "          ? 'změnila by se data uzamčené (odeslané) nabídky ' + kdo + kde",
+    nahrad: "          ? 'změnila by se data uzamčené (odeslané) nabídky'",
+    proc: 'obnova ze zálohy by přeskočila zakázku bez vodítka, co se liší' },
+  { nazev: '#555: cesta se počítá ze syrových dat', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "          ? globalThis.zamekDataRozdilCesta(nv.data, sv.data, sv) : '';",
+    nahrad: "          ? globalThis.zamekDataRozdilCesta(nv.data, nv.data, sv) : '';",
+    proc: 'hláška by nikdy cestu neuvedla (porovnání se sebou samým)' },
+  { nazev: '#555: značka DPH „ručně" shodí uložení', soubor: '../src/zamek.js',
+    hledej: "    if (rucni) delete rucni['C.dph'];",
+    nahrad: "    if (rucni) void 0;",
+    proc: 'povolená změna DPH odeslané nabídky po CN by skončila 409 „změnila by se data"' },
   /* #554 DK (3. 11. 2026): kopie na Disk každý den — kopírovat, když je noční
    * otisk novější než ten v poslední kopii; heslo z přihlášení; hlídka 3 dny.
    * Hlídají src/test_kopie_disk.js a src/test_554_kopie_denne.js. */
@@ -2245,12 +2270,12 @@ const MUTACE = [
     nahrad: "  return !!(s && typeof s[c[1]] === 'number');",
     proc: 'po podpisu smlouvy by šla změnit sazba DPH zakázky' },
   { nazev: 'Z1: serverové porovnání přehlíží každou změnu DPH', soubor: '../src/zamek.js',
-    hledej: "  if (kopie.cenik && typeof kopie.cenik === 'object' && zamekDphVolna(v, 'C.dph')) delete kopie.cenik.dph;",
-    nahrad: "  if (kopie.cenik && typeof kopie.cenik === 'object') delete kopie.cenik.dph;",
+    hledej: "  if (kopie.cenik && typeof kopie.cenik === 'object' && zamekDphVolna(v, 'C.dph')) {",
+    nahrad: "  if (kopie.cenik && typeof kopie.cenik === 'object') {",   // #555: přecíleno (blok s cenikRucni)
     proc: 'po SoD nebo u starého zámku by server pustil změnu sazby DPH' },
   { nazev: 'Z1: serverové porovnání nepřehlíží DPH', soubor: '../src/zamek.js',
-    hledej: "  if (kopie.cenik && typeof kopie.cenik === 'object' && zamekDphVolna(v, 'C.dph')) delete kopie.cenik.dph;",
-    nahrad: "",
+    hledej: "    delete kopie.cenik.dph;",
+    nahrad: "",   // #555: přecíleno (blok s cenikRucni)
     proc: 'editovatelná sazba DPH (tabulka J. V.) by server vrátil 409' },
   { nazev: 'Z1: serverové porovnání přehlíží plán plateb vždy', soubor: '../src/zamek.js',
     hledej: "  if (kopie.kryciProj && typeof kopie.kryciProj === 'object' && zamekKryciPoleVolne(v, 'kryciProj', 'planPredvolba'))",
