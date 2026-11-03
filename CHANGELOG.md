@@ -27,6 +27,8 @@ Nad 198ed4c (`origin/test`, v3.11.3). Na ostrém webu nic. Verzi může koordina
 - **Testy:** nový `src/test_k39_leseni_rucne.js` 36/0 (nad 198ed4c padá — chybí funkce; s vypnutou kontrolou ruční
   volby v `typSachtyPrepni` 6 FAIL: cena +položka, příznak, zahraničí); `overit_k39_sablony_filtr.mjs` 9/0 (s filtrem
   vždy pravdivým 2 FAIL). Mutace jádra „K39-N1“ **4 z 4** chycené; tři mutace #546 přecíleny na nový tvar kódu (7 z 7).
+- **Kolo:** `--bez-mutaci` VŠE ZELENÉ (373 / 0 / 7, hodiny 300 / 0 / 1, statické 5 z 5); mutace jádra po částech
+  **641 z 641**; server část 1/12 **102 z 102** + filtr „#555“ 5 z 5, části 2–12/12 nepuštěny (netlify/ beze změny).
 
 ## v3.11.3 — ZO #555: tisk klonu odeslané nabídky („změnila by se data uzamčené nabídky“), větev claude/zo-klon-tisk
 

@@ -8,10 +8,16 @@ Neslučováno; na ostrém ani testovacím webu nic.
 | K39-N1 lešení hlavy u staré zakázky po přepnutí typu tam a zpět | ✅ | `typSachtyPrepni` + `leseniHlavaRucneZjisti` (`src/ui/kalk_ock.js`), `zobrazeniLeseniHlavaVychozi` / `…JeVychozi` (`src/zobrazeni.js`) |
 | K39-N2 harness šablony PROJ (filtr #367) | ✅ | `overit_nabidka_proj_word.mjs`, nový `overit_k39_sablony_filtr.mjs` |
 | roadmapa #557, CHANGELOG v3.11.4 | ✅ | |
-| testovací kolo + mutace po částech | ⏳ | viz níž |
+| testovací kolo + mutace po částech | ✅ (server jen část 1/12 + filtr #555) | viz níž |
 
 **Testy:** `src/test_k39_leseni_rucne.js` 36/0 (pojistka: nad 198ed4c padá, s vypnutou kontrolou 6 FAIL),
 `overit_k39_sablony_filtr.mjs` 9/0 (s rozbitým filtrem 2 FAIL). Mutace „K39-N1“ 4 z 4, „#546“ 7 z 7 (3 přecíleny).
+
+**Kolo** `--bez-mutaci`: **VŠE ZELENÉ** (sady 373 / 0 / 7 přeskočeno — firemní podklady + test.js; hodiny +400 dní
+300 / 0 / 1; statické 5 z 5; 32 min). **Mutace jádra po částech 1–4/4: 641 z 641 chycených** (161+160+160+160).
+**Mutace serveru: část 1/12 102 z 102** (přerušena limitem 2 h na [949/1216], navázáno `KNG_MUTACE_OD=950`),
+filtr „#555“ 5 z 5. **Části 2–12/12 serveru nepuštěny** — jedna část tu trvá ~2 h (celkem ~20 h); `netlify/` se
+v dávce neměnil. Doporučení: matrix v Actions (`testy.yml` → workflow_dispatch nad `claude/k39-opravy`).
 
 **Nedělat bez J. V.:** K37-N6, K37-I4, K38-I2 (ceníky v10 / v37 — data), K39-I1 / K38-I1 (TEST sada K28/K29/K36 — data).
 
