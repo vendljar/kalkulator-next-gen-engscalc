@@ -59,7 +59,10 @@ const nahrad = (cil, zdroj) => { Object.keys(cil).forEach(k => delete cil[k]); O
 
 /* Prostředí: server = ceník sestavení, PROG_BUILD neexistuje; prohlížeč po
  * přihlášení = zveřejněný ceník v DEFAULT_CENIK a PROG_BUILD ze sestavení. */
-const PUB = ZC.zkusebniCenik(), PUBP = ZC.zkusebniCenikProj();
+const PUB = ZC.zkusebniCenik();
+/* Zveřejněný ceník PROJ v jiném pořadí klíčů než sestavení (zkušební má pořadí
+ * shodné; skutečný zveřejněný ceník pořadí ze sestavení držet nemusí). */
+const PUBP = (() => { const c = ZC.zkusebniCenikProj(), o = {}; Object.keys(c).reverse().forEach(k => { o[k] = c[k]; }); return o; })();
 const server = () => { nahrad(global.DEFAULT_CENIK, BUILD); nahrad(global.DEFAULT_CENIK_PROJ, BUILDP); delete global.PROG_BUILD; };
 const prohlizec = () => { nahrad(global.DEFAULT_CENIK, PUB); nahrad(global.DEFAULT_CENIK_PROJ, PUBP);
   global.PROG_BUILD = { cenik: kopie(BUILD), cenikProj: kopie(BUILDP) }; };
@@ -111,7 +114,7 @@ const tok = (uprav) => {
 }
 {
   const r = tok(d => { const k0 = Object.keys(d.cenik.spojovaci)[0]; delete d.cenik.spojovaci[k0];
-    Object.keys(d.proj.cenik).filter(k => typeof d.proj.cenik[k] === 'number').slice(0, 2).forEach(k => delete d.proj.cenik[k]); });
+    ['dopravaKmKc', 'dopravaHodKc', 'kurzEurKc'].forEach(k => delete d.proj.cenik[k]); });
   test('#555b: vnořený oddíl a ceník PROJ starší → sedí', r.shoda && r.cesta === '', r.cesta);
   test('#555b: ceník PROJ doplněn v pořadí jako na serveru', Object.keys(r.oknoV1.proj.cenik).join() === Object.keys(r.sv.data.proj.cenik).join());
   test('#555b: vnořený oddíl doplněn v pořadí jako na serveru', Object.keys(r.oknoV1.cenik.spojovaci).join() === Object.keys(r.sv.data.cenik.spojovaci).join());
