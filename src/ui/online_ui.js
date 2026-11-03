@@ -1544,11 +1544,33 @@ function onlinePosledniZapamatovana() {
 /* Po přihlášení: vrátit se tam, kde uživatel skončil. Otevírá se jen do
  * PRÁZDNÉ zakázky — kdyby už měl rozdělanou práci (obnovená záloha z historie),
  * měla by přednost a nikdo o ni nesmí přijít. */
+/* ODKAZ NA KALKULACI Z PIPEDRIVE (#553, 3. 11. 2026): webhook „Vygenerovat
+ * nabídku" vrací do dealu adresu <web>/?zakazka=<soubor>. Po přihlášení se
+ * otevře tahle zakázka místo poslední — stejnou cestou a se stejnými
+ * pojistkami (rejstřík, rozdělaná práce). Jen tvar jména souboru; parametr se
+ * z adresy hned odebere, aby ho F5 neotevíral znovu. */
+function onlineOdkazZakazka() {
+  try {
+    if (typeof location === 'undefined' || !location.search) return '';
+    const s = new URLSearchParams(location.search).get('zakazka') || '';
+    if (s && typeof history !== 'undefined' && history.replaceState) {
+      const u = new URL(location.href);
+      u.searchParams.delete('zakazka');
+      history.replaceState(null, '', u.pathname + (u.search || '') + (u.hash || ''));
+    }
+    return /^[A-Za-z0-9._-]{1,200}$/.test(s) ? s : '';
+  } catch (e) { return ''; }
+}
+
 function onlineObnovPosledni() {
-  const soubor = onlinePosledniZapamatovana();
+  const zOdkazu = onlineOdkazZakazka();
+  const soubor = zOdkazu || onlinePosledniZapamatovana();
   if (!soubor || ONLINE_STAV.soubor) return Promise.resolve(false);
   const jeVRejstriku = (ONLINE_STAV.rejstrik || []).some(z => z.soubor === soubor);
-  if (!jeVRejstriku) { onlinePoslednizapamatuj(''); return Promise.resolve(false); }
+  if (!jeVRejstriku) {
+    if (zOdkazu) { onlineZprava('Kalkulace z odkazu (' + zOdkazu + ') v databázi není.', 'varovani'); return Promise.resolve(false); }
+    onlinePoslednizapamatuj(''); return Promise.resolve(false);
+  }
   /* PTÁME SE, JESTLI NĚCO UDĚLAL ČLOVĚK — ne jestli se zakázka liší od otisku
    * (nálezy N12 a N13, 19. testovací kolo, 22. 9. 2026).
    *
@@ -1578,7 +1600,8 @@ function onlineObnovPosledni() {
    * nepřepíše. */
   if (ONLINE_STAV.zmenaUzivatele) return Promise.resolve(false);
   return onlineOtevri(soubor).then(v => {
-    if (v) onlineZprava('Otevřena zakázka, na které jste naposledy pracoval: ' + soubor + '.');
+    if (v) onlineZprava(zOdkazu ? 'Otevřena kalkulace z odkazu Pipedrive: ' + soubor + '.'
+      : 'Otevřena zakázka, na které jste naposledy pracoval: ' + soubor + '.');
     return v;
   }).catch(() => false);
 }

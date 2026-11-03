@@ -213,6 +213,7 @@ const ULOZISTE = {
   pd_cache: 'výjimka: cache Pipedrive s osobními daty, maže se po 30 dnech',
   pd_stav: 'výjimka: poslední známý stav dealu (P1) — při uložení se zapisuje i do zakázky, ta se zálohuje; jinak se znovu načte z Pipedrive',
   pipedrive: 'výjimka: mapa polí Pipedrive, znovu se načte',
+  pd_webhook: 'výjimka: rejstřík deal → kalkulace webhooku (#553) — vazbu nese sama zakázka (pdDealId) a ta se zálohuje; rejstřík se obnoví prvním doručením',
   pokusy: 'výjimka: krátkodobá počítadla pokusů přihlášení',
   zalohy: 'výjimka: otisky samy, tokeny obnovy',
 };
@@ -231,6 +232,7 @@ const KLICE = {
   rejstrik: ['sablony', true],
   rezim: ['analytika', false], 'den/': ['analytika', false], 'ocista-b175': ['analytika', false],
   pole: ['pipedrive', false],
+  'deal:': ['pd_webhook', false],        // #553: deal → jméno kalkulace, jen zkratka hledání
   'kopie-disk': ['zalohy', false],         // záznam o kopii na Disk (#151 N6), ne data
   'retence-varovani': ['zalohy', false],   // varování pojistky retence (K3-N13, O7), ne data
   'retence-zaklad': ['zalohy', false],     // den potvrzeného úbytku — základ kumulativní pojistky (O-K9 #527), ne data

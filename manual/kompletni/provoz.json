@@ -316,6 +316,11 @@
        "PIPEDRIVE_FAZE_PRODANO",
        "nepovinná fáze, do které Prodáno přesune deal: číslo = id fáze, text = název (výchozí „Vyhrané k podpisu SoD“ v pipeline dealu)",
        "oba weby"
+      ],
+      [
+       "PIPEDRIVE_WEBHOOK_KLIC",
+       "tajný klíč webhooku „Vygenerovat nabídku“, aspoň 32 znaků; nastavuje správce, do repozitáře ani klientovi nejde",
+       "oba weby (nejdřív testovací)"
       ]
      ]
     },
@@ -649,6 +654,12 @@
        "mapa polí CRM (Nastavení → Mapa polí CRM)",
        "—",
        "do změny"
+      ],
+      [
+       "pd_webhook",
+       "rejstřík webhooku „Vygenerovat nabídku“: id dealu → jméno kalkulace, jen zkratka hledání (vazbu nese sama zakázka v `pdDealId`)",
+       "ne",
+       "do smazání zakázky; v záloze není — obnoví se prvním doručením"
       ]
      ]
     },
@@ -1599,6 +1610,12 @@
        "GET",
        "jen administrátor",
        "mapa vlastních polí Pipedrive"
+      ],
+      [
+       "/api/pd/webhook",
+       "POST",
+       "bez přihlášení — tajný klíč v hlavičce `x-kalkulator-klic` (`PIPEDRIVE_WEBHOOK_KLIC`); volá ji automatizace Pipedrive",
+       "webhook „Vygenerovat nabídku“: z těla jen ID dealu, kalkulátor si deal načte, založí nebo aktualizuje kalkulaci a vrátí do dealu odkaz na ni; cena se z CRM nepřebírá"
       ]
      ]
     },
@@ -1731,6 +1748,13 @@
        "nepovinně",
        "nepovinně",
        "kam Prodáno přesune deal: id fáze nebo název; bez ní fáze „Vyhrané k podpisu SoD“ v pipeline dealu (stav dealu Prodáno nemění)"
+      ],
+      [
+       "PIPEDRIVE_WEBHOOK_KLIC",
+       "jen pro webhook",
+       "nepovinně",
+       "nepovinně",
+       "tajný klíč webhooku „Vygenerovat nabídku“, aspoň 32 znaků; chybí → webhook 503, jiný klíč → 401 bez dotazu do Pipedrive"
       ]
      ]
     },

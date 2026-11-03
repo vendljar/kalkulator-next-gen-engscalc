@@ -175,7 +175,7 @@ test('… první načtení se zeptalo Pipedrive (pole dealu a organizace)', vola
 volani = 0;
 const d2 = await (await get('http://x/api/pd/pole', cAdmin)).json();
 test('druhé načtení jde z cache (žádný dotaz do Pipedrive)', volani === 0 && d2.prehled.souhrn.celkem === d1.prehled.souhrn.celkem);
-test('… a cache nese verzi mapy', d2.verze === 2 && d2.prehled.verze === 2);
+test('… a cache nese verzi mapy', d2.verze === 3 && d2.prehled.verze === 3);
 const d3 = await (await get('http://x/api/pd/pole?obnovit=1', cAdmin)).json();
 test('Obnovit z CRM obejde cache', volani === 2 && d3.ok, volani);
 test('… a pořídí mapu znovu', d3.poridano >= d2.poridano);
