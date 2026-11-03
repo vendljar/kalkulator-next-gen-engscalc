@@ -194,6 +194,8 @@ const PRIORITA = [
   'test_k37_controlling.js',
   /* #555 — tisk klonu odeslané nabídky (ui/kalk_ock.js, zamek.js) */
   'test_555_klon_tisk.js',
+  /* #555b — ceník odeslané varianty uložené starší verzí (zakazka.js, zamek.js) */
+  'test_555b_klon_cenik.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -222,6 +224,33 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* #555b ZO2 (3. 11. 2026, hlášení J. V. na test v3.11.3: „první rozdíl
+   * v datech: cenik"): import doplňuje chybějící klíče ceníku ODESLANÉ
+   * varianty podle ceníku sestavení jako server; porovnání zámku bez ohledu
+   * na pořadí klíčů; cesta řekne, která strana chybí. Hlídá
+   * src/test_555b_klon_cenik.js (prohlížeč: overit_klon_tisk.mjs 5).
+   * Mutace vzoru importu (src/zakazka.js) jsou v netlify/mutace.mjs —
+   * zakazka.js není v seznamu jader. */
+  { nazev: '#555b: porovnání zámku podle pořadí klíčů', soubor: 'zamek.js',
+    hledej: "  return zamekJsonKanon(kopie);",
+    nahrad: "  return JSON.stringify(kopie);",
+    proc: 'tytéž hodnoty ceníku v jiném pořadí (doplněné klíče) by server bral jako změnu odeslané nabídky — „první rozdíl v datech: cenik"' },
+  { nazev: '#555b: kanonický zápis neřadí klíče', soubor: 'zamek.js',
+    hledej: "    Object.keys(h).sort().forEach(kk => { o[kk] = h[kk]; });",
+    nahrad: "    Object.keys(h).forEach(kk => { o[kk] = h[kk]; });",
+    proc: 'porovnání by dál záviselo na pořadí doplněných klíčů' },
+  { nazev: '#555b: cesta neřekne, že ceník chybí v ukládané', soubor: 'zamek.js',
+    hledej: "    if (dx === 'chybi' && dy !== 'chybi') pozn = ' (chybí v ukládané)';",
+    nahrad: "    if (dx === 'chybi' && dy !== 'chybi') pozn = '';",
+    proc: 'hláška „cenik" by zase nerozlišila, jestli ceník chybí, nebo se liší' },
+  { nazev: '#555b: strany chybějícího ceníku prohozené', soubor: 'zamek.js',
+    hledej: "    else if (dy === 'chybi' && dx !== 'chybi') pozn = ' (chybí v uložené)';",
+    nahrad: "    else if (dy === 'chybi' && dx !== 'chybi') pozn = ' (chybí v ukládané)';",
+    proc: 'diagnostika by ukázala na špatnou stranu (prohlížeč místo databáze)' },
+  { nazev: '#555b: cesta bez poznámky o jiném typu', soubor: 'zamek.js',
+    hledej: "    else if (dx !== dy) pozn = ' (jiný typ)';",
+    nahrad: "    else if (dx !== dy) pozn = '';",
+    proc: 'ceník jako pole proti objektu by se v hlášce nedal poznat' },
   /* #555 ZO (3. 11. 2026, hlášení J. V.): tisk klonu odeslané nabídky —
    * typSachtyPrepni nesmí po odmítnutém set dosadit profily do zamčené
    * varianty; porovnání zámku bez značky DPH; cesta pro hlášku serveru.
@@ -255,8 +284,8 @@ const MUTACE = [
     nahrad: "  try { a = JSON.parse(JSON.stringify(data)); b = JSON.parse(JSON.stringify(ulozena)); }",
     proc: 'hláška by ukazovala povolenou změnu (kontakt v krycím listu) místo skutečné příčiny' },
   { nazev: '#555: rozdílná cesta bez stropu délky', soubor: 'zamek.js',
-    hledej: "  return (t || '(celá data)').slice(0, 200);",
-    nahrad: "  return (t || '(celá data)');",
+    hledej: "  return (t || '(celá data)').slice(0, 200 - pozn.length) + pozn;",   // #555b: přecíleno (poznámka strany)
+    nahrad: "  return (t || '(celá data)') + pozn;",
     proc: 'neomezeně dlouhý klíč by nafoukl hlášku serveru' },
   /* #546 (2. 11. 2026, požadavek obchodu 29. 10. 2026): lešení pro dokončení
    * hlavy šachty jen u interiérové šachty. Hlídá src/test_leseni_hlava_typ.js. */

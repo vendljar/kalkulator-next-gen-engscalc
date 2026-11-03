@@ -552,8 +552,23 @@ function zamekZakZmeny(stara, nova) {
  * ručních hodnot polí krycího listu, která se smí doplňovat. Zámek se bere
  * z `v` (na serveru vždy z ULOŽENÉ verze, klient si ho nevybírá). Od Z1
  * se vynechá i plán plateb PROJ a sazby DPH, když jsou editovatelné. */
+/* POŘADÍ KLÍČŮ NENÍ OBSAH (ZO2 #555b). Porovnání se dělá textem JSON
+ * a ten závisí na pořadí, v jakém klíče do objektu přibyly. Migrace doplňuje
+ * chybějící klíče na konec — podle vzoru, který má na každé straně jiné
+ * pořadí (prohlížeč zveřejněný ceník, server ceník sestavení), takže tytéž
+ * hodnoty v jiném pořadí vypadaly jako změna odeslané nabídky. Porovnává se
+ * proto text se seřazenými klíči objektů (pole drží pořadí — to obsah je).
+ * Hodnoty se porovnávají všechny, nic se nevynechává. */
+function zamekJsonKanon(x) {
+  return JSON.stringify(x, (k, h) => {
+    if (!h || typeof h !== 'object' || Array.isArray(h)) return h;
+    const o = Object.create(null);   // `__proto__` jako obyčejný klíč
+    Object.keys(h).sort().forEach(kk => { o[kk] = h[kk]; });
+    return o;
+  });
+}
 function zamekDataPorovnani(data, v) {
-  if (!data || typeof data !== 'object' || !variantaUzamcena(v)) return JSON.stringify(data);
+  if (!data || typeof data !== 'object' || !variantaUzamcena(v)) return zamekJsonKanon(data);
   const kopie = JSON.parse(JSON.stringify(data));
   ['kryci', 'kryciProj'].forEach(list => {
     const h = kopie[list] && kopie[list].hodnoty;
@@ -575,7 +590,7 @@ function zamekDataPorovnani(data, v) {
     delete kopie.proj.cenik.dph;
     if (rucni) delete rucni['PC.dph'];
   }
-  return JSON.stringify(kopie);
+  return zamekJsonKanon(kopie);
 }
 
 /* KDE SE DATA ZAMČENÉ VARIANTY LIŠÍ (#555, hlášení J. V. 3. 11. 2026).
@@ -590,8 +605,13 @@ function zamekDataRozdilCesta(data, ulozena, v) {
   try { a = JSON.parse(zamekDataPorovnani(data, v)); b = JSON.parse(zamekDataPorovnani(ulozena, v)); }
   catch (e) { return ''; }
   const cesta = [];
+  /* #555b: u rozdílu, kde jedna strana chybí nebo má jiný tvar, řekne cesta
+   * i KTERÁ — „cenik" samo nestačilo poznat, jestli ceník chybí, nebo je
+   * jiný. Pořád bez hodnot. `x` = ukládaná data, `y` = uložená. */
+  let pozn = '';
+  const druh = (h) => (h === undefined || h === null) ? 'chybi' : (Array.isArray(h) ? 'pole' : typeof h);
   const jdi = (x, y) => {
-    if (JSON.stringify(x) === JSON.stringify(y)) return false;
+    if (zamekJsonKanon(x) === zamekJsonKanon(y)) return false;
     if (x && y && typeof x === 'object' && typeof y === 'object' && Array.isArray(x) === Array.isArray(y)) {
       const klice = Array.isArray(x) ? Array.from({ length: Math.max(x.length, y.length) }, (_, i) => String(i))
         : Array.from(new Set(Object.keys(x).concat(Object.keys(y)))).sort();
@@ -601,11 +621,15 @@ function zamekDataRozdilCesta(data, ulozena, v) {
         cesta.pop();
       }
     }
+    const dx = druh(x), dy = druh(y);
+    if (dx === 'chybi' && dy !== 'chybi') pozn = ' (chybí v ukládané)';
+    else if (dy === 'chybi' && dx !== 'chybi') pozn = ' (chybí v uložené)';
+    else if (dx !== dy) pozn = ' (jiný typ)';
     return true;
   };
   if (!jdi(a, b)) return '';
   const t = cesta.map(k => String(k).replace(/[\u0000-\u001f]/g, ' ')).join('.');
-  return (t || '(celá data)').slice(0, 200);
+  return (t || '(celá data)').slice(0, 200 - pozn.length) + pozn;
 }
 
 /* Uzamčení. První tisk je ten definitivní okamžik „odesláno" – uloží se
@@ -1195,7 +1219,7 @@ if (typeof module !== 'undefined')
                      variantaEditovatelna, zamkniVariantu, odemkniVariantu, zamekKdyProblem,
                      ZAMEK_OTISK_POLE, zamekOtisk, zamekOtiskZPorovnani,
                      zajistiZamek, ZAMEK_KRYCI_SMLOUVY, zamekTiskyTypy, zamekKryciOtevreny, zamekPrvniSmlouva,
-                     zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani, zamekDataRozdilCesta,
+                     zamekKryciPoleVNabidce, zamekKryciPoleVolne, zamekKryciPolePlnaMoc, zamekDataPorovnani, zamekJsonKanon, zamekDataRozdilCesta,
                      ZAMEK_KRYCI_PO_CN, zamekKryciPoleStav, zamekKryciPoleZname, zamekSnimekSpocti, zamekSnimek,
                      zamekDphVolna, zamekNabidkaPohled, zamekZakCesty, zamekZakCestaZmrazena, zamekZakZmeny, zamekZakHlavickaOznac,
                      zamekZakRidici, ZAMEK_KRYCI_PO_SOD_VOLNE };

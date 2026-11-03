@@ -121,7 +121,9 @@ function prepni(z, typ, editovatelna) {
   const d2 = kopie(d); d2.cenik.priplatky = [1, 2]; const d2b = kopie(d); d2b.cenik.priplatky = [1, 3];
   test('pole: index prvku', zm.zamekDataRozdilCesta(d2, d2b, v) === 'cenik.priplatky.1', zm.zamekDataRozdilCesta(d2, d2b, v));
   const d3 = kopie(d); d3.ock.zadani.novyKlic = 5;
-  test('přibylý klíč → jeho cesta', zm.zamekDataRozdilCesta(d3, d, v) === 'ock.zadani.novyKlic');
+  /* #555b: u chybějící strany cesta řekne kterou (ZO2). */
+  test('přibylý klíč → jeho cesta (chybí v uložené)', zm.zamekDataRozdilCesta(d3, d, v) === 'ock.zadani.novyKlic (chybí v uložené)',
+    zm.zamekDataRozdilCesta(d3, d, v));
   test('#555: cesta nenese hodnoty', !/60x40/.test(zm.zamekDataRozdilCesta(d1, d, v)));
   const d4 = kopie(d); d4.kryci.hodnoty.jmenoPrijmeni = 'Zkušební Kontakt';
   test('volné pole krycího listu po CN rozdíl není (jako zamekDataPorovnani)', zm.zamekDataRozdilCesta(d4, d, v) === '',

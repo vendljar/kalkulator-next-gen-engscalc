@@ -835,6 +835,35 @@ function zadaniCislaZTextu(zadani, vzor) {
   return n;
 }
 
+/* VZOR CENÍKU PRO MIGRACE ODESLANÉ VARIANTY (ZO2 #555b, hlášení J. V.
+ * 3. 11. 2026 na test v3.11.3: tisk klonu → „Neuloženo: změnila by se data
+ * uzamčené (odeslané) nabídky „Varianta 1" …, první rozdíl v datech: cenik").
+ *
+ * Varianta uložená starší verzí nemá klíče ceníku, které přibyly později;
+ * import je doplní (cenikDoplnKlice, V38). V prohlížeči ale DEFAULT_CENIK
+ * po přihlášení nese ZVEŘEJNĚNÝ ceník (progPouzij → konfigNahradVMiste) —
+ * s jiným pořadím klíčů, jinými texty a bez klíčů, které zná jen sestavení.
+ * Server tutéž uloženou verzi před porovnáním zámku migruje s ceníkem
+ * SESTAVENÍ (staraPorovnani). Ceník odeslané varianty tak v prohlížeči
+ * vypadal jinak než ten, se kterým ho server srovnával, a server odmítl
+ * každé uložení zakázky — i když se pracovalo jen s klonem.
+ *
+ * Zamčená varianta se proto migruje se vzorem ze sestavení (PROG_BUILD,
+ * uložený dřív, než ho cokoli přepíše) — stejně jako na serveru. Rozpracovaná
+ * varianta dál s platným ceníkem (beze změny; po otevření se stejně
+ * přepočítá na dnešní ceník). Na serveru a v Node testech PROG_BUILD není →
+ * DEFAULT_CENIK, což je tam ceník sestavení. */
+function zakImportVzorCeniku(v) {
+  const zamcena = (typeof variantaUzamcena === 'function') ? variantaUzamcena(v)
+    : !!(v && v.zamek && v.zamek.zamceno);
+  let b = null;
+  if (zamcena) { try { b = (typeof PROG_BUILD !== 'undefined' && PROG_BUILD) ? PROG_BUILD : null; } catch (e) { b = null; } }
+  return {
+    ock: (b && b.cenik) || ((typeof DEFAULT_CENIK !== 'undefined') ? DEFAULT_CENIK : null),
+    proj: (b && b.cenikProj) || ((typeof DEFAULT_CENIK_PROJ !== 'undefined') ? DEFAULT_CENIK_PROJ : null),
+  };
+}
+
 /* Import: umí schema 2 (zakázka) i původní formát v1 {zadani, cenik, fixes} */
 function importZakazka(obj) {
   if (obj && obj.schema >= 2 && Array.isArray(obj.varianty) && obj.varianty.length) {
@@ -848,14 +877,15 @@ function importZakazka(obj) {
     });
     obj.varianty.forEach(v => {
       const d = v.data || {};
+      const vzor = zakImportVzorCeniku(v);   // #555b: odeslaná varianta jako na serveru
       if (!d.proj) d.proj = { zadani: JSON.parse(JSON.stringify(DEFAULT_ZADANI_PROJ)),
-                              cenik: JSON.parse(JSON.stringify(DEFAULT_CENIK_PROJ)) };
+                              cenik: JSON.parse(JSON.stringify(vzor.proj)) };
       /* B186: totéž u zadání projekce (počty a rozměry PROJ). */
       if (typeof DEFAULT_ZADANI_PROJ !== 'undefined') zadaniCislaZTextu(d.proj.zadani, DEFAULT_ZADANI_PROJ);
       if (!d.proj.cenik.fixy)   // migrace: fixní náklady sekcí přesunuty do ceníku PROJ
-        d.proj.cenik.fixy = JSON.parse(JSON.stringify(DEFAULT_CENIK_PROJ.fixy));
+        d.proj.cenik.fixy = JSON.parse(JSON.stringify(vzor.proj.fixy));
       if (d.proj.cenik.dph == null)   // migrace: PROJ má vlastní sazbu DPH; převezme dosud platnou z ceníku OCK
-        d.proj.cenik.dph = (d.cenik && d.cenik.dph != null) ? d.cenik.dph : DEFAULT_CENIK_PROJ.dph;
+        d.proj.cenik.dph = (d.cenik && d.cenik.dph != null) ? d.cenik.dph : vzor.proj.dph;
       /* Migrace 11. 8. 2026: tři fixní částky lešení se slučují do jedné
        * (C.leseniFix). Bez převzetí staré hodnoty by fixní část spadla na
        * nulu a cena zakázky by se po otevření tiše propadla. Guard kvůli
@@ -867,9 +897,9 @@ function importZakazka(obj) {
        * a 25 takhle zmizelo „Sklo VSG 4.4.2". Doplňuje se jen chybějící klíč
        * a jen nulou, takže se cena zakázky nemění. */
       if (typeof cenikDoplnKlice === 'function') {
-        if (typeof DEFAULT_CENIK !== 'undefined') cenikDoplnKlice(d.cenik, DEFAULT_CENIK);
-        if (typeof DEFAULT_CENIK_PROJ !== 'undefined' && d.proj)
-          cenikDoplnKlice(d.proj.cenik, DEFAULT_CENIK_PROJ);
+        if (vzor.ock) cenikDoplnKlice(d.cenik, vzor.ock);
+        if (vzor.proj && d.proj)
+          cenikDoplnKlice(d.proj.cenik, vzor.proj);
       }
       /* Migrace 9. 9. 2026: řádky skel se přejmenovaly (MATERIÁL VSG 4.4.1 /
        * 4.4.2). Ruční přepisy i seznam vyřazených položek se klíčují názvem,
@@ -1761,7 +1791,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zadaniCislaZTextu, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { zadaniCislaZTextu, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,

@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v3.11.4 — ZO2 #555b: tisk klonu odeslané nabídky — „první rozdíl v datech: cenik“, větev claude/zo2-klon-cenik
+
+Nad 198ed4c (`test` = v3.11.3, obsahuje ZO #555), hlášení J. V. 3. 11. 2026 z testu v3.11.3. Na ostrém ani testovacím
+webu nic. Verzi může koordinace přečíslovat.
+
+- **Hlášení:** tisk klonu (Varianta 2) → „Neuloženo: změnila by se data uzamčené (odeslané) nabídky „Varianta 1“ (…),
+  první rozdíl v datech: cenik“. Data v databázi zůstala celá (server zápis odmítl).
+- **Příčina (reprodukováno harnessem):** odeslané variantě uložené starší verzí aplikace chybějí klíče ceníku, které
+  přibyly později. `importZakazka` je při otevření doplní (`cenikDoplnKlice`, V38) na konec objektu — v prohlížeči
+  podle `DEFAULT_CENIK`, který po přihlášení nese **zveřejněný** ceník (jiné pořadí klíčů, jiné texty, bez klíčů
+  známých jen sestavení), na serveru podle ceníku **sestavení** (`staraPorovnani`). Hodnoty stejné, pořadí jiné —
+  a porovnání zámku textem JSON to bralo jako změnu odeslané nabídky. Proto cesta končila na `cenik`. Na zakázku
+  s takovou variantou nešlo uložit nic (tisk klonu, Prodáno, ruční uložení). Týká se i ostrého v27.10.6 (tentýž kód).
+- **Oprava 1 (příčina):** zamčená varianta se v importu doplňuje se vzorem ze sestavení (`PROG_BUILD`, jako server) —
+  `zakImportVzorCeniku` (`src/zakazka.js`), OCK i PROJ. Rozpracovaná varianta beze změny (platný ceník, V38).
+- **Oprava 2 (normalizace porovnání, obě strany):** `zamekDataPorovnani` porovnává JSON se seřazenými klíči objektů
+  (`zamekJsonKanon`, `src/zamek.js`) — pořadí klíčů není obsah; pole drží pořadí, hodnoty se porovnávají všechny.
+  Pojistka serveru neoslabená a bez výjimky: změněná cena, jiný text, chybějící ceník se dál odmítnou.
+- **Diagnostika:** `zamekDataRozdilCesta` u chybějící strany nebo jiného tvaru řekne kterou: `cenik (chybí v ukládané)`,
+  `cenik (chybí v uložené)`, `cenik (jiný typ)` (null = chybí). Bez hodnot, strop 200 znaků i s poznámkou.
+- **Testy:** `src/test_555b_klon_cenik.js` (prohlížeč i server v jednom procesu: zveřejněný ceník + PROG_BUILD → server;
+  OCK, PROJ, text, vnořený oddíl, zahraniční řada; kanonické porovnání, pojistka, diagnostika; nad 198ed4c padá),
+  `netlify/test_555b_klon_cenik.mjs` (tělo uložení z prohlížeče do v3.11.3 proti skutečné kontrole serveru;
+  nad 198ed4c 4 FAIL — přesně hláška J. V.), `overit_klon_tisk.mjs` 5) (zestárlá odeslaná varianta v úložišti → klon
+  → přepočet klonu → tisk; text, vnořený oddíl, zahraniční řada, PROJ bez přepočtu; hlídač zápisů nad prací s ceníkem
+  klonu — přepočet, řada, obnovení ceníku, ruční cena). Test #555 „přibylý klíč“ záměrně přepsán na novou poznámku.
+
 ## v3.11.3 — ZO #555: tisk klonu odeslané nabídky („změnila by se data uzamčené nabídky“), větev claude/zo-klon-tisk
 
 Nad 6e4bf49 (`claude/integrace-16-10`, v3.11.1), hlášení J. V. 3. 11. 2026 z testu (v2.11.9). Na ostrém webu nic.

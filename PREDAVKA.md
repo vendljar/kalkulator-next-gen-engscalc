@@ -1,3 +1,53 @@
+# Předávka — 3. 11. 2026: ZO2 #555b (roadmapa #557) — tisk klonu „první rozdíl v datech: cenik“, větev `claude/zo2-klon-cenik`
+
+Nad `198ed4c` (`test` = v3.11.3, obsahuje ZO #555). **Verze 3.11.4** (koordinace přečísluje). Neslučováno; na ostrém
+ani testovacím webu nic, do databáze test nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. příčina reprodukcí | ✅ | `overit_klon_tisk.mjs` 5) — zestárlá odeslaná varianta v úložišti → klon → tisk = přesně hláška J. V. |
+| 2. oprava příčiny (pojistka serveru beze změny, bez výjimky) | ✅ | `zakImportVzorCeniku` (`src/zakazka.js`); `zamekJsonKanon` v `zamekDataPorovnani` (`src/zamek.js`) |
+| 3. diagnostika „(chybí v ukládané / uložené)“, „(jiný typ)“ | ✅ | `zamekDataRozdilCesta` (`src/zamek.js`) |
+| 4. zakázka J. V. TEST … 9578 | ✅ (postup níž) | — |
+| 5. roadmapa #557, CHANGELOG, PREDAVKA | ✅ | `roadmapa/roadmap.json` (`overit_roadmapu.mjs` 17/0) |
+
+**Příčina (pro J. V.):** Varianta 1 byla odeslaná (uložená) starší verzí aplikace. Od té doby přibylo v ceníku pár
+nových položek. Při otevření zakázky je aplikace odeslané variantě doplní (s nulou, cena se nemění) — jenže prohlížeč
+je doplnil podle **zveřejněného** ceníku a server podle **ceníku v programu**. Položky vyšly stejné, ale v jiném pořadí
+(případně s jiným textem názvu), a server porovnával text „jak je to napsané“ — vypadalo to, že se ceník odeslané
+nabídky změnil. Proto „první rozdíl v datech: cenik“ (bez konkrétní položky). Pojistka serveru zafungovala správně:
+v databázi je všechno celé, neuložilo se nic. Stejné to je na ostrém v27.10.6 u zakázek odeslaných dřívější verzí.
+
+**Oprava:** (1) prohlížeč doplňuje odeslané variantě chybějící položky stejně jako server (ceník programu, OCK i PROJ);
+rozpracované varianty beze změny. (2) Porovnání zámku na serveru i v prohlížeči nebere ohled na pořadí položek —
+všechny hodnoty se porovnávají dál, žádná výjimka. Skutečná změna ceny/textu odeslané nabídky se dál odmítne.
+(3) Hláška u chybějícího ceníku řekne, na které straně chybí.
+
+**Zakázka J. V. TEST - 2026 - OPR - CN - 9578 - K19T-C078 (test):** v databázi je neporušená (Varianta 1 odeslaná,
+vytištěný klon tam není). Po nasazení opravy na test půjde vytisknout. Postup:
+1. Okno s rozdělanou zakázkou zavřít **bez uložení** („Zahodit“) — v okně je Varianta 1 doplněná postaru a klon,
+   který se neuložil.
+2. Obnovit stránku (F5, nová verze aplikace) a přihlásit se.
+3. Zakázku otevřít znovu z databáze, klon založit tlačítkem „Klonovat a pokračovat“, v klonu nastavit totéž, co měl
+   vytištěný (typ šachty, rozměry, profily …) a porovnat cenu s vytištěným dokumentem.
+4. Vytisknout znovu — zámek klonu a záznam odeslání se uloží. Liší-li se cena od papíru, poslat zákazníkovi nový dokument.
+5. Kdyby se po tisku objevilo „ceník varianty je směs platného ceníku a starších cen“: klon nese ceny z doby odeslání
+   Varianty 1 — přepočítat klon podle platného ceníku (Ceník → přepočet) nebo požádat o schválení. To je jiná
+   (správná) kontrola nového zámku, ne tahle chyba.
+Bez opravy (dnešní test v3.11.3) se tahle zakázka uložit nedá vůbec — ani klon, ani Prodáno.
+
+**Testy:** `src/test_555b_klon_cenik.js` 30/0 (nad 198ed4c padá: 6 FAIL a výjimka), `netlify/test_555b_klon_cenik.mjs`
+13/0 (nad 198ed4c 4 FAIL — mj. tělo z prohlížeče dostane přesně „… první rozdíl v datech: cenik“),
+`overit_klon_tisk.mjs` VYSLEDEK_KLON, `src/test_555_klon_tisk.js` 18/0 (test „přibylý klíč“ záměrně přepsán na poznámku),
+`netlify/test_555_klon_tisk.mjs` 13/0. Mutace „#555b“: jádro **5 z 5**, server VYSLEDEK_MUT_SRV (`--kontrola` 642 / 1222 OK).
+Kolo `--bez-mutaci` VYSLEDEK_KOLO.
+
+**Otevřené:** (a) ostrý v27.10.6 má tentýž kód — zakázky s variantou odeslanou starší verzí nejdou uložit, dokud se
+oprava nenasadí; (b) mutace vzoru importu (`src/zakazka.js`) jsou v serverovém běhu (`netlify/mutace.mjs`), protože
+`zakazka.js` není v seznamu jader mutací jádra.
+
+---
+
 # Předávka — 3. 11. 2026: ZO #555 — tisk klonu odeslané nabídky, větev `claude/zo-klon-tisk`
 
 Nad `6e4bf49` (`claude/integrace-16-10`, v3.11.1). **Verze 3.11.2** (koordinace přečísluje). Neslučováno; na ostrém

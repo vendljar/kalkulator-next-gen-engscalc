@@ -26,9 +26,13 @@
  *   3) diagnostika: když se data zamčené varianty přesto liší, dialog po
  *      tisku řekne kterou variantu a první rozdílnou cestu, bez hodnot;
  *   4) žádný vstup na žádné záložce nezmění data odeslané varianty
- *      (hlídač zápisů — Proxy nad daty zamčené varianty).
+ *      (hlídač zápisů — Proxy nad daty zamčené varianty);
+ *   5) ZO2 #555b: odeslaná varianta uložená starší verzí (chybějící klíče
+ *      ceníku OCK i PROJ, text, vnořený oddíl, zahraniční řada) — tisk klonu
+ *      se uloží; hlídač zápisů nad prací s ceníkem klonu.
  *
- * Pojistka: nad 6e4bf49 (v3.11.1) selže 1) i 2) i 3) a 4) (viz commit).
+ * Pojistka: nad 6e4bf49 (v3.11.1) selže 1) i 2) i 3) a 4) (viz commit);
+ * 5) nad 198ed4c (v3.11.3) selže hláškou „první rozdíl v datech: cenik".
  * Smyšlené účty a údaje, zkušební ceník.
  * Spuštění: NODE_PATH=$(npm root -g) node overit_klon_tisk.mjs */
 process.env.TAJEMSTVI_RELACE = 'zkusebni-tajemstvi-jen-pro-harness';
@@ -306,6 +310,95 @@ test('#555: dialog jmenuje zamčenou variantu (název a číslo)', /„Varianta 
 test('#555: dialog uvádí první rozdílnou cestu v datech', /první rozdíl v datech: ock\.zadani\.zdvih/.test(dgText), dgText);
 test('#555: dialog nenese hodnoty (12.5 ani 9)', !/12[.,]5|\b9\b/.test(dgText.replace(/2026 - OPR - CN - 8743/, '')), dgText);
 test('#555: důvod je v dialogu na vlastním řádku', /\n\nDůvod: Neuloženo: změnila by se data uzamčené/.test(dgText), dgText);
+
+/* ---- 5) (běží před 4 — hlídač ve 4 přepíná i globální volby, např. jazyk) ZO2 #555b: ceník odeslané varianty uložené starší verzí ----
+ * Hlášení J. V. 3. 11. 2026 (test v3.11.3): po tisku klonu „změnila by se
+ * data uzamčené (odeslané) nabídky „Varianta 1" …, první rozdíl v datech:
+ * cenik". Odeslané variantě uložené dřív chybějí klíče ceníku, které
+ * přibyly později. Import je doplní — v prohlížeči podle ZVEŘEJNĚNÉHO ceníku
+ * (DEFAULT_CENIK po přihlášení, jiné pořadí klíčů a texty), na serveru podle
+ * ceníku SESTAVENÍ. Tytéž hodnoty v jiném pořadí (nebo jiný doplněný text)
+ * server bral jako změnu odeslané nabídky a odmítl každé uložení.
+ * Uložená verze se tu „zestárne" přímo v úložišti (jako by ji uložila
+ * starší verze aplikace): chybí klíč, který zveřejněný ceník má
+ * (zamecnikAtypKc), a klíče, které zná jen sestavení. */
+const klicSouboru = (s) => [...pamet.keys()].find(k => k.endsWith('/' + s) && k.includes('zakazky/'));
+const zestarni = (s, fn) => { const k = klicSouboru(s); const z = JSON.parse(pamet.get(k)); fn(z.varianty[0].data, z); pamet.set(k, JSON.stringify(z)); return z; };
+const STARE_KLICE = ['zamecnikAtypKc', 'kurzEurKc', 'atypMontazPct', 'dleNabidky'];
+const prepoctiKlon = () => page.evaluate(() => { const v = aktivniVarianta(ZAK);
+  const r = cenikPrepocti(v, cenikDnesniProVariantu(v), Object.assign({ build: buildVerze() }, cenikPlatnaVerzeInfo()));
+  syncVarianta(); render(); return r.zmen; });
+/* Stejné pravidlo jako server: migrace (importZakazka) + zamekDataPorovnani. */
+const migrovanaV1 = (z) => { const m = globalThis.importZakazka(JSON.parse(JSON.stringify(z))); return globalThis.zamekDataPorovnani(m.varianty[0].data, m.varianty[0]); };
+const klonCenik = async (cislo, uprav, popis, sPrepoctem = true) => {
+  const s = await odeslana(cislo);
+  await cekej(); await dlg();
+  const stara = zestarni(s, uprav);
+  await otevri(s);
+  const v1Okno = await dataV(0);
+  await page.evaluate(() => { window.__klonAno = true; zamekKlonUI(ZAK.varianty[0].id); });
+  await cekej(); await dlg();
+  if (sPrepoctem) { await prepoctiKlon(); await cekej(); await dlg(); }
+  await tiskniKlon();
+  const d = await dlg();
+  test('#555b ' + popis + ': tisk klonu bez dialogu „Odeslaná nabídka není uložená"', !neulozena(d).length,
+    neulozena(d).map(x => x.text.slice(-260)));
+  const sv = await naServeru(s);
+  test('#555b ' + popis + ': klon uložen a zamčený na serveru', sv.varianty.length === 2 && !!(sv.varianty[1].zamek || {}).zamceno,
+    sv.varianty.map(v => !!(v.zamek && v.zamek.zamceno)));
+  test('#555b ' + popis + ': odeslaná varianta na serveru věcně beze změny (po téže migraci jako server)',
+    migrovanaV1(sv) === migrovanaV1(stara));
+  test('#555b ' + popis + ': odeslaná varianta v okně beze změny', !rozdil(v1Okno, await dataV(0)), rozdil(v1Okno, await dataV(0)));
+  return s;
+};
+await klonCenik('8761', (d) => STARE_KLICE.forEach(k => delete d.cenik[k]), 'starší tvar ceníku + přepočet klonu');
+/* Doplněný TEXT (název skla): v prohlížeči text zveřejněného ceníku, na serveru ze sestavení. */
+await klonCenik('8762', (d) => { delete d.cenik.skloBokyNazev; delete d.cenik.cetrisKc; }, 'chybí text ceníku');
+/* Vnořený oddíl (spojovací materiál) — jiné pořadí uvnitř objektu. */
+await klonCenik('8763', (d) => { const sp = d.cenik.spojovaci; const k0 = Object.keys(sp)[0]; delete sp[k0]; delete d.cenik.kurzEurKc; delete d.cenik.atypMontazPct; },
+  'chybí klíč vnořeného oddílu');
+/* Zahraniční řada odeslané varianty (nabídka v EUR — kurz nese odeslaná varianta;
+ * zkušební zveřejněný ceník kurz nemá, proto bez přepočtu klonu). */
+await klonCenik('8764', (d) => { d.cenikRada = 'zahr'; d.cenik.kurzEurKc = 25; ['zamecnikAtypKc', 'atypMontazPct', 'dleNabidky'].forEach(k => delete d.cenik[k]); }, 'zahraniční řada', false);
+/* Bez přepočtu (klon s cenami odeslané varianty) — chybí jen klíče sestavení a ceníku PROJ. */
+await klonCenik('8765', (d) => { delete d.cenik.kurzEurKc; delete d.cenik.dleNabidky;
+  const pk = Object.keys(d.proj.cenik).filter(k => typeof d.proj.cenik[k] === 'number').slice(0, 2); pk.forEach(k => delete d.proj.cenik[k]); },
+  'ceník PROJ starší, bez přepočtu', false);
+
+/* 5b) hlídač zápisů: práce s ceníkem KLONU nesahá do dat odeslané varianty
+ * (přepočet podle dnešního ceníku, přepnutí řady tam a zpět, obnovení
+ * výchozího ceníku OCK i PROJ, ruční cena). */
+{
+  const s = await odeslana('8766');
+  await cekej(); await dlg();
+  zestarni(s, (d) => STARE_KLICE.forEach(k => delete d.cenik[k]));
+  await otevri(s);
+  await page.evaluate(() => { window.__klonAno = true; zamekKlonUI(ZAK.varianty[0].id); });
+  await cekej(); await dlg();
+  await page.evaluate(() => {
+    window.__zapisy = [];
+    const obal = (o, cesta) => (o && typeof o === 'object') ? new Proxy(o, {
+      get(t, k) { const x = t[k]; return (x && typeof x === 'object' && typeof k === 'string') ? obal(x, cesta + '.' + k) : x; },
+      set(t, k, h) { if (JSON.stringify(t[k]) !== JSON.stringify(h)) window.__zapisy.push(cesta + '.' + String(k)); t[k] = h; return true; },
+      deleteProperty(t, k) { if (k in t) window.__zapisy.push('smazáno ' + cesta + '.' + String(k)); delete t[k]; return true; },
+    }) : o;
+    const v = ZAK.varianty[0];
+    window.__zakl555b = zamekDataPorovnani(JSON.parse(JSON.stringify(v.data)), v);
+    v.data = obal(v.data, 'data');
+  });
+  await prepoctiKlon();
+  await page.evaluate(async () => { prepniTab('cenik'); render(); await cenikRadaPrepniUI('zahr'); await cenikRadaPrepniUI('cr'); });
+  await page.evaluate(async () => { await resetCenik(); await resetCenikProj(); });
+  await page.evaluate(() => { set('C.montazHodKc', (+aktivniVarianta(ZAK).data.cenik.montazHodKc || 0) + 1); render(); });
+  await cekej(); await dlg();
+  const st5 = await page.evaluate(() => ({ z: window.__zapisy.slice(0, 5), akt: ZAK.aktivni === ZAK.varianty[1].id,
+    shoda: zamekDataPorovnani(JSON.parse(JSON.stringify(ZAK.varianty[0].data)), ZAK.varianty[0]) === window.__zakl555b }));
+  test('#555b: hlídač — práce s ceníkem klonu (přepočet, řada, obnovení, ruční cena) nezapíše do odeslané varianty',
+    st5.akt && st5.shoda && !st5.z.length, st5);
+  await tiskniKlon();
+  const d = await dlg();
+  test('#555b: …a tisk klonu se pak uloží', !neulozena(d).length, neulozena(d).map(x => x.text.slice(-260)));
+}
 
 await otevri(soubor2);
 await page.evaluate(() => { window.__klonAno = false; });

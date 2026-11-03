@@ -176,7 +176,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* #554 DK (3. 11. 2026): samočinná kopie na Disk každý den po přihlášení heslem. */
      '../src/test_554_kopie_denne.js',
      /* #555 ZO (3. 11. 2026): hláška odmítnutí zamčených dat s variantou a cestou. */
-     'test_555_klon_tisk.mjs', '../src/test_555_klon_tisk.js'];
+     'test_555_klon_tisk.mjs', '../src/test_555_klon_tisk.js',
+     /* #555b ZO2 (3. 11. 2026): ceník odeslané varianty uložené starší verzí. */
+     'test_555b_klon_cenik.mjs', '../src/test_555b_klon_cenik.js'];
 /* Filtr podle názvu; `--cast K/N` a `--od N` vybírají část běhu podle pořadí
  * (P2, 23. 10. 2026 — nastroje/mutace_cast.mjs). */
 const { mutaceCast, filtrZArgv } = await import('../nastroje/mutace_cast.mjs');
@@ -186,6 +188,35 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* #555b ZO2 (3. 11. 2026, hlášení J. V. na test v3.11.3): tělo z prohlížeče
+   * s doplněnými klíči ceníku odeslané varianty v jiném pořadí se uloží;
+   * hláška řekne, která strana ceník nemá. Hlídá netlify/test_555b_klon_cenik.mjs. */
+  /* Vzor doplnění ceníku odeslané varianty v importu (prohlížeč) — hlídá
+   * src/test_555b_klon_cenik.js (je v SADY). */
+  { nazev: '#555b: odeslaná varianta se doplňuje ze zveřejněného ceníku', soubor: '../src/zakazka.js',
+    hledej: "  if (zamcena) { try { b = (typeof PROG_BUILD !== 'undefined' && PROG_BUILD) ? PROG_BUILD : null; } catch (e) { b = null; } }",
+    nahrad: "  if (false) { try { b = (typeof PROG_BUILD !== 'undefined' && PROG_BUILD) ? PROG_BUILD : null; } catch (e) { b = null; } }",
+    proc: 'odeslaná varianta uložená starší verzí by v prohlížeči dostala jiné doplněné klíče a texty ceníku než na serveru — server by odmítl každé uložení zakázky (tisk klonu, Prodáno)' },
+  { nazev: '#555b: vzor ze sestavení i pro rozpracovanou variantu', soubor: '../src/zakazka.js',
+    hledej: "  if (zamcena) { try { b = (typeof PROG_BUILD !== 'undefined' && PROG_BUILD) ? PROG_BUILD : null; } catch (e) { b = null; } }",
+    nahrad: "  { try { b = (typeof PROG_BUILD !== 'undefined' && PROG_BUILD) ? PROG_BUILD : null; } catch (e) { b = null; } }",
+    proc: 'rozpracovaná zakázka by po zveřejnění ceníku ztratila položku platného ceníku, kterou v době uložení neměla (V38)' },
+  { nazev: '#555b: ceník PROJ odeslané varianty ze zveřejněného', soubor: '../src/zakazka.js',
+    hledej: "          cenikDoplnKlice(d.proj.cenik, vzor.proj);",
+    nahrad: "          cenikDoplnKlice(d.proj.cenik, DEFAULT_CENIK_PROJ);",
+    proc: 'odeslaná varianta se starším ceníkem PROJ by se na serveru lišila pořadím a texty — uložení odmítnuto' },
+  { nazev: '#555b: server porovnává zámek podle pořadí klíčů', soubor: '../src/zamek.js',
+    hledej: "  return zamekJsonKanon(kopie);",
+    nahrad: "  return JSON.stringify(kopie);",
+    proc: 'tisk klonu u zakázky odeslané starší verzí by skončil 409 „první rozdíl v datech: cenik" (hlášení J. V.)' },
+  { nazev: '#555b: hláška serveru bez strany chybějícího ceníku', soubor: '../src/zamek.js',
+    hledej: "    if (dx === 'chybi' && dy !== 'chybi') pozn = ' (chybí v ukládané)';",
+    nahrad: "    if (dx === 'chybi' && dy !== 'chybi') pozn = '';",
+    proc: 'hláška by neřekla, že ceník chybí v ukládané zakázce' },
+  { nazev: '#555b: hláška serveru bez jiného typu', soubor: '../src/zamek.js',
+    hledej: "    else if (dx !== dy) pozn = ' (jiný typ)';",
+    nahrad: "    else if (dx !== dy) pozn = '';",
+    proc: 'ceník v jiném tvaru (pole) by hláška nerozlišila' },
   /* #555 ZO (3. 11. 2026, hlášení J. V.): hláška „změnila by se data uzamčené
    * nabídky" jmenuje variantu a první rozdílnou cestu (bez hodnot); DPH po CN
    * se značkou „ručně" projde. Hlídá netlify/test_555_klon_tisk.mjs. */
