@@ -749,7 +749,7 @@
       },
       {
        "pojem": "Kopie na Disk",
-       "vyklad": "Tlačítko *Zkopírovat zálohu na Disk teď* (Chrome nebo Edge, povolený zápis do složky). Aplikace kopii připomene jednou týdně, kopie starší než 14 dní svítí jako varování. Po úspěšné kopii aplikace ve složce uklidí jen vlastní soubory záloh podle retence."
+       "vyklad": "Tlačítko *Zkopírovat zálohu na Disk teď* (Chrome nebo Edge, povolený zápis do složky). Kopie se pořídí sama každý den po přihlášení správce heslem, jakmile je v Netlify nový noční otisk (bez nového otisku se nekopíruje); kopie starší než 3 dny svítí jako varování. Po úspěšné kopii aplikace ve složce uklidí jen vlastní soubory záloh podle retence."
       },
       {
        "pojem": "Ranní e-mail",

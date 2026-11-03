@@ -310,7 +310,9 @@ function onlinePrihlas() {
   if (!email || !heslo) { onlineZprava('Zadejte e-mail i heslo.', 'varovani'); render(); return Promise.resolve(false); }
   ONLINE_STAV.pracuje = true; render();
   return onlineApi('/api/prihlaseni', { email, heslo })
-    .then(o => { ONLINE_STAV.formHeslo = ''; return onlinePoPrihlaseni(o).then(() => true); })
+    /* #554: heslo jen předané samočinné kopii na Disk (onlineKopieDiskAuto),
+     * nikam se neukládá; obnovené sezení (F5) ho nemá → jen připomínka. */
+    .then(o => { ONLINE_STAV.formHeslo = ''; return onlinePoPrihlaseni(o, heslo).then(() => true); })
     .catch(e => { onlineZprava('Přihlášení se nepodařilo: ' + e.message, 'varovani'); return false; })
     .then(v => { ONLINE_STAV.pracuje = false; render(); return v; });
 }
@@ -318,7 +320,7 @@ function onlinePrihlas() {
 /* Po přihlášení se aplikace srovná podle serveru: jméno do razítek a
  * protokolu, role do viditelnosti záložek (skutečná práva beztak hlídá
  * server – upravenému klientovi role v prohlížeči nepomůže). */
-function onlinePoPrihlaseni(ja) {
+function onlinePoPrihlaseni(ja, hesloPrihlaseni) {
   ONLINE_STAV.ja = { email: ja.email, jmeno: ja.jmeno || '', role: ja.role,
     titul: ja.titul || '', funkce: ja.funkce || '', telefon: ja.telefon || '',
     podpis: ja.podpis || '',
@@ -385,7 +387,7 @@ function onlinePoPrihlaseni(ja) {
      * přihlášením (ze souboru, ze zálohy). Návrat k poslední zakázce se ptá
      * sám; tady se pak druhý dotaz nepošle (pdStavObnovZak, K7-K6). */
     .then(() => { pdStavObnovZak(); })
-    .then(() => { if (jeAdminOnline()) onlineZalohaAuto(); });
+    .then(() => { if (jeAdminOnline()) onlineZalohaAuto(hesloPrihlaseni); });
 }
 
 /* SLEVY ZE SERVERU (revize 13. 10. 2026, B101/B105). Server rozhodnutí
@@ -1914,7 +1916,7 @@ function onlineZalohaLimitText(e) {
  * pořiď ho (server, žádná složka); 3) je-li navíc připojená složka, odlij
  * do ní kopii pro Disk Google. Krok 3 je bonus – když selže, otisk na
  * serveru už existuje a hlásí se to jen tiše jako varování. */
-function onlineZalohaAuto() {
+function onlineZalohaAuto(hesloPrihlaseni) {
   if (!jeAdminOnline()) return Promise.resolve(false);
   const dnes = new Date().toISOString().slice(0, 10);
   let chybaZalohy = '';
@@ -1953,10 +1955,10 @@ function onlineZalohaAuto() {
      * teď. Hláška jde přes onlineZprava AŽ NAKONEC, aby ji nepřepsala
      * zpráva o dnešní záloze; administrátor ji uvidí hned po přihlášení,
      * ne až v Nastavení → Databáze. */
-    return onlineKopieDiskAuto().catch(() => false).then(() => {
+    return onlineKopieDiskAuto(hesloPrihlaseni).catch(() => false).then(() => {
       const hl = (typeof uloZalohaHlidka === 'function') ? uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()) : null;
-      /* Hlídka kopie na Disku (#151 N6): starší než 14 dní → varování. */
-      const kd = (typeof uloKopieDiskStav === 'function') ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy) : null;
+      /* Hlídka kopie na Disku (#151 N6; #554: starší než 3 dny) → varování. */
+      const kd = (typeof uloKopieDiskStav === 'function') ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy, ONLINE_STAV.otisky) : null;
       /* Pojistka retence (K3-N13): pokles dat v noční záloze. */
       const rv = (typeof uloRetenceVarovani === 'function') ? uloRetenceVarovani(ONLINE_STAV.retenceVarovani, Date.now()) : null;
       const varovani = [chybaZalohy, rv ? rv.text : '', hl && hl.stara ? hl.text : '', kd && kd.stara ? kd.text : ''].filter(Boolean);
@@ -1987,7 +1989,7 @@ async function onlineOtiskDopor(prvni, prubeh) {
 
 /* ---------- KOPIE ZÁLOH NA DISK GOOGLE (#151 N6, 19. 10. 2026) ----------
  *
- * Rozhodnutí J. V.: jednou týdně kopie posledního nočního otisku mimo
+ * Rozhodnutí J. V.: kopie posledního nočního otisku mimo
  * Netlify, do složky „_Zaloha Netlify DB" na Disku Google (sourozenec
  * složky _DB). Netlify na Disk nedosáhne, takže kopii píše prohlížeč
  * správce přes File System Access — stejně jako dřív odlévání do _DB, jen
@@ -1996,7 +1998,9 @@ async function onlineOtiskDopor(prvni, prubeh) {
  * tlačítkem a pamatuje se v IndexedDB (klíč „zalohaDisk"); prohlížeč se
  * na právo zápisu může po restartu znovu zeptat — zeptat se smí jen po
  * kliknutí, proto automatika po přihlášení bez uděleného práva mlčí a
- * zbude hlídka (14 dní).
+ * zbude hlídka (3 dny, #554). Od #554 (J. V. 3. 11. 2026) každý den — jakmile
+ * je v Netlify noční otisk novější, než jaký nese poslední kopie
+ * (uloKopieDiskStav); dřív jednou týdně.
  *
  * Obsah (J. V.): BEZ otisků hesel a BEZ podpisů — server ho vydá očištěný
  * (GET /api/zaloha?zdroj=nocni). Soubor
@@ -2257,19 +2261,39 @@ async function onlineKopieDiskTed() {
   } finally { ONLINE_STAV.pracuje = false; render(); }
 }
 
-/* Po přihlášení správce: je-li poslední kopie starší než 7 dní (nebo žádná)
- * a v tomhle prohlížeči je složka vybraná s uděleným právem, automatika jen
- * PŘIPOMENE tlačítko (K4-N15, O9). Kopie od K3-N1 chce heslo správce a dialog
- * hesla hned po přihlášení, o který správce nežádal, je špatný zvyk (učí
- * zadávat heslo do čehokoli, co vyskočí). Bez práva mlčí — hlídka varuje. */
-async function onlineKopieDiskAuto() {
+/* SAMOČINNÁ KOPIE PO PŘIHLÁŠENÍ (#554, J. V. 3. 11. 2026: kopie každý den).
+ * Kopíruje se, když v Netlify leží noční otisk novější, než jaký nese
+ * poslední kopie tohoto prostředí (uloKopieDiskStav → potreba), a jen když
+ * je v tomhle prohlížeči složka vybraná a právo zápisu UDĚLENÉ — o právo se
+ * tu nežádá (žádost smí jen kliknutí), bez něj automatika mlčí a zbude
+ * hlídka (3 dny).
+ *
+ * Heslo (K3-N1: záznam kopie odemyká retenci, server ho chce s heslem
+ * správce) se bere z PRÁVĚ PROBĚHLÉHO přihlášení — `hesloPrihlaseni`
+ * předává onlinePrihlas jen sem, nikam se neukládá. Dialog s heslem se po
+ * přihlášení dál neotevírá (K4-N15). Obnovené sezení (F5, cookie) heslo
+ * nemá → jen připomene tlačítko jako dosud. Selhání kopie přihlášení
+ * nezastaví, jen se ohlásí. */
+async function onlineKopieDiskAuto(hesloPrihlaseni) {
   if (!jeAdminOnline() || typeof uloKopieDiskStav !== 'function') return false;
-  if (!uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy).potreba) return false;
+  if (!uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy, ONLINE_STAV.otisky).potreba) return false;
   const h = await kopieDiskSlozka();
   if (!h || !(await uloPravo(h, true))) return false;
-  onlineZprava('Týdenní kopie zálohy na Disk čeká: Nastavení → Databáze → „Zkopírovat zálohu na Disk teď" '
-    + '(potvrdíte ji svým heslem).');
-  return false;
+  if (!hesloPrihlaseni) {
+    onlineZprava('Denní kopie zálohy na Disk čeká: Nastavení → Databáze → „Zkopírovat zálohu na Disk teď" '
+      + '(potvrdíte ji svým heslem; po přihlášení heslem se pořídí sama).');
+    return false;
+  }
+  try {
+    const k = await kopieDiskProved(h, hesloPrihlaseni);
+    onlineZprava('Denní kopie zálohy se sama uložila na Disk: ' + h.name + '/' + k.soubor + ' ('
+      + kopieDiskVelikost(k.velikostB) + ').' + kopieDiskUklidText(k.uklid));
+    return true;
+  } catch (e) {
+    onlineZprava('Denní kopii zálohy na Disk se nepodařilo pořídit: ' + (e && e.message || e)
+      + ' — zkuste tlačítko „Zkopírovat zálohu na Disk teď" v Nastavení → Databáze.', 'varovani');
+    return false;
+  }
 }
 
 /* Odlití kopie na Disk Google. Jen když je složka opravdu připojená a
@@ -3102,7 +3126,7 @@ function renderOnlineKarta() {
          ${typeof ULO_STAV !== 'undefined' && ULO_STAV.pripraveno
     ? `<button onclick="onlineZaloha(true)" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Odlít zálohu do složky (Disk)</button>` : ''}
          <button onclick="onlineKopieDiskTed()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}
-           title="zkopíruje poslední noční zálohu (bez hesel a podpisů) do složky „_Zaloha Netlify DB“ na Disku Google">Zkopírovat zálohu na Disk teď</button>
+           title="zkopíruje poslední noční zálohu (bez hesel a podpisů) do složky „_Zaloha Netlify DB“ na Disku Google; po přihlášení heslem se to děje samo každý den, jakmile je nová noční záloha">Zkopírovat zálohu na Disk teď</button>
          <button onclick="onlineZaloha(false)" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Stáhnout zálohu</button>
          <button onclick="onlineObnovaOtevri()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}
            title="nalije zálohu zpátky do online databáze – nejdřív náhled, teprve pak obnova">Obnovit ze zálohy…</button>` : '';
@@ -3110,9 +3134,9 @@ function renderOnlineKarta() {
      * výpadku delším než 48 hodin jako varování. */
     const hlidka = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloZalohaHlidka === 'function')
       ? uloZalohaHlidka(ONLINE_STAV.otisky, Date.now()) : null;
-    /* Hlídka kopie na Disku (#151 N6): starší než 14 dní → varování. */
+    /* Hlídka kopie na Disku (#151 N6; #554: starší než 3 dny) → varování. */
     const kopieHl = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloKopieDiskStav === 'function')
-      ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy) : null;
+      ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy, ONLINE_STAV.otisky) : null;
     /* Pojistka retence (K3-N13): noční záloha s poklesem dat pod polovinu. */
     const retenceHl = (jeAdminOnline() && ONLINE_STAV.otiskyNacteno && typeof uloRetenceVarovani === 'function')
       ? uloRetenceVarovani(ONLINE_STAV.retenceVarovani, Date.now()) : null;
@@ -3145,9 +3169,10 @@ function renderOnlineKarta() {
         <input type="checkbox" ${ONLINE_STAV.auto ? 'checked' : ''} onchange="onlineAutoPrepni(this.checked)"><span class="u"></span></div>
       <div class="note">Zakázky i platný ceník žijí na serveru – ke stejným datům se dostanete
         z libovolného počítače po přihlášení. <b>Vytištěná (odeslaná) nabídka se nikdy nepřepíše</b> –
-        hlídá to přímo server, stejným pravidlem jako složka. Záloha databáze se
-        <b>odlévá na Disk Google</b>: po přihlášení administrátora se jednou denně uloží do připojené
-        složky sama a tlačítky ji lze pořídit kdykoli; navíc si server každou noc ukládá vlastní otisk.
+        hlídá to přímo server, stejným pravidlem jako složka. Server si každou noc ukládá
+        otisk databáze a jeho kopie jde <b>na Disk Google</b> (složka „_Zaloha Netlify DB“): po přihlášení
+        administrátora heslem se uloží sama jednou denně, jakmile je k dispozici nový noční otisk (Chrome nebo Edge
+        s vybranou složkou a povoleným zápisem); tlačítky ji lze pořídit kdykoli.
         ${typeof ULO_STAV !== 'undefined' && ULO_STAV.koren
     ? 'Dokud je připojená složka, platí ceník i zakázky ze složky jako dosud (přechodné období).'
     : 'Složku už není potřeba připojovat – slouží jen jako cíl zálohy.'}</div>`;

@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v3.11.1 — DK #554: samočinná kopie zálohy na Disk každý den, větev claude/dk-kopie-denne
+
+Nad integrací 1bf1a3a (v2.11.9), pokyn J. V. 3. 11. 2026. Na ostrém webu ani na Disku nic. Verzi může koordinace
+přečíslovat.
+
+- **Pravidlo kopie** (`uloKopieDiskStav`, nově `uloKopieDiskNocni`, `src/uloziste.js`): kopírovat, když v Netlify leží
+  noční otisk **novější**, než jaký nese poslední kopie tohoto prostředí (den otisku ze záznamu kopie; u kopie
+  „aktuální stav“ bez dne otisku rozhoduje čas). Dřív jednou za 7 dní podle `floor((teď − kopie) / 24 h)` — s intervalem
+  1 den by ráno po včerejší odpolední kopii nový otisk vypadl. Bez nového nočního otisku se nekopíruje (výpadek noční
+  zálohy hlásí její hlídka), vynucené otisky se za noční nepočítají, záznam cizího prostředí = žádná vlastní kopie.
+  Konstanta `ULO_KOPIE_DISK_INTERVAL_DNU` zrušena.
+- **Samočinná kopie po přihlášení** (`onlineKopieDiskAuto`, `src/ui/online_ui.js`): po přihlášení správce **heslem**
+  se kopie pořídí sama — heslo z právě proběhlého přihlášení předá `onlinePrihlas` → `onlinePoPrihlaseni` →
+  `onlineZalohaAuto` jen sem, nikam se neukládá a dialog s heslem se neotevírá (K4-N15 drží). Obnovené sezení (F5)
+  heslo nemá → jen připomínka tlačítka. Bez vybrané složky nebo bez uděleného práva zápisu nic (o právo se nežádá).
+  Selhání kopie = varování s odkazem na tlačítko, přihlášení pokračuje.
+- **Hlídka stáří kopie** 14 → **3 dny** (shodně s ranní kontrolou záloh); text hlášky vysvětlí denní samočinnou kopii.
+- **Retence na Disku** (7 denních + 8 nedělních + 6 prvních v měsíci) beze změny — test simuluje rok denních kopií:
+  nejvýš 21 souborů na prostředí, starý tvar, cizí prostředí ani `posledni_kopie_*` se nesmažou.
+- **Texty:** popisek Nastavení → Online databáze (dřív „odlévá … jednou denně do připojené složky“), title tlačítka
+  „Zkopírovat zálohu na Disk teď“, `manual/admin/obsah.json`, `manual/obsah.json`, `manual/kompletni/provoz.json`,
+  komentáře serveru (hlídka 3 dny).
+- **Testy:** `src/test_kopie_disk.js` přepsán (24; na 1bf1a3a 7 FAIL), nový `src/test_554_kopie_denne.js` (17; na
+  1bf1a3a 10 FAIL). Úseky v `test_o7_kopie_klient.js` a `test_z2_disk_retence.js` srovnány s novými hlavičkami funkcí.
+  Mutace „#554“ 12 z 12 chycených (12 nových; 2 staré mutace týdenního intervalu zrušeny); `--kontrola` 1211 OK.
+
 ## v2.11.9 — ZN #552: názvy záloh na Disku Google s prostředím a časem, větev claude/zn-nazvy-zaloh
 
 Nad integrací b22f5df (v2.11.3), pokyn J. V. 2. 11. 2026. Na ostrém webu ani na Disku nic. Verze ponechána,

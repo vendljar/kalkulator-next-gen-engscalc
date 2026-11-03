@@ -29,7 +29,7 @@ const R = require('./retence_zaloh.js');
 const zdroj = fs.readFileSync(__dirname + '/ui/online_ui.js', 'utf8');
 const usek = (od, po) => { const a = zdroj.indexOf(od), b = zdroj.indexOf(po, a + 1); return a > 0 && b > a ? zdroj.slice(a, b) : ''; };
 const kopie = usek('/* ZÁLOHA PO STRÁNKÁCH (#522 Z1)', 'function kopieDiskVelikost');
-const tlacitko = usek('function kopieDiskVelikost', '/* Po přihlášení správce');
+const tlacitko = usek('function kopieDiskVelikost', '/* SAMOČINNÁ KOPIE PO PŘIHLÁŠENÍ (#554');
 const obnovaText = usek('async function onlineObnovaSouborText', 'function onlineObnovaPripraveno');
 
 let ok = 0, fail = 0;

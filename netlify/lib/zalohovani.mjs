@@ -1132,7 +1132,7 @@ export async function posledniNocniKlic() {
   return null;
 }
 
-/* Záznam o poslední kopii na Disku — na serveru, aby hlídka (14 dní)
+/* Záznam o poslední kopii na Disku — na serveru, aby hlídka (3 dny, #554)
  * fungovala v každém prohlížeči, i tam, kde složka připojená není. */
 export const KOPIE_DISK_KLIC = 'kopie-disk';
 /* Složka na Disku Google, do které se kopie zapisuje (J. V. 19. 10. 2026);

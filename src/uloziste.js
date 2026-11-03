@@ -2088,16 +2088,17 @@ function uloZalohaHlidka(otisky, ted) {
  * Otisky leží ve stejném Netlify Blobs jako ostrá data — smazání webu by
  * vzalo obojí. Netlify na Disk nedosáhne, proto kopii píše prohlížeč
  * správce do vybrané složky „_Zaloha Netlify DB" (sourozenec složky _DB).
- * Jednou za 7 dní sama po přihlášení (je-li složka vybraná a právo
- * udělené), kdykoli tlačítkem; hlídka varuje, je-li poslední kopie starší
- * než 14 dní. Od #523 Z2 (26. 10. 2026) je kopie komprimovaná
+ * Od #554 (J. V. 3. 11. 2026) každý den: po přihlášení správce, jakmile
+ * v Netlify leží noční otisk novější než ten v poslední kopii tohoto
+ * prostředí (je-li složka vybraná a právo udělené), kdykoli tlačítkem;
+ * hlídka varuje, je-li poslední kopie starší než 3 dny (dřív 7 / 14 dní).
+ * Od #523 Z2 (26. 10. 2026) je kopie komprimovaná
  * (`otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz`, #552) a po úspěšné kopii prohlížeč ve složce
  * uklidí staré kopie (src/retence_zaloh.js, kopieDiskUklid v online_ui.js).
  * Čisté funkce nad záznamem ze serveru (GET /api/zaloha_vynuceno →
  * kopieDisk), `ted` v ms. */
 const ULO_KOPIE_DISK_SLOZKA = '_Zaloha Netlify DB';
-const ULO_KOPIE_DISK_INTERVAL_DNU = 7;
-const ULO_KOPIE_DISK_HLIDKA_DNU = 14;
+const ULO_KOPIE_DISK_HLIDKA_DNU = 3;   // #554: shodně s ranní kontrolou záloh (dřív 14)
 /* JMÉNO KOPIE (#552, J. V. 2. 11. 2026): ostrý i testovací web píšou do téže
  * složky, proto `otisk_<prostředí>_RRRR-MM-DD_HHMM.json(.gz)` — prostředí
  * main | test | jiny hlásí server (odpověď /api/zaloha?zdroj=nocni), čas je
@@ -2136,26 +2137,56 @@ function uloKopieDiskPosledniJmeno(prostredi) {
   const p = uloKopieDiskProstredi(prostredi);
   return p ? 'posledni_kopie_' + p + '.json' : '';
 }
+/* NEJNOVĚJŠÍ NOČNÍ OTISK v přehledu záloh (GET /api/zaloha_vynuceno →
+ * otisky: { den, porizena, zdroj }) — { den: 'RRRR-MM-DD', t } nebo null.
+ * Vynucené otisky (ruční, při přihlášení, před obnovou) se nepočítají: na
+ * Disk jde noční otisk (/api/zaloha?zdroj=nocni). */
+function uloKopieDiskNocni(otisky) {
+  let nej = null;
+  for (const o of (Array.isArray(otisky) ? otisky : [])) {
+    if (!o || o.zdroj !== 'nocni-otisk') continue;
+    const den = String(o.den || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(den)) continue;
+    const t = Date.parse(o.porizena || den);
+    if (!nej || den > nej.den || (den === nej.den && t > nej.t)) nej = { den, t: isFinite(t) ? t : NaN };
+  }
+  return nej;
+}
 /* `prostredi` (#552) = prostředí tohoto webu ze serveru; záznam kopie JINÉHO
  * prostředí se bere jako žádná kopie (hláška ukazuje jen vlastní kopii),
- * starý záznam bez prostředí platí (na webu ho psal jen ten web). */
-function uloKopieDiskStav(kopie, ted, prostredi) {
+ * starý záznam bez prostředí platí (na webu ho psal jen ten web).
+ *
+ * KDY KOPÍROVAT (#554, J. V. 3. 11. 2026 — kopie každý den): `potreba`, když
+ * v Netlify leží noční otisk NOVĚJŠÍ, než jaký nese poslední kopie tohoto
+ * prostředí (`otisky` = přehled záloh ze serveru). Porovnává se den otisku
+ * (`kopie.otisk`), ne stáří kopie: s intervalem „1 den" podle
+ * floor((ted − kdy) / 24 h) by se ráno po včerejší odpolední kopii nic
+ * nezkopírovalo, přestože v noci vznikl nový otisk. Kopie bez dne otisku
+ * (aktuální stav, když noční chyběl) se porovná časem: noční otisk pořízený
+ * po ní = kopírovat. Žádný nový noční otisk (noční záloha neproběhla) →
+ * nekopírovat; to hlásí hlídka noční zálohy (uloZalohaHlidka). Žádná vlastní
+ * kopie → kopírovat. `nocni` ve výsledku = den nejnovějšího nočního otisku. */
+function uloKopieDiskStav(kopie, ted, prostredi, otisky) {
   const p = uloKopieDiskProstredi(prostredi);
   if (kopie && p && kopie.prostredi !== undefined && kopie.prostredi !== p) kopie = null;
   const kde = p ? ' (prostředí ' + p + ')' : '';
   const t = kopie && Date.parse(kopie.kdy || '');
+  const nocni = uloKopieDiskNocni(otisky);
   if (!kopie || !isFinite(t)) {
-    return { dnu: null, potreba: true, stara: true,
+    return { dnu: null, potreba: true, stara: true, nocni: nocni ? nocni.den : null,
       text: 'Kopie záloh na Disku Google' + kde + ' (složka „' + ULO_KOPIE_DISK_SLOZKA + '") zatím žádná není. '
         + 'Pořiďte ji tlačítkem „Zkopírovat zálohu na Disk teď".' };
   }
   const dnu = Math.max(0, Math.floor(((+ted || Date.now()) - t) / 86400000));
   const stara = dnu > ULO_KOPIE_DISK_HLIDKA_DNU;
   const kdy = new Date(t).toLocaleString('cs-CZ');
-  return { dnu, potreba: dnu >= ULO_KOPIE_DISK_INTERVAL_DNU, stara,
+  const denKopie = /^\d{4}-\d{2}-\d{2}$/.test(String(kopie.otisk || '')) ? String(kopie.otisk) : '';
+  const potreba = !!nocni && (denKopie ? nocni.den > denKopie : (isFinite(nocni.t) && nocni.t > t));
+  return { dnu, potreba, stara, nocni: nocni ? nocni.den : null,
     text: stara
       ? 'Kopie záloh na Disku Google' + kde + ' je stará ' + dnu + ' dní (naposledy ' + kdy + ', ' + String(kopie.soubor || '') + '). '
-        + 'Zkopírujte zálohu na Disk — tlačítko „Zkopírovat zálohu na Disk teď"; samo se to děje jen v prohlížeči s vybranou složkou.'
+        + 'Kopie se dělá každý den sama po přihlášení správce, jen v prohlížeči s vybranou složkou „' + ULO_KOPIE_DISK_SLOZKA
+        + '" a povoleným zápisem — jinak ji pořiďte tlačítkem „Zkopírovat zálohu na Disk teď".'
       : 'Poslední kopie záloh na Disku Google' + kde + ': ' + kdy + ' (' + String(kopie.soubor || '') + ').' };
 }
 
@@ -2196,7 +2227,7 @@ function uloRetenceVarovani(v, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { uloZalohaSloz, ULO_TYPY_HLAVICKA, uloRetenceVarovani, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, uloKopieDiskProstredi, uloKopieDiskPosledniJmeno, uloPrahaCas, ULO_KOPIE_DISK_PROSTREDI, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_INTERVAL_DNU, ULO_KOPIE_DISK_HLIDKA_DNU, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloZalohaSloz, ULO_TYPY_HLAVICKA, uloRetenceVarovani, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, uloKopieDiskProstredi, uloKopieDiskPosledniJmeno, uloPrahaCas, ULO_KOPIE_DISK_PROSTREDI, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_HLIDKA_DNU, uloKopieDiskNocni, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,

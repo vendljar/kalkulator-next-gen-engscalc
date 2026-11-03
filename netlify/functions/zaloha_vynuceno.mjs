@@ -76,7 +76,7 @@ export default async (req) => {
   let telo = {};
   try { telo = (await req.json()) || {}; } catch (e) { /* tělo je nepovinné */ }
   /* ZÁZNAM KOPIE NA DISK (#151 N6). Kopii zapisuje prohlížeč správce, server
-   * si jen poznamená kdy a co — z toho hlídka (14 dní) v každém prohlížeči.
+   * si jen poznamená kdy a co — z toho hlídka (3 dny, #554) v každém prohlížeči.
    * Jen souhrnná pole, žádná data; jméno souboru jen v bezpečném tvaru. */
   if (!telo || typeof telo !== 'object' || Array.isArray(telo)) telo = {};
   if (telo.akce === 'kopie-disk') {

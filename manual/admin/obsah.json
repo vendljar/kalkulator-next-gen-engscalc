@@ -684,7 +684,7 @@
             },
             {
               "pojem": "Kopie na Disk Google",
-              "vyklad": "Tlačítko **Zkopírovat zálohu na Disk teď** uloží poslední noční otisk do složky **_Zaloha Netlify DB** jako `otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz` (účty bez hesel, bez podpisů) a vedle soubor `posledni_kopie_<prostředí>.json`. Prostředí je `main` (ostrý web), `test` (testovací web) nebo `jiny` (náhled nasazení); datum je den nočního otisku, čas jeho pořízení (český čas) — např. `otisk_main_2026-11-02_0315.json.gz`. Ostrý i testovací web kopírují do téže složky a díky prostředí v názvu se nepřepíšou. Hláška „Poslední kopie záloh na Disku Google“ ukazuje jen kopii vlastního webu. Aplikace připomene kopii jednou týdně; kopie starší než 14 dní svítí jako varování."
+              "vyklad": "Tlačítko **Zkopírovat zálohu na Disk teď** uloží poslední noční otisk do složky **_Zaloha Netlify DB** jako `otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz` (účty bez hesel, bez podpisů) a vedle soubor `posledni_kopie_<prostředí>.json`. Prostředí je `main` (ostrý web), `test` (testovací web) nebo `jiny` (náhled nasazení); datum je den nočního otisku, čas jeho pořízení (český čas) — např. `otisk_main_2026-11-02_0315.json.gz`. Ostrý i testovací web kopírují do téže složky a díky prostředí v názvu se nepřepíšou. Hláška „Poslední kopie záloh na Disku Google“ ukazuje jen kopii vlastního webu. Kopie se pořídí **sama každý den**: po přihlášení správce heslem, jakmile je v Netlify noční otisk novější než ten v poslední kopii tohoto webu (Chrome nebo Edge s vybranou složkou a povoleným zápisem). Po obnovení stránky bez nového přihlášení jen připomene tlačítko. Když noční záloha neproběhla, nic se nekopíruje a hlásí to hlídka noční zálohy. Kopie starší než **3 dny** svítí jako varování."
             },
             {
               "pojem": "Stáhnout zálohu",
@@ -848,7 +848,7 @@
             },
             {
               "pojem": "V aplikaci — kopie na Disku",
-              "vyklad": "Připomínka jednou týdně (kopie starší než 7 dní), varování při kopii starší než **14 dní** nebo když žádná není."
+              "vyklad": "Kopie se dělá sama každý den po přihlášení heslem, je-li nový noční otisk; bez vybrané složky nebo práva zápisu jen hláška. Varování při kopii starší než **3 dny** nebo když žádná není."
             },
             {
               "pojem": "V aplikaci — úbytek dat",
@@ -885,7 +885,7 @@
               "text": "Svítí-li varování o noční záloze: Netlify → projekt → **Logs → Functions → zaloha_nocni** a podle scénáře D v kapitole A8."
             },
             {
-              "text": "Jednou týdně: **Zkopírovat zálohu na Disk teď** (stačí, když to aplikace připomene)."
+              "text": "Kopie na Disk se dělá sama každý den po přihlášení heslem; tlačítko **Zkopírovat zálohu na Disk teď** jen tehdy, když to aplikace připomene nebo svítí varování."
             }
           ]
         }

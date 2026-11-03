@@ -22,7 +22,7 @@ const vm = require('vm');
 const U = require('./uloziste.js');
 const zdroj = fs.readFileSync(__dirname + '/ui/online_ui.js', 'utf8');
 const usek = (od, po) => { const a = zdroj.indexOf(od), b = zdroj.indexOf(po, a + 1); return a > 0 && b > a ? zdroj.slice(a, b) : ''; };
-const auto = usek('function onlineZalohaAuto()', '/* ---------- KOPIE ZÁLOH NA DISK');
+const auto = usek('function onlineZalohaAuto(', '/* ---------- KOPIE ZÁLOH NA DISK');
 /* #522: od v26.10.8 úsek začíná stahováním po stránkách (onlineZalohaStrankami). */
 const kopie = usek('/* ZÁLOHA PO STRÁNKÁCH (#522 Z1)', 'function kopieDiskVelikost');
 

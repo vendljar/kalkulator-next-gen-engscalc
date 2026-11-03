@@ -172,7 +172,9 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* #523 Z2 (26. 10. 2026): retence záloh v Blobs a na Disku, komprese otisku. */
      'test_z2_retence.mjs', '../src/test_z2_disk_retence.js',
      /* #552 ZN (2. 11. 2026): jména kopií na Disku s prostředím a časem. */
-     '../src/test_552_nazvy_zaloh.js', 'test_552_prostredi_zaloh.mjs'];
+     '../src/test_552_nazvy_zaloh.js', 'test_552_prostredi_zaloh.mjs',
+     /* #554 DK (3. 11. 2026): samočinná kopie na Disk každý den po přihlášení heslem. */
+     '../src/test_554_kopie_denne.js'];
 /* Filtr podle názvu; `--cast K/N` a `--od N` vybírají část běhu podle pořadí
  * (P2, 23. 10. 2026 — nastroje/mutace_cast.mjs). */
 const { mutaceCast, filtrZArgv } = await import('../nastroje/mutace_cast.mjs');
@@ -182,6 +184,57 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* #554 DK (3. 11. 2026): kopie na Disk každý den — kopírovat, když je noční
+   * otisk novější než ten v poslední kopii; heslo z přihlášení; hlídka 3 dny.
+   * Hlídají src/test_kopie_disk.js a src/test_554_kopie_denne.js. */
+  { nazev: '#554: kopie podle 24h intervalu místo nového otisku', soubor: '../src/uloziste.js',
+    hledej: '  const potreba = !!nocni && (denKopie ? nocni.den > denKopie : (isFinite(nocni.t) && nocni.t > t));',
+    nahrad: '  const potreba = dnu >= 1;',
+    proc: 'ráno po včerejší odpolední kopii by se nový noční otisk nezkopíroval (Δ < 24 h)' },
+  { nazev: '#554: kopie i bez nového nočního otisku', soubor: '../src/uloziste.js',
+    hledej: '  const potreba = !!nocni && (denKopie ? nocni.den > denKopie : (isFinite(nocni.t) && nocni.t > t));',
+    nahrad: '  const potreba = !!nocni && (denKopie ? nocni.den >= denKopie : (isFinite(nocni.t) && nocni.t > t));',
+    proc: 'když noční neproběhla, kopíroval by se znovu tentýž otisk a hlídka by mlčela' },
+  { nazev: '#554: kopie aktuálního stavu se s nočním otiskem nesrovná', soubor: '../src/uloziste.js',
+    hledej: '  const potreba = !!nocni && (denKopie ? nocni.den > denKopie : (isFinite(nocni.t) && nocni.t > t));',
+    nahrad: '  const potreba = !!nocni && (denKopie ? nocni.den > denKopie : false);',
+    proc: 'po kopii aktuálního stavu (noční tehdy chyběl) by se už žádný noční otisk samočinně nezkopíroval' },
+  { nazev: '#554: za noční se bere i vynucený otisk', soubor: '../src/uloziste.js',
+    hledej: "    if (!o || o.zdroj !== 'nocni-otisk') continue;",
+    nahrad: '    if (!o) continue;',
+    proc: 'záloha při přihlášení by předstírala nový noční otisk' },
+  { nazev: '#554: nejnovější noční = první v seznamu', soubor: '../src/uloziste.js',
+    hledej: '    if (!nej || den > nej.den || (den === nej.den && t > nej.t)) nej = { den, t: isFinite(t) ? t : NaN };',
+    nahrad: '    if (!nej) nej = { den, t: isFinite(t) ? t : NaN };',
+    proc: 'při jiném pořadí přehledu by se porovnávalo se starým otiskem' },
+  { nazev: '#554: hlídka kopie zase 14 dní', soubor: '../src/uloziste.js',
+    hledej: 'const ULO_KOPIE_DISK_HLIDKA_DNU = 3;',
+    nahrad: 'const ULO_KOPIE_DISK_HLIDKA_DNU = 14;',
+    proc: 'rozhodnutí J. V.: varovat po 3 dnech, shodně s ranní kontrolou' },
+  { nazev: '#554: automatika kopii jen připomene', soubor: '../src/ui/online_ui.js',
+    hledej: '  if (!hesloPrihlaseni) {\n    onlineZprava(\'Denní kopie zálohy na Disk čeká',
+    nahrad: '  if (true) {\n    onlineZprava(\'Denní kopie zálohy na Disk čeká',
+    proc: 'kopie by se po přihlášení sama nepořídila (dřívější stav)' },
+  { nazev: '#554: automatika se ptá dialogem na heslo', soubor: '../src/ui/online_ui.js',
+    hledej: '    const k = await kopieDiskProved(h, hesloPrihlaseni);',
+    nahrad: '    const k = await kopieDiskProved(h);',
+    proc: 'po přihlášení by vyskočil dialog s heslem (K4-N15)' },
+  { nazev: '#554: automatika žádá o právo zápisu', soubor: '../src/ui/online_ui.js',
+    hledej: "  if (!h || !(await uloPravo(h, true))) return false;\n  if (!hesloPrihlaseni) {",
+    nahrad: "  if (!h || !(await uloPravo(h, false))) return false;\n  if (!hesloPrihlaseni) {",
+    proc: 'prohlížeč by po přihlášení bez kliknutí žádal o právo (nesmí)' },
+  { nazev: '#554: přihlášení heslo automatice nepředá', soubor: '../src/ui/online_ui.js',
+    hledej: '    .then(o => { ONLINE_STAV.formHeslo = \'\'; return onlinePoPrihlaseni(o, heslo).then(() => true); })',
+    nahrad: '    .then(o => { ONLINE_STAV.formHeslo = \'\'; return onlinePoPrihlaseni(o).then(() => true); })',
+    proc: 'samočinná kopie by po přihlášení nikdy neproběhla' },
+  { nazev: '#554: automatika zálohy heslo nepředá kopii', soubor: '../src/ui/online_ui.js',
+    hledej: '    return onlineKopieDiskAuto(hesloPrihlaseni).catch(() => false).then(() => {',
+    nahrad: '    return onlineKopieDiskAuto().catch(() => false).then(() => {',
+    proc: 'samočinná kopie by po přihlášení nikdy neproběhla' },
+  { nazev: '#554: selhání samočinné kopie spadne', soubor: '../src/ui/online_ui.js',
+    hledej: "  } catch (e) {\n    onlineZprava('Denní kopii zálohy na Disk se nepodařilo pořídit: '",
+    nahrad: "  } catch (e) {\n    throw e;\n    onlineZprava('Denní kopii zálohy na Disk se nepodařilo pořídit: '",
+    proc: 'chyba kopie by se ztratila v .catch automatiky a správce by se nic nedozvěděl' },
   /* #552 ZN (2. 11. 2026): jména kopií na Disku s prostředím a časem. Hlídají
    * src/test_552_nazvy_zaloh.js, test_552_prostredi_zaloh.mjs a starší sady záloh. */
   { nazev: '#552: úklid Disku maže i kopie druhého webu', soubor: '../src/retence_zaloh.js',
@@ -3270,18 +3323,10 @@ const MUTACE = [
     hledej: '      kopieDisk: kopieDiskVlastni(await sZal.cti(kopieDiskKlic()), prostrediZalohy()),',
     nahrad: '      kopieDisk: null,',
     proc: 'hlídka 14 dní by nevěděla o žádné kopii' },
-  { nazev: '#151 N6: týdenní interval kopie 8 dní', soubor: '../src/uloziste.js',
-    hledej: 'const ULO_KOPIE_DISK_INTERVAL_DNU = 7;',
-    nahrad: 'const ULO_KOPIE_DISK_INTERVAL_DNU = 8;',
-    proc: 'rozhodnutí J. V.: jednou týdně' },
   { nazev: '#151 N6: hlídka kopie už po 14 dnech', soubor: '../src/uloziste.js',
     hledej: '  const stara = dnu > ULO_KOPIE_DISK_HLIDKA_DNU;',
     nahrad: '  const stara = dnu >= ULO_KOPIE_DISK_HLIDKA_DNU;',
     proc: 'rozhodnutí J. V.: starší než 14 dní' },
-  { nazev: '#151 N6: kopie až po víc než 7 dnech', soubor: '../src/uloziste.js',
-    hledej: '  return { dnu, potreba: dnu >= ULO_KOPIE_DISK_INTERVAL_DNU, stara,',
-    nahrad: '  return { dnu, potreba: dnu > ULO_KOPIE_DISK_INTERVAL_DNU, stara,',
-    proc: 'kopie by se dělala po 8 dnech' },
   { nazev: '#151 N6: jméno souboru kopie bez kontroly dne [#552]', soubor: '../src/uloziste.js',
     hledej: '  const d = /^\\d{4}-\\d{2}-\\d{2}$/.test(String(den || \'\')) ? String(den) : cas.den;',
     nahrad: '  const d = String(den);',
