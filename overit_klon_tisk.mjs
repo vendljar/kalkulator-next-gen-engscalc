@@ -330,7 +330,7 @@ const prepoctiKlon = () => page.evaluate(() => { const v = aktivniVarianta(ZAK);
   syncVarianta(); render(); return r.zmen; });
 /* Stejné pravidlo jako server: migrace (importZakazka) + zamekDataPorovnani. */
 const migrovanaV1 = (z) => { const m = globalThis.importZakazka(JSON.parse(JSON.stringify(z))); return globalThis.zamekDataPorovnani(m.varianty[0].data, m.varianty[0]); };
-const klonCenik = async (cislo, uprav, popis, sPrepoctem = true) => {
+const klonCenik = async (cislo, uprav, popis, sPrepoctem = true, jenUlozit = false) => {
   const s = await odeslana(cislo);
   await cekej(); await dlg();
   const stara = zestarni(s, uprav);
@@ -339,6 +339,17 @@ const klonCenik = async (cislo, uprav, popis, sPrepoctem = true) => {
   await page.evaluate(() => { window.__klonAno = true; zamekKlonUI(ZAK.varianty[0].id); });
   await cekej(); await dlg();
   if (sPrepoctem) { await prepoctiKlon(); await cekej(); await dlg(); }
+  if (jenUlozit) {
+    /* Ruční uložení klonu (chyba bránila KAŽDÉMU uložení zakázky, nejen tisku). */
+    await page.evaluate(() => { aktivniVarianta(ZAK).data.ock.zadani.zdvih = 9.5; syncVarianta(); render(); });
+    const z = await page.evaluate(async () => { await onlineUloz(); await (ONLINE_STAV.ukladaBeh || Promise.resolve());
+      return String(ONLINE_STAV.hlaska || ''); });
+    await cekej(); await dlg();
+    test('#555b ' + popis + ': uložení klonu projde (bez „změnila by se data uzamčené")', !/změnila by se data|Neuloženo/.test(z), z.slice(-260));
+    const sv = await naServeru(s);
+    test('#555b ' + popis + ': klon uložen na serveru', sv.varianty.length === 2 && sv.varianty[1].data.ock.zadani.zdvih === 9.5,
+      sv.varianty.length);
+  } else {
   await tiskniKlon();
   const d = await dlg();
   test('#555b ' + popis + ': tisk klonu bez dialogu „Odeslaná nabídka není uložená"', !neulozena(d).length,
@@ -346,6 +357,8 @@ const klonCenik = async (cislo, uprav, popis, sPrepoctem = true) => {
   const sv = await naServeru(s);
   test('#555b ' + popis + ': klon uložen a zamčený na serveru', sv.varianty.length === 2 && !!(sv.varianty[1].zamek || {}).zamceno,
     sv.varianty.map(v => !!(v.zamek && v.zamek.zamceno)));
+  }
+  const sv = await naServeru(s);
   test('#555b ' + popis + ': odeslaná varianta na serveru věcně beze změny (po téže migraci jako server)',
     migrovanaV1(sv) === migrovanaV1(stara));
   test('#555b ' + popis + ': odeslaná varianta v okně beze změny', !rozdil(v1Okno, await dataV(0)), rozdil(v1Okno, await dataV(0)));
@@ -357,9 +370,10 @@ await klonCenik('8762', (d) => { delete d.cenik.skloBokyNazev; delete d.cenik.ce
 /* Vnořený oddíl (spojovací materiál) — jiné pořadí uvnitř objektu. */
 await klonCenik('8763', (d) => { const sp = d.cenik.spojovaci; const k0 = Object.keys(sp)[0]; delete sp[k0]; delete d.cenik.kurzEurKc; delete d.cenik.atypMontazPct; },
   'chybí klíč vnořeného oddílu');
-/* Zahraniční řada odeslané varianty (bez přepočtu klonu — zkušební zveřejněný
- * ceník nemá zahraniční odchylky ani kurz EUR). */
-await klonCenik('8764', (d) => { d.cenikRada = 'zahr'; ['zamecnikAtypKc', 'atypMontazPct', 'dleNabidky'].forEach(k => delete d.cenik[k]); }, 'zahraniční řada', false);
+/* Zahraniční řada odeslané varianty — zkušební zveřejněný ceník nemá kurz EUR,
+ * zahraniční nabídka se tiskne v EUR: ověřuje se ruční uložení klonu (bez
+ * přepočtu, beze změny ceny). */
+await klonCenik('8764', (d) => { d.cenikRada = 'zahr'; ['zamecnikAtypKc', 'atypMontazPct', 'dleNabidky'].forEach(k => delete d.cenik[k]); }, 'zahraniční řada', false, true);
 /* Bez přepočtu (klon s cenami odeslané varianty) — chybí jen klíče sestavení a ceníku PROJ. */
 await klonCenik('8765', (d) => { delete d.cenik.kurzEurKc; delete d.cenik.dleNabidky;
   const pk = Object.keys(d.proj.cenik).filter(k => typeof d.proj.cenik[k] === 'number').slice(0, 2); pk.forEach(k => delete d.proj.cenik[k]); },
