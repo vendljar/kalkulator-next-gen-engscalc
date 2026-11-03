@@ -1,3 +1,29 @@
+# Předávka — 3. 11. 2026: SF #556 — rozpis objednaných příplatků ve SoD v4 bez číslování, větev `claude/sf-sod-rozpis`
+
+Nad `6e4bf49` (`claude/integrace-16-10`, v3.11.1). **Verze 3.11.2** (koordinace přečísluje). Neslučováno; na ostrém webu
+ani na Disku nic (šablony v4 CZ/EN/DE/FR jen přečteny k rozboru a ověření, nic nezapsáno).
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. oprava v generátoru: numId 0, jc left, hanging 0, odstavec na řádek, bez mezer v bloku | ✅ | `docxRozpisOdstavce` (`src/docxgen.js`), volá `docxVyplnSablonu` |
+| 2. příčina I./II./III. | ✅ | styl `Normlnweb` šablony má `numId 7` (upperRoman); `sodRealV4` mazala jen přímé `numPr` |
+| 2b. návrh opravy výroby šablony | ✅ (jen text) | `podklady/SABLONA_SOD_REALIZACE_V4_21_10.md` §3; `vyrob_sablony.js` beze změny |
+| 3. roadmapa #556, CHANGELOG | ✅ | `roadmapa/roadmap.json` (kontrola OK) |
+
+**Šablonu J. V. znovu nahrávat nemusí** — generátor upraví už nahranou v4 ve všech 4 jazycích (ověřeno na souborech
+z Disku: rozpis bez čísel, vlevo, příplatek na řádek, XML bez vad, render LibreOffice jako podklad).
+
+**Testy:** nový `src/test_sod_rozpis.js` 16/0 (na 6e4bf49 0/1, s vypnutým voláním 6/10); `src/test_sod_real_v4.js` 20/0
+(kontrola „seznam v jednom odstavci se `<w:br/>`“ záměrně změněna); `test_sod.js` 60/0. Mutace jádra „#556“ **9 z 9
+chycených** (`--kontrola` 629 OK). Kolo `--bez-mutaci` **VŠE ZELENÉ** (sady 368 / 0 / 7 přeskočeno — firemní podklady;
+hodiny +400 dní 297 / 0 / 1; statické 5 z 5; 23 min). Celé mutace nepouštěny.
+
+**Pozn. k pushi:** nová větev nad SHA bez místních vzdálených refů → pre-push hlásil staré nálezy z cizích commitů
+(sdílecí odkazy v kokpitu / PREDAVKA_KOORDINACE). Stačí `git fetch origin claude/integrace-16-10` (hook pak bere
+historii za veřejnou); `--no-verify` nepoužito.
+
+---
+
 # Předávka — 3. 11. 2026: DK #554 — samočinná kopie zálohy na Disk každý den, větev `claude/dk-kopie-denne`
 
 Nad `1bf1a3a` (integrace v2.11.9). **Verze 3.11.1** (koordinace přečísluje). Neslučováno; na ostrém webu ani na Disku nic.
