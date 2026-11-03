@@ -15,7 +15,11 @@ ani testovacím webu nic. Rozhodnutí J. V. 3. 11. 2026: „Ano, jen data:image�
 podpis. Důvod: stará zakázka (i zamčená) s fotkou z odkazu se musí dát uložit. Nahrávání: GIF a SVG se odmítnou
 hláškou už při nahrání (dřív by se uložily a server by je teď stejně zahodil); PNG/JPEG/WEBP a strop 2 MB beze změny.
 
-**Testy:** @@TESTY@@
+**Testy:** `src/test_sec_m16_foto.js` 59/0 (na 198ed4c 44 FAIL), `netlify/test_sec_m16.mjs` 44/0 (na 198ed4c 25 FAIL).
+Mutace „#557 SEC-M16“: jádro **4 z 4**, server **7 z 7** chycených (`--kontrola` 641 / 1223 OK). Kolo `--bez-mutaci`
+**VŠE ZELENÉ** (sady 373 / 0 / 7 přeskočeno — firemní podklady; hodiny +400 dní 301 / 0 / 1; statické 5 z 5; 30 min).
+Celé mutace nepouštěny. Pozn.: v čerstvém kontejneru se playwright z kořene repa nenačte (ESM nevidí NODE_PATH) —
+pomůže `mkdir -p node_modules && ln -s /opt/node-tools/node_modules/playwright{,-core} node_modules/` (jinak 52 sad přeskočeno).
 
 **Otevřené body:** fotky s webovou adresou v uložených zakázkách zmizí při prvním otevření/uložení (obchodník je musí
 nahrát znovu ze souboru) — kolik takových zakázek je v databázi, nevím (do živých webů se nepřihlašuji).

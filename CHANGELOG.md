@@ -27,8 +27,9 @@ přečíslovat. Na ostrém ani testovacím webu nic.
 - **Klient:** náhled v kartě, tisk HTML i Word fotku vykreslí jen po kontrole. Nahrání souborem a Ctrl+V beze změny,
   jen GIF a SVG odmítne hláškou; strop 2 MB beze změny.
 - **Testy:** `src/test_sec_m16_foto.js` 59/0 (na 198ed4c 44 FAIL), `netlify/test_sec_m16.mjs` 44/0 (na 198ed4c 25 FAIL).
-  Mutace „#557 SEC-M16“ jádro **4 z 4** chycených (`--kontrola` 641 OK), server @@SERVER@@ (`--kontrola` 1223 OK).
-  Kolo `--bez-mutaci` @@KOLO@@.
+  Mutace „#557 SEC-M16“ jádro **4 z 4** chycených (`--kontrola` 641 OK), server **7 z 7** (`--kontrola` 1223 OK).
+  Kolo `--bez-mutaci` **VŠE ZELENÉ** (sady 373 / 0 / 7 přeskočeno — firemní podklady; hodiny +400 dní 301 / 0 / 1;
+  statické 5 z 5; 30 min).
 - `BEZPECNOST_MEZE.md` (SEC-M16 opraveno, mez: fotku s odkazem nahrát znovu), audit `podklady/SEC_AUDIT_MAIN_28_10.md`
   (SEC-M16 opraveno, otázka 4 rozhodnuta), roadmapa #557.
 
