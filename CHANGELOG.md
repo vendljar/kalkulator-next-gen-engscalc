@@ -53,6 +53,8 @@ koordinace přečíslovat.
   obchodníkem) — **na `198ed4c` sada selže** (funkce neexistuje). Řádek webhooku v matici práv
   (`netlify/test_prava.mjs` 962/0) a statická kontrola „klíč dřív než tělo, Pipedrive a databáze“;
   `netlify/test_zalohy.mjs` 165/0 (nové úložiště na seznamu výjimek s důvodem).
+  Mutace „#553“ 20 z 20 chycených. Kolo `--bez-mutaci` **VŠE ZELENÉ** (sady 372 / 0 / 7 přeskočeno; hodiny +400 dní
+  300 / 0 / 1; statické 5 z 5; 29 min 41 s).
 
 ---
 

@@ -33,7 +33,9 @@ hodnotu) — ponechaná pole vypíše v odpovědi jen názvem.
 funkce neexistuje; napsáno v commitu). Matice práv `netlify/test_prava.mjs` **962/0** (nový řádek webhooku:
 401 všem rolím, i administrátorovi; statická kontrola „klíč se ověří dřív než tělo, Pipedrive a databáze“).
 `netlify/test_zalohy.mjs` **165/0** (nové úložiště `pd_webhook` na seznamu výjimek s důvodem).
-Mutace „#553“ (20): **viz commit** — `--kontrola` 1236 OK. Kolo `--bez-mutaci`: viz commit.
+Mutace „#553“: **20 z 20 chycených** (`--kontrola` 1236 OK; „zamčená varianta dostane údaje z dealu“ byla nejdřív nechycená → do sady přidán těsný případ). Kolo `--bez-mutaci` nad `7e03880`: **VŠE ZELENÉ** (sady 372 / 0 / 7 přeskočeno — firemní podklady a test.js; hodiny +400 dní 300 / 0 / 1; statické 5 z 5; 29 min 41 s). První běh kola chytil `test_dokumentace_kompletni.js` před doplněním webhooku do `manual/kompletni/provoz.json` (4 FAIL), po opravě zelené. Celé mutace neopakovány.
+
+**Prostředí:** ESM sady `overit_*.mjs` v cloudovém kontejneru nenajdou Playwright z `/opt/node-tools` — před kolem `mkdir -p node_modules && ln -sfn /opt/node-tools/node_modules/playwright node_modules/playwright && ln -sfn /opt/node-tools/node_modules/playwright-core node_modules/playwright-core` (jinak se část sad přeskočí). Navržen samostatný úkol na opravu v `spust_testy.sh`.
 
 **Co musí nastavit J. V.** (celý seznam v `podklady/PIPEDRIVE_WEBHOOK_553.md`, část 5):
 1. vymyslet klíč aspoň 32 znaků (`openssl rand -base64 36`) — do repozitáře ani do chatu nepatří;
