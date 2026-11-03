@@ -34,6 +34,8 @@ webu nic. Verzi může koordinace přečíslovat.
   nad 198ed4c 4 FAIL — přesně hláška J. V.), `overit_klon_tisk.mjs` 5) (zestárlá odeslaná varianta v úložišti → klon
   → přepočet klonu → tisk; text, vnořený oddíl, zahraniční řada, PROJ bez přepočtu; hlídač zápisů nad prací s ceníkem
   klonu — přepočet, řada, obnovení ceníku, ruční cena). Test #555 „přibylý klíč“ záměrně přepsán na novou poznámku.
+  Výsledky: 30/0, 13/0, harness 50/0; mutace „#555b“ jádro **5 z 5**, server **6 z 6** (`--kontrola` 642 / 1222 OK);
+  kolo `--bez-mutaci` VŠE ZELENÉ (373 / 0 / 7 přeskočeno, hodiny 301 / 0 / 1, statické 5 z 5).
 
 ## v3.11.3 — ZO #555: tisk klonu odeslané nabídky („změnila by se data uzamčené nabídky“), větev claude/zo-klon-tisk
 

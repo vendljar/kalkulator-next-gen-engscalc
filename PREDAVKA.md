@@ -38,9 +38,11 @@ Bez opravy (dnešní test v3.11.3) se tahle zakázka uložit nedá vůbec — an
 
 **Testy:** `src/test_555b_klon_cenik.js` 30/0 (nad 198ed4c padá: 6 FAIL a výjimka), `netlify/test_555b_klon_cenik.mjs`
 13/0 (nad 198ed4c 4 FAIL — mj. tělo z prohlížeče dostane přesně „… první rozdíl v datech: cenik“),
-`overit_klon_tisk.mjs` VYSLEDEK_KLON, `src/test_555_klon_tisk.js` 18/0 (test „přibylý klíč“ záměrně přepsán na poznámku),
-`netlify/test_555_klon_tisk.mjs` 13/0. Mutace „#555b“: jádro **5 z 5**, server VYSLEDEK_MUT_SRV (`--kontrola` 642 / 1222 OK).
-Kolo `--bez-mutaci` VYSLEDEK_KOLO.
+`overit_klon_tisk.mjs` **50/0** (nová sekce 5: 22 kontrol; scénáře ověřeny nad 198ed4c průzkumným harnessem — hláška přesně „první rozdíl v datech: cenik“), `src/test_555_klon_tisk.js` 18/0 (test „přibylý klíč“ záměrně přepsán na poznámku),
+`netlify/test_555_klon_tisk.mjs` 13/0. Mutace „#555b“: jádro **5 z 5**, server **6 z 6** (po zesílení testu PROJ; první běh 5 z 6) (`--kontrola` 642 / 1222 OK).
+Kolo `--bez-mutaci` **VŠE ZELENÉ** (sady 373 / 0 / 7 přeskočeno — firemní podklady; hodiny +400 dní 301 / 0 / 1; statické 5 z 5; 29 min). Celé mutace nepouštěny.
+
+**Pozn. k prostředí:** ESM harnessy potřebují místní `node_modules/playwright` — v čerstvém kontejneru stačí odkaz na globální (`mkdir -p node_modules && ln -s $(npm root -g)/playwright node_modules/playwright`), jinak kolo „zeleně“ přeskočí 52 prohlížečových sad.
 
 **Otevřené:** (a) ostrý v27.10.6 má tentýž kód — zakázky s variantou odeslanou starší verzí nejdou uložit, dokud se
 oprava nenasadí; (b) mutace vzoru importu (`src/zakazka.js`) jsou v serverovém běhu (`netlify/mutace.mjs`), protože
