@@ -1,3 +1,20 @@
+# Předávka — 3. 11. 2026: K39 — opravy nálezů kol 38 a 39, větev `claude/k39-opravy`
+
+Nad `198ed4c` (`origin/test`, v3.11.3 = DK #554 + SF #556 + ZO #555). **Verze 3.11.4** (koordinace přečísluje).
+Neslučováno; na ostrém ani testovacím webu nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| K39-N1 lešení hlavy u staré zakázky po přepnutí typu tam a zpět | ✅ | `typSachtyPrepni` + `leseniHlavaRucneZjisti` (`src/ui/kalk_ock.js`), `zobrazeniLeseniHlavaVychozi` / `…JeVychozi` (`src/zobrazeni.js`) |
+| K39-N2 harness šablony PROJ (filtr #367) | ✅ | `overit_nabidka_proj_word.mjs`, nový `overit_k39_sablony_filtr.mjs` |
+| roadmapa #557, CHANGELOG v3.11.4 | ✅ | |
+| testovací kolo + mutace po částech | ⏳ | viz níž |
+
+**Testy:** `src/test_k39_leseni_rucne.js` 36/0 (pojistka: nad 198ed4c padá, s vypnutou kontrolou 6 FAIL),
+`overit_k39_sablony_filtr.mjs` 9/0 (s rozbitým filtrem 2 FAIL). Mutace „K39-N1“ 4 z 4, „#546“ 7 z 7 (3 přecíleny).
+
+**Nedělat bez J. V.:** K37-N6, K37-I4, K38-I2 (ceníky v10 / v37 — data), K39-I1 / K38-I1 (TEST sada K28/K29/K36 — data).
+
 # Předávka — 3. 11. 2026: ZO #555 — tisk klonu odeslané nabídky, větev `claude/zo-klon-tisk`
 
 Nad `6e4bf49` (`claude/integrace-16-10`, v3.11.1). **Verze 3.11.2** (koordinace přečísluje). Neslučováno; na ostrém

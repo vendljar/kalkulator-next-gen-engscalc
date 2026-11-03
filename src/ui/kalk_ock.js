@@ -81,15 +81,33 @@ function zdvihVarovani() {
  * i v nabídce příplatků, exteriér → interiér vrátí výchozí stav interiéru
  * (sloupec Výchozí). Ruční volbu obchodníka (`Z.leseniHlavaRucne`) nemění.
  * Pravidlo je v jádře: zobrazeniLeseniHlavaTyp (zobrazeni.js). */
-function leseniHlavaPodleTypu() {
-  if (typeof zobrazeniLeseniHlavaTyp !== 'function') return;
-  zobrazeniLeseniHlavaTyp((typeof NAST !== 'undefined' && NAST) ? NAST.zobrazeni : null, Z);
+/* K39-N1 (kolo 39): zakázka uložená před v2.11.3 nemá `leseniHlavaRucne`,
+ * i když lešení hlavy obchodník přenastavil. Před změnou typu se proto zjistí
+ * (leseniHlavaRucneZjisti), zda stav odpovídá výchozímu stavu PŮVODNÍHO typu;
+ * odchylka = ruční volba → příznak se dopíše a pravidlo se nepustí.
+ * Vrací text pro hlášku, když pravidlo stav změnilo, jinak ''. */
+function leseniHlavaRucneZjisti(typPred) {
+  if (Z.leseniHlavaRucne || typeof zobrazeniLeseniHlavaJeVychozi !== 'function') return !!Z.leseniHlavaRucne;
+  return !zobrazeniLeseniHlavaJeVychozi((typeof NAST !== 'undefined' && NAST) ? NAST.zobrazeni : null, Z, typPred);
+}
+function leseniHlavaPodleTypu(rucne) {
+  if (typeof zobrazeniLeseniHlavaTyp !== 'function') return '';
+  if (rucne) { Z.leseniHlavaRucne = true; return ''; }
+  if (!zobrazeniLeseniHlavaTyp((typeof NAST !== 'undefined' && NAST) ? NAST.zobrazeni : null, Z)) return '';
+  const zakl = !!(Z.volitelne && Z.volitelne.leseniHlava);
+  const nab = !(Array.isArray(Z.priplatkyVynechat) && Z.priplatkyVynechat.includes('leseniHlava'));
+  const stav = zakl ? 'zařazeno do základní ceny'
+    : nab ? 'mimo základní cenu, nabízeno jako příplatek' : 'mimo základní cenu i nabídku příplatků';
+  return 'Lešení pro dokončení hlavy šachty: ' + stav + ' podle typu šachty (mění cenu).';
 }
 
 function typSachtyPrepni(typ) {
   const t = (typ === 'interiérová') ? 'interiérová' : 'exteriérová';
   const puvodni = JSON.stringify(Z.profily);
   const typPred = Z.typSachty;
+  /* K39-N1: ruční volbu lešení hlavy zjistit ještě nad PŮVODNÍM typem. */
+  const lesRucne = (typPred !== t) && typeof leseniHlavaRucneZjisti === 'function'
+    && leseniHlavaRucneZjisti(typPred);
   set('Z.typSachty', t);
   /* ZAMČENÁ VARIANTA SE NEMĚNÍ ANI V PROHLÍŽEČI (#555, hlášení J. V.
    * 3. 11. 2026). `set` u odeslané nabídky změnu odmítne a jen NABÍDNE klon
@@ -101,13 +119,19 @@ function typSachtyPrepni(typ) {
   if (Z.typSachty !== t) return;
   /* #546: lešení hlavy šachty podle typu — jen když `set` typ opravdu změnil
    * (zamčenou variantu nepustí, cena odeslané nabídky se nehne). */
-  if (Z.typSachty === t && typPred !== t) leseniHlavaPodleTypu();
+  const zpravy = [];
+  if (Z.typSachty === t && typPred !== t) {
+    const lesZprava = leseniHlavaPodleTypu(lesRucne);
+    if (lesZprava) zpravy.push(lesZprava);
+  }
   if (typeof PROFILY_VYCHOZI !== 'undefined' && PROFILY_VYCHOZI[t]) {
     Z.profily = JSON.parse(JSON.stringify(PROFILY_VYCHOZI[t]));
-    if (JSON.stringify(Z.profily) !== puvodni && typeof progZprava === 'function')
-      progZprava('Typ šachty „' + t + '": dosazeny výchozí dimenze profilů podle typu. '
-        + 'Pokud jste si je upravil, nastavte je znovu.', 'varovani');
+    if (JSON.stringify(Z.profily) !== puvodni)
+      zpravy.unshift('Typ šachty „' + t + '": dosazeny výchozí dimenze profilů podle typu. '
+        + 'Pokud jste si je upravil, nastavte je znovu.');
   }
+  /* progZprava drží jen jednu hlášku — obě změny ceny se řeknou najednou. */
+  if (zpravy.length && typeof progZprava === 'function') progZprava(zpravy.join(' '), 'varovani');
   /* DÍRA V AUTOMATU ATYP (nález V36, 14. 9. 2026). `set` výš pustil kontrolu
    * standardu ještě nad STARÝMI profily; nové se dosazují až tady, přímo do
    * zadání, takže o nich automat nevěděl. Kdo přepnul typ šachty ze stavu,

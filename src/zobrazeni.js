@@ -807,13 +807,35 @@ function zobrazeniVychoziAplikuj(mat, zadaniOck, zadaniProj) {
  * Volá se jen na ČERSTVÉ zadání (zobrazeniVychoziAplikuj — nová zakázka)
  * a při přepnutí typu šachty (typSachtyPrepni). Při otevření uložené zakázky
  * NE: starou exteriérovou variantu by to tiše zlevnilo. Vrací počet změn. */
-function zobrazeniLeseniHlavaTyp(mat, zadaniOck) {
-  if (!zadaniOck || typeof zadaniOck !== 'object' || zadaniOck.leseniHlavaRucne) return 0;
-  const ext = zadaniOck.typSachty === 'exteriérová';   // jako engine.js
+/* Výchozí stav lešení hlavy pro typ šachty (K39-N1, kolo 39): čistá funkce,
+ * kterou sdílí pravidlo níž i kontrola ruční volby v typSachtyPrepni. */
+function zobrazeniLeseniHlavaVychozi(mat, typ) {
+  const ext = typ === 'exteriérová';   // jako engine.js
   const DZ = (typeof DEFAULT_ZADANI !== 'undefined' && DEFAULT_ZADANI) || {};
   const zakladKod = !!((DZ.volitelne || {}).leseniHlava);
-  const vZaklade = ext ? false : zobrazeniPolozkaVychozi(mat, 'ock.leseniHlava', zakladKod);
-  const vNabidce = ext ? false : zobrazeniPolozkaVychozi(mat, ZOBRAZENI_PRIPLATEK + 'leseniHlava', true);
+  return {
+    vZaklade: ext ? false : zobrazeniPolozkaVychozi(mat, 'ock.leseniHlava', zakladKod),
+    vNabidce: ext ? false : zobrazeniPolozkaVychozi(mat, ZOBRAZENI_PRIPLATEK + 'leseniHlava', true),
+  };
+}
+
+/* Odpovídá stav lešení hlavy v zadání výchozímu stavu pro daný typ? Porovnává
+ * obojí: zaškrtnutí v základní ceně i vynechání z nabídky příplatků (K39-N1).
+ * Zakázka uložená před v2.11.3 nemá příznak `leseniHlavaRucne`, i když ji
+ * obchodník přenastavil — odchylka od výchozího stavu je pak jediná stopa
+ * po ruční volbě. */
+function zobrazeniLeseniHlavaJeVychozi(mat, zadaniOck, typ) {
+  if (!zadaniOck || typeof zadaniOck !== 'object') return true;
+  const v = zobrazeniLeseniHlavaVychozi(mat, typ);
+  const vZaklade = !!((zadaniOck.volitelne || {}).leseniHlava);
+  const vyn = Array.isArray(zadaniOck.priplatkyVynechat) ? zadaniOck.priplatkyVynechat : [];
+  const vNabidce = vyn.indexOf('leseniHlava') < 0;
+  return vZaklade === v.vZaklade && vNabidce === v.vNabidce;
+}
+
+function zobrazeniLeseniHlavaTyp(mat, zadaniOck) {
+  if (!zadaniOck || typeof zadaniOck !== 'object' || zadaniOck.leseniHlavaRucne) return 0;
+  const { vZaklade, vNabidce } = zobrazeniLeseniHlavaVychozi(mat, zadaniOck.typSachty);
   let zmen = 0;
   if (!zadaniOck.volitelne || typeof zadaniOck.volitelne !== 'object') zadaniOck.volitelne = {};
   if (!!zadaniOck.volitelne.leseniHlava !== vZaklade) { zadaniOck.volitelne.leseniHlava = vZaklade; zmen++; }
@@ -887,5 +909,5 @@ if (typeof module !== 'undefined')
     ZOBRAZENI_POCITAT, ZOBRAZENI_PRIPLATEK,
     zobrazeniPolozkaVychozi, zobrazeniPolozkaVychoziNastav,
     zobrazeniProjKlic, zobrazeniVychoziAplikuj, zobrazeniVychoziNedotcene,
-    zobrazeniLeseniHlavaTyp,
+    zobrazeniLeseniHlavaTyp, zobrazeniLeseniHlavaVychozi, zobrazeniLeseniHlavaJeVychozi,
   };
