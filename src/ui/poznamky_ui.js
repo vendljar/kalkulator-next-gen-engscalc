@@ -131,20 +131,45 @@ function poznamkyKarta(kde) {
 
 /* Jedno textové pole zápisníku — karta v Kalkulaci i krycí list sdílejí
  * totéž `ZAK.poznamkyText`. Id musí být v dokumentu jedinečné (všechny
- * stránky jsou v DOM naráz). Kdo zakázku jen čte, má pole readonly. */
+ * stránky jsou v DOM naráz). Kdo zakázku jen čte, má pole readonly.
+ *
+ * VELIKOST (J. V. 4. 11. 2026): „ať má alespoň pět řádků a v případě
+ * potřeby se zvětší, pokud by se do nich text nevešel". Pole roste s obsahem
+ * a nemá vnitřní posuvník (třída .pozn-roste v app_template.html). Výška se
+ * nastaví podle obsahu při psaní i po každém překreslení
+ * (poznamkyPoleVyskaVse z render()); `rows` je minimum a odhad podle textu,
+ * aby pole nebylo oříznuté ani před prvním přepočtem. */
+const POZN_MIN_RADKU = 5;
+function poznamkyRadkuOdhad(text, min) {
+  const r = String(text || '').split('\n').reduce((n, l) => n + Math.max(1, Math.ceil(l.length / 90)), 0);
+  return Math.max(min || POZN_MIN_RADKU, r + 1);
+}
+function poznamkyPoleVyska(el) {
+  if (!el || !el.offsetParent) return;          // skrytá stránka: přepočte se po přepnutí (render)
+  el.style.height = 'auto';
+  el.style.height = Math.max(el.scrollHeight + 2, el.clientHeight) + 'px';
+}
+function poznamkyPoleVyskaVse() {
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll('textarea.pozn-roste').forEach(poznamkyPoleVyska);
+}
 function poznamkyTextarea(id, radku) {
   const zak = poznamkyZak();
   if (!zak) return '';
   const smi = poznamkyPsatSmi();
   const ro = smi ? '' : ' readonly title="Jen ke čtení — poznámky smí upravovat ten, kdo smí upravovat zakázku."';
-  return `<textarea id="${id}" class="pozn-pole" rows="${radku || 6}" style="width:100%;text-align:left"${ro}
+  const min = Math.max(POZN_MIN_RADKU, radku || 0);
+  const text = poznamkyPoleText(zak);
+  return `<textarea id="${id}" class="pozn-pole pozn-roste" rows="${poznamkyRadkuOdhad(text, min)}"
+      style="width:100%;text-align:left"${ro}
       placeholder="Např.: Sleva 6 % dohodnutá s p. Novákem – tři šachty v jedné budově, montáž v jednom nájezdu."
-      oninput="poznamkyPoleSet(this.value)"
-      onchange="poznamkyPoleHotovo(this.value)">${esc(poznamkyPoleText(zak))}</textarea>`;
+      oninput="poznamkyPoleSet(this.value);poznamkyPoleVyska(this)"
+      onchange="poznamkyPoleHotovo(this.value)">${esc(text)}</textarea>`;
 }
 
-/* Krycí list OCK / PROJ: první sekce, nadpis stejný jako karta v Kalkulaci
- * (IK, J. V. 4. 11. 2026). Tiskne se do obou verzí, prázdné pole ne. */
+/* Krycí list OCK / PROJ: sekce mezi „Základní údaje“ a „Dodavatel (naše
+ * firma)“, nadpis stejný jako karta v Kalkulaci (IK, J. V. 4. 11. 2026).
+ * Tiskne se do obou verzí, prázdné pole ne. */
 function poznamkyKryciBlok(kde) {
   const zak = poznamkyZak();
   if (!zak) return '';
@@ -155,6 +180,6 @@ function poznamkyKryciBlok(kde) {
     <div class="note">Totéž pole jako karta v Kalkulaci — co napíšete tady, je vidět tam a naopak.
       Tiskne se do obou verzí krycího listu (prázdné ne), nikam jinam. Doplňovat jde vždy, i po odeslání nabídky,
       po SoD i po Prodáno.</div>
-    ${poznamkyTextarea('poznText-kl-' + k, 5)}
+    ${poznamkyTextarea('poznText-kl-' + k, POZN_MIN_RADKU)}
   </div>`;
 }

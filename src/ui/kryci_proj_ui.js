@@ -151,7 +151,9 @@ function renderKryciProj() {
     }).join('');
     const plan = (s.sekce === 'Platební podmínky' && typeof planKlpKarta === 'function') ? planKlpKarta(c) : '';
     const platby = (/^Smlouva o dílo — splátky/.test(s.sekce) && typeof planKlpPlatbyKarta === 'function') ? planKlpPlatbyKarta(c) : '';
-    return `<h3>${s.sekce}</h3>${platby}${rows}${plan}`;
+    /* IK: interní poznámky hned za Základními údaji (J. V. 4. 11. 2026). */
+    const ik = (s.sekce === KRYCI_IK_ZA_SEKCI && typeof poznamkyKryciBlok === 'function') ? poznamkyKryciBlok('proj') : '';
+    return `<h3>${s.sekce}</h3>${platby}${rows}${plan}${ik}`;
   }).join('');
 
   el.innerHTML = `<div class="kl-doc">
@@ -163,7 +165,6 @@ function renderKryciProj() {
     ukazují, do které verze výstupu pole patří.</div>
     ${typeof zamekKryciPoznamka === 'function' ? zamekKryciPoznamka((typeof KRYCI_PROJ_NABIDKA_SEKCE !== 'undefined' ? KRYCI_PROJ_NABIDKA_SEKCE.concat(['plán plateb']) : [])) : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
-    ${typeof poznamkyKryciBlok === 'function' ? poznamkyKryciBlok('proj') : ''}
     ${sekceHtml}
     ${typeof kryciHodinyBlok === 'function' ? kryciHodinyBlok('proj') : ''}
     ${kryciProjTiskBlok(zab)}

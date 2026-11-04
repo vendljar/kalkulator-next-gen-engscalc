@@ -1,10 +1,13 @@
 /* Ověření v prohlížeči: IK — interní poznámky k zakázce na krycím listu
  * (rozhodnutí J. V. 4. 11. 2026, roadmapa #560).
- *   – krycí list OCK i PROJ: první sekce „Interní poznámky k zakázce“ nad
- *     „Základní údaje“, stejný nadpis jako karta v Kalkulaci,
+ *   – krycí list OCK i PROJ: sekce „Interní poznámky k zakázce“ mezi
+ *     „Základní údaje“ a „Dodavatel (naše firma)“ (změna zadání J. V.
+ *     4. 11. odpoledne), stejný nadpis jako karta v Kalkulaci,
+ *   – pole má aspoň 5 řádků a roste s obsahem: dlouhý text (20 řádků) není
+ *     na obrazovce oříznutý (bez vnitřního posuvníku) a v tisku je celý,
  *   – sdílení oběma směry: zápis v Kalkulaci je na krycím listu a naopak
  *     (jedno ZAK.poznamkyText, všechna čtyři textová pole),
- *   – tisk PDF BO i Tech obou listů: první sekce s textem; Word obou verzí;
+ *   – tisk PDF BO i Tech obou listů: sekce s textem na svém místě; Word obou verzí;
  *     prázdné pole se netiskne,
  *   – popisek karty v Kalkulaci nelže („netisknou se do nabídky…“),
  *   – po odeslané nabídce (zámek + režim čtení) jde pole dál doplnit,
@@ -59,12 +62,16 @@ for (const [tab, page, k] of [['kryci', 'page-kryci', 'ock'], ['kryciproj', 'pag
   const r = await p.evaluate(([t, pg, k]) => {
     prepniTab(t); render();
     const h3 = [...document.querySelectorAll('#' + pg + ' .kl-doc h3')].map(x => x.textContent.replace(/\s+/g, ' ').trim());
-    return { h3: h3.slice(0, 2), pole: !!document.getElementById('poznText-kl-' + k),
-      vBloku: !!document.querySelector('#klIk-' + k + ' textarea') };
+    const ta = document.getElementById('poznText-kl-' + k);
+    const radek = ta ? parseFloat(getComputedStyle(ta).lineHeight) : 0;
+    return { h3: h3.slice(0, 3), pole: !!ta, vBloku: !!document.querySelector('#klIk-' + k + ' textarea'),
+      radku: ta ? ta.clientHeight / radek : 0 };
   }, [tab, page, k]);
-  zkus(`${tab}: první sekce je „${NADPIS}“`, /^Interní poznámky k zakázce\b/.test(r.h3[0] || ''), r);
-  zkus(`${tab}: hned pod ní „Základní údaje“`, /^Základní údaje/.test(r.h3[1] || ''), r);
+  zkus(`${tab}: první sekce zůstává „Základní údaje“`, /^Základní údaje/.test(r.h3[0] || ''), r);
+  zkus(`${tab}: pod ní „${NADPIS}“`, /^Interní poznámky k zakázce\b/.test(r.h3[1] || ''), r);
+  zkus(`${tab}: a pak „Dodavatel (naše firma)“`, /^Dodavatel \(naše firma\)/.test(r.h3[2] || ''), r);
   zkus(`${tab}: v sekci je textové pole`, r.pole && r.vBloku, r);
+  zkus(`${tab}: prázdné pole má aspoň 5 řádků`, r.radku >= 4.9, r.radku);
 }
 
 /* ---------- sdílení oběma směry ---------- */
@@ -100,9 +107,11 @@ const nahled = async (tab, verze) => {
   await okno.waitForLoadState();
   const r = await okno.evaluate(() => {
     const h2 = [...document.querySelectorAll('#dok h2')];
-    const prvni = h2[0];
-    return { h2: h2.slice(0, 2).map(x => x.textContent.trim()),
-      text: prvni && prvni.nextElementSibling ? prvni.nextElementSibling.innerText : '' };
+    const ik = h2.find(x => x.textContent.trim() === 'Interní poznámky k zakázce');
+    const td = ik && ik.nextElementSibling ? ik.nextElementSibling.querySelector('td') : null;
+    return { h2: h2.slice(0, 3).map(x => x.textContent.trim()),
+      text: ik && ik.nextElementSibling ? ik.nextElementSibling.innerText : '',
+      orez: td ? (td.scrollHeight > td.clientHeight + 1 || getComputedStyle(td).overflow === 'hidden') : null };
   });
   await okno.close();
   return r;
@@ -110,8 +119,8 @@ const nahled = async (tab, verze) => {
 console.log('\nTisk PDF');
 for (const tab of ['kryci', 'kryciproj']) for (const verze of ['bo', 'techdata']) {
   const r = await nahled(tab, verze);
-  zkus(`${tab} ${verze}: první sekce náhledu jsou interní poznámky, pod nimi Základní údaje`,
-    r.h2[0] === NADPIS && r.h2[1] === 'Základní údaje', r);
+  zkus(`${tab} ${verze}: v náhledu Základní údaje → interní poznámky → Dodavatel`,
+    r.h2[0] === 'Základní údaje' && r.h2[1] === NADPIS && r.h2[2] === 'Dodavatel (naše firma)', r);
   zkus(`${tab} ${verze}: text i se zalomením řádku`, r.text.trim() === TEXT, r.text);
 }
 
@@ -129,8 +138,8 @@ const docXml = async (typ) => {
 };
 for (const typ of ['kryci_bo', 'kryci_techdata', 'kryciproj_bo', 'kryciproj_techdata']) {
   const xml = await docXml(typ);
-  const iP = xml.indexOf(NADPIS), iZ = xml.indexOf('>Základní údaje<');
-  zkus(`${typ}: Word nese sekci nad Základními údaji`, iP > 0 && iZ > iP, [iP, iZ]);
+  const iP = xml.indexOf(NADPIS), iZ = xml.indexOf('>Základní údaje<'), iD = xml.indexOf('>Dodavatel (naše firma)<');
+  zkus(`${typ}: Word nese sekci mezi Základními údaji a Dodavatelem`, iZ > 0 && iP > iZ && iD > iP, [iZ, iP, iD]);
   zkus(`${typ}: Word nese text`, xml.indexOf('IK-4711') > iP);
 }
 
@@ -139,12 +148,39 @@ console.log('\nPrázdné pole');
 await p.evaluate(() => { poznamkyPoleHotovo('   '); });
 for (const tab of ['kryci', 'kryciproj']) for (const verze of ['bo', 'techdata']) {
   const r = await nahled(tab, verze);
-  zkus(`${tab} ${verze}: prázdné pole se do náhledu netiskne`, r.h2[0] === 'Základní údaje', r);
+  zkus(`${tab} ${verze}: prázdné pole se do náhledu netiskne`, r.h2[0] === 'Základní údaje' && r.h2[1] === 'Dodavatel (naše firma)', r);
 }
 for (const typ of ['kryci_bo', 'kryciproj_techdata'])
   zkus(`${typ}: prázdné pole se do Wordu netiskne`, (await docXml(typ)).indexOf(NADPIS) < 0);
 const naObrazovce = await p.evaluate(() => { prepniTab('kryci'); render(); return !!document.getElementById('poznText-kl-ock'); });
 zkus('na obrazovce sekce zůstává i prázdná (aby šla vyplnit)', naObrazovce);
+
+/* ---------- dlouhý text: obrazovka bez ořezu, tisk celý ---------- */
+console.log('\nDlouhý text (20 řádků)');
+{
+  const DLOUHY = Array.from({ length: 20 }, (_, i) => 'Řádek ' + (i + 1) + ' dlouhé interní poznámky — IK-R' + (i + 1)).join('\n');
+  await p.evaluate((t) => { poznamkyPoleHotovo(t); }, DLOUHY);
+  for (const [tab, id] of [['kryci', 'poznText-kl-ock'], ['kryciproj', 'poznText-kl-proj'], ['kalk', 'poznText-ock']]) {
+    const r = await p.evaluate(([t, id]) => { prepniTab(t); render();
+      const ta = document.getElementById(id);
+      return { sh: ta.scrollHeight, ch: ta.clientHeight, radku: ta.clientHeight / parseFloat(getComputedStyle(ta).lineHeight) }; }, [tab, id]);
+    zkus(`${id}: pole se zvětšilo a text není oříznutý (bez posuvníku)`, r.sh <= r.ch + 1 && r.radku >= 20, r);
+  }
+  /* Psaní pole zvětšuje průběžně (bez překreslení). */
+  const r = await p.evaluate(() => { prepniTab('kryci'); render();
+    const ta = document.getElementById('poznText-kl-ock');
+    ta.value = ta.value + '\nA\nB\nC\nD\nE\nF'; ta.dispatchEvent(new Event('input'));
+    return { sh: ta.scrollHeight, ch: ta.clientHeight }; });
+  zkus('při psaní pole roste s textem', r.sh <= r.ch + 1, r);
+  await p.evaluate((t) => { poznamkyPoleHotovo(t); }, DLOUHY);
+  for (const tab of ['kryci', 'kryciproj']) for (const verze of ['bo', 'techdata']) {
+    const n = await nahled(tab, verze);
+    const vsech = Array.from({ length: 20 }, (_, i) => n.text.includes('IK-R' + (i + 1))).every(Boolean);
+    zkus(`${tab} ${verze}: v tisku je všech 20 řádků, bez ořezu`, vsech && n.text.trim().split('\n').length === 20 && n.orez === false, n.orez);
+  }
+  const xml = await docXml('kryciproj_techdata');
+  zkus('Word: všech 20 řádků', Array.from({ length: 20 }, (_, i) => xml.includes('IK-R' + (i + 1) + '<')).every(Boolean));
+}
 
 /* ---------- nikam jinam (nabídka, Pipedrive) ---------- */
 await p.evaluate((t) => poznamkyPoleHotovo(t), TEXT);

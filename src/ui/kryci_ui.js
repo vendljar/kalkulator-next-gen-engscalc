@@ -255,7 +255,9 @@ function renderKryci() {
         { prefill: pref, type: p.typ, o: p.o, src: p.src, ph: p.ph, dphBind: p.dphBind,
           odvozene: !!p.odvozene && !(c && c.zamceno) });
     }).join('');
-    return `<h3>${s.sekce}</h3>${rows}`;
+    /* IK: interní poznámky hned za Základními údaji (J. V. 4. 11. 2026). */
+    const ik = (s.sekce === KRYCI_IK_ZA_SEKCI && typeof poznamkyKryciBlok === 'function') ? poznamkyKryciBlok('ock') : '';
+    return `<h3>${s.sekce}</h3>${rows}${ik}`;
   }).join('');
 
   el.innerHTML = `<div class="kl-doc">
@@ -265,7 +267,6 @@ function renderKryci() {
     ukazují, do které verze výstupu pole patří.</div>
     ${typeof zamekKryciPoznamka === 'function' ? zamekKryciPoznamka((typeof KRYCI_NABIDKA_SEKCE !== 'undefined' ? KRYCI_NABIDKA_SEKCE : [])) : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
-    ${typeof poznamkyKryciBlok === 'function' ? poznamkyKryciBlok('ock') : ''}
     ${sekceHtml}
     ${kryciHodinyBlok('ock')}
     ${kryciTiskBlok(zab)}

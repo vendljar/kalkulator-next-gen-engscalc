@@ -913,6 +913,10 @@
   .ares-zdroj { margin-top:8px; font-size:11px; opacity:.8; }
   /* #37 – interní zápisník zakázky. Vědomě jiná barva než dokumenty:
      tohle je vnitřní poznámkový blok, ne nic, co jde ven k zákazníkovi. */
+  /* Interní poznámky (IK, J. V. 4. 11. 2026): min. 5 řádků, roste s obsahem
+     (výšku nastaví poznamkyPoleVyska), bez vnitřního posuvníku. */
+  textarea.pozn-roste { min-height:calc(5 * 1.45em + 14px); overflow-y:hidden; resize:vertical; line-height:1.45; }
+  @media print { textarea.pozn-roste { height:auto; overflow:visible; } }
   .pozn-zapis { background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:9px 11px; }
   .pozn-seznam { list-style:none; margin:10px 0 0; padding:0; }
   .pozn-radek { border-top:1px solid var(--line); padding:8px 2px; }

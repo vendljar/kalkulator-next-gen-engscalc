@@ -2,8 +2,9 @@
  * (rozhodnutí J. V. 4. 11. 2026, roadmapa #560).
  *
  * Žádná nová sekce: TOTÉŽ pole jako karta „Interní poznámky k zakázce“
- * v Kalkulaci (ZAK.poznamkyText) se na krycím listu OCK i PROJ ukáže jako
- * první sekce se stejným nadpisem a tiskne se do verze Backoffice i Techdata
+ * v Kalkulaci (ZAK.poznamkyText) se na krycím listu OCK i PROJ ukáže mezi
+ * „Základní údaje“ a „Dodavatel (naše firma)“ (změna zadání J. V. 4. 11.
+ * odpoledne) se stejným nadpisem a tiskne se do verze Backoffice i Techdata
  * (PDF i Word). Prázdné se netiskne. Nikam jinam (CN, SoD, plná moc,
  * specifikace, Pipedrive, controlling). Platí pro zakázku (všechny varianty,
  * OCK i PROJ); doplňovat jde vždy, i po CN, SoD a Prodáno. Píše každý, kdo
@@ -85,29 +86,39 @@ const zakazka = (text) => {
 /* ---------- 2) sdílení: jedno pole, žádná kopie ---------- */
 {
   const z = zakazka('první');
-  const a = K.kryciVystupSekce(z, []);
+  const a = K.kryciVystupSekce(z, [{ sekce: 'Základní údaje', radky: [] }]).slice(1);
   PZ.poznamkyTextNastav(z, 'druhé');           // zápis v Kalkulaci
-  const b = K.kryciVystupSekce(z, []);
+  const b = K.kryciVystupSekce(z, [{ sekce: 'Základní údaje', radky: [] }]).slice(1);
   test('zápis v poli je hned na krycím listu (žádná kopie)', a[0].text === 'první' && b[0].text === 'druhé', [a, b]);
   test('krycí list nic do variant neukládá', z.varianty.every(v => JSON.stringify(v.data).indexOf('druhé') < 0));
   /* Platnost zakázka: všechny varianty a OCK i PROJ čtou totéž. */
   zam.klonujVariantu(z, z.varianty[0].id);
   const v2 = z.varianty[1];
-  test('klon varianty: krycí list druhé varianty nese totéž', K.kryciVystupSekce(z, K.kryciData(z, v2, JEKLY, 'bo').sekce)[0].text === 'druhé');
+  test('klon varianty: krycí list druhé varianty nese totéž', K.kryciVystupSekce(z, K.kryciData(z, v2, JEKLY, 'bo').sekce)[1].text === 'druhé');
   test('…a pole se klonem nezdvojí do variant', z.varianty.every(v => v.poznamkyText === undefined && v.data.poznamkyText === undefined));
 }
 
-/* ---------- 3) první sekce v obou verzích OCK i PROJ, PDF i Word ---------- */
+/* ---------- 3) mezi Základními údaji a Dodavatelem, obě verze OCK i PROJ, PDF i Word ---------- */
+const DLOUHY = Array.from({ length: 20 }, (_, i) => 'Řádek ' + (i + 1) + ' dlouhé interní poznámky — ' + 'x'.repeat(60) + ' IK-R' + (i + 1)).join('\n');
 for (const [list, data, prvni] of [['OCK', K.kryciData, 'Základní údaje'], ['PROJ', KP.kryciProjData, 'Základní údaje']]) {
   for (const verze of ['bo', 'techdata']) {
     const z = zakazka(TEXT);
     const d = data(z, z.varianty[0], JEKLY, verze);
     const vyst = K.kryciVystupSekce(z, d.sekce);
-    test(`${list} ${verze}: první sekce výstupu jsou interní poznámky`, vyst[0].sekce === 'Interní poznámky k zakázce' && vyst[1].sekce === prvni,
-      vyst.slice(0, 2).map(s => s.sekce));
+    test(`${list} ${verze}: interní poznámky stojí mezi „Základní údaje“ a „Dodavatel (naše firma)“`,
+      vyst[0].sekce === prvni && vyst[1].sekce === 'Interní poznámky k zakázce' && vyst[2].sekce === 'Dodavatel (naše firma)',
+      vyst.slice(0, 3).map(s => s.sekce));
+    test(`${list} ${verze}: výstup jinak nese všechny sekce v původním pořadí`,
+      JSON.stringify(vyst.filter(s => s.sekce !== 'Interní poznámky k zakázce')) === JSON.stringify(d.sekce));
     const xml = dg.docxTeloZeSekci(d.nadpis, vyst);
-    const iP = xml.indexOf('Interní poznámky k zakázce'), iZ = xml.indexOf('>' + prvni + '<');
-    test(`${list} ${verze}: Word nese nadpis nad „${prvni}"`, iP > 0 && iZ > iP, [iP, iZ]);
+    const iP = xml.indexOf('Interní poznámky k zakázce'), iZ = xml.indexOf('>' + prvni + '<'), iD = xml.indexOf('>Dodavatel (naše firma)<');
+    test(`${list} ${verze}: Word nese sekci mezi „${prvni}" a Dodavatelem`, iZ > 0 && iP > iZ && iD > iP, [iZ, iP, iD]);
+    /* Dlouhý text (20 řádků) se tiskne celý, každý řádek zvlášť zalomený. */
+    const zd = zakazka(DLOUHY);
+    const xd = dg.docxTeloZeSekci(d.nadpis, K.kryciVystupSekce(zd, data(zd, zd.varianty[0], JEKLY, verze).sekce));
+    const vsech = Array.from({ length: 20 }, (_, i) => xd.indexOf('IK-R' + (i + 1) + '<') > 0).every(Boolean);
+    test(`${list} ${verze}: dlouhý text (20 řádků) je ve Wordu celý se zalomeními`,
+      vsech && (xd.match(/<w:br\/>/g) || []).length >= 19, (xd.match(/<w:br\/>/g) || []).length);
     test(`${list} ${verze}: Word nese text i se zalomením řádku`,
       xml.indexOf('Rozhoduje p. Ukázkový.</w:t><w:br/><w:t xml:space="preserve">Na stavbě jen dopoledne — IK-4711.') > iP,
       xml.slice(iP, iP + 900));
@@ -115,7 +126,7 @@ for (const [list, data, prvni] of [['OCK', K.kryciData, 'Základní údaje'], ['
     const zp = zakazka('');
     const dp = data(zp, zp.varianty[0], JEKLY, verze);
     const vp = K.kryciVystupSekce(zp, dp.sekce);
-    test(`${list} ${verze}: prázdné pole → sekce chybí`, vp[0].sekce === prvni && dg.docxTeloZeSekci(dp.nadpis, vp).indexOf('Interní poznámky') < 0);
+    test(`${list} ${verze}: prázdné pole → sekce chybí`, vp[0].sekce === prvni && vp[1].sekce === 'Dodavatel (naše firma)' && dg.docxTeloZeSekci(dp.nadpis, vp).indexOf('Interní poznámky') < 0);
   }
 }
 {

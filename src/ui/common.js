@@ -2622,6 +2622,8 @@ function prepniTab(t) {
     document.getElementById('tab-' + x).className = (x === t ? 'act' : '') + (tabViditelny(x) ? '' : ' skryt');
   });
   document.body.dataset.tab = t;
+  /* Interní poznámky (IK): výška pole podle obsahu jde změřit jen na viditelné stránce. */
+  if (typeof poznamkyPoleVyskaVse === 'function') poznamkyPoleVyskaVse();
 }
 /* promítne viditelnost záložek (Nastavení) do navigace */
 function aplikujViditelnostTabu() {
@@ -2921,6 +2923,8 @@ function render() {
     /* heat mapa (#26) jede s uživatelem: každé překreslení aplikace
      * překreslí i ji — jinak by po přepnutí záložky ukazovala staré prvky */
     if (typeof heatPoRenderu === 'function') heatPoRenderu();
+    /* Interní poznámky (IK, J. V. 4. 11. 2026): pole roste s obsahem. */
+    if (typeof poznamkyPoleVyskaVse === 'function') poznamkyPoleVyskaVse();
     /* Otevřené okno Nastavení se překresluje SPOLU s aplikací (21. 8. 2026
      * večer). Do té doby ho obnovoval jen `nastRefresh()` — jenže od chvíle,
      * kdy se do Nastavení přestěhovala karta Databáze, sedí v modálním okně
