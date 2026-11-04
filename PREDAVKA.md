@@ -1,3 +1,31 @@
+# Předávka — 4. 11. 2026: PR #563 — prodaná varianta je vždy řídící, větev `claude/pr-prodano-ridici`
+
+Nad `b751c91` (`main` = `test` = v4.11.4). **Verze 4.11.5** (koordinace přečísluje verzi i číslo #563).
+Neslučováno; na ostrém ani testovacím webu nic, do živého Pipedrive nic (jen simulátor v testech).
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. Prodáno → prodaná řídící ve stejném uložení | ✅ | `prodRidiciSrovnej` (`src/objednane.js`), `prodejUiProdej` (`src/ui/sod_ui.js`) |
+| 2. server je autorita (srovná, neodmítá) | ✅ | `prodServer` → `prodRidiciSrovnej`; hlavička / #555 / #555b nezastaví |
+| 3. víc prodaných variant | ✅ beze změny | smí být jen jedna (klient `prodNelzeProdat`, server 400) |
+| 4. dopady (hlavička, Pipedrive, controlling, KL, přehled) | ✅ | CHANGELOG v4.11.5, test simulátoru a controllingu |
+| 5. UI: výběr „· řídící“, hláška, zákaz ručního přepnutí | ✅ | `varRidici`, `zakazkaHlavicka`, `seznam_ui.js`, karta Prodej |
+| 6. starší zakázky — srovná až uložení | ✅ | `onlineUloz` + server; načtení nemigruje |
+| oprava navíc: zámek čtení a výběr otevřené varianty | ✅ | `prodJedinaZmena` / `prodBezProdeje` (PB #547) |
+| testy, mutace #563, roadmapa, CHANGELOG, manuál | ✅ / kolo viz níž | `src/test_563_…`, `netlify/test_563_…`, `overit_prodano_zamek.mjs` 9–10 |
+
+**Rozhodnutí (pro J. V.):** server nesoulad *opraví*, neodmítá. Přepnutí řídící nemění data ani zámek žádné
+varianty, takže je bezpečné; kdyby server odmítal, okno starší verze (otevřené před nasazením) by prodej
+neuložilo vůbec a starší zakázky s prodanou neřídící variantou by nešly uložit. Ruční přepnutí řídící po
+prodeji UI nenabízí a server by ho vrátil; uvolní ho odemčení prodeje (vedoucí, administrátor).
+
+**Otevřené pro J. V.:** (a) smí být v zakázce prodaných víc variant? Dnes ne (beze změny). (b) Hláška
+`progZprava` se zobrazuje v kartě Nastavení → program; na krycím listu ji proto ukazuje i karta Prodej.
+
+**Stav kola:** doplní se po doběhnutí (viz další commit).
+
+---
+
 # Předávka — 4. 11. 2026: PS #562 — štítek „Nabídka prodána“ + lišta „Ceník není nahraný“, větev `claude/ps-prodano-cenik`
 
 Nad `7a23c50` (`test` = v3.11.4). **Verze 4.11.4** (koordinace přečísluje). Neslučováno; na ostrém ani testovacím webu nic.
