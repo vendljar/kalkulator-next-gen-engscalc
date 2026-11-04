@@ -27,7 +27,7 @@ by si obchodník sazbu dopočítal. V JSONu zakázky je sazba vidět (vědomá m
 všechny selžou (0/2, 7/10, pád v oddílu 1). Mutace „#561“ **19 z 19** (napoprvé 18, nechycenou dvojí pojistku přepočtu doplnil
 test; `--kontrola` 1268 / jádro 650 OK). První kolo `--bez-mutaci` nad 313b18b: 5 sad červených (escape, mutace jádra na
 verzi exportu, počet pravidel v overit_lista a manuálu výpočtu, overit_roadmapu kvůli #560 z návrhu NV) → opraveno v fc7a7ab.
-Výsledek druhého kola viz hlášení koordinaci / CHANGELOG.
+Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přeskočeno — firemní podklady a test.js, Playwright odkaz funguje; hodiny +400 dní 307 / 0 / 1; statické 5 z 5; 29 min 31 s). Celé mutace nepouštěny.
 
 **Otevřené body pro J. V.:**
 - Příloha (PDF nabídky dodavatele) k ruční ceně není — jen textový zdroj.

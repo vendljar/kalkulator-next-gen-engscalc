@@ -40,7 +40,8 @@ Na webech nic. Verzi může koordinace přečíslovat.
 - **Testy:** `src/test_561_rucni_cena.js` 71/0 (na 6109e39 0 OK / 2 FAIL — modul chybí),
   `netlify/test_561_rucni_cena.mjs` 29/0 (na 6109e39 7 OK / 10 FAIL), `overit_rucni_cena.mjs` 18/0
   (na 6109e39 padá v oddílu 1). Upraveny počty v `test_kontroly.js` (47 pravidel) a verze exportu 6
-  v `test_controlling*.js`, `test_pd_stav.js`. Mutace „#561“ viz PREDAVKA.
+  v `test_controlling*.js`, `test_pd_stav.js`. Mutace „#561“ 19 z 19 chycených. Kolo `--bez-mutaci` **VŠE ZELENÉ**
+  (sady 381 / 0 / 7 přeskočeno; hodiny +400 dní 307 / 0 / 1; statické 5 z 5; 29 min 31 s).
 
 ---
 ## v4.11.3 — PW #553: webhook „Vygenerovat nabídku“ z Pipedrive (varianta A), větev claude/pw-553-webhook
