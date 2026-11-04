@@ -8,7 +8,7 @@ Nad `7a23c50` (`test` = v3.11.4). **Verze 4.11.1** (koordinace přečísluje). N
 | 2. lišta ceníku až po ověření | ✅ | `ukazkoveCekaniTrva` (`src/ukazkove.js`), `src/ui/ukazkove_ui.js`, `src/ui/online_ui.js` |
 | 3. testy s pojistkou, mutace #558 | ✅ | `src/test_ukazkove.js`, `overit_lista_cekani.mjs`, `overit_prodano_zamek.mjs`, `overit_klon_tisk.mjs`, `netlify/mutace.mjs` |
 | 4. roadmapa #558, CHANGELOG | ✅ | `roadmapa/roadmap.json`, `CHANGELOG.md` |
-| 5. kolo `--bez-mutaci` | viz CHANGELOG / hlášení koordinaci | — |
+| 5. kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | 373/0/7, hodiny 301/0/1, statické 5/5; mutace #558 4/4, S5 15/15 |
 
 **Příčina 1 (pro J. V.):** štítek vedle „STANDARD OCK“ uměl jen tři stavy — rozpracovaná, odeslaná (uzamčená)
 a jen ke čtení. Prodej v něm vůbec nebyl, proto po Prodáno zůstal červený. Nešlo o překreslení ani o jinou

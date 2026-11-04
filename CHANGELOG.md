@@ -37,7 +37,7 @@ přihlášení“), C přepsán na strop 15 s — nad 7a23c50 26/6, po opravě 3
 7a23c50 3 FAIL, po opravě 34/0); `overit_klon_tisk.mjs` +3 — tok J. V. (Prodáno na klonu Varianta 2) nad 7a23c50
 přesně „Nabídka uzamčena“ (2 FAIL), po opravě 53/0. Mutace serveru „#558“ 4 z 4; mutace S5 „lišta čeká i po
 doběhnutí“ přesměrována na nový tvar podmínky (`--kontrola` 1226 / 642 OK).
-<!--VYSLEDKY-PS-->
+Kolo `--bez-mutaci` **VŠE ZELENÉ** (29 min): sady 373 / 0 / 7 přeskočeno (jen firemní podklady KNG_PODKLADY a test.js — prohlížečové sady proběhly), hodiny +400 dní 301 / 0 / 1, statické 5 z 5. Mutace: „#558“ 4 z 4, „S5:“ 15 z 15; celé mutace nepouštěny.
 
 ## v3.11.4 — ZO2 #555b: tisk klonu odeslané nabídky — „první rozdíl v datech: cenik“, větev claude/zo2-klon-cenik
 
