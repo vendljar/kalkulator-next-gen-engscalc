@@ -1694,7 +1694,7 @@ async function onlineOtevri(soubor) {
     if (typeof standardAtypUklid === 'function') standardAtypUklid();
     ONLINE_STAV.posledni = JSON.stringify(ZAK);
     onlineZprava('Otevřeno online: ' + soubor + '.'
-      + (prep && (prep.prepocteno || prep.svetlikyStavba) && typeof uloPrepocetVeta === 'function' ? ' ' + uloPrepocetVeta(prep) : ''));
+      + (prep && (prep.prepocteno || prep.svetlikyStavba || prep.svetlikyMaterialBez) && typeof uloPrepocetVeta === 'function' ? ' ' + uloPrepocetVeta(prep) : ''));
     zavriOnline();
     render();
     if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();

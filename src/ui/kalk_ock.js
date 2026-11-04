@@ -756,7 +756,8 @@ function svetlikVyplnTitulek(kde, r) {
     && r.zaskleni.vypln.material[kde] && r.zaskleni.vypln.material[kde].A;
   if (!m) return zaklad;
   const co = (m.druh === 'sklo' || m.druh === 'deska') ? oplTypNazev(m.typ, m.nazev)
-    : ({ plech: 'plech', stavba: 'zajistí stavba (výplň 0 Kč)', bez: 'nic' })[m.druh] || '';
+    : (m.druh === 'bez' && m.typ === 'bez' ? 'nic — stěny B, C, D jsou „bez — dodá stavba", světlík se počítá jako „bez" (#560)'
+      : ({ plech: 'plech', stavba: 'zajistí stavba (výplň 0 Kč)', bez: 'nic' })[m.druh] || '');
   return zaklad + (co ? '. Teď: ' + co : '');
 }
 

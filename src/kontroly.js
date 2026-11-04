@@ -443,6 +443,12 @@ const KONTROLY = [
        * 4. 11. 2026) — upozornění na ni zrušeno. Hlídá se dál jen počet
        * a šířka u zvolené výplně (sklo, plech, materiál). */
       if (volba === 'bez') return null;
+      /* #560: materiál opláštění z „bez — dodá stavba" počítá jádro jako „bez"
+       * (bočních světlíků 0) — počet ani šířka se nehlídají. Podle výsledku
+       * jádra, takže odeslaná nabídka se starým otiskem se posuzuje po staru. */
+      const bokyM = r && r.zaskleni && r.zaskleni.vypln && r.zaskleni.vypln.material
+        && r.zaskleni.vypln.material.boky && r.zaskleni.vypln.material.boky.A;
+      if (volba === 'material' && bokyM && bokyM.druh === 'bez') return null;
       const potize = [];
       if (!(n > 0)) potize.push('počet je 0 — zvolte u boků „bez", nebo zadejte počet');
       else {

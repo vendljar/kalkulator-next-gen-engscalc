@@ -67,7 +67,8 @@ function dvSvetlikMaterial(r, kde, Z) {
   const jeden = x => (x.druh === 'sklo' || x.druh === 'deska')
     ? ((typeof oplTypNazev === 'function') ? oplTypNazev(x.typ, x.nazev) : String(x.typ || ''))
       + (x.druh === 'deska' ? ' (deska, bez lišt a terčů)' : '')
-    : ({ bez: 'nic', plech: 'plech', stavba: 'zajistí stavba (výplň 0 Kč)' })[x.druh] || '—';
+    : (x.druh === 'bez' && x.typ === 'bez' ? 'nic („bez — dodá stavba" = světlík „bez", #560)'
+      : ({ bez: 'nic', plech: 'plech', stavba: 'zajistí stavba (výplň 0 Kč)' })[x.druh] || '—');
   /* Stěna C se ukáže, jen když na ní jsou dveře (průchozí šachta). */
   const z = Z || {};
   const maA = !z.pruchoziSachta || (+z.nastupisteA || 0) > 0;
@@ -350,7 +351,7 @@ function renderDetail() {
       ...(z.vypln.bokyKs > 0 && z.vypln.sirkaPredpocitana != null ? dvBokySirkaRadky(z.vypln, M) : []),
       ['Světlíky u dveří — čím se vyplní', 'nad dveřmi: ' + dvSvetlikMaterial(r, 'nad', Z) + ' · boky: ' + dvSvetlikMaterial(r, 'boky', Z),
         'sklo = sklo stěny s dveřmi a její zasklení (po stěnách typ skla té stěny, a není-li ze skla, sklo stěny ze standardu); '
-        + 'materiál opláštění = materiál stěn B, C, D, převažující podle plochy („bez — dodá stavba" = zajistí stavba) — rozhodnutí J. V. 30. 9. 2026'],
+        + 'materiál opláštění = materiál stěn B, C, D, převažující podle plochy („bez — dodá stavba" = světlík „bez", bez naší konstrukce — #560, 4. 11. 2026) — rozhodnutí J. V. 30. 9. 2026'],
     ] : []),
     /* P2 (K19-N104): prohlubeň prosklená zkratkou — všechny stěny od −prohlubeň. */
     ...((typeof oplasteniProhlubenVse === 'function' && oplasteniProhlubenVse(Z)) ? [

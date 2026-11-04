@@ -1612,6 +1612,29 @@ function svetlikyStavbaPrevod(zak) {
   return n;
 }
 
+/* SVĚTLÍK Z MATERIÁLU „BEZ — DODÁ STAVBA" (#560, rozhodnutí J. V. 4. 11. 2026)
+ * počítá jádro jako „bez" — data se nemění, jen výsledek. Kolik ROZPRACOVANÝCH
+ * variant se to týká (věta v liště po otevření); odeslané mají zmrazený
+ * výsledek a nepočítají se. `jekly` = katalog profilů (JEKLY v prohlížeči). */
+function svetlikyMaterialBezPocet(zak, jekly) {
+  if (!zak || !Array.isArray(zak.varianty) || typeof vypocet !== 'function') return 0;
+  const zamcena = (v) => (typeof variantaUzamcena === 'function') ? variantaUzamcena(v)
+    : !!(v && v.zamek && v.zamek.zamceno);
+  let n = 0;
+  zak.varianty.forEach(v => {
+    const d = v && v.data, z = d && d.ock && d.ock.zadani;
+    if (!z || !d.cenik || zamcena(v)) return;
+    if (z.nadDvermi !== 'material' && z.bokyDveri !== 'material') return;
+    try {
+      const m = ((vypocet(z, d.cenik, jekly, d.ock.fixes) || {}).zaskleni || {}).vypln;
+      const bez = k => !!(m && m.material && m.material[k] && m.material[k].A
+        && m.material[k].A.druh === 'bez' && m.material[k].A.typ === 'bez');
+      if ((z.nadDvermi === 'material' && bez('nad')) || (z.bokyDveri === 'material' && bez('boky'))) n++;
+    } catch (e) { /* rozbitá varianta se hlásí jinde */ }
+  });
+  return n;
+}
+
 /* Opak při načtení: doplní ceník z platného a vrátí odchylky. Volá ho
  * importZakazka; bez platného ceníku (Node bez prohlížeče) se bere ceník ze
  * sestavení (DEFAULT_CENIK, DEFAULT_CENIK_PROJ). */
@@ -1870,7 +1893,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zadaniCislaZTextu, svetlikyStavbaPrevod, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { zadaniCislaZTextu, svetlikyStavbaPrevod, svetlikyMaterialBezPocet, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, obrazekDataUrlPlatny, uvodniFotoPlatna, uvodniFotoOcisti, uvodniFotoVarovani, OBRAZEK_TYPY_FOTO, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,

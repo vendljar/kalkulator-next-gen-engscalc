@@ -233,9 +233,13 @@ test('záporný ruční počet = 0', () => E.bokyPocet(zad({ bokyDveri: 'sklo', 
       && blizko(mn(matJine, 'TRAPÉZ'), matJine.oplasteni.pasy.filter(p => p.stena !== 'A').reduce((a, p) => a + p.m2, 0) + matJine.zaskleni.vypln.bokyM2, 1e-9));
   const matBez = spocti(steny(zad({ bokyDveri: 'material', nadDvermi: 'material' }), st => {
     st.B.pasy = pas('bez'); st.C.pasy = pas('bez'); st.D.pasy = pas('bez'); }));
-  test('materiál po stěnách „bez — dodá stavba" = zajistí stavba (výplň 0 Kč, konstrukce naše)',
-    () => matBez.zaskleni.vypln.material.boky.A.druh === 'stavba' && matBez.oplasteni.plochaCelkem === 0
-      && matBez.parametry.sloupkyPortalu === 10 && matBez.montaz.hodinyNavic.svetlik === 0);
+  /* #560 (rozhodnutí J. V. 4. 11. 2026): materiál „bez — dodá stavba" = světlík
+   * „bez" — žádná naše konstrukce (dřív druh „stavba", 10 sloupků portálu). */
+  test('materiál po stěnách „bez — dodá stavba" = „bez" (bez konstrukce, počet 0; #560)',
+    () => matBez.zaskleni.vypln.material.boky.A.druh === 'bez' && matBez.oplasteni.plochaCelkem === 0
+      && matBez.parametry.sloupkyPortalu === 0 && matBez.zaskleni.vypln.bokyKs === 0
+      && matBez.montaz.hodinyNavic.svetlikyBoky === 0 && matBez.montaz.hodinyNavic.svetlik === 0,
+    () => [matBez.zaskleni.vypln.material.boky.A.druh, matBez.parametry.sloupkyPortalu, matBez.zaskleni.vypln.bokyKs]);
 }
 
 /* ---------- 6) nad dveřmi: bez / zajistí stavba ---------- */

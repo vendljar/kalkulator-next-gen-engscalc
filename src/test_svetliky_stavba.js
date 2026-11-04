@@ -14,7 +14,11 @@
  *      klon i duplikát zakázky z ní převedou jen kopii,
  *   4) upozornění u „bez" nevzniká (nad dveřmi ani na bocích) a brána
  *      dokumentů s ním nepočítá; kontroly počtu u skla fungují dál,
- *   5) server (uloTypyProblemy): nová „stavba" neprojde, stará data ano.
+ *   5) server (uloTypyProblemy): nová „stavba" neprojde, stará data ano,
+ *   6) materiál opláštění, jehož stěny B, C, D jsou „bez — dodá stavba",
+ *      = světlík „bez" (J. V. 4. 11. 2026, dodatek): cena na haléř jako „bez"
+ *      v obou modelech, kontrola počtu mlčí, specifikace nic; „bez" jen na
+ *      stěně A nic nemění; odeslaná nabídka jede ze svého otisku.
  *
  * Pojistka: nad 6109e39 (v4.11.3) sada selže (volba v UI je, převod ani
  * NAD_DVERMI_NABIDKA neexistují, upozornění „bez" vzniká, server „stavba"
@@ -223,6 +227,76 @@ function zakazkaSeStavbou() {
   test('server: obnova ze zálohy nese starou „stavba" bez odmítnutí', () => s1(z => { z.nadDvermi = 'stavba'; }, null, { obnova: true }).length === 0);
   test('server: platné volby projdou', () => s1(z => { z.nadDvermi = 'bez'; z.bokyDveri = 'material'; }).length === 0);
   test('server: neznámá volba dál neprojde jako typ', () => s1(z => { z.nadDvermi = 'zlato'; }).some(p => p.duvod === 'typ'));
+}
+
+/* ---------- 6) materiál opláštění „bez — dodá stavba" = „bez" (#560, J. V. 4. 11. 2026) ---------- */
+{
+  const c = CENIK();
+  const steny = (z, fn) => { const st = E.oplasteniStenyVychozi(z, c); fn(st); z.oplasteni = { rezim: 'poStenach', steny: st }; return z; };
+  const pas = typ => [{ typ, doM: null }];
+  const bezBCD = st => { st.B.pasy = pas('bez'); st.C.pasy = pas('bez'); st.D.pasy = pas('bez'); };
+  const druh = (r, k) => r.zaskleni.vypln.material[k].A;
+  for (const fixes of [true, false]) {
+    const M = fixes ? 'Model 2' : 'Model 1';
+    const n = E.nastupisteCelkem(zad());
+    const matN = spocti(steny(zad({ nadDvermi: 'material' }), bezBCD), fixes), bezN = spocti(steny(zad({ nadDvermi: 'bez' }), bezBCD), fixes);
+    test(M + ': nad dveřmi materiál z „bez — dodá stavba" = „bez" na haléř', () => cena(matN) === cena(bezN)
+      && druh(matN, 'nad').druh === 'bez' && druh(matN, 'nad').typ === 'bez', () => [cena(matN), cena(bezN), druh(matN, 'nad')]);
+    test(M + ': … montáž jako „bez"' + (fixes ? ' (Model 2 neubírá)' : ' (−0,2 h na nástupiště)'),
+      () => blizko(matN.montaz.hodinyNavic.svetlik, fixes ? 0 : -0.2 * n), () => matN.montaz.hodinyNavic.svetlik);
+    const matB = spocti(steny(zad({ bokyDveri: 'material', svetlikyBokyKs: 7 }), bezBCD), fixes);
+    const bezB = spocti(steny(zad({ bokyDveri: 'bez', svetlikyBokyKs: 7 }), bezBCD), fixes);
+    test(M + ': boky materiál z „bez — dodá stavba" = „bez" na haléř (počet 0, bez sloupků, příčníků a 0,5 h)',
+      () => cena(matB) === cena(bezB) && matB.zaskleni.vypln.bokyKs === 0 && matB.parametry.sloupkyPortalu === 0
+        && matB.montaz.hodinyNavic.svetlikyBoky === 0, () => [cena(matB), cena(bezB), matB.zaskleni.vypln.bokyKs, matB.parametry.sloupkyPortalu]);
+  }
+  /* „bez" jen na stěně, ze které se světlík nebere — nic se nemění. */
+  const aBez = st => { st.A.pasy = pas('bez'); };
+  const matA = spocti(steny(zad({ nadDvermi: 'material', bokyDveri: 'material', svetlikyBokyKs: 7 }), aBez));
+  test('stěna A „bez" a materiál (z B, C, D): světlík dál sklo, 7 bočních s konstrukcí', () => druh(matA, 'nad').druh === 'sklo'
+    && druh(matA, 'boky').druh === 'sklo' && matA.zaskleni.vypln.bokyKs === 7 && matA.parametry.sloupkyPortalu === 7, () => [druh(matA, 'boky'), matA.parametry.sloupkyPortalu]);
+  const skloA = spocti(steny(zad({ nadDvermi: 'sklo', bokyDveri: 'sklo', svetlikyBokyKs: 7 }), aBez));
+  test('stěna A „bez" a volba sklo: sklo stěny ze standardu (beze změny, #375)', () => druh(skloA, 'boky').druh === 'sklo'
+    && skloA.parametry.sloupkyPortalu === 7);
+  const jenB = spocti(steny(zad({ bokyDveri: 'material', svetlikyBokyKs: 7 }), st => { st.B.pasy = pas('bez'); }));
+  test('jen stěna B „bez" (převažuje sklo C, D): materiál dál sklo', () => druh(jenB, 'boky').druh === 'sklo' && jenB.zaskleni.vypln.bokyKs === 7);
+
+  /* kontrola počtu nestraší */
+  const sl = require('./sleva.js'); global.slevaPodil = sl.slevaPodil;
+  const kt = require('./kontroly.js');
+  const nal = z => kt.kontrolyProved({ zadani: z, vysledek: spocti(z) }).nalezy.find(x => x.kod === 'bokyDveri');
+  test('kontrola: materiál „bez — dodá stavba" s počtem 0 nehlásí „počet je 0"', () => !nal(steny(zad({ bokyDveri: 'material', svetlikyBokyKs: 0 }), bezBCD)));
+  test('kontrola: … ani s počtem 12 (víc než dva na dveře)', () => !nal(steny(zad({ bokyDveri: 'material', svetlikyBokyKs: 12 }), bezBCD)));
+  test('kontrola: materiál ze skla s počtem 12 hlásí dál', () => /víc než dva/.test((nal(steny(zad({ bokyDveri: 'material', svetlikyBokyKs: 12 }), () => {})) || {}).text || ''));
+
+  /* specifikace o světlíku mlčí */
+  const tsm = require('./techspec.js');
+  const zSp = steny(zad({ nadDvermi: 'material', bokyDveri: 'material' }), bezBCD);
+  const rSp = spocti(zSp);
+  test('specifikace: SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ „ -", členění „bez světlíků"', () => tsm.tsSvetlikyDveri(zSp, rSp) === ' -'
+    && tsm.tsVyplnDveriCasti(zSp, rSp).join('|') === 'bez světlíků', () => [tsm.tsSvetlikyDveri(zSp, rSp), tsm.tsVyplnDveriCasti(zSp, rSp)]);
+
+  /* odeslaná nabídka: počítá se ze zmrazeného výsledku — starý otisk (druh
+   * „stavba", 10 sloupků portálu) zůstává, data i zámek se nemění */
+  const z = zk.novaZakazka(); z.cislo = '2026 - OPR - CN - 9565'; z.nazevAkce = 'TEST SV 560 materiál';
+  const v = z.varianty[0];
+  Object.assign(v.data.ock.zadani, zSp);
+  v.data.cenik = Object.assign(v.data.cenik, ZC.zkusebniCenik());
+  zm.klonujVariantu(z, v.id);
+  zm.zamkniVariantu(v, { cislo: zm.variantaCislo(z, v), typ: 'nabidkaTisk', kdy: '2026-10-20T10:00:00.000Z',
+    vysledek: zm.zamekVysledekSpocti(v, J, 'test') });
+  const otisk = zm.zamekVysledek(v).ock;
+  otisk.zaskleni.vypln.material.boky.A.druh = 'stavba'; otisk.zaskleni.vypln.material.nad.A.druh = 'stavba';
+  otisk.parametry.sloupkyPortalu = 10; otisk.souhrn.zakladCena += 12345;      // „jak počítala verze před #560"
+  const dataPred = JSON.stringify(v.data), porovnaniPred = zm.zamekDataPorovnani(kop(v.data), v);
+  test('odeslaná: vypocetZ vrací starý otisk (cena i konstrukce z doby odeslání)', () => {
+    const r = zm.vypocetZ(v, J); return r.souhrn.zakladCena === otisk.souhrn.zakladCena && r.parametry.sloupkyPortalu === 10; });
+  test('odeslaná: specifikace z otisku dál „… zajistí objednatel" (co zákazník dostal)', () =>
+    /zajistí objednatel/.test(tsm.tsSvetlikyDveri(v.data.ock.zadani, zm.vypocetZ(v, J))));
+  test('převod zakázky na materiál nesahá (data a zámek beze změny)', () => zk.svetlikyStavbaPrevod(z) === 0
+    && JSON.stringify(v.data) === dataPred && zm.zamekDataPorovnani(kop(v.data), v) === porovnaniPred);
+  test('věta v liště: 1 rozpracovaná varianta (odeslaná se nepočítá)', () => zk.svetlikyMaterialBezPocet(z, J) === 1, () => zk.svetlikyMaterialBezPocet(z, J));
+  test('… bez „bez — dodá stavba" žádná', () => zk.svetlikyMaterialBezPocet(zakazkaSeStavbou(), J) === 0);
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);

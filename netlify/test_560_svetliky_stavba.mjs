@@ -14,7 +14,9 @@
  *      rozpracovanou „stavbu" nepřevedl, uloží (stará data),
  *   4) administrátor odemkne odeslanou variantu se „stavba" bez 409 (proto
  *      převod není v importZakazka) a klon odeslané varianty se uloží,
- *   5) obnova ze zálohy starou rozpracovanou „stavba" neodmítne.
+ *   5) obnova ze zálohy starou rozpracovanou „stavba" neodmítne,
+ *   6) materiál opláštění „bez — dodá stavba" (= „bez" ve výsledku jádra):
+ *      odeslaná i rozpracovaná varianta se uloží a znovu uloží bez 409.
  *
  * Pojistka: nad 6109e39 selže bod 1 (server „stavba" pouštěl) a převod
  * (svetlikyStavbaPrevod neexistuje) — viz commit. Smyšlené údaje,
@@ -169,6 +171,30 @@ const k3 = zm.klonujVariantu(o3, o3.varianty[0].id);
 r = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: o3, ocekavaneRazitko: g3.uloRazitko }, cookie)).json();
 test('klon odeslané varianty („bez") se uloží', r.ok === true && k3.data.ock.zadani.nadDvermi === 'bez', r);
 test('…odeslaná zůstala v úložišti beze změny', otiskOdeslane(JSON.parse(pamet.get(klic3)).varianty[0]) === pred3);
+
+/* 6) materiál opláštění „bez — dodá stavba" (= „bez", jen výsledek jádra):
+ * odeslaná varianta i rozpracovaná se uloží a znovu uloží bez chyby zámku */
+{
+  const zm6 = zakazka('2026 - OPR - CN - 9566');
+  const v = zm6.varianty[0], zad6 = v.data.ock.zadani;
+  const st = E.oplasteniStenyVychozi(zad6, v.data.cenik);
+  ['B', 'C', 'D'].forEach(k => { st[k].pasy = [{ typ: 'bez', doM: null }]; });
+  Object.assign(zad6, { nadDvermi: 'material', bokyDveri: 'material', svetlikyBokyKs: 6, oplasteni: { rezim: 'poStenach', steny: st } });
+  zm.klonujVariantu(zm6, v.id);
+  zm.zamkniVariantu(v, { cislo: zm.variantaCislo(zm6, v), typ: 'nabidkaTisk', kdy: new Date().toISOString(),
+    vysledek: zm.zamekVysledekSpocti(v, JEKLY, 'test'), snimek: zm.zamekSnimekSpocti(v) });
+  const r6 = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: zm6 }, cookie)).json();
+  test('materiál „bez — dodá stavba": zakázka s odeslanou variantou se uloží', r6.ok === true, r6);
+  const g6 = (await (await get(zakazky, 'http://x/api/zakazky?soubor=' + encodeURIComponent(r6.soubor), cookie)).json()).zakazka;
+  const o6 = zk.importZakazka(kopie(g6));
+  test('… výsledek jádra: světlík „bez", 0 bočních (rozpracovaná)', (() => {
+    const r = E.vypocet(o6.varianty[1].data.ock.zadani, o6.varianty[1].data.cenik, JEKLY, o6.varianty[1].data.ock.fixes);
+    return r.zaskleni.vypln.material.boky.A.druh === 'bez' && r.zaskleni.vypln.bokyKs === 0; })());
+  test('… převod dat se jí netýká', zk.svetlikyStavbaPrevod(o6) === 0);
+  o6.varianty[1].pozn = 'po otevření';
+  const r6b = await (await post(zakazky, 'http://x/api/zakazky', { zakazka: o6, ocekavaneRazitko: g6.uloRazitko }, cookie)).json();
+  test('… znovu uložení bez chyby zámku', r6b.ok === true, r6b);
+}
 
 /* 5) obnova ze zálohy: rozpracovaná „stavba" je stará data, ne nová volba */
 {

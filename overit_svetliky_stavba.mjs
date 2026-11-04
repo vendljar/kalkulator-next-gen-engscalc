@@ -13,7 +13,9 @@
  *      výběru zrušenou volbu jen jako vypnutou položku,
  *   3) kontrola před nabídkou u „bez" nic nehlásí (nad dveřmi ani boky),
  *      u skla s počtem 12 hlásí dál,
- *   4) klon odeslané varianty je „bez"; žádná chyba v konzoli.
+ *   4) klon odeslané varianty je „bez"; žádná chyba v konzoli,
+ *   5) materiál opláštění ze stěn „bez — dodá stavba" = „bez" (dodatek J. V.
+ *      4. 11. 2026): věta v liště, bublina, 0 bočních, kontrola i spec mlčí.
  *
  * Pojistka: nad 6109e39 selže bod 1 i 2 (volba v menu, převod neexistuje).
  * Spuštění: node overit_svetliky_stavba.mjs (po python3 build.py)
@@ -106,6 +108,29 @@ const vysl = await p.evaluate(([c, cp]) => {
   const k = klonujVariantu(ZAK, ZAK.varianty[0].id);
   out.klon = { nad: k.data.ock.zadani.nadDvermi, boky: k.data.ock.zadani.bokyDveri,
     zdroj: ZAK.varianty[0].data.ock.zadani.nadDvermi };
+  /* 5) materiál opláštění „bez — dodá stavba" (#560 dodatek): věta v liště,
+   * bublina, specifikace a kontrola */
+  {
+    const zM = novaZakazka(); zM.cislo = '2026 - OPR - CN - 9567'; zM.nazevAkce = 'TEST SV 560 materiál';
+    const vM = zM.varianty[0];
+    Object.assign(vM.data.ock.zadani, zad, { nadDvermi: 'material', bokyDveri: 'material', svetlikyBokyKs: 0 });
+    Object.assign(vM.data.cenik, c); delete vM.data.cenik.prazdny; delete vM.data.cenik.ukazkove;
+    Object.assign(vM.data.proj.cenik, cp); delete vM.data.proj.cenik.prazdny; delete vM.data.proj.cenik.ukazkove;
+    const st = oplasteniStenyVychozi(vM.data.ock.zadani, vM.data.cenik);
+    ['B', 'C', 'D'].forEach(k => { st[k].pasy = [{ typ: 'bez', doM: null }]; });
+    vM.data.ock.zadani.oplasteni = { rezim: 'poStenach', steny: st };
+    ZAK = importZakazka(JSON.parse(JSON.stringify(zM))); syncVarianta();
+    const prepM = uloSrovnejSPlatnymCenikem();
+    render();
+    const sel = t => { const l = [...document.querySelectorAll('#inputs .row > label')].find(x => x.textContent.trim().indexOf(t) === 0);
+      return l && l.parentElement.querySelector('select'); };
+    const rr = vypocetAkt();
+    out.material = { veta: uloPrepocetVeta(prepM), pocet: prepM && prepM.svetlikyMaterialBez,
+      bublina: (sel('Světlíky na bocích dveří') || {}).title || '',
+      kody: kontrolyProved(kontrolyCtxAkt()).nalezy.map(n => n.kod),
+      spec: tsSvetlikyDveri(Z, rr), bokyKs: rr.zaskleni.vypln.bokyKs };
+  }
+
   return out;
 }, [ZC.zkusebniCenik(), ZC.zkusebniCenikProj()]);
 
@@ -132,6 +157,11 @@ zkus('3) „bez" nad dveřmi ani na bocích kontrola nehlásí', !vysl.kodyBez.i
 zkus('3) sklo s 12 světlíky na 5 dveří hlásí dál', /víc než dva/.test(vysl.n12), vysl.n12);
 zkus('4) klon odeslané varianty je „bez", zdroj „stavba"', vysl.klon.nad === 'bez' && vysl.klon.boky === 'bez' && vysl.klon.zdroj === 'stavba',
   JSON.stringify(vysl.klon));
+zkus('5) materiál „bez — dodá stavba": věta v liště o přepočtu jako „bez"', vysl.material.pocet === 1
+  && /Světlík z materiálu opláštění „bez — dodá stavba" se počítá jako „bez" \(1 rozpracovaná varianta/.test(vysl.material.veta), JSON.stringify(vysl.material));
+zkus('5) … bublina u boků to vysvětlí', /se počítá jako „bez"/.test(vysl.material.bublina), vysl.material.bublina);
+zkus('5) … 0 bočních světlíků, kontrola „počet je 0" nestraší, specifikace „ -"', vysl.material.bokyKs === 0
+  && !vysl.material.kody.includes('bokyDveri') && vysl.material.spec === ' -', JSON.stringify(vysl.material));
 zkus('žádná chyba v konzoli', chyby.length === 0, chyby.slice(0, 3).join(' | '));
 
 await b.close();

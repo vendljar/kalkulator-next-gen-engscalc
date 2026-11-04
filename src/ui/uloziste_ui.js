@@ -354,6 +354,9 @@ function uloSrovnejSPlatnymCenikem() {
   if (typeof cenikPrepoctiRozpracovane !== 'function'
     || typeof cenikDnesniData !== 'function'
     || typeof ZAK === 'undefined' || !ZAK) return stavba ? { prepocteno: 0, svetlikyStavba: stavba } : null;
+  /* #560: světlík z materiálu „bez — dodá stavba" = „bez" (jen výsledek jádra). */
+  const materialBez = (typeof svetlikyMaterialBezPocet === 'function' && typeof JEKLY !== 'undefined')
+    ? svetlikyMaterialBezPocet(ZAK, JEKLY) : 0;
 
   /* ZÁLOHA PŘED PŘEPOČTEM (#284). Bez ní by nabídka „ponechat původní ceník"
    * byla prázdný slib: přepočet přepisuje ceny na místě a zpátky se z toho
@@ -381,18 +384,22 @@ function uloSrovnejSPlatnymCenikem() {
    * v ceníku varianty nese „nejsou to ostrá data" a po otevření nad platným
    * ceníkem by jinak dál svítila červená lišta a dokument by byl zablokovaný. */
   if ((r.prepocteno || r.orazitkovano || r.znacky || r.popisy) && typeof syncVarianta === 'function') syncVarianta();
-  if (r) r.svetlikyStavba = stavba;
+  if (r) { r.svetlikyStavba = stavba; r.svetlikyMaterialBez = materialBez; }
   return r;
 }
 
 /* Věta o převodu „zajistí stavba" → „bez" (#560). Prázdná, když nebylo co
  * převádět. Volající ji připojí za větu o přepočtu (uloPrepocetVeta). */
 function uloSvetlikyStavbaVeta(r) {
-  const n = r && r.svetlikyStavba;
-  if (!n) return '';
-  return 'Zrušená volba světlíku „zajistí stavba" převedena na „bez" ('
-    + (n === 1 ? '1 rozpracovaná varianta' : (n < 5 ? n + ' rozpracované varianty' : n + ' rozpracovaných variant'))
-    + '; prostor světlíku dozdí stavba, cena se přepočetla). Odeslané nabídky zůstávají beze změny.';
+  const kolik = n => (n === 1 ? '1 rozpracovaná varianta' : (n < 5 ? n + ' rozpracované varianty' : n + ' rozpracovaných variant'));
+  const n = r && r.svetlikyStavba, m = r && r.svetlikyMaterialBez;
+  const vety = [];
+  if (n) vety.push('Zrušená volba světlíku „zajistí stavba" převedena na „bez" (' + kolik(n)
+    + '; prostor světlíku dozdí stavba, cena se přepočetla).');
+  if (m) vety.push('Světlík z materiálu opláštění „bez — dodá stavba" se počítá jako „bez" (' + kolik(m)
+    + '; bez naší konstrukce světlíku, cena přepočtená).');
+  if (vety.length) vety.push('Odeslané nabídky zůstávají beze změny.');
+  return vety.join(' ');
 }
 
 /* Věta do lišty. Mlčet o přepočtu by znamenalo, že se čísla v otevřené
@@ -586,7 +593,7 @@ async function uloOtevriZeSlozky(soubor) {
     const prep = uloSrovnejSPlatnymCenikem();
     const fotoVar = (typeof uvodniFotoVarovani === 'function') ? uvodniFotoVarovani(zak.fotoZahozena) : '';   // SEC-M16
     uloZprava('Otevřeno ze složky: ' + soubor + '.'
-      + (prep && (prep.prepocteno || prep.svetlikyStavba) ? ' ' + uloPrepocetVeta(prep) : '') + (fotoVar ? ' ' + fotoVar : ''), fotoVar ? 'varovani' : '');
+      + (prep && (prep.prepocteno || prep.svetlikyStavba || prep.svetlikyMaterialBez) ? ' ' + uloPrepocetVeta(prep) : '') + (fotoVar ? ' ' + fotoVar : ''), fotoVar ? 'varovani' : '');
     zavriUloziste();
     render();
     if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
@@ -594,7 +601,7 @@ async function uloOtevriZeSlozky(soubor) {
      * vidět zakázku, o které se rozhoduje. Nečeká se na něj — otevření
      * zakázky je hotové a dialog si výsledek dořeší sám. */
     if (typeof uloPrepocetDialog === 'function') uloPrepocetDialog(prep);
-    if (prep && (prep.prepocteno || prep.svetlikyStavba) && typeof nabidkaStavTextBezpecne === 'function') {
+    if (prep && (prep.prepocteno || prep.svetlikyStavba || prep.svetlikyMaterialBez) && typeof nabidkaStavTextBezpecne === 'function') {
       nabidkaStavTextBezpecne(uloPrepocetVeta(prep));
     } else if (typeof cenikPrehledAkt === 'function') {
       const p = cenikPrehledAkt();

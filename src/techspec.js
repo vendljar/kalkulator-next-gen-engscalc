@@ -232,7 +232,7 @@ function tsVyplnDveriCasti(Z, r) {
   else if (v.nadDruh === 'plech') casti.push('plechové nadpraží nade dveřmi');
   else if (v.nadDruh === 'material' || v.nadDruh === 'deska') casti.push('nadpraží z materiálu opláštění stěny');
   else if (v.nadDruh === 'stavba') casti.push('nadpraží nade dveřmi zajistí objednatel');
-  if (v.boky !== 'bez' && v.bokyKs > 0) {
+  if (v.boky !== 'bez' && v.bokyDruh !== 'bez' && v.bokyKs > 0) {
     if (v.skloBoky) casti.push(v.strana ? 'světlík ' + v.strana + ' š. dveří' : 'světlíky na bocích š. dveří');
     else if (v.bokyDruh === 'plech') casti.push(v.strana ? 'plechová výplň ' + v.strana + ' dveří' : 'plechová výplň na bocích dveří');
     else if (v.bokyDruh === 'material' || v.bokyDruh === 'deska') casti.push('výplň vedle dveří z materiálu opláštění stěny');
@@ -325,10 +325,12 @@ function tsSvetlikyDveri(Z, r) {
     return popisek + ': ' + kusy + (mat ? ', ' + mat : '');
   };
   const casti = [];
-  if (v.nad !== 'bez' && v.dvere > 0)
+  /* Druh „bez" i u volby „materiál" (#560: stěny „bez — dodá stavba") —
+   * o světlíku, který neděláme, specifikace mlčí. */
+  if (v.nad !== 'bez' && v.nadDruh !== 'bez' && v.dvere > 0)
     casti.push(cast(v.nadDruh === 'sklo' ? 'Světlík nad šachetními dveřmi' : 'Nadpraží nad šachetními dveřmi',
       v.dvere, v.nadDruh, 'nad'));
-  if (v.boky !== 'bez' && v.bokyKs > 0) casti.push(cast('Světlíky na bocích dveří', v.bokyKs, v.bokyDruh, 'boky'));
+  if (v.boky !== 'bez' && v.bokyDruh !== 'bez' && v.bokyKs > 0) casti.push(cast('Světlíky na bocích dveří', v.bokyKs, v.bokyDruh, 'boky'));
   return casti.length ? casti.join('; ') : ' -';
 }
 
