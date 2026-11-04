@@ -26,11 +26,17 @@ Odeslané: data i cena na haléř stejné, ve výběru vypnutá položka „zaji
 `overit_svetliky_stavba.mjs` 13/0 (všechny na 6109e39 selžou). Mutace #560: jádro 11/11, server 8/8. Kolo
 `--bez-mutaci` po doplnění CHANGELOG zelené (jediný pád byl `test_release_odkaz.js` kvůli chybějícímu oddílu v4.11.4).
 
+**Dodatek (J. V. 4. 11. 2026, bod 1):** světlík z *materiálu opláštění*, jehož stěny B, C, D jsou převážně
+„bez — dodá stavba“, = „bez“ (jádro: druh 'bez', efektivní `nadV` / `bokyV`, `bokyKs` 0; výběr materiálu
+světlíků přesunut před hodiny a konstrukci). Data beze změny, rozpracované se přepočtou s větou v liště
+(`svetlikyMaterialBezPocet`), odeslané z otisku. Testy 67/0, 25/0, 16/0 (pojistka na `b9cec72`), mutace #560
+celkem jádro 17/17, server 9/9.
+
 **Otevřené body:**
+- Věta „Světlík z materiálu opláštění „bez — dodá stavba“ se počítá jako „bez““ se ukáže při každém otevření
+  takové rozpracované zakázky (data se nemění, takže nejde poznat „už jednou řečeno“).
 - Vydaný manuál výpočtu (3. vydání, `manual_vypocet/sablona.html`) dál popisuje „zajistí stavba“; nové vydání
   podle pokynu ne — v `cisla_vydani.json` jen počet kontrol 44 → 43.
-- Materiál opláštění „bez — dodá stavba“ u volby *materiál opláštění* dál dává druh „stavba“ (konstrukce naše,
-  výplň 0 Kč, věta „zajistí objednatel“). Volby se netýká; jestli to má být taky „bez“, rozhodne J. V.
 - Převod se uloží až při první úpravě zakázky (otisk autosave se bere po převodu, stejně jako přepočet ceníku).
 
 # Předávka — 3. 11. 2026: PW #553 — webhook „Vygenerovat nabídku“ z Pipedrive, větev `claude/pw-553-webhook`

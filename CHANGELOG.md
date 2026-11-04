@@ -38,7 +38,7 @@ není třeba.“ Na webech nic. Verzi i číslo může koordinace přečíslovat
   a obnova ze zálohy beze změny.
 - **Specifikace a nabídka:** u „bez“ nic o světlíku (řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ „ -“, členění portálů
   „bez světlíků“) — dřívější věty „… zajistí objednatel“ zůstávají jen u odeslaných nabídek (a u materiálu
-  opláštění „bez — dodá stavba“, který s volbou nesouvisí). Krycí listy světlíky neuvádějí (beze změny). Překlady
+  opláštění „bez — dodá stavba“ — viz dodatek níž). Krycí listy světlíky neuvádějí (beze změny). Překlady
   EN/DE/FR beze změny (věty dál potřebují odeslané nabídky).
 - **Testy:** nové `src/test_svetliky_stavba.js` 49/0, `netlify/test_560_svetliky_stavba.mjs` 21/0,
   `overit_svetliky_stavba.mjs` 13/0 — **na `6109e39` všechny tři selžou**. Upravené `test_nadprazi.js`,
@@ -47,6 +47,16 @@ není třeba.“ Na webech nic. Verzi i číslo může koordinace přečíslovat
   (stará mutace „#375: kontrola boků „bez“ nehlásí mezeru“ zrušena — chování odstraněno). Kolo `--bez-mutaci`
   zelené (sady 381 / 0 / 7 přeskočeno — firemní podklady a test.js; žádná prohlížečová sada nepřeskočena).
 - **Manuál obchodníka** (`manual/obsah.json`): volby bez „zajistí stavba“, co znamená „bez“, převod starší zakázky.
+- **Dodatek (rozhodnutí J. V. 4. 11. 2026, otevřený bod 1): světlík z *materiálu opláštění*, jehož stěny B, C, D
+  jsou převážně „bez — dodá stavba“, = světlík „bez“.** Dřív druh „stavba“ (naše konstrukce, výplň 0 Kč, věta
+  „zajistí objednatel“). Teď žádná naše konstrukce (sloupek portálu, krátké příčníky, terče / lišty, 0,5 h u boků),
+  bočních světlíků 0, nad dveřmi jako „bez“ i v Modelu 1 (−0,2 h × nástupiště); cena na haléř jako u volby „bez“.
+  Specifikace o světlíku mlčí, kontrola „počet je 0“ nestraší, bublina a Detail to vysvětlí, po otevření věta v liště
+  (`svetlikyMaterialBezPocet`). Data se nemění — jen výsledek jádra (výběr materiálu světlíků přesunut v `vypocet`
+  před hodiny a konstrukci). „Bez“ jen na stěně A (volba sklo bere sklo ze standardu) nic nemění. Odeslané nabídky
+  jedou ze zmrazeného výsledku (volba „materiál“ je až od #375, po zavedení otisku 15. 9.) — beze změny, uložení
+  bez chyby zámku. Testy: `src/test_svetliky_stavba.js` 67/0, `netlify/test_560_svetliky_stavba.mjs` 25/0,
+  `overit_svetliky_stavba.mjs` 16/0 (nové části na `b9cec72` selžou); mutace „#560“ celkem jádro 17 z 17, server 9 z 9.
 
 ---
 
