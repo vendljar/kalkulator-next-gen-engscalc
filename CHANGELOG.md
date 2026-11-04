@@ -31,10 +31,10 @@ Návrh 8 pevných bodů (varianta C) J. V. nepřijal: **žádná nová sekce, je
 - Popisek karty v Kalkulaci: **„(netisknou se do nabídky; tisknou se jen na krycím listu)“**, text pod polem
   upraven.
 - Razítko „naposledy upravil kdo a kdy“ u sekce **vynecháno** — server píše jen razítko celé zakázky.
-- **Testy:** `src/test_ik_poznamky.js` (70), `netlify/test_ik_poznamky.mjs` (13), `overit_ik_poznamky.mjs` (54, vč. textu
+- **Testy:** `src/test_ik_poznamky.js` (71), `netlify/test_ik_poznamky.mjs` (13), `overit_ik_poznamky.mjs` (54, vč. textu
   o 20 řádcích: obrazovka bez ořezu, tisk PDF i Word celý);
   `src/test_poznamky.js` upraven (krycí list smí poznámky znát jen přes `poznamkyKryciSekce`). Pojistka:
-  nad 6109e39 všechny tři selžou. Mutace „#IK“ (13) v `netlify/mutace.mjs`.
+  nad 6109e39 všechny tři selžou. Mutace „#IK“ 13 z 13 chycených (`netlify/mutace.mjs`). Kolo `--bez-mutaci` VŠE ZELENÉ (381 / 0 / 7 přeskočeno).
 - Manuál obchodníka (kap. 27) a správce (A2, A12) doplněny.
 
 ## v4.11.3 — PW #553: webhook „Vygenerovat nabídku“ z Pipedrive (varianta A), větev claude/pw-553-webhook
