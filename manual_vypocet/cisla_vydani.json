@@ -1,6 +1,6 @@
 {
  "vydani": 3,
- "verze": "26.10.12",
+ "verze": "4.11.4",
  "pozn": "Čísla vydaného manuálu výpočtu OCK. Změní-li jádro kterékoli z nich, test_manual_vypocet.js spadne: vydejte nový manuál a soubor obnovte (node manual_vypocet/sestav.js --snapshot).",
  "hodnoty": {
   "z.zdvih": "17,325",
@@ -338,7 +338,7 @@
   "v.ram1": "4,54",
   "v.nadVys": "0,965",
   "v.prosk3": "17,025",
-  "k.pocet": "44",
+  "k.pocet": "47",
   "e.strecha": "2,762",
   "e.strecha2": "2,76",
   "e.fasada": "40,05",

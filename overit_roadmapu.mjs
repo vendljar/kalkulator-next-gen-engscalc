@@ -120,8 +120,11 @@ test('reset filtrů vrátí výchozí pohled',
 const sloupce = () => page.evaluate(() => [...document.querySelectorAll('#vlny-telo .sloup h2')]
   .map(h => (RM.meta.vlny.find(v => h.textContent.indexOf(v.nazev) === 0) || {}).id));
 const vychozi = await sloupce();
-test('vlny A a B jsou ve výchozím pohledu schované',
-  vychozi.indexOf('A') < 0 && vychozi.indexOf('B') < 0, vychozi.join(''));
+/* Vlna B dostala 4. 11. 2026 novou otevřenou položku (#560 můstky, návrh NV) —
+ * hotová vlna se schová, vlna s otevřenou prací ne (podle dat, ne napevno). */
+const otevreneAB = await page.evaluate(() => ['A', 'B'].filter(id => RM.polozky.some(p => p.vlna === id && p.stav !== 'hotovo')));
+test('hotové vlny A a B jsou ve výchozím pohledu schované (s otevřenou prací vidět)',
+  ['A', 'B'].every(id => (vychozi.indexOf(id) >= 0) === otevreneAB.includes(id)), { vychozi: vychozi.join(''), otevreneAB });
 const otevrene = await page.evaluate(() =>
   RM.meta.vlny.filter(v => RM.polozky.some(p => p.vlna === v.id && p.stav !== 'hotovo')).map(v => v.id));
 test('každá vlna s otevřenou prací má sloupec', otevrene.every(id => vychozi.indexOf(id) >= 0),
