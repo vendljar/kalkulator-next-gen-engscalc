@@ -625,7 +625,8 @@ if (typeof dokumentRegistruj === 'function') {
       nazev: 'Krycí list PROJ – ' + label,
       generate: (zak, varianta, jekly) => {
         const d = kryciProjData(zak, varianta, jekly, verze);
-        return { blob: docxDokumentBlob(d.nadpis, d.sekce), nazevSouboru: d.nazevSouboru, data: d };
+        /* Interní poznámky k zakázce jako první sekce (IK) — kryciVystupSekce v kryci.js. */
+        return { blob: docxDokumentBlob(d.nadpis, kryciVystupSekce(zak, d.sekce)), nazevSouboru: d.nazevSouboru, data: d };
       },
     });
   });

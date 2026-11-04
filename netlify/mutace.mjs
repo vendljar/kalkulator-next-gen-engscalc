@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : [/* #530 (27. 10. 2026): autorská poznámka v hlavičce lib/sdilene.mjs — rychlá sada, první. */
+  : [/* #IK / #560 (4. 11. 2026): interní poznámky k zakázce na krycím listu — rychlé sady. */
+     '../src/test_ik_poznamky.js', 'test_ik_poznamky.mjs', '../src/test_poznamky.js',
+     /* #530 (27. 10. 2026): autorská poznámka v hlavičce lib/sdilene.mjs — rychlá sada, první. */
      '../src/test_autorstvi.js',
      /* #553 PW (3. 11. 2026): webhook „Vygenerovat nabídku" z Pipedrive — rychlá sada (< 1 s). */
      'test_553_webhook.mjs',
@@ -5718,6 +5720,56 @@ const MUTACE = [
     hledej: "  const bunka = (typeof csvBunka === 'function') ? csvBunka :",
     nahrad: "  const bunka = false ? csvBunka :",
     proc: 'text „=HYPERLINK(…)" z krycího listu by u integrátora spustil vzorec (B83)' },
+  /* ---------- #IK / #560 (4. 11. 2026): interní poznámky k zakázce na krycím listu ----------
+   * Hlídají src/test_ik_poznamky.js, netlify/test_ik_poznamky.mjs a src/test_poznamky.js. */
+  { nazev: '#IK: server nehlídá, kdo poznámky mění', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "    if (ptext(zak) !== ptext(stara) && !globalThis.poznamkySmiPsat(stara, relace))",
+    nahrad: "    if (false && ptext(zak) !== ptext(stara) && !globalThis.poznamkySmiPsat(stara, relace))",
+    proc: 'cizí obchodník, který zakázku jen čte, by přepsal interní poznámky' },
+  { nazev: '#IK: server bere autora z těla požadavku', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "    if (ptext(zak) !== ptext(stara) && !globalThis.poznamkySmiPsat(stara, relace))",
+    nahrad: "    if (ptext(zak) !== ptext(stara) && !globalThis.poznamkySmiPsat(zak, relace))",
+    proc: 'podvržený autor v těle by pravidlo „kdo jen čte" obešel' },
+  { nazev: '#IK: server porovnává holé pole místo zobrazeného textu', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "    const ptext = x => (typeof globalThis.poznamkyPoleText === 'function')",
+    nahrad: "    const ptext = x => (false)",
+    proc: 'zhmotnění textu starších poznámek by se bralo jako změna a uložení by spadlo' },
+  { nazev: '#IK: smí psát každý', soubor: '../src/poznamky.js',
+    hledej: "  return f ? !!f(zak, ja) : true;",
+    nahrad: "  return true;",
+    proc: 'kdo zakázku jen čte, by poznámky přepsal' },
+  { nazev: '#IK: krycí list poznámky netiskne', soubor: '../src/poznamky.js',
+    hledej: "  if (!t.trim()) return null;\n  return { sekce: POZN_NADPIS",
+    nahrad: "  return null;\n  return { sekce: POZN_NADPIS",
+    proc: 'pole by na krycím listu (tisk ani Word) chybělo' },
+  { nazev: '#IK: prázdné pole se tiskne', soubor: '../src/poznamky.js',
+    hledej: "  if (!t.trim()) return null;\n  return { sekce: POZN_NADPIS",
+    nahrad: "  return { sekce: POZN_NADPIS",
+    proc: 'krycí list by nesl prázdnou sekci interních poznámek' },
+  { nazev: '#IK: jiný nadpis než karta v Kalkulaci', soubor: '../src/poznamky.js',
+    hledej: "const POZN_NADPIS = 'Interní poznámky k zakázce';",
+    nahrad: "const POZN_NADPIS = 'Interní klíčové informace';",
+    proc: 'J. V.: nadpis má být úplně stejný jako v Kalkulaci' },
+  { nazev: '#IK: poznámky až na konci krycího listu', soubor: '../src/kryci.js',
+    hledej: "  return ik ? [ik].concat(sekce || []) : (sekce || []);",
+    nahrad: "  return ik ? (sekce || []).concat([ik]) : (sekce || []);",
+    proc: 'J. V.: sekce má být první, nad Základními údaji' },
+  { nazev: '#IK: poznámky v sekcích krycího listu (Pipedrive)', soubor: '../src/kryci.js',
+    hledej: "  return { nadpis: 'Krycí list zakázky OCK — ' + verzeNazev, sekce, nazevSouboru,",
+    nahrad: "  return { nadpis: 'Krycí list zakázky OCK — ' + verzeNazev, sekce: kryciVystupSekce(zak, sekce), nazevSouboru,",
+    proc: 'interní poznámky by šly do náhledu zápisu Prodáno do Pipedrive' },
+  { nazev: '#IK: Word krycího listu OCK bez poznámek', soubor: '../src/kryci.js',
+    hledej: "docxDokumentBlob(d.nadpis, kryciVystupSekce(zak, d.sekce))",
+    nahrad: "docxDokumentBlob(d.nadpis, d.sekce)",
+    proc: 'Word krycího listu OCK by poznámky nenesl' },
+  { nazev: '#IK: Word krycího listu PROJ bez poznámek', soubor: '../src/kryci_proj.js',
+    hledej: "docxDokumentBlob(d.nadpis, kryciVystupSekce(zak, d.sekce))",
+    nahrad: "docxDokumentBlob(d.nadpis, d.sekce)",
+    proc: 'Word krycího listu PROJ by poznámky nenesl' },
+  { nazev: '#IK: Word nezná sekci s textem', soubor: '../src/docxgen.js',
+    hledej: "    if (typeof s.text === 'string') {",
+    nahrad: "    if (false) {",
+    proc: 'Word by místo textu poznámek vytiskl prázdnou tabulku' },
 ];
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
  * (nález T5 revize v22.9.9, 22. 9. 2026)

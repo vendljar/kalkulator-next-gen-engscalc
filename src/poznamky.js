@@ -29,7 +29,8 @@
  *    po nich záznam bez dat (název, velikost, kdo a kdy), takže je pořád
  *    vidět, že tam něco bylo.
  *
- * 4) NIC z toho se netiskne. To je celý smysl funkce: je to místo pro
+ * 4) NIC z toho se netiskne (jediná výjimka od 4. 11. 2026: krycí list OCK
+ *    a PROJ, viz poznamkyKryciSekce dole). Je to místo pro
  *    věty, které zákazník vidět nemá. Žádný generátor dokumentů proto
  *    tento modul nevolá a ani nezná názvy jeho polí; hlídá to test
  *    v test_poznamky.js, který zdrojáky generátorů čte jako text.
@@ -323,8 +324,42 @@ function poznamkyJedinaZmena(ted, ulozeno) {
   return poznamkyStabilne(poznamkyBezZapisniku(a)) === poznamkyStabilne(poznamkyBezZapisniku(b));
 }
 
+/* ---------- krycí list OCK i PROJ (IK, rozhodnutí J. V. 4. 11. 2026) ----------
+ *
+ * TOTÉŽ pole jako karta v Kalkulaci, žádná kopie ani převod: krycí list
+ * OCK i PROJ ho ukazuje jako první sekci se stejným nadpisem a tiskne ho
+ * do verze Backoffice i Techdata (PDF i Word). Prázdné pole se netiskne.
+ *
+ * Bod 4 nahoře („nic se netiskne") od 4. 11. 2026 platí s jedinou výjimkou:
+ * krycí list, tedy interní podklad pro backoffice a technické oddělení.
+ * Do nabídky (CN), smlouvy, plné moci, specifikace, Pipedrive ani
+ * controllingu se pole nedostane — generátory krycího listu volají jen
+ * `poznamkyKryciSekce` a výsledek nepatří do `kryciData().sekce`, ze které
+ * bere náhled zápisu do Pipedrive (prodPdZapis). Hlídá test_ik_poznamky.js. */
+const POZN_NADPIS = 'Interní poznámky k zakázce';
+
+/* Sekce pro výstup krycího listu, nebo null u prázdného pole. Tvar
+ * `{ sekce, text }` (bez řádků) kreslí tisk i Word jako jeden odstavec přes
+ * celou šířku. Text je přesně to, co uživatel v poli vidí (i odvozený ze
+ * starších strukturovaných poznámek). */
+function poznamkyKryciSekce(zak) {
+  const t = String(poznamkyPoleText(zak) || '').replace(/\r/g, '');
+  if (!t.trim()) return null;
+  return { sekce: POZN_NADPIS, text: t.replace(/\s+$/, '') };
+}
+
+/* Kdo smí do pole psát: každý, kdo smí upravovat zakázku — stejné pravidlo
+ * jako odemčení zakázky (zamekCteniSmiOdemknout: autor, vedoucí,
+ * administrátor; offline a zakázka bez autora ano). Ostatní pole jen čtou.
+ * Odeslaná nabídka, SoD ani Prodáno pole nezamykají (bod 2 nahoře). */
+function poznamkySmiPsat(zak, ja) {
+  const f = (typeof zamekCteniSmiOdemknout === 'function') ? zamekCteniSmiOdemknout
+    : (typeof require === 'function' ? require('./zamek.js').zamekCteniSmiOdemknout : null);
+  return f ? !!f(zak, ja) : true;
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { POZN_DRUHY, POZN_DRUH_VYCHOZI, POZN_MAX_PRILOHA, POZN_MAX_CELKEM,
+  module.exports = { POZN_NADPIS, poznamkyKryciSekce, poznamkySmiPsat, POZN_DRUHY, POZN_DRUH_VYCHOZI, POZN_MAX_PRILOHA, POZN_MAX_CELKEM,
                      POZN_POLE_ZAPISNIKU, poznamkyJedinaZmena, poznamkyBezZapisniku,
                      poznamkyZajisti, poznamkyPridej, poznamkyUprav, poznamkySmaz, poznamkyObnov,
                      poznamkySeznam, poznamkyNajdi, poznamkyShrnuti, poznamkyText,

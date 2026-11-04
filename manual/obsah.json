@@ -961,11 +961,14 @@
       "id": "kap-poznamky",
       "nadpis": "27. Interní poznámky k zakázce",
       "bloky": [
-        { "typ": "text", "text": "Karta **Interní poznámky k zakázce (netisknou se)** stojí **nahoře**: v Kalkulaci OCK hned pod cenovým pásem, v Kalkulaci PROJ pod souhrnem. Patří sem to, co se jinak ztratí v e-mailu: proč se dala sleva, co jsme slíbili, na čem se čeká." },
+        { "typ": "text", "text": "Karta **Interní poznámky k zakázce (netisknou se do nabídky; tisknou se jen na krycím listu)** stojí **nahoře**: v Kalkulaci OCK hned pod cenovým pásem, v Kalkulaci PROJ pod souhrnem. Patří sem to, co se jinak ztratí v e-mailu a co má vědět firma: proč se dala sleva, co jsme slíbili, kdo rozhoduje, na co si dát pozor na stavbě, na čem se čeká." },
+        { "typ": "text", "text": "**Totéž pole je na krycím listu.** Na záložce **Krycí list zakázky OCK** i **PROJ** je to **první sekce**, nad Základními údaji, se stejným nadpisem. Není to kopie: co napíšete v Kalkulaci, je hned na krycím listu, a co doplníte na krycím listu, uvidíte v Kalkulaci. Platí pro celou zakázku — pro OCK, PROJ i všechny varianty." },
+        { "typ": "text", "text": "**Kam se tiskne:** do obou verzí krycího listu — **Tisk PDF – Backoffice** i **Tisk PDF – Technické odd.** (i do Wordu krycího listu) — jako první sekce. Prázdné pole se netiskne. Do cenové nabídky, smlouvy o dílo, plné moci, technické specifikace, Pipedrive ani controllingu se **nedostane nikdy**." },
+        { "typ": "text", "text": "**Doplňovat jde vždy** — i po odeslání nabídky, po podpisu SoD a po Prodáno; zámek odeslané nabídky poznámky nezamyká. Psát smí ten, kdo smí zakázku upravovat (autor, vedoucí, administrátor); kolega, který cizí zakázku jen čte, vidí pole jen ke čtení." },
         {
           "typ": "kroky", "nadpis": "Postup: zapsat poznámku",
           "polozky": [
-            {"text": "Klikněte do pole karty **Interní poznámky k zakázce** a pište jako do zápisníku. Ukládá se samo, i v zakázce otevřené jen ke čtení.", "snimek": "poznamky-prilohy", "klik": {"sel": "textarea", "stitek": "pište sem"}, "odkazy": [{"obsahuje": "netisknou se", "text": "Nic z téhle karty se **netiskne**: text se neobjeví v nabídce, krycím listu ani ve specifikaci."}]}
+            {"text": "Klikněte do pole karty **Interní poznámky k zakázce** a pište jako do zápisníku. Ukládá se samo, i v zakázce otevřené jen ke čtení.", "snimek": "poznamky-prilohy", "klik": {"sel": "textarea", "stitek": "pište sem"}, "odkazy": [{"obsahuje": "netisknou se", "text": "Do nabídky se text **netiskne** — jen do krycího listu OCK a PROJ (verze Backoffice i Technické odd.)."}]}
           ]
         },
         { "typ": "text", "text": "Poznámky jsou **jedno textové pole** — píšete do něj jako do zápisníku, odstavec pod odstavec. Štítky druhu poznámky a jednotlivé záznamy s autorem a časem zmizely; v provozu je nikdo nepoužíval. Je to **jeden zápisník zakázky**: co napíšete v OCK, uvidíte i v PROJ." },

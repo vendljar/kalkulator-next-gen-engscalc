@@ -533,7 +533,7 @@ function renderProj() {
      * obchodník napíše v OCK, vidí i v PROJ. Stojí na témže místě jako
      * v Kalkulaci OCK — hned pod souhrnem, nad vlastním výpočtem. */
     (typeof poznamkyKarta === 'function'
-      ? kartaRezim('proj', 'poznamky', 'Interní poznámky k zakázce (netisknou se)',
+      ? kartaRezim('proj', 'poznamky', 'Interní poznámky k zakázce (netisknou se do nabídky; tisknou se jen na krycím listu)',
                    poznamkyKarta('proj'), 'proj-poznamky')
       : '') +
     card('Cenová kalkulace PROJ', kalkulace, false, 'proj-kalkulace') +

@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v4.11.4 — IK #560: Interní poznámky k zakázce i na krycím listu OCK a PROJ, větev claude/ik-poznamky-kryci
+
+Nad `6109e39` (`test`, v4.11.3), rozhodnutí J. V. 4. 11. 2026 po návrhu IK (`podklady/NAVRH_INTERNI_INFO_04_11.md`).
+Návrh 8 pevných bodů (varianta C) J. V. nepřijal: **žádná nová sekce, jedno textové pole — totéž jako
+„Interní poznámky k zakázce“**. Na webech nic. Verzi může koordinace přečíslovat.
+
+- **Krycí list OCK i PROJ:** první sekce nad „Základní údaje“ s nadpisem **„Interní poznámky k zakázce“**
+  a textovým polem. Je to `ZAK.poznamkyText` — totéž pole jako karta v Kalkulaci OCK i PROJ; zápis kdekoli
+  je hned vidět všude (žádná kopie ani převod). Platí pro zakázku (OCK, PROJ, všechny varianty).
+- **Tisk:** sekce jde jako první do **Backoffice i Techdata** (tiskový náhled PDF i Word krycího listu),
+  odstavec přes celou šířku se zachovaným zalomením. **Prázdné pole se netiskne.**
+- **Nikam jinam:** CN, SoD, plná moc, specifikace, Pipedrive (nanečisto, mapa polí, zápis Prodáno) ani
+  controlling. Pole není v `KRYCI_SEKCE`/`KRYCI_PROJ_SEKCE` ani v `kryciData().sekce` (z té bere
+  `prodPdZapis`); krycí list ho bere jen přes `kryciVystupSekce` → `poznamkyKryciSekce`.
+- **Doplňování vždy:** i po CN, SoD a Prodáno — pole leží mimo data variant (#555/#555b) i mimo cesty
+  hlavičky Z1; server ho kvůli zámku neodmítne.
+- **Kdo píše:** každý, kdo smí upravovat zakázku (autor, vedoucí, administrátor — `zamekCteniSmiOdemknout`).
+  Cizí obchodník má pole readonly (karta i krycí list) a server mu změnu odmítne **403** (autor z uložené
+  verze). Dosud mohl poznámky cizí zakázky přepsat kdokoli přihlášený.
+- Popisek karty v Kalkulaci: **„(netisknou se do nabídky; tisknou se jen na krycím listu)“**, text pod polem
+  upraven.
+- Razítko „naposledy upravil kdo a kdy“ u sekce **vynecháno** — server píše jen razítko celé zakázky.
+- **Testy:** `src/test_ik_poznamky.js` (62), `netlify/test_ik_poznamky.mjs` (13), `overit_ik_poznamky.mjs` (41);
+  `src/test_poznamky.js` upraven (krycí list smí poznámky znát jen přes `poznamkyKryciSekce`). Pojistka:
+  nad 6109e39 všechny tři selžou. Mutace „#IK“ (12) v `netlify/mutace.mjs`.
+- Manuál obchodníka (kap. 27) a správce (A2, A12) doplněny.
+
 ## v4.11.3 — PW #553: webhook „Vygenerovat nabídku“ z Pipedrive (varianta A), větev claude/pw-553-webhook
 
 Nad `198ed4c` (`test`, v3.11.3), rozhodnutí J. V. 3. 11. 2026 (varianta A z návrhu #553). Na webech nic —

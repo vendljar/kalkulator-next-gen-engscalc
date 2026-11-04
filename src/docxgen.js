@@ -1082,6 +1082,18 @@ function docxTeloZeSekci(nadpis, sekce) {
       return;
     }
     const hlava = `<w:tr>${docxCell(docxPar(s.sekce, { b: true, sz: 20, color: 'FFFFFF', after: 0 }), WFULL, { span: 2, fill: '2B3850' })}</w:tr>`;
+    /* Sekce s volným textem místo řádků (`{ sekce, text }`, krycí list IK
+     * 4. 11. 2026): jeden odstavec přes celou šířku, zalomení řádků zůstane. */
+    if (typeof s.text === 'string') {
+      body += `<w:tbl><w:tblPr><w:tblW w:w="${WFULL}" w:type="dxa"/>`
+        + '<w:tblBorders><w:top w:val="single" w:sz="4" w:color="C7D0DB"/><w:left w:val="single" w:sz="4" w:color="C7D0DB"/>'
+        + '<w:bottom w:val="single" w:sz="4" w:color="C7D0DB"/><w:right w:val="single" w:sz="4" w:color="C7D0DB"/>'
+        + '<w:insideH w:val="single" w:sz="4" w:color="C7D0DB"/><w:insideV w:val="single" w:sz="4" w:color="C7D0DB"/></w:tblBorders>'
+        + `</w:tblPr><w:tblGrid><w:gridCol w:w="${W1}"/><w:gridCol w:w="${W2}"/></w:tblGrid>`
+        + hlava + `<w:tr>${docxCell(docxPar(s.text, { sz: 18, after: 0 }), WFULL, { span: 2 })}</w:tr>`
+        + '</w:tbl>' + docxPar('', { after: 80 });
+      return;
+    }
     const radky = (s.radky || []).map(([l, v]) =>
       `<w:tr>${docxCell(docxPar(l, { b: true, sz: 18, after: 0 }), W1, { fill: 'EEF2F8' })}`
       + `${docxCell(docxPar(v, { sz: 18, after: 0 }), W2)}</w:tr>`).join('');

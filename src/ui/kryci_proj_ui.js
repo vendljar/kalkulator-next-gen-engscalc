@@ -163,6 +163,7 @@ function renderKryciProj() {
     ukazují, do které verze výstupu pole patří.</div>
     ${typeof zamekKryciPoznamka === 'function' ? zamekKryciPoznamka((typeof KRYCI_PROJ_NABIDKA_SEKCE !== 'undefined' ? KRYCI_PROJ_NABIDKA_SEKCE.concat(['plán plateb']) : [])) : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
+    ${typeof poznamkyKryciBlok === 'function' ? poznamkyKryciBlok('proj') : ''}
     ${sekceHtml}
     ${typeof kryciHodinyBlok === 'function' ? kryciHodinyBlok('proj') : ''}
     ${kryciProjTiskBlok(zab)}
@@ -198,7 +199,7 @@ function kryciProjTiskPohled(verze) {
   const v = aktivniVarianta(ZAK);
   const e2 = esc;   // #6: sjednoceno se sdíleným escapováním (ošetří i uvozovky a apostrof)
   const d = kryciProjData(ZAK, v, JEKLY, verze);
-  const sekHtml = d.sekce.map(s =>
+  const sekHtml = kryciVystupSekce(ZAK, d.sekce).map(s =>
     `<h2>${e2(s.sekce)}</h2>${kryciTiskTabulka(s)}`).join('');
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;

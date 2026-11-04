@@ -788,6 +788,18 @@ function kryciData(zak, varianta, jekly, verze) {
   return { nadpis: 'Krycí list zakázky OCK — ' + verzeNazev, sekce, nazevSouboru, verze, verzeNazev };
 }
 
+/* VÝSTUP KRYCÍHO LISTU = interní poznámky k zakázce + sekce (IK, J. V.
+ * 4. 11. 2026). Pole „Interní poznámky k zakázce“ jde jako PRVNÍ sekce do
+ * tisku i Wordu obou verzí (BO i Tech) krycího listu OCK i PROJ; prázdné se
+ * netiskne. Schválně NENÍ v `kryciData().sekce` — z té bere náhled zápisu
+ * do Pipedrive (prodPdZapis) a pole do CRM nepatří. */
+function kryciVystupSekce(zak, sekce) {
+  const f = (typeof poznamkyKryciSekce === 'function') ? poznamkyKryciSekce
+    : (typeof require === 'function' ? require('./poznamky.js').poznamkyKryciSekce : null);
+  const ik = f ? f(zak) : null;
+  return ik ? [ik].concat(sekce || []) : (sekce || []);
+}
+
 /* registrace obou verzí do jednotného registru dokumentů (generují se od nuly) */
 if (typeof dokumentRegistruj === 'function') {
   [['bo', 'Backoffice'], ['techdata', 'Techdata']].forEach(([verze, label]) => {
@@ -795,7 +807,7 @@ if (typeof dokumentRegistruj === 'function') {
       nazev: 'Krycí list zakázky OCK – ' + label,
       generate: (zak, varianta, jekly) => {
         const d = kryciData(zak, varianta, jekly, verze);
-        return { blob: docxDokumentBlob(d.nadpis, d.sekce), nazevSouboru: d.nazevSouboru, data: d };
+        return { blob: docxDokumentBlob(d.nadpis, kryciVystupSekce(zak, d.sekce)), nazevSouboru: d.nazevSouboru, data: d };
       },
     });
   });
@@ -1279,7 +1291,7 @@ function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
 
 if (typeof module !== 'undefined')
   module.exports = { kryciPlatbyOck100, kryciHodiny, kryciHodinySekce, KRYCI_HODINY_OCK, kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_ZALOHY, KRYCI_LIMIT_POKUT, kryciPokutySazby, kryciLimitVolby, kryciPodmEf, kryciPodmEfVarianty, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
-    kryciData, kryciMigraceZadrzne, kryciMigraceSazbaDph,
+    kryciData, kryciVystupSekce, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
     kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,
     kryciSymbolyZeSekci, kryciPodminkoveSymboly, kryciSodSymboly, kryciZmrazPodminky, KRYCI_SOD_OPIS, kryciZmrazSod, kryciDatumCz,

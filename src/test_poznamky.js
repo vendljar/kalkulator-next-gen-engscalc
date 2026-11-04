@@ -230,10 +230,15 @@ test('ani název přílohy',
 /* A do zdrojáků generátorů se poznámky nesmí dostat ani omylem: kdyby někdo
  * do šablony nabídky přidal `ZAK.poznamky`, test výš by to nemusel chytit
  * (poznámka by tam byla jen když nějaká je). Proto ještě čtení textu. */
+/* IK (J. V. 4. 11. 2026): krycí list OCK a PROJ textové pole tiskne — jako
+ * první sekci obou verzí, jen přes `poznamkyKryciSekce` (kryciVystupSekce).
+ * Jiný odkaz na poznámky ani přílohy v jeho zdrojácích být nesmí; zbytek
+ * pojistek (CN, SoD, Pipedrive, controlling) je v test_ik_poznamky.js. */
 const GENERATORY = ['nabidka.js', 'nabidka_proj.js', 'kryci.js', 'kryci_proj.js',
                     'docxgen.js', 'dokumenty.js', 'techspec.js'];
 const hrisnici = GENERATORY.filter(f =>
-  /\bpoznamky\b|\bprilohy\b/.test(fs.readFileSync(__dirname + '/' + f, 'utf8')));
+  /\bpoznamky\b|\bprilohy\b/.test(fs.readFileSync(__dirname + '/' + f, 'utf8')
+    .replace(/poznamkyKryciSekce/g, '').replace(/require\('\.\/poznamky\.js'\)/g, '')));
 test('generátory dokumentů o poznámkách vůbec nevědí',
   hrisnici.length === 0, hrisnici.join(', '));
 

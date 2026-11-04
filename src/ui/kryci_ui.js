@@ -265,6 +265,7 @@ function renderKryci() {
     ukazují, do které verze výstupu pole patří.</div>
     ${typeof zamekKryciPoznamka === 'function' ? zamekKryciPoznamka((typeof KRYCI_NABIDKA_SEKCE !== 'undefined' ? KRYCI_NABIDKA_SEKCE : [])) : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
+    ${typeof poznamkyKryciBlok === 'function' ? poznamkyKryciBlok('ock') : ''}
     ${sekceHtml}
     ${kryciHodinyBlok('ock')}
     ${kryciTiskBlok(zab)}
@@ -302,6 +303,9 @@ function kryciTiskBlok(zab) {
  * sloupci (hodiny z kalkulace, 14. 10. 2026) má záhlaví a víc hodnot. */
 function kryciTiskTabulka(s) {
   const e2 = esc;
+  /* Volný text přes celou šířku (Interní poznámky k zakázce, IK 4. 11. 2026). */
+  if (typeof s.text === 'string')
+    return `<table><tr><td class="ik-text" style="white-space:pre-wrap">${e2(s.text)}</td></tr></table>`;
   if (Array.isArray(s.sloupce) && s.sloupce.length >= 2) {   // i jeden sloupec hodnot má záhlaví (15. 10.)
     const n = s.sloupce.length - 1;
     const tr = (r, th) => `<tr><td class="l">${e2(r[0] || '')}</td>${r.slice(1, n + 1).map(v =>
@@ -335,7 +339,7 @@ function kryciTiskPohled(verze) {
   const v = aktivniVarianta(ZAK);
   const e2 = esc;   // #6: sjednoceno se sdíleným escapováním (ošetří i uvozovky a apostrof)
   const d = kryciData(ZAK, v, JEKLY, verze);
-  const sekHtml = d.sekce.map(s =>
+  const sekHtml = kryciVystupSekce(ZAK, d.sekce).map(s =>
     `<h2>${e2(s.sekce)}</h2>${kryciTiskTabulka(s)}`).join('');
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
