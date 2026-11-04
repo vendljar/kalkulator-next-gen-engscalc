@@ -148,6 +148,17 @@ const naServeru = async (soubor) => {
   return (await (await zakazky(new Request('http://x/api/zakazky?soubor=' + encodeURIComponent(soubor), { headers: { cookie: cA } }))).json()).zakazka;
 };
 
+/* Štítek stavu otevřené varianty v liště nad Kalkulací OCK (PS #558). */
+const stitek = () => page.evaluate(() => {
+  prepniTab('kalk'); render();
+  const el = document.querySelector('.kalk-lista .stav-pill');
+  const r = el ? { trida: el.className, text: el.textContent.trim(), title: el.title,
+    pozadi: getComputedStyle(el).backgroundColor, cteni: zamekCteniJe() } : null;
+  prepniTab('kryci'); render();
+  return r;
+});
+const PRODANA_POZADI = 'rgb(11, 46, 107)';   // #0B2E6B — tmavě modrá firemní
+
 /* ---- 1) obchodník: odeslaná nabídka, otevřená z databáze jen ke čtení ---- */
 test('obchodník přihlášen', await prihlas('obch.prodej@priklad.cz') === 'obch.prodej@priklad.cz');
 const soubor = await page.evaluate(async (ceniky) => {
@@ -166,6 +177,12 @@ test('příprava: nabídka uložená a vytištěná (zámek na serveru)', !!soub
   && !!((await naServeru(soubor)).varianty[0].zamek || {}).zamceno, soubor);
 let o = await otevri(soubor);
 test('otevřená z databáze: jen ke čtení, varianta zamčená (stav z hlášení J. V.)', o.cteni && o.zamceno, o);
+{
+  const st = await page.evaluate(() => { zamekCteniVypni(); return true; }).then(stitek);
+  await page.evaluate(() => { zamekCteniZapni(); render(); });
+  test('PS #558: odeslaná NEprodaná nabídka (odemčené okno) — štítek „Nabídka uzamčena" jako dosud',
+    !!st && /\bzamcena\b/.test(st.trida) && /Nabídka uzamčena/.test(st.text), st);
+}
 await dlg();
 
 /* ---- 2) texty karty a potvrzení (#545) ---- */
@@ -192,6 +209,13 @@ test('…zapsal ho obchodník (razítko serveru) a stopa je v historii',
     && (srv.prodejHistorie || []).some(h => h.akce === 'prodano'), srv.prodejHistorie);
 test('…žádný klon: v zakázce zůstala jediná varianta, zamčená', srv.varianty.length === 1 && !!srv.varianty[0].zamek.zamceno, srv.varianty.length);
 test('…okno zůstalo jen ke čtení (prodej zámek čtení neodemyká)', await page.evaluate(() => zamekCteniJe()));
+{
+  /* PS #558: štítek hned po kliknutí (okno jen ke čtení) — nad 7a23c50 „Jen ke čtení". */
+  const st = await stitek();
+  test('PS #558: hned po Prodáno (okno jen ke čtení) štítek „Nabídka prodána", tmavě modrý',
+    !!st && st.cteni && /\bprodana\b/.test(st.trida) && /Nabídka prodána/.test(st.text) && st.pozadi === PRODANA_POZADI, st);
+  test('PS #558: …bublina připomene zámek okna jen ke čtení', !!st && /jen ke čtení/.test(st.title), st && st.title);
+}
 
 /* ---- 4) znovuotevření ---- */
 o = await otevri(soubor);
@@ -202,6 +226,17 @@ const po = await page.evaluate(() => {
     nazev: typeof zamekZakCestaZmrazena === 'function' ? !!zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel') : null };
 });
 test('po znovuotevření je varianta prodaná a karta to ukazuje', po.prodano && /✔ Prodáno/.test(po.text), po.text.slice(0, 200));
+{
+  /* PS #558: po znovunačtení z databáze — táž zpráva jako hned po kliknutí. */
+  const st = await stitek();
+  test('PS #558: po znovuotevření z databáze štítek „Nabídka prodána", tmavě modrý',
+    !!st && /\bprodana\b/.test(st.trida) && /Nabídka prodána/.test(st.text) && st.pozadi === PRODANA_POZADI, st);
+  /* odemčené okno (bez zámku čtení) — stav zakázky J. V. v hlášení */
+  const st2 = await page.evaluate(() => { zamekCteniVypni(); return true; }).then(stitek);
+  await page.evaluate(() => { zamekCteniZapni(); render(); });
+  test('PS #558: …i v odemčeném okně „Nabídka prodána", ne „Nabídka uzamčena"',
+    !!st2 && !st2.cteni && /\bprodana\b/.test(st2.trida) && !/uzamčena/.test(st2.text), st2);
+}
 test('…krycí list zamčený i ve volném poli (kontakt zákazníka, definitivně)', po.volne === 'zmrazeno', po.volne);
 test('…kromě čísla SoD, které jde doplnit do prvního tisku SoD (K37-N2)', po.sod === 'editovatelne', po.sod);
 test('…hlavička (zákazník) zmrazená', po.nazev === true, po.nazev);

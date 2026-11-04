@@ -8,6 +8,37 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v4.11.4 — PS #562: štítek „Nabídka prodána“ a lišta „Ceník není nahraný“ až po ověření, větev claude/ps-prodano-cenik
+
+Hlášení J. V. 4. 11. 2026 (test v3.11.4). Větev nad `7a23c50` (`test` = v3.11.4). Do `test-draft` / `test` / `main`
+nic; verzi přečísluje koordinace.
+
+- **Štítek po Prodáno.** Po kliknutí na Prodáno zůstával v liště nad kalkulací červený „🔒 Nabídka uzamčena“.
+  Příčina: `variantaStavPill` (`src/ui/common.js`) znala jen stavy *jen ke čtení / uzamčena / aktivní* a prodej
+  (`v.prodano`, `variantaProdana`) vůbec nečetla — nebylo to překreslením ani jinou variantou (stav se bere
+  z otevřené varianty, Prodáno se zapisuje taky do ní). Nově **„✔ Nabídka prodána“**, tmavě modrý (`#0B2E6B` jako
+  text štítku „✔ Prodáno“ na krycím listu, bílé písmo, třída `.stav-pill.prodana`); bublina: datum prodeje, krycí
+  list i hlavička zamčené, odemknout smí vedoucí nebo administrátor. Má přednost i před „Jen ke čtení“, takže po
+  znovuotevření z databáze ukazuje totéž co hned po kliknutí (zámek okna zmíní bublina). Odeslaná neprodaná
+  varianta dál „Nabídka uzamčena“. Štítek v překladech není (rozhraní je jen česky).
+- **Lišta „Ceník není nahraný“ při prvním načtení.** Čekání z S5 (v15.10.4) končilo doběhnutím prvního pokusu
+  zdraví → ja, nejdéle 5 s. Bez živé relace (první otevření, vypršené přihlášení) pokus skončí hned, takže lišta
+  naskočila pod přihlašovacím oknem a svítila i po přihlášení, dokud se ceník nestáhl; při studeném serveru
+  (zdraví + ja + ceník přes 5 s) blikla v 5. vteřině. Ceník přitom nechyběl — jen se ještě neověřil. Nově
+  (`ukazkoveCekaniTrva`, `src/ukazkove.js`) lišta čeká, **dokud je vidět přihlašovací okno** (bez stropu) a **po
+  přihlášení, dokud se ceník stáhne a nasadí** (`UKAZKOVE_OVERENI_MS` = 15 s; `ukazkoveOvereniZacni/Konec`
+  v `src/ui/ukazkove_ui.js`, volá `onlinePoPrihlaseni`, `onlineNactiProgram`, `onlineTik`). Chyba stažení,
+  nezveřejněný ceník a „Pokračovat bez přihlášení“ (bez sítě) čekání ukončí hned — skutečně chybějící ceník se
+  hlásí dál. Zábrany dokumentů beze změny (platí od první vteřiny).
+
+**Testy:** `src/test_ukazkove.js` +10 (nad 7a23c50 6 FAIL, po opravě 106/0); `overit_lista_cekani.mjs` nové
+scénáře D (bez přihlášení → přihlášení formulářem), F (studený start 3 × 2 s), G (bez sítě → „Pokračovat bez
+přihlášení“), C přepsán na strop 15 s — nad 7a23c50 26/6, po opravě 32/0; `overit_prodano_zamek.mjs` +5 (nad
+7a23c50 3 FAIL, po opravě 34/0); `overit_klon_tisk.mjs` +3 — tok J. V. (Prodáno na klonu Varianta 2) nad 7a23c50
+přesně „Nabídka uzamčena“ (2 FAIL), po opravě 53/0. Mutace serveru „#562“ 4 z 4; mutace S5 „lišta čeká i po
+doběhnutí“ přesměrována na nový tvar podmínky (`--kontrola` 1226 / 642 OK).
+Kolo `--bez-mutaci` **VŠE ZELENÉ** (29 min): sady 373 / 0 / 7 přeskočeno (jen firemní podklady KNG_PODKLADY a test.js — prohlížečové sady proběhly), hodiny +400 dní 301 / 0 / 1, statické 5 z 5. Mutace: „#562“ 4 z 4, „S5:“ 15 z 15; celé mutace nepouštěny.
+
 ## v4.11.3 — PW #553: webhook „Vygenerovat nabídku“ z Pipedrive (varianta A), větev claude/pw-553-webhook
 
 Nad `198ed4c` (`test`, v3.11.3), rozhodnutí J. V. 3. 11. 2026 (varianta A z návrhu #553). Na webech nic —

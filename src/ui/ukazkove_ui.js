@@ -80,7 +80,7 @@ function ukazkoveLista() {
  * z online databáze doběhl. `od: null` = nečeká se (file://, kde se online
  * nic nenačítá). Nad http(s) se čas zapíše hned při načtení skriptu — dřív,
  * než cokoli poprvé překreslí obrazovku. */
-const UKAZKOVE_CEKANI = { od: null, dobehlo: false };
+const UKAZKOVE_CEKANI = { od: null, dobehlo: false, overujeOd: null };
 
 function ukazkoveCekaniStart(ted) {
   if (UKAZKOVE_CEKANI.od !== null) return;
@@ -100,6 +100,30 @@ function ukazkoveCekaniKonec() {
   if (typeof setTimeout === 'function') setTimeout(hotovo, 0); else hotovo();
 }
 
+/* Ověřování ceníku po přihlášení (PS #558) — začne v onlinePoPrihlaseni,
+ * skončí nasazením staženého ceníku (onlineTik), chybou stažení nebo
+ * zjištěním, že žádný zveřejněný ceník není (onlineNactiProgram). Pojistný
+ * časovač lištu vyhodnotí po stropu UKAZKOVE_OVERENI_MS, i kdyby se nic
+ * z toho nestalo (visící server, vládne složka). */
+function ukazkoveOvereniZacni(ted) {
+  UKAZKOVE_CEKANI.overujeOd = (typeof ted === 'number') ? ted : Date.now();
+  if (typeof setTimeout === 'function')
+    setTimeout(renderUkazkoveLista, UKAZKOVE_OVERENI_MS + 50);
+}
+function ukazkoveOvereniKonec() {
+  if (UKAZKOVE_CEKANI.overujeOd === null || UKAZKOVE_CEKANI.overujeOd === undefined) return;
+  UKAZKOVE_CEKANI.overujeOd = null;
+  renderUkazkoveLista();
+}
+
+/* Stav čekání pro rozhodnutí lišty: k uloženému stavu přidá, jestli je
+ * právě vidět přihlašovací okno (PS #558 — bez přihlášení se ceník nemá
+ * odkud vzít, okno je ta zpráva). Nad file:// okno není nikdy. */
+function ukazkoveCekaniAkt() {
+  return Object.assign({}, UKAZKOVE_CEKANI, {
+    prihlaseni: typeof prihlaseniViditelne === 'function' && !!prihlaseniViditelne() });
+}
+
 if (typeof location !== 'undefined' && /^https?:$/.test(location.protocol)
     && typeof fetch === 'function')
   ukazkoveCekaniStart();
@@ -109,7 +133,7 @@ function renderUkazkoveLista() {
   if (!el) return;
   /* Během čekání se lišta NEKRESLÍ — obsah (ukazkoveLista) ani zábrany
    * dokumentů se ale nemění. */
-  el.innerHTML = ukazkoveListaRozhodni(ukazkoveStavAkt(), UKAZKOVE_CEKANI, Date.now()) === 'ukazat'
+  el.innerHTML = ukazkoveListaRozhodni(ukazkoveStavAkt(), ukazkoveCekaniAkt(), Date.now()) === 'ukazat'
     ? ukazkoveLista() : '';
 }
 

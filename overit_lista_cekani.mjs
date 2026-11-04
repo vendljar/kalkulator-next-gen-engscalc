@@ -18,8 +18,11 @@
  *  A) ceník přijde za 2 s  → lišta se neukáže vůbec, ceník je nasazený,
  *     a dokud byl prázdný, zábrana dokumentu i varování do tisku platily,
  *  B) /api/program selže za 1,5 s → do té doby nic, pak lišta (dřív než 5 s),
- *  C) /api/program visí → do 4,8 s nic, po 5 s lišta,
- *  D) bez přihlášení → lišta hned po zjištění, že relace není (jako dosud),
+ *  C) /api/program visí → do 14,5 s nic, po 15 s lišta (PS #558),
+ *  D) bez přihlášení → pod přihlašovacím oknem nic, po přihlášení formulářem
+ *     taky nic, ceník se nasadí (PS #558; do v3.11.4 lišta hned),
+ *  F) studený start (zdraví, ja, ceník po 2 s) → nic (PS #558),
+ *  G) bez sítě → pod oknem nic, po „Pokračovat bez přihlášení" lišta hned,
  *  E) ze souboru (file://) → lišta hned jako dosud (online se nic nenačítá).
  *
  * Spuštění: NODE_PATH=$(npm root -g) node overit_lista_cekani.mjs
@@ -130,17 +133,23 @@ const VZORKOVANI = () => {
 };
 
 /* program: 'ok' | 'chyba' | 'visi'; zpozdeni v ms pro GET /api/program. */
-async function scenar({ prihlasen, program, zpozdeni, kolik, soubor }) {
+async function scenar({ prihlasen, program, zpozdeni, kolik, soubor, cesty, offline, akce }) {
   const ctx = await prohlizec.newContext();
   const page = await ctx.newPage();
   const chyby = [];
   page.on('pageerror', e => chyby.push('pageerror: ' + e.message));
   await page.addInitScript(VZORKOVANI);
   const casovace = [];
+  let cookie = prihlasen ? COOKIE : '';
   await page.route('**/api/**', async route => {
     const r = route.request();
     const url = new URL(r.url());
+    /* bez sítě (PS #558) */
+    if (offline) return route.abort('internetdisconnected').catch(() => {});
     const f = FUNKCE[url.pathname];
+    /* zdržení jednotlivých cest — studený start serveru (PS #558) */
+    const zc = cesty && cesty[url.pathname];
+    if (zc) await new Promise(res => casovace.push(setTimeout(res, zc)));
     if (!f) return route.fulfill({ status: 404, body: '{"ok":false}' });
     if (url.pathname === '/api/program' && r.method() === 'GET' && program !== 'ok-hned') {
       await new Promise(res => casovace.push(setTimeout(res, zpozdeni)));
@@ -148,19 +157,24 @@ async function scenar({ prihlasen, program, zpozdeni, kolik, soubor }) {
         return route.fulfill({ status: 503, contentType: 'application/json', body: '{"ok":false,"chyba":"zkušební výpadek"}' })
           .catch(() => {});
     }
-    const init = { method: r.method(), headers: { cookie: prihlasen ? COOKIE : '' } };
+    const init = { method: r.method(), headers: { cookie } };
     if (r.method() === 'POST') init.body = r.postData() || '';
     const odp = await f(new Request(r.url(), init));
+    /* přihlášení formulářem v prohlížeči zapíše relaci (PS #558) */
+    const sc = odp.headers.get('set-cookie');
+    if (sc && url.pathname === '/api/prihlaseni') cookie = sc.split(';')[0];
     await route.fulfill({ status: odp.status, contentType: 'application/json; charset=utf-8',
       body: await odp.text() }).catch(() => {});
   });
   await page.goto(soubor ? new URL('dist/kalkulacka.html', import.meta.url).href : ADRESA);
+  if (akce) await akce(page);
   await page.waitForTimeout(kolik);
   const v = await page.evaluate(() => ({
     vzorky: window.__vzorky,
     cenikPouzit: typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.cenikPouzit,
     lista: document.getElementById('ukazkoveLista').innerHTML,
     kde: (ukazkoveStavAkt().kde || []).join(', '),
+    prihlasen: typeof ONLINE_STAV !== 'undefined' && !!ONLINE_STAV.ja,
   }));
   casovace.forEach(clearTimeout);
   await ctx.close();
@@ -201,24 +215,75 @@ async function scenar({ prihlasen, program, zpozdeni, kolik, soubor }) {
   test('B: bez chyb stránky', v.chyby.length === 0, v.chyby);
 }
 
-/* ---------- C) /api/program visí ---------- */
+/* ---------- C) /api/program visí ----------
+ * Od PS #558 (4. 11. 2026) čeká lišta na stažení ceníku po přihlášení až
+ * UKAZKOVE_OVERENI_MS = 15 s (dřív 5 s od startu stránky — na studeném
+ * serveru to nestačilo a lišta blikla). */
 {
-  const v = await scenar({ prihlasen: true, program: 'visi', zpozdeni: 30000, kolik: 6300 });
-  test('C: do 4,8 s lišta nesvítí (čeká se na ověření)',
-    v.bezi.filter(x => x[0] < 4800).every(x => !x[1]), v.prvniLista);
-  test('C: po 5 s se lišta ukáže sama', v.prvniLista !== null && v.prvniLista < 6300, v.prvniLista);
+  const v = await scenar({ prihlasen: true, program: 'visi', zpozdeni: 40000, kolik: 16800 });
+  test('C: do 14,5 s lišta nesvítí (ceník se po přihlášení ještě stahuje)',
+    v.bezi.filter(x => x[0] < 14500).every(x => !x[1]), v.prvniLista);
+  test('C: po stropu 15 s se lišta ukáže sama', v.prvniLista !== null && v.prvniLista >= 14500 && v.prvniLista < 16800, v.prvniLista);
   test('C: zábrana dokumentu platila i během čekání',
     v.bezi.filter(x => x[2] && !x[1]).length > 10
     && v.bezi.filter(x => x[2]).every(x => x[3] === true && x[4] === true));
   test('C: bez chyb stránky', v.chyby.length === 0, v.chyby);
 }
 
-/* ---------- D) bez přihlášení ---------- */
+/* ---------- D) bez přihlášení (PS #558, 4. 11. 2026) ----------
+ * Do v3.11.4 se lišta ukázala hned po zjištění, že relace není — tedy pod
+ * přihlašovacím oknem, při prvním otevření aplikace každému. Ceník přitom
+ * nechyběl, jen se bez přihlášení nedal načíst. Teď čeká, dokud je okno
+ * vidět; po přihlášení formulářem čeká na stažení ceníku (zdržené o 2 s). */
 {
-  const v = await scenar({ prihlasen: false, program: 'ok-hned', zpozdeni: 0, kolik: 2500 });
-  test('D: bez přihlášení se lišta ukáže hned po zjištění (do 2 s), ne až po 5 s',
-    v.prvniLista !== null && v.prvniLista < 2000, v.prvniLista);
+  const prihlas = async (page) => {
+    await page.waitForSelector('#onlineEmail', { timeout: 5000 });
+    await page.waitForTimeout(800);
+    await page.fill('#onlineEmail', EMAIL);
+    await page.fill('#onlineHeslo', 'Zkusebni.Heslo.123');
+    await page.click('#prihlaseni-box button.primary');
+  };
+  const v = await scenar({ prihlasen: false, program: 'ok', zpozdeni: 2000, kolik: 4500, akce: prihlas });
+  test('D: aplikace naběhla a vzorkovala', v.bezi.length > 20, v.bezi.length);
+  test('D: bez přihlášení ani po přihlášení formulářem se lišta neukázala ani na okamžik',
+    v.prvniLista === null, { prvniLista: v.prvniLista, lista: v.lista.slice(0, 120) });
+  test('D: přihlášení formulářem proběhlo a platný ceník se nasadil', v.prihlasen === true && v.cenikPouzit === true,
+    { prihlasen: v.prihlasen, cenikPouzit: v.cenikPouzit });
+  test('D: zábrana dokumentu platila po celou dobu prázdného ceníku',
+    v.bezi.filter(x => x[2]).length > 5 && v.bezi.filter(x => x[2]).every(x => x[3] === true && x[4] === true));
   test('D: bez chyb stránky', v.chyby.length === 0, v.chyby);
+}
+
+/* ---------- F) studený start serveru (PS #558) ----------
+ * Živá relace, ale zdraví, ja i ceník odpovídají každý po 2 s (dohromady
+ * přes 6 s). Do v3.11.4 lišta naskočila v 5 s a za chvíli zmizela. */
+{
+  const v = await scenar({ prihlasen: true, program: 'ok-hned', zpozdeni: 0, kolik: 8500,
+    cesty: { '/api/zdravi': 2000, '/api/ja': 2000, '/api/program': 2000 } });
+  test('F: studený start — lišta se neukázala ani na okamžik', v.prvniLista === null, { prvniLista: v.prvniLista });
+  test('F: platný ceník se nasadil', v.cenikPouzit === true && v.lista.trim() === '');
+  test('F: bez chyb stránky', v.chyby.length === 0, v.chyby);
+}
+
+/* ---------- G) bez sítě (PS #558) ----------
+ * Server neodpovídá → přihlašovací okno „Zkusit znovu / Pokračovat bez
+ * přihlášení". Dokud je okno vidět, lišta nesvítí; kdo pokračuje bez
+ * přihlášení, ceník opravdu nemá — lišta se ukáže hned. */
+{
+  const t = { klik: null };
+  const v = await scenar({ offline: true, program: 'ok-hned', zpozdeni: 0, kolik: 800, akce: async (page) => {
+    await page.waitForSelector('text=Pokračovat bez přihlášení', { timeout: 5000 });
+    await page.waitForTimeout(1500);
+    t.klik = await page.evaluate(() => Math.round(performance.now()));
+    await page.click('text=Pokračovat bez přihlášení');
+  } });
+  test('G: bez sítě se lišta pod oknem „server neodpovídá" neukázala',
+    v.bezi.filter(x => x[0] < t.klik).length > 10 && v.bezi.filter(x => x[0] < t.klik).every(x => !x[1]),
+    { prvniLista: v.prvniLista, klik: t.klik });
+  test('G: po „Pokračovat bez přihlášení" se lišta ukáže hned (ceník opravdu chybí)',
+    v.prvniLista !== null && v.prvniLista >= t.klik && v.prvniLista < t.klik + 600 && /není nahraný/.test(v.lista),
+    { prvniLista: v.prvniLista, klik: t.klik });
+  test('G: bez chyb stránky', v.chyby.length === 0, v.chyby);
 }
 
 /* ---------- E) ze souboru (file://) ---------- */

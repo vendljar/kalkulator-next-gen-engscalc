@@ -356,5 +356,36 @@ test('po srovnání s ostrým ceníkem lišta zhasne a dokument se odblokuje', (
     && uk.ukazkoveCekaniTrva({ od: T0, dobehlo: true }, T0 + 1) === false);
 }
 
+/* ---------- ověřování po přihlášení a přihlašovací okno (PS #558) ----------
+ * Hlášení J. V. 4. 11. 2026: lišta „ceník není nahraný" při prvním načtení.
+ * Do v3.11.4 čekání skončilo doběhnutím prvního pokusu — bez relace hned,
+ * takže lišta svítila pod přihlašovacím oknem a po přihlášení do stažení
+ * ceníku; na studeném serveru blikla po 5 s. */
+{
+  const R = uk.ukazkoveListaRozhodni;
+  const prazdny = ukazkoveStav({ cenik: { ukazkove: true, prazdny: true }, cenikProj: { ukazkove: true, prazdny: true } });
+  const ostry = ukazkoveStav({ cenik: { marze: 0.42 }, cenikProj: { marze: 0.42 }, slevy: {}, firma: {} });
+  const T0 = 2000000;
+  test('PS #558: strop ověřování po přihlášení je 15 s', uk.UKAZKOVE_OVERENI_MS === 15000);
+  test('PS #558: přihlašovací okno → lišta čeká i po doběhnutí prvního pokusu',
+    R(prazdny, { od: T0, dobehlo: true, prihlaseni: true }, T0 + 100) === 'ceka');
+  test('PS #558: přihlašovací okno nemá strop (ani po minutě)',
+    R(prazdny, { od: T0, dobehlo: true, prihlaseni: true }, T0 + 60000) === 'ceka');
+  test('PS #558: okno zavřené („Pokračovat bez přihlášení") → lišta hned',
+    R(prazdny, { od: T0, dobehlo: true, prihlaseni: false }, T0 + 100) === 'ukazat');
+  test('PS #558: ceník se po přihlášení stahuje → lišta čeká (i po 5 s od startu)',
+    R(prazdny, { od: T0, dobehlo: true, overujeOd: T0 + 3000 }, T0 + 7000) === 'ceka');
+  test('PS #558: ještě 14,99 s od začátku ověřování čeká',
+    R(prazdny, { od: T0, dobehlo: true, overujeOd: T0 }, T0 + 14999) === 'ceka');
+  test('PS #558: v 15 s ověřování se lišta ukáže (visící server)',
+    R(prazdny, { od: T0, dobehlo: true, overujeOd: T0 }, T0 + 15000) === 'ukazat');
+  test('PS #558: ověřování skončilo (overujeOd null) → lišta hned',
+    R(prazdny, { od: T0, dobehlo: true, overujeOd: null }, T0 + 100) === 'ukazat');
+  test('PS #558: načtený ceník → nic, ať se čeká na cokoli',
+    R(ostry, { od: T0, dobehlo: true, prihlaseni: true, overujeOd: T0 }, T0 + 1) === 'neukazat');
+  test('PS #558: čekání nebrání zábraně dokumentu',
+    R(prazdny, { od: T0, dobehlo: true, prihlaseni: true }, T0) === 'ceka' && uk.ukazkoveBraniDokumentu(prazdny) === true);
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

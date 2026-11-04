@@ -4095,8 +4095,9 @@ const MUTACE = [
 
   /* ---------- S5 (15. 10. 2026): červená lišta až po ověření ceníku ---------- */
   { nazev: 'S5: lišta čeká i po doběhnutí načtení', soubor: '../src/ukazkove.js',
-    hledej: "  if (!cekani || cekani.od === null || cekani.od === undefined || cekani.dobehlo) return false;",
-    nahrad: "  if (!cekani || cekani.od === null || cekani.od === undefined) return false;",
+    /* PS #558: podmínka se přesunula pod kontrolu přihlašovacího okna a ověřování */
+    hledej: "  if (cekani.od === null || cekani.od === undefined || cekani.dobehlo) return false;",
+    nahrad: "  if (cekani.od === null || cekani.od === undefined) return false;",
     proc: 'po selhání /api/program by prázdný ceník zůstal 5 s bez varování, i když už je jasné, že chybí' },
   { nazev: 'S5: čekání nemá strop 5 s', soubor: '../src/ukazkove.js',
     hledej: "  return (ted - cekani.od) < UKAZKOVE_CEKANI_MS;",
@@ -4110,6 +4111,23 @@ const MUTACE = [
     hledej: "const UKAZKOVE_CEKANI_MS = 5000;",
     nahrad: "const UKAZKOVE_CEKANI_MS = 0;",
     proc: 'lišta by zase blikla každému přihlášenému, než se ceník stáhne (zadání J. V. 15. 10. 2026)' },
+  /* ---------- PS #558 (4. 11. 2026): lišta ceníku až po ověření ---------- */
+  { nazev: '#558: přihlašovací okno lištu nezdrží', soubor: '../src/ukazkove.js',
+    hledej: "  if (cekani.prihlaseni === true) return true;\n",
+    nahrad: "",
+    proc: 'lišta „ceník není nahraný" by zase svítila pod přihlašovacím oknem při prvním otevření (hlášení J. V. 4. 11. 2026)' },
+  { nazev: '#558: stahování ceníku po přihlášení lištu nezdrží', soubor: '../src/ukazkove.js',
+    hledej: "  if (typeof cekani.overujeOd === 'number' && (ted - cekani.overujeOd) < UKAZKOVE_OVERENI_MS) return true;\n",
+    nahrad: "",
+    proc: 'po přihlášení / na studeném serveru by lišta svítila, dokud ceník nedorazí' },
+  { nazev: '#558: ověřování nemá strop', soubor: '../src/ukazkove.js',
+    hledej: "(ted - cekani.overujeOd) < UKAZKOVE_OVERENI_MS) return true;",
+    nahrad: "true) return true;",
+    proc: 'při visícím serveru by lišta po přihlášení nenaskočila nikdy' },
+  { nazev: '#558: strop ověřování zkrácený na 5 s', soubor: '../src/ukazkove.js',
+    hledej: "const UKAZKOVE_OVERENI_MS = 15000;",
+    nahrad: "const UKAZKOVE_OVERENI_MS = 5000;",
+    proc: 'na studeném serveru by lišta zase blikla' },
   /* Audit kola 25 (15. 10. 2026). */
   { nazev: 'B152: hodnoty krycího listu bez kontroly typu', soubor: '../src/uloziste.js',
     hledej: "    uloTypyKryci(d, sv && sv.data).forEach(k => out.push({ kde: pred + k, duvod: 'typ' }));",
