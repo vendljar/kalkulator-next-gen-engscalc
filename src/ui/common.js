@@ -2728,6 +2728,9 @@ function nactiZakazku(ev) {
   f.text().then(t => {
     try {
       ZAK = StorageAdapter.importuj(t); syncVarianta();
+      /* SEC-M16: fotka s odkazem se při importu zahodila — říct to. */
+      const fotoVar = (typeof uvodniFotoVarovani === 'function') ? uvodniFotoVarovani(ZAK.fotoZahozena) : '';
+      if (fotoVar) hlaska(fotoVar);
       // #18: hledání a filtr patří k oknu, ne k datům – jiná zakázka se musí
       // ukázat celá, ne přes zúžení nastavené nad tou předchozí.
       if (typeof seznamReset === 'function') seznamReset();

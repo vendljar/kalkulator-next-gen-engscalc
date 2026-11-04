@@ -1,3 +1,28 @@
+# Předávka — 3. 11. 2026: SF16 #559 — SEC-M16 úvodní fotka jen jako `data:image`, větev `claude/sec-m16-foto`
+
+Nad `198ed4c` (`test`, v3.11.3). **Verze 3.11.4** (koordinace přečísluje, číslo #559 také). Neslučováno; na ostrém
+ani testovacím webu nic. Rozhodnutí J. V. 3. 11. 2026: „Ano, jen data:image“.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. společná kontrola tvaru (fotka PNG/JPEG/WEBP, logo PNG/JPEG) | ✅ | `obrazekDataUrlPlatny`, `uvodniFotoPlatna` (`src/zakazka.js`); `firma.js` (logo); podpis `podpisZkontroluj` má totéž pravidlo |
+| 2. server, obnova, import: jiná fotka se zahodí s hláškou | ✅ | `importZakazka` → `uvodniFotoOcisti`; `zakazka_kontrola.mjs` (`fotoZahozena`), `zakazky.mjs` (`varovani`), `obnova.mjs` (upozornění), `ui/common.js` a `ui/uloziste_ui.js` (hláška) |
+| 3. klient fotku s odkazem nevykreslí | ✅ | `nabidkaFotoSrc` (`src/ui/zakazka_ui.js`) — karta, tisk HTML; Word `uvodniFotoObrazky` |
+| 4. zamčená varianta se kvůli fotce neodmítne | ✅ | fotka je v hlavičce zakázky, ne v `varianta.data`; ověřeno testem (nová i stará uložená zakázka) |
+| 5. meze, audit, CHANGELOG, roadmapa #559 | ✅ | `BEZPECNOST_MEZE.md`, `podklady/SEC_AUDIT_MAIN_28_10.md` |
+
+**Rozhodnutí v dávce:** server fotku v jiném tvaru **zahodí s varováním** (200), neodmítá 400 — jako logo, ne jako
+podpis. Důvod: stará zakázka (i zamčená) s fotkou z odkazu se musí dát uložit. Nahrávání: GIF a SVG se odmítnou
+hláškou už při nahrání (dřív by se uložily a server by je teď stejně zahodil); PNG/JPEG/WEBP a strop 2 MB beze změny.
+
+**Testy:** `src/test_sec_m16_foto.js` 59/0 (na 198ed4c 44 FAIL), `netlify/test_sec_m16.mjs` 44/0 (na 198ed4c 25 FAIL).
+Mutace „#559 SEC-M16“: jádro **4 z 4**, server **7 z 7** chycených (`--kontrola` 641 / 1223 OK). Kolo `--bez-mutaci`
+**VŠE ZELENÉ** (sady 373 / 0 / 7 přeskočeno — firemní podklady; hodiny +400 dní 301 / 0 / 1; statické 5 z 5; 30 min).
+Celé mutace nepouštěny. Pozn.: v čerstvém kontejneru se playwright z kořene repa nenačte (ESM nevidí NODE_PATH) —
+pomůže `mkdir -p node_modules && ln -s /opt/node-tools/node_modules/playwright{,-core} node_modules/` (jinak 52 sad přeskočeno).
+
+**Otevřené body:** fotky s webovou adresou v uložených zakázkách zmizí při prvním otevření/uložení (obchodník je musí
+nahrát znovu ze souboru) — kolik takových zakázek je v databázi, nevím (do živých webů se nepřihlašuji).
 # Předávka — 3. 11. 2026: K39 — opravy nálezů kol 38 a 39, větev `claude/k39-opravy`
 
 Nad `198ed4c` (`origin/test`, v3.11.3 = DK #554 + SF #556 + ZO #555). **Verze 3.11.4** (koordinace přečísluje).

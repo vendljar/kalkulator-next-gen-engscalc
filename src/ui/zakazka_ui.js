@@ -741,6 +741,20 @@ const NABIDKA_FOTO_NAZVY = { ock: 'OCK', proj: 'PROJ' };
 /* Přijetí souboru z dialogu i ze schránky (Ctrl+V) — jedna cesta pro obojí,
  * aby limit velikosti a pojmenování platily stejně. Výstřižek ze schránky
  * jméno souboru nemá, tak se dopíše, odkud přišel a kdy. */
+/* Fotka k vykreslení (SEC-M16, 3. 11. 2026): jen datový obrázek PNG/JPEG/WEBP,
+ * jinak ''. Stará zakázka s odkazem (http(s)://…) nebo `javascript:` by se
+ * jinak stáhla z cizího serveru (sledovací pixel v souboru z disku bez CSP).
+ * Kontrola je společná se serverem a importem (uvodniFotoPlatna v zakazka.js). */
+function nabidkaFotoPlatna(s) {
+  return (typeof uvodniFotoPlatna === 'function')
+    ? uvodniFotoPlatna(s)
+    : (typeof s === 'string' && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(s));
+}
+function nabidkaFotoSrc(cast) {
+  const f = ZAK[nabidkaFotoPole(cast).foto];
+  return nabidkaFotoPlatna(f) ? f : '';
+}
+
 function nabidkaFotoPrijmi(cast, f, zeSchranky) {
   const p = nabidkaFotoPole(cast);
   if (!f) return;
@@ -750,6 +764,8 @@ function nabidkaFotoPrijmi(cast, f, zeSchranky) {
     + ' kB). Použijte obrázek do 2 MB – ukládá se přímo do souboru zakázky.');
   const fr = new FileReader();
   fr.onload = () => {
+    /* SEC-M16: uloží se jen to, co server i tisk přijmou (GIF, SVG, BMP ne). */
+    if (!nabidkaFotoPlatna(fr.result)) return hlaska('Vložit jde jen obrázek JPG, PNG nebo WEBP.');
     ZAK[p.foto] = fr.result;
     ZAK[p.nazev] = f.name || (zeSchranky
       ? 'ze schránky ' + new Date().toISOString().slice(0, 16).replace('T', ' ') : 'fotka');
@@ -784,7 +800,7 @@ async function nabidkaFotoSmaz(cast) {
 async function nabidkaFotoPrevezmi(cast) {
   const cil = nabidkaFotoPole(cast);
   const zdroj = nabidkaFotoPole(cast === 'proj' ? 'ock' : 'proj');
-  if (!ZAK[zdroj.foto]) return hlaska('Druhá nabídka žádnou úvodní fotku nahranou nemá.');
+  if (!nabidkaFotoSrc(cast === 'proj' ? 'ock' : 'proj')) return hlaska('Druhá nabídka žádnou úvodní fotku nahranou nemá.');
   if (ZAK[cil.foto] && !await potvrd('Nahradit fotku této nabídky fotkou z druhé nabídky?')) return;
   ZAK[cil.foto] = ZAK[zdroj.foto];
   ZAK[cil.nazev] = ZAK[zdroj.nazev];
@@ -797,9 +813,10 @@ function nabidkaFotoPopis(val, cast) { ZAK[nabidkaFotoPole(cast).popis] = val; }
 /* Fotka do tiskového dokumentu (prázdné, není-li nahraná). */
 function nabidkaFotoHtml(cast) {
   const p = nabidkaFotoPole(cast);
-  if (!ZAK[p.foto]) return '';
+  const src = nabidkaFotoSrc(cast);
+  if (!src) return '';
   const popis = (ZAK[p.popis] || '').trim();
-  return `<figure class="uvod-foto"><img src="${esc(ZAK[p.foto])}" alt="">`
+  return `<figure class="uvod-foto"><img src="${esc(src)}" alt="">`
     + (popis ? `<figcaption>${esc(popis)}</figcaption>` : '') + `</figure>`;
 }
 
@@ -810,8 +827,9 @@ function nabidkaFotoKarta(cast) {
   const arg = `'${c}'`;
   const druha = nabidkaFotoPole(c === 'proj' ? 'ock' : 'proj');
   const druhaNazev = c === 'proj' ? 'OCK' : 'PROJ';
-  const nahled = ZAK[p.foto]
-    ? `<img src="${esc(ZAK[p.foto])}" alt="úvodní fotka"
+  const src = nabidkaFotoSrc(c);
+  const nahled = src
+    ? `<img src="${esc(src)}" alt="úvodní fotka"
          style="max-height:120px;max-width:260px;border:1px solid var(--line);border-radius:6px;padding:3px">`
     : '<span class="note">Fotka zatím nenahraná – nabídka se vytiskne bez ní.</span>';
   return `<div class="note" style="font-weight:600;margin-top:10px">Úvodní fotka nabídky

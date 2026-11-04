@@ -51,6 +51,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_autorstvi.js',
      /* #542 O-SECM (1. 11. 2026): nálezy security testu SEC-M M2–M9 — rychlá sada (< 1 s). */
      'test_secm.mjs',
+     /* #557 SEC-M16 (3. 11. 2026): úvodní fotka jen jako datový obrázek — rychlé sady. */
+     'test_sec_m16.mjs', '../src/test_sec_m16_foto.js',
      /* #540 (27. 10. 2026): Prodáno — model prodServer a zmrazení; rychlá sada před maticí práv. */
      '../src/test_controlling_c4.js',
      /* #548 (2. 11. 2026, K10-S2): migrace můstků na serveru bez sazeb v kódu — rychlá sada. */
@@ -228,6 +230,38 @@ const MUTACE = [
     hledej: `        const kdo = '„' + String(sv.nazev || sv.id || '').slice(0, 80) + '"' + (cislo ? ' (' + cislo + ')' : '');`,
     nahrad: "        const kdo = '';",
     proc: 'hláška by neřekla, KTERÁ odeslaná varianta se mění (J. V. tiskl klon a nevěděl proč)' },
+  /* #557 SEC-M16 (3. 11. 2026): úvodní fotka nabídky jen jako datový obrázek
+   * PNG/JPEG/WEBP — importZakazka (uložení, obnova, soubor) jinou zahodí,
+   * server a obnova to ohlásí, logo firmy drží PNG/JPEG. Hlídají
+   * netlify/test_sec_m16.mjs a src/test_sec_m16_foto.js. */
+  { nazev: '#557 SEC-M16: import fotku s odkazem nezahodí', soubor: '../src/zakazka.js',
+    hledej: "    if (uvodniFotoPlatna(f)) return;",
+    nahrad: "    if (true) return;",
+    proc: 'server by uložil uvodniFoto = https://… a klient z disku by ho stáhl jako sledovací pixel' },
+  { nazev: '#557 SEC-M16: kontrola tvaru bez kotvy konce', soubor: '../src/zakazka.js',
+    hledej: "  return new RegExp('^data:image/(' + t + ');base64,[A-Za-z0-9+/=]+$').test(s);",
+    nahrad: "  return new RegExp('^data:image/(' + t + ');base64,').test(s);",
+    proc: 'za platný začátek by šlo připojit uvozovku a atribut (onerror=…) — kontrola by je pustila' },
+  { nazev: '#557 SEC-M16: fotka smí být SVG', soubor: '../src/zakazka.js',
+    hledej: "const OBRAZEK_TYPY_FOTO = ['png', 'jpeg', 'webp'];",
+    nahrad: "const OBRAZEK_TYPY_FOTO = ['png', 'jpeg', 'webp', 'svg\\\\+xml'];",
+    proc: 'SVG je XML, které umí nést skript — prošlo by uložením i do náhledu' },
+  { nazev: '#557 SEC-M16: seznam zahozených se zapíše do souboru', soubor: '../src/zakazka.js',
+    hledej: "{ value: zahozene, enumerable: false, configurable: true, writable: true }",
+    nahrad: "{ value: zahozene, enumerable: true, configurable: true, writable: true }",
+    proc: 'pomocný údaj by se ukládal do souborů zakázek a databáze' },
+  { nazev: '#557 SEC-M16: logo smí být WEBP i bez společné kontroly', soubor: '../src/firma.js',
+    hledej: "    ? obrazekDataUrlPlatny(f && f.logo, ['png', 'jpeg'])",
+    nahrad: "    ? obrazekDataUrlPlatny(f && f.logo, ['png', 'jpeg', 'webp'])",
+    proc: 'logo by se rozešlo s podpisem (PNG/JPEG) a Word by WEBP nevložil' },
+  { nazev: '#557 SEC-M16: uložení o zahozené fotce mlčí', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  const fotoZahozena = Array.isArray(zak && zak.fotoZahozena) ? zak.fotoZahozena.slice() : [];",
+    nahrad: "  const fotoZahozena = [];",
+    proc: 'obchodník by se nedozvěděl, že úvodní fotka z nabídky zmizela' },
+  { nazev: '#557 SEC-M16: obnova o zahozené fotce mlčí', soubor: 'functions/obnova.mjs',
+    hledej: "        if (prijem.fotoZahozena && prijem.fotoZahozena.length)   // SEC-M16: obnoví se bez fotky z odkazu",
+    nahrad: "        if (false)",
+    proc: 'správce by po obnově nevěděl, proč nabídka nemá úvodní fotku' },
   { nazev: '#555: obnova hlásí jen obecný důvod', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "          ? 'změnila by se data uzamčené (odeslané) nabídky ' + kdo + kde",
     nahrad: "          ? 'změnila by se data uzamčené (odeslané) nabídky'",

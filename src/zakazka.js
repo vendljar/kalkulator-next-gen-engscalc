@@ -454,7 +454,7 @@ function uvodniFotoPole(cast) {
 function uvodniFotoObrazky(zak, cast) {
   const p = uvodniFotoPole(cast);
   const f = (zak && zak[p.foto]) || '';
-  return f ? { UVODNI_FOTO: f } : {};
+  return uvodniFotoPlatna(f) ? { UVODNI_FOTO: f } : {};   // SEC-M16
 }
 function uvodniFotoSymboly(zak, cast) {
   const z = zak || {}, p = uvodniFotoPole(cast);
@@ -462,6 +462,51 @@ function uvodniFotoSymboly(zak, cast) {
     UVODNI_FOTO_NAZEV: String(z[p.nazev] || ''),
     UVODNI_FOTO_POPIS: String(z[p.popis] || ''),
   };
+}
+
+/* ---------- obrázek jen jako datový zápis (SEC-M16, 3. 11. 2026) ----------
+ *
+ * Jedna kontrola tvaru pro obrázky, které putují se zakázkou nebo s firmou:
+ * logo firmy (firma.js, B18) a úvodní fotka nabídky OCK i PROJ. Podpis má
+ * na serveru totéž pravidlo v podpisZkontroluj (sdilene.mjs) — shodu všech
+ * tří hlídá test_sec_m16_foto.js.
+ *
+ * Proč jen `data:image/…;base64,`: odkaz (http(s)://…) by se při každém
+ * otevření nabídky stáhl z cizího serveru — v souboru otevřeném z disku
+ * (bez CSP) jako sledovací pixel, a Word ho stejně zahodí. SVG je XML, které
+ * umí nést skript. `javascript:` a podobné do `src` nepatří nikdy.
+ * `typy` = povolené podtypy (výchozí PNG a JPEG jako logo a podpis); fotka
+ * smí navíc WEBP, protože ji nahrávání z fotoaparátu/prohlížeče tak vrací. */
+const OBRAZEK_TYPY_FOTO = ['png', 'jpeg', 'webp'];
+function obrazekDataUrlPlatny(s, typy) {
+  if (typeof s !== 'string' || !s) return false;
+  const t = (Array.isArray(typy) && typy.length ? typy : ['png', 'jpeg']).join('|');
+  return new RegExp('^data:image/(' + t + ');base64,[A-Za-z0-9+/=]+$').test(s);
+}
+function uvodniFotoPlatna(s) { return obrazekDataUrlPlatny(s, OBRAZEK_TYPY_FOTO); }
+/* Zahodí úvodní fotku (OCK i PROJ), která není datový obrázek PNG/JPEG/WEBP.
+ * Volá ji importZakazka — tedy otevření souboru, obnova ze zálohy i uložení
+ * na serveru jdou touž cestou. Název fotky jde pryč s ní (patří k souboru),
+ * popisek zůstává (je to text nabídky). Vrací seznam zahozených ('OCK',
+ * 'PROJ'), ať volající může varovat. Zámek se to netýká: fotka leží
+ * v hlavičce zakázky, ne v datech varianty. */
+function uvodniFotoOcisti(zak) {
+  const zahozene = [];
+  if (!zak || typeof zak !== 'object') return zahozene;
+  [['ock', 'OCK'], ['proj', 'PROJ']].forEach(([cast, nazev]) => {
+    const p = uvodniFotoPole(cast);
+    const f = zak[p.foto];
+    if (f == null || f === '') return;
+    if (uvodniFotoPlatna(f)) return;
+    zak[p.foto] = ''; zak[p.nazev] = '';
+    zahozene.push(nazev);
+  });
+  return zahozene;
+}
+function uvodniFotoVarovani(zahozene) {
+  if (!Array.isArray(zahozene) || !zahozene.length) return '';
+  return 'Úvodní fotka nabídky ' + zahozene.join(' a ') + ' nebyla obrázek nahraný ze souboru '
+    + '(PNG, JPEG nebo WEBP) a byla odebrána. Nahrajte ji znovu ze souboru.';
 }
 
 const ZAK_HLAVICKA_POLE = ['cislo', 'nazevAkce', 'adresa', 'adresaObjednatele',
@@ -1052,6 +1097,11 @@ function importZakazka(obj) {
     if (obj.uvodniFotoProj == null) obj.uvodniFotoProj = '';
     if (obj.uvodniFotoProjNazev == null) obj.uvodniFotoProjNazev = '';
     if (obj.uvodniFotoProjPopis == null) obj.uvodniFotoProjPopis = '';
+    /* SEC-M16: fotka jen jako datový obrázek. Seznam zahozených nese
+     * zakázka jako NEVÝČTOVOU vlastnost — do souboru ani do databáze se
+     * nezapíše, volající (otevření souboru, server) podle ní varuje. */
+    { const zahozene = uvodniFotoOcisti(obj);
+      if (zahozene.length) Object.defineProperty(obj, 'fotoZahozena', { value: zahozene, enumerable: false, configurable: true, writable: true }); }
     // #37: interní zápisník a přílohy. Zakázka uložená dřív pole nemá a první
     // zápis by spadl na undefined.push. Guard kvůli Node testům, které
     // zakazka.js načítají bez poznamky.js.
@@ -1792,7 +1842,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
 
 if (typeof module !== 'undefined')
   module.exports = { zadaniCislaZTextu, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
-                     zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
+                     zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, obrazekDataUrlPlatny, uvodniFotoPlatna, uvodniFotoOcisti, uvodniFotoVarovani, OBRAZEK_TYPY_FOTO, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,
                      ZAK_HLAVICKA_POLE, zajistiProjHlavicku, projHlavicka,

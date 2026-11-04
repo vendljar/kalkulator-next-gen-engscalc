@@ -134,7 +134,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* zobrazeni.js (#546, 2. 11. 2026): výchozí stav lešení pro dokončení hlavy
    * šachty podle typu šachty — nová exteriérová zakázka ho nemá v základní
    * ceně ani v nabídce příplatků. Hlídá src/test_leseni_hlava_typ.js. */
-  'zobrazeni.js'];
+  'zobrazeni.js',
+  /* ui/zakazka_ui.js (SEC-M16, #557, 3. 11. 2026): úvodní fotka nabídky se
+   * v náhledu karty i v tisku vykreslí jen jako datový obrázek PNG/JPEG/WEBP;
+   * nahrání jiný formát odmítne. Hlídá src/test_sec_m16_foto.js. */
+  'ui/zakazka_ui.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -196,6 +200,8 @@ const PRIORITA = [
   'test_555_klon_tisk.js',
   /* #555b — ceník odeslané varianty uložené starší verzí (zakazka.js, zamek.js) */
   'test_555b_klon_cenik.js',
+  /* #557 SEC-M16 — úvodní fotka jen jako datový obrázek (ui/zakazka_ui.js) */
+  'test_sec_m16_foto.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -251,6 +257,25 @@ const MUTACE = [
     hledej: "    else if (dx !== dy) pozn = ' (jiný typ)';",
     nahrad: "    else if (dx !== dy) pozn = '';",
     proc: 'ceník jako pole proti objektu by se v hlášce nedal poznat' },
+  /* #557 SEC-M16 (3. 11. 2026): úvodní fotka nabídky jen jako datový obrázek
+   * PNG/JPEG/WEBP — klient fotku s odkazem nevykreslí (náhled karty, tisk)
+   * a nahrání jiného formátu odmítne. Hlídá src/test_sec_m16_foto.js. */
+  { nazev: '#557 SEC-M16: klient vykreslí fotku s odkazem', soubor: 'ui/zakazka_ui.js',
+    hledej: "  return nabidkaFotoPlatna(f) ? f : '';",
+    nahrad: "  return f || '';",
+    proc: 'stará zakázka s fotkou https://… by v souboru otevřeném z disku stáhla sledovací pixel' },
+  { nazev: '#557 SEC-M16: tisk bere fotku bez kontroly', soubor: 'ui/zakazka_ui.js',
+    hledej: "  const src = nabidkaFotoSrc(cast);\n  if (!src) return '';",
+    nahrad: "  const src = ZAK[p.foto];\n  if (!src) return '';",
+    proc: 'tisk nabídky by vložil <img src> s cizí adresou' },
+  { nazev: '#557 SEC-M16: náhled karty bere fotku bez kontroly', soubor: 'ui/zakazka_ui.js',
+    hledej: "  const src = nabidkaFotoSrc(c);",
+    nahrad: "  const src = ZAK[p.foto];",
+    proc: 'karta nabídky by fotku s odkazem stáhla při každém překreslení' },
+  { nazev: '#557 SEC-M16: nahrání přijme GIF i SVG', soubor: 'ui/zakazka_ui.js',
+    hledej: "    if (!nabidkaFotoPlatna(fr.result)) return hlaska('Vložit jde jen obrázek JPG, PNG nebo WEBP.');\n",
+    nahrad: "",
+    proc: 'SVG (umí nést skript) by se uložilo do zakázky a server by ho pak tiše zahodil' },
   /* #555 ZO (3. 11. 2026, hlášení J. V.): tisk klonu odeslané nabídky —
    * typSachtyPrepni nesmí po odmítnutém set dosadit profily do zamčené
    * varianty; porovnání zámku bez značky DPH; cesta pro hlášku serveru.

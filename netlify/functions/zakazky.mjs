@@ -115,6 +115,7 @@ export default async (req) => {
   const prijem = zakazkaPrijmi(t.zakazka, ULO);
   if (!prijem.ok) return json({ ok: false, chyba: prijem.chyba }, prijem.status);
   const { zak, jmeno } = prijem;
+  const fotoVarovani = typeof globalThis.uvodniFotoVarovani === 'function' ? globalThis.uvodniFotoVarovani(prijem.fotoZahozena) : '';
   /* ČTENÍ, KONTROLY A ZÁPIS ZAKÁZKY V JEDNOM VÝHRADNÍM ÚSEKU (SEC-S1, #514,
    * audit S1 23. 10. 2026). Do v23.10.4 se `stara` přečetla jednou a zápis
    * nehlídal nic: souběžné uložení starší kopie (autosave z jiného okna,
@@ -271,7 +272,8 @@ export default async (req) => {
   /* Sporné razítko (B59) se hlásí hned — uložení prošlo, ale obchodník se
    * musí dozvědět, že čísla odeslané nabídky server z dat nedostal. */
   const varovani = sporne.map(x => 'Pozor, nabídka ' + x.cislo + ': '
-    + globalThis.zamekOvereniText(x.ov) + ' Obnovte stránku (Ctrl+F5) a nabídku zkontrolujte.').join(' ');
+    + globalThis.zamekOvereniText(x.ov) + ' Obnovte stránku (Ctrl+F5) a nabídku zkontrolujte.')
+    .concat(fotoVarovani ? [fotoVarovani] : []).join(' ');   // SEC-M16
   /* Slevy tak, jak je server uložil (revize 13. 10. 2026): schvalovaniServerKontrola
    * může čas rozhodnutí orazítkovat nebo vrátit uložené rozhodnutí (B101,
    * B105). Prohlížeč si je převezme — jinak by ukazoval jiný stav slevy, než
