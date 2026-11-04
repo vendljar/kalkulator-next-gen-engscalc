@@ -1,4 +1,5 @@
-/* ČÍSLA PRO VIZUÁLNÍ MANUÁL VÝPOČTU OCK (M7, 3. vydání, 27. 10. 2026).
+/* ČÍSLA PRO VIZUÁLNÍ MANUÁL VÝPOČTU OCK (M7, 3. vydání, 27. 10. 2026; 4. vydání MV4,
+ * 4. 11. 2026 — čísla beze změny, číslo vydání v cisla_vydani.json).
  *
  * Každé číslo, které manuál ukazuje (m, kg, m², ks, hodiny, Kč), vzniká
  * TADY voláním výpočetního jádra `src/engine.js` — nic se nepočítá ručně

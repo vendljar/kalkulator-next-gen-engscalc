@@ -1,5 +1,5 @@
 {
- "vydani": 3,
+ "vydani": 4,
  "verze": "4.11.4",
  "pozn": "Čísla vydaného manuálu výpočtu OCK. Změní-li jádro kterékoli z nich, test_manual_vypocet.js spadne: vydejte nový manuál a soubor obnovte (node manual_vypocet/sestav.js --snapshot).",
  "hodnoty": {

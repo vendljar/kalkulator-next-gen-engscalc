@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Jak kalkulačka počítá OCK</title>
-<!-- ŠABLONA 3. vydání (M7, 27. 10. 2026). Čísla se NEPÍŠOU ručně: {{klíč}} dosadí
+<!-- ŠABLONA 4. vydání (MV4, 4. 11. 2026; 3. vydání M7, 27. 10. 2026). Číslo vydání = {{meta.vydani}} z cisla_vydani.json. Čísla se NEPÍŠOU ručně: {{klíč}} dosadí
      manual_vypocet/sestav.js z výsledku jádra (manual_vypocet/data.js), {{%klíč:měřítko}}
      je číslo pro geometrii schématu, {{@blok}} vygenerovaný blok, {{meta.*}} údaje vydání. -->
 <style>
@@ -94,7 +94,7 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
   <div class="nad">ENGINEERS CZ · KALKULÁTOR NEXT GEN (ENGSCALC)</div>
   <h1>Jak kalkulačka počítá OCK</h1>
   <div class="pod">Vizuální manuál výpočtu jednotlivých prvků ocelové konstrukce výtahové šachty — od zadání šachty po cenu s DPH.</div>
-  <div class="verze">Platí pro <b>v{{meta.verze}}</b> (základ {{meta.zaklad}}) · výpočet <b>Model 2</b> · <span class="vydani">3. vydání</span> · sestaveno {{meta.datum}}<br>
+  <div class="verze">Platí pro <b>v{{meta.verze}}</b> (základ {{meta.zaklad}}) · výpočet <b>Model 2</b> · <span class="vydani">{{meta.vydani}}. vydání</span> · sestaveno {{meta.datum}}<br>
   Rozdíly mezi verzemi a co se chystá shrnuje kapitola 17.</div>
 </div>
 
@@ -111,7 +111,7 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 <div class="ram warn">
   <h4>Interní dokument — obsahuje postup výpočtu firmy</h4>
   Všechna <b>množství</b> (m, kg, m², ks, hodiny) jsou skutečné výsledky výpočetního jádra aplikace pro vzorovou šachtu — manuál je vyrábí skript, ne ruka, a test hlídá, že sedí s jádrem.
-  Všechny <b>částky v Kč</b> jsou ze <b>zkušebního ceníku z testů</b> — kulatá smyšlená čísla, ne ceny firmy (doplněného jen o {{c.statikaOplHod}} h statiky opláštění a o smyšlené parametry montáže můstků, které zkušební ceník nemá — viz kap. 11).
+  Všechny <b>částky v Kč</b> jsou <b>ilustrační</b> — ze <b>zkušebního ceníku z testů</b> — kulatá smyšlená čísla, ne ceny firmy (doplněného jen o {{c.statikaOplHod}} h statiky opláštění a o smyšlené parametry montáže můstků, které zkušební ceník nemá — viz kap. 11).
   Skutečné sazby jsou v Ceníku OCK v aplikaci. Obchodník v aplikaci náklady nevidí, jen ceny; manuál ukazuje obojí.
 </div>
 <div class="ram info">
@@ -609,6 +609,7 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 </table>
 <p>Ve vzoru EXT: <b>MATERIÁL boční + zadní stěna</b> {{e.matBoky}} m² a <b>MATERIÁL VSG 4.4.1</b> {{e.matCelo}} m²; ve vzoru INT (terče) oba řádky ze skla VSG 4.4.2: {{i.matBoky}} + {{i.matCelo}} m². Chybí-li sazba skla v ceníku, řádek ukáže nulu — nic se tiše nenahrazuje jiným sklem.</p>
 <div class="ram"><h4>Izolační dvojsklo</h4>Položka ceníku <b>„Izolační dvojsklo"</b> (a „Izolační dvojsklo – typ") je i typem v opláštění po stěnách — po stěnách jde dvojsklo na kteroukoli stěnu. Klíč ceníku je <code>C.skloBokyKc</code>.</div>
+<div class="ram novy"><h4>Vyřazené nebo přepsané sklo se při změně typu skla nevrací</h4>Řádek skla nese název podle typu šachty a zasklení (tabulka výše). Když se název změní — přepnutí interiér ↔ exteriér, změna zasklení (terče / mezi příčníky), přejmenování skla v ceníku, převzetí verze ceníku, přepočet na dnešní ceník nebo přepnutí řady ČR / zahraničí —, <b>vyřazení řádku a ruční přepis množství, ceny i názvu přejdou na nový řádek skla</b>. Vyřazené sklo se tak po přepnutí znovu nezapočítá a po znovuotevření zakázky vychází stejná cena. Odeslané (zamčené) varianty se to netýká — drží zmrazený výsledek.</div>
 <h3 class="sub">Opláštění po stěnách A–D</h3>
 <p>Přepínač <b>Opláštění: po stěnách A–D</b> v zadání šachty dovolí každé stěně jiný materiál a rozdělení na <b>pásy</b> podle výšky (i pod úroveň nástupu do prohlubně). Typy: izolační dvojsklo (jen ext), VSG 4.4.1, VSG 4.4.2 (jen int), Cetris, „{{ps2.bezNazev}}" a „jiné" s ruční sazbou. Zapnutí režimu beze změny stěn cenou nehne a režim po stěnách není ATYP — kontrola standardu ho posuzuje jako jednotné opláštění.</p>
 <ul style="margin:4px 0 4px 16px;padding:0">
@@ -835,7 +836,8 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
   <div class="vz"><b class="l">VZOREC</b><span class="vzorec">hodiny na kus = max(minimum; základ + h/bm × délka (m))<br>náklad = počet × hodiny × Kč/hod</span></div>
   <div class="vz"><b class="l">VZOROVÝ MŮSTEK</b>max({{mu.minHod}}; {{mu.zakladHod}} + {{mu.bmHod}} × 1,0) = <span class="vysl">{{mu.hodKs}} h</span> × {{mu.hodKc}}/h = <span class="vysl">{{mu.montKs}}</span></div>
   <div class="pozn">Délka 1 500 mm: {{mu.d15.hod}} h; do 1 000 mm platí minimum {{mu.minHod}} h (např. 600 mm: {{mu.d06.hod}} h).</div>
-  <div class="rad">Řádek kalkulace: <b>MONTÁŽ MŮSTKŮ</b><br>Sazba z ceníku: Montáž můstků (Kč/hod); – základ (hod/ks); – za metr délky (hod/bm); – minimum (hod/ks)</div></div>
+  <div class="rad">Řádek kalkulace: <b>MONTÁŽ MŮSTKŮ</b><br>Sazba z ceníku: Montáž můstků (Kč/hod); – základ (hod/ks); – za metr délky (hod/bm); – minimum (hod/ks)</div>
+  <div class="pozn"><b>Zahraniční řada ceníku</b> má vlastní buňku sazby montáže můstků. Nevyplněná = sazba montáže na stavbě zahraniční řady; není-li ani ta, platí tuzemská sazba montáže můstků. Buňka v ceníku má nápovědu „jako montáž zahr.".</div></div>
 </div>
 <table>
 <tr><th>Příklad (vzorová šachta EXT, zkušební ceník)</th><th class="n">bm</th><th class="n">hodiny</th><th class="n">Náklad můstků</th></tr>
@@ -857,7 +859,8 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
   <div class="pozn"><b>Technická specifikace a nabídka:</b> jeden řádek „N ks, rozměr Š × D mm (šířka × délka), ocelová konstrukce vč. zábradlí a montáže", cena v základu OCK; řádek KOTVENÍ KONSTRUKCE (POLOHA) doplní „… a přes můstky".</div>
   <div class="rad">Pravidla kontrol: mustky · mustkyPrechodove · mustekStrecha · mustekRozmer</div></div>
 </div>
-<div class="ram warn"><h4>Ceník bez referenční šířky počítá můstky paušálem</h4>Výpočet podle rozměru platí jen s ceníkem, který má kladnou <b>referenční šířku</b>. Zamčená (odeslaná) varianta a ceník bez referenční šířky počítají <b>paušál × počet</b> v jednom řádku MŮSTKY MEZI BUDOVOU A OCK (např. 2 můstky × zkušební {{mu.cenaBm}} = {{mu.stary.naklad}}) — ceny odeslaných nabídek se nemění. Zveřejnění ceníku starý tvar převede (doplní nové buňky výchozími hodnotami) a rozpracované varianty se pak přepočítají samy.</div>
+<div class="ram warn"><h4>Ceník bez referenční šířky počítá můstky paušálem</h4>Výpočet podle rozměru platí jen s ceníkem, který má kladnou <b>referenční šířku</b>. Zamčená (odeslaná) varianta a ceník bez referenční šířky počítají <b>paušál × počet</b> v jednom řádku MŮSTKY MEZI BUDOVOU A OCK (např. 2 můstky × zkušební {{mu.cenaBm}} = {{mu.stary.naklad}}) — ceny odeslaných nabídek se nemění. Rozpracované varianty se po zveřejnění ceníku v novém tvaru přepočítají samy.</div>
+<div class="ram novy"><h4>Sazby můstků jsou jen v ceníku</h4>Aplikace sama žádnou sazbu můstků nezná — cena za bm, referenční šířka, sazba a hodiny montáže jsou jen v Ceníku OCK na serveru. Při zveřejnění ceníku ve starém tvaru (paušál za kus) se nové buňky převezmou z <b>platného ceníku</b>: cena za bm a referenční šířka vždy, montážní buňky jen tam, kde je správce nevyplnil. Nemá-li ani platný ceník nový tvar, převádět není z čeho: ceník zůstane paušálem (počítá jako dřív) a dialog zveřejnění vyzve k vyplnění ceny za bm, referenční šířky, sazby a hodin montáže v Nastavení → Ceník. <b>Nulová cena</b> za bm, nulová sazba montáže, nulové hodiny nebo nulový paušál projdou zveřejněním jen po potvrzení „Zveřejnit i tak" — jinak by vznikl můstek za 0 Kč.</div>
 </div>
 
 <!-- ============================ 12 ============================ -->
@@ -880,7 +883,7 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 <tr><td>Přechodové plechy – montáž</td><td>nást (jde vždy s materiálem)</td><td>ks</td><td>ext i int</td><td class="n">{{e.prechKs}}</td><td class="n">{{i.prechKs}}</td><td>☑</td></tr>
 <tr><td>Lešení vnitřní</td><td>H (m) × Kč/m + fixní část</td><td>m</td><td>ext i int</td><td class="n">{{e.lesVez}}</td><td class="n">{{i.lesVez}}</td><td>☑</td></tr>
 <tr><td>Lešení vnější</td><td>U (m²) × Kč/m² + fixní část</td><td>m²</td><td>ext (int jen příplatek)</td><td class="n">{{e.lesUp}}</td><td class="n">—</td><td>☐</td></tr>
-<tr><td>Lešení – dokončení hlavy</td><td>přejezd (m) × Kč/m, bez fixu</td><td>m</td><td>ext i int</td><td class="n">{{e.pp.leseniHlava}}</td><td class="n">{{i.pp.leseniHlava}}</td><td>☐</td></tr>
+<tr><td>Lešení – dokončení hlavy</td><td>přejezd (m) × Kč/m, bez fixu</td><td>m</td><td>int (ext jen ruční volbou)</td><td class="n">{{e.pp.leseniHlava}}</td><td class="n">{{i.pp.leseniHlava}}</td><td>☐</td></tr>
 <tr><td>Háky na mytí šachty</td><td>3 ks</td><td>ks</td><td>jen ext</td><td class="n">{{e.haky}}</td><td class="n">—</td><td>☑</td></tr>
 <tr><td>Úpravy / napojení zábradlí</td><td>nást</td><td>ks</td><td>jen int</td><td class="n">—</td><td class="n">{{i.zabradli}}</td><td>☑ (int)</td></tr>
 <tr><td>Oplechování soklu prohlubně</td><td>š + 2 × hl</td><td>bm</td><td>jen ext</td><td class="n">{{e.sokl}}</td><td class="n">—</td><td>☐</td></tr>
@@ -888,9 +891,10 @@ svg text{font-family:"Segoe UI",Roboto,Arial,sans-serif}
 <div class="ram"><h4>Lešení — tři druhy, jedna fixní část</h4>
 <b>Vnitřní</b> (věž uvnitř šachty): metry výšky H × sazba + fixní část (postavení, doprava). Vzor: {{e.lesVez}} m.
 <b>Vnější</b> (U kolem stěn B, C, D): (š + 0,5 + 2 × (hl + 0,25)) × (zdvih + přejezd) m² × sazba + fixní část. Vzor: {{e.lesU}} m². U interiérové šachty je vždy jen příplatkem.
-<b>Dokončení hlavy šachty:</b> přejezd (m) × sazba, bez fixní části — je to nástavba postaveného lešení.
+<b>Dokončení hlavy šachty:</b> přejezd (m) × sazba, bez fixní části — je to nástavba postaveného lešení. Patří k <b>interiérové</b> šachtě: u nové exteriérové šachty není ve výchozím stavu vybrané — není v základní ceně ani v nabídce příplatků (množství {{e.pp.leseniHlava}} m se spočítá, jen se nenabízí).
 Fixní část je v ceníku jedna (Lešení – fixní část) pro všechna lešení. Ručně přepsané množství: metry × sazba + celá fixní část; přepis na 0 m = 0 Kč i bez fixu.<br>
 Technická specifikace má řádky <b>LEŠENÍ VNITŘNÍ PRO STAVBU OCK</b> a LEŠENÍ KOLEM OCK řízené kalkulací: lešení v základní ceně → řádek se do „Součástí dodávky není" nedává; příplatek v nabídce → „nabízeno jako příplatek"; příplatek vyřazený z nabídky → „zajistí objednatel v rámci SP". Výpočet beze změny.</div>
+<div class="ram novy"><h4>Lešení hlavy a typ šachty</h4>Přepnutí typu šachty <b>interiér → exteriér</b> lešení hlavy odznačí (ze základu i z nabídky příplatků), <b>exteriér → interiér</b> vrátí výchozí stav interiéru; aplikace to oznámí hláškou „Lešení pro dokončení hlavy šachty: … podle typu šachty (mění cenu).". <b>Ruční volba má přednost:</b> zaškrtne-li nebo odškrtne-li obchodník položku ve Volitelných nebo ve sloupci Nabídka, zakázka si to pamatuje a přepnutí typu ji nemění. Za ruční volbu platí i stav, který se od výchozího stavu původního typu liší (starší zakázky). Uložená zakázka se při otevření nemění; zamčená varianta beze změny.</div>
 <h3 class="sub">Příplatkové položky (ceník variant)</h3>
 <p>Příplatky jsou nabídkové menu pro zákazníka a do základní ceny nevstupují. Každá položka má cenu = náklad × (1 + přirážka), zaokrouhleno nahoru na tisíce. Kromě tabulky se sem dostanou nezaškrtnuté volitelné položky (lešení, přechodové plechy, háky, zábradlí, sokl) a vlastní položky obchodníka. Obchodník u příplatku smí přepsat množství i cenu; sloupec Nabídka řídí, zda se tiskne.</p>
 <table>
@@ -1028,6 +1032,7 @@ Technická specifikace má řádky <b>LEŠENÍ VNITŘNÍ PRO STAVBU OCK</b> a LE
 <div class="ram"><h4>Kdy nabídka neodejde bez opravy nebo schválení</h4>Rozměr šachty pod 0,6 m (zdvih, šířka, hloubka), zdvih nad 99 m; profil mimo katalog jeklů (počítá se nulou a dokument se zastaví), nulová cena, záporná položka; <b>cenová výjimka</b>: ceník varianty se liší od platného ceníku (kromě položek „cena dle nabídky"), nebo pás „jiné" má sazbu nižší než nejlevnější ceníkové opláštění — bez práva na ceník je potřeba schválení nadřízeného (záložka Schvalování); sleva nad strop role nebo pod minimální marži.</div>
 </div>
 <div class="ram novy"><h4>Cenové výjimky a schvalovatel</h4>Obsah schválené výjimky nese u pásu „jiné" jeho <b>rozsah</b> (od–do m po ořezu jádrem, délku stěny) a <b>plochu z výpočtu jádra</b> zaokrouhlenou na <b>0,1 m² nahoru</b>; stejně světlíky „jiné" u dveří. Schválený pás tak nejde zvětšit změnou šachty — výjimka se vrátí do „čeká znovu". Karta Schvalování → Cenové výjimky ukazuje tomu, kdo smí rozhodnout, použitou a ceníkovou sazbu a <b>dopad na cenu strany</b> v Kč a %. Výpočet ceny se tím nemění. Kontrol před nabídkou je {{k.pocet}}.</div>
+<div class="ram novy"><h4>Prodáno nemění cenu</h4>Tlačítko <b>Prodáno</b> (krycí list OCK i PROJ, karta Prodej) zapíše u odeslané varianty datum prodeje a prodanou variantu. Cena, obsah varianty ani výpočet se tím nemění — zápis prodeje je jediná povolená změna nad zamčenou variantou. Datum prodeje smí být nejdřív den odeslání nabídky a nejpozději dnes. Po prodeji je krycí list i hlavička zamčené; volná zůstávají jen <b>číslo SoD</b> a <b>datum podpisu SoD</b> do prvního tisku smlouvy o dílo. Prodej zamčené varianty si vezme i controlling (datum a prodaná varianta). V liště nad kalkulací svítí „✔ Nabídka prodána".</div>
 <p class="mala">Kalkulace se vždy počítá v korunách. U nabídky v EN/DE/FR se částky převádějí kurzem z ceníku po položkách, zaokrouhlují na celá eura nahoru a sčítají z převedených čísel; bez kurzu se cizojazyčný dokument nevytvoří. Dlaždice „Základní cena bez DPH" ukazuje u zahraniční zakázky pod částkou i cenu v EUR (celá eura nahoru). Splátky OCK musí dát 100 % (kontrola „platbyOck100").</p>
 </div>
 
@@ -1067,7 +1072,21 @@ Technická specifikace má řádky <b>LEŠENÍ VNITŘNÍ PRO STAVBU OCK</b> a LE
 <!-- ============================ 17 ============================ -->
 <div class="kap">
 <div class="kaph"><div class="cislo">17</div><h2>Rozdíly mezi verzemi</h2><div class="detail">v15.10.14 → v{{meta.verze}}</div></div>
-<p>Manuál popisuje <b>v{{meta.verze}}</b>. Změny výpočtu OCK, sazeb, řádků kalkulace, kontrol standardu a Detailu výpočtu od v15.10.14 (2. vydání manuálu) po verzích:</p>
+<p>Manuál popisuje <b>v{{meta.verze}}</b>. Změny výpočtu OCK, ceníku, řádků kalkulace a dokumentů mezi v26.10.12 (3. vydání manuálu) a v{{meta.verze}} po verzích:</p>
+<table>
+<tr><th>Verze</th><th>Co se změnilo</th><th>Kap.</th></tr>
+<tr class="novy"><td>v27.10.5</td><td>Převod ceníku můstků ve starém tvaru: cena za bm se při zveřejnění převezme vždy — paušál za kus se už nečte jako cena za bm. Import z Excelu ze starého ceníku cenu za bm do nového tvaru nezapíše.</td><td>11</td></tr>
+<tr class="novy"><td>v27.10.6</td><td>Tlačítko <b>Prodáno</b> na krycím listu OCK i PROJ: datum prodeje a prodaná varianta, krycí list a hlavička se zamknou. Controlling bere prodej z Prodáno. Výpočet beze změny.</td><td>14</td></tr>
+<tr class="novy"><td>v2.11.3</td><td><b>Lešení – dokončení hlavy šachty</b> jen u interiérové šachty: u nové exteriérové není v základu ani v nabídce příplatků; přepnutí typu šachty výchozí stav mění, ruční volba zůstává.</td><td>12</td></tr>
+<tr class="novy"><td>v2.11.4</td><td><b>Sazby můstků jen v ceníku</b> — aplikace žádnou výchozí sazbu nemá; převod starého ceníku jen z platného ceníku, jinak zůstane paušál a dialog vyzve k doplnění; nulová cena můstku jen po potvrzení. Zahraniční řada má <b>vlastní sazbu montáže můstků</b> (nevyplněná = montáž na stavbě zahraniční řady).</td><td>11</td></tr>
+<tr class="novy"><td>v2.11.6</td><td>Prodáno u odeslané (zamčené) varianty bez dialogu klonu; datum prodeje od dne odeslání nabídky do dneška; číslo SoD a datum podpisu SoD zůstávají po prodeji zapisovatelné do prvního tisku smlouvy.</td><td>14</td></tr>
+<tr class="novy"><td>v2.11.8</td><td>Vyřazené nebo ručně přepsané sklo boků po přepnutí typu šachty, zasklení, názvu skla, verze ceníku nebo řady ČR / zahraničí přejde na nový řádek skla — vyřazené sklo se znovu nezapočítá. Controlling: souhrn Kapitol bez dvojího zaokrouhlení, „Cena před slevou" před zaokrouhlením na tisíce.</td><td>7</td></tr>
+<tr class="novy"><td>v3.11.2</td><td>Smlouva o dílo: rozpis objednaných příplatků bez číslování odstavců. Výpočet beze změny.</td><td>—</td></tr>
+<tr class="novy"><td>v4.11.1</td><td>Lešení hlavy u starší zakázky: stav, který se liší od výchozího stavu typu šachty, platí při přepnutí typu za ruční volbu; změnu podle typu ohlásí hláška.</td><td>12</td></tr>
+<tr class="novy"><td>v4.11.4</td><td>Štítek „✔ Nabídka prodána" v liště nad kalkulací. Výpočet beze změny.</td><td>14</td></tr>
+</table>
+<p>Vzorová šachta vychází ve v{{meta.verze}} na <b>stejná množství i cenu jako ve 3. vydání</b> (zkušební ceník: základní cena {{e.zakCena}}, s ATYP {{at.zakCena}}); počet kontrol před nabídkou zůstává {{k.pocet}}.</p>
+<p>Změny mezi v15.10.14 (2. vydání) a v26.10.12 (3. vydání):</p>
 <table>
 <tr><th>Verze</th><th>Co se změnilo</th><th>Kap.</th></tr>
 <tr><td>v16.10.1</td><td>Cenová výjimka s pásem „jiné": obsah schválení nese i rozsah pásu (od–do m), karta ho ukazuje.</td><td>7, 14</td></tr>
@@ -1086,13 +1105,13 @@ Technická specifikace má řádky <b>LEŠENÍ VNITŘNÍ PRO STAVBU OCK</b> a LE
 <tr><td>v22.10.4</td><td>Lakování: režim pojmenovaný po dodavateli přejmenován na <b>„lakovna B"</b> (ceník, Kalkulace OCK, Detail výpočtu krok 10; klíče beze změny). Dlaždice základní ceny ukazuje u zahraniční zakázky i EUR.</td><td>9, 14</td></tr>
 <tr><td>v26.10.5</td><td>Specifikace: KOTVENÍ KONSTRUKCE (POLOHA) „… a přes můstky". Výpočet beze změny.</td><td>11</td></tr>
 <tr><td>v26.10.6</td><td>Ceník: „Sklo boky + zadní stěna" → <b>„Izolační dvojsklo"</b>, i jako typ opláštění po stěnách. Kontrola platbyOck100 (splátky OCK = 100 %).</td><td>7, 14</td></tr>
-<tr class="novy"><td>v26.10.11</td><td><b>Můstky podle rozměru</b>: šířka = šířka šachty, zadává se délka (prázdná = 1 000 mm); dva řádky <b>MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL</b> (bm × šířka / ref. šířka × Kč/bm) a <b>MONTÁŽ MŮSTKŮ</b> (max(min; základ + h/bm × délka) × Kč/h); 5 nových buněk ceníku; standard hlídá jen délku ≤ 1 000 mm; specifikace „Š × D mm"; starý ceník a zamčené varianty dál paušál × kusy.</td><td>11, 13, 15</td></tr>
+<tr><td>v26.10.11</td><td><b>Můstky podle rozměru</b>: šířka = šířka šachty, zadává se délka (prázdná = 1 000 mm); dva řádky <b>MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL</b> (bm × šířka / ref. šířka × Kč/bm) a <b>MONTÁŽ MŮSTKŮ</b> (max(min; základ + h/bm × délka) × Kč/h); 5 nových buněk ceníku; standard hlídá jen délku ≤ 1 000 mm; specifikace „Š × D mm"; starý ceník a zamčené varianty dál paušál × kusy.</td><td>11, 13, 15</td></tr>
 <tr><td>v26.10.12</td><td>Zálohy — výpočet beze změny.</td><td>—</td></tr>
 </table>
-<p>Vzorová šachta vychází na <b>stejná množství i cenu jako ve v15.10.14</b> (zkušební ceník: základní cena {{e.zakCena}}, s ATYP {{at.zakCena}}). Nové jsou příklady se vzorovým můstkem (kap. 11). Starší zakázky se nepřecenily: zamčené varianty drží zmrazený výsledek a starý ceník počítá můstky paušálem.</p>
+<p>Starší zakázky se nepřecenily: zamčené varianty drží zmrazený výsledek a starý ceník počítá můstky paušálem.</p>
 <div class="ram novy"><h4>Co se chystá (roadmapa, zatím není v aplikaci)</h4>
 <b>Přeuspořádání ceníku OCK</b> (čeká): nová sekce „Montáž a práce" se všemi sazbami práce (montáž na stavbě, montáž můstků, oplechování – práce, práce opláštění, zámečník, montáž přechodových plechů, demontáže); stávající sekce jen materiál, smíšené položky rozdělit nebo do „Smíšené a služby". Vzorce se tím nemají měnit, změní se místo sazeb v ceníku — manuál pak upraví řádky „Sazba z ceníku".<br>
-<b>Controlling — zbývající části</b> (čeká): zaokrouhlení OCK v exportu, Kapitoly, protokol exportů v záloze, PROJ. Výpočet ceny se nemění.<br>
+<b>Controlling — zbývající části</b> (čeká): rozvržení projekce (PROJ) a účty z účetního systému. Výpočet ceny se nemění.<br>
 </div>
 <div class="ram"><h4>Odkud manuál je a jak byl ověřen</h4>
 Zdroj: repozitář kalkulator-next-gen-engscalc, základ {{meta.zaklad}} (v{{meta.verze}}), soubory <code>src/engine.js</code>, <code>src/cenik.js</code>, <code>src/techspec.js</code>, <code>src/standard_ock.js</code>, <code>src/kontroly.js</code>, <code>src/vyjimky.js</code>, <code>src/ui/detail_ui.js</code>, <code>src/ui/kalk_ock.js</code>, <code>src/jekly.json</code> a CHANGELOG v15.10.14 → v{{meta.verze}}.<br>

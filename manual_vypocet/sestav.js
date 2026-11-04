@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /* Sestaví „Vizuální manuál výpočtu OCK" (Jak kalkulačka počítá OCK) z šablony
- * a z čísel jádra. M7, 3. vydání (27. 10. 2026).
+ * a z čísel jádra. M7 (3. vydání, 27. 10. 2026), MV4 (4. vydání, 4. 11. 2026).
+ * Číslo vydání je jediné — `vydani` v manual_vypocet/cisla_vydani.json.
  *
  *   node manual_vypocet/sestav.js [--out SLOŽKA] [--pdf] [--snapshot]
  *   (--snapshot zapíše čísla vydání do manual_vypocet/cisla_vydani.json)
@@ -16,7 +17,7 @@
  *   {{%klíč:měř:posun}} holé číslo pro geometrii schématu: hodnota × měř + posun
  *                       (posun = číslo nebo klíč); netiskne se jako údaj
  *   {{@blok}}           vygenerovaný blok z data.js (tabulka kapitoly 15)
- *   {{meta.x}}          údaje vydání (verze, datum, základ, počet čísel)
+ *   {{meta.x}}          údaje vydání (vydani, verze, datum, základ, počet čísel)
  * Neznámý klíč = chyba (kód 2) — v manuálu nesmí zůstat nedosazené místo. */
 'use strict';
 const fs = require('fs');
@@ -31,6 +32,9 @@ const KOREN = path.resolve(KDE, '..');
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 function datumCz(d) { return d.getDate() + '. ' + (d.getMonth() + 1) + '. ' + d.getFullYear(); }
+function cislaVydani() {
+  return JSON.parse(fs.readFileSync(path.join(KDE, 'cisla_vydani.json'), 'utf8'));
+}
 function zakladGit() {
   try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: KOREN, encoding: 'utf8' }).trim(); }
   catch (e) { return '?'; }
@@ -74,6 +78,7 @@ function sestav(opts) {
   const data = D.spocitej();
   const ted = o.datum || new Date();
   const meta = {
+    vydani: String(o.vydani || cislaVydani().vydani),
     verze: data.meta.verze,
     zaklad: o.zaklad || zakladGit(),
     datum: datumCz(ted),
@@ -101,7 +106,7 @@ async function doPdf(htmlSoubor, pdfSoubor, meta) {
     await str.goto('file://' + htmlSoubor, { waitUntil: 'load' });
     await str.emulateMedia({ media: 'print' });
     const pata = `<div style="font:7px Arial,sans-serif;color:#5d6670;width:100%;padding:0 12mm;display:flex;justify-content:space-between">`
-      + `<span>Výpočet OCK — vizuální manuál · v${esc(meta.verze)} · 3. vydání · interní</span>`
+      + `<span>Výpočet OCK — vizuální manuál · v${esc(meta.verze)} · ${esc(meta.vydani)}. vydání · interní</span>`
       + `<span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>`;
     await str.pdf({ path: pdfSoubor, format: 'A4', printBackground: true,
       margin: { top: '12mm', bottom: '14mm', left: '0', right: '0' },
@@ -117,7 +122,7 @@ async function main() {
   if (a.includes('--snapshot')) {
     /* Čísla vydaného manuálu — test je porovnává s jádrem (src/test_manual_vypocet.js). */
     const cil = path.join(KDE, 'cisla_vydani.json');
-    fs.writeFileSync(cil, JSON.stringify({ vydani: 3, verze: r.meta.verze,
+    fs.writeFileSync(cil, JSON.stringify({ vydani: +r.meta.vydani, verze: r.meta.verze,
       pozn: 'Čísla vydaného manuálu výpočtu OCK. Změní-li jádro kterékoli z nich, test_manual_vypocet.js spadne: vydejte nový manuál a soubor obnovte (node manual_vypocet/sestav.js --snapshot).',
       hodnoty: r.data.hodnoty }, null, 1) + '\n');
     console.log('Snapshot: ' + cil);

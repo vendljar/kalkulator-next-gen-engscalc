@@ -8,6 +8,28 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## Dokumentace (bez nové verze aplikace) — MV4 #566: 4. vydání manuálu výpočtu OCK pro v4.11.4, větev claude/mv4-manual-vypocet
+
+Nad b751c91 (`main` = `test` = v4.11.4). Rozhodnutí J. V. 3. 11. 2026: „4. vydání až po main“. Kód aplikace beze
+změny, verze se nezvyšuje.
+
+- **Dokumentace:** „Jak kalkulačka počítá OCK" — 4. vydání (22 stran A4, HTML + PDF), platí pro v4.11.4. Proti
+  3. vydání (v26.10.12): sazby můstků jen z ceníku, převod starého ceníku jen z platného ceníku, nulová cena jen
+  po potvrzení (#548, kap. 11); vlastní zahraniční sazba montáže můstků (#550, kap. 11); lešení hlavy jen
+  u interiérové šachty, přepnutí typu a ruční volba (#546, K39-N1, kap. 12); vyřazené / přepsané sklo při změně
+  typu skla (K37-N1, kap. 7); Prodáno nemění cenu, mez data prodeje, pole SoD do prvního tisku (#540, #547,
+  #562, kap. 14); kap. 17 = nová tabulka v26.10.12 → v4.11.4 po verzích (bez jmen a kódů) + dřívější změny,
+  „Co se chystá" bez hotových částí controllingu. Kotvení přes můstky (#519) už 3. vydání neslo — beze změny.
+  Vzorová šachta i počet kontrol (44) beze změny; všechny částky dál ze zkušebního ceníku, v manuálu výslovně
+  „ilustrační". Změny, které na main ještě nejsou (SV, RC #561, IK), do vydání nepatří. Hotový manuál se do
+  repozitáře neukládá.
+- **Číslo vydání je jediné:** `vydani` v `manual_vypocet/cisla_vydani.json` (4, verze 4.11.4); titul šablony
+  (`{{meta.vydani}}`) i patička PDF ho berou odtud, `--snapshot` ho zachová.
+- **Test `src/test_manual_vypocet.js`** 13/0 (s `KNG_MANUAL_HTML` 15/0): titul nese číslo vydání z
+  `cisla_vydani.json` a v šabloně ani v patičce není napevno. Pojistka: se šablonou a `sestav.js` 3. vydání 2 FAIL.
+
+---
+
 ## v4.11.8 — IK #565: Interní poznámky k zakázce i na krycím listu OCK a PROJ, větev claude/ik-poznamky-kryci
 
 Nad `6109e39` (`test`, v4.11.3), rozhodnutí J. V. 4. 11. 2026 po návrhu IK (`podklady/NAVRH_INTERNI_INFO_04_11.md`).
