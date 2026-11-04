@@ -22,7 +22,11 @@ prodeji UI nenabízí a server by ho vrátil; uvolní ho odemčení prodeje (ved
 **Otevřené pro J. V.:** (a) smí být v zakázce prodaných víc variant? Dnes ne (beze změny). (b) Hláška
 `progZprava` se zobrazuje v kartě Nastavení → program; na krycím listu ji proto ukazuje i karta Prodej.
 
-**Stav kola:** doplní se po doběhnutí (viz další commit).
+**Stav kola `--bez-mutaci`: VŠE ZELENÉ** — sady 380/0/7 (přeskočeno jen test.js a 6 sad bez firemních podkladů KNG_PODKLADY; prohlížečové sady běžely, playwright odkazem), hodiny +400 dní 307/0/1, statické 5/5. Mutace cíleně: #563 10/10 chycených, #547 11/11 (řádek jedné mutace #547 upraven), `--kontrola` 1263 úseků v pořádku.
+
+**Pojistka:** nad b751c91 padá `src/test_563_prodano_ridici.js` (0/1), `netlify/test_563_prodano_ridici.mjs` (22 OK / 14 FAIL), `overit_prodano_zamek.mjs` (40 OK / 7 FAIL, oddíl 10 přidán po opravě aktivni).
+
+**Další krok:** koordinace přečísluje verzi a #563, sloučení rozhodne J. V.
 
 ---
 
