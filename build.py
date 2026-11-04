@@ -28,7 +28,7 @@ CORE = ['build_info.js', 'nazvy_souboru.js',
         'preklad.js', 'format.js', 'engine.js', 'engine_proj.js', 'techspec.js', 'zakazka.js', 'uloziste.js', 'retence_zaloh.js', 'zamek.js', 'seznam.js', 'archiv.js',
         'docxgen.js', 'xlsx.js',
         'dokumenty.js', 'sleva.js', 'schvalovani.js', 'zaokrouhleni.js', 'marze.js', 'kontroly.js', 'ares.js', 'poznamky.js', 'protokol.js', 'firma.js', 'zpracovatel.js', 'podminky.js', 'plan_plateb.js', 'nabidka.js', 'nabidka_proj.js', 'sod.js', 'kryci.js', 'kryci_proj.js',
-        'cenik.js', 'cenik_stari.js', 'cenik_rady.js', 'vyjimky.js', 'katalog.js', 'prepisy.js', 'slovnik.js',
+        'cenik.js', 'cenik_stari.js', 'cenik_rady.js', 'vyjimky.js', 'rucni_ceny.js', 'katalog.js', 'prepisy.js', 'slovnik.js',
         'konfigurace.js', 'sablony_online.js', 'sablona_obsah.js', 'analytika.js', 'nastaveni_db.js', 'program.js', 'ukazkove.js', 'prava.js', 'zobrazeni.js', 'zakaznici.js', 'controlling.js', 'pd_nanecisto.js', 'objednane.js', 'standard_ock.js', 'testdata.js']
 UI = ['ui/common.js', 'ui/dialog.js', 'ui/zakulozeni_ui.js', 'ui/kalk_ock.js', 'ui/detail_ui.js', 'ui/techspec_ui.js', 'ui/specdata_ui.js',
       'ui/kryci_ui.js', 'ui/kryci_proj_ui.js', 'ui/plan_plateb_ui.js', 'ui/kalk_proj.js', 'ui/detail_proj_ui.js', 'ui/nabidka_proj_ui.js', 'ui/sod_ui.js',

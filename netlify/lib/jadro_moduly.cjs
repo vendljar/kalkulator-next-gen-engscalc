@@ -72,6 +72,9 @@ Object.assign(globalThis, require('../../src/cenik_rady.js'));
 /* Cenové výjimky varianty (13. 10. 2026): směs ceníku a pás „jiné" pod
  * ceníkovou sazbou — rozhodnutí a nový zámek hlídá server týmž kódem. */
 Object.assign(globalThis, require('../../src/vyjimky.js'));
+/* Ruční cena položky s potvrzením (#561, 4. 11. 2026): razítko z relace,
+ * tvar záznamů a nový zámek hlídá server týmž kódem jako prohlížeč. */
+Object.assign(globalThis, require('../../src/rucni_ceny.js'));
 /* Zveřejněný slovník (#401, 12. 10. 2026): /api/slovnik i obnova kontrolují
  * hesla týmž kódem jako prohlížeč (slovnikHeslaKontrola, slovnikDbOciste). */
 Object.assign(globalThis, require('../../src/slovnik.js'));

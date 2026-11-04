@@ -1810,6 +1810,11 @@ function zakazkaDuplikuj(zak, noveCislo) {
      * vrací false, takže se sleva do ceny nepropíše — nic se tiše neuplatní
      * ani tiše neztratí. */
     slevaRozhodnutiZahod(n.data);
+    /* RUČNÍ CENA POLOŽKY (#561): cena a zdroj zůstávají, POTVRZENÍ ne — nová
+     * zakázka (jiný zákazník) ji musí potvrdit znovu. Klon varianty v téže
+     * zakázce potvrzení nese (B154: stejný obsah). */
+    if (n.data && n.data.rucniCeny && typeof n.data.rucniCeny === 'object')
+      Object.keys(n.data.rucniCeny).forEach(k => { const r = n.data.rucniCeny[k]; if (r && typeof r === 'object') r.potvrdil = null; });
     /* PŘÍPONY PODLE POŘADÍ, NE SAMÉ NULY (nález N32 revize v22.9.9).
      *
      * Do 22. 9. 2026 tu stálo `n.pripona = 0` pro každou variantu. Komentář

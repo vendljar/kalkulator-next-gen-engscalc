@@ -1243,6 +1243,49 @@ const KONTROLY = [
           + 'Rozpracovanou zakázku lze dál ukládat.' };
     },
   },
+  {
+    /* RUČNÍ CENA POLOŽKY NEPOTVRZENÁ (#561, J. V. 4. 11. 2026, rucni_ceny.js).
+     * Obchodník přepsal nákupní cenu položky podle nabídky dodavatele a ještě
+     * ji nepotvrdil: dokument (tisk = odeslání, nový zámek) nevznikne —
+     * zrcadlo serveru (rucniCenyZamekProblem, 403). `ctx.rucni` dodá UI
+     * (rucniCenyPrehled); bez něj (zamčená varianta) pravidlo mlčí. Ruční
+     * cena mění cenu OCK, proto drží dokumenty strany OCK. */
+    kod: 'rucniCenaNepotvrzena', kde: 'Kalkulace OCK', nazev: 'Ruční cena položky nepotvrzená',
+    zabranaMozna: true, strany: ['ock'],
+    zjisti(ctx) {
+      const x = ctx.rucni;
+      if (!x || !Array.isArray(x.nepotvrzene) || !x.nepotvrzene.length) return null;
+      const n = x.nepotvrzene;
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: 'Potvrďte ruční cenu u: ' + n.slice(0, 5).map(p => p.popis).join(', ')
+          + (n.length > 5 ? ' a další ' + (n.length - 5) : '')
+          + ' (Kalkulace OCK, tlačítko „Potvrdit cenu“, nebo ↺ vrátit na ceník). Rozpracovanou zakázku lze dál ukládat.' };
+    },
+  },
+  {
+    /* PLATNOST NABÍDKY DODAVATELE PROŠLA (#561) — upozornění, ne zábrana. */
+    kod: 'rucniCenaProsla', kde: 'Kalkulace OCK', nazev: 'Nabídka dodavatele prošla',
+    zjisti(ctx) {
+      const x = ctx.rucni;
+      if (!x || !Array.isArray(x.prosle) || !x.prosle.length) return null;
+      return { text: 'Platnost nabídky dodavatele u ruční ceny prošla: ' + x.prosle.slice(0, 5).map(p => p.popis).join(', ')
+        + (x.prosle.length > 5 ? ' a další ' + (x.prosle.length - 5) : '')
+        + '. Ověřte u dodavatele, že cena platí, případně ji upravte a potvrďte znovu.' };
+    },
+  },
+  {
+    /* NOVÝ CENÍK A RUČNÍ CENA (#561): zveřejněný ceník ruční cenu nepřepíše,
+     * jen upozorní, že se ceníková sazba té položky od potvrzení změnila.
+     * Bez čísel (P12 — obchodník ceníkovou sazbu nevidí). */
+    kod: 'rucniCenaCenik', kde: 'Kalkulace OCK', nazev: 'Ceník se u ruční ceny změnil',
+    zjisti(ctx) {
+      const x = ctx.rucni;
+      if (!x || !Array.isArray(x.cenikZmena) || !x.cenikZmena.length) return null;
+      return { text: 'Od potvrzení ruční ceny se změnil ceník u: ' + x.cenikZmena.slice(0, 5).map(p => p.popis).join(', ')
+        + (x.cenikZmena.length > 5 ? ' a další ' + (x.cenikZmena.length - 5) : '')
+        + '. Ruční cena zůstává; zkontrolujte, zda nabídka dodavatele platí, a cenu potvrďte znovu (nebo ↺ vraťte na ceník).' };
+    },
+  },
   /* ---- D2: šablona nabídky PROJ obchodníka (rozhodnutí J. V. 20. 10. 2026) ---- */
   {
     /* JEDNOSTUPŇOVÁ DOKUMENTACE. Aplikace nabídku nepřepisuje (DPZ a DPS

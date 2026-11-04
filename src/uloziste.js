@@ -1877,10 +1877,21 @@ function uloCenikProblemy(zak, stara, opts) {
         const h = listy[p];
         return typeof h === 'number' && isFinite(h) && h >= 0;
       };
+      /* RUČNÍ CENA POLOŽKY S DOKLADEM (#561, J. V. 4. 11. 2026). Obchodník
+       * smí změnit nákupní cenu KONKRÉTNÍ položky ceníku OCK s cenou v Kč
+       * (rucniCenaSmi), když k ní varianta nese záznam `rucniCeny` se STEJNOU
+       * kladnou hodnotou. Uvolní se jen ta jedna cesta — ostatní sazby ceníku
+       * se hlídají dál beze změny. Potvrzení k uložení třeba není (rozpracovaná
+       * zakázka); bez něj nevznikne nový zámek (rucniCenyZamekProblem). */
+      const rcPlati = uloB112Zdroj('rucniCenaPlati', './rucni_ceny.js');
+      const volnaRucni = (kde) => {
+        if (c.pred !== 'cenik.' || !rcPlati) return false;
+        return rcPlati(d, 'C.' + kde.slice(c.pred.length));
+      };
       let rozdily = null;
       for (const g of skupiny) {
         const r = uloB112Rozdily(listy, g, c.pred, g[0]).concat(doplnenaNula(g));
-        for (let i = r.length - 1; i >= 0; i--) if (volnaDleNab(r[i])) r.splice(i, 1);
+        for (let i = r.length - 1; i >= 0; i--) if (volnaDleNab(r[i]) || volnaRucni(r[i])) r.splice(i, 1);
         if (!rozdily || r.length < rozdily.length) rozdily = r;
         if (!r.length) break;
       }

@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v4.11.4 · sestaveno 2. 11. 2026",
+  "verze": "Platí pro aplikaci v4.11.5 · sestaveno 4. 11. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -534,7 +534,8 @@
           "typ": "obrazek",
           "snimek": "a-nast-pdmapa",
           "titulek": "Mapa polí CRM bez nastaveného napojení na Pipedrive (zkušební prostředí)."
-        }
+        },
+        {"typ": "text", "text": "**Export controllingu: zdroj ceny a odchylka.** Na konci listů *Řádky* a *Příplatky – volby* jsou sloupce **Zdroj ceny** (ceník, nebo nabídka dodavatele s dodavatelem, číslem, platností a kdo cenu potvrdil), **Odchylka od ceníku za jednotku (Kč)**, **Odchylka od ceníku (%)** a **Odchylka od ceníku celkem (Kč)**. Odchylka se počítá proti sazbě platného ceníku v okamžiku potvrzení. U ceníkových položek jsou sloupce odchylky prázdné."}
       ]
     },
     {
@@ -652,7 +653,11 @@
           "typ": "obrazek",
           "snimek": "a-cenikproj",
           "titulek": "Ceník nákladů PROJ (výřez tabulky, zkušební ceník)."
-        }
+        },
+        {"typ": "podnadpis", "text": "Ruční cena položky z nabídky dodavatele"},
+        {"typ": "text", "text": "Obchodník smí u **kterékoli položky ceníku OCK s cenou v Kč** zadat nákupní cenu z nabídky dodavatele (✎ cena z nabídky v Kalkulaci OCK) se zdrojem (dodavatel, číslo a datum nabídky, platnost) a potvrdit ji. Žádný příznak v ceníku se k tomu nenastavuje a **schvalování se netýká** — stačí potvrzení obchodníka. Nepotvrzená ruční cena zastaví tisk dokumentů OCK u každé role, i u administrátora; prošlá platnost nabídky je jen upozornění."},
+        {"typ": "text", "text": "**Ostatní ceník zůstává chráněný:** server přijme změnu jen té jedné položky, ke které varianta nese záznam ruční ceny se stejnou hodnotou; jiná změna ceníku varianty se odmítne jako dřív. Razítko „kdo a kdy potvrdil“ a ceníkovou sazbu v okamžiku potvrzení zapisuje server z přihlášení a z platného ceníku."},
+        {"typ": "text", "text": "**Zveřejnění nového ceníku** ruční cenu v rozpracované zakázce nepřepíše; obchodník dostane upozornění, že se ceníková sazba té položky změnila. Kontrola směsi ceníků ruční cenu s dokladem nehlásí. V kalkulaci vidí ceníkovou sazbu a odchylku (Kč, %) jen role s právem na sloupce s náklady — obchodník má *Ceník: skryto*."}
       ]
     },
     {

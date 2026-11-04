@@ -755,8 +755,16 @@ function set(path, v) {
     }
   }
   const ks = path.split('.'); const last = ks.pop();
+  const predRc = path.startsWith('C.') ? get(path) : undefined;
   ks.reduce((o, k) => o[k], rootObj())[last] = v;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  /* RUČNÍ CENA POLOŽKY (#561): změna čísla v buňce ceny srovná záznam a shodí
+   * potvrzení; příplatek „cena dle nabídky" (S13) bez záznamu dostane u role
+   * bez práva ceníku záznam k potvrzení (B-Q6 — stejné potvrzení se zdrojem). */
+  if (path.startsWith('C.') && typeof rucniCenaPoSet === 'function')
+    rucniCenaPoSet(aktivniVarianta(ZAK).data, path, v, {
+      dleNabidky: typeof cenikDleNabidkyJe === 'function' && typeof DEFAULT_CENIK !== 'undefined' && cenikDleNabidkyJe(DEFAULT_CENIK, path),
+      smiCenik: typeof smiZobrazit === 'function' && smiZobrazit('tab.cenik'), puvodni: predRc });
   /* Ceník je zdroj pravdy pro pár polí zadání (1. 9. 2026): ruční přepis
    * pole se poznamená, aby ho ceník nepřebil, a naopak změna ŘÍDÍCÍ ceníkové
    * položky se hned propíše do kalkulace — jinak by administrátor zadal číslo

@@ -399,7 +399,8 @@ function onlinePoPrihlaseni(ja, hesloPrihlaseni) {
 function onlineSlevyOtisk(zak) {
   const out = {};
   ((zak && zak.varianty) || []).forEach(v => {
-    if (v && v.data) out[v.id] = JSON.stringify([v.data.sleva || null, v.data.slevaProj || null, v.data.cenovaVyjimka || null]);
+    if (v && v.data) out[v.id] = JSON.stringify([v.data.sleva || null, v.data.slevaProj || null, v.data.cenovaVyjimka || null,
+      v.data.rucniCeny || null]);
   });
   return out;
 }
@@ -413,8 +414,12 @@ function onlineSlevyZeServeru(slevy, odeslane) {
     /* Cenová výjimka (13. 10. 2026) — razí ji server jako slevu; starší
      * server pole neposílá, pak se nechá, jak je. */
     const sVyj = ('cenovaVyjimka' in s) ? (s.cenovaVyjimka || null) : (v.data.cenovaVyjimka || null);
-    const novy = JSON.stringify([s.sleva || null, s.slevaProj || null, sVyj]);
+    /* Ruční ceny položek (#561): razítko potvrzení z relace. */
+    const sRc = ('rucniCeny' in s) ? (s.rucniCeny || null) : (v.data.rucniCeny || null);
+    const novy = JSON.stringify([s.sleva || null, s.slevaProj || null, sVyj, sRc]);
     if (novy === ted[v.id]) return;
+    if (sRc) v.data.rucniCeny = JSON.parse(JSON.stringify(sRc));
+    else delete v.data.rucniCeny;
     if (s.sleva) v.data.sleva = JSON.parse(JSON.stringify(s.sleva));
     if (s.slevaProj) v.data.slevaProj = JSON.parse(JSON.stringify(s.slevaProj));
     if (sVyj) v.data.cenovaVyjimka = JSON.parse(JSON.stringify(sVyj));

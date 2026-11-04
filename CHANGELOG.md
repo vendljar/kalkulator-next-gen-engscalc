@@ -8,6 +8,42 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v4.11.5 — RC #561: ruční cena položky z nabídky dodavatele s potvrzením obchodníkem, větev claude/rc-rucni-cena
+
+Nad `6109e39` (`test`, v4.11.3) + návrh NV (`claude/nv-mustky-cena`, oddíl B), rozhodnutí J. V. 4. 11. 2026.
+Na webech nic. Verzi může koordinace přečíslovat.
+
+- **Nové: cena z nabídky dodavatele u položky** (Kalkulace OCK, i bez sloupce s náklady): tlačítko
+  **✎ cena z nabídky** otevře řádek s **nákupní cenou**, dodavatelem, číslem nabídky, datem a platností,
+  tlačítka **Potvrdit cenu** a **↺ vrátit na ceník**. Přirážka se k nákupní ceně přičte jako jinde (B-Q1).
+  Přepsat jde **každá položka ceníku OCK s cenou v Kč** (B-Q2), ne hodiny, rozměry, kurz, přirážka ani DPH.
+  Štítky *ručně – nepotvrzeno* / *✓ potvrzeno* (kdo, kdy, dodavatel, č. nabídky) / *nabídka prošla*.
+- **Potvrzení místo schvalování** (B-Q3): nepotvrzená ruční cena zastaví tisk dokumentů OCK (zábrana
+  `rucniCenaNepotvrzena`, server 403 u nového zámku — i administrátorovi); každá změna čísla nebo zdroje
+  potvrzení shodí; prošlá platnost nabídky = upozornění `rucniCenaProsla`, ne zábrana. #425 se nedělá.
+- **Server:** B112 (`uloCenikProblemy`) přijme změnu jen té položky, ke které varianta nese záznam
+  `rucniCeny` se stejnou kladnou hodnotou — ostatní sazby ceníku chráněné beze změny. Razítko „kdo a kdy
+  potvrdil“ a ceníkovou sazbu v okamžiku potvrzení píše server z relace a z platného ceníku (klientské se
+  zahodí); odpověď uložení je vrací prohlížeči. Kontrola směsi ceníků (cenová výjimka) ruční cenu s dokladem
+  nehlásí.
+- **Nový ceník, zámek, klon:** zveřejněný ceník ruční cenu nepřepíše (ani přepočet vybraných položek), jen
+  upozorní bez čísel (`rucniCenaCenik`); okno přepočtu ji nevypisuje. Zamčená varianta ji drží (změna = 409),
+  klon ji nese i s potvrzením (B154), kopie zakázky bez potvrzení.
+- **P12:** obchodník u položky ceníkovou sazbu nevidí („Ceník: skryto“, pole se nepředvyplňuje); sazbu
+  a odchylku (Kč, %) ukazuje kalkulace jen s právem `sloupce.naklad`. Zdůvodnění: z odchylky a vlastní ceny by
+  si sazbu dopočítal, proto ji nevidí ani jako směr.
+- **Controlling (B-Q5):** export verze 6 — na konci listů Řádky a Příplatky – volby sloupce *Zdroj ceny*,
+  *Odchylka od ceníku za jednotku (Kč)*, *(%)* a *celkem (Kč)*. Šablona podkladů přegenerována.
+- **Příplatky „cena dle nabídky“ (S13, B-Q6):** stejné potvrzení se zdrojem; starší vlastní cena bez záznamu
+  se čte jako *✓ potvrzeno bez dokladu* (data se nepřevádějí, tisk se neblokuje).
+- **Meze B195–B198** v `BEZPECNOST_MEZE.md`; manuál obchodníka (kap. 18) a správce (A6, A7); roadmapa #561 hotovo.
+- **Testy:** `src/test_561_rucni_cena.js` 71/0 (na 6109e39 0 OK / 2 FAIL — modul chybí),
+  `netlify/test_561_rucni_cena.mjs` 29/0 (na 6109e39 7 OK / 10 FAIL), `overit_rucni_cena.mjs` 18/0
+  (na 6109e39 padá v oddílu 1). Upraveny počty v `test_kontroly.js` (47 pravidel) a verze exportu 6
+  v `test_controlling*.js`, `test_pd_stav.js`. Mutace „#561“ 19 z 19 chycených. Kolo `--bez-mutaci` **VŠE ZELENÉ**
+  (sady 381 / 0 / 7 přeskočeno; hodiny +400 dní 307 / 0 / 1; statické 5 z 5; 29 min 31 s).
+
+---
 ## v4.11.4 — PS #562: štítek „Nabídka prodána“ a lišta „Ceník není nahraný“ až po ověření, větev claude/ps-prodano-cenik
 
 Hlášení J. V. 4. 11. 2026 (test v3.11.4). Větev nad `7a23c50` (`test` = v3.11.4). Do `test-draft` / `test` / `main`

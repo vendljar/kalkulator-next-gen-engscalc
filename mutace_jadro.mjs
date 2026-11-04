@@ -414,7 +414,7 @@ const MUTACE = [
     nahrad: "  if (false) return",
     proc: 'zakázka s rozbitým datem prodeje by z exportu zmizela bez hlášky (K6-S6)' },
   { nazev: '#540: verze struktury exportu zůstane 3', soubor: 'controlling.js',
-    hledej: "const CTRL_EXPORT_VERZE = 5;",
+    hledej: "const CTRL_EXPORT_VERZE = 6;",
     nahrad: "const CTRL_EXPORT_VERZE = 4;",
     proc: 'controlling by nepoznal, že se export změnil (pravidlo otázky 12)' },
   { nazev: '#540: volné pole krycího listu po Prodáno editovatelné', soubor: 'zamek.js',
@@ -2784,7 +2784,7 @@ const MUTACE = [
     nahrad: "        '', h.pdStavNacteno || '',",
     proc: "controlling by stav dealu v CSV/XLSX nedostal" },
   { nazev: "P1: verze exportu zůstala 2", soubor: "controlling.js",
-    hledej: "const CTRL_EXPORT_VERZE = 5;",   // #540: verze 4, K37: verze 5
+    hledej: "const CTRL_EXPORT_VERZE = 6;",   // #540: verze 4, K37: verze 5, #561: verze 6
     nahrad: "const CTRL_EXPORT_VERZE = 2;",
     proc: "převodník controllingu by nepoznal posunuté sloupce" },
   /* #507 (O-K7, 23. 10. 2026): K7-K1 — tisk během běžícího ukládání. Hlídá

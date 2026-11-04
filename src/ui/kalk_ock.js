@@ -1685,6 +1685,145 @@ function adminKoncBunky(r, sekceKey) {
  * Stejný typ štítku jako „skrytá ostatním" nebo „bez ceny" — jeden vzhled
  * pro jednu třídu sdělení. Netiskne se: je to poznámka pro nás, ne pro
  * zákazníka (obchodník ostatně vypnutou položku do nabídky nedává). */
+/* ---------- RUČNÍ CENA POLOŽKY S POTVRZENÍM (#561, J. V. 4. 11. 2026) ----------
+ * Model a pravidla v src/rucni_ceny.js. Obchodník u položky ceníku OCK
+ * s cenou v Kč (i bez sloupce s náklady) otevře „✎ cena z nabídky", zadá
+ * NÁKUPNÍ cenu z nabídky dodavatele (přirážka se přičte jako jinde), zdroj
+ * a „Potvrdit cenu". Ceníkovou sazbu vidí jen role s právem sloupce.naklad
+ * (P12) — obchodník „Ceník: skryto". Razítko kdo/kdy po uložení přepíše
+ * server z relace. Zamčená varianta: jen štítek, bez úprav. */
+const RC_UI = { otevrene: new Set(), vykresleno: new Set() };
+function rcVarianta() { return (typeof ZAK !== 'undefined' && ZAK) ? aktivniVarianta(ZAK) : null; }
+function rcZamcena(v) { return !!(v && typeof variantaUzamcena === 'function' && variantaUzamcena(v)); }
+function rcCestaJs(c) { return escJs(String(c)); }
+/* Ceníková sazba platného ceníku pro řadu varianty (bez zveřejněného ceníku
+ * neznámá — upozornění „ceník se změnil" pak mlčí). */
+function rcDnesniF(v) {
+  const platny = (typeof vyjPlatnyZaznam === 'function') ? vyjPlatnyZaznam() : null;
+  if (!platny || typeof cenikDnesniProVariantu !== 'function') return null;
+  let dn = null;
+  try { dn = cenikDnesniProVariantu(v); } catch (e) { dn = null; }
+  if (!dn || !dn.cenik) return null;
+  return (cesta) => { const h = cenikGet(dn.cenik, cesta); return typeof h === 'number' && isFinite(h) ? h : undefined; };
+}
+function rcDleNabidkyF(cesta) {
+  return typeof cenikDleNabidkyJe === 'function' && typeof DEFAULT_CENIK !== 'undefined' && cenikDleNabidkyJe(DEFAULT_CENIK, cesta);
+}
+/* Stav pro kontroly (kontroly_ui.js): zábrana rucniCenaNepotvrzena,
+ * upozornění rucniCenaProsla a rucniCenaCenik. Zamčená varianta odešla. */
+function rucniCenyStavVarianty(v) {
+  if (!v || !v.data || typeof rucniCenyPrehled !== 'function' || rcZamcena(v)) return null;
+  try { return rucniCenyPrehled(v.data, { dnesniF: rcDnesniF(v), dleNabidkyF: rcDleNabidkyF }); }
+  catch (e) { return null; }
+}
+function rcSmiNaklad() { return typeof smiZobrazit === 'function' && smiZobrazit('sloupce.naklad'); }
+function rcStitek(r) {
+  if (!r || r.vlastni || !r.cenaPath || typeof rucniCenaSmi !== 'function' || !rucniCenaSmi(r.cenaPath)) return '';
+  const v = rcVarianta(); if (!v || !v.data) return '';
+  const rec = rucniCenaZaznam(v.data, r.cenaPath);
+  const zamceno = rcZamcena(v);
+  let h = '';
+  if (rec) {
+    if (rucniCenaStav(rec) === RC_POTVRZENO) {
+      const p = rec.potvrdil || {};
+      const tit = 'potvrdil ' + (p.jmeno || p.email || '?') + (p.kdy ? ', ' + String(p.kdy).slice(0, 16).replace('T', ' ') : '')
+        + (p.lokalne ? ' (razítko doplní server po uložení)' : '')
+        + (rec.dodavatel ? ' · ' + rec.dodavatel : '') + (rec.cislo ? ' · nabídka ' + rec.cislo : '');
+      h += ` <span class="pill ok noprint rc-potvrzeno" title="${esc(tit)}">✓ potvrzeno</span>`;
+    } else {
+      h += ` <span class="pill warn noprint rc-nepotvrzeno" title="ruční cena z nabídky dodavatele — bez potvrzení nejde tisknout">ručně – nepotvrzeno</span>`;
+    }
+    if (rucniCenaProsla(rec)) h += ` <span class="pill warn noprint rc-prosla" title="platnost nabídky dodavatele skončila ${esc(rec.platnostDo)}">nabídka prošla</span>`;
+  } else if (rcDleNabidkyF(r.cenaPath)) {
+    const dn = rcDnesniF(v);
+    const d = dn ? dn(r.cenaPath) : undefined;
+    if (typeof d === 'number' && Math.abs((+r.cena || 0) - d) > 1e-9)
+      h += ` <span class="pill ok noprint rc-bez-dokladu" title="starší vlastní cena příplatku dle nabídky — bere se jako potvrzená bez dokladu">✓ potvrzeno bez dokladu</span>`;
+  }
+  if (!zamceno && !RC_UI.otevrene.has(r.cenaPath))
+    h += ` <button class="mini noprint rc-otevri" title="zadat nákupní cenu z nabídky dodavatele" onclick="rcOtevri('${rcCestaJs(r.cenaPath)}')">✎ cena z nabídky</button>`;
+  return h;
+}
+function rcRadekPod(r, NC) {
+  if (!r || r.vlastni || !r.cenaPath || typeof rucniCenaSmi !== 'function' || !rucniCenaSmi(r.cenaPath)) return '';
+  const v = rcVarianta(); if (!v || !v.data || rcZamcena(v)) return '';
+  const cesta = r.cenaPath;
+  const rec = rucniCenaZaznam(v.data, cesta);
+  const otevreno = RC_UI.otevrene.has(cesta) || (rec && rucniCenaStav(rec) !== RC_POTVRZENO);
+  if (!otevreno || RC_UI.vykresleno.has(cesta)) return '';
+  RC_UI.vykresleno.add(cesta);
+  const cj = rcCestaJs(cesta);
+  const jed = rucniCenaJednotka(cesta);
+  const pole = (k, typ, popis, sirka) => `<label class="rc-pole">${popis} <input type="${typ}" class="rc-${k}" style="width:${sirka}"
+      value="${esc(rec ? rec[k] || '' : '')}" ${rec ? '' : 'disabled'} onchange="rcZdroj('${cj}', '${k}', this.value)"></label>`;
+  /* P12: ceníkovou sazbu a odchylku jen s právem na náklady. */
+  let info = 'Ceník: skryto';
+  if (rcSmiNaklad()) {
+    const dn = rcDnesniF(v);
+    const z = rec && typeof rec.zaklad === 'number' ? rec.zaklad : (dn ? dn(cesta) : undefined);
+    const o = rec ? rucniCenaOdchylka(Object.assign({}, rec, { zaklad: z })) : null;
+    info = 'Ceník: ' + (typeof z === 'number' ? fmt(z) + ' ' + esc(jed) : 'neznámý')
+      + (o ? ' · odchylka ' + (o.kc > 0 ? '+' : '') + fmt(o.kc) + (o.pct != null ? ' (' + (o.pct > 0 ? '+' : '') + num(o.pct, 1) + ' %)' : '') : '');
+  }
+  const potvrzeno = rec && rucniCenaStav(rec) === RC_POTVRZENO;
+  const p = potvrzeno ? rec.potvrdil : null;
+  return `<tr class="rc-radek noprint" data-cesta="${esc(cesta)}"><td colspan="${NC}" style="white-space:normal">
+    <div class="rc-box" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:6px 8px;border:1px solid var(--line, #dde3ea);border-radius:8px">
+      <b>✎ Cena z nabídky dodavatele</b>
+      <label class="rc-pole">Nákupní cena <input type="number" step="any" min="0" class="rc-hodnota" style="width:96px"
+        value="${rec ? +(+rec.hodnota).toFixed(2) : ''}" placeholder="z nabídky" onchange="rcHodnota('${cj}', this.value)"> ${esc(jed)}</label>
+      ${pole('dodavatel', 'text', 'Dodavatel', '170px')}${pole('cislo', 'text', 'Č. nabídky', '110px')}
+      ${pole('datum', 'date', 'Datum nabídky', '140px')}${pole('platnostDo', 'date', 'Platnost do', '140px')}
+      <button class="mini rc-potvrdit" ${rec && !potvrzeno ? '' : 'disabled'} onclick="rcPotvrd('${cj}')">Potvrdit cenu</button>
+      ${rec ? `<button class="mini rc-vratit" title="smaže ruční cenu a vrátí ceníkovou sazbu" onclick="rcVrat('${cj}')">↺ vrátit na ceník</button>` : ''}
+      ${!rec ? `<button class="mini rc-zavrit" onclick="rcZavri('${cj}')">zavřít</button>` : ''}
+      <span class="note rc-info">${info}</span>
+      ${p ? `<span class="note rc-razitko">Potvrdil ${esc(p.jmeno || p.email || '?')}${p.kdy ? ', ' + esc(String(p.kdy).slice(0, 16).replace('T', ' ')) : ''}${p.lokalne ? ' — razítko doplní server po uložení' : ''}</span>` : ''}
+    </div></td></tr>`;
+}
+function rcZmena(v, cesta) {
+  v.upraveno = new Date().toISOString();
+  const klic = String(cesta).slice(2);
+  if (typeof ZADANI_Z_CENIKU !== 'undefined' && typeof cenikDoZadani === 'function' && ZADANI_Z_CENIKU.some(m => m.c === klic))
+    cenikDoZadani(v);
+  render();
+}
+function rcStop() {
+  if (typeof zamekCteniStop === 'function' && zamekCteniStop()) return true;
+  return typeof zamekStop === 'function' && zamekStop();
+}
+function rcOtevri(cesta) { if (rcStop()) return; RC_UI.otevrene.add(String(cesta)); render(); }
+function rcZavri(cesta) { RC_UI.otevrene.delete(String(cesta)); render(); }
+function rcHodnota(cesta, hodnota) {
+  if (rcStop()) return;
+  const v = rcVarianta(); if (!v || !v.data) return;
+  if (!rucniCenaNastav(v.data, cesta, hodnota)) {
+    if (!(+hodnota > 0) && typeof hlaska === 'function')
+      hlaska('Nákupní cena z nabídky musí být kladné číslo. Ruční cenu zrušíte tlačítkem ↺ vrátit na ceník.');
+    render(); return;
+  }
+  RC_UI.otevrene.add(String(cesta));
+  rcZmena(v, cesta);
+}
+function rcZdroj(cesta, pole, hodnota) {
+  if (rcStop()) return;
+  const v = rcVarianta(); if (!v || !v.data) return;
+  if (rucniCenaZdrojNastav(v.data, cesta, pole, hodnota)) rcZmena(v, cesta); else render();
+}
+function rcPotvrd(cesta) {
+  if (rcStop()) return;
+  const v = rcVarianta(); if (!v || !v.data) return;
+  const kdo = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV && ONLINE_STAV.ja && (ONLINE_STAV.ja.jmeno || ONLINE_STAV.ja.email))
+    || (typeof NAST !== 'undefined' && NAST.uzivatel) || '';
+  if (rucniCenaPotvrd(v.data, cesta, kdo, new Date().toISOString())) { RC_UI.otevrene.delete(String(cesta)); rcZmena(v, cesta); }
+  else render();
+}
+function rcVrat(cesta) {
+  if (rcStop()) return;
+  const v = rcVarianta(); if (!v || !v.data) return;
+  const dn = rcDnesniF(v);
+  if (rucniCenaVrat(v.data, cesta, dn ? dn(cesta) : undefined)) { RC_UI.otevrene.delete(String(cesta)); rcZmena(v, cesta); }
+}
 /* Štítky „cena dle nabídky" / „vlastní cena" u příplatku (S13, J. V.
  * 16. 10. 2026). Příznak se bere z PLATNÉHO ceníku (DEFAULT_CENIK = platný
  * po progPouzij) — týž zdroj, ze kterého ho bere server; ceník varianty ho
@@ -1725,20 +1864,20 @@ function radekKalk(r, sekceKey) {
   const vlastniEd = !admin && r.vlastni && !r.kid && smiZobrazit('kalk.pridatPolozku');
   const trvalaEd = !admin && r.vlastni && !!r.kid && smiZobrazit('kalk.pridatPolozku');
   let c = `<td style="white-space:normal">${admin
-    ? `<div class="vol-name">${gripHtml(r, sekceKey)}${bunkaNazev(r, sekceKey)}${bezCenyHtml(r)}${vypnutoHtml(r)}</div>`
+    ? `<div class="vol-name">${gripHtml(r, sekceKey)}${bunkaNazev(r, sekceKey)}${bezCenyHtml(r)}${vypnutoHtml(r)}${rcStitek(r)}</div>`
     : vlastniEd
       ? `<input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'nazev', this.value)">
          à <input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
            onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)"> Kč
          <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('${escJs(r.sekce)}', ${r.idx})">✕</button>`
-      : esc(r.nazev) + poznHtml(r) + bezCenyHtml(r) + vypnutoHtml(r)
+      : esc(r.nazev) + poznHtml(r) + bezCenyHtml(r) + vypnutoHtml(r) + rcStitek(r)
         + (trvalaEd ? ` <button class="mini noprint" title="smazat trvalou položku jen v této zakázce" onclick="vlastniDel('${escJs(r.sekce)}', ${r.idx})">✕</button>` : '')}</td>`;
   c += `<td style="white-space:nowrap">${(admin || vlastniEd || trvalaEd) ? bunkaMnozstvi(r) : num(r.mnozstvi, 3)}</td>`;
   if (admin) c += `<td style="white-space:nowrap">${bunkaCena(r)}</td>`;
   if (showCost) c += `<td>${fmt(r.naklad)}</td><td>${fmt(r.marze)}</td>`;
   c += `<td>${fmt(r.sMarzi)}</td>`;
   if (admin) c += adminKoncBunky(r, sekceKey);
-  return `<tr${dz} class="${vypnutoTrida(r).trim()}">${c}</tr>`;
+  return `<tr${dz} class="${vypnutoTrida(r).trim()}">${c}</tr>` + rcRadekPod(r, kalkSloupce().NC);
 }
 function radekPridat(sekceKey, popis) {
   const { NC } = kalkSloupce();
@@ -2075,6 +2214,7 @@ function sirotciKarta(r) {
 }
 
 function renderOutputs() {
+  RC_UI.vykresleno = new Set();   // řádek ruční ceny (#561) jen pod prvním řádkem s danou cestou
   let r;
   try { r = vypocetAkt(); }
   catch (e) {
@@ -2167,7 +2307,7 @@ function renderOutputs() {
     /* Klíč ceníkové položky i u příplatku (2. 9. 2026): řádky kalkulace ho mají
      * od 1. 9., příplatky na něj tehdy zapomněly — a přitom je to jediné místo,
      * kde je vidět, ze které ceníkové položky se cena bere. */
-    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${origJs}', this.value)" title="název příplatku lze přepsat">${reset}${klicChip(x.cenaPath)}${vypnutoHtml(x)}${dleNabidkyStitky(x)}`;
+    return `<input type="text" class="nazev-ed" value="${esc(x.nazev)}" onchange="nazevSet('${origJs}', this.value)" title="název příplatku lze přepsat">${reset}${klicChip(x.cenaPath)}${vypnutoHtml(x)}${dleNabidkyStitky(x)}${rcStitek(x)}`;
   };
   /* Množství u příplatku jde od 2. 9. 2026 PŘEPSAT (zadání J. V. po testu
    * Kornpfortstraße): předloha má u některých položek pod čarou nulu, aby se
@@ -2198,7 +2338,7 @@ function renderOutputs() {
     let c = '';
     if (col.admin) c += `<td style="text-align:center"><input type="checkbox" ${vynech.includes(x.key) ? '' : 'checked'}
         onchange="priplatekNabidka('${keyAttr(x.key)}', this.checked)" title="propsat do cenové nabídky"></td>`;
-    c += `<td style="white-space:normal">${col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x) + dleNabidkyStitky(x)}</td>`;
+    c += `<td style="white-space:normal">${col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x) + dleNabidkyStitky(x) + rcStitek(x)}</td>`;
     c += `<td style="white-space:nowrap">${col.admin ? pripMnozstvi(x) : num(x.mnozstvi, 3)}</td>`;
     if (col.admin) c += `<td style="white-space:nowrap">${pripCena(x)}</td>`;
     if (col.showCost) c += `<td>${fmt(x.naklad)}</td>`;
@@ -2215,7 +2355,7 @@ function renderOutputs() {
           + 'otevřená zakázka se nemění')}</td>`;
     }
     const radek = `<tr class="${vypnutoTrida(x).trim()}">${c}</tr>`;
-    return radek + popisRadek(x, pripCols);
+    return radek + rcRadekPod(x, pripCols) + popisRadek(x, pripCols);
   };
   /* Skryté položky vidí ten, kdo je umí odkrýt — tedy administrátor.
    * Vedoucímu s právem na náklady by jinak v tabulce svítily řádky, které

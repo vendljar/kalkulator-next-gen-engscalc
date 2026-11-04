@@ -112,7 +112,13 @@ function cenikRucniVsechny() {
 /* Hodnota, které se automatický přepočet nesmí dotknout: je zakázková
  * A OBCHODNÍK JI SÁM NASTAVIL. Obojí musí platit zároveň. */
 function cenikChranena(data, cesta) {
-  return cenikPatriZakazce(cesta) && cenikRucniJe(data, cesta);
+  return (cenikPatriZakazce(cesta) && cenikRucniJe(data, cesta)) || cenikRucniCenaJe(data, cesta);
+}
+/* RUČNÍ CENA POLOŽKY (#561, J. V. 4. 11. 2026) patří zakázce: přepočet na
+ * nový ceník ji nepřepíše (ani přepočet vybraných položek) — jen upozorní
+ * kontrola „rucniCenaCenik". Vrátit ji jde tlačítkem ↺ u položky. */
+function cenikRucniCenaJe(data, cesta) {
+  return typeof rucniCenaZaznam === 'function' && !!rucniCenaZaznam(data, cesta);
 }
 
 /* Jednotný seznam sledovaných položek: OCK, PROJ a tři globální hodnoty. */
@@ -324,7 +330,10 @@ function cenikPrehled(v, dnesni, opts) {
   opts = opts || {};
   const dnes = opts.dnes || new Date().toISOString().slice(0, 10);
   const data = (v && v.data) || null;
-  const rozdily = data ? cenikRozdily(data, dnesni) : [];
+  /* Ruční cena položky (#561) není zastaralá cena a do okna přepočtu nepatří
+   * — přepočet ji nepřepíše a okno by obchodníkovi ukázalo ceníkovou sazbu
+   * (P12). Upozornění na změnu ceníku dává kontrola rucniCenaCenik. */
+  const rozdily = data ? cenikRozdily(data, dnesni).filter(r => !cenikRucniCenaJe(data, r.cesta)) : [];
   /* Přirážka a sazba DPH jsou rozhodnutí zakázky, ne ceny (CENIK_ZAKAZKOVE).
    * Automatický přepočet je vynechával, varování ne — ruční DPH 21 % pak
    * svítilo jako „Sazba DPH −42,9 %" (P4 / K13-N58, 24. 9. 2026). V seznamu
@@ -435,6 +444,7 @@ function cenikPrepocti(v, dnesni, opts) {
   const nulaMistoCeny = (r) => !!vynut[r.sekce] && (r.stara === 0 || r.stara === undefined || r.stara === '')
     && typeof r.nova === 'number' && r.nova !== 0 && !chranena(v.data, r.cesta);
   const rozdily = cenikRozdily(v.data, dnesni)
+    .filter(r => !cenikRucniCenaJe(v.data, r.cesta))
     .filter(r => (vyber ? (vyber.has(r.cesta) || nulaMistoCeny(r)) : !chranena(v.data, r.cesta)));
   rozdily.forEach(r => cenikNastavHodnotu(v.data, r.cesta, r.nova));
   /* Přepočet po vybraných položkách (dohodnutá cena skla zůstává) nechává
@@ -444,7 +454,7 @@ function cenikPrepocti(v, dnesni, opts) {
    * Verze se proto zapíše, jen když po přepočtu nezůstal žádný rozdíl. */
   /* Do „co ještě zbývá" se zakázkové hodnoty nepočítají: jinak by odlišná
    * přirážka navždy brala variantě číslo verze ceníku, ze které počítala. */
-  const zbyva = cenikRozdily(v.data, dnesni).filter(r => !chranena(v.data, r.cesta)).length;
+  const zbyva = cenikRozdily(v.data, dnesni).filter(r => !chranena(v.data, r.cesta) && !cenikRucniCenaJe(v.data, r.cesta)).length;
   v.data.cenikRazitko = cenikRazitkoNovy(v.data,
     zbyva ? Object.assign({}, opts, { verze: null, platnoOd: '' }) : opts);
   /* Značka se srovnává jen tehdy, když po přepočtu nezůstal rozdíl – tedy když
@@ -503,7 +513,7 @@ function cenikPrepoctiRozpracovane(zak, dnesni, opts) {
   const dleNab = (cesta) => typeof cenikDleNabidkyJe === 'function'
     && String(cesta).indexOf('C.') === 0 && !!dnesni && cenikDleNabidkyJe(dnesni.cenik, cesta);
   const chranena = rozdelana
-    ? ((data, cesta) => cenikPatriZakazce(cesta) || dleNab(cesta))
+    ? ((data, cesta) => cenikPatriZakazce(cesta) || dleNab(cesta) || cenikRucniCenaJe(data, cesta))
     : cenikChranena;
 
   zak.varianty.forEach(v => {
@@ -674,7 +684,7 @@ if (typeof module !== 'undefined')
                      cenikSrovnejZnacky,
                      cenikOtisk, cenikSouhrn, cenikKvitovat, cenikZrusKvitanci,
                      cenikJeKvitovano, cenikPrehled, cenikProcento, cenikVarovaniText,
-                     cenikDatumCz, cenikPrepocti, cenikPrepoctiRozpracovane,
+                     cenikDatumCz, cenikPrepocti, cenikPrepoctiRozpracovane, cenikRucniCenaJe,
                      cenikOznacJakoDnesni,
                      cenikVerzeCislo, cenikRazitkoNovy, cenikRazitkoRada, cenikVerzeText, cenikVerzeVeta,
                      cenikDopadText };

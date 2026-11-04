@@ -520,6 +520,13 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       { matice: ctx.matice, program: ctx.program, zamcenaDriv, jekly: JEKLY });
     if (!vyj.ok) return odmitni(vyj.status || 403, veta(vyj.chyba));
   }
+  /* Ruční cena položky s potvrzením (#561, J. V. 4. 11. 2026, src/rucni_ceny.js):
+   * tvar záznamů, hodnota = ceník varianty, razítko „kdo a kdy" z relace
+   * (klientskému se nevěří). V obnově je záznam doklad ze zálohy — jen tvar. */
+  if (typeof globalThis.rucniCenyServer === 'function') {
+    const rc = globalThis.rucniCenyServer(staraPorovnani, zak, relace, { program: ctx.program, zamcenaDriv, obnova });
+    if (!rc.ok) return odmitni(rc.status || 400, veta(rc.chyba));
+  }
 
   if (!obnova) {
     /* Autor: nová zakázka dostane autora z relace (cizího smí ponechat jen
@@ -635,6 +642,10 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
      * ceníku — nový zámek jen s platným schválením (13. 10. 2026). */
     const vyjProblem = globalThis.vyjimkyZamekProblem(zak, v, relace, { matice: ctx.matice, program: ctx.program, jekly: JEKLY });
     if (vyjProblem) return odmitni(403, 'Neuloženo: ' + vyjProblem + '.');
+    /* Nepotvrzená ruční cena položky (#561) — zrcadlo zábrany
+     * rucniCenaNepotvrzena; platí pro každého, i administrátora. */
+    const rcProblem = typeof globalThis.rucniCenyZamekProblem === 'function' ? globalThis.rucniCenyZamekProblem(zak, v) : '';
+    if (rcProblem) return odmitni(403, 'Neuloženo: ' + rcProblem + '.');
     /* Nový zámek strany OCK z nulového nebo nevyplněného rozměru (B137) —
      * zrcadlo zábrany „rozmery"; platí pro každého, i administrátora
      * (zábranu v prohlížeči nepřekročí ani on). */

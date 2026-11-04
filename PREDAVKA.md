@@ -1,3 +1,40 @@
+# Předávka — 4. 11. 2026: RC #561 — ruční cena položky z nabídky dodavatele s potvrzením, větev `claude/rc-rucni-cena`
+
+Nad `6109e39` (`test`, v4.11.3) + sloučený návrh NV (`origin/claude/nv-mustky-cena`, 1ef0e8b). **Verze 4.11.5**
+(koordinace přečísluje). Do `test-draft`, `test` ani `main` nic, na webech nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. UI u položky: nákupní cena, dodavatel, č. nabídky, datum, platnost | ✅ (příloha ne — otevřený bod) | `src/ui/kalk_ock.js` (rcStitek, rcRadekPod, rc*) |
+| 2. Potvrdit cenu / ↺ vrátit na ceník, štítky, razítko ze serveru | ✅ | `src/rucni_ceny.js`, `netlify/lib/zakazka_kontrola.mjs`, `netlify/functions/zakazky.mjs`, `src/ui/online_ui.js` |
+| 3. Server: B112 přijme krytou položku, ostatní ceník chráněn, směs ceníků ji nehlásí | ✅ | `src/uloziste.js` (volnaRucni), `src/vyjimky.js` |
+| 4. Nový ceník nepřepíše (jen upozorní), zámek drží, klon nese (B154), zábrana tisku, prošlá platnost = upozornění | ✅ | `src/cenik_stari.js`, `src/kontroly.js`, `src/zakazka.js` |
+| 5. Controlling zdroj + odchylka, P12 | ✅ | `src/controlling.js` (export verze 6), šablona podkladů přegenerována |
+| 6. Dokumentace | ✅ | manuál obchodníka kap. 18, správce A6/A7, `BEZPECNOST_MEZE.md` B195–B198, roadmapa #561 hotovo, CHANGELOG |
+
+**Jak se to používá:** Kalkulace OCK → u položky **✎ cena z nabídky** → nákupní cena (v jednotce položky) + zdroj →
+**Potvrdit cenu**. Přirážka se přičte jako jinde. Nepotvrzená cena zastaví tisk dokumentů OCK („Potvrďte ruční cenu u: …“),
+každá změna potvrzení shodí, ↺ vrátí sazbu platného ceníku. Obchodník ceníkovou sazbu nevidí („Ceník: skryto“), správce
+ano i s odchylkou.
+
+**Jak jsem rozhodl nerozhodnuté body:** #425 nedělán; controlling = zdroj + odchylka (Kč/jedn., %, celkem) v exportu;
+příplatky S13 — nová změna u role bez práva ceníku = ruční cena k potvrzení, starší vlastní cena bez záznamu se **čte** jako
+„✓ potvrzeno bez dokladu“ (data se nepřevádějí, aby se nezměnily zamčené varianty), tisk neblokuje.
+**P12:** odchylku a ceníkovou sazbu vidí jen `sloupce.naklad` a export controllingu (jen admin) — z odchylky a vlastní ceny
+by si obchodník sazbu dopočítal. V JSONu zakázky je sazba vidět (vědomá mez B196 = B162a).
+
+**Testy:** `src/test_561_rucni_cena.js` 72/0, `netlify/test_561_rucni_cena.mjs` 29/0, `overit_rucni_cena.mjs` 18/0 — na 6109e39
+všechny selžou (0/2, 7/10, pád v oddílu 1). Mutace „#561“ **19 z 19** (napoprvé 18, nechycenou dvojí pojistku přepočtu doplnil
+test; `--kontrola` 1268 / jádro 650 OK). První kolo `--bez-mutaci` nad 313b18b: 5 sad červených (escape, mutace jádra na
+verzi exportu, počet pravidel v overit_lista a manuálu výpočtu, overit_roadmapu kvůli #560 z návrhu NV) → opraveno v fc7a7ab.
+Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přeskočeno — firemní podklady a test.js, Playwright odkaz funguje; hodiny +400 dní 307 / 0 / 1; statické 5 z 5; 29 min 31 s). Celé mutace nepouštěny.
+
+**Otevřené body pro J. V.:**
+- Příloha (PDF nabídky dodavatele) k ruční ceně není — jen textový zdroj.
+- PROJ ceník ruční cenu nemá (jen OCK).
+- Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
+- B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
+- `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
 # Pravidla komunikace s integrátorem Pipedrive (J. V. 23. 10., znovu 3. a 4. 11. 2026)
 
 - Make se pro proces kalkulátor ↔ Pipedrive **nepoužívá** a v ničem, co jde integrátorovi (e-maily, tabulky, podklady), se **nezmiňuje**. Mluví se obecně o „automatizacích v účtu“.
