@@ -10,6 +10,7 @@ Neslučováno; do `test-draft` / `test` / `main` nic, na webech, Disku ani v Pip
 | 3. číslo vydání, čísla proti jádru | ✅ | `cisla_vydani.json` vydani 4 / verze 4.11.4 (jediný zdroj — titul `{{meta.vydani}}`, patička PDF); 629 čísel = jádro, beze změny proti 3. vydání; kontrol 44 |
 | 4. testy, CHANGELOG, roadmapa #563 | ✅ | `src/test_manual_vypocet.js` 13/0 (s HTML 15/0; pojistka 2 FAIL), `test_manual_fakta` 14/0, `test_dokumentace_kompletni` 93/0; `roadmapa.py --kontrola` 556 OK |
 | 5. HTML + PDF | ✅ | 22 stran A4, obsah 1 strana; poslané koordinaci přes SendUserFile, do repa ne; `kontrola_udaju.py` čistá i nad HTML a textem PDF |
+| 6. kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | 29 min 47 s: sady 378 / 0 / 7 přeskočeno (firemní podklady KNG_PODKLADY a test.js), hodiny +400 dní 305 / 0 / 1, statické 5 z 5; mutace nepouštěny (kód beze změny) |
 
 **Výroba znovu:** `bash manual_vypocet/sestav.sh <složka mimo repo>` (HTML + PDF + test s hotovým HTML; Playwright
 přes odkaz `node_modules/playwright` → `npm root -g`). Nové vydání: zvýšit `vydani` v `cisla_vydani.json`,
