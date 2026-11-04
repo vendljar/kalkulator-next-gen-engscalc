@@ -1,3 +1,24 @@
+# Předávka — 4. 11. 2026: MV4 #563 — 4. vydání manuálu výpočtu OCK pro v4.11.4, větev `claude/mv4-manual-vypocet`
+
+Nad `b751c91` (`main` = `test` = v4.11.4). **Kód aplikace beze změny, verze se nezvyšuje** (CHANGELOG „Dokumentace").
+Neslučováno; do `test-draft` / `test` / `main` nic, na webech, Disku ani v Pipedrive nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. změny v26.10.12 → v4.11.4 v manuálu | ✅ | `manual_vypocet/sablona.html` — kap. 7 sklo při změně typu (K37-N1), kap. 11 sazby můstků jen z ceníku (#548) + zahraniční sazba montáže (#550), kap. 12 lešení hlavy (#546, K39-N1), kap. 14 Prodáno nemění cenu (#540, #547, #562), kap. 17 nová tabulka po verzích; kotvení přes můstky (#519) už ve 3. vydání |
+| 2. bez SV, RC #561, IK | ✅ | nejsou na main — nic o nich ani v „Co se chystá" |
+| 3. číslo vydání, čísla proti jádru | ✅ | `cisla_vydani.json` vydani 4 / verze 4.11.4 (jediný zdroj — titul `{{meta.vydani}}`, patička PDF); 629 čísel = jádro, beze změny proti 3. vydání; kontrol 44 |
+| 4. testy, CHANGELOG, roadmapa #563 | ✅ | `src/test_manual_vypocet.js` 13/0 (s HTML 15/0; pojistka 2 FAIL), `test_manual_fakta` 14/0, `test_dokumentace_kompletni` 93/0; `roadmapa.py --kontrola` 556 OK |
+| 5. HTML + PDF | ✅ | 22 stran A4, obsah 1 strana; poslané koordinaci přes SendUserFile, do repa ne; `kontrola_udaju.py` čistá i nad HTML a textem PDF |
+
+**Výroba znovu:** `bash manual_vypocet/sestav.sh <složka mimo repo>` (HTML + PDF + test s hotovým HTML; Playwright
+přes odkaz `node_modules/playwright` → `npm root -g`). Nové vydání: zvýšit `vydani` v `cisla_vydani.json`,
+`node manual_vypocet/sestav.js --snapshot`, kap. 17 doplnit. Strany: `NODE_PATH=$(npm root -g) node manual/mereni_sazby.mjs <pdf>`.
+
+**Další vydání (5.):** světlíky bez „zajistí stavba" (SV), ruční cena položky (RC #561), interní poznámky na krycím
+listu (IK) — až budou na main.
+
+---
 # Předávka — 4. 11. 2026: PS #562 — štítek „Nabídka prodána“ + lišta „Ceník není nahraný“, větev `claude/ps-prodano-cenik`
 
 Nad `7a23c50` (`test` = v3.11.4). **Verze 4.11.4** (koordinace přečísluje). Neslučováno; na ostrém ani testovacím webu nic.
