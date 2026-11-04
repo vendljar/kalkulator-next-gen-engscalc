@@ -28,6 +28,7 @@ function varNova() {
     const z = novaVarianta('Varianta ' + p,
       JSON.parse(JSON.stringify(zdroj.data)));
     if (typeof zakazkaUnikatniId === 'function') z.id = zakazkaUnikatniId(ZAK, z.id);   // B29
+    if (typeof svetlikyStavbaNaBez === 'function' && z.data && z.data.ock) svetlikyStavbaNaBez(z.data.ock.zadani);   // #560
     ZAK.varianty.push(z); ZAK.aktivni = z.id;
   }
   syncVarianta(); render();

@@ -251,15 +251,13 @@ function renderInputs() {
          * nadDvermiVypln(): stará zakázka bez volby ukáže to, co znamenalo
          * její zaškrtávátko (sklo / bez). */
         + `<div class="row"><label>Světlík nad šachetními dveřmi</label>
-            <select style="width:150px" onchange="nadDvermiSet(this.value)" title="${esc(svetlikVyplnTitulek('nad', rAkt))}">${NAD_DVERMI_POPISY.map(([v, t]) =>
-              `<option value="${v}" ${nadDvermiVypln(Z) === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+            <select style="width:150px" onchange="nadDvermiSet(this.value)" title="${esc(svetlikVyplnTitulek('nad', rAkt))}">${svetlikVolbyHtml(nadDvermiVypln(Z))}
             </select><span class="u"></span></div>`
         /* SVĚTLÍKY NA BOCÍCH DVEŘÍ (#375, rozhodnutí J. V. 30. 9. 2026): tytéž
          * volby jako nad dveřmi (dřív počet stran a pod ním „Výplň boků
          * dveří"). Pod volbou počet světlíků, jen když boky nejsou „bez". */
         + `<div class="row"><label>Světlíky na bocích dveří</label>
-            <select style="width:150px" onchange="bokyDveriSet(this.value)" title="${esc(svetlikVyplnTitulek('boky', rAkt))}">${NAD_DVERMI_POPISY.map(([v, t]) =>
-              `<option value="${v}" ${bokyVypln(Z) === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}
+            <select style="width:150px" onchange="bokyDveriSet(this.value)" title="${esc(svetlikVyplnTitulek('boky', rAkt))}">${svetlikVolbyHtml(bokyVypln(Z))}
             </select><span class="u"></span></div>`
         + bokyKsRadek()
         /* Šířka bočního světlíku (#381): jen Model 2 a ruční počet. */
@@ -733,7 +731,18 @@ function oplZmeneno() {
  * světlíky na bocích dveří TYTÉŽ volby — dřívější „Výplň boků dveří" bez
  * volby „bez" zanikla. */
 const NAD_DVERMI_POPISY = [['bez', 'bez'], ['sklo', 'sklo'], ['plech', 'plech'],
-                           ['material', 'materiál opláštění'], ['stavba', 'zajistí stavba']];
+                           ['material', 'materiál opláštění']];
+/* „Zajistí stavba" se nenabízí (#560, rozhodnutí J. V. 4. 11. 2026: stavba
+ * dozdí prostor světlíku = „bez"). Rozpracovaná varianta se po otevření
+ * převede na „bez"; volbu tak nese už jen ODESLANÁ nabídka (jen ke čtení).
+ * Aby výběr u ní neukazoval „bez", které neplatí pro její cenu, dostane
+ * zrušenou volbu jako vypnutou položku — vybrat ji znovu nejde. */
+function svetlikVolbyHtml(akt) {
+  const volby = NAD_DVERMI_POPISY.map(([v, t]) =>
+    `<option value="${v}" ${akt === v ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  return akt === 'stavba'
+    ? volby + `<option value="stavba" selected disabled>${esc('zajistí stavba (zrušená volba)')}</option>` : volby;
+}
 
 /* Bublina u volby světlíků (#375): co volby znamenají a čím se světlík TEĎ
  * vyplní. Materiál se bere z výsledku jádra (`vypocetAkt`, u odeslané
@@ -774,7 +783,7 @@ function bokyKsRadek() {
  * Funkce jsou v ZAMEK_CHRANENE: převod i zápis projdou jen u varianty, do
  * které se smí psát (zámek, náhled). */
 function bokyDveriSet(v) {
-  if (NAD_DVERMI_VOLBY.indexOf(v) < 0) return;
+  if (NAD_DVERMI_NABIDKA.indexOf(v) < 0) return;   // #560: „stavba" už nevzniká
   if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(Z);
   set('Z.bokyDveri', v);
 }
@@ -875,7 +884,7 @@ function mustkySet(v) {
 }
 
 function nadDvermiSet(v) {
-  if (NAD_DVERMI_VOLBY.indexOf(v) < 0) return;
+  if (NAD_DVERMI_NABIDKA.indexOf(v) < 0) return;   // #560: „stavba" už nevzniká
   set('Z.nadDvermi', v);
   if (Z.nadDvermi === v) Z.svetlikNadDvermi = (v === 'sklo' || v === 'material');
 }

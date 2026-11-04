@@ -608,6 +608,18 @@ const SVETLA_VYSKA_ODSTUP_M = 0.2;
  *              jako předloha jen v Modelu 1 (zůstává 1:1), Model 2 od
  *              1. 10. 2026 ne (#378, rozhodnutí J. V.). */
 const NAD_DVERMI_VOLBY = ['bez', 'sklo', 'plech', 'material', 'stavba'];
+/* „ZAJISTÍ STAVBA" ZRUŠENO (#560, rozhodnutí J. V. 4. 11. 2026): „Žádné rámy
+ * kolem neděláme, světlík kompletně dodává stavba. Variantu zajistí stavba
+ * odstraň. Protože stavba v takovém případě dozdívá prostor světlíku a my
+ * s ním nemáme práci. Což pro obchodníka znamená, že je to varianta
+ * světlíku ‚bez'."
+ *
+ * NAD_DVERMI_NABIDKA je to, co obrazovka NABÍZÍ (a co smí vzniknout nově).
+ * NAD_DVERMI_VOLBY dál obsahuje „stavba", protože ji jádro musí umět ČÍST:
+ * odeslaná (zamčená) nabídka se počítá ze svých uložených dat a musí vyjít
+ * na haléř stejně jako v den odeslání. Rozpracovaná varianta se při otevření
+ * převede na „bez" (svetlikyStavbaNaBez níž) a přepočte. */
+const NAD_DVERMI_NABIDKA = ['bez', 'sklo', 'plech', 'material'];
 function nadDvermiVypln(z) {
   const v = z && z.nadDvermi;
   if (NAD_DVERMI_VOLBY.indexOf(v) >= 0) return v;
@@ -688,6 +700,26 @@ function svetlikyBokyMigrace(z) {
   if (strany === 2) { if (bokyPocetRucni(z) != null) z.svetlikyBokyKs = ''; }
   else z.svetlikyBokyKs = strany * nastupisteCelkem(z);
   return true;
+}
+/* PŘEVOD ZRUŠENÉ VOLBY „ZAJISTÍ STAVBA" NA „BEZ" (#560). Jen pro zadání
+ * ROZPRACOVANÉ varianty — o tom rozhoduje volající (svetlikyStavbaPrevod
+ * v zakazka.js, klon v zamek.js); odeslaná varianta se nemění nikdy.
+ *   nad dveřmi „stavba" → „bez" (Model 1 tím ubere 0,2 h na nástupiště jako
+ *              u každého „bez" — předloha jinou volbu nezná; Model 2 cenu
+ *              nemění, výplň byla 0 Kč a montáž se neubírala ani dřív);
+ *   boky „stavba" → „bez" (počet bočních světlíků 0: zmizí 0,5 h montáže,
+ *              sloupek portálu a 2 krátké příčníky na kus). Starší tvar
+ *              (počet stran + `bokyVypln`) se nejdřív převede po staru.
+ * Ruční počet a šířka bočních světlíků zůstávají v datech (při „bez" je
+ * jádro nečte) — kdo pak zvolí sklo, vrátí se mu jeho čísla.
+ * Vrací true, když zadání změnil. */
+function svetlikyStavbaNaBez(z) {
+  if (!z || typeof z !== 'object') return false;
+  let zmena = false;
+  if (z.nadDvermi === 'stavba') { z.nadDvermi = 'bez'; z.svetlikNadDvermi = false; zmena = true; }
+  if (!bokyNovyTvar(z) && (+z.svetlikyBoky || 0) > 0 && z.bokyVypln === 'stavba') svetlikyBokyMigrace(z);
+  if (z.bokyDveri === 'stavba') { z.bokyDveri = 'bez'; zmena = true; }
+  return zmena;
 }
 /* Excelová značka „světlík nad dveřmi zaškrtnut" (sklo i materiál). Od #375
  * rozhoduje o skle materiál stěn (viz svetlikRozres ve výpočtu); tahle
@@ -2510,4 +2542,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, cenikMigraceMustku, mustkyCenikKontrola, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, cenikMigraceMustku, mustkyCenikKontrola, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

@@ -242,6 +242,8 @@ const n58 = await p.evaluate(() => {
     zadneZaskrtavatko: !document.querySelector('#inputs input[type=checkbox][onchange*="svetlikNadDvermi"]'),
     volby, vybrano: sel ? sel.value : '',
   };
+  /* #560: „zajistí stavba" se nenabízí a zápis se odmítne. */
+  nadDvermiSet('bez');
   nadDvermiSet('stavba');
   out.poStavba = { nad: Z.nadDvermi, stary: Z.svetlikNadDvermi };
   nadDvermiSet('sklo');
@@ -267,11 +269,11 @@ zkus('25. 9.: můstky jsou číselné pole (výchozí 0), staré zaškrtávátko
   n58.mustkyPole && n58.mustkyPole.typ === 'number' && n58.mustkyPole.hodnota === '0' && n58.zadnyStaryMustek, JSON.stringify(n58.mustkyPole));
 zkus('4. sloupec: čistý vstup → můstky → přechodové plechy → ATYP',
   n58.mustekV4 && n58.poradi4.every((x, i, a) => x >= 0 && (i === 0 || a[i - 1] < x)), JSON.stringify(n58.poradi4));
-zkus('N58: menu nabízí bez / sklo / plech / materiál opláštění / zajistí stavba',
-  n58.volby.join('|') === 'bez|sklo|plech|materiál opláštění|zajistí stavba', n58.volby.join('|'));
+zkus('N58 + #560: menu nabízí bez / sklo / plech / materiál opláštění (bez „zajistí stavba")',
+  n58.volby.join('|') === 'bez|sklo|plech|materiál opláštění', n58.volby.join('|'));
 zkus('N58: staré zaškrtávátko zmizelo', n58.zadneZaskrtavatko);
-zkus('N58: volba se uloží a staré pole drží v souladu (stavba → ne, sklo → ano)',
-  n58.poStavba.nad === 'stavba' && n58.poStavba.stary === false && n58.poSklo.nad === 'sklo' && n58.poSklo.stary === true, JSON.stringify(n58));
+zkus('N58 + #560: „stavba" se odmítne (zůstane „bez"), sklo se uloží a staré pole drží v souladu',
+  n58.poStavba.nad === 'bez' && n58.poStavba.stary === false && n58.poSklo.nad === 'sklo' && n58.poSklo.stary === true, JSON.stringify(n58));
 zkus('25. 9.: 3 můstky se uloží, staré pole v souladu, ukážou se rozměry',
   n58.mustky3.ks === 3 && n58.mustky3.stary === true && n58.mustky3.rozmery, JSON.stringify(n58.mustky3));
 zkus('25. 9.: záporný počet můstků = 0', n58.mustkyZap === 0, n58.mustkyZap);
@@ -311,15 +313,18 @@ const s375 = await p.evaluate(() => {
    * = počet dveří (ručně) — a přepnutí výplně počet nezdvojí. */
   delete Z.bokyDveri; delete Z.svetlikyBokyKs; Z.svetlikyBoky = 1; Z.bokyVypln = 'plech'; render();
   out.stara = { volba: bokySel() && bokySel().value, hodnota: pole() && pole().value, rucne: rucne() };
-  bokyDveriSet('stavba');
+  bokyDveriSet('stavba');   // #560: zrušená volba se odmítne, data zůstanou ve starém tvaru
+  out.stavbaOdmitnuta = Z.bokyDveri === undefined && Z.bokyVypln === 'plech';
+  bokyDveriSet('material');
   out.staraPoZmene = { data: Z.bokyDveri, ks: Z.svetlikyBokyKs, hodnota: pole() && pole().value };
   bokyDveriSet('bez');
   out.zpetBez = { data: Z.bokyDveri, pole: !!pole() };
   set('Z.nastupiste', puvNast); render();
   return out;
 });
-zkus('#375: boky nabízejí bez / sklo / plech / materiál opláštění / zajistí stavba',
-  s375.volby.join('|') === 'bez|sklo|plech|materiál opláštění|zajistí stavba', s375.volby.join('|'));
+zkus('#375 + #560: boky nabízejí bez / sklo / plech / materiál opláštění (bez „zajistí stavba")',
+  s375.volby.join('|') === 'bez|sklo|plech|materiál opláštění', s375.volby.join('|'));
+zkus('#560: zápis „stavba" do boků se odmítne', s375.stavbaOdmitnuta, JSON.stringify(s375));
 zkus('#375: nová zakázka má boky „bez" a pole s počtem se neukáže', s375.vychozi === 'bez' && !s375.poleBez, JSON.stringify(s375));
 zkus('#375: stará „Výplň boků dveří" zmizela', !s375.staraVypln);
 zkus('#375: po volbě skla se ukáže počet 10 (5 nástupišť × 2), bez štítku „ručně" a bez ↺',
@@ -336,7 +341,7 @@ zkus('#375: ↺ vrátí výpočet (8 nástupišť × 2 = 16)', s375.poZpet.data 
 zkus('#375: starší zakázka (1 strana, plech) ukáže plech a počet dveří jako ruční',
   s375.stara.volba === 'plech' && s375.stara.hodnota === '8' && s375.stara.rucne, JSON.stringify(s375.stara));
 zkus('#375: přepnutí výplně u starší zakázky počet nezdvojí (převod na nový tvar)',
-  s375.staraPoZmene.data === 'stavba' && s375.staraPoZmene.ks === 8 && s375.staraPoZmene.hodnota === '8', JSON.stringify(s375.staraPoZmene));
+  s375.staraPoZmene.data === 'material' && s375.staraPoZmene.ks === 8 && s375.staraPoZmene.hodnota === '8', JSON.stringify(s375.staraPoZmene));
 zkus('#375: zpět na „bez" pole zmizí', s375.zpetBez.data === 'bez' && !s375.zpetBez.pole, JSON.stringify(s375.zpetBez));
 
 zkus('za celý průchod nevznikla chyba v konzoli', konzole.length === 0, konzole.slice(0, 2).join(' | '));

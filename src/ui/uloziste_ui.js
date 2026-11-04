@@ -342,11 +342,18 @@ function uloUlozDoSlozky(opts) {
 const ULO_PREPOCET = { zaloha: null, zakazka: null, pred: null, po: null, verze: null };
 
 function uloSrovnejSPlatnymCenikem() {
-  if (typeof cenikPrepoctiRozpracovane !== 'function'
-    || typeof cenikDnesniData !== 'function'
-    || typeof ZAK === 'undefined' || !ZAK) return null;
   const info = (typeof progPlatnaVerzeInfo === 'function')
     ? progPlatnaVerzeInfo() : { verze: null, platnoOd: '' };
+  /* ZRUŠENÁ VOLBA SVĚTLÍKU „ZAJISTÍ STAVBA" (#560): rozpracované varianty se
+   * převedou na „bez" HNED po otevření — dřív než záloha pro „Vrátit"
+   * a přepočet níž, aby se zrušená volba nevrátila s původním ceníkem.
+   * Odeslané varianty zůstávají (svetlikyStavbaPrevod v zakazka.js). */
+  const stavba = (typeof svetlikyStavbaPrevod === 'function' && typeof ZAK !== 'undefined' && ZAK)
+    ? svetlikyStavbaPrevod(ZAK) : 0;
+  if (stavba && typeof syncVarianta === 'function') syncVarianta();
+  if (typeof cenikPrepoctiRozpracovane !== 'function'
+    || typeof cenikDnesniData !== 'function'
+    || typeof ZAK === 'undefined' || !ZAK) return stavba ? { prepocteno: 0, svetlikyStavba: stavba } : null;
 
   /* ZÁLOHA PŘED PŘEPOČTEM (#284). Bez ní by nabídka „ponechat původní ceník"
    * byla prázdný slib: přepočet přepisuje ceny na místě a zpátky se z toho
@@ -374,12 +381,24 @@ function uloSrovnejSPlatnymCenikem() {
    * v ceníku varianty nese „nejsou to ostrá data" a po otevření nad platným
    * ceníkem by jinak dál svítila červená lišta a dokument by byl zablokovaný. */
   if ((r.prepocteno || r.orazitkovano || r.znacky || r.popisy) && typeof syncVarianta === 'function') syncVarianta();
+  if (r) r.svetlikyStavba = stavba;
   return r;
+}
+
+/* Věta o převodu „zajistí stavba" → „bez" (#560). Prázdná, když nebylo co
+ * převádět. Volající ji připojí za větu o přepočtu (uloPrepocetVeta). */
+function uloSvetlikyStavbaVeta(r) {
+  const n = r && r.svetlikyStavba;
+  if (!n) return '';
+  return 'Zrušená volba světlíku „zajistí stavba" převedena na „bez" ('
+    + (n === 1 ? '1 rozpracovaná varianta' : (n < 5 ? n + ' rozpracované varianty' : n + ' rozpracovaných variant'))
+    + '; prostor světlíku dozdí stavba, cena se přepočetla). Odeslané nabídky zůstávají beze změny.';
 }
 
 /* Věta do lišty. Mlčet o přepočtu by znamenalo, že se čísla v otevřené
  * nabídce změnila a nikdo neví proč. */
 function uloPrepocetVeta(r) {
+  if (r && !r.prepocteno) return uloSvetlikyStavbaVeta(r);
   if (!r || !r.prepocteno) return '';
   const kolik = r.prepocteno === 1 ? '1 rozpracovaná varianta'
     : (r.prepocteno < 5 ? r.prepocteno + ' rozpracované varianty'
@@ -390,6 +409,8 @@ function uloPrepocetVeta(r) {
   t += '.';
   if (r.zamcene) t += ' Vytištěné nabídky (' + r.zamcene + ') zůstávají beze změny.';
   if (r.dohodnute) t += ' Varianty s dohodnutými cenami (' + r.dohodnute + ') se nepřepočítávají.';
+  const stavba = uloSvetlikyStavbaVeta(r);
+  if (stavba) t += ' ' + stavba;
   return t;
 }
 
@@ -565,7 +586,7 @@ async function uloOtevriZeSlozky(soubor) {
     const prep = uloSrovnejSPlatnymCenikem();
     const fotoVar = (typeof uvodniFotoVarovani === 'function') ? uvodniFotoVarovani(zak.fotoZahozena) : '';   // SEC-M16
     uloZprava('Otevřeno ze složky: ' + soubor + '.'
-      + (prep && prep.prepocteno ? ' ' + uloPrepocetVeta(prep) : '') + (fotoVar ? ' ' + fotoVar : ''), fotoVar ? 'varovani' : '');
+      + (prep && (prep.prepocteno || prep.svetlikyStavba) ? ' ' + uloPrepocetVeta(prep) : '') + (fotoVar ? ' ' + fotoVar : ''), fotoVar ? 'varovani' : '');
     zavriUloziste();
     render();
     if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
@@ -573,7 +594,7 @@ async function uloOtevriZeSlozky(soubor) {
      * vidět zakázku, o které se rozhoduje. Nečeká se na něj — otevření
      * zakázky je hotové a dialog si výsledek dořeší sám. */
     if (typeof uloPrepocetDialog === 'function') uloPrepocetDialog(prep);
-    if (prep && prep.prepocteno && typeof nabidkaStavTextBezpecne === 'function') {
+    if (prep && (prep.prepocteno || prep.svetlikyStavba) && typeof nabidkaStavTextBezpecne === 'function') {
       nabidkaStavTextBezpecne(uloPrepocetVeta(prep));
     } else if (typeof cenikPrehledAkt === 'function') {
       const p = cenikPrehledAkt();

@@ -148,6 +148,10 @@ function klonujVariantu(zak, id, opts) {
   /* Schválení slevy se do klonu nepřenáší (N44, 24. 9. 2026) — viz
    * slevaRozhodnutiZahod v zakazka.js. */
   if (typeof slevaRozhodnutiZahod === 'function') slevaRozhodnutiZahod(kopie.data);
+  /* Klon je rozpracovaná varianta: zrušená volba světlíku „zajistí stavba"
+   * se v něm převede na „bez" (#560). Zdroj (třeba odeslaná nabídka) zůstává. */
+  if (typeof svetlikyStavbaNaBez === 'function' && kopie.data && kopie.data.ock)
+    svetlikyStavbaNaBez(kopie.data.ock.zadani);
   kopie.klonZ = zdroj.id;
   kopie.klonZCislo = variantaCislo(zak, zdroj);
   /* NOVÁ VARIANTA NESE DNEŠNÍ DATUM (nález D2, 15. 9. 2026). Klon vzniká

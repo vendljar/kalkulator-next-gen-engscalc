@@ -347,8 +347,9 @@ for (const fixes of [true, false]) {
   const nal = z => kt.kontrolyProved({ zadani: z, vysledek: spocti(z) }).nalezy.find(n => n.kod === 'bokyDveri');
   const zBez = zad({ bokyDveri: 'bez' }), n1 = nal(zBez);
   const mezTxt = String(Math.round(spocti(zBez).zaskleni.vypln.mezera * 100) / 100).replace('.', ',');
-  test('kontrola: boky „bez" upozorní na mezeru vedle dveří (s rozměrem)', () => !!n1 && mezTxt === '0,6'
-    && n1.text.indexOf('mezera ' + mezTxt + ' m') >= 0, () => n1 && n1.text);
+  /* #560 (rozhodnutí J. V. 4. 11. 2026): „bez" = mezeru dozdí stavba —
+   * upozornění zrušeno, i když mezera (0,6 m) je. */
+  test('kontrola: boky „bez" už na mezeru neupozorňují (#560)', () => !n1 && mezTxt === '0,6', () => n1 && n1.text);
   test('kontrola: boky „bez" bez mezery (dveře přes celou šířku) mlčí', () => !nal(zad({ bokyDveri: 'bez', cistyVstupMm: 1400 })));
   test('kontrola: 10 světlíků na 5 dveří mlčí', () => !nal(zad({ bokyDveri: 'sklo' })));
   const n2 = nal(zad({ bokyDveri: 'sklo', svetlikyBokyKs: 12 }));
@@ -357,7 +358,7 @@ for (const fixes of [true, false]) {
   test('kontrola: dveře bez světlíku (3 na 5 dveří) i s mezerou', () => !!n3 && /u 2 dveří/.test(n3.text) && /mezera/.test(n3.text), () => n3 && n3.text);
   const n4 = nal(zad({ bokyDveri: 'plech', svetlikyBokyKs: 0 }));
   test('kontrola: počet 0 při zvolené výplni', () => !!n4 && /počet je 0/.test(n4.text), () => n4 && n4.text);
-  test('kontrola je jen upozornění (nezastaví dokument)', () => !!n1 && n1.uroven !== kt.KONTROLY_UROVEN_ZABRANA);
+  test('kontrola počtu je jen upozornění (nezastaví dokument)', () => !!n3 && n3.uroven !== kt.KONTROLY_UROVEN_ZABRANA);
 }
 
 /* ---------- 10) technická specifikace a překlad ---------- */
@@ -420,7 +421,9 @@ for (const fixes of [true, false]) {
   test('server: skript v `bokyDveri` neprojde', () => s1(z => { z.bokyDveri = '<img src=x onerror=alert(1)>'; }).some(p => /bokyDveri/.test(p.kde)));
   test('server: neznámá volba nad dveřmi neprojde', () => s1(z => { z.nadDvermi = 'zlato'; }).some(p => /nadDvermi/.test(p.kde)));
   test('server: text místo počtu světlíků neprojde', () => s1(z => { z.svetlikyBokyKs = '"><b>'; }).some(p => /svetlikyBokyKs/.test(p.kde)));
-  test('server: platné volby a prázdný počet projdou', () => s1(z => { z.bokyDveri = 'material'; z.svetlikyBokyKs = ''; z.nadDvermi = 'stavba'; }).length === 0);
+  test('server: platné volby a prázdný počet projdou', () => s1(z => { z.bokyDveri = 'material'; z.svetlikyBokyKs = ''; z.nadDvermi = 'bez'; }).length === 0);
+  /* #560: nová „stavba" se odmítne jako zrušená volba (podrobně test_svetliky_stavba.js). */
+  test('server: nová „stavba" neprojde (#560)', () => s1(z => { z.nadDvermi = 'stavba'; }).some(p => p.duvod === 'zrusenaVolba'));
 }
 
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
