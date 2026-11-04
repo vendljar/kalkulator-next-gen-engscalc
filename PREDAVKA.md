@@ -1,3 +1,18 @@
+# Předávka — 4. 11. 2026: odpověď integrátorovi k webhooku odeslána, větev `claude/eager-carson-1xznt2` (jen dokumentace)
+
+- J. V. 4. 11. odeslal integrátorovi odpověď k webhooku #553 s přílohou „Webhook Vygenerovat nabídku — podklad pro
+  Pipedrive“ (Word, zdroj https://claude.ai/artifact/LYRpkUSMvM5xd7cTNH7pbT): dvě pole („Vygenerovat nabídku“,
+  „Odkaz na kalkulaci“), automatizace jen na změnu pole, hlavička `x-kalkulator-klic`, varování před smyčkou, chybové
+  kódy, zkouška na dealu „TEST – integrace kalkulačky“. Bez Make a bez interních částí (kontrolní seznam J. V.,
+  označení úkolů). Adresa webhooku a klíč jdou zvlášť.
+- Dávka PW #553 je sloučená v integraci i v `test` (6109e39, v4.11.3).
+- Make v podkladech pro integrátora v repozitáři: `PIPEDRIVE_WEBHOOK_553.md` ř. 55, `PIPEDRIVE_UPOMINKA_INTEGRATOR.md`
+  ř. 39, 46, 66 (překonaný koncept), `PIPEDRIVE_TOKEN_POSTUP.md` ř. 19 — pokyn k opravě předán koordinaci přes J. V.
+- Čeká: integrátor založí pole a automatizaci; J. V. vloží token a klíč na testovací web; zkušební zápis a zkouška
+  webhooku na testovacím dealu; mapovací tabulka doplnit o dvě nová pole.
+
+---
+
 # Předávka — 3. 11. 2026: stav od koordinace a dělba práce, větev `claude/eager-carson-1xznt2` (jen dokumentace)
 
 Zpráva koordinace (session_01TMQ5bLDJuS5k5NWWYy7jLx, 3. 11.), ověřeno v gitu:
