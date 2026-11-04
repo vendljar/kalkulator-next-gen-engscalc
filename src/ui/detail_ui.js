@@ -58,7 +58,7 @@ function dvKrok(nadpis, inner, id) {
 }
 
 /* Popisky voleb výplně u dveří (N58, #375) — tytéž jako v Zadání šachty. */
-const DV_VYPLN_POPIS = { bez: 'bez', sklo: 'sklo', plech: 'plech', material: 'materiál opláštění', stavba: 'zajistí stavba' };
+const DV_VYPLN_POPIS = { bez: 'bez', sklo: 'sklo', plech: 'plech', material: 'materiál opláštění', stavba: 'zajistí stavba (zrušená volba, #560)' };
 /* Čím se světlíky u dveří vyplní (#375) — věta z výsledku jádra, ne vlastní
  * úvaha obrazovky. Otisk odeslané nabídky z doby před #375 materiál nenese. */
 function dvSvetlikMaterial(r, kde, Z) {
@@ -67,7 +67,8 @@ function dvSvetlikMaterial(r, kde, Z) {
   const jeden = x => (x.druh === 'sklo' || x.druh === 'deska')
     ? ((typeof oplTypNazev === 'function') ? oplTypNazev(x.typ, x.nazev) : String(x.typ || ''))
       + (x.druh === 'deska' ? ' (deska, bez lišt a terčů)' : '')
-    : ({ bez: 'nic', plech: 'plech', stavba: 'zajistí stavba (výplň 0 Kč)' })[x.druh] || '—';
+    : (x.druh === 'bez' && x.typ === 'bez' ? 'nic („bez — dodá stavba" = světlík „bez", #560)'
+      : ({ bez: 'nic', plech: 'plech', stavba: 'zajistí stavba (výplň 0 Kč)' })[x.druh] || '—');
   /* Stěna C se ukáže, jen když na ní jsou dveře (průchozí šachta). */
   const z = Z || {};
   const maA = !z.pruchoziSachta || (+z.nastupisteA || 0) > 0;
@@ -179,7 +180,8 @@ function renderDetail() {
       + (OCK.fixes && bokyPocetRucne(Z) && bokyPocet(Z) > 0 && bokySirkaRucniMm(Z) != null
         ? ', šířka ' + bokySirkaRucniMm(Z) + ' mm (ručně)' : ''),
       'ze zadání (N58, #375); sklo = sklo stěny s dveřmi, materiál opláštění = materiál stěn B, C, D, plech 8,5 kg/m² '
-      + 'do plechů dveří s lakováním obou stran, zajistí stavba = konstrukce naše, výplň 0 Kč, bez = nic; '
+      + 'do plechů dveří s lakováním obou stran, bez = nic (prostor světlíku dozdí stavba; volba „zajistí stavba" zrušena 4. 11. 2026, #560 — '
+      + 'nese ji jen odeslaná nabídka); '
       + 'počet bočních světlíků je automaticky nástupiště × 2, obchodník ho může přepsat; '
       + 'při ručním počtu v Modelu 2 i šířku jednoho světlíku (#381)'],
     ['Čistý vstup / šířka rámu dveří', `${Z.cistyVstupMm} / ${Z.sirkaRamuMm} mm`,
@@ -219,8 +221,8 @@ function renderDetail() {
     ['Za světlík / světlíky boky', `${M(hn.svetlik, 2)} / ${M(hn.svetlikyBoky, 2)} h`,
       (OCK.fixes
         ? 'světlík: Model 2 montáž neubírá u žádné volby („bez" od 1. 10. 2026, rozhodnutí J. V.; Model 1 jako předloha ubírá při „bez" 0,2 h na nástupiště)'
-        : 'světlík: jen volba „bez" ubere 0,2 h na nástupiště (tak počítá předloha; Model 2 od 1. 10. 2026 neubírá); sklo, plech, materiál i „zajistí stavba" '
-          + 'se montují jako světlík (stavba od 30. 9. 2026, rozhodnutí J. V.)')
+        : 'světlík: jen volba „bez" ubere 0,2 h na nástupiště (tak počítá předloha; Model 2 od 1. 10. 2026 neubírá); sklo, plech i materiál '
+          + 'se montují jako světlík (zrušená volba „zajistí stavba" odeslané nabídky taky — #375, #560)')
       + '; boky: 0,5 h na každý boční světlík'],
     ['Hodiny navíc celkem', `${M(r.montaz.hodinyNavicCelkem, 2)} h`, 'součet výše'],
     ['Montáž 1 osoba / 4 osoby', `${M(r.montaz.hod1osoba, 1)} h / ${M(r.montaz.hodCelkem, 1)} h`, `≈ ${M(r.montaz.dni, 1)} dní`],
@@ -349,7 +351,7 @@ function renderDetail() {
       ...(z.vypln.bokyKs > 0 && z.vypln.sirkaPredpocitana != null ? dvBokySirkaRadky(z.vypln, M) : []),
       ['Světlíky u dveří — čím se vyplní', 'nad dveřmi: ' + dvSvetlikMaterial(r, 'nad', Z) + ' · boky: ' + dvSvetlikMaterial(r, 'boky', Z),
         'sklo = sklo stěny s dveřmi a její zasklení (po stěnách typ skla té stěny, a není-li ze skla, sklo stěny ze standardu); '
-        + 'materiál opláštění = materiál stěn B, C, D, převažující podle plochy („bez — dodá stavba" = zajistí stavba) — rozhodnutí J. V. 30. 9. 2026'],
+        + 'materiál opláštění = materiál stěn B, C, D, převažující podle plochy („bez — dodá stavba" = světlík „bez", bez naší konstrukce — #560, 4. 11. 2026) — rozhodnutí J. V. 30. 9. 2026'],
     ] : []),
     /* P2 (K19-N104): prohlubeň prosklená zkratkou — všechny stěny od −prohlubeň. */
     ...((typeof oplasteniProhlubenVse === 'function' && oplasteniProhlubenVse(Z)) ? [

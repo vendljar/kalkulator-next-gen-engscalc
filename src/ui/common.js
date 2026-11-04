@@ -2756,10 +2756,14 @@ function nactiZakazku(ev) {
   const f = ev.target.files[0]; if (!f) return;
   f.text().then(t => {
     try {
-      ZAK = StorageAdapter.importuj(t); syncVarianta();
+      ZAK = StorageAdapter.importuj(t);
+      /* #560: zrušená volba světlíku „zajistí stavba" → „bez" v rozpracovaných variantách. */
+      const stavba = (typeof svetlikyStavbaPrevod === 'function') ? svetlikyStavbaPrevod(ZAK) : 0;
+      syncVarianta();
       /* SEC-M16: fotka s odkazem se při importu zahodila — říct to. */
       const fotoVar = (typeof uvodniFotoVarovani === 'function') ? uvodniFotoVarovani(ZAK.fotoZahozena) : '';
-      if (fotoVar) hlaska(fotoVar);
+      const stavbaVeta = (stavba && typeof uloSvetlikyStavbaVeta === 'function') ? uloSvetlikyStavbaVeta({ svetlikyStavba: stavba }) : '';
+      if (fotoVar || stavbaVeta) hlaska([fotoVar, stavbaVeta].filter(Boolean).join(' '));
       // #18: hledání a filtr patří k oknu, ne k datům – jiná zakázka se musí
       // ukázat celá, ne přes zúžení nastavené nad tou předchozí.
       if (typeof seznamReset === 'function') seznamReset();

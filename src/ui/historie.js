@@ -287,9 +287,9 @@ function historieObnovZalohu() {
    * přesně ten stav, který uživatel opustil, ne ho přepočítat.) */
   if (typeof uloSrovnejSPlatnymCenikem === 'function') {
     const prep = uloSrovnejSPlatnymCenikem();
-    if (prep && (prep.prepocteno || prep.znacky)) {
+    if (prep && (prep.prepocteno || prep.znacky || prep.svetlikyStavba || prep.svetlikyMaterialBez)) {
       if (typeof render === 'function') render();
-      if (prep.prepocteno && typeof nabidkaStavTextBezpecne === 'function'
+      if ((prep.prepocteno || prep.svetlikyStavba || prep.svetlikyMaterialBez) && typeof nabidkaStavTextBezpecne === 'function'
           && typeof uloPrepocetVeta === 'function')
         nabidkaStavTextBezpecne(uloPrepocetVeta(prep));
       /* Dialog o přepočtu (#284) patří i sem — nález nezávislé revize

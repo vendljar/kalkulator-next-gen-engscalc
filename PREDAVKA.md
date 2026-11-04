@@ -1,3 +1,43 @@
+# Předávka — 4. 11. 2026: SV #564 — světlíky: zrušená volba „zajistí stavba“, větev `claude/sv-svetliky-stavba`
+
+Nad `6109e39` (`test`, v4.11.3). **Verze 4.11.6** (koordinace přečísluje, číslo #564 také). Neslučováno; do
+`test-draft`, `test` ani `main` nic, na webech nic. Paralelně dávka PS (`claude/ps-prodano-cenik`) — nedotčena.
+
+Rozhodnutí J. V. 4. 11. 2026: „stavba“ = „bez“ (prostor světlíku dozdí stavba), upozornění u „bez“ není třeba.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. volba „zajistí stavba“ pryč z UI (nad dveřmi i boky) | ✅ | `src/ui/kalk_ock.js` (`svetlikVolbyHtml`), `NAD_DVERMI_NABIDKA` v `src/engine.js` |
+| 2. rozpracovaná → „bez“ + přepočet; odeslaná beze změny | ✅ | `svetlikyStavbaNaBez`, `svetlikyStavbaPrevod` (zakazka.js), `uloSrovnejSPlatnymCenikem`, klon, duplikát |
+| 3. upozornění `nadDvermiBez` a „bez“ v `bokyDveri` pryč | ✅ | `src/kontroly.js` (pravidel 43) |
+| 4. specifikace u „bez“ nic | ✅ | beze změny kódu (`techspec.js` u „bez“ „ -“) |
+| 5. server: „stavba“ jen ve starých datech | ✅ | `uloVyplnDveriZrusena` (uloziste.js), `{ obnova }` v `zakazka_kontrola.mjs` |
+| 6. roadmapa #564, CHANGELOG, manuál | ✅ | `manual/obsah.json`; admin a provoz.json volbu nezmiňují |
+
+**Proč převod není v `importZakazka`:** ten běží i na serveru nad příchozí zakázkou. Při odemčení odeslané
+nabídky administrátorem server porovnává data odemčené varianty s uloženou zamčenou verzí — převod v importu by
+je rozešel (409). Převádí proto obrazovka po otevření a klon / duplikát.
+
+**Ceny starších zakázek (rozpracovaných):** nad dveřmi Model 2 beze změny, Model 1 −0,2 h × nástupiště (jako
+každé „bez“); boky v obou modelech levnější (−0,5 h, sloupek portálu a 2 krátké příčníky na světlík + terče/lišty).
+Odeslané: data i cena na haléř stejné, ve výběru vypnutá položka „zajistí stavba (zrušená volba)“.
+
+**Testy:** `src/test_svetliky_stavba.js` 49/0, `netlify/test_560_svetliky_stavba.mjs` 21/0,
+`overit_svetliky_stavba.mjs` 13/0 (všechny na 6109e39 selžou). Mutace #564: jádro 11/11, server 8/8. Kolo
+`--bez-mutaci` po doplnění CHANGELOG zelené (jediný pád byl `test_release_odkaz.js` kvůli chybějícímu oddílu v4.11.6).
+
+**Dodatek (J. V. 4. 11. 2026, bod 1):** světlík z *materiálu opláštění*, jehož stěny B, C, D jsou převážně
+„bez — dodá stavba“, = „bez“ (jádro: druh 'bez', efektivní `nadV` / `bokyV`, `bokyKs` 0; výběr materiálu
+světlíků přesunut před hodiny a konstrukci). Data beze změny, rozpracované se přepočtou s větou v liště
+(`svetlikyMaterialBezPocet`), odeslané z otisku. Testy 67/0, 25/0, 16/0 (pojistka na `b9cec72`), mutace #564
+celkem jádro 17/17, server 9/9.
+
+**Otevřené body:**
+- Věta „Světlík z materiálu opláštění „bez — dodá stavba“ se počítá jako „bez““ se ukáže při každém otevření
+  takové rozpracované zakázky (data se nemění, takže nejde poznat „už jednou řečeno“).
+- Vydaný manuál výpočtu (3. vydání, `manual_vypocet/sablona.html`) dál popisuje „zajistí stavba“; nové vydání
+  podle pokynu ne — v `cisla_vydani.json` jen počet kontrol 44 → 43.
+- Převod se uloží až při první úpravě zakázky (otisk autosave se bere po převodu, stejně jako přepočet ceníku).
 # Předávka — 4. 11. 2026: RC #561 — ruční cena položky z nabídky dodavatele s potvrzením, větev `claude/rc-rucni-cena`
 
 Nad `6109e39` (`test`, v4.11.3) + sloučený návrh NV (`origin/claude/nv-mustky-cena`, 1ef0e8b). **Verze 4.11.5**

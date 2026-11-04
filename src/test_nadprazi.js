@@ -13,7 +13,10 @@
  *     na nástupiště, lakování obou stran, montáž jako u světlíku,
  *   – materiál opláštění ve standardu = sklo stěny, zajistí stavba = bez,
  *   – boční pole: plech/stavba bere plochu ze skla,
- *   – specifikace, kontrola před nabídkou, výchozí volba nové zakázky. */
+ *   – specifikace, kontrola před nabídkou, výchozí volba nové zakázky.
+ * Od #560 (4. 11. 2026) se „zajistí stavba" nenabízí a rozpracovaná varianta
+ * se převede na „bez" (test_svetliky_stavba.js); jádro ji dál počítá kvůli
+ * odeslaným nabídkám — proto testy „stavba" níž zůstávají. */
 const E = require('./engine.js');
 const ZC = require('./zkusebni_cenik.js');
 const J = require('./jekly.json');
@@ -189,9 +192,10 @@ for (const typ of ['interiérová', 'exteriérová']) {
   const kt = require('./kontroly.js');
   const nal = x => { const z = Object.assign(kop(E.DEFAULT_ZADANI), x);
     return kt.kontrolyProved({ zadani: z, vysledek: E.vypocet(z, kop(CENIK), J, true) }).nalezy.find(n => n.kod === 'nadDvermiBez'); };
-  const n = nal({ nadDvermi: 'bez' });
-  test('kontrola: „bez" nad dveřmi upozorní na otvor s výškou', !!n && /otvor vysoký 0,9[67] m/.test(n.text), n && n.text);
-  test('kontrola: zajistí stavba mlčí', !nal({ nadDvermi: 'stavba' }));
+  /* #560 (rozhodnutí J. V. 4. 11. 2026): „bez" = prostor světlíku dozdí
+   * stavba — upozornění „Nad dveřmi zůstane otvor" (nadDvermiBez) zrušeno. */
+  test('kontrola: „bez" nad dveřmi už neupozorňuje (#560)', !nal({ nadDvermi: 'bez' }));
+  test('kontrola: zajistí stavba (odeslaná nabídka) mlčí', !nal({ nadDvermi: 'stavba' }));
   test('kontrola: plech mlčí', !nal({ nadDvermi: 'plech' }));
 }
 

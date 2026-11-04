@@ -51,6 +51,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_autorstvi.js',
      /* #561 RC (4. 11. 2026): ruční cena položky s potvrzením — model a server, rychlé sady. */
      '../src/test_561_rucni_cena.js', 'test_561_rucni_cena.mjs',
+     /* #560 SV (4. 11. 2026): zrušená volba světlíku „zajistí stavba" — rychlé sady. */
+     '../src/test_svetliky_stavba.js', 'test_560_svetliky_stavba.mjs',
      /* #553 PW (3. 11. 2026): webhook „Vygenerovat nabídku" z Pipedrive — rychlá sada (< 1 s). */
      'test_553_webhook.mjs',
      /* #542 O-SECM (1. 11. 2026): nálezy security testu SEC-M M2–M9 — rychlá sada (< 1 s). */
@@ -279,6 +281,46 @@ const MUTACE = [
    * hláška řekne, která strana ceník nemá. Hlídá netlify/test_555b_klon_cenik.mjs. */
   /* Vzor doplnění ceníku odeslané varianty v importu (prohlížeč) — hlídá
    * src/test_555b_klon_cenik.js (je v SADY). */
+  /* #560 SV (4. 11. 2026, rozhodnutí J. V.): volba světlíku „zajistí stavba"
+   * zrušena. Převod rozpracovaných variant (zakazka.js) a serverové pravidlo
+   * „nová stavba nevzniká" (uloziste.js, zakazka_kontrola.mjs). Hlídají
+   * src/test_svetliky_stavba.js a netlify/test_560_svetliky_stavba.mjs. */
+  { nazev: '#560: převod sáhne i na odeslanou variantu [#560]', soubor: '../src/zakazka.js',
+    hledej: "    if (!v || !v.data || zamcena(v)) return;\n    const z = v.data.ock && v.data.ock.zadani;",
+    nahrad: "    if (!v || !v.data) return;\n    const z = v.data.ock && v.data.ock.zadani;",
+    proc: 'odeslaná nabídka by změnila data i cenu — zámek by uložení odmítl (#555)' },
+  { nazev: '#560: převod zakázky nic nepřevede [#560]', soubor: '../src/zakazka.js',
+    hledej: "    if (z && typeof z === 'object' && svetlikyStavbaNaBez(z)) n++;",
+    nahrad: "    if (false) n++;",
+    proc: 'rozpracovaná varianta by zrušenou volbu nesla dál' },
+  { nazev: '#560: duplikát zakázky nese „stavba" [#560]', soubor: '../src/zakazka.js',
+    hledej: "    if (typeof svetlikyStavbaNaBez === 'function' && n.data && n.data.ock) svetlikyStavbaNaBez(n.data.ock.zadani);",
+    nahrad: "",
+    proc: 'duplikát by server jako novou zakázku neuložil' },
+  { nazev: '#560: server pustí novou „stavba" [#560]', soubor: '../src/uloziste.js',
+    hledej: "  return bylo !== x && byloBoky !== x;",
+    nahrad: "  return false;",
+    proc: 'zrušená volba by mohla nově vzniknout (starý klient, ruční požadavek)' },
+  { nazev: '#560: server odmítne i starou „stavba" [#560]', soubor: '../src/uloziste.js',
+    hledej: "  return bylo !== x && byloBoky !== x;",
+    nahrad: "  return true;",
+    proc: 'zakázka uložená starší verzí by nešla uložit, dokud ji někdo neotevře novou' },
+  { nazev: '#560: server nepozná starší tvar boků [#560]', soubor: '../src/uloziste.js',
+    hledej: "  return bylo !== x && byloBoky !== x;",
+    nahrad: "  return bylo !== x;",
+    proc: 'zakázka uložená před #375 (boky „stavba" jako bokyVypln) by se odmítla' },
+  { nazev: '#560: obnova ze zálohy odmítne starou „stavba" [#560]', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "ULO.uloTypyProblemy(zak, stara, { obnova });",
+    nahrad: "ULO.uloTypyProblemy(zak, stara);",
+    proc: 'záloha se starou rozpracovanou zakázkou by nešla obnovit' },
+  { nazev: '#560: zrušená volba hlášena jako špatný typ [#560]', soubor: '../src/uloziste.js',
+    hledej: "duvod: p.duvod === 'zrusenaVolba' ? p.duvod : 'typ' }));",
+    nahrad: "duvod: 'typ' }));",
+    proc: 'obchodník by dostal „hodnotu nesprávného typu" místo věty, že volba je zrušená a co dělat' },
+  { nazev: '#560: věta o materiálu „bez" počítá i odeslané [#560]', soubor: '../src/zakazka.js',
+    hledej: "    if (!z || !d.cenik || zamcena(v)) return;\n    if (z.nadDvermi !== 'material'",
+    nahrad: "    if (!z || !d.cenik) return;\n    if (z.nadDvermi !== 'material'",
+    proc: 'lišta by tvrdila, že se přepočetla i odeslaná nabídka' },
   { nazev: '#555b: odeslaná varianta se doplňuje ze zveřejněného ceníku', soubor: '../src/zakazka.js',
     hledej: "  if (zamcena) { try { b = (typeof PROG_BUILD !== 'undefined' && PROG_BUILD) ? PROG_BUILD : null; } catch (e) { b = null; } }",
     nahrad: "  if (false) { try { b = (typeof PROG_BUILD !== 'undefined' && PROG_BUILD) ? PROG_BUILD : null; } catch (e) { b = null; } }",
