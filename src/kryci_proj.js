@@ -617,6 +617,13 @@ function kryciProjData(zak, varianta, jekly, verze) {
   return { nadpis: 'Krycí list zakázky PROJ — ' + verzeNazev, sekce, nazevSouboru, verze, verzeNazev };
 }
 
+/* Výstup krycího listu PROJ s interními poznámkami (IK) — sdílené pravidlo
+ * kryciVystupSekce z kryci.js; v Node se kryci.js může načíst až tady. */
+function kryciProjVystupSekce(zak, sekce) {
+  const f = (typeof kryciVystupSekce === 'function') ? kryciVystupSekce : require('./kryci.js').kryciVystupSekce;
+  return f(zak, sekce);
+}
+
 /* registrace obou verzí do jednotného registru dokumentů (generují se od nuly).
  * Typ začíná „kryciproj_“, aby se nemíchal s prefixem „kryci_“ krycího listu OCK. */
 if (typeof dokumentRegistruj === 'function') {
@@ -625,8 +632,8 @@ if (typeof dokumentRegistruj === 'function') {
       nazev: 'Krycí list PROJ – ' + label,
       generate: (zak, varianta, jekly) => {
         const d = kryciProjData(zak, varianta, jekly, verze);
-        /* Interní poznámky k zakázce jako první sekce (IK) — kryciVystupSekce v kryci.js. */
-        return { blob: docxDokumentBlob(d.nadpis, kryciVystupSekce(zak, d.sekce)), nazevSouboru: d.nazevSouboru, data: d };
+        /* Interní poznámky k zakázce pod Základními údaji (IK) — kryciVystupSekce v kryci.js. */
+        return { blob: docxDokumentBlob(d.nadpis, kryciProjVystupSekce(zak, d.sekce)), nazevSouboru: d.nazevSouboru, data: d };
       },
     });
   });
@@ -661,6 +668,6 @@ function kryciProjPodminkoveSymboly(zak, varianta, P) {
 
 if (typeof module !== 'undefined')
   module.exports = { KRYCI_PROJ_SEKCE, KRYCI_POKUTY_SAZBY, KRYCI_PROJ_NABIDKA_SEKCE, KRYCI_PROJ_CINNOSTI, kryciProjCtx,
-    kryciProjHodnota, kryciProjData, kryciProjMigraceSazbaDph, kryciProjPodminkoveSymboly,
+    kryciProjHodnota, kryciProjData, kryciProjVystupSekce, kryciProjMigraceSazbaDph, kryciProjPodminkoveSymboly,
     kryciProjSekceKc, kryciProjSodSymboly, kryciProjMesicu, kryciProjZmrazPodminky, KRYCI_PROJ_SOD_OPIS, kryciProjZmrazSod,
     KRYCI_PROJ_PLAN_CINNOSTI, kryciProjPoleViditelne, kryciProjPlatbyText, kryciProjZmrazPlan, kryciProjPoleHodnota };

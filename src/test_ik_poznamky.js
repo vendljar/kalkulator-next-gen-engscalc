@@ -132,10 +132,14 @@ for (const [list, data, prvni] of [['OCK', K.kryciData, 'Základní údaje'], ['
 {
   /* Registrace Wordu (dokumentRegistruj) je jen v prohlížeči — zdroják ji
    * musí krmit kryciVystupSekce, jinak by Word poznámky nenesl. */
-  for (const f of ['kryci.js', 'kryci_proj.js']) {
+  for (const [f, fn] of [['kryci.js', 'kryciVystupSekce'], ['kryci_proj.js', 'kryciProjVystupSekce']]) {
     const t = fs.readFileSync(__dirname + '/' + f, 'utf8');
-    test(f + ': Word krycího listu staví z kryciVystupSekce', /docxDokumentBlob\(d\.nadpis, kryciVystupSekce\(zak, d\.sekce\)\)/.test(t));
+    test(f + ': Word krycího listu staví z ' + fn, t.indexOf('docxDokumentBlob(d.nadpis, ' + fn + '(zak, d.sekce))') > 0);
   }
+  /* Word PROJ v Node i bez načteného kryci.js (dokumentVygeneruj). */
+  test('kryciProjVystupSekce dá totéž co kryciVystupSekce',
+    JSON.stringify(KP.kryciProjVystupSekce(zakazka(TEXT), [{ sekce: 'Základní údaje', radky: [] }]))
+      === JSON.stringify(K.kryciVystupSekce(zakazka(TEXT), [{ sekce: 'Základní údaje', radky: [] }])));
   for (const f of ['ui/kryci_ui.js', 'ui/kryci_proj_ui.js']) {
     const t = fs.readFileSync(__dirname + '/' + f, 'utf8');
     test(f + ': tisk PDF krycího listu staví z kryciVystupSekce', /kryciVystupSekce\(ZAK, d\.sekce\)/.test(t));

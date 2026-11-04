@@ -171,7 +171,7 @@
         },
         {
           "typ": "text",
-          "text": "**Interní poznámky k zakázce** (karta v Kalkulaci a sekce pod Základními údaji krycího listu OCK i PROJ, od v4.11.4) píše každý, kdo smí zakázku upravovat — její autor, vedoucí a administrátor — a to **vždy**, i po odeslání nabídky, po SoD a po Prodáno. Cizí obchodník je vidí jen ke čtení a server mu změnu odmítne. Tisknou se jen do krycího listu (Backoffice i Technické odd.), nikdy do nabídky, smlouvy, plné moci, specifikace, Pipedrive ani controllingu."
+          "text": "**Interní poznámky k zakázce** (karta v Kalkulaci a sekce pod Základními údaji krycího listu OCK i PROJ) píše každý, kdo smí zakázku upravovat — její autor, vedoucí a administrátor — a to **vždy**, i po odeslání nabídky, po SoD a po Prodáno. Cizí obchodník je vidí jen ke čtení a server mu změnu odmítne. Tisknou se jen do krycího listu (Backoffice i Technické odd.), nikdy do nabídky, smlouvy, plné moci, specifikace, Pipedrive ani controllingu."
         }
       ]
     },

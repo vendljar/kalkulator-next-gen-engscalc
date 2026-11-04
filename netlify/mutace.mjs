@@ -5767,7 +5767,7 @@ const MUTACE = [
     nahrad: "docxDokumentBlob(d.nadpis, d.sekce)",
     proc: 'Word krycího listu OCK by poznámky nenesl' },
   { nazev: '#IK: Word krycího listu PROJ bez poznámek', soubor: '../src/kryci_proj.js',
-    hledej: "docxDokumentBlob(d.nadpis, kryciVystupSekce(zak, d.sekce))",
+    hledej: "docxDokumentBlob(d.nadpis, kryciProjVystupSekce(zak, d.sekce))",
     nahrad: "docxDokumentBlob(d.nadpis, d.sekce)",
     proc: 'Word krycího listu PROJ by poznámky nenesl' },
   { nazev: '#IK: Word nezná sekci s textem', soubor: '../src/docxgen.js',

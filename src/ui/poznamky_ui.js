@@ -160,7 +160,7 @@ function poznamkyTextarea(id, radku) {
   const ro = smi ? '' : ' readonly title="Jen ke čtení — poznámky smí upravovat ten, kdo smí upravovat zakázku."';
   const min = Math.max(POZN_MIN_RADKU, radku || 0);
   const text = poznamkyPoleText(zak);
-  return `<textarea id="${id}" class="pozn-pole pozn-roste" rows="${poznamkyRadkuOdhad(text, min)}"
+  return `<textarea id="${id}" class="pozn-pole pozn-roste" rows="${esc(poznamkyRadkuOdhad(text, min))}"
       style="width:100%;text-align:left"${ro}
       placeholder="Např.: Sleva 6 % dohodnutá s p. Novákem – tři šachty v jedné budově, montáž v jednom nájezdu."
       oninput="poznamkyPoleSet(this.value);poznamkyPoleVyska(this)"
