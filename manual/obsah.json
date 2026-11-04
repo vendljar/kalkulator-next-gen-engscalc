@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
-    "verze": "Platí pro aplikaci v4.11.2 · sestaveno 2. 11. 2026",
+    "verze": "Platí pro aplikaci v4.11.3 · sestaveno 2. 11. 2026",
 
   "uvod": [
     {
@@ -993,6 +993,7 @@
         { "typ": "text", "text": "Co se z toho týká vás: export bere údaje přímo ze zakázky — **datum prodeje z tlačítka Prodáno a objednané příplatky** (kapitola 24), **Stav Pipedrive** (kapitola 5) a číslo dealu, které ke zakázce zadává administrátor. Když je máte vyplněné správně, controlling se nemusí doptávat." },
         { "typ": "podnadpis", "text": "Mapa polí CRM (jen administrátor)" },
         { "typ": "text", "text": "V **Nastavení → Mapa polí CRM** administrátor vidí, jak se pole kalkulace párují s vlastními poli Pipedrive: nahoře souhrn se štítky (**spárováno**, **chybí v CRM**, **jiný typ**, **dvakrát**, **nezařazená v CRM**), pod ním tabulka polí se směrem (čte se z CRM / zapisuje se do CRM) a zdrojem (OCK / PROJ) a seznam vlastních polí CRM, která kalkulátor nezná. Tlačítko **Obnovit z CRM** načte mapu znovu. Pole se párují **přesně podle názvu** dohodnutého s integrátorem — kdo pole v Pipedrive přejmenuje, uvidí ho tu jako „chybí v CRM“ a kalkulátor do něj nic nezapíše ani z něj nečte. Ručně se nic nepřiřazuje." },
+        { "typ": "text", "text": "**Vygenerovat nabídku z Pipedrive (zapíná se zvlášť, zatím nenasazeno).** Až integrátor v Pipedrive založí pole *Vygenerovat nabídku* a *Odkaz na kalkulaci* a správce v Netlify vloží tajný klíč, může obchodník kalkulaci založit přímo z dealu: změna pole v Pipedrive pošle kalkulátoru **jen ID dealu**, ten si deal sám načte a založí — nebo doplní — kalkulaci s číslem a názvem akce, adresou, zákazníkem, IČO, kontaktem a termínem předání, a do dealu vrátí odkaz na ni. **Cena se z Pipedrive nikdy nebere a dokument na serveru nevzniká** — nabídku vypočítá a vytiskne obchodník v prohlížeči jako dosud. Opakované spuštění druhou kalkulaci nezaloží, **odeslanou (zamčenou) nabídku to nikdy nezmění** a co obchodník v kalkulaci přepsal ručně, zůstane. Bez klíče nebo se špatným klíčem se požadavek odmítne a do Pipedrive se vůbec nesáhne. Podrobnosti pro integrátora: `podklady/PIPEDRIVE_WEBHOOK_553.md`." },
         { "typ": "text", "text": "Administrátor také může nastavit, které volitelné položky a které projekční činnosti mají být v nové zakázce rovnou zaškrtnuté. **Nemění to nic na zakázkách, které už máte rozdělané** — jen na těch, které teprve založíte. Když vám v nové nabídce něco chybí nebo naopak přebývá, je to tohle nastavení, ne chyba." },
         { "typ": "text", "text": "A ještě jedna věc, o které je dobré vědět: administrátor si může **zapnout náhled a vidět aplikaci přesně tak, jak ji vidíte vy** — bez toho, aby se hlásil na váš účet. Vaše heslo tím nikdo nezná a do vaší zakázky se v náhledu nedá nic zapsat. Slouží to k jedinému: aby vám na dotaz „nevidím tam to tlačítko“ uměl odpovědět, aniž by si musel sedat k vašemu počítači." },
         { "typ": "podnadpis", "text": "Co je v Nastavení (pro představu)" },

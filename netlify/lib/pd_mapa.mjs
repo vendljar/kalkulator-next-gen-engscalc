@@ -216,6 +216,13 @@ export const POLE_DEALU = [
   /* Krycí list drží, KDO byl informován (text); datum plní automatizace. */
   D('informovanoBo', 'Informováno Backoffice', 'datum', null, 'nic'),
   D('informovanoTech', 'Informováno Technické odd.', 'datum', null, 'nic'),
+  /* Webhook „Vygenerovat nabídku" (#553, 3. 11. 2026). Obě pole zakládá
+   * integrátor. Spouštěcí pole kalkulátor nečte (automatizace ho jen sleduje
+   * a pošle ID dealu, typ volí integrátor); do odkazu píše webhook adresu
+   * kalkulace (functions/pd_webhook.mjs) — jediný zápis webhooku, mimo #115. */
+  D('vygenerovatNabidku', 'Vygenerovat nabídku', 'volba', null, 'nic',
+    { typ: ['enum', 'set', 'varchar', 'double', 'date'], webhook: true }),
+  D('odkazKalkulace', 'Odkaz na kalkulaci', 'text', null, 'nic', { webhook: true }),
 ];
 
 /* Pole organizace. IČ je v účtu číselné; „IČO" se bere taky, kdyby se pole
@@ -228,7 +235,7 @@ export const POLE_ORGANIZACE = [
 /* Verze tvaru uložené mapy (cache v pd_pole.mjs). Mapa z doby párování
  * podle vzorů (do 21. 10. 2026) nesla tři pole spárovaná se špatným polem
  * CRM — po nasazení se nesmí číst ani do konce své jednodenní platnosti. */
-export const PD_POLE_VERZE = 2;
+export const PD_POLE_VERZE = 3;   // 3: pole webhooku #553 (mapa bez nich by den platila)
 
 /* Vlastní pole, která čte detail dealu (pdDealNaNase). Jen o těchhle má
  * obchodník slyšet, když v CRM chybí — chybějící pole pro zápis řeší

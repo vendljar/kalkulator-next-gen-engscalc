@@ -1737,6 +1737,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
    * administrátor). */
   delete nova.pdDealId;
   delete nova.pdStav;   // stav patří dealu (P1, 22. 10. 2026)
+  delete nova.pdZadani; // otisky zadání z webhooku patří dealu (#553)
   /* Prodej patří původní zakázce (#540): kopie není prodaná a stopu nedědí. */
   delete nova.prodejHistorie;
   delete nova.prodejOdemknout;

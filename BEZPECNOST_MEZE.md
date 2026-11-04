@@ -1356,3 +1356,59 @@ Zpráva `podklady/SEC_AUDIT_MAIN_28_10.md` (oddíl „Stav oprav“), testy
   s CI (návrh: kontrola při měsíčním kole).
 - **SEC-M22 (info):** `@netlify/blobs` `^8.1.0`, zámek 8.2.0 = nejvyšší v `^8`
   — dnes nic neujíždí; přesná verze a major s Dependabotem (SEC-I13).
+
+## PW #553 — webhook „Vygenerovat nabídku“ z Pipedrive (v3.11.4, 3. 11. 2026)
+
+Varianta A podle rozhodnutí J. V. 3. 11. 2026. `POST /api/pd/webhook`
+(`netlify/functions/pd_webhook.mjs`, logika `netlify/lib/pd_webhook.mjs`) je
+jediná cesta, kterou **nevolá prohlížeč** — volá ji automatizace Pipedrive,
+takže nemá cookie ani relaci. Místo přihlášení ji chrání tajný klíč.
+Podmínky SEC-PD a K8-S3 z #115 jsou dodrženy: cena a hodnota dealu se z CRM
+ani z webhooku neberou vůbec, deal id se bere z těla jen jako číslo a dál se
+pracuje s dealem načteným ze Pipedrive, e-maily a telefony z CRM se ve
+odpovědi nevracejí (odpověď nese jen názvy polí a odkaz), zápis do CRM je
+jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
+
+### Nové meze
+
+- **B176 — webhook bez přihlášení, jen klíč v hlavičce.** `PIPEDRIVE_WEBHOOK_KLIC`
+  (proměnná Netlify, nastavuje J. V., min. 32 znaků, kratší = nenastavený →
+  503) se porovnává v konstantním čase (`tajneShodne`, sha256 +
+  timingSafeEqual). Bez klíče nebo se špatným klíčem **401 dřív, než se čte
+  tělo, než se sáhne do Pipedrive a než se sáhne do databáze** (hlídá statická
+  kontrola v `netlify/test_prava.mjs`, blok KLICEM_CHRANENE). Klíč se přijímá
+  jen z hlavičky `x-kalkulator-klic`, `Authorization: Bearer` nebo hesla
+  Basic — **z adresy (query) nikdy**, adresy se logují.
+  *Co to nedělá:* kdo klíč zná, může zakládat kalkulace z dealů, které jsou
+  v CRM vidět tokenem integrace, a pálit tokeny Pipedrive do stropu (níž).
+  Klíč je tedy tajemství stejné váhy jako token; mění se přepsáním proměnné
+  a novým nasazením. Původ požadavku se nehlídá (`cizihoPuvodu` se nevolá) —
+  Pipedrive hlavičku Origin neposílá.
+- **B177 — strop volání webhooku 60/h, jen v instanci funkce.** Počítadlo
+  `pd_cache/strop:webhook:pipedrive-webhook` (`pdStropCerstvych`, výhradní úsek)
+  je společné pro všechny dealy; nad stropem 429 bez dotazu do Pipedrive
+  (souběh 100 doručení ověřen v sadě). *Co to nedělá:* mezi instancemi funkce
+  platí tatáž mez jako u B158 — strop může přetéct o násobek počtu instancí.
+  Dopad je jen rozpočet volání Pipedrive, ne data. Proti smyčce #117 je to
+  pojistka, ne řešení: automatizace se **smí spouštět jen změnou pole
+  „Vygenerovat nabídku“** (podklady/PIPEDRIVE_WEBHOOK_553.md, část 2).
+- **B178 — webhook zapisuje do databáze zakázek bez člověka.** Zakládá
+  a aktualizuje zakázky pod razítkem `pipedrive-webhook` (není to účet, nejde
+  se pod ním přihlásit). Pojistky: tvar nové zakázky projde `zakazkaPrijmi`
+  (jméno souboru, id, délka čísla) jako uložení z prohlížeče; zamčená
+  (odeslaná) varianta se nemění nikdy (`pdWebhookZamkyPoruseny` porovná
+  všechny zamčené varianty bajt po bajtu, při porušení 500 a nic se neuloží)
+  a se zamčenou variantou v zakázce se nemění ani hlavička; co obchodník
+  v kalkulaci změnil ručně, se nepřepíše (otisky `zak.pdZadani`, pravidlo
+  #113); čtení i zápis běží ve výhradním úseku zakázky s kontrolou razítka
+  (vzor SEC-S1). *Co to nedělá:* `zakazkaServerKontrola` (slevy, marže, ceník,
+  zámky) se nevolá — webhook ceník ani ceny nesahá a novou zakázku ukládá ve
+  tvaru „bez ceníku“ (P12), takže ceník si doplní prohlížeč z platného
+  zveřejněného. Protokol zakázky se nezapisuje (zdroj je vidět na razítku
+  autora a v `pdZadani`).
+- **B179 — `pd_webhook/deal:<id>` se nezálohuje.** Rejstřík deal → jméno
+  kalkulace je jen zkratka hledání; vazbu nese sama zakázka (`pdDealId`)
+  a ta v záloze je. Po obnově ze zálohy ho vyrobí první doručení (najde
+  kalkulaci podle čísla nabídky). Záznam nese jméno souboru a čas, žádné
+  osobní údaje; úklid `pdCacheUklid` ho nemaže (`pd_cache` je jiné úložiště) —
+  roste nejvýš o jeden záznam na deal.

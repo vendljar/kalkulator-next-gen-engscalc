@@ -25,6 +25,7 @@
 
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
 process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
+process.env.PIPEDRIVE_WEBHOOK_KLIC = 'matice-prav-klic-webhooku-0123456789abcdef';   // #553: řádek matice čeká 401, ne 503
 
 const pamet = new Map();
 globalThis.__TEST_ULOZISTE = (nazev) => ({
@@ -70,6 +71,7 @@ import pdPole from './functions/pd_pole.mjs';
 import pdDealy from './functions/pd_dealy.mjs';
 import pdDeal from './functions/pd_deal.mjs';
 import pdNanecistoFn from './functions/pd_nanecisto.mjs';
+import pdWebhookFn from './functions/pd_webhook.mjs';
 import pdStavFn from './functions/pd_stav.mjs';
 import { config as configNocni } from './functions/zaloha_nocni.mjs';
 import { ADMIN_EMAIL, ROLE, POKUSY_MAX, POKUSY_IP_MAX, zpozdeniMs, pokusyReset,
@@ -545,6 +547,14 @@ const MATICE = [
     telo: () => ({ strany: { ock: { hodnoty: { splatnostDni: '14', cisloCN: 'CN-1' } } } }),
     proc: 'náhled „co by se zapsalo" k zakázce — s právem crm.pipedrive, výchozí všem; do CRM nic nepíše',
     prava: PRIHLASENY_OK },
+
+  /* Webhook „Vygenerovat nabídku" (#553, 3. 11. 2026): volá ho Pipedrive, ne
+   * prohlížeč — místo relace tajný klíč v hlavičce. Cookie žádné role nestačí:
+   * bez klíče 401 každému. Podrobnosti test_553_webhook.mjs. */
+  { fn: pdWebhookFn, soubor: 'pd_webhook.mjs', nazev: 'Pipedrive — webhook Vygenerovat nabídku (POST /api/pd/webhook)',
+    metoda: 'POST', url: 'http://x/api/pd/webhook', telo: () => ({ dealId: 1 }),
+    proc: 'zakládá kalkulace z dealu — chrání ho klíč PIPEDRIVE_WEBHOOK_KLIC, relace ne',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 401, 'Vedoucí': 401, 'Administrátor': 401 } },
 
   /* Centrální šablony dokumentů (#139). Číst smí každý přihlášený — obchodník
    * z platné šablony tiskne. Zveřejnit a přepínat režim smí JEN administrátor:
@@ -3366,8 +3376,18 @@ test('/api/ja u běžného účtu hlavní příznak nenastavuje', jaObycejny.hla
 console.log('\n===== ZDROJOVÁ KONTROLA =====\n');
 
 const VEREJNE_ZAMERNE = ['prihlaseni.mjs', 'odhlaseni.mjs', 'zdravi.mjs', 'zaloha_nocni.mjs'];
+/* Funkce chráněné klíčem místo relace (#553): volá je Pipedrive. Klíč se musí
+ * ověřit dřív, než se čte tělo nebo sahá do Pipedrive či databáze. */
+const KLICEM_CHRANENE = ['pd_webhook.mjs'];
+for (const f of KLICEM_CHRANENE) {
+  const kod = readFileSync(resolve(KOREN, 'functions', f), 'utf8');
+  const hlavni = kod.slice(kod.indexOf('export default'));
+  const i = hlavni.indexOf('pdWebhookKlicSedi(');
+  test('funkce ' + f + ' ověřuje klíč dřív než tělo, Pipedrive a databázi', i > 0
+    && ['req.text()', 'pdZavolej(', 'uloziste(', 'pdStropCerstvych('].every(x => hlavni.indexOf(x) < 0 || hlavni.indexOf(x) > i));
+}
 for (const f of souboryFunkci) {
-  if (VEREJNE_ZAMERNE.includes(f)) continue;
+  if (VEREJNE_ZAMERNE.includes(f) || KLICEM_CHRANENE.includes(f)) continue;
   const kod = readFileSync(resolve(KOREN, 'functions', f), 'utf8');
   test('funkce ' + f + ' kontroluje přihlášení',
     /vyzadujRoli\s*\(/.test(kod) || /prihlaseny\s*\(/.test(kod) || /pdPristup\s*\(/.test(kod));

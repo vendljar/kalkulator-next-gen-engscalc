@@ -8,6 +8,55 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v4.11.3 — PW #553: webhook „Vygenerovat nabídku“ z Pipedrive (varianta A), větev claude/pw-553-webhook
+
+Nad `198ed4c` (`test`, v3.11.3), rozhodnutí J. V. 3. 11. 2026 (varianta A z návrhu #553). Na webech nic —
+proměnnou `PIPEDRIVE_WEBHOOK_KLIC` nastavuje J. V., pole a automatizaci zakládá integrátor. Verzi může
+koordinace přečíslovat.
+
+- **Nový endpoint `POST /api/pd/webhook`** (`netlify/functions/pd_webhook.mjs`, čistá logika
+  `netlify/lib/pd_webhook.mjs`). Z těla se bere **jen ID dealu** (`dealId` / `deal_id` / obecný webhook v2);
+  cena, název ani cokoli dalšího z těla se ignoruje. Kalkulátor si deal načte z Pipedrive sám — tatáž cesta
+  jako `/api/pd/deal`.
+- **Klíč místo přihlášení:** Pipedrive nemá cookie, webhook proto chrání tajný klíč
+  `PIPEDRIVE_WEBHOOK_KLIC` (min. 32 znaků) z hlavičky `x-kalkulator-klic`, `Authorization: Bearer` nebo hesla
+  Basic — **z adresy nikdy**. Porovnání v konstantním čase; bez klíče nebo se špatným klíčem **401 dřív, než
+  se čte tělo, než se sáhne do Pipedrive a než se sáhne do databáze** (hlídá statická kontrola v matici práv).
+  Strop **60 volání za hodinu**.
+- **Zadání z dealu podle §12 / #113:** číslo a název akce, adresa realizace, zákazník (organizace dealu),
+  IČO, kontakt (osoba dealu), podle *Typu zakázky* strana (Projekce… → hlavička PROJ, jinak OCK)
+  a *Konečné předání díla*. **Cena se z CRM ani z webhooku nebere nikdy** a dokument na serveru nevzniká —
+  nabídku vypočítá a vytiskne obchodník v prohlížeči. Nová kalkulace se ukládá **bez ceníku** (P12), ceník
+  doplní prohlížeč z platného zveřejněného.
+- **Idempotence:** vazba `pdDealId` + rejstřík `pd_webhook/deal:<id>`, vlastník dealu podle „Čísla nabídky (CN)“
+  (rozhodnutí 27. 10., `podklady/PIPEDRIVE_ROZHODNUTI_115.md`) — jiné CN v dealu → 409 a nic se nemění.
+  Opakované doručení **druhou kalkulaci nezaloží**, nic nezapíše a razítko zakázky neposune (otevřené okno
+  obchodníka tedy nehlásí kolizi).
+- **Co webhook nikdy nepřepíše:** zamčenou (odeslanou) variantu (pojistka porovná všechny zamčené varianty
+  bajt po bajtu), hlavičku zakázky, která už nějakou odeslanou nabídku obsahuje, ani to, co obchodník
+  v kalkulaci změnil ručně (otisky `zak.pdZadani`, bez hodnot — pravidlo #113 „jen prázdné pole, nebo po
+  potvrzení“). Ponechaná pole hlásí odpověď **jen názvem**.
+- **Jediný zápis do Pipedrive:** odkaz na kalkulaci do nového pole *Odkaz na kalkulaci*
+  (`<web>/?zakazka=<soubor>`; po přihlášení se kalkulace otevře — `onlineOdkazZakazka` v `src/ui/online_ui.js`).
+  Stejný odkaz už v dealu = **žádný PATCH**, takže se neposune `update_time` (smyčka #117). Automatizace se
+  smí spouštět **jen změnou pole „Vygenerovat nabídku“** — zapsáno v podkladu pro integrátora.
+- **Mapa polí CRM:** dvě nová pole se směrem „nic“ (*Vygenerovat nabídku*, *Odkaz na kalkulaci*),
+  `PD_POLE_VERZE` 2 → 3, ať se po nasazení nečte den stará mapa bez nich. Duplikát zakázky nenese `pdZadani`.
+- **Meze B176–B179** v `BEZPECNOST_MEZE.md` (klíč místo relace, strop jen v instanci funkce, zápis do databáze
+  bez člověka a jeho pojistky, nezálohovaný rejstřík webhooku).
+- **Podklady:** `podklady/PIPEDRIVE_WEBHOOK_553.md` — pro integrátora (pole, automatizace, tělo, odpověď,
+  chybové kódy, varování před smyčkou) a kontrolní seznam pro J. V. (proměnná na testengscalc, nasazení,
+  zkouška na dealu „TEST – integrace kalkulačky“). Krátká zmínka v manuálu administrátora.
+- **Testy:** nová sada `netlify/test_553_webhook.mjs` 74/0 proti simulátoru (klíč, tělo, založení, opakované
+  doručení, podvržená cena v těle, aktualizace, ruční změna obchodníka, zamčená varianta, vlastník dealu,
+  projekce, strop včetně 100 souběžných doručení, žádné osobní údaje ani klíč v odpovědi, uložení kalkulace
+  obchodníkem) — **na `198ed4c` sada selže** (funkce neexistuje). Řádek webhooku v matici práv
+  (`netlify/test_prava.mjs` 962/0) a statická kontrola „klíč dřív než tělo, Pipedrive a databáze“;
+  `netlify/test_zalohy.mjs` 165/0 (nové úložiště na seznamu výjimek s důvodem).
+  Mutace „#553“ 20 z 20 chycených. Kolo `--bez-mutaci` **VŠE ZELENÉ** (sady 372 / 0 / 7 přeskočeno; hodiny +400 dní
+  300 / 0 / 1; statické 5 z 5; 29 min 41 s).
+
+---
 ## v4.11.2 — SF16 #559: SEC-M16 — úvodní fotka nabídky jen jako nahraný obrázek, větev claude/sec-m16-foto
 
 Nad 198ed4c (`test`, v3.11.3), rozhodnutí J. V. 3. 11. 2026 („Ano, jen data:image“). Verzi i číslo může koordinace

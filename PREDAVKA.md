@@ -1,3 +1,60 @@
+# Předávka — 3. 11. 2026: PW #553 — webhook „Vygenerovat nabídku“ z Pipedrive, větev `claude/pw-553-webhook`
+
+Nad `198ed4c` (`test`, v3.11.3). **Verze 4.11.3** (koordinace přečísluje). Neslučováno; do `test-draft`, `test`
+ani `main` nic. **Na ostrém ani testovacím webu nic**, do živého Pipedrive se nezapisovalo a konektor Pipedrive
+se nepoužil — vývoj i testy proti simulátoru (`PIPEDRIVE_SIMULATOR=1`).
+
+Varianta A podle rozhodnutí J. V. 3. 11. 2026: kalkulátor podle ID dealu deal sám načte, založí nebo
+idempotentně aktualizuje kalkulaci a do dealu vrátí odkaz. **Cena se z CRM ani z webhooku nebere nikdy
+a dokument na serveru nevzniká** — nabídku generuje obchodník v prohlížeči jako dnes.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. endpoint webhooku, z těla jen ID dealu | ✅ | `netlify/functions/pd_webhook.mjs` (`POST /api/pd/webhook`) |
+| 2. klíč v proměnné, konstantní čas, 401 bez dotazu do PD, strop | ✅ | `netlify/lib/pd_webhook.mjs` (`PIPEDRIVE_WEBHOOK_KLIC`, 60 volání/h) |
+| 3. načtení dealu a zadání podle §12 / #113 | ✅ | `pdWebhookZadani` + `pdDealNaNase` (tatáž cesta jako `pd_deal`) |
+| 4. idempotence (`pdDealId` + CN), opakované doručení | ✅ | rejstřík `pd_webhook/deal:<id>`, pravidlo z `PIPEDRIVE_ROZHODNUTI_115.md` |
+| 5. odkaz do dealu jako jediný zápis | ✅ | nové pole „Odkaz na kalkulaci“; `?zakazka=` v `src/ui/online_ui.js` |
+| 6. zamčená varianta nedotčená, ruční změny obchodníka zůstanou | ✅ | `pdWebhookPouzij`, `pdWebhookZamkyPoruseny` (otisky `zak.pdZadani`) |
+| 7. meze SEC-PD / K8-S3 a nové B176–B179 | ✅ | `BEZPECNOST_MEZE.md` |
+| 8. podklad pro integrátora + seznam pro J. V. | ✅ | `podklady/PIPEDRIVE_WEBHOOK_553.md` |
+| 9. roadmapa #553 → hotovo, CHANGELOG, manuál admin | ✅ | `roadmapa/roadmap.json` (kontrola OK), `CHANGELOG.md`, `manual/obsah.json` |
+
+**Jak to funguje (pro J. V.):** obchodník v Pipedrive přepne pole *Vygenerovat nabídku* → automatizace pošle
+kalkulátoru **jen ID dealu** → kalkulátor si deal načte sám a založí (nebo doplní) kalkulaci s číslem a názvem
+akce, adresou, zákazníkem, IČO, kontaktem a termínem předání; projekční deal jde do hlavičky PROJ, ostatní do
+OCK → do dealu se vrátí **odkaz na kalkulaci**, po kliknutí se po přihlášení otevře. Druhé přepnutí druhou
+kalkulaci nezaloží a když se nic nezměnilo, do dealu se nic nezapisuje (`update_time` se neposune — smyčka #117).
+Odeslanou (zamčenou) nabídku to nezmění nikdy; hlavička zakázky s odeslanou nabídkou se také nemění. Co
+obchodník v kalkulaci přepsal ručně, webhook nepřepíše (přepíše jen prázdné pole nebo svou vlastní minulou
+hodnotu) — ponechaná pole vypíše v odpovědi jen názvem.
+
+**Testy:** nová sada `netlify/test_553_webhook.mjs` **74/0** proti simulátoru (pojistka: nad `198ed4c` selže —
+funkce neexistuje; napsáno v commitu). Matice práv `netlify/test_prava.mjs` **962/0** (nový řádek webhooku:
+401 všem rolím, i administrátorovi; statická kontrola „klíč se ověří dřív než tělo, Pipedrive a databáze“).
+`netlify/test_zalohy.mjs` **165/0** (nové úložiště `pd_webhook` na seznamu výjimek s důvodem).
+Mutace „#553“: **20 z 20 chycených** (`--kontrola` 1236 OK; „zamčená varianta dostane údaje z dealu“ byla nejdřív nechycená → do sady přidán těsný případ). Kolo `--bez-mutaci` nad `7e03880`: **VŠE ZELENÉ** (sady 372 / 0 / 7 přeskočeno — firemní podklady a test.js; hodiny +400 dní 300 / 0 / 1; statické 5 z 5; 29 min 41 s). První běh kola chytil `test_dokumentace_kompletni.js` před doplněním webhooku do `manual/kompletni/provoz.json` (4 FAIL), po opravě zelené. Celé mutace neopakovány.
+
+**Prostředí:** ESM sady `overit_*.mjs` v cloudovém kontejneru nenajdou Playwright z `/opt/node-tools` — před kolem `mkdir -p node_modules && ln -sfn /opt/node-tools/node_modules/playwright node_modules/playwright && ln -sfn /opt/node-tools/node_modules/playwright-core node_modules/playwright-core` (jinak se část sad přeskočí). Navržen samostatný úkol na opravu v `spust_testy.sh`.
+
+**Co musí nastavit J. V.** (celý seznam v `podklady/PIPEDRIVE_WEBHOOK_553.md`, část 5):
+1. vymyslet klíč aspoň 32 znaků (`openssl rand -base64 36`) — do repozitáře ani do chatu nepatří;
+2. Netlify `testengscalc` → Environment variables → `PIPEDRIVE_WEBHOOK_KLIC` (secret, scope Functions);
+3. nové nasazení (proměnná se projeví až po něm);
+4. Nastavení → Mapa polí CRM → Obnovit z CRM (obě nová pole musí být spárovaná);
+5. zkouška na dealu „TEST – integrace kalkulačky“ + druhé přepnutí (musí zůstat jedna kalkulace).
+
+**Co musí udělat integrátor:** založit pole **Vygenerovat nabídku** (typ dle své volby) a **Odkaz na kalkulaci**
+(krátký text) a automatizaci **jen na změnu pole „Vygenerovat nabídku“** — nikdy na „deal aktualizován“
+(smyčka). Tělo `{ "dealId": {{deal.id}} }`, klíč v hlavičce `x-kalkulator-klic`.
+
+**Otevřené body:**
+- Pole *Vygenerovat nabídku* v účtu zatím není — do té doby se webhook dá zkoušet jen simulátorem.
+- Odkaz na kalkulaci se zapisuje do pole, které kalkulátor jinak nečte; kdyby ho integrátor pojmenoval jinak,
+  kalkulace se založí a odkaz ne (vrátí se ve `varovani`).
+- Strop 60/h platí jen v instanci funkce (B177, stejná mez jako B158) — proti smyčce je to pojistka, ne řešení.
+- Webhook nevolá `zakazkaServerKontrola` (slevy, marže, ceník) — ceny a ceník nesahá, viz B178. Kdyby se měl
+  zápis z webhooku rozšířit na víc než zadání z dealu, kontrolu doplnit.
 # Předávka — 3. 11. 2026: SF16 #559 — SEC-M16 úvodní fotka jen jako `data:image`, větev `claude/sec-m16-foto`
 
 Nad `198ed4c` (`test`, v3.11.3). **Verze 3.11.4** (koordinace přečísluje, číslo #559 také). Neslučováno; na ostrém
