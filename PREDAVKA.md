@@ -1,3 +1,36 @@
+# Předávka — 4. 11. 2026: PS #558 — štítek „Nabídka prodána“ + lišta „Ceník není nahraný“, větev `claude/ps-prodano-cenik`
+
+Nad `7a23c50` (`test` = v3.11.4). **Verze 4.11.1** (koordinace přečísluje). Neslučováno; na ostrém ani testovacím webu nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. štítek po Prodáno | ✅ | `variantaStavPill` (`src/ui/common.js`), `.stav-pill.prodana` (`src/app_template.html`) |
+| 2. lišta ceníku až po ověření | ✅ | `ukazkoveCekaniTrva` (`src/ukazkove.js`), `src/ui/ukazkove_ui.js`, `src/ui/online_ui.js` |
+| 3. testy s pojistkou, mutace #558 | ✅ | `src/test_ukazkove.js`, `overit_lista_cekani.mjs`, `overit_prodano_zamek.mjs`, `overit_klon_tisk.mjs`, `netlify/mutace.mjs` |
+| 4. roadmapa #558, CHANGELOG | ✅ | `roadmapa/roadmap.json`, `CHANGELOG.md` |
+| 5. kolo `--bez-mutaci` | viz CHANGELOG / hlášení koordinaci | — |
+
+**Příčina 1 (pro J. V.):** štítek vedle „STANDARD OCK“ uměl jen tři stavy — rozpracovaná, odeslaná (uzamčená)
+a jen ke čtení. Prodej v něm vůbec nebyl, proto po Prodáno zůstal červený. Nešlo o překreslení ani o jinou
+variantu: štítek i Prodáno patří otevřené variantě (u J. V. Varianta 2 · řídící). Nově tmavě modrý „✔ Nabídka
+prodána“ — hned po kliknutí i po otevření z databáze (má přednost i před „Jen ke čtení“, to zmíní bublina).
+
+**Příčina 2 (pro J. V.):** hláška „Ceník není nahraný – všude svítí nuly …“ je červená lišta pod hlavičkou. Od
+15. 10. (S5) čekala, než aplikace zjistí, kdo je přihlášený — jenže když přihlášený nikdo není (první otevření,
+ráno po vypršení přihlášení), zjistí to hned, a lišta se ukázala pod přihlašovacím oknem a zůstala, než se po
+přihlášení ceník stáhl. Na pomalém (ráno „studeném“) serveru blikla po 5 s. Ceník nikdy nechyběl, jen se ještě
+neověřil. Nově lišta čeká, dokud je vidět přihlašovací okno, a po přihlášení na stažení ceníku (nejdéle 15 s).
+Když ceník opravdu chybí (chyba serveru, nic zveřejněného, „Pokračovat bez přihlášení“), ukáže se hned.
+
+**Otevřené pro J. V.:** (a) přednost „Nabídka prodána“ před „Jen ke čtení“ (jinak by po F5 svítil jantarový
+„Jen ke čtení“); (b) strop 15 s pro ověřování po přihlášení (dřív 5 s od startu); (c) štítek se nepřekládá —
+rozhraní je jen česky, překlady se týkají dokumentů.
+
+**Pozn. k prostředí:** `node_modules/playwright` + `playwright-core` = odkazy na `$(npm root -g)` (jinak kolo
+přeskočí prohlížečové sady).
+
+---
+
 # Předávka — 3. 11. 2026: ZO2 #555b (roadmapa #557) — tisk klonu „první rozdíl v datech: cenik“, větev `claude/zo2-klon-cenik`
 
 Nad `198ed4c` (`test` = v3.11.3, obsahuje ZO #555). **Verze 3.11.4** (koordinace přečísluje). Neslučováno; na ostrém
