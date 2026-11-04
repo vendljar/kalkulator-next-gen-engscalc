@@ -1431,7 +1431,12 @@ function zakazkaHlavicka(ock) {
   const ridiciPill = `<span class="pill ${akt.ridici ? '' : 'mut'}" style="margin-left:12px" title="řídící = aktuálně platná varianta pro nabídku">${akt.ridici ? '✓ řídící' : 'není řídící'}</span>`;
   const variantaRow = `<div class="row"><label>Otevřená varianta${ridiciPill}</label>
     <select class="cteni-ok" onchange="varAktivuj(this.value)" title="přepnout počítanou variantu">${opts}</select></div>`;
-  const ridiciBtn = akt.ridici ? '' : `<div class="row"><label></label><button class="mini noprint" onclick="varRidici('${escJs(akt.id)}')">nastavit jako řídící (platná je „${esc(rid.nazev)}")</button></div>`;
+  /* PR #563: u prodané zakázky je řídící prodaná varianta — tlačítko se
+   * nenabízí, místo něj krátké vysvětlení (uvolní ho odemčení prodeje). */
+  const ridiciZamceno = (!akt.ridici && typeof prodRidiciZamceno === 'function') ? prodRidiciZamceno(ZAK, akt.id) : '';
+  const ridiciBtn = akt.ridici ? '' : ridiciZamceno
+    ? `<div class="row"><label></label><span class="note noprint" data-pr-ridici="1" title="${esc(ridiciZamceno)}">řídící je prodaná varianta „${esc(rid.nazev)}"</span></div>`
+    : `<div class="row"><label></label><button class="mini noprint" onclick="varRidici('${escJs(akt.id)}')">nastavit jako řídící (platná je „${esc(rid.nazev)}")</button></div>`;
   /* Model 1 je od 24. 9. 2026 zmrazený (#332): ne-administrátor ho v nabídce
    * nemá. U zakázky, která v něm už je, vidí „Model 1 (zmrazený)" a může ji
    * převést na Model 2; administrátor přepíná jako dřív. */

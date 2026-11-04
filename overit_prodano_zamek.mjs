@@ -17,6 +17,10 @@
  * odemkne (taky bez dialogu klonu) a odemčení se uloží; texty karty
  * a potvrzení mluví o fázi „Vyhrané k podpisu SoD", ne o „Vyhráno".
  *
+ * PR #563 (J. V. 4. 11. 2026): prodej klonu (v2), když řídící je odeslaná v1 —
+ * v2 je po Prodáno řídící (téže uložení, výběr „… · řídící", hláška), ruční
+ * přepnutí jinam se nenabízí a po F5 stav drží. Nad b751c91 tyto kroky selžou.
+ *
  * Pojistka: nad 141b92f (v2.11.2) selže „žádný dialog klonu", „prodej
  * uložen" i „skutečný důvod" (viz commit). Smyšlené účty a údaje.
  * Spuštění: NODE_PATH=$(npm root -g) node overit_prodano_zamek.mjs */
@@ -298,6 +302,123 @@ test('vedoucí: odemčení uložené — varianta neprodaná, zamčená, důvod 
 o = await otevri(soubor);
 test('vedoucí: po znovuotevření jde zase prodat (tlačítko Prodáno povolené)',
   await page.locator('#prodejKarta_ock button', { hasText: 'Prodáno' }).first().isEnabled());
+
+/* ---- 9) PR #563: prodaná varianta je vždy řídící ----
+ * Řídící je odeslaná varianta 1, prodává se odeslaný klon (varianta 2) ze
+ * zakázky otevřené z databáze jen ke čtení. */
+await prihlas('obch.prodej@priklad.cz');
+const soubor3 = await page.evaluate(async (ceniky) => {
+  zakOdpojUlozeni();
+  ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 8724'; ZAK.nazevAkce = 'TEST PR řídící'; ZAK.adresa = 'Zkušební 2, Praha';
+  const v = aktivniVarianta(ZAK);
+  v.data.cenik = ceniky.ock; v.data.proj.cenik = ceniky.proj;
+  Object.assign(v.data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 });
+  syncVarianta(); render();
+  await onlineUloz();
+  zamekPoTisku('nabidkaTisk', v.id);
+  await (ONLINE_STAV.ukladaBeh || Promise.resolve());
+  const k = klonujVariantu(ZAK, v.id);
+  k.data.ock.zadani.zdvih = 12;
+  syncVarianta(); render();
+  await onlineUloz();
+  zamekPoTisku('nabidkaTisk', k.id);
+  await (ONLINE_STAV.ukladaBeh || Promise.resolve());
+  return ONLINE_STAV.soubor;
+}, ceniky);
+srv = await naServeru(soubor3);
+test('PR #563 příprava: v1 i klon v2 odeslané, řídící v1', srv.varianty.length === 2 && srv.varianty.every(x => x.zamek && x.zamek.zamceno)
+  && srv.varianty[0].ridici && !srv.varianty[1].ridici, srv.varianty.map(x => [x.nazev, x.ridici, !!(x.zamek && x.zamek.zamceno)]));
+const vyber = () => page.evaluate(() => {
+  prepniTab('kalk'); render();
+  const sel = [...document.querySelectorAll('select')].find(s => [...s.options].some(o => / · řídící$/.test(o.textContent)));
+  const r = sel ? { vybrana: sel.options[sel.selectedIndex].textContent, ridici: [...sel.options].filter(o => / · řídící$/.test(o.textContent)).map(o => o.textContent) } : null;
+  const tl = [...document.querySelectorAll('button')].some(b => /nastavit jako řídící/.test(b.textContent));
+  const pozn = [...document.querySelectorAll('[data-pr-ridici]')].map(e => e.textContent.trim());
+  prepniTab('kryci'); render();
+  return Object.assign({ tlacitko: tl, pozn }, r || {});
+});
+o = await otevri(soubor3); await dlg();
+test('PR #563: zakázka otevřená jen ke čtení, otevřená je v2 (klon)', o.cteni && await page.evaluate(() => aktivniVarianta(ZAK).nazev) === 'Varianta 2', o);
+let vy = await vyber();
+test('PR #563: před prodejem nabízí výběr „Varianta 1 · řídící" a tlačítko „nastavit jako řídící"',
+  JSON.stringify(vy.ridici) === JSON.stringify(['Varianta 1 · řídící']) && vy.tlacitko, vy);
+await klikni('Prodáno');
+d = await dlg();
+test('PR #563: prodej klonu bez dialogu klonu a bez chybové hlášky', !klon(d) && !d.some(x => /neuložil/.test(x.text)), d);
+srv = await naServeru(soubor3);
+test('PR #563: na serveru je prodaná v2 a je ŘÍDÍCÍ (téže uložení), v1 ne', !!srv.varianty[1].prodano && srv.varianty[1].ridici === true
+  && !srv.varianty[0].ridici, srv.varianty.map(x => [x.nazev, x.ridici, !!x.prodano]));
+test('PR #563: …hlavička zakázky beze změny', srv.nazevAkce === 'TEST PR řídící' && srv.adresa === 'Zkušební 2, Praha');
+vy = await vyber();
+test('PR #563: výběr „Otevřená varianta" ukazuje „Varianta 2 · řídící" (vybraná)', vy.vybrana === 'Varianta 2 · řídící'
+  && JSON.stringify(vy.ridici) === JSON.stringify(['Varianta 2 · řídící']), vy);
+const info = await page.evaluate(() => ({ prog: PROG_STAV.hlaska, karta: (document.getElementById('prodejKarta_ock') || {}).textContent || '' }));
+test('PR #563: hláška (progZprava) „Prodaná varianta 2026 - OPR - CN - 8724.2 je teď řídící."',
+  info.prog === 'Prodaná varianta 2026 - OPR - CN - 8724.2 je teď řídící.', info.prog);
+test('PR #563: …a karta Prodej ji ukáže i s pravidlem „prodaná je vždy řídící"', /je teď řídící/.test(info.karta)
+  && /vždy\s+řídící/.test(info.karta), info.karta.slice(0, 300));
+test('PR #563: okno zůstalo jen ke čtení a bez neuložených změn',
+  await page.evaluate(() => zamekCteniJe() && JSON.stringify(ZAK) === ONLINE_STAV.posledni));
+/* Ruční přepnutí řídící po prodeji: tlačítko se nenabízí, varRidici odmítne. */
+await page.evaluate(() => { varAktivuj(ZAK.varianty[0].id); });
+vy = await vyber();
+test('PR #563: na v1 se tlačítko „nastavit jako řídící" po prodeji nenabízí, místo něj vysvětlení',
+  !vy.tlacitko && vy.pozn.some(t => /řídící je prodaná varianta „Varianta 2"/.test(t)), vy);
+const pokus = await page.evaluate(() => { varRidici(ZAK.varianty[0].id); return ZAK.varianty.map(x => !!x.ridici); });
+d = await dlg();
+test('PR #563: varRidici(v1) po prodeji odmítne s hláškou, řídící zůstane v2', JSON.stringify(pokus) === '[false,true]'
+  && d.some(x => /vždy řídící/.test(x.text) && /odemčení prodeje/.test(x.text)), [pokus, d]);
+/* Po F5: znovu přihlásit a otevřít — stav drží (bere se z databáze). */
+await page.reload();
+await page.waitForFunction(() => typeof window.render === 'function');
+await page.waitForTimeout(400);
+await page.evaluate(() => {
+  window.__dlg = [];
+  window.potvrd = (t, o) => { window.__dlg.push({ druh: 'potvrd', nadpis: (o && o.nadpis) || '', text: String(t) }); return Promise.resolve(false); };
+  window.hlaska = (t) => { window.__dlg.push({ druh: 'hlaska', text: String(t) }); return Promise.resolve(); };
+  window.volba = (t) => { window.__dlg.push({ druh: 'volba', text: String(t) }); return Promise.resolve('zahodit'); };
+});
+await page.evaluate(async () => { if (!ONLINE_STAV.ja) { ONLINE_STAV.formEmail = 'obch.prodej@priklad.cz'; ONLINE_STAV.formHeslo = 'Heslo12345x'; await onlinePrihlas(); } });
+o = await otevri(soubor3); await dlg();
+const poF5 = await page.evaluate(() => ({ ridici: ZAK.varianty.map(x => !!x.ridici), prodana: (prodStav(ZAK) || { v: {} }).v.nazev }));
+test('PR #563: po F5 je prodaná v2 dál řídící', JSON.stringify(poF5.ridici) === '[false,true]' && poF5.prodana === 'Varianta 2', poF5);
+
+/* ---- 10) PR #563: v databázi je otevřená v1, obchodník v okně jen ke čtení
+ * přepne „Otevřená varianta" na klon v2 a klikne Prodáno. Výběr otevřené
+ * varianty (zak.aktivni) není obsah nabídky — prodej se uložit musí. */
+const soubor4 = await page.evaluate(async (ceniky) => {
+  zakOdpojUlozeni();
+  ZAK = novaZakazka(); ZAK.cislo = '2026 - OPR - CN - 8725'; ZAK.nazevAkce = 'TEST PR přepnutá otevřená';
+  const v = aktivniVarianta(ZAK);
+  v.data.cenik = ceniky.ock; v.data.proj.cenik = ceniky.proj;
+  Object.assign(v.data.ock.zadani, { sirka: 1.6, hloubka: 1.8, zdvih: 9, prejezd: 3.2, prohluben: 1.2 });
+  syncVarianta(); render();
+  await onlineUloz();
+  zamekPoTisku('nabidkaTisk', v.id);
+  await (ONLINE_STAV.ukladaBeh || Promise.resolve());
+  const k = klonujVariantu(ZAK, v.id);
+  k.data.ock.zadani.zdvih = 12;
+  syncVarianta(); render();
+  await onlineUloz();
+  zamekPoTisku('nabidkaTisk', k.id);
+  await (ONLINE_STAV.ukladaBeh || Promise.resolve());
+  ZAK.aktivni = v.id;   // v databázi zůstane otevřená v1
+  await onlineUloz();
+  return ONLINE_STAV.soubor;
+}, ceniky);
+test('PR #563 příprava: v databázi je otevřená v1', (await naServeru(soubor4)).aktivni === (await naServeru(soubor4)).varianty[0].id);
+await page.evaluate(() => { window.potvrd = (t, o) => { const nadpis = (o && o.nadpis) || ''; window.__dlg.push({ druh: 'potvrd', nadpis, text: String(t) });
+  return Promise.resolve(nadpis === 'Prodáno'); }; });
+o = await otevri(soubor4); await dlg();
+await page.evaluate(() => { varAktivuj(ZAK.varianty[1].id); prepniTab('kryci'); render(); });
+test('PR #563: (okno jen ke čtení, otevřená přepnutá na v2)', o.cteni && await page.evaluate(() => aktivniVarianta(ZAK).nazev) === 'Varianta 2');
+await klikni('Prodáno');
+d = await dlg();
+test('PR #563: prodej v2 po přepnutí otevřené varianty se uloží (bez dialogu klonu a bez „neuložil")',
+  !klon(d) && !d.some(x => /neuložil/.test(x.text)), d);
+srv = await naServeru(soubor4);
+test('PR #563: …na serveru prodaná a řídící v2', !!srv.varianty[1].prodano && srv.varianty[1].ridici === true && !srv.varianty[0].ridici,
+  srv.varianty.map(x => [x.nazev, x.ridici, !!x.prodano]));
 
 await prohlizec.close(); server.close();
 if (chyby.length) { console.log('Chyby v konzoli:\n  ' + chyby.join('\n  ')); fail += chyby.length; }

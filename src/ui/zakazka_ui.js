@@ -33,7 +33,13 @@ function varNova() {
   syncVarianta(); render();
 }
 function varAktivuj(id) { ZAK.aktivni = id; syncVarianta(); render(); }
-function varRidici(id) { nastavRidici(ZAK, id); render(); }
+function varRidici(id) {
+  /* PR #563: prodaná varianta je vždy řídící — jinam až po odemčení prodeje
+   * (server by přepnutí při uložení stejně vrátil, prodServer). */
+  const proc = (typeof prodRidiciZamceno === 'function') ? prodRidiciZamceno(ZAK, id) : '';
+  if (proc) { if (typeof hlaska === 'function') hlaska(proc); render(); return; }
+  nastavRidici(ZAK, id); render();
+}
 async function varSmaz(id) {
   if (ZAK.varianty.length <= 1) { await hlaska('Poslední variantu nelze smazat.'); return; }
   const v = ZAK.varianty.find(x => x.id === id);

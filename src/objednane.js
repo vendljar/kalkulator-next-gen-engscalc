@@ -387,6 +387,39 @@ function prodNastav(zak, v, datum, ctx) {
   v.prodano = { datum: d, kdo: String(c.kdo || ''), kdy, pipedrive: { stav: 'ceka', kdy } };
   return '';
 }
+/* PRODANÁ VARIANTA JE VŽDY ŘÍDÍCÍ (PR #563, J. V. 4. 11. 2026: „Ve chvíli,
+ * kdy je kalkulace prodána, je tato vždy řídící. Nastav tedy automaticky
+ * prodanou kalkulaci jako řídící, kdyby náhodou do té doby nebyla.")
+ *
+ * Řídící je u prodané zakázky odvozený údaj: srovná ho klient při stisku
+ * Prodáno (téže uložení), a SERVER při každém uložení (prodServer) — server
+ * nesoulad neodmítá, ale opraví: přepnutí řídící nemění data ani zámek žádné
+ * varianty (jen příznak `ridici` a stopu `zamek.hlavicka`, K7-S2 #508),
+ * starší klient v otevřeném okně by jinak prodej vůbec neuložil a starší
+ * zakázka s prodanou neřídící variantou se tak srovná při dalším uložení.
+ * Ruční přepnutí řídící jinam po prodeji tím server vrátí; prohlížeč ho
+ * proto nenabízí (prodRidiciZamceno) — uvolní ho až odemčení prodeje.
+ * Stopu „hlavička zmrazená" přepnutí neuvolní (jako nastavRidici).
+ * Vrací id nové řídící, nebo '' (nic se neměnilo). */
+function prodRidiciSrovnej(zak) {
+  const p = prodStav(zak);
+  if (!p || p.v.ridici === true) return '';
+  const oznac = () => { if (typeof zamekZakHlavickaOznac === 'function') zamekZakHlavickaOznac(zak); };
+  oznac();
+  zak.varianty.forEach(x => { if (x && typeof x === 'object') x.ridici = x.id === p.v.id; });
+  oznac();
+  return p.v.id;
+}
+/* Proč řídící nejde přepnout na variantu `id` ('' = jde): u prodané zakázky
+ * je řídící prodaná varianta, dokud prodej neodemkne vedoucí nebo administrátor. */
+function prodRidiciZamceno(zak, id) {
+  const p = prodStav(zak);
+  if (!p || p.v.id === id) return '';
+  const c = (typeof variantaCislo === 'function') ? String(variantaCislo(zak, p.v) || '') : '';
+  return 'Zakázka je prodaná variantou „' + String(p.v.nazev || p.v.id) + '"' + (c ? ' (' + c + ')' : '')
+    + ' a prodaná varianta je vždy řídící. Přepnout řídící jinam jde až po odemčení prodeje '
+    + '(vedoucí nebo administrátor).';
+}
 /* Klient: žádost o odemčení (vedoucí, administrátor) — prodej zmizí, důvod
  * jde serveru, který zapíše stopu. Vrací chybu nebo ''. */
 function prodOdemkni(zak, v, duvod) {
@@ -412,17 +445,33 @@ const PROD_POLE_ZAKAZKY = ['prodejOdemknout', 'prodejHistorie'];
 function prodBezProdeje(z) {
   const k = JSON.parse(JSON.stringify(z));
   PROD_POLE_ZAKAZKY.forEach(p => { delete k[p]; });
+  /* PR #563: výběr otevřené varianty (`aktivni`) není obsah nabídky — prodej
+   * klonu po přepnutí „Otevřená varianta" v okně jen ke čtení se uložit musí. */
+  delete k.aktivni;
   (Array.isArray(k.varianty) ? k.varianty : []).forEach(v => { if (v && typeof v === 'object') delete v.prodano; });
   return JSON.stringify(k);
 }
 function prodJedinaZmena(ted, ulozeno) {
   const rozbal = (x) => {
     if (typeof x === 'string') { try { return JSON.parse(x); } catch (e) { return null; } }
-    return (x && typeof x === 'object' && !Array.isArray(x)) ? x : null;
+    return (x && typeof x === 'object' && !Array.isArray(x)) ? JSON.parse(JSON.stringify(x)) : null;   // kopie — srovnává se níž
   };
   const a = rozbal(ted), b = rozbal(ulozeno);
   if (!a || !b) return false;
-  if (JSON.stringify(a) === JSON.stringify(b)) return false;          // nic se nezměnilo
+  const bezAkt = z => { const k = Object.assign({}, z); delete k.aktivni; return JSON.stringify(k); };
+  if (bezAkt(a) === bezAkt(b)) return false;   // nic se nezměnilo (jen výběr otevřené varianty, PR #563)
+  /* PR #563: Prodáno přepne řídící na prodanou variantu (prodRidiciSrovnej)
+   * — uložená verze se pro porovnání srovná stejně, jako by se prodala táž
+   * varianta (a příchozí taky — přepnutí udělá server i za starší okno).
+   * Jiné přepnutí řídící (bez prodeje, nebo na neprodanou) zůstane rozdílem
+   * a zámek čtení ho zastaví. */
+  const p = prodStav(a);
+  const bp = p && Array.isArray(b.varianty) ? b.varianty.find(x => x && x.id === p.v.id) : null;
+  if (bp && bp.zamek && bp.zamek.zamceno) {
+    if (bp.prodano == null) bp.prodano = p.prodano;
+    prodRidiciSrovnej(b);
+    prodRidiciSrovnej(a);   // okno staršího klientu řídící nepřepnulo — přepne ji server
+  }
   return prodBezProdeje(a) === prodBezProdeje(b);
 }
 /* Hláška neuloženého prodeje / odemčení se SKUTEČNOU příčinou (PB #547:
@@ -533,6 +582,8 @@ function prodServer(stara, zak, relace, ctx) {
   }
   const h = historie.slice(-PROD_HISTORIE_MAX);
   if (h.length) zak.prodejHistorie = h; else delete zak.prodejHistorie;
+  /* PR #563: prodaná varianta je vždy řídící — server srovná (neodmítá), viz prodRidiciSrovnej. */
+  prodRidiciSrovnej(zak);
   return null;
 }
 
@@ -581,4 +632,4 @@ if (typeof module !== 'undefined' && module.exports)
     objSodSnimek, objSodZaznamyServer, objZmenenoPoSod, objZmenyServer, objZmenyOciste, objDnes, objDatumPlatne, objStav, objDatumPodpisu, objPodepsano, objNabidnute,
     objObjednaneVarianty, objText, objNastav, objOtisk, objTvarPlatny, objKontrola,
     PROD_ROLE_ODEMKNOUT, PROD_PD_STAVY, PROD_PD_STAV_TEXT, PROD_DUVOD_MIN, PROD_HISTORIE_MAX, prodStav, prodNelzeProdat, prodNastav,
-    prodOdemkni, prodDatumOd, prodDatumProblem, prodJedinaZmena, prodNeulozenoText, prodPdStavText, prodTvarPlatny, prodOciste, prodHistorieOciste, prodServer, prodPdZapis };
+    prodOdemkni, prodRidiciSrovnej, prodRidiciZamceno, prodDatumOd, prodDatumProblem, prodJedinaZmena, prodNeulozenoText, prodPdStavText, prodTvarPlatny, prodOciste, prodHistorieOciste, prodServer, prodPdZapis };

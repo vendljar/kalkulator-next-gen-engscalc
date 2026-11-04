@@ -307,7 +307,7 @@ function prodUiDatumText(d) {
  * Připravený zápis se do zakázky NEUKLÁDÁ jako hotové tělo PATCH — server
  * ho při odeslání (#510) spočítá znovu ze zmrazených dat (klientovi se
  * nevěří); zakázka nese jen stav „čeká na odeslání". */
-const PROD_UI = { nacita: false, chyba: '', data: null, zak: null, varianta: '' };
+const PROD_UI = { nacita: false, chyba: '', data: null, zak: null, varianta: '', info: '', infoZak: null };
 function prodUiPodklad(v) {
   const kopie = JSON.parse(JSON.stringify(ZAK));
   (kopie.varianty || []).forEach(x => { x.ridici = !!x && x.id === v.id; });
@@ -370,6 +370,9 @@ function prodejKarta(strana) {
     return `<div id="prodejKarta_${esc(strana)}" class="prod-karta">
       <div><span class="pill" style="background:#86e8ad;color:#0B2E6B">✔ Prodáno ${esc(prodUiDatumText(p.prodano.datum))}</span>
         <span class="note">${esc(p.prodano.kdo || '')}</span></div>
+      ${PROD_UI.info && PROD_UI.infoZak === ZAK ? `<div class="note" data-pr-info="1"><b>${esc(PROD_UI.info)}</b></div>` : ''}
+      <div class="note" data-pr-ridici="1">Prodaná varianta je vždy <b>řídící</b> (hlavička, Pipedrive a controlling se řídí jí);
+        jinou variantu jako řídící jde nastavit až po odemčení prodeje.</div>
       <div class="note">Krycí list i hlavička zakázky jsou <b>definitivně zamčené</b>. Zápis do Pipedrive (údaje krycího listu
         a přesun dealu do fáze Vyhrané k podpisu SoD; stav dealu „Vyhrané“ se mění až po doručení podepsané SoD
         v Pipedrive): <b>${esc(pd)}</b> — napojení na Pipedrive zatím není zapnuté, nic se neodeslalo.</div>
@@ -410,11 +413,24 @@ async function prodejUiProdej(strana) {
   const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja) ? ONLINE_STAV.ja.email : '';
   const chyba = prodNastav(ZAK, v, datum, { kdo: ja });
   if (chyba) { hlaska(chyba); return; }
+  /* PR #563: prodaná varianta je vždy řídící — přepne se v TÉMŽE uložení.
+   * Neuloží-li se prodej, vrátí se i řídící a stopa hlavičky (zamek.hlavicka). */
+  const predRidici = ZAK.varianty.map(x => ({ x, ridici: x.ridici, hl: x.zamek ? x.zamek.hlavicka : undefined }));
+  const novaRidici = (typeof prodRidiciSrovnej === 'function') ? prodRidiciSrovnej(ZAK) : '';
+  if (novaRidici) ZAK.aktivni = v.id;
   if (typeof onlineZmenaUzivatele === 'function') onlineZmenaUzivatele({});
   const r = await prodUiUloz();
   if (!r.ok) {
     delete v.prodano;
+    if (novaRidici) predRidici.forEach(p => {
+      p.x.ridici = p.ridici;
+      if (p.x.zamek) { if (p.hl === undefined) delete p.x.zamek.hlavicka; else p.x.zamek.hlavicka = p.hl; }
+    });
     hlaska(prodNeulozenoText('prodej', r.duvod));
+  } else if (novaRidici) {
+    const t = 'Prodaná varianta ' + variantaCislo(ZAK, v) + ' je teď řídící.';
+    PROD_UI.info = t; PROD_UI.infoZak = ZAK;
+    if (typeof progZprava === 'function') progZprava(t);
   }
   render();
 }
