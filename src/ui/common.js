@@ -987,6 +987,27 @@ function card(title, inner, closed = false, id = '') {
 function variantaStavPill() {
   const v = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : null;
   if (!v) return '';
+  /* PRODANÁ VARIANTA (PS #558, hlášení J. V. 4. 11. 2026): po „Prodáno"
+   * zůstával červený štítek „Nabídka uzamčena" — tahle funkce prodej
+   * (`v.prodano`, `variantaProdana` v src/zamek.js) vůbec nečetla, znala jen
+   * zámek odeslání. Prodaná je pořád i odeslaná (prodat jde jen zamčenou
+   * variantu), proto se ptá dřív než na zámek — a dřív i než na okno jen ke
+   * čtení: to má přednost proto, aby štítek „aktivní" nesliboval úpravy
+   * (P3), a „prodána" nic takového neslibuje. Po znovuotevření z databáze
+   * (okno jen ke čtení) tak štítek říká totéž co hned po kliknutí; zámek
+   * okna připomene bublina a lišta nahoře. Barva = tmavě modrá firemní
+   * (#0B2E6B, táž jako text štítku „✔ Prodáno" na krycím listu). Stav se
+   * bere z otevřené varianty, stejně jako zámek. */
+  if (typeof variantaProdana === 'function' && variantaProdana(v)) {
+    const d = v.prodano.datum;
+    const dText = (typeof prodUiDatumText === 'function') ? prodUiDatumText(d) : String(d || '');
+    const cteni = (typeof zamekCteniJe === 'function' && zamekCteniJe())
+      ? ' Zakázka je teď otevřená jen ke čtení — jiné změny se neuloží, dokud ji neodemknete (lišta nahoře).' : '';
+    return `<span class="stav-pill prodana" title="Nabídka je prodaná${dText ? ' (' + esc(dText) + ')' : ''}. `
+      + `Odeslaná nabídka se zpětně needituje; krycí list i hlavička zakázky jsou zamčené. `
+      + `Odemknout prodej smí vedoucí nebo administrátor (krycí list → Prodej).${cteni}"
+      >✔ Nabídka prodána</span>`;
+  }
   /* JEN KE ČTENÍ MÁ PŘEDNOST PŘED STAVEM VARIANTY (P3, nález N4,
    * 21. 9. 2026). Stav zakázky se dosud hlásil jen lištou nahoře, která
    * po odrolování zmizela — a štítek vedle čísla nabídky přitom tvrdil

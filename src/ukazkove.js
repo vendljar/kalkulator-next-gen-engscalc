@@ -306,8 +306,31 @@ function ukazkoveVyctem(stav) {
  * skutečných pěti vteřin. */
 const UKAZKOVE_CEKANI_MS = 5000;
 
+/* DALŠÍ DVĚ CHVÍLE, KDY SE TEPRVE OVĚŘUJE (PS #558, hlášení J. V. 4. 11. 2026:
+ * „stále se nám při prvním načítání aplikace zobrazuje hláška o chybějícím
+ * ceníku"). Čekání z S5 končilo doběhnutím prvního pokusu (zdraví → ja) —
+ * jenže bez živé relace (první otevření, ráno po vypršení) ten pokus doběhne
+ * za zlomek vteřiny s výsledkem „nikdo není přihlášený", a lišta naskočila
+ * pod přihlašovacím oknem. Po přihlášení zůstala svítit, dokud se ceník
+ * nestáhl a nenasadil. Totéž po pěti vteřinách při pomalém (studeném)
+ * serveru, kdy relace byla, ale ceník ještě putoval. Ani jedno neznamenalo,
+ * že ceník chybí — jen že se ještě neověřilo.
+ *
+ *   `prihlaseni: true`   — je vidět přihlašovací okno: aplikace se přes ně
+ *                          stejně nepoužívá a ceník se bez přihlášení načíst
+ *                          nedá. Bez stropu; okno samo je ta zpráva. Kdo zvolí
+ *                          „Pokračovat bez přihlášení", lištu dostane hned.
+ *   `overujeOd: číslo`   — po přihlášení se stahuje a nasazuje ceník (čas
+ *                          začátku). Nejdéle UKAZKOVE_OVERENI_MS, pak se lišta
+ *                          ukáže, i kdyby odpověď nepřišla. Chyba stažení nebo
+ *                          nezveřejněný ceník čekání ukončí hned (UI). */
+const UKAZKOVE_OVERENI_MS = 15000;
+
 function ukazkoveCekaniTrva(cekani, ted) {
-  if (!cekani || cekani.od === null || cekani.od === undefined || cekani.dobehlo) return false;
+  if (!cekani) return false;
+  if (cekani.prihlaseni === true) return true;
+  if (typeof cekani.overujeOd === 'number' && (ted - cekani.overujeOd) < UKAZKOVE_OVERENI_MS) return true;
+  if (cekani.od === null || cekani.od === undefined || cekani.dobehlo) return false;
   return (ted - cekani.od) < UKAZKOVE_CEKANI_MS;
 }
 
@@ -324,4 +347,4 @@ if (typeof module !== 'undefined')
                      ukazkoveBez, ukazkoveStav, ukazkoveText,
                      ukazkoveKratce, ukazkoveVyctem, ukazkoveBraniDokumentu,
                      ukazkoveKudy, ukazkovePripojeni,
-                     UKAZKOVE_CEKANI_MS, ukazkoveCekaniTrva, ukazkoveListaRozhodni };
+                     UKAZKOVE_CEKANI_MS, UKAZKOVE_OVERENI_MS, ukazkoveCekaniTrva, ukazkoveListaRozhodni };

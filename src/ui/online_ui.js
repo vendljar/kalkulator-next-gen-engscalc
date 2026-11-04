@@ -361,6 +361,9 @@ function onlinePoPrihlaseni(ja, hesloPrihlaseni) {
    * posluchače na `input`/`change`/klik, tedy události od člověka; kdo měl
    * rozdělanou práci, o ni nepřijde. */
   const byloOdUzivatele = !!ONLINE_STAV.zmenaUzivatele;
+  /* Červená lišta „ceník není nahraný" počká, než se ceník stáhne a nasadí
+   * (PS #558) — jinak po přihlášení svítila, dokud nepřišel. */
+  if (typeof ukazkoveOvereniZacni === 'function') ukazkoveOvereniZacni();
   return Promise.all([onlineNactiProgram(), onlineNactiFirmu(), onlineNactiZobrazeni(), onlineNactiRejstrik(),
                       onlineNactiSablony(),
                       /* zveřejněný slovník překladů (#401) — na ceníku nezávisí */
@@ -484,9 +487,12 @@ function onlineNactiProgram() {
     /* Nasazení nechává na onlineTik – tam je jediné místo, které ví,
      * jestli zrovna nevládne složka. */
     ONLINE_STAV.cenikPouzit = false;
+    /* Žádný zveřejněný ceník → není co čekat, chybí opravdu (PS #558). */
+    if (!(ONLINE_STAV.db && ONLINE_STAV.db.platny) && typeof ukazkoveOvereniKonec === 'function') ukazkoveOvereniKonec();
     return true;
   }).catch(e => {
     onlineZprava('Platný ceník se ze serveru nepodařilo načíst: ' + e.message, 'varovani');
+    if (typeof ukazkoveOvereniKonec === 'function') ukazkoveOvereniKonec();
     return false;
   });
 }
@@ -2595,6 +2601,8 @@ function onlineTik() {
       setTimeout(() => {
         progPouzij(ONLINE_STAV.db.platny);
         onlineZprava('Platí online ceník – ' + programPopisVerze(ONLINE_STAV.db.platny) + '.');
+        /* ceník je nasazený — lišta se teď rozhoduje nad skutečnými daty (PS #558) */
+        if (typeof UKAZKOVE_CEKANI !== 'undefined') UKAZKOVE_CEKANI.overujeOd = null;
         render();
       }, 0);
       /* Do 4. 8. 2026 se tu končilo `return` a autosave čekal na další tik.

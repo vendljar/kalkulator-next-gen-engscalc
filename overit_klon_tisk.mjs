@@ -234,6 +234,17 @@ test('#555: klon uložen na serveru a zamčený (záznam odeslání)', srv.varia
   srv.varianty.map(v => !!(v.zamek && v.zamek.zamceno)));
 test('#555: odeslaná varianta na serveru beze změny', JSON.stringify(srv.varianty[0].data) === v1Server);
 
+/* Štítek stavu otevřené varianty v liště nad Kalkulací OCK (PS #558). */
+const stitek = () => page.evaluate(() => {
+  prepniTab('kalk'); render();
+  const el = document.querySelector('.kalk-lista .stav-pill');
+  const r = el ? { trida: el.className, text: el.textContent.trim(), title: el.title,
+    pozadi: getComputedStyle(el).backgroundColor, cteni: zamekCteniJe() } : null;
+  prepniTab('kryci'); render();
+  return r;
+});
+const PRODANA_POZADI = 'rgb(11, 46, 107)';   // #0B2E6B — tmavě modrá firemní
+
 /* ---- 1b) Prodáno na klonu (doplnění J. V. 3. 11.: „Prodej se neuložil:
  * Neuloženo: změnila by se data uzamčené (odeslané) nabídky") ---- */
 const klikniProdano = async () => {
@@ -250,6 +261,21 @@ srv = await naServeru(soubor);
 test('#555: klon je na serveru prodaný, odeslaná varianta 1 beze změny',
   !!(srv.varianty[1] && srv.varianty[1].prodano) && !srv.varianty[0].prodano && JSON.stringify(srv.varianty[0].data) === v1Server,
   srv.varianty.map(v => !!v.prodano));
+/* PS #558 (hlášení J. V. 4. 11. 2026): po Prodáno na klonu (Varianta 2 · řídící)
+ * zůstal v liště červený štítek „Nabídka uzamčena". Nad 7a23c50 selže. */
+{
+  const st = await stitek();
+  test('PS #558: po Prodáno na klonu je v liště tmavě modrý štítek „Nabídka prodána" (bez F5)',
+    !!st && /\bprodana\b/.test(st.trida) && /Nabídka prodána/.test(st.text) && !/uzamčena/.test(st.text)
+      && st.pozadi === PRODANA_POZADI, st);
+  test('PS #558: …bublina říká, co se dál smí (odemknout jen vedoucí / administrátor)',
+    !!st && /prodaná/.test(st.title) && /vedoucí nebo administrátor/.test(st.title), st && st.title);
+  const v1 = await page.evaluate(() => { const id = aktivniVarianta(ZAK).id; ZAK.aktivni = ZAK.varianty[0].id; return id; });
+  const st1 = await stitek();
+  await page.evaluate((id) => { ZAK.aktivni = id; render(); }, v1);
+  test('PS #558: odeslaná neprodaná Varianta 1 má dál červený „Nabídka uzamčena"',
+    !!st1 && /\bzamcena\b/.test(st1.trida) && /Nabídka uzamčena/.test(st1.text), st1);
+}
 
 /* ---- 1c) tisk klonu se neuložil (výpadek sítě) → Prodáno → uložení ---- */
 const soubor4 = await odeslana('8744');
