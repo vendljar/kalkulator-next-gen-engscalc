@@ -275,6 +275,7 @@ function ctrlRozvrhOck(vysledek, opts) {
     const s = ctrlSkupinaKlice(P.mapa, klic, r.sekce || sekce);
     out.push({ oblast: 'ock', sekce, nazev: String(r.nazev || r.origNazev || ''), klic,
       ...(sekce === 'priplatky' && r.key ? { pKey: String(r.key) } : {}),
+      ...(r.cenaPath && !r.vlastni ? { cenaPath: String(r.cenaPath) } : {}),
       skupina: s.skupina, zarazeno: s.zarazeno, vZakladu,
       vlastni: !!r.vlastni, mnozstvi: +r.mnozstvi || 0, cena: +r.cena || 0,
       naklad: +r.naklad || 0, prodej: +r.sMarzi || 0 });
@@ -587,8 +588,14 @@ function ctrlKatalogNazvy(katalog, cenikProj) {
  * u OCK před zaokrouhlením na tisíce (CEIL byl ve sloupci Zaokrouhlení
  * podruhé — K37-N3); nečitelné textové datum prodeje se hlásí mezi
  * přeskočenými místo tichého „mimo období" (K37-N9). */
-const CTRL_EXPORT_VERZE = 5;
-const CTRL_EXPORT_ZMENA = 'proti verzi 4: Cena před slevou (Kč) v souhrnu Kapitol je u OCK před zaokrouhlením na tisíce '
+/* Verze 6 (#561, 4. 11. 2026): list Řádky (i Příplatky – volby) má na konci
+ * sloupce Zdroj ceny a Odchylka od ceníku (Kč za jednotku, %, celkem) —
+ * ruční cena položky z nabídky dodavatele s potvrzením obchodníka. */
+const CTRL_EXPORT_VERZE = 6;
+const CTRL_EXPORT_ZMENA = 'proti verzi 5: na konci listu Řádky a Příplatky – volby sloupce Zdroj ceny, Odchylka od ceníku '
+  + 'za jednotku (Kč), Odchylka od ceníku (%) a Odchylka od ceníku celkem (Kč) — ruční nákupní cena položky z nabídky '
+  + 'dodavatele potvrzená obchodníkem (#561), u ceníkových položek prázdné; '
+  + 'proti verzi 4: Cena před slevou (Kč) v souhrnu Kapitol je u OCK před zaokrouhlením na tisíce '
   + '(zaokrouhlení základu je jen ve sloupci Zaokrouhlení, řádek souhrnu dává Cena před slevou − Sleva + Zaokrouhlení = Cena '
   + 'nabídky), nečitelné datum prodeje se hlásí mezi přeskočenými; '
   + 'proti verzi 3: prodej podle tlačítka „Prodáno" (objednané příplatky jen doplňují; starší zakázky '
@@ -653,6 +660,17 @@ function ctrlExportVarianty(zak, v, opts) {
       naklad: (+vProj.souhrn.naklad || 0) + (+vProj.souhrn.doprava || 0) + (+vProj.souhrn.vyjezd || 0), cena });
   }
   if (!strany.length) return { ok: false, chyba: 'Varianta nemá výsledek výpočtu k exportu.' };
+  /* RUČNÍ CENA POLOŽKY (#561): zdroj a odchylka od ceníku (sazba ceníku při
+   * potvrzení, `zaklad` — razí server). Jen řádek, jehož jednotková cena je
+   * ta ruční (táž hodnota) — přepis množství nebo ceny řádku nic nemění. */
+  const rc = (d.rucniCeny && typeof d.rucniCeny === 'object' && !Array.isArray(d.rucniCeny)) ? d.rucniCeny : {};
+  radky.forEach(r => {
+    const x = r.cenaPath && Object.prototype.hasOwnProperty.call(rc, r.cenaPath) ? rc[r.cenaPath] : null;
+    if (!x || typeof x !== 'object' || typeof x.hodnota !== 'number' || Math.abs(x.hodnota - r.cena) > 1e-9) return;
+    const z = typeof x.zaklad === 'number' && isFinite(x.zaklad) ? x.zaklad : null;
+    r.rucni = { zdroj: typeof rucniCenaZdrojText === 'function' ? rucniCenaZdrojText(x) : 'nabídka dodavatele',
+      odchylka: z == null ? null : x.hodnota - z, pct: z ? (x.hodnota - z) / z * 100 : null };
+  });
   /* C6: příplatky, které zákazník z této nabídky objednal (zak.objednane),
    * jdou do listu Řádky se sloupcem „Objednáno dodatečně". */
   const obj = zak.objednane && Array.isArray(zak.objednane.klice) && zak.objednane.varianta === v.id ? zak.objednane : null;
@@ -1085,7 +1103,9 @@ const CTRL_RADKY_HLAVICKA = ['Číslo nabídky', 'Název akce', 'Zákazník', 'I
   'Oblast', 'Sekce kalkulace', 'Řádek', 'Klíč', 'Skupina (id)', 'Skupina', 'Položka v ManVysl',
   'Účet Helios nyní', 'Účet Helios budoucí', 'Typ nákladu', 'Chování', 'V základní ceně', 'Ruční / vlastní',
   'Zařazeno', 'Množství', 'Jednotka ceny', 'Jednotková nákladová cena (Kč)', 'Náklad celkem (Kč)',
-  'Prodejní cena před slevou a zaokrouhlením (Kč)'];
+  'Prodejní cena před slevou a zaokrouhlením (Kč)',
+  /* #561 (verze 6): ruční cena položky — zdroj a odchylka od ceníku. */
+  'Zdroj ceny', 'Odchylka od ceníku za jednotku (Kč)', 'Odchylka od ceníku (%)', 'Odchylka od ceníku celkem (Kč)'];
 const CTRL_TYP_TEXT = { primy: 'přímý', neprimy: 'nepřímý' };
 const CTRL_CHOVANI_TEXT = { variabilni: 'variabilní', fixni: 'fixní' };
 
@@ -1131,7 +1151,11 @@ function ctrlExportListy(exp, data, opts) {
         r.oblast.toUpperCase(), r.sekce, r.nazev, r.klic, r.skupina, s.nazev, s.manVysl || '',
         (s.ucetNyni || []).join(', '), (s.ucetBudouci || []).join(', '), CTRL_TYP_TEXT[s.typ] || '', CTRL_CHOVANI_TEXT[s.chovani] || '',
         ctrlVZakladuText(r), r.vlastni ? 'ano' : 'ne', r.zarazeno ? 'ano' : 'ne (náhradní skupina)',
-        ctrlZaokr(r.mnozstvi), pop.jednotka, ctrlZaokr(r.cena), ctrlZaokr(r.naklad), ctrlZaokr(r.prodej)]);
+        ctrlZaokr(r.mnozstvi), pop.jednotka, ctrlZaokr(r.cena), ctrlZaokr(r.naklad), ctrlZaokr(r.prodej),
+        r.rucni ? r.rucni.zdroj : 'ceník',
+        r.rucni && r.rucni.odchylka != null ? ctrlZaokr(r.rucni.odchylka) : '',
+        r.rucni && r.rucni.pct != null ? ctrlZaokr(r.rucni.pct) : '',
+        r.rucni && r.rucni.odchylka != null ? ctrlZaokr(r.rucni.odchylka * (+r.mnozstvi || 0)) : '']);
     });
     e.strany.forEach(st => {
       const zaklad = e.radky.filter(r => r.oblast === st.oblast && r.vZakladu);

@@ -173,6 +173,11 @@ function vyjimkyObsah(data, dnesni, vyrazena, jekly) {
        * (`dnesni`), nikdy z ceníku varianty: ten si zakázka umí podstrčit. */
       if (typeof cenikDleNabidkyJe === 'function' && String(r.cesta).indexOf('C.') === 0
           && cenikDleNabidkyJe(dnesni.cenik, r.cesta)) return;
+      /* RUČNÍ CENA POLOŽKY S DOKLADEM (#561, J. V. 4. 11. 2026): položka,
+       * k jejíž hodnotě varianta nese záznam ruční ceny (nabídka dodavatele),
+       * není směs ceníků. Bez potvrzení ji zastaví vlastní zábrana
+       * rucniCenaNepotvrzena (a server u nového zámku), schválení netřeba. */
+      if (typeof rucniCenaPlati === 'function' && rucniCenaPlati(d, r.cesta)) return;
       const sekce = r.sekce === 'PROJ' ? 'PROJ' : 'OCK';
       if ((sekce === 'PROJ' ? 'proj' : 'ock') === vyrazena) return;
       /* `pod` = číslo varianty pod platným ceníkem — jen pro znění hlášky. */

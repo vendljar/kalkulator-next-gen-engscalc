@@ -117,6 +117,13 @@ function kontrolyCtxAkt() {
           ? vyjimkyStavVarianty(aktivniVarianta(ZAK)) : null;
       } catch (e) { return null; }
     })(),
+    /* Ruční ceny položek (#561) — zábrana rucniCenaNepotvrzena a upozornění. */
+    rucni: (() => {
+      try {
+        return (typeof rucniCenyStavVarianty === 'function' && typeof ZAK !== 'undefined')
+          ? rucniCenyStavVarianty(aktivniVarianta(ZAK)) : null;
+      } catch (e) { return null; }
+    })(),
   };
 }
 
@@ -219,6 +226,7 @@ function kontrolyCtxVarianta(v) {
     zaokrProj: d.zaokrProj || d.zaokr || null,
     /* Cenová výjimka (13. 10. 2026) — zábrana cenovaVyjimka. */
     vyjimka: (() => { try { return (typeof vyjimkyStavVarianty === 'function') ? vyjimkyStavVarianty(v) : null; } catch (e) { return null; } })(),
+    rucni: (() => { try { return (typeof rucniCenyStavVarianty === 'function') ? rucniCenyStavVarianty(v) : null; } catch (e) { return null; } })(),
   };
 }
 function kontrolyStavVarianta(v) {

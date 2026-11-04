@@ -186,7 +186,7 @@ const pravidla = kontrolyPravidla();
  * velký nebo nečíselný rozměr můstku — upozornění. */
 /* 39. „dpzUvodWordProj" 20. 10. 2026 (D1); 40.–43. D2: jednostupnovaProj,
  * vyjezdCenaChybi, uvodProjNesedi, cestovneWordProj. */
-test('pravidel je čtyřicet čtyři (20. 10. 2026: + mustekRozmer, + dpzUvodWordProj D1, + 4 pravidla D2; 26. 10.: + platbyOck100 #517)', pravidla.length === 44, pravidla.length);
+test('pravidel je čtyřicet sedm (20. 10. 2026: + mustekRozmer, + dpzUvodWordProj D1, + 4 pravidla D2; 26. 10.: + platbyOck100 #517; 4. 11.: + 3 pravidla ruční ceny #561)', pravidla.length === 47, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -410,7 +410,7 @@ test('zábrana má vlastní text, který se dá ukázat samostatně',
 /* bokyDveri od #381 (1. 10. 2026): ruční šířka bočního světlíku v Modelu 2
  * širší než mezera vedle dveří nebo „nevejdou se" zastaví dokumenty OCK. */
 test('v katalogu pravidel je poznat, které umí zastavit dokument',
-  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,bokyDveri,sleva,slevaProj,ukazkovyCenik,planPlateb100,planPlatebSoucet,cenovaVyjimka',
+  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,bokyDveri,sleva,slevaProj,ukazkovyCenik,planPlateb100,planPlatebSoucet,cenovaVyjimka,rucniCenaNepotvrzena',
   JSON.stringify(pravidla.filter(p => p.zabranaMozna).map(p => p.kod)));
 
 /* ---------- 6) dvě podoby textu ---------- */

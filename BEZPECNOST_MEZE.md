@@ -1412,3 +1412,65 @@ jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
   kalkulaci podle čísla nabídky). Záznam nese jméno souboru a čas, žádné
   osobní údaje; úklid `pdCacheUklid` ho nemaže (`pd_cache` je jiné úložiště) —
   roste nejvýš o jeden záznam na deal.
+
+## RC #561 — ruční cena položky obchodníkem s potvrzením (v4.11.4, 4. 11. 2026)
+
+Rozhodnutí J. V. 4. 11. 2026 (dialog k návrhu NV, oddíl B): obchodník zadává
+**nákupní cenu z nabídky dodavatele** u kterékoli položky ceníku OCK s cenou
+v Kč (B-Q2), aplikace k ní přičte přirážku (B-Q1); **vždy stačí potvrzení
+obchodníkem**, žádné schvalování ani u snížení pod ceník (B-Q3); #425 se
+nedělá (B-Q4). Model `src/rucni_ceny.js`, server `uloCenikProblemy`
+(`src/uloziste.js`) a `rucniCenyServer` / `rucniCenyZamekProblem`
+(`netlify/lib/zakazka_kontrola.mjs`).
+
+**Co se hlídá:** B112 (`uloCenikProblemy`) uvolní jen cestu `C.…`, ke které
+varianta nese záznam `rucniCeny` se **stejnou kladnou hodnotou** a která je
+položkou s cenou v Kč (`rucniCenaSmi` — ne hodiny, mm, kg, kurz EUR, přirážka,
+DPH, PROJ); každá jiná změna ceníku varianty se odmítne 403 jako dřív. Server
+odmítne 400 záznam, jehož hodnota nesedí s ceníkem varianty, cizí položku,
+nečíselnou nebo nekladnou cenu, text delší než 120 znaků nebo s řídicími
+znaky a víc než 200 záznamů. Razítko `potvrdil` (jméno, e-mail, čas) píše
+server z relace; klient posílá jen „potvrzeno“ a jeho obsah se zahodí.
+Totéž potvrzení se stejným obsahem (hodnota + zdroj) se při dalším uložení
+— i v klonu varianty (B154) — vezme z uložené verze; změna obsahu bez
+nového potvrzení = nepotvrzeno. Nový zámek (tisk) s nepotvrzenou ruční cenou
+odmítne server 403 u **každé role, i u administrátora** (zrcadlo zábrany
+`rucniCenaNepotvrzena`). Zamčená varianta drží záznam v datech (kontrola dat
+zámku).
+
+### Nové meze
+
+- **B195 — obchodník smí bez schválení snížit nákladovou sazbu kterékoli
+  položky.** Je to rozhodnutí J. V. (B-Q2, B-Q3): stačí potvrzení s dokladem
+  (dodavatel, číslo nabídky). Snížení nákladu snižuje prodejní cenu stejně
+  jako sleva, ale nejde přes schvalování slev ani cenové výjimky. *Co to
+  hlídá:* cena musí být kladná (nula ani záporná neprojde), každá změna
+  shodí potvrzení, kdo a kdy potvrdil razí server, nový zámek bez potvrzení
+  neprojde a **export controllingu** ukáže zdroj a odchylku od ceníku
+  (Kč/jedn., %, celkem) — tam se zneužití pozná zpětně. *Co to nedělá:*
+  doklad (nabídku dodavatele) aplikace neověřuje a příloha se nenahrává;
+  minimální marže se hlídá jen u platné slevy (#341, B71), ne u ruční ceny.
+- **B196 — ceníková sazba v záznamu je vidět v datech zakázky (P12).** Záznam
+  nese `zaklad` (sazba platného ceníku v okamžiku potvrzení, razí server)
+  kvůli odchylce v controllingu a upozornění „ceník se změnil“. Kalkulace ji
+  i odchylku ukazuje jen s právem `sloupce.naklad` (obchodník „Ceník: skryto“,
+  pole ceny se nepředvyplňuje, okno přepočtu ruční cenu nevypisuje,
+  upozornění na změnu ceníku je bez čísel). V JSONu zakázky
+  (`GET /api/zakazky?soubor=`) ji ale obchodník přečte — patří to pod vědomou
+  mez B162a („ceníky v online zakázkách zůstávají“; ceník varianty nese
+  nákladové sazby i bez ruční ceny).
+- **B197 — `zaklad` nepotvrzené ruční ceny je od klienta nebo z uložené
+  verze.** Server ho razí jen při novém potvrzení (z platného ceníku pro řadu
+  varianty); u nepotvrzeného záznamu ponechá uložený, jinak klientův. Do
+  controllingu jde jen zamčená varianta, a ta má ruční cenu potvrzenou —
+  tedy se základem od serveru. Bez zveřejněného ceníku (`program.platny`
+  chybí) zůstane základ uložený / od klienta.
+- **B198 — starší vlastní cena příplatku „dle nabídky“ = potvrzeno bez
+  dokladu.** Rozhodnutí J. V. pro S13 (B-Q6 v zadání dávky): stará data se
+  nepřevádějí (zamčené varianty by se změnily), čtou se tak — štítek
+  „✓ potvrzeno bez dokladu“, tisk neblokují, server je dál pouští pravidlem
+  S13 (`volnaDleNab`). Novou změnu takového příplatku u role bez práva
+  `tab.cenik` aplikace zapíše jako ruční cenu k potvrzení; role s právem
+  ceníku (správce) mění ceník přímo jako dřív.
+- **Obnova ze zálohy** bere záznam ruční ceny jako doklad (jen očista tvaru,
+  razítko se nepřepisuje) — stejně jako cenovou výjimku (vyjimky.js).

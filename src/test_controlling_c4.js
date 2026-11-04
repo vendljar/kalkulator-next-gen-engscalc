@@ -200,8 +200,8 @@ else {
 
   /* ---------- 12. verze struktury ---------- */
   const popis = listy.find(l => l.nazev === 'Popis').rows;
-  test('#540 bod 12: verze struktury 5 (K37 po #540) v konstantě i v listu Popis', C.CTRL_EXPORT_VERZE === 5
-    && (popis.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 5);
+  test('#540 bod 12: verze struktury 6 (K37 po #540, #561) v konstantě i v listu Popis', C.CTRL_EXPORT_VERZE === 6
+    && (popis.find(r => r[0] === 'Verze struktury souboru') || [])[1] === 6);
   test('#540 bod 12: Popis říká, co se ve verzi změnilo (Prodáno, Všechny, zaokrouhlení, 100 %)', (() => {
     const t = String((popis.find(r => r[0] === 'Změna struktury') || [])[1] || '');
     return /Prodáno/.test(t) && /Všechny/.test(t) && /tisíce/.test(t) && /100 %/.test(t); })());

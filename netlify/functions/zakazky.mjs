@@ -281,7 +281,9 @@ export default async (req) => {
   const slevy = (zak.varianty || []).filter(v => v && v.data)
     .map(v => ({ id: v.id, sleva: v.data.sleva || null, slevaProj: v.data.slevaProj || null,
       /* Cenová výjimka (13. 10. 2026) — server ji razí stejně jako slevu. */
-      cenovaVyjimka: v.data.cenovaVyjimka || null }));
+      cenovaVyjimka: v.data.cenovaVyjimka || null,
+      /* Ruční ceny položek (#561) — razítko potvrzení píše server. */
+      rucniCeny: v.data.rucniCeny || null }));
   return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, slevy } : { ok: true, soubor: jmeno, razitko, slevy });
 };
 export const config = { path: '/api/zakazky' };
