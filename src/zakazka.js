@@ -1588,6 +1588,30 @@ function zakazkaBezCeniku(zak, dnesniProVariantu) {
   return out;
 }
 
+/* ZRUŠENÁ VOLBA SVĚTLÍKU „ZAJISTÍ STAVBA" (#560, rozhodnutí J. V.
+ * 4. 11. 2026: „stavba" = „bez"). Převede ROZPRACOVANÉ varianty zakázky;
+ * odeslaná (zamčená) varianta se nemění — její data i výpočet zůstávají,
+ * jak odešly, a zámek tak nemá co hlásit (#555).
+ *
+ * SCHVÁLNĚ NENÍ V importZakazka: ten běží i na serveru nad příchozí
+ * zakázkou. Při odemčení odeslané nabídky administrátorem server porovnává
+ * data právě odemčené varianty s uloženou zamčenou verzí — převod uvnitř
+ * importu by je rozešel a uložení by spadlo na 409. Převádí proto obrazovka
+ * po otevření (uloSrovnejSPlatnymCenikem) a klon varianty (klonujVariantu).
+ * Vrací počet převedených variant. */
+function svetlikyStavbaPrevod(zak) {
+  if (!zak || !Array.isArray(zak.varianty) || typeof svetlikyStavbaNaBez !== 'function') return 0;
+  const zamcena = (v) => (typeof variantaUzamcena === 'function') ? variantaUzamcena(v)
+    : !!(v && v.zamek && v.zamek.zamceno);
+  let n = 0;
+  zak.varianty.forEach(v => {
+    if (!v || !v.data || zamcena(v)) return;
+    const z = v.data.ock && v.data.ock.zadani;
+    if (z && typeof z === 'object' && svetlikyStavbaNaBez(z)) n++;
+  });
+  return n;
+}
+
 /* Opak při načtení: doplní ceník z platného a vrátí odchylky. Volá ho
  * importZakazka; bez platného ceníku (Node bez prohlížeče) se bere ceník ze
  * sestavení (DEFAULT_CENIK, DEFAULT_CENIK_PROJ). */
@@ -1783,6 +1807,10 @@ function zakazkaDuplikuj(zak, noveCislo) {
     delete n.prodano;        // ani neprodala (#540)
     delete n.klonZ;          // klon čeho? původní varianta tu není
     delete n.klonZCislo;
+    /* Kopie je rozpracovaná: zrušená volba světlíku „zajistí stavba" → „bez"
+     * (#560) — i z odeslané varianty předlohy. Jinak by ji server u nové
+     * zakázky odmítl jako nově vzniklou. */
+    if (typeof svetlikyStavbaNaBez === 'function' && n.data && n.data.ock) svetlikyStavbaNaBez(n.data.ock.zadani);
     /* KVITANCE „CENY JSOU DOHODNUTÉ" SE NEDĚDÍ (oprava 21. 9. 2026,
      * nezávislá revize).
      *
@@ -1842,7 +1870,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zadaniCislaZTextu, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { zadaniCislaZTextu, svetlikyStavbaPrevod, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, obrazekDataUrlPlatny, uvodniFotoPlatna, uvodniFotoOcisti, uvodniFotoVarovani, OBRAZEK_TYPY_FOTO, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,

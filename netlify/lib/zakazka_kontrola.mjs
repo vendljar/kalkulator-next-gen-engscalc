@@ -279,7 +279,7 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   /* Typy polí zadání a ceníku (#340, návrh P1): čísla, pravdy a volby musí
    * mít tvar, jaký dává výchozí zadání. Varianty zamčené už v uložené verzi
    * se přeskakují — doklad se neposuzuje. */
-  const spatneTypy = ULO.uloTypyProblemy(zak, stara);
+  const spatneTypy = ULO.uloTypyProblemy(zak, stara, { obnova });   // #560: obnova smí nést starou „stavba“
   if (spatneTypy.length)
     return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(spatneTypy) + '.');
   /* Záporná částka, množství nebo hodiny (B111, 29. 9. 2026) — nikomu. */

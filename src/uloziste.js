@@ -878,6 +878,24 @@ const ULO_CISLA_NAVIC = ['ock.zadani.mustekHloubkaMm', 'ock.zadani.mustekSirkaMm
  * NAD_DVERMI_VOLBY z engine.js (shodu hlídá test_svetliky_boky.js). */
 const ULO_VYPLN_DVERI = ['bez', 'sklo', 'plech', 'material', 'stavba'];
 const ULO_VYCTY_MIMO_VZOR = { nadDvermi: ULO_VYPLN_DVERI, bokyDveri: ULO_VYPLN_DVERI };
+/* ZRUŠENÁ VOLBA „ZAJISTÍ STAVBA" (#560, rozhodnutí J. V. 4. 11. 2026: „stavba"
+ * = „bez"). Ve výčtu výš zůstává, protože ji nesou STARÁ data — odeslaná
+ * nabídka i rozpracovaná varianta, kterou ještě nikdo neotevřel novou verzí.
+ * NOVĚ vzniknout nesmí: rozpracovaná varianta ji smí nést jen tehdy, když ji
+ * v tomtéž poli měla už uložená verze téže varianty (nová varianta, nová
+ * zakázka nebo změna volby na „stavba" → 400 s vlastní větou). Zamčené
+ * varianty uložené verze uloTypyProblemy přeskakuje celé (doklad). */
+const ULO_VYPLN_ZRUSENE = ['stavba'];
+function uloVyplnDveriZrusena(z, sz, k) {
+  const x = z && z[k];
+  if (ULO_VYPLN_ZRUSENE.indexOf(x) < 0) return false;
+  const bylo = sz && typeof sz === 'object' ? sz[k] : undefined;
+  /* Starší tvar boků (počet stran + `bokyVypln`) převádí na `bokyDveri`
+   * import zakázky — uložená verze ho může nést ještě po staru. */
+  const byloBoky = k === 'bokyDveri' && sz && typeof sz === 'object' && sz.bokyDveri === undefined
+    && (+sz.svetlikyBoky || 0) > 0 ? sz.bokyVypln : undefined;
+  return bylo !== x && byloBoky !== x;
+}
 function uloCisloSedi(h) {
   return h === null || h === undefined || h === ''
     || (typeof h === 'number' && isFinite(h))
@@ -1018,7 +1036,10 @@ function uloVariantaPopis(v) {
 }
 /* Textová pole hlavičky zakázky (K7-S11) — jen jednoduchá hodnota. */
 const ULO_TYPY_HLAVICKA = ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt', 'datum'];
-function uloTypyProblemy(zak, stara) {
+function uloTypyProblemy(zak, stara, opts) {
+  /* `opts.obnova` (#560): obnova ze zálohy nese stará data — zrušená volba
+   * „zajistí stavba" v nich je doklad minulosti, ne nová volba. */
+  const obnova = !!(opts && opts.obnova);
   const out = [];
   if (!zak || !Array.isArray(zak.varianty)) return out;
   const g = (n) => (typeof globalThis !== 'undefined' && globalThis[n]) || null;
@@ -1050,10 +1071,13 @@ function uloTypyProblemy(zak, stara) {
       if (vzZad) uloTypyStrom(vzZad, d.ock.zadani, 'ock.zadani', vlastni);
       const z = d.ock.zadani;
       if (z && typeof z === 'object') {
+        const sz = sv && sv.data && sv.data.ock && sv.data.ock.zadani;
         Object.keys(ULO_VYCTY_MIMO_VZOR).forEach(k => {
           const x = z[k];
           if (x !== undefined && x !== null && x !== '' && ULO_VYCTY_MIMO_VZOR[k].indexOf(x) < 0)
             vlastni.push({ kde: 'ock.zadani.' + k, duvod: 'typ' });
+          else if (!obnova && uloVyplnDveriZrusena(z, sz, k))
+            vlastni.push({ kde: 'ock.zadani.' + k, duvod: 'zrusenaVolba' });   // #560
         });
         uloTypyOplasteni(z.oplasteni, 'ock.zadani.oplasteni.steny', vlastni);
         uloTypyProfily(z.profily, 'ock.zadani.profily', vlastni);
@@ -1073,7 +1097,7 @@ function uloTypyProblemy(zak, stara) {
       uloTypyProj(d.proj.zadani, 'proj.zadani', vlastni);
       if (vzCenP) uloTypyStrom(vzCenP, d.proj.cenik, 'proj.cenik', vlastni, true);
     }
-    vlastni.forEach(p => out.push({ kde: pred + p.kde, duvod: 'typ' }));
+    vlastni.forEach(p => out.push({ kde: pred + p.kde, duvod: p.duvod === 'zrusenaVolba' ? p.duvod : 'typ' }));   // #560
   });
   return out;
 }
@@ -1989,8 +2013,10 @@ function uloIdProblemyText(problemy) {
   const zaokr = problemy.filter(p => p.duvod === 'zaokr');
   const rozmer = problemy.filter(p => p.duvod === 'rozmer');
   const model = problemy.filter(p => p.duvod === 'model');
+  const zrusena = problemy.filter(p => p.duvod === 'zrusenaVolba');
   const tvar = problemy.filter(p => p.duvod !== 'duplicita' && p.duvod !== 'delka' && p.duvod !== 'priloha'
-    && p.duvod !== 'typ' && p.duvod !== 'zaporne' && p.duvod !== 'zaokr' && p.duvod !== 'rozmer' && p.duvod !== 'model');
+    && p.duvod !== 'typ' && p.duvod !== 'zaporne' && p.duvod !== 'zaokr' && p.duvod !== 'rozmer' && p.duvod !== 'model'
+    && p.duvod !== 'zrusenaVolba');
   const casti = [];
   if (tvar.length) casti.push('identifikátor v nepovoleném tvaru (' + tvar.map(x => x.kde).join(', ')
     + ') — povolená jsou písmena, číslice, tečka, podtržítko a pomlčka');
@@ -2005,6 +2031,9 @@ function uloIdProblemyText(problemy) {
   if (typ.length) casti.push('hodnotu nesprávného typu (' + typ.slice(0, 5).map(x => x.kde).join(', ')
     + (typ.length > 5 ? ' a další ' + (typ.length - 5) : '')
     + ') — číselné pole nese text, nebo volba není z nabídky');
+  /* #560: zrušená volba světlíku — nová „zajistí stavba" nesmí vzniknout. */
+  if (zrusena.length) casti.push('zrušenou volbu světlíku „zajistí stavba" (' + zrusena.slice(0, 5).map(x => x.kde).join(', ')
+    + ') — od 4. 11. 2026 se volí „bez" (prostor světlíku dozdí stavba); otevřete zakázku znovu, převede se sama');
   /* B111: záporná částka, množství nebo hodiny — cesty jako u typů. */
   if (zaporne.length) casti.push('zápornou částku nebo množství (' + zaporne.slice(0, 5).map(x => x.kde).join(', ')
     + (zaporne.length > 5 ? ' a další ' + (zaporne.length - 5) : '')
