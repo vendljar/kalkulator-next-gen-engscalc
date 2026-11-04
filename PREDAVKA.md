@@ -1,3 +1,35 @@
+# Předávka — 4. 11. 2026: PR #563 — prodaná varianta je vždy řídící, větev `claude/pr-prodano-ridici`
+
+Nad `b751c91` (`main` = `test` = v4.11.4). **Verze 4.11.7** (koordinace přečísluje verzi i číslo #563).
+Neslučováno; na ostrém ani testovacím webu nic, do živého Pipedrive nic (jen simulátor v testech).
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. Prodáno → prodaná řídící ve stejném uložení | ✅ | `prodRidiciSrovnej` (`src/objednane.js`), `prodejUiProdej` (`src/ui/sod_ui.js`) |
+| 2. server je autorita (srovná, neodmítá) | ✅ | `prodServer` → `prodRidiciSrovnej`; hlavička / #555 / #555b nezastaví |
+| 3. víc prodaných variant | ✅ beze změny | smí být jen jedna (klient `prodNelzeProdat`, server 400) |
+| 4. dopady (hlavička, Pipedrive, controlling, KL, přehled) | ✅ | CHANGELOG v4.11.7, test simulátoru a controllingu |
+| 5. UI: výběr „· řídící“, hláška, zákaz ručního přepnutí | ✅ | `varRidici`, `zakazkaHlavicka`, `seznam_ui.js`, karta Prodej |
+| 6. starší zakázky — srovná až uložení | ✅ | `onlineUloz` + server; načtení nemigruje |
+| oprava navíc: zámek čtení a výběr otevřené varianty | ✅ | `prodJedinaZmena` / `prodBezProdeje` (PB #547) |
+| testy, mutace #563, roadmapa, CHANGELOG, manuál | ✅ / kolo viz níž | `src/test_563_…`, `netlify/test_563_…`, `overit_prodano_zamek.mjs` 9–10 |
+
+**Rozhodnutí (pro J. V.):** server nesoulad *opraví*, neodmítá. Přepnutí řídící nemění data ani zámek žádné
+varianty, takže je bezpečné; kdyby server odmítal, okno starší verze (otevřené před nasazením) by prodej
+neuložilo vůbec a starší zakázky s prodanou neřídící variantou by nešly uložit. Ruční přepnutí řídící po
+prodeji UI nenabízí a server by ho vrátil; uvolní ho odemčení prodeje (vedoucí, administrátor).
+
+**Otevřené pro J. V.:** (a) smí být v zakázce prodaných víc variant? Dnes ne (beze změny). (b) Hláška
+`progZprava` se zobrazuje v kartě Nastavení → program; na krycím listu ji proto ukazuje i karta Prodej.
+
+**Stav kola `--bez-mutaci`: VŠE ZELENÉ** — sady 380/0/7 (přeskočeno jen test.js a 6 sad bez firemních podkladů KNG_PODKLADY; prohlížečové sady běžely, playwright odkazem), hodiny +400 dní 307/0/1, statické 5/5. Mutace cíleně: #563 10/10 chycených, #547 11/11 (řádek jedné mutace #547 upraven), `--kontrola` 1263 úseků v pořádku.
+
+**Pojistka:** nad b751c91 padá `src/test_563_prodano_ridici.js` (0/1), `netlify/test_563_prodano_ridici.mjs` (22 OK / 14 FAIL), `overit_prodano_zamek.mjs` (40 OK / 7 FAIL, oddíl 10 přidán po opravě aktivni).
+
+**Další krok:** koordinace přečísluje verzi a #563, sloučení rozhodne J. V.
+
+---
+
 # Předávka — 4. 11. 2026: SV #564 — světlíky: zrušená volba „zajistí stavba“, větev `claude/sv-svetliky-stavba`
 
 Nad `6109e39` (`test`, v4.11.3). **Verze 4.11.6** (koordinace přečísluje, číslo #564 také). Neslučováno; do

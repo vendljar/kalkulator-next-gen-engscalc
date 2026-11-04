@@ -1369,6 +1369,11 @@ function onlineUloz(opts) {
     if (!opts.tiche) { onlineZprava('Online databáze není dostupná — aplikace běží ze souboru.', 'varovani'); render(); }
     return Promise.resolve(false);
   }
+  /* PR #563: starší zakázka s prodanou neřídící variantou se srovná při
+   * uložení (při načtení se nemigruje) — server by řídící stejně přepnul
+   * (prodServer); okno tak drží totéž, co leží v databázi. */
+  if (typeof prodRidiciSrovnej === 'function' && prodRidiciSrovnej(ZAK) && typeof progZprava === 'function')
+    progZprava('Prodaná varianta ' + variantaCislo(ZAK, ridiciVarianta(ZAK)) + ' je teď řídící.');
   // #41: rozepsané změny do protokolu hned – uložený záznam nese protokol
   // k okamžiku uložení (stejně jako ukládání do složky).
   if (typeof protokolZapisTed === 'function') protokolZapisTed();

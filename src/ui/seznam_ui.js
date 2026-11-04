@@ -243,8 +243,9 @@ function seznamRadekHtml(r) {
     <td>${r.ock == null ? '—' : fmt0(r.ock)}</td>
     <td>${r.proj == null ? '—' : fmt0(r.proj)}</td>
     <td>${r.celkem == null ? '—' : fmt0(r.celkem)}</td>
-    <td style="text-align:center"><input type="checkbox" ${r.ridici ? 'checked' : ''} onchange="varRidici('${escJs(r.id)}')"
-        title="řídící (aktuálně platná) varianta"></td>
+    <td style="text-align:center"><input type="checkbox" ${r.ridici ? 'checked' : ''} onchange="varRidici('${escJs(r.id)}')"${
+        (typeof prodRidiciZamceno === 'function' && prodRidiciZamceno(ZAK, r.id)) ? ' disabled' : ''}
+        title="${esc((typeof prodRidiciZamceno === 'function' && prodRidiciZamceno(ZAK, r.id)) || 'řídící (aktuálně platná) varianta')}"></td>
     <td class="note">${esc((r.upraveno || '').slice(0, 10))}</td>
     <td style="white-space:nowrap"><button class="mini" onclick="varKopie('${escJs(r.id)}')"
         title="založit kopii této kalkulace s dalším číslem nabídky a pokračovat v ní">⧉</button>

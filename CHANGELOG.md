@@ -8,6 +8,39 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v4.11.7 — PR #563: prodaná varianta je vždy řídící, větev claude/pr-prodano-ridici
+
+Pokyn J. V. 4. 11. 2026: „Ve chvíli, kdy je kalkulace prodána, je tato vždy řídící. Nastav tedy automaticky
+prodanou kalkulaci jako řídící, kdyby náhodou do té doby nebyla.“ Větev nad `b751c91` (`main` = `test` = v4.11.4).
+Do `test-draft` / `test` / `main` nic; verzi i číslo přečísluje koordinace.
+
+- **Prodáno nastaví prodanou variantu jako řídící ve stejném uložení** (`prodRidiciSrovnej`, `src/objednane.js`;
+  volá `prodejUiProdej` v `src/ui/sod_ui.js`). Otevřená varianta = prodaná, výběr ukáže „… · řídící“, hláška
+  (`progZprava` a karta Prodej): „Prodaná varianta X je teď řídící.“ Neuloží-li se prodej, vrátí se i řídící
+  a stopa hlavičky. Prodej řídící varianty nic nemění.
+- **Server je autorita a nesoulad srovná (neodmítá).** `prodServer` při každém uložení přepne řídící na prodanou
+  variantu: přepnutí nemění data ani klíč zámku žádné varianty, takže kontrola hlavičky odeslané zakázky
+  (`zamekZakZmeny`, Z1 / K7-S2 — stopa `zamek.hlavicka` se neuvolní) ani #555/#555b uložení nezastaví; prohlížeč
+  starší verze, který řídící nepřepne, prodej uloží a server řídící srovná. Ověřeno pro případ řídící = odeslaná
+  varianta 1, prodává se odeslaný klon (varianta 2). Obnova z otisku nic nepřepíná.
+- **Po prodeji se řídící jinam nepřepíná** (`prodRidiciZamceno`): `varRidici` odmítne s hláškou, místo tlačítka
+  „nastavit jako řídící“ je poznámka, zaškrtávátko v seznamu variant zhasne; server by přepnutí vrátil. Uvolní
+  ho odemčení prodeje (vedoucí, administrátor) — řídící se přitom sama nemění.
+- **Oprava zámku čtení (PB #547):** prodej klonu po přepnutí „Otevřená varianta“ v zakázce otevřené jen ke čtení
+  skončil „Prodej se neuložil: … jiné neuložené změny“ — výběr otevřené varianty (`zak.aktivni`) se počítal jako
+  změna. `prodJedinaZmena` ho teď za obsah nebere a prodej + přepnutí řídící na prodanou bere jako jedinou změnu.
+- **Starší zakázky** s prodanou neřídící variantou se při načtení nemigrují; srovná je další uložení
+  (`onlineUloz` i server).
+- **Dopady:** hlavička zakázky (název, adresa, CN) se nemění — je jedna pro všechny varianty, zmrazená prodejem;
+  Pipedrive: hodnota dealu a kalendář (#115) i náhled berou řídící = prodanou variantu (hodnota je cena prodané
+  varianty, dřív náhled #115 bral dosavadní řídící), fáze „Vyhrané k podpisu SoD“ (#545) beze změny; nic se
+  nového nezapisuje (jen simulátor v testech). Controlling: export otevřené zakázky (řídící) i hromadný výběr
+  vezmou prodanou variantu jako řídící. Krycí listy a přehled nabídek (filtr „Jen řídící“, štítek řady) se řídí
+  prodanou variantou. Počet prodaných variant beze změny — smí být jen jedna.
+- Testy: `src/test_563_prodano_ridici.js` (32), `netlify/test_563_prodano_ridici.mjs` (36, vč. simulátoru
+  Pipedrive a controllingu), `overit_prodano_zamek.mjs` oddíly 9–10 (51 celkem); nad `b751c91` padají (0/1,
+  22/36 se 14 FAIL, 40/47 se 7 FAIL). Mutace `#563` (10) v `netlify/mutace.mjs`, manuál kap. Prodáno.
+
 ## v4.11.6 — SV #564: světlíky u šachetních dveří — zrušena volba „zajistí stavba“, „bez“ bez upozornění, větev claude/sv-svetliky-stavba
 
 Nad `6109e39` (`test`, v4.11.3), rozhodnutí J. V. 4. 11. 2026: „Žádné rámy kolem neděláme, světlík kompletně
