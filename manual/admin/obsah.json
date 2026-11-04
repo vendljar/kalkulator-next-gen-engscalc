@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v4.11.7 · sestaveno 4. 11. 2026",
+  "verze": "Platí pro aplikaci v4.11.8 · sestaveno 4. 11. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -168,6 +168,10 @@
             "Právo měnit **Globální přirážku** obchází slevové stropy (nižší přirážka je na výsledku k nerozeznání od slevy) a právo vidět **ceník nákladů** nebo **sloupce Náklad a Přirážka** prozradí nákupní ceny. Doporučení u každého řádku matice to vysvětluje; měňte je vědomě."
           ],
           "druh": "varovne"
+        },
+        {
+          "typ": "text",
+          "text": "**Interní poznámky k zakázce** (karta v Kalkulaci a sekce pod Základními údaji krycího listu OCK i PROJ) píše každý, kdo smí zakázku upravovat — její autor, vedoucí a administrátor — a to **vždy**, i po odeslání nabídky, po SoD a po Prodáno. Cizí obchodník je vidí jen ke čtení a server mu změnu odmítne. Tisknou se jen do krycího listu (Backoffice i Technické odd.), nikdy do nabídky, smlouvy, plné moci, specifikace, Pipedrive ani controllingu."
         }
       ]
     },
@@ -1177,6 +1181,10 @@
             {
               "pojem": "Co se zatím nezapisuje",
               "vyklad": "**Do Pipedrive se nic nezapisuje.** Logika zápisu (hodnota dealu, platby, platební kalendář) je připravená, ale nezapojená — zapne se až po dohodě vlastníka aplikace s integrátorem."
+            },
+            {
+              "pojem": "Co do Pipedrive nejde nikdy",
+              "vyklad": "**Interní poznámky k zakázce** — tisknou se jen na krycí list; mapa polí CRM ani náhled zápisu (nanečisto, Prodáno) je nenabízí."
             },
             {
               "pojem": "Kdo smí číst",

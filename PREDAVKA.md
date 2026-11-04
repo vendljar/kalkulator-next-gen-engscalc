@@ -1,3 +1,40 @@
+# Předávka — 4. 11. 2026: IK #565 — Interní poznámky k zakázce i na krycím listu OCK a PROJ, větev `claude/ik-poznamky-kryci`
+
+Nad `6109e39` (`test`, v4.11.3) + sloučený návrh `claude/ik-interni-info` (d95bc35). **Verze 4.11.8** (koordinace
+přečísluje). Neslučováno; do `test-draft`, `test` ani `main` nic. Na webech nic.
+
+**Rozhodnutí J. V. (4. 11. 2026):** žádná nová strukturovaná sekce (návrh 8 bodů nepřijat) — jedno textové pole,
+TOTÉŽ jako „Interní poznámky k zakázce“. **Změna zadání odpoledne (přes koordinaci):** na krycím listu ne nahoru,
+ale **mezi „Základní údaje“ a „Dodavatel (naše firma)“**; pole aspoň 5 řádků, zvětšuje se podle textu; v tisku
+celý text.
+
+| úkol | stav | kde |
+|---|---|---|
+| pole na krycím listu OCK i PROJ pod Základními údaji, stejný nadpis | ✅ | `src/ui/poznamky_ui.js` (`poznamkyKryciBlok`), `src/ui/kryci_ui.js`, `src/ui/kryci_proj_ui.js` |
+| sdílení s kartou v Kalkulaci (jedno `ZAK.poznamkyText`) | ✅ | `poznamkyTextarea` (4 pole, překreslení po změně) |
+| min. 5 řádků, roste s obsahem, bez posuvníku | ✅ | `poznamkyPoleVyska(Vse)` z `render()` a `prepniTab()`, CSS `.pozn-roste` |
+| tisk BO i Tech (PDF náhled i Word), celý text, prázdné ne | ✅ | `kryciVystupSekce` (`src/kryci.js`), `poznamkyKryciSekce` (`src/poznamky.js`), `docxTeloZeSekci` (sekce s textem) |
+| nikam jinam (CN, SoD, plná moc, specifikace, Pipedrive, controlling) | ✅ | mimo `KRYCI_SEKCE` i `kryciData().sekce` (z té bere `prodPdZapis`) |
+| doplňování po CN, SoD, Prodáno | ✅ | pole mimo data variant i cesty Z1 — beze změny zámku |
+| kdo píše / čtenář jen čte | ✅ | `poznamkySmiPsat` (= `zamekCteniSmiOdemknout`); readonly v UI; server 403 (`netlify/lib/zakazka_kontrola.mjs`) |
+| popisek karty „(netisknou se do nabídky; tisknou se jen na krycím listu)“ | ✅ | `src/ui/kalk_ock.js`, `src/ui/kalk_proj.js` |
+| roadmapa #565 hotovo, CHANGELOG, manuál obchodníka (kap. 27) a správce (A2, A12) | ✅ | |
+
+**Kde byly poznámky uložené:** na **zakázce** (`ZAK.poznamkyText`, starší `ZAK.poznamky[]`) už od #37 — žádný převod
+ani mazání nebylo potřeba. Starší strukturované poznámky se tisknou tak, jak je pole ukazuje (`poznamkyPoleText`).
+
+**Nové chování navíc:** dosud mohl poznámky cizí zakázky přepsat kdokoli přihlášený (karta byla zapisovatelná i pro
+cizího obchodníka a server nic nehlídal). Teď: autor, vedoucí, administrátor; ostatní readonly + 403.
+
+**Vynecháno:** razítko „naposledy upravil kdo a kdy“ u sekce — server píše jen razítko celé zakázky; vlastní razítko
+poznámek by potřebovalo změnu odpovědi uložení (klient ho po vlastním uložení nedostane). Případně samostatný úkol.
+
+**Testy:** `src/test_ik_poznamky.js` 71/0, `netlify/test_ik_poznamky.mjs` 13/0, `overit_ik_poznamky.mjs` 54/0
+(vč. textu o 20 řádcích); `src/test_poznamky.js` upraven 64/0. Pojistka: nad 6109e39 jádro padá hned (funkce
+neexistují), server 10/2 (cizí obchodník 200 místo 403), harness selže na sekci krycího listu. Mutace „#IK“:
+**13 z 13 chycených** (`--kontrola` 1262 OK). Kolo `--bez-mutaci` nad 000cdbd: **VŠE ZELENÉ** — sady 381 / 0 / **7 přeskočeno** (test.js + 6 sad bez firemních podkladů KNG_PODKLADY, stejně jako v předchozích dávkách), hodiny +400 dní 307 / 0 / 1, statické 5 z 5, 29 min 15 s. První běh kola chytil 3 mé chyby (escapování `rows`, Word PROJ v Node bez kryci.js, verze v příručce správce) — opraveno v 000cdbd. Celé mutace neopakovány.
+
+**Otevřené body:** razítko „kdo a kdy“ (viz výše); N46 beze změny.
 # Předávka — 4. 11. 2026: PR #563 — prodaná varianta je vždy řídící, větev `claude/pr-prodano-ridici`
 
 Nad `b751c91` (`main` = `test` = v4.11.4). **Verze 4.11.7** (koordinace přečísluje verzi i číslo #563).

@@ -255,7 +255,9 @@ function renderKryci() {
         { prefill: pref, type: p.typ, o: p.o, src: p.src, ph: p.ph, dphBind: p.dphBind,
           odvozene: !!p.odvozene && !(c && c.zamceno) });
     }).join('');
-    return `<h3>${s.sekce}</h3>${rows}`;
+    /* IK: interní poznámky hned za Základními údaji (J. V. 4. 11. 2026). */
+    const ik = (s.sekce === KRYCI_IK_ZA_SEKCI && typeof poznamkyKryciBlok === 'function') ? poznamkyKryciBlok('ock') : '';
+    return `<h3>${s.sekce}</h3>${rows}${ik}`;
   }).join('');
 
   el.innerHTML = `<div class="kl-doc">
@@ -302,6 +304,9 @@ function kryciTiskBlok(zab) {
  * sloupci (hodiny z kalkulace, 14. 10. 2026) má záhlaví a víc hodnot. */
 function kryciTiskTabulka(s) {
   const e2 = esc;
+  /* Volný text přes celou šířku (Interní poznámky k zakázce, IK 4. 11. 2026). */
+  if (typeof s.text === 'string')
+    return `<table><tr><td class="ik-text" style="white-space:pre-wrap">${e2(s.text)}</td></tr></table>`;
   if (Array.isArray(s.sloupce) && s.sloupce.length >= 2) {   // i jeden sloupec hodnot má záhlaví (15. 10.)
     const n = s.sloupce.length - 1;
     const tr = (r, th) => `<tr><td class="l">${e2(r[0] || '')}</td>${r.slice(1, n + 1).map(v =>
@@ -335,7 +340,7 @@ function kryciTiskPohled(verze) {
   const v = aktivniVarianta(ZAK);
   const e2 = esc;   // #6: sjednoceno se sdíleným escapováním (ošetří i uvozovky a apostrof)
   const d = kryciData(ZAK, v, JEKLY, verze);
-  const sekHtml = d.sekce.map(s =>
+  const sekHtml = kryciVystupSekce(ZAK, d.sekce).map(s =>
     `<h2>${e2(s.sekce)}</h2>${kryciTiskTabulka(s)}`).join('');
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;

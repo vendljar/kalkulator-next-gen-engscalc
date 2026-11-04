@@ -151,7 +151,9 @@ function renderKryciProj() {
     }).join('');
     const plan = (s.sekce === 'Platební podmínky' && typeof planKlpKarta === 'function') ? planKlpKarta(c) : '';
     const platby = (/^Smlouva o dílo — splátky/.test(s.sekce) && typeof planKlpPlatbyKarta === 'function') ? planKlpPlatbyKarta(c) : '';
-    return `<h3>${s.sekce}</h3>${platby}${rows}${plan}`;
+    /* IK: interní poznámky hned za Základními údaji (J. V. 4. 11. 2026). */
+    const ik = (s.sekce === KRYCI_IK_ZA_SEKCI && typeof poznamkyKryciBlok === 'function') ? poznamkyKryciBlok('proj') : '';
+    return `<h3>${s.sekce}</h3>${platby}${rows}${plan}${ik}`;
   }).join('');
 
   el.innerHTML = `<div class="kl-doc">
@@ -198,7 +200,7 @@ function kryciProjTiskPohled(verze) {
   const v = aktivniVarianta(ZAK);
   const e2 = esc;   // #6: sjednoceno se sdíleným escapováním (ošetří i uvozovky a apostrof)
   const d = kryciProjData(ZAK, v, JEKLY, verze);
-  const sekHtml = d.sekce.map(s =>
+  const sekHtml = kryciVystupSekce(ZAK, d.sekce).map(s =>
     `<h2>${e2(s.sekce)}</h2>${kryciTiskTabulka(s)}`).join('');
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;

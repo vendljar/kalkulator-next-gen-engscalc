@@ -528,6 +528,21 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     if (!rc.ok) return odmitni(rc.status || 400, veta(rc.chyba));
   }
 
+  if (!obnova && stara && typeof globalThis.poznamkySmiPsat === 'function') {
+    /* INTERNÍ POZNÁMKY K ZAKÁZCE (IK, J. V. 4. 11. 2026): píše každý, kdo smí
+     * upravovat zakázku (autor, vedoucí, administrátor — zamekCteniSmiOdemknout),
+     * a to VŽDY: zámek odeslané nabídky, SoD ani Prodáno je neblokují (pole
+     * leží na zakázce mimo data variant a mimo hlídané cesty hlavičky Z1).
+     * Kdo zakázku jen čte, je změnit nesmí. Porovnává se text, který pole
+     * ukazuje (i odvozený ze starších poznámek), aby první zápis téhož textu
+     * nebyl změnou. Autor z ULOŽENÉ verze, ne z těla požadavku. */
+    const ptext = x => (typeof globalThis.poznamkyPoleText === 'function')
+      ? String(globalThis.poznamkyPoleText(x) || '') : String((x && x.poznamkyText) || '');
+    if (ptext(zak) !== ptext(stara) && !globalThis.poznamkySmiPsat(stara, relace))
+      return odmitni(403, 'Neuloženo: interní poznámky k zakázce smí upravovat jen ten, kdo smí upravovat zakázku '
+        + '(její autor, vedoucí nebo administrátor).');
+  }
+
   if (!obnova) {
     /* Autor: nová zakázka dostane autora z relace (cizího smí ponechat jen
      * administrátor — obnova ze souboru); u existující je autor ten

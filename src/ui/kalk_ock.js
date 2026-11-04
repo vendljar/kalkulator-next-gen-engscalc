@@ -2427,7 +2427,7 @@ function renderOutputs() {
    * Táž karta se vykresluje i v Kalkulaci PROJ (kalk_proj.js) — je to jeden
    * zápisník zakázky, ne dva. */
   const kartaPoznamek = (typeof poznamkyKarta === 'function')
-    ? kartaRezim('ock', 'poznamky', 'Interní poznámky k zakázce (netisknou se)',
+    ? kartaRezim('ock', 'poznamky', 'Interní poznámky k zakázce (netisknou se do nabídky; tisknou se jen na krycím listu)',
                  poznamkyKarta('ock'), 'ock-poznamky')
     : '';
   const elSouhrn = document.getElementById('kalk-souhrn');
