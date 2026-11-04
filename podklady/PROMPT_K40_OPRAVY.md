@@ -3,6 +3,7 @@
 Pracuj v nové paralelní větvi `claude/k40-opravy` založené nad commitem, který ti koordinace pošle ve zprávě „SPUSŤ K40 nad <SHA>“ (bude to `origin/test` po sloučení dávek z 4. 11.: RC #561 ruční cena, SV #564 světlíky, PR prodaná = řídící, IK interní poznámky na krycím listu, MV4 manuál). Výchozí v4.11.4 (b751c91) z kola 42 už NEPLATÍ. Do `test-draft`, `test` ani `main` nic neslučuj, o sloučení rozhodne J. V. Komunikace česky. Na začátku přečti `CLAUDE.md` a `PREDAVKA.md` a spusť `bash nastroje/instaluj_hooky.sh`.
 
 **Podklady:**
+- `podklady/K40_PRIPRAVA.md` — krok 0 všech bodů nad integrací (stav, místo, kolize). Čísla řádků v tomto promptu jsou z `df0138c` (integrace v4.11.6); u bodů, kterých se týká PR #563 nebo IK, je uvedený očekávaný posun.
 - `Testovani/2026-11-04_kalkulator_BEZPECNOSTNI_AUDIT_v4.11.3.md` na Disku.
 - Rozhodnutí J. V. ze 4. 11. 2026 jsou zapsaná přímo u bodů níž (v1 tohoto promptu je měla jako otevřená).
 - Prompt vydává koordinační sezení „Zefektivnění programu“ (`PROMPT_KOORDINACE_ZEFEKTIVNENI_PROGRAMU.md`) a výsledek také ověří.
@@ -24,7 +25,7 @@ Pracuj v nové paralelní větvi `claude/k40-opravy` založené nad commitem, kt
 
 ## 1. K40-N1 — vyřazené čelní sklo se po změně zasklení nebo typu znovu počítá (střední)
 
-**Kde:** `src/engine.js` — `skloMigraceNazvu` (ř. ~455–475) a `skloVolba` (ř. ~420–445). Volá ji `skloMigraceAkt` v `src/ui/common.js:74`, při importu také `importZakazka`.
+**Kde:** `src/engine.js` — `skloMigraceNazvu` (ř. 458–487, dvojice ř. 463–464) a `skloVolba` (ř. 420–447). Volá ji `skloMigraceAkt` v `src/ui/common.js:74` (volání `:59` a `:797`), při importu také `importZakazka` (`src/zakazka.js:952`). Krok 0 nad df0138c: trvá (SV #564 sklo nezasáhla).
 
 **Příčina.** Název řádku čelního skla závisí na typu šachty a zasklení:
 - `MATERIÁL VSG 4.4.1` — exteriér, nebo interiér „mezi příčníky“,
@@ -68,7 +69,7 @@ Vyřazení (`nepocitat`) a přepisy (`mnozstviPrepis`, `cenyPrepis`, `nazvyPrepi
 
 ## 3. K40-S2 — diagnostika rozdílu zámku je drahá u hlubokých dat (nízká)
 
-**Kde:** `src/zamek.js:613–623` — `zamekDataRozdilCesta`, rekurze `jdi` volá na každé úrovni `zamekJsonKanon` obou podstromů. Volá ji `netlify/lib/zakazka_kontrola.mjs` při každém 409.
+**Kde:** `src/zamek.js:607–637` — `zamekDataRozdilCesta`, rekurze `jdi` (ř. 618) volá na každé úrovni `zamekJsonKanon` obou podstromů. Volá ji `netlify/lib/zakazka_kontrola.mjs:451` při každém 409.
 
 **Oprava:** kanonizace jednou nahoře a sestup přímým porovnáním kanonických struktur, případně strop počtu kroků (po něm vrátit dosavadní cestu s „…“). Výsledná cesta, ořez na 200 znaků a náhrada řídicích znaků se nesmí změnit (sady `test_555*`, `test_555b*`).
 
@@ -76,10 +77,10 @@ Vyřazení (`nepocitat`) a přepisy (`mnozstviPrepis`, `cenyPrepis`, `nazvyPrepi
 
 ## 4. K40-N2, K40-N5 — kontroly věrohodnosti ceníku můstků (drobné)
 
-**K40-N2:** `mustkyCenikKontrola` (`src/engine.js:813`) hlídá u `C.mustekRefSirkaMm` jen hodnotu > 0. Šířka zadaná v metrech (2 místo 2 000) dá 1 000× dražší materiál můstku a nikdo nevaruje.
+**K40-N2:** `mustkyCenikKontrola` (`src/engine.js:845–872`, po sloučení návrhu NV posun z 813) hlídá u `C.mustekRefSirkaMm` jen hodnotu > 0 (přes `mustkyCenikNovy`, ř. 783–786). Šířka zadaná v metrech (2 místo 2 000) dá 1 000× dražší materiál můstku a nikdo nevaruje.
 - Doplň rozsah věrohodnosti, např. 500–5 000 mm. Mimo něj chtěj při zveřejnění ceníku potvrzení — v dialogu i na serveru (`netlify/functions/program.mjs`), stejným mechanismem jako dnešní potvrzení nuly.
 
-**K40-N5:** kontrola můstků v dialogu (`src/ui/program_ui.js:345–347`) i na serveru (`program.mjs:104–109`) čte jen tuzemský ceník. Zahraniční řada s nulovou hodinovou sazbou montáže a bez sazby montáže můstků dá v zahraniční zakázce montáž můstků za 0 Kč/hod bez potvrzení.
+**K40-N5:** kontrola můstků v dialogu (`src/ui/program_ui.js:345–354`) i na serveru (`program.mjs:104–110`) čte jen tuzemský ceník. Zahraniční řada s nulovou hodinovou sazbou montáže a bez sazby montáže můstků dá v zahraniční zakázce montáž můstků za 0 Kč/hod bez potvrzení.
 - Kontroluj i složenou zahraniční řadu (`cenikZahrSVychozimi`) a nulu dej na potvrzení.
 
 **Testy:** obě cesty (dialog i server) s potvrzením i bez něj. Mutace u každého bodu.
@@ -90,9 +91,10 @@ Oba nálezy jsou ve stejném kódu, proto se opravují spolu.
 
 **Kde** (čísla řádků jsou z v4.11.3 — dávka PR 4. 11. v `src/objednane.js` přidala `prodRidiciSrovnej`/`prodRidiciZamceno` a `prodServer` teď na konci srovnává řídící variantu na prodanou; řádky se posunuly, hledej podle jmen funkcí a respektuj chování PR):
 - `src/objednane.js` (`prodDatumOd`, `prodDatumProblem`, `prodServer`).
-- `src/zamek.js:640–660` (`zamekKdyProblem`, K7-S5).
-- `netlify/lib/zakazka_kontrola.mjs:609–611` (příjem nového zámku).
-- `src/ui/sod_ui.js` ~`:390` (pole data prodeje).
+- `src/zamek.js:652–663` (`ZAMEK_KDY_*`, `zamekKdyProblem`, K7-S5).
+- `netlify/lib/zakazka_kontrola.mjs:616–618` (příjem nového zámku; po sloučení IK +15 ř. → ~631–633).
+- `src/ui/sod_ui.js:390–391` (pole data prodeje; po PR ~393).
+- Nad df0138c (bez PR): `prodDatumOd` ř. 365, `prodDatumProblem` ř. 371, `prodServer` ř. 480 (kontrola data ř. 529); po PR posun ~+33. Razítko `prijato` musí projít i `prodJedinaZmena`, kterou PR mění.
 
 **Příčina S1.** Dolní mez data prodeje je den zámku (`zamek.kdy`). U **nového** zámku (nová zakázka, nový klon varianty) ale `kdy` píše prohlížeč a server ho připustí až 400 dní zpět (K7-S5). Prodej tak jde zapsat do starého, i uzavřeného období controllingu. Stačí špatné hodiny počítače. Pokus kola 40 nad v4.11.3: nová zakázka se zámkem i prodejem −300 dní → 200; existující zakázka s novým klonem −200 dní → 200.
 
@@ -124,13 +126,13 @@ Oba nálezy jsou ve stejném kódu, proto se opravují spolu.
 
 ## 6. K40-W1 — vazba webhooku na existující kalkulaci: záznam a upozornění (info → oprava, rozhodnutí J. V. 4. 11.)
 
-**Kde:** `netlify/functions/pd_webhook.mjs:149–163`, `:186–187` (`if (bezVazby) zak.pdDealId = dealId`); `src/controlling.js:1003–1012` (`ctrlPdDealKontrola`, pravidlo C4); UI otevření zakázky (`src/ui/online_ui.js`, lišta zpráv).
+**Kde:** `netlify/functions/pd_webhook.mjs:149–160`, `:186–187` (`if (bezVazby) zak.pdDealId = dealId`); `src/controlling.js:1021–1029` (`ctrlPdDealKontrola`, pravidlo C4); UI otevření zakázky (`src/ui/online_ui.js`, lišta zpráv).
 
 **Dnes.** Webhook #553 naváže podle čísla nabídky i existující nenavázanou kalkulaci, a to i se zamčenou variantou. Hodnoty variant nemění, ale vazba `pdDealId` vznikne bez člověka a bez záznamu v protokolu. Překlep CN v Pipedrive tak naváže cizí kalkulaci: deal dostane odkaz na ni a stav dealu se k ní páruje i v controllingu.
 
 **Oprava:**
 - **Při navázání existující kalkulace webhookem:**
-  - Zapiš událost do protokolu zakázky (`protokolZapis`, `kdo: 'pipedrive-webhook'`, deal, číslo nabídky, „navázáno podle čísla nabídky“). Pokud `protokol.js` není v jádru serveru, doplň ho.
+  - Zapiš událost do protokolu zakázky (`protokolZapis`, `kdo: 'pipedrive-webhook'`, deal, číslo nabídky, „navázáno podle čísla nabídky“). `protokol.js` už v jádru serveru je (`netlify/lib/jadro_moduly.cjs:60`).
   - Do zakázky ulož `pdVazbaWebhook = { deal, kdy, cislo, stav: 'ceka' }`.
 - **Upozornění při otevření** (každý, kdo zakázku otevře, dokud je `stav: 'ceka'`): „Kalkulace byla <datum> automaticky navázána na deal <id> v Pipedrive podle čísla nabídky.“
   - **„V pořádku“** — potvrdí (`stav: 'potvrzeno'`, záznam v protokolu). Smí každý s právem ukládat.
@@ -155,7 +157,7 @@ Oba nálezy jsou ve stejném kódu, proto se opravují spolu.
 
 ## 7. K40-X4 — výběr srovnávací kopie na Disku (info → oprava, rozhodnutí J. V. 4. 11.)
 
-**Kde:** `src/ui/online_ui.js:2167` (`kopieDiskUklid`): `const predchozi = jmena.filter(j => datum(j) && datum(j) !== den && j !== kopie.soubor).sort().pop();`
+**Kde:** `src/ui/online_ui.js:2178` (`kopieDiskUklid` od ř. 2152; po PR ~2183): `const predchozi = jmena.filter(j => datum(j) && datum(j) !== den && j !== kopie.soubor).sort().pop();`
 
 **Dnes.** Jako srovnávací kopie pro pojistku úbytku se bere abecedně poslední jméno ve sdílené složce. Soubor s budoucím datem od kohokoli se zápisem do složky pojistku vyřadí (malý soubor), nebo mazání zastaví (velký).
 
@@ -165,7 +167,7 @@ Oba nálezy jsou ve stejném kódu, proto se opravují spolu.
 
 ## 8. K40-N4 — DPH PROJ u starší zakázky: oprava komentáře (rozhodnutí J. V. 4. 11.)
 
-**Kde:** `src/zakazka.js:926–933`.
+**Kde:** `src/zakazka.js:925–933` (komentář ř. 932).
 
 Zakázka bez `data.proj` dostane `d.proj.cenik` ze vzoru, včetně sazby DPH. Větev „převezme dosud platnou z ceníku OCK“ (ř. 932) se tak uplatní, jen když `data.proj` existuje a sazbu nemá.
 
@@ -173,22 +175,22 @@ Zakázka bez `data.proj` dostane `d.proj.cenik` ze vzoru, včetně sazby DPH. V�
 
 ## 9. Hygiena testů a dokumentace
 
-- **K40-S4:** do `netlify/test_555b_klon_cenik.mjs` a `netlify/test_555_klon_tisk.mjs` (a dalších nových sad, které `ADMIN_EMAIL` čtou bez výchozí hodnoty) doplň výchozí smyšlený e-mail jako v `podklady/K10_pokusy/harness.mjs:7`. Samostatné spuštění musí skončit OK/FAIL, ne výjimkou.
-- **X6:** v `src/ui/cenik_ui.js:206`, `:208` obal `path` do `escJs`. Do seznamu `RIZIKO` v `src/test_escape.js` přidej `path` a `cesta`. Dnes to zneužít nejde, `path` je jen z konstant ceníku.
-- **K40-X5:** záložní buňka CSV pro běh bez `format.js` (`src/slovnik.js:150–152`, `src/pd_nanecisto.js:141`): smazat, nebo sjednotit s `csvBunka` (`src/format.js:118`) včetně ochrany proti vzorcům. Test.
+- **K40-S4:** do `netlify/test_555b_klon_cenik.mjs` a `netlify/test_555_klon_tisk.mjs` a dalších sad, které `ADMIN_EMAIL` čtou bez výchozí hodnoty — krok 0 nad df0138c: výjimkou dál končí i `test_560_svetliky_stavba`, `test_controlling`, `test_funkce`, `test_klon_sleva`, `test_obnova_nanecisto`, `test_pipedrive`, `test_stary_tvar`; `test_zalohy` dá 31 FAIL doplň výchozí smyšlený e-mail jako v `podklady/K10_pokusy/harness.mjs:7`. Samostatné spuštění musí skončit OK/FAIL, ne výjimkou.
+- **X6:** v `src/ui/cenik_ui.js:206`, `:208` (a stejně `:176`, `:177`, `:184`, `:185`) obal `path` do `escJs`. Do seznamu `RIZIKO` v `src/test_escape.js` přidej `path` a `cesta`. Dnes to zneužít nejde, `path` je jen z konstant ceníku.
+- **K40-X5:** záložní buňka CSV pro běh bez `format.js` (`src/slovnik.js:148–150` — jiné pravidlo než `csvBunka`; `src/pd_nanecisto.js:141` — bez ochrany vzorců): smazat, nebo sjednotit s `csvBunka` (`src/format.js:118`) včetně ochrany proti vzorcům. Test.
 - **K40-T1:** harnessy `overit_nabidka_proj_word.mjs`, `overit_sod.mjs` a `overit_sablony_online.mjs` ať hledají šablonu s nejvyšší verzí (`najdiNejnovejsi`) jako `overit_sablona.mjs`. Na Disku jsou šablony verzované (CN v15, PROJ v8, SoD v4) a pod pevným jménem se nenajdou. Při chybějící šabloně dál platí přeskočení s kódem 4.
   - `overit_sablony_online.mjs` (část „správa šablon“) ať nechce přesně CN v11.
   - `overit_sod.mjs` dnes umí jen smlouvy v1 a v2 si vyrábí sám (`vyrob_sablony.js`). Nad aktuální v4 spadne výjimkou „šablona už seznam plateb má“. Ať pozná, že šablona už je převedená, a ověří ji přímo. Nikdy nesmí skončit výjimkou místo FAIL nebo přeskočení.
-- **K40-T2:** `overit_online.mjs:1170` čeká na `ONLINE_STAV.obnova.soubor || ONLINE_STAV.obnova.hlaska`. Podmínku ale splní už průběžná hláška „Načítám soubor…“ (`src/ui/online_ui.js:3274`), takže kontrola #523 pod zátěží selže (v kole 274/1, samostatně 275/0). Čekej na `souborJmeno` nahraného souboru, nebo na hlášku, která nezačíná „Načítám“. Totéž zkontroluj u dalších `waitForFunction` v harnessech, které čekají na „jakoukoli hlášku“.
-- **K40-T3 (táž příčina jako K39-N2):** `overit_sablony_online.mjs:181`, `:183`, `:274` a `overit_sod.mjs:138` hledají v `nastSablony()` řádky PROJ a smluv. Ve výchozím pohledu OCK je ale filtr #367 skryje (`src/ui/nastaveni_ui.js:963`). S aktuálními šablonami to dnes dává 3 FAIL a 1 FAIL. Udělej to stejně jako v `overit_nabidka_proj_word.mjs:193–201`: přepni `NAST.sablonyVse`, po kontrole ho vrať a přidej i kontrolu, že filtr řádky opravdu skrývá. Ověř se šablonami z Disku: výsledek 29/0 a 51/0.
+- **K40-T2:** `overit_online.mjs:1170` čeká na `ONLINE_STAV.obnova.soubor || ONLINE_STAV.obnova.hlaska`. Podmínku ale splní už průběžná hláška „Načítám soubor…“ (`src/ui/online_ui.js:3287`), takže kontrola #523 pod zátěží selže (v kole 274/1, samostatně 275/0). Čekej na `souborJmeno` nahraného souboru, nebo na hlášku, která nezačíná „Načítám“. Totéž zkontroluj u dalších `waitForFunction` (např. `overit_online.mjs:1116`, `:1183`, `:1193`, `:1208`) v harnessech, které čekají na „jakoukoli hlášku“.
+- **K40-T3 (táž příčina jako K39-N2):** `overit_sablony_online.mjs:182`, `:184`, `:186`, `:275` a `overit_sod.mjs:139` hledají v `nastSablony()` řádky PROJ a smluv. Ve výchozím pohledu OCK je ale filtr #367 skryje (`src/ui/nastaveni_ui.js:936`). S aktuálními šablonami to dnes dává 3 FAIL a 1 FAIL. Udělej to stejně jako v `overit_nabidka_proj_word.mjs:193–201`: přepni `NAST.sablonyVse`, po kontrole ho vrať a přidej i kontrolu, že filtr řádky opravdu skrývá. Ověř se šablonami z Disku: výsledek 29/0 a 51/0.
 - **K40-P1 — kolize čísel B:**
-  - Meze webhooku #553 v `BEZPECNOST_MEZE.md` (oddíl „PW #553“) nesou B176–B179, a ta čísla už mají starší nálezy (B176 ř. ~369, B177 ~447, B178 ~454/~464, B179 ~534).
+  - Meze webhooku #553 v `BEZPECNOST_MEZE.md` (oddíl „PW #553“) nesou B176–B179, a ta čísla už mají starší nálezy (B176 ř. 369, B177 447, B178 454/464, B179 534). Meze #553 jsou na ř. 1374, 1387, 1395, 1409; odkaz na ně `CHANGELOG.md:163` a roadmapa #553. Krok 0 nad df0138c: nejvyšší použité číslo je B198, mutace #553 číslo B nenesou.
   - Přečísluj meze #553 na **B199–B202** (B195–B198 už 4. 11. obsadila RC #561 — ruční cena). Před přečíslováním grepem ověř nejvyšší použité číslo v `BEZPECNOST_MEZE.md`, CHANGELOG, roadmapě a `podklady/` nad výchozím commitem; je-li vyšší než B198, vezmi další volná čísla.
   - Uprav i odkazy v CHANGELOG, roadmapě, komentářích a názvech mutací, kde jde o #553. Ke starému číslu připiš poznámku „dříve B17x (#553)“.
   - Přidej test (např. do `src/test_kontrola_udaju.js` nebo nové sady), který selže, když se nadpis „B<číslo> —“ v `BEZPECNOST_MEZE.md` opakuje.
 - **Nové meze do `BEZPECNOST_MEZE.md`** (rozhodnutí J. V. 4. 11.: chování ponechat, jen zapsat; čísla za přečíslovanými mezemi #553, tj. od B203):
-  - **K40-X3:** po přihlášení správce se jeho heslo bez dalšího dotazu použije k potvrzení kopie zálohy na Disk (#554), která na serveru odemyká mazání starých záloh (`src/ui/online_ui.js:315`, `:390`, `:1944`, `:2212`, `:2313`). Heslo se nikam neukládá.
-  - **K40-S3:** po Prodáno a před prvním tiskem SoD smí číslo SoD a datum podpisu měnit kdokoli s právem ukládat (B157 „podle běžných pravidel zámku“, `src/zamek.js:396–399`, `:413`).
+  - **K40-X3:** po přihlášení správce se jeho heslo bez dalšího dotazu použije k potvrzení kopie zálohy na Disk (#554), která na serveru odemyká mazání starých záloh (`src/ui/online_ui.js:313`, `:393`, `:1955`, `:1994`, `:2215–2225`, `:2313–2324`; po PR od ř. 1367 +5). Heslo se nikam neukládá.
+  - **K40-S3:** po Prodáno a před prvním tiskem SoD smí číslo SoD a datum podpisu měnit kdokoli s právem ukládat (B157 „podle běžných pravidel zámku“, `src/zamek.js:400–415`).
   - **K40-W1:** doplň do mezí #553 popis vazby, upozornění a zrušení z bodu 6.
 - **Mezery hlídačů (volitelné, jen testy):**
   - `test_escape.js` ať vidí víceřádkové `${…}` v šablonách HTML.
