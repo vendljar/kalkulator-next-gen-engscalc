@@ -1,5 +1,8 @@
 # Koncept upomínky integrátorovi Pipedrive (#536 → #509, #510)
 
+> **Překonané — neodesílat.** Integrátor odpověděl 2. 11. 2026 (zpracováno v PO #509, v2.11.7); koncept zůstává
+> jen jako záznam.
+
 Připraveno 27. 10. 2026 pro J. V. — **odesílá J. V.** (nic se neodeslalo).
 Bez osobních údajů a cen; jména a adresy doplní J. V. Navazuje na otázky
 z 21. 10. 2026 (`podklady/NAVRH_PIPEDRIVE_ZAPIS_2026-09-22.md` §11.9);
@@ -36,14 +39,14 @@ testovacím dealu. Prosím o krátké odpovědi, stačí k číslům.
 
 **B. Otázky (rozhodují, jestli zápis proběhne bez ztráty)**
 
-4. **Automatizace:** co v Make (nebo jinde) reaguje na **změnu dealu**
+4. **Automatizace:** co v automatizacích v účtu reaguje na **změnu dealu**
    nebo jeho vlastních polí? Před prvním zápisem potřebujeme vědět, jestli
    zápis z kalkulace něco nespustí (e-mail, úkol, posun fáze, kopii jinam).
    **Doplněno 2. 11. 2026 (#545):** tlačítko „Prodáno" v kalkulátoru
    **nemění stav dealu** (won) — jen ho přesune do **fáze „Vyhrané
    k podpisu SoD"** (pipeline „Obchod") a zapíše údaje krycího listu. Stav
    „Vyhrané" přepíná až člověk v Pipedrive po doručení podepsané SoD.
-   Prosíme tedy: reaguje Make na **změnu fáze** (`stage_id`), konkrétně na
+   Prosíme tedy: reaguje některá automatizace v účtu na **změnu fáze** (`stage_id`), konkrétně na
    vstup do „Vyhrané k podpisu SoD"? Navázaný proces má startovat až na
    **změnu stavu na won**, ne na tuto fázi.
 5. **„Typ produktu / služby"** (č. 10 tabulky) se nezaložil — nahrazuje ho
@@ -63,7 +66,7 @@ testovacím dealu. Prosím o krátké odpovědi, stačí k číslům.
 11. **Číslo nabídky (CN)** chodí s mezerami a u varianty s příponou „.2"
     (např. „2026 - OPR - CN - 0123.2") — pole prosím nevalidujte vzorem.
 12. **Vícevýběr** („Dokumentace v rozsahu") vyprazdňujeme hodnotou `null`
-    (API v2 nepřijme `[]`) — vadí to něčemu v Make?
+    (API v2 nepřijme `[]`) — vadí to některé automatizaci v účtu?
 13. **Limit smluvních pokut** „neuplatněn" posíláme jako 0 — souhlasí?
 14. **Převod starého ANO / NE** u „Způsob fakturace" — jak se převáděly
     dosavadní hodnoty?

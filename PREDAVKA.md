@@ -1,3 +1,11 @@
+# Pravidla komunikace s integrátorem Pipedrive (J. V. 23. 10., znovu 3. a 4. 11. 2026)
+
+- Make se pro proces kalkulátor ↔ Pipedrive **nepoužívá** a v ničem, co jde integrátorovi (e-maily, tabulky, podklady), se **nezmiňuje**. Mluví se obecně o „automatizacích v účtu“.
+- Integraci Pipedrive API koordinuje J. V. v sezení „Pipedrive API integrace“ (session_01HpevFD8dLfB4Keo5veExeG); kód z něj jde paralelní větví, slučuje koordinace.
+- #553: podklad integrátorovi odeslán 4. 11. (zkrácená verze `podklady/PIPEDRIVE_WEBHOOK_553.md`); čeká na založení polí „Vygenerovat nabídku“ a „Odkaz na kalkulaci“ a automatizace.
+- Kontrola: `git grep -n -i '\bmake\b' -- 'podklady/PIPEDRIVE_*'` nesmí najít nic.
+
+---
 # Předávka — 4. 11. 2026: PS #562 — štítek „Nabídka prodána“ + lišta „Ceník není nahraný“, větev `claude/ps-prodano-cenik`
 
 Nad `7a23c50` (`test` = v3.11.4). **Verze 4.11.4** (koordinace přečísluje). Neslučováno; na ostrém ani testovacím webu nic.

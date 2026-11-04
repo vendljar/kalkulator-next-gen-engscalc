@@ -1,5 +1,11 @@
 # Webhook „Vygenerovat nabídku“ — podklad pro integrátora (#553)
 
+> **Interní verze.** Integrátorovi odešla 4. 11. 2026 (J. V.) zkrácená verze
+> bez interních částí — „Webhook Vygenerovat nabídku — podklad pro Pipedrive“
+> (Word; zdroj https://claude.ai/artifact/LYRpkUSMvM5xd7cTNH7pbT). Kontrolní
+> seznam pro J. V. (část 5) je jen interní. Pravidlo J. V.: v ničem, co jde
+> integrátorovi, se nezmiňuje externí nástroj pro scénáře — pro tento proces se nepoužívá.
+
 Rozhodnutí J. V. 3. 11. 2026: **varianta A** z návrhu #553. Kalkulátor podle
 ID dealu deal sám načte, založí nebo aktualizuje kalkulaci a do dealu vrátí
 odkaz. **Nabídku (dokument) generuje obchodník v prohlížeči jako dosud** —
@@ -52,8 +58,7 @@ dealu**. Proto:
 - automatizace se smí spouštět **jen změnou pole „Vygenerovat nabídku“**;
 - **nikdy** spouštěčem „deal aktualizován“ / „změna jakéhokoli pole“ —
   vznikla by smyčka (zápis odkazu → aktualizace dealu → nový webhook → …);
-- totéž platí pro navázané scénáře v Make: pokud na změnu dealu reagují,
-  musí pole „Odkaz na kalkulaci“ ignorovat.
+- na změnu pole „Odkaz na kalkulaci“ nesmí reagovat žádná automatizace.
 
 Pojistka na naší straně: **strop 60 volání za hodinu** (pak 401/429, viz
 níž). Smyčka tedy nevyčerpá denní rozpočet tokenů Pipedrive, ale zastaví se

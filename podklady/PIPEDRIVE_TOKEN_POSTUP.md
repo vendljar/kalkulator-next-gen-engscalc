@@ -16,7 +16,7 @@ se token nevkládá, dokud neproběhne zkušební zápis (#510) a nerozhodne se
 - [ ] Ověřit, že ten uživatel **vidí všechny dealy**, organizace a osoby,
       které má kalkulačka číst, a má právo číst seznam uživatelů
       (`users:read` — pole „Nabídku vypracoval" a „Hlavní projektant").
-- [ ] Před prvním **zápisem** (ne čtením) potvrzení integrátora, co v Make
+- [ ] Před prvním **zápisem** (ne čtením) potvrzení integrátora, co v účtu
       reaguje na změnu dealu (upomínka `PIPEDRIVE_UPOMINKA_INTEGRATOR.md`,
       otázka 4). Samotné čtení nic nespouští.
 
