@@ -8,6 +8,27 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v4.11.1 — K39: opravy nálezů kol 38 a 39 (lešení hlavy u staré zakázky, harness šablon PROJ), větev claude/k39-opravy
+
+Nad 198ed4c (`origin/test`, v3.11.3). Na ostrém webu nic. Verzi může koordinace přečíslovat.
+
+- **K39-N1 (nízká):** přepnutí typu šachty tam a zpět zapnulo lešení hlavy, které měl obchodník u **staré** zakázky
+  vypnuté (kolo 39, sada G22, TEST K36-D18b; nabídka +cena položky). Příznak `leseniHlavaRucne` (#546) zapisuje UI až
+  od v2.11.3. `typSachtyPrepni` (`src/ui/kalk_ock.js`) teď ještě nad **původním** typem porovná stav lešení hlavy
+  (zaškrtnutí v základu i vynechání z nabídky příplatků) s výchozím stavem typu — nová čistá funkce
+  `zobrazeniLeseniHlavaVychozi(mat, typ)` a `zobrazeniLeseniHlavaJeVychozi` (`src/zobrazeni.js`), kterou sdílí i pravidlo
+  `zobrazeniLeseniHlavaTyp`. Odchylka = ruční volba → dopíše se `leseniHlavaRucne` a pravidlo se nepustí. Když pravidlo
+  stav změní, řekne to `progZprava` („Lešení pro dokončení hlavy šachty: … podle typu šachty (mění cenu).“, spolu
+  s hláškou o profilech). Uložená data se nemigrují; zamčená varianta beze změny.
+- **K39-N2 (nízká, díra v testu):** `overit_nabidka_proj_word.mjs` hledal řádek šablony PROJ ve výchozím pohledu OCK
+  (od #367 filtr `podmSablonaViditelna`) a trvale hlásil 1 FAIL. Kontrola teď čte pohledy „všechny“, „jen OCK“
+  a „jen PROJ“ a stav vrátí. Protože se ten harness bez firemní šablony celý přeskočí, filtr hlídá i nový
+  `overit_k39_sablony_filtr.mjs` (bez podkladů, v kole vždy).
+- **Testy:** nový `src/test_k39_leseni_rucne.js` 36/0 (nad 198ed4c padá — chybí funkce; s vypnutou kontrolou ruční
+  volby v `typSachtyPrepni` 6 FAIL: cena +položka, příznak, zahraničí); `overit_k39_sablony_filtr.mjs` 9/0 (s filtrem
+  vždy pravdivým 2 FAIL). Mutace jádra „K39-N1“ **4 z 4** chycené; tři mutace #546 přecíleny na nový tvar kódu (7 z 7).
+- **Kolo:** `--bez-mutaci` VŠE ZELENÉ (373 / 0 / 7, hodiny 300 / 0 / 1, statické 5 z 5); mutace jádra po částech
+  **641 z 641**; server část 1/12 **102 z 102** + filtr „#555“ 5 z 5, části 2–12/12 nepuštěny (netlify/ beze změny).
 ## v3.11.4 — ZO2 #555b: tisk klonu odeslané nabídky — „první rozdíl v datech: cenik“, větev claude/zo2-klon-cenik
 
 Nad 198ed4c (`test` = v3.11.3, obsahuje ZO #555), hlášení J. V. 3. 11. 2026 z testu v3.11.3. Na ostrém ani testovacím

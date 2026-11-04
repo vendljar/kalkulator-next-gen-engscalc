@@ -189,10 +189,21 @@ test('obě kopie karty se hlásí do téhož stavového řádku',
 
 /* Nastavení → Šablony musí umět šablonu PROJ přijmout, jinak by se vybírala
  * při každém generování znovu. */
-test('Nastavení → Šablony zná řádek šablony PROJ',
-  await p.evaluate(() => /Šablona cenové nabídky PROJ/.test(nastSablony())));
-test('a pořád zná i šablonu OCK',
-  await p.evaluate(() => /Šablona cenové nabídky OCK/.test(nastSablony())));
+/* K39-N2 (kolo 39): od #367 filtruje nastSablony() řádky přepínačem OCK | PROJ
+ * (podmSablonaViditelna) — ve výchozím pohledu OCK řádek PROJ chybí a kontrola
+ * trvale hlásila 1 FAIL. Řádky se proto čtou ve třech pohledech a stav
+ * (NAST.sablonyVse, NAST.panelPodminky) se po kontrole vrátí. */
+const pohledy = await p.evaluate(() => {
+  const vse = NAST.sablonyVse, panel = NAST.panelPodminky;
+  const cti = (v, c) => { NAST.sablonyVse = v; NAST.panelPodminky = c; const h = nastSablony();
+    return { proj: /Šablona cenové nabídky PROJ/.test(h), ock: /Šablona cenové nabídky OCK/.test(h) }; };
+  try { return { vse: cti(true, 'ock'), ock: cti(false, 'ock'), proj: cti(false, 'proj') }; }
+  finally { NAST.sablonyVse = vse; NAST.panelPodminky = panel; }
+});
+test('Nastavení → Šablony (všechny šablony) zná řádek šablony PROJ', pohledy.vse.proj, pohledy);
+test('a pořád zná i šablonu OCK', pohledy.vse.ock, pohledy);
+test('filtr „jen OCK": řádek PROJ chybí, OCK je', !pohledy.ock.proj && pohledy.ock.ock, pohledy);
+test('filtr „jen PROJ": řádek PROJ je, OCK chybí', pohledy.proj.proj && !pohledy.proj.ock, pohledy);
 
 /* ---------- 2) hotový dokument ---------- */
 console.log('\nvygenerovaný .docx');
