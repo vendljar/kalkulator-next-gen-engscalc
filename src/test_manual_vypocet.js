@@ -12,7 +12,8 @@
  *      a obnovit cisla_vydani.json: node manual_vypocet/sestav.js --snapshot),
  *   4. s KNG_MANUAL_HTML=<cesta> navíc hotový (rozeslaný) HTML soubor,
  *   5. pojistka proti prázdnému testu: podvržené číslo porovnání chytí,
- *   6. ceník je zkušební (žádné skutečné sazby) a titul nese 3. vydání.
+ *   6. ceník je zkušební (žádné skutečné sazby) a titul nese číslo vydání
+ *      z cisla_vydani.json (MV4: 4. vydání pro v4.11.4).
  * Spuštění: node src/test_manual_vypocet.js */
 const fs = require('fs');
 const path = require('path');
@@ -106,8 +107,18 @@ if (process.env.KNG_MANUAL_HTML) {
   test('doplnění zkušebního ceníku jsou jen hodiny, rozměr a zkušební sazba montáže (500 Kč/h)',
     Object.keys(dopl).sort().join() === 'mustekMontazBmHod,mustekMontazHodKc,mustekMontazMinHod,mustekMontazZakladHod,mustekRefSirkaMm,statikaOplHod'
     && dopl.mustekMontazHodKc === ZC.montazHodKc, dopl);
-  test('titul: 3. vydání a verze z verze.txt', /3\. vydání/.test(r.html)
-    && r.html.indexOf('v' + fs.readFileSync(path.join(KOREN, 'verze.txt'), 'utf8').trim()) > 0);
+  /* MV4: číslo vydání je jediné (cisla_vydani.json) — titul i patička PDF ho berou odtud,
+   * v šabloně ani v generátoru nesmí zůstat napevno zapsané. */
+  const VYD = JSON.parse(fs.readFileSync(path.join(KOREN, 'manual_vypocet', 'cisla_vydani.json'), 'utf8')).vydani;
+  test('titul: ' + VYD + '. vydání (z cisla_vydani.json) a verze z verze.txt',
+    Number.isInteger(VYD) && VYD >= 4 && r.meta.vydani === String(VYD)
+    && new RegExp('class="vydani">' + VYD + '\\. vydání<').test(r.html)
+    && r.html.indexOf('v' + fs.readFileSync(path.join(KOREN, 'verze.txt'), 'utf8').trim()) > 0, r.meta.vydani);
+  const SAB = fs.readFileSync(path.join(KOREN, 'manual_vypocet', 'sablona.html'), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+  const GEN = fs.readFileSync(path.join(KOREN, 'manual_vypocet', 'sestav.js'), 'utf8');
+  test('číslo vydání není v šabloně ani v patičce PDF napevno', !/class="vydani">\d/.test(SAB) && !/· \d+\. vydání · interní/.test(GEN)
+    && /\{\{meta\.vydani\}\}\. vydání/.test(SAB) && /\$\{esc\(meta\.vydani\)\}\. vydání/.test(GEN)
+    && !/vydani: \d/.test(GEN));
   /* #548 (K10-S2): skutečná čísla už v testu nejsou — hlídá se zdroj čísel:
    * manuál nesmí brát sazby můstku z jádra (to žádné nemá), jen ze zkušebního
    * ceníku a jeho doplnění. */
