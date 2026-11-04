@@ -1,3 +1,38 @@
+# Předávka — 4. 11. 2026: SV #560 — světlíky: zrušená volba „zajistí stavba“, větev `claude/sv-svetliky-stavba`
+
+Nad `6109e39` (`test`, v4.11.3). **Verze 4.11.4** (koordinace přečísluje, číslo #560 také). Neslučováno; do
+`test-draft`, `test` ani `main` nic, na webech nic. Paralelně dávka PS (`claude/ps-prodano-cenik`) — nedotčena.
+
+Rozhodnutí J. V. 4. 11. 2026: „stavba“ = „bez“ (prostor světlíku dozdí stavba), upozornění u „bez“ není třeba.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. volba „zajistí stavba“ pryč z UI (nad dveřmi i boky) | ✅ | `src/ui/kalk_ock.js` (`svetlikVolbyHtml`), `NAD_DVERMI_NABIDKA` v `src/engine.js` |
+| 2. rozpracovaná → „bez“ + přepočet; odeslaná beze změny | ✅ | `svetlikyStavbaNaBez`, `svetlikyStavbaPrevod` (zakazka.js), `uloSrovnejSPlatnymCenikem`, klon, duplikát |
+| 3. upozornění `nadDvermiBez` a „bez“ v `bokyDveri` pryč | ✅ | `src/kontroly.js` (pravidel 43) |
+| 4. specifikace u „bez“ nic | ✅ | beze změny kódu (`techspec.js` u „bez“ „ -“) |
+| 5. server: „stavba“ jen ve starých datech | ✅ | `uloVyplnDveriZrusena` (uloziste.js), `{ obnova }` v `zakazka_kontrola.mjs` |
+| 6. roadmapa #560, CHANGELOG, manuál | ✅ | `manual/obsah.json`; admin a provoz.json volbu nezmiňují |
+
+**Proč převod není v `importZakazka`:** ten běží i na serveru nad příchozí zakázkou. Při odemčení odeslané
+nabídky administrátorem server porovnává data odemčené varianty s uloženou zamčenou verzí — převod v importu by
+je rozešel (409). Převádí proto obrazovka po otevření a klon / duplikát.
+
+**Ceny starších zakázek (rozpracovaných):** nad dveřmi Model 2 beze změny, Model 1 −0,2 h × nástupiště (jako
+každé „bez“); boky v obou modelech levnější (−0,5 h, sloupek portálu a 2 krátké příčníky na světlík + terče/lišty).
+Odeslané: data i cena na haléř stejné, ve výběru vypnutá položka „zajistí stavba (zrušená volba)“.
+
+**Testy:** `src/test_svetliky_stavba.js` 49/0, `netlify/test_560_svetliky_stavba.mjs` 21/0,
+`overit_svetliky_stavba.mjs` 13/0 (všechny na 6109e39 selžou). Mutace #560: jádro 11/11, server 8/8. Kolo
+`--bez-mutaci` po doplnění CHANGELOG zelené (jediný pád byl `test_release_odkaz.js` kvůli chybějícímu oddílu v4.11.4).
+
+**Otevřené body:**
+- Vydaný manuál výpočtu (3. vydání, `manual_vypocet/sablona.html`) dál popisuje „zajistí stavba“; nové vydání
+  podle pokynu ne — v `cisla_vydani.json` jen počet kontrol 44 → 43.
+- Materiál opláštění „bez — dodá stavba“ u volby *materiál opláštění* dál dává druh „stavba“ (konstrukce naše,
+  výplň 0 Kč, věta „zajistí objednatel“). Volby se netýká; jestli to má být taky „bez“, rozhodne J. V.
+- Převod se uloží až při první úpravě zakázky (otisk autosave se bere po převodu, stejně jako přepočet ceníku).
+
 # Předávka — 3. 11. 2026: PW #553 — webhook „Vygenerovat nabídku“ z Pipedrive, větev `claude/pw-553-webhook`
 
 Nad `198ed4c` (`test`, v3.11.3). **Verze 4.11.3** (koordinace přečísluje). Neslučováno; do `test-draft`, `test`

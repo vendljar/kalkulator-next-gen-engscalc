@@ -8,6 +8,48 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v4.11.4 — SV #560: světlíky u šachetních dveří — zrušena volba „zajistí stavba“, „bez“ bez upozornění, větev claude/sv-svetliky-stavba
+
+Nad `6109e39` (`test`, v4.11.3), rozhodnutí J. V. 4. 11. 2026: „Žádné rámy kolem neděláme, světlík kompletně
+dodává stavba. Variantu zajistí stavba odstraň … pro obchodníka je to varianta světlíku ‚bez‘. Kontrola proto
+není třeba.“ Na webech nic. Verzi i číslo může koordinace přečíslovat.
+
+- **Volba „zajistí stavba“ zmizela** z výběru *Světlík nad šachetními dveřmi* i *Světlíky na bocích dveří*
+  (`NAD_DVERMI_POPISY`, nový seznam nabízených voleb `NAD_DVERMI_NABIDKA` v jádře); `nadDvermiSet`
+  a `bokyDveriSet` „stavba“ nepřijmou. „Bez“ = světlík neděláme, nic se neoceňuje, bočních světlíků 0.
+- **Starší rozpracovaná varianta se při otevření převede na „bez“** a přepočte (`svetlikyStavbaNaBez`
+  v `engine.js`, `svetlikyStavbaPrevod` v `zakazka.js`): online, ze složky, ze souboru JSON i z nouzové
+  zálohy (`uloSrovnejSPlatnymCenikem`, `nactiZakazku`), věta „Zrušená volba světlíku „zajistí stavba“
+  převedena na „bez“ …“. Klon varianty a duplikát zakázky převádějí kopii.
+- **Odeslaná (zamčená) varianta se nemění:** data ani zmrazený výsledek; jádro „stavba“ dál umí spočítat,
+  takže výpočet z uložených dat vyjde na haléř stejně a zámek (#555 / #555b) nehlásí rozdíl. Ve výběru ji
+  ukáže jen jako vypnutou položku „zajistí stavba (zrušená volba)“. Převod schválně není v `importZakazka`
+  (běží i na serveru — odemčení odeslané nabídky administrátorem by jinak skončilo 409).
+- **Dopad na cenu rozpracované zakázky:** nad dveřmi v Modelu 2 žádný (výplň 0 Kč, montáž se neubírala ani
+  dřív), v Modelu 1 −0,2 h montáže na nástupiště (jako u každého „bez“, předloha 1:1); boky v obou modelech
+  zlevní — zmizí 0,5 h montáže, sloupek portálu a 2 krátké příčníky na každý boční světlík (a terče / lišty
+  na nich).
+- **Upozornění zrušena:** „Nad dveřmi zůstane otvor“ (`nadDvermiBez`, pravidel 44 → 43) a věta o mezeře
+  u boků „bez“ (`bokyDveri`). Kontroly počtu a ruční šířky u skla, plechu a materiálu zůstávají (zábrana šířky
+  dál brání dokumentům). Starší odklepnutí s `nadDvermiBez` platí dál.
+- **Server:** „stavba“ projde jen ve starých datech — rozpracovaná varianta ji smí nést, jen když ji v tomtéž
+  poli měla už uložená verze téže varianty (i starší tvar boků `bokyVypln`); nová zakázka, nová varianta
+  nebo změna na „stavba“ → 400 „zrušenou volbu světlíku „zajistí stavba“ … se volí „bez““. Zamčené varianty
+  a obnova ze zálohy beze změny.
+- **Specifikace a nabídka:** u „bez“ nic o světlíku (řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ „ -“, členění portálů
+  „bez světlíků“) — dřívější věty „… zajistí objednatel“ zůstávají jen u odeslaných nabídek (a u materiálu
+  opláštění „bez — dodá stavba“, který s volbou nesouvisí). Krycí listy světlíky neuvádějí (beze změny). Překlady
+  EN/DE/FR beze změny (věty dál potřebují odeslané nabídky).
+- **Testy:** nové `src/test_svetliky_stavba.js` 49/0, `netlify/test_560_svetliky_stavba.mjs` 21/0,
+  `overit_svetliky_stavba.mjs` 13/0 — **na `6109e39` všechny tři selžou**. Upravené `test_nadprazi.js`,
+  `test_svetliky_boky.js`, `test_kontroly.js`, `overit_lista.mjs`, `overit_zadani_detail.mjs`; v `manual_vypocet/cisla_vydani.json`
+  jen počet kontrol 44 → 43 (nové vydání manuálu výpočtu ne). Mutace „#560“: jádro 11 z 11, server 8 z 8 chycených
+  (stará mutace „#375: kontrola boků „bez“ nehlásí mezeru“ zrušena — chování odstraněno). Kolo `--bez-mutaci`
+  zelené (sady 381 / 0 / 7 přeskočeno — firemní podklady a test.js; žádná prohlížečová sada nepřeskočena).
+- **Manuál obchodníka** (`manual/obsah.json`): volby bez „zajistí stavba“, co znamená „bez“, převod starší zakázky.
+
+---
+
 ## v4.11.3 — PW #553: webhook „Vygenerovat nabídku“ z Pipedrive (varianta A), větev claude/pw-553-webhook
 
 Nad `198ed4c` (`test`, v3.11.3), rozhodnutí J. V. 3. 11. 2026 (varianta A z návrhu #553). Na webech nic —
