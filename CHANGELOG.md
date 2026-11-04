@@ -14,11 +14,12 @@ Nad `6109e39` (`test`, v4.11.3), rozhodnutí J. V. 4. 11. 2026 po návrhu IK (`p
 Návrh 8 pevných bodů (varianta C) J. V. nepřijal: **žádná nová sekce, jedno textové pole — totéž jako
 „Interní poznámky k zakázce“**. Na webech nic. Verzi může koordinace přečíslovat.
 
-- **Krycí list OCK i PROJ:** první sekce nad „Základní údaje“ s nadpisem **„Interní poznámky k zakázce“**
-  a textovým polem. Je to `ZAK.poznamkyText` — totéž pole jako karta v Kalkulaci OCK i PROJ; zápis kdekoli
+- **Krycí list OCK i PROJ:** sekce **mezi „Základní údaje“ a „Dodavatel (naše firma)“** (změna zadání J. V.
+  4. 11. odpoledne — původně první sekce) s nadpisem **„Interní poznámky k zakázce“** a textovým polem
+  **aspoň na 5 řádků, které se zvětšuje podle obsahu** (bez posuvníku; i karta v Kalkulaci). Je to `ZAK.poznamkyText` — totéž pole jako karta v Kalkulaci OCK i PROJ; zápis kdekoli
   je hned vidět všude (žádná kopie ani převod). Platí pro zakázku (OCK, PROJ, všechny varianty).
-- **Tisk:** sekce jde jako první do **Backoffice i Techdata** (tiskový náhled PDF i Word krycího listu),
-  odstavec přes celou šířku se zachovaným zalomením. **Prázdné pole se netiskne.**
+- **Tisk:** sekce jde na totéž místo do **Backoffice i Techdata** (tiskový náhled PDF i Word krycího listu),
+  odstavec přes celou šířku, **celý text bez ořezu** i se zalomením řádků. **Prázdné pole se netiskne.**
 - **Nikam jinam:** CN, SoD, plná moc, specifikace, Pipedrive (nanečisto, mapa polí, zápis Prodáno) ani
   controlling. Pole není v `KRYCI_SEKCE`/`KRYCI_PROJ_SEKCE` ani v `kryciData().sekce` (z té bere
   `prodPdZapis`); krycí list ho bere jen přes `kryciVystupSekce` → `poznamkyKryciSekce`.
@@ -30,9 +31,10 @@ Návrh 8 pevných bodů (varianta C) J. V. nepřijal: **žádná nová sekce, je
 - Popisek karty v Kalkulaci: **„(netisknou se do nabídky; tisknou se jen na krycím listu)“**, text pod polem
   upraven.
 - Razítko „naposledy upravil kdo a kdy“ u sekce **vynecháno** — server píše jen razítko celé zakázky.
-- **Testy:** `src/test_ik_poznamky.js` (62), `netlify/test_ik_poznamky.mjs` (13), `overit_ik_poznamky.mjs` (41);
+- **Testy:** `src/test_ik_poznamky.js` (70), `netlify/test_ik_poznamky.mjs` (13), `overit_ik_poznamky.mjs` (54, vč. textu
+  o 20 řádcích: obrazovka bez ořezu, tisk PDF i Word celý);
   `src/test_poznamky.js` upraven (krycí list smí poznámky znát jen přes `poznamkyKryciSekce`). Pojistka:
-  nad 6109e39 všechny tři selžou. Mutace „#IK“ (12) v `netlify/mutace.mjs`.
+  nad 6109e39 všechny tři selžou. Mutace „#IK“ (13) v `netlify/mutace.mjs`.
 - Manuál obchodníka (kap. 27) a správce (A2, A12) doplněny.
 
 ## v4.11.3 — PW #553: webhook „Vygenerovat nabídku“ z Pipedrive (varianta A), větev claude/pw-553-webhook
