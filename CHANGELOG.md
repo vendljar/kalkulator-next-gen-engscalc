@@ -48,9 +48,9 @@ Nad `000924e` (`main` = `test` = v4.11.8), rozhodnutí J. V. 4. 11. 2026 k návr
   ostatní → zámečníci, montáž → stavební práce), **standard OCK** (nejdelší můstek, zadaná šířka ≤ šířka OCK),
   **server** (validace `Z.mustky`: pole ≤ 20 skupin, čísla nezáporná se stropem, volby ze seznamů, texty ≤ 120,
   žádné cizí klíče). **Zamčené nabídky beze změny**, ruční ceny (#561) fungují i pro nové klíče (jsou v Kč).
-- **Testy:** `src/test_560_mustky_sekce.js` 227/0 (zlatá pojistka proti 000924e: 9 scénářů × Model 1/2 × výsledek,
+- **Testy:** `src/test_560_mustky_sekce.js` 228/0 (zlatá pojistka proti 000924e: 9 scénářů × Model 1/2 × výsledek,
   symboly CZ/EN, náhled, specifikace — otisky `src/test_560_zlata.json`, generátor `nastroje/zlata_560.js`),
-  `netlify/test_560_mustky.mjs` 22/0, `overit_560_mustky.mjs`. Pojistky: viz commit.
+  `netlify/test_560_mustky.mjs` 22/0, `overit_560_mustky.mjs` 17/0; upraveny `overit_zadani_detail.mjs` a `overit_zobrazeni.mjs` (délka a šířka jsou v kartě Můstky). Mutace „#560“ jádro 38/38, server 15/15. Pojistky: viz commit.
 
 ## Dokumentace (bez nové verze aplikace) — MV4 #566: 4. vydání manuálu výpočtu OCK pro v4.11.4, větev claude/mv4-manual-vypocet
 

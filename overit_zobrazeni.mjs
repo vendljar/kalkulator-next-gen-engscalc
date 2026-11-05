@@ -676,10 +676,11 @@ test('můstek bez rozměrů hlásí „nelze posoudit", ne atyp',
   }));
 test('rozměry můstku se v zadání ptají, teprve když můstek je',
   await page.evaluate(() => {
-    const s = document.getElementById('page-kalk').innerHTML;
+    /* #560: rozměry jsou v kartě Můstky (#ock-mustky), ta je jen s můstkem */
+    const s = !!document.getElementById('ock-mustky');
     Z.mustek = false; render();
-    const bez = document.getElementById('page-kalk').innerHTML;
-    return s.includes('Z.mustekHloubkaMm') && !bez.includes('Z.mustekHloubkaMm');
+    const bez = !!document.getElementById('ock-mustky');
+    return s && !bez;
   }));
 test('štítek je i v technické specifikaci',
   await page.evaluate(() => {

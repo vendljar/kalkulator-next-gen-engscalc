@@ -55,6 +55,8 @@ function zlata(src) {
     const z = g.zk.novaZakazka();
     z.cislo = '2026-OPR-CN-9560'; z.nazevAkce = 'Zlatá pojistka ' + jm;
     const v = z.varianty[0];
+    /* pevné datum — nová zakázka bere dnešek a krok kola „hodiny +400 dní" by otisk změnil */
+    z.datum = '2026-11-05'; if (v.datum) v.datum = '2026-11-05';
     Object.assign(v.data.ock.zadani, ZADANI, { typSachty: typ }, uprava);
     v.data.cenik = Object.assign(g.ZC.zkusebniCenik(), cen === '354' ? g.ZC.zkusebniMustky() : {}, { kurzEurKc: 25 });
     const zaznam = {};
