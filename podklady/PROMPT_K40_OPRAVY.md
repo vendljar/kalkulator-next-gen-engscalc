@@ -3,8 +3,8 @@
 Pracuj v nové paralelní větvi `claude/k40-opravy` založené nad commitem, který ti koordinace pošle ve zprávě „SPUSŤ K40 nad <SHA>“ (bude to `origin/test` po sloučení dávek z 4. 11.: RC #561 ruční cena, SV #564 světlíky, PR prodaná = řídící, IK interní poznámky na krycím listu, MV4 manuál). Výchozí v4.11.4 (b751c91) z kola 42 už NEPLATÍ. Do `test-draft`, `test` ani `main` nic neslučuj, o sloučení rozhodne J. V. Komunikace česky. Na začátku přečti `CLAUDE.md` a `PREDAVKA.md` a spusť `bash nastroje/instaluj_hooky.sh`.
 
 **Podklady:**
-- `podklady/K40_PRIPRAVA.md` — krok 0 všech bodů nad integrací (stav, místo, kolize). Čísla řádků v tomto promptu jsou z `9a16ff5` (integrace v4.11.8 se všemi dávkami ze 4. 11.: RC, SV, PR, IK, MV4). Ověřeno i nad `000924e` (`origin/test` = `origin/main` = v4.11.8, proti `9a16ff5` jen PREDAVKA) — řádky beze změny. Roadmapa: K40 má volné **#567**, dávka PH (`claude/ph-proj-hlavicka`) bere od **#568** — další položky K40 až za posledním číslem PH (ověř grepem v `roadmapa/roadmap.json`).
-- **Souběh s dávkou PH** (hlavička ceny PROJ, text studie v `src/nabidka_proj.js`/`src/podminky.js`, sklo 4.4.1 v textu OCK): je-li ve výchozím commitu a mění názvy řádků skla (`skloVolba`) nebo heslo „Sklo VSG 4.4.1“, zopakuj krok 0 u K40-N1 — vzor migrace musí sedět na starý i nový název.
+- `podklady/K40_PRIPRAVA.md` — krok 0 všech bodů nad integrací (stav, místo, kolize). Čísla řádků v tomto promptu jsou z `9a16ff5` (integrace v4.11.8 se všemi dávkami ze 4. 11.: RC, SV, PR, IK, MV4). Ověřeno i nad `000924e` a `5da7a2d` (integrace v5.11.1 = v4.11.8 + PH); jediný posun: `src/preklad.js` `prekladNorm` na ř. 1286. Roadmapa: K40 má volné **#567** a pak od **#573** (#568, #569, #572 PH; #570 návrh víc šachet; #571 DZ).
+- **Souběh s dávkou PH (ve výchozím stavu od 5da7a2d):** PH (#572) přidala v `vypocet` razítko `oplasteni.skloJenSPlochou` a `techspec.js` vynechává sklo s nulovou plochou podle cest ceníku. `skloVolba` a `skloMigraceNazvu` nezměnila. U K40-N1 přidej do testů i kontrolu, že specifikace (`src/test_570_sklo_bez_plochy.js`) dává po přepnutí zasklení tam a zpět stejný text.
 - `Testovani/2026-11-04_kalkulator_BEZPECNOSTNI_AUDIT_v4.11.3.md` na Disku.
 - Rozhodnutí J. V. ze 4. 11. 2026 jsou zapsaná přímo u bodů níž (v1 tohoto promptu je měla jako otevřená).
 - Prompt vydává koordinační sezení „Zefektivnění programu“ (`PROMPT_KOORDINACE_ZEFEKTIVNENI_PROGRAMU.md`) a výsledek také ověří.
@@ -58,7 +58,7 @@ Vyřazení (`nepocitat`) a přepisy (`mnozstviPrepis`, `cenyPrepis`, `nazvyPrepi
 
 **Kde:**
 - `src/nazvy_souboru.js:50` — `nazevCast`, poslední `.replace(/^[-.]+|[-.]+$/g, '')`.
-- `src/preklad.js:1272` (`prekladNorm`), `src/plan_plateb.js:435` (`milnik`), `src/slovnik.js:279` — ořez konce výrazem s kotvou.
+- `src/preklad.js:1286` (`prekladNorm`), `src/plan_plateb.js:435` (`milnik`), `src/slovnik.js:279` — ořez konce výrazem s kotvou.
 
 **Příčina.** Výraz s kotvou na konci zkouší shodu od každé pozice, takže nad dlouhým textem roste kvadraticky. `nazevCast` volá `nabidkaKarta` při každém `render()` Kalkulace OCK. Název varianty ani zákazník nemají délkový strop. Naměřeno na v4.11.3: 20 000 znaků 0,36 s, 60 000 znaků 3,6 s na jedno volání. Oprava #542 to vyřešila jen v `uloKlicSouboru` (`src/uloziste.js:64–70`).
 

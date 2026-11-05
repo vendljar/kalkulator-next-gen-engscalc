@@ -10,13 +10,19 @@ listu) a MV4 #566 (manuál). Všechny dávky ze 4. 11. jsou tedy už ve výchoz�
 3. průchod nad `000924e` (5. 11. 2026, `origin/test` = `origin/main` = v4.11.8). `000924e` se od `9a16ff5` liší jen
 v `PREDAVKA.md` (ověřeno `git diff --stat`) — **všechna místa a čísla řádků v tabulce platí beze změny.**
 
-**Možná kolize — dávka PH** (`claude/ph-proj-hlavicka`, roadmapa od #568; 5. 11. na GitHubu ještě není, posuzováno
-podle popisu koordinace): hlavička ceny PROJ a text studie bez zaměření (`src/nabidka_proj.js`, `src/podminky.js`)
-se bodů K40 netýkají. **„Sklo 4.4.1 v textu OCK“** se může dotknout K40-N1: pokud PH změní název řádku skla
-(`skloVolba`, `src/engine.js:420–447`, „MATERIÁL VSG 4.4.x“) nebo heslo `Sklo VSG 4.4.1` (`src/cenik.js:90`, `:96`,
-`src/preklad.js:481`), musí vzor migrace čelního skla sedět na nový i starý tvar. Při SPUŠTĚNÍ ověřit, zda je PH
-ve výchozím commitu, a případně krok 0 u N1 zopakovat. Roadmapa: K40 od #567, PH od #568 — K40 má tedy jen
-jedno volné číslo před PH; další položky K40 vzít až za posledním číslem PH (zjistit při spuštění).
+4. průchod nad `5da7a2d` (5. 11. 2026, `origin/claude/integrace-16-10`, v5.11.1 = v4.11.8 + PH). **Všechny body
+trvají**; jediný posun řádku v K40: `prekladNorm` `src/preklad.js:1272` → **`:1286`** (PH přidala hesla překladu).
+
+**Dávka PH ve výchozím stavu** (#568 hlavička ceny PROJ, #569 studie bez zaměření, #572 sklo jen s plochou):
+mění `src/nabidka_proj.js`, `src/podminky.js`, `src/docxgen.js`, `src/techspec.js`, `src/engine_proj.js`,
+`src/kontroly.js`, `src/preklad.js`, `src/ui/kalk_proj.js`, `mutace_jadro.mjs` a v `src/engine.js` jen
+`vypocet` (ř. 2452: razítko `oplasteni.skloJenSPlochou`). **`skloVolba` ani `skloMigraceNazvu` PH nezměnila**,
+názvy řádků skla („MATERIÁL VSG 4.4.x“) zůstaly → K40-N1 platí, jak je popsán. `techspec.js` vynechává sklo
+s nulovou plochou podle cest ceníku (`TS_OPL_SKLA` = `C.skloBokyKc`, `C.skloCelniKc`, `C.skloVsg442Kc`), ne podle
+názvu řádku — s migrací názvů se nepotká. Testy k N1 přibyly: `src/test_570_sklo_bez_plochy.js` (#572).
+
+**Roadmapa:** obsazeno #568, #569, #572 (PH), #570 drží návrh víc šachet, #571 DZ → K40 má volné **#567** a pak
+od **#573**.
 
 **Změna 9a16ff5 proti df0138c** (jen to, co se K40 týká):
 - PR #563: `src/objednane.js` (+33 ř. za `prodNastav`: `prodRidiciSrovnej`, `prodRidiciZamceno`; `prodJedinaZmena`
@@ -36,7 +42,7 @@ jedno volné číslo před PH; další položky K40 vzít až za posledním čí
 | bod | stav | místo (9a16ff5) | poznámka, kolize, testy a mutace |
 |---|---|---|---|
 | **K40-N1** čelní sklo po změně zasklení / typu | **trvá** (ověřeno v Node: `nepocitat` i `mnozstviPrepis` s `MATERIÁL VSG 4.4.2` po přepnutí na „mezi příčníky“ zůstanou, `skloMigraceNazvu` vrátí 0 změn, aktuální název je `MATERIÁL VSG 4.4.1`) | `src/engine.js:420–447` `skloVolba` (čelní název ř. 427 a 445), `:458–487` `skloMigraceNazvu` (dvojice ř. 463–464); `src/ui/common.js:74–79` `skloMigraceAkt`, volání `:59` (`syncVarianta`) a `:797` (`set`); `src/zakazka.js:952` (`importZakazka`) | SV #564 sklo nezasáhla (mění jen světlíky, `svetlikSkloSteny` ř. 993). Další výskyty názvu čelního skla: `src/engine.js:1751`, `:2013`, `src/ui/detail_ui.js:47`, `src/ui/kalk_ock.js:1543` — vzor `^MATERIÁL VSG 4\.4\.[12]$` se s jinými řádky nepotká (jiné sekce `MATERIÁL VSG` nemají). Testy: `src/test_k37_sklo_prepnuti.js`, `test_sklo_vazba.js`, `test_cenik_rady.js` (ř. 490–495), `test_zahr_jen_realizace.js`, `test_555_klon_tisk.js`, `overit_k37_sklo.mjs`, fuzz `src/test_fuzz_invarianty.js`. Mutace: `mutace_jadro.mjs` (6 výskytů `skloMigrace`). |
-| **K40-X1/X2** kvadratický ořez konce | **trvá** (30 000 znaků: `nazevCast` 453 ms) | `src/nazvy_souboru.js:44–51` `nazevCast` (výraz ř. 50); `src/preklad.js:1272` (`prekladNorm`); `src/plan_plateb.js:435` (`milnik`); `src/slovnik.js:279`; vzor smyčky `src/uloziste.js:64–70` | Dávky 4. 11. nezasáhly. Testy: `src/test_nazvy_souboru.js`, `src/test_ares.js` (volá `nazevCast`). Mutace pro `nazevCast` dnes žádná. |
+| **K40-X1/X2** kvadratický ořez konce | **trvá** (30 000 znaků: `nazevCast` 453 ms) | `src/nazvy_souboru.js:44–51` `nazevCast` (výraz ř. 50); `src/preklad.js:1286` (`prekladNorm`, do PH 1272); `src/plan_plateb.js:435` (`milnik`); `src/slovnik.js:279`; vzor smyčky `src/uloziste.js:64–70` | Dávky 4. 11. nezasáhly. Testy: `src/test_nazvy_souboru.js`, `src/test_ares.js` (volá `nazevCast`). Mutace pro `nazevCast` dnes žádná. |
 | **K40-S2** drahá diagnostika rozdílu zámku | **trvá** | `src/zamek.js:607–637` `zamekDataRozdilCesta` (kanonizace na každé úrovni ř. 618, `zamekJsonKanon` ř. 566); volá `netlify/lib/zakazka_kontrola.mjs:451–452` | Prompt měl ř. 613–623. IK vkládá řádky až za ř. 523 → volání se neposune. Testy: `netlify/test_555_klon_tisk.mjs`, `netlify/test_555b_klon_cenik.mjs` (+ `src/test_555*.js`). Mutace: `netlify/mutace.mjs` (2 výskyty). |
 | **K40-N2** šířka můstku bez rozsahu | **trvá** | `src/engine.js:783–786` `mustkyCenikNovy` (jen `> 0`), `:845–872` `mustkyCenikKontrola` (nový tvar šířku vůbec nehlídá, nový tvar = šířka > 0); `src/ui/program_ui.js:345–354` `progMustkyPotvrd`; `netlify/functions/program.mjs:104–110` | Prompt měl `engine.js:813` — posun +32 od NV/RC (návrh NV byl sloučen s RC, #560 můstky). Testy: `src/test_548_mustky_bez_cen.js` (+ serverová sada #548). Mutace: hledat pod „#548“. |
 | **K40-N5** zahraniční řada bez kontroly můstků | **trvá** | dialog `src/ui/program_ui.js:347` a server `netlify/functions/program.mjs:106–108` čtou jen `ctx.cenik`; `cenikZahrSVychozimi` v `src/cenik_rady.js:113` | Jako N2. |
@@ -61,4 +67,4 @@ Nic. Všechny body K40 trvají i nad `9a16ff5` (N1 znovu ověřen v Node: `skloM
 `MATERIÁL VSG 4.4.2` ve vyřazených zůstává).
 
 ## Na co se čeká
-- Pokyn „SPUSŤ K40 nad <SHA>“ (výchozí bude nejspíš `000924e` = `origin/test`, nebo novější s dávkou PH).
+- Pokyn „SPUSŤ K40 nad <SHA>“ (výchozí bude nejspíš `5da7a2d` nebo novější).
