@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : [/* #IK / #560 (4. 11. 2026): interní poznámky k zakázce na krycím listu — rychlé sady. */
+  : [/* #560 MU (5. 11. 2026): sekce MŮSTKY — server (validace Z.mustky, zveřejnění ceníku, zámek) a model. */
+     'test_560_mustky.mjs', '../src/test_560_mustky_sekce.js',
+     /* #IK / #560 (4. 11. 2026): interní poznámky k zakázce na krycím listu — rychlé sady. */
      '../src/test_ik_poznamky.js', 'test_ik_poznamky.mjs', '../src/test_poznamky.js',
      /* #530 (27. 10. 2026): autorská poznámka v hlavičce lib/sdilene.mjs — rychlá sada, první. */
      '../src/test_autorstvi.js',

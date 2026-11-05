@@ -89,9 +89,9 @@ const radek = (r, n) => (r.sekce.mustky || []).concat(r.sekce.hrubaOck).find(x =
     && !('mustkyKs' in z0) && !('mustekHloubkaMm' in z0));
 
   /* Model 1: vzorec #354 i se skladebným ceníkem a provedením; šířka = šířka šachty, bez sloupů */
-  const zM1 = ZAD({ mustky: [{ ks: 2, sirkaMm: 1200, delkaMm: 1000, podlaha: 'vana', zabradli: 'sklo', sloupyKs: 2 }] });
+  const zM1 = ZAD({ rezervaProfilyPct: 0.07, mustky: [{ ks: 2, sirkaMm: 1200, delkaMm: 1000, podlaha: 'vana', zabradli: 'sklo', sloupyKs: 2 }] });
   const r1 = E.vypocet(kop(zM1), CSKL(), J, false);
-  const r1ref = E.vypocet(ZAD({ mustkyKs: 2, mustekHloubkaMm: 1000 }), CSKL(), J, false);
+  const r1ref = E.vypocet(ZAD({ rezervaProfilyPct: 0.07, mustkyKs: 2, mustekHloubkaMm: 1000 }), CSKL(), J, false);
   test('B Model 1: bez sekce MŮSTKY a se stejnou cenou jako starý tvar (#354)', !r1.sekce.mustky && !r1.mustky.skladebny
     && r1.souhrn.zakladCena === r1ref.souhrn.zakladCena && !r1.souhrn.mustkyCena, [r1.souhrn.zakladCena, r1ref.souhrn.zakladCena]);
   test('B Model 1: řádky #354 (materiál + montáž), šířka = šířka šachty, sloupy ani kotvení nejsou',
@@ -220,6 +220,9 @@ const MU = [{ ks: 2, delkaMm: 1200, podlaha: 'vana', zabradli: 'sklo', zabradliS
     && ph.TS_MUSTKY_PODLAHA === 'ocelová vana pro beton (betonáž zajistí stavba)' && ph.TS_MUSTKY_ZABRADLI === 'skleněné, jednostranně'
     && ph.TS_MUSTKY_KOTVENI === 'konzolově jen z OCK' && ph.TS_MUSTKY_SLOUPY === '2 ks, výška 3,2 m', [ph.TS_MUSTKY_ROZMER, ph.TS_MUSTKY_ZABRADLI, ph.TS_MUSTKY_SLOUPY]);
   test('D souhrnný řádek v DOPLŇKOVÝCH KONSTRUKCÍCH zmizí', ph.TS_MUSTKY === '');
+  v.data.techspec.hodnoty.mustky = 'ruční text souhrnného řádku';
+  test('D … i když ho obchodník dřív přepsal ručně (sekce ho nahrazuje)', N.nabidkaData(z, v, J, 'cz').placeholders.TS_MUSTKY === '');
+  delete v.data.techspec.hodnoty.mustky;
   const cis = t => +String(t).replace(/[^\d,]/g, '').replace(',', '.');
   test('D řádek ceny: šachta + můstky = cena bez DPH (bez slevy)', cis(ph.CENA_SACHTA_BEZ_DPH) + cis(ph.CENA_MUSTKY_BEZ_DPH) === cis(ph.CENA_BEZ_DPH)
     && cis(ph.CENA_MUSTKY_BEZ_DPH) > 0 && ph.CENA_BEZ_DPH_SACHTA === '' && ph.CENA_BEZ_DPH_CELKEM === ph.CENA_BEZ_DPH, [ph.CENA_SACHTA_BEZ_DPH, ph.CENA_MUSTKY_BEZ_DPH, ph.CENA_BEZ_DPH]);
