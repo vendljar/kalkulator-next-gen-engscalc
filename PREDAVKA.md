@@ -164,6 +164,16 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
+# Předávka koordinace — 5. 11. 2026: stav integrace v4.11.8
+
+- **Větve:** `main` = v4.11.4 (b751c91, ostrý engscalc 4.11.4); `test` = `claude/integrace-16-10` = v4.11.8 (9a16ff5). Tagy v3.11.1–v4.11.8 vydané.
+- **Ve v4.11.5–v4.11.8 (+ dokumentace):** RC #561 ruční nákupní cena položky s potvrzením (v4.11.5), SV #564 světlíky bez „zajistí stavba“ + materiál opláštění „bez — dodá stavba“ = bez (v4.11.6), PR #563 prodaná varianta = řídící (v4.11.7), IK #565 interní poznámky i na krycím listu OCK/PROJ (v4.11.8), MV4 #566 4. vydání manuálu výpočtu (pro v4.11.4), podklady Pipedrive bez zmínky o Make. Kolo nad 9a16ff5 VŠE ZELENÉ (389/0/7, hodiny 313/0/1), cílené mutace 23/23.
+- **Netlify testengscalc** po pushi 9a16ff5 (4. 11. 17:47) nenasadil — build lokálně prochází; kontrola Deploys u J. V.
+- **Čeká (roadmapa `ceka`):** #560 můstky v CN (rozhodnutí J. V. 4. 11. v `podklady/NAVRH_MUSTKY_A_ZMENA_CENY_04_11.md` + koordinace: karta Můstky, skupiny, pochozí plech výchozí, beton dělá stavba, sloupy navíc = jakly jako sloupky šachty, skladebně, Model 1 beze změny, CN v16).
+- **Připraveno, nespouštět bez J. V.:** K40 opravy (sezení session_018mwHQEeBrcffVibfJHNsF3, větev `claude/k40-priprava`, prompt `podklady/PROMPT_K40_OPRAVY.md`, nové položky roadmapy od #567, meze od B199); koordinace „Zefektivnění programu“ (`podklady/PROMPT_KOORDINACE_ZEFEKTIVNENI_PROGRAMU.md`, konec týdne 45).
+- **Čísla roadmapy obsazená do #566**, meze B do B198.
+
+---
 # Pravidla komunikace s integrátorem Pipedrive (J. V. 23. 10., znovu 3. a 4. 11. 2026)
 
 - Make se pro proces kalkulátor ↔ Pipedrive **nepoužívá** a v ničem, co jde integrátorovi (e-maily, tabulky, podklady), se **nezmiňuje**. Mluví se obecně o „automatizacích v účtu“.
