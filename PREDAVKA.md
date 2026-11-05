@@ -1,3 +1,35 @@
+# Předávka — 5. 11. 2026: MU #560 — samostatná sekce MŮSTKY, větev `claude/mu-mustky` (sloučeno do integrace jako v5.11.2)
+
+Nad `000924e` (`main` = `test` = v4.11.8). **Verze 5.11.2** (přečíslováno koordinací). Neslučováno; do `test-draft`,
+`test` ani `main` nic, na webech, Disku (šablony jen přečteny) ani v Pipedrive nic.
+
+| úkol (rozhodnutí J. V. 4. 11.) | stav | kde |
+|---|---|---|
+| A-Q1/Q2 karta Můstky, skupiny `Z.mustky[]`, starý tvar = jedna skupina | ✅ | `src/ui/kalk_ock.js` (`mustkyKarta`, `mustkySet`, `mustekPoleSet`), `src/engine.js` (`mustkySkupiny`, `mustkyNaSkupiny`) |
+| A-Q3/Q6 skladebný model, nové klíče bez sazeb, potvrzení při zveřejnění | ✅ | `src/engine.js` (`mustkyRozpad`, `MUSTKY_SKLADBA_KLICE`, `mustkyCenikKontrola`), `src/cenik.js` |
+| A-Q4 vana = jen ocelová vana, beton stavba (věta v nabídce i specifikaci) | ✅ | řádek kalkulace + `MUSTEK_PODLAHY` |
+| A-Q5 sloupy jako sloupky šachty, bez `mustekSloupBmKc` | ✅ | `src/engine.js` (profil sloupku, rezerva, Kč/kg, lakování profilů) |
+| A-Q7 Model 1 na #354, karta jen počet + délka + upozornění | ✅ | |
+| A-Q8/9 CN sekce + řádek ceny, Word v16 + klon v15 | ✅ | `src/nabidka.js`, `src/docxgen.js` (`predSymbolem`, `prejmenuj`, `DOCX_CENA_CASTI`), `nastroje/vyrob_sablony.js --cn-v16` |
+| překlady, specifikace, krycí list, controlling, standard, server | ✅ | `src/preklad.js`, `src/techspec.js`, `src/kryci.js`, `src/controlling.js`, `src/standard_ock.js`, `src/uloziste.js` |
+| roadmapa #560 hotovo, CHANGELOG, manuál obchodníka a správce | ✅ | BEZPECNOST_MEZE beze změny (nová mez nevznikla — strop skupin a textů je validace tvaru) |
+
+**Na J. V.:** (1) v Nastavení → Ceník vyplnit sazby skladebného modelu (`C.mustekRamBmKc` a podlahy, zábradlí,
+kotvení, hodiny skla) a zveřejnit — dokud je nosná konstrukce nulová, počítá se vše jako dosud; (2) nahrát šablonu
+**CN v16** (CZ/EN/DE/FR) v Nastavení → Šablony. Vyrobena nástrojem z firemních v15 (Disk jen čten):
+`node nastroje/vyrob_sablony.js --cn-v16 <složka s Sablona_NABIDKA_CN_v15.docx> [výstup]` — ověřeno nad skutečnou v15
+(symbolů 122, bez problémů). Do té doby funguje klon do v15.
+
+**Testy:** `src/test_560_mustky_sekce.js` 228/0 (zlatá pojistka proti 000924e — otisky `src/test_560_zlata.json`,
+`nastroje/zlata_560.js`), `netlify/test_560_mustky.mjs` 22/0, `overit_560_mustky.mjs` 17/0. Pojistky na 000924e:
+jádro projde jen zlatá část A a pak spadne, server 15 FAIL, harness spadne. Mutace „#560": jádro 38/38 (vč. 15 SV),
+server 15/15 (vč. 9 SV); `--kontrola` 687 / 1310. Kolo `--bez-mutaci` nad 4492632: **VŠE ZELENÉ** — sady 392 / 0 / **7 přeskočeno** (test.js + 6 prohlížečových sad bez firemních podkladů KNG_PODKLADY, jako v předchozích dávkách), hodiny +400 dní 315 / 0 / 1, statické 5 z 5, 26 min 20 s. První kolo chytilo: datum ve zlaté pojistce (krok hodiny), čísla roadmapy v manuálech, dva starší harnessy na pole délky v zadání — opraveno. Celé mutace nepouštěny (jen „#560“).
+
+**Otevřené body:** výchozí výška sloupu = zdvih (výška nejvyššího nástupiště) — potvrdit; sloupy navíc bez hodin
+montáže (sloupky šachty vlastní hodiny nemají); provedení „jiné" se standardu OCK netýká (ATYP se kvůli němu
+nezaškrtne) a cenu dostává ručním přepisem řádku; překlady EN/DE/FR ke kontrole; štítek #560 sdílí s dávkou SV
+(světlíky „zajistí stavba") — koordinace přečísluje; krycí list (techdata) nově předvyplní „Můstky…" i u starších
+zakázek s můstky (jen prázdné pole).
 # Předávka — 5. 11. 2026: PH #568, #569, #572 — hlavička PROJ, studie bez zaměření, sklo jen s plochou, větev `claude/ph-proj-hlavicka`
 
 Nad `000924e` (`test` = `main` = v4.11.8). **Verze 5.11.1** (koordinace přečísluje). Neslučováno; do `test-draft`,
@@ -203,7 +235,10 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 5. 11. 2026: stav integrace v4.11.8
+# Předávka koordinace — 5. 11. 2026: stav integrace v5.11.2
+
+- **v5.11.1** PH #568/#569/#572 (5da7a2d, kolo zelené), **v5.11.2** MU #560 můstky (sloučeno 5. 11.; mutace SV přečíslovány na #564). `test` = `main` = v4.11.8. Běží DZ #571 (kopie zálohy na Disk). Standby K40, VS víc šachet (#570).
+- **Na J. V. po MU:** sazby skladebného modelu můstků v Ceníku, šablona CN v16 (CZ/EN/DE/FR).
 
 - **Větve:** `main` = v4.11.4 (b751c91, ostrý engscalc 4.11.4); `test` = `claude/integrace-16-10` = v4.11.8 (9a16ff5). Tagy v3.11.1–v4.11.8 vydané.
 - **Ve v4.11.5–v4.11.8 (+ dokumentace):** RC #561 ruční nákupní cena položky s potvrzením (v4.11.5), SV #564 světlíky bez „zajistí stavba“ + materiál opláštění „bez — dodá stavba“ = bez (v4.11.6), PR #563 prodaná varianta = řídící (v4.11.7), IK #565 interní poznámky i na krycím listu OCK/PROJ (v4.11.8), MV4 #566 4. vydání manuálu výpočtu (pro v4.11.4), podklady Pipedrive bez zmínky o Make. Kolo nad 9a16ff5 VŠE ZELENÉ (389/0/7, hodiny 313/0/1), cílené mutace 23/23.

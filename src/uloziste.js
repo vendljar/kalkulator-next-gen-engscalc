@@ -1177,6 +1177,16 @@ const ULO_PROJ_BEZ_ZAPORU = ['cena', 'hodiny', 'rezerva', 'cenaPrepis', 'sazbaPr
 const ULO_ZADANI_BEZ_ZAPORU = ['rezervaProfilyPct', 'rezervaPlechyPct', 'rezervaZakladPct', 'rezervaPriplatkyPct',
   'oplechOstatniKg', 'oplechOstatniHod', 'engineeringKs', 'zamecnikAtypKs', 'zamecnikAtypKc', 'striskaKs',
   'nastupiste', 'nastupisteA', 'nastupisteC', 'patra', 'svetlikyBoky', 'svetlikyBokyKs', 'svetlikyBokySirkaMm', 'mustkyKs'];
+/* Skupiny můstků (#560) — seznamy shodné s MUSTEK_PODLAHY / _ZABRADLI /
+ * _KOTVENI a MUSTKY_SKUPIN_MAX / MUSTEK_TEXT_MAX v engine.js (uloziste.js se
+ * načítá i bez jádra; shodu hlídá src/test_560_mustky_sekce.js). */
+const ULO_MUSTKY_MAX = 20;
+const ULO_MUSTKY_TEXT = 120;
+const ULO_MUSTKY_CISLA = ['ks', 'sirkaMm', 'delkaMm', 'zabradliStrany', 'sloupyKs', 'sloupVyskaM'];
+const ULO_MUSTKY_VOLBY = { podlaha: ['plech', 'pororost', 'vana', 'jine'], zabradli: ['kov', 'sklo', 'bez', 'jine'],
+  kotveni: ['deska', 'sloupy', 'konzola', 'jine'] };
+const ULO_MUSTKY_TEXTY = ['podlahaNazev', 'zabradliNazev', 'kotveniText'];
+const ULO_MUSTKY_KLICE = ULO_MUSTKY_CISLA.concat(Object.keys(ULO_MUSTKY_VOLBY), ULO_MUSTKY_TEXTY);
 /* Číselná pole vzoru, která do ceny nevstupují (evidence pro standard OCK). */
 const ULO_ZADANI_MIMO_JADRO = ['mustekHloubkaMm', 'mustekSirkaMm'];
 /* Tolerance porovnání začátku opláštění s dnem prohlubně — táž jako
@@ -1232,6 +1242,25 @@ function uloZaporneVZadani(z, zp) {
         if (uloCisloSedi(m[nazev]) && isFinite(n) && Math.abs(n) > ULO_PREPIS_MAX) out.push({ kde: c, duvod: 'typ' });
       });
     });
+    /* SKUPINY MŮSTKŮ (#560). Pole objektů (nejvýš ULO_MUSTKY_MAX), čísla
+     * nezáporná se stropem, volby jen ze seznamů jádra, texty do
+     * ULO_MUSTKY_TEXT znaků. Jádro neznámou volbu čte jako výchozí, ale
+     * doklad (zámek, nabídka) má nést jen platná data. */
+    if (z.mustky !== null && z.mustky !== undefined) {
+      if (!Array.isArray(z.mustky) || z.mustky.length > ULO_MUSTKY_MAX) out.push({ kde: 'ock.zadani.mustky', duvod: 'typ' });
+      else z.mustky.forEach((g, i) => {
+        const c = 'ock.zadani.mustky[' + i + ']';
+        if (!g || typeof g !== 'object' || Array.isArray(g)) { out.push({ kde: c, duvod: 'typ' }); return; }
+        ULO_MUSTKY_CISLA.forEach(k => { hlidej(g[k], c + '.' + k); strop(g[k], c + '.' + k); });
+        Object.keys(ULO_MUSTKY_VOLBY).forEach(k => {
+          if (g[k] !== undefined && g[k] !== null && g[k] !== '' && ULO_MUSTKY_VOLBY[k].indexOf(g[k]) < 0) out.push({ kde: c + '.' + k, duvod: 'typ' });
+        });
+        ULO_MUSTKY_TEXTY.forEach(k => {
+          if (g[k] !== undefined && g[k] !== null && (typeof g[k] !== 'string' || g[k].length > ULO_MUSTKY_TEXT)) out.push({ kde: c + '.' + k, duvod: 'typ' });
+        });
+        Object.keys(g).forEach(k => { if (ULO_MUSTKY_KLICE.indexOf(k) < 0) out.push({ kde: c + '.' + (ULO_TOKEN.test(k) ? k : '?'), duvod: 'typ' }); });
+      });
+    }
     ULO_HODINY_N56.forEach(k => hlidej(z[k], 'ock.zadani.' + k));
     ULO_ZADANI_BEZ_ZAPORU.forEach(k => hlidej(z[k], 'ock.zadani.' + k));
     /* Opláštění po stěnách: výšky pásů (odM, doM) — záporná výška zmenší
@@ -2267,7 +2296,7 @@ function uloRetenceVarovani(v, ted) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { uloZalohaSloz, ULO_TYPY_HLAVICKA, uloRetenceVarovani, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, uloKopieDiskProstredi, uloKopieDiskPosledniJmeno, uloPrahaCas, ULO_KOPIE_DISK_PROSTREDI, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_HLIDKA_DNU, uloKopieDiskNocni, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloZalohaSloz, ULO_MUSTKY_MAX, ULO_MUSTKY_TEXT, ULO_MUSTKY_VOLBY, ULO_MUSTKY_KLICE, ULO_TYPY_HLAVICKA, uloRetenceVarovani, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, uloKopieDiskProstredi, uloKopieDiskPosledniJmeno, uloPrahaCas, ULO_KOPIE_DISK_PROSTREDI, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_HLIDKA_DNU, uloKopieDiskNocni, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,

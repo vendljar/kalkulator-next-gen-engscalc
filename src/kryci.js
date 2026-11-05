@@ -383,7 +383,10 @@ const KRYCI_SEKCE = [
     { id: 'dodavatelVytahu', label: 'Dodavatel výtahu (kontakt email / telefon)', verze: ['techdata'] },
   ] },
   { sekce: 'Atypy OCK', pole: [
-    { id: 'atypMustky', label: 'Můstky (rozměr, napojení stavba ↔ OCK)', verze: ['techdata'], typ: 'textarea' },
+    /* #560: souhrn z karty Můstky (počet, rozměr, podlaha, zábradlí,
+     * kotvení, sloupy) pro výrobu a montáž; přepsat jde jako dřív. */
+    { id: 'atypMustky', label: 'Můstky (rozměr, napojení stavba ↔ OCK)', verze: ['techdata'], typ: 'textarea',
+      prefill: c => c.mustky || '', src: 'z kalkulace OCK (karta Můstky)' },
     { id: 'atypOplasteni', label: 'Typ a způsob opláštění', verze: ['techdata'], typ: 'textarea' },
     { id: 'atypHlava', label: 'Napojení hlavy OCK', verze: ['techdata'], typ: 'textarea' },
     { id: 'atypStavbaVyska', label: 'Napojení na stavbu po výšce šachty', verze: ['techdata'], typ: 'textarea' },
@@ -604,6 +607,7 @@ function kryciCtx(zak, varianta, jekly) {
     hodnota, priplatky, firma, typProduktu,
     objednane: (typeof objText === 'function') ? objText(zak, varianta, jekly) : '—',
     sken3d: kryciSken3d(d, rOck),
+    mustky: kryciMustkyText(rOck),
     projAno: key => (projSekce[key] > 0 ? 'Ano' : 'Ne'),
     /* Podmínky zmrazené při odeslání (P9.5) — platí jen, dokud je varianta
      * zamčená; po odemčení nebo v klonu se předvyplňuje zase z Nastavení. */
@@ -611,6 +615,31 @@ function kryciCtx(zak, varianta, jekly) {
     /* Zamčená varianta drží i u odvozených řádků to, co se odeslalo. */
     zamceno: !!(varianta && varianta.zamek && varianta.zamek.zamceno),
   };
+}
+/* SOUHRN MŮSTKŮ PRO KRYCÍ LIST (#560): „2 ks 1 600 × 1 000 mm, pochozí
+ * plech, zábradlí kovové oboustranně, kotvení do stropní desky / věnce
+ * budovy, sloupy navíc 2 ks × 3,2 m"; víc skupin oddělí středník. Model 1
+ * a starý ceník jen počet a rozměr (provedení se v nich nepočítá). */
+function kryciMustkyText(r) {
+  const m = r && r.mustky;
+  const sk = m && Array.isArray(m.skupiny) ? m.skupiny.filter(s => s.ks > 0) : [];
+  if (!sk.length) return '';
+  const volba = (seznam, k) => { const x = (typeof seznam !== 'undefined' && seznam || []).find(v => v[0] === k); return x ? x[1] : k; };
+  const P = typeof MUSTEK_PODLAHY !== 'undefined' ? MUSTEK_PODLAHY : [];
+  const Zb = typeof MUSTEK_ZABRADLI !== 'undefined' ? MUSTEK_ZABRADLI : [];
+  const K = typeof MUSTEK_KOTVENI !== 'undefined' ? MUSTEK_KOTVENI : [];
+  const cz = n => (Math.round((+n || 0) * 100) / 100).toLocaleString('cs-CZ');
+  return sk.map(s => {
+    const casti = [s.ks + ' ks ' + cz(s.sirkaEfMm) + ' × ' + cz(s.delkaEfMm) + ' mm'];
+    if (m.skladebny) {
+      casti.push(s.podlaha === 'jine' ? (s.podlahaNazev || 'podlaha jiná') : volba(P, s.podlaha));
+      casti.push(s.zabradli === 'bez' ? 'bez zábradlí' : 'zábradlí ' + (s.zabradli === 'jine' ? (s.zabradliNazev || 'jiné') : volba(Zb, s.zabradli))
+        + (s.zabradliStrany === 1 ? ' jednostranně' : ' oboustranně'));
+      casti.push('kotvení ' + (s.kotveni === 'jine' ? (s.kotveniText || 'jiné') : volba(K, s.kotveni)));
+    }
+    if (m.sloupyKs && s.sloupyKs > 0) casti.push('sloupy navíc ' + s.sloupyKs + ' ks × ' + cz(s.vyskaSloupuM) + ' m');
+    return casti.join(', ');
+  }).join('; ');
 }
 /* ---------- termín dodání a přirážka za ATYP (21. 8. 2026) ----------
  *
@@ -727,7 +756,7 @@ function kryciHodiny(zak, varianta, jekly, strana) {
   const radky = [];
   let celkem = null;
   if (rOck && rOck.sekce) {
-    const pocitane = [].concat(rOck.sekce.hrubaOck || [], rOck.sekce.oplasteni || [], rOck.sekce.rezie || []);
+    const pocitane = [].concat(rOck.sekce.hrubaOck || [], rOck.sekce.mustky || [], rOck.sekce.oplasteni || [], rOck.sekce.rezie || []);
     KRYCI_HODINY_OCK.forEach(def => {
       const casti = pocitane.filter(x => x && def.cesty.indexOf(x.cenaPath) >= 0)
         .map(x => Math.round(+x.mnozstvi || 0)).filter(h => h > 0);
@@ -1296,7 +1325,7 @@ function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { kryciPlatbyOck100, kryciHodiny, kryciHodinySekce, KRYCI_HODINY_OCK, kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_ZALOHY, KRYCI_LIMIT_POKUT, kryciPokutySazby, kryciLimitVolby, kryciPodmEf, kryciPodmEfVarianty, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
+  module.exports = { kryciMustkyText, kryciPlatbyOck100, kryciHodiny, kryciHodinySekce, KRYCI_HODINY_OCK, kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_ZALOHY, KRYCI_LIMIT_POKUT, kryciPokutySazby, kryciLimitVolby, kryciPodmEf, kryciPodmEfVarianty, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
     kryciData, kryciVystupSekce, KRYCI_IK_ZA_SEKCI, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
     kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,

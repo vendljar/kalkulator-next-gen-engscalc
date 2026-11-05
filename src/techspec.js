@@ -168,6 +168,39 @@ function tsMustky(Z) {
   if (n !== undefined && n !== null && n !== '' && isFinite(+n)) return Math.max(0, Math.floor(+n));
   return (Z && Z.mustek) ? 1 : 0;
 }
+/* SEKCE MŮSTKY VE SPECIFIKACI A NABÍDCE (#560). Platí jen ve skladebném
+ * modelu (Model 2 + nový ceník — r.mustky.skladebny); jinak zůstává jeden
+ * souhrnný řádek MŮSTKY MEZI BUDOVOU A OCK v DOPLŇKOVÝCH KONSTRUKCÍCH
+ * (stará data a starý ceník beze změny). Texty se skládají po částech
+ * v jazyce dokumentu (`jazykSam`), čísla zůstávají. Víc skupin = výčet
+ * „skupina 1: …; skupina 2: …". */
+function tsMustkySkladebne(r) { return !!(r && r.mustky && r.mustky.skladebny); }
+function tsMustkyCast(r, Z, jazyk, co) {
+  const T = t => (jazyk && jazyk !== 'cz' && typeof tr === 'function') ? tr(t, jazyk) : t;
+  const sk = ((r && r.mustky && r.mustky.skupiny) || []).filter(s => s.ks > 0);
+  if (!sk.length) return ' -';
+  const mm = n => String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+  const des = n => String(Math.round((+n || 0) * 100) / 100).replace('.', jazyk === 'en' ? '.' : ',');
+  const E = (typeof MUSTEK_PODLAHY !== 'undefined') ? { MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI }
+    : (typeof require === 'function' ? require('./engine.js') : {});
+  const volba = (seznam, k) => { const x = (E[seznam] || []).find(v => v[0] === k); return x ? x[1] : k; };
+  const text = s => {
+    if (co === 'rozmer') return s.ks + ' ' + T('ks') + ', ' + mm(s.sirkaEfMm) + ' × ' + mm(s.delkaEfMm) + ' mm (' + T('šířka × délka') + ')';
+    if (co === 'podlaha') return s.podlaha === 'jine' ? (s.podlahaNazev || T('jiné')) : T(volba('MUSTEK_PODLAHY', s.podlaha));
+    if (co === 'zabradli') {
+      if (s.zabradli === 'bez') return T('bez zábradlí');
+      const druh = s.zabradli === 'jine' ? (s.zabradliNazev || T('jiné')) : T(volba('MUSTEK_ZABRADLI', s.zabradli));
+      return druh + ', ' + T(s.zabradliStrany === 1 ? 'jednostranně' : 'oboustranně');
+    }
+    if (co === 'kotveni') return s.kotveni === 'jine' ? (s.kotveniText || T('jiné')) : T(volba('MUSTEK_KOTVENI', s.kotveni));
+    if (co === 'sloupy') return s.sloupyKs > 0 ? s.sloupyKs + ' ' + T('ks') + ', ' + T('výška') + ' ' + des(s.vyskaSloupuM) + ' m' : '';
+    return '';
+  };
+  const casti = sk.map(text);
+  if (co === 'sloupy' && casti.every(t => !t)) return ' -';
+  if (sk.length === 1 || casti.every(t => t === casti[0])) return casti[0] || ' -';
+  return casti.map((t, i) => T('skupina') + ' ' + (i + 1) + ': ' + (t || '-')).join('; ');
+}
 function tsNastupiste(Z) {
   if (typeof nastupisteCelkem === 'function') return nastupisteCelkem(Z || {});
   return +(Z && Z.nastupiste) || 0;
@@ -613,9 +646,16 @@ const TECHSPEC_DEF = [
     { id: 'podchoziOck', label: 'PODCHOZÍ NOSNÁ OCK', def: ' -' },
     /* Můstky do specifikace a nabídky (P7 / K13-N59, 25. 9. 2026). */
     { id: 'mustky', label: 'MŮSTKY MEZI BUDOVOU A OCK',
-      prefill: (r, Z) => {
+      prefill: (r, Z, C, jazyk) => {
         const n = tsMustky(Z);
         if (!n) return ' -';
+        /* #560: skladebný model má vlastní sekci MŮSTKY — souhrnný řádek
+         * zmizí. Víc skupin (Model 2, starý ceník) = výčet rozměrů. */
+        if (tsMustkySkladebne(r)) return ' -';
+        const sk = r && r.mustky && Array.isArray(r.mustky.skupiny) ? r.mustky.skupiny.filter(s => s.ks > 0) : [];
+        if (r && r.mustky && r.mustky.novy && sk.length > 1)
+          return sk.map(s => s.ks + ' ks ' + s.sirkaEfMm + ' × ' + s.delkaEfMm + ' mm').join(', ')
+            + ' (šířka × délka), ocelová konstrukce vč. zábradlí a montáže';
         /* #354: s novým ceníkem (r.mustky.novy) rozměr Š × D — šířka šachty
          * × délka (prázdná = 1 000 mm, jako v ceně). Starý ceník (zamčené
          * varianty) a volání bez výsledku jádra dávají větu jako dřív. */
@@ -647,6 +687,16 @@ const TECHSPEC_DEF = [
       odvozene: (r, Z) => { const s = tsSoklRadek(r, Z); return s.vDodavce ? s.text : ''; },
       odvozenePopis: 'Řídí se cenou: řádek je tady, když je OPLECHOVÁNÍ SOKLU PROHLUBNĚ v základní ceně '
         + '(Kalkulace OCK, volitelné položky), jinak stojí v sekci SOUČÁSTÍ DODÁVKY NENÍ.' },
+  ] },
+
+  /* #560: sekce MŮSTKY jen ve skladebném modelu (`jen`); hodnoty jdou
+   * přepsat ručně jako ostatní řádky, předvyplňuje je karta Můstky. */
+  { sekce: 'MŮSTKY MEZI BUDOVOU A OCK', jen: r => tsMustkySkladebne(r), pole: [
+    { id: 'mustkyRozmer', label: 'POČET A ROZMĚR', jazykSam: true, prefill: (r, Z, C, j) => tsMustkyCast(r, Z, j, 'rozmer') },
+    { id: 'mustkyPodlaha', label: 'PODLAHA', jazykSam: true, prefill: (r, Z, C, j) => tsMustkyCast(r, Z, j, 'podlaha') },
+    { id: 'mustkyZabradli', label: 'ZÁBRADLÍ', jazykSam: true, prefill: (r, Z, C, j) => tsMustkyCast(r, Z, j, 'zabradli') },
+    { id: 'mustkyKotveni', label: 'KOTVENÍ MŮSTKŮ', jazykSam: true, prefill: (r, Z, C, j) => tsMustkyCast(r, Z, j, 'kotveni') },
+    { id: 'mustkySloupy', label: 'SLOUPY NAVÍC', jazykSam: true, prefill: (r, Z, C, j) => tsMustkyCast(r, Z, j, 'sloupy') },
   ] },
 
   { sekce: 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE', pole: [

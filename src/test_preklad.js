@@ -78,7 +78,8 @@ const popisky = TS.TECHSPEC_DEF.flatMap(s => s.pole.map(p => p.label));
 const volby = Object.values(TS.TS_C).flat();
 
 const pSekce = P.prekladPokryti(sekce, 'en');
-eq('všech 7 sekcí má EN', pSekce.prelozeno, 7);
+/* #560: osmá sekce MŮSTKY MEZI BUDOVOU A OCK (jen ve skladebném modelu) */
+eq('všech 8 sekcí má EN', pSekce.prelozeno, 8);
 const pPopisky = P.prekladPokryti(popisky, 'en');
 ok('EN popisky pokryty aspoň z 80 %', pPopisky.procenta >= 80);
 const pVolby = P.prekladPokryti(volby, 'en');

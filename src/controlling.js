@@ -122,6 +122,14 @@ const CTRL_MAPA_VYCHOZI = (() => {
    * materiál vč. zábradlí; montáž můstků má vlastní řádek → stavební práce. */
   dej('sl-zamecnici', ['C.spodniRamKc', 'C.cilkoKc', 'C.nytKc', 'C.zamecnikAtypKc', 'Z.zamecnikAtypKc', 'C.mustekKc']);
   dej('sl-stavebni', ['C.mustekMontazHodKc']);
+  /* #560 (skladebný model můstků): nosná konstrukce, podlahy (vana = jen
+   * ocelová vana, beton je mimo dodávku), kovové zábradlí a kotvení →
+   * zámečníci; skleněné zábradlí → sklo. Sloupy navíc nesou C.profilasKgKc
+   * (profily) a lakování C.lak.* jako sloupky šachty. */
+  dej('sl-zamecnici', ['C.mustekRamBmKc', 'C.mustekPodlahaPlechM2Kc', 'C.mustekPodlahaPororostM2Kc',
+    'C.mustekPodlahaVanaM2Kc', 'C.mustekZabradliKovBmKc', 'C.mustekKotveniDeskaKc', 'C.mustekKotveniSloupKc',
+    'C.mustekKotveniKonzolaKc', 'V.mustky']);
+  dej('mat-sklo', ['C.mustekZabradliSkloBmKc']);
   dej('mat-ostatni', ['C.montazniNosnik', 'C.lemovaniKgKc', 'C.vetraciMrizkaKc', 'C.zastreseniM2Kc',
     'C.oplechFasadaBmKc', 'C.plastKotvyKc', 'C.striskaDvurKc', 'C.hakyKc', 'C.priplatky.medStrechaM2',
     'C.priplatky.ventilatorKc', 'C.priplatky.zabranyDvereKc', 'C.priplatky.madlaBmKc', 'C.priplatky.zabranyPadKc',
@@ -154,7 +162,8 @@ const CTRL_MAPA_VYCHOZI = (() => {
     'C.lak.rezim', 'C.skloBokyNazev', 'C.skloCelniNazev', 'C.atypPrirazka', 'C.atypMontazPct', 'C.atypProjekcePct',
     'C.atypZamecnikKc', 'C.atypRezervaZakladPct', 'C.atypRezervaPriplatkyPct',
     /* #354: referenční šířka a hodiny montáže můstků (náklad nese sazba). */
-    'C.mustekRefSirkaMm', 'C.mustekMontazZakladHod', 'C.mustekMontazBmHod', 'C.mustekMontazMinHod']);
+    'C.mustekRefSirkaMm', 'C.mustekMontazZakladHod', 'C.mustekMontazBmHod', 'C.mustekMontazMinHod',
+    'C.mustekZabradliSkloMontazHodBm']);
   return m;
 })();
 
@@ -280,7 +289,7 @@ function ctrlRozvrhOck(vysledek, opts) {
       vlastni: !!r.vlastni, mnozstvi: +r.mnozstvi || 0, cena: +r.cena || 0,
       naklad: +r.naklad || 0, prodej: +r.sMarzi || 0 });
   };
-  ['hrubaOck', 'oplasteni', 'volitelne', 'rezie'].forEach(sek =>
+  ['hrubaOck', 'mustky', 'oplasteni', 'volitelne', 'rezie'].forEach(sek =>
     (vysledek.sekce[sek] || []).forEach(r => radek(r, sek, true)));
   const rz = vysledek.rezerva;
   if (rz && (+rz.naklad || +rz.sMarzi)) {

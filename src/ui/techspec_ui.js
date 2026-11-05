@@ -131,7 +131,7 @@ function renderTechspecPreklad() {
   const row = (lbl, val, hotovo) => `<div class="spec-row ro"><div class="lbl">${tsPrelozText(lbl)}</div>
     <div>${hotovo ? esc(val) : tsPrelozText(val)}</div><div></div></div>`;
 
-  const sekce = TECHSPEC_DEF.map(sk =>
+  const sekce = TECHSPEC_DEF.filter(sk => !sk.jen || sk.jen(r, Z)).map(sk =>
     `<h3>${tsPrelozText(sk.sekce)}</h3>` +
     sk.pole.map(p => {
       const h = tsHodnota(p, TS, r, Z, C, jazyk());
@@ -244,7 +244,8 @@ function renderTechspec() {
     </div>`;
   };
 
-  const sekce = TECHSPEC_DEF.map(s =>
+  /* `jen` (#560): sekce, která se zakázky netýká (MŮSTKY mimo skladebný model), se nekreslí. */
+  const sekce = TECHSPEC_DEF.filter(s => !s.jen || s.jen(r, Z)).map(s =>
     `<h3>${esc(s.sekce)}</h3>` + s.pole.map(specRow).join('') +
     (s.pozn ? `<div class="note">${esc(s.pozn)}</div>` : '')
   ).join('');

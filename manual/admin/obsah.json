@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v4.11.8 · sestaveno 4. 11. 2026",
+  "verze": "Platí pro aplikaci v5.11.2 · sestaveno 4. 11. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -641,6 +641,10 @@
         {
           "typ": "podnadpis",
           "text": "Migrace ceníku po nasazení nové verze"
+        },
+        {
+          "typ": "text",
+          "text": "**Skladebný model můstků.** Ve skupině **HRUBÁ OCK** přibyly položky **Můstky – nosná konstrukce (skladebný model)** (Kč/bm délky při referenční šířce, bez podlahy a zábradlí), **podlaha pochozí plech / pororošt / ocelová vana pro beton** (Kč/m²; vana je jen naše ocelová vana, betonáž zajistí stavba), **zábradlí kovové / skleněné** (Kč/bm na každé straně), **kotvení do stropní desky / do sloupů / konzolově z OCK** (Kč za sadu na můstek) a **Montáž můstků – skleněné zábradlí navíc** (hod/bm). Sazby v kódu nejsou — vyplníte je vy. **Dokud je nosná konstrukce nulová, počítají se můstky dál podle dosavadních řádků** (Kč/bm vč. zábradlí, montáž v hodinách) — nic se nemění. Jakmile nosnou konstrukci vyplníte, Model 2 počítá skladebně a dosavadní **Můstek … vč. zábradlí – materiál** nečte (jinak by se zábradlí započetlo dvakrát); montáž (sazba a hodiny) zůstává společná. Při zveřejnění ceníku s nosnou konstrukcí, ale s nulovou sazbou některého provedení, chce aplikace potvrzení (nové nabídky by to provedení počítaly zdarma). Sloupy navíc vlastní sazbu nemají — berou cenu profilů za kg a lakování profilů. Model 1 počítá dál jako dosud."
         },
         {
           "typ": "text",

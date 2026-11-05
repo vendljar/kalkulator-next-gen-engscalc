@@ -8,6 +8,49 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v5.11.2 — MU #560: samostatná sekce MŮSTKY (karta v Zadání, skladebný výpočet v Modelu 2, sekce a řádek ceny v CN, šablona CN v16), větev claude/mu-mustky
+
+Nad `000924e` (`main` = `test` = v4.11.8), rozhodnutí J. V. 4. 11. 2026 k návrhu NV
+(`podklady/NAVRH_MUSTKY_A_ZMENA_CENY_04_11.md`, oddíl A, A-Q1 až A-Q9). Verzi může koordinace přečíslovat.
+
+- **Zadání (A-Q1, A-Q2):** karta **„Můstky mezi budovou a OCK“** v Zadání šachty (pod zadáním, režim karty
+  `ock.mustky`). Zadání **po skupinách stejných můstků** `Z.mustky[]` (ks, šířka — prázdná = šířka šachty, délka —
+  prázdná = 1 000 mm, podlaha, zábradlí + strany, kotvení, sloupy navíc ks × výška — prázdná = zdvih);
+  „+ další provedení“ / ✕. Pole počtu v zadání šachty zůstává (u více skupin jen součet). Stará zakázka
+  (`mustkyKs`/`mustek` + `mustekHloubkaMm`) se čte jako jedna skupina a **přepíše se až první úpravou v kartě** —
+  stará data počítají na haléř stejně. Pole délky a šířky ve sloupci zadání nahradila karta.
+- **Výpočet (A-Q3 až A-Q7):** **Model 1 zůstává na vzorci #354** (karta ukáže jen počet a délku a upozorní).
+  **Model 2 se starým ceníkem** (bez kladné `C.mustekRamBmKc`) počítá dál #354 = pochozí plech + kovové zábradlí,
+  jen se zadanou šířkou skupiny. **Model 2 se skladebným ceníkem** = nosná konstrukce + podlaha podle typu (m²) +
+  zábradlí podle typu (bm × strany) + kotvení (sada na můstek) + sloupy navíc + montáž (#354 + hodiny skleněného
+  zábradlí); vlastní sekce kalkulace **MŮSTKY MEZI BUDOVOU A OCK**, `C.mustekKc` (vč. zábradlí) se v něm nečte.
+  **Sloupy navíc jako rohové sloupky šachty** (A-Q5): profil sloupku z Dimenze profilů, rezerva profilů, Kč/kg
+  profilů, lakování profilů — žádná nová sazba (`mustekSloupBmKc` se nezavádí); jen Model 2, i se starým ceníkem.
+  **Vana (A-Q4):** sazba jen za ocelovou vanu, řádek „… OCELOVÁ VANA (BETON ZAJISTÍ STAVBA)“, ve specifikaci
+  a nabídce „ocelová vana pro beton (betonáž zajistí stavba)“. Provedení „jiné“ = řádek s cenou 0 a štítkem
+  *bez ceny* (cenu doplní ruční přepis řádku), kontrola `mustky` to řekne.
+- **Ceník (A-Q6, #548):** nové klíče `mustekRamBmKc`, `mustekPodlahaPlechM2Kc`, `…PororostM2Kc`, `…VanaM2Kc`,
+  `mustekZabradliKovBmKc`, `…SkloBmKc`, `mustekKotveniDeskaKc`, `…SloupKc`, `…KonzolaKc`,
+  `mustekZabradliSkloMontazHodBm` — **bez hodnot v kódu**. Zveřejnění ceníku s nosnou konstrukcí a nulovou sazbou
+  provedení (nebo sazbami provedení bez nosné konstrukce) chce potvrzení (`mustkyPotvrzeno`, jako #548 / K40-N2).
+- **Cenová nabídka (A-Q8/9):** technická část má (jen ve skladebném modelu) sekci **MŮSTKY MEZI BUDOVOU A OCK**
+  (POČET A ROZMĚR, PODLAHA, ZÁBRADLÍ, KOTVENÍ MŮSTKŮ, SLOUPY NAVÍC); souhrnný řádek v DOPLŇKOVÝCH KONSTRUKCÍCH pak
+  zmizí. Část B: **Výtahová šachta** (bez můstků) a **Můstky mezi budovou a OCK** (obojí před slevou), případně
+  Cena před slevou a Sleva, pak **Cena celkem** bez DPH. Sleva a zaokrouhlení z celku jako dosud; šachta + můstky =
+  cena před slevou na korunu (v eurech na euro). `zakladCena` zůstává celková — krycí list, controlling a Pipedrive
+  beze změny. **Šablona CN v16** (`node nastroje/vyrob_sablony.js --cn-v16 <podklady>`, z v15) se symboly
+  `TS_MUSTKY_ROZMER/_PODLAHA/_ZABRADLI/_KOTVENI/_SLOUPY`, `CENA_SACHTA_BEZ_DPH`, `CENA_MUSTKY_BEZ_DPH`,
+  `CENA_BEZ_DPH_SACHTA`, `CENA_BEZ_DPH_CELKEM` (+ EN/DE/FR); šablona v15 a starší dostane sekci i řádky ceny
+  naklonované (kotvy `TS_SOKL`, `CENA_BEZ_DPH`, vložení před „Cena před slevou“, přejmenování na „CENA CELKEM“ —
+  rozšíření `docxRadkyNavic` o `predSymbolem` a `prejmenuj`). Bez můstků dá v16 tentýž dokument jako v15.
+- **Překlady EN/DE/FR** (návrh ke kontrole J. V.), **specifikace** (sekce s podmínkou `jen`, přepsatelné řádky),
+  **krycí list** (techdata „Můstky…“ předvyplní souhrn z karty), **controlling** (sekce `mustky`; sklo → sklo,
+  ostatní → zámečníci, montáž → stavební práce), **standard OCK** (nejdelší můstek, zadaná šířka ≤ šířka OCK),
+  **server** (validace `Z.mustky`: pole ≤ 20 skupin, čísla nezáporná se stropem, volby ze seznamů, texty ≤ 120,
+  žádné cizí klíče). **Zamčené nabídky beze změny**, ruční ceny (#561) fungují i pro nové klíče (jsou v Kč).
+- **Testy:** `src/test_560_mustky_sekce.js` 228/0 (zlatá pojistka proti 000924e: 9 scénářů × Model 1/2 × výsledek,
+  symboly CZ/EN, náhled, specifikace — otisky `src/test_560_zlata.json`, generátor `nastroje/zlata_560.js`),
+  `netlify/test_560_mustky.mjs` 22/0, `overit_560_mustky.mjs` 17/0; upraveny `overit_zadani_detail.mjs` a `overit_zobrazeni.mjs` (délka a šířka jsou v kartě Můstky). Mutace „#560“ jádro 38/38, server 15/15. Pojistky: viz commit.
 ## v5.11.1 — PH #568, #569, #572: hlavička PROJ jako u OCK, studie bez zaměření, sklo jen tam, kde je, větev claude/ph-proj-hlavicka
 
 Nad `000924e` (`test` = `main` = v4.11.8). Pokyn J. V. 5. 11. 2026 a e-mail obchodníka D. Sikory z 2. 11. 2026.

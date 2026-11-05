@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : [/* #IK / #560 (4. 11. 2026): interní poznámky k zakázce na krycím listu — rychlé sady. */
+  : [/* #560 MU (5. 11. 2026): sekce MŮSTKY — server (validace Z.mustky, zveřejnění ceníku, zámek) a model. */
+     'test_560_mustky.mjs', '../src/test_560_mustky_sekce.js',
+     /* #IK / #560 (4. 11. 2026): interní poznámky k zakázce na krycím listu — rychlé sady. */
      '../src/test_ik_poznamky.js', 'test_ik_poznamky.mjs', '../src/test_poznamky.js',
      /* #530 (27. 10. 2026): autorská poznámka v hlavičce lib/sdilene.mjs — rychlá sada, první. */
      '../src/test_autorstvi.js',
@@ -285,19 +287,19 @@ const MUTACE = [
    * hláška řekne, která strana ceník nemá. Hlídá netlify/test_555b_klon_cenik.mjs. */
   /* Vzor doplnění ceníku odeslané varianty v importu (prohlížeč) — hlídá
    * src/test_555b_klon_cenik.js (je v SADY). */
-  /* #560 SV (4. 11. 2026, rozhodnutí J. V.): volba světlíku „zajistí stavba"
+  /* #564 SV (4. 11. 2026, rozhodnutí J. V.): volba světlíku „zajistí stavba"
    * zrušena. Převod rozpracovaných variant (zakazka.js) a serverové pravidlo
    * „nová stavba nevzniká" (uloziste.js, zakazka_kontrola.mjs). Hlídají
    * src/test_svetliky_stavba.js a netlify/test_560_svetliky_stavba.mjs. */
-  { nazev: '#560: převod sáhne i na odeslanou variantu [#560]', soubor: '../src/zakazka.js',
+  { nazev: '#564: převod sáhne i na odeslanou variantu [#564]', soubor: '../src/zakazka.js',
     hledej: "    if (!v || !v.data || zamcena(v)) return;\n    const z = v.data.ock && v.data.ock.zadani;",
     nahrad: "    if (!v || !v.data) return;\n    const z = v.data.ock && v.data.ock.zadani;",
     proc: 'odeslaná nabídka by změnila data i cenu — zámek by uložení odmítl (#555)' },
-  { nazev: '#560: převod zakázky nic nepřevede [#560]', soubor: '../src/zakazka.js',
+  { nazev: '#564: převod zakázky nic nepřevede [#564]', soubor: '../src/zakazka.js',
     hledej: "    if (z && typeof z === 'object' && svetlikyStavbaNaBez(z)) n++;",
     nahrad: "    if (false) n++;",
     proc: 'rozpracovaná varianta by zrušenou volbu nesla dál' },
-  { nazev: '#560: duplikát zakázky nese „stavba" [#560]', soubor: '../src/zakazka.js',
+  { nazev: '#564: duplikát zakázky nese „stavba" [#564]', soubor: '../src/zakazka.js',
     hledej: "    if (typeof svetlikyStavbaNaBez === 'function' && n.data && n.data.ock) svetlikyStavbaNaBez(n.data.ock.zadani);",
     nahrad: "",
     proc: 'duplikát by server jako novou zakázku neuložil' },
@@ -1566,8 +1568,8 @@ const MUTACE = [
     nahrad: "  dej('sl-zamecnici', ['C.mustekMontazHodKc']);",
     proc: 'controlling by materiál a montáž můstků neviděl zvlášť' },
   { nazev: '#354: hodiny montáže můstků jako náklad', soubor: '../src/controlling.js',
-    hledej: "    'C.mustekRefSirkaMm', 'C.mustekMontazZakladHod', 'C.mustekMontazBmHod', 'C.mustekMontazMinHod']);",
-    nahrad: "    ]);",
+    hledej: "    'C.mustekRefSirkaMm', 'C.mustekMontazZakladHod', 'C.mustekMontazBmHod', 'C.mustekMontazMinHod',",
+    nahrad: "   ",
     proc: 'počty hodin a šířka by se v mapování tvářily jako nezařazený náklad' },
   { nazev: '#447: prototypové klíče v mapování controllingu projdou', soubor: '../src/controlling.js',
     hledej: "    if (CTRL_ZAKAZANE_KLICE.includes(k) || !CTRL_KLIC_TVAR.test(k))\n      return",
@@ -5960,6 +5962,31 @@ const MUTACE = [
     hledej: "    if (typeof s.text === 'string') {",
     nahrad: "    if (false) {",
     proc: 'Word by místo textu poznámek vytiskl prázdnou tabulku' },
+  /* ---------- #560 sekce MŮSTKY (5. 11. 2026) — hlídá netlify/test_560_mustky.mjs ---------- */
+  { nazev: '#560: server pustí víc než 20 skupin můstků', soubor: '../src/uloziste.js',
+    hledej: "      if (!Array.isArray(z.mustky) || z.mustky.length > ULO_MUSTKY_MAX) out.push({ kde: 'ock.zadani.mustky', duvod: 'typ' });",
+    nahrad: "      if (!Array.isArray(z.mustky)) out.push({ kde: 'ock.zadani.mustky', duvod: 'typ' });",
+    proc: 'obří pole skupin by šlo uložit a rozbít výpočet i dokument' },
+  { nazev: '#560: server nehlídá volby podlahy, zábradlí a kotvení', soubor: '../src/uloziste.js',
+    hledej: "ULO_MUSTKY_VOLBY[k].indexOf(g[k]) < 0) out.push({ kde: c + '.' + k, duvod: 'typ' });",
+    nahrad: "false) out.push({ kde: c + '.' + k, duvod: 'typ' });",
+    proc: 'doklad (zámek, nabídka) by nesl neznámé provedení' },
+  { nazev: '#560: server nehlídá délku textů skupiny', soubor: '../src/uloziste.js',
+    hledej: "(typeof g[k] !== 'string' || g[k].length > ULO_MUSTKY_TEXT)) out.push",
+    nahrad: "false) out.push",
+    proc: 'do nabídky by šel libovolně dlouhý nebo netextový údaj' },
+  { nazev: '#560: server pustí neznámý klíč skupiny', soubor: '../src/uloziste.js',
+    hledej: "Object.keys(g).forEach(k => { if (ULO_MUSTKY_KLICE.indexOf(k) < 0) out.push",
+    nahrad: "Object.keys(g).forEach(k => { if (false) out.push",
+    proc: 'zakázka by vozila cizí pole (třeba vlastní cenu) mimo kontrolu' },
+  { nazev: '#560: server nehlídá čísla skupiny', soubor: '../src/uloziste.js',
+    hledej: "        ULO_MUSTKY_CISLA.forEach(k => { hlidej(g[k], c + '.' + k); strop(g[k], c + '.' + k); });",
+    nahrad: "        ULO_MUSTKY_CISLA.forEach(k => { strop(g[k], c + '.' + k); });",
+    proc: 'záporný počet můstků by snížil cenu bez schvalování' },
+  { nazev: '#560: zveřejnění skladebného ceníku s nulovou sazbou bez potvrzení', soubor: '../src/engine.js',
+    hledej: "    if (nul.length) return { ok: false, stary: false, chybi: chybi.concat(nul),",
+    nahrad: "    if (false) return { ok: false, stary: false, chybi: chybi.concat(nul),",
+    proc: 'provedení můstku by šlo do nabídek za 0 Kč (#548 / K40-N2)' },
 ];
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
  * (nález T5 revize v22.9.9, 22. 9. 2026)

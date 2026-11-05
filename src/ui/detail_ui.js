@@ -445,6 +445,7 @@ function renderDetail() {
   const s = r.souctySekci;
   const krCeny = dvKrok('11. Cenové sekce (náklad + přirážka)',
     sekceBlok('HRUBÁ OCK', r.sekce.hrubaOck, s.hrubaOck) +
+    (r.sekce.mustky ? sekceBlok('MŮSTKY MEZI BUDOVOU A OCK', r.sekce.mustky, s.mustky) : '') +
     sekceBlok('OPLÁŠTĚNÍ', r.sekce.oplasteni, s.oplasteni) +
     sekceBlok('VOLITELNÉ (jen zaškrtnuté)', r.sekce.volitelne, s.volitelne) +
     sekceBlok('REŽIE', r.sekce.rezie, s.rezie) +

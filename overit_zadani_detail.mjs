@@ -250,12 +250,14 @@ const n58 = await p.evaluate(() => {
   out.poSklo = { nad: Z.nadDvermi, stary: Z.svetlikNadDvermi };
   nadDvermiSet('plech'); render();
   mustkySet(3);
-  /* #354: zadává se jen Délka můstku, Šířka můstku je jen zobrazení (= šířka šachty). */
-  const sirkaL = lbl('Šířka můstku'), sirkaMustku = sirkaL && sirkaL.parentElement.querySelector('input');
-  out.mustky3 = { ks: Z.mustkyKs, stary: Z.mustek, rozmery: !!lbl('Délka můstku') && !!sirkaMustku
-    && !!sirkaMustku.disabled && sirkaMustku.value === String(Math.round((+Z.sirka || 0) * 1000)) };
+  /* #560: počet založí skupinu Z.mustky; délka, šířka (prázdná = šířka šachty)
+   * a provedení jsou v kartě Můstky pod zadáním šachty. */
+  const karta = document.getElementById('ock-mustky');
+  const sirkaMustku = karta && [...karta.querySelectorAll('input')].find(i => /šířka šachty/.test(i.title || ''));
+  out.mustky3 = { ks: mustkyPocet(Z), stary: Array.isArray(Z.mustky) && Z.mustky[0].ks === 3 && !('mustkyKs' in Z),
+    rozmery: !!karta && !!sirkaMustku && sirkaMustku.placeholder === String(Math.round((+Z.sirka || 0) * 1000)) };
   mustkySet(-2);
-  out.mustkyZap = Z.mustkyKs;
+  out.mustkyZap = mustkyPocet(Z);
   mustkySet(0); render();
   return out;
 });
@@ -274,7 +276,7 @@ zkus('N58 + #560: menu nabízí bez / sklo / plech / materiál opláštění (be
 zkus('N58: staré zaškrtávátko zmizelo', n58.zadneZaskrtavatko);
 zkus('N58 + #560: „stavba" se odmítne (zůstane „bez"), sklo se uloží a staré pole drží v souladu',
   n58.poStavba.nad === 'bez' && n58.poStavba.stary === false && n58.poSklo.nad === 'sklo' && n58.poSklo.stary === true, JSON.stringify(n58));
-zkus('25. 9.: 3 můstky se uloží, staré pole v souladu, ukážou se rozměry',
+zkus('25. 9. / #560: 3 můstky se uloží jako skupina, ukáže se karta Můstky s rozměry',
   n58.mustky3.ks === 3 && n58.mustky3.stary === true && n58.mustky3.rozmery, JSON.stringify(n58.mustky3));
 zkus('25. 9.: záporný počet můstků = 0', n58.mustkyZap === 0, n58.mustkyZap);
 
