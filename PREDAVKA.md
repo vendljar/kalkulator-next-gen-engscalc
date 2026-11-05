@@ -23,7 +23,7 @@ kotvení, hodiny skla) a zveřejnit — dokud je nosná konstrukce nulová, poč
 **Testy:** `src/test_560_mustky_sekce.js` 228/0 (zlatá pojistka proti 000924e — otisky `src/test_560_zlata.json`,
 `nastroje/zlata_560.js`), `netlify/test_560_mustky.mjs` 22/0, `overit_560_mustky.mjs` 17/0. Pojistky na 000924e:
 jádro projde jen zlatá část A a pak spadne, server 15 FAIL, harness spadne. Mutace „#560": jádro 38/38 (vč. 15 SV),
-server 15/15 (vč. 9 SV); `--kontrola` 687 / 1310. Kolo `--bez-mutaci`: viz ohlášení koordinaci.
+server 15/15 (vč. 9 SV); `--kontrola` 687 / 1310. Kolo `--bez-mutaci` nad 4492632: **VŠE ZELENÉ** — sady 392 / 0 / **7 přeskočeno** (test.js + 6 prohlížečových sad bez firemních podkladů KNG_PODKLADY, jako v předchozích dávkách), hodiny +400 dní 315 / 0 / 1, statické 5 z 5, 26 min 20 s. První kolo chytilo: datum ve zlaté pojistce (krok hodiny), čísla roadmapy v manuálech, dva starší harnessy na pole délky v zadání — opraveno. Celé mutace nepouštěny (jen „#560“).
 
 **Otevřené body:** výchozí výška sloupu = zdvih (výška nejvyššího nástupiště) — potvrdit; sloupy navíc bez hodin
 montáže (sloupky šachty vlastní hodiny nemají); provedení „jiné" se standardu OCK netýká (ATYP se kvůli němu
