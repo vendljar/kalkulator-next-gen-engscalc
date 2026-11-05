@@ -4,7 +4,9 @@
  *  A) Zlatá pojistka: zakázky bez můstků a se starým zadáním (počet + délka,
  *     zaškrtávátko) a starým ceníkem (paušál i #354) dávají v Modelu 1 i 2
  *     tentýž výsledek jádra, symboly nabídky CZ/EN, náhled a specifikaci jako
- *     výchozí commit 000924e (otisky v test_560_zlata.json, generátor
+ *     výchozí commit 000924e, v integraci přegenerováno ze stromu 5da7a2d
+ *     (v5.11.1 PH přidala do výsledku jen razítko oplasteni.skloJenSPlochou)
+ *     (otisky v test_560_zlata.json, generátor
  *     nastroje/zlata_560.js).
  *  B) Jádro: skupiny `Z.mustky`, starý tvar = jedna skupina na haléř, Model 1
  *     na vzorci #354, skladebný model v Modelu 2 (každá podlaha a zábradlí
@@ -66,7 +68,7 @@ const radek = (r, n) => (r.sekce.mustky || []).concat(r.sekce.hrubaOck).find(x =
   const ted = JSON.parse(require('child_process').execFileSync(process.execPath,
     [path.join(__dirname, '..', 'nastroje', 'zlata_560.js'), __dirname], { encoding: 'utf8', maxBuffer: 1 << 24 })).scenare;
   Object.keys(zlata).forEach(sc => Object.keys(zlata[sc]).forEach(k => {
-    test('A zlatá pojistka ' + sc + ' · ' + k + ' = 000924e', ted[sc] && ted[sc][k] === zlata[sc][k], ted[sc] && ted[sc][k]);
+    test('A zlatá pojistka ' + sc + ' · ' + k + ' = základ', ted[sc] && ted[sc][k] === zlata[sc][k], ted[sc] && ted[sc][k]);
   }));
 }
 

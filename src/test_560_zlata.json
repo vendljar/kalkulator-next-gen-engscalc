@@ -2,7 +2,7 @@
  "zdroj": "nastroje/zlata_560.js",
  "scenare": {
   "bezMustku-ext": {
-   "model2": "f6bf31cea7d6ba42bbc836f6",
+   "model2": "7112f635a461b736b8ffe2ee",
    "model2Cena": 1212000,
    "m2-ph-cz": "17dc5b712433041fa223dedb",
    "m2-nahled-cz": "9300da6855b21a56cda3e53b",
@@ -11,7 +11,7 @@
    "m2-nahled-en": "69c5a99fe37d077b2794c49d",
    "m2-radkyNavic-en": "c706974fe0cb3ab9afe9b491",
    "m2-spec": "5e84f6da69ab3f6a7505f1c0",
-   "model1": "12f9371f4a81f2e83498b482",
+   "model1": "78be478b9b09cb756e6e6b5b",
    "model1Cena": 1208000,
    "m1-ph-cz": "2320b506d6b55c92ff2e0d43",
    "m1-nahled-cz": "ba460eedff1f4d69db3c8bfe",
@@ -22,7 +22,7 @@
    "m1-spec": "5e84f6da69ab3f6a7505f1c0"
   },
   "bezMustku-int": {
-   "model2": "801f079e90787505adddf859",
+   "model2": "2f136502f96a5a5c8b54c613",
    "model2Cena": 972000,
    "m2-ph-cz": "c7bfd512e4deb8fc983f725a",
    "m2-nahled-cz": "4d60ca545346da4d28ca39ed",
@@ -31,7 +31,7 @@
    "m2-nahled-en": "c3a07a7032094c9567e02fb9",
    "m2-radkyNavic-en": "c706974fe0cb3ab9afe9b491",
    "m2-spec": "42c0338f94af10434e9566c2",
-   "model1": "87cb6d026bf673fd761e1f5a",
+   "model1": "d3b32edf33f2623278edf1cd",
    "model1Cena": 972000,
    "m1-ph-cz": "c7bfd512e4deb8fc983f725a",
    "m1-nahled-cz": "4d60ca545346da4d28ca39ed",
@@ -42,7 +42,7 @@
    "m1-spec": "42c0338f94af10434e9566c2"
   },
   "bezMustku-pausal": {
-   "model2": "f6bf31cea7d6ba42bbc836f6",
+   "model2": "7112f635a461b736b8ffe2ee",
    "model2Cena": 1212000,
    "m2-ph-cz": "aa25a352120a34c586ec8b77",
    "m2-nahled-cz": "57691a87a767d6a19424d5e4",
@@ -51,7 +51,7 @@
    "m2-nahled-en": "0969a68005edf81fd764de47",
    "m2-radkyNavic-en": "c706974fe0cb3ab9afe9b491",
    "m2-spec": "5e84f6da69ab3f6a7505f1c0",
-   "model1": "12f9371f4a81f2e83498b482",
+   "model1": "78be478b9b09cb756e6e6b5b",
    "model1Cena": 1208000,
    "m1-ph-cz": "a0975dd5ba31a358ac8fa739",
    "m1-nahled-cz": "9d4d98d47ffd5a5319486c29",
@@ -62,7 +62,7 @@
    "m1-spec": "5e84f6da69ab3f6a7505f1c0"
   },
   "stare-2ks-delka-354": {
-   "model2": "a7530a81bc950cc9a996cb4c",
+   "model2": "b90767a79528da29c5b3f1e4",
    "model2Cena": 1279000,
    "m2-ph-cz": "57cefede175b5eaa279b0831",
    "m2-nahled-cz": "929b88b93799c2cd9c6da8ff",
@@ -71,7 +71,7 @@
    "m2-nahled-en": "e4132939f323b5ef575214ec",
    "m2-radkyNavic-en": "c706974fe0cb3ab9afe9b491",
    "m2-spec": "9207baf2af4edae3dfe29d48",
-   "model1": "344bfbc6c05318379a0e0054",
+   "model1": "17bdf5faff3cfb4846f1097d",
    "model1Cena": 1276000,
    "m1-ph-cz": "4b64b5f1b0431388c7c5bec6",
    "m1-nahled-cz": "7785c9e5149c45bcb139ed8c",
@@ -82,7 +82,7 @@
    "m1-spec": "9207baf2af4edae3dfe29d48"
   },
   "stare-1ks-bezDelky-354": {
-   "model2": "3d745cc2af3fa99364e8e23f",
+   "model2": "a54ed59e2c591c5a6b3eb0dd",
    "model2Cena": 1001000,
    "m2-ph-cz": "a868dd2009674e68ac03c0bd",
    "m2-nahled-cz": "d9d107e4dabc57b2e6f4037b",
@@ -91,7 +91,7 @@
    "m2-nahled-en": "42d71fceaa2db188d7bd1cd2",
    "m2-radkyNavic-en": "c706974fe0cb3ab9afe9b491",
    "m2-spec": "a818ab3fe601adefbb9a96e2",
-   "model1": "30ceac9a3b4e866f9ccfa32e",
+   "model1": "27d615da0e733817a787e432",
    "model1Cena": 1001000,
    "m1-ph-cz": "a868dd2009674e68ac03c0bd",
    "m1-nahled-cz": "d9d107e4dabc57b2e6f4037b",
@@ -102,7 +102,7 @@
    "m1-spec": "a818ab3fe601adefbb9a96e2"
   },
   "stare-zaskrtnuty-354": {
-   "model2": "4876dd8480e96e8671c94284",
+   "model2": "d6c3c682142b25d98472c764",
    "model2Cena": 1236000,
    "m2-ph-cz": "f6dbec61f11cec2b0d4678fd",
    "m2-nahled-cz": "999ea2944c9ea6e9ab786fe8",
@@ -111,7 +111,7 @@
    "m2-nahled-en": "ab88bc061c28d67605e64fde",
    "m2-radkyNavic-en": "c706974fe0cb3ab9afe9b491",
    "m2-spec": "69917dfab9b204bc2d19a200",
-   "model1": "9ee70bd9e5dafa06f103aea4",
+   "model1": "b48fdc2216e629085590f359",
    "model1Cena": 1232000,
    "m1-ph-cz": "bddf6d95ab1182af640e4762",
    "m1-nahled-cz": "06ac28c2169e01faceb05fac",
@@ -122,7 +122,7 @@
    "m1-spec": "69917dfab9b204bc2d19a200"
   },
   "stare-vsechna-nastupiste-354": {
-   "model2": "572f90b1ca89046d7a7cdeda",
+   "model2": "e58289c58ed2e64114a91dca",
    "model2Cena": 1367000,
    "m2-ph-cz": "b82c47c63372e67015b6f5c2",
    "m2-nahled-cz": "297b3896b58d9b40b087104a",
@@ -131,7 +131,7 @@
    "m2-nahled-en": "2404f1f886cb61186fdd6769",
    "m2-radkyNavic-en": "c706974fe0cb3ab9afe9b491",
    "m2-spec": "cda48993285ab4924a22298c",
-   "model1": "8ba2c76ba91e044be2169b2f",
+   "model1": "19d91108d22d941d572a3839",
    "model1Cena": 1363000,
    "m1-ph-cz": "78dadbda7e85634358541532",
    "m1-nahled-cz": "962c464935a6ac592b7fdd15",
@@ -142,7 +142,7 @@
    "m1-spec": "cda48993285ab4924a22298c"
   },
   "stare-2ks-pausal": {
-   "model2": "0c604e736f14f14156509edb",
+   "model2": "6f1a480a68d65e650d44049d",
    "model2Cena": 1308000,
    "m2-ph-cz": "4af352e18ffe40ac6acd9750",
    "m2-nahled-cz": "3ce973abe53a532171e62a93",
@@ -151,7 +151,7 @@
    "m2-nahled-en": "df210ade6dc69731b712b5ff",
    "m2-radkyNavic-en": "c706974fe0cb3ab9afe9b491",
    "m2-spec": "1061f445218c1e79368463f6",
-   "model1": "33dc561d61717a5dc3f2b316",
+   "model1": "afe04ebd1ad93cd3a6ba38d0",
    "model1Cena": 1304000,
    "m1-ph-cz": "763cb2040fa51976aed070b8",
    "m1-nahled-cz": "a11a27104ec605d359e91788",
@@ -162,7 +162,7 @@
    "m1-spec": "1061f445218c1e79368463f6"
   },
   "stare-zaskrtnuty-pausal": {
-   "model2": "101c58be77f8b4b8375fa70e",
+   "model2": "c096fa09b6dc8e4dcee432f6",
    "model2Cena": 1020000,
    "m2-ph-cz": "1ea311d23505204373f87c1a",
    "m2-nahled-cz": "74f176ed87809222f276ca0c",
@@ -171,7 +171,7 @@
    "m2-nahled-en": "91108c38b38d4cf806f62174",
    "m2-radkyNavic-en": "c706974fe0cb3ab9afe9b491",
    "m2-spec": "c644a2b67398c19a892a2612",
-   "model1": "446a8b94c87ee2411a7417f9",
+   "model1": "ad7ab1feaaaa0d99fb7f5ca8",
    "model1Cena": 1020000,
    "m1-ph-cz": "1ea311d23505204373f87c1a",
    "m1-nahled-cz": "74f176ed87809222f276ca0c",
