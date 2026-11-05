@@ -5,7 +5,7 @@
 **Kód aplikace beze změny. NIC NEPROGRAMOVAT, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“.**
 
 - Podklad: `podklady/NAVRH_VICE_SACHET_05_11.md` (oddíl 0 rozhodnutí, oddíl 11 prompt pro realizaci po etapách).
-- Artefakt (soukromý, verze 5): https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa — zdroj HTML jen
+- Artefakt (soukromý, verze 6): https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa — zdroj HTML jen
   v artefaktu (načíst přes Artifact `read`, republish na stejnou adresu přes `url`).
 - Roadmapa: #570 (vlna C, `ceka`, XL, závisí měkce na #560) v `roadmapa/roadmap.json`.
 
@@ -18,14 +18,16 @@ hodnota = cena nabídky + seznam šachet v poznámce · R7 zaokrouhlovací rozd�
 R9 jeden krycí list za variantu · R10 max. 10 šachet · R11 ruční cena #561 společná · R12 u šachty
 s víc kusy jen cena za všechny kusy · R13 sloučený příplatek = jedna volba.
 
-**Otevřené body:** žádné otázky. Návrh uzavřen, připraveno ke spuštění.
+**Otevřené body:** O11 — můstky v tabulce šachet (doporučeno a: řádek za šachtu bez můstků + jeden řádek Můstky za všechny šachty + Cena celkem). Jinak připraveno ke spuštění.
 
-**Závislosti:** dávka MU (#560, `Z.mustky[]`) musí být sloučená dřív. K40 opravy a PH běží souběžně
+**Závislosti:** dávka MU (#560, `Z.mustky[]`, šablona CN v16) je sloučená v v5.11.2. K40 opravy a PH běží souběžně
 a mění sousední soubory → po každém „AKTUALIZUJ VS nad <SHA>“ ověřit návrh a prompt proti kódu
 (hlavně `zamek.js` `vypocetZ`, `engine.js` souhrn, `nabidka.js`, `kryci.js`, `pd_nanecisto.js`,
 `uloziste.js`) a krátce ohlásit koordinaci.
 
 **Ověřeno proti kódu:** 5. 11. nad `5da7a2d` (v5.11.1, PH) — dopad jen na specifikaci po šachtách (razítko #572 `skloJenSPlochou`, `tsMaSklo` volat s výsledkem šachty, ruční hodnoty `dalsi[i].techspec`); podklad oddíl 12.
+
+**Ověřeno 5. 11. nad `6b70cc3`** (v5.11.3, MU #560 + DZ): třetí pole `mustkyCenaPredZaokr`, můstky ze součtu, rozpočet bez můstků, šablona v17 navazuje na v16, KL můstky po šachtách; podklad oddíl 12.
 
 **Další krok:** čekat na pokyn koordinace. Při spuštění etapy: větev `claude/vs-e<N>-…` nad zadaným SHA,
 hooky, pojistky testů, zlatá sada „1 šachta na haléř“, celé kolo (Playwright přes odkaz
