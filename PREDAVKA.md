@@ -1,3 +1,35 @@
+# Předávka — 5. 11. 2026: MU #560 — samostatná sekce MŮSTKY, větev `claude/mu-mustky`
+
+Nad `000924e` (`main` = `test` = v4.11.8). **Verze 5.11.1** (koordinace přečísluje). Neslučováno; do `test-draft`,
+`test` ani `main` nic, na webech, Disku (šablony jen přečteny) ani v Pipedrive nic.
+
+| úkol (rozhodnutí J. V. 4. 11.) | stav | kde |
+|---|---|---|
+| A-Q1/Q2 karta Můstky, skupiny `Z.mustky[]`, starý tvar = jedna skupina | ✅ | `src/ui/kalk_ock.js` (`mustkyKarta`, `mustkySet`, `mustekPoleSet`), `src/engine.js` (`mustkySkupiny`, `mustkyNaSkupiny`) |
+| A-Q3/Q6 skladebný model, nové klíče bez sazeb, potvrzení při zveřejnění | ✅ | `src/engine.js` (`mustkyRozpad`, `MUSTKY_SKLADBA_KLICE`, `mustkyCenikKontrola`), `src/cenik.js` |
+| A-Q4 vana = jen ocelová vana, beton stavba (věta v nabídce i specifikaci) | ✅ | řádek kalkulace + `MUSTEK_PODLAHY` |
+| A-Q5 sloupy jako sloupky šachty, bez `mustekSloupBmKc` | ✅ | `src/engine.js` (profil sloupku, rezerva, Kč/kg, lakování profilů) |
+| A-Q7 Model 1 na #354, karta jen počet + délka + upozornění | ✅ | |
+| A-Q8/9 CN sekce + řádek ceny, Word v16 + klon v15 | ✅ | `src/nabidka.js`, `src/docxgen.js` (`predSymbolem`, `prejmenuj`, `DOCX_CENA_CASTI`), `nastroje/vyrob_sablony.js --cn-v16` |
+| překlady, specifikace, krycí list, controlling, standard, server | ✅ | `src/preklad.js`, `src/techspec.js`, `src/kryci.js`, `src/controlling.js`, `src/standard_ock.js`, `src/uloziste.js` |
+| roadmapa #560 hotovo, CHANGELOG, manuál obchodníka a správce | ✅ | BEZPECNOST_MEZE beze změny (nová mez nevznikla — strop skupin a textů je validace tvaru) |
+
+**Na J. V.:** (1) v Nastavení → Ceník vyplnit sazby skladebného modelu (`C.mustekRamBmKc` a podlahy, zábradlí,
+kotvení, hodiny skla) a zveřejnit — dokud je nosná konstrukce nulová, počítá se vše jako dosud; (2) nahrát šablonu
+**CN v16** (CZ/EN/DE/FR) v Nastavení → Šablony. Vyrobena nástrojem z firemních v15 (Disk jen čten):
+`node nastroje/vyrob_sablony.js --cn-v16 <složka s Sablona_NABIDKA_CN_v15.docx> [výstup]` — ověřeno nad skutečnou v15
+(symbolů 122, bez problémů). Do té doby funguje klon do v15.
+
+**Testy:** `src/test_560_mustky_sekce.js` 228/0 (zlatá pojistka proti 000924e — otisky `src/test_560_zlata.json`,
+`nastroje/zlata_560.js`), `netlify/test_560_mustky.mjs` 22/0, `overit_560_mustky.mjs` 17/0. Pojistky na 000924e:
+jádro projde jen zlatá část A a pak spadne, server 15 FAIL, harness spadne. Mutace „#560": jádro 38/38 (vč. 15 SV),
+server 15/15 (vč. 9 SV); `--kontrola` 687 / 1310. Kolo `--bez-mutaci`: viz ohlášení koordinaci.
+
+**Otevřené body:** výchozí výška sloupu = zdvih (výška nejvyššího nástupiště) — potvrdit; sloupy navíc bez hodin
+montáže (sloupky šachty vlastní hodiny nemají); provedení „jiné" se standardu OCK netýká (ATYP se kvůli němu
+nezaškrtne) a cenu dostává ručním přepisem řádku; překlady EN/DE/FR ke kontrole; štítek #560 sdílí s dávkou SV
+(světlíky „zajistí stavba") — koordinace přečísluje; krycí list (techdata) nově předvyplní „Můstky…" i u starších
+zakázek s můstky (jen prázdné pole).
 # Předávka — 4. 11. 2026: MV4 #566 — 4. vydání manuálu výpočtu OCK pro v4.11.4, větev `claude/mv4-manual-vypocet`
 
 Nad `b751c91` (`main` = `test` = v4.11.4). **Kód aplikace beze změny, verze se nezvyšuje** (CHANGELOG „Dokumentace").
