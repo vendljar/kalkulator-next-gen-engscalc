@@ -3,7 +3,7 @@
 Pracuj v nové paralelní větvi `claude/k40-opravy` založené nad commitem, který ti koordinace pošle ve zprávě „SPUSŤ K40 nad <SHA>“ (bude to `origin/test` po sloučení dávek z 4. 11.: RC #561 ruční cena, SV #564 světlíky, PR prodaná = řídící, IK interní poznámky na krycím listu, MV4 manuál). Výchozí v4.11.4 (b751c91) z kola 42 už NEPLATÍ. Do `test-draft`, `test` ani `main` nic neslučuj, o sloučení rozhodne J. V. Komunikace česky. Na začátku přečti `CLAUDE.md` a `PREDAVKA.md` a spusť `bash nastroje/instaluj_hooky.sh`.
 
 **Podklady:**
-- `podklady/K40_PRIPRAVA.md` — krok 0 všech bodů nad integrací (stav, místo, kolize). Čísla řádků v tomto promptu jsou z `9a16ff5` (integrace v4.11.8 se všemi dávkami ze 4. 11.: RC, SV, PR, IK, MV4). Ověřeno i nad `000924e` a `5da7a2d` (integrace v5.11.1 = v4.11.8 + PH); jediný posun: `src/preklad.js` `prekladNorm` na ř. 1286. Roadmapa: K40 má volné **#567** a pak od **#573** (#568, #569, #572 PH; #570 návrh víc šachet; #571 DZ).
+- `podklady/K40_PRIPRAVA.md` — krok 0 všech bodů nad integrací (stav, místo, kolize). **Čísla řádků v tomto promptu jsou z `6b70cc3`** (integrace v5.11.3 = v4.11.8 + PH #568/#569/#572 + MU #560 můstky + DZ #571 kopie na Disk). Roadmapa: obsazeno do #572 (#567 a #570 volné, #570 drží návrh víc šachet) → K40 bere **#567** a pak od **#573**.
 - **Souběh s dávkou PH (ve výchozím stavu od 5da7a2d):** PH (#572) přidala v `vypocet` razítko `oplasteni.skloJenSPlochou` a `techspec.js` vynechává sklo s nulovou plochou podle cest ceníku. `skloVolba` a `skloMigraceNazvu` nezměnila. U K40-N1 přidej do testů i kontrolu, že specifikace (`src/test_570_sklo_bez_plochy.js`) dává po přepnutí zasklení tam a zpět stejný text.
 - `Testovani/2026-11-04_kalkulator_BEZPECNOSTNI_AUDIT_v4.11.3.md` na Disku.
 - Rozhodnutí J. V. ze 4. 11. 2026 jsou zapsaná přímo u bodů níž (v1 tohoto promptu je měla jako otevřená).
@@ -26,7 +26,7 @@ Pracuj v nové paralelní větvi `claude/k40-opravy` založené nad commitem, kt
 
 ## 1. K40-N1 — vyřazené čelní sklo se po změně zasklení nebo typu znovu počítá (střední)
 
-**Kde:** `src/engine.js` — `skloMigraceNazvu` (ř. 458–487, dvojice ř. 463–464) a `skloVolba` (ř. 420–447). Volá ji `skloMigraceAkt` v `src/ui/common.js:74` (volání `:59` a `:797`), při importu také `importZakazka` (`src/zakazka.js:952`). Krok 0 nad 9a16ff5: trvá (dávky 4. 11. sklo nezasáhly).
+**Kde:** `src/engine.js` — `skloMigraceNazvu` (ř. 464–493, dvojice ř. 469–470) a `skloVolba` (ř. 426–453). Volá ji `skloMigraceAkt` v `src/ui/common.js:74` (volání `:59` a `:797`), při importu také `importZakazka` (`src/zakazka.js:952`). Krok 0 nad 6b70cc3: trvá (ověřeno v Node; PH ani MU sklo nezasáhly).
 
 **Příčina.** Název řádku čelního skla závisí na typu šachty a zasklení:
 - `MATERIÁL VSG 4.4.1` — exteriér, nebo interiér „mezi příčníky“,
@@ -58,7 +58,7 @@ Vyřazení (`nepocitat`) a přepisy (`mnozstviPrepis`, `cenyPrepis`, `nazvyPrepi
 
 **Kde:**
 - `src/nazvy_souboru.js:50` — `nazevCast`, poslední `.replace(/^[-.]+|[-.]+$/g, '')`.
-- `src/preklad.js:1286` (`prekladNorm`), `src/plan_plateb.js:435` (`milnik`), `src/slovnik.js:279` — ořez konce výrazem s kotvou.
+- `src/preklad.js:1314` (`prekladNorm`), `src/plan_plateb.js:435` (`milnik`), `src/slovnik.js:279` — ořez konce výrazem s kotvou.
 
 **Příčina.** Výraz s kotvou na konci zkouší shodu od každé pozice, takže nad dlouhým textem roste kvadraticky. `nazevCast` volá `nabidkaKarta` při každém `render()` Kalkulace OCK. Název varianty ani zákazník nemají délkový strop. Naměřeno na v4.11.3: 20 000 znaků 0,36 s, 60 000 znaků 3,6 s na jedno volání. Oprava #542 to vyřešila jen v `uloKlicSouboru` (`src/uloziste.js:64–70`).
 
@@ -78,11 +78,12 @@ Vyřazení (`nepocitat`) a přepisy (`mnozstviPrepis`, `cenyPrepis`, `nazvyPrepi
 
 ## 4. K40-N2, K40-N5 — kontroly věrohodnosti ceníku můstků (drobné)
 
-**K40-N2:** `mustkyCenikKontrola` (`src/engine.js:845–872`, po sloučení návrhu NV posun z 813) hlídá u `C.mustekRefSirkaMm` jen hodnotu > 0 (přes `mustkyCenikNovy`, ř. 783–786). Šířka zadaná v metrech (2 místo 2 000) dá 1 000× dražší materiál můstku a nikdo nevaruje.
+**K40-N2:** `mustkyCenikKontrola` (`src/engine.js:1002–1045`) hlídá u `C.mustekRefSirkaMm` jen hodnotu > 0 (přes `mustkyCenikNovy`, ř. 792–795). Šířka zadaná v metrech (2 místo 2 000) dá 1 000× dražší materiál můstku a nikdo nevaruje — krok 0 nad 6b70cc3: ceník `{mustekKc, mustekRefSirkaMm: 2, mustekMontazHodKc, mustekMontazZakladHod}` vrátí `ok: true`.
+- **Po MU #560 (sekce MŮSTKY, skladebný model):** referenční šířka teď škáluje i nosnou konstrukci skladebného modelu (`mustkyRozpad` ř. 914–, `bmRef` = délka × šířka / ref → `C.mustekRamBmKc`); podlaha a zábradlí počítají ze skutečných rozměrů skupiny. Kontrola skladebných sazeb (`MUSTKY_SKLADBA_KLICE` ř. 839, větev `kladne(c.mustekRamBmKc)` v `mustkyCenikKontrola`) už potvrzení nuly má a komentář odkazuje na K40-N2 — rozsah šířky doplň do téže funkce, ať platí pro oba modely, a nový výsledek (`chybi`/`text`) slaď s větvemi skladebného modelu (testy `src/test_560_mustky_sekce.js`, `netlify/test_560_mustky.mjs`, zlatá pojistka `src/test_560_zlata.json` se nesmí změnit).
 - Doplň rozsah věrohodnosti, např. 500–5 000 mm. Mimo něj chtěj při zveřejnění ceníku potvrzení — v dialogu i na serveru (`netlify/functions/program.mjs`), stejným mechanismem jako dnešní potvrzení nuly.
 
 **K40-N5:** kontrola můstků v dialogu (`src/ui/program_ui.js:345–354`) i na serveru (`program.mjs:104–110`) čte jen tuzemský ceník. Zahraniční řada s nulovou hodinovou sazbou montáže a bez sazby montáže můstků dá v zahraniční zakázce montáž můstků za 0 Kč/hod bez potvrzení.
-- Kontroluj i složenou zahraniční řadu (`cenikZahrSVychozimi`) a nulu dej na potvrzení.
+- Kontroluj i složenou zahraniční řadu (`cenikZahrSVychozimi`, `src/cenik_rady.js:113`) a nulu dej na potvrzení. Krok 0 nad 6b70cc3: `program_ui.js` ani `program.mjs` MU nezměnila, trvá. Zahraniční řada může mít odchylky i u nových klíčů `C.mustek*` skladebného modelu (`src/cenik.js:54–64`) — kontrolu pusť nad celou složenou řadou.
 
 **Testy:** obě cesty (dialog i server) s potvrzením i bez něj. Mutace u každého bodu.
 
@@ -127,7 +128,7 @@ Oba nálezy jsou ve stejném kódu, proto se opravují spolu.
 
 ## 6. K40-W1 — vazba webhooku na existující kalkulaci: záznam a upozornění (info → oprava, rozhodnutí J. V. 4. 11.)
 
-**Kde:** `netlify/functions/pd_webhook.mjs:149–160`, `:186–187` (`if (bezVazby) zak.pdDealId = dealId`); `src/controlling.js:1021–1029` (`ctrlPdDealKontrola`, pravidlo C4); UI otevření zakázky (`src/ui/online_ui.js`, lišta zpráv).
+**Kde:** `netlify/functions/pd_webhook.mjs:149–160`, `:186–187` (`if (bezVazby) zak.pdDealId = dealId`); `src/controlling.js:1030–1038` (`ctrlPdDealKontrola`, pravidlo C4); UI otevření zakázky (`src/ui/online_ui.js`, lišta zpráv).
 
 **Dnes.** Webhook #553 naváže podle čísla nabídky i existující nenavázanou kalkulaci, a to i se zamčenou variantou. Hodnoty variant nemění, ale vazba `pdDealId` vznikne bez člověka a bez záznamu v protokolu. Překlep CN v Pipedrive tak naváže cizí kalkulaci: deal dostane odkaz na ni a stav dealu se k ní páruje i v controllingu.
 
@@ -158,7 +159,7 @@ Oba nálezy jsou ve stejném kódu, proto se opravují spolu.
 
 ## 7. K40-X4 — výběr srovnávací kopie na Disku (info → oprava, rozhodnutí J. V. 4. 11.)
 
-**Kde:** `src/ui/online_ui.js:2183` (`kopieDiskUklid` od ř. 2157): `const predchozi = jmena.filter(j => datum(j) && datum(j) !== den && j !== kopie.soubor).sort().pop();`
+**Kde:** `src/ui/online_ui.js:2191` (`kopieDiskUklid` od ř. 2165; DZ #571 výběr srovnávací kopie nezměnila): `const predchozi = jmena.filter(j => datum(j) && datum(j) !== den && j !== kopie.soubor).sort().pop();`
 
 **Dnes.** Jako srovnávací kopie pro pojistku úbytku se bere abecedně poslední jméno ve sdílené složce. Soubor s budoucím datem od kohokoli se zápisem do složky pojistku vyřadí (malý soubor), nebo mazání zastaví (velký).
 
@@ -182,7 +183,7 @@ Zakázka bez `data.proj` dostane `d.proj.cenik` ze vzoru, včetně sazby DPH. V�
 - **K40-T1:** harnessy `overit_nabidka_proj_word.mjs`, `overit_sod.mjs` a `overit_sablony_online.mjs` ať hledají šablonu s nejvyšší verzí (`najdiNejnovejsi`) jako `overit_sablona.mjs`. Na Disku jsou šablony verzované (CN v15, PROJ v8, SoD v4) a pod pevným jménem se nenajdou. Při chybějící šabloně dál platí přeskočení s kódem 4.
   - `overit_sablony_online.mjs` (část „správa šablon“) ať nechce přesně CN v11.
   - `overit_sod.mjs` dnes umí jen smlouvy v1 a v2 si vyrábí sám (`vyrob_sablony.js`). Nad aktuální v4 spadne výjimkou „šablona už seznam plateb má“. Ať pozná, že šablona už je převedená, a ověří ji přímo. Nikdy nesmí skončit výjimkou místo FAIL nebo přeskočení.
-- **K40-T2:** `overit_online.mjs:1170` čeká na `ONLINE_STAV.obnova.soubor || ONLINE_STAV.obnova.hlaska`. Podmínku ale splní už průběžná hláška „Načítám soubor…“ (`src/ui/online_ui.js:3292`), takže kontrola #523 pod zátěží selže (v kole 274/1, samostatně 275/0). Čekej na `souborJmeno` nahraného souboru, nebo na hlášku, která nezačíná „Načítám“. Totéž zkontroluj u dalších `waitForFunction` (např. `overit_online.mjs:1116`, `:1183`, `:1193`, `:1208`) v harnessech, které čekají na „jakoukoli hlášku“.
+- **K40-T2:** `overit_online.mjs:1170` čeká na `ONLINE_STAV.obnova.soubor || ONLINE_STAV.obnova.hlaska`. Podmínku ale splní už průběžná hláška „Načítám soubor…“ (`src/ui/online_ui.js:3369`), takže kontrola #523 pod zátěží selže (v kole 274/1, samostatně 275/0). Čekej na `souborJmeno` nahraného souboru, nebo na hlášku, která nezačíná „Načítám“. Totéž zkontroluj u dalších `waitForFunction` (např. `overit_online.mjs:1116`, `:1183`, `:1193`, `:1208`) v harnessech, které čekají na „jakoukoli hlášku“.
 - **K40-T3 (táž příčina jako K39-N2):** `overit_sablony_online.mjs:182`, `:184`, `:186`, `:275` a `overit_sod.mjs:139` hledají v `nastSablony()` řádky PROJ a smluv. Ve výchozím pohledu OCK je ale filtr #367 skryje (`src/ui/nastaveni_ui.js:936`). S aktuálními šablonami to dnes dává 3 FAIL a 1 FAIL. Udělej to stejně jako v `overit_nabidka_proj_word.mjs:193–201`: přepni `NAST.sablonyVse`, po kontrole ho vrať a přidej i kontrolu, že filtr řádky opravdu skrývá. Ověř se šablonami z Disku: výsledek 29/0 a 51/0.
 - **K40-P1 — kolize čísel B:**
   - Meze webhooku #553 v `BEZPECNOST_MEZE.md` (oddíl „PW #553“) nesou B176–B179, a ta čísla už mají starší nálezy (B176 ř. 369, B177 447, B178 454/464, B179 534). Meze #553 jsou na ř. 1374, 1387, 1395, 1409; odkaz na ně `CHANGELOG.md:163` a roadmapa #553. Krok 0 nad 9a16ff5: nejvyšší použité číslo je B198, mutace #553 číslo B nenesou.
@@ -190,7 +191,7 @@ Zakázka bez `data.proj` dostane `d.proj.cenik` ze vzoru, včetně sazby DPH. V�
   - Uprav i odkazy v CHANGELOG, roadmapě, komentářích a názvech mutací, kde jde o #553. Ke starému číslu připiš poznámku „dříve B17x (#553)“.
   - Přidej test (např. do `src/test_kontrola_udaju.js` nebo nové sady), který selže, když se nadpis „B<číslo> —“ v `BEZPECNOST_MEZE.md` opakuje.
 - **Nové meze do `BEZPECNOST_MEZE.md`** (rozhodnutí J. V. 4. 11.: chování ponechat, jen zapsat; čísla za přečíslovanými mezemi #553, tj. od B203):
-  - **K40-X3:** po přihlášení správce se jeho heslo bez dalšího dotazu použije k potvrzení kopie zálohy na Disk (#554), která na serveru odemyká mazání starých záloh (`src/ui/online_ui.js:313`, `:393`, `:1960`, `:1999`, `:2220–2230`, `:2318–2329`). Heslo se nikam neukládá.
+  - **K40-X3:** po přihlášení správce se jeho heslo bez dalšího dotazu použije k potvrzení kopie zálohy na Disk (#554), která na serveru odemyká mazání starých záloh (`src/ui/online_ui.js:318`, `:398`, `:1965`, `:2004`, `:2228–2238`, `:2341–`). Heslo se nikam neukládá. Po DZ #571: bez hesla z přihlášení (obnovená relace) se kopie nepořídí tiše, ale čeká na potvrzení heslem (`kopieDiskCeka('heslo', …)`) — mez popiš v tomto stavu.
   - **K40-S3:** po Prodáno a před prvním tiskem SoD smí číslo SoD a datum podpisu měnit kdokoli s právem ukládat (B157 „podle běžných pravidel zámku“, `src/zamek.js:400–415`).
   - **K40-W1:** doplň do mezí #553 popis vazby, upozornění a zrušení z bodu 6.
 - **Mezery hlídačů (volitelné, jen testy):**
