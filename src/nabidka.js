@@ -156,7 +156,14 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     ? cenaSDph(cenaBezDphNum, Cv.dph) : { dphKc: cenaBezDphNum * Cv.dph }).dphKc;
   let cenaSDphNum = (typeof cenaSDph === 'function'
     ? cenaSDph(cenaBezDphNum, Cv.dph) : { sDph: cenaBezDphNum * (1 + Cv.dph) }).sDph;
+  /* MŮSTKY S VLASTNÍM ŘÁDKEM CENY (#560, A-Q8/9) — jen skladebný model
+   * (Model 2 + nový ceník). Obě částky jsou PŘED slevou (cenaNabidkyOck);
+   * v eurech se převádí cena můstků a šachta je rozdíl do převedené ceny
+   * před slevou — rozpad sedí na euro. Jinak prázdné (řádky zmizí). */
+  const mustkySk = !!(r.mustky && r.mustky.skladebny && cn && cn.mustky);
+  let cenaMustkyNum = mustkySk ? cn.mustky.mustkyPred : 0;
   if (mena.eur) {
+    cenaMustkyNum = mustkySk ? mena.na(cenaMustkyNum) : 0;
     cenaPredSlevou = mena.na(cenaPredSlevou);
     cenaBezDphNum = mena.na(cenaBezDphNum);
     slevaKcNum = cenaPredSlevou - cenaBezDphNum;   // rozdíl převedených částek — sedí na euro
@@ -234,7 +241,13 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
      * symbol nemá — doplní se se šablonou. */
     TS_PROSKLENA_PRICKA: tsNeboPrazdno('prosklenaPricka'),
     TS_PROSKLENA_STRISKA: tsNeboPrazdno('prosklenaStriska'),
-    TS_MUSTKY: tsNeboPrazdno('mustky'),   // P7 / K13-N59: počet a rozměr můstků
+    TS_MUSTKY: mustkySk ? '' : tsNeboPrazdno('mustky'),   // P7 / K13-N59: počet a rozměr můstků
+    /* #560: sekce MŮSTKY (jen skladebný model; jinak prázdné → sekce zmizí). */
+    TS_MUSTKY_ROZMER: mustkySk ? tsNeboPrazdno('mustkyRozmer') : '',
+    TS_MUSTKY_PODLAHA: mustkySk ? tsNeboPrazdno('mustkyPodlaha') : '',
+    TS_MUSTKY_ZABRADLI: mustkySk ? tsNeboPrazdno('mustkyZabradli') : '',
+    TS_MUSTKY_KOTVENI: mustkySk ? tsNeboPrazdno('mustkyKotveni') : '',
+    TS_MUSTKY_SLOUPY: mustkySk ? tsNeboPrazdno('mustkySloupy') : '',
     TS_LESENI_UVNITR: ts('leseniUvnitr'), TS_LESENI_VNE: ts('leseniVne'),
     TS_ZABRANY_VSTUPY: ts('zabranyVstupy'),
     TS_SKEN3D: ts('sken3d'), TS_VYSTUP_ZAMERENI: ts('vystupZamereni'),
@@ -259,6 +272,15 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     TS_NENI_PRISTUP: ts('neni11'),
 
     CENA_BEZ_DPH: kc(cenaBezDphNum),
+    /* #560: šachta bez můstků a můstky (obojí před slevou); bez skladebného
+     * modelu prázdné — řádky ze šablony v16 zmizí, v15 se neklonují. */
+    CENA_SACHTA_BEZ_DPH: mustkySk ? kc(cenaPredSlevou - cenaMustkyNum) : '',
+    CENA_MUSTKY_BEZ_DPH: mustkySk ? kc(cenaMustkyNum) : '',
+    /* Šablona v16: koncová cena bez DPH v řádku „VÝTAHOVÁ ŠACHTA" (bez můstků,
+     * jako dosud), nebo v řádku „CENA CELKEM" (s můstky). Druhý je prázdný
+     * a zmizí (docxgen DOCX_CENA_CASTI). */
+    CENA_BEZ_DPH_SACHTA: mustkySk ? '' : kc(cenaBezDphNum),
+    CENA_BEZ_DPH_CELKEM: mustkySk ? kc(cenaBezDphNum) : '',
     DPH_SAZBA: String(Math.round(Cv.dph * 100)),
     /* Nulová sazba má vlastní jméno (22. 9. 2026 večer). Od té doby, co
      * zahraniční řada ceníku přepíná DPH na 0 %, by tu podmínka `<= 0.15`
@@ -514,6 +536,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
       nazev: P('LEŠENÍ VNITŘNÍ PRO STAVBU OCK'), hodnota: placeholders.TS_NENI_LESENI_VNITRNI },
     ...(tsExtra.length ? [{ kotva: 'TS_NENI_PRISTUP', pruh: true, nazev: P('DALŠÍ UJEDNÁNÍ') }] : []),
     ...tsExtra.map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
+    ...nabidkaMustkyKlon(placeholders, P, sablona),
   ];
   return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic, tsExtra, mena,
            /* Cena nabídky bez DPH ve měně dokumentu a sazba DPH — SoD k ní
@@ -524,6 +547,35 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
              typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky() : {},
              typeof uvodniFotoObrazky === 'function' ? uvodniFotoObrazky(zak) : {}),
            nazevSouboru: nazevSouboru.replace(/[\\/:*?"<>|]+/g, '-') };
+}
+
+/* MŮSTKY DO ŠABLONY CN v15 A STARŠÍ (#560, A-Q8/9). Šablona bez symbolů
+ * sekce MŮSTKY a řádku ceny můstků dostane řádky naklonované:
+ *  – sekce: pruh „MŮSTKY MEZI BUDOVOU A OCK" a pět řádků za kotvou
+ *    {{TS_SOKL}} (poslední řádek DOPLŇKOVÝCH KONSTRUKCÍ; bez něj
+ *    {{TS_PRECHODOVE_PLECHY}}), formát z kotvy;
+ *  – cena: řádky „VÝTAHOVÁ ŠACHTA" a „MŮSTKY MEZI BUDOVOU A OCK" (před
+ *    slevou) z řádku {{CENA_BEZ_DPH}}, vložené před „Cena před slevou"
+ *    (bez slevy ten řádek zmizí, klony zůstanou), a řádek {{CENA_BEZ_DPH}}
+ *    dostane popisek „CENA CELKEM".
+ * Šablona v16 symboly nese (`symbol`) — klon nevznikne. Bez skladebného
+ * modelu prázdné. `sablona.symboly` (Word) rozhoduje o kotvě sekce. */
+function nabidkaMustkyKlon(ph, P, sablona) {
+  if (!ph.CENA_MUSTKY_BEZ_DPH) return [];
+  const sym = sablona && sablona.symboly;
+  if (sym && sym.has('CENA_MUSTKY_BEZ_DPH') && sym.has('TS_MUSTKY_ROZMER')) return [];   // šablona v16
+  const kotvaTs = (sym && !sym.has('TS_SOKL') && sym.has('TS_PRECHODOVE_PLECHY')) ? 'TS_PRECHODOVE_PLECHY' : 'TS_SOKL';
+  const ts = [['POČET A ROZMĚR', ph.TS_MUSTKY_ROZMER], ['PODLAHA', ph.TS_MUSTKY_PODLAHA], ['ZÁBRADLÍ', ph.TS_MUSTKY_ZABRADLI],
+    ['KOTVENÍ MŮSTKŮ', ph.TS_MUSTKY_KOTVENI], ['SLOUPY NAVÍC', ph.TS_MUSTKY_SLOUPY]].filter(x => x[1]);
+  return [
+    { kotva: kotvaTs, symbol: 'TS_MUSTKY_ROZMER', pruh: true, nazev: P('MŮSTKY MEZI BUDOVOU A OCK') },
+    ...ts.map(([n, h]) => ({ kotva: kotvaTs, symbol: 'TS_MUSTKY_ROZMER', nazev: P(n), hodnota: h })),
+    { kotva: 'CENA_BEZ_DPH', symbol: 'CENA_MUSTKY_BEZ_DPH', predSymbolem: 'CENA_PRED_SLEVOU', pred: true,
+      nazev: P('VÝTAHOVÁ ŠACHTA').toLocaleUpperCase(), hodnota: ph.CENA_SACHTA_BEZ_DPH },
+    { kotva: 'CENA_BEZ_DPH', symbol: 'CENA_MUSTKY_BEZ_DPH', predSymbolem: 'CENA_PRED_SLEVOU', pred: true,
+      nazev: P('MŮSTKY MEZI BUDOVOU A OCK'), hodnota: ph.CENA_MUSTKY_BEZ_DPH },
+    { kotva: 'CENA_BEZ_DPH', symbol: 'CENA_MUSTKY_BEZ_DPH', prejmenuj: true, nazev: P('CENA CELKEM') },
+  ];
 }
 
 /* Struktura náhledu podkladů – stejné sekce jako v technické specifikaci/nabídce.
@@ -643,6 +695,11 @@ function nabidkaNahledSekce(ph, lang, platby, extra) {
        * součástí dodávky není. Rozhoduje to, který ze zástupců je vyplněný;
        * tahle funkce dostává jen `ph`, jinou cestou se sem odpověď nedostane. */
       ...(ph.TS_SOKL ? [['OPLECHOVÁNÍ SOKLU PROHLUBNĚ', ph.TS_SOKL]] : [])] },
+    /* #560: sekce MŮSTKY jen ve skladebném modelu (symboly jinak prázdné). */
+    ...(ph.TS_MUSTKY_ROZMER ? [{ sekce: 'MŮSTKY MEZI BUDOVOU A OCK', radky: [
+      ['POČET A ROZMĚR', ph.TS_MUSTKY_ROZMER], ['PODLAHA', ph.TS_MUSTKY_PODLAHA],
+      ['ZÁBRADLÍ', ph.TS_MUSTKY_ZABRADLI], ['KOTVENÍ MŮSTKŮ', ph.TS_MUSTKY_KOTVENI],
+      ...(ph.TS_MUSTKY_SLOUPY ? [['SLOUPY NAVÍC', ph.TS_MUSTKY_SLOUPY]] : [])] }] : []),
     { sekce: 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE', radky: [
       ['LEŠENÍ – UVNITŘ ŠACHTY', ph.TS_LESENI_UVNITR], ['LEŠENÍ – VNĚ ŠACHTY', ph.TS_LESENI_VNE],
       ['ZÁBRANY DO DVEŘNÍCH VSTUPŮ', ph.TS_ZABRANY_VSTUPY]] },
@@ -666,7 +723,13 @@ function nabidkaNahledSekce(ph, lang, platby, extra) {
     ...((extra || []).length ? [{ sekce: 'DALŠÍ UJEDNÁNÍ',
       radky: extra.map(e => [{ hotovo: e.nazev }, e.hodnota]) }] : []),
     { sekce: 'B. OBCHODNÍ ČÁST – CENOVÁ NABÍDKA', radky: [
-      ['Výtahová šachta (bez DPH)', ph.CENA_BEZ_DPH],
+      /* #560: s můstky šachta a můstky zvlášť (před slevou), sleva a součet. */
+      ...(ph.CENA_MUSTKY_BEZ_DPH ? [
+        ['Výtahová šachta (bez DPH)', ph.CENA_SACHTA_BEZ_DPH],
+        ['Můstky mezi budovou a OCK (bez DPH)', ph.CENA_MUSTKY_BEZ_DPH],
+        ...(ph.SLEVA_KC ? [[{ hotovo: P('Sleva') + ' ' + ph.SLEVA_PROC + ' %' }, '− ' + ph.SLEVA_KC]] : []),
+        ['Cena celkem (bez DPH)', ph.CENA_BEZ_DPH]]
+        : [['Výtahová šachta (bez DPH)', ph.CENA_BEZ_DPH]]),
       /* skládaný popisek (číslo sazby uprostřed) se překládá po částech, proto je
        * označen jako HOTOVÝ – závěrečná mapa ho už nesmí překládat podruhé */
       [{ hotovo: P('DPH') + ' ' + ph.DPH_SAZBA + ' % (' + ph.DPH_NAZEV + ' ' + P('sazba') + ')' }, ph.DPH_KC],

@@ -48,6 +48,20 @@ const CENIK_DEF = [
     ['C.mustekMontazZakladHod', 'Montáž můstků – základ', 'hod/ks', 'hodiny celkem (všechny osoby) na kus'],
     ['C.mustekMontazBmHod', 'Montáž můstků – za metr délky', 'hod/bm', 'hodiny celkem za každý metr délky'],
     ['C.mustekMontazMinHod', 'Montáž můstků – minimum', 'hod/ks', 'nejméně tolik hodin bez ohledu na velikost můstku'],
+    /* Skladebný model můstků (#560, rozhodnutí J. V. 4. 11. 2026, A-Q6). Platí
+     * jen v Modelu 2 a jen s kladnou nosnou konstrukcí; bez ní se počítá podle
+     * řádků výš (#354). Sloupy navíc se počítají jako sloupky šachty (A-Q5). */
+    ['C.mustekRamBmKc', 'Můstky – nosná konstrukce (skladebný model)', 'Kč/bm délky při ref. šířce',
+     'bez podlahy a zábradlí; nenulová = počítá se skladebně (jen Model 2)'],
+    ['C.mustekPodlahaPlechM2Kc', 'Můstky – podlaha pochozí plech', 'Kč/m²', 'výchozí podlaha'],
+    ['C.mustekPodlahaPororostM2Kc', 'Můstky – podlaha pororošt', 'Kč/m²', ''],
+    ['C.mustekPodlahaVanaM2Kc', 'Můstky – podlaha ocelová vana pro beton', 'Kč/m²', 'jen ocelová vana; betonáž zajistí stavba'],
+    ['C.mustekZabradliKovBmKc', 'Můstky – zábradlí kovové', 'Kč/bm', 'za metr délky na každé straně'],
+    ['C.mustekZabradliSkloBmKc', 'Můstky – zábradlí skleněné', 'Kč/bm', 'za metr délky na každé straně'],
+    ['C.mustekKotveniDeskaKc', 'Můstky – kotvení do stropní desky / věnce', 'Kč/ks', 'sada na jeden můstek'],
+    ['C.mustekKotveniSloupKc', 'Můstky – kotvení do sloupů (na terén)', 'Kč/ks', 'sada na jeden můstek'],
+    ['C.mustekKotveniKonzolaKc', 'Můstky – kotvení konzolově jen z OCK', 'Kč/ks', 'sada na jeden můstek'],
+    ['C.mustekZabradliSkloMontazHodBm', 'Montáž můstků – skleněné zábradlí navíc', 'hod/bm', 'hodiny celkem za metr skleněného zábradlí'],
     ['C.oplechFasadaBmKc', 'Oplechování k fasádě (ext)', 'Kč/bm', ''],
   ]],
   /* ATYP (#7). Skupina se jmenuje stejně jako katalogová sekce `atyp` –

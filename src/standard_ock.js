@@ -380,7 +380,25 @@ function standardVyhodnot(z, vyskaM, std, pripl) {
   /* #354 (J. V. 26. 10. 2026): šířka můstku = šířka šachty, proto se už
    * nehlídá (limity sirkaMaxMm / sirkaJakoOck zůstávají v datech, nic je
    * nečte). Délka (dřív „hloubka") max 1 000 mm jako standard zůstává. */
-  if (mustkyKs > 0) {
+  if (mustkyKs > 0 && Array.isArray(zad.mustky) && typeof mustkySkupiny === 'function') {
+    /* #560: zadání po skupinách — rozhoduje nejdelší můstek; zadaná šířka
+     * (prázdná = šířka šachty) nesmí přesáhnout šířku OCK (sirkaJakoOck). */
+    kontrol += 1;
+    const sk = mustkySkupiny(zad).filter(x => x.ks > 0);
+    const delky = sk.map(x => x.delkaMm);
+    if (delky.some(d => d === '')) nalezy.push(_nalez('Délka můstku', 'max ' + s.mustek.hloubkaMaxMm + ' mm', 'nevyplněno', 'nelze'));
+    else {
+      const h = Math.max.apply(null, delky);
+      if (h > s.mustek.hloubkaMaxMm) nalezy.push(_nalez('Délka můstku', 'max ' + s.mustek.hloubkaMaxMm + ' mm', h + ' mm'));
+    }
+    const sirkaOck = Math.round((+zad.sirka || 0) * 1000);
+    const sirky = sk.map(x => x.sirkaMm).filter(x => x !== '');
+    if (s.mustek.sirkaJakoOck && sirkaOck > 0 && sirky.length) {
+      kontrol += 1;
+      const w = Math.max.apply(null, sirky);
+      if (w > sirkaOck) nalezy.push(_nalez('Šířka můstku', 'max šířka OCK ' + sirkaOck + ' mm', w + ' mm'));
+    }
+  } else if (mustkyKs > 0) {
     kontrol += 1;
     const h = _cislo(zad.mustekHloubkaMm);
     if (h === null) nalezy.push(_nalez('Délka můstku', 'max ' + s.mustek.hloubkaMaxMm + ' mm', 'nevyplněno', 'nelze'));

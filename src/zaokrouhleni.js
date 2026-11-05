@@ -185,7 +185,17 @@ function cenaNabidkyOck(vysl, sleva, zaokr) {
    * stejného světa: zaokrouhlený základ a zaokrouhlená koncová cena.
    * `slevaKcVykaz` je proto ROZDÍL těch dvou, ne procento z hrubého základu. */
   const zakladZaokr = zaokrouhli(zaklad, zaokr);
-  return { zaklad, slevaPct: p, slevaKc, pred, cena,
+  /* SAMOSTATNÝ ŘÁDEK MŮSTKŮ (#560, A-Q8/9) — jen ve skladebném modelu
+   * (`souhrn.mustkyCena`). Řádky části B stojí PŘED slevou: můstky =
+   * jejich cena zaokrouhlená stejně jako základ, šachta = rozdíl do
+   * zaokrouhleného základu, takže šachta + můstky = cena před slevou
+   * na korunu. Bez můstků pole `mustky` chybí (výsledek beze změny). */
+  const mc = +vysl.souhrn.mustkyCena;
+  const mustky = (Number.isFinite(mc) && mc > 0) ? (() => {
+    const m = Math.min(zaokrouhli(mc, zaokr), zakladZaokr);
+    return { mustkyPred: m, sachtaPred: Math.round((zakladZaokr - m) * 100) / 100 };
+  })() : null;
+  return { zaklad, slevaPct: p, slevaKc, pred, cena, ...(mustky ? { mustky } : {}),
            zakladZaokr, slevaKcVykaz: Math.round((zakladZaokr - cena) * 100) / 100,
            zaokrKc: Math.round((cena - pred) * 100) / 100,
            naklad: vysl.souhrn.zakladNaklad };

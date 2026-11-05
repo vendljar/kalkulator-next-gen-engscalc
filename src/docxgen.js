@@ -219,12 +219,14 @@ function nahradPlaceholdery(xml, ph) {
  * nemají jediný datový řádek (následuje přímo další sekce nebo konec tabulky). */
 const TS_SEKCE_NAZVY = ['ZÁKLADNÍ PARAMETRY ŠACHTY', 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY',
   'OPLÁŠTĚNÍ ŠACHTY', 'DOPLŇKOVÉ KONSTRUKCE', 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE',
-  'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ',
+  'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ', 'MŮSTKY MEZI BUDOVOU A OCK',
   /* pruh vlastních řádků (docxRadkyNavic, obchodník 15. 10. 2026): sekce nad ním,
    * které nezbyl řádek, se pozná jako prázdná a zmizí */
   'DALŠÍ UJEDNÁNÍ'];
 
 const DOCX_SLEVA_KLICE = ['CENA_PRED_SLEVOU', 'SLEVA_PROC', 'SLEVA_KC'];
+/* #560: cenové řádky šablony CN v16 — viz odstranPrazdneTsRadky. */
+const DOCX_CENA_CASTI = ['CENA_SACHTA_BEZ_DPH', 'CENA_MUSTKY_BEZ_DPH', 'CENA_BEZ_DPH_SACHTA', 'CENA_BEZ_DPH_CELKEM'];
 /* Totéž pro nabídku PROJ (P4 / K15-N66): řádky „Cena před slevou" a „Sleva"
  * zmizí, když projekce slevu nemá (prázdný PROJ_SLEVA_KC). */
 const DOCX_SLEVA_PROJ_KLICE = ['PROJ_CENA_PRED_SLEVOU', 'PROJ_SLEVA_PROC', 'PROJ_SLEVA_KC'];
@@ -600,6 +602,13 @@ function odstranPrazdneTsRadky(xml, ph) {
       kOdstr.push(sp);
     else if (klice.some(k => DOCX_SLEVA_PROJ_KLICE.includes(k)) && ('PROJ_SLEVA_KC' in ph) && jePrazdnaHodnota(ph.PROJ_SLEVA_KC))
       kOdstr.push(sp);
+    /* ŘÁDKY CENY ŠACHTY A MŮSTKŮ (#560, šablona CN v16): řádek, jehož
+     * všechny cenové symboly šachty/můstků jsou v datech prázdné, zmizí —
+     * bez můstků zůstane „VÝTAHOVÁ ŠACHTA" jako dosud, s můstky šachta,
+     * můstky a „CENA CELKEM". */
+    else if (klice.some(k => DOCX_CENA_CASTI.includes(k))
+      && klice.filter(k => DOCX_CENA_CASTI.includes(k)).every(k => (k in ph) && jePrazdnaHodnota(ph[k])))
+      kOdstr.push(sp);
   }
   // neodstraňuj nadřazený řádek kvůli vnořenému – ponech jen vnější z překrývajících
   const vyber = kOdstr.filter(sp => !kOdstr.some(o => o !== sp && o.zac <= sp.zac && sp.kon <= o.kon && o.hloubka < sp.hloubka));
@@ -651,44 +660,52 @@ function docxTextDoRadku(radek, text) {
 }
 function docxRadkyNavic(xml, radky) {
   const seznam = (Array.isArray(radky) ? radky : []).filter(x => x && x.kotva
-    && (x.pruh || x.vzdy || !jePrazdnaHodnota(x.hodnota))
+    && (x.pruh || x.vzdy || x.prejmenuj || !jePrazdnaHodnota(x.hodnota))
     && !(x.symbol && klicePlaceholderu(xml).indexOf(x.symbol) >= 0));
   if (!seznam.length) return xml;
-  const kotvy = [];
-  seznam.forEach(x => { if (kotvy.indexOf(x.kotva) < 0) kotvy.push(x.kotva); });
-  const vlozit = [];
-  kotvy.forEach(kotva => {
-    const spany = radkoveSpany(xml);
-    const kandidati = spany.filter(sp => klicePlaceholderu(vlastniObsahRadku(xml.slice(sp.zac, sp.kon))).indexOf(kotva) >= 0);
-    if (!kandidati.length) return;
-    const sp = kandidati.reduce((a, b) => (b.hloubka > a.hloubka ? b : a));
+  const spany = radkoveSpany(xml);
+  /* nejvnitřnější řádek se symbolem */
+  const radekSe = sym => {
+    const k = spany.filter(sp => klicePlaceholderu(vlastniObsahRadku(xml.slice(sp.zac, sp.kon))).indexOf(sym) >= 0);
+    return k.length ? k.reduce((a, b) => (b.hloubka > a.hloubka ? b : a)) : null;
+  };
+  const prvniBunka = (r, text) => {
+    const m = r.match(/<w:tc[\s>][\s\S]*?<\/w:tc>/);
+    return m ? r.replace(m[0], docxTextDoRadku(m[0], text)) : r;
+  };
+  /* operace nad řádky: { sp, pred, za, nahrad } — klíč = začátek řádku */
+  const ops = new Map();
+  const op = sp => { if (!ops.has(sp.zac)) ops.set(sp.zac, { sp, pred: '', za: '', nahrad: null }); return ops.get(sp.zac); };
+  seznam.forEach(x => {
+    const sp = radekSe(x.kotva);
+    if (!sp) return;
     const radek = xml.slice(sp.zac, sp.kon);
-    const prvniBunka = (r, text) => {
-      const m = r.match(/<w:tc[\s>][\s\S]*?<\/w:tc>/);
-      return m ? r.replace(m[0], docxTextDoRadku(m[0], text)) : r;
-    };
-    /* sekční pruh: nejbližší řádek téže hloubky nad kotvou bez symbolu, ve stejné tabulce */
-    const pruhVzor = () => {
+    /* `prejmenuj` (#560): řádek kotvy zůstane, jen dostane jiný popisek
+     * (symbol a formát beze změny) — „CENA CELKEM" místo „VÝTAHOVÁ ŠACHTA". */
+    if (x.prejmenuj) { const o = op(sp); o.nahrad = prvniBunka(o.nahrad || radek, String(x.nazev == null ? '' : x.nazev)); return; }
+    let novy;
+    if (x.pruh) {
+      /* sekční pruh: nejbližší řádek téže hloubky nad kotvou bez symbolu, ve stejné tabulce */
       const pred = spany.filter(o => o.hloubka === sp.hloubka && o.kon <= sp.zac).sort((a, b) => b.zac - a.zac);
+      let v = null;
       for (const o of pred) {
-        if (/<\/w:tbl>|<w:tbl[\s>]/.test(xml.slice(o.kon, sp.zac).replace(/<w:tr[\s>][\s\S]*?<\/w:tr>/g, ''))) return null;
+        if (/<\/w:tbl>|<w:tbl[\s>]/.test(xml.slice(o.kon, sp.zac).replace(/<w:tr[\s>][\s\S]*?<\/w:tr>/g, ''))) break;
         const r = xml.slice(o.zac, o.kon);
-        if (!klicePlaceholderu(r).length) return r;
+        if (!klicePlaceholderu(r).length) { v = r; break; }
       }
-      return null;
-    };
-    let predBlok = '', zaBlok = '';
-    seznam.filter(x => x.kotva === kotva).forEach(x => {
-      let novy;
-      if (x.pruh) { const v = pruhVzor(); if (!v) return; novy = docxTextDoRadku(v, x.nazev); }
-      else novy = nahradPlaceholdery(prvniBunka(radek, String(x.nazev == null ? '' : x.nazev)),
-        { [kotva]: String(x.hodnota == null ? '' : x.hodnota) });
-      if (x.pred) predBlok += novy; else zaBlok += novy;
-    });
-    vlozit.push({ sp, predBlok, zaBlok });
+      if (!v) return;
+      novy = docxTextDoRadku(v, x.nazev);
+    } else novy = nahradPlaceholdery(prvniBunka(radek, String(x.nazev == null ? '' : x.nazev)),
+      { [x.kotva]: String(x.hodnota == null ? '' : x.hodnota) });
+    /* `predSymbolem` (#560): vložit před řádek s tímto symbolem (je-li
+     * v šabloně), jinak podle `pred` vůči kotvě. */
+    const cil = x.predSymbolem ? radekSe(x.predSymbolem) : null;
+    if (cil) op(cil).pred += novy;
+    else if (x.pred) op(sp).pred += novy; else op(sp).za += novy;
   });
-  vlozit.sort((a, b) => b.sp.zac - a.sp.zac)
-    .forEach(v => { xml = xml.slice(0, v.sp.zac) + v.predBlok + xml.slice(v.sp.zac, v.sp.kon) + v.zaBlok + xml.slice(v.sp.kon); });
+  Array.from(ops.values()).sort((a, b) => b.sp.zac - a.sp.zac).forEach(o => {
+    xml = xml.slice(0, o.sp.zac) + o.pred + (o.nahrad != null ? o.nahrad : xml.slice(o.sp.zac, o.sp.kon)) + o.za + xml.slice(o.sp.kon);
+  });
   return xml;
 }
 
@@ -1401,7 +1418,7 @@ async function docxXmlVady(arrayBuffer) {
 
 if (typeof module !== 'undefined')
   module.exports = { docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
-    odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
+    odstranPrazdneTsRadky, DOCX_CENA_CASTI, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
     docxPrelozSablonu, docxPrelozXml, odstavcoveSpany, odstavecText, xmlUnesc,

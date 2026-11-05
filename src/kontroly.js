@@ -497,6 +497,23 @@ const KONTROLY = [
       if (c && novy && !(+c.mustekMontazHodKc > 0))
         potize.push('v ceníku chybí sazba montáže můstků (Ceník → Hrubá OCK → Montáž můstků), '
           + 'takže montáž jde do nabídky za 0 Kč');
+      /* #560: skladebný model (Model 2 + nový ceník) — sazba použitého
+       * provedení chybí, nebo provedení „jiné" nemá cenu. Mimo skladebný
+       * model se provedení ani sloupy do ceny nepromítnou — řekne se to. */
+      const rm = ctx.vysledek && ctx.vysledek.mustky;
+      const sekM = ctx.vysledek && ctx.vysledek.sekce && ctx.vysledek.sekce.mustky;
+      if (rm && rm.skladebny && Array.isArray(sekM)) {
+        const nulove = sekM.filter(x => x && x.cenaPath && +x.mnozstvi > 0 && !(+x.cena > 0)).map(x => x.nazev);
+        if (nulove.length) potize.push('v ceníku chybí sazba (0 Kč): ' + nulove.join(', '));
+        const jine = sekM.filter(x => x && x.bezCeny).map(x => x.nazev);
+        if (jine.length) potize.push('provedení „jiné" nemá cenu (' + jine.join(', ')
+          + ') — doplňte ji ručním přepisem ceny řádku v sekci MŮSTKY, nebo provedení změňte');
+      } else if (typeof mustkyProvedeniMimoVychozi === 'function' && mustkyProvedeniMimoVychozi(z)) {
+        potize.push('zadané provedení (podlaha, zábradlí, kotvení) se počítá jen v Modelu 2 s ceníkem, který má sazbu '
+          + 'nosné konstrukce můstku — teď se počítá jako pochozí plech s kovovým zábradlím');
+      }
+      if (rm && !rm.sloupyKs && Array.isArray(z.mustky) && z.mustky.some(x => x && +x.sloupyKs > 0))
+        potize.push('sloupy navíc pod můstky se počítají jen v Modelu 2');
       if (!potize.length) return null;
       return { text: 'Můstky mezi budovou a OCK: ' + kontrolyVyctem(potize) + '.' };
     },
@@ -564,6 +581,23 @@ const KONTROLY = [
       /* #354: s novým ceníkem je šířka můstku šířka šachty (nezadává se)
        * a z délky se počítá cena — prázdná délka se řekne, počítá se 1 000 mm. */
       const novy = typeof mustkyCenikNovy === 'function' && mustkyCenikNovy(ctx.cenik);
+      /* #560: zadání po skupinách — délka a šířka každé skupiny. */
+      if (Array.isArray(z.mustky) && typeof mustkySkupiny === 'function') {
+        const sk = mustkySkupiny(z).filter(x => x.ks > 0);
+        const bezDelky = sk.filter(x => x.delkaMm === '').length;
+        sk.forEach((x, i) => [['sirkaMm', 'šířka'], ['delkaMm', 'délka']].forEach(([k, jm]) => {
+          if (x[k] !== '' && x[k] > KONTROLY_MUSTEK_MAX_MM)
+            potize.push((sk.length > 1 ? 'skupina ' + (i + 1) + ': ' : '') + jm + ' ' + x[k].toLocaleString('cs-CZ')
+              + ' mm je nezvykle velká (víc než ' + KONTROLY_MUSTEK_MAX_MM.toLocaleString('cs-CZ') + ' mm)');
+        }));
+        if (!potize.length && bezDelky && novy)
+          return { text: 'Doplňte délku můstku (karta Můstky). Do doplnění se počítá '
+            + (typeof MUSTEK_DELKA_VYCHOZI_MM !== 'undefined' ? MUSTEK_DELKA_VYCHOZI_MM : 1000).toLocaleString('cs-CZ')
+            + ' mm. Tisk to nezastaví.' };
+        if (!potize.length) return null;
+        return { text: 'Rozměry můstku: ' + kontrolyVyctem(potize) + '. Zkontrolujte kartu Můstky (rozměr se zadává v milimetrech); '
+          + 'hodnota se do výpočtu bere, jak je zadaná. Tisk to nezastaví.' };
+      }
       if (novy) {
         const v = z.mustekHloubkaMm;
         if (v === undefined || v === null || String(v).trim() === '')

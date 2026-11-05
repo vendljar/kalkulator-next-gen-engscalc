@@ -83,6 +83,12 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
    * mustkyCenikNovy(). Nula = starý ceník, počítá se paušálem za kus. */
   mustekRefSirkaMm: 0, mustekMontazHodKc: 0,
   mustekMontazZakladHod: 0, mustekMontazBmHod: 0, mustekMontazMinHod: 0,
+  /* Skladebný model můstků (#560, A-Q6) — jen jména, sazby v ceníku na
+   * serveru (#548). Nula u nosné konstrukce = starý tvar (vzorec #354). */
+  mustekRamBmKc: 0, mustekPodlahaPlechM2Kc: 0, mustekPodlahaPororostM2Kc: 0, mustekPodlahaVanaM2Kc: 0,
+  mustekZabradliKovBmKc: 0, mustekZabradliSkloBmKc: 0,
+  mustekKotveniDeskaKc: 0, mustekKotveniSloupKc: 0, mustekKotveniKonzolaKc: 0,
+  mustekZabradliSkloMontazHodBm: 0,
   montazHodKc: 0, vetraciMrizkaKc: 0, transportKc: 0,
   zastreseniM2Kc: 0, oplechFasadaBmKc: 0,
   skloBokyKc: 0,  skloBokyNazev: '',
@@ -731,6 +737,9 @@ const PLECH_NADPRAZI_KG_M2 = 8.5;   // stejný plech jako podesty (podKg1)
  * `mustkyKs` = kolik můstků na šachtě je (0 = žádný). Stará zakázka nese
  * jen zaškrtávátko `mustek` — zaškrtnuté znamená jeden můstek. */
 function mustkyPocet(z) {
+  /* #560: zadání po skupinách stejných můstků (`Z.mustky[]`) má přednost;
+   * počet = součet kusů skupin. Bez pole platí dnešní tvar beze změny. */
+  if (z && Array.isArray(z.mustky)) return mustkySkupiny(z).reduce((a, s) => a + s.ks, 0);
   const n = z ? z.mustkyKs : undefined;
   if (n !== undefined && n !== null && n !== '' && isFinite(+n)) return Math.max(0, Math.floor(+n));
   return (z && z.mustek) ? 1 : 0;
@@ -790,20 +799,168 @@ function mustekDelkaMm(z) {
   const n = (v === null || v === undefined || String(v).trim() === '') ? NaN : +v;
   return Number.isFinite(n) && n > 0 ? n : MUSTEK_DELKA_VYCHOZI_MM;
 }
-/* Rozpad ceny můstků — jediné místo vzorce (jádro, kontroly, testy). */
-function mustkyRozpad(z, c) {
+/* SAMOSTATNÁ SEKCE MŮSTKY (#560, rozhodnutí J. V. 4. 11. 2026, návrh
+ * podklady/NAVRH_MUSTKY_A_ZMENA_CENY_04_11.md, oddíl A).
+ *
+ * ZADÁNÍ PO SKUPINÁCH STEJNÝCH MŮSTKŮ (A-Q2): `Z.mustky = [{ ks, sirkaMm,
+ * delkaMm, podlaha, podlahaNazev, zabradli, zabradliNazev, zabradliStrany,
+ * kotveni, kotveniText, sloupyKs, sloupVyskaM }]`, běžně jeden řádek.
+ * Prázdná šířka = šířka šachty, prázdná délka = 1 000 mm, prázdná výška
+ * sloupu = výška nejvyššího nástupiště (zdvih). Starší zakázka pole nemá
+ * a čte se přes mustkySkupiny(): `mustkyKs` (nebo zaškrtnutý `mustek`)
+ * + `mustekHloubkaMm` = jedna skupina s výchozím provedením. Uložená data
+ * se NEPŘEPISUJÍ — převod je jen při čtení.
+ *
+ * VÝPOČET (A-Q6, A-Q7):
+ *  – MODEL 1 zůstává na vzorci #354 (předloha 1:1): po skupinách jen počet
+ *    a délka, šířka = šířka šachty, provedení, kotvení ani sloupy se
+ *    nepočítají.
+ *  – MODEL 2 se starým ceníkem (bez kladné `C.mustekRamBmKc`): vzorec #354
+ *    beze změny (= pochozí plech, kovové zábradlí), jen se zadanou šířkou
+ *    skupiny; sloupy navíc se počítají (jako sloupky šachty, A-Q5).
+ *  – MODEL 2 s novým ceníkem (`mustkyCenikSkladebny`): SKLADEBNÝ model —
+ *    nosná konstrukce + podlaha podle typu + zábradlí podle typu + kotvení
+ *    + sloupy (jako rohové sloupky šachty: profil sloupku z Dimenze profilů,
+ *    rezerva profilů, Kč/kg profilů a lakování profilů) + montáž; řádky
+ *    tvoří vlastní sekci kalkulace MŮSTKY a nabídka má samostatný řádek ceny.
+ *  Podlaha „vana" = ocelová vana je naše dodávka, BETONÁŽ ZAJISTÍ STAVBA
+ *  (A-Q4) — sazba je jen za vanu. Volba „jiné" nemá ceníkovou sazbu: řádek
+ *  vznikne s cenou 0 a příznakem `bezCeny` (cenu doplní administrátor
+ *  ručním přepisem řádku), kontrola `mustky` to řekne. */
+const MUSTEK_PODLAHY = [['plech', 'pochozí plech'], ['pororost', 'pororošt'],
+  ['vana', 'ocelová vana pro beton (betonáž zajistí stavba)'], ['jine', 'jiné']];
+const MUSTEK_ZABRADLI = [['kov', 'kovové'], ['sklo', 'skleněné'], ['bez', 'bez zábradlí'], ['jine', 'jiné']];
+const MUSTEK_KOTVENI = [['deska', 'do stropní desky / věnce budovy'], ['sloupy', 'do sloupů (na terén)'],
+  ['konzola', 'konzolově jen z OCK'], ['jine', 'jiné']];
+const MUSTKY_SKUPIN_MAX = 20;
+const MUSTEK_TEXT_MAX = 120;
+/* Nové klíče ceníku skladebného modelu (A-Q6) — JEN JMÉNA, sazby žijí
+ * v ceníku na serveru (#548). Sloupy navíc vlastní sazbu nemají (A-Q5). */
+const MUSTKY_SKLADBA_KLICE = ['mustekRamBmKc', 'mustekPodlahaPlechM2Kc', 'mustekPodlahaPororostM2Kc',
+  'mustekPodlahaVanaM2Kc', 'mustekZabradliKovBmKc', 'mustekZabradliSkloBmKc', 'mustekKotveniDeskaKc',
+  'mustekKotveniSloupKc', 'mustekKotveniKonzolaKc', 'mustekZabradliSkloMontazHodBm'];
+const MUSTEK_PODLAHA_KLIC = { plech: 'mustekPodlahaPlechM2Kc', pororost: 'mustekPodlahaPororostM2Kc', vana: 'mustekPodlahaVanaM2Kc' };
+const MUSTEK_ZABRADLI_KLIC = { kov: 'mustekZabradliKovBmKc', sklo: 'mustekZabradliSkloBmKc' };
+const MUSTEK_KOTVENI_KLIC = { deska: 'mustekKotveniDeskaKc', sloupy: 'mustekKotveniSloupKc', konzola: 'mustekKotveniKonzolaKc' };
+/* Názvy řádků kalkulace (klíče ručních přepisů — neměnit). */
+const MUSTEK_RADEK = {
+  konstrukce: 'MŮSTKY – NOSNÁ KONSTRUKCE',
+  podlaha: { plech: 'MŮSTKY – PODLAHA: POCHOZÍ PLECH', pororost: 'MŮSTKY – PODLAHA: POROROŠT',
+    vana: 'MŮSTKY – PODLAHA: OCELOVÁ VANA (BETON ZAJISTÍ STAVBA)', jine: 'MŮSTKY – PODLAHA: JINÁ' },
+  zabradli: { kov: 'MŮSTKY – ZÁBRADLÍ: KOVOVÉ', sklo: 'MŮSTKY – ZÁBRADLÍ: SKLENĚNÉ', jine: 'MŮSTKY – ZÁBRADLÍ: JINÉ' },
+  kotveni: { deska: 'MŮSTKY – KOTVENÍ: DO STROPNÍ DESKY', sloupy: 'MŮSTKY – KOTVENÍ: DO SLOUPŮ',
+    konzola: 'MŮSTKY – KOTVENÍ: KONZOLOVĚ Z OCK', jine: 'MŮSTKY – KOTVENÍ: JINÉ' },
+  sloupy: 'MŮSTKY – SLOUPY NAVÍC (PROFIL)',
+  sloupyLak: 'MŮSTKY – SLOUPY NAVÍC (LAKOVÁNÍ)',
+  montaz: 'MONTÁŽ MŮSTKŮ',
+};
+/* Cesta řádku do ceníku (klíče ve výčtech výš; controlling je zařazuje všechny). */
+const mustekCesta = k => 'C.' + k;
+const mustekVolba = (seznam, v, vychozi) => (seznam.some(x => x[0] === v) ? v : vychozi);
+const mustekText = v => (typeof v === 'string' ? v.slice(0, MUSTEK_TEXT_MAX) : '');
+/* Kladné číslo, nebo '' (prázdno není nula). */
+const mustekKladne = v => {
+  if (v === null || v === undefined || String(v).trim() === '') return '';
+  const n = +v;
+  return Number.isFinite(n) && n > 0 ? n : '';
+};
+const mustekKusy = v => { const n = +v; return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0; };
+function mustekSkupinaOciste(s) {
+  const x = (s && typeof s === 'object' && !Array.isArray(s)) ? s : {};
+  return {
+    ks: mustekKusy(x.ks), sirkaMm: mustekKladne(x.sirkaMm), delkaMm: mustekKladne(x.delkaMm),
+    podlaha: mustekVolba(MUSTEK_PODLAHY, x.podlaha, 'plech'), podlahaNazev: mustekText(x.podlahaNazev),
+    zabradli: mustekVolba(MUSTEK_ZABRADLI, x.zabradli, 'kov'), zabradliNazev: mustekText(x.zabradliNazev),
+    zabradliStrany: +x.zabradliStrany === 1 ? 1 : 2,
+    kotveni: mustekVolba(MUSTEK_KOTVENI, x.kotveni, 'deska'), kotveniText: mustekText(x.kotveniText),
+    sloupyKs: mustekKusy(x.sloupyKs), sloupVyskaM: mustekKladne(x.sloupVyskaM),
+  };
+}
+/* Nová skupina (tlačítko „+ další provedení"; převod starého tvaru). */
+function mustekSkupinaNova(ks) { return mustekSkupinaOciste({ ks: ks == null ? 1 : ks }); }
+/* Skupiny můstků zakázky — jediné místo čtení obou tvarů. */
+function mustkySkupiny(z) {
+  if (z && Array.isArray(z.mustky)) return z.mustky.slice(0, MUSTKY_SKUPIN_MAX).map(mustekSkupinaOciste);
+  const n = z ? z.mustkyKs : undefined;
+  const ks = (n !== undefined && n !== null && n !== '' && isFinite(+n)) ? Math.max(0, Math.floor(+n)) : ((z && z.mustek) ? 1 : 0);
+  if (!ks) return [];
+  return [mustekSkupinaOciste({ ks, delkaMm: z.mustekHloubkaMm })];
+}
+/* Převod starého tvaru na skupiny (UI při první úpravě karty Můstky). */
+function mustkyNaSkupiny(z) {
+  if (!z || typeof z !== 'object') return [];
+  if (Array.isArray(z.mustky)) return z.mustky;
+  z.mustky = mustkySkupiny(z);
+  delete z.mustkyKs; delete z.mustek; delete z.mustekHloubkaMm;
+  return z.mustky;
+}
+/* Nový (skladebný) tvar ceníku: kladná referenční šířka (#354) a kladná
+ * sazba nosné konstrukce. Bez ní platí #354 (A-Q6: starý ceník → beze změny). */
+function mustkyCenikSkladebny(c) {
+  const r = c ? +c.mustekRamBmKc : NaN;
+  return mustkyCenikNovy(c) && Number.isFinite(r) && r > 0;
+}
+/* Provedení, které se ve výpočtu neprojeví (Model 1 nebo starý ceník):
+ * podlaha, zábradlí ani kotvení mimo výchozí. Pro kontrolu a kartu. */
+function mustkyProvedeniMimoVychozi(z) {
+  return mustkySkupiny(z).some(s => s.ks > 0 && (s.podlaha !== 'plech' || s.zabradli !== 'kov'
+    || s.zabradliStrany !== 2 || s.kotveni !== 'deska'));
+}
+/* Rozpad ceny můstků — jediné místo vzorce (jádro, kontroly, testy).
+ * `fixes` = Model 2 (výchozí true kvůli starším volajícím; Model 1 = false).
+ * Pole první skupiny (sirkaMm, delkaMm, bmRef, hodKs, materialKs, montazKs)
+ * zůstávají kvůli čtenářům #354; součty za všechny skupiny nesou
+ * bmRefCelkem / hodCelkem, skladebný model `skladba`. */
+function mustkyRozpad(z, c, fixes) {
+  const m2 = fixes !== false;
   const ks = mustkyPocet(z);
   const novy = mustkyCenikNovy(c);
   const num = v => (Number.isFinite(+v) ? +v : 0);
-  const sirkaMm = Math.round(num(z && z.sirka) * 1000);
-  const delkaMm = mustekDelkaMm(z);
-  const delkaM = delkaMm / 1000;
-  const out = { ks, novy, sirkaMm, delkaMm, delkaZadana: delkaMm === +(z && z.mustekHloubkaMm) };
+  const sirkaSachtyMm = Math.round(num(z && z.sirka) * 1000);
+  const skupiny = mustkySkupiny(z).map(s => Object.assign({}, s, {
+    sirkaEfMm: (m2 && s.sirkaMm !== '') ? +s.sirkaMm : sirkaSachtyMm,
+    delkaEfMm: s.delkaMm !== '' ? +s.delkaMm : MUSTEK_DELKA_VYCHOZI_MM,
+    vyskaSloupuM: s.sloupVyskaM !== '' ? +s.sloupVyskaM : num(z && z.zdvih),
+  }));
+  const prvni = skupiny[0];
+  const sirkaMm = prvni ? prvni.sirkaEfMm : sirkaSachtyMm;
+  const delkaMm = prvni ? prvni.delkaEfMm : mustekDelkaMm(z);
+  const out = { ks, novy, sirkaMm, delkaMm,
+    delkaZadana: prvni ? prvni.delkaMm !== '' : delkaMm === +(z && z.mustekHloubkaMm),
+    skupiny, skladebny: false,
+    /* Sloupy navíc jen Model 2 (Model 1 je nezná). */
+    sloupyM: m2 ? skupiny.reduce((a, s) => a + s.sloupyKs * s.vyskaSloupuM, 0) : 0,
+    sloupyKs: m2 ? skupiny.reduce((a, s) => a + s.sloupyKs, 0) : 0 };
   if (!novy) return out;
-  out.bmRef = delkaM * (sirkaMm / num(c.mustekRefSirkaMm));          // bm přepočtené na ref. šířku, 1 ks
-  out.hodKs = Math.max(num(c.mustekMontazMinHod), num(c.mustekMontazZakladHod) + num(c.mustekMontazBmHod) * delkaM);
+  const ref = num(c.mustekRefSirkaMm);
+  const hodNa = dM => Math.max(num(c.mustekMontazMinHod), num(c.mustekMontazZakladHod) + num(c.mustekMontazBmHod) * dM);
+  skupiny.forEach(s => { s.bmRef = (s.delkaEfMm / 1000) * (s.sirkaEfMm / ref); s.hodKs = hodNa(s.delkaEfMm / 1000); });
+  out.bmRef = (delkaMm / 1000) * (sirkaMm / ref);          // bm přepočtené na ref. šířku, 1 ks
+  out.hodKs = hodNa(delkaMm / 1000);
   out.materialKs = out.bmRef * num(c.mustekKc);
   out.montazKs = out.hodKs * num(c.mustekMontazHodKc);
+  out.bmRefCelkem = skupiny.length ? skupiny.reduce((a, s) => a + s.ks * s.bmRef, 0) : ks * out.bmRef;
+  out.hodCelkem = skupiny.length ? skupiny.reduce((a, s) => a + s.ks * s.hodKs, 0) : ks * out.hodKs;
+  if (!m2 || !mustkyCenikSkladebny(c) || !ks) return out;
+  /* SKLADEBNÝ MODEL (Model 2 + nový ceník). */
+  out.skladebny = true;
+  const sk = { konstrukceBm: out.bmRefCelkem, podlaha: {}, podlahaNazvy: [], zabradli: {}, zabradliNazvy: [],
+    kotveni: {}, kotveniTexty: [], skloBm: 0, hodiny: out.hodCelkem };
+  const pricti = (o, k, v) => { o[k] = (o[k] || 0) + v; };
+  skupiny.forEach(s => {
+    if (!s.ks) return;
+    const sM = s.sirkaEfMm / 1000, dM = s.delkaEfMm / 1000;
+    pricti(sk.podlaha, s.podlaha, s.ks * sM * dM);
+    if (s.podlaha === 'jine' && s.podlahaNazev && sk.podlahaNazvy.indexOf(s.podlahaNazev) < 0) sk.podlahaNazvy.push(s.podlahaNazev);
+    if (s.zabradli !== 'bez') pricti(sk.zabradli, s.zabradli, s.ks * s.zabradliStrany * dM);
+    if (s.zabradli === 'jine' && s.zabradliNazev && sk.zabradliNazvy.indexOf(s.zabradliNazev) < 0) sk.zabradliNazvy.push(s.zabradliNazev);
+    if (s.zabradli === 'sklo') sk.skloBm += s.ks * s.zabradliStrany * dM;
+    pricti(sk.kotveni, s.kotveni, s.ks);
+    if (s.kotveni === 'jine' && s.kotveniText && sk.kotveniTexty.indexOf(s.kotveniText) < 0) sk.kotveniTexty.push(s.kotveniText);
+  });
+  sk.hodinySklo = sk.skloBm * num(c.mustekZabradliSkloMontazHodBm);
+  sk.hodiny = out.hodCelkem + sk.hodinySklo;
+  out.skladba = sk;
   return out;
 }
 /* MIGRACE ZVEŘEJŇOVANÉHO CENÍKU (#354; od #548 bez sazeb v kódu).
@@ -864,6 +1021,23 @@ function mustkyCenikKontrola(cenik) {
   if (!kladne(c.mustekKc)) chybi.push('mustekKc');
   if (!kladne(c.mustekMontazHodKc)) chybi.push('mustekMontazHodKc');
   if (!MUSTKY_CENIK_KLICE.slice(3).some(k => kladne(c[k]))) chybi.push('hodiny');
+  /* #560 (A-Q6): skladebný model — s kladnou nosnou konstrukcí musí mít
+   * sazbu každé provedení (podlahy, zábradlí, kotvení); hodiny skleněného
+   * zábradlí smějí být nula. Rozpracovaný skladebný ceník bez nosné
+   * konstrukce se taky řekne (model by se nezapnul). Obojí jde zveřejnit
+   * jen s potvrzením (stejně jako #548 / K40-N2). */
+  const skladba = MUSTKY_SKLADBA_KLICE.filter(k => k !== 'mustekZabradliSkloMontazHodBm');
+  if (kladne(c.mustekRamBmKc)) {
+    const nul = skladba.filter(k => !kladne(c[k]));
+    if (nul.length) return { ok: false, stary: false, chybi: chybi.concat(nul),
+      text: (chybi.length ? 'Cena můstku podle #354 není úplná (' + chybi.map(k => POPIS[k]).join(', ') + '). ' : '')
+        + 'Skladebný model můstků: chybí sazba ' + nul.map(k => 'C.' + k).join(', ')
+        + '. Nové nabídky v Modelu 2 by toto provedení počítaly za 0 Kč. Doplňte je v Nastavení → Ceník.' };
+  } else if (skladba.some(k => kladne(c[k])) && !chybi.length) {
+    return { ok: false, stary: false, chybi: ['mustekRamBmKc'],
+      text: 'Skladebný model můstků má vyplněné sazby provedení, ale chybí C.mustekRamBmKc (nosná konstrukce) — '
+        + 'bez ní se můstky dál počítají podle #354 a sazby provedení se nepoužijí.' };
+  }
   if (!chybi.length) return { ok: true, stary: false, chybi, text: '' };
   return { ok: false, stary: false, chybi,
     text: 'Cena můstku není úplná — chybí ' + chybi.map(k => POPIS[k]).join(', ')
@@ -1255,7 +1429,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const mustekRozmer = v => (Number.isFinite(+v) && +v > 0 ? +v / 1000 : 0);
   /* #354: s novým ceníkem šířka = šířka šachty, délka jako v ceně (prázdná
    * = 1 000 mm); starý ceník (zamčené varianty) počítá střechu jako dřív. */
-  const mustkyR = mustkyRozpad(z, c);
+  const mustkyR = mustkyRozpad(z, c, fixes);
   const mustekSirka = mustkyR.novy ? mustkyR.sirkaMm / 1000 : mustekRozmer(z.mustekSirkaMm);
   const mustekHloubka = mustkyR.novy ? mustkyR.delkaMm / 1000 : mustekRozmer(z.mustekHloubkaMm);
   const strechaMustekM2 = (mustekNahore && mustekSirka && mustekHloubka) ? (mustekSirka + 0.2) * mustekHloubka : 0;
@@ -1381,6 +1555,17 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
                   celkem: (+vl.mnozstvi || 0) * (+vl.cena || 0), vlastni: true }));
   const lakVlastniKc = vlLakRows.reduce((a, r) => a + r.celkem, 0);
   const lakovaniKc = (L.rezim === 'tomas' ? tomas : lakovna) + lakVlastniKc;
+
+  /* SLOUPY NAVÍC POD MŮSTKY (#560, A-Q5 — J. V.: „To jsou jakly, stejné
+   * jako v rozích šachty … naceňují se stejným způsobem jako sloupky
+   * v šachtě a se stejnými dimenzemi"). Profil sloupku z Dimenze profilů,
+   * rezerva profilů jako u sloupků šachty, materiál Kč/kg profilů
+   * a lakování sazbou profilů (lakovna za bm, Tomáš za m²). Vlastní sazba
+   * sloupů se nezavádí. Jen Model 2 (mustkyRozpad vrací 0 v Modelu 1). */
+  const sloupyMustkuM = mustkyR.sloupyM * (1 + rezP);
+  const sloupyMustkuKg = sloupyMustkuM * jSl.kg, sloupyMustkuM2 = sloupyMustkuM * jSl.m2;
+  const sloupyMustkuLakKc = sloupyMustkuM > 0
+    ? (L.rezim === 'tomas' ? (+L.tomasProfilM2 || 0) * sloupyMustkuM2 : (+L.lakovnaProfilBm || 0) * sloupyMustkuM) : 0;
 
   /* ---------- zasklení ---------- */
   const zadniKs = Math.ceil(vyskaProsklene / z.roztec - 1e-9);
@@ -1941,6 +2126,41 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const oznacAtyp = r => r && ({ ...r, atyp: true,
     bezCeny: (+r.mnozstvi || 0) > 0 && !((+r.cena || 0) > 0) });
 
+  /* Sloupy navíc pod můstky (#560) — řádky jen při sloupech (Model 2). */
+  const mustkySloupyRadky = () => (mustky > 0 && sloupyMustkuM > 0) ? [
+    mkItem(MUSTEK_RADEK.sloupy, sloupyMustkuKg, c.profilasKgKc, { cenaPath: 'C.profilasKgKc',
+      pozn: mustkyR.sloupyKs + ' ks, ' + (Math.round(mustkyR.sloupyM * 100) / 100) + ' m' }),
+    mkItem(MUSTEK_RADEK.sloupyLak, 1, sloupyMustkuLakKc, { naklad: sloupyMustkuLakKc, cenaSkupina: 'C.lak.*' }),
+  ] : [];
+  /* SEKCE MŮSTKY — skladebný model (#560, Model 2 + nový ceník). Řádek
+   * s nulovým množstvím nevzniká; „jiné" bez ceníkové sazby nese `bezCeny`. */
+  const oznacBezCeny = r => r && ({ ...r, bezCeny: (+r.mnozstvi || 0) > 0 && !((+r.cena || 0) > 0) });
+  const mustkyRadky = !mustkyR.skladebny ? [] : (() => {
+    const sk = mustkyR.skladba;
+    const radky = [mkItem(MUSTEK_RADEK.konstrukce, sk.konstrukceBm, c.mustekRamBmKc, { cenaPath: 'C.mustekRamBmKc' })];
+    MUSTEK_PODLAHY.forEach(([k]) => {
+      if (!(sk.podlaha[k] > 0)) return;
+      radky.push(k === 'jine'
+        ? oznacBezCeny(mkItem(MUSTEK_RADEK.podlaha.jine, sk.podlaha.jine, 0, { pozn: sk.podlahaNazvy.join(', ') }))
+        : mkItem(MUSTEK_RADEK.podlaha[k], sk.podlaha[k], c[MUSTEK_PODLAHA_KLIC[k]], { cenaPath: mustekCesta(MUSTEK_PODLAHA_KLIC[k]) }));
+    });
+    MUSTEK_ZABRADLI.forEach(([k]) => {
+      if (k === 'bez' || !(sk.zabradli[k] > 0)) return;
+      radky.push(k === 'jine'
+        ? oznacBezCeny(mkItem(MUSTEK_RADEK.zabradli.jine, sk.zabradli.jine, 0, { pozn: sk.zabradliNazvy.join(', ') }))
+        : mkItem(MUSTEK_RADEK.zabradli[k], sk.zabradli[k], c[MUSTEK_ZABRADLI_KLIC[k]], { cenaPath: mustekCesta(MUSTEK_ZABRADLI_KLIC[k]) }));
+    });
+    MUSTEK_KOTVENI.forEach(([k]) => {
+      if (!(sk.kotveni[k] > 0)) return;
+      radky.push(k === 'jine'
+        ? oznacBezCeny(mkItem(MUSTEK_RADEK.kotveni.jine, sk.kotveni.jine, 0, { pozn: sk.kotveniTexty.join(', ') }))
+        : mkItem(MUSTEK_RADEK.kotveni[k], sk.kotveni[k], c[MUSTEK_KOTVENI_KLIC[k]], { cenaPath: mustekCesta(MUSTEK_KOTVENI_KLIC[k]) }));
+    });
+    radky.push(...mustkySloupyRadky());
+    radky.push(mkItem(MUSTEK_RADEK.montaz, sk.hodiny, c.mustekMontazHodKc, { cenaPath: 'C.mustekMontazHodKc' }));
+    return radky.concat(vlastniProSekci('mustky'));
+  })();
+
   const plechKey = ext ? 'C.powertechExt' : 'C.powertechInt';
   const hrubaOck = [
     mkItem('PROFILY - HLAVNÍ NOSNÉ PRVKY', profKg, c.profilasKgKc, { cenaPath: 'C.profilasKgKc' }),
@@ -1982,9 +2202,13 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     (mustky > 0 && !mustkyR.novy) ? mkItem('MŮSTKY MEZI BUDOVOU A OCK', mustky, c.mustekKc, { cenaPath: 'C.mustekKc' }) : null,
     /* #354: s novým ceníkem dva řádky — materiál (bm přepočtené na
      * referenční šířku × Kč/bm) a montáž (hodiny × Kč/hod), controlling je
-     * vidí zvlášť. Množství nese počet kusů, cena zůstává ceníková. */
-    (mustky > 0 && mustkyR.novy) ? mkItem('MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL', mustky * mustkyR.bmRef, c.mustekKc, { cenaPath: 'C.mustekKc' }) : null,
-    (mustky > 0 && mustkyR.novy) ? mkItem('MONTÁŽ MŮSTKŮ', mustky * mustkyR.hodKs, c.mustekMontazHodKc, { cenaPath: 'C.mustekMontazHodKc' }) : null,
+     * vidí zvlášť. Množství nese počet kusů, cena zůstává ceníková.
+     * #560: po skupinách (součet ks × bm každé skupiny; jedna skupina =
+     * přesně dnešní ks × bm). Skladebný model (Model 2 + nový ceník) má
+     * místo nich vlastní sekci MŮSTKY níž. */
+    (mustky > 0 && mustkyR.novy && !mustkyR.skladebny) ? mkItem('MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL', mustkyR.bmRefCelkem, c.mustekKc, { cenaPath: 'C.mustekKc' }) : null,
+    (mustky > 0 && mustkyR.novy && !mustkyR.skladebny) ? mkItem('MONTÁŽ MŮSTKŮ', mustkyR.hodCelkem, c.mustekMontazHodKc, { cenaPath: 'C.mustekMontazHodKc' }) : null,
+    ...(mustkyR.skladebny ? [] : mustkySloupyRadky()),
     ...vlastniProSekci('hrubaOck'),
     /* ATYP položky se v nabídce nevydělují do vlastní sekce – zákazník má vidět
      * jednu ocelovou konstrukci, ne účet za „něco navíc". Uvnitř kalkulace je
@@ -2208,14 +2432,18 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
 
   const sekce = { hrubaOck: jenPocitane(hrubaOck), oplasteni: jenPocitane(oplasteni),
                   volitelne: jenTetoRady(volitelne), rezie: jenPocitane(rezie) };
+  /* Sekce MŮSTKY jen ve skladebném modelu (#560) — výsledek zakázky bez
+   * ní má tvar beze změny (zlatá pojistka). */
+  if (mustkyR.skladebny) sekce.mustky = jenPocitane(mustkyRadky);
   const sum = rows => ({
     naklad: rows.reduce((a, r) => a + r.naklad, 0),
     marze: rows.reduce((a, r) => a + r.marze, 0),
     sMarzi: rows.reduce((a, r) => a + r.sMarzi, 0),
   });
   const s1 = sum(sekce.hrubaOck), s2 = sum(sekce.oplasteni), s3 = sum(sekce.volitelne), s4 = sum(sekce.rezie);
-  const nakladBezRezervy = s1.naklad + s2.naklad + s3.naklad + s4.naklad;
-  const sMarziBezRezervy = s1.sMarzi + s2.sMarzi + s3.sMarzi + s4.sMarzi;
+  const s5 = sekce.mustky ? sum(sekce.mustky) : null;
+  const nakladBezRezervy = s1.naklad + s2.naklad + s3.naklad + s4.naklad + (s5 ? s5.naklad : 0);
+  const sMarziBezRezervy = s1.sMarzi + s2.sMarzi + s3.sMarzi + s4.sMarzi + (s5 ? s5.sMarzi : 0);
 
   // REZERVA — oprava: počítá se z NÁKLADŮ a marže se přidá jen jednou.
   // (šablona: základ = cena vč. marže a k tomu ještě jednou marže)
@@ -2387,6 +2615,18 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     priplatkyCena: priplatkyCenaCelkem, priplatkyDph: priplatkyCenaCelkem * dph,
     priplatkySDph: priplatkyCenaCelkem * (1 + dph),
   };
+  /* CENA MŮSTKŮ PRO SAMOSTATNÝ ŘÁDEK NABÍDKY (#560, A-Q8/9). Jen ve
+   * skladebném modelu. Podíl na rezervě se počítá stejně jako rezerva
+   * celku (Model 2: z nákladu), zaokrouhluje se nahoru na tisíce jako
+   * základ. `zakladCena` zůstává CELKOVÁ (šachta + můstky) — krycí list,
+   * Pipedrive i controlling ji čtou beze změny; nabídka z ní šachtu
+   * dopočte jako rozdíl (cenaNabidkyOck). */
+  if (s5) {
+    const rezMustky = s5.naklad * z.rezervaZakladPct;
+    const cenaMustky = Math.min(CEIL(s5.sMarzi + rezMustky * (1 + m), 1000), zakladCenaZaokr);
+    souhrn.mustkyNaklad = s5.naklad + rezMustky;
+    souhrn.mustkyCena = cenaMustky;
+  }
 
   return {
     odvozene: { vyskaSachty: H, vyskaPodlazi, svetlaVyska, vyskaProsklene, sirkaDveri, leseniVez, leseniU },
@@ -2456,7 +2696,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
                  zakladPasu: oplZakladPasu, svetliky: oplSvetliky,
                  sirkySten: stenaSirka, plochaCelkem: oplPlochaCelkem,
                  podleTypu: Object.keys(oplPodleTypu).map(k => ({ klic: k, ...oplPodleTypu[k] })) },
-    sekce, volitelneKatalog, souctySekci: { hrubaOck: s1, oplasteni: s2, volitelne: s3, rezie: s4 }, rezerva,
+    sekce, volitelneKatalog, souctySekci: Object.assign({ hrubaOck: s1, oplasteni: s2, volitelne: s3, rezie: s4 }, s5 ? { mustky: s5 } : {}), rezerva,
     priplatky, souhrn,
   };
 }
@@ -2560,4 +2800,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, cenikMigraceMustku, mustkyCenikKontrola, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, cenikMigraceMustku, mustkyCenikKontrola, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
