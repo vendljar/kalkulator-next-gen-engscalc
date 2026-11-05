@@ -154,7 +154,7 @@ const word = await p.evaluate(async ([s15, s16]) => {
   };
   try { return { v15: await text(s15), v16: await text(s16) }; } catch (e) { return { chyba: e.message }; }
 }, [v15, v16]);
-zkus('5 Word v15 (klon): sekce MŮSTKY a řádky ceny', word.v15 && /\nMŮSTKY MEZI BUDOVOU A OCK\s*\n\s*POČET A ROZMĚR/.test(word.v15)
+zkus('5 Word v15 (klon): sekce MŮSTKY a řádky ceny', word.v15 && /MŮSTKY MEZI BUDOVOU A OCK[ |]*\n\s*POČET A ROZMĚR/.test(word.v15)
   && /MŮSTKY MEZI BUDOVOU A OCK \|[^\n]*bez DPH/.test(word.v15) && /CENA CELKEM \|/.test(word.v15) && !/\{\{/.test(word.v15), word.chyba || (word.v15 || '').slice(-600));
 zkus('5 Word v16: sekce MŮSTKY a řádky ceny ze symbolů', word.v16 && /POČET A ROZMĚR \| 2 ks/.test(word.v16)
   && /CENA CELKEM[^|\n]* \|/.test(word.v16) && (word.v16.match(/VÝTAHOVÁ ŠACHTA/g) || []).length === 1 && !/\{\{/.test(word.v16), word.chyba || (word.v16 || '').slice(-600));

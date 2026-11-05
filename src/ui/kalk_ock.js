@@ -872,16 +872,12 @@ function mustkySet(v) {
   const n = Math.max(0, Math.floor(+v || 0));
   /* #560: zadání po skupinách — počet v zadání šachty mění první skupinu
    * (běžně jediná); u více skupin je pole jen součet (mění se v kartě). */
-  if (Array.isArray(Z.mustky)) {
-    const sk = Z.mustky.map(x => Object.assign({}, x));
-    if (sk.length > 1) { render(); return; }
-    if (!sk.length) sk.push(mustekSkupinaNova(n)); else sk[0].ks = n;
-    set('Z.mustky', n > 0 ? sk : []);
-    return;
-  }
-  set('Z.mustkyKs', n);
-  if (Z.mustkyKs === n) Z.mustek = n > 0;
-  render();
+  /* Starší tvar (mustkyKs + mustekHloubkaMm) se převede na skupinu — délka
+   * zůstane; jedna skupina počítá na haléř stejně (test_560_mustky_sekce.js). */
+  const sk = mustkySkupinyKopie();
+  if (sk.length > 1) { render(); return; }
+  if (!sk.length) sk.push(mustekSkupinaNova(n)); else sk[0].ks = n;
+  mustkyUloz(n > 0 ? sk : []);
 }
 
 /* KARTA MŮSTKY (#560, rozhodnutí J. V. 4. 11. 2026, A-Q1/A-Q2/A-Q7).
