@@ -17,7 +17,7 @@ udělené → kopie šla. Starý `posledni_kopie.json` / záznam `kopie-disk` be
 | 3c. starý `posledni_kopie.json` nebrání | ✅ | ověřeno (klient i server), bez změny kódu |
 | 4. testovací web dál stejně | ✅ | harness průchod G |
 | 5. postup pro J. V. | ✅ | níže + manuál správce |
-| testy, mutace, kolo | viz CHANGELOG v5.11.1 | `src/test_571_kopie_disk_stav.js`, `netlify/test_571_kopie_disk.mjs`, `src/test_554_kopie_denne.js`; mutace `[#571]` |
+| testy, mutace, kolo | ✅ VŠE ZELENÉ | kolo `--bez-mutaci` 392 / 0 / 7 přeskočeno, hodiny 315 / 0 / 1, statické 5/5; mutace #571 11/11, #554 12/12, O7 1/1 | `src/test_571_kopie_disk_stav.js`, `netlify/test_571_kopie_disk.mjs`, `src/test_554_kopie_denne.js`; mutace `[#571]` |
 
 **Co má J. V. udělat hned (ostrý web, Chrome/Edge, v4.11.8 — ještě bez opravy):** Nastavení → Databáze →
 **Zkopírovat zálohu na Disk teď** → vybrat na Disku Google složku **_Zaloha Netlify DB** (nabídne-li prohlížeč

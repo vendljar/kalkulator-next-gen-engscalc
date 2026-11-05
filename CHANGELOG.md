@@ -32,7 +32,9 @@ testovací web kopii udělal sám. Na webech ani na Disku nic. Verzi může koor
   složka, F5 bez hesla, testovací web, bez nového otisku); `src/test_571_kopie_disk_stav.js` (20),
   `netlify/test_571_kopie_disk.mjs` (8), `src/test_554_kopie_denne.js` upraven (18). Pojistka: harness na 000924e
   9 / 11 FAIL (stav „prompt": žádná kopie, žádná hláška), test jádra padá; po opravě vše zelené. Mutace „#571"
-  (11) + upravené #554 a O7.
+  11 z 11 chycených, upravené #554 12 z 12, O7 1 z 1; `--kontrola` 1315 úseků v pořádku.
+- **Kolo `--bez-mutaci`:** VŠE ZELENÉ (26 min 51 s) — sady 392 / 0 / 7 přeskočeno (firemní podklady KNG_PODKLADY
+  a test.js, jako dřív), hodiny +400 dní 315 / 0 / 1, statické 5 z 5.
 - Manuál správce (kopie na Disk, postup) a `manual/kompletni/provoz.json` doplněny.
 
 ## Dokumentace (bez nové verze aplikace) — MV4 #566: 4. vydání manuálu výpočtu OCK pro v4.11.4, větev claude/mv4-manual-vypocet

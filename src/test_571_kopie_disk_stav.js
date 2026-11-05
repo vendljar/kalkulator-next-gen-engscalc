@@ -19,9 +19,8 @@
  *   - souhrnné varování po přihlášení důvod nepřepíše.
  * Prohlížečový průchod: overit_dz_kopie_disk.mjs.
  *
- * Pojistka: na 000924e (v4.11.8) padá 9 kontrol (funkce kopieDiskPravoPredem,
- * kopieDiskCeka a pole kopieDiskCeka neexistují, přihlášení o právo nežádá,
- * souhrnná hláška důvod nenese); po opravě vše zelené.
+ * Pojistka: na 000924e (v4.11.8) padá (přihlášení o právo nežádá, pak
+ * výjimka — kopieDiskPravoPredem neexistuje); po opravě 20 / 0.
  * Spuštění: node src/test_571_kopie_disk_stav.js
  * ============================================================ */
 const fs = require('fs');
