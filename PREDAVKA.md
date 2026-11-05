@@ -1,3 +1,42 @@
+# Předávka — 5. 11. 2026: PH #568, #569, #572 — hlavička PROJ, studie bez zaměření, sklo jen s plochou, větev `claude/ph-proj-hlavicka`
+
+Nad `000924e` (`test` = `main` = v4.11.8). **Verze 5.11.1** (koordinace přečísluje). Neslučováno; do `test-draft`,
+`test` ani `main` nic. Na webech nic. Nová mez B nepřidána.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. #568 hlavička PROJ jako OCK | ✅ | `src/ui/kalk_proj.js` — tmavá dlaždice = `projCena` (cena nabídky po slevě a zaokrouhlení, EUR z téhož čísla), řádek „Cena nabídky bez DPH" pryč; ověřeno = nabídka PROJ (náhled, Word) = krycí list PROJ |
+| 2. #569 studie bez zaměření | ✅ | `src/nabidka_proj.js`, `engine_proj.js` (razítko `studieBezZamereni`), `podminky.js`, `docxgen.js` (`docxStudieBezZamereni` — Word bez nové šablony), `dokumenty.js`, `kontroly.js`, `preklad.js` |
+| 3. #572 OCK sklo jen s plochou | ✅ | `src/techspec.js` (`tsMaSklo`, filtr pásů), `engine.js` (razítko `oplasteni.skloJenSPlochou`), `preklad.js` |
+| 4. testy s pojistkou | ✅ | `test_568_proj_hlavicka` 25, `test_569_studie_bez_zamereni` 80, `test_570_sklo_bez_plochy` 66 — na 000924e 5 / 1 / 60 FAIL |
+| 5. mutace [#568], [#569], [#572] | ✅ 20 z 20 chycených | `mutace_jadro.mjs` (#568 1/1, #569 12/12, #572 7/7; `--kontrola` 686/686) |
+| 6. kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | 30 min 22 s: sady 392 / 0 / 7 přeskočeno (test.js + 6 harnessů bez KNG_PODKLADY, jako u IK), hodiny +400 dní 316 / 0 / 1, statické 5 z 5 |
+| 7. roadmapa, CHANGELOG, manuál obchodníka | ✅ | #568, #569, #572 (`--kontrola` 564 položek), CHANGELOG v5.11.1, `manual/obsah.json` (Kalkulace PROJ, studie, opláštění po stěnách) |
+
+**Přeformulované věty (#569):**
+- úvod: „Z výsledku zaměření navrhneme varianty řešení…" → „Z podkladů a prohlídky navrhneme varianty řešení
+  a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI."
+- rozsah studie: „PŮVODNÍ STAV – grafický výstup ze zaměření, průmět reality…" → „PŮVODNÍ STAV – grafický výstup
+  z podkladů a prohlídky, průmět reality z průzkumu s původní dokumentací stavby"
+- termín studie (výchozí Firma): „do 10–12 týdnů od zpracování výstupů ze zaměření" → „do 10–12 týdnů od předání podkladů"
+- části: „část 2" (vypracování) → „část 1", „část 3" (projednání) → „část 2"; nadpisy cen totéž.
+- plán plateb: studie na zaměření nenavazovala (milníky podpis / předání studie / vyjádření OPP) — beze změny.
+
+**Odeslané nabídky:** znění se pozná podle razítka ve zmrazeném výsledku zámku (`vysledek.proj.studieBezZamereni`,
+`vysledek.ock.oplasteni.skloJenSPlochou`). Odeslané před dávkou PH razítko nemají → dotisk původní text (online
+i Word). Razítka jsou příznaky; porovnání zámku je neporovnává (B59/P6).
+
+**Otevřené body pro J. V.:**
+- Word #569 je ověřený na syntetické tabulce ve stavbě šablony PROJ v8 (text šablony přečten z Disku); na skutečném
+  .docx ověřit lokálně `overit_nabidka_proj_word.mjs` / zkušebním tiskem (šablona v repu není).
+- Firma s vlastními termíny PROJ v Nastavení → Firma má termín studie uložený — tam ho přepsat ručně.
+- Netýká se studie, nechal jsem: DPZ „dokumentace stávajícího stavu – stav vycházející ze zaměření a původní
+  dokumentace" a termín DPZ bez studie „do 12 týdnů od zpracování výstupů ze zaměření" (D1, rozhodnutí J. V.).
+- #572: pevný popisek šablony CN v15 „VZHLED KOTVENÍ ZASKLENÍ" zůstává (u Cetrisu má hodnotu „obdélníkový terč…");
+  příplatek „PROSKLENÁ STĚNA VEDLE ŠACHTY" (0 Kč, samostatný výrobek) se netýká skla šachty.
+- #568: OCK má v dlaždici základní cenu PŘED slevou, PROJ teď cenu nabídky PO slevě (zadání „cena nabídky").
+- K40 (sklo v `engine.js`): názvy řádků skla jsem neměnil; v `engine.js` jen razítko v objektu `oplasteni` výsledku.
+
 # Předávka — 4. 11. 2026: MV4 #566 — 4. vydání manuálu výpočtu OCK pro v4.11.4, větev `claude/mv4-manual-vypocet`
 
 Nad `b751c91` (`main` = `test` = v4.11.4). **Kód aplikace beze změny, verze se nezvyšuje** (CHANGELOG „Dokumentace").

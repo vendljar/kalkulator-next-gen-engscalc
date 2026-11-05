@@ -1317,7 +1317,8 @@ const KONTROLY = [
       if (!z || typeof nabidkaProjUvodNesedi !== 'function' || typeof nabidkaProjUvod !== 'function') return null;
       const sekce = (ctx.projVysledek && ctx.projVysledek.sekce) || [];
       const vRozsahu = k => sekce.some(x => x && x.key === k && Number(x.celkem) > 0);
-      if (!nabidkaProjUvodNesedi(z, nabidkaProjUvod(vRozsahu).join('\n'))) return null;
+      /* #569: ruční úvod nad znění před přeformulováním věty o studii není „nesedí" */
+      if (!nabidkaProjUvodNesedi(z, nabidkaProjUvod(vRozsahu).join('\n'), nabidkaProjUvod(vRozsahu, null, true).join('\n'))) return null;
       return { text: 'Úvod nabídky PROJ („Naše NABÍDKA a doporučení") byl upraven ručně a nabízené činnosti se od té doby '
         + 'změnily — ruční text nemusí sedět. Zkontrolujte ho v kartě Cenová nabídka (PROJ), nebo vraťte výchozí znění.' };
     },

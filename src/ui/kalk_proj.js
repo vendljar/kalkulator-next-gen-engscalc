@@ -232,11 +232,13 @@ function renderProj() {
   const box3 = kpiLine('naklad', 'Náklad', fmt0(naklad)) + kpiLine('hrubyZisk', 'Hrubý zisk', fmt0(hrubyZisk));
   const box4 = kpiLine('sleva', 'Poskytnutá sleva', pct(slevaProjPodil)) + kpiLine('marze', 'Marže', pct(marze));
   /* Obchodní zaokrouhlení má od 1. 8. 2026 vlastní sekci pod výpočtem (#38)
-   * a vypisuje se i vlastním řádkem v souhrnné tabulce. V hlavičce by byl
-   * jen třetí opis téhož čísla, tak tam není. Cena nabídky ale zůstává –
-   * je to částka, která odchází zákazníkovi, a ta patří nahoru vždycky,
-   * i když se zrovna nezaokrouhluje. */
-  const cenaLine = `<div class="kpi-line"><span class="kl">Cena nabídky bez DPH</span><span class="kv">${fmt0(projCena)}</span></div>`;
+   * a vypisuje se i vlastním řádkem v souhrnné tabulce. Hlavička je od #568
+   * (dávka PH, J. V. 5. 11. 2026) stejná jako v OCK: tmavá dlaždice nese
+   * rovnou CENU NABÍDKY bez DPH (po slevě a obchodním zaokrouhlení =
+   * projCena, totéž číslo jako cenová nabídka a krycí list), světlá jen DPH
+   * a Celkem s DPH. Nezaokrouhlený součet r.souhrn.cena se v hlavičce
+   * neukazuje (dřív stál v tmavé dlaždici a cena nabídky ve zvláštním
+   * řádku pod ní — dvě různá čísla „bez DPH" vedle sebe). */
 
   /* Přirážka a sleva jsou DVĚ oddělené veličiny (zadání 31. 7. 2026:
    * „a je to vždy rozdělené, tzn. globální sleva a globální přirážka").
@@ -249,9 +251,8 @@ function renderProj() {
   const hlava = `<div class="kalk-title">${ZAK.cislo ? `<span class="kt-cislo">${esc(ZAK.cislo)}</span>` : ''}${esc(ZAK.nazevAkce || 'Bez názvu akce')}</div>
   ${typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('proj') : ''}
   <div class="grand">
-    <div class="kpi main"><div class="l">Základní cena bez DPH</div><div class="v">${fmt0(r.souhrn.cena)}</div>${kpiEurHtml(r.souhrn.cena, aktivniVarianta(ZAK), PC.kurzEurKc)}</div>
+    <div class="kpi main"><div class="l">Základní cena bez DPH</div><div class="v">${fmt0(projCena)}</div>${kpiEurHtml(projCena, aktivniVarianta(ZAK), PC.kurzEurKc)}</div>
     <div class="kpi kpi-multi">
-      ${cenaLine}
       <div class="kpi-line"><span class="kl">DPH ${Math.round(PC.dph * 100)} %</span><span class="kv">${fmt0(dphKc)}</span></div>
       <div class="kpi-line"><span class="kl">Celkem s DPH</span><span class="kv">${fmt0(celkemSDph)}</span></div>
     </div>

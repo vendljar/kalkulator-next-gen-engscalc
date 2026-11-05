@@ -73,6 +73,16 @@ function zadani(zapnute) {
 
 const data = (zapnute, lang) => np.nabidkaProjData({},
   { data: { proj: { zadani: zadani(zapnute), cenik: cenik() } } }, lang || 'cz');
+/* #569: nabídka odeslaná PŘED odstraněním zaměření ze studie — zmrazený
+ * výsledek bez razítka `studieBezZamereni` → dotisk dá původní znění se
+ * „částí 1" (oddíly 2 a 4 níž hlídají právě to znění). */
+const dataStara = (zapnute, lang) => {
+  const z = zadani(zapnute), c = cenik();
+  const r = engProj.vypocetProj(z, c);
+  delete r.studieBezZamereni;
+  return np.nabidkaProjData({}, { zamek: { zamceno: true, vysledek: { proj: r } },
+    data: { proj: { zadani: z, cenik: c } } }, lang || 'cz');
+};
 
 /* Částka z vytištěného řádku na číslo; odkaz ani „není součástí" číslo nedají. */
 function castkaNaCislo(t) {
@@ -124,9 +134,9 @@ kombinace.forEach(zap => {
     Math.abs(sR - sC) < 0.01, { rekapitulace: sR, radky: sC });
 });
 
-/* ---------- 2) konkrétně „část 1" ---------- */
+/* ---------- 2) konkrétně „část 1" (znění před #569, dotisk) ---------- */
 {
-  const d = data(['zamereni', 'studie', 'projednani']);
+  const d = dataStara(['zamereni', 'studie', 'projednani']);
   const ca = d.bloky.find(b => b.typ === 'cena' && /část 1/.test(b.nadpis));
   const za = d.bloky.find(b => b.typ === 'cena' && /^CENA ZA ZAMĚŘENÍ/.test(b.nadpis));
   test('blok „část 1" se pořád tiskne (rozsah se neztrácí)', !!ca);
@@ -139,7 +149,7 @@ kombinace.forEach(zap => {
 /* Objednané JEN zaměření: studie se nenabízí, „část 1" se netiskne vůbec
  * (to je oprava z 23. 8. 2026 — nesmí se rozbít). */
 {
-  const d = data(['zamereni']);
+  const d = dataStara(['zamereni']);
   test('bez studie se „část 1" netiskne vůbec',
     !d.bloky.some(b => /část 1/.test(b.nadpis)));
   test('a hlavička STUDIE PROVEDITELNOSTI taky ne',
@@ -149,9 +159,19 @@ kombinace.forEach(zap => {
 /* Objednaná jen studie bez zaměření: zaměření nemá cenu, takže „část 1"
  * nemá na co odkazovat — nesmí zůstat odkaz do prázdna. */
 {
-  const d = data(['studie']);
+  const d = dataStara(['studie']);
   const ca = d.bloky.find(b => b.typ === 'cena' && /část 1/.test(b.nadpis));
   test('bez oceněného zaměření nezůstane odkaz do prázdna', !ca, ca && ca.castka);
+}
+
+/* #569 — NOVÉ ZNĚNÍ: studie bez zaměření. „Část 1" je vypracování studie
+ * (sekce studie, s vlastní částkou), žádný odkaz na cenu zaměření. */
+{
+  const d = data(['zamereni', 'studie', 'projednani']);
+  test('#569: v novém znění žádný blok ceny neodkazuje na zaměření', !d.bloky.some(b => b.typ === 'cena' && b.odkaz));
+  const c1 = d.bloky.find(b => b.typ === 'cena' && /část 1/.test(b.nadpis));
+  test('#569: „část 1" = vypracování studie (sekce studie, částka)', !!c1 && c1.sekce === 'studie' && castkaNaCislo(c1.castka) > 0, c1);
+  test('#569: „část 3" už není', !d.bloky.some(b => /část 3/.test(b.nadpis)));
 }
 
 /* ---------- 3) Word: symbol SP1 nese odkaz, ne druhou částku ---------- */
@@ -169,7 +189,7 @@ kombinace.forEach(zap => {
 
 /* ---------- 4) odkaz se překládá ---------- */
 ['en', 'de'].forEach(l => {
-  const d = data(['zamereni', 'studie'], l);
+  const d = dataStara(['zamereni', 'studie'], l);
   const ca = d.bloky.find(b => b.typ === 'cena' && b.odkaz);
   test('odkaz není v ' + l.toUpperCase() + ' česky',
     !!ca && !/viz |výše/.test(ca.castka), ca && ca.castka);

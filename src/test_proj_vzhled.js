@@ -134,7 +134,12 @@ test('zrušené pole globální slevy PROJ už v UI není',
  * číslo, které jde ven. */
 test('v hlavičce PROJ už není dlaždicový řádek Obchodní zaokrouhlení',
   !/kl">Obchodní zaokrouhlení/.test(kod));
-test('v hlavičce PROJ zůstává Cena nabídky bez DPH', /Cena nabídky bez DPH/.test(kod));
+/* #568 (J. V. 5. 11. 2026): hlavička jako u OCK — cena nabídky (po slevě
+ * a zaokrouhlení) stojí rovnou v tmavé dlaždici, zvláštní řádek ve světlé
+ * dlaždici zmizel. */
+test('v hlavičce PROJ nese tmavá dlaždice cenu nabídky (projCena), ne nezaokrouhlený součet',
+  /<div class="kpi main"><div class="l">Základní cena bez DPH<\/div><div class="v">\$\{fmt0\(projCena\)\}/.test(kod)
+  && !/kl">Cena nabídky bez DPH/.test(kod));
 /* Od #141 má souhrnná tabulka o dva sloupce méně (sloupec „Sleva/přir."
  * zmizel spolu s druhým procentem), takže zaokrouhlení sedí přes 4 sloupce. */
 test('souhrnná tabulka zaokrouhlení dál vypisuje vlastním řádkem',

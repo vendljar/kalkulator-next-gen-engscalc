@@ -545,6 +545,137 @@ function odstranPrazdneBloky(xml, ph, blokyPryc) {
   return xml;
 }
 
+/* STUDIE PROVEDITELNOSTI BEZ SEKCE ZAMĚŘENÍ VE WORDU (#569, e-mail
+ * D. Sikory 2. 11. 2026). Šablona nabídky PROJ (v7, v8) má rozsah studie
+ * natvrdo: tabulku ST v bloku BLOK_STUDIE_ROZSAH a ceny částí 1–3 v bloku
+ * BLOK_STUDIE_CENA. Novou šablonu kvůli tomu nevyrábíme — builder nabídky
+ * PROJ pošle `studieBezZamereni` a tady se při plnění:
+ *   1. z tabulky ST vyjmou řádky od nadpisu „Studie proveditelnosti – část 1"
+ *      (zaměření 3D skenerem, výstupy ze zaměření …) po nadpis „… – část 2",
+ *   2. z cen studie vyjme řádek se symbolem {{PROJ_CENA_SP1}} (část 1 =
+ *      odkaz na cenu zaměření),
+ *   3. části se v obou blocích přečíslují (2 → 1, 3 → 2),
+ *   4. řádek PŮVODNÍ STAV dostane neutrální znění („z podkladů a prohlídky").
+ * Rozpoznává se podle textu ve všech čtyřech jazycích šablony (CZ/EN/DE/FR)
+ * a text smí být rozdělený do více běhů (<w:t>). Šablona bez bloků studie
+ * (v6 a starší) nebo bez nadpisu části 1 zůstane, jak je — nic se nehádá.
+ * Odeslaná nabídka z doby před #569 příznak nemá (dotisk = původní text). */
+const DOCX_STUDIE_CAST_RE = /^(?:Studie proveditelnosti|Feasibility study|Machbarkeitsstudie|Étude de faisabilité)\s*[–-]\s*(?:část|part|Teil|partie)\s*(\d)\s*:?$/i;
+const DOCX_STUDIE_CISLO_RE = /(?:část|části|parts?|Teile?|parties?)\s*([23])(?!\d)/gi;
+const DOCX_STUDIE_PUVODNI = [
+  ['grafický výstup ze zaměření', 'grafický výstup z podkladů a prohlídky'],
+  ['graphic output of the survey', 'graphic output from the documents and the inspection'],
+  ['grafische Auswertung des Aufmaßes', 'grafische Darstellung aus den Unterlagen und der Besichtigung'],
+  ['restitution graphique du relevé', 'restitution graphique à partir des documents et de la visite'],
+];
+/* Běhy textu řádku: [{ zac, kon (vnitřek <w:t>), text }] */
+function docxRadekBehy(radek) {
+  const out = [];
+  const re = /(<w:t(?:\s[^>]*)?>)([\s\S]*?)<\/w:t>/g;
+  let m;
+  while ((m = re.exec(radek))) {
+    const zac = m.index + m[1].length;
+    out.push({ zac, kon: zac + m[2].length, otevreni: m[1], text: xmlUnesc(m[2]) });
+  }
+  return out;
+}
+/* Nahradí úsek [a, b) spojeného textu řádku textem `novy` — první dotčený
+ * běh dostane náhradu, z ostatních dotčených se úsek vypustí (formát běhů
+ * zůstane). */
+function docxRadekNahrad(radek, a, b, novy) {
+  const behy = docxRadekBehy(radek);
+  let poz = 0, vlozeno = false;
+  const zmeny = [];
+  behy.forEach(beh => {
+    const z = poz, k = poz + beh.text.length;
+    poz = k;
+    if (k <= a || z >= b) return;
+    const pred = beh.text.slice(0, Math.max(0, a - z));
+    const za = beh.text.slice(Math.min(beh.text.length, b - z));
+    const t = pred + (vlozeno ? '' : novy) + za;
+    vlozeno = true;
+    zmeny.push({ beh, t });
+  });
+  zmeny.reverse().forEach(({ beh, t }) => {
+    const otevreni = /xml:space=/.test(beh.otevreni) ? beh.otevreni : beh.otevreni.replace(/^<w:t/, '<w:t xml:space="preserve"');
+    radek = radek.slice(0, beh.zac - beh.otevreni.length) + otevreni + xmlEsc(t) + radek.slice(beh.kon);
+  });
+  return radek;
+}
+function docxRadekText(radek) { return docxRadekBehy(radek).map(b => b.text).join(''); }
+/* Přečíslování a PŮVODNÍ STAV v jednom řádku. */
+function docxStudieRadekUprav(radek) {
+  for (let kolo = 0; kolo < 20; kolo++) {
+    const text = docxRadekText(radek);
+    let hotovo = true;
+    for (const [stary, novy] of DOCX_STUDIE_PUVODNI) {
+      const i = text.indexOf(stary);
+      if (i >= 0) { radek = docxRadekNahrad(radek, i, i + stary.length, novy); hotovo = false; break; }
+    }
+    if (!hotovo) continue;
+    break;
+  }
+  const text = docxRadekText(radek);
+  const cisla = [];
+  let m;
+  DOCX_STUDIE_CISLO_RE.lastIndex = 0;
+  while ((m = DOCX_STUDIE_CISLO_RE.exec(text))) {
+    const i = m.index + m[0].length - 1;
+    cisla.push([i, String(+m[1] - 1)]);
+  }
+  cisla.reverse().forEach(([i, c]) => { radek = docxRadekNahrad(radek, i, i + 1, c); });
+  return radek;
+}
+function docxStudieBlok(xml, jmeno) {
+  const zn = docxZnackyBloku(xml);
+  const a = zn.find(z => z.jmeno === jmeno && z.typ === 'ZAC');
+  const b = a && zn.find(z => z.jmeno === jmeno && z.typ === 'KON' && z.zac > a.kon);
+  return (a && b) ? { zac: a.kon, kon: b.zac } : null;
+}
+/* Nejvyšší řádky (hloubka nejmenší) uvnitř úseku. */
+function docxRadkyVUseku(xml, u) {
+  const sp = radkoveSpany(xml).filter(s => s.zac >= u.zac && s.kon <= u.kon);
+  const min = sp.reduce((a, s) => Math.min(a, s.hloubka), Infinity);
+  return sp.filter(s => s.hloubka === min);
+}
+function docxStudieBezZamereni(xml) {
+  /* 1 + 3 + 4: tabulka ST */
+  let u = docxStudieBlok(xml, 'BLOK_STUDIE_ROZSAH');
+  if (u) {
+    const radky = docxRadkyVUseku(xml, u);
+    const cast = sp => { const m = docxRadekText(xml.slice(sp.zac, sp.kon)).replace(/\s+/g, ' ').trim().match(DOCX_STUDIE_CAST_RE); return m ? +m[1] : 0; };
+    const i1 = radky.findIndex(sp => cast(sp) === 1);
+    const i2 = radky.findIndex((sp, i) => i > i1 && cast(sp) === 2);
+    if (i1 >= 0 && i2 > i1) {
+      const zac = radky[i1].zac, kon = radky[i2].zac;
+      /* mezi řádky stejné tabulky nesmí být konec tabulky */
+      if (!/<\/w:tbl>/.test(xml.slice(zac, kon))) {
+        xml = xml.slice(0, zac) + xml.slice(kon);
+        u = docxStudieBlok(xml, 'BLOK_STUDIE_ROZSAH');
+        docxRadkyVUseku(xml, u).reverse().forEach(sp => {
+          xml = xml.slice(0, sp.zac) + docxStudieRadekUprav(xml.slice(sp.zac, sp.kon)) + xml.slice(sp.kon);
+        });
+      }
+    }
+  }
+  /* 2 + 3: ceny studie */
+  u = docxStudieBlok(xml, 'BLOK_STUDIE_CENA');
+  if (u) {
+    const radky = docxRadkyVUseku(xml, u);
+    const sp1 = radky.find(sp => klicePlaceholderu(xml.slice(sp.zac, sp.kon)).indexOf('PROJ_CENA_SP1') >= 0);
+    if (sp1) {
+      xml = xml.slice(0, sp1.zac) + xml.slice(sp1.kon);
+      u = docxStudieBlok(xml, 'BLOK_STUDIE_CENA');
+      docxRadkyVUseku(xml, u).reverse().forEach(sp => {
+        const r = xml.slice(sp.zac, sp.kon);
+        if (!klicePlaceholderu(r).some(k => k === 'PROJ_CENA_SP2' || k === 'PROJ_CENA_SP3')) return;
+        xml = xml.slice(0, sp.zac) + docxStudieRadekUprav(r) + xml.slice(sp.kon);
+      });
+    }
+  }
+  return xml;
+}
+
 function docxBlokChybiText(jmeno) {
   if (/^BLOK_STUDIE_/.test(jmeno))
     return 'Šablona nabídky PROJ (v7) nemá blok ' + jmeno + ' (značky {{' + jmeno + '_ZAC}} a {{' + jmeno
@@ -1014,6 +1145,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
         po = docxRadkyNavic(po, volby && volby.radkyNavic);   // řádky bez symbolu v šabloně (obchodník 15. 10. 2026)
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
       }
+      if (p.nazev === 'word/document.xml' && volby && volby.studieBezZamereni) po = docxStudieBezZamereni(po);   // #569: studie bez zaměření
       po = odstranOdstavceSeSymboly(po, volby && volby.odstavcePryc);   // věty, které do dokumentu nepatří (K18-N101)
       po = odstranPrazdneBloky(po, placeholders, volby && volby.blokyPryc);   // prázdné kapitoly (P8A) a nenabízené činnosti SoD PROJ (#380)
       po = rozvinRadkyZaRadek(po, placeholders);        // věty o dílčích dokladech OCK: řádek tabulky za větu (etapa A)
@@ -1400,7 +1532,7 @@ async function docxXmlVady(arrayBuffer) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxStudieBezZamereni, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

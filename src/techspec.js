@@ -79,10 +79,11 @@ const TS_C = { /* číselníky z listů _data (bez úvodní pomlčky) */
   umisteniOplasteni: ['vložené mezi ocelové profily konstrukce', 'kotvené na vnější stranu ocelové konstrukce',
     'předsazené před ocelovou konstrukci o cca 30 mm'],
   kotveniOplasteni: ['do L profilů mezi příčníky', 'na zasklívací terče', 'do rámečku z plechových lišt',
-    'kotvy do otvorů vrtaných ve skle'],
+    'kotvy do otvorů vrtaných ve skle', 'na kotevní terče'],   // #572: opláštění bez skla
   parametryKotvy: ['nerezové držáky do otvorů ve skle', 'obdélníkový terč 80x50, lakovaný RAL 7016, zapuštěné pozink šrouby',
     'obdélníkový terč 80x50, nerezový, zapuštěné pozink šrouby', 'kruhový terč průměr 70 mm, lakovaný, zapuštěný pozink šroub',
-    'kruhový terč průměr 70 mm, nerezový, zapuštěný šroub', 'lakované lišty po obvodu skla', 'nerezové lišty po obvodu skla'],
+    'kruhový terč průměr 70 mm, nerezový, zapuštěný šroub', 'lakované lišty po obvodu skla', 'nerezové lišty po obvodu skla',
+    'lakované lišty po obvodu výplně'],   // #572: opláštění bez skla
   napojeniDveri: ['provede kompletně stavba po montáži šachetních dveří', 'bez dokrytí', 'řeší objednatel',
     'dokrytí lakovaným plechem', 'dokrytí nerezovým plechem'],
   /* Čtyři varianty názvu akce místo jedné věty s lomítkem (nález D3,
@@ -241,6 +242,21 @@ function tsVyplnDveriCasti(Z, r) {
   return casti.length ? casti : ['bez světlíků'];
 }
 
+/* Typy pásů, které jsou sklem (OPL_SKLA v engine.js). */
+const TS_OPL_SKLA = ['C.skloBokyKc', 'C.skloCelniKc', 'C.skloVsg442Kc'];
+/* Je v zakázce nějaké sklo (#572)? Standardní režim opláštění je skleněný
+ * vždy; po stěnách rozhoduje plocha ve výsledku jádra — skleněné pásy
+ * a skleněné světlíky s plochou > 0. Bez výsledku se nehádá (true =
+ * texty jako dosud). Odeslaná nabídka tiskne ze zmrazeného výsledku
+ * (vypocetZ); bez razítka `skloJenSPlochou` (odeslaná před #572) taky true. */
+function tsMaSklo(Z, r) {
+  if (!tsOplPoStenach(Z)) return true;
+  const o = r && r.oplasteni;
+  if (!o || o.rezim !== 'poStenach' || !Array.isArray(o.pasy)) return true;
+  if (!o.skloJenSPlochou) return true;   // odeslaná nabídka z doby před #572 = texty jako tehdy
+  return o.pasy.some(p => TS_OPL_SKLA.indexOf(p.typ) >= 0 && +p.m2 > 0)
+    || (o.svetliky || []).some(x => x && x.druh === 'sklo' && +x.m2 > 0);
+}
 /* Je opláštění rozdělené po stěnách (#268)? */
 function tsOplPoStenach(Z) {
   const o = (Z && Z.oplasteni) || {};
@@ -272,7 +288,18 @@ function tsOplPasyPoStenach(o, r) {
     if (!st || !Array.isArray(st.pasy) || !st.pasy.length) return;
     const spoctene = (r && r.oplasteni && r.oplasteni.rezim === 'poStenach' && Array.isArray(r.oplasteni.pasy))
       ? r.oplasteni.pasy.filter(p => p.stena === k) : null;
-    const zdroj = spoctene || st.pasy;
+    /* SKLO JEN TAM, KDE OPRAVDU JE (#572, D. Sikora 2. 11. 2026, zakázka
+     * OPR-CN-0422): pás skla s nulovou plochou ve výpočtu (typicky čelní
+     * stěna A celá pod dveřmi, světlíky „bez") se nevypisuje — jinak
+     * materiál, rozsah i věta o opláštění v nabídce tvrdily „Sklo VSG 4.4.1
+     * (stěna A)", ačkoli v zakázce žádné sklo není. Jen u výsledku jádra
+     * (pás nese `m2`); ze samotného zadání se plocha nepozná. */
+    const bezNuly = !!(spoctene && r.oplasteni.skloJenSPlochou);   // zmrazený výsledek z doby před #572 razítko nemá
+    /* Skleněný světlík na stěně (nad dveřmi / boky, bere sklo stěny) je
+     * sklo té stěny — pás pak zůstává, i když sám plochu nemá. */
+    const svetlikSklo = (r && r.oplasteni && r.oplasteni.svetliky || [])
+      .some(x => x && x.stena === k && x.druh === 'sklo' && +x.m2 > 0);
+    const zdroj = (spoctene || st.pasy).filter(p => !(bezNuly && !svetlikSklo && TS_OPL_SKLA.indexOf(p.typ) >= 0 && !(+p.m2 > 0)));
     if (!zdroj.length) return;
     out.push({ stena: k, odM: +st.odM || 0, pasy: zdroj });
   });
@@ -504,8 +531,9 @@ const TECHSPEC_DEF = [
     /* Povrch se u exteriéru bere z názvu ceníkové položky pro boky — a to je
      * právě ta položka, ze které se u exteriéru počítá. U interiéru se z ní
      * nepočítá nic, takže by její název popisoval sklo, které v nabídce není. */
+    /* #572: bez skla v zakázce o skle nic (řádek „ -" z nabídky zmizí). */
     { id: 'povrchOplasteni', label: 'POVRCHOVÁ ÚPRAVA OPLÁŠTĚNÍ', ciselnik: TS_C.povrchOplasteni,
-      prefill: (r, Z, C) => tsDvojsklo(Z)
+      prefill: (r, Z, C) => !tsMaSklo(Z, r) ? ' -' : tsDvojsklo(Z)
         ? `standardní ${C.skloBokyNazev || 'čirá skla'}`
         : 'čiré sklo' },
     { id: 'oplasteniCela', label: 'OPLÁŠTĚNÍ ČELA POD NÁSTUPIŠTĚM', ciselnik: TS_C.oplasteniCela,
@@ -552,11 +580,13 @@ const TECHSPEC_DEF = [
       prefill: (r, Z) => Z.zaskleni === 'na terče'
         ? 'kotvené na vnější stranu ocelové konstrukce'
         : 'vložené mezi ocelové profily konstrukce' },
+    /* #572: bez skla v zakázce „na kotevní terče" / „po obvodu výplně" (žádné zasklení). */
     { id: 'kotveniOplasteni', label: 'ZPŮSOB KOTVENÍ OPLÁŠTĚNÍ', ciselnik: TS_C.kotveniOplasteni,
-      prefill: (r, Z) => Z.zaskleni === 'na terče' ? 'na zasklívací terče' : 'do L profilů mezi příčníky' },
+      prefill: (r, Z) => Z.zaskleni === 'na terče' ? (tsMaSklo(Z, r) ? 'na zasklívací terče' : 'na kotevní terče') : 'do L profilů mezi příčníky' },
     { id: 'parametryKotvy', label: 'VZHLED KOTVENÍ ZASKLENÍ', ciselnik: TS_C.parametryKotvy,
       prefill: (r, Z) => Z.zaskleni === 'na terče'
-        ? 'obdélníkový terč 80x50, lakovaný RAL 7016, zapuštěné pozink šrouby' : 'lakované lišty po obvodu skla' },
+        ? 'obdélníkový terč 80x50, lakovaný RAL 7016, zapuštěné pozink šrouby'
+        : (tsMaSklo(Z, r) ? 'lakované lišty po obvodu skla' : 'lakované lišty po obvodu výplně') },
     { id: 'napojeniDveri', label: 'NAPOJENÍ ŠACHETNÍCH DVEŘÍ', ciselnik: TS_C.napojeniDveri,
       def: 'dokrytí lakovaným plechem' },
   ] },
@@ -1025,7 +1055,7 @@ function tsKontrola(ts, r, Z, C, zak) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { tsLeseniNeniRadek, tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah, tsOplasteniMaterial, tsOplPoStenach,
+  module.exports = { tsMaSklo, TS_OPL_SKLA, tsLeseniNeniRadek, tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah, tsOplasteniMaterial, tsOplPoStenach,
     tsVyplnDveri, tsVyplnDveriCasti, tsSvetlikyDveri,
     tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene, tsSken3dVCene, tsSoklRadek,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,

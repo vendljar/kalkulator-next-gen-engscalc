@@ -117,7 +117,8 @@ const PREKLAD = {
   /* ---- hesla používaná aplikací ---- */
   "** parametry profilů se mohou změnit po zpracování statického posouzení": ["** Beam size may differ based on final static calculation of all structure.", "** Die Trägergröße kann je nach endgültiger statischer Berechnung der gesamten Konstruktion abweichen.", "** La dimension des profilés peut être modifiée selon le calcul statique final de toute la structure."],
   "4x rohový sloupek, ocelový uzavřený profil": ["4 corner columns, closed profile", "4 Eckstiele, geschlossenes Stahlprofil", "4 montants d’angle, profilé creux en acier"],
-  "bez světlíků": ["Without glass portals", "ohne Oberlichter", "sans impostes vitrées"],
+  /* #572 (D. Sikora 2. 11. 2026): „bez světlíků" nesmí znít jako sklo — EN „glass portals" ani FR „vitrées". */
+  "bez světlíků": ["Without fanlights or side lights", "ohne Oberlichter", "sans impostes"],
   "bezúplatně zajistí majitel objektu": ["by building owner (no extra cost)", "durch den Gebäudeeigentümer (ohne Aufpreis)", "par le propriétaire du bâtiment (sans frais)"],
   "CELKOVÁ VÝŠKA KONSTRUKCE [m] *": ["TOTAL HEIGHT [m] *", "GESAMTHÖHE [m] *", "HAUTEUR TOTALE [m] *"],
   "DEMONTÁŽ PORTÁLŮ": ["LANDING ENTRANCE DISMANTLING", "DEMONTAGE DES PODESTEINGANGS", "DÉMONTAGE DES PORTAILS DE PALIER"],
@@ -144,6 +145,8 @@ const PREKLAD = {
   "MONTÁŽNÍ NOSNÍK NEBO OKA": ["INSTALLATION BEAM OR LIFTING EYE","MONTAGEBALKEN ODER HEBEHAKEN","POUTRE DE MONTAGE OU ANNEAUX DE LEVAGE"],
   "na dně prohlubně výtahové šachty": ["On the shaft pit floor", "Auf der Schachtgrubensohle", "au fond de la fosse de la gaine"],
   "Na horním nosném rámu OCK": ["On the top frame of the steel structure","Auf dem oberen Rahmen der Stahlkonstruktion","Sur le cadre supérieur de la structure métallique"],
+  "na kotevní terče": ["On fixing plates", "Auf Befestigungsplatten", "Sur platines de fixation"],
+  "lakované lišty po obvodu výplně": ["Painted trims along the panel perimeter", "Lackierte Leisten am Umfang der Füllung", "Baguettes laquées sur le pourtour du panneau"],
   "na zasklívací terče": ["Glazing fixing points", "Befestigungspunkte der Verglasung", "sur pastilles de vitrage"],
   "na zpevněné hraně stěn prohlubně výtahové šachty": ["on the reinforced pit edge", "Am verstärkten Grubenrand", "sur le bord renforcé de la fosse"],
   "NAPOJENÍ ŠACHETNÍCH DVEŘÍ": ["LANDING DOOR COVER PLATE", "SCHACHTTÜR-ABDECKPLATTE", "TÔLE DE RECOUVREMENT DES PORTES PALIÈRES"],
@@ -888,6 +891,17 @@ const PREKLAD = {
     "As part of the planned CONSTRUCTION OF THE LIFT AND LIFT SHAFT, in the initial phase we offer a SURVEY and PROCESSING OF THE SURVEY OUTPUTS for the intended lift location.",
     "Im Rahmen des geplanten BAUS DES AUFZUGS UND DES AUFZUGSSCHACHTS bieten wir in der Anfangsphase das AUFMASS und die AUSWERTUNG DES AUFMASSES für den vorgesehenen Aufzugsstandort an.",
     "Dans le cadre de la CONSTRUCTION prévue DE L'ASCENSEUR ET DE LA GAINE D'ASCENSEUR, nous proposons dans la phase initiale le RELEVÉ et le TRAITEMENT DES LIVRABLES DU RELEVÉ pour l'emplacement envisagé de l'ascenseur."],
+  /* #569 (D. Sikora 2. 11. 2026): studie bez našeho zaměření — neutrální znění */
+  "Z podkladů a prohlídky navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.": [
+    "Based on the available documents and an inspection, we will propose alternative solutions and elaborate the selected alternative in a FEASIBILITY STUDY.",
+    "Auf Grundlage der Unterlagen und einer Besichtigung schlagen wir Lösungsvarianten vor und arbeiten die gewählte Variante in einer MACHBARKEITSSTUDIE aus.",
+    "À partir des documents disponibles et d'une visite, nous proposerons des variantes de solution et développerons la variante retenue dans une ÉTUDE DE FAISABILITÉ."],
+  "PŮVODNÍ STAV - grafický výstup z podkladů a prohlídky, průmět reality z průzkumu s původní dokumentací stavby": [
+    "ORIGINAL STATE – graphic output from the documents and the inspection, comparison of the inspection findings with the original building documentation",
+    "BESTAND – grafische Darstellung aus den Unterlagen und der Besichtigung, Abgleich der Untersuchungsergebnisse mit den ursprünglichen Bauunterlagen",
+    "ÉTAT EXISTANT – restitution graphique à partir des documents et de la visite, confrontation des constats du diagnostic avec le dossier d'origine du bâtiment"],
+  "PŮVODNÍ STAV - grafický výstup z podkladů a prohlídky": ["ORIGINAL STATE – graphic output from the documents and the inspection", "BESTAND – grafische Darstellung aus den Unterlagen und der Besichtigung", "ÉTAT EXISTANT – restitution graphique à partir des documents et de la visite"],
+  "do 10-12 týdnů od předání podkladů": ["within 10–12 weeks of handover of the documents", "innerhalb von 10–12 Wochen nach Übergabe der Unterlagen", "dans les 10 à 12 semaines suivant la remise des documents"],
   "Z výsledku zaměření navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.": [
     "Based on the survey results, we will propose alternative solutions and elaborate the selected alternative in a FEASIBILITY STUDY.",
     "Auf Grundlage des Aufmaßes schlagen wir Lösungsvarianten vor und arbeiten die gewählte Variante in einer MACHBARKEITSSTUDIE aus.",

@@ -8,6 +8,44 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v5.11.1 — PH #568, #569, #572: hlavička PROJ jako u OCK, studie bez zaměření, sklo jen tam, kde je, větev claude/ph-proj-hlavicka
+
+Nad `000924e` (`test` = `main` = v4.11.8). Pokyn J. V. 5. 11. 2026 a e-mail obchodníka D. Sikory z 2. 11. 2026.
+Verzi přečísluje koordinace. Nová mez B se nepřidává.
+
+- **#568 Hlavička ceny v Kalkulaci PROJ jako u OCK.** Tmavá dlaždice „Základní cena bez DPH“ nese rovnou **cenu
+  nabídky** (`projCena` = `cenaNabidkyProj`: po slevě PROJ a obchodním zaokrouhlení), EUR pod ní z téhož čísla.
+  Ze světlé dlaždice zmizel řádek „Cena nabídky bez DPH“, zůstávají DPH a Celkem s DPH (z téže ceny jako dosud).
+  Ověřeno testem: číslo = nabídka PROJ (náhled `souhrn.bezDph`, Word `{{PROJ_CELKEM_BEZ_DPH}}`) = krycí list PROJ
+  „Hodnota zakázky bez DPH“, i se slevou a zaokrouhlením. Nezaokrouhlený součet dál používají karta zaokrouhlení,
+  souhrnná tabulka, marže a controlling (beze změny).
+- **#569 Studie proveditelnosti bez sekce zaměření** (online náhled, Word, CZ/EN/DE/FR). Část 1 se zaměřením
+  (průzkum, 3D sken, výstupy ze zaměření, prohlídka, fotodokumentace) a cena „části 1“ (odkaz na cenu ZA) se
+  netisknou; části se přečíslují (vypracování studie = část 1, projednání = část 2). Přeformulováno:
+  úvod „Z podkladů a prohlídky navrhneme…“, PŮVODNÍ STAV „grafický výstup z podkladů a prohlídky…“, termín studie
+  „do 10–12 týdnů od předání podkladů“ (výchozí znění Firmy), překlady EN/DE/FR. **Word:** šablona PROJ v7/v8
+  zůstává — `docxStudieBezZamereni` (docxgen.js) při plnění vyjme z `BLOK_STUDIE_ROZSAH` řádky části 1,
+  z `BLOK_STUDIE_CENA` řádek `{{PROJ_CENA_SP1}}`, přečísluje části a upraví PŮVODNÍ STAV (text smí být rozdělený
+  do běhů). Samostatná činnost Zaměření (ZA) i cena PROJ beze změny. **Odeslané nabídky se nemění:** razítko
+  `studieBezZamereni` ve výsledku `vypocetProj` (zmrazený výsledek zámku) — nabídka odeslaná před #569 ho nemá
+  a dotiskne se s původním textem (online i Word, i termín studie). Ruční úvod napsaný nad původní větou kontrola
+  „nesedí“ nehlásí.
+- **#572 OCK: sklo jen tam, kde v zakázce opravdu je** (OPR-CN-0422). Příčina: opláštění po stěnách, B–D Cetris
+  / plech, čelní stěna A předvyplněná sklem VSG 4.4.1 (4.4.2), světlíky „bez“ → sklo na A má 0 m², ale
+  MATERIÁL OPLÁŠTĚNÍ, ROZSAH OPLÁŠTĚNÍ a věta „Opláštění šachty: …“ psaly „Sklo VSG 4.4.1 (stěna A)“. Teď se
+  skleněný pás s nulovou plochou nevypisuje (stěna se skleněným světlíkem ho drží dál); bez skla v zakázce
+  POVRCHOVÁ ÚPRAVA „ -“ (řádek zmizí), ZPŮSOB KOTVENÍ „na kotevní terče“, u lišt „po obvodu výplně“. EN „bez
+  světlíků“ = „Without fanlights or side lights“ (dřív „Without glass portals“), FR „sans impostes“. Krycí list OCK
+  sklo nezmiňoval. Odeslané nabídky se nemění (razítko `oplasteni.skloJenSPlochou` ve zmrazeném výsledku OCK).
+  Názvy řádků skla v `engine.js` (skloMigraceNazvu / skloVolba, K40-N1) se nemění.
+- **Testy:** nové `src/test_568_proj_hlavicka.js` (25), `src/test_569_studie_bez_zamereni.js` (80),
+  `src/test_570_sklo_bez_plochy.js` (66) — **na `000924e` všechny tři selžou** (5, 1 a 60 FAIL). Upravené
+  `test_proj_vzhled`, `test_d5_eur_dlazdice`, `test_nabidka_proj_duplicita` (původní znění = dotisk),
+  `test_d2_proj_sikora` (část 1), `test_o7_zmrazeni` (zámek se zmrazeným výsledkem), `test_profil_neznamy` (razítko
+  mimo otisk). Mutace jádra „[#568]“, „[#569]“, „[#572]“ (20 nových, `--kontrola` 686/686).
+
+---
+
 ## Dokumentace (bez nové verze aplikace) — MV4 #566: 4. vydání manuálu výpočtu OCK pro v4.11.4, větev claude/mv4-manual-vypocet
 
 Nad b751c91 (`main` = `test` = v4.11.4). Rozhodnutí J. V. 3. 11. 2026: „4. vydání až po main“. Kód aplikace beze

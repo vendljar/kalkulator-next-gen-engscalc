@@ -117,13 +117,15 @@ test('B126: hláška u chybějícího profilu říká „rozměr chybí"', eng.p
  * nemění. Střecha přes nejvyšší můstek (#356, 17. 10. 2026) přidala
  * popisné pole `strecha` (plocha, příznak, plocha nad můstkem); bez můstku
  * se ceny nemění, pole do otisku nevstupuje a otisky zůstávají. Totéž
- * popisné pole `mustky` (#354, 26. 10. 2026: rozměr a tvar ceny můstků). */
+ * popisné pole `mustky` (#354, 26. 10. 2026: rozměr a tvar ceny můstků).
+ * Razítko `oplasteni.skloJenSPlochou` (#572, 5. 11. 2026) není číslo, jen
+ * příznak znění specifikace — do otisku nevstupuje, otisky zůstávají. */
 const OTISK_BEZ = ['bokyKs', 'bokyKsAuto', 'bokyKsRucne', 'dvere', 'dvereDva', 'dvereJeden', 'dvereBez',
   'mezera', 'nadM2', 'bokyM2', 'material', 'boky', 'sirkaPredpocitana', 'sirkaRucne', 'sirka'];
 const otiskOcisti = r => {
   const x = JSON.parse(JSON.stringify(r));
   OTISK_BEZ.forEach(k => { delete x.zaskleni.vypln[k]; });
-  delete x.oplasteni.zakladPasu; delete x.oplasteni.svetliky;
+  delete x.oplasteni.zakladPasu; delete x.oplasteni.svetliky; delete x.oplasteni.skloJenSPlochou;
   delete x.strecha; delete x.mustky;
   return x;
 };

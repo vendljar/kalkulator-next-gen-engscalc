@@ -142,7 +142,9 @@ const tiskProj = (z, v) => {
   const pred = tiskProj(z, v);
   test('PROJ před změnou: doložky se netisknou (výchozí vypnuté)', JSON.parse(pred.bloky_cz)[3] === null, pred.bloky_cz.slice(-40));
   kp.kryciProjZmrazPodminky(z, v);
-  v.zamek = { zamceno: true };
+  /* Zámek jako ze skutečného tisku: se zmrazeným výsledkem PROJ (#569 — bez
+   * něj by dotisk bral znění studie z doby před #569, tj. jiný termín studie). */
+  v.zamek = { zamceno: true, vysledek: { proj: vypocetProj(v.data.proj.zadani, v.data.proj.cenik) } };
   test('PROJ: snímek textů je ve variantě (data.kryciProj.zmrazenoPodminky.nabidkaProj, dolozkyTisk=false)',
     !!(v.data.kryciProj.zmrazenoPodminky && v.data.kryciProj.zmrazenoPodminky.nabidkaProj
       && v.data.kryciProj.zmrazenoPodminky.nabidkaProj.dolozkyTisk === false), v.data.kryciProj.zmrazenoPodminky);
