@@ -693,7 +693,7 @@
             },
             {
               "pojem": "Kopie na Disk Google",
-              "vyklad": "Tlačítko **Zkopírovat zálohu na Disk teď** uloží poslední noční otisk do složky **_Zaloha Netlify DB** jako `otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz` (účty bez hesel, bez podpisů) a vedle soubor `posledni_kopie_<prostředí>.json`. Prostředí je `main` (ostrý web), `test` (testovací web) nebo `jiny` (náhled nasazení); datum je den nočního otisku, čas jeho pořízení (český čas) — např. `otisk_main_2026-11-02_0315.json.gz`. Ostrý i testovací web kopírují do téže složky a díky prostředí v názvu se nepřepíšou. Hláška „Poslední kopie záloh na Disku Google“ ukazuje jen kopii vlastního webu. Kopie se pořídí **sama každý den**: po přihlášení správce heslem, jakmile je v Netlify noční otisk novější než ten v poslední kopii tohoto webu (Chrome nebo Edge s vybranou složkou a povoleným zápisem). Po obnovení stránky bez nového přihlášení jen připomene tlačítko. Když noční záloha neproběhla, nic se nekopíruje a hlásí to hlídka noční zálohy. Kopie starší než **3 dny** svítí jako varování."
+              "vyklad": "Tlačítko **Zkopírovat zálohu na Disk teď** uloží poslední noční otisk do složky **_Zaloha Netlify DB** jako `otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz` (účty bez hesel, bez podpisů) a vedle soubor `posledni_kopie_<prostředí>.json`. Prostředí je `main` (ostrý web), `test` (testovací web) nebo `jiny` (náhled nasazení); datum je den nočního otisku, čas jeho pořízení (český čas) — např. `otisk_main_2026-11-02_0315.json.gz`. Ostrý i testovací web kopírují do téže složky a díky prostředí v názvu se nepřepíšou. Hláška „Poslední kopie záloh na Disku Google“ ukazuje jen kopii vlastního webu. Kopie se pořídí **sama každý den**: po přihlášení správce heslem, jakmile je v Netlify noční otisk novější než ten v poslední kopii tohoto webu (Chrome nebo Edge s vybranou složkou a povoleným zápisem). O právo zápisu do složky se prohlížeč po svém restartu ptá znovu — **při kliknutí na Přihlásit**; povolte ho (nejlépe „Povolit při každé návštěvě“). Když kopie potřeba je a pořídit nejde (není vybraná složka, prohlížeč nepovolil zápis, po obnovení stránky chybí heslo, chyba kopie), aplikace nikdy nemlčí: hláška řekne proč a v liště nahoře i v kartě Online databáze se ukáže tlačítko **⚠ Zkopírovat zálohu na Disk teď**. Když noční záloha neproběhla, nic se nekopíruje a hlásí to hlídka noční zálohy. Kopie starší než **3 dny** svítí jako varování."
             },
             {
               "pojem": "Stáhnout zálohu",
@@ -895,6 +895,9 @@
             },
             {
               "text": "Kopie na Disk se dělá sama každý den po přihlášení heslem; tlačítko **Zkopírovat zálohu na Disk teď** jen tehdy, když to aplikace připomene nebo svítí varování."
+            },
+            {
+              "text": "Svítí-li v liště nahoře **⚠ Zkopírovat zálohu na Disk teď** (denní kopie se nepořídila): klikněte na něj, vyberte na Disku Google složku **_Zaloha Netlify DB** (nabídne-li prohlížeč výběr) a povolte zápis — nejlépe „Povolit při každé návštěvě“. Důvod, proč se kopie sama nepořídila, říká hláška v kartě Online databáze."
             }
           ]
         }

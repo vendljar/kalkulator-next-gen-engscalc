@@ -1,3 +1,30 @@
+# Předávka — 5. 11. 2026: DZ #571 — denní kopie zálohy na Disk na ostrém webu (nikdy tiše), větev `claude/dz-kopie-disk`
+
+Nad `000924e` (`main` = `test` = v4.11.8). **Verze 5.11.1** (koordinace přečísluje). Neslučováno; do `test-draft`,
+`test` ani `main` nic. Na webech nic, na Disk nic.
+
+**Příčina (reprodukováno `overit_dz_kopie_disk.mjs` na 000924e):** Chrome/Edge po restartu vrací právo zápisu ke
+složce „_Zaloha Netlify DB" do stavu „prompt". `onlineKopieDiskAuto` se jen tiše ptala (`uloPravo(h, true)`)
+a mlčky vrátila false; hlídka „> 3 dny" mlčela (kopie z 2. 11. byla stará 2 dny). Testovací web měl právo
+udělené → kopie šla. Starý `posledni_kopie.json` / záznam `kopie-disk` bez prostředí kopii nebránil.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. reprodukce harnessem (ostré prostředí, starý záznam, noční otisk, stavy práva) | ✅ | `overit_dz_kopie_disk.mjs` — na 000924e 9 / 11 FAIL, po opravě 20 / 0 |
+| 2. příčina | ✅ | tichý dotaz na právo bez gesta (viz výše) |
+| 3a. žádost o právo při kliknutí na „Přihlásit" (před `await`) | ✅ | `kopieDiskPravoPredem` v `onlinePrihlas`; `kopieDiskPravoStav` |
+| 3b. nikdy tiše: důvod + tlačítko | ✅ | `kopieDiskCeka` → `ONLINE_STAV.kopieDiskCeka`; lišta nahoře (`#online-lista-kopie-disk`), karta Online databáze (`#online-kopie-disk-ceka`); souhrnné varování nese důvod |
+| 3c. starý `posledni_kopie.json` nebrání | ✅ | ověřeno (klient i server), bez změny kódu |
+| 4. testovací web dál stejně | ✅ | harness průchod G |
+| 5. postup pro J. V. | ✅ | níže + manuál správce |
+| testy, mutace, kolo | viz CHANGELOG v5.11.1 | `src/test_571_kopie_disk_stav.js`, `netlify/test_571_kopie_disk.mjs`, `src/test_554_kopie_denne.js`; mutace `[#571]` |
+
+**Co má J. V. udělat hned (ostrý web, Chrome/Edge, v4.11.8 — ještě bez opravy):** Nastavení → Databáze →
+**Zkopírovat zálohu na Disk teď** → vybrat na Disku Google složku **_Zaloha Netlify DB** (nabídne-li prohlížeč
+výběr) → **povolit zápis** (nejlépe „Povolit při každé návštěvě") → potvrdit heslem. Ve složce pak přibude
+`otisk_main_2026-11-05_0300.json.gz` a `posledni_kopie_main.json`. Po nasazení opravy se prohlížeč na zápis
+zeptá sám při kliknutí na „Přihlásit"; když kopie nejde, svítí v liště „⚠ Zkopírovat zálohu na Disk teď".
+
 # Předávka — 4. 11. 2026: MV4 #566 — 4. vydání manuálu výpočtu OCK pro v4.11.4, větev `claude/mv4-manual-vypocet`
 
 Nad `b751c91` (`main` = `test` = v4.11.4). **Kód aplikace beze změny, verze se nezvyšuje** (CHANGELOG „Dokumentace").
