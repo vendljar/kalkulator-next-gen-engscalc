@@ -8,6 +8,34 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v5.11.3 — DZ #571: denní kopie zálohy na Disk na ostrém webu — nikdy tiše, větev claude/dz-kopie-disk
+
+Nad `000924e` (`main` = `test` = v4.11.8). Hlášení J. V. 5. 11. 2026: na ostrém webu se po přihlášení správce
+denní kopie na Disk (DK #554) neudělala — poslední kopie 2. 11., noční záloha 5. 11. 3:00 — a nic se neohlásilo;
+testovací web kopii udělal sám. Na webech ani na Disku nic. Verzi může koordinace přečíslovat.
+
+- **Příčina:** právo zápisu ke složce „_Zaloha Netlify DB" vrací Chrome/Edge po restartu prohlížeče do stavu
+  „prompt". Samočinná kopie po přihlášení se jen tiše ptala (`uloPravo(h, true)`) a bez uděleného práva mlčky
+  skončila. Hlídka stáří kopie (> 3 dny) mlčela taky — kopie byla stará 2 dny. Na testovacím webu bylo právo
+  udělené, proto tam kopie šla. Starý záznam `posledni_kopie.json` / `kopie-disk` z doby před ZN/DK kopii
+  **nebránil** (bere se jako kopie vlastního prostředí; ověřeno testy).
+- **O právo se žádá při kliknutí na „Přihlásit"** (i Enter) — ve stejném gestu, ještě před `await` přihlášení
+  (`kopieDiskPravoPredem`); po něm by prohlížeč žádost bez kliknutí odmítl. Žádá se jen v prohlížeči, který
+  složku pro kopii už má. Samočinná kopie výsledek převezme a kopii pořídí.
+- **Nikdy tiše:** když je nový noční otisk a kopie nejde, hláška řekne proč — není vybraná složka / prohlížeč
+  nepovolil (zakázal) zápis / chybí heslo (obnovení stránky) / chyba kopie — a nabídne **„⚠ Zkopírovat zálohu
+  na Disk teď"** v liště nahoře i v kartě Online databáze (Nastavení → Databáze). Souhrnné varování po
+  přihlášení důvod nepřepíše. Po úspěšné kopii výzva zhasne.
+- **Tlačítko** po zamítnutém právu zapomene zapamatovanou složku → další klik nabídne výběr složky znovu.
+- **Testy:** `overit_dz_kopie_disk.mjs` (20, prohlížeč proti skutečným serverovým funkcím: ostré prostředí,
+  starý záznam z 2. 11., noční otisk dneška, právo granted / prompt-povolí / prompt-odmítne / denied / žádná
+  složka, F5 bez hesla, testovací web, bez nového otisku); `src/test_571_kopie_disk_stav.js` (20),
+  `netlify/test_571_kopie_disk.mjs` (8), `src/test_554_kopie_denne.js` upraven (18). Pojistka: harness na 000924e
+  9 / 11 FAIL (stav „prompt": žádná kopie, žádná hláška), test jádra padá; po opravě vše zelené. Mutace „#571"
+  11 z 11 chycených, upravené #554 12 z 12, O7 1 z 1; `--kontrola` 1315 úseků v pořádku.
+- **Kolo `--bez-mutaci`:** VŠE ZELENÉ (26 min 51 s) — sady 392 / 0 / 7 přeskočeno (firemní podklady KNG_PODKLADY
+  a test.js, jako dřív), hodiny +400 dní 315 / 0 / 1, statické 5 z 5.
+- Manuál správce (kopie na Disk, postup) a `manual/kompletni/provoz.json` doplněny.
 ## v5.11.2 — MU #560: samostatná sekce MŮSTKY (karta v Zadání, skladebný výpočet v Modelu 2, sekce a řádek ceny v CN, šablona CN v16), větev claude/mu-mustky
 
 Nad `000924e` (`main` = `test` = v4.11.8), rozhodnutí J. V. 4. 11. 2026 k návrhu NV

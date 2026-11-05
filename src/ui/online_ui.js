@@ -54,6 +54,7 @@ const ONLINE_STAV = {
   otisky: [],        // souhrny záloh databáze (jen administrátor; bez dat)
   otiskyNacteno: false,
   kopieDisk: null,   // záznam poslední kopie otisku na Disk (#151 N6) — ze serveru, bez dat
+  kopieDiskCeka: null,   // #571 DZ: { duvod, text } — denní kopie na Disk se po přihlášení nepořídila (proč)
   prostrediZalohy: null,   // #552: prostředí záloh main | test | jiny — ze serveru (GET /api/zaloha_vynuceno)
   retenceVarovani: null,   // pojistka retence přeskočila mazání (K3-N13) — ze serveru
   zalohySmi: null,   // O-K9 #527: { potvrditUbytek, smazatPredObnovou } — rozhoduje server
@@ -309,6 +310,10 @@ function onlinePrihlas() {
   const heslo = String(ONLINE_STAV.formHeslo || '');
   if (!email || !heslo) { onlineZprava('Zadejte e-mail i heslo.', 'varovani'); render(); return Promise.resolve(false); }
   ONLINE_STAV.pracuje = true; render();
+  /* #571 DZ: o právo zápisu do složky kopie na Disk se žádá TEĎ, ve stejném
+   * gestu (klik / Enter) a ještě před `await` přihlášení — po něm už prohlížeč
+   * žádost bez kliknutí odmítne. Výsledek si vezme onlineKopieDiskAuto. */
+  kopieDiskPravoPredem();
   return onlineApi('/api/prihlaseni', { email, heslo })
     /* #554: heslo jen předané samočinné kopii na Disk (onlineKopieDiskAuto),
      * nikam se neukládá; obnovené sezení (F5) ho nemá → jen připomínka. */
@@ -2002,7 +2007,10 @@ function onlineZalohaAuto(hesloPrihlaseni) {
       const kd = (typeof uloKopieDiskStav === 'function') ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy, ONLINE_STAV.otisky) : null;
       /* Pojistka retence (K3-N13): pokles dat v noční záloze. */
       const rv = (typeof uloRetenceVarovani === 'function') ? uloRetenceVarovani(ONLINE_STAV.retenceVarovani, Date.now()) : null;
-      const varovani = [chybaZalohy, rv ? rv.text : '', hl && hl.stara ? hl.text : '', kd && kd.stara ? kd.text : ''].filter(Boolean);
+      /* #571 DZ: důvod, proč se denní kopie na Disk nepořídila, se nesmí
+       * ztratit pod dalšími varováními (dřív ho souhrnná hláška přepsala). */
+      const ceka = ONLINE_STAV.kopieDiskCeka ? ONLINE_STAV.kopieDiskCeka.text : '';
+      const varovani = [chybaZalohy, ceka, rv ? rv.text : '', hl && hl.stara ? hl.text : '', kd && kd.stara && !ceka ? kd.text : ''].filter(Boolean);
       if (varovani.length) onlineZprava(varovani.join(' '), 'varovani');
       render(); return v;
     });
@@ -2076,7 +2084,7 @@ async function onlineZalohaStrankami(adresa, prubeh) {
   return { ok: true, zaloha, puvod, otisk, prostredi, porizena };
 }
 
-const KOPIE_DISK = { slozka: null, nacteno: false };
+const KOPIE_DISK = { slozka: null, nacteno: false, pravoPredem: null };
 const KOPIE_DISK_IDB_KLIC = 'zalohaDisk';
 
 function kopieDiskIdb(hodnota) {
@@ -2290,8 +2298,15 @@ async function onlineKopieDiskTed() {
       KOPIE_DISK.slozka = h;
       kopieDiskIdb(h).catch(() => false);      // zapamatování je pohodlí, ne podmínka
     }
-    if (!(await uloPravo(h, false))) throw new Error('prohlížeč nepovolil zápis do složky „' + h.name + '"');
+    if (!(await uloPravo(h, false))) {
+      /* #571 DZ: zapamatovanou složku zapomenout — příští klik nabídne výběr
+       * složky znovu (jinak by se tlačítko točilo na zamítnutém právu). */
+      KOPIE_DISK.slozka = null; kopieDiskIdb(null).catch(() => false);
+      throw new Error('prohlížeč nepovolil zápis do složky „' + h.name + '" — klikněte znovu, vyberte složku „'
+        + ULO_KOPIE_DISK_SLOZKA + '" a zápis povolte (nejlépe „Povolit při každé návštěvě")');
+    }
     const k = await kopieDiskProved(h);
+    ONLINE_STAV.kopieDiskCeka = null;
     onlineZprava('Záloha zkopírována na Disk: ' + h.name + '/' + k.soubor + ' (' + kopieDiskVelikost(k.velikostB) + ', '
       + (k.puvod === 'nocni-otisk' ? 'noční otisk ' + k.otisk : 'aktuální stav — noční otisk za posledních 7 dní chybí') + ').'
       + kopieDiskUklidText(k.uklid));
@@ -2304,37 +2319,91 @@ async function onlineKopieDiskTed() {
 
 /* SAMOČINNÁ KOPIE PO PŘIHLÁŠENÍ (#554, J. V. 3. 11. 2026: kopie každý den).
  * Kopíruje se, když v Netlify leží noční otisk novější, než jaký nese
- * poslední kopie tohoto prostředí (uloKopieDiskStav → potreba), a jen když
- * je v tomhle prohlížeči složka vybraná a právo zápisu UDĚLENÉ — o právo se
- * tu nežádá (žádost smí jen kliknutí), bez něj automatika mlčí a zbude
- * hlídka (3 dny).
+ * poslední kopie tohoto prostředí (uloKopieDiskStav → potreba), složka je
+ * v tomhle prohlížeči vybraná a právo zápisu udělené.
  *
  * Heslo (K3-N1: záznam kopie odemyká retenci, server ho chce s heslem
  * správce) se bere z PRÁVĚ PROBĚHLÉHO přihlášení — `hesloPrihlaseni`
  * předává onlinePrihlas jen sem, nikam se neukládá. Dialog s heslem se po
- * přihlášení dál neotevírá (K4-N15). Obnovené sezení (F5, cookie) heslo
- * nemá → jen připomene tlačítko jako dosud. Selhání kopie přihlášení
- * nezastaví, jen se ohlásí. */
+ * přihlášení dál neotevírá (K4-N15). Selhání kopie přihlášení nezastaví.
+ *
+ * #571 DZ (hlášení J. V. 5. 11. 2026): na ostrém webu se kopie po přihlášení
+ * neudělala a nic se neohlásilo. Právo zápisu ke složce prohlížeč po
+ * restartu vrací do stavu „prompt" a do v4.11.8 se tu jen TIŠE zjišťovalo
+ * (uloPravo(h, true)) → funkce mlčky skončila. Hlídka „starší než 3 dny"
+ * mlčela taky (kopie z 2. 11. byla stará 2 dny). Od #571:
+ *   - o právo se žádá už při kliknutí na „Přihlásit" (kopieDiskPravoPredem,
+ *     ve stejném gestu, před `await` přihlášení) — tady se jen převezme;
+ *   - když kopie potřeba je a nejde ji pořídit, NIKDY se nemlčí: hláška
+ *     řekne proč (není vybraná složka / prohlížeč nepovolil zápis / chybí
+ *     heslo / chyba kopie) a v Nastavení → Databáze i v liště nahoře se
+ *     ukáže tlačítko „Zkopírovat zálohu na Disk teď" (ONLINE_STAV.kopieDiskCeka). */
 async function onlineKopieDiskAuto(hesloPrihlaseni) {
+  const predem = KOPIE_DISK.pravoPredem;
+  KOPIE_DISK.pravoPredem = null;
   if (!jeAdminOnline() || typeof uloKopieDiskStav !== 'function') return false;
-  if (!uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy, ONLINE_STAV.otisky).potreba) return false;
-  const h = await kopieDiskSlozka();
-  if (!h || !(await uloPravo(h, true))) return false;
-  if (!hesloPrihlaseni) {
-    onlineZprava('Denní kopie zálohy na Disk čeká: Nastavení → Databáze → „Zkopírovat zálohu na Disk teď" '
-      + '(potvrdíte ji svým heslem; po přihlášení heslem se pořídí sama).');
+  if (!uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy, ONLINE_STAV.otisky).potreba) {
+    ONLINE_STAV.kopieDiskCeka = null;
     return false;
   }
+  const h = await kopieDiskSlozka();
+  if (!h) return kopieDiskCeka('slozka', 'v tomhle prohlížeči není vybraná složka „' + ULO_KOPIE_DISK_SLOZKA
+    + '" (prohlížeč si ji pamatuje pro každou adresu webu zvlášť)');
+  const pravo = await kopieDiskPravoStav(h, predem);
+  if (pravo !== 'granted') return kopieDiskCeka('pravo', pravo === 'denied'
+    ? 'prohlížeč zápis do složky „' + h.name + '" zakázal'
+    : 'prohlížeč nepovolil zápis do složky „' + h.name + '" (po restartu prohlížeče se na právo ptá znovu)');
+  if (!hesloPrihlaseni) return kopieDiskCeka('heslo', 'chybí heslo — přihlášení proběhlo z uložené relace '
+    + '(obnovení stránky), bez hesla správce server kopii nepřijme');
   try {
     const k = await kopieDiskProved(h, hesloPrihlaseni);
+    ONLINE_STAV.kopieDiskCeka = null;
     onlineZprava('Denní kopie zálohy se sama uložila na Disk: ' + h.name + '/' + k.soubor + ' ('
       + kopieDiskVelikost(k.velikostB) + ').' + kopieDiskUklidText(k.uklid));
     return true;
   } catch (e) {
-    onlineZprava('Denní kopii zálohy na Disk se nepodařilo pořídit: ' + (e && e.message || e)
-      + ' — zkuste tlačítko „Zkopírovat zálohu na Disk teď" v Nastavení → Databáze.', 'varovani');
-    return false;
+    return kopieDiskCeka('chyba', 'kopii se nepodařilo pořídit: ' + (e && e.message || e));
   }
+}
+
+/* #571 DZ: žádost o právo zápisu ve stejném gestu jako klik na „Přihlásit".
+ * Prohlížeč (Chrome, Edge) žádost bez čerstvého kliknutí odmítne; aktivace
+ * kliknutím vydrží pár sekund, na načtení složky z IndexedDB stačí. Žádá se
+ * jen, když tenhle prohlížeč složku pro kopii už má a právo je ve stavu
+ * „prompt" — bez složky se nic neotevírá (výběr složky je věc tlačítka).
+ * Vrací slib stavu práva ('granted' | 'prompt' | 'denied' | '') a uloží ho
+ * do KOPIE_DISK.pravoPredem pro onlineKopieDiskAuto. Nikdy nevyhodí. */
+function kopieDiskPravoPredem() {
+  const o = { mode: 'readwrite' };
+  const p = Promise.resolve().then(() => kopieDiskSlozka()).then(h => {
+    if (!h) return '';
+    if (typeof h.queryPermission !== 'function') return 'granted';
+    return h.queryPermission(o).then(s => (s === 'prompt' && typeof h.requestPermission === 'function')
+      ? h.requestPermission(o) : s);
+  }).catch(() => '');
+  KOPIE_DISK.pravoPredem = p;
+  return p;
+}
+
+/* #571 DZ: stav práva zápisu ke složce `h` — výsledek žádosti z kliknutí na
+ * „Přihlásit" (`predem`), jinak jen zjištění (žádat bez kliknutí nejde). */
+async function kopieDiskPravoStav(h, predem) {
+  if (predem) { try { if ((await predem) === 'granted') return 'granted'; } catch (e) { /* zjistí se níž */ } }
+  if (!h || typeof h.queryPermission !== 'function') return 'granted';
+  try { return String(await h.queryPermission({ mode: 'readwrite' })); } catch (e) { return ''; }
+}
+
+/* #571 DZ: denní kopie čeká — důvod do hlášky i do trvalého řádku
+ * s tlačítkem (Nastavení → Databáze, lišta nahoře). Vrací false. */
+function kopieDiskCeka(duvod, proc) {
+  const dal = duvod === 'slozka' ? ' a vyberte složku „' + ULO_KOPIE_DISK_SLOZKA + '" na Disku Google (pak povolte zápis)'
+    : duvod === 'pravo' ? ' a zápis do složky povolte (nejlépe „Povolit při každé návštěvě")'
+      : duvod === 'heslo' ? ' a potvrďte ji svým heslem (po přihlášení heslem se pořídí sama)' : '';
+  const text = 'Denní kopie zálohy na Disk čeká: ' + proc + '. Klikněte na „Zkopírovat zálohu na Disk teď"'
+    + ' (Nastavení → Databáze nebo lišta nahoře)' + dal + '.';
+  ONLINE_STAV.kopieDiskCeka = { duvod, text };
+  onlineZprava(text, 'varovani');
+  return false;
 }
 
 /* Odlití kopie na Disk Google. Jen když je složka opravdu připojená a
@@ -2848,7 +2917,12 @@ function renderOnlineLista() {
          ${ikona} ${esc(kdo)}${esc(nahled ? '' : funkce)} (${esc(role)})</button>`
     : `<b style="color:${barva}">${ikona} ${esc(kdo)}${esc(funkce)}</b>
        <span style="color:${barva};opacity:.85">(${esc(role)})</span>`;
-  el.innerHTML = jmenoHtml + nahledMenuHtml() + `
+  /* #571 DZ: denní kopie na Disk čeká → tlačítko rovnou v liště (hláška
+   * v Nastavení → Databáze by po přihlášení nikdo neviděl). */
+  const kc = jeAdminOnline() && !nahled && ONLINE_STAV.kopieDiskCeka;
+  const kopieTl = kc ? `<button class="mini" id="online-lista-kopie-disk" onclick="onlineKopieDiskTed()"
+       title="${esc(kc.text)}" style="border-color:#fbbf24;color:#fbbf24">⚠ Zkopírovat zálohu na Disk teď</button>` : '';
+  el.innerHTML = jmenoHtml + nahledMenuHtml() + kopieTl + `
     <button class="mini" onclick="otevriMujProfil()">Můj profil</button>
     <button class="mini" onclick="otevriZmenaHesla()">Změnit heslo</button>
     ${typeof heatPrepinacHtml === 'function' ? heatPrepinacHtml() : ''}
@@ -3187,6 +3261,9 @@ function renderOnlineKarta() {
       ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>`
         + (hlidka ? `<div id="online-zalohy-nocni" class="${hlidka.stara ? 'seznam-varovani' : 'note'}">${esc(hlidka.text)}</div>` : '')
         + (kopieHl ? `<div id="online-kopie-disk" class="${kopieHl.stara ? 'seznam-varovani' : 'note'}">${esc(kopieHl.text)}</div>` : '')
+        /* #571 DZ: denní kopie se nepořídila — proč, a tlačítko hned u toho */
+        + (ONLINE_STAV.kopieDiskCeka ? `<div id="online-kopie-disk-ceka" class="seznam-varovani">${esc(ONLINE_STAV.kopieDiskCeka.text)}
+            <button class="mini" onclick="onlineKopieDiskTed()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Zkopírovat zálohu na Disk teď</button></div>` : '')
         + (retenceHl ? `<div id="online-retence-varovani" class="seznam-varovani">${esc(retenceHl.text)}
             ${ONLINE_STAV.zalohySmi && ONLINE_STAV.zalohySmi.potvrditUbytek === false
               ? `<span class="note" id="online-retence-jen-hlavni">Potvrdit úbytek může jen hlavní správce.</span>`

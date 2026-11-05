@@ -7,7 +7,10 @@
  * (onlinePrihlas → onlinePoPrihlaseni → onlineZalohaAuto →
  * onlineKopieDiskAuto), nikam se neukládá a dialog se neotevírá (K4-N15).
  * Obnovené sezení (F5) heslo nemá → jen připomínka. Bez vybrané složky nebo
- * bez uděleného práva zápisu se nic nevnucuje.
+ * bez uděleného práva zápisu se nic nevnucuje — od #571 DZ (5. 11. 2026) ale
+ * ani nemlčí: hláška s důvodem a tlačítkem (prohlížečový harness
+ * overit_dz_kopie_disk.mjs). Automatika sama o právo nežádá; žádá se při
+ * kliknutí na „Přihlásit" (kopieDiskPravoPredem).
  *
  * Úseky src/ui/online_ui.js se spustí ve vm s náhradami (vzor
  * test_o7_kopie_klient.js). Pojistka: na 1bf1a3a (v2.11.9) padá 10 kontrol
@@ -40,9 +43,12 @@ const novyCtx = (o) => {
     zpravy: [], provedeno: [], dotazu: 0,
     ULO_KOPIE_DISK_SLOZKA: U.ULO_KOPIE_DISK_SLOZKA, uloKopieDiskStav: U.uloKopieDiskStav,
     ONLINE_STAV: { otisky: o.otisky, kopieDisk: o.kopie, prostrediZalohy: 'main' },
+    KOPIE_DISK: { pravoPredem: o.predem ? Promise.resolve(o.predem) : null },
     jeAdminOnline: () => true,
-    kopieDiskSlozka: async () => (o.slozka === false ? null : { name: U.ULO_KOPIE_DISK_SLOZKA }),
-    uloPravo: async (h, tiche) => { ctx.tiche = tiche; return o.pravo !== false; },
+    kopieDiskSlozka: async () => (o.slozka === false ? null : { name: U.ULO_KOPIE_DISK_SLOZKA,
+      queryPermission: async () => (o.pravo === false ? 'prompt' : 'granted'),
+      requestPermission: async () => { ctx.zadosti++; return 'granted'; } }),
+    zadosti: 0,
     dotazHeslo: async () => { ctx.dotazu++; return HESLO; },
     kopieDiskProved: async (h, heslo) => {
       ctx.provedeno.push(heslo);
@@ -64,7 +70,7 @@ const novyCtx = (o) => {
     const v = await ctx.auto(HESLO);
     test('#554: nový noční otisk a heslo z přihlášení → kopie se pořídí sama', v === true && ctx.provedeno.length === 1, ctx.provedeno);
     test('#554: kopie dostane heslo z přihlášení, žádný dialog', ctx.provedeno[0] === HESLO && ctx.dotazu === 0);
-    test('#554: o právo zápisu se nežádá (jen tichý dotaz)', ctx.tiche === true);
+    test('#554: automatika o právo zápisu sama nežádá (jen zjišťuje)', ctx.zadosti === 0);
     test('#554: hláška o samočinné kopii jmenuje soubor', ctx.zpravy.some(([t, typ]) => /Denní kopie zálohy se sama uložila na Disk: _Zaloha Netlify DB\/otisk_main_/.test(t) && typ === ''), ctx.zpravy);
     test('#554: heslo se neuloží do stavu aplikace', !JSON.stringify(ctx.ONLINE_STAV).includes(HESLO));
   }
@@ -86,8 +92,13 @@ const novyCtx = (o) => {
     const a = novyCtx({ otisky: [noc(0)], kopie: kopieVcera, slozka: false });
     const b = novyCtx({ otisky: [noc(0)], kopie: kopieVcera, pravo: false });
     await a.auto(HESLO); await b.auto(HESLO);
-    test('#554: bez vybrané složky nic (ani kopie, ani dialog)', a.provedeno.length === 0 && a.zpravy.length === 0 && a.dotazu === 0);
-    test('#554: bez práva zápisu nic', b.provedeno.length === 0 && b.zpravy.length === 0);
+    test('#554 #571: bez vybrané složky ani kopie, ani dialog — ale hláška s důvodem',
+      a.provedeno.length === 0 && a.dotazu === 0 && a.zpravy.some(([t, typ]) => /není vybraná složka/.test(t) && typ === 'varovani'), a.zpravy);
+    test('#554 #571: bez práva zápisu bez kopie — hláška „nepovolil zápis" a o právo se nežádá',
+      b.provedeno.length === 0 && b.zadosti === 0 && b.zpravy.some(([t]) => /nepovolil zápis/.test(t) && /Zkopírovat zálohu na Disk teď/.test(t)), b.zpravy);
+    const c = novyCtx({ otisky: [noc(0)], kopie: kopieVcera, pravo: false, predem: 'granted' });
+    await c.auto(HESLO);
+    test('#571: právo udělené při kliknutí na „Přihlásit" (pravoPredem) → kopie se pořídí', c.provedeno.length === 1 && c.zadosti === 0, c.zpravy);
   }
   /* ---- cizí prostředí v záznamu → kopírovat ---- */
   {

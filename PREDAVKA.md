@@ -1,3 +1,29 @@
+# Předávka — 5. 11. 2026: DZ #571 — denní kopie zálohy na Disk na ostrém webu (nikdy tiše), větev `claude/dz-kopie-disk` (sloučeno do integrace jako v5.11.3)
+
+Nad `000924e` (`main` = `test` = v4.11.8). **Verze 5.11.1** (koordinace přečísluje). Neslučováno; do `test-draft`,
+`test` ani `main` nic. Na webech nic, na Disk nic.
+
+**Příčina (reprodukováno `overit_dz_kopie_disk.mjs` na 000924e):** Chrome/Edge po restartu vrací právo zápisu ke
+složce „_Zaloha Netlify DB" do stavu „prompt". `onlineKopieDiskAuto` se jen tiše ptala (`uloPravo(h, true)`)
+a mlčky vrátila false; hlídka „> 3 dny" mlčela (kopie z 2. 11. byla stará 2 dny). Testovací web měl právo
+udělené → kopie šla. Starý `posledni_kopie.json` / záznam `kopie-disk` bez prostředí kopii nebránil.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. reprodukce harnessem (ostré prostředí, starý záznam, noční otisk, stavy práva) | ✅ | `overit_dz_kopie_disk.mjs` — na 000924e 9 / 11 FAIL, po opravě 20 / 0 |
+| 2. příčina | ✅ | tichý dotaz na právo bez gesta (viz výše) |
+| 3a. žádost o právo při kliknutí na „Přihlásit" (před `await`) | ✅ | `kopieDiskPravoPredem` v `onlinePrihlas`; `kopieDiskPravoStav` |
+| 3b. nikdy tiše: důvod + tlačítko | ✅ | `kopieDiskCeka` → `ONLINE_STAV.kopieDiskCeka`; lišta nahoře (`#online-lista-kopie-disk`), karta Online databáze (`#online-kopie-disk-ceka`); souhrnné varování nese důvod |
+| 3c. starý `posledni_kopie.json` nebrání | ✅ | ověřeno (klient i server), bez změny kódu |
+| 4. testovací web dál stejně | ✅ | harness průchod G |
+| 5. postup pro J. V. | ✅ | níže + manuál správce |
+| testy, mutace, kolo | ✅ VŠE ZELENÉ | kolo `--bez-mutaci` 392 / 0 / 7 přeskočeno, hodiny 315 / 0 / 1, statické 5/5; mutace #571 11/11, #554 12/12, O7 1/1 | `src/test_571_kopie_disk_stav.js`, `netlify/test_571_kopie_disk.mjs`, `src/test_554_kopie_denne.js`; mutace `[#571]` |
+
+**Co má J. V. udělat hned (ostrý web, Chrome/Edge, v4.11.8 — ještě bez opravy):** Nastavení → Databáze →
+**Zkopírovat zálohu na Disk teď** → vybrat na Disku Google složku **_Zaloha Netlify DB** (nabídne-li prohlížeč
+výběr) → **povolit zápis** (nejlépe „Povolit při každé návštěvě") → potvrdit heslem. Ve složce pak přibude
+`otisk_main_2026-11-05_0300.json.gz` a `posledni_kopie_main.json`. Po nasazení opravy se prohlížeč na zápis
+zeptá sám při kliknutí na „Přihlásit"; když kopie nejde, svítí v liště „⚠ Zkopírovat zálohu na Disk teď".
 # Předávka — 5. 11. 2026: MU #560 — samostatná sekce MŮSTKY, větev `claude/mu-mustky` (sloučeno do integrace jako v5.11.2)
 
 Nad `000924e` (`main` = `test` = v4.11.8). **Verze 5.11.2** (přečíslováno koordinací). Neslučováno; do `test-draft`,
@@ -235,8 +261,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 5. 11. 2026: stav integrace v5.11.2
+# Předávka koordinace — 5. 11. 2026: stav integrace v5.11.3
 
+- **v5.11.3** DZ #571 kopie zálohy na Disk nikdy tiše (o právo zápisu se žádá při „Přihlásit“).
 - **v5.11.1** PH #568/#569/#572 (5da7a2d, kolo zelené), **v5.11.2** MU #560 můstky (sloučeno 5. 11.; mutace SV přečíslovány na #564). `test` = `main` = v4.11.8. Běží DZ #571 (kopie zálohy na Disk). Standby K40, VS víc šachet (#570).
 - **Na J. V. po MU:** sazby skladebného modelu můstků v Ceníku, šablona CN v16 (CZ/EN/DE/FR).
 
