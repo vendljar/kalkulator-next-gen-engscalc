@@ -6,7 +6,17 @@ Sezení K40 v režimu PŘÍPRAVA (pokyn J. V. 4. 11. 2026): **nic se neopravuje*
 nad 9a16ff5“). Obsahuje RC #561, SV #564, PR #563 (prodaná = řídící), IK #565 (interní poznámky na krycím
 listu) a MV4 #566 (manuál). Všechny dávky ze 4. 11. jsou tedy už ve výchozím stavu.
 
-**Historie kroku 0:** 1. průchod nad `df0138c` (v4.11.6, a9ee49d), 2. průchod nad `9a16ff5` (tento zápis).
+**Historie kroku 0:** 1. průchod nad `df0138c` (v4.11.6, a9ee49d), 2. průchod nad `9a16ff5` (6bb341f),
+3. průchod nad `000924e` (5. 11. 2026, `origin/test` = `origin/main` = v4.11.8). `000924e` se od `9a16ff5` liší jen
+v `PREDAVKA.md` (ověřeno `git diff --stat`) — **všechna místa a čísla řádků v tabulce platí beze změny.**
+
+**Možná kolize — dávka PH** (`claude/ph-proj-hlavicka`, roadmapa od #568; 5. 11. na GitHubu ještě není, posuzováno
+podle popisu koordinace): hlavička ceny PROJ a text studie bez zaměření (`src/nabidka_proj.js`, `src/podminky.js`)
+se bodů K40 netýkají. **„Sklo 4.4.1 v textu OCK“** se může dotknout K40-N1: pokud PH změní název řádku skla
+(`skloVolba`, `src/engine.js:420–447`, „MATERIÁL VSG 4.4.x“) nebo heslo `Sklo VSG 4.4.1` (`src/cenik.js:90`, `:96`,
+`src/preklad.js:481`), musí vzor migrace čelního skla sedět na nový i starý tvar. Při SPUŠTĚNÍ ověřit, zda je PH
+ve výchozím commitu, a případně krok 0 u N1 zopakovat. Roadmapa: K40 od #567, PH od #568 — K40 má tedy jen
+jedno volné číslo před PH; další položky K40 vzít až za posledním číslem PH (zjistit při spuštění).
 
 **Změna 9a16ff5 proti df0138c** (jen to, co se K40 týká):
 - PR #563: `src/objednane.js` (+33 ř. za `prodNastav`: `prodRidiciSrovnej`, `prodRidiciZamceno`; `prodJedinaZmena`
@@ -51,4 +61,4 @@ Nic. Všechny body K40 trvají i nad `9a16ff5` (N1 znovu ověřen v Node: `skloM
 `MATERIÁL VSG 4.4.2` ve vyřazených zůstává).
 
 ## Na co se čeká
-- Pokyn „SPUSŤ K40 nad <SHA>“ (kolo nad 9a16ff5 podle koordinace právě běží; `test` je zatím na v4.11.4).
+- Pokyn „SPUSŤ K40 nad <SHA>“ (výchozí bude nejspíš `000924e` = `origin/test`, nebo novější s dávkou PH).
