@@ -1,3 +1,36 @@
+# Téma víc šachet — stav (5. 11. 2026, větev `claude/vs-vice-sachet`)
+
+**Samostatné trvalé sezení tématu „Víc šachet v OCK (#570)“**, řízené z koordinace
+(`session_01TMQ5bLDJuS5k5NWWYy7jLx`); J. V. může psát i přímo. Větev nad `000924e` (v4.11.8).
+**Kód aplikace beze změny. NIC NEPROGRAMOVAT, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“.**
+
+- Podklad: `podklady/NAVRH_VICE_SACHET_05_11.md` (oddíl 0 rozhodnutí, oddíl 11 prompt pro realizaci po etapách).
+- Artefakt (soukromý, verze 4): https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa — zdroj HTML jen
+  v artefaktu (načíst přes Artifact `read`, republish na stejnou adresu přes `url`).
+- Roadmapa: #570 (vlna C, `ceka`, XL, závisí měkce na #560) v `roadmapa/roadmap.json`.
+
+**Rozhodnutí J. V. 5. 11. 2026 (R1–R13):** R1 architektura A (`ock.zadani` = šachta 1, další
+v `ock.dalsi[]` {id, nazev, ks, zadani}) · R2 každá šachta celá, nic jednou za zakázku, ks = čistý
+násobek · R3 CEIL na tisíce jen na součtu, jedna sleva s limitem ze součtu, jen Model 2 · R4 CN tabulka
+šachet (ks, cena) + součet, sleva, cena celkem · R5 controlling jen za celou zakázku · R6 Pipedrive
+hodnota = cena nabídky + seznam šachet v poznámce · R7 zaokrouhlovací rozdíl rozpočítat do šachet
+(největší zbytek, celá čísla, oddíl 3.6) · R8 stejné příplatky sloučit (klíč + sazba, oddíl 5.1.1) ·
+R9 jeden krycí list za variantu · R10 max. 10 šachet · R11 ruční cena #561 společná · R12 u šachty
+s víc kusy jen cena za všechny kusy · R13 sloučený příplatek = jedna volba.
+
+**Otevřené body:** žádné otázky. Návrh uzavřen, připraveno ke spuštění.
+
+**Závislosti:** dávka MU (#560, `Z.mustky[]`) musí být sloučená dřív. K40 opravy a PH běží souběžně
+a mění sousední soubory → po každém „AKTUALIZUJ VS nad <SHA>“ ověřit návrh a prompt proti kódu
+(hlavně `zamek.js` `vypocetZ`, `engine.js` souhrn, `nabidka.js`, `kryci.js`, `pd_nanecisto.js`,
+`uloziste.js`) a krátce ohlásit koordinaci.
+
+**Další krok:** čekat na pokyn koordinace. Při spuštění etapy: větev `claude/vs-e<N>-…` nad zadaným SHA,
+hooky, pojistky testů, zlatá sada „1 šachta na haléř“, celé kolo (Playwright přes odkaz
+`node_modules/playwright`), mutace po částech, ohlásit koordinaci.
+
+---
+
 # Předávka — 4. 11. 2026: MV4 #566 — 4. vydání manuálu výpočtu OCK pro v4.11.4, větev `claude/mv4-manual-vypocet`
 
 Nad `b751c91` (`main` = `test` = v4.11.4). **Kód aplikace beze změny, verze se nezvyšuje** (CHANGELOG „Dokumentace").

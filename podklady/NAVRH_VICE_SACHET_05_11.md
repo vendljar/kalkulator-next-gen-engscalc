@@ -4,7 +4,7 @@ Dávka VS. Artefakt s náhledy obrazovek:
 https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa .
 Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 
-**Stav: návrh uzavřený rozhodnutími R1–R11 (zbývají dvě drobné otázky O9–O10, oddíl 9). Nic se neprogramuje, dokud J. V. neřekne**
+**Stav: NÁVRH UZAVŘEN — PŘIPRAVENO KE SPUŠTĚNÍ (rozhodnutí R1–R13). Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
 („zatím připrav komplexní návrh, který si nejprve odladíme, a spustíme až
 řeknu“, 5. 11. 2026). Všechny částky jsou **smyšlené a ilustrační**.
 
@@ -25,6 +25,8 @@ Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 | R9 (O6) | **Jeden krycí list za variantu** s tabulkou šachet. |
 | R10 (O7) | **Nejvýš 10 šachet ve variantě**; šachta s N ks je jedna šachta. |
 | R11 (O8) | **Ruční cena #561 platí pro všechny šachty varianty**, jedno potvrzení. |
+| R12 (O9) | **U šachty s víc kusy jen cena za všechny kusy dohromady** — tabulka CN má jeden sloupec ceny, cena za kus se netiskne. |
+| R13 (O10) | **Sloučený příplatek = jedna volba pro všechny šachty**, kterých se týká; kdo chce příplatek jen pro jednu šachtu, obchodník ho u druhé odškrtne a nabídka vydá dva řádky. |
 
 ---
 
@@ -181,7 +183,7 @@ Z = 3 267 000 → q = 1 184 498 a 2 082 501, r = 1 → koruna připadne B
 - Rozpočítává se **základ před slevou**; sleva a obchodní zaokrouhlení
   jsou pod tabulkou jednou za nabídku (dnešní `cenaNabidkyOck`).
 - V tabulce je u šachty s ks > 1 cena **za řádek** (všechny kusy); cena za
-  kus se netiskne, aby se nemusela dělit (otázka O9).
+  kus se netiskne (R12).
 - Uloží se do otisku (`sachty[].cenaRozpis`), dotisk ji nepočítá znovu.
 - Test `test_vs_rozpocet.js`: součet = Z pro 10 000 náhodných sad (1–10
   šachet, ks 1–20, ceny 0 – 10 mil. Kč), deterministika (2× stejný vstup =
@@ -247,7 +249,10 @@ i při plném přepočtu.
 - Celkem příplatků `P = CEIL(Σ, 1000)` (oddíl 3.1). Ceny jednotlivých
   řádků se tisknou jako dnes (bez rozpočtu zaokrouhlení).
 - Výběr příplatků do nabídky (sloupec Nabídka) zůstává po šachtách;
-  sloučí se jen to, co je vybrané.
+  sloučí se jen to, co je vybrané. Sloučený řádek je pro zákazníka **jedna
+  volba** pro všechny vypsané šachty (R13); příplatek jen pro jednu šachtu
+  vznikne tak, že ho obchodník u ostatních šachet odškrtne — pak má vlastní
+  řádek (a odškrtnuté šachty ve výčtu nejsou).
 - Test `test_vs_priplatky.js`: shodný klíč a sazba → 1 řádek se součtem;
   jiná sazba → 2 řádky; příplatek jen u jedné šachty; ks × množství.
 
@@ -351,21 +356,9 @@ nemění) a dá se sloučit samostatně jako bezpečný první krok.
 
 ## 9. Otázky
 
-O1–O8 rozhodl J. V. 5. 11. 2026 (R4–R11 v oddíle 0). Při zapracování
-vyplynuly dvě drobnosti:
-
-- **O9 — Cena v tabulce u šachty s víc kusy.** Má být u Výtahu B (2 ks)
-  cena za oba kusy dohromady, nebo za jeden kus?
-  *Doporučeno:* za oba kusy dohromady (řádek pak sedí na součet a nic se
-  nedělí). *Jinak:* dva sloupce, cena za kus i celkem (cena za kus se pak
-  musí zaokrouhlit a kus × počet nemusí přesně sedět).
-- **O10 — Sloučený příplatek v nabídce.** Když je třeba vnější lešení
-  sloučené pro Výtah A i Výtah B, objednává ho zákazník jen pro všechny
-  šachty najednou?
-  *Doporučeno:* ano, jeden řádek = jedna volba; kdo chce příplatek jen
-  pro jednu šachtu, obchodník ho u druhé šachty odškrtne a nabídka vydá
-  dva řádky. *Jinak:* u sloučeného řádku uvést i cenu za každou šachtu
-  zvlášť.
+Všechny otázky O1–O10 rozhodl J. V. 5. 11. 2026 (R4–R13 v oddíle 0).
+**Otevřené otázky: žádné.** Nové otázky, které vyplynou při realizaci
+nebo při aktualizaci návrhu na nový kód, se zapíšou sem a do oddílu 0.
 
 ## 10. Položka roadmapy
 
@@ -376,13 +369,14 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 
 ## 11. Prompt pro realizaci (po pokynu J. V.)
 
-> Dávka VS-R (#570): víc šachet v jedné nabídce OCK. Založ větev
-> `claude/vs-realizace` nad `<VÝCHOZÍ_COMMIT>` (určí koordinace).
+> Dávka VS-E<N> (#570): víc šachet v jedné nabídce OCK, etapa E<N>. Založ
+> větev `claude/vs-e<N>-…` nad `<VÝCHOZÍ_COMMIT>` (určí koordinace zprávou
+> „SPUSŤ VS E<N> nad <SHA>“). Etapy se spouštějí po jedné.
 > Pracuj česky podle `CLAUDE.md`; na začátku `bash nastroje/instaluj_hooky.sh`,
 > `git push --no-verify` zakázané, do `test-draft` / `test` / `main` nic.
-> Závazný návrh: `podklady/NAVRH_VICE_SACHET_05_11.md` (rozhodnutí R1–R11,
-> O9 a O10 podle odpovědí J. V.). Dávka MU (#560, `Z.mustky[]`) musí být
-> sloučená dřív.
+> Závazný návrh: `podklady/NAVRH_VICE_SACHET_05_11.md` (rozhodnutí R1–R13).
+> Dávka MU (#560, `Z.mustky[]`) musí být sloučená dřív; souběžné dávky K40
+> a PH mění sousední soubory — před začátkem ověř návrh proti výchozímu SHA.
 >
 > Postupuj po etapách, po každé commit + push + `PREDAVKA.md`:
 > - **E1** data `ock.nazev/ks/dalsi[]`, `sachtyZ`, obal `vypocetZakazkyOck`
@@ -399,6 +393,7 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 >   porovnání variant.
 > - **E4** CN (náhled + Word: smyčka `{#sachty}`, nová verze šablony,
 >   zábrana staré šablony), sloučené příplatky 5.1.1 (`test_vs_priplatky.js`),
+>   jeden sloupec ceny u šachty (R12), sloučený příplatek = jedna volba (R13),
 >   technická specifikace.
 > - **E5** krycí list (jeden za variantu s tabulkou), SoD, controlling
 >   (beze změny, test součtu), Pipedrive (poznámka), zámek a otisk
@@ -408,5 +403,8 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 >   testovacím webu, CHANGELOG, roadmapa #570 → hotovo.
 >
 > Každý nový test s pojistkou „před implementací selže“ (do commitu).
+> Celé testovací kolo `nastroje/testovaci_kolo.sh` (Playwright přes odkaz
+> `node_modules/playwright` → `npm root -g`), mutace po částech
+> (`KNG_MUTACE_CAST=K/N`), kolo s částí hlásí „ZELENÁ ČÁST“.
 > Zakázka s jednou šachtou musí dát na haléř výsledek i dokumenty jako
 > výchozí commit. Na konci ohlas koordinaci: SHA, verze, výsledek kola.
