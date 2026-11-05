@@ -5,7 +5,7 @@
 **Kód aplikace beze změny. NIC NEPROGRAMOVAT, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“.**
 
 - Podklad: `podklady/NAVRH_VICE_SACHET_05_11.md` (oddíl 0 rozhodnutí, oddíl 11 prompt pro realizaci po etapách).
-- Artefakt (soukromý, verze 4): https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa — zdroj HTML jen
+- Artefakt (soukromý, verze 5): https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa — zdroj HTML jen
   v artefaktu (načíst přes Artifact `read`, republish na stejnou adresu přes `url`).
 - Roadmapa: #570 (vlna C, `ceka`, XL, závisí měkce na #560) v `roadmapa/roadmap.json`.
 
@@ -24,6 +24,8 @@ s víc kusy jen cena za všechny kusy · R13 sloučený příplatek = jedna volb
 a mění sousední soubory → po každém „AKTUALIZUJ VS nad <SHA>“ ověřit návrh a prompt proti kódu
 (hlavně `zamek.js` `vypocetZ`, `engine.js` souhrn, `nabidka.js`, `kryci.js`, `pd_nanecisto.js`,
 `uloziste.js`) a krátce ohlásit koordinaci.
+
+**Ověřeno proti kódu:** 5. 11. nad `5da7a2d` (v5.11.1, PH) — dopad jen na specifikaci po šachtách (razítko #572 `skloJenSPlochou`, `tsMaSklo` volat s výsledkem šachty, ruční hodnoty `dalsi[i].techspec`); podklad oddíl 12.
 
 **Další krok:** čekat na pokyn koordinace. Při spuštění etapy: větev `claude/vs-e<N>-…` nad zadaným SHA,
 hooky, pojistky testů, zlatá sada „1 šachta na haléř“, celé kolo (Playwright přes odkaz

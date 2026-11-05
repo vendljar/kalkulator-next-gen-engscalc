@@ -73,6 +73,12 @@ v.data.ock = {
   **nepatří**, stejně jako se to řešilo u `mustkyKs`).
 - `id` šachty: jedinečné v rámci varianty (`s_` + náhodný řetězec), stálé
   i po přejmenování; podle něj se váže otisk, kontroly a controlling.
+- **Technická specifikace po šachtách:** ruční hodnoty specifikace jsou
+  dnes ve `v.data.techspec` (za variantu). Šachta 2+ dostane nepovinné
+  `dalsi[i].techspec` jen pro pole, která popisují šachtu (typ, rozměry,
+  opláštění, kotvení, povrch, můstky); chybí = předvyplnění z výpočtu té
+  šachty. Pole za zakázku (stavba, termíny, podmínky) zůstávají ve
+  `v.data.techspec`. Šachta 1 čte dál `v.data.techspec` beze změny.
 - Klon a „Nová varianta (kopie otevřené)“ kopírují `dalsi` celé (nová `id`
   šachet se nevytvářejí — jsou jedinečné jen uvnitř varianty).
 - **Server (`uloziste.js`):** kontrola tvaru `ock.dalsi` (pole objektů,
@@ -117,6 +123,14 @@ vysl.sachty = [ { id, nazev, ks, vysl: Rᵢ, cenaPredZaokr: kᵢ·Uᵢ,
                   cenaRozpis /* celé Kč, algoritmus 3.6 */ } , ... ]
 ```
 
+- **Popisné (nesčitatelné) části výsledku** — `odvozene`, `parametry`,
+  `oplasteni` (pásy, světlíky, razítko `skloJenSPlochou` z #572),
+  `zaskleni.rozmer`, `zaskleni.vypln` — se v součtu **nepřepočítávají**:
+  součet nese ty ze šachty 1 (aby kód, který o šachtách neví, dostal
+  platná data a razítka), a kdo popisuje šachtu (specifikace, kontroly,
+  nákres opláštění), čte vždy **výsledek své šachty** `sachty[i].vysl`.
+  Funkce specifikace jako `tsMaSklo(Z, r)` a `tsOplPasyPoStenach(o, r)`
+  se volají s dvojicí (zadání šachty, výsledek šachty), nikdy se součtem.
 - Řádky sekcí se slučují podle **původního názvu a jednotkové ceny**:
   množství a náklad se sečtou × *kᵢ*. Stejný ceník → stejná položka
   se sloučí; vlastní položka s jinou cenou zůstane zvlášť.
@@ -208,7 +222,7 @@ i při plném přepočtu.
 | **Záložky kalkulace** (Dimenze profilů, Práce a režie, Cenová kalkulace, Hrubá OCK, Opláštění, Volitelné, Režie, Příplatky) | Přepínač „Výtah A · Výtah B · Součet“. V šachtě se edituje jako dnes, ceny šachty bez zaokrouhlení na tisíce (jen informačně „podíl na součtu“). Pohled Součet je jen ke čtení (sloučené řádky, × ks). |
 | **Sleva** | Beze změny ovládání; nad polem „Sleva se počítá z ceny celé nabídky (3 šachty, 4 ks)“. |
 | **Cenová nabídka (náhled)** | Viz oddíl 5. |
-| **Technická specifikace** | Společné údaje jednou, pak oddíl za šachtu (název, ks, rozměry, provedení, můstky). |
+| **Technická specifikace** | Společné údaje jednou, pak oddíl za šachtu (název, ks, rozměry, provedení, opláštění, můstky). Předvyplnění každé šachty z její dvojice (zadání, výsledek) — vč. pravidla #572 „sklo jen s plochou“ (`tsMaSklo`), takže šachta bez skla nemá v oddílu sklo, i když jiná šachta sklo má. Ruční hodnoty šachty 2+ v `dalsi[i].techspec`. |
 | **Krycí list OCK** (R9: jeden list za variantu) | Předmět „OCK – 2 šachty, 3 ks (Výtah A, Výtah B 2 ks)“, hodnota = koncová cena, nová tabulka rozpisu po šachtách. Hodiny montáže a materiál = součet. |
 | **SoD** | Předmět díla vyjmenuje šachty s počty, cena díla = koncová cena, rozpis v příloze / článku o ceně. |
 | **Přehled nabídek** (`seznam.js`) | Jeden řádek za variantu, cena = součet, u názvu štítek „2 šachty / 3 ks“; hledání najde i podle názvu šachty. |
@@ -375,6 +389,7 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 > Pracuj česky podle `CLAUDE.md`; na začátku `bash nastroje/instaluj_hooky.sh`,
 > `git push --no-verify` zakázané, do `test-draft` / `test` / `main` nic.
 > Závazný návrh: `podklady/NAVRH_VICE_SACHET_05_11.md` (rozhodnutí R1–R13).
+> Výchozí SHA nejméně `5da7a2d` (v5.11.1, PH), viz oddíl 12.
 > Dávka MU (#560, `Z.mustky[]`) musí být sloučená dřív; souběžné dávky K40
 > a PH mění sousední soubory — před začátkem ověř návrh proti výchozímu SHA.
 >
@@ -408,3 +423,11 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 > (`KNG_MUTACE_CAST=K/N`), kolo s částí hlásí „ZELENÁ ČÁST“.
 > Zakázka s jednou šachtou musí dát na haléř výsledek i dokumenty jako
 > výchozí commit. Na konci ohlas koordinaci: SHA, verze, výsledek kola.
+
+---
+
+## 12. Ověření návrhu proti kódu
+
+| Datum | Nad | Co se změnilo v kódu | Dopad na návrh |
+|---|---|---|---|
+| 5. 11. 2026 | `5da7a2d` (integrace v5.11.1 = v4.11.8 + PH #568, #569, #572) | `engine.js`: `oplasteni.skloJenSPlochou: true` (razítko, ne číslo). `techspec.js`: `tsMaSklo(Z, r)`, `TS_OPL_SKLA`, filtr skla s nulovou plochou v `tsOplPasyPoStenach`, nové hodnoty číselníků kotvení. `docxgen.js`, `nabidka_proj.js`, `engine_proj.js`, `kontroly.js`, `ui/kalk_proj.js`: jen PROJ (hlavička, studie bez zaměření). | (1) Specifikace po šachtách volá `tsMaSklo` / `tsOplPasyPoStenach` s výsledkem **své** šachty, ne se součtem (doplněno 2, 3.2, 4). (2) Součet přebírá popisné objekty vč. razítka ze šachty 1, zlatá sada tím drží i #572. (3) Ruční hodnoty specifikace šachty 2+ v `dalsi[i].techspec` (doplněno 2). (4) PROJ změny se návrhu netýkají (PROJ beze změny, 5.7). (5) Výpočet OCK (`vypocet` ceny), `zamek.js`, `zaokrouhleni.js`, `uloziste.js`, `nabidka.js`, `kryci.js`, `controlling.js`, `pd_nanecisto.js`, `seznam.js` beze změny → vzorce, obal a výstupy platí. (6) Pozn.: v kódu je test `src/test_570_sklo_bez_plochy.js` pro #572 (PH původně #570) — jen název souboru, položka návrhu je dál #570. |
