@@ -85,7 +85,9 @@ const NABIDKA_PROJ_UVOD = [
       cz: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY v počáteční fázi nabízíme ZAMĚŘENÍ a ZPRACOVÁNÍ VÝSTUPŮ ZE ZAMĚŘENÍ uvažovaného umístění výtahu.',
       prvni: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY v počáteční fázi nabízíme ZAMĚŘENÍ a ZPRACOVÁNÍ VÝSTUPŮ ZE ZAMĚŘENÍ uvažovaného umístění výtahu.' },
     { sekce: 'studie',
-      cz: 'Z výsledku zaměření navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.',
+      cz: 'Z podkladů a prohlídky navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.',
+      /* původní věta — jen pro dotisk nabídky odeslané před #569 */
+      czStare: 'Z výsledku zaměření navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.',
       prvni: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.' },
     { sekce: 'projednani',
       cz: 'Součástí nabídkové ceny je i projednání této studie s Odborem památkové péče HMP.',
@@ -120,11 +122,47 @@ function nabidkaProjUvodRucne(zadani) {
 }
 /* true = ruční úvod vznikl nad jiným výchozím zněním, než jaké dávají
  * dnešní nabízené činnosti. `vychoziCz` = výchozí úvod (odstavce \n). */
-function nabidkaProjUvodNesedi(zadani, vychoziCz) {
+/* `vychoziStareCz` (#569): výchozí úvod podle znění před přeformulováním
+ * věty o studii — ruční úvod napsaný nad ním „nesedí" jen tehdy, když se
+ * změnily činnosti, ne kvůli nové větě. */
+function nabidkaProjUvodNesedi(zadani, vychoziCz, vychoziStareCz) {
   if (!nabidkaProjUvodRucne(zadani)) return false;
   const z = zadani.uvodNabidkyZaklad;
-  return typeof z === 'string' && z.trim() !== String(vychoziCz || '').trim();
+  if (typeof z !== 'string') return false;
+  if (vychoziStareCz != null && z.trim() === String(vychoziStareCz).trim()) return false;
+  return z.trim() !== String(vychoziCz || '').trim();
 }
+
+/* STUDIE PROVEDITELNOSTI BEZ SEKCE ZAMĚŘENÍ (#569, e-mail D. Sikory
+ * 2. 11. 2026: „sekci zaměření prosím úplně vymaž ze studie proveditelnosti.
+ * Zaměření budeme nabízet pouze jako samostatnou položku"). Studie má od té
+ * doby dvě části (dřívější část 2 → 1, část 3 → 2), „část 1" se zaměřením
+ * a její cena (odkaz na cenu ZA) se netisknou a věty, které předpokládaly
+ * naše zaměření, mají neutrální znění. Cena se nemění.
+ *   Odeslaná (zamčená) nabídka se nemění: znění se pozná podle razítka
+ * `studieBezZamereni` ve zmrazeném výsledku PROJ (engine_proj.js). Nabídka
+ * odeslaná dřív ho nemá → dotisk dá původní text. Rozpracovaná varianta
+ * počítá živě, takže razítko má vždy. */
+function nabidkaProjStudieBezZamereni(varianta) {
+  if (!varianta) return true;
+  const z = varianta.zamek;
+  if (!(z && z.zamceno)) return true;               // rozpracovaná = nové znění
+  const p = z.vysledek && z.vysledek.proj;         // otisk z okamžiku odeslání (zamekVysledek)
+  return !!(p && p.studieBezZamereni === true);
+}
+/* Přečíslování částí studie v novém znění (online i Word, všechny jazyky
+ * přes slovník). */
+const NABIDKA_PROJ_STUDIE_CASTI = {
+  'Studie proveditelnosti – část 2': 'Studie proveditelnosti – část 1',
+  'Studie proveditelnosti – část 3': 'Studie proveditelnosti – část 2',
+  'CENA ZA STUDII PROVEDITELNOSTI – část 2': 'CENA ZA STUDII PROVEDITELNOSTI – část 1',
+  'CENA ZA STUDII PROVEDITELNOSTI – část 3': 'CENA ZA STUDII PROVEDITELNOSTI – část 2',
+};
+/* Neutrální znění řádku PŮVODNÍ STAV (studie už nevychází z našeho zaměření). */
+const NABIDKA_PROJ_PUVODNI_STAV = {
+  stare: 'PŮVODNÍ STAV – grafický výstup ze zaměření, průmět reality z průzkumu s původní dokumentací stavby',
+  nove: 'PŮVODNÍ STAV – grafický výstup z podkladů a prohlídky, průmět reality z průzkumu s původní dokumentací stavby',
+};
 
 /* CESTOVNÉ U AKCE MIMO PRAHU (D2, rozhodnutí J. V. 20. 10. 2026, šablona
  * nabídky PROJ obchodníka rev. 33). `{X}` = cena 1 výjezdu technika
@@ -151,13 +189,14 @@ const NABIDKA_PROJ_CESTOVNE_KDE = {
 
 /* Odstavce úvodu pro sekce v rozsahu. `vRozsahu(sekce)` rozhoduje stejně
  * jako u ostatních bloků nabídky (sekce s cenou). */
-function nabidkaProjUvod(vRozsahu, P) {
+/* `stare` = znění z doby před #569 (dotisk odeslané nabídky). */
+function nabidkaProjUvod(vRozsahu, P, stare) {
   const T = typeof P === 'function' ? P : (t => t);
   let prvni = true;
   const odst = [];
   NABIDKA_PROJ_UVOD.forEach(skupina => {
     const vety = skupina.filter(v => vRozsahu(v.sekce)).map(v => {
-      const t = prvni ? v.prvni : v.cz; prvni = false; return T(t);
+      const t = prvni ? v.prvni : ((stare && v.czStare) || v.cz); prvni = false; return T(t);
     });
     if (vety.length) odst.push(vety.join(' '));
   });
@@ -209,14 +248,16 @@ const NABIDKA_PROJ_DEF = [
   { typ: 'rozsah', nadpis: 'STUDIE PROVEDITELNOSTI (ST)', sekce: ['studie', 'projednani'], uvod: [
     { cz: 'Studie proveditelnosti – podoba úprav domu, umístění výtahové šachty a technologie výtahu – se zpracovává jako prvotní dokumentace, do které se zapracují veškeré požadavky investora v kombinaci s realizovatelností záměru a legislativních požadavků. Tím se docílí podkladu, který poté slouží nejen pro projednání záměru na stavebním úřadě, ale je možné ho dále rozpracovat do dalších stupňů projektových dokumentací.' },
   ], radky: [
-    ['Studie proveditelnosti – část 1', '', 'studie'],
-    ['Stavebně technický průzkum a zaměření', 'zajištění původní dokumentace stavby v potřebném rozsahu od investora nebo z archivu stavebního úřadu', 'studie'],
-    ['Stavebně technický průzkum a zaměření', 'detailní zaměření 3D skenerem dotčených částí objektu', 'studie'],
-    ['Stavebně technický průzkum a zaměření', 'zpracování výstupu ze zaměření', 'studie'],  /* část 1 studie – vlastní položka to není */
-    ['Stavebně technický průzkum a zaměření', 'vizuální prohlídka objektu stavebně technických návazností', 'studie'],
-    ['Stavebně technický průzkum a zaměření', 'pořízení detailní fotodokumentace', 'studie'],
+    /* Část 1 se zaměřením (4. prvek 'stare') se od #569 tiskne jen v dotisku
+     * nabídky odeslané dřív — viz nabidkaProjStudieBezZamereni. */
+    ['Studie proveditelnosti – část 1', '', 'studie', 'stare'],
+    ['Stavebně technický průzkum a zaměření', 'zajištění původní dokumentace stavby v potřebném rozsahu od investora nebo z archivu stavebního úřadu', 'studie', 'stare'],
+    ['Stavebně technický průzkum a zaměření', 'detailní zaměření 3D skenerem dotčených částí objektu', 'studie', 'stare'],
+    ['Stavebně technický průzkum a zaměření', 'zpracování výstupu ze zaměření', 'studie', 'stare'],  /* část 1 studie – vlastní položka to není */
+    ['Stavebně technický průzkum a zaměření', 'vizuální prohlídka objektu stavebně technických návazností', 'studie', 'stare'],
+    ['Stavebně technický průzkum a zaměření', 'pořízení detailní fotodokumentace', 'studie', 'stare'],
     ['Studie proveditelnosti – část 2', '', 'studie'],
-    ['Návrh grafické studie', 'PŮVODNÍ STAV – grafický výstup ze zaměření, průmět reality z průzkumu s původní dokumentací stavby', 'studie'],
+    ['Návrh grafické studie', NABIDKA_PROJ_PUVODNI_STAV.stare, 'studie'],
     ['Návrh grafické studie', 'ROZSAH BOURÁNÍ – grafické naznačení možného rozsahu bourání s ohledem na statiku objektu', 'studie'],
     ['Návrh grafické studie', 'NAVRHOVANÝ STAV – návrh na úpravy prostoru pro výtahovou šachtu, portálu dveří a dalších návazných nutných stavebních úprav', 'studie'],
     ['Návrh grafické studie', 'TECHNICKÁ ZPRÁVA – obsahující popis řešení', 'studie'],
@@ -246,7 +287,8 @@ const NABIDKA_PROJ_DEF = [
    *
    * `odkaz` = „cena je jinde, tady je jen rozsah". Sekce zůstává `zamereni`,
    * protože vzorec #174 platí dál: odsud JE ta cena — jen se už jednou vypsala. */
-  { typ: 'cena', nadpis: 'CENA ZA STUDII PROVEDITELNOSTI – část 1', sekce: 'zamereni',
+  /* #569: v novém znění se netiskne (část 1 se zaměřením ze studie zmizela). */
+  { typ: 'cena', nadpis: 'CENA ZA STUDII PROVEDITELNOSTI – část 1', sekce: 'zamereni', jenStare: true,
     jenSe: ['studie', 'projednani'], popis: 'ZAMĚŘENÍ a zpracování výstupů',
     odkaz: 'viz CENA ZA ZAMĚŘENÍ A ZPRACOVÁNÍ VÝSTUPŮ výše' },
   { typ: 'cena', nadpis: 'CENA ZA STUDII PROVEDITELNOSTI – část 2', sekce: 'studie',
@@ -721,7 +763,20 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     if (!b.sekce) return true;
     return (Array.isArray(b.sekce) ? b.sekce : [b.sekce]).some(vRozsahu);
   };
-  const radekVRozsahu = x => !Array.isArray(x) || x.length < 3 || vRozsahu(x[2]);
+  /* #569: nové znění studie (bez zaměření), u odeslané nabídky podle razítka */
+  const studieBezZam = nabidkaProjStudieBezZamereni(varianta);
+  const radekVRozsahu = x => !Array.isArray(x) || x.length < 3
+    || ((x[3] !== 'stare' || !studieBezZam) && vRozsahu(x[2]));
+  /* text v novém znění: přečíslované části a neutrální PŮVODNÍ STAV */
+  /* #569: dotisk nabídky odeslané dřív (bez snímku podmínek) dá původní
+   * termín studie, ne nový výchozí — online i Word ({{PROJ_TERMINY_TERMIN}}). */
+  const TS = ((typeof PODMINKY !== 'undefined') ? PODMINKY : require('./podminky.js').PODMINKY).PODMINKY_TERMIN_STUDIE;
+  const terminStudie = x => (!studieBezZam && TS && x[2] === 'studie' && x[1] === P(TS.nove)) ? P(TS.stare) : x[1];
+  const zneni = t => {
+    if (!studieBezZam) return t;
+    if (NABIDKA_PROJ_STUDIE_CASTI[t]) return NABIDKA_PROJ_STUDIE_CASTI[t];
+    return t === NABIDKA_PROJ_PUVODNI_STAV.stare ? NABIDKA_PROJ_PUVODNI_STAV.nove : t;
+  };
 
   /* VLASTNÍ A TRVALÉ POLOŽKY V NABÍDCE (P4 / K14-N64, K15-N66, 25. 9. 2026).
    * Položka, kterou obchodník do sekce přidal sám („+ přidat položku"), nebo
@@ -741,9 +796,10 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   const navicVypsano = {};
 
   /* P11: úvod podle rozsahu; D2: ruční úvod obchodníka má v češtině přednost */
-  const uvodVychoziCz = nabidkaProjUvod(vRozsahu).join('\n');
+  const uvodVychoziCz = nabidkaProjUvod(vRozsahu, null, !studieBezZam).join('\n');
+  const uvodStareCz = nabidkaProjUvod(vRozsahu, null, true).join('\n');
   const uvodRucne = L === 'cz' ? nabidkaProjUvodRucne(pj.zadani) : '';
-  const uvodOdst = uvodRucne ? uvodRucne.split(/\n+/).map(x => x.trim()).filter(Boolean) : nabidkaProjUvod(vRozsahu, P);
+  const uvodOdst = uvodRucne ? uvodRucne.split(/\n+/).map(x => x.trim()).filter(Boolean) : nabidkaProjUvod(vRozsahu, P, !studieBezZam);
   /* Cestovné u akce mimo Prahu (D2) — věty v jazyce dokumentu po činnostech. */
   const vyjezdJednotka = (typeof vyjezdTechnikaKc === 'function') ? vyjezdTechnikaKc(pj.zadani, pj.cenik || DEFAULT_CENIK_PROJ) : 0;
   const cestovne = k => {
@@ -787,6 +843,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     .filter(b => !b.ad || nabiziAD)
     .filter(b => !b.dolozky || podmEf.nabidkaProj.dolozkyTisk)
     .filter(b => planStary ? b.typ !== 'platby' : !b.stary)
+    .filter(b => !b.jenStare || !studieBezZam)
     .filter(blokVRozsahu).map(b => {
     if (b.typ === 'platby') return platbyBloky;
     if (b.typ === 'nadpis') return { typ: 'nadpis', text: P(b.text) };
@@ -811,7 +868,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
        * a každý bod začíná pomlčkou přes celou šířku. Opakovat tentýž štítek
        * na každém řádku bylo hůř čitelné. Skupiny bez hlavičky části (blok
        * ZAMĚŘENÍ) dostanou podnadpis ze svého štítku. */
-      const vstup = b.radky.filter(radekVRozsahu).map(x => [P(x[0]), x[1] ? P(x[1]) : '']);
+      const vstup = b.radky.filter(radekVRozsahu).map(x => [P(zneni(x[0])), x[1] ? P(zneni(x[1])) : '']);
       const radky = [];
       let i = 0;
       const jeHlavicka = r => !r[1];
@@ -853,8 +910,12 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
           [P('Platnost nabídky'), platnost || P(NABIDKA_PROJ_SAZBY.platnostMesicu + ' měsíce')],
         ] };
       }
-      if (b.firma === 'terminy') return { typ: 'pary', nadpis: P(b.nadpis),
-        radky: textProj('terminy').filter(radekVRozsahu).map(x => [x[0], x[1]]) };
+      if (b.firma === 'terminy') {
+        /* #569: dotisk nabídky odeslané dřív (bez snímku podmínek) dá
+         * původní termín studie, ne nový výchozí. */
+        return { typ: 'pary', nadpis: P(b.nadpis),
+          radky: textProj('terminy').filter(radekVRozsahu).map(x => [x[0], terminStudie(x)]) };
+      }
       return { typ: 'pary', nadpis: P(b.nadpis),
         radky: b.radky.filter(radekVRozsahu).map(x => [P(x[0]), P(x[1])]) };
     }
@@ -907,7 +968,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
       cestovneVety = cestovne(kCest);
       if (cestovneVety.length) cestovneVypsano[kCest] = true;
     }
-    return { typ: 'cena', nadpis: P(b.nadpis), popis, sekce: b.sekce || null, navic, cestovne: cestovneVety,
+    return { typ: 'cena', nadpis: P(zneni(b.nadpis)), popis, sekce: b.sekce || null, navic, cestovne: cestovneVety,
       castka: odkaz ? odkaz
         : (neuvedena ? P('není součástí této nabídky') : kc(hodnota)
             + (b.jednotka ? ' / ' + P(b.jednotka) : '')),
@@ -1060,7 +1121,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
      * za každou dvojici (docxgen rozvinRadkyZaRadek), činnost a termín na
      * stejném řádku hodnoty. */
     PROJ_TERMINY_CINNOST: textProj('terminy').filter(radekVRozsahu).map(x => x[0]).join('\n'),
-    PROJ_TERMINY_TERMIN: textProj('terminy').filter(radekVRozsahu).map(x => x[1]).join('\n'),
+    PROJ_TERMINY_TERMIN: textProj('terminy').filter(radekVRozsahu).map(x => terminStudie(x)).join('\n'),
     PROJ_DOLOZKY: podmEf.nabidkaProj.dolozkyTisk ? textProj('dolozky').join('\n') : '',
     /* Cestovné u akce mimo Prahu (D2) pro šablonu PROJ v8: věta (věty) pod
      * cenou činnosti, v bloku {{BLOK_CESTOVNE_<X>_ZAC}}…{{…_KON}} — prázdné
@@ -1125,7 +1186,10 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   return { placeholders, bloky, rekapitulace, jazyk: L, nazevSouboru, platbyProj, blokyPryc,
     /* Úvod (D2): výchozí české znění, ruční text a zda ruční text sedí. */
     uvod: { vychoziCz: uvodVychoziCz, rucne: nabidkaProjUvodRucne(pj.zadani),
-            nesedi: nabidkaProjUvodNesedi(pj.zadani, uvodVychoziCz) },
+            nesedi: nabidkaProjUvodNesedi(pj.zadani, uvodVychoziCz, uvodStareCz) },
+    /* #569: Word — část 1 studie se zaměřením a její cenu docxgen ze šablony
+     * vyjme a části přečísluje (docxStudieBezZamereni). */
+    studieBezZamereni: studieBezZam,
     vyjezdKc: vyjezdJednotka,
     /* Sekce kalkulace, které tato nabídka oceňuje — rozsah díla SoD PROJ (#380 Q7). */
     nabizeneSekce: NABIDKA_PROJ_SEKCE.filter(k => !!cenaSekce(k)),
@@ -1162,4 +1226,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, nabidkaProjUvodRucne, nabidkaProjUvodNesedi, NABIDKA_PROJ_CESTOVNE, NABIDKA_PROJ_CESTOVNE_KDE, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
+  module.exports = { nabidkaProjStudieBezZamereni, NABIDKA_PROJ_STUDIE_CASTI, NABIDKA_PROJ_PUVODNI_STAV, nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, nabidkaProjUvodRucne, nabidkaProjUvodNesedi, NABIDKA_PROJ_CESTOVNE, NABIDKA_PROJ_CESTOVNE_KDE, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };

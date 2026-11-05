@@ -2449,7 +2449,10 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * kterému se nedá věřit, je horší než žádný.
      *
      * Ve standardním režimu je pole prázdné; kreslit není co. */
-    oplasteni: { rezim: oplRezim, vyska: vyskaProsklene, pasy: oplPasy,
+    /* `skloJenSPlochou` (#570) není číslo, jen razítko kódu: specifikace
+     * smí vynechat sklo s nulovou plochou. Zmrazený výsledek nabídky
+     * odeslané dřív ho nemá → dotisk dá původní text (tsMaSklo v techspec.js). */
+    oplasteni: { rezim: oplRezim, skloJenSPlochou: true, vyska: vyskaProsklene, pasy: oplPasy,
                  zakladSten: oplZakladSteny,
                  /* #375: základ pásů (stěny bez světlíků u dveří) a světlíky
                   * s materiálem a stěnou — nákres je připíše ke své stěně. */

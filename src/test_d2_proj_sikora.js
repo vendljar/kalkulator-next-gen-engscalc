@@ -116,7 +116,8 @@ const cenaBlok = (d, nadpis) => d.bloky.find(b => b.typ === 'cena' && b.nadpis =
   test('IČ: NEZAHRNUJE s cenou za výjezd', ic && ic.cestovne.join(' ') === 'Cena NEZAHRNUJE cestovní náklady – případné cesty budou fakturovány individuálně ve výši 3 500,00 Kč bez DPH za jeden výjezd.', ic && ic.cestovne);
   const ad = cenaBlok(d, 'MĚSÍČNÍ SAZBA ZA AUTORSKÝ DOZOR (AD)');
   test('AD: věta o každém výjezdu AD', ad && /^Cestovní náklady na každý 1 výjezd AD na stavbu \(3 500,00 Kč bez DPH\)/.test(ad.cestovne.join(' ')), ad && ad.cestovne);
-  const sp2 = cenaBlok(d, 'CENA ZA STUDII PROVEDITELNOSTI – část 2');
+  /* #569: studie bez zaměření — dřívější „část 2" (vypracování studie) je teď část 1 */
+  const sp2 = cenaBlok(d, 'CENA ZA STUDII PROVEDITELNOSTI – část 1');
   test('SP se zaměřením: věta jen u zaměření (výjezd jednou)', sp2 && sp2.cestovne.length === 0);
   test('DPS / EZC / geodet: nic', ['CENA ZA DOKUMENTACI PRO PROVEDENÍ STAVBY (DPS)', 'CENA ZA EKONOMICKOU ZADÁVACÍ ČÁST (EZC)', 'CENA ZA GEODETICKÉ ZAMĚŘENÍ']
     .every(n => !cenaBlok(d, n) || !cenaBlok(d, n).cestovne.length));

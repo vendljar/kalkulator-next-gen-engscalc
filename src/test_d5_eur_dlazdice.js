@@ -51,8 +51,9 @@ const ock = fs.readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
 const proj = fs.readFileSync(__dirname + '/ui/kalk_proj.js', 'utf8');
 test('Kalkulace OCK: dlaždice Základní cena bez DPH nese EUR (kpiEurHtml(zaklad, …, C.kurzEurKc))',
   /<div class="kpi main"><div class="l">Základní cena bez DPH<\/div><div class="v">\$\{fmt0\(zaklad\)\}<\/div>\$\{kpiEurHtml\(zaklad, aktivniVarianta\(ZAK\), C\.kurzEurKc\)\}<\/div>/.test(ock));
-test('Kalkulace PROJ: dlaždice Základní cena bez DPH nese EUR (kpiEurHtml(r.souhrn.cena, …, PC.kurzEurKc))',
-  /<div class="kpi main"><div class="l">Základní cena bez DPH<\/div><div class="v">\$\{fmt0\(r\.souhrn\.cena\)\}<\/div>\$\{kpiEurHtml\(r\.souhrn\.cena, aktivniVarianta\(ZAK\), PC\.kurzEurKc\)\}<\/div>/.test(proj));
+/* #568: v PROJ je v dlaždici cena nabídky (projCena) — EUR převádí totéž číslo. */
+test('Kalkulace PROJ: dlaždice Základní cena bez DPH nese EUR (kpiEurHtml(projCena, …, PC.kurzEurKc))',
+  /<div class="kpi main"><div class="l">Základní cena bez DPH<\/div><div class="v">\$\{fmt0\(projCena\)\}<\/div>\$\{kpiEurHtml\(projCena, aktivniVarianta\(ZAK\), PC\.kurzEurKc\)\}<\/div>/.test(proj));
 const tpl = fs.readFileSync(__dirname + '/app_template.html', 'utf8');
 test('styl: malé písmo zarovnané doprava', /\.kpi \.v-eur \{[^}]*font-size:12px[^}]*text-align:right/.test(tpl));
 /* K7-K5 (#508, J. V. 23. 10. 2026): bublina říká „přepočet základní ceny" a že nabídka může být

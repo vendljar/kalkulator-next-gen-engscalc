@@ -236,6 +236,14 @@ function vypocetProj(zadani, cenik) {
   const sum = f => sekce.reduce((a, s) => a + s[f], 0);
   return {
     sekce,
+    /* ZNĚNÍ STUDIE BEZ ZAMĚŘENÍ (#569, D. Sikora 2. 11. 2026, pokyn J. V.
+     * 5. 11. 2026). Není to číslo, jen razítko kódu, který výsledek spočítal:
+     * zmrazený výsledek odeslané nabídky (zamek.vysledek.proj) ho nese jen
+     * tehdy, když nabídka odešla z verze, která už sekci zaměření ze studie
+     * proveditelnosti netiskne. Starší odeslaná nabídka razítko nemá a dotisk
+     * dá původní text (nabidkaProjStudieBezZamereni v nabidka_proj.js).
+     * Porovnání zámku texty a příznaky neporovnává (zamekVysledekRozdily). */
+    studieBezZamereni: true,
     souhrn: {
       naklad: sum('naklad'),
       marze: sum('marze'),             // přirážka v Kč (jedno procento, viz výše)
