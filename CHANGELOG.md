@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v6.11.3 — MU2 #560: čitelná karta Můstky (rozložení), větev claude/mu2-karta-vzhled
+
+Nad `6b70cc3` (`test` = integrace v5.11.3), pokyn J. V. 6. 11. 2026 se snímkem: „zadání můstků je nečitelné a
+ovládací prvky v samostatné sekci jsou rozmístěny chaoticky — oprav to“. **Výpočet beze změny** (zlatá pojistka
+a `test_560_mustky_sekce.js` beze změny otisků). Verzi může koordinace přečíslovat.
+
+- **Příčina:** tělo karet zadání je mřížka sloupců po 300 px (`.inputs .card .body`); tabulka skupin, tlačítko
+  „+ další provedení“ a upozornění o ceníku se do ní sázely jako tři samostatné buňky — tlačítko (velký bílý box)
+  a upozornění stály přes sloupce tabulky, záhlaví nesedělo, selecty se zkracovaly.
+- **Oprava:** celý obsah karty v jednom obalu přes celou šířku (`.mustky-karta`); upozornění (Model 1, starý ceník,
+  skladebný model) jako **lišta nad tabulkou** v toku stránky; tabulka skupin ve vlastním **vodorovně posuvném
+  kontejneru** (posouvá se jen karta, ne stránka), záhlaví i pole zarovnané vlevo; selecty mají šířku podle volby
+  (min. 120 px) a v kartě **krátké popisky** voleb (např. „ocelová vana (beton stavba)“, „do stropní desky / věnce“
+  — specifikace a nabídka dál berou plné znění); text u volby „jiné“ pod selectem v téže buňce; **„+ další
+  provedení“ malé tlačítko pod tabulkou vlevo**, ✕ v posledním sloupci (obojí se netiskne); prázdná šířka šachty
+  dává nápovědu „jako šachta“ místo „0“; bublina součtu v zadání šachty zkrácena („součet skupin z karty Můstky“ —
+  bublina je prohlížečová, šířku nelze stylovat). Z textu lišty zmizelo číslo „#354“.
+- **Testy:** `overit_560_mustky.mjs` 42/0 — nový bod 7 rozložení na 1200 / 1440 / 1920 px, Model 1 i 2, 1–3
+  skupiny, starý i skladebný ceník a tisk (prvky karty se nepřekrývají, záhlaví nad sloupci, select není užší než
+  text volby, lišta nad tabulkou, tlačítko malé pod ní vlevo, stránka bez vodorovného posunu); nad 6b70cc3 bod 7
+  selže (20 FAIL). `src/test_560_mu2_karta.js` 18/0 — stavba HTML karty ve vm a styly šablony (pro mutace jádra);
+  nad 6b70cc3 15 FAIL. Nástroj na snímky `nastroje/snimky_mustky.mjs` (výstup, šířka, model, počet skupin, ceník).
+
+---
+
 ## v5.11.3 — DZ #571: denní kopie zálohy na Disk na ostrém webu — nikdy tiše, větev claude/dz-kopie-disk
 
 Nad `000924e` (`main` = `test` = v4.11.8). Hlášení J. V. 5. 11. 2026: na ostrém webu se po přihlášení správce
