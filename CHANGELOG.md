@@ -41,8 +41,8 @@ ukázat českou čárku. Na webech, Disku ani v Pipedrive nic. Verzi přečíslu
   ceník OCK, přirážka a hodiny PROJ, „1 250,5", odmítnutí, Zpět; na 977bd57 40 FAIL). Upraveny harnessy a sady, které
   hledaly `input[type=number]` (smoke, overit_560_mustky, _cenik_barvy, _lista, _o11_vyjezd, _p12_naklady,
   _podminky_firma, _podminky_zverejnit, _proj17, _proj_editace, _vypnuty_radek, _zadani_detail, _zobrazeni;
-  test_560_mu2_karta, test_560_mu3_sloupy, test_tabulator). Zlaté pojistky beze změny. Mutace „[#575]" KOLO_MUTACE.
-  Kolo `--bez-mutaci`: KOLO_VYSLEDEK. Manuál obchodníka kap. 11 a roadmapa #575 doplněny.
+  test_560_mu2_karta, test_560_mu3_sloupy, test_tabulator). Zlaté pojistky beze změny. Mutace „[#575]" 16/16 chycené (`--kontrola` 749 úseků; do mutací jádra přibyly `format.js` a `ui/cislo_pole.js`).
+  Kolo `--bez-mutaci`: **VŠE ZELENÉ** — sady 404 / 0 / 7 přeskočeno (test.js + 6 prohlížečových bez KNG_PODKLADY), hodiny +400 dní 325 / 0 / 1, statické 5 z 5, 27 min. Manuál obchodníka kap. 11 a roadmapa #575 doplněny.
 
 ---
 

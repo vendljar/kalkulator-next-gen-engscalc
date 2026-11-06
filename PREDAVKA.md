@@ -1,3 +1,29 @@
+# Předávka — 6. 11. 2026: CA #575 — číselná pole s českou desetinnou čárkou nezávisle na prohlížeči, větev `claude/ca-desetinna-carka`
+
+Nad `977bd57` (claude/mu3-sloupy-vyska = integrace v6.11.3 + MU3). **Verze v6.11.5** v CHANGELOG (koordinace
+přečísluje). Neslučováno; do `test-draft`, `test` ani `main` nic. Na webech, Disku ani v Pipedrive nic.
+
+**Rozhodnutí J. V. 6. 11.:** všechna číselná pole přijmou čárku i tečku a vždy ukážou českou čárku, nezávisle na
+jazyku prohlížeče (type=number v anglickém prohlížeči dělal ze 17,3 → 173).
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. jeden společný prvek všude | ✅ | `src/ui/cislo_pole.js` (`CISLO_POLE` = `inputmode="decimal" autocomplete="off" data-cislo="1"`, bez `type`), v buildu před `ui/common.js`; převedeno 61 polí (common, kalk_ock, kalk_proj, cenik_ui, nastaveni_ui, podminky_ui); CSS `input[data-cislo]` |
+| 2. parser + zobrazení | ✅ | `cisloPoleText` / `cisloPoleZobraz` ve `src/format.js`: 17,3 / 17.3 / 1 250 / 1 250,5 / -0,5; prázdné = prázdné; abc, 1,2,3, 1 25 odmítnuto; čárka + mezera v tisících jako `formatCislo` |
+| 3. data beze změny | ✅ | `el.value` číselného pole vrací normalizovaný text s tečkou (přepis `HTMLInputElement.prototype.value` jen pro `data-cislo`), obsluhy `+this.value` beze změny → Number; server, uložené zakázky, ceník, výstupy, EN/DE/FR beze změny |
+| 4. chování polí | ✅ | nečitelný zápis zastaví `change` v první fázi (návrat hodnoty + hláška), písmena se nenapíšou; šipky/kolečko nemění; Tab/Enter, zámek, zpět/znovu, autosave, zvýraznění ceníku; `renderSFokusem` vrací surový rozepsaný text; placeholdery česky |
+| 5. testy | ✅ | `src/test_575_cislo_pole.js` 76/0 (na 977bd57 59 FAIL); `overit_575_desetinna_carka.mjs` en-US + cs-CZ 56/0 (na 977bd57 40 FAIL); upraveny harnessy/sady hledající `input[type=number]` |
+| 6. mutace | ✅ | „[#575]" 16/16, `--kontrola` 749 |
+| 7. kolo `--bez-mutaci` | ✅ | VŠE ZELENÉ — sady 404/0/7 přesk., hodiny 325/0/1, statické 5/5, 27 min (nad 1. WIP; po něm jen test/mutace/escape v regexu, cíleně přetestováno) |
+| 8. roadmapa #575, CHANGELOG, manuál kap. 11, PREDAVKA | ✅ | |
+
+**Otevřené body pro J. V. (přes koordinaci):** (a) klávesy ↑/↓ už hodnotu nekrokují (v type=number ano) — podle
+zadání „šipky/kolečko nemění hodnotu omylem"; kdyby je chtěl zpět, jde to doplnit do `cislo_pole.js`; (b) mezera
+v tisících i u čtyřmístných čísel („1 250") — stejně jako výstupy (`formatCislo`); (c) plán plateb PROJ má od dřív
+vlastní textová pole s čárkou (přijímají i „95 880 Kč") a nechal jsem je; (d) min/max se dál nevynucují (nevynucoval
+je ani type=number, jen u šipek) — kontroly rozsahu dělají obsluhy a server; (e) `inputValue()` v Playwrightu čte
+izolovaný svět, tedy zobrazený text („2,7"), `evaluate(el.value)` normalizovaný („2.7") — pro nové harnessy.
+
 # Předávka — 6. 11. 2026: MU3 #560 — výška sloupů navíc pod můstky a česká čárka v kartě Můstky, větev `claude/mu3-sloupy-vyska`
 
 Nad `7632ca5` (integrace v6.11.3). **Verze v6.11.4** v CHANGELOG (koordinace přečísluje). Neslučováno; do `test-draft`,
