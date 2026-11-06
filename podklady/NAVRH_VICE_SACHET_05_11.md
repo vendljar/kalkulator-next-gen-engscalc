@@ -4,7 +4,7 @@ Dávka VS. Artefakt s náhledy obrazovek:
 https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa .
 Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 
-**Stav: připraveno ke spuštění po odpovědi na O11 (můstky v tabulce šachet, vyplynulo ze sloučení MU #560 v5.11.2); rozhodnutí R1–R13. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
+**Stav: připraveno ke spuštění po odpovědi na O12 (jedna šachta s můstky v CN); rozhodnutí R1–R14. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
 („zatím připrav komplexní návrh, který si nejprve odladíme, a spustíme až
 řeknu“, 5. 11. 2026). Všechny částky jsou **smyšlené a ilustrační**.
 
@@ -27,6 +27,7 @@ Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 | R11 (O8) | **Ruční cena #561 platí pro všechny šachty varianty**, jedno potvrzení. |
 | R12 (O9) | **U šachty s víc kusy jen cena za všechny kusy dohromady** — tabulka CN má jeden sloupec ceny, cena za kus se netiskne. |
 | R13 (O10) | **Sloučený příplatek = jedna volba pro všechny šachty**, kterých se týká; kdo chce příplatek jen pro jednu šachtu, obchodník ho u druhé odškrtne a nabídka vydá dva řádky. |
+| R14 (O11, 6. 11.) | **U víc šachet se cena můstků v CN schová do ceny své šachty**; samostatný řádek Můstky zmizí (tabulka = řádky šachet + Cena celkem). |
 
 ---
 
@@ -170,8 +171,8 @@ by pak skočil o 1 000 Kč. Proto vlastní pole.
   Model (skladebný / starý) určuje ceník varianty (`mustkyCenikSkladebny`),
   je tedy u všech šachet stejný. Popisný objekt `vysl.mustky` (skupiny,
   efektivní rozměry) se nesčítá — kdo ho tiskne (specifikace, krycí list),
-  bere ho ze své šachty (3.2). Jak se můstky ukážou v tabulce šachet, je
-  otázka O11.
+  bere ho ze své šachty (3.2). V CN u víc šachet je cena můstků v ceně
+  své šachty (R14); technický popis můstků zůstává v oddílu šachty.
 
 ### 3.5 Model 1
 
@@ -209,11 +210,13 @@ Z = 3 267 000 → q = 1 184 498 a 2 082 501, r = 1 → koruna připadne B
 
 - Rozpočítává se **základ před slevou**; sleva a obchodní zaokrouhlení
   jsou pod tabulkou jednou za nabídku (dnešní `cenaNabidkyOck`).
-- **S můstky (#560) a odpovědí O11 a)** se rozpočítává jen část bez můstků:
-  `T = cena před slevou − mustkyPred` (`cenaNabidkyOck(…).mustky.mustkyPred`,
-  dnešní pravidlo „šachta = cena před slevou − můstky“) a
-  `sᵢ = kᵢ·(Uᵢ − Mᵢ)`; řádek Můstky má `mustkyPred` beze změny. Bez můstků
-  `T = Z` jako výše.
+- **Můstky (R14):** u víc šachet se rozpočítává **celý** základ před
+  slevou včetně můstků — `T = Z`, `sᵢ = kᵢ·Uᵢ` (`Uᵢ` už můstky své šachty
+  obsahuje). Každá šachta tak v tabulce nese i své můstky; řádek Můstky
+  není. `souhrn.mustkyCena` (ze součtu, 3.1) zůstává ve výsledku pro
+  krycí list a controlling, do CN u víc šachet nejde.
+  Příklad (ilustrační): Výtah B má můstky, Výtah A ne → v tabulce
+  1 184 498 a 2 082 502 Kč, celkem 3 267 000 Kč (řádek B obsahuje můstky).
 - V tabulce je u šachty s ks > 1 cena **za řádek** (všechny kusy); cena za
   kus se netiskne (R12).
 - Uloží se do otisku (`sachty[].cenaRozpis`), dotisk ji nepočítá znovu.
@@ -264,11 +267,17 @@ i při plném přepočtu.
   (bez skladebných můstků jen `{{CENA_BEZ_DPH_SACHTA}}`, prázdné řádky maže
   `odstranPrazdneTsRadky` podle `DOCX_CENA_CASTI`). Nová **v17** nahradí
   řádek „Výtahová šachta“ smyčkou `{#sachty}{SACHTA_NAZEV} … {SACHTA_KS} ks
-  … {SACHTA_CENA_BEZ_DPH}{/sachty}`; řádky Můstky a Cena celkem zůstávají
-  (při O11 a). Technické řádky můstků `TS_MUSTKY_*` (dnes jedna sada)
-  jdou v v17 do smyčky šachet. Jedna šachta ve v17 = jeden řádek smyčky
-  s textem „Výtahová šachta“ → dokument jako dnes (zlatá sada porovná
-  text v16 a v17 u jedné šachty).
+  … {SACHTA_CENA_BEZ_DPH}{/sachty}` a nechá řádky Můstky
+  `{{CENA_MUSTKY_BEZ_DPH}}` a Cena celkem `{{CENA_BEZ_DPH_CELKEM}}`.
+  **U víc šachet (R14)** dostane `CENA_MUSTKY_BEZ_DPH` prázdnou hodnotu,
+  takže řádek Můstky smaže dnešní `odstranPrazdneTsRadky` (`DOCX_CENA_CASTI`)
+  — žádný nový mechanismus; tabulka = řádky šachet + Cena celkem. Název
+  šachty s můstky dostane dovětek „vč. můstků“ (např. „Výtah B – uliční
+  trakt, vč. můstků“), aby zákazník věděl, kde cena můstků je.
+  **U jedné šachty** podle O12 (doporučeno: jako dnes — „Výtahová šachta“,
+  „Můstky“, „Cena celkem“). Technické řádky můstků `TS_MUSTKY_*` (dnes
+  jedna sada) jdou v v17 do smyčky šachet. Jedna šachta ve v17 = dokument
+  jako ve v16 (zlatá sada porovná text v16 a v17 u jedné šachty).
 - Stará šablona (v16, v15 s klonováním řádků `nabidkaMustkyKlon`, starší):
   zakázka s jednou šachtou se tiskne jako dnes; zakázka s víc šachtami →
   zábrana tisku „Šablona neumí rozpis po šachtách, použijte šablonu v17“.
@@ -403,15 +412,20 @@ Všechny otázky O1–O10 rozhodl J. V. 5. 11. 2026 (R4–R13 v oddíle 0).
 Nové otázky, které vyplynou při realizaci nebo při aktualizaci návrhu na
 nový kód, se zapíšou sem a do oddílu 0.
 
-**Otevřená (vyplynula ze sloučení MU #560, v5.11.2):**
+**O11 rozhodnuta J. V. 6. 11. 2026 = b)** (R14): u víc šachet je cena
+můstků v ceně své šachty, řádek Můstky zmizí.
 
-- **O11 — Můstky v tabulce šachet.** Dnes nabídka s můstky ukazuje
-  „Výtahová šachta“, „Můstky“ a „Cena celkem“. Jak to bude u víc šachet?
-  *Doporučeno:* a) řádek za každou šachtu (bez můstků), pod nimi **jeden
-  řádek Můstky za všechny šachty** a Cena celkem — u jedné šachty je
-  nabídka přesně jako dnes a šablona se mění nejméně.
-  *Jinak:* b) cena můstků schovaná v ceně své šachty (řádek Můstky
-  zmizí) · c) pod každou šachtou její vlastní řádek můstků.
+**Otevřená (vyplynula z R14):**
+
+- **O12 — Jedna šachta s můstky.** Má i nabídka s jedinou šachtou
+  schovat můstky do ceny šachty, aby se nabídky chovaly stejně?
+  *Doporučeno:* a) **ne, nechat jako dnes** („Výtahová šachta“, „Můstky“,
+  „Cena celkem“) — dnešní nabídky se nemění ani o řádek, zlatá sada
+  „1 šachta = beze změny“ platí i pro dokument a zákazník vidí cenu
+  můstků, jak je zvyklý od v16.
+  *Jinak:* b) schovat i u jedné šachty (jednotné chování; mění se vzhled
+  všech nových nabídek s můstky, zlatá sada pro dokument by měla
+  výjimku a odeslané nabídky ze zámku zůstanou se řádkem Můstky).
 
 ## 10. Položka roadmapy
 
@@ -472,3 +486,4 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 |---|---|---|---|
 | 5. 11. 2026 | `5da7a2d` (integrace v5.11.1 = v4.11.8 + PH #568, #569, #572) | `engine.js`: `oplasteni.skloJenSPlochou: true` (razítko, ne číslo). `techspec.js`: `tsMaSklo(Z, r)`, `TS_OPL_SKLA`, filtr skla s nulovou plochou v `tsOplPasyPoStenach`, nové hodnoty číselníků kotvení. `docxgen.js`, `nabidka_proj.js`, `engine_proj.js`, `kontroly.js`, `ui/kalk_proj.js`: jen PROJ (hlavička, studie bez zaměření). | (1) Specifikace po šachtách volá `tsMaSklo` / `tsOplPasyPoStenach` s výsledkem **své** šachty, ne se součtem (doplněno 2, 3.2, 4). (2) Součet přebírá popisné objekty vč. razítka ze šachty 1, zlatá sada tím drží i #572. (3) Ruční hodnoty specifikace šachty 2+ v `dalsi[i].techspec` (doplněno 2). (4) PROJ změny se návrhu netýkají (PROJ beze změny, 5.7). (5) Výpočet OCK (`vypocet` ceny), `zamek.js`, `zaokrouhleni.js`, `uloziste.js`, `nabidka.js`, `kryci.js`, `controlling.js`, `pd_nanecisto.js`, `seznam.js` beze změny → vzorce, obal a výstupy platí. (6) Pozn.: v kódu je test `src/test_570_sklo_bez_plochy.js` pro #572 (PH původně #570) — jen název souboru, položka návrhu je dál #570. |
 | 5. 11. 2026 | `6b70cc3` (`claude/integrace-16-10`, v5.11.3 = + MU #560 v5.11.2, DZ #571) | MU #560: `engine.js` skupiny `Z.mustky[]` (`mustkySkupiny`, `MUSTKY_SKUPIN_MAX`), skladebný model (`mustkyCenikSkladebny`), sekce `sekce.mustky`, `souhrn.mustkyCena = min(CEIL(s5 + rez, 1000), zakladCenaZaokr)` a `mustkyNaklad`, `souctySekci.mustky`, popisný `vysl.mustky`; `zaokrouhleni.js` `cenaNabidkyOck` vrací `mustky.mustkyPred`; `nabidka.js` řádky části B (`CENA_SACHTA_BEZ_DPH` = cena před slevou − můstky, `CENA_MUSTKY_BEZ_DPH`, `CENA_BEZ_DPH_CELKEM`, `CENA_BEZ_DPH_SACHTA`), `nabidkaMustkyKlon` pro starší šablony; `docxgen.js` `DOCX_CENA_CASTI`; `kryci.js` `kryciMustkyText(r)` a sekce mustky v hodinách; `controlling.js` sekce mustky a mapování klíčů můstků; `techspec.js` řádky můstků; `kontroly.js`, `uloziste.js` (tvar skupin). DZ #571: jen `online_ui.js` (kopie na Disk). | (1) Třetí nové pole `mustkyCenaPredZaokr`, `mustkyCena` ze součtu se stejným pravidlem `min(CEIL, Z)` (3.1, 3.3). (2) Můstky po šachtách uvnitř zadání, limit skupin na šachtu, model můstků z ceníku varianty (3.4). (3) Rozpočet zaokrouhlení jen z části bez můstků (3.6). (4) CN: šablona v17 navazuje na v16, smyčka šachet místo řádku „Výtahová šachta“, `TS_MUSTKY_*` ve smyčce; v15/v16 u víc šachet zábrana (5.1). (5) Krycí list: `kryciMustkyText` se volá po šachtách a spojí s názvem šachty („Výtah A: …; Výtah B 2×: …“), protože popisný `vysl.mustky` se nesčítá. (6) Controlling čte sečtenou `sekce.mustky` — beze změny (R5). (7) Validace serveru: zadání šachty 2+ prochází stejnou kontrolou skupin můstků jako šachta 1. (8) Nová otázka **O11** (oddíl 9). DZ se návrhu netýká. |
+| 6. 11. 2026 | (rozhodnutí, ne kód) | O11 = b) | R14: rozpočet zaokrouhlení z celého základu vč. můstků (3.6); v17: u víc šachet prázdné `CENA_MUSTKY_BEZ_DPH` → řádek Můstky zmizí dnešním mechanismem, dovětek „vč. můstků“ u šachty (5.1); nová otázka O12 (jedna šachta). |
