@@ -121,6 +121,51 @@ function csvBunka(t) {
   return '"' + s.replace(/"/g, '""') + '"';
 }
 
+/* ČÍSELNÉ POLE S ČESKOU ČÁRKOU (CA #575, rozhodnutí J. V. 6. 11. 2026).
+ * Pole typu `number` nechávalo desetinnou čárku na jazyku prohlížeče:
+ * český Chrome „17,3" přijal, anglický z něj udělal „173". Všechna číselná
+ * pole aplikace jsou proto textová (`ui/cislo_pole.js`) a čtou se TADY —
+ * jediný parser, testovaný v Node (test_575_cislo_pole.js).
+ *
+ * cisloPoleText(t) → normalizovaný řetězec s desetinnou TEČKOU, jaký dřív
+ * vracelo pole type=number („17.3", „-0.5", „1250.5"); prázdný vstup = '';
+ * nečitelný vstup = null (volající ho odmítne, data se nemění).
+ * Přijímá čárku i tečku jako desetinný oddělovač a mezery (i pevné)
+ * mezi tisíci. Tečka jako oddělovač tisíců („1.250.000") se nebere —
+ * byla by k nerozeznání od desetinné. */
+const CISLO_POLE_MEZERA = /[\s\u00a0\u202f\u2009]/;
+function cisloPoleText(t) {
+  if (t === null || t === undefined) return '';
+  if (typeof t === 'number') return isFinite(t) ? String(t) : null;
+  let s = String(t).trim();
+  if (s === '') return '';
+  s = s.replace(/^([+\-\u2212])[\s\u00a0\u202f\u2009]+/, '$1');
+  /* mezera smí být jen mezi trojicemi číslic celé části (tisíce) */
+  if (CISLO_POLE_MEZERA.test(s)) {
+    if (!/^[+\-\u2212]?\d{1,3}(?:[\s\u00a0\u202f\u2009]\d{3})+(?:[.,]\d*)?$/.test(s)) return null;
+    s = s.replace(/[\s\u00a0\u202f\u2009]/g, '');
+  }
+  s = s.replace(/^\u2212/, '-').replace(/^\+/, '').replace(',', '.');
+  if (!/^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(s)) return null;
+  if (/\.$/.test(s)) s = s.slice(0, -1);
+  if (/^-?\./.test(s)) s = s.replace('.', '0.');
+  return s;
+}
+
+/* Číslo nebo text čísla → co pole ukáže: desetinná ČÁRKA a pevná mezera
+ * v tisících (stejně jako formatCislo / num ve výstupech: „1 250",
+ * „12 500", „17,3"). Číslice se neztrácejí ani nezaokrouhlují —
+ * pole ukazuje přesně to, co je v datech. Nečitelný text vrátí beze změny. */
+function cisloPoleZobraz(v) {
+  const n = cisloPoleText(v);
+  if (n === null) return String(v);
+  if (n === '' || /e/i.test(n)) return n.replace('.', ',');
+  const m = /^(-?)(\d+)(?:\.(\d+))?$/.exec(n);
+  if (!m) return n;
+  const cela = m[2].length >= 4 ? m[2].replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0') : m[2];
+  return m[1] + cela + (m[3] ? ',' + m[3] : '');
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { formatKc2, formatKc0, formatCislo, formatPctTypo, formatKcTypo,
+  module.exports = { cisloPoleText, cisloPoleZobraz, formatKc2, formatKc0, formatCislo, formatPctTypo, formatKcTypo,
                      prepisPlati, menaKc, menaDokumentu, csvBunka };

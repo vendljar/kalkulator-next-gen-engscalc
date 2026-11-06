@@ -27,6 +27,7 @@ const test = (n, c, info) => { if (c) { ok++; console.log('OK   ' + n); }
 
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const ctx = vm.createContext(Object.assign({ console, esc,
+  CISLO_POLE: 'inputmode="decimal" autocomplete="off" data-cislo="1"',   // ui/cislo_pole.js (CA #575)
   kartaRezim: (oblast, key, titul, obsah, id) => '<karta id="' + id + '">' + obsah + '</karta>' }, E));
 vm.runInContext(fs.readFileSync(path.join(__dirname, 'ui', 'kalk_ock.js'), 'utf8'), ctx, { filename: 'kalk_ock.js' });
 const karta = (z, fixes, skladebny) => {

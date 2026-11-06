@@ -110,7 +110,7 @@ const vysl = await p.evaluate(([c, cs, cp]) => {
   /* 4) stará zakázka */
   ZAK = novaZakazka(); syncVarianta(); Object.assign(Z, zad, { mustkyKs: 2, mustekHloubkaMm: 1200 }); OCK.fixes = true; pripravCenik(cs);
   render();
-  const vstupy = karta() ? [...karta().querySelectorAll('input[type=number]')].map(i => i.value) : [];
+  const vstupy = karta() ? [...karta().querySelectorAll('input[data-cislo]')].map(i => i.value) : [];
   out.stara = { karta: !!karta(), vstupy, maPole: Array.isArray(Z.mustky), ks: Z.mustkyKs, hint: karta() ? karta().textContent : '' };
   mustekPoleSet(0, 'ks', '3');
   out.staraPoZmene = { mustky: JSON.parse(JSON.stringify(Z.mustky)), maKs: 'mustkyKs' in Z, maDelku: 'mustekHloubkaMm' in Z };
@@ -266,21 +266,21 @@ for (const [sir, mod, n, cd] of [[1200, 2, 3, 'stary'], [1200, 2, 2, 'stary'], [
     const k = document.getElementById('ock-mustky');
     const v = k && k.querySelector('input.mu-sloupVyskaM');
     const tdPozn = [...document.querySelectorAll('#page-kalk tr')].find(tr => [...tr.querySelectorAll('input.nazev-ed')].some(i => /SLOUPY NAVÍC \(PROFIL\)/.test(i.value)));
-    return { ph: v && v.placeholder, title: v && v.title, typ: v && v.type,
+    return { ph: v && v.placeholder, title: v && v.title, typ: v && (v.hasAttribute('data-cislo') ? 'cislo' : v.type),
       tecky: k ? [...k.querySelectorAll('input')].map(i => i.placeholder).filter(x => /\d\.\d/.test(x)) : null,
       sloupyM: vypocetAkt().mustky.sloupyM, radek: tdPozn ? tdPozn.textContent.replace(/\s+/g, ' ') : '' };
   }, [cen]);
   zkus('8 nápověda výšky sloupu = výška šachty − 0,2 m s čárkou („20,85")', pr.ph === '20,85', pr);
   zkus('8 bublina říká „výška šachty (prohlubeň + zdvih + přejezd)"', /výška šachty \(prohlubeň \+ zdvih \+ přejezd\)/.test(pr.title || ''), pr.title);
-  zkus('8 v kartě žádná nápověda s desetinnou tečkou; pole je type=number jako v Zadání šachty', pr.tecky && !pr.tecky.length && pr.typ === 'number', pr.tecky);
+  zkus('8 v kartě žádná nápověda s desetinnou tečkou; pole je číselné pole (data-cislo, CA #575) jako v Zadání šachty', pr.tecky && !pr.tecky.length && pr.typ === 'cislo', pr.tecky);
   zkus('8 prázdná výška počítá 2 × 20,85 m', Math.abs(pr.sloupyM - 41.7) < 1e-9, pr.sloupyM);
   zkus('8 řádek kalkulace „2 ks, 41,7 m" (čárka)', /2 ks, 41,7 m/.test(pr.radek), pr.radek);
   /* Zápis z klávesnice: karta se musí chovat STEJNĚ jako pole Zdvih
-   * v Zadání šachty (týž prvek). Jak prohlížeč čte čárku v type=number,
-   * řídí jeho národní nastavení — český Chrome ukazuje i přijímá „17,3";
-   * Chromium v harnessu češtinu v číselném poli nemá (čárku zahodí u obou
-   * polí stejně), proto se tu porovnává shoda s polem Zdvih a hodnota, kterou
-   * pole předá dál, se zkouší přímo (mustekPoleSet s „17,3" i „17.3"). */
+   * v Zadání šachty (týž prvek). Od CA #575 čte čárku i tečku společné
+   * číselné pole (ui/cislo_pole.js) v každém jazyce prohlížeče; zápis
+   * „17,3" i „17.3" v en-US i cs-CZ hlídá overit_575_desetinna_carka.mjs.
+   * Tady se porovnává shoda s polem Zdvih a hodnota, kterou pole předá dál,
+   * se zkouší i přímo (mustekPoleSet s „17,3" i „17.3"). */
   const zapis = async (sel, txt, cti) => {
     const el = pg.locator(sel).first();
     await el.click(); await pg.keyboard.press('Control+A'); await pg.keyboard.press('Backspace');

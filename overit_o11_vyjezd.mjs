@@ -56,15 +56,24 @@ await p.dispatchEvent('#projVyjezdPrepis', 'change');
 await p.waitForTimeout(200);
 ok('správce: přepis 5000 se zapíše do zadání', await p.evaluate(() => PJ.vyjezdKcPrepis === 5000));
 
-/* Nečitelný vstup: pole type=number vrací '' s validity.badInput — dřív to
- * tiše smazalo přepis (vrátila se cena z ceníku). */
+/* Nečitelný vstup: dřív (type=number) vracel '' a tiše smazal přepis (vrátila
+ * se cena z ceníku). Od CA #575 ho zastaví společné číselné pole dřív, než
+ * se dostane k obsluze; pjVyjezdPrepis ho hlídá i při přímém volání. */
 const vysl = await p.evaluate(() => {
-  const el = { value: '', validity: { badInput: true } };
-  pjVyjezdPrepis(el);
+  const el = document.getElementById('projVyjezdPrepis');
+  cisloPoleSuroveNastav(el, '100 Kč');
+  el.dispatchEvent(new Event('change', { bubbles: true }));
   return PJ.vyjezdKcPrepis;
 });
 ok('nečitelný vstup v poli přepis nezmění (zůstane 5000)', vysl === 5000);
-ok('… a ukáže upozornění místo tichého návratu k ceníku', /není platné číslo/.test(await zavriDlg()));
+ok('… a ukáže upozornění místo tichého návratu k ceníku', /není číslo/.test(await zavriDlg()));
+const prime = await p.evaluate(() => {
+  const el = document.getElementById('projVyjezdPrepis');
+  cisloPoleSuroveNastav(el, '1,2,3');
+  pjVyjezdPrepis(el);
+  return PJ.vyjezdKcPrepis;
+});
+ok('přímé volání s nečitelným polem přepis nezmění', prime === 5000 && /není platné číslo/.test(await zavriDlg()));
 const zap = await p.evaluate(() => { pjVyjezdPrepis({ value: '-10', validity: {} }); return PJ.vyjezdKcPrepis; });
 ok('záporná cena výjezdu se odmítne (zůstane 5000)', zap === 5000 && /záporné/.test(await zavriDlg()));
 

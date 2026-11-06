@@ -184,7 +184,7 @@ for (const sirka of [1400, 760]) {
       r.length >= 8 && rozptyl <= 2, JSON.stringify(r));
     const limit = r.find(x => x[0] === 'Limit smluvních pokut');
     const jedn = await p.evaluate(() => {
-      const i = [...document.querySelectorAll('#nastaveni-overlay input[type=number]')].find(x => /limitPokutProc/.test(x.getAttribute('onchange')));
+      const i = [...document.querySelectorAll('#nastaveni-overlay input[data-cislo]')].find(x => /limitPokutProc/.test(x.getAttribute('onchange')));
       const j = i.parentElement.querySelector('.podm-jednotka');
       return j ? [j.textContent.trim(), Math.round(j.getBoundingClientRect().left - i.getBoundingClientRect().right)] : null;
     });

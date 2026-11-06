@@ -278,7 +278,7 @@ const zobrazeni = await p.evaluate(([marze, zdroj]) => {
       if (s.typ !== 'hod') delete s.cenaPrepis;
       return { naklad: v.naklad, marze: v.marze };
     })(),
-    globPlaceholdery: [...document.querySelectorAll('#page-proj tr.sechd input[type=number]')]
+    globPlaceholdery: [...document.querySelectorAll('#page-proj tr.sechd input[data-cislo]')]
       .map(x => x.placeholder),
   };
 }, [MARZE_ZKUS, RADKY_SEKCE]);

@@ -67,10 +67,11 @@ test('bez souseda se zůstane v poli, ne na BODY',
 /* ---------- 4) běžné překreslení se nesmí změnit ---------- */
 
 test('bez čerstvého Tabu se fokus pořád vrací do TÉHOŽ pole',
-  /if \(!klic\) \{ kresli\(\); return; \}[\s\S]{0,600}cil\.focus/.test(fn));
+  /if \(!klic\) \{ kresli\(\); return; \}[\s\S]{0,1200}cil\.focus/.test(fn));
 test('a rozepsaná hodnota i kurzor zůstávají',
   /setSelectionRange\(zac, kon\)/.test(fn));
-test('rozepsanost se pozná proti defaultValue', /a\.value !== a\.defaultValue/.test(fn));
+/* CA #575: u číselného pole se porovnává napsaný (surový) text, jinak value. */
+test('rozepsanost se pozná proti defaultValue', /const hodnota = surove \? cisloPoleSurove\(a\) : a\.value;\s*\n\s*const rozepsano = hodnota !== a\.defaultValue/.test(fn));
 
 /* ---------- 5) výběr tabovatelných prvků ---------- */
 

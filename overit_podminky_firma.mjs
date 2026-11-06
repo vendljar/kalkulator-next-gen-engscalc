@@ -72,7 +72,7 @@ const kl = (id, cast) => p.evaluate(([id, cast]) => {
 }, [id, cast]);
 ok('krycí list OCK před změnou: splatnost 14', await kl('splatnostDni') === '14', await kl('splatnostDni'));
 await p.evaluate(() => {
-  const inp = [...document.querySelectorAll('#nastaveni-overlay input[type=number]')]
+  const inp = [...document.querySelectorAll('#nastaveni-overlay input[data-cislo]')]
     .find(x => /'ock', 'splatnostDni'/.test(x.getAttribute('onchange')));
   inp.value = '30'; inp.dispatchEvent(new Event('change'));
 });

@@ -298,7 +298,7 @@ test('obchodník nevidí náklad ani přirážku (jako dosud)', !ob.thK.includes
 const vlastni = await page.evaluate(() => {
   const tab = [...document.querySelectorAll('#page-proj table')].find(t => [...t.querySelectorAll('th')].some(h => h.textContent.trim() === 'Položka'));
   const radek = [...tab.rows].find(r => r.querySelector('input.nazev-ed') && r.querySelector('input.nazev-ed').value === 'Vlastní zkušební položka');
-  const vstup = radek && [...radek.querySelectorAll('input[type=number]')].pop();
+  const vstup = radek && [...radek.querySelectorAll('input[data-cislo]')].pop();
   if (!vstup) return { je: false };
   const pred = vypocetProjAkt().souhrn.celkem;
   vstup.value = '5000'; vstup.dispatchEvent(new Event('change'));

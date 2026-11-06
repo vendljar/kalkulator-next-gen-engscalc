@@ -83,18 +83,19 @@ test('nesmysl zůstává prázdný („abc", „-1")', E.mustekSkupinaOciste({ s
 {
   const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const ctx = vm.createContext(Object.assign({ console, esc,
+    CISLO_POLE: 'inputmode="decimal" autocomplete="off" data-cislo="1"',   // ui/cislo_pole.js (CA #575)
     kartaRezim: (oblast, key, titul, obsah) => obsah }, F, E));
   vm.runInContext(fs.readFileSync(path.join(__dirname, 'ui', 'kalk_ock.js'), 'utf8'), ctx, { filename: 'kalk_ock.js' });
   ctx.Z = ZAD({ mustky: [{ ks: 1, sloupyKs: 2 }] }); ctx.OCK = { fixes: true };
   const h = ctx.mustkyKarta({ mustky: { skladebny: true } }).replace(/\s+/g, ' ');
-  const pole = (h.match(/<input type="number" class="mu-sloupVyskaM"[^>]*>/) || [''])[0];
+  const pole = (h.match(/<input inputmode="decimal" autocomplete="off" data-cislo="1" class="mu-sloupVyskaM"[^>]*>/) || [''])[0];
   const ph = (pole.match(/placeholder="([^"]*)"/) || [])[1];
   const tit = (pole.match(/title="([^"]*)"/) || [])[1] || '';
   test('nápověda výšky sloupu = „20,85" (česká čárka)', ph === '20,85', ph);
   test('bublina: prázdné = výška šachty (prohlubeň + zdvih + přejezd)', /výška šachty \(prohlubeň \+ zdvih \+ přejezd\)/.test(tit) && /20,85 m/.test(tit), tit);
   test('v kartě není nápověda s tečkou ani zdvih', !/placeholder="\d+\.\d+"/.test(h) && !/placeholder="17[.,]3"/.test(h));
-  test('všechna číselná pole karty jsou týž prvek jako Zadání šachty (type="number")',
-    (h.match(/<input type="number" class="mu-(ks|sirkaMm|delkaMm|sloupyKs|sloupVyskaM)"/g) || []).length === 5);
+  test('všechna číselná pole karty jsou týž prvek jako Zadání šachty (CISLO_POLE, CA #575)',
+    (h.match(/<input inputmode="decimal" autocomplete="off" data-cislo="1" class="mu-(ks|sirkaMm|delkaMm|sloupyKs|sloupVyskaM)"/g) || []).length === 5);
   const phMm = (h.match(/class="mu-delkaMm"[^>]*placeholder="([^"]*)"/) || [])[1];
   test('nápověda délky v českém zápisu („1 000")', phMm === (1000).toLocaleString('cs-CZ').replace(/\s+/g, ' '), phMm);
 }

@@ -260,7 +260,7 @@ function renderProj() {
     ${box4 ? `<div class="kpi kpi-multi">${box4}</div>` : ''}
   </div>
   ${col.admin ? `<div class="prm"><span class="prm-l">Globální přirážka <span class="note">(z ceníku PROJ, platí pro všechny sekce)</span></span>
-    <input type="number" step="1" style="width:76px" value="${Math.round(PC.marze * 10000) / 100}"
+    <input ${CISLO_POLE} step="1" style="width:76px" value="${Math.round(PC.marze * 10000) / 100}"
       onchange="set('PC.marze', (+this.value) / 100)"><span class="prm-u">%</span></div>` : ''}`;
 
   /* ---------------- tabulka kalkulace ---------------- */
@@ -344,14 +344,14 @@ function renderProj() {
          * a číslo v poli je dohoda pro TUHLE zakázku, ceník nechá být. */
         const sazbaEd = col.admin
           ? `<span class="pill mut" title="sazba z Ceníku nákladů PROJ – mění se tam, platí pro všechny zakázky">${esc(p.sazba)}</span>
-             <input type="number" step="50" class="prepis-ed${p.sazbaPrepsana ? ' aktivni' : ''}" style="width:86px" value="${p.sazbaPrepsana ? esc(p.sazbaKc) : ''}"
+             <input ${CISLO_POLE} step="50" class="prepis-ed${p.sazbaPrepsana ? ' aktivni' : ''}" style="width:86px" value="${p.sazbaPrepsana ? esc(p.sazbaKc) : ''}"
                placeholder="${num(p.sazbaZCeniku)}" onchange="pjPrepis(${i},${j},'sazbaPrepis',this.value)"
                title="sjednaná sazba jen pro tuto zakázku (prázdné = ${num(p.sazbaZCeniku)} Kč z ceníku)">
              ${p.sazbaPrepsana ? `<button class="mini noprint" onclick="pjPrepis(${i},${j},'sazbaPrepis','')" title="vrátit sazbu z ceníku (${num(p.sazbaZCeniku)} Kč)">↺</button>` : ''}`
           : (vidSazby ? num(p.sazbaKc) : num(prodejni(s, p.sazbaKc)));
         return `${tr}<td>${nazev}${stitekVyp}</td>
-          <td>${(col.admin || vlEd) ? `<input type="number" step="1" min="0" style="width:66px" value="${esc(+p.hodiny || 0)}" onchange="pjSet(${i}, 'polozky.${j}.hodiny', +this.value)">` : num(p.hodiny)}</td>
-          <td>${col.admin ? `<input type="number" step="1" min="0" style="width:66px" value="${esc(+p.rezerva || 0)}" onchange="pjSet(${i}, 'polozky.${j}.rezerva', +this.value)">` : num(p.rezerva)}</td>
+          <td>${(col.admin || vlEd) ? `<input ${CISLO_POLE} step="1" min="0" style="width:66px" value="${esc(+p.hodiny || 0)}" onchange="pjSet(${i}, 'polozky.${j}.hodiny', +this.value)">` : num(p.hodiny)}</td>
+          <td>${col.admin ? `<input ${CISLO_POLE} step="1" min="0" style="width:66px" value="${esc(+p.rezerva || 0)}" onchange="pjSet(${i}, 'polozky.${j}.rezerva', +this.value)">` : num(p.rezerva)}</td>
           <td>${num(p.hodinyCelkem)}</td>
           <td style="white-space:nowrap">${sazbaEd}</td>
           ${penize(p.naklad, marzeSekce(s, p.naklad), cena)}${pocitat}</tr>`;
@@ -362,13 +362,13 @@ function renderProj() {
        * Teď se zapisuje přepis do zakázky; ceník se mění v záložce Ceník PROJ. */
       const fixEd = col.admin
         ? (p.fixKey
-          ? `<input type="number" step="500" min="0" class="prepis-ed${p.cenaPrepsana ? ' aktivni' : ''}" style="width:86px" value="${p.cenaPrepsana ? esc(p.cenaEfekt) : ''}"
+          ? `<input ${CISLO_POLE} step="500" min="0" class="prepis-ed${p.cenaPrepsana ? ' aktivni' : ''}" style="width:86px" value="${p.cenaPrepsana ? esc(p.cenaEfekt) : ''}"
                placeholder="${num(p.cenaZCeniku)}" onchange="pjPrepis(${i},${j},'cenaPrepis',this.value)"
                title="cena jen pro tuto zakázku (prázdné = ${num(p.cenaZCeniku)} Kč z Ceníku nákladů PROJ)">
              ${p.cenaPrepsana ? `<button class="mini noprint" onclick="pjPrepis(${i},${j},'cenaPrepis','')" title="vrátit cenu z ceníku (${num(p.cenaZCeniku)} Kč)">↺</button>` : ''}`
-          : `<input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`)
+          : `<input ${CISLO_POLE} step="500" min="0" style="width:86px" value="${esc(p.cena)}" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`)
         : (vlEd && !p.fixKey
-          ? `<input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" title="částka této položky před přirážkou sekce (jen pro tuto zakázku); cena vpravo už přirážku obsahuje" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
+          ? `<input ${CISLO_POLE} step="500" min="0" style="width:86px" value="${esc(p.cena)}" title="částka této položky před přirážkou sekce (jen pro tuto zakázku); cena vpravo už přirážku obsahuje" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
             + (vidSazby ? '' : ' <span class="note">před přirážkou</span>')
           /* Bez práva na náklady (P12) prodejní cena položky místo nákladové. */
           : (vidSazby ? num(p.cenaEfekt) : num(prodejni(s, p.cenaEfekt))));
@@ -399,7 +399,7 @@ function renderProj() {
       : col.admin
         ? `<tr><td><span class="grip" style="visibility:hidden">⠿</span>Doprava (${num(PC.dopravaKmKc)} Kč/km)
              <span class="pill mut" style="margin-left:6px" title="doprava vstupuje do základu přirážky sekce: cena sekce = (náklad + doprava) × (1 + %) — jako v předloze (O12 = O8 + O11)">v základu přirážky</span></td>
-           <td><input type="number" step="1" style="width:66px" value="${esc(zdroj.doprava.km)}" onchange="pjSet(${i}, 'doprava.km', +this.value)" title="km"></td>
+           <td><input ${CISLO_POLE} step="1" style="width:66px" value="${esc(zdroj.doprava.km)}" onchange="pjSet(${i}, 'doprava.km', +this.value)" title="km"></td>
            <td class="note">km</td>
            <td style="white-space:nowrap"><label title="příplatek mimo Prahu = km / 60 × ${num(hodKc)} Kč (hodina cesty při 60 km/h; sazba v Ceníku nákladů PROJ); po Praze nechte odškrtnuté">
              <input type="checkbox" ${zdroj.doprava.mimoPrahu ? 'checked' : ''} onchange="pjSet(${i}, 'doprava.mimoPrahu', this.checked)"> mimo Prahu</label></td>
@@ -439,7 +439,7 @@ function renderProj() {
      * sloupci Počítat, a je tmavě modré, ať se od položkových liší. */
     const vlastniPct = col.admin
       ? `<span class="note" style="font-weight:400;white-space:nowrap">vlastní % sekce
-           <input type="number" step="1" style="width:64px" value="${zdroj.prirazkaPct == null ? '' : esc(zdroj.prirazkaPct)}"
+           <input ${CISLO_POLE} step="1" style="width:64px" value="${zdroj.prirazkaPct == null ? '' : esc(zdroj.prirazkaPct)}"
              placeholder="${prirGlob}" onchange="pjSet(${i}, 'prirazkaPct', this.value === '' ? null : +this.value)"
              title="vlastní % jen pro tuhle sekci: kladné číslo přirazí, záporné slevu (prázdné = ${prirPopis}). Nula znamená „u téhle sekce nepřirážíme nic“."> %</span>`
       : '';
@@ -562,11 +562,12 @@ function renderProj() {
   if (typeof zamekCteniNasad === 'function') zamekCteniNasad('proj');
 }
 
-/* Ruční cena výjezdu technika (K4-N4, O11). Pole type=number vrací při
- * nečitelném vstupu („100,5" v anglickém prohlížeči) prázdný řetězec —
- * dřív to tiše vrátilo cenu z ceníku. Teď upozornění a beze změny. */
+/* Ruční cena výjezdu technika (K4-N4, O11). Nečitelný vstup dřív vracel
+ * prázdný řetězec a tiše vrátil cenu z ceníku. Od CA #575 ho zastaví
+ * společné číselné pole (ui/cislo_pole.js) dřív, než se sem dostane;
+ * kontrola zůstává jako pojistka pro volání mimo událost `change`. */
 function pjVyjezdPrepis(el) {
-  if (el && el.validity && el.validity.badInput) {
+  if (el && typeof cisloPoleChybne === 'function' && cisloPoleChybne(el)) {
     if (typeof hlaska === 'function') hlaska('Cena výjezdu není platné číslo — zadejte celé Kč (např. 3500). Hodnota se nezměnila.');
     render(); return;
   }
@@ -594,7 +595,7 @@ function kalkProjVolbyD2() {
   const smiPrepis = typeof smiZobrazit === 'function' && smiZobrazit('sloupce.naklad');
   const spatnyTvar = prepis !== '' && typeof uloCisloJadro === 'function' && !uloCisloJadro(prepis);
   const pole = smiPrepis
-    ? `<input type="number" step="1" min="0" style="width:110px" id="projVyjezdPrepis" value="${esc(prepis)}" placeholder="${esc(cenikVyjezd || '')}"
+    ? `<input ${CISLO_POLE} step="1" min="0" style="width:110px" id="projVyjezdPrepis" value="${esc(prepis)}" placeholder="${esc(cenikVyjezd || '')}"
         onchange="pjVyjezdPrepis(this)"><span class="u">Kč</span>
       ${prepis !== '' ? `<button class="mini" onclick="set('PJ.vyjezdKcPrepis', null)" title="vrátit cenu z ceníku PROJ">↺</button>` : ''}`
     : `<span id="projVyjezdCena" title="cenu výjezdu přepisuje jen role s právem vidět náklady">${ucinna > 0 ? esc(fmt(ucinna)) : '—'}</span>`;

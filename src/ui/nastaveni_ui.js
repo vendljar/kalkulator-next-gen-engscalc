@@ -286,9 +286,9 @@ function nastStandard() {
   const cis = v => (v == null ? '' : v);
   const radaHtml = (vetev) => (r, i) => `<tr>
     <td><input type="text" style="width:100px" value="${esc(r.profil)}" onchange="stdRadaSet('${vetev}', ${i}, 'profil', this.value)"></td>
-    <td><input type="number" step="0.5" style="width:78px" value="${esc(cis(r.vyskaMaxM))}" onchange="stdRadaSet('${vetev}', ${i}, 'vyskaMaxM', this.value)"> m</td>
-    <td><input type="number" step="10" style="width:90px" value="${esc(cis(r.sirkaMaxMm))}" onchange="stdRadaSet('${vetev}', ${i}, 'sirkaMaxMm', this.value)"> mm</td>
-    <td><input type="number" step="10" style="width:90px" value="${esc(cis(r.hloubkaMaxMm))}" onchange="stdRadaSet('${vetev}', ${i}, 'hloubkaMaxMm', this.value)"> mm</td>
+    <td><input ${CISLO_POLE} step="0.5" style="width:78px" value="${esc(cis(r.vyskaMaxM))}" onchange="stdRadaSet('${vetev}', ${i}, 'vyskaMaxM', this.value)"> m</td>
+    <td><input ${CISLO_POLE} step="10" style="width:90px" value="${esc(cis(r.sirkaMaxMm))}" onchange="stdRadaSet('${vetev}', ${i}, 'sirkaMaxMm', this.value)"> mm</td>
+    <td><input ${CISLO_POLE} step="10" style="width:90px" value="${esc(cis(r.hloubkaMaxMm))}" onchange="stdRadaSet('${vetev}', ${i}, 'hloubkaMaxMm', this.value)"> mm</td>
     <td><button class="mini" onclick="stdRadaSmaz('${vetev}', ${i})" title="odebrat řádek">✕</button></td></tr>`;
 
   const tabulka = (vetev) => `<table class="sd-tbl"><thead><tr><th>Profil sloupku</th><th>Výška max</th>
@@ -316,7 +316,7 @@ function nastStandard() {
    * přesná hodnota — proto „přesně", ne „max". Prázdné pole kontrolu vypne;
    * je to platná volba, takže se nedoplňuje výchozí čtyřkou. */
   const sloupkyBlok = (vetev) => `<div class="row"><label>Počet sloupků ve standardu</label>
-      <input type="number" step="1" min="0" style="width:100px"
+      <input ${CISLO_POLE} step="1" min="0" style="width:100px"
         value="${esc(s[vetev].sloupkyStandard == null ? '' : s[vetev].sloupkyStandard)}"
         placeholder="nekontrolovat"
         title="Přesný počet sloupků ve standardu. Jakýkoli jiný počet je atyp. Prázdné pole kontrolu vypne."
@@ -350,7 +350,7 @@ function nastStandard() {
       společné, proto stojí mimo obě tabulky (rozhodnutí J. V. 17. 9. 2026). Hlídá se jen tehdy,
       když má zakázka v zadání šachty aspoň jeden můstek (pole Můstky mezi budovou a OCK).</div>
     <div class="row"><label>Délka max <span class="note">(mezi budovou a OCK)</span></label>
-      <input type="number" step="10" style="width:100px" value="${esc(s.mustek.hloubkaMaxMm)}"
+      <input ${CISLO_POLE} step="10" style="width:100px" value="${esc(s.mustek.hloubkaMaxMm)}"
         onchange="stdSet('mustek.hloubkaMaxMm', +this.value)"><span class="u">mm</span></div>
     <div class="note" style="margin-top:0">Šířka můstku je šířka šachty, proto se nehlídá (#354, 26. 10. 2026).</div>
     <div class="row"><label>Konstrukční řešení ${stdNehlidame(STD_NEHLIDAME.mustekReseni)}</label>
@@ -626,7 +626,7 @@ function nastSlevy() {
       <td style="text-align:right">
         ${r === 'Administrátor'
           ? '<span class="pill">bez limitu (jen pojistka marže)</span>'
-          : `<input type="number" step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.stropy[r] || 0)}" onchange="slStrop('${escJs(r)}', this.value)"> %`}
+          : `<input ${CISLO_POLE} step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.stropy[r] || 0)}" onchange="slStrop('${escJs(r)}', this.value)"> %`}
       </td>
     </tr>`).join('');
   const schemaRows = NAST.slevy.schemata.map((s, i) => `
@@ -646,11 +646,11 @@ function nastSlevy() {
 
     <div class="sec-title">1) Pojistka marže (tvrdý strop)</div>
     <div class="row" style="max-width:420px"><label>Minimální marže po slevě</label>
-      <span class="pct-wrap"><input type="number" step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.minMarze)}" onchange="slMinMarze(this.value)"> %</span></div>
+      <span class="pct-wrap"><input ${CISLO_POLE} step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.minMarze)}" onchange="slMinMarze(this.value)"> %</span></div>
     <div class="note">Žádná sleva (ani se schválením) nesmí stlačit marži pod tuto hranici. Chrání před ztrátovou zakázkou.</div>
 
     <div class="row" style="max-width:420px;margin-top:8px"><label>Maximální globální sleva</label>
-      <span class="pct-wrap"><input type="number" step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.maxGlobalni != null ? NAST.slevy.maxGlobalni : 0.30)}" onchange="slMaxGlobalni(this.value)"> %</span></div>
+      <span class="pct-wrap"><input ${CISLO_POLE} step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.maxGlobalni != null ? NAST.slevy.maxGlobalni : 0.30)}" onchange="slMaxGlobalni(this.value)"> %</span></div>
     <div class="note">Strop pole „Globální sleva PROJ" v kartě slevy (zadání 2. 8. 2026, výchozích 30 %).
       Sleva na nabídku ZAK-10 má vlastní stropy dle role níže. Hodnota nad strop se při zadání přistřihne;
       přijde-li vyšší importem starší zakázky, rozsvítí se kontrola.</div>

@@ -842,7 +842,7 @@ function inp(path, opts = {}) {
    * přirážku v ceníku min nemá (smí ji měnit jen administrátor). */
   if (opts.type === 'pct') {  // uloženo jako desetinné číslo (0,30), zobrazeno a zadáváno v % (30)
     const minPct = opts.min != null ? ` min="${esc(opts.min)}"` : '';
-    return `<div class="row"><label>${opts.l}</label><input type="number" step="${opts.step ?? 1}"${minPct} value="${Math.round(val * 10000) / 100}" onchange="set('${path}', (+this.value) / 100)"><span class="u">%</span></div>`;
+    return `<div class="row"><label>${opts.l}</label><input ${CISLO_POLE} step="${opts.step ?? 1}"${minPct} value="${Math.round(val * 10000) / 100}" onchange="set('${path}', (+this.value) / 100)"><span class="u">%</span></div>`;
   }
   /* `t` = tooltip nad polem. Přibylo 10. 9. 2026, když se popisné texty
    * odstěhovaly ze Zadání šachty do Detailu výpočtu (zadání J. V.) — vysvětlení
@@ -853,7 +853,7 @@ function inp(path, opts = {}) {
    * šipky přes hranici; napsané číslo se uloží, jak je (tiché oříznutí by
    * z překlepu udělalo jinou nabídku). Co je nad hranicí, řekne volající. */
   const max = opts.max != null ? ` max="${esc(opts.max)}"` : '';
-  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}"${min}${max} value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
+  return `<div class="row"><label>${opts.l}</label><input ${CISLO_POLE} step="${step}"${min}${max} value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
 }
 
 /* NULA SE NEMUSÍ MAZAT (10. 9. 2026, zadání J. V.: „nastav buňky tak, aby když
@@ -1463,7 +1463,7 @@ function zakazkaHlavicka(ock) {
    * náklad. Proto se řídí právem `pole.prirazka` a řádek se nekreslí vůbec;
    * dřívější třída `admin-only` uměla jen „admin / neadmin", ne přidělení roli. */
   const prirazkaRow = !smiZobrazit('pole.prirazka') ? '' : `<div class="row"><label>Globální přirážka</label>
-    <span class="pct-wrap"><input type="number" step="1" value="${Math.round(C.marze * 10000) / 100}" onchange="set('C.marze', (+this.value) / 100)"> %</span></div>`;
+    <span class="pct-wrap"><input ${CISLO_POLE} step="1" value="${Math.round(C.marze * 10000) / 100}" onchange="set('C.marze', (+this.value) / 100)"> %</span></div>`;
 
   /* ---------- řada ceníku: ČR / Zahraničí (#181, 31. 8. 2026) ----------
    * Zadání J. V.: „v pravém rohu hlavičky přepínač ČR / Zahraničí, který se
@@ -1493,7 +1493,7 @@ function zakazkaHlavicka(ock) {
   const kurzRow = (radaTed !== 'zahr' || !smiZobrazit('pole.prirazka')) ? ''
     : `<div class="row"><label>Kurz pro nabídku</label>
        <span class="pct-wrap">${kurzEd
-        ? `<input type="number" step="0.01" value="${esc(C.kurzEurKc || 0)}"
+        ? `<input ${CISLO_POLE} step="0.01" value="${esc(C.kurzEurKc || 0)}"
          title="kurz z ceníku; v dokumentu se neukazuje, jen se jím převádí"
          onchange="set('C.kurzEurKc', +this.value)">`
         : `<b title="kurz z ceníku – mění se v Ceníku OCK, sekce CIZÍ MĚNA">${esc(C.kurzEurKc || 0)}</b>`} Kč/€</span></div>`;
@@ -1540,7 +1540,7 @@ function zakazkaHlavicka(ock) {
    * v hlavičce OCK. Do 31. 7. se nastavovala jen v záložce Ceník nákladů PROJ,
    * takže při počítání nabídky nebyla vidět a nikdo si jí nevšiml. */
   const prirazkaRowProj = !smiZobrazit('pole.prirazka') ? '' : `<div class="row"><label>Globální přirážka</label>
-    <span class="pct-wrap"><input type="number" step="1" value="${Math.round(PC.marze * 10000) / 100}" onchange="set('PC.marze', (+this.value) / 100)"> %</span></div>`;
+    <span class="pct-wrap"><input ${CISLO_POLE} step="1" value="${Math.round(PC.marze * 10000) / 100}" onchange="set('PC.marze', (+this.value) / 100)"> %</span></div>`;
 
   /* #17 – varianta převzatá z historické kalkulace nese větu o původu.
    * Bez ní by se po pár dnech nedalo poznat, že se nepočítalo od nuly, a
@@ -2276,7 +2276,7 @@ function slevaKarta(kontext) {
   const inner = `<div class="zak-head" style="grid-template-columns:1fr 1fr 1fr">
       <div class="row"><label>Schéma slevy</label><select onchange="${c.fn}('schema', this.value)">${schemaOpts}</select></div>
       <div class="row"><label>Zadal (role)</label><span title="Role slevy se bere z přihlášeného uživatele, který zadal procenta; určuje strop, do kterého se sleva schválí sama.">${esc(SLC.role || '—')}</span></div>
-      <div class="row"><label>Sleva</label><span class="pct-wrap"><input type="number" step="0.5" min="0" value="${+SLC.procenta || 0}" onchange="${c.fn}('procenta', this.value)"> %</span></div>
+      <div class="row"><label>Sleva</label><span class="pct-wrap"><input ${CISLO_POLE} step="0.5" min="0" value="${+SLC.procenta || 0}" onchange="${c.fn}('procenta', this.value)"> %</span></div>
     </div>
     <div class="row" style="max-width:100%"><label>Poznámka ke slevě</label>
       <input type="text" value="${esc(SLC.poznamka || '')}" onchange="${c.fn}('poznamka', this.value)" placeholder="důvod, kampaň, partner…"></div>
@@ -2937,15 +2937,21 @@ function renderSFokusem(kresli) {
   }
 
   if (!klic) { kresli(); return; }
-  const rozepsano = a.value !== a.defaultValue;
-  const hodnota = a.value;
+  /* U číselného pole (CA #575) se porovnává a vrací to, co je opravdu
+   * napsané — `value` vrací normalizovaný text a rozepsané „17," by po
+   * překreslení přišlo o čárku. */
+  const surove = typeof cisloPoleSurove === 'function' && typeof cisloPoleJe === 'function' && cisloPoleJe(a);
+  const hodnota = surove ? cisloPoleSurove(a) : a.value;
+  const rozepsano = hodnota !== a.defaultValue;
   let zac = null, kon = null;
   try { zac = a.selectionStart; kon = a.selectionEnd; } catch (e) {}
   kresli();
   const cil = [...document.querySelectorAll('input, textarea, select')]
     .find(x => renderKlicPole(x) === klic);
   if (!cil) return;
-  if (rozepsano) cil.value = hodnota;
+  if (rozepsano) {
+    if (surove && cisloPoleJe(cil)) cisloPoleSuroveNastav(cil, hodnota); else cil.value = hodnota;
+  }
   try {
     cil.focus({ preventScroll: true });
     if (rozepsano && zac != null && cil.setSelectionRange) cil.setSelectionRange(zac, kon);

@@ -107,7 +107,7 @@ function cenikZahrPctPole(cesta, opts) {
   const placeholder = o.placeholder || 'jako ČR';
   return `<span class="pct-wrap" style="margin-left:18px">
     <label style="margin-right:6px">${label}</label>
-    <input type="number" step="1" class="zahr-cena${zv === '' ? '' : ' ma'}" style="width:80px"
+    <input ${CISLO_POLE} step="1" class="zahr-cena${zv === '' ? '' : ' ma'}" style="width:80px"
       value="${esc(pct)}" placeholder="${esc(placeholder)}"
       title="${esc(title)}"
       onchange="cenikZahrSet('${cesta}', this.value === '' ? '' : (+this.value) / 100)"> %
@@ -180,9 +180,9 @@ function cenikRows(def, zahrSloupec) {
       /* Procenta se v datech drží jako desetinný podíl (0,30), ale zadávají
        * se lidsky — 30. Stejně jako globální přirážka o pár řádků výš
        * (31. 8. 2026, položky ATYP a výchozí rozsahy práce). */
-      else if (typ === 'pct') ed = `<input type="number" step="1" value="${val == null || val === '' ? '' : Math.round(val * 10000) / 100}"
+      else if (typ === 'pct') ed = `<input ${CISLO_POLE} step="1" value="${val == null || val === '' ? '' : Math.round(val * 10000) / 100}"
           placeholder="nenastaveno"${cenikBarvaAttr(u)} onchange="set('${path}', this.value === '' ? 0 : (+this.value) / 100)">`;
-      else ed = `<input type="number" step="any" value="${esc(val)}"${cenikBarvaAttr(u)} onchange="set('${path}', +this.value)">`;
+      else ed = `<input ${CISLO_POLE} step="any" value="${esc(val)}"${cenikBarvaAttr(u)} onchange="set('${path}', +this.value)">`;
       /* TUZEMSKÁ CENA U POLOŽKY „JEN ZAHRANIČNÍ" SE NEZADÁVÁ (P4, nález N6).
        *
        * Ceník verze 27 měl u překladů CZ→DE vyplněnou i ČR hodnotu — dalo se
@@ -191,7 +191,7 @@ function cenikRows(def, zahrSloupec) {
        * Pole, do kterého jde psát a nic to neudělá (nebo udělá něco jiného,
        * než člověk čeká), je horší než pole, které tam není. */
       if (jenZahrPolozka && zahrSloupec)
-        ed = `<input type="number" value="" placeholder="neplatí v ČR" disabled
+        ed = `<input ${CISLO_POLE} value="" placeholder="neplatí v ČR" disabled
           title="Položka v tuzemské kalkulaci vůbec není, takže tuzemská cena nemá co ovlivnit. Zadává se jen cena ve sloupci Zahraničí.">`;
       let zahr = '';
       if (zahrSloupec) {
@@ -199,7 +199,7 @@ function cenikRows(def, zahrSloupec) {
         const pevne = jenZahrPevne;
         const jen = jenZahrPolozka;
         zahr = typ ? '<td colspan="2" class="note">—</td>' : `<td class="zahr-bunka">
-          <input type="number" step="any" class="zahr-cena${zv === '' ? '' : ' ma'}" value="${esc(zv)}"
+          <input ${CISLO_POLE} step="any" class="zahr-cena${zv === '' ? '' : ' ma'}" value="${esc(zv)}"
             placeholder="${path === 'C.mustekMontazHodKc' ? 'jako montáž zahr.' : 'jako ČR'}" title="${path === 'C.mustekMontazHodKc'
               ? 'prázdné = platí zahraniční sazba montáže na stavbě (bez ní tuzemská sazba montáže můstků) — #550'
               : 'prázdné = platí tuzemská cena'}"${cenikBarvaAttr(u, { prazdnaOk: true })}
@@ -255,9 +255,9 @@ function cenikCustomRows(sekceKey, sloupcu) {
   const sk = escJs(sekceKey);
   const rows = arr.map(p => `<tr>
       <td><input type="text" value="${esc(p.nazev)}" onchange="katSet('${sk}','${escJs(p.kid)}','nazev',this.value)"></td>
-      <td><input type="number" step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')} onchange="katSet('${sk}','${escJs(p.kid)}','cena',this.value)"></td>
+      <td><input ${CISLO_POLE} step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')} onchange="katSet('${sk}','${escJs(p.kid)}','cena',this.value)"></td>
       ${mezera}
-      <td><input type="number" step="any" style="width:70px" value="${+p.mnozstvi || 1}"${cenikBarvaAttr('ks')} onchange="katSet('${sk}','${escJs(p.kid)}','mnozstvi',this.value)" title="výchozí množství v nové nabídce"></td>
+      <td><input ${CISLO_POLE} step="any" style="width:70px" value="${+p.mnozstvi || 1}"${cenikBarvaAttr('ks')} onchange="katSet('${sk}','${escJs(p.kid)}','mnozstvi',this.value)" title="výchozí množství v nové nabídce"></td>
       <td><span class="pill ok" title="je součástí každé nové cenové nabídky">trvalá</span>
           <button class="mini noprint" title="odebrat z ceníku i z této zakázky" onclick="katDel('${sk}','${escJs(p.kid)}')">✕</button></td></tr>`).join('');
   const lokal = katalogCil(Z, sekceKey).filter(p => !p.kid).length;
@@ -688,9 +688,9 @@ function cenikProjTrvaleRadky(sekce) {
         onchange="cenikProjTrvaleSet('${sk}','${kidJs}','nazev',this.value)">
         ${chip}</td>
       <td class="c-hod">${p.typ === 'hod'
-        ? `<input type="number" step="any" style="width:90px" value="${+p.hodiny || 0}"
+        ? `<input ${CISLO_POLE} step="any" style="width:90px" value="${+p.hodiny || 0}"
              title="hodin"${cenikBarvaAttr('hod')} onchange="cenikProjTrvaleSet('${sk}','${kidJs}','hodiny',this.value)">`
-        : `<input type="number" step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')}
+        : `<input ${CISLO_POLE} step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')}
              onchange="cenikProjTrvaleSet('${sk}','${kidJs}','cena',this.value)">`}</td>
       <td class="c-jed">${p.typ === 'hod' ? 'hod (' + esc(p.sazba || 'projektant') + ')' : 'Kč'}</td>
       <td class="c-pozn">trvalá položka${viceSekci ? ' — ' + esc(sek.nazev) : ''}, je v každé nové nabídce
