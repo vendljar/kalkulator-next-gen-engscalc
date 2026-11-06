@@ -542,8 +542,8 @@ const MUTACE = [
     nahrad: '    return onlineKopieDiskAuto().catch(() => false).then(() => {',
     proc: 'samočinná kopie by po přihlášení nikdy neproběhla' },
   { nazev: '#554: selhání samočinné kopie spadne', soubor: '../src/ui/online_ui.js',
-    hledej: "  } catch (e) {\n    return kopieDiskCeka('chyba', 'kopii se nepodařilo pořídit: '",
-    nahrad: "  } catch (e) {\n    throw e;\n    return kopieDiskCeka('chyba', 'kopii se nepodařilo pořídit: '",
+    hledej: "    return kopieDiskCeka('chyba', 'kopii se nepodařilo pořídit: '",
+    nahrad: "    throw e;\n    return kopieDiskCeka('chyba', 'kopii se nepodařilo pořídit: '",   /* #574: před řádkem je větev „nenalezena" */
     proc: 'chyba kopie by se ztratila v .catch automatiky a správce by se nic nedozvěděl' },
   /* #574 DZ2 (6. 11. 2026, hlášení J. V.): zapamatovaná složka pro kopii na
    * Disk v počítači už není (NotFoundError). Hlídá src/test_574_slozka_nenalezena.js
