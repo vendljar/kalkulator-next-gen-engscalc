@@ -1109,4 +1109,4 @@ if (typeof module !== 'undefined')
     tsVyplnDveri, tsVyplnDveriCasti, tsSvetlikyDveri,
     tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene, tsSken3dVCene, tsSoklRadek,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,
-    TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola, tsNazevAkce };
+    TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola, tsNazevAkce, tsMustkyCast };

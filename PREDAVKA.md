@@ -1,3 +1,30 @@
+# Předávka — 6. 11. 2026: MU3 #560 — výška sloupů navíc pod můstky a česká čárka v kartě Můstky, větev `claude/mu3-sloupy-vyska`
+
+Nad `7632ca5` (integrace v6.11.3). **Verze v6.11.4** v CHANGELOG (koordinace přečísluje). Neslučováno; do `test-draft`,
+`test` ani `main` nic. Na webech, Disku ani v Pipedrive nic.
+
+**Připomínka J. V. 6. 11.** (zdvih 17,3 m, přejezd 2,7 m, prohlubeň 1,05 m; nápověda u sloupů „17.3"): výška šachty
+není zdvih a sloupy můstků neodpovídají; tečka místo čárky.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. prázdná výška sloupu = délka rohového sloupku (H − 0,2 m) | ✅ | `mustekSloupVychoziM`, `MUSTEK_SLOUP_ODPOCET_M` v `src/engine.js`; rohový sloupek v jádru `dSloupky = H·n − 0,2·n` → u snímku 20,85 m (dřív 17,3) |
+| 1b. vyplněná výška beze změny, zamčené nabídky zmrazené | ✅ | jádro čte `sloupVyskaM` jako dřív; zmrazený výsledek se nepřepočítává |
+| 1c. nápověda, manuál | ✅ | bublina „prázdné = výška šachty (prohlubeň + zdvih + přejezd) − 0,2 m jako rohový sloupek = 20,85 m"; `manual/obsah.json`; specifikace/CN výšku berou z jádra (`vyskaSloupuM`) |
+| 2. česká čárka v kartě | ✅ | nápovědy přes `formatCislo` (`src/ui/kalk_ock.js`), pole dál `type="number"` jako Zadání šachty; jádro čte „17,3" i „17.3" (`mustekKladne`, `mustekKusy`); poznámka řádku sloupů v kalkulaci `toLocaleString('cs-CZ')`; specifikace (CZ/DE/FR čárka, EN tečka), krycí list a kontroly už čárku měly |
+| 3. cena jen u sloupů s prázdnou výškou | ✅ | zlatá pojistka `test_560_zlata.json` beze změny (bez sloupů navíc); `test_560_mustky_sekce.js` dva očekávané výsledky 12 → 16,3 m |
+| testy | ✅ | `src/test_560_mu3_sloupy.js` 23/0 (na 7632ca5 15 FAIL), `overit_560_mustky.mjs` bod 8 → 52/0 |
+| mutace | ✅ | „[MU3 #560]" 9/9 chycené, `--kontrola` 733 úseků |
+| kolo `--bez-mutaci` | ✅ | **VŠE ZELENÉ** nad d3453fb — sady 402 / 0 / 7 přeskočeno (test.js + 6 prohlížečových bez KNG_PODKLADY), hodiny +400 dní 324 / 0 / 1, statické 5 z 5, 30 min 8 s; celé mutace nepouštěny (jen „[MU3 #560]") |
+| roadmapa #560 pozn., CHANGELOG, PREDAVKA | ✅ | |
+
+**Otevřené body pro J. V. (přes koordinaci):** (a) výchozí výška = H − 0,2 m (přesně jako rohový sloupek v jádru),
+ne celé H — zadání říká „H", ale i „stejně jako rohový sloupek"; při volbě celého H stačí `MUSTEK_SLOUP_ODPOCET_M = 0`
+a přepočítat dvě čísla v testech; (b) zápis čárky z klávesnice v `type="number"` řídí národní nastavení prohlížeče —
+v českém Chrome čárku ukáže i přijme, Chromium harnessu češtinu v číselném poli nemá a čárku zahodí **u karty
+i u pole Zdvih stejně** (harness hlídá shodu obou polí). Kdyby to J. V. chtěl nezávisle na prohlížeči, šlo by
+o změnu všech číselných polí aplikace (text + vlastní čtení), ne jen karty.
+
 # Předávka — 6. 11. 2026: DZ2 #574 — kopie zálohy na Disk: zapamatovaná složka v počítači už není, větev `claude/dz2-slozka-nenalezena` (sloučeno do integrace jako v6.11.3)
 
 Nad `6b70cc3` (integrace v5.11.3 s DZ #571). **Verze 6.11.2** (koordinace přečísluje). Neslučováno; do `test-draft`,
@@ -341,8 +368,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 6. 11. 2026: stav integrace v6.11.3
+# Předávka koordinace — 6. 11. 2026: stav integrace v6.11.4
 
+- **v6.11.4** MU3: výchozí výška sloupů navíc pod můstky = rohový sloupek (prohlubeň + zdvih + přejezd − 0,2 m), česká čárka v kartě Můstky (J. V. potvrdil 6. 11.). Běží CA #575 (čárka ve všech polích nezávisle na prohlížeči). Kolo v6.11.3 VŠE ZELENÉ (+ mutace #574/#571/#554 34/34).
 - **v6.11.3** DZ2 #574: zastaralá složka záloh se pozná před heslem, zapomene a nabídne výběr znovu; česká hláška. Záloha ostré 6. 11. pořízena ručně (otisk_main_2026-11-06_0300).
 - **v6.11.2** MU2: čitelná karta Můstky (lišta nad tabulkou, „+ další provedení“ pod ní, výpočet beze změny).
 - **6. 11.:** `test` = v5.11.3 (6b70cc3, testengscalc 5.11.3). **v6.11.1** DP #573 texty DPZ bez zaměření. Běží DZ2 #574 (zastaralá složka záloh, NotFoundError) a MU2 (vzhled karty Můstky, #560). VS návrh uzavřen (R1–R15), K40 připravena (od #575) — obojí jen na pokyn J. V.

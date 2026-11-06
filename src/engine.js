@@ -806,7 +806,8 @@ function mustekDelkaMm(z) {
  * delkaMm, podlaha, podlahaNazev, zabradli, zabradliNazev, zabradliStrany,
  * kotveni, kotveniText, sloupyKs, sloupVyskaM }]`, běžně jeden řádek.
  * Prázdná šířka = šířka šachty, prázdná délka = 1 000 mm, prázdná výška
- * sloupu = výška nejvyššího nástupiště (zdvih). Starší zakázka pole nemá
+ * sloupu = délka rohového sloupku šachty (MU3, viz mustekSloupVychoziM).
+ * Starší zakázka pole nemá
  * a čte se přes mustkySkupiny(): `mustkyKs` (nebo zaškrtnutý `mustek`)
  * + `mustekHloubkaMm` = jedna skupina s výchozím provedením. Uložená data
  * se NEPŘEPISUJÍ — převod je jen při čtení.
@@ -858,13 +859,15 @@ const MUSTEK_RADEK = {
 const mustekCesta = k => 'C.' + k;
 const mustekVolba = (seznam, v, vychozi) => (seznam.some(x => x[0] === v) ? v : vychozi);
 const mustekText = v => (typeof v === 'string' ? v.slice(0, MUSTEK_TEXT_MAX) : '');
-/* Kladné číslo, nebo '' (prázdno není nula). */
+/* Kladné číslo, nebo '' (prázdno není nula). MU3 (#560, 6. 11. 2026): text
+ * s desetinnou čárkou („17,3") se čte jako číslo — karta Můstky přijímá
+ * českou čárku i tečku stejně jako pole Zadání šachty. */
 const mustekKladne = v => {
   if (v === null || v === undefined || String(v).trim() === '') return '';
-  const n = +v;
+  const n = typeof v === 'string' ? +v.trim().replace(',', '.') : +v;
   return Number.isFinite(n) && n > 0 ? n : '';
 };
-const mustekKusy = v => { const n = +v; return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0; };
+const mustekKusy = v => { const n = typeof v === 'string' ? +v.trim().replace(',', '.') : +v; return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0; };
 function mustekSkupinaOciste(s) {
   const x = (s && typeof s === 'object' && !Array.isArray(s)) ? s : {};
   return {
@@ -875,6 +878,22 @@ function mustekSkupinaOciste(s) {
     kotveni: mustekVolba(MUSTEK_KOTVENI, x.kotveni, 'deska'), kotveniText: mustekText(x.kotveniText),
     sloupyKs: mustekKusy(x.sloupyKs), sloupVyskaM: mustekKladne(x.sloupVyskaM),
   };
+}
+/* VÝCHOZÍ VÝŠKA SLOUPU NAVÍC (MU3 #560, připomínka J. V. 6. 11. 2026:
+ * „jaká je výška šachty při zdvihu 17,3 m? Myslím, že to není totéž
+ * a sloupy můstků potom neodpovídají").
+ *
+ * Do MU3 se prázdná výška brala jako zdvih — jenže sloup navíc je podle
+ * rozhodnutí 4. 11. (A-Q5) jakl jako rohový sloupek šachty a ten jde přes
+ * celou výšku šachty H = prohlubeň + zdvih + přejezd. Rohový sloupek má
+ * v jádru délku H − 0,2 m (`dSloupky = H·n − 0,2·n`, předloha), sloup navíc
+ * proto stejně; rezerva profilů se přičítá k oběma až v součtu
+ * (sloupyMustkuM). Vyplněná výška skupiny platí dál beze změny. */
+const MUSTEK_SLOUP_ODPOCET_M = 0.2;
+function mustekSloupVychoziM(z) {
+  const num = v => (Number.isFinite(+v) ? +v : 0);
+  const H = num(z && z.prejezd) + num(z && z.zdvih) + num(z && z.prohluben);
+  return Math.max(Math.round((H - MUSTEK_SLOUP_ODPOCET_M) * 1e6) / 1e6, 0);
 }
 /* Nová skupina (tlačítko „+ další provedení"; převod starého tvaru). */
 function mustekSkupinaNova(ks) { return mustekSkupinaOciste({ ks: ks == null ? 1 : ks }); }
@@ -920,7 +939,7 @@ function mustkyRozpad(z, c, fixes) {
   const skupiny = mustkySkupiny(z).map(s => Object.assign({}, s, {
     sirkaEfMm: (m2 && s.sirkaMm !== '') ? +s.sirkaMm : sirkaSachtyMm,
     delkaEfMm: s.delkaMm !== '' ? +s.delkaMm : MUSTEK_DELKA_VYCHOZI_MM,
-    vyskaSloupuM: s.sloupVyskaM !== '' ? +s.sloupVyskaM : num(z && z.zdvih),
+    vyskaSloupuM: s.sloupVyskaM !== '' ? +s.sloupVyskaM : mustekSloupVychoziM(z),
   }));
   const prvni = skupiny[0];
   const sirkaMm = prvni ? prvni.sirkaEfMm : sirkaSachtyMm;
@@ -2129,7 +2148,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   /* Sloupy navíc pod můstky (#560) — řádky jen při sloupech (Model 2). */
   const mustkySloupyRadky = () => (mustky > 0 && sloupyMustkuM > 0) ? [
     mkItem(MUSTEK_RADEK.sloupy, sloupyMustkuKg, c.profilasKgKc, { cenaPath: 'C.profilasKgKc',
-      pozn: mustkyR.sloupyKs + ' ks, ' + (Math.round(mustkyR.sloupyM * 100) / 100) + ' m' }),
+      pozn: mustkyR.sloupyKs + ' ks, ' + (Math.round(mustkyR.sloupyM * 100) / 100).toLocaleString('cs-CZ') + ' m' }),
     mkItem(MUSTEK_RADEK.sloupyLak, 1, sloupyMustkuLakKc, { naklad: sloupyMustkuLakKc, cenaSkupina: 'C.lak.*' }),
   ] : [];
   /* SEKCE MŮSTKY — skladebný model (#560, Model 2 + nový ceník). Řádek
@@ -2803,4 +2822,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, cenikMigraceMustku, mustkyCenikKontrola, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, mustekSloupVychoziM, MUSTEK_SLOUP_ODPOCET_M, cenikMigraceMustku, mustkyCenikKontrola, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

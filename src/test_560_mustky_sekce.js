@@ -106,12 +106,15 @@ const radek = (r, n) => (r.sekce.mustky || []).concat(r.sekce.hrubaOck).find(x =
     && blizko(radek(r2s, 'MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL').mnozstvi, 2 * 1 * 1200 / 2000));
   const sl = radek(r2s, E.MUSTEK_RADEK.sloupy);
   const jSl = J[zM1.profily.sloupek.dim];
-  const kgOcek = 2 * 12 * (1 + zM1.rezervaProfilyPct) * jSl.kg[String(zM1.profily.sloupek.tl)];
+  /* MU3 (#560, 6. 11. 2026): prázdná výška sloupu = délka rohového sloupku
+   * šachty H − 0,2 = 1,2 + 12 + 3,3 − 0,2 = 16,3 m (do MU3 zdvih 12 m). */
+  const vSl = 16.3;
+  const kgOcek = 2 * vSl * (1 + zM1.rezervaProfilyPct) * jSl.kg[String(zM1.profily.sloupek.tl)];
   test('B sloupy = sloupky šachty: profil sloupku, rezerva profilů, Kč/kg profilů', !!sl && blizko(sl.mnozstvi, kgOcek)
     && sl.cenaPath === 'C.profilasKgKc' && sl.cena === C354().profilasKgKc, [sl && sl.mnozstvi, kgOcek]);
   const lak = radek(r2s, E.MUSTEK_RADEK.sloupyLak);
   const L = C354().lak;
-  const lakOcek = L.rezim === 'tomas' ? L.tomasProfilM2 * 2 * 12 * (1 + zM1.rezervaProfilyPct) * jSl.m2 : L.lakovnaProfilBm * 2 * 12 * (1 + zM1.rezervaProfilyPct);
+  const lakOcek = L.rezim === 'tomas' ? L.tomasProfilM2 * 2 * vSl * (1 + zM1.rezervaProfilyPct) * jSl.m2 : L.lakovnaProfilBm * 2 * vSl * (1 + zM1.rezervaProfilyPct);
   test('B sloupy: lakování sazbou profilů', !!lak && blizko(lak.naklad, lakOcek), [lak && lak.naklad, lakOcek]);
   test('B sloupy: nová sazba Kč/bm se nezavádí', !('mustekSloupBmKc' in E.DEFAULT_CENIK) && E.MUSTKY_SKLADBA_KLICE.indexOf('mustekSloupBmKc') < 0);
 
