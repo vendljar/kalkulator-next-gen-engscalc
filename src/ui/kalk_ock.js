@@ -936,11 +936,20 @@ function mustkyKarta(rAkt) {
   const skladebny = !!(rAkt && rAkt.mustky && rAkt.mustky.skladebny);
   const sk = mustkySkupiny(Z);
   const sirkaSachty = Math.round((+Z.sirka || 0) * 1000);
-  const zdvih = +Z.zdvih || 0;
+  /* MU3 (#560): prázdná výška sloupu = délka rohového sloupku šachty
+   * (prohlubeň + zdvih + přejezd − 0,2 m, mustekSloupVychoziM v jádru);
+   * nápověda v poli i v bublině s českou desetinnou čárkou. */
+  const sloupVych = mustekSloupVychoziM(Z);
+  const cz = n => (typeof formatCislo === 'function' ? formatCislo(n) : String(Math.round(n * 100) / 100).replace('.', ','));
   const sel = (i, pole, seznam, hodnota, popisky, tit) => `<select class="mu-${pole}" title="${esc(tit)}" onchange="mustekPoleSet(${i}, '${pole}', this.value)">`
     + seznam.map(([k, t]) => `<option value="${esc(k)}" ${String(hodnota) === String(k) ? 'selected' : ''}>${esc((popisky && popisky[k]) || t)}</option>`).join('') + '</select>';
+  /* Číselné pole karty = týž prvek jako pole Zadání šachty (inp() v common.js:
+   * <input type="number">, prohlížeč v české stránce ukazuje desetinnou
+   * čárku a přijme čárku i tečku). Šedá nápověda je text, ten prohlížeč
+   * nepřevádí — proto jde přes formatCislo (MU3, J. V. 6. 11.: „používáš
+   * tečku místo čárky"). */
   const cis = (i, pole, hodnota, opts) => `<input type="number" class="mu-${pole}" min="0" step="${opts.step || 1}"
-      value="${esc(hodnota === '' || hodnota == null ? '' : hodnota)}" placeholder="${esc(opts.ph == null ? '' : opts.ph)}"
+      value="${esc(hodnota === '' || hodnota == null ? '' : hodnota)}" placeholder="${esc(opts.ph == null || opts.ph === '' ? '' : (typeof opts.ph === 'number' ? cz(opts.ph) : opts.ph))}"
       title="${esc(opts.t || '')}" onchange="mustekPoleSet(${i}, '${pole}', this.value)">`;
   const txt = (i, pole, hodnota, ph) => `<input type="text" class="mu-text" maxlength="${MUSTEK_TEXT_MAX}" value="${esc(hodnota || '')}"
       placeholder="${esc(ph)}" onchange="mustekPoleSet(${i}, '${pole}', this.value)">`;
@@ -959,7 +968,8 @@ function mustkyKarta(rAkt) {
       <td>${sel(i, 'podlaha', MUSTEK_PODLAHY, s.podlaha, MUSTKY_UI_POPISKY.podlaha, 'provedení podlahy můstku')}${s.podlaha === 'jine' ? txt(i, 'podlahaNazev', s.podlahaNazev, 'jaká podlaha') : ''}</td>
       <td><span class="mu-dvojice">${sel(i, 'zabradli', MUSTEK_ZABRADLI, s.zabradli, MUSTKY_UI_POPISKY.zabradli, 'typ zábradlí')}${s.zabradli !== 'bez' ? sel(i, 'zabradliStrany', [['2', 'obě strany'], ['1', 'jedna strana']], String(s.zabradliStrany), null, 'zábradlí na obou stranách, nebo jen na jedné') : ''}</span>${s.zabradli === 'jine' ? txt(i, 'zabradliNazev', s.zabradliNazev, 'jaké zábradlí') : ''}</td>
       <td>${sel(i, 'kotveni', MUSTEK_KOTVENI, s.kotveni, MUSTKY_UI_POPISKY.kotveni, 'kotvení můstku')}${s.kotveni === 'jine' ? txt(i, 'kotveniText', s.kotveniText, 'jak kotvit') : ''}</td>
-      <td><span class="mu-dvojice">${cis(i, 'sloupyKs', s.sloupyKs || '', { ph: 0, t: 'sloupy navíc pod můstky — počítají se jako rohové sloupky šachty (profil sloupku z Dimenze profilů)' })}<span class="mu-krat">×</span>${cis(i, 'sloupVyskaM', s.sloupVyskaM, { step: 0.1, ph: zdvih || '', t: 'výška sloupu v m; prázdné = výška nejvyššího nástupiště (zdvih)' })}</span></td>
+      <td><span class="mu-dvojice">${cis(i, 'sloupyKs', s.sloupyKs || '', { ph: 0, t: 'sloupy navíc pod můstky — počítají se jako rohové sloupky šachty (profil sloupku z Dimenze profilů)' })}<span class="mu-krat">×</span>${cis(i, 'sloupVyskaM', s.sloupVyskaM, { step: 0.1, ph: sloupVych || '', t: 'výška sloupu v m; prázdné = výška šachty (prohlubeň + zdvih + přejezd) − 0,2 m jako rohový sloupek'
+        + (sloupVych > 0 ? ' = ' + cz(sloupVych) + ' m' : '') })}</span></td>
       <td class="mu-akce">${odeber}</td></tr>`;
   }).join('');
   const lista = !m2

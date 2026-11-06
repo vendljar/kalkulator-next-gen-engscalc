@@ -1,3 +1,30 @@
+# Předávka — 6. 11. 2026: MU3 #560 — výška sloupů navíc pod můstky a česká čárka v kartě Můstky, větev `claude/mu3-sloupy-vyska`
+
+Nad `7632ca5` (integrace v6.11.3). **Verze v6.11.4** v CHANGELOG (koordinace přečísluje). Neslučováno; do `test-draft`,
+`test` ani `main` nic. Na webech, Disku ani v Pipedrive nic.
+
+**Připomínka J. V. 6. 11.** (zdvih 17,3 m, přejezd 2,7 m, prohlubeň 1,05 m; nápověda u sloupů „17.3"): výška šachty
+není zdvih a sloupy můstků neodpovídají; tečka místo čárky.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. prázdná výška sloupu = délka rohového sloupku (H − 0,2 m) | ✅ | `mustekSloupVychoziM`, `MUSTEK_SLOUP_ODPOCET_M` v `src/engine.js`; rohový sloupek v jádru `dSloupky = H·n − 0,2·n` → u snímku 20,85 m (dřív 17,3) |
+| 1b. vyplněná výška beze změny, zamčené nabídky zmrazené | ✅ | jádro čte `sloupVyskaM` jako dřív; zmrazený výsledek se nepřepočítává |
+| 1c. nápověda, manuál | ✅ | bublina „prázdné = výška šachty (prohlubeň + zdvih + přejezd) − 0,2 m jako rohový sloupek = 20,85 m"; `manual/obsah.json`; specifikace/CN výšku berou z jádra (`vyskaSloupuM`) |
+| 2. česká čárka v kartě | ✅ | nápovědy přes `formatCislo` (`src/ui/kalk_ock.js`), pole dál `type="number"` jako Zadání šachty; jádro čte „17,3" i „17.3" (`mustekKladne`, `mustekKusy`); poznámka řádku sloupů v kalkulaci `toLocaleString('cs-CZ')`; specifikace (CZ/DE/FR čárka, EN tečka), krycí list a kontroly už čárku měly |
+| 3. cena jen u sloupů s prázdnou výškou | ✅ | zlatá pojistka `test_560_zlata.json` beze změny (bez sloupů navíc); `test_560_mustky_sekce.js` dva očekávané výsledky 12 → 16,3 m |
+| testy | ✅ | `src/test_560_mu3_sloupy.js` 23/0 (na 7632ca5 15 FAIL), `overit_560_mustky.mjs` bod 8 → 52/0 |
+| mutace | ✅ | „[MU3 #560]" 9/9 chycené, `--kontrola` 733 úseků |
+| kolo `--bez-mutaci` | KOLO_VYSLEDEK | |
+| roadmapa #560 pozn., CHANGELOG, PREDAVKA | ✅ | |
+
+**Otevřené body pro J. V. (přes koordinaci):** (a) výchozí výška = H − 0,2 m (přesně jako rohový sloupek v jádru),
+ne celé H — zadání říká „H", ale i „stejně jako rohový sloupek"; při volbě celého H stačí `MUSTEK_SLOUP_ODPOCET_M = 0`
+a přepočítat dvě čísla v testech; (b) zápis čárky z klávesnice v `type="number"` řídí národní nastavení prohlížeče —
+v českém Chrome čárku ukáže i přijme, Chromium harnessu češtinu v číselném poli nemá a čárku zahodí **u karty
+i u pole Zdvih stejně** (harness hlídá shodu obou polí). Kdyby to J. V. chtěl nezávisle na prohlížeči, šlo by
+o změnu všech číselných polí aplikace (text + vlastní čtení), ne jen karty.
+
 # Předávka — 6. 11. 2026: DZ2 #574 — kopie zálohy na Disk: zapamatovaná složka v počítači už není, větev `claude/dz2-slozka-nenalezena` (sloučeno do integrace jako v6.11.3)
 
 Nad `6b70cc3` (integrace v5.11.3 s DZ #571). **Verze 6.11.2** (koordinace přečísluje). Neslučováno; do `test-draft`,

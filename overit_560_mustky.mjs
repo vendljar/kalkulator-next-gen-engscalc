@@ -14,10 +14,13 @@
  *      (bez DPH)"; Word se šablonou v15 (klon) i v16 (symboly);
  *   6) zamčená varianta: změna v kartě se nezapíše; žádná chyba v konzoli;
  *   7) rozložení karty (MU2): bez překryvů, záhlaví nad sloupci, nezkrácené
- *      selecty, lišta nad tabulkou, tlačítko pod ní, 1200/1440/1920 i tisk.
+ *      selecty, lišta nad tabulkou, tlačítko pod ní, 1200/1440/1920 i tisk;
+ *   8) výška sloupu navíc a česká čárka (MU3): nápověda 20,85 = výška šachty
+ *      − 0,2 m, zápis „17,3" i „17.3" z klávesnice, řádek kalkulace s čárkou.
  *
  * Pojistka: nad 000924e karta ani sekce neexistují — body 1, 2, 5 selžou;
- * nad 6b70cc3 (před MU2) selže bod 7 (tlačítko a lišta přes tabulku).
+ * nad 6b70cc3 (před MU2) selže bod 7 (tlačítko a lišta přes tabulku);
+ * nad 7632ca5 (před MU3) selže bod 8 (nápověda „17.3", zdvih místo H − 0,2).
  * Spuštění: node overit_560_mustky.mjs (po python3 build.py)
  */
 import { chromium } from 'playwright';
@@ -241,6 +244,62 @@ for (const [sir, mod, n, cd] of [[1200, 2, 3, 'stary'], [1200, 2, 2, 'stary'], [
   }, [cenStary]);
   await pg.close();
   zkus('7 tisk: tlačítka karty se netisknou, lišta nad tabulkou, tabulka se vejde', t && t.tlacitkaSkryta && t.listaNad && t.celaTabulka, t);
+}
+
+/* 8) VÝŠKA SLOUPU A ČESKÁ ČÁRKA (MU3, J. V. 6. 11. 2026: zdvih 17,3 m,
+ * přejezd 2,7 m, prohlubeň 1,05 m, nápověda „17.3"). Nápověda výšky sloupu
+ * = délka rohového sloupku (H − 0,2 = 20,85 m) s čárkou; zápis „17,3"
+ * i „17.3" z klávesnice v české stránce (prohlížeč s cs-CZ) se uloží jako
+ * 17,3; poznámka řádku sloupů v kalkulaci s čárkou. */
+{
+  const ctxCs = await b.newContext({ locale: 'cs-CZ' });
+  const pg = await ctxCs.newPage(); await pg.setViewportSize({ width: 1440, height: 1000 });
+  const chybyCs = []; pg.on('pageerror', e => chybyCs.push(e.message));
+  await pg.goto(KDE); await pg.waitForFunction(() => typeof render === 'function' && typeof NAST !== 'undefined');
+  const pr = await pg.evaluate(([c]) => {
+    ZAK = novaZakazka(); syncVarianta();
+    Object.assign(Z, { typSachty: 'exteriérová', profily: JSON.parse(JSON.stringify(PROFILY_VYCHOZI['exteriérová'])), sirka: 1.6, hloubka: 2,
+      zdvih: 17.3, prejezd: 2.7, prohluben: 1.05, nastupiste: 5, rohoveSloupky: 4 });
+    Object.keys(C).forEach(k => delete C[k]); Object.assign(C, JSON.parse(JSON.stringify(c))); delete C.prazdny; OCK.fixes = true;
+    Z.mustky = [{ ks: 1, sloupyKs: 2 }];
+    prepniTab('kalk'); render();
+    const k = document.getElementById('ock-mustky');
+    const v = k && k.querySelector('input.mu-sloupVyskaM');
+    const tdPozn = [...document.querySelectorAll('#page-kalk tr')].find(tr => [...tr.querySelectorAll('input.nazev-ed')].some(i => /SLOUPY NAVÍC \(PROFIL\)/.test(i.value)));
+    return { ph: v && v.placeholder, title: v && v.title, typ: v && v.type,
+      tecky: k ? [...k.querySelectorAll('input')].map(i => i.placeholder).filter(x => /\d\.\d/.test(x)) : null,
+      sloupyM: vypocetAkt().mustky.sloupyM, radek: tdPozn ? tdPozn.textContent.replace(/\s+/g, ' ') : '' };
+  }, [cen]);
+  zkus('8 nápověda výšky sloupu = výška šachty − 0,2 m s čárkou („20,85")', pr.ph === '20,85', pr);
+  zkus('8 bublina říká „výška šachty (prohlubeň + zdvih + přejezd)"', /výška šachty \(prohlubeň \+ zdvih \+ přejezd\)/.test(pr.title || ''), pr.title);
+  zkus('8 v kartě žádná nápověda s desetinnou tečkou; pole je type=number jako v Zadání šachty', pr.tecky && !pr.tecky.length && pr.typ === 'number', pr.tecky);
+  zkus('8 prázdná výška počítá 2 × 20,85 m', Math.abs(pr.sloupyM - 41.7) < 1e-9, pr.sloupyM);
+  zkus('8 řádek kalkulace „2 ks, 41,7 m" (čárka)', /2 ks, 41,7 m/.test(pr.radek), pr.radek);
+  /* Zápis z klávesnice: karta se musí chovat STEJNĚ jako pole Zdvih
+   * v Zadání šachty (týž prvek). Jak prohlížeč čte čárku v type=number,
+   * řídí jeho národní nastavení — český Chrome ukazuje i přijímá „17,3";
+   * Chromium v harnessu češtinu v číselném poli nemá (čárku zahodí u obou
+   * polí stejně), proto se tu porovnává shoda s polem Zdvih a hodnota, kterou
+   * pole předá dál, se zkouší přímo (mustekPoleSet s „17,3" i „17.3"). */
+  const zapis = async (sel, txt, cti) => {
+    const el = pg.locator(sel).first();
+    await el.click(); await pg.keyboard.press('Control+A'); await pg.keyboard.press('Backspace');
+    await pg.keyboard.type(txt); await pg.keyboard.press('Tab');
+    return pg.evaluate(cti);
+  };
+  for (const txt of ['17,3', '17.3']) {
+    const vKarte = await zapis('#ock-mustky input.mu-sloupVyskaM', txt, () => Z.mustky[0].sloupVyskaM);
+    const zdvihPred = await pg.evaluate(() => Z.zdvih);
+    const vZdvihu = await zapis('#inputs .row:has(> label:text-is("Zdvih")) input', txt, () => Z.zdvih);
+    await pg.evaluate((z) => { set('Z.zdvih', z); }, zdvihPred);
+    zkus('8 zápis „' + txt + '" z klávesnice: karta Můstky = pole Zdvih v Zadání šachty', vKarte === vZdvihu, { vKarte, vZdvihu });
+  }
+  const predane = await pg.evaluate(() => ['17,3', '17.3'].map(t => { mustekPoleSet(0, 'sloupVyskaM', t); return Z.mustky[0].sloupVyskaM; }));
+  zkus('8 hodnota „17,3" i „17.3" z pole → 17,3 m', predane[0] === 17.3 && predane[1] === 17.3, predane);
+  const vVyp = await pg.evaluate(() => vypocetAkt().mustky.skupiny[0].vyskaSloupuM);
+  zkus('8 vyplněná výška platí (17,3 m)', vVyp === 17.3, vVyp);
+  zkus('8 žádná chyba stránky', !chybyCs.length, chybyCs);
+  await ctxCs.close();
 }
 
 /* 6) zamčená varianta */

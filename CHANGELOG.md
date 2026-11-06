@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v6.11.4 — MU3 #560: výška sloupů navíc pod můstky = délka rohového sloupku šachty, česká čárka v kartě Můstky, větev claude/mu3-sloupy-vyska
+
+Nad `7632ca5` (integrace v6.11.3: MU #560, MU2, DP #573, DZ2 #574). Připomínka J. V. 6. 11. 2026 (zdvih 17,3 m, horní
+přejezd 2,7 m, prohlubeň 1,05 m; u sloupů šedá nápověda „17.3"): „jaká je výška šachty při zdvihu 17,3 m? Myslím, že
+to není totéž a sloupy můstků potom neodpovídají. pozor na formát můstků, používáš tečku místo čárky." Na webech,
+Disku ani v Pipedrive nic. Verzi přečísluje koordinace.
+
+- **Výchozí výška sloupu navíc** (prázdné pole) = délka rohového sloupku šachty: prohlubeň + zdvih + přejezd − 0,2 m
+  (`mustekSloupVychoziM` v `src/engine.js`; tentýž odpočet 0,2 m jako `dSloupky` u rohových sloupků, rezerva profilů
+  se přičítá k oběma až v součtu). Do MU3 to byl zdvih — u snímku J. V. 17,3 m místo 20,85 m. Vyplněná výška platí
+  beze změny; zamčené a odeslané nabídky drží zmrazený výsledek.
+- **Česká čárka v kartě Můstky:** šedé nápovědy (výška sloupu, délka, šířka) přes `formatCislo` („20,85", „1 000"),
+  bublina „prázdné = výška šachty (prohlubeň + zdvih + přejezd) − 0,2 m jako rohový sloupek = 20,85 m". Pole jsou
+  dál týž prvek jako v Zadání šachty (`<input type="number">`, český prohlížeč ukazuje a přijímá čárku); jádro
+  nově přečte i text „17,3" (`mustekKladne`, `mustekKusy`). Poznámka řádku „MŮSTKY – SLOUPY NAVÍC (PROFIL)"
+  v kalkulaci s čárkou („2 ks, 41,7 m"). Specifikace, krycí list a kontroly čárku už měly (EN tečka).
+- **Cena** se mění jen u skupin se sloupy navíc a prázdnou výškou (Model 2); Model 1 sloupy nezná. Zlatá pojistka
+  `src/test_560_zlata.json` beze změny (žádný scénář sloupy navíc nemá); v `test_560_mustky_sekce.js` dva očekávané
+  výsledky sloupů přepočteny na 16,3 m (H − 0,2) místo zdvihu 12 m.
+- **Testy:** `src/test_560_mu3_sloupy.js` 23/0 (na 7632ca5 15 FAIL), `overit_560_mustky.mjs` bod 8 (52/0),
+  mutace „[MU3 #560]" 9/9. Manuál obchodníka (karta Můstky) a roadmapa #560 doplněny.
+
+---
+
 ## v6.11.3 — DZ2 #574: kopie zálohy na Disk — zapamatovaná složka v počítači už není, větev claude/dz2-slozka-nenalezena
 
 Nad `6b70cc3` (integrace v5.11.3 s DZ #571). Hlášení J. V. 6. 11. 2026 (ostrý engscalc v4.11.8, Chrome):
