@@ -29,6 +29,7 @@ jen jako samostatná položka ZA). Verzi přečísluje koordinace. Na webech, Di
   „ze zaměření“), upravený `src/test_d1_dpz_bez_studie.js` (95, nové znění termínu). Mutace „[#573]“ 9 z 9
   chycených; upravené D1 Q2 5 z 5 a #569 12 z 12 (zadání „termín studie dotisku nový“ přizpůsobené);
   `--kontrola` jádro 716 a server 1321 úseků v pořádku.
+- **Kolo `--bez-mutaci`:** VŠE ZELENÉ (~32 min) — sady 399 / 0 / 7 přeskočeno (test.js + 6 prohlížečových sad bez firemních podkladů KNG_PODKLADY, jako dřív), hodiny +400 dní 321 / 0 / 1, statické 5 z 5. První běh spadl jen na verzi (verze.txt 5.11.3 × commit 6. 11.) → verze.txt 6.11.1.
 - Manuál obchodníka (`manual/obsah.json`) doplněn o odstavec k DPZ.
 
 ## v5.11.3 — DZ #571: denní kopie zálohy na Disk na ostrém webu — nikdy tiše, větev claude/dz-kopie-disk
