@@ -8,6 +8,44 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v6.11.5 — CA #575: číselná pole s českou desetinnou čárkou nezávisle na prohlížeči, větev claude/ca-desetinna-carka
+
+Nad `977bd57` (větev claude/mu3-sloupy-vyska = integrace v6.11.3 + MU3). Rozhodnutí J. V. 6. 11. 2026: pole
+`type="number"` nechávala desetinnou čárku na jazyku prohlížeče — český Chrome „17,3" ukázal i přijal, anglicky
+nastavený (i headless Chromium) čárku zahodil (17,3 → 173). Všechna číselná pole mají přijmout čárku i tečku a vždy
+ukázat českou čárku. Na webech, Disku ani v Pipedrive nic. Verzi přečísluje koordinace.
+
+- **Jeden prvek pro celou aplikaci:** `<input ${CISLO_POLE} …>` z nového `src/ui/cislo_pole.js` (v buildu před
+  `ui/common.js`) — textové pole s `inputmode="decimal"` a `data-cislo`, bez atributu `type` (nespadá pod CSS
+  `input[type=text]`, které textová pole roztahuje). Převedeno všech 61 číselných polí v `common.js` (inp(),
+  přirážky, kurz EUR, sleva), `kalk_ock.js` (Zadání šachty, karta Můstky, opláštění, množství a ceny řádků,
+  příplatky, ruční cena), `kalk_proj.js` (přirážky, sazby, hodiny, ceny, doprava, výjezd), `cenik_ui.js`,
+  `nastaveni_ui.js` (Standard OCK, stropy slev) a `podminky_ui.js`. CSS `input[type=number]` → `input[data-cislo]`.
+- **Parser a zobrazení** ve `format.js` (`cisloPoleText`, `cisloPoleZobraz`, test v Node): „17,3", „17.3", „1 250",
+  „1 250,5", „-0,5" (i „−0,5"); prázdné = prázdné (výchozí hodnoty beze změny); „abc", „1,2,3", „1 25", „17,3 m"
+  se odmítnou. Pole ukazuje desetinnou čárku a mezeru v tisících jako výstupy (`formatCislo`: „1 250", „12 500"),
+  číslice nezaokrouhluje; číselný placeholder taky česky.
+- **Data beze změny:** `el.value` číselného pole vrací normalizovaný text s tečkou — totéž, co dřív `type=number` —
+  takže obsluhy (`set(…, +this.value)`, `katSet(…, this.value)`…) zůstaly a do zakázky, ceníku i na server jde dál
+  Number. Uložené zakázky, ceník, serverové validace i výstupy (kalkulace, CN, specifikace, krycí list,
+  controlling, EN/DE/FR) beze změny.
+- **Chování polí:** nečitelný zápis zastaví posluchač `change` dřív, než se dostane k obsluze (pole se vrátí na
+  původní hodnotu, hláška „… není číslo — … Hodnota se nezměnila."), písmena se při psaní nenapíšou. Šipky ani
+  kolečko hodnotu nemění (dřív ↑/↓ krokovaly). Enter/Tab, zámek odeslané nabídky, zpět/znovu, ukládání po chvíli
+  klidu, kontrolní zvýraznění (ceník, vypnutý řádek) beze změny; `renderSFokusem` vrací rozepsaný surový text, takže
+  „17," nepřijde při autosave o čárku. Min/max/step zůstávají v poli jako popis rozsahu (prohlížeč je u `type=number`
+  také nevynucoval, jen u šipek). Plán plateb PROJ má od dřív vlastní textová pole s čárkou (přijímají i „95 880 Kč")
+  a zůstal.
+- **Testy:** `src/test_575_cislo_pole.js` 76/0 (parser, zobrazení, `ui/cislo_pole.js` v Node, žádné `type="number"`
+  v `src/ui`; na 977bd57 59 FAIL), `overit_575_desetinna_carka.mjs` 56/0 v en-US i cs-CZ (Zdvih, karta Můstky,
+  ceník OCK, přirážka a hodiny PROJ, „1 250,5", odmítnutí, Zpět; na 977bd57 40 FAIL). Upraveny harnessy a sady, které
+  hledaly `input[type=number]` (smoke, overit_560_mustky, _cenik_barvy, _lista, _o11_vyjezd, _p12_naklady,
+  _podminky_firma, _podminky_zverejnit, _proj17, _proj_editace, _vypnuty_radek, _zadani_detail, _zobrazeni;
+  test_560_mu2_karta, test_560_mu3_sloupy, test_tabulator). Zlaté pojistky beze změny. Mutace „[#575]" KOLO_MUTACE.
+  Kolo `--bez-mutaci`: KOLO_VYSLEDEK. Manuál obchodníka kap. 11 a roadmapa #575 doplněny.
+
+---
+
 ## v6.11.4 — MU3 #560: výška sloupů navíc pod můstky = délka rohového sloupku šachty, česká čárka v kartě Můstky, větev claude/mu3-sloupy-vyska
 
 Nad `7632ca5` (integrace v6.11.3: MU #560, MU2, DP #573, DZ2 #574). Připomínka J. V. 6. 11. 2026 (zdvih 17,3 m, horní

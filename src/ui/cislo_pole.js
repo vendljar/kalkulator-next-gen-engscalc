@@ -128,6 +128,6 @@ if (typeof document !== 'undefined' && document.addEventListener) {
    * celé až při `change` (např. „1 250,50" z tabulky). */
   document.addEventListener('beforeinput', (e) => {
     if (!cisloPoleJe(e.target) || e.inputType !== 'insertText' || e.data == null) return;
-    if (/[^0-9.,\s +\-−]/.test(e.data)) e.preventDefault();
+    if (/[^0-9.,\s\u00a0+\-\u2212]/.test(e.data)) e.preventDefault();
   }, true);
 }

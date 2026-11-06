@@ -81,5 +81,62 @@ const common = fs.readFileSync(path.join(UI, 'common.js'), 'utf8');
 const inpSrc = (common.match(/function inp\([\s\S]*?\n}\n/) || [''])[0];
 test('inp() v common.js používá CISLO_POLE (číslo i procenta)', (inpSrc.match(/\$\{CISLO_POLE\}/g) || []).length >= 2, inpSrc.length);
 
+/* ui/cislo_pole.js v Node: náhradní HTMLInputElement a document. */
+{
+  const vm = require('vm');
+  class HTMLInputElement {
+    constructor(attrs) { this.tagName = 'INPUT'; this._a = Object.assign({}, attrs); this._v = this._a.value || ''; }
+    hasAttribute(k) { return k in this._a; }
+    getAttribute(k) { return k in this._a ? this._a[k] : null; }
+    setAttribute(k, v) { this._a[k] = String(v); if (k === 'value' && !this._dirty) this._v = String(v); }
+    get defaultValue() { return this.getAttribute('value') || ''; }
+  }
+  Object.defineProperty(HTMLInputElement.prototype, 'value', { configurable: true, enumerable: true,
+    get() { return this._v; }, set(v) { this._v = String(v); this._dirty = true; } });
+  const posl = {};
+  const hlasky = [];
+  const document = { readyState: 'complete', documentElement: {}, querySelectorAll: () => [],
+    addEventListener: (typ, fn) => { posl[typ] = fn; } };
+  const ctx = vm.createContext(Object.assign({ console, HTMLInputElement, document,
+    hlaska: t => hlasky.push(t) }, F));
+  vm.runInContext(fs.readFileSync(path.join(UI, 'cislo_pole.js'), 'utf8') + '\n;this.CISLO_POLE = CISLO_POLE;', ctx, { filename: 'cislo_pole.js' });
+  test('CISLO_POLE nemá type (textové pole mimo CSS input[type=text]) a nese data-cislo',
+    !/type=/.test(ctx.CISLO_POLE) && /data-cislo=/.test(ctx.CISLO_POLE) && /inputmode="decimal"/.test(ctx.CISLO_POLE), ctx.CISLO_POLE);
+  const pole = (v) => new HTMLInputElement({ 'data-cislo': '1', value: v });
+  const a = pole('17,3');
+  test('value čísla „17,3" vrací „17.3" (jako dřív type=number)', a.value === '17.3', a.value);
+  test('value „1 250,5" vrací „1250.5"', pole('1 250,5').value === '1250.5');
+  test('value nečitelného textu vrací prázdno', pole('abc').value === '', pole('abc').value);
+  const b = pole(''); b.value = 17.3;
+  test('zápis value = 17.3 ukáže „17,3"', ctx.cisloPoleSurove(b) === '17,3', ctx.cisloPoleSurove(b));
+  const obyc = new HTMLInputElement({ value: '17,3' });
+  test('obyčejné textové pole se nemění', obyc.value === '17,3');
+  const c = new HTMLInputElement({ 'data-cislo': '1', value: '12500.5', placeholder: '3500' });
+  ctx.cisloPoleUprav(c);
+  test('vložené pole ukáže hodnotu i placeholder česky („12 500,5", „3 500")',
+    c.getAttribute('value') === '12 500,5' && c.getAttribute('placeholder') === '3 500', [c.getAttribute('value'), c.getAttribute('placeholder')]);
+  const tx = new HTMLInputElement({ 'data-cislo': '1', placeholder: 'jako šachta' });
+  ctx.cisloPoleUprav(tx);
+  test('textový placeholder zůstává', tx.getAttribute('placeholder') === 'jako šachta');
+
+  test('posluchače change a beforeinput jsou zaregistrované', typeof posl.change === 'function' && typeof posl.beforeinput === 'function');
+  const zmena = (el) => { let stop = false; posl.change({ target: el, stopImmediatePropagation: () => { stop = true; } }); return stop; };
+  const d = new HTMLInputElement({ 'data-cislo': '1', value: '17,3' }); d.value = '1,2,3';
+  ctx.cisloPoleSuroveNastav(d, '1,2,3');
+  const zast = zmena(d);
+  test('nečitelný zápis „1,2,3" se zastaví před obsluhou pole', zast === true);
+  test('… pole se vrátí na původní „17,3"', ctx.cisloPoleSurove(d) === '17,3', ctx.cisloPoleSurove(d));
+  test('… a ohlásí se hláška „není číslo"', hlasky.length === 1 && /není číslo/.test(hlasky[0]), hlasky);
+  const e = new HTMLInputElement({ 'data-cislo': '1', value: '' }); ctx.cisloPoleSuroveNastav(e, '17.3');
+  test('čitelný zápis „17.3" projde a ukáže se „17,3"', zmena(e) === false && ctx.cisloPoleSurove(e) === '17,3', ctx.cisloPoleSurove(e));
+  const prazdne = new HTMLInputElement({ 'data-cislo': '1', value: '5' }); ctx.cisloPoleSuroveNastav(prazdne, '');
+  test('prázdný zápis projde (prázdno = prázdno)', zmena(prazdne) === false && prazdne.value === '');
+  const vstup = (data) => { let zak = false; posl.beforeinput({ target: pole(''), inputType: 'insertText', data, preventDefault: () => { zak = true; } }); return zak; };
+  test('psaní: písmeno se nepustí, číslice, čárka, tečka, mezera a minus ano',
+    vstup('x') && vstup('e') && !vstup('1') && !vstup(',') && !vstup('.') && !vstup(' ') && !vstup('-'));
+  test('cisloPoleChybne pozná nečitelný obsah', ctx.cisloPoleChybne(Object.assign(pole(''), {})) === false
+    && (() => { const q = pole(''); ctx.cisloPoleSuroveNastav(q, 'abc'); return ctx.cisloPoleChybne(q); })());
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);
