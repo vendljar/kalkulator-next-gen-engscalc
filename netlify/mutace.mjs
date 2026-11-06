@@ -191,6 +191,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_554_kopie_denne.js',
      /* #571 DZ (5. 11. 2026): denní kopie na Disk nikdy tiše, žádost o právo při přihlášení. */
      '../src/test_571_kopie_disk_stav.js', 'test_571_kopie_disk.mjs',
+     /* #574 DZ2 (6. 11. 2026): zapamatovaná složka pro kopii na Disk v počítači už není. */
+     '../src/test_574_slozka_nenalezena.js',
      /* #555 ZO (3. 11. 2026): hláška odmítnutí zamčených dat s variantou a cestou. */
      'test_555_klon_tisk.mjs', '../src/test_555_klon_tisk.js',
      /* #555b ZO2 (3. 11. 2026): ceník odeslané varianty uložené starší verzí. */
@@ -543,6 +545,53 @@ const MUTACE = [
     hledej: "  } catch (e) {\n    return kopieDiskCeka('chyba', 'kopii se nepodařilo pořídit: '",
     nahrad: "  } catch (e) {\n    throw e;\n    return kopieDiskCeka('chyba', 'kopii se nepodařilo pořídit: '",
     proc: 'chyba kopie by se ztratila v .catch automatiky a správce by se nic nedozvěděl' },
+  /* #574 DZ2 (6. 11. 2026, hlášení J. V.): zapamatovaná složka pro kopii na
+   * Disk v počítači už není (NotFoundError). Hlídá src/test_574_slozka_nenalezena.js
+   * (prohlížečový overit_dz_kopie_disk.mjs I–M v mutacích neběží). [#574] */
+  { nazev: '#574: sonda nepozná zmizelou složku [#574]', soubor: '../src/ui/online_ui.js',
+    hledej: "    if (kopieDiskNenalezena(e)) return 'nenalezena';\n    if (e && (e.name === 'NotAllowedError'",
+    nahrad: "    if (e && (e.name === 'NotAllowedError'",
+    proc: "zmizelá složka by se poznala až po hesle při zápisu (hlášení J. V. 6. 11.)" },
+  { nazev: '#574: jen NotFoundError [#574]', soubor: '../src/ui/online_ui.js',
+    hledej: "const KOPIE_DISK_NENALEZENA_CHYBY = ['NotFoundError', 'InvalidStateError', 'NotReadableError'];",
+    nahrad: "const KOPIE_DISK_NENALEZENA_CHYBY = ['NotFoundError'];",
+    proc: "odpojená či změněná složka (InvalidStateError, NotReadableError) by tlačítko zase zasekla" },
+  { nazev: '#574: zapomenutí nesmaže IndexedDB [#574]', soubor: '../src/ui/online_ui.js',
+    hledej: "  KOPIE_DISK.slozka = null;\n  kopieDiskIdb(null).catch(() => false);\n}\nfunction kopieDiskNenalezenaText",
+    nahrad: "  KOPIE_DISK.slozka = null;\n}\nfunction kopieDiskNenalezenaText",
+    proc: "po obnovení stránky by se zastaralá složka vrátila z IndexedDB" },
+  { nazev: '#574: tlačítko sondu nevolá [#574]', soubor: '../src/ui/online_ui.js',
+    hledej: "      let sonda = await kopieDiskSonda(h);",
+    nahrad: "      let sonda = 'ok';",
+    proc: "přesně v5.11.3: heslo, stažení zálohy a pak anglická hláška" },
+  { nazev: '#574: tlačítko po zapomenutí výběr nenabídne [#574]', soubor: '../src/ui/online_ui.js',
+    hledej: "kopieDiskZapomen(); h = null; pravoOk = null; }",
+    nahrad: "kopieDiskZapomen(); return false; }",
+    proc: "správce by musel klikat dvakrát a nevěděl by proč" },
+  { nazev: '#574: nevybraná složka po zmizelé = anglická hláška [#574]', soubor: '../src/ui/online_ui.js',
+    hledej: "        if (zmizela) {   // #574",
+    nahrad: "        if (0) {   // #574",
+    proc: "při vypršeném gestu by se ukázal jen SecurityError anglicky" },
+  { nazev: '#574: zápis NotFoundError nepřeloží (kopieDiskProved) [#574]', soubor: '../src/ui/online_ui.js',
+    hledej: "  try { velikostB = await kopieDiskZapisSoubor(h, jmeno, data); } catch (e) { throw kopieDiskChybaSlozky(e, h); }",
+    nahrad: "  velikostB = await kopieDiskZapisSoubor(h, jmeno, data);",
+    proc: "složka zmizelá mezi sondou a zápisem by se nezapomněla v automatice" },
+  { nazev: '#574: tlačítko chybu nepřeloží [#574]', soubor: '../src/ui/online_ui.js',
+    hledej: "    const x = kopieDiskChybaSlozky(e, KOPIE_DISK.slozka);",
+    nahrad: "    const x = e;",
+    proc: "surová NotFoundError → anglická hláška a složka zůstane zapamatovaná" },
+  { nazev: '#574: automatika sondu nevolá [#574]', soubor: '../src/ui/online_ui.js',
+    hledej: "  if ((await kopieDiskSonda(h)) === 'nenalezena') {",
+    nahrad: "  if (false) {",
+    proc: "automatika by se ptala na zmizelou složku jen jako „chyba kopie\" s anglickou hláškou" },
+  { nazev: '#574: automatika nenalezenou při zápisu hlásí jako chybu [#574]', soubor: '../src/ui/online_ui.js',
+    hledej: "    if (e && e.nenalezena) return kopieDiskCeka('nenalezena', kopieDiskNenalezenaDuvod(h.name));\n",
+    nahrad: "",
+    proc: "důvod by nebyl „složka nenalezena — vyberte ji znovu\"" },
+  { nazev: '#574: výzva neřekne, kterou složku vybrat [#574]', soubor: '../src/ui/online_ui.js',
+    hledej: "  const dal = (duvod === 'slozka' || duvod === 'nenalezena') ? ' a vyberte",
+    nahrad: "  const dal = duvod === 'slozka' ? ' a vyberte",
+    proc: "správce by nevěděl, že má vybrat „_Zaloha Netlify DB\"" },
   /* #571 DZ (5. 11. 2026, hlášení J. V.): denní kopie na Disk se na ostrém
    * po přihlášení neudělala a nic se neohlásilo (právo zápisu „prompt").
    * Hlídají src/test_554_kopie_denne.js, src/test_571_kopie_disk_stav.js

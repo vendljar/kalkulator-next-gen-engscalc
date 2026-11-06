@@ -1222,6 +1222,9 @@
        "text": "E-mail hlásí starou kopii na Disku → *Zkopírovat zálohu na Disk teď* do složky _Zaloha Netlify DB."
       },
       {
+       "text": "Hláška „Složka … na tomto počítači už není“ / „složka nenalezena“ → složka se přesunula či přejmenovala nebo Disk Google neběží; *Zkopírovat zálohu na Disk teď* a vybrat _Zaloha Netlify DB znovu (aplikace starou zapomněla)."
+      },
+      {
        "text": "E-mail hlásí menší zálohu → nejdřív ověřit, zda data nezmizela (Přehled nabídek, Uživatelé). Zmizela → obnova (kapitola P6). Úbytek byl záměrný → hlavní správce potvrdí v kartě Databáze."
       }
      ]

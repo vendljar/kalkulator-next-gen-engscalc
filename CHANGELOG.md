@@ -8,6 +8,34 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v6.11.2 — DZ2 #574: kopie zálohy na Disk — zapamatovaná složka v počítači už není, větev claude/dz2-slozka-nenalezena
+
+Nad `6b70cc3` (integrace v5.11.3 s DZ #571). Hlášení J. V. 6. 11. 2026 (ostrý engscalc v4.11.8, Chrome):
+Nastavení → Databáze → „Zkopírovat zálohu na Disk teď" → po zadání hesla „Kopii zálohy na Disk se nepodařilo
+pořídit: A requested file or directory could not be found at the time an operation was processed."; automatická
+kopie po přihlášení 5. 11. také neproběhla. Na webech ani na Disku nic. Verzi přečísluje koordinace.
+
+- **Příčina:** zapamatovaná složka (IndexedDB `kng_uloziste` / `handles` / `zalohaDisk`) ukazuje na místo, kde
+  v počítači už není — složka nebo nadřazená se přesunula či přejmenovala, nebo Disk Google připojil disk jinak
+  (či neběží). Jméno složky i dotaz na právo projdou, chyba (DOMException NotFoundError) přijde až při zápisu —
+  po hesle a stažení zálohy. Aplikace složku nezapomněla, takže tlačítko nikdy nenabídlo nový výběr. DZ #571
+  zapomínal složku jen po zamítnutém právu.
+- **Sonda před heslem:** první položka ze složky (`values()`, nic se nezapisuje). Ověřeno v Chromiu: živá složka
+  (i prázdná) projde, zmizelá hodí NotFoundError s přesně tou hláškou; `getFileHandle` bez `create` to nerozliší.
+  NotFoundError, InvalidStateError a NotReadableError → složka se **zapomene** (paměť i IndexedDB).
+- **Tlačítko:** po zapomenutí v témže kliknutí nabídne výběr složky; když výběr nejde (vypršelé gesto, zrušení),
+  česká hláška „Složka „…" na tomto počítači už není (přesunutá nebo přejmenovaná, případně Disk Google na počítači
+  neběží). Klikněte znovu … a vyberte složku „_Zaloha Netlify DB" na Disku Google." Nikdy jen anglická hláška.
+- **Automatika po přihlášení:** zapomene a ukáže důvod „složka … nenalezena — … vyberte ji znovu" s tlačítkem
+  (lišta i Nastavení → Databáze), nikdy tiše.
+- **NotFoundError až při zápisu** (sonda prošla): totéž — zapomenout + česká hláška / důvod.
+- **Testy:** `src/test_574_slozka_nenalezena.js` (30), `overit_dz_kopie_disk.mjs` rozšířený o scénáře I–M
+  (33; mock handle hází DOMException NotFoundError, výběr složky jako Chrome jen s aktivací kliknutím);
+  `test_571`/`test_554` dostaly stub sondy. Mutace „[#574]" (11).
+- **Manuál správce:** Bezpečnost a zálohy — co dělat při hlášce o nenalezené složce (postup i potíže);
+  `manual/kompletni/provoz.json`.
+- **Po nasazení:** J. V. jednou klikne na „Zkopírovat zálohu na Disk teď" a vybere složku _Zaloha Netlify DB znovu.
+
 ## v5.11.3 — DZ #571: denní kopie zálohy na Disk na ostrém webu — nikdy tiše, větev claude/dz-kopie-disk
 
 Nad `000924e` (`main` = `test` = v4.11.8). Hlášení J. V. 5. 11. 2026: na ostrém webu se po přihlášení správce
