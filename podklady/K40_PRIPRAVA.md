@@ -22,7 +22,7 @@ s nulovou plochou podle cest ceníku (`TS_OPL_SKLA` = `C.skloBokyKc`, `C.skloCel
 názvu řádku — s migrací názvů se nepotká. Testy k N1 přibyly: `src/test_570_sklo_bez_plochy.js` (#572).
 
 **Roadmapa:** obsazeno #568, #569, #572 (PH), #570 drží návrh víc šachet, #571 DZ → K40 má volné **#567** a pak
-od **#573** (překonáno 6. 11.: od #575).
+od **#573** (překonáno 6. 11.: od #576).
 
 **5. průchod nad `6b70cc3`** (5. 11. 2026, `origin/claude/integrace-16-10`, **v5.11.3** = v5.11.1 + MU #560 můstky
 (v5.11.2) + DZ #571 kopie na Disk (v5.11.3)). **Všechny body trvají** (N1 a N2 znovu ověřeny v Node). **Čísla řádků
@@ -51,7 +51,7 @@ v tabulce jsou z `6b70cc3`.**
   `prekladNorm` 1286 → 1314, `ctrlPdDealKontrola` 1021 → 1030, `online_ui.js` +5 až +77 (X3, X4, T2). Beze změny:
   `zamek.js`, `objednane.js`, `zakazka_kontrola.mjs`, `pd_webhook.mjs`, `sod_ui.js`, `common.js`, `zakazka.js`.
 - **Roadmapa obsazená do #572** (#560 MU, #568/#569/#572 PH, #571 DZ; #567 a #570 volné, #570 drží návrh víc
-  šachet) → **K40: #567 a dál od #575** (oprava koordinace 6. 11.: #573 DP — texty DPZ bez zaměření, #574 DZ2 — zastaralá složka záloh na Disku).
+  šachet) → **K40: #567 a dál od #576** (oprava koordinace 6. 11.: #573 DP — texty DPZ bez zaměření, #574 DZ2 — zastaralá složka záloh na Disku, #575 CA — desetinná čárka v číselných polích).
 
 **Změna 9a16ff5 proti df0138c** (jen to, co se K40 týká):
 - PR #563: `src/objednane.js` (+33 ř. za `prodNastav`: `prodRidiciSrovnej`, `prodRidiciZamceno`; `prodJedinaZmena`
