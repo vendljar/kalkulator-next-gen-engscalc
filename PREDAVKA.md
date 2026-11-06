@@ -17,7 +17,7 @@ beze změny otisků.
 ceník, tisk — bez překryvů, záhlaví nad sloupci, nezkrácené selecty, lišta nad / tlačítko pod tabulkou, bez
 vodorovného posunu stránky); nad 6b70cc3 20 FAIL. `src/test_560_mu2_karta.js` 18/0 (stavba HTML ve vm + styly);
 nad 6b70cc3 15 FAIL. Mutace „MU2 #560“ 8/8 chycených (`--kontrola` 715). `test_escape` doplněn o nové volání
-`sel()` (hotové HTML). Kolo `--bez-mutaci`: viz ohlášení.
+`sel()` (hotové HTML), `overit_zadani_detail.mjs` na nápovědu „jako šachta“. Kolo `--bez-mutaci` nad 650318e: **VŠE ZELENÉ** — sady 399 / 0 / **7 přeskočeno** (test.js + 6 prohlížečových bez KNG_PODKLADY), hodiny +400 dní 321 / 0 / 1, statické 5 z 5, 25 min 53 s (první kolo chytilo starší harness s nápovědou „0“ — opraveno).
 
 **Snímky před/po:** vyrábí je `node nastroje/snimky_mustky.mjs <výstup bez přípony> <šířka> <model 1|2> <skupin 1–3>
 <stary|skl>` (karta + karta zadání). Poslané koordinaci jako soubory (do repa se neukládají).
