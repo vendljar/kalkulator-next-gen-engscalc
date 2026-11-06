@@ -71,7 +71,7 @@
   .mustky-scroll { overflow-x:auto; max-width:100%; }
   table.mustky-tbl { width:auto; }
   table.mustky-tbl th, table.mustky-tbl td { text-align:left; vertical-align:top; padding:5px 8px 5px 0; white-space:nowrap; }
-  table.mustky-tbl input[type=number] { width:76px; }
+  table.mustky-tbl input[data-cislo] { width:76px; }
   table.mustky-tbl input.mu-ks, table.mustky-tbl input.mu-sloupyKs { width:52px; }
   table.mustky-tbl input.mu-sloupVyskaM { width:62px; }
   table.mustky-tbl select { width:auto; min-width:120px; }
@@ -140,13 +140,14 @@
   .prm { display:flex; justify-content:flex-end; align-items:center; gap:8px; margin:5px 0; }
   .prm .prm-l { text-align:right; }
   .prm .prm-u { width:14px; color:var(--mut); font-size:12px; text-align:left; }
-  input[type=number], select, input[type=text], input[type=date] { width:110px; padding:5px 7px; border:1px solid var(--line);
+  input[data-cislo], select, input[type=text], input[type=date] { width:110px; padding:5px 7px; border:1px solid var(--line);
       border-radius:6px; font:inherit; background:#fff; text-align:right; }
   /* Bez klikacích šipek (9. 9. 2026, zadání J. V.: „v datových polích odstraň
    * klikací šipky, jsou zbytečné"). Čísla se v kalkulaci zadávají z klávesnice
    * a krok po jedné nedává smysl u částky ani u rozměru v metrech; šipky jen
-   * ukrajovaly šířku pole a daly se trefit omylem. Klávesy ↑/↓ v poli fungují
-   * dál — `step` zůstává, mizí jen ovládací prvek. */
+   * ukrajovaly šířku pole a daly se trefit omylem. Od CA #575 (6. 11. 2026)
+   * jsou pole textová s českou čárkou a hodnotu nemění ani klávesy ↑/↓,
+   * ani kolečko — nic se nepřestaví omylem. */
   /* ZADÁNÍ ŠACHTY VE ČTYŘECH PEVNÝCH SLOUPCÍCH (9. 9. 2026, zadání J. V.).
      Do té doby karta skládala pole vlastním gridem `repeat(auto-fill,
      minmax(300px,1fr))`, takže se pořadí polí měnilo se šířkou okna.
@@ -155,14 +156,14 @@
      do něj vměstnaly po ~210 px a každý popisek by se zalomil na dva řádky. */
   .zadani-ctyri { grid-column:1 / -1; display:grid; grid-template-columns:repeat(4, 1fr); gap:0 30px; }
   .zadani-ctyri .row label { flex:1; min-width:0; }
-  .zadani-ctyri .row input[type=number] { width:96px; }
+  .zadani-ctyri .row input[data-cislo] { width:96px; }
   .zadani-ctyri .row select { width:118px; }
   @media (max-width:1200px) { .zadani-ctyri { grid-template-columns:repeat(2, 1fr); } }
   @media (max-width:700px)  { .zadani-ctyri { grid-template-columns:1fr; } }
   /* Dvě úzká čísla vedle sebe: nástupiště A (čelní stěna) a C (zadní stěna). */
   .zadani-ctyri .par { display:flex; gap:6px; align-items:center; }
   .zadani-ctyri .par .ozn { color:var(--mut); font-size:12px; font-weight:600; }
-  .zadani-ctyri .par input[type=number] { width:44px; }
+  .zadani-ctyri .par input[data-cislo] { width:44px; }
   .zadani-ctyri input[readonly] { background:#f2f5f9; color:var(--mut); }
   /* OPLÁŠTĚNÍ PO STĚNÁCH (#268). Vlastní mřížka ze stejného důvodu jako
      `.zadani-ctyri`, ale tady jde o víc než o vzhled: `.inputs .card .body`
@@ -242,9 +243,8 @@
   .opl-legenda-kus b { color:var(--ink); font-weight:600; }
   .opl-legenda-soucet { margin-left:auto; }
   @media (max-width:640px) { .opl-stena-in { flex-direction:column; } .opl-nakres { width:100%; } }
-  input[type=number] { -moz-appearance:textfield; appearance:textfield; }
-  input[type=number]::-webkit-outer-spin-button,
-  input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  /* Číselná pole jsou od CA #575 (6. 11. 2026) textová s českou čárkou
+   * (ui/cislo_pole.js, atribut data-cislo) — šipky ani krokování nemají. */
   select { text-align:left; width:130px; }
   input[type=checkbox], input[type=radio]{ width:16px; height:16px; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -529,7 +529,7 @@
   tr.vypnuto-nulou > td .note { color:#a3abba; }
   tr.vypnuto-nulou input, tr.vypnuto-nulou select, tr.vypnuto-nulou button,
   tr.vypnuto-nulou textarea { opacity:1; color:var(--tmava, #17233a); }
-  tr.vypnuto-nulou input[type=number] { border-color:#f0b429; background:#fffdf5; }
+  tr.vypnuto-nulou input[data-cislo] { border-color:#f0b429; background:#fffdf5; }
   .strana-zamcena { opacity:.62; filter:grayscale(.55); }
   /* P6 (zámek strany, 13. 10. 2026): štítek vynulované strany. */
   .strana-nulovana { background:#fff7ed; border:1px solid #fdba74; color:#7c2d12; border-radius:6px;
@@ -603,7 +603,7 @@
   /* Sloupec jednotek v oddílech platebních podmínek (U1, 20. 10. 2026): pevná
    * šířka i v řádcích bez jednotky, aby vstupy končily v jedné svislici. */
   .podm-radek .podm-jednotka { flex:none; width:92px; white-space:nowrap; }
-  .podm-radek > input[type=number] { width:110px; }
+  .podm-radek > input[data-cislo] { width:110px; }
   .note { color:var(--mut); font-size:12px; margin:6px 0; }
   /* SPRÁVA ŠABLON (#349, 24. 9. 2026): tabulka dokument × jazyk, detail a průvodce. */
   .sabl-tab { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
@@ -650,7 +650,7 @@
   .tabs { display:flex; gap:2px; padding:0 22px; background:var(--ink); flex-wrap:wrap; }
   .tabs button { border:none; border-radius:8px 8px 0 0; padding:9px 18px; background:#2b3850; color:#c6d1e2; font-weight:600; }
   .tabs button.act { background:var(--bg); color:var(--ink); }
-  .ceniktbl td input[type=number] { width:120px; }
+  .ceniktbl td input[data-cislo] { width:120px; }
   .ceniktbl td:nth-child(2) { width:140px; }
   .ceniktbl td:nth-child(3) { width:70px; text-align:left; color:var(--mut); }
   .ceniktbl td:nth-child(4) { text-align:left; color:var(--mut); font-size:12px; white-space:normal; }
@@ -776,7 +776,7 @@
   .sd-item input[type=text] { width:100%; text-align:left; }
   .sd-item-btns { display:flex; gap:3px; }
   .sd-item-btns .mini { padding:1px 6px; }
-  .proj-sek td input[type=number] { width:80px; }
+  .proj-sek td input[data-cislo] { width:80px; }
   .proj-sek td input[type=text] { width:100%; text-align:left; }
   .proj-sek td:first-child { min-width:220px; }
   /* Textová pole v seznamu variant se přizpůsobují šířce sloupce (dřív měla

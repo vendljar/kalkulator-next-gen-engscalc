@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
-    "verze": "Platí pro aplikaci v6.11.4 · sestaveno 4. 11. 2026",
+    "verze": "Platí pro aplikaci v6.11.5 · sestaveno 4. 11. 2026",
 
   "uvod": [
     {
@@ -327,6 +327,7 @@
       "nadpis": "11. Zadání šachty",
       "bloky": [
         { "typ": "text", "text": "Karta **Zadání šachty** má taky čtyři sloupce. Co znamenají jednotlivá pole, ukazují vysvětlivky u obrázku." },
+        { "typ": "text", "text": "**Čísla se zadávají s čárkou i s tečkou** — ve všech číselných polích aplikace (zadání šachty, karta Můstky, ceník, přirážky, slevy, kalkulace PROJ, Nastavení). Napíšete-li **17,3** nebo **17.3**, uloží se totéž číslo a pole ho vždy ukáže s českou desetinnou čárkou (**17,3**); tisíce můžete oddělit mezerou (**1 250,5**). Nezáleží na tom, v jakém jazyce máte prohlížeč. Když do pole napíšete něco, co číslo není (třeba **1,2,3**), hodnota se nezmění a aplikace to ohlásí. Šipky ani kolečko myši hodnotu v poli nemění." },
         {
           "typ": "obrazek", "snimek": "zadani-zaklad",
           "titulek": "Zadání šachty u ukázkové zakázky.",

@@ -108,7 +108,7 @@ function podmRadek(label, vstup, pozn, jednotka) {
 }
 function podmCisloVstup(cast, pole, hodnota, min, max) {
   const dis = jeAdmin() ? '' : ' disabled';
-  return `<input type="number" min="${min}" max="${max}" step="1" value="${esc(String(hodnota))}"
+  return `<input ${CISLO_POLE} min="${min}" max="${max}" step="1" value="${esc(String(hodnota))}"
       onchange="podmSet(${cast ? `'${cast}'` : 'null'}, '${escJs(pole)}', this.value, 'cislo')"${dis}>`;
 }
 function podmVyberVstup(cast, pole, hodnota, volby) {
@@ -157,7 +157,7 @@ function nastPodminkyOck() {
   const anoNe = [['Ano', 'Ano'], ['Ne', 'Ne']];
   const splatka = (popis, kProc, kMil, pozn) => podmRadek(popis,
     `<span style="display:flex;gap:6px;align-items:center;flex:1;min-width:0">
-      <input type="number" min="0" max="100" step="1" value="${esc(String(o[kProc]))}" style="width:80px"
+      <input ${CISLO_POLE} min="0" max="100" step="1" value="${esc(String(o[kProc]))}" style="width:80px"
         class="podm-proc${s.ok ? '' : ' podm-chyba'}" onchange="podmSet('ock', '${kProc}', this.value, 'cislo')"${dis}> %
       <input type="text" value="${esc(o[kMil])}" maxlength="200" style="flex:1;min-width:0"
         onchange="podmSet('ock', '${kMil}', this.value)"${dis}></span>`, podmStitek('ock', kProc) + (pozn || ''));
@@ -178,12 +178,12 @@ function nastPodminkyOck() {
     ${soucet}
     ${podmRadek('Zádržné do odstranění vad a nedodělků', `<span style="display:flex;gap:6px;align-items:center;flex:none">
       ${podmVyberVstup('ock', 'zadrzneVan', o.zadrzneVan, anoNe)}
-      <input type="number" min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneVanProc))}" style="width:80px"
+      <input ${CISLO_POLE} min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneVanProc))}" style="width:80px"
         onchange="podmSet('ock', 'zadrzneVanProc', this.value, 'procentaVolitelne')"${dis}></span>`,
       podmStitek('ock', 'zadrzneVan') + (o.zadrzneVan === 'Ano' && o.zadrzneVanProc === '' ? ' <span class="pill warn">Ano bez procenta</span>' : ''), '%')}
     ${podmRadek('Zádržné po dobu záruky', `<span style="display:flex;gap:6px;align-items:center;flex:none">
       ${podmVyberVstup('ock', 'zadrzneZaruka', o.zadrzneZaruka, anoNe)}
-      <input type="number" min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneZarukaProc))}" style="width:80px"
+      <input ${CISLO_POLE} min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneZarukaProc))}" style="width:80px"
         onchange="podmSet('ock', 'zadrzneZarukaProc', this.value, 'procentaVolitelne')"${dis}></span>`,
       podmStitek('ock', 'zadrzneZaruka') + (o.zadrzneZaruka === 'Ano' && o.zadrzneZarukaProc === '' ? ' <span class="pill warn">Ano bez procenta</span>' : ''), '%')}
     ${podmRadek('Doba záruky', podmCisloVstup('ock', 'zarukaMesicu', o.zarukaMesicu, 0, 240), podmStitek('ock', 'zarukaMesicu'), 'měsíců')}

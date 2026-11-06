@@ -90,7 +90,7 @@ const vzhled = await p.evaluate(n => {
     .find(x => x.textContent.indexOf(n) === 0 || x.querySelector(`input[onchange*="mnozstviSet('${n}'"]`));
   if (!tr) return { chyba: 'řádek nenalezen' };
   const st = getComputedStyle(tr.querySelector('td'));
-  const inp = tr.querySelector('input[type=number]');
+  const inp = tr.querySelector('input[data-cislo]');
   const stInp = getComputedStyle(inp);
   const stitek = tr.querySelector('.pill.vyp');
   return {

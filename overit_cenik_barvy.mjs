@@ -94,7 +94,7 @@ const souhlas = await p.evaluate(() => {
     return el.classList.contains('cenik-nula') !== (ceka === 'cenik-nula')
       || el.classList.contains('cenik-vysoka') !== (ceka === 'cenik-vysoka');
   }).map(el => el.getAttribute('onchange'));
-  const cisel = [...document.querySelectorAll('#page-cenik table.ceniktbl input[type=number]:not([disabled])')];
+  const cisel = [...document.querySelectorAll('#page-cenik table.ceniktbl input[data-cislo]:not([disabled])')];
   const bezJednotky = cisel.filter(el => !el.hasAttribute('data-cenik-j')).map(el => el.getAttribute('onchange'));
   return { pocet: vse.length, spatne, bezJednotky };
 });

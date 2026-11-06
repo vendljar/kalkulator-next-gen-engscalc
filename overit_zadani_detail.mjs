@@ -169,7 +169,7 @@ zkus('(sonda) hlídač prázdné vysvětlení opravdu pozná', sonda === 1, sond
 console.log('\nnula v poli');
 const nula = await p.evaluate(async () => {
   prepniTab('kalk'); render();
-  const pole = [...document.querySelectorAll('#ock-zadani input[type=number]')]
+  const pole = [...document.querySelectorAll('#ock-zadani input[data-cislo]')]
     .filter(i => !i.readOnly && !i.disabled);
   if (!pole.length) return { chyba: 'žádné číselné pole' };
   const cil = pole[0];
@@ -237,7 +237,7 @@ const n58 = await p.evaluate(() => {
     /* 25. 9. 2026: můstky jsou počet kusů hned pod čistým vstupem. */
     poradi4: [poradi(s4, 'Čistý vstup – šířka'), poradi(s4, 'Můstky mezi budovou a OCK'), poradi(s4, 'Přechodové plechy'), poradi(s4, 'ATYP (nestandardní zakázka)')],
     mustkyPole: (() => { const l = lbl('Můstky mezi budovou a OCK'); const i = l && l.parentElement.querySelector('input');
-      return i ? { typ: i.type, hodnota: i.value } : null; })(),
+      return i ? { typ: i.hasAttribute('data-cislo') ? 'cislo' : i.type, hodnota: i.value } : null; })(),   // CA #575: číselné pole = data-cislo
     zadnyStaryMustek: !document.querySelector('#inputs input[type=checkbox][onchange*="Z.mustek"]'),
     zadneZaskrtavatko: !document.querySelector('#inputs input[type=checkbox][onchange*="svetlikNadDvermi"]'),
     volby, vybrano: sel ? sel.value : '',
@@ -268,7 +268,7 @@ zkus('25. 9.: typ portálů je ve 3. sloupci hned za opláštěním',
 zkus('N58: světlík nad dveřmi je ve 3. sloupci mezi typem portálů a světlíky na bocích',
   n58.stejnySloupec && n58.poradi3[0] >= 0 && n58.poradi3[0] < n58.poradi3[1] && n58.poradi3[1] < n58.poradi3[2], JSON.stringify(n58));
 zkus('25. 9.: můstky jsou číselné pole (výchozí 0), staré zaškrtávátko zmizelo',
-  n58.mustkyPole && n58.mustkyPole.typ === 'number' && n58.mustkyPole.hodnota === '0' && n58.zadnyStaryMustek, JSON.stringify(n58.mustkyPole));
+  n58.mustkyPole && n58.mustkyPole.typ === 'cislo' && n58.mustkyPole.hodnota === '0' && n58.zadnyStaryMustek, JSON.stringify(n58.mustkyPole));
 zkus('4. sloupec: čistý vstup → můstky → přechodové plechy → ATYP',
   n58.mustekV4 && n58.poradi4.every((x, i, a) => x >= 0 && (i === 0 || a[i - 1] < x)), JSON.stringify(n58.poradi4));
 zkus('N58 + #560: menu nabízí bez / sklo / plech / materiál opláštění (bez „zajistí stavba")',

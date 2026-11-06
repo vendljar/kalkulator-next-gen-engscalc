@@ -318,7 +318,7 @@ test('procentní pole zapisují do dat desetinný podíl (30 % → 0,30)',
     Z.rezervaProfilyPct = 0.30; render();
     const radek = [...document.querySelectorAll('#inputs .row')]
       .find(r => /Rezerva profily/.test(r.textContent));
-    const vstup = radek && radek.querySelector('input[type=number]');
+    const vstup = radek && radek.querySelector('input[data-cislo]');
     return !!vstup && +vstup.value === 30;
   }));
 test('Engineering i Výstup ze zaměření jsou rolovací Ano/Ne (ukládají 1/0)',

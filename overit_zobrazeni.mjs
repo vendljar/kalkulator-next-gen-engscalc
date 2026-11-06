@@ -1539,7 +1539,7 @@ test('rozepsaná hodnota v poli přežije překreslení aplikace',
   await page.evaluate(async () => {
     NAST.jeAdmin = true; prepniTab('kalk'); render();
     await new Promise(r => setTimeout(r, 100));
-    const pole = [...document.querySelectorAll('#page-kalk input[type=number]')]
+    const pole = [...document.querySelectorAll('#page-kalk input[data-cislo]')]
       .find(x => x.getAttribute('onchange'));
     if (!pole) return false;
     pole.focus();
@@ -1557,7 +1557,7 @@ test('pole bez rozepsané hodnoty se překreslením jen znovu zaostří',
   await page.evaluate(async () => {
     prepniTab('kalk'); render();
     await new Promise(r => setTimeout(r, 100));
-    const pole = [...document.querySelectorAll('#page-kalk input[type=number]')]
+    const pole = [...document.querySelectorAll('#page-kalk input[data-cislo]')]
       .find(x => x.getAttribute('onchange'));
     if (!pole) return false;
     const puvodni = pole.value;

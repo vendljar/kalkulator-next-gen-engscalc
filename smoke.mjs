@@ -279,15 +279,18 @@ test('karty zadání mají plnou šířku jako kalkulace', rozvrzeni.rozdilSirek
  * Šipky spinneru ubíraly šířku a daly se trefit omylem. Kontrola je v CSS,
  * takže se pozná jen v prohlížeči — proto tady, ne v Node sadě. */
 const sipky = await page.evaluate(() => {
-  const pole = [...document.querySelectorAll('input[type=number]')].filter(el => el.offsetParent !== null);
+  const pole = [...document.querySelectorAll('input[data-cislo]')].filter(el => el.offsetParent !== null);
   const st = pole.length ? getComputedStyle(pole[0]) : null;
-  return { pocet: pole.length,
+  return { pocet: pole.length, typ: pole.length ? pole[0].type : '',
            appearance: st ? (st.appearance || st.webkitAppearance || st.MozAppearance) : '',
            /* Pseudo-element spinneru: když ho CSS schová, prohlížeč u něj hlásí display:none. */
            spinner: pole.length ? getComputedStyle(pole[0], '::-webkit-inner-spin-button').display : '' };
 });
-test('číselná pole nemají klikací šipky', sipky.pocet > 0
-  && (sipky.appearance === 'textfield' || sipky.spinner === 'none'), JSON.stringify(sipky));
+/* Od CA #575 (6. 11. 2026) jsou číselná pole textová (data-cislo) — spinner
+ * nemají z podstaty; kontroluje se, že žádné viditelné pole není type=number. */
+const typNumber = await page.evaluate(() => document.querySelectorAll('input[type=number]').length);
+test('číselná pole nemají klikací šipky', sipky.pocet > 0 && typNumber === 0
+  && (sipky.typ === 'text' || sipky.appearance === 'textfield' || sipky.spinner === 'none'), JSON.stringify(sipky));
 
 /* ---- nic se cestou nerozbilo ---- */
 test('za celý průchod nevznikla chyba v konzoli', chyby.length === 0, chyby);

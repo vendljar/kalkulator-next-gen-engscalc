@@ -145,7 +145,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* ui/zakazka_ui.js (SEC-M16, #557, 3. 11. 2026): úvodní fotka nabídky se
    * v náhledu karty i v tisku vykreslí jen jako datový obrázek PNG/JPEG/WEBP;
    * nahrání jiný formát odmítne. Hlídá src/test_sec_m16_foto.js. */
-  'ui/zakazka_ui.js'];
+  'ui/zakazka_ui.js',
+  /* CA #575 (6. 11. 2026): společné číselné pole s českou čárkou — parser
+   * v format.js a prvek v ui/cislo_pole.js (každé číselné pole aplikace). */
+  'format.js', 'ui/cislo_pole.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -209,6 +212,8 @@ const PRIORITA = [
   'test_555b_klon_cenik.js',
   /* #557 SEC-M16 — úvodní fotka jen jako datový obrázek (ui/zakazka_ui.js) */
   'test_sec_m16_foto.js',
+  /* CA #575 — číselná pole s desetinnou čárkou (format.js, ui/cislo_pole.js, ui/common.js) */
+  'test_575_cislo_pole.js', 'test_tabulator.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -237,6 +242,73 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* CA #575 (6. 11. 2026, rozhodnutí J. V.): všechna číselná pole přijmou
+   * čárku i tečku a ukážou českou čárku nezávisle na jazyku prohlížeče.
+   * Hlídá src/test_575_cislo_pole.js (a test_tabulator.js). */
+  { nazev: 'CA: čárka se nepřevede na tečku [#575]', soubor: 'format.js',
+    hledej: "  s = s.replace(/^\\u2212/, '-').replace(/^\\+/, '').replace(',', '.');",
+    nahrad: "  s = s.replace(/^\\u2212/, '-').replace(/^\\+/, '');",
+    proc: '„17,3" by se odmítlo — přesně to, co J. V. hlásil z anglického prohlížeče' },
+  { nazev: 'CA: mezera v tisících kdekoli [#575]', soubor: 'format.js',
+    hledej: "    if (!/^[+\\-\\u2212]?\\d{1,3}(?:[\\s\\u00a0\\u202f\\u2009]\\d{3})+(?:[.,]\\d*)?$/.test(s)) return null;",
+    nahrad: "    if (!/^[+\\-\\u2212]?\\d+(?:[\\s\\u00a0\\u202f\\u2009]\\d+)+(?:[.,]\\d*)?$/.test(s)) return null;",
+    proc: 'překlep „1 25" by se tiše uložil jako 125' },
+  { nazev: 'CA: nečitelný text se čte jako číslo [#575]', soubor: 'format.js',
+    hledej: "  if (!/^-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)$/.test(s)) return null;",
+    nahrad: "  if (!isFinite(parseFloat(s))) return null; s = String(parseFloat(s));",
+    proc: '„17,3 m" nebo „1,2,3" by prošlo jako číslo (dnešní pole je odmítalo)' },
+  { nazev: 'CA: pole ukáže desetinnou tečku [#575]', soubor: 'format.js',
+    hledej: "  return m[1] + cela + (m[3] ? ',' + m[3] : '');",
+    nahrad: "  return m[1] + cela + (m[3] ? '.' + m[3] : '');",
+    proc: 'pole by ukazovalo „17.3" místo české čárky' },
+  { nazev: 'CA: bez mezery v tisících [#575]', soubor: 'format.js',
+    hledej: "  const cela = m[2].length >= 4 ? m[2]",
+    nahrad: "  const cela = m[2].length >= 99 ? m[2]",
+    proc: 'ceník by ukazoval „12500" místo „12 500" jako výstupy' },
+  { nazev: 'CA: číselné pole zase type=number [#575]', soubor: 'ui/cislo_pole.js',
+    hledej: "const CISLO_POLE = 'inputmode=\"decimal\" autocomplete=\"off\" data-cislo=\"1\"';",
+    nahrad: "const CISLO_POLE = 'type=\"number\" inputmode=\"decimal\" autocomplete=\"off\" data-cislo=\"1\"';",
+    proc: 'čárku by zase řídil jazyk prohlížeče (17,3 → 173)' },
+  { nazev: 'CA: value vrací text s čárkou [#575]', soubor: 'ui/cislo_pole.js',
+    hledej: "      return n === null ? '' : n;",
+    nahrad: "      return t;",
+    proc: 'obsluhy `+this.value` by z „17,3" udělaly NaN → 0 v datech' },
+  { nazev: 'CA: zápis value neukáže čárku [#575]', soubor: 'ui/cislo_pole.js',
+    hledej: "      CISLO_POLE_NATIVNI.set.call(this, cisloPoleJe(this) ? cisloPoleZobraz(v == null ? '' : v) : v);",
+    nahrad: "      CISLO_POLE_NATIVNI.set.call(this, v);",
+    proc: 'Zpět/obnova pole by ukázaly „17.3"' },
+  { nazev: 'CA: vložené pole neukáže česky [#575]', soubor: 'ui/cislo_pole.js',
+    hledej: "    if (z !== a) el.setAttribute('value', z);",
+    nahrad: "",
+    proc: 'po každém překreslení by pole ukazovalo „17.3" z dat' },
+  { nazev: 'CA: číselný placeholder s tečkou [#575]', soubor: 'ui/cislo_pole.js',
+    hledej: "    if (z !== ph) el.setAttribute('placeholder', z);",
+    nahrad: "",
+    proc: 'šedá nápověda by ukazovala tečku nebo číslo bez mezery' },
+  { nazev: 'CA: nečitelný zápis dojde do obsluhy [#575]', soubor: 'ui/cislo_pole.js',
+    hledej: "      e.stopImmediatePropagation();\n",
+    nahrad: "",
+    proc: '„1,2,3" by se uložilo jako prázdno → 0 (zdvih, cena)' },
+  { nazev: 'CA: odmítnutí nevrátí původní hodnotu [#575]', soubor: 'ui/cislo_pole.js',
+    hledej: "      cisloPoleSuroveNastav(el, el.defaultValue);",
+    nahrad: "",
+    proc: 'v poli by zůstal nesmysl, data přitom beze změny — pole by lhalo' },
+  { nazev: 'CA: odmítnutí potichu [#575]', soubor: 'ui/cislo_pole.js',
+    hledej: "      if (typeof hlaska === 'function')\n        hlaska(",
+    nahrad: "      if (false)\n        hlaska(",
+    proc: 'uživatel by nevěděl, proč se hodnota nezměnila' },
+  { nazev: 'CA: písmena jdou napsat [#575]', soubor: 'ui/cislo_pole.js',
+    hledej: "    if (/[^0-9.,\\s\\u00a0+\\-\\u2212]/.test(e.data)) e.preventDefault();",
+    nahrad: "",
+    proc: 'do čísla by šla napsat písmena (type=number je nepouštělo)' },
+  { nazev: 'CA: inp() zase type=number [#575]', soubor: 'ui/common.js',
+    hledej: "  return `<div class=\"row\"><label>${opts.l}</label><input ${CISLO_POLE} step=\"${step}\"${min}${max}",
+    nahrad: "  return `<div class=\"row\"><label>${opts.l}</label><input type=\"number\" step=\"${step}\"${min}${max}",
+    proc: 'Zadání šachty (zdvih, rozměry) by v anglickém prohlížeči z 17,3 dělalo 173' },
+  { nazev: 'CA: překreslení vrací normalizovaný text [#575]', soubor: 'ui/common.js',
+    hledej: "  const hodnota = surove ? cisloPoleSurove(a) : a.value;",
+    nahrad: "  const hodnota = a.value;",
+    proc: 'rozepsané „17," by po autosave přišlo o čárku' },
   /* #555b ZO2 (3. 11. 2026, hlášení J. V. na test v3.11.3: „první rozdíl
    * v datech: cenik"): import doplňuje chybějící klíče ceníku ODESLANÉ
    * varianty podle ceníku sestavení jako server; porovnání zámku bez ohledu

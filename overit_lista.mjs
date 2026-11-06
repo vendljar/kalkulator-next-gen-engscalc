@@ -155,7 +155,7 @@ ok('před změnou jsou všechna Zpět vypnutá', await p.evaluate(() =>
  * 2,7 m; od v9.9.3 začíná na nule (#231), takže kontrola „Zpět vrátilo 2.7"
  * padala — a přitom byla vadná kontrola, ne aplikace. Hodnota se proto
  * dosadí jako první krok a teprve druhá změna se vrací. */
-const pole = p.locator('#ock-zadani input[type=number]').first();
+const pole = p.locator('#ock-zadani input[data-cislo]').first();
 await pole.fill('2.7');
 await pole.press('Tab');
 await p.waitForTimeout(500);
@@ -171,8 +171,10 @@ ok(`po změně jsou zapnuté všechny kopie Zpět (${poZmene.zapnute} z ${poZmen
 // vrátit změnu tlačítkem v LIŠTĚ (ne ve vrchní liště)
 await p.locator('#page-kalk .kalk-lista .jsHistZpet').click();
 await p.waitForTimeout(500);
-const hodnota = await p.locator('#ock-zadani input[type=number]').first().inputValue();
-ok(`Zpět v liště vrátilo hodnotu (${hodnota}, čekám 2.7)`, hodnota === '2.7');
+const hodnota = await p.locator('#ock-zadani input[data-cislo]').first().inputValue();
+/* inputValue() čte pole z izolovaného světa Playwrightu, tedy to, co pole
+ * UKAZUJE — od CA #575 česká čárka. */
+ok(`Zpět v liště vrátilo hodnotu (${hodnota}, čekám 2,7)`, hodnota === '2,7');
 ok('po vrácení jsou zapnutá všechna Znovu', await p.evaluate(() =>
   [...document.querySelectorAll('.jsHistZnovu')].every(b => !b.disabled)));
 
