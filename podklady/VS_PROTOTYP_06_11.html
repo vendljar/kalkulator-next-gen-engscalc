@@ -1145,8 +1145,8 @@ const R = {
   R14: 'U víc šachet je cena můstků v ceně své šachty (dovětek „vč. můstků“); řádek Můstky v nabídce zmizí.',
   R15: 'Jedna šachta s můstky zůstává v nabídce jako dnes: Výtahová šachta / Můstky / Cena celkem.',
   R16: 'Jedna šachta = dnešní kalkulátor beze změny vzhledu. Rozhraní víc šachet (seznam šachet, přepínač A/B/Součet, rozpočet) se ukáže až od 2 šachet. Počet šachet se nastavuje na jednom místě.',
-  O13: 'NÁVRH k rozhodnutí: počet šachet se nastavuje polem „Počet šachet v nabídce“ (1–10) nahoře v kartě Zadání šachty. Počet stejných kusů je zvlášť, u každé šachty, a ukáže se až v režimu víc šachet.',
-  O14: 'NÁVRH k rozhodnutí: při snížení počtu šachet se zobrazí potvrzení, které šachty se smažou (i s jejich zadáním a můstky); šachta 1 zůstává vždy. Omylem smazané vrátí tlačítko Zpět.',
+  R17: 'Počet šachet se nastavuje polem „Počet šachet v nabídce“ (1–10) nahoře v kartě Zadání šachty. Počet stejných kusů je zvlášť, u každé šachty, a ukáže se až v režimu víc šachet.',
+  R18: 'Při snížení počtu šachet se zobrazí potvrzení, které šachty se smažou (i s jejich zadáním a můstky); šachta 1 zůstává vždy. Omylem smazané vrátí tlačítko Zpět.',
 };
 const rt = (...k) => k.map(x => `<button type="button" class="rtag" data-r="${x}" title="${esc(R[x])}">${x}</button>`).join('');
 
@@ -1417,11 +1417,11 @@ function renderZadani() {
   const s = sachta(S.akt), i = S.sachty.indexOf(s);
   const mks = s.mustky.reduce((a, g) => a + (+g.ks || 0), 0);
   const vic = rezimVic();
-  const pocet = `<div class="pocet-sachet"><div class="row"><label><b>Počet šachet v nabídce</b>${rt('R16', 'O13')}</label>
+  const pocet = `<div class="pocet-sachet"><div class="row"><label><b>Počet šachet v nabídce</b>${rt('R16', 'R17')}</label>
       <select data-act="pocetSachet" ${S.model === 1 ? 'title="Model 1 počítá jen jednu šachtu"' : ''}>${Array.from({ length: 10 }, (_, k) => k + 1).map(n => `<option value="${n}" ${n === S.sachty.length ? 'selected' : ''} ${S.model === 1 && n > 1 ? 'disabled' : ''}>${n}</option>`).join('')}</select></div>
       <span class="mut">${vic ? 'různé šachty; stejné kusy jedné šachty nastavíte v kartě Šachty varianty (Počet stejných kusů)' : 'jedna šachta = kalkulátor jako dnes; od 2 se zapne rozpis po šachtách'}${S.model === 1 ? ' · Model 1 počítá jen jednu šachtu' : ''}</span></div>`;
   const potvrd = S.potvrdit ? `<div class="zabrana pocet-potvrd"><b>Smazat ${S.potvrdit.ids.length === 1 ? 'šachtu' : 'šachty'} ${esc(S.potvrdit.ids.map(id => nazevS(sachta(id), S.sachty.indexOf(sachta(id)))).join(', '))}?</b>
-      Smaže se i ${S.potvrdit.ids.length === 1 ? 'její' : 'jejich'} zadání, můstky a příplatky.${rt('O14')} ${S.potvrdit.ids.length && S.sachty.length - S.potvrdit.ids.length === 1 ? 'Kalkulátor se vrátí do zobrazení pro jednu šachtu.' : ''}
+      Smaže se i ${S.potvrdit.ids.length === 1 ? 'její' : 'jejich'} zadání, můstky a příplatky.${rt('R18')} ${S.potvrdit.ids.length && S.sachty.length - S.potvrdit.ids.length === 1 ? 'Kalkulátor se vrátí do zobrazení pro jednu šachtu.' : ''}
       <div style="margin-top:8px;display:flex;gap:8px"><button class="mini vyzva" data-act="potvrditAno">Smazat</button><button class="mini" data-act="potvrditNe">Zrušit</button></div></div>` : '';
   return karta('ock-zadani', 'Zadání šachty' + (vic ? ' — ' + esc(nazevS(s, i)) : '') + rt('R1', 'R2'), `${potvrd}${pocet}<div class="zadani-ctyri">
     <div>${fld('Typ šachty', 'typ', s.typ, '', { sel: [['exteriérová', 'exteriérová'], ['interiérová', 'interiérová']] })}${fld('Zdvih', 'zdvih', s.zdvih, 'm')}${fld('Horní přejezd', 'prejezd', s.prejezd, 'm')}${fld('Prohlubeň', 'prohluben', s.prohluben, 'm')}</div>
@@ -1654,29 +1654,9 @@ function renderNavod() {
     <li><b>Cenová nabídka:</b> u víc šachet přepněte šablonu na v16 (zábrana). U jedné šachty s můstky jsou řádky Výtahová šachta / Můstky / Cena celkem jako dnes.</li>
     <li><b>Model 1:</b> s jednou šachtou ho vyberte — počet šachet nad 1 pak nejde nastavit.</li>
     <li><b>Ruční cena:</b> u řádku skla „✎ cena z nabídky“ → platí pro všechny šachty, dokud není potvrzená, tisk stojí.</li>
-    <li>Fialové štítky <span class="rtag" style="cursor:default">R7</span> ukážou, které rozhodnutí J. V. prvek naplňuje (O13, O14 = návrh k rozhodnutí).</li>
+    <li>Fialové štítky <span class="rtag" style="cursor:default">R7</span> ukážou, které rozhodnutí J. V. prvek naplňuje .</li>
   </ol>
-  <div class="otazka"><h3>K rozhodnutí — O13: kde se nastavuje počet šachet</h3>
-    <div class="varianty">
-      <div class="dop"><div class="vt">a) pole v kartě Zadání šachty nahoře (doporučeno, je v prototypu)</div>
-        <div class="mini-nahled"><b>Počet šachet v nabídce</b><span class="pole">1 ▾</span><span class="mut">Typ šachty · Zdvih …</span></div>
-        <div class="pozn-proto">Obchodník ho vidí hned, kde začíná zadávat. Počet stejných kusů je zvlášť, u každé šachty v režimu víc šachet.</div></div>
-      <div><div class="vt">b) tlačítko v hlavičce zakázky</div>
-        <div class="mini-nahled"><span class="pole">+ přidat další šachtu do nabídky</span></div>
-        <div class="pozn-proto">Méně nápadné v Zadání; ubírá se mazáním v kartě Šachty varianty.</div></div>
-      <div><div class="vt">c) obojí</div>
-        <div class="mini-nahled"><span class="pole">Počet šachet 1 ▾</span><span class="pole">+ přidat šachtu</span></div>
-        <div class="pozn-proto">Dvě místa pro totéž.</div></div>
-    </div></div>
-  <div class="otazka"><h3>K rozhodnutí — O14: co při návratu na méně šachet</h3>
-    <div class="varianty">
-      <div class="dop"><div class="vt">a) potvrdit a smazat (doporučeno, je v prototypu)</div>
-        <div class="mini-nahled">Smazat šachtu Šachta 2? <span class="pole">Smazat</span><span class="pole">Zrušit</span></div>
-        <div class="pozn-proto">Šachta 1 zůstává vždy. Omylem smazané vrátí Zpět.</div></div>
-      <div><div class="vt">b) schovat a data ponechat</div>
-        <div class="mini-nahled">Šachta 2 (skrytá, nepočítá se)</div>
-        <div class="pozn-proto">Data se nezahodí, ale zakázka nese šachty, které nejsou vidět ani v ceně.</div></div>
-    </div></div></div>`);
+</div></div>`);
 }
 
 /* ---------- hlavní překreslení ---------- */
