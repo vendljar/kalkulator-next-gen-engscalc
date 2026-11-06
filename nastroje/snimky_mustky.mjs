@@ -1,0 +1,28 @@
+import { chromium } from 'playwright';
+import { createRequire } from 'module';
+const require = createRequire(process.cwd() + '/x.mjs');
+const ZC = require('./src/zkusebni_cenik.js');
+const [,, vystup, sirka, model, skupin, cenik] = process.argv;
+const b = await chromium.launch({ args: ['--no-sandbox'] });
+const p = await (await b.newContext({ viewport: { width: +sirka, height: 1000 } })).newPage();
+await p.goto(new URL('dist/kalkulacka.html', 'file://' + process.cwd() + '/').href);
+await p.waitForFunction(() => typeof render === 'function' && typeof NAST !== 'undefined');
+await p.waitForTimeout(300);
+const SK = { mustekRamBmKc: 10000, mustekPodlahaPlechM2Kc: 1000, mustekPodlahaPororostM2Kc: 1100, mustekPodlahaVanaM2Kc: 1200, mustekZabradliKovBmKc: 2000, mustekZabradliSkloBmKc: 5000, mustekKotveniDeskaKc: 3000, mustekKotveniSloupKc: 3100, mustekKotveniKonzolaKc: 3200, mustekZabradliSkloMontazHodBm: 1 };
+const c = Object.assign(ZC.zkusebniCenik(), ZC.zkusebniMustky(), cenik === 'skl' ? SK : {});
+await p.evaluate(([c, m, n]) => {
+  ZAK = novaZakazka(); syncVarianta();
+  Object.assign(Z, { typSachty: 'exteriérová', profily: JSON.parse(JSON.stringify(PROFILY_VYCHOZI['exteriérová'])), sirka: 1.6, hloubka: 2, zdvih: 12, prejezd: 3.3, prohluben: 1.2, nastupiste: 5 });
+  Object.keys(C).forEach(k => delete C[k]); Object.assign(C, c); delete C.prazdny; delete C.ukazkove;
+  OCK.fixes = m === '2';
+  const sk = [{ ks: 3, delkaMm: 1200 }, { ks: 1, delkaMm: 900, podlaha: 'pororost', zabradli: 'sklo', kotveni: 'sloupy', sloupyKs: 2 }, { ks: 2, sirkaMm: 1400, podlaha: 'jine', podlahaNazev: 'dřevo', zabradli: 'jine', zabradliNazev: 'nerez lanko', kotveni: 'jine', kotveniText: 'na ocelový nosník' }];
+  Z.mustky = sk.slice(0, +n);
+  prepniTab('kalk'); render();
+}, [c, model, skupin]);
+await p.waitForTimeout(200);
+const k = await p.$('#ock-mustky');
+const z = await p.$('#ock-zadani');
+if (z) await z.screenshot({ path: vystup + '_zadani.png' });
+if (k) await k.screenshot({ path: vystup + '.png' });
+console.log(k ? 'ok' : 'bez karty');
+await b.close();

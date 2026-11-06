@@ -88,6 +88,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* nabidka.js (#560, 5. 11. 2026): sekce MŮSTKY a samostatný řádek ceny
    * můstků v cenové nabídce OCK (CZ i EUR) a klon řádků do šablon v15. */
   'nabidka.js',
+  /* app_template.html (MU2 #560, 6. 11. 2026): styly karty Můstky — obal
+   * přes celou mřížku těla karty a posun tabulky jen v kartě. Hlídá
+   * src/test_560_mu2_karta.js (prohlížeč: overit_560_mustky.mjs bod 7). */
+  'app_template.html',
   /* vyjimky.js (B183, 20. 10. 2026): obsah cenové výjimky — plocha pásu
    * a světlíku na 0,1 m², dřív schválené výjimky starým tvarem. */
   'vyjimky.js',
@@ -3331,6 +3335,39 @@ const MUTACE = [
     hledej: "function tsMustkySkladebne(r) { return !!(r && r.mustky && r.mustky.skladebny); }",
     nahrad: "function tsMustkySkladebne(r) { return !!(r && r.mustky); }",
     proc: 'starý ceník by tiskl provedení, které se v ceně nepočítá' },
+  /* ---------- MU2 #560 vzhled karty Můstky (6. 11. 2026) — hlídá src/test_560_mu2_karta.js ---------- */
+  { nazev: 'MU2 #560: karta bez obalu přes celou mřížku', soubor: 'ui/kalk_ock.js',
+    hledej: '`<div class="mustky-karta">${lista}<div class="mustky-scroll">',
+    nahrad: '`<div>${lista}<div class="mustky-scroll">',
+    proc: 'tabulka, tlačítko a upozornění by se zase rozletěly do sloupců mřížky přes sebe' },
+  { nazev: 'MU2 #560: tlačítko „+ další provedení" mimo obal karty', soubor: 'ui/kalk_ock.js',
+    hledej: "</tbody></table></div>${pridat}</div>`, 'ock-mustky');",
+    nahrad: "</tbody></table></div></div>${pridat}`, 'ock-mustky');",
+    proc: 'tlačítko by se v mřížce postavilo vedle tabulky přes její sloupce' },
+  { nazev: 'MU2 #560: velké tlačítko (neznámá třída sm)', soubor: 'ui/kalk_ock.js',
+    hledej: `<button class="mini" onclick="mustekSkupinaPridej()">`,
+    nahrad: `<button class="sm" onclick="mustekSkupinaPridej()">`,
+    proc: 'tlačítko by mělo plnou velikost běžného tlačítka a roztáhlo se v mřížce' },
+  { nazev: 'MU2 #560: upozornění o ceníku jako plovoucí nápověda', soubor: 'ui/kalk_ock.js',
+    hledej: `'<div class="mustky-lista varovani">Platný ceník`,
+    nahrad: `'<div class="hint">Platný ceník`,
+    proc: 'upozornění by se znovu sázelo jako samostatný sloupec přes tabulku' },
+  { nazev: 'MU2 #560: nápověda šířky „0" bez šířky šachty', soubor: 'ui/kalk_ock.js',
+    hledej: "ph: sirkaSachty > 0 ? sirkaSachty : 'jako šachta'",
+    nahrad: "ph: sirkaSachty",
+    proc: 'prázdná šířka by vypadala jako zadaná nula' },
+  { nazev: 'MU2 #560: dlouhé popisky voleb v kartě', soubor: 'ui/kalk_ock.js',
+    hledej: "${esc((popisky && popisky[k]) || t)}",
+    nahrad: "${esc(t)}",
+    proc: 'select podlahy by byl široký jako celá věta o betonáži, nebo by se zkrátil' },
+  { nazev: 'MU2 #560: obal karty jen v jednom sloupci mřížky', soubor: 'app_template.html',
+    hledej: '  .mustky-karta { grid-column:1 / -1; min-width:0; }',
+    nahrad: '  .mustky-karta { min-width:0; }',
+    proc: 'karta by se natlačila do sloupce 300 px a tabulka by přetekla přes ostatní' },
+  { nazev: 'MU2 #560: tabulka posouvá celou stránku', soubor: 'app_template.html',
+    hledej: '  .mustky-scroll { overflow-x:auto; max-width:100%; }',
+    nahrad: '  .mustky-scroll { max-width:100%; }',
+    proc: 'na úzkém okně by tabulka vytlačila stránku do strany' },
 ];
 
 /* ============================================================

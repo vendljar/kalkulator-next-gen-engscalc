@@ -60,6 +60,28 @@
    * Vysvětlivky (.note) se roztahují přes celou šířku karty. */
   .inputs .card .body { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); column-gap:28px; align-content:start; }
   .inputs .card .body > .note { grid-column:1 / -1; }
+  /* KARTA MŮSTKY (MU2 #560, 6. 11. 2026): jeden blok přes celou šířku mřížky
+   * karty — lišta upozornění nahoře, tabulka skupin ve vlastním vodorovně
+   * posuvném kontejneru, tlačítko pod ní. Záhlaví i pole zarovnaná vlevo,
+   * selecty se nezkracují (šířka podle nejdelší volby, min. šířka). */
+  .mustky-karta { grid-column:1 / -1; min-width:0; }
+  .mustky-lista { margin:0 0 10px; padding:8px 12px; border-radius:7px; background:#eef4ff; border:1px solid #c9d8f5;
+                  font-size:12.5px; line-height:1.45; white-space:normal; }
+  .mustky-lista.varovani { background:#fff8e6; border-color:#f0d58a; }
+  .mustky-scroll { overflow-x:auto; max-width:100%; }
+  table.mustky-tbl { width:auto; }
+  table.mustky-tbl th, table.mustky-tbl td { text-align:left; vertical-align:top; padding:5px 8px 5px 0; white-space:nowrap; }
+  table.mustky-tbl input[type=number] { width:76px; }
+  table.mustky-tbl input.mu-ks, table.mustky-tbl input.mu-sloupyKs { width:52px; }
+  table.mustky-tbl input.mu-sloupVyskaM { width:62px; }
+  table.mustky-tbl select { width:auto; min-width:120px; }
+  table.mustky-tbl select.mu-zabradliStrany { min-width:0; margin-left:6px; }
+  table.mustky-tbl input.mu-text { display:block; width:100%; min-width:150px; margin-top:4px; box-sizing:border-box; text-align:left; }
+  table.mustky-tbl .mu-dvojice { display:inline-flex; align-items:center; gap:4px; }
+  table.mustky-tbl .mu-krat { color:var(--mut); }
+  table.mustky-tbl td.mu-akce { padding-right:0; }
+  .mustky-pridat { margin-top:8px; }
+  @media print { .mustky-scroll { overflow:visible; } }
   /* sdílená hlavička zakázka + varianta (Kalkulace OCK i PROJ) */
   .zak-bar { border-color:var(--acc); }
   .zak-bar-h { font-size:13px; text-transform:uppercase; letter-spacing:.04em; margin:0; padding:10px 14px;
