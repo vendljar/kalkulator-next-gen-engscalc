@@ -2,8 +2,8 @@
 
 Dávka VS. Artefakt s náhledy obrazovek:
 https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa .
-Klikací prototyp v5 (6. 11., R1–R18): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2 — skutečná
-sestavená aplikace v6.11.3 (další verze main, s kartou Můstky) + vrstva víc šachet (`podklady/vs_prototyp/`); u 1 šachty pixelově shodná s v6.11.3.
+Klikací prototyp v6 (6. 11., R1–R18): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2 — skutečná
+sestavená aplikace v6.11.4 (další verze main, s kartou Můstky a MU3) + vrstva víc šachet (`podklady/vs_prototyp/`); u 1 šachty pixelově shodná s v6.11.4.
 Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 
 **Stav: NÁVRH UZAVŘEN — PŘIPRAVENO KE SPUŠTĚNÍ (rozhodnutí R1–R18). Před spuštěním se slučují MU2, DP a DZ2. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
@@ -492,3 +492,4 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 | 6. 11. 2026 | (rozhodnutí, ne kód) | O12 = a) | R15: jedna šachta s můstky v CN jako dnes; návrh uzavřen. Před spuštěním se slučují MU2, DP, DZ2 → po „AKTUALIZUJ VS“ znovu ověřit. |
 | 6. 11. 2026 | (připomínka J. V. k prototypu) | R16 | Jedna šachta = dnešní vzhled; režim víc šachet od 2 šachet (nebo ks > 1); nové otázky O13 (místo nastavení počtu) a O14 (snížení počtu). Prototyp upraven (výchozí stav = 1 šachta). |
 | 6. 11. 2026 | (rozhodnutí, ne kód) | O13 = a, O14 = a | R17 pole Počet šachet v nabídce v Zadání šachty, R18 potvrzení a smazání při snížení; návrh uzavřen, prototyp bez náhledů nezvolených variant. |
+| 6. 11. 2026 večer | `0f16310` (integrace v6.11.4 = MU3) | MU3: výchozí výška sloupu navíc = H − 0,2 m (jako rohový sloupek), nápovědy karty Můstky s čárkou. | Návrh beze změny (sloupy jsou v zadání šachty, jádro je po šachtách přebírá). Prototyp přestavěn na v6.11.4 (v6), ověřen. |

@@ -7,11 +7,11 @@
 - Podklad: `podklady/NAVRH_VICE_SACHET_05_11.md` (oddíl 0 rozhodnutí, oddíl 11 prompt pro realizaci po etapách).
 - Artefakt (soukromý, verze 8): https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa — zdroj HTML jen
   v artefaktu (načíst přes Artifact `read`, republish na stejnou adresu přes `url`).
-- Klikací prototyp v5 (6. 11.): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2 — `podklady/VS_PROTOTYP_06_11.html` = SKUTEČNÁ
-  sestavená aplikace z integrace 7632ca5 (v6.11.3 = další verze main, `KNG_NEZVYSOVAT_VERZI=1 python3 build.py`) + vrstvy
+- Klikací prototyp v6 (6. 11. večer, základ v6.11.4 = MU3): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2 — `podklady/VS_PROTOTYP_06_11.html` = SKUTEČNÁ
+  sestavená aplikace z integrace 0f16310 (v6.11.4 = další verze main, `KNG_NEZVYSOVAT_VERZI=1 python3 build.py`) + vrstvy
   `podklady/vs_prototyp/` (a1 offline, a2 zkušební ceník s přepínačem skladebný/starý #354, b víc šachet R1–R18 přes `vypocetZ`,
-  můstky Z.mustky[] po šachtách skutečným jádrem). Složení `python3 podklady/vs_prototyp/sestav.py <scratchpad> wti`
-  (dist v <scratchpad>/wti). Shoda u 1 šachty: `rozdil_{1200,1440,1920}.png` (rozdíl jen panel prototypu a pole Počet šachet).
+  můstky Z.mustky[] po šachtách skutečným jádrem). Složení `python3 podklady/vs_prototyp/sestav.py <scratchpad> wti4`
+  (dist v <scratchpad>/wti4). Shoda u 1 šachty: `rozdil_{1200,1440,1920}.png` (rozdíl jen panel prototypu a pole Počet šachet).
 - Roadmapa: #570 (vlna C, `ceka`, XL, závisí měkce na #560) v `roadmapa/roadmap.json`.
 
 **Rozhodnutí J. V. 5.–6. 11. 2026 (R1–R18; R14 = O11 b, u víc šachet můstky v ceně šachty; R15 = O12 a, jedna šachta jako dnes; R16 = jedna šachta beze změny vzhledu, víc šachet až od 2; R17 = pole Počet šachet v nabídce v Zadání šachty; R18 = snížení s potvrzením a smazáním):** R1 architektura A (`ock.zadani` = šachta 1, další
@@ -34,7 +34,7 @@ a mění sousední soubory → po každém „AKTUALIZUJ VS nad <SHA>“ ověři
 
 **Ověřeno 5. 11. nad `6b70cc3`** (v5.11.3, MU #560 + DZ): třetí pole `mustkyCenaPredZaokr`, můstky ze součtu, rozpočet bez můstků, šablona v17 navazuje na v16, KL můstky po šachtách; podklad oddíl 12.
 
-**Čeká se na MU3** (claude/mu3-sloupy-vyska nad 7632ca5: výchozí výška sloupů navíc = výška šachty, desetinná čárka v kartě Můstky). Po „AKTUALIZUJ VS nad <SHA>“ přestavět prototyp na nové sestavě (`sestav.py <scratchpad> <worktree>`), znovu pixelové srovnání a ceny. Vrstva b prototypu formátuje všechna čísla česky (toLocaleString cs-CZ) — ověřeno 6. 11. Playwrightem (jediný výskyt tečky je číslo verze „v6.11.3“).
+**MU3 zapracováno** (v6.11.4, prototyp v6). **Čeká se na CA #575** (čárka ve všech číselných polích) — po „AKTUALIZUJ VS nad <SHA>“ ještě jedna přestavba prototypu (`sestav.py <scratchpad> <worktree>`), pixely a ceny znovu. Vrstva b formátuje čísla česky (ověřeno 6. 11.).
 
 **Další krok:** čekat na pokyn koordinace. Při spuštění etapy: větev `claude/vs-e<N>-…` nad zadaným SHA,
 hooky, pojistky testů, zlatá sada „1 šachta na haléř“, celé kolo (Playwright přes odkaz

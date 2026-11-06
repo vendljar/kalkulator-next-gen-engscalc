@@ -53,7 +53,7 @@
   function kresliPanel() {
     const cz = (window.PROTO_CENIK || {}).rezim || 'skladebny';
     stitek.innerHTML = `<span class="vs-proto">Prototyp — nic se neukládá</span>
-      <span class="vs-pz">základ = v6.11.3 (další verze main)</span>
+      <span class="vs-pz">základ = v6.11.4 (další verze main)</span>
       <span class="vs-pz">Zkušební ceník můstků: <span class="rada-prep"><button type="button" class="${cz === 'skladebny' ? 'on' : ''}" onclick="VS_cenik('skladebny')">skladebný</button><button type="button" class="${cz === 'stary' ? 'on' : ''}" onclick="VS_cenik('stary')">starý (#354)</button></span></span>
       <button type="button" class="mini" onclick="VS_navod()">Co si proklikat</button>`;
   }
@@ -314,8 +314,8 @@
     if (n) { n.remove(); return; }
     n = document.createElement('div'); n.id = 'vsNavod'; n.className = 'vs-navod';
     n.innerHTML = `<button type="button" class="mini" style="float:right" onclick="VS_navod()">Zavřít</button><h3>Co si proklikat</h3><ol>
-      <li><b>Jedna šachta</b> = kalkulátor jako dnes (základ v6.11.3, další verze main)${rt('R16')}. V kartě <b>Zadání šachty</b> vpravo v nadpisu nastavte <b>Počet šachet v nabídce</b> na 2 — zapne se režim víc šachet${rt('R17')}.</li>
-      <li><b>Můstky u jedné šachty:</b> v Zadání šachty dejte „Můstky mezi budovou a OCK“ = 1 — objeví se karta <b>Můstky</b>. Změňte podlahu, zábradlí, kotvení, sloupy, „+ další provedení“. Cena se přepočítá; v nabídce (Word, šablona v16) má jedna šachta řádky Výtahová šachta / Můstky / Cena celkem jako v v6.11.3${rt('R15')}.</li>
+      <li><b>Jedna šachta</b> = kalkulátor jako dnes (základ v6.11.4, další verze main)${rt('R16')}. V kartě <b>Zadání šachty</b> vpravo v nadpisu nastavte <b>Počet šachet v nabídce</b> na 2 — zapne se režim víc šachet${rt('R17')}.</li>
+      <li><b>Můstky u jedné šachty:</b> v Zadání šachty dejte „Můstky mezi budovou a OCK“ = 1 — objeví se karta <b>Můstky</b>. Změňte podlahu, zábradlí, kotvení, „+ další provedení“. <b>Sloupy navíc:</b> zadejte počet a výšku nechte prázdnou — nápověda v poli ukáže výšku šachty − 0,2 m (jako rohový sloupek) a s ní se i počítá. Cena se přepočítá; v nabídce (Word, šablona v16) má jedna šachta řádky Výtahová šachta / Můstky / Cena celkem jako v v6.11.4${rt('R15')}.</li>
       <li><b>Můstky u Šachty 2:</b> přepněte na Šachtu 2 (karta Šachty varianty), přidejte jí jiné můstky. Každá šachta má své skupiny; cena se přepočítá v šachtě i v součtu.</li>
       <li><b>Ceník:</b> v panelu vlevo dole přepněte <b>Zkušební ceník můstků</b> skladebný ↔ starý (#354) — starý počítá můstky vzorcem a karta ukáže lištu upozornění.</li>
       <li><b>Kalkulace:</b> přepínač šachet / Součet v Cenové kalkulaci (sekce MŮSTKY po šachtách, v Součtu sečtená).</li>
