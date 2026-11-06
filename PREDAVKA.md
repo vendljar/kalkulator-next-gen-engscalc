@@ -1,3 +1,27 @@
+# Předávka — 6. 11. 2026: MU2 #560 — čitelná karta Můstky, větev `claude/mu2-karta-vzhled`
+
+Nad `6b70cc3` (`test` = integrace v5.11.3). **Verze 6.11.3** (koordinace přečísluje). Neslučováno; do
+`test-draft`, `test` ani `main` nic. **Výpočet beze změny** — zlatá pojistka a `test_560_mustky_sekce.js` (228/0)
+beze změny otisků.
+
+| úkol (snímek J. V. 6. 11.) | stav | kde |
+|---|---|---|
+| 1. „+ další provedení“ obří box přes tabulku | ✅ malé tlačítko (`mini`) pod tabulkou vlevo, netiskne se | `src/ui/kalk_ock.js` `mustkyKarta` |
+| 2. upozornění o ceníku plovoucí přes tabulku | ✅ lišta nad tabulkou v toku stránky (Model 1, starý i skladebný ceník) | `.mustky-lista` |
+| 3. záhlaví nesedí, selecty useknuté | ✅ obal přes celou mřížku karty, tabulka ve vlastním posuvném kontejneru, vše vlevo, select podle volby (min. 120 px), krátké popisky voleb jen v kartě | `src/app_template.html` (`.mustky-*`) |
+| 4. součet v zadání šachty s bublinou přes sloupec | ✅ bublina zkrácena („součet skupin z karty Můstky“); je to prohlížečová bublina, šířku styl neovlivní | |
+| 5. šířka „0“ | ✅ bez šířky šachty nápověda „jako šachta“ (nula byla nápověda z nevyplněné šířky šachty, ne hodnota) | |
+| testy rozložení + pojistka, mutace, CHANGELOG, roadmapa | ✅ | viz níž |
+
+**Testy:** `overit_560_mustky.mjs` 42/0 (nový bod 7: 1200/1440/1920 px, Model 1 i 2, 1–3 skupiny, starý i skladebný
+ceník, tisk — bez překryvů, záhlaví nad sloupci, nezkrácené selecty, lišta nad / tlačítko pod tabulkou, bez
+vodorovného posunu stránky); nad 6b70cc3 20 FAIL. `src/test_560_mu2_karta.js` 18/0 (stavba HTML ve vm + styly);
+nad 6b70cc3 15 FAIL. Mutace „MU2 #560“ 8/8 chycených (`--kontrola` 715). `test_escape` doplněn o nové volání
+`sel()` (hotové HTML). Kolo `--bez-mutaci`: viz ohlášení.
+
+**Snímky před/po:** vyrábí je `node nastroje/snimky_mustky.mjs <výstup bez přípony> <šířka> <model 1|2> <skupin 1–3>
+<stary|skl>` (karta + karta zadání). Poslané koordinaci jako soubory (do repa se neukládají).
+
 # Předávka — 5. 11. 2026: DZ #571 — denní kopie zálohy na Disk na ostrém webu (nikdy tiše), větev `claude/dz-kopie-disk` (sloučeno do integrace jako v5.11.3)
 
 Nad `000924e` (`main` = `test` = v4.11.8). **Verze 5.11.1** (koordinace přečísluje). Neslučováno; do `test-draft`,
