@@ -2,6 +2,8 @@
 
 Dávka VS. Artefakt s náhledy obrazovek:
 https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa .
+Klikací prototyp (6. 11., R1–R15, CSS z v6.11.1): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2
+(zdroj `podklady/VS_PROTOTYP_06_11.html`).
 Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 
 **Stav: NÁVRH UZAVŘEN — PŘIPRAVENO KE SPUŠTĚNÍ (rozhodnutí R1–R15). Před spuštěním se slučují MU2, DP a DZ2. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**

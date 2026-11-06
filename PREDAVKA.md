@@ -7,6 +7,8 @@
 - Podklad: `podklady/NAVRH_VICE_SACHET_05_11.md` (oddíl 0 rozhodnutí, oddíl 11 prompt pro realizaci po etapách).
 - Artefakt (soukromý, verze 8): https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa — zdroj HTML jen
   v artefaktu (načíst přes Artifact `read`, republish na stejnou adresu přes `url`).
+- Klikací prototyp (VS-PROTOTYP, 6. 11.): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2 — zdroj `podklady/VS_PROTOTYP_06_11.html`
+  (CSS 1:1 ze sestavené v6.11.1 nad b179acb + karta Můstky MU2; výpočet zjednodušený, smyšlené sazby; ověřeno Playwrightem 1200/1440/1920).
 - Roadmapa: #570 (vlna C, `ceka`, XL, závisí měkce na #560) v `roadmapa/roadmap.json`.
 
 **Rozhodnutí J. V. 5.–6. 11. 2026 (R1–R15; R14 = O11 b, u víc šachet můstky v ceně šachty; R15 = O12 a, jedna šachta jako dnes):** R1 architektura A (`ock.zadani` = šachta 1, další
