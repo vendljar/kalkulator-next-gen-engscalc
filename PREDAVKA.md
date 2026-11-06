@@ -1,3 +1,25 @@
+# Předávka — 6. 11. 2026: DP #573 — texty DPZ bez našeho zaměření, větev `claude/dp-dpz-bez-zamereni`
+
+Nad `6b70cc3` (integrace v5.11.3). **Verze 6.11.1** (koordinace přečísluje). Neslučováno; do `test-draft`,
+`test` ani `main` nic, na webech, Disku ani v Pipedrive nic. Rozhodnutí J. V. 6. 11. 2026 po #569.
+
+| úkol | stav | kde |
+|---|---|---|
+| věta „stav vycházející ze zaměření a původní dokumentace" → „z původní dokumentace a prohlídky" | ✅ | `src/nabidka_proj.js` (`NABIDKA_PROJ_DPZ_STAVAJICI`, `zneni`) |
+| termín DPZ bez studie → „do 12 týdnů od předání podkladů" (sjednoceno se studií #569) | ✅ | `src/podminky.js` (`PODMINKY_TERMIN_DPZ` nove/stare); uložené termíny firmy beze změny |
+| další výskyty zaměření v textech DPZ | ✅ | žádné další; ostatní „zaměření" patří k ZA, geodetovi a platbám ZA (beze změny) |
+| Word (šablona v8 beze změny) | ✅ | `src/docxgen.js` `docxDpzBezZamereni` (CZ/EN/DE/FR, i přes běhy), `src/dokumenty.js` |
+| odeslaná nabídka beze změny | ✅ | razítko `dpzBezZamereni` v `src/engine_proj.js`, `nabidkaProjDpzBezZamereni` |
+| překlady EN/DE/FR | ✅ | `src/preklad.js` (i celý řádek stávajícího stavu — online se dřív nepřekládal) |
+| test s pojistkou, mutace, kolo | ✅ VŠE ZELENÉ | `src/test_573_dpz_bez_zamereni.js`; mutace `[#573]` |
+| roadmapa #573, CHANGELOG, manuál obchodníka | ✅ | `roadmapa/roadmap.json`, `CHANGELOG.md`, `manual/obsah.json` |
+
+**Otevřené body:** (1) ověřit Word na skutečné šabloně PROJ v8 (`overit_nabidka_proj_word.mjs` lokálně) — hlavně
+přesné znění věty stávajícího stavu v EN/DE/FR šabloně (nahrazuje se podle slovníku); (2) online EN/DE/FR dál
+nepřekládá ostatní řádky části 1 DPZ (situace stavby, bourací dokumentace, nový stav) — stav před #573;
+(3) firma, která má v Nastavení → Firma uložené termíny, má termín DPZ „od výstupů ze zaměření" dál — upravit tam.
+
+**Testy:** `src/test_573_dpz_bez_zamereni.js` 65/0 (pojistka: na 6b70cc3 padá — funkce chybí), `src/test_d1_dpz_bez_studie.js` 95/0 (nové znění termínu), `src/test_569_studie_bez_zamereni.js` 80/0. Mutace „[#573]" 9/9, D1 Q2 5/5, #569 12/12 (jedno zadání přizpůsobené); `--kontrola` 716 / 1321. **Kolo `--bez-mutaci`:** VŠE ZELENÉ (~32 min) — sady 399 / 0 / 7 přeskočeno (test.js + 6 prohlížečových sad bez firemních podkladů KNG_PODKLADY, jako dřív), hodiny +400 dní 321 / 0 / 1, statické 5 z 5. První běh spadl jen na verzi (verze.txt 5.11.3 × commit 6. 11.) → verze.txt 6.11.1.
 # Předávka — 5. 11. 2026: DZ #571 — denní kopie zálohy na Disk na ostrém webu (nikdy tiše), větev `claude/dz-kopie-disk` (sloučeno do integrace jako v5.11.3)
 
 Nad `000924e` (`main` = `test` = v4.11.8). **Verze 5.11.1** (koordinace přečísluje). Neslučováno; do `test-draft`,
@@ -261,7 +283,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 5. 11. 2026: stav integrace v5.11.3
+# Předávka koordinace — 6. 11. 2026: stav integrace v6.11.1
+
+- **6. 11.:** `test` = v5.11.3 (6b70cc3, testengscalc 5.11.3). **v6.11.1** DP #573 texty DPZ bez zaměření. Běží DZ2 #574 (zastaralá složka záloh, NotFoundError) a MU2 (vzhled karty Můstky, #560). VS návrh uzavřen (R1–R15), K40 připravena (od #575) — obojí jen na pokyn J. V.
 
 - **v5.11.3** DZ #571 kopie zálohy na Disk nikdy tiše (o právo zápisu se žádá při „Přihlásit“).
 - **v5.11.1** PH #568/#569/#572 (5da7a2d, kolo zelené), **v5.11.2** MU #560 můstky (sloučeno 5. 11.; mutace SV přečíslovány na #564). `test` = `main` = v4.11.8. Běží DZ #571 (kopie zálohy na Disk). Standby K40, VS víc šachet (#570).

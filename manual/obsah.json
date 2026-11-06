@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
-    "verze": "Platí pro aplikaci v5.11.3 · sestaveno 4. 11. 2026",
+    "verze": "Platí pro aplikaci v6.11.1 · sestaveno 4. 11. 2026",
 
   "uvod": [
     {
@@ -925,6 +925,7 @@
         { "typ": "text", "text": "Praktická drobnost z ceníku projekce: u dopravy je zaškrtávátko **„mimo Prahu“**, které přičte paušál z ceníku a při změně ceníku se přepočítá. Ruční pole v Kč vedle něj je **příplatek navíc, ne tatáž věc**." },
         { "typ": "text", "text": "**Akce mimo Prahu** (zaškrtávátko pod souhrnem Kalkulace PROJ): k ceně zaměření, studie, DPZ a kolaudace se přičte cena jednoho výjezdu technika z Ceníku nákladů PROJ a nabídka u nich napíše „Cena zahrnuje i cestovní náklady na 1 výjezd technika na stavbu (… Kč bez DPH)“ — u DPZ a kolaudace navíc „Případné další cesty budou fakturovány individuálně“. U inženýrské činnosti a autorského dozoru se cena výjezdu jen uvede. Cenu výjezdu přepisuje jen ten, kdo smí vidět náklady; obchodník ji vidí jako číslo. V Praze nechte nezaškrtnuté." },
         { "typ": "text", "text": "**Studie proveditelnosti už zaměření neobsahuje** (od listopadu 2026): zaměření se nabízí jen jako samostatná činnost *Zaměření a zpracování výstupů (ZA)*. Studie má v nabídce dvě části — **část 1** vypracování studie (původní stav z podkladů a prohlídky, rozsah bourání, navrhovaný stav, technická zpráva) a **část 2** projednání s památkáři; úvod nabídky i termín studie („do 10–12 týdnů od předání podkladů“) na naše zaměření nenavazují. Platí pro náhled i Word ve všech jazycích; cena se nemění. Nabídka odeslaná dřív se dotiskne tak, jak odešla." },
+        { "typ": "text", "text": "**Ani texty DPZ na naše zaměření nenavazují** (od listopadu 2026): dokumentace stávajícího stavu v rozsahu DPZ vychází *z původní dokumentace a prohlídky* a termín hrubopisu DPZ bez studie je „do 12 týdnů od předání podkladů“. Kdo má termíny uložené v Nastavení → Firma, má je dál beze změny. Platí pro náhled i Word ve všech jazycích; cena se nemění a nabídka odeslaná dřív se dotiskne tak, jak odešla." },
         { "typ": "text", "text": "**Jednostupňová dokumentace** (DPZ a DPS v jednom stupni): aplikace nic nepřepočítá ani nepřepíše — kontrola před nabídkou připomene, že nabídku PROJ je nutné upravit ve Wordu ručně (popis DPZ+DPS, ceny, plán plateb, termíny)." },
         { "typ": "text", "text": "**Úvod nabídky PROJ** je v kartě *Cenová nabídka (PROJ)* v poli **Naše NABÍDKA a doporučení** — předvyplní se podle nabízených činností, přepsat ho můžete a **↺ Vrátit výchozí** vrátí původní znění. Ruční text platí pro českou nabídku; anglická, německá a francouzská mají výchozí úvod. **Autorský dozor** nabídka i krycí list PROJ uvádějí jen se zaškrtnutým **Nabízet autorský dozor** (nová zakázka ho má vypnutý). **Bez studie proveditelnosti** (začínáte rovnou DPZ) nabídka nepíše, že DPZ navazuje na studii, vynechá hvězdičku u ceny DPZ a termín hrubopisu DPZ zní „do 12-ti týdnů od objednání a předání podkladů“." }
       ]

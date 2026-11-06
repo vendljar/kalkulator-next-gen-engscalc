@@ -27,9 +27,19 @@
 
 /* Továrna = dnešní hodnoty z kódu (stav e3995e6), aby se výstup nezměnil. */
 /* TERMÍN HRUBOPISU DPZ BEZ STUDIE (D1) — rozhodnutí J. V. 20. 10. 2026 ~11:35:
- * pevných 12 týdnů s navázáním obchodníka (na výstupy ze zaměření); se studií
+ * pevných 12 týdnů s navázáním obchodníka (od #573 na předání podkladů); se studií
  * zůstává „do 10–12 týdnů od schválení studie investorem a objednání". */
-const PODMINKY_TERMIN_DPZ_BEZ_STUDIE = 'do 12 týdnů od zpracování výstupů ze zaměření';
+/* DPZ BEZ NAŠEHO ZAMĚŘENÍ (#573, rozhodnutí J. V. 6. 11. 2026 po #569):
+ * hrubopis DPZ bez studie se už neváže na výstupy ze zaměření (zaměření se
+ * nabízí jen jako samostatná položka ZA), znění je sjednocené s termínem
+ * studie („od předání podkladů"). Původní znění drží `stare` — dotisk
+ * nabídky odeslané před #573 bez snímku podmínek (nabidka_proj.js). Firma,
+ * která má termíny uložené v Nastavení → Firma, je má dál beze změny. */
+const PODMINKY_TERMIN_DPZ = {
+  nove: 'do 12 týdnů od předání podkladů',
+  stare: 'do 12 týdnů od zpracování výstupů ze zaměření',
+};
+const PODMINKY_TERMIN_DPZ_BEZ_STUDIE = PODMINKY_TERMIN_DPZ.nove;
 /* TERMÍN STUDIE BEZ NAŠEHO ZAMĚŘENÍ (#569, D. Sikora 2. 11. 2026): studie
  * proveditelnosti už zaměření neobsahuje, termín se proto neváže na výstupy
  * ze zaměření. Původní znění drží `stare` — dotisk nabídky odeslané před
@@ -602,7 +612,7 @@ function podminkyEfZmrazene(firma, snimek) {
 
 /* Jeden objekt pro ostatní moduly — v prohlížeči jsou soubory v jednom
  * scope, v Node se načte přes require (vzor firmaPlanModul). */
-const PODMINKY = { PODMINKY_VYCHOZI, PODMINKY_TERMIN_DPZ_BEZ_STUDIE, PODMINKY_TERMIN_STUDIE, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
+const PODMINKY = { PODMINKY_VYCHOZI, PODMINKY_TERMIN_DPZ_BEZ_STUDIE, PODMINKY_TERMIN_DPZ, PODMINKY_TERMIN_STUDIE, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
   podminkyVeta, podminkyVetaJenVychoziPreklad, podminkyTextProj, podminkyNastavVetu, podminkyNastavTextProj, podmPoradi,
   podminkyZalohaText, podminkyZalohyVolby, podminkyZalohaVychozi, podminkyFaktura2, podminkyKonecna,
   podminkyLimitVolby, podminkyLimitText, podminkySoucetOck, podminkyVady, podminkyCiste, podminkyNastav,

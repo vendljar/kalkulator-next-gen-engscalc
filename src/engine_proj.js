@@ -244,6 +244,11 @@ function vypocetProj(zadani, cenik) {
      * dá původní text (nabidkaProjStudieBezZamereni v nabidka_proj.js).
      * Porovnání zámku texty a příznaky neporovnává (zamekVysledekRozdily). */
     studieBezZamereni: true,
+    /* DPZ BEZ ZAMĚŘENÍ (#573, J. V. 6. 11. 2026): stejné razítko pro texty
+     * DPZ (stávající stav „z původní dokumentace a prohlídky", termín
+     * hrubopisu bez studie „od předání podkladů"). Odeslaná nabídka bez
+     * razítka se dotiskne původním zněním (nabidkaProjDpzBezZamereni). */
+    dpzBezZamereni: true,
     souhrn: {
       naklad: sum('naklad'),
       marze: sum('marze'),             // přirážka v Kč (jedno procento, viz výše)
