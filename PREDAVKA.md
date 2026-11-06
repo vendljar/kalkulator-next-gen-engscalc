@@ -34,6 +34,8 @@ a mění sousední soubory → po každém „AKTUALIZUJ VS nad <SHA>“ ověři
 
 **Ověřeno 5. 11. nad `6b70cc3`** (v5.11.3, MU #560 + DZ): třetí pole `mustkyCenaPredZaokr`, můstky ze součtu, rozpočet bez můstků, šablona v17 navazuje na v16, KL můstky po šachtách; podklad oddíl 12.
 
+**Čeká se na MU3** (claude/mu3-sloupy-vyska nad 7632ca5: výchozí výška sloupů navíc = výška šachty, desetinná čárka v kartě Můstky). Po „AKTUALIZUJ VS nad <SHA>“ přestavět prototyp na nové sestavě (`sestav.py <scratchpad> <worktree>`), znovu pixelové srovnání a ceny. Vrstva b prototypu formátuje všechna čísla česky (toLocaleString cs-CZ) — ověřeno 6. 11. Playwrightem (jediný výskyt tečky je číslo verze „v6.11.3“).
+
 **Další krok:** čekat na pokyn koordinace. Při spuštění etapy: větev `claude/vs-e<N>-…` nad zadaným SHA,
 hooky, pojistky testů, zlatá sada „1 šachta na haléř“, celé kolo (Playwright přes odkaz
 `node_modules/playwright`), mutace po částech, ohlásit koordinaci.
