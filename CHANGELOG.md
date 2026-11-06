@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v6.11.1 — DP #573: texty DPZ bez našeho zaměření (stávající stav, termín hrubopisu bez studie), větev claude/dp-dpz-bez-zamereni
+
+Nad `6b70cc3` (integrace v5.11.3). Rozhodnutí J. V. 6. 11. 2026 po #569 (e-mail D. Sikory 2. 11.: zaměření se nabízí
+jen jako samostatná položka ZA). Verzi přečísluje koordinace. Na webech, Disku ani v Pipedrive nic.
+
+- **Rozsah DPZ (část 1):** „dokumentace stávajícího stavu – stav vycházející **z původní dokumentace a prohlídky**“
+  (dřív „ze zaměření a původní dokumentace“) — náhled i Word, CZ/EN/DE/FR. Celý řádek se nově překládá i online
+  (dřív zůstával v EN/DE/FR česky).
+- **Termín hrubopisu DPZ bez studie:** „do 12 týdnů **od předání podkladů**“ (dřív „od zpracování výstupů ze
+  zaměření“), sjednoceno s termínem studie z #569; se studií beze změny („od schválení studie investorem
+  a objednání“). Mění se jen výchozí znění (`PODMINKY_TERMIN_DPZ`); termíny uložené firmou v Nastavení → Firma
+  zůstávají.
+- **Word:** šablona PROJ v8 se nemění — `docxDpzBezZamereni` při plnění nahradí větu stávajícího stavu ve všech
+  odstavcích (CZ/EN/DE/FR, i rozdělenou do běhů); termín jde symbolem `{{PROJ_TERMINY_TERMIN}}`.
+- **Odeslaná nabídka se nemění:** nové razítko `dpzBezZamereni` ve zmrazeném výsledku PROJ (`engine_proj.js`);
+  nabídka odeslaná před #573 ho nemá → dotisk dá původní větu i termín a Word bez úpravy.
+- Samostatné Zaměření (ZA), geodetické zaměření, platby ZA a ceny beze změny.
+- **Testy:** nový `src/test_573_dpz_bez_zamereni.js` (65; pojistka: na 6b70cc3 padá — funkce chybí, DPZ píše
+  „ze zaměření“), upravený `src/test_d1_dpz_bez_studie.js` (95, nové znění termínu). Mutace „[#573]“ 9 z 9
+  chycených; upravené D1 Q2 5 z 5 a #569 12 z 12 (zadání „termín studie dotisku nový“ přizpůsobené);
+  `--kontrola` jádro 716 a server 1321 úseků v pořádku.
+- Manuál obchodníka (`manual/obsah.json`) doplněn o odstavec k DPZ.
+
 ## v5.11.3 — DZ #571: denní kopie zálohy na Disk na ostrém webu — nikdy tiše, větev claude/dz-kopie-disk
 
 Nad `000924e` (`main` = `test` = v4.11.8). Hlášení J. V. 5. 11. 2026: na ostrém webu se po přihlášení správce

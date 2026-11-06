@@ -678,6 +678,34 @@ function docxStudieBezZamereni(xml) {
   return xml;
 }
 
+/* DPZ BEZ NAŠEHO ZAMĚŘENÍ VE WORDU (#573, rozhodnutí J. V. 6. 11. 2026).
+ * Šablona nabídky PROJ (v8) má rozsah DPZ natvrdo a v části 1 větu
+ * „dokumentace stávajícího stavu – stav vycházející ze zaměření a původní
+ * dokumentace". Novou šablonu nevyrábíme — builder pošle `dpzBezZamereni`
+ * a tady se ve všech odstavcích dokumentu nahradí věta (CZ/EN/DE/FR, text
+ * smí být rozdělený do více běhů) neutrálním zněním. Termín hrubopisu DPZ
+ * jde symbolem {{PROJ_TERMINY_TERMIN}} a řeší ho builder. Šablona bez té
+ * věty zůstane, jak je; odeslaná nabídka z doby před #573 příznak nemá. */
+const DOCX_DPZ_STAVAJICI = [
+  ['stav vycházející ze zaměření a původní dokumentace', 'stav vycházející z původní dokumentace a prohlídky'],
+  ['state based on the survey and the original documentation', 'state based on the original documentation and the inspection'],
+  ['Zustand auf Grundlage des Aufmaßes und der ursprünglichen Unterlagen', 'Zustand auf Grundlage der ursprünglichen Unterlagen und der Besichtigung'],
+  ["état établi à partir du relevé et du dossier d'origine", "état établi à partir du dossier d'origine et de la visite"],
+  ['état établi à partir du relevé et du dossier d’origine', 'état établi à partir du dossier d’origine et de la visite'],
+];
+function docxDpzBezZamereni(xml) {
+  return String(xml).replace(/<w:p[\s>][\s\S]*?<\/w:p>/g, odst => {
+    for (let kolo = 0; kolo < 20; kolo++) {
+      const text = docxRadekText(odst);
+      const nalez = DOCX_DPZ_STAVAJICI.find(([stary]) => text.indexOf(stary) >= 0);
+      if (!nalez) break;
+      const i = text.indexOf(nalez[0]);
+      odst = docxRadekNahrad(odst, i, i + nalez[0].length, nalez[1]);
+    }
+    return odst;
+  });
+}
+
 function docxBlokChybiText(jmeno) {
   if (/^BLOK_STUDIE_/.test(jmeno))
     return 'Šablona nabídky PROJ (v7) nemá blok ' + jmeno + ' (značky {{' + jmeno + '_ZAC}} a {{' + jmeno
@@ -1163,6 +1191,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
       }
       if (p.nazev === 'word/document.xml' && volby && volby.studieBezZamereni) po = docxStudieBezZamereni(po);   // #569: studie bez zaměření
+      if (p.nazev === 'word/document.xml' && volby && volby.dpzBezZamereni) po = docxDpzBezZamereni(po);   // #573: DPZ bez zaměření
       po = odstranOdstavceSeSymboly(po, volby && volby.odstavcePryc);   // věty, které do dokumentu nepatří (K18-N101)
       po = odstranPrazdneBloky(po, placeholders, volby && volby.blokyPryc);   // prázdné kapitoly (P8A) a nenabízené činnosti SoD PROJ (#380)
       po = rozvinRadkyZaRadek(po, placeholders);        // věty o dílčích dokladech OCK: řádek tabulky za větu (etapa A)
@@ -1549,7 +1578,7 @@ async function docxXmlVady(arrayBuffer) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { docxStudieBezZamereni, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, DOCX_CENA_CASTI, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

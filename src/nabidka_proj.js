@@ -150,6 +150,25 @@ function nabidkaProjStudieBezZamereni(varianta) {
   const p = z.vysledek && z.vysledek.proj;         // otisk z okamžiku odeslání (zamekVysledek)
   return !!(p && p.studieBezZamereni === true);
 }
+/* DPZ BEZ NAŠEHO ZAMĚŘENÍ (#573, rozhodnutí J. V. 6. 11. 2026 po #569):
+ * texty DPZ už nepředpokládají naše zaměření — dokumentace stávajícího
+ * stavu vychází „z původní dokumentace a prohlídky" a termín hrubopisu DPZ
+ * bez studie běží „od předání podkladů" (PODMINKY_TERMIN_DPZ). Cena se
+ * nemění, samostatné zaměření (ZA) beze změny. Odeslaná (zamčená) nabídka
+ * se nemění: rozhoduje razítko `dpzBezZamereni` ve zmrazeném výsledku PROJ
+ * (engine_proj.js); nabídka odeslaná dřív ho nemá → dotisk dá původní text. */
+function nabidkaProjDpzBezZamereni(varianta) {
+  if (!varianta) return true;
+  const z = varianta.zamek;
+  if (!(z && z.zamceno)) return true;               // rozpracovaná = nové znění
+  const p = z.vysledek && z.vysledek.proj;
+  return !!(p && p.dpzBezZamereni === true);
+}
+/* Řádek „dokumentace stávajícího stavu" v rozsahu DPZ (část 1). */
+const NABIDKA_PROJ_DPZ_STAVAJICI = {
+  stare: 'dokumentace stávajícího stavu – stav vycházející ze zaměření a původní dokumentace',
+  nove: 'dokumentace stávajícího stavu – stav vycházející z původní dokumentace a prohlídky',
+};
 /* Přečíslování částí studie v novém znění (online i Word, všechny jazyky
  * přes slovník). */
 const NABIDKA_PROJ_STUDIE_CASTI = {
@@ -314,7 +333,7 @@ const NABIDKA_PROJ_DEF = [
   ], radky: [
     ['Dokumentace pro povolení záměru – část 1', ''],
     ['Stavební část projektu', 'situace stavby – v rozsahu požadovaném pro řízení o povolení záměru'],
-    ['Stavební část projektu', 'dokumentace stávajícího stavu – stav vycházející ze zaměření a původní dokumentace'],
+    ['Stavební část projektu', NABIDKA_PROJ_DPZ_STAVAJICI.stare],   /* #573: v novém znění bez zaměření (zneni) */
     ['Stavební část projektu', 'bourací dokumentace – zakreslení rozsahu a postupu bouracích prací'],
     ['Stavební část projektu', 'dokumentace nového stavu – návrh umístění výtahu u objektu, návrh šachty a stavebních úprav'],
     ['Stavební část projektu', 'průvodní, souhrnná a technická zpráva'],
@@ -771,8 +790,16 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   /* #569: dotisk nabídky odeslané dřív (bez snímku podmínek) dá původní
    * termín studie, ne nový výchozí — online i Word ({{PROJ_TERMINY_TERMIN}}). */
   const TS = ((typeof PODMINKY !== 'undefined') ? PODMINKY : require('./podminky.js').PODMINKY).PODMINKY_TERMIN_STUDIE;
-  const terminStudie = x => (!studieBezZam && TS && x[2] === 'studie' && x[1] === P(TS.nove)) ? P(TS.stare) : x[1];
+  /* #573: totéž pro termín hrubopisu DPZ bez studie (razítko dpzBezZamereni) */
+  const dpzBezZam = nabidkaProjDpzBezZamereni(varianta);
+  const TD = ((typeof PODMINKY !== 'undefined') ? PODMINKY : require('./podminky.js').PODMINKY).PODMINKY_TERMIN_DPZ;
+  const terminStudie = x => {
+    if (!studieBezZam && TS && x[2] === 'studie' && x[1] === P(TS.nove)) return P(TS.stare);
+    if (!dpzBezZam && TD && x[2] === 'dpz-studie' && x[1] === P(TD.nove)) return P(TD.stare);
+    return x[1];
+  };
   const zneni = t => {
+    if (t === NABIDKA_PROJ_DPZ_STAVAJICI.stare) return dpzBezZam ? NABIDKA_PROJ_DPZ_STAVAJICI.nove : t;
     if (!studieBezZam) return t;
     if (NABIDKA_PROJ_STUDIE_CASTI[t]) return NABIDKA_PROJ_STUDIE_CASTI[t];
     return t === NABIDKA_PROJ_PUVODNI_STAV.stare ? NABIDKA_PROJ_PUVODNI_STAV.nove : t;
@@ -1190,6 +1217,9 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     /* #569: Word — část 1 studie se zaměřením a její cenu docxgen ze šablony
      * vyjme a části přečísluje (docxStudieBezZamereni). */
     studieBezZamereni: studieBezZam,
+    /* #573: Word — věta o stávajícím stavu v rozsahu DPZ bez zaměření
+     * (docxDpzBezZamereni; šablona PROJ v8 ji má natvrdo). */
+    dpzBezZamereni: dpzBezZam,
     vyjezdKc: vyjezdJednotka,
     /* Sekce kalkulace, které tato nabídka oceňuje — rozsah díla SoD PROJ (#380 Q7). */
     nabizeneSekce: NABIDKA_PROJ_SEKCE.filter(k => !!cenaSekce(k)),
@@ -1226,4 +1256,4 @@ if (typeof dokumentRegistruj === 'function')
   });
 
 if (typeof module !== 'undefined')
-  module.exports = { nabidkaProjStudieBezZamereni, NABIDKA_PROJ_STUDIE_CASTI, NABIDKA_PROJ_PUVODNI_STAV, nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, nabidkaProjUvodRucne, nabidkaProjUvodNesedi, NABIDKA_PROJ_CESTOVNE, NABIDKA_PROJ_CESTOVNE_KDE, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };
+  module.exports = { nabidkaProjStudieBezZamereni, nabidkaProjDpzBezZamereni, NABIDKA_PROJ_DPZ_STAVAJICI, NABIDKA_PROJ_STUDIE_CASTI, NABIDKA_PROJ_PUVODNI_STAV, nabidkaProjData, nabidkaProjNabiziAD, nabidkaProjCeny, nabidkaProjPlatby, NABIDKA_PROJ_PLATBY, nabidkaProjSlevaZvlast, nabidkaProjUvod, nabidkaProjUvodRucne, nabidkaProjUvodNesedi, NABIDKA_PROJ_CESTOVNE, NABIDKA_PROJ_CESTOVNE_KDE, NABIDKA_PROJ_UVOD, NABIDKA_PROJ_UVOD_ZAVER, NABIDKA_PROJ_DPZ_UVOD, NABIDKA_PROJ_DEF, NABIDKA_PROJ_SAZBY, NABIDKA_PROJ_SEKCE, NABIDKA_PROJ_CENA_SYMBOL };

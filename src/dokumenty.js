@@ -58,7 +58,8 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
    * jako dřív. */
   const blob = await docxVyplnSablonu(templateArrayBuffer, data.placeholders,
     data.priplatky || [], data.obrazky || {}, { odstavcePryc: data.odstavcePryc || [], blokyPryc: data.blokyPryc || [], radkyNavic: data.tsRadkyNavic || [],
-      studieBezZamereni: data.studieBezZamereni === true });   // #569: Word nabídky PROJ bez zaměření ve studii
+      studieBezZamereni: data.studieBezZamereni === true,   // #569: Word nabídky PROJ bez zaměření ve studii
+      dpzBezZamereni: data.dpzBezZamereni === true });      // #573: Word nabídky PROJ — DPZ bez zaměření
   return { blob, nazevSouboru: data.nazevSouboru, data };
 }
 /* Symboly {{…}} šablony (tělo, záhlaví, zápatí) — i rozdělené mezi běhy. */
