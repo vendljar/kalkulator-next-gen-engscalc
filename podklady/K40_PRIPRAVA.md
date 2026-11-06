@@ -24,6 +24,30 @@ názvu řádku — s migrací názvů se nepotká. Testy k N1 přibyly: `src/tes
 **Roadmapa:** obsazeno #568, #569, #572 (PH), #570 drží návrh víc šachet, #571 DZ → K40 má volné **#567** a pak
 od **#573** (překonáno 6. 11.: od #576).
 
+**6. průchod nad `e2c2137`** (6. 11. 2026, `origin/claude/integrace-16-10`, **v6.11.5** = v5.11.3 + DP #573, MU2, DZ2 #574,
+MU3, CA #575). **Všechny body trvají** (v Node znovu: N1 0 změn, N2 `ok: true` při šířce 2 mm, `nazevCast` 30 000 znaků
+672 ms). **Čísla řádků v tabulce jsou z `e2c2137`** — jen tam, kde se posunula, je to uvedeno níž; ostatní platí z 5. průchodu.
+
+- **X1/X2 (ořez textu):** CA #575 přidala parser `cisloPoleText` (`src/format.js:137–153`) a `src/ui/cislo_pole.js` —
+  všechny výrazy jsou kotvené na začátek (`^…$`), změřeno 100 000 znaků za 0 ms → **nový kvadratický ořez nepřibyl**.
+  Žádný nový výraz s kotvou jen na konci v přidaných řádcích `src/` (grep diffu). Posun: `prekladNorm`
+  `src/preklad.js:1314` → **`:1319`**; `nazevCast`, `milnik`, `slovnik.js:279` beze změny.
+- **N2/N5 (můstky):** MU2 (čitelná karta Můstky) a MU3 (výchozí výška sloupu navíc = H − 0,2 m, `mustekSloupVychoziM`)
+  kontrolu ceníku nezměnily. Posuny: `MUSTKY_SKLADBA_KLICE` 839 → **840**, `mustkyRozpad` 914 → **933**, `ref` ř. **954**,
+  `mustkyCenikKontrola` 1002 → **1021**; `mustkyCenikNovy` 792 beze změny. `program_ui.js` a `program.mjs` beze změny.
+- **X3/X4 (kopie na Disk):** DZ2 #574 přidala `kopieDiskSonda` (`src/ui/online_ui.js:2128`) — sonda složky běží DŘÍV, než se
+  žádá heslo; zastaralou složku zapomene. Použití hesla z přihlášení (X3) ani výběr srovnávací kopie (X4) nezměnila.
+  Posuny: `kopieDiskUklid` **2214**, výběr **2240**, `kopieDiskProved` **2277** (heslo ř. 2285), `onlineKopieDiskAuto`
+  **2411**; ř. 318, 398, 1965, 2004 beze změny. T2: průběžná hláška **3451**.
+- **X6:** `src/ui/cenik_ui.js:176`, `:177`, `:184`, `:185`, `:206`, `:208` dál bez `escJs` (ř. 185 teď s `CISLO_POLE` z CA).
+  `test_escape.js` dostal jen výjimku pro `sel()` karty Můstky (MU2); `path`/`cesta` v `RIZIKO` dál nejsou.
+- **N1:** `skloVolba` 426, `skloMigraceNazvu` 464, `common.js:59/74/797` beze změny; řádky čelního skla ve výpočtu
+  `src/engine.js:1955`, `:2256`.
+- Beze změny: `zamek.js`, `objednane.js`, `zakazka_kontrola.mjs`, `pd_webhook.mjs`, `controlling.js` (1030), `sod_ui.js`,
+  `zakazka.js`, harnessy T1–T3 (`overit_online.mjs:1170`, `overit_sablony_online.mjs`, `overit_sod.mjs`).
+- **Roadmapa** obsazená do #575 (#573 DP, #574 DZ2, #575 CA; #567 a #570 volné) → **K40: #567 a dál od #576.**
+  Nejvyšší B dál B198.
+
 **5. průchod nad `6b70cc3`** (5. 11. 2026, `origin/claude/integrace-16-10`, **v5.11.3** = v5.11.1 + MU #560 můstky
 (v5.11.2) + DZ #571 kopie na Disk (v5.11.3)). **Všechny body trvají** (N1 a N2 znovu ověřeny v Node). **Čísla řádků
 v tabulce jsou z `6b70cc3`.**
@@ -68,7 +92,7 @@ v tabulce jsou z `6b70cc3`.**
 
 ## Tabulka: bod → stav → místo → poznámka
 
-| bod | stav | místo (6b70cc3) | poznámka, kolize, testy a mutace |
+| bod | stav | místo (6b70cc3; posuny v e2c2137 viz 6. průchod) | poznámka, kolize, testy a mutace |
 |---|---|---|---|
 | **K40-N1** čelní sklo po změně zasklení / typu | **trvá** (ověřeno v Node: `nepocitat` i `mnozstviPrepis` s `MATERIÁL VSG 4.4.2` po přepnutí na „mezi příčníky“ zůstanou, `skloMigraceNazvu` vrátí 0 změn, aktuální název je `MATERIÁL VSG 4.4.1`) | `src/engine.js:426–453` `skloVolba`, `:464–493` `skloMigraceNazvu` (dvojice ř. 469–470); `src/ui/common.js:74–79` `skloMigraceAkt`, volání `:59` (`syncVarianta`) a `:797` (`set`); `src/zakazka.js:952` (`importZakazka`) | SV #564 sklo nezasáhla (mění jen světlíky, `svetlikSkloSteny` ř. 993). Další výskyty názvu čelního skla: `src/engine.js:1936`, `:2237`, `src/ui/detail_ui.js:47`, `src/ui/kalk_ock.js:1543` — vzor `^MATERIÁL VSG 4\.4\.[12]$` se s jinými řádky nepotká (jiné sekce `MATERIÁL VSG` nemají). Testy: `src/test_k37_sklo_prepnuti.js`, `test_sklo_vazba.js`, `test_cenik_rady.js` (ř. 490–495), `test_zahr_jen_realizace.js`, `test_555_klon_tisk.js`, `overit_k37_sklo.mjs`, fuzz `src/test_fuzz_invarianty.js`. Mutace: `mutace_jadro.mjs` (6 výskytů `skloMigrace`). |
 | **K40-X1/X2** kvadratický ořez konce | **trvá** (30 000 znaků: `nazevCast` 453 ms) | `src/nazvy_souboru.js:44–51` `nazevCast` (výraz ř. 50); `src/preklad.js:1314` (`prekladNorm`; v4.11.8 ř. 1272); `src/plan_plateb.js:435` (`milnik`); `src/slovnik.js:279`; vzor smyčky `src/uloziste.js:64–70` | Dávky 4. 11. nezasáhly. Testy: `src/test_nazvy_souboru.js`, `src/test_ares.js` (volá `nazevCast`). Mutace pro `nazevCast` dnes žádná. |
@@ -92,7 +116,7 @@ v tabulce jsou z `6b70cc3`.**
 | N46 | mimo | — | Podle rozhodnutí J. V. se neopravuje. |
 
 ## Opraveno při kroku 0
-Nic. Všechny body K40 trvají i nad `6b70cc3` (5. 11.) (N1 znovu ověřen v Node: `skloMigraceNazvu` 0 změn,
+Nic. Všechny body K40 trvají i nad `e2c2137` (6. 11.) (N1 znovu ověřen v Node: `skloMigraceNazvu` 0 změn,
 `MATERIÁL VSG 4.4.2` ve vyřazených zůstává).
 
 ## Na co se čeká
