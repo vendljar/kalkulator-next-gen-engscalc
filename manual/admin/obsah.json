@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v6.11.2 · sestaveno 4. 11. 2026",
+  "verze": "Platí pro aplikaci v6.11.3 · sestaveno 4. 11. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -902,6 +902,9 @@
             },
             {
               "text": "Svítí-li v liště nahoře **⚠ Zkopírovat zálohu na Disk teď** (denní kopie se nepořídila): klikněte na něj, vyberte na Disku Google složku **_Zaloha Netlify DB** (nabídne-li prohlížeč výběr) a povolte zápis — nejlépe „Povolit při každé návštěvě“. Důvod, proč se kopie sama nepořídila, říká hláška v kartě Online databáze."
+            },
+            {
+              "text": "Hláška **„Složka … na tomto počítači už není“** nebo **„složka nenalezena — vyberte ji znovu“** (dřív anglicky „A requested file or directory could not be found…“): složka _Zaloha Netlify DB nebo některá nadřazená se přesunula či přejmenovala, nebo Disk Google na počítači neběží či se připojil jinak. Aplikace si starou složku zapomněla. Zkontrolujte, že Disk Google běží, klikněte na **Zkopírovat zálohu na Disk teď** a ve výběru složky vyberte znovu **_Zaloha Netlify DB** na Disku Google (výběr se většinou nabídne hned v témže kliknutí) a povolte zápis."
             }
           ]
         }
@@ -1322,6 +1325,10 @@
             {
               "pojem": "Kopie na Disk nejde uložit",
               "vyklad": "Prohlížeč bez přístupu ke složkám (jiný než Chrome / Edge) nebo odebrané povolení — při další kopii vyberte složku _Zaloha Netlify DB znovu."
+            },
+            {
+              "pojem": "„Složka … na tomto počítači už není“",
+              "vyklad": "Zapamatovaná složka pro kopii na Disk se přesunula, přejmenovala nebo Disk Google neběží. Aplikace ji zapomene; klikněte na Zkopírovat zálohu na Disk teď a vyberte _Zaloha Netlify DB znovu."
             },
             {
               "pojem": "Mapa polí CRM hlásí nenastavené napojení",

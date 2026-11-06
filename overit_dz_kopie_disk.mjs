@@ -109,8 +109,13 @@ async function pripravServer(prostredi, zaznam) {
 /* ---- složka „_Zaloha Netlify DB" v paměti stránky ---- */
 const SLOZKA_SKRIPT = () => {
   const soubory = new Map();
-  const d = window.__disk = { soubory, pravo: 'granted', odpoved: 'granted', zadosti: 0, bezGesta: 0, vyber: 0 };
-  d.slozka = { kind: 'directory', name: '_Zaloha Netlify DB',
+  const d = window.__disk = { soubory, pravo: 'granted', odpoved: 'granted', zadosti: 0, bezGesta: 0, vyber: 0,
+    log: [], prisnyVyber: false, vyberBezGesta: 0 };
+  /* #574: zastaralý handle jako v Chrome — name i queryPermission projdou,
+   * práce se složkou hodí DOMException NotFoundError (text z Chrome) */
+  const NENALEZENO = 'A requested file or directory could not be found at the time an operation was processed.';
+  const novaSlozka = () => { const st = { zmizela: false, zmizetPriZapisu: false };
+  const hl = { kind: 'directory', name: '_Zaloha Netlify DB', __st: st,
     queryPermission: async () => d.pravo,
     /* jako Chrome: žádost bez aktivace uživatelem = SecurityError */
     requestPermission: async () => {
@@ -123,19 +128,32 @@ const SLOZKA_SKRIPT = () => {
       return d.pravo;
     },
     getFileHandle: async (jmeno, o) => {
+      if (st.zmizela || (st.zmizetPriZapisu && o && o.create)) throw new DOMException(NENALEZENO, 'NotFoundError');
       if (!soubory.has(jmeno) && !(o && o.create)) throw new DOMException('není', 'NotFoundError');
       return { createWritable: async () => { const casti = [];
           return { write: async (t) => { casti.push(t); }, close: async () => { soubory.set(jmeno, new Blob(casti)); } }; },
         getFile: async () => soubory.get(jmeno) || new Blob([]) };
     },
-    values: async function* () { for (const jm of [...soubory.keys()]) yield { kind: 'file', name: jm }; },
+    values: async function* () {
+      d.log.push('sonda');
+      if (d.pravo !== 'granted') throw new DOMException('Permission was denied.', 'NotAllowedError');
+      if (st.zmizela) throw new DOMException(NENALEZENO, 'NotFoundError');
+      for (const jm of [...soubory.keys()]) yield { kind: 'file', name: jm }; },
     removeEntry: async (jmeno) => { soubory.delete(jmeno); } };
-  window.showDirectoryPicker = async () => { d.vyber++; d.pravo = 'granted'; return d.slozka; };
+  return hl; };
+  d.slozka = novaSlozka();
+  window.showDirectoryPicker = async () => {
+    /* #574: jako Chrome — výběr složky jen s čerstvou aktivací kliknutím */
+    if (d.prisnyVyber && (d.gestoVyprselo || !(navigator.userActivation && navigator.userActivation.isActive))) {
+      d.vyberBezGesta++;
+      throw new DOMException('Must be handling a user gesture to show a file picker.', 'SecurityError');
+    }
+    d.vyber++; d.log.push('vyber'); d.pravo = 'granted'; d.slozka = novaSlozka(); return d.slozka; };
 };
 
 /* Jeden průchod: nová karta prohlížeče, přihlášení klikem, čekání na automatiku. */
 async function pruchod(nazev, { prostredi = 'main', zaznam = STARY_ZAZNAM, pravo = 'granted', odpoved = 'granted',
-  slozka = true, f5 = false } = {}) {
+  slozka = true, f5 = false, priprava = '' } = {}) {
   await pripravServer(prostredi, zaznam);
   const kontext = await prohlizec.newContext();
   const page = await kontext.newPage();
@@ -162,18 +180,21 @@ async function pruchod(nazev, { prostredi = 'main', zaznam = STARY_ZAZNAM, pravo
   const priprav = async () => {
     await page.waitForFunction(() => typeof window.render === 'function');
     await page.waitForTimeout(300);
-    await page.evaluate(({ pravo, odpoved, slozka }) => {
+    await page.evaluate(({ pravo, odpoved, slozka, priprava }) => {
       window.__dlgTexty = [];
       window.potvrd = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(true); };
       window.hlaska = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(); };
       window.dotaz = (t, v) => { window.__dlgTexty.push(String(t)); return Promise.resolve(v == null ? '' : v); };
-      window.dotazHeslo = (t) => { window.__dlgTexty.push(String(t)); return Promise.resolve(window.__dlgHeslo === undefined ? null : window.__dlgHeslo); };
+      window.dotazHeslo = (t) => { window.__dlgTexty.push(String(t)); window.__disk.log.push('heslo'); return Promise.resolve(window.__dlgHeslo === undefined ? null : window.__dlgHeslo); };
       window.__disk.pravo = pravo; window.__disk.odpoved = odpoved;
       /* složka zapamatovaná z dřívějška (v aplikaci z IndexedDB) */
       KOPIE_DISK.slozka = slozka ? window.__disk.slozka : null; KOPIE_DISK.nacteno = true;
       /* starý záznam z doby před ZN/DK leží ve složce taky */
       if (slozka) window.__disk.soubory.set('posledni_kopie.json', new Blob(['{"kdy":"stary"}']));
-    }, { pravo, odpoved, slozka });
+      /* #574: zapamatovaná složka, která v počítači už není */
+      if (priprava) { window.__disk.slozka.__st[priprava] = true; window.__disk.prisnyVyber = true;
+        window.__dlgHeslo = 'Zkusebni.Heslo.123'; }
+    }, { pravo, odpoved, slozka, priprava });
   };
   await page.goto(ADRESA);
   await priprav();
@@ -294,6 +315,101 @@ const tlacitko = (s) => /id="online-lista-kopie-disk"/.test(s.lista) && /Zkopír
   const s = await pruchod('H ostrý, kopie dnešního otisku už je', { zaznam: dnesni, pravo: 'prompt', odpoved: 'granted' });
   test('DZ H: bez nového nočního otisku žádná kopie ani výzva', !s.ceka && !/Denní kopie/.test(s.hlaska)
     && !s.soubory.some(j => /^otisk_main_/.test(j)), [s.hlaska, s.soubory]);
+  await s.kontext.close();
+}
+
+/* ---- #574 DZ2 (hlášení J. V. 6. 11. 2026): zapamatovaná složka v počítači už není ---- */
+const DNESNI_ZAZNAM = () => Object.assign({}, STARY_ZAZNAM, { kdy: new Date().toISOString(), otisk: DNES,
+  soubor: 'otisk_main_' + DNES + '_0300.json.gz', prostredi: 'main' });
+const ANGLICKY = /could not be found|requested file|user gesture/i;
+const zastarej = (page, jak = 'zmizela') => page.evaluate((jak) => {
+  window.__disk.slozka.__st[jak] = true; window.__disk.prisnyVyber = true; window.__disk.log.length = 0;
+  window.__dlgHeslo = 'Zkusebni.Heslo.123'; }, jak);
+const poKliku = (page) => page.evaluate(() => ({ hlaska: ONLINE_STAV.hlaska, typ: ONLINE_STAV.hlaskaTyp, ceka: ONLINE_STAV.kopieDiskCeka,
+  log: window.__disk.log.slice(), vyber: window.__disk.vyber, vyberBezGesta: window.__disk.vyberBezGesta,
+  zapamatovana: KOPIE_DISK.slozka === null ? null : (KOPIE_DISK.slozka === window.__disk.slozka ? 'nova' : 'stara'),
+  soubory: [...window.__disk.soubory.keys()] }));
+const cekejNaKopii = (page) => page.waitForFunction(() => !ONLINE_STAV.pracuje, null, { timeout: 10000 });
+/* ---- I) automatika po přihlášení: složka zmizela ---- */
+{
+  const s = await pruchod('I ostrý, složka zmizela → automatika po přihlášení', { pravo: 'granted', priprava: 'zmizela' });
+  const st = await poKliku(s.page);
+  test('DZ2 I: automatika — NE tiše: důvod „složka nenalezena — vyberte ji znovu"',
+    s.typ === 'varovani' && /Denní kopie zálohy na Disk čeká: složka „_Zaloha Netlify DB" nenalezena/.test(s.hlaska)
+    && /vyberte ji znovu/.test(s.hlaska) && !ANGLICKY.test(s.hlaska), s.hlaska);
+  test('DZ2 I: automatika — důvod „nenalezena" a tlačítko v liště i v Nastavení → Databáze',
+    !!s.ceka && s.ceka.duvod === 'nenalezena' && tlacitko(s), s.ceka);
+  test('DZ2 I: automatika — zastaralá složka zapomenuta (paměť i IndexedDB), heslo se nestahovalo',
+    st.zapamatovana === null && await s.page.evaluate(() => kopieDiskIdb()) === null
+    && !s.soubory.some(j => kopieJmeno('main').test(j)), st);
+  await s.page.click('#online-lista-kopie-disk');
+  await cekejNaKopii(s.page);
+  const po = await poKliku(s.page);
+  test('DZ2 I: klik na tlačítko v liště → výběr složky (s gestem) → heslo → kopie, výzva zmizí',
+    po.vyber === 1 && po.vyberBezGesta === 0 && po.soubory.some(j => kopieJmeno('main').test(j)) && !po.ceka
+    && po.zapamatovana === 'nova', po);
+  test('DZ2 I: bez chyb stránky', s.chyby.length === 0, s.chyby);
+  await s.kontext.close();
+}
+/* ---- J) tlačítko: složka zmizela → v témže kliknutí výběr, heslo až potom ---- */
+{
+  const s = await pruchod('J ostrý, tlačítko se zmizelou složkou', { pravo: 'granted', zaznam: DNESNI_ZAZNAM() });
+  await zastarej(s.page);
+  await s.page.evaluate(() => { ONLINE_STAV.kopieDiskCeka = { duvod: 'chyba', text: 'x' }; render(); });
+  await s.page.click('#online-lista-kopie-disk');
+  await cekejNaKopii(s.page);
+  const po = await poKliku(s.page);
+  test('DZ2 J: zmizelá složka se pozná sondou DŘÍV, než se ptá na heslo (sonda → výběr → heslo)',
+    po.log.indexOf('sonda') === 0 && po.log.indexOf('vyber') > 0 && po.log.indexOf('heslo') > po.log.indexOf('vyber'), po.log);
+  test('DZ2 J: výběr složky v témže kliknutí (gesto platí), kopie do nové složky',
+    po.vyber === 1 && po.vyberBezGesta === 0 && po.soubory.some(j => kopieJmeno('main').test(j))
+    && /Záloha zkopírována na Disk/.test(po.hlaska) && po.zapamatovana === 'nova', po);
+  await s.kontext.close();
+}
+/* ---- K) gesto už neplatí → česká hláška, žádné heslo; další klik vybere ---- */
+{
+  const s = await pruchod('K ostrý, zmizelá složka, výběr bez gesta', { pravo: 'granted', zaznam: DNESNI_ZAZNAM() });
+  await zastarej(s.page);
+  /* aktivace vyprchala (např. dlouhý dotaz na právo) — page.evaluate v Playwrightu
+   * sám aktivaci dává, proto se vypršení napodobí příznakem */
+  await s.page.evaluate(() => { window.__disk.gestoVyprselo = true; });
+  const v = await s.page.evaluate(() => onlineKopieDiskTed());
+  await s.page.evaluate(() => { window.__disk.gestoVyprselo = false; });
+  const po = await poKliku(s.page);
+  test('DZ2 K: česká hláška „Složka … na tomto počítači už není … Klikněte znovu a vyberte"',
+    v === false && po.typ === 'varovani' && /^Složka „_Zaloha Netlify DB" na tomto počítači už není \(přesunutá nebo přejmenovaná/.test(po.hlaska)
+    && /Klikněte znovu na „Zkopírovat zálohu na Disk teď" a vyberte složku „_Zaloha Netlify DB" na Disku Google/.test(po.hlaska), po.hlaska);
+  test('DZ2 K: nikdy anglická systémová hláška', !ANGLICKY.test(po.hlaska), po.hlaska);
+  test('DZ2 K: heslo se nežádalo, záloha nestahovala, složka zapomenuta',
+    !po.log.includes('heslo') && po.zapamatovana === null && po.vyberBezGesta === 1, po);
+  await s.page.evaluate(() => { ONLINE_STAV.kopieDiskCeka = { duvod: 'nenalezena', text: 'x' }; render(); });
+  await s.page.click('#online-lista-kopie-disk');
+  await cekejNaKopii(s.page);
+  const po2 = await poKliku(s.page);
+  test('DZ2 K: další klik → výběr složky → kopie', po2.vyber === 1 && po2.soubory.some(j => kopieJmeno('main').test(j)), po2);
+  await s.kontext.close();
+}
+/* ---- L) sonda projde, složka zmizí až při zápisu ---- */
+{
+  const s = await pruchod('L ostrý, složka zmizí při zápisu', { pravo: 'granted', zaznam: DNESNI_ZAZNAM() });
+  await zastarej(s.page, 'zmizetPriZapisu');
+  const v = await s.page.evaluate(() => onlineKopieDiskTed());
+  const po = await poKliku(s.page);
+  test('DZ2 L: NotFoundError při zápisu → zapomenout + česká hláška (bez angličtiny)',
+    v === false && /na tomto počítači už není/.test(po.hlaska) && !ANGLICKY.test(po.hlaska) && po.zapamatovana === null, po);
+  await s.kontext.close();
+}
+/* ---- M) zmizelá složka a právo „prompt" (restart prohlížeče) ---- */
+{
+  const s = await pruchod('M ostrý, zmizelá složka + právo prompt', { pravo: 'granted', zaznam: DNESNI_ZAZNAM() });
+  await zastarej(s.page);
+  await s.page.evaluate(() => { window.__disk.pravo = 'prompt'; window.__disk.odpoved = 'granted';
+    ONLINE_STAV.kopieDiskCeka = { duvod: 'pravo', text: 'x' }; render(); });
+  await s.page.click('#online-lista-kopie-disk');
+  await cekejNaKopii(s.page);
+  const po = await poKliku(s.page);
+  test('DZ2 M: bez práva čtení sonda nerozhodne → žádost o právo → sonda → výběr → kopie',
+    po.vyber === 1 && po.soubory.some(j => kopieJmeno('main').test(j)) && po.log.filter(x => x === 'sonda').length >= 2, po);
   await s.kontext.close();
 }
 

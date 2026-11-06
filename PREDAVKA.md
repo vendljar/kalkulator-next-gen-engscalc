@@ -1,3 +1,37 @@
+# Předávka — 6. 11. 2026: DZ2 #574 — kopie zálohy na Disk: zapamatovaná složka v počítači už není, větev `claude/dz2-slozka-nenalezena` (sloučeno do integrace jako v6.11.3)
+
+Nad `6b70cc3` (integrace v5.11.3 s DZ #571). **Verze 6.11.2** (koordinace přečísluje). Neslučováno; do `test-draft`,
+`test` ani `main` nic. Na webech, Disku ani v Pipedrive nic.
+
+**Příčina:** zapamatovaný FileSystemDirectoryHandle (IndexedDB `kng_uloziste` / `handles` / `zalohaDisk`) ukazuje na
+složku, která na tom místě v počítači už není. `h.name` i `queryPermission` projdou, DOMException NotFoundError přijde
+až při zápisu (po hesle a stažení zálohy) a handle se nezapomněl → tlačítko uvízlo. **Ověřeno v Chromiu (OPFS):**
+přesně text z hlášení J. V.; `getFileHandle` bez `create` hází NotFoundError i u živé složky bez souboru (nerozliší),
+první položka z `values()` projde na živé (i prázdné) složce a na zmizelé hodí NotFoundError.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. sonda před heslem, zapomenout při NotFound / InvalidState / NotReadable | ✅ | `kopieDiskSonda`, `kopieDiskNenalezena`, `kopieDiskZapomen` (`src/ui/online_ui.js`) |
+| 2. tlačítko: výběr složky v témže kliknutí, jinak česká hláška | ✅ | `onlineKopieDiskTed`; bez práva čtení sonda nerozhodne → žádost o právo → sonda znovu |
+| 3. automatika: důvod „složka … nenalezena — vyberte ji znovu" + tlačítko | ✅ | `onlineKopieDiskAuto`, `kopieDiskCeka('nenalezena')` |
+| 4. NotFoundError až při zápisu: totéž | ✅ | `kopieDiskChybaSlozky` v `kopieDiskProved` a v tlačítku |
+| testy | ✅ | `src/test_574_slozka_nenalezena.js` 30/0, `overit_dz_kopie_disk.mjs` 33/0 (nové scénáře I–M), `test_571`/`test_554` dostaly stub sondy |
+| pojistka | ✅ | na 6b70cc3: harness 21 OK / 12 FAIL (anglická hláška), test_574 výjimka; po opravě zelené |
+| mutace | ✅ | „#574" 11/11 chycené; mutace #554 „selhání spadne" posunuta o řádek, 1/1; `--kontrola` 1332 úseků |
+| kolo `--bez-mutaci` | ✅ | sady 399 / 0 / 7 přeskočeno (KNG_PODKLADY, test.js), hodiny 321 / 0 / 1; build + statické 5/5 zelené po nastavení verze 6.11.2 (první kolo spadlo jen na verze.txt 5.11.3) |
+| CHANGELOG, roadmapa #574, manuál správce + provoz | ✅ | |
+
+**Co má J. V. udělat po nasazení:** Nastavení → Databáze → **Zkopírovat zálohu na Disk teď** → ve výběru vybrat znovu
+**_Zaloha Netlify DB** na Disku Google → povolit zápis → heslo. **Hned (v4.11.8 bez opravy)** tlačítko výběr
+nenabídne. Obejít: ověřit, že Disk Google na počítači běží, a vrátit složku _Zaloha Netlify DB (i nadřazené) na původní
+místo a jméno — zapamatovaný odkaz pak zase platí. Mazání dat webu v prohlížeči **nedoporučuji** (smazalo by i jiná
+lokální data aplikace); rozhodne J. V.
+
+**Otevřené body:** (a) prohlížečový průchod je na mocku handle (skutečný výběr složky headless nejde); sonda ověřena
+na OPFS, ne na připojeném Disku Google — chování G: disku by mělo být stejné (stejná vrstva File System Access);
+(b) vypršení gesta po dialogu o právu (scénář M v reálném Chrome) — kdyby výběr neprošel, ukáže se česká hláška
+a druhý klik vybere; (c) NotReadableError se bere jako „složka nenalezena" (zapomenutí je levné).
+
 # Předávka — 6. 11. 2026: MU2 #560 — čitelná karta Můstky, větev `claude/mu2-karta-vzhled` (sloučeno do integrace jako v6.11.2)
 
 Nad `6b70cc3` (`test` = integrace v5.11.3). **Verze 6.11.3** (koordinace přečísluje). Neslučováno; do
@@ -307,8 +341,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 6. 11. 2026: stav integrace v6.11.2
+# Předávka koordinace — 6. 11. 2026: stav integrace v6.11.3
 
+- **v6.11.3** DZ2 #574: zastaralá složka záloh se pozná před heslem, zapomene a nabídne výběr znovu; česká hláška. Záloha ostré 6. 11. pořízena ručně (otisk_main_2026-11-06_0300).
 - **v6.11.2** MU2: čitelná karta Můstky (lišta nad tabulkou, „+ další provedení“ pod ní, výpočet beze změny).
 - **6. 11.:** `test` = v5.11.3 (6b70cc3, testengscalc 5.11.3). **v6.11.1** DP #573 texty DPZ bez zaměření. Běží DZ2 #574 (zastaralá složka záloh, NotFoundError) a MU2 (vzhled karty Můstky, #560). VS návrh uzavřen (R1–R15), K40 připravena (od #575) — obojí jen na pokyn J. V.
 

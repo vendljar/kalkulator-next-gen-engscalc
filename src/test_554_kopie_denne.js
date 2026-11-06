@@ -56,6 +56,7 @@ const novyCtx = (o) => {
       return { soubor: 'otisk_main_' + den(0) + '_0200.json.gz', velikostB: 2048, uklid: { smazano: [], chyby: [] } };
     },
     kopieDiskVelikost: (b) => b + ' B', kopieDiskUklidText: () => ' Starší kopie na Disku: nic ke smazání.',
+    kopieDiskSonda: async () => 'ok', kopieDiskZapomen: () => {},   // #574: složka na místě (sondu hlídá test_574)
     onlineZprava: (t, typ) => { ctx.zpravy.push([String(t), typ || '']); },
   };
   vm.createContext(ctx);

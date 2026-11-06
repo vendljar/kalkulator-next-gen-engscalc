@@ -2108,6 +2108,55 @@ function kopieDiskSlozka() {
   });
 }
 
+/* #574 DZ2 (hlášení J. V. 6. 11. 2026): zapamatovaná složka, která na tom
+ * místě v počítači už není (složka nebo nadřazená přesunutá či přejmenovaná,
+ * Disk Google připojený jinak nebo neběží). Na zastaralém handlu projde
+ * h.name i queryPermission; selže až práce se složkou — DOMException
+ * NotFoundError „A requested file or directory could not be found…". Do
+ * v5.11.3 se to ukázalo až po hesle a stažení zálohy, handle se nezapomněl
+ * a tlačítko nikdy znovu nenabídlo výběr složky.
+ * Sonda: první položka z h.values(). Ověřeno v Chromiu: na živé složce
+ * projde (i prázdné), na zmizelé hodí NotFoundError. getFileHandle bez
+ * create to nerozliší — NotFoundError hází i živá složka bez souboru.
+ * Nic se nezapisuje. Vrací 'ok' | 'nenalezena' | 'pravo' (bez práva čtení
+ * se nedá říct; rozhodne se po žádosti o právo). Jiná chyba = 'ok' (ukáže
+ * se až při kopii, jako dřív). */
+const KOPIE_DISK_NENALEZENA_CHYBY = ['NotFoundError', 'InvalidStateError', 'NotReadableError'];
+function kopieDiskNenalezena(e) {
+  return !!e && KOPIE_DISK_NENALEZENA_CHYBY.indexOf(String(e.name || '')) >= 0;
+}
+async function kopieDiskSonda(h) {
+  if (!h || typeof h.values !== 'function') return 'ok';
+  try {
+    const it = h.values();
+    await it.next();
+    if (typeof it.return === 'function') { try { await it.return(); } catch (e) { /* jen úklid */ } }
+    return 'ok';
+  } catch (e) {
+    if (kopieDiskNenalezena(e)) return 'nenalezena';
+    if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) return 'pravo';
+    return 'ok';
+  }
+}
+function kopieDiskZapomen() {
+  KOPIE_DISK.slozka = null;
+  kopieDiskIdb(null).catch(() => false);
+}
+function kopieDiskNenalezenaText(jmeno) {
+  return 'Složka „' + String(jmeno || ULO_KOPIE_DISK_SLOZKA) + '" na tomto počítači už není (přesunutá nebo přejmenovaná,'
+    + ' případně Disk Google na počítači neběží). Klikněte znovu na „Zkopírovat zálohu na Disk teď" a vyberte složku „'
+    + ULO_KOPIE_DISK_SLOZKA + '" na Disku Google.';
+}
+/* Chyba práce se složkou → u nenalezené složky ji zapomene a vrátí českou
+ * chybu (e.nenalezena), jinak chybu beze změny. */
+function kopieDiskChybaSlozky(e, h) {
+  if (!kopieDiskNenalezena(e)) return e;
+  kopieDiskZapomen();
+  const x = new Error(kopieDiskNenalezenaText(h && h.name));
+  x.nenalezena = true;
+  return x;
+}
+
 async function kopieDiskSha256(data) {
   if (typeof crypto === 'undefined' || !crypto.subtle) return '';
   const b = await crypto.subtle.digest('SHA-256', typeof data === 'string' ? new TextEncoder().encode(data) : data);
@@ -2246,7 +2295,9 @@ async function kopieDiskProved(h, heslo) {
   const jmeno = uloKopieDiskJmeno(o.otisk, gzip, prostredi, o.porizena || (o.zaloha && o.zaloha.porizena) || Date.now());
   const ocekavano = data.length;
   const sha256 = await kopieDiskSha256(data);
-  const velikostB = await kopieDiskZapisSoubor(h, jmeno, data);
+  /* #574: složka zmizela mezi sondou a zápisem → zapomenout + česká hláška */
+  let velikostB;
+  try { velikostB = await kopieDiskZapisSoubor(h, jmeno, data); } catch (e) { throw kopieDiskChybaSlozky(e, h); }
   /* Kontrola zápisu: soubor na Disku musí mít celou délku, jinak se kopie
    * nezapočítá (hlídka by jinak mlčela nad useknutým souborem). */
   if (velikostB !== ocekavano) throw new Error('soubor ' + jmeno + ' se nezapsal celý (' + velikostB + ' z ' + ocekavano + ' B)');
@@ -2257,8 +2308,10 @@ async function kopieDiskProved(h, heslo) {
   const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });
   ONLINE_STAV.kopieDisk = (z && z.kopieDisk) || ONLINE_STAV.kopieDisk;
   if (z && z.retenceVarovani !== undefined) ONLINE_STAV.retenceVarovani = z.retenceVarovani;   // #523: čerstvá pojistka
-  await kopieDiskZapisSoubor(h, uloKopieDiskPosledniJmeno(prostredi),
-    JSON.stringify(Object.assign({ kdy: (z && z.kopieDisk && z.kopieDisk.kdy) || new Date().toISOString() }, kopie), null, 1));
+  try {
+    await kopieDiskZapisSoubor(h, uloKopieDiskPosledniJmeno(prostredi),
+      JSON.stringify(Object.assign({ kdy: (z && z.kopieDisk && z.kopieDisk.kdy) || new Date().toISOString() }, kopie), null, 1));
+  } catch (e) { throw kopieDiskChybaSlozky(e, h); }
   /* #523 Z2: úklid starých kopií — jen když server kopii přijal. */
   let uklid;
   if (!z || !z.ok) uklid = { smazano: [], chyby: [], duvod: 'server kopii nepotvrdil' };
@@ -2290,15 +2343,31 @@ async function onlineKopieDiskTed() {
   ONLINE_STAV.pracuje = true; render();
   try {
     let h = await kopieDiskSlozka();
+    /* #574 DZ2: zapamatovaná složka, která v počítači už není, se pozná
+     * DŘÍV, než se ptá na heslo a stahuje záloha — zapomene se a v témže
+     * kliknutí se nabídne výběr složky (aktivace kliknutím ještě platí). */
+    let zmizela = '', pravoOk = null;
+    if (h) {
+      let sonda = await kopieDiskSonda(h);
+      if (sonda === 'pravo') { pravoOk = await uloPravo(h, false); if (pravoOk) sonda = await kopieDiskSonda(h); }
+      if (sonda === 'nenalezena') { zmizela = String(h.name || ULO_KOPIE_DISK_SLOZKA); kopieDiskZapomen(); h = null; pravoOk = null; }
+    }
     if (!h) {
       if (typeof window === 'undefined' || typeof window.showDirectoryPicker !== 'function')
         throw new Error('tenhle prohlížeč neumí zapisovat do složky — použijte Chrome nebo Edge na počítači s Diskem Google');
       try { h = await window.showDirectoryPicker({ id: 'kng-zaloha-disk', mode: 'readwrite' }); }
-      catch (e) { if (e && e.name === 'AbortError') { onlineZprava('Kopie na Disk se nepořídila — složka nebyla vybrána.', 'varovani'); return false; } throw e; }
+      catch (e) {
+        if (zmizela) {   // #574: nikdy jen anglická systémová hláška
+          onlineZprava(kopieDiskNenalezenaText(zmizela) + (e && e.name === 'AbortError' ? ' (Výběr složky byl zrušen.)' : ''), 'varovani');
+          return false;
+        }
+        if (e && e.name === 'AbortError') { onlineZprava('Kopie na Disk se nepořídila — složka nebyla vybrána.', 'varovani'); return false; }
+        throw e;
+      }
       KOPIE_DISK.slozka = h;
       kopieDiskIdb(h).catch(() => false);      // zapamatování je pohodlí, ne podmínka
     }
-    if (!(await uloPravo(h, false))) {
+    if (!(pravoOk !== null ? pravoOk : await uloPravo(h, false))) {
       /* #571 DZ: zapamatovanou složku zapomenout — příští klik nabídne výběr
        * složky znovu (jinak by se tlačítko točilo na zamítnutém právu). */
       KOPIE_DISK.slozka = null; kopieDiskIdb(null).catch(() => false);
@@ -2312,7 +2381,8 @@ async function onlineKopieDiskTed() {
       + kopieDiskUklidText(k.uklid));
     return true;
   } catch (e) {
-    onlineZprava('Kopii zálohy na Disk se nepodařilo pořídit: ' + (e && e.message || e), 'varovani');
+    const x = kopieDiskChybaSlozky(e, KOPIE_DISK.slozka);   // #574: i NotFoundError odjinud → zapomenout, česky
+    onlineZprava(x && x.nenalezena ? x.message : 'Kopii zálohy na Disk se nepodařilo pořídit: ' + (x && x.message || x), 'varovani');
     return false;
   } finally { ONLINE_STAV.pracuje = false; render(); }
 }
@@ -2350,6 +2420,11 @@ async function onlineKopieDiskAuto(hesloPrihlaseni) {
   if (!h) return kopieDiskCeka('slozka', 'v tomhle prohlížeči není vybraná složka „' + ULO_KOPIE_DISK_SLOZKA
     + '" (prohlížeč si ji pamatuje pro každou adresu webu zvlášť)');
   const pravo = await kopieDiskPravoStav(h, predem);
+  /* #574 DZ2: složka, která v počítači už není → zapomenout a říct proč */
+  if ((await kopieDiskSonda(h)) === 'nenalezena') {
+    kopieDiskZapomen();
+    return kopieDiskCeka('nenalezena', kopieDiskNenalezenaDuvod(h.name));
+  }
   if (pravo !== 'granted') return kopieDiskCeka('pravo', pravo === 'denied'
     ? 'prohlížeč zápis do složky „' + h.name + '" zakázal'
     : 'prohlížeč nepovolil zápis do složky „' + h.name + '" (po restartu prohlížeče se na právo ptá znovu)');
@@ -2362,6 +2437,7 @@ async function onlineKopieDiskAuto(hesloPrihlaseni) {
       + kopieDiskVelikost(k.velikostB) + ').' + kopieDiskUklidText(k.uklid));
     return true;
   } catch (e) {
+    if (e && e.nenalezena) return kopieDiskCeka('nenalezena', kopieDiskNenalezenaDuvod(h.name));
     return kopieDiskCeka('chyba', 'kopii se nepodařilo pořídit: ' + (e && e.message || e));
   }
 }
@@ -2393,10 +2469,16 @@ async function kopieDiskPravoStav(h, predem) {
   try { return String(await h.queryPermission({ mode: 'readwrite' })); } catch (e) { return ''; }
 }
 
+/* #574 DZ2: důvod do hlášky automatiky po přihlášení. */
+function kopieDiskNenalezenaDuvod(jmeno) {
+  return 'složka „' + String(jmeno || ULO_KOPIE_DISK_SLOZKA) + '" nenalezena — na tomto počítači už není'
+    + ' (přesunutá nebo přejmenovaná, případně Disk Google neběží), vyberte ji znovu';
+}
+
 /* #571 DZ: denní kopie čeká — důvod do hlášky i do trvalého řádku
  * s tlačítkem (Nastavení → Databáze, lišta nahoře). Vrací false. */
 function kopieDiskCeka(duvod, proc) {
-  const dal = duvod === 'slozka' ? ' a vyberte složku „' + ULO_KOPIE_DISK_SLOZKA + '" na Disku Google (pak povolte zápis)'
+  const dal = (duvod === 'slozka' || duvod === 'nenalezena') ? ' a vyberte složku „' + ULO_KOPIE_DISK_SLOZKA + '" na Disku Google (pak povolte zápis)'
     : duvod === 'pravo' ? ' a zápis do složky povolte (nejlépe „Povolit při každé návštěvě")'
       : duvod === 'heslo' ? ' a potvrďte ji svým heslem (po přihlášení heslem se pořídí sama)' : '';
   const text = 'Denní kopie zálohy na Disk čeká: ' + proc + '. Klikněte na „Zkopírovat zálohu na Disk teď"'

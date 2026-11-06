@@ -91,6 +91,7 @@ const novyCtx = (o) => {
     stav: o.stav || 'granted',
     kopieDiskProved: async () => ({ soubor: 'otisk_main_2026-11-05_0300.json.gz', velikostB: 2048, uklid: null }),
     kopieDiskVelikost: (b) => b + ' B', kopieDiskUklidText: () => '',
+    kopieDiskSonda: async () => 'ok', kopieDiskZapomen: () => {},   // #574: složka na místě (sondu hlídá test_574)
     onlineZprava: (t, typ) => { ctx.zpravy.push([String(t), typ || '']); } };
   vm.createContext(ctx);
   vm.runInContext(auto + '\nthis.auto = onlineKopieDiskAuto; this.predem = kopieDiskPravoPredem;', ctx);
