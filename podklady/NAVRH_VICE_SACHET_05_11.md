@@ -2,8 +2,8 @@
 
 Dávka VS. Artefakt s náhledy obrazovek:
 https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa .
-Klikací prototyp v6 (6. 11., R1–R18): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2 — skutečná
-sestavená aplikace v6.11.4 (další verze main, s kartou Můstky a MU3) + vrstva víc šachet (`podklady/vs_prototyp/`); u 1 šachty pixelově shodná s v6.11.4.
+Klikací prototyp v7 (6. 11., R1–R18): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2 — skutečná
+sestavená aplikace v6.11.5 (další verze main, s kartou Můstky, MU3 a CA #575) + vrstva víc šachet (`podklady/vs_prototyp/`); u 1 šachty pixelově shodná s v6.11.5.
 Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 
 **Stav: NÁVRH UZAVŘEN — PŘIPRAVENO KE SPUŠTĚNÍ (rozhodnutí R1–R18). Před spuštěním se slučují MU2, DP a DZ2. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
@@ -444,7 +444,10 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 > Pracuj česky podle `CLAUDE.md`; na začátku `bash nastroje/instaluj_hooky.sh`,
 > `git push --no-verify` zakázané, do `test-draft` / `test` / `main` nic.
 > Závazný návrh: `podklady/NAVRH_VICE_SACHET_05_11.md` (rozhodnutí R1–R13).
-> Výchozí SHA nejméně `6b70cc3` (v5.11.3: PH, MU #560, DZ), viz oddíl 12.
+> Výchozí SHA nejméně `e2c2137` (integrace v6.11.5: MU #560, MU2, MU3, PH, DP, DZ/DZ2, CA #575), viz oddíl 12.
+> **Číselná pole jen přes `CISLO_POLE`** (`src/ui/cislo_pole.js`, `<input ${CISLO_POLE} …>`, čárka i tečka,
+> zobrazení s čárkou, `el.value` vrací normalizovaný text s tečkou) — i nová pole „Počet šachet v nabídce“
+> a „Počet stejných kusů“; žádné `type="number"`.
 > Šablona CN v17 navazuje na v16 (5.1).
 > Dávka MU (#560, `Z.mustky[]`) je sloučená (v5.11.2); souběžné dávky K40
 > a PH mění sousední soubory — před začátkem ověř návrh proti výchozímu SHA.
@@ -493,3 +496,4 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 | 6. 11. 2026 | (připomínka J. V. k prototypu) | R16 | Jedna šachta = dnešní vzhled; režim víc šachet od 2 šachet (nebo ks > 1); nové otázky O13 (místo nastavení počtu) a O14 (snížení počtu). Prototyp upraven (výchozí stav = 1 šachta). |
 | 6. 11. 2026 | (rozhodnutí, ne kód) | O13 = a, O14 = a | R17 pole Počet šachet v nabídce v Zadání šachty, R18 potvrzení a smazání při snížení; návrh uzavřen, prototyp bez náhledů nezvolených variant. |
 | 6. 11. 2026 večer | `0f16310` (integrace v6.11.4 = MU3) | MU3: výchozí výška sloupu navíc = H − 0,2 m (jako rohový sloupek), nápovědy karty Můstky s čárkou. | Návrh beze změny (sloupy jsou v zadání šachty, jádro je po šachtách přebírá). Prototyp přestavěn na v6.11.4 (v6), ověřen. |
+| 6. 11. 2026 večer | `e2c2137` (integrace v6.11.5 = CA #575) | Všechna číselná pole = jeden prvek `CISLO_POLE` (`src/ui/cislo_pole.js`), textové pole s `data-cislo`, čárka i tečka, zobrazení s čárkou. | Prompt (oddíl 11): výchozí SHA nejméně `e2c2137`, číselná pole jen přes `CISLO_POLE`. Prototyp v7 na v6.11.5; pole Počet šachet a Počet stejných kusů jsou `CISLO_POLE`. |

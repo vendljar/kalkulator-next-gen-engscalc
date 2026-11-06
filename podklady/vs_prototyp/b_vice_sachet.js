@@ -42,7 +42,7 @@
     .vs-blok { grid-column:1 / -1; min-width:0; }
     .vs-radek { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0; }
     .vs-radek input[type=text] { width:240px; text-align:left; }
-    .vs-radek input[type=number] { width:64px; }
+    .vs-radek input[type=number], .vs-radek input[data-cislo] { width:64px; }
     .vs-soucet-ro input, .vs-soucet-ro select, .vs-soucet-ro button.rc-otevri, .vs-soucet-ro .grip { pointer-events:none; opacity:.6; }
     .vs-tab td.r, .vs-tab th.r { text-align:right; white-space:nowrap; }
     .vs-tab td, .vs-tab th { text-align:left; }
@@ -53,12 +53,14 @@
   function kresliPanel() {
     const cz = (window.PROTO_CENIK || {}).rezim || 'skladebny';
     stitek.innerHTML = `<span class="vs-proto">Prototyp — nic se neukládá</span>
-      <span class="vs-pz">základ = v6.11.4 (další verze main)</span>
+      <span class="vs-pz">základ = v6.11.5 (další verze main)</span>
       <span class="vs-pz">Zkušební ceník můstků: <span class="rada-prep"><button type="button" class="${cz === 'skladebny' ? 'on' : ''}" onclick="VS_cenik('skladebny')">skladebný</button><button type="button" class="${cz === 'stary' ? 'on' : ''}" onclick="VS_cenik('stary')">starý (#354)</button></span></span>
       <button type="button" class="mini" onclick="VS_navod()">Co si proklikat</button>`;
   }
   kresliPanel();
 
+  /* Číselná pole jako v aplikaci (CA #575): jeden prvek CISLO_POLE — čárka i tečka, zobrazení s čárkou. */
+  const CP = () => (typeof CISLO_POLE !== 'undefined') ? CISLO_POLE : 'type="number"';
   const rt = (...k) => k.map(x => `<span class="vs-r" title="${esc(R[x] || '')}">${x}</span>`).join('');
   const kcF = x => (Math.round(+x || 0)).toLocaleString('cs-CZ') + ' Kč';
 
@@ -188,8 +190,8 @@
     const n = sachty().length, m1 = !OCK.fixes;
     const pole = document.createElement('span');
     pole.className = 'vs-pocet'; pole.setAttribute('onclick', 'event.stopPropagation()');
-    pole.innerHTML = `Počet šachet v nabídce <select class="mini" id="vsPocet" onchange="VS_pocet(this.value)" title="${m1 ? 'Model 1 počítá jen jednu šachtu' : 'počet různých šachet v nabídce'}">${
-      Array.from({ length: 10 }, (_, k) => k + 1).map(k => `<option value="${k}" ${k === n ? 'selected' : ''} ${m1 && k > 1 ? 'disabled' : ''}>${k}</option>`).join('')}</select>${rt('R16', 'R17')}`;
+    pole.innerHTML = `Počet šachet v nabídce <input ${CP()} id="vsPocet" min="1" max="10" step="1" value="${n}" style="width:46px;padding:2px 6px;font-size:12.5px"
+      ${m1 ? 'disabled title="Model 1 počítá jen jednu šachtu"' : 'title="počet různých šachet v nabídce, 1–10"'} onchange="VS_pocet(this.value)">${rt('R16', 'R17')}`;
     const vpravo = h2.lastElementChild && h2.lastElementChild.tagName === 'SPAN' && h2.children.length > 1 ? h2.lastElementChild : null;
     h2.insertBefore(pole, vpravo);
     if (!vic() && !VS.potvrdit) return;
@@ -203,7 +205,7 @@
         <span style="display:inline-flex;gap:8px;margin-left:10px"><button class="mini vyzva" onclick="VS_potvrd(true)">Smazat</button><button class="mini" onclick="VS_potvrd(false)">Zrušit</button></span></div>` : '';
     const inner = `<div class="vs-blok">${potvrd}<div class="vs-radek">${tabs}${rt('R1', 'R10')}<span class="note" style="margin:0">${l.length} z 10 šachet</span></div>
       <div class="vs-radek"><label>Název</label><input type="text" maxlength="80" value="${esc(s.nazev || '')}" placeholder="${esc(nazevS(s, VS.akt))}" onchange="VS_nazev(this.value)">
-        <label style="margin-left:12px">Počet stejných kusů</label><input type="number" min="1" max="20" value="${s.ks}" onchange="VS_ks(this.value)">${rt('R2', 'R12')}
+        <label style="margin-left:12px">Počet stejných kusů</label><input ${CP()} min="1" max="20" step="1" value="${s.ks}" onchange="VS_ks(this.value)">${rt('R2', 'R12')}
         <button class="mini" onclick="VS_kopie()" ${l.length >= 10 || !OCK.fixes ? 'disabled' : ''}>Kopírovat šachtu</button>
         <button class="mini" onclick="VS_smaz()" ${VS.akt === 0 ? 'disabled title="šachtu 1 nejde smazat"' : ''}>Smazat šachtu</button></div>
       <div class="note">Karty Zadání šachty a Dimenze profilů patří vybrané šachtě. Hlavička zakázky, ceník, přirážka, sleva a ruční ceny jsou společné pro variantu.</div></div>`;
@@ -314,8 +316,8 @@
     if (n) { n.remove(); return; }
     n = document.createElement('div'); n.id = 'vsNavod'; n.className = 'vs-navod';
     n.innerHTML = `<button type="button" class="mini" style="float:right" onclick="VS_navod()">Zavřít</button><h3>Co si proklikat</h3><ol>
-      <li><b>Jedna šachta</b> = kalkulátor jako dnes (základ v6.11.4, další verze main)${rt('R16')}. V kartě <b>Zadání šachty</b> vpravo v nadpisu nastavte <b>Počet šachet v nabídce</b> na 2 — zapne se režim víc šachet${rt('R17')}.</li>
-      <li><b>Můstky u jedné šachty:</b> v Zadání šachty dejte „Můstky mezi budovou a OCK“ = 1 — objeví se karta <b>Můstky</b>. Změňte podlahu, zábradlí, kotvení, „+ další provedení“. <b>Sloupy navíc:</b> zadejte počet a výšku nechte prázdnou — nápověda v poli ukáže výšku šachty − 0,2 m (jako rohový sloupek) a s ní se i počítá. Cena se přepočítá; v nabídce (Word, šablona v16) má jedna šachta řádky Výtahová šachta / Můstky / Cena celkem jako v v6.11.4${rt('R15')}.</li>
+      <li><b>Jedna šachta</b> = kalkulátor jako dnes (základ v6.11.5, další verze main)${rt('R16')}. V kartě <b>Zadání šachty</b> vpravo v nadpisu napište do pole <b>Počet šachet v nabídce</b> 2 — zapne se režim víc šachet${rt('R17')}.</li>
+      <li><b>Můstky u jedné šachty:</b> v Zadání šachty dejte „Můstky mezi budovou a OCK“ = 1 — objeví se karta <b>Můstky</b>. Změňte podlahu, zábradlí, kotvení, „+ další provedení“. <b>Sloupy navíc:</b> zadejte počet a výšku nechte prázdnou — nápověda v poli ukáže výšku šachty − 0,2 m (jako rohový sloupek) a s ní se i počítá. Cena se přepočítá; v nabídce (Word, šablona v16) má jedna šachta řádky Výtahová šachta / Můstky / Cena celkem jako v v6.11.5${rt('R15')}.</li>
       <li><b>Můstky u Šachty 2:</b> přepněte na Šachtu 2 (karta Šachty varianty), přidejte jí jiné můstky. Každá šachta má své skupiny; cena se přepočítá v šachtě i v součtu.</li>
       <li><b>Ceník:</b> v panelu vlevo dole přepněte <b>Zkušební ceník můstků</b> skladebný ↔ starý (#354) — starý počítá můstky vzorcem a karta ukáže lištu upozornění.</li>
       <li><b>Kalkulace:</b> přepínač šachet / Součet v Cenové kalkulaci (sekce MŮSTKY po šachtách, v Součtu sečtená).</li>

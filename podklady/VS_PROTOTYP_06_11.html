@@ -1,5 +1,5 @@
 <title>Prototyp víc šachet OCK</title>
-<!-- PROTOTYP VS (#570): sestavená aplikace z integrace claude/integrace-16-10 0f16310 (v6.11.4 = další verze main) + vrstvy A1/A2 (offline, zkušební ceník) + B (víc šachet). Nic se neukládá ani neposílá. -->
+<!-- PROTOTYP VS (#570): sestavená aplikace z integrace claude/integrace-16-10 e2c2137 (v6.11.5 = další verze main) + vrstvy A1/A2 (offline, zkušební ceník) + B (víc šachet). Nic se neukládá ani neposílá. -->
 <!-- Autor programu Jaroslav Vendl (2026) -->
 
 
@@ -91,7 +91,7 @@
   .mustky-scroll { overflow-x:auto; max-width:100%; }
   table.mustky-tbl { width:auto; }
   table.mustky-tbl th, table.mustky-tbl td { text-align:left; vertical-align:top; padding:5px 8px 5px 0; white-space:nowrap; }
-  table.mustky-tbl input[type=number] { width:76px; }
+  table.mustky-tbl input[data-cislo] { width:76px; }
   table.mustky-tbl input.mu-ks, table.mustky-tbl input.mu-sloupyKs { width:52px; }
   table.mustky-tbl input.mu-sloupVyskaM { width:62px; }
   table.mustky-tbl select { width:auto; min-width:120px; }
@@ -160,13 +160,14 @@
   .prm { display:flex; justify-content:flex-end; align-items:center; gap:8px; margin:5px 0; }
   .prm .prm-l { text-align:right; }
   .prm .prm-u { width:14px; color:var(--mut); font-size:12px; text-align:left; }
-  input[type=number], select, input[type=text], input[type=date] { width:110px; padding:5px 7px; border:1px solid var(--line);
+  input[data-cislo], select, input[type=text], input[type=date] { width:110px; padding:5px 7px; border:1px solid var(--line);
       border-radius:6px; font:inherit; background:#fff; text-align:right; }
   /* Bez klikacích šipek (9. 9. 2026, zadání J. V.: „v datových polích odstraň
    * klikací šipky, jsou zbytečné"). Čísla se v kalkulaci zadávají z klávesnice
    * a krok po jedné nedává smysl u částky ani u rozměru v metrech; šipky jen
-   * ukrajovaly šířku pole a daly se trefit omylem. Klávesy ↑/↓ v poli fungují
-   * dál — `step` zůstává, mizí jen ovládací prvek. */
+   * ukrajovaly šířku pole a daly se trefit omylem. Od CA #575 (6. 11. 2026)
+   * jsou pole textová s českou čárkou a hodnotu nemění ani klávesy ↑/↓,
+   * ani kolečko — nic se nepřestaví omylem. */
   /* ZADÁNÍ ŠACHTY VE ČTYŘECH PEVNÝCH SLOUPCÍCH (9. 9. 2026, zadání J. V.).
      Do té doby karta skládala pole vlastním gridem `repeat(auto-fill,
      minmax(300px,1fr))`, takže se pořadí polí měnilo se šířkou okna.
@@ -175,14 +176,14 @@
      do něj vměstnaly po ~210 px a každý popisek by se zalomil na dva řádky. */
   .zadani-ctyri { grid-column:1 / -1; display:grid; grid-template-columns:repeat(4, 1fr); gap:0 30px; }
   .zadani-ctyri .row label { flex:1; min-width:0; }
-  .zadani-ctyri .row input[type=number] { width:96px; }
+  .zadani-ctyri .row input[data-cislo] { width:96px; }
   .zadani-ctyri .row select { width:118px; }
   @media (max-width:1200px) { .zadani-ctyri { grid-template-columns:repeat(2, 1fr); } }
   @media (max-width:700px)  { .zadani-ctyri { grid-template-columns:1fr; } }
   /* Dvě úzká čísla vedle sebe: nástupiště A (čelní stěna) a C (zadní stěna). */
   .zadani-ctyri .par { display:flex; gap:6px; align-items:center; }
   .zadani-ctyri .par .ozn { color:var(--mut); font-size:12px; font-weight:600; }
-  .zadani-ctyri .par input[type=number] { width:44px; }
+  .zadani-ctyri .par input[data-cislo] { width:44px; }
   .zadani-ctyri input[readonly] { background:#f2f5f9; color:var(--mut); }
   /* OPLÁŠTĚNÍ PO STĚNÁCH (#268). Vlastní mřížka ze stejného důvodu jako
      `.zadani-ctyri`, ale tady jde o víc než o vzhled: `.inputs .card .body`
@@ -262,9 +263,8 @@
   .opl-legenda-kus b { color:var(--ink); font-weight:600; }
   .opl-legenda-soucet { margin-left:auto; }
   @media (max-width:640px) { .opl-stena-in { flex-direction:column; } .opl-nakres { width:100%; } }
-  input[type=number] { -moz-appearance:textfield; appearance:textfield; }
-  input[type=number]::-webkit-outer-spin-button,
-  input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  /* Číselná pole jsou od CA #575 (6. 11. 2026) textová s českou čárkou
+   * (ui/cislo_pole.js, atribut data-cislo) — šipky ani krokování nemají. */
   select { text-align:left; width:130px; }
   input[type=checkbox], input[type=radio]{ width:16px; height:16px; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -549,7 +549,7 @@
   tr.vypnuto-nulou > td .note { color:#a3abba; }
   tr.vypnuto-nulou input, tr.vypnuto-nulou select, tr.vypnuto-nulou button,
   tr.vypnuto-nulou textarea { opacity:1; color:var(--tmava, #17233a); }
-  tr.vypnuto-nulou input[type=number] { border-color:#f0b429; background:#fffdf5; }
+  tr.vypnuto-nulou input[data-cislo] { border-color:#f0b429; background:#fffdf5; }
   .strana-zamcena { opacity:.62; filter:grayscale(.55); }
   /* P6 (zámek strany, 13. 10. 2026): štítek vynulované strany. */
   .strana-nulovana { background:#fff7ed; border:1px solid #fdba74; color:#7c2d12; border-radius:6px;
@@ -623,7 +623,7 @@
   /* Sloupec jednotek v oddílech platebních podmínek (U1, 20. 10. 2026): pevná
    * šířka i v řádcích bez jednotky, aby vstupy končily v jedné svislici. */
   .podm-radek .podm-jednotka { flex:none; width:92px; white-space:nowrap; }
-  .podm-radek > input[type=number] { width:110px; }
+  .podm-radek > input[data-cislo] { width:110px; }
   .note { color:var(--mut); font-size:12px; margin:6px 0; }
   /* SPRÁVA ŠABLON (#349, 24. 9. 2026): tabulka dokument × jazyk, detail a průvodce. */
   .sabl-tab { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
@@ -670,7 +670,7 @@
   .tabs { display:flex; gap:2px; padding:0 22px; background:var(--ink); flex-wrap:wrap; }
   .tabs button { border:none; border-radius:8px 8px 0 0; padding:9px 18px; background:#2b3850; color:#c6d1e2; font-weight:600; }
   .tabs button.act { background:var(--bg); color:var(--ink); }
-  .ceniktbl td input[type=number] { width:120px; }
+  .ceniktbl td input[data-cislo] { width:120px; }
   .ceniktbl td:nth-child(2) { width:140px; }
   .ceniktbl td:nth-child(3) { width:70px; text-align:left; color:var(--mut); }
   .ceniktbl td:nth-child(4) { text-align:left; color:var(--mut); font-size:12px; white-space:normal; }
@@ -796,7 +796,7 @@
   .sd-item input[type=text] { width:100%; text-align:left; }
   .sd-item-btns { display:flex; gap:3px; }
   .sd-item-btns .mini { padding:1px 6px; }
-  .proj-sek td input[type=number] { width:80px; }
+  .proj-sek td input[data-cislo] { width:80px; }
   .proj-sek td input[type=text] { width:100%; text-align:left; }
   .proj-sek td:first-child { min-width:220px; }
   /* Textová pole v seznamu variant se přizpůsobují šířce sloupce (dřív měla
@@ -1061,7 +1061,7 @@
 <header>
   <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICA8IS0tIExvZ28gdiBobGF2acSNY2UgYXBsaWthY2UgKDE3LiA4LiAyMDI2IHZlxI1lcik6IHRlbnTDvcW+IHpuYWsgZG9sYXJ1IGpha28KICAgICAgIGZhdmljb24sIGFsZSB2ZSBTVsSaVExFIFpFTEVOw4kg4oCUIGhsYXZpxI1rYSBqZSB0bWF2xJsgbW9kcsOhIGEgdG1hdsSbIG1vZHLDvQogICAgICAgem5hayBuYSBuw60gbmVieWwgdmlkxJt0ICh6YWTDoW7DrSBKLiBWLikuIEZhdmljb24gbmEga2FydMSbIHByb2hsw63FvmXEjWUKICAgICAgIHrFr3N0w6F2w6EgdG1hdsSbIG1vZHLDvSAodGFtIGplIHBvZGtsYWQgc3bEm3Rsw70pLiAtLT4KICA8dGV4dCB4PSIzMiIgeT0iMzQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJjZW50cmFsIgogICAgICAgIGZvbnQtZmFtaWx5PSJBcmlhbCwgSGVsdmV0aWNhLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjU2IiBmb250LXdlaWdodD0iNzAwIgogICAgICAgIGZpbGw9IiM4NkU4QUQiPiQ8L3RleHQ+Cjwvc3ZnPgo=" alt="" width="28" height="28"
        style="display:block;border-radius:6px;flex:0 0 auto">
-  <h1>Kalkulačka v6.11.4</h1>
+  <h1>Kalkulačka v6.11.5</h1>
   <!-- Podtitulek s verzemi šablon zmizel 17. 8. 2026 večer (zadání J. V.) —
        zůstává jen štítek režimu výpočtu. -->
   <!-- Výchozí stav štítku musí odpovídat výchozímu modelu (od 17. 9. 2026
@@ -1183,14 +1183,14 @@
 /* ============================================================
  * VERZE A DATUM SESTAVENÍ
  *
- * Značky v6.11.4 a 2026-11-06 nahradí build.py při skládání aplikace.
+ * Značky v6.11.5 a 2026-11-06 nahradí build.py při skládání aplikace.
  * V Node testech se nic nenahrazuje a značky zůstanou tak, jak jsou zapsané –
  * proto se ven nedávají přímo, ale přes funkce, které nejdřív ověří tvar.
  * Bez té kontroly by testy i vývojový běh tvrdily, že aplikace je ze dne
  * „2026-11-06", a počítaly z toho stáří.
  * ============================================================ */
 
-const BUILD_VERZE_ZNACKA = 'v6.11.4';
+const BUILD_VERZE_ZNACKA = 'v6.11.5';
 const BUILD_DATUM_ZNACKA = '2026-11-06';
 
 function buildVerze() {
@@ -3182,6 +3182,51 @@ function csvBunka(t) {
   let s = String(t == null ? '' : t);
   if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
   return '"' + s.replace(/"/g, '""') + '"';
+}
+
+/* ČÍSELNÉ POLE S ČESKOU ČÁRKOU (CA #575, rozhodnutí J. V. 6. 11. 2026).
+ * Pole typu `number` nechávalo desetinnou čárku na jazyku prohlížeče:
+ * český Chrome „17,3" přijal, anglický z něj udělal „173". Všechna číselná
+ * pole aplikace jsou proto textová (`ui/cislo_pole.js`) a čtou se TADY —
+ * jediný parser, testovaný v Node (test_575_cislo_pole.js).
+ *
+ * cisloPoleText(t) → normalizovaný řetězec s desetinnou TEČKOU, jaký dřív
+ * vracelo pole type=number („17.3", „-0.5", „1250.5"); prázdný vstup = '';
+ * nečitelný vstup = null (volající ho odmítne, data se nemění).
+ * Přijímá čárku i tečku jako desetinný oddělovač a mezery (i pevné)
+ * mezi tisíci. Tečka jako oddělovač tisíců („1.250.000") se nebere —
+ * byla by k nerozeznání od desetinné. */
+const CISLO_POLE_MEZERA = /[\s\u00a0\u202f\u2009]/;
+function cisloPoleText(t) {
+  if (t === null || t === undefined) return '';
+  if (typeof t === 'number') return isFinite(t) ? String(t) : null;
+  let s = String(t).trim();
+  if (s === '') return '';
+  s = s.replace(/^([+\-\u2212])[\s\u00a0\u202f\u2009]+/, '$1');
+  /* mezera smí být jen mezi trojicemi číslic celé části (tisíce) */
+  if (CISLO_POLE_MEZERA.test(s)) {
+    if (!/^[+\-\u2212]?\d{1,3}(?:[\s\u00a0\u202f\u2009]\d{3})+(?:[.,]\d*)?$/.test(s)) return null;
+    s = s.replace(/[\s\u00a0\u202f\u2009]/g, '');
+  }
+  s = s.replace(/^\u2212/, '-').replace(/^\+/, '').replace(',', '.');
+  if (!/^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(s)) return null;
+  if (/\.$/.test(s)) s = s.slice(0, -1);
+  if (/^-?\./.test(s)) s = s.replace('.', '0.');
+  return s;
+}
+
+/* Číslo nebo text čísla → co pole ukáže: desetinná ČÁRKA a pevná mezera
+ * v tisících (stejně jako formatCislo / num ve výstupech: „1 250",
+ * „12 500", „17,3"). Číslice se neztrácejí ani nezaokrouhlují —
+ * pole ukazuje přesně to, co je v datech. Nečitelný text vrátí beze změny. */
+function cisloPoleZobraz(v) {
+  const n = cisloPoleText(v);
+  if (n === null) return String(v);
+  if (n === '' || /e/i.test(n)) return n.replace('.', ',');
+  const m = /^(-?)(\d+)(?:\.(\d+))?$/.exec(n);
+  if (!m) return n;
+  const cela = m[2].length >= 4 ? m[2].replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0') : m[2];
+  return m[1] + cela + (m[3] ? ',' + m[3] : '');
 }
 
 
@@ -35667,6 +35712,140 @@ function testDataZakazka(predpis, nova) {
 const JEKLY = {"10x10": {"kg": {"1": 0.3}, "A": 10, "B": 10, "m2": 0.01}, "15x15": {"kg": {"1": 0.426, "1.5": 0.611, "2": 0.776}, "A": 15, "B": 15, "m2": 0.0225}, "20x20": {"kg": {"1": 0.583, "1.5": 0.846, "2": 1.09}, "A": 20, "B": 20, "m2": 0.04}, "25x25": {"kg": {"1": 0.74, "1.5": 1.082, "2": 1.404, "2.5": 1.707}, "A": 25, "B": 25, "m2": 0.0625}, "30x30": {"kg": {"1": 0.9, "1.5": 1.317, "2": 1.718, "2.5": 2.1, "3": 2.463, "4": 2.942}, "A": 30, "B": 30, "m2": 0.09}, "35x35": {"kg": {"1.5": 1.553, "2": 2.032, "2.5": 2.492, "3": 2.934, "4": 3.57}, "A": 35, "B": 35, "m2": 0.1225}, "40x40": {"kg": {"1.5": 1.788, "2": 2.346, "2.5": 2.885, "3": 3.405, "4": 4.198, "5": 4.989}, "A": 40, "B": 40, "m2": 0.16}, "45x45": {"kg": {"2": 2.646, "2.5": 3.277, "3": 3.896, "4": 4.826}, "A": 45, "B": 45, "m2": 0.2025}, "50x50": {"kg": {"1.5": 2.259, "2": 2.974, "2.5": 3.67, "3": 4.347, "4": 5.454, "5": 6.559, "6": 7.56}, "A": 50, "B": 50, "m2": 0.25}, "60x60": {"kg": {"2": 3.602, "2.5": 4.455, "3": 5.289, "4": 6.71, "5": 8.129, "6": 9.444}, "A": 60, "B": 60, "m2": 0.36}, "70x70": {"kg": {"3": 6, "4": 7.966, "5": 9.699, "6": 11.328}, "A": 70, "B": 70, "m2": 0.49}, "80x80": {"kg": {"2": 4.858, "2.5": 6.025, "3": 7.173, "4": 9.222, "5": 11.269, "6": 13.212, "8": 16.79}, "A": 80, "B": 80, "m2": 0.64}, "90x90": {"kg": {"4": 10.478, "5": 12.839, "6": 15.096, "8": 19.302}, "A": 90, "B": 90, "m2": 0.81}, "100x100": {"kg": {"2.5": 7.595, "3": 9.057, "4": 11.734, "5": 14.409, "6": 16.98, "8": 21.814}, "A": 100, "B": 100, "m2": 1}, "110x110": {"kg": {"4": 12.99, "6": 18.864, "8": 24.326}, "A": 110, "B": 110, "m2": 1.21}, "120x120": {"kg": {"4": 14.246, "5": 17.549, "6": 20.748, "8": 26.838}, "A": 120, "B": 120, "m2": 1.44}, "125x125": {"kg": {"4": 14.874, "5": 18.334, "6": 21.69, "8": 28.094}, "A": 125, "B": 125, "m2": 1.5625}, "150x150": {"kg": {"4": 18.014, "5": 22.259, "6": 26.4, "8": 34.374}, "A": 150, "B": 150, "m2": 2.25}, "175x175": {"kg": {"4": 21.154, "5": 26.184, "6": 31.11}, "A": 175, "B": 175, "m2": 3.0625}, "180x180": {"kg": {"6": 32.052, "8": 41.91}, "A": 180, "B": 180, "m2": 3.24}, "200x200": {"kg": {"5": 30.109, "6": 35.82, "8": 46.934}, "A": 200, "B": 200, "m2": 4}, "220x220": {"kg": {"6": 39.588, "8": 51.958}, "A": 220, "B": 220, "m2": 4.84}, "15x12": {"kg": {"1": 0.586}, "A": 15, "B": 12, "m2": 0.018}, "20x10": {"kg": {"1": 0.426, "1.5": 0.606}, "A": 20, "B": 10, "m2": 0.02}, "20x15": {"kg": {"1": 0.505, "1.5": 0.841}, "A": 20, "B": 15, "m2": 0.03}, "25x15": {"kg": {"1": 0.583, "1.5": 0.846, "2": 1.077}, "A": 25, "B": 15, "m2": 0.0375}, "30x15": {"kg": {"1": 0.662, "1.5": 0.964, "2": 1.247}, "A": 30, "B": 15, "m2": 0.045}, "30x20": {"kg": {"1": 0.74, "1.5": 1.082, "2": 1.404, "2.5": 1.682}, "A": 30, "B": 20, "m2": 0.06}, "35x15": {"kg": {"1": 0.74, "1.5": 1.077, "2": 1.391}, "A": 35, "B": 15, "m2": 0.0525}, "35x20": {"kg": {"1": 0.819, "1.5": 1.199, "2": 1.561}, "A": 35, "B": 20, "m2": 0.07}, "35x25": {"kg": {"1.5": 1.312, "2": 1.705, "2.5": 2.075}, "A": 35, "B": 25, "m2": 0.0875}, "40x10": {"kg": {"2": 1.404}, "A": 40, "B": 10, "m2": 0.04}, "40x20": {"kg": {"1.5": 1.317, "2": 1.718, "2.5": 2.1, "3": 2.463}, "A": 40, "B": 20, "m2": 0.08}, "40x25": {"kg": {"1.5": 1.43, "2": 1.884, "2.5": 2.271}, "A": 40, "B": 25, "m2": 0.1}, "40x30": {"kg": {"1.5": 1.553, "2": 2.032, "2.5": 2.467, "3": 2.893, "4": 3.57}, "A": 40, "B": 30, "m2": 0.12}, "40x35": {"kg": {"1.5": 1.67, "2": 2.189, "2.5": 2.689, "3": 3.169}, "A": 40, "B": 35, "m2": 0.14}, "45x25": {"kg": {"1.5": 1.548, "2": 2.019, "2.5": 2.467, "3": 2.893}, "A": 45, "B": 25, "m2": 0.1125}, "45x35": {"kg": {"1.5": 1.788, "2": 2.346, "2.5": 2.885, "3": 3.405}, "A": 45, "B": 35, "m2": 0.1575}, "50x20": {"kg": {"1.5": 1.553, "2": 2.032}, "A": 50, "B": 20, "m2": 0.1}, "50x25": {"kg": {"1.5": 1.67, "2": 2.189, "2.5": 2.689, "3": 3.169}, "A": 50, "B": 25, "m2": 0.125}, "50x30": {"kg": {"1.5": 1.788, "2": 2.346, "2.5": 2.885, "3": 3.405, "4": 4.198}, "A": 50, "B": 30, "m2": 0.15}, "50x35": {"kg": {"1.5": 1.906, "2": 2.503, "2.5": 3.081, "3": 3.64}, "A": 50, "B": 35, "m2": 0.175}, "50x40": {"kg": {"2": 2.62, "4": 4.826}, "A": 50, "B": 40, "m2": 0.2}, "60x20": {"kg": {"1.5": 1.783, "2": 2.346, "2.5": 2.885}, "A": 60, "B": 20, "m2": 0.12}, "60x30": {"kg": {"1.5": 2.024, "2": 2.66, "2.5": 3.277, "3": 3.876, "4": 4.826}, "A": 60, "B": 30, "m2": 0.18}, "60x40": {"kg": {"1.5": 2.259, "2": 2.974, "2.5": 3.67, "3": 4.347, "4": 5.454, "5": 6.559}, "A": 60, "B": 40, "m2": 0.24}, "65x30": {"kg": {"2": 2.83, "2.5": 3.49, "3": 4.131}, "A": 65, "B": 30, "m2": 0.195}, "65x40": {"kg": {"2": 3.131, "2.5": 3.866, "3": 4.582, "4": 5.957}, "A": 65, "B": 40, "m2": 0.26}, "70x30": {"kg": {"2": 2.961, "2.5": 3.653, "3": 4.306, "4": 5.454}, "A": 70, "B": 30, "m2": 0.21}, "70x35": {"kg": {"2": 3.131, "2.5": 3.866, "3": 4.582}, "A": 70, "B": 35, "m2": 0.245}, "70x40": {"kg": {"4": 6.082, "5": 7.344}, "A": 70, "B": 40, "m2": 0.28}, "70x50": {"kg": {"2": 3.602, "2.5": 4.455, "3": 5.289, "4": 6.71, "5": 8.129, "6": 9.444}, "A": 70, "B": 50, "m2": 0.35}, "70x60": {"kg": {"3": 5.76, "4": 7.338, "5": 8.914}, "A": 70, "B": 60, "m2": 0.42}, "75x40": {"kg": {"2": 3.445}, "A": 75, "B": 40, "m2": 0.3}, "80x30": {"kg": {"2": 3.288, "2.5": 4.062, "3": 4.818, "4": 6.082}, "A": 80, "B": 30, "m2": 0.24}, "80x35": {"kg": {"1.5": 2.612, "2": 3.445, "2.5": 4.259, "3": 5.053}, "A": 80, "B": 35, "m2": 0.28}, "80x40": {"kg": {"1.5": 2.73, "2": 3.602, "2.5": 4.455, "3": 5.289, "4": 6.71, "5": 8.129, "6": 9.444}, "A": 80, "B": 40, "m2": 0.32}, "80x50": {"kg": {"2": 3.916, "2.5": 4.947, "3": 5.76, "4": 7.338, "5": 8.914, "6": 10.386}, "A": 80, "B": 50, "m2": 0.4}, "80x60": {"kg": {"2": 4.23, "2.5": 5.24, "3": 6.17, "4": 7.966, "5": 9.699, "6": 11.328}, "A": 80, "B": 60, "m2": 0.48}, "80x70": {"kg": {"4": 8.594, "5": 10.484}, "A": 80, "B": 70, "m2": 0.56}, "90x30": {"kg": {"4": 6.71, "5": 8.129}, "A": 90, "B": 30, "m2": 0.27}, "90x40": {"kg": {"2": 3.916, "2.5": 4.847, "3": 5.76, "4": 7.527}, "A": 90, "B": 40, "m2": 0.36}, "90x50": {"kg": {"4": 7.966, "5": 9.699, "6": 11.328}, "A": 90, "B": 50, "m2": 0.45}, "90x70": {"kg": {"4": 9.222, "5": 11.269}, "A": 90, "B": 70, "m2": 0.63}, "100x30": {"kg": {"2": 3.876}, "A": 100, "B": 30, "m2": 0.3}, "100x40": {"kg": {"2": 4.23, "2.5": 5.24, "4": 7.966, "5": 9.699, "6": 11.328}, "A": 100, "B": 40, "m2": 0.4}, "100x50": {"kg": {"3": 6.702, "4": 8.594, "5": 10.484, "6": 12.27}, "A": 100, "B": 50, "m2": 0.5}, "100x60": {"kg": {"3": 7.173, "4": 9.222, "5": 11.269, "6": 13.212}, "A": 100, "B": 60, "m2": 0.6}, "100x80": {"kg": {"4": 10.478, "5": 12.839, "6": 15.096}, "A": 100, "B": 80, "m2": 0.8}, "110x40": {"kg": {"3": 6.702}, "A": 110, "B": 40, "m2": 0.44}, "110x50": {"kg": {"4": 9.222, "5": 11.269, "6": 13.212}, "A": 110, "B": 50, "m2": 0.55}, "120x40": {"kg": {"4": 9.222, "5": 11.269, "6": 13.212}, "A": 120, "B": 40, "m2": 0.48}, "120x60": {"kg": {"2.5": 6.81, "3": 8.115, "4": 10.478, "5": 12.839, "6": 15.096}, "A": 120, "B": 60, "m2": 0.72}, "120x80": {"kg": {"4": 11.734, "5": 14.409, "6": 16.98, "8": 21.814}, "A": 120, "B": 80, "m2": 0.96}, "120x85": {"kg": {"2.5": 7.791, "3": 9.292}, "A": 120, "B": 85, "m2": 1.02}, "120x100": {"kg": {"3": 9.999, "4": 12.99, "5": 15.979, "6": 18.864, "8": 24.326}, "A": 120, "B": 100, "m2": 1.2}, "125x30": {"kg": {"2.5": 4.562, "3": 6.836}, "A": 125, "B": 30, "m2": 0.375}, "130x50": {"kg": {"4": 10.478, "5": 12.839, "6": 15.096}, "A": 130, "B": 50, "m2": 0.65}, "140x60": {"kg": {"4": 11.734, "5": 14.409, "6": 16.98}, "A": 140, "B": 60, "m2": 0.84}, "140x70": {"kg": {"4": 12.362, "5": 15.194, "6": 17.922}, "A": 140, "B": 70, "m2": 0.98}, "140x80": {"kg": {"4": 12.99, "5": 15.979, "6": 18.864, "8": 24.326}, "A": 140, "B": 80, "m2": 1.12}, "140x85": {"kg": {"3": 10.133}, "A": 140, "B": 85, "m2": 1.19}, "145x60": {"kg": {"3": 8.948}, "A": 145, "B": 60, "m2": 0.87}, "150x50": {"kg": {"4": 11.734, "5": 14.409, "6": 16.98}, "A": 150, "B": 50, "m2": 0.75}, "150x100": {"kg": {"4": 14.874, "5": 18.334, "6": 21.69, "8": 28.094}, "A": 150, "B": 100, "m2": 1.5}, "160x80": {"kg": {"4": 14.246, "5": 17.549, "6": 20.748, "8": 26.838}, "A": 160, "B": 80, "m2": 1.28}, "160x90": {"kg": {"4": 14.874, "5": 18.334, "6": 21.69, "8": 28.094}, "A": 160, "B": 90, "m2": 1.44}, "180x60": {"kg": {"4": 14.246, "5": 17.549, "6": 20.748}, "A": 180, "B": 60, "m2": 1.08}, "180x80": {"kg": {"5": 19.119, "6": 22.632}, "A": 180, "B": 80, "m2": 1.44}, "180x100": {"kg": {"8": 31.862}, "A": 180, "B": 100, "m2": 1.8}, "200x100": {"kg": {"4": 18.014, "5": 22.259, "6": 26.4, "8": 34.374}, "A": 200, "B": 100, "m2": 2}, "200x120": {"kg": {"6": 28.284, "8": 36.886}, "A": 200, "B": 120, "m2": 2.4}, "200x150": {"kg": {"6": 31.11, "8": 40.654}, "A": 200, "B": 150, "m2": 3}, "220x120": {"kg": {"6": 30.168, "8": 39.398}, "A": 220, "B": 120, "m2": 2.64}, "220x140": {"kg": {"6": 32.052, "8": 41.91}, "A": 220, "B": 140, "m2": 3.08}, "250x100": {"kg": {"4": 21.154, "5": 26.184, "6": 31.11, "8": 40.654}, "A": 250, "B": 100, "m2": 2.5}, "250x150": {"kg": {"6": 35.82, "8": 46.934}, "A": 250, "B": 150, "m2": 3.75}};
 </script>
 <script>
+/* ============================================================================
+ * ČÍSELNÉ POLE S ČESKOU DESETINNOU ČÁRKOU (CA #575, rozhodnutí J. V.
+ * 6. 11. 2026)
+ *
+ * Do 6. 11. 2026 byla číselná pole `<input type="number">`. Desetinnou čárku
+ * pak řídil jazyk prohlížeče: český Chrome ukázal i přijal „17,3", anglicky
+ * nastavený (i headless Chromium) čárku zahodil — „17,3" → 173. J. V. chce
+ * všude totéž bez ohledu na prohlížeč: pole přijme čárku i tečku a vždy
+ * ukáže českou desetinnou čárku (mezeru v tisících jako výstupy).
+ *
+ * JEDEN PRVEK PRO CELOU APLIKACI. Každé číselné pole se píše jako
+ *   `<input ${CISLO_POLE} …>`
+ * (atributy bez `type` — pole je textové, ale nespadá pod CSS pravidla
+ * `input[type=text]`, která textová pole roztahují na celou šířku buňky).
+ * Logika je jen tady a v parseru `cisloPoleText` / `cisloPoleZobraz`
+ * (format.js, test v Node):
+ *
+ *  1. `el.value` vrací u číselného pole NORMALIZOVANÝ text s tečkou („17.3",
+ *     „1250.5", '' pro prázdné i nečitelné) — přesně to, co dřív vracelo pole
+ *     type=number. Obsluhy `onchange="set(…, +this.value)"`, `katSet(…,
+ *     this.value)` atd. proto zůstaly beze změny a do dat jde dál Number.
+ *     Zápis `el.value = x` ukáže číslo s čárkou.
+ *  2. Po vložení do stránky (MutationObserver; aplikace kreslí přes innerHTML)
+ *     se hodnota i číselný placeholder přepíší do české podoby. Mění se
+ *     atribut `value`, takže `defaultValue` (podle něj `renderSFokusem`
+ *     pozná rozepsané pole) zůstává shodný s tím, co je vidět.
+ *  3. `change` s nečitelným textem („abc", „1,2,3") se zastaví dřív, než ho
+ *     uvidí obsluha pole: hodnota se vrátí na původní a ukáže se hláška —
+ *     do dat nic nejde (dřív prohlížeč písmena do type=number nepustil).
+ *     Písmena se nepustí ani při psaní (beforeinput).
+ *  4. Šipky ani kolečko hodnotu nemění — textové pole nemá krokování, takže
+ *     se nic nepřestaví omylem (J. V.: „šipky/kolečko nemění hodnotu omylem").
+ *     Atributy min/max/step se v poli nechávají jako popis rozsahu; kontroly
+ *     rozsahu dělají obsluhy a server jako dosud.
+ * ========================================================================== */
+
+const CISLO_POLE = 'inputmode="decimal" autocomplete="off" data-cislo="1"';
+
+function cisloPoleJe(el) {
+  return !!(el && el.tagName === 'INPUT' && el.hasAttribute && el.hasAttribute('data-cislo'));
+}
+
+/* Původní (nativní) přístup k hodnotě pole — co je opravdu napsáno. */
+const CISLO_POLE_NATIVNI = (typeof HTMLInputElement !== 'undefined')
+  ? Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value') : null;
+
+function cisloPoleSurove(el) {
+  return CISLO_POLE_NATIVNI ? CISLO_POLE_NATIVNI.get.call(el) : el.value;
+}
+function cisloPoleSuroveNastav(el, t) {
+  if (CISLO_POLE_NATIVNI) CISLO_POLE_NATIVNI.set.call(el, t); else el.value = t;
+}
+
+/* Nečitelný obsah (true) — prázdné pole čitelné je (= prázdná hodnota). */
+function cisloPoleChybne(el) {
+  return cisloPoleJe(el) && cisloPoleText(cisloPoleSurove(el)) === null;
+}
+
+if (CISLO_POLE_NATIVNI) {
+  Object.defineProperty(HTMLInputElement.prototype, 'value', {
+    configurable: true,
+    enumerable: CISLO_POLE_NATIVNI.enumerable,
+    get() {
+      const t = CISLO_POLE_NATIVNI.get.call(this);
+      if (!cisloPoleJe(this)) return t;
+      const n = cisloPoleText(t);
+      return n === null ? '' : n;
+    },
+    set(v) {
+      CISLO_POLE_NATIVNI.set.call(this, cisloPoleJe(this) ? cisloPoleZobraz(v == null ? '' : v) : v);
+    },
+  });
+}
+
+/* Česká podoba hodnoty a číselného placeholderu v nově vloženém poli. */
+function cisloPoleUprav(el) {
+  if (!cisloPoleJe(el)) return;
+  const a = el.getAttribute('value');
+  if (a != null && a !== '') {
+    const z = cisloPoleZobraz(a);
+    if (z !== a) el.setAttribute('value', z);
+  }
+  const ph = el.getAttribute('placeholder');
+  if (ph && cisloPoleText(ph) !== null) {
+    const z = cisloPoleZobraz(ph);
+    if (z !== ph) el.setAttribute('placeholder', z);
+  }
+}
+function cisloPoleUpravVse(koren) {
+  if (!koren) return;
+  if (cisloPoleJe(koren)) cisloPoleUprav(koren);
+  if (koren.querySelectorAll) koren.querySelectorAll('input[data-cislo]').forEach(cisloPoleUprav);
+}
+
+if (typeof document !== 'undefined' && document.addEventListener) {
+  if (typeof MutationObserver !== 'undefined') {
+    new MutationObserver(zmeny => {
+      for (const z of zmeny) {
+        if (z.type === 'attributes') { cisloPoleUprav(z.target); continue; }
+        z.addedNodes.forEach(n => { if (n.nodeType === 1) cisloPoleUpravVse(n); });
+      }
+    }).observe(document.documentElement, {
+      childList: true, subtree: true, attributes: true, attributeFilter: ['value', 'placeholder'],
+    });
+  }
+  if (document.readyState !== 'loading') cisloPoleUpravVse(document);
+  else document.addEventListener('DOMContentLoaded', () => cisloPoleUpravVse(document));
+
+  /* Nečitelný zápis se do obsluhy nedostane (zachytává se v první fázi,
+   * dřív než inline `onchange`). Čitelný se jen přepíše do české podoby. */
+  document.addEventListener('change', (e) => {
+    const el = e.target;
+    if (!cisloPoleJe(el)) return;
+    const t = cisloPoleSurove(el);
+    if (cisloPoleText(t) === null) {
+      e.stopImmediatePropagation();
+      cisloPoleSuroveNastav(el, el.defaultValue);
+      if (typeof hlaska === 'function')
+        hlaska('„' + String(t).trim().slice(0, 40) + '“ není číslo — zadejte číslo, desetinná čárka i tečka platí (např. 17,3). Hodnota se nezměnila.');
+      return;
+    }
+    const z = cisloPoleZobraz(t);
+    if (z !== t) cisloPoleSuroveNastav(el, z);
+  }, true);
+
+  /* Psaní: projde číslice, čárka, tečka, mezera a znaménko — jako dřív
+   * do type=number se písmena nedostanou. Vložení ze schránky se kontroluje
+   * celé až při `change` (např. „1 250,50" z tabulky). */
+  document.addEventListener('beforeinput', (e) => {
+    if (!cisloPoleJe(e.target) || e.inputType !== 'insertText' || e.data == null) return;
+    if (/[^0-9.,\s\u00a0+\-\u2212]/.test(e.data)) e.preventDefault();
+  }, true);
+}
+
 /* Autor programu Jaroslav Vendl (2026) */
 /* ================= SPOLEČNÝ ZÁKLAD UI =================
  * Stav aplikace: ZAK (zakázka) + reference na data aktivní varianty.
@@ -36511,7 +36690,7 @@ function inp(path, opts = {}) {
    * přirážku v ceníku min nemá (smí ji měnit jen administrátor). */
   if (opts.type === 'pct') {  // uloženo jako desetinné číslo (0,30), zobrazeno a zadáváno v % (30)
     const minPct = opts.min != null ? ` min="${esc(opts.min)}"` : '';
-    return `<div class="row"><label>${opts.l}</label><input type="number" step="${opts.step ?? 1}"${minPct} value="${Math.round(val * 10000) / 100}" onchange="set('${path}', (+this.value) / 100)"><span class="u">%</span></div>`;
+    return `<div class="row"><label>${opts.l}</label><input ${CISLO_POLE} step="${opts.step ?? 1}"${minPct} value="${Math.round(val * 10000) / 100}" onchange="set('${path}', (+this.value) / 100)"><span class="u">%</span></div>`;
   }
   /* `t` = tooltip nad polem. Přibylo 10. 9. 2026, když se popisné texty
    * odstěhovaly ze Zadání šachty do Detailu výpočtu (zadání J. V.) — vysvětlení
@@ -36522,7 +36701,7 @@ function inp(path, opts = {}) {
    * šipky přes hranici; napsané číslo se uloží, jak je (tiché oříznutí by
    * z překlepu udělalo jinou nabídku). Co je nad hranicí, řekne volající. */
   const max = opts.max != null ? ` max="${esc(opts.max)}"` : '';
-  return `<div class="row"><label>${opts.l}</label><input type="number" step="${step}"${min}${max} value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
+  return `<div class="row"><label>${opts.l}</label><input ${CISLO_POLE} step="${step}"${min}${max} value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
 }
 
 /* NULA SE NEMUSÍ MAZAT (10. 9. 2026, zadání J. V.: „nastav buňky tak, aby když
@@ -37132,7 +37311,7 @@ function zakazkaHlavicka(ock) {
    * náklad. Proto se řídí právem `pole.prirazka` a řádek se nekreslí vůbec;
    * dřívější třída `admin-only` uměla jen „admin / neadmin", ne přidělení roli. */
   const prirazkaRow = !smiZobrazit('pole.prirazka') ? '' : `<div class="row"><label>Globální přirážka</label>
-    <span class="pct-wrap"><input type="number" step="1" value="${Math.round(C.marze * 10000) / 100}" onchange="set('C.marze', (+this.value) / 100)"> %</span></div>`;
+    <span class="pct-wrap"><input ${CISLO_POLE} step="1" value="${Math.round(C.marze * 10000) / 100}" onchange="set('C.marze', (+this.value) / 100)"> %</span></div>`;
 
   /* ---------- řada ceníku: ČR / Zahraničí (#181, 31. 8. 2026) ----------
    * Zadání J. V.: „v pravém rohu hlavičky přepínač ČR / Zahraničí, který se
@@ -37162,7 +37341,7 @@ function zakazkaHlavicka(ock) {
   const kurzRow = (radaTed !== 'zahr' || !smiZobrazit('pole.prirazka')) ? ''
     : `<div class="row"><label>Kurz pro nabídku</label>
        <span class="pct-wrap">${kurzEd
-        ? `<input type="number" step="0.01" value="${esc(C.kurzEurKc || 0)}"
+        ? `<input ${CISLO_POLE} step="0.01" value="${esc(C.kurzEurKc || 0)}"
          title="kurz z ceníku; v dokumentu se neukazuje, jen se jím převádí"
          onchange="set('C.kurzEurKc', +this.value)">`
         : `<b title="kurz z ceníku – mění se v Ceníku OCK, sekce CIZÍ MĚNA">${esc(C.kurzEurKc || 0)}</b>`} Kč/€</span></div>`;
@@ -37209,7 +37388,7 @@ function zakazkaHlavicka(ock) {
    * v hlavičce OCK. Do 31. 7. se nastavovala jen v záložce Ceník nákladů PROJ,
    * takže při počítání nabídky nebyla vidět a nikdo si jí nevšiml. */
   const prirazkaRowProj = !smiZobrazit('pole.prirazka') ? '' : `<div class="row"><label>Globální přirážka</label>
-    <span class="pct-wrap"><input type="number" step="1" value="${Math.round(PC.marze * 10000) / 100}" onchange="set('PC.marze', (+this.value) / 100)"> %</span></div>`;
+    <span class="pct-wrap"><input ${CISLO_POLE} step="1" value="${Math.round(PC.marze * 10000) / 100}" onchange="set('PC.marze', (+this.value) / 100)"> %</span></div>`;
 
   /* #17 – varianta převzatá z historické kalkulace nese větu o původu.
    * Bez ní by se po pár dnech nedalo poznat, že se nepočítalo od nuly, a
@@ -37945,7 +38124,7 @@ function slevaKarta(kontext) {
   const inner = `<div class="zak-head" style="grid-template-columns:1fr 1fr 1fr">
       <div class="row"><label>Schéma slevy</label><select onchange="${c.fn}('schema', this.value)">${schemaOpts}</select></div>
       <div class="row"><label>Zadal (role)</label><span title="Role slevy se bere z přihlášeného uživatele, který zadal procenta; určuje strop, do kterého se sleva schválí sama.">${esc(SLC.role || '—')}</span></div>
-      <div class="row"><label>Sleva</label><span class="pct-wrap"><input type="number" step="0.5" min="0" value="${+SLC.procenta || 0}" onchange="${c.fn}('procenta', this.value)"> %</span></div>
+      <div class="row"><label>Sleva</label><span class="pct-wrap"><input ${CISLO_POLE} step="0.5" min="0" value="${+SLC.procenta || 0}" onchange="${c.fn}('procenta', this.value)"> %</span></div>
     </div>
     <div class="row" style="max-width:100%"><label>Poznámka ke slevě</label>
       <input type="text" value="${esc(SLC.poznamka || '')}" onchange="${c.fn}('poznamka', this.value)" placeholder="důvod, kampaň, partner…"></div>
@@ -38606,15 +38785,21 @@ function renderSFokusem(kresli) {
   }
 
   if (!klic) { kresli(); return; }
-  const rozepsano = a.value !== a.defaultValue;
-  const hodnota = a.value;
+  /* U číselného pole (CA #575) se porovnává a vrací to, co je opravdu
+   * napsané — `value` vrací normalizovaný text a rozepsané „17," by po
+   * překreslení přišlo o čárku. */
+  const surove = typeof cisloPoleSurove === 'function' && typeof cisloPoleJe === 'function' && cisloPoleJe(a);
+  const hodnota = surove ? cisloPoleSurove(a) : a.value;
+  const rozepsano = hodnota !== a.defaultValue;
   let zac = null, kon = null;
   try { zac = a.selectionStart; kon = a.selectionEnd; } catch (e) {}
   kresli();
   const cil = [...document.querySelectorAll('input, textarea, select')]
     .find(x => renderKlicPole(x) === klic);
   if (!cil) return;
-  if (rozepsano) cil.value = hodnota;
+  if (rozepsano) {
+    if (surove && cisloPoleJe(cil)) cisloPoleSuroveNastav(cil, hodnota); else cil.value = hodnota;
+  }
   try {
     cil.focus({ preventScroll: true });
     if (rozepsano && zac != null && cil.setSelectionRange) cil.setSelectionRange(zac, kon);
@@ -39223,13 +39408,13 @@ function pruchoziPrepni(zap) {
 function nastupisteACRadek() {
   if (!Z.pruchoziSachta) return '';
   const pole = (klic, ozn, titulek) => `<span class="ozn" title="${esc(titulek)}">${ozn}</span>`
-    + `<input type="number" step="1" min="0" value="${esc(+Z[klic] || 0)}"`
+    + `<input ${CISLO_POLE} step="1" min="0" value="${esc(+Z[klic] || 0)}"`
     + ` title="${esc(titulek)}" onchange="set('Z.${escJs(klic)}', +this.value)">`;
   return `<div class="row"><label>Počet nástupišť</label>
       <span class="par">${pole('nastupisteA', 'A', 'nástupiště na čelní stěně')}${pole('nastupisteC', 'C', 'nástupiště na zadní stěně')}</span>
       <span class="u">ks</span></div>`
     + `<div class="row"><label>Počet pater</label>
-        <input type="number" step="1" min="0" value="${esc(+Z.patra || 0)}"
+        <input ${CISLO_POLE} step="1" min="0" value="${esc(+Z.patra || 0)}"
           title="z počtu pater se počítá výška podlaží; u průchozí šachty nejde odvodit z nástupišť"
           onchange="set('Z.patra', +this.value)"><span class="u">ks</span></div>`
     + (patraVarovani() || '');
@@ -39242,7 +39427,7 @@ function nastupisteRadek() {
   if (!Z.pruchoziSachta) return inp('Z.nastupiste', { l: 'Počet nástupišť', step: 1, u: 'ks' });
   const celkem = (typeof nastupisteCelkem === 'function') ? nastupisteCelkem(Z) : (+Z.nastupiste || 0);
   return `<div class="row"><label>Počet nástupišť</label>
-      <input type="number" value="${esc(celkem)}" readonly
+      <input ${CISLO_POLE} value="${esc(celkem)}" readonly
         title="dopočítáno z nástupišť A + C (${+Z.nastupisteA || 0} + ${+Z.nastupisteC || 0})"><span class="u">ks</span></div>`;
 }
 
@@ -39412,7 +39597,7 @@ function renderInputs() {
          * 2. 10. 2026). Vlastní obsluha: změna hloubky posune dolní meze
          * stěn, dokud zkratka platí (oplasteniProhlubenSleduj). */
         + `<div class="row"><label>Prohlubeň</label>
-            <input type="number" step="any" value="${esc(Z.prohluben)}"
+            <input ${CISLO_POLE} step="any" value="${esc(Z.prohluben)}"
               title="Opláštění i v prohlubni: zaškrtněte „Opláštit i prohlubeň" — všechny stěny pak začínají v −prohlubeň (opláštění po stěnách)."
               onchange="prohlubenSet(this.value)"><span class="u">m</span></div>`
         + prohlubenSkloRadek()
@@ -39472,7 +39657,7 @@ function renderInputs() {
          * pod čistým vstupem, nad přechodovými plechy. Rozměry se ptají, jen
          * když můstky jsou; prázdné pole znamená „nevyplněno", ne nulu. */
         + `<div class="row"><label>Můstky mezi budovou a OCK</label>
-            <input type="number" step="1" min="0" value="${esc(mustkyPocet(Z))}" ${Array.isArray(Z.mustky) && Z.mustky.length > 1 ? 'disabled' : ''}
+            <input ${CISLO_POLE} step="1" min="0" value="${esc(mustkyPocet(Z))}" ${Array.isArray(Z.mustky) && Z.mustky.length > 1 ? 'disabled' : ''}
               title="${Array.isArray(Z.mustky) && Z.mustky.length > 1 ? 'součet skupin z karty Můstky' : 'počet můstků; 0 = šachta nemá žádný; rozměry a provedení v kartě Můstky'}" onchange="mustkySet(this.value)"><span class="u">ks</span></div>`
         /* #560: délka, šířka, provedení, kotvení a sloupy jsou v kartě
          * „Můstky" pod zadáním (mustkyKarta) — zadávají se po skupinách. */
@@ -39962,7 +40147,7 @@ function bokyKsRadek() {
   const auto = bokyPocetAuto(Z), n = bokyPocet(Z), rucne = bokyPocetRucne(Z);
   return `<div class="row"><label>Celkem světlíků na bocích dveří${rucne
       ? ' <span class="pill mut" title="zadáno ručně — výpočet by dal ' + esc(auto) + '">ručně</span>' : ''}</label>
-      <span class="par"><input type="number" step="1" min="0" value="${esc(n)}"
+      <span class="par"><input ${CISLO_POLE} step="1" min="0" value="${esc(n)}"
         title="${esc(rucne ? 'zadáno ručně; výpočet: počet nástupišť × 2 = ' + auto
           : 'počet nástupišť × 2 — přepište, když jich je jinak')}"
         onchange="bokyKsSet(this.value)">${rucne
@@ -40039,7 +40224,7 @@ function bokySirkaRadek(r) {
   const titulPred = predMm != null ? 'předpočítaná šířka skla přes sloupky ' + predMm + ' mm' : 'předpočítaná šířka skla přes sloupky';
   return `<div class="row boky-sirka"><label>Šířka skla bočního světlíku (přes sloupky)${rucne
       ? ' <span class="pill mut" title="' + esc('zadáno ručně; ' + titulPred) + '">ručně</span>' : ''}</label>
-      <span class="par"><input type="number" step="1" min="0" value="${esc(hodnota)}"
+      <span class="par"><input ${CISLO_POLE} step="1" min="0" value="${esc(hodnota)}"
         title="${esc(rucne ? 'zadáno ručně; ' + titulPred
           : 'šířka skla jednoho bočního světlíku přes sloupky (tabule přesahuje sloupky, světlo vedle dveří je užší) — přepište, když je jiná (plocha boků = počet × šířka × 2,2 m)')}"
         onchange="bokySirkaSet(this.value)">${rucne
@@ -40145,11 +40330,11 @@ function mustkyKarta(rAkt) {
   const sel = (i, pole, seznam, hodnota, popisky, tit) => `<select class="mu-${pole}" title="${esc(tit)}" onchange="mustekPoleSet(${i}, '${pole}', this.value)">`
     + seznam.map(([k, t]) => `<option value="${esc(k)}" ${String(hodnota) === String(k) ? 'selected' : ''}>${esc((popisky && popisky[k]) || t)}</option>`).join('') + '</select>';
   /* Číselné pole karty = týž prvek jako pole Zadání šachty (inp() v common.js:
-   * <input type="number">, prohlížeč v české stránce ukazuje desetinnou
-   * čárku a přijme čárku i tečku). Šedá nápověda je text, ten prohlížeč
-   * nepřevádí — proto jde přes formatCislo (MU3, J. V. 6. 11.: „používáš
+   * `<input ${CISLO_POLE}>` z ui/cislo_pole.js — od CA #575 ukáže českou
+   * desetinnou čárku a přijme čárku i tečku v každém prohlížeči). Šedá
+   * nápověda jde přes formatCislo (MU3, J. V. 6. 11.: „používáš
    * tečku místo čárky"). */
-  const cis = (i, pole, hodnota, opts) => `<input type="number" class="mu-${pole}" min="0" step="${opts.step || 1}"
+  const cis = (i, pole, hodnota, opts) => `<input ${CISLO_POLE} class="mu-${pole}" min="0" step="${opts.step || 1}"
       value="${esc(hodnota === '' || hodnota == null ? '' : hodnota)}" placeholder="${esc(opts.ph == null || opts.ph === '' ? '' : (typeof opts.ph === 'number' ? cz(opts.ph) : opts.ph))}"
       title="${esc(opts.t || '')}" onchange="mustekPoleSet(${i}, '${pole}', this.value)">`;
   const txt = (i, pole, hodnota, ph) => `<input type="text" class="mu-text" maxlength="${MUSTEK_TEXT_MAX}" value="${esc(hodnota || '')}"
@@ -40473,7 +40658,7 @@ function oplJineHtml(k, i) {
   return `<div class="row opl-jine"><label></label><span class="par opl-sloupce">
       <input class="opl-s1" type="text" style="width:190px" placeholder="název opláštění"
         value="${esc(p.nazev || '')}" onchange="oplPasSet('${escJs(k)}', ${+i}, 'nazev', this.value)">
-      <input class="opl-s2" type="number" step="any" min="0" style="width:90px" placeholder="sazba"
+      <input class="opl-s2" ${CISLO_POLE} step="any" min="0" style="width:90px" placeholder="sazba"
         title="náklad za m²; ruční sazba znamená atyp"
         value="${esc(p.naklad == null ? '' : p.naklad)}" onchange="oplPasSet('${escJs(k)}', ${+i}, 'naklad', this.value)">
       <span class="opl-s3 opl-jednotka">Kč/m²</span>
@@ -40648,7 +40833,7 @@ function oplStenaHtml(s, opl) {
     return `<div class="row"><label style="font-weight:400">Pás ${i + 1}${posledni ? ' (až nahoru)' : ''}</label>
       <span class="par opl-sloupce">${oplTypSelect(k, i)}
         ${posledni ? '<span class="note opl-s2">po horní hranu</span>'
-          : `<input class="opl-s2" type="number" step="0.01" style="width:90px" placeholder="do (m)"
+          : `<input class="opl-s2" ${CISLO_POLE} step="0.01" style="width:90px" placeholder="do (m)"
               title="dělicí výška — kde tenhle pás končí a začíná další"
               value="${esc(p.doM == null ? '' : p.doM)}"
               onchange="oplPasSet('${escJs(k)}', ${+i}, 'doM', this.value)">`}
@@ -40670,7 +40855,7 @@ function oplStenaHtml(s, opl) {
     + `<div class="row"><label></label><span class="par opl-sloupce opl-bez1">
         <button class="mini opl-s23 opl-vpravo" onclick="oplPasPridej('${escJs(k)}')">+ přidat pás</button></span><span class="u"></span></div>`
     + `<div class="row"><label style="font-weight:400">Opláštění začíná</label>
-        <span class="par opl-sloupce opl-bez1"><input class="opl-s2" type="number" step="0.01" style="width:90px"
+        <span class="par opl-sloupce opl-bez1"><input class="opl-s2" ${CISLO_POLE} step="0.01" style="width:90px"
           title="výška, od které se opláštění počítá; záporná hodnota sahá do prohlubně"
           value="${esc(st.odM)}" onchange="oplOdSet('${escJs(k)}', this.value)"><span class="opl-s3 opl-jednotka">m</span></span><span class="u"></span></div>`
     + varovaniHtml);
@@ -40846,18 +41031,18 @@ function jeRadekSkla(r) {
 }
 function bunkaMnozstvi(r) {
   if (r.vlastni)
-    return `<input type="number" step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'mnozstvi', this.value)">`;
+    return `<input ${CISLO_POLE} step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'mnozstvi', this.value)">`;
   const origJs = keyAttr(r.origNazev);
-  return `<input type="number" step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat">` +
+  return `<input ${CISLO_POLE} step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat">` +
     (r.prepsano ? ` <button class="mini noprint" title="vrátit vypočtené množství (${num(r.mnozstviAuto, 3)})" onclick="mnozstviSet('${origJs}', '')">↺</button>` : '');
 }
 function bunkaCena(r) {
   if (r.vlastni)
-    return `<input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)">`;
+    return `<input ${CISLO_POLE} step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)">`;
   if (r.cenaPath)
-    return `<input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="set('${escJs(r.cenaPath)}', +this.value)" title="jedn. cena z ceníku – změna se propíše i do Ceníku nákladů (obousměrně)">`;
+    return `<input ${CISLO_POLE} step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="set('${escJs(r.cenaPath)}', +this.value)" title="jedn. cena z ceníku – změna se propíše i do Ceníku nákladů (obousměrně)">`;
   const origJs = keyAttr(r.origNazev);
-  return `<input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="cenaSet('${origJs}', this.value)" title="jedn. cena – ruční přepis (bez ceníkové vazby)">` +
+  return `<input ${CISLO_POLE} step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" onchange="cenaSet('${origJs}', this.value)" title="jedn. cena – ruční přepis (bez ceníkové vazby)">` +
     (r.cenaPrepsana ? ` <button class="mini noprint" title="vrátit vypočtenou cenu (${fmt(r.cenaAuto)})" onclick="cenaSet('${origJs}', '')">↺</button>` : '');
 }
 /* ---- stabilní klíč řádku (pro pořadí a viditelnost) ---- */
@@ -41082,7 +41267,7 @@ function rcRadekPod(r, NC) {
   return `<tr class="rc-radek noprint" data-cesta="${esc(cesta)}"><td colspan="${NC}" style="white-space:normal">
     <div class="rc-box" style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:6px 8px;border:1px solid var(--line, #dde3ea);border-radius:8px">
       <b>✎ Cena z nabídky dodavatele</b>
-      <label class="rc-pole">Nákupní cena <input type="number" step="any" min="0" class="rc-hodnota" style="width:96px"
+      <label class="rc-pole">Nákupní cena <input ${CISLO_POLE} step="any" min="0" class="rc-hodnota" style="width:96px"
         value="${rec ? +(+rec.hodnota).toFixed(2) : ''}" placeholder="z nabídky" onchange="rcHodnota('${cj}', this.value)"> ${esc(jed)}</label>
       ${pole('dodavatel', 'text', 'Dodavatel', '170px')}${pole('cislo', 'text', 'Č. nabídky', '110px')}
       ${pole('datum', 'date', 'Datum nabídky', '140px')}${pole('platnostDo', 'date', 'Platnost do', '140px')}
@@ -41179,7 +41364,7 @@ function radekKalk(r, sekceKey) {
     ? `<div class="vol-name">${gripHtml(r, sekceKey)}${bunkaNazev(r, sekceKey)}${bezCenyHtml(r)}${vypnutoHtml(r)}${rcStitek(r)}</div>`
     : vlastniEd
       ? `<input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'nazev', this.value)">
-         à <input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
+         à <input ${CISLO_POLE} step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
            onchange="vlastniSet('${escJs(r.sekce)}', ${r.idx}, 'cena', this.value)"> Kč
          <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('${escJs(r.sekce)}', ${r.idx})">✕</button>`
       : esc(r.nazev) + poznHtml(r) + bezCenyHtml(r) + vypnutoHtml(r) + rcStitek(r)
@@ -41314,10 +41499,10 @@ function tblVolitelne(katalog, sum) {
           : `<input type="checkbox" ${r.zahrnuto ? 'checked' : ''} onchange="volitelneToggle('${escJs(r.key)}', this.checked)" title="zahrnout do základní ceny"> `;
         c = vlEdV
           ? `<td style="white-space:normal">${chkU}<input type="text" class="nazev-ed" style="width:55%" value="${esc(r.nazev)}" onchange="vlastniSet('volitelne', ${r.idx}, 'nazev', this.value)">
-               à <input type="number" step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
+               à <input ${CISLO_POLE} step="any" min="0" style="width:96px" value="${+(+r.cena).toFixed(2)}" title="jednotková cena této položky (jen pro tuto zakázku)"
                  onchange="vlastniSet('volitelne', ${r.idx}, 'cena', this.value)"> Kč
                <button class="mini noprint" title="odebrat vlastní položku" onclick="vlastniDel('volitelne', ${r.idx})">✕</button></td>
-             <td style="white-space:nowrap"><input type="number" step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('volitelne', ${r.idx}, 'mnozstvi', this.value)"></td>`
+             <td style="white-space:nowrap"><input ${CISLO_POLE} step="any" min="0" style="width:86px" value="${+(+r.mnozstvi).toFixed(3)}" onchange="vlastniSet('volitelne', ${r.idx}, 'mnozstvi', this.value)"></td>`
           : `<td style="white-space:normal">${chkU}${esc(r.nazev) + poznHtml(r) + vypnutoHtml(r)}</td><td style="white-space:nowrap">${num(r.mnozstvi, 3)}</td>`;
       }
       /* NEZAŠKRTNUTÝ ŘÁDEK NEUKAZUJE ČÁSTKU (16. 9. 2026, nález J. V.:
@@ -41629,15 +41814,15 @@ function renderOutputs() {
    * které vrátí vypočtené množství; prázdné pole = platí výpočet. */
   const pripMnozstvi = (x) => {
     if (x.vlastni)
-      return `<input type="number" step="any" min="0" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'mnozstvi', this.value)">`;
+      return `<input ${CISLO_POLE} step="any" min="0" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'mnozstvi', this.value)">`;
     const origJs = keyAttr(x.origNazev);
-    return `<input type="number" step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat (prázdné = vypočtené)">`
+    return `<input ${CISLO_POLE} step="any" style="width:80px" value="${+(+x.mnozstvi).toFixed(3)}" onchange="mnozstviSet('${origJs}', this.value)" title="množství lze ručně přepsat (prázdné = vypočtené)">`
       + (x.prepsano ? ` <button class="mini noprint" title="vrátit vypočtené množství (${num(x.mnozstviAuto, 3)})" onclick="mnozstviSet('${origJs}', '')">↺</button>` : '');
   };
   const pripCena = (x) => x.vlastni
-    ? `<input type="number" step="any" min="0" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'cena', this.value)">`
+    ? `<input ${CISLO_POLE} step="any" min="0" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="priplatekVlastniSet(${+String(x.key).split(':')[1]}, 'cena', this.value)">`
     : (x.cenaPath
-        ? `<input type="number" step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="set('${escJs(x.cenaPath)}', +this.value)" title="jedn. cena z ceníku – propíše se i do Ceníku (obousměrně)">`
+        ? `<input ${CISLO_POLE} step="any" style="width:96px" value="${+(+x.cena).toFixed(2)}" onchange="set('${escJs(x.cenaPath)}', +this.value)" title="jedn. cena z ceníku – propíše se i do Ceníku (obousměrně)">`
         : fmt(x.cena));
   const pripHlava = (col.admin ? '<th title="zaškrtnuté položky se propíší do cenové nabídky">Nabídka</th>' : '')
     + '<th>Položka</th><th>Množství</th>' + (col.admin ? '<th>Jedn. cena</th>' : '')
@@ -44100,7 +44285,7 @@ function renderProj() {
     ${box4 ? `<div class="kpi kpi-multi">${box4}</div>` : ''}
   </div>
   ${col.admin ? `<div class="prm"><span class="prm-l">Globální přirážka <span class="note">(z ceníku PROJ, platí pro všechny sekce)</span></span>
-    <input type="number" step="1" style="width:76px" value="${Math.round(PC.marze * 10000) / 100}"
+    <input ${CISLO_POLE} step="1" style="width:76px" value="${Math.round(PC.marze * 10000) / 100}"
       onchange="set('PC.marze', (+this.value) / 100)"><span class="prm-u">%</span></div>` : ''}`;
 
   /* ---------------- tabulka kalkulace ---------------- */
@@ -44184,14 +44369,14 @@ function renderProj() {
          * a číslo v poli je dohoda pro TUHLE zakázku, ceník nechá být. */
         const sazbaEd = col.admin
           ? `<span class="pill mut" title="sazba z Ceníku nákladů PROJ – mění se tam, platí pro všechny zakázky">${esc(p.sazba)}</span>
-             <input type="number" step="50" class="prepis-ed${p.sazbaPrepsana ? ' aktivni' : ''}" style="width:86px" value="${p.sazbaPrepsana ? esc(p.sazbaKc) : ''}"
+             <input ${CISLO_POLE} step="50" class="prepis-ed${p.sazbaPrepsana ? ' aktivni' : ''}" style="width:86px" value="${p.sazbaPrepsana ? esc(p.sazbaKc) : ''}"
                placeholder="${num(p.sazbaZCeniku)}" onchange="pjPrepis(${i},${j},'sazbaPrepis',this.value)"
                title="sjednaná sazba jen pro tuto zakázku (prázdné = ${num(p.sazbaZCeniku)} Kč z ceníku)">
              ${p.sazbaPrepsana ? `<button class="mini noprint" onclick="pjPrepis(${i},${j},'sazbaPrepis','')" title="vrátit sazbu z ceníku (${num(p.sazbaZCeniku)} Kč)">↺</button>` : ''}`
           : (vidSazby ? num(p.sazbaKc) : num(prodejni(s, p.sazbaKc)));
         return `${tr}<td>${nazev}${stitekVyp}</td>
-          <td>${(col.admin || vlEd) ? `<input type="number" step="1" min="0" style="width:66px" value="${esc(+p.hodiny || 0)}" onchange="pjSet(${i}, 'polozky.${j}.hodiny', +this.value)">` : num(p.hodiny)}</td>
-          <td>${col.admin ? `<input type="number" step="1" min="0" style="width:66px" value="${esc(+p.rezerva || 0)}" onchange="pjSet(${i}, 'polozky.${j}.rezerva', +this.value)">` : num(p.rezerva)}</td>
+          <td>${(col.admin || vlEd) ? `<input ${CISLO_POLE} step="1" min="0" style="width:66px" value="${esc(+p.hodiny || 0)}" onchange="pjSet(${i}, 'polozky.${j}.hodiny', +this.value)">` : num(p.hodiny)}</td>
+          <td>${col.admin ? `<input ${CISLO_POLE} step="1" min="0" style="width:66px" value="${esc(+p.rezerva || 0)}" onchange="pjSet(${i}, 'polozky.${j}.rezerva', +this.value)">` : num(p.rezerva)}</td>
           <td>${num(p.hodinyCelkem)}</td>
           <td style="white-space:nowrap">${sazbaEd}</td>
           ${penize(p.naklad, marzeSekce(s, p.naklad), cena)}${pocitat}</tr>`;
@@ -44202,13 +44387,13 @@ function renderProj() {
        * Teď se zapisuje přepis do zakázky; ceník se mění v záložce Ceník PROJ. */
       const fixEd = col.admin
         ? (p.fixKey
-          ? `<input type="number" step="500" min="0" class="prepis-ed${p.cenaPrepsana ? ' aktivni' : ''}" style="width:86px" value="${p.cenaPrepsana ? esc(p.cenaEfekt) : ''}"
+          ? `<input ${CISLO_POLE} step="500" min="0" class="prepis-ed${p.cenaPrepsana ? ' aktivni' : ''}" style="width:86px" value="${p.cenaPrepsana ? esc(p.cenaEfekt) : ''}"
                placeholder="${num(p.cenaZCeniku)}" onchange="pjPrepis(${i},${j},'cenaPrepis',this.value)"
                title="cena jen pro tuto zakázku (prázdné = ${num(p.cenaZCeniku)} Kč z Ceníku nákladů PROJ)">
              ${p.cenaPrepsana ? `<button class="mini noprint" onclick="pjPrepis(${i},${j},'cenaPrepis','')" title="vrátit cenu z ceníku (${num(p.cenaZCeniku)} Kč)">↺</button>` : ''}`
-          : `<input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`)
+          : `<input ${CISLO_POLE} step="500" min="0" style="width:86px" value="${esc(p.cena)}" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`)
         : (vlEd && !p.fixKey
-          ? `<input type="number" step="500" min="0" style="width:86px" value="${esc(p.cena)}" title="částka této položky před přirážkou sekce (jen pro tuto zakázku); cena vpravo už přirážku obsahuje" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
+          ? `<input ${CISLO_POLE} step="500" min="0" style="width:86px" value="${esc(p.cena)}" title="částka této položky před přirážkou sekce (jen pro tuto zakázku); cena vpravo už přirážku obsahuje" onchange="pjSet(${i}, 'polozky.${j}.cena', +this.value)">`
             + (vidSazby ? '' : ' <span class="note">před přirážkou</span>')
           /* Bez práva na náklady (P12) prodejní cena položky místo nákladové. */
           : (vidSazby ? num(p.cenaEfekt) : num(prodejni(s, p.cenaEfekt))));
@@ -44239,7 +44424,7 @@ function renderProj() {
       : col.admin
         ? `<tr><td><span class="grip" style="visibility:hidden">⠿</span>Doprava (${num(PC.dopravaKmKc)} Kč/km)
              <span class="pill mut" style="margin-left:6px" title="doprava vstupuje do základu přirážky sekce: cena sekce = (náklad + doprava) × (1 + %) — jako v předloze (O12 = O8 + O11)">v základu přirážky</span></td>
-           <td><input type="number" step="1" style="width:66px" value="${esc(zdroj.doprava.km)}" onchange="pjSet(${i}, 'doprava.km', +this.value)" title="km"></td>
+           <td><input ${CISLO_POLE} step="1" style="width:66px" value="${esc(zdroj.doprava.km)}" onchange="pjSet(${i}, 'doprava.km', +this.value)" title="km"></td>
            <td class="note">km</td>
            <td style="white-space:nowrap"><label title="příplatek mimo Prahu = km / 60 × ${num(hodKc)} Kč (hodina cesty při 60 km/h; sazba v Ceníku nákladů PROJ); po Praze nechte odškrtnuté">
              <input type="checkbox" ${zdroj.doprava.mimoPrahu ? 'checked' : ''} onchange="pjSet(${i}, 'doprava.mimoPrahu', this.checked)"> mimo Prahu</label></td>
@@ -44279,7 +44464,7 @@ function renderProj() {
      * sloupci Počítat, a je tmavě modré, ať se od položkových liší. */
     const vlastniPct = col.admin
       ? `<span class="note" style="font-weight:400;white-space:nowrap">vlastní % sekce
-           <input type="number" step="1" style="width:64px" value="${zdroj.prirazkaPct == null ? '' : esc(zdroj.prirazkaPct)}"
+           <input ${CISLO_POLE} step="1" style="width:64px" value="${zdroj.prirazkaPct == null ? '' : esc(zdroj.prirazkaPct)}"
              placeholder="${prirGlob}" onchange="pjSet(${i}, 'prirazkaPct', this.value === '' ? null : +this.value)"
              title="vlastní % jen pro tuhle sekci: kladné číslo přirazí, záporné slevu (prázdné = ${prirPopis}). Nula znamená „u téhle sekce nepřirážíme nic“."> %</span>`
       : '';
@@ -44402,11 +44587,12 @@ function renderProj() {
   if (typeof zamekCteniNasad === 'function') zamekCteniNasad('proj');
 }
 
-/* Ruční cena výjezdu technika (K4-N4, O11). Pole type=number vrací při
- * nečitelném vstupu („100,5" v anglickém prohlížeči) prázdný řetězec —
- * dřív to tiše vrátilo cenu z ceníku. Teď upozornění a beze změny. */
+/* Ruční cena výjezdu technika (K4-N4, O11). Nečitelný vstup dřív vracel
+ * prázdný řetězec a tiše vrátil cenu z ceníku. Od CA #575 ho zastaví
+ * společné číselné pole (ui/cislo_pole.js) dřív, než se sem dostane;
+ * kontrola zůstává jako pojistka pro volání mimo událost `change`. */
 function pjVyjezdPrepis(el) {
-  if (el && el.validity && el.validity.badInput) {
+  if (el && typeof cisloPoleChybne === 'function' && cisloPoleChybne(el)) {
     if (typeof hlaska === 'function') hlaska('Cena výjezdu není platné číslo — zadejte celé Kč (např. 3500). Hodnota se nezměnila.');
     render(); return;
   }
@@ -44434,7 +44620,7 @@ function kalkProjVolbyD2() {
   const smiPrepis = typeof smiZobrazit === 'function' && smiZobrazit('sloupce.naklad');
   const spatnyTvar = prepis !== '' && typeof uloCisloJadro === 'function' && !uloCisloJadro(prepis);
   const pole = smiPrepis
-    ? `<input type="number" step="1" min="0" style="width:110px" id="projVyjezdPrepis" value="${esc(prepis)}" placeholder="${esc(cenikVyjezd || '')}"
+    ? `<input ${CISLO_POLE} step="1" min="0" style="width:110px" id="projVyjezdPrepis" value="${esc(prepis)}" placeholder="${esc(cenikVyjezd || '')}"
         onchange="pjVyjezdPrepis(this)"><span class="u">Kč</span>
       ${prepis !== '' ? `<button class="mini" onclick="set('PJ.vyjezdKcPrepis', null)" title="vrátit cenu z ceníku PROJ">↺</button>` : ''}`
     : `<span id="projVyjezdCena" title="cenu výjezdu přepisuje jen role s právem vidět náklady">${ucinna > 0 ? esc(fmt(ucinna)) : '—'}</span>`;
@@ -45747,7 +45933,7 @@ function cenikZahrPctPole(cesta, opts) {
   const placeholder = o.placeholder || 'jako ČR';
   return `<span class="pct-wrap" style="margin-left:18px">
     <label style="margin-right:6px">${label}</label>
-    <input type="number" step="1" class="zahr-cena${zv === '' ? '' : ' ma'}" style="width:80px"
+    <input ${CISLO_POLE} step="1" class="zahr-cena${zv === '' ? '' : ' ma'}" style="width:80px"
       value="${esc(pct)}" placeholder="${esc(placeholder)}"
       title="${esc(title)}"
       onchange="cenikZahrSet('${cesta}', this.value === '' ? '' : (+this.value) / 100)"> %
@@ -45820,9 +46006,9 @@ function cenikRows(def, zahrSloupec) {
       /* Procenta se v datech drží jako desetinný podíl (0,30), ale zadávají
        * se lidsky — 30. Stejně jako globální přirážka o pár řádků výš
        * (31. 8. 2026, položky ATYP a výchozí rozsahy práce). */
-      else if (typ === 'pct') ed = `<input type="number" step="1" value="${val == null || val === '' ? '' : Math.round(val * 10000) / 100}"
+      else if (typ === 'pct') ed = `<input ${CISLO_POLE} step="1" value="${val == null || val === '' ? '' : Math.round(val * 10000) / 100}"
           placeholder="nenastaveno"${cenikBarvaAttr(u)} onchange="set('${path}', this.value === '' ? 0 : (+this.value) / 100)">`;
-      else ed = `<input type="number" step="any" value="${esc(val)}"${cenikBarvaAttr(u)} onchange="set('${path}', +this.value)">`;
+      else ed = `<input ${CISLO_POLE} step="any" value="${esc(val)}"${cenikBarvaAttr(u)} onchange="set('${path}', +this.value)">`;
       /* TUZEMSKÁ CENA U POLOŽKY „JEN ZAHRANIČNÍ" SE NEZADÁVÁ (P4, nález N6).
        *
        * Ceník verze 27 měl u překladů CZ→DE vyplněnou i ČR hodnotu — dalo se
@@ -45831,7 +46017,7 @@ function cenikRows(def, zahrSloupec) {
        * Pole, do kterého jde psát a nic to neudělá (nebo udělá něco jiného,
        * než člověk čeká), je horší než pole, které tam není. */
       if (jenZahrPolozka && zahrSloupec)
-        ed = `<input type="number" value="" placeholder="neplatí v ČR" disabled
+        ed = `<input ${CISLO_POLE} value="" placeholder="neplatí v ČR" disabled
           title="Položka v tuzemské kalkulaci vůbec není, takže tuzemská cena nemá co ovlivnit. Zadává se jen cena ve sloupci Zahraničí.">`;
       let zahr = '';
       if (zahrSloupec) {
@@ -45839,7 +46025,7 @@ function cenikRows(def, zahrSloupec) {
         const pevne = jenZahrPevne;
         const jen = jenZahrPolozka;
         zahr = typ ? '<td colspan="2" class="note">—</td>' : `<td class="zahr-bunka">
-          <input type="number" step="any" class="zahr-cena${zv === '' ? '' : ' ma'}" value="${esc(zv)}"
+          <input ${CISLO_POLE} step="any" class="zahr-cena${zv === '' ? '' : ' ma'}" value="${esc(zv)}"
             placeholder="${path === 'C.mustekMontazHodKc' ? 'jako montáž zahr.' : 'jako ČR'}" title="${path === 'C.mustekMontazHodKc'
               ? 'prázdné = platí zahraniční sazba montáže na stavbě (bez ní tuzemská sazba montáže můstků) — #550'
               : 'prázdné = platí tuzemská cena'}"${cenikBarvaAttr(u, { prazdnaOk: true })}
@@ -45895,9 +46081,9 @@ function cenikCustomRows(sekceKey, sloupcu) {
   const sk = escJs(sekceKey);
   const rows = arr.map(p => `<tr>
       <td><input type="text" value="${esc(p.nazev)}" onchange="katSet('${sk}','${escJs(p.kid)}','nazev',this.value)"></td>
-      <td><input type="number" step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')} onchange="katSet('${sk}','${escJs(p.kid)}','cena',this.value)"></td>
+      <td><input ${CISLO_POLE} step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')} onchange="katSet('${sk}','${escJs(p.kid)}','cena',this.value)"></td>
       ${mezera}
-      <td><input type="number" step="any" style="width:70px" value="${+p.mnozstvi || 1}"${cenikBarvaAttr('ks')} onchange="katSet('${sk}','${escJs(p.kid)}','mnozstvi',this.value)" title="výchozí množství v nové nabídce"></td>
+      <td><input ${CISLO_POLE} step="any" style="width:70px" value="${+p.mnozstvi || 1}"${cenikBarvaAttr('ks')} onchange="katSet('${sk}','${escJs(p.kid)}','mnozstvi',this.value)" title="výchozí množství v nové nabídce"></td>
       <td><span class="pill ok" title="je součástí každé nové cenové nabídky">trvalá</span>
           <button class="mini noprint" title="odebrat z ceníku i z této zakázky" onclick="katDel('${sk}','${escJs(p.kid)}')">✕</button></td></tr>`).join('');
   const lokal = katalogCil(Z, sekceKey).filter(p => !p.kid).length;
@@ -46328,9 +46514,9 @@ function cenikProjTrvaleRadky(sekce) {
         onchange="cenikProjTrvaleSet('${sk}','${kidJs}','nazev',this.value)">
         ${chip}</td>
       <td class="c-hod">${p.typ === 'hod'
-        ? `<input type="number" step="any" style="width:90px" value="${+p.hodiny || 0}"
+        ? `<input ${CISLO_POLE} step="any" style="width:90px" value="${+p.hodiny || 0}"
              title="hodin"${cenikBarvaAttr('hod')} onchange="cenikProjTrvaleSet('${sk}','${kidJs}','hodiny',this.value)">`
-        : `<input type="number" step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')}
+        : `<input ${CISLO_POLE} step="any" value="${+p.cena || 0}"${cenikBarvaAttr('Kč')}
              onchange="cenikProjTrvaleSet('${sk}','${kidJs}','cena',this.value)">`}</td>
       <td class="c-jed">${p.typ === 'hod' ? 'hod (' + esc(p.sazba || 'projektant') + ')' : 'Kč'}</td>
       <td class="c-pozn">trvalá položka${viceSekci ? ' — ' + esc(sek.nazev) : ''}, je v každé nové nabídce
@@ -58445,7 +58631,7 @@ function podmRadek(label, vstup, pozn, jednotka) {
 }
 function podmCisloVstup(cast, pole, hodnota, min, max) {
   const dis = jeAdmin() ? '' : ' disabled';
-  return `<input type="number" min="${min}" max="${max}" step="1" value="${esc(String(hodnota))}"
+  return `<input ${CISLO_POLE} min="${min}" max="${max}" step="1" value="${esc(String(hodnota))}"
       onchange="podmSet(${cast ? `'${cast}'` : 'null'}, '${escJs(pole)}', this.value, 'cislo')"${dis}>`;
 }
 function podmVyberVstup(cast, pole, hodnota, volby) {
@@ -58494,7 +58680,7 @@ function nastPodminkyOck() {
   const anoNe = [['Ano', 'Ano'], ['Ne', 'Ne']];
   const splatka = (popis, kProc, kMil, pozn) => podmRadek(popis,
     `<span style="display:flex;gap:6px;align-items:center;flex:1;min-width:0">
-      <input type="number" min="0" max="100" step="1" value="${esc(String(o[kProc]))}" style="width:80px"
+      <input ${CISLO_POLE} min="0" max="100" step="1" value="${esc(String(o[kProc]))}" style="width:80px"
         class="podm-proc${s.ok ? '' : ' podm-chyba'}" onchange="podmSet('ock', '${kProc}', this.value, 'cislo')"${dis}> %
       <input type="text" value="${esc(o[kMil])}" maxlength="200" style="flex:1;min-width:0"
         onchange="podmSet('ock', '${kMil}', this.value)"${dis}></span>`, podmStitek('ock', kProc) + (pozn || ''));
@@ -58515,12 +58701,12 @@ function nastPodminkyOck() {
     ${soucet}
     ${podmRadek('Zádržné do odstranění vad a nedodělků', `<span style="display:flex;gap:6px;align-items:center;flex:none">
       ${podmVyberVstup('ock', 'zadrzneVan', o.zadrzneVan, anoNe)}
-      <input type="number" min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneVanProc))}" style="width:80px"
+      <input ${CISLO_POLE} min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneVanProc))}" style="width:80px"
         onchange="podmSet('ock', 'zadrzneVanProc', this.value, 'procentaVolitelne')"${dis}></span>`,
       podmStitek('ock', 'zadrzneVan') + (o.zadrzneVan === 'Ano' && o.zadrzneVanProc === '' ? ' <span class="pill warn">Ano bez procenta</span>' : ''), '%')}
     ${podmRadek('Zádržné po dobu záruky', `<span style="display:flex;gap:6px;align-items:center;flex:none">
       ${podmVyberVstup('ock', 'zadrzneZaruka', o.zadrzneZaruka, anoNe)}
-      <input type="number" min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneZarukaProc))}" style="width:80px"
+      <input ${CISLO_POLE} min="0" max="20" placeholder="%" value="${esc(String(o.zadrzneZarukaProc))}" style="width:80px"
         onchange="podmSet('ock', 'zadrzneZarukaProc', this.value, 'procentaVolitelne')"${dis}></span>`,
       podmStitek('ock', 'zadrzneZaruka') + (o.zadrzneZaruka === 'Ano' && o.zadrzneZarukaProc === '' ? ' <span class="pill warn">Ano bez procenta</span>' : ''), '%')}
     ${podmRadek('Doba záruky', podmCisloVstup('ock', 'zarukaMesicu', o.zarukaMesicu, 0, 240), podmStitek('ock', 'zarukaMesicu'), 'měsíců')}
@@ -59794,9 +59980,9 @@ function nastStandard() {
   const cis = v => (v == null ? '' : v);
   const radaHtml = (vetev) => (r, i) => `<tr>
     <td><input type="text" style="width:100px" value="${esc(r.profil)}" onchange="stdRadaSet('${vetev}', ${i}, 'profil', this.value)"></td>
-    <td><input type="number" step="0.5" style="width:78px" value="${esc(cis(r.vyskaMaxM))}" onchange="stdRadaSet('${vetev}', ${i}, 'vyskaMaxM', this.value)"> m</td>
-    <td><input type="number" step="10" style="width:90px" value="${esc(cis(r.sirkaMaxMm))}" onchange="stdRadaSet('${vetev}', ${i}, 'sirkaMaxMm', this.value)"> mm</td>
-    <td><input type="number" step="10" style="width:90px" value="${esc(cis(r.hloubkaMaxMm))}" onchange="stdRadaSet('${vetev}', ${i}, 'hloubkaMaxMm', this.value)"> mm</td>
+    <td><input ${CISLO_POLE} step="0.5" style="width:78px" value="${esc(cis(r.vyskaMaxM))}" onchange="stdRadaSet('${vetev}', ${i}, 'vyskaMaxM', this.value)"> m</td>
+    <td><input ${CISLO_POLE} step="10" style="width:90px" value="${esc(cis(r.sirkaMaxMm))}" onchange="stdRadaSet('${vetev}', ${i}, 'sirkaMaxMm', this.value)"> mm</td>
+    <td><input ${CISLO_POLE} step="10" style="width:90px" value="${esc(cis(r.hloubkaMaxMm))}" onchange="stdRadaSet('${vetev}', ${i}, 'hloubkaMaxMm', this.value)"> mm</td>
     <td><button class="mini" onclick="stdRadaSmaz('${vetev}', ${i})" title="odebrat řádek">✕</button></td></tr>`;
 
   const tabulka = (vetev) => `<table class="sd-tbl"><thead><tr><th>Profil sloupku</th><th>Výška max</th>
@@ -59824,7 +60010,7 @@ function nastStandard() {
    * přesná hodnota — proto „přesně", ne „max". Prázdné pole kontrolu vypne;
    * je to platná volba, takže se nedoplňuje výchozí čtyřkou. */
   const sloupkyBlok = (vetev) => `<div class="row"><label>Počet sloupků ve standardu</label>
-      <input type="number" step="1" min="0" style="width:100px"
+      <input ${CISLO_POLE} step="1" min="0" style="width:100px"
         value="${esc(s[vetev].sloupkyStandard == null ? '' : s[vetev].sloupkyStandard)}"
         placeholder="nekontrolovat"
         title="Přesný počet sloupků ve standardu. Jakýkoli jiný počet je atyp. Prázdné pole kontrolu vypne."
@@ -59858,7 +60044,7 @@ function nastStandard() {
       společné, proto stojí mimo obě tabulky (rozhodnutí J. V. 17. 9. 2026). Hlídá se jen tehdy,
       když má zakázka v zadání šachty aspoň jeden můstek (pole Můstky mezi budovou a OCK).</div>
     <div class="row"><label>Délka max <span class="note">(mezi budovou a OCK)</span></label>
-      <input type="number" step="10" style="width:100px" value="${esc(s.mustek.hloubkaMaxMm)}"
+      <input ${CISLO_POLE} step="10" style="width:100px" value="${esc(s.mustek.hloubkaMaxMm)}"
         onchange="stdSet('mustek.hloubkaMaxMm', +this.value)"><span class="u">mm</span></div>
     <div class="note" style="margin-top:0">Šířka můstku je šířka šachty, proto se nehlídá (#354, 26. 10. 2026).</div>
     <div class="row"><label>Konstrukční řešení ${stdNehlidame(STD_NEHLIDAME.mustekReseni)}</label>
@@ -60134,7 +60320,7 @@ function nastSlevy() {
       <td style="text-align:right">
         ${r === 'Administrátor'
           ? '<span class="pill">bez limitu (jen pojistka marže)</span>'
-          : `<input type="number" step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.stropy[r] || 0)}" onchange="slStrop('${escJs(r)}', this.value)"> %`}
+          : `<input ${CISLO_POLE} step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.stropy[r] || 0)}" onchange="slStrop('${escJs(r)}', this.value)"> %`}
       </td>
     </tr>`).join('');
   const schemaRows = NAST.slevy.schemata.map((s, i) => `
@@ -60154,11 +60340,11 @@ function nastSlevy() {
 
     <div class="sec-title">1) Pojistka marže (tvrdý strop)</div>
     <div class="row" style="max-width:420px"><label>Minimální marže po slevě</label>
-      <span class="pct-wrap"><input type="number" step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.minMarze)}" onchange="slMinMarze(this.value)"> %</span></div>
+      <span class="pct-wrap"><input ${CISLO_POLE} step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.minMarze)}" onchange="slMinMarze(this.value)"> %</span></div>
     <div class="note">Žádná sleva (ani se schválením) nesmí stlačit marži pod tuto hranici. Chrání před ztrátovou zakázkou.</div>
 
     <div class="row" style="max-width:420px;margin-top:8px"><label>Maximální globální sleva</label>
-      <span class="pct-wrap"><input type="number" step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.maxGlobalni != null ? NAST.slevy.maxGlobalni : 0.30)}" onchange="slMaxGlobalni(this.value)"> %</span></div>
+      <span class="pct-wrap"><input ${CISLO_POLE} step="0.5" style="width:80px;text-align:right" value="${pct(NAST.slevy.maxGlobalni != null ? NAST.slevy.maxGlobalni : 0.30)}" onchange="slMaxGlobalni(this.value)"> %</span></div>
     <div class="note">Strop pole „Globální sleva PROJ" v kartě slevy (zadání 2. 8. 2026, výchozích 30 %).
       Sleva na nabídku ZAK-10 má vlastní stropy dle role níže. Hodnota nad strop se při zadání přistřihne;
       přijde-li vyšší importem starší zakázky, rozsvítí se kontrola.</div>
@@ -61624,7 +61810,7 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
     .vs-blok { grid-column:1 / -1; min-width:0; }
     .vs-radek { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0; }
     .vs-radek input[type=text] { width:240px; text-align:left; }
-    .vs-radek input[type=number] { width:64px; }
+    .vs-radek input[type=number], .vs-radek input[data-cislo] { width:64px; }
     .vs-soucet-ro input, .vs-soucet-ro select, .vs-soucet-ro button.rc-otevri, .vs-soucet-ro .grip { pointer-events:none; opacity:.6; }
     .vs-tab td.r, .vs-tab th.r { text-align:right; white-space:nowrap; }
     .vs-tab td, .vs-tab th { text-align:left; }
@@ -61635,12 +61821,14 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
   function kresliPanel() {
     const cz = (window.PROTO_CENIK || {}).rezim || 'skladebny';
     stitek.innerHTML = `<span class="vs-proto">Prototyp — nic se neukládá</span>
-      <span class="vs-pz">základ = v6.11.4 (další verze main)</span>
+      <span class="vs-pz">základ = v6.11.5 (další verze main)</span>
       <span class="vs-pz">Zkušební ceník můstků: <span class="rada-prep"><button type="button" class="${cz === 'skladebny' ? 'on' : ''}" onclick="VS_cenik('skladebny')">skladebný</button><button type="button" class="${cz === 'stary' ? 'on' : ''}" onclick="VS_cenik('stary')">starý (#354)</button></span></span>
       <button type="button" class="mini" onclick="VS_navod()">Co si proklikat</button>`;
   }
   kresliPanel();
 
+  /* Číselná pole jako v aplikaci (CA #575): jeden prvek CISLO_POLE — čárka i tečka, zobrazení s čárkou. */
+  const CP = () => (typeof CISLO_POLE !== 'undefined') ? CISLO_POLE : 'type="number"';
   const rt = (...k) => k.map(x => `<span class="vs-r" title="${esc(R[x] || '')}">${x}</span>`).join('');
   const kcF = x => (Math.round(+x || 0)).toLocaleString('cs-CZ') + ' Kč';
 
@@ -61770,8 +61958,8 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
     const n = sachty().length, m1 = !OCK.fixes;
     const pole = document.createElement('span');
     pole.className = 'vs-pocet'; pole.setAttribute('onclick', 'event.stopPropagation()');
-    pole.innerHTML = `Počet šachet v nabídce <select class="mini" id="vsPocet" onchange="VS_pocet(this.value)" title="${m1 ? 'Model 1 počítá jen jednu šachtu' : 'počet různých šachet v nabídce'}">${
-      Array.from({ length: 10 }, (_, k) => k + 1).map(k => `<option value="${k}" ${k === n ? 'selected' : ''} ${m1 && k > 1 ? 'disabled' : ''}>${k}</option>`).join('')}</select>${rt('R16', 'R17')}`;
+    pole.innerHTML = `Počet šachet v nabídce <input ${CP()} id="vsPocet" min="1" max="10" step="1" value="${n}" style="width:46px;padding:2px 6px;font-size:12.5px"
+      ${m1 ? 'disabled title="Model 1 počítá jen jednu šachtu"' : 'title="počet různých šachet v nabídce, 1–10"'} onchange="VS_pocet(this.value)">${rt('R16', 'R17')}`;
     const vpravo = h2.lastElementChild && h2.lastElementChild.tagName === 'SPAN' && h2.children.length > 1 ? h2.lastElementChild : null;
     h2.insertBefore(pole, vpravo);
     if (!vic() && !VS.potvrdit) return;
@@ -61785,7 +61973,7 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
         <span style="display:inline-flex;gap:8px;margin-left:10px"><button class="mini vyzva" onclick="VS_potvrd(true)">Smazat</button><button class="mini" onclick="VS_potvrd(false)">Zrušit</button></span></div>` : '';
     const inner = `<div class="vs-blok">${potvrd}<div class="vs-radek">${tabs}${rt('R1', 'R10')}<span class="note" style="margin:0">${l.length} z 10 šachet</span></div>
       <div class="vs-radek"><label>Název</label><input type="text" maxlength="80" value="${esc(s.nazev || '')}" placeholder="${esc(nazevS(s, VS.akt))}" onchange="VS_nazev(this.value)">
-        <label style="margin-left:12px">Počet stejných kusů</label><input type="number" min="1" max="20" value="${s.ks}" onchange="VS_ks(this.value)">${rt('R2', 'R12')}
+        <label style="margin-left:12px">Počet stejných kusů</label><input ${CP()} min="1" max="20" step="1" value="${s.ks}" onchange="VS_ks(this.value)">${rt('R2', 'R12')}
         <button class="mini" onclick="VS_kopie()" ${l.length >= 10 || !OCK.fixes ? 'disabled' : ''}>Kopírovat šachtu</button>
         <button class="mini" onclick="VS_smaz()" ${VS.akt === 0 ? 'disabled title="šachtu 1 nejde smazat"' : ''}>Smazat šachtu</button></div>
       <div class="note">Karty Zadání šachty a Dimenze profilů patří vybrané šachtě. Hlavička zakázky, ceník, přirážka, sleva a ruční ceny jsou společné pro variantu.</div></div>`;
@@ -61896,8 +62084,8 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
     if (n) { n.remove(); return; }
     n = document.createElement('div'); n.id = 'vsNavod'; n.className = 'vs-navod';
     n.innerHTML = `<button type="button" class="mini" style="float:right" onclick="VS_navod()">Zavřít</button><h3>Co si proklikat</h3><ol>
-      <li><b>Jedna šachta</b> = kalkulátor jako dnes (základ v6.11.4, další verze main)${rt('R16')}. V kartě <b>Zadání šachty</b> vpravo v nadpisu nastavte <b>Počet šachet v nabídce</b> na 2 — zapne se režim víc šachet${rt('R17')}.</li>
-      <li><b>Můstky u jedné šachty:</b> v Zadání šachty dejte „Můstky mezi budovou a OCK“ = 1 — objeví se karta <b>Můstky</b>. Změňte podlahu, zábradlí, kotvení, „+ další provedení“. <b>Sloupy navíc:</b> zadejte počet a výšku nechte prázdnou — nápověda v poli ukáže výšku šachty − 0,2 m (jako rohový sloupek) a s ní se i počítá. Cena se přepočítá; v nabídce (Word, šablona v16) má jedna šachta řádky Výtahová šachta / Můstky / Cena celkem jako v v6.11.4${rt('R15')}.</li>
+      <li><b>Jedna šachta</b> = kalkulátor jako dnes (základ v6.11.5, další verze main)${rt('R16')}. V kartě <b>Zadání šachty</b> vpravo v nadpisu napište do pole <b>Počet šachet v nabídce</b> 2 — zapne se režim víc šachet${rt('R17')}.</li>
+      <li><b>Můstky u jedné šachty:</b> v Zadání šachty dejte „Můstky mezi budovou a OCK“ = 1 — objeví se karta <b>Můstky</b>. Změňte podlahu, zábradlí, kotvení, „+ další provedení“. <b>Sloupy navíc:</b> zadejte počet a výšku nechte prázdnou — nápověda v poli ukáže výšku šachty − 0,2 m (jako rohový sloupek) a s ní se i počítá. Cena se přepočítá; v nabídce (Word, šablona v16) má jedna šachta řádky Výtahová šachta / Můstky / Cena celkem jako v v6.11.5${rt('R15')}.</li>
       <li><b>Můstky u Šachty 2:</b> přepněte na Šachtu 2 (karta Šachty varianty), přidejte jí jiné můstky. Každá šachta má své skupiny; cena se přepočítá v šachtě i v součtu.</li>
       <li><b>Ceník:</b> v panelu vlevo dole přepněte <b>Zkušební ceník můstků</b> skladebný ↔ starý (#354) — starý počítá můstky vzorcem a karta ukáže lištu upozornění.</li>
       <li><b>Kalkulace:</b> přepínač šachet / Součet v Cenové kalkulaci (sekce MŮSTKY po šachtách, v Součtu sečtená).</li>
