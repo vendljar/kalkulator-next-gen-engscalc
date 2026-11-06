@@ -22,9 +22,10 @@ první položka z `values()` projde na živé (i prázdné) složce a na zmizel�
 | CHANGELOG, roadmapa #574, manuál správce + provoz | ✅ | |
 
 **Co má J. V. udělat po nasazení:** Nastavení → Databáze → **Zkopírovat zálohu na Disk teď** → ve výběru vybrat znovu
-**_Zaloha Netlify DB** na Disku Google → povolit zápis → heslo. **Hned (v4.11.8 bez opravy)** to nejde, dokud se
-zastaralá složka nezapomene: obejít jde vymazáním dat webu (ikona zámku u adresy → Nastavení webu → Vymazat data)
-— pak tlačítko nabídne výběr. Ověřit i, že Disk Google na počítači běží a složka se nepřesunula.
+**_Zaloha Netlify DB** na Disku Google → povolit zápis → heslo. **Hned (v4.11.8 bez opravy)** tlačítko výběr
+nenabídne. Obejít: ověřit, že Disk Google na počítači běží, a vrátit složku _Zaloha Netlify DB (i nadřazené) na původní
+místo a jméno — zapamatovaný odkaz pak zase platí. Mazání dat webu v prohlížeči **nedoporučuji** (smazalo by i jiná
+lokální data aplikace); rozhodne J. V.
 
 **Otevřené body:** (a) prohlížečový průchod je na mocku handle (skutečný výběr složky headless nejde); sonda ověřena
 na OPFS, ne na připojeném Disku Google — chování G: disku by mělo být stejné (stejná vrstva File System Access);
