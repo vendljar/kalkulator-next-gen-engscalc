@@ -5,11 +5,11 @@
 **Kód aplikace beze změny. NIC NEPROGRAMOVAT, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“.**
 
 - Podklad: `podklady/NAVRH_VICE_SACHET_05_11.md` (oddíl 0 rozhodnutí, oddíl 11 prompt pro realizaci po etapách).
-- Artefakt (soukromý, verze 7): https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa — zdroj HTML jen
+- Artefakt (soukromý, verze 8): https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa — zdroj HTML jen
   v artefaktu (načíst přes Artifact `read`, republish na stejnou adresu přes `url`).
 - Roadmapa: #570 (vlna C, `ceka`, XL, závisí měkce na #560) v `roadmapa/roadmap.json`.
 
-**Rozhodnutí J. V. 5.–6. 11. 2026 (R1–R14; R14 = O11 b, můstky v ceně šachty):** R1 architektura A (`ock.zadani` = šachta 1, další
+**Rozhodnutí J. V. 5.–6. 11. 2026 (R1–R15; R14 = O11 b, u víc šachet můstky v ceně šachty; R15 = O12 a, jedna šachta jako dnes):** R1 architektura A (`ock.zadani` = šachta 1, další
 v `ock.dalsi[]` {id, nazev, ks, zadani}) · R2 každá šachta celá, nic jednou za zakázku, ks = čistý
 násobek · R3 CEIL na tisíce jen na součtu, jedna sleva s limitem ze součtu, jen Model 2 · R4 CN tabulka
 šachet (ks, cena) + součet, sleva, cena celkem · R5 controlling jen za celou zakázku · R6 Pipedrive
@@ -18,7 +18,7 @@ hodnota = cena nabídky + seznam šachet v poznámce · R7 zaokrouhlovací rozd�
 R9 jeden krycí list za variantu · R10 max. 10 šachet · R11 ruční cena #561 společná · R12 u šachty
 s víc kusy jen cena za všechny kusy · R13 sloučený příplatek = jedna volba.
 
-**Otevřené body:** O12 — jedna šachta s můstky v CN (doporučeno a: nechat jako dnes, řádek Můstky zůstává). O11 rozhodnuta 6. 11. = b (R14: u víc šachet můstky v ceně své šachty, řádek Můstky zmizí).
+**Otevřené body:** žádné otázky. Návrh uzavřen (R1–R15), připraveno ke spuštění; před spuštěním se slučují MU2, DP, DZ2 → po „AKTUALIZUJ VS“ znovu ověřit.
 
 **Závislosti:** dávka MU (#560, `Z.mustky[]`, šablona CN v16) je sloučená v v5.11.2. K40 opravy a PH běží souběžně
 a mění sousední soubory → po každém „AKTUALIZUJ VS nad <SHA>“ ověřit návrh a prompt proti kódu
