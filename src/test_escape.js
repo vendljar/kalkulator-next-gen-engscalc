@@ -312,6 +312,8 @@ const PROVERENO = {
       + 'klíč a jazyk do onchange přes keyAttr().',
   },
   'kalk_ock.js': {
+    "sel(i, 'zabradli', MUSTEK_ZABRADLI, s.zabradli, MUSTKY_UI_POPISKY.zabradli, 'typ zábradlí')":
+      'hotové HTML ze sel() v kartě Můstky (MU2 #560) — hodnoty, popisky i titulek jdou uvnitř přes esc(), ostatní literály kódu',
     'popisJazykyStitek(klic, t)': 'hotové HTML štítku „Překlad do nabídky: EN, DE" '
       + '(#379, K18-N96) — kódy jazyků jdou uvnitř přes esc(), ostatní je literál.',
     'typ': 'typ pole řádku ruční ceny (#561, rcRadekPod) — jen literály \'text\' / \'date\' z volání v kódu',

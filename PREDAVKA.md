@@ -1,3 +1,27 @@
+# Předávka — 6. 11. 2026: MU2 #560 — čitelná karta Můstky, větev `claude/mu2-karta-vzhled` (sloučeno do integrace jako v6.11.2)
+
+Nad `6b70cc3` (`test` = integrace v5.11.3). **Verze 6.11.3** (koordinace přečísluje). Neslučováno; do
+`test-draft`, `test` ani `main` nic. **Výpočet beze změny** — zlatá pojistka a `test_560_mustky_sekce.js` (228/0)
+beze změny otisků.
+
+| úkol (snímek J. V. 6. 11.) | stav | kde |
+|---|---|---|
+| 1. „+ další provedení“ obří box přes tabulku | ✅ malé tlačítko (`mini`) pod tabulkou vlevo, netiskne se | `src/ui/kalk_ock.js` `mustkyKarta` |
+| 2. upozornění o ceníku plovoucí přes tabulku | ✅ lišta nad tabulkou v toku stránky (Model 1, starý i skladebný ceník) | `.mustky-lista` |
+| 3. záhlaví nesedí, selecty useknuté | ✅ obal přes celou mřížku karty, tabulka ve vlastním posuvném kontejneru, vše vlevo, select podle volby (min. 120 px), krátké popisky voleb jen v kartě | `src/app_template.html` (`.mustky-*`) |
+| 4. součet v zadání šachty s bublinou přes sloupec | ✅ bublina zkrácena („součet skupin z karty Můstky“); je to prohlížečová bublina, šířku styl neovlivní | |
+| 5. šířka „0“ | ✅ bez šířky šachty nápověda „jako šachta“ (nula byla nápověda z nevyplněné šířky šachty, ne hodnota) | |
+| testy rozložení + pojistka, mutace, CHANGELOG, roadmapa | ✅ | viz níž |
+
+**Testy:** `overit_560_mustky.mjs` 42/0 (nový bod 7: 1200/1440/1920 px, Model 1 i 2, 1–3 skupiny, starý i skladebný
+ceník, tisk — bez překryvů, záhlaví nad sloupci, nezkrácené selecty, lišta nad / tlačítko pod tabulkou, bez
+vodorovného posunu stránky); nad 6b70cc3 20 FAIL. `src/test_560_mu2_karta.js` 18/0 (stavba HTML ve vm + styly);
+nad 6b70cc3 15 FAIL. Mutace „MU2 #560“ 8/8 chycených (`--kontrola` 715). `test_escape` doplněn o nové volání
+`sel()` (hotové HTML), `overit_zadani_detail.mjs` na nápovědu „jako šachta“. Kolo `--bez-mutaci` nad 650318e: **VŠE ZELENÉ** — sady 399 / 0 / **7 přeskočeno** (test.js + 6 prohlížečových bez KNG_PODKLADY), hodiny +400 dní 321 / 0 / 1, statické 5 z 5, 25 min 53 s (první kolo chytilo starší harness s nápovědou „0“ — opraveno).
+
+**Snímky před/po:** vyrábí je `node nastroje/snimky_mustky.mjs <výstup bez přípony> <šířka> <model 1|2> <skupin 1–3>
+<stary|skl>` (karta + karta zadání). Poslané koordinaci jako soubory (do repa se neukládají).
+
 # Předávka — 6. 11. 2026: DP #573 — texty DPZ bez našeho zaměření, větev `claude/dp-dpz-bez-zamereni`
 
 Nad `6b70cc3` (integrace v5.11.3). **Verze 6.11.1** (koordinace přečísluje). Neslučováno; do `test-draft`,
@@ -283,8 +307,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 6. 11. 2026: stav integrace v6.11.1
+# Předávka koordinace — 6. 11. 2026: stav integrace v6.11.2
 
+- **v6.11.2** MU2: čitelná karta Můstky (lišta nad tabulkou, „+ další provedení“ pod ní, výpočet beze změny).
 - **6. 11.:** `test` = v5.11.3 (6b70cc3, testengscalc 5.11.3). **v6.11.1** DP #573 texty DPZ bez zaměření. Běží DZ2 #574 (zastaralá složka záloh, NotFoundError) a MU2 (vzhled karty Můstky, #560). VS návrh uzavřen (R1–R15), K40 připravena (od #575) — obojí jen na pokyn J. V.
 
 - **v5.11.3** DZ #571 kopie zálohy na Disk nikdy tiše (o právo zápisu se žádá při „Přihlásit“).

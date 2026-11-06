@@ -12,9 +12,12 @@
  *      data se nepřepíšou, dokud se v kartě nic nezmění; po změně skupiny;
  *   5) tiskový náhled CN: sekce MŮSTKY a řádek „Můstky mezi budovou a OCK
  *      (bez DPH)"; Word se šablonou v15 (klon) i v16 (symboly);
- *   6) zamčená varianta: změna v kartě se nezapíše; žádná chyba v konzoli.
+ *   6) zamčená varianta: změna v kartě se nezapíše; žádná chyba v konzoli;
+ *   7) rozložení karty (MU2): bez překryvů, záhlaví nad sloupci, nezkrácené
+ *      selecty, lišta nad tabulkou, tlačítko pod ní, 1200/1440/1920 i tisk.
  *
- * Pojistka: nad 000924e karta ani sekce neexistují — body 1, 2, 5 selžou.
+ * Pojistka: nad 000924e karta ani sekce neexistují — body 1, 2, 5 selžou;
+ * nad 6b70cc3 (před MU2) selže bod 7 (tlačítko a lišta přes tabulku).
  * Spuštění: node overit_560_mustky.mjs (po python3 build.py)
  */
 import { chromium } from 'playwright';
@@ -158,6 +161,87 @@ zkus('5 Word v15 (klon): sekce MŮSTKY a řádky ceny', word.v15 && /MŮSTKY MEZ
   && /MŮSTKY MEZI BUDOVOU A OCK \|[^\n]*bez DPH/.test(word.v15) && /CENA CELKEM \|/.test(word.v15) && !/\{\{/.test(word.v15), word.chyba || (word.v15 || '').slice(-600));
 zkus('5 Word v16: sekce MŮSTKY a řádky ceny ze symbolů', word.v16 && /POČET A ROZMĚR \| 2 ks/.test(word.v16)
   && /CENA CELKEM[^|\n]* \|/.test(word.v16) && (word.v16.match(/VÝTAHOVÁ ŠACHTA/g) || []).length === 1 && !/\{\{/.test(word.v16), word.chyba || (word.v16 || '').slice(-600));
+
+/* 7) ROZLOŽENÍ KARTY (MU2, J. V. 6. 11. 2026: „zadání můstků je nečitelné
+ * a ovládací prvky … rozmístěny chaoticky"). Šířky okna 1200 / 1440 / 1920,
+ * Model 1 i 2, 1 a 3 skupiny, starý i skladebný ceník a tisk: prvky karty
+ * se nepřekrývají, záhlaví stojí nad svým sloupcem, select není užší než
+ * text vybrané volby, lišta upozornění je nad tabulkou a tlačítko „+ další
+ * provedení" pod ní vlevo, stránka se vodorovně neposouvá. */
+const rozlozeni = async (sirka, model, skupin, cenikDruh, tisk) => {
+  const pg = await ctx.newPage();
+  await pg.setViewportSize({ width: sirka, height: 1000 });
+  await pg.goto(KDE);
+  await pg.waitForFunction(() => typeof render === 'function' && typeof NAST !== 'undefined');
+  await pg.waitForTimeout(200);
+  return pg.evaluate(async ([c, m, n, tiskem]) => {
+    ZAK = novaZakazka(); syncVarianta();
+    Object.assign(Z, { typSachty: 'exteriérová', profily: JSON.parse(JSON.stringify(PROFILY_VYCHOZI['exteriérová'])),
+      sirka: 1.6, hloubka: 2, zdvih: 12, prejezd: 3.3, prohluben: 1.2, nastupiste: 5 });
+    Object.keys(C).forEach(k => delete C[k]); Object.assign(C, JSON.parse(JSON.stringify(c))); delete C.prazdny; delete C.ukazkove;
+    OCK.fixes = m === 2;
+    Z.mustky = [{ ks: 3, delkaMm: 1200 }, { ks: 1, delkaMm: 900, podlaha: 'vana', zabradli: 'sklo', kotveni: 'konzola', sloupyKs: 2 },
+      { ks: 2, sirkaMm: 1400, podlaha: 'jine', podlahaNazev: 'dřevo', zabradli: 'jine', zabradliNazev: 'nerez lanko', kotveni: 'jine', kotveniText: 'na nosník' }].slice(0, n);
+    prepniTab('kalk'); render();
+    if (tiskem) document.body.classList.add('tisk-zkouska');
+    const karta = document.getElementById('ock-mustky');
+    if (!karta) return { chyba: 'karta chybí' };
+    const R = el => el.getBoundingClientRect();
+    const prvky = [...karta.querySelectorAll('.body input, .body select, .body button, .body .mustky-lista')].filter(e => R(e).width > 0);
+    const prekryvy = [];
+    for (let i = 0; i < prvky.length; i++) for (let j = i + 1; j < prvky.length; j++) {
+      const a = R(prvky[i]), b = R(prvky[j]);
+      const x = Math.min(a.right, b.right) - Math.max(a.left, b.left), y = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      if (x > 1 && y > 1) prekryvy.push((prvky[i].className || prvky[i].tagName) + ' × ' + (prvky[j].className || prvky[j].tagName));
+    }
+    const tbl = karta.querySelector('table'), lista = karta.querySelector('.mustky-lista');
+    const pridat = [...karta.querySelectorAll('button')].find(x => /další provedení/.test(x.textContent));
+    const th = [...tbl.querySelectorAll('thead th')];
+    const prvniRadek = tbl.querySelector('tbody tr');
+    const zahlavi = th.map((h, i) => { const td = prvniRadek.children[i]; if (!td) return true;
+      const a = R(h), b = R(td); return Math.abs(a.left - b.left) < 2 && Math.abs(a.right - b.right) < 2; }).every(Boolean);
+    const cv = document.createElement('canvas').getContext('2d');
+    const useknute = [...karta.querySelectorAll('select')].filter(sel => {
+      const st = getComputedStyle(sel); cv.font = st.font;
+      const text = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+      return cv.measureText(text).width + 30 > sel.clientWidth + 1;
+    }).map(sel => sel.options[sel.selectedIndex].text);
+    const scroll = karta.querySelector('.mustky-scroll');
+    return { prekryvy, zahlavi, useknute,
+      listaNad: !!lista && R(lista).bottom <= R(tbl).top + 1,
+      tlacitkoPod: !pridat || (R(pridat).top >= R(tbl).bottom - 1 && Math.abs(R(pridat).left - R(tbl).left) < 4 && R(pridat).height < 40 && R(pridat).width < 220),
+      bezPosunuStranky: document.documentElement.scrollWidth <= window.innerWidth + 1,
+      posunJenVKarte: !scroll || getComputedStyle(scroll).overflowX === 'auto' };
+  }, [cenikDruh === 'skl' ? cen : cenStary, model, skupin, tisk]).finally(() => pg.close());
+};
+for (const [sir, mod, n, cd] of [[1200, 2, 3, 'stary'], [1200, 2, 2, 'stary'], [1200, 1, 3, 'stary'], [1440, 2, 1, 'skl'], [1440, 2, 3, 'skl'],
+  [1920, 2, 3, 'stary'], [1920, 1, 1, 'skl'], [1200, 2, 3, 'skl']]) {
+  const r = await rozlozeni(sir, mod, n, cd);
+  const jm = '7 ' + sir + ' px, Model ' + mod + ', ' + n + ' sk., ' + (cd === 'skl' ? 'skladebný' : 'starý') + ' ceník';
+  zkus(jm + ': prvky karty se nepřekrývají', r.prekryvy && !r.prekryvy.length, r.chyba || r.prekryvy);
+  zkus(jm + ': záhlaví nad sloupci, selecty nezkrácené', r.zahlavi && r.useknute && !r.useknute.length, { zahlavi: r.zahlavi, useknute: r.useknute });
+  zkus(jm + ': lišta nad tabulkou, tlačítko malé pod ní vlevo, stránka bez vodorovného posunu',
+    r.listaNad && r.tlacitkoPod && r.bezPosunuStranky && r.posunJenVKarte, r);
+}
+{ /* tisk / náhled: tiskové styly */
+  const pg = await ctx.newPage(); await pg.setViewportSize({ width: 1200, height: 1000 }); await pg.emulateMedia({ media: 'print' });
+  await pg.goto(KDE); await pg.waitForFunction(() => typeof render === 'function' && typeof NAST !== 'undefined');
+  const t = await pg.evaluate(([c]) => {
+    ZAK = novaZakazka(); syncVarianta();
+    Object.assign(Z, { typSachty: 'exteriérová', profily: JSON.parse(JSON.stringify(PROFILY_VYCHOZI['exteriérová'])), sirka: 1.6, hloubka: 2, zdvih: 12, prejezd: 3.3, prohluben: 1.2, nastupiste: 5 });
+    Object.keys(C).forEach(k => delete C[k]); Object.assign(C, JSON.parse(JSON.stringify(c))); delete C.prazdny; OCK.fixes = true;
+    Z.mustky = [{ ks: 3, delkaMm: 1200 }, { ks: 1, delkaMm: 900, podlaha: 'vana' }];
+    prepniTab('kalk'); render();
+    const k = document.getElementById('ock-mustky'); if (!k) return null;
+    const pr = [...k.querySelectorAll('button')].filter(b => /další provedení|✕/.test(b.textContent));
+    const tbl = k.querySelector('table'), lista = k.querySelector('.mustky-lista');
+    return { tlacitkaSkryta: pr.every(b => b.getBoundingClientRect().width === 0),
+      listaNad: lista.getBoundingClientRect().bottom <= tbl.getBoundingClientRect().top + 1,
+      celaTabulka: tbl.getBoundingClientRect().right <= k.getBoundingClientRect().right + 1 };
+  }, [cenStary]);
+  await pg.close();
+  zkus('7 tisk: tlačítka karty se netisknou, lišta nad tabulkou, tabulka se vejde', t && t.tlacitkaSkryta && t.listaNad && t.celaTabulka, t);
+}
 
 /* 6) zamčená varianta */
 const zam = await p.evaluate(() => {

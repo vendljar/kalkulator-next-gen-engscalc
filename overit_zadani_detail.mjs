@@ -255,7 +255,7 @@ const n58 = await p.evaluate(() => {
   const karta = document.getElementById('ock-mustky');
   const sirkaMustku = karta && [...karta.querySelectorAll('input')].find(i => /šířka šachty/.test(i.title || ''));
   out.mustky3 = { ks: mustkyPocet(Z), stary: Array.isArray(Z.mustky) && Z.mustky[0].ks === 3 && !('mustkyKs' in Z),
-    rozmery: !!karta && !!sirkaMustku && sirkaMustku.placeholder === String(Math.round((+Z.sirka || 0) * 1000)) };
+    rozmery: !!karta && !!sirkaMustku && sirkaMustku.placeholder === ((+Z.sirka || 0) > 0 ? String(Math.round(Z.sirka * 1000)) : 'jako šachta') };   // MU2: bez šířky šachty „jako šachta“
   mustkySet(-2);
   out.mustkyZap = mustkyPocet(Z);
   mustkySet(0); render();

@@ -272,7 +272,7 @@ function renderInputs() {
          * když můstky jsou; prázdné pole znamená „nevyplněno", ne nulu. */
         + `<div class="row"><label>Můstky mezi budovou a OCK</label>
             <input type="number" step="1" min="0" value="${esc(mustkyPocet(Z))}" ${Array.isArray(Z.mustky) && Z.mustky.length > 1 ? 'disabled' : ''}
-              title="${Array.isArray(Z.mustky) && Z.mustky.length > 1 ? 'součet skupin — počet měňte v kartě Můstky' : 'počet můstků; 0 = šachta nemá žádný; rozměry a provedení v kartě Můstky'}" onchange="mustkySet(this.value)"><span class="u">ks</span></div>`
+              title="${Array.isArray(Z.mustky) && Z.mustky.length > 1 ? 'součet skupin z karty Můstky' : 'počet můstků; 0 = šachta nemá žádný; rozměry a provedení v kartě Můstky'}" onchange="mustkySet(this.value)"><span class="u">ks</span></div>`
         /* #560: délka, šířka, provedení, kotvení a sloupy jsou v kartě
          * „Můstky" pod zadáním (mustkyKarta) — zadávají se po skupinách. */
         + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
@@ -915,6 +915,21 @@ function mustekSkupinaOdeber(i) {
   sk.splice(i, 1);
   mustkyUloz(sk);
 }
+/* MU2 (#560, J. V. 6. 11. 2026: „zadání můstků je nečitelné a ovládací
+ * prvky … rozmístěny chaoticky"). Tělo karet zadání je mřížka sloupců po
+ * 300 px (`.inputs .card .body`) a tabulka, tlačítko i upozornění se do ní
+ * dřív sázely jako samostatné buňky — tlačítko a upozornění tak stály
+ * VEDLE tabulky přes její sloupce. Teď je všechno v jednom obalu přes celou
+ * šířku (`.mustky-karta`): upozornění jako lišta nad tabulkou, tabulka ve
+ * vlastním vodorovně posuvném kontejneru (posouvá se jen karta, ne stránka),
+ * „+ další provedení" malé tlačítko pod ní vlevo. Volby mají v kartě krátké
+ * popisky (MUSTKY_UI_POPISKY), ať se select nemusí zkracovat; dokument
+ * (specifikace, nabídka) dál bere plné znění z jádra. */
+const MUSTKY_UI_POPISKY = {
+  podlaha: { plech: 'pochozí plech', pororost: 'pororošt', vana: 'ocelová vana (beton stavba)', jine: 'jiná…' },
+  zabradli: { kov: 'kovové', sklo: 'skleněné', bez: 'bez zábradlí', jine: 'jiné…' },
+  kotveni: { deska: 'do stropní desky / věnce', sloupy: 'do sloupů (na terén)', konzola: 'konzolově jen z OCK', jine: 'jiné…' },
+};
 function mustkyKarta(rAkt) {
   if (!(mustkyPocet(Z) > 0)) return '';
   const m2 = !!(typeof OCK !== 'undefined' && OCK && OCK.fixes);
@@ -922,43 +937,42 @@ function mustkyKarta(rAkt) {
   const sk = mustkySkupiny(Z);
   const sirkaSachty = Math.round((+Z.sirka || 0) * 1000);
   const zdvih = +Z.zdvih || 0;
-  const sel = (i, pole, volby, hodnota) => `<select onchange="mustekPoleSet(${i}, '${pole}', this.value)">`
-    + volby.map(([k, t]) => `<option value="${esc(k)}" ${hodnota === k ? 'selected' : ''}>${esc(t)}</option>`).join('') + '</select>';
-  const cis = (i, pole, hodnota, opts) => `<input type="number" min="0" step="${opts.step || 1}" style="width:${opts.w || 80}px"
+  const sel = (i, pole, seznam, hodnota, popisky, tit) => `<select class="mu-${pole}" title="${esc(tit)}" onchange="mustekPoleSet(${i}, '${pole}', this.value)">`
+    + seznam.map(([k, t]) => `<option value="${esc(k)}" ${String(hodnota) === String(k) ? 'selected' : ''}>${esc((popisky && popisky[k]) || t)}</option>`).join('') + '</select>';
+  const cis = (i, pole, hodnota, opts) => `<input type="number" class="mu-${pole}" min="0" step="${opts.step || 1}"
       value="${esc(hodnota === '' || hodnota == null ? '' : hodnota)}" placeholder="${esc(opts.ph == null ? '' : opts.ph)}"
       title="${esc(opts.t || '')}" onchange="mustekPoleSet(${i}, '${pole}', this.value)">`;
-  const txt = (i, pole, hodnota, ph) => `<input type="text" maxlength="${MUSTEK_TEXT_MAX}" style="width:140px" value="${esc(hodnota || '')}"
+  const txt = (i, pole, hodnota, ph) => `<input type="text" class="mu-text" maxlength="${MUSTEK_TEXT_MAX}" value="${esc(hodnota || '')}"
       placeholder="${esc(ph)}" onchange="mustekPoleSet(${i}, '${pole}', this.value)">`;
   const hlava = m2
-    ? '<tr><th>ks</th><th>šířka [mm]</th><th>délka [mm]</th><th>podlaha</th><th>zábradlí</th><th>kotvení</th><th>sloupy navíc</th><th></th></tr>'
+    ? '<tr><th>ks</th><th>šířka [mm]</th><th>délka [mm]</th><th>podlaha</th><th>zábradlí</th><th>kotvení</th><th>sloupy navíc [ks × m]</th><th></th></tr>'
     : '<tr><th>ks</th><th>délka [mm]</th><th></th></tr>';
   const radky = sk.map((s, i) => {
-    const odeber = sk.length > 1 ? `<button class="sm" title="odebrat skupinu" onclick="mustekSkupinaOdeber(${i})">✕</button>` : '';
-    const ks = cis(i, 'ks', s.ks, { w: 60, t: 'počet stejných můstků v této skupině; 0 = skupina se nepočítá' });
+    const odeber = sk.length > 1 ? `<button class="mini mu-odebrat noprint" title="odebrat skupinu" onclick="mustekSkupinaOdeber(${i})">✕</button>` : '';
+    const ks = cis(i, 'ks', s.ks, { t: 'počet stejných můstků v této skupině; 0 = skupina se nepočítá' });
     const delka = cis(i, 'delkaMm', s.delkaMm, { step: 10, ph: MUSTEK_DELKA_VYCHOZI_MM, t: 'vzdálenost mezi budovou a OCK; prázdné = 1 000 mm; standard max 1 000 mm' });
-    if (!m2) return `<tr><td>${ks}</td><td>${delka}</td><td>${odeber}</td></tr>`;
+    if (!m2) return `<tr><td>${ks}</td><td>${delka}</td><td class="mu-akce">${odeber}</td></tr>`;
     return `<tr>
       <td>${ks}</td>
-      <td>${cis(i, 'sirkaMm', s.sirkaMm, { step: 10, ph: sirkaSachty, t: 'prázdné = šířka šachty' })}</td>
+      <td>${cis(i, 'sirkaMm', s.sirkaMm, { step: 10, ph: sirkaSachty > 0 ? sirkaSachty : 'jako šachta', t: 'šířka můstku; prázdné = šířka šachty' })}</td>
       <td>${delka}</td>
-      <td>${sel(i, 'podlaha', MUSTEK_PODLAHY, s.podlaha)}${s.podlaha === 'jine' ? '<br>' + txt(i, 'podlahaNazev', s.podlahaNazev, 'jaká podlaha') : ''}</td>
-      <td>${sel(i, 'zabradli', MUSTEK_ZABRADLI, s.zabradli)}${s.zabradli !== 'bez' ? ' ' + sel(i, 'zabradliStrany', [['2', 'obě strany'], ['1', 'jedna strana']], String(s.zabradliStrany)) : ''}${s.zabradli === 'jine' ? '<br>' + txt(i, 'zabradliNazev', s.zabradliNazev, 'jaké zábradlí') : ''}</td>
-      <td>${sel(i, 'kotveni', MUSTEK_KOTVENI, s.kotveni)}${s.kotveni === 'jine' ? '<br>' + txt(i, 'kotveniText', s.kotveniText, 'jak kotvit') : ''}</td>
-      <td>${cis(i, 'sloupyKs', s.sloupyKs || '', { w: 50, ph: 0, t: 'sloupy navíc pod můstky — počítají se jako rohové sloupky šachty (profil sloupku z Dimenze profilů)' })} ks
-        × ${cis(i, 'sloupVyskaM', s.sloupVyskaM, { step: 0.1, w: 60, ph: zdvih, t: 'výška sloupu; prázdné = výška nejvyššího nástupiště (zdvih)' })} m</td>
-      <td>${odeber}</td></tr>`;
+      <td>${sel(i, 'podlaha', MUSTEK_PODLAHY, s.podlaha, MUSTKY_UI_POPISKY.podlaha, 'provedení podlahy můstku')}${s.podlaha === 'jine' ? txt(i, 'podlahaNazev', s.podlahaNazev, 'jaká podlaha') : ''}</td>
+      <td><span class="mu-dvojice">${sel(i, 'zabradli', MUSTEK_ZABRADLI, s.zabradli, MUSTKY_UI_POPISKY.zabradli, 'typ zábradlí')}${s.zabradli !== 'bez' ? sel(i, 'zabradliStrany', [['2', 'obě strany'], ['1', 'jedna strana']], String(s.zabradliStrany), null, 'zábradlí na obou stranách, nebo jen na jedné') : ''}</span>${s.zabradli === 'jine' ? txt(i, 'zabradliNazev', s.zabradliNazev, 'jaké zábradlí') : ''}</td>
+      <td>${sel(i, 'kotveni', MUSTEK_KOTVENI, s.kotveni, MUSTKY_UI_POPISKY.kotveni, 'kotvení můstku')}${s.kotveni === 'jine' ? txt(i, 'kotveniText', s.kotveniText, 'jak kotvit') : ''}</td>
+      <td><span class="mu-dvojice">${cis(i, 'sloupyKs', s.sloupyKs || '', { ph: 0, t: 'sloupy navíc pod můstky — počítají se jako rohové sloupky šachty (profil sloupku z Dimenze profilů)' })}<span class="mu-krat">×</span>${cis(i, 'sloupVyskaM', s.sloupVyskaM, { step: 0.1, ph: zdvih || '', t: 'výška sloupu v m; prázdné = výška nejvyššího nástupiště (zdvih)' })}</span></td>
+      <td class="mu-akce">${odeber}</td></tr>`;
   }).join('');
-  const pozn = !m2
-    ? '<div class="hint">Model 1 počítá můstky vzorcem předlohy (#354): jen počet a délka, šířka = šířka šachty. '
+  const lista = !m2
+    ? '<div class="mustky-lista">Model 1 počítá můstky vzorcem předlohy: jen počet a délka, šířka = šířka šachty. '
       + 'Šířka, podlaha, zábradlí, kotvení a sloupy navíc se zadávají a počítají jen v Modelu 2.</div>'
-    : (skladebny ? '<div class="hint">Cena se skládá z nosné konstrukce, podlahy, zábradlí, kotvení, sloupů a montáže '
+    : (skladebny ? '<div class="mustky-lista">Cena se skládá z nosné konstrukce, podlahy, zábradlí, kotvení, sloupů a montáže '
         + '(sekce MŮSTKY v kalkulaci); v cenové nabídce má vlastní řádek. Ocelová vana: betonáž zajistí stavba.</div>'
-      : '<div class="hint">Platný ceník nemá sazby skladebného modelu můstků — cena se počítá jako pochozí plech '
-        + 's kovovým zábradlím (vzorec #354); sloupy navíc se počítají jako sloupky šachty.</div>');
+      : '<div class="mustky-lista varovani">Platný ceník nemá sazby skladebného modelu můstků — cena se počítá jako pochozí plech '
+        + 's kovovým zábradlím; sloupy navíc se počítají jako sloupky šachty.</div>');
   const pridat = (m2 && sk.length < MUSTKY_SKUPIN_MAX)
-    ? '<button class="sm" onclick="mustekSkupinaPridej()">+ další provedení</button>' : '';
+    ? '<div class="mustky-pridat noprint"><button class="mini" onclick="mustekSkupinaPridej()">+ další provedení</button></div>' : '';
   return kartaRezim('ock', 'mustky', 'Můstky mezi budovou a OCK',
-    `<table class="tbl mustky-tbl"><thead>${hlava}</thead><tbody>${radky}</tbody></table>${pridat}${pozn}`, 'ock-mustky');
+    `<div class="mustky-karta">${lista}<div class="mustky-scroll"><table class="mustky-tbl"><thead>${hlava}</thead><tbody>${radky}</tbody></table></div>${pridat}</div>`, 'ock-mustky');
 }
 
 function nadDvermiSet(v) {
