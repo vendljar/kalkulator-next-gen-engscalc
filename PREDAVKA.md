@@ -15,7 +15,7 @@ není zdvih a sloupy můstků neodpovídají; tečka místo čárky.
 | 3. cena jen u sloupů s prázdnou výškou | ✅ | zlatá pojistka `test_560_zlata.json` beze změny (bez sloupů navíc); `test_560_mustky_sekce.js` dva očekávané výsledky 12 → 16,3 m |
 | testy | ✅ | `src/test_560_mu3_sloupy.js` 23/0 (na 7632ca5 15 FAIL), `overit_560_mustky.mjs` bod 8 → 52/0 |
 | mutace | ✅ | „[MU3 #560]" 9/9 chycené, `--kontrola` 733 úseků |
-| kolo `--bez-mutaci` | KOLO_VYSLEDEK | |
+| kolo `--bez-mutaci` | ✅ | **VŠE ZELENÉ** nad d3453fb — sady 402 / 0 / 7 přeskočeno (test.js + 6 prohlížečových bez KNG_PODKLADY), hodiny +400 dní 324 / 0 / 1, statické 5 z 5, 30 min 8 s; celé mutace nepouštěny (jen „[MU3 #560]") |
 | roadmapa #560 pozn., CHANGELOG, PREDAVKA | ✅ | |
 
 **Otevřené body pro J. V. (přes koordinaci):** (a) výchozí výška = H − 0,2 m (přesně jako rohový sloupek v jádru),
