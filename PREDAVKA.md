@@ -11,7 +11,7 @@
   (CSS 1:1 ze sestavené v6.11.1 nad b179acb + karta Můstky MU2; výpočet zjednodušený, smyšlené sazby; ověřeno Playwrightem 1200/1440/1920).
 - Roadmapa: #570 (vlna C, `ceka`, XL, závisí měkce na #560) v `roadmapa/roadmap.json`.
 
-**Rozhodnutí J. V. 5.–6. 11. 2026 (R1–R15; R14 = O11 b, u víc šachet můstky v ceně šachty; R15 = O12 a, jedna šachta jako dnes):** R1 architektura A (`ock.zadani` = šachta 1, další
+**Rozhodnutí J. V. 5.–6. 11. 2026 (R1–R16; R14 = O11 b, u víc šachet můstky v ceně šachty; R15 = O12 a, jedna šachta jako dnes; R16 = jedna šachta beze změny vzhledu, víc šachet až od 2):** R1 architektura A (`ock.zadani` = šachta 1, další
 v `ock.dalsi[]` {id, nazev, ks, zadani}) · R2 každá šachta celá, nic jednou za zakázku, ks = čistý
 násobek · R3 CEIL na tisíce jen na součtu, jedna sleva s limitem ze součtu, jen Model 2 · R4 CN tabulka
 šachet (ks, cena) + součet, sleva, cena celkem · R5 controlling jen za celou zakázku · R6 Pipedrive
@@ -20,7 +20,7 @@ hodnota = cena nabídky + seznam šachet v poznámce · R7 zaokrouhlovací rozd�
 R9 jeden krycí list za variantu · R10 max. 10 šachet · R11 ruční cena #561 společná · R12 u šachty
 s víc kusy jen cena za všechny kusy · R13 sloučený příplatek = jedna volba.
 
-**Otevřené body:** žádné otázky. Návrh uzavřen (R1–R15), připraveno ke spuštění; před spuštěním se slučují MU2, DP, DZ2 → po „AKTUALIZUJ VS“ znovu ověřit.
+**Otevřené body:** O13 (kde se nastavuje počet šachet; doporučeno pole „Počet šachet v nabídce“ nahoře v Zadání šachty) a O14 (snížení počtu: potvrdit a smazat). R16 (6. 11.): jedna šachta = dnešní vzhled, režim víc šachet od 2.
 
 **Závislosti:** dávka MU (#560, `Z.mustky[]`, šablona CN v16) je sloučená v v5.11.2. K40 opravy a PH běží souběžně
 a mění sousední soubory → po každém „AKTUALIZUJ VS nad <SHA>“ ověřit návrh a prompt proti kódu

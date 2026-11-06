@@ -6,7 +6,7 @@ Klikací prototyp (6. 11., R1–R15, CSS z v6.11.1): https://claude.ai/artifact/
 (zdroj `podklady/VS_PROTOTYP_06_11.html`).
 Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 
-**Stav: NÁVRH UZAVŘEN — PŘIPRAVENO KE SPUŠTĚNÍ (rozhodnutí R1–R15). Před spuštěním se slučují MU2, DP a DZ2. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
+**Stav: rozhodnutí R1–R16; čeká na O13–O14 (kde se nastavuje počet šachet, co při návratu na méně šachet). Před spuštěním se slučují MU2, DP a DZ2. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
 („zatím připrav komplexní návrh, který si nejprve odladíme, a spustíme až
 řeknu“, 5. 11. 2026). Všechny částky jsou **smyšlené a ilustrační**.
 
@@ -31,6 +31,7 @@ Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 | R13 (O10) | **Sloučený příplatek = jedna volba pro všechny šachty**, kterých se týká; kdo chce příplatek jen pro jednu šachtu, obchodník ho u druhé odškrtne a nabídka vydá dva řádky. |
 | R14 (O11, 6. 11.) | **U víc šachet se cena můstků v CN schová do ceny své šachty**; samostatný řádek Můstky zmizí (tabulka = řádky šachet + Cena celkem). |
 | R15 (O12, 6. 11.) | **Jedna šachta s můstky zůstává v CN jako dnes** — „Výtahová šachta“, „Můstky“, „Cena celkem“ (v16 i v17 stejně). |
+| R16 (6. 11., připomínka k prototypu) | **Jedna šachta = dnešní kalkulátor beze změny vzhledu.** Rozhraní víc šachet (karta Šachty varianty, přepínač šachta/Součet v kalkulaci, rozpis a rozpočet zaokrouhlení, tabulka šachet v CN, sloučené příplatky, rozpis v krycím listu) se ukáže až od 2 šachet (nebo když má šachta víc než 1 ks). Počet šachet se nastavuje na jednom jasném místě (O13); návrat na 1 šachtu vrátí dnešní zobrazení (O14). |
 
 ---
 
@@ -241,6 +242,7 @@ i při plném přepočtu.
 
 | Obrazovka | Změna |
 |---|---|
+| **Režim zobrazení (R16)** | `rezimViceSachet = dalsi.length > 0 || ks > 1` u některé šachty. Bez něj se nic z níže popsaného nezobrazuje a obrazovka je jako dnes (kromě pole Počet šachet v nabídce, O13). |
 | **Zadání (Kalkulace OCK)** | Nad kartami pruh šachet „Výtah A · Výtah B 2 ks · + přidat šachtu“. Akce: Přejmenovat, Kopírovat šachtu, Počet ks, Smazat (jen šachta 2+; šachtu 1 nejde smazat, jen přejmenovat). Karty pod pruhem patří vybrané šachtě, jsou to tytéž karty jako dnes. Hlavička zakázky / varianty (místo, model, ceník, sleva) zůstává nad pruhem a je společná. |
 | **Hlavička ceny (KPI)** | Hlavní číslo = koncová cena za variantu (součet). Pod ní řádek s rozpisem „Výtah A 1× · Výtah B 2× · součet“, klik otevře šachtu. U jedné šachty se rozpis nezobrazuje (obrazovka jako dnes). |
 | **Záložky kalkulace** (Dimenze profilů, Práce a režie, Cenová kalkulace, Hrubá OCK, Opláštění, Volitelné, Režie, Příplatky) | Přepínač „Výtah A · Výtah B · Součet“. V šachtě se edituje jako dnes, ceny šachty bez zaokrouhlení na tisíce (jen informačně „podíl na součtu“). Pohled Součet je jen ke čtení (sloučené řádky, × ks). |
@@ -421,7 +423,24 @@ můstků v ceně své šachty, řádek Můstky zmizí.
 **O12 rozhodnuta J. V. 6. 11. 2026 = a)** (R15): jedna šachta s můstky
 zůstává jako dnes.
 
-**Otevřené otázky: žádné.**
+**Otevřené (vyplynuly z R16, náhledy v prototypu, karta „Co si proklikat“):**
+
+- **O13 — Kde se nastavuje počet šachet.**
+  *Doporučeno:* a) pole **„Počet šachet v nabídce“ (1–10)** nahoře v kartě
+  Zadání šachty, nad Typem šachty — obchodník ho vidí tam, kde začíná
+  zadávat. Zvýšení přidá šachty jako kopii poslední šachty (název
+  „Šachta N“, přejmenuje se v kartě Šachty varianty). Počet **stejných
+  kusů** je zvlášť, u každé šachty v kartě Šachty varianty, a ukáže se až
+  v režimu víc šachet (u jedné šachty je pole jen „Počet šachet“).
+  *Jinak:* b) tlačítko „+ přidat další šachtu do nabídky“ v hlavičce
+  zakázky · c) obojí.
+- **O14 — Co při snížení počtu šachet (i návratu na 1).**
+  *Doporučeno:* a) **potvrzení přímo na stránce** se jmény šachet, které se
+  smažou (i jejich zadání, můstky a příplatky); šachta 1 zůstává vždy;
+  omylem smazané vrátí Zpět (historie). Po návratu na 1 šachtu je
+  kalkulátor jako dnes.
+  *Jinak:* b) šachty schovat a data ponechat (zakázka by nesla šachty,
+  které nejsou vidět ani v ceně — nedoporučeno).
 
 ## 10. Položka roadmapy
 
@@ -484,3 +503,4 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 | 5. 11. 2026 | `6b70cc3` (`claude/integrace-16-10`, v5.11.3 = + MU #560 v5.11.2, DZ #571) | MU #560: `engine.js` skupiny `Z.mustky[]` (`mustkySkupiny`, `MUSTKY_SKUPIN_MAX`), skladebný model (`mustkyCenikSkladebny`), sekce `sekce.mustky`, `souhrn.mustkyCena = min(CEIL(s5 + rez, 1000), zakladCenaZaokr)` a `mustkyNaklad`, `souctySekci.mustky`, popisný `vysl.mustky`; `zaokrouhleni.js` `cenaNabidkyOck` vrací `mustky.mustkyPred`; `nabidka.js` řádky části B (`CENA_SACHTA_BEZ_DPH` = cena před slevou − můstky, `CENA_MUSTKY_BEZ_DPH`, `CENA_BEZ_DPH_CELKEM`, `CENA_BEZ_DPH_SACHTA`), `nabidkaMustkyKlon` pro starší šablony; `docxgen.js` `DOCX_CENA_CASTI`; `kryci.js` `kryciMustkyText(r)` a sekce mustky v hodinách; `controlling.js` sekce mustky a mapování klíčů můstků; `techspec.js` řádky můstků; `kontroly.js`, `uloziste.js` (tvar skupin). DZ #571: jen `online_ui.js` (kopie na Disk). | (1) Třetí nové pole `mustkyCenaPredZaokr`, `mustkyCena` ze součtu se stejným pravidlem `min(CEIL, Z)` (3.1, 3.3). (2) Můstky po šachtách uvnitř zadání, limit skupin na šachtu, model můstků z ceníku varianty (3.4). (3) Rozpočet zaokrouhlení jen z části bez můstků (3.6). (4) CN: šablona v17 navazuje na v16, smyčka šachet místo řádku „Výtahová šachta“, `TS_MUSTKY_*` ve smyčce; v15/v16 u víc šachet zábrana (5.1). (5) Krycí list: `kryciMustkyText` se volá po šachtách a spojí s názvem šachty („Výtah A: …; Výtah B 2×: …“), protože popisný `vysl.mustky` se nesčítá. (6) Controlling čte sečtenou `sekce.mustky` — beze změny (R5). (7) Validace serveru: zadání šachty 2+ prochází stejnou kontrolou skupin můstků jako šachta 1. (8) Nová otázka **O11** (oddíl 9). DZ se návrhu netýká. |
 | 6. 11. 2026 | (rozhodnutí, ne kód) | O11 = b) | R14: rozpočet zaokrouhlení z celého základu vč. můstků (3.6); v17: u víc šachet prázdné `CENA_MUSTKY_BEZ_DPH` → řádek Můstky zmizí dnešním mechanismem, dovětek „vč. můstků“ u šachty (5.1); nová otázka O12 (jedna šachta). |
 | 6. 11. 2026 | (rozhodnutí, ne kód) | O12 = a) | R15: jedna šachta s můstky v CN jako dnes; návrh uzavřen. Před spuštěním se slučují MU2, DP, DZ2 → po „AKTUALIZUJ VS“ znovu ověřit. |
+| 6. 11. 2026 | (připomínka J. V. k prototypu) | R16 | Jedna šachta = dnešní vzhled; režim víc šachet od 2 šachet (nebo ks > 1); nové otázky O13 (místo nastavení počtu) a O14 (snížení počtu). Prototyp upraven (výchozí stav = 1 šachta). |

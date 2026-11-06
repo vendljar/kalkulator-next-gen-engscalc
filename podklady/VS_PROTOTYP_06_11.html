@@ -1087,6 +1087,21 @@ table.proto th:not(.r), table.proto td:not(.r) { text-align:left; }
 select.siroky { width:auto; min-width:190px; }
 .proto-lista span { flex:1 1 400px; }
 .papir.spec td:first-child { width:36%; }
+.inputs .card .body > .pocet-sachet, .inputs .card .body > .pocet-potvrd { grid-column:1 / -1; }
+.pocet-sachet { display:flex; flex-wrap:wrap; align-items:center; gap:6px 18px; padding:2px 0 10px; margin-bottom:10px; border-bottom:1px dashed var(--line); }
+.pocet-sachet .row { margin:0; gap:12px; }
+.pocet-sachet .row label { flex:0 0 auto; }
+.pocet-sachet select { width:72px; }
+.pocet-sachet .mut { font-size:12.5px; }
+.otazka { border:1px solid #c4b5fd; background:#faf8ff; border-radius:10px; padding:10px 14px; margin-top:12px; }
+.otazka h3 { margin:0 0 6px; font-size:14px; }
+.varianty { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:10px; margin-top:6px; }
+.varianty > div { border:1px solid var(--line); background:#fff; border-radius:8px; padding:8px 10px; min-width:0; font-size:13px; }
+.varianty > div.dop { border:2px solid var(--acc); }
+.varianty .vt { font-weight:700; font-size:12.5px; margin-bottom:6px; }
+.varianty .dop .vt { color:var(--acc); }
+.mini-nahled { border:1px solid var(--line); border-radius:6px; background:var(--bg); padding:6px 8px; font-size:12px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.mini-nahled .pole { border:1px solid var(--line); background:#fff; border-radius:4px; padding:1px 6px; }
 
 </style>
 <header>
@@ -1129,6 +1144,9 @@ const R = {
   R13: 'Sloučený příplatek = jedna volba pro všechny šachty; kdo ho chce jen pro jednu, obchodník ho u druhé odškrtne → dva řádky.',
   R14: 'U víc šachet je cena můstků v ceně své šachty (dovětek „vč. můstků“); řádek Můstky v nabídce zmizí.',
   R15: 'Jedna šachta s můstky zůstává v nabídce jako dnes: Výtahová šachta / Můstky / Cena celkem.',
+  R16: 'Jedna šachta = dnešní kalkulátor beze změny vzhledu. Rozhraní víc šachet (seznam šachet, přepínač A/B/Součet, rozpočet) se ukáže až od 2 šachet. Počet šachet se nastavuje na jednom místě.',
+  O13: 'NÁVRH k rozhodnutí: počet šachet se nastavuje polem „Počet šachet v nabídce“ (1–10) nahoře v kartě Zadání šachty. Počet stejných kusů je zvlášť, u každé šachty, a ukáže se až v režimu víc šachet.',
+  O14: 'NÁVRH k rozhodnutí: při snížení počtu šachet se zobrazí potvrzení, které šachty se smažou (i s jejich zadáním a můstky); šachta 1 zůstává vždy. Omylem smazané vrátí tlačítko Zpět.',
 };
 const rt = (...k) => k.map(x => `<button type="button" class="rtag" data-r="${x}" title="${esc(R[x])}">${x}</button>`).join('');
 
@@ -1159,11 +1177,8 @@ const S = {
   rucni: { aktivni: false, hodnota: 3150, dodavatel: 'Sklárna (smyšlená)', potvrzeno: false },
   sachty: [
     novaSachta('Výtah A – dvorní trakt', { id: 's1' }),
-    novaSachta('Výtah B – uliční trakt', { id: 's2', ks: 2, typ: 'interiérová', zdvih: 14.1, prejezd: 3.5, prohluben: 1.2, sirka: 1.6, hloubka: 1.75, nastupiste: 5,
-      prip: { leseniVnejsi: true, haky: false, vsgFolie: true, sokl: false },
-      mustky: [{ ks: 1, sirkaMm: '', delkaMm: 1000, podlaha: 'plech', zabradli: 'kov', strany: 2, kotveni: 'deska', sloupyKs: 0, sloupVyska: '' }] }),
   ],
-  akt: 's1', pohled: 's1', tab: 'kalk', prejmenovat: false,
+  akt: 's1', pohled: 's1', tab: 'kalk', prejmenovat: false, potvrdit: null,
 };
 const STROP = { 'Obchodník': 5, 'Vedoucí': 10, 'Administrátor': 15 };
 const MIN_MARZE = 15;
@@ -1175,6 +1190,7 @@ const cis = (x, d = 2) => (Math.round((+x || 0) * 10 ** d) / 10 ** d).toLocaleSt
 const CEIL = (x, k) => Math.ceil(Math.round(x * 100) / 100 / k) * k;
 const zaokrouhli = (x, krok) => krok ? Math.ceil(Math.round(x * 100) / 100 / krok) * krok : x;
 const sachta = id => S.sachty.find(s => s.id === id);
+const rezimVic = () => S.sachty.length > 1 || S.sachty.some(s => s.ks > 1);
 const nazevS = (s, i) => (s.nazev || '').trim() || ('Šachta ' + (i + 1));
 
 /* ---------- výpočet jedné šachty (zjednodušený, smyšlené sazby) ---------- */
@@ -1342,13 +1358,13 @@ function renderHlavicka(Vx) {
       <button class="mini" disabled>+ Nová varianta (kopie otevřené)</button><button class="mini" data-tab="zakazka">Přehled cenových nabídek →</button></div>
   </div></div>
   <div class="kalk-lista noprint"><span class="odd"></span>
-    <a class="dv-kotva" href="#ock-sachty">Šachty</a><a class="dv-kotva" href="#ock-zadani">Zadání šachty</a><a class="dv-kotva" href="#ock-mustky">Můstky</a><a class="dv-kotva" href="#ock-kalkulace">Cenová kalkulace</a><a class="dv-kotva" href="#ock-priplatky">Příplatky</a><a class="dv-kotva" href="#ock-sleva">Sleva</a><a class="dv-kotva" href="#ock-zaokr">Zaokrouhlení</a><a class="dv-kotva" href="#ock-nabidka">Cenová nabídka</a>
+    ${rezimVic() ? '<a class="dv-kotva" href="#ock-sachty">Šachty</a>' : ''}<a class="dv-kotva" href="#ock-zadani">Zadání šachty</a><a class="dv-kotva" href="#ock-mustky">Můstky</a><a class="dv-kotva" href="#ock-kalkulace">Cenová kalkulace</a><a class="dv-kotva" href="#ock-priplatky">Příplatky</a><a class="dv-kotva" href="#ock-sleva">Sleva</a><a class="dv-kotva" href="#ock-zaokr">Zaokrouhlení</a><a class="dv-kotva" href="#ock-nabidka">Cenová nabídka</a>
     <span style="margin-left:auto;display:inline-flex;gap:8px;align-items:center"><span class="stav-pill aktivni">● Nabídka aktivní</span></span></div>`;
 }
 
 function renderSouhrn(Vx) {
   const ksCelkem = S.sachty.reduce((a, s) => a + s.ks, 0);
-  const vic = !Vx.jedna;
+  const vic = rezimVic();
   const chips = vic ? `<div class="rozpis-chips">${Vx.V.map(({ s }, i) =>
     `<button type="button" data-sachta="${s.id}">${esc(nazevS(s, i))} · ${s.ks} ks · <b>${kc(Vx.rozp[i])}</b></button>`).join('')}
     <span class="mut" style="align-self:center;font-size:12px">ceny šachet po rozpočtu zaokrouhlení${rt('R7')}</span></div>` : '';
@@ -1359,12 +1375,15 @@ function renderSouhrn(Vx) {
         <div class="kpi-line"><span class="kl">Celkem s DPH</span><span class="kv">${kc(Vx.cena + Vx.dph)}</span></div></div>
       <div class="kpi kpi-multi"><div class="kpi-line"><span class="kl">Náklad</span><span class="kv">${kc(Vx.N)}</span></div>
         <div class="kpi-line"><span class="kl">Hrubý zisk</span><span class="kv">${kc(Vx.cena - Vx.N)}</span></div></div>
-      <div class="kpi kpi-multi"><div class="kpi-line"><span class="kl">Šachet / kusů${rt('R10')}</span><span class="kv">${S.sachty.length} / ${ksCelkem}</span></div>
-        <div class="kpi-line"><span class="kl">Sleva · marže</span><span class="kv">${cis(Vx.p * 100, 1)} % · ${cis(Vx.marzePoSleve, 1)} %</span></div></div>
+      ${vic ? `<div class="kpi kpi-multi"><div class="kpi-line"><span class="kl">Šachet / kusů${rt('R10')}</span><span class="kv">${S.sachty.length} / ${ksCelkem}</span></div>
+        <div class="kpi-line"><span class="kl">Sleva · marže</span><span class="kv">${cis(Vx.p * 100, 1)} % · ${cis(Vx.marzePoSleve, 1)} %</span></div></div>`
+      : `<div class="kpi kpi-multi"><div class="kpi-line"><span class="kl">Poskytnutá sleva</span><span class="kv">${cis(Vx.p * 100, 1)} %</span></div>
+        <div class="kpi-line"><span class="kl">Marže</span><span class="kv">${cis(Vx.marzePoSleve, 1)} %</span></div></div>`}
     </div>${chips}</div></div>`;
 }
 
 function renderSachty() {
+  if (!rezimVic()) return '';
   const max = S.sachty.length >= 10;
   const blokM1 = S.model === 1;
   const s = sachta(S.akt), i = S.sachty.indexOf(s);
@@ -1397,12 +1416,18 @@ function fld(label, key, val, unit, opts) {
 function renderZadani() {
   const s = sachta(S.akt), i = S.sachty.indexOf(s);
   const mks = s.mustky.reduce((a, g) => a + (+g.ks || 0), 0);
-  return karta('ock-zadani', 'Zadání šachty — ' + esc(nazevS(s, i)) + rt('R1', 'R2'), `<div class="zadani-ctyri">
+  const vic = rezimVic();
+  const pocet = `<div class="pocet-sachet"><div class="row"><label><b>Počet šachet v nabídce</b>${rt('R16', 'O13')}</label>
+      <select data-act="pocetSachet" ${S.model === 1 ? 'title="Model 1 počítá jen jednu šachtu"' : ''}>${Array.from({ length: 10 }, (_, k) => k + 1).map(n => `<option value="${n}" ${n === S.sachty.length ? 'selected' : ''} ${S.model === 1 && n > 1 ? 'disabled' : ''}>${n}</option>`).join('')}</select></div>
+      <span class="mut">${vic ? 'různé šachty; stejné kusy jedné šachty nastavíte v kartě Šachty varianty (Počet stejných kusů)' : 'jedna šachta = kalkulátor jako dnes; od 2 se zapne rozpis po šachtách'}${S.model === 1 ? ' · Model 1 počítá jen jednu šachtu' : ''}</span></div>`;
+  const potvrd = S.potvrdit ? `<div class="zabrana pocet-potvrd"><b>Smazat ${S.potvrdit.ids.length === 1 ? 'šachtu' : 'šachty'} ${esc(S.potvrdit.ids.map(id => nazevS(sachta(id), S.sachty.indexOf(sachta(id)))).join(', '))}?</b>
+      Smaže se i ${S.potvrdit.ids.length === 1 ? 'její' : 'jejich'} zadání, můstky a příplatky.${rt('O14')} ${S.potvrdit.ids.length && S.sachty.length - S.potvrdit.ids.length === 1 ? 'Kalkulátor se vrátí do zobrazení pro jednu šachtu.' : ''}
+      <div style="margin-top:8px;display:flex;gap:8px"><button class="mini vyzva" data-act="potvrditAno">Smazat</button><button class="mini" data-act="potvrditNe">Zrušit</button></div></div>` : '';
+  return karta('ock-zadani', 'Zadání šachty' + (vic ? ' — ' + esc(nazevS(s, i)) : '') + rt('R1', 'R2'), `${potvrd}${pocet}<div class="zadani-ctyri">
     <div>${fld('Typ šachty', 'typ', s.typ, '', { sel: [['exteriérová', 'exteriérová'], ['interiérová', 'interiérová']] })}${fld('Zdvih', 'zdvih', s.zdvih, 'm')}${fld('Horní přejezd', 'prejezd', s.prejezd, 'm')}${fld('Prohlubeň', 'prohluben', s.prohluben, 'm')}</div>
     <div>${fld('Vnitřní šířka', 'sirka', s.sirka, 'm')}${fld('Vnitřní hloubka', 'hloubka', s.hloubka, 'm')}${fld('Počet nástupišť', 'nastupiste', s.nastupiste, 'ks')}${fld('Počet sloupků', 'sloupky', s.sloupky, 'ks')}</div>
     <div>${fld('Opláštění', 'opl', s.opl, '', { cls: 'siroky', sel: [['sklo', 'sklo (standard)'], ['cetris', 'Cetris (bez skla)']] })}<div class="row"><label>Způsob zasklení</label><select disabled><option>na terče</option></select><span class="u"></span></div></div>
-    <div><div class="row"><label>Můstky mezi budovou a OCK</label><input type="number" min="0" value="${mks}" data-act="mustkyKs"><span class="u">ks</span></div>
-      <div class="row"><label>Počet kusů této šachty</label><input type="number" min="1" max="20" value="${s.ks}" data-act="ks"><span class="u">ks</span></div></div>
+    <div><div class="row"><label>Můstky mezi budovou a OCK</label><input type="number" min="0" value="${mks}" data-act="mustkyKs"><span class="u">ks</span></div></div>
   </div>`);
 }
 
@@ -1411,7 +1436,7 @@ function renderMustky() {
   if (!s.mustky.some(g => +g.ks > 0)) return '';
   const sel = (j, pole, volby, h) => `<select class="mu-${pole}" data-mu="${j}" data-pole="${pole}">${volby.map(([k, t]) => `<option value="${k}" ${String(h) === String(k) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
   const num = (j, pole, h, ph, step) => `<input type="number" class="mu-${pole}" min="0" step="${step || 1}" value="${h === '' || h == null ? '' : h}" placeholder="${ph}" data-mu="${j}" data-pole="${pole}">`;
-  const vic = !(S.sachty.length === 1 && s.ks === 1);
+  const vic = rezimVic();
   const radky = s.mustky.map((g, j) => `<tr>
     <td>${num(j, 'ks', g.ks, 0)}</td><td>${num(j, 'sirkaMm', g.sirkaMm, Math.round(s.sirka * 1000), 10)}</td><td>${num(j, 'delkaMm', g.delkaMm, 1000, 10)}</td>
     <td>${sel(j, 'podlaha', PODLAHY, g.podlaha)}</td>
@@ -1419,7 +1444,7 @@ function renderMustky() {
     <td>${sel(j, 'kotveni', KOTVENI, g.kotveni)}</td>
     <td><span class="mu-dvojice">${num(j, 'sloupyKs', g.sloupyKs || '', 0)}<span class="mu-krat">×</span>${num(j, 'sloupVyska', g.sloupVyska, cis(s.zdvih), 0.1)}</span></td>
     <td class="mu-akce">${s.mustky.length > 1 ? `<button class="mini mu-odebrat" data-act="muOdeber" data-mu="${j}" title="odebrat skupinu">✕</button>` : ''}</td></tr>`).join('');
-  return karta('ock-mustky', 'Můstky mezi budovou a OCK — ' + esc(nazevS(s, i)) + rt('R2', vic ? 'R14' : 'R15'), `<div class="mustky-karta">
+  return karta('ock-mustky', 'Můstky mezi budovou a OCK' + (vic ? ' — ' + esc(nazevS(s, i)) : '') + rt(vic ? 'R14' : 'R15'), `<div class="mustky-karta">
     <div class="mustky-lista">Cena se skládá z nosné konstrukce, podlahy, zábradlí, kotvení, sloupů a montáže (sekce MŮSTKY v kalkulaci). Můstky patří této šachtě a počítají se s ní.
       ${vic ? 'V nabídce s víc šachtami je cena můstků <b>v ceně šachty</b> (dovětek „vč. můstků“).' : 'V nabídce s jednou šachtou mají můstky vlastní řádek, jako dnes.'} Ocelová vana: betonáž zajistí stavba.</div>
     <div class="mustky-scroll"><table class="tbl mustky-tbl"><thead><tr><th>ks</th><th>šířka [mm]</th><th>délka [mm]</th><th>podlaha</th><th>zábradlí</th><th>kotvení</th><th>sloupy navíc [ks × m]</th><th></th></tr></thead><tbody>${radky}</tbody></table></div>
@@ -1428,8 +1453,8 @@ function renderMustky() {
 
 function renderKalkulace(Vx) {
   const pohled = S.pohled;
-  const prep = `<span class="prepinac" onclick="event.stopPropagation()">${Vx.V.map(({ s }, i) => `<button type="button" class="${pohled === s.id ? 'on' : ''}" data-pohled="${s.id}">${esc(nazevS(s, i).split(' – ')[0])}</button>`).join('')}
-    ${Vx.V.length > 1 || Vx.V[0].s.ks > 1 ? `<button type="button" class="${pohled === 'soucet' ? 'on' : ''}" data-pohled="soucet">Součet</button>` : ''}</span>`;
+  const prep = !rezimVic() ? '' : `<span class="prepinac" onclick="event.stopPropagation()">${Vx.V.map(({ s }, i) => `<button type="button" class="${pohled === s.id ? 'on' : ''}" data-pohled="${s.id}">${esc(nazevS(s, i).split(' – ')[0])}</button>`).join('')}
+    ${rezimVic() ? `<button type="button" class="${pohled === 'soucet' ? 'on' : ''}" data-pohled="soucet">Součet</button>` : ''}</span>`;
   const nazvySek = { hrubaOck: 'HRUBÁ OCK', mustky: 'MŮSTKY', oplasteni: 'OPLÁŠTĚNÍ', rezie: 'REŽIE' };
   let telo = '';
   if (pohled !== 'soucet') {
@@ -1487,6 +1512,7 @@ function renderPriplatky(Vx) {
   const slTab = `<table class="proto"><thead><tr><th>Položka v nabídce</th><th>Šachty</th><th class="r">Počet</th><th class="r">Cena</th></tr></thead><tbody>
     ${sl.map(x => `<tr><td>${x.nazev}</td><td>${esc(x.sachty.join(', '))}</td><td class="r">${cis(x.mn, 2)} ${x.jedn}</td><td class="r">${kc(x.cena)}</td></tr>`).join('') || '<tr><td colspan="4" class="mut">žádný příplatek není vybraný</td></tr>'}
     <tr class="celkem"><td colspan="3">Příplatky celkem (zaokrouhleno na tisíce ze součtu)</td><td class="r">${kc(Vx.P)}</td></tr></tbody></table>`;
+  if (!rezimVic()) return karta('ock-priplatky', 'Příplatkové položky (ceník variant)', `<div class="tw">${vlastni}</div>`);
   return karta('ock-priplatky', 'Příplatkové položky' + rt('R8', 'R13'), `<div class="dvojice-karet"><div><div class="note" style="margin-bottom:6px">Výběr do nabídky je po šachtách — zde pro <b>${esc(nazevS(s, i))}</b>.</div><div class="tw">${vlastni}</div></div>
     <div><div class="note" style="margin-bottom:6px">Co půjde do nabídky: stejné příplatky všech šachet sloučené do jednoho řádku s počtem (jedna volba pro všechny vypsané šachty).</div><div class="tw">${slTab}</div></div></div>`);
 }
@@ -1503,7 +1529,7 @@ function renderSleva(Vx) {
 
 function renderZaokr(Vx) {
   const info = Vx.rozpInfo;
-  const vic = !Vx.jedna && Vx.V.length > 1;
+  const vic = rezimVic();
   const tab = vic ? `<div class="tw"><table class="proto"><thead><tr><th>Šachta</th><th class="r">ks</th><th class="r">Spočteno (ks × cena)</th><th class="r">Celé Kč dolů</th><th class="r">+1 Kč</th><th class="r">V nabídce</th></tr></thead><tbody>
     ${Vx.V.map(({ s, r }, i) => `<tr><td>${esc(nazevS(s, i))}</td><td class="r">${s.ks}</td><td class="r">${kc(s.ks * r.cena, 2)}</td><td class="r">${kc(info.q[i] - (info.plus.has(i) ? 1 : 0))}</td><td class="r">${info.plus.has(i) ? '1' : '—'}</td><td class="r"><b>${kc(Vx.rozp[i])}</b></td></tr>`).join('')}
     <tr class="celkem"><td colspan="2">Celkem</td><td class="r">${kc(Vx.predZaokr, 2)}</td><td></td><td></td><td class="r">${kc(Vx.rozp.reduce((a, b) => a + b, 0))}</td></tr></tbody></table></div>
@@ -1563,7 +1589,7 @@ function renderSpec(Vx) {
   const sek = Vx.V.map(({ s, r }, i) => {
     const sklo = s.opl === 'sklo';
     const mu = s.mustky.filter(g => +g.ks > 0);
-    return `<h4>${esc(nazevS(s, i))} · ${s.ks} ks${s.ks > 1 ? ' shodné' : ''}</h4><table><tbody>
+    return `<h4>${rezimVic() ? esc(nazevS(s, i)) + ' · ' + s.ks + ' ks' + (s.ks > 1 ? ' shodné' : '') : 'Výtahová šachta'}</h4><table><tbody>
       <tr><td>Typ šachty</td><td>${s.typ}, zapuštěný portál</td></tr>
       <tr><td>Vnitřní rozměr šachty</td><td>${cis(s.sirka * 1000, 0)} × ${cis(s.hloubka * 1000, 0)} mm</td></tr>
       <tr><td>Zdvih / přejezd / prohlubeň</td><td>${cis(s.zdvih * 1000, 0)} / ${cis(s.prejezd * 1000, 0)} / ${cis(s.prohluben * 1000, 0)} mm, ${s.nastupiste} nástupišť</td></tr>
@@ -1573,7 +1599,7 @@ function renderSpec(Vx) {
       ${mu.length ? `<tr><td>Můstky</td><td>${mu.map(g => `${g.ks} ks ${cis(+g.sirkaMm || s.sirka * 1000, 0)} × ${cis(+g.delkaMm || 1000, 0)} mm, ${PODLAHY.find(x => x[0] === g.podlaha)[1]}, ${g.zabradli === 'bez' ? 'bez zábradlí' : 'zábradlí ' + ZABRADLI.find(x => x[0] === g.zabradli)[1] + (g.strany == 1 ? ' jednostranně' : ' oboustranně')}, kotvení ${KOTVENI.find(x => x[0] === g.kotveni)[1]}`).join('; ')}</td></tr>` : ''}
       </tbody></table>`;
   }).join('');
-  return karta('spec', 'Technická specifikace OCK — po šachtách' + rt('R1'), `<div class="note" style="margin-bottom:8px">Společné údaje jednou, pak oddíl za každou šachtu. Šachta bez skla nemá ve svém oddílu sklo (#572), i když jiná šachta sklo má. Ruční úpravy specifikace se ukládají u šachty.</div>
+  return karta('spec', 'Technická specifikace OCK' + (rezimVic() ? ' — po šachtách' + rt('R1') : ''), `<div class="note" style="margin-bottom:8px">${rezimVic() ? '' : 'Jedna šachta — specifikace jako dnes. '}Společné údaje jednou, pak oddíl za každou šachtu. Šachta bez skla nemá ve svém oddílu sklo (#572), i když jiná šachta sklo má. Ruční úpravy specifikace se ukládají u šachty.</div>
     <div class="papir spec"><h4>Společné údaje</h4><table><tbody><tr><td>Stavba</td><td>${esc(S.zak.nazev)}, ${esc(S.zak.adresa)}</td></tr><tr><td>Povrchová úprava konstrukce</td><td>práškový lak RAL 7016</td></tr></tbody></table>${sek}</div>`);
 }
 
@@ -1619,16 +1645,38 @@ function renderPrehled(Vx) {
 
 function renderNavod() {
   return karta('navod', 'Co si proklikat', `<div class="navod"><ol>
-    <li><b>Šachty:</b> přepínejte Výtah A / Výtah B, změňte „Počet stejných kusů“, přidejte, zkopírujte, přejmenujte a smažte šachtu (nejvýš 10).</li>
-    <li><b>Zadání a můstky:</b> změňte zdvih nebo rozměry; u Výtahu B upravte můstky nebo přidejte „+ další provedení“. Hlavička ceny se přepočítá.</li>
-    <li><b>Kalkulace:</b> přepínač Výtah A / Výtah B / Součet — šachta se nezaokrouhluje, na tisíce jen součet.</li>
+    <li><b>Začátek — jedna šachta:</b> kalkulátor vypadá jako dnes${rt('R16')}. V kartě <b>Zadání šachty</b> nahoře nastavte <b>Počet šachet v nabídce</b> na 2 → zapne se režim víc šachet (karta Šachty varianty, přepínač v kalkulaci, rozpis v nabídce). Nastavením zpět na 1 se po potvrzení vrátí dnešní zobrazení.</li>
+    <li><b>Šachty:</b> přepínejte šachty, změňte „Počet stejných kusů“, přejmenujte, zkopírujte a smažte šachtu (nejvýš 10).</li>
+    <li><b>Zadání a můstky:</b> změňte zdvih nebo rozměry; zadejte můstky u druhé šachty („Můstky mezi budovou a OCK“), přidejte „+ další provedení“. Hlavička ceny se přepočítá.</li>
+    <li><b>Kalkulace:</b> přepínač šachet / Součet — šachta se nezaokrouhluje, na tisíce jen součet.</li>
     <li><b>Zaokrouhlení:</b> tabulka rozpočtu ukazuje, jak se rozdíl rozdělí do šachet; součet sedí na korunu.</li>
     <li><b>Sleva:</b> zkuste 6 % jako Obchodník (čeká na schválení) a jako Vedoucí.</li>
-    <li><b>Cenová nabídka:</b> přepněte šablonu na v16 (zábrana) a smažte Výtah B (jedna šachta s můstky → řádky Výtahová šachta / Můstky / Cena celkem).</li>
-    <li><b>Model 1:</b> se dvěma šachtami nejde vybrat; s jednou šachtou ho vyberte a zkuste přidat šachtu.</li>
+    <li><b>Cenová nabídka:</b> u víc šachet přepněte šablonu na v16 (zábrana). U jedné šachty s můstky jsou řádky Výtahová šachta / Můstky / Cena celkem jako dnes.</li>
+    <li><b>Model 1:</b> s jednou šachtou ho vyberte — počet šachet nad 1 pak nejde nastavit.</li>
     <li><b>Ruční cena:</b> u řádku skla „✎ cena z nabídky“ → platí pro všechny šachty, dokud není potvrzená, tisk stojí.</li>
-    <li>Fialové štítky <span class="rtag" style="cursor:default">R7</span> ukážou, které rozhodnutí J. V. prvek naplňuje.</li>
-  </ol></div>`);
+    <li>Fialové štítky <span class="rtag" style="cursor:default">R7</span> ukážou, které rozhodnutí J. V. prvek naplňuje (O13, O14 = návrh k rozhodnutí).</li>
+  </ol>
+  <div class="otazka"><h3>K rozhodnutí — O13: kde se nastavuje počet šachet</h3>
+    <div class="varianty">
+      <div class="dop"><div class="vt">a) pole v kartě Zadání šachty nahoře (doporučeno, je v prototypu)</div>
+        <div class="mini-nahled"><b>Počet šachet v nabídce</b><span class="pole">1 ▾</span><span class="mut">Typ šachty · Zdvih …</span></div>
+        <div class="pozn-proto">Obchodník ho vidí hned, kde začíná zadávat. Počet stejných kusů je zvlášť, u každé šachty v režimu víc šachet.</div></div>
+      <div><div class="vt">b) tlačítko v hlavičce zakázky</div>
+        <div class="mini-nahled"><span class="pole">+ přidat další šachtu do nabídky</span></div>
+        <div class="pozn-proto">Méně nápadné v Zadání; ubírá se mazáním v kartě Šachty varianty.</div></div>
+      <div><div class="vt">c) obojí</div>
+        <div class="mini-nahled"><span class="pole">Počet šachet 1 ▾</span><span class="pole">+ přidat šachtu</span></div>
+        <div class="pozn-proto">Dvě místa pro totéž.</div></div>
+    </div></div>
+  <div class="otazka"><h3>K rozhodnutí — O14: co při návratu na méně šachet</h3>
+    <div class="varianty">
+      <div class="dop"><div class="vt">a) potvrdit a smazat (doporučeno, je v prototypu)</div>
+        <div class="mini-nahled">Smazat šachtu Šachta 2? <span class="pole">Smazat</span><span class="pole">Zrušit</span></div>
+        <div class="pozn-proto">Šachta 1 zůstává vždy. Omylem smazané vrátí Zpět.</div></div>
+      <div><div class="vt">b) schovat a data ponechat</div>
+        <div class="mini-nahled">Šachta 2 (skrytá, nepočítá se)</div>
+        <div class="pozn-proto">Data se nezahodí, ale zakázka nese šachty, které nejsou vidět ani v ceně.</div></div>
+    </div></div></div>`);
 }
 
 /* ---------- hlavní překreslení ---------- */
@@ -1660,7 +1708,10 @@ document.addEventListener('click', e => {
   if (!a) return;
   if (a === 'pridat' && S.sachty.length < 10 && S.model === 2) { const n = novaSachta('', { mustky: [] }); S.sachty.push(n); S.akt = n.id; S.pohled = n.id; }
   if (a === 'kopirovat' && S.sachty.length < 10) { const s = sachta(S.akt); const k = JSON.parse(JSON.stringify(s)); k.id = 's' + (idc++); k.nazev = (s.nazev || 'Šachta') + ' (kopie)'; S.sachty.push(k); S.akt = k.id; S.pohled = k.id; }
-  if (a === 'smazat') { const i = S.sachty.findIndex(s => s.id === S.akt); if (i > 0) { S.sachty.splice(i, 1); S.akt = S.sachty[Math.max(0, i - 1)].id; S.pohled = S.akt; } }
+  if (a === 'smazat') { const i = S.sachty.findIndex(s => s.id === S.akt); if (i > 0) S.potvrdit = { ids: [S.akt] }; }
+  if (a === 'potvrditNe') S.potvrdit = null;
+  if (a === 'potvrditAno' && S.potvrdit) { S.sachty = S.sachty.filter(x => !S.potvrdit.ids.includes(x.id)); S.potvrdit = null;
+    if (!sachta(S.akt)) S.akt = S.sachty[S.sachty.length - 1].id; S.pohled = S.akt; }
   if (a === 'prejmenovat') S.prejmenovat = true;
   if (a === 'prejmenovatOk') { const v = document.getElementById('prejmenovatPole'); sachta(S.akt).nazev = v ? v.value.slice(0, 80) : ''; S.prejmenovat = false; }
   if (a === 'naModel2') S.model = 2;
@@ -1683,6 +1734,15 @@ document.addEventListener('change', e => {
     return;
   }
   const a = t.dataset.act;
+  if (a === 'pocetSachet') {
+    const n = Math.max(1, Math.min(10, +t.value || 1));
+    if (n > S.sachty.length && S.model === 2) {
+      while (S.sachty.length < n) { const z = S.sachty[S.sachty.length - 1]; const k = JSON.parse(JSON.stringify(z)); k.id = 's' + (idc++); k.nazev = 'Šachta ' + (S.sachty.length + 1); k.ks = 1;
+        if (!S.sachty[0].nazev) S.sachty[0].nazev = 'Šachta 1'; S.sachty.push(k); }
+      S.akt = S.sachty[S.sachty.length - 1].id; S.pohled = S.akt; S.potvrdit = null;
+    } else if (n < S.sachty.length) S.potvrdit = { ids: S.sachty.slice(n).map(x => x.id) };
+    render(); return;
+  }
   if (a === 'ks') zmenaSachty(s => { s.ks = Math.min(20, Math.max(1, Math.round(num(t.value)) || 1)); });
   else if (a === 'mustkyKs') zmenaSachty(s => { const n = Math.round(num(t.value));
     if (!n) s.mustky = []; else if (!s.mustky.length) s.mustky = [{ ks: n, sirkaMm: '', delkaMm: 1000, podlaha: 'plech', zabradli: 'kov', strany: 2, kotveni: 'deska', sloupyKs: 0, sloupVyska: '' }];
