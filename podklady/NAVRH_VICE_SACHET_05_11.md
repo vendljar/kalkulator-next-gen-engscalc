@@ -2,8 +2,8 @@
 
 Dávka VS. Artefakt s náhledy obrazovek:
 https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa .
-Klikací prototyp v4 (6. 11., R1–R18): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2 — skutečná
-sestavená aplikace z main (v4.11.8) + vrstva víc šachet (`podklady/vs_prototyp/`); u 1 šachty pixelově shodná s main.
+Klikací prototyp v5 (6. 11., R1–R18): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2 — skutečná
+sestavená aplikace v6.11.3 (další verze main, s kartou Můstky) + vrstva víc šachet (`podklady/vs_prototyp/`); u 1 šachty pixelově shodná s v6.11.3.
 Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 
 **Stav: NÁVRH UZAVŘEN — PŘIPRAVENO KE SPUŠTĚNÍ (rozhodnutí R1–R18). Před spuštěním se slučují MU2, DP a DZ2. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**

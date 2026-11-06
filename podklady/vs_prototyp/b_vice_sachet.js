@@ -25,9 +25,16 @@
   const VS = { akt: 0, pohled: 'akt', force: null, potvrdit: null };
   const st = document.createElement('style');
   st.textContent = `
-    .vs-proto { position:fixed; left:max(8px, env(safe-area-inset-left, 0px)); bottom:max(8px, env(safe-area-inset-bottom, 0px)); z-index:60;
-      background:#b91c1c; color:#fff; font:700 10.5px "Segoe UI", system-ui, sans-serif; letter-spacing:.05em; text-transform:uppercase;
-      padding:3px 8px; border-radius:5px; opacity:.85; pointer-events:none; }
+    .vs-panel { position:fixed; left:max(8px, env(safe-area-inset-left, 0px)); bottom:max(8px, env(safe-area-inset-bottom, 0px)); z-index:60;
+      display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; max-width:calc(100vw - 16px); box-sizing:border-box;
+      background:rgba(255,255,255,.96); border:1px solid #f2a7a7; border-radius:8px; padding:5px 8px; box-shadow:0 2px 10px rgba(0,0,0,.12);
+      font:12px "Segoe UI", system-ui, sans-serif; color:#1a2332; }
+    .vs-panel .rada-prep button { font-size:11.5px; padding:2px 9px; }
+    .vs-proto { background:#b91c1c; color:#fff; font:700 10.5px "Segoe UI", system-ui, sans-serif; letter-spacing:.05em; text-transform:uppercase; padding:3px 8px; border-radius:5px; }
+    .vs-pz { color:#6b7686; display:inline-flex; align-items:center; gap:6px; }
+    .vs-navod { position:fixed; right:max(12px, env(safe-area-inset-right, 0px)); bottom:max(56px, env(safe-area-inset-bottom, 0px)); z-index:61; width:min(520px, calc(100vw - 24px));
+      max-height:70vh; overflow:auto; background:#fff; border:1px solid #dde3ea; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.2); padding:14px 16px; font:13.5px/1.45 "Segoe UI", system-ui, sans-serif; color:#1a2332; }
+    .vs-navod h3 { margin:0 0 8px; font-size:14px; } .vs-navod ol { margin:0; padding-left:20px; } .vs-navod li { margin:4px 0; }
     .vs-r { display:inline-block; font:700 9.5px/14px "Segoe UI", system-ui, sans-serif; color:#6d28d9; border:1px solid #c4b5fd; background:#f5f3ff;
       border-radius:999px; padding:0 5px; margin-left:5px; vertical-align:middle; cursor:help; text-transform:none; letter-spacing:0; }
     .vs-pocet { font-weight:400; text-transform:none; letter-spacing:0; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; line-height:1; margin:-10px 0; height:0; overflow:visible; }
@@ -41,8 +48,16 @@
     .vs-tab td, .vs-tab th { text-align:left; }
   `;
   document.head.appendChild(st);
-  const stitek = document.createElement('div'); stitek.className = 'vs-proto'; stitek.textContent = 'Prototyp — nic se neukládá';
+  const stitek = document.createElement('div'); stitek.className = 'vs-panel';
   document.body.appendChild(stitek);
+  function kresliPanel() {
+    const cz = (window.PROTO_CENIK || {}).rezim || 'skladebny';
+    stitek.innerHTML = `<span class="vs-proto">Prototyp — nic se neukládá</span>
+      <span class="vs-pz">základ = v6.11.3 (další verze main)</span>
+      <span class="vs-pz">Zkušební ceník můstků: <span class="rada-prep"><button type="button" class="${cz === 'skladebny' ? 'on' : ''}" onclick="VS_cenik('skladebny')">skladebný</button><button type="button" class="${cz === 'stary' ? 'on' : ''}" onclick="VS_cenik('stary')">starý (#354)</button></span></span>
+      <button type="button" class="mini" onclick="VS_navod()">Co si proklikat</button>`;
+  }
+  kresliPanel();
 
   const rt = (...k) => k.map(x => `<span class="vs-r" title="${esc(R[x] || '')}">${x}</span>`).join('');
   const kcF = x => (Math.round(+x || 0)).toLocaleString('cs-CZ') + ' Kč';
@@ -72,11 +87,21 @@
     const r0 = vys[0], m = +cenik.marze || 0;
     const r = Object.assign({}, r0);
     r.sekce = {};
-    Object.keys(r0.sekce).forEach(k => { r.sekce[k] = slozRadky(vys.map(x => x.sekce[k]), ksy); });
+    const klSek = [...new Set(vys.flatMap(x => Object.keys(x.sekce)))];
+    klSek.forEach(k => { r.sekce[k] = slozRadky(vys.map(x => x.sekce[k] || []), ksy); });
     r.volitelneKatalog = slozRadky(vys.map(x => x.volitelneKatalog), ksy);
     r.priplatky = slozRadky(vys.map(x => x.priplatky), ksy, true, m);
     const sum = rows => ({ naklad: rows.reduce((a, x) => a + x.naklad, 0), marze: rows.reduce((a, x) => a + x.marze, 0), sMarzi: rows.reduce((a, x) => a + x.sMarzi, 0) });
-    r.souctySekci = {}; Object.keys(r0.souctySekci).forEach(k => { r.souctySekci[k] = sum(r.sekce[k] || []); });
+    r.souctySekci = {}; [...new Set(vys.flatMap(x => Object.keys(x.souctySekci)))].forEach(k => { r.souctySekci[k] = sum(r.sekce[k] || []); });
+    /* Můstky (#560) po šachtách: popisný objekt nese skupiny všech šachet (× ks);
+     * R14 — u víc šachet je cena můstků v ceně šachty, samostatný řádek Můstky v CN není
+     * (souhrn.mustkyCena se do součtu nepřenáší). */
+    const sM = vys.map(x => x.mustky).filter(m => m && Array.isArray(m.skupiny));
+    if (sM.length) {
+      const zakl = sM.find(m => m.skupiny.some(g => g.ks > 0)) || sM[0];
+      r.mustky = Object.assign({}, zakl, { skladebny: sM.some(m => m.skladebny),
+        skupiny: vys.flatMap((x, i) => (x.mustky && x.mustky.skupiny || []).map(g => Object.assign({}, g, { ks: g.ks * ksy[i] }))) });
+    }
     r.rezerva = { naklad: 0, marze: 0, sMarzi: 0 };
     vys.forEach((x, i) => ['naklad', 'marze', 'sMarzi'].forEach(f => { r.rezerva[f] += ksy[i] * (+x.rezerva[f] || 0); }));
     r.montaz = Object.assign({}, r0.montaz);
@@ -214,6 +239,11 @@
       ${rp.cn && rp.cn.slevaKcVykaz > 0 ? `<tr><td>Sleva ${(Math.round(rp.cn.slevaPct * 1000) / 10).toLocaleString('cs-CZ')} %</td><td></td><td class="r">−${kcF(rp.cn.slevaKcVykaz)}</td></tr>` : ''}
       <tr><td style="font-weight:600">Cena nabídky bez DPH</td><td></td><td class="r" style="font-weight:600">${kcF(rp.cn ? rp.cn.cena : rp.T)}</td></tr></tbody></table>`;
   }
+  function mustkyPoSachtach(rp) {
+    const l = sachty();
+    const radky = l.map((x, i) => { const t = (typeof kryciMustkyText === 'function') ? kryciMustkyText(rp.r.vsSachty[i].vysl) : ''; return t ? `<tr><td>${esc(nazevS(x, i))}${x.ks > 1 ? ' (' + x.ks + ' ks)' : ''}</td><td>${esc(t)}</td></tr>` : ''; }).join('');
+    return radky ? `<div class="note" style="font-weight:600;margin-top:10px">Technická část — MŮSTKY po šachtách</div><table class="vs-tab" style="max-width:900px"><tbody><tr><th>Šachta</th><th>Můstky (rozměr, podlaha, zábradlí, kotvení, sloupy)</th></tr>${radky}</tbody></table>` : '';
+  }
   function vlozNabidka() {
     if (!vic()) return;
     const rp = rozpis(); if (!rp) return;
@@ -227,7 +257,7 @@
     if (nab) {
       const anchor = [...nab.querySelectorAll('.note')].find(n => /živý náhled/.test(n.textContent));
       const html = `<div class="seznam-varovani" style="margin:10px 0">Tisk nabídky s víc šachtami potřebuje novou Word šablonu (smyčka šachet, v17). Dnešní šablona umí jen jednu šachtu — tisk se u víc šachet zastaví s odkazem na novou šablonu.${rt('R4')}</div>
-        <div class="note" style="font-weight:600;margin-top:8px">Cena díla — rozpis po šachtách (do nabídky)${rt('R4', 'R12', 'R14')}</div>${tabulkaSachet(rp)}`;
+        <div class="note" style="font-weight:600;margin-top:8px">Cena díla — rozpis po šachtách (do nabídky)${rt('R4', 'R12', 'R14')}</div>${tabulkaSachet(rp)}${mustkyPoSachtach(rp)}`;
       if (anchor) anchor.insertAdjacentHTML('beforebegin', html); else nab.insertAdjacentHTML('afterbegin', html);
     }
   }
@@ -235,7 +265,7 @@
     if (!vic()) return;
     const rp = rozpis(); const pg = document.getElementById('page-kryci'); if (!rp || !pg) return;
     pg.insertAdjacentHTML('afterbegin', kartaRezim('ock', 'vsKryci', 'Rozpis po šachtách (krycí list)' + rt('R9'),
-      `<div class="note" style="margin-bottom:6px">Jeden krycí list za variantu: předmět ${sachty().length} šachty, ${sachty().reduce((a, s) => a + s.ks, 0)} ks; hodnota a hodiny jsou součtem šachet.</div>${tabulkaSachet(rp)}`, 'vs-kryci'));
+      `<div class="note" style="margin-bottom:6px">Jeden krycí list za variantu: předmět ${sachty().length} šachty, ${sachty().reduce((a, s) => a + s.ks, 0)} ks; hodnota a hodiny jsou součtem šachet.</div>${tabulkaSachet(rp)}${mustkyPoSachtach(rp)}`, 'vs-kryci'));
   }
   function vlozSpec(id) {
     if (!vic()) return;
@@ -278,6 +308,23 @@
   window.VS_kopie = function () { if (sachty().length >= 10) return; const s = sachty()[VS.akt]; if (!Array.isArray(OCK.dalsi)) OCK.dalsi = [];
     OCK.dalsi.push({ id: 's' + Date.now().toString(36), nazev: nazevS(s, VS.akt) + ' (kopie)', ks: s.ks, zadani: kopie(s.zadani) }); VS_akt(sachty().length - 1); };
   window.VS_smaz = function () { if (VS.akt > 0) { VS.potvrdit = [VS.akt]; render(); } };
+  window.VS_cenik = function (rez) { if (typeof PROTO_cenikNastav === 'function') PROTO_cenikNastav(rez); syncVarianta(); render(); kresliPanel(); };
+  window.VS_navod = function () {
+    let n = document.getElementById('vsNavod');
+    if (n) { n.remove(); return; }
+    n = document.createElement('div'); n.id = 'vsNavod'; n.className = 'vs-navod';
+    n.innerHTML = `<button type="button" class="mini" style="float:right" onclick="VS_navod()">Zavřít</button><h3>Co si proklikat</h3><ol>
+      <li><b>Jedna šachta</b> = kalkulátor jako dnes (základ v6.11.3, další verze main)${rt('R16')}. V kartě <b>Zadání šachty</b> vpravo v nadpisu nastavte <b>Počet šachet v nabídce</b> na 2 — zapne se režim víc šachet${rt('R17')}.</li>
+      <li><b>Můstky u jedné šachty:</b> v Zadání šachty dejte „Můstky mezi budovou a OCK“ = 1 — objeví se karta <b>Můstky</b>. Změňte podlahu, zábradlí, kotvení, sloupy, „+ další provedení“. Cena se přepočítá; v nabídce (Word, šablona v16) má jedna šachta řádky Výtahová šachta / Můstky / Cena celkem jako v v6.11.3${rt('R15')}.</li>
+      <li><b>Můstky u Šachty 2:</b> přepněte na Šachtu 2 (karta Šachty varianty), přidejte jí jiné můstky. Každá šachta má své skupiny; cena se přepočítá v šachtě i v součtu.</li>
+      <li><b>Ceník:</b> v panelu vlevo dole přepněte <b>Zkušební ceník můstků</b> skladebný ↔ starý (#354) — starý počítá můstky vzorcem a karta ukáže lištu upozornění.</li>
+      <li><b>Kalkulace:</b> přepínač šachet / Součet v Cenové kalkulaci (sekce MŮSTKY po šachtách, v Součtu sečtená).</li>
+      <li><b>Cenová nabídka:</b> rozpis po šachtách s „vč. můstků“ a technická část MŮSTKY po šachtách; rozpočet zaokrouhlení v kartě Obchodní zaokrouhlení${rt('R7')}.</li>
+      <li><b>Krycí list a Technická specifikace:</b> rozpis po šachtách, můstky každé šachty; ve specifikaci přepínač šachty.</li>
+      <li><b>Model 1:</b> u jedné šachty přepněte Režim výpočtu na Model 1 — karta Můstky má jen počet a délku, počet šachet nad 1 nejde.</li>
+      <li><b>Zpět na jednu šachtu:</b> Počet šachet = 1 → potvrzení se jmény mazaných šachet${rt('R18')}.</li></ol>`;
+    document.body.appendChild(n);
+  };
   window.VS_stav = function () { const rp = vic() ? rozpis() : null; return { vic: vic(), pocet: sachty().length, akt: VS.akt, rp: rp && { T: rp.T, ceny: rp.ceny, cena: rp.cn && rp.cn.cena } }; };
 
   render();

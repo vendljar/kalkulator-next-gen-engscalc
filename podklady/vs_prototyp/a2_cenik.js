@@ -75,9 +75,21 @@ const ZKUSEBNI_MUSTKY = {
   mustekMontazZakladHod: 6, mustekMontazBmHod: 10, mustekMontazMinHod: 14,
 };
 const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
+  /* Skladebné sazby můstků (#560) — SMYŠLENÉ, převzaté ze src/test_560_mustky_sekce.js. */
+  const SKLADBA = { mustekRamBmKc: 10000, mustekPodlahaPlechM2Kc: 1000, mustekPodlahaPororostM2Kc: 1100, mustekPodlahaVanaM2Kc: 1200,
+    mustekZabradliKovBmKc: 2000, mustekZabradliSkloBmKc: 5000, mustekKotveniDeskaKc: 3000, mustekKotveniSloupKc: 3100,
+    mustekKotveniKonzolaKc: 3200, mustekZabradliSkloMontazHodBm: 1 };
+  /* Režim zkušebního ceníku: 'skladebny' (nové sazby můstků) nebo 'stary' (bez nich → výpočet #354 a lišta). */
+  window.PROTO_CENIK = { rezim: 'skladebny' };
+  window.PROTO_cenikNastav = function (rezim) {
+    const v = aktivniVarianta(ZAK);
+    PROTO_CENIK.rezim = rezim === 'stary' ? 'stary' : 'skladebny';
+    Object.assign(v.data.cenik, zkusebniCenik(), zkusebniMustky());
+    Object.keys(SKLADBA).forEach(k => { v.data.cenik[k] = PROTO_CENIK.rezim === 'skladebny' ? SKLADBA[k] : 0; });
+  };
   try {
     const v = aktivniVarianta(ZAK);
-    Object.assign(v.data.cenik, zkusebniCenik(), zkusebniMustky());
+    PROTO_cenikNastav('skladebny');
     Object.assign(v.data.proj.cenik, zkusebniCenikProj());
     ZAK.cislo = '2026 - OPR - CN - 0412';
     ZAK.nazevAkce = 'Bytový dům Nad Parkem (ukázka)';

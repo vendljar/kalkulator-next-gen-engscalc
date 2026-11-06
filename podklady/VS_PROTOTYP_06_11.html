@@ -1,5 +1,5 @@
 <title>Prototyp víc šachet OCK</title>
-<!-- PROTOTYP VS (#570): sestavená aplikace z main 000924e (v4.11.8) + vrstvy A1/A2 (offline, zkušební ceník) + B (víc šachet). Nic se neukládá ani neposílá. -->
+<!-- PROTOTYP VS (#570): sestavená aplikace z integrace claude/integrace-16-10 7632ca5 (v6.11.3 = další verze main) + vrstvy A1/A2 (offline, zkušební ceník) + B (víc šachet). Nic se neukládá ani neposílá. -->
 <!-- Autor programu Jaroslav Vendl (2026) -->
 
 
@@ -80,6 +80,28 @@
    * Vysvětlivky (.note) se roztahují přes celou šířku karty. */
   .inputs .card .body { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); column-gap:28px; align-content:start; }
   .inputs .card .body > .note { grid-column:1 / -1; }
+  /* KARTA MŮSTKY (MU2 #560, 6. 11. 2026): jeden blok přes celou šířku mřížky
+   * karty — lišta upozornění nahoře, tabulka skupin ve vlastním vodorovně
+   * posuvném kontejneru, tlačítko pod ní. Záhlaví i pole zarovnaná vlevo,
+   * selecty se nezkracují (šířka podle nejdelší volby, min. šířka). */
+  .mustky-karta { grid-column:1 / -1; min-width:0; }
+  .mustky-lista { margin:0 0 10px; padding:8px 12px; border-radius:7px; background:#eef4ff; border:1px solid #c9d8f5;
+                  font-size:12.5px; line-height:1.45; white-space:normal; }
+  .mustky-lista.varovani { background:#fff8e6; border-color:#f0d58a; }
+  .mustky-scroll { overflow-x:auto; max-width:100%; }
+  table.mustky-tbl { width:auto; }
+  table.mustky-tbl th, table.mustky-tbl td { text-align:left; vertical-align:top; padding:5px 8px 5px 0; white-space:nowrap; }
+  table.mustky-tbl input[type=number] { width:76px; }
+  table.mustky-tbl input.mu-ks, table.mustky-tbl input.mu-sloupyKs { width:52px; }
+  table.mustky-tbl input.mu-sloupVyskaM { width:62px; }
+  table.mustky-tbl select { width:auto; min-width:120px; }
+  table.mustky-tbl select.mu-zabradliStrany { min-width:0; margin-left:6px; }
+  table.mustky-tbl input.mu-text { display:block; width:100%; min-width:150px; margin-top:4px; box-sizing:border-box; text-align:left; }
+  table.mustky-tbl .mu-dvojice { display:inline-flex; align-items:center; gap:4px; }
+  table.mustky-tbl .mu-krat { color:var(--mut); }
+  table.mustky-tbl td.mu-akce { padding-right:0; }
+  .mustky-pridat { margin-top:8px; }
+  @media print { .mustky-scroll { overflow:visible; } }
   /* sdílená hlavička zakázka + varianta (Kalkulace OCK i PROJ) */
   .zak-bar { border-color:var(--acc); }
   .zak-bar-h { font-size:13px; text-transform:uppercase; letter-spacing:.04em; margin:0; padding:10px 14px;
@@ -1039,7 +1061,7 @@
 <header>
   <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0Ij4KICA8IS0tIExvZ28gdiBobGF2acSNY2UgYXBsaWthY2UgKDE3LiA4LiAyMDI2IHZlxI1lcik6IHRlbnTDvcW+IHpuYWsgZG9sYXJ1IGpha28KICAgICAgIGZhdmljb24sIGFsZSB2ZSBTVsSaVExFIFpFTEVOw4kg4oCUIGhsYXZpxI1rYSBqZSB0bWF2xJsgbW9kcsOhIGEgdG1hdsSbIG1vZHLDvQogICAgICAgem5hayBuYSBuw60gbmVieWwgdmlkxJt0ICh6YWTDoW7DrSBKLiBWLikuIEZhdmljb24gbmEga2FydMSbIHByb2hsw63FvmXEjWUKICAgICAgIHrFr3N0w6F2w6EgdG1hdsSbIG1vZHLDvSAodGFtIGplIHBvZGtsYWQgc3bEm3Rsw70pLiAtLT4KICA8dGV4dCB4PSIzMiIgeT0iMzQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJjZW50cmFsIgogICAgICAgIGZvbnQtZmFtaWx5PSJBcmlhbCwgSGVsdmV0aWNhLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjU2IiBmb250LXdlaWdodD0iNzAwIgogICAgICAgIGZpbGw9IiM4NkU4QUQiPiQ8L3RleHQ+Cjwvc3ZnPgo=" alt="" width="28" height="28"
        style="display:block;border-radius:6px;flex:0 0 auto">
-  <h1>Kalkulačka v4.11.8</h1>
+  <h1>Kalkulačka v6.11.3</h1>
   <!-- Podtitulek s verzemi šablon zmizel 17. 8. 2026 večer (zadání J. V.) —
        zůstává jen štítek režimu výpočtu. -->
   <!-- Výchozí stav štítku musí odpovídat výchozímu modelu (od 17. 9. 2026
@@ -1161,14 +1183,14 @@
 /* ============================================================
  * VERZE A DATUM SESTAVENÍ
  *
- * Značky v4.11.8 a 2026-11-06 nahradí build.py při skládání aplikace.
+ * Značky v6.11.3 a 2026-11-06 nahradí build.py při skládání aplikace.
  * V Node testech se nic nenahrazuje a značky zůstanou tak, jak jsou zapsané –
  * proto se ven nedávají přímo, ale přes funkce, které nejdřív ověří tvar.
  * Bez té kontroly by testy i vývojový běh tvrdily, že aplikace je ze dne
  * „2026-11-06", a počítaly z toho stáří.
  * ============================================================ */
 
-const BUILD_VERZE_ZNACKA = 'v4.11.8';
+const BUILD_VERZE_ZNACKA = 'v6.11.3';
 const BUILD_DATUM_ZNACKA = '2026-11-06';
 
 function buildVerze() {
@@ -1528,7 +1550,8 @@ const PREKLAD = {
   /* ---- hesla používaná aplikací ---- */
   "** parametry profilů se mohou změnit po zpracování statického posouzení": ["** Beam size may differ based on final static calculation of all structure.", "** Die Trägergröße kann je nach endgültiger statischer Berechnung der gesamten Konstruktion abweichen.", "** La dimension des profilés peut être modifiée selon le calcul statique final de toute la structure."],
   "4x rohový sloupek, ocelový uzavřený profil": ["4 corner columns, closed profile", "4 Eckstiele, geschlossenes Stahlprofil", "4 montants d’angle, profilé creux en acier"],
-  "bez světlíků": ["Without glass portals", "ohne Oberlichter", "sans impostes vitrées"],
+  /* #572 (D. Sikora 2. 11. 2026): „bez světlíků" nesmí znít jako sklo — EN „glass portals" ani FR „vitrées". */
+  "bez světlíků": ["Without fanlights or side lights", "ohne Oberlichter", "sans impostes"],
   "bezúplatně zajistí majitel objektu": ["by building owner (no extra cost)", "durch den Gebäudeeigentümer (ohne Aufpreis)", "par le propriétaire du bâtiment (sans frais)"],
   "CELKOVÁ VÝŠKA KONSTRUKCE [m] *": ["TOTAL HEIGHT [m] *", "GESAMTHÖHE [m] *", "HAUTEUR TOTALE [m] *"],
   "DEMONTÁŽ PORTÁLŮ": ["LANDING ENTRANCE DISMANTLING", "DEMONTAGE DES PODESTEINGANGS", "DÉMONTAGE DES PORTAILS DE PALIER"],
@@ -1555,6 +1578,8 @@ const PREKLAD = {
   "MONTÁŽNÍ NOSNÍK NEBO OKA": ["INSTALLATION BEAM OR LIFTING EYE","MONTAGEBALKEN ODER HEBEHAKEN","POUTRE DE MONTAGE OU ANNEAUX DE LEVAGE"],
   "na dně prohlubně výtahové šachty": ["On the shaft pit floor", "Auf der Schachtgrubensohle", "au fond de la fosse de la gaine"],
   "Na horním nosném rámu OCK": ["On the top frame of the steel structure","Auf dem oberen Rahmen der Stahlkonstruktion","Sur le cadre supérieur de la structure métallique"],
+  "na kotevní terče": ["On fixing plates", "Auf Befestigungsplatten", "Sur platines de fixation"],
+  "lakované lišty po obvodu výplně": ["Painted trims along the panel perimeter", "Lackierte Leisten am Umfang der Füllung", "Baguettes laquées sur le pourtour du panneau"],
   "na zasklívací terče": ["Glazing fixing points", "Befestigungspunkte der Verglasung", "sur pastilles de vitrage"],
   "na zpevněné hraně stěn prohlubně výtahové šachty": ["on the reinforced pit edge", "Am verstärkten Grubenrand", "sur le bord renforcé de la fosse"],
   "NAPOJENÍ ŠACHETNÍCH DVEŘÍ": ["LANDING DOOR COVER PLATE", "SCHACHTTÜR-ABDECKPLATTE", "TÔLE DE RECOUVREMENT DES PORTES PALIÈRES"],
@@ -1996,6 +2021,34 @@ const PREKLAD = {
   "Přístavba výtahu v nové ocelové konstrukci výtahové šachty k fasádě objektu.": ["Addition of a lift in a new steel lift shaft structure attached to the building facade.","Anbau eines Aufzugs in einer neuen Stahlkonstruktion des Aufzugsschachts an der Gebäudefassade.","Ajout d'un ascenseur dans une nouvelle structure métallique de gaine accolée à la façade du bâtiment."],
   "Vestavba výtahu v nové ocelové konstrukci výtahové šachty do vnitřního prostoru objektu.": ["Installation of a lift in a new steel lift shaft structure inside the building.","Einbau eines Aufzugs in einer neuen Stahlkonstruktion des Aufzugsschachts im Gebäudeinneren.","Installation d'un ascenseur dans une nouvelle structure métallique de gaine à l'intérieur du bâtiment."],
   "Šachta je průchozí – nástupiště jsou na čelní i zadní straně.": ["The shaft is a through-type shaft – landings are on both the front and the rear side.","Der Schacht ist ein Durchladeschacht – Zugangsstellen befinden sich an der Vorder- und der Rückseite.","La gaine est traversante – les paliers se trouvent en façade avant et arrière."],
+  /* SEKCE MŮSTKY (#560, 5. 11. 2026) — návrh překladů z podklady/NAVRH_MUSTKY_A_ZMENA_CENY_04_11.md
+   * (A3) doplněný o popisky řádků; ke kontrole J. V. jako u P7. */
+  "POČET A ROZMĚR": ["NUMBER AND DIMENSIONS", "ANZAHL UND ABMESSUNGEN", "NOMBRE ET DIMENSIONS"],
+  "PODLAHA": ["FLOOR", "BODEN", "PLANCHER"],
+  "ZÁBRADLÍ": ["RAILING", "GELÄNDER", "GARDE-CORPS"],
+  "KOTVENÍ MŮSTKŮ": ["BRIDGE ANCHORING", "VERANKERUNG DER BRÜCKEN", "ANCRAGE DES PASSERELLES"],
+  "SLOUPY NAVÍC": ["ADDITIONAL COLUMNS", "ZUSÄTZLICHE STÜTZEN", "POTEAUX SUPPLÉMENTAIRES"],
+  "pochozí plech": ["walkable checker plate", "begehbares Riffelblech", "tôle larmée"],
+  "pororošt": ["grating", "Gitterrost", "caillebotis"],
+  "ocelová vana pro beton (betonáž zajistí stavba)": ["steel tray for concrete (concreting by the builder)", "Stahlwanne für Beton (Betonage durch den Bauherrn)", "bac en acier pour béton (bétonnage par le maître d'ouvrage)"],
+  "kovové": ["steel", "Stahl", "métallique"],
+  "skleněné": ["glass", "Glas", "en verre"],
+  "bez zábradlí": ["without railing", "ohne Geländer", "sans garde-corps"],
+  "jiné": ["other", "andere", "autre"],
+  "jednostranně": ["one side", "einseitig", "d'un côté"],
+  "oboustranně": ["both sides", "beidseitig", "des deux côtés"],
+  "do stropní desky / věnce budovy": ["into the floor slab / ring beam of the building", "in die Geschossdecke / den Ringbalken des Gebäudes", "dans la dalle / le chaînage du bâtiment"],
+  "do sloupů (na terén)": ["onto columns (to the ground)", "auf Stützen (auf das Gelände)", "sur poteaux (au sol)"],
+  "konzolově jen z OCK": ["cantilevered from the steel structure only", "auskragend nur von der Stahlkonstruktion", "en porte-à-faux depuis la structure uniquement"],
+  "ks": ["pcs", "Stk.", "pcs"],
+  "šířka × délka": ["width × length", "Breite × Länge", "largeur × longueur"],
+  "výška": ["height", "Höhe", "hauteur"],
+  "skupina": ["group", "Gruppe", "groupe"],
+  "CENA CELKEM": ["TOTAL PRICE", "GESAMTPREIS", "PRIX TOTAL"],
+  "výtahová šachta a můstky mezi budovou a OCK": ["lift shaft and bridges between the building and the steel structure", "Aufzugsschacht und Brücken zwischen Gebäude und Stahlkonstruktion", "gaine d'ascenseur et passerelles entre le bâtiment et la structure"],
+  "rozsah dodávky dle Technické části nabídky - MŮSTKY MEZI BUDOVOU A OCK": ["scope of supply according to the Technical part of the quotation - BRIDGES BETWEEN THE BUILDING AND THE STEEL STRUCTURE", "Lieferumfang gemäß technischem Teil des Angebots - BRÜCKEN ZWISCHEN GEBÄUDE UND STAHLKONSTRUKTION", "étendue de la fourniture selon la partie technique de l'offre - PASSERELLES ENTRE LE BÂTIMENT ET LA STRUCTURE MÉTALLIQUE"],
+  "Můstky mezi budovou a OCK (bez DPH)": ["Bridges between building and steel structure (excl. VAT)", "Brücken zwischen Gebäude und Stahlkonstruktion (ohne MwSt.)", "Passerelles entre bâtiment et structure (HT)"],
+  "Cena celkem (bez DPH)": ["Total price (excl. VAT)", "Gesamtpreis (ohne MwSt.)", "Prix total (HT)"],
   "MŮSTKY MEZI BUDOVOU A OCK": ["BRIDGES BETWEEN THE BUILDING AND THE STEEL STRUCTURE","BRÜCKEN ZWISCHEN GEBÄUDE UND STAHLKONSTRUKTION","PASSERELLES ENTRE LE BÂTIMENT ET LA STRUCTURE MÉTALLIQUE"],
   "přisazena k fasádě, v jednom nástupišti přes můstek": ["Attached to the facade, at one landing via an access bridge","An die Fassade angebaut, an einer Zugangsstelle über eine Brücke","Accolée à la façade, à un palier par une passerelle"],
   "přisazena k podestám, v jednom nástupišti přes můstek": ["Attached to the landings, at one landing via an access bridge","An die Podeste angebaut, an einer Zugangsstelle über eine Brücke","Accolée aux paliers, à un palier par une passerelle"],
@@ -2299,6 +2352,17 @@ const PREKLAD = {
     "As part of the planned CONSTRUCTION OF THE LIFT AND LIFT SHAFT, in the initial phase we offer a SURVEY and PROCESSING OF THE SURVEY OUTPUTS for the intended lift location.",
     "Im Rahmen des geplanten BAUS DES AUFZUGS UND DES AUFZUGSSCHACHTS bieten wir in der Anfangsphase das AUFMASS und die AUSWERTUNG DES AUFMASSES für den vorgesehenen Aufzugsstandort an.",
     "Dans le cadre de la CONSTRUCTION prévue DE L'ASCENSEUR ET DE LA GAINE D'ASCENSEUR, nous proposons dans la phase initiale le RELEVÉ et le TRAITEMENT DES LIVRABLES DU RELEVÉ pour l'emplacement envisagé de l'ascenseur."],
+  /* #569 (D. Sikora 2. 11. 2026): studie bez našeho zaměření — neutrální znění */
+  "Z podkladů a prohlídky navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.": [
+    "Based on the available documents and an inspection, we will propose alternative solutions and elaborate the selected alternative in a FEASIBILITY STUDY.",
+    "Auf Grundlage der Unterlagen und einer Besichtigung schlagen wir Lösungsvarianten vor und arbeiten die gewählte Variante in einer MACHBARKEITSSTUDIE aus.",
+    "À partir des documents disponibles et d'une visite, nous proposerons des variantes de solution et développerons la variante retenue dans une ÉTUDE DE FAISABILITÉ."],
+  "PŮVODNÍ STAV - grafický výstup z podkladů a prohlídky, průmět reality z průzkumu s původní dokumentací stavby": [
+    "ORIGINAL STATE – graphic output from the documents and the inspection, comparison of the inspection findings with the original building documentation",
+    "BESTAND – grafische Darstellung aus den Unterlagen und der Besichtigung, Abgleich der Untersuchungsergebnisse mit den ursprünglichen Bauunterlagen",
+    "ÉTAT EXISTANT – restitution graphique à partir des documents et de la visite, confrontation des constats du diagnostic avec le dossier d'origine du bâtiment"],
+  "PŮVODNÍ STAV - grafický výstup z podkladů a prohlídky": ["ORIGINAL STATE – graphic output from the documents and the inspection", "BESTAND – grafische Darstellung aus den Unterlagen und der Besichtigung", "ÉTAT EXISTANT – restitution graphique à partir des documents et de la visite"],
+  "do 10-12 týdnů od předání podkladů": ["within 10–12 weeks of handover of the documents", "innerhalb von 10–12 Wochen nach Übergabe der Unterlagen", "dans les 10 à 12 semaines suivant la remise des documents"],
   "Z výsledku zaměření navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.": [
     "Based on the survey results, we will propose alternative solutions and elaborate the selected alternative in a FEASIBILITY STUDY.",
     "Auf Grundlage des Aufmaßes schlagen wir Lösungsvarianten vor und arbeiten die gewählte Variante in einer MACHBARKEITSSTUDIE aus.",
@@ -2555,6 +2619,10 @@ const PREKLAD = {
   "- zakreslení rozsahu a postupu bouracích prací": ["- drawing of the scope and sequence of the demolition works", "- Darstellung von Umfang und Ablauf der Abbrucharbeiten", "- représentation de l'étendue et du déroulement des travaux de démolition"],
   "bourací dokumentace": ["demolition documentation", "Abbruchplanung", "dossier de démolition"],
   "- stav vycházející ze zaměření a původní dokumentace": ["- state based on the survey and the original documentation", "- Zustand auf Grundlage des Aufmaßes und der ursprünglichen Unterlagen", "- état établi à partir du relevé et du dossier d'origine"],
+  /* #573 (J. V. 6. 11. 2026): DPZ bez našeho zaměření — neutrální znění */
+  "dokumentace stávajícího stavu - stav vycházející z původní dokumentace a prohlídky": ["documentation of the existing state – state based on the original documentation and the inspection", "Dokumentation des Bestands – Zustand auf Grundlage der ursprünglichen Unterlagen und der Besichtigung", "dossier de l'état existant – état établi à partir du dossier d'origine et de la visite"],
+  "dokumentace stávajícího stavu - stav vycházející ze zaměření a původní dokumentace": ["documentation of the existing state – state based on the survey and the original documentation", "Dokumentation des Bestands – Zustand auf Grundlage des Aufmaßes und der ursprünglichen Unterlagen", "dossier de l'état existant – état établi à partir du relevé et du dossier d'origine"],   /* dotisk nabídky odeslané před #573 */
+  "- stav vycházející z původní dokumentace a prohlídky": ["- state based on the original documentation and the inspection", "- Zustand auf Grundlage der ursprünglichen Unterlagen und der Besichtigung", "- état établi à partir du dossier d'origine et de la visite"],
   "dokumentace stávajícího stavu": ["documentation of the existing state", "Dokumentation des Bestands", "dossier de l'état existant"],
   "- v rozsahu požadovaném pro řízení o povolení záměru": ["- to the extent required for the project permit procedure", "- im für das Genehmigungsverfahren erforderlichen Umfang", "- dans l'étendue requise pour la procédure d'autorisation du projet"],
   "situace stavby": ["site plan", "Lageplan", "plan de situation"],
@@ -2567,6 +2635,7 @@ const PREKLAD = {
   "Dokumentace pro povolení záměru obsahuje tyto části:": ["The documentation for the project permit contains the following parts:", "Die Unterlagen für die Vorhabengenehmigung umfassen folgende Teile:", "Le dossier de demande d'autorisation comprend les parties suivantes :"],
   /* D1 Q2 (rozhodnutí J. V. 20. 10. 2026): termín hrubopisu DPZ bez studie */
   "do 12 týdnů od zpracování výstupů ze zaměření": ["within 12 weeks of processing the survey outputs", "innerhalb von 12 Wochen nach Ausarbeitung der Aufmaßergebnisse", "dans un délai de 12 semaines après l'élaboration des résultats du relevé"],
+  "do 12 týdnů od předání podkladů": ["within 12 weeks of handover of the documents", "innerhalb von 12 Wochen nach Übergabe der Unterlagen", "dans les 12 semaines suivant la remise des documents"],   /* #573 */
   "Dokumentace povolení záměru obsahuje tyto části:": ["The documentation for the project permit contains the following parts:", "Die Unterlagen für die Vorhabengenehmigung umfassen folgende Teile:", "Le dossier de demande d'autorisation comprend les parties suivantes :"],
   "Dokumentace pro povolení záměru (DPZ) navazuje na vzájemně odsouhlasenou STUDII PROVEDITELNOSTI. Ta rozpracovává dokumentaci, dle platné vyhlášky do legislativou požadované úrovně s autorizacemi inženýrů dle příslušných oborů.": ["The documentation for the project permit (DPZ) follows on from the mutually agreed FEASIBILITY STUDY. It develops the documentation in accordance with the applicable decree to the level required by legislation, with the authorisations of engineers in the relevant disciplines.", "Die Unterlagen für die Vorhabengenehmigung (DPZ) bauen auf der gemeinsam abgestimmten MACHBARKEITSSTUDIE auf. Sie arbeiten die Dokumentation gemäß geltender Verordnung bis zum gesetzlich geforderten Niveau aus, mit Autorisierung der Ingenieure der jeweiligen Fachrichtungen.", "Le dossier de demande d'autorisation (DPZ) s'appuie sur l'ÉTUDE DE FAISABILITÉ validée d'un commun accord. Il développe la documentation conformément au décret en vigueur jusqu'au niveau exigé par la législation, avec les agréments des ingénieurs des disciplines concernées."],
   "DPZ": ["DPZ", "DPZ", "DPZ"],
@@ -3202,6 +3271,12 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
    * mustkyCenikNovy(). Nula = starý ceník, počítá se paušálem za kus. */
   mustekRefSirkaMm: 0, mustekMontazHodKc: 0,
   mustekMontazZakladHod: 0, mustekMontazBmHod: 0, mustekMontazMinHod: 0,
+  /* Skladebný model můstků (#560, A-Q6) — jen jména, sazby v ceníku na
+   * serveru (#548). Nula u nosné konstrukce = starý tvar (vzorec #354). */
+  mustekRamBmKc: 0, mustekPodlahaPlechM2Kc: 0, mustekPodlahaPororostM2Kc: 0, mustekPodlahaVanaM2Kc: 0,
+  mustekZabradliKovBmKc: 0, mustekZabradliSkloBmKc: 0,
+  mustekKotveniDeskaKc: 0, mustekKotveniSloupKc: 0, mustekKotveniKonzolaKc: 0,
+  mustekZabradliSkloMontazHodBm: 0,
   montazHodKc: 0, vetraciMrizkaKc: 0, transportKc: 0,
   zastreseniM2Kc: 0, oplechFasadaBmKc: 0,
   skloBokyKc: 0,  skloBokyNazev: '',
@@ -3850,6 +3925,9 @@ const PLECH_NADPRAZI_KG_M2 = 8.5;   // stejný plech jako podesty (podKg1)
  * `mustkyKs` = kolik můstků na šachtě je (0 = žádný). Stará zakázka nese
  * jen zaškrtávátko `mustek` — zaškrtnuté znamená jeden můstek. */
 function mustkyPocet(z) {
+  /* #560: zadání po skupinách stejných můstků (`Z.mustky[]`) má přednost;
+   * počet = součet kusů skupin. Bez pole platí dnešní tvar beze změny. */
+  if (z && Array.isArray(z.mustky)) return mustkySkupiny(z).reduce((a, s) => a + s.ks, 0);
   const n = z ? z.mustkyKs : undefined;
   if (n !== undefined && n !== null && n !== '' && isFinite(+n)) return Math.max(0, Math.floor(+n));
   return (z && z.mustek) ? 1 : 0;
@@ -3909,20 +3987,168 @@ function mustekDelkaMm(z) {
   const n = (v === null || v === undefined || String(v).trim() === '') ? NaN : +v;
   return Number.isFinite(n) && n > 0 ? n : MUSTEK_DELKA_VYCHOZI_MM;
 }
-/* Rozpad ceny můstků — jediné místo vzorce (jádro, kontroly, testy). */
-function mustkyRozpad(z, c) {
+/* SAMOSTATNÁ SEKCE MŮSTKY (#560, rozhodnutí J. V. 4. 11. 2026, návrh
+ * podklady/NAVRH_MUSTKY_A_ZMENA_CENY_04_11.md, oddíl A).
+ *
+ * ZADÁNÍ PO SKUPINÁCH STEJNÝCH MŮSTKŮ (A-Q2): `Z.mustky = [{ ks, sirkaMm,
+ * delkaMm, podlaha, podlahaNazev, zabradli, zabradliNazev, zabradliStrany,
+ * kotveni, kotveniText, sloupyKs, sloupVyskaM }]`, běžně jeden řádek.
+ * Prázdná šířka = šířka šachty, prázdná délka = 1 000 mm, prázdná výška
+ * sloupu = výška nejvyššího nástupiště (zdvih). Starší zakázka pole nemá
+ * a čte se přes mustkySkupiny(): `mustkyKs` (nebo zaškrtnutý `mustek`)
+ * + `mustekHloubkaMm` = jedna skupina s výchozím provedením. Uložená data
+ * se NEPŘEPISUJÍ — převod je jen při čtení.
+ *
+ * VÝPOČET (A-Q6, A-Q7):
+ *  – MODEL 1 zůstává na vzorci #354 (předloha 1:1): po skupinách jen počet
+ *    a délka, šířka = šířka šachty, provedení, kotvení ani sloupy se
+ *    nepočítají.
+ *  – MODEL 2 se starým ceníkem (bez kladné `C.mustekRamBmKc`): vzorec #354
+ *    beze změny (= pochozí plech, kovové zábradlí), jen se zadanou šířkou
+ *    skupiny; sloupy navíc se počítají (jako sloupky šachty, A-Q5).
+ *  – MODEL 2 s novým ceníkem (`mustkyCenikSkladebny`): SKLADEBNÝ model —
+ *    nosná konstrukce + podlaha podle typu + zábradlí podle typu + kotvení
+ *    + sloupy (jako rohové sloupky šachty: profil sloupku z Dimenze profilů,
+ *    rezerva profilů, Kč/kg profilů a lakování profilů) + montáž; řádky
+ *    tvoří vlastní sekci kalkulace MŮSTKY a nabídka má samostatný řádek ceny.
+ *  Podlaha „vana" = ocelová vana je naše dodávka, BETONÁŽ ZAJISTÍ STAVBA
+ *  (A-Q4) — sazba je jen za vanu. Volba „jiné" nemá ceníkovou sazbu: řádek
+ *  vznikne s cenou 0 a příznakem `bezCeny` (cenu doplní administrátor
+ *  ručním přepisem řádku), kontrola `mustky` to řekne. */
+const MUSTEK_PODLAHY = [['plech', 'pochozí plech'], ['pororost', 'pororošt'],
+  ['vana', 'ocelová vana pro beton (betonáž zajistí stavba)'], ['jine', 'jiné']];
+const MUSTEK_ZABRADLI = [['kov', 'kovové'], ['sklo', 'skleněné'], ['bez', 'bez zábradlí'], ['jine', 'jiné']];
+const MUSTEK_KOTVENI = [['deska', 'do stropní desky / věnce budovy'], ['sloupy', 'do sloupů (na terén)'],
+  ['konzola', 'konzolově jen z OCK'], ['jine', 'jiné']];
+const MUSTKY_SKUPIN_MAX = 20;
+const MUSTEK_TEXT_MAX = 120;
+/* Nové klíče ceníku skladebného modelu (A-Q6) — JEN JMÉNA, sazby žijí
+ * v ceníku na serveru (#548). Sloupy navíc vlastní sazbu nemají (A-Q5). */
+const MUSTKY_SKLADBA_KLICE = ['mustekRamBmKc', 'mustekPodlahaPlechM2Kc', 'mustekPodlahaPororostM2Kc',
+  'mustekPodlahaVanaM2Kc', 'mustekZabradliKovBmKc', 'mustekZabradliSkloBmKc', 'mustekKotveniDeskaKc',
+  'mustekKotveniSloupKc', 'mustekKotveniKonzolaKc', 'mustekZabradliSkloMontazHodBm'];
+const MUSTEK_PODLAHA_KLIC = { plech: 'mustekPodlahaPlechM2Kc', pororost: 'mustekPodlahaPororostM2Kc', vana: 'mustekPodlahaVanaM2Kc' };
+const MUSTEK_ZABRADLI_KLIC = { kov: 'mustekZabradliKovBmKc', sklo: 'mustekZabradliSkloBmKc' };
+const MUSTEK_KOTVENI_KLIC = { deska: 'mustekKotveniDeskaKc', sloupy: 'mustekKotveniSloupKc', konzola: 'mustekKotveniKonzolaKc' };
+/* Názvy řádků kalkulace (klíče ručních přepisů — neměnit). */
+const MUSTEK_RADEK = {
+  konstrukce: 'MŮSTKY – NOSNÁ KONSTRUKCE',
+  podlaha: { plech: 'MŮSTKY – PODLAHA: POCHOZÍ PLECH', pororost: 'MŮSTKY – PODLAHA: POROROŠT',
+    vana: 'MŮSTKY – PODLAHA: OCELOVÁ VANA (BETON ZAJISTÍ STAVBA)', jine: 'MŮSTKY – PODLAHA: JINÁ' },
+  zabradli: { kov: 'MŮSTKY – ZÁBRADLÍ: KOVOVÉ', sklo: 'MŮSTKY – ZÁBRADLÍ: SKLENĚNÉ', jine: 'MŮSTKY – ZÁBRADLÍ: JINÉ' },
+  kotveni: { deska: 'MŮSTKY – KOTVENÍ: DO STROPNÍ DESKY', sloupy: 'MŮSTKY – KOTVENÍ: DO SLOUPŮ',
+    konzola: 'MŮSTKY – KOTVENÍ: KONZOLOVĚ Z OCK', jine: 'MŮSTKY – KOTVENÍ: JINÉ' },
+  sloupy: 'MŮSTKY – SLOUPY NAVÍC (PROFIL)',
+  sloupyLak: 'MŮSTKY – SLOUPY NAVÍC (LAKOVÁNÍ)',
+  montaz: 'MONTÁŽ MŮSTKŮ',
+};
+/* Cesta řádku do ceníku (klíče ve výčtech výš; controlling je zařazuje všechny). */
+const mustekCesta = k => 'C.' + k;
+const mustekVolba = (seznam, v, vychozi) => (seznam.some(x => x[0] === v) ? v : vychozi);
+const mustekText = v => (typeof v === 'string' ? v.slice(0, MUSTEK_TEXT_MAX) : '');
+/* Kladné číslo, nebo '' (prázdno není nula). */
+const mustekKladne = v => {
+  if (v === null || v === undefined || String(v).trim() === '') return '';
+  const n = +v;
+  return Number.isFinite(n) && n > 0 ? n : '';
+};
+const mustekKusy = v => { const n = +v; return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0; };
+function mustekSkupinaOciste(s) {
+  const x = (s && typeof s === 'object' && !Array.isArray(s)) ? s : {};
+  return {
+    ks: mustekKusy(x.ks), sirkaMm: mustekKladne(x.sirkaMm), delkaMm: mustekKladne(x.delkaMm),
+    podlaha: mustekVolba(MUSTEK_PODLAHY, x.podlaha, 'plech'), podlahaNazev: mustekText(x.podlahaNazev),
+    zabradli: mustekVolba(MUSTEK_ZABRADLI, x.zabradli, 'kov'), zabradliNazev: mustekText(x.zabradliNazev),
+    zabradliStrany: +x.zabradliStrany === 1 ? 1 : 2,
+    kotveni: mustekVolba(MUSTEK_KOTVENI, x.kotveni, 'deska'), kotveniText: mustekText(x.kotveniText),
+    sloupyKs: mustekKusy(x.sloupyKs), sloupVyskaM: mustekKladne(x.sloupVyskaM),
+  };
+}
+/* Nová skupina (tlačítko „+ další provedení"; převod starého tvaru). */
+function mustekSkupinaNova(ks) { return mustekSkupinaOciste({ ks: ks == null ? 1 : ks }); }
+/* Skupiny můstků zakázky — jediné místo čtení obou tvarů. */
+function mustkySkupiny(z) {
+  if (z && Array.isArray(z.mustky)) return z.mustky.slice(0, MUSTKY_SKUPIN_MAX).map(mustekSkupinaOciste);
+  const n = z ? z.mustkyKs : undefined;
+  const ks = (n !== undefined && n !== null && n !== '' && isFinite(+n)) ? Math.max(0, Math.floor(+n)) : ((z && z.mustek) ? 1 : 0);
+  if (!ks) return [];
+  return [mustekSkupinaOciste({ ks, delkaMm: z.mustekHloubkaMm })];
+}
+/* Převod starého tvaru na skupiny (UI při první úpravě karty Můstky). */
+function mustkyNaSkupiny(z) {
+  if (!z || typeof z !== 'object') return [];
+  if (Array.isArray(z.mustky)) return z.mustky;
+  z.mustky = mustkySkupiny(z);
+  delete z.mustkyKs; delete z.mustek; delete z.mustekHloubkaMm;
+  return z.mustky;
+}
+/* Nový (skladebný) tvar ceníku: kladná referenční šířka (#354) a kladná
+ * sazba nosné konstrukce. Bez ní platí #354 (A-Q6: starý ceník → beze změny). */
+function mustkyCenikSkladebny(c) {
+  const r = c ? +c.mustekRamBmKc : NaN;
+  return mustkyCenikNovy(c) && Number.isFinite(r) && r > 0;
+}
+/* Provedení, které se ve výpočtu neprojeví (Model 1 nebo starý ceník):
+ * podlaha, zábradlí ani kotvení mimo výchozí. Pro kontrolu a kartu. */
+function mustkyProvedeniMimoVychozi(z) {
+  return mustkySkupiny(z).some(s => s.ks > 0 && (s.podlaha !== 'plech' || s.zabradli !== 'kov'
+    || s.zabradliStrany !== 2 || s.kotveni !== 'deska'));
+}
+/* Rozpad ceny můstků — jediné místo vzorce (jádro, kontroly, testy).
+ * `fixes` = Model 2 (výchozí true kvůli starším volajícím; Model 1 = false).
+ * Pole první skupiny (sirkaMm, delkaMm, bmRef, hodKs, materialKs, montazKs)
+ * zůstávají kvůli čtenářům #354; součty za všechny skupiny nesou
+ * bmRefCelkem / hodCelkem, skladebný model `skladba`. */
+function mustkyRozpad(z, c, fixes) {
+  const m2 = fixes !== false;
   const ks = mustkyPocet(z);
   const novy = mustkyCenikNovy(c);
   const num = v => (Number.isFinite(+v) ? +v : 0);
-  const sirkaMm = Math.round(num(z && z.sirka) * 1000);
-  const delkaMm = mustekDelkaMm(z);
-  const delkaM = delkaMm / 1000;
-  const out = { ks, novy, sirkaMm, delkaMm, delkaZadana: delkaMm === +(z && z.mustekHloubkaMm) };
+  const sirkaSachtyMm = Math.round(num(z && z.sirka) * 1000);
+  const skupiny = mustkySkupiny(z).map(s => Object.assign({}, s, {
+    sirkaEfMm: (m2 && s.sirkaMm !== '') ? +s.sirkaMm : sirkaSachtyMm,
+    delkaEfMm: s.delkaMm !== '' ? +s.delkaMm : MUSTEK_DELKA_VYCHOZI_MM,
+    vyskaSloupuM: s.sloupVyskaM !== '' ? +s.sloupVyskaM : num(z && z.zdvih),
+  }));
+  const prvni = skupiny[0];
+  const sirkaMm = prvni ? prvni.sirkaEfMm : sirkaSachtyMm;
+  const delkaMm = prvni ? prvni.delkaEfMm : mustekDelkaMm(z);
+  const out = { ks, novy, sirkaMm, delkaMm,
+    delkaZadana: prvni ? prvni.delkaMm !== '' : delkaMm === +(z && z.mustekHloubkaMm),
+    skupiny, skladebny: false,
+    /* Sloupy navíc jen Model 2 (Model 1 je nezná). */
+    sloupyM: m2 ? skupiny.reduce((a, s) => a + s.sloupyKs * s.vyskaSloupuM, 0) : 0,
+    sloupyKs: m2 ? skupiny.reduce((a, s) => a + s.sloupyKs, 0) : 0 };
   if (!novy) return out;
-  out.bmRef = delkaM * (sirkaMm / num(c.mustekRefSirkaMm));          // bm přepočtené na ref. šířku, 1 ks
-  out.hodKs = Math.max(num(c.mustekMontazMinHod), num(c.mustekMontazZakladHod) + num(c.mustekMontazBmHod) * delkaM);
+  const ref = num(c.mustekRefSirkaMm);
+  const hodNa = dM => Math.max(num(c.mustekMontazMinHod), num(c.mustekMontazZakladHod) + num(c.mustekMontazBmHod) * dM);
+  skupiny.forEach(s => { s.bmRef = (s.delkaEfMm / 1000) * (s.sirkaEfMm / ref); s.hodKs = hodNa(s.delkaEfMm / 1000); });
+  out.bmRef = (delkaMm / 1000) * (sirkaMm / ref);          // bm přepočtené na ref. šířku, 1 ks
+  out.hodKs = hodNa(delkaMm / 1000);
   out.materialKs = out.bmRef * num(c.mustekKc);
   out.montazKs = out.hodKs * num(c.mustekMontazHodKc);
+  out.bmRefCelkem = skupiny.length ? skupiny.reduce((a, s) => a + s.ks * s.bmRef, 0) : ks * out.bmRef;
+  out.hodCelkem = skupiny.length ? skupiny.reduce((a, s) => a + s.ks * s.hodKs, 0) : ks * out.hodKs;
+  if (!m2 || !mustkyCenikSkladebny(c) || !ks) return out;
+  /* SKLADEBNÝ MODEL (Model 2 + nový ceník). */
+  out.skladebny = true;
+  const sk = { konstrukceBm: out.bmRefCelkem, podlaha: {}, podlahaNazvy: [], zabradli: {}, zabradliNazvy: [],
+    kotveni: {}, kotveniTexty: [], skloBm: 0, hodiny: out.hodCelkem };
+  const pricti = (o, k, v) => { o[k] = (o[k] || 0) + v; };
+  skupiny.forEach(s => {
+    if (!s.ks) return;
+    const sM = s.sirkaEfMm / 1000, dM = s.delkaEfMm / 1000;
+    pricti(sk.podlaha, s.podlaha, s.ks * sM * dM);
+    if (s.podlaha === 'jine' && s.podlahaNazev && sk.podlahaNazvy.indexOf(s.podlahaNazev) < 0) sk.podlahaNazvy.push(s.podlahaNazev);
+    if (s.zabradli !== 'bez') pricti(sk.zabradli, s.zabradli, s.ks * s.zabradliStrany * dM);
+    if (s.zabradli === 'jine' && s.zabradliNazev && sk.zabradliNazvy.indexOf(s.zabradliNazev) < 0) sk.zabradliNazvy.push(s.zabradliNazev);
+    if (s.zabradli === 'sklo') sk.skloBm += s.ks * s.zabradliStrany * dM;
+    pricti(sk.kotveni, s.kotveni, s.ks);
+    if (s.kotveni === 'jine' && s.kotveniText && sk.kotveniTexty.indexOf(s.kotveniText) < 0) sk.kotveniTexty.push(s.kotveniText);
+  });
+  sk.hodinySklo = sk.skloBm * num(c.mustekZabradliSkloMontazHodBm);
+  sk.hodiny = out.hodCelkem + sk.hodinySklo;
+  out.skladba = sk;
   return out;
 }
 /* MIGRACE ZVEŘEJŇOVANÉHO CENÍKU (#354; od #548 bez sazeb v kódu).
@@ -3983,6 +4209,23 @@ function mustkyCenikKontrola(cenik) {
   if (!kladne(c.mustekKc)) chybi.push('mustekKc');
   if (!kladne(c.mustekMontazHodKc)) chybi.push('mustekMontazHodKc');
   if (!MUSTKY_CENIK_KLICE.slice(3).some(k => kladne(c[k]))) chybi.push('hodiny');
+  /* #560 (A-Q6): skladebný model — s kladnou nosnou konstrukcí musí mít
+   * sazbu každé provedení (podlahy, zábradlí, kotvení); hodiny skleněného
+   * zábradlí smějí být nula. Rozpracovaný skladebný ceník bez nosné
+   * konstrukce se taky řekne (model by se nezapnul). Obojí jde zveřejnit
+   * jen s potvrzením (stejně jako #548 / K40-N2). */
+  const skladba = MUSTKY_SKLADBA_KLICE.filter(k => k !== 'mustekZabradliSkloMontazHodBm');
+  if (kladne(c.mustekRamBmKc)) {
+    const nul = skladba.filter(k => !kladne(c[k]));
+    if (nul.length) return { ok: false, stary: false, chybi: chybi.concat(nul),
+      text: (chybi.length ? 'Cena můstku podle #354 není úplná (' + chybi.map(k => POPIS[k]).join(', ') + '). ' : '')
+        + 'Skladebný model můstků: chybí sazba ' + nul.map(k => 'C.' + k).join(', ')
+        + '. Nové nabídky v Modelu 2 by toto provedení počítaly za 0 Kč. Doplňte je v Nastavení → Ceník.' };
+  } else if (skladba.some(k => kladne(c[k])) && !chybi.length) {
+    return { ok: false, stary: false, chybi: ['mustekRamBmKc'],
+      text: 'Skladebný model můstků má vyplněné sazby provedení, ale chybí C.mustekRamBmKc (nosná konstrukce) — '
+        + 'bez ní se můstky dál počítají podle #354 a sazby provedení se nepoužijí.' };
+  }
   if (!chybi.length) return { ok: true, stary: false, chybi, text: '' };
   return { ok: false, stary: false, chybi,
     text: 'Cena můstku není úplná — chybí ' + chybi.map(k => POPIS[k]).join(', ')
@@ -4374,7 +4617,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const mustekRozmer = v => (Number.isFinite(+v) && +v > 0 ? +v / 1000 : 0);
   /* #354: s novým ceníkem šířka = šířka šachty, délka jako v ceně (prázdná
    * = 1 000 mm); starý ceník (zamčené varianty) počítá střechu jako dřív. */
-  const mustkyR = mustkyRozpad(z, c);
+  const mustkyR = mustkyRozpad(z, c, fixes);
   const mustekSirka = mustkyR.novy ? mustkyR.sirkaMm / 1000 : mustekRozmer(z.mustekSirkaMm);
   const mustekHloubka = mustkyR.novy ? mustkyR.delkaMm / 1000 : mustekRozmer(z.mustekHloubkaMm);
   const strechaMustekM2 = (mustekNahore && mustekSirka && mustekHloubka) ? (mustekSirka + 0.2) * mustekHloubka : 0;
@@ -4500,6 +4743,17 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
                   celkem: (+vl.mnozstvi || 0) * (+vl.cena || 0), vlastni: true }));
   const lakVlastniKc = vlLakRows.reduce((a, r) => a + r.celkem, 0);
   const lakovaniKc = (L.rezim === 'tomas' ? tomas : lakovna) + lakVlastniKc;
+
+  /* SLOUPY NAVÍC POD MŮSTKY (#560, A-Q5 — J. V.: „To jsou jakly, stejné
+   * jako v rozích šachty … naceňují se stejným způsobem jako sloupky
+   * v šachtě a se stejnými dimenzemi"). Profil sloupku z Dimenze profilů,
+   * rezerva profilů jako u sloupků šachty, materiál Kč/kg profilů
+   * a lakování sazbou profilů (lakovna za bm, Tomáš za m²). Vlastní sazba
+   * sloupů se nezavádí. Jen Model 2 (mustkyRozpad vrací 0 v Modelu 1). */
+  const sloupyMustkuM = mustkyR.sloupyM * (1 + rezP);
+  const sloupyMustkuKg = sloupyMustkuM * jSl.kg, sloupyMustkuM2 = sloupyMustkuM * jSl.m2;
+  const sloupyMustkuLakKc = sloupyMustkuM > 0
+    ? (L.rezim === 'tomas' ? (+L.tomasProfilM2 || 0) * sloupyMustkuM2 : (+L.lakovnaProfilBm || 0) * sloupyMustkuM) : 0;
 
   /* ---------- zasklení ---------- */
   const zadniKs = Math.ceil(vyskaProsklene / z.roztec - 1e-9);
@@ -5060,6 +5314,41 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
   const oznacAtyp = r => r && ({ ...r, atyp: true,
     bezCeny: (+r.mnozstvi || 0) > 0 && !((+r.cena || 0) > 0) });
 
+  /* Sloupy navíc pod můstky (#560) — řádky jen při sloupech (Model 2). */
+  const mustkySloupyRadky = () => (mustky > 0 && sloupyMustkuM > 0) ? [
+    mkItem(MUSTEK_RADEK.sloupy, sloupyMustkuKg, c.profilasKgKc, { cenaPath: 'C.profilasKgKc',
+      pozn: mustkyR.sloupyKs + ' ks, ' + (Math.round(mustkyR.sloupyM * 100) / 100) + ' m' }),
+    mkItem(MUSTEK_RADEK.sloupyLak, 1, sloupyMustkuLakKc, { naklad: sloupyMustkuLakKc, cenaSkupina: 'C.lak.*' }),
+  ] : [];
+  /* SEKCE MŮSTKY — skladebný model (#560, Model 2 + nový ceník). Řádek
+   * s nulovým množstvím nevzniká; „jiné" bez ceníkové sazby nese `bezCeny`. */
+  const oznacBezCeny = r => r && ({ ...r, bezCeny: (+r.mnozstvi || 0) > 0 && !((+r.cena || 0) > 0) });
+  const mustkyRadky = !mustkyR.skladebny ? [] : (() => {
+    const sk = mustkyR.skladba;
+    const radky = [mkItem(MUSTEK_RADEK.konstrukce, sk.konstrukceBm, c.mustekRamBmKc, { cenaPath: 'C.mustekRamBmKc' })];
+    MUSTEK_PODLAHY.forEach(([k]) => {
+      if (!(sk.podlaha[k] > 0)) return;
+      radky.push(k === 'jine'
+        ? oznacBezCeny(mkItem(MUSTEK_RADEK.podlaha.jine, sk.podlaha.jine, 0, { pozn: sk.podlahaNazvy.join(', ') }))
+        : mkItem(MUSTEK_RADEK.podlaha[k], sk.podlaha[k], c[MUSTEK_PODLAHA_KLIC[k]], { cenaPath: mustekCesta(MUSTEK_PODLAHA_KLIC[k]) }));
+    });
+    MUSTEK_ZABRADLI.forEach(([k]) => {
+      if (k === 'bez' || !(sk.zabradli[k] > 0)) return;
+      radky.push(k === 'jine'
+        ? oznacBezCeny(mkItem(MUSTEK_RADEK.zabradli.jine, sk.zabradli.jine, 0, { pozn: sk.zabradliNazvy.join(', ') }))
+        : mkItem(MUSTEK_RADEK.zabradli[k], sk.zabradli[k], c[MUSTEK_ZABRADLI_KLIC[k]], { cenaPath: mustekCesta(MUSTEK_ZABRADLI_KLIC[k]) }));
+    });
+    MUSTEK_KOTVENI.forEach(([k]) => {
+      if (!(sk.kotveni[k] > 0)) return;
+      radky.push(k === 'jine'
+        ? oznacBezCeny(mkItem(MUSTEK_RADEK.kotveni.jine, sk.kotveni.jine, 0, { pozn: sk.kotveniTexty.join(', ') }))
+        : mkItem(MUSTEK_RADEK.kotveni[k], sk.kotveni[k], c[MUSTEK_KOTVENI_KLIC[k]], { cenaPath: mustekCesta(MUSTEK_KOTVENI_KLIC[k]) }));
+    });
+    radky.push(...mustkySloupyRadky());
+    radky.push(mkItem(MUSTEK_RADEK.montaz, sk.hodiny, c.mustekMontazHodKc, { cenaPath: 'C.mustekMontazHodKc' }));
+    return radky.concat(vlastniProSekci('mustky'));
+  })();
+
   const plechKey = ext ? 'C.powertechExt' : 'C.powertechInt';
   const hrubaOck = [
     mkItem('PROFILY - HLAVNÍ NOSNÉ PRVKY', profKg, c.profilasKgKc, { cenaPath: 'C.profilasKgKc' }),
@@ -5101,9 +5390,13 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     (mustky > 0 && !mustkyR.novy) ? mkItem('MŮSTKY MEZI BUDOVOU A OCK', mustky, c.mustekKc, { cenaPath: 'C.mustekKc' }) : null,
     /* #354: s novým ceníkem dva řádky — materiál (bm přepočtené na
      * referenční šířku × Kč/bm) a montáž (hodiny × Kč/hod), controlling je
-     * vidí zvlášť. Množství nese počet kusů, cena zůstává ceníková. */
-    (mustky > 0 && mustkyR.novy) ? mkItem('MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL', mustky * mustkyR.bmRef, c.mustekKc, { cenaPath: 'C.mustekKc' }) : null,
-    (mustky > 0 && mustkyR.novy) ? mkItem('MONTÁŽ MŮSTKŮ', mustky * mustkyR.hodKs, c.mustekMontazHodKc, { cenaPath: 'C.mustekMontazHodKc' }) : null,
+     * vidí zvlášť. Množství nese počet kusů, cena zůstává ceníková.
+     * #560: po skupinách (součet ks × bm každé skupiny; jedna skupina =
+     * přesně dnešní ks × bm). Skladebný model (Model 2 + nový ceník) má
+     * místo nich vlastní sekci MŮSTKY níž. */
+    (mustky > 0 && mustkyR.novy && !mustkyR.skladebny) ? mkItem('MŮSTKY VČ. ZÁBRADLÍ – MATERIÁL', mustkyR.bmRefCelkem, c.mustekKc, { cenaPath: 'C.mustekKc' }) : null,
+    (mustky > 0 && mustkyR.novy && !mustkyR.skladebny) ? mkItem('MONTÁŽ MŮSTKŮ', mustkyR.hodCelkem, c.mustekMontazHodKc, { cenaPath: 'C.mustekMontazHodKc' }) : null,
+    ...(mustkyR.skladebny ? [] : mustkySloupyRadky()),
     ...vlastniProSekci('hrubaOck'),
     /* ATYP položky se v nabídce nevydělují do vlastní sekce – zákazník má vidět
      * jednu ocelovou konstrukci, ne účet za „něco navíc". Uvnitř kalkulace je
@@ -5327,14 +5620,18 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
 
   const sekce = { hrubaOck: jenPocitane(hrubaOck), oplasteni: jenPocitane(oplasteni),
                   volitelne: jenTetoRady(volitelne), rezie: jenPocitane(rezie) };
+  /* Sekce MŮSTKY jen ve skladebném modelu (#560) — výsledek zakázky bez
+   * ní má tvar beze změny (zlatá pojistka). */
+  if (mustkyR.skladebny) sekce.mustky = jenPocitane(mustkyRadky);
   const sum = rows => ({
     naklad: rows.reduce((a, r) => a + r.naklad, 0),
     marze: rows.reduce((a, r) => a + r.marze, 0),
     sMarzi: rows.reduce((a, r) => a + r.sMarzi, 0),
   });
   const s1 = sum(sekce.hrubaOck), s2 = sum(sekce.oplasteni), s3 = sum(sekce.volitelne), s4 = sum(sekce.rezie);
-  const nakladBezRezervy = s1.naklad + s2.naklad + s3.naklad + s4.naklad;
-  const sMarziBezRezervy = s1.sMarzi + s2.sMarzi + s3.sMarzi + s4.sMarzi;
+  const s5 = sekce.mustky ? sum(sekce.mustky) : null;
+  const nakladBezRezervy = s1.naklad + s2.naklad + s3.naklad + s4.naklad + (s5 ? s5.naklad : 0);
+  const sMarziBezRezervy = s1.sMarzi + s2.sMarzi + s3.sMarzi + s4.sMarzi + (s5 ? s5.sMarzi : 0);
 
   // REZERVA — oprava: počítá se z NÁKLADŮ a marže se přidá jen jednou.
   // (šablona: základ = cena vč. marže a k tomu ještě jednou marže)
@@ -5506,6 +5803,18 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     priplatkyCena: priplatkyCenaCelkem, priplatkyDph: priplatkyCenaCelkem * dph,
     priplatkySDph: priplatkyCenaCelkem * (1 + dph),
   };
+  /* CENA MŮSTKŮ PRO SAMOSTATNÝ ŘÁDEK NABÍDKY (#560, A-Q8/9). Jen ve
+   * skladebném modelu. Podíl na rezervě se počítá stejně jako rezerva
+   * celku (Model 2: z nákladu), zaokrouhluje se nahoru na tisíce jako
+   * základ. `zakladCena` zůstává CELKOVÁ (šachta + můstky) — krycí list,
+   * Pipedrive i controlling ji čtou beze změny; nabídka z ní šachtu
+   * dopočte jako rozdíl (cenaNabidkyOck). */
+  if (s5) {
+    const rezMustky = s5.naklad * z.rezervaZakladPct;
+    const cenaMustky = Math.min(CEIL(s5.sMarzi + rezMustky * (1 + m), 1000), zakladCenaZaokr);
+    souhrn.mustkyNaklad = s5.naklad + rezMustky;
+    souhrn.mustkyCena = cenaMustky;
+  }
 
   return {
     odvozene: { vyskaSachty: H, vyskaPodlazi, svetlaVyska, vyskaProsklene, sirkaDveri, leseniVez, leseniU },
@@ -5568,14 +5877,17 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * kterému se nedá věřit, je horší než žádný.
      *
      * Ve standardním režimu je pole prázdné; kreslit není co. */
-    oplasteni: { rezim: oplRezim, vyska: vyskaProsklene, pasy: oplPasy,
+    /* `skloJenSPlochou` (#572) není číslo, jen razítko kódu: specifikace
+     * smí vynechat sklo s nulovou plochou. Zmrazený výsledek nabídky
+     * odeslané dřív ho nemá → dotisk dá původní text (tsMaSklo v techspec.js). */
+    oplasteni: { rezim: oplRezim, skloJenSPlochou: true, vyska: vyskaProsklene, pasy: oplPasy,
                  zakladSten: oplZakladSteny,
                  /* #375: základ pásů (stěny bez světlíků u dveří) a světlíky
                   * s materiálem a stěnou — nákres je připíše ke své stěně. */
                  zakladPasu: oplZakladPasu, svetliky: oplSvetliky,
                  sirkySten: stenaSirka, plochaCelkem: oplPlochaCelkem,
                  podleTypu: Object.keys(oplPodleTypu).map(k => ({ klic: k, ...oplPodleTypu[k] })) },
-    sekce, volitelneKatalog, souctySekci: { hrubaOck: s1, oplasteni: s2, volitelne: s3, rezie: s4 }, rezerva,
+    sekce, volitelneKatalog, souctySekci: Object.assign({ hrubaOck: s1, oplasteni: s2, volitelne: s3, rezie: s4 }, s5 ? { mustky: s5 } : {}), rezerva,
     priplatky, souhrn,
   };
 }
@@ -5919,6 +6231,19 @@ function vypocetProj(zadani, cenik) {
   const sum = f => sekce.reduce((a, s) => a + s[f], 0);
   return {
     sekce,
+    /* ZNĚNÍ STUDIE BEZ ZAMĚŘENÍ (#569, D. Sikora 2. 11. 2026, pokyn J. V.
+     * 5. 11. 2026). Není to číslo, jen razítko kódu, který výsledek spočítal:
+     * zmrazený výsledek odeslané nabídky (zamek.vysledek.proj) ho nese jen
+     * tehdy, když nabídka odešla z verze, která už sekci zaměření ze studie
+     * proveditelnosti netiskne. Starší odeslaná nabídka razítko nemá a dotisk
+     * dá původní text (nabidkaProjStudieBezZamereni v nabidka_proj.js).
+     * Porovnání zámku texty a příznaky neporovnává (zamekVysledekRozdily). */
+    studieBezZamereni: true,
+    /* DPZ BEZ ZAMĚŘENÍ (#573, J. V. 6. 11. 2026): stejné razítko pro texty
+     * DPZ (stávající stav „z původní dokumentace a prohlídky", termín
+     * hrubopisu bez studie „od předání podkladů"). Odeslaná nabídka bez
+     * razítka se dotiskne původním zněním (nabidkaProjDpzBezZamereni). */
+    dpzBezZamereni: true,
     souhrn: {
       naklad: sum('naklad'),
       marze: sum('marze'),             // přirážka v Kč (jedno procento, viz výše)
@@ -6058,10 +6383,11 @@ const TS_C = { /* číselníky z listů _data (bez úvodní pomlčky) */
   umisteniOplasteni: ['vložené mezi ocelové profily konstrukce', 'kotvené na vnější stranu ocelové konstrukce',
     'předsazené před ocelovou konstrukci o cca 30 mm'],
   kotveniOplasteni: ['do L profilů mezi příčníky', 'na zasklívací terče', 'do rámečku z plechových lišt',
-    'kotvy do otvorů vrtaných ve skle'],
+    'kotvy do otvorů vrtaných ve skle', 'na kotevní terče'],   // #572: opláštění bez skla
   parametryKotvy: ['nerezové držáky do otvorů ve skle', 'obdélníkový terč 80x50, lakovaný RAL 7016, zapuštěné pozink šrouby',
     'obdélníkový terč 80x50, nerezový, zapuštěné pozink šrouby', 'kruhový terč průměr 70 mm, lakovaný, zapuštěný pozink šroub',
-    'kruhový terč průměr 70 mm, nerezový, zapuštěný šroub', 'lakované lišty po obvodu skla', 'nerezové lišty po obvodu skla'],
+    'kruhový terč průměr 70 mm, nerezový, zapuštěný šroub', 'lakované lišty po obvodu skla', 'nerezové lišty po obvodu skla',
+    'lakované lišty po obvodu výplně'],   // #572: opláštění bez skla
   napojeniDveri: ['provede kompletně stavba po montáži šachetních dveří', 'bez dokrytí', 'řeší objednatel',
     'dokrytí lakovaným plechem', 'dokrytí nerezovým plechem'],
   /* Čtyři varianty názvu akce místo jedné věty s lomítkem (nález D3,
@@ -6146,6 +6472,39 @@ function tsMustky(Z) {
   if (n !== undefined && n !== null && n !== '' && isFinite(+n)) return Math.max(0, Math.floor(+n));
   return (Z && Z.mustek) ? 1 : 0;
 }
+/* SEKCE MŮSTKY VE SPECIFIKACI A NABÍDCE (#560). Platí jen ve skladebném
+ * modelu (Model 2 + nový ceník — r.mustky.skladebny); jinak zůstává jeden
+ * souhrnný řádek MŮSTKY MEZI BUDOVOU A OCK v DOPLŇKOVÝCH KONSTRUKCÍCH
+ * (stará data a starý ceník beze změny). Texty se skládají po částech
+ * v jazyce dokumentu (`jazykSam`), čísla zůstávají. Víc skupin = výčet
+ * „skupina 1: …; skupina 2: …". */
+function tsMustkySkladebne(r) { return !!(r && r.mustky && r.mustky.skladebny); }
+function tsMustkyCast(r, Z, jazyk, co) {
+  const T = t => (jazyk && jazyk !== 'cz' && typeof tr === 'function') ? tr(t, jazyk) : t;
+  const sk = ((r && r.mustky && r.mustky.skupiny) || []).filter(s => s.ks > 0);
+  if (!sk.length) return ' -';
+  const mm = n => String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0');
+  const des = n => String(Math.round((+n || 0) * 100) / 100).replace('.', jazyk === 'en' ? '.' : ',');
+  const E = (typeof MUSTEK_PODLAHY !== 'undefined') ? { MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI }
+    : (typeof require === 'function' ? require('./engine.js') : {});
+  const volba = (seznam, k) => { const x = (E[seznam] || []).find(v => v[0] === k); return x ? x[1] : k; };
+  const text = s => {
+    if (co === 'rozmer') return s.ks + ' ' + T('ks') + ', ' + mm(s.sirkaEfMm) + ' × ' + mm(s.delkaEfMm) + ' mm (' + T('šířka × délka') + ')';
+    if (co === 'podlaha') return s.podlaha === 'jine' ? (s.podlahaNazev || T('jiné')) : T(volba('MUSTEK_PODLAHY', s.podlaha));
+    if (co === 'zabradli') {
+      if (s.zabradli === 'bez') return T('bez zábradlí');
+      const druh = s.zabradli === 'jine' ? (s.zabradliNazev || T('jiné')) : T(volba('MUSTEK_ZABRADLI', s.zabradli));
+      return druh + ', ' + T(s.zabradliStrany === 1 ? 'jednostranně' : 'oboustranně');
+    }
+    if (co === 'kotveni') return s.kotveni === 'jine' ? (s.kotveniText || T('jiné')) : T(volba('MUSTEK_KOTVENI', s.kotveni));
+    if (co === 'sloupy') return s.sloupyKs > 0 ? s.sloupyKs + ' ' + T('ks') + ', ' + T('výška') + ' ' + des(s.vyskaSloupuM) + ' m' : '';
+    return '';
+  };
+  const casti = sk.map(text);
+  if (co === 'sloupy' && casti.every(t => !t)) return ' -';
+  if (sk.length === 1 || casti.every(t => t === casti[0])) return casti[0] || ' -';
+  return casti.map((t, i) => T('skupina') + ' ' + (i + 1) + ': ' + (t || '-')).join('; ');
+}
 function tsNastupiste(Z) {
   if (typeof nastupisteCelkem === 'function') return nastupisteCelkem(Z || {});
   return +(Z && Z.nastupiste) || 0;
@@ -6220,6 +6579,21 @@ function tsVyplnDveriCasti(Z, r) {
   return casti.length ? casti : ['bez světlíků'];
 }
 
+/* Typy pásů, které jsou sklem (OPL_SKLA v engine.js). */
+const TS_OPL_SKLA = ['C.skloBokyKc', 'C.skloCelniKc', 'C.skloVsg442Kc'];
+/* Je v zakázce nějaké sklo (#572)? Standardní režim opláštění je skleněný
+ * vždy; po stěnách rozhoduje plocha ve výsledku jádra — skleněné pásy
+ * a skleněné světlíky s plochou > 0. Bez výsledku se nehádá (true =
+ * texty jako dosud). Odeslaná nabídka tiskne ze zmrazeného výsledku
+ * (vypocetZ); bez razítka `skloJenSPlochou` (odeslaná před #572) taky true. */
+function tsMaSklo(Z, r) {
+  if (!tsOplPoStenach(Z)) return true;
+  const o = r && r.oplasteni;
+  if (!o || o.rezim !== 'poStenach' || !Array.isArray(o.pasy)) return true;
+  if (!o.skloJenSPlochou) return true;   // odeslaná nabídka z doby před #572 = texty jako tehdy
+  return o.pasy.some(p => TS_OPL_SKLA.indexOf(p.typ) >= 0 && +p.m2 > 0)
+    || (o.svetliky || []).some(x => x && x.druh === 'sklo' && +x.m2 > 0);
+}
 /* Je opláštění rozdělené po stěnách (#268)? */
 function tsOplPoStenach(Z) {
   const o = (Z && Z.oplasteni) || {};
@@ -6251,7 +6625,18 @@ function tsOplPasyPoStenach(o, r) {
     if (!st || !Array.isArray(st.pasy) || !st.pasy.length) return;
     const spoctene = (r && r.oplasteni && r.oplasteni.rezim === 'poStenach' && Array.isArray(r.oplasteni.pasy))
       ? r.oplasteni.pasy.filter(p => p.stena === k) : null;
-    const zdroj = spoctene || st.pasy;
+    /* SKLO JEN TAM, KDE OPRAVDU JE (#572, D. Sikora 2. 11. 2026, zakázka
+     * OPR-CN-0422): pás skla s nulovou plochou ve výpočtu (typicky čelní
+     * stěna A celá pod dveřmi, světlíky „bez") se nevypisuje — jinak
+     * materiál, rozsah i věta o opláštění v nabídce tvrdily „Sklo VSG 4.4.1
+     * (stěna A)", ačkoli v zakázce žádné sklo není. Jen u výsledku jádra
+     * (pás nese `m2`); ze samotného zadání se plocha nepozná. */
+    const bezNuly = !!(spoctene && r.oplasteni.skloJenSPlochou);   // zmrazený výsledek z doby před #572 razítko nemá
+    /* Skleněný světlík na stěně (nad dveřmi / boky, bere sklo stěny) je
+     * sklo té stěny — pás pak zůstává, i když sám plochu nemá. */
+    const svetlikSklo = (r && r.oplasteni && r.oplasteni.svetliky || [])
+      .some(x => x && x.stena === k && x.druh === 'sklo' && +x.m2 > 0);
+    const zdroj = (spoctene || st.pasy).filter(p => !(bezNuly && !svetlikSklo && TS_OPL_SKLA.indexOf(p.typ) >= 0 && !(+p.m2 > 0)));
     if (!zdroj.length) return;
     out.push({ stena: k, odM: +st.odM || 0, pasy: zdroj });
   });
@@ -6483,8 +6868,9 @@ const TECHSPEC_DEF = [
     /* Povrch se u exteriéru bere z názvu ceníkové položky pro boky — a to je
      * právě ta položka, ze které se u exteriéru počítá. U interiéru se z ní
      * nepočítá nic, takže by její název popisoval sklo, které v nabídce není. */
+    /* #572: bez skla v zakázce o skle nic (řádek „ -" z nabídky zmizí). */
     { id: 'povrchOplasteni', label: 'POVRCHOVÁ ÚPRAVA OPLÁŠTĚNÍ', ciselnik: TS_C.povrchOplasteni,
-      prefill: (r, Z, C) => tsDvojsklo(Z)
+      prefill: (r, Z, C) => !tsMaSklo(Z, r) ? ' -' : tsDvojsklo(Z)
         ? `standardní ${C.skloBokyNazev || 'čirá skla'}`
         : 'čiré sklo' },
     { id: 'oplasteniCela', label: 'OPLÁŠTĚNÍ ČELA POD NÁSTUPIŠTĚM', ciselnik: TS_C.oplasteniCela,
@@ -6531,11 +6917,13 @@ const TECHSPEC_DEF = [
       prefill: (r, Z) => Z.zaskleni === 'na terče'
         ? 'kotvené na vnější stranu ocelové konstrukce'
         : 'vložené mezi ocelové profily konstrukce' },
+    /* #572: bez skla v zakázce „na kotevní terče" / „po obvodu výplně" (žádné zasklení). */
     { id: 'kotveniOplasteni', label: 'ZPŮSOB KOTVENÍ OPLÁŠTĚNÍ', ciselnik: TS_C.kotveniOplasteni,
-      prefill: (r, Z) => Z.zaskleni === 'na terče' ? 'na zasklívací terče' : 'do L profilů mezi příčníky' },
+      prefill: (r, Z) => Z.zaskleni === 'na terče' ? (tsMaSklo(Z, r) ? 'na zasklívací terče' : 'na kotevní terče') : 'do L profilů mezi příčníky' },
     { id: 'parametryKotvy', label: 'VZHLED KOTVENÍ ZASKLENÍ', ciselnik: TS_C.parametryKotvy,
       prefill: (r, Z) => Z.zaskleni === 'na terče'
-        ? 'obdélníkový terč 80x50, lakovaný RAL 7016, zapuštěné pozink šrouby' : 'lakované lišty po obvodu skla' },
+        ? 'obdélníkový terč 80x50, lakovaný RAL 7016, zapuštěné pozink šrouby'
+        : (tsMaSklo(Z, r) ? 'lakované lišty po obvodu skla' : 'lakované lišty po obvodu výplně') },
     { id: 'napojeniDveri', label: 'NAPOJENÍ ŠACHETNÍCH DVEŘÍ', ciselnik: TS_C.napojeniDveri,
       def: 'dokrytí lakovaným plechem' },
   ] },
@@ -6562,9 +6950,16 @@ const TECHSPEC_DEF = [
     { id: 'podchoziOck', label: 'PODCHOZÍ NOSNÁ OCK', def: ' -' },
     /* Můstky do specifikace a nabídky (P7 / K13-N59, 25. 9. 2026). */
     { id: 'mustky', label: 'MŮSTKY MEZI BUDOVOU A OCK',
-      prefill: (r, Z) => {
+      prefill: (r, Z, C, jazyk) => {
         const n = tsMustky(Z);
         if (!n) return ' -';
+        /* #560: skladebný model má vlastní sekci MŮSTKY — souhrnný řádek
+         * zmizí. Víc skupin (Model 2, starý ceník) = výčet rozměrů. */
+        if (tsMustkySkladebne(r)) return ' -';
+        const sk = r && r.mustky && Array.isArray(r.mustky.skupiny) ? r.mustky.skupiny.filter(s => s.ks > 0) : [];
+        if (r && r.mustky && r.mustky.novy && sk.length > 1)
+          return sk.map(s => s.ks + ' ks ' + s.sirkaEfMm + ' × ' + s.delkaEfMm + ' mm').join(', ')
+            + ' (šířka × délka), ocelová konstrukce vč. zábradlí a montáže';
         /* #354: s novým ceníkem (r.mustky.novy) rozměr Š × D — šířka šachty
          * × délka (prázdná = 1 000 mm, jako v ceně). Starý ceník (zamčené
          * varianty) a volání bez výsledku jádra dávají větu jako dřív. */
@@ -6596,6 +6991,16 @@ const TECHSPEC_DEF = [
       odvozene: (r, Z) => { const s = tsSoklRadek(r, Z); return s.vDodavce ? s.text : ''; },
       odvozenePopis: 'Řídí se cenou: řádek je tady, když je OPLECHOVÁNÍ SOKLU PROHLUBNĚ v základní ceně '
         + '(Kalkulace OCK, volitelné položky), jinak stojí v sekci SOUČÁSTÍ DODÁVKY NENÍ.' },
+  ] },
+
+  /* #560: sekce MŮSTKY jen ve skladebném modelu (`jen`); hodnoty jdou
+   * přepsat ručně jako ostatní řádky, předvyplňuje je karta Můstky. */
+  { sekce: 'MŮSTKY MEZI BUDOVOU A OCK', jen: r => tsMustkySkladebne(r), pole: [
+    { id: 'mustkyRozmer', label: 'POČET A ROZMĚR', jazykSam: true, prefill: (r, Z, C, j) => tsMustkyCast(r, Z, j, 'rozmer') },
+    { id: 'mustkyPodlaha', label: 'PODLAHA', jazykSam: true, prefill: (r, Z, C, j) => tsMustkyCast(r, Z, j, 'podlaha') },
+    { id: 'mustkyZabradli', label: 'ZÁBRADLÍ', jazykSam: true, prefill: (r, Z, C, j) => tsMustkyCast(r, Z, j, 'zabradli') },
+    { id: 'mustkyKotveni', label: 'KOTVENÍ MŮSTKŮ', jazykSam: true, prefill: (r, Z, C, j) => tsMustkyCast(r, Z, j, 'kotveni') },
+    { id: 'mustkySloupy', label: 'SLOUPY NAVÍC', jazykSam: true, prefill: (r, Z, C, j) => tsMustkyCast(r, Z, j, 'sloupy') },
   ] },
 
   { sekce: 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE', pole: [
@@ -10085,6 +10490,16 @@ const ULO_PROJ_BEZ_ZAPORU = ['cena', 'hodiny', 'rezerva', 'cenaPrepis', 'sazbaPr
 const ULO_ZADANI_BEZ_ZAPORU = ['rezervaProfilyPct', 'rezervaPlechyPct', 'rezervaZakladPct', 'rezervaPriplatkyPct',
   'oplechOstatniKg', 'oplechOstatniHod', 'engineeringKs', 'zamecnikAtypKs', 'zamecnikAtypKc', 'striskaKs',
   'nastupiste', 'nastupisteA', 'nastupisteC', 'patra', 'svetlikyBoky', 'svetlikyBokyKs', 'svetlikyBokySirkaMm', 'mustkyKs'];
+/* Skupiny můstků (#560) — seznamy shodné s MUSTEK_PODLAHY / _ZABRADLI /
+ * _KOTVENI a MUSTKY_SKUPIN_MAX / MUSTEK_TEXT_MAX v engine.js (uloziste.js se
+ * načítá i bez jádra; shodu hlídá src/test_560_mustky_sekce.js). */
+const ULO_MUSTKY_MAX = 20;
+const ULO_MUSTKY_TEXT = 120;
+const ULO_MUSTKY_CISLA = ['ks', 'sirkaMm', 'delkaMm', 'zabradliStrany', 'sloupyKs', 'sloupVyskaM'];
+const ULO_MUSTKY_VOLBY = { podlaha: ['plech', 'pororost', 'vana', 'jine'], zabradli: ['kov', 'sklo', 'bez', 'jine'],
+  kotveni: ['deska', 'sloupy', 'konzola', 'jine'] };
+const ULO_MUSTKY_TEXTY = ['podlahaNazev', 'zabradliNazev', 'kotveniText'];
+const ULO_MUSTKY_KLICE = ULO_MUSTKY_CISLA.concat(Object.keys(ULO_MUSTKY_VOLBY), ULO_MUSTKY_TEXTY);
 /* Číselná pole vzoru, která do ceny nevstupují (evidence pro standard OCK). */
 const ULO_ZADANI_MIMO_JADRO = ['mustekHloubkaMm', 'mustekSirkaMm'];
 /* Tolerance porovnání začátku opláštění s dnem prohlubně — táž jako
@@ -10140,6 +10555,25 @@ function uloZaporneVZadani(z, zp) {
         if (uloCisloSedi(m[nazev]) && isFinite(n) && Math.abs(n) > ULO_PREPIS_MAX) out.push({ kde: c, duvod: 'typ' });
       });
     });
+    /* SKUPINY MŮSTKŮ (#560). Pole objektů (nejvýš ULO_MUSTKY_MAX), čísla
+     * nezáporná se stropem, volby jen ze seznamů jádra, texty do
+     * ULO_MUSTKY_TEXT znaků. Jádro neznámou volbu čte jako výchozí, ale
+     * doklad (zámek, nabídka) má nést jen platná data. */
+    if (z.mustky !== null && z.mustky !== undefined) {
+      if (!Array.isArray(z.mustky) || z.mustky.length > ULO_MUSTKY_MAX) out.push({ kde: 'ock.zadani.mustky', duvod: 'typ' });
+      else z.mustky.forEach((g, i) => {
+        const c = 'ock.zadani.mustky[' + i + ']';
+        if (!g || typeof g !== 'object' || Array.isArray(g)) { out.push({ kde: c, duvod: 'typ' }); return; }
+        ULO_MUSTKY_CISLA.forEach(k => { hlidej(g[k], c + '.' + k); strop(g[k], c + '.' + k); });
+        Object.keys(ULO_MUSTKY_VOLBY).forEach(k => {
+          if (g[k] !== undefined && g[k] !== null && g[k] !== '' && ULO_MUSTKY_VOLBY[k].indexOf(g[k]) < 0) out.push({ kde: c + '.' + k, duvod: 'typ' });
+        });
+        ULO_MUSTKY_TEXTY.forEach(k => {
+          if (g[k] !== undefined && g[k] !== null && (typeof g[k] !== 'string' || g[k].length > ULO_MUSTKY_TEXT)) out.push({ kde: c + '.' + k, duvod: 'typ' });
+        });
+        Object.keys(g).forEach(k => { if (ULO_MUSTKY_KLICE.indexOf(k) < 0) out.push({ kde: c + '.' + (ULO_TOKEN.test(k) ? k : '?'), duvod: 'typ' }); });
+      });
+    }
     ULO_HODINY_N56.forEach(k => hlidej(z[k], 'ock.zadani.' + k));
     ULO_ZADANI_BEZ_ZAPORU.forEach(k => hlidej(z[k], 'ock.zadani.' + k));
     /* Opláštění po stěnách: výšky pásů (odM, doM) — záporná výška zmenší
@@ -13092,12 +13526,14 @@ function nahradPlaceholdery(xml, ph) {
  * nemají jediný datový řádek (následuje přímo další sekce nebo konec tabulky). */
 const TS_SEKCE_NAZVY = ['ZÁKLADNÍ PARAMETRY ŠACHTY', 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY',
   'OPLÁŠTĚNÍ ŠACHTY', 'DOPLŇKOVÉ KONSTRUKCE', 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE',
-  'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ',
+  'PROJEKČNÍ A PŘÍPRAVNÉ PRÁCE', 'SOUČÁSTÍ DODÁVKY NENÍ', 'MŮSTKY MEZI BUDOVOU A OCK',
   /* pruh vlastních řádků (docxRadkyNavic, obchodník 15. 10. 2026): sekce nad ním,
    * které nezbyl řádek, se pozná jako prázdná a zmizí */
   'DALŠÍ UJEDNÁNÍ'];
 
 const DOCX_SLEVA_KLICE = ['CENA_PRED_SLEVOU', 'SLEVA_PROC', 'SLEVA_KC'];
+/* #560: cenové řádky šablony CN v16 — viz odstranPrazdneTsRadky. */
+const DOCX_CENA_CASTI = ['CENA_SACHTA_BEZ_DPH', 'CENA_MUSTKY_BEZ_DPH', 'CENA_BEZ_DPH_SACHTA', 'CENA_BEZ_DPH_CELKEM'];
 /* Totéž pro nabídku PROJ (P4 / K15-N66): řádky „Cena před slevou" a „Sleva"
  * zmizí, když projekce slevu nemá (prázdný PROJ_SLEVA_KC). */
 const DOCX_SLEVA_PROJ_KLICE = ['PROJ_CENA_PRED_SLEVOU', 'PROJ_SLEVA_PROC', 'PROJ_SLEVA_KC'];
@@ -13418,6 +13854,165 @@ function odstranPrazdneBloky(xml, ph, blokyPryc) {
   return xml;
 }
 
+/* STUDIE PROVEDITELNOSTI BEZ SEKCE ZAMĚŘENÍ VE WORDU (#569, e-mail
+ * D. Sikory 2. 11. 2026). Šablona nabídky PROJ (v7, v8) má rozsah studie
+ * natvrdo: tabulku ST v bloku BLOK_STUDIE_ROZSAH a ceny částí 1–3 v bloku
+ * BLOK_STUDIE_CENA. Novou šablonu kvůli tomu nevyrábíme — builder nabídky
+ * PROJ pošle `studieBezZamereni` a tady se při plnění:
+ *   1. z tabulky ST vyjmou řádky od nadpisu „Studie proveditelnosti – část 1"
+ *      (zaměření 3D skenerem, výstupy ze zaměření …) po nadpis „… – část 2",
+ *   2. z cen studie vyjme řádek se symbolem {{PROJ_CENA_SP1}} (část 1 =
+ *      odkaz na cenu zaměření),
+ *   3. části se v obou blocích přečíslují (2 → 1, 3 → 2),
+ *   4. řádek PŮVODNÍ STAV dostane neutrální znění („z podkladů a prohlídky").
+ * Rozpoznává se podle textu ve všech čtyřech jazycích šablony (CZ/EN/DE/FR)
+ * a text smí být rozdělený do více běhů (<w:t>). Šablona bez bloků studie
+ * (v6 a starší) nebo bez nadpisu části 1 zůstane, jak je — nic se nehádá.
+ * Odeslaná nabídka z doby před #569 příznak nemá (dotisk = původní text). */
+const DOCX_STUDIE_CAST_RE = /^(?:Studie proveditelnosti|Feasibility study|Machbarkeitsstudie|Étude de faisabilité)\s*[–-]\s*(?:část|part|Teil|partie)\s*(\d)\s*:?$/i;
+const DOCX_STUDIE_CISLO_RE = /(?:část|části|parts?|Teile?|parties?)\s*([23])(?!\d)/gi;
+const DOCX_STUDIE_PUVODNI = [
+  ['grafický výstup ze zaměření', 'grafický výstup z podkladů a prohlídky'],
+  ['graphic output of the survey', 'graphic output from the documents and the inspection'],
+  ['grafische Auswertung des Aufmaßes', 'grafische Darstellung aus den Unterlagen und der Besichtigung'],
+  ['restitution graphique du relevé', 'restitution graphique à partir des documents et de la visite'],
+];
+/* Běhy textu řádku: [{ zac, kon (vnitřek <w:t>), text }] */
+function docxRadekBehy(radek) {
+  const out = [];
+  const re = /(<w:t(?:\s[^>]*)?>)([\s\S]*?)<\/w:t>/g;
+  let m;
+  while ((m = re.exec(radek))) {
+    const zac = m.index + m[1].length;
+    out.push({ zac, kon: zac + m[2].length, otevreni: m[1], text: xmlUnesc(m[2]) });
+  }
+  return out;
+}
+/* Nahradí úsek [a, b) spojeného textu řádku textem `novy` — první dotčený
+ * běh dostane náhradu, z ostatních dotčených se úsek vypustí (formát běhů
+ * zůstane). */
+function docxRadekNahrad(radek, a, b, novy) {
+  const behy = docxRadekBehy(radek);
+  let poz = 0, vlozeno = false;
+  const zmeny = [];
+  behy.forEach(beh => {
+    const z = poz, k = poz + beh.text.length;
+    poz = k;
+    if (k <= a || z >= b) return;
+    const pred = beh.text.slice(0, Math.max(0, a - z));
+    const za = beh.text.slice(Math.min(beh.text.length, b - z));
+    const t = pred + (vlozeno ? '' : novy) + za;
+    vlozeno = true;
+    zmeny.push({ beh, t });
+  });
+  zmeny.reverse().forEach(({ beh, t }) => {
+    const otevreni = /xml:space=/.test(beh.otevreni) ? beh.otevreni : beh.otevreni.replace(/^<w:t/, '<w:t xml:space="preserve"');
+    radek = radek.slice(0, beh.zac - beh.otevreni.length) + otevreni + xmlEsc(t) + radek.slice(beh.kon);
+  });
+  return radek;
+}
+function docxRadekText(radek) { return docxRadekBehy(radek).map(b => b.text).join(''); }
+/* Přečíslování a PŮVODNÍ STAV v jednom řádku. */
+function docxStudieRadekUprav(radek) {
+  for (let kolo = 0; kolo < 20; kolo++) {
+    const text = docxRadekText(radek);
+    let hotovo = true;
+    for (const [stary, novy] of DOCX_STUDIE_PUVODNI) {
+      const i = text.indexOf(stary);
+      if (i >= 0) { radek = docxRadekNahrad(radek, i, i + stary.length, novy); hotovo = false; break; }
+    }
+    if (!hotovo) continue;
+    break;
+  }
+  const text = docxRadekText(radek);
+  const cisla = [];
+  let m;
+  DOCX_STUDIE_CISLO_RE.lastIndex = 0;
+  while ((m = DOCX_STUDIE_CISLO_RE.exec(text))) {
+    const i = m.index + m[0].length - 1;
+    cisla.push([i, String(+m[1] - 1)]);
+  }
+  cisla.reverse().forEach(([i, c]) => { radek = docxRadekNahrad(radek, i, i + 1, c); });
+  return radek;
+}
+function docxStudieBlok(xml, jmeno) {
+  const zn = docxZnackyBloku(xml);
+  const a = zn.find(z => z.jmeno === jmeno && z.typ === 'ZAC');
+  const b = a && zn.find(z => z.jmeno === jmeno && z.typ === 'KON' && z.zac > a.kon);
+  return (a && b) ? { zac: a.kon, kon: b.zac } : null;
+}
+/* Nejvyšší řádky (hloubka nejmenší) uvnitř úseku. */
+function docxRadkyVUseku(xml, u) {
+  const sp = radkoveSpany(xml).filter(s => s.zac >= u.zac && s.kon <= u.kon);
+  const min = sp.reduce((a, s) => Math.min(a, s.hloubka), Infinity);
+  return sp.filter(s => s.hloubka === min);
+}
+function docxStudieBezZamereni(xml) {
+  /* 1 + 3 + 4: tabulka ST */
+  let u = docxStudieBlok(xml, 'BLOK_STUDIE_ROZSAH');
+  if (u) {
+    const radky = docxRadkyVUseku(xml, u);
+    const cast = sp => { const m = docxRadekText(xml.slice(sp.zac, sp.kon)).replace(/\s+/g, ' ').trim().match(DOCX_STUDIE_CAST_RE); return m ? +m[1] : 0; };
+    const i1 = radky.findIndex(sp => cast(sp) === 1);
+    const i2 = radky.findIndex((sp, i) => i > i1 && cast(sp) === 2);
+    if (i1 >= 0 && i2 > i1) {
+      const zac = radky[i1].zac, kon = radky[i2].zac;
+      /* mezi řádky stejné tabulky nesmí být konec tabulky */
+      if (!/<\/w:tbl>/.test(xml.slice(zac, kon))) {
+        xml = xml.slice(0, zac) + xml.slice(kon);
+        u = docxStudieBlok(xml, 'BLOK_STUDIE_ROZSAH');
+        docxRadkyVUseku(xml, u).reverse().forEach(sp => {
+          xml = xml.slice(0, sp.zac) + docxStudieRadekUprav(xml.slice(sp.zac, sp.kon)) + xml.slice(sp.kon);
+        });
+      }
+    }
+  }
+  /* 2 + 3: ceny studie */
+  u = docxStudieBlok(xml, 'BLOK_STUDIE_CENA');
+  if (u) {
+    const radky = docxRadkyVUseku(xml, u);
+    const sp1 = radky.find(sp => klicePlaceholderu(xml.slice(sp.zac, sp.kon)).indexOf('PROJ_CENA_SP1') >= 0);
+    if (sp1) {
+      xml = xml.slice(0, sp1.zac) + xml.slice(sp1.kon);
+      u = docxStudieBlok(xml, 'BLOK_STUDIE_CENA');
+      docxRadkyVUseku(xml, u).reverse().forEach(sp => {
+        const r = xml.slice(sp.zac, sp.kon);
+        if (!klicePlaceholderu(r).some(k => k === 'PROJ_CENA_SP2' || k === 'PROJ_CENA_SP3')) return;
+        xml = xml.slice(0, sp.zac) + docxStudieRadekUprav(r) + xml.slice(sp.kon);
+      });
+    }
+  }
+  return xml;
+}
+
+/* DPZ BEZ NAŠEHO ZAMĚŘENÍ VE WORDU (#573, rozhodnutí J. V. 6. 11. 2026).
+ * Šablona nabídky PROJ (v8) má rozsah DPZ natvrdo a v části 1 větu
+ * „dokumentace stávajícího stavu – stav vycházející ze zaměření a původní
+ * dokumentace". Novou šablonu nevyrábíme — builder pošle `dpzBezZamereni`
+ * a tady se ve všech odstavcích dokumentu nahradí věta (CZ/EN/DE/FR, text
+ * smí být rozdělený do více běhů) neutrálním zněním. Termín hrubopisu DPZ
+ * jde symbolem {{PROJ_TERMINY_TERMIN}} a řeší ho builder. Šablona bez té
+ * věty zůstane, jak je; odeslaná nabídka z doby před #573 příznak nemá. */
+const DOCX_DPZ_STAVAJICI = [
+  ['stav vycházející ze zaměření a původní dokumentace', 'stav vycházející z původní dokumentace a prohlídky'],
+  ['state based on the survey and the original documentation', 'state based on the original documentation and the inspection'],
+  ['Zustand auf Grundlage des Aufmaßes und der ursprünglichen Unterlagen', 'Zustand auf Grundlage der ursprünglichen Unterlagen und der Besichtigung'],
+  ["état établi à partir du relevé et du dossier d'origine", "état établi à partir du dossier d'origine et de la visite"],
+  ['état établi à partir du relevé et du dossier d’origine', 'état établi à partir du dossier d’origine et de la visite'],
+];
+function docxDpzBezZamereni(xml) {
+  return String(xml).replace(/<w:p[\s>][\s\S]*?<\/w:p>/g, odst => {
+    for (let kolo = 0; kolo < 20; kolo++) {
+      const text = docxRadekText(odst);
+      const nalez = DOCX_DPZ_STAVAJICI.find(([stary]) => text.indexOf(stary) >= 0);
+      if (!nalez) break;
+      const i = text.indexOf(nalez[0]);
+      odst = docxRadekNahrad(odst, i, i + nalez[0].length, nalez[1]);
+    }
+    return odst;
+  });
+}
+
 function docxBlokChybiText(jmeno) {
   if (/^BLOK_STUDIE_/.test(jmeno))
     return 'Šablona nabídky PROJ (v7) nemá blok ' + jmeno + ' (značky {{' + jmeno + '_ZAC}} a {{' + jmeno
@@ -13473,6 +14068,13 @@ function odstranPrazdneTsRadky(xml, ph) {
       kOdstr.push(sp);
     else if (klice.some(k => DOCX_SLEVA_PROJ_KLICE.includes(k)) && ('PROJ_SLEVA_KC' in ph) && jePrazdnaHodnota(ph.PROJ_SLEVA_KC))
       kOdstr.push(sp);
+    /* ŘÁDKY CENY ŠACHTY A MŮSTKŮ (#560, šablona CN v16): řádek, jehož
+     * všechny cenové symboly šachty/můstků jsou v datech prázdné, zmizí —
+     * bez můstků zůstane „VÝTAHOVÁ ŠACHTA" jako dosud, s můstky šachta,
+     * můstky a „CENA CELKEM". */
+    else if (klice.some(k => DOCX_CENA_CASTI.includes(k))
+      && klice.filter(k => DOCX_CENA_CASTI.includes(k)).every(k => (k in ph) && jePrazdnaHodnota(ph[k])))
+      kOdstr.push(sp);
   }
   // neodstraňuj nadřazený řádek kvůli vnořenému – ponech jen vnější z překrývajících
   const vyber = kOdstr.filter(sp => !kOdstr.some(o => o !== sp && o.zac <= sp.zac && sp.kon <= o.kon && o.hloubka < sp.hloubka));
@@ -13524,44 +14126,52 @@ function docxTextDoRadku(radek, text) {
 }
 function docxRadkyNavic(xml, radky) {
   const seznam = (Array.isArray(radky) ? radky : []).filter(x => x && x.kotva
-    && (x.pruh || x.vzdy || !jePrazdnaHodnota(x.hodnota))
+    && (x.pruh || x.vzdy || x.prejmenuj || !jePrazdnaHodnota(x.hodnota))
     && !(x.symbol && klicePlaceholderu(xml).indexOf(x.symbol) >= 0));
   if (!seznam.length) return xml;
-  const kotvy = [];
-  seznam.forEach(x => { if (kotvy.indexOf(x.kotva) < 0) kotvy.push(x.kotva); });
-  const vlozit = [];
-  kotvy.forEach(kotva => {
-    const spany = radkoveSpany(xml);
-    const kandidati = spany.filter(sp => klicePlaceholderu(vlastniObsahRadku(xml.slice(sp.zac, sp.kon))).indexOf(kotva) >= 0);
-    if (!kandidati.length) return;
-    const sp = kandidati.reduce((a, b) => (b.hloubka > a.hloubka ? b : a));
+  const spany = radkoveSpany(xml);
+  /* nejvnitřnější řádek se symbolem */
+  const radekSe = sym => {
+    const k = spany.filter(sp => klicePlaceholderu(vlastniObsahRadku(xml.slice(sp.zac, sp.kon))).indexOf(sym) >= 0);
+    return k.length ? k.reduce((a, b) => (b.hloubka > a.hloubka ? b : a)) : null;
+  };
+  const prvniBunka = (r, text) => {
+    const m = r.match(/<w:tc[\s>][\s\S]*?<\/w:tc>/);
+    return m ? r.replace(m[0], docxTextDoRadku(m[0], text)) : r;
+  };
+  /* operace nad řádky: { sp, pred, za, nahrad } — klíč = začátek řádku */
+  const ops = new Map();
+  const op = sp => { if (!ops.has(sp.zac)) ops.set(sp.zac, { sp, pred: '', za: '', nahrad: null }); return ops.get(sp.zac); };
+  seznam.forEach(x => {
+    const sp = radekSe(x.kotva);
+    if (!sp) return;
     const radek = xml.slice(sp.zac, sp.kon);
-    const prvniBunka = (r, text) => {
-      const m = r.match(/<w:tc[\s>][\s\S]*?<\/w:tc>/);
-      return m ? r.replace(m[0], docxTextDoRadku(m[0], text)) : r;
-    };
-    /* sekční pruh: nejbližší řádek téže hloubky nad kotvou bez symbolu, ve stejné tabulce */
-    const pruhVzor = () => {
+    /* `prejmenuj` (#560): řádek kotvy zůstane, jen dostane jiný popisek
+     * (symbol a formát beze změny) — „CENA CELKEM" místo „VÝTAHOVÁ ŠACHTA". */
+    if (x.prejmenuj) { const o = op(sp); o.nahrad = prvniBunka(o.nahrad || radek, String(x.nazev == null ? '' : x.nazev)); return; }
+    let novy;
+    if (x.pruh) {
+      /* sekční pruh: nejbližší řádek téže hloubky nad kotvou bez symbolu, ve stejné tabulce */
       const pred = spany.filter(o => o.hloubka === sp.hloubka && o.kon <= sp.zac).sort((a, b) => b.zac - a.zac);
+      let v = null;
       for (const o of pred) {
-        if (/<\/w:tbl>|<w:tbl[\s>]/.test(xml.slice(o.kon, sp.zac).replace(/<w:tr[\s>][\s\S]*?<\/w:tr>/g, ''))) return null;
+        if (/<\/w:tbl>|<w:tbl[\s>]/.test(xml.slice(o.kon, sp.zac).replace(/<w:tr[\s>][\s\S]*?<\/w:tr>/g, ''))) break;
         const r = xml.slice(o.zac, o.kon);
-        if (!klicePlaceholderu(r).length) return r;
+        if (!klicePlaceholderu(r).length) { v = r; break; }
       }
-      return null;
-    };
-    let predBlok = '', zaBlok = '';
-    seznam.filter(x => x.kotva === kotva).forEach(x => {
-      let novy;
-      if (x.pruh) { const v = pruhVzor(); if (!v) return; novy = docxTextDoRadku(v, x.nazev); }
-      else novy = nahradPlaceholdery(prvniBunka(radek, String(x.nazev == null ? '' : x.nazev)),
-        { [kotva]: String(x.hodnota == null ? '' : x.hodnota) });
-      if (x.pred) predBlok += novy; else zaBlok += novy;
-    });
-    vlozit.push({ sp, predBlok, zaBlok });
+      if (!v) return;
+      novy = docxTextDoRadku(v, x.nazev);
+    } else novy = nahradPlaceholdery(prvniBunka(radek, String(x.nazev == null ? '' : x.nazev)),
+      { [x.kotva]: String(x.hodnota == null ? '' : x.hodnota) });
+    /* `predSymbolem` (#560): vložit před řádek s tímto symbolem (je-li
+     * v šabloně), jinak podle `pred` vůči kotvě. */
+    const cil = x.predSymbolem ? radekSe(x.predSymbolem) : null;
+    if (cil) op(cil).pred += novy;
+    else if (x.pred) op(sp).pred += novy; else op(sp).za += novy;
   });
-  vlozit.sort((a, b) => b.sp.zac - a.sp.zac)
-    .forEach(v => { xml = xml.slice(0, v.sp.zac) + v.predBlok + xml.slice(v.sp.zac, v.sp.kon) + v.zaBlok + xml.slice(v.sp.kon); });
+  Array.from(ops.values()).sort((a, b) => b.sp.zac - a.sp.zac).forEach(o => {
+    xml = xml.slice(0, o.sp.zac) + o.pred + (o.nahrad != null ? o.nahrad : xml.slice(o.sp.zac, o.sp.kon)) + o.za + xml.slice(o.sp.kon);
+  });
   return xml;
 }
 
@@ -13887,6 +14497,8 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
         po = docxRadkyNavic(po, volby && volby.radkyNavic);   // řádky bez symbolu v šabloně (obchodník 15. 10. 2026)
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
       }
+      if (p.nazev === 'word/document.xml' && volby && volby.studieBezZamereni) po = docxStudieBezZamereni(po);   // #569: studie bez zaměření
+      if (p.nazev === 'word/document.xml' && volby && volby.dpzBezZamereni) po = docxDpzBezZamereni(po);   // #573: DPZ bez zaměření
       po = odstranOdstavceSeSymboly(po, volby && volby.odstavcePryc);   // věty, které do dokumentu nepatří (K18-N101)
       po = odstranPrazdneBloky(po, placeholders, volby && volby.blokyPryc);   // prázdné kapitoly (P8A) a nenabízené činnosti SoD PROJ (#380)
       po = rozvinRadkyZaRadek(po, placeholders);        // věty o dílčích dokladech OCK: řádek tabulky za větu (etapa A)
@@ -14505,7 +15117,9 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
    * podpisu a razítka zpracovatele). Builder, který žádné nedodá, se chová
    * jako dřív. */
   const blob = await docxVyplnSablonu(templateArrayBuffer, data.placeholders,
-    data.priplatky || [], data.obrazky || {}, { odstavcePryc: data.odstavcePryc || [], blokyPryc: data.blokyPryc || [], radkyNavic: data.tsRadkyNavic || [] });
+    data.priplatky || [], data.obrazky || {}, { odstavcePryc: data.odstavcePryc || [], blokyPryc: data.blokyPryc || [], radkyNavic: data.tsRadkyNavic || [],
+      studieBezZamereni: data.studieBezZamereni === true,   // #569: Word nabídky PROJ bez zaměření ve studii
+      dpzBezZamereni: data.dpzBezZamereni === true });      // #573: Word nabídky PROJ — DPZ bez zaměření
   return { blob, nazevSouboru: data.nazevSouboru, data };
 }
 /* Symboly {{…}} šablony (tělo, záhlaví, zápatí) — i rozdělené mezi běhy. */
@@ -15405,7 +16019,15 @@ function cenaNabidkyOck(vysl, sleva, zaokr) {
    * stejného světa: zaokrouhlený základ a zaokrouhlená koncová cena.
    * `slevaKcVykaz` je proto ROZDÍL těch dvou, ne procento z hrubého základu. */
   const zakladZaokr = zaokrouhli(zaklad, zaokr);
-  return { zaklad, slevaPct: p, slevaKc, pred, cena,
+  /* SAMOSTATNÝ ŘÁDEK MŮSTKŮ (#560, A-Q8/9) — jen ve skladebném modelu
+   * (`souhrn.mustkyCena`). Řádky části B stojí PŘED slevou: můstky =
+   * jejich cena zaokrouhlená stejně jako základ; šachtu dopočte nabídka
+   * jako rozdíl do ceny před slevou (v měně dokumentu), takže šachta +
+   * můstky = cena před slevou na korunu i na euro. Bez můstků pole
+   * `mustky` chybí (výsledek beze změny). */
+  const mc = +vysl.souhrn.mustkyCena;
+  const mustky = (Number.isFinite(mc) && mc > 0) ? { mustkyPred: Math.min(zaokrouhli(mc, zaokr), zakladZaokr) } : null;
+  return { zaklad, slevaPct: p, slevaKc, pred, cena, ...(mustky ? { mustky } : {}),
            zakladZaokr, slevaKcVykaz: Math.round((zakladZaokr - cena) * 100) / 100,
            zaokrKc: Math.round((cena - pred) * 100) / 100,
            naklad: vysl.souhrn.zakladNaklad };
@@ -16166,6 +16788,23 @@ const KONTROLY = [
       if (c && novy && !(+c.mustekMontazHodKc > 0))
         potize.push('v ceníku chybí sazba montáže můstků (Ceník → Hrubá OCK → Montáž můstků), '
           + 'takže montáž jde do nabídky za 0 Kč');
+      /* #560: skladebný model (Model 2 + nový ceník) — sazba použitého
+       * provedení chybí, nebo provedení „jiné" nemá cenu. Mimo skladebný
+       * model se provedení ani sloupy do ceny nepromítnou — řekne se to. */
+      const rm = ctx.vysledek && ctx.vysledek.mustky;
+      const sekM = ctx.vysledek && ctx.vysledek.sekce && ctx.vysledek.sekce.mustky;
+      if (rm && rm.skladebny && Array.isArray(sekM)) {
+        const nulove = sekM.filter(x => x && x.cenaPath && +x.mnozstvi > 0 && !(+x.cena > 0)).map(x => x.nazev);
+        if (nulove.length) potize.push('v ceníku chybí sazba (0 Kč): ' + nulove.join(', '));
+        const jine = sekM.filter(x => x && x.bezCeny).map(x => x.nazev);
+        if (jine.length) potize.push('provedení „jiné" nemá cenu (' + jine.join(', ')
+          + ') — doplňte ji ručním přepisem ceny řádku v sekci MŮSTKY, nebo provedení změňte');
+      } else if (typeof mustkyProvedeniMimoVychozi === 'function' && mustkyProvedeniMimoVychozi(z)) {
+        potize.push('zadané provedení (podlaha, zábradlí, kotvení) se počítá jen v Modelu 2 s ceníkem, který má sazbu '
+          + 'nosné konstrukce můstku — teď se počítá jako pochozí plech s kovovým zábradlím');
+      }
+      if (rm && !rm.sloupyKs && Array.isArray(z.mustky) && z.mustky.some(x => x && +x.sloupyKs > 0))
+        potize.push('sloupy navíc pod můstky se počítají jen v Modelu 2');
       if (!potize.length) return null;
       return { text: 'Můstky mezi budovou a OCK: ' + kontrolyVyctem(potize) + '.' };
     },
@@ -16233,6 +16872,23 @@ const KONTROLY = [
       /* #354: s novým ceníkem je šířka můstku šířka šachty (nezadává se)
        * a z délky se počítá cena — prázdná délka se řekne, počítá se 1 000 mm. */
       const novy = typeof mustkyCenikNovy === 'function' && mustkyCenikNovy(ctx.cenik);
+      /* #560: zadání po skupinách — délka a šířka každé skupiny. */
+      if (Array.isArray(z.mustky) && typeof mustkySkupiny === 'function') {
+        const sk = mustkySkupiny(z).filter(x => x.ks > 0);
+        const bezDelky = sk.filter(x => x.delkaMm === '').length;
+        sk.forEach((x, i) => [['sirkaMm', 'šířka'], ['delkaMm', 'délka']].forEach(([k, jm]) => {
+          if (x[k] !== '' && x[k] > KONTROLY_MUSTEK_MAX_MM)
+            potize.push((sk.length > 1 ? 'skupina ' + (i + 1) + ': ' : '') + jm + ' ' + x[k].toLocaleString('cs-CZ')
+              + ' mm je nezvykle velká (víc než ' + KONTROLY_MUSTEK_MAX_MM.toLocaleString('cs-CZ') + ' mm)');
+        }));
+        if (!potize.length && bezDelky && novy)
+          return { text: 'Doplňte délku můstku (karta Můstky). Do doplnění se počítá '
+            + (typeof MUSTEK_DELKA_VYCHOZI_MM !== 'undefined' ? MUSTEK_DELKA_VYCHOZI_MM : 1000).toLocaleString('cs-CZ')
+            + ' mm. Tisk to nezastaví.' };
+        if (!potize.length) return null;
+        return { text: 'Rozměry můstku: ' + kontrolyVyctem(potize) + '. Zkontrolujte kartu Můstky (rozměr se zadává v milimetrech); '
+          + 'hodnota se do výpočtu bere, jak je zadaná. Tisk to nezastaví.' };
+      }
       if (novy) {
         const v = z.mustekHloubkaMm;
         if (v === undefined || v === null || String(v).trim() === '')
@@ -16986,7 +17642,8 @@ const KONTROLY = [
       if (!z || typeof nabidkaProjUvodNesedi !== 'function' || typeof nabidkaProjUvod !== 'function') return null;
       const sekce = (ctx.projVysledek && ctx.projVysledek.sekce) || [];
       const vRozsahu = k => sekce.some(x => x && x.key === k && Number(x.celkem) > 0);
-      if (!nabidkaProjUvodNesedi(z, nabidkaProjUvod(vRozsahu).join('\n'))) return null;
+      /* #569: ruční úvod nad znění před přeformulováním věty o studii není „nesedí" */
+      if (!nabidkaProjUvodNesedi(z, nabidkaProjUvod(vRozsahu).join('\n'), nabidkaProjUvod(vRozsahu, null, true).join('\n'))) return null;
       return { text: 'Úvod nabídky PROJ („Naše NABÍDKA a doporučení") byl upraven ručně a nabízené činnosti se od té doby '
         + 'změnily — ruční text nemusí sedět. Zkontrolujte ho v kartě Cenová nabídka (PROJ), nebo vraťte výchozí znění.' };
     },
@@ -19129,9 +19786,27 @@ function zpracovatelKontaktProKryci(f) {
 
 /* Továrna = dnešní hodnoty z kódu (stav e3995e6), aby se výstup nezměnil. */
 /* TERMÍN HRUBOPISU DPZ BEZ STUDIE (D1) — rozhodnutí J. V. 20. 10. 2026 ~11:35:
- * pevných 12 týdnů s navázáním obchodníka (na výstupy ze zaměření); se studií
+ * pevných 12 týdnů s navázáním obchodníka (od #573 na předání podkladů); se studií
  * zůstává „do 10–12 týdnů od schválení studie investorem a objednání". */
-const PODMINKY_TERMIN_DPZ_BEZ_STUDIE = 'do 12 týdnů od zpracování výstupů ze zaměření';
+/* DPZ BEZ NAŠEHO ZAMĚŘENÍ (#573, rozhodnutí J. V. 6. 11. 2026 po #569):
+ * hrubopis DPZ bez studie se už neváže na výstupy ze zaměření (zaměření se
+ * nabízí jen jako samostatná položka ZA), znění je sjednocené s termínem
+ * studie („od předání podkladů"). Původní znění drží `stare` — dotisk
+ * nabídky odeslané před #573 bez snímku podmínek (nabidka_proj.js). Firma,
+ * která má termíny uložené v Nastavení → Firma, je má dál beze změny. */
+const PODMINKY_TERMIN_DPZ = {
+  nove: 'do 12 týdnů od předání podkladů',
+  stare: 'do 12 týdnů od zpracování výstupů ze zaměření',
+};
+const PODMINKY_TERMIN_DPZ_BEZ_STUDIE = PODMINKY_TERMIN_DPZ.nove;
+/* TERMÍN STUDIE BEZ NAŠEHO ZAMĚŘENÍ (#569, D. Sikora 2. 11. 2026): studie
+ * proveditelnosti už zaměření neobsahuje, termín se proto neváže na výstupy
+ * ze zaměření. Původní znění drží `stare` — dotisk nabídky odeslané před
+ * #569 bez snímku podmínek (nabidka_proj.js). */
+const PODMINKY_TERMIN_STUDIE = {
+  nove: 'do 10–12 týdnů od předání podkladů',
+  stare: 'do 10–12 týdnů od zpracování výstupů ze zaměření',
+};
 
 const PODMINKY_VYCHOZI = {
   v: 1,
@@ -19207,7 +19882,7 @@ const PODMINKY_VYCHOZI = {
     ] },
     terminy: { cz: [
       ['Provedení detailního zaměření a stavebně technického průzkumu', 'ZAMĚŘENÍ na stavbě do 4 týdnů od objednání a předání plné moci; zpracování VÝSTUPŮ do 4–6 týdnů od zaměření', 'zamereni'],
-      ['Zpracování STUDIE PROVEDITELNOSTI (SP)', 'do 10–12 týdnů od zpracování výstupů ze zaměření', 'studie'],
+      ['Zpracování STUDIE PROVEDITELNOSTI (SP)', PODMINKY_TERMIN_STUDIE.nove, 'studie'],
       ['Projednání s odborem památkové péče HMP', 'do cca 2–3 měsíců od podání žádosti – záleží na vytíženosti úředníků státní správy', 'projednani'],
       /* D1 (20. 10. 2026): termín hrubopisu DPZ podle studie — klíč
        * „dpz+studie" / „dpz-studie" (viz vRozsahu v nabidka_proj.js). Znění
@@ -19696,7 +20371,7 @@ function podminkyEfZmrazene(firma, snimek) {
 
 /* Jeden objekt pro ostatní moduly — v prohlížeči jsou soubory v jednom
  * scope, v Node se načte přes require (vzor firmaPlanModul). */
-const PODMINKY = { PODMINKY_VYCHOZI, PODMINKY_TERMIN_DPZ_BEZ_STUDIE, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
+const PODMINKY = { PODMINKY_VYCHOZI, PODMINKY_TERMIN_DPZ_BEZ_STUDIE, PODMINKY_TERMIN_DPZ, PODMINKY_TERMIN_STUDIE, PODMINKY_SOUCET_BLOKUJE, PODMINKY_JAZYKY, PODMINKY_TYPY_SMLOUVY, podminkyEf, podminkyUpraveno,
   podminkyVeta, podminkyVetaJenVychoziPreklad, podminkyTextProj, podminkyNastavVetu, podminkyNastavTextProj, podmPoradi,
   podminkyZalohaText, podminkyZalohyVolby, podminkyZalohaVychozi, podminkyFaktura2, podminkyKonecna,
   podminkyLimitVolby, podminkyLimitText, podminkySoucetOck, podminkyVady, podminkyCiste, podminkyNastav,
@@ -20397,7 +21072,14 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     ? cenaSDph(cenaBezDphNum, Cv.dph) : { dphKc: cenaBezDphNum * Cv.dph }).dphKc;
   let cenaSDphNum = (typeof cenaSDph === 'function'
     ? cenaSDph(cenaBezDphNum, Cv.dph) : { sDph: cenaBezDphNum * (1 + Cv.dph) }).sDph;
+  /* MŮSTKY S VLASTNÍM ŘÁDKEM CENY (#560, A-Q8/9) — jen skladebný model
+   * (Model 2 + nový ceník). Obě částky jsou PŘED slevou (cenaNabidkyOck);
+   * v eurech se převádí cena můstků a šachta je rozdíl do převedené ceny
+   * před slevou — rozpad sedí na euro. Jinak prázdné (řádky zmizí). */
+  const mustkySk = !!(r.mustky && r.mustky.skladebny && cn && cn.mustky);
+  let cenaMustkyNum = mustkySk ? cn.mustky.mustkyPred : 0;
   if (mena.eur) {
+    cenaMustkyNum = mustkySk ? mena.na(cenaMustkyNum) : 0;
     cenaPredSlevou = mena.na(cenaPredSlevou);
     cenaBezDphNum = mena.na(cenaBezDphNum);
     slevaKcNum = cenaPredSlevou - cenaBezDphNum;   // rozdíl převedených částek — sedí na euro
@@ -20475,7 +21157,13 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
      * symbol nemá — doplní se se šablonou. */
     TS_PROSKLENA_PRICKA: tsNeboPrazdno('prosklenaPricka'),
     TS_PROSKLENA_STRISKA: tsNeboPrazdno('prosklenaStriska'),
-    TS_MUSTKY: tsNeboPrazdno('mustky'),   // P7 / K13-N59: počet a rozměr můstků
+    TS_MUSTKY: mustkySk ? '' : tsNeboPrazdno('mustky'),   // P7 / K13-N59: počet a rozměr můstků
+    /* #560: sekce MŮSTKY (jen skladebný model; jinak prázdné → sekce zmizí). */
+    TS_MUSTKY_ROZMER: mustkySk ? tsNeboPrazdno('mustkyRozmer') : '',
+    TS_MUSTKY_PODLAHA: mustkySk ? tsNeboPrazdno('mustkyPodlaha') : '',
+    TS_MUSTKY_ZABRADLI: mustkySk ? tsNeboPrazdno('mustkyZabradli') : '',
+    TS_MUSTKY_KOTVENI: mustkySk ? tsNeboPrazdno('mustkyKotveni') : '',
+    TS_MUSTKY_SLOUPY: mustkySk ? tsNeboPrazdno('mustkySloupy') : '',
     TS_LESENI_UVNITR: ts('leseniUvnitr'), TS_LESENI_VNE: ts('leseniVne'),
     TS_ZABRANY_VSTUPY: ts('zabranyVstupy'),
     TS_SKEN3D: ts('sken3d'), TS_VYSTUP_ZAMERENI: ts('vystupZamereni'),
@@ -20500,6 +21188,15 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     TS_NENI_PRISTUP: ts('neni11'),
 
     CENA_BEZ_DPH: kc(cenaBezDphNum),
+    /* #560: šachta bez můstků a můstky (obojí před slevou); bez skladebného
+     * modelu prázdné — řádky ze šablony v16 zmizí, v15 se neklonují. */
+    CENA_SACHTA_BEZ_DPH: mustkySk ? kc(cenaPredSlevou - cenaMustkyNum) : '',
+    CENA_MUSTKY_BEZ_DPH: mustkySk ? kc(cenaMustkyNum) : '',
+    /* Šablona v16: koncová cena bez DPH v řádku „VÝTAHOVÁ ŠACHTA" (bez můstků,
+     * jako dosud), nebo v řádku „CENA CELKEM" (s můstky). Druhý je prázdný
+     * a zmizí (docxgen DOCX_CENA_CASTI). */
+    CENA_BEZ_DPH_SACHTA: mustkySk ? '' : kc(cenaBezDphNum),
+    CENA_BEZ_DPH_CELKEM: mustkySk ? kc(cenaBezDphNum) : '',
     DPH_SAZBA: String(Math.round(Cv.dph * 100)),
     /* Nulová sazba má vlastní jméno (22. 9. 2026 večer). Od té doby, co
      * zahraniční řada ceníku přepíná DPH na 0 %, by tu podmínka `<= 0.15`
@@ -20755,6 +21452,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
       nazev: P('LEŠENÍ VNITŘNÍ PRO STAVBU OCK'), hodnota: placeholders.TS_NENI_LESENI_VNITRNI },
     ...(tsExtra.length ? [{ kotva: 'TS_NENI_PRISTUP', pruh: true, nazev: P('DALŠÍ UJEDNÁNÍ') }] : []),
     ...tsExtra.map(e => ({ kotva: 'TS_NENI_PRISTUP', vzdy: true, nazev: e.nazev, hodnota: e.hodnota })),
+    ...nabidkaMustkyKlon(placeholders, P, sablona),
   ];
   return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic, tsExtra, mena,
            /* Cena nabídky bez DPH ve měně dokumentu a sazba DPH — SoD k ní
@@ -20765,6 +21463,35 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
              typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky() : {},
              typeof uvodniFotoObrazky === 'function' ? uvodniFotoObrazky(zak) : {}),
            nazevSouboru: nazevSouboru.replace(/[\\/:*?"<>|]+/g, '-') };
+}
+
+/* MŮSTKY DO ŠABLONY CN v15 A STARŠÍ (#560, A-Q8/9). Šablona bez symbolů
+ * sekce MŮSTKY a řádku ceny můstků dostane řádky naklonované:
+ *  – sekce: pruh „MŮSTKY MEZI BUDOVOU A OCK" a pět řádků za kotvou
+ *    {{TS_SOKL}} (poslední řádek DOPLŇKOVÝCH KONSTRUKCÍ; bez něj
+ *    {{TS_PRECHODOVE_PLECHY}}), formát z kotvy;
+ *  – cena: řádky „VÝTAHOVÁ ŠACHTA" a „MŮSTKY MEZI BUDOVOU A OCK" (před
+ *    slevou) z řádku {{CENA_BEZ_DPH}}, vložené před „Cena před slevou"
+ *    (bez slevy ten řádek zmizí, klony zůstanou), a řádek {{CENA_BEZ_DPH}}
+ *    dostane popisek „CENA CELKEM".
+ * Šablona v16 symboly nese (`symbol`) — klon nevznikne. Bez skladebného
+ * modelu prázdné. `sablona.symboly` (Word) rozhoduje o kotvě sekce. */
+function nabidkaMustkyKlon(ph, P, sablona) {
+  if (!ph.CENA_MUSTKY_BEZ_DPH) return [];
+  const sym = sablona && sablona.symboly;
+  if (sym && sym.has('CENA_MUSTKY_BEZ_DPH') && sym.has('TS_MUSTKY_ROZMER')) return [];   // šablona v16
+  const kotvaTs = (sym && !sym.has('TS_SOKL') && sym.has('TS_PRECHODOVE_PLECHY')) ? 'TS_PRECHODOVE_PLECHY' : 'TS_SOKL';
+  const ts = [['POČET A ROZMĚR', ph.TS_MUSTKY_ROZMER], ['PODLAHA', ph.TS_MUSTKY_PODLAHA], ['ZÁBRADLÍ', ph.TS_MUSTKY_ZABRADLI],
+    ['KOTVENÍ MŮSTKŮ', ph.TS_MUSTKY_KOTVENI], ['SLOUPY NAVÍC', ph.TS_MUSTKY_SLOUPY]].filter(x => x[1]);
+  return [
+    { kotva: kotvaTs, symbol: 'TS_MUSTKY_ROZMER', pruh: true, nazev: P('MŮSTKY MEZI BUDOVOU A OCK') },
+    ...ts.map(([n, h]) => ({ kotva: kotvaTs, symbol: 'TS_MUSTKY_ROZMER', nazev: P(n), hodnota: h })),
+    { kotva: 'CENA_BEZ_DPH', symbol: 'CENA_MUSTKY_BEZ_DPH', predSymbolem: 'CENA_PRED_SLEVOU', pred: true,
+      nazev: P('VÝTAHOVÁ ŠACHTA').toLocaleUpperCase(), hodnota: ph.CENA_SACHTA_BEZ_DPH },
+    { kotva: 'CENA_BEZ_DPH', symbol: 'CENA_MUSTKY_BEZ_DPH', predSymbolem: 'CENA_PRED_SLEVOU', pred: true,
+      nazev: P('MŮSTKY MEZI BUDOVOU A OCK'), hodnota: ph.CENA_MUSTKY_BEZ_DPH },
+    { kotva: 'CENA_BEZ_DPH', symbol: 'CENA_MUSTKY_BEZ_DPH', prejmenuj: true, nazev: P('CENA CELKEM') },
+  ];
 }
 
 /* Struktura náhledu podkladů – stejné sekce jako v technické specifikaci/nabídce.
@@ -20884,6 +21611,11 @@ function nabidkaNahledSekce(ph, lang, platby, extra) {
        * součástí dodávky není. Rozhoduje to, který ze zástupců je vyplněný;
        * tahle funkce dostává jen `ph`, jinou cestou se sem odpověď nedostane. */
       ...(ph.TS_SOKL ? [['OPLECHOVÁNÍ SOKLU PROHLUBNĚ', ph.TS_SOKL]] : [])] },
+    /* #560: sekce MŮSTKY jen ve skladebném modelu (symboly jinak prázdné). */
+    ...(ph.TS_MUSTKY_ROZMER ? [{ sekce: 'MŮSTKY MEZI BUDOVOU A OCK', radky: [
+      ['POČET A ROZMĚR', ph.TS_MUSTKY_ROZMER], ['PODLAHA', ph.TS_MUSTKY_PODLAHA],
+      ['ZÁBRADLÍ', ph.TS_MUSTKY_ZABRADLI], ['KOTVENÍ MŮSTKŮ', ph.TS_MUSTKY_KOTVENI],
+      ...(ph.TS_MUSTKY_SLOUPY ? [['SLOUPY NAVÍC', ph.TS_MUSTKY_SLOUPY]] : [])] }] : []),
     { sekce: 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE', radky: [
       ['LEŠENÍ – UVNITŘ ŠACHTY', ph.TS_LESENI_UVNITR], ['LEŠENÍ – VNĚ ŠACHTY', ph.TS_LESENI_VNE],
       ['ZÁBRANY DO DVEŘNÍCH VSTUPŮ', ph.TS_ZABRANY_VSTUPY]] },
@@ -20907,7 +21639,13 @@ function nabidkaNahledSekce(ph, lang, platby, extra) {
     ...((extra || []).length ? [{ sekce: 'DALŠÍ UJEDNÁNÍ',
       radky: extra.map(e => [{ hotovo: e.nazev }, e.hodnota]) }] : []),
     { sekce: 'B. OBCHODNÍ ČÁST – CENOVÁ NABÍDKA', radky: [
-      ['Výtahová šachta (bez DPH)', ph.CENA_BEZ_DPH],
+      /* #560: s můstky šachta a můstky zvlášť (před slevou), sleva a součet. */
+      ...(ph.CENA_MUSTKY_BEZ_DPH ? [
+        ['Výtahová šachta (bez DPH)', ph.CENA_SACHTA_BEZ_DPH],
+        ['Můstky mezi budovou a OCK (bez DPH)', ph.CENA_MUSTKY_BEZ_DPH],
+        ...(ph.SLEVA_KC ? [[{ hotovo: P('Sleva') + ' ' + ph.SLEVA_PROC + ' %' }, '− ' + ph.SLEVA_KC]] : []),
+        ['Cena celkem (bez DPH)', ph.CENA_BEZ_DPH]]
+        : [['Výtahová šachta (bez DPH)', ph.CENA_BEZ_DPH]]),
       /* skládaný popisek (číslo sazby uprostřed) se překládá po částech, proto je
        * označen jako HOTOVÝ – závěrečná mapa ho už nesmí překládat podruhé */
       [{ hotovo: P('DPH') + ' ' + ph.DPH_SAZBA + ' % (' + ph.DPH_NAZEV + ' ' + P('sazba') + ')' }, ph.DPH_KC],
@@ -21103,7 +21841,9 @@ const NABIDKA_PROJ_UVOD = [
       cz: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY v počáteční fázi nabízíme ZAMĚŘENÍ a ZPRACOVÁNÍ VÝSTUPŮ ZE ZAMĚŘENÍ uvažovaného umístění výtahu.',
       prvni: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY v počáteční fázi nabízíme ZAMĚŘENÍ a ZPRACOVÁNÍ VÝSTUPŮ ZE ZAMĚŘENÍ uvažovaného umístění výtahu.' },
     { sekce: 'studie',
-      cz: 'Z výsledku zaměření navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.',
+      cz: 'Z podkladů a prohlídky navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.',
+      /* původní věta — jen pro dotisk nabídky odeslané před #569 */
+      czStare: 'Z výsledku zaměření navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.',
       prvni: 'V rámci zamýšlené VÝSTAVBY VÝTAHU A VÝTAHOVÉ ŠACHTY navrhneme varianty řešení a vybranou variantu zpracujeme ve STUDII PROVEDITELNOSTI.' },
     { sekce: 'projednani',
       cz: 'Součástí nabídkové ceny je i projednání této studie s Odborem památkové péče HMP.',
@@ -21138,11 +21878,66 @@ function nabidkaProjUvodRucne(zadani) {
 }
 /* true = ruční úvod vznikl nad jiným výchozím zněním, než jaké dávají
  * dnešní nabízené činnosti. `vychoziCz` = výchozí úvod (odstavce \n). */
-function nabidkaProjUvodNesedi(zadani, vychoziCz) {
+/* `vychoziStareCz` (#569): výchozí úvod podle znění před přeformulováním
+ * věty o studii — ruční úvod napsaný nad ním „nesedí" jen tehdy, když se
+ * změnily činnosti, ne kvůli nové větě. */
+function nabidkaProjUvodNesedi(zadani, vychoziCz, vychoziStareCz) {
   if (!nabidkaProjUvodRucne(zadani)) return false;
   const z = zadani.uvodNabidkyZaklad;
-  return typeof z === 'string' && z.trim() !== String(vychoziCz || '').trim();
+  if (typeof z !== 'string') return false;
+  if (vychoziStareCz != null && z.trim() === String(vychoziStareCz).trim()) return false;
+  return z.trim() !== String(vychoziCz || '').trim();
 }
+
+/* STUDIE PROVEDITELNOSTI BEZ SEKCE ZAMĚŘENÍ (#569, e-mail D. Sikory
+ * 2. 11. 2026: „sekci zaměření prosím úplně vymaž ze studie proveditelnosti.
+ * Zaměření budeme nabízet pouze jako samostatnou položku"). Studie má od té
+ * doby dvě části (dřívější část 2 → 1, část 3 → 2), „část 1" se zaměřením
+ * a její cena (odkaz na cenu ZA) se netisknou a věty, které předpokládaly
+ * naše zaměření, mají neutrální znění. Cena se nemění.
+ *   Odeslaná (zamčená) nabídka se nemění: znění se pozná podle razítka
+ * `studieBezZamereni` ve zmrazeném výsledku PROJ (engine_proj.js). Nabídka
+ * odeslaná dřív ho nemá → dotisk dá původní text. Rozpracovaná varianta
+ * počítá živě, takže razítko má vždy. */
+function nabidkaProjStudieBezZamereni(varianta) {
+  if (!varianta) return true;
+  const z = varianta.zamek;
+  if (!(z && z.zamceno)) return true;               // rozpracovaná = nové znění
+  const p = z.vysledek && z.vysledek.proj;         // otisk z okamžiku odeslání (zamekVysledek)
+  return !!(p && p.studieBezZamereni === true);
+}
+/* DPZ BEZ NAŠEHO ZAMĚŘENÍ (#573, rozhodnutí J. V. 6. 11. 2026 po #569):
+ * texty DPZ už nepředpokládají naše zaměření — dokumentace stávajícího
+ * stavu vychází „z původní dokumentace a prohlídky" a termín hrubopisu DPZ
+ * bez studie běží „od předání podkladů" (PODMINKY_TERMIN_DPZ). Cena se
+ * nemění, samostatné zaměření (ZA) beze změny. Odeslaná (zamčená) nabídka
+ * se nemění: rozhoduje razítko `dpzBezZamereni` ve zmrazeném výsledku PROJ
+ * (engine_proj.js); nabídka odeslaná dřív ho nemá → dotisk dá původní text. */
+function nabidkaProjDpzBezZamereni(varianta) {
+  if (!varianta) return true;
+  const z = varianta.zamek;
+  if (!(z && z.zamceno)) return true;               // rozpracovaná = nové znění
+  const p = z.vysledek && z.vysledek.proj;
+  return !!(p && p.dpzBezZamereni === true);
+}
+/* Řádek „dokumentace stávajícího stavu" v rozsahu DPZ (část 1). */
+const NABIDKA_PROJ_DPZ_STAVAJICI = {
+  stare: 'dokumentace stávajícího stavu – stav vycházející ze zaměření a původní dokumentace',
+  nove: 'dokumentace stávajícího stavu – stav vycházející z původní dokumentace a prohlídky',
+};
+/* Přečíslování částí studie v novém znění (online i Word, všechny jazyky
+ * přes slovník). */
+const NABIDKA_PROJ_STUDIE_CASTI = {
+  'Studie proveditelnosti – část 2': 'Studie proveditelnosti – část 1',
+  'Studie proveditelnosti – část 3': 'Studie proveditelnosti – část 2',
+  'CENA ZA STUDII PROVEDITELNOSTI – část 2': 'CENA ZA STUDII PROVEDITELNOSTI – část 1',
+  'CENA ZA STUDII PROVEDITELNOSTI – část 3': 'CENA ZA STUDII PROVEDITELNOSTI – část 2',
+};
+/* Neutrální znění řádku PŮVODNÍ STAV (studie už nevychází z našeho zaměření). */
+const NABIDKA_PROJ_PUVODNI_STAV = {
+  stare: 'PŮVODNÍ STAV – grafický výstup ze zaměření, průmět reality z průzkumu s původní dokumentací stavby',
+  nove: 'PŮVODNÍ STAV – grafický výstup z podkladů a prohlídky, průmět reality z průzkumu s původní dokumentací stavby',
+};
 
 /* CESTOVNÉ U AKCE MIMO PRAHU (D2, rozhodnutí J. V. 20. 10. 2026, šablona
  * nabídky PROJ obchodníka rev. 33). `{X}` = cena 1 výjezdu technika
@@ -21169,13 +21964,14 @@ const NABIDKA_PROJ_CESTOVNE_KDE = {
 
 /* Odstavce úvodu pro sekce v rozsahu. `vRozsahu(sekce)` rozhoduje stejně
  * jako u ostatních bloků nabídky (sekce s cenou). */
-function nabidkaProjUvod(vRozsahu, P) {
+/* `stare` = znění z doby před #569 (dotisk odeslané nabídky). */
+function nabidkaProjUvod(vRozsahu, P, stare) {
   const T = typeof P === 'function' ? P : (t => t);
   let prvni = true;
   const odst = [];
   NABIDKA_PROJ_UVOD.forEach(skupina => {
     const vety = skupina.filter(v => vRozsahu(v.sekce)).map(v => {
-      const t = prvni ? v.prvni : v.cz; prvni = false; return T(t);
+      const t = prvni ? v.prvni : ((stare && v.czStare) || v.cz); prvni = false; return T(t);
     });
     if (vety.length) odst.push(vety.join(' '));
   });
@@ -21227,14 +22023,16 @@ const NABIDKA_PROJ_DEF = [
   { typ: 'rozsah', nadpis: 'STUDIE PROVEDITELNOSTI (ST)', sekce: ['studie', 'projednani'], uvod: [
     { cz: 'Studie proveditelnosti – podoba úprav domu, umístění výtahové šachty a technologie výtahu – se zpracovává jako prvotní dokumentace, do které se zapracují veškeré požadavky investora v kombinaci s realizovatelností záměru a legislativních požadavků. Tím se docílí podkladu, který poté slouží nejen pro projednání záměru na stavebním úřadě, ale je možné ho dále rozpracovat do dalších stupňů projektových dokumentací.' },
   ], radky: [
-    ['Studie proveditelnosti – část 1', '', 'studie'],
-    ['Stavebně technický průzkum a zaměření', 'zajištění původní dokumentace stavby v potřebném rozsahu od investora nebo z archivu stavebního úřadu', 'studie'],
-    ['Stavebně technický průzkum a zaměření', 'detailní zaměření 3D skenerem dotčených částí objektu', 'studie'],
-    ['Stavebně technický průzkum a zaměření', 'zpracování výstupu ze zaměření', 'studie'],  /* část 1 studie – vlastní položka to není */
-    ['Stavebně technický průzkum a zaměření', 'vizuální prohlídka objektu stavebně technických návazností', 'studie'],
-    ['Stavebně technický průzkum a zaměření', 'pořízení detailní fotodokumentace', 'studie'],
+    /* Část 1 se zaměřením (4. prvek 'stare') se od #569 tiskne jen v dotisku
+     * nabídky odeslané dřív — viz nabidkaProjStudieBezZamereni. */
+    ['Studie proveditelnosti – část 1', '', 'studie', 'stare'],
+    ['Stavebně technický průzkum a zaměření', 'zajištění původní dokumentace stavby v potřebném rozsahu od investora nebo z archivu stavebního úřadu', 'studie', 'stare'],
+    ['Stavebně technický průzkum a zaměření', 'detailní zaměření 3D skenerem dotčených částí objektu', 'studie', 'stare'],
+    ['Stavebně technický průzkum a zaměření', 'zpracování výstupu ze zaměření', 'studie', 'stare'],  /* část 1 studie – vlastní položka to není */
+    ['Stavebně technický průzkum a zaměření', 'vizuální prohlídka objektu stavebně technických návazností', 'studie', 'stare'],
+    ['Stavebně technický průzkum a zaměření', 'pořízení detailní fotodokumentace', 'studie', 'stare'],
     ['Studie proveditelnosti – část 2', '', 'studie'],
-    ['Návrh grafické studie', 'PŮVODNÍ STAV – grafický výstup ze zaměření, průmět reality z průzkumu s původní dokumentací stavby', 'studie'],
+    ['Návrh grafické studie', NABIDKA_PROJ_PUVODNI_STAV.stare, 'studie'],
     ['Návrh grafické studie', 'ROZSAH BOURÁNÍ – grafické naznačení možného rozsahu bourání s ohledem na statiku objektu', 'studie'],
     ['Návrh grafické studie', 'NAVRHOVANÝ STAV – návrh na úpravy prostoru pro výtahovou šachtu, portálu dveří a dalších návazných nutných stavebních úprav', 'studie'],
     ['Návrh grafické studie', 'TECHNICKÁ ZPRÁVA – obsahující popis řešení', 'studie'],
@@ -21264,7 +22062,8 @@ const NABIDKA_PROJ_DEF = [
    *
    * `odkaz` = „cena je jinde, tady je jen rozsah". Sekce zůstává `zamereni`,
    * protože vzorec #174 platí dál: odsud JE ta cena — jen se už jednou vypsala. */
-  { typ: 'cena', nadpis: 'CENA ZA STUDII PROVEDITELNOSTI – část 1', sekce: 'zamereni',
+  /* #569: v novém znění se netiskne (část 1 se zaměřením ze studie zmizela). */
+  { typ: 'cena', nadpis: 'CENA ZA STUDII PROVEDITELNOSTI – část 1', sekce: 'zamereni', jenStare: true,
     jenSe: ['studie', 'projednani'], popis: 'ZAMĚŘENÍ a zpracování výstupů',
     odkaz: 'viz CENA ZA ZAMĚŘENÍ A ZPRACOVÁNÍ VÝSTUPŮ výše' },
   { typ: 'cena', nadpis: 'CENA ZA STUDII PROVEDITELNOSTI – část 2', sekce: 'studie',
@@ -21290,7 +22089,7 @@ const NABIDKA_PROJ_DEF = [
   ], radky: [
     ['Dokumentace pro povolení záměru – část 1', ''],
     ['Stavební část projektu', 'situace stavby – v rozsahu požadovaném pro řízení o povolení záměru'],
-    ['Stavební část projektu', 'dokumentace stávajícího stavu – stav vycházející ze zaměření a původní dokumentace'],
+    ['Stavební část projektu', NABIDKA_PROJ_DPZ_STAVAJICI.stare],   /* #573: v novém znění bez zaměření (zneni) */
     ['Stavební část projektu', 'bourací dokumentace – zakreslení rozsahu a postupu bouracích prací'],
     ['Stavební část projektu', 'dokumentace nového stavu – návrh umístění výtahu u objektu, návrh šachty a stavebních úprav'],
     ['Stavební část projektu', 'průvodní, souhrnná a technická zpráva'],
@@ -21739,7 +22538,28 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     if (!b.sekce) return true;
     return (Array.isArray(b.sekce) ? b.sekce : [b.sekce]).some(vRozsahu);
   };
-  const radekVRozsahu = x => !Array.isArray(x) || x.length < 3 || vRozsahu(x[2]);
+  /* #569: nové znění studie (bez zaměření), u odeslané nabídky podle razítka */
+  const studieBezZam = nabidkaProjStudieBezZamereni(varianta);
+  const radekVRozsahu = x => !Array.isArray(x) || x.length < 3
+    || ((x[3] !== 'stare' || !studieBezZam) && vRozsahu(x[2]));
+  /* text v novém znění: přečíslované části a neutrální PŮVODNÍ STAV */
+  /* #569: dotisk nabídky odeslané dřív (bez snímku podmínek) dá původní
+   * termín studie, ne nový výchozí — online i Word ({{PROJ_TERMINY_TERMIN}}). */
+  const TS = ((typeof PODMINKY !== 'undefined') ? PODMINKY : require('./podminky.js').PODMINKY).PODMINKY_TERMIN_STUDIE;
+  /* #573: totéž pro termín hrubopisu DPZ bez studie (razítko dpzBezZamereni) */
+  const dpzBezZam = nabidkaProjDpzBezZamereni(varianta);
+  const TD = ((typeof PODMINKY !== 'undefined') ? PODMINKY : require('./podminky.js').PODMINKY).PODMINKY_TERMIN_DPZ;
+  const terminStudie = x => {
+    if (!studieBezZam && TS && x[2] === 'studie' && x[1] === P(TS.nove)) return P(TS.stare);
+    if (!dpzBezZam && TD && x[2] === 'dpz-studie' && x[1] === P(TD.nove)) return P(TD.stare);
+    return x[1];
+  };
+  const zneni = t => {
+    if (t === NABIDKA_PROJ_DPZ_STAVAJICI.stare) return dpzBezZam ? NABIDKA_PROJ_DPZ_STAVAJICI.nove : t;
+    if (!studieBezZam) return t;
+    if (NABIDKA_PROJ_STUDIE_CASTI[t]) return NABIDKA_PROJ_STUDIE_CASTI[t];
+    return t === NABIDKA_PROJ_PUVODNI_STAV.stare ? NABIDKA_PROJ_PUVODNI_STAV.nove : t;
+  };
 
   /* VLASTNÍ A TRVALÉ POLOŽKY V NABÍDCE (P4 / K14-N64, K15-N66, 25. 9. 2026).
    * Položka, kterou obchodník do sekce přidal sám („+ přidat položku"), nebo
@@ -21759,9 +22579,10 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   const navicVypsano = {};
 
   /* P11: úvod podle rozsahu; D2: ruční úvod obchodníka má v češtině přednost */
-  const uvodVychoziCz = nabidkaProjUvod(vRozsahu).join('\n');
+  const uvodVychoziCz = nabidkaProjUvod(vRozsahu, null, !studieBezZam).join('\n');
+  const uvodStareCz = nabidkaProjUvod(vRozsahu, null, true).join('\n');
   const uvodRucne = L === 'cz' ? nabidkaProjUvodRucne(pj.zadani) : '';
-  const uvodOdst = uvodRucne ? uvodRucne.split(/\n+/).map(x => x.trim()).filter(Boolean) : nabidkaProjUvod(vRozsahu, P);
+  const uvodOdst = uvodRucne ? uvodRucne.split(/\n+/).map(x => x.trim()).filter(Boolean) : nabidkaProjUvod(vRozsahu, P, !studieBezZam);
   /* Cestovné u akce mimo Prahu (D2) — věty v jazyce dokumentu po činnostech. */
   const vyjezdJednotka = (typeof vyjezdTechnikaKc === 'function') ? vyjezdTechnikaKc(pj.zadani, pj.cenik || DEFAULT_CENIK_PROJ) : 0;
   const cestovne = k => {
@@ -21805,6 +22626,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
     .filter(b => !b.ad || nabiziAD)
     .filter(b => !b.dolozky || podmEf.nabidkaProj.dolozkyTisk)
     .filter(b => planStary ? b.typ !== 'platby' : !b.stary)
+    .filter(b => !b.jenStare || !studieBezZam)
     .filter(blokVRozsahu).map(b => {
     if (b.typ === 'platby') return platbyBloky;
     if (b.typ === 'nadpis') return { typ: 'nadpis', text: P(b.text) };
@@ -21829,7 +22651,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
        * a každý bod začíná pomlčkou přes celou šířku. Opakovat tentýž štítek
        * na každém řádku bylo hůř čitelné. Skupiny bez hlavičky části (blok
        * ZAMĚŘENÍ) dostanou podnadpis ze svého štítku. */
-      const vstup = b.radky.filter(radekVRozsahu).map(x => [P(x[0]), x[1] ? P(x[1]) : '']);
+      const vstup = b.radky.filter(radekVRozsahu).map(x => [P(zneni(x[0])), x[1] ? P(zneni(x[1])) : '']);
       const radky = [];
       let i = 0;
       const jeHlavicka = r => !r[1];
@@ -21871,8 +22693,12 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
           [P('Platnost nabídky'), platnost || P(NABIDKA_PROJ_SAZBY.platnostMesicu + ' měsíce')],
         ] };
       }
-      if (b.firma === 'terminy') return { typ: 'pary', nadpis: P(b.nadpis),
-        radky: textProj('terminy').filter(radekVRozsahu).map(x => [x[0], x[1]]) };
+      if (b.firma === 'terminy') {
+        /* #569: dotisk nabídky odeslané dřív (bez snímku podmínek) dá
+         * původní termín studie, ne nový výchozí. */
+        return { typ: 'pary', nadpis: P(b.nadpis),
+          radky: textProj('terminy').filter(radekVRozsahu).map(x => [x[0], terminStudie(x)]) };
+      }
       return { typ: 'pary', nadpis: P(b.nadpis),
         radky: b.radky.filter(radekVRozsahu).map(x => [P(x[0]), P(x[1])]) };
     }
@@ -21925,7 +22751,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
       cestovneVety = cestovne(kCest);
       if (cestovneVety.length) cestovneVypsano[kCest] = true;
     }
-    return { typ: 'cena', nadpis: P(b.nadpis), popis, sekce: b.sekce || null, navic, cestovne: cestovneVety,
+    return { typ: 'cena', nadpis: P(zneni(b.nadpis)), popis, sekce: b.sekce || null, navic, cestovne: cestovneVety,
       castka: odkaz ? odkaz
         : (neuvedena ? P('není součástí této nabídky') : kc(hodnota)
             + (b.jednotka ? ' / ' + P(b.jednotka) : '')),
@@ -22078,7 +22904,7 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
      * za každou dvojici (docxgen rozvinRadkyZaRadek), činnost a termín na
      * stejném řádku hodnoty. */
     PROJ_TERMINY_CINNOST: textProj('terminy').filter(radekVRozsahu).map(x => x[0]).join('\n'),
-    PROJ_TERMINY_TERMIN: textProj('terminy').filter(radekVRozsahu).map(x => x[1]).join('\n'),
+    PROJ_TERMINY_TERMIN: textProj('terminy').filter(radekVRozsahu).map(x => terminStudie(x)).join('\n'),
     PROJ_DOLOZKY: podmEf.nabidkaProj.dolozkyTisk ? textProj('dolozky').join('\n') : '',
     /* Cestovné u akce mimo Prahu (D2) pro šablonu PROJ v8: věta (věty) pod
      * cenou činnosti, v bloku {{BLOK_CESTOVNE_<X>_ZAC}}…{{…_KON}} — prázdné
@@ -22143,7 +22969,13 @@ function nabidkaProjData(zak, varianta, lang, moznosti) {
   return { placeholders, bloky, rekapitulace, jazyk: L, nazevSouboru, platbyProj, blokyPryc,
     /* Úvod (D2): výchozí české znění, ruční text a zda ruční text sedí. */
     uvod: { vychoziCz: uvodVychoziCz, rucne: nabidkaProjUvodRucne(pj.zadani),
-            nesedi: nabidkaProjUvodNesedi(pj.zadani, uvodVychoziCz) },
+            nesedi: nabidkaProjUvodNesedi(pj.zadani, uvodVychoziCz, uvodStareCz) },
+    /* #569: Word — část 1 studie se zaměřením a její cenu docxgen ze šablony
+     * vyjme a části přečísluje (docxStudieBezZamereni). */
+    studieBezZamereni: studieBezZam,
+    /* #573: Word — věta o stávajícím stavu v rozsahu DPZ bez zaměření
+     * (docxDpzBezZamereni; šablona PROJ v8 ji má natvrdo). */
+    dpzBezZamereni: dpzBezZam,
     vyjezdKc: vyjezdJednotka,
     /* Sekce kalkulace, které tato nabídka oceňuje — rozsah díla SoD PROJ (#380 Q7). */
     nabizeneSekce: NABIDKA_PROJ_SEKCE.filter(k => !!cenaSekce(k)),
@@ -23083,7 +23915,10 @@ const KRYCI_SEKCE = [
     { id: 'dodavatelVytahu', label: 'Dodavatel výtahu (kontakt email / telefon)', verze: ['techdata'] },
   ] },
   { sekce: 'Atypy OCK', pole: [
-    { id: 'atypMustky', label: 'Můstky (rozměr, napojení stavba ↔ OCK)', verze: ['techdata'], typ: 'textarea' },
+    /* #560: souhrn z karty Můstky (počet, rozměr, podlaha, zábradlí,
+     * kotvení, sloupy) pro výrobu a montáž; přepsat jde jako dřív. */
+    { id: 'atypMustky', label: 'Můstky (rozměr, napojení stavba ↔ OCK)', verze: ['techdata'], typ: 'textarea',
+      prefill: c => c.mustky || '', src: 'z kalkulace OCK (karta Můstky)' },
     { id: 'atypOplasteni', label: 'Typ a způsob opláštění', verze: ['techdata'], typ: 'textarea' },
     { id: 'atypHlava', label: 'Napojení hlavy OCK', verze: ['techdata'], typ: 'textarea' },
     { id: 'atypStavbaVyska', label: 'Napojení na stavbu po výšce šachty', verze: ['techdata'], typ: 'textarea' },
@@ -23304,6 +24139,7 @@ function kryciCtx(zak, varianta, jekly) {
     hodnota, priplatky, firma, typProduktu,
     objednane: (typeof objText === 'function') ? objText(zak, varianta, jekly) : '—',
     sken3d: kryciSken3d(d, rOck),
+    mustky: kryciMustkyText(rOck),
     projAno: key => (projSekce[key] > 0 ? 'Ano' : 'Ne'),
     /* Podmínky zmrazené při odeslání (P9.5) — platí jen, dokud je varianta
      * zamčená; po odemčení nebo v klonu se předvyplňuje zase z Nastavení. */
@@ -23311,6 +24147,31 @@ function kryciCtx(zak, varianta, jekly) {
     /* Zamčená varianta drží i u odvozených řádků to, co se odeslalo. */
     zamceno: !!(varianta && varianta.zamek && varianta.zamek.zamceno),
   };
+}
+/* SOUHRN MŮSTKŮ PRO KRYCÍ LIST (#560): „2 ks 1 600 × 1 000 mm, pochozí
+ * plech, zábradlí kovové oboustranně, kotvení do stropní desky / věnce
+ * budovy, sloupy navíc 2 ks × 3,2 m"; víc skupin oddělí středník. Model 1
+ * a starý ceník jen počet a rozměr (provedení se v nich nepočítá). */
+function kryciMustkyText(r) {
+  const m = r && r.mustky;
+  const sk = m && Array.isArray(m.skupiny) ? m.skupiny.filter(s => s.ks > 0) : [];
+  if (!sk.length) return '';
+  const volba = (seznam, k) => { const x = (typeof seznam !== 'undefined' && seznam || []).find(v => v[0] === k); return x ? x[1] : k; };
+  const P = typeof MUSTEK_PODLAHY !== 'undefined' ? MUSTEK_PODLAHY : [];
+  const Zb = typeof MUSTEK_ZABRADLI !== 'undefined' ? MUSTEK_ZABRADLI : [];
+  const K = typeof MUSTEK_KOTVENI !== 'undefined' ? MUSTEK_KOTVENI : [];
+  const cz = n => (Math.round((+n || 0) * 100) / 100).toLocaleString('cs-CZ');
+  return sk.map(s => {
+    const casti = [s.ks + ' ks ' + cz(s.sirkaEfMm) + ' × ' + cz(s.delkaEfMm) + ' mm'];
+    if (m.skladebny) {
+      casti.push(s.podlaha === 'jine' ? (s.podlahaNazev || 'podlaha jiná') : volba(P, s.podlaha));
+      casti.push(s.zabradli === 'bez' ? 'bez zábradlí' : 'zábradlí ' + (s.zabradli === 'jine' ? (s.zabradliNazev || 'jiné') : volba(Zb, s.zabradli))
+        + (s.zabradliStrany === 1 ? ' jednostranně' : ' oboustranně'));
+      casti.push('kotvení ' + (s.kotveni === 'jine' ? (s.kotveniText || 'jiné') : volba(K, s.kotveni)));
+    }
+    if (m.sloupyKs && s.sloupyKs > 0) casti.push('sloupy navíc ' + s.sloupyKs + ' ks × ' + cz(s.vyskaSloupuM) + ' m');
+    return casti.join(', ');
+  }).join('; ');
 }
 /* ---------- termín dodání a přirážka za ATYP (21. 8. 2026) ----------
  *
@@ -23427,7 +24288,7 @@ function kryciHodiny(zak, varianta, jekly, strana) {
   const radky = [];
   let celkem = null;
   if (rOck && rOck.sekce) {
-    const pocitane = [].concat(rOck.sekce.hrubaOck || [], rOck.sekce.oplasteni || [], rOck.sekce.rezie || []);
+    const pocitane = [].concat(rOck.sekce.hrubaOck || [], rOck.sekce.mustky || [], rOck.sekce.oplasteni || [], rOck.sekce.rezie || []);
     KRYCI_HODINY_OCK.forEach(def => {
       const casti = pocitane.filter(x => x && def.cesty.indexOf(x.cenaPath) >= 0)
         .map(x => Math.round(+x.mnozstvi || 0)).filter(h => h > 0);
@@ -24717,6 +25578,20 @@ const CENIK_DEF = [
     ['C.mustekMontazZakladHod', 'Montáž můstků – základ', 'hod/ks', 'hodiny celkem (všechny osoby) na kus'],
     ['C.mustekMontazBmHod', 'Montáž můstků – za metr délky', 'hod/bm', 'hodiny celkem za každý metr délky'],
     ['C.mustekMontazMinHod', 'Montáž můstků – minimum', 'hod/ks', 'nejméně tolik hodin bez ohledu na velikost můstku'],
+    /* Skladebný model můstků (#560, rozhodnutí J. V. 4. 11. 2026, A-Q6). Platí
+     * jen v Modelu 2 a jen s kladnou nosnou konstrukcí; bez ní se počítá podle
+     * řádků výš (#354). Sloupy navíc se počítají jako sloupky šachty (A-Q5). */
+    ['C.mustekRamBmKc', 'Můstky – nosná konstrukce (skladebný model)', 'Kč/bm délky při ref. šířce',
+     'bez podlahy a zábradlí; nenulová = počítá se skladebně (jen Model 2)'],
+    ['C.mustekPodlahaPlechM2Kc', 'Můstky – podlaha pochozí plech', 'Kč/m²', 'výchozí podlaha'],
+    ['C.mustekPodlahaPororostM2Kc', 'Můstky – podlaha pororošt', 'Kč/m²', ''],
+    ['C.mustekPodlahaVanaM2Kc', 'Můstky – podlaha ocelová vana pro beton', 'Kč/m²', 'jen ocelová vana; betonáž zajistí stavba'],
+    ['C.mustekZabradliKovBmKc', 'Můstky – zábradlí kovové', 'Kč/bm', 'za metr délky na každé straně'],
+    ['C.mustekZabradliSkloBmKc', 'Můstky – zábradlí skleněné', 'Kč/bm', 'za metr délky na každé straně'],
+    ['C.mustekKotveniDeskaKc', 'Můstky – kotvení do stropní desky / věnce', 'Kč/ks', 'sada na jeden můstek'],
+    ['C.mustekKotveniSloupKc', 'Můstky – kotvení do sloupů (na terén)', 'Kč/ks', 'sada na jeden můstek'],
+    ['C.mustekKotveniKonzolaKc', 'Můstky – kotvení konzolově jen z OCK', 'Kč/ks', 'sada na jeden můstek'],
+    ['C.mustekZabradliSkloMontazHodBm', 'Montáž můstků – skleněné zábradlí navíc', 'hod/bm', 'hodiny celkem za metr skleněného zábradlí'],
     ['C.oplechFasadaBmKc', 'Oplechování k fasádě (ext)', 'Kč/bm', ''],
   ]],
   /* ATYP (#7). Skupina se jmenuje stejně jako katalogová sekce `atyp` –
@@ -32159,6 +33034,14 @@ const CTRL_MAPA_VYCHOZI = (() => {
    * materiál vč. zábradlí; montáž můstků má vlastní řádek → stavební práce. */
   dej('sl-zamecnici', ['C.spodniRamKc', 'C.cilkoKc', 'C.nytKc', 'C.zamecnikAtypKc', 'Z.zamecnikAtypKc', 'C.mustekKc']);
   dej('sl-stavebni', ['C.mustekMontazHodKc']);
+  /* #560 (skladebný model můstků): nosná konstrukce, podlahy (vana = jen
+   * ocelová vana, beton je mimo dodávku), kovové zábradlí a kotvení →
+   * zámečníci; skleněné zábradlí → sklo. Sloupy navíc nesou C.profilasKgKc
+   * (profily) a lakování C.lak.* jako sloupky šachty. */
+  dej('sl-zamecnici', ['C.mustekRamBmKc', 'C.mustekPodlahaPlechM2Kc', 'C.mustekPodlahaPororostM2Kc',
+    'C.mustekPodlahaVanaM2Kc', 'C.mustekZabradliKovBmKc', 'C.mustekKotveniDeskaKc', 'C.mustekKotveniSloupKc',
+    'C.mustekKotveniKonzolaKc', 'V.mustky']);
+  dej('mat-sklo', ['C.mustekZabradliSkloBmKc']);
   dej('mat-ostatni', ['C.montazniNosnik', 'C.lemovaniKgKc', 'C.vetraciMrizkaKc', 'C.zastreseniM2Kc',
     'C.oplechFasadaBmKc', 'C.plastKotvyKc', 'C.striskaDvurKc', 'C.hakyKc', 'C.priplatky.medStrechaM2',
     'C.priplatky.ventilatorKc', 'C.priplatky.zabranyDvereKc', 'C.priplatky.madlaBmKc', 'C.priplatky.zabranyPadKc',
@@ -32191,7 +33074,8 @@ const CTRL_MAPA_VYCHOZI = (() => {
     'C.lak.rezim', 'C.skloBokyNazev', 'C.skloCelniNazev', 'C.atypPrirazka', 'C.atypMontazPct', 'C.atypProjekcePct',
     'C.atypZamecnikKc', 'C.atypRezervaZakladPct', 'C.atypRezervaPriplatkyPct',
     /* #354: referenční šířka a hodiny montáže můstků (náklad nese sazba). */
-    'C.mustekRefSirkaMm', 'C.mustekMontazZakladHod', 'C.mustekMontazBmHod', 'C.mustekMontazMinHod']);
+    'C.mustekRefSirkaMm', 'C.mustekMontazZakladHod', 'C.mustekMontazBmHod', 'C.mustekMontazMinHod',
+    'C.mustekZabradliSkloMontazHodBm']);
   return m;
 })();
 
@@ -32317,7 +33201,7 @@ function ctrlRozvrhOck(vysledek, opts) {
       vlastni: !!r.vlastni, mnozstvi: +r.mnozstvi || 0, cena: +r.cena || 0,
       naklad: +r.naklad || 0, prodej: +r.sMarzi || 0 });
   };
-  ['hrubaOck', 'oplasteni', 'volitelne', 'rezie'].forEach(sek =>
+  ['hrubaOck', 'mustky', 'oplasteni', 'volitelne', 'rezie'].forEach(sek =>
     (vysledek.sekce[sek] || []).forEach(r => radek(r, sek, true)));
   const rz = vysledek.rezerva;
   if (rz && (+rz.naklad || +rz.sMarzi)) {
@@ -34583,7 +35467,25 @@ function standardVyhodnot(z, vyskaM, std, pripl) {
   /* #354 (J. V. 26. 10. 2026): šířka můstku = šířka šachty, proto se už
    * nehlídá (limity sirkaMaxMm / sirkaJakoOck zůstávají v datech, nic je
    * nečte). Délka (dřív „hloubka") max 1 000 mm jako standard zůstává. */
-  if (mustkyKs > 0) {
+  if (mustkyKs > 0 && Array.isArray(zad.mustky) && typeof mustkySkupiny === 'function') {
+    /* #560: zadání po skupinách — rozhoduje nejdelší můstek; zadaná šířka
+     * (prázdná = šířka šachty) nesmí přesáhnout šířku OCK (sirkaJakoOck). */
+    kontrol += 1;
+    const sk = mustkySkupiny(zad).filter(x => x.ks > 0);
+    const delky = sk.map(x => x.delkaMm);
+    if (delky.some(d => d === '')) nalezy.push(_nalez('Délka můstku', 'max ' + s.mustek.hloubkaMaxMm + ' mm', 'nevyplněno', 'nelze'));
+    else {
+      const h = Math.max.apply(null, delky);
+      if (h > s.mustek.hloubkaMaxMm) nalezy.push(_nalez('Délka můstku', 'max ' + s.mustek.hloubkaMaxMm + ' mm', h + ' mm'));
+    }
+    const sirkaOck = Math.round((+zad.sirka || 0) * 1000);
+    const sirky = sk.map(x => x.sirkaMm).filter(x => x !== '');
+    if (s.mustek.sirkaJakoOck && sirkaOck > 0 && sirky.length) {
+      kontrol += 1;
+      const w = Math.max.apply(null, sirky);
+      if (w > sirkaOck) nalezy.push(_nalez('Šířka můstku', 'max šířka OCK ' + sirkaOck + ' mm', w + ' mm'));
+    }
+  } else if (mustkyKs > 0) {
     kontrol += 1;
     const h = _cislo(zad.mustekHloubkaMm);
     if (h === null) nalezy.push(_nalez('Délka můstku', 'max ' + s.mustek.hloubkaMaxMm + ' mm', 'nevyplněno', 'nelze'));
@@ -38551,20 +39453,10 @@ function renderInputs() {
          * pod čistým vstupem, nad přechodovými plechy. Rozměry se ptají, jen
          * když můstky jsou; prázdné pole znamená „nevyplněno", ne nulu. */
         + `<div class="row"><label>Můstky mezi budovou a OCK</label>
-            <input type="number" step="1" min="0" value="${esc(mustkyPocet(Z))}"
-              title="počet můstků; 0 = šachta nemá žádný" onchange="mustkySet(this.value)"><span class="u">ks</span></div>`
-        /* #354 (26. 10. 2026): zadává se jen DÉLKA (data `mustekHloubkaMm`);
-         * šířka je šířka šachty a jen se ukazuje. Staré `mustekSirkaMm` se
-         * nečte (jen zamčené varianty se starým ceníkem — střecha). */
-        + (mustkyPocet(Z) > 0
-          ? `<div class="row"><label>Délka můstku</label>
-               <input type="number" step="10" min="0" value="${esc(Z.mustekHloubkaMm == null ? '' : Z.mustekHloubkaMm)}"
-                 placeholder="1000" title="vzdálenost mezi budovou a OCK; prázdné = počítá se 1 000 mm; standard max 1 000 mm"
-                 onchange="set('Z.mustekHloubkaMm', this.value)"><span class="u">mm</span></div>
-             <div class="row"><label>Šířka můstku</label>
-               <input type="text" disabled value="${esc(Math.round((+Z.sirka || 0) * 1000))}"
-                 title="šířka můstku = šířka šachty; nezadává se"><span class="u">mm</span></div>`
-          : '')
+            <input type="number" step="1" min="0" value="${esc(mustkyPocet(Z))}" ${Array.isArray(Z.mustky) && Z.mustky.length > 1 ? 'disabled' : ''}
+              title="${Array.isArray(Z.mustky) && Z.mustky.length > 1 ? 'součet skupin z karty Můstky' : 'počet můstků; 0 = šachta nemá žádný; rozměry a provedení v kartě Můstky'}" onchange="mustkySet(this.value)"><span class="u">ks</span></div>`
+        /* #560: délka, šířka, provedení, kotvení a sloupy jsou v kartě
+         * „Můstky" pod zadáním (mustkyKarta) — zadávají se po skupinách. */
         + inp('Z.prechodovePlechy', { type: 'check', l: 'Přechodové plechy' })
 
         /* ATYP má vlastní obsluhu (17. 8. večer): zaškrtnutí předvyplní všechny
@@ -38587,6 +39479,7 @@ function renderInputs() {
     /* Stěny stojí hned za zadáním šachty: navazují na přepínač Opláštění
        o pár polí výš a patří k popisu stavby, ne k cenám. */
     oplasteniKarta() +
+    mustkyKarta(rAkt) +
     kartaRezim('ock', 'profily', 'Dimenze profilů',
       profRow('sloupek', 'Sloupek') + profRow('precnikBok', 'Příčníky bok/zadek') + profRow('sloupekPortal', 'Sloupek portálu') +
       profRow('precnikPortal', 'Příčníky portálu') + profRow('spojka', 'Spojka sloupků') + profRow('lemovani', 'Lemování ext. šachty') +
@@ -39159,9 +40052,109 @@ function bokySirkaZpet() {
  * Zapisuje se AŽ po set() — když zápis zastaví zámek, nemění se nic. */
 function mustkySet(v) {
   const n = Math.max(0, Math.floor(+v || 0));
-  set('Z.mustkyKs', n);
-  if (Z.mustkyKs === n) Z.mustek = n > 0;
-  render();
+  /* #560: zadání po skupinách — počet v zadání šachty mění první skupinu
+   * (běžně jediná); u více skupin je pole jen součet (mění se v kartě). */
+  /* Starší tvar (mustkyKs + mustekHloubkaMm) se převede na skupinu — délka
+   * zůstane; jedna skupina počítá na haléř stejně (test_560_mustky_sekce.js). */
+  const sk = mustkySkupinyKopie();
+  if (sk.length > 1) { render(); return; }
+  if (!sk.length) sk.push(mustekSkupinaNova(n)); else sk[0].ks = n;
+  mustkyUloz(n > 0 ? sk : []);
+}
+
+/* KARTA MŮSTKY (#560, rozhodnutí J. V. 4. 11. 2026, A-Q1/A-Q2/A-Q7).
+ * Zadání po skupinách stejných můstků (`Z.mustky[]`). Starší zakázka
+ * (`mustkyKs` + `mustekHloubkaMm`) se převede na jednu skupinu až první
+ * úpravou v kartě — do té doby se nic nepřepisuje (stará data počítají
+ * na haléř stejně). Model 1 zná jen počet a délku (vzorec #354), proto
+ * karta ukáže jen ty a upozorní, že provedení se počítá jen v Modelu 2.
+ * Každý zápis jde přes set('Z.mustky', …), takže ho hlídá zámek varianty
+ * i náhled. */
+function mustkySkupinyKopie() {
+  return mustkySkupiny(Z).map(x => Object.assign({}, x));
+}
+function mustkyUloz(sk) {
+  set('Z.mustky', sk);
+  /* staré klíče až po úspěšném zápisu (zámek zápis zastaví) */
+  if (Z.mustky === sk) { delete Z.mustkyKs; delete Z.mustek; delete Z.mustekHloubkaMm; }
+}
+function mustekPoleSet(i, pole, v) {
+  const sk = mustkySkupinyKopie();
+  if (!sk[i]) return;
+  sk[i][pole] = v;
+  sk[i] = mustekSkupinaOciste(sk[i]);
+  mustkyUloz(sk);
+}
+function mustekSkupinaPridej() {
+  const sk = mustkySkupinyKopie();
+  if (sk.length >= MUSTKY_SKUPIN_MAX) return;
+  sk.push(mustekSkupinaNova(1));
+  mustkyUloz(sk);
+}
+function mustekSkupinaOdeber(i) {
+  const sk = mustkySkupinyKopie();
+  if (!sk[i]) return;
+  sk.splice(i, 1);
+  mustkyUloz(sk);
+}
+/* MU2 (#560, J. V. 6. 11. 2026: „zadání můstků je nečitelné a ovládací
+ * prvky … rozmístěny chaoticky"). Tělo karet zadání je mřížka sloupců po
+ * 300 px (`.inputs .card .body`) a tabulka, tlačítko i upozornění se do ní
+ * dřív sázely jako samostatné buňky — tlačítko a upozornění tak stály
+ * VEDLE tabulky přes její sloupce. Teď je všechno v jednom obalu přes celou
+ * šířku (`.mustky-karta`): upozornění jako lišta nad tabulkou, tabulka ve
+ * vlastním vodorovně posuvném kontejneru (posouvá se jen karta, ne stránka),
+ * „+ další provedení" malé tlačítko pod ní vlevo. Volby mají v kartě krátké
+ * popisky (MUSTKY_UI_POPISKY), ať se select nemusí zkracovat; dokument
+ * (specifikace, nabídka) dál bere plné znění z jádra. */
+const MUSTKY_UI_POPISKY = {
+  podlaha: { plech: 'pochozí plech', pororost: 'pororošt', vana: 'ocelová vana (beton stavba)', jine: 'jiná…' },
+  zabradli: { kov: 'kovové', sklo: 'skleněné', bez: 'bez zábradlí', jine: 'jiné…' },
+  kotveni: { deska: 'do stropní desky / věnce', sloupy: 'do sloupů (na terén)', konzola: 'konzolově jen z OCK', jine: 'jiné…' },
+};
+function mustkyKarta(rAkt) {
+  if (!(mustkyPocet(Z) > 0)) return '';
+  const m2 = !!(typeof OCK !== 'undefined' && OCK && OCK.fixes);
+  const skladebny = !!(rAkt && rAkt.mustky && rAkt.mustky.skladebny);
+  const sk = mustkySkupiny(Z);
+  const sirkaSachty = Math.round((+Z.sirka || 0) * 1000);
+  const zdvih = +Z.zdvih || 0;
+  const sel = (i, pole, seznam, hodnota, popisky, tit) => `<select class="mu-${pole}" title="${esc(tit)}" onchange="mustekPoleSet(${i}, '${pole}', this.value)">`
+    + seznam.map(([k, t]) => `<option value="${esc(k)}" ${String(hodnota) === String(k) ? 'selected' : ''}>${esc((popisky && popisky[k]) || t)}</option>`).join('') + '</select>';
+  const cis = (i, pole, hodnota, opts) => `<input type="number" class="mu-${pole}" min="0" step="${opts.step || 1}"
+      value="${esc(hodnota === '' || hodnota == null ? '' : hodnota)}" placeholder="${esc(opts.ph == null ? '' : opts.ph)}"
+      title="${esc(opts.t || '')}" onchange="mustekPoleSet(${i}, '${pole}', this.value)">`;
+  const txt = (i, pole, hodnota, ph) => `<input type="text" class="mu-text" maxlength="${MUSTEK_TEXT_MAX}" value="${esc(hodnota || '')}"
+      placeholder="${esc(ph)}" onchange="mustekPoleSet(${i}, '${pole}', this.value)">`;
+  const hlava = m2
+    ? '<tr><th>ks</th><th>šířka [mm]</th><th>délka [mm]</th><th>podlaha</th><th>zábradlí</th><th>kotvení</th><th>sloupy navíc [ks × m]</th><th></th></tr>'
+    : '<tr><th>ks</th><th>délka [mm]</th><th></th></tr>';
+  const radky = sk.map((s, i) => {
+    const odeber = sk.length > 1 ? `<button class="mini mu-odebrat noprint" title="odebrat skupinu" onclick="mustekSkupinaOdeber(${i})">✕</button>` : '';
+    const ks = cis(i, 'ks', s.ks, { t: 'počet stejných můstků v této skupině; 0 = skupina se nepočítá' });
+    const delka = cis(i, 'delkaMm', s.delkaMm, { step: 10, ph: MUSTEK_DELKA_VYCHOZI_MM, t: 'vzdálenost mezi budovou a OCK; prázdné = 1 000 mm; standard max 1 000 mm' });
+    if (!m2) return `<tr><td>${ks}</td><td>${delka}</td><td class="mu-akce">${odeber}</td></tr>`;
+    return `<tr>
+      <td>${ks}</td>
+      <td>${cis(i, 'sirkaMm', s.sirkaMm, { step: 10, ph: sirkaSachty > 0 ? sirkaSachty : 'jako šachta', t: 'šířka můstku; prázdné = šířka šachty' })}</td>
+      <td>${delka}</td>
+      <td>${sel(i, 'podlaha', MUSTEK_PODLAHY, s.podlaha, MUSTKY_UI_POPISKY.podlaha, 'provedení podlahy můstku')}${s.podlaha === 'jine' ? txt(i, 'podlahaNazev', s.podlahaNazev, 'jaká podlaha') : ''}</td>
+      <td><span class="mu-dvojice">${sel(i, 'zabradli', MUSTEK_ZABRADLI, s.zabradli, MUSTKY_UI_POPISKY.zabradli, 'typ zábradlí')}${s.zabradli !== 'bez' ? sel(i, 'zabradliStrany', [['2', 'obě strany'], ['1', 'jedna strana']], String(s.zabradliStrany), null, 'zábradlí na obou stranách, nebo jen na jedné') : ''}</span>${s.zabradli === 'jine' ? txt(i, 'zabradliNazev', s.zabradliNazev, 'jaké zábradlí') : ''}</td>
+      <td>${sel(i, 'kotveni', MUSTEK_KOTVENI, s.kotveni, MUSTKY_UI_POPISKY.kotveni, 'kotvení můstku')}${s.kotveni === 'jine' ? txt(i, 'kotveniText', s.kotveniText, 'jak kotvit') : ''}</td>
+      <td><span class="mu-dvojice">${cis(i, 'sloupyKs', s.sloupyKs || '', { ph: 0, t: 'sloupy navíc pod můstky — počítají se jako rohové sloupky šachty (profil sloupku z Dimenze profilů)' })}<span class="mu-krat">×</span>${cis(i, 'sloupVyskaM', s.sloupVyskaM, { step: 0.1, ph: zdvih || '', t: 'výška sloupu v m; prázdné = výška nejvyššího nástupiště (zdvih)' })}</span></td>
+      <td class="mu-akce">${odeber}</td></tr>`;
+  }).join('');
+  const lista = !m2
+    ? '<div class="mustky-lista">Model 1 počítá můstky vzorcem předlohy: jen počet a délka, šířka = šířka šachty. '
+      + 'Šířka, podlaha, zábradlí, kotvení a sloupy navíc se zadávají a počítají jen v Modelu 2.</div>'
+    : (skladebny ? '<div class="mustky-lista">Cena se skládá z nosné konstrukce, podlahy, zábradlí, kotvení, sloupů a montáže '
+        + '(sekce MŮSTKY v kalkulaci); v cenové nabídce má vlastní řádek. Ocelová vana: betonáž zajistí stavba.</div>'
+      : '<div class="mustky-lista varovani">Platný ceník nemá sazby skladebného modelu můstků — cena se počítá jako pochozí plech '
+        + 's kovovým zábradlím; sloupy navíc se počítají jako sloupky šachty.</div>');
+  const pridat = (m2 && sk.length < MUSTKY_SKUPIN_MAX)
+    ? '<div class="mustky-pridat noprint"><button class="mini" onclick="mustekSkupinaPridej()">+ další provedení</button></div>' : '';
+  return kartaRezim('ock', 'mustky', 'Můstky mezi budovou a OCK',
+    `<div class="mustky-karta">${lista}<div class="mustky-scroll"><table class="mustky-tbl"><thead>${hlava}</thead><tbody>${radky}</tbody></table></div>${pridat}</div>`, 'ock-mustky');
 }
 
 function nadDvermiSet(v) {
@@ -40570,6 +41563,7 @@ function renderOutputs() {
   const kalkulace = `<table>
     <tr><th>Položka</th><th>Množství</th>${col.admin ? '<th>Jedn. cena</th>' : ''}${col.showCost ? '<th>Náklad</th><th>Přirážka</th>' : ''}<th>${thCena}</th>${adminTh}</tr>
     ${tbl(r.sekce.hrubaOck, s.hrubaOck, 'HRUBÁ OCK', 'hrubaOck')}
+    ${r.sekce.mustky ? tbl(r.sekce.mustky, s.mustky, 'MŮSTKY MEZI BUDOVOU A OCK', 'mustky') : ''}
     ${tbl(r.sekce.oplasteni, s.oplasteni, 'OPLÁŠTĚNÍ', 'oplasteni')}
     ${tblVolitelne(r.volitelneKatalog, s.volitelne)}
     ${tbl(r.sekce.rezie, s.rezie, 'REŽIE', 'rezie')}
@@ -41183,6 +42177,7 @@ function renderDetail() {
   const s = r.souctySekci;
   const krCeny = dvKrok('11. Cenové sekce (náklad + přirážka)',
     sekceBlok('HRUBÁ OCK', r.sekce.hrubaOck, s.hrubaOck) +
+    (r.sekce.mustky ? sekceBlok('MŮSTKY MEZI BUDOVOU A OCK', r.sekce.mustky, s.mustky) : '') +
     sekceBlok('OPLÁŠTĚNÍ', r.sekce.oplasteni, s.oplasteni) +
     sekceBlok('VOLITELNÉ (jen zaškrtnuté)', r.sekce.volitelne, s.volitelne) +
     sekceBlok('REŽIE', r.sekce.rezie, s.rezie) +
@@ -41417,7 +42412,7 @@ function renderTechspecPreklad() {
   const row = (lbl, val, hotovo) => `<div class="spec-row ro"><div class="lbl">${tsPrelozText(lbl)}</div>
     <div>${hotovo ? esc(val) : tsPrelozText(val)}</div><div></div></div>`;
 
-  const sekce = TECHSPEC_DEF.map(sk =>
+  const sekce = TECHSPEC_DEF.filter(sk => !sk.jen || sk.jen(r, Z)).map(sk =>
     `<h3>${tsPrelozText(sk.sekce)}</h3>` +
     sk.pole.map(p => {
       const h = tsHodnota(p, TS, r, Z, C, jazyk());
@@ -41530,7 +42525,8 @@ function renderTechspec() {
     </div>`;
   };
 
-  const sekce = TECHSPEC_DEF.map(s =>
+  /* `jen` (#560): sekce, která se zakázky netýká (MŮSTKY mimo skladebný model), se nekreslí. */
+  const sekce = TECHSPEC_DEF.filter(s => !s.jen || s.jen(r, Z)).map(s =>
     `<h3>${esc(s.sekce)}</h3>` + s.pole.map(specRow).join('') +
     (s.pozn ? `<div class="note">${esc(s.pozn)}</div>` : '')
   ).join('');
@@ -43047,11 +44043,13 @@ function renderProj() {
   const box3 = kpiLine('naklad', 'Náklad', fmt0(naklad)) + kpiLine('hrubyZisk', 'Hrubý zisk', fmt0(hrubyZisk));
   const box4 = kpiLine('sleva', 'Poskytnutá sleva', pct(slevaProjPodil)) + kpiLine('marze', 'Marže', pct(marze));
   /* Obchodní zaokrouhlení má od 1. 8. 2026 vlastní sekci pod výpočtem (#38)
-   * a vypisuje se i vlastním řádkem v souhrnné tabulce. V hlavičce by byl
-   * jen třetí opis téhož čísla, tak tam není. Cena nabídky ale zůstává –
-   * je to částka, která odchází zákazníkovi, a ta patří nahoru vždycky,
-   * i když se zrovna nezaokrouhluje. */
-  const cenaLine = `<div class="kpi-line"><span class="kl">Cena nabídky bez DPH</span><span class="kv">${fmt0(projCena)}</span></div>`;
+   * a vypisuje se i vlastním řádkem v souhrnné tabulce. Hlavička je od #568
+   * (dávka PH, J. V. 5. 11. 2026) stejná jako v OCK: tmavá dlaždice nese
+   * rovnou CENU NABÍDKY bez DPH (po slevě a obchodním zaokrouhlení =
+   * projCena, totéž číslo jako cenová nabídka a krycí list), světlá jen DPH
+   * a Celkem s DPH. Nezaokrouhlený součet r.souhrn.cena se v hlavičce
+   * neukazuje (dřív stál v tmavé dlaždici a cena nabídky ve zvláštním
+   * řádku pod ní — dvě různá čísla „bez DPH" vedle sebe). */
 
   /* Přirážka a sleva jsou DVĚ oddělené veličiny (zadání 31. 7. 2026:
    * „a je to vždy rozdělené, tzn. globální sleva a globální přirážka").
@@ -43064,9 +44062,8 @@ function renderProj() {
   const hlava = `<div class="kalk-title">${ZAK.cislo ? `<span class="kt-cislo">${esc(ZAK.cislo)}</span>` : ''}${esc(ZAK.nazevAkce || 'Bez názvu akce')}</div>
   ${typeof stranaNulovanaStitek === 'function' ? stranaNulovanaStitek('proj') : ''}
   <div class="grand">
-    <div class="kpi main"><div class="l">Základní cena bez DPH</div><div class="v">${fmt0(r.souhrn.cena)}</div>${kpiEurHtml(r.souhrn.cena, aktivniVarianta(ZAK), PC.kurzEurKc)}</div>
+    <div class="kpi main"><div class="l">Základní cena bez DPH</div><div class="v">${fmt0(projCena)}</div>${kpiEurHtml(projCena, aktivniVarianta(ZAK), PC.kurzEurKc)}</div>
     <div class="kpi kpi-multi">
-      ${cenaLine}
       <div class="kpi-line"><span class="kl">DPH ${Math.round(PC.dph * 100)} %</span><span class="kv">${fmt0(dphKc)}</span></div>
       <div class="kpi-line"><span class="kl">Celkem s DPH</span><span class="kv">${fmt0(celkemSDph)}</span></div>
     </div>
@@ -51923,6 +52920,7 @@ const ONLINE_STAV = {
   otisky: [],        // souhrny záloh databáze (jen administrátor; bez dat)
   otiskyNacteno: false,
   kopieDisk: null,   // záznam poslední kopie otisku na Disk (#151 N6) — ze serveru, bez dat
+  kopieDiskCeka: null,   // #571 DZ: { duvod, text } — denní kopie na Disk se po přihlášení nepořídila (proč)
   prostrediZalohy: null,   // #552: prostředí záloh main | test | jiny — ze serveru (GET /api/zaloha_vynuceno)
   retenceVarovani: null,   // pojistka retence přeskočila mazání (K3-N13) — ze serveru
   zalohySmi: null,   // O-K9 #527: { potvrditUbytek, smazatPredObnovou } — rozhoduje server
@@ -52178,6 +53176,10 @@ function onlinePrihlas() {
   const heslo = String(ONLINE_STAV.formHeslo || '');
   if (!email || !heslo) { onlineZprava('Zadejte e-mail i heslo.', 'varovani'); render(); return Promise.resolve(false); }
   ONLINE_STAV.pracuje = true; render();
+  /* #571 DZ: o právo zápisu do složky kopie na Disk se žádá TEĎ, ve stejném
+   * gestu (klik / Enter) a ještě před `await` přihlášení — po něm už prohlížeč
+   * žádost bez kliknutí odmítne. Výsledek si vezme onlineKopieDiskAuto. */
+  kopieDiskPravoPredem();
   return onlineApi('/api/prihlaseni', { email, heslo })
     /* #554: heslo jen předané samočinné kopii na Disk (onlineKopieDiskAuto),
      * nikam se neukládá; obnovené sezení (F5) ho nemá → jen připomínka. */
@@ -53871,7 +54873,10 @@ function onlineZalohaAuto(hesloPrihlaseni) {
       const kd = (typeof uloKopieDiskStav === 'function') ? uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy, ONLINE_STAV.otisky) : null;
       /* Pojistka retence (K3-N13): pokles dat v noční záloze. */
       const rv = (typeof uloRetenceVarovani === 'function') ? uloRetenceVarovani(ONLINE_STAV.retenceVarovani, Date.now()) : null;
-      const varovani = [chybaZalohy, rv ? rv.text : '', hl && hl.stara ? hl.text : '', kd && kd.stara ? kd.text : ''].filter(Boolean);
+      /* #571 DZ: důvod, proč se denní kopie na Disk nepořídila, se nesmí
+       * ztratit pod dalšími varováními (dřív ho souhrnná hláška přepsala). */
+      const ceka = ONLINE_STAV.kopieDiskCeka ? ONLINE_STAV.kopieDiskCeka.text : '';
+      const varovani = [chybaZalohy, ceka, rv ? rv.text : '', hl && hl.stara ? hl.text : '', kd && kd.stara && !ceka ? kd.text : ''].filter(Boolean);
       if (varovani.length) onlineZprava(varovani.join(' '), 'varovani');
       render(); return v;
     });
@@ -53945,7 +54950,7 @@ async function onlineZalohaStrankami(adresa, prubeh) {
   return { ok: true, zaloha, puvod, otisk, prostredi, porizena };
 }
 
-const KOPIE_DISK = { slozka: null, nacteno: false };
+const KOPIE_DISK = { slozka: null, nacteno: false, pravoPredem: null };
 const KOPIE_DISK_IDB_KLIC = 'zalohaDisk';
 
 function kopieDiskIdb(hodnota) {
@@ -53967,6 +54972,55 @@ function kopieDiskSlozka() {
     if (h && !KOPIE_DISK.slozka) KOPIE_DISK.slozka = h;
     return KOPIE_DISK.slozka;
   });
+}
+
+/* #574 DZ2 (hlášení J. V. 6. 11. 2026): zapamatovaná složka, která na tom
+ * místě v počítači už není (složka nebo nadřazená přesunutá či přejmenovaná,
+ * Disk Google připojený jinak nebo neběží). Na zastaralém handlu projde
+ * h.name i queryPermission; selže až práce se složkou — DOMException
+ * NotFoundError „A requested file or directory could not be found…". Do
+ * v5.11.3 se to ukázalo až po hesle a stažení zálohy, handle se nezapomněl
+ * a tlačítko nikdy znovu nenabídlo výběr složky.
+ * Sonda: první položka z h.values(). Ověřeno v Chromiu: na živé složce
+ * projde (i prázdné), na zmizelé hodí NotFoundError. getFileHandle bez
+ * create to nerozliší — NotFoundError hází i živá složka bez souboru.
+ * Nic se nezapisuje. Vrací 'ok' | 'nenalezena' | 'pravo' (bez práva čtení
+ * se nedá říct; rozhodne se po žádosti o právo). Jiná chyba = 'ok' (ukáže
+ * se až při kopii, jako dřív). */
+const KOPIE_DISK_NENALEZENA_CHYBY = ['NotFoundError', 'InvalidStateError', 'NotReadableError'];
+function kopieDiskNenalezena(e) {
+  return !!e && KOPIE_DISK_NENALEZENA_CHYBY.indexOf(String(e.name || '')) >= 0;
+}
+async function kopieDiskSonda(h) {
+  if (!h || typeof h.values !== 'function') return 'ok';
+  try {
+    const it = h.values();
+    await it.next();
+    if (typeof it.return === 'function') { try { await it.return(); } catch (e) { /* jen úklid */ } }
+    return 'ok';
+  } catch (e) {
+    if (kopieDiskNenalezena(e)) return 'nenalezena';
+    if (e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) return 'pravo';
+    return 'ok';
+  }
+}
+function kopieDiskZapomen() {
+  KOPIE_DISK.slozka = null;
+  kopieDiskIdb(null).catch(() => false);
+}
+function kopieDiskNenalezenaText(jmeno) {
+  return 'Složka „' + String(jmeno || ULO_KOPIE_DISK_SLOZKA) + '" na tomto počítači už není (přesunutá nebo přejmenovaná,'
+    + ' případně Disk Google na počítači neběží). Klikněte znovu na „Zkopírovat zálohu na Disk teď" a vyberte složku „'
+    + ULO_KOPIE_DISK_SLOZKA + '" na Disku Google.';
+}
+/* Chyba práce se složkou → u nenalezené složky ji zapomene a vrátí českou
+ * chybu (e.nenalezena), jinak chybu beze změny. */
+function kopieDiskChybaSlozky(e, h) {
+  if (!kopieDiskNenalezena(e)) return e;
+  kopieDiskZapomen();
+  const x = new Error(kopieDiskNenalezenaText(h && h.name));
+  x.nenalezena = true;
+  return x;
 }
 
 async function kopieDiskSha256(data) {
@@ -54107,7 +55161,9 @@ async function kopieDiskProved(h, heslo) {
   const jmeno = uloKopieDiskJmeno(o.otisk, gzip, prostredi, o.porizena || (o.zaloha && o.zaloha.porizena) || Date.now());
   const ocekavano = data.length;
   const sha256 = await kopieDiskSha256(data);
-  const velikostB = await kopieDiskZapisSoubor(h, jmeno, data);
+  /* #574: složka zmizela mezi sondou a zápisem → zapomenout + česká hláška */
+  let velikostB;
+  try { velikostB = await kopieDiskZapisSoubor(h, jmeno, data); } catch (e) { throw kopieDiskChybaSlozky(e, h); }
   /* Kontrola zápisu: soubor na Disku musí mít celou délku, jinak se kopie
    * nezapočítá (hlídka by jinak mlčela nad useknutým souborem). */
   if (velikostB !== ocekavano) throw new Error('soubor ' + jmeno + ' se nezapsal celý (' + velikostB + ' z ' + ocekavano + ' B)');
@@ -54118,8 +55174,10 @@ async function kopieDiskProved(h, heslo) {
   const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });
   ONLINE_STAV.kopieDisk = (z && z.kopieDisk) || ONLINE_STAV.kopieDisk;
   if (z && z.retenceVarovani !== undefined) ONLINE_STAV.retenceVarovani = z.retenceVarovani;   // #523: čerstvá pojistka
-  await kopieDiskZapisSoubor(h, uloKopieDiskPosledniJmeno(prostredi),
-    JSON.stringify(Object.assign({ kdy: (z && z.kopieDisk && z.kopieDisk.kdy) || new Date().toISOString() }, kopie), null, 1));
+  try {
+    await kopieDiskZapisSoubor(h, uloKopieDiskPosledniJmeno(prostredi),
+      JSON.stringify(Object.assign({ kdy: (z && z.kopieDisk && z.kopieDisk.kdy) || new Date().toISOString() }, kopie), null, 1));
+  } catch (e) { throw kopieDiskChybaSlozky(e, h); }
   /* #523 Z2: úklid starých kopií — jen když server kopii přijal. */
   let uklid;
   if (!z || !z.ok) uklid = { smazano: [], chyby: [], duvod: 'server kopii nepotvrdil' };
@@ -54151,59 +55209,149 @@ async function onlineKopieDiskTed() {
   ONLINE_STAV.pracuje = true; render();
   try {
     let h = await kopieDiskSlozka();
+    /* #574 DZ2: zapamatovaná složka, která v počítači už není, se pozná
+     * DŘÍV, než se ptá na heslo a stahuje záloha — zapomene se a v témže
+     * kliknutí se nabídne výběr složky (aktivace kliknutím ještě platí). */
+    let zmizela = '', pravoOk = null;
+    if (h) {
+      let sonda = await kopieDiskSonda(h);
+      if (sonda === 'pravo') { pravoOk = await uloPravo(h, false); if (pravoOk) sonda = await kopieDiskSonda(h); }
+      if (sonda === 'nenalezena') { zmizela = String(h.name || ULO_KOPIE_DISK_SLOZKA); kopieDiskZapomen(); h = null; pravoOk = null; }
+    }
     if (!h) {
       if (typeof window === 'undefined' || typeof window.showDirectoryPicker !== 'function')
         throw new Error('tenhle prohlížeč neumí zapisovat do složky — použijte Chrome nebo Edge na počítači s Diskem Google');
       try { h = await window.showDirectoryPicker({ id: 'kng-zaloha-disk', mode: 'readwrite' }); }
-      catch (e) { if (e && e.name === 'AbortError') { onlineZprava('Kopie na Disk se nepořídila — složka nebyla vybrána.', 'varovani'); return false; } throw e; }
+      catch (e) {
+        if (zmizela) {   // #574: nikdy jen anglická systémová hláška
+          onlineZprava(kopieDiskNenalezenaText(zmizela) + (e && e.name === 'AbortError' ? ' (Výběr složky byl zrušen.)' : ''), 'varovani');
+          return false;
+        }
+        if (e && e.name === 'AbortError') { onlineZprava('Kopie na Disk se nepořídila — složka nebyla vybrána.', 'varovani'); return false; }
+        throw e;
+      }
       KOPIE_DISK.slozka = h;
       kopieDiskIdb(h).catch(() => false);      // zapamatování je pohodlí, ne podmínka
     }
-    if (!(await uloPravo(h, false))) throw new Error('prohlížeč nepovolil zápis do složky „' + h.name + '"');
+    if (!(pravoOk !== null ? pravoOk : await uloPravo(h, false))) {
+      /* #571 DZ: zapamatovanou složku zapomenout — příští klik nabídne výběr
+       * složky znovu (jinak by se tlačítko točilo na zamítnutém právu). */
+      KOPIE_DISK.slozka = null; kopieDiskIdb(null).catch(() => false);
+      throw new Error('prohlížeč nepovolil zápis do složky „' + h.name + '" — klikněte znovu, vyberte složku „'
+        + ULO_KOPIE_DISK_SLOZKA + '" a zápis povolte (nejlépe „Povolit při každé návštěvě")');
+    }
     const k = await kopieDiskProved(h);
+    ONLINE_STAV.kopieDiskCeka = null;
     onlineZprava('Záloha zkopírována na Disk: ' + h.name + '/' + k.soubor + ' (' + kopieDiskVelikost(k.velikostB) + ', '
       + (k.puvod === 'nocni-otisk' ? 'noční otisk ' + k.otisk : 'aktuální stav — noční otisk za posledních 7 dní chybí') + ').'
       + kopieDiskUklidText(k.uklid));
     return true;
   } catch (e) {
-    onlineZprava('Kopii zálohy na Disk se nepodařilo pořídit: ' + (e && e.message || e), 'varovani');
+    const x = kopieDiskChybaSlozky(e, KOPIE_DISK.slozka);   // #574: i NotFoundError odjinud → zapomenout, česky
+    onlineZprava(x && x.nenalezena ? x.message : 'Kopii zálohy na Disk se nepodařilo pořídit: ' + (x && x.message || x), 'varovani');
     return false;
   } finally { ONLINE_STAV.pracuje = false; render(); }
 }
 
 /* SAMOČINNÁ KOPIE PO PŘIHLÁŠENÍ (#554, J. V. 3. 11. 2026: kopie každý den).
  * Kopíruje se, když v Netlify leží noční otisk novější, než jaký nese
- * poslední kopie tohoto prostředí (uloKopieDiskStav → potreba), a jen když
- * je v tomhle prohlížeči složka vybraná a právo zápisu UDĚLENÉ — o právo se
- * tu nežádá (žádost smí jen kliknutí), bez něj automatika mlčí a zbude
- * hlídka (3 dny).
+ * poslední kopie tohoto prostředí (uloKopieDiskStav → potreba), složka je
+ * v tomhle prohlížeči vybraná a právo zápisu udělené.
  *
  * Heslo (K3-N1: záznam kopie odemyká retenci, server ho chce s heslem
  * správce) se bere z PRÁVĚ PROBĚHLÉHO přihlášení — `hesloPrihlaseni`
  * předává onlinePrihlas jen sem, nikam se neukládá. Dialog s heslem se po
- * přihlášení dál neotevírá (K4-N15). Obnovené sezení (F5, cookie) heslo
- * nemá → jen připomene tlačítko jako dosud. Selhání kopie přihlášení
- * nezastaví, jen se ohlásí. */
+ * přihlášení dál neotevírá (K4-N15). Selhání kopie přihlášení nezastaví.
+ *
+ * #571 DZ (hlášení J. V. 5. 11. 2026): na ostrém webu se kopie po přihlášení
+ * neudělala a nic se neohlásilo. Právo zápisu ke složce prohlížeč po
+ * restartu vrací do stavu „prompt" a do v4.11.8 se tu jen TIŠE zjišťovalo
+ * (uloPravo(h, true)) → funkce mlčky skončila. Hlídka „starší než 3 dny"
+ * mlčela taky (kopie z 2. 11. byla stará 2 dny). Od #571:
+ *   - o právo se žádá už při kliknutí na „Přihlásit" (kopieDiskPravoPredem,
+ *     ve stejném gestu, před `await` přihlášení) — tady se jen převezme;
+ *   - když kopie potřeba je a nejde ji pořídit, NIKDY se nemlčí: hláška
+ *     řekne proč (není vybraná složka / prohlížeč nepovolil zápis / chybí
+ *     heslo / chyba kopie) a v Nastavení → Databáze i v liště nahoře se
+ *     ukáže tlačítko „Zkopírovat zálohu na Disk teď" (ONLINE_STAV.kopieDiskCeka). */
 async function onlineKopieDiskAuto(hesloPrihlaseni) {
+  const predem = KOPIE_DISK.pravoPredem;
+  KOPIE_DISK.pravoPredem = null;
   if (!jeAdminOnline() || typeof uloKopieDiskStav !== 'function') return false;
-  if (!uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy, ONLINE_STAV.otisky).potreba) return false;
-  const h = await kopieDiskSlozka();
-  if (!h || !(await uloPravo(h, true))) return false;
-  if (!hesloPrihlaseni) {
-    onlineZprava('Denní kopie zálohy na Disk čeká: Nastavení → Databáze → „Zkopírovat zálohu na Disk teď" '
-      + '(potvrdíte ji svým heslem; po přihlášení heslem se pořídí sama).');
+  if (!uloKopieDiskStav(ONLINE_STAV.kopieDisk, Date.now(), ONLINE_STAV.prostrediZalohy, ONLINE_STAV.otisky).potreba) {
+    ONLINE_STAV.kopieDiskCeka = null;
     return false;
   }
+  const h = await kopieDiskSlozka();
+  if (!h) return kopieDiskCeka('slozka', 'v tomhle prohlížeči není vybraná složka „' + ULO_KOPIE_DISK_SLOZKA
+    + '" (prohlížeč si ji pamatuje pro každou adresu webu zvlášť)');
+  const pravo = await kopieDiskPravoStav(h, predem);
+  /* #574 DZ2: složka, která v počítači už není → zapomenout a říct proč */
+  if ((await kopieDiskSonda(h)) === 'nenalezena') {
+    kopieDiskZapomen();
+    return kopieDiskCeka('nenalezena', kopieDiskNenalezenaDuvod(h.name));
+  }
+  if (pravo !== 'granted') return kopieDiskCeka('pravo', pravo === 'denied'
+    ? 'prohlížeč zápis do složky „' + h.name + '" zakázal'
+    : 'prohlížeč nepovolil zápis do složky „' + h.name + '" (po restartu prohlížeče se na právo ptá znovu)');
+  if (!hesloPrihlaseni) return kopieDiskCeka('heslo', 'chybí heslo — přihlášení proběhlo z uložené relace '
+    + '(obnovení stránky), bez hesla správce server kopii nepřijme');
   try {
     const k = await kopieDiskProved(h, hesloPrihlaseni);
+    ONLINE_STAV.kopieDiskCeka = null;
     onlineZprava('Denní kopie zálohy se sama uložila na Disk: ' + h.name + '/' + k.soubor + ' ('
       + kopieDiskVelikost(k.velikostB) + ').' + kopieDiskUklidText(k.uklid));
     return true;
   } catch (e) {
-    onlineZprava('Denní kopii zálohy na Disk se nepodařilo pořídit: ' + (e && e.message || e)
-      + ' — zkuste tlačítko „Zkopírovat zálohu na Disk teď" v Nastavení → Databáze.', 'varovani');
-    return false;
+    if (e && e.nenalezena) return kopieDiskCeka('nenalezena', kopieDiskNenalezenaDuvod(h.name));
+    return kopieDiskCeka('chyba', 'kopii se nepodařilo pořídit: ' + (e && e.message || e));
   }
+}
+
+/* #571 DZ: žádost o právo zápisu ve stejném gestu jako klik na „Přihlásit".
+ * Prohlížeč (Chrome, Edge) žádost bez čerstvého kliknutí odmítne; aktivace
+ * kliknutím vydrží pár sekund, na načtení složky z IndexedDB stačí. Žádá se
+ * jen, když tenhle prohlížeč složku pro kopii už má a právo je ve stavu
+ * „prompt" — bez složky se nic neotevírá (výběr složky je věc tlačítka).
+ * Vrací slib stavu práva ('granted' | 'prompt' | 'denied' | '') a uloží ho
+ * do KOPIE_DISK.pravoPredem pro onlineKopieDiskAuto. Nikdy nevyhodí. */
+function kopieDiskPravoPredem() {
+  const o = { mode: 'readwrite' };
+  const p = Promise.resolve().then(() => kopieDiskSlozka()).then(h => {
+    if (!h) return '';
+    if (typeof h.queryPermission !== 'function') return 'granted';
+    return h.queryPermission(o).then(s => (s === 'prompt' && typeof h.requestPermission === 'function')
+      ? h.requestPermission(o) : s);
+  }).catch(() => '');
+  KOPIE_DISK.pravoPredem = p;
+  return p;
+}
+
+/* #571 DZ: stav práva zápisu ke složce `h` — výsledek žádosti z kliknutí na
+ * „Přihlásit" (`predem`), jinak jen zjištění (žádat bez kliknutí nejde). */
+async function kopieDiskPravoStav(h, predem) {
+  if (predem) { try { if ((await predem) === 'granted') return 'granted'; } catch (e) { /* zjistí se níž */ } }
+  if (!h || typeof h.queryPermission !== 'function') return 'granted';
+  try { return String(await h.queryPermission({ mode: 'readwrite' })); } catch (e) { return ''; }
+}
+
+/* #574 DZ2: důvod do hlášky automatiky po přihlášení. */
+function kopieDiskNenalezenaDuvod(jmeno) {
+  return 'složka „' + String(jmeno || ULO_KOPIE_DISK_SLOZKA) + '" nenalezena — na tomto počítači už není'
+    + ' (přesunutá nebo přejmenovaná, případně Disk Google neběží), vyberte ji znovu';
+}
+
+/* #571 DZ: denní kopie čeká — důvod do hlášky i do trvalého řádku
+ * s tlačítkem (Nastavení → Databáze, lišta nahoře). Vrací false. */
+function kopieDiskCeka(duvod, proc) {
+  const dal = (duvod === 'slozka' || duvod === 'nenalezena') ? ' a vyberte složku „' + ULO_KOPIE_DISK_SLOZKA + '" na Disku Google (pak povolte zápis)'
+    : duvod === 'pravo' ? ' a zápis do složky povolte (nejlépe „Povolit při každé návštěvě")'
+      : duvod === 'heslo' ? ' a potvrďte ji svým heslem (po přihlášení heslem se pořídí sama)' : '';
+  const text = 'Denní kopie zálohy na Disk čeká: ' + proc + '. Klikněte na „Zkopírovat zálohu na Disk teď"'
+    + ' (Nastavení → Databáze nebo lišta nahoře)' + dal + '.';
+  ONLINE_STAV.kopieDiskCeka = { duvod, text };
+  onlineZprava(text, 'varovani');
+  return false;
 }
 
 /* Odlití kopie na Disk Google. Jen když je složka opravdu připojená a
@@ -54717,7 +55865,12 @@ function renderOnlineLista() {
          ${ikona} ${esc(kdo)}${esc(nahled ? '' : funkce)} (${esc(role)})</button>`
     : `<b style="color:${barva}">${ikona} ${esc(kdo)}${esc(funkce)}</b>
        <span style="color:${barva};opacity:.85">(${esc(role)})</span>`;
-  el.innerHTML = jmenoHtml + nahledMenuHtml() + `
+  /* #571 DZ: denní kopie na Disk čeká → tlačítko rovnou v liště (hláška
+   * v Nastavení → Databáze by po přihlášení nikdo neviděl). */
+  const kc = jeAdminOnline() && !nahled && ONLINE_STAV.kopieDiskCeka;
+  const kopieTl = kc ? `<button class="mini" id="online-lista-kopie-disk" onclick="onlineKopieDiskTed()"
+       title="${esc(kc.text)}" style="border-color:#fbbf24;color:#fbbf24">⚠ Zkopírovat zálohu na Disk teď</button>` : '';
+  el.innerHTML = jmenoHtml + nahledMenuHtml() + kopieTl + `
     <button class="mini" onclick="otevriMujProfil()">Můj profil</button>
     <button class="mini" onclick="otevriZmenaHesla()">Změnit heslo</button>
     ${typeof heatPrepinacHtml === 'function' ? heatPrepinacHtml() : ''}
@@ -55056,6 +56209,9 @@ function renderOnlineKarta() {
       ? `<div class="note" id="online-zalohy">${esc(onlineOtiskPopis())}</div>`
         + (hlidka ? `<div id="online-zalohy-nocni" class="${hlidka.stara ? 'seznam-varovani' : 'note'}">${esc(hlidka.text)}</div>` : '')
         + (kopieHl ? `<div id="online-kopie-disk" class="${kopieHl.stara ? 'seznam-varovani' : 'note'}">${esc(kopieHl.text)}</div>` : '')
+        /* #571 DZ: denní kopie se nepořídila — proč, a tlačítko hned u toho */
+        + (ONLINE_STAV.kopieDiskCeka ? `<div id="online-kopie-disk-ceka" class="seznam-varovani">${esc(ONLINE_STAV.kopieDiskCeka.text)}
+            <button class="mini" onclick="onlineKopieDiskTed()" ${ONLINE_STAV.pracuje ? 'disabled' : ''}>Zkopírovat zálohu na Disk teď</button></div>` : '')
         + (retenceHl ? `<div id="online-retence-varovani" class="seznam-varovani">${esc(retenceHl.text)}
             ${ONLINE_STAV.zalohySmi && ONLINE_STAV.zalohySmi.potvrditUbytek === false
               ? `<span class="note" id="online-retence-jen-hlavni">Potvrdit úbytek může jen hlavní správce.</span>`
@@ -60366,9 +61522,21 @@ const ZKUSEBNI_MUSTKY = {
   mustekMontazZakladHod: 6, mustekMontazBmHod: 10, mustekMontazMinHod: 14,
 };
 const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
+  /* Skladebné sazby můstků (#560) — SMYŠLENÉ, převzaté ze src/test_560_mustky_sekce.js. */
+  const SKLADBA = { mustekRamBmKc: 10000, mustekPodlahaPlechM2Kc: 1000, mustekPodlahaPororostM2Kc: 1100, mustekPodlahaVanaM2Kc: 1200,
+    mustekZabradliKovBmKc: 2000, mustekZabradliSkloBmKc: 5000, mustekKotveniDeskaKc: 3000, mustekKotveniSloupKc: 3100,
+    mustekKotveniKonzolaKc: 3200, mustekZabradliSkloMontazHodBm: 1 };
+  /* Režim zkušebního ceníku: 'skladebny' (nové sazby můstků) nebo 'stary' (bez nich → výpočet #354 a lišta). */
+  window.PROTO_CENIK = { rezim: 'skladebny' };
+  window.PROTO_cenikNastav = function (rezim) {
+    const v = aktivniVarianta(ZAK);
+    PROTO_CENIK.rezim = rezim === 'stary' ? 'stary' : 'skladebny';
+    Object.assign(v.data.cenik, zkusebniCenik(), zkusebniMustky());
+    Object.keys(SKLADBA).forEach(k => { v.data.cenik[k] = PROTO_CENIK.rezim === 'skladebny' ? SKLADBA[k] : 0; });
+  };
   try {
     const v = aktivniVarianta(ZAK);
-    Object.assign(v.data.cenik, zkusebniCenik(), zkusebniMustky());
+    PROTO_cenikNastav('skladebny');
     Object.assign(v.data.proj.cenik, zkusebniCenikProj());
     ZAK.cislo = '2026 - OPR - CN - 0412';
     ZAK.nazevAkce = 'Bytový dům Nad Parkem (ukázka)';
@@ -60410,9 +61578,16 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
   const VS = { akt: 0, pohled: 'akt', force: null, potvrdit: null };
   const st = document.createElement('style');
   st.textContent = `
-    .vs-proto { position:fixed; left:max(8px, env(safe-area-inset-left, 0px)); bottom:max(8px, env(safe-area-inset-bottom, 0px)); z-index:60;
-      background:#b91c1c; color:#fff; font:700 10.5px "Segoe UI", system-ui, sans-serif; letter-spacing:.05em; text-transform:uppercase;
-      padding:3px 8px; border-radius:5px; opacity:.85; pointer-events:none; }
+    .vs-panel { position:fixed; left:max(8px, env(safe-area-inset-left, 0px)); bottom:max(8px, env(safe-area-inset-bottom, 0px)); z-index:60;
+      display:flex; flex-wrap:wrap; gap:6px 10px; align-items:center; max-width:calc(100vw - 16px); box-sizing:border-box;
+      background:rgba(255,255,255,.96); border:1px solid #f2a7a7; border-radius:8px; padding:5px 8px; box-shadow:0 2px 10px rgba(0,0,0,.12);
+      font:12px "Segoe UI", system-ui, sans-serif; color:#1a2332; }
+    .vs-panel .rada-prep button { font-size:11.5px; padding:2px 9px; }
+    .vs-proto { background:#b91c1c; color:#fff; font:700 10.5px "Segoe UI", system-ui, sans-serif; letter-spacing:.05em; text-transform:uppercase; padding:3px 8px; border-radius:5px; }
+    .vs-pz { color:#6b7686; display:inline-flex; align-items:center; gap:6px; }
+    .vs-navod { position:fixed; right:max(12px, env(safe-area-inset-right, 0px)); bottom:max(56px, env(safe-area-inset-bottom, 0px)); z-index:61; width:min(520px, calc(100vw - 24px));
+      max-height:70vh; overflow:auto; background:#fff; border:1px solid #dde3ea; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.2); padding:14px 16px; font:13.5px/1.45 "Segoe UI", system-ui, sans-serif; color:#1a2332; }
+    .vs-navod h3 { margin:0 0 8px; font-size:14px; } .vs-navod ol { margin:0; padding-left:20px; } .vs-navod li { margin:4px 0; }
     .vs-r { display:inline-block; font:700 9.5px/14px "Segoe UI", system-ui, sans-serif; color:#6d28d9; border:1px solid #c4b5fd; background:#f5f3ff;
       border-radius:999px; padding:0 5px; margin-left:5px; vertical-align:middle; cursor:help; text-transform:none; letter-spacing:0; }
     .vs-pocet { font-weight:400; text-transform:none; letter-spacing:0; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; line-height:1; margin:-10px 0; height:0; overflow:visible; }
@@ -60426,8 +61601,16 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
     .vs-tab td, .vs-tab th { text-align:left; }
   `;
   document.head.appendChild(st);
-  const stitek = document.createElement('div'); stitek.className = 'vs-proto'; stitek.textContent = 'Prototyp — nic se neukládá';
+  const stitek = document.createElement('div'); stitek.className = 'vs-panel';
   document.body.appendChild(stitek);
+  function kresliPanel() {
+    const cz = (window.PROTO_CENIK || {}).rezim || 'skladebny';
+    stitek.innerHTML = `<span class="vs-proto">Prototyp — nic se neukládá</span>
+      <span class="vs-pz">základ = v6.11.3 (další verze main)</span>
+      <span class="vs-pz">Zkušební ceník můstků: <span class="rada-prep"><button type="button" class="${cz === 'skladebny' ? 'on' : ''}" onclick="VS_cenik('skladebny')">skladebný</button><button type="button" class="${cz === 'stary' ? 'on' : ''}" onclick="VS_cenik('stary')">starý (#354)</button></span></span>
+      <button type="button" class="mini" onclick="VS_navod()">Co si proklikat</button>`;
+  }
+  kresliPanel();
 
   const rt = (...k) => k.map(x => `<span class="vs-r" title="${esc(R[x] || '')}">${x}</span>`).join('');
   const kcF = x => (Math.round(+x || 0)).toLocaleString('cs-CZ') + ' Kč';
@@ -60457,11 +61640,21 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
     const r0 = vys[0], m = +cenik.marze || 0;
     const r = Object.assign({}, r0);
     r.sekce = {};
-    Object.keys(r0.sekce).forEach(k => { r.sekce[k] = slozRadky(vys.map(x => x.sekce[k]), ksy); });
+    const klSek = [...new Set(vys.flatMap(x => Object.keys(x.sekce)))];
+    klSek.forEach(k => { r.sekce[k] = slozRadky(vys.map(x => x.sekce[k] || []), ksy); });
     r.volitelneKatalog = slozRadky(vys.map(x => x.volitelneKatalog), ksy);
     r.priplatky = slozRadky(vys.map(x => x.priplatky), ksy, true, m);
     const sum = rows => ({ naklad: rows.reduce((a, x) => a + x.naklad, 0), marze: rows.reduce((a, x) => a + x.marze, 0), sMarzi: rows.reduce((a, x) => a + x.sMarzi, 0) });
-    r.souctySekci = {}; Object.keys(r0.souctySekci).forEach(k => { r.souctySekci[k] = sum(r.sekce[k] || []); });
+    r.souctySekci = {}; [...new Set(vys.flatMap(x => Object.keys(x.souctySekci)))].forEach(k => { r.souctySekci[k] = sum(r.sekce[k] || []); });
+    /* Můstky (#560) po šachtách: popisný objekt nese skupiny všech šachet (× ks);
+     * R14 — u víc šachet je cena můstků v ceně šachty, samostatný řádek Můstky v CN není
+     * (souhrn.mustkyCena se do součtu nepřenáší). */
+    const sM = vys.map(x => x.mustky).filter(m => m && Array.isArray(m.skupiny));
+    if (sM.length) {
+      const zakl = sM.find(m => m.skupiny.some(g => g.ks > 0)) || sM[0];
+      r.mustky = Object.assign({}, zakl, { skladebny: sM.some(m => m.skladebny),
+        skupiny: vys.flatMap((x, i) => (x.mustky && x.mustky.skupiny || []).map(g => Object.assign({}, g, { ks: g.ks * ksy[i] }))) });
+    }
     r.rezerva = { naklad: 0, marze: 0, sMarzi: 0 };
     vys.forEach((x, i) => ['naklad', 'marze', 'sMarzi'].forEach(f => { r.rezerva[f] += ksy[i] * (+x.rezerva[f] || 0); }));
     r.montaz = Object.assign({}, r0.montaz);
@@ -60599,6 +61792,11 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
       ${rp.cn && rp.cn.slevaKcVykaz > 0 ? `<tr><td>Sleva ${(Math.round(rp.cn.slevaPct * 1000) / 10).toLocaleString('cs-CZ')} %</td><td></td><td class="r">−${kcF(rp.cn.slevaKcVykaz)}</td></tr>` : ''}
       <tr><td style="font-weight:600">Cena nabídky bez DPH</td><td></td><td class="r" style="font-weight:600">${kcF(rp.cn ? rp.cn.cena : rp.T)}</td></tr></tbody></table>`;
   }
+  function mustkyPoSachtach(rp) {
+    const l = sachty();
+    const radky = l.map((x, i) => { const t = (typeof kryciMustkyText === 'function') ? kryciMustkyText(rp.r.vsSachty[i].vysl) : ''; return t ? `<tr><td>${esc(nazevS(x, i))}${x.ks > 1 ? ' (' + x.ks + ' ks)' : ''}</td><td>${esc(t)}</td></tr>` : ''; }).join('');
+    return radky ? `<div class="note" style="font-weight:600;margin-top:10px">Technická část — MŮSTKY po šachtách</div><table class="vs-tab" style="max-width:900px"><tbody><tr><th>Šachta</th><th>Můstky (rozměr, podlaha, zábradlí, kotvení, sloupy)</th></tr>${radky}</tbody></table>` : '';
+  }
   function vlozNabidka() {
     if (!vic()) return;
     const rp = rozpis(); if (!rp) return;
@@ -60612,7 +61810,7 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
     if (nab) {
       const anchor = [...nab.querySelectorAll('.note')].find(n => /živý náhled/.test(n.textContent));
       const html = `<div class="seznam-varovani" style="margin:10px 0">Tisk nabídky s víc šachtami potřebuje novou Word šablonu (smyčka šachet, v17). Dnešní šablona umí jen jednu šachtu — tisk se u víc šachet zastaví s odkazem na novou šablonu.${rt('R4')}</div>
-        <div class="note" style="font-weight:600;margin-top:8px">Cena díla — rozpis po šachtách (do nabídky)${rt('R4', 'R12', 'R14')}</div>${tabulkaSachet(rp)}`;
+        <div class="note" style="font-weight:600;margin-top:8px">Cena díla — rozpis po šachtách (do nabídky)${rt('R4', 'R12', 'R14')}</div>${tabulkaSachet(rp)}${mustkyPoSachtach(rp)}`;
       if (anchor) anchor.insertAdjacentHTML('beforebegin', html); else nab.insertAdjacentHTML('afterbegin', html);
     }
   }
@@ -60620,7 +61818,7 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
     if (!vic()) return;
     const rp = rozpis(); const pg = document.getElementById('page-kryci'); if (!rp || !pg) return;
     pg.insertAdjacentHTML('afterbegin', kartaRezim('ock', 'vsKryci', 'Rozpis po šachtách (krycí list)' + rt('R9'),
-      `<div class="note" style="margin-bottom:6px">Jeden krycí list za variantu: předmět ${sachty().length} šachty, ${sachty().reduce((a, s) => a + s.ks, 0)} ks; hodnota a hodiny jsou součtem šachet.</div>${tabulkaSachet(rp)}`, 'vs-kryci'));
+      `<div class="note" style="margin-bottom:6px">Jeden krycí list za variantu: předmět ${sachty().length} šachty, ${sachty().reduce((a, s) => a + s.ks, 0)} ks; hodnota a hodiny jsou součtem šachet.</div>${tabulkaSachet(rp)}${mustkyPoSachtach(rp)}`, 'vs-kryci'));
   }
   function vlozSpec(id) {
     if (!vic()) return;
@@ -60663,6 +61861,23 @@ const zkusebniMustky = () => JSON.parse(JSON.stringify(ZKUSEBNI_MUSTKY));
   window.VS_kopie = function () { if (sachty().length >= 10) return; const s = sachty()[VS.akt]; if (!Array.isArray(OCK.dalsi)) OCK.dalsi = [];
     OCK.dalsi.push({ id: 's' + Date.now().toString(36), nazev: nazevS(s, VS.akt) + ' (kopie)', ks: s.ks, zadani: kopie(s.zadani) }); VS_akt(sachty().length - 1); };
   window.VS_smaz = function () { if (VS.akt > 0) { VS.potvrdit = [VS.akt]; render(); } };
+  window.VS_cenik = function (rez) { if (typeof PROTO_cenikNastav === 'function') PROTO_cenikNastav(rez); syncVarianta(); render(); kresliPanel(); };
+  window.VS_navod = function () {
+    let n = document.getElementById('vsNavod');
+    if (n) { n.remove(); return; }
+    n = document.createElement('div'); n.id = 'vsNavod'; n.className = 'vs-navod';
+    n.innerHTML = `<button type="button" class="mini" style="float:right" onclick="VS_navod()">Zavřít</button><h3>Co si proklikat</h3><ol>
+      <li><b>Jedna šachta</b> = kalkulátor jako dnes (základ v6.11.3, další verze main)${rt('R16')}. V kartě <b>Zadání šachty</b> vpravo v nadpisu nastavte <b>Počet šachet v nabídce</b> na 2 — zapne se režim víc šachet${rt('R17')}.</li>
+      <li><b>Můstky u jedné šachty:</b> v Zadání šachty dejte „Můstky mezi budovou a OCK“ = 1 — objeví se karta <b>Můstky</b>. Změňte podlahu, zábradlí, kotvení, sloupy, „+ další provedení“. Cena se přepočítá; v nabídce (Word, šablona v16) má jedna šachta řádky Výtahová šachta / Můstky / Cena celkem jako v v6.11.3${rt('R15')}.</li>
+      <li><b>Můstky u Šachty 2:</b> přepněte na Šachtu 2 (karta Šachty varianty), přidejte jí jiné můstky. Každá šachta má své skupiny; cena se přepočítá v šachtě i v součtu.</li>
+      <li><b>Ceník:</b> v panelu vlevo dole přepněte <b>Zkušební ceník můstků</b> skladebný ↔ starý (#354) — starý počítá můstky vzorcem a karta ukáže lištu upozornění.</li>
+      <li><b>Kalkulace:</b> přepínač šachet / Součet v Cenové kalkulaci (sekce MŮSTKY po šachtách, v Součtu sečtená).</li>
+      <li><b>Cenová nabídka:</b> rozpis po šachtách s „vč. můstků“ a technická část MŮSTKY po šachtách; rozpočet zaokrouhlení v kartě Obchodní zaokrouhlení${rt('R7')}.</li>
+      <li><b>Krycí list a Technická specifikace:</b> rozpis po šachtách, můstky každé šachty; ve specifikaci přepínač šachty.</li>
+      <li><b>Model 1:</b> u jedné šachty přepněte Režim výpočtu na Model 1 — karta Můstky má jen počet a délku, počet šachet nad 1 nejde.</li>
+      <li><b>Zpět na jednu šachtu:</b> Počet šachet = 1 → potvrzení se jmény mazaných šachet${rt('R18')}.</li></ol>`;
+    document.body.appendChild(n);
+  };
   window.VS_stav = function () { const rp = vic() ? rozpis() : null; return { vic: vic(), pocet: sachty().length, akt: VS.akt, rp: rp && { T: rp.T, ceny: rp.ceny, cena: rp.cn && rp.cn.cena } }; };
 
   render();

@@ -1,5 +1,5 @@
 import sys, re
-S = sys.argv[1]; dist = open(S + '/wtm/dist/kalkulacka.html', encoding='utf-8').read()
+S = sys.argv[1]; dist = open(S + '/' + (sys.argv[2] if len(sys.argv) > 2 else 'wti') + '/dist/kalkulacka.html', encoding='utf-8').read()
 r = lambda f: open(S + '/v4/' + f, encoding='utf-8').read()
 def sloz(s_b, artefakt):
     h = dist
@@ -14,7 +14,7 @@ def sloz(s_b, artefakt):
         h = re.sub(r'^<!DOCTYPE html>\s*', '', h, count=1)
         h = h.replace('<html lang="cs">', '', 1).replace('<head>', '', 1).replace('</head>\n<body>', '', 1)
         k = h.rindex('</body>'); h = h[:k] + h[k:].replace('</body>', '', 1).replace('</html>', '', 1)
-        h = '<title>Prototyp víc šachet OCK</title>\n<!-- PROTOTYP VS (#570): sestavená aplikace z main 000924e (v4.11.8) + vrstvy A1/A2 (offline, zkušební ceník) + B (víc šachet). Nic se neukládá ani neposílá. -->\n' + h
+        h = '<title>Prototyp víc šachet OCK</title>\n<!-- PROTOTYP VS (#570): sestavená aplikace z integrace claude/integrace-16-10 7632ca5 (v6.11.3 = další verze main) + vrstvy A1/A2 (offline, zkušební ceník) + B (víc šachet). Nic se neukládá ani neposílá. -->\n' + h
     return h
 open(S + '/v4/baseline.html', 'w', encoding='utf-8').write(sloz(False, False))
 open(S + '/v4/proto_test.html', 'w', encoding='utf-8').write(sloz(True, False))
