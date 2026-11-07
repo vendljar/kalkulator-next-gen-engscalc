@@ -1164,14 +1164,31 @@ test('dělení na dávky drží limit a neztratí žádný záznam',
 const zalohaText = await page.evaluate(() => onlineApi('/api/zaloha').then(o => JSON.stringify(o.zaloha)));
 await page.evaluate(() => onlineObnovaZmena('zdrojTyp', 'soubor'));
 await page.waitForTimeout(200);
-/* #523 Z2: kopie z Disku je .json.gz — obnova ze souboru ji rozbalí sama. */
+/* #523 Z2: kopie z Disku je .json.gz — obnova ze souboru ji rozbalí sama.
+ * #576 (FL, 7. 11. 2026): čeká se na KONEC čtení — soubor načtený pod svým
+ * jménem, nebo varování — ne na jakoukoli hlášku. Aplikace hned po výběru
+ * souboru ukáže „Načítám soubor …" (pomíjivá hláška, soubor ještě null);
+ * staré čekání `soubor || hlaska` ji bralo jako výsledek a pod zátěží
+ * (celá sada, CPU) test sáhl na stav uprostřed rozbalování → FAIL s prázdnou
+ * hláškou (do jejího přečtení rozbalení doběhlo). Pojistka: rozbalení se tu
+ * uměle zdrží o 400 ms, takže staré čekání selže vždy, ne jen pod zátěží.
+ * Stav (soubor, jméno, hláška) se čte jedním evaluate. */
+await page.evaluate(() => {
+  window.__souborTextPuvodni = onlineObnovaSouborText;
+  window.onlineObnovaSouborText = (f) => new Promise(r => setTimeout(r, 400)).then(() => window.__souborTextPuvodni(f));
+});
 await page.setInputFiles('#online-obnova input[type=file]',
   { name: 'otisk_2026-10-27.json.gz', mimeType: 'application/gzip', buffer: gzipSync(Buffer.from(zalohaText)) });
-await page.waitForFunction(() => { try { return !!ONLINE_STAV.obnova.soubor || !!ONLINE_STAV.obnova.hlaska; } catch (e) { return false; } }, null, { timeout: 8000 });
+const nacitaGz = await page.evaluate(() => /^Načítám soubor otisk_2026-10-27\.json\.gz/.test(ONLINE_STAV.obnova.hlaska) && !ONLINE_STAV.obnova.soubor);
+await page.waitForFunction(() => { try { const o = ONLINE_STAV.obnova;
+  return (!!o.soubor && o.souborJmeno === 'otisk_2026-10-27.json.gz') || o.hlaskaTyp === 'varovani'; } catch (e) { return false; } }, null, { timeout: 8000 });
+await page.evaluate(() => { window.onlineObnovaSouborText = window.__souborTextPuvodni; });
+const gzStav = await page.evaluate(() => { const o = ONLINE_STAV.obnova;
+  return { soubor: o.soubor ? JSON.stringify(o.soubor) : null, jmeno: o.souborJmeno, hlaska: o.hlaska, typ: o.hlaskaTyp }; });
+test('#576: během rozbalování .gz panel hned hlásí „Načítám soubor …“ (soubor ještě není)', nacitaGz);
 test('#523: obnova ze souboru načte komprimovanou kopii otisk_….json.gz',
-  await page.evaluate((t) => !!ONLINE_STAV.obnova.soubor && JSON.stringify(ONLINE_STAV.obnova.soubor) === t
-    && ONLINE_STAV.obnova.souborJmeno === 'otisk_2026-10-27.json.gz', zalohaText),
-  await page.evaluate(() => ONLINE_STAV.obnova.hlaska));
+  gzStav.soubor === zalohaText && gzStav.jmeno === 'otisk_2026-10-27.json.gz' && gzStav.hlaska === '',
+  JSON.stringify({ jmeno: gzStav.jmeno, hlaska: gzStav.hlaska, typ: gzStav.typ, soubor: gzStav.soubor ? gzStav.soubor.length + ' znaků' : null }));
 await page.setInputFiles('#online-obnova input[type=file]',
   { name: 'zaloha_online_test.json', mimeType: 'application/json', buffer: Buffer.from(zalohaText) });
 await page.waitForFunction(() => { try { return ONLINE_STAV.obnova.souborJmeno === 'zaloha_online_test.json'; } catch (e) { return false; } }, null, { timeout: 8000 });

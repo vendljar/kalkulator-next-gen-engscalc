@@ -1,3 +1,19 @@
+# Předávka — 7. 11. 2026: FL #576 — kolísavý bod #523 v overit_online.mjs (obnova ze souboru .json.gz), větev `claude/fl-online-523`
+
+Nad `e2c2137` (integrace = test v6.11.5). **Verze v7.11.1** v CHANGELOG (koordinace přečísluje). Neslučováno; do
+`test-draft`, `test` ani `main` nic. Na webech, Disku ani v Pipedrive nic. **Aplikace beze změny** (chyba v harnessu).
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. příčina | ✅ | `onlineObnovaSoubor` hned ukáže pomíjivou hlášku „Načítám soubor …“ (soubor null), soubor nastaví až po rozbalení; harness čekal na `soubor \|\| hlaska` → pod zátěží četl stav uprostřed rozbalování, hlášku až druhým evaluate (už prázdná) |
+| 2. oprava harnessu | ✅ | `overit_online.mjs`: čeká na soubor pod svým jménem nebo `hlaskaTyp === 'varovani'`, stav jedním evaluate |
+| 3. pojistka | ✅ | rozbalení zdržené o 400 ms (obal `onlineObnovaSouborText`) + bod „#576 … Načítám soubor …“; se starou podmínkou FAIL vždy, s novou 276/0 |
+| 4. četnost 20× | ✅ | throttling ×6, 4 souběžně: před 11/20 FAIL, po 0/20; bez throttlingu 5 souběžně: před 2/20 (s „""“), po 0/20 |
+| 5. kolo `--bez-mutaci` | ✅ | sady 404/0/7 přesk. (overit_online ✓), hodiny 325/0/1, 31 min; build a statické napoprvé ✗ jen kvůli verze.txt 6.11.5 → 7.11.1, pak `--jen build,staticke` VŠE ZELENÉ (5/5) a overit_online 276/0 nad v7.11.1 |
+| 6. roadmapa #576, CHANGELOG, PREDAVKA | ✅ | mutace nejsou (aplikace beze změny) |
+
+**Otevřené body:** žádné k rozhodnutí; jiná čekání na `obnova.hlaska` v harnessu hlídají i `!pracuje`, stejný vzor nemají.
+
 # Předávka — 6. 11. 2026: CA #575 — číselná pole s českou desetinnou čárkou nezávisle na prohlížeči, větev `claude/ca-desetinna-carka`
 
 Nad `977bd57` (claude/mu3-sloupy-vyska = integrace v6.11.3 + MU3). **Verze v6.11.5** v CHANGELOG (koordinace
@@ -394,8 +410,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 6. 11. 2026: stav integrace v6.11.5
+# Předávka koordinace — 6. 11. 2026: stav integrace v7.11.1
 
+- **7. 11.:** `test` = v6.11.5 (e2c2137), tagy až po v6.11.5 vydané. **v7.11.1** FL #576: kolísání overit_online #523 = harness četl stav během rozbalování .gz; čeká na konec čtení (před 11/20 FAIL pod zátěží, po 0/20). Aplikace beze změny.
 - **v6.11.5** CA #575: všechna číselná pole (61) jeden prvek cislo_pole.js — čárka i tečka, zobrazení s čárkou a mezerou v tisících nezávisle na jazyku prohlížeče; data beze změny. Kolo v6.11.4 VŠE ZELENÉ (402/0, hodiny 324/0), mutace MU3 9/9.
 - **v6.11.4** MU3: výchozí výška sloupů navíc pod můstky = rohový sloupek (prohlubeň + zdvih + přejezd − 0,2 m), česká čárka v kartě Můstky (J. V. potvrdil 6. 11.). Běží CA #575 (čárka ve všech polích nezávisle na prohlížeči). Kolo v6.11.3 VŠE ZELENÉ (+ mutace #574/#571/#554 34/34).
 - **v6.11.3** DZ2 #574: zastaralá složka záloh se pozná před heslem, zapomene a nabídne výběr znovu; česká hláška. Záloha ostré 6. 11. pořízena ručně (otisk_main_2026-11-06_0300).
