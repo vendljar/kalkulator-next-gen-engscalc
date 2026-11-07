@@ -8,6 +8,20 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v7.11.1 — FL #576: kolísavý bod #523 v overit_online.mjs (obnova ze souboru .json.gz), větev claude/fl-online-523
+
+Nad `e2c2137` (integrace = test v6.11.5). Aplikace beze změny — chyba byla v harnessu. Na webech, Disku ani
+v Pipedrive nic. Verzi přečísluje koordinace.
+
+- **Příčina:** po výběru souboru aplikace hned ukáže pomíjivou hlášku „Načítám soubor …“ a soubor nastaví až po
+  rozbalení .gz. Harness čekal na `soubor || hlaska`, takže ho pustila už ta hláška; pod zátěží test četl stav
+  uprostřed rozbalování a text hlášky (druhé čtení) byl mezitím prázdný → „FAIL #523 … \"\"“.
+- **Oprava (`overit_online.mjs`):** čeká se na konec čtení (soubor pod svým jménem, nebo varování), stav se čte
+  jedním evaluate. Pojistka: rozbalení zdržené o 400 ms + bod „#576: během rozbalování .gz panel hned hlásí
+  Načítám soubor …“ — se starou podmínkou selže vždy. Harness 276 / 0.
+- **Četnost (20 běhů):** CPU throttling ×6, 4 souběžně: před 11 FAIL, po 0; bez throttlingu, 5 souběžně: před 2 FAIL
+  (přesně s prázdnou hláškou), po 0.
+
 ## v6.11.5 — CA #575: číselná pole s českou desetinnou čárkou nezávisle na prohlížeči, větev claude/ca-desetinna-carka
 
 Nad `977bd57` (větev claude/mu3-sloupy-vyska = integrace v6.11.3 + MU3). Rozhodnutí J. V. 6. 11. 2026: pole

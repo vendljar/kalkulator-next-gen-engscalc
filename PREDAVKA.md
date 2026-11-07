@@ -1,3 +1,19 @@
+# Předávka — 7. 11. 2026: FL #576 — kolísavý bod #523 v overit_online.mjs (obnova ze souboru .json.gz), větev `claude/fl-online-523`
+
+Nad `e2c2137` (integrace = test v6.11.5). **Verze v7.11.1** v CHANGELOG (koordinace přečísluje). Neslučováno; do
+`test-draft`, `test` ani `main` nic. Na webech, Disku ani v Pipedrive nic. **Aplikace beze změny** (chyba v harnessu).
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. příčina | ✅ | `onlineObnovaSoubor` hned ukáže pomíjivou hlášku „Načítám soubor …“ (soubor null), soubor nastaví až po rozbalení; harness čekal na `soubor \|\| hlaska` → pod zátěží četl stav uprostřed rozbalování, hlášku až druhým evaluate (už prázdná) |
+| 2. oprava harnessu | ✅ | `overit_online.mjs`: čeká na soubor pod svým jménem nebo `hlaskaTyp === 'varovani'`, stav jedním evaluate |
+| 3. pojistka | ✅ | rozbalení zdržené o 400 ms (obal `onlineObnovaSouborText`) + bod „#576 … Načítám soubor …“; se starou podmínkou FAIL vždy, s novou 276/0 |
+| 4. četnost 20× | ✅ | throttling ×6, 4 souběžně: před 11/20 FAIL, po 0/20; bez throttlingu 5 souběžně: před 2/20 (s „""“), po 0/20 |
+| 5. kolo `--bez-mutaci` | KOLO | |
+| 6. roadmapa #576, CHANGELOG, PREDAVKA | ✅ | mutace nejsou (aplikace beze změny) |
+
+**Otevřené body:** žádné k rozhodnutí; jiná čekání na `obnova.hlaska` v harnessu hlídají i `!pracuje`, stejný vzor nemají.
+
 # Předávka — 6. 11. 2026: CA #575 — číselná pole s českou desetinnou čárkou nezávisle na prohlížeči, větev `claude/ca-desetinna-carka`
 
 Nad `977bd57` (claude/mu3-sloupy-vyska = integrace v6.11.3 + MU3). **Verze v6.11.5** v CHANGELOG (koordinace
