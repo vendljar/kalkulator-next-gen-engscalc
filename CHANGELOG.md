@@ -21,6 +21,8 @@ v Pipedrive nic. Verzi přečísluje koordinace.
   Načítám soubor …“ — se starou podmínkou selže vždy. Harness 276 / 0.
 - **Četnost (20 běhů):** CPU throttling ×6, 4 souběžně: před 11 FAIL, po 0; bez throttlingu, 5 souběžně: před 2 FAIL
   (přesně s prázdnou hláškou), po 0.
+- Kolo `--bez-mutaci`: sady 404 / 0 / 7 přeskočeno (test.js + 6 prohlížečových bez KNG_PODKLADY), hodiny +400 dní
+  325 / 0 / 1; build a statické po srovnání `verze.txt` na 7.11.1 zelené (5 z 5). Mutace se nepouštěly — aplikace beze změny.
 
 ## v6.11.5 — CA #575: číselná pole s českou desetinnou čárkou nezávisle na prohlížeči, větev claude/ca-desetinna-carka
 

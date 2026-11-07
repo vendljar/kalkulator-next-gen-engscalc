@@ -9,7 +9,7 @@ Nad `e2c2137` (integrace = test v6.11.5). **Verze v7.11.1** v CHANGELOG (koordin
 | 2. oprava harnessu | ✅ | `overit_online.mjs`: čeká na soubor pod svým jménem nebo `hlaskaTyp === 'varovani'`, stav jedním evaluate |
 | 3. pojistka | ✅ | rozbalení zdržené o 400 ms (obal `onlineObnovaSouborText`) + bod „#576 … Načítám soubor …“; se starou podmínkou FAIL vždy, s novou 276/0 |
 | 4. četnost 20× | ✅ | throttling ×6, 4 souběžně: před 11/20 FAIL, po 0/20; bez throttlingu 5 souběžně: před 2/20 (s „""“), po 0/20 |
-| 5. kolo `--bez-mutaci` | KOLO | |
+| 5. kolo `--bez-mutaci` | ✅ | sady 404/0/7 přesk. (overit_online ✓), hodiny 325/0/1, 31 min; build a statické napoprvé ✗ jen kvůli verze.txt 6.11.5 → 7.11.1, pak `--jen build,staticke` VŠE ZELENÉ (5/5) a overit_online 276/0 nad v7.11.1 |
 | 6. roadmapa #576, CHANGELOG, PREDAVKA | ✅ | mutace nejsou (aplikace beze změny) |
 
 **Otevřené body:** žádné k rozhodnutí; jiná čekání na `obnova.hlaska` v harnessu hlídají i `!pracuje`, stejný vzor nemají.
