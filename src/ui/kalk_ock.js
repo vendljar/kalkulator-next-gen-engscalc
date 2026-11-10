@@ -193,9 +193,15 @@ function renderInputs() {
    * čím se světlík vyplní (#375). Spadne-li výpočet, zadání se vykreslí
    * i bez nich. */
   let rAkt = null;
-  try { rAkt = vypocetAkt(); } catch (e) { rAkt = null; }
-  document.getElementById('inputs').innerHTML =
-    kartaRezim('ock', 'zadani', 'Zadání šachty',
+  try { rAkt = vypocetSachtyAkt(); } catch (e) { rAkt = null; }
+  /* VS #570 (E2): karta Šachty varianty před zadáním, název šachty a pole
+   * Počet variant / Počet kusů v nadpisu. S vypnutou funkcí a jednou šachtou
+   * prázdné — zadání se kreslí přesně jako dosud. */
+  const vsKarta = typeof vsKartaSachty === 'function' ? vsKartaSachty() : '';
+  const vsTitul = typeof vsZadaniTitul === 'function' ? vsZadaniTitul() : '';
+  const vsNavic = typeof vsZadaniNavic === 'function' ? vsZadaniNavic() : '';
+  document.getElementById('inputs').innerHTML = vsKarta +
+    kartaRezim('ock', 'zadani', 'Zadání šachty' + vsTitul,
       `<div class="zadani-ctyri">`
       + sl(
         /* Vlastní obsluha (9. 9. 2026): přepnutí typu dosadí výchozí profily. */
@@ -293,7 +299,7 @@ function renderInputs() {
        * v ceníku varianty (`C.atypPrirazka`, sekce REŽIE), takže se pořád
        * mění u jednotlivé nabídky a starší nabídky se nepřepočítávají;
        * mění ji ten, kdo vidí ceník. */
-      '', 'ock-zadani') +
+      '', 'ock-zadani', false, vsNavic) +
     /* Stěny stojí hned za zadáním šachty: navazují na přepínač Opláštění
        o pár polí výš a patří k popisu stavby, ne k cenám. */
     oplasteniKarta() +
@@ -477,7 +483,7 @@ function atypPrepni(zap, opts) {
      * hodin; montáž +30 % z CELKOVÝCH hodin potřebných pro montáž (základ +
      * hodiny navíc vypočtené z konstrukce — světlíky, přechody atd.). */
     let navic = 0;
-    try { navic = vypocetAkt().montaz.hodinyNavicCelkem || 0; } catch (e) { navic = 0; }
+    try { navic = vypocetSachtyAkt().montaz.hodinyNavicCelkem || 0; } catch (e) { navic = 0; }
     predloha = {
       rezervaProfilyPct: 0.30,
       rezervaPlechyPct: 0.30,
@@ -1488,7 +1494,7 @@ function oplasteniKarta() {
    * zámek: odeslaná nabídka by se překreslila dnešním jádrem místo svého
    * otisku (nález A1). Hlídá to `test_zamek_otisk.js` — a chytil to hned. */
   let opl = null;
-  try { opl = (vypocetAkt() || {}).oplasteni || null; } catch (e) { opl = null; }
+  try { opl = (vypocetSachtyAkt() || {}).oplasteni || null; } catch (e) { opl = null; }
   return kartaRezim('ock', 'oplasteniSteny', 'Opláštění po stěnách (A–D)',
     /* Každá stěna je JEDEN blok. Bez toho ji `.inputs .card .body` rozseká:
      * ten grid sází do sloupců každý `.row` zvlášť, takže hlavičky čtyř stěn
@@ -1713,7 +1719,7 @@ function dragStart(e, sek, key) { _dragSek = sek; _dragKey = key; if (e.dataTran
 function dragOver(e) { if (_dragKey != null) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; } }
 function dragDrop(e, sek, key) { e.preventDefault(); if (_dragSek === sek && _dragKey != null && _dragKey !== key) presunRadek(sek, _dragKey, key); _dragKey = null; _dragSek = null; }
 function presunRadek(sekceKey, fromKey, toKey) {
-  let r; try { r = vypocetAkt(); } catch (e) { return; }
+  let r; try { r = vypocetSachtyAkt(); } catch (e) { return; }
   const zdroj = sekceKey === 'volitelne' ? r.volitelneKatalog : (r.sekce[sekceKey] || []);
   let ord = serazSekci(zdroj, sekceKey).map(radekKey).filter(k => k !== fromKey);
   const ti = ord.indexOf(toKey);
@@ -2292,7 +2298,7 @@ function priplatekVlastniSet(i, k, v) {
  * rozhodnutí: sirotek může být dočasný (položka je jen vypnutá nastavením
  * šachty a po přepnutí se vrátí i s přepisem). */
 async function sirotciUklidVse() {
-  let r; try { r = vypocetAkt(); } catch (e) { return; }
+  let r; try { r = vypocetSachtyAkt(); } catch (e) { return; }
   const s = prepisySirotci(Z, r.nazvyPolozek);
   if (!s.length) return render();
   if (!await potvrd('Smazat ' + s.length + ' nepoužitý ruční přepis/y?\n\nTýká se jen přepisů, které v tomto výpočtu nemají odpovídající položku. Vrátit zpět to lze tlačítkem „Zpět“ (Ctrl+Z).')) return;
@@ -2326,14 +2332,17 @@ function sirotciKarta(r) {
 
 function renderOutputs() {
   RC_UI.vykresleno = new Set();   // řádek ruční ceny (#561) jen pod prvním řádkem s danou cestou
-  let r;
-  try { r = vypocetAkt(); }
+  let r, rS;
+  try { r = vypocetAkt(); rS = (typeof vsKalkVysledek === 'function') ? vsKalkVysledek(r) : r; }
   catch (e) {
     const elS = document.getElementById('kalk-souhrn'); if (elS) elS.innerHTML = '';
     document.getElementById('outputs').innerHTML = `<div class="card"><div class="body neg">Chyba výpočtu: ${esc(e.message)}</div></div>`; return; }
   // štítek režimu výpočtu se obnovuje v render() (viz renderRezimPill v common.js),
   // aby zůstal správný i tehdy, když výpočet spadne a tahle funkce skončí dřív
-  const s = r.souctySekci, o = r.odvozene, p = r.parametry;
+  /* VS #570: `r` = celá varianta (hlavička ceny, sleva, zaokrouhlení),
+   * `rS` = tabulky kalkulace — otevřená šachta, nebo pohled Součet (jen ke
+   * čtení). Bez víc šachet je rS === r. */
+  const s = rS.souctySekci, o = rS.odvozene, p = rS.parametry;
 
   const col = kalkSloupce();
   // hodnoty hlavičky – zohlední schválenou slevu (jinak podíl 0)
@@ -2390,13 +2399,13 @@ function renderOutputs() {
   const adminTd = '<td class="admincol"></td>'.repeat(col.adminExtra);
   const kalkulace = `<table>
     <tr><th>Položka</th><th>Množství</th>${col.admin ? '<th>Jedn. cena</th>' : ''}${col.showCost ? '<th>Náklad</th><th>Přirážka</th>' : ''}<th>${thCena}</th>${adminTh}</tr>
-    ${tbl(r.sekce.hrubaOck, s.hrubaOck, 'HRUBÁ OCK', 'hrubaOck')}
-    ${r.sekce.mustky ? tbl(r.sekce.mustky, s.mustky, 'MŮSTKY MEZI BUDOVOU A OCK', 'mustky') : ''}
-    ${tbl(r.sekce.oplasteni, s.oplasteni, 'OPLÁŠTĚNÍ', 'oplasteni')}
-    ${tblVolitelne(r.volitelneKatalog, s.volitelne)}
-    ${tbl(r.sekce.rezie, s.rezie, 'REŽIE', 'rezie')}
-    ${Z.rezervaZakladPct ? `<tr><td>REZERVA (${num(Z.rezervaZakladPct * 100)} %)</td><td></td>${col.admin ? '<td></td>' : ''}${col.showCost ? `<td>${fmt(r.rezerva.naklad)}</td><td>${fmt(r.rezerva.marze)}</td>` : ''}<td>${fmt(r.rezerva.sMarzi)}</td>${adminTd}</tr>` : ''}
-    <tr class="tot"><td>CELKEM (zaokrouhleno ↑ na tisíce)</td><td></td>${col.admin ? '<td></td>' : ''}${col.showCost ? `<td>${fmt(r.souhrn.zakladNaklad)}</td><td>${fmt(r.souhrn.zakladMarze)}</td>` : ''}<td>${fmt0(r.souhrn.zakladCena)}</td>${adminTd}</tr>
+    ${tbl(rS.sekce.hrubaOck, s.hrubaOck, 'HRUBÁ OCK', 'hrubaOck')}
+    ${rS.sekce.mustky ? tbl(rS.sekce.mustky, s.mustky, 'MŮSTKY MEZI BUDOVOU A OCK', 'mustky') : ''}
+    ${tbl(rS.sekce.oplasteni, s.oplasteni, 'OPLÁŠTĚNÍ', 'oplasteni')}
+    ${tblVolitelne(rS.volitelneKatalog, s.volitelne)}
+    ${tbl(rS.sekce.rezie, s.rezie, 'REŽIE', 'rezie')}
+    ${Z.rezervaZakladPct ? `<tr><td>REZERVA (${num(Z.rezervaZakladPct * 100)} %)</td><td></td>${col.admin ? '<td></td>' : ''}${col.showCost ? `<td>${fmt(rS.rezerva.naklad)}</td><td>${fmt(rS.rezerva.marze)}</td>` : ''}<td>${fmt(rS.rezerva.sMarzi)}</td>${adminTd}</tr>` : ''}
+    <tr class="tot"><td>${vsCelkemPopis(rS)}</td><td></td>${col.admin ? '<td></td>' : ''}${col.showCost ? `<td>${fmt(rS.souhrn.zakladNaklad)}</td><td>${fmt(rS.souhrn.zakladMarze)}</td>` : ''}<td>${vsCelkemBunka(rS)}</td>${adminTd}</tr>
   </table>
   ${col.admin ? `<div class="note">Řádky přetáhnete úchopem <b>⠿</b> vlevo (v rámci sekce).${col.spravce ? ` Zaškrtávátko <b>Viditelné</b> určuje,
   zda položku vidí běžný uživatel. Zaškrtávátko <b>Výchozí</b> platí pro <b>nové</b> zakázky, ne pro tuhle:
@@ -2472,17 +2481,17 @@ function renderOutputs() {
   /* Skryté položky vidí ten, kdo je umí odkrýt — tedy administrátor.
    * Vedoucímu s právem na náklady by jinak v tabulce svítily řádky, které
    * nemá jak vrátit zpátky a které v nabídce stejně nejsou. */
-  const pripRows = col.spravce ? r.priplatky : r.priplatky.filter(x => !jeSkryta(x.key));
+  const pripRows = col.spravce ? rS.priplatky : rS.priplatky.filter(x => !jeSkryta(x.key));
   const pripCols = (col.admin ? 1 : 0) + 2 + (col.admin ? 1 : 0) + (col.showCost ? 1 : 0) + 1 + col.adminExtra;
   const prip = `<table>
     <tr>${pripHlava}</tr>
     ${pripRows.map(pripRadek).join('')}
-    ${priplatkyZakladniCena(r, col)}
+    ${priplatkyZakladniCena(rS, col)}
     ${col.admin ? `<tr class="pridat noprint"><td colspan="${pripCols}">
       <button class="mini" title="vlastní příplatek jen této zakázky" onclick="priplatekVlastniAdd()">+ přidat položku</button></td></tr>` : ''}
-    <tr class="tot"><td colspan="${pripCols - 1 - col.adminExtra}">PŘÍPLATKY CELKEM (pokud vše)</td><td>${fmt0(r.souhrn.priplatkyCena)}</td>${'<td class="admincol"></td>'.repeat(col.adminExtra)}</tr>
+    <tr class="tot"><td colspan="${pripCols - 1 - col.adminExtra}">PŘÍPLATKY CELKEM (pokud vše)</td><td>${fmt0(rS === r ? r.souhrn.priplatkyCena : vsPriplatkyCelkem(rS))}</td>${'<td class="admincol"></td>'.repeat(col.adminExtra)}</tr>
   </table>
-  ${priplatkyVeVolitelnych(r)}
+  ${priplatkyVeVolitelnych(rS)}
   <div class="note">Příplatkové položky jsou ceník variant pro zákazníka – do základní ceny se nezapočítávají.${col.admin ? `
   Název, množství i jedn. cenu lze přepsat (↺ vrátí vypočtené množství), tlačítkem lze přidat vlastní příplatek. Sloupec <b>Nabídka</b> určuje, které
   příplatky se propíší do generované cenové nabídky (sekce II.). Položky zvolené ve „Volitelné" se zde
@@ -2497,22 +2506,22 @@ function renderOutputs() {
     <tr><td>Počet rámů</td><td>${esc(p.ramy)}</td><td>Portálové příčníky</td><td>${esc(p.portPricniky)}</td></tr>
     <tr><td>Spojky sloupků</td><td>${esc(p.spojky)}</td><td>Počet čílek (int)</td><td>${esc(p.pocetCilek)}</td></tr>
     <tr class="subhead"><td colspan="4">Materiál</td></tr>
-    <tr><td>Profily celkem</td><td>${num(r.profily.celkemM, 2)} m · ${num(r.profily.celkemKg, 1)} kg</td>
-        <td>Lemování ext</td><td>${num(r.profily.lemovani.m, 2)} m · ${num(r.profily.lemovani.kg, 1)} kg</td></tr>
-    <tr><td>Konstrukční plechy</td><td>${esc(r.plechy.ks)} ks · ${num(r.plechy.kg, 1)} kg</td>
-        <td>Terče / lišty</td><td>${esc(r.dily.terceKs)} ks / ${num(r.dily.listyBm, 1)} bm</td></tr>
-    <tr><td>Oplechování dveří</td><td>${esc(r.dily.oplDvereKs)} ks · ${num(r.dily.oplDvereKg, 1)} kg</td>
-        <td>Přechodové plechy</td><td>${esc(r.dily.prechKs)} ks · ${num(r.dily.prechKg, 1)} kg</td></tr>
-    <tr class="subhead"><td colspan="4">Zasklení (rozměr skla ${num(r.zaskleni.rozmer.sir, 3)}×${num(r.zaskleni.rozmer.vys, 3)} m)</td></tr>
-    <tr><td>Zadní stěna</td><td>${esc(r.zaskleni.zadni.ks)} ks · ${num(r.zaskleni.zadni.m2, 2)} m²</td>
-        <td>Boční stěny</td><td>${esc(r.zaskleni.bocni.ks)} ks · ${num(r.zaskleni.bocni.m2, 2)} m²</td></tr>
-    <tr><td>Světlíky</td><td>${esc(r.zaskleni.svetliky.ks + r.zaskleni.svetlikyBoky.ks)} ks · ${num(r.zaskleni.svetliky.m2 + r.zaskleni.svetlikyBoky.m2, 2)} m²</td>
-        <td><b>Zasklení celkem</b></td><td><b>${num(r.zaskleni.celkemM2, 2)} m²</b></td></tr>
+    <tr><td>Profily celkem</td><td>${num(rS.profily.celkemM, 2)} m · ${num(rS.profily.celkemKg, 1)} kg</td>
+        <td>Lemování ext</td><td>${num(rS.profily.lemovani.m, 2)} m · ${num(rS.profily.lemovani.kg, 1)} kg</td></tr>
+    <tr><td>Konstrukční plechy</td><td>${esc(rS.plechy.ks)} ks · ${num(rS.plechy.kg, 1)} kg</td>
+        <td>Terče / lišty</td><td>${esc(rS.dily.terceKs)} ks / ${num(rS.dily.listyBm, 1)} bm</td></tr>
+    <tr><td>Oplechování dveří</td><td>${esc(rS.dily.oplDvereKs)} ks · ${num(rS.dily.oplDvereKg, 1)} kg</td>
+        <td>Přechodové plechy</td><td>${esc(rS.dily.prechKs)} ks · ${num(rS.dily.prechKg, 1)} kg</td></tr>
+    <tr class="subhead"><td colspan="4">Zasklení (rozměr skla ${num(rS.zaskleni.rozmer.sir, 3)}×${num(rS.zaskleni.rozmer.vys, 3)} m)</td></tr>
+    <tr><td>Zadní stěna</td><td>${esc(rS.zaskleni.zadni.ks)} ks · ${num(rS.zaskleni.zadni.m2, 2)} m²</td>
+        <td>Boční stěny</td><td>${esc(rS.zaskleni.bocni.ks)} ks · ${num(rS.zaskleni.bocni.m2, 2)} m²</td></tr>
+    <tr><td>Světlíky</td><td>${esc(rS.zaskleni.svetliky.ks + rS.zaskleni.svetlikyBoky.ks)} ks · ${num(rS.zaskleni.svetliky.m2 + rS.zaskleni.svetlikyBoky.m2, 2)} m²</td>
+        <td><b>Zasklení celkem</b></td><td><b>${num(rS.zaskleni.celkemM2, 2)} m²</b></td></tr>
     <tr class="subhead"><td colspan="4">Práce</td></tr>
-    <tr><td>Montáž – hodiny navíc</td><td>${num(r.montaz.hodinyNavicCelkem, 2)} h</td>
-        <td>Montáž celkem (4 os.)</td><td>${num(r.montaz.hodCelkem, 1)} h · ${num(r.montaz.dni, 1)} dní</td></tr>
-    <tr><td>Lakování – lakovna B</td><td>${fmt(r.lakovani.tomas)}</td><td>Lakování – lakovna</td><td>${fmt(r.lakovani.lakovna)}</td></tr>
-    <tr><td>Spojovací materiál</td><td>${fmt(r.spojovaci.celkem)}</td><td>Nýtování</td><td>${esc(r.spojovaci.nytovaniKs)} ks</td></tr>
+    <tr><td>Montáž – hodiny navíc</td><td>${num(rS.montaz.hodinyNavicCelkem, 2)} h</td>
+        <td>Montáž celkem (4 os.)</td><td>${num(rS.montaz.hodCelkem, 1)} h · ${num(rS.montaz.dni, 1)} dní</td></tr>
+    <tr><td>Lakování – lakovna B</td><td>${fmt(rS.lakovani.tomas)}</td><td>Lakování – lakovna</td><td>${fmt(rS.lakovani.lakovna)}</td></tr>
+    <tr><td>Spojovací materiál</td><td>${fmt(rS.spojovaci.celkem)}</td><td>Nýtování</td><td>${esc(rS.spojovaci.nytovaniKs)} ks</td></tr>
     </table>`;
 
   /* Souhrn (základní cena, DPH, náklad, marže) stojí NAD zadáním šachty —
@@ -2545,7 +2554,7 @@ function renderOutputs() {
      * stejně jako sekce v tabulce kalkulace — dřív ho neměly, ačkoli je
      * obchodník vidí jako úplně stejné bloky. */
     kartaRezim('ock', 'priplatky', 'Příplatkové položky (ceník variant)', prip, 'ock-priplatky') +
-    sirotciKarta(r) +
+    sirotciKarta(rS) +
     (col.admin ? kartaRezim('ock', 'detailMezivypoctu', 'Detail mezivýpočtů', det, 'ock-detail') : '');
 }
 

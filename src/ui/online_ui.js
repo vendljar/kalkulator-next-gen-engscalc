@@ -369,8 +369,12 @@ function onlinePoPrihlaseni(ja, hesloPrihlaseni) {
   /* Červená lišta „ceník není nahraný" počká, než se ceník stáhne a nasadí
    * (PS #558) — jinak po přihlášení svítila, dokud nepřišel. */
   if (typeof ukazkoveOvereniZacni === 'function') ukazkoveOvereniZacni();
-  if (ONLINE_STAV.funkce) delete ONLINE_STAV.funkce;   // VS #570: vypínač se načte znovu, až bude potřeba
+  if (ONLINE_STAV.funkce) delete ONLINE_STAV.funkce;
+  /* VS #570 (E2): vypínač se čte po přihlášení — se ZAPNUTOU funkcí má
+   * i zakázka s jednou šachtou v zadání pole Počet variant a Počet kusů
+   * (R17, R20). Chyba načtení = vypnuto (onlineNactiFunkce ji spolkne). */
   return Promise.all([onlineNactiProgram(), onlineNactiFirmu(), onlineNactiZobrazeni(), onlineNactiRejstrik(),
+                      onlineNactiFunkce(),
                       onlineNactiSablony(),
                       /* zveřejněný slovník překladů (#401) — na ceníku nezávisí */
                       onlineNactiSlovnik(),

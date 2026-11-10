@@ -70,8 +70,10 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const { zipPrecti } = require(KOREN + 'src/docxgen.js');
 
+/* VS #570 E2: klient čte vypínač zkušebních funkcí po přihlášení. */
+const { default: funkceFn } = await import('./netlify/functions/funkce.mjs');
 const FUNKCE = {
-  '/api/zdravi': zdravi, '/api/ja': ja, '/api/prihlaseni': prihlaseni,
+  '/api/zdravi': zdravi, '/api/funkce': funkceFn, '/api/ja': ja, '/api/prihlaseni': prihlaseni,
   '/api/odhlaseni': odhlaseni, '/api/uzivatele': uzivatele,
   '/api/program': program, '/api/zakazky': zakazky, '/api/zaloha': zaloha,
   '/api/firma': firma, '/api/zobrazeni': zobrazeni,

@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v10.11.3 — VS-E5 #570: víc šachet ve výstupech za zakázku — krycí list, SoD, objednané příplatky, controlling, Pipedrive náhled, zámek, kontroly (#595), větev claude/vs-s3-e5
+## v10.11.5 — VS-E5 #570: víc šachet ve výstupech za zakázku — krycí list, SoD, objednané příplatky, controlling, Pipedrive náhled, zámek, kontroly (#595), větev claude/vs-s3-e5
 
-Nad `079cfc6` (integrace v11.11.1 = E0/E1). Verzi přečísluje koordinace. Sezení S3, paralelně s S1 (E2/E3) a S2 (E4).
+Nad `079cfc6`, sloučeno s integrací `aaac150` (v10.11.4 = E2 + E4). Verzi přečísluje koordinace. Sezení S3, paralelně s S1 (E2/E3) a S2 (E4).
 Všechno čte výsledek obalu (`vysl.sachty[]`, u odeslané nabídky zmrazený v zámku) — **jedna šachta (bez `dalsi`,
 ks 1) = výstupy bajt po bajtu jako dnes** (zlatá sada 319/319 beze změny otisků). Na webech, Disku ani v Pipedrive nic.
 
@@ -39,13 +39,76 @@ ks 1) = výstupy bajt po bajtu jako dnes** (zlatá sada 319/319 beze změny otis
   můstky, statika, opláštění, ATYP) se ptají **každé šachty jejím zadáním a výsledkem** — nález „Výtah B: …“, jeden
   kód za všechny šachty; pravidla za variantu nad součtem. Nová pravidla **`vsModel1`** (víc šachet v Modelu 1 =
   zábrana dokumentů OCK) a **`vsSablona`** (šablona CN bez rozpisu šachet v15/v16 = zábrana jen Wordu nabídky —
-  nález nese `dokumenty: ['nabidka']`, brána to respektuje; rozpozná ji `vsSablonaUmiSachty` z E4, jinak symboly
+  nález nese `dokumenty: ['nabidka']`, brána to respektuje; rozhoduje `vsSablonaZabrana` z E4 (tatáž, jakou nabidkaData zastaví Word), bez ní symboly
   `SACHTA_*`). `ui/kontroly_ui.js` dodá `ctx.ock` a u víc šachet stáhne symboly šablony.
 - **Testy:** `src/test_vs_vystupy.js` 47, `src/test_vs_zamek.js` 21, `src/test_vs_kontroly.js` 18,
   `netlify/test_vs_e5_pd.mjs` 9, harness `overit_vs_kryci_sod.mjs` 23 (1200/1440/1920, bez překryvů, vypínač ZAP);
   na 079cfc6 všechny padají. `test_kontroly.js`: 48 pravidel. Mutace „[#570 E5]“ jádro 15, server 3.
 
 ## v11.11.1 — VS-E0/E1 #570: víc šachet v nabídce — zlatá sada, jádro, server a vypínač správce (výchozí vypnuto), větev claude/vs-e0e1
+## v10.11.4 — VS-E4 #570: víc šachet v nabídce — cenová nabídka s tabulkou variant šachet, Word CN v17, technická specifikace po šachtách, překlady, větev claude/vs-s2-e4
+
+Nad `079cfc6` (integrace v11.11.1 = E0/E1). `verze.txt` 10.11.3 (den posledního commitu); verzi přečísluje koordinace. Všechno za
+vypínačem a v datech víc šachet: zakázka s jednou šachtou (vypínač VYP i ZAP) dává cenovou nabídku, Word,
+náhledy, specifikaci i smlouvu o dílo **bajt po bajtu jako dnes** — zlatá sada 319/319 beze změny otisků.
+
+- **Cenová nabídka (náhled i Word) — R4, R12, R14:** u víc šachet tabulka variant šachet: řádek za variantu
+  (název, „počet kusů: N", cena VŠECH kusů — cena za kus se netiskne), u šachty s můstky dovětek „vč. můstků"
+  (samostatný řádek Můstky a řádek Výtahová šachta zmizí), pod tím sleva a **Cena celkem** se „šachet celkem:
+  N ks". Ceny řádků = rozpočet ceny před slevou do šachet (R7) už v měně dokumentu — součet sedí na korunu
+  i na euro. Nové symboly `SACHTA_NAZEV`, `SACHTA_KS`, `SACHTA_POPIS`, `SACHTA_CENA_BEZ_DPH`, `SACHTA_TS_NAZEV`,
+  `SACHTY_CELKEM_POPIS`, `POCET_VARIANT`, `POCET_SACHET_CELKEM` (jen u víc šachet; `VS_NOVE_SYMBOLY` je kryje).
+  **Jedna šachta s můstky (R15)** = „Výtahová šachta", „Můstky", „Cena celkem" jako dnes.
+- **Technická část po šachtách:** sekce ZÁKLADNÍ PARAMETRY … MŮSTKY (+ sokl) za každou šachtu z jejího zadání,
+  výsledku a specifikace (`tsSymbolySachty` — šachta 1 = dnešní hodnoty), MŮSTKY jen u šachty, která je má;
+  stavební a projekční práce a „není součástí" jednou za nabídku.
+- **Word — smyčka `{#sachty}…{/sachty}`** (`docxSmyckaSachet` v `docxgen.js`): řádky tabulky mezi značkami se
+  zopakují za šachtu; prázdné řádky šachty a prázdné sekce zmizí, název šachty jde do XML se závorkou jako
+  entitou (B86). Bez dat víc šachet = jedna položka s prázdnými symboly → dokument stejný jako z v16.
+- **Šablona CN v17** — `node nastroje/vyrob_sablony.js --cn-v17 <podklady>` z `Sablona_NABIDKA_CN_v16.docx`
+  (+ _EN/_DE/_FR): smyčka v technické části (ZÁKLADNÍ PARAMETRY … TS_MUSTKY_SLOUPY s nadpisem šachty), smyčka
+  řádku šachty v obchodní části, odstavec „šachet celkem" v řádku CENA CELKEM. **Jedna šachta: v17 = v16 bajt
+  po bajtu** (česky i v přeložené EN/DE šabloně, s můstky i bez, se slevou i bez). Značky smyčky se při
+  překladu šablony nepřekládají ani nehlásí.
+- **Zábrana tisku v15/v16 u víc šachet:** `vsSablonaZabrana(ock, symboly)` (pro kontroly.js — zapojí E5)
+  a `nabidkaData` s Word šablonou bez smyčky vyhodí „Šablona cenové nabídky neumí rozpis po šachtách … CN v17".
+  Online náhled a tisk do PDF rozpis umí vždy. Model 1 počítá jen šachtu 1 → bez tabulky i bez zábrany.
+- **Technická specifikace (obrazovka):** u víc šachet přepínač šachty (`.rada-prep`), sekce šachty
+  s názvem vybrané šachty a hodnotami z jejího zadání a výsledku (#572 sklo podle SVÉ šachty); ruční hodnoty
+  šachty 2+ do `ock.dalsi[i].techspec.hodnoty` (`tsSachtaTechspec`, jen pole šachty), pole za zakázku dál
+  do `v.data.techspec`. S vypnutým vypínačem jsou pole šachet 2+ jen ke čtení (server by změnu odmítl).
+- **Překlady EN/DE/FR:** Šachta, VARIANTA ŠACHTY, vč. můstků, počet kusů, šachet celkem, Počet variant šachet.
+- **Testy:** `src/test_vs_nabidka.js` (43), `src/test_vs_docx_v17.js` (29), `src/test_vs_techspec.js` (17),
+  harness `overit_vs_dokumenty.mjs` (20; 1200/1440/1920, bez překryvů) — všechny na 079cfc6 selžou (pojistka);
+  mutace jádra `[#570 E4]` 15/15 chycených (1 ekvivalentní vyřazena); zlatá sada 319/319, `test_560_mustky_sekce.js` 228/0.
+
+## v10.11.3 — VS-E2 #570: víc šachet v nabídce — zadání: Počet variant šachet, Počet kusů, karta Šachty varianty (jen se zapnutým vypínačem), větev claude/vs-s1-e2e3
+
+Nad `079cfc6` (integrace v11.11.1 = E0/E1). Verzi přečísluje koordinace. Na webech, Disku ani v Pipedrive nic.
+Závazné podklady ve větvi `claude/vs-vice-sachet` (návrh R1–R21, plán E2, prototyp v9). **S vypnutým vypínačem
+je Kalkulace OCK znak po znaku jako 079cfc6** (harness) a zlatá sada 319/319 beze změny otisků.
+
+- **ZAP + jedna šachta (R16, R17, R20):** v nadpisu karty Zadání šachty pole **Počet variant šachet v nabídce**
+  (1–10) a **Počet kusů** (1–20), obě `CISLO_POLE`; jinak obrazovka beze změny.
+- **Režim víc šachet** (≥ 2 varianty nebo ks > 1): karta **Šachty varianty** (přepínač šachet, Název, Počet
+  stejných kusů, Kopírovat šachtu, Smazat šachtu; v nadpisu Počet variant a **Počet šachet celkem** = Σ ks, R19),
+  nadpis „Zadání šachty — Název" s „Počet kusů této šachty: N ks". Zvýšení počtu přidá kopie poslední šachty
+  („Šachta N"), snížení i Smazat se **potvrzují na stránce** se jmény šachet (R18), omyl vrátí Zpět. Snížení
+  na 1 posílá `dalsi: []` — klíč se nemaže (server by uložení odmítl 409).
+- Globální `Z` míří na **zadání otevřené šachty** (`vsSyncZ` v `syncVarianta`), takže Zadání, Opláštění,
+  **Můstky po šachtách**, Dimenze profilů a Práce a režie pracují s ní; bubliny, ATYP, standard a tabulky
+  Cenové kalkulace čtou výsledek otevřené šachty (`vypocetSachtyAkt`; řádek CELKEM šachty nezaokrouhlený),
+  hlavička ceny celou variantu. Trvalé položky ceníku dostanou se ZAP všechny šachty.
+- **Model 1:** pole zhasnutá, přidání šachty odmítnuto; u víc šachet je volba Model 1 zakázaná i v `set()`.
+- **VYP + zakázka s víc šachtami (R21):** karta jen vypíše šachty s lištou „funkce je v Nastavení vypnutá",
+  zadání = šachta 1, změny šachet odmítnuty; cena podle dat.
+- Vypínač se čte po přihlášení (`onlineNactiFunkce` v načtení po přihlášení; chyba = vypnuto).
+- Testy: `src/test_vs_zadani.js` (nová, 49), `overit_vs_zadani.mjs` (nový, 50; `KNG_DIST_ZAKLAD` = srovnání se
+  základem znak po znaku), mutace „[#570 E2]" 12; úprava `test_vychozi_po_refreshi.js` (tabulky z `rS`).
+
+---
+
+## v10.11.2 — VS-E0/E1 #570: víc šachet v nabídce — zlatá sada, jádro, server a vypínač správce (výchozí vypnuto), větev claude/vs-e0e1
 
 Nad `3ff5403` (integrace = test v10.11.1; main = v6.11.5). Verzi přečísluje koordinace (`verze.txt` zůstává
 10.11.1 — kontrola verze = den posledního commitu). Na webech, Disku ani v Pipedrive nic. Závazné podklady

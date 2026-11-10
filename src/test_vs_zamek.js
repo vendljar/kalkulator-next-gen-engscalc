@@ -88,6 +88,12 @@ function zamkni(zak, v) {
   const { z, vv } = zamkni(zak, v);
   test('B zámek nese součet, sachty[] a sachtyVerze 1', vv.zamek.vysledek.ock.sachtyVerze === 1 && vv.zamek.vysledek.ock.sachty.length === 2
     && vv.zamek.vysledek.ock.sachty.every(s => typeof s.cenaRozpis === 'number'));
+  /* E4 (CN při dotisku) čte ze zámku výsledek každé šachty a cenu před zaokrouhlením. */
+  const zz = vypocetZ(vv, J);
+  test('B dotisk: zámek po JSON nese sachty[i].vysl a cenaPredZaokr (CN v17)', zz.sachty.every(s => s.vysl && s.vysl.souhrn
+    && typeof s.vysl.souhrn.zakladCena === 'number' && typeof s.cenaPredZaokr === 'number' && s.cenaPredZaokr > 0)
+    && Math.abs(zz.sachty[1].cenaPredZaokr - 2 * (zz.sachty[1].vysl.souhrn.zakladNaklad + zz.sachty[1].vysl.souhrn.zakladMarze)) < 0.01,
+    zz.sachty.map(s => s.cenaPredZaokr));
   const pred = { kl: kryciData(z, vv, J, 'bo'), sod: sodData(z, vv, J, 'cz').placeholders, pd: pdnStranaOck(z, vv, J) };
   /* data varianty se změní (jiná přirážka v ceníku, jiný název šachty) — dotisk musí zůstat */
   vv.data.cenik.marze = (+vv.data.cenik.marze || 0) + 0.25;

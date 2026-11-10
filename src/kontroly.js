@@ -1400,21 +1400,21 @@ const KONTROLY = [
      * nabídky starší než v17 nemá smyčku šachet — Word by vytiskl jednu
      * šachtu s cenou celé zakázky. Zastaví JEN Word nabídky OCK
      * (`dokumenty`), náhled a ostatní dokumenty ne. Symboly šablony stahuje
-     * UI na pozadí; nevíme-li, mlčí (jako slevaWord). Rozpozná ji funkce E4
-     * (`vsSablonaUmiSachty`, nabidka.js), bez ní podle symbolů SACHTA_*. */
+     * UI na pozadí; nevíme-li, mlčí (jako slevaWord). Rozhoduje funkce E4
+     * `vsSablonaZabrana` (vice_sachet.js), bez ní symboly SACHTA_*. */
     kod: 'vsSablona', kde: 'Nabídka', nazev: 'Šablona nabídky neumí víc šachet',
     zabranaMozna: true, strany: ['ock'],
     zjisti(ctx) {
       if (!ctx.__vs) return null;
       const s = ctx.sablonaNabidka;
       if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
-      const umi = (typeof vsSablonaUmiSachty === 'function') ? vsSablonaUmiSachty(s.symboly)
-        : s.symboly.some(k => /^SACHTA_/.test(k));
-      if (umi) return null;
+      /* E4: vsSablonaZabrana (vice_sachet.js) — totéž pravidlo, jakým nabidkaData zastaví Word. */
+      const zab = (typeof vsSablonaZabrana === 'function') ? vsSablonaZabrana(ctx.__vs.ock, s.symboly)
+        : (s.symboly.some(k => /^SACHTA_/.test(k)) ? '' : 'Šablona cenové nabídky neumí rozpis po šachtách — zakázka má víc šachet.');
+      if (!zab) return null;
       return { uroven: KONTROLY_UROVEN_ZABRANA, dokumenty: ['nabidka'],
-        text: 'Šablona nabídky OCK' + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
-          + ' neumí rozpis po šachtách (v15/v16) — Word nabídky s víc šachtami nevznikne. '
-          + 'Administrátor nahraje šablonu v17 (Nastavení → Šablony → Cenová nabídka OCK).' };
+        text: zab + ' Šablona nabídky OCK' + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+          + ' je v15/v16 nebo starší — Word nabídky s víc šachtami nevznikne, administrátor nahraje šablonu v17.' };
     },
   },
 ];

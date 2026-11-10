@@ -152,7 +152,7 @@ test('prázdný název akce vyplněný není', zk.hlavickaVyplneno(nova.nazevAkc
   /* Funkce, kterou nikdo nevolá, nic nevysvětlí — mutace „vysvětlení se
    * nekreslí" mi napoprvé prošla právě proto, že tahle kontrola chyběla. */
   test('a opravdu se v té tabulce kreslí',
-    /\$\{priplatkyVeVolitelnych\(r\)\}/.test(ui));
+    /\$\{priplatkyVeVolitelnych\(rS?\)\}/.test(ui));   // rS = šachta / součet (VS #570)
   test('a vypisuje konkrétní názvy, ne obecnou větu',
     /skryte\.map\(x => x\.nazev\)\.join/.test(ui));
   /* Escapuje se jedním voláním kolem celého spojeného textu — po položkách
@@ -174,7 +174,7 @@ test('prázdný název akce vyplněný není', zk.hlavickaVyplneno(nova.nazevAkc
    * Správce ale kouká do ceníku variant a řádky z něj beze stopy zmizí. */
   test('tabulka příplatků vypisuje i to, co je v základní ceně',
     /function priplatkyZakladniCena\(r, col\)/.test(ui));
-  test('a opravdu se to kreslí', /\$\{priplatkyZakladniCena\(r, col\)\}/.test(ui));
+  test('a opravdu se to kreslí', /\$\{priplatkyZakladniCena\(rS?, col\)\}/.test(ui));
   test('jen pro správce — obchodníkovi by to v ceníku překáželo',
     /function priplatkyZakladniCena\(r, col\) \{\s*\n\s*if \(!col\.admin\) return '';/.test(ui));
   /* Od 16. 9. 2026 navíc podle `prip`: smysl bloku je ukázat řádky, které
