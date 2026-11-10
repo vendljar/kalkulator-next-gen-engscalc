@@ -18,6 +18,8 @@ jedna šachta (VYP i ZAP) = dnešní dokumenty bajt po bajtu (zlatá sada 319/31
 | testy | ✅ | `test_vs_nabidka.js` 43, `test_vs_docx_v17.js` 29, `test_vs_techspec.js` 17, `overit_vs_dokumenty.mjs` 20 (1200/1440/1920) — na 079cfc6 všechny selžou; upraveny `test_platby_ock.js` (5. parametr náhledu) |
 | mutace `[#570 E4]` | ✅ 15/15 | `mutace_jadro.mjs` (16. „název šachty jako symbol“ vyřazena jako ekvivalentní — B122 v nahradPlaceholdery); opravené zadání #560 „souhrnný řádek můstků“ (refaktor) |
 
+| kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | nad a4b9e7c: sady 415/0/7 přesk. (test.js + 6 bez KNG_PODKLADY), hodiny +400 dní 335/0/1, statické 5/5, 32 min 3 s; celé mutace nepouštěny (jen cílené „[#570 E4]“) |
+
 **POSTUP VÝROBY ŠABLONY CN v17 PRO J. V.** (firemní šablony nejsou v repu):
 1. Do jedné složky dát `Sablona_NABIDKA_CN_v16.docx` (česká, ta, která je dnes nahraná online).
 2. `node nastroje/vyrob_sablony.js --cn-v17 <ta složka> [výstupní složka]` → `Sablona_NABIDKA_CN_v17.docx`
