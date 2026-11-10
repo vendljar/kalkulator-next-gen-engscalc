@@ -3,12 +3,55 @@
  * Pole s prefill se plní živě z kalkulace OCK; ruční úprava má přednost
  * (badge „ručně“, tlačítko ↺ vrátí automatiku). */
 
+/* ---------- VÍC ŠACHET (VS-E4 #570) ----------
+ * Specifikace má u víc šachet přepínač šachty. Sekce, které POPISUJÍ ŠACHTU
+ * (tsSekceSachty), se kreslí pro vybranou šachtu z jejího zadání a výsledku;
+ * ruční hodnoty šachty 2+ jdou do ock.dalsi[i].techspec.hodnoty. Ostatní
+ * sekce (stavba, práce, co není součástí) jsou za zakázku a zapisují se
+ * jako dosud do TS (v.data.techspec). Jedna šachta = obrazovka jako dnes. */
+let TS_SACHTA = 0;
+function tsVsKontext() {
+  if (typeof rezimViceSachet !== 'function' || typeof OCK === 'undefined' || !OCK || OCK.fixes === false || !rezimViceSachet(OCK)) return null;
+  const sachty = sachtyZ(OCK);
+  if (TS_SACHTA >= sachty.length || TS_SACHTA < 0) TS_SACHTA = 0;
+  return { sachty, i: TS_SACHTA };
+}
+/* Kam se zapisuje ruční hodnota pole: šachta 2+ a pole šachty → její techspec. */
+function tsHodnotyCil(id) {
+  const k = tsVsKontext();
+  if (!k || !k.i || !tsPoleSachty(id)) return TS.hodnoty;
+  const s = OCK.dalsi[k.i - 1];
+  if (!s.techspec || typeof s.techspec !== 'object') s.techspec = { hodnoty: {} };
+  if (!s.techspec.hodnoty || typeof s.techspec.hodnoty !== 'object') s.techspec.hodnoty = {};
+  return s.techspec.hodnoty;
+}
+/* S vypnutou funkcí víc šachet (R21) server změnu šachet 2+ odmítne — pole
+ * šachty 2+ jsou jen ke čtení. */
+function tsSachtaJenCteni(id) {
+  const k = tsVsKontext();
+  return !!(k && k.i && tsPoleSachty(id) && typeof viceSachetZapnuto === 'function' && !viceSachetZapnuto());
+}
+function tsSachtaPrepni(i) { TS_SACHTA = +i || 0; render(); }
+function tsSachtyLista(k) {
+  if (!k) return '';
+  return `<div class="noprint" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0">
+    <b>Šachta:</b><span class="rada-prep">${k.sachty.map((s, i) => `<button type="button" class="${i === k.i ? 'on' : ''}"
+      onclick="tsSachtaPrepni(${i})">${esc(vsNazev(s, i))}${s.ks > 1 ? ' · ' + s.ks + ' ks' : ''}</button>`).join('')}</span>
+    <span class="note" style="margin:0">Sekce popisující šachtu platí pro vybranou šachtu; stavební a projekční práce a to, co není součástí dodávky, jsou za celou nabídku.</span>
+  </div>`;
+}
+
 function tsSet(id, val) {
-  if (val === '') delete TS.hodnoty[id]; else TS.hodnoty[id] = val;
+  if (tsSachtaJenCteni(id)) { if (typeof hlaska === 'function') hlaska('Funkce víc šachet je vypnutá — šachty 2 a další teď nejde měnit.'); render(); return; }
+  const h = tsHodnotyCil(id);
+  if (val === '') delete h[id]; else h[id] = val;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }
-function tsReset(id) { delete TS.hodnoty[id]; render(); }
+function tsReset(id) {
+  if (tsSachtaJenCteni(id)) { render(); return; }
+  delete tsHodnotyCil(id)[id]; render();
+}
 /* výběr z rozbalovacího seznamu; „vlastní text…" umožní libovolnou hodnotu */
 async function tsSelect(id, sel) {
   if (sel.value === '__VLASTNI__') {
@@ -196,9 +239,26 @@ function renderTechspec() {
   if (jazyk() !== 'cz') return renderTechspecPreklad();
   let r = null;
   try { r = vypocetAkt(); } catch (e) {}
+  /* VS-E4: vybraná šachta (zadání a výsledek té šachty, její ruční hodnoty).
+   * Šachta 1 = OCK.zadani (ne globální Z — ten může ukazovat jinou šachtu). */
+  const vsK = tsVsKontext();
+  let sZ = Z, sR = r, sTS = TS;
+  if (vsK) {
+    /* Sekce za zakázku nad součtem šachet a sekce šachty nad výsledkem té
+     * šachty — obojí přes vypocetZ (zamčená varianta = otisk, ne nový výpočet;
+     * hlídá test_zamek_otisk), jako cenová nabídka. */
+    let rS = null;
+    try { rS = vypocetZ(aktivniVarianta(ZAK), JEKLY); } catch (e) {}
+    if (rS) r = rS;
+    sZ = vsK.sachty[vsK.i].zadani;
+    sR = (rS && Array.isArray(rS.sachty) && rS.sachty[vsK.i] && rS.sachty[vsK.i].vysl) || r;
+    sTS = tsSachtaTechspec(aktivniVarianta(ZAK).data, vsK.i);
+  }
 
-  const specRow = (pole) => {
-    const h = tsHodnota(pole, TS, r, Z, C);
+  const specRow = (pole, sachty) => {
+    const TSx = sachty ? sTS : TS, rX = sachty ? sR : r, Zx = sachty ? sZ : Z;
+    const jenCteni = sachty && tsSachtaJenCteni(pole.id) ? ' disabled' : '';
+    const h = tsHodnota(pole, TSx, rX, Zx, C);
     /* ODVOZENÉ POLE (22. 9. 2026 večer): hodnotu určuje cena, takže se nedá
      * přepsat a obrazovka řekne, kde se to mění. Ruční hodnota ze starší
      * zakázky se nemaže — jen se ukáže, že neplatí, jinak by uživatel nevěděl,
@@ -206,7 +266,7 @@ function renderTechspec() {
      * řádek do dokumentu nepatří; na obrazovce zůstane (ať je vidět proč),
      * ale do tisku ne. */
     if (h.odvozeno) {
-      const stara = TS.hodnoty[pole.id];
+      const stara = TSx.hodnoty[pole.id];
       const neplati = (stara != null && String(stara) !== h.text)
         ? `<div class="note noprint" style="margin:2px 0 0">Ruční hodnota „${esc(stara)}“ se nepoužije — řádek se řídí cenou.</div>` : '';
       const vynechano = h.text === '';
@@ -216,7 +276,7 @@ function renderTechspec() {
       <div><span class="pill src" title="hodnotu určuje cena v Kalkulaci OCK, ručně se nemění">z kalkulace</span></div>
     </div>`;
     }
-    const rucne = TS.hodnoty[pole.id] != null;
+    const rucne = TSx.hodnoty[pole.id] != null;
     const badge = rucne ? '<span class="pill warn src">ručně</span>'
       : (h.zdroj === 'z kalkulace' ? '<span class="pill src">z kalkulace</span>' : '<span class="pill mut src">výchozí</span>');
     let control;
@@ -230,9 +290,9 @@ function renderTechspec() {
           `<option value="${esc(o)}"${o === cur ? ' selected' : ''}>${esc(o)}</option>`));
       if (vlastni) opts.push(`<option value="${esc(cur)}" selected>${esc(cur)} (vlastní)</option>`);
       opts.push(`<option value="__VLASTNI__">✎ vlastní text…</option>`);
-      control = `<select data-cur="${esc(cur)}" onchange="tsSelect('${escJs(pole.id)}', this)">${opts.join('')}</select>`;
+      control = `<select data-cur="${esc(cur)}"${jenCteni} onchange="tsSelect('${escJs(pole.id)}', this)">${opts.join('')}</select>`;
     } else {
-      control = `<input type="text" value="${esc(h.text)}" onchange="tsSet('${escJs(pole.id)}', this.value)">`;
+      control = `<input type="text" value="${esc(h.text)}"${jenCteni} onchange="tsSet('${escJs(pole.id)}', this.value)">`;
     }
     /* TS-1: povinné a prázdné pole se jen označí – zápis ani tisk se neblokuje */
     const chybi = tsChybi(pole, h.text);
@@ -240,15 +300,22 @@ function renderTechspec() {
       ? ` <span class="pill warn" title="povinná položka dokumentu – zatím nevyplněno">${esc(T('nevyplněno'))}</span>` : '';
     return `<div class="spec-row${chybi ? ' chybi' : ''}"><div class="lbl">${esc(pole.label)}</div>
       <div>${control}</div>
-      <div>${badge}${varovani}${rucne ? ` <button class="mini noprint" title="vrátit automatické plnění" onclick="tsReset('${escJs(pole.id)}')">↺</button>` : ''}</div>
+      <div>${badge}${varovani}${rucne && !jenCteni ? ` <button class="mini noprint" title="vrátit automatické plnění" onclick="tsReset('${escJs(pole.id)}')">↺</button>` : ''}</div>
     </div>`;
   };
 
   /* `jen` (#560): sekce, která se zakázky netýká (MŮSTKY mimo skladebný model), se nekreslí. */
-  const sekce = TECHSPEC_DEF.filter(s => !s.jen || s.jen(r, Z)).map(s =>
-    `<h3>${esc(s.sekce)}</h3>` + s.pole.map(specRow).join('') +
-    (s.pozn ? `<div class="note">${esc(s.pozn)}</div>` : '')
-  ).join('');
+  /* VS-E4: sekce šachty s výsledkem vybrané šachty (a `jen` podle něj —
+   * šachta bez skladebných můstků sekci MŮSTKY nemá), nadpis s názvem šachty. */
+  const vsNazevAkt = vsK ? vsNazev(vsK.sachty[vsK.i], vsK.i) : '';
+  const sekce = TECHSPEC_DEF.filter(s => {
+    const sach = vsK && tsSekceSachty(s.sekce);
+    return !s.jen || s.jen(sach ? sR : r, sach ? sZ : Z);
+  }).map(s => {
+    const sach = !!(vsK && tsSekceSachty(s.sekce));
+    return `<h3>${esc(s.sekce)}${sach ? ' – ' + esc(vsNazevAkt) : ''}</h3>` + s.pole.map(p => specRow(p, sach)).join('') +
+      (s.pozn ? `<div class="note">${esc(s.pozn)}</div>` : '');
+  }).join('');
 
   const extra = TS.extra.map((e, i) =>
     `<div class="spec-row"><div class="lbl"><input type="text" style="font-weight:600" value="${esc(e.label)}"
@@ -270,6 +337,7 @@ function renderTechspec() {
         ${typeof standardPill === 'function' ? standardPill() : ''}
       </div>
       ${typeof standardRozpis === 'function' ? standardRozpis() : ''}
+      ${tsSachtyLista(vsK)}
       <div class="sub">(tato technická specifikace bude použita jako příloha Smlouvy o dílo nebo závazné objednávky)</div>
       <div class="spec-row"><div class="lbl">ČÍSLO NABÍDKY</div><div><input type="text" value="${esc(ZAK.cislo)}" onchange="set('ZAK.cislo', this.value)"></div><div></div></div>
       <div class="spec-row"><div class="lbl">OBJEDNATEL</div><div><input type="text" value="${esc(ZAK.objednatel)}" onchange="set('ZAK.objednatel', this.value)"></div><div></div></div>

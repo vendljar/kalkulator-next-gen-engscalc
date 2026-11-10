@@ -617,6 +617,14 @@ const PREKLAD = {
   "Můstky mezi budovou a OCK (bez DPH)": ["Bridges between building and steel structure (excl. VAT)", "Brücken zwischen Gebäude und Stahlkonstruktion (ohne MwSt.)", "Passerelles entre bâtiment et structure (HT)"],
   "Cena celkem (bez DPH)": ["Total price (excl. VAT)", "Gesamtpreis (ohne MwSt.)", "Prix total (HT)"],
   "MŮSTKY MEZI BUDOVOU A OCK": ["BRIDGES BETWEEN THE BUILDING AND THE STEEL STRUCTURE","BRÜCKEN ZWISCHEN GEBÄUDE UND STAHLKONSTRUKTION","PASSERELLES ENTRE LE BÂTIMENT ET LA STRUCTURE MÉTALLIQUE"],
+  /* VS-E4 #570 (10. 11. 2026): víc šachet v jedné nabídce — tabulka variant
+   * šachet v obchodní části, technická část po šachtách, součet. */
+  "Šachta": ["Shaft", "Schacht", "Gaine"],
+  "VARIANTA ŠACHTY": ["SHAFT VARIANT", "SCHACHTVARIANTE", "VARIANTE DE GAINE"],
+  "vč. můstků": ["incl. bridges", "inkl. Brücken", "passerelles comprises"],
+  "počet kusů": ["number of units", "Stückzahl", "nombre d'unités"],
+  "šachet celkem": ["shafts in total", "Schächte insgesamt", "gaines au total"],
+  "Počet variant šachet": ["Number of shaft variants", "Anzahl der Schachtvarianten", "Nombre de variantes de gaine"],
   "přisazena k fasádě, v jednom nástupišti přes můstek": ["Attached to the facade, at one landing via an access bridge","An die Fassade angebaut, an einer Zugangsstelle über eine Brücke","Accolée à la façade, à un palier par une passerelle"],
   "přisazena k podestám, v jednom nástupišti přes můstek": ["Attached to the landings, at one landing via an access bridge","An die Podeste angebaut, an einer Zugangsstelle über eine Brücke","Accolée aux paliers, à un palier par une passerelle"],
   "plechové nadpraží nade dveřmi": ["Sheet-metal panel above the door","Blechpaneel über der Tür","Panneau en tôle au-dessus de la porte"],

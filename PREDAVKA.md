@@ -1,3 +1,51 @@
+# Předávka — 10. 11. 2026: VS-E4 #570 (#594) — víc šachet: cenová nabídka s tabulkou šachet, Word CN v17, specifikace po šachtách, překlady, větev `claude/vs-s2-e4` (sezení S2)
+
+Nad `079cfc6` (integrace v11.11.1 = E0/E1). **CHANGELOG v12.11.x** (koordinace přečísluje; `verze.txt` beze změny).
+Do `test-draft`, `test` ani `main` nic; weby, Disk, Pipedrive nic. Vše za vypínačem / v datech víc šachet:
+jedna šachta (VYP i ZAP) = dnešní dokumenty bajt po bajtu (zlatá sada 319/319 beze změny otisků).
+
+| úkol | stav | kde |
+|---|---|---|
+| CN tabulka variant šachet (R4, R12, R14) | ✅ | `nabidka.js` `nabidkaVsData`: řádek za variantu (název, „počet kusů: N“, cena všech kusů z rozpočtu ceny před slevou v měně dokumentu), „vč. můstků“, řádky v16 šachta/můstky/VÝTAHOVÁ ŠACHTA prázdné, CENA CELKEM + „šachet celkem: N ks“; `POCET_VARIANT`, `POCET_SACHET_CELKEM`, `SACHTA_*`, `SACHTY_CELKEM_POPIS` jen u víc šachet |
+| jedna šachta s můstky (R15) | ✅ | beze změny (řádky šachta / můstky / cena celkem) — žádný nový symbol ani klíč výsledku (SoD výsledek přebírá celý) |
+| technická část CN po šachtách | ✅ | `tsSymbolySachty(TS, r, Z, mSk)` (refaktor beze změny pořadí klíčů), šachta 2+ s `tsSachtaTechspec` a `sachty[i].vysl`; MŮSTKY jen u šachty s můstky; náhled `nabidkaNahledSekce(..., sachty)` |
+| Word smyčka `{#sachty}…{/sachty}` | ✅ | `docxgen.js` `docxSmyckaSachet` (řádky tabulek, i přes víc tabulek téže úrovně; B86; prázdné řádky/sekce šachty pryč; odstavec SACHTY_* s prázdnou hodnotou pryč); `dokumenty.js` předává `data.sachtyWord`; překlad šablony značky přeskočí |
+| šablona CN v17 | ✅ nástroj | `node nastroje/vyrob_sablony.js --cn-v17 <podklady>` z v16 (+EN/DE/FR) — viz postup níž; **1 šachta: v17 = v16 bajt po bajtu** (CZ, EN, DE; s/bez můstků a slevy) |
+| zábrana v15/v16 | ✅ | `vsSablonaZabrana(ock, symboly)` + `VS_SABLONA_ZABRANA` na konci `vice_sachet.js` (pro `kontroly.js` — zapojí S3/E5); `nabidkaData` s Word šablonou bez smyčky vyhodí hlášku (tisk Wordu se zastaví) |
+| specifikace po šachtách (obrazovka) | ✅ | `techspec.js`: `TS_SEKCE_SACHTY`, `tsSekceSachty`, `tsPoleSachty`, `tsSachtaTechspec`; `ui/techspec_ui.js`: přepínač šachty, zápis polí šachty 2+ do `ock.dalsi[i].techspec.hodnoty`, VYP = šachty 2+ jen ke čtení, výsledek přes `vypocetZ` (zámek) |
+| náhledy CN | ✅ | `ui/zakazka_ui.js`: podklady i tiskový dokument (řádky šachet, Cena celkem + počet) |
+| překlady EN/DE/FR | ✅ | Šachta, VARIANTA ŠACHTY, vč. můstků, počet kusů, šachet celkem, Počet variant šachet |
+| testy | ✅ | `test_vs_nabidka.js` 43, `test_vs_docx_v17.js` 29, `test_vs_techspec.js` 17, `overit_vs_dokumenty.mjs` 20 (1200/1440/1920) — na 079cfc6 všechny selžou; upraveny `test_platby_ock.js` (5. parametr náhledu) |
+| mutace `[#570 E4]` | ✅ 15/15 | `mutace_jadro.mjs` (16. „název šachty jako symbol“ vyřazena jako ekvivalentní — B122 v nahradPlaceholdery); opravené zadání #560 „souhrnný řádek můstků“ (refaktor) |
+
+**POSTUP VÝROBY ŠABLONY CN v17 PRO J. V.** (firemní šablony nejsou v repu):
+1. Do jedné složky dát `Sablona_NABIDKA_CN_v16.docx` (česká, ta, která je dnes nahraná online).
+2. `node nastroje/vyrob_sablony.js --cn-v17 <ta složka> [výstupní složka]` → `Sablona_NABIDKA_CN_v17.docx`
+   + `_EN`, `_DE`, `_FR`. Výpis musí u CZ hlásit ✓; u překladů „česky zůstalo“ jen to, co hlásila už v16
+   (značky `{#sachty}` / `{/sachty}` se nepřekládají ani nehlásí).
+3. Ve Wordu zkontrolovat: v technické části nad ZÁKLADNÍMI PARAMETRY řádek `{#sachty}` a řádek
+   `{{SACHTA_TS_NAZEV}}` (vzhled pruhu), pod řádkem SLOUPY NAVÍC řádek `{/sachty}`; v ceně nad řádkem VÝTAHOVÁ
+   ŠACHTA (šachta před slevou) trojice `{#sachty}` / `{{SACHTA_NAZEV}} {{SACHTA_POPIS}} | {{SACHTA_CENA_BEZ_DPH}}`
+   / `{/sachty}`; v řádku CENA CELKEM pod popisem odstavec `{{SACHTY_CELKEM_POPIS}}`. Řádky se značkami se do
+   dokumentu nikdy nedostanou, jen je nemazat a neslučovat.
+4. Nahrát v17 (všechny 4 jazyky) do šablon online. Zakázka s jednou šachtou z ní vyjde stejně jako z v16;
+   zakázka s víc šachtami se do v16 netiskne (hláška „… použijte šablonu CN v17“).
+Nástroj odmítne vstup, který není v16, a druhé spuštění nad v17. Kdyby firemní v16 neměla pruh
+„ZÁKLADNÍ PARAMETRY ŠACHTY“ v jednom běhu textu, nástroj skončí chybou (nic nehádá) — pak ozvat.
+
+**Otevřené body:**
+1. **Server — tvar `ock.dalsi[i].techspec`:** `vsTvarProblemy` (E1) klíč `techspec` povoluje, obsah nekontroluje.
+   Navrhuji (S1 / uloziste.js): `{ hodnoty: { [id]: string ≤ délka jako v.data.techspec } }`, jen id polí šachty
+   (`tsPoleSachty`). Klient píše jen tento tvar.
+2. **Zábrana do kontrol (S3/E5):** zapojit `vsSablonaZabrana(v.data.ock, symbolyŠablony)` do `kontroly.js`
+   (dnes zastaví až samotné generování Wordu hláškou).
+3. **TS_NENI_SOKL u víc šachet** bere šachtu 1 (sekce „není součástí“ je za zakázku); má-li jen jiná šachta sokl
+   v dodávce, řádek „není součástí“ to neodráží — drobnost k rozhodnutí koordinace.
+4. **Přeložený náhled specifikace (EN/DE/FR na obrazovce)** ukazuje u víc šachet šachtu 1; CN a Word jsou po šachtách.
+5. **S1 (E2):** přepínač šachty ve specifikaci je vlastní (`TS_SACHTA` v `ui/techspec_ui.js`); jestli ho svázat
+   s aktivní šachtou z karty Šachty varianty, rozhodne S1. Specifikace čte šachty z `OCK` (ne z globálního `Z`).
+6. **Otisk zámku (E5):** CN čte `sachty[i].vysl` a `cenaPredZaokr` z `vypocetZ`; snímek musí oba nést (dnes nese).
+
 # Předávka — 10. 11. 2026: VS-E0/E1 #570 (#590, #591) — víc šachet v nabídce: zlatá sada, jádro, server, vypínač správce, větev `claude/vs-e0e1`
 
 Nad `3ff5403` (integrace = test v10.11.1; main = v6.11.5). **CHANGELOG v11.11.1** (koordinace přečísluje;

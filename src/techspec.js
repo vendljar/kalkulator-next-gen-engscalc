@@ -1104,9 +1104,46 @@ function tsKontrola(ts, r, Z, C, zak) {
   };
 }
 
+/* ============================================================
+ * TECHNICKÁ SPECIFIKACE PO ŠACHTÁCH (VS-E4 #570, návrh oddíl 2 a 4).
+ *
+ * Sekce, které POPISUJÍ ŠACHTU (rozměry, konstrukce, opláštění, doplňkové
+ * konstrukce, můstky), má každá šachta zvlášť; ostatní (stavební a projekční
+ * práce, co není součástí dodávky) jsou za zakázku jednou.
+ *   šachta 1   ruční hodnoty ve v.data.techspec (beze změny),
+ *   šachta 2+  ruční hodnoty polí šachty v ock.dalsi[i].techspec.hodnoty;
+ *              chybí = předvyplnění z výpočtu TÉ šachty (její zadání a výsledek,
+ *              vč. #572 „sklo jen s plochou" — tsMaSklo dostane její dvojici).
+ * Pole za zakázku čtou vždy v.data.techspec.
+ * ============================================================ */
+const TS_SEKCE_SACHTY = ['ZÁKLADNÍ PARAMETRY ŠACHTY', 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY', 'OPLÁŠTĚNÍ ŠACHTY',
+  'DOPLŇKOVÉ KONSTRUKCE', 'MŮSTKY MEZI BUDOVOU A OCK'];
+function tsSekceSachty(sekce) { return TS_SEKCE_SACHTY.indexOf(sekce) >= 0; }
+/* Patří pole (id) šachtě? */
+function tsPoleSachty(id) {
+  return TECHSPEC_DEF.some(s => tsSekceSachty(s.sekce) && s.pole.some(p => p.id === id));
+}
+/* Specifikace šachty `i` (0 = šachta 1) varianty `d` (= v.data): objekt tvaru
+ * techspec (nazevAkce, hodnoty, extra), který tsHodnota čte jako dosud.
+ * Hodnoty polí šachty 2+ jen z dalsi[i-1].techspec (ne ze šachty 1 — jinak
+ * by ruční rozměr šachty 1 přepsal předvyplnění šachty 2), pole zakázky
+ * z v.data.techspec. */
+function tsSachtaTechspec(d, i) {
+  const ts = (d && d.techspec) || { hodnoty: {}, extra: [] };
+  if (!i) return ts;
+  const dalsi = (d && d.ock && Array.isArray(d.ock.dalsi)) ? d.ock.dalsi : [];
+  const s = dalsi[i - 1];
+  const vlastni = (s && s.techspec && s.techspec.hodnoty && typeof s.techspec.hodnoty === 'object') ? s.techspec.hodnoty : {};
+  const hodnoty = {};
+  Object.keys(ts.hodnoty || {}).forEach(k => { if (!tsPoleSachty(k)) hodnoty[k] = ts.hodnoty[k]; });
+  Object.keys(vlastni).forEach(k => { if (tsPoleSachty(k)) hodnoty[k] = vlastni[k]; });
+  return Object.assign({}, ts, { hodnoty });
+}
+
 if (typeof module !== 'undefined')
   module.exports = { tsMaSklo, TS_OPL_SKLA, tsLeseniNeniRadek, tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah, tsOplasteniMaterial, tsOplPoStenach,
     tsVyplnDveri, tsVyplnDveriCasti, tsSvetlikyDveri,
     tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene, tsSken3dVCene, tsSoklRadek,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,
-    TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola, tsNazevAkce, tsMustkyCast };
+    TS_HLAVICKA, TS_POVINNE, tsPrazdna, tsKontrola, tsNazevAkce, tsMustkyCast, tsMustky,
+    TS_SEKCE_SACHTY, tsSekceSachty, tsPoleSachty, tsSachtaTechspec };
