@@ -8,6 +8,12 @@
 
 let ZAK = novaZakazka();
 let Z, C, OCK, PJ, PC, TS, KL, KLP, SL, SLP, ZO, ZOP;
+/* VÍC ŠACHET (VS #570, E2): stav obrazovky — která šachta varianty je
+ * v zadání otevřená (0 = šachta 1 = OCK.zadani), pohled kalkulace
+ * ('akt' / 'soucet') a čekající potvrzení mazání šachet (R18). Do dat se
+ * neukládá. Logika je v ui/vice_sachet_ui.js; tady stojí jen proto, že
+ * syncVarianta() běží už při načtení souboru. */
+const VS_UI = { vid: null, akt: 0, pohled: 'akt', potvrdit: null };
 
 /* Kurz EUR je od 2. 9. 2026 JEDEN pro celou zakázku (pokyn J. V.). Edituje se
  * v ceníku OCK (`C.kurzEurKc`); ceník projekce si ho jen zrcadlí, protože
@@ -51,6 +57,9 @@ function syncVarianta() {
    * zmrazeného výsledku by změnily cenu dotisku a server by uložení
    * odmítl (data zamčené nabídky by se změnila). */
   const zamcena = typeof variantaUzamcena === 'function' && variantaUzamcena(v);
+  /* VS #570 (E2): Z míří na zadání otevřené šachty varianty (šachta 1 =
+   * OCK.zadani jako dosud); bez víc šachet se nic nemění. */
+  if (typeof vsSyncZ === 'function') vsSyncZ(v, zamcena);
   // trvalé (katalogové) položky ceníku → do zadání; idempotentní, páruje přes kid
   if (!zamcena) katalogAplikuj(KATALOG, Z);
   // totéž pro PROJ (19. 8. 2026): trvalé položky ceníku PROJ → do zadání PROJ
@@ -731,6 +740,15 @@ function set(path, v) {
    * zakázka, která v Modelu 1 už je, se počítá dál beze změny ceny
    * a obchodník ji smí převést na Model 2 — zpátky už ne. Pojistka je
    * tady, ne jen v přepínači, aby ji neobešlo žádné jiné volání set(). */
+  /* VÍC ŠACHET POČÍTÁ JEN MODEL 2 (VS #570, R3, plán E2): Model 1 je
+   * předloha Excel pro jednu šachtu. */
+  if (path === 'OCK.fixes' && !v && typeof rezimViceSachet === 'function' && rezimViceSachet(OCK)) {
+    const t = 'Víc šachet počítá jen Model 2. Na Model 1 lze přepnout až u varianty s jednou šachtou '
+      + '(Počet variant šachet v nabídce 1 a Počet kusů 1).';
+    if (typeof hlaska === 'function') hlaska(t);
+    render();
+    return;
+  }
   if (path === 'OCK.fixes' && !v && (typeof jeAdmin !== 'function' || !jeAdmin())) {
     const t = 'Model 1 (1:1 jako Excel) je zmrazený — přepnout na něj smí jen administrátor. '
       + 'Nové nabídky se počítají Modelem 2.';
@@ -1075,6 +1093,19 @@ function vypocetAkt() {
   return vypocet(Z, C, JEKLY, OCK.fixes);
 }
 
+/* VÝSLEDEK OTEVŘENÉ ŠACHTY (VS #570, E2). Zadání šachty (bubliny světlíků,
+ * opláštění, ATYP, standard, řádky kalkulace) popisuje JEDNU šachtu, kdežto
+ * `vypocetAkt()` dává u víc šachet součet varianty. Bez víc šachet je to
+ * tentýž objekt jako vypocetAkt() — nic se nemění. */
+function vypocetSachtyAkt() {
+  const r = vypocetAkt();
+  if (r && Array.isArray(r.sachty)) {
+    const s = r.sachty[VS_UI.akt] || r.sachty[0];
+    if (s && s.vysl) return s.vysl;
+  }
+  return r;
+}
+
 /* Totéž pro Kalkulaci PROJ — a právě tam nález A1 vznikl: zamčená nabídka
  * 2025-OVP-CN-0356 měla sekci ZAMĚŘENÍ za 195 800 Kč a po změně vzorce
  * ukazovala 208 104. Zapomenout na tuhle polovinu by znamenalo zmrazit
@@ -1094,7 +1125,7 @@ let STD_ROZPIS = false;      // je rozpis nálezů rozbalený? (stav obrazovky)
 function standardVysledek() {
   if (typeof standardVyhodnot !== 'function') return null;
   let r;
-  try { r = vypocetAkt(); } catch (e) { r = null; }
+  try { r = vypocetSachtyAkt(); } catch (e) { r = null; }
   const vyska = r && r.odvozene ? r.odvozene.vyskaSachty : null;
   /* Jednotypovost zasklení: názvy skel, která opravdu jdou do nabídky.
    * „Zvolené" znamená dvě věci najednou — příplatek NENÍ vyškrtnutý ze
@@ -1251,12 +1282,14 @@ function standardRozpis() {
  *
  * `event.stopPropagation()` u selectu je nutné: nadpis karty sám o sobě
  * sbaluje a rozbaluje, takže bez něj by každá změna volby kartu i překlopila. */
-function kartaRezim(oblast, sekceKey, title, inner, id = '', closed = false) {
+function kartaRezim(oblast, sekceKey, title, inner, id = '', closed = false, navic = '') {
   const rezim = sekceRezim(oblast, sekceKey);
   if (rezim === 'skryt') return '';
   const vpravo = jeAdmin() ? sekceRezimSelect(oblast, sekceKey)
     : (rezim === 'srolovat' ? sekceRozbalBtn(oblast, sekceKey) : '');
-  const nadpis = `<span style="flex:1">${title}</span>`
+  /* `navic` = prvek v nadpisu vlevo od výběru zobrazení (VS #570: Počet
+   * variant šachet, Počet kusů); prázdný = nadpis jako dosud. */
+  const nadpis = `<span style="flex:1">${title}</span>` + (navic || '')
     + (vpravo ? `<span onclick="event.stopPropagation()" style="font-weight:400">${vpravo}</span>` : '');
   /* `closed` = karta je ve výchozím stavu sbalená i bez volby „srolovat"
    * (Dimenze profilů, 19. 8. 2026); ruční rozbalení nadpisem platí dál. */
@@ -1448,12 +1481,14 @@ function zakazkaHlavicka(ock) {
   /* Model 1 je od 24. 9. 2026 zmrazený (#332): ne-administrátor ho v nabídce
    * nemá. U zakázky, která v něm už je, vidí „Model 1 (zmrazený)" a může ji
    * převést na Model 2; administrátor přepíná jako dřív. */
+  /* VS #570: u víc šachet se na Model 1 přepnout nedá (pojistka v set()). */
+  const vsM1Zakazano = OCK.fixes && typeof rezimViceSachet === 'function' && rezimViceSachet(OCK);
   const rezimRow = (jeAdmin() || !OCK.fixes) ? `<div class="row"><label>Režim výpočtu</label>
     <select class="rezim-vypoctu" onchange="set('OCK.fixes', this.value==='fix')" title="${jeAdmin()
       ? 'přepnutí Model 2 – opravený / Model 1 – 1:1 jako Excel (Model 1 je zmrazený, přepnout na něj smí jen administrátor)'
       : 'zakázka se počítá zmrazeným Modelem 1 — převést na Model 2 lze, zpět ne'}">
       <option value="fix" ${OCK.fixes ? 'selected' : ''}>Model 2 – opravený</option>
-      <option value="compat" ${!OCK.fixes ? 'selected' : ''}>Model 1 – 1:1 jako Excel${jeAdmin() ? '' : ' (zmrazený)'}</option></select></div>`
+      <option value="compat" ${!OCK.fixes ? 'selected' : ''}${vsM1Zakazano ? ' disabled' : ''}>Model 1 – 1:1 jako Excel${jeAdmin() ? '' : ' (zmrazený)'}${vsM1Zakazano ? ' (jen jedna šachta)' : ''}</option></select></div>`
     : `<div class="row"><label>Režim výpočtu</label><div><span class="pill rezim-vypoctu" title="Model 1 je zmrazený; nové nabídky se počítají Modelem 2">Model 2 – opravený</span></div></div>`;
   const datumRow = `<div class="row na-konec"><label>Datum vytvoření</label>
     <input type="date" value="${esc(ZAK.datum)}" onchange="set('ZAK.datum', this.value)"></div>`;

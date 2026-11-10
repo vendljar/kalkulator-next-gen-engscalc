@@ -484,8 +484,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 10. 11. 2026: stav integrace v10.11.2
+# Předávka koordinace — 10. 11. 2026: stav integrace v10.11.3
 
+- **v10.11.3** VS-E2 #592 (zadání víc šachet za vypínačem; S1 pokračuje E3 ve stejné větvi).
 - **v10.11.2** VS-E0/E1 #570 (#590, #591): zlatá sada 319 scénářů, jádro víc šachet src/vice_sachet.js, server, vypínač /api/funkce (výchozí VYP). Koordinace rozhodla (drobnost, pokyn J. V. 10. 11.): klíč `funkce` je výjimkou zálohy (po obnově vypínač vypnutý). Další: E2–E5 ve 3 sezeních nad touto integrací.
 
 - **Pokyny J. V. 10. 11. 2026 večer (platí ~2 dny, „vše má běžet bez přerušení“):** (1) po každém CELÉM zeleném kole smí koordinace poslat integraci do `test` bez ptaní (víc šachet za vypnutým vypínačem); do `main` jen na pokyn J. V. (2) Po E0/E1 spustit E2–E5 víc šachet ve 3 paralelních sezeních (S1 zadání+kalkulace, S2 CN v17+specifikace+překlady, S3 KL/SoD/controlling/Pipedrive/zámek), každá etapa do integrace až po zeleném kole. (3) K40 až po víc šachet. (4) Drobné otázky bez dopadu na cenu, zákazníka a bezpečnost rozhoduje koordinace doporučenou variantou a zapíše je; ostatní jdou J. V. v dialogu.

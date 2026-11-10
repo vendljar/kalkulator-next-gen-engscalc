@@ -61,7 +61,9 @@ let chromium;
 try { ({ chromium } = require('playwright')); }
 catch (e) { console.error('Playwright není k dispozici. NODE_PATH=$(npm root -g) node overit_prodano_zamek.mjs'); process.exit(2); }
 
-const FUNKCE = { '/api/zdravi': zdravi, '/api/ja': ja, '/api/prihlaseni': prihlaseni, '/api/odhlaseni': odhlaseni,
+/* VS #570 E2: klient čte vypínač zkušebních funkcí po přihlášení. */
+const { default: funkceFn } = await import('./netlify/functions/funkce.mjs');
+const FUNKCE = { '/api/zdravi': zdravi, '/api/funkce': funkceFn, '/api/ja': ja, '/api/prihlaseni': prihlaseni, '/api/odhlaseni': odhlaseni,
   '/api/uzivatele': uzivatele, '/api/program': program, '/api/zakazky': zakazky, '/api/firma': firma,
   '/api/zobrazeni': zobrazeni, '/api/popisy': popisyFn, '/api/zakaznici': zakazniciFn, '/api/sablony': sablonyFn,
   '/api/analytika': analytikaFn, '/api/slovnik': slovnikFn, '/api/controlling': controllingFn, '/api/pd/stav': pdStavFn };
