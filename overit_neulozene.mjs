@@ -54,7 +54,9 @@ import slovnikFn from './netlify/functions/slovnik.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 
-const FUNKCE = { '/api/zdravi': zdravi, '/api/ja': ja, '/api/prihlaseni': prihlaseni,
+/* VS #570 E2: klient čte vypínač zkušebních funkcí po přihlášení. */
+const { default: funkceFn } = await import('./netlify/functions/funkce.mjs');
+const FUNKCE = { '/api/zdravi': zdravi, '/api/funkce': funkceFn, '/api/ja': ja, '/api/prihlaseni': prihlaseni,
   '/api/uzivatele': uzivatele, '/api/program': programF, '/api/zakazky': zakazky,
   '/api/firma': firma, '/api/zobrazeni': zobrazeni, '/api/zakaznici': zakaznici,
   '/api/sablony': sablony, '/api/analytika': analytika, '/api/popisy': popisy, '/api/slovnik': slovnikFn };
