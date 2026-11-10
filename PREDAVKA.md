@@ -444,6 +444,8 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
 # Předávka koordinace — 10. 11. 2026: stav integrace v10.11.1
 
+- **Pokyny J. V. 10. 11. 2026 večer (platí ~2 dny, „vše má běžet bez přerušení“):** (1) po každém CELÉM zeleném kole smí koordinace poslat integraci do `test` bez ptaní (víc šachet za vypnutým vypínačem); do `main` jen na pokyn J. V. (2) Po E0/E1 spustit E2–E5 víc šachet ve 3 paralelních sezeních (S1 zadání+kalkulace, S2 CN v17+specifikace+překlady, S3 KL/SoD/controlling/Pipedrive/zámek), každá etapa do integrace až po zeleném kole. (3) K40 až po víc šachet. (4) Drobné otázky bez dopadu na cenu, zákazníka a bezpečnost rozhoduje koordinace doporučenou variantou a zapíše je; ostatní jdou J. V. v dialogu.
+
 - **10. 11.:** `main` = v6.11.5 (e2c2137), `test` = v7.11.1 (59c56b3), tagy do v7.11.1. **v10.11.1** AS #577: noční kopie zálohy na Disk skriptem Apps Script (/api/zaloha_disk, token KNG_DISK_TOKEN, návod podklady/NAVOD_ZALOHA_APPS_SCRIPT.md); roadmapa #578 GD smlouva (vlna F). VS: prototyp v8, plán podklady/VS_PLAN_REALIZACE.md, otázky O15/P1/P2 čekají. K40 připravena (#567, od #579).
 
 - **7. 11.:** `test` = v6.11.5 (e2c2137), tagy až po v6.11.5 vydané. **v7.11.1** FL #576: kolísání overit_online #523 = harness četl stav během rozbalování .gz; čeká na konec čtení (před 11/20 FAIL pod zátěží, po 0/20). Aplikace beze změny.
