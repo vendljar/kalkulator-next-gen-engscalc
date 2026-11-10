@@ -121,6 +121,25 @@ function retenceZalohDiskRozeber(jmeno) {
     ? { den: m[1], prostredi: null, hhmm: null, gzip: !!m[2], stary: true } : null;
   return null;
 }
+/* JMÉNO KOPIE PRO SKRIPT (#577 AS, 10. 11. 2026). Noční kopii na Disk dělá
+ * i skript Google Apps Script (nastroje/apps_script/kopie_disk.gs) — jméno
+ * mu skládá SERVER (netlify/lib/kopie_skript.mjs) touto funkcí, aby bylo
+ * stejné jako u kopie z prohlížeče (uloKopieDiskJmeno v src/uloziste.js,
+ * vždy .json.gz). Shodu obou hlídá src/test_577_jmeno_kopie.js. `den` = den
+ * nočního otisku, `kdy` = jeho pořízení (HHMM v Europe/Prague). Neplatný
+ * den, prostředí nebo čas = '' (kopie pak nevznikne). */
+function retenceZalohDiskJmeno(den, prostredi, kdy) {
+  if (!RETENCE_ZALOH_DISK_PROSTREDI.includes(prostredi) || !Number.isFinite(retenceZalohDenMs(String(den || '')))) return '';
+  const t = typeof kdy === 'number' ? kdy : Date.parse(String(kdy || ''));
+  if (!Number.isFinite(t)) return '';
+  try {
+    const c = {};
+    for (const x of new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Prague', hour: '2-digit', minute: '2-digit',
+      hourCycle: 'h23' }).formatToParts(new Date(t))) c[x.type] = x.value;
+    if (!/^\d{2}$/.test(c.hour || '') || !/^\d{2}$/.test(c.minute || '')) return '';
+    return 'otisk_' + prostredi + '_' + den + '_' + c.hour + c.minute + '.json.gz';
+  } catch (e) { return ''; }
+}
 /* `jmena` = jména souborů ve složce, `chranit` = jména, která se nesmažou
  * nikdy (právě zapsaná kopie), `prostredi` = prostředí webu, který uklízí.
  * Bere JEN soubory nového tvaru téhož prostředí — cizí prostředí ani starý
@@ -208,5 +227,5 @@ function retenceZalohPopis() {
 
 if (typeof module !== 'undefined')
   module.exports = { RETENCE_ZALOH_POJISTKA, retenceZalohPokles, retenceZalohMaximum, RETENCE_ZALOH_BLOBS, RETENCE_ZALOH_DISK, RETENCE_ZALOH_STARE_PRED, RETENCE_ZALOH_DISK_JMENO,
-    RETENCE_ZALOH_DISK_JMENO_STARE, RETENCE_ZALOH_DISK_PROSTREDI, retenceZalohDiskRozeber,
+    RETENCE_ZALOH_DISK_JMENO_STARE, RETENCE_ZALOH_DISK_PROSTREDI, retenceZalohDiskRozeber, retenceZalohDiskJmeno,
     retenceZalohDenMs, retenceZalohMesicuZpet, retenceZalohDrz, retenceZalohDiskVyber, retenceZalohPopis };
