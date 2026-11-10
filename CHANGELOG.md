@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v11.11.1 — VS-E0/E1 #570: víc šachet v nabídce — zlatá sada, jádro, server a vypínač správce (výchozí vypnuto), větev claude/vs-e0e1
+## v10.11.2 — VS-E0/E1 #570: víc šachet v nabídce — zlatá sada, jádro, server a vypínač správce (výchozí vypnuto), větev claude/vs-e0e1
 
 Nad `3ff5403` (integrace = test v10.11.1; main = v6.11.5). Verzi přečísluje koordinace (`verze.txt` zůstává
 10.11.1 — kontrola verze = den posledního commitu). Na webech, Disku ani v Pipedrive nic. Závazné podklady
