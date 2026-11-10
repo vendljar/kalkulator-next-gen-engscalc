@@ -19,7 +19,7 @@ Disk, Pipedrive nic. Commity: E2 `9909df5` + `ed1c5a7`/`879dc9b` (verze, harness
 | testy | ✅ | `test_vs_zadani.js` 50, `test_vs_priplatky.js` 19, `test_vs_sleva.js` 19, `overit_vs_zadani.mjs` 52 (`KNG_DIST_ZAKLAD` = srovnání s 079cfc6), `overit_vs_kalkulace.mjs` 23; zlatá sada 319/319 |
 | mutace | ✅ | „[#570 E2]" 12/12, „[#570 E3]" 10/10 (`ui/vice_sachet_ui.js`, `seznam.js` v JADRA) |
 | body koordinace po E4 | ✅ | (1) `vsTechspecOk` — server kontroluje `dalsi[i].techspec`; (5) `TS_SACHTA` = `VS_UI.akt` se zapnutou funkcí |
-| kolo `--bez-mutaci` | E2 ✅, E3 viz hlášení | E2 nad 879dc9b VŠE ZELENÉ (413/0/7, +400 dní 333/0/1, statické 5/5); E3 po sloučení integrace |
+| kolo `--bez-mutaci` | ✅ | E2 nad 879dc9b VŠE ZELENÉ (413/0/7, +400 dní 333/0/1, statické 5/5, 32 min); E3 po sloučení integrace aaac150 nad a78552b VŠE ZELENÉ (420/0/7 přesk. bez KNG_PODKLADY, +400 dní 338/0/1, statické 5/5, 32 min) |
 
 **Pozor pro další etapy:** sestavení je jeden `<script>` — funkce se stejným jménem v jiném souboru tiše přepíše
 jinou (E3: `vsSoucet` obrazovky přepsala `vsSoucet` jádra → zacyklený výpočet). `test_vs_zadani.js` hlídá jen
