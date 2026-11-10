@@ -6,7 +6,7 @@ Klikací prototyp v7 (6. 11., R1–R18): https://claude.ai/artifact/PPL2GLSARywu
 sestavená aplikace v6.11.5 (další verze main, s kartou Můstky, MU3 a CA #575) + vrstva víc šachet (`podklady/vs_prototyp/`); u 1 šachty pixelově shodná s v6.11.5.
 Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 
-**Stav: rozhodnutí R1–R19 (R19 = připomínka J. V. 10. 11. k prototypu v7); drobná otázka O15. Podrobný plán realizace: `podklady/PLAN_VS_REALIZACE.md`. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
+**Stav: rozhodnutí R1–R19 (R19 = připomínka J. V. 10. 11. k prototypu v7); drobná otázka O15. Podrobný plán realizace: `podklady/VS_PLAN_REALIZACE.md`. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
 („zatím připrav komplexní návrh, který si nejprve odladíme, a spustíme až
 řeknu“, 5. 11. 2026). Všechny částky jsou **smyšlené a ilustrační**.
 
@@ -512,4 +512,4 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 | 6. 11. 2026 | (rozhodnutí, ne kód) | O13 = a, O14 = a | R17 pole Počet šachet v nabídce v Zadání šachty, R18 potvrzení a smazání při snížení; návrh uzavřen, prototyp bez náhledů nezvolených variant. |
 | 6. 11. 2026 večer | `0f16310` (integrace v6.11.4 = MU3) | MU3: výchozí výška sloupu navíc = H − 0,2 m (jako rohový sloupek), nápovědy karty Můstky s čárkou. | Návrh beze změny (sloupy jsou v zadání šachty, jádro je po šachtách přebírá). Prototyp přestavěn na v6.11.4 (v6), ověřen. |
 | 6. 11. 2026 večer | `e2c2137` (integrace v6.11.5 = CA #575) | Všechna číselná pole = jeden prvek `CISLO_POLE` (`src/ui/cislo_pole.js`), textové pole s `data-cislo`, čárka i tečka, zobrazení s čárkou. | Prompt (oddíl 11): výchozí SHA nejméně `e2c2137`, číselná pole jen přes `CISLO_POLE`. Prototyp v7 na v6.11.5; pole Počet šachet a Počet stejných kusů jsou `CISLO_POLE`. |
-| 10. 11. 2026 | `7eab7a8` (integrace v7.11.1 = v6.11.5 + FL #576 harness, kód aplikace beze změny) | Jen harness `overit_online.mjs`, roadmapa #578. | Návrh beze změny kódu; R19 a O15 doplněny; prototyp v8 na v7.11.1; plán realizace `podklady/PLAN_VS_REALIZACE.md`, výchozí SHA 7eab7a8. |
+| 10. 11. 2026 | `7eab7a8` (integrace v7.11.1 = v6.11.5 + FL #576 harness, kód aplikace beze změny) | Jen harness `overit_online.mjs`, roadmapa #578. | Návrh beze změny kódu; R19 a O15 doplněny; prototyp v8 na v7.11.1; plán realizace `podklady/VS_PLAN_REALIZACE.md`, výchozí SHA 7eab7a8. |
