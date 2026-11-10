@@ -216,6 +216,7 @@ const ULOZISTE = {
   pd_webhook: 'výjimka: rejstřík deal → kalkulace webhooku (#553) — vazbu nese sama zakázka (pdDealId) a ta se zálohuje; rejstřík se obnoví prvním doručením',
   pokusy: 'výjimka: krátkodobá počítadla pokusů přihlášení',
   zalohy: 'výjimka: otisky samy, tokeny obnovy',
+  disk_kopie: 'výjimka: připravený soubor kopie pro skript Apps Script (#577, odvozený z nočního otisku) a počítadla četnosti',
 };
 /* Pevné klíče (literály a konstanty v `zapis(…)`) → úložiště a zda je otisk
  * nese. Prefixy končí lomítkem/čímkoli před `+`. */
@@ -238,6 +239,9 @@ const KLICE = {
   'retence-zaklad': ['zalohy', false],     // den potvrzeného úbytku — základ kumulativní pojistky (O-K9 #527), ne data
   'otisk-stav': ['zalohy', false],         // poslední pokus o otisk (#522), ne data
   'nocni-dokonceno': ['zalohy', false],    // den, kdy noc doběhla celá (#522), ne data
+  'kopie-skript-stav': ['disk_kopie', false],      // #577: stav přípravy souboru pro skript, ne data
+  'kopie-skript-cetnost': ['disk_kopie', false],   // #577: počítadlo četnosti tokenu, ne data
+  'spatne:': ['disk_kopie', false],                // #577: počítadlo špatných tokenů na adresu, ne data
 };
 /* Dynamické výrazy v uloziste(…), které nejsou nové úložiště. */
 const DYNAMICKE = {

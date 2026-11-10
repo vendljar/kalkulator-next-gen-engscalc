@@ -66,6 +66,7 @@ export const KS_ROZPOCET = { krokMs: 4000, zamekNavicMs: 20000 };
 /* Token: aspoň 32 znaků (návod: 48 náhodných bajtů v base64url = 64 znaků).
  * Kratší nebo chybějící KNG_DISK_TOKEN = cesta vypnutá (403). */
 export const KS_TOKEN_MIN = 32;
+export const KS_TOKEN_PROMENNA = 'KNG_DISK_TOKEN';
 /* Omezení četnosti (B212): správný token nejvýš 300 požadavků za hodinu
  * a 200 stažených kusů za den (~600 MB, běžná noc ~20 kusů na web);
  * špatný token nejvýš 10 pokusů za 15 min z jedné adresy (pak 429). Správný
@@ -78,7 +79,7 @@ export const KS_KDO = 'skript Apps Script';
 
 /* ---------- token ---------- */
 export function kopieSkriptToken(env = process.env) {
-  const t = String((env || {}).KNG_DISK_TOKEN || '').trim();
+  const t = String((env || {})[KS_TOKEN_PROMENNA] || '').trim();
   return t.length >= KS_TOKEN_MIN ? t : '';
 }
 export function tokenZHlavicky(req) {

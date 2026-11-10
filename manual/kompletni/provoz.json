@@ -321,6 +321,11 @@
        "PIPEDRIVE_WEBHOOK_KLIC",
        "tajný klíč webhooku „Vygenerovat nabídku“, aspoň 32 znaků; nastavuje správce, do repozitáře ani klientovi nejde",
        "oba weby (nejdřív testovací)"
+      ],
+      [
+       "KNG_DISK_TOKEN",
+       "token noční kopie na Disk skriptem Google Apps Script, aspoň 32 znaků; nastavuje správce v Netlify a ve vlastnostech skriptu, do repozitáře ani klientovi nejde",
+       "oba weby (každý vlastní)"
       ]
      ]
     },
@@ -624,6 +629,12 @@
        "otisky databáze (noční, ruční, před obnovou), stav pořizování a retence",
        "vše výše včetně otisků hesel",
        "podle retence, kapitola P6"
+      ],
+      [
+       "disk_kopie",
+       "připravený soubor kopie nočního otisku pro skript Apps Script po kusech, stav přípravy, počítadla četnosti tokenu",
+       "kopie bez otisků hesel a podpisů",
+       "jen poslední noční otisk; v záloze není (odvozená data)"
       ],
       [
        "analytika",
@@ -1561,6 +1572,12 @@
        "ruční otisk, evidence kopií na Disk, retence"
       ],
       [
+       "/api/zaloha_disk",
+       "GET, POST",
+       "jen skript Google Apps Script s tokenem `KNG_DISK_TOKEN` v hlavičce Authorization (relace nestačí, token v adrese 400)",
+       "noční kopie na Disk: metadata, příprava `.json.gz` po krocích, kusy po 3 MiB, potvrzení kopie, varování úbytku"
+      ],
+      [
        "/api/obnova",
        "POST",
        "jen administrátor; zápis účtů nebo matice z otisku s heslem správce; hlavní účet jen hlavní správce",
@@ -1758,6 +1775,13 @@
        "nepovinně",
        "nepovinně",
        "tajný klíč webhooku „Vygenerovat nabídku“, aspoň 32 znaků; chybí → webhook 503, jiný klíč → 401 bez dotazu do Pipedrive"
+      ],
+      [
+       "KNG_DISK_TOKEN",
+       "jen pro kopii skriptem",
+       "nepovinně",
+       "nepovinně",
+       "token noční kopie na Disk skriptem Apps Script, aspoň 32 znaků, pro každý web jiný; chybí → `/api/zaloha_disk` 403"
       ]
      ]
     },

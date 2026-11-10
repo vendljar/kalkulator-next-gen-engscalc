@@ -3372,9 +3372,10 @@ function renderOnlineKarta() {
       <div class="note">Zakázky i platný ceník žijí na serveru – ke stejným datům se dostanete
         z libovolného počítače po přihlášení. <b>Vytištěná (odeslaná) nabídka se nikdy nepřepíše</b> –
         hlídá to přímo server, stejným pravidlem jako složka. Server si každou noc ukládá
-        otisk databáze a jeho kopie jde <b>na Disk Google</b> (složka „_Zaloha Netlify DB“): po přihlášení
-        administrátora heslem se uloží sama jednou denně, jakmile je k dispozici nový noční otisk (Chrome nebo Edge
-        s vybranou složkou a povoleným zápisem); tlačítky ji lze pořídit kdykoli.
+        otisk databáze a jeho kopie jde <b>na Disk Google</b> (složka „_Zaloha Netlify DB“): každou noc ji tam
+        bez přihlášení uloží skript Google Apps Script v účtu správce (když je nastavený, #577). Jako záloha záloh
+        ji po přihlášení administrátora heslem uloží i prohlížeč — jen když kopii nového nočního otisku skript
+        nepotvrdil (Chrome nebo Edge s vybranou složkou a povoleným zápisem); tlačítky ji lze pořídit kdykoli.
         ${typeof ULO_STAV !== 'undefined' && ULO_STAV.koren
     ? 'Dokud je připojená složka, platí ceník i zakázky ze složky jako dosud (přechodné období).'
     : 'Složku už není potřeba připojovat – slouží jen jako cíl zálohy.'}</div>`;

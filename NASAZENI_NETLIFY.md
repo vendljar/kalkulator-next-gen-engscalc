@@ -51,6 +51,7 @@ nahraj novou dávku, nebo dej **Deploys → Trigger deploy → Deploy project**
 | `PIPEDRIVE_DOMENA` | jen pro CRM | doména firmy, např. `mojefirma` nebo `mojefirma.pipedrive.com` |
 | `PROSTREDI` | jen testovací web | `test` → červený pruh „TESTOVACÍ PROSTŘEDÍ" na každé záložce i v PDF |
 | `PROSTREDI_POPIS` | ne | nepovinný text do pruhu |
+| `KNG_DISK_TOKEN` | jen pro kopii skriptem | token pro noční kopii zálohy na Disk skriptem Google Apps Script (#577), **aspoň 32 znaků**, pro každý web jiný; bez něj je `/api/zaloha_disk` vypnutá — návod `podklady/NAVOD_ZALOHA_APPS_SCRIPT.md` |
 
 `TAJEMSTVI_RELACE`: kdo ho zná, mohl by se vydávat za přihlášeného — nikomu
 ho nesděluj a nikam nezapisuj. Náhodnou hodnotu vyrobíš třeba v PowerShellu:

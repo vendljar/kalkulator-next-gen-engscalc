@@ -72,6 +72,7 @@ import pdDealy from './functions/pd_dealy.mjs';
 import pdDeal from './functions/pd_deal.mjs';
 import pdNanecistoFn from './functions/pd_nanecisto.mjs';
 import pdWebhookFn from './functions/pd_webhook.mjs';
+import zalohaDiskFn from './functions/zaloha_disk.mjs';
 import pdStavFn from './functions/pd_stav.mjs';
 import { config as configNocni } from './functions/zaloha_nocni.mjs';
 import { ADMIN_EMAIL, ROLE, POKUSY_MAX, POKUSY_IP_MAX, zpozdeniMs, pokusyReset,
@@ -555,6 +556,19 @@ const MATICE = [
     metoda: 'POST', url: 'http://x/api/pd/webhook', telo: () => ({ dealId: 1 }),
     proc: 'zakládá kalkulace z dealu — chrání ho klíč PIPEDRIVE_WEBHOOK_KLIC, relace ne',
     prava: { 'nepřihlášený': 401, 'Obchodník': 401, 'Vedoucí': 401, 'Administrátor': 401 } },
+
+  /* Noční kopie na Disk skriptem Apps Script (#577 AS, 10. 11. 2026): volá ji
+   * skript v Google účtu správce s tokenem KNG_DISK_TOKEN v hlavičce
+   * Authorization — relace žádné role nestačí (403, ani administrátorovi).
+   * Podrobnosti netlify/test_577_kopie_skript.mjs. */
+  { fn: zalohaDiskFn, soubor: 'zaloha_disk.mjs', nazev: 'kopie na Disk skriptem — metadata (GET /api/zaloha_disk)',
+    metoda: 'GET', url: 'http://x/api/zaloha_disk',
+    proc: 'vydává noční zálohu celé databáze — chrání ji token KNG_DISK_TOKEN, relace ne',
+    prava: { 'nepřihlášený': 403, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 403 } },
+  { fn: zalohaDiskFn, nazev: 'kopie na Disk skriptem — potvrzení (POST akce=potvrdit)',
+    metoda: 'POST', url: 'http://x/api/zaloha_disk', telo: () => ({ akce: 'potvrdit', kopie: {} }),
+    proc: 'záznam kopie odemyká retenci záloh — jen token skriptu',
+    prava: { 'nepřihlášený': 403, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 403 } },
 
   /* Centrální šablony dokumentů (#139). Číst smí každý přihlášený — obchodník
    * z platné šablony tiskne. Zveřejnit a přepínat režim smí JEN administrátor:
@@ -3378,16 +3392,21 @@ console.log('\n===== ZDROJOVÁ KONTROLA =====\n');
 const VEREJNE_ZAMERNE = ['prihlaseni.mjs', 'odhlaseni.mjs', 'zdravi.mjs', 'zaloha_nocni.mjs'];
 /* Funkce chráněné klíčem místo relace (#553): volá je Pipedrive. Klíč se musí
  * ověřit dřív, než se čte tělo nebo sahá do Pipedrive či databáze. */
-const KLICEM_CHRANENE = ['pd_webhook.mjs'];
-for (const f of KLICEM_CHRANENE) {
+/* #577 AS: /api/zaloha_disk volá skript Apps Script s tokenem KNG_DISK_TOKEN —
+ * token (tajneShodne) dřív než tělo, úložiště a příprava či vydání zálohy. */
+const KLICEM_CHRANENE = {
+  'pd_webhook.mjs': ['pdWebhookKlicSedi(', ['req.text()', 'pdZavolej(', 'uloziste(', 'pdStropCerstvych(']],
+  'zaloha_disk.mjs': ['tajneShodne(', ['req.json()', 'uloziste(', 'kopieSkriptKrok(', 'kopieSkriptKus(', 'await info()', 'potvrdit(req', 'varovani(req', 'cetnostZapocti(']],
+};
+for (const [f, [klic, pozdeji]] of Object.entries(KLICEM_CHRANENE)) {
   const kod = readFileSync(resolve(KOREN, 'functions', f), 'utf8');
   const hlavni = kod.slice(kod.indexOf('export default'));
-  const i = hlavni.indexOf('pdWebhookKlicSedi(');
+  const i = hlavni.indexOf(klic);
   test('funkce ' + f + ' ověřuje klíč dřív než tělo, Pipedrive a databázi', i > 0
-    && ['req.text()', 'pdZavolej(', 'uloziste(', 'pdStropCerstvych('].every(x => hlavni.indexOf(x) < 0 || hlavni.indexOf(x) > i));
+    && pozdeji.every(x => hlavni.indexOf(x) < 0 || hlavni.indexOf(x) > i));
 }
 for (const f of souboryFunkci) {
-  if (VEREJNE_ZAMERNE.includes(f) || KLICEM_CHRANENE.includes(f)) continue;
+  if (VEREJNE_ZAMERNE.includes(f) || Object.prototype.hasOwnProperty.call(KLICEM_CHRANENE, f)) continue;
   const kod = readFileSync(resolve(KOREN, 'functions', f), 'utf8');
   test('funkce ' + f + ' kontroluje přihlášení',
     /vyzadujRoli\s*\(/.test(kod) || /prihlaseny\s*\(/.test(kod) || /pdPristup\s*\(/.test(kod));
