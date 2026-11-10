@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.11.2 — VS-E3 #570: víc šachet v nabídce — kalkulace šachta / Součet, hlavička ceny s rozpisem, rozpočet zaokrouhlení, sleva ze součtu, přehledy (za vypínačem), větev claude/vs-s1-e2e3
+
+Nad E2 (téže větve). Verzi přečísluje koordinace. **Jedna šachta (VYP i ZAP) = obrazovka znak po znaku jako 079cfc6**
+(#inputs, #outputs, souhrn, sleva/zaokrouhlení/CN, Detail výpočtu — harness), zlatá sada 319/319.
+
+- **Cenová kalkulace:** v nadpisu přepínač **šachty / Součet**. Šachta = její řádky (editace jako dnes), CELKEM šachty
+  bez zaokrouhlení; **Součet** = sloučené řádky × ks, CELKEM = základní cena (na tisíce jen součet, R3), **jen ke čtení**
+  (všechna pole a tlačítka zhasnutá, i z klávesnice). Příplatky v Součtu s výčtem šachet „Výtah A, Výtah B 2×" (R8).
+  Detail mezivýpočtů, nepoužité přepisy a záložka Detail výpočtu = otevřená šachta.
+- **Hlavička ceny:** hlavní číslo = základ celé nabídky, pod ním rozpis „Výtah A · 1 ks · … Kč" (ceny po rozpočtu
+  zaokrouhlení, Σ = základ, R7), klik otevře šachtu.
+- **Karta Obchodní zaokrouhlení OCK:** tabulka **Rozpočet zaokrouhlení do šachet** (spočteno ks × cena, v nabídce,
+  celkem = základ).
+- **Sleva a schvalování:** věta „Sleva se počítá z ceny celé nabídky (2 varianty šachet, celkem 3 ks)" v kartě slevy,
+  v žádosti o schválení počty šachet (strop a marže ze součtu počítá jádro a server už od E1).
+- **Přehledy:** seznam variant se štítkem „2 varianty / 3 ks" a hledáním i podle názvu šachty (`seznam.js`,
+  `vsNazvySachetText`), porovnání variant se štítkem pod názvem (porovnávají se součty).
+- Oprava během E3: obsluha tlačítka Součet se jmenovala jako funkce jádra `vsSoucet()` a v sestavení ji přepsala;
+  přejmenováno a `test_vs_zadani.js` nově hlídá kolize jmen modulu obrazovky se zbytkem `src/`.
+- Testy: `src/test_vs_priplatky.js` (19), `src/test_vs_sleva.js` (19), `overit_vs_kalkulace.mjs` (23),
+  `overit_vs_zadani.mjs` rozšířen o slevu/CN a Detail; mutace „[#570 E3]" 10.
+
+---
+
 ## v12.11.1 — VS-E2 #570: víc šachet v nabídce — zadání: Počet variant šachet, Počet kusů, karta Šachty varianty (jen se zapnutým vypínačem), větev claude/vs-s1-e2e3
 
 Nad `079cfc6` (integrace v11.11.1 = E0/E1). Verzi přečísluje koordinace. Na webech, Disku ani v Pipedrive nic.

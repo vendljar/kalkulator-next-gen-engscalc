@@ -150,7 +150,9 @@ function dvPruchoziRadky() {
 function renderDetail() {
   const el = document.getElementById('page-detail'); if (!el) return;
   let r;
-  try { r = vypocetAkt(); }
+  /* VS #570 (E3): detail popisuje otevřenou šachtu (Z) — u víc šachet její
+   * výsledek, ne součet; bez víc šachet tentýž výsledek jako vypocetAkt(). */
+  try { r = (typeof vypocetSachtyAkt === 'function') ? vypocetSachtyAkt() : vypocetAkt(); }
   catch (e) { el.innerHTML = `<div class="card"><div class="body neg">Chyba výpočtu: ${esc(e.message)}</div></div>`; return; }
   const o = r.odvozene, p = r.parametry, ext = Z.typSachty === 'exteriérová';
   const M = num, K = fmt, K0 = fmt0;

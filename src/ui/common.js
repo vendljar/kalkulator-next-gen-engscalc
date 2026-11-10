@@ -2317,7 +2317,7 @@ function slevaKarta(kontext) {
       <input type="text" value="${esc(SLC.poznamka || '')}" onchange="${c.fn}('poznamka', this.value)" placeholder="důvod, kampaň, partner…"></div>
     <div style="margin-top:6px">Stav: <span class="pill ${pillCls}">${pillTxt}</span>
       ${slevaPlati(SLC) ? '<span class="note" style="margin-left:8px">propíše se do ceny nabídky ↓</span>' : (+SLC.procenta > 0 ? '<span class="note" style="margin-left:8px">neschválená sleva se do nabídky nepropíše</span>' : '')}</div>
-    ${dopad}${schvalBlok}${oddeleni}
+    ${!c.proj && typeof vsSlevaPoznamka === 'function' ? vsSlevaPoznamka() : ''}${dopad}${schvalBlok}${oddeleni}
     ${+SLC.procenta > 0 ? `<div class="btns" style="margin-top:6px"><button class="mini" onclick="${c.zrus}">Zrušit slevu</button></div>` : ''}`;
   /* Režim sekce i u slevy OCK (23. 9. 2026, zadání J. V.: „přidej skrývací
    * a rolovací tlačítka do všech sekcí kalkulace OCK"). PROJ zůstává beze

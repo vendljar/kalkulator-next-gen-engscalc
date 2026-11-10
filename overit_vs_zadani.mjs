@@ -73,7 +73,7 @@ async function otevri(url, { locale = 'cs-CZ', width = 1440, zap = false } = {})
 const obrazovka = (p) => p.evaluate(() => {
   /* Nadpis zakázky nese datum a čas sestavení / verzi — srovnává se obsah karet. */
   const g = id => (document.getElementById(id) || {}).innerHTML || '';
-  return { inputs: g('inputs'), outputs: g('outputs'), souhrn: g('kalk-souhrn') };
+  return { inputs: g('inputs'), outputs: g('outputs'), souhrn: g('kalk-souhrn'), nabidka: g('kalk-nabidka'), detail: g('page-detail') };
 });
 const bezVsPole = (p) => p.evaluate(() => {
   document.querySelectorAll('#ock-zadani h2 .vs-pocet').forEach(e => e.remove());
@@ -94,7 +94,8 @@ const bezVsPole = (p) => p.evaluate(() => {
   }));
   test('ZAP + 1 šachta: bez karty Šachty varianty (R16)', await zap.p.evaluate(() => !document.getElementById('vs-sachty')));
   const sZap = await obrazovka(zap.p);
-  test('ZAP + 1 šachta: kalkulace a souhrn shodné s VYP', sZap.outputs === sVyp.outputs && sZap.souhrn === sVyp.souhrn);
+  test('ZAP + 1 šachta: kalkulace, souhrn, sleva/CN a detail shodné s VYP', sZap.outputs === sVyp.outputs && sZap.souhrn === sVyp.souhrn
+    && sZap.nabidka === sVyp.nabidka && sZap.detail === sVyp.detail);
   test('ZAP + 1 šachta: zadání = VYP + jen pole v nadpisu', (await bezVsPole(zap.p)) === sVyp.inputs);
   if (ZAKLAD) {
     const z = await otevri(ZAKLAD);
@@ -102,6 +103,8 @@ const bezVsPole = (p) => p.evaluate(() => {
     test('VYP: #inputs znak po znaku jako 079cfc6', sVyp.inputs === sZ.inputs, sVyp.inputs.length + ' / ' + sZ.inputs.length);
     test('VYP: #outputs znak po znaku jako 079cfc6', sVyp.outputs === sZ.outputs);
     test('VYP: souhrn znak po znaku jako 079cfc6', sVyp.souhrn === sZ.souhrn);
+    test('VYP: sleva, zaokrouhlení a CN (#kalk-nabidka) znak po znaku jako 079cfc6', sVyp.nabidka === sZ.nabidka);
+    test('VYP: Detail výpočtu znak po znaku jako 079cfc6', sVyp.detail === sZ.detail);
     await z.ctx.close();
   } else { preskoc++; console.log('SKIP srovnání se základem 079cfc6 (KNG_DIST_ZAKLAD)'); }
   test('VYP/ZAP: bez chyb stránky', !vyp.chyby.length && !zap.chyby.length, vyp.chyby.concat(zap.chyby));

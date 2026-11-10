@@ -376,6 +376,8 @@ const PROVERENO = {
       + 'prochází esc(SCHV_DUVODY[z.id]) a id přes escJs()',
   },
   'zakazka_ui.js': {
+    'vsPorovnaniStitek(v.id)': 'hotové HTML štítku víc šachet (VS #570 E3) z vsStitekVarianty() — '
+      + 'počty i názvy šachet jdou uvnitř přes esc(), ostatní literál.',
     'nazev': 'popisek pole v náhledu nabídky – pole() se volá s literály',
   },
 };

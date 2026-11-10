@@ -192,6 +192,7 @@ function schvRadek(z, muzeVidetMarzi) {
   if (!z.spocteno)
     podrobnosti.push('Výpočet ' + (z.cast === 'proj' ? 'projekce' : 'OCK')
       + ' této varianty se nepodařil – dopad slevy v Kč proto nelze ukázat.');
+  if (typeof vsSchvPopis === 'function' && vsSchvPopis(z)) podrobnosti.push(vsSchvPopis(z));   // VS #570: sleva ze součtu šachet
   if (proc) podrobnosti.push('<span class="note">' + proc + '</span>');
 
   const duvod = smiTeď && (z.kategorie === 'ceka' || z.kategorie === 'schvaleno' || z.kategorie === 'auto')

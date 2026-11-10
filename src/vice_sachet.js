@@ -303,7 +303,14 @@ function vsZakazkaMaData(zak) {
   return !!(zak && Array.isArray(zak.varianty) && zak.varianty.some(v => v && v.data && vsMaData(v.data.ock)));
 }
 
+/* Názvy šachet varianty pro hledání v seznamu variant (VS #570 E3). Bez
+ * víc šachet '' — hledání beze změny. */
+function vsNazvySachetText(ock) {
+  if (!rezimViceSachet(ock)) return '';
+  return sachtyZ(ock).map((s, i) => vsNazev(s, i)).join(' ');
+}
+
 if (typeof module !== 'undefined' && module.exports)
   module.exports = { VS_VARIANT_MAX, VS_KS_MAX, VS_NAZEV_MAX, vsKs, vsDalsi, rezimViceSachet, vsMaData, sachtyZ, vsNazev, vsPocty,
     rozpocetSachet, vsKlicPriplatku, vsKlicRadku, vsSlucRadky, priplatkySloucene, vsSoucetSouhrnu, vsSoucet,
-    vypocetZakazkyOck, vypocetOckDat, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska, vsZakazkaMaData };
+    vypocetZakazkyOck, vypocetOckDat, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska, vsZakazkaMaData, vsNazvySachetText };
