@@ -868,6 +868,95 @@ function docxRadkyNavic(xml, radky) {
   return xml;
 }
 
+
+/* ============================================================
+ * SMYČKA ŠACHET {#sachty} … {/sachty} (VS-E4 #570, šablona CN v17).
+ *
+ * Nabídka s víc variantami šachet má v obchodní části řádek za každou
+ * šachtu (R4) a v technické části oddíl za každou šachtu. Šablona v17
+ * označí ŘÁDKY TABULKY, které se opakují: řádek se značkou {#sachty},
+ * řádky za ním a řádek se značkou {/sachty} (značky stojí ve vlastních
+ * řádcích — v dokumentu nikdy nezůstanou). Pro každou šachtu se úsek
+ * naklonuje a dosadí se do něj symboly šachty (`volby.sachty.polozky[i]`:
+ * SACHTA_NAZEV, SACHTA_POPIS, SACHTA_CENA_BEZ_DPH, SACHTA_TS_NAZEV
+ * a symboly technické části šachty TS_*), předem se z klonu vyhodí:
+ *   – řádek se symboly SACHTA_*, které má šachta všechny prázdné,
+ *   – prázdné řádky a sekce technické části podle hodnot šachty
+ *     (odstranPrazdneTsRadky nad klonem).
+ * JEDNA ŠACHTA (žádné `volby.sachty`) = jedna položka s prázdnými SACHTA_*:
+ * řádek ceny šachty i nadpis šachty zmizí, technická část zůstane se
+ * symboly pro hlavní průchod — dokument je stejný jako ze šablony v16 (R15).
+ * Odstavec se symbolem SACHTY_* (součet „šachet celkem: N ks" v řádku CENA
+ * CELKEM) zmizí, když je hodnota prázdná; jinak se dosadí (`spolecne`).
+ * Text šachty (název od obchodníka) jde do XML se složenou závorkou jako
+ * entitou (B86) — nerozvine se jako symbol. Značky jinde než v řádku
+ * tabulky nebo bez páru = chyba (šablona je vadná, nic se nehádá). */
+const DOCX_SMYCKA_TEXT_RE = /\{[#/]sachty\}/g;
+const docxRePresTagy = t => new RegExp(t.split('').map(c => c.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')).join('(?:<[^>]+>)*'), 'g');
+const DOCX_SMYCKA_ZAC = docxRePresTagy('{#sachty}'), DOCX_SMYCKA_KON = docxRePresTagy('{/sachty}');
+const DOCX_SMYCKA_PRAZDNA = { SACHTA_NAZEV: '', SACHTA_KS: '', SACHTA_POPIS: '', SACHTA_CENA_BEZ_DPH: '', SACHTA_TS_NAZEV: '' };
+function docxSmyckaChyba(t) { return new Error('Šablona cenové nabídky má vadnou smyčku šachet ({#sachty} … {/sachty}): ' + t + '.'); }
+/* značka pryč, tagy mezi jejími znaky zůstanou */
+function docxBezZnackySmycky(xml) {
+  const pryc = m => m.replace(/(<[^>]+>)|[^<]+/g, (t, tag) => tag || '');
+  return xml.replace(DOCX_SMYCKA_ZAC, pryc).replace(DOCX_SMYCKA_KON, pryc);
+}
+function docxSmyckaSachet(xml, sachty) {
+  const polozky = (sachty && Array.isArray(sachty.polozky) && sachty.polozky.length) ? sachty.polozky : [DOCX_SMYCKA_PRAZDNA];
+  const spolecne = (sachty && sachty.spolecne) || { SACHTY_CELKEM_POPIS: '' };
+  const bezSymbolu = (v) => (v == null ? v : String(v).replace(/\{/g, '\uE000'));
+  for (let kolo = 0; kolo < 50; kolo++) {
+    DOCX_SMYCKA_ZAC.lastIndex = 0; DOCX_SMYCKA_KON.lastIndex = 0;
+    const mz = DOCX_SMYCKA_ZAC.exec(xml);
+    const mk = DOCX_SMYCKA_KON.exec(xml);
+    if (!mz && !mk) break;
+    if (!mz || !mk || mk.index < mz.index) throw docxSmyckaChyba('značka bez páru');
+    DOCX_SMYCKA_ZAC.lastIndex = mz.index + 1;
+    const dalsiZac = DOCX_SMYCKA_ZAC.exec(xml);
+    if (dalsiZac && dalsiZac.index < mk.index) throw docxSmyckaChyba('vnořená smyčka');
+    const spany = radkoveSpany(xml);
+    const radekS = pos => { const k = spany.filter(sp => sp.zac <= pos && pos < sp.kon); return k.length ? k.reduce((a, b) => (b.hloubka > a.hloubka ? b : a)) : null; };
+    const rz = radekS(mz.index), rk = radekS(mk.index);
+    /* Úsek smí přejít přes víc tabulek téže úrovně (sekce technické části
+     * jako samostatné tabulky): klon pak nese i jejich hranice. */
+    if (!rz || !rk || rz.hloubka !== rk.hloubka || rk.zac < rz.zac) throw docxSmyckaChyba('značky musí stát v řádcích tabulek téže úrovně');
+    /* úsek bez značek; řádek, kterému po značce nezbyl text ani symbol, pryč */
+    let usek = docxBezZnackySmycky(xml.slice(rz.zac, rk.kon));
+    const prazdnyRadek = r => !textRadku(vlastniObsahRadku(r)) && !klicePlaceholderu(r).length;
+    const rUseku = radkoveSpany(usek).filter(sp => sp.hloubka === 0);
+    const prvni = rUseku[0], posledni = rUseku[rUseku.length - 1];
+    [posledni, prvni].filter((sp, i, a) => sp && a.indexOf(sp) === i).forEach(sp => {
+      if (prazdnyRadek(usek.slice(sp.zac, sp.kon))) usek = usek.slice(0, sp.zac) + usek.slice(sp.kon);
+    });
+    const kopie = polozky.map((ph, i) => {
+      let f = usek;
+      /* řádky se symboly šachty, které má šachta všechny prázdné */
+      const odstr = radkoveSpany(f).filter(sp => {
+        const k = klicePlaceholderu(vlastniObsahRadku(f.slice(sp.zac, sp.kon))).filter(x => /^SACHTA_/.test(x));
+        return k.length && k.every(x => jePrazdnaHodnota(ph[x]));
+      }).sort((a, b) => b.zac - a.zac);
+      odstr.forEach(sp => { f = f.slice(0, sp.zac) + f.slice(sp.kon); });
+      f = odstranPrazdneTsRadky(f, ph);
+      const hodnoty = {};
+      Object.keys(ph).forEach(k => { hodnoty[k] = bezSymbolu(ph[k]); });
+      f = nahradPlaceholdery(f, hodnoty).replace(/\uE000/g, '&#123;');
+      return i ? f.replace(/\sw14:(?:paraId|textId)="[^"]*"/g, '') : f;   // klon bez dvojích id odstavců
+    });
+    xml = xml.slice(0, rz.zac) + kopie.join('') + xml.slice(rk.kon);
+  }
+  /* SACHTY_*: odstavec s prázdnou hodnotou pryč (v buňce zůstane aspoň jeden) */
+  return xml.replace(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, (p) => {
+    const k = klicePlaceholderu(p).filter(x => /^SACHTY_/.test(x));
+    if (!k.length) return p;
+    if (k.every(x => jePrazdnaHodnota(spolecne[x]))) return '\uE001';
+    const hodnoty = {};
+    k.forEach(x => { hodnoty[x] = bezSymbolu(spolecne[x]); });
+    return nahradPlaceholdery(p, hodnoty).replace(/\uE000/g, '&#123;');
+  }).replace(/<w:tc[\s>](?:(?!<\/w:tc>)[\s\S])*?<\/w:tc>/g, tc => (tc.indexOf('\uE001') < 0 ? tc
+    : (/<w:p[\s>]/.test(tc.replace(/\uE001/g, '')) ? tc.replace(/\uE001/g, '') : tc.replace(/\uE001/g, '<w:p/>'))))
+    .replace(/\uE001/g, '');
+}
+
 /* ---------- dynamické bloky: tabulka s {{PRIP_NAZEV}} se naklonuje pro každý příplatek ---------- */
 function najdiTabulku(xml, pozice) {
   const udalosti = [];
@@ -1186,6 +1275,7 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
       const pred = dekoder.decode(p.data);
       let po = pred;
       if (p.nazev === 'word/document.xml') {
+        po = docxSmyckaSachet(po, volby && volby.sachty);   // VS-E4: šablona CN v17 (bez značek beze změny)
         po = expandujPriplatky(po, priplatky);
         po = docxRadkyNavic(po, volby && volby.radkyNavic);   // řádky bez symbolu v šabloně (obchodník 15. 10. 2026)
         po = odstranPrazdneTsRadky(po, placeholders);   // prázdné/„-“ řádky TS pryč
@@ -1454,6 +1544,7 @@ function docxPrelozXml(xml, lang, stat) {
     const sp = spany[i], cely = xml.slice(sp.zac, sp.kon);
     const text = odstavecText(cely);
     if (!text.trim()) continue;
+    if (!text.replace(DOCX_SMYCKA_TEXT_RE, '').trim()) continue;   // VS-E4: značka smyčky šachet se nepřekládá
     /* ODSTAVEC SE SYMBOLEM {{…}} (#350, 25. 9. 2026). Do té doby se takový
      * odstavec přeskakoval celý — u nabídek nevadilo, ve smlouvě o dílo jsou
      * to ale právě články s cenou, platbami a pokutami („Celková cena díla
@@ -1579,7 +1670,7 @@ async function docxXmlVady(arrayBuffer) {
 
 if (typeof module !== 'undefined')
   module.exports = { docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
-    odstranPrazdneTsRadky, DOCX_CENA_CASTI, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
+    odstranPrazdneTsRadky, docxSmyckaSachet, DOCX_CENA_CASTI, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
     docxPrelozSablonu, docxPrelozXml, odstavcoveSpany, odstavecText, xmlUnesc,
