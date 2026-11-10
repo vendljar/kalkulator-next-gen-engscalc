@@ -68,7 +68,7 @@ Původní plán se sběrnou větví `claude/vs-balik` (celý balíček najednou)
 Pracnost: S = hodiny, M = 1–2 dny, L = 3–5 dní (dny práce sezení).
 
 ### E0 — Zlatá sada „1 šachta“ (S, ½ dne)
-- **Před první změnou kódu** vyrobit otisky z `7eab7a8`:
+- **Před první změnou kódu** vyrobit otisky ze základu etapy (integrace `3ff5403`; kód výpočtu a dokumentů beze změny proti `7eab7a8` — mezi nimi jen AS #577, záloha na Disk):
   `nastroje/zlata_vs.js` → `src/test_vs_zlata.json`.
 - Co se otiskuje pro každou fixturu (`src/fixtury`, dnes 1 odeslaná zakázka) a 300 náhodných zadání
   fuzzu (`test_fuzz_invarianty.js`, pevné semínko):
@@ -186,7 +186,7 @@ Pracnost: S = hodiny, M = 1–2 dny, L = 3–5 dní (dny práce sezení).
   příručka „Co je nového“, CHANGELOG, roadmapa #570 + #590–#596.
 - Celé testovací kolo `nastroje/testovaci_kolo.sh` s mutacemi po částech
   (jádro N = 4, server N = 12–16), Playwright přes `node_modules/playwright`.
-- Ruční zkouška scénářů z prototypu na sestavě balíčku.
+- Ruční zkouška scénářů z prototypu na sestavě integrace se zapnutým vypínačem.
 - Poslední sloučení do integrace, příprava na `main` (vypínač na ostrém zůstává VYP, zapnutí rozhodne J. V.).
 
 ---
@@ -245,7 +245,7 @@ E0+E1+vypínač ─► integrace ─┬─► E2 ─► integrace ─► E3 ─�
 | E6 | 1½ dne + celé kolo | kolo s mutacemi po částech ~1 den |
 
 Celkem asi **13–15 dní práce**. Se třemi sezeními paralelně (S2, S3 po E1)
-asi **8–10 dní kalendářně** do zeleného kola balíčku. Odhad, ne závazek;
+asi **8–10 dní kalendářně** do zeleného kola po E6. Odhad, ne závazek;
 nejistota je hlavně v E4 (Word šablona) a v kolizích se souběžnými dávkami.
 
 ---
@@ -271,7 +271,7 @@ nejistota je hlavně v E4 (Word šablona) a v kolizích se souběžnými dávkam
 1. ~~Odpověď na O15~~ — rozhodnuto 10. 11.: R20 (pole „Počet kusů“ i u jedné šachty).
 2. **Podklady s firemními šablonami** (CN v16 a starší) pro výrobu v17 přes
    `KNG_PODKLADY`, a po E4 **nahrání šablony v17** do šablon online.
-3. **Rozhodnutí o souběžných dávkách** (bod 2.2): zmrazit dávky v
+3. **Rozhodnutí o souběžných dávkách** (bod 2.3): zmrazit dávky v
    `kalk_ock.js`, `common.js`, `nabidka.js`, `kryci.js`, `engine.js`
    po dobu E1–E5, nebo souhlas s průběžným přeskládáním.
 4. **Pipedrive:** potvrdit, do kterého pole dealu jde seznam variant
@@ -300,13 +300,13 @@ Zastřešující **#570** zůstává. Pod ní (od #590, obsazeno do #578, K40 dr
 
 | # | Název | Vlna | Složitost | Závisí |
 |---|---|---|---|---|
-| #590 | VS-E0: zlatá sada „1 šachta = beze změny“ (otisky z 7eab7a8) | C | S | — |
+| #590 | VS-E0: zlatá sada „1 šachta = beze změny“ (otisky ze základu etapy, 3ff5403) | C | S | — |
 | #591 | VS-E1: data `ock.dalsi[]`, modul `vice_sachet.js`, obal `vypocetZ`, server | C | M | #590 |
 | #592 | VS-E2: zadání — Počet variant / šachet celkem, karta Šachty varianty | C | M | #591 |
 | #593 | VS-E3: kalkulace šachta/Součet, hlavička ceny, rozpočet, sleva, přehledy | C | M | #592 |
 | #594 | VS-E4: CN tabulka variant, Word v17, specifikace po šachtách, překlady | C | L | #591 |
 | #595 | VS-E5: krycí list, SoD, controlling, Pipedrive, zámek, kontroly | C | L | #591 |
-| #596 | VS-E6: manuály, CHANGELOG, celé kolo, sloučení balíčku do integrace | C | M | #592–#595 |
+| #596 | VS-E6: manuály, CHANGELOG, celé kolo, poslední sloučení do integrace | C | M | #592–#595 |
 
 Do `roadmap.json` se zapíšou až po souhlasu koordinace (čísla může
 přečíslovat).

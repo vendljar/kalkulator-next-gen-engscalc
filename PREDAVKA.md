@@ -42,6 +42,14 @@ a mění sousední soubory → po každém „AKTUALIZUJ VS nad <SHA>“ ověři
 
 **10. 11. — změna plánu (J. V.) → R21:** žádná sběrná větev `claude/vs-balik`; VS se slučuje do integrace po etapách za vypínačem v Nastavení (jen správce, výchozí VYP, s VYP aplikace přesně jako dnes — zlatá sada), J. V. testuje na testengscalc se ZAP. Realizace E0 + E1 + vypínač: sezení „VS-E0/E1 #570“, větev `claude/vs-e0e1` nad 3ff5403, čte podklady z této větve. Zapsáno v návrhu (stav, R21) a v plánu (oddíl 2 přepsán, E1 doplněna o vypínač, diagram, P1, šablona promptu). J. V. potvrdil 10. 11.: zakázka s víc šachtami při VYP — cena a dokumenty podle dat, editace šachet zamčená s hláškou (R21).
 
+**10. 11. — nové téma-sezení (session_018mwHQHfW4cMQ96zxkW9nUE) převzalo správu** po vyčerpaném sezení. Ověřeno:
+návrh R1–R21 a plán (oddíl 2, bod 8.6 potvrzen) jsou v souladu; artefakt prototypu PPL2GLSARywu7j2whk2KY2 je z tohoto
+sezení dostupný k publikaci (vlastník, verze shodná s `podklady/VS_PROTOTYP_06_11.html` = v9, vrstvy a1/a2/b obsažené).
+Integrace 3ff5403 (v10.11.1) proti základu prototypu 7eab7a8 mění jen AS #577 (záloha na Disk) — ceny a výpočet
+prototypu platí. Opraveny zbytky „balíčku“ v plánu (E0 otisky ze základu etapy 3ff5403, E6, #590, #596, bod 8.3 → 2.3).
+**Mezera:** prototyp v9 nemá vypínač R21 (stav VYP, zakázka s víc šachtami při VYP se zamčenou editací) — doplnit
+jako v10 na pokyn koordinace.
+
 **Další krok:** čekat na pokyn koordinace. Při spuštění etapy: větev `claude/vs-e<N>-…` nad zadaným SHA,
 hooky, pojistky testů, zlatá sada „1 šachta na haléř“, celé kolo (Playwright přes odkaz
 `node_modules/playwright`), mutace po částech, ohlásit koordinaci.
