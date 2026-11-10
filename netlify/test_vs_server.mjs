@@ -141,7 +141,18 @@ const SPATNE = [
   ['šachta 2: skupina můstků s neznámou podlahou', o => { o.dalsi[0].zadani.mustky = [{ ks: 1, podlaha: 'mramor' }]; }],
   ['šachta 2: číslo jako objekt', o => { o.dalsi[0].zadani.nastupiste = { a: 1 }; }],
   ['šachta 2: neznámý typ šachty', o => { o.dalsi[0].zadani.typSachty = 'podzemní'; }],
+  /* VS-E4/E3 (bod koordinace 1): ruční hodnoty specifikace šachty 2+ jen { hodnoty: { pole šachty: text } } */
+  ['techspec není objekt', o => { o.dalsi[0].techspec = 'x'; }],
+  ['techspec s klíčem mimo hodnoty', o => { o.dalsi[0].techspec = { hodnoty: {}, extra: [] }; }],
+  ['techspec hodnoty jako pole', o => { o.dalsi[0].techspec = { hodnoty: ['a'] }; }],
+  ['techspec pole za zakázku (lešení)', o => { o.dalsi[0].techspec = { hodnoty: { leseniUvnitr: 'ano' } }; }],
+  ['techspec neznámé pole', o => { o.dalsi[0].techspec = { hodnoty: { neexistuje: 'x' } }; }],
+  ['techspec hodnota není text', o => { o.dalsi[0].techspec = { hodnoty: { strecha: { a: 1 } } }; }],
+  ['techspec hodnota přes 2000 znaků', o => { o.dalsi[0].techspec = { hodnoty: { strecha: 'x'.repeat(2001) } }; }],
 ];
+{ const z = sDalsi('techspec šachty 2 platná', o => { o.dalsi[0].techspec = { hodnoty: { strecha: 'plochá', mustkyRozmer: '1,2 × 1,6 m' } }; });
+  const r = await uloz(z, cO);
+  test('zapnuto: platná techspec šachty 2 { hodnoty: { pole šachty: text } } se uloží (200)', r.status === 200 && r.ok, r); }
 for (const [jm, fn] of SPATNE) {
   const z = sDalsi('špatně: ' + jm, fn);
   const pred = pamet.size;

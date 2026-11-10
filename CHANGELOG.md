@@ -27,7 +27,12 @@ Nad integrací aaac150 (v10.11.4 = E2 v10.11.3 + E4 v10.11.4). Verzi přečíslu
   `vsNazvySachetText`), porovnání variant se štítkem pod názvem (porovnávají se součty).
 - Oprava během E3: obsluha tlačítka Součet se jmenovala jako funkce jádra `vsSoucet()` a v sestavení ji přepsala;
   přejmenováno a `test_vs_zadani.js` nově hlídá kolize jmen modulu obrazovky se zbytkem `src/`.
-- Testy: `src/test_vs_priplatky.js` (19), `src/test_vs_sleva.js` (19), `overit_vs_kalkulace.mjs` (23),
+- **Body koordinace po E4:** (1) server kontroluje `ock.dalsi[i].techspec` — jen `{ hodnoty: { <pole šachty>: text ≤ 2000 } }`
+  (`vsTechspecOk` ve `vsTvarProblemy`; pole za zakázku i neznámá pole 400); (5) přepínač šachty v Technické
+  specifikaci je se zapnutou funkcí táž volba jako otevřená šachta zadání (`TS_SACHTA` = `VS_UI.akt`, přepnutí
+  ve specifikaci přepne i zadání a kalkulaci); s vypnutou funkcí jako v E4 (náhled šachet 2+ jen ke čtení).
+- Testy: `src/test_vs_priplatky.js` (19), `src/test_vs_sleva.js` (19), `overit_vs_kalkulace.mjs` (25),
+  `netlify/test_vs_server.mjs` +8 (techspec, 65/0; na E2 7 FAIL), serverové mutace „[#570 E3]" 2/2,
   `overit_vs_zadani.mjs` rozšířen o slevu/CN a Detail; mutace „[#570 E3]" 10.
 
 ---

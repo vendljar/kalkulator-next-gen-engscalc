@@ -1,7 +1,7 @@
 # Předávka — 10. 11. 2026: VS-S1 #570 — E2 zadání (#592) + E3 kalkulace (#593) víc šachet, větev `claude/vs-s1-e2e3`
 
-Nad `079cfc6` (integrace v11.11.1 = E0/E1). **CHANGELOG v12.11.1 (E2) a v12.11.2 (E3)** — koordinace přečísluje;
-`verze.txt` = 10.11.1 (kontrola verze = den commitu + existující oddíl CHANGELOG; základ 079cfc6 nesl 11.11.1
+Nad `079cfc6`, po E2 sloučena integrace `aaac150` (E2 = v10.11.3, E4 = v10.11.4). **E3 = CHANGELOG v10.11.5**,
+`verze.txt` = 10.11.5 — koordinace přečísluje; dříve `verze.txt` = 10.11.1 (kontrola verze = den commitu + existující oddíl CHANGELOG; základ 079cfc6 nesl 11.11.1
 s commitem z 10. 11. a sám kontrolou verze neprojde). Neslučováno; do `test-draft`, `test` ani `main` nic; weby,
 Disk, Pipedrive nic. Commity: E2 `9909df5` + `ed1c5a7`/`879dc9b` (verze, harnessy), E3 `109f332`.
 
@@ -18,7 +18,8 @@ Disk, Pipedrive nic. Commity: E2 `9909df5` + `ed1c5a7`/`879dc9b` (verze, harness
 | E3 přehledy | ✅ | štítek „N variant / X ks" v seznamu a porovnání, hledání podle názvu šachty (`seznam.js`) |
 | testy | ✅ | `test_vs_zadani.js` 50, `test_vs_priplatky.js` 19, `test_vs_sleva.js` 19, `overit_vs_zadani.mjs` 52 (`KNG_DIST_ZAKLAD` = srovnání s 079cfc6), `overit_vs_kalkulace.mjs` 23; zlatá sada 319/319 |
 | mutace | ✅ | „[#570 E2]" 12/12, „[#570 E3]" 10/10 (`ui/vice_sachet_ui.js`, `seznam.js` v JADRA) |
-| kolo `--bez-mutaci` | viz níže | E2 nad 879dc9b; E3 nad 109f332 |
+| body koordinace po E4 | ✅ | (1) `vsTechspecOk` — server kontroluje `dalsi[i].techspec`; (5) `TS_SACHTA` = `VS_UI.akt` se zapnutou funkcí |
+| kolo `--bez-mutaci` | E2 ✅, E3 viz hlášení | E2 nad 879dc9b VŠE ZELENÉ (413/0/7, +400 dní 333/0/1, statické 5/5); E3 po sloučení integrace |
 
 **Pozor pro další etapy:** sestavení je jeden `<script>` — funkce se stejným jménem v jiném souboru tiše přepíše
 jinou (E3: `vsSoucet` obrazovky přepsala `vsSoucet` jádra → zacyklený výpočet). `test_vs_zadani.js` hlídá jen

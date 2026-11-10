@@ -130,6 +130,12 @@ test('Detail výpočtu = otevřená šachta B', await p.evaluate(() => {
   return document.getElementById('page-detail').textContent.indexOf('17,3') >= 0;
 }));
 
+/* 6b. specifikace: přepínač šachty = otevřená šachta zadání (bod koordinace 5) */
+test('specifikace sleduje otevřenou šachtu zadání', await p.evaluate(() => { vsAkt(1); return tsVsKontext().i === 1; }));
+test('přepnutí šachty ve specifikaci přepne i zadání (Z) a kalkulaci', await p.evaluate(() => {
+  tsSachtaPrepni(0); return VS_UI.akt === 0 && Z === OCK.zadani && tsVsKontext().i === 0; }));
+await p.evaluate(() => vsAkt(1));
+
 /* 5. seznam a porovnání */
 await p.evaluate(() => { varNova && varNova(); });
 await p.waitForTimeout(150);
