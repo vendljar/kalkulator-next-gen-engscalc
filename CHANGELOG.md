@@ -8,6 +8,32 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.11.1 — VS-E2 #570: víc šachet v nabídce — zadání: Počet variant šachet, Počet kusů, karta Šachty varianty (jen se zapnutým vypínačem), větev claude/vs-s1-e2e3
+
+Nad `079cfc6` (integrace v11.11.1 = E0/E1). Verzi přečísluje koordinace. Na webech, Disku ani v Pipedrive nic.
+Závazné podklady ve větvi `claude/vs-vice-sachet` (návrh R1–R21, plán E2, prototyp v9). **S vypnutým vypínačem
+je Kalkulace OCK znak po znaku jako 079cfc6** (harness) a zlatá sada 319/319 beze změny otisků.
+
+- **ZAP + jedna šachta (R16, R17, R20):** v nadpisu karty Zadání šachty pole **Počet variant šachet v nabídce**
+  (1–10) a **Počet kusů** (1–20), obě `CISLO_POLE`; jinak obrazovka beze změny.
+- **Režim víc šachet** (≥ 2 varianty nebo ks > 1): karta **Šachty varianty** (přepínač šachet, Název, Počet
+  stejných kusů, Kopírovat šachtu, Smazat šachtu; v nadpisu Počet variant a **Počet šachet celkem** = Σ ks, R19),
+  nadpis „Zadání šachty — Název" s „Počet kusů této šachty: N ks". Zvýšení počtu přidá kopie poslední šachty
+  („Šachta N"), snížení i Smazat se **potvrzují na stránce** se jmény šachet (R18), omyl vrátí Zpět. Snížení
+  na 1 posílá `dalsi: []` — klíč se nemaže (server by uložení odmítl 409).
+- Globální `Z` míří na **zadání otevřené šachty** (`vsSyncZ` v `syncVarianta`), takže Zadání, Opláštění,
+  **Můstky po šachtách**, Dimenze profilů a Práce a režie pracují s ní; bubliny, ATYP, standard a tabulky
+  Cenové kalkulace čtou výsledek otevřené šachty (`vypocetSachtyAkt`; řádek CELKEM šachty nezaokrouhlený),
+  hlavička ceny celou variantu. Trvalé položky ceníku dostanou se ZAP všechny šachty.
+- **Model 1:** pole zhasnutá, přidání šachty odmítnuto; u víc šachet je volba Model 1 zakázaná i v `set()`.
+- **VYP + zakázka s víc šachtami (R21):** karta jen vypíše šachty s lištou „funkce je v Nastavení vypnutá",
+  zadání = šachta 1, změny šachet odmítnuty; cena podle dat.
+- Vypínač se čte po přihlášení (`onlineNactiFunkce` v načtení po přihlášení; chyba = vypnuto).
+- Testy: `src/test_vs_zadani.js` (nová, 49), `overit_vs_zadani.mjs` (nový, 50; `KNG_DIST_ZAKLAD` = srovnání se
+  základem znak po znaku), mutace „[#570 E2]" 12; úprava `test_vychozi_po_refreshi.js` (tabulky z `rS`).
+
+---
+
 ## v11.11.1 — VS-E0/E1 #570: víc šachet v nabídce — zlatá sada, jádro, server a vypínač správce (výchozí vypnuto), větev claude/vs-e0e1
 
 Nad `3ff5403` (integrace = test v10.11.1; main = v6.11.5). Verzi přečísluje koordinace (`verze.txt` zůstává

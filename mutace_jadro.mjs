@@ -156,7 +156,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* vice_sachet.js (VS #570 E1, 10. 11. 2026): víc šachet v nabídce — obal
    * výpočtu, součet × ks, CEIL jen na součtu, rozpočet do šachet. Hlídají
    * src/test_vs_soucet.js, src/test_vs_rozpocet.js a zlatá sada test_vs_zlata.js. */
-  'vice_sachet.js'];
+  'vice_sachet.js',
+  /* ui/vice_sachet_ui.js (VS #570 E2, 10. 11. 2026): zadání víc šachet —
+   * počet variant, kusy, kopie, mazání s potvrzením, vypínač, Model 1.
+   * Hlídá src/test_vs_zadani.js (prohlížeč: overit_vs_zadani.mjs). */
+  'ui/vice_sachet_ui.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -307,6 +311,56 @@ const MUTACE = [
     hledej: "      ock: (typeof vypocetOckDat === 'function') ? vypocetOckDat(d, jekly) : vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes),",
     nahrad: '      ock: vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes),',
     proc: 'dotisk odeslané nabídky víc šachet by vydal cenu jen šachty 1', sady: ['test_vs_soucet.js'] },
+  /* VS #570 E2 (10. 11. 2026): zadání víc šachet na obrazovce. Hlídá
+   * src/test_vs_zadani.js (pole `sady` = pustit ji první). [#570 E2] */
+  { nazev: 'VS-E2: snížení na 1 šachtu smaže klíč dalsi [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  OCK.dalsi = (Array.isArray(OCK.dalsi) ? OCK.dalsi : []).filter((_, j) => !smaz.has(j + 1));",
+    nahrad: "  OCK.dalsi = (Array.isArray(OCK.dalsi) ? OCK.dalsi : []).filter((_, j) => !smaz.has(j + 1));\n  if (!OCK.dalsi.length) delete OCK.dalsi;",
+    proc: 'server by uložení odmítl (409 — ztráta šachet proti uložené verzi)', sady: ['test_vs_zadani.js'] },
+  { nazev: 'VS-E2: nová šachta sdílí zadání s předlohou [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "const vsKopieDat = o => JSON.parse(JSON.stringify(o));",
+    nahrad: "const vsKopieDat = o => o;",
+    proc: 'změna rozměru jedné šachty by přepsala i druhou', sady: ['test_vs_zadani.js'] },
+  { nazev: 'VS-E2: šachty jdou měnit i s vypnutou funkcí [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  if (!vsZap()) {\n    hlaska('Víc šachet v nabídce je v Nastavení vypnuté",
+    nahrad: "  if (false) {\n    hlaska('Víc šachet v nabídce je v Nastavení vypnuté",
+    proc: 'na ostrém webu by šlo založit víc šachet (R21), server by uložení odmítl', sady: ['test_vs_zadani.js'] },
+  { nazev: 'VS-E2: víc šachet i v Modelu 1 [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  if (!OCK.fixes) {\n    hlaska(",
+    nahrad: "  if (false) {\n    hlaska(",
+    proc: 'Model 1 (předloha Excel) počítá jen šachtu 1 — přidané šachty by se v ceně neobjevily', sady: ['test_vs_zadani.js'] },
+  { nazev: 'VS-E2: vypnutá funkce nechá otevřenou šachtu 2+ [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  if (!vsZap() || !OCK.fixes) VS_UI.akt = 0;",
+    nahrad: "",
+    proc: 'zápis do šachty 2 s vypnutou funkcí by server odmítl (409), Model 1 by ukazoval šachtu, kterou nepočítá', sady: ['test_vs_zadani.js'] },
+  { nazev: 'VS-E2: 1 ks šachty 1 zůstane v datech [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  if (VS_UI.akt === 0) { if (k === 1) delete OCK.ks; else OCK.ks = k; }",
+    nahrad: "  if (VS_UI.akt === 0) { OCK.ks = k; }",
+    proc: 'návrat na 1 ks by v datech nechal šachtový údaj (R20)', sady: ['test_vs_zadani.js'] },
+  { nazev: 'VS-E2: snížení počtu bez potvrzení [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "    VS_UI.potvrdit = l.map((_, i) => i).slice(n);\n    render();\n    return;",
+    nahrad: "    OCK.dalsi = OCK.dalsi.slice(0, n - 1);\n    vsZmeneno();\n    return;",
+    proc: 'překlep v počtu by bez otázky smazal šachty i se zadáním (R18)', sady: ['test_vs_zadani.js'] },
+  { nazev: 'VS-E2: počet variant bez horní meze [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  const n = vsCeleCislo(t, 1, VS_VARIANT_MAX);",
+    nahrad: "  const n = vsCeleCislo(t, 1, 99);",
+    proc: 'víc než 10 variant (R10) — server by uložení odmítl', sady: ['test_vs_zadani.js'] },
+  { nazev: 'VS-E2: katalog do šachet 2+ i s vypnutou funkcí [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  if (!zamcena && vsZap() && typeof katalogAplikuj === 'function'",
+    nahrad: "  if (!zamcena && typeof katalogAplikuj === 'function'",
+    proc: 'pouhé otevření zakázky by změnilo šachty a server by uložení odmítl (409)', sady: ['test_vs_zadani.js'] },
+  { nazev: 'VS-E2: pole Počet variant i s vypnutou funkcí [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  if (!rez && !vsZap()) return '';",
+    nahrad: "  if (!rez && false) return '';",
+    proc: 'ostrý web by ukázal pole víc šachet (R21 — vypnuto = aplikace jako dosud)', sady: ['test_vs_zadani.js'] },
+  { nazev: 'VS-E2: kalkulace ukazuje součet místo otevřené šachty [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  if (VS_UI.pohled === 'soucet') return r;",
+    nahrad: "  return r;",
+    proc: 'ruční úprava řádku by šla do jiné šachty, než jakou tabulka ukazuje', sady: ['test_vs_zadani.js'] },
+  { nazev: 'VS-E2: zamčená varianta dovolí měnit šachty [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  if (typeof zamekStop === 'function' && zamekStop()) return true;",
+    nahrad: "",
+    proc: 'odeslaná nabídka by šla tiše přecenit přidáním šachty', sady: ['test_vs_zadani.js'] },
   /* AS #577 (10. 11. 2026): jméno kopie pro skript Apps Script. Hlídá
    * src/test_577_jmeno_kopie.js (pole `sady` = pustit ji první). */
   { nazev: 'AS: jméno kopie s neznámým prostředím [#577]', soubor: 'retence_zaloh.js',

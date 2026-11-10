@@ -490,6 +490,16 @@
   .rada-prep button + button { border-left:1px solid var(--line); }
   .rada-prep button.on { background:#eaf0ff; color:var(--acc); }
   .rada-prep button.on.zahr { background:#ffedd5; color:#b45309; }
+  /* VS #570 — víc šachet v nabídce (ui/vice_sachet_ui.js); bez víc šachet se nepoužije. */
+  .vs-pocet { font-weight:400; text-transform:none; letter-spacing:0; display:inline-flex; align-items:center; gap:6px; font-size:12.5px; line-height:1; margin:-10px 0; height:0; overflow:visible; }
+  .vs-pocet input[data-cislo] { text-align:center; }
+  .vs-blok { grid-column:1 / -1; min-width:0; }
+  .vs-radek { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0; }
+  .vs-radek input[type=text] { width:240px; text-align:left; }
+  .vs-radek input[data-cislo] { width:64px; }
+  .vs-soucet-ro input, .vs-soucet-ro select, .vs-soucet-ro button, .vs-soucet-ro .grip { pointer-events:none; opacity:.6; }
+  .vs-tab td.r, .vs-tab th.r { text-align:right; white-space:nowrap; }
+  .vs-tab td, .vs-tab th { text-align:left; }
   .zak-bar.rada-zahr { background:#fff7ed; border-color:#fdba74; }
   .zak-bar.rada-zahr .zak-bar-h { background:#ffedd5; color:#b45309; border-bottom-color:#fdba74; }
   .zak-bar.rada-zahr .zak-head input, .zak-bar.rada-zahr .zak-head select { background:#fffdf9; border-color:#f3d5b0; }
