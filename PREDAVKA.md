@@ -40,7 +40,7 @@ a mění sousední soubory → po každém „AKTUALIZUJ VS nad <SHA>“ ověři
 
 **10. 11. večer: O15 = a → R20** (pole Počet kusů i u jedné šachty), prototyp v9, návrh uzavřen R1–R20. **Realizace E0 + E1 běží v samostatném sezení**; toto sezení zůstává správcem návrhu, plánu a prototypu — držet podklady v této větvi aktuální.
 
-**10. 11. — změna plánu (J. V.) → R21:** žádná sběrná větev `claude/vs-balik`; VS se slučuje do integrace po etapách za vypínačem v Nastavení (jen správce, výchozí VYP, s VYP aplikace přesně jako dnes — zlatá sada), J. V. testuje na testengscalc se ZAP. Realizace E0 + E1 + vypínač: sezení „VS-E0/E1 #570“, větev `claude/vs-e0e1` nad 3ff5403, čte podklady z této větve. Zapsáno v návrhu (stav, R21) a v plánu (oddíl 2 přepsán, E1 doplněna o vypínač, diagram, P1, šablona promptu). Otevřené k potvrzení J. V.: chování zakázky s víc šachtami při VYP (návrh: cena podle dat, editace zamčená).
+**10. 11. — změna plánu (J. V.) → R21:** žádná sběrná větev `claude/vs-balik`; VS se slučuje do integrace po etapách za vypínačem v Nastavení (jen správce, výchozí VYP, s VYP aplikace přesně jako dnes — zlatá sada), J. V. testuje na testengscalc se ZAP. Realizace E0 + E1 + vypínač: sezení „VS-E0/E1 #570“, větev `claude/vs-e0e1` nad 3ff5403, čte podklady z této větve. Zapsáno v návrhu (stav, R21) a v plánu (oddíl 2 přepsán, E1 doplněna o vypínač, diagram, P1, šablona promptu). J. V. potvrdil 10. 11.: zakázka s víc šachtami při VYP — cena a dokumenty podle dat, editace šachet zamčená s hláškou (R21).
 
 **Další krok:** čekat na pokyn koordinace. Při spuštění etapy: větev `claude/vs-e<N>-…` nad zadaným SHA,
 hooky, pojistky testů, zlatá sada „1 šachta na haléř“, celé kolo (Playwright přes odkaz

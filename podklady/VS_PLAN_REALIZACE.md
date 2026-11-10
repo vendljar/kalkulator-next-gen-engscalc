@@ -44,8 +44,8 @@ Původní plán se sběrnou větví `claude/vs-balik` (celý balíček najednou)
    - Zakázka, která už má víc šachet (`ock.dalsi` nebo ks > 1), a vypínač je
      VYP: výpočet a dokumenty se **počítají podle dat** (cena se vypnutím
      nemění), editace šachet je nedostupná a lišta řekne „Zakázka má víc
-     šachet — funkce je v Nastavení vypnutá“. (K potvrzení J. V.; jinak by
-     vypnutí měnilo cenu uložených nabídek.)
+     šachet — funkce je v Nastavení vypnutá“. (Potvrzeno J. V. 10. 11.;
+     vypnutí tak nemění cenu uložených nabídek.)
 2. **Každá etapa se slučuje do integrace samostatně** (běžný postup:
    vlastní větev `claude/vs-e<N>-…` nad aktuální integrací, celé kolo,
    sloučení na pokyn koordinace, vlastní verze). Rozpracovaná funkce je
@@ -277,7 +277,7 @@ nejistota je hlavně v E4 (Word šablona) a v kolizích se souběžnými dávkam
 4. **Pipedrive:** potvrdit, do kterého pole dealu jde seznam variant
    (poznámka dealu, nebo existující textové pole z mapy #115/#553).
 5. **Čas na ruční test** na testengscalc se zapnutým vypínačem po sloučení každé etapy.
-6. **Potvrdit chování zakázky s víc šachtami při vypnutém vypínači** (oddíl 2, bod 1: cena podle dat, editace zamčená).
+6. ~~Chování zakázky s víc šachtami při VYP~~ — rozhodnuto 10. 11. (cena a dokumenty podle dat, editace zamčená s hláškou; R21).
 
 ---
 
