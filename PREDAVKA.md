@@ -1,6 +1,6 @@
 # Předávka — 10. 11. 2026: VS-E5 #570 (#595) — výstupy za zakázku s víc šachtami (S3), větev `claude/vs-s3-e5`
 
-Nad `079cfc6` (integrace v11.11.1 = E0/E1). **CHANGELOG v12.11.x** (koordinace přečísluje). Neslučováno; do
+Nad `079cfc6` (integrace v11.11.1 = E0/E1). **CHANGELOG v10.11.3** (koordinace přečísluje). Neslučováno; do
 `test-draft`, `test` ani `main` nic. Na webech, Disku ani v Pipedrive nic. Paralelně S1 (E2/E3) a S2 (E4).
 
 | úkol | stav | kde |

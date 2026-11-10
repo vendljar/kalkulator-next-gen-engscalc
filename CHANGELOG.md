@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v12.11.x — VS-E5 #570: víc šachet ve výstupech za zakázku — krycí list, SoD, objednané příplatky, controlling, Pipedrive náhled, zámek, kontroly (#595), větev claude/vs-s3-e5
+## v10.11.3 — VS-E5 #570: víc šachet ve výstupech za zakázku — krycí list, SoD, objednané příplatky, controlling, Pipedrive náhled, zámek, kontroly (#595), větev claude/vs-s3-e5
 
 Nad `079cfc6` (integrace v11.11.1 = E0/E1). Verzi přečísluje koordinace. Sezení S3, paralelně s S1 (E2/E3) a S2 (E4).
 Všechno čte výsledek obalu (`vysl.sachty[]`, u odeslané nabídky zmrazený v zámku) — **jedna šachta (bez `dalsi`,
