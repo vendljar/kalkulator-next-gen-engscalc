@@ -307,3 +307,103 @@ if (typeof module !== 'undefined' && module.exports)
   module.exports = { VS_VARIANT_MAX, VS_KS_MAX, VS_NAZEV_MAX, vsKs, vsDalsi, rezimViceSachet, vsMaData, sachtyZ, vsNazev, vsPocty,
     rozpocetSachet, vsKlicPriplatku, vsKlicRadku, vsSlucRadky, priplatkySloucene, vsSoucetSouhrnu, vsSoucet,
     vypocetZakazkyOck, vypocetOckDat, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska, vsZakazkaMaData };
+
+/* ============================================================
+ * VS-E5 (#595, sezení S3, 10. 11. 2026) — VÝSTUPY ZA ZAKÁZKU: krycí list,
+ * SoD, controlling, Pipedrive, zámek a kontroly. Jen přidané funkce (jádro
+ * E1 výš se nemění). Všechno čte VÝSLEDEK (`vysl.sachty[]` z obalu nebo ze
+ * zmrazeného zámku), ne živá data — dotisk odeslané nabídky tak dá tentýž
+ * rozpis (ceny `cenaRozpis`, názvy, ks), jaký odešel. Výsledek bez
+ * `sachty[]` (jedna šachta, starý zámek bez `sachtyVerze`) = null → výstupy
+ * přesně jako dnes (zlatá sada).
+ * ============================================================ */
+
+/* Čeština: 1 varianta, 2–4 varianty, 5+ variant (R19: „variant šachet"
+ * × „šachet celkem (ks)"). */
+function vsVariantText(n) {
+  const k = Math.abs(Math.round(+n || 0));
+  return k + ' ' + (k === 1 ? 'varianta šachty' : (k >= 2 && k <= 4 ? 'varianty šachet' : 'variant šachet'));
+}
+function vsPoctyText(variant, celkem) {
+  return vsVariantText(variant) + ', celkem ' + (Math.round(+celkem || 0)) + ' ks';
+}
+
+/* Má výsledek šachty můstky (#560)? Skupiny s ks > 0 nebo neprázdná sekce. */
+function vsMaMustky(vysl) {
+  const m = vysl && vysl.mustky;
+  if (m && Array.isArray(m.skupiny) && m.skupiny.some(s => s && +s.ks > 0)) return true;
+  const sek = vysl && vysl.sekce && vysl.sekce.mustky;
+  return Array.isArray(sek) && sek.length > 0;
+}
+
+/* Rozpis šachet z výsledku OCK pro výstupy. null = jedna šachta (dnešní
+ * výstupy). `cena` = cenaRozpis (celé Kč, Σ = základ před slevou, R7). */
+function vsVystup(vysl) {
+  if (!vysl || typeof vysl !== 'object' || !Array.isArray(vysl.sachty) || !vysl.sachty.length) return null;
+  const sachty = vysl.sachty.map((s, i) => ({
+    id: String((s && s.id) || ('s' + (i + 1))),
+    nazev: vsNazev(s, i),
+    ks: vsKs(s && s.ks),
+    cena: (s && typeof s.cenaRozpis === 'number' && isFinite(s.cenaRozpis)) ? s.cenaRozpis : 0,
+    mustky: vsMaMustky(s && s.vysl),
+    vysl: (s && s.vysl) || null,
+  }));
+  const celkem = sachty.reduce((a, s) => a + s.ks, 0);
+  const zaklad = (vysl.souhrn && typeof vysl.souhrn.zakladCena === 'number') ? vysl.souhrn.zakladCena
+    : sachty.reduce((a, s) => a + s.cena, 0);
+  return { variant: sachty.length, celkem, sachty, zaklad, text: vsPoctyText(sachty.length, celkem) };
+}
+
+/* „Výtah A 1 ks, Výtah B 2 ks" (R6 poznámka Pipedrive, předmět SoD). */
+function vsSeznamText(vo) {
+  return vo ? vo.sachty.map(s => s.nazev + ' ' + s.ks + ' ks').join(', ') : '';
+}
+
+/* Popis předmětu za zakázku: „2 varianty šachet, celkem 3 ks (Výtah A 1 ks,
+ * Výtah B 2 ks)". */
+function vsPredmetText(vo) {
+  return vo ? vo.text + ' (' + vsSeznamText(vo) + ')' : '';
+}
+
+/* ATYP zakázky s víc šachtami: atypická je, je-li atypická kterákoli šachta
+ * (termín dodání krycího listu, Pipedrive). Jedna šachta = její příznak. */
+function vsAtyp(ock) {
+  if (!ock || typeof ock !== 'object') return false;
+  return sachtyZ(ock).some(s => !!(s.zadani && s.zadani.atyp));
+}
+
+/* Příplatky v nabídce po šachtách (R13): příplatek patří do nabídky, má-li
+ * ho aspoň jedna šachta zaškrtnutý ve sloupci Nabídka (`priplatkyVynechat`
+ * je po šachtách). Vrací [{ nazev, sachty: [názvy] }] v pořadí prvního
+ * výskytu (jako R8: šachta 1, pak ostatní). */
+function vsPriplatkyVNabidce(vysl, ock) {
+  const vo = vsVystup(vysl);
+  if (!vo) return null;
+  const l = sachtyZ(ock);
+  const mapa = new Map(), out = [];
+  vo.sachty.forEach((s, i) => {
+    const vyn = (l[i] && l[i].zadani && Array.isArray(l[i].zadani.priplatkyVynechat)) ? l[i].zadani.priplatkyVynechat : [];
+    ((s.vysl && s.vysl.priplatky) || []).forEach(p => {
+      if (!p || vyn.indexOf(p.key) >= 0) return;
+      const k = vsKlicPriplatku(p) + '|' + vsSazba(p);
+      let x = mapa.get(k);
+      if (!x) { x = { nazev: String(p.nazev || ''), sachty: [] }; mapa.set(k, x); out.push(x); }
+      if (x.sachty.indexOf(s.nazev) < 0) x.sachty.push(s.nazev);
+    });
+  });
+  return out;
+}
+
+/* ZAMČENÁ VARIANTA A ŠACHTY (návrh 5.5): odeslanou nabídku nejde měnit —
+ * přidat, kopírovat ani smazat šachtu; nová šachta = nová varianta (klon).
+ * Pro UI (E2): vrací důvod, nebo ''. Server totéž drží porovnáním dat
+ * zamčené varianty (zamekDataPorovnani — `ock.dalsi` je v datech). */
+function vsZamekZmenaSachet(v) {
+  if (!v || !v.zamek || !v.zamek.zamceno) return '';
+  return 'Nabídka této varianty je odeslaná (uzamčená) — šachty v ní nejde přidat, kopírovat ani smazat. '
+    + 'Novou šachtu přidejte v nové variantě (klon).';
+}
+
+if (typeof module !== 'undefined' && module.exports)
+  Object.assign(module.exports, { vsVariantText, vsPoctyText, vsMaMustky, vsVystup, vsSeznamText, vsPredmetText, vsAtyp,
+    vsPriplatkyVNabidce, vsZamekZmenaSachet });

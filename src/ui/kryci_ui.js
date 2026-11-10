@@ -257,7 +257,9 @@ function renderKryci() {
     }).join('');
     /* IK: interní poznámky hned za Základními údaji (J. V. 4. 11. 2026). */
     const ik = (s.sekce === KRYCI_IK_ZA_SEKCI && typeof poznamkyKryciBlok === 'function') ? poznamkyKryciBlok('ock') : '';
-    return `<h3>${s.sekce}</h3>${rows}${ik}`;
+    /* VS-E5 (#595): tabulka šachet za Základními údaji — jen víc šachet. */
+    const vsBlok = (s.sekce === 'Základní údaje') ? kryciSachtyBlok(c) : '';
+    return `<h3>${s.sekce}</h3>${rows}${ik}${vsBlok}`;
   }).join('');
 
   el.innerHTML = `<div class="kl-doc">
@@ -314,6 +316,17 @@ function kryciTiskTabulka(s) {
     return `<table>${tr(s.sloupce, true)}${s.radky.map(r => tr(r)).join('')}</table>`;
   }
   return `<table>${s.radky.map(r => `<tr><td class="l">${e2(r[0])}</td><td>${e2(r[1] || '')}</td></tr>`).join('')}</table>`;
+}
+/* ŠACHTY V NABÍDCE (VS-E5 #595, R9): jeden krycí list za variantu
+ * s tabulkou šachet — jen ke čtení, počítá kryciSachtySekce (kryci.js) ze
+ * stejného výsledku jako Word a tisk. Jedna šachta = nic (list jako dnes). */
+function kryciSachtyBlok(c) {
+  const s = (typeof kryciSachtySekce === 'function') ? kryciSachtySekce(c) : null;
+  if (!s) return '';
+  return `<h3>${esc(s.sekce)} <span class="pill mut kl-verze" title="v obou verzích">BO+Tech</span></h3>
+    <div class="note">Jeden krycí list za variantu: ${esc(c.vs.text)}. Ceny šachet po rozpočtu zaokrouhlení — součet
+    sedí na základ před slevou; hodnota zakázky, hodiny a materiál jsou součtem šachet.</div>
+    <div id="kryciSachty">${kryciTiskTabulka(s)}</div>`;
 }
 /* HODINY Z KALKULACE na konci krycího listu (OCK i PROJ, 14. 10. 2026) —
  * jen ke čtení; počítá kryciHodiny (kryci.js), do výstupu jde ve verzi BO.

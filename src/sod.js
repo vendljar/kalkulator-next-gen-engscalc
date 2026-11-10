@@ -213,6 +213,7 @@ function sodData(zak, varianta, jekly, lang, sablona) {
     sodDphSymboly(d.placeholders, kryciPoleHodnota(zak, varianta, 'sodDphRezim'), kryciPoleHodnota(zak, varianta, 'sodMistoPlneni'), L);
   sodSkladne(d.placeholders, (typeof firmaAktualni === 'function') ? firmaAktualni() : null, d.mena, L);
   sodPrelozHodnoty(d.placeholders, L);
+  sodSachtySymboly(d, zak, varianta, jekly, L);   // VS-E5: předmět díla a rozpis šachet (jen víc šachet)
   /* Splátky z platebního kalendáře krycího listu (K18-N100). */
   const odstavcePryc = objPryc.slice();
   if (typeof kryciSodPlatby === 'function') {
@@ -227,6 +228,39 @@ function sodData(zak, varianta, jekly, lang, sablona) {
       kryciPoleHodnota(zak, varianta, 'pokutaDodavka')));
   return Object.assign({}, d,
     { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') }, odstavcePryc.length ? { odstavcePryc } : {});
+}
+
+/* VÍC ŠACHET VE SMLOUVĚ O DÍLO (VS-E5 #595, návrh oddíl 4 a 5.2). Cena díla
+ * je cena nabídky — součet šachet (CENA_BEZ_DPH beze změny, smlouva vzniká
+ * z nabidkaData). Nové symboly jen u víc šachet (u jedné šachty se do dat
+ * nic nepřidá — zlatá sada):
+ *   {{SACHTY_SOD_PREDMET}}  „2 varianty šachet, celkem 3 ks (Výtah A 1 ks,
+ *                           Výtah B 2 ks)" — předmět díla vyjmenuje varianty,
+ *   {{SACHTY_SOD_ROZPIS}}   řádek na variantu „Výtah B – 2 ks – 2 082 502 Kč"
+ *                           (rozpočet R7, ceny před slevou; v eurech po
+ *                           položkách nahoru jako nabídka, #155).
+ * Šablona SoD bez těch symbolů dostane jen celkovou cenu — předmět se pak
+ * doplní ve Wordu (symboly zůstanou vidět jen v šabloně, která je má).
+ * Čte výsledek strany OCK (u odeslané nabídky zmrazený), dotisk dá totéž. */
+function sodSachtySymboly(d, zak, varianta, jekly, L) {
+  if (typeof vsVystup !== 'function' || !d || !d.placeholders) return;
+  let r = null;
+  try {
+    r = (typeof vysledekStrany === 'function') ? vysledekStrany(zak, varianta, 'ock', jekly)
+      : (typeof vypocetZ === 'function' ? vypocetZ(varianta, jekly) : null);
+  } catch (e) { r = null; }
+  const vo = vsVystup(r);
+  if (!vo) return;
+  const P = t => (L && L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
+  const kc = (d.mena && typeof d.mena.fmt === 'function') ? d.mena.fmt
+    : (n => Math.round(+n || 0).toLocaleString('cs-CZ') + ' Kč');
+  const na = (d.mena && typeof d.mena.na === 'function') ? d.mena.na : (n => n);
+  const k = vo.variant;
+  const druh = k === 1 ? 'varianta šachty' : (k >= 2 && k <= 4 ? 'varianty šachet' : 'variant šachet');
+  const seznam = vo.sachty.map(x => x.nazev + ' ' + x.ks + ' ks').join(', ');
+  d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + P(druh) + ', ' + P('celkem') + ' ' + vo.celkem + ' ks (' + seznam + ')';
+  d.placeholders.SACHTY_SOD_ROZPIS = vo.sachty.map(x => x.nazev + (x.mustky ? ', ' + P('vč. můstků') : '')
+    + ' – ' + x.ks + ' ks – ' + kc(na(x.cena))).join('\n');
 }
 
 /* OBJEDNANÉ PŘÍPLATKY VE SMLOUVĚ (#447 C6, rozhodnutí J. V. 21. 10. 2026,
@@ -515,4 +549,4 @@ if (typeof dokumentRegistruj === 'function') {
 
 if (typeof module !== 'undefined')
   module.exports = { SOD_OBJ_BEZ_ROZPISU, sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
-    sodJazykZabrana, sodPrelozHodnoty, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };
+    sodJazykZabrana, sodPrelozHodnoty, sodSachtySymboly, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };

@@ -1378,7 +1378,111 @@ const KONTROLY = [
         + 'Nahrajte šablonu nabídky PROJ v8, nebo věty doplňte ve Wordu ručně.' };
     },
   },
+  /* ---- VS-E5 (#595): víc šachet v nabídce OCK ---- */
+  {
+    /* MODEL 1 A VÍC ŠACHET (návrh 3.5, R3): Model 1 je předloha Excel 1:1
+     * pro jednu šachtu — obal výpočtu u něj počítá jen šachtu 1. Varianta
+     * s dalšími šachtami (nebo ks > 1) v Modelu 1 by odešla s cenou jedné
+     * šachty → zábrana dokumentů OCK. Server takovou zakázku se zapnutým
+     * vypínačem neuloží; tohle chytá ručně upravený soubor a VYP (R21). */
+    kod: 'vsModel1', kde: 'Kalkulace OCK', nazev: 'Víc šachet v Modelu 1',
+    zabranaMozna: true, strany: ['ock'],
+    zjisti(ctx) {
+      const vs = ctx.__vs;
+      if (!vs || vs.ock.fixes !== false) return null;
+      return { uroven: KONTROLY_UROVEN_ZABRANA,
+        text: 'Varianta má ' + vs.pocty + ', ale počítá se Modelem 1 — ten počítá jen šachtu 1 (předloha Excel). '
+          + 'Přepněte variantu na Model 2. Dokument nevznikne, dokud se to neopraví.' };
+    },
+  },
+  {
+    /* ŠABLONA CN BEZ ROZPISU ŠACHET (návrh 5.1, zábrana v15/v16): šablona
+     * nabídky starší než v17 nemá smyčku šachet — Word by vytiskl jednu
+     * šachtu s cenou celé zakázky. Zastaví JEN Word nabídky OCK
+     * (`dokumenty`), náhled a ostatní dokumenty ne. Symboly šablony stahuje
+     * UI na pozadí; nevíme-li, mlčí (jako slevaWord). Rozpozná ji funkce E4
+     * (`vsSablonaUmiSachty`, nabidka.js), bez ní podle symbolů SACHTA_*. */
+    kod: 'vsSablona', kde: 'Nabídka', nazev: 'Šablona nabídky neumí víc šachet',
+    zabranaMozna: true, strany: ['ock'],
+    zjisti(ctx) {
+      if (!ctx.__vs) return null;
+      const s = ctx.sablonaNabidka;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      const umi = (typeof vsSablonaUmiSachty === 'function') ? vsSablonaUmiSachty(s.symboly)
+        : s.symboly.some(k => /^SACHTA_/.test(k));
+      if (umi) return null;
+      return { uroven: KONTROLY_UROVEN_ZABRANA, dokumenty: ['nabidka'],
+        text: 'Šablona nabídky OCK' + (s.nazev ? ' „' + s.nazev + '"' : '') + (s.verze ? ' (verze ' + s.verze + ')' : '')
+          + ' neumí rozpis po šachtách (v15/v16) — Word nabídky s víc šachtami nevznikne. '
+          + 'Administrátor nahraje šablonu v17 (Nastavení → Šablony → Cenová nabídka OCK).' };
+    },
+  },
 ];
+
+/* VÍC ŠACHET V KONTROLÁCH (VS-E5 #595, návrh 5.6). Pravidla nad ZADÁNÍM
+ * a VÝSLEDKEM šachty (rozměry, nástupiště, světlíky, můstky, opláštění,
+ * ATYP…) se u víc šachet ptají každé šachty zvlášť — její zadání a její
+ * výsledek (`vysl.sachty[i].vysl`), stejně jako u šachty 1; nález nese
+ * název šachty („Výtah B: …") a jeden kód za všechny šachty. Pravidla za
+ * variantu (cena, marže, sleva, ruční ceny, šablony, hlavička) běží jednou
+ * nad SOUČTEM. Jedna šachta = beze změny. */
+const KONTROLY_PO_SACHTE = ['rozmery', 'profilNeznamy', 'zapornaPolozka', 'stanice', 'vysky', 'bokyDveri', 'mustky',
+  'mustkyPrechodove', 'mustekStrecha', 'mustekRozmer', 'statikaDvakrat', 'oplasteniBezKonstrukce', 'atypBezProjekce', 'atypBezCeny'];
+/* Data OCK varianty v režimu víc šachet, nebo null. `ctx.ock` (v.data.ock)
+ * dodává UI; bez něj se varianta najde v zakázce podle zadání šachty. */
+function kontrolyVsOck(ctx) {
+  if (!ctx || ctx.jenProj || typeof rezimViceSachet !== 'function') return null;
+  let ock = (ctx.ock && typeof ctx.ock === 'object') ? ctx.ock : null;
+  if (!ock && ctx.zadani && ctx.zak && Array.isArray(ctx.zak.varianty)) {
+    const v = ctx.zak.varianty.find(x => x && x.data && x.data.ock && (x.data.ock.zadani === ctx.zadani
+      || (Array.isArray(x.data.ock.dalsi) && x.data.ock.dalsi.some(s => s && s.zadani === ctx.zadani))));
+    ock = v ? v.data.ock : null;
+  }
+  return (ock && rezimViceSachet(ock)) ? ock : null;
+}
+/* Šachty k posouzení: [{ nazev, zadani, vysl }] + součet. Výsledek šachty
+ * z `sachty[]` součtu (u odeslané nabídky ze zámku), jinak se spočítá. */
+function kontrolyVsPriprav(ctx, ock) {
+  const jekly = ctx.jekly || (typeof JEKLY !== 'undefined' ? JEKLY : undefined);
+  let soucet = (ctx.vysledek && Array.isArray(ctx.vysledek.sachty)) ? ctx.vysledek : null;
+  if (!soucet && typeof vypocetZakazkyOck === 'function' && ctx.cenik) {
+    try { const r = vypocetZakazkyOck(ock, ctx.cenik, jekly); if (r && Array.isArray(r.sachty)) soucet = r; } catch (e) { soucet = null; }
+  }
+  const l = sachtyZ(ock);
+  const sachty = l.map((s, i) => {
+    let vysl = (soucet && soucet.sachty[i] && soucet.sachty[i].vysl) || null;
+    if (!vysl && ctx.cenik && typeof vypocet === 'function')
+      try { vysl = vypocet(s.zadani, ctx.cenik, jekly, ock.fixes); } catch (e) { vysl = null; }
+    if (!vysl && i === 0) vysl = ctx.vysledek || null;
+    return { nazev: vsNazev(s, i), zadani: s.zadani, vysl };
+  });
+  const p = vsPocty(ock);
+  return { ock, soucet, sachty, pocty: vsPoctyText(p.variant, p.celkem) };
+}
+/* Jedno pravidlo po šachtách → jeden nález (nebo null). */
+function kontrolyVsPravidlo(r, ctx, vs) {
+  const casti = [];
+  if (r.kod === 'zapornaPolozka' && ctx.projZadani) {          // projekce jednou, bez názvu šachty
+    let v = null;
+    try { v = r.zjisti(Object.assign({}, ctx, { zadani: null })); } catch (e) { v = null; }
+    if (v) casti.push({ nazev: '', v });
+  }
+  vs.sachty.forEach(s => {
+    let v = null;
+    const c = Object.assign({}, ctx, { zadani: s.zadani, vysledek: s.vysl });
+    if (r.kod === 'zapornaPolozka') c.projZadani = null;
+    try { v = r.zjisti(c); } catch (e) { v = null; }
+    if (v) casti.push({ nazev: s.nazev, v });
+  });
+  if (!casti.length) return null;
+  const pre = x => x.nazev ? x.nazev + ': ' : '';
+  const strany = [];
+  casti.forEach(x => (Array.isArray(x.v.strany) && x.v.strany.length ? x.v.strany : (r.strany || ['ock', 'proj']))
+    .forEach(st => { if (strany.indexOf(st) < 0) strany.push(st); }));
+  const det = casti.filter(x => x.v.detail).map(x => pre(x) + x.v.detail);
+  return { uroven: casti.some(x => x.v.uroven === KONTROLY_UROVEN_ZABRANA) ? KONTROLY_UROVEN_ZABRANA : (casti[0].v.uroven || KONTROLY_UROVEN),
+    strany, text: casti.map(x => pre(x) + x.v.text).join(' '), detail: det.join(' ') };
+}
 
 /* Katalog pravidel bez funkcí – pro nápovědu, protokol o kalkulaci (#41)
  * a pro test, že se pravidlo nikam neztratilo. */
@@ -1471,6 +1575,10 @@ function kontrolyCtxStrany(ctx) {
 function kontrolyProved(ctx) {
   ctx = kontrolyCtxStrany(ctx);
   const nalezy = [];
+  /* VS-E5 (#595): víc šachet — pravidla šachty po šachtách, ostatní nad součtem. */
+  const vsOck = (ctx && typeof ctx === 'object') ? kontrolyVsOck(ctx) : null;
+  const vs = vsOck ? kontrolyVsPriprav(ctx, vsOck) : null;
+  if (vs) ctx = Object.assign({}, ctx, { vysledek: vs.soucet || ctx.vysledek, __vs: vs });
   if (ctx && typeof ctx === 'object') {
     KONTROLY.forEach(r => {
       let v = null;
@@ -1482,7 +1590,8 @@ function kontrolyProved(ctx) {
        * „někdy jí prodáváme zvlášť") — čistě projekční nabídka nesmí svítit
        * varováními o šachtě, kterou nikdo neprodává. */
       if (ctx && ctx.jenProj && r.kde === 'Kalkulace OCK') return;
-      try { v = r.zjisti(ctx); } catch (e) { v = null; }
+      if (vs && KONTROLY_PO_SACHTE.indexOf(r.kod) >= 0) v = kontrolyVsPravidlo(r, ctx, vs);
+      else try { v = r.zjisti(ctx); } catch (e) { v = null; }
       if (!v) return;
       nalezy.push({ kod: r.kod, kde: r.kde, nazev: r.nazev,
         uroven: v.uroven || KONTROLY_UROVEN,
@@ -1491,6 +1600,8 @@ function kontrolyProved(ctx) {
         strany: (Array.isArray(v.strany) && v.strany.length) ? v.strany.slice()
           : (Array.isArray(r.strany) ? r.strany.slice() : ['ock', 'proj']),
         text: v.text, detail: v.detail || '' });
+      /* Zábrana jen některých dokumentů strany (VS-E5: Word nabídky). */
+      if (Array.isArray(v.dokumenty) && v.dokumenty.length) nalezy[nalezy.length - 1].dokumenty = v.dokumenty.slice();
     });
   }
   const zabrany = nalezy.filter(n => n.uroven === KONTROLY_UROVEN_ZABRANA);
@@ -1571,9 +1682,11 @@ function kontrolyStranaZabrana(zak, typ) {
 function kontrolyZabranaDokumentu(vysl, typ) {
   const strana = kontrolyDokumentStrana(typ);
   if (!strana || !vysl || !Array.isArray(vysl.nalezy)) return '';
+  const zakl = String(typ || '').replace(/_(en|de|fr)$/, '');
   const zab = vysl.nalezy.filter(n => n.uroven === KONTROLY_UROVEN_ZABRANA
     && KONTROLY_BRANA_JINDE.indexOf(n.kod) < 0
-    && (!Array.isArray(n.strany) || n.strany.indexOf(strana) >= 0));
+    && (!Array.isArray(n.strany) || n.strany.indexOf(strana) >= 0)
+    && (!Array.isArray(n.dokumenty) || n.dokumenty.indexOf(zakl) >= 0));
   if (!zab.length) return '';
   return 'Kontrola před nabídkou — dokument nevznikne, dokud se neopraví: '
     + zab.map(n => n.nazev + ': ' + n.text).join(' | ');
@@ -1620,4 +1733,5 @@ if (typeof module !== 'undefined')
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
                      KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu,
                      kontrolyCtxStrany, kontrolyStranaZabrana,
+                     KONTROLY_PO_SACHTE, kontrolyVsOck, kontrolyVsPriprav, kontrolyVsPravidlo,
                      kontrolyProjProdava };

@@ -565,7 +565,7 @@ function kryciCtx(zak, varianta, jekly) {
   const d = (varianta && varianta.data) || {};
   const Zv = (d.ock && d.ock.zadani) || {};
   const Cv = d.cenik || {};
-  let priplatky = '—', ockKc = null, projKc = null, rOck = null;
+  let priplatky = '—', ockKc = null, projKc = null, rOck = null, vs = null;
   const projSekce = {};
   try {
     /* Odeslaná nabídka vydá svůj otisk (A1). Vyřazená strana (P6, zámek
@@ -581,6 +581,13 @@ function kryciCtx(zak, varianta, jekly) {
     const vynech = Zv.priplatkyVynechat || [];
     const zahrn = (rOck.priplatky || []).filter(pp => !vynech.includes(pp.key));
     priplatky = zahrn.length ? (zahrn.length + ' – ' + zahrn.map(pp => pp.nazev).join(', ')) : 'bez příplatků';
+    /* VS-E5 (#595): víc šachet — výběr do nabídky je po šachtách (R13),
+     * u příplatku se vypíše, kterých šachet se týká. */
+    vs = (typeof vsVystup === 'function') ? vsVystup(rOck) : null;
+    if (vs) {
+      const pv = vsPriplatkyVNabidce(rOck, d.ock) || [];
+      priplatky = pv.length ? (pv.length + ' – ' + pv.map(pp => pp.nazev + ' (' + pp.sachty.join(', ') + ')').join(', ')) : 'bez příplatků';
+    }
   } catch (e) {}
   try {
     /* P6 (zámek strany): u zakázky s vyřazenou PROJ (číslo OPR, jen
@@ -603,11 +610,14 @@ function kryciCtx(zak, varianta, jekly) {
   return {
     zak, varianta, ext: Zv.typSachty === 'exteriérová', dph: Math.round((Cv.dph || 0) * 100),
     /* ATYP z otevřené varianty — termín dodání se podle něj prodlužuje. */
-    atyp: !!Zv.atyp,
+    atyp: vs ? vsAtyp(d.ock) : !!Zv.atyp,   // VS-E5: atypická je zakázka, je-li atypická kterákoli šachta
     hodnota, priplatky, firma, typProduktu,
+    /* VS-E5 (#595, R9): rozpis šachet z výsledku (u odeslané nabídky ze
+     * zámku) — null u jedné šachty. */
+    vs,
     objednane: (typeof objText === 'function') ? objText(zak, varianta, jekly) : '—',
     sken3d: kryciSken3d(d, rOck),
-    mustky: kryciMustkyText(rOck),
+    mustky: vs ? kryciMustkyPoSachtach(vs) : kryciMustkyText(rOck),
     projAno: key => (projSekce[key] > 0 ? 'Ano' : 'Ne'),
     /* Podmínky zmrazené při odeslání (P9.5) — platí jen, dokud je varianta
      * zamčená; po odemčení nebo v klonu se předvyplňuje zase z Nastavení. */
@@ -640,6 +650,29 @@ function kryciMustkyText(r) {
     if (m.sloupyKs && s.sloupyKs > 0) casti.push('sloupy navíc ' + s.sloupyKs + ' ks × ' + cz(s.vyskaSloupuM) + ' m');
     return casti.join(', ');
   }).join('; ');
+}
+/* MŮSTKY PO ŠACHTÁCH (VS-E5 #595): „Výtah A: 2 ks 1 600 × 1 000 mm, …;
+ * Výtah B (2 ks): …" — jen šachty s můstky, každá ze SVÉHO výsledku
+ * (popisný objekt `mustky` se v součtu nesčítá, návrh 3.2). */
+function kryciMustkyPoSachtach(vs) {
+  if (!vs || !Array.isArray(vs.sachty)) return '';
+  return vs.sachty.map(s => {
+    const t = kryciMustkyText(s.vysl);
+    return t ? s.nazev + (s.ks > 1 ? ' (' + s.ks + ' ks)' : '') + ': ' + t : '';
+  }).filter(Boolean).join('; ');
+}
+/* TABULKA ŠACHET KRYCÍHO LISTU (VS-E5 #595, R9 + R19): jeden krycí list za
+ * variantu, za Základními údaji sekce se sloupci varianta šachty / ks / cena
+ * bez DPH (rozpočet R7 — sedí na korunu na základ před slevou) a řádek
+ * celkem s počtem variant a šachet celkem. Hodnota zakázky (po slevě)
+ * zůstává v Základních údajích. null = jedna šachta (list jako dnes). */
+const KRYCI_SACHTY_SEKCE = 'Šachty v nabídce';
+function kryciSachtySekce(c) {
+  const vs = c && c.vs;
+  if (!vs) return null;
+  const radky = vs.sachty.map(s => [s.nazev + (s.mustky ? ', vč. můstků' : ''), s.ks + ' ks', kryciKc(s.cena)]);
+  radky.push(['Celkem před slevou — ' + vsVariantText(vs.variant) + ', šachet celkem', vs.celkem + ' ks', kryciKc(vs.zaklad)]);
+  return { sekce: KRYCI_SACHTY_SEKCE, sloupce: ['Varianta šachty', 'Počet', 'Cena bez DPH'], radky };
 }
 /* ---------- termín dodání a přirážka za ATYP (21. 8. 2026) ----------
  *
@@ -810,6 +843,8 @@ function kryciData(zak, varianta, jekly, verze) {
     const radky = s.pole.filter(p => p.verze.includes(verze)).map(p => [p.label, kryciHodnota(p, kl, c)]);
     return radky.length ? { sekce: s.sekce, radky } : null;
   }).filter(Boolean);
+  const sachty = kryciSachtySekce(c);    // VS-E5: za Základními údaji, jen víc šachet
+  if (sachty) sekce.splice(sekce.findIndex(x => x.sekce === 'Základní údaje') + 1, 0, sachty);
   const hodiny = kryciHodinySekce(zak, varianta, jekly, verze, 'ock');   // konec listu BO, jen OCK (15. 10. 2026)
   if (hodiny) sekce.push(hodiny);
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
@@ -1325,7 +1360,7 @@ function kryciPodminkoveSymboly(zak, varianta, jekly, P) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { kryciMustkyText, kryciPlatbyOck100, kryciHodiny, kryciHodinySekce, KRYCI_HODINY_OCK, kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_ZALOHY, KRYCI_LIMIT_POKUT, kryciPokutySazby, kryciLimitVolby, kryciPodmEf, kryciPodmEfVarianty, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
+  module.exports = { kryciMustkyText, kryciMustkyPoSachtach, kryciSachtySekce, KRYCI_SACHTY_SEKCE, kryciPlatbyOck100, kryciHodiny, kryciHodinySekce, KRYCI_HODINY_OCK, kryciKc, KRYCI_SEKCE, KRYCI_NABIDKA_SEKCE, KRYCI_DPH_SAZBY, KRYCI_POKUTY, KRYCI_ZALOHY, KRYCI_LIMIT_POKUT, kryciPokutySazby, kryciLimitVolby, kryciPodmEf, kryciPodmEfVarianty, KRYCI_FAKTURACE, kryciCtx, kryciHodnota,
     kryciData, kryciVystupSekce, KRYCI_IK_ZA_SEKCI, kryciMigraceZadrzne, kryciMigraceSazbaDph,
     PODM_PREFIX, kryciSymbolId, kryciCisloZTextu, kryciProcentoZTextu,
     kryciTerminDodani, kryciTerminDodaniText, kryciTerminSJednotkou, kryciTydnu,

@@ -71,6 +71,26 @@ function objNabidnute(v, jekly) {
   let r = null;
   try { r = (typeof vypocetZ === 'function') ? vypocetZ(v, jekly) : null; } catch (e) { r = null; }
   if (!r || !Array.isArray(r.priplatky)) return [];
+  /* VS-E5 (#595, R13): víc šachet — příplatek je jedna volba pro všechny
+   * šachty, které ho mají ve sloupci Nabídka (výběr je po šachtách); cena
+   * a náklad = Σ ks × šachta. Objednává se po klíči, stejně jako u jedné šachty. */
+  const vo = (typeof vsVystup === 'function') ? vsVystup(r) : null;
+  if (vo) {
+    const l = (typeof sachtyZ === 'function') ? sachtyZ(v.data && v.data.ock) : [];
+    const mapa = new Map();
+    vo.sachty.forEach((s, i) => {
+      const z = (l[i] && l[i].zadani) || {};
+      const vyn = Array.isArray(z.priplatkyVynechat) ? z.priplatkyVynechat : [];
+      ((s.vysl && s.vysl.priplatky) || []).forEach(p => {
+        if (!p || !p.key || vyn.includes(p.key)) return;
+        const k = String(p.key);
+        if (!mapa.has(k)) mapa.set(k, { key: k, nazev: String(p.nazev || p.key), sMarzi: 0, naklad: 0 });
+        const x = mapa.get(k);
+        x.sMarzi += s.ks * (+p.sMarzi || 0); x.naklad += s.ks * (+p.naklad || 0);
+      });
+    });
+    return Array.from(mapa.values());
+  }
   const zad = (v.data && v.data.ock && v.data.ock.zadani) || {};
   const vynech = Array.isArray(zad.priplatkyVynechat) ? zad.priplatkyVynechat : [];
   return r.priplatky.filter(p => p && p.key && !vynech.includes(p.key))
@@ -622,7 +642,9 @@ function prodPdZapis(zak, v, jekly) {
     datumProdeje: String(p.datum || ''), hodnota,
     hodnotaKc: hodnota.reduce((a, h) => a + h.bezDphKc, 0),
     kryci: kryci.map(k => ({ list: k.list, sekce: (k.sekce || []).map(s => ({ sekce: s.sekce,
-      radky: (s.radky || []).filter(r => r && r[1] !== '' && r[1] != null).map(r => [String(r[0]), String(r[1])]) }))
+      /* Sekce s víc sloupci hodnot (VS-E5: šachty — počet a cena) jde jednou buňkou „2 ks · 2 082 502 Kč". */
+      radky: (s.radky || []).filter(r => r && r[1] !== '' && r[1] != null)
+        .map(r => [String(r[0]), (Array.isArray(s.sloupce) && s.sloupce.length > 2) ? r.slice(1).map(String).join(' · ') : String(r[1])]) }))
       .filter(s => s.radky.length) })),
     stav: prodPdStavText(p) || 'připraveno po stisku Prodáno' };
 }

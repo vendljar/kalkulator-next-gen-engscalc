@@ -8,6 +8,43 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.11.x — VS-E5 #570: víc šachet ve výstupech za zakázku — krycí list, SoD, objednané příplatky, controlling, Pipedrive náhled, zámek, kontroly (#595), větev claude/vs-s3-e5
+
+Nad `079cfc6` (integrace v11.11.1 = E0/E1). Verzi přečísluje koordinace. Sezení S3, paralelně s S1 (E2/E3) a S2 (E4).
+Všechno čte výsledek obalu (`vysl.sachty[]`, u odeslané nabídky zmrazený v zámku) — **jedna šachta (bez `dalsi`,
+ks 1) = výstupy bajt po bajtu jako dnes** (zlatá sada 319/319 beze změny otisků). Na webech, Disku ani v Pipedrive nic.
+
+- **`src/vice_sachet.js`** (jen přidané funkce na konec): `vsVystup` (rozpis šachet z výsledku: název, ks, cena
+  z rozpočtu R7, můstky), `vsVariantText` / `vsPoctyText` („2 varianty šachet, celkem 3 ks“, R19), `vsSeznamText`,
+  `vsPredmetText`, `vsAtyp` (ATYP zakázky = ATYP kterékoli šachty), `vsPriplatkyVNabidce` (výběr po šachtách, R13),
+  `vsZamekZmenaSachet` (důvod pro UI E2: odeslaná varianta šachty nemění).
+- **Krycí list OCK (R9, R19):** jeden list za variantu; nová sekce **„Šachty v nabídce“** za Základními údaji
+  (varianta šachty / počet / cena bez DPH, „vč. můstků“, řádek celkem „N variant šachet, šachet celkem X ks“; ceny
+  po rozpočtu sedí na základ před slevou) — obrazovka, tisk BO i Techdata, Word. Hodnota zakázky = cena nabídky ze
+  součtu, hodiny a materiál součtem, **pole Můstky po šachtách** (`kryciMustkyText` každé šachty), příplatky
+  v nabídce s výčtem šachet, termín dodání s ATYP kterékoli šachty.
+- **SoD:** cena díla = nabídka (součet); nové symboly jen u víc šachet `{{SACHTY_SOD_PREDMET}}` (předmět díla
+  s variantami a ks) a `{{SACHTY_SOD_ROZPIS}}` (řádek na variantu s cenou z rozpočtu; v eurech po položkách).
+- **Objednané příplatky:** u víc šachet je příplatek jedna volba za šachty, které ho mají ve sloupci Nabídka,
+  cena Σ ks × šachta; `prodPdZapis` dává sekci šachet jednou buňkou „počet · cena“.
+- **Controlling (R5):** listy a sloupce beze změny (řádky = sečtené sekce šachet × ks, ověřeno A + 2 × B);
+  v listu Popis „Šachty v nabídce (OCK)“, v hromadném exportu sloupec jen když ho některá zakázka má.
+- **Pipedrive náhled (R6):** hodnota dealu = cena celé nabídky (beze změny), podklad nese `sachty`
+  („Šachty v nabídce: …“), server ho přebere (jen text, ≤ 20 000 znaků) a náhled ukáže řádek „Poznámka dealu —
+  šachty v nabídce“; **zápis (patch) se nemění** — pole poznámky určí J. V. (plán 8.4). ATYP = kterákoli šachta.
+- **Zámek:** snímek odeslané nabídky nese u víc šachet `sachty [{id, nazev, ks}]` + `sachtyVerze: 1`; dotisk
+  krycího listu, SoD a Pipedrive ze zmrazeného výsledku (změna dat po odeslání nic nemění); přísné ověření nového
+  zámku = shoda, podvržená cena šachty = rozdíl; zamčená varianta šachty nezmění (server porovnává data celá).
+- **Kontroly (`kontroly.js`):** pravidla šachty (rozměry, profil, záporné položky, nástupiště, výšky, světlíky,
+  můstky, statika, opláštění, ATYP) se ptají **každé šachty jejím zadáním a výsledkem** — nález „Výtah B: …“, jeden
+  kód za všechny šachty; pravidla za variantu nad součtem. Nová pravidla **`vsModel1`** (víc šachet v Modelu 1 =
+  zábrana dokumentů OCK) a **`vsSablona`** (šablona CN bez rozpisu šachet v15/v16 = zábrana jen Wordu nabídky —
+  nález nese `dokumenty: ['nabidka']`, brána to respektuje; rozpozná ji `vsSablonaUmiSachty` z E4, jinak symboly
+  `SACHTA_*`). `ui/kontroly_ui.js` dodá `ctx.ock` a u víc šachet stáhne symboly šablony.
+- **Testy:** `src/test_vs_vystupy.js` 47, `src/test_vs_zamek.js` 21, `src/test_vs_kontroly.js` 18,
+  `netlify/test_vs_e5_pd.mjs` 9, harness `overit_vs_kryci_sod.mjs` 23 (1200/1440/1920, bez překryvů, vypínač ZAP);
+  na 079cfc6 všechny padají. `test_kontroly.js`: 48 pravidel. Mutace „[#570 E5]“ jádro 15, server 3.
+
 ## v11.11.1 — VS-E0/E1 #570: víc šachet v nabídce — zlatá sada, jádro, server a vypínač správce (výchozí vypnuto), větev claude/vs-e0e1
 
 Nad `3ff5403` (integrace = test v10.11.1; main = v6.11.5). Verzi přečísluje koordinace (`verze.txt` zůstává

@@ -382,12 +382,21 @@ function zamekSnimekSpocti(v) {
   const d = (v && v.data) || {};
   const kopie = x => (x === undefined || x === null) ? null : JSON.parse(JSON.stringify(x));
   const cislo = x => (typeof x === 'number' && isFinite(x)) ? x : null;
-  return {
+  const out = {
     kryci: kopie(d.kryci),
     kryciProj: kopie(d.kryciProj),
     dph: cislo(d.cenik && d.cenik.dph),
     dphProj: cislo(d.proj && d.proj.cenik && d.proj.cenik.dph),
   };
+  /* VS-E5 (#595, návrh 5.5): odeslaná nabídka s víc šachtami nese ve snímku
+   * i seznam šachet (id, název, ks) a `sachtyVerze: 1` — doklad, které šachty
+   * odešly (ceny a rozpis nese zmrazený výsledek `vysledek.ock.sachty[]`).
+   * Jedna šachta = snímek beze změny (zámek bez `sachtyVerze` = jedna šachta). */
+  if (d.ock && typeof rezimViceSachet === 'function' && rezimViceSachet(d.ock)) {
+    out.sachty = sachtyZ(d.ock).map((x, i) => ({ id: x.id, nazev: vsNazev(x, i), ks: x.ks }));
+    out.sachtyVerze = 1;
+  }
+  return out;
 }
 
 function zamekSnimek(v) {

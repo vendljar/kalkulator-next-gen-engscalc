@@ -187,7 +187,7 @@ const pravidla = kontrolyPravidla();
 /* 39. „dpzUvodWordProj" 20. 10. 2026 (D1); 40.–43. D2: jednostupnovaProj,
  * vyjezdCenaChybi, uvodProjNesedi, cestovneWordProj. */
 /* 4. 11. 2026: + 3 pravidla ruční ceny #561, − nadDvermiBez #564 („bez" = prostor světlíku dozdí stavba). */
-test('pravidel je čtyřicet šest (20. 10. 2026: + mustekRozmer, + dpzUvodWordProj D1, + 4 pravidla D2; 26. 10.: + platbyOck100 #517; 4. 11.: + 3 pravidla ruční ceny #561, − nadDvermiBez #564)', pravidla.length === 46, pravidla.length);
+test('pravidel je čtyřicet osm (20. 10. 2026: + mustekRozmer, + dpzUvodWordProj D1, + 4 pravidla D2; 26. 10.: + platbyOck100 #517; 4. 11.: + 3 pravidla ruční ceny #561, − nadDvermiBez #564; 10. 11.: + vsModel1, vsSablona VS-E5 #595)', pravidla.length === 48, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));
@@ -408,10 +408,10 @@ test('text varování nikde nepřikazuje ani neblokuje',
   !/nesmí|zakázán|zakázan|blokov|nelze pokračovat|nelze odeslat/i.test(textVse), textVse);
 test('zábrana má vlastní text, který se dá ukázat samostatně',
   k9.textBrani.length > 0 && k9.textBrani === n9.text, k9.textBrani);
-/* bokyDveri od #381 (1. 10. 2026): ruční šířka bočního světlíku v Modelu 2
+/* vsModel1 a vsSablona: VS-E5 #595 (10. 11. 2026, test_vs_kontroly.js). bokyDveri od #381 (1. 10. 2026): ruční šířka bočního světlíku v Modelu 2
  * širší než mezera vedle dveří nebo „nevejdou se" zastaví dokumenty OCK. */
 test('v katalogu pravidel je poznat, které umí zastavit dokument',
-  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,bokyDveri,sleva,slevaProj,ukazkovyCenik,planPlateb100,planPlatebSoucet,cenovaVyjimka,rucniCenaNepotvrzena',
+  pravidla.filter(p => p.zabranaMozna).map(p => p.kod).join(',') === 'rozmery,profilNeznamy,zapornaPolozka,cenaNula,bokyDveri,sleva,slevaProj,ukazkovyCenik,planPlateb100,planPlatebSoucet,cenovaVyjimka,rucniCenaNepotvrzena,vsModel1,vsSablona',
   JSON.stringify(pravidla.filter(p => p.zabranaMozna).map(p => p.kod)));
 
 /* ---------- 6) dvě podoby textu ---------- */

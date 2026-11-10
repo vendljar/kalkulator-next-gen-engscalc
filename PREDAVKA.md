@@ -1,3 +1,39 @@
+# Předávka — 10. 11. 2026: VS-E5 #570 (#595) — výstupy za zakázku s víc šachtami (S3), větev `claude/vs-s3-e5`
+
+Nad `079cfc6` (integrace v11.11.1 = E0/E1). **CHANGELOG v12.11.x** (koordinace přečísluje). Neslučováno; do
+`test-draft`, `test` ani `main` nic. Na webech, Disku ani v Pipedrive nic. Paralelně S1 (E2/E3) a S2 (E4).
+
+| úkol | stav | kde |
+|---|---|---|
+| krycí list (jeden za variantu) | ✅ | `kryci.js` `kryciSachtySekce` (sekce „Šachty v nabídce“ za Základními údaji: varianta / počet / cena R7, vč. můstků, celkem N variant + X ks), `kryciMustkyPoSachtach`, `kryciCtx.vs`, ATYP kterékoli šachty, příplatky s výčtem šachet; `ui/kryci_ui.js` `kryciSachtyBlok` (#kryciSachty); tisk BO/Tech i Word přes sekci se sloupci |
+| SoD + objednané | ✅ | `sod.js` `sodSachtySymboly` → `{{SACHTY_SOD_PREDMET}}`, `{{SACHTY_SOD_ROZPIS}}` (jen víc šachet); `objednane.js` `objNabidnute` po šachtách (Σ ks × šachta, výběr po šachtách), `prodPdZapis` víc sloupců jednou buňkou |
+| controlling (R5) | ✅ | `controlling.js`: listy beze změny, `hlavicka.sachty` → Popis „Šachty v nabídce (OCK)“, hromadný sloupec jen když je |
+| Pipedrive (R6) | ✅ | `pd_nanecisto.js` (`sachty`, ATYP), `functions/pd_nanecisto.mjs` (přebere text ≤ 20 000), `lib/pd_prevod.mjs` řádek „Poznámka dealu — šachty v nabídce“; **patch beze změny** |
+| zámek | ✅ | `zamek.js` `zamekSnimekSpocti`: `sachty[{id,nazev,ks}]` + `sachtyVerze: 1` (jen víc šachet); dotisk ze zmrazeného `vysledek.ock.sachty[]` |
+| kontroly | ✅ | `kontroly.js`: `KONTROLY_PO_SACHTE` (14 pravidel po šachtách, „Výtah B: …“), `vsModel1`, `vsSablona` (`dokumenty: ['nabidka']`), brána respektuje `dokumenty`; `ui/kontroly_ui.js` `ctx.ock`, šablona i kvůli VS |
+| vice_sachet.js (konec souboru) | ✅ | `vsVystup`, `vsVariantText`, `vsPoctyText`, `vsSeznamText`, `vsPredmetText`, `vsMaMustky`, `vsAtyp`, `vsPriplatkyVNabidce`, `vsZamekZmenaSachet` (export přes `Object.assign(module.exports, …)`) |
+| testy | ✅ | `src/test_vs_vystupy.js` 47, `src/test_vs_zamek.js` 21, `src/test_vs_kontroly.js` 18, `netlify/test_vs_e5_pd.mjs` 9, `overit_vs_kryci_sod.mjs` 23; na 079cfc6 všechny padají; `test_kontroly.js` 48 pravidel, `test_platby_ock.js` (4. parametr), `manual_vypocet/cisla_vydani.json` k.pocet 48 |
+| mutace „[#570 E5]“ | viz hlášení | jádro 15 (`mutace_jadro.mjs`), server 3 (`netlify/mutace.mjs`, sada `test_vs_e5_pd.mjs`) |
+| kolo `--bez-mutaci` | viz hlášení | |
+
+**Otevřené body (pro koordinaci / J. V.):**
+1. **Pipedrive pole poznámky** (plán 8.4): náhled ukazuje řádek „Poznámka dealu — šachty v nabídce“, zápis ho
+   neposílá. Až J. V. určí pole (poznámka dealu / textové pole z mapy), doplní se do `pdZapisDealu`.
+2. **Překlady pro S2 (`preklad.js`):** „varianta šachty“, „varianty šachet“, „variant šachet“, „celkem“,
+   „vč. můstků“ (SoD v EN/DE/FR je za `sodJazykZabrana`; bez překladu zůstanou česky).
+3. **Pro S2 (E4):** zábrana šablony v15/v16 je pravidlo `vsSablona` v `kontroly.js` — umí zavolat
+   `vsSablonaUmiSachty(symboly)` z E4, bez ní hledá symboly `SACHTA_*`. Do Wordu nabídky ať E4 přidá i vlastní
+   pojistku při generování (kontroly mlčí, dokud se symboly šablony nestáhnou). Symboly SoD jsou `SACHTY_SOD_*`
+   (vzor `VS_NOVE_SYMBOLY` je kryje).
+4. **Pro S1 (E2):** `vsZamekZmenaSachet(v)` dá důvod pro zhasnutá tlačítka šachet v odeslané variantě;
+   `kontrolyCtxAkt` posílá `ock` otevřené varianty (kontroly po šachtách nezávisí na tom, kam E2 přepne `Z`).
+5. **ATYP zakázky = ATYP kterékoli šachty** (termín dodání v krycím listu, Pipedrive) a **Typ produktu** zůstává
+   podle šachty 1 (exteriér/interiér) — k potvrzení J. V., až budou smíšené zakázky.
+6. **Velikost zámku:** 10 variant šachet ≈ 350 kB JSON na zamčenou variantu (sachty[] nesou výsledky šachet);
+   strop zakázky 4 MB — u mnoha zamčených variant s 10 šachtami by šel blízko.
+7. `manual_vypocet/cisla_vydani.json`: počet pravidel kontrol 46 → 48 (jako SV/RC); obsah 4. vydání se nemění,
+   nové vydání manuálu je E6.
+
 # Předávka — 10. 11. 2026: VS-E0/E1 #570 (#590, #591) — víc šachet v nabídce: zlatá sada, jádro, server, vypínač správce, větev `claude/vs-e0e1`
 
 Nad `3ff5403` (integrace = test v10.11.1; main = v6.11.5). **CHANGELOG v11.11.1** (koordinace přečísluje;
