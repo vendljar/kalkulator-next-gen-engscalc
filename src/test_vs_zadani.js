@@ -210,5 +210,24 @@ const run = (c, kod) => vm.runInContext(kod, c);
   test('bez víc šachet: tentýž objekt', ctx.vsKalkVysledek(jedna) === jedna && ctx.VS_UI.kalkSachta === false);
 }
 
+/* ---------- kolize jmen (E3, 10. 11. 2026) ----------
+ * Sestavená aplikace je jeden <script>: funkce ui/vice_sachet_ui.js se
+ * stejným jménem jako funkce jiného souboru tu druhou TIŠE přepíše. Stalo se
+ * u E3 — obsluha tlačítka „Součet" `vsSoucet()` přepsala součet jádra
+ * `vsSoucet(vys, ksy, cenik)` a výpočet víc šachet se zacyklil. */
+{
+  const jmena = t => new Set([...t.matchAll(/^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)].map(m => m[1] || m[2]));
+  const ui = jmena(fs.readFileSync(path.join(__dirname, 'ui', 'vice_sachet_ui.js'), 'utf8'));
+  const ostatni = [];
+  const projdi = (adr) => fs.readdirSync(adr).forEach(f => {
+    const pl = path.join(adr, f);
+    if (fs.statSync(pl).isDirectory()) { if (f === 'ui') projdi(pl); return; }
+    if (!/\.js$/.test(f) || /^test_|^vs_ui_prostredi/.test(f) || pl.endsWith(path.join('ui', 'vice_sachet_ui.js'))) return;
+    jmena(fs.readFileSync(pl, 'utf8')).forEach(j => { if (ui.has(j)) ostatni.push(f + ': ' + j); });
+  });
+  projdi(__dirname);
+  test('funkce ui/vice_sachet_ui.js nemají jméno žádné jiné funkce src/ a src/ui/', ostatni.length === 0, ostatni);
+}
+
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

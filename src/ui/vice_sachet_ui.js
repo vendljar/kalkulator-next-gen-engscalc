@@ -318,3 +318,124 @@ function vsSmaz() {
   VS_UI.potvrdit = [VS_UI.akt];
   render();
 }
+
+/* ================= E3 (roadmapa #593): kalkulace, cena, sleva, přehledy =================
+ * Přepínač šachta / Součet v Cenové kalkulaci (Součet jen ke čtení, stejné
+ * položky sloučené podle klíče a sazby — R8), hlavička ceny s rozpisem po
+ * šachtách (ceny po rozpočtu zaokrouhlení R7, klik otevře šachtu), tabulka
+ * rozpočtu v kartě Obchodní zaokrouhlení, věta o slevě ze součtu (R3),
+ * štítek „N variant šachet / X ks" ve schvalování, seznamu a porovnání.
+ * Bez víc šachet vrací každá funkce '' (obrazovka beze změny). */
+
+function vsPoctyText(ock) {
+  const p = vsPocty(ock);
+  return p.variant + ' ' + vsVariantSlovo(p.variant) + ' šachet, celkem ' + p.celkem + ' ks';
+}
+const vsKcF = x => fmt0(Math.round(+x || 0));
+
+/* Přepínač v nadpisu karty Cenová kalkulace. S vypnutou funkcí jen
+ * šachta 1 a Součet (ostatní šachty nejde otevřít, R21). */
+function vsKalkPrepinac(r) {
+  if (!r || !Array.isArray(r.sachty)) return '';
+  const zap = vsZap();
+  const btn = (i, s) => `<button type="button" class="${VS_UI.pohled === 'akt' && i === VS_UI.akt ? 'on' : ''}" onclick="vsAkt(${i})">${esc(vsNazev(s, i))}</button>`;
+  const sachty = r.sachty.map((s, i) => (zap || i === 0) ? btn(i, s) : '').join('');
+  return `<span class="vs-pocet" onclick="event.stopPropagation()"><span class="rada-prep" id="vsKalkPrepinac">${sachty}<button type="button" id="vsKalkSoucet" class="${VS_UI.pohled === 'soucet' ? 'on' : ''}" onclick="vsPohledSoucet()">Součet</button></span></span>`;
+}
+function vsPohledSoucet() { VS_UI.pohled = 'soucet'; render(); }
+
+/* Věta nad tabulkou kalkulace (šachta / součet). */
+function vsKalkPoznamka(r) {
+  if (!r || !Array.isArray(r.sachty)) return '';
+  if (VS_UI.pohled === 'soucet')
+    return `<div class="note" id="vsKalkPozn" style="margin-bottom:6px">Součet šachet × ks (${esc(vsPoctyText(OCK))}) — <b>jen ke čtení</b>.
+      Stejné položky (název a sazba) jsou sečtené; na tisíce se zaokrouhluje jen tento součet. Upravuje se ve vybrané šachtě.</div>`;
+  const s = r.sachty[VS_UI.akt] || r.sachty[0];
+  return `<div class="note" id="vsKalkPozn" style="margin-bottom:6px">Šachta <b>${esc(s.nazev)}</b>${s.ks > 1 ? ' (1 ks; v součtu × ' + esc(s.ks) + ')' : ''}
+    — cena šachty se na tisíce nezaokrouhluje, zaokrouhlí se až součet všech šachet.</div>`;
+}
+/* Tabulky Součtu se kreslí v obalu jen ke čtení. */
+function vsKalkObal(r, html) {
+  if (!(r && Array.isArray(r.sachty) && VS_UI.pohled === 'soucet')) return html;
+  /* Sloučený řádek nepatří žádné šachtě — zápis z něj by šel do otevřené
+   * šachty s hodnotou součtu. Proto disabled (i z klávesnice), ne jen vzhled. */
+  return `<div class="vs-soucet-ro">${String(html).replace(/<(input|select|button|textarea)\b/g, '<$1 disabled')}</div>`;
+}
+function vsPriplatkyPoznamka(r) {
+  if (!r || !Array.isArray(r.sachty)) return '';
+  if (VS_UI.pohled === 'soucet')
+    return `<div class="note" style="margin-bottom:6px">Příplatky všech šachet — stejný příplatek se stejnou sazbou je jeden řádek
+      s počtem (Σ ks × množství) a výčtem šachet. Pro zákazníka je to jedna volba; výběr do nabídky se mění ve vybrané šachtě.</div>`;
+  const s = r.sachty[VS_UI.akt] || r.sachty[0];
+  return `<div class="note" style="margin-bottom:6px">Výběr příplatků do nabídky je po šachtách — zde pro <b>${esc(s.nazev)}</b>.
+    V nabídce se stejné příplatky všech šachet sloučí do jednoho řádku s počtem (pohled Součet).</div>`;
+}
+/* Výčet šachet pod sloučeným řádkem v pohledu Součet (R8): „Výtah A, Výtah B 2×". */
+function vsSachtyPopis(x) {
+  if (VS_UI.pohled !== 'soucet' || !x || !Array.isArray(x.vsSachty) || VS_UI.kalkSachta) return '';
+  const l = vsSachtyUI();
+  const t = x.vsSachty.map(o => vsNazev(l[o.i], o.i) + (o.ks > 1 ? ' ' + o.ks + '×' : '')).join(', ');
+  return t ? `<div class="note vs-sachty-popis">${esc(t)}</div>` : '';
+}
+/* Řádek REZERVA: u šachty jako dosud (procento ze zadání), v Součtu
+ * součet šachet (procenta se mezi šachtami mohou lišit). */
+function vsRezervaPopis(rS) {
+  if (VS_UI.pohled === 'soucet' && rS && Array.isArray(rS.sachty) && !VS_UI.kalkSachta)
+    return (rS.rezerva && rS.rezerva.sMarzi) ? 'REZERVA (součet šachet)' : '';
+  return Z.rezervaZakladPct ? `REZERVA (${num(Z.rezervaZakladPct * 100)} %)` : '';
+}
+/* Detail mezivýpočtů a nepoužité přepisy popisují JEDNU šachtu. */
+function vsDetailVysledek(r) {
+  if (!r || !Array.isArray(r.sachty)) return r;
+  const s = r.sachty[VS_UI.akt] || r.sachty[0];
+  return (s && s.vysl) || r;
+}
+
+/* Hlavička ceny: rozpis po šachtách (R7 — ceny po rozpočtu zaokrouhlení,
+ * Σ = základní cena). Klik otevře šachtu. */
+function vsRozpisHlavicka(r) {
+  if (!r || !Array.isArray(r.sachty)) return '';
+  const zap = vsZap();
+  const pill = (s, i) => `<button type="button" class="pill vs-rozpis-sachta" ${zap || i === 0 ? `onclick="vsAkt(${i})" title="otevřít šachtu"` : 'disabled'}>${esc(s.nazev)} · ${esc(s.ks)} ks · ${vsKcF(s.cenaRozpis)}</button>`;
+  return `<div class="vs-radek" id="vsRozpis" style="margin-top:10px">${r.sachty.map(pill).join('')}
+    <span class="note" style="margin:0">${esc(vsPoctyText(OCK))} · ceny šachet před slevou, po rozpočtu zaokrouhlení na tisíce</span></div>`;
+}
+
+/* Tabulka rozpočtu zaokrouhlení do šachet (karta Obchodní zaokrouhlení OCK). */
+function vsRozpocetTabulka() {
+  let r = null;
+  try { r = vypocetAkt(); } catch (e) { r = null; }
+  if (!r || !Array.isArray(r.sachty)) return '';
+  const h = x => (Math.round(x * 100) / 100).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Kč';
+  const spocteno = r.sachty.reduce((a, s) => a + s.cenaPredZaokr, 0);
+  const vNabidce = r.sachty.reduce((a, s) => a + s.cenaRozpis, 0);
+  return `<div class="note" style="font-weight:600;margin-top:10px">Rozpočet zaokrouhlení do šachet</div>
+    <table class="sd-tbl vs-tab" id="vsRozpocet" style="max-width:760px"><tr><th>Šachta</th><th class="r">ks</th><th class="r">Spočteno (ks × cena)</th><th class="r">V nabídce</th></tr>
+    ${r.sachty.map(s => `<tr><td>${esc(s.nazev)}</td><td class="r">${esc(s.ks)}</td><td class="r">${h(s.cenaPredZaokr)}</td><td class="r">${vsKcF(s.cenaRozpis)}</td></tr>`).join('')}
+    <tr><td style="font-weight:600">Celkem</td><td class="r">${vsPocty(OCK).celkem}</td><td class="r">${h(spocteno)}</td><td class="r" style="font-weight:600">${vsKcF(vNabidce)}</td></tr></table>
+    <div class="note">Na tisíce se zaokrouhlí jen součet (základní cena ${vsKcF(r.souhrn.zakladCena)}). Rozdíl se rozdělí podle podílu
+      šachty na ceně; chybějící koruny dostanou šachty s největším zbytkem. Tabulka po šachtách v nabídce tak sedí na korunu.
+      Sleva a obchodní zaokrouhlení se počítají jednou za celou nabídku.</div>`;
+}
+
+/* Karta slevy OCK: sleva i její strop se počítají z ceny celé nabídky (R3). */
+function vsSlevaPoznamka() {
+  if (!vsRezimUI()) return '';
+  return `<div class="note" id="vsSlevaPozn" style="margin:6px 0">Sleva se počítá z ceny celé nabídky (${esc(vsPoctyText(OCK))}) — jedna sleva,
+    strop role i minimální marže ze součtu šachet.</div>`;
+}
+
+/* Štítek varianty s víc šachtami (seznam variant, porovnání, schvalování). */
+function vsStitekVarianty(v) {
+  const ock = v && v.data && v.data.ock;
+  if (!ock || typeof rezimViceSachet !== 'function' || !rezimViceSachet(ock)) return '';
+  const p = vsPocty(ock);
+  return ` <span class="pill vs-stitek" title="${esc(sachtyZ(ock).map((s, i) => vsNazev(s, i) + (s.ks > 1 ? ' ' + s.ks + ' ks' : '')).join(', '))}">${esc(p.variant + ' ' + vsVariantSlovo(p.variant) + ' / ' + p.celkem + ' ks')}</span>`;
+}
+function vsSchvPopis(z) {
+  if (!z || z.cast === 'proj' || typeof ZAK === 'undefined' || !ZAK || !Array.isArray(ZAK.varianty)) return '';
+  const v = ZAK.varianty.find(x => x && x.id === z.id);
+  const ock = v && v.data && v.data.ock;
+  if (!ock || !rezimViceSachet(ock)) return '';
+  return 'Sleva z ceny celé nabídky: <b>' + esc(vsPoctyText(ock)) + '</b>';
+}

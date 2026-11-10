@@ -1,6 +1,6 @@
 # Předávka — 10. 11. 2026: VS-E5 #570 (#595) — výstupy za zakázku s víc šachtami (S3), větev `claude/vs-s3-e5`
 
-Nad `079cfc6`, sloučeno s integrací `aaac150` (v10.11.4 = E2 + E4). **CHANGELOG v10.11.5** (koordinace přečísluje). Neslučováno; do
+Nad `079cfc6`, sloučeno s integrací `d3ee6db` (v10.11.5 = E2 + E3 + E4). **CHANGELOG v10.11.6** (koordinace přečísluje). Neslučováno; do
 `test-draft`, `test` ani `main` nic. Na webech, Disku ani v Pipedrive nic. Paralelně S1 (E2/E3) a S2 (E4).
 
 | úkol | stav | kde |
@@ -11,7 +11,7 @@ Nad `079cfc6`, sloučeno s integrací `aaac150` (v10.11.4 = E2 + E4). **CHANGELO
 | Pipedrive (R6) | ✅ | `pd_nanecisto.js` (`sachty`, ATYP), `functions/pd_nanecisto.mjs` (přebere text ≤ 20 000), `lib/pd_prevod.mjs` řádek „Poznámka dealu — šachty v nabídce“; **patch beze změny** |
 | zámek | ✅ | `zamek.js` `zamekSnimekSpocti`: `sachty[{id,nazev,ks}]` + `sachtyVerze: 1` (jen víc šachet); dotisk ze zmrazeného `vysledek.ock.sachty[]` |
 | kontroly | ✅ | `kontroly.js`: `KONTROLY_PO_SACHTE` (14 pravidel po šachtách, „Výtah B: …“), `vsModel1`, `vsSablona` (`dokumenty: ['nabidka']`), brána respektuje `dokumenty`; `ui/kontroly_ui.js` `ctx.ock`, šablona i kvůli VS |
-| vice_sachet.js (konec souboru) | ✅ | `vsVystup`, `vsVariantText`, `vsPoctyText`, `vsSeznamText`, `vsPredmetText`, `vsMaMustky`, `vsAtyp`, `vsPriplatkyVNabidce`, `vsZamekZmenaSachet` (export přes `Object.assign(module.exports, …)`) |
+| vice_sachet.js (konec souboru) | ✅ | `vsVystup`, `vsVariantText`, `vsPoctyPopis`, `vsSeznamText`, `vsPredmetText`, `vsMaMustky`, `vsAtyp`, `vsPriplatkyVNabidce`, `vsZamekZmenaSachet` (export přes `Object.assign(module.exports, …)`) |
 | testy | ✅ | `src/test_vs_vystupy.js` 47, `src/test_vs_zamek.js` 21, `src/test_vs_kontroly.js` 18, `netlify/test_vs_e5_pd.mjs` 9, `overit_vs_kryci_sod.mjs` 23; na 079cfc6 všechny padají; `test_kontroly.js` 48 pravidel, `test_platby_ock.js` (4. parametr), `manual_vypocet/cisla_vydani.json` k.pocet 48 |
 | mutace „[#570 E5]“ | viz hlášení | jádro 15 (`mutace_jadro.mjs`), server 3 (`netlify/mutace.mjs`, sada `test_vs_e5_pd.mjs`) |
 | kolo `--bez-mutaci` | viz hlášení | |
@@ -30,11 +30,48 @@ Nad `079cfc6`, sloučeno s integrací `aaac150` (v10.11.4 = E2 + E4). **CHANGELO
    podle šachty 1 (exteriér/interiér) — k potvrzení J. V., až budou smíšené zakázky.
 6. **Velikost zámku:** 10 variant šachet ≈ 350 kB JSON na zamčenou variantu (sachty[] nesou výsledky šachet);
    strop zakázky 4 MB — u mnoha zamčených variant s 10 šachtami by šel blízko.
+8. **Bod pro E6 (z E3, bod c):** rejstřík Přehledu cenových nabídek na serveru šachty nenese (štítek „2 varianty
+   / 3 ks“ jde jen z otevřené zakázky). Řešení: v `uloRejstrikZaznam` + `uloRejstrikNormalizuj` (uloziste.js)
+   nepovinný klíč `sachty: { variant, celkem }` řídící varianty (jen víc šachet — jedna šachta beze změny
+   rejstříku) a štítek v Přehledu. Do E5 záměrně nezařazeno: rejstřík čtou všichni, mění se při každém uložení
+   a soubory vlastní S1 — patří do E6 se sadami rejstříku (`test_rejstrik*.mjs`).
 7. `manual_vypocet/cisla_vydani.json`: počet pravidel kontrol 46 → 48 (jako SV/RC); obsah 4. vydání se nemění,
    nové vydání manuálu je E6.
+# Předávka — 10. 11. 2026: VS-S1 #570 — E2 zadání (#592) + E3 kalkulace (#593) víc šachet, větev `claude/vs-s1-e2e3`
+
+Nad `079cfc6`, po E2 sloučena integrace `aaac150` (E2 = v10.11.3, E4 = v10.11.4). **E3 = CHANGELOG v10.11.6**,
+`verze.txt` = 10.11.5 — koordinace přečísluje; dříve `verze.txt` = 10.11.1 (kontrola verze = den commitu + existující oddíl CHANGELOG; základ 079cfc6 nesl 11.11.1
+s commitem z 10. 11. a sám kontrolou verze neprojde). Neslučováno; do `test-draft`, `test` ani `main` nic; weby,
+Disk, Pipedrive nic. Commity: E2 `9909df5` + `ed1c5a7`/`879dc9b` (verze, harnessy), E3 `109f332`.
+
+| úkol | stav | kde |
+|---|---|---|
+| E2 pole Počet variant / Počet kusů (R17, R20) | ✅ | `src/ui/vice_sachet_ui.js` (nový, build za kalk_ock.js), nadpis Zadání šachty přes `kartaRezim(..., navic)` |
+| E2 karta Šachty varianty (R18, R19) | ✅ | přepínač, název, ks, kopie, smazání s potvrzením na stránce, Zpět; snížení na 1 = `dalsi: []` |
+| E2 Z = otevřená šachta | ✅ | `VS_UI` + `vsSyncZ` v `syncVarianta`, `vypocetSachtyAkt` (zadání, opláštění, Můstky, ATYP, standard, tabulky) |
+| E2 Model 1, R21 | ✅ | Model 1: pole zhasnutá, přepnutí na Model 1 u víc šachet odmítnuto (`set`) + zakázaná volba; VYP + data: seznam + lišta, šachta 1, zápis odmítnut |
+| E2 vypínač po přihlášení | ✅ | `onlineNactiFunkce` v načtení po přihlášení; 13 harnessů s mapou funkcí doplněno o `/api/funkce` |
+| E3 kalkulace šachta / Součet | ✅ | přepínač v nadpisu, Součet jen ke čtení (disabled), výčet šachet u příplatků (R8), Detail = šachta |
+| E3 hlavička, rozpočet | ✅ | rozpis po šachtách (cenaRozpis, klik otevře), tabulka rozpočtu v kartě Obchodní zaokrouhlení |
+| E3 sleva, schvalování | ✅ | věta „ze součtu" s počty (karta slevy, žádost); limit a marže ze součtu už od E1 |
+| E3 přehledy | ✅ | štítek „N variant / X ks" v seznamu a porovnání, hledání podle názvu šachty (`seznam.js`) |
+| testy | ✅ | `test_vs_zadani.js` 50, `test_vs_priplatky.js` 19, `test_vs_sleva.js` 19, `overit_vs_zadani.mjs` 52 (`KNG_DIST_ZAKLAD` = srovnání s 079cfc6), `overit_vs_kalkulace.mjs` 23; zlatá sada 319/319 |
+| mutace | ✅ | „[#570 E2]" 12/12, „[#570 E3]" 10/10 (`ui/vice_sachet_ui.js`, `seznam.js` v JADRA) |
+| body koordinace po E4 | ✅ | (1) `vsTechspecOk` — server kontroluje `dalsi[i].techspec`; (5) `TS_SACHTA` = `VS_UI.akt` se zapnutou funkcí |
+| kolo `--bez-mutaci` | ✅ | E2 nad 879dc9b VŠE ZELENÉ (413/0/7, +400 dní 333/0/1, statické 5/5, 32 min); E3 po sloučení integrace aaac150 nad a78552b VŠE ZELENÉ (420/0/7 přesk. bez KNG_PODKLADY, +400 dní 338/0/1, statické 5/5, 32 min) |
+
+**Pozor pro další etapy:** sestavení je jeden `<script>` — funkce se stejným jménem v jiném souboru tiše přepíše
+jinou (E3: `vsSoucet` obrazovky přepsala `vsSoucet` jádra → zacyklený výpočet). `test_vs_zadani.js` hlídá jen
+`ui/vice_sachet_ui.js`; S2/S3 ať u nových funkcí ve `vice_sachet.js` jméno ověří (`grep -rn "function <jméno>" src`).
+
+**Otevřené body / pro koordinaci:**
+1. Základ 079cfc6: `verze.txt` 11.11.1 vs. commit 10. 11. → build/statické kontroly v kole padají i na základu.
+2. Pohled Součet zhasne i výběr režimu sekce (zobrazit/skrýt) v tabulce — mění se v pohledu šachty.
+3. Porovnání variant: štítek pod názvem varianty (ne vlastní řádek metriky) — porovnávají se součty.
+4. Rejstřík online (Přehled cenových nabídek ze serveru) štítek šachet nemá — server data šachet do rejstříku neukládá; případně E5/E6.
 # Předávka — 10. 11. 2026: VS-E4 #570 (#594) — víc šachet: cenová nabídka s tabulkou šachet, Word CN v17, specifikace po šachtách, překlady, větev `claude/vs-s2-e4` (sezení S2)
 
-Nad `079cfc6`, sloučeno s integrací `aaac150` (v10.11.4 = E2 + E4). **CHANGELOG v10.11.5**, `verze.txt` 10.11.3 (den commitu; koordinace přečísluje).
+Nad `079cfc6`, sloučeno s integrací `d3ee6db` (v10.11.5 = E2 + E3 + E4). **CHANGELOG v10.11.6**, `verze.txt` 10.11.3 (den commitu; koordinace přečísluje).
 Do `test-draft`, `test` ani `main` nic; weby, Disk, Pipedrive nic. Vše za vypínačem / v datech víc šachet:
 jedna šachta (VYP i ZAP) = dnešní dokumenty bajt po bajtu (zlatá sada 319/319 beze změny otisků).
 

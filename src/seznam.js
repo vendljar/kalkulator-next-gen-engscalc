@@ -125,6 +125,9 @@ function seznamRadek(zak, v, i, ceny) {
   };
   r.hledatelne = seznamNorm(SEZNAM_SLOUPCE.filter(s => s.hledat)
     .map(s => s.id === 'stav' ? r.stavPopis : r[s.id]).join(' '));
+  /* VS #570 (E3): varianta s víc šachtami se najde i podle názvu šachty. */
+  const vsN = (typeof vsNazvySachetText === 'function' && v.data) ? vsNazvySachetText(v.data.ock) : '';
+  if (vsN) r.hledatelne += ' ' + seznamNorm(vsN);
   return r;
 }
 

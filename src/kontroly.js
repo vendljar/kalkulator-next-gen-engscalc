@@ -1457,7 +1457,7 @@ function kontrolyVsPriprav(ctx, ock) {
     return { nazev: vsNazev(s, i), zadani: s.zadani, vysl };
   });
   const p = vsPocty(ock);
-  return { ock, soucet, sachty, pocty: vsPoctyText(p.variant, p.celkem) };
+  return { ock, soucet, sachty, pocty: vsPoctyPopis(p.variant, p.celkem) };
 }
 /* Jedno pravidlo po šachtách → jeden nález (nebo null). */
 function kontrolyVsPravidlo(r, ctx, vs) {

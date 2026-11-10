@@ -235,7 +235,7 @@ function seznamRadekHtml(r) {
    * s tlačítky se přilepuje k pravému okraji a musí mít stejný podklad */
   return `<tr class="${r.aktivni ? 'aktivni' : ''}">
     <td><input type="radio" name="varAkt" ${r.aktivni ? 'checked' : ''} onchange="varAktivuj('${escJs(r.id)}')" title="otevřít variantu"></td>
-    <td><input type="text" value="${esc(r.nazev)}"${ro} onchange="varSet('${escJs(r.id)}', 'nazev', this.value)"></td>
+    <td><input type="text" value="${esc(r.nazev)}"${ro} onchange="varSet('${escJs(r.id)}', 'nazev', this.value)">${typeof vsStitekVarianty === 'function' ? vsStitekVarianty(v) : ''}</td>
     <td class="note" style="white-space:nowrap">${esc(r.cislo)}${puvodZn}</td>
     <td>${stav}</td>
     <td><input type="text" value="${esc(r.zakaznik)}" placeholder="varianta zákazníka"${ro} onchange="varSet('${escJs(r.id)}', 'zakaznik', this.value)"></td>

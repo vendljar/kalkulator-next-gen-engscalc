@@ -13,6 +13,9 @@ let TS_SACHTA = 0;
 function tsVsKontext() {
   if (typeof rezimViceSachet !== 'function' || typeof OCK === 'undefined' || !OCK || OCK.fixes === false || !rezimViceSachet(OCK)) return null;
   const sachty = sachtyZ(OCK);
+  /* VS-E3: se zapnutou funkcí je šachta specifikace TÁŽ jako otevřená
+   * šachta zadání (VS_UI.akt, E2) — jeden výběr pro celou aplikaci. */
+  if (typeof vsZap === 'function' && vsZap() && typeof VS_UI !== 'undefined') TS_SACHTA = VS_UI.akt;
   if (TS_SACHTA >= sachty.length || TS_SACHTA < 0) TS_SACHTA = 0;
   return { sachty, i: TS_SACHTA };
 }
@@ -31,7 +34,11 @@ function tsSachtaJenCteni(id) {
   const k = tsVsKontext();
   return !!(k && k.i && tsPoleSachty(id) && typeof viceSachetZapnuto === 'function' && !viceSachetZapnuto());
 }
-function tsSachtaPrepni(i) { TS_SACHTA = +i || 0; render(); }
+function tsSachtaPrepni(i) {
+  /* Zapnuto: přepne i zadání a kalkulaci (vsAkt); vypnuto: jen náhled specifikace (šachty 2+ jen ke čtení). */
+  if (typeof vsZap === 'function' && vsZap() && typeof vsAkt === 'function') { vsAkt(+i || 0); return; }
+  TS_SACHTA = +i || 0; render();
+}
 function tsSachtyLista(k) {
   if (!k) return '';
   return `<div class="noprint" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0">

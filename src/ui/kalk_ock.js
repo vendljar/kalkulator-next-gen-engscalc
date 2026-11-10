@@ -2342,7 +2342,13 @@ function renderOutputs() {
   /* VS #570: `r` = celá varianta (hlavička ceny, sleva, zaokrouhlení),
    * `rS` = tabulky kalkulace — otevřená šachta, nebo pohled Součet (jen ke
    * čtení). Bez víc šachet je rS === r. */
-  const s = rS.souctySekci, o = rS.odvozene, p = rS.parametry;
+  const s = rS.souctySekci;
+  /* Detail mezivýpočtů a nepoužité přepisy popisují jednu šachtu (i v Součtu). */
+  const rD = (typeof vsDetailVysledek === 'function') ? vsDetailVysledek(r) : r;
+  const o = rD.odvozene, p = rD.parametry;
+  const vsRez = (x) => (typeof vsRezervaPopis === 'function') ? vsRezervaPopis(x)
+    : (Z.rezervaZakladPct ? `REZERVA (${num(Z.rezervaZakladPct * 100)} %)` : '');
+  const vsF = (fn, ...a) => (typeof window !== 'undefined' && typeof window[fn] === 'function') ? window[fn](...a) : '';
 
   const col = kalkSloupce();
   // hodnoty hlavičky – zohlední schválenou slevu (jinak podíl 0)
@@ -2389,7 +2395,7 @@ function renderOutputs() {
     </div>
     ${box3 ? `<div class="kpi kpi-multi">${box3}</div>` : ''}
     ${box4 ? `<div class="kpi kpi-multi">${box4}</div>` : ''}
-  </div>`;
+  </div>${vsF('vsRozpisHlavicka', r)}`;
 
   const thCena = col.admin ? 'Cena vč. přirážky' : 'Cena';
   const adminTh = (col.admin && col.spravce)
@@ -2404,7 +2410,7 @@ function renderOutputs() {
     ${tbl(rS.sekce.oplasteni, s.oplasteni, 'OPLÁŠTĚNÍ', 'oplasteni')}
     ${tblVolitelne(rS.volitelneKatalog, s.volitelne)}
     ${tbl(rS.sekce.rezie, s.rezie, 'REŽIE', 'rezie')}
-    ${Z.rezervaZakladPct ? `<tr><td>REZERVA (${num(Z.rezervaZakladPct * 100)} %)</td><td></td>${col.admin ? '<td></td>' : ''}${col.showCost ? `<td>${fmt(rS.rezerva.naklad)}</td><td>${fmt(rS.rezerva.marze)}</td>` : ''}<td>${fmt(rS.rezerva.sMarzi)}</td>${adminTd}</tr>` : ''}
+    ${vsRez(rS) ? `<tr><td>${vsRez(rS)}</td><td></td>${col.admin ? '<td></td>' : ''}${col.showCost ? `<td>${fmt(rS.rezerva.naklad)}</td><td>${fmt(rS.rezerva.marze)}</td>` : ''}<td>${fmt(rS.rezerva.sMarzi)}</td>${adminTd}</tr>` : ''}
     <tr class="tot"><td>${vsCelkemPopis(rS)}</td><td></td>${col.admin ? '<td></td>' : ''}${col.showCost ? `<td>${fmt(rS.souhrn.zakladNaklad)}</td><td>${fmt(rS.souhrn.zakladMarze)}</td>` : ''}<td>${vsCelkemBunka(rS)}</td>${adminTd}</tr>
   </table>
   ${col.admin ? `<div class="note">Řádky přetáhnete úchopem <b>⠿</b> vlevo (v rámci sekce).${col.spravce ? ` Zaškrtávátko <b>Viditelné</b> určuje,
@@ -2459,7 +2465,7 @@ function renderOutputs() {
     let c = '';
     if (col.admin) c += `<td style="text-align:center"><input type="checkbox" ${vynech.includes(x.key) ? '' : 'checked'}
         onchange="priplatekNabidka('${keyAttr(x.key)}', this.checked)" title="propsat do cenové nabídky"></td>`;
-    c += `<td style="white-space:normal">${col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x) + dleNabidkyStitky(x) + rcStitek(x)}</td>`;
+    c += `<td style="white-space:normal">${col.admin ? pripNazev(x) : esc(x.nazev) + vypnutoHtml(x) + dleNabidkyStitky(x) + rcStitek(x)}${vsF('vsSachtyPopis', x)}</td>`;
     c += `<td style="white-space:nowrap">${col.admin ? pripMnozstvi(x) : num(x.mnozstvi, 3)}</td>`;
     if (col.admin) c += `<td style="white-space:nowrap">${pripCena(x)}</td>`;
     if (col.showCost) c += `<td>${fmt(x.naklad)}</td>`;
@@ -2506,22 +2512,22 @@ function renderOutputs() {
     <tr><td>Počet rámů</td><td>${esc(p.ramy)}</td><td>Portálové příčníky</td><td>${esc(p.portPricniky)}</td></tr>
     <tr><td>Spojky sloupků</td><td>${esc(p.spojky)}</td><td>Počet čílek (int)</td><td>${esc(p.pocetCilek)}</td></tr>
     <tr class="subhead"><td colspan="4">Materiál</td></tr>
-    <tr><td>Profily celkem</td><td>${num(rS.profily.celkemM, 2)} m · ${num(rS.profily.celkemKg, 1)} kg</td>
-        <td>Lemování ext</td><td>${num(rS.profily.lemovani.m, 2)} m · ${num(rS.profily.lemovani.kg, 1)} kg</td></tr>
-    <tr><td>Konstrukční plechy</td><td>${esc(rS.plechy.ks)} ks · ${num(rS.plechy.kg, 1)} kg</td>
-        <td>Terče / lišty</td><td>${esc(rS.dily.terceKs)} ks / ${num(rS.dily.listyBm, 1)} bm</td></tr>
-    <tr><td>Oplechování dveří</td><td>${esc(rS.dily.oplDvereKs)} ks · ${num(rS.dily.oplDvereKg, 1)} kg</td>
-        <td>Přechodové plechy</td><td>${esc(rS.dily.prechKs)} ks · ${num(rS.dily.prechKg, 1)} kg</td></tr>
-    <tr class="subhead"><td colspan="4">Zasklení (rozměr skla ${num(rS.zaskleni.rozmer.sir, 3)}×${num(rS.zaskleni.rozmer.vys, 3)} m)</td></tr>
-    <tr><td>Zadní stěna</td><td>${esc(rS.zaskleni.zadni.ks)} ks · ${num(rS.zaskleni.zadni.m2, 2)} m²</td>
-        <td>Boční stěny</td><td>${esc(rS.zaskleni.bocni.ks)} ks · ${num(rS.zaskleni.bocni.m2, 2)} m²</td></tr>
-    <tr><td>Světlíky</td><td>${esc(rS.zaskleni.svetliky.ks + rS.zaskleni.svetlikyBoky.ks)} ks · ${num(rS.zaskleni.svetliky.m2 + rS.zaskleni.svetlikyBoky.m2, 2)} m²</td>
-        <td><b>Zasklení celkem</b></td><td><b>${num(rS.zaskleni.celkemM2, 2)} m²</b></td></tr>
+    <tr><td>Profily celkem</td><td>${num(rD.profily.celkemM, 2)} m · ${num(rD.profily.celkemKg, 1)} kg</td>
+        <td>Lemování ext</td><td>${num(rD.profily.lemovani.m, 2)} m · ${num(rD.profily.lemovani.kg, 1)} kg</td></tr>
+    <tr><td>Konstrukční plechy</td><td>${esc(rD.plechy.ks)} ks · ${num(rD.plechy.kg, 1)} kg</td>
+        <td>Terče / lišty</td><td>${esc(rD.dily.terceKs)} ks / ${num(rD.dily.listyBm, 1)} bm</td></tr>
+    <tr><td>Oplechování dveří</td><td>${esc(rD.dily.oplDvereKs)} ks · ${num(rD.dily.oplDvereKg, 1)} kg</td>
+        <td>Přechodové plechy</td><td>${esc(rD.dily.prechKs)} ks · ${num(rD.dily.prechKg, 1)} kg</td></tr>
+    <tr class="subhead"><td colspan="4">Zasklení (rozměr skla ${num(rD.zaskleni.rozmer.sir, 3)}×${num(rD.zaskleni.rozmer.vys, 3)} m)</td></tr>
+    <tr><td>Zadní stěna</td><td>${esc(rD.zaskleni.zadni.ks)} ks · ${num(rD.zaskleni.zadni.m2, 2)} m²</td>
+        <td>Boční stěny</td><td>${esc(rD.zaskleni.bocni.ks)} ks · ${num(rD.zaskleni.bocni.m2, 2)} m²</td></tr>
+    <tr><td>Světlíky</td><td>${esc(rD.zaskleni.svetliky.ks + rD.zaskleni.svetlikyBoky.ks)} ks · ${num(rD.zaskleni.svetliky.m2 + rD.zaskleni.svetlikyBoky.m2, 2)} m²</td>
+        <td><b>Zasklení celkem</b></td><td><b>${num(rD.zaskleni.celkemM2, 2)} m²</b></td></tr>
     <tr class="subhead"><td colspan="4">Práce</td></tr>
-    <tr><td>Montáž – hodiny navíc</td><td>${num(rS.montaz.hodinyNavicCelkem, 2)} h</td>
-        <td>Montáž celkem (4 os.)</td><td>${num(rS.montaz.hodCelkem, 1)} h · ${num(rS.montaz.dni, 1)} dní</td></tr>
-    <tr><td>Lakování – lakovna B</td><td>${fmt(rS.lakovani.tomas)}</td><td>Lakování – lakovna</td><td>${fmt(rS.lakovani.lakovna)}</td></tr>
-    <tr><td>Spojovací materiál</td><td>${fmt(rS.spojovaci.celkem)}</td><td>Nýtování</td><td>${esc(rS.spojovaci.nytovaniKs)} ks</td></tr>
+    <tr><td>Montáž – hodiny navíc</td><td>${num(rD.montaz.hodinyNavicCelkem, 2)} h</td>
+        <td>Montáž celkem (4 os.)</td><td>${num(rD.montaz.hodCelkem, 1)} h · ${num(rD.montaz.dni, 1)} dní</td></tr>
+    <tr><td>Lakování – lakovna B</td><td>${fmt(rD.lakovani.tomas)}</td><td>Lakování – lakovna</td><td>${fmt(rD.lakovani.lakovna)}</td></tr>
+    <tr><td>Spojovací materiál</td><td>${fmt(rD.spojovaci.celkem)}</td><td>Nýtování</td><td>${esc(rD.spojovaci.nytovaniKs)} ks</td></tr>
     </table>`;
 
   /* Souhrn (základní cena, DPH, náklad, marže) stojí NAD zadáním šachty —
@@ -2549,12 +2555,14 @@ function renderOutputs() {
   document.getElementById('outputs').innerHTML =
     (elSouhrn ? '' : `<div class="card"><div class="body">${hlava}${marzeLista({ cast: 'ock' })}</div></div>`
       + kartaPoznamek) +
-    kartaRezim('ock', 'kalkulace', 'Cenová kalkulace', kalkulace, 'ock-kalkulace') +
+    kartaRezim('ock', 'kalkulace', 'Cenová kalkulace', vsF('vsKalkPoznamka', r) + (typeof vsKalkObal === 'function' ? vsKalkObal(r, kalkulace) : kalkulace),
+      'ock-kalkulace', false, vsF('vsKalkPrepinac', r)) +
     /* Obě karty mají od 20. 8. 2026 režim sekce (zobrazit/skrýt/srolovat)
      * stejně jako sekce v tabulce kalkulace — dřív ho neměly, ačkoli je
      * obchodník vidí jako úplně stejné bloky. */
-    kartaRezim('ock', 'priplatky', 'Příplatkové položky (ceník variant)', prip, 'ock-priplatky') +
-    sirotciKarta(rS) +
+    kartaRezim('ock', 'priplatky', 'Příplatkové položky (ceník variant)',
+      vsF('vsPriplatkyPoznamka', r) + (typeof vsKalkObal === 'function' ? vsKalkObal(r, prip) : prip), 'ock-priplatky') +
+    sirotciKarta(rD) +
     (col.admin ? kartaRezim('ock', 'detailMezivypoctu', 'Detail mezivýpočtů', det, 'ock-detail') : '');
 }
 

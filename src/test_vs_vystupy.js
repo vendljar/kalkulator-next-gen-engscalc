@@ -230,7 +230,7 @@ function zamkni(zak, v) {
   test('F dalsi [] + ks 1 + název = jedna šachta (krycí list shodný)', JSON.stringify(kryciData(z2, v2, J, 'bo')) === JSON.stringify(kryciData(zak, v, J, 'bo')));
   test('F vsVystup(null / bez sachty) = null', vsVystup(null) === null && vsVystup(r) === null);
   test('F texty R19: 1 varianta / 2–4 varianty / 5+ variant', vsVariantText(1) === '1 varianta šachty' && vsVariantText(4) === '4 varianty šachet'
-    && vsVariantText(5) === '5 variant šachet' && vsPoctyText(3, 7) === '3 varianty šachet, celkem 7 ks');
+    && vsVariantText(5) === '5 variant šachet' && vsPoctyPopis(3, 7) === '3 varianty šachet, celkem 7 ks');
 }
 
 console.log(ok + ' OK, ' + fail + ' FAIL');

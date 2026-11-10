@@ -8,14 +8,14 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v10.11.5 — VS-E5 #570: víc šachet ve výstupech za zakázku — krycí list, SoD, objednané příplatky, controlling, Pipedrive náhled, zámek, kontroly (#595), větev claude/vs-s3-e5
+## v10.11.6 — VS-E5 #570: víc šachet ve výstupech za zakázku — krycí list, SoD, objednané příplatky, controlling, Pipedrive náhled, zámek, kontroly (#595), větev claude/vs-s3-e5
 
-Nad `079cfc6`, sloučeno s integrací `aaac150` (v10.11.4 = E2 + E4). Verzi přečísluje koordinace. Sezení S3, paralelně s S1 (E2/E3) a S2 (E4).
+Nad `079cfc6`, sloučeno s integrací `d3ee6db` (v10.11.5 = E2 + E3 + E4). Verzi přečísluje koordinace. Sezení S3, paralelně s S1 (E2/E3) a S2 (E4).
 Všechno čte výsledek obalu (`vysl.sachty[]`, u odeslané nabídky zmrazený v zámku) — **jedna šachta (bez `dalsi`,
 ks 1) = výstupy bajt po bajtu jako dnes** (zlatá sada 319/319 beze změny otisků). Na webech, Disku ani v Pipedrive nic.
 
 - **`src/vice_sachet.js`** (jen přidané funkce na konec): `vsVystup` (rozpis šachet z výsledku: název, ks, cena
-  z rozpočtu R7, můstky), `vsVariantText` / `vsPoctyText` („2 varianty šachet, celkem 3 ks“, R19), `vsSeznamText`,
+  z rozpočtu R7, můstky), `vsVariantText` / `vsPoctyPopis` („2 varianty šachet, celkem 3 ks“, R19), `vsSeznamText`,
   `vsPredmetText`, `vsAtyp` (ATYP zakázky = ATYP kterékoli šachty), `vsPriplatkyVNabidce` (výběr po šachtách, R13),
   `vsZamekZmenaSachet` (důvod pro UI E2: odeslaná varianta šachty nemění).
 - **Krycí list OCK (R9, R19):** jeden list za variantu; nová sekce **„Šachty v nabídce“** za Základními údaji
@@ -46,6 +46,35 @@ ks 1) = výstupy bajt po bajtu jako dnes** (zlatá sada 319/319 beze změny otis
   na 079cfc6 všechny padají. `test_kontroly.js`: 48 pravidel. Mutace „[#570 E5]“ jádro 15, server 3.
 
 ## v11.11.1 — VS-E0/E1 #570: víc šachet v nabídce — zlatá sada, jádro, server a vypínač správce (výchozí vypnuto), větev claude/vs-e0e1
+## v10.11.5 — VS-E3 #570: víc šachet v nabídce — kalkulace šachta / Součet, hlavička ceny s rozpisem, rozpočet zaokrouhlení, sleva ze součtu, přehledy (za vypínačem), větev claude/vs-s1-e2e3
+
+Nad integrací aaac150 (v10.11.4 = E2 v10.11.3 + E4 v10.11.4). Verzi přečísluje koordinace. **Jedna šachta (VYP i ZAP) = obrazovka znak po znaku jako 079cfc6**
+(#inputs, #outputs, souhrn, sleva/zaokrouhlení/CN, Detail výpočtu — harness), zlatá sada 319/319.
+
+- **Cenová kalkulace:** v nadpisu přepínač **šachty / Součet**. Šachta = její řádky (editace jako dnes), CELKEM šachty
+  bez zaokrouhlení; **Součet** = sloučené řádky × ks, CELKEM = základní cena (na tisíce jen součet, R3), **jen ke čtení**
+  (všechna pole a tlačítka zhasnutá, i z klávesnice). Příplatky v Součtu s výčtem šachet „Výtah A, Výtah B 2×" (R8).
+  Detail mezivýpočtů, nepoužité přepisy a záložka Detail výpočtu = otevřená šachta.
+- **Hlavička ceny:** hlavní číslo = základ celé nabídky, pod ním rozpis „Výtah A · 1 ks · … Kč" (ceny po rozpočtu
+  zaokrouhlení, Σ = základ, R7), klik otevře šachtu.
+- **Karta Obchodní zaokrouhlení OCK:** tabulka **Rozpočet zaokrouhlení do šachet** (spočteno ks × cena, v nabídce,
+  celkem = základ).
+- **Sleva a schvalování:** věta „Sleva se počítá z ceny celé nabídky (2 varianty šachet, celkem 3 ks)" v kartě slevy,
+  v žádosti o schválení počty šachet (strop a marže ze součtu počítá jádro a server už od E1).
+- **Přehledy:** seznam variant se štítkem „2 varianty / 3 ks" a hledáním i podle názvu šachty (`seznam.js`,
+  `vsNazvySachetText`), porovnání variant se štítkem pod názvem (porovnávají se součty).
+- Oprava během E3: obsluha tlačítka Součet se jmenovala jako funkce jádra `vsSoucet()` a v sestavení ji přepsala;
+  přejmenováno a `test_vs_zadani.js` nově hlídá kolize jmen modulu obrazovky se zbytkem `src/`.
+- **Body koordinace po E4:** (1) server kontroluje `ock.dalsi[i].techspec` — jen `{ hodnoty: { <pole šachty>: text ≤ 2000 } }`
+  (`vsTechspecOk` ve `vsTvarProblemy`; pole za zakázku i neznámá pole 400); (5) přepínač šachty v Technické
+  specifikaci je se zapnutou funkcí táž volba jako otevřená šachta zadání (`TS_SACHTA` = `VS_UI.akt`, přepnutí
+  ve specifikaci přepne i zadání a kalkulaci); s vypnutou funkcí jako v E4 (náhled šachet 2+ jen ke čtení).
+- Testy: `src/test_vs_priplatky.js` (19), `src/test_vs_sleva.js` (19), `overit_vs_kalkulace.mjs` (25),
+  `netlify/test_vs_server.mjs` +8 (techspec, 65/0; na E2 7 FAIL), serverové mutace „[#570 E3]" 2/2,
+  `overit_vs_zadani.mjs` rozšířen o slevu/CN a Detail; mutace „[#570 E3]" 10.
+
+---
+
 ## v10.11.4 — VS-E4 #570: víc šachet v nabídce — cenová nabídka s tabulkou variant šachet, Word CN v17, technická specifikace po šachtách, překlady, větev claude/vs-s2-e4
 
 Nad `079cfc6` (integrace v11.11.1 = E0/E1). `verze.txt` 10.11.3 (den posledního commitu); verzi přečísluje koordinace. Všechno za

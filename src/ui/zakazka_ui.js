@@ -213,6 +213,15 @@ function porovnaniRozdil(m, r, rPct) {
   return `<span class="${r > 0 ? 'neg' : 'pos'}">${txt}</span>${pct}`;
 }
 
+/* VS #570 (E3): u varianty s víc šachtami „N variant / X ks" pod názvem —
+ * porovnávají se součty šachet. */
+function vsPorovnaniStitek(id) {
+  if (typeof vsStitekVarianty !== 'function') return '';
+  const v = ZAK.varianty.find(x => x.id === id);
+  const t = v ? vsStitekVarianty(v) : '';
+  return t ? `<div>${t}</div>` : '';
+}
+
 function porovnaniKarta() {
   if (ZAK.varianty.length < 2)
     return card('Porovnání variant vedle sebe',
@@ -225,7 +234,7 @@ function porovnaniKarta() {
 
   const hlavicka = vs.map(v =>
     `<th class="${v.ridici ? 'ridici' : ''}">${esc(v.nazev)}${v.ridici ? ' <span class="tag">řídící</span>' : ''}
-     ${v.zakaznik ? `<div class="note">${esc(v.zakaznik)}</div>` : ''}</th>
+     ${v.zakaznik ? `<div class="note">${esc(v.zakaznik)}</div>` : ''}${vsPorovnaniStitek(v.id)}</th>
      ${v.ridici ? '' : '<th class="rozdil">rozdíl</th>'}`).join('');
 
   const telo = met.map(m => {

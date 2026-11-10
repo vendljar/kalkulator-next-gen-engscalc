@@ -116,7 +116,7 @@ function zaokrKarta(kontext) {
       <div class="row"><label>Stav</label>
         <div><span class="pill ${zapnuto ? '' : 'mut'}">${zapnuto ? esc(zaokrStav(0, st).popis) : 'vypnuto'}</span></div></div>
     </div>
-    ${dopad}`;
+    ${dopad}${!proj && typeof vsRozpocetTabulka === 'function' ? vsRozpocetTabulka() : ''}`;
   /* Režim sekce i tady (23. 9. 2026) — jen u OCK, viz slevaKarta(). */
   return proj ? card('Obchodní zaokrouhlení koncové ceny PROJ', inner, false, 'proj-zaokr')
     : kartaRezim('ock', 'zaokr', 'Obchodní zaokrouhlení koncové ceny OCK', inner, 'ock-zaokr');
