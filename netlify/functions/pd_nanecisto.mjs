@@ -58,6 +58,8 @@ export function pdNanecistoStrana(z) {
   const s = { hodnoty: textova(z.hodnoty), rucne: textova(z.rucne) };
   if (z.atyp === true || z.atyp === false) s.atyp = z.atyp;
   if (typeof z.kalendar === 'string') s.kalendar = z.kalendar.slice(0, TEXT_MAX);
+  /* VS-E5 (#595, R6): seznam šachet do poznámky dealu (jen náhled). */
+  if (typeof z.sachty === 'string' && z.sachty.trim()) s.sachty = z.sachty.slice(0, TEXT_MAX);
   if (typeof z.cena === 'number' && isFinite(z.cena)) s.cena = z.cena;
   if (typeof z.mena === 'string' && /^[A-Za-z]{3}$/.test(z.mena)) s.mena = z.mena.toUpperCase();
   return s;

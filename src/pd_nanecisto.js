@@ -47,16 +47,23 @@ function pdnStranaOck(zak, v, jekly) {
     try { x = kryciHodnota(p, kl, c); } catch (e) { x = ''; }
     hodnoty[p.id] = pdnText(x);
   }));
-  let cena = null;
+  let cena = null, vo = null;
   try {
     const r = (typeof vysledekStrany === 'function') ? vysledekStrany(zak, v, 'ock', jekly) : vypocetZ(v, jekly);
     const d = v.data || {};
     const cn = (r && typeof cenaNabidkyOck === 'function') ? cenaNabidkyOck(r, d.sleva || {}, d.zaokr) : null;
     if (cn && isFinite(+cn.cena)) cena = +cn.cena;
+    vo = (typeof vsVystup === 'function') ? vsVystup(r) : null;
   } catch (e) { cena = null; }
   const zad = (v.data && v.data.ock && v.data.ock.zadani) || {};
-  const out = { hodnoty, rucne: Object.assign({}, kl.hodnoty || {}), atyp: !!zad.atyp, mena: 'CZK' };
+  /* VS-E5 (#595, R6): víc šachet — hodnota dealu = cena celé nabídky (beze
+   * změny), ATYP, je-li atypická kterákoli šachta, a seznam šachet do
+   * poznámky dealu (`sachty`; jen náhled — pole určí J. V., do Pipedrive
+   * se nic neposílá). Jedna šachta = podklad beze změny. */
+  const out = { hodnoty, rucne: Object.assign({}, kl.hodnoty || {}),
+    atyp: vo ? vsAtyp(v.data && v.data.ock) : !!zad.atyp, mena: 'CZK' };
   if (cena !== null) out.cena = cena;
+  if (vo) out.sachty = 'Šachty v nabídce: ' + vsPredmetText(vo);
   return out;
 }
 

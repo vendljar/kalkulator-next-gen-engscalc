@@ -49,6 +49,8 @@ const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
   : [/* VS #570 E1 (10. 11. 2026): víc šachet v nabídce — vypínač, tvar, limity, 409, zámek (rychlá sada). */
      'test_vs_server.mjs',
+     /* VS #570 E5 (#595, 10. 11. 2026): Pipedrive náhled — seznam šachet do poznámky (rychlá sada). */
+     'test_vs_e5_pd.mjs',
      /* #560 MU (5. 11. 2026): sekce MŮSTKY — server (validace Z.mustky, zveřejnění ceníku, zámek) a model. */
      'test_560_mustky.mjs', '../src/test_560_mustky_sekce.js',
      /* #IK / #560 (4. 11. 2026): interní poznámky k zakázce na krycím listu — rychlé sady. */
@@ -215,6 +217,20 @@ const MUTACE = [
   /* VS #570 E1 (10. 11. 2026): víc šachet v jedné nabídce — server: vypínač
    * správce, tvar a limity ock.dalsi, Model 2, 409 při ztrátě dalsi, zadání
    * šachet 2+ stejnými kontrolami. Hlídá netlify/test_vs_server.mjs. [#570] */
+  /* VS #570 E5 (#595, 10. 11. 2026): Pipedrive náhled — seznam šachet do
+   * poznámky dealu, do Pipedrive nic. Hlídá netlify/test_vs_e5_pd.mjs. [#570 E5] */
+  { nazev: 'VS-E5: server zahodí seznam šachet [#570 E5]', soubor: 'functions/pd_nanecisto.mjs',
+    hledej: "  if (typeof z.sachty === 'string' && z.sachty.trim()) s.sachty = z.sachty.slice(0, TEXT_MAX);",
+    nahrad: '',
+    proc: 'náhled Pipedrive by u víc šachet neukázal, které šachty jdou do poznámky (R6)', sady: ['test_vs_e5_pd.mjs'] },
+  { nazev: 'VS-E5: seznam šachet bez meze délky [#570 E5]', soubor: 'functions/pd_nanecisto.mjs',
+    hledej: "  if (typeof z.sachty === 'string' && z.sachty.trim()) s.sachty = z.sachty.slice(0, TEXT_MAX);",
+    nahrad: "  if (typeof z.sachty === 'string' && z.sachty.trim()) s.sachty = z.sachty;",
+    proc: 'klient by poslal libovolně dlouhý text do náhledu', sady: ['test_vs_e5_pd.mjs'] },
+  { nazev: 'VS-E5: náhled bez řádku poznámky šachet [#570 E5]', soubor: 'lib/pd_prevod.mjs',
+    hledej: "  if (vsZ) radky.push({ klic: 'poznamkaSachty',",
+    nahrad: "  if (false) radky.push({ klic: 'poznamkaSachty',",
+    proc: 'obchodník by neviděl, co by šlo do poznámky dealu (R6)', sady: ['test_vs_e5_pd.mjs'] },
   /* VS-E3 (bod koordinace 1 po E4): ruční hodnoty specifikace šachty 2+. [#570 E3] */
   { nazev: 'VS-E3: techspec šachty 2+ bez kontroly tvaru [#570 E3]', soubor: '../src/vice_sachet.js',
     hledej: "    if (s.techspec !== undefined && !vsTechspecOk(s.techspec)) out.push({ kde: c + '.techspec', duvod: 'typ' });",

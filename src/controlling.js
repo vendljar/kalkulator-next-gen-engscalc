@@ -705,6 +705,11 @@ function ctrlExportVarianty(zak, v, opts) {
     cenaDilaSod: ctrlCenaDilaSod(v),
     objZmenenoPoSod: ctrlObjZmenenoPoSod(zak, v),
   };
+  /* VS-E5 (#595, R5): controlling jen za celou zakázku — listy a sloupce beze
+   * změny (kapitoly = sečtené sekce šachet z obalu). U víc šachet jen text
+   * do listu Popis: počet variant a šachet celkem se seznamem. */
+  const vsVo = (vOck && typeof vsVystup === 'function') ? vsVystup(vOck) : null;
+  if (vsVo) hlavicka.sachty = vsPredmetText(vsVo);
   return { ok: true, hlavicka, strany, radky, kapitoly: ctrlKapitoly(radky, { data: o.data, jenZaklad: true }),
     kdy: o.kdy || new Date().toISOString(), kdo: String(o.kdo || ''), build: String(o.build || '') };
 }
@@ -1248,6 +1253,9 @@ function ctrlExportListy(exp, data, opts) {
     : 'Datum prodeje (Prodáno)', prodane[0].hlavicka.datumProdeje]);
   if (!hr && prvni.hlavicka && prvni.hlavicka.cenaDilaSod != null) popis.push(['Cena díla dle SoD (Kč bez DPH)', ctrlZaokr(prvni.hlavicka.cenaDilaSod)]);
   if (!hr && prvni.hlavicka && prvni.hlavicka.objZmenenoPoSod) popis.push(['Objednané změněny po tisku SoD', prvni.hlavicka.objZmenenoPoSod]);
+  /* VS-E5 (#595, R5/R19): víc šachet — řádky a kapitoly jsou součtem šachet × ks. */
+  if (!hr && prvni.hlavicka && prvni.hlavicka.sachty)
+    popis.push(['Šachty v nabídce (OCK)', prvni.hlavicka.sachty + ' — řádky a kapitoly jsou součtem šachet × ks']);
   if (hr) popis.push(['Zakázek s datem prodeje (Prodáno, u starších objednané příplatky)', prodane.length]);
   popis.push(['List ' + CTRL_LIST_PRIPLATKY, 'příplatky nabídnuté jako volba (mimo cenu nabídky), stejné sloupce jako Řádky']);
   popis.push([]);
@@ -1258,10 +1266,14 @@ function ctrlExportListy(exp, data, opts) {
     popis.push([]);
     popis.push(['Zakázky v exportu', 'Název akce', 'Zákazník', 'Zamčeno', 'Řada', 'Oblast', 'Výsledek', 'Datum prodeje',
       'Cena díla dle SoD (Kč bez DPH)', 'Objednané změněny po tisku SoD']);
+    /* VS-E5: sloupec Šachty (OCK) jen tehdy, má-li víc šachet aspoň jedna zakázka exportu. */
+    const vsSl = exps.some(e => e.hlavicka.sachty);
+    if (vsSl) popis[popis.length - 1].push('Šachty v nabídce (OCK)');
     exps.forEach(e => popis.push([e.strany.map(s => s.cislo).join(' + '), e.hlavicka.nazevAkce, e.hlavicka.zakaznik,
       e.hlavicka.zamceno, e.hlavicka.rada, e.strany.map(s => s.oblast.toUpperCase()).join(' + '),
       e.hlavicka.zmrazeno ? 'zmrazený' : 'přepočtený', e.hlavicka.datumProdeje || '',
-      e.hlavicka.cenaDilaSod != null ? ctrlZaokr(e.hlavicka.cenaDilaSod) : '', e.hlavicka.objZmenenoPoSod || '']));
+      e.hlavicka.cenaDilaSod != null ? ctrlZaokr(e.hlavicka.cenaDilaSod) : '', e.hlavicka.objZmenenoPoSod || '']
+      .concat(vsSl ? [e.hlavicka.sachty || ''] : [])));
     const presk = Array.isArray(hr.preskoceno) ? hr.preskoceno : [];
     if (presk.length) {
       popis.push([]);

@@ -289,8 +289,8 @@ const kapIII = (sek) => (Array.isArray(sek) ? sek.find(x => /^III\./.test(x.sekc
   const ku = fs.readFileSync(path.join(__dirname, 'ui', 'kontroly_ui.js'), 'utf8');
   const kuCtx = ku.slice(ku.indexOf('function kontrolyCtxAkt'), ku.indexOf('function kontrolySablonaNabidka'));
   test('kontroly v aplikaci dostanou kalendář a šablonu stáhnou i kvůli platebním podmínkám',
-    /kryciPlatebniKalendar\(/.test(kuCtx) && /^\s*platbyOck,$/m.test(kuCtx) && /kontrolySablonaNabidka\([\s\S]{0,200}?, platbyOck\)/.test(kuCtx)
-    && /function kontrolySablonaNabidka\(sleva, jazyk, platby\)[\s\S]{0,400}kontrolyPlatbyDuvody\(platby\)/.test(ku));
+    /kryciPlatebniKalendar\(/.test(kuCtx) && /^\s*platbyOck,$/m.test(kuCtx) && /kontrolySablonaNabidka\([\s\S]{0,200}?, platbyOck(, vsRezim)?\)/.test(kuCtx)
+    && /function kontrolySablonaNabidka\(sleva, jazyk, platby(, vs)?\)[\s\S]{0,400}kontrolyPlatbyDuvody\(platby\)/.test(ku));
 }
 
 /* ---------------- 10) Word: řádek tabulky za každou větu ---------------- */

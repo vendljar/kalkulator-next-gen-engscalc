@@ -42,9 +42,14 @@ function kontrolyCtxAkt() {
     platbyOck = (typeof kryciPlatebniKalendar === 'function' && typeof ZAK !== 'undefined')
       ? kryciPlatebniKalendar(ZAK, aktivniVarianta(ZAK), JEKLY) : null;
   } catch (e) { platbyOck = null; }
+  /* VS-E5 (#595): data OCK otevřené varianty (šachty 2+ pro kontroly po šachtách). */
+  let ockData = null;
+  try { const va = aktivniVarianta(ZAK); ockData = (va && va.data && va.data.ock) || null; } catch (e) { ockData = null; }
+  const vsRezim = !!(ockData && typeof rezimViceSachet === 'function' && rezimViceSachet(ockData));
   return {
     zadani: Z,
     vysledek: ock,
+    ock: vsRezim ? ockData : null,
     /* Zámek strany (P6): jenProj / jenOck z vyřazené strany (kontrolyProved
      * to odvodí i sám — kontrolyCtxStrany). */
     jenProj: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'ock' : !!ZAK.jenProj),
@@ -84,7 +89,7 @@ function kontrolyCtxAkt() {
     sablonaNabidka: (() => {
       try {
         return kontrolySablonaNabidka((typeof SL !== 'undefined') ? SL : null,
-          (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz', platbyOck);
+          (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz', platbyOck, vsRezim);
       } catch (e) { return null; }
     })(),
     /* Symboly šablony nabídky PROJ (P4 / K15-N66) — stahují se jen u zakázky
@@ -136,10 +141,11 @@ const KONTROLY_SABLONA = { cache: {}, bezi: {} };
 /* Od etapy A (30. 9. 2026) i kvůli platebním podmínkám: šablona se stáhne,
  * když kalendář OCK obsahuje něco, co šablona v13 s pevnými větami nevytiskne
  * (bez zálohy, splátka s 0 %, měsíční fakturace — kontrolyPlatbyDuvody). */
-function kontrolySablonaNabidka(sleva, jazyk, platby) {
+/* VS-E5 (#595): i u víc šachet — pravidlo vsSablona (šablona bez rozpisu šachet). */
+function kontrolySablonaNabidka(sleva, jazyk, platby, vs) {
   const sleva_ = typeof slevaPlati === 'function' && slevaPlati(sleva);
   const platby_ = typeof kontrolyPlatbyDuvody === 'function' && kontrolyPlatbyDuvody(platby).length > 0;
-  if (!sleva_ && !platby_) return null;
+  if (!sleva_ && !platby_ && !vs) return null;
   return kontrolySablonaSymboly('nabidka', jazyk);
 }
 /* Totéž pro nabídku PROJ (P4): stahuje se jen, když je co hlídat — schválená
@@ -212,6 +218,7 @@ function kontrolyCtxVarianta(v) {
   return {
     zadani: d.ock ? d.ock.zadani : null,
     vysledek: ock,
+    ock: d.ock || null,      // VS-E5: šachty 2+ pro kontroly po šachtách
     jenProj: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'ock' : !!ZAK.jenProj),
     jenOck: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'proj' : !!ZAK.jenOck),
     projZadani: d.proj ? d.proj.zadani : null,

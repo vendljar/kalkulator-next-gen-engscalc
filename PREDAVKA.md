@@ -1,6 +1,45 @@
+# Předávka — 10. 11. 2026: VS-E5 #570 (#595) — výstupy za zakázku s víc šachtami (S3), větev `claude/vs-s3-e5`
+
+Nad `079cfc6`, sloučeno s integrací `d3ee6db` (v10.11.5 = E2 + E3 + E4). **CHANGELOG v10.11.6** (koordinace přečísluje). Neslučováno; do
+`test-draft`, `test` ani `main` nic. Na webech, Disku ani v Pipedrive nic. Paralelně S1 (E2/E3) a S2 (E4).
+
+| úkol | stav | kde |
+|---|---|---|
+| krycí list (jeden za variantu) | ✅ | `kryci.js` `kryciSachtySekce` (sekce „Šachty v nabídce“ za Základními údaji: varianta / počet / cena R7, vč. můstků, celkem N variant + X ks), `kryciMustkyPoSachtach`, `kryciCtx.vs`, ATYP kterékoli šachty, příplatky s výčtem šachet; `ui/kryci_ui.js` `kryciSachtyBlok` (#kryciSachty); tisk BO/Tech i Word přes sekci se sloupci |
+| SoD + objednané | ✅ | `sod.js` `sodSachtySymboly` → `{{SACHTY_SOD_PREDMET}}`, `{{SACHTY_SOD_ROZPIS}}` (jen víc šachet); `objednane.js` `objNabidnute` po šachtách (Σ ks × šachta, výběr po šachtách), `prodPdZapis` víc sloupců jednou buňkou |
+| controlling (R5) | ✅ | `controlling.js`: listy beze změny, `hlavicka.sachty` → Popis „Šachty v nabídce (OCK)“, hromadný sloupec jen když je |
+| Pipedrive (R6) | ✅ | `pd_nanecisto.js` (`sachty`, ATYP), `functions/pd_nanecisto.mjs` (přebere text ≤ 20 000), `lib/pd_prevod.mjs` řádek „Poznámka dealu — šachty v nabídce“; **patch beze změny** |
+| zámek | ✅ | `zamek.js` `zamekSnimekSpocti`: `sachty[{id,nazev,ks}]` + `sachtyVerze: 1` (jen víc šachet); dotisk ze zmrazeného `vysledek.ock.sachty[]` |
+| kontroly | ✅ | `kontroly.js`: `KONTROLY_PO_SACHTE` (14 pravidel po šachtách, „Výtah B: …“), `vsModel1`, `vsSablona` (`dokumenty: ['nabidka']`), brána respektuje `dokumenty`; `ui/kontroly_ui.js` `ctx.ock`, šablona i kvůli VS |
+| vice_sachet.js (konec souboru) | ✅ | `vsVystup`, `vsVariantText`, `vsPoctyPopis`, `vsSeznamText`, `vsPredmetText`, `vsMaMustky`, `vsAtyp`, `vsPriplatkyVNabidce`, `vsZamekZmenaSachet` (export přes `Object.assign(module.exports, …)`) |
+| testy | ✅ | `src/test_vs_vystupy.js` 47, `src/test_vs_zamek.js` 21, `src/test_vs_kontroly.js` 18, `netlify/test_vs_e5_pd.mjs` 9, `overit_vs_kryci_sod.mjs` 23; na 079cfc6 všechny padají; `test_kontroly.js` 48 pravidel, `test_platby_ock.js` (4. parametr), `manual_vypocet/cisla_vydani.json` k.pocet 48 |
+| mutace „[#570 E5]“ | ✅ jádro 15/15, server 3/3 | `mutace_jadro.mjs`, `netlify/mutace.mjs` (sada `test_vs_e5_pd.mjs`); po sloučení E2–E4 znovu 15/15 + 3/3 |
+| kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | po sloučení integrace d3ee6db: sady 425/0/7 přesk., hodiny +400 dní 342/0/1, statické 5/5, 31 min 38 s; harnessy VS E2/E4/E5 zelené |
+
+**Otevřené body (pro koordinaci / J. V.):**
+1. **Pipedrive pole poznámky** (plán 8.4): náhled ukazuje řádek „Poznámka dealu — šachty v nabídce“, zápis ho
+   neposílá. Až J. V. určí pole (poznámka dealu / textové pole z mapy), doplní se do `pdZapisDealu`.
+2. **Překlady pro S2 (`preklad.js`):** „varianta šachty“, „varianty šachet“, „variant šachet“, „celkem“,
+   „vč. můstků“ (SoD v EN/DE/FR je za `sodJazykZabrana`; bez překladu zůstanou česky).
+3. **E4 zapojeno (po sloučení `aaac150`):** pravidlo `vsSablona` volá `vsSablonaZabrana(ock, symboly)` z E4 (stejné
+   pravidlo, jakým `nabidkaData` zastaví Word); zábrana jen Wordu nabídky. Zámek po JSON nese `sachty[i].vysl`
+   a `cenaPredZaokr` (test). Symboly SoD jsou `SACHTY_SOD_*` (vzor `VS_NOVE_SYMBOLY` je kryje).
+4. **Pro S1 (E2):** `vsZamekZmenaSachet(v)` dá důvod pro zhasnutá tlačítka šachet v odeslané variantě;
+   `kontrolyCtxAkt` posílá `ock` otevřené varianty (kontroly po šachtách nezávisí na tom, kam E2 přepne `Z`).
+5. **ATYP zakázky = ATYP kterékoli šachty** (termín dodání v krycím listu, Pipedrive) a **Typ produktu** zůstává
+   podle šachty 1 (exteriér/interiér) — k potvrzení J. V., až budou smíšené zakázky.
+6. **Velikost zámku:** 10 variant šachet ≈ 350 kB JSON na zamčenou variantu (sachty[] nesou výsledky šachet);
+   strop zakázky 4 MB — u mnoha zamčených variant s 10 šachtami by šel blízko.
+8. **Bod pro E6 (z E3, bod c):** rejstřík Přehledu cenových nabídek na serveru šachty nenese (štítek „2 varianty
+   / 3 ks“ jde jen z otevřené zakázky). Řešení: v `uloRejstrikZaznam` + `uloRejstrikNormalizuj` (uloziste.js)
+   nepovinný klíč `sachty: { variant, celkem }` řídící varianty (jen víc šachet — jedna šachta beze změny
+   rejstříku) a štítek v Přehledu. Do E5 záměrně nezařazeno: rejstřík čtou všichni, mění se při každém uložení
+   a soubory vlastní S1 — patří do E6 se sadami rejstříku (`test_rejstrik*.mjs`).
+7. `manual_vypocet/cisla_vydani.json`: počet pravidel kontrol 46 → 48 (jako SV/RC); obsah 4. vydání se nemění,
+   nové vydání manuálu je E6.
 # Předávka — 10. 11. 2026: VS-S1 #570 — E2 zadání (#592) + E3 kalkulace (#593) víc šachet, větev `claude/vs-s1-e2e3`
 
-Nad `079cfc6`, po E2 sloučena integrace `aaac150` (E2 = v10.11.3, E4 = v10.11.4). **E3 = CHANGELOG v10.11.5**,
+Nad `079cfc6`, po E2 sloučena integrace `aaac150` (E2 = v10.11.3, E4 = v10.11.4). **E3 = CHANGELOG v10.11.6**,
 `verze.txt` = 10.11.5 — koordinace přečísluje; dříve `verze.txt` = 10.11.1 (kontrola verze = den commitu + existující oddíl CHANGELOG; základ 079cfc6 nesl 11.11.1
 s commitem z 10. 11. a sám kontrolou verze neprojde). Neslučováno; do `test-draft`, `test` ani `main` nic; weby,
 Disk, Pipedrive nic. Commity: E2 `9909df5` + `ed1c5a7`/`879dc9b` (verze, harnessy), E3 `109f332`.
@@ -32,7 +71,7 @@ jinou (E3: `vsSoucet` obrazovky přepsala `vsSoucet` jádra → zacyklený výpo
 4. Rejstřík online (Přehled cenových nabídek ze serveru) štítek šachet nemá — server data šachet do rejstříku neukládá; případně E5/E6.
 # Předávka — 10. 11. 2026: VS-E4 #570 (#594) — víc šachet: cenová nabídka s tabulkou šachet, Word CN v17, specifikace po šachtách, překlady, větev `claude/vs-s2-e4` (sezení S2)
 
-Nad `079cfc6` (integrace v11.11.1 = E0/E1). **CHANGELOG v10.11.3**, `verze.txt` 10.11.3 (den commitu; koordinace přečísluje).
+Nad `079cfc6`, sloučeno s integrací `d3ee6db` (v10.11.5 = E2 + E3 + E4). **CHANGELOG v10.11.6**, `verze.txt` 10.11.3 (den commitu; koordinace přečísluje).
 Do `test-draft`, `test` ani `main` nic; weby, Disk, Pipedrive nic. Vše za vypínačem / v datech víc šachet:
 jedna šachta (VYP i ZAP) = dnešní dokumenty bajt po bajtu (zlatá sada 319/319 beze změny otisků).
 
@@ -566,7 +605,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 10. 11. 2026: stav integrace v10.11.5
+# Předávka koordinace — 11. 11. 2026: stav integrace v10.11.6
+
+- **v10.11.6** VS-E5 #595 (KL, SoD, objednané, controlling, PD náhled, zámek, kontroly; za vypínačem). Zbývá E6 (dokumentace, překlady SoD, rejstřík se štítkem šachet, celé kolo s mutacemi). Otevřené pro J. V.: pole Pipedrive pro seznam šachet; ATYP/Typ produktu u víc šachet.
 
 - **10. 11. 23:55:** `test` = integrace = v10.11.5 (d3ee6db), `main` = v6.11.5. Víc šachet za vypínačem (výchozí VYP): E0/E1 v10.11.2, E2 v10.11.3, E4 v10.11.4, E3 v10.11.5 — každá po zeleném kole na testu. Běží VS-S3 (E5: KL, SoD, controlling, PD, zámek, kontroly), pak E6 (dokumentace, celé kolo s mutacemi). Tagy bez releasu: v10.11.2–v10.11.5.
 
