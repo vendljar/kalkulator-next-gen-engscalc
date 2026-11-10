@@ -566,7 +566,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 10. 11. 2026: stav integrace v10.11.4
+# Předávka koordinace — 10. 11. 2026: stav integrace v10.11.5
+
+- **10. 11. 23:55:** `test` = integrace = v10.11.5 (d3ee6db), `main` = v6.11.5. Víc šachet za vypínačem (výchozí VYP): E0/E1 v10.11.2, E2 v10.11.3, E4 v10.11.4, E3 v10.11.5 — každá po zeleném kole na testu. Běží VS-S3 (E5: KL, SoD, controlling, PD, zámek, kontroly), pak E6 (dokumentace, celé kolo s mutacemi). Tagy bez releasu: v10.11.2–v10.11.5.
 
 - **v10.11.4** VS-E4 #594 (CN s tabulkou variant, Word v17 přes `vyrob_sablony.js --cn-v17`, specifikace po šachtách, překlady; vše za vypínačem).
 - **v10.11.3** VS-E2 #592 (zadání víc šachet za vypínačem; S1 pokračuje E3 ve stejné větvi).
