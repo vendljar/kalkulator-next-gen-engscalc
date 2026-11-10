@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v12.11.x — VS-E4 #570: víc šachet v nabídce — cenová nabídka s tabulkou variant šachet, Word CN v17, technická specifikace po šachtách, překlady, větev claude/vs-s2-e4
+## v10.11.3 — VS-E4 #570: víc šachet v nabídce — cenová nabídka s tabulkou variant šachet, Word CN v17, technická specifikace po šachtách, překlady, větev claude/vs-s2-e4
 
-Nad `079cfc6` (integrace v11.11.1 = E0/E1). Verzi přečísluje koordinace (`verze.txt` beze změny). Všechno za
+Nad `079cfc6` (integrace v11.11.1 = E0/E1). `verze.txt` 10.11.3 (den posledního commitu); verzi přečísluje koordinace. Všechno za
 vypínačem a v datech víc šachet: zakázka s jednou šachtou (vypínač VYP i ZAP) dává cenovou nabídku, Word,
 náhledy, specifikaci i smlouvu o dílo **bajt po bajtu jako dnes** — zlatá sada 319/319 beze změny otisků.
 

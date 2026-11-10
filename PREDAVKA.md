@@ -1,6 +1,6 @@
 # Předávka — 10. 11. 2026: VS-E4 #570 (#594) — víc šachet: cenová nabídka s tabulkou šachet, Word CN v17, specifikace po šachtách, překlady, větev `claude/vs-s2-e4` (sezení S2)
 
-Nad `079cfc6` (integrace v11.11.1 = E0/E1). **CHANGELOG v12.11.x** (koordinace přečísluje; `verze.txt` beze změny).
+Nad `079cfc6` (integrace v11.11.1 = E0/E1). **CHANGELOG v10.11.3**, `verze.txt` 10.11.3 (den commitu; koordinace přečísluje).
 Do `test-draft`, `test` ani `main` nic; weby, Disk, Pipedrive nic. Vše za vypínačem / v datech víc šachet:
 jedna šachta (VYP i ZAP) = dnešní dokumenty bajt po bajtu (zlatá sada 319/319 beze změny otisků).
 
