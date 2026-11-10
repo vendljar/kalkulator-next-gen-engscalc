@@ -8,6 +8,48 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v10.11.1 — AS #577: noční kopie zálohy na Disk skriptem Google Apps Script (bez prohlížeče a bez přihlášení), větev claude/as-zaloha-apps-script
+
+Nad `59c56b3` (integrace v7.11.1). Na webech, Disku ani v Pipedrive nic (ani zkušební zápis). Verzi přečísluje
+koordinace. Hlášení J. V. 10. 11. 2026: „přihlášený v ostrém webu jsem od rána a nic. potřebuju, aby to fungovalo
+automaticky a nemusel jsem nic klikat.“ Rozhodnutí J. V.: kopii dělá skript Apps Script v jeho Google účtu (časový
+spouštěč); kopie z prohlížeče zůstává jako záloha záloh.
+
+- **Server `/api/zaloha_disk`** (`netlify/functions/zaloha_disk.mjs`, `netlify/lib/kopie_skript.mjs`): jen s tokenem
+  `KNG_DISK_TOKEN` (proměnná Netlify, ≥ 32 znaků, jinak cesta vypnutá → 403) v hlavičce `Authorization: Bearer`,
+  porovnání v konstantním čase; token v adrese 400, požadavek z prohlížeče (Origin) 403; špatný token 10× za 15 min
+  z adresy → 429, správný 300 požadavků/h a 200 kusů/den; log bez obsahu. `GET` metadata, `POST {akce:'priprav'}`
+  po krocích připraví soubor `.json.gz` (části nočního otisku → očištění `otiskProDisk` → deflate se Z_SYNC_FLUSH,
+  jeden gzip s průběžným CRC-32 a SHA-256, stav v úložišti `disk_kopie`), `GET ?kus=i&otisk=` vydá kus 3 MiB
+  (= 12 × 256 KiB; Netlify 6 MB i s base64, Apps Script blob 50 MB) — ověřeno na **67 MiB gzip / 90 MiB dat**,
+  23 kusů. Obsah = `otiskProDisk` + web (bez otisků hesel a podpisů), totéž co `/api/zaloha?zdroj=nocni`;
+  jméno `otisk_<prostředí>_RRRR-MM-DD_HHMM.json.gz` skládá `retenceZalohDiskJmeno` (shodné s `uloKopieDiskJmeno`).
+- **Potvrzení** `POST {akce:'potvrdit'}` jen pro soubor, který server připravil (otisk, jméno, SHA-256, velikost),
+  jen nejnovější noční otisky, starší nepřepíše novější → záznam `kopie-disk` se `zdroj: 'skript'`,
+  `potvrzeno: 'token-skript'`; `kopieDiskPodlozena` ho bere jako heslo správce (`KOPIE_DISK_POTVRZENI`) — retence
+  v Netlify maže podle dnešních pravidel. Token nic nemaže, neobnovuje ani nepotvrzuje úbytek (neznámá akce 400,
+  ostatní cesty 401). `POST {akce:'varovani'}` ohlásí úbytek na Disku (jen zastaví mazání).
+- **Skript** `nastroje/apps_script/kopie_disk.gs` (+ `appsscript.json`, `README.md`, `vloz_retenci.py`): metadata →
+  příprava → obnovitelné nahrávání Drive API kus po kuse (kontrola SHA kusu, `sha256Checksum` a velikost na Disku)
+  → potvrzení → `posledni_kopie_<prostředí>.json` → úklid podle `src/retence_zaloh.js` vloženého doslova (jen vlastní
+  prostředí, nikdy nejnovější, do koše). Soubor stejného jména nepřepíše; úbytek dat pod 90 % nebo nepotvrzené
+  varování → nemaže a pošle e-mail; chyba → e-mail na adresu účtu (Session, žádná adresa v kódu, bez tokenu);
+  token jen ve vlastnostech skriptu; běh přes 4,5 min naváže spouštěčem; volitelně druhá konfigurace pro testovací web.
+- **Aplikace:** hlídka v Nastavení → Databáze „Poslední kopie na Disku: … (skript)“; prohlížeč po přihlášení kopii
+  nedělá ani nestraší, když skript potvrdil nejnovější noční otisk (`uloKopieDiskStav`); stará kopie skriptu radí
+  spouštěč a e-mail. Text karty Online databáze zmiňuje skript.
+- **Bezpečnost:** meze B210–B214 (`BEZPECNOST_MEZE.md`); matice práv (`test_prava.mjs`) zná `zaloha_disk.mjs`
+  jako cestu chráněnou klíčem (relace žádné role 403, token dřív než tělo a úložiště).
+- **Návod pro J. V.:** `podklady/NAVOD_ZALOHA_APPS_SCRIPT.md` (token v PowerShellu do schránky, Netlify engscalc
+  i testengscalc, script.google.com, vlastnosti, oprávnění, první běh, spouštěč, chybové e-maily); příručka správce
+  kap. 30, `manual/kompletni/provoz.json` (příloha 1, 2, P3, P5), `NASAZENI_NETLIFY.md`.
+- **Testy:** `netlify/test_577_kopie_skript.mjs` 53/0 (token, četnost, 60+ MB, potvrzení, retence, varování,
+  starý jednolitý otisk), `netlify/test_577_apps_script.mjs` 31/0 (skutečný skript ve vm, server ve vlákně:
+  retence, úbytek, nepřepsání, poškozený kus a navázání nahrávání, SHA Disku, limit běhu, test web, e-maily bez
+  tokenu), `src/test_577_jmeno_kopie.js` 15/0; na 59c56b3 všechny tři selžou. Mutace „[#577]“ server 30/30 a jádro 3/3 chycené
+  (volitelné pole `sady` = pořadí sad pro mutaci v obou bězích). Kolo `--bez-mutaci`: sady 407 / 0 / 7 přeskočeno,
+  hodiny +400 dní 328 / 0 / 1, statické 5 z 5 — VŠE ZELENÉ (31 min).
+
 ## v7.11.1 — FL #576: kolísavý bod #523 v overit_online.mjs (obnova ze souboru .json.gz), větev claude/fl-online-523
 
 Nad `e2c2137` (integrace = test v6.11.5). Aplikace beze změny — chyba byla v harnessu. Na webech, Disku ani

@@ -148,7 +148,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'ui/zakazka_ui.js',
   /* CA #575 (6. 11. 2026): společné číselné pole s českou čárkou — parser
    * v format.js a prvek v ui/cislo_pole.js (každé číselné pole aplikace). */
-  'format.js', 'ui/cislo_pole.js'];
+  'format.js', 'ui/cislo_pole.js',
+  /* retence_zaloh.js (#577 AS, 10. 11. 2026): jméno kopie pro skript Apps
+   * Script (retenceZalohDiskJmeno) a pravidlo retence, které skript nese
+   * doslova. Hlídá src/test_577_jmeno_kopie.js. */
+  'retence_zaloh.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -242,6 +246,20 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* AS #577 (10. 11. 2026): jméno kopie pro skript Apps Script. Hlídá
+   * src/test_577_jmeno_kopie.js (pole `sady` = pustit ji první). */
+  { nazev: 'AS: jméno kopie s neznámým prostředím [#577]', soubor: 'retence_zaloh.js',
+    hledej: '  if (!RETENCE_ZALOH_DISK_PROSTREDI.includes(prostredi) || !Number.isFinite(retenceZalohDenMs(String(den || \'\')))) return \'\';',
+    nahrad: '  if (!Number.isFinite(retenceZalohDenMs(String(den || \'\')))) return \'\';',
+    proc: 'skript by uložil kopii, kterou retence ani obnova nepřiřadí webu', sady: ['test_577_jmeno_kopie.js'] },
+  { nazev: 'AS: čas ve jméně v UTC [#577]', soubor: 'retence_zaloh.js',
+    hledej: '    for (const x of new Intl.DateTimeFormat(\'en-GB\', { timeZone: \'Europe/Prague\', hour: \'2-digit\', minute: \'2-digit\',',
+    nahrad: '    for (const x of new Intl.DateTimeFormat(\'en-GB\', { timeZone: \'UTC\', hour: \'2-digit\', minute: \'2-digit\',',
+    proc: 'kopie skriptu a prohlížeče by se jmenovaly jinak (dvě kopie téhož otisku)', sady: ['test_577_jmeno_kopie.js'] },
+  { nazev: 'AS: jméno bez .gz [#577]', soubor: 'retence_zaloh.js',
+    hledej: '    return \'otisk_\' + prostredi + \'_\' + den + \'_\' + c.hour + c.minute + \'.json.gz\';',
+    nahrad: '    return \'otisk_\' + prostredi + \'_\' + den + \'_\' + c.hour + c.minute + \'.json\';',
+    proc: 'obnova ze souboru by komprimovanou kopii nerozbalila', sady: ['test_577_jmeno_kopie.js'] },
   /* CA #575 (6. 11. 2026, rozhodnutí J. V.): všechna číselná pole přijmou
    * čárku i tečku a ukážou českou čárku nezávisle na jazyku prohlížeče.
    * Hlídá src/test_575_cislo_pole.js (a test_tabulator.js). */
@@ -3679,7 +3697,8 @@ for (const { m, poradi } of vybrane) {
   }
   try {
     writeFileSync(cesta, puvodni.replace(m.hledej, m.nahrad), 'utf8');
-    const v = spustSady(zelene);
+    /* `sady` (#577): sady, které mutace pouští nejdřív — jen pořadí */
+    const v = spustSady(Array.isArray(m.sady) ? m.sady.filter(s => zelene.includes(s)).concat(zelene.filter(s => !m.sady.includes(s))) : zelene);
     if (v.chycena) { chycene++; console.log(kde + 'chycená      ' + m.nazev + '   → ' + v.kde); }
     else { nechycene.push(m); console.log(kde + 'NECHYCENÁ    ' + m.nazev + '   → ' + m.proc); }
   } finally {

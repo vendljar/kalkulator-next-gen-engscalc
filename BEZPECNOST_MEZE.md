@@ -1474,3 +1474,77 @@ zámku).
   ceníku (správce) mění ceník přímo jako dřív.
 - **Obnova ze zálohy** bere záznam ruční ceny jako doklad (jen očista tvaru,
   razítko se nepřepisuje) — stejně jako cenovou výjimku (vyjimky.js).
+
+## AS #577 — noční kopie na Disk skriptem Google Apps Script (v10.11.1, 10. 11. 2026)
+
+Rozhodnutí J. V. 10. 11. 2026: kopii nočního otisku na Disk Google dělá plně
+automaticky skript Apps Script v jeho Google účtu (časový spouštěč, bez
+prohlížeče a bez přihlášení; `nastroje/apps_script/kopie_disk.gs`, návod
+`podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`). Server: `GET/POST /api/zaloha_disk`
+(`netlify/functions/zaloha_disk.mjs`, logika `netlify/lib/kopie_skript.mjs`).
+Kopie z prohlížeče (heslo správce, K3-N1) zůstává jako záloha záloh beze změny.
+Čísla B199–B202 drží K40, proto B210+.
+
+### Nové meze
+
+- **B210 — kopie skriptem vydává ven noční zálohu celé databáze, chráněnou
+  jen tokenem.** `KNG_DISK_TOKEN` (proměnná Netlify, nastavuje J. V., min.
+  32 znaků; kratší nebo chybějící = cesta vypnutá → 403) je **samostatné
+  tajemství** (ne heslo správce, ne `TAJEMSTVI_RELACE`) a žije jen v Netlify
+  a ve vlastnostech skriptu (Script Properties) v Google účtu J. V. Obsah je
+  totéž co kopie z prohlížeče: `otiskProDisk` — bez otisků hesel a bez podpisů,
+  ale se zakázkami, ceníkem a zákazníky. *Co to nedělá:* kdo token získá
+  (z Netlify, z projektu Apps Script, z účtu Google), stáhne si poslední noční
+  zálohu. Token se mění přepsáním proměnné v Netlify (a novým nasazením)
+  a vlastnosti ve skriptu; projekt Apps Script se nesdílí. Ochrana účtu Google
+  (dvoufázové ověření) je tím součástí ochrany dat kalkulátoru.
+- **B211 — token jen v hlavičce `Authorization: Bearer`, porovnání v konstantním
+  čase.** `tajneShodne` (sha256 + timingSafeEqual) dřív než čtení těla,
+  úložiště i přípravy zálohy (statická kontrola `netlify/test_prava.mjs`,
+  KLICEM_CHRANENE). Parametr s tokenem v adrese (`token`, `access_token`,
+  `key`, …) → 400 a nic se nezpracuje (adresy se logují). Požadavek s hlavičkou
+  `Origin` (prohlížeč) → 403 i se správným tokenem — token do prohlížeče
+  nepatří. Odpověď na chybějící token, špatný token i vypnutou cestu je
+  stejná (403, stejný text) — z odpovědi nejde poznat, jestli je cesta zapnutá.
+  Cookie žádné role (ani administrátora) tu nic neodemyká a token neplatí na
+  žádné jiné cestě (401 na `/api/zaloha`, `/api/zaloha_vynuceno`).
+- **B212 — omezení četnosti jen v instanci funkce.** Špatný token nejvýš
+  10× za 15 min z jedné adresy (IPv6 po /64), pak 429; správný token tím
+  zablokovaný není (zásada #92). Správný token nejvýš 300 požadavků za hodinu
+  a 200 stažených kusů (~600 MB) za den. Počítadla v úložišti `disk_kopie`
+  (`vyhradne`). *Co to nedělá:* mezi instancemi funkce platí mez B158 —
+  počítadla mohou přetéct o násobek počtu instancí; dopad je přenos dat
+  Netlify, ne data. Log (`zaloha_disk: …`) nese jen akci, otisk, číslo kusu,
+  velikost a klíč adresy, nikdy obsah ani token.
+- **B213 — token potvrdí kopii a odemkne tím retenci v Netlify.** Záznam
+  `kopie-disk` se značkou `potvrzeno: 'token-skript'` bere `kopieDiskPodlozena`
+  stejně jako záznam potvrzený heslem správce (rozhodnutí J. V. — kopie bez
+  kliknutí). Omezení: token potvrdí **jen soubor, který server sám připravil**
+  (shoda otisku, jména, SHA-256 a velikosti se stavem přípravy), jen nejnovější
+  noční otisky (7 nejnovějších, K4-N14) a starší otisk nepřepíše záznam
+  novějšího. Retence pak maže přesně podle dnešních pravidel (14 dní / 8 týdnů
+  / 6 měsíců, nejnovější nikdy, pojistka úbytku drží). *Co to nedělá:* server
+  nevidí do Disku — kdo token ukradne, může potvrdit kopii, která na Disku není
+  (stáhne a nikam neuloží), a retence v Netlify pak smaže otisky starší než
+  pravidla (ne nejnovější, ne denní za 14 dní). Stejné riziko nese dnes heslo
+  správce (K3-N1). Mazat zálohy, potvrzovat úbytek dat, obnovovat ani mazat
+  otisk „před obnovou“ token **neumí** (neznámá akce → 400).
+- **B214 — token smí ohlásit úbytek dat na Disku.** `POST { akce: 'varovani' }`
+  zapíše varování pojistky (jako `retence-varovani-disk` z prohlížeče) — jen
+  pro právě připravený soubor a jen při skutečném poklesu (server přepočítá
+  `retencePoklesPocty`). Varování jen ZASTAVUJE mazání; nepotvrzené se
+  nepřepíše a další se řadí za něj (strop 20, K9-S2). *Co to nedělá:* kdo
+  token ukradne, může mazání záloh zastavit (zálohy pak rostou, dokud hlavní
+  správce varování nepotvrdí) — bezpečný směr.
+- **Připravený soubor v Blobs.** `disk_kopie` drží kusy posledního
+  připraveného souboru (~50 MB, jen nejnovější otisk; při novém otisku se staré
+  kusy smažou) a do otisku nepatří (výjimka v `netlify/test_zalohy.mjs`, N4).
+  Obsah je stejný jako kopie na Disku (bez hesel a podpisů). Poškozený kus
+  server pozná (SHA-256 kusu) a připraví soubor znovu.
+- **Skript na straně Google.** Token je ve vlastnostech skriptu, ne v kódu;
+  adresa webu musí být `https://`; e-mail o chybě jde jen na adresu účtu, pod
+  kterým skript běží (`Session.getEffectiveUser`), a nenese token. Soubor
+  stejného jména se nepřepisuje; retence Disku je doslova `src/retence_zaloh.js`
+  (`vloz_retenci.py`, hlídá `src/test_577_jmeno_kopie.js`) — jen kopie vlastního
+  prostředí, nikdy nejnovější, při úbytku dat pod 90 % nebo nepotvrzeném
+  varování nemaže a pošle e-mail; maže se do koše Disku (30 dní).

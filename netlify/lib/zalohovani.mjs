@@ -1192,6 +1192,9 @@ export function kopieDiskRozeber(jmeno) { return RZ.retenceZalohDiskRozeber(jmen
  * i libovolně starý otisk (staré se nemažou). Počítá se z klíčů, ne z času,
  * takže na hodinách nezávisí. */
 export const KOPIE_DISK_NEJNOVEJSICH = 7;
+/* Čím je záznam kopie potvrzený: heslem správce (prohlížeč, K3-N1) nebo
+ * tokenem skriptu Apps Script (#577 AS, KS_POTVRZENO v lib/kopie_skript.mjs). */
+export const KOPIE_DISK_POTVRZENI = ['heslo-spravce', 'token-skript'];
 export function kopieDiskPodlozena(zaznam, klice, prostredi = prostrediZalohy()) {
   if (!zaznam || typeof zaznam !== 'object' || zaznam.puvod !== 'nocni-otisk') return false;
   const otisk = typeof zaznam.otisk === 'string' ? zaznam.otisk : '';
@@ -1210,7 +1213,10 @@ export function kopieDiskPodlozena(zaznam, klice, prostredi = prostrediZalohy())
   /* K3-N1 (rozhodnutí J. V. 20. 10. 2026): jen záznam potvrzený heslem
    * správce a jen kopie do složky „_Zaloha Netlify DB". Záznamy zapsané
    * před v20.10.2 tyhle značky nemají — retence počká na novou kopii. */
-  if (zaznam.potvrzeno !== 'heslo-spravce' || zaznam.slozka !== KOPIE_DISK_SLOZKA) return false;
+  /* #577 AS (rozhodnutí J. V. 10. 11. 2026): i záznam skriptu Apps Script
+   * potvrzený tokenem KNG_DISK_TOKEN — server ho přijme jen pro soubor, který
+   * sám připravil (shoda SHA-256, velikosti a jména, lib/kopie_skript.mjs). */
+  if (!KOPIE_DISK_POTVRZENI.includes(zaznam.potvrzeno) || zaznam.slozka !== KOPIE_DISK_SLOZKA) return false;
   return Number.isSafeInteger(zaznam.velikostB) && zaznam.velikostB > 0
     && /^[0-9a-f]{64}$/.test(String(zaznam.sha256 || ''));
 }

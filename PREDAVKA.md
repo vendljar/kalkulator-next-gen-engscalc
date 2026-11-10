@@ -1,3 +1,35 @@
+# Předávka — 10. 11. 2026: AS #577 — noční kopie zálohy na Disk skriptem Google Apps Script, větev `claude/as-zaloha-apps-script`
+
+Nad `59c56b3` (integrace v7.11.1; test = v6.11.5 e2c2137; main = v4.11.8 000924e). **Verze v10.11.1** v CHANGELOG
+(koordinace přečísluje). Neslučováno; do `test-draft`, `test` ani `main` nic. Na webech, Disku ani v Pipedrive nic.
+
+**Problém (J. V. 10. 11.):** kopie na Disk jen z prohlížeče po přihlášení heslem a s právem zápisu — na ostrém
+od 6. 11. žádná. **Rozhodnutí J. V.:** skript Apps Script v jeho účtu, časový spouštěč; prohlížeč = záloha záloh.
+
+| úkol | stav | kde |
+|---|---|---|
+| 1. server pro skript | ✅ | `/api/zaloha_disk` (`functions/zaloha_disk.mjs`, `lib/kopie_skript.mjs`): token `KNG_DISK_TOKEN` (≥ 32 zn., jinak 403) jen v `Authorization: Bearer`, `tajneShodne`, token v adrese 400, Origin 403, četnost (špatný 10/15 min/adresa → 429; správný 300/h, 200 kusů/den), log bez obsahu; příprava `.json.gz` po krocích (deflate Z_SYNC_FLUSH, CRC-32 + SHA-256 se stavem), kusy 3 MiB = 12 × 256 KiB; 67 MiB gzip ověřeno |
+| 2. potvrzení tokenem | ✅ | jen připravený soubor (otisk, jméno, SHA, velikost), jen nejnovější noční, starší nepřepíše novější; `potvrzeno: 'token-skript'`, `zdroj: 'skript'`; `kopieDiskPodlozena` bere (`KOPIE_DISK_POTVRZENI`); token nic nemaže (B213); `akce: 'varovani'` jen zastaví mazání (B214) |
+| 3. Apps Script | ✅ | `nastroje/apps_script/kopie_disk.gs` + `appsscript.json` + `README.md` + `vloz_retenci.py` (retence doslova ze `src/retence_zaloh.js`); resumable upload Drive API, SHA kusu + `sha256Checksum` Disku, nepřepíše stejné jméno, `posledni_kopie_<p>.json`, retence + pojistka 90 % + nepotvrzené varování → nemaže + e-mail, chyba → e-mail (Session), navázání přes 6 min, druhá konfigurace test |
+| 4. aplikace | ✅ | `uloKopieDiskStav`: „Poslední kopie na Disku (prostředí main): … (skript).“, `potreba` false po kopii skriptu → prohlížeč nekopíruje ani nestraší; text karty Online databáze |
+| 5. návod J. V. | ✅ | `podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`; `NASAZENI_NETLIFY.md`; příručka správce kap. 30; `manual/kompletni/provoz.json` |
+| 6. bezpečnost | ✅ | `BEZPECNOST_MEZE.md` B210–B214; `test_prava.mjs` (KLICEM_CHRANENE, matice 403 všem rolím); kontrola údajů čistá |
+| testy | ✅ | `netlify/test_577_kopie_skript.mjs` 53/0, `netlify/test_577_apps_script.mjs` 31/0, `src/test_577_jmeno_kopie.js` 15/0; na 59c56b3 všechny tři selžou |
+| mutace „[#577]“ | ✅ | server 30/30 chycených (29 nových + upravené O7 K3-N1), jádro 3/3; pole `sady` u mutace (pořadí sad) v obou bězích |
+| kolo `--bez-mutaci` | ✅ | VŠE ZELENÉ nad v10.11.1 — sady 407/0/7 přesk. (test.js + 6 bez KNG_PODKLADY), hodiny +400 dní 328/0/1, statické 5/5, 31 min 15 s; celé mutace nepouštěny (jen „[#577]“) |
+| roadmapa #577, CHANGELOG, PREDAVKA | ✅ | |
+
+**Čeká na J. V. (přes koordinaci):** sloučení a nasazení; pak podle návodu token v Netlify (engscalc, testengscalc
++ Trigger deploy), skript na script.google.com, vlastnosti, oprávnění, první běh `kopieDiskRucne`, `nastavitSpoustec`.
+
+**Otevřené body:** (a) spouštěč výchozí **6:00**, ne 4:00 — noční otisk vzniká po částech 2:00–3:45 UTC (= do 4:45
+SEČ / 5:45 SELČ), ve 4:00 by dnešní často nebyl hotový (`KNG_HODINA` jde přepsat); (b) připravený soubor leží
+v Blobs `disk_kopie` (~50 MB navíc, jen poslední otisk); (c) token odemyká retenci v Netlify stejně jako heslo
+správce (rozhodnutí J. V.) — server nevidí do Disku, ukradený token může potvrdit kopii, která na Disku není
+(B213); (d) `sha256Checksum` vrací Drive API u binárních souborů — kdyby ho nevrátil, skript ověří po kusech
+(SHA každého kusu) a velikost; (e) ostrý běh proti skutečnému Drive API a Netlify v cloudu ověřit nejde — simulace
+věrně dle dokumentace (308 + Range, Content-Range, kusy násobky 256 KiB).
+
 # Předávka — 7. 11. 2026: FL #576 — kolísavý bod #523 v overit_online.mjs (obnova ze souboru .json.gz), větev `claude/fl-online-523`
 
 Nad `e2c2137` (integrace = test v6.11.5). **Verze v7.11.1** v CHANGELOG (koordinace přečísluje). Neslučováno; do
@@ -410,7 +442,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 6. 11. 2026: stav integrace v7.11.1
+# Předávka koordinace — 10. 11. 2026: stav integrace v10.11.1
+
+- **10. 11.:** `main` = v6.11.5 (e2c2137), `test` = v7.11.1 (59c56b3), tagy do v7.11.1. **v10.11.1** AS #577: noční kopie zálohy na Disk skriptem Apps Script (/api/zaloha_disk, token KNG_DISK_TOKEN, návod podklady/NAVOD_ZALOHA_APPS_SCRIPT.md); roadmapa #578 GD smlouva (vlna F). VS: prototyp v8, plán podklady/VS_PLAN_REALIZACE.md, otázky O15/P1/P2 čekají. K40 připravena (#567, od #579).
 
 - **7. 11.:** `test` = v6.11.5 (e2c2137), tagy až po v6.11.5 vydané. **v7.11.1** FL #576: kolísání overit_online #523 = harness četl stav během rozbalování .gz; čeká na konec čtení (před 11/20 FAIL pod zátěží, po 0/20). Aplikace beze změny.
 - **v6.11.5** CA #575: všechna číselná pole (61) jeden prvek cislo_pole.js — čárka i tečka, zobrazení s čárkou a mezerou v tisících nezávisle na jazyku prohlížeče; data beze změny. Kolo v6.11.4 VŠE ZELENÉ (402/0, hodiny 324/0), mutace MU3 9/9.

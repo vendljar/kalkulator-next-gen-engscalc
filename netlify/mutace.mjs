@@ -196,7 +196,11 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* #555 ZO (3. 11. 2026): hláška odmítnutí zamčených dat s variantou a cestou. */
      'test_555_klon_tisk.mjs', '../src/test_555_klon_tisk.js',
      /* #555b ZO2 (3. 11. 2026): ceník odeslané varianty uložené starší verzí. */
-     'test_555b_klon_cenik.mjs', '../src/test_555b_klon_cenik.js'];
+     'test_555b_klon_cenik.mjs', '../src/test_555b_klon_cenik.js',
+     /* #577 AS (10. 11. 2026): noční kopie na Disk skriptem Apps Script — server
+      * (/api/zaloha_disk), simulace skriptu a klient. Na konci (velký otisk
+      * 60+ MB trvá ~15 s); mutace #577 je pouštějí první (`sady`). */
+     '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'];
 /* Filtr podle názvu; `--cast K/N` a `--od N` vybírají část běhu podle pořadí
  * (P2, 23. 10. 2026 — nastroje/mutace_cast.mjs). */
 const { mutaceCast, filtrZArgv } = await import('../nastroje/mutace_cast.mjs');
@@ -206,6 +210,130 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* #577 AS (10. 11. 2026, rozhodnutí J. V.): noční kopie na Disk skriptem
+   * Google Apps Script — token, obsah souboru, potvrzení, hlídka, skript.
+   * Hlídají netlify/test_577_kopie_skript.mjs, netlify/test_577_apps_script.mjs
+   * a src/test_577_jmeno_kopie.js (pole `sady` = pustit je první). [#577] */
+  { nazev: '#577: krátký token zapne cestu [#577]', soubor: 'lib/kopie_skript.mjs',
+    hledej: '  return t.length >= KS_TOKEN_MIN ? t : \'\';',
+    nahrad: '  return t;',
+    proc: 'token o pár znacích by šel uhodnout — cesta by se zapnula i se slabým tajemstvím', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: token se neověří [#577]', soubor: 'functions/zaloha_disk.mjs',
+    hledej: '  if (!ocekavany || !dany || !tajneShodne(dany, ocekavany)) {',
+    nahrad: '  if (!ocekavany) {',
+    proc: 'kdokoli by si stáhl celou databázi zákazníků a cen', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: token v adrese projde [#577]', soubor: 'functions/zaloha_disk.mjs',
+    hledej: '  if (tokenVAdrese(req.url)) {',
+    nahrad: '  if (false) {',
+    proc: 'token by zůstal v logu Netlify a v historii prohlížeče', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: požadavek z prohlížeče projde [#577]', soubor: 'functions/zaloha_disk.mjs',
+    hledej: '  if (req.headers.get(\'origin\')) {',
+    nahrad: '  if (false) {',
+    proc: 'token by šlo používat ze stránky v prohlížeči (únik přes XSS nebo rozšíření)', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: špatný token bez brzdy [#577]', soubor: 'lib/kopie_skript.mjs',
+    hledej: '    return n > KS_LIMIT.spatnychZa15;',
+    nahrad: '    return false;',
+    proc: 'hádání tokenu bez omezení četnosti', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: bez hodinového limitu [#577]', soubor: 'lib/kopie_skript.mjs',
+    hledej: '    if (h.n >= KS_LIMIT.zaHodinu) return',
+    nahrad: '    if (false) return',
+    proc: 'ukradený token by stahoval databázi ve smyčce (přenos dat Netlify)', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: otisky hesel na Disk [#577]', soubor: 'lib/kopie_skript.mjs',
+    hledej: '      for (const u of pole) polozka(st, x, J(uzivatelBezHesla(u)), out);',
+    nahrad: '      for (const u of pole) polozka(st, x, J(u), out);',
+    proc: 'na Disk by odešly otisky hesel všech účtů', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: podpisy na Disk [#577]', soubor: 'lib/kopie_skript.mjs',
+    hledej: 'KOPIE_DISK_CASTI.includes(x.nazev) && x.nazev !== \'podpisy\');',
+    nahrad: 'KOPIE_DISK_CASTI.includes(x.nazev));',
+    proc: 'na Disk by odešly podpisy (rozhodnutí J. V.: bez podpisů)', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: každý krok končí posledním blokem [#577]', soubor: 'lib/kopie_skript.mjs',
+    hledej: '  posledni ? DEFLATE : { ...DEFLATE, finishFlush: ZC.Z_SYNC_FLUSH });',
+    nahrad: '  DEFLATE);',
+    proc: 'gunzip by přečetl jen první krok — kopie by byla useknutá', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: CRC jen z posledního kroku [#577]', soubor: 'lib/kopie_skript.mjs',
+    hledej: '      st.crc = crc32(data, st.crc); st.delkaDat += data.length;',
+    nahrad: '      st.crc = crc32(data, 0); st.delkaDat += data.length;',
+    proc: 'obnova ze souboru by kopii odmítla (chybný kontrolní součet gzip)', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: kusy nepevné délky [#577]', soubor: 'lib/kopie_skript.mjs',
+    hledej: '    while (cekajici.length >= KS_KUS_B || (st.hotovo && cekajici.length > 0)) {',
+    nahrad: '    while (cekajici.length > 0) {',
+    proc: 'Drive API kus, který není násobek 256 KiB, odmítne — nahrávání by selhalo', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: poškozený kus se vydá [#577]', soubor: 'lib/kopie_skript.mjs',
+    hledej: '  if (!data || data.length !== st.kusy[i].b || sha !== st.kusy[i].sha) {',
+    nahrad: '  if (!data) {',
+    proc: 'na Disk by šel poškozený kus (skript by ho odmítl až po stažení)', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: staré kusy zůstanou [#577]', soubor: 'lib/kopie_skript.mjs',
+    hledej: '      for (const k of await s.seznam(KS_KUS_PREDPONA)) await s.smaz(k);',
+    nahrad: '      ;',
+    proc: 'každý den +50 MB v Netlify Blobs navíc', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: souběžné kroky přípravy [#577]', soubor: 'lib/kopie_skript.mjs',
+    hledej: '    if (st.zamekDo && Date.parse(st.zamekDo) > Date.now()) return { bezi: true, stav: st };',
+    nahrad: '',
+    proc: 'dva běhy by psaly tytéž kusy přes sebe', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: potvrzení bez kontroly SHA-256 [#577]', soubor: 'functions/zaloha_disk.mjs',
+    hledej: '|| txt(k.sha256) !== st.sha256 ',
+    nahrad: '',
+    proc: 'token by potvrdil kopii, která na Disku není (retence by mazala bez zálohy)', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: potvrzení bez kontroly velikosti [#577]', soubor: 'functions/zaloha_disk.mjs',
+    hledej: '|| cislo(k.velikostB) !== st.velikostB',
+    nahrad: '',
+    proc: 'useknutá kopie by odemkla retenci', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: starší kopie přepíše novější záznam [#577]', soubor: 'functions/zaloha_disk.mjs',
+    hledej: '    if (denVl && denVl > st.otisk) return',
+    nahrad: '    if (false) return',
+    proc: 'hlídka by ukázala starší kopii a prohlížeč by kopíroval znovu', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: varování pro cizí soubor [#577]', soubor: 'functions/zaloha_disk.mjs',
+    hledej: '  if (!st || !st.hotovo || novySoubor !== st.soubor ||',
+    nahrad: '  if (!st || !st.hotovo ||',
+    proc: 'tokenem by šlo zapisovat varování o libovolném souboru', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: kopie skriptu retenci neodemkne [#577]', soubor: 'lib/zalohovani.mjs',
+    hledej: 'export const KOPIE_DISK_POTVRZENI = [\'heslo-spravce\', \'token-skript\'];',
+    nahrad: 'export const KOPIE_DISK_POTVRZENI = [\'heslo-spravce\', \'heslo-spravce\'];',
+    proc: 'zálohy v Netlify by rostly bez omezení (retence čeká na kopii z prohlížeče)', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: hlídka kopii skriptu nepozná [#577]', soubor: '../src/uloziste.js',
+    hledej: '  if (skript) return { dnu, potreba, stara, skript,',
+    nahrad: '  if (false) return { dnu, potreba, stara, skript,',
+    proc: 'v Nastavení → Databáze by chybělo „(skript)" a stará kopie by radila jen tlačítko', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: záznam skriptu bez zdroje se nepozná [#577]', soubor: '../src/uloziste.js',
+    hledej: '  const skript = kopie.zdroj === \'skript\' || kopie.potvrzeno === \'token-skript\';',
+    nahrad: '  const skript = kopie.zdroj === \'skript\';',
+    proc: 'starší tvar záznamu by hlídka ukázala jako kopii z prohlížeče', sady: ['../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs', 'test_577_apps_script.mjs'] },
+  { nazev: '#577: skript: kus bez kontroly SHA [#577]', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: '      if (bajty.length === p.kusy[i].b && kngHex_(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bajty)) === p.kusy[i].sha256)',
+    nahrad: '      if (true)',
+    proc: 'poškozený kus by se nahrál na Disk', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
+  { nazev: '#577: skript: soubor stejného jména se nepozná [#577]', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: '      else throw new Error(\'ve složce už je soubor \' + p.soubor + \' s jiným obsahem',
+    nahrad: '      else if (0) throw new Error(\'ve složce už je soubor \' + p.soubor + \' s jiným obsahem',
+    proc: 'na Disku by vznikly dva soubory stejného jména (zadání: nepřepsat)', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
+  { nazev: '#577: skript: SHA Disku se nekontroluje [#577]', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: '  if (meta.sha256Checksum && meta.sha256Checksum !== p.sha256)',
+    nahrad: '  if (false)',
+    proc: 'poškozený soubor na Disku by se potvrdil jako záloha', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
+  { nazev: '#577: skript: bez pojistky úbytku [#577]', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: '    if (co && !(r.stav === \'potvrzene\' && r.den === den)) {',
+    nahrad: '    if (false) {',
+    proc: 'při ztrátě dat by se mazaly staré kopie na Disku (pravidlo 90 %)', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
+  { nazev: '#577: skript: nepotvrzené varování nezastaví mazání [#577]', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: '  if (r.stav === \'drzi\') return stoji(',
+    nahrad: '  if (false) return stoji(',
+    proc: 'K3-N13: mazání starých kopií by běželo i s nepotvrzeným úbytkem', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
+  { nazev: '#577: skript: prostředí se nekontroluje [#577]', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: '  if (info.prostredi !== w.prostredi)',
+    nahrad: '  if (false)',
+    proc: 'prohozené adresy/tokeny by kopírovaly ostrý web pod jménem testu', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
+  { nazev: '#577: skript: retence cizího prostředí [#577]', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: '  var smazat = retenceZalohDiskVyber(jmena, new Date(ted).toISOString().slice(0, 10), [p.soubor], w.prostredi);',
+    nahrad: '  var smazat = retenceZalohDiskVyber(jmena, new Date(ted).toISOString().slice(0, 10), [p.soubor], \'main\');',
+    proc: 'konfigurace testu by uklízela kopie ostrého webu', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
+  { nazev: '#577: skript: chyba bez e-mailu [#577]', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: '  if (chyby.length || upozorneni.length) {',
+    nahrad: '  if (false) {',
+    proc: 'záloha by tiše nevznikala — přesně problém z 10. 11.', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
+  { nazev: '#577: skript: adresa bez https [#577]', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: '    if (!/^https:\\/\\/[a-z0-9.-]+(:\\d+)?$/i.test(url))',
+    nahrad: '    if (false)',
+    proc: 'token by šel po síti nešifrovaně', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
   /* #561 RC (4. 11. 2026, rozhodnutí J. V.): ruční nákupní cena položky
    * z nabídky dodavatele s potvrzením obchodníkem — B112 jen na krytou cestu,
    * razítko z relace, zábrana zámku, směs ceníků, přepočet, controlling.
@@ -4875,12 +5003,12 @@ const MUTACE = [
    * a složka u kopie na Disk), K3-N4 (limit vynucených otisků), K3-N13
    * (pojistka retence). */
   { nazev: "O7: K3-N1 retence bez potvrzení heslem správce", soubor: "lib/zalohovani.mjs",
-    hledej: "  if (zaznam.potvrzeno !== 'heslo-spravce' || zaznam.slozka !== KOPIE_DISK_SLOZKA) return false;",
+    hledej: "  if (!KOPIE_DISK_POTVRZENI.includes(zaznam.potvrzeno) || zaznam.slozka !== KOPIE_DISK_SLOZKA) return false;",
     nahrad: "  if (zaznam.slozka !== KOPIE_DISK_SLOZKA) return false;",
     proc: "retenci by odemkl záznam poslaný jen s cookie správce" },
   { nazev: "O7: K3-N1 retence z kopie v jiné složce", soubor: "lib/zalohovani.mjs",
-    hledej: "  if (zaznam.potvrzeno !== 'heslo-spravce' || zaznam.slozka !== KOPIE_DISK_SLOZKA) return false;",
-    nahrad: "  if (zaznam.potvrzeno !== 'heslo-spravce') return false;",
+    hledej: "  if (!KOPIE_DISK_POTVRZENI.includes(zaznam.potvrzeno) || zaznam.slozka !== KOPIE_DISK_SLOZKA) return false;",
+    nahrad: "  if (!KOPIE_DISK_POTVRZENI.includes(zaznam.potvrzeno)) return false;",
     proc: "kopie mimo „_Zaloha Netlify DB“ by odemkla mazání otisků" },
   { nazev: "O7: K3-N1 záznam kopie bez hesla správce", soubor: "functions/zaloha_vynuceno.mjs",
     hledej: "    { const stop = await potvrdHesloSpravce(req, relace, telo.hesloSpravce); if (stop) return stop; }",
@@ -6139,8 +6267,13 @@ function spustSadu(sada) {
   });
 }
 
-async function spustSady() {
-  for (const sada of SADY) {
+/* `prvni` (#577, 10. 11. 2026): sady, které mutace pouští NEJDŘÍV (pole
+ * `sady` u mutace) — jen pořadí, ne výběr: chycení kteroukoli sadou platí
+ * dál, jen se na sadu, která mutaci hlídá, nečeká přes celý seznam. Bez
+ * `sady` beze změny. */
+async function spustSady(prvni) {
+  const poradi = Array.isArray(prvni) && prvni.length ? prvni.filter(s => SADY.includes(s)).concat(SADY.filter(s => !prvni.includes(s))) : SADY;
+  for (const sada of poradi) {
     const { chyba, vystup } = await spustSadu(sada);
     /* test_obnova.mjs píše souhrn „N OK, M FAIL", ostatní „prošlo/selhalo". */
     const m = /(\d+) (?:prošlo|OK), (\d+) (?:selhalo|FAIL)/.exec(vystup);
@@ -6238,7 +6371,7 @@ for (const { m, poradi } of vybrane) {
   try {
     aktivni = { cesta, puvodni };                // od téhle chvíle ho vrací i obsluha signálu
     writeFileSync(cesta, puvodni.replace(m.hledej, m.nahrad), 'utf8');
-    const v = await spustSady();
+    const v = await spustSady(m.sady);
     if (v.chycena) { chycene++; console.log(kde + 'chycená      ' + m.nazev + '   → ' + v.kde); }
     else { nechycene.push(m); console.log(kde + 'NECHYCENÁ    ' + m.nazev + '   → ' + m.proc); }
   } finally {

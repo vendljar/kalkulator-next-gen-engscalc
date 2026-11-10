@@ -2251,7 +2251,18 @@ function uloKopieDiskStav(kopie, ted, prostredi, otisky) {
   const kdy = new Date(t).toLocaleString('cs-CZ');
   const denKopie = /^\d{4}-\d{2}-\d{2}$/.test(String(kopie.otisk || '')) ? String(kopie.otisk) : '';
   const potreba = !!nocni && (denKopie ? nocni.den > denKopie : (isFinite(nocni.t) && nocni.t > t));
-  return { dnu, potreba, stara, nocni: nocni ? nocni.den : null,
+  /* #577 AS (J. V. 10. 11. 2026): noční kopii dělá skript Google Apps Script
+   * (záznam se zdrojem „skript", potvrzený tokenem). Když skript kopii
+   * nejnovějšího nočního otisku potvrdil, `potreba` je false — prohlížeč
+   * kopii nedělá ani nestraší. Hláška říká, kdo kopii pořídil. */
+  const skript = kopie.zdroj === 'skript' || kopie.potvrzeno === 'token-skript';
+  if (skript) return { dnu, potreba, stara, skript, nocni: nocni ? nocni.den : null,
+    text: stara
+      ? 'Kopie záloh na Disku Google' + kde + ' je stará ' + dnu + ' dní (naposledy ' + kdy + ', ' + String(kopie.soubor || '') + ', skript). '
+        + 'Noční kopii dělá skript Google Apps Script — zkontrolujte e-mail o chybě a spouštěč na script.google.com '
+        + '(návod podklady/NAVOD_ZALOHA_APPS_SCRIPT.md); zálohu záloh pořídíte tlačítkem „Zkopírovat zálohu na Disk teď".'
+      : 'Poslední kopie na Disku' + kde + ': ' + kdy + ' (' + String(kopie.soubor || '') + ') (skript).' };
+  return { dnu, potreba, stara, skript: false, nocni: nocni ? nocni.den : null,
     text: stara
       ? 'Kopie záloh na Disku Google' + kde + ' je stará ' + dnu + ' dní (naposledy ' + kdy + ', ' + String(kopie.soubor || '') + '). '
         + 'Kopie se dělá každý den sama po přihlášení správce, jen v prohlížeči s vybranou složkou „' + ULO_KOPIE_DISK_SLOZKA
