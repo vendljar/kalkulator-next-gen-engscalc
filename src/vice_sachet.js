@@ -286,22 +286,24 @@ function vsRozvinZakazku(zak) {
   return Object.assign({}, zak, { varianty });
 }
 
-/* ZAKÁZKA S VÍC ŠACHTAMI A VYPNUTÝ VYPÍNAČ (VS #570, 10. 11. 2026). Funkce se
- * zkouší na testovacím webu; zakázka uložená se zapnutou funkcí a otevřená
- * s vypnutou je JEN KE ČTENÍ: server ji neuloží (409, uloVsProblemy) a
- * aplikace to řekne hned při otevření, ne až při ukládání. Vrací text
- * upozornění, nebo '' (funkce zapnutá / zakázka bez víc šachet). */
+/* ZAKÁZKA S VÍC ŠACHTAMI A VYPNUTÝ VYPÍNAČ (VS #570, R21 — J. V. 10. 11. 2026).
+ * Cena a dokumenty se počítají podle dat (vypnutí nemění cenu uložené
+ * nabídky, tisk funguje); měnit šachty nejde — server změnu šachtové části
+ * odmítne (409, uloVsProblemy) a lišta to řekne hned při otevření. Vrací text
+ * lišty, nebo '' (funkce zapnutá / zakázka bez víc šachet). */
 function vsVypnutoHlaska(zak, zapnuto) {
   if (zapnuto) return '';
   const vs = (zak && Array.isArray(zak.varianty) ? zak.varianty : [])
     .filter(v => v && v.data && vsMaData(v.data.ock));
   if (!vs.length) return '';
-  return 'Zakázka obsahuje víc šachet v jedné nabídce (' + vs.map(v => '„' + String(v.nazev || v.id) + '"').join(', ')
-    + '), ale zkušební funkce Víc šachet v nabídce je vypnutá. Zakázka je jen ke čtení — online ji nejde uložit, '
-    + 'dokud funkci nezapne administrátor (Nastavení → Zkušební funkce).';
+  return 'Zakázka má víc šachet — funkce je v Nastavení vypnutá. Cena a dokumenty se počítají podle uložených dat; '
+    + 'šachty (počet variant, kusy, názvy) teď nejde měnit — zapnout je může administrátor (Nastavení → Zkušební funkce).';
+}
+function vsZakazkaMaData(zak) {
+  return !!(zak && Array.isArray(zak.varianty) && zak.varianty.some(v => v && v.data && vsMaData(v.data.ock)));
 }
 
 if (typeof module !== 'undefined' && module.exports)
   module.exports = { VS_VARIANT_MAX, VS_KS_MAX, VS_NAZEV_MAX, vsKs, vsDalsi, rezimViceSachet, vsMaData, sachtyZ, vsNazev, vsPocty,
     rozpocetSachet, vsKlicPriplatku, vsKlicRadku, vsSlucRadky, priplatkySloucene, vsSoucetSouhrnu, vsSoucet,
-    vypocetZakazkyOck, vypocetOckDat, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska };
+    vypocetZakazkyOck, vypocetOckDat, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska, vsZakazkaMaData };

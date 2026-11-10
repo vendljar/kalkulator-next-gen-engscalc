@@ -2,10 +2,10 @@
  *
  *  1) Vypínač /api/funkce: výchozí vypnuto; GET každý přihlášený, POST jen
  *     administrátor (obchodník 403), neplatný tvar 400.
- *  2) Vypnuto: zakázka bez víc šachet se uloží jako dnes; s další šachtou
- *     nebo ks > 1 → 409 a úložiště beze změny; zakázka uložená se ZAPNUTOU
- *     funkcí je po vypnutí jen ke čtení (409 i bez změny, i při pokusu šachty
- *     zahodit) — server ji nepřepíše ani nerozšíří.
+ *  2) Vypnuto: zakázka bez víc šachet se uloží jako dnes; nová s další
+ *     šachtou nebo ks > 1 → 409; zakázka uložená se ZAPNUTOU funkcí (R21):
+ *     jiné změny i tisk (zámek se součtem) projdou, jakákoli změna šachtové
+ *     části (smazání, ks, zadání, název, přidání) → 409, úložiště beze změny.
  *  3) Zapnuto: platné šachty se uloží; limity a tvar (11 variant, ks 0 / 21 /
  *     1,5 / text, název 81 znaků, chybí id, duplicitní id, neznámý klíč,
  *     zadání není objekt) → 400; Model 1 s víc šachtami → 400.
@@ -197,26 +197,46 @@ let zamcena = null;
   const r1v = r.varovani || '';
   test('zámek: poctivý zámek se součtem je bez rozporu', !/nesouhlasí/.test(r1v), r1v); }
 
-/* 2b) po vypnutí je zakázka s víc šachtami jen ke čtení */
+/* 2b) po vypnutí (R21): cena a tisk podle dat, šachty nejde měnit */
 { const r = await vypinac(false);
   test('vypínač: správce vypne (200)', r.status === 200 && r.funkce.viceSachet === false, r);
-  const g = await nacti(ulozenaVS, cO);
-  const pred = ulozeno(ulozenaVS);
+  let g = await nacti(ulozenaVS, cO);
   const a = zk.importZakazka(kopie(g)); a.kontakt = 'jen poznámka';
   const r1 = await uloz(a, cO, g.uloRazitko);
-  test('vypnuto: uložená zakázka s víc šachtami → 409 (jen ke čtení)', r1.status === 409 && /jen ke čtení/.test(r1.chyba || ''), r1);
-  const b = zk.importZakazka(kopie(g)); b.varianty[0].data.ock.dalsi = []; delete b.varianty[0].data.ock.nazev;
-  const r2 = await uloz(b, cO, g.uloRazitko);
-  test('vypnuto: ani zahození šachet neprojde (409), úložiště beze změny', r2.status === 409 && ulozeno(ulozenaVS) === pred, r2);
-  test('vypnuto: zakázka jde dál načíst (GET 200)', !!(await nacti(ulozenaVS, cO)));
+  test('vypnuto: uložená zakázka s víc šachtami — jiná změna se uloží (200)', r1.status === 200, r1);
+  g = await nacti(ulozenaVS, cO);
+  test('vypnuto: šachty zůstaly beze změny', g.varianty[0].data.ock.dalsi.length === 1 && g.varianty[0].data.ock.dalsi[0].ks === 2);
+  const pred = ulozeno(ulozenaVS);
+  const zmeny = [
+    ['smazání šachet (dalsi: [])', o => { o.dalsi = []; }],
+    ['změna ks šachty 2', o => { o.dalsi[0].ks = 3; }],
+    ['změna zadání šachty 2', o => { o.dalsi[0].zadani.zdvih = 15; }],
+    ['přejmenování šachty 1', o => { o.nazev = 'Výtah A2'; }],
+    ['přidání šachty', o => { o.dalsi.push(Object.assign(kopie(o.dalsi[0]), { id: 's_c', nazev: 'C' })); }],
+  ];
+  for (const [jm, fn] of zmeny) {
+    const b = zk.importZakazka(kopie(g)); fn(b.varianty[0].data.ock);
+    const rr = await uloz(b, cO, g.uloRazitko);
+    test('vypnuto: ' + jm + ' → 409 s lištou „funkce je v Nastavení vypnutá", úložiště beze změny',
+      rr.status === 409 && /v Nastavení vypnutá/.test(rr.chyba || '') && ulozeno(ulozenaVS) === pred, rr);
+  }
+  /* tisk: nový zámek varianty s víc šachtami (součet) projde i s vypnutou funkcí */
+  const c = zk.importZakazka(kopie(g)); const v = c.varianty[0];
+  zam.zamkniVariantu(v, { cislo: zam.variantaCislo(c, v), typ: 'nabidka', kdo: 'Obch VS', vysledek: zam.zamekVysledekSpocti(v, JEKLY, 'VS') });
+  const r2 = await uloz(c, cO, g.uloRazitko);
+  test('vypnuto: tisk (nový zámek) zakázky s víc šachtami projde bez rozporu (200)', r2.status === 200 && !/nesouhlasí/.test(r2.varovani || ''), r2);
+  g = await nacti(ulozenaVS, cO);
+  test('vypnuto: zámek nese cenu součtu (vypnutí cenu nemění)', g.varianty[0].zamek && g.varianty[0].zamek.vysledek.ock.sachty.length === 2
+    && g.varianty[0].zamek.vysledek.ock.souhrn.zakladCena === globalThis.vypocetOckDat(g.varianty[0].data, JEKLY).souhrn.zakladCena);
   const r3 = await uloz(nova('jedna šachta po vypnutí'), cO);
   test('vypnuto: běžná zakázka se dál ukládá (200)', r3.status === 200, r3);
-  test('vypnuto: zamčená zakázka s víc šachtami zůstala v úložišti', !!ulozeno(zamcena)); }
+  const z4 = sDalsi('nová po vypnutí'); const r4 = await uloz(z4, cO);
+  test('vypnuto: novou zakázku s víc šachtami nejde založit (409)', r4.status === 409, r4); }
 
-/* klient: hláška jen ke čtení */
+/* klient: lišta R21 */
 { const hl = globalThis.vsVypnutoHlaska(zk.importZakazka(kopie(await nacti(ulozenaVS, cO))), false);
-  test('klient: vsVypnutoHlaska u vypnuté funkce hlásí jen ke čtení', /jen ke čtení/.test(hl), hl);
-  test('klient: zapnuto nebo jedna šachta → bez hlášky', globalThis.vsVypnutoHlaska(nova('x'), false) === ''
+  test('klient: vsVypnutoHlaska u vypnuté funkce: „Zakázka má víc šachet — funkce je v Nastavení vypnutá"', /^Zakázka má víc šachet — funkce je v Nastavení vypnutá/.test(hl), hl);
+  test('klient: zapnuto nebo jedna šachta → bez lišty', globalThis.vsVypnutoHlaska(nova('x'), false) === ''
     && globalThis.vsVypnutoHlaska(sDalsi('y'), true) === ''); }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

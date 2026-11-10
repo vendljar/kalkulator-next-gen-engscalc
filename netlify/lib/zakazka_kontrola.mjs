@@ -306,7 +306,7 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   /* VÍC ŠACHET V NABÍDCE (VS #570, E1): vypínač správce (ctx.viceSachet,
    * výchozí vypnuto), tvar a limity, Model 2, 409 při ztrátě `dalsi`. Zadání
    * šachet 2+ pak projdou TÝMIŽ kontrolami jako šachta 1 (vsKontrolaSachet). */
-  const vs = ULO.uloVsProblemy ? ULO.uloVsProblemy(zak, stara, { zapnuto: ctx.viceSachet === true }) : null;
+  const vs = ULO.uloVsProblemy ? ULO.uloVsProblemy(zak, stara, { zapnuto: ctx.viceSachet === true, importuj: globalThis.importZakazka }) : null;
   if (vs) return odmitni(vs.status, veta(vs.chyba));
   {
     const p = vsKontrolaSachet(stara, zak, relace, ctx, obnova);

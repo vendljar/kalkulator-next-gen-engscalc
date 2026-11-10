@@ -4,9 +4,9 @@
  *      (aplikace podle toho ukáže nebo schová rozhraní víc šachet)
  * POST /api/funkce { viceSachet: true|false } → JEN Administrátor
  *
- * Výchozí stav je VYPNUTO. Server vypínač zná a s vypnutým odmítne uložit
- * zakázku s daty víc šachet (uloVsProblemy v src/uloziste.js), takže taková
- * zakázka na ostrém nevznikne, ani kdyby prohlížeč někdo obešel. */
+ * Výchozí stav je VYPNUTO. Server vypínač zná a s vypnutým odmítne každou
+ * změnu šachtové části zakázky (uloVsProblemy v src/uloziste.js, R21), takže
+ * zakázka s víc šachtami na ostrém nevznikne, ani kdyby prohlížeč někdo obešel. */
 import { uloziste, vyzadujRoli, json, hloubkaChyba } from '../lib/sdilene.mjs';
 import { FUNKCE_KLIC, funkceCti, funkceOciste } from '../lib/funkce.mjs';
 

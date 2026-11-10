@@ -2312,10 +2312,12 @@ function uloRetenceVarovani(v, ted) {
  * Funkce je ZKUŠEBNÍ a stojí za vypínačem správce (rozhodnutí J. V.
  * 10. 11. 2026): server ho čte z úložiště programu (klíč `funkce`,
  * /api/funkce), výchozí VYPNUTO. Pravidla:
- *   – vypnuto: zakázka s daty víc šachet (další šachta nebo ks ≠ 1) se
- *     neuloží ani neobnoví — 409. Totéž, když je má UŽ ULOŽENÁ verze: taková
- *     zakázka je s vypnutou funkcí jen ke čtení (nesmí se ani „tiše"
- *     zahodit, ani rozšířit). Zakázka bez víc šachet = dnešní chování;
+ *   – vypnuto (R21, J. V. 10. 11. 2026): šachtová část varianty (`ock.dalsi`,
+ *     `ock.ks`, `ock.nazev`) se nesmí změnit proti uložené verzi — nová
+ *     zakázka nebo varianta s víc šachtami, přidání, úprava i smazání šachty
+ *     → 409. Zakázka, která víc šachet UŽ MÁ, se dál počítá a tiskne podle dat
+ *     (vypnutí nemění cenu uložené nabídky) a ostatní změny včetně zámku po
+ *     tisku se uloží. Zakázka bez víc šachet = dnešní chování;
  *   – tvar `ock.dalsi` / `ock.ks` / `ock.nazev` (vsTvarProblemy): ≤ 10 variant
  *     šachet (R10), ks celé číslo 1–20, název ≤ 80 znaků — jinak by šlo
  *     poslat zakázku s tisíci šachet a zahltit výpočet;
@@ -2333,12 +2335,26 @@ function uloVsVarianty(zak) {
 function uloVsMaData(zak) {
   return typeof vsMaData === 'function' && uloVsVarianty(zak).some(v => vsMaData(v.data.ock));
 }
-const ULO_VS_VYPNUTO = 'Zakázka obsahuje víc šachet v jedné nabídce, ale tahle zkušební funkce je vypnutá '
-  + '(Nastavení → Víc šachet v nabídce, zapíná jen administrátor). Zakázka je zatím jen ke čtení — uložit ji jde po zapnutí funkce.';
+const ULO_VS_VYPNUTO = 'Zakázka má víc šachet — funkce je v Nastavení vypnutá. Šachty (počet variant, kusy, '
+  + 'názvy a zadání dalších šachet) teď nejde měnit; zapnout je může administrátor (Nastavení → Zkušební funkce).';
+/* Šachtová část varianty pro porovnání s uloženou verzí ('' = jedna šachta). */
+function uloVsPodpis(v) {
+  const o = v && v.data && v.data.ock;
+  if (!o || typeof vsMaData !== 'function' || !vsMaData(o)) return '';
+  return JSON.stringify({ nazev: o.nazev, ks: o.ks, dalsi: o.dalsi });
+}
 function uloVsProblemy(zak, stara, opts) {
   const o = opts || {};
   if (!o.zapnuto) {
-    if (uloVsMaData(zak) || uloVsMaData(stara)) return { status: 409, chyba: ULO_VS_VYPNUTO };
+    /* Uložená verze přes tutéž migraci jako příchozí (N43) — jinak by nový
+     * klíč doplněný importem vypadal jako změna šachty. */
+    let st = stara;
+    if (st && typeof o.importuj === 'function') { try { st = o.importuj(JSON.parse(JSON.stringify(st))); } catch (e) { st = stara; } }
+    const ulozene = new Map(uloVsVarianty(st).map(v => [String(v.id), uloVsPodpis(v)]));
+    for (const v of uloVsVarianty(zak)) {
+      if (uloVsPodpis(v) !== (ulozene.get(String(v.id)) || '')) return { status: 409, chyba: ULO_VS_VYPNUTO };
+      ulozene.delete(String(v.id));
+    }
     return null;
   }
   if (typeof vsTvarProblemy !== 'function') return null;

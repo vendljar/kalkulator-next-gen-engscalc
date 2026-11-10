@@ -369,8 +369,8 @@ function onlinePoPrihlaseni(ja, hesloPrihlaseni) {
   /* Červená lišta „ceník není nahraný" počká, než se ceník stáhne a nasadí
    * (PS #558) — jinak po přihlášení svítila, dokud nepřišel. */
   if (typeof ukazkoveOvereniZacni === 'function') ukazkoveOvereniZacni();
+  if (ONLINE_STAV.funkce) delete ONLINE_STAV.funkce;   // VS #570: vypínač se načte znovu, až bude potřeba
   return Promise.all([onlineNactiProgram(), onlineNactiFirmu(), onlineNactiZobrazeni(), onlineNactiRejstrik(),
-                      onlineNactiFunkce(),   // vypínače zkušebních funkcí (VS #570)
                       onlineNactiSablony(),
                       /* zveřejněný slovník překladů (#401) — na ceníku nezávisí */
                       onlineNactiSlovnik(),
@@ -638,7 +638,9 @@ function onlineSablonyRezimNastav(rezim) {
 /* ---------- vypínače zkušebních funkcí (VS #570, 10. 11. 2026) ----------
  * Stav drží server (/api/funkce, výchozí vypnuto); prohlížeč ho jen čte,
  * přepíná ho administrátor v Nastavení → Zkušební funkce. Nepřihlášený
- * nebo neúspěšné načtení = vypnuto. */
+ * nebo neúspěšné načtení = vypnuto. NAČÍTÁ SE JEN, KDYŽ JE POTŘEBA
+ * (zakázka s daty víc šachet, panel Zkušební funkce): s jednou šachtou
+ * aplikace neodešle ani požadavek navíc — přesně jako před VS. */
 function onlineNactiFunkce() {
   return onlineApi('/api/funkce').then(o => {
     ONLINE_STAV.funkce = { viceSachet: !!(o.funkce && o.funkce.viceSachet === true), kdo: o.kdo || '', kdy: o.kdy || '' };
@@ -648,11 +650,12 @@ function onlineNactiFunkce() {
 function onlineFunkceZapnuta(k) {
   return !!(ONLINE_STAV.ja && ONLINE_STAV.funkce && ONLINE_STAV.funkce[k] === true);
 }
+function viceSachetZapnuto() { return onlineFunkceZapnuta('viceSachet'); }
 async function onlineFunkceNastav(k, zapnout) {
   if (!jeAdminOnline()) { onlineZprava('Zkušební funkce přepíná jen administrátor.', 'varovani'); render(); return false; }
   if (!await potvrd((zapnout ? 'Zapnout' : 'Vypnout') + ' zkušební funkci „Víc šachet v nabídce" pro celý program?\n\n'
     + (zapnout ? 'Obchodníci budou moci zakládat nabídky s víc šachtami. Na ostrém webu nechte funkci vypnutou.'
-      : 'Zakázky s víc šachtami zůstanou uložené, ale budou jen ke čtení.'))) return false;
+      : 'Zakázky s víc šachtami se dál počítají a tisknou podle dat, jejich šachty ale nepůjde měnit.'))) return false;
   const telo = {}; telo[k] = !!zapnout;
   return onlineApi('/api/funkce', telo).then(o => {
     ONLINE_STAV.funkce = { viceSachet: !!(o.funkce && o.funkce.viceSachet === true), kdo: o.kdo || '', kdy: o.kdy || '' };
@@ -663,12 +666,17 @@ async function onlineFunkceNastav(k, zapnout) {
 }
 function nastFunkce() {
   if (!jeAdminOnline()) return '<div class="note">Zkušební funkce přepíná jen přihlášený administrátor.</div>';
+  if (!ONLINE_STAV.funkce) {
+    onlineNactiFunkce().then(() => { if (typeof renderNastaveni === 'function') renderNastaveni(); });
+    return '<div class="note">Načítám stav ze serveru…</div>';
+  }
   const f = ONLINE_STAV.funkce || {};
   const zap = f.viceSachet === true;
   return `<div class="sec-title">Víc šachet v nabídce — zkušební funkce</div>
     <div class="note">Víc variant šachet a počet kusů v jedné nabídce OCK (#570). Funkce se dodává po etapách
       a zkouší se na testovacím webu — <b>na ostrém webu ji nechte vypnutou</b>. S vypnutou funkcí se aplikace
-      chová přesně jako dosud a server zakázku s víc šachtami neuloží (zakázka je jen ke čtení).</div>
+      chová přesně jako dosud: novou zakázku s víc šachtami nejde založit; zakázka, která víc šachet už má, se dál
+      počítá a tiskne podle dat, jen její šachty nejde měnit.</div>
     <div class="note">Stav: ${zap ? '<b>zapnuto</b>' : '<b>vypnuto</b>'}${f.kdy ? ' (naposledy změnil ' + esc(f.kdo || '?') + ' '
       + esc(String(f.kdy).slice(0, 10)) + ')' : ''}.</div>
     <div class="btns"><button class="mini" id="vsVypinac" onclick="onlineFunkceNastav('viceSachet', ${zap ? 'false' : 'true'})">
@@ -1348,10 +1356,6 @@ function onlineUloz(opts) {
         + 'pod vaším administrátorským účtem. Uložit?')
         .then(ok => ok ? onlineUloz(Object.assign({}, opts, { nahledPotvrzeno: true })) : false);
   }
-  /* VS #570: zakázka s víc šachtami při vypnuté zkušební funkci je jen ke
-   * čtení — server by ji odmítl (409); řekne se to tady, bez dotazu. */
-  { const vs = typeof vsVypnutoHlaska === 'function' ? vsVypnutoHlaska(ZAK, onlineFunkceZapnuta('viceSachet')) : '';
-    if (vs) { if (!opts.tiche) { onlineZprava(vs, 'varovani'); render(); } return Promise.resolve(false); } }
   /* BEZ ČÍSLA NABÍDKY SE NEUKLÁDÁ (P5 / K15-N69, 25. 9. 2026). Tlačítko
    * v liště to hlídalo samo (stav „vyplnit"), ale do `onlineUloz()` vede
    * víc cest — karta Databáze, dialog „Otevřít jinou zakázku → Uložit
@@ -1761,9 +1765,15 @@ async function onlineOtevri(soubor) {
     ONLINE_STAV.posledni = JSON.stringify(ZAK);
     onlineZprava('Otevřeno online: ' + soubor + '.'
       + (prep && (prep.prepocteno || prep.svetlikyStavba || prep.svetlikyMaterialBez) && typeof uloPrepocetVeta === 'function' ? ' ' + uloPrepocetVeta(prep) : ''));
-    /* VS #570: zakázka s víc šachtami a vypnutá funkce = jen ke čtení. */
-    { const vs = typeof vsVypnutoHlaska === 'function' ? vsVypnutoHlaska(ZAK, onlineFunkceZapnuta('viceSachet')) : '';
-      if (vs) onlineZprava(vs, 'varovani'); }
+    /* VS #570 (R21): zakázka s víc šachtami a vypnutá funkce — lišta; vypínač
+     * se ze serveru čte jen u takové zakázky. */
+    if (typeof vsZakazkaMaData === 'function' && vsZakazkaMaData(ZAK)) {
+      const zak = ZAK;
+      onlineNactiFunkce().then(() => {
+        const vs = ZAK === zak ? vsVypnutoHlaska(ZAK, viceSachetZapnuto()) : '';
+        if (vs) { onlineZprava(vs, 'varovani'); render(); }
+      });
+    }
     zavriOnline();
     render();
     if (typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
