@@ -261,8 +261,24 @@ function vsTvarProblemy(ock) {
     if (!s.zadani || typeof s.zadani !== 'object' || Array.isArray(s.zadani)) out.push({ kde: c + '.zadani', duvod: 'typ' });
     const navic = Object.keys(s).filter(k => ['id', 'nazev', 'ks', 'zadani', 'techspec'].indexOf(k) < 0);
     if (navic.length) out.push({ kde: c, duvod: 'typ' });
+    if (s.techspec !== undefined && !vsTechspecOk(s.techspec)) out.push({ kde: c + '.techspec', duvod: 'typ' });
   });
   return out;
+}
+
+/* Ruční hodnoty specifikace šachty 2+ (VS-E4, dalsi[i].techspec): jen
+ * { hodnoty: { <id pole šachty>: text ≤ 2000 znaků } }. Pole za zakázku
+ * (lešení, stavba…) sem nepatří — čtou se z v.data.techspec; seznam polí
+ * šachty dává techspec.js (tsPoleSachty), bez něj aspoň tvar id. */
+const VS_TS_HODNOTA_MAX = 2000;
+function vsTechspecOk(t) {
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return false;
+  if (Object.keys(t).some(k => k !== 'hodnoty')) return false;
+  const h = t.hodnoty;
+  if (h === undefined) return true;
+  if (!h || typeof h !== 'object' || Array.isArray(h)) return false;
+  const jePole = (typeof tsPoleSachty === 'function') ? tsPoleSachty : (id => VS_ID_TVAR.test(id));
+  return Object.keys(h).every(k => jePole(k) && typeof h[k] === 'string' && h[k].length <= VS_TS_HODNOTA_MAX);
 }
 
 /* Zakázka rozvinutá na šachty: varianta s dalšími šachtami dostane za sebe
@@ -303,10 +319,17 @@ function vsZakazkaMaData(zak) {
   return !!(zak && Array.isArray(zak.varianty) && zak.varianty.some(v => v && v.data && vsMaData(v.data.ock)));
 }
 
+/* Názvy šachet varianty pro hledání v seznamu variant (VS #570 E3). Bez
+ * víc šachet '' — hledání beze změny. */
+function vsNazvySachetText(ock) {
+  if (!rezimViceSachet(ock)) return '';
+  return sachtyZ(ock).map((s, i) => vsNazev(s, i)).join(' ');
+}
+
 if (typeof module !== 'undefined' && module.exports)
   module.exports = { VS_VARIANT_MAX, VS_KS_MAX, VS_NAZEV_MAX, vsKs, vsDalsi, rezimViceSachet, vsMaData, sachtyZ, vsNazev, vsPocty,
     rozpocetSachet, vsKlicPriplatku, vsKlicRadku, vsSlucRadky, priplatkySloucene, vsSoucetSouhrnu, vsSoucet,
-    vypocetZakazkyOck, vypocetOckDat, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska, vsZakazkaMaData };
+    vypocetZakazkyOck, vypocetOckDat, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska, vsZakazkaMaData, vsNazvySachetText, vsTechspecOk };
 
 /* ============================================================
  * VS-E4 (#570 / roadmapa #594) — šablona cenové nabídky a víc šachet.

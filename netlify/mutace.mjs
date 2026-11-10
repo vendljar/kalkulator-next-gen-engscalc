@@ -215,6 +215,15 @@ const MUTACE = [
   /* VS #570 E1 (10. 11. 2026): víc šachet v jedné nabídce — server: vypínač
    * správce, tvar a limity ock.dalsi, Model 2, 409 při ztrátě dalsi, zadání
    * šachet 2+ stejnými kontrolami. Hlídá netlify/test_vs_server.mjs. [#570] */
+  /* VS-E3 (bod koordinace 1 po E4): ruční hodnoty specifikace šachty 2+. [#570 E3] */
+  { nazev: 'VS-E3: techspec šachty 2+ bez kontroly tvaru [#570 E3]', soubor: '../src/vice_sachet.js',
+    hledej: "    if (s.techspec !== undefined && !vsTechspecOk(s.techspec)) out.push({ kde: c + '.techspec', duvod: 'typ' });",
+    nahrad: '',
+    proc: 'do zakázky by šlo uložit libovolná data pod techspec šachty (i pole za zakázku nebo objekty místo textu)', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS-E3: techspec šachty 2+ přijme pole za zakázku [#570 E3]', soubor: '../src/vice_sachet.js',
+    hledej: "  return Object.keys(h).every(k => jePole(k) && typeof h[k] === 'string' && h[k].length <= VS_TS_HODNOTA_MAX);",
+    nahrad: "  return Object.keys(h).every(k => typeof h[k] === 'string' && h[k].length <= VS_TS_HODNOTA_MAX);",
+    proc: 'šachta 2 by nesla vlastní lešení nebo stavbu, které platí za celou zakázku', sady: ['test_vs_server.mjs'] },
   { nazev: 'VS: vypnutý vypínač nic nehlídá [#570]', soubor: '../src/uloziste.js',
     hledej: '  if (!o.zapnuto) {',
     nahrad: '  if (false) {',

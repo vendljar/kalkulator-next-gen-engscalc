@@ -160,7 +160,9 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* ui/vice_sachet_ui.js (VS #570 E2, 10. 11. 2026): zadání víc šachet —
    * počet variant, kusy, kopie, mazání s potvrzením, vypínač, Model 1.
    * Hlídá src/test_vs_zadani.js (prohlížeč: overit_vs_zadani.mjs). */
-  'ui/vice_sachet_ui.js'];
+  'ui/vice_sachet_ui.js',
+  /* seznam.js (VS #570 E3): hledání variant i podle názvu šachty. Hlídá src/test_vs_sleva.js. */
+  'seznam.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -428,6 +430,48 @@ const MUTACE = [
     hledej: "  if (typeof zamekStop === 'function' && zamekStop()) return true;",
     nahrad: "",
     proc: 'odeslaná nabídka by šla tiše přecenit přidáním šachty', sady: ['test_vs_zadani.js'] },
+  /* VS #570 E3 (10. 11. 2026): kalkulace, cena, sleva, přehledy víc šachet.
+   * Hlídají src/test_vs_priplatky.js a src/test_vs_sleva.js. [#570 E3] */
+  { nazev: 'VS-E3: pohled Součet jde editovat [#570 E3]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  return `<div class=\"vs-soucet-ro\">${String(html).replace(/<(input|select|button|textarea)\\b/g, '<$1 disabled')}</div>`;",
+    nahrad: "  return `<div class=\"vs-soucet-ro\">${html}</div>`;",
+    proc: 'zápis do sloučeného řádku by šel do otevřené šachty s hodnotou součtu', sady: ['test_vs_priplatky.js'] },
+  { nazev: 'VS-E3: výčet šachet bez počtu kusů [#570 E3]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  const t = x.vsSachty.map(o => vsNazev(l[o.i], o.i) + (o.ks > 1 ? ' ' + o.ks + '×' : '')).join(', ');",
+    nahrad: "  const t = x.vsSachty.map(o => vsNazev(l[o.i], o.i)).join(', ');",
+    proc: 'obchodník by neviděl, že sloučený příplatek platí pro 2 kusy šachty (R8)', sady: ['test_vs_priplatky.js'] },
+  { nazev: 'VS-E3: příplatky šachty zaokrouhlené na tisíce [#570 E3]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  const x = rS.souhrn.priplatkyCenaPredZaokr;",
+    nahrad: "  const x = rS.souhrn.priplatkyCena;",
+    proc: 'cena šachty by se zaokrouhlovala zvlášť, ačkoli se zaokrouhluje jen součet (R3)', sady: ['test_vs_priplatky.js'] },
+  { nazev: 'VS-E3: přepínač i s vypnutou funkcí otevře šachtu 2+ [#570 E3]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  const sachty = r.sachty.map((s, i) => (zap || i === 0) ? btn(i, s) : '').join('');",
+    nahrad: "  const sachty = r.sachty.map((s, i) => btn(i, s)).join('');",
+    proc: 'vypnutá funkce (R21) by nabízela šachty, které nejde otevřít', sady: ['test_vs_priplatky.js'] },
+  { nazev: 'VS-E3: rozpis v hlavičce bez rozpočtu (ceny před zaokrouhlením) [#570 E3]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: " ks · ${vsKcF(s.cenaRozpis)}</button>`;",
+    nahrad: " ks · ${vsKcF(s.cenaPredZaokr)}</button>`;",
+    proc: 'ceny šachet v hlavičce by nedaly základní cenu (R7)', sady: ['test_vs_sleva.js'] },
+  { nazev: 'VS-E3: věta o slevě ze součtu chybí [#570 E3]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  if (!vsRezimUI()) return '';\n  return `<div class=\"note\" id=\"vsSlevaPozn\"",
+    nahrad: "  return '';\n  return `<div class=\"note\" id=\"vsSlevaPozn\"",
+    proc: 'obchodník by nevěděl, že strop slevy platí pro celou nabídku (R3)', sady: ['test_vs_sleva.js'] },
+  { nazev: 'VS-E3: schvalování ukáže šachty i u projekce [#570 E3]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  if (!z || z.cast === 'proj' || typeof ZAK",
+    nahrad: "  if (!z || typeof ZAK",
+    proc: 'žádost o slevu projekce by tvrdila, že jde o slevu ze šachet', sady: ['test_vs_sleva.js'] },
+  { nazev: 'VS-E3: rozpočet celkem z ceny před zaokrouhlením [#570 E3]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  const vNabidce = r.sachty.reduce((a, s) => a + s.cenaRozpis, 0);",
+    nahrad: "  const vNabidce = spocteno;",
+    proc: 'tabulka rozpočtu by neukázala, že součet sedí na základní cenu', sady: ['test_vs_sleva.js'] },
+  { nazev: 'VS-E3: hledání nezná názvy šachet [#570 E3]', soubor: 'seznam.js',
+    hledej: "  if (vsN) r.hledatelne += ' ' + seznamNorm(vsN);",
+    nahrad: "",
+    proc: 'variantu by nešlo najít podle názvu šachty („Uliční trakt")', sady: ['test_vs_sleva.js'] },
+  { nazev: 'VS-E3: štítek varianty i u jedné šachty [#570 E3]', soubor: 'ui/vice_sachet_ui.js',
+    hledej: "  if (!ock || typeof rezimViceSachet !== 'function' || !rezimViceSachet(ock)) return '';\n  const p = vsPocty(ock);",
+    nahrad: "  if (!ock) return '';\n  const p = vsPocty(ock);",
+    proc: 'seznam a porovnání by u každé dnešní zakázky ukázaly „1 varianta / 1 ks" (R16)', sady: ['test_vs_sleva.js'] },
   /* AS #577 (10. 11. 2026): jméno kopie pro skript Apps Script. Hlídá
    * src/test_577_jmeno_kopie.js (pole `sady` = pustit ji první). */
   { nazev: 'AS: jméno kopie s neznámým prostředím [#577]', soubor: 'retence_zaloh.js',
