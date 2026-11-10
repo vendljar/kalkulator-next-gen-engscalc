@@ -1,3 +1,35 @@
+# Předávka — 10. 11. 2026: VS-S1 #570 — E2 zadání (#592) + E3 kalkulace (#593) víc šachet, větev `claude/vs-s1-e2e3`
+
+Nad `079cfc6` (integrace v11.11.1 = E0/E1). **CHANGELOG v12.11.1 (E2) a v12.11.2 (E3)** — koordinace přečísluje;
+`verze.txt` = 10.11.1 (kontrola verze = den commitu + existující oddíl CHANGELOG; základ 079cfc6 nesl 11.11.1
+s commitem z 10. 11. a sám kontrolou verze neprojde). Neslučováno; do `test-draft`, `test` ani `main` nic; weby,
+Disk, Pipedrive nic. Commity: E2 `9909df5` + `ed1c5a7`/`879dc9b` (verze, harnessy), E3 `109f332`.
+
+| úkol | stav | kde |
+|---|---|---|
+| E2 pole Počet variant / Počet kusů (R17, R20) | ✅ | `src/ui/vice_sachet_ui.js` (nový, build za kalk_ock.js), nadpis Zadání šachty přes `kartaRezim(..., navic)` |
+| E2 karta Šachty varianty (R18, R19) | ✅ | přepínač, název, ks, kopie, smazání s potvrzením na stránce, Zpět; snížení na 1 = `dalsi: []` |
+| E2 Z = otevřená šachta | ✅ | `VS_UI` + `vsSyncZ` v `syncVarianta`, `vypocetSachtyAkt` (zadání, opláštění, Můstky, ATYP, standard, tabulky) |
+| E2 Model 1, R21 | ✅ | Model 1: pole zhasnutá, přepnutí na Model 1 u víc šachet odmítnuto (`set`) + zakázaná volba; VYP + data: seznam + lišta, šachta 1, zápis odmítnut |
+| E2 vypínač po přihlášení | ✅ | `onlineNactiFunkce` v načtení po přihlášení; 13 harnessů s mapou funkcí doplněno o `/api/funkce` |
+| E3 kalkulace šachta / Součet | ✅ | přepínač v nadpisu, Součet jen ke čtení (disabled), výčet šachet u příplatků (R8), Detail = šachta |
+| E3 hlavička, rozpočet | ✅ | rozpis po šachtách (cenaRozpis, klik otevře), tabulka rozpočtu v kartě Obchodní zaokrouhlení |
+| E3 sleva, schvalování | ✅ | věta „ze součtu" s počty (karta slevy, žádost); limit a marže ze součtu už od E1 |
+| E3 přehledy | ✅ | štítek „N variant / X ks" v seznamu a porovnání, hledání podle názvu šachty (`seznam.js`) |
+| testy | ✅ | `test_vs_zadani.js` 50, `test_vs_priplatky.js` 19, `test_vs_sleva.js` 19, `overit_vs_zadani.mjs` 52 (`KNG_DIST_ZAKLAD` = srovnání s 079cfc6), `overit_vs_kalkulace.mjs` 23; zlatá sada 319/319 |
+| mutace | ✅ | „[#570 E2]" 12/12, „[#570 E3]" 10/10 (`ui/vice_sachet_ui.js`, `seznam.js` v JADRA) |
+| kolo `--bez-mutaci` | viz níže | E2 nad 879dc9b; E3 nad 109f332 |
+
+**Pozor pro další etapy:** sestavení je jeden `<script>` — funkce se stejným jménem v jiném souboru tiše přepíše
+jinou (E3: `vsSoucet` obrazovky přepsala `vsSoucet` jádra → zacyklený výpočet). `test_vs_zadani.js` hlídá jen
+`ui/vice_sachet_ui.js`; S2/S3 ať u nových funkcí ve `vice_sachet.js` jméno ověří (`grep -rn "function <jméno>" src`).
+
+**Otevřené body / pro koordinaci:**
+1. Základ 079cfc6: `verze.txt` 11.11.1 vs. commit 10. 11. → build/statické kontroly v kole padají i na základu.
+2. Pohled Součet zhasne i výběr režimu sekce (zobrazit/skrýt) v tabulce — mění se v pohledu šachty.
+3. Porovnání variant: štítek pod názvem varianty (ne vlastní řádek metriky) — porovnávají se součty.
+4. Rejstřík online (Přehled cenových nabídek ze serveru) štítek šachet nemá — server data šachet do rejstříku neukládá; případně E5/E6.
+
 # Předávka — 10. 11. 2026: VS-E0/E1 #570 (#590, #591) — víc šachet v nabídce: zlatá sada, jádro, server, vypínač správce, větev `claude/vs-e0e1`
 
 Nad `3ff5403` (integrace = test v10.11.1; main = v6.11.5). **CHANGELOG v11.11.1** (koordinace přečísluje;
