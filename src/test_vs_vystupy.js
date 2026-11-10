@@ -125,6 +125,19 @@ const sekce = (d, jm) => (d.sekce || []).find(s => s.sekce === jm);
   const { zak: z1, v: v1 } = zakazka(false);
   const ph1 = sodData(z1, v1, J, 'cz').placeholders;
   test('B SoD jedné šachty: žádný symbol SACHTY_*', !Object.keys(ph1).some(k => /^SACHTY_/.test(k)));
+  /* E6 #596: předmět a rozpis v EN/DE/FR — žádné české slovo kromě názvů šachet */
+  const OC = { en: ['2 shaft variants, in total 3 pcs (Výtah A 1 pcs, Výtah B 2 pcs)', 'Výtah A, incl. bridges – 1 pcs – '],
+    de: ['2 Schachtvarianten, insgesamt 3 Stk. (Výtah A 1 Stk., Výtah B 2 Stk.)', 'Výtah A, inkl. Brücken – 1 Stk. – '],
+    fr: ['2 variantes de gaine, au total 3 pcs (Výtah A 1 pcs, Výtah B 2 pcs)', 'Výtah A, passerelles comprises – 1 pcs – '] };
+  Object.keys(OC).forEach(L => {
+    const dd = { placeholders: {} };
+    sodSachtySymboly(dd, zak, v, J, L);
+    test('B SoD ' + L + ': předmět přeložený', dd.placeholders.SACHTY_SOD_PREDMET === OC[L][0], dd.placeholders.SACHTY_SOD_PREDMET);
+    test('B SoD ' + L + ': rozpis přeložený', String(dd.placeholders.SACHTY_SOD_ROZPIS).indexOf(OC[L][1]) === 0
+      && !/variant|šachet|celkem|můstk| ks /.test(String(dd.placeholders.SACHTY_SOD_ROZPIS).replace(/Výtah [AB]/g, '')), dd.placeholders.SACHTY_SOD_ROZPIS);
+  });
+  ['varianta šachty', 'varianty šachet', 'variant šachet', 'celkem', 'vč. můstků'].forEach(t =>
+    ['en', 'de', 'fr'].forEach(L => test('B překlad „' + t + '" ' + L, trStav(t, L).prelozeno && trStav(t, L).zdroj === 'slovník', trStav(t, L))));
 }
 
 /* ---------- C) controlling (R5) ---------- */
