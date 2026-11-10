@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v12.11.2 — VS-E3 #570: víc šachet v nabídce — kalkulace šachta / Součet, hlavička ceny s rozpisem, rozpočet zaokrouhlení, sleva ze součtu, přehledy (za vypínačem), větev claude/vs-s1-e2e3
+## v10.11.5 — VS-E3 #570: víc šachet v nabídce — kalkulace šachta / Součet, hlavička ceny s rozpisem, rozpočet zaokrouhlení, sleva ze součtu, přehledy (za vypínačem), větev claude/vs-s1-e2e3
 
-Nad E2 (téže větve). Verzi přečísluje koordinace. **Jedna šachta (VYP i ZAP) = obrazovka znak po znaku jako 079cfc6**
+Nad integrací aaac150 (v10.11.4 = E2 v10.11.3 + E4 v10.11.4). Verzi přečísluje koordinace. **Jedna šachta (VYP i ZAP) = obrazovka znak po znaku jako 079cfc6**
 (#inputs, #outputs, souhrn, sleva/zaokrouhlení/CN, Detail výpočtu — harness), zlatá sada 319/319.
 
 - **Cenová kalkulace:** v nadpisu přepínač **šachty / Součet**. Šachta = její řádky (editace jako dnes), CELKEM šachty
@@ -32,7 +32,43 @@ Nad E2 (téže větve). Verzi přečísluje koordinace. **Jedna šachta (VYP i Z
 
 ---
 
-## v12.11.1 — VS-E2 #570: víc šachet v nabídce — zadání: Počet variant šachet, Počet kusů, karta Šachty varianty (jen se zapnutým vypínačem), větev claude/vs-s1-e2e3
+## v10.11.4 — VS-E4 #570: víc šachet v nabídce — cenová nabídka s tabulkou variant šachet, Word CN v17, technická specifikace po šachtách, překlady, větev claude/vs-s2-e4
+
+Nad `079cfc6` (integrace v11.11.1 = E0/E1). `verze.txt` 10.11.3 (den posledního commitu); verzi přečísluje koordinace. Všechno za
+vypínačem a v datech víc šachet: zakázka s jednou šachtou (vypínač VYP i ZAP) dává cenovou nabídku, Word,
+náhledy, specifikaci i smlouvu o dílo **bajt po bajtu jako dnes** — zlatá sada 319/319 beze změny otisků.
+
+- **Cenová nabídka (náhled i Word) — R4, R12, R14:** u víc šachet tabulka variant šachet: řádek za variantu
+  (název, „počet kusů: N", cena VŠECH kusů — cena za kus se netiskne), u šachty s můstky dovětek „vč. můstků"
+  (samostatný řádek Můstky a řádek Výtahová šachta zmizí), pod tím sleva a **Cena celkem** se „šachet celkem:
+  N ks". Ceny řádků = rozpočet ceny před slevou do šachet (R7) už v měně dokumentu — součet sedí na korunu
+  i na euro. Nové symboly `SACHTA_NAZEV`, `SACHTA_KS`, `SACHTA_POPIS`, `SACHTA_CENA_BEZ_DPH`, `SACHTA_TS_NAZEV`,
+  `SACHTY_CELKEM_POPIS`, `POCET_VARIANT`, `POCET_SACHET_CELKEM` (jen u víc šachet; `VS_NOVE_SYMBOLY` je kryje).
+  **Jedna šachta s můstky (R15)** = „Výtahová šachta", „Můstky", „Cena celkem" jako dnes.
+- **Technická část po šachtách:** sekce ZÁKLADNÍ PARAMETRY … MŮSTKY (+ sokl) za každou šachtu z jejího zadání,
+  výsledku a specifikace (`tsSymbolySachty` — šachta 1 = dnešní hodnoty), MŮSTKY jen u šachty, která je má;
+  stavební a projekční práce a „není součástí" jednou za nabídku.
+- **Word — smyčka `{#sachty}…{/sachty}`** (`docxSmyckaSachet` v `docxgen.js`): řádky tabulky mezi značkami se
+  zopakují za šachtu; prázdné řádky šachty a prázdné sekce zmizí, název šachty jde do XML se závorkou jako
+  entitou (B86). Bez dat víc šachet = jedna položka s prázdnými symboly → dokument stejný jako z v16.
+- **Šablona CN v17** — `node nastroje/vyrob_sablony.js --cn-v17 <podklady>` z `Sablona_NABIDKA_CN_v16.docx`
+  (+ _EN/_DE/_FR): smyčka v technické části (ZÁKLADNÍ PARAMETRY … TS_MUSTKY_SLOUPY s nadpisem šachty), smyčka
+  řádku šachty v obchodní části, odstavec „šachet celkem" v řádku CENA CELKEM. **Jedna šachta: v17 = v16 bajt
+  po bajtu** (česky i v přeložené EN/DE šabloně, s můstky i bez, se slevou i bez). Značky smyčky se při
+  překladu šablony nepřekládají ani nehlásí.
+- **Zábrana tisku v15/v16 u víc šachet:** `vsSablonaZabrana(ock, symboly)` (pro kontroly.js — zapojí E5)
+  a `nabidkaData` s Word šablonou bez smyčky vyhodí „Šablona cenové nabídky neumí rozpis po šachtách … CN v17".
+  Online náhled a tisk do PDF rozpis umí vždy. Model 1 počítá jen šachtu 1 → bez tabulky i bez zábrany.
+- **Technická specifikace (obrazovka):** u víc šachet přepínač šachty (`.rada-prep`), sekce šachty
+  s názvem vybrané šachty a hodnotami z jejího zadání a výsledku (#572 sklo podle SVÉ šachty); ruční hodnoty
+  šachty 2+ do `ock.dalsi[i].techspec.hodnoty` (`tsSachtaTechspec`, jen pole šachty), pole za zakázku dál
+  do `v.data.techspec`. S vypnutým vypínačem jsou pole šachet 2+ jen ke čtení (server by změnu odmítl).
+- **Překlady EN/DE/FR:** Šachta, VARIANTA ŠACHTY, vč. můstků, počet kusů, šachet celkem, Počet variant šachet.
+- **Testy:** `src/test_vs_nabidka.js` (43), `src/test_vs_docx_v17.js` (29), `src/test_vs_techspec.js` (17),
+  harness `overit_vs_dokumenty.mjs` (20; 1200/1440/1920, bez překryvů) — všechny na 079cfc6 selžou (pojistka);
+  mutace jádra `[#570 E4]` 15/15 chycených (1 ekvivalentní vyřazena); zlatá sada 319/319, `test_560_mustky_sekce.js` 228/0.
+
+## v10.11.3 — VS-E2 #570: víc šachet v nabídce — zadání: Počet variant šachet, Počet kusů, karta Šachty varianty (jen se zapnutým vypínačem), větev claude/vs-s1-e2e3
 
 Nad `079cfc6` (integrace v11.11.1 = E0/E1). Verzi přečísluje koordinace. Na webech, Disku ani v Pipedrive nic.
 Závazné podklady ve větvi `claude/vs-vice-sachet` (návrh R1–R21, plán E2, prototyp v9). **S vypnutým vypínačem
@@ -58,7 +94,7 @@ je Kalkulace OCK znak po znaku jako 079cfc6** (harness) a zlatá sada 319/319 be
 
 ---
 
-## v11.11.1 — VS-E0/E1 #570: víc šachet v nabídce — zlatá sada, jádro, server a vypínač správce (výchozí vypnuto), větev claude/vs-e0e1
+## v10.11.2 — VS-E0/E1 #570: víc šachet v nabídce — zlatá sada, jádro, server a vypínač správce (výchozí vypnuto), větev claude/vs-e0e1
 
 Nad `3ff5403` (integrace = test v10.11.1; main = v6.11.5). Verzi přečísluje koordinace (`verze.txt` zůstává
 10.11.1 — kontrola verze = den posledního commitu). Na webech, Disku ani v Pipedrive nic. Závazné podklady

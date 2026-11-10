@@ -59,7 +59,8 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
   const blob = await docxVyplnSablonu(templateArrayBuffer, data.placeholders,
     data.priplatky || [], data.obrazky || {}, { odstavcePryc: data.odstavcePryc || [], blokyPryc: data.blokyPryc || [], radkyNavic: data.tsRadkyNavic || [],
       studieBezZamereni: data.studieBezZamereni === true,   // #569: Word nabídky PROJ bez zaměření ve studii
-      dpzBezZamereni: data.dpzBezZamereni === true });      // #573: Word nabídky PROJ — DPZ bez zaměření
+      dpzBezZamereni: data.dpzBezZamereni === true,         // #573: Word nabídky PROJ — DPZ bez zaměření
+      sachty: data.sachtyWord || null });                    // VS-E4 #570: smyčka šachet šablony CN v17 (null = jedna šachta)
   return { blob, nazevSouboru: data.nazevSouboru, data };
 }
 /* Symboly {{…}} šablony (tělo, záhlaví, zápatí) — i rozdělené mezi běhy. */

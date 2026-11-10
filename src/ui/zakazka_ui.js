@@ -688,7 +688,7 @@ async function nabidkaNahled() {
   const p = data.placeholders;
   const radek = (l, v) => `<tr><td style="font-weight:600">${esc(l)}</td><td>${esc(v)}</td></tr>`;
   /* platební kalendář OCK: splátky a měsíční fakturace podle týchž pravidel jako Word (D1/D2) */
-  const sekceHtml = nabidkaNahledSekce(p, L, data.platbyOck, data.tsExtra).map(s =>
+  const sekceHtml = nabidkaNahledSekce(p, L, data.platbyOck, data.tsExtra, data.sachty).map(s =>
     `<h2>${esc(s.sekce)}</h2><table>${s.radky.map(r => radek(r[0], r[1])).join('')}</table>`).join('');
   const nadpisPripl = `<h2>${esc('II. ' + P('ROZŠÍŘENÍ CENOVÉ NABÍDKY – PŘÍPLATKY'))}</h2>`;
   const priplatkyHtml = data.priplatky.length
@@ -899,7 +899,7 @@ async function nabidkaOckDokument() {
   /* sekce z nabidka.js: [0] hlavička (tiskne se jako tabulka nahoře),
    * pak technická část, obchodní část (rozepsaná níže vlastní tabulkou)
    * a nakonec nepovinný Dodavatel. */
-  const vse = nabidkaNahledSekce(p, L, data.platbyOck, data.tsExtra);   // platební kalendář OCK (D1/D2)
+  const vse = nabidkaNahledSekce(p, L, data.platbyOck, data.tsExtra, data.sachty);   // platební kalendář OCK (D1/D2)
   let iObchod = vse.findIndex(s => s.radky.some(r => r[1] === p.CENA_S_DPH));
   if (iObchod < 0) iObchod = vse.length - 1;
   const radek = (l, v) => `<tr><td>${esc(l)}</td><td>${esc(v)}</td></tr>`;
@@ -912,12 +912,19 @@ async function nabidkaOckDokument() {
   const slevaRadky = (p.SLEVA_PROC && p.SLEVA_PROC !== '0')
     ? `<tr><td>${esc(P('Cena před slevou'))}</td><td class="castka">${esc(p.CENA_PRED_SLEVOU)}</td></tr>
        <tr><td>${esc(P('Sleva'))} ${esc(p.SLEVA_PROC)} %</td><td class="castka">− ${esc(p.SLEVA_KC)}</td></tr>` : '';
+  /* VÍC ŠACHET (VS-E4 #570, R4/R12/R14): řádek za variantu šachty — název
+   * (u šachty s můstky „vč. můstků"), počet kusů a cena všech kusů před
+   * slevou; součet řádků = cena před slevou. Jedna šachta: nic (jako dnes). */
+  const sachtyRadky = data.sachty ? data.sachty.map(s => `<tr><td><b>${esc(s.nazevTisk)}</b><br><span class="popis">${esc(s.ph.SACHTA_POPIS)}</span></td>
+       <td class="castka">${esc(s.cena)}<br><span class="popis">${esc(P('bez DPH'))}</span></td></tr>`).join('') : '';
   /* Řádek „obchodní zaokrouhlení" v nabídce od 12. 8. 2026 NENÍ (#135):
    * zaokrouhlují se rovnou položky, takže součet vychází sám. Zákazník čte
    * položky, ne naše zaokrouhlovací pravidlo. */
   const cenaHtml = `<table class="rekap">
+      ${sachtyRadky}
       ${slevaRadky}
-      <tr class="tot"><td><b>${esc(P('Výtahová šachta (bez DPH)'))}</b></td><td class="castka"><b>${esc(p.CENA_BEZ_DPH)}</b></td></tr>
+      <tr class="tot"><td><b>${esc(data.sachty ? P('Cena celkem (bez DPH)') : P('Výtahová šachta (bez DPH)'))}</b>${data.sachty
+        ? `<br><span class="popis">${esc(p.SACHTY_CELKEM_POPIS)}</span>` : ''}</td><td class="castka"><b>${esc(p.CENA_BEZ_DPH)}</b></td></tr>
       <tr class="dph-radek"><td>${esc(P('DPH'))} ${esc(p.DPH_SAZBA)} % (${esc(p.DPH_NAZEV)} ${esc(P('sazba'))})</td><td class="castka">${esc(p.DPH_KC)}</td></tr>
       <tr class="tot dph-radek"><td><b>${esc(P('CELKEM za nabídku (včetně DPH)'))}</b></td><td class="castka"><b>${esc(p.CENA_S_DPH)}</b></td></tr>
     </table>`;

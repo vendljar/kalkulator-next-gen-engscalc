@@ -314,3 +314,36 @@ if (typeof module !== 'undefined' && module.exports)
   module.exports = { VS_VARIANT_MAX, VS_KS_MAX, VS_NAZEV_MAX, vsKs, vsDalsi, rezimViceSachet, vsMaData, sachtyZ, vsNazev, vsPocty,
     rozpocetSachet, vsKlicPriplatku, vsKlicRadku, vsSlucRadky, priplatkySloucene, vsSoucetSouhrnu, vsSoucet,
     vypocetZakazkyOck, vypocetOckDat, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska, vsZakazkaMaData, vsNazvySachetText };
+
+/* ============================================================
+ * VS-E4 (#570 / roadmapa #594) — šablona cenové nabídky a víc šachet.
+ * (S2 jen přidává na konec souboru, jádro E1 výš beze změny.)
+ *
+ * Šablona CN v17 nese smyčku šachet {#sachty}…{/sachty} se symboly
+ * {{SACHTA_NAZEV}} / {{SACHTA_CENA_BEZ_DPH}} (docxgen docxSmyckaSachet).
+ * Starší šablona (v16, v15 s klonováním můstků a starší) rozpis po šachtách
+ * neumí: zakázka s jednou šachtou se tiskne jako dnes, zakázka s víc
+ * šachtami se netiskne vůbec (R4 — šablona by zákazníkovi ukázala jen
+ * součet bez šachet, případně řádek „Výtahová šachta" s cenou všech).
+ * ============================================================ */
+const VS_SABLONA_ZABRANA = 'Šablona cenové nabídky neumí rozpis po šachtách — zakázka má víc šachet. '
+  + 'Použijte šablonu CN v17 (Nastavení → Šablony).';
+
+/* Umí šablona (množina / pole jejích symbolů) rozpis po šachtách? */
+function vsSablonaUmiSachty(symboly) {
+  if (!symboly) return false;
+  const ma = k => (typeof symboly.has === 'function') ? symboly.has(k) : (Array.isArray(symboly) && symboly.indexOf(k) >= 0);
+  return ma('SACHTA_NAZEV') && ma('SACHTA_CENA_BEZ_DPH');
+}
+
+/* Zábrana tisku Wordu: '' = smí se tisknout, jinak text pro uživatele.
+ * `ock` = v.data.ock, `symboly` = symboly šablony (bez šablony — online
+ * náhled, tisk do PDF — se nebrání: náhled rozpis po šachtách umí).
+ * Pro kontroly.js (S3, E5) i pro nabidkaData (Word). */
+function vsSablonaZabrana(ock, symboly) {
+  if (!rezimViceSachet(ock) || ock.fixes === false || !symboly) return '';
+  return vsSablonaUmiSachty(symboly) ? '' : VS_SABLONA_ZABRANA;
+}
+
+if (typeof module !== 'undefined' && module.exports)
+  Object.assign(module.exports, { VS_SABLONA_ZABRANA, vsSablonaUmiSachty, vsSablonaZabrana });

@@ -96,23 +96,23 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    * trefit celou a `tsOplasteniRozsah` si ji složí rovnou v cílovém jazyce.
    * Když to udělá (hlásí `prelozeno`), NEPOUŠTÍ se přes ni `tr()` podruhé —
    * jinak by tisk hlásil chybějící heslo u textu, který je v pořádku. */
-  const ts = id => {
-    if (!pole[id]) return P(' -');
-    const h = tsHodnota(pole[id], TSv, r, Zv, Cv, L);
-    return h.prelozeno ? h.text : P(h.text);
+  /* VS-E4 (#570): totéž pro libovolnou šachtu — (specifikace, výsledek,
+   * zadání) šachty. Šachta 1 = TSv, r, Zv jako dosud. */
+  const tsPro = (TSx, rx, Zx) => {
+    const tsX = id => {
+      if (!pole[id]) return P(' -');
+      const h = tsHodnota(pole[id], TSx, rx, Zx, Cv, L);
+      return h.prelozeno ? h.text : P(h.text);
+    };
+    /* Pole, které v téhle zakázce nic neříká („ -"), vrací prázdno — řádek
+     * pak z dokumentu zmizí (docxgen i nabidkaNahledSekce). */
+    const tsNeboPrazdnoX = id => {
+      const t = tsX(id);
+      return /^\s*-?\s*$/.test(String(t == null ? '' : t)) ? '' : t;
+    };
+    return { ts: tsX, tsNeboPrazdno: tsNeboPrazdnoX };
   };
-
-  /* Pole, které v téhle zakázce nic neříká („ -"), vrací prázdno — řádek
-   * pak z dokumentu zmizí (docxgen i nabidkaNahledSekce). */
-  const tsNeboPrazdno = id => {
-    const t = ts(id);
-    return /^\s*-?\s*$/.test(String(t == null ? '' : t)) ? '' : t;
-  };
-
-  // vnější rozměr: z ručního přepisu pole „ROZMĚR ŠACHTY – VNĚJŠÍ“, je-li ve tvaru „š × h“
-  let sirkaVnejsi = ' -', hloubkaVnejsi = ' -';
-  const mVnejsi = String(TSv.hodnoty.rozmerVnejsi || '').match(/(\d[\d\s]*)\D+(\d[\d\s]*)/);
-  if (mVnejsi) { sirkaVnejsi = mVnejsi[1].trim(); hloubkaVnejsi = mVnejsi[2].trim(); }
+  const { ts, tsNeboPrazdno } = tsPro(TSv, r, Zv);
 
   /* Je položka u TÉHLE šachty vůbec na výběr? Katalog volitelných je už
    * profiltrovaný podle typu šachty (`dostupne`), takže co v něm není,
@@ -171,6 +171,84 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     cenaSDphNum = cenaBezDphNum + dphKcNum;
   }
 
+  /* SYMBOLY TECHNICKÉ ČÁSTI, KTERÉ POPISUJÍ ŠACHTU (VS-E4 #570): sekce
+   * ZÁKLADNÍ PARAMETRY … MŮSTKY + sokl v doplňkových konstrukcích. Jedna
+   * šachta = tytéž hodnoty jako dosud (TSv, r, Zv); u víc šachet se volá
+   * pro každou šachtu s JEJÍ dvojicí (zadání, výsledek) a specifikací
+   * (tsSachtaTechspec) — šablona v17 je dosadí do smyčky {#sachty}. */
+  const tsSymbolySachty = (TSx, rx, Zx, mSk) => {
+    const T = tsPro(TSx, rx, Zx);
+    // vnější rozměr: z ručního přepisu pole „ROZMĚR ŠACHTY – VNĚJŠÍ“, je-li ve tvaru „š × h“
+    const vnejsi = [' -', ' -'];
+    const mVnejsi = String((TSx.hodnoty || {}).rozmerVnejsi || '').match(/(\d[\d\s]*)\D+(\d[\d\s]*)/);
+    if (mVnejsi) { vnejsi[0] = mVnejsi[1].trim(); vnejsi[1] = mVnejsi[2].trim(); }
+    const soklX = ((typeof tsSoklRadek === 'function') ? tsSoklRadek : require('./techspec.js').tsSoklRadek)(rx, Zx);
+    return {
+      TS_UMISTENI: T.ts('umisteni'), TS_UMISTENI_STROJE: T.ts('umisteniStroje'),
+      TS_ULOZENI: T.ts('ulozeni'), TS_VYSKA_CELKOVA: T.ts('vyskaCelkova'),
+      TS_SIRKA_VNITRNI: String(Math.round(Zx.sirka * 1000)),
+      TS_HLOUBKA_VNITRNI: String(Math.round(Zx.hloubka * 1000)),
+      TS_SIRKA_VNEJSI: vnejsi[0], TS_HLOUBKA_VNEJSI: vnejsi[1],
+      TS_ZDVIH: cislo(Zx.zdvih), TS_DOLNI_PREJEZD: String(Math.round(Zx.prohluben * 1000)),
+      TS_HORNI_PREJEZD: String(Math.round(Zx.prejezd * 1000)),
+      TS_STANICE: T.ts('stanice'), TS_KABINA: T.ts('kabina'), TS_PUDORYS: T.ts('pudorys'),
+      /* USAZENÍ OCK PODLE TECHNICKÉ SPECIFIKACE (12. 10. 2026, pokyn J. V.).
+       * Specifikace má vedle „boční stěny" i levou a pravou boční stěnu zvlášť —
+       * do nabídky se nepropisovaly. Pole bez volby (výchozí „ -") vrací
+       * prázdno a řádek z nabídky zmizí (Word i online). Šablona bez symbolů
+       * {{TS_USAZENI_LEVA}} / {{TS_USAZENI_PRAVA}} (CN v14 a starší) dostane
+       * levou a pravou stěnu do řádku „boční stěny" — viz usazeniBocniSloucene. */
+      TS_USAZENI_CELNI: T.tsNeboPrazdno('usazeniCelni'), TS_USAZENI_BOCNI: T.tsNeboPrazdno('usazeniBocni'),
+      TS_USAZENI_LEVA: T.tsNeboPrazdno('usazeniLeva'), TS_USAZENI_PRAVA: T.tsNeboPrazdno('usazeniPrava'),
+      TS_USAZENI_ZADNI: T.tsNeboPrazdno('usazeniZadni'),
+      TS_TYP_KONSTRUKCE: T.ts('typKonstrukce'), TS_SVISLE_NOSNE: T.ts('svisleNosne'),
+      TS_PROFIL_SLOUPKU: T.ts('profilSloupku'), TS_VODOROVNE_NOSNE: T.ts('vodorovneNosne'),
+      TS_ROZTEC: T.ts('roztecPricniku'), TS_PROFIL_PRICNIKU: T.ts('profilPricniku'),
+      TS_KOTVENI_POLOHA: T.ts('kotveniPoloha'), TS_KOTVENI_TYP: T.ts('kotveniTyp'),
+      TS_PORTALY_PROSTOR: T.ts('portalyProstor'), TS_PORTALY_CLENENI: T.ts('portalyCleneni'),
+      TS_POVRCH_UPRAVA: T.ts('povrchovaUprava'), TS_HAKY: T.ts('haky'),
+      TS_STRECHA: T.ts('strecha'), TS_POZARNI: T.ts('pozarni'),
+      TS_TYP_OPLASTENI: T.ts('typOplasteni'), TS_MATERIAL_OPLASTENI: T.ts('materialOplasteni'),
+      TS_POVRCH_OPLASTENI: T.ts('povrchOplasteni'), TS_OPLASTENI_CELA: T.ts('oplasteniCela'),
+      TS_ROZSAH_OPLASTENI: T.ts('rozsahOplasteni'), TS_OPLASTENI_NADSVETLIKU: T.ts('oplasteniNadsvetliku'),
+      /* Světlíky u šachetních dveří s počtem a materiálem (#375, 30. 9. 2026).
+       * Šablona v11 na ně zatím symbol nemá — doplní se do ní; online nabídka
+       * řádek ukazuje hned. Bez světlíků prázdné = řádek zmizí. */
+      TS_SVETLIKY_DVERI: T.tsNeboPrazdno('svetlikyDveri'),
+      TS_UMISTENI_OPLASTENI: T.ts('umisteniOplasteni'), TS_KOTVENI_OPLASTENI: T.ts('kotveniOplasteni'),
+      TS_PARAMETRY_KOTVY: T.ts('parametryKotvy'), TS_NAPOJENI_DVERI: T.ts('napojeniDveri'),
+      TS_MONTAZNI_NOSNIK: T.ts('montazniNosnik'), TS_PRIPRAVA_KOTVENI: T.ts('pripravaKotveni'),
+      TS_ODVETRANI: T.ts('odvetrani'), TS_PODCHOZI_OCK: T.ts('podchoziOck'),
+      TS_PRECHODOVE_PLECHY: T.ts('prechodovePlechy'),
+      /* Příčka a stříšky vedle šachty (P10 / K12-N46, 24. 9. 2026). Stříšky
+       * jsou v základní ceně (sekce opláštění), technická specifikace je
+       * vypisuje, ale do nabídky se nedostávaly. Prázdná hodnota = řádek
+       * zmizí (Word i náhled), stejně jako u soklu. Šablona v11 na ně zatím
+       * symbol nemá — doplní se se šablonou. */
+      TS_PROSKLENA_PRICKA: T.tsNeboPrazdno('prosklenaPricka'),
+      TS_PROSKLENA_STRISKA: T.tsNeboPrazdno('prosklenaStriska'),
+      TS_MUSTKY: mSk ? '' : T.tsNeboPrazdno('mustky'),   // P7 / K13-N59: počet a rozměr můstků
+      /* #560: sekce MŮSTKY (jen skladebný model; jinak prázdné → sekce zmizí). */
+      TS_MUSTKY_ROZMER: mSk ? T.tsNeboPrazdno('mustkyRozmer') : '',
+      TS_MUSTKY_PODLAHA: mSk ? T.tsNeboPrazdno('mustkyPodlaha') : '',
+      TS_MUSTKY_ZABRADLI: mSk ? T.tsNeboPrazdno('mustkyZabradli') : '',
+      TS_MUSTKY_KOTVENI: mSk ? T.tsNeboPrazdno('mustkyKotveni') : '',
+      TS_MUSTKY_SLOUPY: mSk ? T.tsNeboPrazdno('mustkySloupy') : '',
+      /* Vyplněný je vždy právě JEDEN z TS_SOKL / TS_NENI_SOKL (viz níž). */
+      TS_SOKL: soklX.vDodavce ? P(soklX.text) : '',
+    };
+  };
+
+  /* Pořadí klíčů zůstává jako před VS-E4 (smlouva o dílo symboly přebírá
+   * v tomto pořadí a zlatá sada otiskuje i ji): část šachty do opláštění,
+   * popis záměru, zbytek šachty, za zakázku, sokl. */
+  const tsS1 = tsSymbolySachty(TSv, r, Zv, mustkySk);
+  const tsS1Klice = Object.keys(tsS1);
+  const tsS1Cast = (od, po) => {
+    const o = {};
+    tsS1Klice.slice(tsS1Klice.indexOf(od), po ? tsS1Klice.indexOf(po) : tsS1Klice.length).forEach(k => { o[k] = tsS1[k]; });
+    return o;
+  };
   const placeholders = {
     OBJEDNATEL: zak.objednatel || '…',
     OBJEDNATEL_KONTAKT: zak.kontakt || '…',
@@ -183,41 +261,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
       ? cisloSVariantou(zak, varianta) : zak.cislo) || '').replace(/\s+/g, ''),
     ADRESA: zak.adresa || '…',
 
-    TS_UMISTENI: ts('umisteni'), TS_UMISTENI_STROJE: ts('umisteniStroje'),
-    TS_ULOZENI: ts('ulozeni'), TS_VYSKA_CELKOVA: ts('vyskaCelkova'),
-    TS_SIRKA_VNITRNI: String(Math.round(Zv.sirka * 1000)),
-    TS_HLOUBKA_VNITRNI: String(Math.round(Zv.hloubka * 1000)),
-    TS_SIRKA_VNEJSI: sirkaVnejsi, TS_HLOUBKA_VNEJSI: hloubkaVnejsi,
-    TS_ZDVIH: cislo(Zv.zdvih), TS_DOLNI_PREJEZD: String(Math.round(Zv.prohluben * 1000)),
-    TS_HORNI_PREJEZD: String(Math.round(Zv.prejezd * 1000)),
-    TS_STANICE: ts('stanice'), TS_KABINA: ts('kabina'), TS_PUDORYS: ts('pudorys'),
-    /* USAZENÍ OCK PODLE TECHNICKÉ SPECIFIKACE (12. 10. 2026, pokyn J. V.).
-     * Specifikace má vedle „boční stěny" i levou a pravou boční stěnu zvlášť —
-     * do nabídky se nepropisovaly. Pole bez volby (výchozí „ -") vrací
-     * prázdno a řádek z nabídky zmizí (Word i online). Šablona bez symbolů
-     * {{TS_USAZENI_LEVA}} / {{TS_USAZENI_PRAVA}} (CN v14 a starší) dostane
-     * levou a pravou stěnu do řádku „boční stěny" — viz usazeniBocniSloucene. */
-    TS_USAZENI_CELNI: tsNeboPrazdno('usazeniCelni'), TS_USAZENI_BOCNI: tsNeboPrazdno('usazeniBocni'),
-    TS_USAZENI_LEVA: tsNeboPrazdno('usazeniLeva'), TS_USAZENI_PRAVA: tsNeboPrazdno('usazeniPrava'),
-    TS_USAZENI_ZADNI: tsNeboPrazdno('usazeniZadni'),
-    TS_TYP_KONSTRUKCE: ts('typKonstrukce'), TS_SVISLE_NOSNE: ts('svisleNosne'),
-    TS_PROFIL_SLOUPKU: ts('profilSloupku'), TS_VODOROVNE_NOSNE: ts('vodorovneNosne'),
-    TS_ROZTEC: ts('roztecPricniku'), TS_PROFIL_PRICNIKU: ts('profilPricniku'),
-    TS_KOTVENI_POLOHA: ts('kotveniPoloha'), TS_KOTVENI_TYP: ts('kotveniTyp'),
-    TS_PORTALY_PROSTOR: ts('portalyProstor'), TS_PORTALY_CLENENI: ts('portalyCleneni'),
-    TS_POVRCH_UPRAVA: ts('povrchovaUprava'), TS_HAKY: ts('haky'),
-    TS_STRECHA: ts('strecha'), TS_POZARNI: ts('pozarni'),
-    TS_TYP_OPLASTENI: ts('typOplasteni'), TS_MATERIAL_OPLASTENI: ts('materialOplasteni'),
-    TS_POVRCH_OPLASTENI: ts('povrchOplasteni'), TS_OPLASTENI_CELA: ts('oplasteniCela'),
-    TS_ROZSAH_OPLASTENI: ts('rozsahOplasteni'), TS_OPLASTENI_NADSVETLIKU: ts('oplasteniNadsvetliku'),
-    /* Světlíky u šachetních dveří s počtem a materiálem (#375, 30. 9. 2026).
-     * Šablona v11 na ně zatím symbol nemá — doplní se do ní; online nabídka
-     * řádek ukazuje hned. Bez světlíků prázdné = řádek zmizí. */
-    TS_SVETLIKY_DVERI: tsNeboPrazdno('svetlikyDveri'),
-    TS_UMISTENI_OPLASTENI: ts('umisteniOplasteni'), TS_KOTVENI_OPLASTENI: ts('kotveniOplasteni'),
-    TS_PARAMETRY_KOTVY: ts('parametryKotvy'), TS_NAPOJENI_DVERI: ts('napojeniDveri'),
-    TS_MONTAZNI_NOSNIK: ts('montazniNosnik'), TS_PRIPRAVA_KOTVENI: ts('pripravaKotveni'),
-    TS_ODVETRANI: ts('odvetrani'), TS_PODCHOZI_OCK: ts('podchoziOck'),
+    ...tsS1Cast('TS_UMISTENI', 'TS_PRECHODOVE_PLECHY'),
     /* POPIS ZÁMĚRU A VĚTA O OPLÁŠTĚNÍ (P6 / K13-N57, 24. 9. 2026). Šablona v11
      * má natvrdo odstavec o přístavbě k dvorní fasádě a o izolačním dvojskle —
      * tiskne se i u interiérových šachet s čistým VSG. Tihle zástupci jsou
@@ -233,21 +277,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
                      fr: 'Bardage de la gaine' }[L] || 'Opláštění šachty';
       return nabidkaHodnotaChybi(m) ? '' : uvod + ': ' + m + '.';
     })(),
-    TS_PRECHODOVE_PLECHY: ts('prechodovePlechy'),
-    /* Příčka a stříšky vedle šachty (P10 / K12-N46, 24. 9. 2026). Stříšky
-     * jsou v základní ceně (sekce opláštění), technická specifikace je
-     * vypisuje, ale do nabídky se nedostávaly. Prázdná hodnota = řádek
-     * zmizí (Word i náhled), stejně jako u soklu. Šablona v11 na ně zatím
-     * symbol nemá — doplní se se šablonou. */
-    TS_PROSKLENA_PRICKA: tsNeboPrazdno('prosklenaPricka'),
-    TS_PROSKLENA_STRISKA: tsNeboPrazdno('prosklenaStriska'),
-    TS_MUSTKY: mustkySk ? '' : tsNeboPrazdno('mustky'),   // P7 / K13-N59: počet a rozměr můstků
-    /* #560: sekce MŮSTKY (jen skladebný model; jinak prázdné → sekce zmizí). */
-    TS_MUSTKY_ROZMER: mustkySk ? tsNeboPrazdno('mustkyRozmer') : '',
-    TS_MUSTKY_PODLAHA: mustkySk ? tsNeboPrazdno('mustkyPodlaha') : '',
-    TS_MUSTKY_ZABRADLI: mustkySk ? tsNeboPrazdno('mustkyZabradli') : '',
-    TS_MUSTKY_KOTVENI: mustkySk ? tsNeboPrazdno('mustkyKotveni') : '',
-    TS_MUSTKY_SLOUPY: mustkySk ? tsNeboPrazdno('mustkySloupy') : '',
+    ...tsS1Cast('TS_PRECHODOVE_PLECHY', 'TS_SOKL'),
     TS_LESENI_UVNITR: ts('leseniUvnitr'), TS_LESENI_VNE: ts('leseniVne'),
     TS_ZABRANY_VSTUPY: ts('zabranyVstupy'),
     TS_SKEN3D: ts('sken3d'), TS_VYSTUP_ZAMERENI: ts('vystupZamereni'),
@@ -266,7 +296,7 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
      * zavedený způsob, jak řádek zmizí: docxgen.js vyhodí z Wordu řádek,
      * jehož všechny TS_* zástupce jsou prázdné, i s popiskem, a pak i sekční
      * pruh, kterému nezbyl jediný datový řádek. Náhled se řídí týmž. */
-    TS_SOKL: sokl.vDodavce ? P(sokl.text) : '',
+    TS_SOKL: tsS1.TS_SOKL,
     TS_NENI_SOKL: sokl.vDodavce ? '' : P(sokl.text),
     TS_NENI_NAPAJENI: ts('neni9'), TS_NENI_PROHLUBEN: ts('neni10'),
     TS_NENI_PRISTUP: ts('neni11'),
@@ -334,6 +364,13 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
    * „levá – …; pravá – …". Online nabídka (bez šablony) má řádky zvlášť. */
   if (sablona && sablona.symboly && !sablona.symboly.has('TS_USAZENI_LEVA'))
     placeholders.TS_USAZENI_BOCNI = usazeniBocniSloucene(placeholders, P);
+
+  /* VÍC ŠACHET V NABÍDCE (VS-E4 #570, R4, R12, R14, R15). Jen když výsledek
+   * nese šachty (obal vypocetZakazkyOck: Model 2 a víc šachet nebo ks > 1);
+   * jedna šachta nedostane ani jeden nový symbol (zlatá sada VS-E0 — symboly
+   * přebírá i smlouva o dílo). */
+  const vs = nabidkaVsData(d, r, sablona, { P, kc, cenaPredSlevou, cenaBezDphNum, tsSymbolySachty });
+  if (vs.sachty) Object.assign(placeholders, vs.placeholders);
 
   if (typeof zpracovatelPlaceholders === 'function')
     Object.assign(placeholders, zpracovatelPlaceholders(
@@ -539,6 +576,10 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
     ...nabidkaMustkyKlon(placeholders, P, sablona),
   ];
   return { placeholders, priplatky: priplatkyList, jazyk: L, platbyOck, tsRadkyNavic, tsExtra, mena,
+           /* VS-E4: šachty pro náhled a pro smyčku Wordu v17 — JEN u víc šachet
+            * (výsledek jedné šachty beze změny; smlouva o dílo ho přebírá celý).
+            * Bez `sachtyWord` bere docxgen jednu šachtu. */
+           ...(vs.sachty ? { sachty: vs.sachty, sachtyWord: vs.word } : {}),
            /* Cena nabídky bez DPH ve měně dokumentu a sazba DPH — SoD k ní
             * přičítá objednané příplatky (#447 C6, sodObjednaneSymboly). */
            ceny: { bezDph: cenaBezDphNum, dphSazba: +Cv.dph || 0 },
@@ -547,6 +588,66 @@ function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
              typeof zpracovatelObrazky === 'function' ? zpracovatelObrazky() : {},
              typeof uvodniFotoObrazky === 'function' ? uvodniFotoObrazky(zak) : {}),
            nazevSouboru: nazevSouboru.replace(/[\\/:*?"<>|]+/g, '-') };
+}
+
+/* ---------- VÍC ŠACHET: tabulka šachet a technická část po šachtách ----------
+ * (VS-E4 #570). Vrací:
+ *   sachty       null u jedné šachty, jinak [{ id, nazev, nazevTisk, ks, mustky,
+ *                cena, ph }] — `ph` = symboly šachty (SACHTA_*, technická část
+ *                šachty TS_* z tsSymbolySachty s její dvojicí zadání/výsledek);
+ *   placeholders jen u víc šachet: řádky ceny šablony v16 prázdné (řádek
+ *                VÝTAHOVÁ ŠACHTA i MŮSTKY zmizí, R14), CENA CELKEM = koncová
+ *                cena, POCET_VARIANT, POCET_SACHET_CELKEM;
+ *   word         pro smyčku {#sachty}…{/sachty} šablony v17 (docxgen):
+ *                { polozky: [symboly šachty], spolecne: { SACHTY_* } }. Jedna
+ *                šachta = jedna položka s prázdnými SACHTA_* → řádek ceny šachty
+ *                ze smyčky zmizí, nadpis šachty v technické části taky a dokument
+ *                je stejný jako z v16 (R15).
+ * Ceny šachet: rozpočet ceny před slevou do šachet (rozpocetSachet, R7) už
+ * v měně dokumentu — součet řádků = „Cena před slevou" na korunu i na euro.
+ * Cena za kus se netiskne (R12). Šablona bez smyčky (v16 a starší) u víc
+ * šachet tisk zastaví (vsSablonaZabrana). */
+function nabidkaVsData(d, r, sablona, o) {
+  const VS = (typeof sachtyZ === 'function')
+    ? { sachtyZ, rozpocetSachet, vsSablonaUmiSachty, VS_SABLONA_ZABRANA } : require('./vice_sachet.js');
+  const prazdna = { SACHTA_NAZEV: '', SACHTA_KS: '', SACHTA_POPIS: '', SACHTA_CENA_BEZ_DPH: '', SACHTA_TS_NAZEV: '' };
+  if (!(r && Array.isArray(r.sachty) && r.sachty.length))
+    return { sachty: null, placeholders: {}, word: { polozky: [prazdna], spolecne: { SACHTY_CELKEM_POPIS: '' } } };
+  if (sablona && sablona.symboly && !VS.vsSablonaUmiSachty(sablona.symboly)) throw new Error(VS.VS_SABLONA_ZABRANA);
+  const P = o.P;
+  const zadani = VS.sachtyZ(d.ock);
+  const ceny = VS.rozpocetSachet(o.cenaPredSlevou, r.sachty.map(s => +s.cenaPredZaokr || 0));
+  const tsMu = (typeof tsMustky === 'function') ? tsMustky : require('./techspec.js').tsMustky;
+  const tsSach = (typeof tsSachtaTechspec === 'function') ? tsSachtaTechspec : require('./techspec.js').tsSachtaTechspec;
+  const celkem = r.sachty.reduce((a, s) => a + (+s.ks || 1), 0);
+  const sachty = r.sachty.map((s, i) => {
+    const zs = zadani[i] || {};
+    const Zi = zs.zadani || d.ock.zadani;
+    const ri = s.vysl || r;
+    const mSk = !!(ri.mustky && ri.mustky.skladebny && +(ri.souhrn || {}).mustkyCena > 0);
+    const mustky = mSk || tsMu(Zi) > 0;
+    /* Nepojmenovaná šachta má v jazyce dokumentu „Šachta N" (vsNazev je česky). */
+    const nazev = String(zs.nazev || '').trim() || (P('Šachta') + ' ' + (i + 1));
+    const ks = +s.ks || 1;
+    const tsI = o.tsSymbolySachty(tsSach(d, i), ri, Zi, mSk);
+    if (sablona && sablona.symboly && !sablona.symboly.has('TS_USAZENI_LEVA')) tsI.TS_USAZENI_BOCNI = usazeniBocniSloucene(tsI, P);
+    /* R14: šachta s můstky nese jejich cenu — dovětek „vč. můstků". */
+    const nazevTisk = nazev + (mustky ? ', ' + P('vč. můstků') : '');
+    const ph = Object.assign({
+      SACHTA_NAZEV: nazevTisk, SACHTA_KS: String(ks), SACHTA_POPIS: P('počet kusů') + ': ' + ks,
+      SACHTA_CENA_BEZ_DPH: o.kc(ceny[i]),
+      SACHTA_TS_NAZEV: P('VARIANTA ŠACHTY') + ': ' + nazev + (ks > 1 ? ' – ' + ks + ' ' + P('ks') : ''),
+    }, tsI);
+    return { id: s.id, nazev, nazevTisk, ks, mustky, cena: ph.SACHTA_CENA_BEZ_DPH, ph };
+  });
+  const celkemPopis = P('šachet celkem') + ': ' + celkem + ' ' + P('ks');
+  return {
+    sachty,
+    placeholders: { CENA_SACHTA_BEZ_DPH: '', CENA_MUSTKY_BEZ_DPH: '', CENA_BEZ_DPH_SACHTA: '',
+      CENA_BEZ_DPH_CELKEM: o.kc(o.cenaBezDphNum), POCET_VARIANT: String(sachty.length), POCET_SACHET_CELKEM: String(celkem),
+      SACHTY_CELKEM_POPIS: celkemPopis },
+    word: { polozky: sachty.map(s => s.ph), spolecne: { SACHTY_CELKEM_POPIS: celkemPopis } },
+  };
 }
 
 /* MŮSTKY DO ŠABLONY CN v15 A STARŠÍ (#560, A-Q8/9). Šablona bez symbolů
@@ -644,13 +745,14 @@ function usazeniBocniSloucene(ph, P) {
 }
 /* `extra` (nepovinné, obchodník 15. 10. 2026) = data.tsExtra z nabidkaData —
  * vlastní řádky specifikace, už přeložené; tvoří sekci DALŠÍ UJEDNÁNÍ. */
-function nabidkaNahledSekce(ph, lang, platby, extra) {
+/* `sachty` (nepovinné, VS-E4 #570) = data.sachty z nabidkaData — u víc šachet
+ * technická část po šachtách a tabulka šachet v obchodní části. */
+function nabidkaNahledSekce(ph, lang, platby, extra, sachty) {
   const L = lang || 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
-  const sekce = [
-    { sekce: 'HLAVIČKA NABÍDKY', radky: [
-      ['Objednatel', ph.OBJEDNATEL], ['Kontaktní osoba', ph.OBJEDNATEL_KONTAKT], ['Datum', ph.DATUM],
-      ['Název akce', ph.NAZEV_AKCE], ['Číslo nabídky', ph.CISLO_NABIDKY], ['Adresa stavby', ph.ADRESA]] },
+  /* Sekce technické části, které popisují šachtu (VS-E4: u víc šachet za
+   * každou šachtu s jejími symboly, nadpis sekce s názvem šachty). */
+  const sachtaSekce = (ph) => [
     { sekce: 'ZÁKLADNÍ PARAMETRY ŠACHTY', radky: [
       ['UMÍSTĚNÍ ŠACHTY', ph.TS_UMISTENI], ['UMÍSTĚNÍ VÝTAHOVÉHO STROJE', ph.TS_UMISTENI_STROJE],
       ['ULOŽENÍ KONSTRUKCE', ph.TS_ULOZENI], ['CELKOVÁ VÝŠKA KONSTRUKCE [m] *', ph.TS_VYSKA_CELKOVA],
@@ -700,6 +802,15 @@ function nabidkaNahledSekce(ph, lang, platby, extra) {
       ['POČET A ROZMĚR', ph.TS_MUSTKY_ROZMER], ['PODLAHA', ph.TS_MUSTKY_PODLAHA],
       ['ZÁBRADLÍ', ph.TS_MUSTKY_ZABRADLI], ['KOTVENÍ MŮSTKŮ', ph.TS_MUSTKY_KOTVENI],
       ...(ph.TS_MUSTKY_SLOUPY ? [['SLOUPY NAVÍC', ph.TS_MUSTKY_SLOUPY]] : [])] }] : []),
+  ];
+  const sachtySekce = !(Array.isArray(sachty) && sachty.length) ? sachtaSekce(ph)
+    : [].concat(...sachty.map(sa => sachtaSekce(Object.assign({}, ph, sa.ph)).map(sk => ({
+      sekce: { hotovo: P(sk.sekce) + ' – ' + sa.nazev + (sa.ks > 1 ? ' (' + sa.ks + ' ' + P('ks') + ')' : '') }, radky: sk.radky }))));
+  const sekce = [
+    { sekce: 'HLAVIČKA NABÍDKY', radky: [
+      ['Objednatel', ph.OBJEDNATEL], ['Kontaktní osoba', ph.OBJEDNATEL_KONTAKT], ['Datum', ph.DATUM],
+      ['Název akce', ph.NAZEV_AKCE], ['Číslo nabídky', ph.CISLO_NABIDKY], ['Adresa stavby', ph.ADRESA]] },
+    ...sachtySekce,
     { sekce: 'STAVEBNÍ A PŘÍPRAVNÉ PRÁCE', radky: [
       ['LEŠENÍ – UVNITŘ ŠACHTY', ph.TS_LESENI_UVNITR], ['LEŠENÍ – VNĚ ŠACHTY', ph.TS_LESENI_VNE],
       ['ZÁBRANY DO DVEŘNÍCH VSTUPŮ', ph.TS_ZABRANY_VSTUPY]] },
@@ -723,8 +834,15 @@ function nabidkaNahledSekce(ph, lang, platby, extra) {
     ...((extra || []).length ? [{ sekce: 'DALŠÍ UJEDNÁNÍ',
       radky: extra.map(e => [{ hotovo: e.nazev }, e.hodnota]) }] : []),
     { sekce: 'B. OBCHODNÍ ČÁST – CENOVÁ NABÍDKA', radky: [
+      /* VS-E4 (R4, R12, R14): u víc šachet řádek za každou variantu šachty
+       * (cena všech kusů, můstky v ceně své šachty), sleva a součet s počtem
+       * šachet celkem. */
+      ...(Array.isArray(sachty) && sachty.length ? [
+        ...sachty.map(sa => [{ hotovo: sa.nazevTisk + ' – ' + sa.ks + ' ' + P('ks') + ' (' + P('bez DPH') + ')' }, sa.cena]),
+        ...(ph.SLEVA_KC ? [[{ hotovo: P('Sleva') + ' ' + ph.SLEVA_PROC + ' %' }, '− ' + ph.SLEVA_KC]] : []),
+        [{ hotovo: P('Cena celkem (bez DPH)') + ' – ' + ph.SACHTY_CELKEM_POPIS }, ph.CENA_BEZ_DPH]]
       /* #560: s můstky šachta a můstky zvlášť (před slevou), sleva a součet. */
-      ...(ph.CENA_MUSTKY_BEZ_DPH ? [
+      : ph.CENA_MUSTKY_BEZ_DPH ? [
         ['Výtahová šachta (bez DPH)', ph.CENA_SACHTA_BEZ_DPH],
         ['Můstky mezi budovou a OCK (bez DPH)', ph.CENA_MUSTKY_BEZ_DPH],
         ...(ph.SLEVA_KC ? [[{ hotovo: P('Sleva') + ' ' + ph.SLEVA_PROC + ' %' }, '− ' + ph.SLEVA_KC]] : []),
@@ -824,7 +942,7 @@ function nabidkaNahledSekce(ph, lang, platby, extra) {
   /* Popisek se přeloží právě jednou. Objekt { hotovo: … } znamená „už přeloženo“
    * (skládané popisky s číslem uprostřed) – ten se jen rozbalí. */
   const popisek = l => (l && typeof l === 'object' && l.hotovo !== undefined) ? l.hotovo : P(l);
-  return sekce.map(s => ({ sekce: P(s.sekce), radky: s.radky.map(r => [popisek(r[0]), r[1]]) }));
+  return sekce.map(s => ({ sekce: popisek(s.sekce), radky: s.radky.map(r => [popisek(r[0]), r[1]]) }));
 }
 
 /* registrace do jednotného registru dokumentů (dokumenty.js) */
@@ -836,4 +954,4 @@ if (typeof dokumentRegistruj === 'function')
     builder: (zak, varianta, jekly, lang, sablona) => nabidkaData(zak, varianta, jekly, lang, sablona),
   });
 
-if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaKapitolyFirma, usazeniBocniSloucene, nabidkaNahledSekce, nabidkaPopisZameru };
+if (typeof module !== 'undefined') module.exports = { nabidkaData, nabidkaKapitolyFirma, usazeniBocniSloucene, nabidkaNahledSekce, nabidkaPopisZameru, nabidkaVsData };

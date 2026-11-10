@@ -125,6 +125,27 @@
  *           sekce i nové řádky a dokument je stejný jako z v15; s můstky
  *           zmizí spodní řádek VÝTAHOVÁ ŠACHTA (docxgen DOCX_CENA_CASTI).
  *
+ * CN v17 (VS-E4 #570, víc šachet v jedné nabídce — R4, R12, R14, R15) — samostatný režim:
+ *   node nastroje/vyrob_sablony.js --cn-v17 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_CN_v16.docx
+ * Výstup: Sablona_NABIDKA_CN_v17.docx + _EN/_DE/_FR
+ * CN v17 = v16 + dvě smyčky šachet {#sachty} … {/sachty} (docxgen docxSmyckaSachet;
+ *           značky stojí ve vlastních řádcích a do dokumentu se nikdy nedostanou):
+ *           – technická část: před pruh ZÁKLADNÍ PARAMETRY ŠACHTY řádek {#sachty}
+ *             a nadpis šachty {{SACHTA_TS_NAZEV}} (stavba pruhu), za řádek
+ *             {{TS_MUSTKY_SLOUPY}} řádek {/sachty} — sekce ZÁKLADNÍ PARAMETRY …
+ *             MŮSTKY se zopakují za každou šachtu s jejími hodnotami;
+ *           – obchodní část: před řádek {{CENA_SACHTA_BEZ_DPH}} řádek šachty
+ *             (stavba řádku VÝTAHOVÁ ŠACHTA) {{SACHTA_NAZEV}} / {{SACHTA_POPIS}}
+ *             | {{SACHTA_CENA_BEZ_DPH}} mezi řádky {#sachty} a {/sachty};
+ *           – řádek CENA CELKEM dostane pod popis odstavec {{SACHTY_CELKEM_POPIS}}
+ *             („šachet celkem: N ks").
+ *           Jedna šachta: nadpis šachty, řádek šachty i odstavec počtu zmizí
+ *           a dokument je stejný jako z v16 (test_vs_docx_v17.js). Víc šachet:
+ *           řádky VÝTAHOVÁ ŠACHTA a MŮSTKY ze v16 zmizí (prázdné), tabulka =
+ *           řádky šachet + (sleva) + CENA CELKEM. Aplikace tiskne víc šachet jen
+ *           do šablony, která smyčku má (vsSablonaZabrana).
+ *
  * SoD PROJ se seznamem plateb (etapa B, 30. 9. 2026) — samostatný režim:
  *   node nastroje/vyrob_sablony.js --sod-proj <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_SOD_PROJEKCE.docx (osm pevných plateb SODP_PLATBA1–8_KC)
@@ -200,6 +221,7 @@ const REZIM_SOD_CISLO = REZIM === '--sod-proj-cislo';
 const REZIM_SOD_REAL3 = REZIM === '--sod-real-v3';
 const REZIM_CN15 = REZIM === '--cn-v15';
 const REZIM_CN16 = REZIM === '--cn-v16';
+const REZIM_CN17 = REZIM === '--cn-v17';
 const REZIM_V5 = REZIM === '--proj-v5';
 const REZIM_V6 = REZIM === '--proj-v6';
 const REZIM_V7 = REZIM === '--proj-v7';
@@ -859,6 +881,58 @@ function cnV16(xml) {
   return xml.slice(0, pred.zac) + sachta + mustky + xml.slice(pred.zac, cena.zac) + puvodni + celkem + xml.slice(cena.kon);
 }
 
+/* CN v17 (VS-E4 #570): smyčky šachet nad v16 — viz hlavička souboru. */
+const cnZnackaRadek = (radek, text) => {
+  let prvni = true;
+  return cnBezId(radek).replace(/<w:t(\s[^>]*)?>[\s\S]*?<\/w:t>/g, () => {
+    if (!prvni) return '<w:t></w:t>';
+    prvni = false;
+    return '<w:t xml:space="preserve">' + dg.docxEsc(text) + '</w:t>';
+  });
+};
+function cnRadekSTextem(xml, text) {
+  const i = xml.indexOf('>' + text + '<');
+  if (i < 0 || xml.indexOf('>' + text + '<', i + 1) >= 0) chyba('CN v16: pruh „' + text + '" není právě jednou (v jednom běhu) — nic nehádám');
+  const zac = Math.max(xml.lastIndexOf('<w:tr ', i), xml.lastIndexOf('<w:tr>', i));
+  const kon = xml.indexOf('</w:tr>', i) + '</w:tr>'.length;
+  const radek = xml.slice(zac, kon);
+  if ((radek.match(/<w:tr[\s>]/g) || []).length !== 1 || radek.replace(/<[^>]+>/g, '').trim() !== text || /\{\{/.test(radek))
+    chyba('CN v16: pruh „' + text + '" nemá očekávanou stavbu');
+  return { zac, kon, radek };
+}
+function cnV17(xml) {
+  const ciste = xml.replace(/<[^>]+>/g, '');
+  if (/SACHTA_NAZEV|\{#sachty\}/.test(ciste)) chyba('vstup už smyčku šachet má (je to v17?)');
+  if (!/CENA_SACHTA_BEZ_DPH/.test(ciste) || !/TS_MUSTKY_SLOUPY/.test(ciste)) chyba('vstup není CN v16 (chybí {{CENA_SACHTA_BEZ_DPH}} nebo {{TS_MUSTKY_SLOUPY}}) — nejdřív vyrobte v16');
+  /* 1) obchodní část: řádek šachty mezi značkami před řádek CENA_SACHTA_BEZ_DPH */
+  const sachta = cnRadekSe(xml, 'CENA_SACHTA_BEZ_DPH');
+  const p = cnPrejmenujSymbol(cnBunkaTexty(cnBezId(sachta.radek), ['{{SACHTA_NAZEV}}', '{{SACHTA_POPIS}}']), 'CENA_SACHTA_BEZ_DPH', 'SACHTA_CENA_BEZ_DPH');
+  if (p.n !== 1) chyba('CN v16: v řádku šachty není {{CENA_SACHTA_BEZ_DPH}}');
+  xml = xml.slice(0, sachta.zac) + cnZnackaRadek(sachta.radek, '{#sachty}') + p.xml + cnZnackaRadek(sachta.radek, '{/sachty}') + xml.slice(sachta.zac);
+  /* 2) CENA CELKEM: odstavec „šachet celkem" pod popis (kopie posledního odstavce s textem první buňky) */
+  const celkem = cnRadekSe(xml, 'CENA_BEZ_DPH_CELKEM');
+  const tc = (celkem.radek.match(/<w:tc[\s>][\s\S]*?<\/w:tc>/) || [])[0];
+  const odst = tc ? (tc.match(/<w:p[\s>][\s\S]*?<\/w:p>/g) || []).filter(o => /<w:t[\s>]/.test(o)) : [];
+  if (!odst.length) chyba('CN v16: první buňka řádku CENA CELKEM nemá text');
+  const vzor = odst[odst.length - 1];
+  let prvni = true;
+  const novy = vzor.replace(/^<w:p\b[^>]*>/, '<w:p>').replace(/<w:t(\s[^>]*)?>[\s\S]*?<\/w:t>/g, () => {
+    if (!prvni) return '<w:t></w:t>';
+    prvni = false;
+    return '<w:t xml:space="preserve">{{SACHTY_CELKEM_POPIS}}</w:t>';
+  });
+  const tcNovy = tc.replace(vzor, vzor + novy);
+  xml = xml.slice(0, celkem.zac) + celkem.radek.replace(tc, tcNovy) + xml.slice(celkem.kon);
+  /* 3) technická část: ZÁKLADNÍ PARAMETRY ŠACHTY … MŮSTKY (konec = řádek TS_MUSTKY_SLOUPY) */
+  const zakl = cnRadekSTextem(xml, 'ZÁKLADNÍ PARAMETRY ŠACHTY');
+  const sloupy = cnRadekSe(xml, 'TS_MUSTKY_SLOUPY');
+  if (!(zakl.kon <= sloupy.zac)) chyba('CN v16: řádek {{TS_MUSTKY_SLOUPY}} nestojí pod pruhem ZÁKLADNÍ PARAMETRY ŠACHTY');
+  const nadpis = cnBezId(zakl.radek).replace('>ZÁKLADNÍ PARAMETRY ŠACHTY<', '>{{SACHTA_TS_NAZEV}}<');
+  xml = xml.slice(0, zakl.zac) + cnZnackaRadek(zakl.radek, '{#sachty}') + nadpis
+    + xml.slice(zakl.zac, sloupy.kon) + cnZnackaRadek(sloupy.radek, '{/sachty}') + xml.slice(sloupy.kon);
+  return xml;
+}
+
 function cenovaTabulka(vzor, texty, symbol) {
   const tblPr = (vzor.match(/<w:tblPr>[\s\S]*?<\/w:tblPr>/) || [''])[0];
   const tblGrid = (vzor.match(/<w:tblGrid>[\s\S]*?<\/w:tblGrid>/) || [''])[0];
@@ -1425,7 +1499,7 @@ async function hlavni() {
   if (REZIM_V8) return hlavniV8();
   if (REZIM_SOD_REAL4) return hlavniSodRealV4();
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-real-v4 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15 | --cn-v16] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-real-v4 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15 | --cn-v16 | --cn-v17] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
@@ -1439,7 +1513,7 @@ async function hlavni() {
   const proj5Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v5.docx');
   const proj6Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v6.docx');
   (REZIM_SOD_CISLO || REZIM_SOD_REAL3 || REZIM_SOD_V4 ? [] : REZIM_V7 ? [proj6Vstup] : REZIM_V6 ? [proj5Vstup] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
-    : REZIM_CN15 ? [cn14Vstup] : REZIM_CN16 ? [cn15Vstup] : [cnVstup, projVstup])
+    : REZIM_CN15 ? [cn14Vstup] : REZIM_CN16 ? [cn15Vstup] : REZIM_CN17 ? [] : [cnVstup, projVstup])
     .forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
   if (REZIM_SOD_REAL3) {
@@ -1544,6 +1618,26 @@ async function hlavni() {
     console.log('\nVýstup: ' + VYSTUP);
     process.exit(prob ? 1 : 0);
   }
+  if (REZIM_CN17) {
+    const vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v16.docx');
+    if (!fs.existsSync(vstup)) chyba('chybí ' + vstup);
+    const v = await ulozSMutacemi(await vyrob(vstup, cnV17), 'Sablona_NABIDKA_CN_v17');
+    let problemu = 0;
+    for (const x of v) {
+      const sym = await symbolyASablona(new Uint8Array(fs.readFileSync(path.join(VYSTUP, x.soubor))));
+      const chybi = ['SACHTA_NAZEV', 'SACHTA_POPIS', 'SACHTA_CENA_BEZ_DPH', 'SACHTA_TS_NAZEV', 'SACHTY_CELKEM_POPIS'].filter(k => sym.indexOf(k) < 0);
+      const prob = x.vady.length + (x.ubylo || []).length + (x.pribylo || []).length + (x.cesky || []).length + chybi.length;
+      problemu += prob;
+      console.log((prob ? '✗ ' : '✓ ') + x.soubor + ' — symbolů ' + x.symbolu + (x.prelozeno ? ', přeloženo ' + x.prelozeno : '')
+        + (x.vady.length ? '\n    vady XML: ' + x.vady.join('; ') : '')
+        + ((x.ubylo || []).length ? '\n    chybí symboly: ' + x.ubylo.join(', ') : '')
+        + ((x.pribylo || []).length ? '\n    navíc symboly: ' + x.pribylo.join(', ') : '')
+        + (chybi.length ? '\n    chybí symboly šachet: ' + chybi.join(', ') : '')
+        + ((x.cesky || []).length ? '\n    česky zůstalo: ' + x.cesky.map(t => '„' + String(t).slice(0, 70) + '"').join(' | ') : ''));
+    }
+    console.log('\nVýstup: ' + VYSTUP + (problemu ? '\nPROBLÉMŮ: ' + problemu : '\nBez problémů.'));
+    process.exit(problemu ? 1 : 0);
+  }
   const vse = REZIM_V7
     ? await ulozSMutacemi(await vyrob(proj6Vstup, projV7), 'Sablona_NABIDKA_PROJ_v7')
     : REZIM_V6
@@ -1575,4 +1669,4 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, cnV15, cnV16, cnPrejmenujSymbol, projV3, projV4, projV5, projV6, projV7, projV8, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, pPrSInd, sodProjCislo, sodProjV4, prepisUsekOdstavce, prelozSablonu };
+module.exports = { cnV13, cnV14, cnV15, cnV16, cnV17, cnPrejmenujSymbol, projV3, projV4, projV5, projV6, projV7, projV8, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, pPrSInd, sodProjCislo, sodProjV4, prepisUsekOdstavce, prelozSablonu };
