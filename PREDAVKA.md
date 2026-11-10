@@ -13,8 +13,8 @@ Nad `079cfc6`, sloučeno s integrací `d3ee6db` (v10.11.5 = E2 + E3 + E4). **CHA
 | kontroly | ✅ | `kontroly.js`: `KONTROLY_PO_SACHTE` (14 pravidel po šachtách, „Výtah B: …“), `vsModel1`, `vsSablona` (`dokumenty: ['nabidka']`), brána respektuje `dokumenty`; `ui/kontroly_ui.js` `ctx.ock`, šablona i kvůli VS |
 | vice_sachet.js (konec souboru) | ✅ | `vsVystup`, `vsVariantText`, `vsPoctyPopis`, `vsSeznamText`, `vsPredmetText`, `vsMaMustky`, `vsAtyp`, `vsPriplatkyVNabidce`, `vsZamekZmenaSachet` (export přes `Object.assign(module.exports, …)`) |
 | testy | ✅ | `src/test_vs_vystupy.js` 47, `src/test_vs_zamek.js` 21, `src/test_vs_kontroly.js` 18, `netlify/test_vs_e5_pd.mjs` 9, `overit_vs_kryci_sod.mjs` 23; na 079cfc6 všechny padají; `test_kontroly.js` 48 pravidel, `test_platby_ock.js` (4. parametr), `manual_vypocet/cisla_vydani.json` k.pocet 48 |
-| mutace „[#570 E5]“ | viz hlášení | jádro 15 (`mutace_jadro.mjs`), server 3 (`netlify/mutace.mjs`, sada `test_vs_e5_pd.mjs`) |
-| kolo `--bez-mutaci` | viz hlášení | |
+| mutace „[#570 E5]“ | ✅ jádro 15/15, server 3/3 | `mutace_jadro.mjs`, `netlify/mutace.mjs` (sada `test_vs_e5_pd.mjs`); po sloučení E2–E4 znovu 15/15 + 3/3 |
+| kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | po sloučení integrace d3ee6db: sady 425/0/7 přesk., hodiny +400 dní 342/0/1, statické 5/5, 31 min 38 s; harnessy VS E2/E4/E5 zelené |
 
 **Otevřené body (pro koordinaci / J. V.):**
 1. **Pipedrive pole poznámky** (plán 8.4): náhled ukazuje řádek „Poznámka dealu — šachty v nabídce“, zápis ho
