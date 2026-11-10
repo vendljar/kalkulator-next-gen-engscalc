@@ -28,14 +28,16 @@ VS se slučuje do integrace po etapách schovaný za vypínačem; s vypnutým se
   službě K2, schvalování (limit slevy ze součtu), výjimkách, starém ceníku a kontrole nového zámku.
   Import migruje i zadání šachet 2+; klon a duplikát nesou `dalsi`.
 - **Vypínač správce** `/api/funkce` (úložiště programu, klíč `funkce`; GET přihlášený, POST jen administrátor),
-  Nastavení → Zkušební funkce. **Vypnuto:** zakázka s další šachtou nebo ks ≠ 1 se neuloží ani neobnoví (409);
-  zakázka uložená se zapnutou funkcí je jen ke čtení (409 i při pokusu šachty zahodit; aplikace to řekne při
-  otevření i uložení). **Zapnuto:** ≤ 10 variant šachet, ks celé 1–20, název ≤ 80, id šachty; víc šachet jen
+  Nastavení → Zkušební funkce. **Vypnuto (R21):** nová zakázka s další šachtou nebo ks ≠ 1 → 409; zakázka, která
+  víc šachet už má, se počítá a tiskne podle dat (vypnutí nemění cenu, nový zámek po tisku projde), jen šachtovou
+  část (počet, ks, názvy, zadání dalších šachet) nejde změnit (409) — lišta „Zakázka má víc šachet — funkce je
+  v Nastavení vypnutá“. Vypínač se ze serveru čte jen u zakázky s víc šachtami (jinak žádný požadavek navíc).
+  **Zapnuto:** ≤ 10 variant šachet, ks celé 1–20, název ≤ 80, id šachty; víc šachet jen
   v Modelu 2; 409 při ztrátě `dalsi` (starší karta; vědomé smazání = `dalsi: []`); zadání šachet 2+ stejnými
   kontrolami jako šachta 1 (typy, záporné hodnoty, rozměry, skupiny můstků, přepisy cen podle role, model).
 - **Testy:** `src/test_vs_zlata.js` 319/319, `src/test_vs_soucet.js`, `src/test_vs_rozpocet.js` (10 000 sad),
-  `netlify/test_vs_server.mjs`; matice práv a příloha 1 příručky s `/api/funkce`. Mutace „[#570]“ jádro 13,
-  server 12. Rozhraní víc šachet (E2+) zatím není — kalkulace na obrazovce ukazuje šachtu 1.
+  `netlify/test_vs_server.mjs`; matice práv a příloha 1 příručky s `/api/funkce`; klíč `funkce` výjimkou zálohy
+  (po obnově vypnuto). Mutace „[#570]“ jádro 13, server 13. Rozhraní víc šachet (E2+) zatím není — kalkulace na obrazovce ukazuje šachtu 1.
 
 ## v10.11.1 — AS #577: noční kopie zálohy na Disk skriptem Google Apps Script (bez prohlížeče a bez přihlášení), větev claude/as-zaloha-apps-script
 
