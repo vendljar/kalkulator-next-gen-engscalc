@@ -6,7 +6,7 @@ Klikací prototyp v7 (6. 11., R1–R18): https://claude.ai/artifact/PPL2GLSARywu
 sestavená aplikace v6.11.5 (další verze main, s kartou Můstky, MU3 a CA #575) + vrstva víc šachet (`podklady/vs_prototyp/`); u 1 šachty pixelově shodná s v6.11.5.
 Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 
-**Stav: rozhodnutí R1–R19 (R19 = připomínka J. V. 10. 11. k prototypu v7); drobná otázka O15. Podrobný plán realizace: `podklady/VS_PLAN_REALIZACE.md`. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
+**Stav: NÁVRH UZAVŘEN, rozhodnutí R1–R20 (R19 = připomínka J. V. 10. 11. k prototypu v7, R20 = O15 a). Realizace běží v samostatném sezení na sběrné větvi `claude/vs-balik` (E0 + E1 nad integrací 3ff5403). Podrobný plán realizace: `podklady/VS_PLAN_REALIZACE.md`. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
 („zatím připrav komplexní návrh, který si nejprve odladíme, a spustíme až
 řeknu“, 5. 11. 2026). Všechny částky jsou **smyšlené a ilustrační**.
 
@@ -35,6 +35,7 @@ Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 | R17 (O13, 6. 11.) | **Počet šachet se nastavuje polem „Počet šachet v nabídce“ (1–10) nahoře v kartě Zadání šachty**, nad Typem šachty. Zvýšení přidá šachty jako kopii poslední (název „Šachta N“). Počet stejných kusů je zvlášť u každé šachty (karta Šachty varianty) a ukáže se až v režimu víc šachet. Model 1 dovolí jen 1. |
 | R18 (O14, 6. 11.) | **Snížení počtu šachet (i Smazat šachtu) se potvrzuje přímo na stránce** se jmény mazaných šachet; smažou se i jejich zadání, můstky a příplatky; šachta 1 zůstává vždy; omyl vrátí Zpět (historie). Návrat na 1 šachtu = dnešní zobrazení. |
 | R19 (10. 11., připomínka k prototypu v7) | **Dvě čísla: Počet variant šachet v nabídce a Počet šachet celkem.** Pole R17 se jmenuje **„Počet variant šachet v nabídce“** (různé šachty, 1–10). U jedné šachty je v záhlaví karty Zadání šachty (jako R17). V režimu víc šachet se **přesune do záhlaví karty Šachty varianty** (vlevo od výběru zobrazit) a vedle něj je **„Počet šachet celkem: X ks“** jen ke čtení = Σ ks všech variant (např. 1 + 2 = 3). V záhlaví „Zadání šachty — Šachta N“ je místo něj **„Počet kusů této šachty: N ks“** převzaté z pole Počet stejných kusů (jedno místo pravdy). Všude, kde se mluví o počtu šachet (CN, krycí list, Pipedrive, controlling, štítky), se rozlišuje „variant šachet“ a „šachet celkem (ks)“. |
+| R20 (O15, 10. 11.) | **U jedné šachty je v záhlaví Zadání šachty vedle „Počet variant šachet v nabídce“ i pole „Počet kusů“** (`CISLO_POLE`, výchozí 1). Zadání 2 a více kusů zapne režim víc šachet s jednou variantou (karta Šachty varianty, Počet šachet celkem = ks). Návrat na 1 ks (u jediné varianty) vrátí dnešní zobrazení. |
 
 ---
 
@@ -430,18 +431,9 @@ zůstává jako dnes.
 
 **R19 (10. 11.)** viz oddíl 0.
 
-**Otevřená (vyplynula z R19):**
+**O15 rozhodnuta J. V. 10. 11. 2026 = a)** (R20).
 
-- **O15 — Jak zadat víc stejných šachet bez druhé varianty (např. 1 varianta × 3 ks)?**
-  U jedné šachty je v záhlaví Zadání jen Počet variant; Počet stejných kusů je
-  až v kartě Šachty varianty (režim víc šachet). Dnes to jde oklikou: Počet
-  variant 2 → u Šachty 1 dát 3 ks → smazat Šachtu 2 (režim zůstane, protože
-  ks > 1).
-  *Doporučeno:* a) u jedné šachty dát do záhlaví Zadání vedle Počtu variant
-  i pole **„Počet kusů“** (výchozí 1); zadáním 2+ se zapne režim víc šachet
-  s jednou variantou.
-  *Jinak:* b) nechat oklikou přes druhou variantu · c) Počet variant 1 a ks
-  řešit jen v kartě Šachty varianty, která by se pak ukazovala vždy.
+**Otevřené otázky: žádné.**
 
 ## 10. Položka roadmapy
 
@@ -513,3 +505,4 @@ složitost XL, závisí na #560). Koordinace může přečíslovat.
 | 6. 11. 2026 večer | `0f16310` (integrace v6.11.4 = MU3) | MU3: výchozí výška sloupu navíc = H − 0,2 m (jako rohový sloupek), nápovědy karty Můstky s čárkou. | Návrh beze změny (sloupy jsou v zadání šachty, jádro je po šachtách přebírá). Prototyp přestavěn na v6.11.4 (v6), ověřen. |
 | 6. 11. 2026 večer | `e2c2137` (integrace v6.11.5 = CA #575) | Všechna číselná pole = jeden prvek `CISLO_POLE` (`src/ui/cislo_pole.js`), textové pole s `data-cislo`, čárka i tečka, zobrazení s čárkou. | Prompt (oddíl 11): výchozí SHA nejméně `e2c2137`, číselná pole jen přes `CISLO_POLE`. Prototyp v7 na v6.11.5; pole Počet šachet a Počet stejných kusů jsou `CISLO_POLE`. |
 | 10. 11. 2026 | `7eab7a8` (integrace v7.11.1 = v6.11.5 + FL #576 harness, kód aplikace beze změny) | Jen harness `overit_online.mjs`, roadmapa #578. | Návrh beze změny kódu; R19 a O15 doplněny; prototyp v8 na v7.11.1; plán realizace `podklady/VS_PLAN_REALIZACE.md`, výchozí SHA 7eab7a8. |
+| 10. 11. 2026 | (rozhodnutí, ne kód) | O15 = a | R20: pole Počet kusů i u jedné šachty v záhlaví Zadání; prototyp v9; plán E2 doplněn. |

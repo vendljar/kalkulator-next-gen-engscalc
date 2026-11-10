@@ -21,6 +21,7 @@
     R16: 'Jedna šachta = dnešní kalkulátor beze změny vzhledu; rozhraní víc šachet až od 2 šachet.',
     R17: 'Počet šachet se nastavuje polem „Počet šachet v nabídce“ nahoře v kartě Zadání šachty; ks zvlášť u šachty.',
     R19: 'Počet variant šachet v nabídce (různé šachty) a Počet šachet celkem (součet kusů všech variant) jsou dvě různá čísla: v režimu víc šachet je vstup Počtu variant a údaj Počet šachet celkem v záhlaví karty Šachty varianty, v záhlaví Zadání šachty je Počet kusů této šachty (z pole Počet stejných kusů).',
+    R20: 'U jedné šachty je v záhlaví Zadání vedle Počtu variant i pole Počet kusů; 2 a více kusů zapne režim víc šachet s jednou variantou.',
     R18: 'Snížení počtu šachet se potvrzuje na stránce se jmény mazaných šachet; šachta 1 zůstává; omyl vrátí Zpět.',
   };
   const VS = { akt: 0, pohled: 'akt', force: null, potvrdit: null };
@@ -195,7 +196,7 @@
       ${m1 ? 'disabled title="Model 1 počítá jen jednu šachtu"' : 'title="počet různých šachet (variant) v nabídce, 1–10"'} onchange="VS_pocet(this.value)">`;
     const pole = document.createElement('span');
     pole.className = 'vs-pocet'; pole.setAttribute('onclick', 'event.stopPropagation()');
-    if (!vic()) pole.innerHTML = vstupVariant + rt('R16', 'R17', 'R19');
+    if (!vic()) pole.innerHTML = vstupVariant + `<span style="margin-left:12px">Počet kusů <input ${CP()} id="vsKs1" min="1" max="20" step="1" value="${l[0].ks}" style="width:40px;padding:2px 6px;font-size:12.5px" title="počet stejných kusů této šachty; 2 a více zapne režim víc šachet" onchange="VS_ks(this.value)"></span>` + rt('R16', 'R17', 'R19', 'R20');
     else pole.innerHTML = `Počet kusů této šachty: <b>${l[VS.akt].ks} ks</b>${rt('R19')}`;
     h2.insertBefore(pole, vpravoZ());
     if (!vic() && !VS.potvrdit) return;
@@ -330,6 +331,7 @@
     n.innerHTML = `<button type="button" class="mini" style="float:right" onclick="VS_navod()">Zavřít</button><h3>Co si proklikat</h3><ol>
       <li><b>Jedna šachta</b> = kalkulátor jako dnes (základ v7.11.1, další verze main)${rt('R16')}. V kartě <b>Zadání šachty</b> vpravo v nadpisu napište do pole <b>Počet variant šachet v nabídce</b> 2 — zapne se režim víc šachet${rt('R17')}. Pole se pak přesune do záhlaví karty <b>Šachty varianty</b> a vedle něj je <b>Počet šachet celkem</b> (součet kusů); v záhlaví Zadání šachty je <b>Počet kusů této šachty</b>${rt('R19')}.</li>
       <li><b>Můstky u jedné šachty:</b> v Zadání šachty dejte „Můstky mezi budovou a OCK“ = 1 — objeví se karta <b>Můstky</b>. Změňte podlahu, zábradlí, kotvení, „+ další provedení“. <b>Sloupy navíc:</b> zadejte počet a výšku nechte prázdnou — nápověda v poli ukáže výšku šachty − 0,2 m (jako rohový sloupek) a s ní se i počítá. Cena se přepočítá; v nabídce (Word, šablona v16) má jedna šachta řádky Výtahová šachta / Můstky / Cena celkem jako v v7.11.1${rt('R15')}.</li>
+      <li><b>Víc stejných šachet bez druhé varianty:</b> u jedné šachty napište do pole <b>Počet kusů</b> (v záhlaví Zadání vedle Počtu variant) 3 — zapne se režim víc šachet s jednou variantou a Počet šachet celkem bude 3 ks${rt('R20')}.</li>
       <li><b>Kusy:</b> u Šachty 2 dejte Počet stejných kusů 2 — Počet šachet celkem v záhlaví karty Šachty varianty se změní na 3 ks a v záhlaví Zadání šachty uvidíte „Počet kusů této šachty: 2 ks“${rt('R19')}.</li>
       <li><b>Můstky u Šachty 2:</b> přepněte na Šachtu 2 (karta Šachty varianty), přidejte jí jiné můstky. Každá šachta má své skupiny; cena se přepočítá v šachtě i v součtu.</li>
       <li><b>Ceník:</b> v panelu vlevo dole přepněte <b>Zkušební ceník můstků</b> skladebný ↔ starý (#354) — starý počítá můstky vzorcem a karta ukáže lištu upozornění.</li>

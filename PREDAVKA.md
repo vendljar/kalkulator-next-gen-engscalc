@@ -7,7 +7,7 @@
 - Podklad: `podklady/NAVRH_VICE_SACHET_05_11.md` (oddíl 0 rozhodnutí, oddíl 11 prompt pro realizaci po etapách).
 - Artefakt (soukromý, verze 8): https://claude.ai/artifact/PvayKJSLqoKbtUXHCPzNWa — zdroj HTML jen
   v artefaktu (načíst přes Artifact `read`, republish na stejnou adresu přes `url`).
-- Klikací prototyp v8 (10. 11., R19, základ integrace 7eab7a8 = v7.11.1): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2 — `podklady/VS_PROTOTYP_06_11.html` = SKUTEČNÁ
+- Klikací prototyp v9 (10. 11., R19 + R20, základ integrace 7eab7a8 = v7.11.1): https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2 — `podklady/VS_PROTOTYP_06_11.html` = SKUTEČNÁ
   sestavená aplikace z integrace 7eab7a8 (v7.11.1, `KNG_NEZVYSOVAT_VERZI=1 python3 build.py`) + vrstvy
   `podklady/vs_prototyp/` (a1 offline, a2 zkušební ceník s přepínačem skladebný/starý #354, b víc šachet R1–R18 přes `vypocetZ`,
   můstky Z.mustky[] po šachtách skutečným jádrem). Složení `python3 podklady/vs_prototyp/sestav.py <scratchpad> wti7`
@@ -37,6 +37,8 @@ a mění sousední soubory → po každém „AKTUALIZUJ VS nad <SHA>“ ověři
 **MU3 a CA #575 zapracovány** (v6.11.5, prototyp v7; pole Počet šachet a Počet stejných kusů = `CISLO_POLE`; prompt oddíl 11: SHA ≥ e2c2137, číselná pole jen přes CISLO_POLE). Čeká se na další „AKTUALIZUJ VS“ / „SPUSŤ VS E<N>“.
 
 **10. 11.: R19** (Počet variant šachet v nabídce / Počet šachet celkem / Počet kusů této šachty) v návrhu i prototypu v8; **O15** otevřená. **Plán realizace** `podklady/VS_PLAN_REALIZACE.md` (sběrná větev claude/vs-balik nad 7eab7a8, E0–E6, sezení S1–S3, roadmapa návrh #590–#596, otázky O15, P1, P2).
+
+**10. 11. večer: O15 = a → R20** (pole Počet kusů i u jedné šachty), prototyp v9, návrh uzavřen R1–R20. **Realizace E0 + E1 běží v samostatném sezení** na `claude/vs-balik` nad integrací 3ff5403; toto sezení zůstává správcem návrhu, plánu a prototypu — držet podklady v této větvi aktuální.
 
 **Další krok:** čekat na pokyn koordinace. Při spuštění etapy: větev `claude/vs-e<N>-…` nad zadaným SHA,
 hooky, pojistky testů, zlatá sada „1 šachta na haléř“, celé kolo (Playwright přes odkaz

@@ -3,10 +3,10 @@
 (Název souboru `VS_PLAN_REALIZACE.md`, ne `PLAN_VS_…`: vzor `PLAN_*.md` je v `.gitignore` pro pracovní poznámky.)
 
 10. 11. 2026, sezení tématu „Víc šachet v OCK (#570)“, větev `claude/vs-vice-sachet`.
-**Jen plán — nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS … nad <SHA>“.**
+**Plán. Realizace E0 + E1 běží od 10. 11. v samostatném sezení na sběrné větvi `claude/vs-balik` nad integrací 3ff5403 (výchozí SHA se tím mění z 7eab7a8 na 3ff5403).**
 
-- Závazný návrh: `podklady/NAVRH_VICE_SACHET_05_11.md` (rozhodnutí R1–R19, otázka O15).
-- Závazný vzhled a chování: klikací prototyp v8
+- Závazný návrh: `podklady/NAVRH_VICE_SACHET_05_11.md` (rozhodnutí R1–R20; O15 rozhodnuta = R20).
+- Závazný vzhled a chování: klikací prototyp v9
   https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2, zdroj `podklady/VS_PROTOTYP_06_11.html`
   a vrstvy `podklady/vs_prototyp/`. Prototyp běží na skutečné sestavě integrace
   7eab7a8; vrstva `b_vice_sachet.js` je referenční implementace obalu výpočtu,
@@ -100,7 +100,8 @@ Pracnost: S = hodiny, M = 1–2 dny, L = 3–5 dní (dny práce sezení).
 ### E2 — Zadání a karta Šachty varianty (M, 1½ dne)
 - **`ui/kalk_ock.js`, `ui/common.js`**:
   - pole „Počet variant šachet v nabídce“ (`CISLO_POLE`) v záhlaví Zadání
-    šachty (R17, R19);
+    šachty (R17, R19) a vedle něj u jedné šachty pole „Počet kusů“ (R20,
+    2+ ks zapne režim víc šachet s jednou variantou);
   - karta „Šachty varianty“ přes `kartaRezim`: přepínač `.rada-prep`,
     název, Počet stejných kusů (`CISLO_POLE`), Kopírovat, Smazat;
   - v záhlaví karty Počet variant (vstup) + Počet šachet celkem (Σ ks)
@@ -110,7 +111,7 @@ Pracnost: S = hodiny, M = 1–2 dny, L = 3–5 dní (dny práce sezení).
   - potvrzení snížení na stránce (R18), historie Zpět;
   - Model 1: počet variant jen 1, volba Model 1 u víc šachet zakázaná;
   - karta Můstky po šachtách (už funguje přes `Z`).
-- **Harness `overit_vs_zadani.mjs`** (Playwright): 1 ↔ 2 ↔ 3 varianty, ks,
+- **Harness `overit_vs_zadani.mjs`** (Playwright): 1 ↔ 2 ↔ 3 varianty, 1 varianta × 3 ks (R20), ks,
   přejmenování, kopie, smazání s potvrzením, Model 1, en-US „17,3“.
 
 ### E3 — Kalkulace, cena, sleva, přehledy (M, 2 dny)
@@ -250,8 +251,7 @@ nejistota je hlavně v E4 (Word šablona) a v kolizích se souběžnými dávkam
 
 ## 8. Co musí dodat J. V.
 
-1. **Odpověď na O15** (jak zadat víc stejných kusů jedné šachty bez druhé
-   varianty; doporučeno pole „Počet kusů“ i u jedné šachty).
+1. ~~Odpověď na O15~~ — rozhodnuto 10. 11.: R20 (pole „Počet kusů“ i u jedné šachty).
 2. **Podklady s firemními šablonami** (CN v16 a starší) pro výrobu v17 přes
    `KNG_PODKLADY`, a po E4 **nahrání šablony v17** do šablon online.
 3. **Rozhodnutí o souběžných dávkách** (bod 2.2): zmrazit dávky v
@@ -265,8 +265,7 @@ nejistota je hlavně v E4 (Word šablona) a v kolizích se souběžnými dávkam
 
 ## 9. Otázky pro J. V. (doporučená odpověď první)
 
-- **O15** — viz bod 8.1 a návrh (oddíl 9): a) pole „Počet kusů“ i u jedné
-  šachty · b) oklikou přes druhou variantu · c) karta Šachty varianty vždy.
+- **O15** — rozhodnuto 10. 11. = a) (R20).
 - **P1 — Souběžné dávky během VS:** a) zmrazit dávky v kolizních souborech
   po dobu E1–E5 (doporučeno, méně konfliktů a jistější zlatá sada) ·
   b) pouštět dál a sběrnou větev přeskládávat.
@@ -299,7 +298,7 @@ přečíslovat).
 
 > SPUSŤ VS E<N> nad <SHA sběrné větve claude/vs-balik>. Větev
 > `claude/vs-e<N>-<popis>`. Závazné: `podklady/NAVRH_VICE_SACHET_05_11.md`
-> (R1–R19), `podklady/VS_PLAN_REALIZACE.md` (etapa E<N>, vlastní soubory),
+> (R1–R20), `podklady/VS_PLAN_REALIZACE.md` (etapa E<N>, vlastní soubory),
 > prototyp `podklady/VS_PROTOTYP_06_11.html` + `podklady/vs_prototyp/b_vice_sachet.js`.
 > CLAUDE.md: hooky, žádné `--no-verify`, číselná pole jen `CISLO_POLE`,
 > pojistky testů, zlatá sada `test_vs_zlata.js` zelená, verze se nezvyšuje
