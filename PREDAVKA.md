@@ -47,8 +47,8 @@ návrh R1–R21 a plán (oddíl 2, bod 8.6 potvrzen) jsou v souladu; artefakt pr
 sezení dostupný k publikaci (vlastník, verze shodná s `podklady/VS_PROTOTYP_06_11.html` = v9, vrstvy a1/a2/b obsažené).
 Integrace 3ff5403 (v10.11.1) proti základu prototypu 7eab7a8 mění jen AS #577 (záloha na Disk) — ceny a výpočet
 prototypu platí. Opraveny zbytky „balíčku“ v plánu (E0 otisky ze základu etapy 3ff5403, E6, #590, #596, bod 8.3 → 2.3).
-**Mezera:** prototyp v9 nemá vypínač R21 (stav VYP, zakázka s víc šachtami při VYP se zamčenou editací) — doplnit
-jako v10 na pokyn koordinace.
+Prototyp v9 nemá vypínač R21 — **rozhodnuto (koordinace / J. V. 10. 11.) = b):** prototyp zůstává beze změny,
+vypínač R21 se ověří rovnou na testengscalc po sloučení E0/E1.
 
 **Další krok:** čekat na pokyn koordinace. Při spuštění etapy: větev `claude/vs-e<N>-…` nad zadaným SHA,
 hooky, pojistky testů, zlatá sada „1 šachta na haléř“, celé kolo (Playwright přes odkaz
