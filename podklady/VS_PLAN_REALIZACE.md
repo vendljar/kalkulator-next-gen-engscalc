@@ -3,51 +3,63 @@
 (Název souboru `VS_PLAN_REALIZACE.md`, ne `PLAN_VS_…`: vzor `PLAN_*.md` je v `.gitignore` pro pracovní poznámky.)
 
 10. 11. 2026, sezení tématu „Víc šachet v OCK (#570)“, větev `claude/vs-vice-sachet`.
-**Plán. Realizace E0 + E1 běží od 10. 11. v samostatném sezení na sběrné větvi `claude/vs-balik` nad integrací 3ff5403 (výchozí SHA se tím mění z 7eab7a8 na 3ff5403).**
+**Plán. ZMĚNA 10. 11. (J. V.): žádná sběrná větev — VS se slučuje do INTEGRACE po etapách za vypínačem v Nastavení (R21, oddíl 2). Realizace E0 + E1 + vypínač běží v sezení „VS-E0/E1 #570“, větev `claude/vs-e0e1` nad integrací `3ff5403`, a čte podklady z `claude/vs-vice-sachet`.**
 
-- Závazný návrh: `podklady/NAVRH_VICE_SACHET_05_11.md` (rozhodnutí R1–R20; O15 rozhodnuta = R20).
+- Závazný návrh: `podklady/NAVRH_VICE_SACHET_05_11.md` (rozhodnutí R1–R21; O15 rozhodnuta = R20, vypínač = R21).
 - Závazný vzhled a chování: klikací prototyp v9
   https://claude.ai/artifact/PPL2GLSARywu7j2whk2KY2, zdroj `podklady/VS_PROTOTYP_06_11.html`
   a vrstvy `podklady/vs_prototyp/`. Prototyp běží na skutečné sestavě integrace
   7eab7a8; vrstva `b_vice_sachet.js` je referenční implementace obalu výpočtu,
   součtu, rozpočtu a vložených prvků.
-- Výchozí SHA realizace: **integrace `7eab7a8`** (v7.11.1 + roadmapa #578).
-  Dnes: test = v7.11.1, main = v6.11.5.
+- Výchozí SHA realizace: **integrace `3ff5403`** (E0 + E1; další etapy nad aktuální integrací).
+  Stav 10. 11.: test = v7.11.1, main = v6.11.5.
 
 ---
 
 ## 1. Cíl
 
-Víc šachet jde do testu **najednou jako jeden balíček**. Testovat se pak bude
-v testovacím rozhraní. Do testu jde balíček až tehdy, když jsou hotové
-všechny etapy, celé testovací kolo je zelené a zlatá sada potvrdí, že
-zakázka s jednou šachtou je bajt po bajtu stejná jako před balíčkem.
+Víc šachet se staví **po etapách přímo v integraci** a s ní jde do testu,
+ale **schované za vypínačem** v Nastavení (R21). J. V. testuje na testovacím
+webu (testengscalc) se zapnutým vypínačem; s vypnutým je aplikace přesně
+jako dnes. Do `main` jde VS až po odsouhlasení J. V. (zapnutí vypínače na
+ostrém webu je samostatné rozhodnutí).
 
 ---
 
-## 2. Co je potřeba změnit proti dnešnímu postupu
+## 2. Slučování do integrace a do testu (změna J. V. 10. 11.)
 
-Dnes jde každá dávka zvlášť do integrace a s ní do testu. U VS by to
-znamenalo poloviční funkci v testu (třeba UI bez dokumentů). Proto:
+Původní plán se sběrnou větví `claude/vs-balik` (celý balíček najednou) je
+**zrušený**. Platí:
 
-1. **Sběrná větev balíčku `claude/vs-balik`** nad `7eab7a8`. Etapy E1–E5 se
-   slučují do ní, ne do integrace. Integrace dostane VS až celou.
-2. **Kolize se souběžnými dávkami.** VS sahá do souborů, které mění skoro
-   každá dávka (`kalk_ock.js`, `common.js`, `nabidka.js`, `kryci.js`,
-   `engine.js`). Doporučení (otázka pro J. V., bod 9): po dobu E1–E5
-   pouštět souběžně jen dávky mimo tyto soubory. Jinak sběrnou větev
-   průběžně přeskládat na integraci (rebase po každém sloučení do integrace,
-   kontrola zlaté sady znovu).
-3. **Jedna verze pro balíček.** Etapy v sběrné větvi verzi nezvyšují
-   (`KNG_NEZVYSOVAT_VERZI=1`). Verze `v<den>.<měsíc>.<N>` se přidělí až při
-   sloučení do integrace.
-4. **Celé kolo až na konci, ale zlatá sada a rychlé sady u každé etapy.**
-   Mutace po částech (`KNG_MUTACE_CAST=K/N`) pustí E6 nad hotovým balíčkem.
-5. **Roadmapa po etapách** (oddíl 10), aby koordinace viděla postup.
-   Zastřešující #570 zůstává; v kokpitu běží jako jedno téma.
-6. **Režim „1 šachta = beze změny“ je jediný přepínač.** Žádný skrytý
-   přepínač funkce v nastavení: dokud zakázka nemá druhou variantu šachty
-   ani ks > 1, nevykoná se žádný nový kód v cestě výpočtu ani dokumentů.
+1. **Vypínač „Víc šachet v nabídce“ v Nastavení** (R21):
+   - mění ho jen správce (právo jako ostatní volby Nastavení), **výchozí VYP**;
+   - ukládá se v nastavení programu na serveru (jako ostatní firemní volby),
+     platí pro všechny uživatele daného webu — na testu ho J. V. zapne,
+     na ostrém zůstane vypnutý;
+   - **VYP:** v UI není pole „Počet variant šachet v nabídce“ ani „Počet
+     kusů“ a žádný prvek víc šachet; výpočet, dokumenty, zámek i server
+     jsou **bajt po bajtu jako dnes** (hlídá zlatá sada E0 ve stavu VYP);
+   - **ZAP:** chování podle R16–R20 (jedna šachta = dnešní vzhled + pole
+     Počet variant a Počet kusů; od 2 variant nebo ks > 1 režim víc šachet).
+   - Zakázka, která už má víc šachet (`ock.dalsi` nebo ks > 1), a vypínač je
+     VYP: výpočet a dokumenty se **počítají podle dat** (cena se vypnutím
+     nemění), editace šachet je nedostupná a lišta řekne „Zakázka má víc
+     šachet — funkce je v Nastavení vypnutá“. (K potvrzení J. V.; jinak by
+     vypnutí měnilo cenu uložených nabídek.)
+2. **Každá etapa se slučuje do integrace samostatně** (běžný postup:
+   vlastní větev `claude/vs-e<N>-…` nad aktuální integrací, celé kolo,
+   sloučení na pokyn koordinace, vlastní verze). Rozpracovaná funkce je
+   v testu jen za vypínačem.
+3. **Kolize se souběžnými dávkami** (`kalk_ock.js`, `common.js`,
+   `nabidka.js`, `kryci.js`, `engine.js`): každá etapa začíná nad aktuální
+   integrací, takže konflikty se řeší při jejím sloučení jako u jiných dávek;
+   zlatá sada se po každém sloučení pouští znovu.
+4. **Zlatá sada ve dvou stavech:** VYP = dnešní stav bajt po bajtu (všechny
+   etapy); ZAP + 1 šachta = dnešní výpočet a dokumenty, v UI navíc jen dvě
+   pole v záhlaví Zadání (pixelové srovnání jako u prototypu).
+5. **Testovací web:** po sloučení etapy J. V. zapne vypínač na testu a
+   zkouší, co etapa přinesla; scénáře z prototypu v9.
+6. **Roadmapa po etapách** (oddíl 10); zastřešující #570 zůstává.
 
 ---
 
@@ -70,7 +82,7 @@ Pracnost: S = hodiny, M = 1–2 dny, L = 3–5 dní (dny práce sezení).
 - Test `src/test_vs_zlata.js` porovná bajt po bajtu; jako vzor slouží
   `test_560_zlata.json` + `nastroje/zlata_560.js`.
 
-### E1 — Data, jádro a server (M, 2 dny)
+### E1 — Data, jádro, server a vypínač (M, 2–2½ dne)
 - **Nový modul `src/vice_sachet.js`** (do CORE v `build.py` za `engine.js`,
   do `netlify/lib/jadro_moduly.cjs`):
   - `sachtyZ(d)`, `rezimViceSachet(d)`;
@@ -92,7 +104,11 @@ Pracnost: S = hodiny, M = 1–2 dny, L = 3–5 dní (dny práce sezení).
   1–20, název ≤ 80 znaků, zadání každé šachty stejnou kontrolou jako
   šachta 1, vč. skupin můstků), 409 při ztrátě `dalsi` proti uložené verzi;
   `netlify/functions/vypocet.mjs` a `sluzba.js` přes obal.
-- **Testy:** `test_vs_soucet.js`, `test_vs_rozpocet.js` (10 000 sad),
+- **Vypínač R21:** volba v Nastavení (jen správce, výchozí VYP), uložení
+  v nastavení programu na serveru, funkce `viceSachetZapnuto()`; s VYP se
+  nezobrazí žádný prvek VS a nový kód se v cestě výpočtu nevykoná (u dat
+  bez `dalsi` a ks 1). Zlatá sada E0 ve stavu VYP i ZAP.
+- **Testy:** `test_vs_vypinac.js`, `test_vs_soucet.js`, `test_vs_rozpocet.js` (10 000 sad),
   `test_vs_hrana_tisicovky.js`, `test_vs_server.js`, `test_vs_model1.js`,
   zlatá sada zelená. Nový modul do mutačních cílů jádra
   (`netlify/mutace.mjs`).
@@ -171,16 +187,17 @@ Pracnost: S = hodiny, M = 1–2 dny, L = 3–5 dní (dny práce sezení).
 - Celé testovací kolo `nastroje/testovaci_kolo.sh` s mutacemi po částech
   (jádro N = 4, server N = 12–16), Playwright přes `node_modules/playwright`.
 - Ruční zkouška scénářů z prototypu na sestavě balíčku.
-- Sloučení `claude/vs-balik` → integrace (verze), odkaz na release.
+- Poslední sloučení do integrace, příprava na `main` (vypínač na ostrém zůstává VYP, zapnutí rozhodne J. V.).
 
 ---
 
 ## 4. Pořadí, závislosti a paralelní sezení
 
 ```
-E0 ─► E1 ─┬─► E2 ─► E3 ─────────────┐
-          ├─► E4 (dokumenty) ──────┤─► E6 ─► integrace ─► test
-          └─► E5 (KL, SoD, zámek) ─┘
+E0+E1+vypínač ─► integrace ─┬─► E2 ─► integrace ─► E3 ─► integrace ─┐
+                            ├─► E4 (dokumenty) ─► integrace ────────┤─► E6 ─► integrace ─► test (vypínač ZAP na testu)
+                            └─► E5 (KL, SoD, zámek) ─► integrace ───┘
+(každé sloučení jde s integrací do testu; s vypínačem VYP beze změny)
 ```
 
 | Sezení | Etapy | Soubory (vlastní) | Smí paralelně s |
@@ -195,9 +212,9 @@ E0 ─► E1 ─┬─► E2 ─► E3 ─────────────�
   - `preklad.js` vlastní jen S2 (S3 posílá texty přes koordinaci);
   - `kontroly.js` vlastní jen S3 (S2 dodá funkci zábrany šablony);
   - `zamek.js`: E1 mění jen `vypocetZ`, E5 jen snímek. E5 začíná až po
-    sloučení E1 do sběrné větve.
+    sloučení E1 do integrace.
 - Každé sezení dělá vlastní větev `claude/vs-e<N>-…` nad aktuální
-  `claude/vs-balik` a po ucelené etapě se do ní slučuje (koordinace nebo S1).
+  integrací a po ucelené etapě se slučuje do integrace (na pokyn koordinace).
 
 ---
 
@@ -239,7 +256,7 @@ nejistota je hlavně v E4 (Word šablona) a v kolizích se souběžnými dávkam
 |---|---|
 | Tichá změna ceny nebo dokumentu staré zakázky | zlatá sada od E0; u jedné šachty obal vrací výsledek jádra beze změny |
 | Skok o 1 000 Kč na hraně tisícovky | pole `zakladCenaPredZaokr`, test hrany |
-| Kolize s jinými dávkami v `kalk_ock.js` / `nabidka.js` | bod 2.2 (zmrazení nebo rebase), sběrná větev |
+| Kolize s jinými dávkami v `kalk_ock.js` / `nabidka.js` | každá etapa nad aktuální integrací, zlatá sada po každém sloučení |
 | Word šablona v17 (podklady mimo repo) | generátor z v16, zlatá sada v16 = v17 u jedné šachty, zábrana starých šablon |
 | Starší karta prohlížeče zahodí `dalsi` | 409 na serveru |
 | Výkon u 10 variant | výpočet po šachtách v ms; mezipaměť aktivní šachty |
@@ -259,7 +276,8 @@ nejistota je hlavně v E4 (Word šablona) a v kolizích se souběžnými dávkam
    po dobu E1–E5, nebo souhlas s průběžným přeskládáním.
 4. **Pipedrive:** potvrdit, do kterého pole dealu jde seznam variant
    (poznámka dealu, nebo existující textové pole z mapy #115/#553).
-5. **Čas na ruční test** v testovacím rozhraní po sloučení balíčku.
+5. **Čas na ruční test** na testengscalc se zapnutým vypínačem po sloučení každé etapy.
+6. **Potvrdit chování zakázky s víc šachtami při vypnutém vypínači** (oddíl 2, bod 1: cena podle dat, editace zamčená).
 
 ---
 
@@ -268,7 +286,8 @@ nejistota je hlavně v E4 (Word šablona) a v kolizích se souběžnými dávkam
 - **O15** — rozhodnuto 10. 11. = a) (R20).
 - **P1 — Souběžné dávky během VS:** a) zmrazit dávky v kolizních souborech
   po dobu E1–E5 (doporučeno, méně konfliktů a jistější zlatá sada) ·
-  b) pouštět dál a sběrnou větev přeskládávat.
+  b) pouštět dál, každá etapa nad aktuální integrací (po změně 10. 11.
+  s vypínačem je b) bezpečnější než dřív — zlatá sada VYP po každém sloučení).
 - **P2 — Sezení:** a) tři sezení (S1 téma VS, S2 dokumenty, S3 KL/SoD/zámek)
   po E1 paralelně (doporučeno, rychlejší) · b) vše postupně v jednom sezení.
 
@@ -296,9 +315,9 @@ přečíslovat).
 
 ## 11. Prompt pro spuštění (šablona)
 
-> SPUSŤ VS E<N> nad <SHA sběrné větve claude/vs-balik>. Větev
+> SPUSŤ VS E<N> nad <SHA aktuální integrace>. Větev
 > `claude/vs-e<N>-<popis>`. Závazné: `podklady/NAVRH_VICE_SACHET_05_11.md`
-> (R1–R20), `podklady/VS_PLAN_REALIZACE.md` (etapa E<N>, vlastní soubory),
+> (R1–R21), `podklady/VS_PLAN_REALIZACE.md` (etapa E<N>, vlastní soubory),
 > prototyp `podklady/VS_PROTOTYP_06_11.html` + `podklady/vs_prototyp/b_vice_sachet.js`.
 > CLAUDE.md: hooky, žádné `--no-verify`, číselná pole jen `CISLO_POLE`,
 > pojistky testů, zlatá sada `test_vs_zlata.js` zelená, verze se nezvyšuje

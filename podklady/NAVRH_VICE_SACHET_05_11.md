@@ -6,7 +6,7 @@ Klikací prototyp v7 (6. 11., R1–R18): https://claude.ai/artifact/PPL2GLSARywu
 sestavená aplikace v6.11.5 (další verze main, s kartou Můstky, MU3 a CA #575) + vrstva víc šachet (`podklady/vs_prototyp/`); u 1 šachty pixelově shodná s v6.11.5.
 Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 
-**Stav: NÁVRH UZAVŘEN, rozhodnutí R1–R20 (R19 = připomínka J. V. 10. 11. k prototypu v7, R20 = O15 a). Realizace běží v samostatném sezení na sběrné větvi `claude/vs-balik` (E0 + E1 nad integrací 3ff5403). Podrobný plán realizace: `podklady/VS_PLAN_REALIZACE.md`. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
+**Stav: NÁVRH UZAVŘEN, rozhodnutí R1–R21 (R19 = připomínka J. V. 10. 11. k prototypu v7, R20 = O15 a). R21 (10. 11.): VS se slučuje do integrace po etapách za vypínačem v Nastavení (jen správce, výchozí VYP). Realizace E0 + E1 + vypínač běží v sezení „VS-E0/E1 #570“, větev `claude/vs-e0e1` nad integrací 3ff5403. Podrobný plán realizace: `podklady/VS_PLAN_REALIZACE.md`. Nic se neprogramuje, dokud koordinace nepošle „SPUSŤ VS E<N> nad <SHA>“ na pokyn J. V.**
 („zatím připrav komplexní návrh, který si nejprve odladíme, a spustíme až
 řeknu“, 5. 11. 2026). Všechny částky jsou **smyšlené a ilustrační**.
 
@@ -36,6 +36,7 @@ Větev `claude/vs-vice-sachet` nad `000924e` (= `main` = `test` = v4.11.8).
 | R18 (O14, 6. 11.) | **Snížení počtu šachet (i Smazat šachtu) se potvrzuje přímo na stránce** se jmény mazaných šachet; smažou se i jejich zadání, můstky a příplatky; šachta 1 zůstává vždy; omyl vrátí Zpět (historie). Návrat na 1 šachtu = dnešní zobrazení. |
 | R19 (10. 11., připomínka k prototypu v7) | **Dvě čísla: Počet variant šachet v nabídce a Počet šachet celkem.** Pole R17 se jmenuje **„Počet variant šachet v nabídce“** (různé šachty, 1–10). U jedné šachty je v záhlaví karty Zadání šachty (jako R17). V režimu víc šachet se **přesune do záhlaví karty Šachty varianty** (vlevo od výběru zobrazit) a vedle něj je **„Počet šachet celkem: X ks“** jen ke čtení = Σ ks všech variant (např. 1 + 2 = 3). V záhlaví „Zadání šachty — Šachta N“ je místo něj **„Počet kusů této šachty: N ks“** převzaté z pole Počet stejných kusů (jedno místo pravdy). Všude, kde se mluví o počtu šachet (CN, krycí list, Pipedrive, controlling, štítky), se rozlišuje „variant šachet“ a „šachet celkem (ks)“. |
 | R20 (O15, 10. 11.) | **U jedné šachty je v záhlaví Zadání šachty vedle „Počet variant šachet v nabídce“ i pole „Počet kusů“** (`CISLO_POLE`, výchozí 1). Zadání 2 a více kusů zapne režim víc šachet s jednou variantou (karta Šachty varianty, Počet šachet celkem = ks). Návrat na 1 ks (u jediné varianty) vrátí dnešní zobrazení. |
+| R21 (J. V., 10. 11.) | **Vypínač „Víc šachet v nabídce“ v Nastavení** — mění jen správce, výchozí VYP, platí pro celý web. S VYP je aplikace přesně jako dnes (žádné pole Počet variant / Počet kusů, výpočet a dokumenty bajt po bajtu; hlídá zlatá sada). Se ZAP platí R16–R20. VS se slučuje do integrace po etapách (žádná sběrná větev), J. V. testuje na testovacím webu se ZAP. Zakázka s víc šachtami při VYP: cena podle dat, editace šachet zamčená (k potvrzení J. V.). Podrobně `VS_PLAN_REALIZACE.md` oddíl 2. |
 
 ---
 
