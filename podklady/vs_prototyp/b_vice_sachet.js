@@ -20,6 +20,7 @@
     R14: 'U víc šachet je cena můstků v ceně šachty (dovětek „vč. můstků“).',
     R16: 'Jedna šachta = dnešní kalkulátor beze změny vzhledu; rozhraní víc šachet až od 2 šachet.',
     R17: 'Počet šachet se nastavuje polem „Počet šachet v nabídce“ nahoře v kartě Zadání šachty; ks zvlášť u šachty.',
+    R19: 'Počet variant šachet v nabídce (různé šachty) a Počet šachet celkem (součet kusů všech variant) jsou dvě různá čísla: v režimu víc šachet je vstup Počtu variant a údaj Počet šachet celkem v záhlaví karty Šachty varianty, v záhlaví Zadání šachty je Počet kusů této šachty (z pole Počet stejných kusů).',
     R18: 'Snížení počtu šachet se potvrzuje na stránce se jmény mazaných šachet; šachta 1 zůstává; omyl vrátí Zpět.',
   };
   const VS = { akt: 0, pohled: 'akt', force: null, potvrdit: null };
@@ -53,7 +54,7 @@
   function kresliPanel() {
     const cz = (window.PROTO_CENIK || {}).rezim || 'skladebny';
     stitek.innerHTML = `<span class="vs-proto">Prototyp — nic se neukládá</span>
-      <span class="vs-pz">základ = v6.11.5 (další verze main)</span>
+      <span class="vs-pz">základ = v7.11.1 (další verze main)</span>
       <span class="vs-pz">Zkušební ceník můstků: <span class="rada-prep"><button type="button" class="${cz === 'skladebny' ? 'on' : ''}" onclick="VS_cenik('skladebny')">skladebný</button><button type="button" class="${cz === 'stary' ? 'on' : ''}" onclick="VS_cenik('stary')">starý (#354)</button></span></span>
       <button type="button" class="mini" onclick="VS_navod()">Co si proklikat</button>`;
   }
@@ -187,15 +188,17 @@
     const karta = document.getElementById('ock-zadani');
     if (!karta) return;
     const h2 = karta.querySelector('h2');
-    const n = sachty().length, m1 = !OCK.fixes;
+    const l = sachty(), n = l.length, m1 = !OCK.fixes;
+    const ksCelkem = l.reduce((a, x) => a + (+x.ks || 1), 0);
+    const vpravoZ = () => (h2.children.length > 1 ? h2.lastElementChild : null);
+    const vstupVariant = `Počet variant šachet v nabídce <input ${CP()} id="vsPocet" min="1" max="10" step="1" value="${n}" style="width:46px;padding:2px 6px;font-size:12.5px"
+      ${m1 ? 'disabled title="Model 1 počítá jen jednu šachtu"' : 'title="počet různých šachet (variant) v nabídce, 1–10"'} onchange="VS_pocet(this.value)">`;
     const pole = document.createElement('span');
     pole.className = 'vs-pocet'; pole.setAttribute('onclick', 'event.stopPropagation()');
-    pole.innerHTML = `Počet šachet v nabídce <input ${CP()} id="vsPocet" min="1" max="10" step="1" value="${n}" style="width:46px;padding:2px 6px;font-size:12.5px"
-      ${m1 ? 'disabled title="Model 1 počítá jen jednu šachtu"' : 'title="počet různých šachet v nabídce, 1–10"'} onchange="VS_pocet(this.value)">${rt('R16', 'R17')}`;
-    const vpravo = h2.lastElementChild && h2.lastElementChild.tagName === 'SPAN' && h2.children.length > 1 ? h2.lastElementChild : null;
-    h2.insertBefore(pole, vpravo);
+    if (!vic()) pole.innerHTML = vstupVariant + rt('R16', 'R17', 'R19');
+    else pole.innerHTML = `Počet kusů této šachty: <b>${l[VS.akt].ks} ks</b>${rt('R19')}`;
+    h2.insertBefore(pole, vpravoZ());
     if (!vic() && !VS.potvrdit) return;
-    const l = sachty();
     if (vic()) { const t = h2.firstElementChild; if (t) t.innerHTML = t.innerHTML + ' — ' + esc(nazevS(l[VS.akt], VS.akt)); }
     // karta Šachty varianty před Zadáním
     const s = l[VS.akt];
@@ -203,13 +206,22 @@
     const potvrd = VS.potvrdit ? `<div class="seznam-varovani" style="margin:8px 0"><b>Smazat ${VS.potvrdit.length === 1 ? 'šachtu' : 'šachty'} ${esc(VS.potvrdit.map(i => nazevS(l[i], i)).join(', '))}?</b>
         Smaže se i ${VS.potvrdit.length === 1 ? 'její' : 'jejich'} zadání, můstky a příplatky.${l.length - VS.potvrdit.length === 1 ? ' Kalkulátor se vrátí do zobrazení pro jednu šachtu.' : ''}${rt('R18')}
         <span style="display:inline-flex;gap:8px;margin-left:10px"><button class="mini vyzva" onclick="VS_potvrd(true)">Smazat</button><button class="mini" onclick="VS_potvrd(false)">Zrušit</button></span></div>` : '';
-    const inner = `<div class="vs-blok">${potvrd}<div class="vs-radek">${tabs}${rt('R1', 'R10')}<span class="note" style="margin:0">${l.length} z 10 šachet</span></div>
+    const inner = `<div class="vs-blok">${potvrd}<div class="vs-radek">${tabs}${rt('R1', 'R10')}<span class="note" style="margin:0">${n} z 10 variant šachet · celkem ${ksCelkem} ks</span></div>
       <div class="vs-radek"><label>Název</label><input type="text" maxlength="80" value="${esc(s.nazev || '')}" placeholder="${esc(nazevS(s, VS.akt))}" onchange="VS_nazev(this.value)">
-        <label style="margin-left:12px">Počet stejných kusů</label><input ${CP()} min="1" max="20" step="1" value="${s.ks}" onchange="VS_ks(this.value)">${rt('R2', 'R12')}
+        <label style="margin-left:12px">Počet stejných kusů</label><input ${CP()} id="vsKs" min="1" max="20" step="1" value="${s.ks}" onchange="VS_ks(this.value)">${rt('R2', 'R12', 'R19')}
         <button class="mini" onclick="VS_kopie()" ${l.length >= 10 || !OCK.fixes ? 'disabled' : ''}>Kopírovat šachtu</button>
         <button class="mini" onclick="VS_smaz()" ${VS.akt === 0 ? 'disabled title="šachtu 1 nejde smazat"' : ''}>Smazat šachtu</button></div>
       <div class="note">Karty Zadání šachty a Dimenze profilů patří vybrané šachtě. Hlavička zakázky, ceník, přirážka, sleva a ruční ceny jsou společné pro variantu.</div></div>`;
-    if (vic() || VS.potvrdit) karta.insertAdjacentHTML('beforebegin', kartaRezim('ock', 'vsSachty', 'Šachty varianty' + rt('R1'), inner, 'vs-sachty'));
+    if (vic() || VS.potvrdit) {
+      karta.insertAdjacentHTML('beforebegin', kartaRezim('ock', 'vsSachty', 'Šachty varianty' + rt('R1'), inner, 'vs-sachty'));
+      const h2S = document.querySelector('#vs-sachty h2');
+      if (h2S && vic()) {
+        const p2 = document.createElement('span');
+        p2.className = 'vs-pocet'; p2.setAttribute('onclick', 'event.stopPropagation()');
+        p2.innerHTML = vstupVariant + `<span style="margin-left:14px">Počet šachet celkem: <b id="vsCelkem">${ksCelkem} ks</b></span>${rt('R19')}`;
+        h2S.insertBefore(p2, h2S.children.length > 1 ? h2S.lastElementChild : null);
+      }
+    }
     // Model 1 nejde u víc šachet
     const rez = document.querySelector('select.rezim-vypoctu option[value="compat"]');
     if (rez && vic()) { rez.disabled = true; rez.textContent = 'Model 1 – 1:1 jako Excel (jen jedna šachta)'; }
@@ -235,9 +247,9 @@
   }
   function tabulkaSachet(rp) {
     const l = sachty();
-    return `<table class="vs-tab" style="max-width:640px"><tbody><tr><th>Šachta</th><th class="r">ks</th><th class="r">Cena bez DPH</th></tr>
+    return `<table class="vs-tab" style="max-width:640px"><tbody><tr><th>Varianta šachty</th><th class="r">ks</th><th class="r">Cena bez DPH</th></tr>
       ${l.map((x, i) => `<tr><td>${esc(nazevS(x, i))}${(typeof mustkyPocet === 'function' && mustkyPocet(x.zadani) > 0) ? ', vč. můstků' : ''}</td><td class="r">${x.ks}</td><td class="r">${kcF(rp.ceny[i])}</td></tr>`).join('')}
-      <tr><td style="font-weight:600">Cena celkem před slevou</td><td></td><td class="r" style="font-weight:600">${kcF(rp.T)}</td></tr>
+      <tr><td style="font-weight:600">Cena celkem před slevou (${l.length} ${l.length < 5 ? 'varianty' : 'variant'} šachet, celkem šachet)</td><td class="r" style="font-weight:600">${l.reduce((a, x) => a + x.ks, 0)}</td><td class="r" style="font-weight:600">${kcF(rp.T)}</td></tr>
       ${rp.cn && rp.cn.slevaKcVykaz > 0 ? `<tr><td>Sleva ${(Math.round(rp.cn.slevaPct * 1000) / 10).toLocaleString('cs-CZ')} %</td><td></td><td class="r">−${kcF(rp.cn.slevaKcVykaz)}</td></tr>` : ''}
       <tr><td style="font-weight:600">Cena nabídky bez DPH</td><td></td><td class="r" style="font-weight:600">${kcF(rp.cn ? rp.cn.cena : rp.T)}</td></tr></tbody></table>`;
   }
@@ -267,7 +279,7 @@
     if (!vic()) return;
     const rp = rozpis(); const pg = document.getElementById('page-kryci'); if (!rp || !pg) return;
     pg.insertAdjacentHTML('afterbegin', kartaRezim('ock', 'vsKryci', 'Rozpis po šachtách (krycí list)' + rt('R9'),
-      `<div class="note" style="margin-bottom:6px">Jeden krycí list za variantu: předmět ${sachty().length} šachty, ${sachty().reduce((a, s) => a + s.ks, 0)} ks; hodnota a hodiny jsou součtem šachet.</div>${tabulkaSachet(rp)}${mustkyPoSachtach(rp)}`, 'vs-kryci'));
+      `<div class="note" style="margin-bottom:6px">Jeden krycí list za variantu: předmět ${sachty().length} ${sachty().length < 5 ? 'varianty' : 'variant'} šachet, celkem ${sachty().reduce((a, s) => a + s.ks, 0)} šachet (ks); hodnota a hodiny jsou součtem šachet.${rt('R19')}</div>${tabulkaSachet(rp)}${mustkyPoSachtach(rp)}`, 'vs-kryci'));
   }
   function vlozSpec(id) {
     if (!vic()) return;
@@ -316,15 +328,16 @@
     if (n) { n.remove(); return; }
     n = document.createElement('div'); n.id = 'vsNavod'; n.className = 'vs-navod';
     n.innerHTML = `<button type="button" class="mini" style="float:right" onclick="VS_navod()">Zavřít</button><h3>Co si proklikat</h3><ol>
-      <li><b>Jedna šachta</b> = kalkulátor jako dnes (základ v6.11.5, další verze main)${rt('R16')}. V kartě <b>Zadání šachty</b> vpravo v nadpisu napište do pole <b>Počet šachet v nabídce</b> 2 — zapne se režim víc šachet${rt('R17')}.</li>
-      <li><b>Můstky u jedné šachty:</b> v Zadání šachty dejte „Můstky mezi budovou a OCK“ = 1 — objeví se karta <b>Můstky</b>. Změňte podlahu, zábradlí, kotvení, „+ další provedení“. <b>Sloupy navíc:</b> zadejte počet a výšku nechte prázdnou — nápověda v poli ukáže výšku šachty − 0,2 m (jako rohový sloupek) a s ní se i počítá. Cena se přepočítá; v nabídce (Word, šablona v16) má jedna šachta řádky Výtahová šachta / Můstky / Cena celkem jako v v6.11.5${rt('R15')}.</li>
+      <li><b>Jedna šachta</b> = kalkulátor jako dnes (základ v7.11.1, další verze main)${rt('R16')}. V kartě <b>Zadání šachty</b> vpravo v nadpisu napište do pole <b>Počet variant šachet v nabídce</b> 2 — zapne se režim víc šachet${rt('R17')}. Pole se pak přesune do záhlaví karty <b>Šachty varianty</b> a vedle něj je <b>Počet šachet celkem</b> (součet kusů); v záhlaví Zadání šachty je <b>Počet kusů této šachty</b>${rt('R19')}.</li>
+      <li><b>Můstky u jedné šachty:</b> v Zadání šachty dejte „Můstky mezi budovou a OCK“ = 1 — objeví se karta <b>Můstky</b>. Změňte podlahu, zábradlí, kotvení, „+ další provedení“. <b>Sloupy navíc:</b> zadejte počet a výšku nechte prázdnou — nápověda v poli ukáže výšku šachty − 0,2 m (jako rohový sloupek) a s ní se i počítá. Cena se přepočítá; v nabídce (Word, šablona v16) má jedna šachta řádky Výtahová šachta / Můstky / Cena celkem jako v v7.11.1${rt('R15')}.</li>
+      <li><b>Kusy:</b> u Šachty 2 dejte Počet stejných kusů 2 — Počet šachet celkem v záhlaví karty Šachty varianty se změní na 3 ks a v záhlaví Zadání šachty uvidíte „Počet kusů této šachty: 2 ks“${rt('R19')}.</li>
       <li><b>Můstky u Šachty 2:</b> přepněte na Šachtu 2 (karta Šachty varianty), přidejte jí jiné můstky. Každá šachta má své skupiny; cena se přepočítá v šachtě i v součtu.</li>
       <li><b>Ceník:</b> v panelu vlevo dole přepněte <b>Zkušební ceník můstků</b> skladebný ↔ starý (#354) — starý počítá můstky vzorcem a karta ukáže lištu upozornění.</li>
       <li><b>Kalkulace:</b> přepínač šachet / Součet v Cenové kalkulaci (sekce MŮSTKY po šachtách, v Součtu sečtená).</li>
       <li><b>Cenová nabídka:</b> rozpis po šachtách s „vč. můstků“ a technická část MŮSTKY po šachtách; rozpočet zaokrouhlení v kartě Obchodní zaokrouhlení${rt('R7')}.</li>
       <li><b>Krycí list a Technická specifikace:</b> rozpis po šachtách, můstky každé šachty; ve specifikaci přepínač šachty.</li>
       <li><b>Model 1:</b> u jedné šachty přepněte Režim výpočtu na Model 1 — karta Můstky má jen počet a délku, počet šachet nad 1 nejde.</li>
-      <li><b>Zpět na jednu šachtu:</b> Počet šachet = 1 → potvrzení se jmény mazaných šachet${rt('R18')}.</li></ol>`;
+      <li><b>Zpět na jednu šachtu:</b> Počet variant šachet = 1 → potvrzení se jmény mazaných šachet${rt('R18')}.</li></ol>`;
     document.body.appendChild(n);
   };
   window.VS_stav = function () { const rp = vic() ? rozpis() : null; return { vic: vic(), pocet: sachty().length, akt: VS.akt, rp: rp && { T: rp.T, ceny: rp.ceny, cena: rp.cn && rp.cn.cena } }; };
