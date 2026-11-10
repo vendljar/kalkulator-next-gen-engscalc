@@ -44,6 +44,7 @@ import ja from './functions/ja.mjs';
 import uzivatele from './functions/uzivatele.mjs';
 import program from './functions/program.mjs';
 import firma from './functions/firma.mjs';
+import funkceFn from './functions/funkce.mjs';
 import zakazky from './functions/zakazky.mjs';
 import vypocet from './functions/vypocet.mjs';
 import zaloha from './functions/zaloha.mjs';
@@ -351,6 +352,20 @@ const MATICE = [
     url: 'http://x/api/firma',
     proc: 'hlavičku nabídky potřebuje každý, kdo nabídku tiskne',
     prava: PRIHLASENY_OK },
+
+  /* Vypínače zkušebních funkcí (VS #570, 10. 11. 2026): číst je musí každý
+   * (aplikace podle nich ukáže rozhraní víc šachet), přepnout jen správce.
+   * Tělo vypíná — matice tím nic nezapne. */
+  { fn: funkceFn, soubor: 'funkce.mjs', nazev: 'funkce — čtení vypínačů (GET /api/funkce)', metoda: 'GET',
+    url: 'http://x/api/funkce',
+    proc: 'aplikace podle vypínače ukáže nebo schová zkušební funkci každému přihlášenému',
+    prava: PRIHLASENY_OK },
+
+  { fn: funkceFn, nazev: 'funkce — přepnutí vypínače (POST /api/funkce)', metoda: 'POST',
+    url: 'http://x/api/funkce',
+    telo: () => ({ viceSachet: false }),
+    proc: 'zkušební funkci (víc šachet v nabídce) zapíná pro celý program jen administrátor',
+    prava: JEN_ADMIN },
 
   { fn: firma, nazev: 'firma — zveřejnění údajů (POST /api/firma)', metoda: 'POST',
     url: 'http://x/api/firma',
@@ -2106,7 +2121,8 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
     ['uzivatele', uzivatele, '/api/uzivatele', cAdmin], ['program', program, '/api/program', cAdmin], ['firma', firma, '/api/firma', cAdmin],
     ['zobrazeni', zobrazeni, '/api/zobrazeni', cAdmin], ['popisy', popisy, '/api/popisy', cAdmin], ['sablony', sablonyFn, '/api/sablony', cAdmin],
     ['slovnik', slovnikFn, '/api/slovnik', cAdmin], ['controlling', controllingFn, '/api/controlling', cAdmin],
-    ['obnova', obnova, '/api/obnova', cAdmin], ['analytika', analytikaFn, '/api/analytika', cObch]]) {
+    ['obnova', obnova, '/api/obnova', cAdmin], ['analytika', analytikaFn, '/api/analytika', cObch],
+    ['funkce', funkceFn, '/api/funkce', cAdmin]]) {
     /* B150 (12. 10. 2026): i pole a číslo — kontrola má odmítnout každé
      * tělo, které není objekt (pole by např. matici zobrazení vynulovalo). */
     for (const telo of [null, [], 5]) {

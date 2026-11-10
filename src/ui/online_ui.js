@@ -665,7 +665,7 @@ function nastFunkce() {
   if (!jeAdminOnline()) return '<div class="note">Zkušební funkce přepíná jen přihlášený administrátor.</div>';
   const f = ONLINE_STAV.funkce || {};
   const zap = f.viceSachet === true;
-  return `<div class="sec-title">Víc šachet v nabídce (zkušební)</div>
+  return `<div class="sec-title">Víc šachet v nabídce — zkušební funkce</div>
     <div class="note">Víc variant šachet a počet kusů v jedné nabídce OCK (#570). Funkce se dodává po etapách
       a zkouší se na testovacím webu — <b>na ostrém webu ji nechte vypnutou</b>. S vypnutou funkcí se aplikace
       chová přesně jako dosud a server zakázku s víc šachtami neuloží (zakázka je jen ke čtení).</div>

@@ -49,6 +49,8 @@ const pred = r => r.souhrn.zakladCenaPredZaokr;
 /* A) jedna šachta */
 { const r = E.vypocet(kop(Z1), C, J, true);
   test('A jádro: zakladCenaPredZaokr je číslo a CEIL z něj = zakladCena', typeof pred(r) === 'number' && CEIL(pred(r), 1000) === r.souhrn.zakladCena, r.souhrn);
+  test('A jádro: zakladCenaPredZaokr = cena před zaokrouhlením (náklad + marže), ne zaokrouhlená',
+    blizko(pred(r), r.souhrn.zakladNaklad + r.souhrn.zakladMarze) && pred(r) !== r.souhrn.zakladCena, [pred(r), r.souhrn.zakladCena]);
   test('A jádro: priplatkyCenaPredZaokr → CEIL = priplatkyCena', CEIL(r.souhrn.priplatkyCenaPredZaokr, 1000) === r.souhrn.priplatkyCena);
   test('A jádro: nová pole nejsou v JSON (nevýčtová)', !/PredZaokr/.test(JSON.stringify(r)) && Object.keys(r.souhrn).indexOf('zakladCenaPredZaokr') < 0);
   const varianty = [{ zadani: kop(Z1), fixes: true }, { zadani: kop(Z1), fixes: true, dalsi: [] }, { zadani: kop(Z1), fixes: true, ks: 1, nazev: 'Výtah A' },

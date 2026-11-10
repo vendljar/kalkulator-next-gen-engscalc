@@ -1518,6 +1518,12 @@
        "firemní údaje"
       ],
       [
+       "/api/funkce",
+       "GET, POST",
+       "GET přihlášený; POST jen administrátor",
+       "vypínače zkušebních funkcí (víc šachet v nabídce; výchozí vypnuto)"
+      ],
+      [
        "/api/sablony",
        "GET, POST",
        "GET přihlášený; POST jen administrátor",

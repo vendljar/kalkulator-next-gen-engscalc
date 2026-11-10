@@ -8,6 +8,35 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v11.11.1 — VS-E0/E1 #570: víc šachet v nabídce — zlatá sada, jádro, server a vypínač správce (výchozí vypnuto), větev claude/vs-e0e1
+
+Nad `3ff5403` (integrace = test v10.11.1; main = v6.11.5). Verzi přečísluje koordinace (`verze.txt` zůstává
+10.11.1 — kontrola verze = den posledního commitu). Na webech, Disku ani v Pipedrive nic. Závazné podklady
+ve větvi `claude/vs-vice-sachet` (návrh R1–R20, plán E0–E6, prototyp v9). **Rozhodnutí J. V. 10. 11. 2026:**
+VS se slučuje do integrace po etapách schovaný za vypínačem; s vypnutým se aplikace chová přesně jako dnes.
+
+- **E0 (#590) zlatá sada „1 šachta = beze změny“** — `nastroje/zlata_vs.js` → `src/test_vs_zlata.json` vyrobený
+  nad 3ff5403: 319 scénářů (fixtury, můstky #560 vč. skladebných, 300 zadání fuzzu, Model 1 i 2, ČR i zahraničí)
+  × otisk výpočtu, vypocetZ, koncové ceny, symbolů a náhledu CN cz/en, textu Wordu, krycího listu, specifikace,
+  SoD, Pipedrive náhledu, controlling CSV, snímku a výsledku zámku; pevné hodiny (i s +400 dní shodné).
+- **E1 (#591) jádro `src/vice_sachet.js`**: data `ock.dalsi[] {id, nazev, ks, zadani}`, `ock.ks`, `ock.nazev`
+  (nejsou ve vzoru, import je nedoplní, žádná migrace); `vypocetZakazkyOck` — jedna šachta = přímo `vypocet()`,
+  víc šachet = součet × ks, **CEIL na tisíce jen na součtu** (R3), řádky sloučené podle klíče a sazby (R8),
+  popisné části ze šachty 1, `sachty[]` s rozpočtem do šachet (R7, BigInt, největší zbytek, Σ = základ);
+  Model 1 počítá jen šachtu 1. `engine.js`: nevýčtová pole `zakladCenaPredZaokr`, `priplatkyCenaPredZaokr`,
+  `mustkyCenaPredZaokr` (JSON výsledku beze změny). Obal ve `vypocetZ`, `zamekVysledekSpocti`, `vysledekStrany`,
+  službě K2, schvalování (limit slevy ze součtu), výjimkách, starém ceníku a kontrole nového zámku.
+  Import migruje i zadání šachet 2+; klon a duplikát nesou `dalsi`.
+- **Vypínač správce** `/api/funkce` (úložiště programu, klíč `funkce`; GET přihlášený, POST jen administrátor),
+  Nastavení → Zkušební funkce. **Vypnuto:** zakázka s další šachtou nebo ks ≠ 1 se neuloží ani neobnoví (409);
+  zakázka uložená se zapnutou funkcí je jen ke čtení (409 i při pokusu šachty zahodit; aplikace to řekne při
+  otevření i uložení). **Zapnuto:** ≤ 10 variant šachet, ks celé 1–20, název ≤ 80, id šachty; víc šachet jen
+  v Modelu 2; 409 při ztrátě `dalsi` (starší karta; vědomé smazání = `dalsi: []`); zadání šachet 2+ stejnými
+  kontrolami jako šachta 1 (typy, záporné hodnoty, rozměry, skupiny můstků, přepisy cen podle role, model).
+- **Testy:** `src/test_vs_zlata.js` 319/319, `src/test_vs_soucet.js`, `src/test_vs_rozpocet.js` (10 000 sad),
+  `netlify/test_vs_server.mjs`; matice práv a příloha 1 příručky s `/api/funkce`. Mutace „[#570]“ jádro 13,
+  server 12. Rozhraní víc šachet (E2+) zatím není — kalkulace na obrazovce ukazuje šachtu 1.
+
 ## v10.11.1 — AS #577: noční kopie zálohy na Disk skriptem Google Apps Script (bez prohlížeče a bez přihlášení), větev claude/as-zaloha-apps-script
 
 Nad `59c56b3` (integrace v7.11.1). Na webech, Disku ani v Pipedrive nic (ani zkušební zápis). Verzi přečísluje
