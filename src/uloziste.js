@@ -2306,8 +2306,84 @@ function uloRetenceVarovani(v, ted) {
       + ' — potvrzují se postupně od nejstaršího.' : ''), dalsi };
 }
 
+/* ============================================================
+ * VÍC ŠACHET V NABÍDCE NA SERVERU (VS #570, E1 = #591, 10. 11. 2026)
+ *
+ * Funkce je ZKUŠEBNÍ a stojí za vypínačem správce (rozhodnutí J. V.
+ * 10. 11. 2026): server ho čte z úložiště programu (klíč `funkce`,
+ * /api/funkce), výchozí VYPNUTO. Pravidla:
+ *   – vypnuto (R21, J. V. 10. 11. 2026): šachtová část varianty (`ock.dalsi`,
+ *     `ock.ks`, `ock.nazev`) se nesmí změnit proti uložené verzi — nová
+ *     zakázka nebo varianta s víc šachtami, přidání, úprava i smazání šachty
+ *     → 409. Zakázka, která víc šachet UŽ MÁ, se dál počítá a tiskne podle dat
+ *     (vypnutí nemění cenu uložené nabídky) a ostatní změny včetně zámku po
+ *     tisku se uloží. Zakázka bez víc šachet = dnešní chování;
+ *   – tvar `ock.dalsi` / `ock.ks` / `ock.nazev` (vsTvarProblemy): ≤ 10 variant
+ *     šachet (R10), ks celé číslo 1–20, název ≤ 80 znaků — jinak by šlo
+ *     poslat zakázku s tisíci šachet a zahltit výpočet;
+ *   – víc šachet jen v Modelu 2 (R3);
+ *   – 409, když uložená verze varianty další šachty MÁ a posílaná klíč
+ *     `dalsi` vůbec nenese (starší otevřená karta prohlížeče by je zahodila).
+ *     Vědomé smazání šachet posílá prázdné pole `dalsi: []`.
+ * Zadání šachet 2+ prověří volající (zakazka_kontrola.mjs) TÝMIŽ kontrolami
+ * jako šachtu 1 přes vsRozvinZakazku (vice_sachet.js).
+ * Vrací { status, chyba } nebo null.
+ * ============================================================ */
+function uloVsVarianty(zak) {
+  return (zak && Array.isArray(zak.varianty)) ? zak.varianty.filter(v => v && v.data && v.data.ock && typeof v.data.ock === 'object') : [];
+}
+function uloVsMaData(zak) {
+  return typeof vsMaData === 'function' && uloVsVarianty(zak).some(v => vsMaData(v.data.ock));
+}
+const ULO_VS_VYPNUTO = 'Zakázka má víc šachet — funkce je v Nastavení vypnutá. Šachty (počet variant, kusy, '
+  + 'názvy a zadání dalších šachet) teď nejde měnit; zapnout je může administrátor (Nastavení → Zkušební funkce).';
+/* Šachtová část varianty pro porovnání s uloženou verzí ('' = jedna šachta). */
+function uloVsPodpis(v) {
+  const o = v && v.data && v.data.ock;
+  if (!o || typeof vsMaData !== 'function' || !vsMaData(o)) return '';
+  return JSON.stringify({ nazev: o.nazev, ks: o.ks, dalsi: o.dalsi });
+}
+function uloVsProblemy(zak, stara, opts) {
+  const o = opts || {};
+  if (!o.zapnuto) {
+    /* Uložená verze přes tutéž migraci jako příchozí (N43) — jinak by nový
+     * klíč doplněný importem vypadal jako změna šachty. */
+    let st = stara;
+    if (st && typeof o.importuj === 'function') { try { st = o.importuj(JSON.parse(JSON.stringify(st))); } catch (e) { st = stara; } }
+    const ulozene = new Map(uloVsVarianty(st).map(v => [String(v.id), uloVsPodpis(v)]));
+    for (const v of uloVsVarianty(zak)) {
+      if (uloVsPodpis(v) !== (ulozene.get(String(v.id)) || '')) return { status: 409, chyba: ULO_VS_VYPNUTO };
+      ulozene.delete(String(v.id));
+    }
+    return null;
+  }
+  if (typeof vsTvarProblemy !== 'function') return null;
+  const popis = v => (v.nazev ? '„' + String(v.nazev).slice(0, 60) + '"' : String(v.id || ''));
+  for (const v of uloVsVarianty(zak)) {
+    const p = vsTvarProblemy(v.data.ock);
+    if (p.length) {
+      const limit = p.some(x => x.duvod === 'limit');
+      return { status: 400, chyba: 'Varianta ' + popis(v) + ': ' + (limit
+        ? 'víc šachet, než dovoluje limit (nejvýš ' + VS_VARIANT_MAX + ' variant šachet).'
+        : 'neplatný údaj víc šachet (' + p.slice(0, 3).map(x => x.kde).join(', ')
+          + ') — počet kusů celé číslo 1–' + VS_KS_MAX + ', název nejvýš ' + VS_NAZEV_MAX + ' znaků.') };
+    }
+    if (v.data.ock.fixes === false && vsMaData(v.data.ock))
+      return { status: 400, chyba: 'Varianta ' + popis(v) + ': víc šachet počítá jen Model 2 — přepněte variantu na Model 2.' };
+  }
+  const nove = new Map(uloVsVarianty(zak).map(v => [String(v.id), v]));
+  for (const sv of uloVsVarianty(stara)) {
+    if (!Array.isArray(sv.data.ock.dalsi) || !sv.data.ock.dalsi.length) continue;
+    const v = nove.get(String(sv.id));
+    if (v && v.data.ock.dalsi === undefined)
+      return { status: 409, chyba: 'Uložení by zahodilo další šachty varianty ' + popis(sv)
+        + ' — nejspíš je otevřená ve starší verzi aplikace. Obnovte stránku (Ctrl+F5) a zakázku načtěte znovu.' };
+  }
+  return null;
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { uloZalohaSloz, ULO_MUSTKY_MAX, ULO_MUSTKY_TEXT, ULO_MUSTKY_VOLBY, ULO_MUSTKY_KLICE, ULO_TYPY_HLAVICKA, uloRetenceVarovani, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, uloKopieDiskProstredi, uloKopieDiskPosledniJmeno, uloPrahaCas, ULO_KOPIE_DISK_PROSTREDI, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_HLIDKA_DNU, uloKopieDiskNocni, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
+  module.exports = { uloVsProblemy, uloVsMaData, ULO_VS_VYPNUTO, uloZalohaSloz, ULO_MUSTKY_MAX, ULO_MUSTKY_TEXT, ULO_MUSTKY_VOLBY, ULO_MUSTKY_KLICE, ULO_TYPY_HLAVICKA, uloRetenceVarovani, uloPodProhlubniText, ULO_ODM_TOL, ULO_REJSTRIK_ADRESA_MAX, uloRejstrikAdresa, uloTypyProblemy, ULO_VYPLN_DVERI, uloProVarianty, uloGlobal, uloZaporneVZadani, uloZaporneProblemy, ULO_ZADANI_BEZ_ZAPORU, ULO_ZADANI_MIMO_JADRO, ULO_HODINY_N56, uloCisloJadro, uloRozmeryVZadani, uloRozmeryProblemy, uloModelProblemy, uloZaokrVadne, uloZaokrProblemy, uloCenikProblemy, uloCenikProblemyText, ULO_VYCTY, uloPrilohaDataBezpecna, uloZalohaHlidka, ULO_NOCNI_ZALOHA_MAX_HODIN, uloKopieDiskStav, uloKopieDiskJmeno, uloKopieDiskProstredi, uloKopieDiskPosledniJmeno, uloPrahaCas, ULO_KOPIE_DISK_PROSTREDI, ULO_KOPIE_DISK_SLOZKA, ULO_KOPIE_DISK_HLIDKA_DNU, uloKopieDiskNocni, uloZamekRazitkaDrz, ULO_PRIPONA, ULO_REJSTRIK_SOUBOR, ULO_SCHEMA, ULO_PROBLEMY,
                      uloNorm, uloSlova, uloCisloVyplneno, uloKlicSouboru,
                      uloJmenoSouboru, uloJeZakazkovySoubor,
                      ULO_HLAVICKA_POLE, uloHlavickaChybi, uloHlavickaVyplnena, uloMaCislo, uloUlozeniStav,

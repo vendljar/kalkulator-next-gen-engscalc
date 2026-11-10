@@ -87,6 +87,7 @@ import { potvrdHesloSpravce, uloziste, vyzadujRoli, json, ADMIN_EMAIL, ROLE, hos
          bezHlavnihoUctu, serverVerze, vyhradne, hloubkaChyba, textovaPoleChyba, klicZAdresyPlatny } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola, zakazkaBezPrototypovychKlicu } from '../lib/zakazka_kontrola.mjs';
+import { funkceCti } from '../lib/funkce.mjs';
 import { porizOtiskKrok, klicPredObnovou, OTISK_KLIC, OTISK_ROZPOCET, ctiOtisk, ctiOtiskCast, otiskVyrez,
   ctiPoDavkach, OBNOVA_TOKEN_PREDPONA, OBNOVA_TOKEN_PLATNOST_MS as TOKEN_PLATNOST_MS, OTISK_ROZPRACOVANY, OTISK_CASTI } from '../lib/zalohovani.mjs';
 
@@ -745,7 +746,8 @@ async function obsluha(req, uvolnit) {
       /* zeSouboru (B98): razítka zámku a odemčení z nahraného souboru nejsou
        * doklad — viz lib/zakazka_kontrola.mjs. */
       const ctx = { ULO, SCHV, JEKLY, slevyNast: (prog && prog.platny && prog.platny.slevy) || {},
-                    verzeServeru: serverVerze(), rezim: 'obnova', zeSouboru: zdrojPopis.typ === 'soubor' };
+                    verzeServeru: serverVerze(), rezim: 'obnova', zeSouboru: zdrojPopis.typ === 'soubor',
+                    viceSachet: (await funkceCti(sProg)).viceSachet };   // VS #570: vypínač správce
       for (const [k, v] of Object.entries(mapa)) {
         if (!klicZeZalohyPlatny(k)) { preskoc(b, k, KLIC_ZE_ZALOHY_DUVOD); continue; }
         if (v == null || typeof v !== 'object') { preskoc(b, k, 'poškozený záznam (není objekt)'); continue; }

@@ -650,7 +650,8 @@ function cenikCenaRozpracovanych(zak, jekly) {
       const vyrazena = (typeof zakazkaVyrazenaStrana === 'function')
         ? zakazkaVyrazenaStrana(zak) : '';
       if (vyrazena !== 'ock') {
-        const r = vypocet(v.data.ock.zadani, v.data.cenik, jekly, v.data.ock.fixes);
+        const r = (typeof vypocetOckDat === 'function') ? vypocetOckDat(v.data, jekly)
+          : vypocet(v.data.ock.zadani, v.data.cenik, jekly, v.data.ock.fixes);
         dil += (r && r.souhrn && +r.souhrn.zakladCena) || 0;
       }
       /* PROJEKCE SE POČÍTÁ TAKY (oprava 21. 9. 2026, nezávislá revize).

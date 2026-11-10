@@ -35,6 +35,7 @@ function sluzbaVarianta(zak, v, nast, jekly) {
     : ((zak && zak.jenProj) ? 'ock' : ((zak && zak.jenOck) ? 'proj' : ''));
   try { ock = vyrazena === 'ock' ? null : (typeof vysledekStrany === 'function') ? vysledekStrany(zak, v, 'ock', jekly)
     : (typeof vypocetZ === 'function') ? vypocetZ(v, jekly)
+    : (typeof vypocetOckDat === 'function') ? vypocetOckDat(d, jekly)
     : vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes); } catch (e) { ock = null; }
   try { proj = vyrazena === 'proj' ? null : (typeof vysledekStrany === 'function') ? vysledekStrany(zak, v, 'proj', jekly)
     : (typeof vypocetProjZ === 'function') ? vypocetProjZ(v)

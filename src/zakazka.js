@@ -681,7 +681,8 @@ function vysledekStrany(zak, v, strana, jekly) {
   }
   if (typeof vypocetZ === 'function') return vypocetZ(v, jekly);
   const d = (v && v.data) || {};
-  return (d.ock && d.cenik) ? vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes) : null;
+  return (d.ock && d.cenik) ? ((typeof vypocetOckDat === 'function') ? vypocetOckDat(d, jekly)
+    : vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes)) : null;
 }
 
 /* Zakázka, která DŘÍV počítala obě strany (P6, bod 9): vědomé „Počítat
@@ -962,7 +963,11 @@ function importZakazka(obj) {
        * C = 0, patra = tentýž počet). Shodit je na nulu smí až obchodník
        * vlastním zaškrtnutím v aplikaci — u ULOŽENÉ nabídky by to znamenalo
        * tichou změnu ceny, a to migrace dělat nesmí. */
-      const zo = d.ock && d.ock.zadani;
+      /* VS #570: táž migrace i pro zadání šachet 2+ (ock.dalsi[i].zadani) —
+       * každá šachta je celé zadání (R2). Jedna šachta: seznam je jen `zo`. */
+      const zadaniSachet = [d.ock && d.ock.zadani].concat((d.ock && Array.isArray(d.ock.dalsi))
+        ? d.ock.dalsi.map(s => s && typeof s === 'object' ? s.zadani : null) : []);
+      zadaniSachet.forEach(zo => {
       if (zo && typeof zo === 'object') {
         /* B186: čísla uložená jako text převést dřív, než s nimi počítají migrace níž. */
         if (typeof DEFAULT_ZADANI !== 'undefined') zadaniCislaZTextu(zo, DEFAULT_ZADANI);
@@ -985,6 +990,7 @@ function importZakazka(obj) {
          * Guard kvůli Node testům, které zakazka.js načítají bez engine.js. */
         if (typeof svetlikyBokyMigrace === 'function') svetlikyBokyMigrace(zo);
       }
+      });
       /* Migrace 12. 8. 2026 (#134): projekce dostala vlastní slevu.
        *
        * Do té doby žila „globální sleva projekce" v zadání jako `slevaPct`
@@ -1833,7 +1839,11 @@ function zakazkaDuplikuj(zak, noveCislo) {
     /* Kopie je rozpracovaná: zrušená volba světlíku „zajistí stavba" → „bez"
      * (#560) — i z odeslané varianty předlohy. Jinak by ji server u nové
      * zakázky odmítl jako nově vzniklou. */
-    if (typeof svetlikyStavbaNaBez === 'function' && n.data && n.data.ock) svetlikyStavbaNaBez(n.data.ock.zadani);
+    if (typeof svetlikyStavbaNaBez === 'function' && n.data && n.data.ock) {
+      svetlikyStavbaNaBez(n.data.ock.zadani);
+      if (Array.isArray(n.data.ock.dalsi))   // VS #570: i další šachty
+        n.data.ock.dalsi.forEach(s => { if (s && s.zadani) svetlikyStavbaNaBez(s.zadani); });
+    }
     /* KVITANCE „CENY JSOU DOHODNUTÉ" SE NEDĚDÍ (oprava 21. 9. 2026,
      * nezávislá revize).
      *

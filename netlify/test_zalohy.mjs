@@ -229,6 +229,10 @@ const KLICE = {
    * controllingu se ZÁLOHUJE (doklad, kdo si kdy vyvezl náklady), obnova ho
    * nepřepisuje — viz blok #540 níž. Do C4 byl výjimkou (C3). */
   controlling_exporty: ['program', true],
+  /* VS #570 (10. 11. 2026): vypínač zkušebních funkcí — provozní stav, ne data.
+   * Po obnově má být vypnutý (výchozí, bezpečná strana); správce ho zapne
+   * znovu. Výjimka k odsouhlasení J. V. (PREDAVKA, otevřený bod). */
+  funkce: ['program', 'výjimka: vypínač zkušebních funkcí (VS #570), po obnově výchozí vypnuto'],
   'z/': ['zakazky', true], _rejstrik: ['zakazky', true],
   rejstrik: ['sablony', true],
   rezim: ['analytika', false], 'den/': ['analytika', false], 'ocista-b175': ['analytika', false],

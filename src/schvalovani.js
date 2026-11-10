@@ -570,7 +570,8 @@ function schvalovaniZakladCasti(v, jekly, cast) {
       if (!r || !r.souhrn) return null;
       return { zakladCena: r.souhrn.celkem, zakladNaklad: r.souhrn.naklad + (r.souhrn.doprava || 0) };
     }
-    const r = vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes);
+    /* VS #570: limit slevy ze součtu šachet (R3). */
+    const r = (typeof vypocetOckDat === 'function') ? vypocetOckDat(d, jekly) : vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes);
     if (!r || !r.souhrn) return null;
     return { zakladCena: r.souhrn.zakladCena, zakladNaklad: r.souhrn.zakladNaklad };
   } catch (e) { return null; }

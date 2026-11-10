@@ -1,3 +1,45 @@
+# Předávka — 10. 11. 2026: VS-E0/E1 #570 (#590, #591) — víc šachet v nabídce: zlatá sada, jádro, server, vypínač správce, větev `claude/vs-e0e1`
+
+Nad `3ff5403` (integrace = test v10.11.1; main = v6.11.5). **CHANGELOG v11.11.1** (koordinace přečísluje;
+`verze.txt` zůstává 10.11.1 — kontrola verze = den posledního commitu). Neslučováno; do `test-draft`, `test`
+ani `main` nic. Na webech, Disku ani v Pipedrive nic. Podklady: větev `claude/vs-vice-sachet` (návrh R1–R20,
+plán E0–E6, prototyp v9). **Rozhodnutí J. V. 10. 11.:** VS jde do integrace po etapách za vypínačem správce
+(výchozí vypnuto); s vypnutým = dnešní aplikace (zlatá sada).
+
+| úkol | stav | kde |
+|---|---|---|
+| E0 zlatá sada | ✅ | `nastroje/zlata_vs.js` → `src/test_vs_zlata.json` (z 3ff5403): 319 scénářů × vypocet, vypocetZ, cena, CN cz/en (symboly, náhled, řádky), text Wordu (šablona se všemi symboly), KL, specifikace, SoD, PD, controlling CSV, snímek a výsledek zámku; pevné hodiny; `VS_NOVE_SYMBOLY` pro E4 |
+| E1 jádro | ✅ | `src/vice_sachet.js` (CORE za engine.js, jadro_moduly.cjs, server.js): sachtyZ, rezimViceSachet, vsMaData, vypocetZakazkyOck, vypocetOckDat, rozpocetSachet, vsSlucRadky / priplatkySloucene, vsTvarProblemy, vsRozvinZakazku, vsVypnutoHlaska; `engine.js` 3 nevýčtová pole *PredZaokr |
+| E1 zapojení obalu | ✅ | `vypocetZ`, `zamekVysledekSpocti` (zámek nese součet + `sachty[]`, `sachtyVerze: 1`), `vysledekStrany`, `sluzba.js`, `schvalovani.js` (limit slevy), `vyjimky.js`, `cenik_stari.js`, `zakazka_kontrola.mjs` (nulová cena nového zámku) |
+| E1 data | ✅ | import migruje i zadání šachet 2+; klon (`zamek.js`) a duplikát (`zakazka.js`) převedou „stavba“ i u šachet 2+; dalsi/ks/nazev se nedoplňují; žádná migrace |
+| vypínač | ✅ | `/api/funkce` (`functions/funkce.mjs`, `lib/funkce.mjs`; úložiště program, klíč `funkce`), Nastavení → Zkušební funkce (jen správce, `nastFunkce` v `ui/online_ui.js`), načtení po přihlášení |
+| server | ✅ | `uloVsProblemy` (uloziste.js): vypnuto (R21) → změna šachtové části (dalsi/ks/nazev) proti uložené verzi 409, jinak (i zámek po tisku) projde; zapnuto: tvar/limity 400, Model 1 400, ztráta `dalsi` 409; `vsKontrolaSachet` (zakazka_kontrola.mjs): šachty 2+ týmiž kontrolami jako šachta 1; uložení i obnova čtou vypínač |
+| R21 v klientu | ✅ | `vsVypnutoHlaska` / `vsZakazkaMaData` / `viceSachetZapnuto`: lišta „Zakázka má víc šachet — funkce je v Nastavení vypnutá“ při otevření; vypínač se ze serveru čte jen u zakázky s víc šachtami a v panelu (s jednou šachtou žádný požadavek navíc) |
+| testy | ✅ | `src/test_vs_zlata.js` 319/319, `src/test_vs_soucet.js` 51/0, `src/test_vs_rozpocet.js` 13/0 (10 000 sad), `netlify/test_vs_server.mjs` 57/0; `test_zalohy.mjs` (klíč `funkce` = výjimka); `test_prava.mjs` (matice + B131) a příloha 1 příručky s `/api/funkce` |
+| pojistky | ✅ | na 3ff5403: zlatá 319/319, úmyslná změna CEIL → 0/319; soucet a rozpocet padnou (bez modulu), server bez E1 padá (30× FAIL s doplněným endpointem) |
+| mutace [#570] | ✅ jádro 13/13, server 13/13 | jádro 13 (`mutace_jadro.mjs`, `vice_sachet.js` v JADRA), server 13 (`netlify/mutace.mjs`); upravené zadání mutace #564 (duplikát „stavba“) |
+| kolo `--bez-mutaci` | ✅ | VŠE ZELENÉ: sady 411/0/7 přesk. (test.js + 6 bez KNG_PODKLADY), hodiny +400 dní 332/0/1, statické 5/5, 32 min; celé mutace nepouštěny (jen „[#570]“) |
+| roadmapa #590–#596, CHANGELOG, PREDAVKA | ✅ | #590, #591 hotovo; #592–#596 čeká |
+
+**Otevřené body / návrhy:**
+1. **UI před E2:** kalkulace na obrazovce (`vypocetAkt` z globálního `Z`) ukazuje šachtu 1, dokumenty přes
+   `vypocetZ` součet. Data víc šachet dnes vzniknou jen importem JSON se zapnutým vypínačem — E2/E3 to srovnají
+   (`vypocetAkt` přes obal pro pohled Součet).
+2. **Smazání šachet posílá `dalsi: []`**, ne smazání klíče (chybějící klíč u uložené VS varianty = 409, ochrana
+   před starší kartou). Prototyp klíč mazal — E2 musí poslat prázdné pole.
+3. **R21 hotovo na serveru a v liště:** s VYP jde uložit vše kromě šachtové části; zamčení editace šachet v UI
+   přijde s E2 (dnes UI šachty stejně nemá). Mazání celé zakázky (DELETE) vypínač neblokuje.
+4. **Zámek nese od E1 součet + `sachty[]`** (E5 doplní dotisk ze snímku a zákaz přidat šachtu do zamčené varianty).
+5. **Klíč `funkce` není v nočním otisku** — zapsán jako výjimka v `test_zalohy.mjs` (provozní stav; po obnově
+   vypnuto = bezpečná strana). Pravidlo testu chce výjimky „s vědomím J. V.“ — **k odsouhlasení**.
+6. Rozpočet zaokrouhlení (`cenaRozpis`) z `souhrn.zakladCena` (před slevou a obchodním zaokrouhlením, R7).
+
+**Návrh dělení E2–E5 do paralelních sezení** (vše nad SHA této větve po sloučení do integrace):
+- S1 (téma VS): E2 → E3 (`ui/kalk_ock.js`, `ui/common.js`, `ui/zaokrouhleni_ui.js`, `sleva.js`, `ui/schvalovani_ui.js`, `ui/seznam_ui.js`), sériově.
+- S2: E4 (`nabidka.js`, `docxgen.js`, `techspec.js`, `ui/techspec_ui.js`, `preklad.js`, `nastroje/vyrob_sablony.js`) — hned po E1.
+- S3: E5 (`kryci.js`, `ui/kryci_ui.js`, `sod.js`, `objednane.js`, `controlling.js`, `pd_nanecisto.js`, `zamek.js` snímek, `kontroly.js`) — hned po E1.
+- Sdílené: `vice_sachet.js` (S2/S3 jen přidávají funkce na konec, žádné změny E1 bez S1), `preklad.js` jen S2, `kontroly.js` jen S3; zlatá sada se nepřegenerovává (E4 jen rozšíří `VS_NOVE_SYMBOLY`).
+
 # Předávka — 10. 11. 2026: AS #577 — noční kopie zálohy na Disk skriptem Google Apps Script, větev `claude/as-zaloha-apps-script`
 
 Nad `59c56b3` (integrace v7.11.1; test = v6.11.5 e2c2137; main = v4.11.8 000924e). **Verze v10.11.1** v CHANGELOG
@@ -442,7 +484,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 10. 11. 2026: stav integrace v10.11.1
+# Předávka koordinace — 10. 11. 2026: stav integrace v11.11.1
+
+- **v11.11.1** VS-E0/E1 #570 (#590, #591): zlatá sada 319 scénářů, jádro víc šachet src/vice_sachet.js, server, vypínač /api/funkce (výchozí VYP). Koordinace rozhodla (drobnost, pokyn J. V. 10. 11.): klíč `funkce` je výjimkou zálohy (po obnově vypínač vypnutý). Další: E2–E5 ve 3 sezeních nad touto integrací.
 
 - **Pokyny J. V. 10. 11. 2026 večer (platí ~2 dny, „vše má běžet bez přerušení“):** (1) po každém CELÉM zeleném kole smí koordinace poslat integraci do `test` bez ptaní (víc šachet za vypnutým vypínačem); do `main` jen na pokyn J. V. (2) Po E0/E1 spustit E2–E5 víc šachet ve 3 paralelních sezeních (S1 zadání+kalkulace, S2 CN v17+specifikace+překlady, S3 KL/SoD/controlling/Pipedrive/zámek), každá etapa do integrace až po zeleném kole. (3) K40 až po víc šachet. (4) Drobné otázky bez dopadu na cenu, zákazníka a bezpečnost rozhoduje koordinace doporučenou variantou a zapíše je; ostatní jdou J. V. v dialogu.
 
