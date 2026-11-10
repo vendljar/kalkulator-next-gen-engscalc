@@ -15,8 +15,8 @@ od 6. 11. žádná. **Rozhodnutí J. V.:** skript Apps Script v jeho účtu, ča
 | 5. návod J. V. | ✅ | `podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`; `NASAZENI_NETLIFY.md`; příručka správce kap. 30; `manual/kompletni/provoz.json` |
 | 6. bezpečnost | ✅ | `BEZPECNOST_MEZE.md` B210–B214; `test_prava.mjs` (KLICEM_CHRANENE, matice 403 všem rolím); kontrola údajů čistá |
 | testy | ✅ | `netlify/test_577_kopie_skript.mjs` 53/0, `netlify/test_577_apps_script.mjs` 31/0, `src/test_577_jmeno_kopie.js` 15/0; na 59c56b3 všechny tři selžou |
-| mutace „[#577]“ | VÝSLEDEK_MUTACI | server 29 + jádro 3; pole `sady` u mutace (pořadí sad) v obou bězích |
-| kolo `--bez-mutaci` | VÝSLEDEK_KOLA | |
+| mutace „[#577]“ | ✅ | server 30/30 chycených (29 nových + upravené O7 K3-N1), jádro 3/3; pole `sady` u mutace (pořadí sad) v obou bězích |
+| kolo `--bez-mutaci` | ✅ | VŠE ZELENÉ nad v10.11.1 — sady 407/0/7 přesk. (test.js + 6 bez KNG_PODKLADY), hodiny +400 dní 328/0/1, statické 5/5, 31 min 15 s; celé mutace nepouštěny (jen „[#577]“) |
 | roadmapa #577, CHANGELOG, PREDAVKA | ✅ | |
 
 **Čeká na J. V. (přes koordinaci):** sloučení a nasazení; pak podle návodu token v Netlify (engscalc, testengscalc

@@ -46,8 +46,9 @@ spouštěč); kopie z prohlížeče zůstává jako záloha záloh.
 - **Testy:** `netlify/test_577_kopie_skript.mjs` 53/0 (token, četnost, 60+ MB, potvrzení, retence, varování,
   starý jednolitý otisk), `netlify/test_577_apps_script.mjs` 31/0 (skutečný skript ve vm, server ve vlákně:
   retence, úbytek, nepřepsání, poškozený kus a navázání nahrávání, SHA Disku, limit běhu, test web, e-maily bez
-  tokenu), `src/test_577_jmeno_kopie.js` 15/0; na 59c56b3 všechny tři selžou. Mutace „[#577]“ (server 29, jádro 3,
-  volitelné pole `sady` = pořadí sad pro mutaci v obou bězích).
+  tokenu), `src/test_577_jmeno_kopie.js` 15/0; na 59c56b3 všechny tři selžou. Mutace „[#577]“ server 30/30 a jádro 3/3 chycené
+  (volitelné pole `sady` = pořadí sad pro mutaci v obou bězích). Kolo `--bez-mutaci`: sady 407 / 0 / 7 přeskočeno,
+  hodiny +400 dní 328 / 0 / 1, statické 5 z 5 — VŠE ZELENÉ (31 min).
 
 ## v7.11.1 — FL #576: kolísavý bod #523 v overit_online.mjs (obnova ze souboru .json.gz), větev claude/fl-online-523
 
