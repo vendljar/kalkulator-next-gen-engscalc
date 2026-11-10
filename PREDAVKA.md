@@ -1,3 +1,37 @@
+# Předávka — VS-E6 #570 (#596): závěr víc šachet — překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi po částech, větev `claude/vs-e6`
+
+Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Do `test-draft`, `test` ani `main` nic;
+weby, Disk, Pipedrive nic. Verze se dorovná při uzavření (poslední commit po půlnoci UTC → 11.11.N; `verze.txt` zatím 10.11.7).
+
+| úkol | stav | kde |
+|---|---|---|
+| překlady EN/DE/FR („varianty šachet“, „variant šachet“, „celkem“, „vč. můstků“, „ks“) | ✅ | `preklad.js` (heslo „varianta šachty“ kryje existující „VARIANTA ŠACHTY“ — slovník ignoruje velikost písmen, duplicitní heslo přepsalo velká písmena v CN; chytil `test_preklad.js` a `test_vs_docx_v17.js`), `sod.js` (`P('ks')`); KL zůstává česky |
+| rejstřík se štítkem šachet (bod 8 PREDAVKA E5) | ✅ | `uloziste.js` `uloRejstrikSachty` / `uloRejstrikSachtyTvar` / `uloRejstrikSachtyText`; klíč `sachty: {variant, celkem}` jen u víc šachet řídící varianty; `ui/online_ui.js` štítek u druhu jen se ZAP |
+| roadmapa #592 pole testy | ✅ | 50/0 + overit 52/0 |
+| drobnosti E3 (a)(b) | ⬜ ponecháno | v PREDAVKA E3 jen body 2 (Součet zhasne i výběr režimu sekce) a 3 (štítek v porovnání pod názvem varianty) — nejsou to chyby, ale chování k rozhodnutí; nesahal jsem na ně |
+| manuál obchodníka | ✅ | kapitola **25. Víc šachet v nabídce** (4 snímky `k25vs-*` v `manual/snimky_auto.mjs`, zakázka 9105, vypínač jen pro ně), kapitoly 26–33 přečíslovány i s odkazy |
+| příručka správce | ✅ | A4 Zkušební funkce (snímek `a-nast-funkce`, `snimky_admin.mjs` CELE + 'funkce'), A5 Šablona CN v17 (`vyrob_sablony.js --cn-v17`) |
+| provozní dokumentace | ✅ | `manual/kompletni/provoz.json`: vypínače v `program` (mimo otisk), počty šachet v rejstříku |
+| manuál výpočtu (`cisla_vydani.json`) | ✅ beze změny | `test_manual_vypocet.js` 13/0 — čísla vydání se nezměnila, nové vydání pravidla nevyžadují |
+| CHANGELOG souhrn #570 | ⏳ připraven, zapíše se s verzí | |
+| zlatá sada | ✅ 319/319 | beze změny otisků |
+| harness VYP = 079cfc6 znak po znaku | ✅ 52/0 | `KNG_DIST_ZAKLAD=<dist z 079cfc6> node overit_vs_zadani.mjs` (základ sestaven ve worktree s `KNG_VERZE_MIMO_DEN=1`) |
+| mutace „[#570 E6]“ | ✅ jádro 3/3, server 7/7 | `mutace_jadro.mjs` (sod.js), `netlify/mutace.mjs` (+ sada `test_vs_rejstrik.mjs`) |
+| kolo bez mutací | ✅ | 425/1/7 + hodiny 342/1/1 + statické 5/5 — jediný FAIL `test_release_odkaz.js` (chyběl oddíl CHANGELOG nové verze)  |
+| mutace jádra po částech (N = 4) | ⏳ 1/4 ✅ 205/205 (33 min); 2/4 běží | |
+| mutace serveru po částech (N = 16) | ⏳ 1/16, 2/16, 3/16 běží (~1 h na část) | |
+
+**Postup mutací:** každá část v samostatném `git worktree` (scratchpad `wt_mj`, `wt_ms1..3`, nad 7618ede = kód E6;
+dokumentační commit kód nemění), `KNG_MUTACE_CAST=K/N bash nastroje/testovaci_kolo.sh --jen mutace-…`, úloha na pozadí
+s limitem 2 h. Přerušená část se naváže `KNG_MUTACE_OD=<číslo z posledního [x/celkem]>`.
+
+**Otevřené body:**
+1. **Snímek `kontroly-pred-nabidkou` (kap. 23 příručky) chybí** — `#page-spec .kontroly-panel` se nenajde; chybí i na
+   b751e57 bez změn E6 (ověřeno), není to věc VS. Před vydáním příručky opravit selektor nebo nastavení zakázky 9103.
+2. Pipedrive pole poznámky se seznamem šachet (E5 bod 1), ATYP/Typ produktu u smíšených zakázek (E5 bod 5),
+   velikost zámku u 10 šachet (E5 bod 6), TS_NENI_SOKL a přeložený náhled specifikace (E4 body 3–4) — beze změny, k J. V.
+3. Ruční zkouška scénářů prototypu na testengscalc se zapnutým vypínačem a rozhodnutí o zapnutí na ostrém — J. V.
+4. Řádky verze příruček nesou zatím v10.11.6 — sjednotit s verze.txt při uzavření.
 # Předávka — 10. 11. 2026: VS-E5 #570 (#595) — výstupy za zakázku s víc šachtami (S3), větev `claude/vs-s3-e5`
 
 Nad `079cfc6`, sloučeno s integrací `d3ee6db` (v10.11.5 = E2 + E3 + E4). **CHANGELOG v10.11.6** (koordinace přečísluje). Neslučováno; do
