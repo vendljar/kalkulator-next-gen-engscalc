@@ -442,6 +442,15 @@ export function pdNanecisto(definice, strany, pole, spolecne = {}, zdroje = {}) 
     }
     radky.push(r);
   }
+  /* VÍC ŠACHET (VS-E5 #595, R6): seznam šachet do POZNÁMKY dealu — jen
+   * řádek náhledu. Pole (poznámka dealu, nebo textové pole z mapy) určí
+   * J. V. (plán VS bod 8.4); do té doby ho zápis (pdZapisDealu) neposílá
+   * a patch se nemění. Jedna šachta = žádný řádek. */
+  const vsZ = s.ock && typeof s.ock.sachty === 'string' ? s.ock.sachty.trim() : '';
+  if (vsZ) radky.push({ klic: 'poznamkaSachty', nazev: 'Poznámka dealu — šachty v nabídce', typ: 'poznámka', strana: 'ock',
+    zdroj: 'OCK: Kalkulace OCK › šachty varianty (název, ks)', hodnotaKalkulace: vsZ, hodnota: vsZ, hodnotaText: vsZ,
+    stav: 'zapise', duvod: 'zatím jen náhled — pole v Pipedrive (poznámka dealu nebo textové pole) určí J. V.; zápis ho neposílá',
+    kolize: [], vCrm: '' });
   const souhrn = { celkem: radky.length, kolize: radky.filter((r) => r.kolize.length).length };
   for (const st of PD_NANECISTO_STAVY) souhrn[st] = radky.filter((r) => r.stav === st).length;
   return { radky, souhrn };
