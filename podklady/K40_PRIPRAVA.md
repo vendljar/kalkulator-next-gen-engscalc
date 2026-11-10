@@ -22,7 +22,7 @@ s nulovou plochou podle cest ceníku (`TS_OPL_SKLA` = `C.skloBokyKc`, `C.skloCel
 názvu řádku — s migrací názvů se nepotká. Testy k N1 přibyly: `src/test_570_sklo_bez_plochy.js` (#572).
 
 **Roadmapa:** obsazeno #568, #569, #572 (PH), #570 drží návrh víc šachet, #571 DZ → K40 má volné **#567** a pak
-od **#573** (překonáno 10. 11.: od #578).
+od **#573** (překonáno 10. 11.: od #579).
 
 **6. průchod nad `e2c2137`** (6. 11. 2026, `origin/claude/integrace-16-10`, **v6.11.5** = v5.11.3 + DP #573, MU2, DZ2 #574,
 MU3, CA #575). **Všechny body trvají** (v Node znovu: N1 0 změn, N2 `ok: true` při šířce 2 mm, `nazevCast` 30 000 znaků
@@ -45,7 +45,7 @@ MU3, CA #575). **Všechny body trvají** (v Node znovu: N1 0 změn, N2 `ok: true
   `src/engine.js:1955`, `:2256`.
 - Beze změny: `zamek.js`, `objednane.js`, `zakazka_kontrola.mjs`, `pd_webhook.mjs`, `controlling.js` (1030), `sod_ui.js`,
   `zakazka.js`, harnessy T1–T3 (`overit_online.mjs:1170`, `overit_sablony_online.mjs`, `overit_sod.mjs`).
-- **Roadmapa** obsazená do #576 (#573 DP, #574 DZ2, #575 CA, #576 FL — kolísavý test obnovy z .gz, doplněno 7. 11.; #577 AS — automatická kopie zálohy na Disk (Apps Script), meze od B210, doplněno 10. 11.; #567 a #570 volné) → **K40: #567 a dál od #578; meze B199–B202 (přečíslování #553) a B203–B209 (nové meze K40).**
+- **Roadmapa** obsazená do #576 (#573 DP, #574 DZ2, #575 CA, #576 FL — kolísavý test obnovy z .gz, doplněno 7. 11.; #577 AS — automatická kopie zálohy na Disk (Apps Script), meze od B210, doplněno 10. 11.; #578 GD smlouva — budoucí úkol, vlna F (integrace 7eab7a8); #567 a #570 volné) → **K40: #567 a dál od #579; meze B199–B202 (přečíslování #553) a B203–B209 (nové meze K40).**
   Nejvyšší B dál B198.
 
 **5. průchod nad `6b70cc3`** (5. 11. 2026, `origin/claude/integrace-16-10`, **v5.11.3** = v5.11.1 + MU #560 můstky
@@ -75,7 +75,7 @@ v tabulce jsou z `6b70cc3`.**
   `prekladNorm` 1286 → 1314, `ctrlPdDealKontrola` 1021 → 1030, `online_ui.js` +5 až +77 (X3, X4, T2). Beze změny:
   `zamek.js`, `objednane.js`, `zakazka_kontrola.mjs`, `pd_webhook.mjs`, `sod_ui.js`, `common.js`, `zakazka.js`.
 - **Roadmapa obsazená do #572** (#560 MU, #568/#569/#572 PH, #571 DZ; #567 a #570 volné, #570 drží návrh víc
-  šachet) → **K40: #567 a dál od #578** (opravy koordinace 6.–10. 11.: #577 AS, #576 FL; #573 DP — texty DPZ bez zaměření, #574 DZ2 — zastaralá složka záloh na Disku, #575 CA — desetinná čárka v číselných polích).
+  šachet) → **K40: #567 a dál od #579** (opravy koordinace 6.–10. 11.: #578 GD, #577 AS, #576 FL; #573 DP — texty DPZ bez zaměření, #574 DZ2 — zastaralá složka záloh na Disku, #575 CA — desetinná čárka v číselných polích).
 
 **Změna 9a16ff5 proti df0138c** (jen to, co se K40 týká):
 - PR #563: `src/objednane.js` (+33 ř. za `prodNastav`: `prodRidiciSrovnej`, `prodRidiciZamceno`; `prodJedinaZmena`
