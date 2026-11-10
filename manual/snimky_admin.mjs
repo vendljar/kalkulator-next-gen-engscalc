@@ -319,7 +319,7 @@ await panel('obecne');
 await vezmi('a-nast-zalozky', () => document.querySelector('#nastaveni-panel .nast-tabs'));
 /* Krátké panely celé, dlouhé jen výřezem — celý panel Šablon nebo Zobrazení
  * má přes 3 000 px a v tisku by zabral několik stran. */
-const CELE = ['obecne', 'slevy', 'standard', 'konfigurace', 'slovnik', 'analytika', 'pdmapa'];
+const CELE = ['obecne', 'slevy', 'standard', 'konfigurace', 'slovnik', 'analytika', 'pdmapa', 'funkce'];
 for (const p of PANELY.filter(x => CELE.includes(x.id))) {
   krok('Nastavení → ' + p.nazev);
   await panel(p.id);

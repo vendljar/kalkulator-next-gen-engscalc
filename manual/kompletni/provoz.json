@@ -584,13 +584,13 @@
      "radky": [
       [
        "program",
-       "platný ceník OCK a PROJ s historií verzí a slevovými stropy (`db`), firemní údaje (`firma`), matice zobrazení, dodatkové texty, slovník, nastavení controllingu",
+       "platný ceník OCK a PROJ s historií verzí a slevovými stropy (`db`), firemní údaje (`firma`), matice zobrazení, dodatkové texty, slovník, nastavení controllingu, vypínače zkušebních funkcí (`funkce`; v nočním otisku nejsou — po obnově jsou funkce vypnuté)",
        "kontakty firmy a zástupců zhotovitele",
        "do změny; verze ceníku se drží v historii"
       ],
       [
        "zakazky",
-       "zakázky a jejich varianty (`z/…`), rejstřík zakázek pro hledání, zámky odeslaných nabídek, poznámky a přílohy",
+       "zakázky a jejich varianty (`z/…`), rejstřík zakázek pro hledání (u zakázky s víc šachtami i počet variant šachet a kusů řídící varianty), zámky odeslaných nabídek, poznámky a přílohy",
        "kontakty zákazníka, jméno obchodníka",
        "dokud je administrátor nesmaže"
       ],

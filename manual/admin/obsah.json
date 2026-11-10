@@ -313,6 +313,10 @@
             {
               "pojem": "Analytika, Controlling, Mapa polí CRM",
               "vyklad": "Jen administrátor — kapitola A6."
+            },
+            {
+              "pojem": "Zkušební funkce",
+              "vyklad": "Jen administrátor — vypínač **Víc šachet v nabídce** pro celý program (níže)."
             }
           ]
         },
@@ -374,6 +378,37 @@
               "text": "Změna platí po **zveřejnění ceníku** (záložka Ceník nákladů OCK → *Zveřejnit ceník této varianty jako platný*), protože stropy jdou na server s ceníkem."
             }
           ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Zkušební funkce: Víc šachet v nabídce"
+        },
+        {
+          "typ": "text",
+          "text": "Funkce, které se teprve zkoušejí, zapíná administrátor pro **celý program** najednou (všem uživatelům). **Víc šachet v nabídce** dovolí obchodníkům dát do jedné nabídky víc variant šachet s počty kusů (příručka obchodníka, kapitola 25). Výchozí stav je **vypnuto**; na ostrém webu ji nechte vypnutou, dokud se o zapnutí nerozhodne. Na testovacím webu ji zapněte, než na něm zkoušíte nabídky s víc šachtami."
+        },
+        {
+          "typ": "text",
+          "text": "Vypnutím se nic neztratí: zakázky s víc šachtami se dál počítají a tisknou podle uložených dat, jen jejich šachty nejde měnit (server takovou změnu odmítne). Stav vypínače se nezálohuje — po obnově ze zálohy je funkce vypnutá a zapnete ji znovu."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: zapnout víc šachet na testovacím webu",
+          "polozky": [
+            {
+              "text": "V Nastavení otevřete záložku **Zkušební funkce** a u **Víc šachet v nabídce** klikněte na **Zapnout**. Aplikace se zeptá, potvrďte. Karta pak ukáže, kdo a kdy funkci zapnul.",
+              "snimek": "a-nast-funkce",
+              "klik": {
+                "obsahuje": "Víc šachet v nabídce"
+              }
+            },
+            {
+              "text": "Před prvním tiskem nabídky s víc šachtami nahrajte **šablonu cenové nabídky v17** ve všech jazycích (kapitola A5). Starší šablona v16 nabídku s víc šachtami nevytiskne."
+            },
+            {
+              "text": "Obchodníci uvidí pole **Počet variant šachet v nabídce** po příštím přihlášení (nebo obnovení stránky)."
+            }
+          ]
         }
       ]
     },
@@ -418,6 +453,33 @@
             },
             {
               "text": "Vyzkoušejte tisk na **testovacím webu** (kapitola A13) a teprve pak šablonu zveřejněte na ostrém."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Šablona cenové nabídky v17 (víc šachet)"
+        },
+        {
+          "typ": "text",
+          "text": "Nabídka s víc šachtami potřebuje šablonu **Sablona_NABIDKA_CN_v17** — od v16 se liší jen místy se značkami `{#sachty}` … `{/sachty}`, mezi kterými se řádek zopakuje za každou šachtu (pruh šachty v technické části a řádek ceny šachty), a odstavcem `{{SACHTY_CELKEM_POPIS}}` pod CENOU CELKEM. Zakázka s jednou šachtou z v17 vyjde stejně jako z v16. Šablona se nevyrábí ručně: dělá ji nástroj z repozitáře z firemní v16."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: vyrobit a nahrát šablonu CN v17",
+          "polozky": [
+            {
+              "text": "Do jedné složky dejte českou **Sablona_NABIDKA_CN_v16.docx** (tu, která je dnes nahraná online), v repozitáři spusťte `node nastroje/vyrob_sablony.js --cn-v17 <ta složka>` a zkontrolujte výpis: u češtiny ✓, u překladů smí zůstat česky jen to, co hlásila už v16. Vzniknou soubory **…_v17.docx** a **_EN**, **_DE**, **_FR**. Nástroj odmítne vstup, který není v16, a nic nehádá — když v16 nemá pruh *ZÁKLADNÍ PARAMETRY ŠACHTY* v jednom kuse textu, skončí chybou."
+            },
+            {
+              "text": "Ve Wordu zkontrolujte řádky se značkami `{#sachty}` a `{/sachty}` (nad ZÁKLADNÍMI PARAMETRY, pod SLOUPY NAVÍC a kolem řádku ceny šachty). Do hotového dokumentu se nikdy nedostanou — jen je nemažte a neslučujte s okolními řádky."
+            },
+            {
+              "text": "V **Šablonách dokumentů** u *Šablony cenové nabídky OCK* nahrajte novou českou verzi a pak doladěné **EN, DE, FR** (ne *Vyrobit z češtiny* — nástroj je už přeložil). Tisk vyzkoušejte na testovacím webu se zapnutou funkcí: s jednou šachtou musí nabídka vyjít jako dřív.",
+              "snimek": "a-sablony-dokumenty",
+              "klik": {
+                "obsahuje": "Nahrát novou českou verzi…"
+              }
             }
           ]
         },
@@ -501,7 +563,7 @@
             },
             {
               "pojem": "Controlling",
-              "vyklad": "Kapitoly nákladů pro porovnání předkalkulace se skutečností v Reporting CZ: id skupiny, název, položka v ManVysl, účty Helios nyní a budoucí, typ nákladu, chování, oblast. Úprava se ukládá **jako nová verze**; tlačítko **Export předkalkulace** vyrobí soubor pro controlling (filtry období, OCK / PROJ, řada ČR / ZAHR, stav dealu — výchozí *Všechny stavy*; popis v kapitole 28). Prodej bere export z tlačítka **Prodáno** v krycím listu (odemknout ho smí vedoucí a administrátor s důvodem). Soubor nese **verzi struktury** (list Popis) — zvyšuje se při každé změně exportu a Popis říká, co se změnilo. **Protokol exportů** (kdo a kdy vyvážel) je v otisku i ve stažené záloze; obnova ho nepřepisuje."
+              "vyklad": "Kapitoly nákladů pro porovnání předkalkulace se skutečností v Reporting CZ: id skupiny, název, položka v ManVysl, účty Helios nyní a budoucí, typ nákladu, chování, oblast. Úprava se ukládá **jako nová verze**; tlačítko **Export předkalkulace** vyrobí soubor pro controlling (filtry období, OCK / PROJ, řada ČR / ZAHR, stav dealu — výchozí *Všechny stavy*; popis v kapitole 29). Prodej bere export z tlačítka **Prodáno** v krycím listu (odemknout ho smí vedoucí a administrátor s důvodem). Soubor nese **verzi struktury** (list Popis) — zvyšuje se při každé změně exportu a Popis říká, co se změnilo. **Protokol exportů** (kdo a kdy vyvážel) je v otisku i ve stažené záloze; obnova ho nepřepisuje."
             },
             {
               "pojem": "Mapa polí CRM",
@@ -674,7 +736,7 @@
       "bloky": [
         {
           "typ": "text",
-          "text": "Data aplikace žijí v **Netlify Blobs** projektu (ostrý a testovací web každý svoje). Zálohování je automatické a vícevrstvé; správce ho hlídá a v nouzi obnovuje. Podrobný nouzový postup s kontrolami je v repozitáři v souboru `podklady/POSTUP_OBNOVY_ZALOHY.md` — tahle kapitola ho shrnuje a ukazuje obrazovky. Pohled obchodníka je v kapitole 30."
+          "text": "Data aplikace žijí v **Netlify Blobs** projektu (ostrý a testovací web každý svoje). Zálohování je automatické a vícevrstvé; správce ho hlídá a v nouzi obnovuje. Podrobný nouzový postup s kontrolami je v repozitáři v souboru `podklady/POSTUP_OBNOVY_ZALOHY.md` — tahle kapitola ho shrnuje a ukazuje obrazovky. Pohled obchodníka je v kapitole 31."
         },
         {
           "typ": "seznam",
@@ -1383,7 +1445,7 @@
             },
             {
               "pojem": "Kontakt — obchodníci",
-              "vyklad": "Dotazy obchodníků jdou na administrátora (kapitola 32)."
+              "vyklad": "Dotazy obchodníků jdou na administrátora (kapitola 33)."
             }
           ]
         },
