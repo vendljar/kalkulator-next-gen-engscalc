@@ -150,8 +150,12 @@ function klonujVariantu(zak, id, opts) {
   if (typeof slevaRozhodnutiZahod === 'function') slevaRozhodnutiZahod(kopie.data);
   /* Klon je rozpracovaná varianta: zrušená volba světlíku „zajistí stavba"
    * se v něm převede na „bez" (#560). Zdroj (třeba odeslaná nabídka) zůstává. */
-  if (typeof svetlikyStavbaNaBez === 'function' && kopie.data && kopie.data.ock)
+  if (typeof svetlikyStavbaNaBez === 'function' && kopie.data && kopie.data.ock) {
     svetlikyStavbaNaBez(kopie.data.ock.zadani);
+    /* VS #570: klon nese i další šachty (ock.dalsi, celé) — totéž u nich. */
+    if (Array.isArray(kopie.data.ock.dalsi))
+      kopie.data.ock.dalsi.forEach(s => { if (s && s.zadani) svetlikyStavbaNaBez(s.zadani); });
+  }
   kopie.klonZ = zdroj.id;
   kopie.klonZCislo = variantaCislo(zak, zdroj);
   /* NOVÁ VARIANTA NESE DNEŠNÍ DATUM (nález D2, 15. 9. 2026). Klon vzniká
@@ -185,7 +189,8 @@ function vypocetZ(v, jekly) {
   if (zmr && zmr.ock) return JSON.parse(JSON.stringify(zmr.ock));
   const d = (v && v.data) || {};
   if (!d.ock || !d.cenik) return null;
-  return vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes);
+  /* VS #570: přes obal víc šachet — u jedné šachty vrací přímo vypocet(). */
+  return (typeof vypocetOckDat === 'function') ? vypocetOckDat(d, jekly) : vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes);
 }
 
 /* CO SE U ODESLANÉ NABÍDKY POČÍTÁ DNEŠNÍM JÁDREM (B130, audit 6. 10. 2026).
@@ -748,7 +753,8 @@ function zamekVysledekSpocti(v, jekly, build) {
   const d = (v && v.data) || {};
   try {
     return {
-      ock: vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes),
+      /* VS #570: zámek víc šachet nese součet i sachty[] (jedna šachta beze změny). */
+      ock: (typeof vypocetOckDat === 'function') ? vypocetOckDat(d, jekly) : vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes),
       proj: vypocetProj(d.proj.zadani, d.proj.cenik),
       kurzEurKc: (d.cenik && +d.cenik.kurzEurKc) || (d.proj && d.proj.cenik && +d.proj.cenik.kurzEurKc) || 0,
       build: build || '',

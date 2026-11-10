@@ -32,7 +32,7 @@ const path = require('path');
  * Moduly spolu mluví přes globální jména (v prohlížeči je skládá build);
  * tady je jednou provždy globalizujeme ve stejném pořadí jako build.py. */
 const SRC = path.join(__dirname, '..', 'src');
-['preklad.js', 'format.js', 'engine.js', 'engine_proj.js', 'techspec.js',
+['preklad.js', 'format.js', 'engine.js', 'vice_sachet.js', 'engine_proj.js', 'techspec.js',
  'sleva.js', 'zaokrouhleni.js', 'marze.js', 'kontroly.js', 'zakazka.js',
  'sluzba.js'].forEach(f => Object.assign(global, require(path.join(SRC, f))));
 

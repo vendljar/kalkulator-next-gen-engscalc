@@ -425,7 +425,8 @@ function vyjimkyDopad(data, obsah, dnesni, jekly) {
   const cena = (dd, sekce) => {
     try {
       return sekce === 'PROJ' ? +vypocetProj(dd.proj.zadani, dd.proj.cenik).souhrn.celkem
-        : +vypocet(dd.ock.zadani, dd.cenik, jk, dd.ock.fixes).souhrn.zakladCena;
+        : +((typeof vypocetOckDat === 'function') ? vypocetOckDat(dd, jk)
+          : vypocet(dd.ock.zadani, dd.cenik, jk, dd.ock.fixes)).souhrn.zakladCena;
     } catch (e) { return NaN; }
   };
   const zaklad = { OCK: (o.pasu || (o.smes || []).some(x => x.sekce !== 'PROJ')) ? cena(d, 'OCK') : NaN,

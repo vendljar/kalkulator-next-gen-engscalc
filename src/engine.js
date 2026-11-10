@@ -2646,6 +2646,18 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     souhrn.mustkyNaklad = s5.naklad + rezMustky;
     souhrn.mustkyCena = cenaMustky;
   }
+  /* CENY PŘED ZAOKROUHLENÍM NA TISÍCE (VS #570, R3). Víc šachet v nabídce
+   * zaokrouhluje jen součet šachet; ten musí vzniknout z cen PŘED `CEIL`.
+   * Dopočet `zakladNaklad + zakladMarze` se v plovoucí čárce může lišit
+   * o zlomek haléře a `CEIL` na hraně tisícovky by pak skočil o 1 000 Kč —
+   * proto vlastní pole přímo z téhož výrazu, ze kterého je `CEIL`.
+   * NEVÝČTOVÁ (enumerable: false): JSON výsledku (otisk zámku, export,
+   * zlatá sada VS-E0) je tím bajt po bajtu stejný jako před VS; po klonu
+   * přes JSON zmizí, ale čte je jen obal víc šachet nad čerstvým výpočtem. */
+  const predZaokr = { zakladCenaPredZaokr: zakladCena, priplatkyCenaPredZaokr: priplatkyCena + priplatkyRez };
+  if (s5) predZaokr.mustkyCenaPredZaokr = s5.sMarzi + s5.naklad * z.rezervaZakladPct * (1 + m);
+  Object.keys(predZaokr).forEach(k => Object.defineProperty(souhrn, k,
+    { value: predZaokr[k], enumerable: false, writable: true, configurable: true }));
 
   return {
     odvozene: { vyskaSachty: H, vyskaPodlazi, svetlaVyska, vyskaProsklene, sirkaDveri, leseniVez, leseniU },

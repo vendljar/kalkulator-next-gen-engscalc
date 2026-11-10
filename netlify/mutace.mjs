@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : [/* #560 MU (5. 11. 2026): sekce MŮSTKY — server (validace Z.mustky, zveřejnění ceníku, zámek) a model. */
+  : [/* VS #570 E1 (10. 11. 2026): víc šachet v nabídce — vypínač, tvar, limity, 409, zámek (rychlá sada). */
+     'test_vs_server.mjs',
+     /* #560 MU (5. 11. 2026): sekce MŮSTKY — server (validace Z.mustky, zveřejnění ceníku, zámek) a model. */
      'test_560_mustky.mjs', '../src/test_560_mustky_sekce.js',
      /* #IK / #560 (4. 11. 2026): interní poznámky k zakázce na krycím listu — rychlé sady. */
      '../src/test_ik_poznamky.js', 'test_ik_poznamky.mjs', '../src/test_poznamky.js',
@@ -210,6 +212,57 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* VS #570 E1 (10. 11. 2026): víc šachet v jedné nabídce — server: vypínač
+   * správce, tvar a limity ock.dalsi, Model 2, 409 při ztrátě dalsi, zadání
+   * šachet 2+ stejnými kontrolami. Hlídá netlify/test_vs_server.mjs. [#570] */
+  { nazev: 'VS: vypnutý vypínač nic nehlídá [#570]', soubor: '../src/uloziste.js',
+    hledej: '  if (!o.zapnuto) {',
+    nahrad: '  if (false) {',
+    proc: 'na ostrém webu by vznikla zakázka s víc šachtami i s vypnutou zkušební funkcí', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS: po vypnutí jde přepsat uloženou zakázku s víc šachtami [#570]', soubor: '../src/uloziste.js',
+    hledej: '    if (uloVsMaData(zak) || uloVsMaData(stara)) return { status: 409, chyba: ULO_VS_VYPNUTO };',
+    nahrad: '    if (uloVsMaData(zak)) return { status: 409, chyba: ULO_VS_VYPNUTO };',
+    proc: 'zakázka s víc šachtami by se po vypnutí tiše přepsala na jednu šachtu', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS: ztráta dalsi se neodmítne [#570]', soubor: '../src/uloziste.js',
+    hledej: '    if (v && v.data.ock.dalsi === undefined)',
+    nahrad: '    if (false)',
+    proc: 'starší karta prohlížeče by při uložení zahodila další šachty', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS: Model 1 s víc šachtami projde [#570]', soubor: '../src/uloziste.js',
+    hledej: '    if (v.data.ock.fixes === false && vsMaData(v.data.ock))',
+    nahrad: '    if (false)',
+    proc: 'Model 1 by počítal jen šachtu 1 a nabídka by tiše vynechala ostatní (3.5)', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS: limit variant šachet o jednu vyšší [#570]', soubor: '../src/vice_sachet.js',
+    hledej: '  if (ock.dalsi.length > VS_VARIANT_MAX - 1) { out.push({ kde: \'ock.dalsi\', duvod: \'limit\' }); return out; }',
+    nahrad: '  if (ock.dalsi.length > VS_VARIANT_MAX) { out.push({ kde: \'ock.dalsi\', duvod: \'limit\' }); return out; }',
+    proc: 'varianta by nesla 11 šachet proti rozhodnutí R10', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS: počet kusů bez kontroly celého čísla a stropu [#570]', soubor: '../src/vice_sachet.js',
+    hledej: '  const ksOk = x => x === undefined || (Number.isInteger(x) && x >= 1 && x <= VS_KS_MAX);',
+    nahrad: '  const ksOk = x => x === undefined || x >= 1;',
+    proc: 'zakázka s 1 000 kusy nebo 1,5 ks by se uložila a zahltila výpočet', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS: id šachty bez kontroly [#570]', soubor: '../src/vice_sachet.js',
+    hledej: "    if (typeof s.id !== 'string' || !VS_ID_TVAR.test(s.id) || s.id === 's1' || ids.has(s.id)) out.push({ kde: c + '.id', duvod: 'typ' });",
+    nahrad: '    if (false) out.push({});',
+    proc: 'dvě šachty se stejným id by se v otisku a kontrolách přepsaly', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS: zadání šachty 2+ bez kontrol šachty 1 [#570]', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: '    const p = vsKontrolaSachet(stara, zak, relace, ctx, obnova);',
+    nahrad: '    const p = null;',
+    proc: 'šachta 2 se zápornou šířkou nebo podvrženými můstky by se uložila', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS: přepis ceny v šachtě 2 bez práv role [#570]', soubor: 'lib/zakazka_kontrola.mjs',
+    hledej: "  if (p.length) return { status: 403, chyba: 'Další šachta: ' + ULO.uloCenikProblemyText(p) };",
+    nahrad: '',
+    proc: 'obchodník by obešel zákaz přepisu cen přes druhou šachtu', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS: vypínač přepne i obchodník [#570]', soubor: 'functions/funkce.mjs',
+    hledej: "  const { chyba, relace } = await vyzadujRoli(req, 'Administrátor');",
+    nahrad: '  const { chyba, relace } = await vyzadujRoli(req);',
+    proc: 'kdokoli přihlášený by zapnul zkušební funkci na ostrém webu', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS: uložení nečte vypínač (vždy zapnuto) [#570]', soubor: 'functions/zakazky.mjs',
+    hledej: '      viceSachet: (await funkceCti(sProg)).viceSachet });   // VS #570: vypínač správce',
+    nahrad: '      viceSachet: true });',
+    proc: 'vypínač by neměl účinek — server by přijal víc šachet i vypnutých', sady: ['test_vs_server.mjs'] },
+  { nazev: 'VS: klient nehlásí jen ke čtení [#570]', soubor: '../src/vice_sachet.js',
+    hledej: "  if (!vs.length) return '';",
+    nahrad: "  return '';",
+    proc: 'obchodník by zakázku upravoval a teprve při uložení zjistil, že nejde uložit', sady: ['test_vs_server.mjs'] },
   /* #577 AS (10. 11. 2026, rozhodnutí J. V.): noční kopie na Disk skriptem
    * Google Apps Script — token, obsah souboru, potvrzení, hlídka, skript.
    * Hlídají netlify/test_577_kopie_skript.mjs, netlify/test_577_apps_script.mjs
@@ -432,7 +485,7 @@ const MUTACE = [
     nahrad: "    if (false) n++;",
     proc: 'rozpracovaná varianta by zrušenou volbu nesla dál' },
   { nazev: '#564: duplikát zakázky nese „stavba" [#564]', soubor: '../src/zakazka.js',
-    hledej: "    if (typeof svetlikyStavbaNaBez === 'function' && n.data && n.data.ock) svetlikyStavbaNaBez(n.data.ock.zadani);",
+    hledej: "      svetlikyStavbaNaBez(n.data.ock.zadani);",
     nahrad: "",
     proc: 'duplikát by server jako novou zakázku neuložil' },
   { nazev: '#560: server pustí novou „stavba" [#560]', soubor: '../src/uloziste.js',

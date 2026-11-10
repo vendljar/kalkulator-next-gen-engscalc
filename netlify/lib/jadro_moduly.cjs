@@ -37,6 +37,7 @@
 Object.assign(globalThis, require('../../src/preklad.js'));
 Object.assign(globalThis, require('../../src/format.js'));
 Object.assign(globalThis, require('../../src/engine.js'));
+Object.assign(globalThis, require('../../src/vice_sachet.js'));   // VS #570: obal výpočtu víc šachet (vypocetZ)
 Object.assign(globalThis, require('../../src/engine_proj.js'));
 Object.assign(globalThis, require('../../src/techspec.js'));
 Object.assign(globalThis, require('../../src/zakazka.js'));

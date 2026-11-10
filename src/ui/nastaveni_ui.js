@@ -53,6 +53,9 @@ const NAST_PANELY = [
   /* Mapa polí CRM (#114, 26. 10. 2026) — JEN administrátor, natvrdo;
    * hranici drží /api/pd/pole (ostatním 403). Kreslí ui/pd_mapa_ui.js. */
   { id: 'pdmapa', nazev: 'Mapa polí CRM', jenAdmin: true, telo: () => nastPdMapa() },
+  /* Zkušební funkce (VS #570, 10. 11. 2026) — JEN administrátor, natvrdo;
+   * hranici drží /api/funkce (POST ostatním 403). Kreslí ui/online_ui.js. */
+  { id: 'funkce', nazev: 'Zkušební funkce', jenAdmin: true, telo: () => nastFunkce() },
 ];
 function nastPanelSmi(x) {
   if (x.jenAdmin && !(typeof jeAdmin === 'function' && jeAdmin())) return false;

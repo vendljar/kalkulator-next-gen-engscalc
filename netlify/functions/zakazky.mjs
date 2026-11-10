@@ -11,6 +11,7 @@ import { uloziste, vyzadujRoli, json, serverVerze, vyhradne, klicZAdresyPlatny, 
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B, zakazkaVelikostHlaska } from '../lib/zakazka_kontrola.mjs';
 import { pdStavPripoj, pdStavUlozeni } from '../lib/pd_stav.mjs';
+import { funkceCti } from '../lib/funkce.mjs';
 
 /* Jméno k e-mailu z účtů (P7 / K16-N87) — jen pro hlášku o kolizi verzí
  * u zakázek uložených dřív, než se jméno začalo zapisovat. Jedno čtení,
@@ -166,7 +167,8 @@ export default async (req) => {
   const zobr = relace.role === 'Administrátor' ? null : await sProg.cti('zobrazeni');
   const kontrola = zakazkaServerKontrola(stara, zak, relace,
     { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni',
-      program: prog, matice: (zobr && zobr.matice) || null });
+      program: prog, matice: (zobr && zobr.matice) || null,
+      viceSachet: (await funkceCti(sProg)).viceSachet });   // VS #570: vypínač správce
   if (!kontrola.ok) return { odpoved: json({ ok: false, chyba: kontrola.chyba }, kontrola.status) };
   /* Stav dealu Pipedrive dosazuje server (P1) — z prohlížeče jen tvar. */
   await pdStavUlozeni(zak, stara);

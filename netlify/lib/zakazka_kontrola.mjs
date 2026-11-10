@@ -207,7 +207,7 @@ export function zamekNovyCenaProblem(zak, v, relace, matice, jekly, program) {
   const spatne = [];
   if (hlidatOck && strany.has('ock') && !jenProj) {
     let o;
-    try { o = globalThis.vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes).souhrn.zakladCena; } catch (e) { o = NaN; }
+    try { o = globalThis.vypocetOckDat(d, jekly).souhrn.zakladCena; } catch (e) { o = NaN; }   // VS #570: přes obal
     if (!(Number(o) > 0)) spatne.push('výtahová šachta (OCK)');
   }
   if (hlidatProj && strany.has('proj')) {
@@ -257,6 +257,33 @@ export function zamekVyrazenaStranaProblem(zak, typy) {
     + (vyr === 'proj' ? 'OCK' : 'PROJ') + ')';
 }
 
+/* Zadání šachet 2+ (VS #570) TÝMIŽ kontrolami jako šachta 1: zakázka se
+ * rozvine na stínové varianty se zadáním další šachty (vsRozvinZakazku)
+ * a prožene kontrolami id, typů, záporných hodnot (vč. skupin můstků),
+ * rozměrů, ceníku / přepisů podle role a modelu (vyřazené řádky). Bez
+ * dalších šachet nedělá nic. Vrací { status, chyba } nebo null. */
+export function vsKontrolaSachet(stara, zak, relace, ctx, obnova) {
+  const G = globalThis, ULO = ctx.ULO;
+  if (typeof G.vsRozvinZakazku !== 'function') return null;
+  const zr = G.vsRozvinZakazku(zak);
+  if (!zr || !Array.isArray(zr.varianty) || !zr.varianty.length) return null;
+  const sr = stara ? G.vsRozvinZakazku(stara) : stara;
+  const text = p => 'Další šachta nese ' + ULO.uloIdProblemyText(p) + '.';
+  let p = ULO.uloIdProblemy(zr);
+  if (p.length) return { status: 400, chyba: text(p) };
+  p = ULO.uloTypyProblemy(zr, sr, { obnova });
+  if (p.length) return { status: 400, chyba: text(p) };
+  p = ULO.uloZaporneProblemy(zr, sr);
+  if (p.length) return { status: 400, chyba: text(p) };
+  p = ULO.uloRozmeryProblemy(zr, sr);
+  if (p.length) return { status: 400, chyba: text(p) };
+  p = ULO.uloCenikProblemy(zr, sr, { role: relace.role, matice: ctx.matice, program: ctx.program, importuj: G.importZakazka });
+  if (p.length) return { status: 403, chyba: 'Další šachta: ' + ULO.uloCenikProblemyText(p) };
+  p = ULO.uloModelProblemy(zr, sr, { role: relace.role, matice: ctx.matice, importuj: G.importZakazka, pocitatKlic: G.ZOBRAZENI_POCITAT });
+  if (p.length) return { status: 403, chyba: text(p) };
+  return null;
+}
+
 export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const { ULO, SCHV, JEKLY } = ctx;
   const obnova = ctx.rezim === 'obnova';
@@ -275,6 +302,16 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const veta = (duvod, klon) => (obnova ? duvod : 'Neuloženo: ' + duvod + (klon ? '. Pokračujte klonem varianty.' : ''));
   const zamcena = (v) => !!(globalThis.variantaUzamcena && globalThis.variantaUzamcena(v));
   const cisloVarianty = (z, v) => String((globalThis.variantaCislo && globalThis.variantaCislo(z, v)) || '');
+
+  /* VÍC ŠACHET V NABÍDCE (VS #570, E1): vypínač správce (ctx.viceSachet,
+   * výchozí vypnuto), tvar a limity, Model 2, 409 při ztrátě `dalsi`. Zadání
+   * šachet 2+ pak projdou TÝMIŽ kontrolami jako šachta 1 (vsKontrolaSachet). */
+  const vs = ULO.uloVsProblemy ? ULO.uloVsProblemy(zak, stara, { zapnuto: ctx.viceSachet === true }) : null;
+  if (vs) return odmitni(vs.status, veta(vs.chyba));
+  {
+    const p = vsKontrolaSachet(stara, zak, relace, ctx, obnova);
+    if (p) return odmitni(p.status, veta(p.chyba));
+  }
 
   /* Typy polí zadání a ceníku (#340, návrh P1): čísla, pravdy a volby musí
    * mít tvar, jaký dává výchozí zadání. Varianty zamčené už v uložené verzi

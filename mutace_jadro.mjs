@@ -152,7 +152,11 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* retence_zaloh.js (#577 AS, 10. 11. 2026): jméno kopie pro skript Apps
    * Script (retenceZalohDiskJmeno) a pravidlo retence, které skript nese
    * doslova. Hlídá src/test_577_jmeno_kopie.js. */
-  'retence_zaloh.js'];
+  'retence_zaloh.js',
+  /* vice_sachet.js (VS #570 E1, 10. 11. 2026): víc šachet v nabídce — obal
+   * výpočtu, součet × ks, CEIL jen na součtu, rozpočet do šachet. Hlídají
+   * src/test_vs_soucet.js, src/test_vs_rozpocet.js a zlatá sada test_vs_zlata.js. */
+  'vice_sachet.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -218,6 +222,8 @@ const PRIORITA = [
   'test_sec_m16_foto.js',
   /* CA #575 — číselná pole s desetinnou čárkou (format.js, ui/cislo_pole.js, ui/common.js) */
   'test_575_cislo_pole.js', 'test_tabulator.js',
+  /* VS #570 — víc šachet (vice_sachet.js, obal ve vypocetZ, pole před zaokrouhlením v engine.js) */
+  'test_vs_soucet.js', 'test_vs_rozpocet.js',
 ];
 
 /* Které sady vůbec pouštět: všechny, které si berou některé z obou jader.
@@ -246,6 +252,61 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* VS #570 E1 (10. 11. 2026): víc šachet v jedné nabídce — jádro. Hlídají
+   * src/test_vs_soucet.js, src/test_vs_rozpocet.js a zlatá sada
+   * src/test_vs_zlata.js (pole `sady` = pustit je první). [#570] */
+  { nazev: 'VS: šachty se zaokrouhlí na tisíce každá zvlášť [#570]', soubor: 'vice_sachet.js',
+    hledej: "  const U = S(r => pred(r, 'zakladCenaPredZaokr', x => x.souhrn.zakladNaklad + x.souhrn.zakladMarze));",
+    nahrad: "  const U = S(r => r.souhrn.zakladCena);",
+    proc: 'nabídka víc šachet by byla dražší o zaokrouhlení každé šachty (R3)', sady: ['test_vs_soucet.js'] },
+  { nazev: 'VS: počet kusů šachty 1 nezapne režim víc šachet [#570]', soubor: 'vice_sachet.js',
+    hledej: '  return vsDalsi(ock).length > 0 || vsKs(ock.ks) > 1;',
+    nahrad: '  return vsDalsi(ock).length > 0;',
+    proc: 'šachta „3 ks" by se spočítala jako 1 ks (R20)', sady: ['test_vs_soucet.js'] },
+  { nazev: 'VS: počet kusů bez horní meze [#570]', soubor: 'vice_sachet.js',
+    hledej: '  return (Number.isInteger(n) && n >= 1 && n <= VS_KS_MAX) ? n : 1;',
+    nahrad: '  return n >= 1 ? n : 1;',
+    proc: 'neplatný počet kusů (1,5 nebo 1000) by násobil cenu', sady: ['test_vs_soucet.js'] },
+  { nazev: 'VS: řádky se nenásobí počtem kusů [#570]', soubor: 'vice_sachet.js',
+    hledej: '    VS_SCITANA_POLE.forEach(f => { if (typeof r[f] === \'number\' && typeof x[f] === \'number\') x[f] += ksy[i] * r[f]; });',
+    nahrad: '    VS_SCITANA_POLE.forEach(f => { if (typeof r[f] === \'number\' && typeof x[f] === \'number\') x[f] += r[f]; });',
+    proc: 'položky kalkulace a příplatků by u šachty s 2 ks byly jen jednou', sady: ['test_vs_soucet.js'] },
+  { nazev: 'VS: řádky se slučují bez ohledu na sazbu [#570]', soubor: 'vice_sachet.js',
+    hledej: "    const k = klicFn(r) + '|' + vsSazba(r);",
+    nahrad: '    const k = klicFn(r);',
+    proc: 'dva ruční příplatky téhož názvu s jinou cenou by splynuly v jeden řádek (R8)', sady: ['test_vs_soucet.js'] },
+  { nazev: 'VS: Model 1 sčítá šachty [#570]', soubor: 'vice_sachet.js',
+    hledej: '  if (!rezimViceSachet(ock) || ock.fixes === false)',
+    nahrad: '  if (!rezimViceSachet(ock))',
+    proc: 'Model 1 (předloha Excel, jedna šachta) by počítal víc šachet (3.5)', sady: ['test_vs_soucet.js'] },
+  { nazev: 'VS: náklad můstků jen ze šachty 1 [#570]', soubor: 'vice_sachet.js',
+    hledej: '    souhrn.mustkyNaklad = S(r => r.souhrn.mustkyNaklad || 0);',
+    nahrad: '    souhrn.mustkyNaklad = vys[0].souhrn.mustkyNaklad || 0;',
+    proc: 'krycí list a controlling by u víc šachet podhodnotily náklad můstků', sady: ['test_vs_soucet.js'] },
+  { nazev: 'VS: rozpočet bez rozdělení zbytku [#570]', soubor: 'vice_sachet.js',
+    hledej: '  for (let i = 0; r > 0n; i++, r--) q[poradi[i % n]] += 1n;',
+    nahrad: '',
+    proc: 'tabulka šachet v nabídce by nedala cenu celkem (R7)', sady: ['test_vs_rozpocet.js', 'test_vs_soucet.js'] },
+  { nazev: 'VS: rozpočet při shodě zbytku nebere dražší šachtu [#570]', soubor: 'vice_sachet.js',
+    hledej: '  const poradi = s.map((_, i) => i).sort((a, b) => cmp(zb[b], zb[a]) || cmp(s[b], s[a]) || a - b);',
+    nahrad: '  const poradi = s.map((_, i) => i).sort((a, b) => cmp(zb[b], zb[a]) || a - b);',
+    proc: 'koruna navíc by šla levnější šachtě v rozporu s pravidlem návrhu 3.6', sady: ['test_vs_rozpocet.js'] },
+  { nazev: 'VS: jádro dává do pole před zaokrouhlením zaokrouhlenou cenu [#570]', soubor: 'engine.js',
+    hledej: '  const predZaokr = { zakladCenaPredZaokr: zakladCena, priplatkyCenaPredZaokr: priplatkyCena + priplatkyRez };',
+    nahrad: '  const predZaokr = { zakladCenaPredZaokr: zakladCenaZaokr, priplatkyCenaPredZaokr: priplatkyCena + priplatkyRez };',
+    proc: 'součet šachet by se zaokrouhlil dvakrát (R3)', sady: ['test_vs_soucet.js'] },
+  { nazev: 'VS: pole před zaokrouhlením v JSON výsledku [#570]', soubor: 'engine.js',
+    hledej: '    { value: predZaokr[k], enumerable: false, writable: true, configurable: true }));',
+    nahrad: '    { value: predZaokr[k], enumerable: true, writable: true, configurable: true }));',
+    proc: 'otisk zámku a výsledek jedné šachty by se změnily proti dnešku (zlatá sada)', sady: ['test_vs_soucet.js', 'test_vs_zlata.js'] },
+  { nazev: 'VS: vypocetZ obchází obal víc šachet [#570]', soubor: 'zamek.js',
+    hledej: "  return (typeof vypocetOckDat === 'function') ? vypocetOckDat(d, jekly) : vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes);",
+    nahrad: '  return vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes);',
+    proc: 'nabídka, krycí list a controlling by u víc šachet ukázaly jen šachtu 1', sady: ['test_vs_soucet.js'] },
+  { nazev: 'VS: zámek zmrazí jen šachtu 1 [#570]', soubor: 'zamek.js',
+    hledej: "      ock: (typeof vypocetOckDat === 'function') ? vypocetOckDat(d, jekly) : vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes),",
+    nahrad: '      ock: vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes),',
+    proc: 'dotisk odeslané nabídky víc šachet by vydal cenu jen šachty 1', sady: ['test_vs_soucet.js'] },
   /* AS #577 (10. 11. 2026): jméno kopie pro skript Apps Script. Hlídá
    * src/test_577_jmeno_kopie.js (pole `sady` = pustit ji první). */
   { nazev: 'AS: jméno kopie s neznámým prostředím [#577]', soubor: 'retence_zaloh.js',
