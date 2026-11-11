@@ -8,6 +8,42 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v11.11.2 — VS-E6 #570: víc šachet v nabídce — závěr: překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi (#596; #570 hotovo), větev claude/vs-e6
+
+Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Verzi přečísluje koordinace.
+S vypnutým vypínačem a u zakázky s jednou šachtou je aplikace beze změny (zlatá sada 319/319 beze změny otisků,
+harness VYP = 079cfc6 znak po znaku). Na webech, Disku ani v Pipedrive nic.
+
+**Souhrn #570 (víc šachet v nabídce, E0–E6):** jedna varianta nabídky smí nést až 10 variant šachet, každou
+s vlastním zadáním a počtem stejných kusů (1–20); každá se počítá celá jako samostatná zakázka (Model 2), ks ji
+násobí, přirážka/sleva/zaokrouhlení jdou ze součtu a cena po zaokrouhlení se do šachet rozpočítá na korunu
+(E0/E1 jádro, server, vypínač; E2 zadání a karta Šachty varianty; E3 kalkulace šachta / Součet, rozpis, sleva,
+přehledy; E4 CN s tabulkou šachet, Word v17, specifikace po šachtách; E5 krycí list, SoD, objednané příplatky,
+controlling, Pipedrive náhled, zámek, kontroly; E6 závěr). Vše za vypínačem správce, výchozí vypnuto; s vypnutým
+jdou zakázky s víc šachtami dál otevřít, spočítat a vytisknout, jen jejich šachty nejde měnit (R21).
+
+- **Překlady EN/DE/FR** (`preklad.js`): „varianty šachet“, „variant šachet“, „celkem“ (heslo „varianta šachty“
+  kryje existující „VARIANTA ŠACHTY“ — slovník je bez ohledu na velikost písmen a duplicitní heslo by přepsalo
+  velká písmena v CN); `sod.js` posílá přes překlad i „ks“ → `{{SACHTY_SOD_PREDMET}}` / `{{SACHTY_SOD_ROZPIS}}`
+  v cizojazyčné smlouvě bez českých slov (kromě názvů šachet). Krycí list zůstává česky (jako dřív).
+- **Štítek šachet v rejstříku zakázek** (bod 8 předávky E5): `uloRejstrikZaznam` přidá nepovinný klíč
+  `sachty: { variant, celkem }` podle **řídící** varianty, jen u víc šachet (u jedné šachty klíč chybí — rejstřík
+  beze změny); `uloRejstrikNormalizuj` ho propustí jen v platném tvaru (celá čísla, 1–10 variant, celkem
+  variant…20 × variant, ne 1/1); `uloRejstrikSachtyText` „2 varianty / 3 ks“. Přehled cenových nabídek ukáže
+  štítek u druhu zakázky **jen se zapnutou funkcí**. Data víc šachet s vypnutým vypínačem nevzniknou (server R21),
+  takže s VYP je rejstřík beze změny.
+- **Dokumentace:** příručka obchodníka — nová kapitola **25. Víc šachet v nabídce** (zapnutí, zadání, karta
+  Šachty varianty, kalkulace šachta / Součet, sleva ze součtu, nabídka v17, krycí list, SoD, přehled, odeslaná
+  nabídka; postup se 4 snímky `k25vs-*` z `manual/snimky_auto.mjs` — vypínač zapne správce jen pro ně, zakázka
+  9105), kapitoly 25–32 → 26–33 i s odkazy; příručka správce — **Zkušební funkce: Víc šachet v nabídce** (A4,
+  snímek `a-nast-funkce`) a **Šablona cenové nabídky v17** (A5: `node nastroje/vyrob_sablony.js --cn-v17
+  <složka s v16>`, kontrola značek ve Wordu, nahrání CZ + EN/DE/FR); provozní dokumentace (část III) — vypínače
+  v úložišti `program` (mimo noční otisk) a počty šachet v rejstříku.
+- **Testy:** `src/test_vs_vystupy.js` +21 (68) — bez opravy 15 FAIL; nová sada `netlify/test_vs_rejstrik.mjs` 32
+  — bez opravy spadne (funkce neexistují). Mutace „[#570 E6]“ jádro 3/3 (`sod.js`), server 7/7 (`uloziste.js`,
+  `ui/online_ui.js`); `test_vs_rejstrik.mjs` v sadách `netlify/mutace.mjs`.
+- **Celé kolo s mutacemi po částech:** probíhá — jádro 820/820, server 1–12/16 bez přeživších (výsledek doplní závěrečný commit).
+
 ## v10.11.6 — VS-E5 #570: víc šachet ve výstupech za zakázku — krycí list, SoD, objednané příplatky, controlling, Pipedrive náhled, zámek, kontroly (#595), větev claude/vs-s3-e5
 
 Nad `079cfc6`, sloučeno s integrací `d3ee6db` (v10.11.5 = E2 + E3 + E4). Verzi přečísluje koordinace. Sezení S3, paralelně s S1 (E2/E3) a S2 (E4).
