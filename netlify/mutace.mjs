@@ -49,6 +49,8 @@ const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
   : [/* VS #570 E1 (10. 11. 2026): víc šachet v nabídce — vypínač, tvar, limity, 409, zámek (rychlá sada). */
      'test_vs_server.mjs',
+     /* K40a #579 (11. 11. 2026): X5 záložní buňka CSV a X6 escJs v onclick ceníku — bez nich mutace [K40a] X5/X6 nemají sadu. */
+     '../src/test_k40_csv_bunka.js', '../src/test_escape.js',
      /* VS #570 E6 (#596, 10. 11. 2026): štítek šachet v rejstříku zakázek (rychlá sada). */
      'test_vs_rejstrik.mjs',
      /* VS #570 E5 (#595, 10. 11. 2026): Pipedrive náhled — seznam šachet do poznámky (rychlá sada). */
