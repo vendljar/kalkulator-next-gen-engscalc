@@ -642,6 +642,8 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
 # Předávka koordinace — 11. 11. 2026: stav integrace v11.11.1
 
+- **Pravidlo J. V. 11. 11. 2026 — poradce Fable 5.2:** u složitých/rizikových úkolů (víc šachet, K40, bezpečnost, výpočet ceny) nejdřív sezení s modelem `claude-fable-5-2` (create_session model) navrhne postup a rozdělení, Opus 5.5 programuje, před sloučením Fable zreviduje rozdíl. Drobnosti jen Opus. Main zatím čeká (J. V. 11. 11.). První poradce: revize plánu K40 (session_018mwHQKAJTYpkQVKGKGfgSr, větev claude/k40-posudek).
+
 - **v11.11.1** VS-E6 #596 (#570 hotovo): překlady SoD, štítek šachet v rejstříku, příručky (kap. 25, A4/A5), celé mutace jádro 820/820 a server 1387/1387. Víc šachet kompletní za vypínačem na testu. Na J. V.: ruční zkouška na testu se ZAP, šablona CN v17 (příručka správce A5), pole PD pro šachty, ATYP/Typ produktu, rozhodnutí o main.
 
 - **v10.11.6** VS-E5 #595 (KL, SoD, objednané, controlling, PD náhled, zámek, kontroly; za vypínačem). Zbývá E6 (dokumentace, překlady SoD, rejstřík se štítkem šachet, celé kolo s mutacemi). Otevřené pro J. V.: pole Pipedrive pro seznam šachet; ATYP/Typ produktu u víc šachet.
