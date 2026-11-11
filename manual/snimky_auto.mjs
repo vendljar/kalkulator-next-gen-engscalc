@@ -139,6 +139,10 @@ const ZAKAZKY = {
   projekce: { cislo: '2026 - OVP - CN - 9104', objednatel: 'Vzorové bytové družstvo',
     nazevAkce: 'projekce výtahu k fasádě bytového domu', kontakt: 'Eva Modelová',
     adresa: 'Modelová 7, Brno' },
+  /* Víc šachet v nabídce (kap. 25, zkušební funkce): dvě varianty šachet. */
+  sachty: { cislo: '2026 - OPR - CN - 9105', objednatel: 'Modelová development a.s.',
+    nazevAkce: 'dva výtahy v jedné nabídce', kontakt: 'Marie Příkladná',
+    adresa: 'Příkladná 3, Plzeň' },
 };
 const ZAKAZNICI = [
   { nazev: 'Ukázková správa budov s.r.o.', sidlo: 'Vzorová 12, 140 00 Praha 4', kontaktOsoba: 'Jan Ukázka' },
@@ -892,6 +896,44 @@ await vezmi('k25-nabidka-tisk', SEKCE('#proj-nabidka > .body', 'Než nabídku od
 
 /* Kapitola 27 používá snímek poznamky-prilohy z ukázkové zakázky. */
 
+
+/* ---- kap. 25: víc šachet v nabídce (zakázka 9105) ----
+ *
+ * Zkušební funkce: vypínač zapne správce jen pro tyhle snímky a hned po nich
+ * ho vypne — ostatní snímky ukazují aplikaci tak, jak ji obchodník vidí na
+ * ostrém webu (bez polí víc šachet). Správce se přihlásí přímo serverové
+ * funkci (vlastní relace), stránka zůstává přihlášená jako obchodník. */
+krok('kap. 25: víc šachet v nabídce (zakázka 9105)');
+const vsVypinac = async (zapnout) => {
+  const prih = await FUNKCE['/api/prihlaseni'](new Request('http://x/api/prihlaseni', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'spravce@priklad.cz', heslo: 'Zkusebni.Heslo.123' }) }));
+  const c = (prih.headers.get('set-cookie') || '').split(';')[0];
+  const r = await FUNKCE['/api/funkce'](new Request('http://x/api/funkce', { method: 'POST',
+    headers: { cookie: c, 'content-type': 'application/json' }, body: JSON.stringify({ viceSachet: zapnout }) }));
+  if (r.status !== 200) throw new Error('vypínač víc šachet: ' + r.status + ' ' + await r.text());
+  await page.evaluate(() => onlineNactiFunkce());
+  await page.evaluate(() => render());
+  await cekej(300);
+};
+await vsVypinac(true);
+await novaZakazka(ZAKAZKY.sachty, ZADANI_ZAKLAD);
+/* Neukládá se ručně: zakázku uloží autosave sám a druhé uložení bez razítka
+ * by narazilo na kolizi čísla (snímky uloženou zakázku nepotřebují). */
+await cekej(600);
+await vezmi('k25vs-zadani', '#ock-zadani');
+await page.evaluate(() => {
+  vsPocetVariant('2');
+  vsAkt(0); vsNazevSet('Výtah A');
+  vsAkt(1); vsNazevSet('Výtah B'); vsKsSet('2');
+  set('Z.zdvih', 15); render();
+});
+await cekej(600);
+await vezmi('k25vs-karta', '#vs-sachty');
+await vezmi('k25vs-souhrn', '#kalk-souhrn');
+await zalozka('kryci');
+await vezmi('k25vs-kryci', SEKCE('#page-kryci .kl-doc', 'Šachty v nabídce', 'Dodavatel'));
+await zalozka('kalk');
+await vsVypinac(false);
 
 /* ---- kap. 30 (administrátor) a kap. 22 (dialog po změně ceníku) ----
  *

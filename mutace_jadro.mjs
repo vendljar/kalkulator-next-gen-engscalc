@@ -380,6 +380,20 @@ const MUTACE = [
     hledej: "      ock: (typeof vypocetOckDat === 'function') ? vypocetOckDat(d, jekly) : vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes),",
     nahrad: '      ock: vypocet(d.ock.zadani, d.cenik, jekly, d.ock.fixes),',
     proc: 'dotisk odeslané nabídky víc šachet by vydal cenu jen šachty 1', sady: ['test_vs_soucet.js'] },
+  /* VS #570 E6 (#596, 10. 11. 2026): předmět a rozpis víc šachet ve smlouvě
+   * o dílo v EN/DE/FR. Hlídá src/test_vs_vystupy.js. [#570 E6] */
+  { nazev: 'VS-E6: předmět SoD s českým „celkem" [#570 E6]', soubor: 'sod.js',
+    hledej: "  d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + P(druh) + ', ' + P('celkem') + ' ' + vo.celkem + ks + ' (' + seznam + ')';",
+    nahrad: "  d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + P(druh) + ', celkem ' + vo.celkem + ks + ' (' + seznam + ')';",
+    proc: 'anglická smlouva by v předmětu díla nesla české slovo', sady: ['test_vs_vystupy.js'] },
+  { nazev: 'VS-E6: SoD s českým „ks" [#570 E6]', soubor: 'sod.js',
+    hledej: "  const ks = ' ' + P('ks');",
+    nahrad: "  const ks = ' ks';",
+    proc: 'cizojazyčná smlouva by počty šachet psala česky „ks"', sady: ['test_vs_vystupy.js'] },
+  { nazev: 'VS-E6: SoD předmět bez překladu druhu [#570 E6]', soubor: 'sod.js',
+    hledej: "  d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + P(druh) + ', ' + P('celkem') + ' ' + vo.celkem + ks + ' (' + seznam + ')';",
+    nahrad: "  d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + druh + ', ' + P('celkem') + ' ' + vo.celkem + ks + ' (' + seznam + ')';",
+    proc: 'cizojazyčná smlouva by nesla „varianty šachet" česky', sady: ['test_vs_vystupy.js'] },
   /* VS #570 E5 (#595, 10. 11. 2026): výstupy zakázky s víc šachtami — krycí
    * list, SoD, objednané příplatky, controlling, snímek zámku, kontroly po
    * šachtách. Hlídají src/test_vs_vystupy.js, test_vs_zamek.js, test_vs_kontroly.js. [#570 E5] */

@@ -1,6 +1,6 @@
 {
  "titul": "Kalkulátor Next Gen — kompletní dokumentace systému",
- "verze": "Platí pro aplikaci v10.11.6 · sestaveno 2. 11. 2026",
+ "verze": "Platí pro aplikaci v11.11.1 · sestaveno 11. 11. 2026",
  "podtitul": "Obsluha · výpočty · provoz systému. Jeden dokument pro správce, nástupce i IT firmu, která má systém převzít.",
  "uvod": [
   {
@@ -584,13 +584,13 @@
      "radky": [
       [
        "program",
-       "platný ceník OCK a PROJ s historií verzí a slevovými stropy (`db`), firemní údaje (`firma`), matice zobrazení, dodatkové texty, slovník, nastavení controllingu",
+       "platný ceník OCK a PROJ s historií verzí a slevovými stropy (`db`), firemní údaje (`firma`), matice zobrazení, dodatkové texty, slovník, nastavení controllingu, vypínače zkušebních funkcí (`funkce`; v nočním otisku nejsou — po obnově jsou funkce vypnuté)",
        "kontakty firmy a zástupců zhotovitele",
        "do změny; verze ceníku se drží v historii"
       ],
       [
        "zakazky",
-       "zakázky a jejich varianty (`z/…`), rejstřík zakázek pro hledání, zámky odeslaných nabídek, poznámky a přílohy",
+       "zakázky a jejich varianty (`z/…`), rejstřík zakázek pro hledání (u zakázky s víc šachtami i počet variant šachet a kusů řídící varianty), zámky odeslaných nabídek, poznámky a přílohy",
        "kontakty zákazníka, jméno obchodníka",
        "dokud je administrátor nesmaže"
       ],

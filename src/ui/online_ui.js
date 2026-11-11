@@ -4106,6 +4106,10 @@ function onlineRadekZakazky(z, vyber) {
   /* Zahraniční zakázka nese štítek (#181) — tuzemská ne, ta je výchozí. */
   const rada = z.rada === 'zahr'
     ? ' <span class="rada-stitek" title="počítáno zahraničním ceníkem">Zahraničí</span>' : '';
+  /* Víc šachet řídící varianty (VS-E6 #596) — jen se zapnutou funkcí. */
+  const vsText = (typeof uloRejstrikSachtyText === 'function' && typeof viceSachetZapnuto === 'function' && viceSachetZapnuto())
+    ? uloRejstrikSachtyText(z) : '';
+  const sachty = vsText ? ` <span class="pill vs-stitek" title="víc šachet v řídící variantě">${esc(vsText)}</span>` : '';
   const chk = vyber
     ? `<td><input type="checkbox" ${onlineVybrano(z.soubor) ? 'checked' : ''}
         onchange="onlineVyberPrepni('${escJs(z.soubor)}', this.checked)"
@@ -4116,7 +4120,7 @@ function onlineRadekZakazky(z, vyber) {
     <td style="text-align:left;white-space:normal">${esc(z.nazevAkce || '—')}${z.adresa
       ? `<div class="rejstrik-adresa" style="font-size:11px;color:#6b7686">${esc(z.adresa)}</div>` : ''}</td>
     <td style="text-align:left;white-space:normal">${esc(z.objednatel || '—')}</td>
-    <td><span class="pill mut">${esc(druh)}</span>${rada}</td>
+    <td><span class="pill mut">${esc(druh)}</span>${rada}${sachty}</td>
     <td>${esc(z.datum || '')}</td>
     <td>${z.variant}</td>
     <td>${odeslane}</td>

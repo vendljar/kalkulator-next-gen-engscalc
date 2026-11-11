@@ -49,6 +49,8 @@ const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
   : [/* VS #570 E1 (10. 11. 2026): víc šachet v nabídce — vypínač, tvar, limity, 409, zámek (rychlá sada). */
      'test_vs_server.mjs',
+     /* VS #570 E6 (#596, 10. 11. 2026): štítek šachet v rejstříku zakázek (rychlá sada). */
+     'test_vs_rejstrik.mjs',
      /* VS #570 E5 (#595, 10. 11. 2026): Pipedrive náhled — seznam šachet do poznámky (rychlá sada). */
      'test_vs_e5_pd.mjs',
      /* #560 MU (5. 11. 2026): sekce MŮSTKY — server (validace Z.mustky, zveřejnění ceníku, zámek) a model. */
@@ -217,6 +219,37 @@ const MUTACE = [
   /* VS #570 E1 (10. 11. 2026): víc šachet v jedné nabídce — server: vypínač
    * správce, tvar a limity ock.dalsi, Model 2, 409 při ztrátě dalsi, zadání
    * šachet 2+ stejnými kontrolami. Hlídá netlify/test_vs_server.mjs. [#570] */
+  /* VS #570 E6 (#596, 10. 11. 2026): štítek šachet v rejstříku zakázek —
+   * počty řídící varianty, jen u víc šachet, normalizace tvaru. Hlídá
+   * netlify/test_vs_rejstrik.mjs. [#570 E6] */
+  { nazev: 'VS-E6: rejstřík bez počtů šachet [#570 E6]', soubor: '../src/uloziste.js',
+    hledej: '    ...uloRejstrikSachty(zak),',
+    nahrad: '',
+    proc: 'Přehled cenových nabídek by u zakázky s víc šachtami neukázal, kolik šachet nabízí', sady: ['test_vs_rejstrik.mjs'] },
+  { nazev: 'VS-E6: rejstřík nese šachty i u jedné šachty [#570 E6]', soubor: '../src/uloziste.js',
+    hledej: '  if (!ock || !rezimViceSachet(ock)) return {};',
+    nahrad: '  if (!ock) return {};',
+    proc: 'rejstřík každé zakázky by se změnil i s vypnutou funkcí (zlatá sada)', sady: ['test_vs_rejstrik.mjs'] },
+  { nazev: 'VS-E6: počty šachet z první varianty místo řídící [#570 E6]', soubor: '../src/uloziste.js',
+    hledej: "  const rid = (typeof ridiciVarianta === 'function') ? ridiciVarianta(zak) : (varianty[0] || null);\n  const ock = rid && rid.data && rid.data.ock;",
+    nahrad: "  const rid = varianty[0] || null;\n  const ock = rid && rid.data && rid.data.ock;",
+    proc: 'štítek by ukazoval šachty jiné varianty, než která se prodává', sady: ['test_vs_rejstrik.mjs'] },
+  { nazev: 'VS-E6: normalizace propustí jakýkoli tvar šachet [#570 E6]', soubor: '../src/uloziste.js',
+    hledej: '  if (v < 1 || v > ULO_REJSTRIK_VS_VARIANT_MAX || c < v || c > v * ULO_REJSTRIK_VS_KS_MAX) return undefined;',
+    nahrad: '',
+    proc: 'ručně upravený nebo poškozený rejstřík by v Přehledu ukázal nesmyslné počty šachet', sady: ['test_vs_rejstrik.mjs'] },
+  { nazev: 'VS-E6: normalizace nechá štítek jedné šachty [#570 E6]', soubor: '../src/uloziste.js',
+    hledej: '  if (v === 1 && c === 1) return undefined;',
+    nahrad: '',
+    proc: 'zakázka s jednou šachtou by v Přehledu nesla štítek „1 varianta / 1 ks"', sady: ['test_vs_rejstrik.mjs'] },
+  { nazev: 'VS-E6: normalizace zahodí počty šachet [#570 E6]', soubor: '../src/uloziste.js',
+    hledej: '      ...(uloRejstrikSachtyTvar(z.sachty) ? { sachty: uloRejstrikSachtyTvar(z.sachty) } : {}),',
+    nahrad: '',
+    proc: 'server by počty šachet při každém sloučení rejstříku zahodil', sady: ['test_vs_rejstrik.mjs'] },
+  { nazev: 'VS-E6: štítek šachet i s vypnutou funkcí [#570 E6]', soubor: '../src/ui/online_ui.js',
+    hledej: "typeof viceSachetZapnuto === 'function' && viceSachetZapnuto())\n    ? uloRejstrikSachtyText(z) : '';",
+    nahrad: "true)\n    ? uloRejstrikSachtyText(z) : '';",
+    proc: 'na ostrém webu s vypnutou funkcí by Přehled ukazoval štítky víc šachet', sady: ['test_vs_rejstrik.mjs'] },
   /* VS #570 E5 (#595, 10. 11. 2026): Pipedrive náhled — seznam šachet do
    * poznámky dealu, do Pipedrive nic. Hlídá netlify/test_vs_e5_pd.mjs. [#570 E5] */
   { nazev: 'VS-E5: server zahodí seznam šachet [#570 E5]', soubor: 'functions/pd_nanecisto.mjs',
@@ -5236,9 +5269,13 @@ const MUTACE = [
     hledej: "  const zadano = Number.isFinite(kdy) ? Math.min(kdy, Date.now()) : Date.now();",
     nahrad: "  const zadano = Date.now();",
     proc: "heslo by leželo v paměti déle než 10 minut od zadání" },
+  /* VS-E6 (11. 11. 2026): zadání přešlo na jméno souboru s prostředím
+   * (uloKopieDiskPosledniJmeno, #550/#554 — posledni_kopie_<prostředí>.json).
+   * Se starým jménem posledni_kopie.json mutace přežívala už na b751e57:
+   * test_o7_kopie_klient.js hlídá soubor, který aplikace opravdu zapisuje. */
   { nazev: "O9: K4-N15 posledni_kopie.json před odpovědí serveru", soubor: "../src/ui/online_ui.js",
     hledej: "  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });",
-    nahrad: "  await kopieDiskZapisSoubor(h, 'posledni_kopie.json', '{}');\n  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });",
+    nahrad: "  await kopieDiskZapisSoubor(h, uloKopieDiskPosledniJmeno(prostredi), '{}');\n  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });",
     proc: "při špatném hesle by Disk tvrdil kopii, o které server neví" },
   /* O10 (21. 10. 2026): K4-N1 — snímek kapitol zamčené varianty hlídá
    * obecné porovnání dat zámku; žádná dřívější mutace na něj necílila. */

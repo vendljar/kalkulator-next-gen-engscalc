@@ -257,10 +257,11 @@ function sodSachtySymboly(d, zak, varianta, jekly, L) {
   const na = (d.mena && typeof d.mena.na === 'function') ? d.mena.na : (n => n);
   const k = vo.variant;
   const druh = k === 1 ? 'varianta šachty' : (k >= 2 && k <= 4 ? 'varianty šachet' : 'variant šachet');
-  const seznam = vo.sachty.map(x => x.nazev + ' ' + x.ks + ' ks').join(', ');
-  d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + P(druh) + ', ' + P('celkem') + ' ' + vo.celkem + ' ks (' + seznam + ')';
+  const ks = ' ' + P('ks');
+  const seznam = vo.sachty.map(x => x.nazev + ' ' + x.ks + ks).join(', ');
+  d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + P(druh) + ', ' + P('celkem') + ' ' + vo.celkem + ks + ' (' + seznam + ')';
   d.placeholders.SACHTY_SOD_ROZPIS = vo.sachty.map(x => x.nazev + (x.mustky ? ', ' + P('vč. můstků') : '')
-    + ' – ' + x.ks + ' ks – ' + kc(na(x.cena))).join('\n');
+    + ' – ' + x.ks + ks + ' – ' + kc(na(x.cena))).join('\n');
 }
 
 /* OBJEDNANÉ PŘÍPLATKY VE SMLOUVĚ (#447 C6, rozhodnutí J. V. 21. 10. 2026,

@@ -398,6 +398,10 @@ function uloRejstrikZaznam(zak, opts) {
       const r = (typeof cenikRadaVarianty === 'function' && rid) ? cenikRadaVarianty(rid.data) : 'cr';
       return r === 'zahr' ? 'zahr' : '';
     })(),
+    /* Víc šachet řídící varianty (VS-E6 #596): štítek „2 varianty / 3 ks"
+     * v Přehledu cenových nabídek. Jen u zakázky s víc šachtami — u jedné
+     * šachty klíč chybí a rejstřík je beze změny (zlatá sada). */
+    ...uloRejstrikSachty(zak),
     variant: varianty.length,
     odeslane: varianty.filter(zamcena).length,
     upraveno,
@@ -407,6 +411,40 @@ function uloRejstrikZaznam(zak, opts) {
      * které ho nenačítají) klíč chybí a export použije hrubý předvýběr. */
     ...((typeof ctrlRejstrikDny === 'function') ? { ctrlDny: ctrlRejstrikDny(zak) } : {}),
   };
+}
+
+/* Víc šachet v rejstříku (VS-E6 #596, bod 8 předávky E5): { sachty:
+ * { variant, celkem } } podle ŘÍDÍCÍ varianty, nebo {} (jedna šachta, sady
+ * bez vice_sachet.js). Data víc šachet vzniknou jen se zapnutým vypínačem
+ * (server je s vypnutým odmítne, R21) — s vypnutým je tedy rejstřík beze
+ * změny; štítek v Přehledu se navíc kreslí jen se zapnutým. */
+const ULO_REJSTRIK_VS_VARIANT_MAX = 10;   // = VS_VARIANT_MAX (R10)
+const ULO_REJSTRIK_VS_KS_MAX = 20;        // = VS_KS_MAX
+function uloRejstrikSachty(zak) {
+  if (typeof rezimViceSachet !== 'function' || typeof vsPocty !== 'function') return {};
+  const varianty = (zak && Array.isArray(zak.varianty)) ? zak.varianty : [];
+  const rid = (typeof ridiciVarianta === 'function') ? ridiciVarianta(zak) : (varianty[0] || null);
+  const ock = rid && rid.data && rid.data.ock;
+  if (!ock || !rezimViceSachet(ock)) return {};
+  const p = vsPocty(ock);
+  return { sachty: { variant: p.variant, celkem: p.celkem } };
+}
+/* Tvar klíče `sachty` v rejstříku: celá čísla v mezích R10 a víc šachet
+ * (víc variant nebo víc kusů). Cokoli jiného → undefined (klíč zmizí). */
+function uloRejstrikSachtyTvar(x) {
+  if (!x || typeof x !== 'object' || Array.isArray(x)) return undefined;
+  const v = x.variant, c = x.celkem;
+  if (!Number.isInteger(v) || !Number.isInteger(c)) return undefined;
+  if (v < 1 || v > ULO_REJSTRIK_VS_VARIANT_MAX || c < v || c > v * ULO_REJSTRIK_VS_KS_MAX) return undefined;
+  if (v === 1 && c === 1) return undefined;
+  return { variant: v, celkem: c };
+}
+/* Text štítku: „1 varianta / 3 ks", „2 varianty / 3 ks", „5 variant / 7 ks". */
+function uloRejstrikSachtyText(z) {
+  const s = uloRejstrikSachtyTvar(z && z.sachty);
+  if (!s) return '';
+  const slovo = s.variant === 1 ? 'varianta' : (s.variant <= 4 ? 'varianty' : 'variant');
+  return s.variant + ' ' + slovo + ' / ' + s.celkem + ' ks';
 }
 
 /* Tvar `ctrlDny` v rejstříku (#504): { zamky: [{ den, rada }], prodej: { den, rada } | null }
@@ -448,6 +486,8 @@ function uloRejstrikNormalizuj(x) {
       datum: uloRejstrikText(z.datum),
       jenProj: !!z.jenProj,
       rada: z.rada === 'zahr' ? 'zahr' : '',      // #181: řada ceníku, prázdno = tuzemsko
+      /* VS-E6 #596: počty šachet řídící varianty jen v platném tvaru. */
+      ...(uloRejstrikSachtyTvar(z.sachty) ? { sachty: uloRejstrikSachtyTvar(z.sachty) } : {}),
       variant: cislo(z.variant),
       odeslane: cislo(z.odeslane),
       upraveno: uloRejstrikText(z.upraveno),
@@ -2391,7 +2431,7 @@ if (typeof module !== 'undefined')
                      ULO_ZALOHA_STARI_DNI, uloZalohaStariDni, uloZalohaRozhodni, uloZalohaOdeslana,
                      uloZalohaSmiPrepsat,
                      uloRazitkoNove, uloRazitko, uloKolize,
-                     uloRejstrikZaznam, uloRejstrikNormalizuj, uloRejstrikSloucit,
+                     uloRejstrikZaznam, uloRejstrikNormalizuj, uloRejstrikSloucit, uloRejstrikSachty, uloRejstrikSachtyTvar, uloRejstrikSachtyText,
                      uloDruhZakazky, uloObchodnik,
                      uloRejstrikOdeber, uloRejstrikSerad, uloHledej, uloRejstrikBezAdresy, ULO_ADRESY_DAVKA,
                      uloRejstrikCtrlDny, uloRejstrikBezDnu, ULO_REJSTRIK_DNY_MAX,
