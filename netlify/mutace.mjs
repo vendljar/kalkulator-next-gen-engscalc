@@ -5269,9 +5269,13 @@ const MUTACE = [
     hledej: "  const zadano = Number.isFinite(kdy) ? Math.min(kdy, Date.now()) : Date.now();",
     nahrad: "  const zadano = Date.now();",
     proc: "heslo by leželo v paměti déle než 10 minut od zadání" },
+  /* VS-E6 (11. 11. 2026): zadání přešlo na jméno souboru s prostředím
+   * (uloKopieDiskPosledniJmeno, #550/#554 — posledni_kopie_<prostředí>.json).
+   * Se starým jménem posledni_kopie.json mutace přežívala už na b751e57:
+   * test_o7_kopie_klient.js hlídá soubor, který aplikace opravdu zapisuje. */
   { nazev: "O9: K4-N15 posledni_kopie.json před odpovědí serveru", soubor: "../src/ui/online_ui.js",
     hledej: "  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });",
-    nahrad: "  await kopieDiskZapisSoubor(h, 'posledni_kopie.json', '{}');\n  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });",
+    nahrad: "  await kopieDiskZapisSoubor(h, uloKopieDiskPosledniJmeno(prostredi), '{}');\n  const z = await onlineApi('/api/zaloha_vynuceno', { akce: 'kopie-disk', kopie, hesloSpravce });",
     proc: "při špatném hesle by Disk tvrdil kopii, o které server neví" },
   /* O10 (21. 10. 2026): K4-N1 — snímek kapitol zamčené varianty hlídá
    * obecné porovnání dat zámku; žádná dřívější mutace na něj necílila. */

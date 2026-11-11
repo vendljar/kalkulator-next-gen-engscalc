@@ -42,7 +42,15 @@ jdou zakázky s víc šachtami dál otevřít, spočítat a vytisknout, jen jeji
 - **Testy:** `src/test_vs_vystupy.js` +21 (68) — bez opravy 15 FAIL; nová sada `netlify/test_vs_rejstrik.mjs` 32
   — bez opravy spadne (funkce neexistují). Mutace „[#570 E6]“ jádro 3/3 (`sod.js`), server 7/7 (`uloziste.js`,
   `ui/online_ui.js`); `test_vs_rejstrik.mjs` v sadách `netlify/mutace.mjs`.
-- **Celé kolo s mutacemi po částech:** probíhá — jádro 820/820, server 1–12/16 bez přeživších (výsledek doplní závěrečný commit).
+- **Celé kolo s mutacemi po částech: ZELENÉ.** Jádro N = 4: **820/820** (část 4/4 po restartu kontejneru navázána
+  `KNG_MUTACE_OD=628`). Server N = 16: **1387/1387** — v částech 1386 chycených a jediná nechycená **O9 K4-N15**
+  (`ui/online_ui.js`) přežívala už na b751e57: zadání zapisovalo staré jméno `posledni_kopie.json`, aplikace od
+  #550/#554 zapisuje `posledni_kopie_<prostředí>.json`; zadání opraveno na `uloKopieDiskPosledniJmeno(prostredi)`
+  → chycená (`test_o7_kopie_klient.js`), mutace se nevypínala. Části 4–9 serveru navázány `--od` po dvou restartech
+  kontejneru. Kolo `--bez-mutaci` nad v11.11.2 **VŠE ZELENÉ**: sady 426/0/7 přesk. (test.js + 6 bez KNG_PODKLADY),
+  hodiny +400 dní 343/0/1, statické 5/5. Zlatá sada 319/319, harness VYP = 079cfc6 znak po znaku 52/0.
+- **Mimo VS (otevřené):** snímek `kontroly-pred-nabidkou` (kap. 23 příručky obchodníka) se nepořídí — selektor
+  `#page-spec .kontroly-panel` chybí už na b751e57. Manuál výpočtu bez nového vydání (`test_manual_vypocet` 13/0).
 
 ## v10.11.6 — VS-E5 #570: víc šachet ve výstupech za zakázku — krycí list, SoD, objednané příplatky, controlling, Pipedrive náhled, zámek, kontroly (#595), větev claude/vs-s3-e5
 

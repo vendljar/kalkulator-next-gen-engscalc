@@ -1,25 +1,25 @@
 # Předávka — VS-E6 #570 (#596): závěr víc šachet — překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi po částech, větev `claude/vs-e6`
 
 Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Do `test-draft`, `test` ani `main` nic;
-weby, Disk, Pipedrive nic. Verze se dorovná při uzavření (poslední commit po půlnoci UTC → 11.11.N; `verze.txt` zatím 10.11.7).
+weby, Disk, Pipedrive nic. **v11.11.2** (poslední commit 11. 11. UTC; stará hlavička „v11.11.1“ v CHANGELOG patří E0/E1 vydané jako v10.11.2, proto .2 — koordinace přečísluje).
 
 | úkol | stav | kde |
 |---|---|---|
 | překlady EN/DE/FR („varianty šachet“, „variant šachet“, „celkem“, „vč. můstků“, „ks“) | ✅ | `preklad.js` (heslo „varianta šachty“ kryje existující „VARIANTA ŠACHTY“ — slovník ignoruje velikost písmen, duplicitní heslo přepsalo velká písmena v CN; chytil `test_preklad.js` a `test_vs_docx_v17.js`), `sod.js` (`P('ks')`); KL zůstává česky |
 | rejstřík se štítkem šachet (bod 8 PREDAVKA E5) | ✅ | `uloziste.js` `uloRejstrikSachty` / `uloRejstrikSachtyTvar` / `uloRejstrikSachtyText`; klíč `sachty: {variant, celkem}` jen u víc šachet řídící varianty; `ui/online_ui.js` štítek u druhu jen se ZAP |
-| roadmapa #592 pole testy | ✅ | 50/0 + overit 52/0 |
+| roadmapa | ✅ | #570 (zastřešující, převzata z větve návrhu — číslo v integraci volné) a #596 hotovo v11.11.2, #592 pole testy (50/0, overit 52/0), pořadí, meta; `roadmapa.py --kontrola` 579 položek bez nálezu |
 | drobnosti E3 (a)(b) | ⬜ ponecháno | v PREDAVKA E3 jen body 2 (Součet zhasne i výběr režimu sekce) a 3 (štítek v porovnání pod názvem varianty) — nejsou to chyby, ale chování k rozhodnutí; nesahal jsem na ně |
 | manuál obchodníka | ✅ | kapitola **25. Víc šachet v nabídce** (4 snímky `k25vs-*` v `manual/snimky_auto.mjs`, zakázka 9105, vypínač jen pro ně), kapitoly 26–33 přečíslovány i s odkazy |
 | příručka správce | ✅ | A4 Zkušební funkce (snímek `a-nast-funkce`, `snimky_admin.mjs` CELE + 'funkce'), A5 Šablona CN v17 (`vyrob_sablony.js --cn-v17`) |
 | provozní dokumentace | ✅ | `manual/kompletni/provoz.json`: vypínače v `program` (mimo otisk), počty šachet v rejstříku |
 | manuál výpočtu (`cisla_vydani.json`) | ✅ beze změny | `test_manual_vypocet.js` 13/0 — čísla vydání se nezměnila, nové vydání pravidla nevyžadují |
-| CHANGELOG souhrn #570 | ⏳ připraven, zapíše se s verzí | |
+| CHANGELOG souhrn #570 | ✅ v11.11.2 se souhrnem #570 | |
 | zlatá sada | ✅ 319/319 | beze změny otisků |
 | harness VYP = 079cfc6 znak po znaku | ✅ 52/0 | `KNG_DIST_ZAKLAD=<dist z 079cfc6> node overit_vs_zadani.mjs` (základ sestaven ve worktree s `KNG_VERZE_MIMO_DEN=1`) |
 | mutace „[#570 E6]“ | ✅ jádro 3/3, server 7/7 | `mutace_jadro.mjs` (sod.js), `netlify/mutace.mjs` (+ sada `test_vs_rejstrik.mjs`) |
-| kolo bez mutací | ✅ | 425/1/7 + hodiny 342/1/1 + statické 5/5 — jediný FAIL `test_release_odkaz.js` (chyběl oddíl CHANGELOG nové verze)  |
-| mutace jádra po částech (N = 4) | ✅ 820/820 | 1/4 205/205, 2/4 205/205, 3/4 205/205, 4/4 157 + 49 po navázání (restart kontejneru, `KNG_MUTACE_OD=628`) |
-| mutace serveru po částech (N = 16) | ⏳ | ✅ 1–9/16 po 87 (navázané části: 4 = 64 + 24 od 1012, 5 = 60 + 28 od 949, 6 = 8 + 62 + 19 od 118/1094, 7 = 57 + 31 od 903, 8 = 24 + 64 od 376, 9 = 10 + 78 od 153; dvakrát restart kontejneru) — bez přeživších; 10–13/16 běží, 14–16 čekají |
+| kolo bez mutací | ✅ | 425/1/7 + hodiny 342/1/1 + statické 5/5 — jediný FAIL `test_release_odkaz.js` (chyběl oddíl CHANGELOG nové verze) ; **závěrečné nad v11.11.2 VŠE ZELENÉ: 426/0/7, +400 dní 343/0/1, statické 5/5** |
+| mutace jádra po částech (N = 4) | ✅ **820/820** — 1/4 205, 2/4 205, 3/4 205, 4/4 157 + 49 (po restartu `KNG_MUTACE_OD=628`); bez přeživších | |
+| mutace serveru po částech (N = 16) | ✅ **1387/1387** — části 1–16 (86–87 mutací, 73–82 min); 4–9 navázány `--od` po dvou restartech kontejneru; jediná nechycená **O9 K4-N15** (`ui/online_ui.js`) přežívala už na b751e57 — zadání psalo staré jméno `posledni_kopie.json`, aplikace od #550/#554 píše `posledni_kopie_<prostředí>.json`; zadání opraveno (`uloKopieDiskPosledniJmeno(prostredi)`) → chycená `test_o7_kopie_klient.js` | |
 
 **Postup mutací:** každá část v samostatném `git worktree` (scratchpad `wt_mj`, `wt_ms1..3`, nad 7618ede = kód E6;
 dokumentační commit kód nemění), `KNG_MUTACE_CAST=K/N bash nastroje/testovaci_kolo.sh --jen mutace-…`, úloha na pozadí
@@ -31,7 +31,8 @@ s limitem 2 h. Přerušená část se naváže `KNG_MUTACE_OD=<číslo z posledn
 2. Pipedrive pole poznámky se seznamem šachet (E5 bod 1), ATYP/Typ produktu u smíšených zakázek (E5 bod 5),
    velikost zámku u 10 šachet (E5 bod 6), TS_NENI_SOKL a přeložený náhled specifikace (E4 body 3–4) — beze změny, k J. V.
 3. Ruční zkouška scénářů prototypu na testengscalc se zapnutým vypínačem a rozhodnutí o zapnutí na ostrém — J. V.
-4. Řádky verze příruček nesou zatím v10.11.6 — sjednotit s verze.txt při uzavření.
+4. Řádky verze příruček nesou v11.11.2 (sestaveno 11. 11. 2026) — sedí s `verze.txt`.
+
 # Předávka — 10. 11. 2026: VS-E5 #570 (#595) — výstupy za zakázku s víc šachtami (S3), větev `claude/vs-s3-e5`
 
 Nad `079cfc6`, sloučeno s integrací `d3ee6db` (v10.11.5 = E2 + E3 + E4). **CHANGELOG v10.11.6** (koordinace přečísluje). Neslučováno; do
