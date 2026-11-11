@@ -167,7 +167,10 @@ for (const v of VZORKY) {
 /* `id` a `kid` přibyly 9. 9. 2026 (B26): identifikátory variant, poznámek,
  * příloh i trvalých položek ceníku cestují v uložené zakázce, tedy od
  * kohokoli, a v obrazovce jdou přímo do onclick. */
-const RIZIKO = /\b(nazev|jmeno|popis|pozn|poznamka|text|email|kdo|firma|objednatel|stavba|adresa|ico|dic|mesto|ulice|psc|soubor|hlaska|chyba|zprava|cislo|klic|key|label|titul|kontakt|telefon|web|banka|ucet|zakaznik|vzkaz|duvod|misto|projekt|varianta|verze|puvod|orig|autor|uzivatel|role|znacka|typ|kod|sekce|polozka|item|id|kid)\b/i;
+/* `path` a `cesta` přibyly 11. 11. 2026 (K40-X6): cesty do ceníku a zadání
+ * jdou v onchange jako řetězec; dnes jsou z konstant, ale stačí jedna cesta
+ * z dat (typ pásu → sazba) a byl by z toho průchod pro skript. */
+const RIZIKO = /\b(nazev|jmeno|popis|pozn|poznamka|text|email|kdo|firma|objednatel|stavba|adresa|ico|dic|mesto|ulice|psc|soubor|hlaska|chyba|zprava|cislo|klic|key|label|titul|kontakt|telefon|web|banka|ucet|zakaznik|vzkaz|duvod|misto|projekt|varianta|verze|puvod|orig|autor|uzivatel|role|znacka|typ|kod|sekce|polozka|item|id|kid|path|cesta)\b/i;
 /* Funkce, po kterých je hodnota prokazatelně bezpečná. */
 /* `dlgEsc` přibylo 14. 9. 2026: je to escapovací funkce modálů v ui/dialog.js
  * a od téhož dne escapuje i ve větvi bez `esc()` (dřív text vracela syrový,
@@ -284,6 +287,10 @@ const PROVERENO = {
     /* Z1 (22. 10. 2026): zamekZakAttr() vrací hotové atributy (disabled,
      * class, title přes esc()) — text důvodu je literál ze zamek.js. */
     "typeof zamekZakAttr === 'function' ? zamekZakAttr('ZAK.objednatel') : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc()',
+    /* K40-X6 (11. 11. 2026): `path` a `cesta` jsou od té doby v RIZIKO —
+     * tyto dvě funkce vracejí hotové atributy, cestu do nich nevkládají. */
+    "typeof zamekZakAttr === 'function' ? zamekZakAttr(path) : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc(), cesta se do HTML nevkládá',
+    "typeof zamekDphAttr === 'function' ? zamekDphAttr(cesta) : ''": 'hotové atributy zmrazené sazby DPH ze zamekDphAttr() — cesta se do HTML nevkládá',
   },
   'techspec_ui.js': {
     "typeof zamekZakAttr === 'function' ? zamekZakAttr('ZAK.adresa') : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc()',
@@ -299,6 +306,7 @@ const PROVERENO = {
    * Záznam v PROVERENO by na ně čekal marně a hlídač zastaralých záznamů by
    * ho (správně) hlásil. Že dlgEsc escapuje, dokazuje sonda nahoře. */
   'cenik_ui.js': {
+    'klicChip(path)': 'hotový úsek HTML z klicChip() – cestu i titulek escapuje esc() uvnitř (K40-X6: path v RIZIKO)',
     'label': 'popisek pole pro zahraniční procentní hodnotu (cenikZahrPctPole). '
       + 'Je to HOTOVÉ HTML — obsahuje `&nbsp;`, takže by ho esc() rozbilo na '
       + 'viditelné „&amp;nbsp;“. Obě volání ho předávají literálem z kódu '

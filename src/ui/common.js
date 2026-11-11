@@ -847,16 +847,16 @@ function inp(path, opts = {}) {
   if (opts.klic) opts = Object.assign({}, opts, { l: opts.l + klicChip(opts.klic) });
   const step = opts.step ?? 'any', u = opts.u ?? '';
   if (opts.type === 'check')
-    return `<div class="row"><label>${opts.l}</label><input type="checkbox" ${val ? 'checked' : ''} onchange="set('${path}', this.checked)"><span class="u"></span></div>`;
+    return `<div class="row"><label>${opts.l}</label><input type="checkbox" ${val ? 'checked' : ''} onchange="set('${escJs(path)}', this.checked)"><span class="u"></span></div>`;
   if (opts.type === 'sel')
-    return `<div class="row"><label>${opts.l}</label><select onchange="set('${path}', this.value)">${opts.o.map(o =>
+    return `<div class="row"><label>${opts.l}</label><select onchange="set('${escJs(path)}', this.value)">${opts.o.map(o =>
       `<option ${String(o[0]) === String(val) ? 'selected' : ''} value="${o[0]}">${o[1]}</option>`).join('')}</select><span class="u"></span></div>`;
   if (opts.type === 'text')
-    return `<div class="row"><label>${opts.l}</label><input type="text" style="width:170px;text-align:left" value="${esc(val)}" onchange="set('${path}', this.value)"><span class="u"></span></div>`;
+    return `<div class="row"><label>${opts.l}</label><input type="text" style="width:170px;text-align:left" value="${esc(val)}" onchange="set('${escJs(path)}', this.value)"><span class="u"></span></div>`;
   if (opts.type === 'date')
-    return `<div class="row"><label>${opts.l}</label><input type="date" value="${esc(val)}" onchange="set('${path}', this.value)"><span class="u"></span></div>`;
+    return `<div class="row"><label>${opts.l}</label><input type="date" value="${esc(val)}" onchange="set('${escJs(path)}', this.value)"><span class="u"></span></div>`;
   if (opts.type === 'anone')   // rolovací Ano / Ne; ukládá se 1 / 0 (17. 8. 2026 večer)
-    return `<div class="row"><label>${opts.l}</label><select onchange="set('${path}', +this.value)">
+    return `<div class="row"><label>${opts.l}</label><select onchange="set('${escJs(path)}', +this.value)">
       <option value="1" ${val ? 'selected' : ''}>Ano</option>
       <option value="0" ${!val ? 'selected' : ''}>Ne</option></select><span class="u"></span></div>`;
   /* `min` u procent (B134, 12. 10. 2026): rezervy zadání OCK nesmějí být
@@ -865,7 +865,7 @@ function inp(path, opts = {}) {
    * přirážku v ceníku min nemá (smí ji měnit jen administrátor). */
   if (opts.type === 'pct') {  // uloženo jako desetinné číslo (0,30), zobrazeno a zadáváno v % (30)
     const minPct = opts.min != null ? ` min="${esc(opts.min)}"` : '';
-    return `<div class="row"><label>${opts.l}</label><input ${CISLO_POLE} step="${opts.step ?? 1}"${minPct} value="${Math.round(val * 10000) / 100}" onchange="set('${path}', (+this.value) / 100)"><span class="u">%</span></div>`;
+    return `<div class="row"><label>${opts.l}</label><input ${CISLO_POLE} step="${opts.step ?? 1}"${minPct} value="${Math.round(val * 10000) / 100}" onchange="set('${escJs(path)}', (+this.value) / 100)"><span class="u">%</span></div>`;
   }
   /* `t` = tooltip nad polem. Přibylo 10. 9. 2026, když se popisné texty
    * odstěhovaly ze Zadání šachty do Detailu výpočtu (zadání J. V.) — vysvětlení
@@ -876,7 +876,7 @@ function inp(path, opts = {}) {
    * šipky přes hranici; napsané číslo se uloží, jak je (tiché oříznutí by
    * z překlepu udělalo jinou nabídku). Co je nad hranicí, řekne volající. */
   const max = opts.max != null ? ` max="${esc(opts.max)}"` : '';
-  return `<div class="row"><label>${opts.l}</label><input ${CISLO_POLE} step="${step}"${min}${max} value="${esc(val)}"${tit} onchange="set('${path}', +this.value)"><span class="u">${u}</span></div>`;
+  return `<div class="row"><label>${opts.l}</label><input ${CISLO_POLE} step="${step}"${min}${max} value="${esc(val)}"${tit} onchange="set('${escJs(path)}', +this.value)"><span class="u">${u}</span></div>`;
 }
 
 /* NULA SE NEMUSÍ MAZAT (10. 9. 2026, zadání J. V.: „nastav buňky tak, aby když
@@ -1377,7 +1377,7 @@ function zakazkaHlavicka(ock) {
   const opts = ZAK.varianty.map(v =>
     `<option value="${esc(v.id)}" ${v.id === akt.id ? 'selected' : ''}>${esc(v.nazev)}${v.ridici ? ' · řídící' : ''}</option>`).join('');
   const txt = (path, label, pill) => `<div class="row"><label>${label}${pill || ''}</label>
-    <input type="text" value="${esc(get(path))}" onchange="set('${path}', this.value)"${
+    <input type="text" value="${esc(get(path))}" onchange="set('${escJs(path)}', this.value)"${
       typeof zamekZakAttr === 'function' ? zamekZakAttr(path) : ''}></div>`;
 
   /* Pole „Zákazník" našeptává z kartotéky i z rejstříku zakázek (22. 8. 2026,
@@ -1468,7 +1468,7 @@ function zakazkaHlavicka(ock) {
     return `<div class="row"><label>IČO zákazníka${pill}</label>
       <input type="text" value="${esc(h)}" placeholder="8 číslic"${typeof zamekZakAttr === 'function' ? zamekZakAttr(path) : ''}
         title="IČO zákazníka; přebírá ho krycí list. Prázdné pole se nikde nehlásí."
-        onchange="set('${path}', this.value)"></div>${aresBtns}`;
+        onchange="set('${escJs(path)}', this.value)"></div>${aresBtns}`;
   };
 
   // indikátor řídící varianty přímo za popiskem „Otevřená varianta" (odsazený)
@@ -1564,7 +1564,7 @@ function zakazkaHlavicka(ock) {
    * Pipedrive" bývá nejvyšší třetí sloupec a u zahraniční zakázky s kurzem
    * by datum sjelo o 38 px pod úroveň sazby DPH. */
   const dphSelect = (cesta, c, sazba) => `<div class="row na-konec"><label>Sazba DPH</label>
-    <select onchange="set('${cesta}', +this.value)"${typeof zamekDphAttr === 'function' ? zamekDphAttr(cesta) : ''}>${dphPredvolby(c, sazba).map(o =>
+    <select onchange="set('${escJs(cesta)}', +this.value)"${typeof zamekDphAttr === 'function' ? zamekDphAttr(cesta) : ''}>${dphPredvolby(c, sazba).map(o =>
       /* Sazba ze zakázky jde do value jen jako ČÍSLO (B69, 24. 9. 2026):
        * uložená zakázka může nést v sazbě řetězec s HTML. */
       `<option value="${esc(+o.h || 0)}" ${Math.abs((+sazba || 0) - (+o.h || 0)) < 1e-9 ? 'selected' : ''}>${

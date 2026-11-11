@@ -110,9 +110,9 @@ function cenikZahrPctPole(cesta, opts) {
     <input ${CISLO_POLE} step="1" class="zahr-cena${zv === '' ? '' : ' ma'}" style="width:80px"
       value="${esc(pct)}" placeholder="${esc(placeholder)}"
       title="${esc(title)}"
-      onchange="cenikZahrSet('${cesta}', this.value === '' ? '' : (+this.value) / 100)"> %
+      onchange="cenikZahrSet('${escJs(cesta)}', this.value === '' ? '' : (+this.value) / 100)"> %
     ${zv === '' ? '' : `<button class="mini noprint" title="${esc(reset)}"
-      onclick="cenikZahrSet('${cesta}', '')">↺</button>`}</span>`;
+      onclick="cenikZahrSet('${escJs(cesta)}', '')">↺</button>`}</span>`;
 }
 /* Sazba DPH pro zahraniční řadu. Vlastní texty, jinak totéž co u přirážky.
  *
@@ -173,16 +173,16 @@ function cenikRows(def, zahrSloupec) {
       const jenZahrPolozka = jenZahrPevne
         || ((typeof CENIK_ZAHR !== 'undefined') && !!CENIK_ZAHR.jenZahr[path]);
       let ed;
-      if (typ === 'text') ed = `<input type="text" style="width:130px;text-align:left" value="${esc(val)}" onchange="set('${path}', this.value)">`;
-      else if (typ === 'selLak') ed = `<select style="width:130px" onchange="set('${path}', this.value)">
+      if (typ === 'text') ed = `<input type="text" style="width:130px;text-align:left" value="${esc(val)}" onchange="set('${escJs(path)}', this.value)">`;
+      else if (typ === 'selLak') ed = `<select style="width:130px" onchange="set('${escJs(path)}', this.value)">
           <option value="tomas" ${val === 'tomas' ? 'selected' : ''}>Lakovna B</option>
           <option value="lakovna" ${val === 'lakovna' ? 'selected' : ''}>lakovna</option></select>`;
       /* Procenta se v datech drží jako desetinný podíl (0,30), ale zadávají
        * se lidsky — 30. Stejně jako globální přirážka o pár řádků výš
        * (31. 8. 2026, položky ATYP a výchozí rozsahy práce). */
       else if (typ === 'pct') ed = `<input ${CISLO_POLE} step="1" value="${val == null || val === '' ? '' : Math.round(val * 10000) / 100}"
-          placeholder="nenastaveno"${cenikBarvaAttr(u)} onchange="set('${path}', this.value === '' ? 0 : (+this.value) / 100)">`;
-      else ed = `<input ${CISLO_POLE} step="any" value="${esc(val)}"${cenikBarvaAttr(u)} onchange="set('${path}', +this.value)">`;
+          placeholder="nenastaveno"${cenikBarvaAttr(u)} onchange="set('${escJs(path)}', this.value === '' ? 0 : (+this.value) / 100)">`;
+      else ed = `<input ${CISLO_POLE} step="any" value="${esc(val)}"${cenikBarvaAttr(u)} onchange="set('${escJs(path)}', +this.value)">`;
       /* TUZEMSKÁ CENA U POLOŽKY „JEN ZAHRANIČNÍ" SE NEZADÁVÁ (P4, nález N6).
        *
        * Ceník verze 27 měl u překladů CZ→DE vyplněnou i ČR hodnotu — dalo se
@@ -203,9 +203,9 @@ function cenikRows(def, zahrSloupec) {
             placeholder="${path === 'C.mustekMontazHodKc' ? 'jako montáž zahr.' : 'jako ČR'}" title="${path === 'C.mustekMontazHodKc'
               ? 'prázdné = platí zahraniční sazba montáže na stavbě (bez ní tuzemská sazba montáže můstků) — #550'
               : 'prázdné = platí tuzemská cena'}"${cenikBarvaAttr(u, { prazdnaOk: true })}
-            onchange="cenikZahrSet('${path}', this.value)">
+            onchange="cenikZahrSet('${escJs(path)}', this.value)">
           ${zv === '' ? '' : `<button class="mini noprint" title="převzít tuzemskou cenu"
-            onclick="cenikZahrSet('${path}', '')">↺</button>`}</td>
+            onclick="cenikZahrSet('${escJs(path)}', '')">↺</button>`}</td>
           <td class="zahr-bunka"><label title="${pevne
             ? 'položka v tuzemské zakázce neexistuje — dané ceníkem, nejde vypnout'
             : 'položka v tuzemské kalkulaci vůbec není'}">
