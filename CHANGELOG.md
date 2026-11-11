@@ -34,7 +34,7 @@ rozhodnutí J. V. 4. 11. (S1, N3) a 11. 11. 2026 (3a, 4a).
   čas tisku dál určuje období odeslání v controllingu — otázka 4a, jen zapsáno).
 - **Příručka obchodníka:** karta Prodej — mez 7 dní před přijetím serverem a výjimka vedoucího s důvodem.
 - **Testy:** `src/test_k40b_zamek_prodej.js` (50), `netlify/test_k40b_prodej_mez.mjs` (31) — nad c664c9e padají;
-  mutace „[K40b]“ server 12 + jádro 3; posunuté zadání starých mutací (#547 K37-N4 ×3, rev #401 N1, #508 K7-S2,
+  mutace „[K40b]“ server 12/12 + jádro 3/3, celé jádro po částech 823/823; posunuté zadání starých mutací (#547 K37-N4 ×3, rev #401 N1, #508 K7-S2,
   B105, #507 K7-K1 ×2).
 
 ## v11.11.1 — VS-E6 #570: víc šachet v nabídce — závěr: překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi (#596; #570 hotovo), větev claude/vs-e6

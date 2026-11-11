@@ -21,7 +21,7 @@ dělá poradce Fable.
 | příručka | ✅ | `manual/obsah.json` karta Prodej |
 | testy s pojistkou | ✅ | `src/test_k40b_zamek_prodej.js` 50/0, `netlify/test_k40b_prodej_mez.mjs` 31/0 — nad c664c9e padají |
 | zlaté sady | ✅ | VS 319/319, můstky (`test_560_mustky_sekce.js`) 228/0 — otisky beze změny, nepřegenerováno |
-| mutace | ✅ | [K40b] server 12/12, jádro 3/3; posunutá zadání (K37-N4 ×3, rev #401 N1, K7-S2, B105, K7-K1 ×2) chycená; `--kontrola` obou sad OK; celé jádro po částech — viz níž |
+| mutace | ✅ | [K40b] server 12/12, jádro 3/3; posunutá zadání (K37-N4 ×3, rev #401 N1, K7-S2, B105, K7-K1 ×2) chycená; `--kontrola` obou sad OK; **celé jádro po částech (N = 4) 823/823** (206/206/206/205, worktree nad `dc3efcd`) |
 | kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | 428/0/7 (přeskočené jen firemní podklady), +400 dní 345/0/1, statické |
 | CHANGELOG, roadmapa #580, verze | ✅ | v11.11.2; `roadmapa.py --kontrola` 580 položek bez nálezu |
 
