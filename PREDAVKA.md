@@ -1,3 +1,25 @@
+# Předávka — 11. 11. 2026: integrátor chce adresu webhooku, větev `claude/eager-carson-1xznt2` (jen dokumentace)
+
+- Integrátor 11. 11. (odpověď na e-mail z 4. 11.): prosí o URL webhooku, navrhuje POST s `deal_id` a Basic Auth
+  (Pipedrive prý jiné ověření neumí), automatizace se spustí jen při nastavení pole na „Ano“ a pak pole vrátí.
+  Na dvě otázky z 4. 11. neodpověděl (jiné automatizace na zkušební deal a na „Odkaz na kalkulaci“).
+- Ověřeno 11. 11. (jen čtení): v Pipedrive jsou obě pole — „Vygenerovat nabídku“ (`enum`, jediná volba „Ano“)
+  a „Odkaz na kalkulaci“ (`varchar`). Testovací web `testengscalc` běží v11.11.1, `GET /api/pd/webhook` vrací 405,
+  `POST` bez klíče 503 = `PIPEDRIVE_WEBHOOK_KLIC` není nastavený.
+- Kód v `test` návrh integrátora pokrývá bez úprav: `pdWebhookDealId` bere `dealId` i `deal_id` (test
+  `netlify/test_553_webhook.mjs` ř. 123, 165), Basic projde s libovolným jménem a heslem = klíč. Tělo musí být
+  platný JSON (`{"deal_id": 123}`), formulář by vrátil 400.
+- Koncept odpovědi integrátorovi je v souhrnu https://claude.ai/artifact/XSFa1QVnFCWXoLpzx7yD8u (oddíl „Odpověď
+  integrátora 11. 11. a další kroky“); koncept v Outlooku založit nejde (konektor má jen čtení pošty). Bez Make.
+- Další kroky: J. V. klíč (≥ 32 znaků) do Netlify `testengscalc`, kontrola tokenu a domény, nové nasazení, Obnovit
+  z CRM; odeslat odpověď; heslo do automatizace vloží J. V. sám; zkouška na dealu „TEST – integrace kalkulačky“
+  s vyplněným „Číslo nabídky (CN)“; po zkoušce rozhodnout o ostrém webu.
+- Otevřené pro J. V.: deal bez čísla nabídky webhook odmítne (422) a obchodník to v Pipedrive nevidí — výchozí
+  CN vyplnit před spuštěním, před ostrým startem zvážit hlášku do „Odkaz na kalkulaci“. Kdyby Pipedrive posílal
+  Basic až po výzvě serveru, 401 dnes nenese `WWW-Authenticate` — řešit jen, když to ukáže zkouška.
+
+---
+
 # Předávka — 4. 11. 2026: odpověď integrátorovi k webhooku odeslána, větev `claude/eager-carson-1xznt2` (jen dokumentace)
 
 - J. V. 4. 11. odeslal integrátorovi odpověď k webhooku #553 s přílohou „Webhook Vygenerovat nabídku — podklad pro
