@@ -19,7 +19,7 @@ weby, Disk, Pipedrive nic. Verze se dorovná při uzavření (poslední commit p
 | mutace „[#570 E6]“ | ✅ jádro 3/3, server 7/7 | `mutace_jadro.mjs` (sod.js), `netlify/mutace.mjs` (+ sada `test_vs_rejstrik.mjs`) |
 | kolo bez mutací | ✅ | 425/1/7 + hodiny 342/1/1 + statické 5/5 — jediný FAIL `test_release_odkaz.js` (chyběl oddíl CHANGELOG nové verze)  |
 | mutace jádra po částech (N = 4) | ✅ 820/820 | 1/4 205/205, 2/4 205/205, 3/4 205/205, 4/4 157 + 49 po navázání (restart kontejneru, `KNG_MUTACE_OD=628`) |
-| mutace serveru po částech (N = 16) | ⏳ | ✅ 1/16, 2/16, 3/16 87/87; 4/16 64 + 24 (od 1012), 5/16 60 + 28 (od 949) — bez přeživších; 6/16 (8 + 62, dál od 1094), 7/16 (57, od 903), 8/16 (24, od 376), 9/16 (10, od 153) navázány po 2. restartu; 10–16 čekají |
+| mutace serveru po částech (N = 16) | ⏳ | ✅ 1–9/16 po 87 (navázané části: 4 = 64 + 24 od 1012, 5 = 60 + 28 od 949, 6 = 8 + 62 + 19 od 118/1094, 7 = 57 + 31 od 903, 8 = 24 + 64 od 376, 9 = 10 + 78 od 153; dvakrát restart kontejneru) — bez přeživších; 10–13/16 běží, 14–16 čekají |
 
 **Postup mutací:** každá část v samostatném `git worktree` (scratchpad `wt_mj`, `wt_ms1..3`, nad 7618ede = kód E6;
 dokumentační commit kód nemění), `KNG_MUTACE_CAST=K/N bash nastroje/testovaci_kolo.sh --jen mutace-…`, úloha na pozadí
