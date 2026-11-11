@@ -1,3 +1,38 @@
+# Předávka — K40a #579 (meze B199–B205): opravy z posudku K40 — sklo víc šachet, můstky, ořez řetězců, CSV, escJs, retence Disku, harnessy; větev `claude/k40a`
+
+Nad `c664c9e` (integrace `claude/integrace-16-10` v11.11.1; před koncem ověřeno, že se nepohnula). **v11.11.2.** Do `test-draft`, `test`
+ani `main` nic; weby, Disk, Pipedrive nic. Paralelně K40b (S1+N3, S2 — zamek.js, zakazka_kontrola, prodej): jejích souborů jsem se nedotkl.
+Podklad: `podklady/K40_POSUDEK_FABLE.md` + `PROMPT_K40_OPRAVY_v2.md` (větev `claude/k40-posudek`), rozhodnutí J. V. 11. 11.
+
+| bod | stav | kde / poznámka |
+|---|---|---|
+| krok 0 — trvají nálezy? | ✅ | vše trvá kromě T2 (opraveno už FL #576) |
+| N1 — čelní sklo přejmenovat jen při skutečném přepnutí (import beze změny) | ✅ | `common.js` `set()` předá `predCelni` jen u `Z.typSachty`/`Z.zaskleni`; `engine.js` `skloMigraceZadani` přesná dvojice; rozhodnutí 2a (převzít vše jako K37), 1a (staré osiřelé nechat) |
+| skloMigrace pro šachty 2+ (nový nález) | ✅ | `skloMigraceNazvu` iteruje i `ock.dalsi[].zadani`; test `test_k40_celni_sklo.js` 68/0 (na c664c9e 27 FAIL) |
+| N2 — referenční šířka můstku 500–5 000 mm (8a) | ✅ | `MUSTEK_REF_SIRKA_MIN/MAX_MM`, `mustkyCenikKontrola` obal; `test_k40_mustky_cenik.js` 30/0 (16 FAIL) |
+| N5 — kontrola zahraniční řady můstků (dialog i server) | ✅ | `cenik_rady.js` `mustkyCenikKontrolaZahr`, `program_ui.js`, `program.mjs`; `netlify/test_k40_mustky_program.mjs` 12/0 (4 FAIL) |
+| N4 — sazba DPH PROJ u starší zakázky | ✅ komentář | chování beze změny (rozhodnutí 4. 11.), opraven komentář; `test_k40_dph_proj.js` 6/0 (1 FAIL) |
+| X1/X2 — ořez konců bez regexu s kotvou (ReDoS) | ✅ | `format.js` `orezKonce`, `nazvy_souboru.js` (strop 200), `preklad.js`, `plan_plateb.js`, `slovnik.js`; `test_k40_orez_konce.js` 17/0 (6 FAIL) |
+| X5 — záložní buňka CSV s ochranou vzorců | ✅ | `slovnik.js`, `pd_nanecisto.js` (require `format.js` `csvBunka`); `test_k40_csv_bunka.js` 23/0 (10 FAIL) |
+| X6 — escJs u `path`/`cesta` v onclick/onchange | ✅ | `common.js`, `cenik_ui.js` 18 míst; `test_escape.js` 42/0 (2 FAIL) |
+| X4 — retence Disku: budoucí kopie nesrovnávat, hlásit (7a, i AS skript) | ✅ | `retence_zaloh.js` `retenceZalohDiskPredchozi`, `online_ui.js` `kopieDiskUklid(Text)`, `kopie_disk.gs` (`vloz_retenci.py --kontrola` aktuální); testy `test_z2_disk_retence.js` 56/0 (3 FAIL), `test_577_apps_script.mjs` 33/0 (2 FAIL) |
+| S4 — ADMIN_EMAIL v netlify testech | ✅ | `netlify/pomoc_test_admin.mjs` importovaný jako první ve 12 testech |
+| T1/T3 — harnessy šablon s nejvyšší verzí | ✅ kód / ⬜ ověření | `harness_podklady.mjs` `najdiSablonu`; `overit_nabidka_proj_word`, `overit_sablony_online`, `overit_sod`; **bez šablon z Disku se přeskočí (kód 4) — ověřit s `KNG_PODKLADY`** |
+| P1 — meze přečíslovat (B176–B179 kolidovaly) | ✅ | #553 → B199–B202; `test_meze_cisla.js` 6/0 (4 FAIL) |
+| meze X3/S3/X4 | ✅ | `BEZPECNOST_MEZE.md` B203 (X3), B204 (S3), B205 (X4) |
+| otázka 6 — šířka skupiny můstků v metrech | ⬜ nedělal | v2: „nedělej bez pokynu J. V.“ (J. V. řekl 6a — jen varování pod 300 mm; čeká na potvrzení, že se má dělat v K40a) |
+| otázka 3a, 4a | → K40b | |
+| webhook K40c | ⬜ dle pokynu | |
+| zlatá sada víc šachet / můstky | ✅ | 319/319, `test_560_mustky_sekce.js` 228/0 — otisky beze změny |
+| mutace [K40a] | ✅ | jádro **19/19**, server **9/9** (X5/X6 nejdřív NECHYCENÉ — sady chyběly v SADY, doplněno); překotvené staré: jádro K37, server #577/#552/#523/#527 (úklid 22/22, #577 1/1, #552 1/1); `--kontrola` jádro 839, server 1396 |
+| kolo `--bez-mutaci` nad v11.11.2 | ✅ VŠE ZELENÉ | sady 433/0/7, +400 dní 350/0/1, statické 5/5 (33 min); přeskočeno 7 — test.js a 6 harnessů bez KNG_PODKLADY |
+| CHANGELOG, roadmapa #579, manuály | ✅ | v11.11.2; `roadmapa.py --kontrola` 580 OK |
+
+**Pro J. V.:**
+1. **Vložit nový `nastroje/apps_script/kopie_disk.gs` do Apps Scriptu** (postup `podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`) — X4 je ve skriptu.
+2. Ověřit harnessy šablon s podklady: `KNG_PODKLADY=… node overit_nabidka_proj_word.mjs`, `overit_sablony_online.mjs`, `overit_sod.mjs`.
+3. Otázka 6 (šířka skupiny můstků) — potvrdit, zda dělat.
+
 # Předávka — VS-E6 #570 (#596): závěr víc šachet — překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi po částech, větev `claude/vs-e6`
 
 Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Do `test-draft`, `test` ani `main` nic;
