@@ -80,6 +80,21 @@ test('úseky online_ui.js nalezeny (kopie na Disk, úklid, obnova .gz)', !!kopie
     && V(['otisk_main_2020-01-01_0310.json', 'otisk_main_2020-01-02_0310.json'], '').length === 0);
 }
 
+/* ---------------- 1b) K40-X4: srovnávací kopie (retenceZalohDiskPredchozi) ---------------- */
+{
+  const P = (j, s, d, pr) => (typeof R.retenceZalohDiskPredchozi === 'function') ? R.retenceZalohDiskPredchozi(j, s, d, pr) : null;
+  const jm = ['otisk_main_2026-10-20_0310.json', 'otisk_main_2026-10-20_2210.json.gz', 'otisk_main_2026-10-27_0310.json.gz', 'otisk_main_2026-10-27_0400.json',
+    'otisk_main_2026-11-30_0310.json', 'otisk_test_2026-10-26_0310.json', 'otisk_2026-10-26.json', 'otisk_main_2027-01-01_0310.json.gz', 'poznamka.txt'];
+  const r = P(jm, 'otisk_main_2026-10-27_0310.json.gz', '2026-10-27', 'main');
+  test('K40-X4 tabulka: předchozí = poslední den MENŠÍ než den kopie (jméno řadí i čas), ne stejný den ani budoucí',
+    !!r && r.predchozi === 'otisk_main_2026-10-20_2210.json.gz', r);
+  test('K40-X4 tabulka: budoucí jména vlastního prostředí zvlášť (seřazená), cizí prostředí a starý tvar ne',
+    !!r && J(r.budouci) === J(['otisk_main_2026-11-30_0310.json', 'otisk_main_2027-01-01_0310.json.gz']), r);
+  test('K40-X4 tabulka: bez starší kopie predchozi null; neplatný den nebo prostředí = nic',
+    !!r && P(['otisk_main_2026-10-27_0310.json'], 'x', '2026-10-27', 'main').predchozi === null
+    && J(P(jm, '', '2026-02-31', 'main')) === J({ predchozi: null, budouci: [] }) && J(P(jm, '', '2026-10-27', 'ostry')) === J({ predchozi: null, budouci: [] }));
+}
+
 /* ---------------- 2) simulovaná složka a průběh kopie ---------------- */
 /* Složka v paměti: jméno → { kind, data: Uint8Array }. `zmenaPoZapisu` umí
  * podvrhnout jiný obsah při čtení (useknutý / jiný soubor). */
@@ -115,7 +130,7 @@ const novyCtx = (opt) => {
     volani: [], zpravy: [], heslo: 'Heslo.Spravce.1',
     ULO_KOPIE_DISK_SLOZKA: U.ULO_KOPIE_DISK_SLOZKA, uloKopieDiskJmeno: U.uloKopieDiskJmeno, uloZalohaSloz: U.uloZalohaSloz,
     uloKopieDiskProstredi: U.uloKopieDiskProstredi, uloKopieDiskPosledniJmeno: U.uloKopieDiskPosledniJmeno, retenceZalohDiskRozeber: R.retenceZalohDiskRozeber,
-    retenceZalohDiskVyber: R.retenceZalohDiskVyber, retenceZalohPokles: R.retenceZalohPokles, RETENCE_ZALOH_DISK_JMENO: R.RETENCE_ZALOH_DISK_JMENO,
+    retenceZalohDiskVyber: R.retenceZalohDiskVyber, retenceZalohDiskPredchozi: R.retenceZalohDiskPredchozi, retenceZalohPokles: R.retenceZalohPokles, RETENCE_ZALOH_DISK_JMENO: R.RETENCE_ZALOH_DISK_JMENO,
     ONLINE_STAV: { otisky: [], kopieDisk: null }, jeAdminOnline: () => true, render: () => {}, uloPravo: async () => true,
     onlineZprava: (t, typ) => { ctx.zpravy.push([String(t), typ || '']); },
     dotazHeslo: () => Promise.resolve(ctx.heslo), uloDb: () => Promise.reject(new Error('bez IndexedDB')),
@@ -363,6 +378,37 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
     test('#523 jméno kopie: uloKopieDiskJmeno umí .json.gz (#552: s prostředím a časem)',
       U.uloKopieDiskJmeno('2026-10-27', true, 'main', '2026-10-27T02:10:00Z') === 'otisk_main_2026-10-27_0310.json.gz'
       && U.uloKopieDiskJmeno('2026-10-27', false, 'main', '2026-10-27T02:10:00Z') === 'otisk_main_2026-10-27_0310.json');
+  }
+  /* ---- K40-X4 (B205): podvržená „budoucí" kopie ve sdílené složce ----
+   * Do K40a se srovnávalo s abecedně POSLEDNÍM jménem prostředí: velký soubor
+   * s budoucím datem dal falešný úbytek (mazání stojí), malý zakryl skutečný. */
+  {
+    const dataNove = Buffer.byteLength(J(ZALOHA));
+    const ctx = novyCtx({ serverOdpoved: async (cesta, telo) => {
+      if (telo && telo.akce === 'retence-varovani-disk') return { ok: true, retenceVarovani: { kdy: 'x', den: telo.disk.den, zdroj: 'disk', text: 'úbytek' } };
+      return { ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString() }, retenceVarovani: null }; } });
+    const h = slozka('_Zaloha Netlify DB', { 'otisk_main_2026-10-20_0310.json': 'x'.repeat(dataNove), 'otisk_main_2026-10-13_0310.json': 'stara',
+      'otisk_main_2026-10-18_0310.json': 'nedele', 'otisk_main_2026-10-01_0310.json': 'prvni', 'otisk_main_2026-12-31_0310.json': 'x'.repeat(dataNove * 3) });
+    const k = await ctx.proved(h);
+    const hlaseni = ctx.volani.find(v => v[1] && v[1].akce === 'retence-varovani-disk');
+    test('K40-X4: velká „budoucí" kopie nedá falešný úbytek — srovnává se s 20. 10., úklid proběhne', !hlaseni && !k.uklid.duvod
+      && J(h.smazane) === J(['otisk_main_2026-10-13_0310.json']), { uklid: k.uklid, hlaseni: hlaseni && hlaseni[1].disk });
+    test('K40-X4: budoucí kopie se nesmaže a úklid ji ohlásí jako podezřelou', h.m.has('otisk_main_2026-12-31_0310.json')
+      && J(k.uklid.podezrela) === J(['otisk_main_2026-12-31_0310.json'])
+      && /Podezřelé kopie s budoucím datem .*otisk_main_2026-12-31_0310\.json/.test(ctx.uklidText(k.uklid)), { uklid: k.uklid, text: ctx.uklidText(k.uklid) });
+  }
+  {
+    const dataNove = Buffer.byteLength(J(ZALOHA));
+    const ctx = novyCtx({ serverOdpoved: async (cesta, telo) => {
+      if (telo && telo.akce === 'retence-varovani-disk') return { ok: true, retenceVarovani: { kdy: 'x', den: telo.disk.den, zdroj: 'disk', text: 'úbytek' } };
+      return { ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString() }, retenceVarovani: null }; } });
+    const h = slozka('_Zaloha Netlify DB', { 'otisk_main_2026-10-20_0310.json': 'x'.repeat(Math.round(dataNove / 0.85)), 'otisk_main_2026-10-13_0310.json': 'stara',
+      'otisk_main_2027-01-02_0310.json': 'x' });
+    const k = await ctx.proved(h);
+    const hlaseni = (ctx.volani.find(v => v[1] && v[1].akce === 'retence-varovani-disk') || [])[1];
+    test('K40-X4: malá „budoucí" kopie nezakryje skutečný úbytek proti 20. 10. — nic se nesmaže, server dostane hlášení',
+      h.smazane.length === 0 && !!hlaseni && hlaseni.disk.predSoubor === 'otisk_main_2026-10-20_0310.json' && /méně dat/.test(k.uklid.duvod || '')
+      && J(k.uklid.podezrela) === J(['otisk_main_2027-01-02_0310.json']), { uklid: k.uklid, hlaseni });
   }
   Date.now = realNow;
   console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');

@@ -440,8 +440,8 @@ const MUTACE = [
     nahrad: '  if (false)',
     proc: 'prohozené adresy/tokeny by kopírovaly ostrý web pod jménem testu', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
   { nazev: '#577: skript: retence cizího prostředí [#577]', soubor: '../nastroje/apps_script/kopie_disk.gs',
-    hledej: '  var smazat = retenceZalohDiskVyber(jmena, new Date(ted).toISOString().slice(0, 10), [p.soubor], w.prostredi);',
-    nahrad: '  var smazat = retenceZalohDiskVyber(jmena, new Date(ted).toISOString().slice(0, 10), [p.soubor], \'main\');',
+    hledej: '  var smazat = retenceZalohDiskVyber(jmena, new Date(ted).toISOString().slice(0, 10), [p.soubor].concat(podezrela), w.prostredi);',   // K40a: + podezřelá
+    nahrad: '  var smazat = retenceZalohDiskVyber(jmena, new Date(ted).toISOString().slice(0, 10), [p.soubor].concat(podezrela), \'main\');',
     proc: 'konfigurace testu by uklízela kopie ostrého webu', sady: ['test_577_apps_script.mjs', '../src/test_577_jmeno_kopie.js', 'test_577_kopie_skript.mjs'] },
   { nazev: '#577: skript: chyba bez e-mailu [#577]', soubor: '../nastroje/apps_script/kopie_disk.gs',
     hledej: '  if (chyby.length || upozorneni.length) {',
@@ -920,13 +920,14 @@ const MUTACE = [
     hledej: '  await kopieDiskZapisSoubor(h, uloKopieDiskPosledniJmeno(prostredi),',
     nahrad: '  await kopieDiskZapisSoubor(h, \'posledni_kopie.json\',',
     proc: 'oba weby by přepisovaly jeden záznam' },
-  { nazev: '#552: pojistka úbytku porovná s kopií druhého webu', soubor: '../src/ui/online_ui.js',
-    hledej: '  const datum = (j) => { const x = retenceZalohDiskRozeber(j); return x && !x.stary && x.prostredi === prostredi ? x.den : \'\'; };',
-    nahrad: '  const datum = (j) => { const x = retenceZalohDiskRozeber(j); return x ? x.den : \'\'; };',
+  /* K40a (11. 11. 2026): výběr srovnávací kopie se přestěhoval do retenceZalohDiskPredchozi. */
+  { nazev: '#552: pojistka úbytku porovná s kopií druhého webu', soubor: '../src/retence_zaloh.js',
+    hledej: 'return r && !r.stary && r.prostredi === prostredi && j !== String(soubor) ? { j, d: r.den } : null; })',
+    nahrad: 'return r && !r.stary && j !== String(soubor) ? { j, d: r.den } : null; })',
     proc: 'test proti ostrému webu by hlásil nesmyslný úbytek a zastavil retenci' },
   { nazev: '#552: úklid Disku nedostane prostředí', soubor: '../src/ui/online_ui.js',
-    hledej: '  for (const j of retenceZalohDiskVyber(jmena, dnes, [kopie.soubor], prostredi)) {',
-    nahrad: '  for (const j of retenceZalohDiskVyber(jmena, dnes, [kopie.soubor], \'main\')) {',
+    hledej: '  for (const j of retenceZalohDiskVyber(jmena, dnes, [kopie.soubor].concat(podezrela), prostredi)) {',   // K40a: + podezřelá
+    nahrad: '  for (const j of retenceZalohDiskVyber(jmena, dnes, [kopie.soubor].concat(podezrela), \'main\')) {',
     proc: 'testovací web by uklízel kopie ostrého' },
   { nazev: '#552: prostředí bez kontextu nasazení', soubor: 'lib/zalohovani.mjs',
     hledej: '  if (ctx && ctx !== \'production\') return \'jiny\';\n',
@@ -1176,6 +1177,30 @@ const MUTACE = [
     hledej: "  if (s >= MUSTEK_REF_SIRKA_MIN_MM && s <= MUSTEK_REF_SIRKA_MAX_MM) return r;",
     nahrad: "  if (s > 0) return r;",
     proc: 'ceník se šířkou 2 (metry místo milimetrů) by se zveřejnil a můstek vyšel tisíckrát dražší (K40-N2)', sady: ['test_k40_mustky_program.mjs'] },
+  /* ---------- K40a X5/X6 (11. 11. 2026, #579): záložní buňka CSV a cesta v onclick ceníku.
+   * Hlídají ../src/test_k40_csv_bunka.js a ../src/test_escape.js. [K40a] ---------- */
+  { nazev: '[K40a] X5: záložní buňka CSV slovníku bez ochrany vzorců', soubor: '../src/slovnik.js',
+    hledej: "  const q = (typeof csvBunka === 'function') ? csvBunka : require('./format.js').csvBunka;",
+    nahrad: "  const q = (typeof csvBunka === 'function') ? csvBunka : (s => '\"' + String(s == null ? '' : s).replace(/\"/g, '\"\"') + '\"');",
+    proc: 'CSV pro překladatele by v Excelu spustilo vzorec z hesla „=HYPERLINK(…)“ (K40-X5)', sady: ['../src/test_k40_csv_bunka.js'] },
+  { nazev: '[K40a] X5: záložní buňka CSV Pipedrive nanečisto bez ochrany vzorců', soubor: '../src/pd_nanecisto.js',
+    hledej: "  const bunka = (typeof csvBunka === 'function') ? csvBunka : require('./format.js').csvBunka;",
+    nahrad: "  const bunka = (typeof csvBunka === 'function') ? csvBunka : (t => '\"' + String(t == null ? '' : t).replace(/\"/g, '\"\"') + '\"');",
+    proc: 'číslo zakázky „=…“ by v CSV suchého běhu spustilo vzorec (K40-X5)', sady: ['../src/test_k40_csv_bunka.js'] },
+  { nazev: '[K40a] X6: cesta v onclick zahraniční odchylky bez escJs', soubor: '../src/ui/cenik_ui.js',
+    hledej: "            onclick=\"cenikZahrSet('${escJs(path)}', '')\">↺</button>`}</td>",
+    nahrad: "            onclick=\"cenikZahrSet('${path}', '')\">↺</button>`}</td>",
+    proc: 'cesta z dat by v onclick ceníku byla průchod pro skript (K40-X6)', sady: ['../src/test_escape.js'] },
+  /* ---------- K40a X4 (11. 11. 2026, #579): skript Apps Script — srovnávací kopie a podezřelá
+   * budoucí jména. Hlídá test_577_apps_script.mjs (S12). [K40a] ---------- */
+  { nazev: '[K40a] X4: skript neohlásí budoucí kopie', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: "  var podezrela = vyber.budouci;",
+    nahrad: "  var podezrela = [];",
+    proc: 'noční skript by podezřelou kopii s budoucím datem zamlčel (K40-X4)', sady: ['test_577_apps_script.mjs'] },
+  { nazev: '[K40a] X4: skript srovnává s abecedně poslední kopií', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: "  var predchozi = vyber.predchozi;",
+    nahrad: "  var predchozi = jmena.filter(function (j) { var x = retenceZalohDiskRozeber(j); return x && !x.stary && x.prostredi === w.prostredi && x.den !== den && j !== p.soubor; }).sort().pop();",
+    proc: 'podvržená „budoucí" kopie by skriptu vyřadila pojistku úbytku (K40-X4)', sady: ['test_577_apps_script.mjs'] },
   /* ---------- K37-N7 (2. 11. 2026): pojistka simulátoru Pipedrive na ostrém webu
    * engscalc. Hlídá netlify/test_pd_simulator.mjs. ---------- */
   { nazev: 'K37-N7: simulátor se zapne na ostrém webu engscalc', soubor: 'lib/pipedrive_simulator.mjs',
@@ -5769,8 +5794,8 @@ const MUTACE = [
     nahrad: '  for await (const e of h.values()) if (e) jmena.push(String(e.name));',
     proc: 'úklid by se pokusil smazat složku pojmenovanou jako kopie' },
   { nazev: '#523: úklid Disku nechrání právě zapsanou kopii [#552]', soubor: '../src/ui/online_ui.js',
-    hledej: '  for (const j of retenceZalohDiskVyber(jmena, dnes, [kopie.soubor], prostredi)) {',
-    nahrad: '  for (const j of retenceZalohDiskVyber(jmena, dnes, [], prostredi)) {',
+    hledej: '  for (const j of retenceZalohDiskVyber(jmena, dnes, [kopie.soubor].concat(podezrela), prostredi)) {',   // K40a: + podezřelá
+    nahrad: '  for (const j of retenceZalohDiskVyber(jmena, dnes, [].concat(podezrela), prostredi)) {',
     proc: 'kopie starého nočního otisku by se hned smazala' },
   { nazev: '#523: kopie na Disk bez komprese', soubor: '../src/ui/online_ui.js',
     hledej: "  if (typeof CompressionStream !== 'function' || typeof Blob !== 'function' || typeof Response !== 'function')",
@@ -6005,8 +6030,8 @@ const MUTACE = [
     nahrad: '  const dnes = new Date(Date.now()).toISOString().slice(0, 10);',
     proc: 'den úklidu by určily hodiny počítače, ne server' },
   { nazev: '#527 K9-S6: úklid bez času serveru', soubor: '../src/ui/online_ui.js',
-    hledej: '  if (!Number.isFinite(tedServer) || tedServer <= 0) return nic(',
-    nahrad: '  if (false) return nic(',
+    hledej: '  if (!Number.isFinite(tedServer) || tedServer <= 0) return sPodezrelymi(nic(',   // K40a: + podezřelá
+    nahrad: '  if (false) return sPodezrelymi(nic(',
     proc: 'bez času serveru by úklid nevěděl, který je den' },
   { nazev: '#527 I3: ruční smazání otisku před obnovou bez hesla', soubor: 'functions/zaloha_vynuceno.mjs',
     hledej: "      return json({ ok: false, chyba: 'Ručně jde smazat jen otisk „před obnovou\".' }, 400);\n    const stopHeslo = await potvrdHesloSpravce(req, relace, telo.hesloSpravce);\n    if (stopHeslo) return stopHeslo;",

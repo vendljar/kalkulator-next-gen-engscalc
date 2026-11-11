@@ -2298,8 +2298,12 @@ async function kopieDiskUklid(h, kopie, ted) {
   if (v !== null && v !== undefined && (typeof v !== 'object' || Array.isArray(v)))
     return nic('záznam varování pojistky je poškozený — mazání stojí, dokud ho hlavní správce nepotvrdí');   // #529
   if (v && !v.potvrzeno) return nic('nepotvrzený úbytek dat (' + String(v.text || v.den || '') + ') — mazání stojí, dokud ho nepotvrdíte');
-  const datum = (j) => { const x = retenceZalohDiskRozeber(j); return x && !x.stary && x.prostredi === prostredi ? x.den : ''; };
-  const predchozi = jmena.filter(j => datum(j) && datum(j) !== den && j !== kopie.soubor).sort().pop();   // #552: stejné prostředí → jméno řadí den i čas
+  /* K40-X4 (B205): srovnává se jen s kopií se dnem MENŠÍM než den nové kopie;
+   * jména s budoucím dnem jsou podezřelá — ohlásí se a nemažou. */
+  const vyber = retenceZalohDiskPredchozi(jmena, kopie.soubor, den, prostredi);
+  const predchozi = vyber.predchozi;
+  const podezrela = vyber.budouci;
+  const sPodezrelymi = (o) => (podezrela.length ? Object.assign(o, { podezrela }) : o);
   if (predchozi && kopie.velikostDatB > 0) {
     const predB = await kopieDiskDatB(h, predchozi);
     const co = retenceZalohPokles({ velikostB: predB }, { velikostB: kopie.velikostDatB });
@@ -2307,7 +2311,7 @@ async function kopieDiskUklid(h, kopie, ted) {
       const o = await onlineApi('/api/zaloha_vynuceno', { akce: 'retence-varovani-disk',
         disk: { den, predSoubor: predchozi, novySoubor: kopie.soubor, predVelikostB: predB, novaVelikostB: kopie.velikostDatB } });
       ONLINE_STAV.retenceVarovani = (o && o.retenceVarovani) || ONLINE_STAV.retenceVarovani;
-      return nic('nová kopie má proti ' + predchozi + ' méně dat (' + co.join(', ') + ') — nic se nesmazalo, úbytek potvrďte v Nastavení → Databáze');
+      return sPodezrelymi(nic('nová kopie má proti ' + predchozi + ' méně dat (' + co.join(', ') + ') — nic se nesmazalo, úbytek potvrďte v Nastavení → Databáze'));
     }
   }
   /* DNEŠEK ZE SERVERU (O-K9 #527, nález K9-S6). Do O-K9 bral úklid dnešek
@@ -2316,16 +2320,16 @@ async function kopieDiskUklid(h, kopie, ted) {
    * hodiny počítače od serveru liší o víc než KOPIE_DISK_HODINY_TOLERANCE_MS,
    * se nesmaže nic. */
   const tedServer = +ted;
-  if (!Number.isFinite(tedServer) || tedServer <= 0) return nic('chybí čas serveru — staré kopie se tentokrát nemažou');
+  if (!Number.isFinite(tedServer) || tedServer <= 0) return sPodezrelymi(nic('chybí čas serveru — staré kopie se tentokrát nemažou'));
   if (Math.abs(Date.now() - tedServer) > KOPIE_DISK_HODINY_TOLERANCE_MS)
-    return nic('hodiny tohoto počítače se liší od serveru o víc než den — staré kopie se nemažou, zkontrolujte datum a čas v počítači');
+    return sPodezrelymi(nic('hodiny tohoto počítače se liší od serveru o víc než den — staré kopie se nemažou, zkontrolujte datum a čas v počítači'));
   const dnes = new Date(tedServer).toISOString().slice(0, 10);
   const smazano = [], chyby = [];
-  for (const j of retenceZalohDiskVyber(jmena, dnes, [kopie.soubor], prostredi)) {
+  for (const j of retenceZalohDiskVyber(jmena, dnes, [kopie.soubor].concat(podezrela), prostredi)) {
     try { await h.removeEntry(j); smazano.push(j); }
     catch (e) { chyby.push(j + ': ' + (e && e.message || e)); }
   }
-  return { smazano, chyby };
+  return sPodezrelymi({ smazano, chyby });
 }
 
 /* Vlastní kopie do složky `h` (právo zápisu už musí být udělené).
@@ -2385,12 +2389,15 @@ async function kopieDiskProved(h, heslo) {
 /* Věta o úklidu do hlášky po kopii (#523). */
 function kopieDiskUklidText(u) {
   if (!u) return '';
-  if (u.duvod) return ' Staré kopie na Disku se nemazaly: ' + u.duvod + '.';
+  /* K40-X4 (B205): jména kopií s budoucím datem — podezřelá, nemažou se. */
+  const pod = (u.podezrela && u.podezrela.length) ? ' Podezřelé kopie s budoucím datem (nesmazány, nesrovnávají se — zkontrolujte '
+    + 'a případně smažte ručně): ' + u.podezrela.join(', ') + '.' : '';
+  if (u.duvod) return ' Staré kopie na Disku se nemazaly: ' + u.duvod + '.' + pod;
   const n = u.smazano.length;
   return (n ? ' Na Disku smazáno ' + n + ' ' + (n === 1 ? 'starší kopie' : (n < 5 ? 'starší kopie' : 'starších kopií'))
       + ' podle pravidla (7 dní, týdenní 8 týdnů, měsíční 6 měsíců): ' + u.smazano.join(', ') + '.'
     : ' Starší kopie na Disku: nic ke smazání.')
-    + (u.chyby.length ? ' Nepodařilo se smazat: ' + u.chyby.join('; ') + '.' : '');
+    + (u.chyby.length ? ' Nepodařilo se smazat: ' + u.chyby.join('; ') + '.' : '') + pod;
 }
 
 function kopieDiskVelikost(b) {

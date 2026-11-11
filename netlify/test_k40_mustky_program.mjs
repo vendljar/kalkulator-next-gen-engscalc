@@ -66,6 +66,11 @@ test('N5: zahraniční montáž 0 bez montáže můstků, bez potvrzení → 400
   && (r.o.chybi || []).includes('zahr:mustekMontazHodKc') && /Zahraniční řada/.test(r.o.chyba || ''), r);
 r = await zverejni({ cenik: novy(), zahranicni: { ceny: { 'C.montazHodKc': 0 }, jenZahr: {} }, mustkyPotvrzeno: true });
 test('N5: … s potvrzením → 200', r.st === 200, r);
+/* platné odchylky teď nesou montáž 0 — nové zveřejnění BEZ odchylek se
+ * skládá se sloučením s platnými (jako cenikZverejneniKontrola), takže nula
+ * z platných se ozve znovu */
+r = await zverejni({ cenik: novy(), zahranicni: { ceny: {}, jenZahr: {} } });
+test('N5: nula montáže v PLATNÝCH odchylkách se ozve i u zveřejnění bez nových odchylek', r.st === 400 && r.o.kod === 'mustky', r);
 r = await zverejni({ cenik: novy(), zahranicni: { ceny: { 'C.montazHodKc': 0, 'C.mustekMontazHodKc': 650 }, jenZahr: {} } });
 test('N5: zahraniční montáž 0, ale vlastní montáž můstků → 200 bez dotazu', r.st === 200, r);
 /* platné odchylky už nesou nulu montáže a montáž můstků 650; nové odchylky
