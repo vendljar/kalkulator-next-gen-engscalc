@@ -145,11 +145,11 @@ function slovnikNoveJakoZmeny(nove) {
 
 /* Podklad pro překladatele: hesla, která zná jen aplikace, jako CSV pro Excel. */
 function slovnikCsvJenVApp(jenVApp) {
-  /* B83: tatáž buňka jako csvBunka (format.js) — ochrana vzorců; záložka
-   * pro samostatný běh v Node. */
-  const q = (typeof csvBunka === 'function') ? csvBunka : (s => {
-    let t = String(s == null ? '' : s); if (/^([=@\t\r]|[+\-][^\s])/.test(t)) t = "'" + t;
-    return '"' + t.replace(/"/g, '""') + '"'; });
+  /* B83: tatáž buňka jako csvBunka (format.js) — ochrana vzorců. K40-X5
+   * (11. 11. 2026): záložní kopie pravidla pro běh bez format.js se rozešla
+   * (+ a − s mezerou „+ 1+1" nechávala bez apostrofu, K37-I5) — místo kopie
+   * se v Node načte TÁŽ funkce z format.js. */
+  const q = (typeof csvBunka === 'function') ? csvBunka : require('./format.js').csvBunka;
   const hlav = ['CZ', 'EN', 'DE', 'FR'].map(q).join(';');
   const radky = (jenVApp || []).map(r => [r.klic, r.hodnoty.en, r.hodnoty.de, r.hodnoty.fr].map(q).join(';'));
   return '﻿' + [hlav].concat(radky).join('\r\n');
