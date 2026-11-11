@@ -50,6 +50,7 @@ function kontrolyCtxAkt() {
     zadani: Z,
     vysledek: ock,
     ock: vsRezim ? ockData : null,
+    ockSurova: ockData,      // VSD #586: surová data pro pravidlo vsTvar (meze uložení)
     /* Zámek strany (P6): jenProj / jenOck z vyřazené strany (kontrolyProved
      * to odvodí i sám — kontrolyCtxStrany). */
     jenProj: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'ock' : !!ZAK.jenProj),

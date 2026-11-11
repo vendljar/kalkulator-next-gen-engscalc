@@ -457,6 +457,24 @@ const MUTACE = [
     hledej: "      if (!zab) return null;\n      return { uroven: KONTROLY_UROVEN_ZABRANA, dokumenty: ['nabidka'],",
     nahrad: "      return null;\n      return { uroven: KONTROLY_UROVEN_ZABRANA, dokumenty: ['nabidka'],",
     proc: 'Word nabídky víc šachet by se vytiskl šablonou v16 s jednou šachtou', sady: ['test_vs_kontroly.js'] },
+  /* VSD #586 (11. 11. 2026): pravidlo vsTvar — meze uložení víc šachet jako
+   * upozornění. Hlídá src/test_vs_kontroly.js (oddíl G). [VSD] */
+  { nazev: 'VSD: vsTvar jako zábrana [VSD #586]', soubor: 'kontroly.js',
+    hledej: '      return { text: kontrolyVsTvarText(ock, p) };',
+    nahrad: '      return { uroven: KONTROLY_UROVEN_ZABRANA, text: kontrolyVsTvarText(ock, p) };',
+    proc: 'upozornění na meze by zastavilo tisk nabídky a SoD (J. V.: jen upozornění)', sady: ['test_vs_kontroly.js'] },
+  { nazev: 'VSD: vsTvar bez větve počtu kusů [VSD #586]', soubor: 'kontroly.js',
+    hledej: "    if (m[2] === 'ks') casti.push(",
+    nahrad: '    if (false) casti.push(',
+    proc: 'obchodník by se nedozvěděl, která šachta má neplatný počet kusů', sady: ['test_vs_kontroly.js'] },
+  { nazev: 'VSD: vsTvar bez větve limitu variant [VSD #586]', soubor: 'kontroly.js',
+    hledej: "    if (p.duvod === 'limit') {",
+    nahrad: '    if (false) {',
+    proc: 'jedenáct variant šachet by se hlásilo jen jako „neplatný tvar" bez meze 10', sady: ['test_vs_kontroly.js'] },
+  { nazev: 'VSD: vsTvar nedbá vypínače [VSD #586]', soubor: 'kontroly.js',
+    hledej: "  if (ctx && typeof ctx.viceSachet === 'boolean') return ctx.viceSachet;",
+    nahrad: "  if (ctx && typeof ctx.viceSachet === 'boolean') return true;",
+    proc: 'se vypnutou funkcí by se k liště „víc šachet vypnuto" přidalo druhé hlášení', sady: ['test_vs_kontroly.js'] },
   /* VS #570 E2 (10. 11. 2026): zadání víc šachet na obrazovce. Hlídá
    * src/test_vs_zadani.js (pole `sady` = pustit ji první). [#570 E2] */
   { nazev: 'VS-E2: snížení na 1 šachtu smaže klíč dalsi [#570 E2]', soubor: 'ui/vice_sachet_ui.js',
