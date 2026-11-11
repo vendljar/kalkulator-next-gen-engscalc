@@ -2,7 +2,9 @@
 
 Jen podklad k rozhodnutí J. V., **není součást aplikace** (nic z této složky se nesestavuje do `dist/`).
 
-- `prototyp.js`, `prototyp.css` — panel prototypu a žluté upozornění; server, Pipedrive i webhook jsou jen
+- `prototyp.js`, `prototyp.css` — klouzavá lišta nahoře (přepínač „Vazba (a)“ / „Jako dnes (b)“, role, kroky 1–4),
+  panel „Co se mění“ (před → po se značkami přidáno / změněno / smazáno / nesmazáno / ponecháno, přehled
+  „Rozdíl variant“) a žluté upozornění v aplikaci; server, Pipedrive i webhook jsou jen
   napodobené v paměti stránky, data jsou smyšlená, nic se nikam neposílá.
 - `sestav.mjs` — vloží panel za sestavenou aplikaci:
   `KNG_NEZVYSOVAT_VERZI=1 python3 build.py && node podklady/k40_w1_prototyp/sestav.mjs dist/kalkulacka.html <výstup.html>`
@@ -14,4 +16,4 @@ Průchod: 1. výchozí stav → 2. webhook s překlepem v čísle nabídky → 3
 - **a)** webhook jen naváže a upozorní; prázdná pole hlavičky doplní až další doručení po „V pořádku“;
   zrušení vazby vymaže i odkaz v dealu a deal u kalkulace odmítne (další webhook 409).
 - **b)** jako dnes: webhook hned doplní prázdná pole hlavičky a termín předání a zapíše odkaz do dealu;
-  zrušení vazby (podle promptu v1) doplněné údaje ani odkaz nevrátí.
+  zrušení vazby (podle promptu v1) doplněné údaje ani odkaz nevrátí; další webhook dostane 409 jako v a).
