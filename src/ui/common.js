@@ -80,11 +80,11 @@ function syncVarianta() {
  * po každé změně zadání nebo ceníku (set) a po každé výměně dat varianty
  * (syncVarianta: přepnutí typu, převzetí verze ceníku, přepočet na dnešní
  * ceník, řada ČR/zahr). Je idempotentní; zamčené varianty se nedotkne. */
-function skloMigraceAkt(v) {
+function skloMigraceAkt(v, opts) {
   v = v || aktivniVarianta(ZAK);
   if (!v || !v.data || typeof skloMigraceNazvu !== 'function') return 0;
   if (typeof variantaUzamcena === 'function' && variantaUzamcena(v)) return 0;
-  return skloMigraceNazvu(v.data);
+  return skloMigraceNazvu(v.data, opts);
 }
 syncVarianta();
 
@@ -774,6 +774,11 @@ function set(path, v) {
   }
   const ks = path.split('.'); const last = ks.pop();
   const predRc = path.startsWith('C.') ? get(path) : undefined;
+  /* K40-N1: název čelního skla PŘED změnou typu šachty nebo zasklení — jen
+   * tady je známý, a jen tady se smí vyřazení a přepisy čelního skla
+   * přejmenovat (import a otevření zakázky staré záznamy nechávají být). */
+  const skloPred = (path === 'Z.typSachty' || path === 'Z.zaskleni') && typeof skloVolba === 'function'
+    ? { predCelni: skloVolba(Z, C).celni.nazev, zadani: Z } : undefined;
   ks.reduce((o, k) => o[k], rootObj())[last] = v;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   /* RUČNÍ CENA POLOŽKY (#561): změna čísla v buňce ceny srovná záznam a shodí
@@ -812,7 +817,7 @@ function set(path, v) {
    * vykreslování je cesta k nekonečné smyčce. */
   if (path.startsWith('Z.') && typeof standardAtypAutomat === 'function') standardAtypAutomat();
   /* K37-N1: typ šachty, zasklení i název skla v ceníku mění název řádku skla. */
-  if (path.startsWith('Z.') || path.startsWith('C.')) skloMigraceAkt();
+  if (path.startsWith('Z.') || path.startsWith('C.')) skloMigraceAkt(undefined, skloPred);
   render();
 }
 

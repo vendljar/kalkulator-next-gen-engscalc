@@ -461,13 +461,48 @@ function skloVolba(z, c) {
  * potichu. Klíče se proto přepíšou na názvy, které pro tutéž zakázku vydá
  * skloVolba(). Migrace se pouští jen tehdy, když starý tvar v datech opravdu
  * je; nová zakázka jí neprojde. */
-function skloMigraceNazvu(data) {
+function skloMigraceNazvu(data, opts) {
   const d = data || {};
-  const z = d.ock && d.ock.zadani, c = d.cenik;
-  if (!z || !c) return 0;
+  const c = d.cenik;
+  const ock = d.ock;
+  if (!ock || !c) return 0;
+  /* VÍC ŠACHET (K40a, nález posudku 11. 11. 2026): každá šachta je celé zadání
+   * a řádky skla se klíčují v jejím vlastním `nepocitat` a přepisech. Do 11. 11.
+   * migrace četla jen šachtu 1 (`ock.zadani`), takže u šachty 2+ se po přepnutí
+   * typu nebo zasklení vyřazené sklo boků znovu počítalo (vada K37-N1). Jedna
+   * šachta: seznam je jen `ock.zadani` — výstup beze změny. */
+  const zadani = [ock.zadani].concat(Array.isArray(ock.dalsi)
+    ? ock.dalsi.map(s => (s && typeof s === 'object') ? s.zadani : null) : [])
+    .filter(z => z && typeof z === 'object');
+  const o = opts || {};
+  let zmen = 0;
+  zadani.forEach(z => { zmen += skloMigraceZadani(z, c, o.zadani === z ? o.predCelni : null); });
+  /* Přechod čelního skla patří k zadání OTEVŘENÉ šachty (`opts.zadani`, v UI
+   * `Z`); bez něj k šachtě 1. */
+  if (o.predCelni && !o.zadani && ock.zadani && typeof ock.zadani === 'object')
+    zmen += skloMigraceZadani(ock.zadani, c, o.predCelni, true);
+  return zmen;
+}
+
+/* ČELNÍ SKLO SE PŘEJMENUJE JEN PŘI SKUTEČNÉM PŘEPNUTÍ (K40-N1, 11. 11. 2026).
+ *
+ * Řádek čelního skla se jmenuje „MATERIÁL VSG 4.4.1" (exteriér, interiér mezi
+ * příčníky) nebo „MATERIÁL VSG 4.4.2" (interiér na terče). Starý tvar „MATERIÁL
+ * čelní stěna (…" pozná vzor; nový tvar vzorem přemapovat NEJDE — migrace běží
+ * i v importZakazka (prohlížeč i server, i nad zamčenou variantou) a vzor by
+ * přemapoval staré osiřelé záznamy: změnil by cenu uložené rozpracované nabídky
+ * a přepočet odeslané (posudek K40, rozhodnutí J. V. 1a). Proto jen přesná
+ * dvojice `predCelni → nový název`, kterou zná ten, kdo typ šachty nebo
+ * zasklení právě mění (set v ui/common.js). Přenáší se vše — vyřazení,
+ * množství, cena i vlastní název (rozhodnutí 2a, jako boky od K37). */
+function skloMigraceZadani(z, c, predCelni, jenCelni) {
   const nove = skloVolba(z, c);
-  const dvojice = [[/^MATERIÁL boční \+ zadní stěna \(/, nove.boky.nazev],
+  const dvojice = jenCelni ? [] : [[/^MATERIÁL boční \+ zadní stěna \(/, nove.boky.nazev],
                    [/^MATERIÁL čelní stěna \(/, nove.celni.nazev]];
+  const presna = (typeof predCelni === 'string' && predCelni && predCelni !== nove.celni.nazev)
+    ? predCelni : null;
+  if (presna) dvojice.push([{ test: k => k === presna }, nove.celni.nazev]);
+  if (!dvojice.length) return 0;
   let zmen = 0;
   const prejmenuj = (mapa) => {
     if (!mapa || typeof mapa !== 'object') return;
@@ -482,13 +517,18 @@ function skloMigraceNazvu(data) {
   };
   prejmenuj(z.mnozstviPrepis); prejmenuj(z.cenyPrepis); prejmenuj(z.nazvyPrepis);
   if (Array.isArray(z.nepocitat)) {
-    z.nepocitat = z.nepocitat.map(n => {
+    const uzMa = presna && z.nepocitat.some(n => String(n) === nove.celni.nazev);
+    const vysl = [];
+    z.nepocitat.forEach(n => {
       const s = String(n);
+      /* Přesná dvojice nesmí v seznamu vyřazených založit duplicitu. */
+      if (presna && s === presna && uzMa) { zmen++; return; }
       const nalez = dvojice.find(([vzor]) => vzor.test(s));
-      if (!nalez || s === nalez[1]) return n;
+      if (!nalez || s === nalez[1]) { vysl.push(n); return; }
       zmen++;
-      return nalez[1];
+      vysl.push(nalez[1]);
     });
+    z.nepocitat = vysl;
   }
   return zmen;
 }
