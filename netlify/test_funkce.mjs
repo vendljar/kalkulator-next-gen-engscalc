@@ -11,6 +11,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
   async smaz(k) { pamet.delete(nazev + '/' + k); },
 });
 
+import './pomoc_test_admin.mjs'; // K40-S4: výchozí smyšlený ADMIN_EMAIL dřív než sdilene.mjs
 import prihlaseni from './functions/prihlaseni.mjs';
 import ja from './functions/ja.mjs';
 import uzivatele from './functions/uzivatele.mjs';
@@ -374,13 +375,16 @@ function projdi(slozka, nalezy) {
  * po znacích a „našel by se“ úplně všude. Bez nastavené proměnné se proto
  * neporovnává, jen se to nahlásí. */
 const vyskyty = [];
-if (ADMIN_EMAIL) {
+/* K40-S4: smyšlená výchozí adresa z pomoc_test_admin.mjs (samostatné spuštění
+ * bez ADMIN_EMAIL) se ve zdrojácích nehledá — modul ji sám nese. */
+const adminVychozi = process.env.KNG_ADMIN_EMAIL_VYCHOZI === '1';
+if (ADMIN_EMAIL && !adminVychozi) {
   for (const kde of ['src', 'netlify', 'server']) projdi(join(KOREN_PROJEKTU, kde), vyskyty);
 }
 test('proměnná ADMIN_EMAIL je pro běh testů nastavená',
   !!ADMIN_EMAIL, 'nastavte ADMIN_EMAIL (v CI ji nastavuje testy.yml)');
 test('adresa hlavního administrátora není ve zdrojácích vůbec',
-  !!ADMIN_EMAIL && vyskyty.length === 0, vyskyty.join(', ') || 'nikde');
+  !!ADMIN_EMAIL && vyskyty.length === 0, vyskyty.join(', ') || (adminVychozi ? 'nehledáno — smyšlená výchozí adresa' : 'nikde'));
 
 const uiKod = readFileSync(join(KOREN_PROJEKTU, 'src', 'ui', 'online_ui.js'), 'utf8');
 test('prohlížeč hlavní účet nepoznává podle e-mailu, ale podle příznaku ze serveru',
