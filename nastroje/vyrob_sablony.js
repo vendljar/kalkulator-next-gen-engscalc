@@ -191,6 +191,13 @@
  * Vstup:  Sablona_SOD_REALIZACE_v3.docx + _EN/_DE/_FR (nebo slovníky .preklad_<en|de|fr>.json)
  * Výstup: Sablona_SOD_REALIZACE_v4.docx + _EN/_DE/_FR (viz sodRealV4).
  *
+ * SoD realizace v5 — víc šachet ve smlouvě (C2 #583, rozhodnutí J. V. 11. 11. 2026):
+ *   node nastroje/vyrob_sablony.js --sod-real-v5 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_SOD_REALIZACE_v4.docx + _EN/_DE/_FR (revidovaná jazyková znění)
+ * Výstup: Sablona_SOD_REALIZACE_v5.docx + _EN/_DE/_FR (viz sodRealV5) — v4 + dva
+ *         samostatné odstavce jen se symbolem {{SACHTY_SOD_PREDMET}} (čl. II)
+ *         a {{SACHTY_SOD_ROZPIS}} (čl. V); u jedné šachty zmizí (= v4).
+ *
  * SoD PROJ v4 — rozsah díla podle nabídky (#380 Q7, rozhodnutí J. V. 17. 10. 2026):
  *   node nastroje/vyrob_sablony.js --sod-proj-v4 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_SOD_PROJEKCE_v3.docx
@@ -228,6 +235,7 @@ const REZIM_V7 = REZIM === '--proj-v7';
 const REZIM_SOD_V4 = REZIM === '--sod-proj-v4';
 const REZIM_V8 = REZIM === '--proj-v8';   // D2: cestovné u akce mimo Prahu
 const REZIM_SOD_REAL4 = REZIM === '--sod-real-v4';   // C6 #447: objednané příplatky
+const REZIM_SOD_REAL5 = REZIM === '--sod-real-v5';   // C2 #583: víc šachet ve smlouvě
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
 const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
 const VYSTUP = ARGY[1] || PODKLADY;
@@ -1325,6 +1333,117 @@ async function hlavniSodRealV4() {
   process.exit(prob ? 1 : 0);
 }
 
+/* ---------- SoD realizace v5: víc šachet ve smlouvě (C2 #583, 11. 11. 2026) ----------
+ *   node nastroje/vyrob_sablony.js --sod-real-v5 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_SOD_REALIZACE_v4.docx + _EN/_DE/_FR (revidovaná znění — nic
+ *         se nepřekládá, úprava běží nad každým jazykovým souborem zvlášť)
+ * Výstup: Sablona_SOD_REALIZACE_v5.docx + _EN/_DE/_FR
+ * v5 = v4 + dva SAMOSTATNÉ odstavce, které nesou JEN symbol (nic k překladu):
+ *   1. čl. II (předmět smlouvy): za první odstavec článku („Předmětem této
+ *      smlouvy je dodávka a montáž …") odstavec {{SACHTY_SOD_PREDMET}} — styl
+ *      a písmo toho odstavce, bez číslování (numId 0), odsazení na jeho text,
+ *      zarovnání vlevo; číslování článku se neposune,
+ *   2. čl. V (cena): za odstavec „z toho cena díla dle cenové nabídky …
+ *      {{SOD_CENA_NABIDKY}}" odstavec {{SACHTY_SOD_ROZPIS}} (stavba odstavce
+ *      rozpisu v4). Celková cena {{CENA_BEZ_DPH}} tak zůstává první a věta
+ *      „… a to ve výši" ukazuje dál na ni; rozpis šachet stojí pod cenou
+ *      nabídky (bez objednaných příplatků ten řádek zmizí a rozpis jde hned
+ *      pod celkovou cenu), objednané příplatky až za ním.
+ * Aplikace (sod.js sodSachtySymboly) u jedné šachty vrátí oba symboly
+ * v odstavcePryc → odstavce zmizí → smlouva = v4 znak po znaku. Kotvy nezávisí
+ * na jazyce (nadpis „Čl./Art. II –" a symbol SOD_CENA_NABIDKY); každá musí
+ * být právě jedna, jinak chyba — nic se nehádá. */
+const SOD_V5_SYMBOLY = ['SACHTY_SOD_PREDMET', 'SACHTY_SOD_ROZPIS'];
+const SOD_V5_NADPIS_II = /^\s*(?:Čl|ČL|Art)\.\s*II\s*[–-]/;
+function sodRealV5Odstavec(p, symbol, ind) {
+  const pPrM = p.match(/<w:pPr>[\s\S]*?<\/w:pPr>/);
+  let pPr = (pPrM ? pPrM[0] : '<w:pPr></w:pPr>').replace(/<w:numPr>[\s\S]*?<\/w:numPr>/, '').replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, '')
+    .replace(/<w:ind\b[^>]*\/>/, '').replace(/<w:jc\b[^>]*\/>/, '');
+  /* číslování i ze stylu pryč (numId 0), na místo podle schématu (za pStyle…) */
+  pPr = pPr.replace(/^<w:pPr>(<w:pStyle\b[^>]*\/>)?(<w:keepNext\/>)?(<w:keepLines\/>)?/, (m) => m + '<w:numPr><w:ilvl w:val="0"/><w:numId w:val="0"/></w:numPr>');
+  pPr = pPrSInd(pPr, ind);
+  const m = pPr.match(/<w:(?:textDirection|textAlignment|textboxTightWrap|outlineLvl|divId|cnfStyle|rPr|sectPr|pPrChange)\b/);
+  pPr = m ? pPr.slice(0, m.index) + '<w:jc w:val="left"/>' + pPr.slice(m.index) : pPr.replace('</w:pPr>', '<w:jc w:val="left"/></w:pPr>');
+  const behM = p.match(/<w:r\b[^>]*>\s*<w:rPr>[\s\S]*?<\/w:rPr>/);
+  const rPr = behM ? behM[0].match(/<w:rPr>[\s\S]*?<\/w:rPr>/)[0].replace(/<w:b\/>|<w:b w:val="(?:1|true|on)"\/>/, '') : '';
+  return '<w:p>' + pPr + '<w:r>' + rPr + '<w:t>{{' + symbol + '}}</w:t></w:r></w:p>';
+}
+function sodRealV5(xml, zaznam) {
+  const t = tělo(xml);
+  let body = t.body;
+  const sym = dg.klicePlaceholderu(body);
+  SOD_V5_SYMBOLY.forEach(k => { if (sym.indexOf(k) >= 0) chyba('SoD realizace: šablona už symbol {{' + k + '}} má — není co doplnit'); });
+  if (sym.indexOf('SOD_PRIPLATKY_OBJEDNANE') < 0) chyba('SoD realizace v5 vzniká z v4 (rozpis objednaných příplatků) — šablona ho nemá');
+  const norm = s => String(s).replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  const prvky = prvkyTela(body);
+  /* 2) rozpis ceny — za odstavec se {{SOD_CENA_NABIDKY}} (vkládá se odzadu, ať sedí pozice) */
+  const cena = odstavceSTextem(body, tx => tx.indexOf('{{SOD_CENA_NABIDKY}}') >= 0);
+  if (cena.length !== 1) chyba('SoD realizace: čekám právě jeden odstavec se {{SOD_CENA_NABIDKY}}, je jich ' + cena.length + ' — nic nehádám');
+  if (docxVBunce(body, cena[0].zac)) chyba('SoD realizace: odstavec ceny dle nabídky je v tabulce — nic nehádám');
+  const pCena = body.slice(cena[0].zac, cena[0].kon);
+  const indCena = (pCena.match(/<w:ind\b[^>]*\/>/) || ['<w:ind w:left="1080" w:right="340"/>'])[0].replace(/\sw:(?:hanging|firstLine)="[^"]*"/g, '');
+  /* 1) předmět — první odstavec za nadpisem čl. II */
+  const nad = prvky.map((pr, i) => ({ pr, i })).filter(x => x.pr.tag === 'p'
+    && SOD_V5_NADPIS_II.test(norm(dg.odstavecText(body.slice(x.pr.zac, x.pr.kon)))));
+  if (nad.length !== 1) chyba('SoD realizace: čekám právě jeden nadpis „Čl. II – …" (předmět smlouvy), je jich ' + nad.length + ' — nic nehádám');
+  /* první NEPRÁZDNÝ odstavec za nadpisem (pod nadpisem bývá prázdný řádek) */
+  let j = nad[0].i + 1;
+  while (j < prvky.length && prvky[j].tag === 'p' && !norm(dg.odstavecText(body.slice(prvky[j].zac, prvky[j].kon)))) j++;
+  const pred = prvky[j];
+  const pPredmet = pred ? body.slice(pred.zac, pred.kon) : '';
+  if (!pred || !/^<w:p[\s>]/.test(pPredmet) || norm(dg.odstavecText(pPredmet)).length < 40 || dg.klicePlaceholderu(pPredmet).length)
+    chyba('SoD realizace: za nadpisem čl. II čekám odstavec s popisem předmětu díla (bez symbolů) — nic nehádám');
+  const indM = pPredmet.match(/<w:ind\b[^>]*\/>/);
+  const left = indM && (indM[0].match(/\sw:(?:left|start)="(-?\d+)"/) || [])[1];
+  const right = indM && (indM[0].match(/\sw:(?:right|end)="(-?\d+)"/) || [])[1];
+  const indPredmet = '<w:ind w:left="' + (left || '0') + '"' + (right ? ' w:right="' + right + '"' : '') + '/>';
+  body = body.slice(0, cena[0].kon) + sodRealV5Odstavec(pCena, 'SACHTY_SOD_ROZPIS', indCena) + body.slice(cena[0].kon);
+  body = body.slice(0, pred.kon) + sodRealV5Odstavec(pPredmet, 'SACHTY_SOD_PREDMET', indPredmet) + body.slice(pred.kon);
+  const z = Array.isArray(zaznam) ? zaznam : [];
+  z.push('čl. II: za „' + norm(dg.odstavecText(pPredmet)).slice(0, 60) + '…" odstavec {{SACHTY_SOD_PREDMET}}');
+  z.push('čl. V: za „' + norm(dg.odstavecText(pCena)).slice(0, 60) + '…" odstavec {{SACHTY_SOD_ROZPIS}}');
+  return t.pred + body + t.po;
+}
+/* Tvrdá kontrola: v5 bez dvou nových odstavců = v4 bajt po bajtu (document.xml). */
+function sodRealV5BezNovych(xmlV5) {
+  return xmlV5.replace(/<w:p><w:pPr>(?:(?!<\/w:p>)[\s\S])*?<w:t>\{\{SACHTY_SOD_(?:PREDMET|ROZPIS)\}\}<\/w:t><\/w:r><\/w:p>/g, '');
+}
+async function hlavniSodRealV5() {
+  if (!PODKLADY) { console.error('Použití: node nastroje/vyrob_sablony.js --sod-real-v5 <složka podkladů> [výstupní složka]'); process.exit(2); }
+  if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
+  let prob = 0, symCz = null;
+  for (const L of ['cz'].concat(JAZYKY)) {
+    const pr = L === 'cz' ? '' : '_' + L.toUpperCase();
+    const vstup = path.join(PODKLADY, 'Sablona_SOD_REALIZACE_v4' + pr + '.docx');
+    if (!fs.existsSync(vstup)) chyba('Chybí vstupní šablona ' + vstup + ' (Disk, Kalkulator NextGen / Sablony)');
+    const zaznam = [];
+    let xmlV4 = '', xmlV5 = '';
+    const bajty = await vyrob(vstup, x => { xmlV4 = x; xmlV5 = sodRealV5(x, zaznam); return xmlV5; });
+    const jmeno = 'Sablona_SOD_REALIZACE_v5' + pr + '.docx';
+    fs.writeFileSync(path.join(VYSTUP, jmeno), bajty);
+    const vady = await dg.docxXmlVady(bajty.slice().buffer);
+    const symV4 = await symbolyASablona(new Uint8Array(fs.readFileSync(vstup)));
+    const sym = await symbolyASablona(bajty);
+    const r = so.sablonaSymbolyRozdil(symV4, sym);
+    const rCz = symCz ? so.sablonaSymbolyRozdil(symCz, sym) : { pribylo: [], ubylo: [] };
+    if (!symCz) symCz = sym;
+    const shoda = sodRealV5BezNovych(xmlV5) === xmlV4;
+    const t = await dg.docxTextSablony(bajty.slice().buffer);
+    const jaz = so.sablonaJazykOdhad(t);
+    const p = vady.length + r.ubylo.length + (r.pribylo.slice().sort().join() === SOD_V5_SYMBOLY.join() ? 0 : 1)
+      + rCz.pribylo.length + rCz.ubylo.length + (shoda ? 0 : 1) + (jaz.jazyk === L ? 0 : 1);
+    prob += p;
+    console.log((p ? '✗ ' : '✓ ') + jmeno + ' — symbolů ' + sym.length + ' (v4 ' + symV4.length + '), jazyk ' + jaz.jazyk + ' (' + Math.round(jaz.podil * 100) + ' %)'
+      + zaznam.map(x => '\n    vloženo: ' + x).join('')
+      + '\n    proti v4 přibylo: ' + (r.pribylo.join(', ') || 'nic') + '; ubylo: ' + (r.ubylo.join(', ') || 'nic')
+      + (symCz !== sym ? '\n    proti CZ v5 +' + rCz.pribylo.length + ' −' + rCz.ubylo.length : '')
+      + '\n    mimo nové odstavce = v4: ' + (shoda ? 'ano (document.xml bajt po bajtu)' : 'NE')
+      + (vady.length ? '\n    vady XML: ' + vady.join('; ') : '\n    XML: bez vad'));
+  }
+  console.log('\nVýstup: ' + VYSTUP);
+  process.exit(prob ? 1 : 0);
+}
+
 /* ---------- SoD PROJ: číslo smlouvy z krycího listu (S9, 15. 10. 2026) ----------
  * Zadání J. V.: „Aktualizuj šablony, aby se nám do nich číslo SoD propisovalo
  * z krycího listu zakázky." SoD realizace má pod nadpisem samostatný řádek
@@ -1498,8 +1617,9 @@ async function ulozSMutacemi(bajty, zaklad) {
 async function hlavni() {
   if (REZIM_V8) return hlavniV8();
   if (REZIM_SOD_REAL4) return hlavniSodRealV4();
+  if (REZIM_SOD_REAL5) return hlavniSodRealV5();
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-real-v4 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15 | --cn-v16 | --cn-v17] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-real-v4 | --sod-real-v5 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15 | --cn-v16 | --cn-v17] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
@@ -1670,3 +1790,5 @@ async function hlavni() {
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
 module.exports = { cnV13, cnV14, cnV15, cnV16, cnV17, cnPrejmenujSymbol, projV3, projV4, projV5, projV6, projV7, projV8, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, pPrSInd, sodProjCislo, sodProjV4, prepisUsekOdstavce, prelozSablonu };
+module.exports.sodRealV5 = sodRealV5;   // C2 #583 (vlastní řádek kvůli souběžné C1)
+module.exports.sodRealV5BezNovych = sodRealV5BezNovych;
