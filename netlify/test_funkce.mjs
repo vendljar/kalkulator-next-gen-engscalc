@@ -12,6 +12,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
 });
 
 import './pomoc_test_admin.mjs'; // K40-S4: výchozí smyšlený ADMIN_EMAIL dřív než sdilene.mjs
+import './pomoc_test_admin.mjs'; // K40-S4: výchozí smyšlený ADMIN_EMAIL dřív než sdilene.mjs
 import prihlaseni from './functions/prihlaseni.mjs';
 import ja from './functions/ja.mjs';
 import uzivatele from './functions/uzivatele.mjs';
@@ -350,7 +351,7 @@ test('seznam otisků nese jen souhrn (den, čas, zdroj, počty)',
  * ============================================================ */
 
 const KOREN_PROJEKTU = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const PRESKOCIT = /(^|\/)(node_modules|dist|_soukrome|\.git|deploy|navrh)(\/|$)|(^|\/)(test_|overit_|snimky_|mutace\.mjs)/;
+const PRESKOCIT = /(^|\/)(node_modules|dist|_soukrome|\.git|deploy|navrh)(\/|$)|(^|\/)(test_|pomoc_test_|overit_|snimky_|mutace\.mjs)/;   // pomoc_test_: K40-S4
 
 function projdi(slozka, nalezy) {
   for (const jmeno of readdirSync(slozka)) {
