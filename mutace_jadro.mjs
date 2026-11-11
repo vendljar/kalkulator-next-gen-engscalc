@@ -222,6 +222,8 @@ const PRIORITA = [
   'test_k40_celni_sklo.js',
   /* K40a X1/X2 — ořez konce smyčkou (format.js, nazvy_souboru.js, preklad.js, plan_plateb.js) */
   'test_k40_orez_konce.js',
+  /* K40a N2/N5 — ceník můstků: rozsah šířky, zahraniční řada (engine.js, ui/program_ui.js) */
+  'test_k40_mustky_cenik.js',
   /* K37-N3, K37-N9 — souhrn Kapitol a nečitelné datum prodeje (controlling.js) */
   'test_k37_controlling.js',
   /* #555 — tisk klonu odeslané nabídky (ui/kalk_ock.js, zamek.js) */
@@ -832,6 +834,27 @@ const MUTACE = [
     nahrad: "  const milnik = x => String(x.text || '(milník chybí)').replace(/[.\\s]+$/, '');",
     proc: 'text milníku smlouvy by se ořezával v kvadratickém čase (K40-X2)' },
   /* záloha slovníku (slovnik.js) není v JADRA — hlídá ji jen test (čas + shoda s výrazem). */
+  /* K40a (11. 11. 2026, #579): K40-N2/N5 ceník můstků. Hlídá src/test_k40_mustky_cenik.js. */
+  { nazev: '[K40a] N2: rozsah referenční šířky se nehlídá', soubor: 'engine.js',
+    hledej: "  if (s >= MUSTEK_REF_SIRKA_MIN_MM && s <= MUSTEK_REF_SIRKA_MAX_MM) return r;",
+    nahrad: "  return r;",
+    proc: 'šířka zadaná v metrech by dala tisíckrát dražší můstek bez varování (K40-N2)' },
+  { nazev: '[K40a] N2: chybí horní mez šířky', soubor: 'engine.js',
+    hledej: "s >= MUSTEK_REF_SIRKA_MIN_MM && s <= MUSTEK_REF_SIRKA_MAX_MM",
+    nahrad: "s >= MUSTEK_REF_SIRKA_MIN_MM",
+    proc: 'šířka v mikrometrech nebo překlep o řád by prošel a můstek vyšel zlomkem ceny' },
+  { nazev: '[K40a] N2: šířka mimo rozsah schová chybějící sazby', soubor: 'engine.js',
+    hledej: "    text: veta + (r.ok ? '' : ' ' + r.text) };",
+    nahrad: "    text: veta };",
+    proc: 'dialog by řekl jen o šířce a nulovou montáž by správce potvrdil, aniž o ní věděl' },
+  { nazev: '[K40a] N5: dialog nekontroluje zahraniční řadu', soubor: 'ui/program_ui.js',
+    hledej: "  if (k.ok && kz.ok) return true;",
+    nahrad: "  if (k.ok) return true;",
+    proc: 'zahraniční řada s montáží můstků za 0 Kč/hod by se zveřejnila bez dotazu (K40-N5)' },
+  { nazev: '[K40a] N5: dialog nebere platné zahraniční odchylky', soubor: 'ui/program_ui.js',
+    hledej: "cenikZahrSluc(typeof CENIK_ZAHR !== 'undefined' ? CENIK_ZAHR : null, ctx.zahranicni)",
+    nahrad: "cenikZahrSluc(null, ctx.zahranicni)",
+    proc: 'dialog by skládal jinou řadu než server (bez platných odchylek)' },
   /* #540 (27. 10. 2026): kód controllingu podle rozhodnutí J. V. Hlídá src/test_controlling_c4.js. */
   { nazev: '#540: výchozí filtr stavu Pipedrive zase „vyhrané"', soubor: 'controlling.js',
     hledej: "  const pd = x.pd == null || x.pd === '' ? 'vse' : x.pd;",

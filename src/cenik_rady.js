@@ -121,6 +121,30 @@ function cenikZahrSVychozimi(zahr) {
 }
 /* Věta do dialogu zveřejnění: zahraniční montáž můstků nevyplněná → platí
  * zahraniční sazba montáže na stavbě. Prázdný řetězec, když není co říct. */
+/* MŮSTKY V ZAHRANIČNÍ ŘADĚ (K40-N5, 11. 11. 2026). Kontrola ceníku můstků
+ * (#548) četla jen tuzemský ceník. Zahraniční řada s nulovou sazbou montáže
+ * a bez vlastní sazby montáže můstků (cenikZahrSVychozimi ji dosadí ze
+ * sazby montáže) počítala v zahraniční zakázce montáž můstků za 0 Kč/hod bez
+ * potvrzení — a odchylky mohou mít i klíče skladebného modelu C.mustek*.
+ * Kontroluje se proto celá SLOŽENÁ řada (cenikSlozRadu, táž funkce jako ve
+ * výpočtu) a hlásí se jen to, co tuzemská kontrola už neřekla. Dialog
+ * i server (functions/program.mjs) volají tuto funkci; výsledek jde na
+ * potvrzení jako nula v tuzemsku. */
+function mustkyCenikKontrolaZahr(cenik, zahr) {
+  const ok = { ok: true, stary: false, chybi: [], text: '' };
+  if (typeof mustkyCenikKontrola !== 'function' || typeof mustkyCenikNovy !== 'function') return ok;
+  if (!cenik || typeof cenik !== 'object') return ok;
+  const slozeny = cenikSlozRadu(cenik, zahr, 'zahr');
+  if (!mustkyCenikNovy(slozeny)) return ok;   // starý tvar řekne tuzemská kontrola
+  const kz = mustkyCenikKontrola(slozeny);
+  if (kz.ok) return ok;
+  const tuz = mustkyCenikKontrola(cenik);
+  const navic = kz.chybi.filter(k => !(tuz.chybi || []).includes(k));
+  if (!navic.length) return ok;
+  return { ok: false, stary: false, chybi: navic.map(k => 'zahr:' + k),
+    text: 'Zahraniční řada (tuzemský ceník + odchylky Zahraničí): ' + kz.text };
+}
+
 function cenikZahrMustkyUpozorneni(zahr) {
   const mm = cenikZahrMustekVychozi(cenikZahrOciste(zahr));
   if (mm === null) return '';
@@ -480,7 +504,7 @@ if (typeof module !== 'undefined')
                      cenikZahrPrazdny, cenikZahrOciste, cenikZahrPrazdna,
                      cenikSlozRadu, cenikRadaRozdily, cenikRadaPrepni, cenikRadaVarianty,
                      CENIK_ZAHR_DPH_CESTY, cenikZahrDphVychozi, cenikZahrSVychozimi,
-                     CENIK_ZAHR_MUSTEK_MONTAZ, cenikZahrMustekVychozi, cenikZahrMustkyUpozorneni,
+                     CENIK_ZAHR_MUSTEK_MONTAZ, cenikZahrMustekVychozi, cenikZahrMustkyUpozorneni, mustkyCenikKontrolaZahr,
                      cenikJenZahrCesty, cenikJenZahrVynuluj,
                      cenikRadaTuzemskaData, cenikDnesniProRadu,
                      CENIK_ZVEREJNENI_SHODA_MAX, cenikZverejneniOcisti, cenikZahrSluc,

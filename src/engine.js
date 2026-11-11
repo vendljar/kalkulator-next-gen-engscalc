@@ -1058,8 +1058,28 @@ function cenikMigraceMustku(cenik, platny, zpravy) {
  * nabídky počítaly můstek za 0 Kč, nebo když ceník zůstal ve starém tvaru
  * (převést nebylo z čeho). Zveřejnit pak jde jen s výslovným potvrzením
  * správce (dialog v aplikaci; server chce `mustkyPotvrzeno: true`). */
+/* VĚROHODNÁ REFERENČNÍ ŠÍŘKA MŮSTKU (K40-N2, rozhodnutí J. V. 8a 11. 11. 2026).
+ * Šířka zadaná v metrech (2 místo 2 000) dá tisíckrát dražší materiál
+ * i nosnou konstrukci skladebného modelu — a dosud ji nic nehlídalo (stačilo
+ * kladné číslo). Mimo rozsah se ceník zveřejní jen s potvrzením (týž
+ * mechanismus jako potvrzení nuly, dialog i server); hodnota se nemění. */
+const MUSTEK_REF_SIRKA_MIN_MM = 500;
+const MUSTEK_REF_SIRKA_MAX_MM = 5000;
 function mustkyCenikKontrola(cenik) {
   const c = (cenik && typeof cenik === 'object') ? cenik : {};
+  const r = mustkyCenikKontrolaSazby(c);
+  /* Rozsah jen u vyplněné kladné šířky (nový tvar, tj. po cenikMigraceMustku);
+   * nulu a prázdno řeší větve sazeb (starý tvar). */
+  if (!mustkyCenikNovy(c)) return r;
+  const s = +c.mustekRefSirkaMm;
+  if (s >= MUSTEK_REF_SIRKA_MIN_MM && s <= MUSTEK_REF_SIRKA_MAX_MM) return r;
+  const veta = 'Referenční šířka můstku C.mustekRefSirkaMm = ' + s + ' mm je mimo věrohodný rozsah '
+    + '500–5\u00a0000 mm (nebyla zadaná v metrech?). Materiál i nosná konstrukce můstku se počítají poměrem k ní, '
+    + 'takže by cena můstku vyšla ' + (s < MUSTEK_REF_SIRKA_MIN_MM ? 'mnohonásobně vyšší' : 'mnohonásobně nižší') + '.';
+  return { ok: false, stary: false, chybi: (r.chybi || []).concat(['mustekRefSirkaMm']),
+    text: veta + (r.ok ? '' : ' ' + r.text) };
+}
+function mustkyCenikKontrolaSazby(c) {
   const kladne = v => Number.isFinite(+v) && +v > 0;
   const POPIS = { mustekKc: 'C.mustekKc (materiál, Kč/bm)', mustekRefSirkaMm: 'referenční šířka (mm)',
     mustekMontazHodKc: 'sazba montáže (Kč/hod)', hodiny: 'hodiny montáže (základ, za bm nebo minimum)' };
@@ -2874,4 +2894,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, mustekSloupVychoziM, MUSTEK_SLOUP_ODPOCET_M, cenikMigraceMustku, mustkyCenikKontrola, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, mustekSloupVychoziM, MUSTEK_SLOUP_ODPOCET_M, cenikMigraceMustku, mustkyCenikKontrola, MUSTEK_REF_SIRKA_MIN_MM, MUSTEK_REF_SIRKA_MAX_MM, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

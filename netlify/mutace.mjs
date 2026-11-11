@@ -73,6 +73,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_controlling_c4.js',
      /* #548 (2. 11. 2026, K10-S2): migrace můstků na serveru bez sazeb v kódu — rychlá sada. */
      'test_548_mustky.mjs',
+     /* K40a N2/N5 (11. 11. 2026, #579): rozsah šířky a zahraniční řada můstků při zveřejnění — rychlá sada. */
+     'test_k40_mustky_program.mjs',
      /* #550 (2. 11. 2026, K36-N2): zahraniční sazba montáže můstků — rychlá sada. */
      '../src/test_550_zahr_mustky.js',
      /* #551 (2. 11. 2026, K37-I2): „IČ:" v cizojazyčné patičce — rychlá sada. */
@@ -1156,6 +1158,24 @@ const MUTACE = [
     hledej: "  cenik.mustekRefSirkaMm = +platny.mustekRefSirkaMm;",
     nahrad: "",
     proc: 'převedený ceník by zůstal ve starém tvaru a paušál by se četl jako cena za metr' },
+  /* ---------- K40a N2/N5 (11. 11. 2026, #579): věrohodnost ceníku můstků při zveřejnění.
+   * Hlídá test_k40_mustky_program.mjs. [K40a] ---------- */
+  { nazev: '[K40a] N5: server zahraniční řadu můstků nekontroluje', soubor: 'functions/program.mjs',
+    hledej: "    if (!kz.ok) return json({ ok: false, kod: 'mustky', chyba: kz.text, chybi: kz.chybi }, 400);",
+    nahrad: "",
+    proc: 'obejitím dialogu by se zveřejnila zahraniční řada s montáží můstků za 0 Kč/hod (K40-N5)', sady: ['test_k40_mustky_program.mjs'] },
+  { nazev: '[K40a] N5: zahraniční řada bez sloučení s platnými odchylkami', soubor: 'functions/program.mjs',
+    hledej: "    const kz = globalThis.mustkyCenikKontrolaZahr(ctx.cenik, zahrProKontrolu);",
+    nahrad: "    const kz = globalThis.mustkyCenikKontrolaZahr(ctx.cenik, ctx.zahranicni);",
+    proc: 'nula montáže v PLATNÝCH odchylkách by se při zveřejnění nových neozvala', sady: ['test_k40_mustky_program.mjs'] },
+  { nazev: '[K40a] N5: složená řada se skládá jako tuzemská', soubor: '../src/cenik_rady.js',
+    hledej: "  const slozeny = cenikSlozRadu(cenik, zahr, 'zahr');",
+    nahrad: "  const slozeny = cenikSlozRadu(cenik, zahr, 'cr');",
+    proc: 'kontrola by četla tuzemské sazby a zahraniční nulu by nikdy neviděla', sady: ['test_k40_mustky_program.mjs'] },
+  { nazev: '[K40a] N2: server pustí šířku můstku v metrech', soubor: '../src/engine.js',
+    hledej: "  if (s >= MUSTEK_REF_SIRKA_MIN_MM && s <= MUSTEK_REF_SIRKA_MAX_MM) return r;",
+    nahrad: "  if (s > 0) return r;",
+    proc: 'ceník se šířkou 2 (metry místo milimetrů) by se zveřejnil a můstek vyšel tisíckrát dražší (K40-N2)', sady: ['test_k40_mustky_program.mjs'] },
   /* ---------- K37-N7 (2. 11. 2026): pojistka simulátoru Pipedrive na ostrém webu
    * engscalc. Hlídá netlify/test_pd_simulator.mjs. ---------- */
   { nazev: 'K37-N7: simulátor se zapne na ostrém webu engscalc', soubor: 'lib/pipedrive_simulator.mjs',
