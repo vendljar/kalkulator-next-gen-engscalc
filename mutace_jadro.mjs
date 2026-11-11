@@ -218,6 +218,8 @@ const PRIORITA = [
   'test_548_mustky_bez_cen.js',
   /* K37-N1 — vyřazené sklo po přepnutí typu šachty (ui/kalk_ock.js, ui/common.js) */
   'test_k37_sklo_prepnuti.js',
+  /* K40a N1 — čelní sklo při přepnutí, sklo u šachet 2+ (engine.js, ui/common.js) */
+  'test_k40_celni_sklo.js',
   /* K37-N3, K37-N9 — souhrn Kapitol a nečitelné datum prodeje (controlling.js) */
   'test_k37_controlling.js',
   /* #555 — tisk klonu odeslané nabídky (ui/kalk_ock.js, zamek.js) */
@@ -781,13 +783,35 @@ const MUTACE = [
     nahrad: "  syncVarianta(); render();",
     proc: 'po přepnutí typu šachty by se vyřazené sklo boků znovu počítalo — vytištěná nabídka by nesla jinou cenu než po znovuotevření' },
   { nazev: 'K37-N1: skloMigraceAkt nic nepřemapuje', soubor: 'ui/common.js',
-    hledej: "  return skloMigraceNazvu(v.data);",
+    hledej: "  return skloMigraceNazvu(v.data, opts);",
     nahrad: "  return 0;",
     proc: 'vyřazení a přepisy skla by po změně typu, zasklení, řady i názvu v ceníku zůstaly pod starým názvem (K37-N1)' },
   { nazev: 'K37-N1: skloMigraceAkt přemapuje i zamčenou variantu', soubor: 'ui/common.js',
     hledej: "  if (typeof variantaUzamcena === 'function' && variantaUzamcena(v)) return 0;\n  return skloMigraceNazvu",
     nahrad: "  return skloMigraceNazvu",
     proc: 'data odeslané nabídky by se změnila bez odemčení — server by uložení odmítl' },
+  /* K40a (11. 11. 2026, #579): K40-N1 čelní sklo jen při skutečném přepnutí + sklo u šachet 2+.
+   * Hlídá src/test_k40_celni_sklo.js. */
+  { nazev: '[K40a] N1: přechod bez predCelni', soubor: 'ui/common.js',
+    hledej: "skloMigraceAkt(undefined, skloPred);",
+    nahrad: "skloMigraceAkt();",
+    proc: 'po změně zasklení nebo typu by se vyřazené čelní sklo znovu počítalo (K40-N1)' },
+  { nazev: '[K40a] N1: migrace skla jen nad šachtou 1', soubor: 'engine.js',
+    hledej: "  const zadani = [ock.zadani].concat(Array.isArray(ock.dalsi)",
+    nahrad: "  const zadani = [ock.zadani].concat(Array.isArray(null)",
+    proc: 'u šachty 2+ by se po přepnutí typu vyřazené sklo boků i čelní znovu počítalo (posudek K40)' },
+  { nazev: '[K40a] N1: přejmenování čelního skla i při importu', soubor: 'engine.js',
+    hledej: "[/^MATERIÁL čelní stěna \\(/, nove.celni.nazev]];",
+    nahrad: "[/^MATERIÁL čelní stěna \\(/, nove.celni.nazev], [/^MATERIÁL VSG 4\\.4\\.[12]$/, nove.celni.nazev]];",
+    proc: 'otevření zakázky by přemapovalo staré osiřelé záznamy a tiše změnilo cenu uložené nabídky (rozhodnutí 1a)' },
+  { nazev: '[K40a] N1: přesná dvojice založí duplicitu ve vyřazených', soubor: 'engine.js',
+    hledej: "      if (presna && s === presna && uzMa) { zmen++; return; }\n",
+    nahrad: "",
+    proc: 'v seznamu vyřazených by vznikl tentýž název dvakrát' },
+  { nazev: '[K40a] N1: přesná dvojice i bez změny názvu', soubor: 'engine.js',
+    hledej: "  if (presna) dvojice.push([{ test: k => k === presna }, nove.celni.nazev]);",
+    nahrad: "  if (predCelni) dvojice.push([{ test: k => k === predCelni }, 'MATERIÁL VSG 4.4.1']);",
+    proc: 'přepnutí by přejmenovalo čelní sklo na pevný název místo názvu podle typu a zasklení' },
   /* #540 (27. 10. 2026): kód controllingu podle rozhodnutí J. V. Hlídá src/test_controlling_c4.js. */
   { nazev: '#540: výchozí filtr stavu Pipedrive zase „vyhrané"', soubor: 'controlling.js',
     hledej: "  const pd = x.pd == null || x.pd === '' ? 'vse' : x.pd;",
