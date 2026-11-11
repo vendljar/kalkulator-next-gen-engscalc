@@ -3,7 +3,7 @@
 **Nahrazuje bod 6 promptu v1 a oddíl G dodatku v2** (`PROMPT_K40_OPRAVY.md`, `PROMPT_K40_OPRAVY_v2.md`). Společná
 pravidla z v1 a z oddílů A a J dodatku v2 platí dál (větev, zlaté sady, mutace, příručky, konec dávky).
 Podklad k chování: prototyp `podklady/k40_w1_prototyp/` (https://claude.ai/artifact/NpHRKtzJC8CqzmoNP3JxNV).
-Návrh poradce podle rozhodnutí J. V. z 11. 11. 2026, jak je předala koordinace; spouští koordinace
+Podle rozhodnutí J. V. z 11. 11. 2026, jak je předala koordinace (programování schváleno); spouští koordinace
 **po sloučení K40b** zprávou „SPUSŤ K40c nad <SHA>“.
 
 - **Větev:** `claude/k40c-webhook` nad SHA od koordinace. **Roadmapa #581** (souhrnná #567), **meze B208–B209**
@@ -24,6 +24,10 @@ Návrh poradce podle rozhodnutí J. V. z 11. 11. 2026, jak je předala koordinac
    Roli ověřuje server.
 4. **ARES:** firma (zákazník, sídlo, IČO, DIČ) jde do hlavičky z ARES podle IČO z dealu, kontakt a termín z dealu.
 5. **„Opravit firmu v Pipedrive“:** tlačítko pro autora a administrátora, zápis jen po potvrzení, nikdy automaticky.
+6. **Doplnění 11. 11. 15:35 (předala koordinace):** deal zakázky smí měnit autor i administrátor — autor jen
+   u zakázek, které sám založil; u zakázek založených webhookem dál jen administrátor. Když pole DIČ u organizace
+   v Pipedrive není, oprava firmy ho **přeskočí a oznámí to v dialogu**. Programování podle tohoto promptu
+   a prototypu v4 je schválené.
 
 ## 1. Vazba, upozornění a pojistka
 
@@ -47,7 +51,8 @@ Návrh poradce podle rozhodnutí J. V. z 11. 11. 2026, jak je předala koordinac
 - **Odmítnutý deal:** webhook kontroluje `pdDealyOdmitnute` **před** jakýmkoli zápisem (zakázka, index, PATCH dealu,
   dotaz do ARES) → 409 s vysvětlením, zakázka beze změny.
 - **Změna vazby ručně** (`ctrlPdDealKontrola`, pravidlo C4): nově smí i autor zakázky, ne jen administrátor.
-  U zakázky založené webhookem (autor `pipedrive-webhook`) dál jen administrátor. Autor se bere z uložené verze.
+  Autor jen u zakázek, které sám založil (`zak.autor` z uložené verze = e-mail relace); u zakázky založené
+  webhookem (autor `pipedrive-webhook`) dál jen administrátor. Potvrzeno J. V. 11. 11.
 - **Pole psaná jen serverem:** `pdVazbaWebhook` a `pdDealyOdmitnute` se při běžném uložení berou z uložené verze
   (vzor `uloZamekRazitkaDrz` / interní poznámky), mění je jen výslovná akce. Obnova ze souboru je nepřebírá.
   Zamčená varianta se nemění (vazba je v hlavičce zakázky).
@@ -103,7 +108,9 @@ do `pdVazbaWebhook.aresRozdily`, zapíše do protokolu a ukáže v upozornění.
 - **Dva kroky, obojí na serveru** (nová funkce, např. `netlify/functions/pd_organizace.mjs`):
   1. `nahled`: server znovu načte deal, jeho organizaci a ARES (klientem poslaným hodnotám nevěří) a vrátí rozdíly
      „v Pipedrive je × podle ARES bude“ jen pro pole, která umí zapsat: název, adresa a ta vlastní pole organizace,
-     která mapa polí zná (IČ; DIČ jen když v účtu takové pole je — **pole se nikdy nezakládá**).
+     která mapa polí zná (IČ; DIČ jen když v účtu takové pole je — **pole se nikdy nezakládá**). Chybí-li pole DIČ,
+     náhled to řekne větou v dialogu („DIČ se do Pipedrive nezapíše — organizace takové pole nemá“) a zápis ho přeskočí
+     (rozhodnutí J. V. 11. 11.).
   2. `zapis`: po potvrzení v dialogu aplikace PATCH `/api/v2/organizations/<id>` **jen změněných polí**; server si
      rozdíly spočítá znovu a zapíše jen to, co klient potvrdil a co se pořád liší. Organizace musí patřit dealu
      navázanému na tuto zakázku.
@@ -156,5 +163,5 @@ Každý nový test: doložit v commitu, že před opravou selže a po ní projde
 
 - co bylo při kroku 0 jinak, než čeká tento prompt (hlavně pole organizace v mapě Pipedrive a existence pole DIČ),
 - soubor:řádek změn, výsledky sad a mutací,
-- otevřené otázky pro J. V. — zejména: (a) autor smí nově měnit `pdDealId` (výklad rozhodnutí 3), (b) co má oprava
-  organizace dělat, když pole DIČ v Pipedrive není (výchozí: přeskočit a napsat to v dialogu).
+- otevřené otázky pro J. V., pokud nějaké vzniknou. Dvě otázky z návrhu jsou rozhodnuté (rozhodnutí 6 nahoře):
+  autor smí měnit deal u vlastních zakázek; chybějící pole DIČ se přeskočí a oznámí v dialogu.
