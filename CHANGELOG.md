@@ -750,7 +750,7 @@ koordinace přečíslovat.
   smí spouštět **jen změnou pole „Vygenerovat nabídku“** — zapsáno v podkladu pro integrátora.
 - **Mapa polí CRM:** dvě nová pole se směrem „nic“ (*Vygenerovat nabídku*, *Odkaz na kalkulaci*),
   `PD_POLE_VERZE` 2 → 3, ať se po nasazení nečte den stará mapa bez nich. Duplikát zakázky nenese `pdZadani`.
-- **Meze B176–B179** v `BEZPECNOST_MEZE.md` (klíč místo relace, strop jen v instanci funkce, zápis do databáze
+- **Meze B199–B202** (do K40a 11. 11. 2026 číslované B176–B179 — kolize se staršími mezemi, přečíslováno) v `BEZPECNOST_MEZE.md` (klíč místo relace, strop jen v instanci funkce, zápis do databáze
   bez člověka a jeho pojistky, nezálohovaný rejstřík webhooku).
 - **Podklady:** `podklady/PIPEDRIVE_WEBHOOK_553.md` — pro integrátora (pole, automatizace, tělo, odpověď,
   chybové kódy, varování před smyčkou) a kontrolní seznam pro J. V. (proměnná na testengscalc, nasazení,

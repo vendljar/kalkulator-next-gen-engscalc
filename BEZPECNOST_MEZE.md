@@ -1371,7 +1371,7 @@ jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
 
 ### Nové meze
 
-- **B176 — webhook bez přihlášení, jen klíč v hlavičce.** `PIPEDRIVE_WEBHOOK_KLIC`
+- **B199 — webhook bez přihlášení, jen klíč v hlavičce.** *(dříve B176, #553; přečíslováno K40a 11. 11. 2026 — číslo patřilo starší mezi)* `PIPEDRIVE_WEBHOOK_KLIC`
   (proměnná Netlify, nastavuje J. V., min. 32 znaků, kratší = nenastavený →
   503) se porovnává v konstantním čase (`tajneShodne`, sha256 +
   timingSafeEqual). Bez klíče nebo se špatným klíčem **401 dřív, než se čte
@@ -1384,7 +1384,7 @@ jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
   Klíč je tedy tajemství stejné váhy jako token; mění se přepsáním proměnné
   a novým nasazením. Původ požadavku se nehlídá (`cizihoPuvodu` se nevolá) —
   Pipedrive hlavičku Origin neposílá.
-- **B177 — strop volání webhooku 60/h, jen v instanci funkce.** Počítadlo
+- **B200 — strop volání webhooku 60/h, jen v instanci funkce.** *(dříve B177, #553; přečíslováno K40a 11. 11. 2026 — číslo patřilo starší mezi)* Počítadlo
   `pd_cache/strop:webhook:pipedrive-webhook` (`pdStropCerstvych`, výhradní úsek)
   je společné pro všechny dealy; nad stropem 429 bez dotazu do Pipedrive
   (souběh 100 doručení ověřen v sadě). *Co to nedělá:* mezi instancemi funkce
@@ -1392,7 +1392,7 @@ jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
   Dopad je jen rozpočet volání Pipedrive, ne data. Proti smyčce #117 je to
   pojistka, ne řešení: automatizace se **smí spouštět jen změnou pole
   „Vygenerovat nabídku“** (podklady/PIPEDRIVE_WEBHOOK_553.md, část 2).
-- **B178 — webhook zapisuje do databáze zakázek bez člověka.** Zakládá
+- **B201 — webhook zapisuje do databáze zakázek bez člověka.** *(dříve B178, #553; přečíslováno K40a 11. 11. 2026 — číslo patřilo starší mezi)* Zakládá
   a aktualizuje zakázky pod razítkem `pipedrive-webhook` (není to účet, nejde
   se pod ním přihlásit). Pojistky: tvar nové zakázky projde `zakazkaPrijmi`
   (jméno souboru, id, délka čísla) jako uložení z prohlížeče; zamčená
@@ -1406,7 +1406,7 @@ jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
   tvaru „bez ceníku“ (P12), takže ceník si doplní prohlížeč z platného
   zveřejněného. Protokol zakázky se nezapisuje (zdroj je vidět na razítku
   autora a v `pdZadani`).
-- **B179 — `pd_webhook/deal:<id>` se nezálohuje.** Rejstřík deal → jméno
+- **B202 — `pd_webhook/deal:<id>` se nezálohuje.** *(dříve B179, #553; přečíslováno K40a 11. 11. 2026 — číslo patřilo starší mezi)* Rejstřík deal → jméno
   kalkulace je jen zkratka hledání; vazbu nese sama zakázka (`pdDealId`)
   a ta v záloze je. Po obnově ze zálohy ho vyrobí první doručení (najde
   kalkulaci podle čísla nabídky). Záznam nese jméno souboru a čas, žádné
@@ -1483,7 +1483,7 @@ prohlížeče a bez přihlášení; `nastroje/apps_script/kopie_disk.gs`, návod
 `podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`). Server: `GET/POST /api/zaloha_disk`
 (`netlify/functions/zaloha_disk.mjs`, logika `netlify/lib/kopie_skript.mjs`).
 Kopie z prohlížeče (heslo správce, K3-N1) zůstává jako záloha záloh beze změny.
-Čísla B199–B202 drží K40, proto B210+.
+Čísla B199–B209 drží K40 (B199–B202 přečíslované meze #553, B203–B205 K40a, B206–B207 K40b, B208–B209 K40c), proto B210+.
 
 ### Nové meze
 
