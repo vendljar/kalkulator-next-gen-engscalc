@@ -17,3 +17,7 @@ Průchod: 1. výchozí stav → 2. webhook s překlepem v čísle nabídky → 3
   zrušení vazby vymaže i odkaz v dealu a deal u kalkulace odmítne (další webhook 409).
 - **b)** jako dnes: webhook hned doplní prázdná pole hlavičky a termín předání a zapíše odkaz do dealu;
   zrušení vazby (podle promptu v1) doplněné údaje ani odkaz nevrátí; další webhook dostane 409 jako v a).
+
+Verze 3 (11. 11. 2026): nápověda „Klikněte na 2. Webhook“, tlačítko „▶ Přehrát“ (1 → 2 → 3 Zrušit vazbu → 4 po 3 s),
+podbarvená pole se štítkem před → po přímo v hlavičce aplikace, bliknutí a odrolování na první změnu, souhrn změn
+kroku v liště. Snímky kroků 2 a 3 obou variant (desktop 1600 × 1000) jsou ve složce `snimky/`.

@@ -19,7 +19,7 @@ body.k40p-otevreno { margin-right: 420px; }
 #k40pLista button.k40p-dalsi { border-color: var(--k40p-zmeneno); box-shadow: 0 0 0 1px var(--k40p-zmeneno); }
 #k40pLista button:focus-visible, #k40pUpoz button:focus-visible { outline: 2px solid var(--k40p-zmeneno); outline-offset: 2px; }
 #k40pLista select { font: inherit; border-radius: 6px; border: 1px solid var(--k40p-line); background: var(--k40p-bg2); color: var(--k40p-fg); padding: 5px 6px; max-width: 100%; }
-#k40pLista .k40p-stav { flex: 1 1 100%; font-size: 12px; color: var(--k40p-mut); min-width: 0; }
+#k40pLista .k40p-stav { flex: 1 1 100%; font-size: 13px; color: var(--k40p-fg); min-width: 0; }
 #k40pLista .k40p-stav b { color: var(--k40p-fg); }
 #k40pPanel { position: fixed; top: var(--k40p-h); right: 0; bottom: 0; width: 420px; z-index: 9000; overflow-y: auto; background: var(--k40p-bg); padding: 10px 14px 24px; border-left: 3px solid var(--k40p-akc); }
 #k40pPanel[hidden], #k40pUpoz[hidden] { display: none !important; }
@@ -53,10 +53,25 @@ body.k40p-otevreno { margin-right: 420px; }
 #k40pUpoz button { font: 600 13px system-ui, sans-serif; cursor: pointer; border-radius: 6px; padding: 6px 12px; border: 1px solid #b98900; background: #fff; color: #3d2900; }
 #k40pUpoz button.k40p-hlavni { background: #1d7a46; border-color: #1d7a46; color: #fff; }
 #k40pUpoz button.k40p-rusit { background: #b3261e; border-color: #b3261e; color: #fff; }
-.k40p-pole-pridano { outline: 3px solid #1d9a55 !important; outline-offset: 1px; background: #e6f8ec !important; }
-.k40p-pole-nesmazano { outline: 3px solid #c62828 !important; outline-offset: 1px; background: #fdeaea !important; }
-.k40p-pole-ponechano { outline: 2px dashed #7a8aa8 !important; outline-offset: 1px; }
-.k40p-pd-zmena { outline: 3px solid #e0a800; outline-offset: 3px; border-radius: 6px; }
+.k40p-pole-pridano { outline: 3px solid #1d9a55 !important; outline-offset: 1px; background: #c9f2d6 !important; }
+.k40p-pole-nesmazano { outline: 3px solid #c62828 !important; outline-offset: 1px; background: #ffd0d0 !important; }
+.k40p-pole-ponechano { outline: 2px dashed #7a8aa8 !important; outline-offset: 1px; background: #eef1f6 !important; }
+.k40p-pole-zmeneno { outline: 3px solid #e0a800 !important; outline-offset: 2px; background: #fff1c2 !important; border-radius: 6px; }
+.k40p-pole-smazano { outline: 3px solid #2f6fd0 !important; outline-offset: 2px; background: #d9e8ff !important; border-radius: 6px; }
+.k40p-stitek-pole { margin: 2px 0 8px; padding: 4px 8px; border-radius: 6px; font: 12.5px/1.4 system-ui, "Segoe UI", sans-serif; color: #10203f; overflow-wrap: anywhere; scroll-margin-top: calc(var(--k40p-h) + 12px); }
+.k40p-stitek-pole .k40p-zn { margin: 0 4px 0 0; }
+.k40p-stitek-pole s { color: #5b6472; }
+.k40p-sp-pridano { background: #c9f2d6; border: 1px solid #1d9a55; } .k40p-sp-nesmazano { background: #ffd0d0; border: 1px solid #c62828; }
+.k40p-sp-ponechano { background: #eef1f6; border: 1px dashed #7a8aa8; } .k40p-sp-zmeneno { background: #fff1c2; border: 1px solid #e0a800; }
+.k40p-sp-smazano { background: #d9e8ff; border: 1px solid #2f6fd0; }
+@keyframes k40p-blik { 0%, 40%, 80% { box-shadow: 0 0 0 6px rgba(255, 196, 0, .85); } 20%, 60%, 100% { box-shadow: 0 0 0 0 rgba(255, 196, 0, 0); } }
+.k40p-blik { animation: k40p-blik 2.4s ease-out 1; }
+@keyframes k40p-pulz { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 210, 122, .0); } 50% { box-shadow: 0 0 0 6px rgba(255, 210, 122, .75); } }
+#k40pLista button.k40p-dalsi { animation: k40p-pulz 1.4s ease-in-out infinite; }
+#k40pLista .k40p-napoveda { background: var(--k40p-zmeneno); color: #10203f; font-weight: 700; border-radius: 6px; padding: 5px 10px; }
+#k40pLista button.k40p-hraj { background: #24407a; border-color: var(--k40p-akc); font-weight: 700; }
+#k40pLista .k40p-stav .k40p-zn { margin-left: 0; }
+@media (prefers-reduced-motion: reduce) { .k40p-blik, #k40pLista button.k40p-dalsi { animation: none; } }
 @media (max-width: 1000px) {
   body.k40p-otevreno { margin-right: 0; }
   #k40pPanel { position: static; width: auto; border-left: 0; border-bottom: 3px solid var(--k40p-akc); max-height: 46vh;
@@ -64,7 +79,8 @@ body.k40p-otevreno { margin-right: 420px; }
 }
 @media (max-width: 600px) {
   #k40pLista { gap: 4px 8px; font-size: 12px; }
-  #k40pLista .k40p-stav, #k40pLista .k40p-pop { display: none; }
+  #k40pLista .k40p-pop { display: none; }
+  #k40pLista .k40p-stav { font-size: 12px; max-height: 4.2em; overflow: hidden; }
   #k40pLista button { padding: 4px 6px; }
   #k40pLista .k40p-var button { font-size: 13px; padding: 4px 8px; }
 }

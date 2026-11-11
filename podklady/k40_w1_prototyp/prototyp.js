@@ -4,7 +4,8 @@
  * Do skutečné aplikace sahá jen takto: mění pole otevřené zakázky (ZAK) a volá render().
  * Varianta a) „Vazba" = návrh posudku (jen vazba, údaje až po „V pořádku", zrušení smaže
  * i odkaz v dealu); varianta b) „Jako dnes" = dnešní webhook + zrušení vazby podle promptu v1.
- * Lišta nahoře zůstává při posouvání na místě; panel „Co se mění" ukazuje před → po. */
+ * Lišta nahoře zůstává při posouvání na místě; panel „Co se mění" ukazuje před → po;
+ * změněná pole dostanou podbarvení a štítek před → po přímo v aplikaci; „▶ Přehrát" projde kroky sám. */
 (function () {
   'use strict';
   const POLE = [['nazevAkce', 'Název akce'], ['adresa', 'Adresa stavby'], ['objednatel', 'Zákazník'], ['ico', 'IČO zákazníka'], ['kontakt', 'Kontaktní osoba']];
@@ -16,7 +17,8 @@
   const ROLE = { autor: 'autor zakázky (obchodník)', jiny: 'jiný obchodník', admin: 'administrátor' };
   const ZNACKY = { pridano: 'přidáno', zmeneno: 'změněno', smazano: 'smazáno', nesmazano: 'nesmazáno', ponechano: 'ponecháno' };
   const VAZBA_TEXT = { '': 'žádná', ceka: 'čeká na potvrzení', dnes: 'navázáno bez potvrzení', potvrzeno: 'potvrzeno', zruseno: 'zrušeno' };
-  const S = { varianta: 'a', role: 'autor', otevreno: true };
+  const S = { varianta: 'a', role: 'autor', otevreno: true, hraje: null, blik: false };
+  let OBS = null, PK = null;
   let P;   // stav napodobeného serveru
 
   const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -136,6 +138,17 @@
     if (kPole && P.ponechano.includes(kPole)) return 'ponechano';
     return '';
   }
+  const UDAJE = POLE.map(([k, n]) => [k, n, k]).concat([['termin', 'Termín předání (krycí list)', 'terminPredani'], ['deal', 'Vazba na deal', null],
+    ['stavPd', 'Stav Pipedrive', null], ['vazba', 'Stav vazby', null], ['odmitnute', 'Odmítnuté dealy', null], ['odkaz', 'Odkaz v dealu', null]]);
+  function souhrn() {
+    if (P.krok === 'vychozi') return 'Výchozí stav — nic se nezměnilo. Klikněte na „2. Webhook" nebo „▶ Přehrát".';
+    const po = snimek(), sk = { pridano: [], zmeneno: [], smazano: [], nesmazano: [] };
+    UDAJE.forEach(([k, n, kp]) => { const z = znacka(k, kp); if (sk[z]) sk[z].push(n); });
+    const cast = (z) => sk[z].length ? '<span class="k40p-zn k40p-zn-' + z + '">' + ZNACKY[z] + '</span> ' + esc(sk[z].join(', ')) : '';
+    const t = ['pridano', 'zmeneno', 'smazano', 'nesmazano'].map(cast).filter(Boolean).join(' · ');
+    const poleZmena = POLE.some(([k]) => P.pred[k] !== po[k]) || P.pred.termin !== po.termin;
+    return (t || 'Tímto krokem se nezměnilo nic.') + (poleZmena || sk.nesmazano.length ? '' : ' · <b>údaje zakázky (hlavička) beze změny</b>');
+  }
   const stitek = (z) => z ? '<span class="k40p-zn k40p-zn-' + z + '">' + ZNACKY[z] + '</span>' : '';
   function radekPP(nazev, k, kPole, pozn) {
     const pred = P.pred[k], po = snimek()[k], z = znacka(k, kPole);
@@ -185,14 +198,15 @@
       + Object.keys(ROLE).map((r) => '<option value="' + r + '"' + (S.role === r ? ' selected' : '') + '>' + esc(ROLE[r]) + '</option>').join('') + '</select></div>'
       + '<div class="k40p-sk"><span class="k40p-pop">Kroky</span>'
       + kr('reset', '1. Výchozí stav', false, false)
-      + kr('webhook', '2. Webhook', !!ZAK.pdDealId || P.krok !== 'vychozi', dalsi === 'webhook')
+      + kr('webhook', '2. Webhook', !!ZAK.pdDealId || P.krok !== 'vychozi', dalsi === 'webhook' && !S.hraje)
       + kr('potvrd', '3. V pořádku', !ceka, dalsi === 'rozhodni')
       + (smiRusit ? kr('zrus', '3. Zrušit vazbu', !ceka, dalsi === 'rozhodni') : kr('chybna', '3. Vazba je chybná', !ceka || !!(v && v.nahlaseno), dalsi === 'rozhodni'))
       + kr('webhook', '4. Webhook znovu', P.krok === 'vychozi', dalsi === 'znovu')
       + '</div>'
-      + '<div class="k40p-sk">' + '<button type="button" data-k40p="panel" aria-pressed="' + S.otevreno + '">Co se mění</button></div>'
-      + '<div class="k40p-stav">Smyšlená data, nic se neposílá. Teď: <b>' + esc(S.varianta === 'a' ? 'Vazba (a)' : 'Jako dnes (b)') + '</b> · ' + esc(popisKroku)
-      + ' · vazba: <b>' + esc(VAZBA_TEXT[(v && v.stav) || '']) + '</b></div>';
+      + (P.krok === 'vychozi' && !S.hraje ? '<span class="k40p-napoveda">◀ Klikněte na „2. Webhook" — do té doby se nic nezmění</span>' : '')
+      + '<div class="k40p-sk"><button type="button" class="k40p-hraj" data-k40p="hraj">' + (S.hraje ? '■ Zastavit' : '▶ Přehrát') + '</button>'
+      + '<button type="button" data-k40p="panel" aria-pressed="' + S.otevreno + '">Co se mění</button></div>'
+      + '<div class="k40p-stav"><b>' + esc(S.varianta === 'a' ? 'Vazba (a)' : 'Jako dnes (b)') + '</b> · ' + esc(popisKroku) + ' → ' + souhrn() + '</div>';
   }
   function panel() {
     const a = S.varianta === 'a';
@@ -222,14 +236,47 @@
       + KROKY.map(([k, n, ta, tb]) => '<div class="k40p-rv' + (P.krok === k ? ' k40p-ted' : '') + '"><span>' + esc(n) + '</span><span' + (P.krok === k && a ? ' class="k40p-sl"' : '') + '>' + esc(ta)
         + '</span><span' + (P.krok === k && !a ? ' class="k40p-sl"' : '') + '>' + esc(tb) + '</span></div>').join('');
   }
+  /* Zvýraznění přímo v aplikaci: podbarvené pole + štítek „před → po" pod řádkem pole.
+   * Aplikace hlavičku překresluje sama, proto se štítky po každém překreslení vracejí
+   * (MutationObserver se při vlastních zásazích odpojuje, jinak by se točil dokola). */
   function zvyrazni() {
-    ['pridano', 'nesmazano', 'ponechano'].forEach((z) => document.querySelectorAll('.k40p-pole-' + z).forEach((e) => e.classList.remove('k40p-pole-' + z)));
-    document.querySelectorAll('.k40p-pd-zmena').forEach((e) => e.classList.remove('k40p-pd-zmena'));
-    const pole = (k, z) => document.querySelectorAll('input[onchange*="ZAK.' + k + '\'"]').forEach((e) => e.classList.add('k40p-pole-' + z));
-    const zrus = P.vazba && P.vazba.stav === 'zruseno';
-    P.doplneno.forEach((k) => pole(k, zrus ? 'nesmazano' : 'pridano'));
-    P.ponechano.forEach((k) => pole(k, 'ponechano'));
-    if (P.pred && P.pred.stavPd !== snimek().stavPd) document.querySelectorAll('.pd-stav-radek').forEach((e) => e.classList.add('k40p-pd-zmena'));
+    if (OBS) OBS.disconnect();
+    try {
+      document.querySelectorAll('.k40p-stitek-pole').forEach((e) => e.remove());
+      ['pridano', 'nesmazano', 'ponechano', 'zmeneno', 'smazano'].forEach((z) => document.querySelectorAll('.k40p-pole-' + z).forEach((e) => e.classList.remove('k40p-pole-' + z, 'k40p-blik')));
+      const po = snimek(), pr = '— prázdné —';
+      const stit = (radek, z, text) => {
+        if (!radek || !radek.parentNode) return;
+        const s = document.createElement('div');
+        s.className = 'k40p-stitek-pole k40p-sp-' + z + (S.blik ? ' k40p-blik' : '');
+        s.innerHTML = '<span class="k40p-zn k40p-zn-' + z + '">' + ZNACKY[z] + '</span> ' + text;
+        radek.parentNode.insertBefore(s, radek.nextSibling);
+      };
+      POLE.forEach(([k]) => {
+        const z = znacka(k, k); if (!z) return;
+        const text = z === 'ponechano' ? 'deal má „' + esc(DEAL.pole[k]) + '" — kalkulace si nechala svoje'
+          : (z === 'nesmazano' ? 'doplnil webhook: „' + esc(po[k]) + '" — po zrušení vazby zůstalo'
+            : '<s>' + esc(P.pred[k] || pr) + '</s> → <b>' + esc(po[k] || pr) + '</b>');
+        document.querySelectorAll('input[onchange*="ZAK.' + k + '\'"]').forEach((e) => {
+          e.classList.add('k40p-pole-' + z); if (S.blik) e.classList.add('k40p-blik');
+          stit(e.closest('.row'), z, text);
+        });
+      });
+      const zp = znacka('stavPd', null) || znacka('deal', null);
+      if (zp) document.querySelectorAll('.pd-stav-radek').forEach((e) => {
+        e.classList.add('k40p-pole-' + zp); if (S.blik) e.classList.add('k40p-blik');
+        stit(e, zp, 'Stav Pipedrive: <s>' + esc(P.pred.stavPd) + '</s> → <b>' + esc(po.stavPd) + '</b> · vazba: <s>' + esc(P.pred.deal || 'žádná') + '</s> → <b>' + esc(po.deal || 'žádná') + '</b>');
+      });
+    } finally {
+      if (OBS && PK) OBS.observe(PK, { childList: true, subtree: true });
+    }
+  }
+  /* Po kroku: záložka Kalkulace OCK a první změněné pole doprostřed obrazovky. */
+  function naZmenu() {
+    try { if (typeof TAB !== 'undefined' && TAB !== 'kalk' && typeof prepniTab === 'function') prepniTab('kalk'); } catch (e) { /* bez přepnutí */ }
+    const viditelny = (e) => e.offsetParent !== null;
+    const prvni = Array.from(document.querySelectorAll('.k40p-stitek-pole')).filter(viditelny)[0] || document.getElementById('k40pUpoz');
+    if (prvni && viditelny(prvni) && prvni.scrollIntoView) prvni.scrollIntoView({ block: 'center' }); else window.scrollTo(0, 0);
   }
   function vyska() {
     const l = document.getElementById('k40pLista');
@@ -243,17 +290,42 @@
     vyska();
   }
 
-  function klik(e) {
-    const b = e.target.closest('[data-k40p]'); if (!b || b.disabled) return;
-    const a = b.getAttribute('data-k40p');
-    if (a === 'panel') S.otevreno = !S.otevreno;
-    else if (a.indexOf(':') > 0) { const [k, h] = a.split(':'); S[k] = h; if (k === 'varianta') vychozi(); }
-    else if (a === 'reset') vychozi();
+  function krok(a) {
+    if (a === 'reset') vychozi();
     else {
       P.pred = snimek();
       if (a === 'webhook') webhook(); else if (a === 'potvrd') potvrd(); else if (a === 'zrus') zrus(); else if (a === 'chybna') chybna();
     }
+    S.blik = a !== 'reset';
     kresli();
+    naZmenu();
+    S.blik = false;
+  }
+  /* „▶ Přehrát": 1. výchozí stav → 2. webhook → 3. zrušit vazbu → 4. webhook znovu, po 3 s. */
+  const PREHRAT = ['reset', 'webhook', 'zrus', 'webhook'];
+  function zastav() { if (S.hraje) { clearTimeout(S.hraje.t); S.hraje = null; } }
+  function hraj() {
+    if (S.hraje) { zastav(); kresli(); return; }
+    if (S.role === 'jiny') S.role = 'autor';
+    S.hraje = { i: 0, t: null };
+    const dalsi = () => {
+      if (!S.hraje) return;
+      const a = PREHRAT[S.hraje.i++];
+      const konec = S.hraje.i >= PREHRAT.length;
+      const h = S.hraje; if (konec) S.hraje = null;
+      krok(a);
+      if (!konec) h.t = setTimeout(dalsi, 3000);
+    };
+    dalsi();
+  }
+  function klik(e) {
+    const b = e.target.closest('[data-k40p]'); if (!b || b.disabled) return;
+    const a = b.getAttribute('data-k40p');
+    if (a === 'hraj') { hraj(); return; }
+    zastav();
+    if (a === 'panel') { S.otevreno = !S.otevreno; kresli(); }
+    else if (a.indexOf(':') > 0) { const [k, h] = a.split(':'); S[k] = h; if (k === 'varianta') vychozi(); kresli(); if (k === 'varianta') naZmenu(); }
+    else krok(a);
   }
 
   function start() {
@@ -265,13 +337,23 @@
     document.body.insertBefore(p, document.body.firstChild);   // na úzké obrazovce stojí panel hned pod lištou
     document.body.insertBefore(l, document.body.firstChild);
     document.body.addEventListener('click', klik);
-    document.body.addEventListener('change', (e) => { if (e.target && e.target.id === 'k40pRole') { S.role = e.target.value; kresli(); } });
+    document.body.addEventListener('change', (e) => { if (e.target && e.target.id === 'k40pRole') { zastav(); S.role = e.target.value; kresli(); } });
     window.addEventListener('resize', vyska);
     /* Aplikace překresluje hlavičku sama — zvýraznění se po překreslení vrátí. */
     let t = null;
-    const pk = document.getElementById('page-kalk');
-    if (pk && window.MutationObserver) new MutationObserver(() => { clearTimeout(t); t = setTimeout(zvyrazni, 60); }).observe(pk, { childList: true, subtree: true });
+    PK = document.getElementById('page-kalk');
+    if (PK && window.MutationObserver) { OBS = new MutationObserver(() => { clearTimeout(t); t = setTimeout(zvyrazni, 60); }); OBS.observe(PK, { childList: true, subtree: true }); }
+    try { if (typeof TAB !== 'undefined' && TAB !== 'kalk' && typeof prepniTab === 'function') prepniTab('kalk'); } catch (e) { /* zůstane otevřená záložka */ }
     vychozi(); kresli();
   }
-  if (document.readyState === 'complete') setTimeout(start, 0); else window.addEventListener('load', () => setTimeout(start, 0));
+  /* Kdyby se prototyp nespustil (aplikace se nenačetla), ať je to vidět, ne tiché. */
+  function bezpecne() {
+    try { start(); } catch (e) {
+      const d = document.createElement('div');
+      d.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#b3261e;color:#fff;padding:10px 16px;font:14px system-ui,sans-serif';
+      d.textContent = 'Prototyp se nespustil: ' + (e && e.message ? e.message : e);
+      document.body.appendChild(d);
+    }
+  }
+  if (document.readyState === 'complete') setTimeout(bezpecne, 0); else window.addEventListener('load', () => setTimeout(bezpecne, 0));
 })();
