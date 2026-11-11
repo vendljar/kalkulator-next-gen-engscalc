@@ -1548,3 +1548,38 @@ Kopie z prohlížeče (heslo správce, K3-N1) zůstává jako záloha záloh bez
   (`vloz_retenci.py`, hlídá `src/test_577_jmeno_kopie.js`) — jen kopie vlastního
   prostředí, nikdy nejnovější, při úbytku dat pod 90 % nebo nepotvrzeném
   varování nemaže a pošle e-mail; maže se do koše Disku (30 dní).
+
+## K40a #579 — opravy kola 40 bez ceny, meze X3, S3, X4 (11. 11. 2026)
+
+Dávka K40a (posudek poradce `podklady/K40_POSUDEK_FABLE.md`, rozhodnutí J. V. 11. 11. 2026). Meze #553
+přečíslované na B199–B202 (výš). Čísla B206–B207 drží K40b, B208–B209 K40c.
+
+### Nové meze
+
+- **B203 — heslo z přihlášení správce potvrdí kopii zálohy na Disk bez dalšího dotazu (K40-X3, vědomá
+  mez).** Hlavní cestou noční kopie je od AS #577 skript Apps Script s tokenem (B213); prohlížeč je záloha
+  záloh. Když kopii nového nočního otisku skript nepotvrdil (`uloKopieDiskStav(…).potreba`), použije
+  prohlížeč po přihlášení administrátora heslo, které právě zadal (`onlinePoPrihlaseni` →
+  `onlineZalohaAuto(hesloPrihlaseni)` → `onlineKopieDiskAuto` → `kopieDiskProved`, `src/ui/online_ui.js`),
+  k potvrzení kopie — a záznam kopie na serveru odemyká mazání starých záloh (retence, K3-N1). Heslo se
+  nikam neukládá (jen parametr volání). Bez hesla z přihlášení (obnovená relace) se kopie nepořídí tiše:
+  čeká na potvrzení heslem (`kopieDiskCeka('heslo', …)`, tlačítko „Zkopírovat zálohu na Disk teď“).
+  *Co to nedělá:* správce po přihlášení není znovu dotázán; kdo ovládne jeho prohlížeč v okamžiku
+  přihlášení, odemkne retenci stejně jako heslem (riziko jako B213 u tokenu).
+- **B204 — po Prodáno a před prvním tiskem SoD smí číslo SoD a datum podpisu měnit kdokoli s právem
+  ukládat (K40-S3, vědomá mez).** `ZAMEK_PRODANO_SOD_POLE` / `zamekProdanoSodVolne` (`src/zamek.js`,
+  K37-N2, B157): pole SoD prodané varianty zůstávají zapisovatelná „podle běžných pravidel zámku“, dokud
+  z varianty neodešla smlouva o dílo; po prvním tisku SoD se zamknou. Ostatní krycí list prodané varianty
+  je zamčený. *Co to nedělá:* změnu čísla SoD nebo data podpisu v tom okně neomezuje role (jen právo
+  ukládat zakázku); stopu nese protokol a razítko uložení.
+- **B205 — srovnávací kopie na Disku jen s dnem menším než den nové kopie; budoucí jména se hlásí
+  (K40-X4, OPRAVENO v K40a).** Pojistka úbytku (#523) srovnávala novou kopii s abecedně POSLEDNÍM jménem
+  vlastního prostředí ve složce „_Zaloha Netlify DB“ — soubor s budoucím datem od kohokoli se zápisem do
+  sdílené složky pojistku vyřadil (malý soubor = falešný úbytek, mazání stojí) nebo zakryl skutečný úbytek
+  (velký soubor). Oprava: `retenceZalohDiskPredchozi(jmena, soubor, den, prostredi)` v
+  `src/retence_zaloh.js` — jediná funkce pro prohlížeč (`kopieDiskUklid`) i skript
+  (`nastroje/apps_script/kopie_disk.gs`, vkládá `vloz_retenci.py`); jména s budoucím dnem vrací zvlášť,
+  úklid je ohlásí jako podezřelá a NEMAŽE je (retence je drží jako „denní“ se záporným věkem). *Co
+  zbývá:* skript v účtu správce se sám neaktualizuje — dokud J. V. nevloží nový `kopie_disk.gs`
+  (`podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`), běží noční kopie se starým výběrem. Budoucí soubor dál zabírá
+  místo na Disku, dokud ho člověk nesmaže.

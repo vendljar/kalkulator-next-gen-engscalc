@@ -710,7 +710,7 @@
         },
         {
           "typ": "text",
-          "text": "Když nová verze aplikace přidá do ceníku buňky (například **cena můstků podle rozměru**: referenční šířka, sazba a hodiny montáže můstků), platí pro **zveřejněný** ceník až po jeho dalším zveřejnění. Zveřejnění starý ceník samo **migruje** (doplní nové buňky výchozími hodnotami a ponechá, co jste vyplnili) a dialog změny je vypíše. **Po nasazení takové verze proto ceník jednou zveřejněte** — do té doby se počítá postaru (u můstků paušálem). Zamčené varianty a ceník zveřejněný před změnou počítají dál postaru. Které verze migraci potřebují, říká CHANGELOG (hledejte „Po nasazení je potřeba ceník jednou zveřejnit“)."
+          "text": "Když nová verze aplikace přidá do ceníku buňky (například **cena můstků podle rozměru**: referenční šířka, sazba a hodiny montáže můstků), platí pro **zveřejněný** ceník až po jeho dalším zveřejnění. **Kontrola ceníku můstků při zveřejnění** (K40a, 11. 11. 2026): referenční šířka mimo rozsah **500–5 000 mm** (typicky zadaná v metrech — 2 místo 2 000, můstek by vyšel tisíckrát dražší) a nulová sazba montáže můstků v **zahraniční řadě** (zahraniční montáž 0 bez vlastní sazby montáže můstků) se zveřejní jen po potvrzení v dialogu — stejně jako nulová cena můstku; hodnota se nemění. Zveřejnění starý ceník samo **migruje** (doplní nové buňky výchozími hodnotami a ponechá, co jste vyplnili) a dialog změny je vypíše. **Po nasazení takové verze proto ceník jednou zveřejněte** — do té doby se počítá postaru (u můstků paušálem). Zamčené varianty a ceník zveřejněný před změnou počítají dál postaru. Které verze migraci potřebují, říká CHANGELOG (hledejte „Po nasazení je potřeba ceník jednou zveřejnit“)."
         },
         {
           "typ": "ram",

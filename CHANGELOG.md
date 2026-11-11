@@ -8,6 +8,44 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v11.11.2 — K40a #579: opravy kola 40 bez ceny — čelní sklo a sklo u šachet 2+, ořez konce textu, ceník můstků, kopie na Disku, hygiena testů, větev claude/k40a
+
+Nad `c664c9e` (integrace v11.11.1). Verzi přečísluje koordinace (souběžně K40b #580). Podle posudku poradce
+(`podklady/K40_POSUDEK_FABLE.md`, `PROMPT_K40_OPRAVY_v2.md`) a rozhodnutí J. V. 11. 11. 2026 (1a, 2a, 6b, 7a, 8a).
+**Cena (`vypocet`) se nemění:** zlatá sada víc šachet 319/319 a zlatá sada můstků beze změny otisků. Weby, Disk
+ani Pipedrive se nedotkly.
+
+- **K40-N1 — vyřazené čelní sklo po změně zasklení nebo typu šachty:** `skloMigraceNazvu(data, opts)` dostala
+  nepovinné `opts.predCelni` + `opts.zadani`; přesnou dvojici starý → nový název čelního skla (VSG 4.4.1 ↔ 4.4.2)
+  přidá jen `set('Z.typSachty' | 'Z.zaskleni')`, který název zná před změnou. Přenáší se vyřazení, množství,
+  cena i vlastní název (2a), bez duplicit ve vyřazených. Import a otevření zakázky (prohlížeč i server)
+  **staré osiřelé záznamy nemění** (1a) — cena uložené nabídky ani přepočet odeslané se nepohnou.
+- **Nový nález posudku — sklo u šachet 2+:** migrace skla boků běží nad každým zadáním (`ock.zadani`
+  i `ock.dalsi[i].zadani`), u šachty 2+ se po přepnutí typu vyřazené sklo už znovu nepočítá. Jedna šachta:
+  výstup migrace beze změny.
+- **K40-X1/X2 — ořez konce textu:** `orezKonce` (format.js) smyčkou místo výrazu s kotvou na konci
+  (kvadratický čas) v `nazevCast`, `prekladNorm`, milníku plánu plateb a záloze slovníku; `nazevCast` navíc
+  strop úseku 200 znaků (K10-N1). Výstup na běžných i krajních vstupech beze změny (3 000 náhodných vstupů
+  proti dosavadnímu výrazu), 100 000 znaků do 50 ms.
+- **K40-N2/N5 — ceník můstků:** referenční šířka mimo **500–5 000 mm** (8a) a nulová montáž můstků ve
+  **složené zahraniční řadě** se zveřejní jen s potvrzením — dialog i server (`/api/program`), stejným
+  mechanismem jako nulová cena. Hodnoty se nemění.
+- **K40-X4 — srovnávací kopie na Disku:** pojistka úbytku srovnává jen s kopií se dnem **menším** než den nové
+  kopie (`retenceZalohDiskPredchozi` v `src/retence_zaloh.js`, sdílí prohlížeč i skript Apps Script — 7a);
+  kopie s budoucím datem se ohlásí jako podezřelé a nemažou se. **Po sloučení je potřeba vložit nový
+  `nastroje/apps_script/kopie_disk.gs` do Apps Script** (`podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`).
+- **K40-N4:** komentář migrace sazby DPH PROJ popisuje obě cesty (chování beze změny).
+- **K40-X5:** záložní buňka CSV ve slovníku a v suchém běhu Pipedrive = `csvBunka` (ochrana vzorců).
+- **K40-X6:** cesty `path`/`cesta` v `onchange`/`onclick` přes `escJs`; `test_escape.js` je hlídá.
+- **K40-S4:** serverové sady spuštěné samostatně bez `ADMIN_EMAIL` končí OK/FAIL (`netlify/pomoc_test_admin.mjs`).
+- **K40-T1/T3:** harnessy šablon berou nejvyšší verzi (`najdiSablonu`), převedená SoD se ověří přímo, nastSablony
+  se čte v pohledu „všechny šablony“ (filtr #367). T2 už opravila FL #576.
+- **K40-P1:** meze webhooku #553 přečíslované **B176–B179 → B199–B202**, test duplicit čísel mezí
+  (`src/test_meze_cisla.js`). Nové meze **B203** (X3 — heslo z přihlášení potvrdí kopii na Disk), **B204**
+  (S3 — pole SoD po Prodáno), **B205** (X4).
+- **Příručky:** správce — kontrola ceníku můstků při zveřejnění; obchodník (Databáze) — podezřelá kopie
+  s budoucím datem.
+
 ## v11.11.1 — VS-E6 #570: víc šachet v nabídce — závěr: překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi (#596; #570 hotovo), větev claude/vs-e6
 
 Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Verzi přečísluje koordinace.
