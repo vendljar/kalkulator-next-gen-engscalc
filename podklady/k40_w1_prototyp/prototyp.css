@@ -84,3 +84,11 @@ body.k40p-otevreno { margin-right: 420px; }
   #k40pLista button { padding: 4px 6px; }
   #k40pLista .k40p-var button { font-size: 13px; padding: 4px 8px; }
 }
+#k40pPanel .k40p-zdroj { font-size: 10.5px; color: var(--k40p-mut); border: 1px solid var(--k40p-line); border-radius: 4px; padding: 0 4px; margin-left: 4px; white-space: nowrap; }
+.k40p-stitek-pole i { font-style: normal; font-size: 11px; color: #3d4a5c; border: 1px solid #9aa6b6; border-radius: 4px; padding: 0 4px; margin-left: 4px; white-space: nowrap; }
+#k40pUpoz .k40p-potvrzeni { flex: 1 1 100%; background: #fff; border: 2px solid #b98900; border-radius: 8px; padding: 10px 12px; color: #3d2900; }
+#k40pUpoz .k40p-pr { display: grid; grid-template-columns: minmax(120px, 22%) 1fr; gap: 10px; padding: 4px 0; border-top: 1px solid #f0e2b8; margin-top: 4px; }
+#k40pUpoz .k40p-pr > span { min-width: 0; overflow-wrap: anywhere; }
+#k40pUpoz .k40p-pr s { color: #8a6d1f; }
+#k40pUpoz .k40p-pt { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 8px; font-size: 12.5px; }
+@media (max-width: 600px) { #k40pLista select { max-width: 29vw; padding: 4px 2px; font-size: 12px; } }
