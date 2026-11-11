@@ -380,19 +380,59 @@ function prodNelzeProdat(zak, v) {
  * prodat nejde dřív, než nabídka odešla — datum prodeje je ≥ den zámku
  * (odeslání) prodávané varianty (pražský den času zámku) a ≤ dnes. Do v2.11.3
  * prošlo i 2001-01-01 a controlling by zakázku vzal do dávno uzavřeného
- * období. Zámek bez platného času (starší data) dolní mez nemá. Vrací
- * 'RRRR-MM-DD' nebo ''. */
-function prodDatumOd(v) {
-  const kdy = v && v.zamek && v.zamek.zamceno ? v.zamek.kdy : '';
-  if (typeof kdy !== 'string' || !/^\d{4}-\d{2}-\d{2}T/.test(kdy) || isNaN(Date.parse(kdy))) return '';
-  return objDnes(kdy);
+ * období. Zámek bez platného času (starší data) dolní mez nemá.
+ *
+ * RAZÍTKO PŘIJETÍ SERVEREM (K40-S1, rozhodnutí J. V. 4. 11. 2026, #580):
+ * čas zámku `kdy` píše prohlížeč a server ho u nového zámku připustí až
+ * 400 dní zpět (K7-S5) — stačily špatné hodiny počítače a prodej šel zapsat
+ * do uzavřeného období. Server proto při PRVNÍM přijetí nového zámku zapíše
+ * vlastní čas `zamek.prijato` (ISO UTC; píše ho jen server, mimo klíč zámku —
+ * uloZamekKlic, drží ho uloZamekRazitkaDrz). Mez je
+ *   max(den(kdy), den(prijato − PROD_PRIJATO_TOLERANCE_DNI)),
+ * tolerance 7 dní je na tisk bez sítě uložený později. Zámek bez `prijato`
+ * (uložený před opravou, obnovený ze souboru) má mez z `kdy` jako dřív.
+ * K40-N3: mez nejvýš dnes (Praha) — zámek těsně před půlnocí s hodinami
+ * napřed (server připustí 10 min) dával den zámku = zítřek a prodat nešlo.
+ * Datum mezi dnem odeslání (`tvrda`) a mezí smí zapsat jen vedoucí nebo
+ * administrátor s důvodem (výjimka, zapíše se do prodejHistorie); pod den
+ * odeslání nikdo. Jedna funkce pro prohlížeč (pole data v kartě Prodáno)
+ * i server (prodServer). Vrací { od, tvrda } jako 'RRRR-MM-DD' nebo ''. */
+const PROD_PRIJATO_TOLERANCE_DNI = 7;
+function prodCasPlatny(x) {
+  return typeof x === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(x) && !isNaN(Date.parse(x));
 }
-/* Proč datum prodeje neplatí ('' = platí); `v` = varianta, jejíž zámek dává dolní mez. */
-function prodDatumProblem(d, v, ted) {
+function prodDatumMez(v, ted) {
+  const z = v && v.zamek && v.zamek.zamceno ? v.zamek : null;
+  if (!z) return { od: '', tvrda: '' };
+  const dnes = objDnes(ted);
+  let tvrda = prodCasPlatny(z.kdy) ? objDnes(z.kdy) : '';
+  let od = tvrda;
+  if (prodCasPlatny(z.prijato)) {
+    const p = objDnes(Date.parse(z.prijato) - PROD_PRIJATO_TOLERANCE_DNI * 86400000);
+    if (p > od) od = p;
+  }
+  if (od > dnes) od = dnes;          // K40-N3
+  if (tvrda > dnes) tvrda = dnes;
+  return { od, tvrda };
+}
+function prodDatumOd(v, ted) { return prodDatumMez(v, ted).od; }
+/* Důvod výjimky z dolní meze: text bez řídicích znaků, s délkovým stropem. */
+function prodVyjimkaText(x) {
+  return typeof x === 'string' ? x.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, PROD_DUVOD_MAX) : '';
+}
+const prodDatumUiText = d => d.split('-').reverse().map(x => String(+x)).join('. ');
+/* Proč datum prodeje neplatí ('' = platí); `v` = varianta, jejíž zámek dává
+ * dolní mez; `vyj` = { role, duvod } — výjimka z meze (K40-S1). */
+function prodDatumProblem(d, v, ted, vyj) {
   if (!objDatumPlatne(d)) return 'Datum prodeje chybí nebo je neplatné.';
   if (d > objDnes(ted)) return 'Datum prodeje nesmí být v budoucnosti.';
-  const od = prodDatumOd(v);
-  if (od && d < od) return 'Datum prodeje nesmí být dřív než odeslání nabídky (' + od.split('-').reverse().map(x => String(+x)).join('. ') + ').';
+  const m = prodDatumMez(v, ted);
+  if (m.tvrda && d < m.tvrda) return 'Datum prodeje nesmí být dřív než odeslání nabídky (' + prodDatumUiText(m.tvrda) + ').';
+  if (m.od && d < m.od) {
+    if (vyj && PROD_ROLE_ODEMKNOUT.includes(String(vyj.role || '')) && prodVyjimkaText(vyj.duvod).length >= PROD_DUVOD_MIN) return '';
+    return 'Datum prodeje nesmí být dřív než ' + prodDatumUiText(m.od) + ' (nejvýš ' + PROD_PRIJATO_TOLERANCE_DNI
+      + ' dní před přijetím odeslané nabídky serverem). Starší datum smí s důvodem zapsat vedoucí nebo administrátor.';
+  }
   return '';
 }
 /* Klient: zapíše prodej (razítka jen předvyplní, přepíše je server). Vrací chybu nebo ''. */
@@ -401,10 +441,13 @@ function prodNastav(zak, v, datum, ctx) {
   const proc = prodNelzeProdat(zak, v);
   if (proc) return proc;
   const d = objDatumPlatne(datum) ? datum : objDnes(c.ted);
-  const zle = prodDatumProblem(d, v, c.ted);
+  const zle = prodDatumProblem(d, v, c.ted, { role: c.role, duvod: c.duvod });
   if (zle) return zle;
   const kdy = c.kdy || new Date().toISOString();
   v.prodano = { datum: d, kdo: String(c.kdo || ''), kdy, pipedrive: { stav: 'ceka', kdy } };
+  /* Výjimka z dolní meze (K40-S1): důvod jde serveru, ten ho zapíše do historie. */
+  const od = prodDatumOd(v, c.ted);
+  if (od && d < od) v.prodano.vyjimka = prodVyjimkaText(c.duvod);
   return '';
 }
 /* PRODANÁ VARIANTA JE VŽDY ŘÍDÍCÍ (PR #563, J. V. 4. 11. 2026: „Ve chvíli,
@@ -478,6 +521,11 @@ function prodJedinaZmena(ted, ulozeno) {
   };
   const a = rozbal(ted), b = rozbal(ulozeno);
   if (!a || !b) return false;
+  /* K40-S1: razítko přijetí zámku (`zamek.prijato`) píše jen server a klient
+   * ho dostane až v odpovědi uložení — jeho chybění v okně není změna. */
+  [a, b].forEach(z => (Array.isArray(z.varianty) ? z.varianty : []).forEach(v => {
+    if (v && v.zamek && typeof v.zamek === 'object') delete v.zamek.prijato;
+  }));
   const bezAkt = z => { const k = Object.assign({}, z); delete k.aktivni; return JSON.stringify(k); };
   if (bezAkt(a) === bezAkt(b)) return false;   // nic se nezměnilo (jen výběr otevřené varianty, PR #563)
   /* PR #563: Prodáno přepne řídící na prodanou variantu (prodRidiciSrovnej)
@@ -564,7 +612,7 @@ function prodServer(stara, zak, relace, ctx) {
   }
   const role = String((relace && relace.role) || '');
   const email = String((relace && relace.email) || '');
-  const ted = c.kdy || new Date().toISOString();
+  const ted = c.kdy || (c.ted != null && !isNaN(new Date(c.ted)) ? new Date(c.ted).toISOString() : new Date().toISOString());
   const autor = !!stara && String(stara.autor || '').toLowerCase() === email.toLowerCase();
   const sVar = (id) => (stara && Array.isArray(stara.varianty)) ? stara.varianty.find(x => x && x.id === id) : null;
   const cislo = (z, v) => (typeof variantaCislo === 'function') ? String(variantaCislo(z, v) || '') : '';
@@ -594,11 +642,20 @@ function prodServer(stara, zak, relace, ctx) {
       return { status: 403, chyba: 'Prodej zapisuje obchodník zakázky, vedoucí nebo administrátor' };
     const d = v.prodano.datum;
     /* Dolní mez z ULOŽENÉHO zámku (klient si čas odeslání neposune); nová
-     * zakázka nebo varianta bez uložené verze → zámek z příchozích dat. */
-    const zleD = prodDatumProblem(d, (sv && sv.zamek && sv.zamek.zamceno) ? sv : v, c.ted);
+     * zakázka nebo varianta bez uložené verze → zámek z příchozích dat.
+     * Razítko přijetí (K40-S1) NIKDY z příchozích dat: u uloženého zámku
+     * z uložené verze (prodServer běží dřív než uloZamekRazitkaDrz), u nového
+     * zámku v témže požadavku čas serveru — ten mu server níž zapíše
+     * (zakazka_kontrola.mjs). Obnova ze souboru razítko nepřebírá (otázka 3a):
+     * nový zámek z ní se chová jako starší (mez z `kdy`). */
+    const ulozenyZamek = !!(sv && sv.zamek && sv.zamek.zamceno);
+    const zamekMez = ulozenyZamek ? sv : { zamek: Object.assign({}, v.zamek, { prijato: c.obnova ? undefined : ted }) };
+    const vyjimka = prodVyjimkaText(v.prodano.vyjimka);
+    const zleD = prodDatumProblem(d, zamekMez, c.ted, { role, duvod: vyjimka });
     if (zleD) return { status: 400, chyba: zleD.replace(/\.$/, '') };
+    const od = prodDatumOd(zamekMez, c.ted);
     v.prodano = { datum: d, kdo: email, kdy: ted, pipedrive: { stav: 'ceka', kdy: ted } };
-    pridej({ akce: 'prodano', varianta: v.id, cislo: cislo(zak, v), datum: d, duvod: '' });
+    pridej({ akce: 'prodano', varianta: v.id, cislo: cislo(zak, v), datum: d, duvod: (od && d < od) ? vyjimka : '' });
   }
   const h = historie.slice(-PROD_HISTORIE_MAX);
   if (h.length) zak.prodejHistorie = h; else delete zak.prodejHistorie;
@@ -654,4 +711,4 @@ if (typeof module !== 'undefined' && module.exports)
     objSodSnimek, objSodZaznamyServer, objZmenenoPoSod, objZmenyServer, objZmenyOciste, objDnes, objDatumPlatne, objStav, objDatumPodpisu, objPodepsano, objNabidnute,
     objObjednaneVarianty, objText, objNastav, objOtisk, objTvarPlatny, objKontrola,
     PROD_ROLE_ODEMKNOUT, PROD_PD_STAVY, PROD_PD_STAV_TEXT, PROD_DUVOD_MIN, PROD_HISTORIE_MAX, prodStav, prodNelzeProdat, prodNastav,
-    prodOdemkni, prodRidiciSrovnej, prodRidiciZamceno, prodDatumOd, prodDatumProblem, prodJedinaZmena, prodNeulozenoText, prodPdStavText, prodTvarPlatny, prodOciste, prodHistorieOciste, prodServer, prodPdZapis };
+    prodOdemkni, prodRidiciSrovnej, prodRidiciZamceno, PROD_PRIJATO_TOLERANCE_DNI, prodDatumMez, prodVyjimkaText, prodDatumOd, prodDatumProblem, prodJedinaZmena, prodNeulozenoText, prodPdStavText, prodTvarPlatny, prodOciste, prodHistorieOciste, prodServer, prodPdZapis };

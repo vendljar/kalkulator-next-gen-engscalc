@@ -1548,3 +1548,50 @@ Kopie z prohlížeče (heslo správce, K3-N1) zůstává jako záloha záloh bez
   (`vloz_retenci.py`, hlídá `src/test_577_jmeno_kopie.js`) — jen kopie vlastního
   prostředí, nikdy nejnovější, při úbytku dat pod 90 % nebo nepotvrzeném
   varování nemaže a pošle e-mail; maže se do koše Disku (30 dní).
+
+## K40b #580 — dolní mez data prodeje z razítka přijetí zámku, diagnostika rozdílu zámku (11. 11. 2026)
+
+Rozhodnutí J. V. 4. 11. 2026 (K40-S1, K40-N3) a 11. 11. 2026 (otázky 3a, 4a posudku
+`podklady/K40_POSUDEK_FABLE.md`). Čas zámku `kdy` píše prohlížeč a server ho
+u nového zámku připustí až 400 dní zpět (K7-S5); dolní mez data prodeje
+(K37-N4) z něj šla posunout chybnými hodinami počítače. Server proto při
+**prvním přijetí** nového zámku zapíše vlastní čas `zamek.prijato`
+(`netlify/lib/zakazka_kontrola.mjs`, příjem nového zámku); mez je
+`max(den(kdy), den(prijato − 7 dní))` a nejvýš dnes (`prodDatumMez`
+v `src/objednane.js` — touž funkcí počítá pole data v kartě Prodáno i server).
+
+- `prijato` **není v klíči zámku** (`uloZamekKlic`) — starší klient, který ho
+  nezná, ukládá bez 409. U uloženého zámku ho drží `uloZamekRazitkaDrz` (vedle
+  `kdo`, `popis`, `sablona`, `slovnik`, `hlavicka`); zámek uložený před opravou
+  ho od klienta nedostane. Příchozí hodnota se u nového zámku zahodí.
+- `prodServer` běží dřív než `uloZamekRazitkaDrz`, proto bere razítko z **uložené**
+  verze; u nového zámku v témže požadavku čas serveru. Z příchozích dat nikdy.
+  `prodJedinaZmena` pole při porovnání vynechá. Odpověď uložení vrací
+  `zamkyPrijato` a prohlížeč si razítko dopíše do místní kopie zámku.
+- **Obnova:** z otisku se razítko přebírá (doklad, jen platný tvar); ze souboru
+  se zahodí (otázka 3a) — nový zámek z obnovy ze souboru se chová jako starší
+  (mez z `kdy`). Je-li tentýž zámek už v databázi, platí razítko z databáze.
+
+### Nové meze
+
+- **B206 — tolerance 7 dní a výjimka z dolní meze.** Prodej smí mít datum
+  nejvýš 7 dní (`PROD_PRIJATO_TOLERANCE_DNI`) před přijetím zámku serverem —
+  tisk bez sítě uložený později. Starší datum (nejdřív den odeslání nabídky)
+  smí zapsat **vedoucí nebo administrátor s důvodem**: důvod (strop 500 znaků,
+  řídicí znaky nahrazené mezerou, v UI přes `esc`) jde v `v.prodano.vyjimka`,
+  server ho zapíše do `prodejHistorie` spolu s tím, kdo a kdy (z relace),
+  a pole z prodeje zahodí. Obchodník dostane 400 i s důvodem. *Co to nedělá:*
+  vedoucí nebo administrátor tak dál může zapsat prodej až ke dni odeslání
+  (u antedatovaného tisku i do uzavřeného období) — vědomě, se stopou. Zámky
+  uložené před v11.11 razítko nemají a jejich mez je dál jen den odeslání.
+- **B207 — antedatovaný čas tisku dál určuje období odeslání v controllingu**
+  (zbytková mez, otázka 4a: jen zapsat). K40-S1 opravuje jen datum prodeje;
+  `src/controlling.js` (export za období, odeslané nabídky) čte `zamek.kdy`, který
+  smí být až 400 dní zpět (K7-S5). Nabídka vytištěná s chybnými hodinami tak
+  může v controllingu spadnout do staršího období odeslání. Přechod na
+  `zamek.prijato` by byl samostatná položka roadmapy (otázka 4b).
+- **K40-S2 (oprava výkonu, ne mez):** `zamekDataRozdilCesta` (hláška 409
+  u zamčené varianty) kanonizuje data jednou a sestupuje jedním průchodem —
+  dřív kanonizovala oba podstromy na každé úrovni (hloubka × velikost dat; s víc
+  šachtami až deset celých zadání v `ock.dalsi`). Výstup beze změny (porovnání
+  s referenční implementací na 3 000 náhodných párech, `src/test_k40b_zamek_prodej.js`).
