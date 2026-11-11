@@ -1322,15 +1322,17 @@ const PREKLAD = {
 /* ---- normalizace klíče (tolerance k mezerám, diakritickým uvozovkám,
  *      koncové dvojtečce/hvězdičce a velikosti písmen) ---- */
 function prekladNorm(s) {
-  return String(s == null ? '' : s)
+  const t = String(s == null ? '' : s)
     .replace(/\u00a0/g, ' ')
     .replace(/[\u2013\u2014]/g, '-')
     .replace(/[\u201e\u201c\u201d]/g, '"')
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/[\s:.*]+$/, '')
-    .toLowerCase();
+    .trim();
+  /* Konec smy\u010dkou, ne v\u00fdrazem `/[\s:.*]+$/` (K40-X2 \u2014 nad dlouh\u00fdm textem
+   * kvadratick\u00fd \u010das; orezKonce ve format.js). */
+  const orez = typeof orezKonce === 'function' ? orezKonce : require('./format.js').orezKonce;
+  return orez(t, /[\s:.*]/).toLowerCase();
 }
 
 /* rejstřík normalizovaný klíč → [EN, DE, FR] (staví se jednou při načtení).

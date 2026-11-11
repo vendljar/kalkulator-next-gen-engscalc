@@ -276,7 +276,11 @@ const SLOVNIK_RIDICI = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/;
 function slovnikNorm(k) {
   if (typeof prekladNorm === 'function') return prekladNorm(k);
   if (typeof require === 'function') { try { return require('./preklad.js').prekladNorm(k); } catch (e) { /* níž */ } }
-  return String(k == null ? '' : k).trim().replace(/[\s:.*]+$/, '').toLowerCase();
+  /* Konec smyčkou, ne výrazem `/[\s:.*]+$/` (K40-X2 — kvadratický čas). */
+  const t = String(k == null ? '' : k).trim();
+  let e = t.length;
+  while (e > 0 && /[\s:.*]/.test(t[e - 1])) e--;
+  return t.slice(0, e).toLowerCase();
 }
 
 /* Přísná kontrola hesel: { cz: [EN, DE, FR] }. Vrací { ok, chyba } nebo

@@ -220,6 +220,8 @@ const PRIORITA = [
   'test_k37_sklo_prepnuti.js',
   /* K40a N1 — čelní sklo při přepnutí, sklo u šachet 2+ (engine.js, ui/common.js) */
   'test_k40_celni_sklo.js',
+  /* K40a X1/X2 — ořez konce smyčkou (format.js, nazvy_souboru.js, preklad.js, plan_plateb.js) */
+  'test_k40_orez_konce.js',
   /* K37-N3, K37-N9 — souhrn Kapitol a nečitelné datum prodeje (controlling.js) */
   'test_k37_controlling.js',
   /* #555 — tisk klonu odeslané nabídky (ui/kalk_ock.js, zamek.js) */
@@ -812,6 +814,24 @@ const MUTACE = [
     hledej: "  if (presna) dvojice.push([{ test: k => k === presna }, nove.celni.nazev]);",
     nahrad: "  if (predCelni) dvojice.push([{ test: k => k === predCelni }, 'MATERIÁL VSG 4.4.1']);",
     proc: 'přepnutí by přejmenovalo čelní sklo na pevný název místo názvu podle typu a zasklení' },
+  /* K40a (11. 11. 2026, #579): K40-X1/X2 ořez konce textu smyčkou. Hlídá src/test_k40_orez_konce.js. */
+  { nazev: '[K40a] X1: nazevCast bez stropu úseku', soubor: 'nazvy_souboru.js',
+    hledej: "  const t = String(s == null ? '' : s).slice(0, NAZEV_CAST_MAX)",
+    nahrad: "  const t = String(s == null ? '' : s)",
+    proc: 'název souboru by neměl délkový strop (K10-N1) a výraz ořezu by běžel nad libovolně dlouhým textem' },
+  { nazev: '[K40a] X1: orezKonce výrazem s kotvou na konci', soubor: 'format.js',
+    hledej: "  while (k > 0 && znak.test(t[k - 1])) k--;\n  return t.slice(0, k);",
+    nahrad: "  return t.replace(new RegExp(znak.source + '+$'), '');",
+    proc: 'ořez konce by byl nad dlouhým textem kvadratický (60 000 znaků 3,6 s při každém render)' },
+  { nazev: '[K40a] X2: prekladNorm ořezává konec výrazem', soubor: 'preklad.js',
+    hledej: "  return orez(t, /[\\s:.*]/).toLowerCase();",
+    nahrad: "  return t.replace(/[\\s:.*]+$/, '').toLowerCase();",
+    proc: 'normalizace klíče překladu by byla nad dlouhým textem kvadratická (K40-X2)' },
+  { nazev: '[K40a] X2: milník plánu plateb ořezává konec výrazem', soubor: 'plan_plateb.js',
+    hledej: "  const milnik = x => orez(String(x.text || '(milník chybí)'), /[.\\s]/);",
+    nahrad: "  const milnik = x => String(x.text || '(milník chybí)').replace(/[.\\s]+$/, '');",
+    proc: 'text milníku smlouvy by se ořezával v kvadratickém čase (K40-X2)' },
+  /* záloha slovníku (slovnik.js) není v JADRA — hlídá ji jen test (čas + shoda s výrazem). */
   /* #540 (27. 10. 2026): kód controllingu podle rozhodnutí J. V. Hlídá src/test_controlling_c4.js. */
   { nazev: '#540: výchozí filtr stavu Pipedrive zase „vyhrané"', soubor: 'controlling.js',
     hledej: "  const pd = x.pd == null || x.pd === '' ? 'vse' : x.pd;",

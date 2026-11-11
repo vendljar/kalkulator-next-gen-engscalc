@@ -115,6 +115,19 @@ function menaKc(lang, kurzEurKc) {
  * K37-I5 (2. 11. 2026): do té doby + a − apostrof dostaly jen hned před
  * dalším znakem, takže „+ 1+1" (Excel i s mezerou počítá vzorec) prošlo bez
  * něj. Pravidlo je teď stejné jako ctrlCsvBunka (controlling.js) — i „- položka". */
+/* OŘEZ KONCE TEXTU SMYČKOU (K40-X1/X2, 11. 11. 2026; vzor SEC-M3 #542).
+ * Výraz s kotvou jen na konci (`/[-.]+$/`, `/[\s:.*]+$/`) zkouší shodu od
+ * každé pozice znovu — nad dlouhým textem kvadratický čas (15 000× „.-"
+ * 0,3 s, 60 000 znaků 3,6 s na jedno volání; název varianty ani zákazník
+ * nemají délkový strop a `nazevCast` běží při každém render()). Smyčka dá
+ * týž výsledek v lineárním čase. `znak` = výraz pro JEDEN znak, bez příznaku g. */
+function orezKonce(s, znak) {
+  const t = String(s == null ? '' : s);
+  let k = t.length;
+  while (k > 0 && znak.test(t[k - 1])) k--;
+  return t.slice(0, k);
+}
+
 function csvBunka(t) {
   let s = String(t == null ? '' : t);
   if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
@@ -168,4 +181,4 @@ function cisloPoleZobraz(v) {
 
 if (typeof module !== 'undefined')
   module.exports = { cisloPoleText, cisloPoleZobraz, formatKc2, formatKc0, formatCislo, formatPctTypo, formatKcTypo,
-                     prepisPlati, menaKc, menaDokumentu, csvBunka };
+                     prepisPlati, menaKc, menaDokumentu, csvBunka, orezKonce };
