@@ -1,3 +1,35 @@
+# Předávka — K40c #581: vazba z webhooku Pipedrive, ARES na serveru, „Opravit firmu v Pipedrive“, větev `claude/k40c-webhook`
+
+Nad `1a08186` (integrace v12.11.3 = test v11.11.1 + K40a + K40b + C1). **v12.11.4** (koordinace přečísluje). Do
+`test-draft`, `test`, `main` ani integrace nic; weby, Disk, ostrý Pipedrive ani ARES nic (jen simulátor a mock).
+Zadání: `podklady/PROMPT_K40_OPRAVY_v3.md` (větev `claude/k40-posudek`, 1c6dfc3) + v2 oddíly A, J + posudek. Revizi
+před sloučením dělá poradce Fable.
+
+| bod | stav | kde |
+|---|---|---|
+| vazba: protokol + `pdVazbaWebhook` (ceka / potvrzeno / webhook / zruseno) | ✅ | `netlify/functions/pd_webhook.mjs`, `netlify/lib/pd_vazba.mjs` |
+| upozornění, V pořádku / Zrušit vazbu / Vazba je chybná (role ověřuje server) | ✅ | `netlify/functions/pd_vazba.mjs`, `src/ui/pd_vazba_ui.js`, `src/ui/common.js` |
+| zrušení: odmítnutý deal (409 před zápisem i ARES), náš odkaz v dealu smazán, údaje zůstanou | ✅ | tamtéž |
+| pole psaná jen serverem (`pdVazbaDrz`), obnova ze souboru je nepřebírá | ✅ | `netlify/lib/zakazka_kontrola.mjs` |
+| C4: deal mění i autor vlastní zakázky (ne u zakázky z webhooku) | ✅ | `src/controlling.js` `ctrlPdDealSmiMenit` |
+| ARES ze serveru (3 s, jeden pokus, 200 kB, nedůvěryhodný vstup), firma do hlavičky | ✅ | `netlify/lib/ares_server.mjs`, `ares_modul.cjs` |
+| Opravit firmu v Pipedrive (náhled/zápis, shoda IČO 409, DIČ přeskočeno) | ✅ | `netlify/functions/pd_organizace.mjs`, simulátor PATCH organizace |
+| štítek „vazba nahlášena“ v Přehledu | ✅ | `src/uloziste.js` (`pdNahlaseno` v rejstříku), `src/ui/online_ui.js` |
+| meze B208, B209, oddíl PW #553 | ✅ | `BEZPECNOST_MEZE.md` |
+| příručka, CHANGELOG, roadmapa #581 | ✅ | `manual/obsah.json`, `manual/kompletni/provoz.json` |
+
+**Krok 0 — jinak, než čekal prompt:** pole organizace v mapě Pipedrive bylo jen IČ (číslo) a Role; **DIČ v účtu
+není** (komentář `pd_mapa.mjs`: „DIČ ani fakturační adresa v CRM nejsou vůbec“). Přidáno `POLE_ORGANIZACE.dic`
+v `PD_DOSUD_NEZALOZENA` (přehled mapy ho ukazuje jako „chybí“, mapa verze 4). Adresa organizace je standardní
+pole `address.value`. Webhook dřív do protokolu nezapisoval (B201) — teď ano.
+
+**Výchozí volby (prompt nechal otevřené):** kalkulace založená webhookem dostane vazbu `stav: 'webhook'` (bez
+„V pořádku“, upozornění jen při problému ARES nebo rozdílech); vazba starší než K40c dostane při prvním dalším
+doručení totéž (jednou se zeptá ARES). Po výpadku ARES se další doručení se stejným IČO ARES neptá (B208 „nejvýš
+jednou“) — ověření tlačítkem „Najít firmu v ARES“. Akce nad vazbou vyžadují uloženou zakázku (bez neuložených
+změn), po akci se zakázka načte znovu.
+
+---
 # Předávka — C1 #582: šablona CN v17 CZ/EN/DE/FR + jednotné nadpisy USAZENÍ OCK (DE, EN), větev `claude/c1-cn-v17`
 
 Nad `aa445a1` (integrace = test v11.11.1). **v12.11.1** (koordinace přečísluje). Do `test-draft`, `test`, `main`
