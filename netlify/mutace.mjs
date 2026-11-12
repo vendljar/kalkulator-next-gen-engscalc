@@ -3136,10 +3136,8 @@ const MUTACE = [
     nahrad: "      if (false)",
     proc: 'stav „xyz" obejde větve kontroly rozhodnutí (revize B101)' },
   { nazev: 'revize B105: server nevrací slevy, prohlížeč drží jiný stav', soubor: 'functions/zakazky.mjs',
-    hledej: "  return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, slevy, zamkyPrijato, ...pdP }
-    : { ok: true, soubor: jmeno, razitko, slevy, zamkyPrijato, ...pdP });",
-    nahrad: "  return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, zamkyPrijato, ...pdP }
-    : { ok: true, soubor: jmeno, razitko, zamkyPrijato, ...pdP });",
+    hledej: "  return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, slevy, zamkyPrijato, ...pdP }\n    : { ok: true, soubor: jmeno, razitko, slevy, zamkyPrijato, ...pdP });",
+    nahrad: "  return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, zamkyPrijato, ...pdP }\n    : { ok: true, soubor: jmeno, razitko, zamkyPrijato, ...pdP });",
     proc: 'tisk hned po schválení → další uložení 409 (revize B105)' },
   { nazev: 'B35: počet klíčů cas/ v analytice bez stropu', soubor: 'functions/analytika.mjs',
     hledej: "          if (!existujici.has(klic) && existujici.size >= g.ANALYTIKA_MAX_CASU) continue;   // B35",
