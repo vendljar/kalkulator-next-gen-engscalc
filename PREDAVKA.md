@@ -11,7 +11,7 @@ stálo na limitu účtu, 12. 11. pokračovalo ve stejném kontejneru, nic se nez
 | obal pro příkazovou řádku | ✅ | `nastroje/test_sada_obnov.mjs` (`--web`, `--export` / `--zaloha`, `--zapsat`; .json i .json.gz; heslo bez ozvěny; Ctrl+C dokončí rozpracovanou) |
 | P1–P7 | ✅ | viz CHANGELOG v12.11.1, meze **B215–B216** v `BEZPECNOST_MEZE.md` |
 | testy | ✅ 121/0 | `netlify/test_c5_test_sada.mjs` (body 1–9 zadání + obal z příkazové řádky proti místnímu HTTP serveru 127.0.0.1); sadu bere `spust_testy.sh` sám (glob `netlify/test_*.mjs`) |
-| mutace „[C5]“ | ✅ viz níže | 23 v `netlify/mutace.mjs`, sada `test_c5_test_sada.mjs` v `SADY`; `--kontrola` 1410 úseků OK |
+| mutace „[C5]“ | ✅ 23/23 chycených | 23 v `netlify/mutace.mjs`, sada `test_c5_test_sada.mjs` v `SADY`; `--kontrola` 1410 úseků OK |
 | návod pro J. V. | ✅ | `podklady/NAVOD_TEST_SADA_OBNOVA.md` (primárně soubor od testovacího sezení, druhá možnost otisk z Disku) |
 | roadmapa #585, CHANGELOG, README_ZDROJAKY, .gitignore | ✅ | `roadmapa.py --kontrola` 580 položek bez nálezu |
 | K40b (#580) nad sloučeným stromem | ⬜ | K40b v integraci zatím není. Až bude: `git worktree add … && git merge --no-commit origin/claude/k40b`, pak `node netlify/test_c5_test_sada.mjs` (razítko přijetí zámku, dolní mez data prodeje: prodaná TEST zakázka v testu nese dnešní datum prodeje, starší data z exportu ověřit) |

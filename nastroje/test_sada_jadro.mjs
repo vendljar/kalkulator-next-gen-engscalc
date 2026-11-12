@@ -58,9 +58,11 @@ export function cilPovolen(adresa) {
   try { u = new URL(s); } catch (e) { return { ok: false, chyba: 'Adresa webu nemá platný tvar.' }; }
   if (u.username || u.password) return { ok: false, chyba: 'Adresa webu nesmí nést jméno ani heslo.' };
   if (s !== u.origin) return { ok: false, chyba: 'Adresa webu musí být jen původ webu, např. https://testengscalc.netlify.app (bez cesty, malými písmeny).' };
-  if (POVOLENE_WEBY.includes(s)) return { ok: true, web: s };
-  const m = MISTNI.exec(s);
-  if (m && +m[2] <= 65535) return { ok: true, web: s };
+  /* Seznam se porovnává s ROZPARSOVANÝM původem; přesnost zápisu (bez cesty,
+   * velkých písmen, výchozího portu) hlídá samostatně kontrola výš. */
+  if (POVOLENE_WEBY.includes(u.origin)) return { ok: true, web: u.origin };
+  const m = MISTNI.exec(u.origin);
+  if (m && +m[2] <= 65535) return { ok: true, web: u.origin };
   return { ok: false, chyba: 'Adresa ' + JSON.stringify(s) + ' není na povoleném seznamu ('
     + POVOLENE_WEBY.concat(['http://localhost:<port>', 'http://127.0.0.1:<port>']).join(', ') + ').' };
 }
