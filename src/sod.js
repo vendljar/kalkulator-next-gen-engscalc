@@ -8,12 +8,13 @@
  * není tu žádný druhý výpočet, jen jiná šablona a jiné jméno souboru.
  *
  * Symboly, které aplikace zná (hlavička zakázky, FIRMA_*, ZPRAC_*, PODM_*,
- * CENA_BEZ_DPH / PROJ_CELKEM_BEZ_DPH), se v šabloně vyplní samy. Symboly,
- * které aplikace NEZNÁ (termíny, splátky, zástupci objednatele, číslo
- * smlouvy — SOD_* / SODP_* / PM_* / OBJEDNATEL_*), buildery záměrně NEPLNÍ:
- * docxgen neznámý symbol nechává v dokumentu viditelný jako {{…}}, takže
- * obchodník ve Wordu na první pohled vidí, co má doplnit. Kdyby se plnily
- * prázdnem, beze stopy by zmizely a chybějící termín by si nikdo nevšiml.
+ * CENA_BEZ_DPH / PROJ_CELKEM_BEZ_DPH), se v šabloně vyplní samy. Co zakázka
+ * nemá (termíny, zástupci objednatele, číslo smlouvy — SOD_* / SODP_* / PM_* /
+ * OBJEDNATEL_*), buildery záměrně NEPLNÍ prázdnem — beze stopy by zmizelo
+ * a chybějící termín by si nikdo nevšiml. Od C3 #584 (11. 11. 2026) dostane
+ * takové místo ve Wordu tečky „……" (sodNevyplnene + docxgen `nevyplnene`)
+ * a kontrola před tiskem i věta po tisku ho vyjmenují; do té doby zůstával
+ * vidět symbol {{…}}.
  *
  * Plná moc není smlouva o ceně — je to administrativa k OBJEKTU. Nese jen
  * firemní údaje zmocněnce ({{FIRMA_*}}) a adresu stavby; údaje zmocnitele
@@ -205,7 +206,7 @@ function sodData(zak, varianta, jekly, lang, sablona) {
   sodVedouciMontaziDoplna(d.placeholders);
   /* Termíny, podpisy a kopie faktur z krycího listu OCK (P9.2, P9.4 —
    * rozhodnutí J. V. 29. 9. 2026), od 1. 10. 2026 i místo plnění, denní
-   * pokuta a datum podpisu (Q2–Q4, Q10). Co obchodník nevyplnil, zůstane {{…}}. */
+   * pokuta a datum podpisu (Q2–Q4, Q10). Co obchodník nevyplnil, dostane tečky „……" (C3 #584). */
   if (typeof kryciSodSymboly === 'function') kryciSodSymboly(zak, varianta, jekly, d.placeholders);
   /* Režim DPH a skladné (18. 10. 2026) — místo plnění česky z krycího
    * listu (před překladem hodnot). */
@@ -213,9 +214,11 @@ function sodData(zak, varianta, jekly, lang, sablona) {
     sodDphSymboly(d.placeholders, kryciPoleHodnota(zak, varianta, 'sodDphRezim'), kryciPoleHodnota(zak, varianta, 'sodMistoPlneni'), L);
   sodSkladne(d.placeholders, (typeof firmaAktualni === 'function') ? firmaAktualni() : null, d.mena, L);
   sodPrelozHodnoty(d.placeholders, L);
-  sodSachtySymboly(d, zak, varianta, jekly, L);   // VS-E5: předmět díla a rozpis šachet (jen víc šachet)
+  /* VS-E5: předmět díla a rozpis šachet (jen víc šachet); C2 #583: u jedné
+   * šachty odstavce šablony v5 se symboly šachet zmizí. */
+  const sachtyPryc = sodSachtySymboly(d, zak, varianta, jekly, L, sablona);
   /* Splátky z platebního kalendáře krycího listu (K18-N100). */
-  const odstavcePryc = objPryc.slice();
+  const odstavcePryc = objPryc.concat(sachtyPryc);
   if (typeof kryciSodPlatby === 'function') {
     const pl = kryciSodPlatby(zak, varianta, jekly, sablona, L);
     if (pl.chyba) throw new Error(pl.chyba);
@@ -226,8 +229,11 @@ function sodData(zak, varianta, jekly, lang, sablona) {
   if (typeof kryciPoleHodnota === 'function')
     odstavcePryc.push(...sodPokutaZhotovitele(d.placeholders, sablona, 'PODM_POKUTA_DODAVKA_PROC',
       kryciPoleHodnota(zak, varianta, 'pokutaDodavka')));
+  /* C3 #584: nevyplněná místa smlouvy dostanou ve Wordu tečky „……". */
+  const nevyplnene = sodNevyplnene(d.placeholders, sablona, odstavcePryc);
   return Object.assign({}, d,
-    { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') }, odstavcePryc.length ? { odstavcePryc } : {});
+    { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') }, odstavcePryc.length ? { odstavcePryc } : {},
+    nevyplnene ? { nevyplnene } : {});
 }
 
 /* VÍC ŠACHET VE SMLOUVĚ O DÍLO (VS-E5 #595, návrh oddíl 4 a 5.2). Cena díla
@@ -242,15 +248,37 @@ function sodData(zak, varianta, jekly, lang, sablona) {
  * Šablona SoD bez těch symbolů dostane jen celkovou cenu — předmět se pak
  * doplní ve Wordu (symboly zůstanou vidět jen v šabloně, která je má).
  * Čte výsledek strany OCK (u odeslané nabídky zmrazený), dotisk dá totéž. */
-function sodSachtySymboly(d, zak, varianta, jekly, L) {
-  if (typeof vsVystup !== 'function' || !d || !d.placeholders) return;
+/* C2 #583 (rozhodnutí J. V. 11. 11. 2026, B0.4): šablona SoD realizace v5 má
+ * oba symboly ve vlastních odstavcích. U jedné šachty se do dat nic nepřidá
+ * a funkce vrátí symboly, které šablona OPRAVDU má (odstavcePryc → odstavce
+ * zmizí, smlouva = v4 znak po znaku); bez informace o šabloně (náhled) se nic
+ * nemaže. Víc šachet + známá šablona bez {{SACHTY_SOD_PREDMET}} → upozornění
+ * (SOD_SACHTY_BEZ_SABLONY, totéž říká pravidlo kontrol vsSablonaSod); tisk
+ * projde, předmět a rozpis doplní obchodník ve Wordu. */
+const SOD_SACHTY_SYMBOLY = ['SACHTY_SOD_PREDMET', 'SACHTY_SOD_ROZPIS'];
+const SOD_SACHTY_BEZ_SABLONY = 'Šablona smlouvy neumí vyjmenovat šachty — předmět díla a rozpis šachet doplňte ve Wordu, '
+  + 'nebo ať administrátor nahraje šablonu SoD realizace v5.';
+function sodSablonaMa(sablona, k) {
+  const sym = sablona && sablona.symboly;
+  return !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
+}
+/* Umí šablona (symboly) vyjmenovat šachty? null = nevíme. */
+function sodSablonaUmiSachty(symboly) {
+  if (!symboly) return null;
+  return sodSablonaMa({ symboly }, 'SACHTY_SOD_PREDMET');
+}
+function sodSachtySymboly(d, zak, varianta, jekly, L, sablona) {
+  const pryc = SOD_SACHTY_SYMBOLY.filter(k => sodSablonaMa(sablona, k));
+  if (typeof vsVystup !== 'function' || !d || !d.placeholders) return pryc;
   let r = null;
   try {
     r = (typeof vysledekStrany === 'function') ? vysledekStrany(zak, varianta, 'ock', jekly)
       : (typeof vypocetZ === 'function' ? vypocetZ(varianta, jekly) : null);
   } catch (e) { r = null; }
   const vo = vsVystup(r);
-  if (!vo) return;
+  if (!vo) return pryc;
+  if (sablona && sablona.symboly && !sodSablonaMa(sablona, 'SACHTY_SOD_PREDMET'))
+    d.upozorneni = (d.upozorneni || []).concat([SOD_SACHTY_BEZ_SABLONY]);
   const P = t => (L && L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const kc = (d.mena && typeof d.mena.fmt === 'function') ? d.mena.fmt
     : (n => Math.round(+n || 0).toLocaleString('cs-CZ') + ' Kč');
@@ -262,6 +290,7 @@ function sodSachtySymboly(d, zak, varianta, jekly, L) {
   d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + P(druh) + ', ' + P('celkem') + ' ' + vo.celkem + ks + ' (' + seznam + ')';
   d.placeholders.SACHTY_SOD_ROZPIS = vo.sachty.map(x => x.nazev + (x.mustky ? ', ' + P('vč. můstků') : '')
     + ' – ' + x.ks + ks + ' – ' + kc(na(x.cena))).join('\n');
+  return [];
 }
 
 /* OBJEDNANÉ PŘÍPLATKY VE SMLOUVĚ (#447 C6, rozhodnutí J. V. 21. 10. 2026,
@@ -319,6 +348,96 @@ function sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona) {
   return [];
 }
 
+/* NEVYPLNĚNÁ MÍSTA SMLOUVY — TEČKY „……" (C3 #584, rozhodnutí J. V.
+ * 11. 11. 2026, B0.5; plná moc doplněk J. V. 11. 11.). Do v11.11 zůstal
+ * symbol, který data nenesla, ve Wordu jako {{OBJEDNATEL_ICO}} — obchodník
+ * ho našel, ale smlouva tak nesměla odejít. Teď dostane každé místo, které
+ * šablona má a data nevyplnila (chybí nebo je prázdné), dvě výpustky „……"
+ * (žluté podbarvení symbolu v šabloně zůstává). Seznam počítá JEDNA funkce —
+ * z něj vznikají tečky v dokumentu (docxgen, volba `nevyplnene`, až po
+ * odstranění odstavců a bloků) i výpis v kontrole sodNevyplneno a ve větě
+ * po tisku, takže co kontrola vyjmenuje, to má v dokumentu tečky.
+ *   – bez informace o šabloně (náhled, testy) vrací null = nic se nemění,
+ *   – značky bloků a smyček (…_ZAC / …_KON) se nepočítají,
+ *   – symboly z `odstavcePryc` (odstavec zmizí celý) se nepočítají. */
+const SOD_TECKY = '\u2026\u2026';
+const SOD_ZNACKA_RE = /_(?:ZAC|KON)$/;
+function sodNevyplnene(placeholders, sablona, odstavcePryc) {
+  const sym = sablona && sablona.symboly;
+  if (!sym) return null;
+  const ph = placeholders || {};
+  const pryc = Array.isArray(odstavcePryc) ? odstavcePryc : [];
+  const vse = Array.from(typeof sym.values === 'function' && !Array.isArray(sym) ? sym.values() : sym);
+  return vse.filter((k, i) => vse.indexOf(k) === i && !SOD_ZNACKA_RE.test(k) && pryc.indexOf(k) < 0
+    && (ph[k] == null || String(ph[k]).trim() === ''));
+}
+/* Lidský popis nevyplněného místa pro kontrolu před tiskem (C3 #584) — mapa
+ * jménem polí krycího listu („zákazník", ne smluvní „objednatel" — tak se pole
+ * v aplikaci jmenují a tam je obchodník doplní; overit_zobrazeni.mjs); mapa
+ * na jednom místě; test hlídá, že popis mají všechny symboly šablon SoD
+ * realizace v4/v5 a SoD projekce v4. Symbol bez popisu se vypíše jménem. */
+const SOD_NEVYPLNENE_POPIS = {
+  /* zákazník = objednatel (hlavička zakázky, krycí list — zástupci) */
+  OBJEDNATEL: 'název zákazníka', OBJEDNATEL_SIDLO: 'sídlo zákazníka', OBJEDNATEL_ICO: 'IČO zákazníka',
+  OBJEDNATEL_DIC: 'DIČ zákazníka', OBJEDNATEL_BANKA: 'banka zákazníka', OBJEDNATEL_UCET: 'číslo účtu zákazníka',
+  OBJEDNATEL_ZAPIS: 'zápis zákazníka v rejstříku', OBJEDNATEL_ZASTUPCE_SMLUVNI: 'zástupce zákazníka ve věcech smluvních',
+  OBJEDNATEL_ZASTUPCE_OBCHODNI: 'zástupce zákazníka ve věcech obchodních',
+  OBJEDNATEL_ZASTUPCE_OBCHODNI_KONTAKT: 'kontakt zástupce zákazníka ve věcech obchodních',
+  OBJEDNATEL_ZASTUPCE_TECHNICKY: 'zástupce zákazníka ve věcech technických',
+  OBJEDNATEL_ZASTUPCE_TECHNICKY_KONTAKT: 'kontakt zástupce zákazníka ve věcech technických',
+  OBJEDNATEL_EMAIL_FAKTURY: 'e-mail zákazníka pro faktury', OBJEDNATEL_KONTAKT_OSOBA: 'kontaktní osoba zákazníka',
+  OBJEDNATEL_TELEFON: 'telefon zákazníka', OBJEDNATEL_EMAIL: 'e-mail zákazníka',
+  OBJEDNATEL_KONTAKT_KOPIE1: 'faktury v kopii na (1)', OBJEDNATEL_KONTAKT_KOPIE2: 'faktury v kopii na (2)',
+  OBJEDNATEL_PODPIS_JMENO: 'jméno podepisujícího za zákazníka', OBJEDNATEL_PODPIS_FUNKCE: 'funkce podepisujícího za zákazníka',
+  OBJEDNATEL_PODPIS_FIRMA: 'firma zákazníka v podpisové doložce',
+  OBJEDNATEL_PODPIS2_JMENO: 'druhý podepisující za zákazníka', OBJEDNATEL_PODPIS2_FUNKCE: 'funkce druhého podepisujícího za zákazníka',
+  /* zhotovitel (Nastavení → Firma, zpracovatel nabídky) */
+  FIRMA_NAZEV: 'název firmy (Nastavení → Firma)', FIRMA_SIDLO: 'sídlo firmy (Nastavení → Firma)', FIRMA_ICO: 'IČO firmy (Nastavení → Firma)',
+  FIRMA_DIC: 'DIČ firmy (Nastavení → Firma)', FIRMA_BANKA: 'banka firmy (Nastavení → Firma)', FIRMA_UCET: 'účet firmy (Nastavení → Firma)',
+  FIRMA_ZAPIS: 'zápis firmy v rejstříku (Nastavení → Firma)', FIRMA_ZASTUPCE_SMLUVNI: 'zástupce firmy ve věcech smluvních (Nastavení → Firma)',
+  FIRMA_ZASTUPCE_SMLUVNI_EMAIL: 'e-mail zástupce firmy (Nastavení → Firma)', FIRMA_ZASTUPCE_SMLUVNI_JMENO: 'podepisující za firmu (Nastavení → Firma)',
+  FIRMA_ZASTUPCE_TECHNICKY: 'technický zástupce firmy (Nastavení → Firma)',
+  ZPRAC_JMENO: 'zpracovatel nabídky', ZPRAC_FUNKCE: 'funkce zpracovatele', ZPRAC_TEL: 'telefon zpracovatele', ZPRAC_EMAIL: 'e-mail zpracovatele',
+  SOD_VEDOUCI_MONTAZI: 'vedoucí montáží (Nastavení → Firma)', SOD_VEDOUCI_MONTAZI_KONTAKT: 'kontakt vedoucího montáží (Nastavení → Firma)',
+  /* zakázka a cena */
+  ADRESA: 'adresa stavby', NAZEV_AKCE: 'název akce', CISLO_NABIDKY: 'číslo nabídky', DATUM: 'datum',
+  CENA_BEZ_DPH: 'cena díla', PROJ_CELKEM_BEZ_DPH: 'cena díla',
+  SOD_CENA_NABIDKY: 'cena díla dle nabídky', SOD_PRIPLATKY_OBJEDNANE: 'objednané příplatky', SOD_PRIPLATKY_KC: 'příplatky celkem',
+  SACHTY_SOD_PREDMET: 'předmět díla – šachty', SACHTY_SOD_ROZPIS: 'rozpis ceny po šachtách',
+  /* smlouva realizace (krycí list OCK) */
+  SOD_CISLO_SMLOUVY: 'číslo smlouvy', SOD_DATUM_PODPISU: 'datum podpisu smlouvy', SOD_MISTO_PLNENI_DRUH: 'druh stavby (místo plnění)',
+  SOD_TERMIN_PODKLADY_VYTAH: 'termín finálních podkladů od dodavatele výtahu', SOD_TERMIN_PRIPRAVENOST: 'termín stavební připravenosti',
+  SOD_TERMIN_MONTAZ_OD: 'termín montáže od (převzetí staveniště)', SOD_TERMIN_MONTAZ_DO: 'termín montáže do',
+  SOD_TERMIN_OPLASTENI_OD: 'termín opláštění od', SOD_TERMIN_OPLASTENI_DO: 'termín opláštění do',
+  SOD_TERMIN_PREDANI_K_MONTAZI: 'termín předání montáži výtahu', SOD_TERMIN_DVERE: 'termín osazení šachetních dveří',
+  SOD_TERMIN_DOKONCENI: 'termín konečného předání díla',
+  SOD_DPH_REZIM: 'věta o režimu DPH (vlastní znění režimu)', SOD_DPH_PROHLASENI: 'prohlášení o sazbě DPH (vlastní znění režimu)',
+  SOD_PLATEBNI_KALENDAR: 'splátky (platební kalendář)', SOD_SKLADNE: 'skladné (Nastavení → Firma)',
+  SOD_ZARUKA_MESICU: 'záruční doba (měsíce)', SOD_POKUTA_DENNI: 'denní pokuta',
+  SOD_SPLATKA1_PROC: 'splátka 1 (%)', SOD_SPLATKA2_PROC: 'splátka 2 (%)', SOD_SPLATKA3_PROC: 'splátka 3 (%)', SOD_SPLATKA4_PROC: 'splátka 4 (%)',
+  PODM_POKUTA_DODAVKA_PROC: 'pokuta za prodlení zhotovitele (vlastní znění bez procenta)',
+  PODM_POKUTA_TERMIN_PROC: 'pokuta za prodlení zhotovitele (vlastní znění bez procenta)',
+  PODM_POKUTA_SPLATNOST_PROC: 'pokuta za prodlení s placením', PODM_POKUTA_LIMIT_PROC: 'limit smluvních pokut',
+  PODM_SPLATNOST_DNI_CISLO: 'splatnost faktur (dny)',
+  /* smlouva projekce (krycí list PROJ) */
+  SODP_ROZSAH_DILA: 'rozsah díla (žádná nabízená činnost)', SODP_PLATEBNI_KALENDAR: 'platby (plán plateb)',
+  SODP_SPRAVNI_POPLATKY: 'správní poplatky', SODP_POKUTA_DENNI: 'pokuta za prodlení se součinností (za den)',
+};
+for (let i = 1; i <= 8; i++) SOD_NEVYPLNENE_POPIS['SODP_PLATBA' + i + '_KC'] = 'platba ' + i;
+function sodNevyplnenePopisy(klice) {
+  const p = (klice || []).map(k => SOD_NEVYPLNENE_POPIS[k] || k);
+  return p.filter((x, i) => p.indexOf(x) === i);
+}
+/* Věta pro stav po tisku a pro kontrolu: „Ve smlouvě zůstalo N míst
+ * k doplnění: …". Prázdný seznam → ''. */
+function sodNevyplneneText(klice) {
+  const n = (klice || []).length;
+  if (!n) return '';
+  const mist = n === 1 ? 'místo' : (n >= 2 && n <= 4 ? 'místa' : 'míst');
+  return 'Ve smlouvě ' + (n >= 2 && n <= 4 ? 'zůstala ' : (n === 1 ? 'zůstalo ' : 'zůstalo ')) + n + ' ' + mist
+    + ' k doplnění (tečky „……"): ' + sodNevyplnenePopisy(klice).join(', ') + '.';
+}
+
 /* POKUTA ZA PRODLENÍ ZHOTOVITELE (rozhodnutí J. V. 1. 10. 2026 k návrhu SoD,
  * Q5 a Q6). Šablony v2 nesou ve větě o prodlení zhotovitele sazbu z krycího
  * listu — SoD realizace pokutu za prodlení dodávky {{PODM_POKUTA_DODAVKA_PROC}},
@@ -326,8 +445,9 @@ function sodObjednaneSymboly(d, zak, varianta, jekly, L, sablona) {
  * (v1 tam měly symbol pokuty za prodlení s placením a mají ho dál).
  *   – „0" (bez pokuty): věta zmizí celá — vrátí se symbol pro odstavcePryc,
  *     ale JEN když ho šablona má (bez informace o šabloně se nic nemaže),
- *   – vlastní znění bez čitelného procenta: symbol se z dat vyřadí, aby
- *     zůstal ve Wordu vidět jako {{…}} (prázdno by dalo „ve výši  % z ceny"),
+ *   – vlastní znění bez čitelného procenta: symbol se z dat vyřadí — ve Wordu
+ *     dostane tečky „ve výši …… %" a kontrola ho vyjmenuje (C3 #584; prázdno
+ *     by dalo „ve výši  % z ceny"),
  *   – procento: symbol se vyplní jako dosud (PODM_*_PROC z krycího listu).
  * Vrací seznam symbolů, jejichž odstavce do smlouvy nepatří. */
 function sodPokutaZhotovitele(placeholders, sablona, symbol, text) {
@@ -364,8 +484,9 @@ function sodProjData(zak, varianta, lang, sablona) {
       kryciProjPoleHodnota(zak, varianta, 'pokutaTermin'));
     if (pryc.length) d.odstavcePryc = (d.odstavcePryc || []).concat(pryc);
   }
+  const nevyplnene = sodNevyplnene(d.placeholders, sablona, d.odstavcePryc);   // C3 #584: tečky
   return Object.assign({}, d,
-    { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') });
+    { nazevSouboru: nazev.replace(/[\\/:*?"<>|]+/g, '-') }, nevyplnene ? { nevyplnene } : {});
 }
 
 /* ROZSAH DÍLA SoD PROJ PODLE NABÍDKY (#380 Q7, rozhodnutí J. V. 17. 10. 2026,
@@ -509,7 +630,7 @@ function sodProjPlatby(d, sablona, lang) {
 /* Plná moc — vyřizuje se pro OBJEKT (povolení, jednání s úřady), ne pro
  * konkrétní kalkulaci. Adresa stavby jde z hlavičky PROJ; když ji projekce
  * nemá, spadne na adresu z hlavičky OCK — objekt je jeden. */
-function plnaMocData(zak, varianta) {
+function plnaMocData(zak, varianta, sablona) {
   const h = (typeof projHlavicka === 'function' ? projHlavicka(zak) : (zak.projHlavicka || {})) || {};
   const placeholders = Object.assign({},
     typeof firmaPlaceholders === 'function'
@@ -524,7 +645,10 @@ function plnaMocData(zak, varianta) {
    * zhotovitele se od 23. 8. 2026 berou z krycího listu PROJ — do té doby
    * je musel obchodník dopisovat ve Wordu do žlutě podbarvených míst. */
   if (typeof kryciProjSodSymboly === 'function') kryciProjSodSymboly(zak, varianta, placeholders);
-  return { placeholders, jazyk: 'cz', obrazky: {},
+  /* Nevyplněné údaje zmocnitele — tečky „……" jako ve smlouvách (doplněk
+   * J. V. 11. 11. 2026), bez kontroly před tiskem. */
+  const nevyplnene = sodNevyplnene(placeholders, sablona, null);
+  return { placeholders, jazyk: 'cz', obrazky: {}, ...(nevyplnene ? { nevyplnene } : {}),
     nazevSouboru: (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('plna-moc', { cislo: h.cislo || zak.cislo }) };   // #533
 }
 
@@ -544,10 +668,12 @@ if (typeof dokumentRegistruj === 'function') {
   });
   dokumentRegistruj('plnaMoc', {
     nazev: 'Plná moc', sablona: 'Sablona_PLNA_MOC.docx',
-    builder: (zak, varianta) => plnaMocData(zak, varianta),
+    sablonaSymboly: true,   // C3 #584 (doplněk J. V. 11. 11.): tečky místo nevyplněných {{PM_…}}
+    builder: (zak, varianta, jekly, lang, sablona) => plnaMocData(zak, varianta, sablona),
   });
 }
 
 if (typeof module !== 'undefined')
   module.exports = { SOD_OBJ_BEZ_ROZPISU, sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
-    sodJazykZabrana, sodPrelozHodnoty, sodSachtySymboly, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };
+    sodJazykZabrana, sodPrelozHodnoty, sodSachtySymboly, SOD_SACHTY_SYMBOLY, SOD_SACHTY_BEZ_SABLONY, sodSablonaUmiSachty,
+    SOD_TECKY, sodNevyplnene, SOD_NEVYPLNENE_POPIS, sodNevyplnenePopisy, sodNevyplneneText, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };

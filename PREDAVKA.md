@@ -1,3 +1,54 @@
+# Předávka — C2 #583 SoD realizace v5 se šachtami + C3 #584 tečky „……“ a kontrola před tiskem SoD, větev `claude/c23-sod-v5`
+
+Nad `aa445a1` (integrace = test v11.11.1). Prompt `podklady/PROMPT_C23_PO_KOLE47.md` (větev claude/plan-po-kole47
+f0fcffc) + doplněk J. V. 11. 11.: tečky i v plné moci, bez kontroly. **Verze 12.11.1** (přečísluje koordinace).
+Do `test-draft`, `test`, `main` ani integrace nic; na Disk, weby a do Pipedrive nic. Slučovat **po C1**
+(společný `nastroje/vyrob_sablony.js` — export v5 je vlastním řádkem pod `module.exports`, `REZIM_SOD_REAL5` pod
+`REZIM_SOD_REAL4`) a **před sloučením revize poradce (Fable) nad celým diffem** (smlouva se podepisuje).
+
+| úkol | stav | kde |
+|---|---|---|
+| C2 nástroj `--sod-real-v5`, šablony v5 CZ/EN/DE/FR | ✅ poslané J. V. v sezení (SendUserFile) | `nastroje/vyrob_sablony.js` (sodRealV5), `podklady/SABLONA_SOD_REALIZACE_V5_11_11.md` |
+| C2 jedna šachta = v4, víc šachet předmět + rozpis | ✅ | `src/sod.js` sodSachtySymboly (`odstavcePryc`), `src/docxgen.js` (DOCX_ROZPIS_KLICE) |
+| C2 oprava: smyčka CN mazala `SACHTY_SOD_*` | ✅ | `src/docxgen.js` docxSmyckaSachet (jen symboly smyčky CN) |
+| C2 upozornění u staré šablony + kontrola `vsSablonaSod` | ✅ jen upozornění | `src/sod.js` SOD_SACHTY_BEZ_SABLONY, `src/kontroly.js`, `src/ui/kontroly_ui.js` (ctx.sablonaSod) |
+| C3 tečky (SoD realizace, projekce, plná moc) | ✅ | `src/sod.js` sodNevyplnene, `src/docxgen.js` volba `nevyplnene`, `src/dokumenty.js` |
+| C3 kontrola `sodNevyplneno` / `sodProjNevyplneno` + věta po tisku | ✅ jen upozornění | `src/kontroly.js`, `src/ui/kontroly_ui.js`, `src/ui/sod_ui.js` |
+| testy, mutace [C2] 8/8, [C3] 9/9 | ✅ | `src/test_sod_v5.js`, `src/test_sod_tecky.js`, `src/test_vs_kontroly.js` G, `mutace_jadro.mjs` |
+| příručky, CHANGELOG, roadmapa #583 #584 | ✅ | `manual/obsah.json` kap. 24/25, `manual/admin/obsah.json` A5 |
+| kolo `--bez-mutaci` (KNG_PODKLADY = 34 šablon z Disku + plná moc) | 427/2/6, hodiny +400 dní 344/1/1, statické 5/5 — selhání jen předem padající (níž) | `nastroje/testovaci_kolo.sh` |
+| mutace jádra celé po částech (N = 4, worktree) | ✅ ZELENÁ ČÁST ×4: 210 + 209 + 209 + 209 = **837/837**; server `--kontrola` 1387 úseků OK (server se nemění) | `mutace_jadro.mjs` |
+
+**Změněná očekávání starých testů (pro revizi):**
+- `src/test_sod_proj_cislo.js` — „jen mezery v Čísle SoD“: dřív `číslo {{SOD_CISLO_SMLOUVY}}`, nově `číslo ……`
+  (syntetická v3 i skutečné šablony z Disku).
+- `src/test_kontroly.js` a `overit_lista.mjs` — počet pravidel 48 → 51 (+ vsSablonaSod, sodNevyplneno, sodProjNevyplneno);
+  `manual_vypocet/cisla_vydani.json` `k.pocet` 48 → 51 (jako VS-E5).
+- `mutace_jadro.mjs` „VS-E5: SoD bez předmětu a rozpisu šachet“ — hledaný řádek se změnil (`const sachtyPryc = …`).
+- Ostatní sady SoD (`test_sod*.js`, `test_rozhodnuti_sod.js`, `test_vs_vystupy.js`, `overit_sod_en.mjs`,
+  `overit_sod_proj_*.mjs`, `overit_vs_kryci_sod.mjs`) prošly beze změny očekávání; zlatá sada 319/319.
+
+**Rozhodnutí sezení (výchozí varianty, k potvrzení):**
+- Rozpis šachet stojí za řádkem „z toho cena díla dle cenové nabídky“ (bez objednaných příplatků hned pod
+  celkovou cenou), objednané příplatky za ním. Odstavce bez uvozujícího textu.
+- Kontrola SoD jsou **dvě** pravidla (`sodNevyplneno` strana OCK, `sodProjNevyplneno` strana PROJ) — jeden kód
+  nemůže vrátit dva nálezy.
+- Popisy chybějících údajů jmény polí krycího listu („IČO **zákazníka**“), ne „objednatele“ — krycí list mluví
+  o zákazníkovi (hlídá `overit_zobrazeni.mjs`) a obchodník je tam doplní.
+- Tečky dostane i prázdná hodnota (např. zpracovatel bez jména, když není přihlášený) — prompt: „chybí nebo prázdné“.
+- Šablony SoD a SoD PROJ se pro kontroly stahují jen u víc šachet nebo zamčené (odeslané) varianty.
+
+**Zjištění:** SoD realizace v4 symboly **žlutě podbarvené nemá** (SoD projekce v4 a plná moc ano) — tečky jsou
+žluté jen tam. Text po tisku proto bez „žlutě“. Kdyby J. V. chtěl žluté tečky i v realizaci, šlo by podbarvení
+přidat v5 (nástroj) nebo generátorem.
+
+**Předem padající sady se šablonami z Disku (i nad bází aa445a1, s dávkou nesouvisí):** `test_sablona_proj_v6.js`
+(skutečná PROJ v6: řádky bloků ≠ v5 — Disk má upravené znění firmy), `overit_sablona.mjs` (v12: nový symbol).
+
+**Na J. V.:** nahrát SoD realizace v5 (CZ+EN/DE/FR najednou, až s kódem C2/C3; postup v podkladu a A5); odpovědět
+na otázky (uvozující text, rozpis před slevou u nabídky se slevou, žluté tečky v realizaci).
+
+---
 # Předávka — VSD: upozornění vsTvar (#586), harness lišty K43-T1 (#587), poznámka šachet do Pipedrive (#588), větev `claude/vsd-drobnosti`
 
 Nad `aa445a1` (integrace = test v11.11.1), prompt `podklady/PROMPT_VSD_PO_KOLE47.md` (f0fcffc) + doplněk J. V. 11. 11.
@@ -886,8 +937,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 12. 11. 2026: stav integrace v12.11.4
+# Předávka koordinace — 12. 11. 2026: stav integrace v12.11.6
 
+- **12. 11. 2026 — integrace v12.11.6** = v12.11.4 (test) + VSD (v12.11.5: #586 vsTvar, #587 K43-T1, #588 poznámka šachet do Pipedrive jen s právem crm.pipedrive, B217; revize Fable po opravách LZE SLOUČIT) + C2+C3 (v12.11.6: #583 SoD realizace v5 se šachtami, #584 tečky v SoD i plné moci — doplněk J. V.; revize LZE SLOUČIT). Počet pravidel kontrol 52. Otevřené otázky J. V. k SoD v5: umístění řádků šachet, řádek slevy v rozpisu (doporučeno a), žluté tečky v realizaci, šum kontroly nevyplněných polí. K40c (78b6fdf) se slučuje po této integraci. Otevřený bod: první skutečný zápis poznámky do Pipedrive ověřit se speciálními znaky v názvu šachty (porovnání escapovaného textu).
 - **12. 11. 2026 — integrace v12.11.4** = v12.11.3 (test) + C5 #585 (nástroj obnovy TEST sady, revize Fable po opravách B1/B2 LZE SLOUČIT). Nástroj spouští jen J. V. podle podklady/NAVOD_TEST_SADA_OBNOVA.md, export dodá testovací sezení.
 - **12. 11. 2026 — integrace v12.11.3** = test v11.11.1 + K40a #579 (v12.11.1, po revizi Fable D1–D7) + K40b #580 (v12.11.2, revize SLOUČIT) + C1 #582 (v12.11.3, revize LZE SLOUČIT). Main = test = v11.11.1 (6c4bc80, na pokyn J. V. 11. 11.). J. V. 11. 11.: do testu slučovat dál samostatně po zeleném kole. Běží C2+C3 (#583/#584), C5 (#585), VSD (#586/#587); K40c (#581) se spouští teď podle podklady/PROMPT_K40_OPRAVY_v3.md (claude/k40-posudek 1c6dfc3, rozhodnutí J. V. 11. 11.: varianta b, ARES, autor+admin, DIČ přeskočit, shoda IČO). Návrh víc zákazníků: claude/vz-navrh e0e007d, prototyp https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V — 4 otázky J. V. otevřené, programovat po K40c. 11. 11. 14:38 zastavil všechna paralelní sezení 5h limit účtu — pouštět nejvýš ~4 souběžně.
 - **Rozhodnutí J. V. 11. 11.:** EN nadpisy USAZENÍ OCK sjednotit („SHAFT STRUCTURE POSITION – …“, C1); tečky i v plné moci (C2+C3); seznam šachet do Pipedrive jako jedna přepisovaná poznámka u dealu (VSD); TEST sada ze souboru testovacího sezení (C5). Koordinace: u nezamčené varianty víc šachet migruje import sklo šachet 2+ jako šachty 1 (B205a), zamčená se nemění.

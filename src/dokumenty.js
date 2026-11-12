@@ -56,11 +56,16 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
    * vymění za tvar označený alternativním textem {{SYMBOL}} (#146: sken
    * podpisu a razítka zpracovatele). Builder, který žádné nedodá, se chová
    * jako dřív. */
+  /* C3 #584: smlouvy a plná moc — nevyplněná místa dostanou tečky „……";
+   * které opravdu dostaly, zapíše generátor do data.nevyplneneVDokumentu. */
+  const nevyplneneVDokumentu = [];
   const blob = await docxVyplnSablonu(templateArrayBuffer, data.placeholders,
     data.priplatky || [], data.obrazky || {}, { odstavcePryc: data.odstavcePryc || [], blokyPryc: data.blokyPryc || [], radkyNavic: data.tsRadkyNavic || [],
       studieBezZamereni: data.studieBezZamereni === true,   // #569: Word nabídky PROJ bez zaměření ve studii
       dpzBezZamereni: data.dpzBezZamereni === true,         // #573: Word nabídky PROJ — DPZ bez zaměření
-      sachty: data.sachtyWord || null });                    // VS-E4 #570: smyčka šachet šablony CN v17 (null = jedna šachta)
+      sachty: data.sachtyWord || null,                       // VS-E4 #570: smyčka šachet šablony CN v17 (null = jedna šachta)
+      nevyplnene: Array.isArray(data.nevyplnene) ? data.nevyplnene : null, nevyplneneVDokumentu });
+  if (Array.isArray(data.nevyplnene)) data.nevyplneneVDokumentu = nevyplneneVDokumentu;
   return { blob, nazevSouboru: data.nazevSouboru, data };
 }
 /* Symboly {{…}} šablony (tělo, záhlaví, zápatí) — i rozdělené mezi běhy. */

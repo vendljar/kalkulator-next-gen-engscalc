@@ -1439,6 +1439,49 @@ const KONTROLY = [
           + ' je v15/v16 nebo starší — Word nabídky s víc šachtami nevznikne, administrátor nahraje šablonu v17.' };
     },
   },
+  /* ---- C2 #583 / C3 #584 (rozhodnutí J. V. 11. 11. 2026): smlouva o dílo ---- */
+  {
+    /* ŠABLONA SoD BEZ ŠACHET (B0.4): víc šachet + šablona SoD realizace bez
+     * {{SACHTY_SOD_PREDMET}} (v4 a starší) → jen UPOZORNĚNÍ, tisk projde
+     * (předmět a rozpis doplní obchodník ve Wordu). Text = SOD_SACHTY_BEZ_SABLONY
+     * (sod.js), totéž, co builder napíše do stavu po tisku. Symboly šablony
+     * stahuje UI na pozadí (ctx.sablonaSod); nevíme-li, pravidlo mlčí. */
+    kod: 'vsSablonaSod', kde: 'Smlouva o dílo', nazev: 'Šablona smlouvy neumí víc šachet',
+    strany: ['ock'],
+    zjisti(ctx) {
+      if (!ctx.__vs) return null;
+      const s = ctx.sablonaSod;
+      if (!s || !Array.isArray(s.symboly) || !s.symboly.length) return null;
+      if (typeof sodSablonaUmiSachty !== 'function' || sodSablonaUmiSachty(s.symboly) !== false) return null;
+      return { uroven: KONTROLY_UROVEN, dokumenty: ['sod'],
+        text: SOD_SACHTY_BEZ_SABLONY + (s.nazev ? ' (šablona „' + s.nazev + '"' + (s.verze ? ', verze ' + s.verze : '') + ')' : '') };
+    },
+  },
+  {
+    /* NEVYPLNĚNÁ MÍSTA SoD REALIZACE (B0.5): co builder nevyplní, dostane ve
+     * Wordu tečky „……" — kontrola je vyjmenuje lidsky. Jen upozornění, nikdy
+     * zábrana. Seznam = sodNevyplnene (sod.js), týž jako tečky v dokumentu;
+     * počítá ho UI nad známými symboly šablony (ctx.sodNevyplneno.sod). */
+    kod: 'sodNevyplneno', kde: 'Smlouva o dílo', nazev: 'Nevyplněné údaje smlouvy o dílo',
+    strany: ['ock'],
+    zjisti(ctx) {
+      const n = ctx.sodNevyplneno && ctx.sodNevyplneno.sod;
+      if (!Array.isArray(n) || !n.length || typeof sodNevyplneneText !== 'function') return null;
+      return { uroven: KONTROLY_UROVEN, dokumenty: ['sod'],
+        text: sodNevyplneneText(n) + ' Doplňte je v krycím listu OCK (sekce Smlouva o dílo), nebo ve Wordu.' };
+    },
+  },
+  {
+    /* Totéž pro SoD projekce (krycí list PROJ). */
+    kod: 'sodProjNevyplneno', kde: 'Smlouva o dílo PROJ', nazev: 'Nevyplněné údaje smlouvy o dílo PROJ',
+    strany: ['proj'],
+    zjisti(ctx) {
+      const n = ctx.sodNevyplneno && ctx.sodNevyplneno.sodProj;
+      if (!Array.isArray(n) || !n.length || typeof sodNevyplneneText !== 'function') return null;
+      return { uroven: KONTROLY_UROVEN, dokumenty: ['sodProj'],
+        text: sodNevyplneneText(n) + ' Doplňte je v krycím listu PROJ, nebo ve Wordu.' };
+    },
+  },
 ];
 
 /* VÍC ŠACHET V KONTROLÁCH (VS-E5 #595, návrh 5.6). Pravidla nad ZADÁNÍM

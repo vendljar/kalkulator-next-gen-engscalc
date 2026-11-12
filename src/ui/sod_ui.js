@@ -11,8 +11,9 @@
  *
  * Ceny ve smlouvě jsou VŽDY ceny nabídky — buildery v sod.js jsou obálky
  * nad nabidkaData/nabidkaProjData, žádný druhý výpočet neexistuje.
- * Symboly, které aplikace nezná (SOD_*, SODP_*, PM_*, OBJEDNATEL_*),
- * zůstávají v dokumentu viditelné jako {{…}} a doplní se ve Wordu.
+ * Údaje, které zakázka nemá (SOD_*, SODP_*, PM_*, OBJEDNATEL_*), dostanou
+ * v dokumentu tečky „……" (C3 #584, 11. 11. 2026) a doplní se ve Wordu;
+ * u smluv je kontrola i věta po tisku vyjmenuje.
  * ============================================================ */
 
 /* místní šablony pro relaci – jen nouzová cesta (měkký režim / bez serveru) */
@@ -102,8 +103,11 @@ async function sodWordGeneruj(typ, srv) {
       }
       const upoz = sodUpozorneniText(res);
       if (upoz) hlaska(upoz, { nadpis: 'Smlouva o dílo' });
+      /* C3 #584: smlouva vyjmenuje místa s tečkami (plná moc jen tečky, bez výpisu). */
+      const tecky = (typ !== 'plnaMoc') ? sodTeckyText(res) : '';
       sodStavText(typ, (upoz ? '⚠ ' + upoz + ' ' : '') + 'Hotovo – soubor ' + res.nazevSouboru + '.docx je ve Stažených. '
-        + 'Žlutě značené symboly {{…}} (termíny, splátky, zástupci objednatele) doplňte ve Wordu.'
+        + (tecky ? '⚠ ' + tecky + ' ' : '')
+        + 'Místa označená tečkami „……" doplňte ve Wordu.'
         + (srv ? ' Použita centrální šablona (verze ' + srv.verze + ').'
                : (sablonyOnlineAktivni() ? ' POZOR: použita MÍSTNÍ šablona (měkký režim) – do zámku se to zapsalo.' : ''))
         + (mutaceChybi ? ' Pozor: pevný text šablony zůstal český – jazykovou mutaci šablony '
@@ -119,6 +123,13 @@ async function sodWordGeneruj(typ, srv) {
     });
 }
 
+/* Věta „Ve smlouvě zůstalo N míst k doplnění: …" z míst, která v dokumentu
+ * opravdu dostala tečky (C3 #584), nebo ''. */
+function sodTeckyText(res) {
+  const d = res && res.data;
+  const n = d && Array.isArray(d.nevyplneneVDokumentu) ? d.nevyplneneVDokumentu : [];
+  return (n.length && typeof sodNevyplneneText === 'function') ? sodNevyplneneText(n) : '';
+}
 /* Upozornění builderu SoD (K6-K2: šablona bez rozpisu objednaných) jednou větou, nebo ''. */
 function sodUpozorneniText(res) {
   const u = res && res.data && Array.isArray(res.data.upozorneni) ? res.data.upozorneni : [];
@@ -231,8 +242,9 @@ function sodKarta() {
       platební podmínky z krycího listu, firemní údaje) – cenu si nikdy nepočítá sama, takže se s nabídkou
       nemůže rozejít. <b>Objednané příplatky</b> (níž) se k ceně díla přičtou v ceně z nabídky (bez slevy);
       DPH se počítá z celku. <b>Zástupci a kontakty zákazníka</b> i bankovní údaje se od 20. 8. 2026 berou z krycího
-      listu výše. Co aplikace nezná – <b>termíny, splátkový kalendář, číslo smlouvy</b> – zůstane
-      v dokumentu viditelně jako <code>{{SOD_…}}</code> a doplní se ve Wordu.
+      listu výše. Co v zakázce chybí (např. <b>termíny, číslo smlouvy, IČO zákazníka</b>), dostane v dokumentu
+      tečky <b>„……"</b> – místa označená …… doplňte ve Wordu; kontrola před tiskem i věta po tisku je vyjmenují.
+      U <b>víc šachet</b> vyjmenuje smlouva šachty v předmětu díla i v rozpisu ceny (šablona SoD realizace v5).
       Vytištěná smlouva variantu <b>uzamkne</b> stejně jako odeslaná nabídka.</div>
     ${objKarta()}
     <div class="btns" style="margin-top:6px">
@@ -269,10 +281,10 @@ function sodProjKarta() {
   const zabPm = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('plnaMoc') : '';
   return `<div class="note" style="font-weight:600;margin-top:14px">Smlouva o dílo a plná moc (Word):</div>
     <div class="note">Smlouva o dílo na projekční práce nese <b>cenu z nabídky PROJ</b> (číslo nabídky, celkem
-      bez DPH, podmínky z krycího listu PROJ). Symboly <code>{{SODP_…}}</code> (platby po fázích, termíny
-      odevzdání) se doplňují ve Wordu; vytištěná smlouva variantu <b>uzamkne</b>.
+      bez DPH, podmínky z krycího listu PROJ). Co v zakázce chybí, dostane tečky <b>„……"</b> – místa označená ……
+      doplňte ve Wordu; vytištěná smlouva variantu <b>uzamkne</b>.
       <b>Plná moc</b> je administrativa k objektu – nese firemní údaje zmocněnce a adresu stavby (z hlavičky
-      PROJ, případně OCK); údaje zmocnitele <code>{{PM_…}}</code> se doplní ručně a varianta se <b>nezamyká</b>.</div>
+      PROJ, případně OCK); chybějící údaje zmocnitele mají tečky „……", doplní se ručně a varianta se <b>nezamyká</b>.</div>
     <div class="btns" style="margin-top:6px">
       <button class="primary"${zab} onclick="sodWord('sodProj')">Vytvořit smlouvu o dílo PROJ (Word)</button>
       <button class="primary"${zabPm} onclick="sodWord('plnaMoc')">Vytvořit plnou moc (Word)</button>
