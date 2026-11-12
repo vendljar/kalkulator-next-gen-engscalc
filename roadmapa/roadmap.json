@@ -9192,7 +9192,7 @@
     "id" : "F"
    }
   ],
-  "build" : "v11.11.2 (větev claude/k40a; integrace = v11.11.1 c664c9e)",
+  "build" : "v12.11.1 (větev claude/k40a; integrace = v11.11.1 c664c9e)",
   "stavKDatu" : "11. 11. 2026"
  },
  "_comment" : [

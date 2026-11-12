@@ -8,6 +8,25 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.11.1 — K40a #579: opravy po revizi (verdikt „sloučit po opravě“), větev claude/k40a
+
+- **D1 — import zamčené varianty s víc šachtami nemigruje sklo šachet 2+** (src/engine.js `skloMigraceNazvu`
+  volba `jenPrvni`, src/zakazka.js `importZakazka`). Od v11.11.2 import přemapoval osiřelé vyřazení skla boků
+  i u šachet 2+ zamčené varianty — cena odeslané nabídky se změnila a ověření zámku vrátilo „nesouhlasí“.
+  Nezamčená varianta migruje šachty 2+ stejně jako šachtu 1 od K37 (rozhodnutí koordinace). Mez **B205a**.
+- **D2 — neplatný den kopie na Disku zastaví úklid** (src/retence_zaloh.js `retenceZalohDiskPredchozi` příznak
+  `neplatnyDen`; prohlížeč `kopieDiskUklid` i skript `kopie_disk.gs` nemažou, skript připomene e-mailem). Dřív se
+  srovnání úbytku tiše přeskočilo a mazalo se dál.
+- **D3** — B205 doplněna o zbytkovou mez (podvržený soubor s minulým dnem a pozdějším časem se dál vybere jako
+  srovnávací). **D5** — mez **B205b**: sirotek čelního skla + přepnutí tam a zpět nechá sklo vyřazené (vědomá
+  vlastnost 2a, kód beze změny).
+- **D4** — test_funkce.mjs: dvojí import pomoc_test_admin odstraněn; `KNG_ADMIN_EMAIL_VYCHOZI` nastavuje modul.
+- **D6** — hláška rozsahu referenční šířky můstku se skládá z konstant `MUSTEK_REF_SIRKA_MIN/MAX_MM`.
+- **D7** — `escJs` u `p.bind`/`bind` v onchange krycích listů OCK i PROJ; `bind` v RIZIKO (src/test_escape.js).
+- Testy: test_k40_celni_sklo 75/0 (na ed98942 3 FAIL), test_z2_disk_retence 59/0 (3 FAIL), test_577_apps_script
+  34/0 (S13, 1 FAIL — starý skript 2 kopie smazal), test_k40_mustky_cenik 31/0 (1 FAIL), test_escape 42/0 (2 FAIL).
+  Zlatá sada víc šachet 319/319, můstky 228/0. Otázka 6 (šířka skupiny můstků) se nedělá.
+
 ## v11.11.2 — K40a #579: opravy kola 40 bez ceny — čelní sklo a sklo u šachet 2+, ořez konce textu, ceník můstků, kopie na Disku, hygiena testů, větev claude/k40a
 
 Nad `c664c9e` (integrace v11.11.1). Verzi přečísluje koordinace (souběžně K40b #580). Podle posudku poradce

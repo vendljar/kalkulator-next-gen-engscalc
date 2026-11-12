@@ -51,6 +51,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_vs_server.mjs',
      /* K40a #579 (11. 11. 2026): X5 záložní buňka CSV a X6 escJs v onclick ceníku — bez nich mutace [K40a] X5/X6 nemají sadu. */
      '../src/test_k40_csv_bunka.js', '../src/test_escape.js',
+     /* Revize K40a D1 (12. 11. 2026): import zamčené varianty s víc šachtami (zakazka.js). */
+     '../src/test_k40_celni_sklo.js',
      /* VS #570 E6 (#596, 10. 11. 2026): štítek šachet v rejstříku zakázek (rychlá sada). */
      'test_vs_rejstrik.mjs',
      /* VS #570 E5 (#595, 10. 11. 2026): Pipedrive náhled — seznam šachet do poznámky (rychlá sada). */
@@ -1195,6 +1197,23 @@ const MUTACE = [
     proc: 'cesta z dat by v onclick ceníku byla průchod pro skript (K40-X6)', sady: ['../src/test_escape.js'] },
   /* ---------- K40a X4 (11. 11. 2026, #579): skript Apps Script — srovnávací kopie a podezřelá
    * budoucí jména. Hlídá test_577_apps_script.mjs (S12). [K40a] ---------- */
+  /* Revize K40a (12. 11. 2026): D1 import zamčené varianty, D2 skript při neplatném dni, D7 escJs u bind. [K40a] */
+  { nazev: '[K40a] D1: import migruje šachty 2+ i u zamčené varianty', soubor: '../src/zakazka.js',
+    hledej: "jenPrvni: (typeof variantaUzamcena === 'function') ? !!variantaUzamcena(v) : !!(v && v.zamek && v.zamek.zamceno) });",
+    nahrad: "jenPrvni: false });",
+    proc: 'cena odeslané nabídky s víc šachtami by se importem změnila a ověření zámku by nesouhlasilo (revize K40a D1)', sady: ['../src/test_k40_celni_sklo.js'] },
+  { nazev: '[K40a] D2: skript při neplatném dni kopie maže', soubor: '../nastroje/apps_script/kopie_disk.gs',
+    hledej: "  if (vyber.neplatnyDen) return stoji(",
+    nahrad: "  if (false) return stoji(",
+    proc: 'skript by při neplatném dni kopie mazal staré kopie bez pojistky úbytku (revize K40a D2)', sady: ['test_577_apps_script.mjs'] },
+  { nazev: '[K40a] D7: bind v onchange krycího listu PROJ bez escJs', soubor: '../src/ui/kryci_proj_ui.js',
+    hledej: "onchange=\"set('${escJs(p.bind)}', this.value)\"",
+    nahrad: "onchange=\"set('${p.bind}', this.value)\"",
+    proc: 'cesta pole by v onchange krycího listu byla průchod pro skript (revize K40a D7)', sady: ['../src/test_escape.js'] },
+  { nazev: '[K40a] D7: bind v onchange krycího listu OCK bez escJs', soubor: '../src/ui/kryci_ui.js',
+    hledej: "onchange=\"set('${escJs(p.bind)}', this.value)\"",
+    nahrad: "onchange=\"set('${p.bind}', this.value)\"",
+    proc: 'cesta pole by v onchange krycího listu byla průchod pro skript (revize K40a D7)', sady: ['../src/test_escape.js'] },
   { nazev: '[K40a] X4: skript neohlásí budoucí kopie', soubor: '../nastroje/apps_script/kopie_disk.gs',
     hledej: "  var podezrela = vyber.budouci;",
     nahrad: "  var podezrela = [];",
