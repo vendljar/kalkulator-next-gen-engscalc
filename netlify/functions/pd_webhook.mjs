@@ -41,11 +41,16 @@ import { uloziste, json, vyhradne } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { pdNastaveno, pdRezim, pdZavolej, PdChyba, pdStropCerstvych, PD_CACHE_ULOZISTE } from '../lib/pipedrive.mjs';
 import { pdDealNaNase, pdHodnota } from '../lib/pd_mapa.mjs';
+import { aresNacti, aresIcoNorm, aresPoleHlavicky, ARES_SIT } from '../lib/ares_server.mjs';
+import {
+  pdVazbaNorm, pdOdmitnuto, pdRejstrikZapis, pdProtokol, pdPoleText, pdOrgText, pdOrgHodnoty, pdOrgRozdily,
+} from '../lib/pd_vazba.mjs';
 import { zakazkaPrijmi } from '../lib/zakazka_kontrola.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 import {
   pdWebhookKlic, pdWebhookKlicZPozadavku, pdWebhookKlicSedi, pdWebhookDealId, pdWebhookZadani,
   pdWebhookHlavicka, pdWebhookPouzij, pdWebhookVolbaText, pdWebhookZamkyPoruseny, pdWebhookCisloKlic, pdWebhookOdkaz,
+  pdWebhookOtisk, PD_WEBHOOK_POLE_ARES,
   PD_WEBHOOK_MAX, PD_WEBHOOK_TELO_MAX, PD_WEBHOOK_AUTOR, PD_WEBHOOK_AUTOR_JMENO, PD_WEBHOOK_ULOZISTE,
   PD_WEBHOOK_KLIC_PROMENNA,
 } from '../lib/pd_webhook.mjs';
@@ -58,15 +63,17 @@ async function bezpecne(cesta) {
   try { return await pdZavolej(cesta); } catch (e) { return null; }
 }
 
-/* Zápis rejstříku zakázek: jeden záznam (vzor functions/zakazky.mjs, K7-S1). */
-async function rejstrikZapis(s, ULO, zak, jmeno, razitko) {
-  await vyhradne('zakazky/_rejstrik', async () => {
-    const rej = (await s.cti('_rejstrik')) || { schema: 1, zakazky: [] };
-    const novy = ULO.uloRejstrikSloucit(Array.isArray(rej.zakazky) ? rej.zakazky : [],
-      ULO.uloRejstrikZaznam(zak, { soubor: jmeno, razitko }));
-    await s.zapis('_rejstrik', { schema: 1, zakazky: ULO.uloRejstrikSerad(novy), kdo: PD_WEBHOOK_AUTOR,
-      upraveno: new Date().toISOString() });
-  });
+const rejstrikZapis = (s, ULO, zak, jmeno, razitko) => pdRejstrikZapis(s, ULO, vyhradne, zak, jmeno, razitko, PD_WEBHOOK_AUTOR);
+
+/* Hlavička strany je zmrazená (zamčená varianta, nebo po tisku SoD / odeslané
+ * CN podle zamekZakCestaZmrazena) — webhook ji nemění a ARES se pak nevolá. */
+function hlavickaZmrazena(zak, strana) {
+  if (!zak) return false;
+  const zam = (v) => !!(globalThis.variantaUzamcena ? globalThis.variantaUzamcena(v) : (v && v.zamek && v.zamek.zamceno));
+  if ((zak.varianty || []).some(zam)) return true;
+  const f = globalThis.zamekZakCestaZmrazena;
+  if (strana === 'proj' || typeof f !== 'function') return false;
+  return ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt'].some((k) => !!f(zak, 'ZAK.' + k));
 }
 
 export default async (req) => {
@@ -159,6 +166,12 @@ async function zpracuj(req, dealId, ULO, G) {
       stara = z;
     }
   }
+  /* ODMÍTNUTÝ DEAL (K40c #581): vazbu na tento deal autor nebo administrátor
+   * u kalkulace zrušil (překlep v čísle nabídky) — PŘED jakýmkoli zápisem
+   * (zakázka, index, odkaz v dealu) i před dotazem do ARES. */
+  if (stara && pdOdmitnuto(stara, dealId))
+    return json({ ok: false, chyba: 'Deal ' + dealId + ' byl u kalkulace ' + String(pdWebhookHlavicka(JSON.parse(JSON.stringify(stara)), zadani.strana).cislo || jmeno)
+      + ' odmítnut (vazbu zrušil autor nebo administrátor). Nic se nezměnilo — opravte číslo nabídky v Pipedrive.' }, 409);
   /* Vlastník dealu (#115 B): CN v dealu musí sedět s číslem navázané kalkulace. */
   if (stara && cnDealu) {
     const h = pdWebhookHlavicka(JSON.parse(JSON.stringify(stara)), zadani.strana);
@@ -167,8 +180,33 @@ async function zpracuj(req, dealId, ULO, G) {
         + ', navázaná kalkulace má ' + String(h.cislo || '') + '. Nic se nezměnilo.' }, 409);
   }
 
-  /* 6) ZÁPIS KALKULACE — ve výhradním úseku zakázky (vzor SEC-S1). */
+  /* 5b) ARES (K40c #581, B208): firma podle IČO organizace dealu — jen při
+   * nové vazbě nebo změně IČO proti otisku, nikdy u zmrazené hlavičky.
+   * Výpadek nic neshodí: zůstanou údaje z dealu a varování. */
   const kdy = new Date().toISOString();
+  const vazbaStara = stara ? pdVazbaNorm(stara.pdVazbaWebhook) : null;
+  const novaVazba = !stara || norm(stara.pdDealId) !== dealId;
+  const vazbaPlati = !novaVazba && vazbaStara && vazbaStara.deal === dealId && vazbaStara.stav !== 'zruseno' ? vazbaStara : null;
+  const icoSurove = String(nase.ico || '').trim();
+  const icoOtisk = icoSurove ? pdWebhookOtisk(aresIcoNorm(icoSurove) || icoSurove) : '';
+  const zmrazena = hlavickaZmrazena(stara, zadani.strana);
+  let ares = vazbaPlati ? vazbaPlati.ares : '';
+  let aresVolano = false, subjekt = null;
+  if (!zmrazena && icoSurove && (!vazbaPlati || vazbaPlati.icoOtisk !== icoOtisk)) {
+    const r = await aresNacti(icoSurove, { fetch: ARES_SIT.fetch });
+    aresVolano = true; ares = r.stav; subjekt = r.subjekt || null;
+  }
+  if (aresVolano && subjekt) Object.assign(zadani.pole, aresPoleHlavicky(subjekt));
+  else if (!aresVolano && ares === 'ok') for (const k of PD_WEBHOOK_POLE_ARES) zadani.pole[k] = '';   // firmu drží ARES, deal ji nepřepíše
+  let aresRozdily = vazbaPlati ? vazbaPlati.aresRozdily : [];
+  if (aresVolano) aresRozdily = subjekt ? pdOrgRozdily(pdOrgHodnoty(organizace, pole.mapaOrganizace, pdHodnota), subjekt).rozdily.map((x) => x.klic) : [];
+  if (aresVolano && ares === 'neplatne') varovani.push('IČO organizace dealu neprojde kontrolní číslicí — do ARES se neposlalo, firma je z dealu.');
+  else if (aresVolano && ares === 'nenalezeno') varovani.push('ARES subjekt s IČO organizace dealu nevede — firma je z dealu, ověřte ji v kalkulaci.');
+  else if (aresVolano && ares === 'vypadek') varovani.push('ARES neodpověděl včas — firma je z dealu, ověřte ji v kalkulaci tlačítkem „Najít firmu v ARES“.');
+  if (subjekt && subjekt.zanikla) varovani.push('Subjekt je v ARES zaniklý' + (subjekt.datumZaniku ? ' (' + subjekt.datumZaniku + ')' : '') + ' — údaje převzaty, zkontrolujte zákazníka.');
+  if (aresRozdily.length && aresVolano) varovani.push('Organizace v Pipedrive se liší od ARES: ' + pdOrgText(aresRozdily) + '.');
+
+  /* 6) ZÁPIS KALKULACE — ve výhradním úseku zakázky (vzor SEC-S1). */
   const vysledek = await vyhradne('zakazky/z/' + jmeno, async () => {
     const tesne = await s.cti('z/' + jmeno);
     if (!!tesne !== !!stara || ULO.uloRazitko(tesne) !== ULO.uloRazitko(stara))
@@ -182,11 +220,31 @@ async function zpracuj(req, dealId, ULO, G) {
       zak = JSON.parse(JSON.stringify(stara));
       akce = 'aktualizovano';
     }
-    const zmena = pdWebhookPouzij(zak, zadani, dealId, kdy);
+    const zmena = pdWebhookPouzij(zak, zadani, dealId, kdy, { hlavickaZmrazena: zmrazena });
     const bezVazby = norm(zak.pdDealId) !== dealId;
     if (bezVazby) zak.pdDealId = dealId;
-    if (stara && !bezVazby && !zmena.zmeneno.length && JSON.stringify(zak.pdZadani) === JSON.stringify(stara.pdZadani))
+    /* VAZBA Z WEBHOOKU (K40c): navázání EXISTUJÍCÍ kalkulace čeká na „V pořádku“
+     * (upozornění při otevření); kalkulace založená webhookem ne. */
+    const doplneno = zmena.zmeneno.slice();
+    const vazba = { deal: dealId, kdy: vazbaPlati && vazbaPlati.kdy ? vazbaPlati.kdy : kdy, cislo: zadani.cislo, strana: zadani.strana,
+      stav: vazbaPlati ? vazbaPlati.stav : (stara ? 'ceka' : 'webhook'), ares, icoOtisk: aresVolano ? icoOtisk : (vazbaPlati ? vazbaPlati.icoOtisk : ''),
+      aresRozdily, doplneno: vazbaPlati ? [...new Set(vazbaPlati.doplneno.concat(doplneno))] : doplneno };
+    if (subjekt ? subjekt.zanikla : (vazbaPlati && vazbaPlati.zanikla && !aresVolano)) vazba.zanikla = true;
+    if (vazbaPlati && vazbaPlati.nahlaseno) vazba.nahlaseno = vazbaPlati.nahlaseno;
+    zak.pdVazbaWebhook = pdVazbaNorm(vazba);
+    if (stara && !bezVazby && !zmena.zmeneno.length && JSON.stringify(zak.pdZadani) === JSON.stringify(stara.pdZadani)
+        && JSON.stringify(zak.pdVazbaWebhook) === JSON.stringify(pdVazbaNorm(stara.pdVazbaWebhook)))
       return { akce: 'bezeZmeny', zmena };   // opakované doručení: nic se nezapisuje, razítko zůstává
+    /* PROTOKOL ZAKÁZKY (K40c): kdo pipedrive-webhook, deal, číslo, doplněná
+     * pole a výsledek ARES — jen názvy polí, žádné kontakty ani hodnoty. */
+    const aresVeta = !aresVolano ? '' : ({ ok: 'firma ověřena v ARES' + (aresRozdily.length ? ' (v Pipedrive se liší: ' + pdOrgText(aresRozdily) + ')' : ''),
+      neplatne: 'IČO neprojde kontrolní číslicí — firma z dealu', nenalezeno: 'IČO v ARES není — firma z dealu',
+      vypadek: 'ARES neodpověděl — firma z dealu' }[ares] || '');
+    pdProtokol(zak, PD_WEBHOOK_AUTOR, (bezVazby ? (stara ? 'Navázáno na deal ' + dealId + ' podle čísla nabídky ' + zadani.cislo
+      : 'Založeno z dealu ' + dealId + ' (číslo nabídky ' + zadani.cislo + ')') : 'Aktualizace z dealu ' + dealId)
+      + '; doplněno: ' + (pdPoleText(zmena.zmeneno) || 'nic')
+      + (zmena.ponechano.length ? '; ponecháno (kalkulace má jinou hodnotu): ' + pdPoleText(zmena.ponechano) : '')
+      + (aresVeta ? '; ' + aresVeta : ''));
     if (stara) {
       const spatne = pdWebhookZamkyPoruseny(stara, zak);
       if (spatne.length)   // nemá nastat — pojistka „zamčenou variantu webhook nikdy nemění“
@@ -233,6 +291,7 @@ async function zpracuj(req, dealId, ULO, G) {
   const z = vysledek.zmena;
   return json({ ok: true, akce: vysledek.akce, dealId, soubor: jmeno, odkaz,
     zmeneno: z.zmeneno, ponechano: z.ponechano, zamceno: z.zamceno, odkazDoDealu, varovani,
+    ares, aresDotaz: aresVolano, aresRozdily,
     pozn: 'Cena se z Pipedrive nepřebírá — nabídku vygeneruje obchodník v kalkulaci.' });
 }
 

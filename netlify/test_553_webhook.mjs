@@ -37,6 +37,11 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
 const venku = [];
 globalThis.fetch = async (url) => { venku.push(String(url)); throw new Error('síť je v testu zakázaná: ' + url); };
 
+/* ARES (K40c #581): webhook se ptá ARES ze serveru. Tady ARES „subjekt
+ * nezná" (404) — firma zůstane z dealu jako před K40c; ARES samotný hlídá
+ * netlify/test_k40c_webhook.mjs. Do sítě se nesmí nic (bod „do sítě nic"). */
+const aresDotazy = [];
+(await import('./lib/ares_server.mjs')).ARES_SIT.fetch = async (url) => { aresDotazy.push(String(url)); return new Response('{}', { status: 404 }); };
 const { default: webhook } = await import('./functions/pd_webhook.mjs');
 const { default: prihlaseni } = await import('./functions/prihlaseni.mjs');
 const { default: program } = await import('./functions/program.mjs');

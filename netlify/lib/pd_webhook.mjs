@@ -100,7 +100,13 @@ export function pdWebhookOtisk(h) {
 }
 
 /* Pole hlavičky, která webhook plní (na straně OCK: zakázka, PROJ: projHlavicka). */
-export const PD_WEBHOOK_POLE = ['nazevAkce', 'adresa', 'objednatel', 'ico', 'kontakt'];
+/* K40c #581: + sídlo a DIČ zákazníka — firmu (objednatel, sídlo, IČO, DIČ)
+ * webhook bere z ARES (lib/ares_server.mjs), když odpoví; jinak z dealu jako
+ * dřív (bez sídla a DIČ, ty deal nemá). Pravidlo přepisu je pro všechna pole
+ * stejné (`smi()`): prázdné pole, nebo hodnota naposledy zapsaná webhookem. */
+export const PD_WEBHOOK_POLE = ['nazevAkce', 'adresa', 'objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt'];
+/* Pole hlavičky, která zná ARES (src/ares.js ARES_POLE). */
+export const PD_WEBHOOK_POLE_ARES = ['objednatel', 'adresaObjednatele', 'ico', 'dic'];
 /* Datum z CRM do krycího listu OCK nezamčených variant. */
 export const PD_WEBHOOK_KRYCI = 'terminPredani';
 
@@ -117,7 +123,7 @@ export function pdWebhookZadani(nase, cnDealu) {
     strana,
     cislo: txt(cnDealu) || txt(n.cislo),
     pole: { nazevAkce: txt(n.nazevAkce), adresa: txt(n.adresa), objednatel: txt(n.objednatel),
-            ico: txt(n.ico), kontakt },
+            adresaObjednatele: '', ico: txt(n.ico), dic: '', kontakt },
     terminPredani: strana === 'ock' ? datum : '',
   };
 }
@@ -157,12 +163,14 @@ function snimek(zak) {
  * změnil a deal má jinou hodnotu (jen NÁZVY polí, žádné hodnoty).
  *   – zamčená varianta v zakázce → hlavička beze změny (zamceno: true),
  *   – krycí list: jen nezamčené varianty, jen strana OCK. */
-export function pdWebhookPouzij(zak, zadani, dealId, kdy) {
+export function pdWebhookPouzij(zak, zadani, dealId, kdy, volby = {}) {
   const otisk = snimek(zak);
   const novyOtisk = { ...otisk };
   const zmeneno = [], ponechano = [];
   const varianty = Array.isArray(zak.varianty) ? zak.varianty : [];
-  const zamceno = varianty.some(zamcena);
+  /* Zmrazená hlavička (K40c: zamekZakCestaZmrazena po tisku SoD / odeslané CN)
+   * se nemění stejně jako hlavička zakázky se zamčenou variantou. */
+  const zamceno = varianty.some(zamcena) || volby.hlavickaZmrazena === true;
   const smi = (aktualni, klic) => {
     const a = String(aktualni == null ? '' : aktualni).trim();
     return !a || (otisk[klic] && pdWebhookOtisk(a) === otisk[klic]);

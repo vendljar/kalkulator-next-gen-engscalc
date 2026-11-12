@@ -230,12 +230,17 @@ export const POLE_DEALU = [
 export const POLE_ORGANIZACE = [
   Object.assign(D('ico', 'IČ', 'cislo', null, 'cteni'), { nazvy: ['IČ', 'IČO'], typ: ['double', 'varchar', 'text'] }),
   D('typOrganizace', 'Role', 'volba', null, 'cteni'),
+  /* DIČ organizace (K40c #581, 12. 11. 2026): v účtu dnes NENÍ (viz hlavička).
+   * Kalkulátor ho zná jen kvůli „Opravit firmu v Pipedrive“ (functions/
+   * pd_organizace.mjs): když ho integrátor jednou založí, zapíše se DIČ z ARES;
+   * dokud není, oprava ho přeskočí a řekne to v dialogu. Pole se nikdy nezakládá. */
+  Object.assign(D('dic', 'DIČ', 'text', null, 'nic'), { nazvy: ['DIČ'], typ: ['varchar', 'text'] }),
 ];
 
 /* Verze tvaru uložené mapy (cache v pd_pole.mjs). Mapa z doby párování
  * podle vzorů (do 21. 10. 2026) nesla tři pole spárovaná se špatným polem
  * CRM — po nasazení se nesmí číst ani do konce své jednodenní platnosti. */
-export const PD_POLE_VERZE = 3;   // 3: pole webhooku #553 (mapa bez nich by den platila)
+export const PD_POLE_VERZE = 4;   // 3: pole webhooku #553 (mapa bez nich by den platila); 4: DIČ organizace (K40c #581)
 
 /* Vlastní pole, která čte detail dealu (pdDealNaNase). Jen o těchhle má
  * obchodník slyšet, když v CRM chybí — chybějící pole pro zápis řeší
@@ -511,7 +516,7 @@ const PD_VELKY_TEXT = ['adresaStavby', 'podminkyJine', 'terminJine', 'odchylky',
   'platebniKalendar'];
 /* Pole, která integrátor ještě nezaložil. Platební kalendář SoD PROJ je
  * založený (ověřeno čtením 2. 11. 2026) — dohodnutá pole má účet všechna. */
-export const PD_DOSUD_NEZALOZENA = [];
+export const PD_DOSUD_NEZALOZENA = ['dic'];   // DIČ organizace (K40c) — v účtu není; simulátor ho bez `vsechna` nemá
 
 /* Stálý čtyřicetiznakový „hash" z názvu (FNV-1a po pěti kolech, bez
  * závislosti na node:crypto — modul se smí načíst kdekoli). */
