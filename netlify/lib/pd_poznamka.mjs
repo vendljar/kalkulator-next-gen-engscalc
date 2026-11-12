@@ -61,7 +61,7 @@ export function pdPoznamkaText(zak, G = globalThis) {
   const p = G.vsPocty(ock);
   let t = PD_POZNAMKA_UVOD + G.vsPoctyPopis(p.variant, p.celkem) + ' ('
     + l.map((s, i) => G.vsNazev(s, i) + ' ' + s.ks + ' ks').join(', ') + ')';
-  t = t.replace(/[\u0000-\u001f\u007f-\u009f  ]+/g, ' ');
+  t = t.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, ' ');
   if (t.length > PD_POZNAMKA_MAX) t = t.slice(0, PD_POZNAMKA_MAX - 1) + '…';
   return t;
 }

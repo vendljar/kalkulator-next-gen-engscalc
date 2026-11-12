@@ -127,8 +127,11 @@ export async function pdZavolej(cesta, volby = {}) {
     init.body = JSON.stringify(volby.telo);
   }
 
+  /* `volby.pokusu` (VSD, 11. 11. 2026): méně pokusů tam, kde se nesmí čekat
+   * sekundy (zápis poznámky při uložení zakázky); nikdy víc než POKUSU. */
+  const pokusu = Math.max(1, Math.min(POKUSU, Number.isInteger(volby.pokusu) ? volby.pokusu : POKUSU));
   let posledni = null;
-  for (let pokus = 0; pokus < POKUSU; pokus++) {
+  for (let pokus = 0; pokus < pokusu; pokus++) {
     let odpoved;
     try {
       odpoved = await (sim ? pdSimFetch(url.toString(), init) : fetch(url.toString(), init));
@@ -153,7 +156,7 @@ export async function pdZavolej(cesta, volby = {}) {
     /* Opakovat má smysl jen u přetížení a serverových chyb. U špatného
      * tokenu by opakování jen třikrát potvrdilo totéž. */
     if (odpoved.status !== 429 && odpoved.status < 500) throw posledni;
-    if (pokus < POKUSU - 1) await spanek((sim ? 1 : 1000) * Math.pow(2, pokus));
+    if (pokus < pokusu - 1) await spanek((sim ? 1 : 1000) * Math.pow(2, pokus));
   }
   throw posledni;
 }
