@@ -286,6 +286,14 @@ export default async (req) => {
       cenovaVyjimka: v.data.cenovaVyjimka || null,
       /* Ruční ceny položek (#561) — razítko potvrzení píše server. */
       rucniCeny: v.data.rucniCeny || null }));
-  return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, slevy } : { ok: true, soubor: jmeno, razitko, slevy });
+  /* Razítko přijetí zámků (K40-S1, #580) — prohlížeč si ho dopíše do místní
+   * kopie zámku (onlinePrijatoZeServeru), ať pole data prodeje bere tutéž mez
+   * jako server. Jen zamčené varianty s razítkem. */
+  const zamkyPrijato = {};
+  (zak.varianty || []).forEach(v => {
+    if (v && v.zamek && v.zamek.zamceno && typeof v.zamek.prijato === 'string') zamkyPrijato[v.id] = v.zamek.prijato;
+  });
+  return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, slevy, zamkyPrijato }
+    : { ok: true, soubor: jmeno, razitko, slevy, zamkyPrijato });
 };
 export const config = { path: '/api/zakazky' };

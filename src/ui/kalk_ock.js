@@ -141,7 +141,9 @@ function typSachtyPrepni(typ) {
   if (typeof standardAtypAutomat === 'function') standardAtypAutomat();
   /* K37-N1: vyřazení a přepisy skla boků na název podle nového typu — stejně
    * jako po znovuotevření (importZakazka). Bez toho se vyřazené sklo po
-   * přepnutí znovu počítalo a vytištěná nabídka nesla jinou cenu. */
+   * přepnutí znovu počítalo a vytištěná nabídka nesla jinou cenu. Čelní sklo
+   * (K40-N1) přejmenoval už `set('Z.typSachty')` výš — jen tam je známý název
+   * před změnou; tohle volání je idempotentní dorovnání boků. */
   if (typeof skloMigraceAkt === 'function') skloMigraceAkt();
   syncVarianta(); render();
 }

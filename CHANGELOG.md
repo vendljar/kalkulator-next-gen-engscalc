@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v12.11.1 — C5 #585: nástroj obnovy testovací sady zakázek TEST do testovací databáze, větev claude/c5-test-sada
+## v12.11.4 — C5 #585: nástroj obnovy testovací sady zakázek TEST do testovací databáze, větev claude/c5-test-sada
 
 Nad `aa445a1` (integrace = test v11.11.1). Verzi přečísluje koordinace. **Kód aplikace a serveru se nemění.**
 Rozhodnutí J. V. B0.9 (11. 11. 2026): TEST zakázky kol K28/K29/K36, které od 2.–3. 11. chybí v testovací databázi
@@ -43,6 +43,112 @@ ke spuštění před revizí. Na webech, Disku ani v Pipedrive nic. Sezení nás
   cíl, zdraví, roli, jen TEST, náhled, nic se nepřepíše (i souběh 409), zámky, prodej, SoD, víc šachet,
   volání, výpis a obal z příkazové řádky proti místnímu HTTP serveru. Mutace „[C5]“ 23 v `netlify/mutace.mjs`,
   sada v `SADY`. `.gitignore`: `test_sada_*.json*`, `otisk_*.json*`.
+## v12.11.3 — C1 #582: šablona CN v17 CZ/EN/DE/FR ke zveřejnění, jednotné nadpisy USAZENÍ OCK (DE, EN), větev claude/c1-cn-v17
+
+Nad `aa445a1` (integrace = test v11.11.1). Verzi přečísluje koordinace. Výpočet ceny beze změny; na webech, Disku
+ani v Pipedrive nic. Rozhodnutí J. V. 11. 11. 2026 B0.2, B0.3 a doplněk (EN).
+
+- **Slovník** (`preklad.js`): nadpisy řádků usazení DE jednotně „POSITIONIERUNG DER SCHACHTKONSTRUKTION – …“,
+  EN „SHAFT STRUCTURE POSITION – …“ (půlčtverčík s mezerami) u čelní, bočních a zadní stěny i u hesla
+  „USAZENÍ ZADNÍ STĚNY OCK“; FR beze změny. Projeví se i v online nabídce a specifikaci EN/DE.
+- **Nástroj šablon** (`nastroje/vyrob_sablony.js`): nový režim `--cn-usazeni` opraví nadpisy ve zveřejněné
+  v16 DE a EN (tvrdé kontroly: každý řádek právě jednou se starým nebo novým zněním, symboly před = po, XML
+  bez vad, ostatní text znak po znaku; idempotentní). `--cn-v17` vyrábí jazykové v17 **přímo ze zveřejněné
+  jazykové v16** (kotva pruhu v jazyce souboru) a ověří text v17 bez smyčky = v16; strojový překlad z CZ jen
+  jako záloha s upozorněním (dřív ztrácel ruční znění, např. „LIFT SHAFT“ → „shaft“).
+- **Ověření nad firemními v16** (Disk, 10. 11. 2026): jedna šachta Word z v17 = Word z v16 v 1276/1276
+  (319 scénářů zlaté sady × CZ/EN/DE/FR), víc šachet 20/20, nepřeložený text žádný nový (jen „IČ:“ v zápatí
+  jako ve v16). Podklad a návod pro J. V.: `podklady/SABLONA_CN_V17_11_11.md`.
+- **Testy:** nový `src/test_cn_usazeni.js` (32), `src/test_vs_docx_v17.js` +18 (F: v17 z jazykové v16; fixtura
+  doplněna o řádky ČELNÍ a ZADNÍ), `src/test_preklad.js` +25; mutace [C1] 8/8 chycené. Zlaté otisky
+  (`src/test_vs_zlata.json`, `src/test_560_zlata.json`) přegenerovány na pokyn koordinace: změnil se jen klíč
+  `nahled-en` (anglický náhled s novými nadpisy) — se starým EN zněním těchto hesel dají skripty původní
+  JSON bajt po bajtu.
+- **Příručka správce A5:** postup v17 ze všech čtyř v16, oprava nadpisů v16 DE/EN, kontrola slovníku.
+## v12.11.2 — K40b #580: dolní mez data prodeje z razítka přijetí zámku serverem (K40-S1, K40-N3), levná diagnostika rozdílu zámku (K40-S2), větev claude/k40b
+
+Nad `c664c9e` (integrace v11.11.1). Souběžně s K40a (#579); verzi přečísluje koordinace. Cena se nemění —
+`vypocet()` beze změny, zlatá sada víc šachet 319/319 a zlatá sada můstků beze změny otisků. Na webech, Disku ani
+v Pipedrive nic. Podklady: `podklady/PROMPT_K40_OPRAVY.md`, `…_v2.md` (přednost), `K40_POSUDEK_FABLE.md`;
+rozhodnutí J. V. 4. 11. (S1, N3) a 11. 11. 2026 (3a, 4a).
+
+- **K40-S1 — razítko přijetí zámku serverem (`zamek.prijato`).** Server ho zapíše při prvním přijetí nového
+  zámku (příchozí hodnotu zahodí) a vrací v odpovědi uložení (`zamkyPrijato: { <id varianty>: <ISO> }`);
+  prohlížeč si ho dopíše do místní kopie zámku (`onlinePrijatoZeServeru`). Pole není v klíči zámku (starší klient
+  ukládá bez 409), u uloženého zámku ho drží `uloZamekRazitkaDrz`. `prodServer` ho bere z uložené verze, u nového
+  zámku v témže požadavku čas serveru, nikdy z příchozích dat; `prodJedinaZmena` ho při porovnání vynechá.
+- **Dolní mez data prodeje** `max(den(kdy), den(prijato − 7 dní))` (`prodDatumMez`, `PROD_PRIJATO_TOLERANCE_DNI`)
+  — touž funkcí pole data v kartě Prodáno i server. Datum mezi dnem odeslání a mezí smí zapsat jen **vedoucí nebo
+  administrátor s důvodem** (dotaz v kartě Prodej; důvod do historie prodeje, bez řídicích znaků, strop 500
+  znaků); obchodník 400 i s důvodem; pod den odeslání nikdo. Zámek bez razítka (uložený před opravou) má mez
+  z `kdy` jako dřív. Pokus kola 40 (nová zakázka se zámkem i prodejem −300 dní → 200) dnes končí 400.
+- **K40-N3:** mez nejvýš dnes (Praha) — tisk 23:55 s hodinami 6 min napřed dával mez = zítřek.
+- **Obnova:** z otisku se razítko přebírá, ze souboru se zahodí (otázka 3a) — zámek se pak chová jako starší.
+- **K40-S2:** `zamekDataRozdilCesta` kanonizuje jednou a sestupuje jedním průchodem (dřív kanonizace obou podstromů
+  na každé úrovni); výstup beze změny (3 000 náhodných párů proti referenční kopii, 10 šachet `ock.dalsi.3.zadani.sirka`),
+  hloubka 50 × 2 000 objektů ~6 ms místo ~110 ms.
+- **Meze:** `BEZPECNOST_MEZE.md` oddíl K40b — **B206** (tolerance 7 dní a výjimka s důvodem), **B207** (antedatovaný
+  čas tisku dál určuje období odeslání v controllingu — otázka 4a, jen zapsáno).
+- **Příručka obchodníka:** karta Prodej — mez 7 dní před přijetím serverem a výjimka vedoucího s důvodem.
+- **Testy:** `src/test_k40b_zamek_prodej.js` (50), `netlify/test_k40b_prodej_mez.mjs` (31) — nad c664c9e padají;
+  mutace „[K40b]“ server 12/12 + jádro 3/3, celé jádro po částech 823/823; posunuté zadání starých mutací (#547 K37-N4 ×3, rev #401 N1, #508 K7-S2,
+  B105, #507 K7-K1 ×2).
+## v12.11.1 — K40a #579: opravy po revizi (verdikt „sloučit po opravě“), větev claude/k40a
+
+- **D1 — import zamčené varianty s víc šachtami nemigruje sklo šachet 2+** (src/engine.js `skloMigraceNazvu`
+  volba `jenPrvni`, src/zakazka.js `importZakazka`). Od v11.11.2 import přemapoval osiřelé vyřazení skla boků
+  i u šachet 2+ zamčené varianty — cena odeslané nabídky se změnila a ověření zámku vrátilo „nesouhlasí“.
+  Nezamčená varianta migruje šachty 2+ stejně jako šachtu 1 od K37 (rozhodnutí koordinace). Mez **B205a**.
+- **D2 — neplatný den kopie na Disku zastaví úklid** (src/retence_zaloh.js `retenceZalohDiskPredchozi` příznak
+  `neplatnyDen`; prohlížeč `kopieDiskUklid` i skript `kopie_disk.gs` nemažou, skript připomene e-mailem). Dřív se
+  srovnání úbytku tiše přeskočilo a mazalo se dál.
+- **D3** — B205 doplněna o zbytkovou mez (podvržený soubor s minulým dnem a pozdějším časem se dál vybere jako
+  srovnávací). **D5** — mez **B205b**: sirotek čelního skla + přepnutí tam a zpět nechá sklo vyřazené (vědomá
+  vlastnost 2a, kód beze změny).
+- **D4** — test_funkce.mjs: dvojí import pomoc_test_admin odstraněn; `KNG_ADMIN_EMAIL_VYCHOZI` nastavuje modul.
+- **D6** — hláška rozsahu referenční šířky můstku se skládá z konstant `MUSTEK_REF_SIRKA_MIN/MAX_MM`.
+- **D7** — `escJs` u `p.bind`/`bind` v onchange krycích listů OCK i PROJ; `bind` v RIZIKO (src/test_escape.js).
+- Testy: test_k40_celni_sklo 75/0 (na ed98942 3 FAIL), test_z2_disk_retence 59/0 (3 FAIL), test_577_apps_script
+  34/0 (S13, 1 FAIL — starý skript 2 kopie smazal), test_k40_mustky_cenik 31/0 (1 FAIL), test_escape 42/0 (2 FAIL).
+  Zlatá sada víc šachet 319/319, můstky 228/0. Otázka 6 (šířka skupiny můstků) se nedělá.
+
+## v11.11.2 — K40a #579: opravy kola 40 bez ceny — čelní sklo a sklo u šachet 2+, ořez konce textu, ceník můstků, kopie na Disku, hygiena testů, větev claude/k40a
+
+Nad `c664c9e` (integrace v11.11.1). Verzi přečísluje koordinace (souběžně K40b #580). Podle posudku poradce
+(`podklady/K40_POSUDEK_FABLE.md`, `PROMPT_K40_OPRAVY_v2.md`) a rozhodnutí J. V. 11. 11. 2026 (1a, 2a, 6b, 7a, 8a).
+**Cena (`vypocet`) se nemění:** zlatá sada víc šachet 319/319 a zlatá sada můstků beze změny otisků. Weby, Disk
+ani Pipedrive se nedotkly.
+
+- **K40-N1 — vyřazené čelní sklo po změně zasklení nebo typu šachty:** `skloMigraceNazvu(data, opts)` dostala
+  nepovinné `opts.predCelni` + `opts.zadani`; přesnou dvojici starý → nový název čelního skla (VSG 4.4.1 ↔ 4.4.2)
+  přidá jen `set('Z.typSachty' | 'Z.zaskleni')`, který název zná před změnou. Přenáší se vyřazení, množství,
+  cena i vlastní název (2a), bez duplicit ve vyřazených. Import a otevření zakázky (prohlížeč i server)
+  **staré osiřelé záznamy nemění** (1a) — cena uložené nabídky ani přepočet odeslané se nepohnou.
+- **Nový nález posudku — sklo u šachet 2+:** migrace skla boků běží nad každým zadáním (`ock.zadani`
+  i `ock.dalsi[i].zadani`), u šachty 2+ se po přepnutí typu vyřazené sklo už znovu nepočítá. Jedna šachta:
+  výstup migrace beze změny.
+- **K40-X1/X2 — ořez konce textu:** `orezKonce` (format.js) smyčkou místo výrazu s kotvou na konci
+  (kvadratický čas) v `nazevCast`, `prekladNorm`, milníku plánu plateb a záloze slovníku; `nazevCast` navíc
+  strop úseku 200 znaků (K10-N1). Výstup na běžných i krajních vstupech beze změny (3 000 náhodných vstupů
+  proti dosavadnímu výrazu), 100 000 znaků do 50 ms.
+- **K40-N2/N5 — ceník můstků:** referenční šířka mimo **500–5 000 mm** (8a) a nulová montáž můstků ve
+  **složené zahraniční řadě** se zveřejní jen s potvrzením — dialog i server (`/api/program`), stejným
+  mechanismem jako nulová cena. Hodnoty se nemění.
+- **K40-X4 — srovnávací kopie na Disku:** pojistka úbytku srovnává jen s kopií se dnem **menším** než den nové
+  kopie (`retenceZalohDiskPredchozi` v `src/retence_zaloh.js`, sdílí prohlížeč i skript Apps Script — 7a);
+  kopie s budoucím datem se ohlásí jako podezřelé a nemažou se. **Po sloučení je potřeba vložit nový
+  `nastroje/apps_script/kopie_disk.gs` do Apps Script** (`podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`).
+- **K40-N4:** komentář migrace sazby DPH PROJ popisuje obě cesty (chování beze změny).
+- **K40-X5:** záložní buňka CSV ve slovníku a v suchém běhu Pipedrive = `csvBunka` (ochrana vzorců).
+- **K40-X6:** cesty `path`/`cesta` v `onchange`/`onclick` přes `escJs`; `test_escape.js` je hlídá.
+- **K40-S4:** serverové sady spuštěné samostatně bez `ADMIN_EMAIL` končí OK/FAIL (`netlify/pomoc_test_admin.mjs`).
+- **K40-T1/T3:** harnessy šablon berou nejvyšší verzi (`najdiSablonu`), převedená SoD se ověří přímo, nastSablony
+  se čte v pohledu „všechny šablony“ (filtr #367). T2 už opravila FL #576.
+- **K40-P1:** meze webhooku #553 přečíslované **B176–B179 → B199–B202**, test duplicit čísel mezí
+  (`src/test_meze_cisla.js`). Nové meze **B203** (X3 — heslo z přihlášení potvrdí kopii na Disk), **B204**
+  (S3 — pole SoD po Prodáno), **B205** (X4).
+- **Příručky:** správce — kontrola ceníku můstků při zveřejnění; obchodník (Databáze) — podezřelá kopie
+  s budoucím datem.
 
 ## v11.11.1 — VS-E6 #570: víc šachet v nabídce — závěr: překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi (#596; #570 hotovo), větev claude/vs-e6
 
@@ -786,7 +892,7 @@ koordinace přečíslovat.
   smí spouštět **jen změnou pole „Vygenerovat nabídku“** — zapsáno v podkladu pro integrátora.
 - **Mapa polí CRM:** dvě nová pole se směrem „nic“ (*Vygenerovat nabídku*, *Odkaz na kalkulaci*),
   `PD_POLE_VERZE` 2 → 3, ať se po nasazení nečte den stará mapa bez nich. Duplikát zakázky nenese `pdZadani`.
-- **Meze B176–B179** v `BEZPECNOST_MEZE.md` (klíč místo relace, strop jen v instanci funkce, zápis do databáze
+- **Meze B199–B202** (do K40a 11. 11. 2026 číslované B176–B179 — kolize se staršími mezemi, přečíslováno) v `BEZPECNOST_MEZE.md` (klíč místo relace, strop jen v instanci funkce, zápis do databáze
   bez člověka a jeho pojistky, nezálohovaný rejstřík webhooku).
 - **Podklady:** `podklady/PIPEDRIVE_WEBHOOK_553.md` — pro integrátora (pole, automatizace, tělo, odpověď,
   chybové kódy, varování před smyčkou) a kontrolní seznam pro J. V. (proměnná na testengscalc, nasazení,

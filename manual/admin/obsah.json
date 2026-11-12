@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v11.11.1 · sestaveno 11. 11. 2026",
+  "verze": "Platí pro aplikaci v12.11.3 · sestaveno 12. 11. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -469,13 +469,16 @@
           "nadpis": "Postup: vyrobit a nahrát šablonu CN v17",
           "polozky": [
             {
-              "text": "Do jedné složky dejte českou **Sablona_NABIDKA_CN_v16.docx** (tu, která je dnes nahraná online), v repozitáři spusťte `node nastroje/vyrob_sablony.js --cn-v17 <ta složka>` a zkontrolujte výpis: u češtiny ✓, u překladů smí zůstat česky jen to, co hlásila už v16. Vzniknou soubory **…_v17.docx** a **_EN**, **_DE**, **_FR**. Nástroj odmítne vstup, který není v16, a nic nehádá — když v16 nemá pruh *ZÁKLADNÍ PARAMETRY ŠACHTY* v jednom kuse textu, skončí chybou."
+              "text": "Do jedné složky dejte všechny čtyři zveřejněné šablony v16 — **Sablona_NABIDKA_CN_v16.docx** a **_EN**, **_DE**, **_FR** (ty, které jsou dnes nahrané online) — a v repozitáři spusťte `node nastroje/vyrob_sablony.js --cn-v17 <ta složka> <výstupní složka>`. Jazykové v17 vzniknou **přímo z jazykové v16** (ruční znění se zachová), u DE a EN se zároveň sjednotí nadpisy usazení (viz další krok); nástroj ověří, že text v17 bez řádků smyčky je stejný jako v16. Chybí-li jazyková v16, nástroj ji jen strojově přeloží z češtiny a vypíše **UPOZORNĚNÍ** — takový soubor nenahrávejte bez kontroly. Ve výpisu musí být u všech čtyř ✓. Nástroj odmítne vstup, který není v16, a nic nehádá — když v16 nemá pruh *ZÁKLADNÍ PARAMETRY ŠACHTY* (v jazyce souboru) v jednom kuse textu, skončí chybou."
+            },
+            {
+              "text": "**Nadpisy usazení v16 DE a EN:** dokud se tiskne z v16, opravte i ji — `node nastroje/vyrob_sablony.js --cn-usazeni <složka s v16> <jiná výstupní složka>` přepíše jen nadpisy řádků usazení na *POSITIONIERUNG DER SCHACHTKONSTRUKTION – …* a *SHAFT STRUCTURE POSITION – …* (francouzštinu jen vypíše) a uloží soubory téhož jména. Opravené v16 DE a EN nahrajte jako novou verzi šablony. V **Nastavení → Slovník** zkontrolujte, že zveřejněný slovník nemá vlastní přepis hesel *USAZENÍ OCK …* se starým zněním (BEFESTIGUNG … / SHAFT STRUCTURE FIXING …); pokud ano, smažte ho a slovník znovu zveřejněte."
             },
             {
               "text": "Ve Wordu zkontrolujte řádky se značkami `{#sachty}` a `{/sachty}` (nad ZÁKLADNÍMI PARAMETRY, pod SLOUPY NAVÍC a kolem řádku ceny šachty). Do hotového dokumentu se nikdy nedostanou — jen je nemažte a neslučujte s okolními řádky."
             },
             {
-              "text": "V **Šablonách dokumentů** u *Šablony cenové nabídky OCK* nahrajte novou českou verzi a pak doladěné **EN, DE, FR** (ne *Vyrobit z češtiny* — nástroj je už přeložil). Tisk vyzkoušejte na testovacím webu se zapnutou funkcí: s jednou šachtou musí nabídka vyjít jako dřív.",
+              "text": "V **Šablonách dokumentů** u *Šablony cenové nabídky OCK* nahrajte novou českou verzi a pak **EN, DE, FR** z nástroje (ne *Vyrobit z češtiny* — strojový překlad by ztratil ruční znění v16), všechny čtyři najednou, v testu i v ostré verzi naráz. Tisk vyzkoušejte na testovacím webu se zapnutou funkcí: s jednou šachtou musí nabídka vyjít jako dřív.",
               "snimek": "a-sablony-dokumenty",
               "klik": {
                 "obsahuje": "Nahrát novou českou verzi…"
@@ -710,7 +713,7 @@
         },
         {
           "typ": "text",
-          "text": "Když nová verze aplikace přidá do ceníku buňky (například **cena můstků podle rozměru**: referenční šířka, sazba a hodiny montáže můstků), platí pro **zveřejněný** ceník až po jeho dalším zveřejnění. Zveřejnění starý ceník samo **migruje** (doplní nové buňky výchozími hodnotami a ponechá, co jste vyplnili) a dialog změny je vypíše. **Po nasazení takové verze proto ceník jednou zveřejněte** — do té doby se počítá postaru (u můstků paušálem). Zamčené varianty a ceník zveřejněný před změnou počítají dál postaru. Které verze migraci potřebují, říká CHANGELOG (hledejte „Po nasazení je potřeba ceník jednou zveřejnit“)."
+          "text": "Když nová verze aplikace přidá do ceníku buňky (například **cena můstků podle rozměru**: referenční šířka, sazba a hodiny montáže můstků), platí pro **zveřejněný** ceník až po jeho dalším zveřejnění. **Kontrola ceníku můstků při zveřejnění** (K40a, 11. 11. 2026): referenční šířka mimo rozsah **500–5 000 mm** (typicky zadaná v metrech — 2 místo 2 000, můstek by vyšel tisíckrát dražší) a nulová sazba montáže můstků v **zahraniční řadě** (zahraniční montáž 0 bez vlastní sazby montáže můstků) se zveřejní jen po potvrzení v dialogu — stejně jako nulová cena můstku; hodnota se nemění. Zveřejnění starý ceník samo **migruje** (doplní nové buňky výchozími hodnotami a ponechá, co jste vyplnili) a dialog změny je vypíše. **Po nasazení takové verze proto ceník jednou zveřejněte** — do té doby se počítá postaru (u můstků paušálem). Zamčené varianty a ceník zveřejněný před změnou počítají dál postaru. Které verze migraci potřebují, říká CHANGELOG (hledejte „Po nasazení je potřeba ceník jednou zveřejnit“)."
         },
         {
           "typ": "ram",

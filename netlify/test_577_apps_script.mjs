@@ -21,6 +21,8 @@
  *   S8  běh přes limit 4,5 min: navázání spouštěčem kopieDiskPokracuj
  *   S9  druhá konfigurace (testovací web), prostředí nesedí, chybí token
  *   S10 spouštěč jednou, token nikde v e-mailech, záznamech ani logu
+ *   S12 podvržená „budoucí" kopie: srovnává se s poslední skutečně předchozí,
+ *       budoucí jméno se ohlásí (hlášení + e-mail) a nesmaže (K40-X4, B205)
  * Pojistka: na 59c56b3 spadne (functions/zaloha_disk.mjs ani skript nejsou).
  * Spuštění: node netlify/test_577_apps_script.mjs */
 import { Worker, isMainThread, workerData, parentPort } from 'node:worker_threads';
@@ -356,6 +358,36 @@ if (!isMainThread) {
     const k11 = naDisku(new RegExp('^otisk_main_' + D(6)));
     test('S11 po přesunu do koše se kopie nahraje znovu a potvrdí', !v.chyby.length && k11.length === 1 && zaznamServeru(SM).otisk === D(6)
       && zaznamServeru(SM).sha256 === createHash('sha256').update(k11[0].data).digest('hex'), v);
+    /* ---------- S12 (K40-X4, B205): podvržená „budoucí" kopie ve sdílené složce ----------
+     * Velký soubor s datem za 40 dní: do K40a ho skript vzal jako srovnávací
+     * (abecedně poslední) → falešný úbytek, varování na serveru, mazání stojí. */
+    rpc(SM, { typ: 'smaz', ul: 'zalohy', klic: 'retence-varovani' });   // úbytek z S11 „potvrzen“
+    const nejvetsi = Math.max(...naDisku(/^otisk_main_/).map(f => f.data.length));
+    const budouci = pridejSoubor('otisk_main_' + D(40) + '_0310.json.gz', randomBytes(nejvetsi * 3));
+    rpc(SM, { typ: 'otisk', den: D(7), zakazek: 6, velikost: 100000 });
+    const emailyPredS12 = pocetEmailu();
+    v = beh();
+    const var12 = rpc(SM, { typ: 'cti', ul: 'zalohy', klic: 'retence-varovani' }).meta.hodnota;
+    test('S12 budoucí kopie: srovná se s poslední skutečně předchozí — žádný falešný úbytek ani varování na serveru',
+      !v.chyby.length && !var12 && naDisku(new RegExp('^otisk_main_' + D(7))).length === 1 && !/méně dat/.test(v.hlaseni.join()), { v, var12 });
+    const posledniEmail = zaznam.emaily[zaznam.emaily.length - 1] || {};
+    test('S12 budoucí kopie se ohlásí jako podezřelá (hlášení i e-mail „Upozornění") a nesmaže se',
+      !budouci.trashed && /budoucím datem/.test(v.hlaseni.join()) && pocetEmailu() === emailyPredS12 + 1
+      && /Upozornění/.test(posledniEmail.predmet || '') && posledniEmail.text.includes(budouci.name), { v, e: posledniEmail });
+    budouci.trashed = true;                                      // správce podle e-mailu smaže
+    /* ---------- S13 (revize K40a D2): den kopie nejde určit → úklid nemaže a připomene ----------
+     * kngUklid_ přímo nad složkou v paměti; dřív se srovnání tiše přeskočilo a mazalo se dál. */
+    {
+      const kos = [];
+      const soubory = ['otisk_main_2026-01-05_0310.json.gz', 'otisk_main_2026-03-01_0310.json.gz', 'otisk_main_2026-10-27_0310.json.gz']
+        .map(j => ({ getName: () => j, isTrashed: () => false, setTrashed: () => kos.push(j), getId: () => j, getSize: () => 10 }));
+      const sl = { getName: () => '_Zaloha Netlify DB', getFiles: () => { let i = 0; return { hasNext: () => i < soubory.length, next: () => soubory[i++] }; } };
+      let u13, chyba13 = null;
+      try { u13 = ctx.kngUklid_({ prostredi: 'main' }, sl, { soubor: 'otisk_main_2026-10-27_0310.json.gz', otisk: '2026-1-27', velikostDatB: 10 },
+        { retence: {}, kopieDisk: { kdy: new Date(Date.now()).toISOString() } }, null, null); } catch (e) { chyba13 = e.message; }
+      test('S13 neplatný den kopie: úklid nesmaže nic, řekne proč a připomene e-mailem (upozornění)',
+        !chyba13 && kos.length === 0 && /den kopie nejde určit/.test(u13 && u13.text || '') && /den kopie nejde určit/.test(u13 && u13.upozorneni || ''), { u13, chyba13, kos });
+    }
     const pocetPredS9 = pocetEmailu();
 
     /* ---------- S9: testovací web, nesedící prostředí, chybějící token ---------- */

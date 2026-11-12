@@ -40,16 +40,17 @@ import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 const KOREN = fileURLToPath(new URL('.', import.meta.url));
 
-import { najdiPodklad, preskoc, negativniKontrola, negativniNalezy } from './nastroje/harness_podklady.mjs';
+import { najdiSablonu, preskoc, negativniKontrola, negativniNalezy } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
 const { zipPrecti } = require(KOREN + 'src/docxgen.js');
 
-const KDE_SABLONA = [
-  '/home/claude/work/sablona_proj/Sablona_NABIDKA_PROJ.docx',
-  '/home/claude/work/deliver/Sablona_NABIDKA_PROJ.docx',
-];
-const sablona = najdiPodklad('Sablona_NABIDKA_PROJ.docx', KDE_SABLONA);
-if (!sablona) preskoc('šablona Sablona_NABIDKA_PROJ.docx', KDE_SABLONA.concat('$KNG_PODKLADY'));
+/* K40-T1: šablona s NEJVYŠŠÍ verzí (Sablona_NABIDKA_PROJ_v<číslo>.docx, na Disku
+ * verzované), jinak jméno bez čísla — nikde pevné číslo verze. */
+const KDE_SABLONA = ['/home/claude/work/sablona_proj', '/home/claude/work/deliver'];
+const nalezSablony = najdiSablonu('Sablona_NABIDKA_PROJ', KDE_SABLONA);
+const sablona = nalezSablony ? nalezSablony.cesta : null;
+if (!sablona) preskoc('šablona Sablona_NABIDKA_PROJ[_v<číslo>].docx (bere se nejvyšší verze)', KDE_SABLONA.concat('$KNG_PODKLADY'));
+console.log('Šablona: ' + sablona);
 
 const KDE = new URL('dist/kalkulacka.html', import.meta.url).href;
 let ok = 0, fail = 0;

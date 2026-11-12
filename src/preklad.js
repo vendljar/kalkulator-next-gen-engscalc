@@ -190,8 +190,8 @@ const PREKLAD = {
   "ULOŽENÍ KONSTRUKCE": ["SHAFT STRUCTURE BASE", "BASIS DER SCHACHTSTAHLKONSTRUKTION", "BASE DE LA STRUCTURE DE LA GAINE"],
   "UMÍSTĚNÍ VÝTAHOVÉHO STROJE": ["LIFT MACHINE LOCATION", "STANDORT DER AUFZUGSMASCHINE", "EMPLACEMENT DE LA MACHINE D’ASCENSEUR"],
   "UMÍSTĚNÍ ŠACHTY": ["SHAFT LOCATION", "STANDORT DES SCHACHTGERÜSTS", "EMPLACEMENT DE LA GAINE"],
-  "USAZENÍ OCK - BOČNÍ STĚNY": ["SHAFT STRUCTURE FIXING - SIDE WALLS", "BEFESTIGUNG DES SCHACHTGERÜSTS - SEITENWÄNDE", "Fixation de la structure de gaine - parois latérales"],
-  "USAZENÍ OCK - ČELNÍ STĚNA": ["SHAFT STRUCTURE FIXING - FRONT WALL", "BEFESTIGUNG DES SCHACHTGERÜSTS - VORDERWAND", "Fixation de la structure de gaine - paroi avant"],
+  "USAZENÍ OCK - BOČNÍ STĚNY": ["SHAFT STRUCTURE POSITION – SIDE WALLS", "POSITIONIERUNG DER SCHACHTKONSTRUKTION – SEITENWÄNDE", "Fixation de la structure de gaine - parois latérales"],
+  "USAZENÍ OCK - ČELNÍ STĚNA": ["SHAFT STRUCTURE POSITION – FRONT WALL", "POSITIONIERUNG DER SCHACHTKONSTRUKTION – VORDERWAND", "Fixation de la structure de gaine - paroi avant"],
   "VODOROVNÉ NOSNÉ PRVKY": ["HORIZONTAL STRUCTURE ELEMENTS", "HORIZONTALRIEGEL", "ÉLÉMENTS PORTEURS HORIZONTAUX"],
   "VZHLED KOTVENÍ ZASKLENÍ": ["CLADDING FIXING ELEMENT", "VERKLEIDUNGSBEFESTIGUNGSELEMENT", "ÉLÉMENT DE FIXATION DE L’HABILLAGE"],
   "VÝSTUP ZE ZAMĚŘENÍ PRO OBJEDNATELE": ["SITE SURVEY OUTPUT FOR CUSTOMER","AUSGABE DES LAGEPLANS FÜR DEN KUNDEN","LIVRABLE DU RELEVÉ POUR LE CLIENT"],
@@ -396,7 +396,7 @@ const PREKLAD = {
   "TYP KONSTRUKCE": ["SHAFT STRUCTURE TYPE", "SCHACHTSTAHLKONSTRUKTION TYP", "TYPE DE STRUCTURE DE GAINE"],
   "Ulice orientační/popisné, Město": ["Street name, bldg nr, town, Germany","Straßenname, Hausnummer, Ort, Deutschland","Rue et numéro, Ville"],
   "UMÍSTĚNÍ OPLÁŠTĚNÍ": ["CLADDING POSITION", "POSITION DER VERKLEIDUNG", "POSITION DE L’HABILLAGE"],
-  "USAZENÍ ZADNÍ STĚNY OCK": ["SHAFT STRUCTURE FIXING - REAR WALL", "BEFESTIGUNG DES SCHACHTGERÜSTS - RÜCKWAND", "Fixation de la structure de gaine - paroi arrière"],
+  "USAZENÍ ZADNÍ STĚNY OCK": ["SHAFT STRUCTURE POSITION – REAR WALL", "POSITIONIERUNG DER SCHACHTKONSTRUKTION – RÜCKWAND", "Fixation de la structure de gaine - paroi arrière"],
   "USKLADNĚNÍ MATERIÁLU Z DŮVODU OPOŽDĚNÍ MONTÁŽE": ["MATERIAL STORAGE DUE TO INSTALLATION DELAYS", "MATERIALLAGERUNG AUFGRUND VON MONTAGEVERZÖGERUNGEN", "STOCKAGE DU MATÉRIEL EN CAS DE RETARD DU MONTAGE"],
   "VENTILÁTOR S ČIDLEM A TERMOSTATEM": ["FAN WITH SENSOR AND THERMOSTAT", "VENTILATOR MIT SENSOR UND THERMOSTAT", "VENTILATEUR AVEC CAPTEUR ET THERMOSTAT"],
   "VNITŘNÍ LEŠENÍ PRO MONTÁŽ OCK": ["INSTALLATION SCAFFOLDING - INSIDE SHAFT", "EINBAUGERÜST - INNERHALB DES SCHACHTS", "ÉCHAFAUDAGE DE MONTAGE – À L’INTÉRIEUR DE LA GAINE"],
@@ -664,7 +664,7 @@ const PREKLAD = {
   "USAZENÍ OCK – PRAVÁ BOČNÍ STĚNA": ["SHAFT STRUCTURE POSITION – RIGHT SIDE WALL","POSITIONIERUNG DER SCHACHTKONSTRUKTION – RECHTE SEITENWAND","FIXATION DE LA STRUCTURE DE GAINE – PAROI LATÉRALE DROITE"],
   "levá": ["left","links","gauche"],
   "pravá": ["right","rechts","droite"],
-  "USAZENÍ OCK – ZADNÍ STĚNA": ["SHAFT STRUCTURE FIXING - REAR WALL","BEFESTIGUNG DES SCHACHTGERÜSTS - RÜCKWAND","FIXATION DE LA STRUCTURE DE GAINE – PAROI ARRIÈRE"],
+  "USAZENÍ OCK – ZADNÍ STĚNA": ["SHAFT STRUCTURE POSITION – REAR WALL","POSITIONIERUNG DER SCHACHTKONSTRUKTION – RÜCKWAND","FIXATION DE LA STRUCTURE DE GAINE – PAROI ARRIÈRE"],
   "v exteriéru, přisazena k fasádě přes nástupní můstky + podchozí nosná OCK": ["Outdoor, attached to the facade via access bridges + supporting structure with a walk-through space beneath","Im Außenbereich, über Zugangsbrücken an die Fassade angebaut + Stützkonstruktion mit Durchgang darunter","À l'extérieur, accolée à la façade par des passerelles d'accès + structure porteuse avec passage en dessous"],
   "v exteriéru, přisazena k fasádě přes nástupní můstky": ["Outdoor, attached to the facade via access bridges","Im Außenbereich, über Zugangsbrücken an die Fassade angebaut","À l'extérieur, accolée à la façade par des passerelles d'accès"],
   "v exteriéru, přisazena k fasádě, umístěna na podchozí nosné OCK": ["Outdoor, attached to the facade, placed on a supporting structure with a walk-through space beneath","Im Außenbereich, an die Fassade angebaut, auf einer Stützkonstruktion mit Durchgang darunter","À l'extérieur, accolée à la façade, posée sur une structure porteuse avec passage en dessous"],
@@ -1322,15 +1322,17 @@ const PREKLAD = {
 /* ---- normalizace klíče (tolerance k mezerám, diakritickým uvozovkám,
  *      koncové dvojtečce/hvězdičce a velikosti písmen) ---- */
 function prekladNorm(s) {
-  return String(s == null ? '' : s)
+  const t = String(s == null ? '' : s)
     .replace(/\u00a0/g, ' ')
     .replace(/[\u2013\u2014]/g, '-')
     .replace(/[\u201e\u201c\u201d]/g, '"')
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/[\s:.*]+$/, '')
-    .toLowerCase();
+    .trim();
+  /* Konec smy\u010dkou, ne v\u00fdrazem `/[\s:.*]+$/` (K40-X2 \u2014 nad dlouh\u00fdm textem
+   * kvadratick\u00fd \u010das; orezKonce ve format.js). */
+  const orez = typeof orezKonce === 'function' ? orezKonce : require('./format.js').orezKonce;
+  return orez(t, /[\s:.*]/).toLowerCase();
 }
 
 /* rejstřík normalizovaný klíč → [EN, DE, FR] (staví se jednou při načtení).

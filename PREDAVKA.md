@@ -1,6 +1,6 @@
 # Předávka — 12. 11. 2026: C5 #585 — nástroj obnovy testovací sady zakázek TEST, větev `claude/c5-test-sada`
 
-Nad `aa445a1` (integrace = test v11.11.1). **v12.11.1** (koordinace přečísluje). Do `test-draft`, `test`, `main`
+Nad `aa445a1` (integrace = test v11.11.1). **v12.11.4** (koordinace přečísluje; po sloučení integrace 1a08186 = v12.11.3 s K40b). Do `test-draft`, `test`, `main`
 ani integrace nic. Weby, Disk, Pipedrive nic. **Nástroj sezení proti žádnému webu nespustilo** (jen místní server
 v paměti). Kód aplikace a serveru (`src/`, `netlify/functions`, `netlify/lib`) beze změny. 11. 11. ve 14:38 sezení
 stálo na limitu účtu, 12. 11. pokračovalo ve stejném kontejneru, nic se neztratilo.
@@ -49,6 +49,119 @@ stálo na limitu účtu, 12. 11. pokračovalo ve stejném kontejneru, nic se nez
 2. Testovací sezení připraví soubor `test_sada_export_2026-11-02.json` (jen TEST zakázky z kopie z 2. 11.)
    a pošle ho J. V. jako soubor ke stažení.
 3. Otázky v závěrečné zprávě koordinaci (zamčené odmítnuté TEST zakázky, zdroj exportu).
+# Předávka — C1 #582: šablona CN v17 CZ/EN/DE/FR + jednotné nadpisy USAZENÍ OCK (DE, EN), větev `claude/c1-cn-v17`
+
+Nad `aa445a1` (integrace = test v11.11.1). **v12.11.1** (koordinace přečísluje). Do `test-draft`, `test`, `main`
+ani integrace nic; weby, Disk, Pipedrive nic. Podrobnosti a návod pro J. V.: `podklady/SABLONA_CN_V17_11_11.md`.
+
+| úkol | stav | kde |
+|---|---|---|
+| slovník DE „POSITIONIERUNG DER SCHACHTKONSTRUKTION – …“, EN „SHAFT STRUCTURE POSITION – …“ (FR beze změny) | ✅ | `src/preklad.js` (4 hesla) |
+| `--cn-usazeni` (oprava v16 DE/EN, tvrdé kontroly, idempotence) | ✅ | `nastroje/vyrob_sablony.js` `cnUsazeni`, `cnUsazeniSoubor` |
+| `--cn-v17` přímo z jazykové v16 (`cnV17(xml, L)`, `cnV17Jazyk`, kontrola v17 bez smyčky = v16) | ✅ | tamtéž; strojový překlad jen záloha s UPOZORNĚNÍM |
+| šablony CN v17 CZ/EN/DE/FR + opravená v16 DE a EN | ✅ předáno J. V. (SendUserFile) | `podklady/sablony_vystup/` (gitignore) |
+| testy | ✅ | `src/test_cn_usazeni.js` 32/0, `src/test_vs_docx_v17.js` 47/0 (+18 F), `src/test_preklad.js` (+25) |
+| zlaté otisky | ✅ přegenerováno (pokyn koordinace 12. 11.) | jen `nahled-en`; se starým EN zněním = původní JSON bajt po bajtu |
+| mutace [C1] | ✅ 8/8 | `mutace_jadro.mjs`, `--kontrola` 828/828 |
+| ověření nad firemními v16 | ✅ | jedna šachta v17 = v16 1276/1276 (319 scénářů × 4 jazyky), víc šachet 20/20 |
+| dokumentace | ✅ | příručka správce A5, CHANGELOG v12.11.1, roadmapa #582 |
+
+**Kolo `--bez-mutaci` s KNG_PODKLADY (12. 11., 34 min):** sady 425/3/6, hodiny +400 dní 342/2/1, statické 5/5.
+Selhání: `test_manual_fakta` (historie rozhodnutí v textu A5) — **opraveno** v dalším commitu (14/0);
+`test_sablona_proj_v6` (skutečná PROJ v6 z Disku) a `overit_sablona` (v12 na Disku není) padají **stejně nad
+bází aa445a1** se stejnými podklady — nesouvisí s dávkou. Mutace celé pouští koordinace při slučování.
+
+**Čeká na J. V.:** kontrola slovníku (Nastavení → Slovník, přepisy hesel USAZENÍ OCK), nahrát opravenou v16 DE/EN
+a v17 všech čtyř jazyků v testu i main naráz; otázky: „VÝTAHOVÁ ŠACHTA“ → „shaft“ v online cizojazyčné nabídce
+(změnit heslo?), sjednotit i FR nadpisy usazení? Zdrojové v16 na Disku upravené 10. 11. 2026 13:52 UTC — potvrdit,
+že jsou totožné se zveřejněnými.
+
+---
+# Předávka — K40b #580: dolní mez data prodeje z razítka přijetí zámku (K40-S1, K40-N3), diagnostika rozdílu zámku (K40-S2), větev `claude/k40b`
+
+Nad `c664c9e` (integrace v11.11.1). **v11.11.2** (koordinace přečísluje — souběžně K40a #579). Do `test-draft`, `test`
+ani `main` nic; weby, Disk, Pipedrive nic. Zadání: `podklady/PROMPT_K40_OPRAVY.md` + `…_v2.md` (přednost, bod F a D)
++ `K40_POSUDEK_FABLE.md` ve větvi `claude/k40-posudek`; rozhodnutí J. V. 11. 11. 2026: 3a, 4a. Revizi před sloučením
+dělá poradce Fable.
+
+| úkol | stav | kde / poznámka |
+|---|---|---|
+| S1: razítko `zamek.prijato` píše jen server (nový zámek, příchozí zahodí) | ✅ | `netlify/lib/zakazka_kontrola.mjs` (příjem nového zámku, `tedServer`) |
+| S1: mimo klíč zámku, držet přes `uloZamekRazitkaDrz` | ✅ | `src/uloziste.js` (seznam + `prijato`); `uloZamekKlic` beze změny → starší klient bez 409 |
+| S1: pořadí `prodServer` × `uloZamekRazitkaDrz` | ✅ | `prodServer` bere razítko z uložené verze, u nového zámku čas serveru (`ctx.kdy`), nikdy z příchozích dat |
+| S1: `prodJedinaZmena` vynechá `zamek.prijato` | ✅ | `src/objednane.js` |
+| S1: odpověď uložení `zamkyPrijato`, prohlížeč dopíše | ✅ | `functions/zakazky.mjs`; `ui/online_ui.js` `onlinePrijatoZeServeru` (i do „naposledy uloženo“ při změně během letu) |
+| S1: mez `max(den(kdy), den(prijato − 7))`, jedna funkce klient i server | ✅ | `prodDatumMez`, `PROD_PRIJATO_TOLERANCE_DNI`; karta Prodej (`ui/sod_ui.js`) min/titulek z téže funkce |
+| S1: výjimka vedoucí/admin s důvodem → `prodejHistorie` | ✅ | `v.prodano.vyjimka` (dotaz v kartě), `prodVyjimkaText` (řídicí znaky, strop 500), server zahodí pole z prodeje; pod den odeslání nikdo |
+| N3: mez nejvýš dnes | ✅ | `prodDatumMez` |
+| obnova: otisk přebírá, soubor zahodí (3a) | ✅ | `zakazka_kontrola.mjs` (obnova nového zámku), `prodServer` (obnova → bez času serveru, mez z `kdy`) |
+| S2: kanonizace jednou | ✅ | `src/zamek.js` `zamekDataRozdilCesta`; výstup = referenční kopie (3 000 párů, 10 šachet) |
+| meze B206–B207 | ✅ | `BEZPECNOST_MEZE.md` oddíl „K40b #580“ (B207 = 4a jen zapsáno) |
+| příručka | ✅ | `manual/obsah.json` karta Prodej |
+| testy s pojistkou | ✅ | `src/test_k40b_zamek_prodej.js` 50/0, `netlify/test_k40b_prodej_mez.mjs` 31/0 — nad c664c9e padají |
+| zlaté sady | ✅ | VS 319/319, můstky (`test_560_mustky_sekce.js`) 228/0 — otisky beze změny, nepřegenerováno |
+| mutace | ✅ | [K40b] server 12/12, jádro 3/3; posunutá zadání (K37-N4 ×3, rev #401 N1, K7-S2, B105, K7-K1 ×2) chycená; `--kontrola` obou sad OK; **celé jádro po částech (N = 4) 823/823** (206/206/206/205, worktree nad `dc3efcd`) |
+| kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | 428/0/7 (přeskočené jen firemní podklady), +400 dní 345/0/1, statické |
+| CHANGELOG, roadmapa #580, verze | ✅ | v11.11.2; `roadmapa.py --kontrola` 580 položek bez nálezu |
+
+**Otevřené body / pro revizi:**
+1. Výjimka smí jít jen do dne odeslání (`tvrda`), ne níž — výklad zadání („datum pod mezí smí zapsat vedoucí…“)
+   s pojistkou K37-N4; kdyby J. V. chtěl výjimku i pod den odeslání, je to jedna podmínka v `prodDatumProblem`.
+2. Obnova ze souboru: je-li tentýž zámek už v databázi, zůstane razítko z databáze (`uloZamekRazitkaDrz`); ze souboru se
+   nikdy nečte.
+3. Klient bez razítka (před první odpovědí) má volnější `min` u pole data; server pak vrátí 400 s hláškou — v pořádku podle v2.
+4. B207 (období odeslání v controllingu z `zamek.kdy`) — jen zapsáno; přechod na `prijato` = otázka 4b, samostatná položka.
+5. K40-S4 (`ADMIN_EMAIL` bez výchozí hodnoty v `test_555*`) řeší K40a — samostatně tyto sady bez proměnné padají.
+# Předávka — K40a #579: opravy po revizi Fable (verdikt „sloučit po opravě“), v12.11.1, větev `claude/k40a`
+
+| bod revize | stav | kde |
+|---|---|---|
+| D1 import zamčené varianty nemigruje sklo šachet 2+ | ✅ | `skloMigraceNazvu(d, { jenPrvni })`, `importZakazka`; nezamčená migruje jako šachta 1 od K37; mez B205a; test 7b v `test_k40_celni_sklo.js` 75/0 (ed98942: 3 FAIL) |
+| D2 neplatný den kopie → úklid nemaže | ✅ | `retenceZalohDiskPredchozi` → `neplatnyDen`; prohlížeč i `kopie_disk.gs` (skript připomene e-mailem); `test_z2_disk_retence` 59/0 (3 FAIL), `test_577_apps_script` S13 34/0 (1 FAIL) |
+| D3 zbytková mez B205 (minulý den + pozdější čas) | ✅ | `BEZPECNOST_MEZE.md` |
+| D4 test_funkce dvojí import, mrtvá větev | ✅ | modul nastaví `KNG_ADMIN_EMAIL_VYCHOZI=1`; 304/0 s i bez ADMIN_EMAIL |
+| D5 sirotek čelního skla tam a zpět | ✅ jen mez | B205b, CHANGELOG |
+| D6 hláška šířky z konstant | ✅ | `mustekMmText`; `test_k40_mustky_cenik` 31/0 (1 FAIL) |
+| D7 escJs u bind | ✅ | `kryci_proj_ui.js` i `kryci_ui.js` (2 místa, hlídač našel i OCK); `bind` v RIZIKO; `test_escape` 42/0 (2 FAIL) |
+| mutace | ✅ | jádro [K40a] 22/22, server [K40a] 13/13, úklid 22/22; `--kontrola` 842 / 1400 |
+| zlatá sada | ✅ | 319/319, můstky 228/0 |
+| kolo `--bez-mutaci` nad v12.11.1 | ✅ VŠE ZELENÉ | 433/0/7, +400 dní 350/0/1, statické 5/5 |
+| otázka 6, Apps Script | — | otázka 6 se nedělá; `kopie_disk.gs` vloží J. V. až po sloučení do `test` |
+
+# Předávka — K40a #579 (meze B199–B205): opravy z posudku K40 — sklo víc šachet, můstky, ořez řetězců, CSV, escJs, retence Disku, harnessy; větev `claude/k40a`
+
+Nad `c664c9e` (integrace `claude/integrace-16-10` v11.11.1; před koncem ověřeno, že se nepohnula). **v11.11.2.** Do `test-draft`, `test`
+ani `main` nic; weby, Disk, Pipedrive nic. Paralelně K40b (S1+N3, S2 — zamek.js, zakazka_kontrola, prodej): jejích souborů jsem se nedotkl.
+Podklad: `podklady/K40_POSUDEK_FABLE.md` + `PROMPT_K40_OPRAVY_v2.md` (větev `claude/k40-posudek`), rozhodnutí J. V. 11. 11.
+
+| bod | stav | kde / poznámka |
+|---|---|---|
+| krok 0 — trvají nálezy? | ✅ | vše trvá kromě T2 (opraveno už FL #576) |
+| N1 — čelní sklo přejmenovat jen při skutečném přepnutí (import beze změny) | ✅ | `common.js` `set()` předá `predCelni` jen u `Z.typSachty`/`Z.zaskleni`; `engine.js` `skloMigraceZadani` přesná dvojice; rozhodnutí 2a (převzít vše jako K37), 1a (staré osiřelé nechat) |
+| skloMigrace pro šachty 2+ (nový nález) | ✅ | `skloMigraceNazvu` iteruje i `ock.dalsi[].zadani`; test `test_k40_celni_sklo.js` 68/0 (na c664c9e 27 FAIL) |
+| N2 — referenční šířka můstku 500–5 000 mm (8a) | ✅ | `MUSTEK_REF_SIRKA_MIN/MAX_MM`, `mustkyCenikKontrola` obal; `test_k40_mustky_cenik.js` 30/0 (16 FAIL) |
+| N5 — kontrola zahraniční řady můstků (dialog i server) | ✅ | `cenik_rady.js` `mustkyCenikKontrolaZahr`, `program_ui.js`, `program.mjs`; `netlify/test_k40_mustky_program.mjs` 12/0 (4 FAIL) |
+| N4 — sazba DPH PROJ u starší zakázky | ✅ komentář | chování beze změny (rozhodnutí 4. 11.), opraven komentář; `test_k40_dph_proj.js` 6/0 (1 FAIL) |
+| X1/X2 — ořez konců bez regexu s kotvou (ReDoS) | ✅ | `format.js` `orezKonce`, `nazvy_souboru.js` (strop 200), `preklad.js`, `plan_plateb.js`, `slovnik.js`; `test_k40_orez_konce.js` 17/0 (6 FAIL) |
+| X5 — záložní buňka CSV s ochranou vzorců | ✅ | `slovnik.js`, `pd_nanecisto.js` (require `format.js` `csvBunka`); `test_k40_csv_bunka.js` 23/0 (10 FAIL) |
+| X6 — escJs u `path`/`cesta` v onclick/onchange | ✅ | `common.js`, `cenik_ui.js` 18 míst; `test_escape.js` 42/0 (2 FAIL) |
+| X4 — retence Disku: budoucí kopie nesrovnávat, hlásit (7a, i AS skript) | ✅ | `retence_zaloh.js` `retenceZalohDiskPredchozi`, `online_ui.js` `kopieDiskUklid(Text)`, `kopie_disk.gs` (`vloz_retenci.py --kontrola` aktuální); testy `test_z2_disk_retence.js` 56/0 (3 FAIL), `test_577_apps_script.mjs` 33/0 (2 FAIL) |
+| S4 — ADMIN_EMAIL v netlify testech | ✅ | `netlify/pomoc_test_admin.mjs` importovaný jako první ve 12 testech |
+| T1/T3 — harnessy šablon s nejvyšší verzí | ✅ kód / ⬜ ověření | `harness_podklady.mjs` `najdiSablonu`; `overit_nabidka_proj_word`, `overit_sablony_online`, `overit_sod`; **bez šablon z Disku se přeskočí (kód 4) — ověřit s `KNG_PODKLADY`** |
+| P1 — meze přečíslovat (B176–B179 kolidovaly) | ✅ | #553 → B199–B202; `test_meze_cisla.js` 6/0 (4 FAIL) |
+| meze X3/S3/X4 | ✅ | `BEZPECNOST_MEZE.md` B203 (X3), B204 (S3), B205 (X4) |
+| otázka 6 — šířka skupiny můstků v metrech | ⬜ nedělal | v2: „nedělej bez pokynu J. V.“ (J. V. řekl 6a — jen varování pod 300 mm; čeká na potvrzení, že se má dělat v K40a) |
+| otázka 3a, 4a | → K40b | |
+| webhook K40c | ⬜ dle pokynu | |
+| zlatá sada víc šachet / můstky | ✅ | 319/319, `test_560_mustky_sekce.js` 228/0 — otisky beze změny |
+| mutace [K40a] | ✅ | jádro **19/19**, server **9/9** (X5/X6 nejdřív NECHYCENÉ — sady chyběly v SADY, doplněno); překotvené staré: jádro K37, server #577/#552/#523/#527 (úklid 22/22, #577 1/1, #552 1/1); `--kontrola` jádro 839, server 1396 |
+| kolo `--bez-mutaci` nad v11.11.2 | ✅ VŠE ZELENÉ | sady 433/0/7, +400 dní 350/0/1, statické 5/5 (33 min); přeskočeno 7 — test.js a 6 harnessů bez KNG_PODKLADY |
+| CHANGELOG, roadmapa #579, manuály | ✅ | v11.11.2; `roadmapa.py --kontrola` 580 OK |
+
+**Pro J. V.:**
+1. **Vložit nový `nastroje/apps_script/kopie_disk.gs` do Apps Scriptu** (postup `podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`) — X4 je ve skriptu.
+2. Ověřit harnessy šablon s podklady: `KNG_PODKLADY=… node overit_nabidka_proj_word.mjs`, `overit_sablony_online.mjs`, `overit_sod.mjs`.
+3. Otázka 6 (šířka skupiny můstků) — potvrdit, zda dělat.
 
 # Předávka — VS-E6 #570 (#596): závěr víc šachet — překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi po částech, větev `claude/vs-e6`
 
@@ -692,8 +805,10 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 11. 11. 2026: stav integrace v11.11.1
+# Předávka koordinace — 12. 11. 2026: stav integrace v12.11.3
 
+- **12. 11. 2026 — integrace v12.11.3** = test v11.11.1 + K40a #579 (v12.11.1, po revizi Fable D1–D7) + K40b #580 (v12.11.2, revize SLOUČIT) + C1 #582 (v12.11.3, revize LZE SLOUČIT). Main = test = v11.11.1 (6c4bc80, na pokyn J. V. 11. 11.). J. V. 11. 11.: do testu slučovat dál samostatně po zeleném kole. Běží C2+C3 (#583/#584), C5 (#585), VSD (#586/#587); K40c (#581) se spouští teď podle podklady/PROMPT_K40_OPRAVY_v3.md (claude/k40-posudek 1c6dfc3, rozhodnutí J. V. 11. 11.: varianta b, ARES, autor+admin, DIČ přeskočit, shoda IČO). Návrh víc zákazníků: claude/vz-navrh e0e007d, prototyp https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V — 4 otázky J. V. otevřené, programovat po K40c. 11. 11. 14:38 zastavil všechna paralelní sezení 5h limit účtu — pouštět nejvýš ~4 souběžně.
+- **Rozhodnutí J. V. 11. 11.:** EN nadpisy USAZENÍ OCK sjednotit („SHAFT STRUCTURE POSITION – …“, C1); tečky i v plné moci (C2+C3); seznam šachet do Pipedrive jako jedna přepisovaná poznámka u dealu (VSD); TEST sada ze souboru testovacího sezení (C5). Koordinace: u nezamčené varianty víc šachet migruje import sklo šachet 2+ jako šachty 1 (B205a), zamčená se nemění.
 - **Prompt po kole 47 (J. V. 11. 11. 2026, `podklady/PROMPT_RIDICI_SEZENI_PO_KOLE47.md`) — odpovědi J. V. B1–B10 (oddíl B0):**
   1. Víc šachet na ostrém zatím NE (main vypnuto, rozhodne se po ruční zkoušce na testu).
   2. CN v17: sezení vyrobí CZ + EN/DE/FR a vypíše nepřeložené texty; J. V. zkontroluje a zveřejní v testu i main naráz.
