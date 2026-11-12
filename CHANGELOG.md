@@ -8,6 +8,42 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.11.1 — C5 #585: nástroj obnovy testovací sady zakázek TEST do testovací databáze, větev claude/c5-test-sada
+
+Nad `aa445a1` (integrace = test v11.11.1). Verzi přečísluje koordinace. **Kód aplikace a serveru se nemění.**
+Rozhodnutí J. V. B0.9 (11. 11. 2026): TEST zakázky kol K28/K29/K36, které od 2.–3. 11. chybí v testovací databázi
+(K39-I1), obnoví sám nástrojem. Před sloučením revize poradce (Fable) nad celým diffem. Nástroj se nikomu nedává
+ke spuštění před revizí. Na webech, Disku ani v Pipedrive nic. Sezení nástroj proti žádnému webu nespustilo.
+
+- **Nové:** `nastroje/test_sada_obnov.mjs` (obal: přepínače, soubor .json/.json.gz, klávesnice) a
+  `nastroje/test_sada_jadro.mjs` (rozhodování v čistých funkcích, `fetch` se předává). Ze souboru exportu
+  (`--export`, soubor od testovacího sezení) nebo z kopie zálohy z Disku (`--zaloha`, vybere jen TEST) založí
+  zakázky `TEST - …` přes `POST /api/zakazky` jako administrátor. Návod pro J. V.:
+  `podklady/NAVOD_TEST_SADA_OBNOVA.md`.
+- **Pojistky (meze B215–B216):**
+  - Cíl jen `https://testengscalc.netlify.app` a místní adresy. Ostrý web (sdílená `pdSimulatorOstryWeb`
+    a `schaftscalc`) odmítne dřív, než se zeptá na heslo.
+  - `/api/zdravi` musí hlásit `test` před přihlášením, po něm a těsně před zápisem. Přesměrování nenásleduje.
+  - Jen role Administrátor a jen pět dvojic metoda + cesta.
+  - Jen zakázky, jejichž číslo, čísla variant, zámků a PROJ začínají `TEST`. Jediná cizí zakázka
+    v exportu znamená, že se nezapíše nic.
+  - Výchozí běh je náhled. Zapisuje až po `--zapsat` a napsaném `OBNOVIT`.
+  - Existující zakázku přeskočí. Vždy posílá `ocekavaneRazitko: ''`, nikdy `prepsat`. Strop 4 MB hlídá předem.
+  - Po zápisu zakázku přečte zpět a porovná číslo, varianty, zámky (číslo, typ, čas) a kanonický otisk dat
+    variant. Data nemění.
+  - Výpis nese jen čísla, počty a stav.
+- **Zjištění P5 (místní server):** odeslaná, prodaná, s tiskem SoD i víc šachet (se zapnutou funkcí) projdou
+  beze změny. Zámek a autor z exportu zůstanou. Server razí jen `sleva.role` z relace, nástroj ho vědomě
+  nepočítá za rozdíl.
+  - Starý zámek bez značky „číslo z papíru“ (před #320) server běžným uložením odmítne (409). Nástroj ho jen
+    vypíše.
+  - Víc šachet s vypnutou funkcí: 409, vypíše se.
+  - Odhlášení nástroje ruší všechny relace účtu (B6), tedy i přihlášení v prohlížeči. Stojí v návodu.
+- **Testy:** `netlify/test_c5_test_sada.mjs` 121/0. Proti skutečným serverovým funkcím nad pamětí ověřuje
+  cíl, zdraví, roli, jen TEST, náhled, nic se nepřepíše (i souběh 409), zámky, prodej, SoD, víc šachet,
+  volání, výpis a obal z příkazové řádky proti místnímu HTTP serveru. Mutace „[C5]“ 23 v `netlify/mutace.mjs`,
+  sada v `SADY`. `.gitignore`: `test_sada_*.json*`, `otisk_*.json*`.
+
 ## v11.11.1 — VS-E6 #570: víc šachet v nabídce — závěr: překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi (#596; #570 hotovo), větev claude/vs-e6
 
 Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Verzi přečísluje koordinace.

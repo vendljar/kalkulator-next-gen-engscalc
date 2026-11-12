@@ -175,6 +175,7 @@ async function spust(o) {
   });
   return Object.assign(r, { volani: VOLANI.slice(), vystup: VYSTUP.join('\n'), hesloDotaz: HESLO_DOTAZ });
 }
+const kanonTela = (z) => J.kanon(z);
 const zapisu = (r) => r.volani.filter(v => v.metoda === 'POST' && v.cesta === '/api/zakazky').length;
 const prihlaseno = (r) => r.volani.some(v => v.cesta === '/api/prihlaseni');
 const naServeru = () => [...pamet.keys()].filter(k => k.startsWith('zakazky/z/'));
@@ -336,6 +337,25 @@ console.log('===== 7) zámky a data (P5) =====');
   const r2 = await spust({ zakazky: EXPORT, zapsat: true });
   test('víc šachet s vypnutou funkcí → odmítnuto serverem s důvodem, ostatní založeny, kód 1',
     r2.kod === 1 && r2.souhrn.odmitnuto === 1 && r2.souhrn.zalozeno === 3 && /odmítnuto serverem \(409\)/.test(r2.vystup), { s: r2.souhrn, v: r2.vystup });
+  /* Prodaná varianta s vytištěnou SoD (záznam tisku v zámku) a starý zámek
+   * bez značky „číslo z papíru" (před #320, 9/2026). Číslo se přejmenuje
+   * i v zámku, aby šlo o novou zakázku. */
+  pamet.clear(); await pripravDatabazi();
+  const prejmenuj = (z, c) => { const x = kopie(z); const stare = x.cislo; x.cislo = c;
+    x.varianty.forEach(v => { if (v.zamek && v.zamek.cislo) v.zamek.cislo = v.zamek.cislo.replace(stare, c); }); return x; };
+  const sod = prejmenuj(EXPORT.find(z => J.jmenoSouboru(z) === souborC), 'TEST - 2026 - OPR - CN - 9590 - C5 SoD');
+  sod.varianty[0].zamek.tisky = (sod.varianty[0].zamek.tisky || []).concat([{ kdy: new Date().toISOString(), typ: 'sod', popis: 'SoD', kdo: 'Test C5' }]);
+  const stary = prejmenuj(EXPORT.find(z => J.jmenoSouboru(z) === souborB), 'TEST - 2026 - OPR - CN - 9591 - C5 stary');
+  delete stary.varianty[0].zamek.cisloPapir;
+  const r3 = await spust({ zakazky: [sod, stary], zapsat: true });
+  if (process.env.C5_VYPIS) console.log(r3.vystup);
+  const gS = JSON.parse(pamet.get('zakazky/z/' + J.jmenoSouboru(sod)) || 'null');
+  test('P5: prodaná varianta s tiskem SoD se založí, zámek i tisk SoD zůstaly', gS && gS.varianty[0].prodano
+    && (gS.varianty[0].zamek.tisky || []).some(t => t && t.typ === 'sod') && !J.porovnej(sod, gS).length, r3.vystup);
+  test('P5: starý zámek bez značky čísla z papíru → odmítnuto serverem (409 s důvodem), nástroj ho neupravuje',
+    r3.souhrn.odmitnuto === 1 && /odmítnuto serverem \(409\): Neuloženo: nová odeslaná/.test(r3.vystup) && r3.kod === 1
+    && !pamet.get('zakazky/z/' + J.jmenoSouboru(stary)), r3.vystup);
+  test('P5: odeslané tělo = export (nástroj data nemění)', TELA.length === 2 && kanonTela(TELA[1].zakazka) === kanonTela(stary), TELA.length);
   /* Porovnání chytí rozdíl v zámku a datech. */
   const a = kopie(EXPORT.find(z => J.jmenoSouboru(z) === souborB)), b = kopie(a);
   b.varianty[0].zamek.kdy = '2020-01-01T00:00:00.000Z';
@@ -390,6 +410,60 @@ console.log('===== 8) volání (P2) =====');
   test('výpis nese čísla a stav', EXPORT.every(z => r.vystup.includes(z.cislo)) && /založeno a ověřeno/.test(r.vystup));
   test('očištění textu serveru: e-mail a částka', J.ocistiText('uložil jan.novak@priklad.cz, cena 125 000 Kč, marže 12,5 %') === 'uložil …@…, cena … Kč, marže … %',
     J.ocistiText('uložil jan.novak@priklad.cz, cena 125 000 Kč, marže 12,5 %')); }
+
+/* ---- 10) obal z příkazové řádky (přepínače, soubor .json.gz, klávesnice) ----
+ * Místní HTTP server jen na 127.0.0.1 nad týmiž funkcemi v paměti. */
+console.log('===== 10) obal test_sada_obnov.mjs =====');
+{ const { createServer } = await import('node:http');
+  const { spawn } = await import('node:child_process');
+  const { writeFileSync, mkdtempSync, rmSync } = await import('node:fs');
+  const { gzipSync } = await import('node:zlib');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  pamet.clear(); await pripravDatabazi();
+  const srv = createServer(async (q, o) => {
+    const kusy = []; for await (const k of q) kusy.push(k);
+    const fn = FN[q.url.split('?')[0]];
+    if (!fn) { o.writeHead(404); return o.end('{}'); }
+    const odp = await fn(new Request('http://x' + q.url, { method: q.method, headers: q.headers,
+      body: ['GET', 'HEAD'].includes(q.method) ? undefined : Buffer.concat(kusy) }));
+    const h = { 'content-type': 'application/json' }; const sc = odp.headers.get('set-cookie'); if (sc) h['set-cookie'] = sc;
+    o.writeHead(odp.status, h); o.end(await odp.text());
+  });
+  await new Promise(r => srv.listen(0, '127.0.0.1', r));
+  const web = 'http://127.0.0.1:' + srv.address().port;
+  const slozka = mkdtempSync(join(tmpdir(), 'c5-'));
+  const fExport = join(slozka, 'test_sada_export.json'); writeFileSync(fExport, JSON.stringify(EXPORT));
+  const fZaloha = join(slozka, 'test_sada_otisk.json.gz'); writeFileSync(fZaloha, gzipSync(JSON.stringify(OTISK)));
+  const fCizi = join(slozka, 'test_sada_cizi.json'); writeFileSync(fCizi, JSON.stringify(Object.values(OTISK.zakazky)));
+  const obal = (args, radky) => new Promise((hotovo) => {
+    const p = spawn(process.execPath, [R + 'nastroje/test_sada_obnov.mjs', ...args], { stdio: ['pipe', 'pipe', 'pipe'] });
+    let out = ''; p.stdout.on('data', d => { out += d; }); p.stderr.on('data', d => { out += d; });
+    /* Řádky klávesnice po jednom, až nástroj vypíše otázku. */
+    const fronta = (radky || []).slice();
+    const pis = () => { if (fronta.length) p.stdin.write(fronta.shift() + '\n'); };
+    let otazek = 0;
+    const hlidej = setInterval(() => { const n = (out.match(/(E-mail administrátora|Heslo: |Napište OBNOVIT)/g) || []).length; while (otazek < n) { otazek++; pis(); } }, 20);
+    p.on('close', (kod) => { clearInterval(hlidej); hotovo({ kod, out }); });
+  });
+  let r = await obal(['--web', web, '--export', fExport, '--neznamy']);
+  test('obal: neznámý přepínač → kód 2 a nápověda', r.kod === 2 && /Použití/.test(r.out), r);
+  r = await obal(['--web', web]);
+  test('obal: chybí soubor → kód 2', r.kod === 2, r);
+  r = await obal(['--web', web, '--export', join(slozka, 'neni.json')]);
+  test('obal: neexistující soubor → kód 2', r.kod === 2 && /neexistuje/.test(r.out), r);
+  r = await obal(['--web', 'https://engscalc.netlify.app', '--export', fExport]);
+  test('obal: ostrý web → kód 2 bez dotazu na heslo', r.kod === 2 && /OSTRÝ/.test(r.out) && !/Heslo/.test(r.out), r);
+  r = await obal(['--web', web, '--export', fCizi]);
+  test('obal: export s cizí zakázkou → kód 2, vypíše ji, bez přihlášení', r.kod === 2 && /2026 - OPR - CN - 0500/.test(r.out) && !/Heslo/.test(r.out), r);
+  r = await obal(['--web', web, '--zaloha', fZaloha], [ADMIN_EMAIL, HESLO_ADMIN]);
+  test('obal: náhled ze zálohy .json.gz → kód 0, vybrány 4 TEST, nic nezapsáno', r.kod === 0 && /vybráno 4 TEST/.test(r.out) && /NÁHLED/.test(r.out) && !naServeru().length, r);
+  test('obal: heslo není ve výstupu (bez ozvěny)', !r.out.includes(HESLO_ADMIN), r.out);
+  r = await obal(['--web', web, '--export', fExport, '--zapsat'], [ADMIN_EMAIL, HESLO_ADMIN, 'OBNOVIT']);
+  test('obal: --zapsat s OBNOVIT → kód 0, 4 založeny', r.kod === 0 && naServeru().length === 4 && /založeno 4/.test(r.out), r);
+  r = await obal(['--web', web, '--export', fExport, '--zapsat'], [ADMIN_EMAIL, HESLO_ADMIN, 'OBNOVIT']);
+  test('obal: druhé spuštění → vše přeskočeno, kód 0', r.kod === 0 && /Založí se 0, přeskočí 4/.test(r.out), r);
+  srv.close(); rmSync(slozka, { recursive: true, force: true }); }
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

@@ -1548,3 +1548,44 @@ Kopie z prohlížeče (heslo správce, K3-N1) zůstává jako záloha záloh bez
   (`vloz_retenci.py`, hlídá `src/test_577_jmeno_kopie.js`) — jen kopie vlastního
   prostředí, nikdy nejnovější, při úbytku dat pod 90 % nebo nepotvrzeném
   varování nemaže a pošle e-mail; maže se do koše Disku (30 dní).
+
+## C5 #585 — nástroj obnovy testovací sady zakázek (v12.11.1, 12. 11. 2026)
+
+Rozhodnutí J. V. 11. 11. 2026 (B0.9): TEST zakázky kol K28/K29/K36, které od 2.–3. 11. chybí v testovací
+databázi (K39-I1), obnoví sám nástrojem `nastroje/test_sada_obnov.mjs` (jádro `nastroje/test_sada_jadro.mjs`,
+návod `podklady/NAVOD_TEST_SADA_OBNOVA.md`). Kód aplikace a serveru se nemění. Nástroj je klient
+veřejného API, žádnou zkratku do úložiště nemá. Čísla B203–B209 drží K40, proto B215–B216.
+
+### Nové meze
+
+- **B215 — nástroj zapisuje do databáze jako administrátor, mimo prohlížeč.** Co smí: přihlásit se
+  účtem s rolí přesně `Administrátor` (jinak konec bez zápisu), přečíst rejstřík a zakázky a uložit
+  **novou** zakázku přes `POST /api/zakazky`. Při tom prochází všemi kontrolami serveru jako prohlížeč.
+  Volá jen `GET /api/zdravi`, `POST /api/prihlaseni`, `POST /api/odhlaseni`, `GET /api/zakazky`
+  a `POST /api/zakazky`. Seznam je v kódu (`VOLANI`) a jiné volání vyhodí výjimku. Co nesmí: `DELETE`,
+  `/api/obnova`, `/api/zaloha*`, Pipedrive, `prepsat: true`. Každý zápis nese `ocekavaneRazitko: ''`,
+  takže server existující zakázku odmítne 409 (bez pole by ji tiše přepsal) a nástroj ji předem
+  přeskočí podle rejstříku. Heslo a e-mail jdou jen z klávesnice. Cookie relace drží jen v paměti,
+  nikam ji nezapisuje ani nevypisuje. Na konci se nástroj odhlásí, a protože odhlášení zvedá verzi
+  hesla účtu (B6), ukončí tím i přihlášení správce v prohlížeči (vědomě, stojí v návodu). Výchozí běh
+  je náhled. Zápis jen s `--zapsat` a napsaným slovem `OBNOVIT`.
+  *Co to nedělá:* jakožto administrátor nástroj smí ponechat cizího autora (u nové zakázky to server
+  dovolí jen jemu). Kdo zná heslo administrátora, zapíše totéž i z prohlížeče, takže nástroj práva nerozšiřuje.
+- **B216 — jen testovací web a jen TEST zakázky.** Cíl musí být **přesně** původ z povoleného seznamu
+  `https://testengscalc.netlify.app` nebo `http://localhost:<port>` / `http://127.0.0.1:<port>`. Platí
+  to bez cesty, dotazu, uživatele, velkých písmen, portu u https a tečky na konci hostu. Jiný testovací web
+  se přidává úpravou `POVOLENE_WEBY` s revizí, ne přepínačem. Ostrý web (host přesně `engscalc.netlify.app`,
+  `<nasazení>--engscalc.netlify.app` přes sdílenou `pdSimulatorOstryWeb`, cokoli se `schaftscalc`) se
+  odmítne vlastní hláškou dřív, než se nástroj zeptá na heslo. Shodu se simulátorem Pipedrive hlídá test.
+  `/api/zdravi` musí hlásit `prostredi === 'test'` třikrát: před přihlášením, po něm a těsně před
+  prvním zápisem (nenastavená proměnná = `ostre` = konec). Všechna volání jdou s `redirect: 'error'`.
+  Zpracuje se jen zakázka, jejíž číslo, čísla všech variant (`variantaCislo`), čísla v zámcích a vyplněné
+  číslo PROJ začínají `TEST`, a jejich jméno souboru (`uloKlicSouboru`) začíná `TEST-`. Zámek bez čísla
+  neprojde. Export s jedinou jinou zakázkou = nezapíše se nic. Z otisku zálohy (`--zaloha`) se vyberou jen
+  vyhovující zakázky, zbytek (účty, ceník, ostatní zakázky) se dál nečte. Výpis nese jen čísla, počty
+  a stav; hlášky serveru se čistí od e-mailů a částek.
+  *Co to nedělá:* `/api/zdravi` je veřejné a nepodepsané. Web, který by se vydával za testovací
+  (podvržené DNS na `testengscalc.netlify.app`), by heslo dostal. Proti tomu stojí jen https a povolený
+  seznam. Číslo `TEST - …` je konvence, ne oprávnění: zakázka „TEST“ v ostré databázi by prošla filtrem,
+  na ostrý web ale nástroj nepustí B216.
+
