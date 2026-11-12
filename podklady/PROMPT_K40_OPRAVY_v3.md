@@ -114,6 +114,12 @@ do `pdVazbaWebhook.aresRozdily`, zapíše do protokolu a ukáže v upozornění.
   2. `zapis`: po potvrzení v dialogu aplikace PATCH `/api/v2/organizations/<id>` **jen změněných polí**; server si
      rozdíly spočítá znovu a zapíše jen to, co klient potvrdil a co se pořád liší. Organizace musí patřit dealu
      navázanému na tuto zakázku.
+- **Shoda IČO (slučitelnost s budoucí funkcí víc zákazníků, poradce VZ, `claude/vz-navrh` e0e007d):** náhled i zápis
+  server povolí **jen když IČO organizace dealu = IČO hlavičky zakázky** (obě po normalizaci, s doplněním úvodních nul;
+  hlavička ze **uložené** verze zakázky). Jinak **409 s vysvětlením** a nic se nečte z ARES ani nezapisuje. Totéž platí,
+  když organizace IČ nemá, hlavička IČO nemá nebo některé z nich neprojde kontrolní číslicí: rozdílné nebo
+  neověřitelné IČO = nezapisovat. Tlačítko v aplikaci je pak zhasnuté a ukáže důvod (klient si shodu spočítá stejně,
+  rozhoduje server). Důsledek: oprava organizace nikdy nezmění IČ organizace — zapisuje jen název, adresu a DIČ.
 - Nikdy automaticky, nikdy z webhooku. Záznam do protokolu (kdo, která pole). Po zápisu smaž cache detailu dealu.
 - Počítá se do denního rozpočtu Pipedrive; opakovaný klik bez rozdílů nic neposílá.
 - **Testy jen proti `pipedrive_simulator.mjs`** (doplnit PATCH organizace) — do ostrého Pipedrive ani do ARES se
@@ -129,7 +135,8 @@ do `pdVazbaWebhook.aresRozdily`, zapíše do protokolu a ukáže v upozornění.
   webhooku a nejvýš jednou na novou vazbu nebo změnu IČO.
 - **B209 — zápis organizace do Pipedrive z kalkulátoru:** jen autor zakázky a administrátor s právem Pipedrive, jen
   po potvrzení, jen lišící se pole, hodnoty z ARES načtené serverem; kdo smí zakázku s dealem navázat, tím určuje,
-  kterou organizaci jde opravit — proto kontrola, že organizace patří navázanému dealu.
+  kterou organizaci jde opravit — proto kontrola, že organizace patří navázanému dealu, a že IČO organizace je
+  shodné s IČO hlavičky zakázky (jinak 409; připraveno na víc zákazníků v zakázce).
 - **CSP a síť:** hlavička CSP v `netlify.toml` platí pro prohlížeč a `connect-src` už `https://ares.gov.cz` má —
   **neměnit**. Dotaz ze serveru CSP neřídí; nová funkce nepotřebuje žádnou novou proměnnou prostředí ani klíč.
   `netlify/test_prava.mjs` (matice přístupu k funkcím, KLICEM_CHRANENE) doplň o novou funkci.
@@ -151,12 +158,14 @@ Každý nový test: doložit v commitu, že před opravou selže a po ní projde
   druhé doručení bez změny IČO → žádný dotaz (počítadlo volání mocku).
 - **Oprava organizace:** náhled a zápis jen změněných polí; cizí role 403; bez práva Pipedrive 403; organizace,
   která nepatří dealu zakázky, 403; hodnoty poslané klientem se nepoužijí; druhý zápis bez rozdílů nic neposílá;
-  chybějící pole DIČ v účtu se přeskočí.
+  chybějící pole DIČ v účtu se přeskočí. **Shoda IČO:** IČO organizace ≠ IČO hlavičky → náhled i zápis 409 a žádný
+  dotaz do ARES ani PATCH (počítadla mocku); organizace bez IČ → 409; hlavička bez IČO → 409; IČO lišící se jen
+  úvodními nulami nebo mezerami → projde; podvržené IČO hlavičky v požadavku nepomůže (bere se uložená verze).
 - **Klient:** upozornění a tlačítka podle role, dialog s rozdíly, `overit_xss.mjs` s otrávenými názvy.
 - **Mutace (server):** „vazba bez záznamu v protokolu“, „zrušení vazby kýmkoli“, „webhook naváže znovu po zrušení“,
   „odkaz v dealu se maže i cizí“, „ARES bez časového limitu“, „ARES přepíše ručně upravené pole“, „odpověď ARES
   s jiným IČO se přijme“, „oprava organizace bez kontroly role“, „oprava zapíše všechna pole“, „oprava bez kontroly,
-  že organizace patří dealu“. Starší mutace #553 po zásahu zkontroluj (`--kontrola`).
+  že organizace patří dealu“, „oprava bez kontroly shody IČO organizace a hlavičky“ (musí ji chytit náhled i zápis). Starší mutace #553 po zásahu zkontroluj (`--kontrola`).
 - Zlaté sady (víc šachet, můstky) beze změny otisků — K40c do výpočtu nesahá.
 
 ## 6. Na konci vypiš
