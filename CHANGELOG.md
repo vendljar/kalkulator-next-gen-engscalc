@@ -8,6 +8,28 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.11.3 — C1 #582: šablona CN v17 CZ/EN/DE/FR ke zveřejnění, jednotné nadpisy USAZENÍ OCK (DE, EN), větev claude/c1-cn-v17
+
+Nad `aa445a1` (integrace = test v11.11.1). Verzi přečísluje koordinace. Výpočet ceny beze změny; na webech, Disku
+ani v Pipedrive nic. Rozhodnutí J. V. 11. 11. 2026 B0.2, B0.3 a doplněk (EN).
+
+- **Slovník** (`preklad.js`): nadpisy řádků usazení DE jednotně „POSITIONIERUNG DER SCHACHTKONSTRUKTION – …“,
+  EN „SHAFT STRUCTURE POSITION – …“ (půlčtverčík s mezerami) u čelní, bočních a zadní stěny i u hesla
+  „USAZENÍ ZADNÍ STĚNY OCK“; FR beze změny. Projeví se i v online nabídce a specifikaci EN/DE.
+- **Nástroj šablon** (`nastroje/vyrob_sablony.js`): nový režim `--cn-usazeni` opraví nadpisy ve zveřejněné
+  v16 DE a EN (tvrdé kontroly: každý řádek právě jednou se starým nebo novým zněním, symboly před = po, XML
+  bez vad, ostatní text znak po znaku; idempotentní). `--cn-v17` vyrábí jazykové v17 **přímo ze zveřejněné
+  jazykové v16** (kotva pruhu v jazyce souboru) a ověří text v17 bez smyčky = v16; strojový překlad z CZ jen
+  jako záloha s upozorněním (dřív ztrácel ruční znění, např. „LIFT SHAFT“ → „shaft“).
+- **Ověření nad firemními v16** (Disk, 10. 11. 2026): jedna šachta Word z v17 = Word z v16 v 1276/1276
+  (319 scénářů zlaté sady × CZ/EN/DE/FR), víc šachet 20/20, nepřeložený text žádný nový (jen „IČ:“ v zápatí
+  jako ve v16). Podklad a návod pro J. V.: `podklady/SABLONA_CN_V17_11_11.md`.
+- **Testy:** nový `src/test_cn_usazeni.js` (32), `src/test_vs_docx_v17.js` +18 (F: v17 z jazykové v16; fixtura
+  doplněna o řádky ČELNÍ a ZADNÍ), `src/test_preklad.js` +25; mutace [C1] 8/8 chycené. Zlaté otisky
+  (`src/test_vs_zlata.json`, `src/test_560_zlata.json`) přegenerovány na pokyn koordinace: změnil se jen klíč
+  `nahled-en` (anglický náhled s novými nadpisy) — se starým EN zněním těchto hesel dají skripty původní
+  JSON bajt po bajtu.
+- **Příručka správce A5:** postup v17 ze všech čtyř v16, oprava nadpisů v16 DE/EN, kontrola slovníku.
 ## v12.11.2 — K40b #580: dolní mez data prodeje z razítka přijetí zámku serverem (K40-S1, K40-N3), levná diagnostika rozdílu zámku (K40-S2), větev claude/k40b
 
 Nad `c664c9e` (integrace v11.11.1). Souběžně s K40a (#579); verzi přečísluje koordinace. Cena se nemění —

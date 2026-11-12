@@ -70,8 +70,9 @@ function zakazka(o) {
 async function sablonaV15() {
   return DG.zipPrecti(new Uint8Array(await DG.docxDokumentBlob('Nabídka', [
     { sekce: 'ZÁKLADNÍ PARAMETRY ŠACHTY', radky: [['ROZMĚR ŠACHTY – VNITŘNÍ [mm]', 'šířka {{TS_SIRKA_VNITRNI}} × hloubka {{TS_HLOUBKA_VNITRNI}}'],
-      ['ZDVIH VÝTAHU [m]', '{{TS_ZDVIH}}'], ['USAZENÍ OCK – BOČNÍ STĚNY', '{{TS_USAZENI_BOCNI}}'],
-      ['USAZENÍ OCK – LEVÁ BOČNÍ STĚNA', '{{TS_USAZENI_LEVA}}'], ['USAZENÍ OCK – PRAVÁ BOČNÍ STĚNA', '{{TS_USAZENI_PRAVA}}']] },
+      ['ZDVIH VÝTAHU [m]', '{{TS_ZDVIH}}'], ['USAZENÍ OCK – ČELNÍ STĚNA', '{{TS_USAZENI_CELNI}}'], ['USAZENÍ OCK – BOČNÍ STĚNY', '{{TS_USAZENI_BOCNI}}'],
+      ['USAZENÍ OCK – LEVÁ BOČNÍ STĚNA', '{{TS_USAZENI_LEVA}}'], ['USAZENÍ OCK – PRAVÁ BOČNÍ STĚNA', '{{TS_USAZENI_PRAVA}}'],
+      ['USAZENÍ OCK – ZADNÍ STĚNA', '{{TS_USAZENI_ZADNI}}']] },
     { sekce: 'KONSTRUKČNÍ ŘEŠENÍ ŠACHTY', radky: [['STŘECHA ŠACHTY', '{{TS_STRECHA}}'], ['TYP KONSTRUKCE (ENG-M)', '{{TS_TYP_KONSTRUKCE}}']] },
     { sekce: 'OPLÁŠTĚNÍ ŠACHTY', radky: [['TYP OPLÁŠTĚNÍ', '{{TS_TYP_OPLASTENI}}'], ['SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ', '{{TS_SVETLIKY_DVERI}}']] },
     { sekce: 'DOPLŇKOVÉ KONSTRUKCE', radky: [['MŮSTKY MEZI BUDOVOU A OCK', '{{TS_MUSTKY}}'], ['PŘECHODOVÉ PLECHY V NÁSTUPIŠTÍCH', '{{TS_PRECHODOVE_PLECHY}}'],
@@ -135,6 +136,29 @@ const text = x => x.replace(/<\/w:tc>/g, ' | ').replace(/<\/w:p>/g, ' ').replace
       && (t17.stat.chybi.length + (t17.stat.symbolove || []).length) === (t16.stat.chybi.length + (t16.stat.symbolove || []).length)
       && DG.klicePlaceholderu(docXml(t17.pol)).length === DG.klicePlaceholderu(x17).length && /\{#sachty\}/.test(docXml(t17.pol)),
       [t17.stat.chybi, t17.stat.symbolove]);
+  }
+
+  /* ---------- F) C1 #582: v17 PŘÍMO z jazykové v16 (cnV17(xml, L) / cnV17Jazyk) ----------
+   * Zveřejněná jazyková v16 se nepřekládá znovu z CZ — v17 vznikne z ní; text
+   * bez řádků smyčky = v16 znak po znaku a Word jedné šachty = Word z v16. */
+  for (const L of ['en', 'de', 'fr']) {
+    const t16 = await prelozena(p16, L);
+    let e3 = ''; try { vyrob.cnV17(docXml(t16.pol)); } catch (e) { e3 = e.message; }
+    test('F ' + L + ': cnV17 bez jazyka nad jazykovou v16 = chyba (kotva česky nenalezena)', /ZÁKLADNÍ PARAMETRY ŠACHTY/.test(e3), e3);
+    const b16 = new Uint8Array(await DG.zipZapis(t16.pol).arrayBuffer());
+    const j = await vyrob.cnV17Jazyk(b16, L);
+    const p17L = await DG.zipPrecti(j.bajty);
+    const symL = new Set(DG.klicePlaceholderu(docXml(p17L)));
+    test('F ' + L + ': v17 z jazykové v16 má symboly šachet a všechny symboly CZ v17', [...sym17].every(k => symL.has(k)) && symL.size === sym17.size, [...sym17].filter(k => !symL.has(k)));
+    test('F ' + L + ': text v17 bez smyčky = v16 znak po znaku', j.rozdilV16.length === 0, j.rozdilV16.slice(0, 3));
+    test('F ' + L + ': v17 XML bez vad', (await DG.docxXmlVady(j.bajty.slice().buffer)).length === 0);
+    const z = zakazka({ mustky: true, sleva: true }); const v = z.varianty[0];
+    const a = await vypln(t16.pol, N.nabidkaData(z, v, J, L, { symboly: sym16 }));
+    const b = await vypln(p17L, N.nabidkaData(z, v, J, L, { symboly: symL }));
+    test('F ' + L + ': jedna šachta — Word z v17 = Word z jazykové v16', a === b, a === b ? '' : [text(a).slice(-400), text(b).slice(-400)]);
+    const zv = zakazka({ vice: true }); const vv = zv.varianty[0];
+    const tv = text(await vypln(p17L, N.nabidkaData(zv, vv, J, L, { symboly: symL })));
+    test('F ' + L + ': víc šachet — obě šachty v textu, bez symbolů a značek', /Výtah A/.test(tv) && /Výtah B/.test(tv) && !/\{\{|\{#|\{\//.test(tv), tv.slice(-300));
   }
 
   /* ---------- C) víc šachet ---------- */
