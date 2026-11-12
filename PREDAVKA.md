@@ -1,3 +1,54 @@
+# Předávka — 12. 11. 2026: C5 #585 — nástroj obnovy testovací sady zakázek TEST, větev `claude/c5-test-sada`
+
+Nad `aa445a1` (integrace = test v11.11.1). **v12.11.1** (koordinace přečísluje). Do `test-draft`, `test`, `main`
+ani integrace nic. Weby, Disk, Pipedrive nic. **Nástroj sezení proti žádnému webu nespustilo** (jen místní server
+v paměti). Kód aplikace a serveru (`src/`, `netlify/functions`, `netlify/lib`) beze změny. 11. 11. ve 14:38 sezení
+stálo na limitu účtu, 12. 11. pokračovalo ve stejném kontejneru, nic se neztratilo.
+
+| úkol | stav | kde |
+|---|---|---|
+| jádro (čisté funkce, `fetch` předaný) | ✅ | `nastroje/test_sada_jadro.mjs` (`cilPovolen`, `cilOstry`, `cisloJeTest`, `zakazkaCizi`, `vyberZExportu`, `vyberZeZalohy`, `planKroku`, `porovnej`, `ocistiText`, `obnovSadu`) |
+| obal pro příkazovou řádku | ✅ | `nastroje/test_sada_obnov.mjs` (`--web`, `--export` / `--zaloha`, `--zapsat`; .json i .json.gz; heslo bez ozvěny; Ctrl+C dokončí rozpracovanou) |
+| P1–P7 | ✅ | viz CHANGELOG v12.11.1, meze **B215–B216** v `BEZPECNOST_MEZE.md` |
+| testy | ✅ 121/0 | `netlify/test_c5_test_sada.mjs` (body 1–9 zadání + obal z příkazové řádky proti místnímu HTTP serveru 127.0.0.1); sadu bere `spust_testy.sh` sám (glob `netlify/test_*.mjs`) |
+| mutace „[C5]“ | ✅ viz níže | 23 v `netlify/mutace.mjs`, sada `test_c5_test_sada.mjs` v `SADY`; `--kontrola` 1410 úseků OK |
+| návod pro J. V. | ✅ | `podklady/NAVOD_TEST_SADA_OBNOVA.md` (primárně soubor od testovacího sezení, druhá možnost otisk z Disku) |
+| roadmapa #585, CHANGELOG, README_ZDROJAKY, .gitignore | ✅ | `roadmapa.py --kontrola` 580 položek bez nálezu |
+| K40b (#580) nad sloučeným stromem | ⬜ | K40b v integraci zatím není. Až bude: `git worktree add … && git merge --no-commit origin/claude/k40b`, pak `node netlify/test_c5_test_sada.mjs` (razítko přijetí zámku, dolní mez data prodeje: prodaná TEST zakázka v testu nese dnešní datum prodeje, starší data z exportu ověřit) |
+
+**Zjištění k zámkům (P5, místní server, skutečné funkce):**
+- Odeslaná nabídka (zámek `nabidkaTisk`), prodaná varianta, prodaná s tiskem SoD i víc šachet se zapnutou
+  funkcí **projdou** jako nová zakázka administrátora. Zámek (číslo, typ, čas), prodej, data variant a **autor
+  z exportu** zůstanou. Server zámek ověří znovu (`overeni`, přísně B119) a `kdo` přepíše z relace (B95).
+  Nástroj ty dva klíče nesrovnává.
+- Server razí `sleva.role` / `slevaProj.role` rolí ukládajícího (Administrátor). Je to pravidlo „role slevy
+  určuje relace“ (K16-N73). Nástroj ho vědomě nepočítá za rozdíl (`RAZI_SERVER`). Ostatní rozdíl hlásí cestou
+  ke klíči.
+- **Odmítne (409):**
+  - zámek bez `cisloPapir` (před #320, 9/2026), protože nový zámek musí nést číslo z papíru (B61),
+  - zakázka s víc šachtami, když je vypínač vypnutý.
+
+  Nástroj je neupravuje, jen vypíše s důvodem serveru. 409 bez `kolize` se nepočítá jako souběh.
+- Dál by neprošly (podle kódu, netestováno na datech): čas zámku starší než 400 dní, profil mimo katalog,
+  ceník bez cen u nového zámku.
+- **Odhlášení nástroje** (`/api/odhlaseni`) zvedá verzi hesla účtu, takže ukončí i přihlášení správce
+  v prohlížeči. Stojí v návodu.
+
+**Odchylky od zadání (bezpečnější výchozí):**
+1. Zámek bez čísla = zakázka nesplňuje P3 (z čeho jinak poznat testovací nabídku).
+2. Číslo PROJ s předlohou „2026 - OPR - CN - “ = nevyplněné (jako `hlavickaVyplneno`), nehlídá se.
+3. Odmítnutý cíl, zdraví ≠ test, cizí zakázka v exportu → kód **2** (vstup / cíl), ne 1.
+4. `--export` přijme i `{ zakazky: { jméno: zakázka } }` (mapa jako ve stažené záloze). Pravidlo „jediná cizí =
+   nic“ platí i tak.
+5. `/api/zdravi` se ptá třikrát (před přihlášením, po něm, před prvním zápisem), ne jen dvakrát.
+
+**Čeká na J. V. / koordinaci:**
+1. Revize poradce (Fable) nad celým diffem `aa445a1..claude/c5-test-sada` **před sloučením**. Do té doby se
+   nástroj nikomu nedává ke spuštění.
+2. Testovací sezení připraví soubor `test_sada_export_2026-11-02.json` (jen TEST zakázky z kopie z 2. 11.)
+   a pošle ho J. V. jako soubor ke stažení.
+3. Otázky v závěrečné zprávě koordinaci (zamčené odmítnuté TEST zakázky, zdroj exportu).
+
 # Předávka — VS-E6 #570 (#596): závěr víc šachet — překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi po částech, větev `claude/vs-e6`
 
 Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Do `test-draft`, `test` ani `main` nic;
