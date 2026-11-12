@@ -8,6 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.11.5 — VSD: upozornění vsTvar (#586), harness lišty K43-T1 (#587), poznámka šachet do Pipedrive (#588) po revizi Fable, větev claude/vsd-drobnosti
+
+Nad `aa445a1`, sloučena integrace `1a08186` (v12.11.3 s K40b a C1). Verzi přečísluje koordinace. Výpočet ceny
+beze změny (zlatá sada 319/319); s vypnutým vypínačem víc šachet se nic nemění. Na webech, Disku ani v ostrém
+Pipedrive nic.
+
+- **#586 vsTvar (K47-I3)** — nové pravidlo kontrol před nabídkou (`src/kontroly.js`, mezi vsModel1 a vsSablona):
+  víc než 10 variant šachet, počet kusů mimo 1–20 (i 0, 1,5 nebo text), název nad 80 znaků nebo jiný neplatný
+  tvar šachet ohlásí **upozornění** dřív, než uložení skončí chybou. Ptá se `vsTvarProblemy` — tatáž funkce jako
+  server; čte surová data varianty (`ctx.ockSurova` z UI). S vypnutou funkcí víc šachet mlčí. Pravidel kontrol
+  je 49 (test_kontroly, overit_lista, `manual_vypocet/cisla_vydani.json`).
+- **#587 K43-T1** — `overit_lista_cekani.mjs` čeká na stav aplikace (ceník nasazený, lišta v DOM, přihlášení),
+  ne pevný čas z Node; meze měří od události ve stránce (odpověď `/api/program`, začátek ověřování `overujeOd`,
+  klik). Selhání se nepodařilo zopakovat — oprava je preventivní, doložená jen pojistkou (lišta hned = 22/10).
+- **#588 Poznámka dealu se seznamem šachet** (doplněk J. V. 11. 11., upraveno po revizi Fable 12. 11.): uložení
+  zakázky se zapnutým vypínačem víc šachet, s dealem a řídící variantou s víc šachtami zapíše „Šachty v nabídce:
+  2 varianty šachet, celkem 3 ks (Výtah A 1 ks, Výtah B 2 ks) — nabídka <číslo>“ do **jedné poznámky u dealu**
+  (`netlify/lib/pd_poznamka.mjs`). Jen s právem `crm.pipedrive` (jinak stav `bez-prava`). Id v serverem psaném poli
+  `pdPoznamkaSachty`; bez id se nejdřív hledá vlastní poznámka dealu podle značky čísla zakázky (žádné množení).
+  Po návratu z Pipedrive třetí čtení zakázky (kolize = 409). Každé volání nejvýš 2,5 s, celý zápis 6 s, jeden
+  pokus, strop 20 pokusů/h na deal; výpadek uložení nezastaví. Přechod na jednu šachtu poznámku nemaže, upraví ji
+  na „1 šachta“. Simulátor Pipedrive umí `/v1/notes` (i seznam podle dealu a scénář „visí“). Mez **B217**.
+- Testy: `src/test_vs_kontroly.js` 40/0 (nad bází 17 FAIL), `netlify/test_vsd_pd_poznamka.mjs` 49/0 (jen
+  simulátor), `netlify/test_vs_e5_pd.mjs` 9/0; mutace jádra [VSD] 4/4, serveru [VSD] viz PREDAVKA.
+
 ## v12.11.4 — C5 #585: nástroj obnovy testovací sady zakázek TEST do testovací databáze, větev claude/c5-test-sada
 
 Nad `aa445a1` (integrace = test v11.11.1). Verzi přečísluje koordinace. **Kód aplikace a serveru se nemění.**
@@ -121,7 +146,7 @@ rozhodnutí J. V. 4. 11. (S1, N3) a 11. 11. 2026 (3a, 4a).
   34/0 (S13, 1 FAIL — starý skript 2 kopie smazal), test_k40_mustky_cenik 31/0 (1 FAIL), test_escape 42/0 (2 FAIL).
   Zlatá sada víc šachet 319/319, můstky 228/0. Otázka 6 (šířka skupiny můstků) se nedělá.
 
-## v11.11.2 — K40a #579: opravy kola 40 bez ceny — čelní sklo a sklo u šachet 2+, ořez konce textu, ceník můstků, kopie na Disku, hygiena testů, větev claude/k40a
+## v12.11.1 — K40a #579 (první část, původně číslovaná v11.11.2): opravy kola 40 bez ceny — čelní sklo a sklo u šachet 2+, ořez konce textu, ceník můstků, kopie na Disku, hygiena testů, větev claude/k40a
 
 Nad `c664c9e` (integrace v11.11.1). Verzi přečísluje koordinace (souběžně K40b #580). Podle posudku poradce
 (`podklady/K40_POSUDEK_FABLE.md`, `PROMPT_K40_OPRAVY_v2.md`) a rozhodnutí J. V. 11. 11. 2026 (1a, 2a, 6b, 7a, 8a).

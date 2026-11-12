@@ -230,8 +230,15 @@ export function pdSimReset() { STAV = null; }
 export function pdSimNastav(volby = {}) {
   const s = stav();
   if (volby.scenar !== undefined) { s.scenar = String(volby.scenar || ''); s.limitZbyva = scenarLimit(s.scenar); }
+  if (volby.poPozadavku !== undefined) s.poPozadavku = typeof volby.poPozadavku === 'function' ? volby.poPozadavku : null;
 }
 /* Pohled do simulátoru: data, spotřebované tokeny a seznam požadavků. */
+/* Smazání poznámky „v Pipedrive" (test: poznámka mezitím zmizela). */
+export function pdSimSmazPoznamku(id) {
+  const p = (stav().data.poznamky || []).find((x) => x.id === +id);
+  if (p) p.active_flag = false;
+  return !!p;
+}
 export function pdSimStav() { const s = stav(); return { data: s.data, tokeny: s.tokeny, pozadavky: s.pozadavky.slice() }; }
 
 function scenarLimit(sc) { const m = /^limit(\d+)$/.exec(sc || ''); return m ? +m[1] : 0; }
@@ -281,6 +288,8 @@ export async function pdSimFetch(url, init = {}) {
   const metoda = String(init.method || 'GET').toUpperCase();
   const cesta = u.pathname.replace(/\/+$/, '');
   s.pozadavky.push(metoda + ' ' + cesta + (u.search || ''));
+  /* Háček testu (VSD N1): po zapsání požadavku, např. souběžné uložení zakázky. */
+  if (typeof s.poPozadavku === 'function') await s.poPozadavku(metoda + ' ' + cesta);
 
   const hlavicky = init.headers || {};
   if (!hlavicky['x-api-token']) return chyba(401, 'Unauthorized');
@@ -288,6 +297,10 @@ export async function pdSimFetch(url, init = {}) {
   if (sc === 'token') return chyba(401, 'Unauthorized');
   if (sc === 'vypadek') return chyba(500, 'Internal server error');
   if (sc === 'limit') return chyba(429, 'Rate limit exceeded');
+  /* visi (VSD N2): odpověď nepřijde nikdy — jen zrušení požadavku (signal) ho ukončí. */
+  if (sc === 'visi') return new Promise((_, ne) => {
+    if (init.signal) init.signal.addEventListener('abort', () => ne(new Error('aborted')), { once: true });
+  });
   if (s.limitZbyva > 0) { s.limitZbyva--; return chyba(429, 'Rate limit exceeded'); }
 
   const rozpocet = Number(process.env[PD_SIM_ROZPOCET_PROMENNA]) > 0 ? Number(process.env[PD_SIM_ROZPOCET_PROMENNA]) : 30000;
@@ -335,6 +348,41 @@ export async function pdSimFetch(url, init = {}) {
       for (const k of ['value', 'currency', 'title', 'status']) if (telo[k] !== undefined) deal[k] = telo[k];
       deal.update_time = new Date().toISOString().slice(0, 19) + 'Z';
       return data(kopie(deal));
+    }
+    return chyba(405, 'Method not allowed');
+  }
+  /* POZNÁMKY v1 (VSD, 11. 11. 2026): poznámka dealu se seznamem šachet.
+   * Založení jen k existujícímu nesmazanému dealu, obsah text do 100 000
+   * znaků (jako API); smazaná poznámka (pdSimSmazPoznamku) vrací 404. */
+  if (!D.poznamky) D.poznamky = [];
+  if (cesta === '/api/v1/notes' && metoda === 'GET') {
+    const deal = parseInt(u.searchParams.get('deal_id'), 10);
+    const seznam = D.poznamky.filter((p) => p.active_flag !== false && (!(deal > 0) || p.deal_id === deal)).slice().reverse();
+    const limit = Math.min(Math.max(parseInt(u.searchParams.get('limit'), 10) || 100, 1), 500);
+    return data(kopie(seznam.slice(0, limit)));
+  }
+  if (cesta === '/api/v1/notes' && metoda === 'POST') {
+    let telo;
+    try { telo = JSON.parse(init.body || '{}'); } catch (e) { return chyba(400, 'Invalid JSON'); }
+    if (typeof telo.content !== 'string' || !telo.content || telo.content.length > 100000) return chyba(400, 'Invalid content');
+    if (!D.dealy.some((d) => d.id === telo.deal_id && d.status !== 'deleted')) return chyba(400, 'Deal not found');
+    const p = { id: 9000 + D.poznamky.length + 1, deal_id: telo.deal_id, content: telo.content, active_flag: true,
+      add_time: new Date().toISOString().slice(0, 19).replace('T', ' ') };
+    D.poznamky.push(p);
+    return data(kopie(p));
+  }
+  if ((m = /^\/api\/v1\/notes\/(\d+)$/.exec(cesta))) {
+    const p = D.poznamky.find((x) => x.id === +m[1] && x.active_flag !== false);
+    if (!p) return chyba(404, 'Note not found');
+    if (metoda === 'GET') return data(kopie(p));
+    if (metoda === 'PUT') {
+      let telo;
+      try { telo = JSON.parse(init.body || '{}'); } catch (e) { return chyba(400, 'Invalid JSON'); }
+      if (typeof telo.content !== 'string' || !telo.content || telo.content.length > 100000) return chyba(400, 'Invalid content');
+      if (telo.deal_id !== undefined && telo.deal_id !== p.deal_id) return chyba(400, 'Note cannot move to another deal');
+      p.content = telo.content;
+      p.update_time = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      return data(kopie(p));
     }
     return chyba(405, 'Method not allowed');
   }

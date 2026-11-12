@@ -1396,6 +1396,28 @@ const KONTROLY = [
     },
   },
   {
+    /* MEZE VÍC ŠACHET V DATECH (VSD #586, K47-I3, J. V. 11. 11. 2026). Server
+     * zakázku s víc než VS_VARIANT_MAX variantami šachet nebo s počtem kusů
+     * mimo 1–VS_KS_MAX neuloží (vsTvarProblemy v uloziste.js). Karta šachet
+     * mez hlídá, data z klonu, souboru či ruční úpravy ne — obchodník se to
+     * dozvěděl až chybou uložení. Ptá se TÉŽE funkce jako server (žádná druhá
+     * kopie mezí), nad SUROVÝMI daty varianty: vsKs() by neplatný počet kusů
+     * tiše vzal jako 1 a ctx.__vs vzniká jen v platném režimu víc šachet.
+     * Jen upozornění (rozhodnutí J. V.), za variantu, ne po šachtě. Vypnutá
+     * funkce víc šachet = mlčí (server tvar nekontroluje, šachty nejde měnit
+     * a lištu o tom ukazuje vsVypnutoHlaska). */
+    kod: 'vsTvar', kde: 'Kalkulace OCK', nazev: 'Víc šachet mimo meze uložení',
+    strany: ['ock'],
+    zjisti(ctx) {
+      if (typeof vsTvarProblemy !== 'function') return null;
+      if (!kontrolyVsZapnuto(ctx)) return null;
+      const ock = kontrolyVsOckSurova(ctx);
+      const p = ock ? vsTvarProblemy(ock) : [];
+      if (!p.length) return null;
+      return { text: kontrolyVsTvarText(ock, p) };
+    },
+  },
+  {
     /* ŠABLONA CN BEZ ROZPISU ŠACHET (návrh 5.1, zábrana v15/v16): šablona
      * nabídky starší než v17 nemá smyčku šachet — Word by vytiskl jednu
      * šachtu s cenou celé zakázky. Zastaví JEN Word nabídky OCK
@@ -1439,6 +1461,59 @@ function kontrolyVsOck(ctx) {
     ock = v ? v.data.ock : null;
   }
   return (ock && rezimViceSachet(ock)) ? ock : null;
+}
+/* VSD #586: vypínač víc šachet pro pravidla, která na něm závisí. ctx.viceSachet
+ * (boolean) má přednost, jinak UI (viceSachetZapnuto); bez údaje (testy,
+ * server) se bere jako zapnuto — tvar pak hlídá i server. */
+function kontrolyVsZapnuto(ctx) {
+  if (ctx && typeof ctx.viceSachet === 'boolean') return ctx.viceSachet;
+  if (typeof viceSachetZapnuto === 'function') { try { return !!viceSachetZapnuto(); } catch (e) { return false; } }
+  return true;
+}
+/* Surová data OCK varianty (bez filtru režimu víc šachet): ctx.ockSurova
+ * (UI), ctx.ock, jinak varianta zakázky podle zadání šachty 1. */
+function kontrolyVsOckSurova(ctx) {
+  if (!ctx || typeof ctx !== 'object') return null;
+  if (ctx.ockSurova && typeof ctx.ockSurova === 'object') return ctx.ockSurova;
+  if (ctx.ock && typeof ctx.ock === 'object') return ctx.ock;
+  if (ctx.zadani && ctx.zak && Array.isArray(ctx.zak.varianty)) {
+    const v = ctx.zak.varianty.find(x => x && x.data && x.data.ock && x.data.ock.zadani === ctx.zadani);
+    return v ? v.data.ock : null;
+  }
+  return null;
+}
+/* Lidský text k nálezům vsTvarProblemy — meze z konstant vice_sachet.js. */
+function kontrolyVsTvarHodnota(x) {
+  if (typeof x === 'number') return isFinite(x) ? String(x).replace('.', ',') : 'neplatné číslo';
+  if (typeof x === 'string') return '„' + (x.length > 20 ? x.slice(0, 20) + '…' : x) + '"';
+  if (x === null) return 'prázdný';
+  return 'neplatný údaj';
+}
+function kontrolyVsTvarText(ock, problemy) {
+  const casti = [];
+  let tvar = false;
+  const sachta = i => {
+    const s = i === 0 ? ock : ock.dalsi[i - 1];
+    return (typeof vsNazev === 'function') ? vsNazev(s && typeof s === 'object' ? s : {}, i) : ('Šachta ' + (i + 1));
+  };
+  problemy.forEach(p => {
+    const kde = String((p && p.kde) || '');
+    if (p.duvod === 'limit') {
+      casti.push('nabídka má ' + (1 + (Array.isArray(ock.dalsi) ? ock.dalsi.length : 0)) + ' variant šachet, nejvýš jich může být ' + VS_VARIANT_MAX);
+      return;
+    }
+    let m = /^ock(?:\.dalsi\[(\d+)\])?\.(ks|nazev)$/.exec(kde);
+    if (!m) { tvar = true; return; }
+    const i = m[1] === undefined ? 0 : (+m[1] + 1);
+    const s = i === 0 ? ock : ock.dalsi[i - 1];
+    if (m[2] === 'ks') casti.push('šachta ‚' + sachta(i) + '‘ má počet kusů ' + kontrolyVsTvarHodnota(s.ks)
+      + ', povoleno je celé číslo 1–' + VS_KS_MAX);
+    else casti.push('šachta ' + (i + 1) + ' má ' + (typeof s.nazev === 'string' ? 'název delší než ' + VS_NAZEV_MAX + ' znaků'
+      : 'neplatný název'));
+  });
+  if (tvar) casti.push('data šachet mají neplatný tvar');
+  const t = casti.join('; ');
+  return t.charAt(0).toUpperCase() + t.slice(1) + ' — zakázku nepůjde uložit. Opravte to v kartě šachet.';
 }
 /* Šachty k posouzení: [{ nazev, zadani, vysl }] + součet. Výsledek šachty
  * z `sachty[]` součtu (u odeslané nabídky ze zámku), jinak se spočítá. */
@@ -1733,5 +1808,5 @@ if (typeof module !== 'undefined')
                      kontrolyPotvrzeni, kontrolyPotvrzeniPlati,
                      KONTROLY_DOKUMENTY_STRANY, KONTROLY_BRANA_JINDE, kontrolyDokumentStrana, kontrolyZabranaDokumentu,
                      kontrolyCtxStrany, kontrolyStranaZabrana,
-                     KONTROLY_PO_SACHTE, kontrolyVsOck, kontrolyVsPriprav, kontrolyVsPravidlo,
+                     KONTROLY_PO_SACHTE, kontrolyVsOck, kontrolyVsZapnuto, kontrolyVsOckSurova, kontrolyVsTvarText, kontrolyVsPriprav, kontrolyVsPravidlo,
                      kontrolyProjProdava };

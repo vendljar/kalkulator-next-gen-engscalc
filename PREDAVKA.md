@@ -1,3 +1,82 @@
+# Předávka — VSD: upozornění vsTvar (#586), harness lišty K43-T1 (#587), poznámka šachet do Pipedrive (#588), větev `claude/vsd-drobnosti`
+
+Nad `aa445a1` (integrace = test v11.11.1), prompt `podklady/PROMPT_VSD_PO_KOLE47.md` (f0fcffc) + doplněk J. V. 11. 11.
+(poznámka Pipedrive); 12. 11. sloučena integrace `1a08186` (v12.11.3, K40b, C1) a #588 upraveno po revizi Fable.
+**v12.11.4** (poslední commit 12. 11. UTC; koordinace přečísluje). Do `test-draft`, `test`,
+`main` ani integrace nic; weby, Disk, ostrý Pipedrive nic (jen simulátor). Sezení 11. 11. ve 14:38 stál limit účtu,
+12. 11. pokračováno v témž kontejneru (nic se neztratilo, zbytek mutace žádný).
+
+| úkol | stav | kde |
+|---|---|---|
+| #586 vsTvar | ✅ | `src/kontroly.js` (pravidlo mezi vsModel1 a vsSablona; `kontrolyVsZapnuto`, `kontrolyVsOckSurova`, `kontrolyVsTvarText`), `src/ui/kontroly_ui.js` (`ockSurova`) |
+| počet pravidel 48 → 49 | ✅ | `src/test_kontroly.js`, `overit_lista.mjs`, `manual_vypocet/cisla_vydani.json` (`k.pocet`, stejně jako VS-E5) |
+| #587 K43-T1 | ✅ | `overit_lista_cekani.mjs` (jen harness) |
+| #588 poznámka Pipedrive | ✅ po revizi Fable (N1–N3, a, b) | `netlify/lib/pd_poznamka.mjs`, `netlify/functions/zakazky.mjs` (třetí čtení), `netlify/lib/pipedrive.mjs` (`volby.pokusu`, `volby.casLimitMs`), `netlify/lib/pipedrive_simulator.mjs` (`/v1/notes` seznam/GET/POST/PUT, scénář `visi`, háček `poPozadavku`), `netlify/lib/pd_prevod.mjs` + `src/pd_nanecisto.js` (text důvodu náhledu) |
+| mez B217 | ✅ | `BEZPECNOST_MEZE.md` (poslední oddíl; B215–B216 má C5, ověřeno ve všech větvích) |
+| příručka kap. 25 | ✅ | věta o mezích (10 variant, 1–20 ks) + položka „Pipedrive“; verze příručky v12.11.4 |
+| roadmapa | ✅ | #586, #587, #588 hotovo v12.11.4 (`roadmapa.py --kontrola` čisté) |
+| testy | ✅ | `src/test_vs_kontroly.js` 40/0 (nad bází 17 FAIL); `netlify/test_vsd_pd_poznamka.mjs` 49/0 (jen simulátor; bez napojení padá); `test_vs_e5_pd` 9/0; zlatá sada 319/319; `test_kontroly` 159/0 |
+| mutace | ✅ | jádro [VSD] 4/4, server [VSD] 20/20, přepsaná #536 a B105 1/1 (sada `test_vsd_pd_poznamka.mjs` v seznamu sad `netlify/mutace.mjs`; dvě starší zadání B105 a #536 přepsána na nový tvar kódu) |
+| kolo `--bez-mutaci` | ✅ VŠE ZELENÉ (nad sloučenou integrací v12.11.4) | sady 437/0/7 (přeskočeny jen sady s firemními podklady), hodiny +400 dní 354/0/1, statické 5/5. Celé mutace pouští koordinace. |
+| kontext sezení | 46 % | `get_session` 12. 11. |
+
+## Rozhodnutí bez J. V. (výchozí varianty)
+
+1. **vsTvar s vypnutou funkcí mlčí** — prompt tvrdil „jako ostatní pravidla vs…“, ale vsModel1/vsSablona na
+   vypínač nehledí (běží nad `ctx.__vs`). Pravidlo čte `ctx.viceSachet`, jinak `viceSachetZapnuto()` z UI, bez
+   údaje (testy, server) bere zapnuto. Důvod: server tvar s VYP nekontroluje (hlídá jen nezměněnost, 409) a lištu
+   ukazuje `vsVypnutoHlaska`.
+2. **Shoda se serverem doslova**: pravidlo hlásí, kdykoli `vsTvarProblemy` ≠ [] (i šachta 1 s `ks: "1"` jako
+   text — server ji se ZAP odmítne). `kde: 'Kalkulace OCK'` → u zakázky „jen projekce“ mlčí (jako ostatní
+   pravidla OCK).
+3. **test_kontroly.js se změnil** jen v počtu pravidel (49) — bez toho by padal; kolize s C2+C3 (také přidává).
+4. **Poznámka Pipedrive se píše při uložení zakázky** (ne webhookem, ne tlačítkem): jediné místo, kde server má
+   aktuální šachty; jen při změně textu. Webhook pole zachová (kopíruje uloženou zakázku).
+5. **Která varianta**: řídící (`ridiciVarianta`), stejně jako rejstřík a Pipedrive náhled.
+6. **Text** = věta náhledu (`'Šachty v nabídce: ' + vsPredmetText`), z dat místo z výsledku (shodu hlídá test).
+7. ~~Zápis smí každý~~ → **rozhodnutí koordinace (a)**: jen s právem `crm.pipedrive` (B80), jinak `bez-prava`.
+8. **Rozhodnutí koordinace (b)**: poznámka se nemaže; přechod na jednu šachtu (ZAP, týž deal, id je) = úprava na
+   „Šachty v nabídce: 1 šachta“. Změna dealu a VYP v mezích (B217).
+
+## Revize Fable (12. 11. 2026) a co se změnilo
+
+#586 a #587 schváleny ke sloučení. #588 vráceno — opraveno:
+- **N1** (blokující): po návratu z Pipedrive se zakázka čte POTŘETÍ, jiné razítko = 409 (test: háček simulátoru
+  zapíše jinou verzi během PUT → 409, zápis jiné instance zůstal; další uložení poznámku převezme, žádná druhá).
+- **N2** (blokující): `pdZavolej` umí `casLimitMs` (AbortController + závod s časovačem, včetně čtení těla) →
+  504 „Pipedrive neodpověděl do 2,5 s“; poznámka: 2,5 s na volání, 6 s celkem, stav `chyba`, varování,
+  zakázka uložena (test se scénářem simulátoru `visi`).
+- **N3**: značka „— nabídka <číslo>“ v textu; bez id nejdřív `GET /v1/notes?deal_id=` a převzetí aktivní
+  poznámky téhož dealu, která začíná „Šachty v nabídce: “ a končí značkou (porovnává se bez HTML značek);
+  POST jen když není. Souběh dvou instancí zůstává zbytkovou mezí (B217).
+- **(a)** právo `crm.pipedrive` (`zobrazeniSmi`, matice z uložení), **(b)** jedna šachta = „1 šachta“, strop
+  čerpají i neúspěšné pokusy — vše v B217.
+
+## Ostatní harnessy lišty (bod 6 — jen výpis, bez nálezu selhání neopravováno)
+
+- `overit_lista.mjs`: 35× `waitForTimeout` (po `goto` 700 ms, po akcích 150–900 ms) — stejný vzor „pevný čas
+  místo stavu“.
+- `overit_zaloha_lista.mjs`: po `goto` 400 ms (ř. 48), po odložení zálohy 80 ms (ř. 126).
+- Pro koordinaci „Zefektivnění programu“ (M0/O): v `overit_lista_cekani.mjs` je hotový vzor — obal `fetch`
+  v `addInitScript` (časy odpovědí `/api/*` v čase stránky), `dobeh(page, ms)` = čekání na čas stránky,
+  `waitForFunction` nad `ONLINE_STAV`; neopakovat.
+
+## Stabilita K43-T1 — čísla (12. 11. 2026, kontejner 4 jádra)
+
+**Selhání K43-T1 se nepodařilo zopakovat; oprava je preventivní, doložená jen pojistkou.**
+
+**Selhání 31/1 se tu nepodařilo vyvolat.** Původní harness (`aa445a1`): samostatně 10/10 OK, pod CPU zátěží
+(4 smyčky) 10/10, tři instance souběžně 12/12, tři instance + CPU zátěž 21/21 — tedy 0 selhání z 53. Nový harness:
+samostatně 1/1, tři instance + CPU zátěž **21/21 (32/0)**. Oprava je proto preventivní podle popsané třídy chyby
+(pevný čas místo stavu, meze od navigace), ne potvrzená reprodukcí. Pojistka proti prázdnému testu: s lištou hned
+po startu (lokálně v `dist/`: `UKAZKOVE_CEKANI_MS = 0`, `UKAZKOVE_OVERENI_MS = 0`, okno přihlášení nečeká)
+nový harness **22/10** (padají A, B×2, C×3, D, F, G×2). Doba běhu ~42 s (dřív ~45 s).
+
+Pozor při měření: změna `verze.txt` bez nového sestavení `dist/` vyvolá v harnessech okno „nová verze aplikace“
+(server hlásí jinou verzi) a scénář D spadne na kliknutí — měření se tím jednou zneplatnilo, opakováno.
+
+
+---
 # Předávka — 12. 11. 2026: C5 #585 — nástroj obnovy testovací sady zakázek TEST, větev `claude/c5-test-sada`
 
 Nad `aa445a1` (integrace = test v11.11.1). **v12.11.4** (koordinace přečísluje; po sloučení integrace 1a08186 = v12.11.3 s K40b). Do `test-draft`, `test`, `main`
