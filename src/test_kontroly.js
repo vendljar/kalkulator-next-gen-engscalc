@@ -187,7 +187,7 @@ const pravidla = kontrolyPravidla();
 /* 39. „dpzUvodWordProj" 20. 10. 2026 (D1); 40.–43. D2: jednostupnovaProj,
  * vyjezdCenaChybi, uvodProjNesedi, cestovneWordProj. */
 /* 4. 11. 2026: + 3 pravidla ruční ceny #561, − nadDvermiBez #564 („bez" = prostor světlíku dozdí stavba). */
-test('pravidel je čtyřicet osm (20. 10. 2026: + mustekRozmer, + dpzUvodWordProj D1, + 4 pravidla D2; 26. 10.: + platbyOck100 #517; 4. 11.: + 3 pravidla ruční ceny #561, − nadDvermiBez #564; 10. 11.: + vsModel1, vsSablona VS-E5 #595)', pravidla.length === 48, pravidla.length);
+test('pravidel je padesát jedna (20. 10. 2026: + mustekRozmer, + dpzUvodWordProj D1, + 4 pravidla D2; 26. 10.: + platbyOck100 #517; 4. 11.: + 3 pravidla ruční ceny #561, − nadDvermiBez #564; 10. 11.: + vsModel1, vsSablona VS-E5 #595; 11. 11.: + vsSablonaSod C2 #583, sodNevyplneno a sodProjNevyplneno C3 #584)', pravidla.length === 51, pravidla.length);
 test('kódy pravidel jsou jedinečné',
   new Set(pravidla.map(p => p.kod)).size === pravidla.length,
   pravidla.map(p => p.kod).join(','));

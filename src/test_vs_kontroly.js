@@ -146,5 +146,31 @@ const nal = (k, kod) => k.nalezy.find(n => n.kod === kod);
   test('F jen projekce: kontroly po šachtách mlčí', kontrolyVsOck(Object.assign({}, c, { jenProj: true })) === null);
 }
 
+/* ---------- G) smlouva o dílo: šablona bez šachet a nevyplněná místa (C2 #583, C3 #584) ---------- */
+{
+  const { zak, v } = zakazka(true);
+  const sab = sym => ({ navic: { sablonaSod: { typ: 'sod', verze: 4, nazev: 'SoD realizace v4', symboly: sym } } });
+  const k4 = kontrolyProved(ctx(zak, v, sab(['CENA_BEZ_DPH', 'SOD_PRIPLATKY_OBJEDNANE'])));
+  const n = nal(k4, 'vsSablonaSod');
+  test('G víc šachet + šablona SoD v4: upozornění (ne zábrana), text = SOD_SACHTY_BEZ_SABLONY', n && n.uroven === KONTROLY_UROVEN
+    && n.text.indexOf(SOD_SACHTY_BEZ_SABLONY) === 0 && !kontrolyZabranaDokumentu(k4, 'sod') && !kontrolyZabranaDokumentu(k4, 'nabidka'), n);
+  test('G vsSablonaSod: pravidlo neumí zábranu (zabranaMozna ne)', !kontrolyPravidla().find(p => p.kod === 'vsSablonaSod').zabranaMozna);
+  test('G šablona SoD v5 (SACHTY_SOD_PREDMET): bez nálezu', !nal(kontrolyProved(ctx(zak, v, sab(['CENA_BEZ_DPH', 'SACHTY_SOD_PREDMET', 'SACHTY_SOD_ROZPIS']))), 'vsSablonaSod'));
+  test('G šablona SoD neznámá: mlčí', !nal(kontrolyProved(ctx(zak, v)), 'vsSablonaSod'));
+  const { zak: z1, v: v1 } = zakazka(false);
+  test('G jedna šachta se šablonou SoD v4: bez nálezu', !nal(kontrolyProved(ctx(z1, v1, sab(['CENA_BEZ_DPH']))), 'vsSablonaSod'));
+  /* sodNevyplneno / sodProjNevyplneno */
+  const nv = o => ({ navic: { sodNevyplneno: o } });
+  const kn = kontrolyProved(ctx(zak, v, nv({ sod: ['OBJEDNATEL_ICO', 'SOD_TERMIN_MONTAZ_OD'], sodProj: ['SODP_SPRAVNI_POPLATKY'] })));
+  const a = nal(kn, 'sodNevyplneno'), b = nal(kn, 'sodProjNevyplneno');
+  test('G sodNevyplneno: upozornění vyjmenuje údaje lidsky, nikdy zábrana', a && a.uroven === KONTROLY_UROVEN
+    && /IČO objednatele, termín montáže od/.test(a.text) && !/OBJEDNATEL_ICO/.test(a.text) && !kontrolyZabranaDokumentu(kn, 'sod'), a);
+  test('G sodProjNevyplneno: upozornění, nikdy zábrana', b && b.uroven === KONTROLY_UROVEN && /správní poplatky/.test(b.text)
+    && !kontrolyZabranaDokumentu(kn, 'sodProj'), b);
+  test('G sodNevyplneno: bez informace / prázdný seznam mlčí', !nal(kontrolyProved(ctx(zak, v)), 'sodNevyplneno')
+    && !nal(kontrolyProved(ctx(zak, v, nv({ sod: [] }))), 'sodNevyplneno') && !nal(kontrolyProved(ctx(zak, v, nv({ sod: null }))), 'sodNevyplneno'));
+  test('G nová pravidla stojí za vsSablona na konci seznamu', kontrolyPravidla().map(p => p.kod).slice(-4).join() === 'vsSablona,vsSablonaSod,sodNevyplneno,sodProjNevyplneno');
+}
+
 console.log(ok + ' OK, ' + fail + ' FAIL');
 if (fail) process.exit(1);
