@@ -15,6 +15,10 @@ Nad `aa445a1` (integrace = test v11.11.1), prompt `podklady/PROMPT_VSD_PO_KOLE47
 | mutace | ✅ | jádro [VSD] 4/4 (`mutace_jadro.mjs`), server [VSD] 13 (`netlify/mutace.mjs`), 2 starší zadání serveru přepsána na nový tvar `zakazky.mjs` |
 | příručka kap. 25 | ✅ | věta o mezích (10 variant, 1–20 ks) + položka „Pipedrive“; verze příručky v12.11.1 |
 | roadmapa | ✅ | #586, #587, #588 hotovo v12.11.1 (`roadmapa.py --kontrola` čisté) |
+| testy | ✅ | `src/test_vs_kontroly.js` 40/0 (nad bází 17 FAIL); `netlify/test_vsd_pd_poznamka.mjs` 34/0 (jen simulátor; bez napojení padá); `test_vs_e5_pd` 9/0; zlatá sada 319/319; `test_kontroly` 159/0 |
+| mutace | ✅ | jádro [VSD] 4/4, server [VSD] 13/13 (sada `test_vsd_pd_poznamka.mjs` doplněna do seznamu sad `netlify/mutace.mjs`); `--kontrola` jádro 824, server 1400 úseků |
+| kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | sady 427/0/7 (přeskočeny jen sady s firemními podklady; harnessy prohlížeče přes `node_modules/playwright` → globální), hodiny +400 dní 344/0/1, statické kontroly zelené. Celé mutace pouští koordinace. |
+| kontext sezení | 39 % | `get_session` 12. 11. |
 
 ## Rozhodnutí bez J. V. (výchozí varianty)
 
