@@ -16,7 +16,8 @@ Do `test-draft`, `test`, `main` ani integrace nic; na Disk, weby a do Pipedrive 
 | C3 kontrola `sodNevyplneno` / `sodProjNevyplneno` + věta po tisku | ✅ jen upozornění | `src/kontroly.js`, `src/ui/kontroly_ui.js`, `src/ui/sod_ui.js` |
 | testy, mutace [C2] 8/8, [C3] 9/9 | ✅ | `src/test_sod_v5.js`, `src/test_sod_tecky.js`, `src/test_vs_kontroly.js` G, `mutace_jadro.mjs` |
 | příručky, CHANGELOG, roadmapa #583 #584 | ✅ | `manual/obsah.json` kap. 24/25, `manual/admin/obsah.json` A5 |
-| kolo `--bez-mutaci`, mutace jádra po částech | viz níž | |
+| kolo `--bez-mutaci` (KNG_PODKLADY = 34 šablon z Disku + plná moc) | 427/2/6, hodiny +400 dní 344/1/1, statické 5/5 — selhání jen předem padající (níž) | `nastroje/testovaci_kolo.sh` |
+| mutace jádra celé po částech (N = 4, worktree) | ✅ ZELENÁ ČÁST ×4: 210 + 209 + 209 + 209 = **837/837**; server `--kontrola` 1387 úseků OK (server se nemění) | `mutace_jadro.mjs` |
 
 **Změněná očekávání starých testů (pro revizi):**
 - `src/test_sod_proj_cislo.js` — „jen mezery v Čísle SoD“: dřív `číslo {{SOD_CISLO_SMLOUVY}}`, nově `číslo ……`
