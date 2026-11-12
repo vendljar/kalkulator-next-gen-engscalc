@@ -945,9 +945,14 @@ function docxSmyckaSachet(xml, sachty) {
     });
     xml = xml.slice(0, rz.zac) + kopie.join('') + xml.slice(rk.kon);
   }
-  /* SACHTY_*: odstavec s prázdnou hodnotou pryč (v buňce zůstane aspoň jeden) */
+  /* SACHTY_*: odstavec s prázdnou hodnotou pryč (v buňce zůstane aspoň jeden).
+   * C2 #583: jen symboly smyčky CN (`spolecne`, SACHTY_CELKEM_POPIS) — do v11.11
+   * filtr /^SACHTY_/ smazal i odstavce {{SACHTY_SOD_PREDMET}} / {{SACHTY_SOD_ROZPIS}}
+   * smlouvy (generátor jde přes smyčku u každého dokumentu), takže by se šachty
+   * do Wordu SoD nedostaly nikdy. Symboly smlouvy řídí builder (odstavcePryc). */
+  const smyckove = Object.keys(spolecne).concat(['SACHTY_CELKEM_POPIS']);
   return xml.replace(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, (p) => {
-    const k = klicePlaceholderu(p).filter(x => /^SACHTY_/.test(x));
+    const k = klicePlaceholderu(p).filter(x => /^SACHTY_/.test(x) && smyckove.indexOf(x) >= 0);
     if (!k.length) return p;
     if (k.every(x => jePrazdnaHodnota(spolecne[x]))) return '\uE001';
     const hodnoty = {};

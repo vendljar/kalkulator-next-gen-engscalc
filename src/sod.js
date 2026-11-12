@@ -8,12 +8,13 @@
  * není tu žádný druhý výpočet, jen jiná šablona a jiné jméno souboru.
  *
  * Symboly, které aplikace zná (hlavička zakázky, FIRMA_*, ZPRAC_*, PODM_*,
- * CENA_BEZ_DPH / PROJ_CELKEM_BEZ_DPH), se v šabloně vyplní samy. Symboly,
- * které aplikace NEZNÁ (termíny, splátky, zástupci objednatele, číslo
- * smlouvy — SOD_* / SODP_* / PM_* / OBJEDNATEL_*), buildery záměrně NEPLNÍ:
- * docxgen neznámý symbol nechává v dokumentu viditelný jako {{…}}, takže
- * obchodník ve Wordu na první pohled vidí, co má doplnit. Kdyby se plnily
- * prázdnem, beze stopy by zmizely a chybějící termín by si nikdo nevšiml.
+ * CENA_BEZ_DPH / PROJ_CELKEM_BEZ_DPH), se v šabloně vyplní samy. Co zakázka
+ * nemá (termíny, zástupci objednatele, číslo smlouvy — SOD_* / SODP_* / PM_* /
+ * OBJEDNATEL_*), buildery záměrně NEPLNÍ prázdnem — beze stopy by zmizelo
+ * a chybějící termín by si nikdo nevšiml. Od C3 #584 (11. 11. 2026) dostane
+ * takové místo ve Wordu tečky „……" (sodNevyplnene + docxgen `nevyplnene`)
+ * a kontrola před tiskem i věta po tisku ho vyjmenují; do té doby zůstával
+ * vidět symbol {{…}}.
  *
  * Plná moc není smlouva o ceně — je to administrativa k OBJEKTU. Nese jen
  * firemní údaje zmocněnce ({{FIRMA_*}}) a adresu stavby; údaje zmocnitele
@@ -205,7 +206,7 @@ function sodData(zak, varianta, jekly, lang, sablona) {
   sodVedouciMontaziDoplna(d.placeholders);
   /* Termíny, podpisy a kopie faktur z krycího listu OCK (P9.2, P9.4 —
    * rozhodnutí J. V. 29. 9. 2026), od 1. 10. 2026 i místo plnění, denní
-   * pokuta a datum podpisu (Q2–Q4, Q10). Co obchodník nevyplnil, zůstane {{…}}. */
+   * pokuta a datum podpisu (Q2–Q4, Q10). Co obchodník nevyplnil, dostane tečky „……" (C3 #584). */
   if (typeof kryciSodSymboly === 'function') kryciSodSymboly(zak, varianta, jekly, d.placeholders);
   /* Režim DPH a skladné (18. 10. 2026) — místo plnění česky z krycího
    * listu (před překladem hodnot). */
@@ -442,8 +443,9 @@ function sodNevyplneneText(klice) {
  * (v1 tam měly symbol pokuty za prodlení s placením a mají ho dál).
  *   – „0" (bez pokuty): věta zmizí celá — vrátí se symbol pro odstavcePryc,
  *     ale JEN když ho šablona má (bez informace o šabloně se nic nemaže),
- *   – vlastní znění bez čitelného procenta: symbol se z dat vyřadí, aby
- *     zůstal ve Wordu vidět jako {{…}} (prázdno by dalo „ve výši  % z ceny"),
+ *   – vlastní znění bez čitelného procenta: symbol se z dat vyřadí — ve Wordu
+ *     dostane tečky „ve výši …… %" a kontrola ho vyjmenuje (C3 #584; prázdno
+ *     by dalo „ve výši  % z ceny"),
  *   – procento: symbol se vyplní jako dosud (PODM_*_PROC z krycího listu).
  * Vrací seznam symbolů, jejichž odstavce do smlouvy nepatří. */
 function sodPokutaZhotovitele(placeholders, sablona, symbol, text) {
