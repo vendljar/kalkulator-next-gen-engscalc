@@ -56,8 +56,6 @@ export default async (req) => {
   const vazba = pdVazbaZiva(ulozena, norm);
   if (!vazba) return json({ ok: false, chyba: 'Zakázka nemá živou vazbu na deal z webhooku.' }, 409);
   if (akce === 'potvrdit' && vazba.stav !== 'ceka') return json({ ok: false, chyba: 'Vazba už je potvrzená.' }, 409);
-  /* Revize K40c N4: nahlášenou vazbu nejde nahlásit znovu (protokol by šlo plnit donekonečna). */
-  if (akce === 'chybna' && vazba.nahlaseno) return json({ ok: false, chyba: 'Vazba už je nahlášená jako chybná.' }, 409);
   if (akce === 'zrusit' && !pdVazbaSmiMenit(ulozena, relace))
     return json({ ok: false, chyba: 'Vazbu na deal smí zrušit jen autor zakázky nebo administrátor. Použijte „Vazba je chybná“.' }, 403);
 
@@ -76,6 +74,8 @@ export default async (req) => {
       nova.stav = 'potvrzeno';
       pdProtokol(zak, kdo, 'Vazbu na deal ' + deal + ' (číslo nabídky ' + cislo + ') potvrdil („V pořádku“)');
     } else if (akce === 'chybna') {
+      /* Revize K40c N4: nahlášenou vazbu nejde nahlásit znovu (protokol by šlo plnit
+       * donekonečna) — kontrola ve výhradním úseku, nad čerstvě přečtenou zakázkou. */
       if (nova.nahlaseno) return { odpoved: json({ ok: false, chyba: 'Vazba už je nahlášená jako chybná.' }, 409) };
       nova.nahlaseno = { kdo: String(relace.email || ''), kdy: ted };
       pdProtokol(zak, kdo, 'Vazbu na deal ' + deal + ' nahlásil jako chybnou — rozhodne autor zakázky nebo administrátor');
