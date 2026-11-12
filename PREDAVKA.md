@@ -29,6 +29,11 @@ pole `address.value`. Webhook dřív do protokolu nezapisoval (B201) — teď an
 selže); mutace `[K40c]` 25/25 chycené; `--kontrola` server 1437/1437 a jádro 853/853 (posunutá zadání #447 C4,
 #509). Celé testovací kolo a celé mutace po částech pouští koordinace při slučování.
 
+**Po sloučení integrace `4acda93` (v12.11.7):** test_k40c_webhook 105/0, test_vsd_pd_poznamka 49/0,
+test_553_webhook 76/0, test_pd_simulator 70/0, test_prava 993/0; mutace [K40c] 29/29 a [VSD] 20/20; kolo
+--bez-mutaci VŠE ZELENÉ (sady 389/0, 59 prohlížečových přeskočeno — Playwright se v kontejneru nenačte; hodiny
++400 dní 358/0; statické 5/5). pd_vazba a pd_organizace volají Pipedrive s casLimitMs 2,5 s.
+
 **Revize Fable (12. 11.) — opraveno:** N1 výpadek ARES (otisk se neukládá), N2 stará vazba = „webhook“,
 N3 odkaz v dealu až po zápisu, N4 opakované nahlášení 409, N5 bez autora jen administrátor (test), N7 ručně
 znovu zadaný odmítnutý deal vypadne ze seznamu, N8 `test_prava.mjs` přes `pomoc_test_admin.mjs`.
