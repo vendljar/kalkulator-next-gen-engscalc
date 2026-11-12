@@ -485,6 +485,29 @@
         },
         {
           "typ": "podnadpis",
+          "text": "Šablona smlouvy o dílo — realizace v5 (víc šachet)"
+        },
+        {
+          "typ": "text",
+          "text": "Smlouva o dílo zakázky s víc šachtami vyjmenuje šachty jen ze šablony **Sablona_SOD_REALIZACE_v5** — od v4 se liší dvěma samostatnými odstavci, které nesou jen symbol: `{{SACHTY_SOD_PREDMET}}` v čl. II pod popisem předmětu díla a `{{SACHTY_SOD_ROZPIS}}` v čl. V pod cenou dle nabídky (celková cena zůstává první). U zakázky s jednou šachtou oba odstavce zmizí a smlouva vyjde **znak po znaku jako z v4**. Se starou v4 se smlouva víc šachet vytiskne s celkovou cenou a aplikace obchodníka jen upozorní (předmět doplní ve Wordu). Šablonu dělá nástroj z repozitáře z revidovaných v4 všech jazyků, nic se nepřekládá; podrobnosti v podkladu `podklady/SABLONA_SOD_REALIZACE_V5_11_11.md`."
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: nahrát šablonu SoD realizace v5",
+          "polozky": [
+            {
+              "text": "Šablonu nahrávejte až na web, který má kód dávky C2/C3 (v12.11 a novější) — starší kód by u jedné šachty nechal ve smlouvě prázdné řádky. Na **ostrém** až s víc šachtami (dnes je tam vypnuté)."
+            },
+            {
+              "text": "V **Šablonách dokumentů** u *Šablony smlouvy o dílo — REALIZACE (OCK)* nahrajte novou českou verzi **Sablona_SOD_REALIZACE_v5.docx**. Kontrola má ukázat: proti v4 **přibylo 2** (SACHTY_SOD_PREDMET, SACHTY_SOD_ROZPIS), **ubylo 0**, čeština, bez vad."
+            },
+            {
+              "text": "Pak nahrajte **všechny tři jazyky najednou** — **_EN**, **_DE**, **_FR** z dávky (ne *Vyrobit z češtiny*: jazykové v5 vznikly z revidovaných v4) — a **Zveřejnit**. Zkouška na testovacím webu: smlouva zakázky s jednou šachtou jako dřív, zakázka se dvěma šachtami má řádek šachet v čl. II a řádek za šachtu v čl. V."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
           "text": "Standard OCK"
         },
         {
