@@ -43,7 +43,7 @@ import { pdNastaveno, pdRezim, pdZavolej, PdChyba, pdStropCerstvych, PD_CACHE_UL
 import { pdDealNaNase, pdHodnota } from '../lib/pd_mapa.mjs';
 import { aresNacti, aresIcoNorm, aresPoleHlavicky, ARES_SIT } from '../lib/ares_server.mjs';
 import {
-  pdVazbaNorm, pdOdmitnuto, pdRejstrikZapis, pdProtokol, pdPoleText, pdOrgText, pdOrgHodnoty, pdOrgRozdily,
+  pdVazbaNorm, pdOdmitnuto, pdRejstrikZapis, pdProtokol, pdPoleText, pdOrgText, pdOrgHodnoty, pdOrgRozdily, pdIcoShoda,
 } from '../lib/pd_vazba.mjs';
 import { zakazkaPrijmi } from '../lib/zakazka_kontrola.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
@@ -231,6 +231,7 @@ async function zpracuj(req, dealId, ULO, G) {
       aresRozdily, doplneno: vazbaPlati ? [...new Set(vazbaPlati.doplneno.concat(doplneno))] : doplneno };
     if (subjekt ? subjekt.zanikla : (vazbaPlati && vazbaPlati.zanikla && !aresVolano)) vazba.zanikla = true;
     if (vazbaPlati && vazbaPlati.nahlaseno) vazba.nahlaseno = vazbaPlati.nahlaseno;
+    if (pdIcoShoda(icoSurove, pdWebhookHlavicka(zak, zadani.strana).ico).ok) vazba.icoShoda = true;
     zak.pdVazbaWebhook = pdVazbaNorm(vazba);
     if (stara && !bezVazby && !zmena.zmeneno.length && JSON.stringify(zak.pdZadani) === JSON.stringify(stara.pdZadani)
         && JSON.stringify(zak.pdVazbaWebhook) === JSON.stringify(pdVazbaNorm(stara.pdVazbaWebhook)))

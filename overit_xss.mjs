@@ -512,6 +512,79 @@ console.log('\nB166 — žlutá lišta #404 se zálohou z localStorage');
   await p.close();
 }
 
+/* K40c #581: UPOZORNĚNÍ NA VAZBU Z WEBHOOKU A DIALOG „OPRAVIT FIRMU V PIPEDRIVE".
+ * Otrávené číslo nabídky ve vazbě, kdo nahlásil, zákazník z ARES v hlavičce
+ * a názvy firmy z Pipedrive i z ARES v dialogu opravy (odpověď serveru je
+ * podvržená — onlineApi se nahradí). Tlačítka podle role: autor a správce
+ * „Zrušit vazbu", ostatní „Vazba je chybná"; oprava zhasnutá bez shody IČO. */
+console.log('\nK40c — upozornění na vazbu z webhooku a dialog opravy firmy');
+{
+  const PAYL = (c) => `');window.__XSS.push('${c}');//"><img src=x onerror="window.__XSS.push('${c}')">`;
+  const p = await b.newPage({ viewport: { width: 1500, height: 1000 } });
+  const chybyStranky = [];
+  p.on('pageerror', e => chybyStranky.push(String(e && e.message || e).slice(0, 160)));
+  await p.goto(KDE); await p.waitForTimeout(400);
+  const r = await p.evaluate(async (PAYS) => {
+    const PAYL = new Function('c', 'return ' + PAYS)();
+    window.__XSS = [];
+    const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 0998'; z.autor = 'autor@priklad.cz';
+    if (typeof zkusebniCenik === 'function') z.varianty[0].data.cenik = zkusebniCenik();
+    z.objednatel = PAYL('ares.objednatel'); z.adresaObjednatele = PAYL('ares.sidlo'); z.dic = PAYL('ares.dic');
+    z.pdDealId = '4711';
+    z.pdVazbaWebhook = { deal: '4711', kdy: '2026-11-12T08:00:00.000Z', cislo: PAYL('vazba.cislo'), strana: 'ock', stav: 'ceka',
+      ares: 'ok', icoOtisk: '', aresRozdily: ['nazev', 'adresa'], doplneno: ['objednatel', PAYL('vazba.doplneno')],
+      nahlaseno: { kdo: PAYL('vazba.nahlaseno'), kdy: '2026-11-12T09:00:00.000Z' } };
+    ZAK = importZakazka(JSON.parse(JSON.stringify(z)));
+    const stav = {};
+    const kresli = async (ja) => {
+      ONLINE_STAV.ja = ja; ONLINE_STAV.soubor = 'x.json';
+      NAST.jeAdmin = ja.role === 'Administrátor';
+      try { prepniTab('kalk'); } catch (e) {}
+      render(); await new Promise(res => setTimeout(res, 80));
+      const el = document.querySelector('.pd-vazba-upoz');
+      const tl = el ? [...el.querySelectorAll('button')].map(b => b.dataset.pdVazba + (b.disabled ? ':off' : '')) : [];
+      return { vidno: !!el, tl, text: el ? el.textContent : '' };
+    };
+    stav.autor = await kresli({ email: 'autor@priklad.cz', role: 'Obchodník', jmeno: 'Autor' });
+    stav.cizi = await kresli({ email: 'cizi@priklad.cz', role: 'Obchodník', jmeno: 'Cizí' });
+    stav.admin = await kresli({ email: 'spravce@priklad.cz', role: 'Administrátor', jmeno: 'Správce' });
+    ZAK.pdVazbaWebhook.icoShoda = true;
+    stav.adminShoda = await kresli({ email: 'spravce@priklad.cz', role: 'Administrátor', jmeno: 'Správce' });
+    /* Dialog opravy s podvrženou odpovědí serveru (názvy z Pipedrive i z ARES). */
+    const puvodni = window.onlineApi;
+    window.onlineApi = async (cesta, telo) => (telo && telo.akce === 'nahled')
+      ? { ok: true, organizace: 5, rozdily: [{ klic: 'nazev', label: PAYL('dialog.label'), ted: PAYL('pipedrive.nazev'), nove: PAYL('ares.nazev') }],
+          dicChybi: true, dicVeta: 'DIČ se do Pipedrive nezapíše — organizace takové pole nemá.' }
+      : { ok: true, zapsano: [] };
+    const hotovo = pdOrganizaceOpravUI();
+    await new Promise(res => setTimeout(res, 200));
+    const dlg = document.querySelector('.dlg-text');
+    stav.dialog = dlg ? dlg.textContent : '';
+    const ne = [...document.querySelectorAll('[data-dlg]')].find(b => /Nezapisovat/.test(b.textContent));
+    if (ne) ne.click();
+    await hotovo.catch(() => {});
+    window.onlineApi = puvodni;
+    /* Štítek v Přehledu nabídek. */
+    ONLINE_STAV.ja = { email: 'autor@priklad.cz', role: 'Obchodník' };
+    stav.stitekAutor = pdVazbaRejstrikStitek({ pdNahlaseno: true, autor: 'autor@priklad.cz' });
+    ONLINE_STAV.ja = { email: 'cizi@priklad.cz', role: 'Obchodník' };
+    stav.stitekCizi = pdVazbaRejstrikStitek({ pdNahlaseno: true, autor: 'autor@priklad.cz' });
+    await new Promise(res => setTimeout(res, 200));
+    return { ...stav, xss: [...new Set(window.__XSS || [])], img: document.querySelectorAll('img[src="x"]').length };
+  }, PAYL.toString());
+  zkus('K40c: upozornění se ukázalo s otráveným číslem jako textem', r.autor.vidno && /__XSS\.push\('vazba\.cislo'\)/.test(r.autor.text), r.autor.text.slice(0, 160));
+  zkus('K40c: autor vidí „V pořádku" a „Zrušit vazbu"', r.autor.tl.join() === 'potvrdit,zrusit', r.autor.tl.join());
+  zkus('K40c: cizí obchodník vidí „V pořádku" a „Vazba je chybná" (už nahlášená = zhasnutá)', r.cizi.tl.join() === 'potvrdit,chybna:off', r.cizi.tl.join());
+  zkus('K40c: administrátor bez shody IČO — oprava firmy zhasnutá', r.admin.tl.join() === 'potvrdit,zrusit,organizace:off', r.admin.tl.join());
+  zkus('K40c: administrátor se shodou IČO — oprava firmy aktivní', r.adminShoda.tl.join() === 'potvrdit,zrusit,organizace', r.adminShoda.tl.join());
+  zkus('K40c: dialog opravy ukázal názvy z Pipedrive i ARES jako text a větu o DIČ', /pipedrive\.nazev/.test(r.dialog) && /ares\.nazev/.test(r.dialog)
+    && /DIČ se do Pipedrive nezapíše/.test(r.dialog), r.dialog.slice(0, 200));
+  zkus('K40c: štítek „vazba nahlášena" vidí autor, cizí obchodník ne', /vazba nahlášena/.test(r.stitekAutor) && r.stitekCizi === '');
+  zkus('K40c: nic se nespustilo', r.xss.length === 0 && r.img === 0, JSON.stringify([r.xss, r.img]));
+  zkus('K40c: stránka nespadla', chybyStranky.length === 0, chybyStranky.join(' | '));
+  await p.close();
+}
+
 /* Sonda na sobě: kdyby payload neuměl spustit nic, všechny kontroly výš by
  * prošly vždycky. Vloží se přímo do stránky syrovým innerHTML. */
 {

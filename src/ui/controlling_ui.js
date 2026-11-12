@@ -471,7 +471,7 @@ function ctrlUiKartaExport() {
     ${zak ? `<div class="btns" style="margin-top:6px;align-items:center">
       <label>Pipedrive deal id zakázky <input id="ctrlPdDeal" inputmode="numeric" size="12" value="${esc(zak.pdDealId || '')}"
         placeholder="např. 1234" onchange="ctrlUiPdDeal(this.value)"></label>
-      <span class="note">jde do sloupce „Pipedrive deal" — zadává a opravuje jen administrátor (hlídá server)</span></div>` : ''}
+      <span class="note">jde do sloupce „Pipedrive deal" — zadává a opravuje administrátor, u vlastních zakázek i jejich autor (hlídá server)</span></div>` : ''}
     <div class="btns" style="margin-top:8px">
       <button class="primary" id="ctrlExportXlsx" onclick="ctrlUiExport('xlsx')" ${zamek ? '' : 'disabled'}>⤓ Stáhnout předkalkulaci (.xlsx)</button>
       <button id="ctrlExportCsv" onclick="ctrlUiExport('csv')" ${zamek ? '' : 'disabled'}>⤓ CSV (list Řádky)</button></div>

@@ -1367,8 +1367,11 @@ function pdStavRadek(zak) {
   const kdy = (st && typeof ctrlDenPraha === 'function') ? ctrlDenPraha(st.nacteno) : '';
   const titul = 'stav obchodu v Pipedrive — jen ke čtení, mění se v Pipedrive'
     + (kdy ? ' (načteno ' + kdy + ')' : '');
+  /* K40c #581: „Opravit firmu v Pipedrive“ i u řádku stavu (autor a administrátor). */
+  const oprava = (maDeal && typeof pdVazbaOpravaTlacitko === 'function') ? pdVazbaOpravaTlacitko(zak, pdVazbaZivaUI(zak)) : '';
   return `<div class="row pd-stav-radek"><label>Stav Pipedrive<span class="pill ${trida}" style="margin-left:12px">${esc(stitek)}</span></label>
-    <select class="pd-stav${maDeal ? '' : ' bez-dealu'}" disabled title="${esc(titul)}"><option selected>${esc(pole)}</option></select></div>`;
+    <select class="pd-stav${maDeal ? '' : ' bez-dealu'}" disabled title="${esc(titul)}"><option selected>${esc(pole)}</option></select></div>${
+    oprava ? `<div class="row"><label></label>${oprava}</div>` : ''}`;
 }
 
 function zakazkaHlavicka(ock) {
@@ -1626,7 +1629,7 @@ function zakazkaHlavicka(ock) {
       (typeof zamekCteniJe === 'function' && zamekCteniJe()) ? ' cteni-zamceno' : ''}">
         <div class="zak-bar-h">Zakázka a varianta${radaTed === 'zahr'
           ? ' <span class="rada-stitek">zahraniční ceník</span>' : ''}</div>
-        <div class="body">${inner}</div></div>`
+        <div class="body">${typeof pdVazbaUpozorneni === 'function' ? pdVazbaUpozorneni(ZAK) : ''}${inner}</div></div>`
       + kalkLista(false);
   }
 
@@ -1651,7 +1654,7 @@ function zakazkaHlavicka(ock) {
       (typeof zamekCteniJe === 'function' && zamekCteniJe()) ? ' cteni-zamceno' : ''}">
       <div class="zak-bar-h">Zakázka a varianta${radaTed === 'zahr'
         ? ' <span class="rada-stitek">zahraniční ceník</span>' : ''}</div>
-      <div class="body">${inner}</div></div>`
+      <div class="body">${typeof pdVazbaUpozorneni === 'function' ? pdVazbaUpozorneni(ZAK) : ''}${inner}</div></div>`
     + kalkLista(true);
 }
 

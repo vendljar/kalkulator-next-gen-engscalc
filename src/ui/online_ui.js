@@ -4149,7 +4149,7 @@ function onlineRadekZakazky(z, vyber) {
     <td style="text-align:left;white-space:normal">${esc(z.nazevAkce || '—')}${z.adresa
       ? `<div class="rejstrik-adresa" style="font-size:11px;color:#6b7686">${esc(z.adresa)}</div>` : ''}</td>
     <td style="text-align:left;white-space:normal">${esc(z.objednatel || '—')}</td>
-    <td><span class="pill mut">${esc(druh)}</span>${rada}${sachty}</td>
+    <td><span class="pill mut">${esc(druh)}</span>${rada}${sachty}${typeof pdVazbaRejstrikStitek === 'function' ? pdVazbaRejstrikStitek(z) : ''}</td>
     <td>${esc(z.datum || '')}</td>
     <td>${z.variant}</td>
     <td>${odeslane}</td>

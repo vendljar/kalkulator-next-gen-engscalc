@@ -143,7 +143,9 @@ for (const [rez, ocek] of [['404', 'nenalezeno'], ['500', 'vypadek'], ['nejson',
   test('ARES ' + rez + ' → ' + ocek, a.stav === ocek, a);
 }
 let t0 = Date.now();
-a = await A.aresNacti(ICO1, { fetch: mf('pomaly'), timeoutMs: 200 });
+/* Pojistka testu: kdyby limit nefungoval, test nečeká donekonečna (mutace). */
+const hlidka = (p, ms) => Promise.race([p, new Promise((res) => setTimeout(() => res({ stav: 'VISI' }), ms))]);
+a = await hlidka(A.aresNacti(ICO1, { fetch: mf('pomaly'), timeoutMs: 200 }), 1500);
 test('mock, který neodpoví → „vypadek“ po časovém limitu', a.stav === 'vypadek' && Date.now() - t0 < 1500, [a, Date.now() - t0]);
 test('výchozí časový limit je 3 s, strop odpovědi 200 kB', A.ARES_TIMEOUT_MS === 3000 && A.ARES_ODPOVED_MAX === 200 * 1024);
 a = await A.aresNacti(ICO3, { fetch: mf('ok') });
@@ -250,8 +252,9 @@ for (const rez of ['404', '500', 'nejson', 'jineIco', 'velka', 'pomaly']) {
   ares.rezim = rez;
   n0 = ares.volani;
   t0 = Date.now();
-  r = await volej(D4.id);
+  r = await hlidka(volej(D4.id), 8000);
   const ms = Date.now() - t0;
+  if (r.stav === 'VISI') { test('ARES ' + rez + ': webhook nevisí (časový limit ARES)', false, ms); ares.rezim = 'ok'; break; }
   ares.rezim = 'ok';
   const z4 = zakazka(r.soubor);
   test('ARES ' + rez + ' → webhook 200 s varováním a firmou z dealu', r.status === 200 && ares.volani === n0 + 1
