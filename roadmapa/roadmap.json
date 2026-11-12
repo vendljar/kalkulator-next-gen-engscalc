@@ -8441,7 +8441,7 @@
    "proc" : "Rozhodnutí J. V. 11. 11. 2026 (B0.4): smlouva u víc šachet vyjmenuje šachty; se starou šablonou aplikace jen upozorní, nezastaví.",
    "detail" : "nastroje/vyrob_sablony.js --sod-real-v5 (sodRealV5): v4 + samostatný odstavec {{SACHTY_SOD_PREDMET}} za popisem předmětu (čl. II) a {{SACHTY_SOD_ROZPIS}} za cenou dle nabídky (čl. V), CZ/EN/DE/FR z revidovaných v4; mimo nové odstavce = v4 bajt po bajtu. sod.js: u jedné šachty odstavce zmizí (odstavcePryc, jen symboly šablony), víc šachet + šablona bez symbolu → upozornění SOD_SACHTY_BEZ_SABLONY; kontrola vsSablonaSod (upozornění). Oprava docxgen: smyčka šachet CN mazala i odstavce SACHTY_SOD_* (šachty by se do Wordu SoD nedostaly).",
    "hotovoV" : "v12.11.1",
-   "testy" : "src/test_sod_v5.js 40/0 (s KNG_PODKLADY), src/test_vs_kontroly.js G; mutace [C2] 8/8",
+   "testy" : "src/test_sod_v5.js 40/0 (s KNG_PODKLADY), src/test_vs_kontroly.js G; mutace [C2] 8/8; celé mutace jádra 837/837 (N = 4); kolo --bez-mutaci 427/2/6 (2 předem padající sady se šablonami z Disku), hodiny 344/1/1, statické 5/5",
    "kde" : "nastroje/vyrob_sablony.js, src/sod.js, src/docxgen.js, src/kontroly.js, src/ui/kontroly_ui.js, podklady/SABLONA_SOD_REALIZACE_V5_11_11.md"
   },
   {
@@ -8457,7 +8457,7 @@
    "proc" : "Rozhodnutí J. V. 11. 11. 2026 (B0.5) a doplněk 11. 11. (plná moc tečky bez kontroly): ve smlouvě nesmí zůstat {{…}}.",
    "detail" : "sod.js sodNevyplnene (jeden seznam pro tečky i kontrolu), mapa popisů SOD_NEVYPLNENE_POPIS; docxgen volba nevyplnene (výchozí vypnuto) jako poslední krok po mazání odstavců a bloků, jen v textu; SoD realizace, SoD projekce, plná moc; nabídky beze změny. Kontroly sodNevyplneno a sodProjNevyplneno (upozornění), věta po tisku „Ve smlouvě zůstalo N míst k doplnění“.",
    "hotovoV" : "v12.11.1",
-   "testy" : "src/test_sod_tecky.js 32/0 (s KNG_PODKLADY), src/test_vs_kontroly.js G; mutace [C3] 9/9",
+   "testy" : "src/test_sod_tecky.js 32/0 (s KNG_PODKLADY), src/test_vs_kontroly.js G; mutace [C3] 9/9; celé mutace jádra 837/837",
    "kde" : "src/sod.js, src/docxgen.js, src/dokumenty.js, src/kontroly.js, src/ui/kontroly_ui.js, src/ui/sod_ui.js"
   }
  ],
