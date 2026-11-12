@@ -72,6 +72,13 @@ a ke každé přidá doporučení. **Co potom uděláte:** prodané a zamčené 
 ještě byly. Režim obnovy bere zámek ze zálohy jako doklad a razítko přijetí nepřepisuje, takže tyto zakázky projdou.
 Obnovu ze zálohy dělá aplikace, ne tento nástroj. Zbylé odmítnuté (bez zámku) pošlete koordinaci.
 
+**Pozor na rozsah obnovy ze zálohy:** záloha nese celou databázi. V dialogu obnovy vyberte **jen část „zakázky“**
+a režim **„doplnit“** (nikdy „přepsat“) — jinak obnova sáhne i na ceník, firmu, účty a ostatní zakázky testu.
+„Doplnit“ přidá i jiné chybějící zakázky ze zálohy, nejen TEST. **Nejdřív si pusťte náhled obnovy** a zkontrolujte,
+co se doplní. U obnovy ze **souboru** se ověření zámku počítá znovu, takže zámky z doby před #320 nemusí projít ani
+tudy — spolehlivější je serverový otisk z doby, kdy zakázky v databázi ještě byly (např. 1. 11.), pokud ho
+retence záloh ještě drží.
+
 ## 3. Náhled (nic se nezapíše)
 
 V kořeni klonu repa:
