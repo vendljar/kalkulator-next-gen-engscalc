@@ -145,6 +145,26 @@
  *           řádky VÝTAHOVÁ ŠACHTA a MŮSTKY ze v16 zmizí (prázdné), tabulka =
  *           řádky šachet + (sleva) + CENA CELKEM. Aplikace tiskne víc šachet jen
  *           do šablony, která smyčku má (vsSablonaZabrana).
+ *           JAZYKOVÉ v17 (C1 #582, 11. 11. 2026): když ve složce leží zveřejněná
+ *           Sablona_NABIDKA_CN_v16_<EN|DE|FR>.docx, v17 toho jazyka vznikne
+ *           PŘÍMO z ní (cnV17(xml, L) — kotva pruhu v jazyce souboru, u DE a EN
+ *           nejdřív cnUsazeni), takže ručně revidované znění v16 zůstane; text
+ *           v17_L bez řádků smyčky se ověří proti v16_L znak po znaku. Bez
+ *           souboru v16_L se jazyk jen strojově přeloží z CZ v17 slovníkem
+ *           aplikace (záloha, hlasité UPOZORNĚNÍ ve výpisu).
+ *
+ * CN USAZENÍ (C1 #582, J. V. 11. 11. 2026 B0.3 + doplněk) — samostatný režim:
+ *   node nastroje/vyrob_sablony.js --cn-usazeni <složka podkladů> <výstupní složka>
+ * Vstup:  Sablona_NABIDKA_CN_v16_DE.docx a _EN.docx (FR se jen přečte a vypíše)
+ * Výstup: soubory TÉHOŽ jména do výstupní složky (musí být jiná než vstupní).
+ *           Nadpisy řádků {{TS_USAZENI_CELNI|BOCNI|LEVA|PRAVA|ZADNI}} dostanou
+ *           jednotné znění ze slovníku aplikace: DE „POSITIONIERUNG DER
+ *           SCHACHTKONSTRUKTION – …", EN „SHAFT STRUCTURE POSITION – …"
+ *           (cnUsazeni). Tvrdé kontroly (cnUsazeniSoubor): každý řádek právě
+ *           jednou s očekávaným starým nebo novým zněním, symboly před = po,
+ *           docxXmlVady bez nálezu, ostatní text znak po znaku stejný; jinak
+ *           chyba a nic se nezapíše. Druhé spuštění nad opraveným souborem
+ *           nic nezmění.
  *
  * SoD PROJ se seznamem plateb (etapa B, 30. 9. 2026) — samostatný režim:
  *   node nastroje/vyrob_sablony.js --sod-proj <složka podkladů> [výstupní složka]
@@ -222,6 +242,7 @@ const REZIM_SOD_REAL3 = REZIM === '--sod-real-v3';
 const REZIM_CN15 = REZIM === '--cn-v15';
 const REZIM_CN16 = REZIM === '--cn-v16';
 const REZIM_CN17 = REZIM === '--cn-v17';
+const REZIM_CN_USAZENI = REZIM === '--cn-usazeni';   // C1 #582: nadpisy usazení v jazykové CN v16
 const REZIM_V5 = REZIM === '--proj-v5';
 const REZIM_V6 = REZIM === '--proj-v6';
 const REZIM_V7 = REZIM === '--proj-v7';
@@ -900,7 +921,8 @@ function cnRadekSTextem(xml, text) {
     chyba('CN v16: pruh „' + text + '" nemá očekávanou stavbu');
   return { zac, kon, radek };
 }
-function cnV17(xml) {
+function cnV17(xml, L) {
+  const pruhZakl = L && L !== 'cz' ? tr('ZÁKLADNÍ PARAMETRY ŠACHTY', L) : 'ZÁKLADNÍ PARAMETRY ŠACHTY';
   const ciste = xml.replace(/<[^>]+>/g, '');
   if (/SACHTA_NAZEV|\{#sachty\}/.test(ciste)) chyba('vstup už smyčku šachet má (je to v17?)');
   if (!/CENA_SACHTA_BEZ_DPH/.test(ciste) || !/TS_MUSTKY_SLOUPY/.test(ciste)) chyba('vstup není CN v16 (chybí {{CENA_SACHTA_BEZ_DPH}} nebo {{TS_MUSTKY_SLOUPY}}) — nejdřív vyrobte v16');
@@ -924,13 +946,93 @@ function cnV17(xml) {
   const tcNovy = tc.replace(vzor, vzor + novy);
   xml = xml.slice(0, celkem.zac) + celkem.radek.replace(tc, tcNovy) + xml.slice(celkem.kon);
   /* 3) technická část: ZÁKLADNÍ PARAMETRY ŠACHTY … MŮSTKY (konec = řádek TS_MUSTKY_SLOUPY) */
-  const zakl = cnRadekSTextem(xml, 'ZÁKLADNÍ PARAMETRY ŠACHTY');
+  const zakl = cnRadekSTextem(xml, pruhZakl);
   const sloupy = cnRadekSe(xml, 'TS_MUSTKY_SLOUPY');
-  if (!(zakl.kon <= sloupy.zac)) chyba('CN v16: řádek {{TS_MUSTKY_SLOUPY}} nestojí pod pruhem ZÁKLADNÍ PARAMETRY ŠACHTY');
-  const nadpis = cnBezId(zakl.radek).replace('>ZÁKLADNÍ PARAMETRY ŠACHTY<', '>{{SACHTA_TS_NAZEV}}<');
+  if (!(zakl.kon <= sloupy.zac)) chyba('CN v16: řádek {{TS_MUSTKY_SLOUPY}} nestojí pod pruhem ' + pruhZakl);
+  const nadpis = cnBezId(zakl.radek).replace('>' + pruhZakl + '<', '>{{SACHTA_TS_NAZEV}}<');
   xml = xml.slice(0, zakl.zac) + cnZnackaRadek(zakl.radek, '{#sachty}') + nadpis
     + xml.slice(zakl.zac, sloupy.kon) + cnZnackaRadek(sloupy.radek, '{/sachty}') + xml.slice(sloupy.kon);
   return xml;
+}
+
+/* CN USAZENÍ (C1 #582, 11. 11. 2026): jednotné nadpisy řádků usazení OCK
+ * v jazykové CN v16/v17. Kotva = symbol {{TS_USAZENI_*}} ve druhé buňce;
+ * nadpis je text první buňky (jeden odstavec, i rozdělený do víc běhů —
+ * cnBunkaTexty dá celý text do prvního w:t, písmo a stavba řádku zůstanou).
+ * Starý text musí být přesně ten očekávaný (CN_USAZENI_STARE) nebo už nový,
+ * jinak chyba — nic se nehádá. Nový text = slovník aplikace (tr). */
+const CN_USAZENI = [['TS_USAZENI_CELNI', 'USAZENÍ OCK – ČELNÍ STĚNA'], ['TS_USAZENI_BOCNI', 'USAZENÍ OCK – BOČNÍ STĚNY'],
+  ['TS_USAZENI_LEVA', 'USAZENÍ OCK – LEVÁ BOČNÍ STĚNA'], ['TS_USAZENI_PRAVA', 'USAZENÍ OCK – PRAVÁ BOČNÍ STĚNA'],
+  ['TS_USAZENI_ZADNI', 'USAZENÍ OCK – ZADNÍ STĚNA']];
+const CN_USAZENI_STARE = {
+  de: { TS_USAZENI_CELNI: 'BEFESTIGUNG DES SCHACHTGERÜSTS - VORDERWAND', TS_USAZENI_BOCNI: 'BEFESTIGUNG DES SCHACHTGERÜSTS - SEITENWÄNDE',
+    TS_USAZENI_ZADNI: 'BEFESTIGUNG DES SCHACHTGERÜSTS - RÜCKWAND' },
+  en: { TS_USAZENI_CELNI: 'SHAFT STRUCTURE FIXING - FRONT WALL', TS_USAZENI_BOCNI: 'SHAFT STRUCTURE FIXING - SIDE WALLS',
+    TS_USAZENI_ZADNI: 'SHAFT STRUCTURE FIXING - REAR WALL' },
+};
+const usazeniText = s => String(s).replace(/\u00a0/g, ' ').trim();
+function cnUsazeniNadpisy(xml) {
+  return CN_USAZENI.map(([sym]) => {
+    const r = cnRadekSe(xml, sym);
+    const tc = (r.radek.match(/<w:tc[\s>][\s\S]*?<\/w:tc>/) || [])[0];
+    const odst = tc ? (tc.match(/<w:p[\s>][\s\S]*?<\/w:p>/g) || []).filter(o => /<w:t[\s>]/.test(o)) : [];
+    if (odst.length !== 1) chyba('CN usazení: první buňka řádku {{' + sym + '}} nemá právě jeden odstavec s textem (' + odst.length + ') — nic nehádám');
+    return { sym, r, text: usazeniText(textBehu(odst[0])) };
+  });
+}
+function cnUsazeni(xml, L) {
+  const stare = CN_USAZENI_STARE[L];
+  if (!stare) chyba('CN usazení: jazyk „' + L + '" se neopravuje (jen ' + Object.keys(CN_USAZENI_STARE).join(', ') + ')');
+  const nahrazeno = [], uzSpravne = [];
+  for (const [sym, cz] of CN_USAZENI) {
+    const novy = tr(cz, L);
+    if (!novy || novy === cz) chyba('CN usazení: slovník nemá překlad „' + cz + '" (' + L + ')');
+    const n = cnUsazeniNadpisy(xml).find(x => x.sym === sym);
+    if (n.text === novy) { uzSpravne.push(sym + ': ' + novy); continue; }
+    if (!stare[sym] || n.text !== stare[sym])
+      chyba('CN usazení: nadpis řádku {{' + sym + '}} je „' + n.text + '", čekám ' + (stare[sym] ? '„' + stare[sym] + '" nebo ' : '') + '„' + novy + '" — nic nehádám');
+    xml = xml.slice(0, n.r.zac) + cnBunkaTexty(n.r.radek, [novy]) + xml.slice(n.r.kon);
+    nahrazeno.push(sym + ': „' + n.text + '" → „' + novy + '"');
+  }
+  return { xml, nahrazeno, uzSpravne };
+}
+/* JAZYKOVÁ v17 ze zveřejněné v16 téhož jazyka (C1 #582): u DE/EN nejdřív
+ * cnUsazeni, pak cnV17 s kotvou v jazyce souboru. Vrátí i rozdíly textu
+ * v17 bez řádků smyčky proti (opravené) v16 — prázdné = znak po znaku stejné. */
+const CN17_SMYCKA_TEXT = t => /\{#sachty\}|\{\/sachty\}|\{\{SACHT[AY]_/.test(t);
+async function cnV17TextRozdil(v16, v17) {
+  const a = await dg.docxTextSablony(v16.slice().buffer);
+  const b = (await dg.docxTextSablony(v17.slice().buffer)).filter(t => !CN17_SMYCKA_TEXT(t));
+  const r = [];
+  for (let i = 0; i < Math.max(a.length, b.length); i++) if (a[i] !== b[i]) r.push('#' + i + ' „' + (a[i] || '') + '" ≠ „' + (b[i] || '') + '"');
+  return r;
+}
+async function cnV17Jazyk(bajty16, L) {
+  let v16 = bajty16, nahrazeno = [];
+  if (CN_USAZENI_STARE[L]) { const u = await cnUsazeniSoubor(bajty16, L); v16 = u.bajty; nahrazeno = u.nahrazeno; }
+  const v17 = await vyrobZBajtu(v16, x => cnV17(x, L), 'CN v16 ' + L);
+  return { bajty: v17, nahrazeno, rozdilV16: await cnV17TextRozdil(v16, v17) };
+}
+/* Soubor: cnUsazeni nad document.xml + tvrdé kontroly; při vadě chyba (nic se nevrátí).
+ * `uprava` jen pro testy kontrol (src/test_cn_usazeni.js) — výchozí cnUsazeni. */
+async function cnUsazeniSoubor(bajty, L, uprava) {
+  let v = null;
+  const po = await vyrobZBajtu(bajty, x => { v = (uprava || cnUsazeni)(x, L); return v.xml; });
+  const [symPred, symPo] = [await symbolyASablona(bajty), await symbolyASablona(po)];
+  if (symPred.join('|') !== symPo.join('|')) chyba('CN usazení: symboly před a po se liší — nic nezapisuji');
+  const vady = await dg.docxXmlVady(po.slice().buffer);
+  if (vady.length) chyba('CN usazení: vady XML: ' + vady.join('; '));
+  const [tPred, tPo] = [await dg.docxTextSablony(bajty.slice().buffer), await dg.docxTextSablony(po.slice().buffer)];
+  if (tPred.length !== tPo.length) chyba('CN usazení: počet odstavců textu se změnil (' + tPred.length + ' → ' + tPo.length + ')');
+  const zmeny = [];
+  tPred.forEach((t, i) => { if (t !== tPo[i]) zmeny.push('„' + usazeniText(t) + '" → „' + usazeniText(tPo[i]) + '"'); });
+  const cekane = v.nahrazeno.map(x => x.replace(/^[A-Z_]+: /, ''));
+  if (zmeny.length !== cekane.length || zmeny.some((z, i) => z !== cekane[i]))
+    chyba('CN usazení: text se změnil i mimo nadpisy usazení (' + zmeny.length + ' změn, čekáno ' + cekane.length + ') — nic nezapisuji');
+  const stare = Object.values(CN_USAZENI_STARE[L]);
+  const zbylo = tPo.filter(t => stare.some(s => usazeniText(t).indexOf(s) >= 0));
+  if (zbylo.length) chyba('CN usazení: starý nadpis zůstal v textu: ' + zbylo.join(' | '));
+  return { bajty: po, nahrazeno: v.nahrazeno, uzSpravne: v.uzSpravne };
 }
 
 function cenovaTabulka(vzor, texty, symbol) {
@@ -1450,9 +1552,12 @@ function sodProjV4(xml, zaznam) {
 
 /* ---------- společné: přepis document.xml, zápis, mutace, ověření ---------- */
 async function vyrob(vstup, uprava) {
-  const polozky = await dg.zipPrecti(new Uint8Array(fs.readFileSync(vstup)));
+  return vyrobZBajtu(new Uint8Array(fs.readFileSync(vstup)), uprava, vstup);
+}
+async function vyrobZBajtu(bajty, uprava, popis) {
+  const polozky = await dg.zipPrecti(bajty);
   const doc = polozky.find(p => p.nazev === 'word/document.xml');
-  if (!doc) chyba(vstup + ': chybí word/document.xml');
+  if (!doc) chyba((popis || 'šablona') + ': chybí word/document.xml');
   doc.data = enc.encode(uprava(dec.decode(doc.data)));
   return new Uint8Array(await dg.zipZapis(polozky).arrayBuffer());
 }
@@ -1473,7 +1578,9 @@ async function symbolyASablona(bajty) {
 async function prelozSablonu(bajty, L, stat) {
   return dg.docxPrelozSablonu(bajty.slice().buffer, L, stat);
 }
-async function ulozSMutacemi(bajty, zaklad) {
+/* zJazyka (jen CN v17, C1 #582): { L: cesta k Sablona_NABIDKA_CN_v16_<L>.docx } —
+ * jazyk se souborem vznikne přímo z něj (cnV17Jazyk), ostatní strojovým překladem. */
+async function ulozSMutacemi(bajty, zaklad, zJazyka) {
   const vysledek = [];
   const cz = path.join(VYSTUP, zaklad + '.docx');
   fs.writeFileSync(cz, bajty);
@@ -1481,6 +1588,16 @@ async function ulozSMutacemi(bajty, zaklad) {
   const vadyCz = await dg.docxXmlVady(bajty.slice().buffer);
   vysledek.push({ soubor: path.basename(cz), vady: vadyCz, symbolu: symCz.length });
   for (const L of JAZYKY) {
+    if (zJazyka && zJazyka[L]) {
+      const j = await cnV17Jazyk(new Uint8Array(fs.readFileSync(zJazyka[L])), L);
+      const soubor = path.join(VYSTUP, zaklad + '_' + L.toUpperCase() + '.docx');
+      fs.writeFileSync(soubor, j.bajty);
+      const sym = await symbolyASablona(j.bajty);
+      const rozdil = so.sablonaSymbolyRozdil(symCz, sym);
+      vysledek.push({ soubor: path.basename(soubor), zdroj: path.basename(zJazyka[L]), vady: await dg.docxXmlVady(j.bajty.slice().buffer),
+        symbolu: sym.length, ubylo: rozdil.ubylo, pribylo: rozdil.pribylo, rozdilV16: j.rozdilV16, nahrazeno: j.nahrazeno, cesky: [] });
+      continue;
+    }
     const stat = {};
     const blob = await prelozSablonu(bajty, L, stat);
     const b = new Uint8Array(await blob.arrayBuffer());
@@ -1490,6 +1607,7 @@ async function ulozSMutacemi(bajty, zaklad) {
     const rozdil = so.sablonaSymbolyRozdil(symCz, sym);
     vysledek.push({ soubor: path.basename(soubor), vady: await dg.docxXmlVady(b.slice().buffer),
       symbolu: sym.length, ubylo: rozdil.ubylo, pribylo: rozdil.pribylo,
+      strojove: zJazyka ? 'Sablona_NABIDKA_CN_v16_' + L.toUpperCase() + '.docx ve složce není — jazyk je jen STROJOVĚ přeložený z CZ (ruční znění v16 se ztratí)' : '',
       prelozeno: stat.prelozeno + ' z ' + stat.celkem, cesky: (stat.chybi || []).concat(stat.symbolove || []) });
   }
   return vysledek;
@@ -1499,7 +1617,7 @@ async function hlavni() {
   if (REZIM_V8) return hlavniV8();
   if (REZIM_SOD_REAL4) return hlavniSodRealV4();
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-real-v4 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15 | --cn-v16 | --cn-v17] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-real-v4 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15 | --cn-v16 | --cn-v17 | --cn-usazeni] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
@@ -1513,7 +1631,7 @@ async function hlavni() {
   const proj5Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v5.docx');
   const proj6Vstup = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v6.docx');
   (REZIM_SOD_CISLO || REZIM_SOD_REAL3 || REZIM_SOD_V4 ? [] : REZIM_V7 ? [proj6Vstup] : REZIM_V6 ? [proj5Vstup] : REZIM_V5 ? [proj4Vstup] : REZIM_V4 ? [projVstup] : REZIM_SOD ? [sodVstup] : REZIM_SOD_REAL ? [sodRealVstup] : REZIM_CN14 ? [cn13Vstup]
-    : REZIM_CN15 ? [cn14Vstup] : REZIM_CN16 ? [cn15Vstup] : REZIM_CN17 ? [] : [cnVstup, projVstup])
+    : REZIM_CN15 ? [cn14Vstup] : REZIM_CN16 ? [cn15Vstup] : REZIM_CN17 || REZIM_CN_USAZENI ? [] : [cnVstup, projVstup])
     .forEach(f => { if (!fs.existsSync(f)) chyba('Chybí vstupní šablona ' + f); });
   if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
   if (REZIM_SOD_REAL3) {
@@ -1618,21 +1736,50 @@ async function hlavni() {
     console.log('\nVýstup: ' + VYSTUP);
     process.exit(prob ? 1 : 0);
   }
+  if (REZIM_CN_USAZENI) {
+    if (path.resolve(VYSTUP) === path.resolve(PODKLADY)) chyba('--cn-usazeni: výstupní složka musí být jiná než vstupní (soubor má stejné jméno)');
+    for (const L of Object.keys(CN_USAZENI_STARE)) {
+      const soubor = 'Sablona_NABIDKA_CN_v16_' + L.toUpperCase() + '.docx';
+      const vstup = path.join(PODKLADY, soubor);
+      if (!fs.existsSync(vstup)) chyba('chybí ' + vstup);
+      const v = await cnUsazeniSoubor(new Uint8Array(fs.readFileSync(vstup)), L);
+      fs.writeFileSync(path.join(VYSTUP, soubor), v.bajty);
+      console.log('✓ ' + soubor + ' — nahrazeno ' + v.nahrazeno.length + ', už správně ' + v.uzSpravne.length
+        + v.nahrazeno.map(x => '\n    ' + x).join('') + v.uzSpravne.map(x => '\n    beze změny ' + x).join(''));
+    }
+    const fr = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v16_FR.docx');
+    if (fs.existsSync(fr)) {
+      const polozky = await dg.zipPrecti(new Uint8Array(fs.readFileSync(fr)));
+      const n = cnUsazeniNadpisy(dec.decode(polozky.find(p => p.nazev === 'word/document.xml').data));
+      console.log('· Sablona_NABIDKA_CN_v16_FR.docx — jen přečteno, beze změny' + n.map(x => '\n    ' + x.sym + ': „' + x.text + '"').join(''));
+    }
+    console.log('\nVýstup: ' + VYSTUP);
+    process.exit(0);
+  }
   if (REZIM_CN17) {
     const vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v16.docx');
     if (!fs.existsSync(vstup)) chyba('chybí ' + vstup);
-    const v = await ulozSMutacemi(await vyrob(vstup, cnV17), 'Sablona_NABIDKA_CN_v17');
+    const czB = await vyrob(vstup, x => cnV17(x));
+    const zJazyka = {};
+    for (const L of JAZYKY) {
+      const v16L = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v16_' + L.toUpperCase() + '.docx');
+      if (fs.existsSync(v16L)) zJazyka[L] = v16L;
+    }
+    const v = await ulozSMutacemi(czB, 'Sablona_NABIDKA_CN_v17', zJazyka);
     let problemu = 0;
     for (const x of v) {
       const sym = await symbolyASablona(new Uint8Array(fs.readFileSync(path.join(VYSTUP, x.soubor))));
       const chybi = ['SACHTA_NAZEV', 'SACHTA_POPIS', 'SACHTA_CENA_BEZ_DPH', 'SACHTA_TS_NAZEV', 'SACHTY_CELKEM_POPIS'].filter(k => sym.indexOf(k) < 0);
-      const prob = x.vady.length + (x.ubylo || []).length + (x.pribylo || []).length + (x.cesky || []).length + chybi.length;
+      const prob = x.vady.length + (x.ubylo || []).length + (x.pribylo || []).length + (x.cesky || []).length + chybi.length + (x.rozdilV16 || []).length;
       problemu += prob;
-      console.log((prob ? '✗ ' : '✓ ') + x.soubor + ' — symbolů ' + x.symbolu + (x.prelozeno ? ', přeloženo ' + x.prelozeno : '')
+      console.log((prob ? '✗ ' : '✓ ') + x.soubor + ' — symbolů ' + x.symbolu + (x.zdroj ? ', ze ' + x.zdroj : '') + (x.prelozeno ? ', přeloženo ' + x.prelozeno : '')
+        + (x.strojove ? '\n    !!! UPOZORNĚNÍ: ' + x.strojove : '')
+        + (x.nahrazeno && x.nahrazeno.length ? x.nahrazeno.map(t => '\n    nadpis ' + t).join('') : '')
         + (x.vady.length ? '\n    vady XML: ' + x.vady.join('; ') : '')
         + ((x.ubylo || []).length ? '\n    chybí symboly: ' + x.ubylo.join(', ') : '')
         + ((x.pribylo || []).length ? '\n    navíc symboly: ' + x.pribylo.join(', ') : '')
         + (chybi.length ? '\n    chybí symboly šachet: ' + chybi.join(', ') : '')
+        + ((x.rozdilV16 || []).length ? '\n    text se liší od v16: ' + x.rozdilV16.slice(0, 10).join(' | ') : '')
         + ((x.cesky || []).length ? '\n    česky zůstalo: ' + x.cesky.map(t => '„' + String(t).slice(0, 70) + '"').join(' | ') : ''));
     }
     console.log('\nVýstup: ' + VYSTUP + (problemu ? '\nPROBLÉMŮ: ' + problemu : '\nBez problémů.'));
@@ -1670,3 +1817,4 @@ async function hlavni() {
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
 module.exports = { cnV13, cnV14, cnV15, cnV16, cnV17, cnPrejmenujSymbol, projV3, projV4, projV5, projV6, projV7, projV8, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, pPrSInd, sodProjCislo, sodProjV4, prepisUsekOdstavce, prelozSablonu };
+module.exports.cnUsazeni = cnUsazeni; module.exports.cnUsazeniSoubor = cnUsazeniSoubor; module.exports.cnV17Jazyk = cnV17Jazyk; module.exports.cnV17TextRozdil = cnV17TextRozdil; module.exports.CN_USAZENI_STARE = CN_USAZENI_STARE;

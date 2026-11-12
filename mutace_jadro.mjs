@@ -258,6 +258,41 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* C1 #582 (11. 11. 2026): nadpisy „USAZENÍ OCK" v jazykové CN (--cn-usazeni)
+   * a v17 přímo z jazykové v16. Hlídají src/test_cn_usazeni.js,
+   * src/test_vs_docx_v17.js (F) a src/test_preklad.js. [C1] */
+  { nazev: 'C1: nečekané znění nadpisu se přepíše bez chyby [C1]', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: '    if (!stare[sym] || n.text !== stare[sym])\n',
+    nahrad: '    if (false)\n',
+    proc: 'nástroj by přepsal i ručně upravený nebo cizí nadpis — nic nehádat', sady: ['test_cn_usazeni.js'] },
+  { nazev: 'C1: kontrola symbolů před = po vypnutá [C1]', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "  if (symPred.join('|') !== symPo.join('|')) chyba(",
+    nahrad: "  if (false) chyba(",
+    proc: 'opravená v16 DE/EN by mohla ztratit symbol a tisknout prázdné pole', sady: ['test_cn_usazeni.js'] },
+  { nazev: 'C1: kontrola textu mimo nadpisy vypnutá [C1]', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: '  if (zmeny.length !== cekane.length || zmeny.some((z, i) => z !== cekane[i]))',
+    nahrad: '  if (false)',
+    proc: 'oprava nadpisů by mohla potichu změnit jiný text zveřejněné šablony', sady: ['test_cn_usazeni.js'] },
+  { nazev: 'C1: druhé spuštění nad opravenou šablonou spadne [C1]', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "    if (n.text === novy) { uzSpravne.push(sym + ': ' + novy); continue; }",
+    nahrad: '',
+    proc: '--cn-v17 nad už opravenou v16 DE by skončil chybou (oprava není idempotentní)', sady: ['test_cn_usazeni.js'] },
+  { nazev: 'C1: kotva pruhu v17 vždy česky [C1]', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "  const pruhZakl = L && L !== 'cz' ? tr('ZÁKLADNÍ PARAMETRY ŠACHTY', L) : 'ZÁKLADNÍ PARAMETRY ŠACHTY';",
+    nahrad: "  const pruhZakl = 'ZÁKLADNÍ PARAMETRY ŠACHTY';",
+    proc: 'jazyková v17 by nešla vyrobit z jazykové v16 a zbyl by jen strojový překlad', sady: ['test_vs_docx_v17.js'] },
+  { nazev: 'C1: porovnání v17 × v16 nic nehlásí [C1]', soubor: '../nastroje/vyrob_sablony.js',
+    hledej: "if (a[i] !== b[i]) r.push(",
+    nahrad: "if (false) r.push(",
+    proc: 'rozdíl jazykové v17 proti zveřejněné v16 by prošel bez povšimnutí', sady: ['test_cn_usazeni.js'] },
+  { nazev: 'C1: DE nadpis čelní stěny zpět BEFESTIGUNG [C1]', soubor: 'preklad.js',
+    hledej: '"SHAFT STRUCTURE POSITION – FRONT WALL", "POSITIONIERUNG DER SCHACHTKONSTRUKTION – VORDERWAND"',
+    nahrad: '"SHAFT STRUCTURE POSITION – FRONT WALL", "BEFESTIGUNG DES SCHACHTGERÜSTS - VORDERWAND"',
+    proc: '--cn-v17 i online nabídka by vrátily starý německý nadpis (B0.3)', sady: ['test_preklad.js'] },
+  { nazev: 'C1: EN nadpis zadní stěny zpět FIXING [C1]', soubor: 'preklad.js',
+    hledej: '"USAZENÍ OCK – ZADNÍ STĚNA": ["SHAFT STRUCTURE POSITION – REAR WALL"',
+    nahrad: '"USAZENÍ OCK – ZADNÍ STĚNA": ["SHAFT STRUCTURE FIXING - REAR WALL"',
+    proc: 'anglický nadpis zadní stěny by se v nabídce lišil od ostatních (doplněk J. V. 11. 11.)', sady: ['test_preklad.js'] },
   /* VS #570 E4 (10. 11. 2026): víc šachet — cenová nabídka, Word v17 (smyčka
    * šachet), technická specifikace po šachtách, nástroj šablon. Hlídají
    * src/test_vs_nabidka.js, src/test_vs_docx_v17.js, src/test_vs_techspec.js
