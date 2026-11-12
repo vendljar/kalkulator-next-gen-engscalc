@@ -10,12 +10,14 @@ stálo na limitu účtu, 12. 11. pokračovalo ve stejném kontejneru, nic se nez
 | jádro (čisté funkce, `fetch` předaný) | ✅ | `nastroje/test_sada_jadro.mjs` (`cilPovolen`, `cilOstry`, `cisloJeTest`, `zakazkaCizi`, `vyberZExportu`, `vyberZeZalohy`, `planKroku`, `porovnej`, `ocistiText`, `obnovSadu`) |
 | obal pro příkazovou řádku | ✅ | `nastroje/test_sada_obnov.mjs` (`--web`, `--export` / `--zaloha`, `--zapsat`; .json i .json.gz; heslo bez ozvěny; Ctrl+C dokončí rozpracovanou) |
 | P1–P7 | ✅ | viz CHANGELOG v12.11.1, meze **B215–B216** v `BEZPECNOST_MEZE.md` |
-| testy | ✅ 121/0 | `netlify/test_c5_test_sada.mjs` (body 1–9 zadání + obal z příkazové řádky proti místnímu HTTP serveru 127.0.0.1); sadu bere `spust_testy.sh` sám (glob `netlify/test_*.mjs`) |
-| mutace „[C5]“ | ✅ 23/23 chycených | 23 v `netlify/mutace.mjs`, sada `test_c5_test_sada.mjs` v `SADY`; `--kontrola` 1410 úseků OK |
+| testy | ✅ 131/0 | `netlify/test_c5_test_sada.mjs` (body 1–9 zadání + obal z příkazové řádky proti místnímu HTTP serveru 127.0.0.1); sadu bere `spust_testy.sh` sám (glob `netlify/test_*.mjs`) |
+| mutace „[C5]“ | ✅ 30/30 chycených (po revizi +7: B1 obal a migrace_znacky, B2 doporučení, upozornění, čtení zpět) | 23 v `netlify/mutace.mjs`, sada `test_c5_test_sada.mjs` v `SADY`; `--kontrola` 1410 úseků OK |
 | návod pro J. V. | ✅ | `podklady/NAVOD_TEST_SADA_OBNOVA.md` (primárně soubor od testovacího sezení, druhá možnost otisk z Disku) |
 | roadmapa #585, CHANGELOG, README_ZDROJAKY, .gitignore | ✅ | `roadmapa.py --kontrola` 580 položek bez nálezu |
-| kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | sady 427/0/7 přesk. (jen firemní podklady a test.js), +400 dní 344/0/1, statické 5/5, 30 min; `mutace_jadro.mjs --kontrola` OK. Pozn.: `node_modules/playwright` + `playwright-core` = odkazy na `/opt/node22/lib/node_modules` (jinak se prohlížečové sady přeskočí) |
-| K40b (#580) nad sloučeným stromem | ⬜ | K40b v integraci zatím není. Až bude: `git worktree add … && git merge --no-commit origin/claude/k40b`, pak `node netlify/test_c5_test_sada.mjs` (razítko přijetí zámku, dolní mez data prodeje: prodaná TEST zakázka v testu nese dnešní datum prodeje, starší data z exportu ověřit) |
+| revize Fable (12. 11.) | ✅ opraveno | B1 heslo se v terminálu zobrazovalo (i `migrace_znacky.mjs`) → readline jen po dobu otázky, test v pseudo-terminálu (`script`); B2 po K40b prodej starší 7 dní → 400 → souhrn „ODMÍTNUTÉ ZAKÁZKY“ s doporučením Obnovit ze zálohy, návod 2a; upozornění na odhlášení; čtení zpět v try/catch; sloučena integrace 1a08186 (v12.11.3 s K40b) |
+| kolo `--bez-mutaci` po revizi | ✅ VŠE ZELENÉ | 437/0/7, +400 dní 354/0/1, statické 5/5 (nad sloučeným K40b) |
+| kolo `--bez-mutaci` (před revizí) | ✅ VŠE ZELENÉ | sady 427/0/7 přesk. (jen firemní podklady a test.js), +400 dní 344/0/1, statické 5/5, 30 min; `mutace_jadro.mjs --kontrola` OK. Pozn.: `node_modules/playwright` + `playwright-core` = odkazy na `/opt/node22/lib/node_modules` (jinak se prohlížečové sady přeskočí) |
+| K40b (#580) nad sloučeným stromem | ✅ | sloučena integrace 1a08186; prodej starší 7 dní → 400, vypsáno s doporučením (test B2) |
 
 **Zjištění k zámkům (P5, místní server, skutečné funkce):**
 - Odeslaná nabídka (zámek `nabidkaTisk`), prodaná varianta, prodaná s tiskem SoD i víc šachet se zapnutou
