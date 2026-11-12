@@ -440,6 +440,23 @@ function onlineSlevyZeServeru(slevy, odeslane) {
   return zmen;
 }
 
+/* RAZÍTKO PŘIJETÍ ZÁMKU ZE SERVERU (K40-S1, #580). `zamek.prijato` píše jen
+ * server při prvním přijetí nového zámku; odpověď uložení ho vrací
+ * (`zamkyPrijato: { <id varianty>: <ISO> }`) a prohlížeč si ho dopíše do
+ * místní kopie zámku — pole data v kartě Prodáno pak bere mez touž funkcí
+ * jako server (prodDatumMez). Starší server pole neposílá → nic. Mění `zak`
+ * (objekt), vrací počet doplněných zámků. */
+function onlinePrijatoZeServeru(zak, mapa) {
+  if (!zak || !Array.isArray(zak.varianty) || !mapa || typeof mapa !== 'object') return 0;
+  let n = 0;
+  zak.varianty.forEach(v => {
+    const p = v && Object.prototype.hasOwnProperty.call(mapa, v.id) ? mapa[v.id] : undefined;
+    if (typeof p !== 'string' || !v.zamek || !v.zamek.zamceno || v.zamek.prijato === p) return;
+    v.zamek.prijato = p; n++;
+  });
+  return n;
+}
+
 /* B171 (audit 15. 10. 2026, dávka H1): odhlášení zvedá verzi hesla
  * (B6, functions/odhlaseni.mjs), takže ukončí relace tohoto účtu na VŠECH
  * zařízeních. Tlačítko to říká v nápovědě a panel online i větou — jinak
@@ -1334,9 +1351,11 @@ const ONLINE_TISK_NAHLED = 'díváte se na aplikaci v náhledu — ukončete ná
 /* Otisk odeslané zakázky doplněný o razítko, které vrátil server (K7-K1) —
  * stejně, jako ho onlineUloz vtiskne do ZAK. Zbytek změn provedených během
  * zápisu tak zůstane rozdílem a autosave ho zapíše příště. */
-function onlineOdeslanoSRazitkem(text, razitko) {
+function onlineOdeslanoSRazitkem(text, razitko, zamkyPrijato) {
   if (!razitko) return text;
-  try { const z = JSON.parse(text); z.uloRazitko = razitko; return JSON.stringify(z); }
+  try { const z = JSON.parse(text); z.uloRazitko = razitko;
+    if (typeof onlinePrijatoZeServeru === 'function') onlinePrijatoZeServeru(z, zamkyPrijato);
+    return JSON.stringify(z); }
   catch (e) { return text; }
 }
 
@@ -1452,12 +1471,13 @@ function onlineUloz(opts) {
     ONLINE_STAV.soubor = o.soubor; ONLINE_STAV.razitko = o.razitko || '';
     if (typeof zamekSnimkyUlozeno === 'function') zamekSnimkyUlozeno(snimkyNove);
     onlineSlevyZeServeru(o.slevy, slevyOdeslane);
+    if (typeof onlinePrijatoZeServeru === 'function') onlinePrijatoZeServeru(ZAK, o.zamkyPrijato);   // K40-S1
     /* Razítko i do zakázky samé, ať kopie v okně odpovídá tomu, co leží na
      * serveru — a ať se počítá do „naposledy zapsaného" o řádek níž. */
     if (o.razitko) ZAK.uloRazitko = o.razitko;
     ONLINE_STAV.kolize = null;
     onlinePoslednizapamatuj(o.soubor);   // po refreshi se sem vrátíme
-    ONLINE_STAV.posledni = zmenaBehem ? onlineOdeslanoSRazitkem(odeslanoText, o.razitko) : JSON.stringify(ZAK);
+    ONLINE_STAV.posledni = zmenaBehem ? onlineOdeslanoSRazitkem(odeslanoText, o.razitko, o.zamkyPrijato) : JSON.stringify(ZAK);
     ONLINE_STAV.kdyUlozeno = new Date();
     /* Server může uložení přijmout s varováním — typicky rozpor zmrazeného
      * výsledku nově odeslané nabídky s jeho přepočtem (B59). Takové varování

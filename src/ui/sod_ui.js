@@ -383,6 +383,14 @@ function prodejKarta(strana) {
   }
   const proc = prodNelzeProdat(ZAK, v);
   const dnes = objDnes();
+  /* Dolní mez (K40-S1): touž funkcí jako server; vedoucí a administrátor smějí
+   * s důvodem níž, nejvýš ke dni odeslání (`tvrda`). */
+  const mez = prodDatumMez(v);
+  const minD = prodUiSmiOdemknout() && mez.tvrda ? mez.tvrda : mez.od;
+  const titulD = 'Od ' + (mez.od ? prodUiDatumText(mez.od) : 'odeslání nabídky') + ' do dneška'
+    + (mez.od && mez.tvrda && mez.tvrda < mez.od ? (prodUiSmiOdemknout()
+      ? '; starší datum (nejdřív ' + prodUiDatumText(mez.tvrda) + ') jen s důvodem'
+      : '; starší datum smí s důvodem zapsat vedoucí nebo administrátor') : '');
   return `<div id="prodejKarta_${esc(strana)}" class="prod-karta">
     <div class="note">Až zákazník nabídku přijme, stiskněte <b>Prodáno</b>: zapíše se datum prodeje a prodaná varianta
       (podle nich bere zakázku controlling), krycí list se <b>definitivně zamkne</b> a připraví se zápis do Pipedrive:
@@ -390,8 +398,8 @@ function prodejKarta(strana) {
       doručení podepsané SoD v Pipedrive. Odemknout smí jen vedoucí nebo administrátor.</div>
     ${proc ? `<div class="note"><b>${esc(proc)}</b></div>` : ''}
     <div class="btns" style="margin-top:6px">
-      <label class="note">Datum prodeje <input type="date" id="prodejDatum_${esc(strana)}" value="${esc(dnes)}" max="${esc(dnes)}"${prodDatumOd(v) ? ' min="' + esc(prodDatumOd(v)) + '"' : ''}${proc ? ' disabled' : ''}
-        title="${esc('Od odeslání nabídky' + (prodDatumOd(v) ? ' (' + prodUiDatumText(prodDatumOd(v)) + ')' : '') + ' do dneška')}"></label>
+      <label class="note">Datum prodeje <input type="date" id="prodejDatum_${esc(strana)}" value="${esc(dnes)}" max="${esc(dnes)}"${minD ? ' min="' + esc(minD) + '"' : ''}${proc ? ' disabled' : ''}
+        title="${esc(titulD)}"></label>
       <button class="primary" ${proc ? 'disabled title="' + esc(proc) + '"' : ''} onclick="prodejUiProdej('${escJs(strana)}')">Prodáno</button>
     </div>
     ${proc ? '' : prodUiNahledHtml(v, strana)}
@@ -411,7 +419,19 @@ async function prodejUiProdej(strana) {
     + 'stav dealu (Vyhrané) se mění až po doručení podepsané SoD v Pipedrive. Napojení zatím není zapnuté, '
     + 'zápis se jen uloží jako „čeká na odeslání".', { nadpis: 'Prodáno' })) return;
   const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja) ? ONLINE_STAV.ja.email : '';
-  const chyba = prodNastav(ZAK, v, datum, { kdo: ja });
+  /* Výjimka z dolní meze (K40-S1): datum před mezí jen vedoucí nebo
+   * administrátor s důvodem (zapíše se do historie prodeje). */
+  let duvod = '';
+  const od = prodDatumOd(v);
+  if (od && datum < od && prodUiSmiOdemknout() && !prodDatumProblem(datum, v, undefined, { role: prodUiRole(), duvod: 'xxx' })) {
+    const t = await dotaz('Datum prodeje ' + prodUiDatumText(datum) + ' je víc než ' + PROD_PRIJATO_TOLERANCE_DNI
+      + ' dní před přijetím odeslané nabídky serverem (běžná mez ' + prodUiDatumText(od) + '). Napište důvod výjimky '
+      + '(zapíše se do historie prodeje):', '');
+    if (t === null || t === undefined) return;
+    duvod = prodVyjimkaText(String(t));
+    if (duvod.length < PROD_DUVOD_MIN) { hlaska('Bez důvodu nejde datum prodeje před mezí zapsat.'); return; }
+  }
+  const chyba = prodNastav(ZAK, v, datum, { kdo: ja, role: prodUiRole(), duvod });
   if (chyba) { hlaska(chyba); return; }
   /* PR #563: prodaná varianta je vždy řídící — přepne se v TÉMŽE uložení.
    * Neuloží-li se prodej, vrátí se i řídící a stopa hlavičky (zamek.hlavicka). */

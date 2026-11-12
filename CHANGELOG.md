@@ -8,6 +8,34 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.11.2 — K40b #580: dolní mez data prodeje z razítka přijetí zámku serverem (K40-S1, K40-N3), levná diagnostika rozdílu zámku (K40-S2), větev claude/k40b
+
+Nad `c664c9e` (integrace v11.11.1). Souběžně s K40a (#579); verzi přečísluje koordinace. Cena se nemění —
+`vypocet()` beze změny, zlatá sada víc šachet 319/319 a zlatá sada můstků beze změny otisků. Na webech, Disku ani
+v Pipedrive nic. Podklady: `podklady/PROMPT_K40_OPRAVY.md`, `…_v2.md` (přednost), `K40_POSUDEK_FABLE.md`;
+rozhodnutí J. V. 4. 11. (S1, N3) a 11. 11. 2026 (3a, 4a).
+
+- **K40-S1 — razítko přijetí zámku serverem (`zamek.prijato`).** Server ho zapíše při prvním přijetí nového
+  zámku (příchozí hodnotu zahodí) a vrací v odpovědi uložení (`zamkyPrijato: { <id varianty>: <ISO> }`);
+  prohlížeč si ho dopíše do místní kopie zámku (`onlinePrijatoZeServeru`). Pole není v klíči zámku (starší klient
+  ukládá bez 409), u uloženého zámku ho drží `uloZamekRazitkaDrz`. `prodServer` ho bere z uložené verze, u nového
+  zámku v témže požadavku čas serveru, nikdy z příchozích dat; `prodJedinaZmena` ho při porovnání vynechá.
+- **Dolní mez data prodeje** `max(den(kdy), den(prijato − 7 dní))` (`prodDatumMez`, `PROD_PRIJATO_TOLERANCE_DNI`)
+  — touž funkcí pole data v kartě Prodáno i server. Datum mezi dnem odeslání a mezí smí zapsat jen **vedoucí nebo
+  administrátor s důvodem** (dotaz v kartě Prodej; důvod do historie prodeje, bez řídicích znaků, strop 500
+  znaků); obchodník 400 i s důvodem; pod den odeslání nikdo. Zámek bez razítka (uložený před opravou) má mez
+  z `kdy` jako dřív. Pokus kola 40 (nová zakázka se zámkem i prodejem −300 dní → 200) dnes končí 400.
+- **K40-N3:** mez nejvýš dnes (Praha) — tisk 23:55 s hodinami 6 min napřed dával mez = zítřek.
+- **Obnova:** z otisku se razítko přebírá, ze souboru se zahodí (otázka 3a) — zámek se pak chová jako starší.
+- **K40-S2:** `zamekDataRozdilCesta` kanonizuje jednou a sestupuje jedním průchodem (dřív kanonizace obou podstromů
+  na každé úrovni); výstup beze změny (3 000 náhodných párů proti referenční kopii, 10 šachet `ock.dalsi.3.zadani.sirka`),
+  hloubka 50 × 2 000 objektů ~6 ms místo ~110 ms.
+- **Meze:** `BEZPECNOST_MEZE.md` oddíl K40b — **B206** (tolerance 7 dní a výjimka s důvodem), **B207** (antedatovaný
+  čas tisku dál určuje období odeslání v controllingu — otázka 4a, jen zapsáno).
+- **Příručka obchodníka:** karta Prodej — mez 7 dní před přijetím serverem a výjimka vedoucího s důvodem.
+- **Testy:** `src/test_k40b_zamek_prodej.js` (50), `netlify/test_k40b_prodej_mez.mjs` (31) — nad c664c9e padají;
+  mutace „[K40b]“ server 12/12 + jádro 3/3, celé jádro po částech 823/823; posunuté zadání starých mutací (#547 K37-N4 ×3, rev #401 N1, #508 K7-S2,
+  B105, #507 K7-K1 ×2).
 ## v12.11.1 — K40a #579: opravy po revizi (verdikt „sloučit po opravě“), větev claude/k40a
 
 - **D1 — import zamčené varianty s víc šachtami nemigruje sklo šachet 2+** (src/engine.js `skloMigraceNazvu`
