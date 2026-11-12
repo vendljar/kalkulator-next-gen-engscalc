@@ -1032,13 +1032,26 @@ function ctrlPdDealIdNorm(x) {
  * verzi se bere jako prázdná — jinak by ji nikdo kromě správce neopravil.
  * Shodná příchozí a uložená hodnota (i neplatná) projde beze změny —
  * uložení jiné části zakázky ji neblokuje (K5-S2). */
-function ctrlPdDealKontrola(stara, zak, role) {
+/* K40c #581 (J. V. 11. 11. 2026): deal smí měnit i AUTOR ZAKÁZKY — jen u
+ * zakázky, kterou sám založil (`autor` z ULOŽENÉ verze = e-mail relace;
+ * nová zakázka patří tomu, kdo ji ukládá). Zakázku založenou webhookem
+ * (autor „pipedrive-webhook") dál jen administrátor. */
+const CTRL_PD_WEBHOOK_AUTOR = 'pipedrive-webhook';
+function ctrlPdDealSmiMenit(stara, role, email) {
+  if (role === 'Administrátor') return true;
+  const ja = String(email || '').trim().toLowerCase();
+  if (!ja) return false;
+  if (!stara) return true;
+  const autor = String(stara.autor || '').trim().toLowerCase();
+  return !!autor && autor !== CTRL_PD_WEBHOOK_AUTOR && autor === ja;
+}
+function ctrlPdDealKontrola(stara, zak, role, email) {
   if (stara && zak && zak.pdDealId !== undefined && zak.pdDealId === stara.pdDealId) return null;
   const nova = ctrlPdDealIdNorm(zak && zak.pdDealId);
   if (nova === null) return { status: 400, chyba: 'Pipedrive deal id musí být kladné celé číslo (id obchodního případu)' };
   const puvodni = ctrlPdDealIdNorm(stara && stara.pdDealId) || '';
-  if (nova !== puvodni && role !== 'Administrátor')
-    return { status: 403, chyba: 'Pipedrive deal id zakázky zadává nebo opravuje jen administrátor' };
+  if (nova !== puvodni && !ctrlPdDealSmiMenit(stara, role, email))
+    return { status: 403, chyba: 'Pipedrive deal id zakázky zadává nebo opravuje jen autor zakázky (u zakázek, které sám založil) nebo administrátor' };
   return null;
 }
 
@@ -1382,7 +1395,7 @@ if (typeof module !== 'undefined' && module.exports)
     ctrlDbNovaVerze, ctrlDbOciste,
     ctrlOdchylky, CTRL_PSEUDO_POPIS, ctrlPopisKlice, ctrlKatalogNazvy, CTRL_EXPORT_VERZE, CTRL_EXPORT_ZMENA, ctrlExportVarianty, ctrlProdej, ctrlPodilyNa100,
     CTRL_RADKY_HLAVICKA, CTRL_LIST_PRIPLATKY, ctrlExportListy, ctrlCsvBunka, ctrlExportCsv, ctrlVZakladuText, ctrlHromadnyVarianta,
-    CTRL_PD_ID_MAX, ctrlPdDealIdNorm, ctrlPdDealKontrola,
+    CTRL_PD_ID_MAX, ctrlPdDealIdNorm, ctrlPdDealKontrola, ctrlPdDealSmiMenit,
     PD_STAVY, PD_STAV_TEXT, pdStavNorm, pdStavKontrola, pdStavZDealu, pdStavText, pdStavNactenoText,
     CTRL_HROMADNY, CTRL_CELA_DB, ctrlHromadnyDotaz, ctrlHromadnyObdobiText, CTRL_FILTR_PD, CTRL_FILTR_PD_TEXT, ctrlPdStavZakazky, ctrlDatumPlatne, ctrlDenPraha, ctrlHromadnyFiltr, ctrlHromadnyKandidati, ctrlHromadnyZakazka, ctrlProtokolPridej,
     ctrlRejstrikDny, ctrlHromadnyZa, CTRL_EXPORT_ID, ctrlProtokolNavaz, ctrlProtokolDavka, ctrlHromadnyStahni, ctrlHromadnyChybaText, CTRL_MAPA_HLAVICKA, ctrlMapaListy, ctrlImportZListu };

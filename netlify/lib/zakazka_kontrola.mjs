@@ -73,6 +73,7 @@ export function zakazkaVelikostHlaska(zak, bajtu) {
   return 'Zakázka je příliš velká (' + kB(celkem) + ', strop ' + kB(ZAKAZKA_MAX_B) + '): přílohy a fotky ' + kB(prilohy)
     + ', zmrazené údaje ' + zamcenych + ' odeslaných variant ' + kB(zmrazene) + ', ostatní ' + kB(ostatni) + '. ' + rada;
 }
+import { pdVazbaDrz } from './pd_vazba.mjs';
 import { razitkoKdo } from './sdilene.mjs';
 
 export const CISLO_MAX = 60;
@@ -324,8 +325,12 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   if (zaporne.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaporne) + '.');
   /* Pipedrive deal id (#447 C4, rozhodnutí J. V. 21. 10. 2026): tvar
    * hlídá každému, ruční zadání a opravu pustí jen administrátorovi. */
-  const pdDeal = globalThis.ctrlPdDealKontrola ? globalThis.ctrlPdDealKontrola(stara, zak, relace.role) : null;
+  const pdDeal = globalThis.ctrlPdDealKontrola ? globalThis.ctrlPdDealKontrola(stara, zak, relace.role, relace.email) : null;
   if (pdDeal) return odmitni(pdDeal.status, veta(pdDeal.chyba));
+  /* Vazba z webhooku a odmítnuté dealy (K40c #581): pole psaná JEN serverem —
+   * z uložené verze (obnova ze souboru je nepřebírá, z otisku ano), mění je
+   * jen výslovná akce (functions/pd_vazba.mjs, pd_organizace.mjs, webhook). */
+  pdVazbaDrz(stara, zak, { obnova, zeSouboru });
   /* Stav dealu Pipedrive (P1, 22. 10. 2026): jen tvar { status, nacteno }
    * z whitelistu — objekt jiného tvaru nebo cizí typ → 400, ne 500.
    * Obsah při uložení dosazuje server (lib/pd_stav.mjs), obnova ho bere ze zálohy. */

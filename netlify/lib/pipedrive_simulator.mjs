@@ -338,9 +338,26 @@ export async function pdSimFetch(url, init = {}) {
     }
     return chyba(405, 'Method not allowed');
   }
-  if (metoda === 'GET' && (m = /^\/api\/v2\/organizations\/(\d+)$/.exec(cesta))) {
+  if ((m = /^\/api\/v2\/organizations\/(\d+)$/.exec(cesta))) {
     const o = D.organizace.find((x) => x.id === +m[1]);
-    return o ? data(kopie(o)) : chyba(404, 'Organization not found');
+    if (!o) return chyba(404, 'Organization not found');
+    if (metoda === 'GET') return data(kopie(o));
+    /* Oprava firmy podle ARES (K40c #581): název, adresa a známá vlastní pole.
+     * Neznámé vlastní pole → 400 PŘED zápisem (pole se nikdy nezakládá). */
+    if (metoda === 'PATCH') {
+      let telo;
+      try { telo = JSON.parse(init.body || '{}'); } catch (e) { return chyba(400, 'Invalid JSON'); }
+      const zname = new Set(D.pole.organizace.map((p) => p.field_code));
+      const nezname = Object.keys((telo && telo.custom_fields) || {}).filter((k) => !zname.has(k));
+      if (nezname.length) return chyba(400, 'Unknown custom field: ' + nezname[0]);
+      if (telo.name !== undefined && (typeof telo.name !== 'string' || !telo.name.trim())) return chyba(400, 'Invalid name');
+      if (telo.name !== undefined) o.name = telo.name;
+      if (telo.address !== undefined) o.address = { value: String((telo.address && telo.address.value) || '') };
+      Object.assign(o.custom_fields, telo.custom_fields || {});
+      o.update_time = new Date().toISOString().slice(0, 19) + 'Z';
+      return data(kopie(o));
+    }
+    return chyba(405, 'Method not allowed');
   }
   if (metoda === 'GET' && (m = /^\/api\/v2\/persons\/(\d+)$/.exec(cesta))) {
     const o = D.osoby.find((x) => x.id === +m[1]);

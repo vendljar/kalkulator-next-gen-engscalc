@@ -73,6 +73,8 @@ import pdDealy from './functions/pd_dealy.mjs';
 import pdDeal from './functions/pd_deal.mjs';
 import pdNanecistoFn from './functions/pd_nanecisto.mjs';
 import pdWebhookFn from './functions/pd_webhook.mjs';
+import pdVazbaFn from './functions/pd_vazba.mjs';
+import pdOrganizaceFn from './functions/pd_organizace.mjs';
 import zalohaDiskFn from './functions/zaloha_disk.mjs';
 import pdStavFn from './functions/pd_stav.mjs';
 import { config as configNocni } from './functions/zaloha_nocni.mjs';
@@ -571,6 +573,21 @@ const MATICE = [
     metoda: 'POST', url: 'http://x/api/pd/webhook', telo: () => ({ dealId: 1 }),
     proc: 'zakládá kalkulace z dealu — chrání ho klíč PIPEDRIVE_WEBHOOK_KLIC, relace ne',
     prava: { 'nepřihlášený': 401, 'Obchodník': 401, 'Vedoucí': 401, 'Administrátor': 401 } },
+
+  /* Vazba z webhooku (K40c #581): V pořádku / Zrušit vazbu / Vazba je chybná —
+   * každý přihlášený, zrušení jen autor zakázky a administrátor (rozhoduje
+   * uložená zakázka). Tady zakázka vazbu nemá → 409 všem přihlášeným.
+   * Podrobnosti netlify/test_k40c_webhook.mjs. */
+  { fn: pdVazbaFn, soubor: 'pd_vazba.mjs', nazev: 'Pipedrive — vazba z webhooku (POST /api/pd/vazba)',
+    metoda: 'POST', url: 'http://x/api/pd/vazba', telo: () => ({ soubor: ulozena.soubor, akce: 'potvrdit' }),
+    proc: 'potvrzení, nahlášení a zrušení vazby kalkulace na deal z webhooku',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 409, 'Vedoucí': 409, 'Administrátor': 409 } },
+  /* Oprava firmy v Pipedrive podle ARES (K40c #581, B209): právo Pipedrive
+   * z matice (B80) a k tomu autor zakázky nebo administrátor. */
+  { fn: pdOrganizaceFn, soubor: 'pd_organizace.mjs', nazev: 'Pipedrive — oprava firmy podle ARES (POST /api/pd/organizace)',
+    metoda: 'POST', url: 'http://x/api/pd/organizace', telo: () => ({ soubor: ulozena.soubor, akce: 'nahled' }),
+    proc: 'zápis názvu, adresy a DIČ organizace dealu po potvrzení — autor zakázky a administrátor s právem Pipedrive',
+    prava: { 'nepřihlášený': 401, 'Obchodník': 403, 'Vedoucí': 403, 'Administrátor': 409 } },
 
   /* Noční kopie na Disk skriptem Apps Script (#577 AS, 10. 11. 2026): volá ji
    * skript v Google účtu správce s tokenem KNG_DISK_TOKEN v hlavičce
@@ -1719,7 +1736,9 @@ console.log('\n===== #374 (B113, B114): KONCOVÁ CENA BEZ SCHVÁLENÍ — IDENTI
   test('C4: obchodník deal id do uložené zakázky nezadá (403)', je403(pd1, /deal id/), pd1);
   const pdN = nova374(); pdN.pdDealId = '4711';
   const pd2 = await uloz374(pdN, cObch);
-  test('C4: obchodník nezaloží zakázku s deal id (403)', je403(pd2, /deal id/), pd2);
+  /* K40c #581 (J. V. 11. 11. 2026): deal mění i autor — u zakázky, kterou sám
+   * zakládá nebo založil. Nová zakázka patří tomu, kdo ji ukládá. */
+  test('C4/K40c: obchodník založí vlastní zakázku s deal id (200 — je její autor)', pd2.status === 200, pd2);
   const pd3 = await uprav374(a => { a.pdDealId = '4712'; }, cVed);
   test('C4: vedoucí deal id nezadá (403)', je403(pd3, /deal id/), pd3);
   const pd4 = await uprav374(a => { a.pdDealId = '4713'; }, cAdmin);
