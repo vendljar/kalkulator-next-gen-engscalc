@@ -958,7 +958,11 @@ function importZakazka(obj) {
       /* Migrace 9. 9. 2026: řádky skel se přejmenovaly (MATERIÁL VSG 4.4.1 /
        * 4.4.2). Ruční přepisy i seznam vyřazených položek se klíčují názvem,
        * takže bez přemapování by vyřazené sklo tiše vlezlo zpátky do ceny. */
-      if (typeof skloMigraceNazvu === 'function') skloMigraceNazvu(d);
+      /* Víc šachet (K40a): nezamčená varianta migruje všechny šachty (jako
+       * šachta 1 od K37); ZAMČENÁ jen šachtu 1 — šachty 2+ nechává, jak
+       * odešly (revize K40a D1, mez B205a). */
+      if (typeof skloMigraceNazvu === 'function') skloMigraceNazvu(d, {
+        jenPrvni: (typeof variantaUzamcena === 'function') ? !!variantaUzamcena(v) : !!(v && v.zamek && v.zamek.zamceno) });
       /* Migrace 9. 9. 2026: průchozí šachta, stříška a patra.
        *
        * Do 9. 9. byla stříška zaškrtávátkem „Průchozí šachta" a počítala se

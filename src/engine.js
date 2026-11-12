@@ -471,10 +471,14 @@ function skloMigraceNazvu(data, opts) {
    * migrace četla jen šachtu 1 (`ock.zadani`), takže u šachty 2+ se po přepnutí
    * typu nebo zasklení vyřazené sklo boků znovu počítalo (vada K37-N1). Jedna
    * šachta: seznam je jen `ock.zadani` — výstup beze změny. */
-  const zadani = [ock.zadani].concat(Array.isArray(ock.dalsi)
+  const o = opts || {};
+  /* `jenPrvni` (revize K40a D1, 12. 11. 2026): importZakazka u ZAMČENÉ
+   * varianty migruje jen šachtu 1 (jako před K40a). Šachty 2+ by jinak dostaly
+   * přemapované osiřelé vyřazení skla — cena odeslané nabídky by se změnila
+   * a ověření zámku by vrátilo „nesouhlasí". Mez B205a. */
+  const zadani = [ock.zadani].concat((!o.jenPrvni && Array.isArray(ock.dalsi))
     ? ock.dalsi.map(s => (s && typeof s === 'object') ? s.zadani : null) : [])
     .filter(z => z && typeof z === 'object');
-  const o = opts || {};
   let zmen = 0;
   zadani.forEach(z => { zmen += skloMigraceZadani(z, c, o.zadani === z ? o.predCelni : null); });
   /* Přechod čelního skla patří k zadání OTEVŘENÉ šachty (`opts.zadani`, v UI
@@ -1065,6 +1069,8 @@ function cenikMigraceMustku(cenik, platny, zpravy) {
  * mechanismus jako potvrzení nuly, dialog i server); hodnota se nemění. */
 const MUSTEK_REF_SIRKA_MIN_MM = 500;
 const MUSTEK_REF_SIRKA_MAX_MM = 5000;
+/* Revize K40a D6: číslo do hlášky skládané z konstant (5000 → „5 000", pevná mezera). */
+function mustekMmText(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0'); }
 function mustkyCenikKontrola(cenik) {
   const c = (cenik && typeof cenik === 'object') ? cenik : {};
   const r = mustkyCenikKontrolaSazby(c);
@@ -1074,7 +1080,7 @@ function mustkyCenikKontrola(cenik) {
   const s = +c.mustekRefSirkaMm;
   if (s >= MUSTEK_REF_SIRKA_MIN_MM && s <= MUSTEK_REF_SIRKA_MAX_MM) return r;
   const veta = 'Referenční šířka můstku C.mustekRefSirkaMm = ' + s + ' mm je mimo věrohodný rozsah '
-    + '500–5\u00a0000 mm (nebyla zadaná v metrech?). Materiál i nosná konstrukce můstku se počítají poměrem k ní, '
+    + MUSTEK_REF_SIRKA_MIN_MM + '–' + mustekMmText(MUSTEK_REF_SIRKA_MAX_MM) + ' mm (nebyla zadaná v metrech?). Materiál i nosná konstrukce můstku se počítají poměrem k ní, '
     + 'takže by cena můstku vyšla ' + (s < MUSTEK_REF_SIRKA_MIN_MM ? 'mnohonásobně vyšší' : 'mnohonásobně nižší') + '.';
   return { ok: false, stary: false, chybi: (r.chybi || []).concat(['mustekRefSirkaMm']),
     text: veta + (r.ok ? '' : ' ' + r.text) };
