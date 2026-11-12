@@ -112,6 +112,17 @@ const soubor = (t) => t.soubor;
   test('1 VYP: uložení zakázky s víc šachtami do Pipedrive nesahá', t3.status === 200 && pozadavkyNotes().length === pocet && !('pdPoznamka' in t3), t3);
   test('1 VYP: id poznámky v zakázce zůstává (server ho drží)', ulozeno(soubor(t3)).pdPoznamkaSachty
     && ulozeno(soubor(t3)).pdPoznamkaSachty.id === ulozeno(soubor(t2)).pdPoznamkaSachty.id);
+  /* podvrh pole z prohlížeče, když se do Pipedrive nejde: uloží se hodnota serveru */
+  const drz = ulozeno(soubor(t3)).pdPoznamkaSachty;
+  z2.pdPoznamkaSachty = { deal: drz.deal, id: drz.id + 777, otisk: 'f'.repeat(16), kdy: 'podvrh' };
+  const t4 = await uloz(z2);
+  test('1 VYP: podvržené pdPoznamkaSachty se neuloží', t4.status === 200
+    && JSON.stringify(ulozeno(soubor(t4)).pdPoznamkaSachty) === JSON.stringify(drz), ulozeno(soubor(t4)).pdPoznamkaSachty);
+  const z5 = nova(false, dealy[0]);
+  z5.pdPoznamkaSachty = { deal: String(dealy[0]), id: 5, otisk: 'a'.repeat(16), kdy: 'podvrh' };
+  const t5 = await uloz(z5);
+  test('1 nová zakázka (jedna šachta) s podvrženým polem: pole se neuloží', t5.status === 200
+    && ulozeno(soubor(t5)).pdPoznamkaSachty === undefined);
   await vypinac(true);
 }
 
