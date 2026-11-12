@@ -86,6 +86,20 @@ export function najdiSlozku(kandidati = []) {
 
 /* Táž otázka pro víc souborů najednou (smlouvy potřebují tři).
  * Vrací { cesty, chybi } — `chybi` je pole názvů, které se nenašly. */
+/* ŠABLONA S NEJVYŠŠÍ VERZÍ (K40-T1, 11. 11. 2026). Na Disku jsou šablony
+ * verzované (CN v17, PROJ v8, SoD v4 …) a pod pevným jménem
+ * „Sablona_NABIDKA_PROJ.docx" se nenajdou — harness se pak přeskočil, i když
+ * šablona po ruce byla. Bere se `<zaklad>_v<číslo>.docx` s nejvyšším číslem
+ * (najdiNejnovejsi), jinak `<zaklad>.docx` bez verze. Nikde pevné číslo verze.
+ * Vrací { cesta, verze } (verze 0 = jméno bez čísla), nebo null. */
+export function najdiSablonu(zaklad, slozky = []) {
+  const esc = String(zaklad).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const nej = najdiNejnovejsi(new RegExp('^' + esc + '_v(\\d+)\\.docx$'), slozky);
+  if (nej) return nej;
+  const p = najdiPodklad(zaklad + '.docx', slozky.map(s => join(s, zaklad + '.docx')));
+  return p ? { cesta: p, verze: 0 } : null;
+}
+
 export function najdiPodklady(mapa) {
   const cesty = {};
   const chybi = [];

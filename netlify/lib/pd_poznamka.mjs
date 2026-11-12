@@ -20,7 +20,7 @@
  * verze se nemění dvakrát (důvod viz lib/pd_stav.mjs). Do Pipedrive se
  * sahá JEN když se text proti uloženému otisku změnil (autosave bez změny
  * šachet nestojí nic), nejvýš PD_POZNAMKA_STROP zápisů za hodinu na deal
- * (B215) a bez opakování po 429/5xx (uložení zakázky se nezdrží o sekundy).
+ * (B217) a bez opakování po 429/5xx (uložení zakázky se nezdrží o sekundy).
  * Selhání Pipedrive uložení NEZASTAVÍ: zakázka se uloží, otisk zůstane
  * starý a příští uložení zápis zkusí znovu; odpověď nese stav a varování.
  *
@@ -33,7 +33,7 @@ export const PD_POZNAMKA_POLE = 'pdPoznamkaSachty';
 /* Délka textu poznámky před escapováním (10 šachet × název ≤ 80 znaků se
  * vejde s rezervou; delší text se zkrátí s „…"). */
 export const PD_POZNAMKA_MAX = 2000;
-/* Strop zápisů poznámky na deal za hodinu (B215) — přejmenovávání šachet
+/* Strop zápisů poznámky na deal za hodinu (B217) — přejmenovávání šachet
  * s autosave nesmí vyčerpat denní rozpočet Pipedrive. */
 export const PD_POZNAMKA_STROP = 20;
 export const PD_POZNAMKA_UVOD = 'Šachty v nabídce: ';

@@ -159,6 +159,33 @@ function retenceZalohDiskVyber(jmena, dnes, chranit, prostredi) {
   return soubory.filter(x => !drz.has(x.d) && !chranene.has(x.j) && !chraneneDny.has(x.d)).map(x => x.j).sort();
 }
 
+/* SROVNÁVACÍ KOPIE PRO POJISTKU ÚBYTKU (K40-X4, 11. 11. 2026, mez B205).
+ * Do 11. 11. se nová kopie srovnávala s abecedně POSLEDNÍM jménem vlastního
+ * prostředí ve sdílené složce — soubor s budoucím datem od kohokoli se
+ * zápisem do složky pojistku vyřadil (malý = falešný úbytek) nebo zakryl
+ * skutečný úbytek (velký). Bere se jen jméno téhož prostředí v novém tvaru
+ * s dnem MENŠÍM než den nové kopie (`den` = den nočního otisku ze serveru);
+ * stejný den ani právě zapsaný `soubor` ne. Jména s dnem větším vrací zvlášť
+ * (`budouci`, seřazená) — úklid je ohlásí jako podezřelá a nemaže je.
+ * Jediná funkce pro prohlížeč (kopieDiskUklid) i skript Apps Script
+ * (kngUklid_, vkládá nastroje/apps_script/vloz_retenci.py).
+ * Vrací { predchozi: jméno | null, budouci: [] }; u dne, který není platné
+ * RRRR-MM-DD, navíc `neplatnyDen: true` — oba volající pak NEMAŽOU (revize
+ * K40a D2, 12. 11. 2026: dřív se srovnání tiše přeskočilo a mazalo se). */
+function retenceZalohDiskPredchozi(jmena, soubor, den, prostredi) {
+  const out = { predchozi: null, budouci: [] };
+  const d = String(den == null ? '' : den);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !Number.isFinite(retenceZalohDenMs(d))) { out.neplatnyDen = true; return out; }
+  if (!RETENCE_ZALOH_DISK_PROSTREDI.includes(prostredi)) return out;
+  const vlastni = [...new Set((jmena || []).map(String))]
+    .map(j => { const r = retenceZalohDiskRozeber(j); return r && !r.stary && r.prostredi === prostredi && j !== String(soubor) ? { j, d: r.den } : null; })
+    .filter(Boolean);
+  out.budouci = vlastni.filter(x => x.d > d).map(x => x.j).sort();
+  const starsi = vlastni.filter(x => x.d < d).map(x => x.j).sort();   // jméno řadí den i čas (#552)
+  out.predchozi = starsi.length ? starsi[starsi.length - 1] : null;
+  return out;
+}
+
 /* POJISTKA PROTI TICHÉ ZTRÁTĚ DAT (K3-N13 20. 10. 2026; rozšířeno #523 Z2,
  * pokyn J. V. 26. 10. 2026: „Zálohy se musí v čase zvětšovat; nenadálé
  * zmenšení musí být oznámené a schválené, jinak se staré zálohy nesmí
@@ -228,4 +255,4 @@ function retenceZalohPopis() {
 if (typeof module !== 'undefined')
   module.exports = { RETENCE_ZALOH_POJISTKA, retenceZalohPokles, retenceZalohMaximum, RETENCE_ZALOH_BLOBS, RETENCE_ZALOH_DISK, RETENCE_ZALOH_STARE_PRED, RETENCE_ZALOH_DISK_JMENO,
     RETENCE_ZALOH_DISK_JMENO_STARE, RETENCE_ZALOH_DISK_PROSTREDI, retenceZalohDiskRozeber, retenceZalohDiskJmeno,
-    retenceZalohDenMs, retenceZalohMesicuZpet, retenceZalohDrz, retenceZalohDiskVyber, retenceZalohPopis };
+    retenceZalohDenMs, retenceZalohMesicuZpet, retenceZalohDrz, retenceZalohDiskVyber, retenceZalohDiskPredchozi, retenceZalohPopis };

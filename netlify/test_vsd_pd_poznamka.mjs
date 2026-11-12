@@ -267,7 +267,7 @@ let Z2, ID2;
   z.nazevAkce = 'TEST VSD po výpadku';
   const t2 = await uloz(z);
   test('7 další uložení zápis zopakuje', t2.pdPoznamka === 'zalozeno' && notes().filter(x => x.deal_id === dealy[9]).length === 1, t2);
-  /* strop zápisů na deal (B215) */
+  /* strop zápisů na deal (B217) */
   let posledni = null;
   for (let i = 0; i < PP.PD_POZNAMKA_STROP + 2; i++) {
     z.varianty[0].data.ock.dalsi[0].nazev = 'Výtah S' + i;

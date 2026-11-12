@@ -628,8 +628,12 @@ function zamekDataRozdilCesta(data, ulozena, v) {
    * jiný. Pořád bez hodnot. `x` = ukládaná data, `y` = uložená. */
   let pozn = '';
   const druh = (h) => (h === undefined || h === null) ? 'chybi' : (Array.isArray(h) ? 'pole' : typeof h);
+  /* K40-S2 (#580): `a` a `b` jsou už kanonické (zamekDataPorovnani výš) —
+   * sestupuje se po nich jedním průchodem. Do v11.11 se na KAŽDÉ úrovni znovu
+   * kanonizovaly oba podstromy (hloubka × velikost dat; s víc šachtami až deset
+   * celých zadání v `ock.dalsi`). Výsledek je týž: podstrom se liší, právě když
+   * se liší některé jeho dítě (klíče seřazené stejně), list porovná JSON. */
   const jdi = (x, y) => {
-    if (zamekJsonKanon(x) === zamekJsonKanon(y)) return false;
     if (x && y && typeof x === 'object' && typeof y === 'object' && Array.isArray(x) === Array.isArray(y)) {
       const klice = Array.isArray(x) ? Array.from({ length: Math.max(x.length, y.length) }, (_, i) => String(i))
         : Array.from(new Set(Object.keys(x).concat(Object.keys(y)))).sort();
@@ -638,7 +642,9 @@ function zamekDataRozdilCesta(data, ulozena, v) {
         if (jdi(x[k], y[k])) return true;
         cesta.pop();
       }
+      return false;
     }
+    if (JSON.stringify(x) === JSON.stringify(y)) return false;
     const dx = druh(x), dy = druh(y);
     if (dx === 'chybi' && dy !== 'chybi') pozn = ' (chybí v ukládané)';
     else if (dy === 'chybi' && dx !== 'chybi') pozn = ' (chybí v uložené)';

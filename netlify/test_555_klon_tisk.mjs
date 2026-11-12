@@ -28,6 +28,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
   async smaz(k) { pamet.delete(nazev + '/' + k); },
 });
 
+import './pomoc_test_admin.mjs'; // K40-S4: výchozí smyšlený ADMIN_EMAIL dřív než sdilene.mjs
 import prihlaseni from './functions/prihlaseni.mjs';
 import program from './functions/program.mjs';
 import zakazky from './functions/zakazky.mjs';

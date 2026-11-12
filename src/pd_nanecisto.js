@@ -146,7 +146,9 @@ function pdnNazevSouboru(zak, verze) {
 /* CSV (středník, BOM kvůli Excelu, buňky přes csvBunka — B83). */
 function pdnCsv(vysledek, meta) {
   const m = meta || {};
-  const bunka = (typeof csvBunka === 'function') ? csvBunka : (t => '"' + String(t == null ? '' : t).replace(/"/g, '""') + '"');
+  /* K40-X5 (11. 11. 2026): záložní buňka bez format.js neměla ochranu vzorců
+   * — místo vlastní kopie se v Node načte TÁŽ csvBunka z format.js. */
+  const bunka = (typeof csvBunka === 'function') ? csvBunka : require('./format.js').csvBunka;
   const radek = pole => pole.map(bunka).join(';');
   const out = [
     radek(['Suchý běh zápisu do Pipedrive — nic se neodeslalo']),
