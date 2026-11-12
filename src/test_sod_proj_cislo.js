@@ -154,7 +154,8 @@ const vygeneruj = async (sablonaAb, cislo) => {
     test('SoD PROJ (v3): prázdné Číslo SoD → návrh z čísla nabídky (#366)',
       prazdne.text[2] === 'číslo 2026 - OVP - SOD - 0411', prazdne.text.slice(0, 4));
     const mezery = await vygeneruj(await docx(v3), '   ');
-    test('SoD PROJ (v3): jen mezery v Čísle SoD = prázdné ({{…}} zůstane)', mezery.text[2] === 'číslo {{' + SYM + '}}', mezery.text.slice(0, 4));
+    /* C3 #584 (11. 11. 2026): nevyplněné místo smlouvy dostane tečky „……" místo {{…}}. */
+    test('SoD PROJ (v3): jen mezery v Čísle SoD = prázdné (tečky „……" místo {{…}}, C3 #584)', mezery.text[2] === 'číslo ……', mezery.text.slice(0, 4));
     const stara = await vygeneruj(await docx(VS.sodProjV2(V1)), '2026 OVP SOD 0013');
     test('SoD PROJ (stará v2 bez symbolu): smlouva dál vznikne, jen bez čísla',
       stara.text[1] && /na zhotovení/.test(stara.text[1]) && stara.xml.indexOf('0013') < 0);
@@ -193,7 +194,7 @@ const vygeneruj = async (sablonaAb, cislo) => {
     test(jm + ' (Disk): prázdné Číslo SoD → návrh z čísla nabídky (#366)',
       p.text.some(t => /číslo 2026 - OVP - SOD - 0411/.test(t)) && p.xml.indexOf(SYM) < 0, p.text.slice(0, 5));
     const m = await vygeneruj(sablonaAb, '   ');
-    test(jm + ' (Disk): jen mezery v Čísle SoD → {{' + SYM + '}} zůstane k doplnění', m.xml.indexOf('{{' + SYM + '}}') >= 0);
+    test(jm + ' (Disk): jen mezery v Čísle SoD → tečky „……" k doplnění (C3 #584)', m.xml.indexOf('{{' + SYM + '}}') < 0 && m.text.some(t => /číslo ……/.test(t)));
   }
   if (!skutecnych) console.log('–    skutečné šablony SoD PROJ (KNG_PODKLADY) nejsou po ruce — přeskočeno');
   konec();

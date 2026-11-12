@@ -35,6 +35,8 @@ import {
 
 const SOUBOR_TVAR = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
 export const PD_ORGANIZACE_MAX = 20;
+/* Tvrdý limit jednoho volání Pipedrive (VSD N2 `casLimitMs`), ARES má vlastní 3 s. */
+export const PD_ORGANIZACE_CAS_MS = 2500;
 export const PD_DIC_VETA = 'DIČ se do Pipedrive nezapíše — organizace takové pole nemá.';
 
 export default async (req) => {
@@ -64,13 +66,13 @@ export default async (req) => {
   try {
     const pole = await pdPoleMapa();
     const mapaOrg = pole.mapaOrganizace || {};
-    const d = await pdZavolej('/api/v2/deals/' + Number(deal));
+    const d = await pdZavolej('/api/v2/deals/' + Number(deal), { casLimitMs: PD_ORGANIZACE_CAS_MS });
     if (!d) return json({ ok: false, chyba: 'Pipedrive deal zakázky nezná.' }, 404);
     if (!d.org_id) return json({ ok: false, chyba: 'K dealu není navázaná organizace.' }, 409);
     const orgId = Number(d.org_id);
     if (akce === 'zapis' && Number(telo.organizace) !== orgId)
       return json({ ok: false, chyba: 'Organizace nepatří dealu navázanému na tuto zakázku.' }, 403);
-    const org = await pdZavolej('/api/v2/organizations/' + orgId);
+    const org = await pdZavolej('/api/v2/organizations/' + orgId, { casLimitMs: PD_ORGANIZACE_CAS_MS });
     if (!org) return json({ ok: false, chyba: 'Pipedrive organizaci dealu nezná.' }, 404);
     /* SHODA IČO organizace a hlavičky ULOŽENÉ zakázky (B209). */
     const vazba = pdVazbaNorm(ulozena.pdVazbaWebhook);
@@ -91,7 +93,7 @@ export default async (req) => {
     const potvrzeno = Array.isArray(telo.pole) ? telo.pole.filter((k) => PD_ORG_POLE.includes(k)) : [];
     const vyber = rozdily.filter((r) => potvrzeno.includes(r.klic));
     if (!vyber.length) return json({ ok: true, zapsano: [], zbyva: rozdily.map((r) => r.klic), dicChybi, dicVeta: dicChybi ? PD_DIC_VETA : '' });
-    await pdZavolej('/api/v2/organizations/' + orgId, { metoda: 'PATCH', telo: pdOrgTelo(vyber, mapaOrg) });
+    await pdZavolej('/api/v2/organizations/' + orgId, { metoda: 'PATCH', telo: pdOrgTelo(vyber, mapaOrg), casLimitMs: PD_ORGANIZACE_CAS_MS });
     try { await (await uloziste(PD_CACHE_ULOZISTE)).smaz('deal:' + deal); } catch (e) { /* cache jen zestárne */ }
     const zapsano = vyber.map((r) => r.klic);
     const zbyva = rozdily.filter((r) => !zapsano.includes(r.klic)).map((r) => r.klic);

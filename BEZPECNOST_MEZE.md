@@ -1750,3 +1750,79 @@ Rozhodnutí J. V. 11. 11. 2026 (podklady/PROMPT_K40_OPRAVY_v3.md, prototyp
   (N2) — to doručení ale smí nahradit pole, která dřív doplnil webhook z dealu,
   úředními údaji téže firmy z ARES.
 
+## C5 #585 — nástroj obnovy testovací sady zakázek (v12.11.4, 12. 11. 2026)
+
+Rozhodnutí J. V. 11. 11. 2026 (B0.9): TEST zakázky kol K28/K29/K36, které od 2.–3. 11. chybí v testovací
+databázi (K39-I1), obnoví sám nástrojem `nastroje/test_sada_obnov.mjs` (jádro `nastroje/test_sada_jadro.mjs`,
+návod `podklady/NAVOD_TEST_SADA_OBNOVA.md`). Kód aplikace a serveru se nemění. Nástroj je klient
+veřejného API, žádnou zkratku do úložiště nemá. Čísla B203–B209 drží K40, proto B215–B216.
+
+### Nové meze
+
+- **B215 — nástroj zapisuje do databáze jako administrátor, mimo prohlížeč.** Co smí: přihlásit se
+  účtem s rolí přesně `Administrátor` (jinak konec bez zápisu), přečíst rejstřík a zakázky a uložit
+  **novou** zakázku přes `POST /api/zakazky`. Při tom prochází všemi kontrolami serveru jako prohlížeč.
+  Volá jen `GET /api/zdravi`, `POST /api/prihlaseni`, `POST /api/odhlaseni`, `GET /api/zakazky`
+  a `POST /api/zakazky`. Seznam je v kódu (`VOLANI`) a jiné volání vyhodí výjimku. Co nesmí: `DELETE`,
+  `/api/obnova`, `/api/zaloha*`, Pipedrive, `prepsat: true`. Každý zápis nese `ocekavaneRazitko: ''`,
+  takže server existující zakázku odmítne 409 (bez pole by ji tiše přepsal) a nástroj ji předem
+  přeskočí podle rejstříku. Heslo a e-mail jdou jen z klávesnice, heslo bez ozvěny i ve skutečném terminálu
+  (B1 revize 12. 11.: readline žije jen po dobu otázky, heslo se čte bez něj; test v pseudo-terminálu). Cookie relace drží jen v paměti,
+  nikam ji nezapisuje ani nevypisuje. Na konci se nástroj odhlásí, a protože odhlášení zvedá verzi
+  hesla účtu (B6), ukončí tím i přihlášení správce v prohlížeči (vědomě, stojí v návodu). Výchozí běh
+  je náhled. Zápis jen s `--zapsat` a napsaným slovem `OBNOVIT`.
+  *Co to nedělá:* jakožto administrátor nástroj smí ponechat cizího autora (u nové zakázky to server
+  dovolí jen jemu). Kdo zná heslo administrátora, zapíše totéž i z prohlížeče, takže nástroj práva nerozšiřuje.
+- **B216 — jen testovací web a jen TEST zakázky.** Cíl musí být **přesně** původ z povoleného seznamu
+  `https://testengscalc.netlify.app` nebo `http://localhost:<port>` / `http://127.0.0.1:<port>`. Platí
+  to bez cesty, dotazu, uživatele, velkých písmen, portu u https a tečky na konci hostu. Jiný testovací web
+  se přidává úpravou `POVOLENE_WEBY` s revizí, ne přepínačem. Ostrý web (host přesně `engscalc.netlify.app`,
+  `<nasazení>--engscalc.netlify.app` přes sdílenou `pdSimulatorOstryWeb`, cokoli se `schaftscalc`) se
+  odmítne vlastní hláškou dřív, než se nástroj zeptá na heslo. Shodu se simulátorem Pipedrive hlídá test.
+  `/api/zdravi` musí hlásit `prostredi === 'test'` třikrát: před přihlášením, po něm a těsně před
+  prvním zápisem (nenastavená proměnná = `ostre` = konec). Všechna volání jdou s `redirect: 'error'`.
+  Zpracuje se jen zakázka, jejíž číslo, čísla všech variant (`variantaCislo`), čísla v zámcích a vyplněné
+  číslo PROJ začínají `TEST`, a jejich jméno souboru (`uloKlicSouboru`) začíná `TEST-`. Zámek bez čísla
+  neprojde. Export s jedinou jinou zakázkou = nezapíše se nic. Z otisku zálohy (`--zaloha`) se vyberou jen
+  vyhovující zakázky, zbytek (účty, ceník, ostatní zakázky) se dál nečte. Výpis nese jen čísla, počty
+  a stav; hlášky serveru se čistí od e-mailů a částek.
+  *Co to nedělá:* `/api/zdravi` je veřejné a nepodepsané. Web, který by se vydával za testovací
+  (podvržené DNS na `testengscalc.netlify.app`), by heslo dostal. Proti tomu stojí jen https a povolený
+  seznam. Číslo `TEST - …` je konvence, ne oprávnění: zakázka „TEST“ v ostré databázi by prošla filtrem,
+  na ostrý web ale nástroj nepustí B216.
+
+## Poznámka dealu se seznamem šachet (VSD, doplněk J. V. 11. 11. 2026)
+
+- **B217 — uložení zakázky píše poznámku do Pipedrive.** Se ZAPNUTÝM
+  vypínačem víc šachet, s navázaným dealem (`pdDealId`) a s řídící variantou
+  s víc šachtami uložení zakázky (`POST /api/zakazky`, ve výhradním úseku, po
+  druhém čtení SEC-S1) založí nebo upraví JEDNU poznámku u dealu
+  (`lib/pd_poznamka.mjs`, v1 `/notes`). Zapisuje jen uživatel s právem
+  `crm.pipedrive` (B80; administrátor vždy) — bez práva stav `bez-prava` bez
+  varování a nejbližší uložení oprávněného to srovná. Id poznámky drží pole
+  zakázky `pdPoznamkaSachty` { deal, id, otisk, kdy }, které píše jen server
+  (hodnota z prohlížeče se zahodí, platí uložená verze téhož dealu). Text nese
+  značku čísla zakázky („— nabídka <číslo>“). Před úpravou server poznámku
+  přečte a přepíše ji jen, patří-li témuž dealu; bez id (nebo po 404 / cizím
+  dealu) nejdřív prohledá poznámky dealu (`GET /v1/notes?deal_id=`) a převezme
+  aktivní poznámku, která začíná „Šachty v nabídce: “ a končí značkou této
+  zakázky — POST jen když taková není. Podvržené id (soubor obnovy) tedy cizí
+  poznámku nepřepíše. Po návratu z Pipedrive se zakázka čte POTŘETÍ a jiné
+  razítko vrátí 409 (N1); poznámku, jejíž id se tím ztratilo, příští uložení
+  najde podle značky. Do Pipedrive se jde jen při změně textu (otisk SHA-256),
+  nejvýš `PD_POZNAMKA_STROP` = 20 **pokusů** za hodinu na deal (čerpají
+  i neúspěšné; počítadlo `pd_cache`, `strop:poznamka:deal:<id>`), každé volání
+  jedním pokusem s tvrdým limitem `PD_POZNAMKA_VOLANI_MS` = 2,5 s a celý zápis
+  nejvýš `PD_POZNAMKA_CELKEM_MS` = 6 s (N2); selhání ani vypršení uložení
+  nezastaví (stav `chyba`, varování, otisk zůstane, zopakuje se příště). Text
+  je escapovaný HTML, seznam nejvýš `PD_POZNAMKA_MAX` = 2 000 znaků + značka
+  (číslo ≤ 120 znaků), jen názvy šachet, kusy a číslo nabídky. Přejde-li
+  zakázka s poznámkou na jednu šachtu (ZAP, týž deal), poznámka se nemaže,
+  upraví se na „Šachty v nabídce: 1 šachta“.
+  *Co to nedělá:* poznámku nikdy nemaže. Při **změně dealu** zůstane stará
+  poznámka u starého dealu (nová vznikne u nového); s **vypnutým vypínačem** se
+  poznámka neupravuje ani nemaže (zůstane poslední stav). Souběžná uložení
+  v RŮZNÝCH instancích funkce (mez B158) mohou poznámku založit dvakrát (obě
+  instance hledají současně, žádná ji ještě nenajde) — zbytková mez; zakázka
+  pak drží id té, která se uložila, druhá zůstane v dealu. Pipedrive vrací
+  poznámky dealu po stránkách — prohledává se prvních 100 nejnovějších.

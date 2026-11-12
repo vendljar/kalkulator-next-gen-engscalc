@@ -58,8 +58,9 @@ function pdnStranaOck(zak, v, jekly) {
   const zad = (v.data && v.data.ock && v.data.ock.zadani) || {};
   /* VS-E5 (#595, R6): víc šachet — hodnota dealu = cena celé nabídky (beze
    * změny), ATYP, je-li atypická kterákoli šachta, a seznam šachet do
-   * poznámky dealu (`sachty`; jen náhled — pole určí J. V., do Pipedrive
-   * se nic neposílá). Jedna šachta = podklad beze změny. */
+   * poznámky dealu (`sachty`; náhled — poznámku do Pipedrive píše server
+   * při uložení zakázky z uložených dat, VSD lib/pd_poznamka.mjs; tenhle
+   * text se nikam nezapisuje). Jedna šachta = podklad beze změny. */
   const out = { hodnoty, rucne: Object.assign({}, kl.hodnoty || {}),
     atyp: vo ? vsAtyp(v.data && v.data.ock) : !!zad.atyp, mena: 'CZK' };
   if (cena !== null) out.cena = cena;

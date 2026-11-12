@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
-    "verze": "Platí pro aplikaci v12.11.3 · sestaveno 12. 11. 2026",
+    "verze": "Platí pro aplikaci v12.11.6 · sestaveno 12. 11. 2026",
 
   "uvod": [
     {
@@ -821,7 +821,7 @@
       "nadpis": "24. Krycí listy, smlouva a plná moc",
       "bloky": [
         { "typ": "text", "text": "Smlouva o dílo nese cenu z nabídky a k tomu zástupce a kontakty zákazníka, bankovní spojení a zápis v rejstříku. Ty se vyplňují v krycím listu v sekci **Zástupci a kontakty zákazníka** — a stačí jednou: krycí list OCK a PROJ sdílejí tatáž pole. Osoba ve věcech smluvních je zároveň ta, která smlouvu podepisuje, proto má i kolonku pozice." },
-        { "typ": "text", "text": "Co nevyplníte, **zůstane ve Wordu vidět jako `{{…}}`** a doplníte to ručně. Je to schválně: prázdné pole by symbol beze stopy smazalo a chybějící údaj by si nikdo nevšiml." },
+        { "typ": "text", "text": "Co nevyplníte, dostane ve Wordu **tečky „……“** a doplníte to ručně (od v12.11). Je to schválně: prázdné pole by místo beze stopy smazalo a chybějící údaj by si nikdo nevšiml. **Kontrola před tiskem** smlouvy o dílo chybějící údaje vyjmenuje jmény polí („IČO zákazníka, termín montáže od …“) — jen upozorní, tisk nezastaví — a po tisku je pod tlačítkem věta „Ve smlouvě zůstalo N míst k doplnění: …“. Kdo údaje doplní v krycím listu před tiskem, tečky ve smlouvě mít nebude. Tečky dostane i plná moc (údaje zmocnitele), tam bez výpisu." },
         {
           "typ": "kroky", "nadpis": "Postup: krycí list a smlouva o dílo OCK",
           "polozky": [
@@ -832,13 +832,13 @@
             {"text": "Pod krycím listem, v kartě **Smlouva o dílo (OCK)**, vyberte **Jazyk tisku** a klikněte na **Vytvořit smlouvu o dílo (Word)**. Tisk smlouvy zamkne číslo SoD i datum podpisu.", "snimek": "k24-sod-karta", "klik": {"obsahuje": "Vytvořit smlouvu o dílo (Word)"}}
           ]
         },
-        { "typ": "text", "text": "**Číslo SoD** zapíšete v Základních údajích každého krycího listu hned pod číslem nabídky — v **Krycím listu zakázky OCK** číslo smlouvy realizace, v **Krycím listu zakázky PROJ** číslo smlouvy projekce. Aplikace pole předvyplní **návrhem** z čísla nabídky — kód CN vymění za SOD a zbytek nechá (z **2026 - OPR - CN - 0412** je **2026 - OPR - SOD - 0412**, varianta 2 si nechá příponu **.2**); vedle pole stojí „návrh z čísla nabídky“. Ruční číslo má přednost, je označené „ručně“ a tlačítko ↺ vrátí návrh. Zakázka bez čísla nabídky návrh nedostane. Doplnit nebo přepsat číslo jde i po odeslání nabídky; **tisk smlouvy o dílo ho zamkne** i s datem podpisu smlouvy — obojí se zapíše do zakázky, takže krycí list i každý další tisk smlouvy nesou totéž číslo a datum. Prázdné pole (bez čísla nabídky) nechá ve Wordu `{{…}}`." },
+        { "typ": "text", "text": "**Číslo SoD** zapíšete v Základních údajích každého krycího listu hned pod číslem nabídky — v **Krycím listu zakázky OCK** číslo smlouvy realizace, v **Krycím listu zakázky PROJ** číslo smlouvy projekce. Aplikace pole předvyplní **návrhem** z čísla nabídky — kód CN vymění za SOD a zbytek nechá (z **2026 - OPR - CN - 0412** je **2026 - OPR - SOD - 0412**, varianta 2 si nechá příponu **.2**); vedle pole stojí „návrh z čísla nabídky“. Ruční číslo má přednost, je označené „ručně“ a tlačítko ↺ vrátí návrh. Zakázka bez čísla nabídky návrh nedostane. Doplnit nebo přepsat číslo jde i po odeslání nabídky; **tisk smlouvy o dílo ho zamkne** i s datem podpisu smlouvy — obojí se zapíše do zakázky, takže krycí list i každý další tisk smlouvy nesou totéž číslo a datum. Prázdné pole (bez čísla nabídky) dá ve Wordu tečky „……“." },
         { "typ": "podnadpis", "text": "Co si smlouva o dílo realizace (OCK) bere z krycího listu" },
         { "typ": "text", "text": "**Termíny, místo plnění, denní pokuta a datum podpisu** se do smlouvy o dílo realizace berou z **Krycího listu zakázky OCK** — ve Wordu je dopisovat nemusíte. Termíny vyplníte v sekci **Termíny** (podklady od dodavatele výtahu, stavební připravenost zákazníka, montáž a opláštění od–do, předání montáži výtahu, osazení šachetních dveří, konečné předání), místo plnění (bytový dům, rodinný dům, administrativní budova nebo vlastní znění), denní pokutu za prodlení zákazníka a datum podpisu v sekci **Smlouva o dílo (SoD realizace)**. Datum podpisu je předvyplněné dnešním dnem, tedy dnem tisku smlouvy — i když nabídka odešla dřív; jiné datum zapíšete ručně. Pokuta za prodlení zhotovitele se ve smlouvě řídí pokutou za prodlení dodávky z platebních podmínek: při „0“ věta ve smlouvě nebude." },
         { "typ": "text", "text": "**Splátky smlouvy realizace** (záloha, dílčí faktura č. 2, konečná faktura) bere smlouva z platebních podmínek krycího listu OCK. Když nedávají dohromady 100 %, smlouva o dílo nevznikne a krycí list řekne, co upravit (kapitola 21)." },
         {"typ": "text", "text": "**Režim DPH ve smlouvě** (šablona smlouvy realizace v3) vyberete ve stejné sekci:"},
         {"typ": "odrazky", "polozky": ["**česká DPH v zákonné sazbě** — k ceně se připočte DPH;", "**přenesená daňová povinnost (tuzemsko)**;", "**reverse charge EU** — zákazník z jiného státu EU, plnění bez české DPH, daň odvede zákazník."]},
-        {"typ": "odrazky", "polozky": ["Předvolba podle DIČ zákazníka v hlavičce: **české DIČ i bez DIČ → přenesená daňová povinnost (tuzemsko)** (u nepodnikatele vyberte českou DPH sami, ↺ vrátí výchozí); u DIČ z jiného státu EU i mimo EU zůstane *— nevybráno —* a režim zvolíte podle místa stavby (u stavby v ČR typicky česká DPH, reverse charge EU jen tam, kde to potvrdí účetní).", "**Dokud režim nevyberete, smlouva o dílo realizace nevznikne** — tlačítko je zhasnuté, pod ním svítí důvod a tlačítko *Přejít na volbu režimu DPH*. Po tisku smlouvy je volba zamčená jako ostatní pole krycího listu.", "Znění vět o DPH je předběžné do kontroly účetní. Odstavec 3 článku V nese prohlášení zákazníka o snížené sazbě DPH jen u české DPH a místa plnění *bytový dům* nebo *rodinný dům*; jinak závazek oznámit změnu skutečností rozhodných pro DPH. Režim napsaný vlastními slovy nechá věty ve Wordu jako `{{…}}`.", "**Skladné** (poplatek za den prodlení zákazníka se stavební připraveností) bere smlouva z **Nastavení → Smlouvy / Šablony** (Kč za den): česká smlouva v korunách, cizojazyčná v eurech kurzem ceníku (celá eura nahoru). Bez zadané částky zůstane `{{SOD_SKLADNE}}` k doplnění."], "uvod": "Co k tomu platí:"},
+        {"typ": "odrazky", "polozky": ["Předvolba podle DIČ zákazníka v hlavičce: **české DIČ i bez DIČ → přenesená daňová povinnost (tuzemsko)** (u nepodnikatele vyberte českou DPH sami, ↺ vrátí výchozí); u DIČ z jiného státu EU i mimo EU zůstane *— nevybráno —* a režim zvolíte podle místa stavby (u stavby v ČR typicky česká DPH, reverse charge EU jen tam, kde to potvrdí účetní).", "**Dokud režim nevyberete, smlouva o dílo realizace nevznikne** — tlačítko je zhasnuté, pod ním svítí důvod a tlačítko *Přejít na volbu režimu DPH*. Po tisku smlouvy je volba zamčená jako ostatní pole krycího listu.", "Znění vět o DPH je předběžné do kontroly účetní. Odstavec 3 článku V nese prohlášení zákazníka o snížené sazbě DPH jen u české DPH a místa plnění *bytový dům* nebo *rodinný dům*; jinak závazek oznámit změnu skutečností rozhodných pro DPH. Režim napsaný vlastními slovy nechá místo vět ve Wordu tečky „……“.", "**Skladné** (poplatek za den prodlení zákazníka se stavební připraveností) bere smlouva z **Nastavení → Smlouvy / Šablony** (Kč za den): česká smlouva v korunách, cizojazyčná v eurech kurzem ceníku (celá eura nahoru). Bez zadané částky dostane skladné ve smlouvě tečky „……“ k doplnění."], "uvod": "Co k tomu platí:"},
         { "typ": "podnadpis", "text": "Objednané příplatky ve smlouvě o dílo" },
         { "typ": "text", "text": "Pod textem smlouvy o dílo je rámeček **Objednané příplatky**: zaškrtněte příplatky z odeslané nabídky, které zákazník objednal — **před tiskem smlouvy**. Smlouva pak nese cenu díla = cena nabídky + objednané příplatky (v ceně z nabídky, bez slevy; DPH z celku). **Přechodové plechy** jsou jednou položkou jako v nabídce a jdou objednat jen celé. Ceny v rámečku jsou v měně smlouvy (Jazyk tisku jiný než česky = eura). Zakázka nese objednané příplatky jen jedné odeslané varianty — při zaškrtnutí u jiné varianty se aplikace zeptá, jestli je má nahradit." },
         { "typ": "text", "text": "**Kdo a do kdy objednané příplatky mění:** zaškrtávat je smí obchodník, který zakázku založil, vedoucí a administrátor. **Jakmile je smlouva podepsaná, mění je už jen administrátor** — podepsaná znamená, že je v krycím listu vyplněné **Datum podpisu smlouvy** s dnešním nebo dřívějším dnem. Datum se do krycího listu zapíše samo i **tiskem smlouvy o dílo**; po tisku smlouvy tedy objednané změní jen administrátor. Předvyplněné dnešní datum podpis neznamená, dokud smlouvu nevytisknete nebo datum nepotvrdíte. **Datum prodeje** (předvyplní se datem podpisu, jinak dneškem) nesmí být v budoucnosti a objednat jde jen příplatek, který odeslaná nabídka opravdu nabízela." },
@@ -938,7 +938,7 @@
         },
         {
           "typ": "text",
-          "text": "Víc šachet počítá jen **Model 2 – opravený**. U varianty v Modelu 1 jsou pole zhasnutá a přepnout variantu s víc šachtami na Model 1 nejde."
+          "text": "Víc šachet počítá jen **Model 2 – opravený**. U varianty v Modelu 1 jsou pole zhasnutá a přepnout variantu s víc šachtami na Model 1 nejde. Nabídka smí mít nejvýš **10 variant šachet** a každá **1–20 kusů**; když data (třeba z klonu nebo ze souboru) mez překročí, **kontrola před nabídkou** to ohlásí upozorněním dřív, než uložení skončí chybou."
         },
         {
           "typ": "podnadpis",
@@ -957,7 +957,7 @@
             },
             {
               "pojem": "Smlouva o dílo",
-              "vyklad": "Cena díla je cena celé nabídky. Šablona smlouvy, která na to má místo, dostane i předmět díla s výčtem šachet a rozpis cen po šachtách."
+              "vyklad": "Cena díla je cena celé nabídky. Šablona **SoD realizace v5** vyjmenuje šachty: v čl. II pod předmětem díla řádek „2 varianty šachet, celkem 3 ks (Výtah A 1 ks, Výtah B 2 ks)“, v čl. V pod cenou řádek za každou variantu (název, kusy, cena před slevou). U zakázky s jednou šachtou je smlouva stejná jako dřív. Se starší šablonou (v4) smlouva vznikne jen s celkovou cenou — aplikace upozorní (kontrola i věta po tisku) a předmět doplníte ve Wordu."
             },
             {
               "pojem": "Přehled cenových nabídek",
@@ -966,6 +966,10 @@
             {
               "pojem": "Odeslaná nabídka",
               "vyklad": "Po tisku je varianta uzamčená i se šachtami — přidat, smazat ani změnit šachtu nejde. Dotisk dá přesně totéž, co se odeslalo."
+            },
+            {
+              "pojem": "Pipedrive",
+              "vyklad": "U zakázky navázané na deal zapíše uložení seznam šachet (názvy, kusy a číslo nabídky) do **jedné poznámky u dealu** — jen účtem, který smí pracovat s Pipedrive. Při změně šachet ji upraví, nepřidává další; když nabídka klesne na jednu šachtu, poznámka to řekne."
             }
           ]
         }

@@ -5,8 +5,8 @@
  *    jen text, délka omezená) — nic jiného navíc.
  * 2. pdNanecisto: řádek „Poznámka dealu — šachty v nabídce" jen u víc
  *    šachet; hodnota dealu = cena celé nabídky beze změny.
- * 3. Do Pipedrive nic: zamýšlený zápis (patch) je s poznámkou i bez ní
- *    STEJNÝ — pole poznámky určí J. V. (plán VS 8.4).
+ * 3. Zamýšlený zápis dealu (patch) je s poznámkou i bez ní STEJNÝ —
+ *    poznámku píše uložení zakázky (VSD, test_vsd_pd_poznamka.mjs).
  * 4. Jedna šachta = náhled beze změny (žádný řádek navíc).
  * Pojistka: na 079cfc6 sada padá (sachty se zahodí, řádek chybí).
  * Spuštění: node netlify/test_vs_e5_pd.mjs
@@ -50,7 +50,7 @@ const jedna = { ock: { hodnoty: {}, cena: 3267000, mena: 'CZK' } };
 {
   const n = pdNanecisto(POLE_DEALU, vs, POLE);
   const r = n.radky.find(x => x.klic === 'poznamkaSachty');
-  test('2 víc šachet: řádek poznámky se seznamem šachet', r && r.hodnotaText === TEXT && r.strana === 'ock' && /J\. V\./.test(r.duvod), r);
+  test('2 víc šachet: řádek poznámky se seznamem šachet', r && r.hodnotaText === TEXT && r.strana === 'ock' && /poznámka u dealu/.test(r.duvod) && /uložení zakázky/.test(r.duvod), r);
   const h = n.radky.find(x => x.klic === 'hodnotaDealu');
   test('2 hodnota dealu = cena celé nabídky (beze změny)', h && h.hodnota && h.hodnota.value === 3267000, h);
   const n1 = pdNanecisto(POLE_DEALU, jedna, POLE);

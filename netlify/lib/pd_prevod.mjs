@@ -442,14 +442,15 @@ export function pdNanecisto(definice, strany, pole, spolecne = {}, zdroje = {}) 
     }
     radky.push(r);
   }
-  /* VÍC ŠACHET (VS-E5 #595, R6): seznam šachet do POZNÁMKY dealu — jen
-   * řádek náhledu. Pole (poznámka dealu, nebo textové pole z mapy) určí
-   * J. V. (plán VS bod 8.4); do té doby ho zápis (pdZapisDealu) neposílá
-   * a patch se nemění. Jedna šachta = žádný řádek. */
+  /* VÍC ŠACHET (VS-E5 #595, R6): seznam šachet do POZNÁMKY dealu. J. V.
+   * 11. 11. 2026: jde jako poznámka (Note) u dealu, ne jako pole — píše ji
+   * uložení zakázky (lib/pd_poznamka.mjs, jen se zapnutým vypínačem víc
+   * šachet), NE zápis dealu: patch pdZapisDealu se nemění. Jedna šachta =
+   * žádný řádek. */
   const vsZ = s.ock && typeof s.ock.sachty === 'string' ? s.ock.sachty.trim() : '';
   if (vsZ) radky.push({ klic: 'poznamkaSachty', nazev: 'Poznámka dealu — šachty v nabídce', typ: 'poznámka', strana: 'ock',
     zdroj: 'OCK: Kalkulace OCK › šachty varianty (název, ks)', hodnotaKalkulace: vsZ, hodnota: vsZ, hodnotaText: vsZ,
-    stav: 'zapise', duvod: 'zatím jen náhled — pole v Pipedrive (poznámka dealu nebo textové pole) určí J. V.; zápis ho neposílá',
+    stav: 'zapise', duvod: 'poznámka u dealu (jedna na deal a zakázku) — zapíše ji uložení zakázky se zapnutým víc šachet; zápis dealu ji neposílá',
     kolize: [], vCrm: '' });
   const souhrn = { celkem: radky.length, kolize: radky.filter((r) => r.kolize.length).length };
   for (const st of PD_NANECISTO_STAVY) souhrn[st] = radky.filter((r) => r.stav === st).length;

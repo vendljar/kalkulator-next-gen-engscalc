@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v12.11.4 — K40c #581: vazba z webhooku Pipedrive, firma z ARES na serveru, „Opravit firmu v Pipedrive“, větev claude/k40c-webhook
+## v12.11.7 — K40c #581: vazba z webhooku Pipedrive, firma z ARES na serveru, „Opravit firmu v Pipedrive“, větev claude/k40c-webhook
 
-Nad `1a08186` (integrace v12.11.3). Verzi přečísluje koordinace. Výpočet ceny beze změny. Rozhodnutí J. V.
+Nad `1a08186` (integrace v12.11.3), sloučeno s integrací `4acda93` (v12.11.6: VSD, C2+C3, C5). Výpočet ceny beze změny. Rozhodnutí J. V.
 11. 11. 2026 (`podklady/PROMPT_K40_OPRAVY_v3.md`, prototyp v4); do ostrého Pipedrive ani do ARES se ze sezení nevolalo.
 
 - **Vazba z webhooku (K40-W1):** webhook dál hned doplní hlavičku a krycí list a zapíše odkaz do dealu; navázání
@@ -49,6 +49,97 @@ Nad `1a08186` (integrace v12.11.3). Verzi přečísluje koordinace. Výpočet ce
   `test_pd_simulator.mjs` a `test_pd_mapa_prehled.mjs` (DIČ organizace). Mutace `[K40c]` (25), `--kontrola`
   obou sad čistá (posunutá zadání #447 C4 a #509).
 
+## v12.11.6 — C2 #583 SoD realizace v5 se šachtami a C3 #584 tečky „……" místo nevyplněných symbolů smlouvy, větev claude/c23-sod-v5
+
+Nad `aa445a1` (integrace = test v11.11.1). Rozhodnutí J. V. 11. 11. 2026 (B0.4, B0.5) a doplněk téhož dne (tečky
+i v plné moci, bez kontroly). Verzi přečísluje koordinace. Na webech, Disku ani v Pipedrive nic.
+
+- **SoD realizace v5 (C2):** nástroj `node nastroje/vyrob_sablony.js --sod-real-v5` vyrobí z revidovaných v4
+  CZ/EN/DE/FR šablonu v5 = v4 + samostatný odstavec `{{SACHTY_SOD_PREDMET}}` pod popisem předmětu (čl. II)
+  a `{{SACHTY_SOD_ROZPIS}}` pod cenou dle nabídky (čl. V; celková cena zůstává první). Odstavce nesou jen symbol
+  — nic k překladu. U jedné šachty zmizí (Word = v4 znak po znaku), u víc šachet předmět vyjmenuje varianty
+  a kusy, rozpis má odstavec na variantu. Podklad `podklady/SABLONA_SOD_REALIZACE_V5_11_11.md`.
+- **Stará šablona u víc šachet jen upozorní** (věta pod tlačítkem, hláška, kontrola `vsSablonaSod`), tisk projde.
+- **Oprava (VS-E4):** generátor mazal v každém dokumentu odstavce se symbolem `SACHTY_*` mimo smyčku CN —
+  i `{{SACHTY_SOD_*}}`, takže by se šachty do Wordu smlouvy nedostaly nikdy. Filtr je jen na symboly smyčky CN.
+- **Tečky (C3):** SoD realizace, SoD projekce i plná moc — každé místo, které šablona má a zakázka nevyplnila
+  (chybí nebo je prázdné), dostane „……" místo `{{…}}`. Náhrada je poslední krok generátoru (volba `nevyplnene`,
+  výchozí vypnuto): co má zmizet (rozpis bez příplatků, pokuta „0", šachty u jedné šachty, nenabízené činnosti
+  SoD PROJ), zmizí dál. Pokuta s vlastním zněním bez procenta = tečky a položka výpisu. Nabídky beze změny.
+- **Kontrola před tiskem SoD** (`sodNevyplneno`, `sodProjNevyplneno`): vyjmenuje chybějící údaje lidsky
+  („IČO objednatele, termín montáže od …"), jen upozornění; po tisku věta „Ve smlouvě zůstalo N míst
+  k doplnění …". Seznam = týž `sodNevyplnene` jako tečky. Záznam tisku (zámek) beze změny.
+- Testy: `src/test_sod_v5.js`, `src/test_sod_tecky.js`, `src/test_vs_kontroly.js` G; očekávání teček
+  v `src/test_sod_proj_cislo.js`, počet pravidel 51; mutace [C2] 8/8, [C3] 9/9.
+## v12.11.5 — VSD: upozornění vsTvar (#586), harness lišty K43-T1 (#587), poznámka šachet do Pipedrive (#588) po revizi Fable, větev claude/vsd-drobnosti
+
+Nad `aa445a1`, sloučena integrace `1a08186` (v12.11.3 s K40b a C1). Verzi přečísluje koordinace. Výpočet ceny
+beze změny (zlatá sada 319/319); s vypnutým vypínačem víc šachet se nic nemění. Na webech, Disku ani v ostrém
+Pipedrive nic.
+
+- **#586 vsTvar (K47-I3)** — nové pravidlo kontrol před nabídkou (`src/kontroly.js`, mezi vsModel1 a vsSablona):
+  víc než 10 variant šachet, počet kusů mimo 1–20 (i 0, 1,5 nebo text), název nad 80 znaků nebo jiný neplatný
+  tvar šachet ohlásí **upozornění** dřív, než uložení skončí chybou. Ptá se `vsTvarProblemy` — tatáž funkce jako
+  server; čte surová data varianty (`ctx.ockSurova` z UI). S vypnutou funkcí víc šachet mlčí. Pravidel kontrol
+  je 49 (test_kontroly, overit_lista, `manual_vypocet/cisla_vydani.json`).
+- **#587 K43-T1** — `overit_lista_cekani.mjs` čeká na stav aplikace (ceník nasazený, lišta v DOM, přihlášení),
+  ne pevný čas z Node; meze měří od události ve stránce (odpověď `/api/program`, začátek ověřování `overujeOd`,
+  klik). Selhání se nepodařilo zopakovat — oprava je preventivní, doložená jen pojistkou (lišta hned = 22/10).
+- **#588 Poznámka dealu se seznamem šachet** (doplněk J. V. 11. 11., upraveno po revizi Fable 12. 11.): uložení
+  zakázky se zapnutým vypínačem víc šachet, s dealem a řídící variantou s víc šachtami zapíše „Šachty v nabídce:
+  2 varianty šachet, celkem 3 ks (Výtah A 1 ks, Výtah B 2 ks) — nabídka <číslo>“ do **jedné poznámky u dealu**
+  (`netlify/lib/pd_poznamka.mjs`). Jen s právem `crm.pipedrive` (jinak stav `bez-prava`). Id v serverem psaném poli
+  `pdPoznamkaSachty`; bez id se nejdřív hledá vlastní poznámka dealu podle značky čísla zakázky (žádné množení).
+  Po návratu z Pipedrive třetí čtení zakázky (kolize = 409). Každé volání nejvýš 2,5 s, celý zápis 6 s, jeden
+  pokus, strop 20 pokusů/h na deal; výpadek uložení nezastaví. Přechod na jednu šachtu poznámku nemaže, upraví ji
+  na „1 šachta“. Simulátor Pipedrive umí `/v1/notes` (i seznam podle dealu a scénář „visí“). Mez **B217**.
+- Testy: `src/test_vs_kontroly.js` 40/0 (nad bází 17 FAIL), `netlify/test_vsd_pd_poznamka.mjs` 49/0 (jen
+  simulátor), `netlify/test_vs_e5_pd.mjs` 9/0; mutace jádra [VSD] 4/4, serveru [VSD] viz PREDAVKA.
+
+## v12.11.4 — C5 #585: nástroj obnovy testovací sady zakázek TEST do testovací databáze, větev claude/c5-test-sada
+
+Nad `aa445a1` (integrace = test v11.11.1). Verzi přečísluje koordinace. **Kód aplikace a serveru se nemění.**
+Rozhodnutí J. V. B0.9 (11. 11. 2026): TEST zakázky kol K28/K29/K36, které od 2.–3. 11. chybí v testovací databázi
+(K39-I1), obnoví sám nástrojem. Před sloučením revize poradce (Fable) nad celým diffem. Nástroj se nikomu nedává
+ke spuštění před revizí. Na webech, Disku ani v Pipedrive nic. Sezení nástroj proti žádnému webu nespustilo.
+
+- **Nové:** `nastroje/test_sada_obnov.mjs` (obal: přepínače, soubor .json/.json.gz, klávesnice) a
+  `nastroje/test_sada_jadro.mjs` (rozhodování v čistých funkcích, `fetch` se předává). Ze souboru exportu
+  (`--export`, soubor od testovacího sezení) nebo z kopie zálohy z Disku (`--zaloha`, vybere jen TEST) založí
+  zakázky `TEST - …` přes `POST /api/zakazky` jako administrátor. Návod pro J. V.:
+  `podklady/NAVOD_TEST_SADA_OBNOVA.md`.
+- **Pojistky (meze B215–B216):**
+  - Cíl jen `https://testengscalc.netlify.app` a místní adresy. Ostrý web (sdílená `pdSimulatorOstryWeb`
+    a `schaftscalc`) odmítne dřív, než se zeptá na heslo.
+  - `/api/zdravi` musí hlásit `test` před přihlášením, po něm a těsně před zápisem. Přesměrování nenásleduje.
+  - Jen role Administrátor a jen pět dvojic metoda + cesta.
+  - Jen zakázky, jejichž číslo, čísla variant, zámků a PROJ začínají `TEST`. Jediná cizí zakázka
+    v exportu znamená, že se nezapíše nic.
+  - Výchozí běh je náhled. Zapisuje až po `--zapsat` a napsaném `OBNOVIT`.
+  - Existující zakázku přeskočí. Vždy posílá `ocekavaneRazitko: ''`, nikdy `prepsat`. Strop 4 MB hlídá předem.
+  - Po zápisu zakázku přečte zpět a porovná číslo, varianty, zámky (číslo, typ, čas) a kanonický otisk dat
+    variant. Data nemění.
+  - Výpis nese jen čísla, počty a stav.
+- **Zjištění P5 (místní server):** odeslaná, prodaná, s tiskem SoD i víc šachet (se zapnutou funkcí) projdou
+  beze změny. Zámek a autor z exportu zůstanou. Server razí jen `sleva.role` z relace, nástroj ho vědomě
+  nepočítá za rozdíl.
+  - Starý zámek bez značky „číslo z papíru“ (před #320) server běžným uložením odmítne (409). Nástroj ho jen
+    vypíše.
+  - Víc šachet s vypnutou funkcí: 409, vypíše se.
+  - Odhlášení nástroje ruší všechny relace účtu (B6), tedy i přihlášení v prohlížeči. Stojí v návodu.
+- **Revize poradce (12. 11.), opraveno:**
+  - **B1:** heslo se v terminálu zobrazovalo. Readline s terminálem opakoval znaky a `rl.pause()` ho
+    neodpojil. Readline teď žije jen po dobu jedné otázky a heslo se čte bez něj. Totéž platilo pro
+    `nastroje/migrace_znacky.mjs`, opraveno stejně. Test v pseudo-terminálu (`script`).
+  - **B2:** po K40b server odmítne prodej starší než 7 dní (razítko přijetí zámku = dnes). Nástroj data
+    nemění, v souhrnu vypíše „ODMÍTNUTÉ ZAKÁZKY“ s doporučením „Obnovit ze zálohy“ v aplikaci. Návod to říká
+    předem (2a).
+  - Upozornění na odhlášení před dotazem na heslo. Čtení zpět je v try/catch, takže se souhrn vypíše
+    i při výpadku.
+- **Testy:** `netlify/test_c5_test_sada.mjs` 131/0 (původně 121). Proti skutečným serverovým funkcím nad pamětí ověřuje
+  cíl, zdraví, roli, jen TEST, náhled, nic se nepřepíše (i souběh 409), zámky, prodej, SoD, víc šachet,
+  volání, výpis a obal z příkazové řádky proti místnímu HTTP serveru. Mutace „[C5]“ 23 v `netlify/mutace.mjs`,
+  sada v `SADY`. `.gitignore`: `test_sada_*.json*`, `otisk_*.json*`.
 ## v12.11.3 — C1 #582: šablona CN v17 CZ/EN/DE/FR ke zveřejnění, jednotné nadpisy USAZENÍ OCK (DE, EN), větev claude/c1-cn-v17
 
 Nad `aa445a1` (integrace = test v11.11.1). Verzi přečísluje koordinace. Výpočet ceny beze změny; na webech, Disku
@@ -118,7 +209,7 @@ rozhodnutí J. V. 4. 11. (S1, N3) a 11. 11. 2026 (3a, 4a).
   34/0 (S13, 1 FAIL — starý skript 2 kopie smazal), test_k40_mustky_cenik 31/0 (1 FAIL), test_escape 42/0 (2 FAIL).
   Zlatá sada víc šachet 319/319, můstky 228/0. Otázka 6 (šířka skupiny můstků) se nedělá.
 
-## v11.11.2 — K40a #579: opravy kola 40 bez ceny — čelní sklo a sklo u šachet 2+, ořez konce textu, ceník můstků, kopie na Disku, hygiena testů, větev claude/k40a
+## v12.11.1 — K40a #579 (první část, původně číslovaná v11.11.2): opravy kola 40 bez ceny — čelní sklo a sklo u šachet 2+, ořez konce textu, ceník můstků, kopie na Disku, hygiena testů, větev claude/k40a
 
 Nad `c664c9e` (integrace v11.11.1). Verzi přečísluje koordinace (souběžně K40b #580). Podle posudku poradce
 (`podklady/K40_POSUDEK_FABLE.md`, `PROMPT_K40_OPRAVY_v2.md`) a rozhodnutí J. V. 11. 11. 2026 (1a, 2a, 6b, 7a, 8a).

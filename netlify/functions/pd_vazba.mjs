@@ -33,6 +33,8 @@ const SOUBOR_TVAR = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
 const AKCE = ['potvrdit', 'zrusit', 'chybna'];
 /* Zrušení sahá do Pipedrive (čtení dealu + PATCH): strop na uživatele (B80 vzor). */
 export const PD_VAZBA_MAX = 20;
+/* Tvrdý limit jednoho volání Pipedrive (VSD N2 `casLimitMs`): akce z prohlížeče nesmí viset. */
+export const PD_VAZBA_CAS_MS = 2500;
 
 export default async (req) => {
   const { chyba, relace } = await pdPristup(req, { bezPrava: true });
@@ -108,13 +110,13 @@ export default async (req) => {
       const pole = await pdPoleMapa();
       const hash = pole.mapa.odkazKalkulace;
       if (!hash) throw new PdChyba('V Pipedrive chybí pole „Odkaz na kalkulaci“.', 404);
-      const d = await pdZavolej('/api/v2/deals/' + Number(deal));
+      const d = await pdZavolej('/api/v2/deals/' + Number(deal), { casLimitMs: PD_VAZBA_CAS_MS });
       const ted = d ? pdHodnota((d.custom_fields || {})[hash]).trim() : '';
       if (!d) odkazVDealu = 'prazdne';
       else if (!ted) odkazVDealu = 'prazdne';
       else if (ted !== pdWebhookOdkaz(soubor, req)) odkazVDealu = 'cizi';
       else {
-        await pdZavolej('/api/v2/deals/' + Number(deal), { metoda: 'PATCH', telo: { custom_fields: { [hash]: null } } });
+        await pdZavolej('/api/v2/deals/' + Number(deal), { metoda: 'PATCH', telo: { custom_fields: { [hash]: null } }, casLimitMs: PD_VAZBA_CAS_MS });
         odkazVDealu = 'smazano';
         try { await (await uloziste(PD_CACHE_ULOZISTE)).smaz('deal:' + deal); } catch (e) { /* cache jen zestárne */ }
       }
