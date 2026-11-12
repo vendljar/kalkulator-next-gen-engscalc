@@ -235,21 +235,21 @@
           : 'rozpracovaná' + (z.platna ? '<div class="note">platí odeslaná ' + esc(z.platna.cislo) + '</div>' : ''));
       const sd = sdili(z);
       return '<tr class="' + (vyb ? 'aktivni ' : '') + (zn ? 'vzp-r-' + zn + (S.blik ? ' vzp-blik' : '') : '') + '" data-z="' + z.id + '">'
-        + '<td style="text-align:center"><input type="radio" name="vzpRidici"' + (z.id === P.ridici ? ' checked' : '') + (lze('ridici:' + z.id) || z.id === P.ridici ? '' : ' disabled')
+        + '<td data-l="Řídící"><input type="radio" name="vzpRidici"' + (z.id === P.ridici ? ' checked' : '') + (lze('ridici:' + z.id) || z.id === P.ridici ? '' : ' disabled')
         + ' data-vzp-ridici="' + z.id + '" title="' + (smiRidit() ? 'řídící zákazník — jeho varianta je řídící a její data nese deal v Pipedrive' : 'řídícího zákazníka mění jen autor zakázky a administrátor') + '"></td>'
-        + '<td><button type="button" class="vzp-jmeno" data-vzp="vyber:' + z.id + '" title="otevřít zákazníka v hlavičce">' + esc(z.nazev) + '</button>'
+        + '<td data-l="Zákazník"><button type="button" class="vzp-jmeno" data-vzp="vyber:' + z.id + '" title="otevřít zákazníka v hlavičce">' + esc(z.nazev) + '</button>'
         + '<div class="note">IČO ' + esc(z.ico) + (z.id === P.ridici ? ' · <b>řídící zákazník</b>' : '') + (vyb ? ' · otevřený v hlavičce' : '') + '</div></td>'
-        + '<td style="white-space:nowrap"><b>' + esc(cisloZ(z)) + '</b></td>'
-        + '<td><select data-vzp-var="' + z.id + '"' + (odeslanoTed(z) && z.prodano ? ' disabled' : '') + ' title="která varianta je nabídkou tohoto zákazníka">' + volby + '</select>'
+        + '<td data-l="Číslo nabídky" class="vzp-cislo"><b>' + esc(cisloZ(z)) + '</b></td>'
+        + '<td data-l="Varianta nabídky"><select data-vzp-var="' + z.id + '"' + (odeslanoTed(z) && z.prodano ? ' disabled' : '') + ' title="která varianta je nabídkou tohoto zákazníka">' + volby + '</select>'
         + '<div class="note">' + (sd.length > 1 ? 'sdílená: ' + esc(sd.map((x) => x.kratce).join(' + ')) : (P.zak.length > 1 ? 'vlastní varianta' : 'jediná varianta')) + '</div></td>'
-        + '<td>' + stav + '</td>'
-        + '<td style="text-align:right;white-space:nowrap">' + esc(kc(cenaV(v))) + '</td>'
-        + '<td class="vzp-akce">' + tl('nahled:' + z.id, '👁 Náhled', 'náhled nabídky pro tohoto zákazníka')
+        + '<td data-l="Stav">' + stav + '</td>'
+        + '<td data-l="Cena bez DPH" class="vzp-cena">' + esc(kc(cenaV(v))) + '</td>'
+        + '</tr><tr class="vzp-akce-r' + (vyb ? ' aktivni' : '') + (zn ? ' vzp-r-' + zn : '') + '"><td></td><td colspan="5" class="vzp-akce">' + tl('nahled:' + z.id, '👁 Náhled', 'náhled nabídky pro tohoto zákazníka')
         + tl('odesli:' + z.id, '🖨 Tisk CN', 'vytisknout (odeslat) cenovou nabídku tomuto zákazníkovi — varianta se zamkne')
         + tl('vlastni:' + z.id, '⧉ Vlastní varianta', 'založit kopii varianty jen pro tohoto zákazníka')
         + tl('prodej:' + z.id, '✔ Prodáno', 'zakázku získal tento zákazník')
         + (z.id !== P.ridici ? tl('odeber:' + z.id, '✕', 'odebrat zákazníka (jen dokud mu nic neodešlo)') : '') + '</td></tr>'
-        + (zn ? '<tr class="vzp-pp vzp-pp-' + zn + '"><td></td><td colspan="6">' + stitek(zn) + ' ' + (zn === 'pridano' ? '<b>' + esc(snimek()['z:' + z.id]) + '</b>'
+        + (zn ? '<tr class="vzp-pp vzp-pp-' + zn + '"><td></td><td colspan="5">' + stitek(zn) + ' ' + (zn === 'pridano' ? '<b>' + esc(snimek()['z:' + z.id]) + '</b>'
           : '<s>' + esc(P.pred['z:' + z.id]) + '</s> → <b>' + esc(snimek()['z:' + z.id]) + '</b>') + '</td></tr>' : '');
     }).join('');
     const volne = Object.keys(FIRMY).filter((k) => !Zk(k));
@@ -283,7 +283,7 @@
     return '<h2><span style="flex:1">Zákazníci zakázky <span class="pill">zkušební funkce</span></span></h2><div class="body">'
       + '<div class="note" style="margin-bottom:8px">Jednu zakázku může poptat víc zákazníků. Každý má <b>svou nabídku</b> (číslo s písmenem zákazníka) — buď sdílí variantu s jiným zákazníkem, nebo má vlastní. '
       + '<b>Řídící zákazník</b> určuje řídící variantu a jen jeho data nese deal v Pipedrive; ostatní jsou v dealu jako textová zmínka.</div>'
-      + '<div class="vzp-tab"><table><thead><tr><th title="řídící zákazník">Řídící</th><th>Zákazník</th><th>Číslo nabídky</th><th>Varianta nabídky</th><th>Stav</th><th style="text-align:right">Cena bez DPH</th><th></th></tr></thead><tbody>' + ro + '</tbody></table></div>'
+      + '<div class="vzp-tab"><table><thead><tr><th title="řídící zákazník">Řídící</th><th>Zákazník</th><th>Číslo nabídky</th><th>Varianta nabídky</th><th>Stav</th><th>Cena bez DPH</th></tr></thead><tbody>' + ro + '</tbody></table></div>'
       + (P.chyba ? '<div class="vzp-upoz">' + esc(P.chyba) + '</div>' : '')
       + '<div class="vzp-pod"><button type="button" class="vzp-modre' + (dalsiKrok().indexOf('pridej') === 0 && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="form"' + (volne.length && !prodanoZ() ? '' : ' disabled') + '>+ Přidat zákazníka</button>' + napoveda + '</div>'
       + form + upoz + potv + '</div>';

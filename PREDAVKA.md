@@ -1,3 +1,21 @@
+# Předávka — 12. 11. 2026: návrh „víc zákazníků na jedné zakázce“ (poradce), větev `claude/vz-navrh`
+
+Nad `aa445a1` (v11.11.1). Jen podklady — kód aplikace beze změny, verze se nemění. Do `test-draft`, `test` ani `main` nic;
+weby, Disk, Pipedrive nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| návrh | ✅ | `podklady/NAVRH_VICE_ZAKAZNIKU.md` (model, řídící zákazník, čísla s písmenem, tisk z pohledu zákazníka, zámek, rejstřík, Pipedrive a K40c, vypínač, rizika, etapy E0–E6, 4 otázky) |
+| klikací prototyp na skutečné aplikaci | ✅ | https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V, zdroj `podklady/vz_prototyp/` (`sestav.mjs`, `prototyp.js`, `prototyp.css`) |
+| ověření v headless Chromiu | ✅ 25/0 | `node podklady/vz_prototyp/snimky.mjs <výstup>` — 1600 × 1000 a 400 × 800; snímky `podklady/vz_prototyp/snimky/` |
+| kontrola údajů | ✅ čisté | `python3 nastroje/kontrola_udaju.py` |
+
+**Čeká na J. V.:** 4 otázky v § 11 návrhu (číslo s písmenem; obsah a místo textu v dealu; organizace dealu po prodeji
+jinému zákazníkovi; krycí list u sdílené varianty).
+**Pro koordinaci:** VZ programovat až po sloučení K40c; do zadání K40c doplnit podmínku — „Opravit firmu v Pipedrive“
+jen při shodě IČO organizace dealu s IČO hlavičky (jinak by po změně řídícího zákazníka přejmenovalo cizí organizaci).
+Čísla roadmapy pro etapy E0–E6 přidělí koordinace. Kolo testů se nepouštělo (kód se neměnil).
+
 # Předávka — VS-E6 #570 (#596): závěr víc šachet — překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi po částech, větev `claude/vs-e6`
 
 Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Do `test-draft`, `test` ani `main` nic;

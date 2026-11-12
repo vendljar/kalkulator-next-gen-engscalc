@@ -74,8 +74,11 @@ body.vzp-otevreno { margin-right: 440px; }
 #vzpKarta td select { max-width: 170px; width: 100%; }
 #vzpKarta .vzp-jmeno { font: inherit; font-weight: 600; background: none; border: 0; padding: 0; color: #1d4ed8; cursor: pointer; text-align: left; }
 #vzpKarta .vzp-jmeno:hover { text-decoration: underline; }
-#vzpKarta td.vzp-akce { white-space: normal; text-align: right; min-width: 200px; }
-#vzpKarta .vzp-akce button { margin: 0 0 3px 3px; }
+#vzpKarta td.vzp-akce { white-space: normal; padding-top: 0; }
+#vzpKarta tr[data-z] > td { border-bottom: 0; }
+#vzpKarta .vzp-cislo, #vzpKarta .vzp-cena { white-space: nowrap; }
+#vzpKarta td[data-l="Řídící"] { text-align: center; }
+#vzpKarta .vzp-akce button { margin: 0 4px 4px 0; }
 #vzpKarta .vzp-prodano { background: #d6f5e1; color: #0f5a30; border-color: #1d9a55; font-weight: 700; }
 #vzpKarta .vzp-pod { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
 #vzpKarta .vzp-modre { font: 600 14px system-ui, sans-serif; cursor: pointer; border-radius: 6px; padding: 8px 14px; border: 1px solid #1d4ed8; background: #1d4ed8; color: #fff; }
@@ -119,5 +122,13 @@ body.vzp-otevreno { margin-right: 440px; }
   #vzpLista button { padding: 4px 6px; }
   #vzpLista select { max-width: 44vw; padding: 4px 2px; font-size: 12px; }
   #vzpLista .vzp-napoveda { font-size: 12px; padding: 3px 6px; }
-  #vzpKarta .vzp-akce { white-space: normal; }
+}
+@media (max-width: 760px) {
+  #vzpKarta thead { display: none; }
+  #vzpKarta table, #vzpKarta tbody, #vzpKarta tr, #vzpKarta td { display: block; width: auto; }
+  #vzpKarta tr[data-z] { border-top: 2px solid #c3cde0; padding-top: 4px; }
+  #vzpKarta td { padding: 3px 8px; text-align: left !important; white-space: normal !important; }
+  #vzpKarta td[data-l]::before { content: attr(data-l) ": "; color: #5b6472; font-size: 12px; margin-right: 4px; }
+  #vzpKarta td:empty { display: none; }
+  #vzpKarta td select { max-width: 100%; width: auto; }
 }
