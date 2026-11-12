@@ -1,3 +1,31 @@
+# Předávka — C1 #582: šablona CN v17 CZ/EN/DE/FR + jednotné nadpisy USAZENÍ OCK (DE, EN), větev `claude/c1-cn-v17`
+
+Nad `aa445a1` (integrace = test v11.11.1). **v12.11.1** (koordinace přečísluje). Do `test-draft`, `test`, `main`
+ani integrace nic; weby, Disk, Pipedrive nic. Podrobnosti a návod pro J. V.: `podklady/SABLONA_CN_V17_11_11.md`.
+
+| úkol | stav | kde |
+|---|---|---|
+| slovník DE „POSITIONIERUNG DER SCHACHTKONSTRUKTION – …“, EN „SHAFT STRUCTURE POSITION – …“ (FR beze změny) | ✅ | `src/preklad.js` (4 hesla) |
+| `--cn-usazeni` (oprava v16 DE/EN, tvrdé kontroly, idempotence) | ✅ | `nastroje/vyrob_sablony.js` `cnUsazeni`, `cnUsazeniSoubor` |
+| `--cn-v17` přímo z jazykové v16 (`cnV17(xml, L)`, `cnV17Jazyk`, kontrola v17 bez smyčky = v16) | ✅ | tamtéž; strojový překlad jen záloha s UPOZORNĚNÍM |
+| šablony CN v17 CZ/EN/DE/FR + opravená v16 DE a EN | ✅ předáno J. V. (SendUserFile) | `podklady/sablony_vystup/` (gitignore) |
+| testy | ✅ | `src/test_cn_usazeni.js` 32/0, `src/test_vs_docx_v17.js` 47/0 (+18 F), `src/test_preklad.js` (+25) |
+| zlaté otisky | ✅ přegenerováno (pokyn koordinace 12. 11.) | jen `nahled-en`; se starým EN zněním = původní JSON bajt po bajtu |
+| mutace [C1] | ✅ 8/8 | `mutace_jadro.mjs`, `--kontrola` 828/828 |
+| ověření nad firemními v16 | ✅ | jedna šachta v17 = v16 1276/1276 (319 scénářů × 4 jazyky), víc šachet 20/20 |
+| dokumentace | ✅ | příručka správce A5, CHANGELOG v12.11.1, roadmapa #582 |
+
+**Kolo `--bez-mutaci` s KNG_PODKLADY (12. 11., 34 min):** sady 425/3/6, hodiny +400 dní 342/2/1, statické 5/5.
+Selhání: `test_manual_fakta` (historie rozhodnutí v textu A5) — **opraveno** v dalším commitu (14/0);
+`test_sablona_proj_v6` (skutečná PROJ v6 z Disku) a `overit_sablona` (v12 na Disku není) padají **stejně nad
+bází aa445a1** se stejnými podklady — nesouvisí s dávkou. Mutace celé pouští koordinace při slučování.
+
+**Čeká na J. V.:** kontrola slovníku (Nastavení → Slovník, přepisy hesel USAZENÍ OCK), nahrát opravenou v16 DE/EN
+a v17 všech čtyř jazyků v testu i main naráz; otázky: „VÝTAHOVÁ ŠACHTA“ → „shaft“ v online cizojazyčné nabídce
+(změnit heslo?), sjednotit i FR nadpisy usazení? Zdrojové v16 na Disku upravené 10. 11. 2026 13:52 UTC — potvrdit,
+že jsou totožné se zveřejněnými.
+
+---
 # Předávka — VS-E6 #570 (#596): závěr víc šachet — překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi po částech, větev `claude/vs-e6`
 
 Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Do `test-draft`, `test` ani `main` nic;
