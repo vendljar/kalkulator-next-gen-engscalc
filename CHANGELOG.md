@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.11.1 — C2 #583 SoD realizace v5 se šachtami a C3 #584 tečky „……" místo nevyplněných symbolů smlouvy, větev claude/c23-sod-v5
+
+Nad `aa445a1` (integrace = test v11.11.1). Rozhodnutí J. V. 11. 11. 2026 (B0.4, B0.5) a doplněk téhož dne (tečky
+i v plné moci, bez kontroly). Verzi přečísluje koordinace. Na webech, Disku ani v Pipedrive nic.
+
+- **SoD realizace v5 (C2):** nástroj `node nastroje/vyrob_sablony.js --sod-real-v5` vyrobí z revidovaných v4
+  CZ/EN/DE/FR šablonu v5 = v4 + samostatný odstavec `{{SACHTY_SOD_PREDMET}}` pod popisem předmětu (čl. II)
+  a `{{SACHTY_SOD_ROZPIS}}` pod cenou dle nabídky (čl. V; celková cena zůstává první). Odstavce nesou jen symbol
+  — nic k překladu. U jedné šachty zmizí (Word = v4 znak po znaku), u víc šachet předmět vyjmenuje varianty
+  a kusy, rozpis má odstavec na variantu. Podklad `podklady/SABLONA_SOD_REALIZACE_V5_11_11.md`.
+- **Stará šablona u víc šachet jen upozorní** (věta pod tlačítkem, hláška, kontrola `vsSablonaSod`), tisk projde.
+- **Oprava (VS-E4):** generátor mazal v každém dokumentu odstavce se symbolem `SACHTY_*` mimo smyčku CN —
+  i `{{SACHTY_SOD_*}}`, takže by se šachty do Wordu smlouvy nedostaly nikdy. Filtr je jen na symboly smyčky CN.
+- **Tečky (C3):** SoD realizace, SoD projekce i plná moc — každé místo, které šablona má a zakázka nevyplnila
+  (chybí nebo je prázdné), dostane „……" místo `{{…}}`. Náhrada je poslední krok generátoru (volba `nevyplnene`,
+  výchozí vypnuto): co má zmizet (rozpis bez příplatků, pokuta „0", šachty u jedné šachty, nenabízené činnosti
+  SoD PROJ), zmizí dál. Pokuta s vlastním zněním bez procenta = tečky a položka výpisu. Nabídky beze změny.
+- **Kontrola před tiskem SoD** (`sodNevyplneno`, `sodProjNevyplneno`): vyjmenuje chybějící údaje lidsky
+  („IČO objednatele, termín montáže od …"), jen upozornění; po tisku věta „Ve smlouvě zůstalo N míst
+  k doplnění …". Seznam = týž `sodNevyplnene` jako tečky. Záznam tisku (zámek) beze změny.
+- Testy: `src/test_sod_v5.js`, `src/test_sod_tecky.js`, `src/test_vs_kontroly.js` G; očekávání teček
+  v `src/test_sod_proj_cislo.js`, počet pravidel 51; mutace [C2] 8/8, [C3] 9/9.
+
 ## v11.11.1 — VS-E6 #570: víc šachet v nabídce — závěr: překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi (#596; #570 hotovo), větev claude/vs-e6
 
 Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Verzi přečísluje koordinace.
