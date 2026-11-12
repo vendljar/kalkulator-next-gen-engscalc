@@ -375,6 +375,19 @@ if (!isMainThread) {
       !budouci.trashed && /budoucím datem/.test(v.hlaseni.join()) && pocetEmailu() === emailyPredS12 + 1
       && /Upozornění/.test(posledniEmail.predmet || '') && posledniEmail.text.includes(budouci.name), { v, e: posledniEmail });
     budouci.trashed = true;                                      // správce podle e-mailu smaže
+    /* ---------- S13 (revize K40a D2): den kopie nejde určit → úklid nemaže a připomene ----------
+     * kngUklid_ přímo nad složkou v paměti; dřív se srovnání tiše přeskočilo a mazalo se dál. */
+    {
+      const kos = [];
+      const soubory = ['otisk_main_2026-01-05_0310.json.gz', 'otisk_main_2026-03-01_0310.json.gz', 'otisk_main_2026-10-27_0310.json.gz']
+        .map(j => ({ getName: () => j, isTrashed: () => false, setTrashed: () => kos.push(j), getId: () => j, getSize: () => 10 }));
+      const sl = { getName: () => '_Zaloha Netlify DB', getFiles: () => { let i = 0; return { hasNext: () => i < soubory.length, next: () => soubory[i++] }; } };
+      let u13, chyba13 = null;
+      try { u13 = ctx.kngUklid_({ prostredi: 'main' }, sl, { soubor: 'otisk_main_2026-10-27_0310.json.gz', otisk: '2026-1-27', velikostDatB: 10 },
+        { retence: {}, kopieDisk: { kdy: new Date(Date.now()).toISOString() } }, null, null); } catch (e) { chyba13 = e.message; }
+      test('S13 neplatný den kopie: úklid nesmaže nic, řekne proč a připomene e-mailem (upozornění)',
+        !chyba13 && kos.length === 0 && /den kopie nejde určit/.test(u13 && u13.text || '') && /den kopie nejde určit/.test(u13 && u13.upozorneni || ''), { u13, chyba13, kos });
+    }
     const pocetPredS9 = pocetEmailu();
 
     /* ---------- S9: testovací web, nesedící prostředí, chybějící token ---------- */

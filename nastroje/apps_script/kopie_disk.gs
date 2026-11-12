@@ -304,6 +304,8 @@ function kngUklid_(w, slozka, p, c, predZaznam, kopieServer) {
    * (sdílená funkce z src/retence_zaloh.js); budoucí jména jsou podezřelá —
    * ohlásí se v textu i v e-mailu a nemažou se. */
   var vyber = retenceZalohDiskPredchozi(jmena, p.soubor, den, w.prostredi);
+  /* Revize K40a D2: neplatný den kopie = pojistku nejde provést → nemazat a připomenout. */
+  if (vyber.neplatnyDen) return stoji('den kopie nejde určit (' + den + ') — pojistku úbytku nejde provést, staré kopie se nemažou');
   var predchozi = vyber.predchozi;
   var podezrela = vyber.budouci;
   var pod = podezrela.length ? ' Podezřelé kopie s budoucím datem (nesmazány, nesrovnávají se — zkontrolujte a případně smažte ručně): '
@@ -617,11 +619,14 @@ function retenceZalohDiskVyber(jmena, dnes, chranit, prostredi) {
  * (`budouci`, seřazená) — úklid je ohlásí jako podezřelá a nemaže je.
  * Jediná funkce pro prohlížeč (kopieDiskUklid) i skript Apps Script
  * (kngUklid_, vkládá nastroje/apps_script/vloz_retenci.py).
- * Vrací { predchozi: jméno | null, budouci: [] }. */
+ * Vrací { predchozi: jméno | null, budouci: [] }; u dne, který není platné
+ * RRRR-MM-DD, navíc `neplatnyDen: true` — oba volající pak NEMAŽOU (revize
+ * K40a D2, 12. 11. 2026: dřív se srovnání tiše přeskočilo a mazalo se). */
 function retenceZalohDiskPredchozi(jmena, soubor, den, prostredi) {
   const out = { predchozi: null, budouci: [] };
   const d = String(den == null ? '' : den);
-  if (!RETENCE_ZALOH_DISK_PROSTREDI.includes(prostredi) || !Number.isFinite(retenceZalohDenMs(d))) return out;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !Number.isFinite(retenceZalohDenMs(d))) { out.neplatnyDen = true; return out; }
+  if (!RETENCE_ZALOH_DISK_PROSTREDI.includes(prostredi)) return out;
   const vlastni = [...new Set((jmena || []).map(String))]
     .map(j => { const r = retenceZalohDiskRozeber(j); return r && !r.stary && r.prostredi === prostredi && j !== String(soubor) ? { j, d: r.den } : null; })
     .filter(Boolean);

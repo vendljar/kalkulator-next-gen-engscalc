@@ -2301,6 +2301,8 @@ async function kopieDiskUklid(h, kopie, ted) {
   /* K40-X4 (B205): srovnává se jen s kopií se dnem MENŠÍM než den nové kopie;
    * jména s budoucím dnem jsou podezřelá — ohlásí se a nemažou. */
   const vyber = retenceZalohDiskPredchozi(jmena, kopie.soubor, den, prostredi);
+  /* Revize K40a D2: neplatný den kopie = pojistku nejde provést → nemazat. */
+  if (vyber.neplatnyDen) return nic('den kopie nejde určit (' + den + ') — pojistku úbytku nejde provést, staré kopie se nemažou');
   const predchozi = vyber.predchozi;
   const podezrela = vyber.budouci;
   const sPodezrelymi = (o) => (podezrela.length ? Object.assign(o, { podezrela }) : o);

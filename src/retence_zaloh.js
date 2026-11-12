@@ -169,11 +169,14 @@ function retenceZalohDiskVyber(jmena, dnes, chranit, prostredi) {
  * (`budouci`, seřazená) — úklid je ohlásí jako podezřelá a nemaže je.
  * Jediná funkce pro prohlížeč (kopieDiskUklid) i skript Apps Script
  * (kngUklid_, vkládá nastroje/apps_script/vloz_retenci.py).
- * Vrací { predchozi: jméno | null, budouci: [] }. */
+ * Vrací { predchozi: jméno | null, budouci: [] }; u dne, který není platné
+ * RRRR-MM-DD, navíc `neplatnyDen: true` — oba volající pak NEMAŽOU (revize
+ * K40a D2, 12. 11. 2026: dřív se srovnání tiše přeskočilo a mazalo se). */
 function retenceZalohDiskPredchozi(jmena, soubor, den, prostredi) {
   const out = { predchozi: null, budouci: [] };
   const d = String(den == null ? '' : den);
-  if (!RETENCE_ZALOH_DISK_PROSTREDI.includes(prostredi) || !Number.isFinite(retenceZalohDenMs(d))) return out;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !Number.isFinite(retenceZalohDenMs(d))) { out.neplatnyDen = true; return out; }
+  if (!RETENCE_ZALOH_DISK_PROSTREDI.includes(prostredi)) return out;
   const vlastni = [...new Set((jmena || []).map(String))]
     .map(j => { const r = retenceZalohDiskRozeber(j); return r && !r.stary && r.prostredi === prostredi && j !== String(soubor) ? { j, d: r.den } : null; })
     .filter(Boolean);

@@ -92,7 +92,11 @@ test('úseky online_ui.js nalezeny (kopie na Disk, úklid, obnova .gz)', !!kopie
     !!r && J(r.budouci) === J(['otisk_main_2026-11-30_0310.json', 'otisk_main_2027-01-01_0310.json.gz']), r);
   test('K40-X4 tabulka: bez starší kopie predchozi null; neplatný den nebo prostředí = nic',
     !!r && P(['otisk_main_2026-10-27_0310.json'], 'x', '2026-10-27', 'main').predchozi === null
-    && J(P(jm, '', '2026-02-31', 'main')) === J({ predchozi: null, budouci: [] }) && J(P(jm, '', '2026-10-27', 'ostry')) === J({ predchozi: null, budouci: [] }));
+    && J(P(jm, '', '2026-02-31', 'main')) === J({ predchozi: null, budouci: [], neplatnyDen: true }) && J(P(jm, '', '2026-10-27', 'ostry')) === J({ predchozi: null, budouci: [] }));
+  /* Revize K40a D2: neplatný den (ne RRRR-MM-DD) nese příznak — volající nemažou. */
+  test('K40a D2 tabulka: neplatný den kopie → neplatnyDen (prázdný, „2026-1-27", „x", null)',
+    ['', '2026-1-27', 'x', null, '2026-10-27T00:00'].every(d => { const q = P(jm, '', d, 'main'); return !!q && q.neplatnyDen === true && q.predchozi === null; }));
+  test('K40a D2 tabulka: platný den příznak nenese', !!r && r.neplatnyDen === undefined);
 }
 
 /* ---------------- 2) simulovaná složka a průběh kopie ---------------- */
@@ -409,6 +413,18 @@ Date.now = () => Date.parse('2026-10-27T09:00:00Z');
     test('K40-X4: malá „budoucí" kopie nezakryje skutečný úbytek proti 20. 10. — nic se nesmaže, server dostane hlášení',
       h.smazane.length === 0 && !!hlaseni && hlaseni.disk.predSoubor === 'otisk_main_2026-10-20_0310.json' && /méně dat/.test(k.uklid.duvod || '')
       && J(k.uklid.podezrela) === J(['otisk_main_2027-01-02_0310.json']), { uklid: k.uklid, hlaseni });
+  }
+  /* ---- Revize K40a D2: den kopie nejde určit → úklid nesmaže nic a řekne proč ----
+   * (dřív se srovnání úbytku tiše přeskočilo a mazalo se dál). */
+  {
+    const ctx = novyCtx({ serverOdpoved: async () => ({ ok: true, kopieDisk: { kdy: new Date(Date.now()).toISOString() }, retenceVarovani: null }) });
+    const h = slozka('_Zaloha Netlify DB', STARE);
+    const kopie = { soubor: 'otisk_main_2026-10-27_0310.json', otisk: '2026-1-27', sha256: '', velikostB: 3, velikostDatB: 3 };
+    h.m.set(kopie.soubor, { kind: 'file', data: Buffer.from('abc') });
+    const sha = require('crypto').createHash('sha256').update('abc').digest('hex');
+    kopie.sha256 = sha;
+    const u = await ctx.uklid(h, kopie, Date.now());
+    test('K40a D2: neplatný den kopie → úklid nesmaže nic a řekne proč', h.smazane.length === 0 && /den kopie nejde určit/.test(u.duvod || ''), { u, smazane: h.smazane });
   }
   Date.now = realNow;
   console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
