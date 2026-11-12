@@ -969,7 +969,7 @@
             },
             {
               "pojem": "Pipedrive",
-              "vyklad": "U zakázky navázané na deal zapíše uložení seznam šachet (názvy a kusy) do **jedné poznámky u dealu**; při změně šachet ji upraví, nepřidává další."
+              "vyklad": "U zakázky navázané na deal zapíše uložení seznam šachet (názvy, kusy a číslo nabídky) do **jedné poznámky u dealu** — jen účtem, který smí pracovat s Pipedrive. Při změně šachet ji upraví, nepřidává další; když nabídka klesne na jednu šachtu, poznámka to řekne."
             }
           ]
         }

@@ -1655,20 +1655,32 @@ v `src/objednane.js` — touž funkcí počítá pole data v kartě Prodáno i s
   vypínačem víc šachet, s navázaným dealem (`pdDealId`) a s řídící variantou
   s víc šachtami uložení zakázky (`POST /api/zakazky`, ve výhradním úseku, po
   druhém čtení SEC-S1) založí nebo upraví JEDNU poznámku u dealu
-  (`lib/pd_poznamka.mjs`, v1 `/notes`). Id poznámky drží pole zakázky
-  `pdPoznamkaSachty` { deal, id, otisk, kdy }, které píše jen server: hodnota
-  z prohlížeče se zahodí, platí uložená verze téhož dealu. Před úpravou server
-  poznámku přečte a přepíše ji jen, patří-li témuž dealu (jinak a po 404 založí
-  novou) — podvržené id (soubor obnovy) tedy cizí poznámku nepřepíše. Do
-  Pipedrive se jde jen při změně textu (otisk SHA-256), nejvýš
-  `PD_POZNAMKA_STROP` = 20 zápisů za hodinu na deal (počítadlo `pd_cache`,
-  `strop:poznamka:deal:<id>`), jedním pokusem bez opakování; selhání uložení
-  nezastaví (varování, otisk zůstane, zopakuje se příště). Text je escapovaný
-  HTML, nejvýš `PD_POZNAMKA_MAX` = 2 000 znaků, jen názvy šachet a kusy.
-  *Co to nedělá:* zápis dělá kdokoli, kdo smí zakázku uložit (ne jen držitel
-  práva `crm.pipedrive`) — píše se jen text z jeho vlastních dat do dealu, na
-  který je zakázka navázaná. Souběžná uložení v RŮZNÝCH instancích funkce
-  (mez B158) mohou založit dvě poznámky (druhá kolize 409 zahodí id první);
-  zakázka pak drží id té, která se uložila, druhá zůstane v dealu. Přechod
-  zakázky z víc šachet na jednu ani vypnutí funkce poznámku nemažou (stará
-  zůstane, jak byla). Strop počítadla platí v instanci a v úložišti jako B158.
+  (`lib/pd_poznamka.mjs`, v1 `/notes`). Zapisuje jen uživatel s právem
+  `crm.pipedrive` (B80; administrátor vždy) — bez práva stav `bez-prava` bez
+  varování a nejbližší uložení oprávněného to srovná. Id poznámky drží pole
+  zakázky `pdPoznamkaSachty` { deal, id, otisk, kdy }, které píše jen server
+  (hodnota z prohlížeče se zahodí, platí uložená verze téhož dealu). Text nese
+  značku čísla zakázky („— nabídka <číslo>“). Před úpravou server poznámku
+  přečte a přepíše ji jen, patří-li témuž dealu; bez id (nebo po 404 / cizím
+  dealu) nejdřív prohledá poznámky dealu (`GET /v1/notes?deal_id=`) a převezme
+  aktivní poznámku, která začíná „Šachty v nabídce: “ a končí značkou této
+  zakázky — POST jen když taková není. Podvržené id (soubor obnovy) tedy cizí
+  poznámku nepřepíše. Po návratu z Pipedrive se zakázka čte POTŘETÍ a jiné
+  razítko vrátí 409 (N1); poznámku, jejíž id se tím ztratilo, příští uložení
+  najde podle značky. Do Pipedrive se jde jen při změně textu (otisk SHA-256),
+  nejvýš `PD_POZNAMKA_STROP` = 20 **pokusů** za hodinu na deal (čerpají
+  i neúspěšné; počítadlo `pd_cache`, `strop:poznamka:deal:<id>`), každé volání
+  jedním pokusem s tvrdým limitem `PD_POZNAMKA_VOLANI_MS` = 2,5 s a celý zápis
+  nejvýš `PD_POZNAMKA_CELKEM_MS` = 6 s (N2); selhání ani vypršení uložení
+  nezastaví (stav `chyba`, varování, otisk zůstane, zopakuje se příště). Text
+  je escapovaný HTML, seznam nejvýš `PD_POZNAMKA_MAX` = 2 000 znaků + značka
+  (číslo ≤ 120 znaků), jen názvy šachet, kusy a číslo nabídky. Přejde-li
+  zakázka s poznámkou na jednu šachtu (ZAP, týž deal), poznámka se nemaže,
+  upraví se na „Šachty v nabídce: 1 šachta“.
+  *Co to nedělá:* poznámku nikdy nemaže. Při **změně dealu** zůstane stará
+  poznámka u starého dealu (nová vznikne u nového); s **vypnutým vypínačem** se
+  poznámka neupravuje ani nemaže (zůstane poslední stav). Souběžná uložení
+  v RŮZNÝCH instancích funkce (mez B158) mohou poznámku založit dvakrát (obě
+  instance hledají současně, žádná ji ještě nenajde) — zbytková mez; zakázka
+  pak drží id té, která se uložila, druhá zůstane v dealu. Pipedrive vrací
+  poznámky dealu po stránkách — prohledává se prvních 100 nejnovějších.

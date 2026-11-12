@@ -1,7 +1,8 @@
 # Předávka — VSD: upozornění vsTvar (#586), harness lišty K43-T1 (#587), poznámka šachet do Pipedrive (#588), větev `claude/vsd-drobnosti`
 
 Nad `aa445a1` (integrace = test v11.11.1), prompt `podklady/PROMPT_VSD_PO_KOLE47.md` (f0fcffc) + doplněk J. V. 11. 11.
-(poznámka Pipedrive). **v12.11.1** (poslední commit 12. 11. UTC; koordinace přečísluje). Do `test-draft`, `test`,
+(poznámka Pipedrive); 12. 11. sloučena integrace `1a08186` (v12.11.3, K40b, C1) a #588 upraveno po revizi Fable.
+**v12.11.4** (poslední commit 12. 11. UTC; koordinace přečísluje). Do `test-draft`, `test`,
 `main` ani integrace nic; weby, Disk, ostrý Pipedrive nic (jen simulátor). Sezení 11. 11. ve 14:38 stál limit účtu,
 12. 11. pokračováno v témž kontejneru (nic se neztratilo, zbytek mutace žádný).
 
@@ -10,14 +11,13 @@ Nad `aa445a1` (integrace = test v11.11.1), prompt `podklady/PROMPT_VSD_PO_KOLE47
 | #586 vsTvar | ✅ | `src/kontroly.js` (pravidlo mezi vsModel1 a vsSablona; `kontrolyVsZapnuto`, `kontrolyVsOckSurova`, `kontrolyVsTvarText`), `src/ui/kontroly_ui.js` (`ockSurova`) |
 | počet pravidel 48 → 49 | ✅ | `src/test_kontroly.js`, `overit_lista.mjs`, `manual_vypocet/cisla_vydani.json` (`k.pocet`, stejně jako VS-E5) |
 | #587 K43-T1 | ✅ | `overit_lista_cekani.mjs` (jen harness) |
-| #588 poznámka Pipedrive | ✅ **čeká revize Fable** | `netlify/lib/pd_poznamka.mjs`, `netlify/functions/zakazky.mjs`, `netlify/lib/pipedrive.mjs` (`volby.pokusu`), `netlify/lib/pipedrive_simulator.mjs` (`/v1/notes`), `netlify/lib/pd_prevod.mjs` + `src/pd_nanecisto.js` (text důvodu náhledu) |
-| mez B217 | ✅ | `BEZPECNOST_MEZE.md` (poslední oddíl) |
-| mutace | ✅ | jádro [VSD] 4/4 (`mutace_jadro.mjs`), server [VSD] 13 (`netlify/mutace.mjs`), 2 starší zadání serveru přepsána na nový tvar `zakazky.mjs` |
-| příručka kap. 25 | ✅ | věta o mezích (10 variant, 1–20 ks) + položka „Pipedrive“; verze příručky v12.11.1 |
-| roadmapa | ✅ | #586, #587, #588 hotovo v12.11.1 (`roadmapa.py --kontrola` čisté) |
-| testy | ✅ | `src/test_vs_kontroly.js` 40/0 (nad bází 17 FAIL); `netlify/test_vsd_pd_poznamka.mjs` 34/0 (jen simulátor; bez napojení padá); `test_vs_e5_pd` 9/0; zlatá sada 319/319; `test_kontroly` 159/0 |
-| mutace | ✅ | jádro [VSD] 4/4, server [VSD] 13/13 (sada `test_vsd_pd_poznamka.mjs` doplněna do seznamu sad `netlify/mutace.mjs`); `--kontrola` jádro 824, server 1400 úseků |
-| kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | sady 427/0/7 (přeskočeny jen sady s firemními podklady; harnessy prohlížeče přes `node_modules/playwright` → globální), hodiny +400 dní 344/0/1, statické kontroly zelené. Celé mutace pouští koordinace. |
+| #588 poznámka Pipedrive | ✅ po revizi Fable (N1–N3, a, b) | `netlify/lib/pd_poznamka.mjs`, `netlify/functions/zakazky.mjs` (třetí čtení), `netlify/lib/pipedrive.mjs` (`volby.pokusu`, `volby.casLimitMs`), `netlify/lib/pipedrive_simulator.mjs` (`/v1/notes` seznam/GET/POST/PUT, scénář `visi`, háček `poPozadavku`), `netlify/lib/pd_prevod.mjs` + `src/pd_nanecisto.js` (text důvodu náhledu) |
+| mez B217 | ✅ | `BEZPECNOST_MEZE.md` (poslední oddíl; B215–B216 má C5, ověřeno ve všech větvích) |
+| příručka kap. 25 | ✅ | věta o mezích (10 variant, 1–20 ks) + položka „Pipedrive“; verze příručky v12.11.4 |
+| roadmapa | ✅ | #586, #587, #588 hotovo v12.11.4 (`roadmapa.py --kontrola` čisté) |
+| testy | ✅ | `src/test_vs_kontroly.js` 40/0 (nad bází 17 FAIL); `netlify/test_vsd_pd_poznamka.mjs` 49/0 (jen simulátor; bez napojení padá); `test_vs_e5_pd` 9/0; zlatá sada 319/319; `test_kontroly` 159/0 |
+| mutace | ✅ | jádro [VSD] 4/4, server [VSD] MUTACE_SERVER (sada `test_vsd_pd_poznamka.mjs` v seznamu sad `netlify/mutace.mjs`; dvě starší zadání B105 a #536 přepsána na nový tvar kódu) |
+| kolo `--bez-mutaci` | KOLO_STAV | KOLO_CISLA |
 | kontext sezení | 39 % | `get_session` 12. 11. |
 
 ## Rozhodnutí bez J. V. (výchozí varianty)
@@ -34,18 +34,23 @@ Nad `aa445a1` (integrace = test v11.11.1), prompt `podklady/PROMPT_VSD_PO_KOLE47
    aktuální šachty; jen při změně textu. Webhook pole zachová (kopíruje uloženou zakázku).
 5. **Která varianta**: řídící (`ridiciVarianta`), stejně jako rejstřík a Pipedrive náhled.
 6. **Text** = věta náhledu (`'Šachty v nabídce: ' + vsPredmetText`), z dat místo z výsledku (shodu hlídá test).
-7. **Přechod na jednu šachtu / vypnutí funkce poznámku nemaže** (do CRM se nemaže nic); zůstane poslední stav.
-8. **Zápis smí každý, kdo smí zakázku uložit** (ne jen právo `crm.pipedrive`) — píše jen vlastní data do dealu
-   navázaného na zakázku. K posouzení Fable / J. V. (B217 „Co to nedělá“).
+7. ~~Zápis smí každý~~ → **rozhodnutí koordinace (a)**: jen s právem `crm.pipedrive` (B80), jinak `bez-prava`.
+8. **Rozhodnutí koordinace (b)**: poznámka se nemaže; přechod na jednu šachtu (ZAP, týž deal, id je) = úprava na
+   „Šachty v nabídce: 1 šachta“. Změna dealu a VYP v mezích (B217).
 
-## K revizi poradce Fable (zápis do CRM)
+## Revize Fable (12. 11. 2026) a co se změnilo
 
-Rozdíl: `git diff aa445a1..claude/vsd-drobnosti -- netlify/lib/pd_poznamka.mjs netlify/functions/zakazky.mjs
-netlify/lib/pipedrive.mjs netlify/lib/pipedrive_simulator.mjs netlify/test_vsd_pd_poznamka.mjs BEZPECNOST_MEZE.md`.
-Body k pohledu: pořadí v úseku (po druhém čtení SEC-S1, před zápisem), ověření `deal_id` přes GET před PUT,
-duplicity mezi instancemi (B158), strop 20/h na deal, `pokusu: 1`, escapování (Pipedrive obsah poznámky = HTML),
-pole `pdPoznamkaSachty` jen ze serveru (obnova ze souboru ho přenese — ochranu dělá GET ověření dealu).
-Testy jen proti simulátoru (`netlify/test_vsd_pd_poznamka.mjs`, síť zakázaná).
+#586 a #587 schváleny ke sloučení. #588 vráceno — opraveno:
+- **N1** (blokující): po návratu z Pipedrive se zakázka čte POTŘETÍ, jiné razítko = 409 (test: háček simulátoru
+  zapíše jinou verzi během PUT → 409, zápis jiné instance zůstal; další uložení poznámku převezme, žádná druhá).
+- **N2** (blokující): `pdZavolej` umí `casLimitMs` (AbortController + závod s časovačem, včetně čtení těla) →
+  504 „Pipedrive neodpověděl do 2,5 s“; poznámka: 2,5 s na volání, 6 s celkem, stav `chyba`, varování,
+  zakázka uložena (test se scénářem simulátoru `visi`).
+- **N3**: značka „— nabídka <číslo>“ v textu; bez id nejdřív `GET /v1/notes?deal_id=` a převzetí aktivní
+  poznámky téhož dealu, která začíná „Šachty v nabídce: “ a končí značkou (porovnává se bez HTML značek);
+  POST jen když není. Souběh dvou instancí zůstává zbytkovou mezí (B217).
+- **(a)** právo `crm.pipedrive` (`zobrazeniSmi`, matice z uložení), **(b)** jedna šachta = „1 šachta“, strop
+  čerpají i neúspěšné pokusy — vše v B217.
 
 ## Ostatní harnessy lišty (bod 6 — jen výpis, bez nálezu selhání neopravováno)
 
@@ -57,6 +62,8 @@ Testy jen proti simulátoru (`netlify/test_vsd_pd_poznamka.mjs`, síť zakázan�
   `waitForFunction` nad `ONLINE_STAV`; neopakovat.
 
 ## Stabilita K43-T1 — čísla (12. 11. 2026, kontejner 4 jádra)
+
+**Selhání K43-T1 se nepodařilo zopakovat; oprava je preventivní, doložená jen pojistkou.**
 
 **Selhání 31/1 se tu nepodařilo vyvolat.** Původní harness (`aa445a1`): samostatně 10/10 OK, pod CPU zátěží
 (4 smyčky) 10/10, tři instance souběžně 12/12, tři instance + CPU zátěž 21/21 — tedy 0 selhání z 53. Nový harness:

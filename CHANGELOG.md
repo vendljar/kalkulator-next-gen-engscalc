@@ -8,31 +8,31 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v12.11.1 — VSD: upozornění vsTvar (#586), harness lišty K43-T1 (#587), poznámka šachet do Pipedrive (#588), větev claude/vsd-drobnosti
+## v12.11.4 — VSD: upozornění vsTvar (#586), harness lišty K43-T1 (#587), poznámka šachet do Pipedrive (#588) po revizi Fable, větev claude/vsd-drobnosti
 
-Nad `aa445a1` (integrace = test v11.11.1). Verzi přečísluje koordinace. Výpočet ceny beze změny (zlatá sada
-319/319); s vypnutým vypínačem víc šachet se nic nemění. Na webech, Disku ani v ostrém Pipedrive nic.
+Nad `aa445a1`, sloučena integrace `1a08186` (v12.11.3 s K40b a C1). Verzi přečísluje koordinace. Výpočet ceny
+beze změny (zlatá sada 319/319); s vypnutým vypínačem víc šachet se nic nemění. Na webech, Disku ani v ostrém
+Pipedrive nic.
 
 - **#586 vsTvar (K47-I3)** — nové pravidlo kontrol před nabídkou (`src/kontroly.js`, mezi vsModel1 a vsSablona):
   víc než 10 variant šachet, počet kusů mimo 1–20 (i 0, 1,5 nebo text), název nad 80 znaků nebo jiný neplatný
-  tvar šachet ohlásí **upozornění** dřív, než uložení skončí chybou („Nabídka má 11 variant šachet, nejvýš jich
-  může být 10 — zakázku nepůjde uložit.“, „Šachta ‚Výtah B‘ má počet kusů 0, povoleno je celé číslo 1–20 …“).
-  Ptá se `vsTvarProblemy` — tatáž funkce jako server; čte surová data varianty (`ctx.ockSurova` z UI), takže
-  vidí i šachtu 1 s neplatnými kusy, kterou výpočet tiše bere jako 1. S vypnutou funkcí víc šachet mlčí. Jedna
-  šachta beze změny. Pravidel kontrol je 49 (test_kontroly, overit_lista, `manual_vypocet/cisla_vydani.json`).
+  tvar šachet ohlásí **upozornění** dřív, než uložení skončí chybou. Ptá se `vsTvarProblemy` — tatáž funkce jako
+  server; čte surová data varianty (`ctx.ockSurova` z UI). S vypnutou funkcí víc šachet mlčí. Pravidel kontrol
+  je 49 (test_kontroly, overit_lista, `manual_vypocet/cisla_vydani.json`).
 - **#587 K43-T1** — `overit_lista_cekani.mjs` čeká na stav aplikace (ceník nasazený, lišta v DOM, přihlášení),
-  ne pevný čas z Node; meze měří od události ve stránce (odpověď `/api/program`, začátek ověřování ceníku
-  `overujeOd`, klik). 32 kontrol beze změny smyslu. Aplikace beze změny.
-- **#588 Poznámka dealu se seznamem šachet** (doplněk J. V. 11. 11.; **před sloučením revize poradce Fable** —
-  zápis do CRM): uložení zakázky se zapnutým vypínačem víc šachet, s navázaným dealem a řídící variantou s víc
-  šachtami zapíše „Šachty v nabídce: 2 varianty šachet, celkem 3 ks (Výtah A 1 ks, Výtah B 2 ks)“ do **jedné
-  poznámky u dealu** (`netlify/lib/pd_poznamka.mjs`). Id poznámky v serverem psaném poli `pdPoznamkaSachty`;
-  další změna šachet poznámku upraví (PUT), zmizelou (404) nebo cizí založí znovu. Do Pipedrive jen při změně
-  textu, strop 20 zápisů/h na deal, jeden pokus; výpadek Pipedrive uložení nezastaví (varování). Text escapovaný,
-  max. 2 000 znaků, jen názvy a kusy. Simulátor Pipedrive umí `/v1/notes`. Mez **B217**.
-- Testy: `src/test_vs_kontroly.js` 40/0 (oddíl G; nad bází 17 FAIL), `netlify/test_vsd_pd_poznamka.mjs` 32/0
-  (jen simulátor; bez napojení padá), `netlify/test_vs_e5_pd.mjs` 9/0; mutace jádra [VSD] 4/4, serveru [VSD] 13.
-  Stabilita harnessu: viz PREDAVKA.md (před/po pod zátěží).
+  ne pevný čas z Node; meze měří od události ve stránce (odpověď `/api/program`, začátek ověřování `overujeOd`,
+  klik). Selhání se nepodařilo zopakovat — oprava je preventivní, doložená jen pojistkou (lišta hned = 22/10).
+- **#588 Poznámka dealu se seznamem šachet** (doplněk J. V. 11. 11., upraveno po revizi Fable 12. 11.): uložení
+  zakázky se zapnutým vypínačem víc šachet, s dealem a řídící variantou s víc šachtami zapíše „Šachty v nabídce:
+  2 varianty šachet, celkem 3 ks (Výtah A 1 ks, Výtah B 2 ks) — nabídka <číslo>“ do **jedné poznámky u dealu**
+  (`netlify/lib/pd_poznamka.mjs`). Jen s právem `crm.pipedrive` (jinak stav `bez-prava`). Id v serverem psaném poli
+  `pdPoznamkaSachty`; bez id se nejdřív hledá vlastní poznámka dealu podle značky čísla zakázky (žádné množení).
+  Po návratu z Pipedrive třetí čtení zakázky (kolize = 409). Každé volání nejvýš 2,5 s, celý zápis 6 s, jeden
+  pokus, strop 20 pokusů/h na deal; výpadek uložení nezastaví. Přechod na jednu šachtu poznámku nemaže, upraví ji
+  na „1 šachta“. Simulátor Pipedrive umí `/v1/notes` (i seznam podle dealu a scénář „visí“). Mez **B217**.
+- Testy: `src/test_vs_kontroly.js` 40/0 (nad bází 17 FAIL), `netlify/test_vsd_pd_poznamka.mjs` 49/0 (jen
+  simulátor), `netlify/test_vs_e5_pd.mjs` 9/0; mutace jádra [VSD] 4/4, serveru [VSD] viz PREDAVKA.
+
 ## v12.11.3 — C1 #582: šablona CN v17 CZ/EN/DE/FR ke zveřejnění, jednotné nadpisy USAZENÍ OCK (DE, EN), větev claude/c1-cn-v17
 
 Nad `aa445a1` (integrace = test v11.11.1). Verzi přečísluje koordinace. Výpočet ceny beze změny; na webech, Disku
