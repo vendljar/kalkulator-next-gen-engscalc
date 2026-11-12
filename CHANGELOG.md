@@ -8,6 +8,41 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v12.11.4 — K40c #581: vazba z webhooku Pipedrive, firma z ARES na serveru, „Opravit firmu v Pipedrive“, větev claude/k40c-webhook
+
+Nad `1a08186` (integrace v12.11.3). Verzi přečísluje koordinace. Výpočet ceny beze změny. Rozhodnutí J. V.
+11. 11. 2026 (`podklady/PROMPT_K40_OPRAVY_v3.md`, prototyp v4); do ostrého Pipedrive ani do ARES se ze sezení nevolalo.
+
+- **Vazba z webhooku (K40-W1):** webhook dál hned doplní hlavičku a krycí list a zapíše odkaz do dealu; navázání
+  existující kalkulace zapíše do protokolu zakázky (`kdo: pipedrive-webhook`, jen názvy polí) a do
+  `zak.pdVazbaWebhook` (`stav: 'ceka'`). Při otevření žlutý pruh nad hlavičkou (i u zamčené, prodané a jen ke
+  čtení): **V pořádku** (každý), **Zrušit vazbu** (autor zakázky a administrátor, ověřuje server), **Vazba je
+  chybná** (ostatní; štítek „vazba nahlášena“ v Přehledu pro autora a administrátora). Nová funkce
+  `POST /api/pd/vazba`.
+- **Zrušení = pojistka proti cizímu dealu:** smaže `pdDealId`, `pdStav`, `pdZadani` a index, deal přidá do
+  `pdDealyOdmitnute` (strop 50) — další webhook dostane 409 dřív, než cokoli zapíše nebo se zeptá ARES; z dealu
+  smaže **náš** odkaz (cizí hodnota zůstane, chyba Pipedrive zrušení nezastaví). Doplněné údaje se nevracejí.
+  Obě pole píše jen server (uložení i obnova ze souboru je berou z uložené verze).
+- **ARES ze serveru** (`netlify/lib/ares_server.mjs`, B208): zákazník, sídlo, IČO a DIČ z ARES podle IČO
+  organizace dealu (kontakt, adresa stavby, název akce a termín dál z dealu), jen při nové vazbě nebo změně IČO,
+  nikdy u zmrazené hlavičky. Pevná adresa, kontrolní číslice, 3 s, jeden pokus, strop 200 kB, odpověď jako
+  nedůvěryhodný vstup (shodné IČO, řídicí znaky, délky, tvar DIČ). Výpadek webhook neshodí — firma z dealu
+  a varování. Pravidlo přepisu beze změny (prázdné pole nebo hodnota z minulého webhooku).
+- **Opravit firmu v Pipedrive** (`POST /api/pd/organizace`, B209): náhled „v Pipedrive je × podle ARES bude“
+  a zápis jen potvrzených lišících se polí (název, adresa, DIČ); autor zakázky a administrátor s právem
+  Pipedrive; jen při shodě IČO organizace dealu a hlavičky uložené zakázky (jinak 409 bez ARES i PATCH);
+  organizace musí patřit dealu zakázky. DIČ organizace v účtu není (`POLE_ORGANIZACE.dic`, nezakládá se) —
+  dialog řekne, že se přeskočí. Simulátor umí PATCH organizace.
+- **C4:** deal zakázky smí měnit i autor u zakázky, kterou sám založil (u zakázky z webhooku dál jen
+  administrátor).
+- **Meze:** B208, B209, úprava oddílu PW #553 (zápisy do CRM, vazba, odmítnuté dealy). Příručka a tabulka
+  funkcí v `manual/`. Mapa polí verze 4 (přehled ukazuje DIČ organizace jako chybějící).
+- **Testy:** nový `netlify/test_k40c_webhook.mjs` (na bázi selže — moduly neexistují), `overit_xss.mjs` oddíl
+  K40c (otrávené číslo, nahlášení, názvy z ARES i Pipedrive v dialogu, tlačítka podle role), úpravy
+  `test_553_webhook.mjs` (mock ARES), `test_prava.mjs` (dvě nové funkce v matici, C4 autor),
+  `test_pd_simulator.mjs` a `test_pd_mapa_prehled.mjs` (DIČ organizace). Mutace `[K40c]` (25), `--kontrola`
+  obou sad čistá (posunutá zadání #447 C4 a #509).
+
 ## v12.11.3 — C1 #582: šablona CN v17 CZ/EN/DE/FR ke zveřejnění, jednotné nadpisy USAZENÍ OCK (DE, EN), větev claude/c1-cn-v17
 
 Nad `aa445a1` (integrace = test v11.11.1). Verzi přečísluje koordinace. Výpočet ceny beze změny; na webech, Disku

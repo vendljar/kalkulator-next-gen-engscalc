@@ -1366,8 +1366,40 @@ takže nemá cookie ani relaci. Místo přihlášení ji chrání tajný klíč.
 Podmínky SEC-PD a K8-S3 z #115 jsou dodrženy: cena a hodnota dealu se z CRM
 ani z webhooku neberou vůbec, deal id se bere z těla jen jako číslo a dál se
 pracuje s dealem načteným ze Pipedrive, e-maily a telefony z CRM se ve
-odpovědi nevracejí (odpověď nese jen názvy polí a odkaz), zápis do CRM je
-jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
+odpovědi nevracejí (odpověď nese jen názvy polí a odkaz). Dokumenty na
+serveru nevznikají.
+
+**Zápisy do CRM (upraveno K40c #581, 12. 11. 2026 — věta „zápis do CRM je
+jediný (odkaz)“ už neplatí).** Kalkulátor do Pipedrive zapisuje tři věci:
+(1) **odkaz na kalkulaci** do dealu (webhook, PATCH jen změněného pole),
+(2) **vymazání našeho odkazu** z dealu při zrušení vazby (jen když v poli je
+odkaz na tutéž kalkulaci; cizí hodnota zůstane) a (3) **opravu organizace
+podle ARES** (název, adresa, DIČ) — jen na výslovný pokyn autora zakázky nebo
+administrátora po potvrzení v dialogu (B209). Z webhooku se do organizace
+nezapisuje nikdy.
+
+**Vazba z webhooku (K40c, rozhodnutí J. V. 11. 11. 2026).** Webhook se chová
+„jako dnes“: hned doplní hlavičku a krycí list a zapíše odkaz do dealu. Firmu
+(zákazník, sídlo, IČO, DIČ) bere z ARES podle IČO organizace dealu (B208),
+kontakt, adresu stavby, název akce a termín z dealu; zapisuje se jen prázdné
+pole, nebo pole s hodnotou naposledy zapsanou webhookem (otisk). Navázání
+EXISTUJÍCÍ kalkulace (podle čísla nabídky) se zapíše do protokolu zakázky
+(`kdo: pipedrive-webhook`, jen názvy polí) a do `zak.pdVazbaWebhook`
+(`stav: 'ceka'`); při otevření zakázky svítí upozornění (i u zamčené, prodané
+a jen-ke-čtení) s tlačítky **V pořádku** (kdokoli), **Zrušit vazbu** (jen autor
+zakázky — `autor` z uložené verze = e-mail relace — a administrátor, ověřuje
+server) a **Vazba je chybná** (ostatní; příznak vidí autor a administrátor
+v upozornění a v Přehledu nabídek). **Zrušení je jen pojistka proti cizímu
+dealu** (překlep v čísle nabídky): smaže `pdDealId`, `pdStav`, `pdZadani`
+a index `pd_webhook/deal:<id>`, deal přidá do `zak.pdDealyOdmitnute` (strop 50)
+a smaže náš odkaz v dealu. **Údaje doplněné webhookem se nevracejí**
+(rozhodnutí J. V. 11. 11.) — protokol vypíše, která pole zůstala. Odmítnutý deal
+webhook kontroluje **před** jakýmkoli zápisem (zakázka, index, PATCH dealu,
+dotaz do ARES) → 409. `pdVazbaWebhook` a `pdDealyOdmitnute` píše jen server:
+při uložení z prohlížeče i při obnově ze souboru se berou z uložené verze
+(`pdVazbaDrz` v `netlify/lib/pd_vazba.mjs`), obnova z otisku je bere ze zálohy.
+Deal zakázky ručně (C4) mění administrátor a autor u zakázky, kterou sám
+založil; u zakázky založené webhookem dál jen administrátor.
 
 ### Nové meze
 
@@ -1404,8 +1436,8 @@ jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
   (vzor SEC-S1). *Co to nedělá:* `zakazkaServerKontrola` (slevy, marže, ceník,
   zámky) se nevolá — webhook ceník ani ceny nesahá a novou zakázku ukládá ve
   tvaru „bez ceníku“ (P12), takže ceník si doplní prohlížeč z platného
-  zveřejněného. Protokol zakázky se nezapisuje (zdroj je vidět na razítku
-  autora a v `pdZadani`).
+  zveřejněného. Od K40c (#581) se navázání, aktualizace a výsledek ARES
+  zapisují do protokolu zakázky (jen názvy polí, žádné kontakty).
 - **B202 — `pd_webhook/deal:<id>` se nezálohuje.** *(dříve B179, #553; přečíslováno K40a 11. 11. 2026 — číslo patřilo starší mezi)* Rejstřík deal → jméno
   kalkulace je jen zkratka hledání; vazbu nese sama zakázka (`pdDealId`)
   a ta v záloze je. Po obnově ze zálohy ho vyrobí první doručení (najde
@@ -1649,3 +1681,58 @@ v `src/objednane.js` — touž funkcí počítá pole data v kartě Prodáno i s
   dřív kanonizovala oba podstromy na každé úrovni (hloubka × velikost dat; s víc
   šachtami až deset celých zadání v `ock.dalsi`). Výstup beze změny (porovnání
   s referenční implementací na 3 000 náhodných párech, `src/test_k40b_zamek_prodej.js`).
+
+## K40c #581 — vazba z webhooku, ARES ze serveru, oprava firmy v Pipedrive (12. 11. 2026)
+
+Rozhodnutí J. V. 11. 11. 2026 (podklady/PROMPT_K40_OPRAVY_v3.md, prototyp
+`podklady/k40_w1_prototyp` v4); popis vazby je v oddílu PW #553 výš. Kód:
+`netlify/lib/ares_server.mjs` (+ `ares_modul.cjs`), `netlify/lib/pd_vazba.mjs`,
+`netlify/functions/pd_webhook.mjs`, `pd_vazba.mjs`, `pd_organizace.mjs`,
+`src/ui/pd_vazba_ui.js`. Sada `netlify/test_k40c_webhook.mjs`, mutace `[K40c]`.
+
+### Nové meze
+
+- **B208 — webhook volá ARES ze serveru.** Adresa je pevná (`ARES_ZAKLAD`
+  z `src/ares.js`) + IČO, které po normalizaci (mezery pryč, číslo z Pipedrive
+  doplněné nulami) projde kontrolní číslicí — nic jiného z dealu se do adresy
+  nedostane, neplatné IČO se do ARES neposílá vůbec. **Jeden pokus, časový
+  limit 3 s** (AbortController a závod s časovačem — platí i pro odpověď, která
+  nepřijde), přesměrování se nepřijímá (`redirect: 'error'`), strop odpovědi
+  200 kB (čte se po kouscích). Odpověď je nedůvěryhodný vstup: jen přes
+  `aresZpracuj`, vrácené IČO musí být shodné s dotazovaným (jinak „nenalezeno“),
+  jen řetězce, řídicí znaky pryč, název nejvýš 200 a adresa 300 znaků, DIČ jen
+  tvaru `^[A-Z]{2}[0-9A-Z]{2,12}$` (jinak prázdné); prázdná hodnota nic nemaže;
+  do zakázky jdou jen čtyři pole z `ARES_POLE`, v UI vše přes `esc`.
+  **Výpadek webhook neshodí:** firma zůstane z dealu jako dřív, odpověď
+  a protokol nesou varování a `pdVazbaWebhook.ares` ('neplatne' | 'nenalezeno'
+  | 'vypadek'); upozornění nabídne „Najít firmu v ARES“. Bez přihlášení jde
+  dotaz vyvolat jen klíčem webhooku (B199) a **nejvýš jednou na novou vazbu
+  nebo změnu IČO** (otisk IČO ve vazbě), u zmrazené hlavičky (zamčená varianta,
+  po tisku SoD) vůbec. *Co to nedělá:* ARES je cizí služba bez smlouvy
+  o dostupnosti — odpověď, která projde kontrolami, se bere jako pravdivá;
+  pole, které člověk po uložení upravil, se nepřepíše nikdy (rozdíl jen
+  v upozornění). CSP v `netlify.toml` řídí prohlížeč (`connect-src` ARES má už
+  dřív), dotaz ze serveru neřídí; nová proměnná prostředí ani klíč nepřibyly.
+  Pomalý ARES prodlouží jedno doručení webhooku nejvýš o 3 s (test měří celé
+  doručení s mockem, který neodpoví).
+- **B209 — zápis organizace do Pipedrive z kalkulátoru.** `POST /api/pd/organizace`
+  (`nahled` → `zapis`): jen **autor zakázky** (autor z uložené verze = e-mail
+  relace; u zakázky z webhooku nikdo) **nebo administrátor**, a k tomu právo
+  Pipedrive z matice (B80); ostatní 403. Klientovi se nevěří nic kromě volby
+  polí: deal bere server z uložené zakázky, organizaci z dealu (zápis nese id
+  organizace z náhledu, jiné = 403), hodnoty z ARES načte sám a rozdíly spočítá
+  znovu i při zápisu — zapíše jen pole, která člověk potvrdil a která se pořád
+  liší (PATCH jen změněných polí, opakovaný klik bez rozdílů nic neposílá).
+  **Shoda IČO:** náhled i zápis jen když IČO organizace dealu = IČO hlavičky
+  **uložené** zakázky (normalizace, platná kontrolní číslice), jinak 409 bez
+  dotazu do ARES i bez PATCH — připraveno na víc zákazníků v zakázce (poradce
+  VZ). Oprava proto nikdy nemění IČ organizace; zapisuje název, adresu a DIČ —
+  DIČ jen když účet takové vlastní pole má (`POLE_ORGANIZACE.dic`, dnes chybí;
+  pole se **nikdy nezakládá**, dialog to oznámí). Zápis jde do protokolu zakázky,
+  smaže cache detailu dealu a počítá se do denního rozpočtu Pipedrive; strop
+  20 oprav za hodinu na uživatele. *Co to nedělá:* kdo smí zakázku s dealem
+  navázat (administrátor, autor u vlastní zakázky — C4), tím určuje, kterou
+  organizaci jde opravit; proti omylu chrání shoda IČO a potvrzení v dialogu,
+  ne druhá osoba. Starý název a adresa organizace se nikde nezálohují
+  (zůstávají jen v historii změn Pipedrive).
+
