@@ -402,6 +402,10 @@ function uloRejstrikZaznam(zak, opts) {
      * v Přehledu cenových nabídek. Jen u zakázky s víc šachtami — u jedné
      * šachty klíč chybí a rejstřík je beze změny (zlatá sada). */
     ...uloRejstrikSachty(zak),
+    /* Vazba z webhooku nahlášená jako chybná (K40c #581): autor a administrátor
+     * ji vidí v Přehledu cenových nabídek. Klíč jen u nahlášené živé vazby. */
+    ...((zak && zak.pdVazbaWebhook && typeof zak.pdVazbaWebhook === 'object' && zak.pdVazbaWebhook.nahlaseno
+      && zak.pdVazbaWebhook.stav !== 'zruseno') ? { pdNahlaseno: true } : {}),
     variant: varianty.length,
     odeslane: varianty.filter(zamcena).length,
     upraveno,
@@ -488,6 +492,7 @@ function uloRejstrikNormalizuj(x) {
       rada: z.rada === 'zahr' ? 'zahr' : '',      // #181: řada ceníku, prázdno = tuzemsko
       /* VS-E6 #596: počty šachet řídící varianty jen v platném tvaru. */
       ...(uloRejstrikSachtyTvar(z.sachty) ? { sachty: uloRejstrikSachtyTvar(z.sachty) } : {}),
+      ...(z.pdNahlaseno === true ? { pdNahlaseno: true } : {}),   // K40c #581
       variant: cislo(z.variant),
       odeslane: cislo(z.odeslane),
       upraveno: uloRejstrikText(z.upraveno),
