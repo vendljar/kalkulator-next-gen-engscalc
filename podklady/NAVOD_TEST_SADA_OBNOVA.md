@@ -56,6 +56,22 @@ Totéž musí platit pro:
 
 Prázdné číslo PROJ a předloha „2026 - OPR - CN - “ se nehlídají. Zámek bez čísla neprojde.
 
+## 2a. Co předem čekat: prodané a staré zamčené zakázky server neobnoví
+
+Nástroj ukládá zakázky **běžnou cestou** jako z prohlížeče. Server je proto bere jako **nové**: zámek odeslané
+nabídky dostane dnešní razítko přijetí (K40b, #580) a posoudí se jako nový zámek. Z toho plyne:
+
+- **Prodaná zakázka s datem prodeje starším než 7 dní** se neobnoví. Server odpoví 400 „Datum prodeje nesmí být
+  dřív než …“. U TEST sady z 2. 11. to budou **všechny prodané** zakázky.
+- **Odeslaná nabídka se zámkem z doby před #320 (září 2026)** se neobnoví. Server odpoví 409 „nová odeslaná
+  (uzamčená) nabídka nese jiné číslo …“, protože zámku chybí značka „číslo z papíru“.
+
+Nástroj tyto zakázky **nemění** a ostatní založí. Na konci je vypíše v oddílu **„ODMÍTNUTÉ ZAKÁZKY — co s nimi“**
+a ke každé přidá doporučení. **Co potom uděláte:** prodané a zamčené zakázky obnovte v aplikaci přes
+**Nastavení → Databáze → Obnovit ze zálohy**, se souborem zálohy (bod 2 B) nebo s otiskem z doby, kdy v databázi
+ještě byly. Režim obnovy bere zámek ze zálohy jako doklad a razítko přijetí nepřepisuje, takže tyto zakázky projdou.
+Obnovu ze zálohy dělá aplikace, ne tento nástroj. Zbylé odmítnuté (bez zámku) pošlete koordinaci.
+
 ## 3. Náhled (nic se nezapíše)
 
 V kořeni klonu repa:
@@ -64,10 +80,13 @@ V kořeni klonu repa:
 node nastroje/test_sada_obnov.mjs --web https://testengscalc.netlify.app --export ~/Stažené/test_sada_export_2026-11-02.json
 ```
 
-Nástroj se zeptá na **e-mail** a **heslo** administrátora. Heslo se při psaní nezobrazuje. Ukázka výstupu
+Nástroj nejdřív upozorní: „Po běhu budete v aplikaci odhlášeni — uložte si rozdělanou práci.“ Pak se zeptá
+na **e-mail** a **heslo** administrátora. Heslo se při psaní nezobrazuje (ani po znacích, ověřeno
+v pseudo-terminálu). Ukázka výstupu
 (čísla jsou smyšlená):
 
 ```
+Po běhu budete v aplikaci odhlášeni — uložte si rozdělanou práci.
 E-mail administrátora testovacího webu: …
 Heslo:
 Přihlášeno jako administrátor na https://testengscalc.netlify.app.
@@ -135,8 +154,10 @@ hned. Co je založené, zůstává. **Další spuštění je bezpečné**: zalo�
    - *profil mimo katalog, čas odeslání starší než 400 dní, ceník bez cen a podobně*: data starší verze
      neprojdou dnešními kontrolami nového zámku.
 
-   Seznam odmítnutých pošlete koordinaci. Rozhodnete, jestli je nechat neobnovené (doporučení), nebo obnovit
-   přes **Obnovit ze zálohy** v aplikaci (Nastavení → Databáze). Tam je zámek ze zálohy doklad.
+   - *„Datum prodeje nesmí být dřív než …“ (400)*: prodej starší než 7 dní (viz 2a).
+
+   Prodané a zamčené obnovte přes **Obnovit ze zálohy** v aplikaci (Nastavení → Databáze), viz 2a. Tam je zámek
+   ze zálohy doklad. Ostatní odmítnuté pošlete koordinaci.
 
 ## 6. Jak to vrátit
 

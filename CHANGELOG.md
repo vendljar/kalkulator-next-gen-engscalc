@@ -39,7 +39,16 @@ ke spuštění před revizí. Na webech, Disku ani v Pipedrive nic. Sezení nás
     vypíše.
   - Víc šachet s vypnutou funkcí: 409, vypíše se.
   - Odhlášení nástroje ruší všechny relace účtu (B6), tedy i přihlášení v prohlížeči. Stojí v návodu.
-- **Testy:** `netlify/test_c5_test_sada.mjs` 121/0. Proti skutečným serverovým funkcím nad pamětí ověřuje
+- **Revize poradce (12. 11.), opraveno:**
+  - **B1:** heslo se v terminálu zobrazovalo. Readline s terminálem opakoval znaky a `rl.pause()` ho
+    neodpojil. Readline teď žije jen po dobu jedné otázky a heslo se čte bez něj. Totéž platilo pro
+    `nastroje/migrace_znacky.mjs`, opraveno stejně. Test v pseudo-terminálu (`script`).
+  - **B2:** po K40b server odmítne prodej starší než 7 dní (razítko přijetí zámku = dnes). Nástroj data
+    nemění, v souhrnu vypíše „ODMÍTNUTÉ ZAKÁZKY“ s doporučením „Obnovit ze zálohy“ v aplikaci. Návod to říká
+    předem (2a).
+  - Upozornění na odhlášení před dotazem na heslo. Čtení zpět je v try/catch, takže se souhrn vypíše
+    i při výpadku.
+- **Testy:** `netlify/test_c5_test_sada.mjs` 131/0 (původně 121). Proti skutečným serverovým funkcím nad pamětí ověřuje
   cíl, zdraví, roli, jen TEST, náhled, nic se nepřepíše (i souběh 409), zámky, prodej, SoD, víc šachet,
   volání, výpis a obal z příkazové řádky proti místnímu HTTP serveru. Mutace „[C5]“ 23 v `netlify/mutace.mjs`,
   sada v `SADY`. `.gitignore`: `test_sada_*.json*`, `otisk_*.json*`.

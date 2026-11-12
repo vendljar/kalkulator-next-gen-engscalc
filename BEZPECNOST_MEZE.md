@@ -1666,7 +1666,8 @@ veřejného API, žádnou zkratku do úložiště nemá. Čísla B203–B209 dr�
   a `POST /api/zakazky`. Seznam je v kódu (`VOLANI`) a jiné volání vyhodí výjimku. Co nesmí: `DELETE`,
   `/api/obnova`, `/api/zaloha*`, Pipedrive, `prepsat: true`. Každý zápis nese `ocekavaneRazitko: ''`,
   takže server existující zakázku odmítne 409 (bez pole by ji tiše přepsal) a nástroj ji předem
-  přeskočí podle rejstříku. Heslo a e-mail jdou jen z klávesnice. Cookie relace drží jen v paměti,
+  přeskočí podle rejstříku. Heslo a e-mail jdou jen z klávesnice, heslo bez ozvěny i ve skutečném terminálu
+  (B1 revize 12. 11.: readline žije jen po dobu otázky, heslo se čte bez něj; test v pseudo-terminálu). Cookie relace drží jen v paměti,
   nikam ji nezapisuje ani nevypisuje. Na konci se nástroj odhlásí, a protože odhlášení zvedá verzi
   hesla účtu (B6), ukončí tím i přihlášení správce v prohlížeči (vědomě, stojí v návodu). Výchozí běh
   je náhled. Zápis jen s `--zapsat` a napsaným slovem `OBNOVIT`.
