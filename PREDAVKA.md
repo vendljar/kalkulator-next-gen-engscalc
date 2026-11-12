@@ -1,3 +1,53 @@
+# Předávka — C2 #583 SoD realizace v5 se šachtami + C3 #584 tečky „……“ a kontrola před tiskem SoD, větev `claude/c23-sod-v5`
+
+Nad `aa445a1` (integrace = test v11.11.1). Prompt `podklady/PROMPT_C23_PO_KOLE47.md` (větev claude/plan-po-kole47
+f0fcffc) + doplněk J. V. 11. 11.: tečky i v plné moci, bez kontroly. **Verze 12.11.1** (přečísluje koordinace).
+Do `test-draft`, `test`, `main` ani integrace nic; na Disk, weby a do Pipedrive nic. Slučovat **po C1**
+(společný `nastroje/vyrob_sablony.js` — export v5 je vlastním řádkem pod `module.exports`, `REZIM_SOD_REAL5` pod
+`REZIM_SOD_REAL4`) a **před sloučením revize poradce (Fable) nad celým diffem** (smlouva se podepisuje).
+
+| úkol | stav | kde |
+|---|---|---|
+| C2 nástroj `--sod-real-v5`, šablony v5 CZ/EN/DE/FR | ✅ poslané J. V. v sezení (SendUserFile) | `nastroje/vyrob_sablony.js` (sodRealV5), `podklady/SABLONA_SOD_REALIZACE_V5_11_11.md` |
+| C2 jedna šachta = v4, víc šachet předmět + rozpis | ✅ | `src/sod.js` sodSachtySymboly (`odstavcePryc`), `src/docxgen.js` (DOCX_ROZPIS_KLICE) |
+| C2 oprava: smyčka CN mazala `SACHTY_SOD_*` | ✅ | `src/docxgen.js` docxSmyckaSachet (jen symboly smyčky CN) |
+| C2 upozornění u staré šablony + kontrola `vsSablonaSod` | ✅ jen upozornění | `src/sod.js` SOD_SACHTY_BEZ_SABLONY, `src/kontroly.js`, `src/ui/kontroly_ui.js` (ctx.sablonaSod) |
+| C3 tečky (SoD realizace, projekce, plná moc) | ✅ | `src/sod.js` sodNevyplnene, `src/docxgen.js` volba `nevyplnene`, `src/dokumenty.js` |
+| C3 kontrola `sodNevyplneno` / `sodProjNevyplneno` + věta po tisku | ✅ jen upozornění | `src/kontroly.js`, `src/ui/kontroly_ui.js`, `src/ui/sod_ui.js` |
+| testy, mutace [C2] 8/8, [C3] 9/9 | ✅ | `src/test_sod_v5.js`, `src/test_sod_tecky.js`, `src/test_vs_kontroly.js` G, `mutace_jadro.mjs` |
+| příručky, CHANGELOG, roadmapa #583 #584 | ✅ | `manual/obsah.json` kap. 24/25, `manual/admin/obsah.json` A5 |
+| kolo `--bez-mutaci`, mutace jádra po částech | viz níž | |
+
+**Změněná očekávání starých testů (pro revizi):**
+- `src/test_sod_proj_cislo.js` — „jen mezery v Čísle SoD“: dřív `číslo {{SOD_CISLO_SMLOUVY}}`, nově `číslo ……`
+  (syntetická v3 i skutečné šablony z Disku).
+- `src/test_kontroly.js` a `overit_lista.mjs` — počet pravidel 48 → 51 (+ vsSablonaSod, sodNevyplneno, sodProjNevyplneno);
+  `manual_vypocet/cisla_vydani.json` `k.pocet` 48 → 51 (jako VS-E5).
+- `mutace_jadro.mjs` „VS-E5: SoD bez předmětu a rozpisu šachet“ — hledaný řádek se změnil (`const sachtyPryc = …`).
+- Ostatní sady SoD (`test_sod*.js`, `test_rozhodnuti_sod.js`, `test_vs_vystupy.js`, `overit_sod_en.mjs`,
+  `overit_sod_proj_*.mjs`, `overit_vs_kryci_sod.mjs`) prošly beze změny očekávání; zlatá sada 319/319.
+
+**Rozhodnutí sezení (výchozí varianty, k potvrzení):**
+- Rozpis šachet stojí za řádkem „z toho cena díla dle cenové nabídky“ (bez objednaných příplatků hned pod
+  celkovou cenou), objednané příplatky za ním. Odstavce bez uvozujícího textu.
+- Kontrola SoD jsou **dvě** pravidla (`sodNevyplneno` strana OCK, `sodProjNevyplneno` strana PROJ) — jeden kód
+  nemůže vrátit dva nálezy.
+- Popisy chybějících údajů jmény polí krycího listu („IČO **zákazníka**“), ne „objednatele“ — krycí list mluví
+  o zákazníkovi (hlídá `overit_zobrazeni.mjs`) a obchodník je tam doplní.
+- Tečky dostane i prázdná hodnota (např. zpracovatel bez jména, když není přihlášený) — prompt: „chybí nebo prázdné“.
+- Šablony SoD a SoD PROJ se pro kontroly stahují jen u víc šachet nebo zamčené (odeslané) varianty.
+
+**Zjištění:** SoD realizace v4 symboly **žlutě podbarvené nemá** (SoD projekce v4 a plná moc ano) — tečky jsou
+žluté jen tam. Text po tisku proto bez „žlutě“. Kdyby J. V. chtěl žluté tečky i v realizaci, šlo by podbarvení
+přidat v5 (nástroj) nebo generátorem.
+
+**Předem padající sady se šablonami z Disku (i nad bází aa445a1, s dávkou nesouvisí):** `test_sablona_proj_v6.js`
+(skutečná PROJ v6: řádky bloků ≠ v5 — Disk má upravené znění firmy), `overit_sablona.mjs` (v12: nový symbol).
+
+**Na J. V.:** nahrát SoD realizace v5 (CZ+EN/DE/FR najednou, až s kódem C2/C3; postup v podkladu a A5); odpovědět
+na otázky (uvozující text, rozpis před slevou u nabídky se slevou, žluté tečky v realizaci).
+
+---
 # Předávka — VS-E6 #570 (#596): závěr víc šachet — překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi po částech, větev `claude/vs-e6`
 
 Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Do `test-draft`, `test` ani `main` nic;
