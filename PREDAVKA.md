@@ -29,6 +29,12 @@ pole `address.value`. Webhook dřív do protokolu nezapisoval (B201) — teď an
 selže); mutace `[K40c]` 25/25 chycené; `--kontrola` server 1437/1437 a jádro 853/853 (posunutá zadání #447 C4,
 #509). Celé testovací kolo a celé mutace po částech pouští koordinace při slučování.
 
+**Revize Fable (12. 11.) — opraveno:** N1 výpadek ARES (otisk se neukládá), N2 stará vazba = „webhook“,
+N3 odkaz v dealu až po zápisu, N4 opakované nahlášení 409, N5 bez autora jen administrátor (test), N7 ručně
+znovu zadaný odmítnutý deal vypadne ze seznamu, N8 `test_prava.mjs` přes `pomoc_test_admin.mjs`.
+**N6 (jen zápis):** tvar zápisu do Pipedrive (`address: { value }`, `custom_fields: { hash: null }`) je ověřený
+jen proti simulátoru — **před ostrým použitím zkušební zápis na testu s tokenem Pipedrive nad dealem TEST**.
+
 **Otevřené pro J. V.:** (1) založit v Pipedrive pole organizace „DIČ“ (text)? Do té doby oprava firmy DIČ
 přeskočí. (2) Vazby starší než K40c se při dalším doručení jednou zeptají ARES a mohou přepsat zákazníka, kterého
 tam dřív dal webhook z dealu (otisk sedí) — chování podle v3, jen upozornění.
