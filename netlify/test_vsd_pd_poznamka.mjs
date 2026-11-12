@@ -245,12 +245,14 @@ let Z2, ID2;
 /* 7) Pipedrive selže → uložení projde s varováním, zápis se zopakuje */
 {
   const z = nova(true, dealy[9]);
+  const postPred = SIM.pdSimStav().pozadavky.filter(x => x === 'POST /api/v1/notes').length;
   SIM.pdSimNastav({ scenar: 'vypadek' });
   const t = await uloz(z);
+  const postVypadek = SIM.pdSimStav().pozadavky.filter(x => x === 'POST /api/v1/notes').length - postPred;
   SIM.pdSimNastav({ scenar: '' });
   test('7 výpadek: zakázka uložena, varování, bez id', t.status === 200 && t.pdPoznamka === 'chyba' && /poznámky dealu/.test(t.varovani || '')
     && ulozeno(soubor(t)).pdPoznamkaSachty === undefined, t);
-  test('7 bez opakování (jeden pokus)', SIM.pdSimStav().pozadavky.filter(x => x === 'POST /api/v1/notes').length >= 1);
+  test('7 bez opakování (jeden pokus POST při výpadku)', postVypadek === 1, postVypadek);
   z.nazevAkce = 'TEST VSD po výpadku';
   const t2 = await uloz(z);
   test('7 další uložení zápis zopakuje', t2.pdPoznamka === 'zalozeno' && notes().filter(x => x.deal_id === dealy[9]).length === 1, t2);
