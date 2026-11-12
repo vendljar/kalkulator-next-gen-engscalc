@@ -693,6 +693,19 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
 # Předávka koordinace — 11. 11. 2026: stav integrace v11.11.1
 
+- **Prompt po kole 47 (J. V. 11. 11. 2026, `podklady/PROMPT_RIDICI_SEZENI_PO_KOLE47.md`) — odpovědi J. V. B1–B10 (oddíl B0):**
+  1. Víc šachet na ostrém zatím NE (main vypnuto, rozhodne se po ruční zkoušce na testu).
+  2. CN v17: sezení vyrobí CZ + EN/DE/FR a vypíše nepřeložené texty; J. V. zkontroluje a zveřejní v testu i main naráz.
+  3. DE nadpisy „USAZENÍ OCK“ sjednotit na „POSITIONIERUNG DER SCHACHTKONSTRUKTION – …“ u všech stěn, v16 i v17, i ve zdroji překladu.
+  4. SoD realizace v5 se `{{SACHTY_SOD_PREDMET}}` a `{{SACHTY_SOD_ROZPIS}}`; stará šablona u víc šachet jen upozorní, nezastaví.
+  5. Nevyplněná pole SoD → tečky „……“; kontrola před tiskem SoD chybějící údaje vyjmenuje (jen upozornění).
+  6. SoD projekce v4 zveřejnit i v main (nahraje J. V.).
+  7. Ceníky: test srovnat podle main (v37) — ceník a termíny firmy v testu zveřejní J. V.
+  8. Skladebné můstky: sazby doplní J. V. v testu, pak samostatné kolo na můstky.
+  9. TEST sada: obnovit do testovací databáze nástrojem `test_sada_obnov.mjs` (C5), spustí J. V.
+  10. Pořadí: K40 a CN v17 hned souběžně; SoD v5 a tečky potom; TEST sada kdykoli; Zefektivnění podle svého promptu.
+  Drobnosti VS do další dávky: upozornění `vsTvar` (víc než 10 variant, kusy mimo 1–20); Pipedrive poznámka se seznamem šachet (pole určí J. V.); potvrzeno ATYP podle kterékoli šachty, Typ produktu podle šachty 1. Velikost zámku u 10 šachet se neřeší.
+- **K40c webhook (J. V. 11. 11. odpoledne, po prototypu):** varianta b) „jako dnes“; vazbu ruší/mění autor zakázky + administrátor (jiný obchodník jen „Vazba je chybná“); při navázání ověřit IČO v ARES a objednatele, sídlo, IČO, DIČ vyplnit z ARES (kontakt, termín z dealu; zmrazená hlavička po SoD nikdy); zápis firmy zpět do Pipedrive jen tlačítkem „Opravit firmu v Pipedrive“ s potvrzením (autor + admin), jen změněná pole. Zadání v3 a prototyp v4 chystá poradce (claude/k40-posudek).
 - **Pravidlo J. V. 11. 11. 2026 — poradce Fable 5.2:** u složitých/rizikových úkolů (víc šachet, K40, bezpečnost, výpočet ceny) nejdřív sezení s modelem `claude-fable-5-2` (create_session model) navrhne postup a rozdělení, Opus 5.5 programuje, před sloučením Fable zreviduje rozdíl. Drobnosti jen Opus. Main zatím čeká (J. V. 11. 11.). První poradce: revize plánu K40 (session_018mwHQKAJTYpkQVKGKGfgSr, větev claude/k40-posudek).
 
 - **v11.11.1** VS-E6 #596 (#570 hotovo): překlady SoD, štítek šachet v rejstříku, příručky (kap. 25, A4/A5), celé mutace jádro 820/820 a server 1387/1387. Víc šachet kompletní za vypínačem na testu. Na J. V.: ruční zkouška na testu se ZAP, šablona CN v17 (příručka správce A5), pole PD pro šachty, ATYP/Typ produktu, rozhodnutí o main.
