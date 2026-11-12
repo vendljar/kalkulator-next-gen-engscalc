@@ -201,6 +201,10 @@ FIRMA_POLE.forEach(p => { firma[p.id] = /Kc$|skladne/i.test(p.id) ? '500' : (/em
     const PM = doc(P('Zmocnitel {{PM_ZMOCNITEL}}, nar. {{PM_ZMOCNITEL_NAROZEN}}, bytem {{PM_ZMOCNITEL_BYTEM}}') + P('Zmocněnec {{FIRMA_NAZEV}} {{ADRESA}}'));
     const pp = prazdnaProj();
     const wp = await word('plnaMoc', await docx(PM), pp.zak, pp.v);
+    const SP = doc(P('Smlouva PROJ {{SOD_CISLO_SMLOUVY}} pro {{OBJEDNATEL}}, IČ {{OBJEDNATEL_ICO}}') + P('Poplatky {{SODP_SPRAVNI_POPLATKY}}'));
+    const wsp = await word('sodProj', await docx(SP), pp.zak, pp.v);
+    test('P SoD projekce (smyšlená šablona): žádné {{, tečky = sodNevyplnene', wsp.xml.indexOf('{{') < 0 && wsp.text[1] === 'Poplatky ' + T
+      && wsp.res.data.nevyplnene.indexOf('SODP_SPRAVNI_POPLATKY') >= 0 && stejne(wsp.res.data.nevyplnene, wsp.res.data.nevyplneneVDokumentu), wsp.text);
     test('N plná moc: nevyplněné {{PM_…}} → tečky (doplněk J. V. 11. 11.), žádné {{', wp.xml.indexOf('{{') < 0
       && wp.text[0] === 'Zmocnitel ' + T + ', nar. ' + T + ', bytem ' + T && stejne(wp.res.data.nevyplnene, wp.res.data.nevyplneneVDokumentu), wp.text);
   }
