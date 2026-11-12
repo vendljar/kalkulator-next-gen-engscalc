@@ -248,6 +248,21 @@ export function porovnej(puvodni, zpet) {
   return r;
 }
 
+/* ---------- doporučení k odmítnuté zakázce (B2, revize 12. 11. 2026) ----------
+ * Běžné uložení bere zámek a prodej jako NOVÉ: prodej starší než 7 dní před
+ * razítkem přijetí zámku (K40b, dnes) a zámek z doby před #320 server odmítne.
+ * Obnova ze zálohy v aplikaci bere zámek ze zálohy jako doklad a razítko
+ * přijetí nepřepisuje — proto doporučení u prodaných a zamčených. */
+export function doporuceniOdmitnute(zak) {
+  const varianty = (zak && Array.isArray(zak.varianty)) ? zak.varianty : [];
+  const prodana = varianty.some(v => v && v.prodano);
+  const zamcena = varianty.some(v => v && v.zamek && v.zamek.zamceno);
+  if (prodana || zamcena)
+    return 'doporučení: ' + (prodana ? 'prodanou' : 'odeslanou (zamčenou)') + ' zakázku obnovte v aplikaci přes „Obnovit ze zálohy“ '
+      + '(Nastavení → Databáze; režim obnovy bere zámek ze zálohy jako doklad a razítko přijetí nepřepisuje).';
+  return 'doporučení: pošlete číslo a hlášku koordinaci (zakázka bez zámku neprošla kontrolou serveru).';
+}
+
 /* ---------- výpis bez cen a osobních údajů ---------- */
 
 /* Text od serveru může nést částku nebo e-mail — do výpisu jde očištěný. */
@@ -312,6 +327,7 @@ export async function obnovSadu(opt) {
   if (!(await zdraviTest('před přihlášením'))) return { kod: 2, souhrn };
 
   /* ---- přihlášení (P2) ---- */
+  vypis('Po běhu budete v aplikaci odhlášeni — uložte si rozdělanou práci.');
   const email = String((await opt.zeptej('E-mail administrátora testovacího webu: ')) || '').trim();
   const heslo = String((await opt.zeptejHeslo('Heslo: ')) || '');
   let prih;
@@ -353,6 +369,7 @@ export async function obnovSadu(opt) {
     if (!(await zdraviTest('před zápisem'))) return { kod: 2, souhrn };
 
     /* ---- zápis po jedné (P4, P5) ---- */
+    const odmitnute = [];
     for (const k of zalozit) {
       if (opt.prerusit && opt.prerusit()) { vypis('PŘERUŠENO — založené zakázky zůstávají, další spuštění je přeskočí.'); break; }
       let r;
@@ -363,10 +380,15 @@ export async function obnovSadu(opt) {
       if (r.odp.status === 409 && r.data && r.data.kolize === true) { souhrn.soubeh++; vypis('  – ' + k.cislo + ' — přeskočeno (mezitím ji někdo založil)'); }
       else if (!r.data || r.data.ok !== true || !r.data.soubor) {
         souhrn.odmitnuto++;
+        odmitnute.push({ cislo: k.cislo, doporuceni: doporuceniOdmitnute(k.zak) });
         vypis('  ✗ ' + k.cislo + ' — odmítnuto serverem (' + r.odp.status + '): ' + ocistiText(r.data && r.data.chyba));
       } else {
-        const zp = await api('GET', '/api/zakazky?soubor=' + encodeURIComponent(r.data.soubor));
-        const rozdily = porovnej(k.zak, zp.data && zp.data.zakazka);
+        /* Čtení zpět i při výpadku spojení nesmí shodit běh (souhrn se vypíše). */
+        let rozdily;
+        try {
+          const zp = await api('GET', '/api/zakazky?soubor=' + encodeURIComponent(r.data.soubor));
+          rozdily = porovnej(k.zak, zp.data && zp.data.zakazka);
+        } catch (e) { rozdily = ['zakázku se nepodařilo přečíst zpět (' + ocistiText(e && e.message) + ')']; }
         if (rozdily.length) { souhrn.rozdil++; vypis('  ! ' + k.cislo + ' — založeno s rozdílem: ' + rozdily.join(', ')); }
         else { souhrn.zalozeno++; vypis('  ✓ ' + k.cislo + ' — založeno a ověřeno'); }
         if (r.data.varovani) vypis('      varování serveru: ' + ocistiText(r.data.varovani));
@@ -378,6 +400,11 @@ export async function obnovSadu(opt) {
       + ', přeskočeno – souběh ' + souhrn.soubeh + ', odmítnuto serverem ' + souhrn.odmitnuto
       + (souhrn.velka ? ', příliš velké ' + souhrn.velka : '') + (souhrn.dvojice ? ', dvakrát v souboru ' + souhrn.dvojice : '')
       + (souhrn.chyba ? ', chyba spojení ' + souhrn.chyba : '') + '.');
+    if (odmitnute.length) {
+      vypis('');
+      vypis('ODMÍTNUTÉ ZAKÁZKY — co s nimi (nástroj data nemění):');
+      for (const o of odmitnute) vypis('  ' + o.cislo + ' — ' + o.doporuceni);
+    }
     const vse = souhrn.zalozeno === zalozit.length && !souhrn.velka && !souhrn.dvojice;
     return { kod: vse ? 0 : 1, souhrn };
   } finally {

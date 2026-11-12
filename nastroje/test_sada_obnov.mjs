@@ -70,14 +70,20 @@ if (volby['--zaloha']) {
   for (const c of vyber.vyrazene) console.log('  vyřazeno ' + c.cislo + ' — ' + c.duvody.map(d => d.kde + ' ' + d.cislo).join('; '));
 }
 
-/* ---------- klávesnice ---------- */
-const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: !!process.stdin.isTTY });
-const zeptej = (otazka) => new Promise(r => rl.question(otazka, o => r(o)));
-/* Heslo bez ozvěny (vzor migrace_znacky.mjs). */
+/* ---------- klávesnice ----------
+ * B1 (revize 12. 11. 2026): readline v terminálu sám opakuje psané znaky
+ * a `rl.pause()` ho neodpojí — heslo zůstalo na obrazovce. Readline proto
+ * žije jen po dobu jedné otázky (pak se zavře) a heslo se čte bez něj,
+ * v surovém režimu terminálu bez ozvěny. Hlídá test B1 v pseudo-terminálu. */
+function zeptej(otazka) {
+  return new Promise(r => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: !!process.stdin.isTTY });
+    rl.question(otazka, (o) => { rl.close(); r(o); });
+  });
+}
 function zeptejHeslo(otazka) {
   process.stdout.write(otazka);
   const stdin = process.stdin;
-  rl.pause();
   const bylo = stdin.isRaw;
   if (stdin.isTTY) stdin.setRawMode(true);
   stdin.resume();
@@ -86,14 +92,14 @@ function zeptejHeslo(otazka) {
     const hotovo = () => {
       if (stdin.isTTY) stdin.setRawMode(!!bylo);
       stdin.removeListener('data', naData);
+      stdin.pause();
       process.stdout.write('\n');
-      rl.resume();
       r(heslo);
     };
     const naData = (buf) => {
       for (const zn of buf.toString('utf8')) {
         if (zn === '\n' || zn === '\r' || zn === '\u0004') return hotovo();
-        if (zn === '\u0003') { process.stdout.write('\n'); process.exit(130); }
+        if (zn === '\u0003') { if (stdin.isTTY) stdin.setRawMode(!!bylo); process.stdout.write('\n'); process.exit(130); }
         if (zn === '\u007f' || zn === '\b') { heslo = heslo.slice(0, -1); continue; }
         heslo += zn;
       }
@@ -114,5 +120,4 @@ const { kod } = await obnovSadu({
   web: cil.web, zakazky: vyber.zakazky, zapsat: !!volby['--zapsat'], fetch: globalThis.fetch,
   zeptej, zeptejHeslo, vypis: (s) => console.log(s), pauzaMs: 400, prerusit: () => preruseno,
 });
-rl.close();
 process.exit(kod);

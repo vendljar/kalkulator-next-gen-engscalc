@@ -356,6 +356,31 @@ console.log('===== 7) zámky a data (P5) =====');
     r3.souhrn.odmitnuto === 1 && /odmítnuto serverem \(409\): Neuloženo: nová odeslaná/.test(r3.vystup) && r3.kod === 1
     && !pamet.get('zakazky/z/' + J.jmenoSouboru(stary)), r3.vystup);
   test('P5: odeslané tělo = export (nástroj data nemění)', TELA.length === 2 && kanonTela(TELA[1].zakazka) === kanonTela(stary), TELA.length);
+  /* B2 (revize 12. 11., K40b #580 ve sloučeném stromu): prodej starší než
+   * 7 dní před razítkem přijetí zámku (u nové zakázky = dnes) server odmítne;
+   * nástroj data nemění, jen vypíše s doporučením obnovy ze zálohy. */
+  pamet.clear(); await pripravDatabazi();
+  const prodStary = prejmenuj(EXPORT.find(z => J.jmenoSouboru(z) === souborC), 'TEST - 2026 - OPR - CN - 9592 - C5 prodej');
+  prodStary.varianty[0].prodano = Object.assign({}, prodStary.varianty[0].prodano, { datum: OBJ.objDnes(Date.now() - 10 * 86400000) });
+  const ruProdStary = kopie(prodStary);
+  const r4 = await spust({ zakazky: [prodStary, EXPORT.find(z => J.jmenoSouboru(z) === souborA)], zapsat: true });
+  if (process.env.C5_VYPIS) console.log(r4.vystup);
+  test('B2: prodej starší než 7 dní → odmítnuto serverem (400), ostatní založena, kód 1',
+    r4.souhrn.odmitnuto === 1 && r4.souhrn.zalozeno === 1 && r4.kod === 1 && /9592 - C5 prodej — odmítnuto serverem \(400\)/.test(r4.vystup)
+    && !pamet.get('zakazky/z/' + J.jmenoSouboru(prodStary)), r4.vystup);
+  test('B2: souhrn u odmítnuté prodané zakázky doporučí Obnovit ze zálohy', /ODMÍTNUTÉ ZAKÁZKY[\s\S]*9592 - C5 prodej — doporučení: prodanou zakázku obnovte v aplikaci přes „Obnovit ze zálohy“/.test(r4.vystup), r4.vystup);
+  test('B2: nástroj datum prodeje nezměnil (tělo = export)', J.kanon(TELA[0].zakazka) === J.kanon(ruProdStary));
+  test('B2: doporučení u zamčené (neprodané) a u rozpracované zakázky',
+    /odeslanou \(zamčenou\)/.test(J.doporuceniOdmitnute(EXPORT.find(z => J.jmenoSouboru(z) === souborB)))
+    && /koordinaci/.test(J.doporuceniOdmitnute(EXPORT.find(z => J.jmenoSouboru(z) === souborA))));
+  /* Výpadek při čtení zpět: souhrn se vypíše, zakázka „s rozdílem", kód 1. */
+  pamet.clear(); await pripravDatabazi();
+  HAKY['GET /api/zakazky'] = async (init) => { if (VOLANI.filter(v => v.metoda === 'GET' && v.cesta === '/api/zakazky').length >= 2) throw new TypeError('fetch failed'); };
+  const r5 = await spust({ zakazky: [EXPORT[0]], zapsat: true });
+  delete HAKY['GET /api/zakazky'];
+  test('čtení zpět spadne → souhrn vypsán, „nepodařilo přečíst zpět“, odhlášeno, kód 1', /SOUHRN/.test(r5.vystup)
+    && /se nepodařilo přečíst zpět/.test(r5.vystup) && r5.kod === 1 && r5.volani.some(v => v.cesta === '/api/odhlaseni'), r5.vystup);
+  test('před heslem upozornění na odhlášení', /Po běhu budete v aplikaci odhlášeni — uložte si rozdělanou práci\./.test(r5.vystup));
   /* Porovnání chytí rozdíl v zámku a datech. */
   const a = kopie(EXPORT.find(z => J.jmenoSouboru(z) === souborB)), b = kopie(a);
   b.varianty[0].zamek.kdy = '2020-01-01T00:00:00.000Z';
@@ -463,6 +488,48 @@ console.log('===== 10) obal test_sada_obnov.mjs =====');
   test('obal: --zapsat s OBNOVIT → kód 0, 4 založeny', r.kod === 0 && naServeru().length === 4 && /založeno 4/.test(r.out), r);
   r = await obal(['--web', web, '--export', fExport, '--zapsat'], [ADMIN_EMAIL, HESLO_ADMIN, 'OBNOVIT']);
   test('obal: druhé spuštění → vše přeskočeno, kód 0', r.kod === 0 && /Založí se 0, přeskočí 4/.test(r.out), r);
+  /* B1 (revize Fable 12. 11.): heslo v SKUTEČNÉM terminálu. Mimo terminál
+   * (roura) readline nic neopakuje, proto se obal pustí v pseudo-terminálu
+   * přes `script` (util-linux). Heslo se píše až po výzvě „Heslo: ". */
+  const { execFileSync } = await import('node:child_process');
+  let maScript = false; try { execFileSync('script', ['--version'], { stdio: 'ignore' }); maScript = true; } catch (e) { /* bez script */ }
+  if (!maScript) console.log('PŘESKOČENO terminál: chybí program script (util-linux)');
+  else {
+    const vTerminalu = (args, radky) => new Promise((hotovo) => {
+      const prikaz = [process.execPath, R + 'nastroje/test_sada_obnov.mjs', ...args].map(a => "'" + a.replace(/'/g, "'\\''") + "'").join(' ');
+      const p = spawn('script', ['-qfec', prikaz, '/dev/null'], { stdio: ['pipe', 'pipe', 'pipe'] });
+      let out = ''; p.stdout.on('data', d => { out += d; }); p.stderr.on('data', d => { out += d; });
+      const fronta = (radky || []).slice(); let otazek = 0;
+      const hlidej = setInterval(() => { const n = (out.match(/(E-mail administrátora|Heslo: |Napište OBNOVIT)/g) || []).length;
+        while (otazek < n) { otazek++; setTimeout(() => { if (fronta.length) p.stdin.write(fronta.shift() + '\r'); }, 150); } }, 30);
+      const stop = setTimeout(() => p.kill('SIGKILL'), 30000);
+      p.on('close', (kod) => { clearInterval(hlidej); clearTimeout(stop); hotovo({ kod, out }); });
+    });
+    pamet.clear(); await pripravDatabazi();
+    const rt = await vTerminalu(['--web', web, '--export', fExport], [ADMIN_EMAIL, HESLO_ADMIN]);
+    test('B1: v terminálu se heslo nezobrazí (ani po znacích)', /NÁHLED/.test(rt.out) && !rt.out.includes(HESLO_ADMIN)
+      && !rt.out.includes(HESLO_ADMIN.slice(0, 6)), rt.out.slice(-1500));
+    test('B1: e-mail se v terminálu zobrazí (readline po hesle funguje)', rt.out.includes(ADMIN_EMAIL), rt.out.slice(-800));
+    pamet.clear(); await pripravDatabazi();
+    const rz = await vTerminalu(['--web', web, '--export', fExport, '--zapsat'], [ADMIN_EMAIL, HESLO_ADMIN, 'OBNOVIT']);
+    test('B1: v terminálu i zápis (OBNOVIT po hesle) → 4 založeny, heslo nikde', /založeno 4/.test(rz.out) && naServeru().length === 4
+      && !rz.out.includes(HESLO_ADMIN.slice(0, 6)), rz.out.slice(-800));
+    /* Stejný vzor měl nastroje/migrace_znacky.mjs (jen náhled — bez --zapsat nic nezapíše). */
+    const vTerminaluSkript = (skript, args, radky) => { const puv = R + 'nastroje/test_sada_obnov.mjs';
+      return new Promise((hotovo) => {
+        const prikaz = [process.execPath, R + skript, ...args].map(a => "'" + a.replace(/'/g, "'\\''") + "'").join(' ');
+        const p = spawn('script', ['-qfec', prikaz, '/dev/null'], { stdio: ['pipe', 'pipe', 'pipe'] });
+        let out = ''; p.stdout.on('data', d => { out += d; }); p.stderr.on('data', d => { out += d; });
+        const fronta = (radky || []).slice(); let otazek = 0;
+        const hlidej = setInterval(() => { const n = (out.match(/(E-mail administrátora|Heslo: )/g) || []).length;
+          while (otazek < n) { otazek++; setTimeout(() => { if (fronta.length) p.stdin.write(fronta.shift() + '\r'); }, 150); } }, 30);
+        const stop = setTimeout(() => p.kill('SIGKILL'), 30000);
+        p.on('close', (kod) => { clearInterval(hlidej); clearTimeout(stop); hotovo({ kod, out, puv }); });
+      }); };
+    const rm = await vTerminaluSkript('nastroje/migrace_znacky.mjs', ['--web', web], [ADMIN_EMAIL, HESLO_ADMIN]);
+    test('B1: migrace_znacky.mjs v terminálu heslo nezobrazí a doběhne náhledem', /Přihlášen jako/.test(rm.out)
+      && !rm.out.includes(HESLO_ADMIN.slice(0, 6)), rm.out.slice(-800));
+  }
   srv.close(); rmSync(slozka, { recursive: true, force: true }); }
 
 console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
