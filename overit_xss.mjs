@@ -551,7 +551,8 @@ console.log('\nK40c — upozornění na vazbu z webhooku a dialog opravy firmy')
     ZAK.pdVazbaWebhook.icoShoda = true;
     stav.adminShoda = await kresli({ email: 'spravce@priklad.cz', role: 'Administrátor', jmeno: 'Správce' });
     /* Dialog opravy s podvrženou odpovědí serveru (názvy z Pipedrive i z ARES). */
-    const puvodni = window.onlineApi;
+    const puvodni = window.onlineApi, puvHist = window.historieNeulozeno;
+    window.historieNeulozeno = () => false;   // zakázka „uložená“ — jinak by se akce zastavila na dialogu
     window.onlineApi = async (cesta, telo) => (telo && telo.akce === 'nahled')
       ? { ok: true, organizace: 5, rozdily: [{ klic: 'nazev', label: PAYL('dialog.label'), ted: PAYL('pipedrive.nazev'), nove: PAYL('ares.nazev') }],
           dicChybi: true, dicVeta: 'DIČ se do Pipedrive nezapíše — organizace takové pole nemá.' }
@@ -562,8 +563,9 @@ console.log('\nK40c — upozornění na vazbu z webhooku a dialog opravy firmy')
     stav.dialog = dlg ? dlg.textContent : '';
     const ne = [...document.querySelectorAll('[data-dlg]')].find(b => /Nezapisovat/.test(b.textContent));
     if (ne) ne.click();
-    await hotovo.catch(() => {});
-    window.onlineApi = puvodni;
+    else [...document.querySelectorAll('[data-dlg]')].forEach(b => { if (/ne|zrušit|ok/i.test(b.dataset.dlg)) b.click(); });
+    await Promise.race([hotovo.catch(() => {}), new Promise(res => setTimeout(res, 1500))]);
+    window.onlineApi = puvodni; window.historieNeulozeno = puvHist;
     /* Štítek v Přehledu nabídek. */
     ONLINE_STAV.ja = { email: 'autor@priklad.cz', role: 'Obchodník' };
     stav.stitekAutor = pdVazbaRejstrikStitek({ pdNahlaseno: true, autor: 'autor@priklad.cz' });

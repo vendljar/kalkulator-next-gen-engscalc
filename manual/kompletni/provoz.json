@@ -1641,19 +1641,19 @@
        "/api/pd/webhook",
        "POST",
        "bez přihlášení — tajný klíč v hlavičce `x-kalkulator-klic` (`PIPEDRIVE_WEBHOOK_KLIC`); volá ji automatizace Pipedrive",
-       "webhook „Vygenerovat nabídku“: z těla jen ID dealu, kalkulátor si deal načte, založí nebo aktualizuje kalkulaci a vrátí do dealu odkaz na ni; firmu bere z ARES (K40c, B208); cena se z CRM nepřebírá"
+       "webhook „Vygenerovat nabídku“: z těla jen ID dealu, kalkulátor si deal načte, založí nebo aktualizuje kalkulaci a vrátí do dealu odkaz na ni; firmu bere z ARES; cena se z CRM nepřebírá"
       ],
       [
        "/api/pd/vazba",
        "POST",
        "přihlášený; „Zrušit vazbu“ jen autor zakázky a administrátor",
-       "vazba kalkulace na deal z webhooku: V pořádku, Vazba je chybná, Zrušit vazbu (deal odmítnut, náš odkaz v dealu smazán, doplněné údaje zůstanou) — K40c #581"
+       "vazba kalkulace na deal z webhooku: V pořádku, Vazba je chybná, Zrušit vazbu (deal odmítnut, náš odkaz v dealu smazán, doplněné údaje zůstanou)"
       ],
       [
        "/api/pd/organizace",
        "POST",
-       "autor zakázky a administrátor s právem Pipedrive (B80)",
-       "Opravit firmu v Pipedrive podle ARES: náhled a zápis jen potvrzených lišících se polí (název, adresa, DIČ), jen při shodě IČO organizace a hlavičky — K40c #581, B209"
+       "autor zakázky a administrátor s právem čtení z Pipedrive",
+       "Opravit firmu v Pipedrive podle ARES: náhled a zápis jen potvrzených lišících se polí (název, adresa, DIČ), jen při shodě IČO organizace a hlavičky"
       ]
      ]
     },
