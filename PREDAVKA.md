@@ -14,6 +14,7 @@ stálo na limitu účtu, 12. 11. pokračovalo ve stejném kontejneru, nic se nez
 | mutace „[C5]“ | ✅ 23/23 chycených | 23 v `netlify/mutace.mjs`, sada `test_c5_test_sada.mjs` v `SADY`; `--kontrola` 1410 úseků OK |
 | návod pro J. V. | ✅ | `podklady/NAVOD_TEST_SADA_OBNOVA.md` (primárně soubor od testovacího sezení, druhá možnost otisk z Disku) |
 | roadmapa #585, CHANGELOG, README_ZDROJAKY, .gitignore | ✅ | `roadmapa.py --kontrola` 580 položek bez nálezu |
+| kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | sady 427/0/7 přesk. (jen firemní podklady a test.js), +400 dní 344/0/1, statické 5/5, 30 min; `mutace_jadro.mjs --kontrola` OK. Pozn.: `node_modules/playwright` + `playwright-core` = odkazy na `/opt/node22/lib/node_modules` (jinak se prohlížečové sady přeskočí) |
 | K40b (#580) nad sloučeným stromem | ⬜ | K40b v integraci zatím není. Až bude: `git worktree add … && git merge --no-commit origin/claude/k40b`, pak `node netlify/test_c5_test_sada.mjs` (razítko přijetí zámku, dolní mez data prodeje: prodaná TEST zakázka v testu nese dnešní datum prodeje, starší data z exportu ověřit) |
 
 **Zjištění k zámkům (P5, místní server, skutečné funkce):**
