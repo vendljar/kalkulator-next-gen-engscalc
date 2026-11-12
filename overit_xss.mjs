@@ -575,7 +575,7 @@ console.log('\nK40c — upozornění na vazbu z webhooku a dialog opravy firmy')
     return { ...stav, xss: [...new Set(window.__XSS || [])], img: document.querySelectorAll('img[src="x"]').length };
   }, PAYL.toString());
   zkus('K40c: upozornění se ukázalo s otráveným číslem jako textem', r.autor.vidno && /__XSS\.push\('vazba\.cislo'\)/.test(r.autor.text), r.autor.text.slice(0, 160));
-  zkus('K40c: autor vidí „V pořádku" a „Zrušit vazbu"', r.autor.tl.join() === 'potvrdit,zrusit', r.autor.tl.join());
+  zkus('K40c: autor vidí „V pořádku", „Zrušit vazbu" a opravu firmy (bez shody IČO zhasnutou)', r.autor.tl.join() === 'potvrdit,zrusit,organizace:off', r.autor.tl.join());
   zkus('K40c: cizí obchodník vidí „V pořádku" a „Vazba je chybná" (už nahlášená = zhasnutá)', r.cizi.tl.join() === 'potvrdit,chybna:off', r.cizi.tl.join());
   zkus('K40c: administrátor bez shody IČO — oprava firmy zhasnutá', r.admin.tl.join() === 'potvrdit,zrusit,organizace:off', r.admin.tl.join());
   zkus('K40c: administrátor se shodou IČO — oprava firmy aktivní', r.adminShoda.tl.join() === 'potvrdit,zrusit,organizace', r.adminShoda.tl.join());

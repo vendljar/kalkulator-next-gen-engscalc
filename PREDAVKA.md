@@ -23,6 +23,16 @@ není** (komentář `pd_mapa.mjs`: „DIČ ani fakturační adresa v CRM nejsou 
 v `PD_DOSUD_NEZALOZENA` (přehled mapy ho ukazuje jako „chybí“, mapa verze 4). Adresa organizace je standardní
 pole `address.value`. Webhook dřív do protokolu nezapisoval (B201) — teď ano.
 
+**Testy (12. 11.):** `netlify/test_k40c_webhook.mjs` 94/0 (na bázi selže — moduly neexistují); všechny
+`netlify/test_*.mjs` zelené (ADMIN_EMAIL nastavený), všechny `src/test_*.js` zelené vč. zlatých sad
+(`test_vs_zlata`, můstky — otisky beze změny, nepřegenerováno); `overit_xss.mjs` 392/0 (oddíl K40c, na bázi
+selže); mutace `[K40c]` 25/25 chycené; `--kontrola` server 1437/1437 a jádro 853/853 (posunutá zadání #447 C4,
+#509). Celé testovací kolo a celé mutace po částech pouští koordinace při slučování.
+
+**Otevřené pro J. V.:** (1) založit v Pipedrive pole organizace „DIČ“ (text)? Do té doby oprava firmy DIČ
+přeskočí. (2) Vazby starší než K40c se při dalším doručení jednou zeptají ARES a mohou přepsat zákazníka, kterého
+tam dřív dal webhook z dealu (otisk sedí) — chování podle v3, jen upozornění.
+
 **Výchozí volby (prompt nechal otevřené):** kalkulace založená webhookem dostane vazbu `stav: 'webhook'` (bez
 „V pořádku“, upozornění jen při problému ARES nebo rozdílech); vazba starší než K40c dostane při prvním dalším
 doručení totéž (jednou se zeptá ARES). Po výpadku ARES se další doručení se stejným IČO ARES neptá (B208 „nejvýš
