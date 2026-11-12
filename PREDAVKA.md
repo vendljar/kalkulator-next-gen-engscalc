@@ -1,3 +1,19 @@
+# Předávka — K40a #579: opravy po revizi Fable (verdikt „sloučit po opravě“), v12.11.1, větev `claude/k40a`
+
+| bod revize | stav | kde |
+|---|---|---|
+| D1 import zamčené varianty nemigruje sklo šachet 2+ | ✅ | `skloMigraceNazvu(d, { jenPrvni })`, `importZakazka`; nezamčená migruje jako šachta 1 od K37; mez B205a; test 7b v `test_k40_celni_sklo.js` 75/0 (ed98942: 3 FAIL) |
+| D2 neplatný den kopie → úklid nemaže | ✅ | `retenceZalohDiskPredchozi` → `neplatnyDen`; prohlížeč i `kopie_disk.gs` (skript připomene e-mailem); `test_z2_disk_retence` 59/0 (3 FAIL), `test_577_apps_script` S13 34/0 (1 FAIL) |
+| D3 zbytková mez B205 (minulý den + pozdější čas) | ✅ | `BEZPECNOST_MEZE.md` |
+| D4 test_funkce dvojí import, mrtvá větev | ✅ | modul nastaví `KNG_ADMIN_EMAIL_VYCHOZI=1`; 304/0 s i bez ADMIN_EMAIL |
+| D5 sirotek čelního skla tam a zpět | ✅ jen mez | B205b, CHANGELOG |
+| D6 hláška šířky z konstant | ✅ | `mustekMmText`; `test_k40_mustky_cenik` 31/0 (1 FAIL) |
+| D7 escJs u bind | ✅ | `kryci_proj_ui.js` i `kryci_ui.js` (2 místa, hlídač našel i OCK); `bind` v RIZIKO; `test_escape` 42/0 (2 FAIL) |
+| mutace | ✅ | jádro [K40a] 22/22, server [K40a] 13/13, úklid 22/22; `--kontrola` 842 / 1400 |
+| zlatá sada | ✅ | 319/319, můstky 228/0 |
+| kolo `--bez-mutaci` nad v12.11.1 | ✅ VŠE ZELENÉ | 433/0/7, +400 dní 350/0/1, statické 5/5 |
+| otázka 6, Apps Script | — | otázka 6 se nedělá; `kopie_disk.gs` vloží J. V. až po sloučení do `test` |
+
 # Předávka — K40a #579 (meze B199–B205): opravy z posudku K40 — sklo víc šachet, můstky, ořez řetězců, CSV, escJs, retence Disku, harnessy; větev `claude/k40a`
 
 Nad `c664c9e` (integrace `claude/integrace-16-10` v11.11.1; před koncem ověřeno, že se nepohnula). **v11.11.2.** Do `test-draft`, `test`
