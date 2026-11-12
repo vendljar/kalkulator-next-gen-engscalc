@@ -106,6 +106,8 @@ function popisStavu(stav, telo) {
   return 'Pipedrive odmítl požadavek.' + (z ? ' ' + z : '');
 }
 
+const PD_CAS_VYPRSEL = Symbol('pd-cas-vyprsel');
+
 function spanek(ms) { return new Promise((h) => setTimeout(h, ms)); }
 
 /* Jediné místo, kde se sahá na síť. `cesta` je bez domény, včetně /api/…
@@ -132,16 +134,30 @@ export async function pdZavolej(cesta, volby = {}) {
   const pokusu = Math.max(1, Math.min(POKUSU, Number.isInteger(volby.pokusu) ? volby.pokusu : POKUSU));
   let posledni = null;
   for (let pokus = 0; pokus < pokusu; pokus++) {
-    let odpoved;
+    let odpoved, telo = null;
+    /* `volby.casLimitMs` (VSD N2, 12. 11. 2026): tvrdý časový limit na celé
+     * volání včetně čtení těla — zápis poznámky při uložení zakázky nesmí
+     * viset na neodpovídajícím Pipedrive. Po vypršení se požadavek zruší
+     * (AbortController) a hlásí se 504. Bez volby beze změny. */
+    const limit = Number.isFinite(volby.casLimitMs) && volby.casLimitMs > 0 ? volby.casLimitMs : 0;
+    const ctrl = limit ? new AbortController() : null;
+    let casovac = null;
     try {
-      odpoved = await (sim ? pdSimFetch(url.toString(), init) : fetch(url.toString(), init));
+      const prubeh = (async () => {
+        const o = await (sim ? pdSimFetch(url.toString(), { ...init, ...(ctrl ? { signal: ctrl.signal } : {}) })
+          : fetch(url.toString(), { ...init, ...(ctrl ? { signal: ctrl.signal } : {}) }));
+        let t = null;
+        try { t = await o.json(); } catch (e) { t = null; }
+        return [o, t];
+      })();
+      const vyprselo = limit ? new Promise((_, ne) => { casovac = setTimeout(() => { ctrl.abort(); ne(PD_CAS_VYPRSEL); }, limit); }) : null;
+      [odpoved, telo] = await (vyprselo ? Promise.race([prubeh, vyprselo]) : prubeh);
     } catch (e) {
+      if (e === PD_CAS_VYPRSEL) throw new PdChyba('Pipedrive neodpověděl do ' + (Math.round(limit / 100) / 10).toString().replace('.', ',') + ' s.', 504);
       /* Síť selhala úplně. Tohle se NESMÍ spolknout do prázdného seznamu —
        * obchodník by si myslel, že v Pipedrivu nic není. */
       throw new PdChyba('Spojení s Pipedrive se nepodařilo navázat.', 502, String(e && e.message));
-    }
-    let telo = null;
-    try { telo = await odpoved.json(); } catch (e) { telo = null; }
+    } finally { if (casovac) clearTimeout(casovac); }
 
     if (odpoved.ok && telo && telo.success !== false) {
       const vysledek = telo.data === undefined ? telo : telo.data;

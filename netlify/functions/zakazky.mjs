@@ -189,7 +189,21 @@ export default async (req) => {
    * jen server (pdPoznamkaSachty). Selhání Pipedrive uložení nezastaví.
    * Až PO druhém čtení (SEC-S1): kolize 409 po zápisu do Pipedrive by
    * zahodila id nové poznámky a příští uložení by založilo druhou. */
-  const pdPoznamka = await pdPoznamkaUlozeni(zak, stara, { viceSachet });
+  const pdPoznamka = await pdPoznamkaUlozeni(zak, stara, { viceSachet, relace, matice: (zobr && zobr.matice) || null });
+  /* N1 (revize Fable 12. 11. 2026): volání Pipedrive trvá až sekundy —
+   * okno mezi druhým čtením a zápisem by se roztáhlo. Po návratu z
+   * Pipedrive se zakázka čte POTŘETÍ; jiné razítko = 409 jako u SEC-S1.
+   * Zapsanou poznámku příští uložení najde podle značky zakázky (N3). */
+  if (pdPoznamka.volano) {
+    const potreti = await s.cti('z/' + jmeno);
+    if (!!potreti !== !!stara || ULO.uloRazitko(potreti) !== ULO.uloRazitko(stara)) {
+      const kdoEmail = String((potreti && (potreti.upravil || potreti.autor)) || '');
+      const kdo = String((potreti && (potreti.upravilJmeno || potreti.autorJmeno)) || '') || kdoEmail;
+      return { odpoved: json({ ok: false, kolize: true, naDisku: ULO.uloRazitko(potreti),
+        kdo, kdoEmail, kdoVy: !!kdoEmail && kdoEmail.toLowerCase() === String(relace.email || '').toLowerCase(),
+        chyba: 'Zakázku právě uložil(a) ' + (kdo || 'někdo jiný') + '. Načtěte ji znovu, nebo změny vědomě přepište.' }, 409) };
+    }
+  }
   const razitko = ULO.uloRazitkoNove();
   zak.uloRazitko = razitko;
   await s.zapis('z/' + jmeno, zak);

@@ -230,6 +230,7 @@ export function pdSimReset() { STAV = null; }
 export function pdSimNastav(volby = {}) {
   const s = stav();
   if (volby.scenar !== undefined) { s.scenar = String(volby.scenar || ''); s.limitZbyva = scenarLimit(s.scenar); }
+  if (volby.poPozadavku !== undefined) s.poPozadavku = typeof volby.poPozadavku === 'function' ? volby.poPozadavku : null;
 }
 /* Pohled do simulátoru: data, spotřebované tokeny a seznam požadavků. */
 /* Smazání poznámky „v Pipedrive" (test: poznámka mezitím zmizela). */
@@ -287,6 +288,8 @@ export async function pdSimFetch(url, init = {}) {
   const metoda = String(init.method || 'GET').toUpperCase();
   const cesta = u.pathname.replace(/\/+$/, '');
   s.pozadavky.push(metoda + ' ' + cesta + (u.search || ''));
+  /* Háček testu (VSD N1): po zapsání požadavku, např. souběžné uložení zakázky. */
+  if (typeof s.poPozadavku === 'function') await s.poPozadavku(metoda + ' ' + cesta);
 
   const hlavicky = init.headers || {};
   if (!hlavicky['x-api-token']) return chyba(401, 'Unauthorized');
@@ -294,6 +297,10 @@ export async function pdSimFetch(url, init = {}) {
   if (sc === 'token') return chyba(401, 'Unauthorized');
   if (sc === 'vypadek') return chyba(500, 'Internal server error');
   if (sc === 'limit') return chyba(429, 'Rate limit exceeded');
+  /* visi (VSD N2): odpověď nepřijde nikdy — jen zrušení požadavku (signal) ho ukončí. */
+  if (sc === 'visi') return new Promise((_, ne) => {
+    if (init.signal) init.signal.addEventListener('abort', () => ne(new Error('aborted')), { once: true });
+  });
   if (s.limitZbyva > 0) { s.limitZbyva--; return chyba(429, 'Rate limit exceeded'); }
 
   const rozpocet = Number(process.env[PD_SIM_ROZPOCET_PROMENNA]) > 0 ? Number(process.env[PD_SIM_ROZPOCET_PROMENNA]) : 30000;
@@ -348,6 +355,12 @@ export async function pdSimFetch(url, init = {}) {
    * Založení jen k existujícímu nesmazanému dealu, obsah text do 100 000
    * znaků (jako API); smazaná poznámka (pdSimSmazPoznamku) vrací 404. */
   if (!D.poznamky) D.poznamky = [];
+  if (cesta === '/api/v1/notes' && metoda === 'GET') {
+    const deal = parseInt(u.searchParams.get('deal_id'), 10);
+    const seznam = D.poznamky.filter((p) => p.active_flag !== false && (!(deal > 0) || p.deal_id === deal)).slice().reverse();
+    const limit = Math.min(Math.max(parseInt(u.searchParams.get('limit'), 10) || 100, 1), 500);
+    return data(kopie(seznam.slice(0, limit)));
+  }
   if (cesta === '/api/v1/notes' && metoda === 'POST') {
     let telo;
     try { telo = JSON.parse(init.body || '{}'); } catch (e) { return chyba(400, 'Invalid JSON'); }
