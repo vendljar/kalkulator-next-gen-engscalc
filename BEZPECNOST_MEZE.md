@@ -1707,7 +1707,8 @@ Rozhodnutí J. V. 11. 11. 2026 (podklady/PROMPT_K40_OPRAVY_v3.md, prototyp
   a protokol nesou varování a `pdVazbaWebhook.ares` ('neplatne' | 'nenalezeno'
   | 'vypadek'); upozornění nabídne „Najít firmu v ARES“. Bez přihlášení jde
   dotaz vyvolat jen klíčem webhooku (B199) a **nejvýš jednou na novou vazbu
-  nebo změnu IČO** (otisk IČO ve vazbě), u zmrazené hlavičky (zamčená varianta,
+  nebo změnu IČO** (otisk IČO ve vazbě; po výpadku se otisk neukládá, takže
+  další doručení se zeptá znovu — revize K40c N1), u zmrazené hlavičky (zamčená varianta,
   po tisku SoD) vůbec. *Co to nedělá:* ARES je cizí služba bez smlouvy
   o dostupnosti — odpověď, která projde kontrolami, se bere jako pravdivá;
   pole, které člověk po uložení upravil, se nepřepíše nikdy (rozdíl jen
@@ -1734,5 +1735,18 @@ Rozhodnutí J. V. 11. 11. 2026 (podklady/PROMPT_K40_OPRAVY_v3.md, prototyp
   navázat (administrátor, autor u vlastní zakázky — C4), tím určuje, kterou
   organizaci jde opravit; proti omylu chrání shoda IČO a potvrzení v dialogu,
   ne druhá osoba. Starý název a adresa organizace se nikde nezálohují
-  (zůstávají jen v historii změn Pipedrive).
+  (zůstávají jen v historii změn Pipedrive). **Tvar zápisu do Pipedrive**
+  (`address: { value }` u organizace, `custom_fields: { <hash>: null }` při
+  mazání odkazu v dealu) je ověřený **jen proti simulátoru** — před ostrým
+  použitím zkušební zápis na testovacím webu s tokenem Pipedrive nad dealem
+  TEST (revize K40c N6).
+- **Doplnění B208/B209 (revize K40c, 12. 11. 2026).** Odmítnutý deal ze seznamu
+  `pdDealyOdmitnute` vypadne, když ho autor nebo administrátor zakázce **ručně
+  znovu zadá** (výslovná akce oprávněného, změnu pustí `ctrlPdDealKontrola`;
+  N7). „Vazba je chybná“ jde u jedné vazby jen jednou (409, N4). U zakázky bez
+  uloženého autora mění deal, ruší vazbu a opravuje firmu jen administrátor
+  (N5). Náš odkaz v dealu se maže až po úspěšném zápisu zrušení do zakázky (N3).
+  Vazba z doby před K40c dostane při prvním doručení stav „webhook“, ne „ceka“
+  (N2) — to doručení ale smí nahradit pole, která dřív doplnil webhook z dealu,
+  úředními údaji téže firmy z ARES.
 

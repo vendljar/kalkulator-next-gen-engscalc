@@ -56,6 +56,8 @@ export default async (req) => {
   const vazba = pdVazbaZiva(ulozena, norm);
   if (!vazba) return json({ ok: false, chyba: 'Zakázka nemá živou vazbu na deal z webhooku.' }, 409);
   if (akce === 'potvrdit' && vazba.stav !== 'ceka') return json({ ok: false, chyba: 'Vazba už je potvrzená.' }, 409);
+  /* Revize K40c N4: nahlášenou vazbu nejde nahlásit znovu (protokol by šlo plnit donekonečna). */
+  if (akce === 'chybna' && vazba.nahlaseno) return json({ ok: false, chyba: 'Vazba už je nahlášená jako chybná.' }, 409);
   if (akce === 'zrusit' && !pdVazbaSmiMenit(ulozena, relace))
     return json({ ok: false, chyba: 'Vazbu na deal smí zrušit jen autor zakázky nebo administrátor. Použijte „Vazba je chybná“.' }, 403);
 
@@ -63,8 +65,41 @@ export default async (req) => {
   const varovani = [];
   let odkazVDealu = '';
   const deal = vazba.deal;
-  /* ODKAZ V DEALU (jen zrušení): smaže se, jen když v něm je odkaz na TUTO
-   * kalkulaci. Chyba Pipedrive zrušení nezastaví. */
+  const v = await vyhradne('zakazky/z/' + soubor, async () => {
+    const zak = await s.cti('z/' + soubor);
+    const ziva = zak && pdVazbaZiva(zak, norm);
+    if (!ziva || ziva.deal !== deal) return { odpoved: json({ ok: false, chyba: 'Vazba se mezitím změnila — otevřete zakázku znovu.' }, 409) };
+    const nova = pdVazbaNorm(ziva);
+    const ted = new Date().toISOString();
+    const cislo = String(pdWebhookHlavicka(JSON.parse(JSON.stringify(zak)), nova.strana).cislo || nova.cislo || '');
+    if (akce === 'potvrdit') {
+      nova.stav = 'potvrzeno';
+      pdProtokol(zak, kdo, 'Vazbu na deal ' + deal + ' (číslo nabídky ' + cislo + ') potvrdil („V pořádku“)');
+    } else if (akce === 'chybna') {
+      if (nova.nahlaseno) return { odpoved: json({ ok: false, chyba: 'Vazba už je nahlášená jako chybná.' }, 409) };
+      nova.nahlaseno = { kdo: String(relace.email || ''), kdy: ted };
+      pdProtokol(zak, kdo, 'Vazbu na deal ' + deal + ' nahlásil jako chybnou — rozhodne autor zakázky nebo administrátor');
+    } else {
+      nova.stav = 'zruseno';
+      delete nova.nahlaseno;
+      delete zak.pdDealId; delete zak.pdStav; delete zak.pdZadani;
+      zak.pdDealyOdmitnute = pdOdmitnuteNorm((zak.pdDealyOdmitnute || []).concat([deal])).slice(-PD_ODMITNUTE_MAX);
+      pdProtokol(zak, kdo, 'Vazbu na deal ' + deal + ' zrušil; deal je u kalkulace odmítnutý (webhook ho znovu nenaváže); '
+        + 'náš odkaz v dealu se maže po zápisu; údaje doplněné webhookem zůstaly: ' + (pdPoleText(nova.doplneno) || 'žádné'));
+    }
+    zak.pdVazbaWebhook = nova;
+    zak.upravil = String(relace.email || '');
+    if (relace.jmeno) zak.upravilJmeno = String(relace.jmeno); else delete zak.upravilJmeno;
+    const razitko = ULO.uloRazitkoNove();
+    zak.uloRazitko = razitko;
+    await s.zapis('z/' + soubor, zak);
+    return { zak, razitko };
+  });
+  if (v.odpoved) return v.odpoved;
+  await pdRejstrikZapis(s, ULO, vyhradne, v.zak, soubor, v.razitko, String(relace.email || ''));
+  /* ODKAZ V DEALU (jen zrušení): AŽ PO úspěšném zápisu zakázky (revize K40c N3)
+   * a jen když v něm je odkaz na TUTO kalkulaci. Chyba Pipedrive zrušení
+   * nezastaví — varování a dodatečný záznam v protokolu. */
   if (akce === 'zrusit') {
     odkazVDealu = 'nezjisteno';
     try {
@@ -88,39 +123,19 @@ export default async (req) => {
         + ' Vazba je přesto zrušená — odkaz v Pipedrive případně smažte ručně.');
     }
   }
-
-  const v = await vyhradne('zakazky/z/' + soubor, async () => {
-    const zak = await s.cti('z/' + soubor);
-    const ziva = zak && pdVazbaZiva(zak, norm);
-    if (!ziva || ziva.deal !== deal) return { odpoved: json({ ok: false, chyba: 'Vazba se mezitím změnila — otevřete zakázku znovu.' }, 409) };
-    const nova = pdVazbaNorm(ziva);
-    const ted = new Date().toISOString();
-    const cislo = String(pdWebhookHlavicka(JSON.parse(JSON.stringify(zak)), nova.strana).cislo || nova.cislo || '');
-    if (akce === 'potvrdit') {
-      nova.stav = 'potvrzeno';
-      pdProtokol(zak, kdo, 'Vazbu na deal ' + deal + ' (číslo nabídky ' + cislo + ') potvrdil („V pořádku“)');
-    } else if (akce === 'chybna') {
-      nova.nahlaseno = { kdo: String(relace.email || ''), kdy: ted };
-      pdProtokol(zak, kdo, 'Vazbu na deal ' + deal + ' nahlásil jako chybnou — rozhodne autor zakázky nebo administrátor');
-    } else {
-      nova.stav = 'zruseno';
-      delete nova.nahlaseno;
-      delete zak.pdDealId; delete zak.pdStav; delete zak.pdZadani;
-      zak.pdDealyOdmitnute = pdOdmitnuteNorm((zak.pdDealyOdmitnute || []).concat([deal])).slice(-PD_ODMITNUTE_MAX);
-      pdProtokol(zak, kdo, 'Vazbu na deal ' + deal + ' zrušil; deal je u kalkulace odmítnutý (webhook ho znovu nenaváže); odkaz v dealu: '
-        + ({ smazano: 'smazán', cizi: 'nese jinou hodnotu — ponechán', prazdne: 'nebyl', nezjisteno: 'nezjištěn (chyba Pipedrive)' }[odkazVDealu])
-        + '; údaje doplněné webhookem zůstaly: ' + (pdPoleText(nova.doplneno) || 'žádné'));
-    }
-    zak.pdVazbaWebhook = nova;
-    zak.upravil = String(relace.email || '');
-    if (relace.jmeno) zak.upravilJmeno = String(relace.jmeno); else delete zak.upravilJmeno;
-    const razitko = ULO.uloRazitkoNove();
-    zak.uloRazitko = razitko;
-    await s.zapis('z/' + soubor, zak);
-    return { zak, razitko };
-  });
-  if (v.odpoved) return v.odpoved;
-  await pdRejstrikZapis(s, ULO, vyhradne, v.zak, soubor, v.razitko, String(relace.email || ''));
+  if (odkazVDealu === 'nezjisteno' || odkazVDealu === 'cizi') {
+    const d2 = await vyhradne('zakazky/z/' + soubor, async () => {
+      const zak = await s.cti('z/' + soubor);
+      if (!zak) return {};
+      pdProtokol(zak, kdo, 'Odkaz v dealu ' + deal + ' ' + (odkazVDealu === 'cizi' ? 'nese jinou hodnotu — ponechán'
+        : 'se nepodařilo smazat (chyba Pipedrive) — smažte ho v Pipedrive ručně'));
+      const razitko = ULO.uloRazitkoNove();
+      zak.uloRazitko = razitko;
+      await s.zapis('z/' + soubor, zak);
+      return { zak, razitko };
+    });
+    if (d2.zak) { v.zak = d2.zak; v.razitko = d2.razitko; await pdRejstrikZapis(s, ULO, vyhradne, v.zak, soubor, v.razitko, String(relace.email || '')); }
+  }
   if (akce === 'zrusit') {
     const sw = await uloziste(PD_WEBHOOK_ULOZISTE);
     const idx = await sw.cti('deal:' + deal);

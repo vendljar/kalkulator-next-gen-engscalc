@@ -94,6 +94,14 @@ export function pdVazbaDrz(stara, zak, volby = {}) {
   const v = pdVazbaNorm(zdroj && zdroj.pdVazbaWebhook);
   const o = pdOdmitnuteNorm(zdroj && zdroj.pdDealyOdmitnute);
   if (v) zak.pdVazbaWebhook = v; else delete zak.pdVazbaWebhook;
+  /* Revize K40c N7: autor nebo administrátor zakázce ručně znovu zadal
+   * odmítnutý deal (výslovná akce oprávněného — změnu dealu pustila už
+   * ctrlPdDealKontrola) → deal ze seznamu odmítnutých vypadne. */
+  if (volby.obnova !== true && stara) {
+    const n = (x) => (typeof globalThis.ctrlPdDealIdNorm === 'function' ? globalThis.ctrlPdDealIdNorm(x) : String(x == null ? '' : x).trim()) || '';
+    const novy = n(zak.pdDealId);
+    if (novy && novy !== n(stara.pdDealId) && o.includes(novy)) o.splice(o.indexOf(novy), 1);
+  }
   if (o.length) zak.pdDealyOdmitnute = o; else delete zak.pdDealyOdmitnute;
 }
 

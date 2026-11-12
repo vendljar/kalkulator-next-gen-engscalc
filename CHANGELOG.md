@@ -33,8 +33,14 @@ Nad `1a08186` (integrace v12.11.3). Verzi přečísluje koordinace. Výpočet ce
   Pipedrive; jen při shodě IČO organizace dealu a hlavičky uložené zakázky (jinak 409 bez ARES i PATCH);
   organizace musí patřit dealu zakázky. DIČ organizace v účtu není (`POLE_ORGANIZACE.dic`, nezakládá se) —
   dialog řekne, že se přeskočí. Simulátor umí PATCH organizace.
-- **C4:** deal zakázky smí měnit i autor u zakázky, kterou sám založil (u zakázky z webhooku dál jen
-  administrátor).
+- **C4:** deal zakázky smí měnit i autor u zakázky, kterou sám založil (u zakázky z webhooku a zakázky bez autora
+  dál jen administrátor). Ručně znovu zadaný odmítnutý deal ze seznamu odmítnutých vypadne.
+- **Revize Fable (N1–N8):** po výpadku ARES se další doručení zeptá znovu (otisk se neukládá); vazba z doby před
+  K40c dostane stav „webhook“ (bez čekání); odkaz v dealu se maže až po zápisu zrušení; opakované „Vazba je
+  chybná“ → 409; `test_prava.mjs` samostatně bez ADMIN_EMAIL. **Pozor po nasazení:** první doručení webhooku
+  u vazby starší než K40c může pole, která dřív doplnil webhook z dealu (zákazník, IČO), nahradit úředními
+  údaji téže firmy z ARES. Tvar zápisu do Pipedrive je ověřený jen proti simulátoru — před ostrým použitím
+  zkušební zápis na testu s tokenem Pipedrive nad dealem TEST.
 - **Meze:** B208, B209, úprava oddílu PW #553 (zápisy do CRM, vazba, odmítnuté dealy). Příručka a tabulka
   funkcí v `manual/`. Mapa polí verze 4 (přehled ukazuje DIČ organizace jako chybějící).
 - **Testy:** nový `netlify/test_k40c_webhook.mjs` (na bázi selže — moduly neexistují), `overit_xss.mjs` oddíl

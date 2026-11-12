@@ -38,6 +38,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
   async smaz(k) { pamet.delete(nazev + '/' + k); },
 });
 
+import './pomoc_test_admin.mjs'; // K40c N8: výchozí smyšlený ADMIN_EMAIL dřív než sdilene.mjs (samostatné spuštění)
 import prihlaseni from './functions/prihlaseni.mjs';
 import odhlaseni from './functions/odhlaseni.mjs';
 import ja from './functions/ja.mjs';

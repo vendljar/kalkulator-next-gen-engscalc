@@ -173,7 +173,8 @@ const dealS = (pred) => {
   return d;
 };
 const D1 = dealS(() => true), D2 = dealS(() => true), D3 = dealS(() => true), D4 = dealS(() => true), D5 = dealS(() => true);
-test('příprava: pět dealů s různými organizacemi', !!(D1 && D2 && D3 && D4 && D5));
+const D6 = dealS(() => true);
+test('příprava: šest dealů s různými organizacemi', !!(D1 && D2 && D3 && D4 && D5 && D6));
 const org = (d) => D().organizace.find((o) => o.id === d.org_id);
 const nastavIco = (d, ico) => { org(d).custom_fields[HASH_IC] = Number(ico); };
 
@@ -243,6 +244,16 @@ r = await volej(D2.id);
 test('… přejmenování organizace v Pipedrive firmu z ARES nepřepíše (ARES se nevolá)', zakazka(S2).objednatel === 'Druhá Zkušební s.r.o. (smyšlené)'
   && ares.volani === n0 + 1, [zakazka(S2).objednatel, ares.volani - n0]);
 
+/* Revize K40c N2: vazba z doby před K40c (pdDealId bez pdVazbaWebhook) nečeká na „V pořádku“. */
+const cn6 = D6.title.split(' ')[0];
+nastavIco(D6, '1000');
+const r6 = await zalozRucne(cn6);
+{ const z6 = zakazka(r6.soubor); z6.pdDealId = String(D6.id); zapisZakazku(r6.soubor, z6); }
+r = await volej(D6.id);
+test('N2: stará vazba (pdDealId bez pdVazbaWebhook) dostane stav „webhook“, ne „ceka“', r.status === 200
+  && zakazka(r6.soubor).pdVazbaWebhook.stav === 'webhook' && zakazka(r6.soubor).protokol.some((p) => /Aktualizace z dealu/.test(p.co)),
+  [r.status, zakazka(r6.soubor).pdVazbaWebhook]);
+
 /* ---------- 4. VÝPADKY ARES A ZMRAZENÁ HLAVIČKA ---------- */
 console.log('\n===== 4. VÝPADKY ARES =====\n');
 let k = 0;
@@ -261,6 +272,21 @@ for (const rez of ['404', '500', 'nejson', 'jineIco', 'velka', 'pomaly']) {
     && ['nenalezeno', 'vypadek'].includes(r.ares) && r.varovani.some((x) => /ARES/.test(x)) && z4.objednatel === org(D4).name
     && z4.pdVazbaWebhook.ares === r.ares, [r.status, r.ares, r.varovani, z4 && z4.objednatel]);
   if (rez === 'pomaly') test('… pomalý ARES: webhook doběhne do 3 s limitu + rezervy (< 6 s, limit funkce 10 s)', ms >= 2900 && ms < 6000, ms);
+}
+/* Revize K40c N1: po výpadku ARES se otisk IČO neukládá — další doručení se ptá znovu. */
+{
+  const icoV = icoS('9300001');
+  ares.subjekty.set(icoV, subjekt(icoV, 'Po Výpadku a.s. (smyšlené)'));
+  nastavIco(D4, icoV);
+  ares.rezim = '500'; n0 = ares.volani;
+  r = await volej(D4.id);
+  ares.rezim = 'ok';
+  test('N1: výpadek ARES → firma z dealu', r.status === 200 && r.ares === 'vypadek' && ares.volani === n0 + 1, [r.status, r.ares]);
+  r = await volej(D4.id);
+  test('N1: po výpadku se další doručení se stejným IČO zeptá ARES znovu a firmu převezme', ares.volani === n0 + 2 && r.ares === 'ok'
+    && zakazka(r.soubor).objednatel === 'Po Výpadku a.s. (smyšlené)', [ares.volani - n0, r.ares, zakazka(r.soubor).objednatel]);
+  r = await volej(D4.id);
+  test('N1: … a po úspěchu už se se stejným IČO neptá', ares.volani === n0 + 2, ares.volani - n0);
 }
 /* Zmrazená hlavička: zamčená varianta → ARES se nevolá, hlavička beze změny. */
 const z4 = zakazka(r.soubor);
@@ -294,6 +320,12 @@ z1 = zakazka(S1);
 test('„Vazba je chybná“ cizím obchodníkem → 200, příznak nahlaseno z relace, protokol', r.status === 200
   && z1.pdVazbaWebhook.nahlaseno && z1.pdVazbaWebhook.nahlaseno.kdo === 'obch.cizi@priklad.cz' && z1.pdVazbaWebhook.stav === 'ceka'
   && z1.protokol.some((p) => /nahlásil jako chybnou/.test(p.co)), [r.status, z1.pdVazbaWebhook]);
+{
+  const pocet = zakazka(S1).protokol.length, raz = zakazka(S1).uloRazitko;
+  const r2 = await vazba(S1, 'chybna', cCizi);
+  test('N4: už nahlášenou vazbu nejde nahlásit znovu (409, protokol ani razítko beze změny)', r2.status === 409
+    && zakazka(S1).protokol.length === pocet && zakazka(S1).uloRazitko === raz, r2);
+}
 const rejNahl = (JSON.parse(pamet.get('zakazky/_rejstrik')).zakazky || []).find((x) => x.soubor === S1);
 test('… příznak je v rejstříku (Přehled cenových nabídek)', rejNahl && rejNahl.pdNahlaseno === true, rejNahl);
 /* Podvržená pole vazby od klienta se ignorují. */
@@ -371,6 +403,20 @@ test('u zakázky založené webhookem obchodník deal nezmění (403)', r.status
 r = await ulozJako(S2, (v) => { v.pdDealId = '4714'; }, cA);
 test('… administrátor ano (200)', r.status === 200, r);
 
+/* Revize K40c N5: zakázka bez uloženého autora — deal, vazbu a firmu mění jen administrátor. */
+{
+  const bez = (soubor) => { const z = zakazka(soubor); const a = z.autor; z.autor = ''; zapisZakazku(soubor, z); return a; };
+  const vrat = (soubor, a) => { const z = zakazka(soubor); z.autor = a; zapisZakazku(soubor, z); };
+  const zrv = bez(rv.soubor);
+  r = await ulozJako(rv.soubor, (v) => { v.pdDealId = '4721'; }, cAutor);
+  test('N5: zakázka bez autora — obchodník deal nezmění (403)', r.status === 403, r);
+  vrat(rv.soubor, zrv);
+  const z5 = bez(S5);
+  r = await vazba(S5, 'zrusit', cAutor);
+  test('N5: zakázka bez autora — obchodník vazbu nezruší (403)', r.status === 403, r);
+  vrat(S5, z5);
+}
+
 /* ---------- 7. OPRAVA ORGANIZACE ---------- */
 console.log('\n===== 7. OPRAVIT FIRMU V PIPEDRIVE =====\n');
 const cn3 = D3.title.split(' ')[0];
@@ -380,6 +426,12 @@ const S3 = r3.soubor;
 r = await volej(D3.id);
 test('příprava: kalkulace autora navázaná na deal s IČO ' + ICO1, r.status === 200 && zakazka(S3).ico === ICO1, [r.status, zakazka(S3).ico]);
 const orgPred = kopie(org(D3));
+{
+  const zz = zakazka(S3); const a = zz.autor; zz.autor = ''; zapisZakazku(S3, zz);
+  const rb = await opravOrg(S3, 'nahled', cAutor);
+  test('N5: zakázka bez autora — obchodník firmu neopraví (403)', rb.status === 403, rb);
+  const zz2 = zakazka(S3); zz2.autor = a; zapisZakazku(S3, zz2);
+}
 n0 = ares.volani; let pO = pdPatche('/organizations/');
 r = await opravOrg(S3, 'nahled', cCizi);
 test('náhled cizím obchodníkem → 403', r.status === 403, r);
@@ -433,6 +485,17 @@ await shoda('IČO lišící se jen úvodní nulou a mezerami → projde (200)', 
 test('zakázka po testech shody IČO beze změny', JSON.stringify(zakazka(S3).ico) === JSON.stringify(zS3.ico));
 r = await opravOrg(S1, 'nahled', cAutor);
 test('zakázka bez dealu (zrušená vazba) → 409', r.status === 409, r);
+
+/* ---------- 7b. ODMÍTNUTÝ DEAL ZNOVU RUČNĚ (revize K40c N7) ---------- */
+console.log('\n===== 7b. ODMÍTNUTÝ DEAL ZNOVU RUČNĚ =====\n');
+r = await ulozJako(S1, (v) => { v.pdDealId = String(D1.id); }, cCizi);
+test('N7: cizí obchodník odmítnutý deal znovu nezadá (403), seznam beze změny', r.status === 403
+  && zakazka(S1).pdDealyOdmitnute.includes(String(D1.id)), r);
+r = await ulozJako(S1, (v) => { v.pdDealId = String(D1.id); }, cAutor);
+test('N7: autor ručně znovu zadá odmítnutý deal → 200 a deal vypadne ze seznamu odmítnutých', r.status === 200
+  && zakazka(S1).pdDealId === String(D1.id) && !(zakazka(S1).pdDealyOdmitnute || []).includes(String(D1.id)), [r.status, zakazka(S1).pdDealyOdmitnute]);
+r = await volej(D1.id);
+test('N7: … a webhook s tímto dealem zase projde (200)', r.status === 200 && r.soubor === S1, r);
 
 /* ---------- 8. ODPOVĚDI ---------- */
 console.log('\n===== 8. ODPOVĚDI =====\n');
