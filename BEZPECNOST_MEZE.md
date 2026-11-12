@@ -1548,3 +1548,27 @@ Kopie z prohlížeče (heslo správce, K3-N1) zůstává jako záloha záloh bez
   (`vloz_retenci.py`, hlídá `src/test_577_jmeno_kopie.js`) — jen kopie vlastního
   prostředí, nikdy nejnovější, při úbytku dat pod 90 % nebo nepotvrzeném
   varování nemaže a pošle e-mail; maže se do koše Disku (30 dní).
+
+## Poznámka dealu se seznamem šachet (VSD, doplněk J. V. 11. 11. 2026)
+
+- **B215 — uložení zakázky píše poznámku do Pipedrive.** Se ZAPNUTÝM
+  vypínačem víc šachet, s navázaným dealem (`pdDealId`) a s řídící variantou
+  s víc šachtami uložení zakázky (`POST /api/zakazky`, ve výhradním úseku, po
+  druhém čtení SEC-S1) založí nebo upraví JEDNU poznámku u dealu
+  (`lib/pd_poznamka.mjs`, v1 `/notes`). Id poznámky drží pole zakázky
+  `pdPoznamkaSachty` { deal, id, otisk, kdy }, které píše jen server: hodnota
+  z prohlížeče se zahodí, platí uložená verze téhož dealu. Před úpravou server
+  poznámku přečte a přepíše ji jen, patří-li témuž dealu (jinak a po 404 založí
+  novou) — podvržené id (soubor obnovy) tedy cizí poznámku nepřepíše. Do
+  Pipedrive se jde jen při změně textu (otisk SHA-256), nejvýš
+  `PD_POZNAMKA_STROP` = 20 zápisů za hodinu na deal (počítadlo `pd_cache`,
+  `strop:poznamka:deal:<id>`), jedním pokusem bez opakování; selhání uložení
+  nezastaví (varování, otisk zůstane, zopakuje se příště). Text je escapovaný
+  HTML, nejvýš `PD_POZNAMKA_MAX` = 2 000 znaků, jen názvy šachet a kusy.
+  *Co to nedělá:* zápis dělá kdokoli, kdo smí zakázku uložit (ne jen držitel
+  práva `crm.pipedrive`) — píše se jen text z jeho vlastních dat do dealu, na
+  který je zakázka navázaná. Souběžná uložení v RŮZNÝCH instancích funkce
+  (mez B158) mohou založit dvě poznámky (druhá kolize 409 zahodí id první);
+  zakázka pak drží id té, která se uložila, druhá zůstane v dealu. Přechod
+  zakázky z víc šachet na jednu ani vypnutí funkce poznámku nemažou (stará
+  zůstane, jak byla). Strop počítadla platí v instanci a v úložišti jako B158.

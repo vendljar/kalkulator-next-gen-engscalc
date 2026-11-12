@@ -13,12 +13,14 @@
  *
  * Stránka si od prvního okamžiku sama vzorkuje (addInitScript, à 50 ms):
  * jestli lišta svítí, jestli je ceník prázdný a jestli platí zábrana
- * dokumentu. Měří se tedy přímo v prohlížeči, ne odhadem z Node.
+ * dokumentu. Měří se tedy přímo v prohlížeči, ne odhadem z Node. Od K43-T1
+ * (#587) se čeká na stav aplikace a meze se měří od události ve stránce
+ * (odpověď /api/program, začátek ověřování, klik) — viz VZORKOVANI.
  *
  *  A) ceník přijde za 2 s  → lišta se neukáže vůbec, ceník je nasazený,
  *     a dokud byl prázdný, zábrana dokumentu i varování do tisku platily,
- *  B) /api/program selže za 1,5 s → do té doby nic, pak lišta (dřív než 5 s),
- *  C) /api/program visí → do 14,5 s nic, po 15 s lišta (PS #558),
+ *  B) /api/program selže za 1,5 s → do té doby nic, pak lišta (do 3,5 s od chyby),
+ *  C) /api/program visí → do 14,5 s od začátku ověřování nic, po 15 s lišta (PS #558),
  *  D) bez přihlášení → pod přihlašovacím oknem nic, po přihlášení formulářem
  *     taky nic, ceník se nasadí (PS #558; do v3.11.4 lišta hned),
  *  F) studený start (zdraví, ja, ceník po 2 s) → nic (PS #558),
@@ -117,9 +119,37 @@ hlidejHarness({ uklid: async () => { await prohlizec.close(); server.close(); } 
 
 /* Vzorkování uvnitř stránky — běží od prvního okamžiku (před skripty aplikace).
  * Vzorek: [ms od začátku navigace, lišta svítí, ceník prázdný, zábrana
- * dokumentu, varování do tisku]. */
+ * dokumentu, varování do tisku].
+ *
+ * K43-T1 (#587, 11. 11. 2026): pod zátěží (souběh s jinými běhy) harness
+ * padal 31/1 — čekal PEVNÝ čas od Node (`waitForTimeout(kolik)` po goto,
+ * 800/1500 ms ve scénářích D a G) a časové meze měřil od začátku navigace,
+ * ne od události, ke které se vážou. Teď si stránka zapisuje i události
+ * (vše v čase performance.now() stránky):
+ *   __api    — konec odpovědi každého /api/* (cesta, metoda, stav),
+ *   __overujeOd — začátek ověřování ceníku po přihlášení (UKAZKOVE_CEKANI.
+ *              overujeOd, převedeno z Date.now() na čas stránky; od něj
+ *              aplikace odpočítává 15 s, PS #558),
+ *   __klik   — okamžik kliknutí (zachycení události v dokumentu).
+ * Harness čeká na KONKRÉTNÍ STAV (ceník nasazený, lišta v DOM, přihlášení)
+ * a pak už jen na uplynutí času STRÁNKY (dobeh). */
 const VZORKOVANI = () => {
   window.__vzorky = [];
+  window.__api = [];
+  window.__overujeOd = null;
+  window.__klik = null;
+  const puvodni = window.fetch.bind(window);
+  window.fetch = function (vstup, init) {
+    const cesta = String((vstup && vstup.url) || vstup);
+    const metoda = String((init && init.method) || 'GET').toUpperCase();
+    const p = puvodni(vstup, init);
+    if (/\/api\//.test(cesta)) {
+      const zapis = (stav) => window.__api.push({ cesta: cesta.replace(/^.*?(\/api\/[^?]*).*$/, '$1'), metoda, stav, konec: Math.round(performance.now()) });
+      p.then(r => zapis(r.status), () => zapis(0));
+    }
+    return p;
+  };
+  document.addEventListener('click', () => { if (window.__klik === null) window.__klik = Math.round(performance.now()); }, true);
   setInterval(() => {
     const el = document.getElementById('ukazkoveLista');
     let prazdny = null, zabrana = null, tisk = null;
@@ -128,12 +158,35 @@ const VZORKOVANI = () => {
       zabrana = dokumentZabrana() !== '';
       tisk = ukazkoveTiskLista() !== '';
     } catch (e) { /* aplikace ještě nenaběhla */ }
+    try {
+      if (window.__overujeOd === null && typeof UKAZKOVE_CEKANI !== 'undefined' && typeof UKAZKOVE_CEKANI.overujeOd === 'number')
+        window.__overujeOd = Math.round(UKAZKOVE_CEKANI.overujeOd - Date.now() + performance.now());
+    } catch (e) { /* nic */ }
     window.__vzorky.push([Math.round(performance.now()), !!(el && el.innerHTML.trim()), prazdny, zabrana, tisk]);
   }, 50);
 };
 
-/* program: 'ok' | 'chyba' | 'visi'; zpozdeni v ms pro GET /api/program. */
-async function scenar({ prihlasen, program, zpozdeni, kolik, soubor, cesty, offline, akce }) {
+/* Podmínky stavu aplikace (běží ve stránce). */
+const STAV = {
+  cenik: () => typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.cenikPouzit === true,
+  lista: () => { const el = document.getElementById('ukazkoveLista'); return !!(el && el.innerHTML.trim()); },
+  bezi: () => Array.isArray(window.__vzorky) && window.__vzorky.some(x => x[2] !== null),
+  prihlasenCenik: () => typeof ONLINE_STAV !== 'undefined' && !!ONLINE_STAV.ja && ONLINE_STAV.cenikPouzit === true,
+};
+/* Strop čekání na stav — jen pojistka proti zaseknutí, ne měřená mez
+ * (meze se měří z událostí ve stránce). */
+const STROP_STAVU = 60000;
+
+/* Počká, až v čase STRÁNKY uplyne `ms` od teď (ne hodiny Node). */
+async function dobeh(page, ms) {
+  const od = await page.evaluate(() => performance.now());
+  await page.waitForFunction((t) => performance.now() >= t, od + ms, { timeout: STROP_STAVU, polling: 50 });
+}
+
+/* program: 'ok' | 'chyba' | 'visi'; zpozdeni v ms pro GET /api/program.
+ * `cekej` = podmínka stavu (STAV.*), na kterou se po načtení čeká, `pak` =
+ * kolik ms času stránky ještě pozorovat po ní. */
+async function scenar({ prihlasen, program, zpozdeni, cekej, pak, soubor, cesty, offline, akce }) {
   const ctx = await prohlizec.newContext();
   const page = await ctx.newPage();
   const chyby = [];
@@ -167,10 +220,13 @@ async function scenar({ prihlasen, program, zpozdeni, kolik, soubor, cesty, offl
       body: await odp.text() }).catch(() => {});
   });
   await page.goto(soubor ? new URL('dist/kalkulacka.html', import.meta.url).href : ADRESA);
+  await page.waitForFunction(STAV.bezi, null, { timeout: STROP_STAVU, polling: 50 });
   if (akce) await akce(page);
-  await page.waitForTimeout(kolik);
+  let dosazeno = true;
+  if (cekej) dosazeno = await page.waitForFunction(cekej, null, { timeout: STROP_STAVU, polling: 50 }).then(() => true, () => false);
+  if (pak) await dobeh(page, pak);
   const v = await page.evaluate(() => ({
-    vzorky: window.__vzorky,
+    vzorky: window.__vzorky, api: window.__api, overujeOd: window.__overujeOd, klik: window.__klik,
     cenikPouzit: typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.cenikPouzit,
     lista: document.getElementById('ukazkoveLista').innerHTML,
     kde: (ukazkoveStavAkt().kde || []).join(', '),
@@ -179,15 +235,21 @@ async function scenar({ prihlasen, program, zpozdeni, kolik, soubor, cesty, offl
   casovace.forEach(clearTimeout);
   await ctx.close();
   v.chyby = chyby;
+  v.dosazeno = dosazeno;
   /* jen vzorky, kdy už aplikace běžela */
   v.bezi = v.vzorky.filter(x => x[2] !== null);
   v.prvniLista = (v.bezi.find(x => x[1]) || [null])[0];
+  /* Zpoždění startu stránky (první vzorek běžící aplikace) — z něj rezerva
+   * časových mezí, kde je čas sám předmětem zkoušky. */
+  v.start = v.bezi.length ? v.bezi[0][0] : 0;
+  v.rezerva = 1000 + v.start;
+  v.program = v.api.find(x => x.cesta === '/api/program' && x.metoda === 'GET') || null;
   return v;
 }
 
 /* ---------- A) ceník přijde za 2 s ---------- */
 {
-  const v = await scenar({ prihlasen: true, program: 'ok', zpozdeni: 2000, kolik: 6500 });
+  const v = await scenar({ prihlasen: true, program: 'ok', zpozdeni: 2000, cekej: STAV.cenik, pak: 2500 });
   test('A: aplikace naběhla a vzorkovala', v.bezi.length > 20, v.bezi.length);
   test('A: lišta se za celou dobu neukázala ani na okamžik', v.prvniLista === null,
     { prvniLista: v.prvniLista });
@@ -202,13 +264,16 @@ async function scenar({ prihlasen, program, zpozdeni, kolik, soubor, cesty, offl
   test('A: bez chyb stránky', v.chyby.length === 0, v.chyby);
 }
 
-/* ---------- B) /api/program selže za 1,5 s ---------- */
+/* ---------- B) /api/program selže za 1,5 s ----------
+ * Meze od okamžiku, kdy stránka dostala chybovou odpověď (__api), ne od
+ * začátku navigace. */
 {
-  const v = await scenar({ prihlasen: true, program: 'chyba', zpozdeni: 1500, kolik: 4500 });
-  test('B: před selháním (do 1,4 s) lišta nesvítí',
-    v.bezi.filter(x => x[0] < 1400).every(x => !x[1]), v.prvniLista);
-  test('B: po selhání se lišta ukáže, dřív než uplyne 5 s',
-    v.prvniLista !== null && v.prvniLista >= 1400 && v.prvniLista < 4500, v.prvniLista);
+  const v = await scenar({ prihlasen: true, program: 'chyba', zpozdeni: 1500, cekej: STAV.lista, pak: 300 });
+  const t = v.program ? v.program.konec : null;
+  test('B: před selháním (do odpovědi 503) lišta nesvítí',
+    t !== null && v.program.stav === 503 && v.bezi.filter(x => x[0] < t).every(x => !x[1]), { prvniLista: v.prvniLista, program: v.program });
+  test('B: po selhání se lišta ukáže, dřív než uplyne 3,5 s od odpovědi',
+    t !== null && v.prvniLista !== null && v.prvniLista >= t && v.prvniLista < t + 3500, { prvniLista: v.prvniLista, odpoved: t });
   test('B: a mluví o nenahraném ceníku', /není nahraný|nuly/i.test(v.lista), v.lista.slice(0, 160));
   test('B: zábrana dokumentu platila po celou dobu (i během čekání)',
     v.bezi.filter(x => x[2]).every(x => x[3] === true && x[4] === true));
@@ -218,12 +283,16 @@ async function scenar({ prihlasen, program, zpozdeni, kolik, soubor, cesty, offl
 /* ---------- C) /api/program visí ----------
  * Od PS #558 (4. 11. 2026) čeká lišta na stažení ceníku po přihlášení až
  * UKAZKOVE_OVERENI_MS = 15 s (dřív 5 s od startu stránky — na studeném
- * serveru to nestačilo a lišta blikla). */
+ * serveru to nestačilo a lišta blikla). 15 s se odpočítává od začátku
+ * ověřování (overujeOd), ne od navigace; horní mez má rezervu ze zpoždění
+ * startu stránky. */
 {
-  const v = await scenar({ prihlasen: true, program: 'visi', zpozdeni: 40000, kolik: 16800 });
-  test('C: do 14,5 s lišta nesvítí (ceník se po přihlášení ještě stahuje)',
-    v.bezi.filter(x => x[0] < 14500).every(x => !x[1]), v.prvniLista);
-  test('C: po stropu 15 s se lišta ukáže sama', v.prvniLista !== null && v.prvniLista >= 14500 && v.prvniLista < 16800, v.prvniLista);
+  const v = await scenar({ prihlasen: true, program: 'visi', zpozdeni: 90000, cekej: STAV.lista, pak: 300 });
+  const od = v.overujeOd;
+  test('C: do 14,5 s od začátku ověřování lišta nesvítí (ceník se po přihlášení ještě stahuje)',
+    od !== null && v.bezi.filter(x => x[0] < od + 14500).every(x => !x[1]), { prvniLista: v.prvniLista, overujeOd: od });
+  test('C: po stropu 15 s se lišta ukáže sama', od !== null && v.prvniLista !== null && v.prvniLista >= od + 14500
+    && v.prvniLista < od + 15000 + v.rezerva, { prvniLista: v.prvniLista, overujeOd: od, rezerva: v.rezerva });
   test('C: zábrana dokumentu platila i během čekání',
     v.bezi.filter(x => x[2] && !x[1]).length > 10
     && v.bezi.filter(x => x[2]).every(x => x[3] === true && x[4] === true));
@@ -234,16 +303,18 @@ async function scenar({ prihlasen, program, zpozdeni, kolik, soubor, cesty, offl
  * Do v3.11.4 se lišta ukázala hned po zjištění, že relace není — tedy pod
  * přihlašovacím oknem, při prvním otevření aplikace každému. Ceník přitom
  * nechyběl, jen se bez přihlášení nedal načíst. Teď čeká, dokud je okno
- * vidět; po přihlášení formulářem čeká na stažení ceníku (zdržené o 2 s). */
+ * vidět; po přihlášení formulářem čeká na stažení ceníku (zdržené o 2 s).
+ * Před vyplněním formuláře se čeká na deset vzorků běžící aplikace pod
+ * oknem (dřív pevných 800 ms). */
 {
   const prihlas = async (page) => {
-    await page.waitForSelector('#onlineEmail', { timeout: 5000 });
-    await page.waitForTimeout(800);
+    await page.waitForSelector('#onlineEmail', { timeout: STROP_STAVU });
+    await page.waitForFunction(() => window.__vzorky.filter(x => x[2] !== null).length > 10, null, { timeout: STROP_STAVU, polling: 50 });
     await page.fill('#onlineEmail', EMAIL);
     await page.fill('#onlineHeslo', 'Zkusebni.Heslo.123');
     await page.click('#prihlaseni-box button.primary');
   };
-  const v = await scenar({ prihlasen: false, program: 'ok', zpozdeni: 2000, kolik: 4500, akce: prihlas });
+  const v = await scenar({ prihlasen: false, program: 'ok', zpozdeni: 2000, akce: prihlas, cekej: STAV.prihlasenCenik, pak: 1500 });
   test('D: aplikace naběhla a vzorkovala', v.bezi.length > 20, v.bezi.length);
   test('D: bez přihlášení ani po přihlášení formulářem se lišta neukázala ani na okamžik',
     v.prvniLista === null, { prvniLista: v.prvniLista, lista: v.lista.slice(0, 120) });
@@ -258,7 +329,7 @@ async function scenar({ prihlasen, program, zpozdeni, kolik, soubor, cesty, offl
  * Živá relace, ale zdraví, ja i ceník odpovídají každý po 2 s (dohromady
  * přes 6 s). Do v3.11.4 lišta naskočila v 5 s a za chvíli zmizela. */
 {
-  const v = await scenar({ prihlasen: true, program: 'ok-hned', zpozdeni: 0, kolik: 8500,
+  const v = await scenar({ prihlasen: true, program: 'ok-hned', zpozdeni: 0, cekej: STAV.cenik, pak: 2000,
     cesty: { '/api/zdravi': 2000, '/api/ja': 2000, '/api/program': 2000 } });
   test('F: studený start — lišta se neukázala ani na okamžik', v.prvniLista === null, { prvniLista: v.prvniLista });
   test('F: platný ceník se nasadil', v.cenikPouzit === true && v.lista.trim() === '');
@@ -268,27 +339,28 @@ async function scenar({ prihlasen, program, zpozdeni, kolik, soubor, cesty, offl
 /* ---------- G) bez sítě (PS #558) ----------
  * Server neodpovídá → přihlašovací okno „Zkusit znovu / Pokračovat bez
  * přihlášení". Dokud je okno vidět, lišta nesvítí; kdo pokračuje bez
- * přihlášení, ceník opravdu nemá — lišta se ukáže hned. */
+ * přihlášení, ceník opravdu nemá — lišta se ukáže hned. Okamžik kliknutí
+ * zapisuje stránka (dřív čas z Node před page.click, pod zátěží o kus dřív). */
 {
-  const t = { klik: null };
-  const v = await scenar({ offline: true, program: 'ok-hned', zpozdeni: 0, kolik: 800, akce: async (page) => {
-    await page.waitForSelector('text=Pokračovat bez přihlášení', { timeout: 5000 });
-    await page.waitForTimeout(1500);
-    t.klik = await page.evaluate(() => Math.round(performance.now()));
+  const v = await scenar({ offline: true, program: 'ok-hned', zpozdeni: 0, cekej: STAV.lista, pak: 300, akce: async (page) => {
+    await page.waitForSelector('text=Pokračovat bez přihlášení', { timeout: STROP_STAVU });
+    await page.waitForFunction(() => window.__vzorky.filter(x => x[2] !== null).length > 10, null, { timeout: STROP_STAVU, polling: 50 });
+    await page.evaluate(() => { window.__klik = null; });
     await page.click('text=Pokračovat bez přihlášení');
   } });
+  const klik = v.klik;
   test('G: bez sítě se lišta pod oknem „server neodpovídá" neukázala',
-    v.bezi.filter(x => x[0] < t.klik).length > 10 && v.bezi.filter(x => x[0] < t.klik).every(x => !x[1]),
-    { prvniLista: v.prvniLista, klik: t.klik });
+    klik !== null && v.bezi.filter(x => x[0] < klik).length > 10 && v.bezi.filter(x => x[0] < klik).every(x => !x[1]),
+    { prvniLista: v.prvniLista, klik });
   test('G: po „Pokračovat bez přihlášení" se lišta ukáže hned (ceník opravdu chybí)',
-    v.prvniLista !== null && v.prvniLista >= t.klik && v.prvniLista < t.klik + 600 && /není nahraný/.test(v.lista),
-    { prvniLista: v.prvniLista, klik: t.klik });
+    klik !== null && v.prvniLista !== null && v.prvniLista >= klik && v.prvniLista < klik + 600 + v.start && /není nahraný/.test(v.lista),
+    { prvniLista: v.prvniLista, klik, start: v.start });
   test('G: bez chyb stránky', v.chyby.length === 0, v.chyby);
 }
 
 /* ---------- E) ze souboru (file://) ---------- */
 {
-  const v = await scenar({ soubor: true, prihlasen: false, program: 'ok-hned', zpozdeni: 0, kolik: 1500 });
+  const v = await scenar({ soubor: true, prihlasen: false, program: 'ok-hned', zpozdeni: 0, pak: 1000 });
   test('E: nad file:// lišta svítí hned jako dosud (první vzorek běžící aplikace)',
     v.bezi.length > 0 && v.bezi[0][1] === true, v.bezi.slice(0, 2));
   test('E: bez chyb stránky', v.chyby.length === 0, v.chyby);
