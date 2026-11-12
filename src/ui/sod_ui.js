@@ -107,7 +107,7 @@ async function sodWordGeneruj(typ, srv) {
       const tecky = (typ !== 'plnaMoc') ? sodTeckyText(res) : '';
       sodStavText(typ, (upoz ? '⚠ ' + upoz + ' ' : '') + 'Hotovo – soubor ' + res.nazevSouboru + '.docx je ve Stažených. '
         + (tecky ? '⚠ ' + tecky + ' ' : '')
-        + 'Místa označená tečkami „……" (žlutě) doplňte ve Wordu.'
+        + 'Místa označená tečkami „……" doplňte ve Wordu.'
         + (srv ? ' Použita centrální šablona (verze ' + srv.verze + ').'
                : (sablonyOnlineAktivni() ? ' POZOR: použita MÍSTNÍ šablona (měkký režim) – do zámku se to zapsalo.' : ''))
         + (mutaceChybi ? ' Pozor: pevný text šablony zůstal český – jazykovou mutaci šablony '
@@ -242,7 +242,7 @@ function sodKarta() {
       platební podmínky z krycího listu, firemní údaje) – cenu si nikdy nepočítá sama, takže se s nabídkou
       nemůže rozejít. <b>Objednané příplatky</b> (níž) se k ceně díla přičtou v ceně z nabídky (bez slevy);
       DPH se počítá z celku. <b>Zástupci a kontakty zákazníka</b> i bankovní údaje se od 20. 8. 2026 berou z krycího
-      listu výše. Co v zakázce chybí (např. <b>termíny, číslo smlouvy, IČO objednatele</b>), dostane v dokumentu
+      listu výše. Co v zakázce chybí (např. <b>termíny, číslo smlouvy, IČO zákazníka</b>), dostane v dokumentu
       tečky <b>„……"</b> – místa označená …… doplňte ve Wordu; kontrola před tiskem i věta po tisku je vyjmenují.
       U <b>víc šachet</b> vyjmenuje smlouva šachty v předmětu díla i v rozpisu ceny (šablona SoD realizace v5).
       Vytištěná smlouva variantu <b>uzamkne</b> stejně jako odeslaná nabídka.</div>

@@ -137,8 +137,8 @@ FIRMA_POLE.forEach(p => { firma[p.id] = /Kc$|skladne/i.test(p.id) ? '500' : (/em
   test('S seznam: chybí / prázdné / jen mezery; značky a odstavcePryc pryč; Set i pole', stejne(sodNevyplnene({ A: 'x', B: '', C: '  ' },
     { symboly: new Set(['A', 'B', 'C', 'D', 'X_ZAC', 'X_KON', 'E']) }, ['E']), ['B', 'C', 'D'])
     && stejne(sodNevyplnene({}, { symboly: ['D', 'D'] }), ['D']));
-  test('S věta: „Ve smlouvě zůstala 2 místa k doplnění … IČO objednatele, termín montáže do."', sodNevyplneneText(['OBJEDNATEL_ICO', 'SOD_TERMIN_MONTAZ_DO'])
-    === 'Ve smlouvě zůstala 2 místa k doplnění (tečky „……"): IČO objednatele, termín montáže do.' && sodNevyplneneText([]) === ''
+  test('S věta: „Ve smlouvě zůstala 2 místa k doplnění … IČO zákazníka, termín montáže do."', sodNevyplneneText(['OBJEDNATEL_ICO', 'SOD_TERMIN_MONTAZ_DO'])
+    === 'Ve smlouvě zůstala 2 místa k doplnění (tečky „……"): IČO zákazníka, termín montáže do.' && sodNevyplneneText([]) === ''
     && /zůstalo 1 místo/.test(sodNevyplneneText(['X'])) && /zůstalo 5 míst/.test(sodNevyplneneText(['A', 'B', 'C', 'D', 'E'])), sodNevyplneneText(['OBJEDNATEL_ICO', 'SOD_TERMIN_MONTAZ_DO']));
   test('S symbol bez popisu se vypíše jménem, stejné popisy se nesčítají', JSON.stringify(sodNevyplnenePopisy(['NEZNAMY_X', 'PODM_POKUTA_DODAVKA_PROC', 'PODM_POKUTA_TERMIN_PROC']))
     === JSON.stringify(['NEZNAMY_X', 'pokuta za prodlení zhotovitele (vlastní znění bez procenta)']));

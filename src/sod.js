@@ -372,23 +372,25 @@ function sodNevyplnene(placeholders, sablona, odstavcePryc) {
     && (ph[k] == null || String(ph[k]).trim() === ''));
 }
 /* Lidský popis nevyplněného místa pro kontrolu před tiskem (C3 #584) — mapa
+ * jménem polí krycího listu („zákazník", ne smluvní „objednatel" — tak se pole
+ * v aplikaci jmenují a tam je obchodník doplní; overit_zobrazeni.mjs); mapa
  * na jednom místě; test hlídá, že popis mají všechny symboly šablon SoD
  * realizace v4/v5 a SoD projekce v4. Symbol bez popisu se vypíše jménem. */
 const SOD_NEVYPLNENE_POPIS = {
-  /* objednatel (hlavička zakázky, krycí list — zástupci) */
-  OBJEDNATEL: 'název objednatele', OBJEDNATEL_SIDLO: 'sídlo objednatele', OBJEDNATEL_ICO: 'IČO objednatele',
-  OBJEDNATEL_DIC: 'DIČ objednatele', OBJEDNATEL_BANKA: 'banka objednatele', OBJEDNATEL_UCET: 'číslo účtu objednatele',
-  OBJEDNATEL_ZAPIS: 'zápis objednatele v rejstříku', OBJEDNATEL_ZASTUPCE_SMLUVNI: 'zástupce objednatele ve věcech smluvních',
-  OBJEDNATEL_ZASTUPCE_OBCHODNI: 'zástupce objednatele ve věcech obchodních',
-  OBJEDNATEL_ZASTUPCE_OBCHODNI_KONTAKT: 'kontakt zástupce objednatele ve věcech obchodních',
-  OBJEDNATEL_ZASTUPCE_TECHNICKY: 'zástupce objednatele ve věcech technických',
-  OBJEDNATEL_ZASTUPCE_TECHNICKY_KONTAKT: 'kontakt zástupce objednatele ve věcech technických',
-  OBJEDNATEL_EMAIL_FAKTURY: 'e-mail objednatele pro faktury', OBJEDNATEL_KONTAKT_OSOBA: 'kontaktní osoba objednatele',
-  OBJEDNATEL_TELEFON: 'telefon objednatele', OBJEDNATEL_EMAIL: 'e-mail objednatele',
+  /* zákazník = objednatel (hlavička zakázky, krycí list — zástupci) */
+  OBJEDNATEL: 'název zákazníka', OBJEDNATEL_SIDLO: 'sídlo zákazníka', OBJEDNATEL_ICO: 'IČO zákazníka',
+  OBJEDNATEL_DIC: 'DIČ zákazníka', OBJEDNATEL_BANKA: 'banka zákazníka', OBJEDNATEL_UCET: 'číslo účtu zákazníka',
+  OBJEDNATEL_ZAPIS: 'zápis zákazníka v rejstříku', OBJEDNATEL_ZASTUPCE_SMLUVNI: 'zástupce zákazníka ve věcech smluvních',
+  OBJEDNATEL_ZASTUPCE_OBCHODNI: 'zástupce zákazníka ve věcech obchodních',
+  OBJEDNATEL_ZASTUPCE_OBCHODNI_KONTAKT: 'kontakt zástupce zákazníka ve věcech obchodních',
+  OBJEDNATEL_ZASTUPCE_TECHNICKY: 'zástupce zákazníka ve věcech technických',
+  OBJEDNATEL_ZASTUPCE_TECHNICKY_KONTAKT: 'kontakt zástupce zákazníka ve věcech technických',
+  OBJEDNATEL_EMAIL_FAKTURY: 'e-mail zákazníka pro faktury', OBJEDNATEL_KONTAKT_OSOBA: 'kontaktní osoba zákazníka',
+  OBJEDNATEL_TELEFON: 'telefon zákazníka', OBJEDNATEL_EMAIL: 'e-mail zákazníka',
   OBJEDNATEL_KONTAKT_KOPIE1: 'faktury v kopii na (1)', OBJEDNATEL_KONTAKT_KOPIE2: 'faktury v kopii na (2)',
-  OBJEDNATEL_PODPIS_JMENO: 'jméno podepisujícího za objednatele', OBJEDNATEL_PODPIS_FUNKCE: 'funkce podepisujícího za objednatele',
-  OBJEDNATEL_PODPIS_FIRMA: 'firma objednatele v podpisové doložce',
-  OBJEDNATEL_PODPIS2_JMENO: 'druhý podepisující za objednatele', OBJEDNATEL_PODPIS2_FUNKCE: 'funkce druhého podepisujícího za objednatele',
+  OBJEDNATEL_PODPIS_JMENO: 'jméno podepisujícího za zákazníka', OBJEDNATEL_PODPIS_FUNKCE: 'funkce podepisujícího za zákazníka',
+  OBJEDNATEL_PODPIS_FIRMA: 'firma zákazníka v podpisové doložce',
+  OBJEDNATEL_PODPIS2_JMENO: 'druhý podepisující za zákazníka', OBJEDNATEL_PODPIS2_FUNKCE: 'funkce druhého podepisujícího za zákazníka',
   /* zhotovitel (Nastavení → Firma, zpracovatel nabídky) */
   FIRMA_NAZEV: 'název firmy (Nastavení → Firma)', FIRMA_SIDLO: 'sídlo firmy (Nastavení → Firma)', FIRMA_ICO: 'IČO firmy (Nastavení → Firma)',
   FIRMA_DIC: 'DIČ firmy (Nastavení → Firma)', FIRMA_BANKA: 'banka firmy (Nastavení → Firma)', FIRMA_UCET: 'účet firmy (Nastavení → Firma)',
