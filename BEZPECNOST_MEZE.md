@@ -1582,4 +1582,24 @@ přečíslované na B199–B202 (výš). Čísla B206–B207 drží K40b, B208�
   úklid je ohlásí jako podezřelá a NEMAŽE je (retence je drží jako „denní“ se záporným věkem). *Co
   zbývá:* skript v účtu správce se sám neaktualizuje — dokud J. V. nevloží nový `kopie_disk.gs`
   (`podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`), běží noční kopie se starým výběrem. Budoucí soubor dál zabírá
-  místo na Disku, dokud ho člověk nesmaže.
+  místo na Disku, dokud ho člověk nesmaže. **Zbytková mez (revize K40a D3, 12. 11. 2026):** podvržený
+  soubor s MINULÝM dnem (menším než den nové kopie) a pozdějším časem v názvu, než má skutečná předchozí
+  kopie (např. `otisk_main_<včera>_2359.json.gz`), se dál vybere jako srovnávací — jméno řadí den i čas
+  a obsah se neověřuje proti záznamu serveru. Malý takový soubor dá falešný úbytek (mazání stojí, správce
+  potvrdí), velký zakryje skutečný úbytek proti té jedné kopii; noční pojistka serveru (#527, maximum za
+  okno dní) to nezakryje. Den kopie, který není platné RRRR-MM-DD, úklid zastaví (D2: `neplatnyDen`,
+  prohlížeč i skript nemažou a skript připomene e-mailem).
+- **B205a — import zakázky s víc šachtami: migrace skla šachet 2+ jen u NEZAMČENÉ varianty (revize K40a
+  D1, 12. 11. 2026, vědomá vlastnost).** `skloMigraceNazvu` (src/engine.js) od K40a migruje i zadání
+  `ock.dalsi[].zadani`. `importZakazka` (src/zakazka.js) u ZAMČENÉ varianty volá `{ jenPrvni: true }` —
+  šachty 2+ zůstanou, jak odešly (cena i ověření zámku = shoda; před K40a se nemigrovaly vůbec). Šachta 1
+  zamčené varianty se migruje dál jako od K37 (beze změny). Nezamčená varianta: import přemapuje osiřelé
+  vyřazení skla boků i u šachet 2+ stejně jako u šachty 1 od K37 (rozhodnutí koordinace) — cena
+  rozpracované nabídky s takovým sirotkem se po otevření může změnit; přepočet na dnešní ceník ji mění
+  stejně. Test `src/test_k40_celni_sklo.js` (7b).
+- **B205b — sirotek čelního skla a přepnutí tam a zpět (K40-N1, vědomá vlastnost, rozhodnutí 2a).**
+  Čelní sklo se přejmenuje jen přesnou dvojicí `predCelni → nový název` při skutečném přepnutí typu
+  šachty nebo zasklení. Je-li v `nepocitat` vyřazené čelní sklo pod názvem, který k zadání nepatří
+  (sirotek), přepnutí tam a zpět ho přenese na skutečný řádek — sklo pak zůstane vyřazené, i když před
+  přepnutím vyřazené nebylo. Přenáší se vše (vyřazení, množství, cena, název) jako u boků od K37; kód
+  se neměnil.

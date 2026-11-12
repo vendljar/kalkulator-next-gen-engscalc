@@ -170,7 +170,7 @@ for (const v of VZORKY) {
 /* `path` a `cesta` přibyly 11. 11. 2026 (K40-X6): cesty do ceníku a zadání
  * jdou v onchange jako řetězec; dnes jsou z konstant, ale stačí jedna cesta
  * z dat (typ pásu → sazba) a byl by z toho průchod pro skript. */
-const RIZIKO = /\b(nazev|jmeno|popis|pozn|poznamka|text|email|kdo|firma|objednatel|stavba|adresa|ico|dic|mesto|ulice|psc|soubor|hlaska|chyba|zprava|cislo|klic|key|label|titul|kontakt|telefon|web|banka|ucet|zakaznik|vzkaz|duvod|misto|projekt|varianta|verze|puvod|orig|autor|uzivatel|role|znacka|typ|kod|sekce|polozka|item|id|kid|path|cesta)\b/i;
+const RIZIKO = /\b(nazev|jmeno|popis|pozn|poznamka|text|email|kdo|firma|objednatel|stavba|adresa|ico|dic|mesto|ulice|psc|soubor|hlaska|chyba|zprava|cislo|klic|key|label|titul|kontakt|telefon|web|banka|ucet|zakaznik|vzkaz|duvod|misto|projekt|varianta|verze|puvod|orig|autor|uzivatel|role|znacka|typ|kod|sekce|polozka|item|id|kid|path|cesta|bind)\b/i;
 /* Funkce, po kterých je hodnota prokazatelně bezpečná. */
 /* `dlgEsc` přibylo 14. 9. 2026: je to escapovací funkce modálů v ui/dialog.js
  * a od téhož dne escapuje i ve větvi bez `esc()` (dřív text vracela syrový,
@@ -339,6 +339,8 @@ const PROVERENO = {
   },
   'kryci_ui.js': {
     'label': 'popisek pole z konstanty KRYCI_SEKCE',
+    "typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc(), cesta se do HTML nevkládá (revize K40a D7: bind v RIZIKO)',
+    "typeof zamekDphAttr === 'function' ? zamekDphAttr(bind) : ''": 'hotové atributy zmrazené sazby DPH ze zamekDphAttr() — cesta se do HTML nevkládá (revize K40a D7: bind v RIZIKO)',
     'p.label': 'popisek pole z konstanty KRYCI_SEKCE',
     's.sekce': 'název sekce z konstanty KRYCI_SEKCE',
     "tiskListaHtml({ pozn: 'Verze ' + d.verzeNazev + ' — uložte jako samostatný soubor (' + d.nazevSouboru + '.pdf).' })":
@@ -347,6 +349,7 @@ const PROVERENO = {
   },
   'kryci_proj_ui.js': {
     'label': 'popisek pole z konstanty KRYCI_SEKCE (zrcadlo kryci_ui.js)',
+    "typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc(), cesta se do HTML nevkládá (revize K40a D7: bind v RIZIKO)',
     'p.label': 'popisek pole z konstanty KRYCI_SEKCE',
     's.sekce': 'název sekce z konstanty KRYCI_SEKCE',
     "tiskListaHtml({ pozn: 'Verze ' + d.verzeNazev + ' — uložte jako samostatný soubor (' + d.nazevSouboru + '.pdf).' })":
@@ -553,11 +556,9 @@ const PROVERENO_CLENY = {
   'kalk_ock.js': { 'r.idx': 'pořadový index vlastní položky z forEach v kódu — číslo' },
   'kryci_proj_ui.js': {
     'opts.src': 'popis zdroje automatiky z konstanty KRYCI_SEKCE (src: literál)',
-    'p.bind': 'cesta k poli z konstanty KRYCI_SEKCE (bind: literál)',
   },
   'kryci_ui.js': {
     'opts.src': 'popis zdroje automatiky z konstanty KRYCI_SEKCE (src: literál)',
-    'p.bind': 'cesta k poli z konstanty KRYCI_SEKCE (bind: literál)',
   },
   'nastaveni_ui.js': {
     'n.pripona': 'přípona varianty z priponyKontrola (zamek.js: pripona = pořadí varianty) — číslo',

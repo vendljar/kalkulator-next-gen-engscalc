@@ -112,6 +112,14 @@ async function dialog(ctx, odpoved, platneZahr) {
   test('dialog: zahraniční montáž 0 potvrzeno → mustkyPotvrzeno', r.vysl === true && ctx2.mustkyPotvrzeno === true, r);
   r = await dialog({ cenik: novy(), zahranicni: zahr() }, false, zahr({ 'C.montazHodKc': 0 }));
   test('dialog: nula v PLATNÝCH zahraničních odchylkách (CENIK_ZAHR) se taky ozve', r.vysl === false && r.dotazy.length === 1, r);
+  /* Revize K40a D6: rozsah v hlášce se skládá z konstant, ne z literálu. */
+  {
+    const src = fs.readFileSync(__dirname + '/engine.js', 'utf8');
+    const i = src.indexOf('function mustkyCenikKontrola(');
+    const telo = src.slice(i, src.indexOf('\n}', i));
+    test('D6: hláška rozsahu nemá číslo napevno (500–5 000), skládá se z MUSTEK_REF_SIRKA_MIN/MAX_MM',
+      i > 0 && !/500–5/.test(telo) && /MUSTEK_REF_SIRKA_MIN_MM \+ '–'/.test(telo) && /MUSTEK_REF_SIRKA_MAX_MM\)/.test(telo), telo.slice(0, 200));
+  }
   console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
   process.exit(fail ? 1 : 0);
 })();

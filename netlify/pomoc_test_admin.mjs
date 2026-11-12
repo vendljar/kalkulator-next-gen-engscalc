@@ -10,4 +10,10 @@
  * Adresa je smyšlená (vzor podklady/K10_pokusy/harness.mjs:7); nastavenou
  * hodnotu nepřepisuje. Jméno nezačíná „test_", aby ho spust_testy.sh nepouštěl;
  * hlídka adresy v test_funkce.mjs ho vynechává jako ostatní testy (pomoc_test_). */
-process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'spravce@priklad.cz';
+/* Revize K40a D4: když se výchozí adresa opravdu dosadí, nese to příznak
+ * KNG_ADMIN_EMAIL_VYCHOZI=1 — test_funkce.mjs pak smyšlenou adresu ve
+ * zdrojácích nehledá (najde ji v testech a nic by tím neověřil). */
+if (!process.env.ADMIN_EMAIL) {
+  process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
+  process.env.KNG_ADMIN_EMAIL_VYCHOZI = '1';
+}
