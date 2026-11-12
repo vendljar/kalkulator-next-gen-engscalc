@@ -807,8 +807,9 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 12. 11. 2026: stav integrace v12.11.3
+# Předávka koordinace — 12. 11. 2026: stav integrace v12.11.4
 
+- **12. 11. 2026 — integrace v12.11.4** = v12.11.3 (test) + C5 #585 (nástroj obnovy TEST sady, revize Fable po opravách B1/B2 LZE SLOUČIT). Nástroj spouští jen J. V. podle podklady/NAVOD_TEST_SADA_OBNOVA.md, export dodá testovací sezení.
 - **12. 11. 2026 — integrace v12.11.3** = test v11.11.1 + K40a #579 (v12.11.1, po revizi Fable D1–D7) + K40b #580 (v12.11.2, revize SLOUČIT) + C1 #582 (v12.11.3, revize LZE SLOUČIT). Main = test = v11.11.1 (6c4bc80, na pokyn J. V. 11. 11.). J. V. 11. 11.: do testu slučovat dál samostatně po zeleném kole. Běží C2+C3 (#583/#584), C5 (#585), VSD (#586/#587); K40c (#581) se spouští teď podle podklady/PROMPT_K40_OPRAVY_v3.md (claude/k40-posudek 1c6dfc3, rozhodnutí J. V. 11. 11.: varianta b, ARES, autor+admin, DIČ přeskočit, shoda IČO). Návrh víc zákazníků: claude/vz-navrh e0e007d, prototyp https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V — 4 otázky J. V. otevřené, programovat po K40c. 11. 11. 14:38 zastavil všechna paralelní sezení 5h limit účtu — pouštět nejvýš ~4 souběžně.
 - **Rozhodnutí J. V. 11. 11.:** EN nadpisy USAZENÍ OCK sjednotit („SHAFT STRUCTURE POSITION – …“, C1); tečky i v plné moci (C2+C3); seznam šachet do Pipedrive jako jedna přepisovaná poznámka u dealu (VSD); TEST sada ze souboru testovacího sezení (C5). Koordinace: u nezamčené varianty víc šachet migruje import sklo šachet 2+ jako šachty 1 (B205a), zamčená se nemění.
 - **Prompt po kole 47 (J. V. 11. 11. 2026, `podklady/PROMPT_RIDICI_SEZENI_PO_KOLE47.md`) — odpovědi J. V. B1–B10 (oddíl B0):**
