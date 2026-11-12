@@ -53,6 +53,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_vs_rejstrik.mjs',
      /* VS #570 E5 (#595, 10. 11. 2026): Pipedrive náhled — seznam šachet do poznámky (rychlá sada). */
      'test_vs_e5_pd.mjs',
+     /* VSD (11. 11. 2026): poznámka dealu se seznamem šachet — zápis do Pipedrive (simulátor, rychlá sada). */
+     'test_vsd_pd_poznamka.mjs',
      /* #560 MU (5. 11. 2026): sekce MŮSTKY — server (validace Z.mustky, zveřejnění ceníku, zámek) a model. */
      'test_560_mustky.mjs', '../src/test_560_mustky_sekce.js',
      /* #IK / #560 (4. 11. 2026): interní poznámky k zakázce na krycím listu — rychlé sady. */
