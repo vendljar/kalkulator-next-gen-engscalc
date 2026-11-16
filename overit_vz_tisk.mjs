@@ -316,7 +316,9 @@ const zakaznikBlok = async (X, ctx2) => {
       if (d.varianta) zkus(`${X} · ${d.nazev}: číslo nabídky v dokumentu ${cek}`, vTele.every(c => c.includes(cek)), vTele);
       /* krycí list nese číslo zakázky i číslo varianty — obojí s písmenem */
       const smi = new Set([cisloCekane(X, 0), cisloCekane(X, X === 'C' ? ctx2.priponaC : 0)]);
-      zkus(`${X} · ${d.nazev}: žádné jiné tvary čísla v dokumentu (jen ${[...smi].join(' / ')})`, vTele.every(c => c.every(x => smi.has(x))), vTele);
+      const spatne = tela.map(t => t.replace(/<[^>]+>/g, ' ').replace(/[\s\u00a0]+/g, ' ')).flatMap(t => [...t.matchAll(CISLO_RE)]
+        .filter(m => !smi.has(m[0])).map(m => '…' + t.slice(Math.max(0, m.index - 70), m.index + 20) + '…'));
+      zkus(`${X} · ${d.nazev}: žádné jiné tvary čísla v dokumentu (jen ${[...smi].join(' / ')})`, !spatne.length, { cisla: vTele, spatne: spatne.slice(0, 3) });
     }
     vysl[d.nazev] = vse;
   }
@@ -393,8 +395,9 @@ console.log('\nZábrany tisku');
   /* varianta C otevřená při zákazníkovi B */
   const c = await priprav('tri'); await otevri(c.ids.B, c.varC);
   for (const [n, kod] of [['náhled a tisk nabídky', 'nabidkaOckDokument()'], ['náhled podkladů', 'nabidkaNahled()'],
-    ['krycí list', "kryciTiskPohled('bo')"], ['Word nabídky', "SABLONA_DOCX = { nazev: 's.docx', data: window.__sablona }; nabidkaWordGeneruj(null)"]]) {
-    const r = await spust(kod, n.startsWith('Word') ? 1 : 0);
+    ['krycí list', "kryciTiskPohled('bo')"], ['Word nabídky', "SABLONA_DOCX = { nazev: 's.docx', data: window.__sablona }; nabidkaWordGeneruj(null)"],
+    ['smlouva o dílo', "SOD_DOCX.sod = { nazev: 's.docx', data: window.__sablonaSod }; sodWordGeneruj('sod', null)"]]) {
+    const r = await spust(kod, /Word|smlouva/.test(n) ? 1 : 0);
     zkus(`B s otevřenou variantou C: ${n} nevznikne, hláška „není nabídka zákazníka"`,
       !r.okna.length && !r.stazeni.length && /není nabídka zákazníka/.test(hlasky(r) + r.stav), { hlasky: hlasky(r), stav: r.stav, okna: r.okna.length, chyba: r.chyba });
   }
@@ -426,6 +429,10 @@ console.log('\nZábrany tisku');
   zkus('PROJ náhled pro B zastaven (R5, jen řídící)', !r.okna.length && /Dokumenty projekce \(PROJ\).*jen pro řídícího/.test(hlasky(r)), hlasky(r));
   r = await spust("kryciProjTiskPohled('bo')");
   zkus('krycí list PROJ pro B zastaven (R5)', !r.okna.length && /projekce \(PROJ\)/.test(hlasky(r)), hlasky(r));
+  for (const typ of ['sodProj', 'plnaMoc']) {
+    r = await spust(`SOD_DOCX.${typ} = { nazev: 's.docx', data: window.__sablonaSod }; sodWordGeneruj('${typ}', null)`, 1);
+    zkus(`${typ === 'plnaMoc' ? 'plná moc' : 'SoD PROJ'} (Word) pro B zastavena (R5)`, !r.stazeni.length && /projekce \(PROJ\)/.test(hlasky(r)), { hlasky: hlasky(r), stazeni: r.stazeni.length });
+  }
 }
 {
   /* funkce vypnutá: pro B zastaveno, pro řídícího projde */

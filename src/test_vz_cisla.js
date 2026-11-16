@@ -223,5 +223,19 @@ console.log('\n===== 7. POJISTKA PROTI PRÁZDNÉMU TESTU =====\n');
   test('po pojistce je vzPismenoPohledu zpět a testy písmene zase projdou', testyPismene().every(([, c]) => c));
 }
 
+/* Číslo SoD zamčené sdílené varianty (overit_vz_tisk: snímek zámku i ruční
+ * přepis nesou číslo řídícího) — v pohledu B s písmenem. */
+{
+  const pole = KRYCI_SEKCE.map(x => x.pole).flat().find(x => x.id === 'cisloSod');
+  const pB = vzTiskPohled(Z1, zB.id), vB = pB.varianty[0];
+  const zm = { cisloSod: '2026 - OPR - SOD - 9940' };
+  test('cisloSod: snímek zámku v pohledu B → …SOD - 9940-B',
+    kryciHodnota(pole, {}, { zak: pB, varianta: vB, zamceno: true, zmrazeno: zm }) === '2026 - OPR - SOD - 9940-B');
+  test('cisloSod: ruční přepis s písmenem zůstane',
+    kryciHodnota(pole, { hodnoty: { cisloSod: 'SOD-1-B' } }, { zak: pB, varianta: vB }) === 'SOD-1-B');
+  const pA = vzTiskPohled(Z1, '');
+  test('cisloSod: řídící beze změny (snímek)', kryciHodnota(pole, {}, { zak: pA, varianta: pA.varianty[0], zamceno: true, zmrazeno: zm }) === '2026 - OPR - SOD - 9940');
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 process.exit(fail ? 1 : 0);

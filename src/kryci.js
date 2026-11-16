@@ -132,7 +132,7 @@ const KRYCI_SEKCE = [
      * v KRYCI_NABIDKA_SEKCE, takže se dá doplnit i po odeslání nabídky;
      * tisk SoD ho zamkne a návrh opíše do dat (kryciZmrazSod). Ve smlouvě
      * plní {{SOD_CISLO_SMLOUVY}}, prázdné pole nechá symbol vidět. */
-    { id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',
+    { id: 'cisloSod', pismenoZakaznika: true, label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',
       prefill: c => (typeof sodCisloNavrh === 'function'
         ? sodCisloNavrh(typeof cisloSVariantou === 'function' ? cisloSVariantou(c.zak, c.varianta) : c.zak.cislo) : '') },
     { id: 'adresaStavby', label: 'Adresa stavby', verze: ['bo', 'techdata'], bind: 'ZAK.adresa', prefill: c => c.zak.adresa, src: 'hlavička kalkulace' },
@@ -723,6 +723,12 @@ function kryciTerminDodani(c) {
 
 /* hodnota pole: ruční přepis (data.kryci.hodnoty) > prefill > '' */
 function kryciHodnota(pole, kl, c) {
+  /* VZ-E2 #601: číslo SoD v pohledu zákazníka s písmenem nese jeho písmeno —
+   * ruční přepis i snímek zámku sdílené varianty mají číslo řídícího. */
+  if (pole.pismenoZakaznika && c && typeof vzPismenoPohledu === 'function' && vzPismenoPohledu(c.zak)) {
+    const v = String(kryciHodnota(Object.assign({}, pole, { pismenoZakaznika: false }), kl, c) || '');
+    return (v.trim() && !vzCisloRozloz(v).pismeno) ? vzCisloSPismenem(v, vzPismenoPohledu(c.zak)) : v;
+  }
   /* Odvozený řádek (`odvozene`, 30. 9. 2026 — Zaměření strojovna): hodnotu
    * určuje kalkulace, ruční přepis se nečte (v datech zůstává). Zamčená
    * varianta jde starou cestou (drží, co se odeslalo), a když se hodnota
