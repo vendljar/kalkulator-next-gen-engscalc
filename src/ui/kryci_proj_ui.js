@@ -8,6 +8,8 @@
 function klpSet(id, v) {
   if (!KLP.hodnoty) KLP.hodnoty = {};
   if (v === '' || v == null) delete KLP.hodnoty[id]; else KLP.hodnoty[id] = v;
+  /* VZ-E2 (revize U1): ruční pole zákazníka patří řídícímu zákazníkovi. */
+  if (typeof vzKlZapis === 'function' && kryciProjPoleZakaznika(id)) vzKlZapis(KLP, id, ZAK);
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }

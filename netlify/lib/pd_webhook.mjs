@@ -254,14 +254,35 @@ export function pdWebhookPismeno(zak, pismeno) {
     && v.zamek.tisky.some((t) => obj(t) && obj(t.zakaznik) && t.zakaznik.pismeno === pismeno));
 }
 
+/* VZ-E2 (#601, U4 revize): číslo varianty „…9940.2" → { zaklad: „…9940",
+ * pripona: 2 } (přípona varianty v.pripona, zamek.js variantaCislo). Jen
+ * kladné celé číslo bez úvodní nuly za číslicí; jinak pripona 0 a základ
+ * beze změny. Webhook ji odřízne JEN u čísla s písmenem zákazníka. */
+export function pdWebhookCisloVarianta(cislo) {
+  const c = String(cislo == null ? '' : cislo).trim();
+  const m = /^(.*\d)\.([1-9]\d{0,5})$/.exec(c);
+  return m ? { zaklad: m[1], pripona: Number(m[2]) } : { zaklad: c, pripona: 0 };
+}
+
+/* Má uložená zakázka variantu s příponou `pripona` (v.pripona === N)? Jen ČTE. */
+export function pdWebhookVariantaPripona(zak, pripona) {
+  if (!zak || typeof zak !== 'object' || !Number.isInteger(pripona) || pripona < 1) return false;
+  return (Array.isArray(zak.varianty) ? zak.varianty : [])
+    .some((v) => !!v && typeof v === 'object' && v.pripona === pripona);
+}
+
 /* Vlastník dealu (#115 B) s písmenem zákazníka: CN dealu patří kalkulaci
  * s číslem `cisloKalkulace`, když se shodují klíče (jako dřív), nebo když CN
- * je „<číslo kalkulace>-P" a zakázka zákazníka s písmenem P opravdu nese. */
+ * je „<číslo kalkulace>-P" a zakázka zákazníka s písmenem P opravdu nese,
+ * nebo „<číslo kalkulace>.N-P" a zakázka nese P I variantu s příponou N (U4). */
 export function pdWebhookCisloSedi(cisloKalkulace, cnDealu, zak) {
   const k = pdWebhookCisloKlic(cisloKalkulace);
   if (!k || k === pdWebhookCisloKlic(cnDealu)) return true;
   const r = pdWebhookCisloZaklad(cnDealu);
-  return !!r.pismeno && pdWebhookCisloKlic(r.zaklad) === k && pdWebhookPismeno(zak, r.pismeno);
+  if (!r.pismeno || !pdWebhookPismeno(zak, r.pismeno)) return false;
+  if (pdWebhookCisloKlic(r.zaklad) === k) return true;
+  const v = pdWebhookCisloVarianta(r.zaklad);
+  return v.pripona > 0 && pdWebhookCisloKlic(v.zaklad) === k && pdWebhookVariantaPripona(zak, v.pripona);
 }
 
 /* Odkaz do aplikace: <web>/?zakazka=<soubor> (src/ui/online_ui.js ho po

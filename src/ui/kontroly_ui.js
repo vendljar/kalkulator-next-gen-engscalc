@@ -205,8 +205,13 @@ function kontrolySodNevyplneno(sablonaSod, sablonaSodProj) {
   try {
     const v = aktivniVarianta(ZAK);
     const L = t => (typeof sodJazyk === 'function') ? sodJazyk(t) : 'cz';
-    if (sym(sablonaSod) && typeof sodData === 'function') o.sod = sodData(ZAK, v, JEKLY, L('sod'), sym(sablonaSod)).nevyplnene || null;
-    if (sym(sablonaSodProj) && typeof sodProjData === 'function') o.sodProj = sodProjData(ZAK, v, L('sodProj'), sym(sablonaSodProj)).nevyplnene || null;
+    /* VZ-E2 (revize U5): nad pohledem otevřeného zákazníka (SoD realizace) a řídícího
+     * (SoD PROJ, R5) — tytéž tečky, jaké dostane jeho smlouva; jeden zákazník = ZAK. */
+    const zS = typeof vzTiskZakTicho === 'function' ? vzTiskZakTicho() : ZAK;
+    const vS = (typeof vzTiskVarianta === 'function' ? vzTiskVarianta(zS, v) : v) || v;
+    const zP = typeof vzTiskRidici === 'function' ? vzTiskRidici() : ZAK;
+    if (sym(sablonaSod) && typeof sodData === 'function') o.sod = sodData(zS, vS, JEKLY, L('sod'), sym(sablonaSod)).nevyplnene || null;
+    if (sym(sablonaSodProj) && typeof sodProjData === 'function') o.sodProj = sodProjData(zP, v, L('sodProj'), sym(sablonaSodProj)).nevyplnene || null;
   } catch (e) { /* smlouva by nevznikla (zábrana DPH, plateb…) — to hlásí jiná pravidla */ }
   return o;
 }

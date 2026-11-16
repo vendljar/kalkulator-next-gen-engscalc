@@ -23,6 +23,12 @@
  * pak dostane 409, zakázka s B navázaná na jiný deal se obejde novou
  * kalkulací); s vrácenou JEN kontrolou vlastníka selže 5 testů bodu 2 (409).
  * Body 3, 4 a 6 hlídají, že se nic jiného nezměnilo — projdou i bez úpravy.
+ *   7. (U4 revize poradce) číslo VARIANTY s písmenem „…9940.2-B" najde zakázku
+ *      „…9940" jen se zákazníkem B A variantou s příponou 2; bez B nebo
+ *      s neexistující variantou („….7-B") i bez písmene („….2") jako dřív.
+ * POJISTKA U4 (16. 11. 2026): před opravou (lib bez pdWebhookCisloVarianta /
+ * pdWebhookVariantaPripona, webhook bez hledání podle čísla varianty) selhalo
+ * 9 testů bodu 7 (deal „….2-B" založil „….2-B.json"); po opravě 58/58.
  * Spuštění: node netlify/test_vz_webhook.mjs
  * ============================================================ */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
@@ -215,6 +221,94 @@ const p6 = zakazkyKlice().length;
 r = await volej(D6.id);
 test('zakázka se zákazníkem B navázaná na JINÝ deal → 409 jako dřív, nic nezapsáno',
   r.status === 409 && pamet.get('zakazky/z/' + S6) === pred6 && zakazkyKlice().length === p6, r);
+
+/* ---------- 7. ČÍSLO VARIANTY S PÍSMENEM „…9940.2-B" (U4 revize poradce) ---------- */
+console.log('\n===== 7. ČÍSLO VARIANTY S PÍSMENEM (…9940.2-B) =====\n');
+{
+  const fn = (n) => typeof W[n] === 'function';
+  test('pdWebhookCisloVarianta: „CN-1.2" → základ „CN-1" + přípona 2; „CN-1.17" → 17',
+    fn('pdWebhookCisloVarianta') && J(W.pdWebhookCisloVarianta('CN-1.2')) === J({ zaklad: 'CN-1', pripona: 2 })
+    && J(W.pdWebhookCisloVarianta(' 2026 - OPR - CN - 9940.17 ')) === J({ zaklad: '2026 - OPR - CN - 9940', pripona: 17 }));
+  test('pdWebhookCisloVarianta: bez přípony, „.0", „.02", písmeno, prázdno, null → pripona 0, základ beze změny',
+    fn('pdWebhookCisloVarianta') && ['CN-1', 'CN-1.0', 'CN-1.02', 'CN-1.2-B', 'CN.2', '.2', '', null, 'CN-1.1234567']
+      .every((c) => W.pdWebhookCisloVarianta(c).pripona === 0 && W.pdWebhookCisloVarianta(c).zaklad === String(c == null ? '' : c).trim()));
+  const z = G.novaZakazka();
+  const kl = G.klonujVariantu(z, z.varianty[0].id);
+  test('příprava: klon varianty má příponu 2', !!kl && kl.pripona === 2, kl && kl.pripona);
+  const pred = J(z);
+  test('pdWebhookVariantaPripona: přípona 2 → true; 7, 0, 1, \'2\', NaN → false',
+    fn('pdWebhookVariantaPripona') && W.pdWebhookVariantaPripona(z, 2)
+    && [7, 0, 1, '2', NaN, -2, 2.5].every((n) => !W.pdWebhookVariantaPripona(z, n)));
+  test('pdWebhookVariantaPripona: cizí tvary (null, pole, varianty null) nespadnou → false',
+    fn('pdWebhookVariantaPripona') && !W.pdWebhookVariantaPripona(null, 2) && !W.pdWebhookVariantaPripona([], 2)
+    && !W.pdWebhookVariantaPripona({ varianty: [null, 'x', { pripona: '2' }] }, 2));
+  test('pdWebhookVariantaPripona zakázku nemění', J(z) === pred);
+  G.vzPridej(z, { objednatel: 'Zákazník B Zkušební s.r.o. (smyšlené)' });
+  test('pdWebhookCisloSedi: „CN-1.2-B" na „CN-1" s B a variantou .2 → true',
+    W.pdWebhookCisloSedi('CN-1', 'CN-1.2-B', z));
+  test('pdWebhookCisloSedi: „CN-1.7-B" (varianta .7 není) → false; „CN-1.2-C" (C není) → false; „CN-2.2-B" → false',
+    !W.pdWebhookCisloSedi('CN-1', 'CN-1.7-B', z) && !W.pdWebhookCisloSedi('CN-1', 'CN-1.2-C', z) && !W.pdWebhookCisloSedi('CN-1', 'CN-2.2-B', z));
+  test('pdWebhookCisloSedi: „CN-1.2" BEZ písmene na „CN-1" → false (jako dřív)', !W.pdWebhookCisloSedi('CN-1', 'CN-1.2', z));
+  const bezB = G.novaZakazka(); G.klonujVariantu(bezB, bezB.varianty[0].id);
+  test('pdWebhookCisloSedi: „CN-1.2-B" u zakázky s variantou .2, ale bez B → false', !W.pdWebhookCisloSedi('CN-1', 'CN-1.2-B', bezB));
+}
+const D7 = dealS(), D8 = dealS(), D9 = dealS(), D10 = dealS();
+test('příprava: další čtyři dealy s CN v názvu', !!(D7 && D8 && D9 && D10));
+const sVariantou = (z) => { const k = G.klonujVariantu(z, z.varianty[0].id); if (!k || k.pripona !== 2) throw new Error('příprava: klon .2'); };
+/* a) zakázka „…" se zákazníkem B a variantou .2 → deal „….2-B" ji najde. */
+const S7 = ulozZakazku(cn(D7), ['B'], sVariantou);
+const pred7 = zakazka(S7);
+const p7 = zakazkyKlice().length;
+nastavCn(D7, cn(D7) + '.2-B');
+r = await volej(D7.id);
+test('deal „' + cn(D7) + '.2-B" → 200, navázaná TATÁŽ zakázka „' + cn(D7) + '" (žádná nová, žádné 409)',
+  r.status === 200 && r.soubor === S7 && r.akce === 'aktualizovano' && zakazkyKlice().length === p7,
+  [r.status, r.soubor, r.akce, r.chyba, zakazkyKlice().length - p7]);
+let z7 = zakazka(S7);
+test('zakázka navázaná na deal, číslo v hlavičce se nepřepsalo (bez „.2-B")', z7.pdDealId === String(D7.id) && z7.cislo === cn(D7), [z7.pdDealId, z7.cislo]);
+test('soubory „….2-B.json" ani „….2.json" nevznikly', !pamet.has('zakazky/z/' + ULO.uloKlicSouboru(cn(D7) + '.2-B') + '.json')
+  && !pamet.has('zakazky/z/' + ULO.uloKlicSouboru(cn(D7) + '.2') + '.json'));
+test('dalsiZakaznici a vzRidici beze změny', vz(z7) === vz(pred7), [vz(z7), vz(pred7)]);
+test('varianty zakázky beze změny (přípony 0 a 2)', J(z7.varianty.map((v) => v.pripona)) === J([0, 2]));
+r = await volej(D7.id);
+test('opakované doručení „….2-B" (vazba podle dealu, kontrola vlastníka) → 200 bez 409', r.status === 200 && r.soubor === S7, r);
+nastavCn(D7, cn(D7) + '.7-B');
+const raz7 = zakazka(S7).uloRazitko;
+r = await volej(D7.id);
+test('navázaný deal přepsaný na „….7-B" (varianta .7 není) → 409 jako dřív, nic se nezměnilo',
+  r.status === 409 && zakazka(S7).uloRazitko === raz7, r);
+nastavCn(D7, cn(D7) + '.2');
+r = await volej(D7.id);
+test('navázaný deal „….2" BEZ písmene → 409 jako dřív (chování bez písmene se nemění)',
+  r.status === 409 && zakazka(S7).uloRazitko === raz7, r);
+test('po všech doručeních dalsiZakaznici a vzRidici beze změny', vz(zakazka(S7)) === vz(pred7));
+/* b) zakázka s variantou .2, ale BEZ zákazníka B → jako dnes (nová kalkulace). */
+const S8 = ulozZakazku(cn(D8), [], sVariantou);
+const pred8 = pamet.get('zakazky/z/' + S8);
+nastavCn(D8, cn(D8) + '.2-B');
+const p8 = zakazkyKlice().length;
+r = await volej(D8.id);
+test('deal „….2-B" u zakázky bez zákazníka B → nová kalkulace „….2-B" jako dřív, zakázka „…" nedotčená',
+  r.status === 200 && r.akce === 'zalozeno' && r.soubor !== S8 && zakazkyKlice().length === p8 + 1
+  && pamet.get('zakazky/z/' + S8) === pred8 && zakazka(r.soubor).cislo === cn(D8) + '.2-B', [r.status, r.akce, r.soubor]);
+/* c) zakázka s B, ale varianta .7 neexistuje → bezpečně nenaváže (jako dnes). */
+const S9 = ulozZakazku(cn(D9), ['B'], sVariantou);
+const pred9 = pamet.get('zakazky/z/' + S9);
+nastavCn(D9, cn(D9) + '.7-B');
+const p9 = zakazkyKlice().length;
+r = await volej(D9.id);
+test('deal „….7-B" (varianta .7 v zakázce není) → nová kalkulace jako dřív, zakázka „…" nedotčená',
+  r.status === 200 && r.akce === 'zalozeno' && r.soubor !== S9 && zakazkyKlice().length === p9 + 1
+  && pamet.get('zakazky/z/' + S9) === pred9, [r.status, r.akce, r.soubor]);
+/* d) „….2" BEZ písmene u zakázky s B a variantou .2 → jako dřív (nová kalkulace „….2"). */
+const S10 = ulozZakazku(cn(D10), ['B'], sVariantou);
+const pred10 = pamet.get('zakazky/z/' + S10);
+nastavCn(D10, cn(D10) + '.2');
+const p10 = zakazkyKlice().length;
+r = await volej(D10.id);
+test('deal „….2" bez písmene → nová kalkulace „….2" jako dřív, zakázka „…" nedotčená',
+  r.status === 200 && r.akce === 'zalozeno' && r.soubor !== S10 && zakazkyKlice().length === p10 + 1
+  && pamet.get('zakazky/z/' + S10) === pred10 && zakazka(r.soubor).cislo === cn(D10) + '.2', [r.status, r.akce, r.soubor]);
 
 /* ---------- 6. BEZ SÍTĚ ---------- */
 test('do sítě za celý běh nic', venku.length === 0, venku);

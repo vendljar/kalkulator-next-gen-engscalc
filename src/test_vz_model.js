@@ -276,11 +276,11 @@ const najdiVar = (z, id) => z.varianty.find(v => v.id === id);
   test('pohled B: projHlavicka nese údaje B, ostatní pole PROJ zůstávají',
     ['objednatel', 'adresaObjednatele', 'ico', 'kontakt'].every(k => B.projHlavicka[k] === 'KANAR_B_' + k)
     && B.projHlavicka.cislo === z.projHlavicka.cislo && B.projHlavicka !== z.projHlavicka);
-  test('pohled B: vzPohledZakaznika { id z2, písmeno B }', J(B.vzPohledZakaznika) === J({ id: 'z2', pismeno: 'B' }));
-  test('pohled C: vzPohledZakaznika { id z3, písmeno C }', J(pohledy.C.vzPohledZakaznika) === J({ id: 'z3', pismeno: 'C' }));
+  test('pohled B: vzPohledZakaznika { id z2, písmeno B }', J(B.vzPohledZakaznika) === J({ id: 'z2', pismeno: 'B', ridici: false }));
+  test('pohled C: vzPohledZakaznika { id z3, písmeno C }', J(pohledy.C.vzPohledZakaznika) === J({ id: 'z3', pismeno: 'C', ridici: false }));
   test('pohled dalšího zákazníka: bez pdZadani a pdStav', !('pdZadani' in B) && !('pdStav' in B) && !('pdStav' in pohledy.C));
   test('pohled řídícího: pdZadani a pdStav zůstávají, vzPohledZakaznika { z1, \'\' }',
-    'pdZadani' in pohledy.A && 'pdStav' in pohledy.A && J(pohledy.A.vzPohledZakaznika) === J({ id: 'z1', pismeno: '' }));
+    'pdZadani' in pohledy.A && 'pdStav' in pohledy.A && J(pohledy.A.vzPohledZakaznika) === J({ id: 'z1', pismeno: '', ridici: true }));
   test('pohled bez id = pohled řídícího', J(vzPohled(z)) === J(pohledy.A));
   test('pohled: sdílená stavba (název akce, číslo) beze změny', B.nazevAkce === z.nazevAkce && B.cislo === z.cislo);
   test('vzPohled s neznámým id → null', vzPohled(z, 'z99') === null);
@@ -291,7 +291,7 @@ const najdiVar = (z, id) => z.varianty.find(v => v.id === id);
   const bez = Object.assign({}, p); delete bez.vzPohledZakaznika;
   test('jeden zákazník: pohled = kopie zakázky + jen vzPohledZakaznika',
     J(bez) === J(z) && J(Object.keys(p)) === J(Object.keys(z).concat('vzPohledZakaznika'))
-    && J(p.vzPohledZakaznika) === J({ id: 'z1', pismeno: '' }) && p !== z);
+    && J(p.vzPohledZakaznika) === J({ id: 'z1', pismeno: '', ridici: true }) && p !== z);
   test('jeden zákazník: pohled z1 = pohled bez id; jiné id → null', J(vzPohled(z, 'z1')) === J(p) && vzPohled(z, 'z2') === null);
 }
 
