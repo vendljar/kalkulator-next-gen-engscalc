@@ -193,9 +193,16 @@ async function pridejFormularem(p, nazev, vlastni) {
   return klik(p, '#vzFormPridej');
 }
 
+/* Část harnessu: výjimka (např. chybějící funkce v bázi před E1) se počítá
+ * jako FAIL a běh pokračuje dalšími částmi, souhrn se vypíše vždy. */
+async function cast(nazev, fn) {
+  try { await fn(); }
+  catch (e) { test('část „' + nazev + '" doběhla bez výjimky', false, String(e && e.message || e).split('\n')[0]); }
+}
+
 /* ---------- 1: VYP = základ znak po znaku ---------- */
 let sVyp;
-{
+await cast('1 VYP', async () => {
   const vyp = await otevri(KDE);
   sVyp = await obrazovka(vyp.p);
   test('VYP: žádné tlačítko „Přidat zákazníka", přepínač ani karta', await vyp.p.evaluate(() =>
@@ -212,10 +219,10 @@ let sVyp;
 
   /* 3: tlačítko není u prodané zakázky ani jen ke čtení (ZAP) */
   await vyp.ctx.close();
-}
+});
 
 /* ---------- 2: ZAP + 1 zákazník ---------- */
-{
+await cast('2 ZAP + 1', async () => {
   const zap = await otevri(KDE, { zap: true });
   await pomocnici(zap.p);
   test('ZAP + 1: v hlavičce OCK právě jedno tlačítko „Přidat zákazníka" (#vzPridat_ock)', await zap.p.evaluate(() =>
@@ -265,10 +272,10 @@ let sVyp;
   test('jen ke čtení: vzFormOtevri formulář neotevře', await zap.p.evaluate(() => !document.getElementById('vzFormular') && JSON.stringify(ZAK) === window.__pr));
   await zap.p.evaluate(() => { zamekCteniVypni(); if (typeof ZAMEK_CTENI !== 'undefined') ZAMEK_CTENI.dialog = false; render(); });
   await zap.ctx.close();
-}
+});
 
 /* ---------- 4–10, 12, 13: ZAP, jedna stránka ---------- */
-{
+await cast('4–10 ZAP', async () => {
   const { ctx, p } = await otevri(KDE, { zap: true });
   await pomocnici(p);
 
@@ -283,7 +290,7 @@ let sVyp;
   await p.fill('#vzF_objednatel', 'Druhý zákazník s.r.o.').catch(() => {});
   test('formulář: po napsání názvu se „Přidat zákazníka" rozsvítí', await p.evaluate(() => {
     const t = document.getElementById('vzFormPridej'); return !!t && !t.disabled; }));
-  await klik(p, '#vzFormZrus');
+  await klik(p, '#vzFormZrus');   // přímo po psaní, bez Tabu (viz test Přidat níž)
   test('Zrušit: formulář zmizí', await p.evaluate(() => !document.getElementById('vzFormular') && !VZ_UI.form));
   test('Zrušit: ZAK je beze změny', await p.evaluate((pr) => JSON.stringify(ZAK) === pr, pred),
     await p.evaluate((pr) => { const a = JSON.parse(pr), o = [];
@@ -291,6 +298,8 @@ let sVyp;
         if (x && y && typeof x === 'object' && typeof y === 'object') new Set([...Object.keys(x), ...Object.keys(y)]).forEach(kk => w(x[kk], y[kk], k + '.' + kk));
         else o.push(k + ': ' + JSON.stringify(x) + ' → ' + JSON.stringify(y)); };
       w(a, JSON.parse(JSON.stringify(ZAK)), 'ZAK'); return o; }, pred));
+
+  await p.evaluate(() => { if (VZ_UI.form) vzFormZavri(); });   // ať chyba Zrušit nerozbije další body
 
   /* 5: ARES ve formuláři */
   await p.evaluate(() => vzFormOtevri('ock'));
@@ -461,13 +470,21 @@ let sVyp;
     const a = JSON.parse(pr); return ['objednatel', 'kontakt', 'ico', 'adresaObjednatele', 'dic'].every(k => a[k] === ZAK[k]); }, zakPred));
   test('confirm() se v celém běhu nezavolal', await p.evaluate(() => window.__confirm === 0));
   await ctx.close();
-}
+});
 
 /* ---------- 10: Zpět / Znovu po přidání ---------- */
-{
+await cast('10 Zpět/Znovu', async () => {
   const { ctx, p } = await otevri(KDE, { zap: true });
   await pomocnici(p);
-  await pridejFormularem(p, 'Druhý zákazník s.r.o.', false);
+  /* Přímo po napsání názvu klik na „Přidat zákazníka" (bez Tabu): change
+   * pole a klik přijdou v jednom gestu — první klik se nesmí ztratit. */
+  await p.evaluate(() => vzFormOtevri('ock'));
+  await p.waitForTimeout(120);
+  await p.fill('#vzF_objednatel', 'Druhý zákazník s.r.o.').catch(() => {});
+  await klik(p, '#vzFormPridej');
+  test('první klik na „Přidat zákazníka" hned po napsání názvu zákazníka přidá', await p.evaluate(() =>
+    (ZAK.dalsiZakaznici || []).length === 1 && !VZ_UI.form));
+  if (await p.evaluate(() => !!VZ_UI.form)) await klik(p, '#vzFormPridej');
   test('Zpět/Znovu: zákazník přidán', await p.evaluate(() => (ZAK.dalsiZakaznici || []).length === 1));
   await p.evaluate(() => historieZpet()); await p.waitForTimeout(150);
   test('Zpět po přidání vrátí stav bez zákazníka (bez klíčů, karty a přepínače)', await p.evaluate(() =>
@@ -478,10 +495,10 @@ let sVyp;
     (ZAK.dalsiZakaznici || []).length === 1 && ZAK.dalsiZakaznici[0].hlavicka.objednatel === 'Druhý zákazník s.r.o.'
     && !!document.getElementById('vzKarta_ock') && !!document.getElementById('vzPrepinac_ock')));
   await ctx.close();
-}
+});
 
 /* ---------- 11: VYP + zakázka, která už další zákazníky má (R21) ---------- */
-{
+await cast('11 VYP + data', async () => {
   const { ctx, p } = await otevri(KDE);
   await pomocnici(p);
   await p.evaluate(() => {
@@ -511,7 +528,7 @@ let sVyp;
     && !document.getElementById('vzFormular') && !document.getElementById('vzOdstranPotvrzeni'), pred),
     await p.evaluate(() => __hl));
   await ctx.close();
-}
+});
 
 /* ---------- 14: chyby stránky ---------- */
 test('žádná chyba stránky (pageerror) v celém běhu', vsechnyChyby.length === 0, vsechnyChyby);
