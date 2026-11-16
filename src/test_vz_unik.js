@@ -132,7 +132,7 @@ function zakazka(proj) {
   const v1 = zak.varianty[0];
   v1.nazev = 'Varianta ' + tokV('A', 16);
   v1.pozn = 'Poznámka ' + tokV('A', 17);
-  v1.zakaznik = 'Zákazník ' + tokZ('A', 21);
+  v1.zakaznik = hA.objednatel + ' ' + tokZ('A', 21);   // jako v aplikaci: název zákazníka
   v1.datum = '2026-11-16';
   Object.assign(v1.data.ock.zadani, ZAD);
   v1.data.ock.zadani.vlastniPolozky.hrubaOck = [{ nazev: 'Položka ' + tokV('A', 18), mnozstvi: 1, cena: 24680 }];
@@ -155,6 +155,13 @@ function zakazka(proj) {
   v2.data.ock.zadani.vlastniPolozky.hrubaOck = [{ nazev: 'Položka ' + tokV('C', 18), mnozstvi: 1, cena: 1357911 }];
   v2.data.zaokr = { krok: 0, smer: 'nahoru' };
   v2.data.sleva = Object.assign({}, v2.data.sleva, { procenta: 3.7, stav: 'schváleno' });
+  /* V3 — VOLNÁ varianta (žádný zákazník na ni neukazuje): smí ji tisknout
+   * jen řídící (vzVariantyZakaznika, revize E0 N3). Vlastní kanárky a cena. */
+  const v3 = klonujVariantu(zak, v1.id, { aktivovat: false, nazev: 'Varianta ' + tokV('D', 16) });
+  v3.pozn = 'Poznámka ' + tokV('D', 17);
+  v3.datum = '2026-11-16';
+  v3.data.ock.zadani.vlastniPolozky.hrubaOck = [{ nazev: 'Položka ' + tokV('D', 18), mnozstvi: 1, cena: 97531 }];
+  v3.data.sleva = Object.assign({}, v3.data.sleva, { procenta: 2.9, stav: 'schváleno' });
   /* Protokol jako E1: záznamy se jmény všech zákazníků. */
   Object.values(ZAKAZNICI).forEach(z => {
     const h = hlavicka(z);
@@ -165,7 +172,17 @@ function zakazka(proj) {
 }
 /* Varianta zákazníka (V1 pro A a B, V2 pro C). */
 const variantaZak = (zak, id) => zak.varianty.find(v => v.id === vzZakaznik(zak, id).varianta);
-const vlastnikVarianty = (zak, varId) => (String(varId) === String(zak.varianty[0].id) ? 'A' : 'C');
+/* Písmeno varianty podle kanárku v názvu: V1 'A' (řídící, sdílená s B),
+ * V2 'C' (vlastní varianta C), V3 'D' (volná). */
+const vlastnikVarianty = (zak, varId) => {
+  const v = zak.varianty.find(x => String(x.id) === String(varId));
+  const m = v && /ZV([A-D])16X/.exec(v.nazev || '');
+  return m ? m[1] : '?';
+};
+/* Varianty (písmena), jejichž kanárky smí nést výstupy zákazníka `id`:
+ * jeho varianta; řídící navíc volné varianty (V3). Očekávání je pevné —
+ * neodvozuje se z pohledu (jinak by test kryl chybu pohledu). */
+const povoleneVar = (zak, id) => vlastnikVarianty(zak, variantaZak(zak, id).id) + (vzZakaznik(zak, id).ridici ? 'D' : '');
 
 /* ---------- detektor ---------- */
 const norm = t => String(t == null ? '' : t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
@@ -178,7 +195,7 @@ const CENY = {};   // CENY[L][pismVarianty] = 'číslice'
 function kanarky(text, L) {
   const n = norm(text);
   const out = [];
-  const re = /z([qv])([abc])(\d\d)x/g;
+  const re = /z([qv])([abcd])(\d\d)x/g;
   let m;
   while ((m = re.exec(n))) out.push({ druh: m[1] === 'q' ? 'z' : 'v', kdo: m[2].toUpperCase(), pole: +m[3] });
   Object.values(ZAKAZNICI).forEach(z => {
@@ -189,9 +206,10 @@ function kanarky(text, L) {
   Object.keys(c).forEach(p => { if (c[p] && n.indexOf(c[p]) >= 0) out.push({ druh: 'cena', kdo: p, pole: 99 }); });
   return out;
 }
-/* Cizí kanárky ve výstupu zákazníka `pism`, který tiskne variantu vlastníka `varPism`. */
-function cizi(nalezy, pism, varPism) {
-  return nalezy.filter(k => ((k.druh === 'v' || k.druh === 'cena') ? k.kdo !== varPism : k.kdo !== pism));
+/* Cizí kanárky ve výstupu zákazníka `pism`; `povolene` = písmena variant,
+ * které smí jeho výstupy nést (např. 'AD' u řídícího). */
+function cizi(nalezy, pism, povolene) {
+  return nalezy.filter(k => ((k.druh === 'v' || k.druh === 'cena') ? String(povolene).indexOf(k.kdo) < 0 : k.kdo !== pism));
 }
 const popisNalezu = k => (k.druh === 'v' ? 'varianta ' : k.druh === 'cena' ? 'cena varianty ' : 'zákazník ') + k.kdo
   + (k.druh === 'cena' ? '' : ' / ' + (k.druh === 'v' ? ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'v.nazev', 'v.pozn', 'ruční položka'][k.pole] : POLE_NAZEV[k.pole] || k.pole));
@@ -295,7 +313,8 @@ async function vystupy(zak, v, L, typy) {
 
 /* Problémy výstupu zákazníka `pism` (varianta vlastníka varPism):
  * [{ nazev, cizi: [...] }] + výstupy bez vlastního objednatele. */
-function problemy(res, pism, varPism, L) {
+function problemy(res, pism, varPism, L, povolene) {
+  povolene = povolene || varPism;
   const unik = [], prazdne = [], videno = new Set();
   const vlastniTok = norm(tokZ(pism, 1));
   for (const o of res.vystupy) {
@@ -305,7 +324,7 @@ function problemy(res, pism, varPism, L) {
     if (k.some(x => x.druh === 'dic' && x.kdo === pism)) videno.add(4);
     if (k.some(x => x.druh === 'cena' && x.kdo === varPism)) videno.add(99);
     k.filter(x => x.druh === 'v' && x.kdo === varPism).forEach(x => videno.add('v' + x.pole));
-    const c = cizi(k, pism, varPism);
+    const c = cizi(k, pism, povolene);
     if (c.length) unik.push({ nazev: o.nazev, cizi: Array.from(new Set(c.map(popisNalezu))) });
     if (o.vlastni && norm(o.text).indexOf(vlastniTok) < 0) prazdne.push(o.nazev);
   }
@@ -330,14 +349,15 @@ async function hlavni() {
   /* ceny variant (kanárek ceny) — z pohledu vlastníka, v každém jazyce */
   for (const L of JAZYKY) {
     CENY[L] = {};
-    for (const [p, id] of [['A', 'z1'], ['C', 'z3']]) {
+    const v3 = zak.varianty.find(v => vlastnikVarianty(zak, v.id) === 'D');
+    for (const [p, id, v] of [['A', 'z1', variantaZak(zak, 'z1')], ['C', 'z3', variantaZak(zak, 'z3')], ['D', 'z1', v3]]) {
       const pz = vzTiskPohled(zak, id);
-      const d = nabidkaData(pz, vzTiskVarianta(pz, variantaZak(zak, id)), J, L);
+      const d = nabidkaData(pz, vzTiskVarianta(pz, v), J, L);
       CENY[L][p] = cislice(d.placeholders.CENA_BEZ_DPH);
     }
-    test('cena varianty jako kanárek (' + L + '): V1 ' + CENY[L].A + ' ≠ V2 ' + CENY[L].C + ', obě dost dlouhé',
-      CENY[L].A.length >= 5 && CENY[L].C.length >= 5 && CENY[L].A !== CENY[L].C
-      && CENY[L].A.indexOf(CENY[L].C) < 0 && CENY[L].C.indexOf(CENY[L].A) < 0, CENY[L]);
+    const cv = Object.values(CENY[L]);
+    test('cena varianty jako kanárek (' + L + '): V1 ' + CENY[L].A + ', V2 ' + CENY[L].C + ', V3 ' + CENY[L].D + ' — různé, dost dlouhé',
+      cv.every(x => x.length >= 5) && cv.every((x, i) => cv.every((y, j) => i === j || x.indexOf(y) < 0)), CENY[L]);
   }
 
   /* --- pohledy --- */
@@ -348,13 +368,14 @@ async function hlavni() {
   let protokolNese = [];
   for (const p of Object.keys(ID)) {
     const pz = vzTiskPohled(zak, ID[p]);
-    const varPism = vlastnikVarianty(zak, variantaZak(zak, ID[p]).id);
+    const pov = povoleneVar(zak, ID[p]);
     const bez = Object.assign({}, pz); delete bez.protokol;
-    const c = cizi(kanarky(JSON.stringify(bez), 'cz'), p, varPism);
-    test('JSON pohledu ' + p + ' (bez protokolu) nenese kanárky jiných zákazníků', !c.length, c.map(popisNalezu));
-    test('pohled ' + p + ' má jen varianty zákazníka (' + varPism + ')',
-      pz.varianty.length === 1 && vlastnikVarianty(zak, pz.varianty[0].id) === varPism, pz.varianty.map(v => v.id));
-    const cp = cizi(kanarky(JSON.stringify(pz.protokol || []), 'cz'), p, varPism);
+    const c = cizi(kanarky(JSON.stringify(bez), 'cz'), p, pov);
+    test('JSON pohledu ' + p + ' (bez protokolu) nenese kanárky jiných zákazníků ani cizích variant', !c.length, c.map(popisNalezu));
+    const maji = pz.varianty.map(v => vlastnikVarianty(zak, v.id)).sort().join('');
+    test('pohled ' + p + ' má právě varianty ' + pov.split('').sort().join('') + ' (řídící + volné; nikdy cizí vlastní)',
+      maji === pov.split('').sort().join(''), maji);
+    const cp = cizi(kanarky(JSON.stringify(pz.protokol || []), 'cz'), p, pov);
     if (cp.length) protokolNese.push(p + ': ' + Array.from(new Set(cp.map(popisNalezu))).join(', '));
   }
   if (protokolNese.length)
@@ -364,6 +385,7 @@ async function hlavni() {
 
   /* --- hlavní běh: dokument × zákazník × jazyk --- */
   const pokryto = new Set();
+  const v2Unik = { vystupu: 0, nalezy: [] };   // název / cena vlastní varianty C ve výstupech A a B
   for (const p of Object.keys(ID)) {
     const id = ID[p];
     const videno = new Set();
@@ -374,7 +396,12 @@ async function hlavni() {
         const varPism = vlastnikVarianty(z, variantaZak(z, id).id);
         const res = await vystupy(pz, vv, L, typy);
         res.vystupy.forEach(o => pokryto.add(o.nazev.replace(/\/(cz|en|de|fr)/, '')));
-        const pr = problemy(res, p, varPism, L);
+        const pr = problemy(res, p, varPism, L, povoleneVar(z, id));
+        if (p !== 'C') res.vystupy.forEach(o => {
+          v2Unik.vystupu++;
+          kanarky(o.text, L).filter(k => (k.druh === 'v' || k.druh === 'cena') && k.kdo === 'C')
+            .forEach(k => v2Unik.nalezy.push(p + ' ' + o.nazev + ': ' + popisNalezu(k)));
+        });
         pr.videno.forEach(x => videno.add(x));
         const stitek = p + ' (' + id + ')' + (z === zakP ? ' PROJ' : '') + ' ' + L;
         test(stitek + ': dokumenty vznikly bez chyby (' + res.vystupy.length + ' výstupů)', !res.chyby.length && res.vystupy.length >= (typy.length ? 8 : 3), res.chyby);
@@ -395,7 +422,7 @@ async function hlavni() {
     }
     /* pruh tisku */
     const pruh = vzTiskPruhText(zak, id);
-    const cp = cizi(kanarky(pruh, 'cz'), p, vlastnikVarianty(zak, variantaZak(zak, id).id));
+    const cp = cizi(kanarky(pruh, 'cz'), p, povoleneVar(zak, id));
     test(p + ': pruh tisku jmenuje jen jeho (' + pruh + ')', pruh && !cp.length && norm(pruh).indexOf(norm(tokZ(p, 1))) >= 0, cp.map(popisNalezu));
     /* kanárky nejsou prázdné: každé pole zákazníka (a cena varianty) se aspoň jednou ukázalo */
     /* fakturyTel netiskne žádný dokument (krycí list má pole jen s `bind`, bez
@@ -412,6 +439,22 @@ async function hlavni() {
     if (nikde.length) info(p + ': netiskne se nikde (kanárek nelze ověřit, únik ani nenastane): ' + nikde.join(', '));
   }
   info('pokryté výstupy: ' + Array.from(pokryto).sort().join('; '));
+  test('název, poznámka, položka ani cena vlastní varianty C nejsou v žádném výstupu řídícího A ani B ('
+    + v2Unik.vystupu + ' výstupů)', v2Unik.vystupu > 100 && !v2Unik.nalezy.length, v2Unik.nalezy.slice(0, 10));
+
+  /* --- řídící tiskne VOLNOU variantu V3 (revize E0 N3): smí, ale bez C --- */
+  {
+    const v3 = zak.varianty.find(v => vlastnikVarianty(zak, v.id) === 'D');
+    test('volná V3: zábrana pro řídícího prázdná, pro B a C nenulová', vzTiskZabrana(zak, 'z1', v3, 'nabidka') === ''
+      && !!vzTiskZabrana(zak, 'z2', v3, 'nabidka') && !!vzTiskZabrana(zak, 'z3', v3, 'nabidka'));
+    for (const L of ['cz', 'en']) {
+      const pz = vzTiskPohled(zak, 'z1');
+      const res = await vystupy(pz, vzTiskVarianta(pz, v3), L, ZAK_TYPY_OCK);
+      const pr = problemy(res, 'A', 'D', L, 'AD');
+      test('A tiskne volnou V3 ' + L + ': dokumenty vznikly, žádný cizí kanárek, cena V3 v dokumentu',
+        !res.chyby.length && !pr.unik.length && !pr.prazdne.length && pr.videno.has(99), [res.chyby, pr.unik, pr.prazdne]);
+    }
+  }
 
   /* --- PROJ pro dalšího zákazníka: zábrana R5 --- */
   for (const p of ['B', 'C']) {
@@ -448,6 +491,65 @@ async function hlavni() {
       test('zamčená sdílená V1, tisk pro B ' + L + ': dokumenty vznikly', !res.chyby.length, res.chyby);
       test('zamčená sdílená V1, tisk pro B ' + L + ': žádný kanárek A (zmrazený krycí list)', !pr.unik.length, pr.unik);
     }
+  }
+
+  /* --- VÝMĚNA ŘÍDÍCÍHO (vzVymenRidiciho na B), kanárky A i v projHlavicka.
+   * Po výměně nesmí v dokumentech nového řídícího B ani ostatních být údaje
+   * původního řídícího A (ani hlavička PROJ). Když únik zmizí, jakmile se
+   * projHlavicka srovná s hlavičkou nového řídícího, jde o známou chybu E0 N1
+   * (výměna nepřepisuje projHlavicka) — hlásí se INFO, ne FAIL. --- */
+  {
+    const behVymeny = async (srovnatProj, srovnatVolne) => {
+      const nalezy = [];
+      for (const proj of [false, true]) {
+        const z = zakazka(proj);
+        if (!proj) Object.assign(z.projHlavicka, { objednatel: z.objednatel, kontakt: z.kontakt, ico: z.ico, adresaObjednatele: z.adresaObjednatele });
+        const r = vzVymenRidiciho(z, 'z2');
+        if (!r.ok) { nalezy.push('vzVymenRidiciho: ' + r.chyba); continue; }
+        if (vzRidiciId(z) !== 'z2') nalezy.push('řídící po výměně není z2');
+        if (srovnatProj) ['objednatel', 'kontakt', 'ico', 'adresaObjednatele'].forEach(k => { z.projHlavicka[k] = z[k]; });
+        /* v.zakaznik sdílené V1 jmenuje A → zábrana pro nového řídícího B
+         * (sdílený text); obchodník ho přepíše — teprve pak se tiskne. */
+        const v1 = z.varianty[0];
+        if (!srovnatProj && !proj && !vzTiskZabrana(z, 'z2', v1, 'nabidka')) nalezy.push('zábrana: v.zakaznik V1 se jménem A nezastavil tisk pro nového řídícího B');
+        v1.zakaznik = z.objednatel + ' ' + tokZ('B', 21);
+        if (srovnatVolne) z.varianty.forEach(v => { if (vlastnikVarianty(z, v.id) === 'D') v.zakaznik = z.objednatel; });
+        for (const [p, id] of [['A', 'z1'], ['B', 'z2'], ['C', 'z3']]) {
+          const typy = proj ? (id === 'z2' ? ZAK_TYPY_PROJ : []) : ZAK_TYPY_OCK;
+          for (const t of typy) { const zb = vzTiskZabrana(z, id, variantaZak(z, id), t); if (zb) nalezy.push(p + ' ' + t + ' zábrana: ' + zb.slice(0, 160)); }
+          for (const L of (proj ? JAZYKY : ['cz', 'en'])) {
+            const pz = vzTiskPohled(z, id);
+            const vv = vzTiskVarianta(pz, variantaZak(z, id));
+            const res = await vystupy(pz, vv, L, typy);
+            const bez = Object.assign({}, pz); delete bez.protokol;
+            res.vystupy.push({ nazev: 'JSON pohledu', text: JSON.stringify(bez), vlastni: true });
+            const pov = povoleneVar(z, id);
+            const pr = problemy(res, p, vlastnikVarianty(z, vv.id), L, pov);
+            const st = 'po výměně ' + (proj ? 'PROJ ' : 'OCK ') + p + ' (' + id + ') ' + L;
+            res.chyby.forEach(c => nalezy.push(st + ' chyba: ' + c));
+            pr.unik.forEach(u => nalezy.push(st + ' ' + u.nazev + ': ' + u.cizi.join(', ')));
+            pr.prazdne.forEach(n => nalezy.push(st + ' bez vlastního objednatele: ' + n));
+          }
+        }
+      }
+      return nalezy;
+    };
+    const dnes = await behVymeny(false, false);
+    const sProj = await behVymeny(true, false);
+    const sOboji = await behVymeny(true, true);
+    const n1 = dnes.filter(x => sProj.indexOf(x) < 0);
+    const volne = sProj.filter(x => sOboji.indexOf(x) < 0);
+    if (n1.length)
+      info('ZNÁMÁ CHYBA E0 N1, čeká na opravu E0: po výměně řídícího zůstává v projHlavicka hlavička původního řídícího → '
+        + n1.length + ' nálezů (zmizí se srovnanou projHlavicka), např. ' + n1.slice(0, 3).join(' | '));
+    else info('výměna řídícího: projHlavicka (E0 N1) žádný únik nezpůsobila');
+    /* Volná varianta (klon V1) nese v.zakaznik s názvem PŮVODNÍHO řídícího;
+     * nový řídící ji vidí v pohledu a porovnání, zábrana tisku kontroluje jen
+     * tištěnou variantu. */
+    test('výměna řídícího (B): volná varianta nenese do porovnání / pohledu nového řídícího v.zakaznik původního řídícího',
+      !volne.length, volne.slice(0, 6));
+    test('výměna řídícího (B): jinak žádný únik ani chyba v dokumentech všech zákazníků (OCK cz/en, PROJ cz/en/de/fr)',
+      !sOboji.length, sOboji.slice(0, 12));
   }
 
   /* --- POJISTKA P1: identita (celá zakázka) místo pohledu --- */

@@ -171,6 +171,14 @@ const vC = zak.varianty.find(v => String(v.id) === rC.zakaznik.varianta);
   test('řídící smí tisknout volnou variantu (ničí nabídka)', !!volna && vzTiskZabrana(zak, '', volna, 'nabidka', {}) === '');
   test('řídící NEsmí tisknout vlastní variantu C', /není nabídka zákazníka/.test(vzTiskZabrana(zak, '', vC, 'nabidka', {})));
   test('B NEsmí tisknout volnou variantu', vzTiskZabrana(zak, rB.zakaznik.id, volna, 'nabidka', {}) !== '');
+  volna.zakaznik = 'Gama Kanarek s.r.o.';
+  test('řídící: volná varianta s cizím v.zakaznik → v pohledu jeho název', (() => { const p = vzTiskPohled(zak, '');
+    const x = p.varianty.find(v => v.id === volna.id); return x !== volna && x.zakaznik === 'Alfa Kanarek s.r.o.'
+      && p.varianty.find(v => v.id === vA.id) === vA; })());
+  volna.nazev = 'Varianta pro Gama Kanarek';
+  test('porovnání řídícího: cizí název volné varianty → zastaveno', /Název varianty/.test(vzTiskZabrana(zak, '', null, 'porovnani', {})));
+  volna.nazev = 'Varianta 4';
+  test('porovnání řídícího bez cizích názvů projde', vzTiskZabrana(zak, '', null, 'porovnani', {}) === '');
   test('tiskový pohled řídícího: bez varianty C, s volnou', (() => { const p = vzTiskPohled(zak, ''); const ids = p.varianty.map(v => v.id);
     return ids.indexOf(vC.id) < 0 && ids.indexOf(volna.id) >= 0 && ids.indexOf(vA.id) >= 0; })());
 }

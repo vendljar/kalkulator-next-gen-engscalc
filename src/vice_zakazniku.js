@@ -513,11 +513,20 @@ function vzTiskPohled(zak, id) {
    * text sdílené varianty nebo klonu nese jméno řídícího. Data, zámek
    * a prodej zůstávají sdílené objekty skutečné varianty. Řídící: tytéž
    * objekty (v.zakaznik hlídá vzTiskZabrana jako sdílený text). */
-  const ridici = p.vzPohledZakaznika.id === vzRidiciId(zak);
+  /* Původní zákazník bez písmene (z1) má tytéž objekty, pokud volný text
+   * v.zakaznik nejmenuje jiného zákazníka (klon zdědí jméno zdroje; po výměně
+   * řídícího); zákazník s písmenem (další, i nový řídící po výměně) vždy
+   * kopie s odvozeným v.zakaznik. */
+  const puvodni = !p.vzPohledZakaznika.pismeno;
   const nazev = vzText(p.objednatel);
+  const ja = vzZakaznik(zak, p.vzPohledZakaznika.id);
+  const ostatni = vzZakaznici(zak).filter(x => x.id !== ja.id);
   p.varianty = (Array.isArray(zak.varianty) ? zak.varianty : []).filter(v => v && smi.has(String(v.id)))
-    .map(v => (ridici ? v : Object.assign({}, v, { zakaznik: nazev })));
+    .map(v => ((puvodni && !vzTextCizi(v.zakaznik, ja, ostatni)) ? v : Object.assign({}, v, { zakaznik: nazev })));
   if (!p.varianty.some(v => v.id === p.aktivni) && p.varianty.length) p.aktivni = p.varianty[0].id;
+  /* Protokol zakázky (E1 do něj píše názvy zákazníků) žádný dokument
+   * netiskne — do tiskového pohledu nepatří (pojistka R1). */
+  delete p.protokol;
   return p;
 }
 
@@ -610,8 +619,12 @@ function vzTiskZabrana(zak, id, varianta, typ, volby) {
     return 'Varianta' + (v && v.nazev ? ' „' + v.nazev + '"' : '') + ' není nabídka zákazníka ' + kdo
       + ' — pro něj se netiskne. Otevřete jeho variantu, nebo mu ji přiřaďte v kartě Zákazníci zakázky.';
   const cizi = vzZakaznici(zak).filter(x => x.id !== sid);
-  const texty = vzSdileneTexty(zak).concat(v ? [['Název varianty', v.nazev]] : [])
-    .concat(v && z.ridici ? [['Zákazník varianty (sloupec Zákazník)', v.zakaznik]] : []);
+  /* Název tištěné varianty; porovnání a detail položek tisknou názvy VŠECH
+   * variant zákazníka (u řídícího i volných). v.zakaznik hlídá vzTiskPohled. */
+  const tistene = typ === 'porovnani'
+    ? vzVariantyZakaznika(zak, sid).map(id => (zak.varianty || []).find(x => x && String(x.id) === id)).filter(Boolean)
+    : (v ? [v] : []);
+  const texty = vzSdileneTexty(zak).concat(tistene.map(x => ['Název varianty', x.nazev]));
   for (const [popisek, hodnota] of texty) {
     const c = vzTextCizi(hodnota, z, cizi);
     if (c) return popisek + ' obsahuje název nebo IČO jiného zákazníka zakázky („' + (c.hlavicka.objednatel || c.id)
