@@ -165,8 +165,7 @@ export function pdPoznamkaJeNase(obsah, zak) {
 export function pdPoznamkaZakJeNase(obsah, zak) {
   const t = jednaMezera(bezZnacek(obsah, ' '));
   const znacka = jednaMezera(pdPoznamkaEsc(pdPoznamkaZnacka(zak).trim()));
-  return !!znacka && t.startsWith(jednaMezera(pdPoznamkaEsc(PD_POZNAMKA_ZAK_UVOD))) && t.endsWith(znacka)
-    && (t.length === znacka.length || t.endsWith(' ' + znacka));
+  return !!znacka && t.startsWith(jednaMezera(pdPoznamkaEsc(PD_POZNAMKA_ZAK_UVOD))) && t.endsWith(znacka);
 }
 
 /* ---------- druhy poznámek (VZ-E5) ----------
