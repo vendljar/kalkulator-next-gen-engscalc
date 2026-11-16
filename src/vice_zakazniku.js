@@ -258,6 +258,13 @@ function vzVymenRidiciho(zak, id) {
   const d = zak.dalsiZakaznici[i];
   const varId = String(d.varianta || '');
   if (!zak.varianty.some(v => v && String(v.id) === varId)) return { ok: false, chyba: 'Varianta zákazníka neexistuje.' };
+  /* N5 (revize Fable): bývalý řídící se stane položkou dalsiZakaznici —
+   * musí projít tvarem (název, délky), jinak by vznikla neuložitelná zakázka. */
+  const sh = vzHlavickaZ(zak), sz = vzZastupciZ(zak.zastupci);
+  if (!sh.objednatel.trim())
+    return { ok: false, chyba: 'Řídící zákazník nemá vyplněný název — doplňte ho v hlavičce před výměnou řídícího.' };
+  if (VZ_HLAVICKA_POLE.some(k => sh[k].length > VZ_TEXT_MAX) || VZ_ZASTUPCI_POLE.some(k => sz[k].length > VZ_TEXT_MAX))
+    return { ok: false, chyba: 'Údaj řídícího zákazníka je delší než ' + VZ_TEXT_MAX + ' znaků — zkraťte ho před výměnou řídícího.' };
   const r = vzObj(zak.vzRidici) ? zak.vzRidici : { id: VZ_RIDICI_ID, pismeno: '', varianta: vzRidiciVariantaId(zak) };
   const stary = {
     id: vzRidiciId(zak),
@@ -269,6 +276,9 @@ function vzVymenRidiciho(zak, id) {
   const nh = vzHlavickaZ(d.hlavicka);
   VZ_HLAVICKA_POLE.forEach(k => { zak[k] = nh[k]; });
   zak.zastupci = vzZastupciZ(d.zastupci);
+  /* N1 (revize Fable): firemní pole hlavičky PROJ patří řídícímu taky —
+   * jinak by po výměně nesla firmu bývalého řídícího (únik do PROJ). */
+  vzProjFirma(zak, nh);
   zak.vzRidici = { id: String(d.id), pismeno: typeof d.pismeno === 'string' ? d.pismeno : '', varianta: varId };
   zak.dalsiZakaznici[i] = stary;
   if (typeof nastavRidici === 'function') nastavRidici(zak, varId);
@@ -276,6 +286,30 @@ function vzVymenRidiciho(zak, id) {
   const p = zak.pdZadani;
   if (vzObj(p) && vzObj(p.otisk)) VZ_OTISK_FIRMA.forEach(k => { delete p.otisk[k]; });
   return { ok: true };
+}
+
+/* Firemní pole hlavičky PROJ podle zákazníka (vzPohled, vzVymenRidiciho).
+ * `dic` jen tam, kde ho hlavička PROJ vede (starší ho nemají). Na místě. */
+function vzProjFirma(cil, hlavicka) {
+  if (!cil || !vzObj(cil.projHlavicka)) return;
+  VZ_HLAVICKA_POLE.forEach(k => { if (k !== 'dic' || k in cil.projHlavicka) cil.projHlavicka[k] = hlavicka[k]; });
+}
+
+/* Ukazatele na NEEXISTUJÍCÍ variantu (smazaná varianta, ruční úprava) →
+ * řídící varianta. N2 (revize Fable): zákazník se kvůli tomu nezahazuje.
+ * Vrací seznam oprav. Na místě. */
+function vzUkazateleOprav(zak) {
+  const out = [];
+  if (!zak || !Array.isArray(zak.varianty) || !zak.varianty.length) return out;
+  const ridiciVar = vzRidiciVariantaId(zak);
+  const ids = new Set(zak.varianty.filter(vzObj).map(v => String(v.id)));
+  if (vzObj(zak.vzRidici) && !ids.has(String(zak.vzRidici.varianta == null ? '' : zak.vzRidici.varianta))) {
+    zak.vzRidici.varianta = ridiciVar; out.push('vzRidici.varianta');
+  }
+  if (Array.isArray(zak.dalsiZakaznici)) zak.dalsiZakaznici.forEach((d, i) => {
+    if (vzObj(d) && !ids.has(String(d.varianta == null ? '' : d.varianta))) { d.varianta = ridiciVar; out.push('dalsiZakaznici[' + i + '].varianta'); }
+  });
+  return out;
 }
 
 /* INVARIANT (§ 2): řídící varianta zakázky = varianta řídícího zákazníka.
@@ -289,11 +323,7 @@ function vzSrovnej(zak) {
   const ridiciVar = vzRidiciVariantaId(zak);
   if (!vzObj(zak.vzRidici)) { zak.vzRidici = { id: VZ_RIDICI_ID, pismeno: '', varianta: ridiciVar }; out.push('vzRidici'); }
   else if (String(zak.vzRidici.varianta || '') !== ridiciVar) { zak.vzRidici.varianta = ridiciVar; out.push('vzRidici.varianta'); }
-  const ids = new Set((zak.varianty || []).filter(Boolean).map(v => String(v.id)));
-  zak.dalsiZakaznici.forEach((d, i) => {
-    if (vzObj(d) && !ids.has(String(d.varianta || ''))) { d.varianta = ridiciVar; out.push('dalsiZakaznici[' + i + '].varianta'); }
-  });
-  return out;
+  return out.concat(vzUkazateleOprav(zak).filter(x => x !== 'vzRidici.varianta'));
 }
 
 /* POHLED ZÁKAZNÍKA (§ 4, R1): mělká kopie zakázky, ve které hlavička,
@@ -314,11 +344,23 @@ function vzPohled(zak, id) {
   if (!z.ridici) {
     VZ_HLAVICKA_POLE.forEach(k => { p[k] = z.hlavicka[k]; });
     p.zastupci = z.zastupci;
-    if (vzObj(zak.projHlavicka)) {
-      p.projHlavicka = Object.assign({}, zak.projHlavicka);
-      VZ_HLAVICKA_POLE.forEach(k => { if (k in p.projHlavicka || k !== 'dic') p.projHlavicka[k] = z.hlavicka[k]; });
-    }
+    if (vzObj(zak.projHlavicka)) { p.projHlavicka = Object.assign({}, zak.projHlavicka); vzProjFirma(p, z.hlavicka); }
     VZ_POHLED_BEZ.forEach(k => { delete p[k]; });
+  }
+  /* N3 (rozhodnutí koordinace po revizi Fable): pohled nese JEN varianty,
+   * které zákazník smí vidět — další zákazník jen svou; řídící všechny
+   * kromě těch, na které ukazuje jen některý další zákazník (vlastní
+   * varianty ostatních: název, cena, razítka). Bez filtru (jeden zákazník,
+   * vše sdílené) zůstává TÉŽ pole `varianty` (zlatá sada). */
+  if (Array.isArray(zak.varianty)) {
+    const cizi = new Set(), ridiciVar = vzRidiciVariantaId(zak);
+    vzDalsi(zak).forEach(d => { const x = String(d.varianta || ''); if (x && x !== ridiciVar) cizi.add(x); });
+    const smi = v => vzObj(v) && (z.ridici ? !cizi.has(String(v.id)) : String(v.id) === z.varianta);
+    if (!zak.varianty.every(smi)) {
+      p.varianty = zak.varianty.filter(smi);
+      if (!p.varianty.some(v => String(v.id) === String(p.aktivni)))
+        p.aktivni = z.ridici ? ridiciVar : z.varianta;
+    }
   }
   p.vzPohledZakaznika = { id: z.id, pismeno: z.pismeno };
   return p;
@@ -403,6 +445,9 @@ function vzOcisti(zak) {
     if (d.zastupci === undefined) d.zastupci = vzZastupciPrazdni();
     else if (vzObj(d.zastupci)) VZ_ZASTUPCI_POLE.forEach(k => { if (d.zastupci[k] == null) d.zastupci[k] = ''; });
   });
+  /* N2 (revize Fable): ukazatel na smazanou variantu není důvod zákazníka
+   * zahodit — přesměruje se na řídící variantu, teprve pak se hlídá tvar. */
+  if (vzObj(zak.vzRidici) && Array.isArray(zak.dalsiZakaznici)) vzUkazateleOprav(zak);
   const p = vzTvarProblemy(zak);
   if (p.length) { pryc(); return p; }
   return [];
@@ -650,6 +695,6 @@ if (typeof module !== 'undefined' && module.exports)
     VZ_ZASTUPCI_POLE, VZ_RIDICI_KLICE, VZ_DALSI_KLICE, VZ_PLATNA_KLICE, VZ_OTISK_FIRMA, VZ_POHLED_BEZ, VZ_VYPNUTO,
     vzDalsi, vzRezim, vzMaData, vzRidiciId, vzRidiciVariantaId, vzZastupciPrazdni, vzZakaznici, vzZakaznik,
     vzRazitkaZakazniku, vzPismenoDalsi, vzIdDalsi, vzPridej, vzVariantaJenJeho, vzOdstran, vzVymenRidiciho,
-    vzSrovnej, vzPohled, vzTvarProblemy, vzOcisti, vzPodpis, vzPlatnaDrz, vzTvarText,
+    vzSrovnej, vzProjFirma, vzUkazateleOprav, vzPohled, vzTvarProblemy, vzOcisti, vzPodpis, vzPlatnaDrz, vzTvarText,
     vzPismenoPohledu, vzCisloSPismenem, vzCisloRozloz, vzVariantyZakaznika, vzTiskPohled, vzNorm, vzNazevJadro,
     vzTextCizi, vzTypProj, vzSdileneTexty, vzTiskZabrana, vzTiskPruhText, vzTiskVarianta, vzTiskHlidej };

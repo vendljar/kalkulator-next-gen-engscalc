@@ -491,6 +491,25 @@ async function hlavni() {
       test('zamčená sdílená V1, tisk pro B ' + L + ': dokumenty vznikly', !res.chyby.length, res.chyby);
       test('zamčená sdílená V1, tisk pro B ' + L + ': žádný kanárek A (zmrazený krycí list)', !pr.unik.length, pr.unik);
     }
+    /* RAZÍTKA OSTATNÍCH ZÁKAZNÍKŮ ve sdílené variantě (koordinace po revizi
+     * E0: v pohledu zůstávají). E3 do zamek.tisky[] píše snímek adresáta
+     * { id, pismeno, cislo, objednatel, ico } — dokument A ani B je nesmí
+     * vytisknout. Snímky nesou kanárky B a C. */
+    const snimek = (zk) => ({ id: zk.id, pismeno: zk.pismeno, cislo: '2026 - OPR - CN - 9940-' + (zk.pismeno || 'X'),
+      objednatel: zk.hlavicka.objednatel, ico: zk.hlavicka.ico });
+    const zkB = vzZakaznik(zz, 'z2'), zkC = vzZakaznik(zz, 'z3');
+    v1.zamek.tisky = (v1.zamek.tisky || []).concat([
+      { typ: 'nabidka', kdo: PEVNE.kdo, kdy: PEVNE.kdy, zakaznik: snimek(zkB) },
+      { typ: 'nabidka', kdo: PEVNE.kdo, kdy: PEVNE.kdy, zakaznik: snimek(zkC) }]);
+    for (const [p, id, cizi] of [['A', 'z1', ['B', 'C']], ['B', 'z2', ['C']]]) {
+      for (const L of ['cz', 'en']) {
+        const pz = vzTiskPohled(zz, id);
+        const res = await vystupy(pz, vzTiskVarianta(pz, v1), L, ZAK_TYPY_OCK);
+        const pr = problemy(res, p, 'A', L, povoleneVar(zz, id));
+        test('razítka B a C ve sdílené V1, tisk pro ' + p + ' ' + L + ': dokumenty vznikly a žádný cizí kanárek (' + cizi.join(', ') + ')',
+          !res.chyby.length && !pr.unik.length, { chyby: res.chyby, unik: pr.unik });
+      }
+    }
   }
 
   /* --- VÝMĚNA ŘÍDÍCÍHO (vzVymenRidiciho na B), kanárky A i v projHlavicka.
@@ -511,7 +530,9 @@ async function hlavni() {
         /* v.zakaznik sdílené V1 jmenuje A → zábrana pro nového řídícího B
          * (sdílený text); obchodník ho přepíše — teprve pak se tiskne. */
         const v1 = z.varianty[0];
-        if (!srovnatProj && !proj && !vzTiskZabrana(z, 'z2', v1, 'nabidka')) nalezy.push('zábrana: v.zakaznik V1 se jménem A nezastavil tisk pro nového řídícího B');
+        /* v.zakaznik se jménem A: tiskový pohled B ho přepíše jménem B (VZ-E2). */
+        if (!srovnatProj && !proj) { const x = vzTiskVarianta(vzTiskPohled(z, 'z2'), v1);
+          if (!x || x.zakaznik !== z.objednatel) nalezy.push('pohled B: v.zakaznik V1 se jménem A nepřepsán jménem B'); }
         v1.zakaznik = z.objednatel + ' ' + tokZ('B', 21);
         if (srovnatVolne) z.varianty.forEach(v => { if (vlastnikVarianty(z, v.id) === 'D') v.zakaznik = z.objednatel; });
         for (const [p, id] of [['A', 'z1'], ['B', 'z2'], ['C', 'z3']]) {
@@ -539,10 +560,9 @@ async function hlavni() {
     const sOboji = await behVymeny(true, true);
     const n1 = dnes.filter(x => sProj.indexOf(x) < 0);
     const volne = sProj.filter(x => sOboji.indexOf(x) < 0);
-    if (n1.length)
-      info('ZNÁMÁ CHYBA E0 N1, čeká na opravu E0: po výměně řídícího zůstává v projHlavicka hlavička původního řídícího → '
-        + n1.length + ' nálezů (zmizí se srovnanou projHlavicka), např. ' + n1.slice(0, 3).join(' | '));
-    else info('výměna řídícího: projHlavicka (E0 N1) žádný únik nezpůsobila');
+    /* E0 N1 opraveno (vzProjFirma, integrace 76ae631) — teď ostrý test. */
+    test('výměna řídícího (B): projHlavicka nese nového řídícího (E0 N1) — žádný nález navíc oproti srovnané projHlavicka',
+      !n1.length, n1.slice(0, 6));
     /* Volná varianta (klon V1) nese v.zakaznik s názvem PŮVODNÍHO řídícího;
      * nový řídící ji vidí v pohledu a porovnání, zábrana tisku kontroluje jen
      * tištěnou variantu. */

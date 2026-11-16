@@ -157,8 +157,6 @@ let ulozenaVZ = null;
 const SPATNE = [
   ['duplicitní písmeno dalších zákazníků', z => { G.vzPridej(z, UDAJE_C, { kdo: 'x' }); z.dalsiZakaznici[1].pismeno = 'B'; }],
   ['duplicitní id dalších zákazníků', z => { G.vzPridej(z, UDAJE_C, { kdo: 'x' }); z.dalsiZakaznici[1].id = 'z2'; }],
-  ['ukazatel dalšího na neexistující variantu', z => { z.dalsiZakaznici[0].varianta = 'neexistuje'; }],
-  ['vzRidici.varianta na neexistující variantu', z => { z.vzRidici.varianta = 'neexistuje'; }],
   ['10 dalších zákazníků (strop 9)', z => { for (let i = 0; i < 8; i++) G.vzPridej(z, UDAJE_C, { kdo: 'x' });
     const d = kopie(z.dalsiZakaznici[8]); d.id = 'z99'; d.pismeno = 'Y'; z.dalsiZakaznici.push(d); }, /limit/],
   ['vzRidici bez dalsiZakaznici', z => { delete z.dalsiZakaznici; }],
@@ -174,6 +172,27 @@ const SPATNE = [
   ['hodnota hlavičky není text', z => { z.dalsiZakaznici[0].hlavicka.ico = { a: 1 }; }],
   ['platna není objekt', z => { z.dalsiZakaznici[0].platna = 'ano'; }],
 ];
+/* N2 (revize Fable): ukazatel na neexistující (smazanou) variantu import
+ * přesměruje na řídící — zákazník se nezahodí, uloží se 200. */
+for (const [jm, fn] of [['ukazatel dalšího na neexistující variantu', z => { z.dalsiZakaznici[0].varianta = 'neexistuje'; }],
+                        ['vzRidici.varianta na neexistující variantu', z => { z.vzRidici.varianta = 'neexistuje'; }]]) {
+  const z = sVz('N2: ' + jm, fn);
+  const r = await uloz(z, cO);
+  const u = r.soubor ? ulozenoObj(r.soubor) : null;
+  const rid = u && (u.varianty.find(v => v.ridici) || u.varianty[0]).id;
+  test('ZAP N2: ' + jm + ' → 200, zákazník zůstal a ukazuje na řídící',
+    r.status === 200 && u && u.dalsiZakaznici && u.dalsiZakaznici.length === 1 && u.dalsiZakaznici[0].varianta === rid && u.vzRidici.varianta === rid,
+    { status: r.status, chyba: r.chyba, d: u && u.dalsiZakaznici });
+}
+/* N9 (revize Fable): první vzRidici je vždy { z1, '' }. */
+for (const [jm, fn] of [['první vzRidici s jiným id (z5)', z => { z.vzRidici.id = 'z5'; }],
+                        ['první vzRidici s písmenem (C)', z => { z.vzRidici.pismeno = 'C'; }]]) {
+  const z = sVz('N9: ' + jm, fn);
+  const pred = zakazekVUlozisti();
+  const r = await uloz(z, cO);
+  test('ZAP N9: ' + jm + ' → 400, úložiště beze změny', r.status === 400 && /řídícího/.test(r.chyba || '') && zakazekVUlozisti() === pred,
+    { status: r.status, chyba: r.chyba });
+}
 for (const [jm, fn, re] of SPATNE) {
   const z = sVz('špatně: ' + jm, fn);
   const pred = zakazekVUlozisti();
@@ -275,7 +294,7 @@ for (const [jm, fn, re] of SPATNE) {
 
 /* ---------- 6) obnova ze souboru (náhled — nic se nezapíše) ---------- */
 { const platna = kopie(sVz('obnova platná'));
-  const vadna = kopie(sVz('obnova vadná', z => { z.dalsiZakaznici[0].varianta = 'neexistuje'; }));
+  const vadna = kopie(sVz('obnova vadná', z => { G.vzPridej(z, UDAJE_C, { kdo: 'x' }); z.dalsiZakaznici[1].pismeno = 'B'; }));
   const zaloha = { porizena: '2026-11-16T10:00:00.000Z', zakazky: { 'TEST-VZ-OBNOVA-PLATNA.json': platna, 'TEST-VZ-OBNOVA-VADNA.json': vadna } };
   const obnov = async () => { const r = await post(obnova, 'http://x/api/obnova', { zdroj: { soubor: zaloha }, rezim: 'doplnit', nahled: true, casti: ['zakazky'] }, cA);
     return { status: r.status, ...(await r.json()) }; };

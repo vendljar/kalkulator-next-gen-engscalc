@@ -90,6 +90,28 @@ a B–Z. `platna` píše jen server (E3).
 Klient: `viceZakaznikuZapnuto()` (online_ui.js; stav se načítá `onlineNactiFunkce`, jako u šachet jen na
 vyžádání — E1 si ho musí načíst, např. při otevření zakázky s `vzMaData` nebo při renderu tlačítka).
 
+## Revize Fable (16. 11. 2026) — opraveno
+
+- **N1** `vzVymenRidiciho` přepíše i firemní pole `projHlavicka` (objednatel, adresaObjednatele, ico, kontakt, dic
+  kde je) údaji nového řídícího (`vzProjFirma`, totéž používá `vzPohled`).
+- **N2** `vzOcisti` už zákazníka se smazanou variantou nezahazuje: ukazatel na neexistující variantu přesměruje na
+  řídící (`vzUkazateleOprav`, sdílí ho `vzSrovnej`), teprve pak kontrola tvaru. **Pro E1:** s VYP se tím smazání
+  varianty, na kterou ukazuje další zákazník, odmítne 400 (`VZ_VYPNUTO`) — v UI udělat zábranu smazání varianty,
+  na kterou ukazuje zákazník, a varování z `vzZahozeno`.
+- **N3 — ZMĚNA CHOVÁNÍ `vzPohled` (pro E2):** pohled nese JEN varianty, které zákazník smí vidět. Další zákazník:
+  jen svou variantu (`pohled.aktivni` = ona). Řídící: všechny kromě variant, na které ukazuje některý další
+  zákazník a které nejsou řídící. Objekty variant jsou tytéž (tisk zamyká skutečnou); bez filtru (jeden
+  zákazník, vše sdílené) zůstává totéž pole `varianty` (zlatá sada 319/319). Porovnání variant, podklady
+  i rozpis variant v E2 proto stačí brát z pohledu. Razítka ostatních zákazníků ve SDÍLENÉ variantě
+  (`zamek.tisky[].zakaznik`, E3) v pohledu zůstávají — E2/E3 ověří testem úniku, že se netisknou.
+- **N5** `vzVymenRidiciho` odmítne předem řídícího bez názvu nebo s polem nad 500 znaků (srozumitelná chyba,
+  zakázka beze změny).
+- **N9** server vynutí první `vzRidici` jako `{ id: 'z1', pismeno: '' }` (400).
+- Mutace: dřív hlášeno 28 + 10 a v souborech „29 + 11“ — rozdíl je řádek úvodního komentáře bloku `… [VZ E0] */`,
+  který `grep "VZ E0"` započítá; mutací bylo 28 + 10. Teď jádro 36, server 11.
+- Po opravách (d3fc96a): mutace [VZ E0] jádro **36/36**, server **11/11**; kolo `--bez-mutaci` **VŠE ZELENÉ** — sady 392/0/59,
+  hodiny +400 dní 361/0/1, statické 5/5; model 145/0, server 55/0, zlatá sada VZ 13/0, VS 319/319.
+
 ## Změny proti návrhu / promptu (bezpečnější volba)
 
 - Báze `77e36e0` (integrace VZ), ne `8462aea` — pokyn koordinace.
@@ -101,6 +123,10 @@ vyžádání — E1 si ho musí načíst, např. při otevření zakázky s `vzM
 - Vadný tvar dostane s VYP hlášku „neplatný údaj“, ne „funkce vypnutá“ (odmítne se tak či tak).
 
 ## Otevřené body
+
+- **Pro E3 (revize Fable):** N4 `zalozen` ze serveru (relace, uložená verze); N6 `platna` počítat ze zámků
+  a rozhodnout, kde je platná nabídka řídícího; N7 obnova zakázky s víc zákazníky s VYP se odmítne — před obnovou
+  zapnout vypínač; N8 `priponaMax` se po odstranění zákazníka s vlastní variantou nevrací (#17). Zapsáno v B220.
 
 - `vzVymenRidiciho`: položka bývalého řídícího nemá `zalozen` a `vzRidici` ho nedrží — po výměně se ztratí, kdo
   a kdy přidal nového řídícího. Návrh to neřeší; rozhodne E4 (případně `vzRidici.zalozen`).
