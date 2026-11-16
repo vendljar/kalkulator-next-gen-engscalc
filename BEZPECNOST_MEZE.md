@@ -1952,3 +1952,52 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   dokumenty PROJ jen pro řídícího (R5); s vypnutou funkcí jen pro řídícího.
   Webhook najde zakázku i podle čísla s písmenem jen u strany OCK a jen když
   zakázka toto písmeno nese (jinak jako dřív).
+### VZ-E3 #602 (v16.11.5, 16. 11. 2026) — zámek po zákaznících
+
+- **B227 — E3: razítko „komu“, platná nabídka a odstranění zákazníka hlídá server.**
+  Každý záznam tisku `zamek.tisky[]` u zakázky s víc zákazníky nese
+  `zakaznik` { id, pismeno, cislo, objednatel, ico } — snímek adresáta.
+  Server (`vzServerRazitka`, `lib/zakazka_kontrola.mjs`) u NOVĚ připsaných
+  záznamů (za uloženým začátkem, u nového zámku všechny) bere z prohlížeče
+  jen id a snímek složí sám z ukládané zakázky; zákazník, který v zakázce
+  není, nebo varianta, která mu nepatří (jeho varianta, varianta, kterou mu
+  podle ULOŽENÝCH razítek už odešla, u řídícího i volná varianta), → 400.
+  S vypnutou funkcí smí nový tisk jen řídící zákazník; s jedním zákazníkem
+  klíč zmizí. Uložená razítka drží `uloZamekRazitkaDrz` (B62) — přepsat ani
+  ubrat je nejde. `zamek.cislo` zůstává číslo varianty BEZ písmene (zámek je
+  společný všem zákazníkům sdílené varianty, B56 beze změny); číslo dokladu
+  zákazníka nese razítko. **Odstranění zákazníka, kterému odešla nabídka**
+  (razítko s jeho id v zámku kterékoli varianty ULOŽENÉ verze; záznam bez
+  razítka patří původnímu zákazníkovi z1), smí jen **role Administrátor
+  z relace**, ostatní 403; řídícího a prodaného nikdo (jádro). Razítka
+  zůstávají, zamčená varianta zůstává (zmizení zamčené varianty hlídá dál
+  `uloKontrolaZamku` / `varianta.smazatUzamcenou`). Písmeno a id stávajícího
+  zákazníka (i řídícího) se nemění (400, N9); nový zákazník nesmí dostat id
+  ani písmeno z uložených razítek (400). `zalozen` { kdo, kdy } píše server
+  (u existujícího id z uložené verze, u nového relace a čas serveru, N4).
+  `platna` dalších zákazníků server při každém uložení přepočítá ze zámků
+  (`vzPlatna`, N6); řídícímu se nikam neukládá (`vzRidici` nese jen id,
+  písmeno a variantu) — jeho platnou nabídku počítá `vzPlatna` za běhu.
+  *Co to nedělá:* id a písmeno zákazníka odstraněného BEZ odeslané nabídky
+  se uvolní a nový zákazník je smí dostat (návrh § 1.1) — u takto znovu
+  použitého id převezme server `zalozen` z uložené verze jen tehdy, když
+  zákazník v ní ještě je (jinak nový z relace). Záznam tisku bez razítka se
+  přičítá z1; kdyby po výměně řídícího (E4) a odstranění z1 zůstal jediný
+  zákazník a tiskl, jeho tisky bez razítka by se přičetly z1 (rozhodne E4).
+  Obnova zakázky (`/api/obnova`) razítka nových tisků neskládá — zámky
+  v záloze jsou doklad (z otisku i `zalozen` a `platna` ze zálohy).
+- **B228 — E3: zmrazení údajů po odeslání nabídky u víc zákazníků.**
+  U zakázky s víc zákazníky zmrazí název akce a adresu stavby PRVNÍ odeslaná
+  nabídka komukoli (kterákoli zamčená varianta; `zamekZakZmeny` → 409,
+  v prohlížeči `zamekZakCestaZmrazena`). Dalšímu zákazníkovi se po odeslání
+  nabídky JEMU (uložená verze) nemění název, sídlo, IČO a DIČ (409);
+  kontaktní osoba a zástupci se měnit smí — snímek adresáta je v razítku
+  a dotisk tiskne název a IČO z něj (`vzTiskPohled(zak, id, varianta)`).
+  Razítka ostatních zákazníků se z tiskového pohledu vyjmou (D3). *Co to
+  nedělá:* hlavičku ŘÍDÍCÍHO zákazníka hlídá dál jen zámek hlavičky jako
+  dnes (po SoD) — jeho název se po odeslání CN měnit smí (dotisk ho vezme
+  z razítka). Obnova (`/api/obnova`) zmrazení údajů neposuzuje.
+  **N7 (revize E0):** obnova zakázky s víc zákazníky se s VYPNUTOU funkcí
+  odmítne (400) — před obnovou takové zakázky administrátor vypínač
+  `viceZakazniku` zapne (Nastavení → Zkušební funkce), obnoví a může ho
+  zase vypnout.
