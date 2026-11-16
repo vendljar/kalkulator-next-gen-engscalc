@@ -386,6 +386,7 @@ function vzSeznamZakaznik(v) {
 /* ---------- obsluha ---------- */
 
 function vzOtevri(id) {
+  vzOtevrenyId();   // srovná VZ_UI.zak (jiná zakázka) dřív, než se zapíše výběr
   if (!vzZap() || !vzRezimUI()) return;
   const z = vzZakaznik(ZAK, id);
   if (!z) return;
@@ -488,6 +489,7 @@ function vzVlastniVarianta(id) {
   if (vzStop('vlastní varianta zákazníka')) return;
   const z = vzZakaznik(ZAK, id);
   if (!z || z.ridici) return;
+  vzOtevrenyId();   // srovná VZ_UI.zak dřív, než se zapíše výběr
   const d = ZAK.dalsiZakaznici.find(x => vzObj(x) && String(x.id) === z.id);
   const zdroj = vzVarianta(z.varianta) ? z.varianta : vzRidiciVariantaId(ZAK);
   const kopie = typeof klonujVariantu === 'function' ? klonujVariantu(ZAK, zdroj, { aktivovat: false }) : null;
