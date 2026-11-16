@@ -43,6 +43,7 @@ Object.assign(globalThis, require('../../src/techspec.js'));
 Object.assign(globalThis, require('../../src/zakazka.js'));
 Object.assign(globalThis, require('../../src/uloziste.js'));
 Object.assign(globalThis, require('../../src/zamek.js'));
+Object.assign(globalThis, require('../../src/vice_zakazniku.js'));   // VZ #598: víc zákazníků na zakázce (import, kontrola tvaru)
 Object.assign(globalThis, require('../../src/sleva.js'));
 Object.assign(globalThis, require('../../src/schvalovani.js'));   // serverová pojistka rozhodnutí (B2)
 Object.assign(globalThis, require('../../src/zaokrouhleni.js'));

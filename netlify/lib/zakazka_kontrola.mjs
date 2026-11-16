@@ -285,6 +285,38 @@ export function vsKontrolaSachet(stara, zak, relace, ctx, obnova) {
   return null;
 }
 
+/* VÍC ZÁKAZNÍKŮ NA ZAKÁZCE NA SERVERU (VZ #598, E0 = #599, 16. 11. 2026).
+ *   – vadný tvar zahozený už importem (`vzZahozeno`, importZakazka) → 400
+ *     (ZAP i VYP: prohlížeč neposlal, co tvrdí, že poslal);
+ *   – VYPNUTO (vzor VS R21, J. V.): `vzRidici` / `dalsiZakaznici` se nesmí
+ *     změnit proti uložené verzi (podpis bez `platna`) → 400. Uložení beze
+ *     změny těchto klíčů projde — zakázka, která víc zákazníků UŽ MÁ, se dál
+ *     ukládá, data se nemažou;
+ *   – ZAPNUTO: vadný tvar (vzTvarProblemy: id, písmena, ukazatele na
+ *     varianty, strop 9 dalších, délky, neznámé klíče) → 400;
+ *   – `platna` píše jen server (vzPlatnaDrz: z uložené verze; obnova
+ *     z otisku ji bere ze zálohy);
+ *   – invariant „řídící varianta = varianta řídícího zákazníka“ se po
+ *     kontrolách srovná (vzSrovnej), neodmítá se (vzor prodRidiciSrovnej).
+ * Uložená verze jde přes tutéž migraci (N43). Vrací { status, chyba } nebo null. */
+export function vzServerKontrola(stara, zak, volby = {}) {
+  const G = globalThis;
+  if (typeof G.vzTvarProblemy !== 'function' || !zak || typeof zak !== 'object') return null;
+  if (Array.isArray(zak.vzZahozeno) && zak.vzZahozeno.length)
+    return { status: 400, chyba: 'Zakázka nese ' + G.vzTvarText(zak.vzZahozeno) };
+  if (!volby.zapnuto) {
+    let st = stara;
+    if (st && typeof G.importZakazka === 'function') { try { st = G.importZakazka(JSON.parse(JSON.stringify(st))); } catch (e) { st = stara; } }
+    if (G.vzPodpis(zak) !== G.vzPodpis(st)) return { status: 400, chyba: G.VZ_VYPNUTO };
+  } else {
+    const p = G.vzTvarProblemy(zak);
+    if (p.length) return { status: 400, chyba: 'Zakázka nese ' + G.vzTvarText(p) };
+  }
+  if (!(volby.obnova && !volby.zeSouboru)) G.vzPlatnaDrz(stara, zak);
+  G.vzSrovnej(zak);
+  return null;
+}
+
 export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const { ULO, SCHV, JEKLY } = ctx;
   const obnova = ctx.rezim === 'obnova';
@@ -309,6 +341,12 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
    * šachet 2+ pak projdou TÝMIŽ kontrolami jako šachta 1 (vsKontrolaSachet). */
   const vs = ULO.uloVsProblemy ? ULO.uloVsProblemy(zak, stara, { zapnuto: ctx.viceSachet === true, importuj: globalThis.importZakazka }) : null;
   if (vs) return odmitni(vs.status, veta(vs.chyba));
+  /* VÍC ZÁKAZNÍKŮ (VZ #598, E0): vypínač správce (ctx.viceZakazniku, výchozí
+   * vypnuto), tvar, `platna` jen ze serveru, invariant řídícího. */
+  {
+    const p = vzServerKontrola(stara, zak, { zapnuto: ctx.viceZakazniku === true, obnova, zeSouboru });
+    if (p) return odmitni(p.status, veta(p.chyba));
+  }
   {
     const p = vsKontrolaSachet(stara, zak, relace, ctx, obnova);
     if (p) return odmitni(p.status, veta(p.chyba));

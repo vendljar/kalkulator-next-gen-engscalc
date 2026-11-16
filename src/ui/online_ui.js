@@ -662,25 +662,41 @@ function onlineSablonyRezimNastav(rezim) {
  * nebo neúspěšné načtení = vypnuto. NAČÍTÁ SE JEN, KDYŽ JE POTŘEBA
  * (zakázka s daty víc šachet, panel Zkušební funkce): s jednou šachtou
  * aplikace neodešle ani požadavek navíc — přesně jako před VS. */
+/* Stav vypínačů z odpovědi serveru (VZ #598: i viceZakazniku). */
+function onlineFunkceZOdpovedi(o) {
+  const f = (o && o.funkce) || {};
+  return { viceSachet: f.viceSachet === true, viceZakazniku: f.viceZakazniku === true, kdo: (o && o.kdo) || '', kdy: (o && o.kdy) || '' };
+}
 function onlineNactiFunkce() {
   return onlineApi('/api/funkce').then(o => {
-    ONLINE_STAV.funkce = { viceSachet: !!(o.funkce && o.funkce.viceSachet === true), kdo: o.kdo || '', kdy: o.kdy || '' };
+    ONLINE_STAV.funkce = onlineFunkceZOdpovedi(o);
     return true;
-  }).catch(() => { ONLINE_STAV.funkce = { viceSachet: false }; return false; });
+  }).catch(() => { ONLINE_STAV.funkce = { viceSachet: false, viceZakazniku: false }; return false; });
 }
 function onlineFunkceZapnuta(k) {
   return !!(ONLINE_STAV.ja && ONLINE_STAV.funkce && ONLINE_STAV.funkce[k] === true);
 }
 function viceSachetZapnuto() { return onlineFunkceZapnuta('viceSachet'); }
+/* Víc zákazníků na zakázce (VZ #598, E0): výchozí VYP, zapíná jen
+ * administrátor v Nastavení → Zkušební funkce; rozhoduje server. */
+function viceZakaznikuZapnuto() { return onlineFunkceZapnuta('viceZakazniku'); }
+const ONLINE_FUNKCE_TEXTY = {
+  viceSachet: { nazev: 'Víc šachet v nabídce',
+    zap: 'Obchodníci budou moci zakládat nabídky s víc šachtami. Na ostrém webu nechte funkci vypnutou.',
+    vyp: 'Zakázky s víc šachtami se dál počítají a tisknou podle dat, jejich šachty ale nepůjde měnit.' },
+  viceZakazniku: { nazev: 'Víc zákazníků na zakázce',
+    zap: 'Obchodníci budou moci přidat k zakázce dalšího zákazníka. Funkce se dodává po etapách — na ostrém webu ji nechte vypnutou.',
+    vyp: 'Zakázky s víc zákazníky zůstanou, jak jsou, jejich zákazníky ale nepůjde měnit.' },
+};
 async function onlineFunkceNastav(k, zapnout) {
   if (!jeAdminOnline()) { onlineZprava('Zkušební funkce přepíná jen administrátor.', 'varovani'); render(); return false; }
-  if (!await potvrd((zapnout ? 'Zapnout' : 'Vypnout') + ' zkušební funkci „Víc šachet v nabídce" pro celý program?\n\n'
-    + (zapnout ? 'Obchodníci budou moci zakládat nabídky s víc šachtami. Na ostrém webu nechte funkci vypnutou.'
-      : 'Zakázky s víc šachtami se dál počítají a tisknou podle dat, jejich šachty ale nepůjde měnit.'))) return false;
+  const tx = ONLINE_FUNKCE_TEXTY[k] || ONLINE_FUNKCE_TEXTY.viceSachet;
+  if (!await potvrd((zapnout ? 'Zapnout' : 'Vypnout') + ' zkušební funkci „' + tx.nazev + '" pro celý program?\n\n'
+    + (zapnout ? tx.zap : tx.vyp))) return false;
   const telo = {}; telo[k] = !!zapnout;
   return onlineApi('/api/funkce', telo).then(o => {
-    ONLINE_STAV.funkce = { viceSachet: !!(o.funkce && o.funkce.viceSachet === true), kdo: o.kdo || '', kdy: o.kdy || '' };
-    onlineZprava('Víc šachet v nabídce: ' + (ONLINE_STAV.funkce.viceSachet ? 'zapnuto.' : 'vypnuto.'));
+    ONLINE_STAV.funkce = onlineFunkceZOdpovedi(o);
+    onlineZprava(tx.nazev + ': ' + (ONLINE_STAV.funkce[k] ? 'zapnuto.' : 'vypnuto.'));
     return true;
   }).catch(e => { onlineZprava('Vypínač se nepodařilo uložit: ' + e.message, 'chyba'); return false; })
     .then(v => { render(); if (typeof renderNastaveni === 'function') renderNastaveni(); return v; });
@@ -701,7 +717,19 @@ function nastFunkce() {
     <div class="note">Stav: ${zap ? '<b>zapnuto</b>' : '<b>vypnuto</b>'}${f.kdy ? ' (naposledy změnil ' + esc(f.kdo || '?') + ' '
       + esc(String(f.kdy).slice(0, 10)) + ')' : ''}.</div>
     <div class="btns"><button class="mini" id="vsVypinac" onclick="onlineFunkceNastav('viceSachet', ${zap ? 'false' : 'true'})">
-      ${zap ? 'Vypnout' : 'Zapnout'} víc šachet v nabídce</button></div>`;
+      ${zap ? 'Vypnout' : 'Zapnout'} víc šachet v nabídce</button></div>
+    ${nastFunkceVz(f)}`;
+}
+/* Druhý vypínač: víc zákazníků na zakázce (VZ #598, E0). */
+function nastFunkceVz(f) {
+  const zap = f.viceZakazniku === true;
+  return `<div class="sec-title">Víc zákazníků na zakázce — zkušební funkce</div>
+    <div class="note">Stejnou zakázku může poptat víc zákazníků — každý dostane nabídku se svým písmenem
+      (…-B, …-C) a deal v Pipedrive vede řídící zákazník (#598). Funkce se dodává po etapách
+      — <b>na ostrém webu ji nechte vypnutou</b>. S vypnutou funkcí se aplikace chová přesně jako dosud.</div>
+    <div class="note">Stav: ${zap ? '<b>zapnuto</b>' : '<b>vypnuto</b>'}.</div>
+    <div class="btns"><button class="mini" id="vzVypinac" onclick="onlineFunkceNastav('viceZakazniku', ${zap ? 'false' : 'true'})">
+      ${zap ? 'Vypnout' : 'Zapnout'} víc zákazníků na zakázce</button></div>`;
 }
 
 function onlineNactiFirmu() {

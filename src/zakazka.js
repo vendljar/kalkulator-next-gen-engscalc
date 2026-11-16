@@ -1124,6 +1124,14 @@ function importZakazka(obj) {
     // zápis by spadl na undefined.push. Guard kvůli Node testům, které
     // zakazka.js načítají bez poznamky.js.
     if (typeof poznamkyZajisti === 'function') poznamkyZajisti(obj);
+    /* VZ #598 (E0): další zákazníci — neznámé klíče pryč, jeden zákazník =
+     * žádné klíče, vadný tvar = klíče pryč + nevýčtový seznam vad
+     * (`vzZahozeno`, jako fotoZahozena; server podle něj odmítne 400).
+     * Guard kvůli Node testům bez vice_zakazniku.js. */
+    if (typeof vzOcisti === 'function') {
+      const vady = vzOcisti(obj);
+      if (vady.length) Object.defineProperty(obj, 'vzZahozeno', { value: vady, enumerable: false, configurable: true, writable: true });
+    }
     zajistiProjHlavicku(obj);   // migrace: hlavička PROJ se osamostatnila – převezme dosavadní údaje z OCK
     // #34: přípony čísel variant a prázdný zámek. Guard kvůli Node testům,
     // které zakazka.js načítají bez zamek.js.
@@ -1806,6 +1814,13 @@ function zakazkaDuplikuj(zak, noveCislo) {
   /* Prodej patří původní zakázce (#540): kopie není prodaná a stopu nedědí. */
   delete nova.prodejHistorie;
   delete nova.prodejOdemknout;
+  /* Víc zákazníků (VZ #598, E0): kopie je pro JINÉHO zákazníka — další
+   * zákazníci původní zakázky se nepřenášejí (únik údajů, R1). Pole psaná
+   * serverem k nim (poznámka dealu, organizace vítěze) taky ne. */
+  delete nova.vzRidici;
+  delete nova.dalsiZakaznici;
+  delete nova.pdPoznamkaZakaznici;
+  delete nova.pdOrgVitez;
 
   /* Zápisy o jednání patří k původní akci, ne sem. */
   nova.poznamky = [];

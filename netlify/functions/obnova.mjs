@@ -747,7 +747,7 @@ async function obsluha(req, uvolnit) {
        * doklad — viz lib/zakazka_kontrola.mjs. */
       const ctx = { ULO, SCHV, JEKLY, slevyNast: (prog && prog.platny && prog.platny.slevy) || {},
                     verzeServeru: serverVerze(), rezim: 'obnova', zeSouboru: zdrojPopis.typ === 'soubor',
-                    viceSachet: (await funkceCti(sProg)).viceSachet };   // VS #570: vypínač správce
+                    ...(await funkceCti(sProg)) };   // VS #570 / VZ #598: vypínače správce (viceSachet, viceZakazniku)
       for (const [k, v] of Object.entries(mapa)) {
         if (!klicZeZalohyPlatny(k)) { preskoc(b, k, KLIC_ZE_ZALOHY_DUVOD); continue; }
         if (v == null || typeof v !== 'object') { preskoc(b, k, 'poškozený záznam (není objekt)'); continue; }

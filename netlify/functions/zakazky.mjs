@@ -166,11 +166,11 @@ export default async (req) => {
    * ceník varianty a přepisy). Administrátor matici nepotřebuje — čte se
    * jen pro ostatní role. */
   const zobr = relace.role === 'Administrátor' ? null : await sProg.cti('zobrazeni');
-  const viceSachet = (await funkceCti(sProg)).viceSachet;   // VS #570: vypínač správce
+  const { viceSachet, viceZakazniku } = await funkceCti(sProg);   // VS #570 / VZ #598: vypínače správce
   const kontrola = zakazkaServerKontrola(stara, zak, relace,
     { ULO, SCHV, JEKLY, slevyNast, verzeServeru: serverVerze(), rezim: 'ulozeni',
       program: prog, matice: (zobr && zobr.matice) || null,
-      viceSachet });   // VS #570: vypínač správce
+      viceSachet, viceZakazniku });   // VS #570 / VZ #598: vypínače správce
   if (!kontrola.ok) return { odpoved: json({ ok: false, chyba: kontrola.chyba }, kontrola.status) };
   /* Stav dealu Pipedrive dosazuje server (P1) — z prohlížeče jen tvar. */
   await pdStavUlozeni(zak, stara);
