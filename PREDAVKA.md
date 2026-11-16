@@ -63,7 +63,11 @@ vyžádání — E1 si ho musí načíst, např. při otevření zakázky s `vzM
   (`zamek.tisky[].zakaznik`, E3) v pohledu zůstávají — E2/E3 ověří testem úniku, že se netisknou.
 - **N5** `vzVymenRidiciho` odmítne předem řídícího bez názvu nebo s polem nad 500 znaků (srozumitelná chyba,
   zakázka beze změny).
-- **N9** server vynutí první `vzRidici` jako `{ id: 'z1', pismeno: '' }` (400).
+- **N9 + D1** (dorevize): když uložená verze data VZ nemá, musí mezi zákazníky (`vzRidici` + `dalsiZakaznici`)
+  být právě jeden `{ id: 'z1', pismeno: '' }` (nemusí být řídící — přidat a v témž uložení vyměnit řídícího
+  projde), jinak 400.
+- **D4** s VYP a smazanou variantou, na kterou ukazuje další zákazník, hláška `VZ_VYPNUTO_VARIANTA`
+  („Variantu nejde smazat: ukazuje na ni další zákazník a funkce Víc zákazníků je vypnutá…“).
 - Mutace: dřív hlášeno 28 + 10 a v souborech „29 + 11“ — rozdíl je řádek úvodního komentáře bloku `… [VZ E0] */`,
   který `grep "VZ E0"` započítá; mutací bylo 28 + 10. Teď jádro 36, server 11.
 - Po opravách (d3fc96a): mutace [VZ E0] jádro **36/36**, server **11/11**; kolo `--bez-mutaci` **VŠE ZELENÉ** — sady 392/0/59,

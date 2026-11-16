@@ -1856,7 +1856,7 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   Funkci proto nezapínat mimo testovací web, dokud E3 a E4 nejsou sloučené.
   Po revizi Fable (16. 11. 2026): ukazatel zákazníka na smazanou variantu
   import přesměruje na řídící variantu (zákazník se nezahodí, N2); první
-  `vzRidici` server vynutí jako { z1, '' } (N9); pohled zákazníka nese jen
+  `vzRidici` musí mít mezi zákazníky právě jeden { z1, '' } (N9, D1); pohled zákazníka nese jen
   varianty, které zákazník smí vidět (N3). S VYP se tím odmítne (400) i
   smazání varianty, na kterou ukazuje další zákazník (změní se ukazatel) —
   zábranu v UI přinese E1.
