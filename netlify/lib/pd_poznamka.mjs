@@ -35,6 +35,19 @@
  * starý a příští uložení zápis zkusí znovu; odpověď nese stav a varování.
  *
  * Poznámky Pipedrive API v2 protějšek nemají (lib/pipedrive.mjs) — v1.
+ *
+ * DRUHY POZNÁMEK (VZ-E5 #604, 16. 11. 2026). Modul je zobecněný na „druh
+ * poznámky“ { pole zakázky, úvod, stavba textu, prázdný stav, klíč stropu,
+ * vypínač, předmět hlášek }. Šachty (PD_POZNAMKA_DRUH_SACHTY) zůstávají pod
+ * dnešními jmény a s dnešním chováním; druhý druh je seznam DALŠÍCH
+ * ZÁKAZNÍKŮ na zakázce (PD_POZNAMKA_DRUH_ZAKAZNICI, pole pdPoznamkaZakaznici,
+ * úvod „Další zákazníci na zakázce: “, klíč stropu
+ * strop:poznamka-zakaznici:deal:<id>, vypínač viceZakazniku, mez B225).
+ * Text staví src/vz_poznamka.js (týž kód jako suchý běh v prohlížeči).
+ * Obě poznámky se zapisují v JEDNOM uložení se SPOLEČNÝM časovým rozpočtem
+ * PD_POZNAMKA_CELKEM_MS — šachty první, zákazníci druzí; nestihne-li se
+ * druhá, stav „chyba“ s varováním a zkusí se při dalším uložení
+ * (pdPoznamkyUlozeni; volající čte zakázku potřetí jen jednou pro obě).
  * ============================================================ */
 import { createHash } from 'node:crypto';
 import { pdNastaveno, pdZavolej, PdChyba, pdStropCerstvych, PD_PRAVO } from './pipedrive.mjs';
@@ -54,6 +67,11 @@ export const PD_POZNAMKA_UVOD = 'Šachty v nabídce: ';
 export const PD_POZNAMKA_JEDNA = 'Šachty v nabídce: 1 šachta';
 export const PD_POZNAMKA_ZNACKA = ' — nabídka ';
 
+/* VZ-E5 (#604): druh „další zákazníci“ — pole, úvod a klíč stropu. */
+export const PD_POZNAMKA_ZAK_POLE = 'pdPoznamkaZakaznici';
+export const PD_POZNAMKA_ZAK_UVOD = 'Další zákazníci na zakázce: ';
+export const PD_POZNAMKA_ZAK_ZADNI = 'Další zákazníci na zakázce: žádní';
+
 const ID_TVAR = /^[1-9][0-9]{0,11}$/;
 const OTISK_TVAR = /^[0-9a-f]{16}$/;
 const RIDICI = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g;
@@ -61,6 +79,12 @@ const RIDICI = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g;
 export function pdPoznamkaEsc(t) {
   return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* Obsah poznámky Pipedrive z prostého textu: řádky ('\n') escapované
+ * a oddělené <br> (VZ-E5). Text šachet je jednořádkový — beze změny. */
+export function pdPoznamkaObsah(text) {
+  return String(text).split('\n').map(pdPoznamkaEsc).join('<br>');
 }
 
 /* Značka zakázky v textu poznámky (prostý text): „ — nabídka <číslo>“. */
@@ -94,6 +118,18 @@ export function pdPoznamkaText(zak, G = globalThis) {
   return s ? s + pdPoznamkaZnacka(zak) : '';
 }
 
+/* VZ-E5: text poznámky dalších zákazníků (prostý text, řádky '\n') se
+ * značkou zakázky, nebo '' = nic. `existuje` = zakázka už poznámku má
+ * (pak bez dalších zákazníků „… žádní — nabídka <číslo>“). Seznam staví
+ * src/vz_poznamka.js (vzPoznamkaText, týž kód jako suchý běh). */
+export function pdPoznamkaZakText(zak, existuje = false, G = globalThis) {
+  const znacka = pdPoznamkaZnacka(zak);
+  if (!znacka || typeof G.vzPoznamkaText !== 'function') return '';
+  const t = G.vzPoznamkaText(zak, { zadni: !!existuje });
+  if (!t) return '';
+  return t.indexOf('\n') >= 0 ? t + '\n' + znacka.trim() : t + znacka;
+}
+
 export function pdPoznamkaOtisk(text) {
   return createHash('sha256').update(String(text), 'utf8').digest('hex').slice(0, 16);
 }
@@ -108,12 +144,64 @@ export function pdPoznamkaNorm(x) {
   return { deal, id, otisk, kdy: typeof x.kdy === 'string' ? x.kdy.slice(0, 40) : '' };
 }
 
+/* Obsah poznámky bez značek HTML, s jednou mezerou místo bílých znaků
+ * (Pipedrive může obsah obalit do <p>…</p> nebo <br> přepsat). */
+const bezZnacek = (obsah, mezera) => String(obsah == null ? '' : obsah).replace(/<[^>]*>/g, mezera).trim();
+const jednaMezera = (t) => t.replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+
 /* Je obsah poznámky Pipedrive „naše“ poznámka této zakázky? (escapovaný HTML;
  * Pipedrive může obsah obalit do <p>…</p> — porovnává se bez značek). */
 export function pdPoznamkaJeNase(obsah, zak) {
-  const t = String(obsah == null ? '' : obsah).replace(/<[^>]*>/g, '').trim();
+  const t = bezZnacek(obsah, '');
   const znacka = pdPoznamkaZnacka(zak);
   return !!znacka && t.startsWith(pdPoznamkaEsc(PD_POZNAMKA_UVOD).trim()) && t.endsWith(pdPoznamkaEsc(znacka));
+}
+
+/* VZ-E5: poznámka dalších zákazníků této zakázky? Víc řádků (<br>), proto
+ * se porovnává bez značek a s jednou mezerou: začíná úvodem, končí
+ * „— nabídka <číslo>“ téže zakázky. */
+export function pdPoznamkaZakJeNase(obsah, zak) {
+  const t = jednaMezera(bezZnacek(obsah, ' '));
+  const znacka = jednaMezera(pdPoznamkaEsc(pdPoznamkaZnacka(zak).trim()));
+  return !!znacka && t.startsWith(jednaMezera(pdPoznamkaEsc(PD_POZNAMKA_ZAK_UVOD))) && t.endsWith(znacka)
+    && (t.length === znacka.length || t.endsWith(' ' + znacka));
+}
+
+/* ---------- druhy poznámek (VZ-E5) ----------
+ *   pole     pole zakázky psané jen serverem { deal, id, otisk, kdy },
+ *   uvod     úvod textu (rozpoznání vlastní poznámky; cizí druh se nepřepíše),
+ *   text     (zak, existuje, G) → prostý text se značkou, nebo '',
+ *   jeNase   (obsah, zak) → je to poznámka tohoto druhu a zakázky?
+ *   strop    druh počítadla pdStropCerstvych (klíč strop:<strop>:deal:<id>),
+ *   predmet  začátek varování. Vypínač předává volající (zapnuto). */
+export const PD_POZNAMKA_DRUH_SACHTY = Object.freeze({
+  pole: PD_POZNAMKA_POLE, uvod: PD_POZNAMKA_UVOD, strop: 'poznamka', predmet: 'Seznam šachet',
+  jeNase: pdPoznamkaJeNase,
+  text(zak, existuje, G) {
+    const text = pdPoznamkaText(zak, G);
+    if (text) return text;
+    /* (b) Zakázka s poznámkou přešla na jednu šachtu: poznámku nemazat, upravit. */
+    if (existuje && !pdPoznamkaSeznam(zak, G)) {
+      const v = typeof G.ridiciVarianta === 'function' ? G.ridiciVarianta(zak) : (zak.varianty || [])[0];
+      const ock = v && v.data && v.data.ock;
+      if (ock && typeof ock === 'object' && !G.rezimViceSachet(ock) && !G.vsTvarProblemy(ock).length)
+        return PD_POZNAMKA_JEDNA + pdPoznamkaZnacka(zak);
+    }
+    return '';
+  },
+});
+export const PD_POZNAMKA_DRUH_ZAKAZNICI = Object.freeze({
+  pole: PD_POZNAMKA_ZAK_POLE, uvod: PD_POZNAMKA_ZAK_UVOD, strop: 'poznamka-zakaznici', predmet: 'Seznam dalších zákazníků',
+  jeNase: pdPoznamkaZakJeNase,
+  text: (zak, existuje, G) => pdPoznamkaZakText(zak, existuje, G),
+});
+const DRUHY = [PD_POZNAMKA_DRUH_SACHTY, PD_POZNAMKA_DRUH_ZAKAZNICI];
+
+/* Začíná obsah úvodem JINÉHO druhu? Taková poznámka se tímto druhem nikdy
+ * nepřepíše (poznámka šachet ≠ poznámka zákazníků, VZ-E5). */
+function jinyDruh(obsah, druh) {
+  const t = jednaMezera(bezZnacek(obsah, ' '));
+  return DRUHY.some((d) => d !== druh && t.startsWith(jednaMezera(pdPoznamkaEsc(d.uvod))));
 }
 
 /* Volání Pipedrive s časovou mezí (N2): jedno volání nejvýš
@@ -127,25 +215,27 @@ function volani(termin) {
 }
 
 /* Najde aktivní poznámku této zakázky u dealu (N3), nebo null. */
-async function najdiNasi(zavolej, dealId, zak) {
+async function najdiNasi(zavolej, dealId, zak, druh) {
   const seznam = await zavolej('/api/v1/notes', { dotaz: { deal_id: dealId, limit: 100, sort: 'add_time DESC' } });
   const p = (Array.isArray(seznam) ? seznam : []).find((x) => x && String(x.deal_id) === dealId
-    && x.active_flag !== false && pdPoznamkaJeNase(x.content, zak));
+    && x.active_flag !== false && druh.jeNase(x.content, zak));
   const id = p && Number(p.id);
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
 /* Zápis/úprava poznámky v Pipedrive. Vrací { id, akce }. */
-async function zapisDoPipedrive(dealId, id, obsah, zak, zavolej) {
+async function zapisDoPipedrive(dealId, id, obsah, zak, zavolej, druh) {
   if (id) {
     let poznamka = null;
     try { poznamka = await zavolej('/api/v1/notes/' + id); }
     catch (e) { if (!(e instanceof PdChyba) || e.stav !== 404) throw e; }
     /* Jen poznámka TÉHOŽ dealu (pojistka proti podvrženému id, např. ze
-     * souboru obnovy) — jinak se nesahá a hledá/zakládá se znovu. */
-    if (!(poznamka && String(poznamka.deal_id) === dealId && poznamka.active_flag !== false)) id = null;
+     * souboru obnovy) — jinak se nesahá a hledá/zakládá se znovu. VZ-E5:
+     * ani poznámka JINÉHO druhu téhož dealu (šachty ↔ zákazníci). */
+    if (!(poznamka && String(poznamka.deal_id) === dealId && poznamka.active_flag !== false
+      && !jinyDruh(poznamka.content, druh))) id = null;
   }
-  if (!id) id = await najdiNasi(zavolej, dealId, zak);
+  if (!id) id = await najdiNasi(zavolej, dealId, zak, druh);
   if (id) {
     try {
       await zavolej('/api/v1/notes/' + id, { metoda: 'PUT', telo: { content: obsah } });
@@ -166,46 +256,61 @@ export function pdPoznamkaSmi(relace, matice, G = globalThis) {
   return typeof smi === 'function' && !!smi(relace.role, PD_PRAVO, matice || null);
 }
 
-/* Uložení zakázky (functions/zakazky.mjs, ve výhradním úseku zakázky).
- * Na místě nastaví zak[PD_POZNAMKA_POLE] a vrátí { stav, volano, varovani? }:
- *   'bez'        — není co psát (vypnuto, bez dealu, bez napojení, jedna šachta bez poznámky),
+/* Jedna poznámka daného druhu při uložení zakázky. Na místě nastaví
+ * zak[druh.pole] a vrátí { stav, volano, varovani? }:
+ *   'bez'        — není co psát (vypnuto, bez dealu, bez napojení, nic k zápisu),
  *   'beze-zmeny' — text se proti uloženému otisku nezměnil,
  *   'bez-prava'  — bylo by co psát, uživatel nemá právo crm.pipedrive (bez varování),
  *   'zalozeno' | 'upraveno' — zapsáno do Pipedrive,
  *   'strop' | 'chyba' — nezapsáno, zkusí se při dalším uložení.
- * `volano` = sahalo se do Pipedrive (volající pak čte zakázku potřetí, N1). */
-export async function pdPoznamkaUlozeni(zak, stara, { viceSachet, relace, matice } = {}, G = globalThis) {
+ * `termin` = společný konec časového rozpočtu (VZ-E5); prošlý termín =
+ * 'chyba' bez volání a bez čerpání stropu. */
+export async function pdPoznamkaDruhUlozeni(druh, zak, stara, { zapnuto, relace, matice, termin } = {}, G = globalThis) {
   const dealId = G.ctrlPdDealIdNorm(zak && zak.pdDealId) || '';
   /* Pole píše jen server: platí uložená verze téhož dealu, klientova se zahodí. */
-  const drz = pdPoznamkaNorm(stara && stara[PD_POZNAMKA_POLE]);
+  const drz = pdPoznamkaNorm(stara && stara[druh.pole]);
   const plati = drz && dealId && drz.deal === dealId ? drz : null;
-  delete zak[PD_POZNAMKA_POLE];
-  if (plati) zak[PD_POZNAMKA_POLE] = plati;
+  delete zak[druh.pole];
+  if (plati) zak[druh.pole] = plati;
 
-  if (viceSachet !== true || !dealId || !pdNastaveno()) return { stav: 'bez' };
-  let text = pdPoznamkaText(zak, G);
-  /* (b) Zakázka s poznámkou přešla na jednu šachtu: poznámku nemazat, upravit. */
-  if (!text && plati && !pdPoznamkaSeznam(zak, G)) {
-    const v = typeof G.ridiciVarianta === 'function' ? G.ridiciVarianta(zak) : (zak.varianty || [])[0];
-    const ock = v && v.data && v.data.ock;
-    if (ock && typeof ock === 'object' && !G.rezimViceSachet(ock) && !G.vsTvarProblemy(ock).length)
-      text = PD_POZNAMKA_JEDNA + pdPoznamkaZnacka(zak);
-  }
+  if (zapnuto !== true || !dealId || !pdNastaveno()) return { stav: 'bez' };
+  const text = druh.text(zak, !!plati, G);
   if (!text) return { stav: 'bez' };
   const otisk = pdPoznamkaOtisk(text);
   if (plati && plati.otisk === otisk) return { stav: 'beze-zmeny' };
   if (!pdPoznamkaSmi(relace, matice, G)) return { stav: 'bez-prava' };
-  if (!(await pdStropCerstvych('deal:' + dealId, 'poznamka', PD_POZNAMKA_STROP)))
-    return { stav: 'strop', varovani: 'Seznam šachet se do poznámky dealu v Pipedrive nezapsal (strop '
+  const konec = typeof termin === 'number' ? termin : Date.now() + PD_POZNAMKA_CELKEM_MS;
+  const nezapsal = druh.predmet + ' se do poznámky dealu v Pipedrive nezapsal';
+  if (konec - Date.now() <= 0)
+    return { stav: 'chyba', varovani: nezapsal + ': Pipedrive neodpověděl včas. Zakázka je uložená; zápis se zkusí při dalším uložení.' };
+  if (!(await pdStropCerstvych('deal:' + dealId, druh.strop, PD_POZNAMKA_STROP)))
+    return { stav: 'strop', varovani: nezapsal + ' (strop '
       + PD_POZNAMKA_STROP + ' pokusů za hodinu) — zapíše se při dalším uložení.' };
-  const zavolej = volani(Date.now() + PD_POZNAMKA_CELKEM_MS);
+  const zavolej = volani(konec);
   try {
-    const r = await zapisDoPipedrive(dealId, plati ? plati.id : 0, pdPoznamkaEsc(text), zak, zavolej);
-    zak[PD_POZNAMKA_POLE] = { deal: dealId, id: r.id, otisk, kdy: new Date().toISOString() };
+    const r = await zapisDoPipedrive(dealId, plati ? plati.id : 0, pdPoznamkaObsah(text), zak, zavolej, druh);
+    zak[druh.pole] = { deal: dealId, id: r.id, otisk, kdy: new Date().toISOString() };
     return { stav: r.akce, volano: true };
   } catch (e) {
     if (!(e instanceof PdChyba)) throw e;
-    return { stav: 'chyba', volano: true, varovani: 'Seznam šachet se do poznámky dealu v Pipedrive nezapsal: ' + e.message
+    return { stav: 'chyba', volano: true, varovani: nezapsal + ': ' + e.message
       + ' Zakázka je uložená; zápis se zkusí při dalším uložení.' };
   }
+}
+
+/* Uložení zakázky — jen poznámka šachet (dnešní jméno a chování, VSD #588). */
+export async function pdPoznamkaUlozeni(zak, stara, { viceSachet, relace, matice } = {}, G = globalThis) {
+  return pdPoznamkaDruhUlozeni(PD_POZNAMKA_DRUH_SACHTY, zak, stara, { zapnuto: viceSachet, relace, matice }, G);
+}
+
+/* Uložení zakázky (functions/zakazky.mjs, ve výhradním úseku zakázky, VZ-E5):
+ * obě poznámky v jednom společném časovém rozpočtu PD_POZNAMKA_CELKEM_MS,
+ * šachty první, zákazníci druzí. Vrací { sachty, zakaznici, volano }. */
+export async function pdPoznamkyUlozeni(zak, stara, { viceSachet, viceZakazniku, relace, matice } = {}, G = globalThis) {
+  const termin = Date.now() + PD_POZNAMKA_CELKEM_MS;
+  const sachty = await pdPoznamkaDruhUlozeni(PD_POZNAMKA_DRUH_SACHTY, zak, stara,
+    { zapnuto: viceSachet, relace, matice, termin }, G);
+  const zakaznici = await pdPoznamkaDruhUlozeni(PD_POZNAMKA_DRUH_ZAKAZNICI, zak, stara,
+    { zapnuto: viceZakazniku, relace, matice, termin }, G);
+  return { sachty, zakaznici, volano: !!(sachty.volano || zakaznici.volano) };
 }

@@ -12,7 +12,7 @@ import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B, zakazkaVelikostHlaska } from '../lib/zakazka_kontrola.mjs';
 import { pdStavPripoj, pdStavUlozeni } from '../lib/pd_stav.mjs';
 import { funkceCti } from '../lib/funkce.mjs';
-import { pdPoznamkaUlozeni } from '../lib/pd_poznamka.mjs';
+import { pdPoznamkyUlozeni } from '../lib/pd_poznamka.mjs';
 
 /* Jméno k e-mailu z účtů (P7 / K16-N87) — jen pro hlášku o kolizi verzí
  * u zakázek uložených dřív, než se jméno začalo zapisovat. Jedno čtení,
@@ -188,13 +188,17 @@ export default async (req) => {
    * zapnutým vypínačem a u řídící varianty s víc šachtami; id poznámky píše
    * jen server (pdPoznamkaSachty). Selhání Pipedrive uložení nezastaví.
    * Až PO druhém čtení (SEC-S1): kolize 409 po zápisu do Pipedrive by
-   * zahodila id nové poznámky a příští uložení by založilo druhou. */
-  const pdPoznamka = await pdPoznamkaUlozeni(zak, stara, { viceSachet, relace, matice: (zobr && zobr.matice) || null });
+   * zahodila id nové poznámky a příští uložení by založilo druhou.
+   * VZ-E5 (#604): v témž kroku i poznámka „Další zákazníci na zakázce“
+   * (vypínač viceZakazniku, pole pdPoznamkaZakaznici) — společný časový
+   * rozpočet, šachty první; třetí čtení níž jedno pro obě. */
+  const pdPoznamky = await pdPoznamkyUlozeni(zak, stara, { viceSachet, viceZakazniku, relace, matice: (zobr && zobr.matice) || null });
+  const pdPoznamka = pdPoznamky.sachty, pdPoznamkaZak = pdPoznamky.zakaznici;
   /* N1 (revize Fable 12. 11. 2026): volání Pipedrive trvá až sekundy —
    * okno mezi druhým čtením a zápisem by se roztáhlo. Po návratu z
    * Pipedrive se zakázka čte POTŘETÍ; jiné razítko = 409 jako u SEC-S1.
    * Zapsanou poznámku příští uložení najde podle značky zakázky (N3). */
-  if (pdPoznamka.volano) {
+  if (pdPoznamky.volano) {
     const potreti = await s.cti('z/' + jmeno);
     if (!!potreti !== !!stara || ULO.uloRazitko(potreti) !== ULO.uloRazitko(stara)) {
       const kdoEmail = String((potreti && (potreti.upravil || potreti.autor)) || '');
@@ -207,10 +211,10 @@ export default async (req) => {
   const razitko = ULO.uloRazitkoNove();
   zak.uloRazitko = razitko;
   await s.zapis('z/' + jmeno, zak);
-  return { sporne: kontrola.sporne, razitko, pdPoznamka };
+  return { sporne: kontrola.sporne, razitko, pdPoznamka, pdPoznamkaZak };
   });
   if (vysledek.odpoved) return vysledek.odpoved;
-  const { sporne, razitko, pdPoznamka } = vysledek;
+  const { sporne, razitko, pdPoznamka, pdPoznamkaZak } = vysledek;
   /* REJSTŘÍK JE ČTENÍ–ZMĚNA–ZÁPIS (K7-S1, audit 23. 10. 2026). Dvě souběžná
    * uložení v téže instanci funkce se řadí za sebe (vyhradne) — jinak pozdější
    * zápis tiše vypustil záznam dřívějšího a zakázka chyběla v Přehledu
@@ -298,7 +302,8 @@ export default async (req) => {
   const varovani = sporne.map(x => 'Pozor, nabídka ' + x.cislo + ': '
     + globalThis.zamekOvereniText(x.ov) + ' Obnovte stránku (Ctrl+F5) a nabídku zkontrolujte.')
     .concat(fotoVarovani ? [fotoVarovani] : [])   // SEC-M16
-    .concat(pdPoznamka && pdPoznamka.varovani ? [pdPoznamka.varovani] : []).join(' ');   // VSD
+    .concat(pdPoznamka && pdPoznamka.varovani ? [pdPoznamka.varovani] : [])   // VSD
+    .concat(pdPoznamkaZak && pdPoznamkaZak.varovani ? [pdPoznamkaZak.varovani] : []).join(' ');   // VZ-E5
   /* Slevy tak, jak je server uložil (revize 13. 10. 2026): schvalovaniServerKontrola
    * může čas rozhodnutí orazítkovat nebo vrátit uložené rozhodnutí (B101,
    * B105). Prohlížeč si je převezme — jinak by ukazoval jiný stav slevy, než
@@ -317,6 +322,7 @@ export default async (req) => {
     if (v && v.zamek && v.zamek.zamceno && typeof v.zamek.prijato === 'string') zamkyPrijato[v.id] = v.zamek.prijato;
   });
   const pdP = pdPoznamka && pdPoznamka.stav !== 'bez' ? { pdPoznamka: pdPoznamka.stav } : {};   // VSD: jen kde se o zápis šlo
+  if (pdPoznamkaZak && pdPoznamkaZak.stav !== 'bez') pdP.pdPoznamkaZakaznici = pdPoznamkaZak.stav;   // VZ-E5
   return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, slevy, zamkyPrijato, ...pdP }
     : { ok: true, soubor: jmeno, razitko, slevy, zamkyPrijato, ...pdP });
 };
