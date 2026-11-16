@@ -381,7 +381,7 @@ function porovnaniPolozkyKarta() {
 
 /* Tiskový pohled detailu položek – popisky v jazyce dokumentů */
 function porovnaniPolozkyTisk() {
-  const vt = vzTiskVstup('porovnani');   // VZ-E2 #601: jen varianty otevřeného zákazníka
+  const vt = vzTiskVstup('porovnani');   // VZ-E2 #601: detail položek jen z variant otevřeného zákazníka
   if (!vt) return;
   const TZ = vt.zak;
   const p = porovnaniPolozkyData(TZ);

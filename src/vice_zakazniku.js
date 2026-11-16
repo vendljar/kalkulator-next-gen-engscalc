@@ -459,6 +459,8 @@ function vzPismenoPohledu(zak) {
  * Prázdné číslo nebo bez písmene → beze změny. */
 function vzCisloSPismenem(cislo, pismeno) {
   const c = vzText(cislo);
+  /* Nedopsaná předloha čísla („2026 - OPR - CN - ") písmeno nedostane (jako příponu varianty). */
+  if (typeof hlavickaVyplneno === 'function' && !hlavickaVyplneno(c.trim())) return c;
   return (c.trim() && typeof pismeno === 'string' && VZ_PISMENO_TVAR.test(pismeno)) ? c.replace(/\s+$/, '') + '-' + pismeno : c;
 }
 

@@ -1745,7 +1745,7 @@ function zakazkaCisloDalsi(cislo) {
  * číselnou skupinu se stejným oddělovačem. Nevyplněné číslo (jen předloha)
  * nebo číslo bez číslic návrh nedá — pole zůstane prázdné. */
 function sodCisloNavrh(cislo) {
-  let s = String(cislo == null ? '' : cislo).trim();
+  const s = String(cislo == null ? '' : cislo).trim();
   if (!hlavickaVyplneno(s)) return '';
   /* VZ-E2 (#601): písmeno zákazníka („…0640-B") se zachová za číslem. */
   const pismeno = /^(.*\d)-([B-Z])$/.exec(s);

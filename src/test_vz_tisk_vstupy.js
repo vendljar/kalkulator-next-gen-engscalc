@@ -152,5 +152,21 @@ const vC = zak.varianty.find(v => String(v.id) === rC.zakaznik.varianta);
   zak.nazevAkce = '';
 }
 
+{
+  let hodila = false;
+  try { vzTiskHlidej(zak); } catch (e) { hodila = /pohledu/.test(e.message); }
+  test('vzTiskHlidej: celá zakázka s víc zákazníky → chyba', hodila);
+  let pohled = true;
+  try { vzTiskHlidej(vzTiskPohled(zak, rB.zakaznik.id)); vzTiskHlidej(JSON.parse(jedenJson)); } catch (e) { pohled = false; }
+  test('vzTiskHlidej: pohled i zakázka s jedním zákazníkem projdou', pohled);
+  /* Razítko tisku s adresátem (E3): varianta, která B už odešla, je jeho. */
+  vC.zamek = { zamceno: true, tisky: [{ kdy: '2026-11-16T11:00:00Z', zakaznik: { id: rB.zakaznik.id, pismeno: 'B' } }] };
+  test('razítko tisku: odeslaná varianta patří B (smí ji tisknout)',
+    vzVariantyZakaznika(zak, rB.zakaznik.id).indexOf(String(vC.id)) >= 0
+    && vzTiskZabrana(zak, rB.zakaznik.id, vC, 'nabidka', {}) === '');
+  delete vC.zamek;
+  test('… bez razítka ne', vzTiskZabrana(zak, rB.zakaznik.id, vC, 'nabidka', {}) !== '');
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 if (fail) process.exit(1);
