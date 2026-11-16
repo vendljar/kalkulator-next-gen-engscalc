@@ -59,6 +59,25 @@ function vzZahozenoVarovani(vady) {
     + (vady.length === 1 ? 'vada' : vady.length < 5 ? 'vady' : 'vad') + ') a byly odebrány — zakázka má jen zákazníka z hlavičky. '
     + 'Další zákazníky přidejte znovu.';
 }
+/* VZ-E1 (dorevize E0, D2): po načtení srovnat ukazatele zákazníků
+ * (vzSrovnej) a říct, kdo přešel na řídící variantu — import je přesměruje
+ * sám (vzPresmerovano), vzSrovnej chytí zbytek. Vrací text upozornění, nebo ''.
+ * Mění data (ukazatel) — volá se jen po načtení zakázky. */
+function vzPoNacteniVarovani(zak) {
+  if (!zak || typeof zak !== 'object') return '';
+  const jm = Array.isArray(zak.vzPresmerovano) ? zak.vzPresmerovano.slice() : [];
+  if (typeof vzSrovnej === 'function' && typeof vzRezim === 'function' && vzRezim(zak)) {
+    const pred = (zak.dalsiZakaznici || []).map(d => d && d.varianta);
+    const opravy = vzSrovnej(zak);
+    opravy.forEach(o => {
+      const m = /^dalsiZakaznici\[(\d+)\]\.varianta$/.exec(o);
+      const d = m && zak.dalsiZakaznici[+m[1]];
+      if (d && pred[+m[1]] !== d.varianta) jm.push(String((d.hlavicka && d.hlavicka.objednatel) || '').trim() || '(bez názvu)');
+    });
+  }
+  const t = jm.map(n => 'Zákazník ' + n + ' přešel na řídící variantu — mění se mu cena.');
+  return [vzZahozenoVarovani(zak.vzZahozeno)].concat(t).filter(Boolean).join(' ');
+}
 async function varSmaz(id) {
   if (ZAK.varianty.length <= 1) { await hlaska('Poslední variantu nelze smazat.'); return; }
   const vzDuvod = vzSmazaniVariantyDuvod(ZAK, id);

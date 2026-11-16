@@ -592,7 +592,7 @@ async function uloOtevriZeSlozky(soubor) {
      * ani vteřinu ceny, se kterými se dál nepočítá. */
     const prep = uloSrovnejSPlatnymCenikem();
     const fotoVar = [(typeof uvodniFotoVarovani === 'function') ? uvodniFotoVarovani(zak.fotoZahozena) : '',   // SEC-M16
-      (typeof vzZahozenoVarovani === 'function') ? vzZahozenoVarovani(zak.vzZahozeno) : ''].filter(Boolean).join(' ');   // VZ-E1 (N2)
+      (typeof vzPoNacteniVarovani === 'function') ? vzPoNacteniVarovani(zak) : ''].filter(Boolean).join(' ');   // VZ-E1 (N2, D2)
     uloZprava('Otevřeno ze složky: ' + soubor + '.'
       + (prep && (prep.prepocteno || prep.svetlikyStavba || prep.svetlikyMaterialBez) ? ' ' + uloPrepocetVeta(prep) : '') + (fotoVar ? ' ' + fotoVar : ''), fotoVar ? 'varovani' : '');
     zavriUloziste();

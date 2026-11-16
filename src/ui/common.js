@@ -2821,7 +2821,7 @@ function nactiZakazku(ev) {
       const fotoVar = (typeof uvodniFotoVarovani === 'function') ? uvodniFotoVarovani(ZAK.fotoZahozena) : '';
       const stavbaVeta = (stavba && typeof uloSvetlikyStavbaVeta === 'function') ? uloSvetlikyStavbaVeta({ svetlikyStavba: stavba }) : '';
       /* VZ-E1 (revize E0, N2): zahozená data dalších zákazníků — říct to. */
-      const vzVar = (typeof vzZahozenoVarovani === 'function') ? vzZahozenoVarovani(ZAK.vzZahozeno) : '';
+      const vzVar = (typeof vzPoNacteniVarovani === 'function') ? vzPoNacteniVarovani(ZAK) : '';
       if (fotoVar || stavbaVeta || vzVar) hlaska([fotoVar, stavbaVeta, vzVar].filter(Boolean).join(' '));
       // #18: hledání a filtr patří k oknu, ne k datům – jiná zakázka se musí
       // ukázat celá, ne přes zúžení nastavené nad tou předchozí.

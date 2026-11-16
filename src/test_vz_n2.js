@@ -49,7 +49,7 @@ global.potvrd = () => Promise.resolve(true);
 global.render = () => {};
 global.syncVarianta = () => {};
 global.smiZobrazit = () => false;
-vm.runInThisContext(['vzSmazaniVariantyDuvod', 'vzZahozenoVarovani', 'varSmaz'].map(vyrez).join('\n'));
+vm.runInThisContext(['vzSmazaniVariantyDuvod', 'vzZahozenoVarovani', 'vzPoNacteniVarovani', 'varSmaz'].map(vyrez).join('\n'));
 test('funkce N2 jsou v ui/zakazka_ui.js', typeof vzSmazaniVariantyDuvod === 'function' && typeof vzZahozenoVarovani === 'function');   // eslint-disable-line no-undef
 
 const zakazka = () => {
@@ -105,9 +105,33 @@ function ZM_klon(z) { return klonujVariantu(z, z.varianty[0].id, { aktivovat: fa
   /* napojení na tři cesty načtení */
   {
     const src = n => fs.readFileSync(path.join(__dirname, 'ui', n), 'utf8');
-    test('načtení ze souboru hlásí vzZahozeno', /vzZahozenoVarovani\(ZAK\.vzZahozeno\)/.test(src('common.js')));
-    test('načtení ze složky hlásí vzZahozeno', /vzZahozenoVarovani\(zak\.vzZahozeno\)/.test(src('uloziste_ui.js')));
-    test('online otevření hlásí vzZahozeno', /vzZahozenoVarovani\(ZAK\.vzZahozeno\)/.test(src('online_ui.js')));
+    test('načtení ze souboru hlásí vzZahozeno i přesměrování', /vzPoNacteniVarovani\(ZAK\)/.test(src('common.js')));
+    test('načtení ze složky hlásí vzZahozeno i přesměrování', /vzPoNacteniVarovani\(zak\)/.test(src('uloziste_ui.js')));
+    test('online otevření hlásí vzZahozeno i přesměrování', /vzPoNacteniVarovani\(ZAK\)/.test(src('online_ui.js')));
+  }
+  /* 3) dorevize E0 D2: zákazník ukazuje na neexistující variantu */
+  {
+    const z = zk.novaZakazka();
+    z.objednatel = 'ALFA s.r.o. (smyšlené)';
+    const v2 = ZM_klon(z);
+    VZ.vzPridej(z, { objednatel: 'BETA a.s. (smyšlené)' }, {});
+    VZ.vzPridej(z, { objednatel: 'GAMA s.r.o. (smyšlené)' }, {});
+    z.dalsiZakaznici[0].varianta = v2.id;
+    const data = JSON.parse(JSON.stringify(z));
+    data.varianty = data.varianty.filter(v => v.id !== v2.id);   // varianta BETA v souboru chybí
+    const imp = zk.importZakazka(data);
+    test('D2: import zákazníka přesměruje na řídící variantu', imp.dalsiZakaznici && imp.dalsiZakaznici[0].varianta === imp.varianty.find(v => v.ridici).id);
+    const t = vzPoNacteniVarovani(imp);   // eslint-disable-line no-undef
+    test('D2: upozornění „Zákazník X přešel na řídící variantu — mění se mu cena."',
+      t === 'Zákazník BETA a.s. (smyšlené) přešel na řídící variantu — mění se mu cena.', t);
+    test('D2: vzPresmerovano je nevýčtové (do souboru se nezapíše)', !Object.keys(imp).includes('vzPresmerovano'));
+    /* data v paměti (bez importu): vzSrovnej po načtení */
+    const z2 = JSON.parse(JSON.stringify(z));
+    z2.dalsiZakaznici[1].varianta = 'neexistuje';
+    const t2 = vzPoNacteniVarovani(z2);   // eslint-disable-line no-undef
+    test('D2: vzSrovnej po načtení opraví ukazatel a ohlásí ho', z2.dalsiZakaznici[1].varianta === z2.varianty.find(v => v.ridici).id
+      && /^Zákazník GAMA s\.r\.o\. \(smyšlené\) přešel na řídící variantu — mění se mu cena\.$/.test(t2), t2);
+    test('D2: bez chybného ukazatele žádné upozornění', vzPoNacteniVarovani(zk.importZakazka(JSON.parse(JSON.stringify(z)))) === '');   // eslint-disable-line no-undef
   }
   console.log('\n' + ok + ' OK, ' + fail + ' FAIL');
   process.exit(fail ? 1 : 0);
