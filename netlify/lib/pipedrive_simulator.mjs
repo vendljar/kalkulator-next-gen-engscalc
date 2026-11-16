@@ -343,9 +343,13 @@ export async function pdSimFetch(url, init = {}) {
        * Kontroluje se PŘED zápisem — odmítnutý PATCH nezmění nic. */
       const fazeNova = telo.stage_id === undefined ? null : D.faze.find((x) => x.id === telo.stage_id);
       if (telo.stage_id !== undefined && !fazeNova) return chyba(400, 'Invalid stage_id');
+      /* Organizace dealu (VZ-E5b #605): jen existující nesmazaná, kontrola PŘED zápisem. */
+      const orgNova = telo.org_id === undefined ? null : D.organizace.find((o) => o.id === telo.org_id && o.is_deleted !== true);
+      if (telo.org_id !== undefined && !orgNova) return chyba(400, 'Invalid org_id');
       Object.assign(deal.custom_fields, telo.custom_fields || {});
       if (fazeNova) { deal.stage_id = fazeNova.id; deal.pipeline_id = fazeNova.pipeline_id; }
       for (const k of ['value', 'currency', 'title', 'status']) if (telo[k] !== undefined) deal[k] = telo[k];
+      if (orgNova) deal.org_id = orgNova.id;
       deal.update_time = new Date().toISOString().slice(0, 19) + 'Z';
       return data(kopie(deal));
     }
@@ -385,6 +389,48 @@ export async function pdSimFetch(url, init = {}) {
       return data(kopie(p));
     }
     return chyba(405, 'Method not allowed');
+  }
+  /* HLEDÁNÍ A ZALOŽENÍ ORGANIZACE (VZ-E5b #605, organizace dealu = vítězný
+   * zákazník). GET /api/v2/organizations/search: `term` (min. 2 znaky, 1 s
+   * exact_match), `fields` (address, custom_fields, notes, name), `exact_match`,
+   * `limit` (max 100); odpověď { items: [{ result_score, item: { id, type, name,
+   * address, owner: { id }, custom_fields: [hodnoty] } }] } — smazané organizace
+   * nevrací. Test smí přimíchat „kandidáty", které hledání tvrdí, ale IČ nemají
+   * (D.hledaniNavic = [id…]) — server musí každého ověřit znovu — a skrýt
+   * organizace jako při zpožděném indexu (D.hledaniSkryt = [id…]).
+   * POST /api/v2/organizations: `name` povinně, `owner_id`, `address.value`,
+   * `custom_fields` jen známá pole (neznámé → 400, pole se nezakládá). */
+  if (metoda === 'GET' && cesta === '/api/v2/organizations/search') {
+    const term = String(u.searchParams.get('term') || '');
+    const presne = u.searchParams.get('exact_match') === 'true';
+    if (term.length < (presne ? 1 : 2)) return chyba(400, 'Invalid term');
+    const pole = String(u.searchParams.get('fields') || 'address,custom_fields,notes,name').split(',');
+    const limit = Math.min(Math.max(parseInt(u.searchParams.get('limit'), 10) || 100, 1), 100);
+    const sedi = (v) => { const t = String(v == null ? '' : v).toLowerCase(); const q = term.toLowerCase(); return presne ? t === q : t.includes(q); };
+    const skryt = Array.isArray(D.hledaniSkryt) ? D.hledaniSkryt : [];   // zpožděný index hledání (test)
+    const nalez = D.organizace.filter((o) => o.is_deleted !== true && !skryt.includes(o.id) && ((pole.includes('name') && sedi(o.name))
+      || (pole.includes('address') && sedi(o.address && o.address.value))
+      || (pole.includes('custom_fields') && Object.values(o.custom_fields || {}).some(sedi))));
+    const navic = (Array.isArray(D.hledaniNavic) ? D.hledaniNavic : []).map((id) => D.organizace.find((o) => o.id === id))
+      .filter((o) => o && !nalez.includes(o));
+    const items = nalez.concat(navic).slice(0, limit).map((o) => ({ result_score: 1, item: { id: o.id, type: 'organization', name: o.name,
+      address: (o.address && o.address.value) || null, visible_to: 3, owner: { id: o.owner_id },
+      custom_fields: Object.values(o.custom_fields || {}).map(String), notes: [] } }));
+    return data({ items }, { additional_data: { next_cursor: null } });
+  }
+  if (metoda === 'POST' && cesta === '/api/v2/organizations') {
+    let telo;
+    try { telo = JSON.parse(init.body || '{}'); } catch (e) { return chyba(400, 'Invalid JSON'); }
+    if (typeof telo.name !== 'string' || !telo.name.trim() || telo.name.length > 255) return chyba(400, 'Invalid name');
+    const zname = new Set(D.pole.organizace.map((p) => p.field_code));
+    const nezname = Object.keys((telo && telo.custom_fields) || {}).filter((k) => !zname.has(k));
+    if (nezname.length) return chyba(400, 'Unknown custom field: ' + nezname[0]);
+    if (telo.owner_id !== undefined && !D.uzivatele.some((x) => x.id === telo.owner_id)) return chyba(400, 'Invalid owner_id');
+    const o = { id: Math.max(0, ...D.organizace.map((x) => x.id)) + 1, name: telo.name, owner_id: telo.owner_id || D.uzivatele[0].id,
+      address: { value: String((telo.address && telo.address.value) || '') }, custom_fields: Object.assign({}, telo.custom_fields || {}),
+      add_time: new Date().toISOString().slice(0, 19) + 'Z' };
+    D.organizace.push(o);
+    return data(kopie(o));
   }
   if ((m = /^\/api\/v2\/organizations\/(\d+)$/.exec(cesta))) {
     const o = D.organizace.find((x) => x.id === +m[1]);
