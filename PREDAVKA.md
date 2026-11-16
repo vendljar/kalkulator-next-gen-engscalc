@@ -1,6 +1,6 @@
 # Předávka — 16. 11. 2026: VZ-E3 #602 (víc zákazníků — zámek po zákaznících), větev `claude/vz-e3`
 
-Nad `claude/vz-e2` `cbf5c57`; sloučena opravená E2 `18acb83` (U1/U2). **v16.11.6** (koordinace přečísluje). Do `test-draft`,
+Nad `claude/vz-e2` `cbf5c57`; sloučena opravená E2 `18acb83` (U1/U2) a integrace VZ `70153e4` (E5b). **v16.11.6** (koordinace přečísluje). Do `test-draft`,
 `test`, `main` ani integrace nic; weby, Disk, Pipedrive nic. **RIZIKOVÁ — před sloučením revize poradce Fable.** Roadmapa
 **#602 hotovo**, meze **B227, B228** (ověřeno volné ve všech vzdálených větvích).
 
@@ -15,7 +15,10 @@ Nad `claude/vz-e2` `cbf5c57`; sloučena opravená E2 `18acb83` (U1/U2). **v16.11
 | zmrazení názvu akce / adresy (první odeslaná komukoli) a údajů dalšího zákazníka | ✅ | `zamekZakVzOdeslano`, `zamekZakZmeny`; `vzZakaznikPoleZmrazeno`; UI `vzPoleAttr`, pojistka v `set()` |
 | doplněk koordinace U1: ruční hodnoty polí zákazníka KL po zákaznících | ✅ | `kl.hodnoty` + `vzVlastnik` = vlastník (bez záznamu z1), ostatní `kl.hodnotyZakaznika[id]`; `vzKlRucni`, `vzKlZapisRucni`, `vzKlOdstranZakaznika`; obrazovka KL za otevřeného zákazníka (`klVzKomu`, `klVzCtxZak`), KL PROJ za řídícího; porovnání zámku přeskočí volná pole i v `hodnotyZakaznika` / `vzVlastnik` |
 | testy | ✅ | `src/test_vz_zamek.js` 72/0, `netlify/test_vz_server.mjs` 88/0, `src/test_vz_unik.js` 163/0, `src/test_vz_ui.js` 133/0, `src/test_vz_kl_pole.js` 33/0, `overit_vz_zamek.mjs` 31/0, `overit_vz_tisk.mjs` 192/0, `overit_vz_zadani.mjs` 76/0, `overit_xss.mjs` 400/0 |
-| mutace „[VZ E3]“ | viz níže | jádro 15, server 14; staré mutace (zámek hlavičky, E1 odstranění, E2 KL, E5 platna) přesměrované na nový kód, „E5: uložená platna se nečte“ vyřazena (N6) |
+| body poradce po dorevizi E2: V1 (obrazovka KL za otevřeného zákazníka), V2 (volné texty KL — rozsah, cenaNezahrnuje, situacniFoto, rozsahJine — v zábraně cizího zákazníka), V3 (úklid `vzVlastnik`/`vzZmrazeno`/`hodnotyZakaznika` po posledním dalším i v klonu), V4 (další zákazník má vlastní ruční hodnoty → smlouva neukazuje „……“) | ✅ | `vzKlUklid`, `vzTiskZabrana` (klTexty), test `src/test_vz_kl_pole.js` 41/0 |
+| sloučení | ✅ | opravená E2 `18acb83`, integrace VZ `70153e4` (E5b) — **v16.11.6** |
+| mutace „[VZ E3]“ | ✅ **jádro 18/18, server 13/13** | staré mutace (zámek hlavičky, E1 odstranění, E2 KL, E5 platna, E0 „po posledním“) přesměrované a ověřené chycené; vyřazeny jako ekvivalentní „E5: uložená platna se nečte“ a „E0: platna z prohlížeče“ (server `vzPlatnaDrz` nahrazen přepočtem N6). Při běhu [vz jádro 1002 + server 68 mutací: přežívaly jen ty přesměrované/vyřazené |
+| kolo `--bez-mutaci` (po sloučení 70153e4) | ✅ **VŠE ZELENÉ** | sady 407/0/59 přeskočeno, hodiny +400 dní 372/0/1, statické 6/6 (29 min) |
 
 ## Rozhodnutí (bezpečnější varianta, k revizi)
 
