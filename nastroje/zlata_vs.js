@@ -256,7 +256,15 @@ function pevneHodiny() {
   globalThis.Date = new Proxy(PevnyDate, { apply: () => new PevnyDate().toString() });
 }
 
-async function zlata(src) {
+/* `volby` (nepovinné, VZ-E0 — src/test_vz_zlata.js):
+ *   zakazka(zak) → zak   hák: zakázka, která jde do scénáře (např. pohled
+ *                        zákazníka vzPohled); varianta scénáře zůstává táž
+ *   pocetFuzz            počet zadání fuzzu místo KNG_ZLATA_VS_POCET
+ * Bez voleb (nebo bez háku) jsou otisky beze změny. */
+async function zlata(src, volby) {
+  const o = volby || {};
+  const pz = typeof o.zakazka === 'function' ? o.zakazka : (zak => zak);
+  const pocetFuzz = o.pocetFuzz != null ? Math.max(0, +o.pocetFuzz || 0) : POCET_FUZZ;
   pevneHodiny();
   const { ZC, J } = nacti(path.resolve(src));
   const out = {};
@@ -264,7 +272,7 @@ async function zlata(src) {
   const fdir = path.join(src, 'fixtury');
   for (const f of fs.readdirSync(fdir).filter(x => x.endsWith('.json')).sort()) {
     const zak = importZakazka(JSON.parse(fs.readFileSync(path.join(fdir, f), 'utf8')));
-    for (const v of zak.varianty) out['fixtura:' + f + ':' + v.id] = await scenar(zak, v, J);
+    for (const v of zak.varianty) out['fixtura:' + f + ':' + v.id] = await scenar(pz(zak), v, J);
   }
   /* 2) scénáře zlaté pojistky #560 + skladebné můstky */
   const ZAD = { prejezd: 3.3, zdvih: 12, prohluben: 1.2, sirka: 1.6, hloubka: 2.1, nastupiste: 4 };
@@ -285,12 +293,12 @@ async function zlata(src) {
       Object.assign(v.data.ock.zadani, ZAD, { typSachty: typ }, kop(uprava));
       v.data.ock.fixes = f;
       v.data.cenik = Object.assign(ZC.zkusebniCenik(), cen === '354' ? ZC.zkusebniMustky() : {}, { kurzEurKc: 25 });
-      out['scenar:' + jm + ':' + (f ? 'm2' : 'm1')] = await scenar(zak, v, J);
+      out['scenar:' + jm + ':' + (f ? 'm2' : 'm1')] = await scenar(pz(zak), v, J);
     }
   }
   /* 3) fuzz */
   const G = generator(ZC);
-  for (let i = 0; i < POCET_FUZZ; i++) {
+  for (let i = 0; i < pocetFuzz; i++) {
     const { c } = G.genCenik();
     const { z, fixes, sleva, zaokr } = G.genZadani();
     const zak = novaZakazka();
@@ -300,7 +308,7 @@ async function zlata(src) {
     v.data.ock.zadani = z; v.data.ock.fixes = fixes; v.data.cenik = Object.assign(c, { kurzEurKc: 25 });
     if (sleva && v.data.sleva) { v.data.sleva.procenta = sleva; v.data.sleva.stav = 'schváleno'; }
     if (zaokr) v.data.zaokr = Object.assign({}, v.data.zaokr || {}, zaokr);
-    out['fuzz:' + i] = await scenar(zak, v, J);
+    out['fuzz:' + i] = await scenar(pz(zak), v, J);
   }
   return out;
 }
