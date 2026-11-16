@@ -1482,6 +1482,25 @@ const KONTROLY = [
         text: sodNevyplneneText(n) + ' Doplňte je v krycím listu PROJ, nebo ve Wordu.' };
     },
   },
+  /* ---- VZ-E2 #601: víc zákazníků — tisk z pohledu zákazníka ---- */
+  {
+    /* TISK PRO ZÁKAZNÍKA (návrh § 4, § 9 R1): varianta, na kterou otevřený
+     * zákazník neukazuje, se pro něj netiskne; sdílený tištěný text (název
+     * akce, adresa, popis záměru, úvodní fotka) ani název varianty nesmí
+     * jmenovat jiného zákazníka zakázky (název nebo IČO); vypnutá funkce
+     * pustí jen řídícího. Rozhoduje vzTiskZabrana (vice_zakazniku.js) — táž
+     * funkce jako brána dokumentů (dokumentZabrana), tady jen pro panel
+     * kontrol. Zakázka s jedním zákazníkem: pravidlo mlčí (dnešek). PROJ jen
+     * pro řídícího (R5) hlídá brána podle typu dokumentu. */
+    kod: 'vzTisk', kde: 'Nabídka', nazev: 'Tisk pro zákazníka zakázky',
+    zabranaMozna: true,
+    zjisti(ctx) {
+      const z = ctx.vzTisk;
+      if (!z || !ctx.zak || typeof vzTiskZabrana !== 'function') return null;
+      const t = vzTiskZabrana(ctx.zak, z.id, z.varianta || null, 'nabidka', { vypnuto: !!z.vypnuto });
+      return t ? { uroven: KONTROLY_UROVEN_ZABRANA, text: t } : null;
+    },
+  },
 ];
 
 /* VÍC ŠACHET V KONTROLÁCH (VS-E5 #595, návrh 5.6). Pravidla nad ZADÁNÍM

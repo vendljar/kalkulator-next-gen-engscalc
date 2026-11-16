@@ -75,6 +75,9 @@ function kontrolyCtxAkt() {
     /* Hlavička zakázky sedí přímo na ZAK (cislo, nazevAkce, objednatel…),
      * ne ve vnořeném objektu – viz novaZakazka() v zakazka.js. */
     zak: (typeof ZAK !== 'undefined') ? ZAK : null,
+    /* VZ-E2 #601: zákazník, pro kterého se tiskne (pravidlo vzTisk). */
+    vzTisk: (typeof vzTiskId === 'function' && typeof ZAK !== 'undefined')
+      ? { id: vzTiskId(), vypnuto: vzTiskVypnuto(), varianta: aktivniVarianta(ZAK) } : null,
     /* Jazyk tisku — kapitoly nabídky má každý jazyk vlastní (K9-N32). */
     jazyk: (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz',
     /* Termín dodání tak, jak půjde do nabídky (#330): z krycího listu,
@@ -265,6 +268,8 @@ function kontrolyCtxVarianta(v) {
     slevaProj: d.slevaProj || null,
     nast: (typeof NAST !== 'undefined') ? NAST : null,
     zak: (typeof ZAK !== 'undefined') ? ZAK : null,
+    vzTisk: (typeof vzTiskId === 'function' && typeof ZAK !== 'undefined')
+      ? { id: vzTiskId(), vypnuto: vzTiskVypnuto(), varianta: v } : null,   // VZ-E2 #601
     zaokr: d.zaokr || null,
     zaokrProj: d.zaokrProj || d.zaokr || null,
     /* Cenová výjimka (13. 10. 2026) — zábrana cenovaVyjimka. */

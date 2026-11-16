@@ -495,13 +495,15 @@ function vzTiskPohled(zak, id) {
   const p = vzPohled(zak, id);
   if (!p) return null;
   const smi = new Set(vzVariantyZakaznika(zak, p.vzPohledZakaznika.id));
-  /* Mělké kopie variant: „varianta zákazníka" (v.zakaznik, jde do názvu
-   * souboru) je u víc zákazníků odvozená = název zákazníka pohledu (návrh
-   * § 1.1) — volný text z klonu by nesl jméno jiného zákazníka. Data, zámek
-   * a prodej zůstávají sdílené objekty skutečné varianty. */
+  /* DALŠÍ zákazník: mělké kopie variant s odvozenou „variantou zákazníka"
+   * (v.zakaznik jde do názvu souboru; návrh § 1.1) = jeho název — volný
+   * text sdílené varianty nebo klonu nese jméno řídícího. Data, zámek
+   * a prodej zůstávají sdílené objekty skutečné varianty. Řídící: tytéž
+   * objekty (v.zakaznik hlídá vzTiskZabrana jako sdílený text). */
+  const ridici = p.vzPohledZakaznika.id === vzRidiciId(zak);
   const nazev = vzText(p.objednatel);
   p.varianty = (Array.isArray(zak.varianty) ? zak.varianty : []).filter(v => v && smi.has(String(v.id)))
-    .map(v => Object.assign({}, v, { zakaznik: nazev }));
+    .map(v => (ridici ? v : Object.assign({}, v, { zakaznik: nazev })));
   if (!p.varianty.some(v => v.id === p.aktivni) && p.varianty.length) p.aktivni = p.varianty[0].id;
   return p;
 }
@@ -555,10 +557,10 @@ function vzTextCizi(text, vlastni, cizi) {
   return null;
 }
 
-/* Typ dokumentu PROJ (nabídka, náhled, krycí list, SoD PROJ). */
+/* Typ dokumentu PROJ (nabídka, náhled, krycí list, SoD PROJ, plná moc PROJ). */
 function vzTypProj(typ) {
   const t = vzText(typ).replace(/_(en|de|fr)$/, '');
-  return t === 'nabidkaProj' || t === 'nabidkaProjTisk' || t === 'sodProj' || /^kryciproj(_|$)/.test(t);
+  return t === 'nabidkaProj' || t === 'nabidkaProjTisk' || t === 'sodProj' || t === 'plnaMoc' || /^kryciproj(_|$)/.test(t);
 }
 
 /* Sdílené tištěné texty zakázky (§ 9 R1): [popisek, hodnota]. */
@@ -595,7 +597,8 @@ function vzTiskZabrana(zak, id, varianta, typ, volby) {
     return 'Varianta' + (v && v.nazev ? ' „' + v.nazev + '"' : '') + ' není nabídka zákazníka ' + kdo
       + ' — pro něj se netiskne. Otevřete jeho variantu, nebo mu ji přiřaďte v kartě Zákazníci zakázky.';
   const cizi = vzZakaznici(zak).filter(x => x.id !== sid);
-  const texty = vzSdileneTexty(zak).concat(v ? [['Název varianty', v.nazev]] : []);
+  const texty = vzSdileneTexty(zak).concat(v ? [['Název varianty', v.nazev]] : [])
+    .concat(v && z.ridici ? [['Zákazník varianty (sloupec Zákazník)', v.zakaznik]] : []);
   for (const [popisek, hodnota] of texty) {
     const c = vzTextCizi(hodnota, z, cizi);
     if (c) return popisek + ' obsahuje název nebo IČO jiného zákazníka zakázky („' + (c.hlavicka.objednatel || c.id)

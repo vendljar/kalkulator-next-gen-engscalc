@@ -232,6 +232,38 @@ export function pdWebhookCisloKlic(cislo) {
   return t ? (typeof f === 'function' ? f(t) : t.toLowerCase()) : '';
 }
 
+/* VZ-E2 (#601): číslo nabídky dalšího zákazníka nese písmeno („…9940-B",
+ * návrh § 3). Rozklad stejným pravidlem jako vzCisloRozloz (src/vice_zakazniku.js):
+ * písmeno B–Z jen za číslicí. Vrací { zaklad, pismeno } (bez písmene pismeno ''). */
+export function pdWebhookCisloZaklad(cislo) {
+  const c = String(cislo == null ? '' : cislo).trim();
+  const m = /^(.*\d)-([B-Z])$/.exec(c);
+  return m ? { zaklad: m[1], pismeno: m[2] } : { zaklad: c, pismeno: '' };
+}
+
+/* Nese uložená zakázka zákazníka s tímto písmenem? Jen ČTE: řídící
+ * (vzRidici.pismeno), další zákazníci (dalsiZakaznici[].pismeno) a razítka
+ * tisků (varianty[].zamek.tisky[].zakaznik.pismeno — písmeno zákazníka, kterému
+ * nabídka odešla, i když ho mezitím odebrali). Zakázka s jedním zákazníkem → false. */
+export function pdWebhookPismeno(zak, pismeno) {
+  if (!zak || typeof zak !== 'object' || typeof pismeno !== 'string' || !/^[B-Z]$/.test(pismeno)) return false;
+  const obj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  if (obj(zak.vzRidici) && zak.vzRidici.pismeno === pismeno) return true;
+  if (Array.isArray(zak.dalsiZakaznici) && zak.dalsiZakaznici.some((z) => obj(z) && z.pismeno === pismeno)) return true;
+  return (Array.isArray(zak.varianty) ? zak.varianty : []).some((v) => obj(v) && obj(v.zamek) && Array.isArray(v.zamek.tisky)
+    && v.zamek.tisky.some((t) => obj(t) && obj(t.zakaznik) && t.zakaznik.pismeno === pismeno));
+}
+
+/* Vlastník dealu (#115 B) s písmenem zákazníka: CN dealu patří kalkulaci
+ * s číslem `cisloKalkulace`, když se shodují klíče (jako dřív), nebo když CN
+ * je „<číslo kalkulace>-P" a zakázka zákazníka s písmenem P opravdu nese. */
+export function pdWebhookCisloSedi(cisloKalkulace, cnDealu, zak) {
+  const k = pdWebhookCisloKlic(cisloKalkulace);
+  if (!k || k === pdWebhookCisloKlic(cnDealu)) return true;
+  const r = pdWebhookCisloZaklad(cnDealu);
+  return !!r.pismeno && pdWebhookCisloKlic(r.zaklad) === k && pdWebhookPismeno(zak, r.pismeno);
+}
+
 /* Odkaz do aplikace: <web>/?zakazka=<soubor> (src/ui/online_ui.js ho po
  * přihlášení otevře). Web = proměnná Netlify URL, jinak původ požadavku. */
 export function pdWebhookOdkaz(soubor, req, env = process.env) {

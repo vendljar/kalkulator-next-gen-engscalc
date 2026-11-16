@@ -170,10 +170,12 @@ staticke() {
   bash nastroje/test_sloucene_vetve.sh || chyb=$((chyb + 1))
   echo "— hook pre-push s kontrolou údajů (nastroje/test_pre_push.sh, SEC-M1 #542)"
   bash nastroje/test_pre_push.sh || chyb=$((chyb + 1))
-  echo "STATICKE_KONTROLY: $((5 - chyb)) z 5 prošly"
+  echo "— únik mezi zákazníky: generátory dokumentů bez dalsiZakaznici (nastroje/kontrola_vz_unik.sh, VZ-E2 #601)"
+  { bash nastroje/kontrola_vz_unik.sh && bash nastroje/kontrola_vz_unik.sh --pojistka; } || chyb=$((chyb + 1))
+  echo "STATICKE_KONTROLY: $((6 - chyb)) z 6 prošly"
   return "$chyb"
 }
-poznamka_staticke() { grep -o 'STATICKE_KONTROLY: [0-9]* z 5 prošly' "$1" | tail -1 | sed 's/^STATICKE_KONTROLY: //'; }
+poznamka_staticke() { grep -o 'STATICKE_KONTROLY: [0-9]* z [0-9]* prošly' "$1" | tail -1 | sed 's/^STATICKE_KONTROLY: //'; }
 
 # ---------- běh ----------
 echo "TESTOVACÍ KOLO — kroky: $KROKY   (logy: $LOGY)"

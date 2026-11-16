@@ -33,22 +33,24 @@ const test = (n, c, info) => { if (c) { ok++; console.log('OK  ' + n); }
   else { fail++; console.log('FAIL ' + n, info === undefined ? '' : JSON.stringify(info)); } };
 
 /* Porovnání otisků se zlatým JSON (jako test_vs_zlata.js). */
-function porovnej(ted) {
+function porovnej(ted, povolit) {
   const ocek = ulozene.scenare;
   let shoda = 0;
   const vypis = [];
+  const povolene = [];
   const klice = Object.keys(ocek);
   for (const k of klice) {
     const a = ocek[k], b = ted[k];
     if (!b) { vypis.push(k + ': scénář chybí'); continue; }
-    const rozdil = Object.keys(a).filter(x => a[x] !== b[x]);
+    let rozdil = Object.keys(a).filter(x => a[x] !== b[x]);
+    if (povolit) { rozdil.filter(x => povolit.indexOf(x) >= 0).forEach(x => povolene.push(k + ': ' + x)); rozdil = rozdil.filter(x => povolit.indexOf(x) < 0); }
     if (Object.keys(b).some(x => !(x in a))) rozdil.push('(nový klíč ' + Object.keys(b).filter(x => !(x in a)).join(',') + ')');
     if (rozdil.length) vypis.push(k + ': ' + rozdil.join(', ')); else shoda++;
   }
   const navic = Object.keys(ted).filter(k => !(k in ocek));
   if (navic.length) vypis.push('scénáře navíc: ' + navic.slice(0, 5).join(', '));
   if (klice.length < 300) vypis.push('málo scénářů (' + klice.length + ') — prázdná sada?');
-  return { shoda, celkem: klice.length, vypis };
+  return { shoda, celkem: klice.length, vypis, povolene };
 }
 function hlas(nazev, r) {
   test(nazev + ': ' + r.shoda + '/' + r.celkem + ' scénářů shodných', !r.vypis.length, r.vypis.slice(0, 10));
@@ -89,6 +91,37 @@ async function hlavni() {
     },
   }))));
   test('(c) druhý zákazník přidán ve všech scénářích', pridano >= ulozene.pocetFuzz && !selhani.length, { pridano, selhani: selhani.slice(0, 5) });
+
+  /* (e) VZ-E2 #601: VSTUP TISKU. Jeden zákazník → vzTiskPohled vrací TÝŽ
+   * objekt (žádná kopie); dva zákazníci (sdílená varianta) → tiskový pohled
+   * řídícího (jen jeho varianty) = dokumenty téže zakázky s jedním
+   * zákazníkem. Pojistka: tiskový pohled, který by nechal hlavičku dalšího
+   * zákazníka (nebo vrátil celou zakázku), (e) shodí — viz zpráva commitu. */
+  let tyz = 0, jiny = 0;
+  hlas('(e1) jeden zákazník: vzTiskPohled = týž objekt = dnešní otisky', porovnej(await zlata(__dirname, Object.assign({}, volby, {
+    zakazka: zak => { const p = vzTiskPohled(zak, ''); if (p === zak) tyz++; else jiny++; return p; },
+  }))));
+  test('(e1) vzTiskPohled u jednoho zákazníka nekopíruje', tyz >= ulozene.pocetFuzz && !jiny, { tyz, jiny });
+  let tisk = 0;
+  const selhaniE = [];
+  /* Controlling (ctrl) není dokument pro zákazníka: u scénářů s variantou,
+   * která NENÍ řídícího zákazníka (zamčená ne-řídící varianta fixtury), ji
+   * tiskový pohled řídícího vynechá (§ 4: tiskne se jen z jeho variant) —
+   * rozdíl jen v ctrl je povolený a vypíše se; dokumenty se shodovat musí. */
+  const rE2 = porovnej(await zlata(__dirname, Object.assign({}, volby, {
+    zakazka: zak => {
+      const k = Object.assign({}, zak);
+      const r = vzPridej(k, DRUHY, PEVNE);
+      if (!r.ok) { selhaniE.push((zak.cislo || '?') + ': ' + r.chyba); return zak; }
+      const p = vzTiskPohled(k, 'z1');
+      if (p && p !== k && !p.dalsiZakaznici && !p.vzRidici) tisk++;
+      return p;
+    },
+  })), ['ctrl']);
+  hlas('(e2) dva zákazníci: vzTiskPohled(z1) = dnešní otisky (dokumenty)', rE2);
+  console.log('    (info) (e2) povolený rozdíl jen controllingu u ne-řídící varianty: ' + rE2.povolene.length + ' — ' + rE2.povolene.join('; '));
+  test('(e2) rozdíl controllingu jen výjimečně (≤ 10 scénářů)', rE2.povolene.length <= 10, rE2.povolene);
+  test('(e2) tiskový pohled řídícího ve všech scénářích', tisk >= ulozene.pocetFuzz && !selhaniE.length, { tisk, selhani: selhaniE.slice(0, 5) });
 
   /* (d) Bez stop. Globály (importZakazka, novaZakazka, vz…) nastavil zlata(). */
   const fdir = path.join(__dirname, 'fixtury');
