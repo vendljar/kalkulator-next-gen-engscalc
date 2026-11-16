@@ -304,11 +304,16 @@ export function vzServerKontrola(stara, zak, volby = {}) {
   if (typeof G.vzTvarProblemy !== 'function' || !zak || typeof zak !== 'object') return null;
   if (Array.isArray(zak.vzZahozeno) && zak.vzZahozeno.length)
     return { status: 400, chyba: 'Zakázka nese ' + G.vzTvarText(zak.vzZahozeno) };
+  let st = stara;
+  if (st && typeof G.importZakazka === 'function') { try { st = G.importZakazka(JSON.parse(JSON.stringify(st))); } catch (e) { st = stara; } }
   if (!volby.zapnuto) {
-    let st = stara;
-    if (st && typeof G.importZakazka === 'function') { try { st = G.importZakazka(JSON.parse(JSON.stringify(st))); } catch (e) { st = stara; } }
     if (G.vzPodpis(zak) !== G.vzPodpis(st)) return { status: 400, chyba: G.VZ_VYPNUTO };
   } else {
+    /* N9 (revize Fable): PRVNÍ vzRidici (uložená verze ho nemá) je vždy
+     * { id: 'z1', pismeno: '' } — prohlížeč si řídícímu písmeno ani id nevybere. */
+    const r = zak.vzRidici;
+    if (r && typeof r === 'object' && !(st && st.vzRidici) && (r.id !== G.VZ_RIDICI_ID || r.pismeno !== ''))
+      return { status: 400, chyba: 'Zakázka nese neplatného řídícího zákazníka (první řídící je vždy bez písmena).' };
     /* Druhá pojistka: po importZakazka je tvar vždy čistý (vadný zahodí
      * vzOcisti → vzZahozeno výš); hlídá volajícího, který import obejde. */
     const p = G.vzTvarProblemy(zak);

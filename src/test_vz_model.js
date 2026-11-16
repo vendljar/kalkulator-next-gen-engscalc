@@ -246,6 +246,9 @@ const najdiVar = (z, id) => z.varianty.find(v => v.id === id);
   const uC = Object.assign(kanar('C', VZ_HLAVICKA_POLE), { zastupci: kanar('C', VZ_ZASTUPCI_POLE) });
   vzPridej(z, uB, { kdo: 'zkousejici' });
   vzPridej(z, uC, { vlastni: true, kdo: 'zkousejici' });
+  /* N3: kanárky i ve VLASTNÍ variantě C (název, poznámka s cenou, zákazník). */
+  const varC = z.varianty.find(v => v.id === z.dalsiZakaznici[1].varianta);
+  varC.nazev = 'KANAR_C_nazevVarianty'; varC.pozn = 'KANAR_C_cena 1 234 567 Kč'; varC.zakaznik = 'KANAR_C_zakaznikVarianty';
   const pred = J(z);
   const pohledy = { A: vzPohled(z, 'z1'), B: vzPohled(z, 'z2'), C: vzPohled(z, 'z3') };
   test('vzPohled nemění zakázku', J(z) === pred);
@@ -256,8 +259,17 @@ const najdiVar = (z, id) => z.varianty.find(v => v.id === id);
     const svoje = VZ_HLAVICKA_POLE.concat(VZ_ZASTUPCI_POLE).filter(k => s.indexOf('KANAR_' + x + '_' + k) < 0);
     test('pohled ' + x + ': obsahuje všechny své kanárky', p && svoje.length === 0, svoje);
     test('pohled ' + x + ': bez dalsiZakaznici a vzRidici', p && !('dalsiZakaznici' in p) && !('vzRidici' in p));
-    test('pohled ' + x + ': sdílí pole variant (mělká kopie)', p && p.varianty === z.varianty);
+    test('pohled ' + x + ': varianty jsou tytéž objekty (tisk zamyká skutečnou)', p && p.varianty.every(v => z.varianty.indexOf(v) >= 0));
   });
+  /* N3 (rozhodnutí koordinace): jen varianty, které zákazník smí vidět. */
+  const idy = p => p.varianty.map(v => v.id).join(',');
+  test('N3 pohled A (řídící): všechny varianty kromě vlastní varianty C', idy(pohledy.A) === z.varianty.filter(v => v !== varC).map(v => v.id).join(','), idy(pohledy.A));
+  test('N3 pohled B (sdílí řídící): jen řídící varianta', idy(pohledy.B) === varRidici(z), idy(pohledy.B));
+  test('N3 pohled C: jen vlastní varianta, aktivni na ni', idy(pohledy.C) === varC.id && pohledy.C.aktivni === varC.id, idy(pohledy.C));
+  test('N3 kanárky vlastní varianty C nejsou v pohledu A ani B', ['A', 'B'].every(x => J(pohledy[x]).indexOf('KANAR_C_') < 0));
+  test('N3 pohled C nese svou variantu (název, cena)', J(pohledy.C).indexOf('KANAR_C_nazevVarianty') >= 0 && J(pohledy.C).indexOf('KANAR_C_cena') >= 0);
+  { const j = zakNova(); klonujVariantu(j, varRidici(j), { aktivovat: false });
+    test('N3 jeden zákazník: pohled sdílí TÉŽ pole variant (zlatá sada)', vzPohled(j).varianty === j.varianty); }
   const B = pohledy.B;
   test('pohled B: hlavička = údaje B', VZ_HLAVICKA_POLE.every(k => B[k] === 'KANAR_B_' + k));
   test('pohled B: zástupci = zástupci B', J(B.zastupci) === J(uB.zastupci));
@@ -419,6 +431,48 @@ const najdiVar = (z, id) => z.varianty.find(v => v.id === id);
   test('vzPlatnaDrz: platna z prohlížeče nahrazena uloženou', J(z.dalsiZakaznici[0].platna) === J(stara.dalsiZakaznici[0].platna));
   vzPlatnaDrz({}, z);
   test('vzPlatnaDrz: bez uložené platna klíč zmizí', !('platna' in z.dalsiZakaznici[0]));
+}
+
+/* ---------- 12. revize Fable: N1, N2, N5 ---------- */
+{
+  /* N1: výměna řídícího přepíše i firemní pole hlavičky PROJ. */
+  const kanar = (x, pole) => { const o = {}; pole.forEach(k => { o[k] = 'KANAR_' + x + '_' + k; }); return o; };
+  const z = zakNova();
+  Object.assign(z, kanar('A', VZ_HLAVICKA_POLE));
+  Object.assign(z.projHlavicka, kanar('A', ['objednatel', 'adresaObjednatele', 'ico', 'kontakt']));
+  vzPridej(z, kanar('B', VZ_HLAVICKA_POLE));
+  const r = vzVymenRidiciho(z, 'z2');
+  test('N1 výměna: projHlavicka nese firmu nového řídícího (B), cislo PROJ beze změny',
+    r.ok && ['objednatel', 'adresaObjednatele', 'ico', 'kontakt'].every(k => z.projHlavicka[k] === 'KANAR_B_' + k), z.projHlavicka);
+  const pB = vzPohled(z, 'z2');
+  test('N1 výměna: pohled nového řídícího bez kanárků A', J(pB).indexOf('KANAR_A_') < 0, J(pB).match(/KANAR_A_\w+/));
+  test('N1 výměna: pohled bývalého řídícího (z1) bez kanárků B', J(vzPohled(z, 'z1')).indexOf('KANAR_B_') < 0);
+}
+{
+  /* N2: smazaná varianta → zákazník zůstane a ukazuje na řídící. */
+  const z = zakNova();
+  vzPridej(z, udaje('B'), { vlastni: true });
+  const vlastni = z.dalsiZakaznici[0].varianta;
+  z.varianty = z.varianty.filter(v => v.id !== vlastni);
+  const i = importZakazka(kop(z));
+  test('N2 import: zákazník se smazanou variantou zůstane a ukazuje na řídící',
+    i.dalsiZakaznici && i.dalsiZakaznici.length === 1 && i.dalsiZakaznici[0].varianta === varRidici(i) && !i.vzZahozeno,
+    i.dalsiZakaznici);
+  const z2 = zakNova(); vzPridej(z2, udaje('B')); z2.vzRidici.varianta = 'smazana';
+  const i2 = importZakazka(kop(z2));
+  test('N2 import: vzRidici.varianta na smazanou → řídící, bez vzZahozeno', i2.vzRidici && i2.vzRidici.varianta === varRidici(i2) && !i2.vzZahozeno);
+}
+{
+  /* N5: výměna odmítne řídícího, ze kterého by vznikla neuložitelná položka. */
+  const z = zakNova(); vzPridej(z, udaje('B'));
+  z.objednatel = '  ';
+  const p = J(z), r = vzVymenRidiciho(z, 'z2');
+  test('N5 výměna: řídící bez názvu → odmítnuto srozumitelně, beze změny', !r.ok && /název/.test(r.chyba) && J(z) === p, r);
+  z.objednatel = 'Firma A'; z.zastupci.banka = 'x'.repeat(VZ_TEXT_MAX + 1);
+  const p2 = J(z), r2 = vzVymenRidiciho(z, 'z2');
+  test('N5 výměna: pole řídícího nad ' + VZ_TEXT_MAX + ' znaků → odmítnuto, beze změny', !r2.ok && /delší/.test(r2.chyba) && J(z) === p2, r2);
+  z.zastupci.banka = '';
+  test('N5 výměna: po opravě projde a výsledek má čistý tvar', vzVymenRidiciho(z, 'z2').ok && vzTvarProblemy(z).length === 0);
 }
 
 /* Pojistka (ověřeno ručně kopií modulu, 16. 11. 2026): sada selže, když
