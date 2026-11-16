@@ -185,5 +185,19 @@ const vC = zak.varianty.find(v => String(v.id) === rC.zakaznik.varianta);
     return ids.indexOf(vC.id) < 0 && ids.indexOf(volna.id) >= 0 && ids.indexOf(vA.id) >= 0; })());
 }
 
+/* Textová shoda cizího zákazníka (B224). */
+{
+  const ja = { id: 'z2', hlavicka: { objednatel: 'ALFA BETA s.r.o.', ico: '' } };
+  const cizi = [{ id: 'z1', hlavicka: { objednatel: 'BETA a.s.', ico: '33333333' } }];
+  test('vlastní název obsahující cizí („ALFA BETA" × „BETA") se nepočítá', vzTextCizi('Výtah pro ALFA BETA s.r.o.', ja, cizi) === null);
+  test('… cizí název mimo vlastní se pozná', !!vzTextCizi('Výtah pro ALFA BETA a sousední BETA', ja, cizi));
+  test('IČO cizího zákazníka v textu (i s mezerami) se pozná', !!vzTextCizi('Investor IČO 333 333 33', ja, cizi)
+    && !!vzTextCizi('IČO: 33333333.', ja, cizi));
+  test('jiné číslo IČO nepozná (delší řada)', vzTextCizi('č. 333333331', ja, cizi) === null);
+  zak.popisZameru = 'Investor IČO 33333333';
+  test('IČO zákazníka C v popisu záměru → tisk pro B zastaven', /Popis záměru/.test(vzTiskZabrana(zak, rB.zakaznik.id, vA, 'nabidka', {})));
+  zak.popisZameru = '';
+}
+
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');
 if (fail) process.exit(1);
