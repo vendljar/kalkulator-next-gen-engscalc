@@ -11,7 +11,7 @@ výchozí variantu a napiš ji do závěrečné zprávy.
 |---|---|
 | větev | `claude/obj-proj` |
 | báze | `0a9866371363195bfb8fa63454072d1f389ec0c6` (integrace v12.11.7) nebo SHA ze zprávy koordinace |
-| roadmapa | **#598** (před zápisem ověř, že je volné; volná jsou #589 a od #598) |
+| roadmapa | **#607** (přidělila koordinace 16. 11. 2026; #598–#606 drží víc zákazníků ve větvi `claude/integrace-vz`, proto nejsou v integraci 16-10 vidět — před zápisem ověř, že je #607 volné v obou) |
 | meze B | žádná nová se nečeká (server se mění jen o typ dokumentu v zámku a v šablonách); kdyby přece, další volná je B218 |
 | odhad | 8–10 h |
 | riziko | **složitá** — smluvní dokument, zámek varianty. Před sloučením revize poradce nad celým diffem |
@@ -141,7 +141,7 @@ systému se do šablony nedává (vzniká až po přijetí objednávky); pro pá
   dávka sahá do `sod.js`, `zamek.js`, `kontroly.js`.
 - `KNG_PODKLADY=<složka> bash nastroje/testovaci_kolo.sh --bez-mutaci` — počty do předávky.
 - Příručka obchodníka (kapitola o smlouvách PROJ: kdy objednávka, kdy smlouva, co se doplní ve Wordu), příručka
-  správce A5 (šablona objednávky, nahrání). `CHANGELOG.md`, `roadmapa/roadmap.json` (#598), `verze.txt`,
+  správce A5 (šablona objednávky, nahrání). `CHANGELOG.md`, `roadmapa/roadmap.json` (#607), `verze.txt`,
   `PREDAVKA.md`; průběžně commit + push, na konci `get_session` → `context_usage`.
 
 ## 9. Otázky pro J. V. (doporučená volba první)
