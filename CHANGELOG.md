@@ -8,6 +8,28 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v16.11.5 — VZ-E3 #602: víc zákazníků — zámek po zákaznících, razítko „komu“, platná nabídka, odstranění s odeslanou nabídkou jen administrátor, větev claude/vz-e3
+
+Nad `claude/vz-e2` `cbf5c57`. Vše za vypínačem `viceZakazniku`; zakázka s jedním zákazníkem beze změny (razítko
+„komu“ se nezapisuje, náhled tisku znak po znaku stejný). Zadání `podklady/PROMPT_VZ_E3.md`, návrh § 5, § 2a, § 1.1.
+
+- **Razítko „komu“** `zamek.tisky[].zakaznik` { id, pismeno, cislo, objednatel, ico } u každého tisku (Word CN, CN PROJ,
+  SoD, náhledy — zákazník z okamžiku, kdy dokument vznikl); `zamek.cislo` zůstává bez písmene (společné všem
+  zákazníkům varianty), číslo dokladu s písmenem nese razítko. Server snímek skládá sám, z prohlížeče bere jen id.
+- **Stav a platná nabídka** `vzStavNabidky`, `vzPlatna` (počítá se ze zámků; server ji zapisuje dalším zákazníkům
+  do `platna` při každém uložení — N6); E5 poznámka dealu teď bere `vzPlatna`.
+- **Dotisk** pro zákazníka nese název a IČO ze snímku jeho razítka; razítka ostatních zákazníků se z tiskového
+  pohledu vyjmou (D3).
+- **Odstranění zákazníka s odeslanou nabídkou jen administrátor** (server z relace a uložené verze 403, obrazovka
+  zhasnuté tlačítko s vysvětlením, potvrzení podle prototypu v3_3); razítka a zamčená varianta zůstávají, číslo
+  dokladu z razítka (`vzCisloDokladu`); písmeno a id se už nepřidělí.
+- **Server (N4, N9, B221):** písmeno a id stávajících zákazníků nejde přepsat, nový zákazník nedostane písmeno
+  ani id z razítek, `zalozen` píše server; podvržené razítko se nepřijme.
+- **Zmrazení:** název akce a adresa stavby po první odeslané nabídce komukoli; název, sídlo, IČO a DIČ dalšího
+  zákazníka po odeslání jemu (kontakt a zástupci volné).
+- Testy `src/test_vz_zamek.js`, rozšířené `netlify/test_vz_server.mjs`, `src/test_vz_unik.js`, `src/test_vz_ui.js`,
+  prohlížeč `overit_vz_zamek.mjs`; mutace „[VZ E3]“. Meze **B227**, **B228** (i N7 — obnova s VYP).
+
 ## v16.11.4 — VZ-E2 #601: víc zákazníků — čísla s písmenem, tisk z pohledu zákazníka, zábrany tisku, test úniku, větev claude/vz-e2
 
 Nad `claude/vz-e0` `e29f2b1` (E0). Vše za vypínačem `viceZakazniku`; zakázka s jedním zákazníkem tiskne bajt po bajtu
