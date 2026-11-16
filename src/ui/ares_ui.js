@@ -43,7 +43,7 @@ function aresCil(kde) {
    * ta má jiná jména polí, takže si `zakaznici_ui.js` podává průhledný
    * převodník — ARES o něm nemusí vědět nic navíc. */
   if (kde === 'zakaznik' && typeof zakaznikAresHlavicka === 'function')
-    return Object.assign({}, ARES_CIL_HLAVICKA, { hlavicka: zakaznikAresHlavicka(), zakaznik: true });
+    return Object.assign({}, ARES_CIL_HLAVICKA, { hlavicka: zakaznikAresHlavicka() });
   return Object.assign({}, ARES_CIL_HLAVICKA, { hlavicka: ZAK });
 }
 
@@ -55,7 +55,7 @@ function aresCil(kde) {
 function aresZmrazeno(kde) {
   const cil = aresCil(kde);
   if (typeof cil.zmrazeno === 'string') return cil.zmrazeno;   // cíl víc zákazníků rozhoduje sám
-  if (cil.zakaznik || typeof zamekZakCestaZmrazena !== 'function' || typeof ZAK === 'undefined') return '';
+  if (kde === 'zakaznik' || typeof zamekZakCestaZmrazena !== 'function' || typeof ZAK === 'undefined') return '';
   for (const p of ARES_POLE) {
     const d = zamekZakCestaZmrazena(ZAK, 'ZAK.' + p.klic);
     if (d) return d;

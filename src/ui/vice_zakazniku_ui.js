@@ -37,6 +37,8 @@ const VZ_UI = {
   zak: null,         // zakázka, ke které stav patří
 };
 const VZ_FORM_KDE = 'vzNovy';   // „kde" formuláře pro ARES a našeptávač
+const VZ_VLASTNI_RIDICI = 'Řídící zákazník: novou variantu založte „+ Nová varianta" a nastavte ji jako řídící.';
+const VZ_ICO_ATR = ' placeholder="8 číslic" inputmode="numeric"';
 
 function vzZap() {
   try { return typeof viceZakaznikuZapnuto === 'function' && viceZakaznikuZapnuto(); } catch (e) { return false; }
@@ -239,8 +241,8 @@ function vzFormularBlok(kde) {
   const f = VZ_UI.form;
   if (!f || f.kde !== kde || !vzZakUI()) return '';
   const k = VZ_FORM_KDE;
-  const pole = (klic, popis, navic) => `<div class="row"><label for="vzF_${klic}">${popis}</label><input type="text" id="vzF_${klic}" autocomplete="off"
-      maxlength="${VZ_TEXT_MAX}" value="${esc(f.h[klic])}"${navic || ''} onchange="vzFormPole('${klic}', this.value)"></div>`;
+  const pole = (klic, popis, navic) => `<div class="row"><label for="vzF_${esc(klic)}">${esc(popis)}</label><input type="text" id="vzF_${esc(klic)}" autocomplete="off"
+      maxlength="${VZ_TEXT_MAX}" value="${esc(f.h[klic])}"${navic || ''} onchange="vzFormPole('${escJs(klic)}', this.value)"></div>`;
   const zakaznik = `<div class="row"><label for="vzF_objednatel">Zákazník</label><span class="nasept-wrap" style="flex:1"><input type="text" id="vzF_objednatel"
       style="width:100%" autocomplete="off" maxlength="${VZ_TEXT_MAX}" value="${esc(f.h.objednatel)}" placeholder="název firmy — nebo ho doplňte z ARES / z databáze"
       onchange="naseptavacZakVyber(this.value,'${k}')" oninput="vzFormPsani(this.value); naseptavacZakKresli('${k}', this.value)"
@@ -257,7 +259,7 @@ function vzFormularBlok(kde) {
   const hotovo = String(f.h.objednatel || '').trim() !== '';
   return `<div class="vz-blok noprint" id="vzFormular"><div class="vz-form"><b>Nový zákazník na zakázce</b>
     <div class="vz-form-pole"><div>${zakaznik}${pole('adresaObjednatele', 'Sídlo zákazníka')}${pole('kontakt', 'Kontaktní osoba')}</div>
-      <div>${pole('ico', 'IČO zákazníka', ' placeholder="8 číslic" inputmode="numeric"')}${pole('dic', 'DIČ zákazníka')}${ares}</div></div>
+      <div>${pole('ico', 'IČO zákazníka', VZ_ICO_ATR)}${pole('dic', 'DIČ zákazníka')}${ares}</div></div>
     <div class="row vz-form-nab"><label>Nabídka</label><span class="vz-volba">
       <label><input type="radio" name="vzFormNova" value="stejna"${f.nova === 'stejna' ? ' checked' : ''} onchange="vzFormNova('stejna')"> stejná varianta jako ${esc(ridNazev)} („${esc(rid.nazev)}")</label>
       <label><input type="radio" name="vzFormNova" value="vlastni"${f.nova === 'vlastni' ? ' checked' : ''} onchange="vzFormNova('vlastni')"> vlastní varianta (kopie)</label></span></div>
@@ -347,7 +349,7 @@ function vzKarta(kde) {
     const tl = [
       `<button type="button" class="mini" onclick="vzNahled('${escJs(z.id)}')"${dis(zap, typeof VZ_VYPNUTO === 'string' ? VZ_VYPNUTO : '')} title="otevřít zákazníka a kartu Cenová nabídka">Náhled</button>`,
       `<button type="button" class="mini" disabled title="Tisk pro zákazníka zavede další etapa (E2).">Tisk CN</button>`,
-      `<button type="button" class="mini" onclick="vzVlastniVarianta('${escJs(z.id)}')"${dis(smi && !z.ridici, !smi ? vzProcNe() : 'Řídící zákazník: novou variantu založte „+ Nová varianta" a nastavte ji jako řídící.')}>Vlastní varianta</button>`,
+      `<button type="button" class="mini" onclick="vzVlastniVarianta('${escJs(z.id)}')"${dis(smi && !z.ridici, !smi ? vzProcNe() : VZ_VLASTNI_RIDICI)}>Vlastní varianta</button>`,
       `<button type="button" class="mini" disabled title="Prodáno u zákazníka zavede další etapa (E4).">Prodáno</button>`,
       `<button type="button" class="mini" onclick="vzOdstranit('${escJs(z.id)}')"${dis(smi && !odstrDuvod, odstrDuvod || vzProcNe())}>Odstranit</button>`,
     ].join(' ');
