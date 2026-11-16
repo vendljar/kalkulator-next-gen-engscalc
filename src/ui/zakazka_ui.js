@@ -139,6 +139,8 @@ function renderZakazka() {
      *     (obě verze)                   → krycí listy OCK / PROJ a karty nabídek
      *   – Online databáze, Zakázky ve složce → Nastavení → Databáze */
     (typeof prehledHledaniKarta === 'function' ? prehledHledaniKarta() : '') +
+    /* VZ-E1 #600: karta Zákazníci zakázky (jen u 2+ zákazníků). */
+    (typeof vzKarta === 'function' ? vzKarta('zakazka') : '') +
     card('Souhrn řídící varianty — ' + esc(rid.nazev),
       `<div class="grand">
         <div class="kpi"><div class="l">OCK bez DPH</div><div class="v">${fmt0(ridOck)}</div></div>

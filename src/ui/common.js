@@ -1393,9 +1393,13 @@ function zakazkaHlavicka(ock) {
    * na to je tlačítko „Vybrat z databáze zákazníků". Kartotéka se při
    * prvním kliknutí do pole doptá serveru, jinak by našeptávač nabízel jen
    * jména z dřívějších zakázek a dotahovat by neměl z čeho. */
-  const zakaznikRow = (kde) => `<div class="row"><label>Zákazník</label>
+  /* VZ-E1 #600: tlačítko „Přidat zákazníka" stojí ZA popiskem (po jeho
+   * odebrání je řádek znak po znaku jako dřív); hodnota a zmrazení podle
+   * otevřeného zákazníka (vzCesta — u řídícího beze změny). */
+  const vzC = p => (typeof vzCesta === 'function' ? vzCesta(p) : p);
+  const zakaznikRow = (kde) => `<div class="row"><label>Zákazník</label>${typeof vzPridatTlacitko === 'function' ? vzPridatTlacitko(kde) : ''}
     <span class="nasept-wrap" style="flex:1"><input type="text" style="width:100%" autocomplete="off"
-      value="${esc(get('ZAK.objednatel'))}"${typeof zamekZakAttr === 'function' ? zamekZakAttr('ZAK.objednatel') : ''}
+      value="${esc(get(vzC('ZAK.objednatel')))}"${typeof zamekZakAttr === 'function' ? zamekZakAttr(vzC('ZAK.objednatel')) : ''}
       title="Při psaní se nabízejí zákazníci z databáze a z dřívějších zakázek. Výběrem se doplní prázdná pole hlavičky (kontaktní osoba, IČO, adresa); už vyplněné údaje zůstanou a celou hlavičku přepíše tlačítko „Vybrat z databáze zákazníků“."
       onchange="if(typeof naseptavacZakVyber==='function')naseptavacZakVyber(this.value,'${kde}'); else set('ZAK.objednatel', this.value)"
       oninput="naseptavacZakKresli('${kde}', this.value)"
@@ -1615,10 +1619,10 @@ function zakazkaHlavicka(ock) {
           ${txt('ZAK.cislo', 'Číslo nabídky (CN)', dupCislo)}${txt('ZAK.nazevAkce', 'Název akce', dupNazev)}${txt('ZAK.adresa', 'Adresa stavby')}${datumRow}
         </div>
         <div class="zak-head-col">
-          ${zakaznikRow('proj')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico', 'proj')}${dphRowProj}
+          ${typeof vzPrepinacRadek === 'function' ? vzPrepinacRadek('proj') : ''}${zakaznikRow('proj')}${txt(vzC('ZAK.kontakt'), 'Kontaktní osoba')}${icoRow(vzC('ZAK.ico'), 'proj')}${dphRowProj}
         </div>
         <div class="zak-head-col">${pdStavRow}${variantaRow}${ridiciBtn}${prirazkaRowProj}</div>
-      </div>${puvodRadek}
+      </div>${typeof vzFormularBlok === 'function' ? vzFormularBlok('proj') : ''}${puvodRadek}
       <div class="zak-cena noprint">
         ${zakTrojice()}
         <span class="zak-cena-del"></span>
@@ -1638,12 +1642,12 @@ function zakazkaHlavicka(ock) {
         ${txt('ZAK.cislo', 'Číslo nabídky (CN)', dupCislo)}${txt('ZAK.nazevAkce', 'Název akce', dupNazev)}${txt('ZAK.adresa', 'Adresa stavby')}${datumRow}
       </div>
       <div class="zak-head-col">
-        ${zakaznikRow('ock')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico')}${dphRow}
+        ${typeof vzPrepinacRadek === 'function' ? vzPrepinacRadek('ock') : ''}${zakaznikRow('ock')}${txt(vzC('ZAK.kontakt'), 'Kontaktní osoba')}${icoRow(vzC('ZAK.ico'), 'ock')}${dphRow}
       </div>
       <div class="zak-head-col">
         ${pdStavRow}${variantaRow}${ridiciBtn}${rezimRow}${prirazkaRow}${radaRow}${kurzRow}
       </div>
-    </div>${puvodRadek}
+    </div>${typeof vzFormularBlok === 'function' ? vzFormularBlok('ock') : ''}${puvodRadek}
     <div class="zak-cena noprint">
       ${zakTrojice()}
       <span class="zak-cena-del"></span>
@@ -1831,7 +1835,8 @@ function renderKalkHlavicka() {
   const el = document.getElementById('kalk-hlavicka');
   /* Lišta „jen ke čtení" tu stála do 13. 10. 2026 — od #404 ji nahrazuje
    * jediná žlutá lišta nad záložkami (renderListaZakazky v zamek_ui.js). */
-  if (el) el.innerHTML = zakazkaHlavicka(true) + zamekStranyLista('ock');
+  /* VZ-E1 #600: karta Zákazníci zakázky pod hlavičkou — jen u 2+ zákazníků. */
+  if (el) el.innerHTML = zakazkaHlavicka(true) + (typeof vzKarta === 'function' ? vzKarta('ock') : '') + zamekStranyLista('ock');
   zamekStranyNasad('ock');
   zamekCteniNasad('ock');
 }

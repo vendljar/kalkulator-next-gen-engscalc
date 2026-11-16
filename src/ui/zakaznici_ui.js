@@ -96,20 +96,36 @@ function naseptavacZakKarta(nazev) {
   return ((typeof ZAK_DB !== 'undefined' && ZAK_DB.seznam) || [])
     .find(z => z && String(z.nazev || '').trim().toLowerCase() === n) || null;
 }
+/* CÍL ÚDAJŮ ZÁKAZNÍKA (VZ-E1 #600): kam se zapisuje výběr z našeptávače
+ * a z karty zákazníka. Bez víc zákazníků je to hlavička zakázky (ZAK) jako
+ * vždy; vzZakaznikCil (vice_zakazniku_ui.js) vrací formulář nového zákazníka
+ * nebo otevřeného dalšího zákazníka — se stejnými klíči jako hlavička. */
+function zakazniciCil(kde) {
+  const vz = typeof vzZakaznikCil === 'function' ? vzZakaznikCil(kde) : null;
+  if (vz) return vz;
+  return {
+    zak: ZAK,
+    set: (k, v) => set('ZAK.' + k, v),
+    zmrazeno: () => (typeof zamekZakCestaZmrazena === 'function' ? zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel') : ''),
+  };
+}
 function naseptavacZakVyber(hodnota, kde) {
+  const cil = zakazniciCil(kde);
   const karta = naseptavacZakKarta(hodnota);
-  if (!karta || typeof zakaznikPredvypln !== 'function') { set('ZAK.objednatel', hodnota); return; }
-  if (typeof zamekStop === 'function' && zamekStop()) return;
+  if (!karta || typeof zakaznikPredvypln !== 'function') { cil.set('objednatel', hodnota); return; }
+  if (!cil.formular && typeof zamekStop === 'function' && zamekStop()) return;
   /* Z1: po smlouvě o dílo kterékoli varianty se údaje zákazníka v hlavičce
    * nemění (zamekZakCestaZmrazena) — i když je otevřený nezamčený klon. */
-  if (typeof zamekZakCestaZmrazena === 'function' && zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel')) {
-    if (typeof hlaska === 'function') hlaska(zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel'));
+  const zmrazeno = cil.zmrazeno();
+  if (zmrazeno) {
+    if (typeof hlaska === 'function') hlaska(zmrazeno);
     render(); return;
   }
   if (typeof nahledStop === 'function' && nahledStop('dotažení zákazníka do hlavičky')) return;
-  const v = zakaznikPredvypln(karta, ZAK);
-  if (v.zmeny.indexOf('objednatel') < 0) ZAK.objednatel = hodnota;   // název se vybral výslovně
-  set('ZAK.objednatel', ZAK.objednatel);                             // zámek, razítko, render
+  const zak = cil.zak;
+  const v = zakaznikPredvypln(karta, zak);
+  if (v.zmeny.indexOf('objednatel') < 0) zak.objednatel = hodnota;   // název se vybral výslovně
+  cil.set('objednatel', zak.objednatel);                             // zámek, razítko, render
   if (v.kontakty.length) naseptavacZakKontaktyNabidni(kde, v.kontakty);
 }
 function naseptavacZakKontaktyNabidni(kde, kontakty) {
@@ -131,7 +147,7 @@ function naseptavacZakKontaktyNabidni(kde, kontakty) {
 }
 function naseptavacZakKontaktVyber(jmeno, kde) {
   ZAK_DB.kontaktVolba = '';
-  if (jmeno) set('ZAK.kontakt', jmeno);
+  if (jmeno) zakazniciCil(kde).set('kontakt', jmeno);
   naseptavacZakSchovej(kde || 'ock');
 }
 
@@ -183,7 +199,7 @@ function zakaznikNovyUI() {
 /* Založit kartu z otevřené zakázky — nejčastější cesta, jak databáze vznikne
  * (zadání J. V.: začínáme na zelené louce, plní se novými zakázkami). */
 function zakaznikZeZakazkyUI() {
-  ZAK_DB.otevreny = zakaznikZeZakazky(ZAK);
+  ZAK_DB.otevreny = zakaznikZeZakazky(zakazniciCil('ock').zak);
   ZAK_DB.novy = true;
   ZAK_DB.hlaska = 'Karta je předvyplněná z otevřené zakázky — projděte ji a uložte.';
   prepniTab('zakaznici'); render();
@@ -240,19 +256,22 @@ async function zakaznikSmaz() {
 }
 
 /* ---------- karta → otevřená zakázka ---------- */
-function zakaznikDoZakazkyUI(klic) {
+function zakaznikDoZakazkyUI(klic, kde) {
   const z = ZAK_DB.seznam.find(x => zakaznikKlic(x) === klic)
     || (ZAK_DB.otevreny && zakaznikKlic(ZAK_DB.otevreny) === klic ? ZAK_DB.otevreny : null);
   if (!z) return;
-  if (typeof zamekStop === 'function' && zamekStop()) return;
+  const cil = zakazniciCil(kde || 'ock');
+  if (!cil.formular && typeof zamekStop === 'function' && zamekStop()) return;
   /* Z1: po smlouvě o dílo kterékoli varianty se údaje zákazníka v hlavičce
    * nemění (zamekZakCestaZmrazena) — i když je otevřený nezamčený klon. */
-  if (typeof zamekZakCestaZmrazena === 'function' && zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel')) {
-    if (typeof hlaska === 'function') hlaska(zamekZakCestaZmrazena(ZAK, 'ZAK.objednatel'));
+  const zmrazeno = cil.zmrazeno();
+  if (zmrazeno) {
+    if (typeof hlaska === 'function') hlaska(zmrazeno);
     render(); return;
   }
   if (typeof nahledStop === 'function' && nahledStop('přenesení zákazníka do zakázky')) return;
-  const n = zakaznikDoZakazky(z, ZAK);
+  const n = zakaznikDoZakazky(z, cil.zak);
+  if (typeof cil.poPrevzeti === 'function') { cil.poPrevzeti(n, z); return; }   // VZ: formulář / další zákazník
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   ZAK_DB.hlaska = n
     ? 'Do otevřené zakázky se přeneslo ' + n + ' údajů. Cokoli tam přepíšete, se do karty samo nevrátí.'
@@ -401,8 +420,8 @@ function zakaznikKartaHtml() {
 
     <div class="btns noprint" style="margin-top:14px">
       <button class="primary" ${ZAK_DB.pracuje ? 'disabled' : ''} onclick="zakaznikUloz()">Uložit zákazníka</button>
-      <button style="background:#86e8ad;color:#0B2E6B;border-color:#5fcf92"
-        onclick="zakaznikDoZakazkyUI('${escJs(klic)}')">Přenést do otevřené zakázky</button>
+      ${typeof vzZakaznikKartaTlacitka === 'function' ? vzZakaznikKartaTlacitka(klic) : ''}<button style="background:#86e8ad;color:#0B2E6B;border-color:#5fcf92"
+        onclick="zakaznikDoZakazkyUI('${escJs(klic)}')">${typeof vzZakaznikKartaPopis === 'function' ? esc(vzZakaznikKartaPopis()) : 'Přenést do otevřené zakázky'}</button>
       ${(!ZAK_DB.novy && typeof jeAdminOnline === 'function' && jeAdminOnline())
         ? `<button class="mini" onclick="zakaznikSmaz()">Smazat kartu…</button>` : ''}
     </div>
