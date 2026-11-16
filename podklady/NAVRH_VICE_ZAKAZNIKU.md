@@ -18,6 +18,9 @@ Kód aplikace se tímto návrhem nemění.
 | 2 | text o ostatních zákaznících v dealu | **poznámka u dealu**, ne pole; mechanismus poznámky šachet (VSD #588, mez B217) | § 7.2 |
 | 3 | organizace dealu po prodeji jinému zákazníkovi | „organizace by se v Pipedrive měla přepsat na vítězného zákazníka a vítězná varianta je řídící cenou v Pipedrive“ — **při Prodáno se přepíše sama** | § 7.4 |
 | 4 | odstranění zákazníka, kterému odešla nabídka | **jen administrátor**; bez odeslané nabídky kdo smí ukládat | § 2a |
+| 5 | kontaktní osoba dealu po přepsání organizace | „kontaktní osobu bude muset obchodník doplnit následně v Pipedrive před posunutím na vyhráno“ — **aplikace osobu nemění**, jen upozorní a zapíše do protokolu | § 7.4 |
+| 6 | zápis ceny prodeje do dealu | samostatný úkol, roadmapa **#597**; do etap VZ nepatří | § 7.4 |
+| 7 | „+“ v přepínači zákazníků | zatím zůstává | § 2a |
 
 **Víc šachet × víc zákazníků (doplněk J. V. 16. 11. 2026):** prototyp má vypínač víc šachet zapnutý, takže jde
 klikat na skutečné ovládání šachet aplikace společně se zákazníky (situace „víc zákazníků + víc šachet“). Šachty
@@ -147,7 +150,7 @@ souborů nahradí pohled zákazníka s testem úniku. Proto seznam v zakázce.
   „Přidat zákazníka“ je zhasnuté, dokud není vyplněný název. Po přidání se do protokolu zapíše, odkud údaje jsou
   (ARES / databáze / ručně) — jen název firmy, žádné kontakty.
 - Potvrzením vznikne druhý zákazník a teprve tehdy se objeví přepínač zákazníků v hlavičce (místo tlačítka; má
-  vlastní „+“), karta „Zákazníci zakázky“ pod hlavičkou a pruh „náhled a tisk platí pro zákazníka X“.
+  vlastní „+“ pro dalšího zákazníka — rozhodnutí J. V. 16. 11. 2026: zatím zůstává), karta „Zákazníci zakázky“ pod hlavičkou a pruh „náhled a tisk platí pro zákazníka X“.
 
 ### Odstranění zákazníka
 
@@ -329,8 +332,10 @@ Další zákazníci na zakázce:
 
 Řídící varianta (cena v dealu) = prodaná varianta platí už dnes (#563). Nově se přepíše i organizace dealu.
 Pozor: samotný zápis dat prodeje do dealu (hodnota, krycí list, fáze) dnes aplikace **neprovádí** — `prodano.pipedrive`
-zůstává ve stavu „čeká na odeslání“ a existuje jen suchý běh (#510, #536). Přepsání organizace je proto samostatný
-zápis s vlastním stavem a na zápisu dat prodeje nezávisí.
+zůstává ve stavu „čeká na odeslání“ a existuje jen suchý běh (#510, #536). **Zápis ceny prodeje do dealu je samostatný
+úkol, roadmapa #597 (rozhodnutí J. V. 16. 11. 2026) — do etap VZ nepatří.** Přepsání organizace je proto samostatný
+zápis s vlastním stavem a na zápisu dat prodeje nezávisí; až #597 vznikne, vezme si řídící variantu a hlavičku,
+tedy vítěze, bez další úpravy VZ.
 
 **Kdy.** Po úspěšném uložení prodeje prohlížeč sám zavolá `POST /api/pd/organizace { soubor, akce: 'vitez' }`
 (bez dalšího dialogu — přepsání organizace je vypsané v potvrzení prodeje). Jen u zakázky s víc zákazníky
@@ -352,7 +357,10 @@ zápis s vlastním stavem a na zápisu dat prodeje nezávisí.
    - dvě a víc aktivních se stejným IČO → stav `vice`, nic se nezapisuje, aplikace vypíše jejich názvy a počet
      („v Pipedrive je víc organizací s tímto IČO — sjednoťte je a zápis zopakujte“). Server nehádá.
 4. `PATCH /api/v2/deals/<id>` jen `{ org_id }`. Původní organizace se nemění ani nemaže. **Kontaktní osoba dealu
-   se nemění** — patří původní organizaci; odpověď to řekne a aplikace na to upozorní (otevřený bod 1 v § 11).
+   se nemění** (rozhodnutí J. V. 16. 11. 2026: obchodník ji doplní v Pipedrive před posunutím na vyhráno). Po
+   úspěšném zápisu organizace (stav `zapsano`) aplikace ukáže upozornění „Doplňte v Pipedrive kontaktní osobu vítězného zákazníka před posunem dealu na Vyhráno.“
+   a **totéž zapíše do protokolu zakázky**. Upozornění zůstává vidět u řádku Stav Pipedrive, dokud je zakázka prodaná;
+   aplikace osobu dealu nečte ani nekontroluje.
 5. Zapíše stav do pole psaného jen serverem `zak.pdOrgVitez = { deal, org, stav, kdy, kdo }`, záznam do protokolu
    (název organizace, „nalezena“ / „založena“, žádné kontakty) a smaže cache detailu dealu.
 
@@ -462,11 +470,7 @@ cloudové sezení včetně kola bez mutací (≈ 4–6 h); mutace po částech n
 
 ## 11. Otevřené body po rozhodnutí J. V.
 
-Všechny čtyři otázky jsou rozhodnuté (úvod). Zbývá jedna nová otázka a body, které řeším doporučením:
-
-1. **Kontaktní osoba dealu po přepsání organizace** (nová, vyplývá z rozhodnutí 3). Osoba dealu patří původní
-   organizaci. (a) aplikace osobu nemění a upozorní, že ji máte v Pipedrive změnit **— doporučeno**;
-   (b) aplikace osobu z dealu odebere; (c) aplikace založí osobu z kontaktu vítězného zákazníka.
+Všechny otázky jsou rozhodnuté (tabulka v úvodu, řádky 1–7). Spuštění programování je na pokyn J. V.
 
 Rozhodnuto doporučením, pokud J. V. neřekne jinak:
 - poznámka o zákaznících je samostatná, vedle poznámky šachet (§ 7.2);

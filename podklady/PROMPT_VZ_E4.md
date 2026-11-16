@@ -32,7 +32,12 @@ krycí list a SoD jdou pro prodaného zákazníka.
    všechny její zákazníky a odlišné podmínky = vlastní varianta. SoD jen pro zákazníka, kterému nabídka odešla.
 5. **Controlling:** jedna zakázka = jeden řádek s řídícím zákazníkem; zámky sdílené varianty se nepočítají víckrát.
 6. Po uložení prodeje u zakázky s víc zákazníky zavolá obrazovka akci „organizace = vítěz“ — **jen háček**
-   (`vzPoProdeji()`), který E5b naplní; v této etapě nic nevolá.
+   (`vzPoProdeji()`), který E5b naplní; v této etapě nic nevolá. Upozornění na kontaktní osobu dealu
+   („Doplňte v Pipedrive kontaktní osobu vítězného zákazníka…“) patří až k úspěšnému zápisu organizace v E5b —
+   tady ho nezaváděj. V potvrzení prodeje jen řádek, že organizace dealu se přepíše na vítěze a kontaktní osobu
+   doplní obchodník v Pipedrive.
+7. Zápis ceny prodeje do dealu (hodnota, krycí list, fáze) **není předmětem VZ** — samostatný úkol, roadmapa #597.
+   `prodano.pipedrive` zůstává, jak je.
 
 ## Testy
 

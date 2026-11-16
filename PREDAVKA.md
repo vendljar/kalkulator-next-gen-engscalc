@@ -18,8 +18,10 @@ má široká pole, „Vybrat z databáze zákazníků“ a funkční „Najít f
 do návrhu § 2a a promptů E1 (zobecnění `ares_ui.js` na cíl, žádná kopie) a E0 (stejné klíče hlavičky).
 
 **Etapy:** E0 → E1 → E2 → E3 → E4 → E5b → E6; E5 souběžně s E1–E3 (po E0). Revize poradce: E0, E2, E3, E5b.
-**Čeká na J. V.:** souhlas se spuštěním; jedna nová otázka — kontaktní osoba dealu po přepsání organizace (§ 11,
-doporučeno: neměnit a upozornit).
+**Rozhodnutí J. V. 16. 11. (zapsáno do návrhu, E5b a E4):** kontaktní osobu dealu aplikace nemění — po zápisu
+organizace vítěze upozorní „Doplňte v Pipedrive kontaktní osobu vítězného zákazníka před posunem dealu na Vyhráno.“
+a zapíše to do protokolu; zápis ceny prodeje do dealu je samostatný úkol #597; „+“ v přepínači zákazníků zůstává.
+**Čeká na J. V.:** souhlas se spuštěním (prochází detail etap).
 **Zjištění pro koordinaci:** zápis dat prodeje do dealu (hodnota, krycí list, fáze) aplikace dnes neprovádí
 (`prodano.pipedrive` zůstává „čeká“, jen suchý běh) — VZ ho nezavádí; organizace dealu je samostatný zápis.
 

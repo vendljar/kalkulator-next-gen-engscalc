@@ -37,7 +37,14 @@ Pipedrive API** a zapiš do hlavičky souboru; do skutečného účtu nevolej.
 5. **Idempotence:** před založením vždy nové hledání; opakování po selhání PATCH nezaloží druhou organizaci.
 6. **Obrazovka:** háček `vzPoProdeji()` z E4 akci zavolá sám po uložení prodeje; při jiném stavu než `zapsano` /
    `shoda` upozornění u řádku Stav Pipedrive a v kartě Zákazníci zakázky s důvodem a tlačítkem „Zkusit zápis znovu“
-   (podle prototypu, snímek `v3_2_*`); vždy věta, že kontaktní osoba dealu se nemění.
+   (podle prototypu, snímek `v3_2_*`).
+   **Kontaktní osoba dealu (rozhodnutí J. V. 16. 11. 2026):** aplikace osobu dealu nemění, nečte ani nekontroluje —
+   obchodník ji doplní v Pipedrive. Po stavu `zapsano` ukaž upozornění přesně tímto zněním:
+   „Doplňte v Pipedrive kontaktní osobu vítězného zákazníka před posunem dealu na Vyhráno.“
+   Server **totéž zapíše do protokolu zakázky** při zápisu stavu `zapsano` (jednou na zápis, ne při každém otevření);
+   odpověď akce nese `upozorneni: 'kontaktni-osoba'`. Upozornění zůstává u řádku Stav Pipedrive, dokud je zakázka
+   prodaná a `pdOrgVitez.stav` je `zapsano`. U stavu `shoda` (organizace už seděla) se neukazuje. Test: znění věty,
+   záznam v protokolu právě jednou i po opakovaném volání, žádný požadavek simulátoru na `/persons` ani `person_id`.
 7. **K40c:** ověř testem, že před přepsáním „Opravit firmu“ vrací 409 (neshoda IČO) a po přepsání funguje nad
    organizací vítěze; webhook po přepsání firmu v hlavičce nepřepíše.
 8. **Simulátor:** hledání organizací, `POST /organizations`, `PATCH /deals/<id>` s `org_id`, scénáře výpadku,
@@ -57,5 +64,6 @@ simulátoru). `overit_vz_organizace.mjs` pro upozornění a opakování. Mutace 
 
 ## Co nedělat
 
-Slučování duplicit, změna osoby dealu, zápis hodnoty a polí dealu, automatické spuštění z webhooku, vracení
+Slučování duplicit, změna osoby dealu, zápis hodnoty a polí dealu (cena prodeje do dealu je samostatný úkol,
+roadmapa #597), automatické spuštění z webhooku, vracení
 organizace při odemčení prodeje.
