@@ -1854,3 +1854,39 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   a E4 (#603). Dokumenty ani obrazovka v E0 další zákazníky nečtou (tisk
   z pohledu zákazníka je E2 #601), takže do papíru se z nich nic nedostane.
   Funkci proto nezapínat mimo testovací web, dokud E3 a E4 nejsou sloučené.
+
+- **B225 — E5 (#604): uložení zakázky píše poznámku „Další zákazníci na zakázce“
+  do Pipedrive.** Se ZAPNUTÝM vypínačem `viceZakazniku`, s navázaným dealem
+  a s víc zákazníky založí nebo upraví uložení zakázky (`POST /api/zakazky`,
+  ve výhradním úseku, týmž mechanismem jako B217 — `lib/pd_poznamka.mjs`, druh
+  `zakaznici`) JEDNU poznámku u dealu. **Co nese:** názvy DALŠÍCH zákazníků
+  (řídící ne — deal vede on), číslo a den jejich poslední ODESLANÉ nabídky
+  a její cenu bez DPH ze zmrazeného výsledku zámku (vedoucí strana), u
+  rozpracované nové varianty „připravuje se nová <číslo>“, po prodeji
+  „— neprodáno“. Kontakty, osoby, adresy, IČO, DIČ ani slevy nenese. **Kdo ji
+  vidí:** každý, kdo v Pipedrive vidí deal — tedy i ceny nabídek ostatních
+  zákazníků (obchodní rozhodnutí J. V. 16. 11. 2026, návrh § 7.2). Id drží
+  pole `pdPoznamkaZakaznici` { deal, id, otisk, kdy } psané jen serverem;
+  rozpoznání úvodem „Další zákazníci na zakázce:“ a značkou „— nabídka
+  <číslo>“ (bez značek HTML, bílé znaky sjednocené); poznámka šachet se jí
+  nikdy nepřepíše a naopak (i když uložené id ukazuje na poznámku druhého
+  druhu). Právo `crm.pipedrive` (B80, bez práva `bez-prava`), strop
+  `PD_POZNAMKA_STROP` = 20 pokusů/h na deal s VLASTNÍM počítadlem
+  `strop:poznamka-zakaznici:deal:<id>`, jedno volání 2,5 s; obě poznámky
+  (šachty první, zákazníci druzí) mají SPOLEČNÝ rozpočet `PD_POZNAMKA_CELKEM_MS`
+  = 6 s a jedno třetí čtení zakázky (N1) — co se nestihne, je `chyba`
+  s varováním a zkusí se při dalším uložení. Text escapovaný, řádky `<br>`,
+  řídicí znaky pryč, seznam nejvýš 2 000 znaků („… a další N“) + značka.
+  Po odstranění posledního dalšího zákazníka se poznámka nemaže, upraví se na
+  „Další zákazníci na zakázce: žádní — nabídka <číslo>“; zakázka, která
+  poznámku nemá, žádnou nedostane.
+  *Co to nedělá:* zbytkové meze B217 platí i tady (dvojí založení při souběhu
+  instancí, prohledává se prvních 100 poznámek dealu, změna dealu nechá starou
+  poznámku u starého dealu, s vypnutým vypínačem se poznámka neupravuje ani
+  nemaže, poznámka se nikdy nemaže). „Odeslaná nabídka“ se do sloučení E3
+  (#602) bere z uložené `platna` (píše jen server) a jinak z razítek tisků
+  `zamek.tisky[].zakaznik` v uložené verzi (drží je server, `uloZamekRazitkaDrz`);
+  dokud E3 razítka „komu“ neplní, je každá nabídka dalšího zákazníka
+  „zatím neodeslána“ a cena se nezapisuje. Měna je vždy Kč (bez `platna.mena`
+  ze serveru) — cizojazyčná nabídka v EUR se v poznámce ukáže korunami ze
+  zmrazeného výsledku. Organizaci dealu (E5b) poznámka nemění.

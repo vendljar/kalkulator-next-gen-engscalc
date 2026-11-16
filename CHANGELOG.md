@@ -8,6 +8,25 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v16.11.2 — VZ-E5 #604: poznámka dealu „Další zákazníci na zakázce“ v Pipedrive, suchý běh, větev claude/vz-e5
+
+Nad `claude/vz-e0` `e29f2b1` (v16.11.1). Vše za vypínačem `viceZakazniku`; s VYP a u zakázky s jedním zákazníkem
+beze změny. Zadání `podklady/PROMPT_VZ_E5.md`, návrh § 7.1–7.2. Do Pipedrive jen simulátor.
+
+- **Zobecněná poznámka dealu** (`netlify/lib/pd_poznamka.mjs`): „druh poznámky“ (pole, úvod, text, rozpoznání,
+  klíč stropu). Poznámka šachet (#588) pod dnešními jmény a s dnešním chováním; nový druh **další zákazníci**
+  (pole `pdPoznamkaZakaznici` psané jen serverem, strop `strop:poznamka-zakaznici:deal:<id>`). Poznámka jednoho
+  druhu nikdy nepřepíše poznámku druhého.
+- **Text** (`src/vz_poznamka.js`, týž kód v prohlížeči i na serveru): za každého dalšího zákazníka název a poslední
+  odeslaná nabídka (číslo, den, cena bez DPH ze zmrazeného zámku), „nabídka zatím neodeslána (<číslo>)“, „připravuje
+  se nová <číslo>“, po prodeji „— neprodáno“; řádky `<br>`, escapováno, strop 2 000 znaků; po odstranění posledního
+  dalšího zákazníka „… žádní — nabídka <číslo>“. Bez kontaktů, IČO a slev.
+- **Uložení zakázky** zapisuje obě poznámky ve společném rozpočtu 6 s (šachty první), jedno třetí čtení; odpověď
+  nese stav `pdPoznamkaZakaznici` a varování.
+- **Suchý běh** ukazuje řádek „Poznámka dealu — další zákazníci“ se stejným textem (patch dealu beze změny).
+- Mez **B225**. Testy `netlify/test_vz_poznamka.mjs`, `netlify/test_vz_nanecisto.mjs`; mutace „[VZ E5]“; 9 zadání
+  mutací „[VSD]“ přepsáno na zobecněný kód (stejný záměr a sada).
+
 ## v16.11.1 — VZ-E0 #599: víc zákazníků na zakázce — vypínač, jádro, import, serverová kontrola tvaru, větev claude/vz-e0
 
 Nad `claude/integrace-vz` `77e36e0` (v12.11.7 + návrh VZ v3). Souhrn VZ je roadmapa #598 (etapy E0 #599 … E6 #606).
