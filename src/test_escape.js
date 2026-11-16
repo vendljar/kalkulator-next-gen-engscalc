@@ -283,6 +283,7 @@ const PROVERENO = {
     "pole('kontakt', 'Kontaktní osoba')": 'hotové HTML z pole() — literály kódu, hodnota a klíč uvnitř přes esc()/escJs()',
     "pole('ico', 'IČO zákazníka', VZ_ICO_ATR)": 'hotové HTML z pole() — literály kódu (VZ_ICO_ATR je konstanta atributů), hodnota uvnitř přes esc()',
     "pole('dic', 'DIČ zákazníka')": 'hotové HTML z pole() — literály kódu, hodnota uvnitř přes esc()/escJs()',
+    'text': 'hotové HTML z blok() ve vzOrgVitezHtml (VZ-E5b) — všichni volající skládají literál + esc(VZ_ORG_KONTAKT) / veta() = esc(důvod, názvy organizací)',
   },
   /* #447 C2 (20. 10. 2026): sel() v ctrlUiKartaSkupiny skládá <select>
    * z literálů kódu (typ, chování, oblast) a hodnoty i popisky escapuje
