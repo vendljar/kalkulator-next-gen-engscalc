@@ -8,6 +8,27 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v16.11.1 — VZ-E0 #599: víc zákazníků na zakázce — vypínač, jádro, import, serverová kontrola tvaru, větev claude/vz-e0
+
+Nad `claude/integrace-vz` `77e36e0` (v12.11.7 + návrh VZ v3). Souhrn VZ je roadmapa #598 (etapy E0 #599 … E6 #606).
+Výpočet, dokumenty ani obrazovka (kromě Nastavení → Zkušební funkce) se nemění; vše za vypínačem `viceZakazniku`
+(výchozí VYP, zapíná jen administrátor). Návrh `podklady/NAVRH_VICE_ZAKAZNIKU.md` v3, zadání `PROMPT_VZ_E0.md`.
+
+- **Vypínač `viceZakazniku`** v `/api/funkce` (`FUNKCE_ZNAME`; POST přijme kterýkoli známý vypínač, neuvedený
+  zůstává), druhý vypínač v Nastavení → Zkušební funkce, v prohlížeči `viceZakaznikuZapnuto()`.
+- **Jádro `src/vice_zakazniku.js`** (CORE za `zamek.js`, i na serveru): `vzRidici` + `dalsiZakaznici[]` vzniknou
+  přidáním druhého zákazníka a zmizí s posledním dalším; `vzPridej` (sdílená nebo vlastní varianta =
+  `klonujVariantu`), `vzOdstran` (řídícího a prodaného odmítne, vlastní nezamčenou variantu smaže na přání),
+  `vzPismenoDalsi` / `vzIdDalsi` (první volné za nejvyšším i z razítek `zamek.tisky[].zakaznik`, strop Z),
+  `vzVymenRidiciho` (hlavička ↔ položka, `nastavRidici`, otisky webhooku polí firmy pryč), `vzSrovnej`
+  (invariant řídící varianty), `vzPohled` (kopie bez ostatních zákazníků + `vzPohledZakaznika`),
+  `vzTvarProblemy`, `vzOcisti`, `vzPlatnaDrz`.
+- **Import** očistí tvar (neznámé klíče pryč, jeden zákazník = žádné klíče, vadný tvar = klíče pryč a nevýčtové
+  `vzZahozeno`); **duplikace** zakázky další zákazníky nepřenáší.
+- **Server** (`vzServerKontrola`): s VYP změna zákazníků proti uložené verzi 400, se ZAP vadný tvar 400, `platna`
+  jen ze serveru, invariant srovná. Mez **B220** (co E0 ještě nehlídá: práva a razítka — E3, E4).
+- Testy `src/test_vz_model.js`, `netlify/test_vz_server.mjs`, zlatá sada `src/test_vz_zlata.js`; mutace „[VZ E0]“.
+
 ## v12.11.7 — K40c #581: vazba z webhooku Pipedrive, firma z ARES na serveru, „Opravit firmu v Pipedrive“, větev claude/k40c-webhook
 
 Nad `1a08186` (integrace v12.11.3), sloučeno s integrací `4acda93` (v12.11.6: VSD, C2+C3, C5). Výpočet ceny beze změny. Rozhodnutí J. V.

@@ -102,7 +102,7 @@ async function hlavni() {
       const z = JSON.parse(vychozi);
       const p = vzPridej(z, DRUHY, PEVNE);
       const pridan = p.ok && vzRezim(z) && JSON.stringify(z) !== vychozi;
-      const o = p.ok ? vzOdstran(z, p.zakaznik.id) : { ok: false };
+      const o = p.ok ? vzOdstran(z, p.zakaznik.id) : { ok: false }; z.dalsiZakaznici = [];
       test('(d) ' + jm + ': přidat (sdílená) → odstranit = výchozí JSON',
         pridan && o.ok && JSON.stringify(z) === vychozi, { pridej: p.chyba, odstran: o.chyba, klice: Object.keys(z).filter(k => !(k in JSON.parse(vychozi))) });
     }
@@ -112,7 +112,7 @@ async function hlavni() {
       const pocet = z.varianty.length;
       const p = vzPridej(z, DRUHY, Object.assign({ vlastni: true }, PEVNE));
       const pridan = p.ok && z.varianty.length === pocet + 1 && p.zakaznik.varianta !== vzRidiciVariantaId(z);
-      const o = p.ok ? vzOdstran(z, p.zakaznik.id, { smazatVariantu: true }) : { ok: false };
+      const o = p.ok ? vzOdstran(z, p.zakaznik.id, { smazatVariantu: true }) : { ok: false }; z.dalsiZakaznici = [];
       const bez = x => { const y = JSON.parse(typeof x === 'string' ? x : JSON.stringify(x)); delete y.priponaMax; return JSON.stringify(y); };
       test('(d) ' + jm + ': přidat (vlastní varianta) → odstranit se smazáním = výchozí JSON kromě priponaMax',
         pridan && o.ok && o.smazanaVarianta === p.zakaznik.varianta && bez(z) === bez(vychozi),

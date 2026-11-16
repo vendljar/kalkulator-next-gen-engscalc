@@ -1826,3 +1826,31 @@ veřejného API, žádnou zkratku do úložiště nemá. Čísla B203–B209 dr�
   instance hledají současně, žádná ji ještě nenajde) — zbytková mez; zakázka
   pak drží id té, která se uložila, druhá zůstane v dealu. Pipedrive vrací
   poznámky dealu po stránkách — prohledává se prvních 100 nejnovějších.
+
+## VZ #598 — víc zákazníků na jedné zakázce (E0 = #599, v16.11.1, 16. 11. 2026)
+
+Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
+
+- **B220 — E0: data víc zákazníků hlídá server jen tvarem a vypínačem.**
+  Zakázka smí nést `vzRidici` { id, pismeno, varianta } a `dalsiZakaznici[]`
+  { id, pismeno, hlavicka (objednatel, adresaObjednatele, ico, dic, kontakt),
+  zastupci, varianta, zalozen, platna } (`src/vice_zakazniku.js`). Server
+  (`vzServerKontrola` v `lib/zakazka_kontrola.mjs`) s **vypnutým** vypínačem
+  `viceZakazniku` (výchozí, `/api/funkce`, přepíná jen administrátor) odmítne
+  každou změnu těchto klíčů proti uložené verzi (400) — zakázka s víc
+  zákazníky na ostrém nevznikne, ani když se prohlížeč obejde; uložení beze
+  změny projde a data se nemažou. Se **zapnutým** odmítne vadný tvar (400):
+  id `z1`–`z999` a písmena B–Z jedinečná, ukazatel jen na existující
+  variantu, nejvýš `VZ_DALSI_MAX` = 9 dalších, textová pole nejvýš
+  `VZ_TEXT_MAX` = 500 znaků, neznámé klíče (import je tiše zahodí, vadný tvar
+  zahodí celý a server pak odmítne). `platna` píše jen server (z uložené
+  verze; obnova z otisku ze zálohy). Invariant „řídící varianta = varianta
+  řídícího zákazníka“ server srovná podle příznaku `ridici` (neodmítá).
+  *Co to v E0 nedělá:* se ZAPNUTÝM vypínačem smí kdokoli, kdo smí zakázku
+  ukládat, zákazníky přidat, upravit, odstranit i vyměnit řídícího — práva
+  (výměna řídícího jen autor a administrátor, odstranění zákazníka
+  s odeslanou nabídkou jen administrátor), držení písmen a razítek tisků
+  („komu“) a zákaz smazat zákazníka se zamčeným tiskem přinesou E3 (#602)
+  a E4 (#603). Dokumenty ani obrazovka v E0 další zákazníky nečtou (tisk
+  z pohledu zákazníka je E2 #601), takže do papíru se z nich nic nedostane.
+  Funkci proto nezapínat mimo testovací web, dokud E3 a E4 nejsou sloučené.
