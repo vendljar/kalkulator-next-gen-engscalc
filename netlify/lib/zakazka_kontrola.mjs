@@ -330,8 +330,34 @@ export function vzServerKontrola(stara, zak, volby = {}) {
      * vzOcisti → vzZahozeno výš); hlídá volajícího, který import obejde. */
     const p = G.vzTvarProblemy(zak);
     if (p.length) return { status: 400, chyba: 'Zakázka nese ' + G.vzTvarText(p) };
+    /* E3 (#602): písmena a id stávajících zákazníků (N9), odstranění zákazníka
+     * s odeslanou nabídkou jen administrátor (B221, rozhodnutí J. V.), zmrazené
+     * údaje po odeslání, `zalozen` ze serveru (N4). Role z RELACE. */
+    if (typeof G.vzServerZakaznici === 'function') {
+      const z = G.vzServerZakaznici(st, zak, volby.relace, { obnova: volby.obnova, zeSouboru: volby.zeSouboru });
+      if (z) return z;
+    }
+  }
+  /* E3: razítko „komu" u NOVĚ připsaných tisků skládá server sám (z prohlížeče
+   * jen id); obnova bere zámky ze zálohy jako doklad. S VYP smí nový tisk
+   * jen řídící zákazník. */
+  if (!volby.obnova && typeof G.vzServerRazitka === 'function') {
+    if (!volby.zapnuto && G.vzRezim(zak)) {
+      const sv = new Map(((st && st.varianty) || []).filter(v => v && typeof v === 'object').map(v => [String(v.id), v]));
+      for (const v of (zak.varianty || [])) {
+        const t = (v && v.zamek && v.zamek.zamceno && Array.isArray(v.zamek.tisky)) ? v.zamek.tisky : [];
+        const s0 = sv.get(String(v && v.id));
+        const od = (s0 && s0.zamek && s0.zamek.zamceno && Array.isArray(s0.zamek.tisky)) ? s0.zamek.tisky.length : 0;
+        if (t.slice(od).some(x => x && x.zakaznik && typeof x.zakaznik === 'object' && x.zakaznik.id && x.zakaznik.id !== G.vzRidiciId(zak)))
+          return { status: 400, chyba: G.VZ_VYPNUTO };
+      }
+    }
+    const r = G.vzServerRazitka(st, zak);
+    if (r) return r;
   }
   if (!(volby.obnova && !volby.zeSouboru)) G.vzPlatnaDrz(stara, zak);
+  /* E3 (N4): `zalozen` ze serveru (uložená verze / relace) — i s VYP. */
+  if (typeof G.vzZalozenDrz === 'function') G.vzZalozenDrz(st, zak, volby.relace, { obnova: volby.obnova, zeSouboru: volby.zeSouboru });
   G.vzSrovnej(zak);
   return null;
 }
@@ -363,7 +389,7 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   /* VÍC ZÁKAZNÍKŮ (VZ #598, E0): vypínač správce (ctx.viceZakazniku, výchozí
    * vypnuto), tvar, `platna` jen ze serveru, invariant řídícího. */
   {
-    const p = vzServerKontrola(stara, zak, { zapnuto: ctx.viceZakazniku === true, obnova, zeSouboru });
+    const p = vzServerKontrola(stara, zak, { zapnuto: ctx.viceZakazniku === true, obnova, zeSouboru, relace });
     if (p) return odmitni(p.status, veta(p.chyba));
   }
   {
@@ -784,6 +810,11 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;
     if (ov && ov.stav !== 'shoda') sporne.push({ cislo: v.zamek.cislo || cisloMaBy, ov });
   }
+
+  /* VZ-E3 (#602, revize E0 N6): `platna` dalších zákazníků = poslední odeslaná
+   * nabídka ze zámků — až po držení razítek (uloZamekRazitkaDrz), klientovi
+   * se nevěří. Obnova z otisku ji bere ze zálohy. */
+  if (!(obnova && !zeSouboru) && typeof globalThis.vzPlatnaPrepocti === 'function') globalThis.vzPlatnaPrepocti(zak);
 
   if (!obnova) {
     /* Jméno obchodníka do rejstříku: z RELACE, ne od klienta (21. 8. 2026);

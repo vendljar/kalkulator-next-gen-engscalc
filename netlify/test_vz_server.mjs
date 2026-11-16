@@ -10,7 +10,7 @@
  *     dalších, vzRidici bez dalsiZakaznici a naopak, prázdný název, dlouhý
  *     text) → 400 a úložiště beze změny; neznámé klíče import tiše zahodí
  *     (200 bez nich); podvržené vzRidici.varianta srovná server (vzSrovnej);
- *     `platna` z prohlížeče se zahodí, platí uložená.
+ *     `platna` z prohlížeče se zahodí; od E3 ji server počítá ze zámků (N6).
  *  4) ZAPNUTO: odstranění posledního dalšího (vzOdstran) 200, klíče pryč.
  *  5) VYPNUTO u zakázky, která víc zákazníků UŽ MÁ (vzor VS R21): uložení
  *     beze změny klíčů 200 (klíče zůstanou), změna názvu dalšího, smazání
@@ -243,15 +243,16 @@ for (const [jm, fn, re] of SPATNE) {
   a.dalsiZakaznici[0].platna = { varianta: a.varianty[0].id, cislo: 'PODVRH', kdy: '2026-11-16', cena: 2, mena: 'EUR' };
   const r = await uloz(a, cO, g.uloRazitko);
   const u = ulozenoObj(ulozenaVZ);
-  test('ZAP: podvržená platna u uložené zakázky → 200 a uložená platna zůstane (klient ji nepřepíše)',
-    r.status === 200 && u.dalsiZakaznici[0].platna && JSON.stringify(u.dalsiZakaznici[0].platna) === JSON.stringify(PLATNA),
+  /* E3 (N6): platna počítá server ze zámků — bez odeslané nabídky žádná (ani podvržená, ani dosazená do úložiště). */
+  test('ZAP: podvržená platna u uložené zakázky → 200 a platna = výpočet ze zámků (nic neodešlo → žádná)',
+    r.status === 200 && !('platna' in u.dalsiZakaznici[0]),
     { status: r.status, chyba: r.chyba, platna: u.dalsiZakaznici[0].platna });
   const g2 = await nacti(ulozenaVZ, cO);
   const b = zk.importZakazka(kopie(g2)); delete b.dalsiZakaznici[0].platna;
   const r2 = await uloz(b, cO, g2.uloRazitko);
   const u2 = ulozenoObj(ulozenaVZ);
-  test('ZAP: platna vynechaná klientem → 200 a uložená platna zůstane',
-    r2.status === 200 && JSON.stringify(u2.dalsiZakaznici[0].platna) === JSON.stringify(PLATNA), { status: r2.status, chyba: r2.chyba, platna: u2.dalsiZakaznici[0].platna }); }
+  test('ZAP: platna vynechaná klientem → 200 a platna = výpočet ze zámků (žádná)',
+    r2.status === 200 && !('platna' in u2.dalsiZakaznici[0]) && PLATNA.cislo === 'SERVER-PLATNA', { status: r2.status, chyba: r2.chyba, platna: u2.dalsiZakaznici[0].platna }); }
 
 /* ---------- 4) ZAPNUTO: odstranění posledního dalšího ---------- */
 { const r0 = await uloz(sVz('odstranění posledního'), cO);
@@ -277,13 +278,13 @@ test('ZAP D4: příprava — zakázka s vlastní variantou zákazníka C uložen
   const u = ulozenoObj(ulozenaVZ);
   test('VYP: uložená zakázka s víc zákazníky — jiná změna, klíče beze změny → 200', r.status === 200 && r.ok, { status: r.status, chyba: r.chyba });
   test('VYP: klíče VZ v uložené verzi zůstaly beze změny (i platna)', u && maVz(u) && G.vzPodpis(u) === podpisPred
-    && u.kontakt === 'jen poznámka mimo zákazníky' && u.dalsiZakaznici[0].platna && u.dalsiZakaznici[0].platna.cislo === 'SERVER-PLATNA', u && u.dalsiZakaznici);
+    && u.kontakt === 'jen poznámka mimo zákazníky' && !('platna' in u.dalsiZakaznici[0]), u && u.dalsiZakaznici);
   g = await nacti(ulozenaVZ, cO);
   const c = zk.importZakazka(kopie(g)); c.dalsiZakaznici[0].platna = { varianta: c.varianty[0].id, cislo: 'PODVRH', kdy: '', cena: 3, mena: 'CZK' };
   const rc = await uloz(c, cO, g.uloRazitko);
   const uc = ulozenoObj(ulozenaVZ);
-  test('VYP: změna jen platna z prohlížeče se neposuzuje jako změna (200) a uložená platna zůstane',
-    rc.status === 200 && uc.dalsiZakaznici[0].platna.cislo === 'SERVER-PLATNA', { status: rc.status, chyba: rc.chyba, p: uc.dalsiZakaznici[0].platna });
+  test('VYP: změna jen platna z prohlížeče se neposuzuje jako změna (200) a platna = výpočet ze zámků (žádná)',
+    rc.status === 200 && !('platna' in uc.dalsiZakaznici[0]), { status: rc.status, chyba: rc.chyba, p: uc.dalsiZakaznici[0].platna });
   g = await nacti(ulozenaVZ, cO);
   const pred = ulozeno(ulozenaVZ);
   const zmeny = [

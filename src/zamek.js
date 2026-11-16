@@ -524,9 +524,14 @@ function zamekZakHlavickaOznac(zak, stara) {
   if (sr && variantaUzamcena(sr)) oznac(vs.find(v => v && v.id === sr.id));
   return n;
 }
+/* VZ-E3 (#602, návrh § 5): u zakázky s víc zákazníky zmrazí název akce
+ * a adresu stavby PRVNÍ odeslaná nabídka komukoli (zamčená kterákoli varianta). */
+function zamekZakVzOdeslano(zak) {
+  return typeof vzRezim === 'function' && vzRezim(zak) && ((zak && zak.varianty) || []).some(v => variantaUzamcena(v));
+}
 function zamekZakStav(zak) {
   const zam = ((zak && zak.varianty) || []).filter(v => variantaUzamcena(v));
-  return { cn: variantaUzamcena(zamekZakRidici(zak)) || zam.some(v => v.zamek.hlavicka === true),
+  return { cn: variantaUzamcena(zamekZakRidici(zak)) || zam.some(v => v.zamek.hlavicka === true) || zamekZakVzOdeslano(zak),
            sod: zam.some(v => !zamekKryciOtevreny(v) || variantaProdana(v)) };
 }
 
@@ -539,6 +544,8 @@ function zamekZakCestaZmrazena(zak, cesta) {
     return 'Zakázka je prodaná — údaje zákazníka v hlavičce se už nemění (odemknout smí vedoucí nebo administrátor).';
   if (st.sod && c.poSod.indexOf(cesta) >= 0)
     return 'Ze zakázky odešla smlouva o dílo — údaje zákazníka v hlavičce se už nemění. Pokračujte novou zakázkou.';
+  if (st.cn && c.poCn.indexOf(cesta) >= 0 && zamekZakVzOdeslano(zak) && !variantaUzamcena(zamekZakRidici(zak)))
+    return 'Zakázka s víc zákazníky už má odeslanou cenovou nabídku — název akce a adresa stavby jsou v ní vytištěné, a proto se už nemění.';
   if (st.cn && c.poCn.indexOf(cesta) >= 0)
     return 'Řídící varianta zakázky je (nebo byla) odeslaná cenová nabídka — název akce a adresa stavby jsou v ní vytištěné, a proto se už nemění.';
   return '';
@@ -558,7 +565,9 @@ function zamekZakZmeny(stara, nova) {
   });
   const sr = zamekZakRidici(stara);
   const nr = zamekZakRidici(nova);
-  const st = { cn: zamcene.some(v => v === sr || (!!nr && v.id === nr.id) || v.zamek.hlavicka === true),
+  /* VZ-E3: u víc zákazníků (uložená nebo ukládaná verze) kterákoli odeslaná varianta. */
+  const vz = typeof vzRezim === 'function' && (vzRezim(stara) || vzRezim(nova)) && zamcene.length > 0;
+  const st = { cn: vz || zamcene.some(v => v === sr || (!!nr && v.id === nr.id) || v.zamek.hlavicka === true),
                sod: zamcene.some(v => !zamekKryciOtevreny(v) || variantaProdana(v)) };   // #540
   if (!st.cn && !st.sod) return [];
   const c = zamekZakCesty();
@@ -707,6 +716,10 @@ function zamkniVariantu(v, info) {
   /* Tisk SoD (K6-K4): otisk objednaných a cena díla, jak smlouva odešla
    * (objSodSnimek; server ho u nového tisku spočítá znovu). */
   if (info.sod && typeof info.sod === 'object') zaznam.sod = info.sod;
+  /* VZ-E3 (#602): razítko „komu" — snímek adresáta { id, pismeno, cislo,
+   * objednatel, ico } jen u zakázky s víc zákazníky (vzRazitkoSnimek);
+   * s jedním zákazníkem klíč chybí. Server si snímek složí sám. */
+  if (info.zakaznik && typeof info.zakaznik === 'object') zaznam.zakaznik = info.zakaznik;
   if (variantaUzamcena(v)) {
     if (!Array.isArray(v.zamek.tisky)) v.zamek.tisky = [];
     v.zamek.tisky.push(zaznam);
@@ -1239,7 +1252,7 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

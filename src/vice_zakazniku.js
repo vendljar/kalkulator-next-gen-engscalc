@@ -454,11 +454,11 @@ function vzOcisti(zak) {
 }
 
 /* Podpis části víc zákazníků pro porovnání s uloženou verzí ('' = žádná).
- * `platna` se neporovnává — píše ji jen server. */
+ * `platna` a `zalozen` (E3, N4) se neporovnávají — píše je jen server. */
 function vzPodpis(zak) {
   if (!vzMaData(zak)) return '';
   const d = Array.isArray(zak.dalsiZakaznici)
-    ? zak.dalsiZakaznici.map(x => { if (!vzObj(x)) return x; const y = Object.assign({}, x); delete y.platna; return y; })
+    ? zak.dalsiZakaznici.map(x => { if (!vzObj(x)) return x; const y = Object.assign({}, x); delete y.platna; delete y.zalozen; return y; })
     : zak.dalsiZakaznici;
   return JSON.stringify({ r: zak.vzRidici === undefined ? null : zak.vzRidici, d: d === undefined ? null : d });
 }
@@ -694,6 +694,288 @@ function vzTiskPruhText(zak, id, varianta) {
   return 'Náhled a tisk platí pro zákazníka ' + (z.hlavicka.objednatel || z.id) + (cislo ? ' — nabídka ' + cislo : '');
 }
 
+/* ============================================================
+ * E3 (#602): ZÁMEK PO ZÁKAZNÍCÍCH, RAZÍTKO „KOMU", PLATNÁ NABÍDKA,
+ * ODSTRANĚNÍ ZÁKAZNÍKA S ODESLANOU NABÍDKOU. Návrh § 5, § 2a, § 1.1.
+ *
+ * Razítko „komu": každý záznam `zamek.tisky[]` u zakázky s víc zákazníky
+ * nese `zakaznik: { id, pismeno, cislo, objednatel, ico }` — snímek adresáta
+ * v okamžiku tisku. S jedním zákazníkem klíč chybí (zlatá sada). Záznam BEZ
+ * razítka patří původnímu zákazníkovi z1 (tiskl se hlavičce, dokud byl
+ * zákazník jeden). `zamek.cislo` zůstává číslo varianty BEZ písmene (zámek je
+ * společný všem zákazníkům sdílené varianty; server B56 ho hlídá proti
+ * variantaCislo celé zakázky) — číslo dokladu konkrétního zákazníka nese
+ * razítko (`zakaznik.cislo` = zamek.cislo + písmeno).
+ * ============================================================ */
+
+const VZ_RAZITKO_KLICE = ['id', 'pismeno', 'cislo', 'objednatel', 'ico'];
+/* Pole hlavičky dalšího zákazníka, která se po odeslání nabídky jemu už
+ * nemění (§ 5; kontaktní osoba a zástupci se měnit smí). */
+const VZ_ZMRAZENA_POLE = ['objednatel', 'adresaObjednatele', 'ico', 'dic'];
+
+/* Komu patří záznam tisku: id z razítka, bez razítka z1 (původní zákazník). */
+function vzTiskKomu(t) {
+  return (t && vzObj(t.zakaznik) && typeof t.zakaznik.id === 'string' && t.zakaznik.id) ? t.zakaznik.id : VZ_RIDICI_ID;
+}
+
+function vzTiskyVarianty(v) {
+  return (v && v.zamek && v.zamek.zamceno && Array.isArray(v.zamek.tisky)) ? v.zamek.tisky.filter(vzObj) : [];
+}
+
+/* Číslo varianty bez písmene (číslo zámku / číslo z celé zakázky). */
+function vzCisloVarianty(zak, v) {
+  const c = v && v.zamek && v.zamek.zamceno && typeof v.zamek.cislo === 'string' && v.zamek.cislo.trim() ? v.zamek.cislo : '';
+  if (c) return c;
+  return typeof variantaCislo === 'function' && v ? variantaCislo(Object.assign({}, zak, { vzPohledZakaznika: undefined }), v)
+    : vzText(zak && zak.cislo);
+}
+
+/* SNÍMEK ADRESÁTA pro razítko tisku: { id, pismeno, cislo, objednatel, ico }
+ * z ULOŽENÝCH údajů zákazníka (server ho skládá sám). Neznámý zákazník → null. */
+function vzRazitkoSnimek(zak, id, v) {
+  const z = vzZakaznik(zak, id == null || id === '' ? vzRidiciId(zak) : id);
+  if (!z) return null;
+  return { id: z.id, pismeno: z.pismeno, cislo: vzCisloSPismenem(vzCisloVarianty(zak, v), z.pismeno),
+    objednatel: z.hlavicka.objednatel, ico: z.hlavicka.ico };
+}
+
+/* Všechny tisky zákazníka napříč variantami: [{ v, t }] podle času. */
+function vzTiskyZakaznika(zak, id) {
+  const sid = String(id);
+  const out = [];
+  ((zak && Array.isArray(zak.varianty)) ? zak.varianty : []).forEach(v => {
+    vzTiskyVarianty(v).forEach(t => { if (vzTiskKomu(t) === sid) out.push({ v, t }); });
+  });
+  return out.sort((a, b) => (vzText(a.t.kdy) < vzText(b.t.kdy) ? -1 : vzText(a.t.kdy) > vzText(b.t.kdy) ? 1 : 0));
+}
+
+/* Odešla zákazníkovi někdy nabídka (razítko s jeho id v zámku kterékoli varianty)? */
+function vzOdeslanoKomu(zak, id) {
+  return vzTiskyZakaznika(zak, id).length > 0;
+}
+
+/* Cena odeslané nabídky ze ZMRAZENÉHO výsledku zámku (vedoucí strana, bez DPH);
+ * starý zámek bez výsledku → null (nic se nepřepočítává). */
+function vzCenaZamku(zak, v) {
+  const r = (typeof zamekVysledek === 'function') ? zamekVysledek(v) : null;
+  if (!r) return null;
+  const d = (v && v.data) || {};
+  try {
+    const proj = (typeof zakazkaVedouciStrana === 'function') && zakazkaVedouciStrana(zak) === 'proj';
+    const cn = proj
+      ? ((typeof cenaNabidkyProj === 'function' && r.proj)
+        ? cenaNabidkyProj(r.proj, d.slevaProj, (typeof zaokrProjZ === 'function') ? zaokrProjZ(d) : d.zaokr) : null)
+      : ((typeof cenaNabidkyOck === 'function' && r.ock) ? cenaNabidkyOck(r.ock, d.sleva || {}, d.zaokr) : null);
+    return cn && typeof cn.cena === 'number' && isFinite(cn.cena) ? cn.cena : null;
+  } catch (e) { return null; }
+}
+
+/* PLATNÁ NABÍDKA (§ 5, revize E0 N6): poslední ODESLANÁ nabídka zákazníka
+ * { varianta, cislo, kdy, cena, mena } nebo null. Počítá se ze zámků, neukládá
+ * se jako pravda — server ji při každém uložení zapíše dalším zákazníkům do
+ * `platna` (pro Pipedrive a rejstřík); řídícímu se nezapisuje nikam
+ * (`vzRidici` nese jen id, písmeno a variantu), počítá se touto funkcí. */
+function vzPlatna(zak, id) {
+  const z = vzZakaznik(zak, id == null || id === '' ? vzRidiciId(zak) : id);
+  if (!z) return null;
+  const l = vzTiskyZakaznika(zak, z.id);
+  if (!l.length) return null;
+  const { v, t } = l[l.length - 1];
+  const zk = vzObj(t.zakaznik) ? t.zakaznik : null;
+  const cislo = zk && typeof zk.cislo === 'string' && zk.cislo.trim() ? zk.cislo
+    : vzCisloSPismenem(vzCisloVarianty(zak, v), zk && typeof zk.pismeno === 'string' ? zk.pismeno : z.pismeno);
+  return { varianta: String(v.id), cislo, kdy: vzText(t.kdy), cena: vzCenaZamku(zak, v), mena: 'CZK' };
+}
+
+/* STAV NABÍDKY ZÁKAZNÍKA (§ 5): 'odeslana' = v zámku JEHO varianty je tisk
+ * s jeho id; jinak 'rozpracovana'. { stav, kdy, platna } — `kdy` posledního
+ * tisku jeho varianty jemu, `platna` = vzPlatna (může být starší varianta). */
+function vzStavNabidky(zak, id) {
+  const z = vzZakaznik(zak, id == null || id === '' ? vzRidiciId(zak) : id);
+  if (!z) return null;
+  const v = ((zak && zak.varianty) || []).find(x => x && String(x.id) === z.varianta) || null;
+  const jeho = vzTiskyVarianty(v).filter(t => vzTiskKomu(t) === z.id);
+  return { stav: jeho.length ? 'odeslana' : 'rozpracovana', kdy: jeho.length ? vzText(jeho[jeho.length - 1].kdy) : '',
+    platna: vzPlatna(zak, z.id) };
+}
+
+/* Snímek adresáta pro dotisk varianty `v` zákazníkovi `id`: poslední jeho
+ * razítko v zámku `v`, nebo null (varianta mu ještě neodešla). */
+function vzRazitkoDotisku(v, id) {
+  const l = vzTiskyVarianty(v).filter(t => vzTiskKomu(t) === String(id) && vzObj(t.zakaznik));
+  return l.length ? l[l.length - 1].zakaznik : null;
+}
+
+/* ČÍSLO DOKLADU (§ 2a): zamčená varianta, která odešla JEN zákazníkovi
+ * s písmenem (a ten už v zakázce není nebo je to jeho vlastní varianta),
+ * nese číslo z razítka (`zamek.cislo` + písmeno). Jinak '' (platí
+ * variantaCislo). */
+function vzCisloDokladu(zak, v) {
+  const t = vzTiskyVarianty(v);
+  if (!t.length) return '';
+  const pismena = new Set(t.map(x => (vzObj(x.zakaznik) && typeof x.zakaznik.pismeno === 'string') ? x.zakaznik.pismeno : ''));
+  if (pismena.size !== 1) return '';
+  const p = Array.from(pismena)[0];
+  if (!VZ_PISMENO_TVAR.test(p)) return '';
+  const id = vzTiskKomu(t[0]);
+  const z = vzZakaznik(zak, id);
+  if (z && z.varianta !== String(v.id) && vzRezim(zak)) return '';
+  return vzCisloSPismenem(vzCisloVarianty(zak, v), p);
+}
+
+/* Smí se zákazník `id` odstranit? '' = ano, jinak důvod. `admin` = role
+ * Administrátor (rozhodnutí J. V.: zákazníka, kterému odešla nabídka,
+ * odstraní jen administrátor). Řídícího a prodaného nikdo. */
+function vzOdstranDuvod(zak, id, admin) {
+  const z = vzZakaznik(zak, id);
+  if (!z) return 'Zákazník v zakázce není.';
+  if (z.ridici) return 'Řídícího zákazníka nejde odstranit, dokud se řídícím nestane jiný.';
+  if (((zak && zak.varianty) || []).some(v => v && vzObj(v.prodano) && String(v.prodano.zakaznik || '') === z.id))
+    return 'Zákazníkovi se prodalo — nejdřív odemknout prodej (vedoucí, administrátor).';
+  if (!admin && vzOdeslanoKomu(zak, z.id))
+    return 'Zákazníkovi už odešla nabídka — odstranit ho smí jen administrátor (doklad o odeslání v zakázce zůstane).';
+  return '';
+}
+
+/* ZMRAZENÍ ÚDAJŮ DALŠÍHO ZÁKAZNÍKA (§ 5): po odeslání nabídky jemu se
+ * název, sídlo, IČO a DIČ nemění (snímek je v razítku); kontakt a zástupci
+ * ano. Vrací důvod nebo ''. Platí jen pro dalšího zákazníka — hlavičku
+ * řídícího hlídá zámek hlavičky jako dnes. */
+function vzZakaznikPoleZmrazeno(zak, id, pole) {
+  if (!vzRezim(zak) || VZ_ZMRAZENA_POLE.indexOf(pole) < 0) return '';
+  const z = vzZakaznik(zak, id);
+  if (!z || z.ridici || !vzOdeslanoKomu(zak, z.id)) return '';
+  return 'Zákazníkovi už odešla nabídka — název, sídlo, IČO a DIČ se už nemění (měnit jde kontaktní osobu). '
+    + 'Jiný subjekt přidejte jako nového zákazníka.';
+}
+
+/* SERVER (§ 5, § 2a, revize E0 N4, N9, B221). `stara` = ULOŽENÁ verze
+ * (po migraci), `zak` = ukládaná, `relace` = { email, role }. Volá se se
+ * ZAPNUTOU funkcí po kontrole tvaru. Vrací { status, chyba } nebo null;
+ * na místě opraví `zalozen` (ze serveru) a razítka nových tisků. */
+function vzServerZakaznici(stara, zak, relace, volby) {
+  const o = volby || {};
+  const rel = relace || {};
+  const admin = rel.role === 'Administrátor';
+  const pred = stara ? vzZakaznici(stara) : [];
+  const ted = vzZakaznici(zak);
+  const tedIds = new Map(ted.map(z => [z.id, z]));
+  const predIds = new Map(pred.map(z => [z.id, z]));
+  /* N9: písmeno stávajícího zákazníka (i řídícího) klient nepřepíše. */
+  for (const p of pred) {
+    const n = tedIds.get(p.id);
+    if (n && n.pismeno !== p.pismeno)
+      return { status: 400, chyba: 'Neuloženo: písmeno zákazníka (' + (p.pismeno || 'bez písmene') + ') se nemění.' };
+  }
+  /* Odstranění zákazníka s odeslanou nabídkou (podle ULOŽENÉ verze) — jen administrátor. */
+  for (const p of pred) {
+    if (tedIds.has(p.id)) continue;
+    if (!o.obnova && vzOdeslanoKomu(stara, p.id) && !admin)
+      return { status: 403, chyba: 'Neuloženo: zákazníkovi „' + (p.hlavicka.objednatel || p.id) + '" už odešla nabídka — '
+        + 'odstranit ho smí jen administrátor.' };
+  }
+  /* N9: nový zákazník nesmí převzít id ani písmeno, se kterým už něco
+   * odešlo (razítko v uložené verzi). Id a písmeno zákazníka odstraněného
+   * bez odeslané nabídky se uvolní (§ 1.1). */
+  const razitka = vzRazitkaZakazniku(stara);
+  const ulozIds = new Set(razitka.map(r => vzText(r.id)));
+  const ulozPismena = new Set(razitka.map(r => vzText(r.pismeno)).filter(Boolean));
+  for (const n of ted) {
+    if (predIds.has(n.id)) continue;
+    if (ulozIds.has(n.id))
+      return { status: 400, chyba: 'Neuloženo: nový zákazník nese id ' + n.id + ', se kterým už odešla nabídka.' };
+    if (n.pismeno && ulozPismena.has(n.pismeno))
+      return { status: 400, chyba: 'Neuloženo: písmeno ' + n.pismeno + ' už nese odeslaná nabídka jiného zákazníka.' };
+  }
+  /* § 5: údaje dalšího zákazníka po odeslání jemu (uložená verze). */
+  for (const p of pred) {
+    const n = tedIds.get(p.id);
+    if (!n || !vzOdeslanoKomu(stara, p.id) || o.obnova) continue;
+    if (p.ridici && n.ridici) continue;   // hlavička řídícího: zámek hlavičky jako dnes
+    const zm = VZ_ZMRAZENA_POLE.filter(k => vzText(p.hlavicka[k]) !== vzText(n.hlavicka[k]));
+    if (zm.length)
+      return { status: 409, chyba: 'Neuloženo: zákazníkovi „' + (p.hlavicka.objednatel || p.id) + '" už odešla nabídka — '
+        + 'název, sídlo, IČO a DIČ se už nemění (' + zm.join(', ') + ').' };
+  }
+  return null;
+}
+
+/* N4 (revize E0): `zalozen` píše server — u existujícího id z uložené verze,
+ * u nového relace a čas serveru. Obnova z otisku bere zálohu. Na místě. */
+function vzZalozenDrz(stara, zak, relace, volby) {
+  const o = volby || {};
+  const rel = relace || {};
+  if (o.obnova && !o.zeSouboru) return;
+  const ulozene = new Map(vzDalsi(stara).map(d => [String(d.id), d.zalozen]));
+  const ridiciDriv = vzObj(stara && stara.vzRidici) ? String(stara.vzRidici.id) : (stara ? VZ_RIDICI_ID : '');
+  vzDalsi(zak).forEach(d => {
+    const id = String(d.id);
+    if (ulozene.has(id) || id === ridiciDriv) {
+      const z = ulozene.get(id);
+      if (vzObj(z)) d.zalozen = vzKop(z); else delete d.zalozen;
+    } else d.zalozen = { kdo: vzText(rel.email), kdy: o.kdy || new Date().toISOString() };
+  });
+}
+
+/* RAZÍTKA NOVÝCH TISKŮ NA SERVERU (§ 5 bod 8): u každého NOVĚ připsaného
+ * záznamu tisku (za uloženým začátkem `tisky`, u nového zámku všechny) si
+ * server snímek adresáta složí sám; z prohlížeče bere jen id. Jeden
+ * zákazník → klíč pryč. Tisk bez id = řídící. Zákazník, který neexistuje
+ * nebo kterému varianta nepatří → 400. Vrací { status, chyba } nebo null. */
+function vzServerRazitka(stara, zak) {
+  const sv = new Map(((stara && stara.varianty) || []).filter(vzObj).map(v => [String(v.id), v]));
+  const rezim = vzRezim(zak);
+  /* Které varianty smí zákazník dostat — podle razítek ULOŽENÉ verze (nové
+   * razítko samo sebe neopravňuje). */
+  const smi = (z, varId) => {
+    if (z.varianta === varId) return true;
+    if (vzTiskyVarianty(sv.get(varId)).some(t => vzTiskKomu(t) === z.id)) return true;
+    if (!z.ridici) return false;
+    const dalsi = vzZakaznici(zak).filter(x => !x.ridici);
+    if (dalsi.some(x => x.varianta === varId)) return false;
+    const ids = new Set(dalsi.map(x => x.id));
+    return !vzTiskyVarianty(sv.get(varId)).some(t => ids.has(vzTiskKomu(t)) && vzObj(t.zakaznik));
+  };
+  for (const v of ((zak && zak.varianty) || [])) {
+    if (!v || !v.zamek || !v.zamek.zamceno || !Array.isArray(v.zamek.tisky)) continue;
+    const s = sv.get(String(v.id));
+    const od = (s && s.zamek && s.zamek.zamceno && Array.isArray(s.zamek.tisky)) ? s.zamek.tisky.length : 0;
+    for (let i = od; i < v.zamek.tisky.length; i++) {
+      const t = v.zamek.tisky[i];
+      if (!vzObj(t)) continue;
+      if (!rezim) { delete t.zakaznik; continue; }
+      const id = (vzObj(t.zakaznik) && typeof t.zakaznik.id === 'string' && t.zakaznik.id) ? t.zakaznik.id : vzRidiciId(zak);
+      const z = vzZakaznik(zak, id);
+      if (!z) return { status: 400, chyba: 'Neuloženo: tisk nabídky pro zákazníka, který v zakázce není. Obnovte stránku a vytiskněte znovu.' };
+      if (!smi(z, String(v.id)))
+        return { status: 400, chyba: 'Neuloženo: varianta „' + vzText(v.nazev || v.id) + '" není nabídka zákazníka „'
+          + (z.hlavicka.objednatel || z.id) + '" — pro něj se netiskne.' };
+      t.zakaznik = vzRazitkoSnimek(zak, z.id, v);
+    }
+  }
+  return null;
+}
+
+/* `platna` dalších zákazníků = vzPlatna ze zámků (N6) — server ji zapíše
+ * při každém uložení, klientovi nevěří. Na místě. */
+function vzPlatnaPrepocti(zak) {
+  vzDalsi(zak).forEach(d => {
+    const p = vzPlatna(zak, d.id);
+    if (p) d.platna = p; else delete d.platna;
+  });
+}
+
+/* D3 (dorevize E0) + § 5 dotisk: varianta v TISKOVÉM pohledu zákazníka `id`
+ * — razítka ostatních zákazníků (snímek adresáta) se z kopie zámku vyjmou.
+ * Vrací tutéž variantu, když v ní cizí razítko není. */
+function vzVariantaBezCizichRazitek(v, id) {
+  const t = vzTiskyVarianty(v);
+  if (!t.some(x => vzObj(x.zakaznik) && x.zakaznik.id !== id)) return v;
+  const tisky = v.zamek.tisky.map(x => (vzObj(x) && vzObj(x.zakaznik) && x.zakaznik.id !== id)
+    ? (() => { const y = Object.assign({}, x); delete y.zakaznik; return y; })() : x);
+  return Object.assign({}, v, { zamek: Object.assign({}, v.zamek, { tisky }) });
+}
+
 if (typeof module !== 'undefined' && module.exports)
   module.exports = { VZ_DALSI_MAX, VZ_VYPNUTO_VARIANTA, VZ_TEXT_MAX, VZ_RIDICI_ID, VZ_ID_TVAR, VZ_PISMENO_TVAR, VZ_PISMENA, VZ_HLAVICKA_POLE,
     VZ_ZASTUPCI_POLE, VZ_RIDICI_KLICE, VZ_DALSI_KLICE, VZ_PLATNA_KLICE, VZ_OTISK_FIRMA, VZ_POHLED_BEZ, VZ_VYPNUTO,
@@ -701,4 +983,7 @@ if (typeof module !== 'undefined' && module.exports)
     vzRazitkaZakazniku, vzPismenoDalsi, vzIdDalsi, vzPridej, vzVariantaJenJeho, vzOdstran, vzVymenRidiciho,
     vzSrovnej, vzProjFirma, vzUkazateleOprav, vzPohled, vzTvarProblemy, vzOcisti, vzPodpis, vzPlatnaDrz, vzTvarText,
     vzPismenoPohledu, vzCisloSPismenem, vzCisloRozloz, vzVariantyZakaznika, vzTiskPohled, vzNorm, vzNazevJadro,
-    vzTextCizi, vzTypProj, vzSdileneTexty, vzTiskZabrana, vzTiskPruhText, vzTiskVarianta, vzTiskHlidej };
+    vzTextCizi, vzTypProj, vzSdileneTexty, vzTiskZabrana, vzTiskPruhText, vzTiskVarianta, vzTiskHlidej,
+    VZ_RAZITKO_KLICE, VZ_ZMRAZENA_POLE, vzTiskKomu, vzTiskyVarianty, vzCisloVarianty, vzRazitkoSnimek, vzTiskyZakaznika,
+    vzOdeslanoKomu, vzCenaZamku, vzPlatna, vzStavNabidky, vzRazitkoDotisku, vzCisloDokladu, vzOdstranDuvod,
+    vzZakaznikPoleZmrazeno, vzServerZakaznici, vzZalozenDrz, vzServerRazitka, vzPlatnaPrepocti, vzVariantaBezCizichRazitek };
