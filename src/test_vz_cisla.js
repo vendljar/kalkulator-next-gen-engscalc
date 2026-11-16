@@ -234,6 +234,12 @@ console.log('\n===== 7. POJISTKA PROTI PRÁZDNÉMU TESTU =====\n');
   test('cisloSod: ruční přepis s písmenem zůstane',
     kryciHodnota(pole, { hodnoty: { cisloSod: 'SOD-1-B' } }, { zak: pB, varianta: vB }) === 'SOD-1-B');
   const pA = vzTiskPohled(Z1, '');
+  /* Podpisová doložka SoD: firma z krycího listu PROJ (sdílený, řídící) jen u řídícího. */
+  const pf = KRYCI_SEKCE.map(x => x.pole).flat().find(x => x.id === 'objPodpisFirma');
+  const vKl = Object.assign({}, vB, { data: Object.assign({}, vB.data, { kryciProj: { hodnoty: { objPodpisFirma: 'Alfa Podpis s.r.o.' } } }) });
+  test('objPodpisFirma: v pohledu B firma B, ne z KL PROJ řídícího',
+    kryciHodnota(pf, {}, { zak: pB, varianta: vKl }) === 'Beta Zkušební a.s.');
+  test('objPodpisFirma: řídící dál z KL PROJ', kryciHodnota(pf, {}, { zak: vzTiskPohled(Z1, ''), varianta: vKl }) === 'Alfa Podpis s.r.o.');
   test('cisloSod: řídící beze změny (snímek)', kryciHodnota(pole, {}, { zak: pA, varianta: pA.varianty[0], zamceno: true, zmrazeno: zm }) === '2026 - OPR - SOD - 9940');
 }
 
