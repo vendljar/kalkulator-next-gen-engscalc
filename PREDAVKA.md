@@ -1,3 +1,63 @@
+# Předávka — 16. 11. 2026: návrh v3 „víc zákazníků“ + prompty etap (poradce), větev `claude/vz-navrh`
+
+Nad integrací `8462aea` (v12.11.7). Jen podklady — kód aplikace beze změny. Do `test-draft`, `test` ani `main` nic;
+weby, Disk, Pipedrive nic. Programování spouští koordinace až po souhlasu J. V.
+
+| úkol | stav | kde |
+|---|---|---|
+| návrh v3 (rozhodnutí J. V. 16. 11.) | ✅ | `podklady/NAVRH_VICE_ZAKAZNIKU.md` — tabulka rozhodnutí v úvodu, § 7.2 poznámka u dealu (zvlášť vedle poznámky šachet, společný modul a časový rozpočet), § 7.4 organizace dealu = vítěz při Prodáno, § 2a odstranění s odeslanou nabídkou jen administrátor, § 10 etapy, § 11 otevřené body |
+| prototyp v3 | ✅ | https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V (verze 3); ověření 33/0 při 1600 i 400 px; snímky `podklady/vz_prototyp/snimky/v3_*` a `v2_*` |
+| prompty pro Opus | ✅ | `podklady/PROMPT_VZ_SPOLECNE.md`, `PROMPT_VZ_E0.md` … `E6.md`, `PROMPT_VZ_E5b.md` |
+
+**Doplněk J. V. 16. 11. (prototyp v4, artefakt verze 4, ověření 38/0, snímky `v4_*`):** tlačítko „Přidat zákazníka“
+bez „+“ na řádku vedle popisku Zákazník (zapsáno do návrhu § 2a a promptu E1); v prototypu zapnuté víc šachet
+a situace „víc zákazníků + víc šachet“.
+
+**Doplněk J. V. 16. 11. — ARES ve formuláři nového zákazníka (prototyp v5, ověření 46/0, snímky `v5_*`):** formulář
+má široká pole, „Vybrat z databáze zákazníků“ a funkční „Najít firmu v ARES“ s potvrzením rozdílů; zapsáno
+do návrhu § 2a a promptů E1 (zobecnění `ares_ui.js` na cíl, žádná kopie) a E0 (stejné klíče hlavičky).
+
+**Etapy:** E0 → E1 → E2 → E3 → E4 → E5b → E6; E5 souběžně s E1–E3 (po E0). Revize poradce: E0, E2, E3, E5b.
+**Rozhodnutí J. V. 16. 11. (zapsáno do návrhu, E5b a E4):** kontaktní osobu dealu aplikace nemění — po zápisu
+organizace vítěze upozorní „Doplňte v Pipedrive kontaktní osobu vítězného zákazníka před posunem dealu na Vyhráno.“
+a zapíše to do protokolu; zápis ceny prodeje do dealu je samostatný úkol #597; „+“ v přepínači zákazníků zůstává.
+**Čeká na J. V.:** souhlas se spuštěním (prochází detail etap).
+**Zjištění pro koordinaci:** zápis dat prodeje do dealu (hodnota, krycí list, fáze) aplikace dnes neprovádí
+(`prodano.pipedrive` zůstává „čeká“, jen suchý běh) — VZ ho nezavádí; organizace dealu je samostatný zápis.
+
+# Předávka — 16. 11. 2026: návrh v2 „víc zákazníků na jedné zakázce“ (poradce), větev `claude/vz-navrh`
+
+Sloučena integrace `8462aea` (v12.11.7). Jen podklady — kód aplikace beze změny. Do `test-draft`, `test` ani `main` nic;
+weby, Disk, Pipedrive nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| návrh v2 | ✅ | `podklady/NAVRH_VICE_ZAKAZNIKU.md` — nově úvod „Co mění v2“, § 2a (standardní pohled, přidání, odstranění), § 1.1 (žádný klíč navíc s jedním zákazníkem, písmeno z razítek), § 11 (4 otázky) |
+| prototyp v2 | ✅ | stejná adresa https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V (verze 2), zdroj `podklady/vz_prototyp/` |
+| ověření v headless Chromiu | ✅ 28/0 | `node podklady/vz_prototyp/snimky.mjs <výstup>` — 1600 × 1000 a 400 × 800; snímky `podklady/vz_prototyp/snimky/v2_*` |
+| kontrola údajů | ✅ čisté | `python3 nastroje/kontrola_udaju.py` |
+
+**Čeká na J. V.:** 4 otázky v § 11 (číslo s písmenem; text v dealu; organizace dealu po prodeji; odstranění zákazníka
+s odeslanou nabídkou). Návrh i prototyp počítají s doporučenými volbami.
+**Pro koordinaci:** platí body z 12. 11. (VZ po sloučení K40c; podmínka shody IČO u „Opravit firmu v Pipedrive“).
+
+# Předávka — 12. 11. 2026: návrh „víc zákazníků na jedné zakázce“ (poradce), větev `claude/vz-navrh`
+
+Nad `aa445a1` (v11.11.1). Jen podklady — kód aplikace beze změny, verze se nemění. Do `test-draft`, `test` ani `main` nic;
+weby, Disk, Pipedrive nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| návrh | ✅ | `podklady/NAVRH_VICE_ZAKAZNIKU.md` (model, řídící zákazník, čísla s písmenem, tisk z pohledu zákazníka, zámek, rejstřík, Pipedrive a K40c, vypínač, rizika, etapy E0–E6, 4 otázky) |
+| klikací prototyp na skutečné aplikaci | ✅ | https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V, zdroj `podklady/vz_prototyp/` (`sestav.mjs`, `prototyp.js`, `prototyp.css`) |
+| ověření v headless Chromiu | ✅ 25/0 | `node podklady/vz_prototyp/snimky.mjs <výstup>` — 1600 × 1000 a 400 × 800; snímky `podklady/vz_prototyp/snimky/` |
+| kontrola údajů | ✅ čisté | `python3 nastroje/kontrola_udaju.py` |
+
+**Čeká na J. V.:** 4 otázky v § 11 návrhu (číslo s písmenem; obsah a místo textu v dealu; organizace dealu po prodeji
+jinému zákazníkovi; krycí list u sdílené varianty).
+**Pro koordinaci:** VZ programovat až po sloučení K40c; do zadání K40c doplnit podmínku — „Opravit firmu v Pipedrive“
+jen při shodě IČO organizace dealu s IČO hlavičky (jinak by po změně řídícího zákazníka přejmenovalo cizí organizaci).
+Čísla roadmapy pro etapy E0–E6 přidělí koordinace. Kolo testů se nepouštělo (kód se neměnil).
 # Předávka — K40c #581: vazba z webhooku Pipedrive, ARES na serveru, „Opravit firmu v Pipedrive“, větev `claude/k40c-webhook`
 
 Nad `1a08186` (integrace v12.11.3), sloučeno s integrací `4acda93` (v12.11.6: + VSD, C2+C3, C5). **v12.11.7**. Do
