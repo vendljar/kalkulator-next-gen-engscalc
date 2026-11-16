@@ -314,7 +314,7 @@
       + '<b>Řídící zákazník</b> určuje řídící variantu a jen jeho data nese deal v Pipedrive; ostatní jsou v dealu jako textová zmínka.</div>'
       + '<div class="vzp-tab"><table><thead><tr><th title="řídící zákazník">Řídící</th><th>Zákazník</th><th>Číslo nabídky</th><th>Varianta nabídky</th><th>Stav</th><th>Cena bez DPH</th></tr></thead><tbody>' + ro + '</tbody></table></div>'
       + (P.chyba ? '<div class="vzp-upoz">' + esc(P.chyba) + '</div>' : '')
-      + '<div class="vzp-pod"><button type="button" class="vzp-modre' + (dalsiKrok().indexOf('pridej') === 0 && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="form"' + (volne.length && !prodanoZ() ? '' : ' disabled') + '>+ Přidat zákazníka</button>' + napoveda + '</div>'
+      + '<div class="vzp-pod"><button type="button" class="vzp-modre' + (dalsiKrok().indexOf('pridej') === 0 && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="form"' + (volne.length && !prodanoZ() ? '' : ' disabled') + '>Přidat zákazníka</button>' + napoveda + '</div>'
       + form + upoz + potv + '</div>';
   }
   function formHtml() {
