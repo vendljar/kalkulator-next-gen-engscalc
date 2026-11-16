@@ -14,6 +14,9 @@ volné pro další etapy). Čísla ověřena volná ve všech 118 vzdálených v
 | testy | ✅ | `src/test_vz_model.js`, `netlify/test_vz_server.mjs` (53/0), `src/test_vz_zlata.js` |
 | mutace „[VZ E0]“ | ✅ | jádro 29 (`mutace_jadro.mjs`, `vice_zakazniku.js` v JADRA), server 11 (`netlify/mutace.mjs`, sady `test_vz_server.mjs`, `../src/test_vz_model.js`) |
 | roadmapa, mez B220, CHANGELOG | ✅ | |
+| testovací kolo `--bez-mutaci` | ✅ **VŠE ZELENÉ** | sady 392/0/59 přeskočeno (prohlížečové bez Playwrightu v kole, firemní podklady), hodiny +400 dní 361/0/1, statické 5/5 (24 min) |
+| testy VZ | ✅ | model 131/0, server 53/0, zlatá sada 13/0 (a VYP 319/319, b ZAP + 1 zákazník 319/319, c pohled řídícího u 2 zákazníků 319/319, d bez stop) |
+| mutace „[VZ E0]“ | ✅ | jádro 28/28, server 10/10 (2 ekvivalentní vyřazeny s komentářem) |
 
 ## STABILNÍ API JÁDRA PRO E1, E2, E5 (`src/vice_zakazniku.js`)
 
@@ -55,6 +58,12 @@ vyžádání — E1 si ho musí načíst, např. při otevření zakázky s `vzM
 - Vadný tvar dostane s VYP hlášku „neplatný údaj“, ne „funkce vypnutá“ (odmítne se tak či tak).
 
 ## Otevřené body
+
+- `vzVymenRidiciho`: položka bývalého řídícího nemá `zalozen` a `vzRidici` ho nedrží — po výměně se ztratí, kdo
+  a kdy přidal nového řídícího. Návrh to neřeší; rozhodne E4 (případně `vzRidici.zalozen`).
+- Mimo rozsah: roadmapa #597 dostala `cekaNa` (overit_roadmapu padal už v bázi 77e36e0).
+- WIP commity 04ec43a a fb6b0d7 nesly pokažený `src/test_vz_zlata.js` (souběh subagentů ve scratchpadu);
+  opraveno v e5c833d. Při squash/revizi brát až stav hlavy větve.
 
 - Práva (výměna řídícího, odstranění s odeslanou nabídkou), držení písmen a razítek na serveru — E3/E4 (mez B220).
 - Protokol zakázky (E1 do něj píše název přidaného zákazníka) se do `vzPohled` přenáší — test úniku E2 musí ověřit,
