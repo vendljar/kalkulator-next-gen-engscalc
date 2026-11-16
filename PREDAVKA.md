@@ -1,3 +1,66 @@
+# Předávka — 16. 11. 2026: VZ-E0 #599 (víc zákazníků — vypínač, jádro, import, server), větev `claude/vz-e0`
+
+Nad `claude/integrace-vz` `77e36e0`. **v16.11.1**. Do `test-draft`, `test`, `main` ani integrace nic; weby, Disk,
+Pipedrive nic. Před sloučením revize poradce (datový model). Souhrn VZ = roadmapa **#598**, E0 = **#599**,
+E1 #600, E2 #601, E3 #602, E4 #603, E5 #604, E5b #605, E6 #606 (založeno jako `ceka`). Mez **B220** (B221–B229
+volné pro další etapy). Čísla ověřena volná ve všech 118 vzdálených větvích.
+
+| úkol | stav | kde |
+|---|---|---|
+| vypínač `viceZakazniku` (server, Nastavení → Zkušební funkce, `viceZakaznikuZapnuto()`) | ✅ | `netlify/lib/funkce.mjs`, `netlify/functions/funkce.mjs`, `src/ui/online_ui.js` |
+| jádro | ✅ | `src/vice_zakazniku.js` (CORE za `zamek.js`, `jadro_moduly.cjs`, `nastroje/zlata_vs.js`) |
+| import (očista, `vzZahozeno`), duplikace bez dalších zákazníků | ✅ | `src/zakazka.js` |
+| server (`vzServerKontrola`; ctx `viceZakazniku` i v obnově) | ✅ | `netlify/lib/zakazka_kontrola.mjs`, `functions/zakazky.mjs`, `functions/obnova.mjs` |
+| testy | ✅ | `src/test_vz_model.js`, `netlify/test_vz_server.mjs` (53/0), `src/test_vz_zlata.js` |
+| mutace „[VZ E0]“ | ✅ | jádro 29 (`mutace_jadro.mjs`, `vice_zakazniku.js` v JADRA), server 11 (`netlify/mutace.mjs`, sady `test_vz_server.mjs`, `../src/test_vz_model.js`) |
+| roadmapa, mez B220, CHANGELOG | ✅ | |
+
+## STABILNÍ API JÁDRA PRO E1, E2, E5 (`src/vice_zakazniku.js`)
+
+Tvar dat (návrh § 1.1): hlavička zakázky = řídící zákazník beze změny;
+`zak.vzRidici = { id, pismeno, varianta }` a `zak.dalsiZakaznici = [{ id, pismeno, hlavicka: { objednatel,
+adresaObjednatele, ico, dic, kontakt }, zastupci: {15 polí jako zak.zastupci}, varianta, zalozen: { kdo, kdy },
+platna? }]` — oba klíče JEN při 2+ zákaznících. Id `z1`…`z999` (řídící od založení `z1`), písmena `''` (řídící)
+a B–Z. `platna` píše jen server (E3).
+
+| funkce | vrací | poznámka |
+|---|---|---|
+| `vzRezim(zak)` | bool | 2+ zákazníků |
+| `vzMaData(zak)` | bool | syrově: má klíč `vzRidici` nebo `dalsiZakaznici` |
+| `vzZakaznici(zak)` | `[{ id, pismeno, ridici, hlavicka, zastupci, varianta, zalozen, platna }]` | řídící první; KOPIE |
+| `vzZakaznik(zak, id)` | položka nebo null | |
+| `vzRidiciId(zak)`, `vzRidiciVariantaId(zak)` | text | |
+| `vzPridej(zak, udaje, { vlastni, zdroj, kdo, kdy, nazevVarianty })` | `{ ok, zakaznik }` / `{ ok:false, chyba }` | udaje = 5 polí hlavičky + `zastupci?`; vlastni = `klonujVariantu` (aktivní varianta se nemění) |
+| `vzOdstran(zak, id, { smazatVariantu })` | `{ ok, smazanaVarianta }` / chyba | řídící a prodaný (`v.prodano.zakaznik`) odmítne; maže jen vlastní NEZAMČENOU variantu; `priponaMax` zůstává (#17) |
+| `vzPismenoDalsi(zak)`, `vzIdDalsi(zak)` | `'C'` / `''` (strop), `'z3'` | i z razítek `zamek.tisky[].zakaznik` (E3 je plní: `{ id, pismeno, … }`) |
+| `vzVymenRidiciho(zak, id)` | `{ ok }` / chyba | hlavička ↔ položka, `nastavRidici`, `pdZadani.otisk` bez objednatel/adresaObjednatele/ico/dic/kontakt |
+| `vzSrovnej(zak)` | seznam oprav | pravda = příznak `v.ridici` |
+| `vzPohled(zak, id?)` | mělká kopie / null | bez `dalsiZakaznici`, `vzRidici`; `vzPohledZakaznika = { id, pismeno }`; u dalšího zákazníka i `projHlavicka` jeho a bez polí Pipedrive (`VZ_POHLED_BEZ`); varianty SDÍLENÉ (tisk zamyká skutečnou) |
+| `vzTvarProblemy(zak)` | `[{ kde, duvod }]` | duvod typ / limit / duplicita / varianta / delka / klic |
+| `vzOcisti(zak)` | vady | volá importZakazka |
+| `vzPodpis(zak)`, `vzPlatnaDrz(stara, zak)`, `vzTvarText(p)` | | server |
+| konstanty | | `VZ_DALSI_MAX` 9, `VZ_TEXT_MAX` 500, `VZ_HLAVICKA_POLE`, `VZ_ZASTUPCI_POLE`, `VZ_VYPNUTO` |
+
+Klient: `viceZakaznikuZapnuto()` (online_ui.js; stav se načítá `onlineNactiFunkce`, jako u šachet jen na
+vyžádání — E1 si ho musí načíst, např. při otevření zakázky s `vzMaData` nebo při renderu tlačítka).
+
+## Změny proti návrhu / promptu (bezpečnější volba)
+
+- Báze `77e36e0` (integrace VZ), ne `8462aea` — pokyn koordinace.
+- Server s VYP odmítá změnu 400 (prompt), ne 409 jako VS R21.
+- Délka textových polí 500 znaků — hlavička zakázky dnes strop nemá („jako u hlavičky“ nešlo převzít).
+- Výměna řídícího maže otisk webhooku i u `kontakt` (návrh jmenuje 4 pole firmy).
+- `vzPohled` dalšího zákazníka přepíše i hlavičku PROJ a zahodí pole Pipedrive (únik R1; PROJ stejně jen pro řídícího, R5).
+- `vzIdDalsi` (id se nepřidělí znovu, je-li v razítku) — návrh to říká jen pro písmena.
+- Vadný tvar dostane s VYP hlášku „neplatný údaj“, ne „funkce vypnutá“ (odmítne se tak či tak).
+
+## Otevřené body
+
+- Práva (výměna řídícího, odstranění s odeslanou nabídkou), držení písmen a razítek na serveru — E3/E4 (mez B220).
+- Protokol zakázky (E1 do něj píše název přidaného zákazníka) se do `vzPohled` přenáší — test úniku E2 musí ověřit,
+  že dokumenty protokol netisknou.
+- Příručka k novému vypínači — E6.
+
 # Předávka — 16. 11. 2026: návrh v3 „víc zákazníků“ + prompty etap (poradce), větev `claude/vz-navrh`
 
 Nad integrací `8462aea` (v12.11.7). Jen podklady — kód aplikace beze změny. Do `test-draft`, `test` ani `main` nic;
