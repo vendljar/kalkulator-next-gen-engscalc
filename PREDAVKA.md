@@ -1,3 +1,40 @@
+# Předávka — 16. 11. 2026: VZ-E1 #600 (víc zákazníků — obrazovka), větev `claude/vz-e1`
+
+Nad `claude/vz-e0` `e29f2b1`, sloučeno s integrací `claude/integrace-vz` `76ae631` (E0 po revizi). **v16.11.2**
+(koordinace přečísluje). Do `test-draft`, `test`, `main` ani integrace nic; weby, Disk, Pipedrive nic. Mez **B221**.
+
+| úkol | stav | kde |
+|---|---|---|
+| tlačítko „Přidat zákazníka“ za popiskem Zákazník (ZAP, ne jen ke čtení / náhled / prodaná) | ✅ | `src/ui/vice_zakazniku_ui.js`, `src/ui/common.js` (zakaznikRow), CSS `app_template.html` |
+| formulář „Nový zákazník na zakázce“ (našeptávač, databáze, ARES, stejná / vlastní varianta) | ✅ | `vzFormularBlok`, `vzFormPridej` |
+| ARES na cíl (`aresCil`, hlavička beze změny), databáze na cíl (`zakazniciCil`) | ✅ | `src/ui/ares_ui.js`, `src/ui/zakaznici_ui.js` |
+| přepínač zákazníků, otevřený zákazník (`vzCesta`), karta Zákazníci zakázky (OCK pod hlavičkou, Přehled) | ✅ | `vzPrepinacRadek`, `vzKarta` |
+| Odstranit s potvrzením na stránce, návrat do standardního pohledu | ✅ | `vzOdstranit`, `vzOdstranitPotvrd` |
+| VYP + data: jen ke čtení s větou „funkce je vypnutá“ (R21) | ✅ | |
+| sloupec Zákazník v seznamu variant odvozený (2+) | ✅ | `src/ui/seznam_ui.js` |
+| revize E0 N2: zábrana smazání varianty se zákazníkem, varování `vzZahozeno` | ✅ | `src/ui/zakazka_ui.js` (`varSmaz`), načtení ze souboru / složky / online |
+| dorevize E0 D2: po načtení `vzSrovnej` + „Zákazník X přešel na řídící variantu — mění se mu cena.“ | ✅ | `vzPoNacteniVarovani`; `src/zakazka.js` nevýčtové `vzPresmerovano` |
+| testy | ✅ | `src/test_vz_ui.js` 107/0, `src/test_vz_n2.js` 20/0, `overit_vz_zadani.mjs` 76/0 (proti bázi e29f2b1 17/10), `overit_xss.mjs` 400/0 (případ VZ-E1), `overit_lista.mjs` 255/0 |
+| mutace „[VZ E1]“ | ✅ 20/20 | `mutace_jadro.mjs` (JADRA + `ui/vice_zakazniku_ui.js`, `ui/zakaznici_ui.js`) |
+| testovací kolo `--bez-mutaci` | ✅ **VŠE ZELENÉ** | sady 395/0/59 přeskočeno (prohlížečové bez Playwrightu v kole, firemní podklady), hodiny +400 dní 363/0/1, statické 5/5 |
+
+## Změny proti návrhu / promptu (bezpečnější volba)
+
+- Tlačítko stojí ZA popiskem (sourozenec `<label>`), ne v něm — klik na popisek ho nespustí a po odebrání je řádek znak po znaku jako báze. Šířka přes CSS `:has()`.
+- Tlačítko se u prodané / jen ke čtení / v náhledu nekreslí vůbec (ne zhasnuté).
+- „Odeslaná nabídka“ v E1 = razítko tisku s id zákazníka NEBO zamčená jeho vlastní varianta → Odstranit zhasnuté.
+- Vlastní varianta pro řídícího zákazníka zhasnutá (řídící variantu mění „nastavit jako řídící“).
+- Přepínač a tlačítko i v hlavičce PROJ (hlavička je společná); formulář se kreslí jen v té, kde se otevřel.
+- Nový zákazník se po přidání neotevře (hlavička dál ukazuje řídícího).
+- D2: drobný zásah do E0 souboru `src/zakazka.js` (nevýčtové `vzPresmerovano` při importu) — jinak by import přesměrování spolkl.
+
+## Otevřené body
+
+- „Kdo smí ukládat“ = každý přihlášený — matice práv roli jen ke čtení nemá (B221).
+- Údaje dalšího zákazníka se nezmrazují (E3/E4); práva odstranění hlídá jen prohlížeč (B221 → E3).
+- Mutační nástroj (`obnovVse`) na konci přepíše všechny soubory JADRA stavem ze začátku — během mutací nesahat do `src/`.
+- Protokol zakázky nese názvy přidaných / odstraněných zákazníků — test úniku E2 musí ověřit, že ho dokumenty netisknou.
+
 # Předávka — 16. 11. 2026: VZ-E0 #599 (víc zákazníků — vypínač, jádro, import, server), větev `claude/vz-e0`
 
 Nad `claude/integrace-vz` `77e36e0`. **v16.11.1**. Do `test-draft`, `test`, `main` ani integrace nic; weby, Disk,
