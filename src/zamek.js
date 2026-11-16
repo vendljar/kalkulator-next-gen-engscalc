@@ -110,7 +110,9 @@ function dalsiPriponaVarianty(zak) {
 function variantaCislo(zak, v) {
   const zaklad = String((zak && zak.cislo) || '');
   const p = variantaPriponaVZakazce(zak, v);
-  return p ? zaklad.replace(/\s+$/, '') + '.' + p : zaklad;
+  const c = p ? zaklad.replace(/\s+$/, '') + '.' + p : zaklad;
+  /* VZ-E2 (#601): v pohledu dalšího zákazníka číslo s písmenem (…9940.2-B). */
+  return (typeof vzPismenoPohledu === 'function' && vzPismenoPohledu(zak)) ? vzCisloSPismenem(c, vzPismenoPohledu(zak)) : c;
 }
 
 /* Patří uložené číslo z odeslané nabídky k tomuto číslu zakázky? Pro zámky
@@ -122,7 +124,9 @@ function zamekCisloZakladSedi(cisloZamku, zak) {
   const bylo = String(cisloZamku || '');
   const zaklad = String((zak && zak.cislo) || '').replace(/\s+$/, '');
   if (bylo === zaklad || bylo === String((zak && zak.cislo) || '')) return true;
-  return bylo.startsWith(zaklad + '.') && /^\d+$/.test(bylo.slice(zaklad.length + 1));
+  /* VZ-E2 (#601): přípona zákazníka „-P" (…9940-B, …9940.2-B) základ nemění. */
+  if (zaklad && bylo.startsWith(zaklad + '-') && /^[B-Z]$/.test(bylo.slice(zaklad.length + 1))) return true;
+  return bylo.startsWith(zaklad + '.') && /^\d+(-[B-Z])?$/.test(bylo.slice(zaklad.length + 1));
 }
 
 /* Klon = nová varianta uvnitř téže zakázky. Přebírá kompletní data

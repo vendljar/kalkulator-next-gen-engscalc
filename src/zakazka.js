@@ -782,7 +782,9 @@ function cisloSVariantou(zak, varianta, zaklad) {
     const i = varianta ? ((zak && zak.varianty) || []).findIndex(v => v && v.id === varianta.id) : -1;
     p = i > 0 ? i + 1 : 0;
   }
-  return p ? cislo + '.' + p : cislo;
+  const c = p ? cislo + '.' + p : cislo;
+  /* VZ-E2 (#601): v pohledu dalšího zákazníka (vzPohled) písmeno: …9940.2-B. */
+  return (typeof vzPismenoPohledu === 'function' && vzPismenoPohledu(zak)) ? vzCisloSPismenem(c, vzPismenoPohledu(zak)) : c;
 }
 
 /* ---------- kontrola duplicit čísla a názvu (19. 8. 2026) ----------
@@ -793,7 +795,12 @@ function cisloSVariantou(zak, varianta, zaklad) {
  * jméno souboru první kolidující zakázky, nebo prázdno. Tvrdou pojistkou
  * zůstává server: cizí zakázku pod stejným číslem odmítne přepsat (razítko). */
 function zakazkaDuplicita(zak, rejstrik, vlastniSoubor) {
-  const normC = x => String(x == null ? '' : x).replace(/\s+/g, '').toLowerCase();
+  /* VZ-E2 (#601): písmeno zákazníka („…9940-B") číslo zakázky nemění — nabídka
+   * dalšího zákazníka koliduje se zakázkou téhož základu. */
+  const normC = x => {
+    const t = String(x == null ? '' : x).replace(/\s+/g, '').toLowerCase();
+    return typeof vzCisloRozloz === 'function' ? vzCisloRozloz(t.toUpperCase()).zaklad.toLowerCase() : t;
+  };
   const normN = x => String(x == null ? '' : x).normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').toLowerCase().trim();
   const out = { cislo: '', nazevAkce: '' };
@@ -1738,8 +1745,11 @@ function zakazkaCisloDalsi(cislo) {
  * číselnou skupinu se stejným oddělovačem. Nevyplněné číslo (jen předloha)
  * nebo číslo bez číslic návrh nedá — pole zůstane prázdné. */
 function sodCisloNavrh(cislo) {
-  const s = String(cislo == null ? '' : cislo).trim();
+  let s = String(cislo == null ? '' : cislo).trim();
   if (!hlavickaVyplneno(s)) return '';
+  /* VZ-E2 (#601): písmeno zákazníka („…0640-B") se zachová za číslem. */
+  const pismeno = /^(.*\d)-([B-Z])$/.exec(s);
+  if (pismeno) { const n = sodCisloNavrh(pismeno[1]); return n ? n + '-' + pismeno[2] : ''; }
   const cn = /(^|[^A-Za-z\u00C0-\u017F])CN(?![A-Za-z\u00C0-\u017F])/i;
   if (cn.test(s)) return s.replace(cn, '$1SOD');
   const m = /^(.*?)(\d+)(\.\d+)?$/.exec(s);

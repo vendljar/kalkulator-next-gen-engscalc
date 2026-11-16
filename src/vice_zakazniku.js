@@ -442,9 +442,163 @@ function vzTvarText(p) {
 const VZ_VYPNUTO = 'Zakázka má víc zákazníků — funkce je v Nastavení vypnutá. Zákazníky (přidání, úpravy, odstranění, '
   + 'řídící zákazník) teď nejde měnit; zapnout je může administrátor (Nastavení → Zkušební funkce).';
 
+/* ============================================================
+ * E2 (#601): ČÍSLA S PÍSMENEM, TISK Z POHLEDU ZÁKAZNÍKA, ZÁBRANY TISKU
+ * Návrh § 3, § 4, § 9 (R1, R2, R5). Jediný vstup dokumentů je
+ * vzTiskPohled — generátory dál čtou zak.objednatel a ostatní zákazníky
+ * v pohledu nemají z čeho vzít (test src/test_vz_unik.js s kanárky).
+ * ============================================================ */
+
+/* Písmeno zákazníka, pro kterého je zakázka „pohledem" (vzPohled); jinak ''. */
+function vzPismenoPohledu(zak) {
+  const p = zak && zak.vzPohledZakaznika;
+  return (vzObj(p) && typeof p.pismeno === 'string' && VZ_PISMENO_TVAR.test(p.pismeno)) ? p.pismeno : '';
+}
+
+/* Číslo + písmeno zákazníka: „…9940" → „…9940-B", „…9940.2" → „…9940.2-B".
+ * Prázdné číslo nebo bez písmene → beze změny. */
+function vzCisloSPismenem(cislo, pismeno) {
+  const c = vzText(cislo);
+  return (c.trim() && typeof pismeno === 'string' && VZ_PISMENO_TVAR.test(pismeno)) ? c.replace(/\s+$/, '') + '-' + pismeno : c;
+}
+
+/* Rozklad čísla nabídky s písmenem: { zaklad, pismeno } (bez písmene pismeno '').
+ * Písmeno se pozná jen za číslicí: „…9940-B", „…9940.2-B". */
+function vzCisloRozloz(cislo) {
+  const c = vzText(cislo).trim();
+  const m = /^(.*\d)-([B-Z])$/.exec(c);
+  return m ? { zaklad: m[1], pismeno: m[2] } : { zaklad: c, pismeno: '' };
+}
+
+/* Varianty, ze kterých se smí tisknout pro zákazníka `id`: ta, na kterou
+ * ukazuje, a ty, které mu už odešly (razítko tisku s jeho id, E3). */
+function vzVariantyZakaznika(zak, id) {
+  const z = vzZakaznik(zak, id);
+  if (!z) return [];
+  const out = new Set(z.varianta ? [z.varianta] : []);
+  ((zak && Array.isArray(zak.varianty)) ? zak.varianty : []).forEach(v => {
+    const t = v && v.zamek && Array.isArray(v.zamek.tisky) ? v.zamek.tisky : [];
+    if (t.some(x => x && vzObj(x.zakaznik) && String(x.zakaznik.id) === z.id)) out.add(String(v.id));
+  });
+  return Array.from(out);
+}
+
+/* VSTUP TISKU (§ 4): zakázka, ze které vzniká dokument pro zákazníka `id`.
+ *   - zakázka s jedním zákazníkem (a už hotový pohled) → TÝŽ objekt
+ *     (žádná kopie: zlatá sada, VYP bajt po bajtu);
+ *   - víc zákazníků → vzPohled + jen varianty tohoto zákazníka
+ *     (porovnání a podklady nevidí cizí vlastní variantu). Objekty variant
+ *     jsou sdílené — tisk zamyká skutečnou variantu.
+ * Neznámé id → null (volající dokument nevytvoří). */
+function vzTiskPohled(zak, id) {
+  if (!zak || typeof zak !== 'object' || !vzRezim(zak)) return zak;
+  const p = vzPohled(zak, id);
+  if (!p) return null;
+  const smi = new Set(vzVariantyZakaznika(zak, p.vzPohledZakaznika.id));
+  p.varianty = (Array.isArray(zak.varianty) ? zak.varianty : []).filter(v => v && smi.has(String(v.id)));
+  if (!p.varianty.some(v => v.id === p.aktivni) && p.varianty.length) p.aktivni = p.varianty[0].id;
+  return p;
+}
+
+/* Normalizace textu pro hledání cizího zákazníka: bez diakritiky, malá
+ * písmena, jen písmena a číslice oddělené jednou mezerou. */
+function vzNorm(t) {
+  return ' ' + vzText(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+}
+/* Název firmy bez právní formy („BETA Development a.s." → „beta development"). */
+const VZ_PRAVNI_FORMA = / (s r o|spol s r o|a s|k s|v o s|z s|se|gmbh|ag|kg|ltd|sro|as)( |$)/g;
+function vzNazevJadro(nazev) {
+  return vzNorm(nazev).replace(VZ_PRAVNI_FORMA, ' ').replace(/\s+/g, ' ');
+}
+
+/* Najde v textu název nebo IČO některého z `cizi` zákazníků. Vlastní název
+ * zákazníka `vlastni` se z textu nejdřív vyjme (název A obsahující název B).
+ * Vrací cizího zákazníka (položku vzZakaznici), nebo null. */
+function vzTextCizi(text, vlastni, cizi) {
+  let t = vzNorm(text);
+  if (t.trim() === '') return null;
+  if (vlastni) {
+    [vzNorm(vlastni.hlavicka.objednatel), vzNazevJadro(vlastni.hlavicka.objednatel)].forEach(n => {
+      if (n.trim().length >= 3) t = t.split(n).join('  ');
+    });
+  }
+  const cisla = ' ' + vzText(text).replace(/\s+/g, '').replace(/\D+/g, ' ') + ' ';
+  for (const z of cizi) {
+    const nazvy = [vzNorm(z.hlavicka.objednatel), vzNazevJadro(z.hlavicka.objednatel)].filter(n => n.trim().length >= 3);
+    if (nazvy.some(n => t.indexOf(n) >= 0)) return z;
+    const ico = vzText(z.hlavicka.ico).replace(/\D+/g, '');
+    if (ico.length >= 6 && cisla.indexOf(' ' + ico + ' ') >= 0) return z;
+  }
+  return null;
+}
+
+/* Typ dokumentu PROJ (nabídka, náhled, krycí list, SoD PROJ). */
+function vzTypProj(typ) {
+  const t = vzText(typ).replace(/_(en|de|fr)$/, '');
+  return t === 'nabidkaProj' || t === 'nabidkaProjTisk' || t === 'sodProj' || /^kryciproj(_|$)/.test(t);
+}
+
+/* Sdílené tištěné texty zakázky (§ 9 R1): [popisek, hodnota]. */
+function vzSdileneTexty(zak) {
+  const z = zak || {};
+  return [['Název akce', z.nazevAkce], ['Adresa stavby', z.adresa], ['Popis záměru', z.popisZameru],
+    ['Popis úvodní fotky OCK', z.uvodniFotoPopis], ['Název úvodní fotky OCK', z.uvodniFotoNazev],
+    ['Popis úvodní fotky PROJ', z.uvodniFotoProjPopis], ['Název úvodní fotky PROJ', z.uvodniFotoProjNazev]];
+}
+
+/* ZÁBRANA TISKU PRO ZÁKAZNÍKA (§ 4, § 9 R1, R5). Vrací hlášku, nebo ''.
+ *   zak       CELÁ zakázka (ne pohled);
+ *   id        zákazník, pro kterého se tiskne ('' = řídící);
+ *   varianta  varianta, ze které dokument vzniká (objekt nebo id; nepovinné);
+ *   typ       typ dokumentu (nabidka, nabidkaProj, kryci_*, sod, plnaMoc …);
+ *   volby     { vypnuto: true } = funkce víc zákazníků je v Nastavení vypnutá.
+ * Zakázka s jedním zákazníkem → vždy '' (dnešek beze změny). */
+function vzTiskZabrana(zak, id, varianta, typ, volby) {
+  if (!vzRezim(zak)) return '';
+  const o = volby || {};
+  const sid = id == null || id === '' ? vzRidiciId(zak) : String(id);
+  const z = vzZakaznik(zak, sid);
+  if (!z) return 'Zákazník, pro kterého se má tisknout, v zakázce není — otevřete zákazníka znovu.';
+  const kdo = '„' + (z.hlavicka.objednatel || 'zákazník ' + (z.pismeno || z.id)) + '"';
+  if (o.vypnuto && !z.ridici)
+    return 'Funkce víc zákazníků je v Nastavení vypnutá — pro dalšího zákazníka ' + kdo + ' teď dokument nevznikne. '
+      + 'Tisknout jde jen pro řídícího zákazníka.';
+  if (vzTypProj(typ) && !z.ridici)
+    return 'Dokumenty projekce (PROJ) se u zakázky s víc zákazníky tisknou jen pro řídícího zákazníka. '
+      + 'Pro zákazníka ' + kdo + ' vytiskněte nabídku OCK, nebo z něj udělejte řídícího.';
+  const varId = varianta == null ? '' : String(vzObj(varianta) ? varianta.id : varianta);
+  const v = varId ? (zak.varianty || []).find(x => x && String(x.id) === varId) : null;
+  if (varId && vzVariantyZakaznika(zak, sid).indexOf(varId) < 0)
+    return 'Varianta' + (v && v.nazev ? ' „' + v.nazev + '"' : '') + ' není nabídka zákazníka ' + kdo
+      + ' — pro něj se netiskne. Otevřete jeho variantu, nebo mu ji přiřaďte v kartě Zákazníci zakázky.';
+  const cizi = vzZakaznici(zak).filter(x => x.id !== sid);
+  const texty = vzSdileneTexty(zak).concat(v ? [['Název varianty', v.nazev]] : []);
+  for (const [popisek, hodnota] of texty) {
+    const c = vzTextCizi(hodnota, z, cizi);
+    if (c) return popisek + ' obsahuje název nebo IČO jiného zákazníka zakázky („' + (c.hlavicka.objednatel || c.id)
+      + '") — dokument pro ' + kdo + ' nevznikne. Text se tiskne všem zákazníkům; upravte ho tak, aby žádného nejmenoval.';
+  }
+  return '';
+}
+
+/* Pruh v kartě Cenová nabídka (§ 4, R2): „Náhled a tisk platí pro zákazníka X
+ * — nabídka …-B". Jen u víc zákazníků; jinak ''. Prostý text (escapuje UI). */
+function vzTiskPruhText(zak, id, varianta) {
+  if (!vzRezim(zak)) return '';
+  const p = vzTiskPohled(zak, id);
+  if (!p) return '';
+  const z = vzZakaznik(zak, p.vzPohledZakaznika.id);
+  const v = varianta || (p.varianty.find(x => x.id === p.aktivni) || null);
+  const cislo = typeof cisloSVariantou === 'function' ? cisloSVariantou(p, v) : vzCisloSPismenem(p.cislo, z.pismeno);
+  return 'Náhled a tisk platí pro zákazníka ' + (z.hlavicka.objednatel || z.id) + (cislo ? ' — nabídka ' + cislo : '');
+}
+
 if (typeof module !== 'undefined' && module.exports)
   module.exports = { VZ_DALSI_MAX, VZ_TEXT_MAX, VZ_RIDICI_ID, VZ_ID_TVAR, VZ_PISMENO_TVAR, VZ_PISMENA, VZ_HLAVICKA_POLE,
     VZ_ZASTUPCI_POLE, VZ_RIDICI_KLICE, VZ_DALSI_KLICE, VZ_PLATNA_KLICE, VZ_OTISK_FIRMA, VZ_POHLED_BEZ, VZ_VYPNUTO,
     vzDalsi, vzRezim, vzMaData, vzRidiciId, vzRidiciVariantaId, vzZastupciPrazdni, vzZakaznici, vzZakaznik,
     vzRazitkaZakazniku, vzPismenoDalsi, vzIdDalsi, vzPridej, vzVariantaJenJeho, vzOdstran, vzVymenRidiciho,
-    vzSrovnej, vzPohled, vzTvarProblemy, vzOcisti, vzPodpis, vzPlatnaDrz, vzTvarText };
+    vzSrovnej, vzPohled, vzTvarProblemy, vzOcisti, vzPodpis, vzPlatnaDrz, vzTvarText,
+    vzPismenoPohledu, vzCisloSPismenem, vzCisloRozloz, vzVariantyZakaznika, vzTiskPohled, vzNorm, vzNazevJadro,
+    vzTextCizi, vzTypProj, vzSdileneTexty, vzTiskZabrana, vzTiskPruhText };
