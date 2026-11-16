@@ -495,9 +495,31 @@ function vzTiskPohled(zak, id) {
   const p = vzPohled(zak, id);
   if (!p) return null;
   const smi = new Set(vzVariantyZakaznika(zak, p.vzPohledZakaznika.id));
-  p.varianty = (Array.isArray(zak.varianty) ? zak.varianty : []).filter(v => v && smi.has(String(v.id)));
+  /* Mělké kopie variant: „varianta zákazníka" (v.zakaznik, jde do názvu
+   * souboru) je u víc zákazníků odvozená = název zákazníka pohledu (návrh
+   * § 1.1) — volný text z klonu by nesl jméno jiného zákazníka. Data, zámek
+   * a prodej zůstávají sdílené objekty skutečné varianty. */
+  const nazev = vzText(p.objednatel);
+  p.varianty = (Array.isArray(zak.varianty) ? zak.varianty : []).filter(v => v && smi.has(String(v.id)))
+    .map(v => Object.assign({}, v, { zakaznik: nazev }));
   if (!p.varianty.some(v => v.id === p.aktivni) && p.varianty.length) p.aktivni = p.varianty[0].id;
   return p;
+}
+
+/* Varianta pro tisk z pohledu: kopie z pohledu podle id (null = varianta
+ * zákazníkovi nepatří). Zakázka, která pohledem není (jeden zákazník) →
+ * TÁŽ varianta. */
+function vzTiskVarianta(pohled, varianta) {
+  if (!pohled || !vzObj(pohled.vzPohledZakaznika) || !Array.isArray(pohled.varianty)) return varianta;
+  if (!varianta) return null;
+  const id = String(vzObj(varianta) ? varianta.id : varianta);
+  return pohled.varianty.find(v => String(v.id) === id) || null;
+}
+
+/* Pojistka generátorů (R1): dokument se nesmí tvořit z celé zakázky
+ * s dalšími zákazníky — jen z pohledu (vzTiskPohled). Hodí chybu. */
+function vzTiskHlidej(zak) {
+  if (vzRezim(zak)) throw new Error('Dokument zakázky s víc zákazníky vzniká jen z pohledu jednoho zákazníka (chyba aplikace — tisk zastaven).');
 }
 
 /* Normalizace textu pro hledání cizího zákazníka: bez diakritiky, malá
@@ -601,4 +623,4 @@ if (typeof module !== 'undefined' && module.exports)
     vzRazitkaZakazniku, vzPismenoDalsi, vzIdDalsi, vzPridej, vzVariantaJenJeho, vzOdstran, vzVymenRidiciho,
     vzSrovnej, vzPohled, vzTvarProblemy, vzOcisti, vzPodpis, vzPlatnaDrz, vzTvarText,
     vzPismenoPohledu, vzCisloSPismenem, vzCisloRozloz, vzVariantyZakaznika, vzTiskPohled, vzNorm, vzNazevJadro,
-    vzTextCizi, vzTypProj, vzSdileneTexty, vzTiskZabrana, vzTiskPruhText };
+    vzTextCizi, vzTypProj, vzSdileneTexty, vzTiskZabrana, vzTiskPruhText, vzTiskVarianta, vzTiskHlidej };

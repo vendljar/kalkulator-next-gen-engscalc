@@ -86,7 +86,9 @@ async function sodWordGeneruj(typ, srv) {
   /* Zábrany (#377, plán plateb) — hláška dřív než chyba z registru. */
   if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas(typ, varianta, t => sodStavText(typ, t))) return;
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol(typ, varianta))) { sodStavText(typ, 'Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
-  dokumentVygeneruj(typ, sablona.slice(0), ZAK, varianta, JEKLY, L)
+  const vt = vzTiskVstup(typ, varianta, t => sodStavText(typ, t));   // VZ-E2 #601: pohled zákazníka
+  if (!vt) return;
+  dokumentVygeneruj(typ, sablona.slice(0), vt.zak, vt.varianta, JEKLY, L)
     .then(res => {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(res.blob);

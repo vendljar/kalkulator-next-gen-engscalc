@@ -198,7 +198,9 @@ async function nabidkaProjWordGeneruj(srv) {
   /* Zábrany (#377, plán plateb) — hláška dřív než chyba z registru. */
   if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidkaProj', varianta, nabidkaProjStavText)) return;
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaProj', varianta))) { nabidkaProjStavText('Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
-  dokumentVygeneruj('nabidkaProj', sablona.slice(0), ZAK, varianta, JEKLY, L)
+  const vt = vzTiskVstup('nabidkaProj', varianta, nabidkaProjStavText);   // VZ-E2 #601 (PROJ jen řídící, R5)
+  if (!vt) return;
+  dokumentVygeneruj('nabidkaProj', sablona.slice(0), vt.zak, vt.varianta, JEKLY, L)
     .then(res => {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(res.blob);
@@ -247,7 +249,9 @@ async function nabidkaProjNahled() {
   /* #518: sběr textů bez překladu až po všech otázkách (await). */
   const sleduj = typeof neprelozenoZacni === 'function' && neprelozenoZacni(L);
   let d;
-  try { d = nabidkaProjData(ZAK, akt, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
+  const vt = vzTiskVstup('nabidkaProjTisk', akt);   // VZ-E2 #601 (PROJ jen řídící, R5)
+  if (!vt) { if (sleduj) neprelozenoKonec(); return; }
+  try { d = nabidkaProjData(vt.zak, vt.varianta, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
   const p = d.placeholders;
 
   const html = d.bloky.map(b => {

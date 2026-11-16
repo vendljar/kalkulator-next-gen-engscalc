@@ -197,10 +197,12 @@ function kryciProjTiskPohled(verze) {
     const duvod = dokumentZabrana('kryciproj_' + verze, aktivniVarianta(ZAK));   // #377
     if (duvod) { hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' }); return; }
   }
-  const v = aktivniVarianta(ZAK);
+  const vt = vzTiskVstup('kryciproj_' + verze, aktivniVarianta(ZAK));   // VZ-E2 #601: pohled zákazníka
+  if (!vt) return;
+  const v = vt.varianta;
   const e2 = esc;   // #6: sjednoceno se sdíleným escapováním (ošetří i uvozovky a apostrof)
-  const d = kryciProjData(ZAK, v, JEKLY, verze);
-  const sekHtml = kryciVystupSekce(ZAK, d.sekce).map(s =>
+  const d = kryciProjData(vt.zak, v, JEKLY, verze);
+  const sekHtml = kryciVystupSekce(vt.zak, d.sekce).map(s =>
     `<h2>${e2(s.sekce)}</h2>${kryciTiskTabulka(s)}`).join('');
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
@@ -232,7 +234,9 @@ function kryciProjWord() {
   verze.forEach(([typ, label], i) => {
     // malý odstup mezi stažením obou souborů, ať je prohlížeč nezablokuje
     setTimeout(() => {
-      dokumentVygeneruj(typ, null, ZAK, v, JEKLY)
+      const vt = vzTiskVstup(typ, v, t => { if (stav) stav.textContent = t; });   // VZ-E2 #601
+      if (!vt) return;
+      dokumentVygeneruj(typ, null, vt.zak, vt.varianta, JEKLY)
         .then(res => {
           const a = document.createElement('a');
           a.href = URL.createObjectURL(res.blob);

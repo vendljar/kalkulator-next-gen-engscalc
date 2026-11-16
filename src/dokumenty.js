@@ -27,6 +27,9 @@ async function dokumentVygeneruj(typ, templateArrayBuffer, zak, varianta, jekly,
    * v Node testech funkce neexistuje a podmínka je tím pádem neškodná.
    * Varianta jde s sebou: dokument může vznikat z řídící varianty, ne
    * z otevřené (nabidkaVarianta; plán plateb — revize etapy B 30. 9. 2026). */
+  /* VZ-E2 (#601, R1): zakázka s víc zákazníky jen z pohledu zákazníka
+   * (vzTiskPohled) — z celé zakázky dokument nevznikne. */
+  if (typeof vzTiskHlidej === 'function') vzTiskHlidej(zak);
   if (typeof dokumentZabrana === 'function') {
     const duvod = dokumentZabrana(typ, varianta);
     if (duvod) throw new Error(duvod);
