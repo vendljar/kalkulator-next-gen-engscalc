@@ -103,7 +103,8 @@ test('standardní pole dealu se nezařazuje', !p.nezarazeno.some((x) => x.nazev 
 test('organizace: IČ spárováno', radek('ico', 'organizace').stav === 'sparovano');
 test('organizace: Role chybí', radek('typOrganizace', 'organizace').stav === 'chybi');
 const s = p.souhrn;
-test('souhrn: chybí 3 (kalendář, typ zakázky, role organizace)', s.chybi === 3, JSON.stringify(s));
+test('souhrn: chybí 4 (kalendář, typ zakázky, role a DIČ organizace — DIČ K40c)', s.chybi === 4, JSON.stringify(s));
+test('organizace: DIČ chybí (K40c — oprava firmy ho přeskočí)', radek('dic', 'organizace').stav === 'chybi');
 test('souhrn: jiný typ 1, dvakrát 1, nezařazená 2 (Priorita, přejmenovaný typ zakázky)',
   s.typNesedi === 1 && s.nejednoznacne === 1 && s.nezarazeno === 2, JSON.stringify(s));
 test('pole jiného typu a zdvojené se mezi nezařazenými nehlásí podruhé',
@@ -167,7 +168,7 @@ test('… a do Pipedrive se nešlo', volani === 0, volani);
 
 const a1 = await get('http://x/api/pd/pole', cAdmin);
 const d1 = await a1.json();
-test('administrátor: 200 s přehledem', a1.status === 200 && d1.ok && d1.prehled && d1.prehled.souhrn.chybi === 3,
+test('administrátor: 200 s přehledem', a1.status === 200 && d1.ok && d1.prehled && d1.prehled.souhrn.chybi === 4,
   JSON.stringify(d1.prehled && d1.prehled.souhrn));
 test('… přehled nese kalendář SoD PROJ jako chybějící',
   d1.prehled.radky.some((r) => r.klic === 'platebniKalendar' && r.stav === 'chybi'));
@@ -175,7 +176,7 @@ test('… první načtení se zeptalo Pipedrive (pole dealu a organizace)', vola
 volani = 0;
 const d2 = await (await get('http://x/api/pd/pole', cAdmin)).json();
 test('druhé načtení jde z cache (žádný dotaz do Pipedrive)', volani === 0 && d2.prehled.souhrn.celkem === d1.prehled.souhrn.celkem);
-test('… a cache nese verzi mapy', d2.verze === 3 && d2.prehled.verze === 3);
+test('… a cache nese verzi mapy', d2.verze === 4 && d2.prehled.verze === 4);
 const d3 = await (await get('http://x/api/pd/pole?obnovit=1', cAdmin)).json();
 test('Obnovit z CRM obejde cache', volani === 2 && d3.ok, volani);
 test('… a pořídí mapu znovu', d3.poridano >= d2.poridano);

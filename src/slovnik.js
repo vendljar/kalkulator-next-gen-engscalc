@@ -145,11 +145,11 @@ function slovnikNoveJakoZmeny(nove) {
 
 /* Podklad pro překladatele: hesla, která zná jen aplikace, jako CSV pro Excel. */
 function slovnikCsvJenVApp(jenVApp) {
-  /* B83: tatáž buňka jako csvBunka (format.js) — ochrana vzorců; záložka
-   * pro samostatný běh v Node. */
-  const q = (typeof csvBunka === 'function') ? csvBunka : (s => {
-    let t = String(s == null ? '' : s); if (/^([=@\t\r]|[+\-][^\s])/.test(t)) t = "'" + t;
-    return '"' + t.replace(/"/g, '""') + '"'; });
+  /* B83: tatáž buňka jako csvBunka (format.js) — ochrana vzorců. K40-X5
+   * (11. 11. 2026): záložní kopie pravidla pro běh bez format.js se rozešla
+   * (+ a − s mezerou „+ 1+1" nechávala bez apostrofu, K37-I5) — místo kopie
+   * se v Node načte TÁŽ funkce z format.js. */
+  const q = (typeof csvBunka === 'function') ? csvBunka : require('./format.js').csvBunka;
   const hlav = ['CZ', 'EN', 'DE', 'FR'].map(q).join(';');
   const radky = (jenVApp || []).map(r => [r.klic, r.hodnoty.en, r.hodnoty.de, r.hodnoty.fr].map(q).join(';'));
   return '﻿' + [hlav].concat(radky).join('\r\n');
@@ -276,7 +276,11 @@ const SLOVNIK_RIDICI = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/;
 function slovnikNorm(k) {
   if (typeof prekladNorm === 'function') return prekladNorm(k);
   if (typeof require === 'function') { try { return require('./preklad.js').prekladNorm(k); } catch (e) { /* níž */ } }
-  return String(k == null ? '' : k).trim().replace(/[\s:.*]+$/, '').toLowerCase();
+  /* Konec smyčkou, ne výrazem `/[\s:.*]+$/` (K40-X2 — kvadratický čas). */
+  const t = String(k == null ? '' : k).trim();
+  let e = t.length;
+  while (e > 0 && /[\s:.*]/.test(t[e - 1])) e--;
+  return t.slice(0, e).toLowerCase();
 }
 
 /* Přísná kontrola hesel: { cz: [EN, DE, FR] }. Vrací { ok, chyba } nebo

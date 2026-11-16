@@ -64,8 +64,14 @@ if (!WEB) {
   process.exit(2);
 }
 
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-const zeptej = (otazka) => new Promise(r => rl.question(otazka, o => r(o)));
+/* B1 (revize C5, 12. 11. 2026): jeden readline na celý běh v terminálu
+ * opakoval i znaky hesla (zeptejHeslo ho neodpojí) — heslo zůstalo na
+ * obrazovce. Readline teď žije jen po dobu jedné otázky; hlídá
+ * netlify/test_c5_test_sada.mjs v pseudo-terminálu. */
+const zeptej = (otazka) => new Promise(r => {
+  const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: !!process.stdin.isTTY });
+  rl.question(otazka, o => { rl.close(); r(o); });
+});
 
 /* Heslo se nevypisuje na obrazovku. Není to dokonalé skrytí (Node nad tím
  * nemá plnou moc), ale nezůstane aspoň v historii shellu ani přes rameno. */
@@ -79,6 +85,7 @@ async function zeptejHeslo(otazka) {
     const konec = () => {
       if (stdin.isTTY) stdin.setRawMode(!!bylo);
       stdin.removeListener('data', naData);
+      stdin.pause();
       process.stdout.write('\n');
       r(heslo);
     };
@@ -92,6 +99,7 @@ async function zeptejHeslo(otazka) {
       }
     };
     stdin.on('data', naData);
+    stdin.resume();
   });
 }
 
@@ -114,7 +122,7 @@ const heslo = await zeptejHeslo('Heslo: ');
 const prih = await api('/api/prihlaseni', { email: email.trim(), heslo });
 if (!prih.data || !prih.data.ok) {
   console.error('Přihlášení se nepovedlo: ' + ((prih.data && prih.data.chyba) || prih.text.slice(0, 200)));
-  rl.close(); process.exit(1);
+  process.exit(1);
 }
 COOKIE = (prih.odp.headers.get('set-cookie') || '').split(';')[0];
 console.log('Přihlášen jako ' + email.trim() + ' (' + (prih.data.role || '?') + ') na ' + WEB + '\n');
@@ -124,7 +132,7 @@ const rej = await api('/api/zakazky');
 if (!rej.data || !rej.data.ok) {
   console.error('Rejstřík zakázek se nepodařilo přečíst: '
     + ((rej.data && rej.data.chyba) || rej.text.slice(0, 200)));
-  rl.close(); process.exit(1);
+  process.exit(1);
 }
 const seznam = ((rej.data.rejstrik || {}).zakazky || []).filter(z => z && z.soubor);
 console.log('Zakázek v databázi: ' + seznam.length + '\n');
@@ -151,7 +159,7 @@ for (const z of seznam) {
 
 if (!kandidati.length) {
   console.log('Žádná zakázka lživou značku nenese — není co migrovat.');
-  rl.close(); process.exit(0);
+  process.exit(0);
 }
 
 console.log('KE ZMĚNĚ (' + kandidati.length + ' zakázek):\n');
@@ -164,13 +172,13 @@ console.log('\nOdebere se jen nálepka „ukázkový / prázdný ceník". Ceny, 
 
 if (!ZAPSAT) {
   console.log('NÁHLED — nic se nezapsalo. Pro skutečný zápis přidejte --zapsat.');
-  rl.close(); process.exit(0);
+  process.exit(0);
 }
 
 const potvrzeni = await zeptej('Zapsat změny do databáze? Napište ANO: ');
 if (potvrzeni.trim().toUpperCase() !== 'ANO') {
   console.log('Zrušeno — nic se nezapsalo.');
-  rl.close(); process.exit(0);
+  process.exit(0);
 }
 
 /* ---------- zápis ---------- */
@@ -204,4 +212,3 @@ if (selhalo) {
   console.log('Selhané zakázky zůstaly beze změny. Nejčastější důvod je, že je mezitím'
     + '\nněkdo uložil (razítko se změnilo) — pusťte skript znovu.');
 }
-rl.close();

@@ -432,7 +432,9 @@ function planZpusobFakturace(plan, firemni, vetaFirmy) {
  * slovníku nabídky PROJ (tytéž milníky), za ní částka a „+ DPH". */
 function planSodKalendar(dopocet, fmt, P) {
   const f = typeof fmt === 'function' ? fmt : (n => String(n));
-  const milnik = x => String(x.text || '(milník chybí)').replace(/[.\s]+$/, '');
+  /* Konec smyčkou, ne výrazem `/[.\s]+$/` (K40-X2 — kvadratický čas). */
+  const orez = typeof orezKonce === 'function' ? orezKonce : require('./format.js').orezKonce;
+  const milnik = x => orez(String(x.text || '(milník chybí)'), /[.\s]/);
   if (typeof P === 'function')
     return ((dopocet && dopocet.platby) || []).map(x => P('Platba ' + milnik(x)) + ' – ' + f(x.castka) + ' + ' + P('DPH') + '.').join('\n');
   return ((dopocet && dopocet.platby) || []).map(x => 'Platba ve výši ' + f(x.castka) + ' + DPH proběhne '

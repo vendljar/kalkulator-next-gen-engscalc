@@ -1366,12 +1366,44 @@ takže nemá cookie ani relaci. Místo přihlášení ji chrání tajný klíč.
 Podmínky SEC-PD a K8-S3 z #115 jsou dodrženy: cena a hodnota dealu se z CRM
 ani z webhooku neberou vůbec, deal id se bere z těla jen jako číslo a dál se
 pracuje s dealem načteným ze Pipedrive, e-maily a telefony z CRM se ve
-odpovědi nevracejí (odpověď nese jen názvy polí a odkaz), zápis do CRM je
-jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
+odpovědi nevracejí (odpověď nese jen názvy polí a odkaz). Dokumenty na
+serveru nevznikají.
+
+**Zápisy do CRM (upraveno K40c #581, 12. 11. 2026 — věta „zápis do CRM je
+jediný (odkaz)“ už neplatí).** Kalkulátor do Pipedrive zapisuje tři věci:
+(1) **odkaz na kalkulaci** do dealu (webhook, PATCH jen změněného pole),
+(2) **vymazání našeho odkazu** z dealu při zrušení vazby (jen když v poli je
+odkaz na tutéž kalkulaci; cizí hodnota zůstane) a (3) **opravu organizace
+podle ARES** (název, adresa, DIČ) — jen na výslovný pokyn autora zakázky nebo
+administrátora po potvrzení v dialogu (B209). Z webhooku se do organizace
+nezapisuje nikdy.
+
+**Vazba z webhooku (K40c, rozhodnutí J. V. 11. 11. 2026).** Webhook se chová
+„jako dnes“: hned doplní hlavičku a krycí list a zapíše odkaz do dealu. Firmu
+(zákazník, sídlo, IČO, DIČ) bere z ARES podle IČO organizace dealu (B208),
+kontakt, adresu stavby, název akce a termín z dealu; zapisuje se jen prázdné
+pole, nebo pole s hodnotou naposledy zapsanou webhookem (otisk). Navázání
+EXISTUJÍCÍ kalkulace (podle čísla nabídky) se zapíše do protokolu zakázky
+(`kdo: pipedrive-webhook`, jen názvy polí) a do `zak.pdVazbaWebhook`
+(`stav: 'ceka'`); při otevření zakázky svítí upozornění (i u zamčené, prodané
+a jen-ke-čtení) s tlačítky **V pořádku** (kdokoli), **Zrušit vazbu** (jen autor
+zakázky — `autor` z uložené verze = e-mail relace — a administrátor, ověřuje
+server) a **Vazba je chybná** (ostatní; příznak vidí autor a administrátor
+v upozornění a v Přehledu nabídek). **Zrušení je jen pojistka proti cizímu
+dealu** (překlep v čísle nabídky): smaže `pdDealId`, `pdStav`, `pdZadani`
+a index `pd_webhook/deal:<id>`, deal přidá do `zak.pdDealyOdmitnute` (strop 50)
+a smaže náš odkaz v dealu. **Údaje doplněné webhookem se nevracejí**
+(rozhodnutí J. V. 11. 11.) — protokol vypíše, která pole zůstala. Odmítnutý deal
+webhook kontroluje **před** jakýmkoli zápisem (zakázka, index, PATCH dealu,
+dotaz do ARES) → 409. `pdVazbaWebhook` a `pdDealyOdmitnute` píše jen server:
+při uložení z prohlížeče i při obnově ze souboru se berou z uložené verze
+(`pdVazbaDrz` v `netlify/lib/pd_vazba.mjs`), obnova z otisku je bere ze zálohy.
+Deal zakázky ručně (C4) mění administrátor a autor u zakázky, kterou sám
+založil; u zakázky založené webhookem dál jen administrátor.
 
 ### Nové meze
 
-- **B176 — webhook bez přihlášení, jen klíč v hlavičce.** `PIPEDRIVE_WEBHOOK_KLIC`
+- **B199 — webhook bez přihlášení, jen klíč v hlavičce.** *(dříve B176, #553; přečíslováno K40a 11. 11. 2026 — číslo patřilo starší mezi)* `PIPEDRIVE_WEBHOOK_KLIC`
   (proměnná Netlify, nastavuje J. V., min. 32 znaků, kratší = nenastavený →
   503) se porovnává v konstantním čase (`tajneShodne`, sha256 +
   timingSafeEqual). Bez klíče nebo se špatným klíčem **401 dřív, než se čte
@@ -1384,7 +1416,7 @@ jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
   Klíč je tedy tajemství stejné váhy jako token; mění se přepsáním proměnné
   a novým nasazením. Původ požadavku se nehlídá (`cizihoPuvodu` se nevolá) —
   Pipedrive hlavičku Origin neposílá.
-- **B177 — strop volání webhooku 60/h, jen v instanci funkce.** Počítadlo
+- **B200 — strop volání webhooku 60/h, jen v instanci funkce.** *(dříve B177, #553; přečíslováno K40a 11. 11. 2026 — číslo patřilo starší mezi)* Počítadlo
   `pd_cache/strop:webhook:pipedrive-webhook` (`pdStropCerstvych`, výhradní úsek)
   je společné pro všechny dealy; nad stropem 429 bez dotazu do Pipedrive
   (souběh 100 doručení ověřen v sadě). *Co to nedělá:* mezi instancemi funkce
@@ -1392,7 +1424,7 @@ jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
   Dopad je jen rozpočet volání Pipedrive, ne data. Proti smyčce #117 je to
   pojistka, ne řešení: automatizace se **smí spouštět jen změnou pole
   „Vygenerovat nabídku“** (podklady/PIPEDRIVE_WEBHOOK_553.md, část 2).
-- **B178 — webhook zapisuje do databáze zakázek bez člověka.** Zakládá
+- **B201 — webhook zapisuje do databáze zakázek bez člověka.** *(dříve B178, #553; přečíslováno K40a 11. 11. 2026 — číslo patřilo starší mezi)* Zakládá
   a aktualizuje zakázky pod razítkem `pipedrive-webhook` (není to účet, nejde
   se pod ním přihlásit). Pojistky: tvar nové zakázky projde `zakazkaPrijmi`
   (jméno souboru, id, délka čísla) jako uložení z prohlížeče; zamčená
@@ -1404,9 +1436,9 @@ jediný (odkaz na kalkulaci). Dokumenty na serveru nevznikají.
   (vzor SEC-S1). *Co to nedělá:* `zakazkaServerKontrola` (slevy, marže, ceník,
   zámky) se nevolá — webhook ceník ani ceny nesahá a novou zakázku ukládá ve
   tvaru „bez ceníku“ (P12), takže ceník si doplní prohlížeč z platného
-  zveřejněného. Protokol zakázky se nezapisuje (zdroj je vidět na razítku
-  autora a v `pdZadani`).
-- **B179 — `pd_webhook/deal:<id>` se nezálohuje.** Rejstřík deal → jméno
+  zveřejněného. Od K40c (#581) se navázání, aktualizace a výsledek ARES
+  zapisují do protokolu zakázky (jen názvy polí, žádné kontakty).
+- **B202 — `pd_webhook/deal:<id>` se nezálohuje.** *(dříve B179, #553; přečíslováno K40a 11. 11. 2026 — číslo patřilo starší mezi)* Rejstřík deal → jméno
   kalkulace je jen zkratka hledání; vazbu nese sama zakázka (`pdDealId`)
   a ta v záloze je. Po obnově ze zálohy ho vyrobí první doručení (najde
   kalkulaci podle čísla nabídky). Záznam nese jméno souboru a čas, žádné
@@ -1483,7 +1515,7 @@ prohlížeče a bez přihlášení; `nastroje/apps_script/kopie_disk.gs`, návod
 `podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`). Server: `GET/POST /api/zaloha_disk`
 (`netlify/functions/zaloha_disk.mjs`, logika `netlify/lib/kopie_skript.mjs`).
 Kopie z prohlížeče (heslo správce, K3-N1) zůstává jako záloha záloh beze změny.
-Čísla B199–B202 drží K40, proto B210+.
+Čísla B199–B209 drží K40 (B199–B202 přečíslované meze #553, B203–B205 K40a, B206–B207 K40b, B208–B209 K40c), proto B210+.
 
 ### Nové meze
 
@@ -1548,3 +1580,249 @@ Kopie z prohlížeče (heslo správce, K3-N1) zůstává jako záloha záloh bez
   (`vloz_retenci.py`, hlídá `src/test_577_jmeno_kopie.js`) — jen kopie vlastního
   prostředí, nikdy nejnovější, při úbytku dat pod 90 % nebo nepotvrzeném
   varování nemaže a pošle e-mail; maže se do koše Disku (30 dní).
+
+## K40a #579 — opravy kola 40 bez ceny, meze X3, S3, X4 (11. 11. 2026)
+
+Dávka K40a (posudek poradce `podklady/K40_POSUDEK_FABLE.md`, rozhodnutí J. V. 11. 11. 2026). Meze #553
+přečíslované na B199–B202 (výš). Čísla B206–B207 drží K40b, B208–B209 K40c.
+
+### Nové meze
+
+- **B203 — heslo z přihlášení správce potvrdí kopii zálohy na Disk bez dalšího dotazu (K40-X3, vědomá
+  mez).** Hlavní cestou noční kopie je od AS #577 skript Apps Script s tokenem (B213); prohlížeč je záloha
+  záloh. Když kopii nového nočního otisku skript nepotvrdil (`uloKopieDiskStav(…).potreba`), použije
+  prohlížeč po přihlášení administrátora heslo, které právě zadal (`onlinePoPrihlaseni` →
+  `onlineZalohaAuto(hesloPrihlaseni)` → `onlineKopieDiskAuto` → `kopieDiskProved`, `src/ui/online_ui.js`),
+  k potvrzení kopie — a záznam kopie na serveru odemyká mazání starých záloh (retence, K3-N1). Heslo se
+  nikam neukládá (jen parametr volání). Bez hesla z přihlášení (obnovená relace) se kopie nepořídí tiše:
+  čeká na potvrzení heslem (`kopieDiskCeka('heslo', …)`, tlačítko „Zkopírovat zálohu na Disk teď“).
+  *Co to nedělá:* správce po přihlášení není znovu dotázán; kdo ovládne jeho prohlížeč v okamžiku
+  přihlášení, odemkne retenci stejně jako heslem (riziko jako B213 u tokenu).
+- **B204 — po Prodáno a před prvním tiskem SoD smí číslo SoD a datum podpisu měnit kdokoli s právem
+  ukládat (K40-S3, vědomá mez).** `ZAMEK_PRODANO_SOD_POLE` / `zamekProdanoSodVolne` (`src/zamek.js`,
+  K37-N2, B157): pole SoD prodané varianty zůstávají zapisovatelná „podle běžných pravidel zámku“, dokud
+  z varianty neodešla smlouva o dílo; po prvním tisku SoD se zamknou. Ostatní krycí list prodané varianty
+  je zamčený. *Co to nedělá:* změnu čísla SoD nebo data podpisu v tom okně neomezuje role (jen právo
+  ukládat zakázku); stopu nese protokol a razítko uložení.
+- **B205 — srovnávací kopie na Disku jen s dnem menším než den nové kopie; budoucí jména se hlásí
+  (K40-X4, OPRAVENO v K40a).** Pojistka úbytku (#523) srovnávala novou kopii s abecedně POSLEDNÍM jménem
+  vlastního prostředí ve složce „_Zaloha Netlify DB“ — soubor s budoucím datem od kohokoli se zápisem do
+  sdílené složky pojistku vyřadil (malý soubor = falešný úbytek, mazání stojí) nebo zakryl skutečný úbytek
+  (velký soubor). Oprava: `retenceZalohDiskPredchozi(jmena, soubor, den, prostredi)` v
+  `src/retence_zaloh.js` — jediná funkce pro prohlížeč (`kopieDiskUklid`) i skript
+  (`nastroje/apps_script/kopie_disk.gs`, vkládá `vloz_retenci.py`); jména s budoucím dnem vrací zvlášť,
+  úklid je ohlásí jako podezřelá a NEMAŽE je (retence je drží jako „denní“ se záporným věkem). *Co
+  zbývá:* skript v účtu správce se sám neaktualizuje — dokud J. V. nevloží nový `kopie_disk.gs`
+  (`podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`), běží noční kopie se starým výběrem. Budoucí soubor dál zabírá
+  místo na Disku, dokud ho člověk nesmaže. **Zbytková mez (revize K40a D3, 12. 11. 2026):** podvržený
+  soubor s MINULÝM dnem (menším než den nové kopie) a pozdějším časem v názvu, než má skutečná předchozí
+  kopie (např. `otisk_main_<včera>_2359.json.gz`), se dál vybere jako srovnávací — jméno řadí den i čas
+  a obsah se neověřuje proti záznamu serveru. Malý takový soubor dá falešný úbytek (mazání stojí, správce
+  potvrdí), velký zakryje skutečný úbytek proti té jedné kopii; noční pojistka serveru (#527, maximum za
+  okno dní) to nezakryje. Den kopie, který není platné RRRR-MM-DD, úklid zastaví (D2: `neplatnyDen`,
+  prohlížeč i skript nemažou a skript připomene e-mailem).
+- **B205a — import zakázky s víc šachtami: migrace skla šachet 2+ jen u NEZAMČENÉ varianty (revize K40a
+  D1, 12. 11. 2026, vědomá vlastnost).** `skloMigraceNazvu` (src/engine.js) od K40a migruje i zadání
+  `ock.dalsi[].zadani`. `importZakazka` (src/zakazka.js) u ZAMČENÉ varianty volá `{ jenPrvni: true }` —
+  šachty 2+ zůstanou, jak odešly (cena i ověření zámku = shoda; před K40a se nemigrovaly vůbec). Šachta 1
+  zamčené varianty se migruje dál jako od K37 (beze změny). Nezamčená varianta: import přemapuje osiřelé
+  vyřazení skla boků i u šachet 2+ stejně jako u šachty 1 od K37 (rozhodnutí koordinace) — cena
+  rozpracované nabídky s takovým sirotkem se po otevření může změnit; přepočet na dnešní ceník ji mění
+  stejně. Test `src/test_k40_celni_sklo.js` (7b).
+- **B205b — sirotek čelního skla a přepnutí tam a zpět (K40-N1, vědomá vlastnost, rozhodnutí 2a).**
+  Čelní sklo se přejmenuje jen přesnou dvojicí `predCelni → nový název` při skutečném přepnutí typu
+  šachty nebo zasklení. Je-li v `nepocitat` vyřazené čelní sklo pod názvem, který k zadání nepatří
+  (sirotek), přepnutí tam a zpět ho přenese na skutečný řádek — sklo pak zůstane vyřazené, i když před
+  přepnutím vyřazené nebylo. Přenáší se vše (vyřazení, množství, cena, název) jako u boků od K37; kód
+  se neměnil.
+## K40b #580 — dolní mez data prodeje z razítka přijetí zámku, diagnostika rozdílu zámku (11. 11. 2026)
+
+Rozhodnutí J. V. 4. 11. 2026 (K40-S1, K40-N3) a 11. 11. 2026 (otázky 3a, 4a posudku
+`podklady/K40_POSUDEK_FABLE.md`). Čas zámku `kdy` píše prohlížeč a server ho
+u nového zámku připustí až 400 dní zpět (K7-S5); dolní mez data prodeje
+(K37-N4) z něj šla posunout chybnými hodinami počítače. Server proto při
+**prvním přijetí** nového zámku zapíše vlastní čas `zamek.prijato`
+(`netlify/lib/zakazka_kontrola.mjs`, příjem nového zámku); mez je
+`max(den(kdy), den(prijato − 7 dní))` a nejvýš dnes (`prodDatumMez`
+v `src/objednane.js` — touž funkcí počítá pole data v kartě Prodáno i server).
+
+- `prijato` **není v klíči zámku** (`uloZamekKlic`) — starší klient, který ho
+  nezná, ukládá bez 409. U uloženého zámku ho drží `uloZamekRazitkaDrz` (vedle
+  `kdo`, `popis`, `sablona`, `slovnik`, `hlavicka`); zámek uložený před opravou
+  ho od klienta nedostane. Příchozí hodnota se u nového zámku zahodí.
+- `prodServer` běží dřív než `uloZamekRazitkaDrz`, proto bere razítko z **uložené**
+  verze; u nového zámku v témže požadavku čas serveru. Z příchozích dat nikdy.
+  `prodJedinaZmena` pole při porovnání vynechá. Odpověď uložení vrací
+  `zamkyPrijato` a prohlížeč si razítko dopíše do místní kopie zámku.
+- **Obnova:** z otisku se razítko přebírá (doklad, jen platný tvar); ze souboru
+  se zahodí (otázka 3a) — nový zámek z obnovy ze souboru se chová jako starší
+  (mez z `kdy`). Je-li tentýž zámek už v databázi, platí razítko z databáze.
+
+### Nové meze
+
+- **B206 — tolerance 7 dní a výjimka z dolní meze.** Prodej smí mít datum
+  nejvýš 7 dní (`PROD_PRIJATO_TOLERANCE_DNI`) před přijetím zámku serverem —
+  tisk bez sítě uložený později. Starší datum (nejdřív den odeslání nabídky)
+  smí zapsat **vedoucí nebo administrátor s důvodem**: důvod (strop 500 znaků,
+  řídicí znaky nahrazené mezerou, v UI přes `esc`) jde v `v.prodano.vyjimka`,
+  server ho zapíše do `prodejHistorie` spolu s tím, kdo a kdy (z relace),
+  a pole z prodeje zahodí. Obchodník dostane 400 i s důvodem. *Co to nedělá:*
+  vedoucí nebo administrátor tak dál může zapsat prodej až ke dni odeslání
+  (u antedatovaného tisku i do uzavřeného období) — vědomě, se stopou. Zámky
+  uložené před v11.11 razítko nemají a jejich mez je dál jen den odeslání.
+- **B207 — antedatovaný čas tisku dál určuje období odeslání v controllingu**
+  (zbytková mez, otázka 4a: jen zapsat). K40-S1 opravuje jen datum prodeje;
+  `src/controlling.js` (export za období, odeslané nabídky) čte `zamek.kdy`, který
+  smí být až 400 dní zpět (K7-S5). Nabídka vytištěná s chybnými hodinami tak
+  může v controllingu spadnout do staršího období odeslání. Přechod na
+  `zamek.prijato` by byl samostatná položka roadmapy (otázka 4b).
+- **K40-S2 (oprava výkonu, ne mez):** `zamekDataRozdilCesta` (hláška 409
+  u zamčené varianty) kanonizuje data jednou a sestupuje jedním průchodem —
+  dřív kanonizovala oba podstromy na každé úrovni (hloubka × velikost dat; s víc
+  šachtami až deset celých zadání v `ock.dalsi`). Výstup beze změny (porovnání
+  s referenční implementací na 3 000 náhodných párech, `src/test_k40b_zamek_prodej.js`).
+
+## K40c #581 — vazba z webhooku, ARES ze serveru, oprava firmy v Pipedrive (12. 11. 2026)
+
+Rozhodnutí J. V. 11. 11. 2026 (podklady/PROMPT_K40_OPRAVY_v3.md, prototyp
+`podklady/k40_w1_prototyp` v4); popis vazby je v oddílu PW #553 výš. Kód:
+`netlify/lib/ares_server.mjs` (+ `ares_modul.cjs`), `netlify/lib/pd_vazba.mjs`,
+`netlify/functions/pd_webhook.mjs`, `pd_vazba.mjs`, `pd_organizace.mjs`,
+`src/ui/pd_vazba_ui.js`. Sada `netlify/test_k40c_webhook.mjs`, mutace `[K40c]`.
+
+### Nové meze
+
+- **B208 — webhook volá ARES ze serveru.** Adresa je pevná (`ARES_ZAKLAD`
+  z `src/ares.js`) + IČO, které po normalizaci (mezery pryč, číslo z Pipedrive
+  doplněné nulami) projde kontrolní číslicí — nic jiného z dealu se do adresy
+  nedostane, neplatné IČO se do ARES neposílá vůbec. **Jeden pokus, časový
+  limit 3 s** (AbortController a závod s časovačem — platí i pro odpověď, která
+  nepřijde), přesměrování se nepřijímá (`redirect: 'error'`), strop odpovědi
+  200 kB (čte se po kouscích). Odpověď je nedůvěryhodný vstup: jen přes
+  `aresZpracuj`, vrácené IČO musí být shodné s dotazovaným (jinak „nenalezeno“),
+  jen řetězce, řídicí znaky pryč, název nejvýš 200 a adresa 300 znaků, DIČ jen
+  tvaru `^[A-Z]{2}[0-9A-Z]{2,12}$` (jinak prázdné); prázdná hodnota nic nemaže;
+  do zakázky jdou jen čtyři pole z `ARES_POLE`, v UI vše přes `esc`.
+  **Výpadek webhook neshodí:** firma zůstane z dealu jako dřív, odpověď
+  a protokol nesou varování a `pdVazbaWebhook.ares` ('neplatne' | 'nenalezeno'
+  | 'vypadek'); upozornění nabídne „Najít firmu v ARES“. Bez přihlášení jde
+  dotaz vyvolat jen klíčem webhooku (B199) a **nejvýš jednou na novou vazbu
+  nebo změnu IČO** (otisk IČO ve vazbě; po výpadku se otisk neukládá, takže
+  další doručení se zeptá znovu — revize K40c N1), u zmrazené hlavičky (zamčená varianta,
+  po tisku SoD) vůbec. *Co to nedělá:* ARES je cizí služba bez smlouvy
+  o dostupnosti — odpověď, která projde kontrolami, se bere jako pravdivá;
+  pole, které člověk po uložení upravil, se nepřepíše nikdy (rozdíl jen
+  v upozornění). CSP v `netlify.toml` řídí prohlížeč (`connect-src` ARES má už
+  dřív), dotaz ze serveru neřídí; nová proměnná prostředí ani klíč nepřibyly.
+  Pomalý ARES prodlouží jedno doručení webhooku nejvýš o 3 s (test měří celé
+  doručení s mockem, který neodpoví).
+- **B209 — zápis organizace do Pipedrive z kalkulátoru.** `POST /api/pd/organizace`
+  (`nahled` → `zapis`): jen **autor zakázky** (autor z uložené verze = e-mail
+  relace; u zakázky z webhooku nikdo) **nebo administrátor**, a k tomu právo
+  Pipedrive z matice (B80); ostatní 403. Klientovi se nevěří nic kromě volby
+  polí: deal bere server z uložené zakázky, organizaci z dealu (zápis nese id
+  organizace z náhledu, jiné = 403), hodnoty z ARES načte sám a rozdíly spočítá
+  znovu i při zápisu — zapíše jen pole, která člověk potvrdil a která se pořád
+  liší (PATCH jen změněných polí, opakovaný klik bez rozdílů nic neposílá).
+  **Shoda IČO:** náhled i zápis jen když IČO organizace dealu = IČO hlavičky
+  **uložené** zakázky (normalizace, platná kontrolní číslice), jinak 409 bez
+  dotazu do ARES i bez PATCH — připraveno na víc zákazníků v zakázce (poradce
+  VZ). Oprava proto nikdy nemění IČ organizace; zapisuje název, adresu a DIČ —
+  DIČ jen když účet takové vlastní pole má (`POLE_ORGANIZACE.dic`, dnes chybí;
+  pole se **nikdy nezakládá**, dialog to oznámí). Zápis jde do protokolu zakázky,
+  smaže cache detailu dealu a počítá se do denního rozpočtu Pipedrive; strop
+  20 oprav za hodinu na uživatele. *Co to nedělá:* kdo smí zakázku s dealem
+  navázat (administrátor, autor u vlastní zakázky — C4), tím určuje, kterou
+  organizaci jde opravit; proti omylu chrání shoda IČO a potvrzení v dialogu,
+  ne druhá osoba. Starý název a adresa organizace se nikde nezálohují
+  (zůstávají jen v historii změn Pipedrive). **Tvar zápisu do Pipedrive**
+  (`address: { value }` u organizace, `custom_fields: { <hash>: null }` při
+  mazání odkazu v dealu) je ověřený **jen proti simulátoru** — před ostrým
+  použitím zkušební zápis na testovacím webu s tokenem Pipedrive nad dealem
+  TEST (revize K40c N6).
+- **Doplnění B208/B209 (revize K40c, 12. 11. 2026).** Odmítnutý deal ze seznamu
+  `pdDealyOdmitnute` vypadne, když ho autor nebo administrátor zakázce **ručně
+  znovu zadá** (výslovná akce oprávněného, změnu pustí `ctrlPdDealKontrola`;
+  N7). „Vazba je chybná“ jde u jedné vazby jen jednou (409, N4). U zakázky bez
+  uloženého autora mění deal, ruší vazbu a opravuje firmu jen administrátor
+  (N5). Náš odkaz v dealu se maže až po úspěšném zápisu zrušení do zakázky (N3).
+  Vazba z doby před K40c dostane při prvním doručení stav „webhook“, ne „ceka“
+  (N2) — to doručení ale smí nahradit pole, která dřív doplnil webhook z dealu,
+  úředními údaji téže firmy z ARES.
+
+## C5 #585 — nástroj obnovy testovací sady zakázek (v12.11.4, 12. 11. 2026)
+
+Rozhodnutí J. V. 11. 11. 2026 (B0.9): TEST zakázky kol K28/K29/K36, které od 2.–3. 11. chybí v testovací
+databázi (K39-I1), obnoví sám nástrojem `nastroje/test_sada_obnov.mjs` (jádro `nastroje/test_sada_jadro.mjs`,
+návod `podklady/NAVOD_TEST_SADA_OBNOVA.md`). Kód aplikace a serveru se nemění. Nástroj je klient
+veřejného API, žádnou zkratku do úložiště nemá. Čísla B203–B209 drží K40, proto B215–B216.
+
+### Nové meze
+
+- **B215 — nástroj zapisuje do databáze jako administrátor, mimo prohlížeč.** Co smí: přihlásit se
+  účtem s rolí přesně `Administrátor` (jinak konec bez zápisu), přečíst rejstřík a zakázky a uložit
+  **novou** zakázku přes `POST /api/zakazky`. Při tom prochází všemi kontrolami serveru jako prohlížeč.
+  Volá jen `GET /api/zdravi`, `POST /api/prihlaseni`, `POST /api/odhlaseni`, `GET /api/zakazky`
+  a `POST /api/zakazky`. Seznam je v kódu (`VOLANI`) a jiné volání vyhodí výjimku. Co nesmí: `DELETE`,
+  `/api/obnova`, `/api/zaloha*`, Pipedrive, `prepsat: true`. Každý zápis nese `ocekavaneRazitko: ''`,
+  takže server existující zakázku odmítne 409 (bez pole by ji tiše přepsal) a nástroj ji předem
+  přeskočí podle rejstříku. Heslo a e-mail jdou jen z klávesnice, heslo bez ozvěny i ve skutečném terminálu
+  (B1 revize 12. 11.: readline žije jen po dobu otázky, heslo se čte bez něj; test v pseudo-terminálu). Cookie relace drží jen v paměti,
+  nikam ji nezapisuje ani nevypisuje. Na konci se nástroj odhlásí, a protože odhlášení zvedá verzi
+  hesla účtu (B6), ukončí tím i přihlášení správce v prohlížeči (vědomě, stojí v návodu). Výchozí běh
+  je náhled. Zápis jen s `--zapsat` a napsaným slovem `OBNOVIT`.
+  *Co to nedělá:* jakožto administrátor nástroj smí ponechat cizího autora (u nové zakázky to server
+  dovolí jen jemu). Kdo zná heslo administrátora, zapíše totéž i z prohlížeče, takže nástroj práva nerozšiřuje.
+- **B216 — jen testovací web a jen TEST zakázky.** Cíl musí být **přesně** původ z povoleného seznamu
+  `https://testengscalc.netlify.app` nebo `http://localhost:<port>` / `http://127.0.0.1:<port>`. Platí
+  to bez cesty, dotazu, uživatele, velkých písmen, portu u https a tečky na konci hostu. Jiný testovací web
+  se přidává úpravou `POVOLENE_WEBY` s revizí, ne přepínačem. Ostrý web (host přesně `engscalc.netlify.app`,
+  `<nasazení>--engscalc.netlify.app` přes sdílenou `pdSimulatorOstryWeb`, cokoli se `schaftscalc`) se
+  odmítne vlastní hláškou dřív, než se nástroj zeptá na heslo. Shodu se simulátorem Pipedrive hlídá test.
+  `/api/zdravi` musí hlásit `prostredi === 'test'` třikrát: před přihlášením, po něm a těsně před
+  prvním zápisem (nenastavená proměnná = `ostre` = konec). Všechna volání jdou s `redirect: 'error'`.
+  Zpracuje se jen zakázka, jejíž číslo, čísla všech variant (`variantaCislo`), čísla v zámcích a vyplněné
+  číslo PROJ začínají `TEST`, a jejich jméno souboru (`uloKlicSouboru`) začíná `TEST-`. Zámek bez čísla
+  neprojde. Export s jedinou jinou zakázkou = nezapíše se nic. Z otisku zálohy (`--zaloha`) se vyberou jen
+  vyhovující zakázky, zbytek (účty, ceník, ostatní zakázky) se dál nečte. Výpis nese jen čísla, počty
+  a stav; hlášky serveru se čistí od e-mailů a částek.
+  *Co to nedělá:* `/api/zdravi` je veřejné a nepodepsané. Web, který by se vydával za testovací
+  (podvržené DNS na `testengscalc.netlify.app`), by heslo dostal. Proti tomu stojí jen https a povolený
+  seznam. Číslo `TEST - …` je konvence, ne oprávnění: zakázka „TEST“ v ostré databázi by prošla filtrem,
+  na ostrý web ale nástroj nepustí B216.
+
+## Poznámka dealu se seznamem šachet (VSD, doplněk J. V. 11. 11. 2026)
+
+- **B217 — uložení zakázky píše poznámku do Pipedrive.** Se ZAPNUTÝM
+  vypínačem víc šachet, s navázaným dealem (`pdDealId`) a s řídící variantou
+  s víc šachtami uložení zakázky (`POST /api/zakazky`, ve výhradním úseku, po
+  druhém čtení SEC-S1) založí nebo upraví JEDNU poznámku u dealu
+  (`lib/pd_poznamka.mjs`, v1 `/notes`). Zapisuje jen uživatel s právem
+  `crm.pipedrive` (B80; administrátor vždy) — bez práva stav `bez-prava` bez
+  varování a nejbližší uložení oprávněného to srovná. Id poznámky drží pole
+  zakázky `pdPoznamkaSachty` { deal, id, otisk, kdy }, které píše jen server
+  (hodnota z prohlížeče se zahodí, platí uložená verze téhož dealu). Text nese
+  značku čísla zakázky („— nabídka <číslo>“). Před úpravou server poznámku
+  přečte a přepíše ji jen, patří-li témuž dealu; bez id (nebo po 404 / cizím
+  dealu) nejdřív prohledá poznámky dealu (`GET /v1/notes?deal_id=`) a převezme
+  aktivní poznámku, která začíná „Šachty v nabídce: “ a končí značkou této
+  zakázky — POST jen když taková není. Podvržené id (soubor obnovy) tedy cizí
+  poznámku nepřepíše. Po návratu z Pipedrive se zakázka čte POTŘETÍ a jiné
+  razítko vrátí 409 (N1); poznámku, jejíž id se tím ztratilo, příští uložení
+  najde podle značky. Do Pipedrive se jde jen při změně textu (otisk SHA-256),
+  nejvýš `PD_POZNAMKA_STROP` = 20 **pokusů** za hodinu na deal (čerpají
+  i neúspěšné; počítadlo `pd_cache`, `strop:poznamka:deal:<id>`), každé volání
+  jedním pokusem s tvrdým limitem `PD_POZNAMKA_VOLANI_MS` = 2,5 s a celý zápis
+  nejvýš `PD_POZNAMKA_CELKEM_MS` = 6 s (N2); selhání ani vypršení uložení
+  nezastaví (stav `chyba`, varování, otisk zůstane, zopakuje se příště). Text
+  je escapovaný HTML, seznam nejvýš `PD_POZNAMKA_MAX` = 2 000 znaků + značka
+  (číslo ≤ 120 znaků), jen názvy šachet, kusy a číslo nabídky. Přejde-li
+  zakázka s poznámkou na jednu šachtu (ZAP, týž deal), poznámka se nemaže,
+  upraví se na „Šachty v nabídce: 1 šachta“.
+  *Co to nedělá:* poznámku nikdy nemaže. Při **změně dealu** zůstane stará
+  poznámka u starého dealu (nová vznikne u nového); s **vypnutým vypínačem** se
+  poznámka neupravuje ani nemaže (zůstane poslední stav). Souběžná uložení
+  v RŮZNÝCH instancích funkce (mez B158) mohou poznámku založit dvakrát (obě
+  instance hledají současně, žádná ji ještě nenajde) — zbytková mez; zakázka
+  pak drží id té, která se uložila, druhá zůstane v dealu. Pipedrive vrací
+  poznámky dealu po stránkách — prohledává se prvních 100 nejnovějších.

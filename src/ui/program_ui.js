@@ -345,8 +345,14 @@ function progZverejniPojistka(ctx) {
 async function progMustkyPotvrd(ctx) {
   if (typeof mustkyCenikKontrola !== 'function' || !ctx) return true;
   const k = mustkyCenikKontrola(ctx.cenik);
-  if (k.ok) return true;
-  const ano = await potvrd('Cena můstku v ceníku k zveřejnění:\n\n' + k.text
+  /* K40-N5: i složená zahraniční řada — odchylky ke zveřejnění sloučené
+   * s platnými (CENIK_ZAHR), stejně jako je skládá server. */
+  const zahr = (typeof cenikZahrSluc === 'function')
+    ? cenikZahrSluc(typeof CENIK_ZAHR !== 'undefined' ? CENIK_ZAHR : null, ctx.zahranicni) : ctx.zahranicni;
+  const kz = (typeof mustkyCenikKontrolaZahr === 'function') ? mustkyCenikKontrolaZahr(ctx.cenik, zahr) : { ok: true };
+  if (k.ok && kz.ok) return true;
+  const text = [k.ok ? '' : k.text, kz.ok ? '' : kz.text].filter(Boolean).join('\n\n');
+  const ano = await potvrd('Cena můstku v ceníku k zveřejnění:\n\n' + text
     + '\n\nZveřejnit ceník i tak?',
     { ano: 'Zveřejnit i tak', ne: 'Zpět — doplním ceník můstků' });
   if (ano) ctx.mustkyPotvrzeno = true;

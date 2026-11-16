@@ -73,6 +73,7 @@ export function zakazkaVelikostHlaska(zak, bajtu) {
   return 'Zakázka je příliš velká (' + kB(celkem) + ', strop ' + kB(ZAKAZKA_MAX_B) + '): přílohy a fotky ' + kB(prilohy)
     + ', zmrazené údaje ' + zamcenych + ' odeslaných variant ' + kB(zmrazene) + ', ostatní ' + kB(ostatni) + '. ' + rada;
 }
+import { pdVazbaDrz } from './pd_vazba.mjs';
 import { razitkoKdo } from './sdilene.mjs';
 
 export const CISLO_MAX = 60;
@@ -324,8 +325,12 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   if (zaporne.length) return odmitni(400, 'Zakázka nese ' + ULO.uloIdProblemyText(zaporne) + '.');
   /* Pipedrive deal id (#447 C4, rozhodnutí J. V. 21. 10. 2026): tvar
    * hlídá každému, ruční zadání a opravu pustí jen administrátorovi. */
-  const pdDeal = globalThis.ctrlPdDealKontrola ? globalThis.ctrlPdDealKontrola(stara, zak, relace.role) : null;
+  const pdDeal = globalThis.ctrlPdDealKontrola ? globalThis.ctrlPdDealKontrola(stara, zak, relace.role, relace.email) : null;
   if (pdDeal) return odmitni(pdDeal.status, veta(pdDeal.chyba));
+  /* Vazba z webhooku a odmítnuté dealy (K40c #581): pole psaná JEN serverem —
+   * z uložené verze (obnova ze souboru je nepřebírá, z otisku ano), mění je
+   * jen výslovná akce (functions/pd_vazba.mjs, pd_organizace.mjs, webhook). */
+  pdVazbaDrz(stara, zak, { obnova, zeSouboru });
   /* Stav dealu Pipedrive (P1, 22. 10. 2026): jen tvar { status, nacteno }
    * z whitelistu — objekt jiného tvaru nebo cizí typ → 400, ne 500.
    * Obsah při uložení dosazuje server (lib/pd_stav.mjs), obnova ho bere ze zálohy. */
@@ -367,8 +372,10 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
    * ukládat, odemyká jen vedoucí a administrátor s důvodem; razítka, stav
    * Pipedrive („čeká na odeslání") a stopu v prodejHistorie píše server.
    * Zmrazení krycího listu prodané varianty hlídá porovnání níž (zamek.js). */
+  /* Jeden čas serveru pro razítko přijetí nového zámku (K40-S1) i mez prodeje v témže požadavku. */
+  const tedServer = new Date().toISOString();
   if (globalThis.prodServer) {
-    const prod = globalThis.prodServer(stara, zak, relace, { obnova, zeSouboru });
+    const prod = globalThis.prodServer(stara, zak, relace, { obnova, zeSouboru, kdy: tedServer });
     if (prod) return odmitni(prod.status, veta(prod.chyba));
   }
   /* Rozměr šachty, který nedává smysl (B137, 12. 10. 2026) — záporný,
@@ -658,6 +665,10 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
        * jméno jiného správce by jinak prošla. Nesouhlas se zapíše, jak je
        * („nesouhlasi"), a obnova ho ohlásí v náhledu (sporne). Z otisku se
        * doplní jen tam, kde chybí. */
+      /* Razítko přijetí (K40-S1): z otisku se přebírá (doklad, jen platný tvar),
+       * ze souboru se zahodí (otázka 3a) — zámek se pak chová jako starší (mez z `kdy`). */
+      if (zeSouboru || !(typeof v.zamek.prijato === 'string' && globalThis.zamekKdyProblem
+        && !globalThis.zamekKdyProblem(v.zamek.prijato, Date.parse(v.zamek.prijato)))) delete v.zamek.prijato;
       if (zeSouboru || !v.zamek.overeni) {
         const ov = globalThis.zamekOvereni(v, JEKLY, verzeServeru);
         if (ov) v.zamek.overeni = ov; else if (zeSouboru) delete v.zamek.overeni;
@@ -706,6 +717,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
       return odmitni(400, 'Neuloženo: odeslaná nabídka nese ' + ULO.uloIdProblemyText(rozmerProblem)
         + '. Doplňte rozměry šachty a nabídku vytiskněte znovu.');
     v.zamek.kdo = razitkoKdo(relace);   // B95
+    /* K40-S1 (#580): čas PRVNÍHO přijetí zámku serverem — dolní mez data
+     * prodeje; příchozí hodnota se zahodí (píše ho jen server). */
+    v.zamek.prijato = tedServer;
     /* Nový zámek se ověřuje přísně (B119): nespárovaný řádek zmrazeného
      * výsledku je rozdíl a jádro nese i součty příplatků a volitelných —
      * vždy, bez ohledu na verzi, kterou výsledek uvádí (tu posílá klient). */

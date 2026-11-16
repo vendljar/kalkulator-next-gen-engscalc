@@ -142,7 +142,7 @@ function renderKryciProj() {
         const jeVyplneno = (typeof hlavickaVyplneno === 'function') ? hlavickaVyplneno(zapsano) : (zapsano != null && zapsano !== '');
         const val = jeVyplneno ? zapsano : (p.prefill ? (p.prefill(c) || '') : '');
         return `<div class="kl-row"><div class="lbl">${p.label} ${znacka(p.verze)}</div>
-          <div><input type="text" value="${esc(val)}" onchange="set('${p.bind}', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''}></div>
+          <div><input type="text" value="${esc(val)}" onchange="set('${escJs(p.bind)}', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''}></div>
           <div class="src"><span class="note" style="font-size:10px">${esc(zdroj || 'hlavička kalkulace')} ↔</span></div></div>`;
       }
       const pref = p.prefill ? p.prefill(c) : null;

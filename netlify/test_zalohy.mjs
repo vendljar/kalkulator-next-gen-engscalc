@@ -32,6 +32,7 @@
  * Paměťové úložiště, žádná síť. Spuštění: node netlify/test_zalohy.mjs */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
 process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
+import './pomoc_test_admin.mjs'; // K40-S4: výchozí smyšlený ADMIN_EMAIL dřív než sdilene.mjs
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

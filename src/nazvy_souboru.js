@@ -41,13 +41,23 @@ const NAZEV_SLOVO_NABIDKA = { cz: 'NABIDKA', en: 'PRICE-QUOTATION', de: 'ANGEBOT
 
 /* Jeden úsek názvu: bez diakritiky, mezery a podtržítka → pomlčka, jen
  * bezpečné znaky [A-Za-z0-9.+-]; „2026 - OPR - CN - 555.2" → „2026-OPR-CN-555.2". */
+/* Strop délky úseku (K40-X1, K10-N1): název varianty ani zákazník délku
+ * nemají omezenou; 200 znaků je víc než kterýkoli skutečný název (sada
+ * test_nazvy_souboru beze změny) a jméno souboru zůstane pod limity Windows. */
+const NAZEV_CAST_MAX = 200;
 function nazevCast(s) {
-  return String(s == null ? '' : s)
+  const t = String(s == null ? '' : s).slice(0, NAZEV_CAST_MAX)
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[\s_]+/g, '-')
     .replace(/[^A-Za-z0-9.+-]+/g, '-')
     .replace(/-{2,}/g, '-')
-    .replace(/^[-.]+|[-.]+$/g, '');
+    .replace(/^[-.]+/, '');
+  /* Konec smyčkou (K40-X1): `/[-.]+$/` je nad dlouhým textem kvadratický. */
+  return nazevOrezKonce(t, /[-.]/);
+}
+function nazevOrezKonce(s, znak) {
+  if (typeof orezKonce === 'function') return orezKonce(s, znak);
+  return require('./format.js').orezKonce(s, znak);
 }
 
 /* 'v27.10.1' → '27.10.1'; cokoli jiného (vývojový běh, testy) → ''. */

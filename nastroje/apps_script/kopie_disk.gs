@@ -300,8 +300,18 @@ function kngUklid_(w, slozka, p, c, predZaznam, kopieServer) {
   var soubory = kngVsechnySoubory_(slozka);
   var jmena = Object.keys(soubory);
   var den = p.otisk;
-  var datum = function (j) { var x = retenceZalohDiskRozeber(j); return x && !x.stary && x.prostredi === w.prostredi ? x.den : ''; };
-  var predchozi = jmena.filter(function (j) { return datum(j) && datum(j) !== den && j !== p.soubor; }).sort().pop();
+  /* K40-X4 (B205): srovnávací kopie jen se dnem MENŠÍM než den nové kopie
+   * (sdílená funkce z src/retence_zaloh.js); budoucí jména jsou podezřelá —
+   * ohlásí se v textu i v e-mailu a nemažou se. */
+  var vyber = retenceZalohDiskPredchozi(jmena, p.soubor, den, w.prostredi);
+  /* Revize K40a D2: neplatný den kopie = pojistku nejde provést → nemazat a připomenout. */
+  if (vyber.neplatnyDen) return stoji('den kopie nejde určit (' + den + ') — pojistku úbytku nejde provést, staré kopie se nemažou');
+  var predchozi = vyber.predchozi;
+  var podezrela = vyber.budouci;
+  var pod = podezrela.length ? ' Podezřelé kopie s budoucím datem (nesmazány, nesrovnávají se — zkontrolujte a případně smažte ručně): '
+    + podezrela.join(', ') + '.' : '';
+  var podUpoz = podezrela.length ? 'podezřelé kopie s budoucím datem ve složce: ' + podezrela.join(', ') : '';
+  var spoj = function (a, b) { return a && b ? a + '; ' + b : (a || b); };
   if (predchozi) {
     /* pojistka porovnává DATA (nekomprimovaná) — velikost předchozí kopie
      * ze záznamu; kde chybí, porovnají se velikosti souborů .gz */
@@ -315,20 +325,22 @@ function kngUklid_(w, slozka, p, c, predZaznam, kopieServer) {
         predVelikostB: predB, novaVelikostB: noveB } });
       var t = 'nová kopie ' + p.soubor + ' má proti ' + predchozi + ' méně dat (' + co.join(', ') + ') — nic se nesmazalo, '
         + 'zkontrolujte data a úbytek potvrďte v aplikaci (Nastavení → Databáze)';
-      return { text: 'Staré kopie se nemazaly: ' + t + '.', upozorneni: t };
+      return { text: 'Staré kopie se nemazaly: ' + t + '.' + pod, upozorneni: spoj(t, podUpoz) };
     }
   }
   var ted = Date.parse((c.kopieDisk && c.kopieDisk.kdy) || '');
-  if (!isFinite(ted)) return nic('chybí čas serveru');
-  if (Math.abs(Date.now() - ted) > KNG_DEN_MS) return nic('hodiny serveru a Google se liší o víc než den');
-  var smazat = retenceZalohDiskVyber(jmena, new Date(ted).toISOString().slice(0, 10), [p.soubor], w.prostredi);
+  var nicPod = function (duvod) { var o = nic(duvod); o.text += pod; if (podUpoz) o.upozorneni = podUpoz; return o; };
+  if (!isFinite(ted)) return nicPod('chybí čas serveru');
+  if (Math.abs(Date.now() - ted) > KNG_DEN_MS) return nicPod('hodiny serveru a Google se liší o víc než den');
+  var smazat = retenceZalohDiskVyber(jmena, new Date(ted).toISOString().slice(0, 10), [p.soubor].concat(podezrela), w.prostredi);
   var smazano = [], chyby = [];
   smazat.forEach(function (j) {
     try { soubory[j].forEach(function (f) { f.setTrashed(true); }); smazano.push(j); }
     catch (e) { chyby.push(j + ': ' + kngText_(e)); }
   });
   return { text: (smazano.length ? 'Do koše přesunuto ' + smazano.length + ' starších kopií: ' + smazano.join(', ') + '.' : 'Starší kopie: nic ke smazání.')
-    + (chyby.length ? ' Nepodařilo se smazat: ' + chyby.join('; ') + '.' : ''), upozorneni: chyby.length ? 'nepodařilo se smazat ' + chyby.join('; ') : '' };
+    + (chyby.length ? ' Nepodařilo se smazat: ' + chyby.join('; ') + '.' : '') + pod,
+    upozorneni: spoj(chyby.length ? 'nepodařilo se smazat ' + chyby.join('; ') : '', podUpoz) };
 }
 
 /* ---------------- Disk ---------------- */
@@ -597,6 +609,33 @@ function retenceZalohDiskVyber(jmena, dnes, chranit, prostredi) {
   return soubory.filter(x => !drz.has(x.d) && !chranene.has(x.j) && !chraneneDny.has(x.d)).map(x => x.j).sort();
 }
 
+/* SROVNÁVACÍ KOPIE PRO POJISTKU ÚBYTKU (K40-X4, 11. 11. 2026, mez B205).
+ * Do 11. 11. se nová kopie srovnávala s abecedně POSLEDNÍM jménem vlastního
+ * prostředí ve sdílené složce — soubor s budoucím datem od kohokoli se
+ * zápisem do složky pojistku vyřadil (malý = falešný úbytek) nebo zakryl
+ * skutečný úbytek (velký). Bere se jen jméno téhož prostředí v novém tvaru
+ * s dnem MENŠÍM než den nové kopie (`den` = den nočního otisku ze serveru);
+ * stejný den ani právě zapsaný `soubor` ne. Jména s dnem větším vrací zvlášť
+ * (`budouci`, seřazená) — úklid je ohlásí jako podezřelá a nemaže je.
+ * Jediná funkce pro prohlížeč (kopieDiskUklid) i skript Apps Script
+ * (kngUklid_, vkládá nastroje/apps_script/vloz_retenci.py).
+ * Vrací { predchozi: jméno | null, budouci: [] }; u dne, který není platné
+ * RRRR-MM-DD, navíc `neplatnyDen: true` — oba volající pak NEMAŽOU (revize
+ * K40a D2, 12. 11. 2026: dřív se srovnání tiše přeskočilo a mazalo se). */
+function retenceZalohDiskPredchozi(jmena, soubor, den, prostredi) {
+  const out = { predchozi: null, budouci: [] };
+  const d = String(den == null ? '' : den);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !Number.isFinite(retenceZalohDenMs(d))) { out.neplatnyDen = true; return out; }
+  if (!RETENCE_ZALOH_DISK_PROSTREDI.includes(prostredi)) return out;
+  const vlastni = [...new Set((jmena || []).map(String))]
+    .map(j => { const r = retenceZalohDiskRozeber(j); return r && !r.stary && r.prostredi === prostredi && j !== String(soubor) ? { j, d: r.den } : null; })
+    .filter(Boolean);
+  out.budouci = vlastni.filter(x => x.d > d).map(x => x.j).sort();
+  const starsi = vlastni.filter(x => x.d < d).map(x => x.j).sort();   // jméno řadí den i čas (#552)
+  out.predchozi = starsi.length ? starsi[starsi.length - 1] : null;
+  return out;
+}
+
 /* POJISTKA PROTI TICHÉ ZTRÁTĚ DAT (K3-N13 20. 10. 2026; rozšířeno #523 Z2,
  * pokyn J. V. 26. 10. 2026: „Zálohy se musí v čase zvětšovat; nenadálé
  * zmenšení musí být oznámené a schválené, jinak se staré zálohy nesmí
@@ -666,5 +705,5 @@ function retenceZalohPopis() {
 if (typeof module !== 'undefined')
   module.exports = { RETENCE_ZALOH_POJISTKA, retenceZalohPokles, retenceZalohMaximum, RETENCE_ZALOH_BLOBS, RETENCE_ZALOH_DISK, RETENCE_ZALOH_STARE_PRED, RETENCE_ZALOH_DISK_JMENO,
     RETENCE_ZALOH_DISK_JMENO_STARE, RETENCE_ZALOH_DISK_PROSTREDI, retenceZalohDiskRozeber, retenceZalohDiskJmeno,
-    retenceZalohDenMs, retenceZalohMesicuZpet, retenceZalohDrz, retenceZalohDiskVyber, retenceZalohPopis };
+    retenceZalohDenMs, retenceZalohMesicuZpet, retenceZalohDrz, retenceZalohDiskVyber, retenceZalohDiskPredchozi, retenceZalohPopis };
 /* ====== KONEC RETENCE ZÁLOH ====== */

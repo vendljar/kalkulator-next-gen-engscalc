@@ -315,7 +315,8 @@ function rozvinOdstavceZaRadek(xml, ph) {
  * Symboly se nahradí tady (pak už je hlavní průchod nenajde). Odstavce
  * z odstavcePryc jsou v té chvíli pryč. Symbol bez hodnoty (builder o něm
  * nic neřekl) se nechá být — zůstane vidět. */
-const DOCX_ROZPIS_KLICE = ['SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_OBJEDNANE', 'SOD_PRIPLATKY_KC'];
+/* C2 #583: i rozpis šachet SoD realizace v5 (řádek na variantu = odstavec). */
+const DOCX_ROZPIS_KLICE = ['SOD_CENA_NABIDKY', 'SOD_PRIPLATKY_OBJEDNANE', 'SOD_PRIPLATKY_KC', 'SACHTY_SOD_ROZPIS'];
 /* pořadí prvků w:pPr ve schématu OOXML (CT_PPrBase + rPr, sectPr, pPrChange) */
 const DOCX_PPR_PORADI = ['pStyle', 'keepNext', 'keepLines', 'pageBreakBefore', 'framePr', 'widowControl', 'numPr', 'suppressLineNumbers',
   'pBdr', 'shd', 'tabs', 'suppressAutoHyphens', 'kinsoku', 'wordWrap', 'overflowPunct', 'topLinePunct', 'autoSpaceDE', 'autoSpaceDN',
@@ -944,9 +945,14 @@ function docxSmyckaSachet(xml, sachty) {
     });
     xml = xml.slice(0, rz.zac) + kopie.join('') + xml.slice(rk.kon);
   }
-  /* SACHTY_*: odstavec s prázdnou hodnotou pryč (v buňce zůstane aspoň jeden) */
+  /* SACHTY_*: odstavec s prázdnou hodnotou pryč (v buňce zůstane aspoň jeden).
+   * C2 #583: jen symboly smyčky CN (`spolecne`, SACHTY_CELKEM_POPIS) — do v11.11
+   * filtr /^SACHTY_/ smazal i odstavce {{SACHTY_SOD_PREDMET}} / {{SACHTY_SOD_ROZPIS}}
+   * smlouvy (generátor jde přes smyčku u každého dokumentu), takže by se šachty
+   * do Wordu SoD nedostaly nikdy. Symboly smlouvy řídí builder (odstavcePryc). */
+  const smyckove = Object.keys(spolecne).concat(['SACHTY_CELKEM_POPIS']);
   return xml.replace(/<w:p[\s>](?:(?!<\/w:p>)[\s\S])*?<\/w:p>/g, (p) => {
-    const k = klicePlaceholderu(p).filter(x => /^SACHTY_/.test(x));
+    const k = klicePlaceholderu(p).filter(x => /^SACHTY_/.test(x) && smyckove.indexOf(x) >= 0);
     if (!k.length) return p;
     if (k.every(x => jePrazdnaHodnota(spolecne[x]))) return '\uE001';
     const hodnoty = {};
@@ -1261,6 +1267,36 @@ function docxObsahZkontroluj(polozky) {
   if (vady.length) throw new Error(so.sablonaObsahVadyText ? so.sablonaObsahVadyText(vady) : 'Šablona obsahuje nepovolené prvky: ' + vady.join('; '));
 }
 
+/* TEČKY MÍSTO NEVYPLNĚNÝCH SYMBOLŮ (C3 #584, rozhodnutí J. V. 11. 11. 2026).
+ * Volba `nevyplnene` = seznam symbolů, které builder smlouvy (sod.js,
+ * sodNevyplnene) nevyplnil. Výchozí vypnuto — ostatní dokumenty beze změny.
+ * Běží jako POSLEDNÍ krok: odstavce z `odstavcePryc`, bloky a rozpisy jsou
+ * v té chvíli pryč (podle původních, prázdných hodnot), tečky dostane jen to,
+ * co by jinak zůstalo vidět jako {{…}}. Jen uvnitř textu (`w:t`) — alternativní
+ * text obrázku ani značky bloků (…_ZAC/_KON) se nemění. Prázdná hodnota ze
+ * seznamu se v hlavním průchodu nedosadí (zůstane symbol) a tady dostane
+ * tečky. `nevyplneneVDokumentu` (pole) — kam zapsat symboly, které tečky
+ * opravdu dostaly. */
+const DOCX_TECKY = '\u2026\u2026';
+function docxTeckySada(volby) {
+  const n = volby && Array.isArray(volby.nevyplnene) ? volby.nevyplnene.filter(k => k && !/_(?:ZAC|KON)$/.test(k)) : [];
+  return n.length ? new Set(n) : null;
+}
+function docxBezPrazdnych(ph, sada) {
+  const o = Object.assign({}, ph || {});
+  sada.forEach(k => { if (o[k] != null && String(o[k]).trim() === '') delete o[k]; });
+  return o;
+}
+function docxTecky(xml, sada, zapis) {
+  return xml.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, vnitrek, pos) => {
+    const klic = vnitrek.replace(/<[^>]+>/g, '');
+    if (!sada.has(klic) || !docxUvnitrTextu(xml, pos)) return cely;
+    if (Array.isArray(zapis) && zapis.indexOf(klic) < 0) zapis.push(klic);
+    /* značky běhů uvnitř rozděleného symbolu zůstanou (vyvážené XML) */
+    return DOCX_TECKY + (cely.match(/<[^>]+>/g) || []).join('');
+  });
+}
+
 /* ---------- hlavní funkce: vyplní šablonu a vrátí Blob .docx ---------- */
 async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, volby) {
   const polozky = await zipPrecti(new Uint8Array(arrayBuffer));
@@ -1287,7 +1323,9 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
       po = rozvinRadkyZaRadek(po, placeholders);        // věty o dílčích dokladech OCK: řádek tabulky za větu (etapa A)
       po = rozvinOdstavceZaRadek(po, placeholders);     // seznam plateb: odstavec za platbu (etapa B)
       po = docxRozpisOdstavce(po, placeholders);       // rozpis ceny díla SoD: bez číslování, vlevo, odstavec na řádek (SF #556)
-      po = nahradPlaceholdery(po, placeholders);
+      const tecky = docxTeckySada(volby);
+      po = nahradPlaceholdery(po, tecky ? docxBezPrazdnych(placeholders, tecky) : placeholders);
+      if (tecky) po = docxTecky(po, tecky, volby.nevyplneneVDokumentu);   // C3 #584: nevyplněná místa smlouvy → „……" (až po všech mazáních)
       if (po !== pred) nahrad++;
       p.data = enkoder.encode(po);
     }
@@ -1670,7 +1708,7 @@ async function docxXmlVady(arrayBuffer) {
 
 if (typeof module !== 'undefined')
   module.exports = { docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
-    odstranPrazdneTsRadky, docxSmyckaSachet, DOCX_CENA_CASTI, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
+    odstranPrazdneTsRadky, docxSmyckaSachet, DOCX_CENA_CASTI, DOCX_TECKY, docxTecky, docxTeckySada, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
     docxPrelozSablonu, docxPrelozXml, odstavcoveSpany, odstavecText, xmlUnesc,

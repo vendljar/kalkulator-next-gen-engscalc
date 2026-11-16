@@ -101,7 +101,7 @@ function klDphPole(bind) {
   const popis = { 12: '12 % snížená', 21: '21 % základní' };
   const opts = nabidka.map(s =>
     `<option value="${s}" ${s === ted ? 'selected' : ''}>${esc(popis[s] || (s + ' %'))}</option>`).join('');
-  return `<select onchange="set('${bind}', (+this.value) / 100)"${typeof zamekDphAttr === 'function' ? zamekDphAttr(bind) : ''}>${opts}</select>`;
+  return `<select onchange="set('${escJs(bind)}', (+this.value) / 100)"${typeof zamekDphAttr === 'function' ? zamekDphAttr(bind) : ''}>${opts}</select>`;
 }
 
 /* jeden řádek krycího listu; opts: {prefill, type:'text|textarea|date|radio|link|dph', o:[...], src:'zdroj', dphBind:'C.dph'} */
@@ -247,7 +247,7 @@ function renderKryci() {
     const rows = s.pole.map(p => {
       if (p.bind) {   // obousměrné provázání s hlavičkou kalkulace (ZAK) – žádný ruční přepis
         return `<div class="kl-row"><div class="lbl">${p.label} ${znacka(p.verze)}</div>
-          <div><input type="text" value="${esc(get(p.bind))}" onchange="set('${p.bind}', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''}></div>
+          <div><input type="text" value="${esc(get(p.bind))}" onchange="set('${escJs(p.bind)}', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''}></div>
           <div class="src"><span class="note" style="font-size:10px">${esc(p.src || 'hlavička kalkulace')} ↔</span></div></div>`;
       }
       const pref = p.prefill ? p.prefill(c) : null;

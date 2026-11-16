@@ -402,6 +402,10 @@ function uloRejstrikZaznam(zak, opts) {
      * v Přehledu cenových nabídek. Jen u zakázky s víc šachtami — u jedné
      * šachty klíč chybí a rejstřík je beze změny (zlatá sada). */
     ...uloRejstrikSachty(zak),
+    /* Vazba z webhooku nahlášená jako chybná (K40c #581): autor a administrátor
+     * ji vidí v Přehledu cenových nabídek. Klíč jen u nahlášené živé vazby. */
+    ...((zak && zak.pdVazbaWebhook && typeof zak.pdVazbaWebhook === 'object' && zak.pdVazbaWebhook.nahlaseno
+      && zak.pdVazbaWebhook.stav !== 'zruseno') ? { pdNahlaseno: true } : {}),
     variant: varianty.length,
     odeslane: varianty.filter(zamcena).length,
     upraveno,
@@ -488,6 +492,7 @@ function uloRejstrikNormalizuj(x) {
       rada: z.rada === 'zahr' ? 'zahr' : '',      // #181: řada ceníku, prázdno = tuzemsko
       /* VS-E6 #596: počty šachet řídící varianty jen v platném tvaru. */
       ...(uloRejstrikSachtyTvar(z.sachty) ? { sachty: uloRejstrikSachtyTvar(z.sachty) } : {}),
+      ...(z.pdNahlaseno === true ? { pdNahlaseno: true } : {}),   // K40c #581
       variant: cislo(z.variant),
       odeslane: cislo(z.odeslane),
       upraveno: uloRejstrikText(z.upraveno),
@@ -665,8 +670,10 @@ function uloZamekRazitkaDrz(naDisku, kUlozeni) {
     const sz = sv.zamek, nz = nv.zamek;
     if (!(sz && sz.zamceno && nz && nz.zamceno)) return;
     /* `slovnik` (revize #401): razítko slovníku, kterým nabídka odešla — drží ho server jako kdo/popis/šablonu.
-     * `hlavicka` (K7-S2, #508): zámek byl řídící — klient ho nesundá (doplnit ho umí server, zamekZakHlavickaOznac). */
-    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka'].forEach(k => {
+     * `hlavicka` (K7-S2, #508): zámek byl řídící — klient ho nesundá (doplnit ho umí server, zamekZakHlavickaOznac).
+     * `prijato` (K40-S1, #580): čas, kdy server zámek poprvé přijal — dolní mez data prodeje (prodDatumMez);
+     * mimo klíč zámku (uloZamekKlic), takže starší klient, který ho nezná, ukládá bez 409. */
+    ['kdo', 'popis', 'sablona', 'slovnik', 'hlavicka', 'prijato'].forEach(k => {
       if (!stejne(sz[k], nz[k])) {
         if (sz[k] === undefined) delete nz[k]; else nz[k] = JSON.parse(JSON.stringify(sz[k]));
         oprav++;

@@ -18,6 +18,9 @@ Verzi tohohle archivu nese soubor **`verze.txt`** — tam je vždycky pravda.
   (např. `OBRAZOVKA_OPLASTENI.md`). Čte se na začátku práce; co je jen
   v chatu, se dřív nebo později ztratí. Návod je v `podklady/README.md`.
 - `roadmapa/roadmap.json` – co se má udělat a co se čeká na rozhodnutí
+- `nastroje/test_sada_obnov.mjs` – obnova testovací sady zakázek `TEST - …` do **testovací** databáze
+  (C5, #585; spouští jen J. V. lokálně, na ostrém webu odmítne běžet). Návod
+  `podklady/NAVOD_TEST_SADA_OBNOVA.md`, jádro `nastroje/test_sada_jadro.mjs`, meze B215–B216.
 
 ## Jak sestavit aplikaci
 

@@ -128,7 +128,7 @@ const novyCtx = (odpoved) => {
     encodeURIComponent, setTimeout, Blob, Response, CompressionStream, DecompressionStream, volani: [],
     ULO_KOPIE_DISK_SLOZKA: U.ULO_KOPIE_DISK_SLOZKA, uloKopieDiskJmeno: U.uloKopieDiskJmeno, uloZalohaSloz: U.uloZalohaSloz,
     uloKopieDiskProstredi: U.uloKopieDiskProstredi, uloKopieDiskPosledniJmeno: U.uloKopieDiskPosledniJmeno,
-    retenceZalohDiskRozeber: R.retenceZalohDiskRozeber, retenceZalohDiskVyber: R.retenceZalohDiskVyber, retenceZalohPokles: R.retenceZalohPokles,
+    retenceZalohDiskRozeber: R.retenceZalohDiskRozeber, retenceZalohDiskVyber: R.retenceZalohDiskVyber, retenceZalohDiskPredchozi: R.retenceZalohDiskPredchozi, retenceZalohPokles: R.retenceZalohPokles,
     RETENCE_ZALOH_DISK_JMENO: R.RETENCE_ZALOH_DISK_JMENO,
     ONLINE_STAV: { otisky: [], kopieDisk: null }, jeAdminOnline: () => true, render: () => {}, uloPravo: async () => true, onlineZprava: () => {},
     dotazHeslo: () => Promise.resolve('Heslo.Spravce.1'), uloDb: () => Promise.reject(new Error('bez IndexedDB')) };

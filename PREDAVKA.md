@@ -15,6 +15,355 @@ jinému zákazníkovi; krycí list u sdílené varianty).
 **Pro koordinaci:** VZ programovat až po sloučení K40c; do zadání K40c doplnit podmínku — „Opravit firmu v Pipedrive“
 jen při shodě IČO organizace dealu s IČO hlavičky (jinak by po změně řídícího zákazníka přejmenovalo cizí organizaci).
 Čísla roadmapy pro etapy E0–E6 přidělí koordinace. Kolo testů se nepouštělo (kód se neměnil).
+# Předávka — K40c #581: vazba z webhooku Pipedrive, ARES na serveru, „Opravit firmu v Pipedrive“, větev `claude/k40c-webhook`
+
+Nad `1a08186` (integrace v12.11.3), sloučeno s integrací `4acda93` (v12.11.6: + VSD, C2+C3, C5). **v12.11.7**. Do
+`test-draft`, `test`, `main` ani integrace nic; weby, Disk, ostrý Pipedrive ani ARES nic (jen simulátor a mock).
+Zadání: `podklady/PROMPT_K40_OPRAVY_v3.md` (větev `claude/k40-posudek`, 1c6dfc3) + v2 oddíly A, J + posudek. Revizi
+před sloučením dělá poradce Fable.
+
+| bod | stav | kde |
+|---|---|---|
+| vazba: protokol + `pdVazbaWebhook` (ceka / potvrzeno / webhook / zruseno) | ✅ | `netlify/functions/pd_webhook.mjs`, `netlify/lib/pd_vazba.mjs` |
+| upozornění, V pořádku / Zrušit vazbu / Vazba je chybná (role ověřuje server) | ✅ | `netlify/functions/pd_vazba.mjs`, `src/ui/pd_vazba_ui.js`, `src/ui/common.js` |
+| zrušení: odmítnutý deal (409 před zápisem i ARES), náš odkaz v dealu smazán, údaje zůstanou | ✅ | tamtéž |
+| pole psaná jen serverem (`pdVazbaDrz`), obnova ze souboru je nepřebírá | ✅ | `netlify/lib/zakazka_kontrola.mjs` |
+| C4: deal mění i autor vlastní zakázky (ne u zakázky z webhooku) | ✅ | `src/controlling.js` `ctrlPdDealSmiMenit` |
+| ARES ze serveru (3 s, jeden pokus, 200 kB, nedůvěryhodný vstup), firma do hlavičky | ✅ | `netlify/lib/ares_server.mjs`, `ares_modul.cjs` |
+| Opravit firmu v Pipedrive (náhled/zápis, shoda IČO 409, DIČ přeskočeno) | ✅ | `netlify/functions/pd_organizace.mjs`, simulátor PATCH organizace |
+| štítek „vazba nahlášena“ v Přehledu | ✅ | `src/uloziste.js` (`pdNahlaseno` v rejstříku), `src/ui/online_ui.js` |
+| meze B208, B209, oddíl PW #553 | ✅ | `BEZPECNOST_MEZE.md` |
+| příručka, CHANGELOG, roadmapa #581 | ✅ | `manual/obsah.json`, `manual/kompletni/provoz.json` |
+
+**Krok 0 — jinak, než čekal prompt:** pole organizace v mapě Pipedrive bylo jen IČ (číslo) a Role; **DIČ v účtu
+není** (komentář `pd_mapa.mjs`: „DIČ ani fakturační adresa v CRM nejsou vůbec“). Přidáno `POLE_ORGANIZACE.dic`
+v `PD_DOSUD_NEZALOZENA` (přehled mapy ho ukazuje jako „chybí“, mapa verze 4). Adresa organizace je standardní
+pole `address.value`. Webhook dřív do protokolu nezapisoval (B201) — teď ano.
+
+**Testy (12. 11.):** `netlify/test_k40c_webhook.mjs` 94/0 (na bázi selže — moduly neexistují); všechny
+`netlify/test_*.mjs` zelené (ADMIN_EMAIL nastavený), všechny `src/test_*.js` zelené vč. zlatých sad
+(`test_vs_zlata`, můstky — otisky beze změny, nepřegenerováno); `overit_xss.mjs` 392/0 (oddíl K40c, na bázi
+selže); mutace `[K40c]` 25/25 chycené; `--kontrola` server 1437/1437 a jádro 853/853 (posunutá zadání #447 C4,
+#509). Celé testovací kolo a celé mutace po částech pouští koordinace při slučování.
+
+**Po sloučení integrace `4acda93` (v12.11.7):** test_k40c_webhook 105/0, test_vsd_pd_poznamka 49/0,
+test_553_webhook 76/0, test_pd_simulator 70/0, test_prava 993/0; mutace [K40c] 29/29 a [VSD] 20/20; kolo
+--bez-mutaci VŠE ZELENÉ (sady 389/0, 59 prohlížečových přeskočeno — Playwright se v kontejneru nenačte; hodiny
++400 dní 358/0; statické 5/5). pd_vazba a pd_organizace volají Pipedrive s casLimitMs 2,5 s.
+
+**Revize Fable (12. 11.) — opraveno:** N1 výpadek ARES (otisk se neukládá), N2 stará vazba = „webhook“,
+N3 odkaz v dealu až po zápisu, N4 opakované nahlášení 409, N5 bez autora jen administrátor (test), N7 ručně
+znovu zadaný odmítnutý deal vypadne ze seznamu, N8 `test_prava.mjs` přes `pomoc_test_admin.mjs`.
+**N6 (jen zápis):** tvar zápisu do Pipedrive (`address: { value }`, `custom_fields: { hash: null }`) je ověřený
+jen proti simulátoru — **před ostrým použitím zkušební zápis na testu s tokenem Pipedrive nad dealem TEST**.
+
+**Otevřené pro J. V.:** (1) založit v Pipedrive pole organizace „DIČ“ (text)? Do té doby oprava firmy DIČ
+přeskočí. (2) Vazby starší než K40c se při dalším doručení jednou zeptají ARES a mohou přepsat zákazníka, kterého
+tam dřív dal webhook z dealu (otisk sedí) — chování podle v3, jen upozornění.
+
+**Výchozí volby (prompt nechal otevřené):** kalkulace založená webhookem dostane vazbu `stav: 'webhook'` (bez
+„V pořádku“, upozornění jen při problému ARES nebo rozdílech); vazba starší než K40c dostane při prvním dalším
+doručení totéž (jednou se zeptá ARES). Po výpadku ARES se další doručení se stejným IČO ARES neptá (B208 „nejvýš
+jednou“) — ověření tlačítkem „Najít firmu v ARES“. Akce nad vazbou vyžadují uloženou zakázku (bez neuložených
+změn), po akci se zakázka načte znovu.
+
+---
+# Předávka — C2 #583 SoD realizace v5 se šachtami + C3 #584 tečky „……“ a kontrola před tiskem SoD, větev `claude/c23-sod-v5`
+
+Nad `aa445a1` (integrace = test v11.11.1). Prompt `podklady/PROMPT_C23_PO_KOLE47.md` (větev claude/plan-po-kole47
+f0fcffc) + doplněk J. V. 11. 11.: tečky i v plné moci, bez kontroly. **Verze 12.11.1** (přečísluje koordinace).
+Do `test-draft`, `test`, `main` ani integrace nic; na Disk, weby a do Pipedrive nic. Slučovat **po C1**
+(společný `nastroje/vyrob_sablony.js` — export v5 je vlastním řádkem pod `module.exports`, `REZIM_SOD_REAL5` pod
+`REZIM_SOD_REAL4`) a **před sloučením revize poradce (Fable) nad celým diffem** (smlouva se podepisuje).
+
+| úkol | stav | kde |
+|---|---|---|
+| C2 nástroj `--sod-real-v5`, šablony v5 CZ/EN/DE/FR | ✅ poslané J. V. v sezení (SendUserFile) | `nastroje/vyrob_sablony.js` (sodRealV5), `podklady/SABLONA_SOD_REALIZACE_V5_11_11.md` |
+| C2 jedna šachta = v4, víc šachet předmět + rozpis | ✅ | `src/sod.js` sodSachtySymboly (`odstavcePryc`), `src/docxgen.js` (DOCX_ROZPIS_KLICE) |
+| C2 oprava: smyčka CN mazala `SACHTY_SOD_*` | ✅ | `src/docxgen.js` docxSmyckaSachet (jen symboly smyčky CN) |
+| C2 upozornění u staré šablony + kontrola `vsSablonaSod` | ✅ jen upozornění | `src/sod.js` SOD_SACHTY_BEZ_SABLONY, `src/kontroly.js`, `src/ui/kontroly_ui.js` (ctx.sablonaSod) |
+| C3 tečky (SoD realizace, projekce, plná moc) | ✅ | `src/sod.js` sodNevyplnene, `src/docxgen.js` volba `nevyplnene`, `src/dokumenty.js` |
+| C3 kontrola `sodNevyplneno` / `sodProjNevyplneno` + věta po tisku | ✅ jen upozornění | `src/kontroly.js`, `src/ui/kontroly_ui.js`, `src/ui/sod_ui.js` |
+| testy, mutace [C2] 8/8, [C3] 9/9 | ✅ | `src/test_sod_v5.js`, `src/test_sod_tecky.js`, `src/test_vs_kontroly.js` G, `mutace_jadro.mjs` |
+| příručky, CHANGELOG, roadmapa #583 #584 | ✅ | `manual/obsah.json` kap. 24/25, `manual/admin/obsah.json` A5 |
+| kolo `--bez-mutaci` (KNG_PODKLADY = 34 šablon z Disku + plná moc) | 427/2/6, hodiny +400 dní 344/1/1, statické 5/5 — selhání jen předem padající (níž) | `nastroje/testovaci_kolo.sh` |
+| mutace jádra celé po částech (N = 4, worktree) | ✅ ZELENÁ ČÁST ×4: 210 + 209 + 209 + 209 = **837/837**; server `--kontrola` 1387 úseků OK (server se nemění) | `mutace_jadro.mjs` |
+
+**Změněná očekávání starých testů (pro revizi):**
+- `src/test_sod_proj_cislo.js` — „jen mezery v Čísle SoD“: dřív `číslo {{SOD_CISLO_SMLOUVY}}`, nově `číslo ……`
+  (syntetická v3 i skutečné šablony z Disku).
+- `src/test_kontroly.js` a `overit_lista.mjs` — počet pravidel 48 → 51 (+ vsSablonaSod, sodNevyplneno, sodProjNevyplneno);
+  `manual_vypocet/cisla_vydani.json` `k.pocet` 48 → 51 (jako VS-E5).
+- `mutace_jadro.mjs` „VS-E5: SoD bez předmětu a rozpisu šachet“ — hledaný řádek se změnil (`const sachtyPryc = …`).
+- Ostatní sady SoD (`test_sod*.js`, `test_rozhodnuti_sod.js`, `test_vs_vystupy.js`, `overit_sod_en.mjs`,
+  `overit_sod_proj_*.mjs`, `overit_vs_kryci_sod.mjs`) prošly beze změny očekávání; zlatá sada 319/319.
+
+**Rozhodnutí sezení (výchozí varianty, k potvrzení):**
+- Rozpis šachet stojí za řádkem „z toho cena díla dle cenové nabídky“ (bez objednaných příplatků hned pod
+  celkovou cenou), objednané příplatky za ním. Odstavce bez uvozujícího textu.
+- Kontrola SoD jsou **dvě** pravidla (`sodNevyplneno` strana OCK, `sodProjNevyplneno` strana PROJ) — jeden kód
+  nemůže vrátit dva nálezy.
+- Popisy chybějících údajů jmény polí krycího listu („IČO **zákazníka**“), ne „objednatele“ — krycí list mluví
+  o zákazníkovi (hlídá `overit_zobrazeni.mjs`) a obchodník je tam doplní.
+- Tečky dostane i prázdná hodnota (např. zpracovatel bez jména, když není přihlášený) — prompt: „chybí nebo prázdné“.
+- Šablony SoD a SoD PROJ se pro kontroly stahují jen u víc šachet nebo zamčené (odeslané) varianty.
+
+**Zjištění:** SoD realizace v4 symboly **žlutě podbarvené nemá** (SoD projekce v4 a plná moc ano) — tečky jsou
+žluté jen tam. Text po tisku proto bez „žlutě“. Kdyby J. V. chtěl žluté tečky i v realizaci, šlo by podbarvení
+přidat v5 (nástroj) nebo generátorem.
+
+**Předem padající sady se šablonami z Disku (i nad bází aa445a1, s dávkou nesouvisí):** `test_sablona_proj_v6.js`
+(skutečná PROJ v6: řádky bloků ≠ v5 — Disk má upravené znění firmy), `overit_sablona.mjs` (v12: nový symbol).
+
+**Na J. V.:** nahrát SoD realizace v5 (CZ+EN/DE/FR najednou, až s kódem C2/C3; postup v podkladu a A5); odpovědět
+na otázky (uvozující text, rozpis před slevou u nabídky se slevou, žluté tečky v realizaci).
+
+---
+# Předávka — VSD: upozornění vsTvar (#586), harness lišty K43-T1 (#587), poznámka šachet do Pipedrive (#588), větev `claude/vsd-drobnosti`
+
+Nad `aa445a1` (integrace = test v11.11.1), prompt `podklady/PROMPT_VSD_PO_KOLE47.md` (f0fcffc) + doplněk J. V. 11. 11.
+(poznámka Pipedrive); 12. 11. sloučena integrace `1a08186` (v12.11.3, K40b, C1) a #588 upraveno po revizi Fable.
+**v12.11.4** (poslední commit 12. 11. UTC; koordinace přečísluje). Do `test-draft`, `test`,
+`main` ani integrace nic; weby, Disk, ostrý Pipedrive nic (jen simulátor). Sezení 11. 11. ve 14:38 stál limit účtu,
+12. 11. pokračováno v témž kontejneru (nic se neztratilo, zbytek mutace žádný).
+
+| úkol | stav | kde |
+|---|---|---|
+| #586 vsTvar | ✅ | `src/kontroly.js` (pravidlo mezi vsModel1 a vsSablona; `kontrolyVsZapnuto`, `kontrolyVsOckSurova`, `kontrolyVsTvarText`), `src/ui/kontroly_ui.js` (`ockSurova`) |
+| počet pravidel 48 → 49 | ✅ | `src/test_kontroly.js`, `overit_lista.mjs`, `manual_vypocet/cisla_vydani.json` (`k.pocet`, stejně jako VS-E5) |
+| #587 K43-T1 | ✅ | `overit_lista_cekani.mjs` (jen harness) |
+| #588 poznámka Pipedrive | ✅ po revizi Fable (N1–N3, a, b) | `netlify/lib/pd_poznamka.mjs`, `netlify/functions/zakazky.mjs` (třetí čtení), `netlify/lib/pipedrive.mjs` (`volby.pokusu`, `volby.casLimitMs`), `netlify/lib/pipedrive_simulator.mjs` (`/v1/notes` seznam/GET/POST/PUT, scénář `visi`, háček `poPozadavku`), `netlify/lib/pd_prevod.mjs` + `src/pd_nanecisto.js` (text důvodu náhledu) |
+| mez B217 | ✅ | `BEZPECNOST_MEZE.md` (poslední oddíl; B215–B216 má C5, ověřeno ve všech větvích) |
+| příručka kap. 25 | ✅ | věta o mezích (10 variant, 1–20 ks) + položka „Pipedrive“; verze příručky v12.11.4 |
+| roadmapa | ✅ | #586, #587, #588 hotovo v12.11.4 (`roadmapa.py --kontrola` čisté) |
+| testy | ✅ | `src/test_vs_kontroly.js` 40/0 (nad bází 17 FAIL); `netlify/test_vsd_pd_poznamka.mjs` 49/0 (jen simulátor; bez napojení padá); `test_vs_e5_pd` 9/0; zlatá sada 319/319; `test_kontroly` 159/0 |
+| mutace | ✅ | jádro [VSD] 4/4, server [VSD] 20/20, přepsaná #536 a B105 1/1 (sada `test_vsd_pd_poznamka.mjs` v seznamu sad `netlify/mutace.mjs`; dvě starší zadání B105 a #536 přepsána na nový tvar kódu) |
+| kolo `--bez-mutaci` | ✅ VŠE ZELENÉ (nad sloučenou integrací v12.11.4) | sady 437/0/7 (přeskočeny jen sady s firemními podklady), hodiny +400 dní 354/0/1, statické 5/5. Celé mutace pouští koordinace. |
+| kontext sezení | 46 % | `get_session` 12. 11. |
+
+## Rozhodnutí bez J. V. (výchozí varianty)
+
+1. **vsTvar s vypnutou funkcí mlčí** — prompt tvrdil „jako ostatní pravidla vs…“, ale vsModel1/vsSablona na
+   vypínač nehledí (běží nad `ctx.__vs`). Pravidlo čte `ctx.viceSachet`, jinak `viceSachetZapnuto()` z UI, bez
+   údaje (testy, server) bere zapnuto. Důvod: server tvar s VYP nekontroluje (hlídá jen nezměněnost, 409) a lištu
+   ukazuje `vsVypnutoHlaska`.
+2. **Shoda se serverem doslova**: pravidlo hlásí, kdykoli `vsTvarProblemy` ≠ [] (i šachta 1 s `ks: "1"` jako
+   text — server ji se ZAP odmítne). `kde: 'Kalkulace OCK'` → u zakázky „jen projekce“ mlčí (jako ostatní
+   pravidla OCK).
+3. **test_kontroly.js se změnil** jen v počtu pravidel (49) — bez toho by padal; kolize s C2+C3 (také přidává).
+4. **Poznámka Pipedrive se píše při uložení zakázky** (ne webhookem, ne tlačítkem): jediné místo, kde server má
+   aktuální šachty; jen při změně textu. Webhook pole zachová (kopíruje uloženou zakázku).
+5. **Která varianta**: řídící (`ridiciVarianta`), stejně jako rejstřík a Pipedrive náhled.
+6. **Text** = věta náhledu (`'Šachty v nabídce: ' + vsPredmetText`), z dat místo z výsledku (shodu hlídá test).
+7. ~~Zápis smí každý~~ → **rozhodnutí koordinace (a)**: jen s právem `crm.pipedrive` (B80), jinak `bez-prava`.
+8. **Rozhodnutí koordinace (b)**: poznámka se nemaže; přechod na jednu šachtu (ZAP, týž deal, id je) = úprava na
+   „Šachty v nabídce: 1 šachta“. Změna dealu a VYP v mezích (B217).
+
+## Revize Fable (12. 11. 2026) a co se změnilo
+
+#586 a #587 schváleny ke sloučení. #588 vráceno — opraveno:
+- **N1** (blokující): po návratu z Pipedrive se zakázka čte POTŘETÍ, jiné razítko = 409 (test: háček simulátoru
+  zapíše jinou verzi během PUT → 409, zápis jiné instance zůstal; další uložení poznámku převezme, žádná druhá).
+- **N2** (blokující): `pdZavolej` umí `casLimitMs` (AbortController + závod s časovačem, včetně čtení těla) →
+  504 „Pipedrive neodpověděl do 2,5 s“; poznámka: 2,5 s na volání, 6 s celkem, stav `chyba`, varování,
+  zakázka uložena (test se scénářem simulátoru `visi`).
+- **N3**: značka „— nabídka <číslo>“ v textu; bez id nejdřív `GET /v1/notes?deal_id=` a převzetí aktivní
+  poznámky téhož dealu, která začíná „Šachty v nabídce: “ a končí značkou (porovnává se bez HTML značek);
+  POST jen když není. Souběh dvou instancí zůstává zbytkovou mezí (B217).
+- **(a)** právo `crm.pipedrive` (`zobrazeniSmi`, matice z uložení), **(b)** jedna šachta = „1 šachta“, strop
+  čerpají i neúspěšné pokusy — vše v B217.
+
+## Ostatní harnessy lišty (bod 6 — jen výpis, bez nálezu selhání neopravováno)
+
+- `overit_lista.mjs`: 35× `waitForTimeout` (po `goto` 700 ms, po akcích 150–900 ms) — stejný vzor „pevný čas
+  místo stavu“.
+- `overit_zaloha_lista.mjs`: po `goto` 400 ms (ř. 48), po odložení zálohy 80 ms (ř. 126).
+- Pro koordinaci „Zefektivnění programu“ (M0/O): v `overit_lista_cekani.mjs` je hotový vzor — obal `fetch`
+  v `addInitScript` (časy odpovědí `/api/*` v čase stránky), `dobeh(page, ms)` = čekání na čas stránky,
+  `waitForFunction` nad `ONLINE_STAV`; neopakovat.
+
+## Stabilita K43-T1 — čísla (12. 11. 2026, kontejner 4 jádra)
+
+**Selhání K43-T1 se nepodařilo zopakovat; oprava je preventivní, doložená jen pojistkou.**
+
+**Selhání 31/1 se tu nepodařilo vyvolat.** Původní harness (`aa445a1`): samostatně 10/10 OK, pod CPU zátěží
+(4 smyčky) 10/10, tři instance souběžně 12/12, tři instance + CPU zátěž 21/21 — tedy 0 selhání z 53. Nový harness:
+samostatně 1/1, tři instance + CPU zátěž **21/21 (32/0)**. Oprava je proto preventivní podle popsané třídy chyby
+(pevný čas místo stavu, meze od navigace), ne potvrzená reprodukcí. Pojistka proti prázdnému testu: s lištou hned
+po startu (lokálně v `dist/`: `UKAZKOVE_CEKANI_MS = 0`, `UKAZKOVE_OVERENI_MS = 0`, okno přihlášení nečeká)
+nový harness **22/10** (padají A, B×2, C×3, D, F, G×2). Doba běhu ~42 s (dřív ~45 s).
+
+Pozor při měření: změna `verze.txt` bez nového sestavení `dist/` vyvolá v harnessech okno „nová verze aplikace“
+(server hlásí jinou verzi) a scénář D spadne na kliknutí — měření se tím jednou zneplatnilo, opakováno.
+
+
+---
+# Předávka — 12. 11. 2026: C5 #585 — nástroj obnovy testovací sady zakázek TEST, větev `claude/c5-test-sada`
+
+Nad `aa445a1` (integrace = test v11.11.1). **v12.11.4** (koordinace přečísluje; po sloučení integrace 1a08186 = v12.11.3 s K40b). Do `test-draft`, `test`, `main`
+ani integrace nic. Weby, Disk, Pipedrive nic. **Nástroj sezení proti žádnému webu nespustilo** (jen místní server
+v paměti). Kód aplikace a serveru (`src/`, `netlify/functions`, `netlify/lib`) beze změny. 11. 11. ve 14:38 sezení
+stálo na limitu účtu, 12. 11. pokračovalo ve stejném kontejneru, nic se neztratilo.
+
+| úkol | stav | kde |
+|---|---|---|
+| jádro (čisté funkce, `fetch` předaný) | ✅ | `nastroje/test_sada_jadro.mjs` (`cilPovolen`, `cilOstry`, `cisloJeTest`, `zakazkaCizi`, `vyberZExportu`, `vyberZeZalohy`, `planKroku`, `porovnej`, `ocistiText`, `obnovSadu`) |
+| obal pro příkazovou řádku | ✅ | `nastroje/test_sada_obnov.mjs` (`--web`, `--export` / `--zaloha`, `--zapsat`; .json i .json.gz; heslo bez ozvěny; Ctrl+C dokončí rozpracovanou) |
+| P1–P7 | ✅ | viz CHANGELOG v12.11.1, meze **B215–B216** v `BEZPECNOST_MEZE.md` |
+| testy | ✅ 131/0 | `netlify/test_c5_test_sada.mjs` (body 1–9 zadání + obal z příkazové řádky proti místnímu HTTP serveru 127.0.0.1); sadu bere `spust_testy.sh` sám (glob `netlify/test_*.mjs`) |
+| mutace „[C5]“ | ✅ 30/30 chycených (po revizi +7: B1 obal a migrace_znacky, B2 doporučení, upozornění, čtení zpět) | 23 v `netlify/mutace.mjs`, sada `test_c5_test_sada.mjs` v `SADY`; `--kontrola` 1410 úseků OK |
+| návod pro J. V. | ✅ | `podklady/NAVOD_TEST_SADA_OBNOVA.md` (primárně soubor od testovacího sezení, druhá možnost otisk z Disku) |
+| roadmapa #585, CHANGELOG, README_ZDROJAKY, .gitignore | ✅ | `roadmapa.py --kontrola` 580 položek bez nálezu |
+| revize Fable (12. 11.) | ✅ opraveno | B1 heslo se v terminálu zobrazovalo (i `migrace_znacky.mjs`) → readline jen po dobu otázky, test v pseudo-terminálu (`script`); B2 po K40b prodej starší 7 dní → 400 → souhrn „ODMÍTNUTÉ ZAKÁZKY“ s doporučením Obnovit ze zálohy, návod 2a; upozornění na odhlášení; čtení zpět v try/catch; sloučena integrace 1a08186 (v12.11.3 s K40b) |
+| kolo `--bez-mutaci` po revizi | ✅ VŠE ZELENÉ | 437/0/7, +400 dní 354/0/1, statické 5/5 (nad sloučeným K40b) |
+| kolo `--bez-mutaci` (před revizí) | ✅ VŠE ZELENÉ | sady 427/0/7 přesk. (jen firemní podklady a test.js), +400 dní 344/0/1, statické 5/5, 30 min; `mutace_jadro.mjs --kontrola` OK. Pozn.: `node_modules/playwright` + `playwright-core` = odkazy na `/opt/node22/lib/node_modules` (jinak se prohlížečové sady přeskočí) |
+| K40b (#580) nad sloučeným stromem | ✅ | sloučena integrace 1a08186; prodej starší 7 dní → 400, vypsáno s doporučením (test B2) |
+
+**Zjištění k zámkům (P5, místní server, skutečné funkce):**
+- Odeslaná nabídka (zámek `nabidkaTisk`), prodaná varianta, prodaná s tiskem SoD i víc šachet se zapnutou
+  funkcí **projdou** jako nová zakázka administrátora. Zámek (číslo, typ, čas), prodej, data variant a **autor
+  z exportu** zůstanou. Server zámek ověří znovu (`overeni`, přísně B119) a `kdo` přepíše z relace (B95).
+  Nástroj ty dva klíče nesrovnává.
+- Server razí `sleva.role` / `slevaProj.role` rolí ukládajícího (Administrátor). Je to pravidlo „role slevy
+  určuje relace“ (K16-N73). Nástroj ho vědomě nepočítá za rozdíl (`RAZI_SERVER`). Ostatní rozdíl hlásí cestou
+  ke klíči.
+- **Odmítne (409):**
+  - zámek bez `cisloPapir` (před #320, 9/2026), protože nový zámek musí nést číslo z papíru (B61),
+  - zakázka s víc šachtami, když je vypínač vypnutý.
+
+  Nástroj je neupravuje, jen vypíše s důvodem serveru. 409 bez `kolize` se nepočítá jako souběh.
+- Dál by neprošly (podle kódu, netestováno na datech): čas zámku starší než 400 dní, profil mimo katalog,
+  ceník bez cen u nového zámku.
+- **Odhlášení nástroje** (`/api/odhlaseni`) zvedá verzi hesla účtu, takže ukončí i přihlášení správce
+  v prohlížeči. Stojí v návodu.
+
+**Odchylky od zadání (bezpečnější výchozí):**
+1. Zámek bez čísla = zakázka nesplňuje P3 (z čeho jinak poznat testovací nabídku).
+2. Číslo PROJ s předlohou „2026 - OPR - CN - “ = nevyplněné (jako `hlavickaVyplneno`), nehlídá se.
+3. Odmítnutý cíl, zdraví ≠ test, cizí zakázka v exportu → kód **2** (vstup / cíl), ne 1.
+4. `--export` přijme i `{ zakazky: { jméno: zakázka } }` (mapa jako ve stažené záloze). Pravidlo „jediná cizí =
+   nic“ platí i tak.
+5. `/api/zdravi` se ptá třikrát (před přihlášením, po něm, před prvním zápisem), ne jen dvakrát.
+
+**Čeká na J. V. / koordinaci:**
+1. Revize poradce (Fable) nad celým diffem `aa445a1..claude/c5-test-sada` **před sloučením**. Do té doby se
+   nástroj nikomu nedává ke spuštění.
+2. Testovací sezení připraví soubor `test_sada_export_2026-11-02.json` (jen TEST zakázky z kopie z 2. 11.)
+   a pošle ho J. V. jako soubor ke stažení.
+3. Otázky v závěrečné zprávě koordinaci (zamčené odmítnuté TEST zakázky, zdroj exportu).
+# Předávka — C1 #582: šablona CN v17 CZ/EN/DE/FR + jednotné nadpisy USAZENÍ OCK (DE, EN), větev `claude/c1-cn-v17`
+
+Nad `aa445a1` (integrace = test v11.11.1). **v12.11.1** (koordinace přečísluje). Do `test-draft`, `test`, `main`
+ani integrace nic; weby, Disk, Pipedrive nic. Podrobnosti a návod pro J. V.: `podklady/SABLONA_CN_V17_11_11.md`.
+
+| úkol | stav | kde |
+|---|---|---|
+| slovník DE „POSITIONIERUNG DER SCHACHTKONSTRUKTION – …“, EN „SHAFT STRUCTURE POSITION – …“ (FR beze změny) | ✅ | `src/preklad.js` (4 hesla) |
+| `--cn-usazeni` (oprava v16 DE/EN, tvrdé kontroly, idempotence) | ✅ | `nastroje/vyrob_sablony.js` `cnUsazeni`, `cnUsazeniSoubor` |
+| `--cn-v17` přímo z jazykové v16 (`cnV17(xml, L)`, `cnV17Jazyk`, kontrola v17 bez smyčky = v16) | ✅ | tamtéž; strojový překlad jen záloha s UPOZORNĚNÍM |
+| šablony CN v17 CZ/EN/DE/FR + opravená v16 DE a EN | ✅ předáno J. V. (SendUserFile) | `podklady/sablony_vystup/` (gitignore) |
+| testy | ✅ | `src/test_cn_usazeni.js` 32/0, `src/test_vs_docx_v17.js` 47/0 (+18 F), `src/test_preklad.js` (+25) |
+| zlaté otisky | ✅ přegenerováno (pokyn koordinace 12. 11.) | jen `nahled-en`; se starým EN zněním = původní JSON bajt po bajtu |
+| mutace [C1] | ✅ 8/8 | `mutace_jadro.mjs`, `--kontrola` 828/828 |
+| ověření nad firemními v16 | ✅ | jedna šachta v17 = v16 1276/1276 (319 scénářů × 4 jazyky), víc šachet 20/20 |
+| dokumentace | ✅ | příručka správce A5, CHANGELOG v12.11.1, roadmapa #582 |
+
+**Kolo `--bez-mutaci` s KNG_PODKLADY (12. 11., 34 min):** sady 425/3/6, hodiny +400 dní 342/2/1, statické 5/5.
+Selhání: `test_manual_fakta` (historie rozhodnutí v textu A5) — **opraveno** v dalším commitu (14/0);
+`test_sablona_proj_v6` (skutečná PROJ v6 z Disku) a `overit_sablona` (v12 na Disku není) padají **stejně nad
+bází aa445a1** se stejnými podklady — nesouvisí s dávkou. Mutace celé pouští koordinace při slučování.
+
+**Čeká na J. V.:** kontrola slovníku (Nastavení → Slovník, přepisy hesel USAZENÍ OCK), nahrát opravenou v16 DE/EN
+a v17 všech čtyř jazyků v testu i main naráz; otázky: „VÝTAHOVÁ ŠACHTA“ → „shaft“ v online cizojazyčné nabídce
+(změnit heslo?), sjednotit i FR nadpisy usazení? Zdrojové v16 na Disku upravené 10. 11. 2026 13:52 UTC — potvrdit,
+že jsou totožné se zveřejněnými.
+
+---
+# Předávka — K40b #580: dolní mez data prodeje z razítka přijetí zámku (K40-S1, K40-N3), diagnostika rozdílu zámku (K40-S2), větev `claude/k40b`
+
+Nad `c664c9e` (integrace v11.11.1). **v11.11.2** (koordinace přečísluje — souběžně K40a #579). Do `test-draft`, `test`
+ani `main` nic; weby, Disk, Pipedrive nic. Zadání: `podklady/PROMPT_K40_OPRAVY.md` + `…_v2.md` (přednost, bod F a D)
++ `K40_POSUDEK_FABLE.md` ve větvi `claude/k40-posudek`; rozhodnutí J. V. 11. 11. 2026: 3a, 4a. Revizi před sloučením
+dělá poradce Fable.
+
+| úkol | stav | kde / poznámka |
+|---|---|---|
+| S1: razítko `zamek.prijato` píše jen server (nový zámek, příchozí zahodí) | ✅ | `netlify/lib/zakazka_kontrola.mjs` (příjem nového zámku, `tedServer`) |
+| S1: mimo klíč zámku, držet přes `uloZamekRazitkaDrz` | ✅ | `src/uloziste.js` (seznam + `prijato`); `uloZamekKlic` beze změny → starší klient bez 409 |
+| S1: pořadí `prodServer` × `uloZamekRazitkaDrz` | ✅ | `prodServer` bere razítko z uložené verze, u nového zámku čas serveru (`ctx.kdy`), nikdy z příchozích dat |
+| S1: `prodJedinaZmena` vynechá `zamek.prijato` | ✅ | `src/objednane.js` |
+| S1: odpověď uložení `zamkyPrijato`, prohlížeč dopíše | ✅ | `functions/zakazky.mjs`; `ui/online_ui.js` `onlinePrijatoZeServeru` (i do „naposledy uloženo“ při změně během letu) |
+| S1: mez `max(den(kdy), den(prijato − 7))`, jedna funkce klient i server | ✅ | `prodDatumMez`, `PROD_PRIJATO_TOLERANCE_DNI`; karta Prodej (`ui/sod_ui.js`) min/titulek z téže funkce |
+| S1: výjimka vedoucí/admin s důvodem → `prodejHistorie` | ✅ | `v.prodano.vyjimka` (dotaz v kartě), `prodVyjimkaText` (řídicí znaky, strop 500), server zahodí pole z prodeje; pod den odeslání nikdo |
+| N3: mez nejvýš dnes | ✅ | `prodDatumMez` |
+| obnova: otisk přebírá, soubor zahodí (3a) | ✅ | `zakazka_kontrola.mjs` (obnova nového zámku), `prodServer` (obnova → bez času serveru, mez z `kdy`) |
+| S2: kanonizace jednou | ✅ | `src/zamek.js` `zamekDataRozdilCesta`; výstup = referenční kopie (3 000 párů, 10 šachet) |
+| meze B206–B207 | ✅ | `BEZPECNOST_MEZE.md` oddíl „K40b #580“ (B207 = 4a jen zapsáno) |
+| příručka | ✅ | `manual/obsah.json` karta Prodej |
+| testy s pojistkou | ✅ | `src/test_k40b_zamek_prodej.js` 50/0, `netlify/test_k40b_prodej_mez.mjs` 31/0 — nad c664c9e padají |
+| zlaté sady | ✅ | VS 319/319, můstky (`test_560_mustky_sekce.js`) 228/0 — otisky beze změny, nepřegenerováno |
+| mutace | ✅ | [K40b] server 12/12, jádro 3/3; posunutá zadání (K37-N4 ×3, rev #401 N1, K7-S2, B105, K7-K1 ×2) chycená; `--kontrola` obou sad OK; **celé jádro po částech (N = 4) 823/823** (206/206/206/205, worktree nad `dc3efcd`) |
+| kolo `--bez-mutaci` | ✅ VŠE ZELENÉ | 428/0/7 (přeskočené jen firemní podklady), +400 dní 345/0/1, statické |
+| CHANGELOG, roadmapa #580, verze | ✅ | v11.11.2; `roadmapa.py --kontrola` 580 položek bez nálezu |
+
+**Otevřené body / pro revizi:**
+1. Výjimka smí jít jen do dne odeslání (`tvrda`), ne níž — výklad zadání („datum pod mezí smí zapsat vedoucí…“)
+   s pojistkou K37-N4; kdyby J. V. chtěl výjimku i pod den odeslání, je to jedna podmínka v `prodDatumProblem`.
+2. Obnova ze souboru: je-li tentýž zámek už v databázi, zůstane razítko z databáze (`uloZamekRazitkaDrz`); ze souboru se
+   nikdy nečte.
+3. Klient bez razítka (před první odpovědí) má volnější `min` u pole data; server pak vrátí 400 s hláškou — v pořádku podle v2.
+4. B207 (období odeslání v controllingu z `zamek.kdy`) — jen zapsáno; přechod na `prijato` = otázka 4b, samostatná položka.
+5. K40-S4 (`ADMIN_EMAIL` bez výchozí hodnoty v `test_555*`) řeší K40a — samostatně tyto sady bez proměnné padají.
+# Předávka — K40a #579: opravy po revizi Fable (verdikt „sloučit po opravě“), v12.11.1, větev `claude/k40a`
+
+| bod revize | stav | kde |
+|---|---|---|
+| D1 import zamčené varianty nemigruje sklo šachet 2+ | ✅ | `skloMigraceNazvu(d, { jenPrvni })`, `importZakazka`; nezamčená migruje jako šachta 1 od K37; mez B205a; test 7b v `test_k40_celni_sklo.js` 75/0 (ed98942: 3 FAIL) |
+| D2 neplatný den kopie → úklid nemaže | ✅ | `retenceZalohDiskPredchozi` → `neplatnyDen`; prohlížeč i `kopie_disk.gs` (skript připomene e-mailem); `test_z2_disk_retence` 59/0 (3 FAIL), `test_577_apps_script` S13 34/0 (1 FAIL) |
+| D3 zbytková mez B205 (minulý den + pozdější čas) | ✅ | `BEZPECNOST_MEZE.md` |
+| D4 test_funkce dvojí import, mrtvá větev | ✅ | modul nastaví `KNG_ADMIN_EMAIL_VYCHOZI=1`; 304/0 s i bez ADMIN_EMAIL |
+| D5 sirotek čelního skla tam a zpět | ✅ jen mez | B205b, CHANGELOG |
+| D6 hláška šířky z konstant | ✅ | `mustekMmText`; `test_k40_mustky_cenik` 31/0 (1 FAIL) |
+| D7 escJs u bind | ✅ | `kryci_proj_ui.js` i `kryci_ui.js` (2 místa, hlídač našel i OCK); `bind` v RIZIKO; `test_escape` 42/0 (2 FAIL) |
+| mutace | ✅ | jádro [K40a] 22/22, server [K40a] 13/13, úklid 22/22; `--kontrola` 842 / 1400 |
+| zlatá sada | ✅ | 319/319, můstky 228/0 |
+| kolo `--bez-mutaci` nad v12.11.1 | ✅ VŠE ZELENÉ | 433/0/7, +400 dní 350/0/1, statické 5/5 |
+| otázka 6, Apps Script | — | otázka 6 se nedělá; `kopie_disk.gs` vloží J. V. až po sloučení do `test` |
+
+# Předávka — K40a #579 (meze B199–B205): opravy z posudku K40 — sklo víc šachet, můstky, ořez řetězců, CSV, escJs, retence Disku, harnessy; větev `claude/k40a`
+
+Nad `c664c9e` (integrace `claude/integrace-16-10` v11.11.1; před koncem ověřeno, že se nepohnula). **v11.11.2.** Do `test-draft`, `test`
+ani `main` nic; weby, Disk, Pipedrive nic. Paralelně K40b (S1+N3, S2 — zamek.js, zakazka_kontrola, prodej): jejích souborů jsem se nedotkl.
+Podklad: `podklady/K40_POSUDEK_FABLE.md` + `PROMPT_K40_OPRAVY_v2.md` (větev `claude/k40-posudek`), rozhodnutí J. V. 11. 11.
+
+| bod | stav | kde / poznámka |
+|---|---|---|
+| krok 0 — trvají nálezy? | ✅ | vše trvá kromě T2 (opraveno už FL #576) |
+| N1 — čelní sklo přejmenovat jen při skutečném přepnutí (import beze změny) | ✅ | `common.js` `set()` předá `predCelni` jen u `Z.typSachty`/`Z.zaskleni`; `engine.js` `skloMigraceZadani` přesná dvojice; rozhodnutí 2a (převzít vše jako K37), 1a (staré osiřelé nechat) |
+| skloMigrace pro šachty 2+ (nový nález) | ✅ | `skloMigraceNazvu` iteruje i `ock.dalsi[].zadani`; test `test_k40_celni_sklo.js` 68/0 (na c664c9e 27 FAIL) |
+| N2 — referenční šířka můstku 500–5 000 mm (8a) | ✅ | `MUSTEK_REF_SIRKA_MIN/MAX_MM`, `mustkyCenikKontrola` obal; `test_k40_mustky_cenik.js` 30/0 (16 FAIL) |
+| N5 — kontrola zahraniční řady můstků (dialog i server) | ✅ | `cenik_rady.js` `mustkyCenikKontrolaZahr`, `program_ui.js`, `program.mjs`; `netlify/test_k40_mustky_program.mjs` 12/0 (4 FAIL) |
+| N4 — sazba DPH PROJ u starší zakázky | ✅ komentář | chování beze změny (rozhodnutí 4. 11.), opraven komentář; `test_k40_dph_proj.js` 6/0 (1 FAIL) |
+| X1/X2 — ořez konců bez regexu s kotvou (ReDoS) | ✅ | `format.js` `orezKonce`, `nazvy_souboru.js` (strop 200), `preklad.js`, `plan_plateb.js`, `slovnik.js`; `test_k40_orez_konce.js` 17/0 (6 FAIL) |
+| X5 — záložní buňka CSV s ochranou vzorců | ✅ | `slovnik.js`, `pd_nanecisto.js` (require `format.js` `csvBunka`); `test_k40_csv_bunka.js` 23/0 (10 FAIL) |
+| X6 — escJs u `path`/`cesta` v onclick/onchange | ✅ | `common.js`, `cenik_ui.js` 18 míst; `test_escape.js` 42/0 (2 FAIL) |
+| X4 — retence Disku: budoucí kopie nesrovnávat, hlásit (7a, i AS skript) | ✅ | `retence_zaloh.js` `retenceZalohDiskPredchozi`, `online_ui.js` `kopieDiskUklid(Text)`, `kopie_disk.gs` (`vloz_retenci.py --kontrola` aktuální); testy `test_z2_disk_retence.js` 56/0 (3 FAIL), `test_577_apps_script.mjs` 33/0 (2 FAIL) |
+| S4 — ADMIN_EMAIL v netlify testech | ✅ | `netlify/pomoc_test_admin.mjs` importovaný jako první ve 12 testech |
+| T1/T3 — harnessy šablon s nejvyšší verzí | ✅ kód / ⬜ ověření | `harness_podklady.mjs` `najdiSablonu`; `overit_nabidka_proj_word`, `overit_sablony_online`, `overit_sod`; **bez šablon z Disku se přeskočí (kód 4) — ověřit s `KNG_PODKLADY`** |
+| P1 — meze přečíslovat (B176–B179 kolidovaly) | ✅ | #553 → B199–B202; `test_meze_cisla.js` 6/0 (4 FAIL) |
+| meze X3/S3/X4 | ✅ | `BEZPECNOST_MEZE.md` B203 (X3), B204 (S3), B205 (X4) |
+| otázka 6 — šířka skupiny můstků v metrech | ⬜ nedělal | v2: „nedělej bez pokynu J. V.“ (J. V. řekl 6a — jen varování pod 300 mm; čeká na potvrzení, že se má dělat v K40a) |
+| otázka 3a, 4a | → K40b | |
+| webhook K40c | ⬜ dle pokynu | |
+| zlatá sada víc šachet / můstky | ✅ | 319/319, `test_560_mustky_sekce.js` 228/0 — otisky beze změny |
+| mutace [K40a] | ✅ | jádro **19/19**, server **9/9** (X5/X6 nejdřív NECHYCENÉ — sady chyběly v SADY, doplněno); překotvené staré: jádro K37, server #577/#552/#523/#527 (úklid 22/22, #577 1/1, #552 1/1); `--kontrola` jádro 839, server 1396 |
+| kolo `--bez-mutaci` nad v11.11.2 | ✅ VŠE ZELENÉ | sady 433/0/7, +400 dní 350/0/1, statické 5/5 (33 min); přeskočeno 7 — test.js a 6 harnessů bez KNG_PODKLADY |
+| CHANGELOG, roadmapa #579, manuály | ✅ | v11.11.2; `roadmapa.py --kontrola` 580 OK |
+
+**Pro J. V.:**
+1. **Vložit nový `nastroje/apps_script/kopie_disk.gs` do Apps Scriptu** (postup `podklady/NAVOD_ZALOHA_APPS_SCRIPT.md`) — X4 je ve skriptu.
+2. Ověřit harnessy šablon s podklady: `KNG_PODKLADY=… node overit_nabidka_proj_word.mjs`, `overit_sablony_online.mjs`, `overit_sod.mjs`.
+3. Otázka 6 (šířka skupiny můstků) — potvrdit, zda dělat.
 
 # Předávka — VS-E6 #570 (#596): závěr víc šachet — překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi po částech, větev `claude/vs-e6`
 
@@ -658,8 +1007,13 @@ Druhé kolo `--bez-mutaci` nad fc7a7ab: **VŠE ZELENÉ** (sady 381 / 0 / 7 přes
 - Manuál výpočtu: `cisla_vydani.json` k.pocet 44 → 47 (počet kontrol) — vydaný manuál říká 44.
 - B195: ruční cena smí snížit náklad bez schválení (rozhodnutí B-Q3); minimální marže se u ní nehlídá.
 - `overit_roadmapu.mjs` počítal s hotovou vlnou B — upraveno podle dat (týká se i návrhové větve NV).
-# Předávka koordinace — 11. 11. 2026: stav integrace v11.11.1
+# Předávka koordinace — 12. 11. 2026: stav integrace v12.11.7
 
+- **12. 11. 2026 — integrace v12.11.7** = v12.11.6 (test, kolo 440/0/7) + K40c #581 (webhook b, ARES na serveru, Opravit firmu v Pipedrive se shodou IČO; revize + dorevize Fable SLOUČIT). Zbytková mez N5 (na později): zakázka bez autora dostane autora z relace prvního ukládajícího (B73) a ten pak má práva K40c — zvážit nedoplňovat autora u existující zakázky. N6: zápis do organizace Pipedrive ověřit na testu s tokenem nad dealem TEST před ostrým použitím.
+- **12. 11. 2026 — integrace v12.11.6** = v12.11.4 (test) + VSD (v12.11.5: #586 vsTvar, #587 K43-T1, #588 poznámka šachet do Pipedrive jen s právem crm.pipedrive, B217; revize Fable po opravách LZE SLOUČIT) + C2+C3 (v12.11.6: #583 SoD realizace v5 se šachtami, #584 tečky v SoD i plné moci — doplněk J. V.; revize LZE SLOUČIT). Počet pravidel kontrol 52. Otevřené otázky J. V. k SoD v5: umístění řádků šachet, řádek slevy v rozpisu (doporučeno a), žluté tečky v realizaci, šum kontroly nevyplněných polí. K40c (78b6fdf) se slučuje po této integraci. Otevřený bod: první skutečný zápis poznámky do Pipedrive ověřit se speciálními znaky v názvu šachty (porovnání escapovaného textu).
+- **12. 11. 2026 — integrace v12.11.4** = v12.11.3 (test) + C5 #585 (nástroj obnovy TEST sady, revize Fable po opravách B1/B2 LZE SLOUČIT). Nástroj spouští jen J. V. podle podklady/NAVOD_TEST_SADA_OBNOVA.md, export dodá testovací sezení.
+- **12. 11. 2026 — integrace v12.11.3** = test v11.11.1 + K40a #579 (v12.11.1, po revizi Fable D1–D7) + K40b #580 (v12.11.2, revize SLOUČIT) + C1 #582 (v12.11.3, revize LZE SLOUČIT). Main = test = v11.11.1 (6c4bc80, na pokyn J. V. 11. 11.). J. V. 11. 11.: do testu slučovat dál samostatně po zeleném kole. Běží C2+C3 (#583/#584), C5 (#585), VSD (#586/#587); K40c (#581) se spouští teď podle podklady/PROMPT_K40_OPRAVY_v3.md (claude/k40-posudek 1c6dfc3, rozhodnutí J. V. 11. 11.: varianta b, ARES, autor+admin, DIČ přeskočit, shoda IČO). Návrh víc zákazníků: claude/vz-navrh e0e007d, prototyp https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V — 4 otázky J. V. otevřené, programovat po K40c. 11. 11. 14:38 zastavil všechna paralelní sezení 5h limit účtu — pouštět nejvýš ~4 souběžně.
+- **Rozhodnutí J. V. 11. 11.:** EN nadpisy USAZENÍ OCK sjednotit („SHAFT STRUCTURE POSITION – …“, C1); tečky i v plné moci (C2+C3); seznam šachet do Pipedrive jako jedna přepisovaná poznámka u dealu (VSD); TEST sada ze souboru testovacího sezení (C5). Koordinace: u nezamčené varianty víc šachet migruje import sklo šachet 2+ jako šachty 1 (B205a), zamčená se nemění.
 - **Prompt po kole 47 (J. V. 11. 11. 2026, `podklady/PROMPT_RIDICI_SEZENI_PO_KOLE47.md`) — odpovědi J. V. B1–B10 (oddíl B0):**
   1. Víc šachet na ostrém zatím NE (main vypnuto, rozhodne se po ruční zkoušce na testu).
   2. CN v17: sezení vyrobí CZ + EN/DE/FR a vypíše nepřeložené texty; J. V. zkontroluje a zveřejní v testu i main naráz.

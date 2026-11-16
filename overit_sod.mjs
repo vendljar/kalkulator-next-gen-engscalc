@@ -35,17 +35,20 @@ import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 const KOREN = fileURLToPath(new URL('.', import.meta.url));
 
-import { najdiPodklady, preskoc } from './nastroje/harness_podklady.mjs';
+import { najdiSablonu, preskoc } from './nastroje/harness_podklady.mjs';
 const require = createRequire(import.meta.url);
 const { zipPrecti, zipZapis } = require(KOREN + 'src/docxgen.js');
 
 /* Šablony se hledají i v `KNG_PODKLADY` — do 22. 9. 2026 jen na pevné cestě
  * z cizího prostředí, takže se tahle sada mimo ně nemohla spustit nikdy. */
-const { cesty: SABLONY_SOUBORY, chybi } = najdiPodklady({
-  sod: ['/home/claude/work/smlouvy/Sablona_SOD_REALIZACE.docx'],
-  sodProj: ['/home/claude/work/smlouvy/Sablona_SOD_PROJEKCE.docx'],
-  plnaMoc: ['/home/claude/work/smlouvy/Sablona_PLNA_MOC.docx'],
-});
+/* K40-T1: šablona s nejvyšší verzí (Sablona_SOD_REALIZACE_v<číslo>.docx …,
+ * na Disku verzované — SoD v4), jinak jméno bez čísla. */
+const SABLONY_SOUBORY = {}, chybi = [];
+for (const [klic, zaklad] of [['sod', 'Sablona_SOD_REALIZACE'], ['sodProj', 'Sablona_SOD_PROJEKCE'], ['plnaMoc', 'Sablona_PLNA_MOC']]) {
+  const n = najdiSablonu(zaklad, ['/home/claude/work/smlouvy']);
+  if (n) { SABLONY_SOUBORY[klic] = n.cesta; console.log('Šablona ' + klic + ': ' + n.cesta); }
+  else chybi.push(zaklad + '[_v<číslo>].docx');
+}
 if (chybi.length) preskoc('šablony smluv (' + chybi.join(', ') + ')',
   '/home/claude/work/smlouvy/ nebo $KNG_PODKLADY');
 
@@ -135,14 +138,28 @@ test('stavové řádky smluv jsou na třídách (karta OCK je v aplikaci dvakrá
     const vsechny = [...document.querySelectorAll('.sodStav_sod')];
     return vsechny.length >= 1 && vsechny.every(e => e.textContent === 'zkouška stavu');
   }));
+/* K40-T3: od #367 filtruje nastSablony() řádky přepínačem OCK | PROJ — plná
+ * moc a SoD PROJ ve výchozím pohledu OCK chybí. Čte se pohled „všechny
+ * šablony" a stav se vrátí (vzor overit_nabidka_proj_word.mjs). */
 test('Nastavení → Šablony zná řádky smluv i plné moci',
-  await p.evaluate(() => /smlouvy o dílo/i.test(nastSablony()) && /pln[áé] moci?/i.test(nastSablony())));
+  await p.evaluate(() => {
+    const vse = NAST.sablonyVse;
+    try { NAST.sablonyVse = true; const h = nastSablony(); return /smlouvy o dílo/i.test(h) && /pln[áé] moci?/i.test(h); }
+    finally { NAST.sablonyVse = vse; }
+  }));
+test('filtr #367: ve výchozím pohledu OCK řádek plné moci chybí',
+  await p.evaluate(() => {
+    const vse = NAST.sablonyVse, panel = NAST.panelPodminky;
+    try { NAST.sablonyVse = false; NAST.panelPodminky = 'ock'; return !/pln[áé] moci?/i.test(nastSablony()); }
+    finally { NAST.sablonyVse = vse; NAST.panelPodminky = panel; }
+  }));
 test('typy smluv jedou přes centrální šablony (#139)',
   await p.evaluate(() => ['sod', 'sodProj', 'plnaMoc'].every(t => SABLONY_ONLINE_TYPY.includes(t))));
 
 /* ---------- 2) hotové dokumenty ---------- */
 console.log('\nvygenerované smlouvy a plná moc');
 const b64 = {};
+const PREVEDENE = new Set();   // K40-T1: šablony, které už převedené byly (ověřují se přímo)
 for (const [typ, cesta] of Object.entries(SABLONY_SOUBORY))
   b64[typ] = readFileSync(cesta).toString('base64');
 /* Šablona SoD PROJ se seznamem plateb (etapa B plánu plateb, 30. 9. 2026):
@@ -154,12 +171,23 @@ for (const [typ, cesta] of Object.entries(SABLONY_SOUBORY))
   const { sodProjV2, sodRealV2 } = require(KOREN + 'nastroje/vyrob_sablony.js');
   /* Šablony v2 vyrobí z dodaných v1 tentýž nástroj, jaký dostal J. V.
    * (--sod-proj, --sod-real; rozhodnutí J. V. 1. 10. 2026 Q5 a Q6). */
-  for (const [klic, zdroj, uprava] of [['sodProjV2', SABLONY_SOUBORY.sodProj, sodProjV2], ['sodRealV2', SABLONY_SOUBORY.sod, sodRealV2]]) {
-    const casti = await zipPrecti(new Uint8Array(readFileSync(zdroj)));
+  /* K40-T1: aktuální šablony z Disku (SoD v4) jsou už PŘEVEDENÉ — nástroj
+   * pak hlásí „šablona už … má". Taková šablona se nepřevádí, ověří se přímo
+   * (do 11. 11. tu harness skončil výjimkou místo FAIL nebo přeskočení). */
+  const prevod = async (zdrojB64, uprava, popis) => {
+    const casti = await zipPrecti(new Uint8Array(Buffer.from(zdrojB64, 'base64')));
     const d = casti.find(x => x.nazev === 'word/document.xml');
-    d.data = new TextEncoder().encode(uprava(new TextDecoder().decode(d.data)));
-    b64[klic] = Buffer.from(new Uint8Array(await zipZapis(casti).arrayBuffer())).toString('base64');
-  }
+    try { d.data = new TextEncoder().encode(uprava(new TextDecoder().decode(d.data))); }
+    catch (e) {
+      if (!/už .* má/.test(String(e && e.message))) throw e;
+      console.log('  (' + popis + ': šablona už je převedená — ověřuje se přímo)');
+      PREVEDENE.add(popis);
+      return zdrojB64;
+    }
+    return Buffer.from(new Uint8Array(await zipZapis(casti).arrayBuffer())).toString('base64');
+  };
+  for (const [klic, zdroj, uprava] of [['sodProjV2', SABLONY_SOUBORY.sodProj, sodProjV2], ['sodRealV2', SABLONY_SOUBORY.sod, sodRealV2]])
+    b64[klic] = await prevod(readFileSync(zdroj).toString('base64'), uprava, klic);
   /* S9 (15. 10. 2026): SoD PROJ v3 = v2 + řádek „číslo {{SOD_CISLO_SMLOUVY}}"
    * pod nadpisem (vyrob_sablony --sod-proj-cislo). Leží-li v podkladech
    * hotová Sablona_SOD_PROJEKCE_v3.docx z Disku, zkouší se ta. */
@@ -169,10 +197,7 @@ for (const [typ, cesta] of Object.entries(SABLONY_SOUBORY))
     b64.sodProjV3 = readFileSync(v3Disk).toString('base64');
     console.log('  (SoD PROJ v3 z podkladů: ' + v3Disk + ')');
   } else {
-    const casti = await zipPrecti(new Uint8Array(Buffer.from(b64.sodProjV2, 'base64')));
-    const d = casti.find(x => x.nazev === 'word/document.xml');
-    d.data = new TextEncoder().encode(sodProjCislo(new TextDecoder().decode(d.data)));
-    b64.sodProjV3 = Buffer.from(new Uint8Array(await zipZapis(casti).arrayBuffer())).toString('base64');
+    b64.sodProjV3 = await prevod(b64.sodProjV2, sodProjCislo, 'sodProjV3');
   }
 }
 
@@ -308,7 +333,11 @@ const docText = async typ => {
     test('S9 + #366: SoD projekce (v3) s prázdným Číslem SoD nese návrh z čísla nabídky',
       /číslo 2026 - OVP - SOD - 0177/.test(v3p) && !/SOD_CISLO_SMLOUVY/.test(v3p), (v3p.match(/SMLOUVA O DÍLO.{0,120}/) || [''])[0]);
   }
-  test('SoD projekce se starou šablonou (8 pevných plateb) a plánem, který v ní nejde vyjádřit: smlouva nevznikne a řekne proč',
+  /* K40-T1: z převedené šablony (SoD PROJ v2+) starou šablonu s pevnými
+   * platbami vyrobit nejde — kontrola se přeskočí, ne FAIL. */
+  if (PREVEDENE.has('sodProjV2'))
+    console.log('  – přeskočeno: SoD projekce se starou šablonou (podklad je už převedený, stará šablona není po ruce)');
+  else test('SoD projekce se starou šablonou (8 pevných plateb) a plánem, který v ní nejde vyjádřit: smlouva nevznikne a řekne proč',
     /SODP_PLATEBNI_KALENDAR/.test(vysledek.sodProjStara || ''), vysledek.sodProjStara);
   /* Q6 (1. 10. 2026): v2 bere pokutu zhotovitele z pokuty za nedodržení
    * termínu krycího listu PROJ — výchozí „0" větu vypustí. */

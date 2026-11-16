@@ -8,7 +8,10 @@
  *  D) Model 1 + víc šachet = zábrana (vsModel1);
  *  E) šablona CN bez rozpisu šachet (v15/v16) = zábrana jen Wordu nabídky
  *     (vsSablona), v17 / neznámá / jedna šachta mlčí;
- *  F) jedna šachta beze změny; zamčená varianta čte výsledky ze zámku.
+ *  F) jedna šachta beze změny; zamčená varianta čte výsledky ze zámku;
+ *  G) vsTvar (VSD #586, 11. 11. 2026): meze 10 variant a 1–20 ks jako
+ *     upozornění, shoda se serverem (uloVsProblemy). Pojistka: nad aa445a1
+ *     oddíl G padá (pravidlo vsTvar neexistuje).
  * Pojistka: na 079cfc6 sada padá (vada šachty B se nepozná, pravidla
  * vsModel1 / vsSablona neexistují) — viz zpráva commitu.
  * Spuštění: node src/test_vs_kontroly.js */
@@ -144,6 +147,106 @@ const nal = (k, kod) => k.nalezy.find(n => n.kod === kod);
   const p = kontrolyVsPriprav(c, ock);
   test('F zamčená: součet i výsledky šachet ze zámku', p.soucet === c.vysledek && p.sachty[1].vysl === c.vysledek.sachty[1].vysl && p.sachty[1].nazev === 'Výtah B');
   test('F jen projekce: kontroly po šachtách mlčí', kontrolyVsOck(Object.assign({}, c, { jenProj: true })) === null);
+}
+
+/* ---------- G) vsTvar — meze uložení víc šachet (VSD #586, K47-I3) ---------- */
+{
+  const tvar = (u, navic) => { const { zak, v } = zakazka(true, u); return { zak, v, k: kontrolyProved(Object.assign(ctx(zak, v), navic || {})) }; };
+  const dalsiB = (vv, i) => Object.assign(kop(vv.data.ock.dalsi[0]), { id: 's_' + i, nazev: 'Šachta X' + i });
+  /* 11 variant → upozornění s číslem 10 */
+  const g11 = tvar((z, vv) => { for (let i = 2; i <= 10; i++) vv.data.ock.dalsi.push(dalsiB(vv, i)); });
+  const n11 = nal(g11.k, 'vsTvar');
+  test('G 11 variant: upozornění „11 variant … nejvýš 10"', n11 && n11.uroven !== KONTROLY_UROVEN_ZABRANA
+    && /má 11 variant šachet, nejvýš jich může být 10/.test(n11.text) && /nepůjde uložit/.test(n11.text), n11);
+  test('G úroveň upozornění: nabídku, tisk ani SoD nezastaví', !kontrolyZabranaDokumentu(g11.k, 'nabidka')
+    && !kontrolyZabranaDokumentu(g11.k, 'nabidkaTisk') && !kontrolyZabranaDokumentu(g11.k, 'sod') && !g11.k.kodyBrani.includes('vsTvar'));
+  /* ks šachty 2+ mimo meze → název šachty a hodnota */
+  for (const [ks, ukaz] of [[0, '0'], [21, '21'], [1.5, '1,5'], ['dva', '„dva"']]) {
+    const g = tvar((z, vv) => { vv.data.ock.dalsi[0].ks = ks; });
+    const n = nal(g.k, 'vsTvar');
+    test('G ks ' + JSON.stringify(ks) + ' u šachty 2: „Výtah B" a hodnota', n && n.text.indexOf('‚Výtah B‘ má počet kusů ' + ukaz + ',') >= 0
+      && /povoleno je celé číslo 1–20/.test(n.text), n && n.text);
+  }
+  /* šachta 1: ks 0 / 21 / 1,5 / text — i bez dalších šachet (ctx.__vs nevznikne) */
+  for (const [ks, ukaz] of [[0, '0'], [21, '21'], [1.5, '1,5'], ['x', '„x"']]) {
+    const { zak, v } = zakazka(false, (z, vv) => { vv.data.ock.nazev = 'Výtah A'; vv.data.ock.ks = ks; });
+    const k = kontrolyProved(ctx(zak, v));
+    const n = nal(k, 'vsTvar');
+    test('G šachta 1 sama, ks ' + JSON.stringify(ks) + ': upozornění', n && n.text.indexOf('‚Výtah A‘ má počet kusů ' + ukaz + ',') >= 0, n && n.text);
+    /* UI posílá jen ctx.ockSurova (ctx.ock je mimo režim víc šachet null); server jen zak */
+    const kUi = kontrolyProved(Object.assign(ctx(zak, v, { ock: false }), { ockSurova: v.data.ock }));
+    const kSrv = kontrolyProved(ctx(zak, v, { ock: false }));
+    test('G šachta 1 sama, ks ' + JSON.stringify(ks) + ': najde i z ockSurova a ze zakázky', !!nal(kUi, 'vsTvar') && !!nal(kSrv, 'vsTvar'));
+  }
+  /* víc problémů v jednom nálezu (jeden za variantu) */
+  const gm = tvar((z, vv) => { vv.data.ock.ks = 0; vv.data.ock.dalsi[0].ks = 25; vv.data.ock.dalsi[0].nazev = 'N'.repeat(81); vv.data.ock.dalsi[0].cizi = 1; });
+  const nm = gm.k.nalezy.filter(n => n.kod === 'vsTvar');
+  test('G víc problémů: jeden nález, všechny vyjmenované', nm.length === 1 && /‚Výtah A‘ má počet kusů 0/.test(nm[0].text)
+    && /počet kusů 25/.test(nm[0].text) && /šachta 2 má název delší než 80 znaků/.test(nm[0].text)
+    && /data šachet mají neplatný tvar/.test(nm[0].text), nm);
+  /* v mezích: 10 variant × 20 ks → nic */
+  const g10 = tvar((z, vv) => { vv.data.ock.ks = 20; vv.data.ock.dalsi[0].ks = 20;
+    for (let i = 2; i <= 9; i++) vv.data.ock.dalsi.push(Object.assign(dalsiB(vv, i), { ks: 20 })); });
+  test('G 10 variant × 20 ks: bez nálezu', !nal(g10.k, 'vsTvar') && g10.v.data.ock.dalsi.length === 9, g10.k.kody);
+  /* jedna šachta: nic; vypnutá funkce: mlčí */
+  const { zak: z1, v: v1 } = zakazka(false);
+  test('G jedna šachta: bez nálezu', !nal(kontrolyProved(ctx(z1, v1)), 'vsTvar'));
+  test('G vypnutá funkce (ctx.viceSachet false): mlčí', !nal(tvar((z, vv) => { vv.data.ock.dalsi[0].ks = 0; }, { viceSachet: false }).k, 'vsTvar'));
+  global.viceSachetZapnuto = () => false;
+  test('G vypnutá funkce (UI viceSachetZapnuto): mlčí', !nal(tvar((z, vv) => { vv.data.ock.dalsi[0].ks = 0; }).k, 'vsTvar'));
+  global.viceSachetZapnuto = () => true;
+  test('G zapnutá funkce (UI): hlásí', !!nal(tvar((z, vv) => { vv.data.ock.dalsi[0].ks = 0; }).k, 'vsTvar'));
+  delete global.viceSachetZapnuto;
+  /* meze z konstant, ne napevno */
+  const puvodni = global.VS_KS_MAX;
+  global.VS_KS_MAX = 37;
+  const n37 = nal(tvar((z, vv) => { vv.data.ock.dalsi[0].ks = 0; }).k, 'vsTvar');
+  global.VS_KS_MAX = puvodni;
+  test('G text bere meze z konstant (VS_KS_MAX)', n37 && /1–37/.test(n37.text) && /1–20/.test(nal(tvar((z, vv) => { vv.data.ock.dalsi[0].ks = 0; }).k, 'vsTvar').text), n37 && n37.text);
+  /* shoda s uložením: vsTvarProblemy ≠ [] ⇔ pravidlo hlásí ⇔ server (uloVsProblemy, zapnuto) odmítne */
+  const pripady = [
+    ['v pořádku', null], ['11 variant', (z, vv) => { for (let i = 2; i <= 10; i++) vv.data.ock.dalsi.push(dalsiB(vv, i)); }],
+    ['ks 0', (z, vv) => { vv.data.ock.dalsi[0].ks = 0; }], ['ks 21 š1', (z, vv) => { vv.data.ock.ks = 21; }],
+    ['ks 1,5', (z, vv) => { vv.data.ock.dalsi[0].ks = 1.5; }], ['ks text', (z, vv) => { vv.data.ock.ks = 'tři'; }],
+    ['ks 20', (z, vv) => { vv.data.ock.dalsi[0].ks = 20; }], ['název 81', (z, vv) => { vv.data.ock.nazev = 'A'.repeat(81); }],
+    ['cizí klíč', (z, vv) => { vv.data.ock.dalsi[0].x = 1; }], ['dalsi []', (z, vv) => { vv.data.ock.dalsi = []; }],
+    ['dalsi objekt', (z, vv) => { vv.data.ock.dalsi = {}; }],
+  ];
+  const shoda = pripady.map(([jm, u]) => {
+    const { zak, v } = zakazka(true, u);
+    const a = vsTvarProblemy(v.data.ock).length > 0;
+    const b = !!nal(kontrolyProved(ctx(zak, v)), 'vsTvar');
+    const c = !!uloVsProblemy(zak, null, { zapnuto: true });
+    return { jm, a, b, c };
+  });
+  test('G shoda: vsTvarProblemy ⇔ pravidlo ⇔ uložení odmítne (11 případů)', shoda.every(x => x.a === x.b && x.b === x.c)
+    && shoda.filter(x => x.a).length === 8, shoda);
+}
+
+/* ---------- H) smlouva o dílo: šablona bez šachet a nevyplněná místa (C2 #583, C3 #584) ---------- */
+{
+  const { zak, v } = zakazka(true);
+  const sab = sym => ({ navic: { sablonaSod: { typ: 'sod', verze: 4, nazev: 'SoD realizace v4', symboly: sym } } });
+  const k4 = kontrolyProved(ctx(zak, v, sab(['CENA_BEZ_DPH', 'SOD_PRIPLATKY_OBJEDNANE'])));
+  const n = nal(k4, 'vsSablonaSod');
+  test('H víc šachet + šablona SoD v4: upozornění (ne zábrana), text = SOD_SACHTY_BEZ_SABLONY', n && n.uroven === KONTROLY_UROVEN
+    && n.text.indexOf(SOD_SACHTY_BEZ_SABLONY) === 0 && !kontrolyZabranaDokumentu(k4, 'sod') && !kontrolyZabranaDokumentu(k4, 'nabidka'), n);
+  test('H vsSablonaSod: pravidlo neumí zábranu (zabranaMozna ne)', !kontrolyPravidla().find(p => p.kod === 'vsSablonaSod').zabranaMozna);
+  test('H šablona SoD v5 (SACHTY_SOD_PREDMET): bez nálezu', !nal(kontrolyProved(ctx(zak, v, sab(['CENA_BEZ_DPH', 'SACHTY_SOD_PREDMET', 'SACHTY_SOD_ROZPIS']))), 'vsSablonaSod'));
+  test('H šablona SoD neznámá: mlčí', !nal(kontrolyProved(ctx(zak, v)), 'vsSablonaSod'));
+  const { zak: z1, v: v1 } = zakazka(false);
+  test('H jedna šachta se šablonou SoD v4: bez nálezu', !nal(kontrolyProved(ctx(z1, v1, sab(['CENA_BEZ_DPH']))), 'vsSablonaSod'));
+  /* sodNevyplneno / sodProjNevyplneno */
+  const nv = o => ({ navic: { sodNevyplneno: o } });
+  const kn = kontrolyProved(ctx(zak, v, nv({ sod: ['OBJEDNATEL_ICO', 'SOD_TERMIN_MONTAZ_OD'], sodProj: ['SODP_SPRAVNI_POPLATKY'] })));
+  const a = nal(kn, 'sodNevyplneno'), b = nal(kn, 'sodProjNevyplneno');
+  test('H sodNevyplneno: upozornění vyjmenuje údaje lidsky, nikdy zábrana', a && a.uroven === KONTROLY_UROVEN
+    && /IČO zákazníka, termín montáže od/.test(a.text) && !/OBJEDNATEL_ICO/.test(a.text) && !kontrolyZabranaDokumentu(kn, 'sod'), a);
+  test('H sodProjNevyplneno: upozornění, nikdy zábrana', b && b.uroven === KONTROLY_UROVEN && /správní poplatky/.test(b.text)
+    && !kontrolyZabranaDokumentu(kn, 'sodProj'), b);
+  test('H sodNevyplneno: bez informace / prázdný seznam mlčí', !nal(kontrolyProved(ctx(zak, v)), 'sodNevyplneno')
+    && !nal(kontrolyProved(ctx(zak, v, nv({ sod: [] }))), 'sodNevyplneno') && !nal(kontrolyProved(ctx(zak, v, nv({ sod: null }))), 'sodNevyplneno'));
+  test('H nová pravidla stojí za vsSablona na konci seznamu', kontrolyPravidla().map(p => p.kod).slice(-4).join() === 'vsSablona,vsSablonaSod,sodNevyplneno,sodProjNevyplneno');
 }
 
 console.log(ok + ' OK, ' + fail + ' FAIL');

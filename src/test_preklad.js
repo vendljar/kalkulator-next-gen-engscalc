@@ -141,6 +141,31 @@ for (const lang of ['en', 'de', 'fr']) {
 }
 // povinné položky se v cizojazyčném náhledu vypisují popiskem – ty už kryje sekce 10
 
+// ---- C1 #582 (11. 11. 2026, J. V. B0.3 + doplněk): nadpisy „USAZENÍ OCK“ ----
+// DE jednotně „POSITIONIERUNG DER SCHACHTKONSTRUKTION – …“, EN jednotně
+// „SHAFT STRUCTURE POSITION – …“ (půlčtverčík s mezerami); FR beze změny.
+{
+  const U = [
+    ['USAZENÍ OCK - ČELNÍ STĚNA', 'FRONT WALL', 'VORDERWAND', 'Fixation de la structure de gaine - paroi avant'],
+    ['USAZENÍ OCK – ČELNÍ STĚNA', 'FRONT WALL', 'VORDERWAND', 'Fixation de la structure de gaine - paroi avant'],
+    ['USAZENÍ OCK - BOČNÍ STĚNY', 'SIDE WALLS', 'SEITENWÄNDE', 'Fixation de la structure de gaine - parois latérales'],
+    ['USAZENÍ OCK – BOČNÍ STĚNY', 'SIDE WALLS', 'SEITENWÄNDE', 'Fixation de la structure de gaine - parois latérales'],
+    ['USAZENÍ OCK – LEVÁ BOČNÍ STĚNA', 'LEFT SIDE WALL', 'LINKE SEITENWAND', 'FIXATION DE LA STRUCTURE DE GAINE – PAROI LATÉRALE GAUCHE'],
+    ['USAZENÍ OCK – PRAVÁ BOČNÍ STĚNA', 'RIGHT SIDE WALL', 'RECHTE SEITENWAND', 'FIXATION DE LA STRUCTURE DE GAINE – PAROI LATÉRALE DROITE'],
+    ['USAZENÍ OCK – ZADNÍ STĚNA', 'REAR WALL', 'RÜCKWAND', 'FIXATION DE LA STRUCTURE DE GAINE – PAROI ARRIÈRE'],
+    ['USAZENÍ ZADNÍ STĚNY OCK', 'REAR WALL', 'RÜCKWAND', 'Fixation de la structure de gaine - paroi arrière'],
+  ];
+  for (const [cz, en, de, fr] of U) {
+    eq('C1 usazení DE ' + cz, P.tr(cz, 'de'), 'POSITIONIERUNG DER SCHACHTKONSTRUKTION – ' + de);
+    eq('C1 usazení EN ' + cz, P.tr(cz, 'en'), 'SHAFT STRUCTURE POSITION – ' + en);
+    eq('C1 usazení FR beze změny ' + cz, P.tr(cz, 'fr'), fr);
+  }
+  const deSloupec = Object.keys(P.PREKLAD).filter(k => /BEFESTIGUNG DES SCHACHTGERÜSTS/i.test(P.PREKLAD[k][1]));
+  eq('C1 v DE sloupci není „BEFESTIGUNG DES SCHACHTGERÜSTS“', deSloupec.join(' | '), '');
+  const enSloupec = Object.keys(P.PREKLAD).filter(k => /SHAFT STRUCTURE FIXING/i.test(P.PREKLAD[k][0]));
+  eq('C1 v EN sloupci není „SHAFT STRUCTURE FIXING“', enSloupec.join(' | '), '');
+}
+
 let fail = 0;
 for (const [st2, name, got, want] of T) {
   if (st2 === 'FAIL') fail++;

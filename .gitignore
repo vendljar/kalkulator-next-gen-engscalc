@@ -101,3 +101,9 @@ podklady/sablony_vystup/
 /*.docx
 /*.csv
 negativni_kontrola.json
+# C5 (#585): soubory exportu TEST sady a kopie zálohy z Disku do repa nepatří
+# (nástroj nastroje/test_sada_obnov.mjs je čte ze složky mimo repo).
+test_sada_*.json
+test_sada_*.json.gz
+otisk_*.json
+otisk_*.json.gz

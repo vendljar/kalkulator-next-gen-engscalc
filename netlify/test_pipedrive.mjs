@@ -22,6 +22,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
     .map(x => x.slice(nazev.length + 1)); },
 });
 
+import './pomoc_test_admin.mjs'; // K40-S4: výchozí smyšlený ADMIN_EMAIL dřív než sdilene.mjs
 import prihlaseni from './functions/prihlaseni.mjs';
 import uzivatele from './functions/uzivatele.mjs';
 import pdPole from './functions/pd_pole.mjs';

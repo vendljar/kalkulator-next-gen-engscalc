@@ -46,10 +46,11 @@ function kontrolyCtxAkt() {
   let ockData = null;
   try { const va = aktivniVarianta(ZAK); ockData = (va && va.data && va.data.ock) || null; } catch (e) { ockData = null; }
   const vsRezim = !!(ockData && typeof rezimViceSachet === 'function' && rezimViceSachet(ockData));
-  return {
+  const ctx = {
     zadani: Z,
     vysledek: ock,
     ock: vsRezim ? ockData : null,
+    ockSurova: ockData,      // VSD #586: surová data pro pravidlo vsTvar (meze uložení)
     /* Zámek strany (P6): jenProj / jenOck z vyřazené strany (kontrolyProved
      * to odvodí i sám — kontrolyCtxStrany). */
     jenProj: (typeof ZAK !== 'undefined') && ((typeof zakazkaVyrazenaStrana === 'function') ? zakazkaVyrazenaStrana(ZAK) === 'ock' : !!ZAK.jenProj),
@@ -102,6 +103,14 @@ function kontrolyCtxAkt() {
           (typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz');
       } catch (e) { return null; }
     })(),
+    /* Šablony smluv o dílo (C2/C3 #583, #584) — null = nevíme; stahují se
+     * jen u víc šachet nebo odeslané (zamčené) nabídky, viz kontrolySablonaSod. */
+    sablonaSod: (() => {
+      try { return kontrolySablonaSod('sod', vsRezim); } catch (e) { return null; }
+    })(),
+    sablonaSodProj: (() => {
+      try { return kontrolySablonaSod('sodProj', false); } catch (e) { return null; }
+    })(),
     zaokr: (typeof ZO !== 'undefined') ? ZO : null,
     /* Plán plateb projekce (etapa B) — 100 % u činností, platby smlouvy. */
     platbyProj: (() => {
@@ -130,6 +139,9 @@ function kontrolyCtxAkt() {
       } catch (e) { return null; }
     })(),
   };
+  /* C3 #584: nevyplněná místa smluv nad známými symboly šablon (null = nevíme). */
+  ctx.sodNevyplneno = kontrolySodNevyplneno(ctx.sablonaSod, ctx.sablonaSodProj);
+  return ctx;
 }
 
 /* Symboly šablony nabídky OCK pro kontrolu „sleva ve Wordu" (P5 / K13-N56).
@@ -173,6 +185,30 @@ function kontrolySablonaNabidkaProj(slevaProj, projVysledek, jazyk) {
   const mimoPrahu = typeof PJ !== 'undefined' && !!PJ && !!PJ.akceMimoPrahu;
   if (!sleva && !navic && !plan && !geodet && !bezAD && !mimoPrahu) return null;
   return kontrolySablonaSymboly('nabidkaProj', jazyk);
+}
+/* Symboly šablony SoD (C2 #583 pravidlo vsSablonaSod, C3 #584 sodNevyplneno).
+ * Stahuje se jen, když je smlouva na řadě: víc šachet (jen realizace), nebo
+ * otevřená varianta je odeslaná (zamčená) nabídka. Cache a stažení na pozadí
+ * jako u nabídky (kontrolySablonaSymboly) — žádné volání při překreslení. */
+function kontrolySablonaSod(typ, vs) {
+  let zam = false;
+  try { const v = aktivniVarianta(ZAK); zam = !!(v && v.zamek && v.zamek.zamceno); } catch (e) { zam = false; }
+  if (!vs && !zam) return null;
+  return kontrolySablonaSymboly(typ, (typeof sodJazyk === 'function') ? sodJazyk(typ)
+    : ((typeof tiskJazyk === 'function') ? tiskJazyk() : 'cz'));
+}
+/* Nevyplněná místa smluv (C3 #584): builder smlouvy nad známými symboly
+ * šablony — týž seznam, který v dokumentu dostane tečky. null = nevíme. */
+function kontrolySodNevyplneno(sablonaSod, sablonaSodProj) {
+  const o = {};
+  const sym = s => (s && Array.isArray(s.symboly) && s.symboly.length) ? { symboly: new Set(s.symboly) } : null;
+  try {
+    const v = aktivniVarianta(ZAK);
+    const L = t => (typeof sodJazyk === 'function') ? sodJazyk(t) : 'cz';
+    if (sym(sablonaSod) && typeof sodData === 'function') o.sod = sodData(ZAK, v, JEKLY, L('sod'), sym(sablonaSod)).nevyplnene || null;
+    if (sym(sablonaSodProj) && typeof sodProjData === 'function') o.sodProj = sodProjData(ZAK, v, L('sodProj'), sym(sablonaSodProj)).nevyplnene || null;
+  } catch (e) { /* smlouva by nevznikla (zábrana DPH, plateb…) — to hlásí jiná pravidla */ }
+  return o;
 }
 function kontrolySablonaSymboly(zaklad, jazyk) {
   if (typeof sablonyOnlineAktivni !== 'function' || !sablonyOnlineAktivni()) return null;

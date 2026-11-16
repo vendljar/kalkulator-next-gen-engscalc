@@ -108,6 +108,13 @@ export default async (req) => {
     const km = globalThis.mustkyCenikKontrola(ctx.cenik);
     if (!km.ok) return json({ ok: false, kod: 'mustky', chyba: km.text, chybi: km.chybi }, 400);
   }
+  /* K40-N5: složená zahraniční řada (odchylky sloučené s platnými) — nula
+   * nebo nevěrohodná šířka jen tam se zveřejní taky jen s potvrzením. */
+  if (t.mustkyPotvrzeno !== true && ctx.cenik && typeof ctx.cenik === 'object'
+      && typeof globalThis.mustkyCenikKontrolaZahr === 'function') {
+    const kz = globalThis.mustkyCenikKontrolaZahr(ctx.cenik, zahrProKontrolu);
+    if (!kz.ok) return json({ ok: false, kod: 'mustky', chyba: kz.text, chybi: kz.chybi }, 400);
+  }
   const posudek = globalThis.cenikZverejneniKontrola(ctx, zahrProKontrolu, t.rada, platny);
   if (!posudek.ok)
     return json({ ok: false, kod: posudek.kod, chyba: posudek.duvod,

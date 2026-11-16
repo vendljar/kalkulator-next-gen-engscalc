@@ -27,7 +27,7 @@ globalThis.__TEST_ULOZISTE = (nazev) => ({
 });
 
 import { createRequire } from 'module';
-import { najdiPodklad, preskoc } from './nastroje/harness_podklady.mjs';
+import { najdiSablonu, preskoc } from './nastroje/harness_podklady.mjs';
 import { createServer } from 'http';
 import { readFileSync } from 'fs';
 import zdravi from './netlify/functions/zdravi.mjs';
@@ -161,12 +161,14 @@ console.log('\nzveřejnění šablony administrátorem');
 /* ŠABLONA SE ČETLA BEZ KONTROLY (N15, 22. 9. 2026) — mimo původní prostředí
  * to byl pád na ENOENT uprostřed běhu, tedy až po přihlášení a polovině
  * kontrol. Nově se přeskočí hned a s vysvětlením. */
-const sablonaCesta = najdiPodklad('Sablona_NABIDKA_PROJ.docx',
-  ['/home/claude/work/sablona_proj/Sablona_NABIDKA_PROJ.docx',
-   '/home/claude/work/deliver/Sablona_NABIDKA_PROJ.docx']);
+/* K40-T1: šablona s nejvyšší verzí (na Disku verzované), jinak bez čísla.
+ * Jméno, pod kterým ji harness zveřejní, zůstává „Sablona_NABIDKA_PROJ.docx". */
+const nalezProj = najdiSablonu('Sablona_NABIDKA_PROJ', ['/home/claude/work/sablona_proj', '/home/claude/work/deliver']);
+const sablonaCesta = nalezProj ? nalezProj.cesta : null;
+if (sablonaCesta) console.log('Šablona PROJ: ' + sablonaCesta);
 /* Kontroly přísného režimu výš šablonu nepotřebují a běží vždy — jejich
  * selhání přeskočení nesmí zamést (nález T2 revize v22.9.9). */
-if (!sablonaCesta) preskoc('šablona Sablona_NABIDKA_PROJ.docx',
+if (!sablonaCesta) preskoc('šablona Sablona_NABIDKA_PROJ[_v<číslo>].docx',
   ['/home/claude/work/sablona_proj/', '$KNG_PODKLADY'], { ok, fail });
 const sablonaB64 = readFileSync(sablonaCesta).toString('base64');
 const zverejneni = await page.evaluate(async (b64) => {
@@ -178,14 +180,31 @@ const zverejneni = await page.evaluate(async (b64) => {
   return { verze: o.verze, meta: onlineSablonaMeta('nabidkaProj') };
 }, sablonaB64);
 test('zveřejnění vrátilo verzi 1', zverejneni.verze === 1, zverejneni);
+/* K40-T3 (táž příčina jako K39-N2): od #367 filtruje nastSablony() řádky
+ * přepínačem OCK | PROJ — ve výchozím pohledu OCK řádky PROJ a smluv chybí.
+ * Řádky se proto čtou v pohledu „všechny šablony" a stav se po kontrole vrátí
+ * (vzor overit_nabidka_proj_word.mjs). */
+await page.evaluate(() => {
+  window.__nastSablonyVse = () => {
+    const vse = NAST.sablonyVse;
+    try { NAST.sablonyVse = true; return nastSablony(); } finally { NAST.sablonyVse = vse; }
+  };
+});
+test('filtr #367 ve výchozím pohledu OCK řádek PROJ opravdu skryje (jinak by přepnutí nic neověřilo)',
+  await page.evaluate(() => {
+    const vse = NAST.sablonyVse, panel = NAST.panelPodminky;
+    try { NAST.sablonyVse = false; NAST.panelPodminky = 'ock'; return !/data-sabl-typ="nabidkaProj"/.test(nastSablony())
+      && /data-sabl-typ="nabidkaProj"/.test(window.__nastSablonyVse()); }
+    finally { NAST.sablonyVse = vse; NAST.panelPodminky = panel; }
+  }));
 test('rejstřík v aplikaci hned zná platnou verzi',
   zverejneni.meta && zverejneni.meta.verze === 1 && zverejneni.meta.zverejnil === 'spravce@priklad.cz');
 test('obrazovka Nastavení → Šablony verzi ukazuje (tabulka dokument × jazyk, #349)',
-  await page.evaluate(() => /data-sabl-typ="nabidkaProj"[\s\S]*?✓ v1/.test(nastSablony())));
+  await page.evaluate(() => /data-sabl-typ="nabidkaProj"[\s\S]*?✓ v1/.test(window.__nastSablonyVse())));
 test('pod číslem verze je i název nahraného souboru (v10 ≠ soubor v12, 25. 9.)',
-  await page.evaluate(() => /data-sabl-typ="nabidkaProj"[\s\S]*?sabl-soubor" title="Sablona_NABIDKA_PROJ\.docx"/.test(nastSablony())));
+  await page.evaluate(() => /data-sabl-typ="nabidkaProj"[\s\S]*?sabl-soubor" title="Sablona_NABIDKA_PROJ\.docx"/.test(window.__nastSablonyVse())));
 test('obrazovka nabízí přepínač režimu',
-  await page.evaluate(() => /PŘÍSNÝ|MĚKKÝ/.test(nastSablony())));
+  await page.evaluate(() => /PŘÍSNÝ|MĚKKÝ/.test(window.__nastSablonyVse())));
 
 /* ---------- 3) obchodní cesta: Word ze serverové šablony ---------- */
 console.log('\ngenerování Wordu ze serverové šablony');
@@ -274,12 +293,12 @@ test('mutace starší než česká šablona se v přísném režimu odmítne', !
 test('hláška říká proč a kdo to napraví',
   /starší než platná česká šablona/.test(zastaralaHlaska) && /Administrátor/.test(zastaralaHlaska), zastaralaHlaska);
 test('Nastavení → Šablony mutaci označí jako zastaralou',
-  await page.evaluate(() => /sablona-zastarala/.test(nastSablony())));
+  await page.evaluate(() => /sablona-zastarala/.test(window.__nastSablonyVse())));
 test('česká nabídka se tím nezastaví',
   /^prošlo/.test(await page.evaluate(() => sablonaProTisk('nabidkaProj', 'cz').then(() => 'prošlo', e => e.message))));
 await zverejni('nabidkaProj_en', 'Sablona_NABIDKA_PROJ_EN.docx'); // přegenerovaná a znovu zveřejněná
 test('po novém zveřejnění mutace tisk zase projde', /^prošlo:nabidkaProj_en$/.test(await tiskEn()), await tiskEn());
-test('a štítek „zastaralá" zmizí', await page.evaluate(() => !/sablona-zastarala/.test(nastSablony())));
+test('a štítek „zastaralá" zmizí', await page.evaluate(() => !/sablona-zastarala/.test(window.__nastSablonyVse())));
 
 /* ---------- 7) správa šablon: průvodce, jazyk souboru, zdroj mutace (#348, #349) ----------
  * 24. 9. 2026 se jako ČESKÁ šablona nabídky OCK zveřejnil soubor …_v11_DE.docx
@@ -288,9 +307,13 @@ test('a štítek „zastaralá" zmizí', await page.evaluate(() => !/sablona-zas
  * používá administrátor: průvodce nahráním, kontrola jazyka, zveřejnění
  * najednou, přegenerování, doladěný soubor k jazyku a vrácení verze. */
 console.log('\nspráva šablon (průvodce, jazyk, zdroj mutace)');
-const cnCesta = najdiPodklad('Sablona_NABIDKA_CN_v11.docx', ['/home/claude/work/sablona/Sablona_NABIDKA_CN_v11.docx']);
-if (!cnCesta) console.log('  – přeskočeno: chybí Sablona_NABIDKA_CN_v11.docx (KNG_PODKLADY)');
+/* K40-T1: CN s nejvyšší verzí (po víc šachtách v17), ne pevně v11. Jména
+ * „…_v11…", pod kterými ji harness nahrává do průvodce, jsou jen popisky. */
+const nalezCn = najdiSablonu('Sablona_NABIDKA_CN', ['/home/claude/work/sablona', '/home/claude/work/deliver']);
+const cnCesta = nalezCn ? nalezCn.cesta : null;
+if (!cnCesta) console.log('  – přeskočeno: chybí Sablona_NABIDKA_CN_v<číslo>.docx (KNG_PODKLADY)');
 else {
+  console.log('  šablona CN: ' + cnCesta);
   const cnB64 = readFileSync(cnCesta).toString('base64');
   await page.evaluate(async (b64) => {
     const bin = atob(b64); const u8 = new Uint8Array(bin.length);

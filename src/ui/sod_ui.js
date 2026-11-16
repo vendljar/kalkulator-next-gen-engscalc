@@ -11,8 +11,9 @@
  *
  * Ceny ve smlouvě jsou VŽDY ceny nabídky — buildery v sod.js jsou obálky
  * nad nabidkaData/nabidkaProjData, žádný druhý výpočet neexistuje.
- * Symboly, které aplikace nezná (SOD_*, SODP_*, PM_*, OBJEDNATEL_*),
- * zůstávají v dokumentu viditelné jako {{…}} a doplní se ve Wordu.
+ * Údaje, které zakázka nemá (SOD_*, SODP_*, PM_*, OBJEDNATEL_*), dostanou
+ * v dokumentu tečky „……" (C3 #584, 11. 11. 2026) a doplní se ve Wordu;
+ * u smluv je kontrola i věta po tisku vyjmenuje.
  * ============================================================ */
 
 /* místní šablony pro relaci – jen nouzová cesta (měkký režim / bez serveru) */
@@ -102,8 +103,11 @@ async function sodWordGeneruj(typ, srv) {
       }
       const upoz = sodUpozorneniText(res);
       if (upoz) hlaska(upoz, { nadpis: 'Smlouva o dílo' });
+      /* C3 #584: smlouva vyjmenuje místa s tečkami (plná moc jen tečky, bez výpisu). */
+      const tecky = (typ !== 'plnaMoc') ? sodTeckyText(res) : '';
       sodStavText(typ, (upoz ? '⚠ ' + upoz + ' ' : '') + 'Hotovo – soubor ' + res.nazevSouboru + '.docx je ve Stažených. '
-        + 'Žlutě značené symboly {{…}} (termíny, splátky, zástupci objednatele) doplňte ve Wordu.'
+        + (tecky ? '⚠ ' + tecky + ' ' : '')
+        + 'Místa označená tečkami „……" doplňte ve Wordu.'
         + (srv ? ' Použita centrální šablona (verze ' + srv.verze + ').'
                : (sablonyOnlineAktivni() ? ' POZOR: použita MÍSTNÍ šablona (měkký režim) – do zámku se to zapsalo.' : ''))
         + (mutaceChybi ? ' Pozor: pevný text šablony zůstal český – jazykovou mutaci šablony '
@@ -119,6 +123,13 @@ async function sodWordGeneruj(typ, srv) {
     });
 }
 
+/* Věta „Ve smlouvě zůstalo N míst k doplnění: …" z míst, která v dokumentu
+ * opravdu dostala tečky (C3 #584), nebo ''. */
+function sodTeckyText(res) {
+  const d = res && res.data;
+  const n = d && Array.isArray(d.nevyplneneVDokumentu) ? d.nevyplneneVDokumentu : [];
+  return (n.length && typeof sodNevyplneneText === 'function') ? sodNevyplneneText(n) : '';
+}
 /* Upozornění builderu SoD (K6-K2: šablona bez rozpisu objednaných) jednou větou, nebo ''. */
 function sodUpozorneniText(res) {
   const u = res && res.data && Array.isArray(res.data.upozorneni) ? res.data.upozorneni : [];
@@ -231,8 +242,9 @@ function sodKarta() {
       platební podmínky z krycího listu, firemní údaje) – cenu si nikdy nepočítá sama, takže se s nabídkou
       nemůže rozejít. <b>Objednané příplatky</b> (níž) se k ceně díla přičtou v ceně z nabídky (bez slevy);
       DPH se počítá z celku. <b>Zástupci a kontakty zákazníka</b> i bankovní údaje se od 20. 8. 2026 berou z krycího
-      listu výše. Co aplikace nezná – <b>termíny, splátkový kalendář, číslo smlouvy</b> – zůstane
-      v dokumentu viditelně jako <code>{{SOD_…}}</code> a doplní se ve Wordu.
+      listu výše. Co v zakázce chybí (např. <b>termíny, číslo smlouvy, IČO zákazníka</b>), dostane v dokumentu
+      tečky <b>„……"</b> – místa označená …… doplňte ve Wordu; kontrola před tiskem i věta po tisku je vyjmenují.
+      U <b>víc šachet</b> vyjmenuje smlouva šachty v předmětu díla i v rozpisu ceny (šablona SoD realizace v5).
       Vytištěná smlouva variantu <b>uzamkne</b> stejně jako odeslaná nabídka.</div>
     ${objKarta()}
     <div class="btns" style="margin-top:6px">
@@ -269,10 +281,10 @@ function sodProjKarta() {
   const zabPm = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr('plnaMoc') : '';
   return `<div class="note" style="font-weight:600;margin-top:14px">Smlouva o dílo a plná moc (Word):</div>
     <div class="note">Smlouva o dílo na projekční práce nese <b>cenu z nabídky PROJ</b> (číslo nabídky, celkem
-      bez DPH, podmínky z krycího listu PROJ). Symboly <code>{{SODP_…}}</code> (platby po fázích, termíny
-      odevzdání) se doplňují ve Wordu; vytištěná smlouva variantu <b>uzamkne</b>.
+      bez DPH, podmínky z krycího listu PROJ). Co v zakázce chybí, dostane tečky <b>„……"</b> – místa označená ……
+      doplňte ve Wordu; vytištěná smlouva variantu <b>uzamkne</b>.
       <b>Plná moc</b> je administrativa k objektu – nese firemní údaje zmocněnce a adresu stavby (z hlavičky
-      PROJ, případně OCK); údaje zmocnitele <code>{{PM_…}}</code> se doplní ručně a varianta se <b>nezamyká</b>.</div>
+      PROJ, případně OCK); chybějící údaje zmocnitele mají tečky „……", doplní se ručně a varianta se <b>nezamyká</b>.</div>
     <div class="btns" style="margin-top:6px">
       <button class="primary"${zab} onclick="sodWord('sodProj')">Vytvořit smlouvu o dílo PROJ (Word)</button>
       <button class="primary"${zabPm} onclick="sodWord('plnaMoc')">Vytvořit plnou moc (Word)</button>
@@ -383,6 +395,14 @@ function prodejKarta(strana) {
   }
   const proc = prodNelzeProdat(ZAK, v);
   const dnes = objDnes();
+  /* Dolní mez (K40-S1): touž funkcí jako server; vedoucí a administrátor smějí
+   * s důvodem níž, nejvýš ke dni odeslání (`tvrda`). */
+  const mez = prodDatumMez(v);
+  const minD = prodUiSmiOdemknout() && mez.tvrda ? mez.tvrda : mez.od;
+  const titulD = 'Od ' + (mez.od ? prodUiDatumText(mez.od) : 'odeslání nabídky') + ' do dneška'
+    + (mez.od && mez.tvrda && mez.tvrda < mez.od ? (prodUiSmiOdemknout()
+      ? '; starší datum (nejdřív ' + prodUiDatumText(mez.tvrda) + ') jen s důvodem'
+      : '; starší datum smí s důvodem zapsat vedoucí nebo administrátor') : '');
   return `<div id="prodejKarta_${esc(strana)}" class="prod-karta">
     <div class="note">Až zákazník nabídku přijme, stiskněte <b>Prodáno</b>: zapíše se datum prodeje a prodaná varianta
       (podle nich bere zakázku controlling), krycí list se <b>definitivně zamkne</b> a připraví se zápis do Pipedrive:
@@ -390,8 +410,8 @@ function prodejKarta(strana) {
       doručení podepsané SoD v Pipedrive. Odemknout smí jen vedoucí nebo administrátor.</div>
     ${proc ? `<div class="note"><b>${esc(proc)}</b></div>` : ''}
     <div class="btns" style="margin-top:6px">
-      <label class="note">Datum prodeje <input type="date" id="prodejDatum_${esc(strana)}" value="${esc(dnes)}" max="${esc(dnes)}"${prodDatumOd(v) ? ' min="' + esc(prodDatumOd(v)) + '"' : ''}${proc ? ' disabled' : ''}
-        title="${esc('Od odeslání nabídky' + (prodDatumOd(v) ? ' (' + prodUiDatumText(prodDatumOd(v)) + ')' : '') + ' do dneška')}"></label>
+      <label class="note">Datum prodeje <input type="date" id="prodejDatum_${esc(strana)}" value="${esc(dnes)}" max="${esc(dnes)}"${minD ? ' min="' + esc(minD) + '"' : ''}${proc ? ' disabled' : ''}
+        title="${esc(titulD)}"></label>
       <button class="primary" ${proc ? 'disabled title="' + esc(proc) + '"' : ''} onclick="prodejUiProdej('${escJs(strana)}')">Prodáno</button>
     </div>
     ${proc ? '' : prodUiNahledHtml(v, strana)}
@@ -411,7 +431,19 @@ async function prodejUiProdej(strana) {
     + 'stav dealu (Vyhrané) se mění až po doručení podepsané SoD v Pipedrive. Napojení zatím není zapnuté, '
     + 'zápis se jen uloží jako „čeká na odeslání".', { nadpis: 'Prodáno' })) return;
   const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja) ? ONLINE_STAV.ja.email : '';
-  const chyba = prodNastav(ZAK, v, datum, { kdo: ja });
+  /* Výjimka z dolní meze (K40-S1): datum před mezí jen vedoucí nebo
+   * administrátor s důvodem (zapíše se do historie prodeje). */
+  let duvod = '';
+  const od = prodDatumOd(v);
+  if (od && datum < od && prodUiSmiOdemknout() && !prodDatumProblem(datum, v, undefined, { role: prodUiRole(), duvod: 'xxx' })) {
+    const t = await dotaz('Datum prodeje ' + prodUiDatumText(datum) + ' je víc než ' + PROD_PRIJATO_TOLERANCE_DNI
+      + ' dní před přijetím odeslané nabídky serverem (běžná mez ' + prodUiDatumText(od) + '). Napište důvod výjimky '
+      + '(zapíše se do historie prodeje):', '');
+    if (t === null || t === undefined) return;
+    duvod = prodVyjimkaText(String(t));
+    if (duvod.length < PROD_DUVOD_MIN) { hlaska('Bez důvodu nejde datum prodeje před mezí zapsat.'); return; }
+  }
+  const chyba = prodNastav(ZAK, v, datum, { kdo: ja, role: prodUiRole(), duvod });
   if (chyba) { hlaska(chyba); return; }
   /* PR #563: prodaná varianta je vždy řídící — přepne se v TÉMŽE uložení.
    * Neuloží-li se prodej, vrátí se i řídící a stopa hlavičky (zamek.hlavicka). */

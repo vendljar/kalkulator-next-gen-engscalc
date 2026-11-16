@@ -930,7 +930,15 @@ function importZakazka(obj) {
       if (typeof DEFAULT_ZADANI_PROJ !== 'undefined') zadaniCislaZTextu(d.proj.zadani, DEFAULT_ZADANI_PROJ);
       if (!d.proj.cenik.fixy)   // migrace: fixní náklady sekcí přesunuty do ceníku PROJ
         d.proj.cenik.fixy = JSON.parse(JSON.stringify(vzor.proj.fixy));
-      if (d.proj.cenik.dph == null)   // migrace: PROJ má vlastní sazbu DPH; převezme dosud platnou z ceníku OCK
+      /* Migrace: PROJ má vlastní sazbu DPH (K40-N4, oprava komentáře 11. 11. 2026).
+       * Dvě cesty, chování se nemění (strana PROJ zakázky naceněné v OCK se
+       * zamyká a nuluje — rozhodnutí 1. 10.):
+       *  - zakázka BEZ `data.proj`: celé `d.proj` výš vzniklo ze VZORU, včetně
+       *    sazby DPH ceníku PROJ (vzor.proj.dph) — tahle větev se jí netýká;
+       *  - zakázka s `data.proj`, jehož ceník sazbu nemá: převezme dosud
+       *    platnou z ceníku OCK téže varianty (bez ní ze vzoru).
+       * Obě cesty popisuje src/test_k40_dph_proj.js. */
+      if (d.proj.cenik.dph == null)
         d.proj.cenik.dph = (d.cenik && d.cenik.dph != null) ? d.cenik.dph : vzor.proj.dph;
       /* Migrace 11. 8. 2026: tři fixní částky lešení se slučují do jedné
        * (C.leseniFix). Bez převzetí staré hodnoty by fixní část spadla na
@@ -950,7 +958,11 @@ function importZakazka(obj) {
       /* Migrace 9. 9. 2026: řádky skel se přejmenovaly (MATERIÁL VSG 4.4.1 /
        * 4.4.2). Ruční přepisy i seznam vyřazených položek se klíčují názvem,
        * takže bez přemapování by vyřazené sklo tiše vlezlo zpátky do ceny. */
-      if (typeof skloMigraceNazvu === 'function') skloMigraceNazvu(d);
+      /* Víc šachet (K40a): nezamčená varianta migruje všechny šachty (jako
+       * šachta 1 od K37); ZAMČENÁ jen šachtu 1 — šachty 2+ nechává, jak
+       * odešly (revize K40a D1, mez B205a). */
+      if (typeof skloMigraceNazvu === 'function') skloMigraceNazvu(d, {
+        jenPrvni: (typeof variantaUzamcena === 'function') ? !!variantaUzamcena(v) : !!(v && v.zamek && v.zamek.zamceno) });
       /* Migrace 9. 9. 2026: průchozí šachta, stříška a patra.
        *
        * Do 9. 9. byla stříška zaškrtávátkem „Průchozí šachta" a počítala se

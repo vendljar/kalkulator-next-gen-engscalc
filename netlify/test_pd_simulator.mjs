@@ -152,8 +152,12 @@ test('mapa polí: režim simulator', mapa.ok && mapa.rezim === 'simulator' && ma
 /* Od 2. 11. 2026 má účet všechna dohodnutá pole (Platební kalendář SoD PROJ
  * integrátor založil), Hlavní projektant je krátký text. */
 test('mapa polí: spárovaná všechna pole (i Platební kalendář SoD PROJ)',
-  mapa.prehled.radky.every(r => r.stav === 'sparovano') && mapa.prehled.souhrn.chybi === 0,
+  mapa.prehled.radky.every(r => r.stav === 'sparovano' || (r.oblast === 'organizace' && r.klic === 'dic'))
+  && mapa.prehled.souhrn.chybi === 1,
   mapa.prehled.radky.filter(r => r.stav !== 'sparovano').map(r => r.klic));
+/* DIČ organizace (K40c #581) účet nemá — přehled ho hlásí jako chybějící
+ * (oprava firmy v Pipedrive ho přeskočí, pole se nikdy nezakládá). */
+test('mapa polí: DIČ organizace v účtu chybí (K40c)', (mapa.prehled.radky.find(r => r.oblast === 'organizace' && r.klic === 'dic') || {}).stav === 'chybi');
 {
   const kal = mapa.prehled.radky.find(r => r.klic === 'platebniKalendar') || {};
   test('mapa polí: Platební kalendář SoD PROJ existuje jako Velký text', kal.stav === 'sparovano' && kal.crmTyp === 'text', J(kal));
