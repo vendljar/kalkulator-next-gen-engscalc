@@ -22,7 +22,8 @@ function pdnUiOnline() {
     && typeof ONLINE_STAV !== 'undefined' && !!(ONLINE_STAV && ONLINE_STAV.ja);
 }
 function pdnUiPrekresli() { if (typeof render === 'function') render(); }
-function pdnUiOtisk(p) { try { return JSON.stringify([p.strany, p.dealId]); } catch (e) { return ''; } }
+/* VZ-E5: text poznámky dalších zákazníků do otisku jen, když je (jinak otisk beze změny). */
+function pdnUiOtisk(p) { try { return JSON.stringify(p.zakaznici ? [p.strany, p.dealId, p.zakaznici] : [p.strany, p.dealId]); } catch (e) { return ''; } }
 
 function pdnUiSpust() {
   if (PDN_UI.nacita || !pdnUiOnline()) return Promise.resolve(false);
@@ -59,7 +60,7 @@ function pdnUiTabulka(d, kde) {
     const kolize = (r.kolize || []).map(k => `<div class="pill warn" data-pdn-kolize>${esc(k)}</div>`).join('');
     return `<tr data-pdn-pole="${esc(r.klic)}" data-pdn-stav="${esc(r.stav)}">
       <td>${esc(r.nazev)}</td>
-      <td>${r.stav === 'zapise' ? `<b>${esc(r.hodnotaText)}</b>` : '<span class="note">—</span>'}</td>
+      <td>${r.stav === 'zapise' ? `<b${String(r.hodnotaText).indexOf('\n') >= 0 ? ' style="white-space:pre-line"' : ''}>${esc(r.hodnotaText)}</b>` : '<span class="note">—</span>'}</td>
       <td class="note">${esc(r.zdroj)}${r.hodnotaKalkulace && r.hodnotaKalkulace !== r.hodnotaText ? `<br>„${esc(r.hodnotaKalkulace)}"` : ''}</td>
       <td><span class="pill ${esc(st.pill)}" title="${esc(st.popis)}">${esc(st.text)}</span>
         ${r.duvod ? `<div class="note">${esc(r.duvod)}</div>` : ''}${kolize}</td>

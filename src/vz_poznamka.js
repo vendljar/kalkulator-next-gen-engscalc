@@ -156,6 +156,21 @@ function vzPoznamkaText(zak, volby) {
   return o.zadni ? VZP_ZADNI : '';
 }
 
+/* Text poznámky se ZNAČKOU zakázky (prostý text) — jeden kód pro server
+ * (pd_poznamka.mjs pdPoznamkaZakText, zápis) i suchý běh (pd_nanecisto.js,
+ * řádek „Poznámka dealu — další zákazníci“), aby náhled ukázal přesně to, co
+ * se zapíše. Značka „— nabídka <číslo>“ (číslo zakázky bez řídicích znaků,
+ * nejvýš VZP_CISLO_MAX znaků — totéž jako pdPoznamkaZnacka): u víceřádkového
+ * textu na samostatném řádku, u jednořádkového („… žádní“) za textem.
+ * Bez textu nebo bez čísla zakázky ''. */
+const VZP_CISLO_MAX = 120;
+function vzPoznamkaSeZnackou(zak, text) {
+  const t = typeof text === 'string' ? text : '';
+  const c = String((zak && zak.cislo) || '').replace(VZP_RIDICI, ' ').trim().slice(0, VZP_CISLO_MAX);
+  if (!t || !c) return '';
+  return t.indexOf('\n') >= 0 ? t + '\n— nabídka ' + c : t + ' — nabídka ' + c;
+}
+
 if (typeof module !== 'undefined' && module.exports)
-  module.exports = { VZP_UVOD, VZP_ZADNI, VZP_MAX, vzpDen, vzpCena, vzpCisloNabidky, vzpCenaZamku, vzpPlatna,
-    vzpNeprodano, vzpRadek, vzPoznamkaRadky, vzPoznamkaText };
+  module.exports = { VZP_UVOD, VZP_ZADNI, VZP_MAX, VZP_CISLO_MAX, vzpDen, vzpCena, vzpCisloNabidky, vzpCenaZamku, vzpPlatna,
+    vzpNeprodano, vzpRadek, vzPoznamkaRadky, vzPoznamkaText, vzPoznamkaSeZnackou };

@@ -127,6 +127,8 @@ export function pdPoznamkaZakText(zak, existuje = false, G = globalThis) {
   if (!znacka || typeof G.vzPoznamkaText !== 'function') return '';
   const t = G.vzPoznamkaText(zak, { zadni: !!existuje });
   if (!t) return '';
+  /* Značku doplní týž kód jako suchý běh (vzPoznamkaSeZnackou, VZ-E5 bod 5). */
+  if (typeof G.vzPoznamkaSeZnackou === 'function') return G.vzPoznamkaSeZnackou(zak, t);
   return t.indexOf('\n') >= 0 ? t + '\n' + znacka.trim() : t + znacka;
 }
 
