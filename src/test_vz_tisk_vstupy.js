@@ -166,6 +166,13 @@ const vC = zak.varianty.find(v => String(v.id) === rC.zakaznik.varianta);
     && vzTiskZabrana(zak, rB.zakaznik.id, vC, 'nabidka', {}) === '');
   delete vC.zamek;
   test('… bez razítka ne', vzTiskZabrana(zak, rB.zakaznik.id, vC, 'nabidka', {}) !== '');
+  /* Řídící: varianty, které nejsou nabídkou dalšího zákazníka (revize E0 N3). */
+  const volna = klonujVariantu(zak, vA.id, { aktivovat: false });
+  test('řídící smí tisknout volnou variantu (ničí nabídka)', !!volna && vzTiskZabrana(zak, '', volna, 'nabidka', {}) === '');
+  test('řídící NEsmí tisknout vlastní variantu C', /není nabídka zákazníka/.test(vzTiskZabrana(zak, '', vC, 'nabidka', {})));
+  test('B NEsmí tisknout volnou variantu', vzTiskZabrana(zak, rB.zakaznik.id, volna, 'nabidka', {}) !== '');
+  test('tiskový pohled řídícího: bez varianty C, s volnou', (() => { const p = vzTiskPohled(zak, ''); const ids = p.varianty.map(v => v.id);
+    return ids.indexOf(vC.id) < 0 && ids.indexOf(volna.id) >= 0 && ids.indexOf(vA.id) >= 0; })());
 }
 
 console.log('\n' + ok + ' prošlo, ' + fail + ' selhalo');

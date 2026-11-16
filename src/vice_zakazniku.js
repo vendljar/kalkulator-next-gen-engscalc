@@ -473,15 +473,26 @@ function vzCisloRozloz(cislo) {
 }
 
 /* Varianty, ze kterých se smí tisknout pro zákazníka `id`: ta, na kterou
- * ukazuje, a ty, které mu už odešly (razítko tisku s jeho id, E3). */
+ * ukazuje, a ty, které mu už odešly (razítko tisku s jeho id, E3).
+ * ŘÍDÍCÍ navíc všechny varianty, které nejsou nabídkou žádného dalšího
+ * zákazníka (stejné pravidlo jako vzPohled po revizi E0, N3) — cizí vlastní
+ * ani cizí odeslaná varianta mezi nimi není. */
 function vzVariantyZakaznika(zak, id) {
   const z = vzZakaznik(zak, id);
   if (!z) return [];
   const out = new Set(z.varianta ? [z.varianta] : []);
-  ((zak && Array.isArray(zak.varianty)) ? zak.varianty : []).forEach(v => {
-    const t = v && v.zamek && Array.isArray(v.zamek.tisky) ? v.zamek.tisky : [];
-    if (t.some(x => x && vzObj(x.zakaznik) && String(x.zakaznik.id) === z.id)) out.add(String(v.id));
-  });
+  const varianty = (zak && Array.isArray(zak.varianty)) ? zak.varianty : [];
+  const razitka = v => (v && v.zamek && Array.isArray(v.zamek.tisky) ? v.zamek.tisky : [])
+    .filter(x => x && vzObj(x.zakaznik)).map(x => String(x.zakaznik.id));
+  varianty.forEach(v => { if (razitka(v).indexOf(z.id) >= 0) out.add(String(v.id)); });
+  if (z.ridici) {
+    const dalsi = vzZakaznici(zak).filter(x => !x.ridici);
+    const cizi = new Set(dalsi.map(x => x.varianta));
+    const ids = new Set(dalsi.map(x => x.id));
+    varianty.forEach(v => {
+      if (v && !cizi.has(String(v.id)) && !razitka(v).some(r => ids.has(r))) out.add(String(v.id));
+    });
+  }
   return Array.from(out);
 }
 
