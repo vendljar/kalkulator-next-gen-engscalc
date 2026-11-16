@@ -19,6 +19,21 @@ Disk, Pipedrive nic. **Před sloučením revize poradce (únik údajů).** Roadm
 | mutace „[VZ E2]“ | ✅ | jádro **46/46** (závěrečný běh po sloučení; výchozí stav 277 sad zelených), server **5/5** |
 | kolo `--bez-mutaci` po sloučení E1/E5 | ✅ **VŠE ZELENÉ** | sady 402/0/59 přeskočeno (24 min), hodiny +400 dní 369/0/1, statické 6/6; prohlížeč overit_vz_tisk 192/0, overit_vz_zadani 72/0/1 |
 
+## Revize poradce (Fable) — „sloučit po opravě“, opraveno 16. 11. 2026
+
+| bod | oprava | test |
+|---|---|---|
+| U1 | všechna pole zákazníka v KL OCK i PROJ (`vzKlOznacPole`: sekce Zákazník a Zástupci, podpisy, kopie faktur, zmocnitel) — ruční hodnota a snímek zámku jen vlastníkovi, jinak předvyplnění z pohledu / prázdné („……“ ve smlouvě) | `src/test_vz_kl_pole.js` 21/0 (kanárek v každém ručním poli × A/B/C × KL a SoD OCK i PROJ) |
+| U2 | vlastník podle id: `kl.vzVlastnik[pole]` (UI zapisuje za řídícího, jen u víc zákazníků), `kl.vzZmrazeno` (snímek); `vzPohledZakaznika.ridici` | výměna řídícího tam a zpět (přepis B u A ne, u B ano; i KL PROJ) |
+| U3 | `vzTiskHlidej` i v `nabidkaData`, `kryciData`, `nabidkaProjData`; obrazovky PROJ a podklad prodeje přes `vzTiskRidici` / pohled řídícího | test_vz_kl_pole U3 |
+| U4 | deal „…9940.2-B“ najde zakázku „…9940“ (písmeno + varianta .2; bez písmene beze změny) | `netlify/test_vz_webhook.mjs` 58/0 |
+| U5 | nevyplněná místa SoD v kontrolách nad pohledem otevřeného zákazníka (PROJ nad řídícím) | test_vz_tisk_vstupy 78/0 |
+| U6 | B224 výslovně heuristika (+ U1/U2/U4 do meze) | — |
+
+Mutace [VZ E2] po revizi: jádro 57/59 → nechycená KL PROJ dostala test (ověřeno ruční záměnou 20/1), „zástupci nejsou
+pole zákazníka“ vyřazena jako ekvivalentní (sekce má jen provázaná pole) ⇒ 58/58; server 17/17. Kolo VŠE ZELENÉ
+(sady 403/0/59, hodiny 369→370/0/1, statické 6/6). Ruční hodnoty po zákaznících = E3.
+
 ## Rozhodnutí (bezpečnější varianta, k revizi)
 
 - Tisknout pro zákazníka jde jen z jeho varianty (+ variant, které mu podle razítka odešly — E3); **řídící navíc z volných

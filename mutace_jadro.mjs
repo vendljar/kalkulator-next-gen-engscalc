@@ -4387,10 +4387,8 @@ const MUTACE = [
     hledej: "/^obj(Podpis|Kopie)/.test(p.id) || ",
     nahrad: "",
     proc: "druhý podepisující a kopie faktur řídícího by šly do SoD jiného zákazníka (U1)", sady: ["test_vz_kl_pole.js"] },
-  { nazev: "VZ-E2: KL — zástupci nejsou pole zákazníka [VZ E2]", soubor: "vice_zakazniku.js",
-    hledej: "  const SEK = ['Zákazník (smluvní partner)', 'Zástupci a kontakty zákazníka'];",
-    nahrad: "  const SEK = ['Zákazník (smluvní partner)'];",
-    proc: "ruční údaje zástupců řídícího by šly jinému zákazníkovi (U1)", sady: ["test_vz_kl_pole.js", "test_vz_unik.js"] },
+  /* „zástupci nejsou pole zákazníka“ vyřazena jako ekvivalentní: sekce Zástupci má jen
+   * provázaná pole (bind ZAK.zastupci.*), ruční hodnoty se u nich nečtou (16. 11. 2026). */
   { nazev: "VZ-E2: KL OCK — ruční hodnota bez kontroly vlastníka [VZ E2]", soubor: "kryci.js",
     hledej: "      if (h[pole.id] !== undefined && h[pole.id] !== '' && vzKlVlastni(c.zak, vl))\n        return typeof pole.normalizuj",
     nahrad: "      if (h[pole.id] !== undefined && h[pole.id] !== '')\n        return typeof pole.normalizuj",

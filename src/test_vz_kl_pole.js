@@ -115,6 +115,12 @@ function beh(nazev) {
   const pZak = rucniOck.find(p => p.id === 'zakaznik'), pTel = rucniOck.find(p => p.id === 'kontaktZakaznikTel');
   zapis(z, v1, pZak, 'KANBZAKAZNIKX', false);
   zapis(z, v1, pTel, 'KANBKONTAKTZAKAZNIKTELX', false);
+  /* … i v krycím listu PROJ (B je teď řídící — PROJ tiskne jen řídící). */
+  const pTelP = rucniProj.find(p => p.id === 'kontaktZakaznikTel'), pZmP = rucniProj.find(p => p.id === 'pmZmocnitelNarozen');
+  zapis(z, v1, pTelP, 'KANBPROJTELX', true);
+  zapis(z, v1, pZmP, 'KANBPROJNAROZENX', true);
+  const tBR = vystupy(z, 'z2', v1);
+  test(nazev + 'B jako řídící: jeho ruční pole KL PROJ v PROJ dokumentech', tBR.indexOf('KANBPROJTELX') >= 0 && tBR.indexOf('KANBPROJNAROZENX') >= 0);
   test(nazev + 'přepis za řídícího B má vlastníka z2', v1.data.kryci.vzVlastnik.zakaznik === 'z2' && v1.data.kryci.vzVlastnik.kontaktZakaznikTel === 'z2');
   test(nazev + 'výměna zpět na A', vzVymenRidiciho(z, 'z1').ok);
   const tA3 = vystupy(z, 'z1', v1), tB3 = vystupy(z, 'z2', v1);
