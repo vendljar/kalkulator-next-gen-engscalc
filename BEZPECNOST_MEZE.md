@@ -1854,3 +1854,38 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   a E4 (#603). Dokumenty ani obrazovka v E0 další zákazníky nečtou (tisk
   z pohledu zákazníka je E2 #601), takže do papíru se z nich nic nedostane.
   Funkci proto nezapínat mimo testovací web, dokud E3 a E4 nejsou sloučené.
+
+### VZ-E2 #601 (v16.11.2, 16. 11. 2026) — tisk z pohledu zákazníka
+
+- **B223 — E2: únik mezi zákazníky hlídá vstup tisku v prohlížeči, ne server.**
+  Každý dokument (Word CN, CN PROJ, SoD, plná moc, krycí listy, náhledy,
+  porovnání, specifikace) vzniká z `vzTiskPohled(ZAK, otevřený zákazník)` —
+  mělké kopie bez `dalsiZakaznici` / `vzRidici`, s hlavičkou a zástupci
+  zvoleného zákazníka, jen s jeho variantami (u dalšího zákazníka s odvozeným
+  `v.zakaznik`), číslo s písmenem (`…9940-B`). Pojistky: `dokumentVygeneruj`
+  z celé zakázky s víc zákazníky hodí chybu (`vzTiskHlidej`), statická
+  kontrola `nastroje/kontrola_vz_unik.sh` (generátory `dalsiZakaznici`
+  nezmiňují), test s kanárky `src/test_vz_unik.js`, strukturní test vstupů
+  `src/test_vz_tisk_vstupy.js`. *Co to nedělá:* dokumenty vznikají
+  v prohlížeči — kdo prohlížeč obejde (konzole), vytiskne cokoli; server
+  dokumenty netvoří. Soubor zakázky (Uložit do souboru), protokol (stažení
+  .txt) a náhled Pipedrive nejsou dokumenty pro zákazníka a nesou celou
+  zakázku. **Krycí list tiskne interní poznámky** (společné všem zákazníkům)
+  — je to interní dokument; jméno jiného zákazníka v poznámce se do krycího
+  listu dostane (návrh § 9: jen upozornit). Protokol zakázky (E1 do něj píše
+  názvy zákazníků) se do pohledu přenáší, žádný generátor ho netiskne
+  (ověřuje test úniku).
+- **B224 — E2: zábrana cizího zákazníka v tištěném textu je textová shoda.**
+  `vzTiskZabrana` zastaví tisk, když název akce, adresa, popis záměru,
+  název/popis úvodní fotky (OCK, PROJ), název varianty (u řídícího i sloupec
+  Zákazník varianty) obsahuje název jiného zákazníka zakázky (bez diakritiky,
+  velikosti písmen a interpunkce; i bez právní formy, nejméně 3 znaky) nebo
+  jeho IČO (6+ číslic jako samostatné číslo). Vlastní název tištěného
+  zákazníka se z textu nejdřív vyjme. *Co to nedělá:* zkratku, přezdívku,
+  překlep, jméno kontaktní osoby ani adresu jiného zákazníka nepozná;
+  obecné slovo shodné s krátkým názvem firmy může tisk zastavit zbytečně
+  (oprava = přepsat text). Varianta, na kterou zákazník neukazuje (a která mu
+  podle razítka tisku neodešla), se pro něj netiskne — i pro řídícího;
+  dokumenty PROJ jen pro řídícího (R5); s vypnutou funkcí jen pro řídícího.
+  Webhook najde zakázku i podle čísla s písmenem jen u strany OCK a jen když
+  zakázka toto písmeno nese (jinak jako dřív).

@@ -8,6 +8,26 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v16.11.2 — VZ-E2 #601: víc zákazníků — čísla s písmenem, tisk z pohledu zákazníka, zábrany tisku, test úniku, větev claude/vz-e2
+
+Nad `claude/vz-e0` `e29f2b1` (E0). Vše za vypínačem `viceZakazniku`; zakázka s jedním zákazníkem tiskne bajt po bajtu
+jako dnes (zlatá sada (e1): `vzTiskPohled` vrací týž objekt). Zadání `podklady/PROMPT_VZ_E2.md`, návrh § 3, § 4, § 9.
+
+- **Čísla s písmenem** (`…9940`, `…9940-B`, `…9940.2-B`): `cisloSVariantou` a `variantaCislo` podle pohledu zákazníka,
+  `zamekCisloZakladSedi` přijme `-P`, `sodCisloNavrh` písmeno zachová, název krycího listu s písmenem, nedopsaná předloha
+  písmeno nedostane; `zakazkaDuplicita` porovnává bez písmene. **Webhook** najde podle čísla dealu s písmenem tutéž
+  zakázku (jen když ji zákazník s tím písmenem má; jinak jako dřív).
+- **Jediný vstup dokumentů `vzTiskPohled`** (jen varianty zákazníka; další zákazník má odvozené `v.zakaznik`) přes
+  `src/ui/vz_tisk_ui.js` u Word CN, CN PROJ, SoD, plné moci, krycích listů (tisk i Word), náhledů nabídky
+  a podkladů, porovnání variant a detailu položek, technické specifikace a živého náhledu karty CN; pojistka
+  `vzTiskHlidej` v `dokumentVygeneruj`.
+- **Zábrany tisku** `vzTiskZabrana` (brána `dokumentZabrana`, pravidlo kontrol `vzTisk`): cizí varianta, název
+  nebo IČO jiného zákazníka ve sdíleném tištěném textu či názvu varianty, PROJ jen pro řídícího (R5), vypnutá funkce
+  jen řídící. **Pruh** „Náhled a tisk platí pro zákazníka X — nabídka …-B“ v kartě CN (jen 2+).
+- **Statická kontrola** `nastroje/kontrola_vz_unik.sh` (s pojistkou) v kole — statické kontroly teď 6.
+- Testy `src/test_vz_unik.js` (kanárky), `src/test_vz_cisla.js`, `src/test_vz_tisk_vstupy.js`, zlatá sada (e),
+  `netlify/test_vz_webhook.mjs`, prohlížeč `overit_vz_tisk.mjs`; mutace „[VZ E2]“. Meze **B223**, **B224**.
+
 ## v16.11.1 — VZ-E0 #599: víc zákazníků na zakázce — vypínač, jádro, import, serverová kontrola tvaru, větev claude/vz-e0
 
 Nad `claude/integrace-vz` `77e36e0` (v12.11.7 + návrh VZ v3). Souhrn VZ je roadmapa #598 (etapy E0 #599 … E6 #606).
