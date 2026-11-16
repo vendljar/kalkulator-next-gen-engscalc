@@ -1,3 +1,41 @@
+# Předávka — 16. 11. 2026: VZ-E5 #604 (poznámka dealu „Další zákazníci na zakázce“), větev `claude/vz-e5`
+
+Nad `claude/vz-e0` `e29f2b1` (v16.11.1). **v16.11.2**. Do `test-draft`, `test`, `main` ani integrace nic; Pipedrive jen
+simulátor. Mez **B225**, roadmapa **#604 hotovo**. Souběžně E1 (B221–B222) a E2 (B223–B224).
+
+| úkol | stav | kde |
+|---|---|---|
+| modul zobecněn na „druh poznámky“, šachty beze změny (#588 49/0) | ✅ | `netlify/lib/pd_poznamka.mjs` (`PD_POZNAMKA_DRUH_SACHTY`, `PD_POZNAMKA_DRUH_ZAKAZNICI`, `pdPoznamkaDruhUlozeni`, `pdPoznamkyUlozeni`) |
+| text poznámky zákazníků (jeden kód pro server i suchý běh) | ✅ | `src/vz_poznamka.js` (CORE za `vice_zakazniku.js`, `jadro_moduly.cjs`, `zlata_vs.js`) |
+| uložení zakázky: obě poznámky, společný rozpočet 6 s, jedno třetí čtení, odpověď `pdPoznamkaZakaznici` | ✅ | `netlify/functions/zakazky.mjs` |
+| suchý běh: řádek „Poznámka dealu — další zákazníci“ | ✅ | `src/pd_nanecisto.js` (`pdnZakaznici`), `src/ui/pd_nanecisto_ui.js`, `functions/pd_nanecisto.mjs`, `lib/pd_prevod.mjs` |
+| testy | ✅ | `netlify/test_vz_poznamka.mjs` 46/0, `netlify/test_vz_nanecisto.mjs` 32/0 |
+| mutace „[VZ E5]“ | ✅ | 25/25 (`netlify/mutace.mjs`); [VSD] 20/20 |
+| B225, CHANGELOG, roadmapa | ✅ | |
+| kolo `--bez-mutaci` | viz níže | |
+
+## Změny proti promptu / návrhu (bezpečnější volba)
+
+- **9 zadání mutací [VSD]** (`hledej`/`nahrad`) přepsáno na zobecněný kód — stejný záměr, název a sada; doslovné
+  řetězce starého kódu po zobecnění neexistují. Testy #588 beze změny.
+- **Platná nabídka před E3:** `d.platna` (píše jen server), jinak poslední tisk se `zakaznik.id` v zámcích; cena jen ze
+  zmrazeného výsledku zámku (`zamekVysledek`, vedoucí strana), starý zámek bez výsledku = bez ceny. **Po sloučení E3
+  nahradit `vzpPlatna` za `vzPlatna`** (src/vz_poznamka.js).
+- **Číslo nabídky zákazníka** `vzpCisloNabidky` = `variantaCislo` + „-písmeno“ — po sloučení E2 převzít její funkci.
+- **Měna** vždy Kč (bez `platna.mena`) — EUR nabídka se ukáže korunami ze zmrazeného výsledku (zapsáno v B225).
+- Poznámka se nepřepíše poznámkou jiného druhu ani podle uloženého id (`jinyDruh`) — nad rámec promptu, kvůli
+  testu „šachty ↔ zákazníci“.
+- Prošlý společný rozpočet = `chyba` bez volání a **bez čerpání stropu**.
+- „Připravuje se nová“ se připojí za odeslanou nabídku středníkem („…bez DPH; připravuje se nová …“).
+- Suchý běh: logika ve funkci `pdnZakaznici`, řádek se proto ukáže i v náhledu „Prodáno“ (týž `pdnPodklad`).
+  Víceřádková hodnota v tabulce náhledu `white-space:pre-line`; `pdnUiOtisk` zahrnuje `zakaznici` jen když je.
+
+## Otevřené body
+
+- Po sloučení E3: `vzPlatna` místo `vzpPlatna`; po E2: číslo nabídky zákazníka z E2; E4: `prodano.zakaznik`
+  (bez něj prodej patří řídícímu — `vzpNeprodano`).
+- Mutace jen [VZ E5] a [VSD] (celé v E6).
+
 # Předávka — 16. 11. 2026: VZ-E0 #599 (víc zákazníků — vypínač, jádro, import, server), větev `claude/vz-e0`
 
 Nad `claude/integrace-vz` `77e36e0`. **v16.11.1**. Do `test-draft`, `test`, `main` ani integrace nic; weby, Disk,
