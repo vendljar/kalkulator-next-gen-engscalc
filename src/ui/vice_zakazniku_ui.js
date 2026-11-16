@@ -24,9 +24,15 @@
  * (`ZAK.dalsiZakaznici.<i>.hlavicka.objednatel`), takže set(), Zpět / Znovu
  * a neuložené změny fungují beze změny (vzor vsSyncZ).
  *
- * Co tu NENÍ (další etapy): čísla s písmenem a tisk pro zákazníka (E2),
- * zámek po zákaznících a odstranění zákazníka s odeslanou nabídkou (E3),
- * změna řídícího a Prodáno (E4), Pipedrive (E5), rejstřík (E6).
+ * E3 (#602): stav nabídky v kartě („odeslána D. M. RRRR" / „rozpracovaná
+ * (platí … z D. M.)"), odstranění zákazníka s odeslanou nabídkou jen
+ * administrátorem (vzOdstranDuvod; potvrzení podle prototypu v3_3), zmrazené
+ * údaje otevřeného dalšího zákazníka po odeslání (vzZakaznikPoleZmrazeno —
+ * pole jen ke čtení, set / ARES / databáze odmítnuty) a číslo dokladu
+ * z razítka (vzCisloDokladu) v seznamu variant a liště zámku.
+ *
+ * Co tu NENÍ (další etapy): změna řídícího a Prodáno (E4), Pipedrive (E5),
+ * rejstřík (E6).
  * Jména: jeden <script> — vše s předponou vz / VZ_.
  * ============================================================ */
 
@@ -113,6 +119,25 @@ function vzCesta(cesta) {
   return 'ZAK.dalsiZakaznici.' + i + '.hlavicka.' + m[1];
 }
 
+/* ZMRAZENÍ ÚDAJŮ DALŠÍHO ZÁKAZNÍKA (E3, návrh § 5): cesta z vzCesta
+ * (`ZAK.dalsiZakaznici.<i>.hlavicka.<pole>`) → důvod z jádra
+ * (vzZakaznikPoleZmrazeno) nebo ''. Jiné cesty (řídící, jeden zákazník)
+ * vždy '' — hlavičku řídícího hlídá zámek hlavičky jako dřív. */
+function vzCestaZmrazena(cesta) {
+  const m = /^ZAK\.dalsiZakaznici\.(\d+)\.hlavicka\.([A-Za-z]+)$/.exec(String(cesta));
+  const z = vzZakUI();
+  if (!m || !z || !Array.isArray(z.dalsiZakaznici)) return '';
+  const d = z.dalsiZakaznici[+m[1]];
+  return vzObj(d) ? vzZakaznikPoleZmrazeno(z, String(d.id), m[2]) : '';
+}
+/* Atribut pole hlavičky (common.js zakaznikRow, icoRow): zmrazené pole jen
+ * ke čtení s důvodem v bublině. U jednoho zákazníka a u řídícího vždy ''
+ * (výstup hlavičky znak po znaku jako dřív). */
+function vzPoleAttr(cesta) {
+  const duvod = vzCestaZmrazena(cesta);
+  return duvod ? ` readonly class="zmrazeno" title="${esc('🔒 ' + duvod)}"` : '';
+}
+
 /* Objekt se stejnými klíči jako hlavička zakázky nad položkou dalšího
  * zákazníka (pro zakaznikPredvypln / zakaznikDoZakazky / zakaznikZeZakazky):
  * zápis jde rovnou do položky, `zakaznikId` se zahodí (klíč navíc v datech). */
@@ -155,7 +180,9 @@ function vzAresCil(kde) {
   if (!d) return null;
   return {
     hlavicka: d.hlavicka,
-    zmrazeno: '',   // zmrazení údajů dalšího zákazníka zavádí E3/E4
+    /* E3: po odeslání nabídky jemu se název, sídlo, IČO a DIČ nemění — ARES
+     * přepisuje právě je (tlačítko zhasne, potvrzení se odmítne). */
+    zmrazeno: vzZakaznikPoleZmrazeno(ZAK, String(d.id), 'objednatel'),
     poPrepisu: (n) => {
       if (!n) return;
       aktivniVarianta(ZAK).upraveno = new Date().toISOString();
@@ -190,8 +217,14 @@ function vzZakaznikCil(kde) {
   if (!d) return null;
   return {
     zak: vzZakaznikProxy(d),
-    set: (k, v) => set(vzCesta('ZAK.' + k), v),
-    zmrazeno: () => '',
+    /* E3: zmrazené pole (název, sídlo, IČO, DIČ po odeslání nabídky jemu) se
+     * nezapíše; kontaktní osoba ano (výběr kontaktu z našeptávače). */
+    set: (k, v) => {
+      const duvod = vzZakaznikPoleZmrazeno(ZAK, String(d.id), k);
+      if (duvod) { if (typeof hlaska === 'function') hlaska(duvod); render(); return; }
+      set(vzCesta('ZAK.' + k), v);
+    },
+    zmrazeno: () => vzZakaznikPoleZmrazeno(ZAK, String(d.id), 'objednatel'),
     poPrevzeti: (n) => {
       aktivniVarianta(ZAK).upraveno = new Date().toISOString();
       if (typeof ZAK_DB !== 'undefined')
@@ -275,14 +308,20 @@ function vzCenaVarianty(v) {
   if (!v || typeof spocitejVariantu !== 'function') return null;
   try { const c = spocitejVariantu(v); return c.ock ? c.ock.souhrn.zakladCena : null; } catch (e) { return null; }
 }
-/* Odešla zákazníkovi nabídka? (razítko tisku s jeho id — E3 — nebo jeho
- * vlastní varianta je zamčená). Bezpečnější výklad do E3: takového
- * zákazníka E1 odstranit nedovolí. */
+/* Odešla zákazníkovi nabídka? (E3: razítko tisku s jeho id v zámku
+ * kterékoli varianty — vzOdeslanoKomu; záznam bez razítka patří z1). */
 function vzOdeslano(z) {
-  if (!z) return false;
-  if (vzRazitkaZakazniku(ZAK).some(r => r && String(r.id) === z.id)) return true;
-  const v = vzVarianta(z.varianta);
-  return !z.ridici && !!v && typeof variantaUzamcena === 'function' && variantaUzamcena(v) && vzVariantaJenJeho(ZAK, z.id, z.varianta);
+  return !!z && vzOdeslanoKomu(ZAK, z.id);
+}
+/* Role Administrátor přihlášeného uživatele (relace serveru). Bez přihlášení
+ * není administrátor nikdo — bezpečnější výklad; server roli ověří sám. */
+function vzJeAdminUI() {
+  return typeof jeAdminOnline === 'function' && !!jeAdminOnline();
+}
+/* Den z ISO času „16. 11. 2026" (český čas, vzpDen); bez roku „16. 11.". */
+function vzDenUI(iso, bezRoku) {
+  const d = typeof vzpDen === 'function' ? vzpDen(iso) : '';
+  return bezRoku ? d.replace(/\s*\d{4}$/, '') : d;
 }
 function vzSdileni(z, l) {
   const s = l.filter(x => x.varianta === z.varianta);
@@ -292,17 +331,18 @@ function vzStavText(z) {
   const v = vzVarianta(z.varianta);
   if (!v) return 'varianta chybí';
   if (typeof variantaProdana === 'function' && variantaProdana(v)) return 'prodáno';
-  if (typeof variantaUzamcena === 'function' && variantaUzamcena(v)) return 'varianta zamčená (odeslaná)';
+  /* E3 (§ 5): odeslána = v zámku JEHO varianty je tisk s jeho id; jinak
+   * rozpracovaná, s poslední odeslanou nabídkou (vzPlatna), pokud nějaká je. */
+  const s = vzStavNabidky(ZAK, z.id);
+  if (s && s.stav === 'odeslana') return ('odeslána ' + vzDenUI(s.kdy)).trim();
+  if (s && s.platna) return 'rozpracovaná (platí ' + s.platna.cislo + (vzDenUI(s.platna.kdy) ? ' z ' + vzDenUI(s.platna.kdy, true) : '') + ')';
   return 'rozpracovaná';
 }
 
+/* Smí se zákazník odstranit? '' = ano, jinak důvod (jádro vzOdstranDuvod:
+ * řídící, prodaný, odeslaná nabídka bez role administrátora). */
 function vzOdstranitDuvod(z) {
-  if (z.ridici) return 'Řídícího zákazníka nejde odstranit, dokud se řídícím nestane jiný.';
-  const v = vzVarianta(z.varianta);
-  if (v && v.prodano && typeof v.prodano === 'object' && String(v.prodano.zakaznik || '') === z.id)
-    return 'Zákazníkovi se prodalo — nejdřív odemknout prodej (vedoucí, administrátor).';
-  if (vzOdeslano(z)) return 'Zákazníkovi už odešla nabídka — odstranění takového zákazníka zavede další etapa (jen administrátor).';
-  return '';
+  return z ? vzOdstranDuvod(ZAK, z.id, vzJeAdminUI()) : 'Zákazník v zakázce není.';
 }
 
 function vzPotvrzeniHtml(l) {
@@ -315,16 +355,28 @@ function vzPotvrzeniHtml(l) {
   const zamcena = !!v && typeof variantaUzamcena === 'function' && variantaUzamcena(v);
   const ostatni = l.filter(x => x.id !== z.id && x.varianta === z.varianta).map(vzNazevZ);
   const r = (n, h) => `<div class="vz-pr"><span>${esc(n)}</span><span>${h}</span></div>`;
+  /* E3: odešla mu nabídka (razítko s jeho id) → doklad zůstává, písmeno se
+   * už nepřidělí; smí jen administrátor (tlačítko jinak zhasnuté). */
+  const odeslano = vzOdeslano(z);
+  const platna = odeslano ? vzPlatna(ZAK, z.id) : null;
+  const razitko = v ? vzRazitkoDotisku(v, z.id) : null;
+  const cisloDokladu = (v && (vzCisloDokladu(ZAK, v) || (razitko && razitko.cislo))) || '';
   const varianta = !v ? 'chybí — nic se nemaže'
     : !jenJeho ? 'zůstává beze změny' + (ostatni.length ? ' — používá ji ' + esc(ostatni.join(', ')) : '')
-      : zamcena ? '<b>zůstává v zakázce zamčená</b> jako doklad'
+        + (razitko ? '; razítko tisku pro tohoto zákazníka v zámku varianty zůstává' : '')
+      : zamcena ? '<b>zůstává v zakázce zamčená</b> jako doklad' + (cisloDokladu ? ' s číslem ' + esc(cisloDokladu) : '')
+        + ' — smazat ji lze jen jako dnes (právo mazat uzamčenou variantu)'
         : `<span class="vz-volba"><label><input type="radio" name="vzOdstranVar" value="smazat"${p.smazat ? ' checked' : ''} onchange="VZ_UI.odstranit.smazat=true"> smazat i jeho rozpracovanou variantu „${esc(v.nazev)}" (nikomu neodešla)</label>
           <label><input type="radio" name="vzOdstranVar" value="ponechat"${p.smazat ? '' : ' checked'} onchange="VZ_UI.odstranit.smazat=false"> ponechat ji v zakázce jako běžnou variantu</label></span>`;
   const zbyde = l.length - 1;
+  const nabidka = platna
+    ? r('Jeho nabídka ' + platna.cislo, 'odeslána ' + esc(vzDenUI(platna.kdy)) + ' → <b>doklad zůstává</b> v zakázce (razítko tisku se snímkem adresáta v zámku varianty, protokol)')
+    : r('Jeho nabídka', 'rozpracovaná, neodeslaná → <b>zanikne</b>');
   return `<div class="vz-potvrzeni" id="vzOdstranPotvrzeni"><b>Odstranit zákazníka ${esc(vzNazevZ(z))} ze zakázky?</b>
-    ${r('Jeho nabídka', 'rozpracovaná, neodeslaná → <b>zanikne</b>')}
+    ${nabidka}
     ${r('Varianta „' + (v ? v.nazev : '?') + '"', varianta)}
-    ${r('Písmeno -' + z.pismeno, 'uvolní se — nic s ním neodešlo')}
+    ${odeslano ? r('Kdo smí', 'jen <b>administrátor</b> — zákazníkovi už odešla nabídka') : ''}
+    ${r('Písmeno -' + z.pismeno, odeslano ? 'už se nepřidělí jinému zákazníkovi (něco s ním odešlo)' : 'uvolní se — nic s ním neodešlo')}
     ${r('Vzhled aplikace', zbyde > 1 ? 'beze změny (zůstávají ' + zbyde + ' zákazníci)'
       : '<s>přepínač zákazníků a karta Zákazníci zakázky</s> → <b>standardní kalkulace</b>, jen tlačítko „Přidat zákazníka"')}
     <div class="vz-pt"><button type="button" class="vz-cervene" id="vzOdstranAno" onclick="vzOdstranitPotvrd(true)">Odstranit zákazníka</button>
@@ -541,6 +593,7 @@ function vzOdstranitPotvrd(ano) {
   const duvod = vzOdstranitDuvod(z);
   if (duvod) { if (typeof hlaska === 'function') hlaska(duvod); render(); return; }
   const nazev = vzNazevZ(z);
+  const odeslano = vzOdeslano(z);
   const r = vzOdstran(ZAK, z.id, { smazatVariantu: !!p.smazat });
   if (!r.ok) { if (typeof hlaska === 'function') hlaska(r.chyba); render(); return; }
   if (VZ_UI.otevreny === z.id) VZ_UI.otevreny = '';
@@ -551,7 +604,8 @@ function vzOdstranitPotvrd(ano) {
   syncVarianta();
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   if (typeof protokolZapis === 'function')
-    protokolZapis(ZAK, { co: 'Odstraněn zákazník' + (r.smazanaVarianta ? ' i s jeho rozpracovanou variantou' : ''),
+    protokolZapis(ZAK, { co: 'Odstraněn zákazník' + (r.smazanaVarianta ? ' i s jeho rozpracovanou variantou' : '')
+      + (odeslano ? ' s odeslanou nabídkou (doklad zůstává)' : ''),
       kde: 'zákazníci zakázky', kdo: vzKdo(), pred: nazev });
   render();
 }

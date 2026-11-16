@@ -480,7 +480,10 @@ console.log('\nJeden zákazník — beze změny');
   /* náhled řídícího u tří zákazníků = náhled téže zakázky s jedním zákazníkem */
   const c3 = await priprav('tri');
   const a3 = (await spust('nabidkaOckDokument()')).okna.map(o => o.titulek + '\n' + o.html).join('');
-  const norm = (t, ids) => bezCasu(t).split(ids).join('VARID');
+  /* VZ-E3 (#602): skript náhledu u víc zákazníků nese navíc adresáta razítka
+   * („zakaznik" v TISK_ZAMEK a 4. argument zamekPoTisku) — obsah dokumentu se nesrovnává s ním. */
+  const norm = (t, ids) => bezCasu(t).split(ids).join('VARID')
+    .replace(/,"zakaznik":"z\d+"/g, '').replace(/,null,\{zakaznik:TISK_ZAMEK\.zakaznik\}/g, '');
   const shoda = norm(a3, c3.ridici) === norm(s1['náhled a tisk nabídky'], cJ.ridici);
   if (!shoda) {
     const x = norm(a3, c3.ridici), y = norm(s1['náhled a tisk nabídky'], cJ.ridici);

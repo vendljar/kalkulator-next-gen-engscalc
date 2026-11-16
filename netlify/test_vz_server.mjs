@@ -17,6 +17,14 @@
  *     klíčů, přidání třetího → 400, úložiště beze změny.
  *  6) Obnova ze souboru (náhled) s VYP: zakázka s víc zákazníky ani zakázka
  *     s vadným tvarem se neobnoví; se ZAP platná ano, vadná ne.
+ *  7) E3 (#602, ZAP): razítko „komu" skládá server (podvržený snímek se
+ *     nepřijme, přepsané uložené razítko se vrátí, tisk pro neexistujícího
+ *     zákazníka / cizí variantu 400, jeden zákazník bez klíče); N6 platna
+ *     …-B; odstranění zákazníka s odeslanou nabídkou: obchodník 403, autor
+ *     403, administrátor 200 a razítka zůstala; smazání zamčené varianty
+ *     odstraněného zákazníka 409; N9 písmeno 400, nové id / písmeno z razítka
+ *     400; N4 zalozen ze serveru; zmrazené údaje B 409 (kontakt projde);
+ *     název akce u víc zákazníků po tisku neřídící varianty 409.
  * Paměťové úložiště, smyšlený ceník (src/zkusebni_cenik.js), smyšlené účty
  * a firmy. Spuštění: node netlify/test_vz_server.mjs */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
@@ -38,7 +46,7 @@ const { default: funkce } = await import(R + 'netlify/functions/funkce.mjs');
 const { default: obnova } = await import(R + 'netlify/functions/obnova.mjs');
 const { ADMIN_EMAIL } = await import(R + 'netlify/lib/sdilene.mjs');
 const { jadro } = await import(R + 'netlify/lib/jadro.mjs');
-await jadro();
+const { JEKLY } = await jadro();
 const { createRequire } = await import('node:module');
 const require = createRequire(R + 'netlify/x.mjs');
 const zk = require(R + 'src/zakazka.js');
@@ -335,6 +343,190 @@ test('ZAP D4: příprava — zakázka s vlastní variantou zákazníka C uložen
     o2.status === 200 && !dP2 && dV2 && /víc zákazníků/.test(dV2.duvod) && o2.casti.zakazky.nove === 1 && zakazekVUlozisti() === pred,
     { z: o2.casti && o2.casti.zakazky });
   await vypinac({ viceZakazniku: false }); }
+
+/* ---------- 7) E3 (#602): zámek po zákaznících ---------- */
+await vypinac({ viceZakazniku: true });
+{ const x2 = await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: 'obch2.vz@priklad.cz', jmeno: 'Obch VZ Dva', role: 'Obchodník', heslo: 'Heslo12345x' }, cA)).json();
+  if (!x2.ok) throw new Error('uzivatel 2 ' + JSON.stringify(x2)); }
+const cO2 = await prihlas('obch2.vz@priklad.cz', 'Heslo12345x');
+/* Tisk jako zamekPoTisku: zamek.cislo = číslo varianty bez písmene, výsledek
+ * a snímek z dat (projde přísným ověřením zámku), razítko z prohlížeče —
+ * server z něj bere jen id. */
+const zamkni = (z, v, komu) => G.zamkniVariantu(v, Object.assign({ typ: 'nabidkaTisk', kdy: new Date().toISOString(), kdo: 'Test VZ E3',
+  cislo: G.variantaCislo(z, v), vysledek: G.zamekVysledekSpocti(v, JEKLY, 'vz-e3'), snimek: G.zamekSnimekSpocti(v) }, komu ? { zakaznik: komu } : {}));
+const tisky = (u, varId) => ((u.varianty.find(v => v.id === varId) || {}).zamek || {}).tisky || [];
+/* Uložená zakázka (B sdílí V1, C má vlastní V2), V1 vytištěná pro B. Vrací { soubor, g (načtená), a (import k úpravě) }. */
+async function sOdeslanouB(nazev, cookie, uprava) {
+  const z = sVz('E3 ' + nazev, zz => { const r = G.vzPridej(zz, UDAJE_C, { kdo: 'x', vlastni: true }); if (!r.ok) throw new Error(r.chyba); });
+  zamkni(z, z.varianty[0], { id: 'z2' });
+  if (uprava) uprava(z);
+  const r = await uloz(z, cookie || cO);
+  if (r.status !== 200) throw new Error('příprava E3 ' + nazev + ' ' + r.status + ' ' + r.chyba);
+  const g = await nacti(r.soubor, cO);
+  return { soubor: r.soubor, g, a: zk.importZakazka(kopie(g)), cislo: G.variantaCislo(z, z.varianty[0]) };
+}
+const opakuj = async (o, fn, cookie) => { const a = zk.importZakazka(kopie(o.g)); fn(a); return uloz(a, cookie || cO, o.g.uloRazitko); };
+
+/* razítko ze serveru + N6 platna */
+let zakB = null;
+{ zakB = await sOdeslanouB('razítko a platna', cO, z => { z.varianty[0].zamek.tisky[0].zakaznik = { id: 'z2', pismeno: 'Q', cislo: 'PODVRH-CISLO',
+    objednatel: 'PODVRŽENÝ ODBĚRATEL', ico: '12345679', navic: 'x' }; });
+  const u = ulozenoObj(zakB.soubor);
+  const rz = tisky(u, u.varianty[0].id)[0].zakaznik;
+  test('E3 podvržený snímek razítka (název, číslo, písmeno, IČO, klíč navíc) → server uloží snímek z dat zákazníka B',
+    rz && rz.id === 'z2' && rz.pismeno === 'B' && rz.objednatel === UDAJE_B.objednatel && rz.ico === '' && rz.cislo === zakB.cislo + '-B'
+    && JSON.stringify(Object.keys(rz)) === JSON.stringify(G.VZ_RAZITKO_KLICE), rz);
+  test('E3 zamek.cislo zůstává číslo varianty bez písmene', u.varianty[0].zamek.cislo === zakB.cislo, u.varianty[0].zamek.cislo);
+  test('E3 N6: platna B po tisku = { V1, …-B, cena z výsledku zámku }', u.dalsiZakaznici[0].platna && u.dalsiZakaznici[0].platna.cislo === zakB.cislo + '-B'
+    && u.dalsiZakaznici[0].platna.varianta === u.varianty[0].id && typeof u.dalsiZakaznici[0].platna.cena === 'number' && u.dalsiZakaznici[0].platna.cena > 0,
+    u.dalsiZakaznici[0].platna);
+  test('E3 N6: C (nic neodešlo) platna nemá', !('platna' in u.dalsiZakaznici[1])); }
+{ const r = await opakuj(zakB, a => { const t = a.varianty[0].zamek.tisky[0]; t.zakaznik.objednatel = 'PŘEPSANÝ ODBĚRATEL'; t.zakaznik.cislo = 'PŘEPSÁNO'; });
+  const u = ulozenoObj(zakB.soubor);
+  const rz = tisky(u, u.varianty[0].id)[0].zakaznik;
+  test('E3 přepsané uložené razítko → 200 a server vrátí uložené (uloZamekRazitkaDrz)',
+    r.status === 200 && rz.objednatel === UDAJE_B.objednatel && rz.cislo === zakB.cislo + '-B', { status: r.status, chyba: r.chyba, rz }); }
+{ const g = await nacti(zakB.soubor, cO);
+  const a = zk.importZakazka(kopie(g)); a.varianty[0].zamek.tisky[0].zakaznik = { id: 'z3', pismeno: 'C', cislo: 'x', objednatel: 'x', ico: '' };
+  const r = await uloz(a, cO, g.uloRazitko);
+  const rz = tisky(ulozenoObj(zakB.soubor), a.varianty[0].id)[0].zakaznik;
+  test('E3 přepsané id v uloženém razítku (B → C) → server vrátí B', r.status === 200 && rz.id === 'z2', { status: r.status, rz }); }
+{ const g = await nacti(zakB.soubor, cO);
+  const pred = ulozeno(zakB.soubor);
+  const a = zk.importZakazka(kopie(g)); zamkni(a, a.varianty[0], { id: 'z9' });
+  const r = await uloz(a, cO, g.uloRazitko);
+  test('E3 nový tisk pro neexistujícího zákazníka (z9) → 400, úložiště beze změny',
+    r.status === 400 && /který v zakázce není/.test(r.chyba || '') && ulozeno(zakB.soubor) === pred, { status: r.status, chyba: r.chyba }); }
+{ const g = await nacti(zakB.soubor, cO);
+  const pred = ulozeno(zakB.soubor);
+  const a = zk.importZakazka(kopie(g)); zamkni(a, a.varianty[0], { id: 'z3' });
+  const r = await uloz(a, cO, g.uloRazitko);
+  test('E3 nový tisk sdílené V1 pro C (jeho varianta je V2) → 400, úložiště beze změny',
+    r.status === 400 && /není nabídka zákazníka/.test(r.chyba || '') && ulozeno(zakB.soubor) === pred, { status: r.status, chyba: r.chyba }); }
+{ const g = await nacti(zakB.soubor, cO);
+  const a = zk.importZakazka(kopie(g)); zamkni(a, a.varianty[0], { id: 'z1' });
+  const r = await uloz(a, cO, g.uloRazitko);
+  const t = tisky(ulozenoObj(zakB.soubor), a.varianty[0].id);
+  test('E3 dotisk V1 řídícímu → 200, razítko A bez písmene, B zůstalo',
+    r.status === 200 && t.length === 2 && t[0].zakaznik.id === 'z2' && t[1].zakaznik.id === 'z1' && t[1].zakaznik.pismeno === ''
+    && t[1].zakaznik.objednatel === ulozenoObj(zakB.soubor).objednatel, { status: r.status, chyba: r.chyba, t: t.map(x => x.zakaznik) }); }
+{ const z = nova('E3 jeden zákazník');
+  zamkni(z, z.varianty[0], { id: 'z1', objednatel: 'PODVRH' });
+  const r = await uloz(z, cO);
+  const u = r.soubor ? ulozenoObj(r.soubor) : null;
+  test('E3 jeden zákazník: klíč zakaznik v záznamu tisku zmizí (200)',
+    r.status === 200 && u && !maVz(u) && !('zakaznik' in tisky(u, u.varianty[0].id)[0]), { status: r.status, chyba: r.chyba }); }
+
+/* zmrazení údajů B po odeslání */
+for (const [jm, fn] of [['název', a => { a.dalsiZakaznici[0].hlavicka.objednatel = 'TEST – JINÝ NÁZEV s.r.o.'; }],
+                        ['sídlo', a => { a.dalsiZakaznici[0].hlavicka.adresaObjednatele = 'Jinde 9'; }],
+                        ['IČO', a => { a.dalsiZakaznici[0].hlavicka.ico = '11112222'; }]]) {
+  const g = await nacti(zakB.soubor, cO);
+  const pred = ulozeno(zakB.soubor);
+  const r = await opakuj({ g }, fn);
+  test('E3 zmrazení: ' + jm + ' B po odeslané nabídce → 409, úložiště beze změny',
+    r.status === 409 && /už odešla nabídka/.test(r.chyba || '') && ulozeno(zakB.soubor) === pred, { status: r.status, chyba: r.chyba });
+}
+{ const g = await nacti(zakB.soubor, cO);
+  const r = await opakuj({ g }, a => { a.dalsiZakaznici[0].hlavicka.kontakt = 'Nová kontaktní osoba'; a.dalsiZakaznici[1].hlavicka.objednatel = 'TEST – TŘETÍ PŘEJMENOVANÝ s.r.o.'; });
+  const u = ulozenoObj(zakB.soubor);
+  test('E3 zmrazení: kontakt B a název C (nic mu neodešlo) se změnit smí → 200',
+    r.status === 200 && u.dalsiZakaznici[0].hlavicka.kontakt === 'Nová kontaktní osoba' && u.dalsiZakaznici[1].hlavicka.objednatel === 'TEST – TŘETÍ PŘEJMENOVANÝ s.r.o.',
+    { status: r.status, chyba: r.chyba }); }
+
+/* N9 písmeno */
+{ const g = await nacti(zakB.soubor, cO);
+  const pred = ulozeno(zakB.soubor);
+  const r = await opakuj({ g }, a => { a.dalsiZakaznici[0].pismeno = 'D'; });
+  test('E3 N9: změna písmene existujícího zákazníka (B → D) → 400, úložiště beze změny',
+    r.status === 400 && /písmeno zákazníka/.test(r.chyba || '') && ulozeno(zakB.soubor) === pred, { status: r.status, chyba: r.chyba }); }
+
+/* N4 zalozen */
+{ const z = sVz('E3 N4 zalozen', zz => { zz.dalsiZakaznici[0].zalozen = { kdo: 'podvrh@priklad.cz', kdy: '2001-01-01T00:00:00.000Z' }; });
+  const t0 = Date.now();
+  const r = await uloz(z, cO);
+  const u = ulozenoObj(r.soubor);
+  const zal = u && u.dalsiZakaznici[0].zalozen;
+  test('E3 N4: nový zákazník — zalozen ze serveru (e-mail relace, čas serveru), podvržené kdo/kdy se nepřijme',
+    r.status === 200 && zal && zal.kdo === 'obch.vz@priklad.cz' && Date.parse(zal.kdy) >= t0 - 1000 && Date.parse(zal.kdy) <= Date.now() + 1000, zal);
+  const g = await nacti(r.soubor, cO);
+  const r2 = await opakuj({ g }, a => { a.dalsiZakaznici[0].zalozen = { kdo: 'jiny@priklad.cz', kdy: '2002-02-02T00:00:00.000Z' };
+    const p = G.vzPridej(a, UDAJE_C, { kdo: 'podvrh@priklad.cz', kdy: '2003-03-03T00:00:00.000Z' }); if (!p.ok) throw new Error(p.chyba); }, cA);
+  const u2 = ulozenoObj(r.soubor);
+  test('E3 N4: existující zákazník drží uložené zalozen, nový (přidaný správcem) dostane jeho relaci',
+    r2.status === 200 && JSON.stringify(u2.dalsiZakaznici[0].zalozen) === JSON.stringify(zal)
+    && u2.dalsiZakaznici[1].zalozen.kdo === ADMIN_EMAIL && u2.dalsiZakaznici[1].zalozen.kdy !== '2003-03-03T00:00:00.000Z',
+    { status: r2.status, chyba: r2.chyba, d: u2.dalsiZakaznici.map(d => d.zalozen) }); }
+
+/* název akce u víc zákazníků po tisku NEŘÍDÍCÍ varianty */
+{ const z = sVz('E3 název akce', zz => { const r = G.vzPridej(zz, UDAJE_C, { kdo: 'x', vlastni: true }); if (!r.ok) throw new Error(r.chyba); });
+  const r0 = await uloz(z, cO);
+  let g = await nacti(r0.soubor, cO);
+  const a = zk.importZakazka(kopie(g));
+  const v2 = a.varianty.find(v => v.id === a.dalsiZakaznici[1].varianta);
+  zamkni(a, v2, { id: 'z3' });
+  const r1 = await uloz(a, cO, g.uloRazitko);
+  const u1 = ulozenoObj(r0.soubor);
+  test('E3 příprava: tisk vlastní (neřídící) V2 pro C → 200, razítko C …-C',
+    r0.status === 200 && r1.status === 200 && tisky(u1, v2.id)[0].zakaznik.id === 'z3' && /-C$/.test(tisky(u1, v2.id)[0].zakaznik.cislo),
+    { r0: r0.status, status: r1.status, chyba: r1.chyba });
+  g = await nacti(r0.soubor, cO);
+  const pred = ulozeno(r0.soubor);
+  const r2 = await opakuj({ g }, b => { b.nazevAkce = 'TEST VZ JINÝ NÁZEV AKCE'; });
+  test('E3 víc zákazníků: změna názvu akce po prvním tisku (neřídící varianta) → 409, úložiště beze změny',
+    r2.status === 409 && /nazevAkce/.test(r2.chyba || '') && ulozeno(r0.soubor) === pred, { status: r2.status, chyba: r2.chyba });
+  const r3 = await opakuj({ g }, b => { b.adresa = 'Jiná stavba 5'; });
+  test('E3 víc zákazníků: změna adresy stavby po prvním tisku → 409', r3.status === 409 && /adresa/.test(r3.chyba || ''), { status: r3.status, chyba: r3.chyba }); }
+
+/* odstranění zákazníka s odeslanou nabídkou: obchodník 403, autor 403, administrátor 200 */
+{ const o = await sOdeslanouB('odstranění', cO);
+  const pred = ulozeno(o.soubor);
+  const rAutor = await opakuj(o, a => { const x = G.vzOdstran(a, 'z2'); if (!x.ok) throw new Error(x.chyba); });
+  test('E3 odstranění B s odeslanou nabídkou: autor zakázky (obchodník) → 403, úložiště beze změny',
+    rAutor.status === 403 && /jen administrátor/.test(rAutor.chyba || '') && ulozeno(o.soubor) === pred, { status: rAutor.status, chyba: rAutor.chyba });
+  const rObch = await opakuj(o, a => { G.vzOdstran(a, 'z2'); }, cO2);
+  test('E3 odstranění B s odeslanou nabídkou: jiný obchodník → 403, úložiště beze změny',
+    rObch.status === 403 && ulozeno(o.soubor) === pred, { status: rObch.status, chyba: rObch.chyba });
+  const rC = await opakuj(o, a => { G.vzOdstran(a, 'z3'); });
+  test('E3 odstranění C bez odeslané nabídky: obchodník smí (200)', rC.status === 200 && ulozenoObj(o.soubor).dalsiZakaznici.length === 1,
+    { status: rC.status, chyba: rC.chyba });
+  const g = await nacti(o.soubor, cO);
+  const rAdm = await opakuj({ g }, a => { G.vzOdstran(a, 'z2'); }, cA);
+  const u = ulozenoObj(o.soubor);
+  const t = tisky(u, u.varianty[0].id);
+  test('E3 odstranění B s odeslanou nabídkou: administrátor → 200, zákazník pryč, razítko B v zámku zůstalo',
+    rAdm.status === 200 && !maVz(u) && t.length === 1 && t[0].zakaznik && t[0].zakaznik.id === 'z2' && t[0].zakaznik.objednatel === UDAJE_B.objednatel,
+    { status: rAdm.status, chyba: rAdm.chyba, t: t.map(x => x.zakaznik) });
+  /* N9: nový zákazník nesmí převzít id ani písmeno z razítka. */
+  const g2 = await nacti(o.soubor, cO);
+  const pred2 = ulozeno(o.soubor);
+  for (const [jm, fn, re] of [['id z2 z razítka', a => { G.vzPridej(a, UDAJE_C, { kdo: 'x' }); a.dalsiZakaznici[0].id = 'z2'; a.dalsiZakaznici[0].pismeno = 'C'; }, /nese id z2/],
+                              ['písmeno B z razítka', a => { G.vzPridej(a, UDAJE_C, { kdo: 'x' }); a.dalsiZakaznici[0].pismeno = 'B'; }, /písmeno B/]]) {
+    const r = await opakuj({ g: g2 }, fn);
+    test('E3 N9: nový zákazník převezme ' + jm + ' → 400, úložiště beze změny',
+      r.status === 400 && re.test(r.chyba || '') && ulozeno(o.soubor) === pred2, { status: r.status, chyba: r.chyba });
+  }
+  const rN = await opakuj({ g: g2 }, a => { const p = G.vzPridej(a, UDAJE_C, { kdo: 'x' });
+    if (!p.ok || p.zakaznik.id !== 'z3' || p.zakaznik.pismeno !== 'C') throw new Error('vzPridej po odstranění ' + JSON.stringify(p)); });
+  test('E3 po odstranění B: nový zákazník přes vzPridej (z3, C) → 200', rN.status === 200, { status: rN.status, chyba: rN.chyba }); }
+
+/* smazání zamčené varianty odstraněného zákazníka bez práva */
+{ const z = sVz('E3 zamčená varianta C', zz => { const r = G.vzPridej(zz, UDAJE_C, { kdo: 'x', vlastni: true }); if (!r.ok) throw new Error(r.chyba); });
+  const v2 = z.varianty.find(v => v.id === z.dalsiZakaznici[1].varianta);
+  zamkni(z, v2, { id: 'z3' });
+  const r0 = await uloz(z, cO);
+  let g = await nacti(r0.soubor, cO);
+  const rA = await opakuj({ g }, a => { const x = G.vzOdstran(a, 'z3', { smazatVariantu: true }); if (!x.ok || x.smazanaVarianta) throw new Error(JSON.stringify(x)); }, cA);
+  const u = ulozenoObj(r0.soubor);
+  test('E3 příprava: administrátor odstraní C (smazatVariantu) → 200, zamčená V2 zůstala jako doklad',
+    r0.status === 200 && rA.status === 200 && u.dalsiZakaznici.length === 1 && u.varianty.some(v => v.id === v2.id && v.zamek && v.zamek.zamceno),
+    { r0: r0.status, status: rA.status, chyba: rA.chyba });
+  g = await nacti(r0.soubor, cO);
+  const pred = ulozeno(r0.soubor);
+  const r = await opakuj({ g }, a => { a.varianty = a.varianty.filter(v => v.id !== v2.id); });
+  test('E3 smazání zamčené varianty odstraněného zákazníka obchodníkem (bez varianta.smazatUzamcenou) → 409, úložiště beze změny',
+    r.status === 409 && /chybí/.test(r.chyba || '') && ulozeno(r0.soubor) === pred, { status: r.status, chyba: r.chyba }); }
+await vypinac({ viceZakazniku: false });
 
 console.log(`\n${ok} OK, ${fail} FAIL`);
 process.exit(fail ? 1 : 0);

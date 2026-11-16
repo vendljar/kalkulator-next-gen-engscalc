@@ -719,6 +719,16 @@ function set(path, v) {
       return;
     }
   }
+  /* VZ-E3 (#602): údaje dalšího zákazníka po odeslání nabídky jemu
+   * (vzCestaZmrazena — jen cesty ZAK.dalsiZakaznici.*; jeden zákazník beze změny). */
+  if (path.startsWith('ZAK.dalsiZakaznici.') && typeof vzCestaZmrazena === 'function') {
+    const duvod = vzCestaZmrazena(path);
+    if (duvod) {
+      if (typeof hlaska === 'function') hlaska(duvod);
+      render();
+      return;
+    }
+  }
   /* ČÍSLO ODESLANÉ NABÍDKY MĚNÍ JEN ADMINISTRÁTOR (nález A3, rozhodnutí
    * J. V. 15. 9. 2026: „Pouze administrátor").
    *
@@ -1399,7 +1409,7 @@ function zakazkaHlavicka(ock) {
   const vzC = p => (typeof vzCesta === 'function' ? vzCesta(p) : p);
   const zakaznikRow = (kde) => `<div class="row"><label>Zákazník</label>${typeof vzPridatTlacitko === 'function' ? vzPridatTlacitko(kde) : ''}
     <span class="nasept-wrap" style="flex:1"><input type="text" style="width:100%" autocomplete="off"
-      value="${esc(get(vzC('ZAK.objednatel')))}"${typeof zamekZakAttr === 'function' ? zamekZakAttr(vzC('ZAK.objednatel')) : ''}
+      value="${esc(get(vzC('ZAK.objednatel')))}"${typeof zamekZakAttr === 'function' ? zamekZakAttr(vzC('ZAK.objednatel')) : ''}${typeof vzPoleAttr === 'function' ? vzPoleAttr(vzC('ZAK.objednatel')) : ''}
       title="Při psaní se nabízejí zákazníci z databáze a z dřívějších zakázek. Výběrem se doplní prázdná pole hlavičky (kontaktní osoba, IČO, adresa); už vyplněné údaje zůstanou a celou hlavičku přepíše tlačítko „Vybrat z databáze zákazníků“."
       onchange="if(typeof naseptavacZakVyber==='function')naseptavacZakVyber(this.value,'${kde}'); else set('ZAK.objednatel', this.value)"
       oninput="naseptavacZakKresli('${kde}', this.value)"
@@ -1473,7 +1483,7 @@ function zakazkaHlavicka(ock) {
            title="uložit údaje z téhle hlavičky jako novou kartu zákazníka${esc(zakDuvod)}">Uložit jako zákazníka</button>`;
     const aresBtns = (typeof aresRadek === 'function') ? aresRadek(kde, false, zakDbBtns) : zakDbBtns;
     return `<div class="row"><label>IČO zákazníka${pill}</label>
-      <input type="text" value="${esc(h)}" placeholder="8 číslic"${typeof zamekZakAttr === 'function' ? zamekZakAttr(path) : ''}
+      <input type="text" value="${esc(h)}" placeholder="8 číslic"${typeof zamekZakAttr === 'function' ? zamekZakAttr(path) : ''}${typeof vzPoleAttr === 'function' ? vzPoleAttr(path) : ''}
         title="IČO zákazníka; přebírá ho krycí list. Prázdné pole se nikde nehlásí."
         onchange="set('${escJs(path)}', this.value)"></div>${aresBtns}`;
   };

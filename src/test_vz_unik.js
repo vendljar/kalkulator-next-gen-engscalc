@@ -510,6 +510,62 @@ async function hlavni() {
           !res.chyby.length && !pr.unik.length, { chyby: res.chyby, unik: pr.unik });
       }
     }
+    /* E3 (#602) DOTISK: vzTiskPohled(zak, id, varianta) bere název a IČO
+     * adresáta ze snímku JEHO razítka — dokumenty A po tisku B nesmí nést
+     * snímek B a naopak (ani přes D3, ani přes dotisk). Razítko A se snímkem
+     * A (kanárky A), razítko B se snímkem B. */
+    v1.zamek.tisky.push({ typ: 'nabidka', kdo: PEVNE.kdo, kdy: '2026-11-16T11:00:00.000Z', zakaznik: vzRazitkoSnimek(zz, 'z1', v1) });
+    v1.zamek.tisky.push({ typ: 'nabidka', kdo: PEVNE.kdo, kdy: '2026-11-16T12:00:00.000Z', zakaznik: vzRazitkoSnimek(zz, 'z2', v1) });
+    for (const [p, id] of [['A', 'z1'], ['B', 'z2']]) {
+      const snap = vzRazitkoDotisku(v1, id);
+      test('dotisk V1 pro ' + p + ': razítko se snímkem ' + p + ' existuje', snap && snap.id === id && norm(snap.objednatel).indexOf(norm(tokZ(p, 1))) >= 0, snap);
+      for (const L of ['cz', 'en']) {
+        const pz = vzTiskPohled(zz, id, v1);
+        const res = await vystupy(pz, vzTiskVarianta(pz, v1), L, ZAK_TYPY_OCK);
+        /* Zámek V1 v pohledu (razítka): snímek jiného zákazníka nesmí nést. Celý
+         * JSON pohledu ani celý zámek ne — data.kryci.zmrazeno a zamek.snimek
+         * sdílené V1 nesou A z prvního tisku (data varianty, dokumenty B je
+         * netisknou — hlídá blok výš). */
+        const zv = (pz.varianty.find(x => x.id === v1.id) || {}).zamek;
+        res.vystupy.push({ nazev: 'razítka tisků V1 v pohledu', text: JSON.stringify(zv && zv.tisky), vlastni: false });
+        const pr = problemy(res, p, 'A', L, povoleneVar(zz, id));
+        test('dotisk V1 pro ' + p + ' ' + L + ' (vzTiskPohled s variantou): dokumenty vznikly, nesou vlastního objednatele, žádný snímek '
+          + (p === 'A' ? 'B ani C' : 'A ani C'), !res.chyby.length && !pr.unik.length && !pr.prazdne.length,
+          { chyby: res.chyby, unik: pr.unik, prazdne: pr.prazdne });
+        test('dotisk V1 pro ' + p + ' ' + L + ': zámek v pohledu nese jen razítka ' + p,
+          zv && zv.tisky.every(t => !t.zakaznik || t.zakaznik.id === id) && zv.tisky.some(t => t.zakaznik && t.zakaznik.id === id), zv && zv.tisky);
+      }
+    }
+  }
+
+  /* --- E3 (#602): VARIANTA ODSTRANĚNÉHO ZÁKAZNÍKA. Vlastní V2 zákazníka C
+   * odešla jemu (razítko se snímkem C), administrátor C odstranil — V2
+   * zůstala jako doklad a je volná (tisknout ji smí řídící). Dokumenty
+   * řídícího A z V2 nesmí nést název ani IČO C (snímek z razítka, ani
+   * v.zakaznik se jménem C). Kanárky varianty V2 (název, cena) smí — tiskne
+   * se V2. --- */
+  {
+    const zr = zakazka(false);
+    const v2 = variantaZak(zr, 'z3');
+    /* Volný text „zákazník" vlastní varianty jmenuje C (obchodník ho vepsal) —
+     * po odstranění C ho tiskový pohled řídícího musí poznat podle snímku
+     * v razítku (text bez jména C detektor ani jádro poznat neumí). */
+    v2.zakaznik = hlavicka(ZAKAZNICI.C).objednatel;
+    zamkniVariantu(v2, { typ: 'nabidka', kdo: PEVNE.kdo, kdy: PEVNE.kdy, cislo: variantaCislo(zr, v2),
+      vysledek: zamekVysledekSpocti(v2, J, 'unik'), snimek: zamekSnimekSpocti(v2), zakaznik: vzRazitkoSnimek(zr, 'z3', v2) });
+    const o = vzOdstran(zr, 'z3', { smazatVariantu: true });
+    test('odstraněný C: varianta V2 (zamčená, razítko C) zůstala, C v zakázce není, řídící smí V2 tisknout',
+      o.ok && !o.smazanaVarianta && !vzZakaznik(zr, 'z3') && vzTiskZabrana(zr, 'z1', v2, 'nabidka') === ''
+      && norm(JSON.stringify(v2.zamek.tisky)).indexOf(norm(tokZ('C', 1))) >= 0, { o, zab: vzTiskZabrana(zr, 'z1', v2, 'nabidka') });
+    for (const L of ['cz', 'en']) {
+      for (const [stitek, pz] of [['tisk', vzTiskPohled(zr, 'z1')], ['dotisk', vzTiskPohled(zr, 'z1', v2)]]) {
+        const res = await vystupy(pz, vzTiskVarianta(pz, v2), L, ZAK_TYPY_OCK);
+        res.vystupy.push({ nazev: 'JSON pohledu (bez protokolu)', text: JSON.stringify(Object.assign({}, pz, { protokol: undefined })), vlastni: true });
+        const pr = problemy(res, 'A', 'C', L, 'ACD');
+        test('odstraněný C, ' + stitek + ' V2 řídícím A ' + L + ': dokumenty vznikly, nesou A, žádný údaj C (snímek razítka, v.zakaznik)',
+          !res.chyby.length && !pr.unik.length && !pr.prazdne.length, { chyby: res.chyby, unik: pr.unik, prazdne: pr.prazdne });
+      }
+    }
   }
 
   /* --- VÝMĚNA ŘÍDÍCÍHO (vzVymenRidiciho na B), kanárky A i v projHlavicka.

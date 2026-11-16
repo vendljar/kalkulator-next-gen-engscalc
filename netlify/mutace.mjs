@@ -53,6 +53,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_vs_server.mjs',
      /* VZ #598 E0 (16. 11. 2026): víc zákazníků — vypínač, tvar, platna, invariant (server) a jádro (model). */
      'test_vz_server.mjs', '../src/test_vz_model.js',
+     /* VZ-E3 #602 (16. 11. 2026): zámek po zákaznících — razítko „komu", platná nabídka, dotisk (jádro). */
+     '../src/test_vz_zamek.js',
      /* VZ-E2 #601 (16. 11. 2026): webhook podle čísla s písmenem zákazníka. */
      'test_vz_webhook.mjs',
      /* K40a #579 (11. 11. 2026): X5 záložní buňka CSV a X6 escJs v onclick ceníku — bez nich mutace [K40a] X5/X6 nemají sadu. */

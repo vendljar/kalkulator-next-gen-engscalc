@@ -15,6 +15,9 @@
  *    do formuláře / položky bez klíče zakaznikId;
  *  – karta Zákazníci zakázky: zhasnutá tlačítka, escapování, odstranění
  *    s potvrzením na stránce (varianta smazat / ponechat, zamčená, odeslaná);
+ *  – E3 (#602): stav nabídky v kartě, odstranění odeslaného jen administrátor
+ *    (zhasnuté s vysvětlením / potvrzení s řádky dokladu), zmrazené údaje
+ *    otevřeného dalšího zákazníka (pole, set přes cíl, ARES, databáze).
  *  – VYP + data víc zákazníků: karta s větou „funkce je vypnutá", zápis odmítnut;
  *  – sloupec Zákazník v seznamu variant, změna varianty zákazníka.
  * Pojistka: na e29f2b1 selže (ui/vice_zakazniku_ui.js neexistuje).
@@ -35,7 +38,7 @@ const escJs = s => esc(String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'
   .replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029'));
 
 const zdroj = f => fs.readFileSync(path.join(__dirname, f), 'utf8');
-const SOUBORY = ['vice_zakazniku.js', 'ares.js', 'zakaznici.js', 'ui/ares_ui.js', 'ui/zakaznici_ui.js', 'ui/vice_zakazniku_ui.js', 'ui/vz_tisk_ui.js'];
+const SOUBORY = ['vice_zakazniku.js', 'vz_poznamka.js', 'ares.js', 'zakaznici.js', 'ui/ares_ui.js', 'ui/zakaznici_ui.js', 'ui/vice_zakazniku_ui.js', 'ui/vz_tisk_ui.js'];
 
 function zakazka() {
   const zast = {};
@@ -48,9 +51,9 @@ function zakazka() {
   };
 }
 
-function prostredi({ zap = true, cteni = false, nahled = false, zamek = false, zak } = {}) {
+function prostredi({ zap = true, cteni = false, nahled = false, zamek = false, admin = false, zak } = {}) {
   const st = { hl: [], protokol: [], render: 0, sync: 0, tab: [], sety: [] };
-  const P = { zap, cteni, nahled, zamek };
+  const P = { zap, cteni, nahled, zamek, admin };
   const ctx = vm.createContext({
     console, JSON, Math, String, Set, Map, Array, Object, Date, Number, RegExp, Promise,
     esc, escJs, setTimeout: () => 0,
@@ -58,6 +61,7 @@ function prostredi({ zap = true, cteni = false, nahled = false, zamek = false, z
     render: () => { st.render++; },
     hlaska: t => { st.hl.push(String(t)); return Promise.resolve(); },
     viceZakaznikuZapnuto: () => P.zap,
+    jeAdminOnline: () => P.admin,   // role Administrátor z relace (online_ui.js)
     zamekCteniJe: () => P.cteni,
     nahledAktivni: () => P.nahled,
     zamekStop: () => P.zamek,   // zamčená (odeslaná) otevřená varianta — hlavičku zakázky to neblokuje jen u formuláře
@@ -355,26 +359,119 @@ const KARTA = { nazev: 'Karta s.r.o.', sidlo: 'Kartová 1', ico: '00000043', dic
   const b = dva();
   run(b.ctx, "vzVlastniVarianta('z2'); vzOdstranit('z2'); VZ_UI.odstranit.smazat = false; vzOdstranitPotvrd(true)");
   test('smazat=false: vlastní varianta zůstává, klíče pryč', b.ctx.ZAK.varianty.length === 3 && !('dalsiZakaznici' in b.ctx.ZAK) && !('vzRidici' in b.ctx.ZAK));
-  /* zamčená vlastní varianta → Odstranit zhasnuté */
+  /* E3: zamčená vlastní varianta BEZ razítka „komu" (tisk patří z1) — B nic
+   * neodešlo → odstranit smí každý, varianta zůstává zamčená (jádro ji nesmaže) */
   const c = dva();
   run(c.ctx, "vzVlastniVarianta('z2')");
-  c.ctx.ZAK.varianty[2].zamek = { zamceno: true };
-  test('zamčená vlastní varianta: vzOdstranitDuvod', /odešla nabídka/.test(run(c.ctx, "vzOdstranitDuvod(vzZakaznik(ZAK, 'z2'))")));
-  test('zamčená vlastní varianta: Odstranit zhasnuté', /vzOdstranit\('z2'\)" disabled/.test(run(c.ctx, "vzKarta('ock')")));
-  const pred = J(c.ctx.ZAK);
+  c.ctx.ZAK.varianty[2].zamek = { zamceno: true, tisky: [{ kdy: '2026-11-16T10:00:00Z' }] };
+  test('E3: zamčená vlastní varianta bez razítka B → Odstranit povolené', run(c.ctx, "vzOdstranitDuvod(vzZakaznik(ZAK, 'z2'))") === ''
+    && /onclick="vzOdstranit\('z2'\)">Odstranit/.test(run(c.ctx, "vzKarta('ock')")));
   run(c.ctx, "vzOdstranit('z2')");
-  test('… a vzOdstranit odmítne s hláškou', run(c.ctx, 'VZ_UI.odstranit') === null && J(c.ctx.ZAK) === pred && c.st.hl.length === 1);
-  /* odeslaný zákazník (razítko tisku s jeho id) */
+  test('E3: … potvrzení „zůstává v zakázce zamčená", písmeno se uvolní', /zůstává v zakázce zamčená<\/b> jako doklad/.test(run(c.ctx, "vzKarta('ock')"))
+    && /uvolní se — nic s ním neodešlo/.test(run(c.ctx, "vzKarta('ock')")));
+  run(c.ctx, 'vzOdstranitPotvrd(true)');
+  test('E3: … po odstranění zamčená varianta zůstává', c.ctx.ZAK.varianty.length === 3 && !('dalsiZakaznici' in c.ctx.ZAK));
+  /* razítko tisku s id zákazníka (zamčená sdílená varianta) */
   const d = dva();
-  d.ctx.ZAK.varianty[0].zamek = { tisky: [{ zakaznik: { id: 'z2', pismeno: 'B' } }] };
-  test('razítko tisku s id zákazníka → Odstranit zhasnuté', /vzOdstranit\('z2'\)" disabled/.test(run(d.ctx, "vzKarta('ock')"))
-    && run(d.ctx, "vzOdeslano(vzZakaznik(ZAK, 'z2'))") === true && run(d.ctx, "vzOdeslano(vzZakaznik(ZAK, 'z1'))") === false);
+  d.ctx.ZAK.varianty[0].zamek = { zamceno: true, tisky: [{ kdy: '2026-11-16T10:00:00Z', zakaznik: { id: 'z2', pismeno: 'B', cislo: '2026 - OPR - CN - 1-B', objednatel: 'Druhý a.s.', ico: '00000027' } }] };
+  test('razítko tisku s id zákazníka → vzOdeslano jen u něj', run(d.ctx, "vzOdeslano(vzZakaznik(ZAK, 'z2'))") === true && run(d.ctx, "vzOdeslano(vzZakaznik(ZAK, 'z1'))") === false);
+  const kd = run(d.ctx, "vzKarta('ock')");
+  test('E3 obchodník: Odstranit odeslaného zhasnuté s vysvětlením „jen administrátor"',
+    /onclick="vzOdstranit\('z2'\)" disabled title="Zákazníkovi už odešla nabídka — odstranit ho smí jen administrátor/.test(kd), kd.match(/vzOdstranit\('z2'\)[^>]*>/g));
+  const predD = J(d.ctx.ZAK);
+  run(d.ctx, "vzOdstranit('z2')");
+  test('E3 obchodník: vzOdstranit odmítne s hláškou, nic se nezmění', run(d.ctx, 'VZ_UI.odstranit') === null && J(d.ctx.ZAK) === predD
+    && /jen administrátor/.test(d.st.hl[d.st.hl.length - 1]));
+  run(d.ctx, "VZ_UI.odstranit = { id: 'z2', smazat: true }; vzOdstranitPotvrd(true)");
+  test('E3 obchodník: ani podstrčené potvrzení neodstraní', J(d.ctx.ZAK) === predD);
+  d.P.admin = true;
+  const ka = run(d.ctx, "vzKarta('ock')");
+  test('E3 administrátor: Odstranit odeslaného povolené', /onclick="vzOdstranit\('z2'\)">Odstranit/.test(ka), ka.match(/vzOdstranit\('z2'\)[^>]*>/g));
+  run(d.ctx, "vzOdstranit('z2')");
+  const pa = run(d.ctx, "vzKarta('ock')");
+  test('E3 administrátor: potvrzení „Jeho nabídka … odeslána 16. 11. 2026 → doklad zůstává"',
+    /Jeho nabídka 2026 - OPR - CN - 1-B<\/span><span>odeslána 16\. 11\. 2026 → <b>doklad zůstává<\/b> v zakázce \(razítko tisku se snímkem adresáta/.test(pa), pa.slice(pa.indexOf('vzOdstranPotvrzeni'), pa.indexOf('vzOdstranPotvrzeni') + 900));
+  test('E3 administrátor: sdílená varianta „razítko tisku … zůstává", Kdo smí, písmeno se nepřidělí',
+    /zůstává beze změny — používá ji Řídící s\.r\.o\.; razítko tisku pro tohoto zákazníka v zámku varianty zůstává/.test(pa)
+    && /Kdo smí<\/span><span>jen <b>administrátor<\/b>/.test(pa) && /Písmeno -B<\/span><span>už se nepřidělí jinému zákazníkovi/.test(pa) && !/uvolní se/.test(pa));
+  run(d.ctx, 'vzOdstranitPotvrd(true)');
+  test('E3 administrátor: odstraněno, razítko zůstává, protokol „s odeslanou nabídkou"', !('dalsiZakaznici' in d.ctx.ZAK)
+    && d.ctx.ZAK.varianty[0].zamek.tisky[0].zakaznik.id === 'z2' && /s odeslanou nabídkou \(doklad zůstává\)/.test(d.st.protokol[d.st.protokol.length - 1].co)
+    && !/00000027/.test(J(d.st.protokol)));
+  test('E3: po odstranění písmeno B se nepřidělí (nový zákazník dostane C)', run(d.ctx, 'vzPismenoDalsi(ZAK)') === 'C');
+  /* vlastní zamčená varianta odeslaná B, administrátor */
+  const g = dva({ admin: true });
+  run(g.ctx, "vzVlastniVarianta('z2')");
+  g.ctx.ZAK.varianty[2].zamek = { zamceno: true, cislo: '2026 - OPR - CN - 1 / v3', tisky: [{ kdy: '2026-11-16T10:00:00Z', zakaznik: { id: 'z2', pismeno: 'B', cislo: '2026 - OPR - CN - 1 / v3-B', objednatel: 'Druhý a.s.', ico: '00000027' } }] };
+  run(g.ctx, "vzOdstranit('z2')");
+  const pg = run(g.ctx, "vzKarta('ock')");
+  test('E3 administrátor, vlastní zamčená: „zůstává v zakázce zamčená jako doklad s číslem …-B", bez volby smazat',
+    /<b>zůstává v zakázce zamčená<\/b> jako doklad s číslem 2026 - OPR - CN - 1 \/ v3-B — smazat ji lze jen jako dnes/.test(pg) && !/name="vzOdstranVar"/.test(pg), pg.slice(pg.indexOf('vzOdstranPotvrzeni'), pg.indexOf('vzOdstranPotvrzeni') + 900));
+  run(g.ctx, 'vzOdstranitPotvrd(true)');
+  test('E3 administrátor, vlastní zamčená: varianta zůstává, číslo dokladu z razítka', g.ctx.ZAK.varianty.length === 3
+    && run(g.ctx, 'vzCisloDokladu(ZAK, ZAK.varianty[2])') === '2026 - OPR - CN - 1 / v3-B');
   /* potvrzení zamčené uprostřed: vzOdstranitPotvrd znovu ověří důvod */
   const e = dva();
   run(e.ctx, "vzOdstranit('z2')");
-  e.ctx.ZAK.varianty[0].zamek = { tisky: [{ zakaznik: { id: 'z2', pismeno: 'B' } }] };
+  e.ctx.ZAK.varianty[0].zamek = { zamceno: true, tisky: [{ kdy: 'x', zakaznik: { id: 'z2', pismeno: 'B' } }] };
   run(e.ctx, 'vzOdstranitPotvrd(true)');
-  test('odeslaný mezi kliknutím a potvrzením → neodstraní', e.ctx.ZAK.dalsiZakaznici.length === 1 && e.st.hl.length === 1);
+  test('odeslaný mezi kliknutím a potvrzením → neodstraní (obchodník)', e.ctx.ZAK.dalsiZakaznici && e.ctx.ZAK.dalsiZakaznici.length === 1 && e.st.hl.length === 1);
+  /* bez přihlášení (jeAdminOnline chybí) = není administrátor */
+  const h = dva({ admin: true });
+  h.ctx.ZAK.varianty[0].zamek = { zamceno: true, tisky: [{ kdy: 'x', zakaznik: { id: 'z2', pismeno: 'B' } }] };
+  run(h.ctx, 'jeAdminOnline = undefined');
+  test('E3: bez jeAdminOnline (offline) → není administrátor', /jen administrátor/.test(run(h.ctx, "vzOdstranitDuvod(vzZakaznik(ZAK, 'z2'))")));
+}
+
+/* ---------- E3: stav nabídky v kartě ---------- */
+{
+  const { ctx } = dva();
+  const stav = id => { const k = run(ctx, "vzKarta('ock')"); const m = new RegExp('data-vz="' + id + '"[\\s\\S]*?data-l="Stav">([^<]*)<').exec(k); return m ? m[1] : null; };
+  test('E3 stav: bez tisku „rozpracovaná" u obou', stav('z1') === 'rozpracovaná' && stav('z2') === 'rozpracovaná', [stav('z1'), stav('z2')]);
+  ctx.ZAK.varianty[0].zamek = { zamceno: true, cislo: '2026 - OPR - CN - 1', tisky: [
+    { kdy: '2026-11-12T09:00:00Z' },
+    { kdy: '2026-11-16T10:00:00Z', zakaznik: { id: 'z2', pismeno: 'B', cislo: '2026 - OPR - CN - 1-B', objednatel: 'Druhý a.s.', ico: '00000027' } }] };
+  test('E3 stav: řídící „odeslána 12. 11. 2026" (tisk bez razítka = z1), B „odeslána 16. 11. 2026"',
+    stav('z1') === 'odeslána 12. 11. 2026' && stav('z2') === 'odeslána 16. 11. 2026', [stav('z1'), stav('z2')]);
+  run(ctx, "vzVlastniVarianta('z2')");
+  test('E3 stav: B na nové vlastní variantě „rozpracovaná (platí …-B z 16. 11.)"', stav('z2') === 'rozpracovaná (platí 2026 - OPR - CN - 1-B z 16. 11.)', stav('z2'));
+  ctx.ZAK.varianty[0].prodano = { kdy: 'x' };
+  test('E3 stav: prodaná varianta „prodáno"', stav('z1') === 'prodáno');
+}
+
+/* ---------- E3: zmrazené údaje otevřeného dalšího zákazníka ---------- */
+{
+  const { ctx, st } = dva();
+  run(ctx, "vzOtevri('z2')");
+  test('E3 zmrazení: bez odeslané nabídky vzPoleAttr "" a ARES / DB cíl nezmrazen', run(ctx, "vzPoleAttr(vzCesta('ZAK.objednatel'))") === ''
+    && run(ctx, "vzAresCil('ock').zmrazeno") === '' && run(ctx, "vzZakaznikCil('ock').zmrazeno()") === '');
+  ctx.ZAK.varianty[0].zamek = { zamceno: true, tisky: [{ kdy: '2026-11-16T10:00:00Z', zakaznik: { id: 'z2', pismeno: 'B', cislo: 'x-B', objednatel: 'Druhý a.s.', ico: '00000027' } }] };
+  const a = run(ctx, "vzPoleAttr(vzCesta('ZAK.objednatel'))");
+  test('E3 zmrazení: objednatel / ico / adresa / dic readonly s důvodem', /^ readonly class="zmrazeno" title="🔒 Zákazníkovi už odešla nabídka — název, sídlo, IČO a DIČ se už nemění/.test(a)
+    && ['ico', 'adresaObjednatele', 'dic'].every(k => /readonly/.test(run(ctx, "vzPoleAttr(vzCesta('ZAK." + k + "'))"))), a);
+  test('E3 zmrazení: kontakt zůstává volný', run(ctx, "vzPoleAttr(vzCesta('ZAK.kontakt'))") === '' && run(ctx, "vzCestaZmrazena(vzCesta('ZAK.kontakt'))") === '');
+  test('E3 zmrazení: řídící a cizí cesty nezmrazené', run(ctx, "vzPoleAttr('ZAK.objednatel')") === '' && run(ctx, "vzCestaZmrazena('ZAK.dalsiZakaznici.7.hlavicka.ico')") === '');
+  const pred = J(ctx.ZAK);
+  st.hl.length = 0;
+  run(ctx, "vzZakaznikCil('ock').set('objednatel', 'Jiná firma')");
+  test('E3 zmrazení: zápis názvu přes cíl databáze odmítnut s hláškou', J(ctx.ZAK) === pred && st.hl.length === 1 && /už odešla nabídka/.test(st.hl[0]));
+  run(ctx, "naseptavacZakVyber('Jiná firma', 'ock')");
+  test('E3 zmrazení: našeptávač (ruční název) odmítnut', J(ctx.ZAK) === pred && st.hl.length === 2);
+  ctx.KARTA = KARTA;
+  run(ctx, "ZAK_DB.seznam = [KARTA]; zakaznikDoZakazkyUI(zakaznikKlic(KARTA), 'ock')");
+  test('E3 zmrazení: přenos karty z databáze odmítnut', J(ctx.ZAK) === pred && st.hl.length === 3);
+  run(ctx, "ARES.kde = 'ock'; ARES.subjekt = " + J(SUBJ) + "; aresPrepisPotvrd('ock')");
+  test('E3 zmrazení: přepis z ARES odmítnut, tlačítko ARES zhasnuté', J(ctx.ZAK) === pred && st.hl.length === 4
+    && /disabled>🔎 Najít firmu v ARES/.test(run(ctx, "aresRadek('ock')")));
+  run(ctx, "vzZakaznikCil('ock').set('kontakt', 'Nová Osoba')");
+  test('E3 zmrazení: kontaktní osoba se zapsat smí', ctx.ZAK.dalsiZakaznici[0].hlavicka.kontakt === 'Nová Osoba' && st.hl.length === 4);
+}
+{
+  /* jeden zákazník: nic z E3 se neprojeví */
+  const { ctx } = prostredi();
+  ctx.ZAK.varianty[0].zamek = { zamceno: true, cislo: '2026 - OPR - CN - 1', tisky: [{ kdy: '2026-11-16T10:00:00Z' }] };
+  test('jeden zákazník: vzPoleAttr / vzCestaZmrazena "" a vzCisloDokladu ""', run(ctx, "vzPoleAttr('ZAK.objednatel') === '' && vzPoleAttr('ZAK.ico') === '' && vzCestaZmrazena('ZAK.ico') === ''")
+    && run(ctx, 'vzCisloDokladu(ZAK, ZAK.varianty[0])') === '');
 }
 
 /* ---------- VYP + data víc zákazníků ---------- */

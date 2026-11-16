@@ -581,6 +581,13 @@ function vzTiskPohled(zak, id, varianta) {
   const nazev = vzText(p.objednatel);
   const ja = vzZakaznik(zak, p.vzPohledZakaznika.id);
   const ostatni = vzZakaznici(zak).filter(x => x.id !== ja.id);
+  /* E3 (#602): i adresáti z razítek ostatních (odstraněný zákazník, starý
+   * název přejmenovaného) — volný text v.zakaznik jeho varianty, která
+   * zůstala jako doklad, nesmí do dokumentu jiného zákazníka. */
+  vzRazitkaZakazniku(zak).forEach(r => {
+    if (vzText(r.id) !== ja.id && vzText(r.objednatel).trim())
+      ostatni.push({ id: vzText(r.id), hlavicka: { objednatel: vzText(r.objednatel), ico: vzText(r.ico) } });
+  });
   /* D3 (dorevize E0): razítka OSTATNÍCH zákazníků (snímek adresáta) se
    * z kopie zámku vyjmou — tisk je nesmí nést (vzVariantaBezCizichRazitek). */
   p.varianty = (Array.isArray(zak.varianty) ? zak.varianty : []).filter(v => v && smi.has(String(v.id)))
@@ -833,7 +840,8 @@ function vzCisloDokladu(zak, v) {
   if (!VZ_PISMENO_TVAR.test(p)) return '';
   const id = vzTiskKomu(t[0]);
   const z = vzZakaznik(zak, id);
-  if (z && z.varianta !== String(v.id) && vzRezim(zak)) return '';
+  /* Zákazník je v zakázce: jen jeho vlastní varianta (sdílená nese číslo variantaCislo). */
+  if (z && (z.varianta !== String(v.id) || !vzVariantaJenJeho(zak, z.id, String(v.id))) && vzRezim(zak)) return '';
   return vzCisloSPismenem(vzCisloVarianty(zak, v), p);
 }
 
