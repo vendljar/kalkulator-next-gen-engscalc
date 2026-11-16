@@ -21,6 +21,16 @@ volná ve všech vzdálených větvích), roadmapa **#605 hotovo**. **Riziková 
 | mutace „[VZ E5b]“ | ✅ **20/20** | `netlify/mutace.mjs` (jedna ekvivalentní vyřazena s komentářem) |
 | kolo `--bez-mutaci` (v16.11.4) | ✅ **VŠE ZELENÉ** | sady 399/0/59 přeskočeno (prohlížečové bez Playwrightu v kole, firemní podklady), hodiny +400 dní 366/0/1, statické 5/5 (27 min) |
 
+## Revize poradce (16. 11. 2026, „sloučit po opravě“) — opraveno
+
+- **P1** `prodano.zakaznik` ≠ `vzRidici.id` → 409 (`PD_VITEZ_JINY_VITEZ`), do Pipedrive nic.
+- **P2** stejný neúspěšný/shodný stav se znovu nezapisuje (razítko, rejstřík beze změny); strop před bez-prava/bez-ico.
+- **P3** ARES nenalezeno/neplatné → `chyba` „IČO v ARES není — ověřte IČO, nebo organizaci změňte ručně“; hlavička jen při výpadku.
+- **P4** B226 doplněna o pád mezi `POST` organizace a zápisem stavu.
+- **P5** `zapisStav` po druhém čtení: pořád prodaná a týž deal, jinak `nezapsano` (UI stav nepřebírá).
+- Testy 15 P1–P5: na 5236b4f 7 FAIL → `test_vz_organizace` 47/0; mutace [VZ E5b] **26/26**; `overit_vz_organizace` 39/0;
+  kolo `--bez-mutaci` **VŠE ZELENÉ** (399/0/59, hodiny 366/0/1, statické 5/5).
+
 ## Změny proti promptu / návrhu (bezpečnější volba)
 
 - Vypínač `viceZakazniku` VYP → akce 409 (prompt to neříká; bez vypínače se do Pipedrive nepíše).
