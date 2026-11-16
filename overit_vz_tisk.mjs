@@ -440,11 +440,14 @@ console.log('\nZábrany tisku');
   let r = await spust('nabidkaOckDokument()');
   zkus('funkce vypnutá: tisk pro řídícího A projde', r.okna.length === 1 && kanarky(r.okna[0].html, 'A').vlastni && !kanarky(r.okna[0].html, 'A').cizi.length,
     { hlasky: hlasky(r), chyba: r.chyba });
+  /* S E1 (vzOtevrenyId) je při vypnuté funkci otevřený vždy řídící — hlavička
+   * i tisk ukazují A; dalšího zákazníka nejde otevřít, pro B nic nevznikne. */
   await otevri(c.ids.B);
   r = await spust('nabidkaOckDokument()');
-  zkus('funkce vypnutá: tisk pro B zastaven (hláška vypnutá)', !r.okna.length && /Funkce víc zákazníků je v Nastavení vypnutá/.test(hlasky(r)), hlasky(r));
-  r = await spust("kryciTiskPohled('bo')");
-  zkus('…krycí list pro B zastaven', !r.okna.length && /vypnutá/.test(hlasky(r)), hlasky(r));
+  zkus('funkce vypnutá: pokus otevřít B → tiskne se řídící A (jako hlavička), žádný údaj B',
+    r.okna.length === 1 && kanarky(r.okna[0].html, 'A').vlastni && !kanarky(r.okna[0].html, 'A').cizi.length, { hlasky: hlasky(r), chyba: r.chyba });
+  const zab = await p.evaluate((id) => vzTiskZabrana(ZAK, id, null, 'nabidka', { vypnuto: true }), c.ids.B);
+  zkus('funkce vypnutá: zábrana pro dalšího zákazníka B (hláška vypnutá)', /Funkce víc zákazníků je v Nastavení vypnutá/.test(zab), zab);
 }
 
 /* ============ 7) jeden zákazník ============ */
