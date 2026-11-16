@@ -221,7 +221,7 @@ export function pdSimVychoziData() {
 /* ---------- stav simulátoru (paměť instance) ---------- */
 let STAV = null;
 function stav() {
-  if (!STAV) STAV = { data: pdSimVychoziData(), tokeny: 0, scenar: null, limitZbyva: 0, pozadavky: [] };
+  if (!STAV) STAV = { data: pdSimVychoziData(), tokeny: 0, scenar: null, limitZbyva: 0, pozadavky: [], tela: [] };
   return STAV;
 }
 /* Vrátí výchozí data a vynuluje počitadla (pro testy). */
@@ -239,7 +239,7 @@ export function pdSimSmazPoznamku(id) {
   if (p) p.active_flag = false;
   return !!p;
 }
-export function pdSimStav() { const s = stav(); return { data: s.data, tokeny: s.tokeny, pozadavky: s.pozadavky.slice() }; }
+export function pdSimStav() { const s = stav(); return { data: s.data, tokeny: s.tokeny, pozadavky: s.pozadavky.slice(), tela: s.tela.slice() }; }
 
 function scenarLimit(sc) { const m = /^limit(\d+)$/.exec(sc || ''); return m ? +m[1] : 0; }
 function aktualniScenar(s) {
@@ -288,6 +288,8 @@ export async function pdSimFetch(url, init = {}) {
   const metoda = String(init.method || 'GET').toUpperCase();
   const cesta = u.pathname.replace(/\/+$/, '');
   s.pozadavky.push(metoda + ' ' + cesta + (u.search || ''));
+  /* Těla zápisů (VZ-E5b): test ověří, co přesně odešlo (např. PATCH dealu jen { org_id }). */
+  if (metoda !== 'GET' && typeof init.body === 'string') s.tela.push({ pozadavek: metoda + ' ' + cesta, telo: init.body.slice(0, 20000) });
   /* Háček testu (VSD N1): po zapsání požadavku, např. souběžné uložení zakázky. */
   if (typeof s.poPozadavku === 'function') await s.poPozadavku(metoda + ' ' + cesta);
 

@@ -6974,10 +6974,7 @@ const MUTACE = [
     hledej: "      if (nalez.length > 1) {",
     nahrad: "      if (false) {",
     proc: "server by hádal mezi duplicitními organizacemi", sady: ['test_vz_organizace.mjs'] },
-  { nazev: "VZ E5b: víc shod: první se použije [VZ E5b]", soubor: "lib/pd_org_vitez.mjs",
-    hledej: "      if (nalez.length === 1) { cil = nalez[0]; zdroj = 'nalezena'; }",
-    nahrad: "      if (nalez.length >= 1) { cil = nalez[0]; zdroj = 'nalezena'; }",
-    proc: "při víc shodách by se deal přepojil náhodně", sady: ['test_vz_organizace.mjs'] },
+  /* „víc shod: první se použije“ (nalez.length >= 1) vyřazena jako ekvivalentní: větev `nalez.length > 1` se vrací dřív. */
   { nazev: "VZ E5b: kdo smí: kdokoli [VZ E5b]", soubor: "lib/pd_org_vitez.mjs",
     hledej: "  if (!pdOrgVitezKdoSmi(ulozena, relace, G))",
     nahrad: "  if (false)",

@@ -133,6 +133,7 @@ let S1, D1, ORG1;
   D1 = dealNovy();
   const puvodni = D().organizace.find(o => o.id === D1.org_id); const puvodniKopie = kopie(puvodni);
   S1 = prodana(D1, ico);
+  const osoba1 = D1.person_id;
   const od = poz().length;
   const r = await vitez(S1, cAutor);
   const ul = zakazka(S1);
@@ -146,7 +147,9 @@ let S1, D1, ORG1;
   test('1 odpověď nese upozornění na kontaktní osobu a razítko = uložené', r.upozorneni === 'kontaktni-osoba' && r.razitko && r.razitko === ul.uloRazitko, r);
   test('13 protokol: přepojení a věta o kontaktní osobě právě jednou', protokolKontakt(S1) === 1
     && ul.protokol.some(p => /Přepojil deal/.test(p.co) && /nalezena/.test(p.co)), ul.protokol);
-  test('13 žádný požadavek na /persons, deal si nechal osobu', bezOsob(od) && !poz().slice(od).some(p => /person_id/.test(p)), poz().slice(od));
+  const tela = SIM.pdSimStav().tela.filter(t => t.pozadavek === 'PATCH /api/v2/deals/' + D1.id);
+  test('13 žádný požadavek na /persons; tělo PATCH dealu přesně { org_id } (osoba dealu beze změny)', bezOsob(od) && tela.length === 1
+    && tela[0].telo === JSON.stringify({ org_id: ORG1.id }) && D1.person_id === osoba1, { tela, osoba: D1.person_id });
   const r2 = await vitez(S1, cAutor);
   test('13 opakované volání po zápisu → shoda, protokol pořád jednou, bez upozornění', r2.stav === 'shoda' && !r2.upozorneni && protokolKontakt(S1) === 1, r2);
   test('7 shoda: stav uložen, žádný PATCH ani POST', zakazka(S1).pdOrgVitez.stav === 'shoda' && poz().filter(p => p.startsWith('PATCH /api/v2/deals/' + D1.id)).length === 1, r2);
@@ -208,6 +211,18 @@ let S1, D1, ORG1;
   D().hledaniNavic = [];
   test('5 kandidát s jiným IČO se znovu načte a neověří → založí se nová, podvrh se nepoužije', r.stav === 'zapsano' && r.zdroj === 'zalozena'
     && d.org_id !== podvrh.id && poz().slice(od).includes('GET /api/v2/organizations/' + podvrh.id), { r, org: d.org_id });
+}
+
+/* 5b) smazaná organizace s IČO vítěze, kterou hledání (zpožděný index) ještě vrátí */
+{
+  const ico = icoS('9200012');
+  const smazana = orgSim(ico, 'Smazaná organizace s.r.o.'); smazana.is_deleted = true;
+  D().hledaniNavic = [smazana.id];
+  ares.subjekty.set(ico, subjekt(ico, 'Živý vítěz s.r.o. (smyšlené)'));
+  const d = dealNovy(); const s = prodana(d, ico);
+  const r = await vitez(s, cAutor);
+  D().hledaniNavic = [];
+  test('5b smazaná organizace se jako kandidát nepoužije → založí se nová', r.stav === 'zapsano' && r.zdroj === 'zalozena' && d.org_id !== smazana.id, { r, org: d.org_id });
 }
 
 /* 6) bez IČO */
