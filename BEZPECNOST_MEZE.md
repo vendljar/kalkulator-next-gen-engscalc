@@ -1903,6 +1903,51 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   „zatím neodeslána“ a cena se nezapisuje. Měna je vždy Kč (bez `platna.mena`
   ze serveru) — cizojazyčná nabídka v EUR se v poznámce ukáže korunami ze
   zmrazeného výsledku. Organizaci dealu (E5b) poznámka nemění.
+- **B226 — E5b (#605, 16. 11. 2026): aplikace poprvé ZAKLÁDÁ organizaci
+  v Pipedrive a přepojuje deal na vítězného zákazníka.** Akce
+  `POST /api/pd/organizace { soubor, akce: 'vitez' }` (`netlify/lib/pd_org_vitez.mjs`)
+  běží jen se zapnutým `viceZakazniku`, u PRODANÉ zakázky s víc zákazníky
+  (`vzRidici` v uložené verzi) a navázaným dealem; klientovi se nevěří nic
+  kromě jména souboru. Smí ten, kdo prodal (`prodano.kdo` uložené verze =
+  e-mail relace), autor zakázky nebo administrátor (jinak 403), a k tomu
+  právo `crm.pipedrive` (B80) — bez něj stav `bez-prava` a do Pipedrive nic.
+  Organizace se hledá podle IČO hlavičky (`/api/v2/organizations/search`,
+  vlastní pole IČ, přesná shoda) a **každý kandidát se znovu načte a ověří**
+  normalizovaným IČO s kontrolní číslicí — výsledku hledání se nevěří; víc
+  ověřených shod = stav `vice` a nic se nezapisuje (server nehádá), víc než
+  10 kandidátů = `chyba`. Žádná shoda → založení: název a adresa z ARES
+  (3 s), při výpadku z hlavičky; IČ do pole z mapy, DIČ jen když účet pole
+  má (pole se nikdy nezakládá); vlastník = vlastník dealu. Deal dostane
+  `PATCH /api/v2/deals/<id>` jen `{ org_id }`. Meze: jedno volání 2,5 s,
+  celá akce 9 s včetně ARES, strop 10 pokusů za hodinu na deal a 20 na
+  uživatele (i neúspěšných), výhradní úsek dealu v instanci, druhé čtení
+  zakázky před zápisem stavu. Stav `zak.pdOrgVitez` { deal, org, stav,
+  zdroj, kdy, kdo, nazev, duvod, vice } píše jen server (z prohlížeče se
+  zahodí, obnova ze souboru ho nepřebírá). Při `zapsano` jde do protokolu
+  zakázky název organizace a věta „Doplňte v Pipedrive kontaktní osobu
+  vítězného zákazníka před posunem dealu na Vyhráno.“ — jednou na zápis
+  (opakované volání vrátí `shoda` a nic nepíše).
+  *Co to nedělá:* neslučuje duplicitní organizace; osobu dealu nemění, nečte
+  ani nekontroluje (žádné `/persons`, žádné `person_id`); původní organizaci
+  nemění ani nemaže; hodnotu, pole ani fázi dealu nezapisuje (#597); při
+  odemčení prodeje nic nevrací (`pdOrgVitez` zůstává jako stopa); ze
+  webhooku se nespouští. **Zbytkové riziko:** souběh dvou instancí funkce
+  může organizaci založit dvakrát (výhradní úsek drží jen v instanci, jako
+  B217); zpožděný index hledání Pipedrive pokrývá jen zapamatované id
+  organizace založené minulým pokusem téže zakázky — organizaci založenou
+  jinou cestou těsně předtím hledání nemusí najít a vznikne duplicita.
+  Totéž platí, když funkce spadne (nebo vyprší) **mezi založením organizace
+  (`POST`) a zápisem stavu do zakázky**: id nové organizace se nezapamatuje,
+  a zpozdí-li se index hledání, další pokus založí druhou organizaci (revize
+  poradce P4). Prodej jinému zákazníkovi, než je řídící (`prodano.zakaznik`),
+  akce odmítne 409 (P1); stejný neúspěšný stav se do zakázky znovu nezapisuje
+  a strop se počítá před `bez-prava`/`bez-ico` (P2); ARES „nenalezeno“ =
+  `chyba`, hlavička jen při výpadku ARES (P3); stav se zapíše jen do zakázky,
+  která je po druhém čtení pořád prodaná a na témž dealu (P5).
+  Název z ARES nebo hlavičky jde do Pipedrive jako text bez řídicích znaků
+  (HTML neescapuje — Pipedrive název zobrazuje jako text; UI aplikace ho
+  escapuje). Volání z obrazovky po prodeji (`vzPoProdejiPd`) zapojí háček
+  E4 (#603); do té doby se akce volá jen tlačítkem „Zkusit zápis znovu“.
 - **B221 — E1 (#600, 16. 11. 2026): obrazovka víc zákazníků hlídá práva jen
   v prohlížeči.** Tlačítko „Přidat zákazníka“, formulář, přepínač a karta
   „Zákazníci zakázky“ (`src/ui/vice_zakazniku_ui.js`) se ukážou jen se

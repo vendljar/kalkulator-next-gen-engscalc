@@ -1369,9 +1369,11 @@ function pdStavRadek(zak) {
     + (kdy ? ' (načteno ' + kdy + ')' : '');
   /* K40c #581: „Opravit firmu v Pipedrive“ i u řádku stavu (autor a administrátor). */
   const oprava = (maDeal && typeof pdVazbaOpravaTlacitko === 'function') ? pdVazbaOpravaTlacitko(zak, pdVazbaZivaUI(zak)) : '';
+  /* VZ-E5b: organizace dealu = vítězný zákazník (jen VZ ZAP + víc zákazníků, jinak ''). */
+  const vzOrg = typeof vzOrgVitezHtml === 'function' ? vzOrgVitezHtml(zak) : '';
   return `<div class="row pd-stav-radek"><label>Stav Pipedrive<span class="pill ${trida}" style="margin-left:12px">${esc(stitek)}</span></label>
     <select class="pd-stav${maDeal ? '' : ' bez-dealu'}" disabled title="${esc(titul)}"><option selected>${esc(pole)}</option></select></div>${
-    oprava ? `<div class="row"><label></label>${oprava}</div>` : ''}`;
+    vzOrg}${oprava ? `<div class="row"><label></label>${oprava}</div>` : ''}`;
 }
 
 function zakazkaHlavicka(ock) {

@@ -35,6 +35,7 @@ const VZ_UI = {
   form: null,        // { kde, h: {5 polí}, zastupci, nova: 'stejna'|'vlastni', zdroj }
   odstranit: null,   // { id, smazat: true|false } — potvrzení na stránce
   zak: null,         // zakázka, ke které stav patří
+  org: null,         // E5b: { zak, bezi, chyba, kod } — běžící / odmítnutý zápis organizace vítěze
 };
 const VZ_FORM_KDE = 'vzNovy';   // „kde" formuláře pro ARES a našeptávač
 const VZ_VLASTNI_RIDICI = 'Řídící zákazník: novou variantu založte „+ Nová varianta" a nastavte ji jako řídící.';
@@ -369,7 +370,7 @@ function vzKarta(kde) {
       variantu s jiným zákazníkem, nebo má vlastní. <b>Řídící zákazník</b> je v hlavičce zakázky a jen jeho data nese deal v Pipedrive.</div>
     <div class="vz-tab"><table><thead><tr><th>Řídící</th><th>Zákazník</th><th>Číslo nabídky</th><th>Varianta nabídky</th><th>Stav</th><th>Cena bez DPH</th></tr></thead>
       <tbody>${radky}</tbody></table></div>
-    ${kde === 'ock' ? vzPotvrzeniHtml(l) : ''}
+    ${kde === 'ock' ? vzPotvrzeniHtml(l) : ''}${vzOrgVitezHtml(ZAK)}
     ${zap ? `<div class="vz-pod"><button type="button" class="vz-modre" onclick="vzFormOtevri('ock')"${dis(smi && l.length <= VZ_DALSI_MAX, smi ? 'Zakázka má nejvýš ' + (VZ_DALSI_MAX + 1) + ' zákazníků.' : vzProcNe())}>Přidat zákazníka</button></div>` : ''}`;
   return `<div class="card vz-karta" id="vzKarta_${kde}"><h2><span style="flex:1">Zákazníci zakázky <span class="pill">zkušební funkce</span></span></h2><div class="body">${inner}</div></div>`;
 }
@@ -566,4 +567,122 @@ function vzPoOtevreni(zak) {
     if (!vzZap() && typeof onlineZprava === 'function') onlineZprava(VZ_VYPNUTO, 'varovani');
     render();
   });
+}
+
+/* ---------- E5b: organizace dealu = vítězný zákazník (§ 7.4) ----------
+ * Po prodeji zakázky s víc zákazníky server přepíše organizaci dealu na
+ * vítězného zákazníka (POST /api/pd/organizace { soubor, akce: 'vitez' },
+ * functions/pd_organizace.mjs). Stav píše JEN server do zak.pdOrgVitez
+ * a vrací nové razítko uložení (zakázku sám zapsal). Obrazovka:
+ *  · stav 'zapsano' u prodané zakázky → věta VZ_ORG_KONTAKT (aplikace osobu
+ *    dealu nemění, nečte ani nekontroluje — rozhodnutí J. V. 16. 11. 2026);
+ *  · 'shoda' → nic;
+ *  · ostatní stavy → „Organizace dealu se nepřepsala" + důvod + „Zkusit
+ *    zápis znovu" (jen kdo smí: administrátor, autor, prodal — rozhoduje server).
+ * Jen se zapnutou funkcí a u zakázky s vzRidici a 2+ zákazníky; jinak ''
+ * (VYP / jeden zákazník = stránka beze změny o znak). Všechny texty z dat
+ * přes esc() — názvy organizací z Pipedrive mohou nést HTML. */
+const VZ_ORG_KONTAKT = 'Doplňte v Pipedrive kontaktní osobu vítězného zákazníka před posunem dealu na Vyhráno.';
+const VZ_ORG_DUVOD = {
+  'bez-ico': 'vítězný zákazník nemá platné IČO — doplňte ho, nebo změňte organizaci ručně v Pipedrive',
+  vice: 'v Pipedrive je víc organizací s tímto IČO — sjednoťte je a zápis zopakujte',
+  'bez-prava': 'k zápisu do Pipedrive nemáte právo — zápis zopakuje někdo s právem',
+  chyba: 'Pipedrive neodpověděl',
+  strop: 'vyčerpaný počet pokusů za hodinu — zkuste to později',
+};
+const VZ_ORG_STYL = 'background:#fff7d6;border:1px solid #e0c46c;border-radius:6px;padding:8px 10px;margin:6px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center';
+
+/* Prodaná varianta zakázky, nebo null. */
+function vzProdanaVar(zak) {
+  if (!zak || !Array.isArray(zak.varianty) || typeof variantaProdana !== 'function') return null;
+  return zak.varianty.find(v => v && variantaProdana(v)) || null;
+}
+/* Zakázka, které se zápis organizace vítěze týká: víc zákazníků (vzRidici
+ * + další zákazník) a prodaná. */
+function vzOrgTyka(zak) {
+  return !!zak && vzObj(zak.vzRidici) && typeof vzRezim === 'function' && vzRezim(zak) && !!vzProdanaVar(zak);
+}
+/* Smí uživatel zápis zopakovat? Jen nápověda pro tlačítko — rozhoduje server. */
+function vzOrgSmi(zak) {
+  const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV && ONLINE_STAV.ja) || null;
+  if (!ja) return false;
+  if (ja.role === 'Administrátor') return true;
+  const e = String(ja.email || '').trim().toLowerCase();
+  if (!e) return false;
+  const v = vzProdanaVar(zak);
+  const prodal = v && v.prodano && typeof v.prodano === 'object' ? String(v.prodano.kdo || '').trim().toLowerCase() : '';
+  return e === String((zak && zak.autor) || '').trim().toLowerCase() || e === prodal;
+}
+function vzOrgTlacitko(zak) {
+  if (!vzOrgSmi(zak)) return '';
+  const bezi = !!(VZ_UI.org && VZ_UI.org.zak === zak && VZ_UI.org.bezi);
+  return `<button type="button" class="mini cteni-ok noprint" data-vz-org="znovu" onclick="vzPoProdejiPd(ZAK)"${bezi ? ' disabled' : ''}
+      title="znovu přepsat organizaci dealu v Pipedrive na vítězného zákazníka">${bezi ? 'Zapisuje se…' : 'Zkusit zápis znovu'}</button>`;
+}
+
+/* Upozornění u řádku Stav Pipedrive a v kartě Zákazníci zakázky ('' = nic). */
+function vzOrgVitezHtml(zak) {
+  if (!vzZap() || !vzOrgTyka(zak)) return '';
+  const veta = (t) => esc(vzText(t).replace(/[.\s]+$/, ''));   // důvod bez koncové tečky (věta pokračuje)
+  const blok = (druh, text, tl) => `<div class="vz-org-upoz noprint" role="status" data-vz-org="${druh}" style="${VZ_ORG_STYL}">
+    <span style="flex:1 1 260px">${text}</span>${tl || ''}</div>`;
+  const ch = VZ_UI.org && VZ_UI.org.zak === zak && VZ_UI.org.chyba ? VZ_UI.org : null;
+  if (ch) {
+    /* Odmítnutí serverem (403/404/409/400/503): chyba bez tlačítka u 403. */
+    return blok('odmitnuto', '<b>Organizace dealu se nepřepsala</b> — ' + veta(ch.chyba) + '. Prodej je uložený.',
+      ch.kod === 403 ? '' : vzOrgTlacitko(zak));
+  }
+  const o = zak.pdOrgVitez;
+  if (!vzObj(o)) return '';
+  const stav = String(o.stav || '');
+  if (stav === 'zapsano') return blok('kontakt', `<span data-vz-org-veta="1">${esc(VZ_ORG_KONTAKT)}</span>`);
+  if (!Object.prototype.hasOwnProperty.call(VZ_ORG_DUVOD, stav)) return '';   // 'shoda' a neznámé stavy: nic
+  let duvod = vzText(o.duvod).trim().replace(/[.\s]+$/, '') || VZ_ORG_DUVOD[stav];
+  const vice = vzObj(o.vice) ? o.vice : null;
+  if (stav === 'vice' && vice) {
+    const nazvy = (Array.isArray(vice.nazvy) ? vice.nazvy : []).map(vzText).filter(Boolean);
+    const pocet = Number.isFinite(Number(vice.pocet)) && Number(vice.pocet) > 0 ? Number(vice.pocet) : nazvy.length;
+    duvod += ' (' + pocet + ' organizací' + (nazvy.length ? ': ' + nazvy.join(', ') : '') + ')';
+  }
+  return blok('stav', '<b>Organizace dealu se nepřepsala</b> — ' + veta(duvod) + '. Prodej je uložený.', vzOrgTlacitko(zak));
+}
+
+/* Zápis organizace vítěze na serveru. MÁ JI ZAVOLAT HÁČEK vzPoProdeji() Z ETAPY
+ * E4 PO ÚSPĚŠNÉM ULOŽENÍ PRODEJE (ten zatím neexistuje — tady se nikde
+ * automaticky nevolá); ručně tlačítko „Zkusit zápis znovu". Jen u zakázky
+ * otevřené z online databáze (ONLINE_STAV.soubor), s vzRidici a prodané.
+ * Převezme pdOrgVitez a nové razítko (server zakázku zapsal — bez převzetí
+ * by další uložení skončilo kolizí) a překreslí. Chyby nehází ven: prodej je
+ * už uložený. Vrací odpověď serveru, nebo null. */
+async function vzPoProdejiPd(zak) {
+  const os = typeof ONLINE_STAV !== 'undefined' ? ONLINE_STAV : null;
+  const soubor = os && os.ja && os.soubor ? String(os.soubor) : '';
+  if (!zak || zak !== vzZakUI() || !soubor || !vzOrgTyka(zak) || typeof onlineApi !== 'function') return null;
+  if (VZ_UI.org && VZ_UI.org.zak === zak && VZ_UI.org.bezi) return null;   // dvojí stisk
+  VZ_UI.org = { zak, bezi: true, chyba: '', kod: 0 };
+  try { render(); } catch (e) { /* překreslení nesmí zastavit zápis */ }
+  let o = null, chyba = '', kod = 0;
+  try {
+    o = await onlineApi('/api/pd/organizace', { soubor, akce: 'vitez' });
+  } catch (e) {
+    /* onlineApi hází i u 200 s ok:false — stav ('vice', 'chyba'…) je pak v e.data. */
+    if (e && e.data && typeof e.data.stav === 'string') o = e.data;
+    else { chyba = (e && e.message) || 'server neodpověděl'; kod = (e && e.stav) || 0; }
+  }
+  /* Mezitím otevřená jiná zakázka: odpověď (i razítko) k ní nepatří. */
+  if (vzZakUI() !== zak || os.soubor !== soubor) { if (VZ_UI.org && VZ_UI.org.zak === zak) VZ_UI.org = null; return null; }
+  VZ_UI.org = chyba ? { zak, bezi: false, chyba, kod } : null;
+  if (o) {
+    const pred = JSON.stringify(zak);
+    const autosaveCisty = os.posledni === pred;
+    const histCista = typeof historieNeulozeno === 'function' && !historieNeulozeno();
+    /* nezapsano (revize P5): server stav do zakázky nezapsal (prodej mezitím odemčen / jiný deal) — nepřebírat. */
+    if (vzObj(o.pdOrgVitez) && !o.nezapsano) zak.pdOrgVitez = o.pdOrgVitez;
+    if (o.razitko) { zak.uloRazitko = String(o.razitko); os.razitko = String(o.razitko); }
+    /* Zápis serveru není neuložená změna (vzor pdStavObnovUI). */
+    if (autosaveCisty) os.posledni = JSON.stringify(zak);
+    if (histCista && typeof historieOznacUlozeno === 'function') historieOznacUlozeno();
+  }
+  try { render(); } catch (e) { /* nic */ }
+  return o;
 }

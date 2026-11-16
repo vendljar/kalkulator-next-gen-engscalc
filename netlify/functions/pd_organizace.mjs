@@ -20,7 +20,15 @@
  *     zapisuje jen název, adresu a DIČ (to jen, když účet takové pole má —
  *     pole se NIKDY nezakládá, chybějící se přeskočí a dialog to řekne),
  *   · nikdy automaticky, nikdy z webhooku; záznam do protokolu zakázky;
- *     po zápisu se smaže cache detailu dealu. */
+ *     po zápisu se smaže cache detailu dealu.
+ *
+ * POST /api/pd/organizace { soubor, akce: 'vitez' }   (VZ-E5b #605, mez B226)
+ *   → 200 { ok, stav, zdroj?, duvod, vice?, organizace?, upozorneni?, pdOrgVitez, razitko }
+ *   Po prodeji zakázky s víc zákazníky: deal se přepojí na organizaci
+ *   vítězného zákazníka (najde podle IČO, nebo založí). Kdo: kdo prodal,
+ *   autor nebo administrátor (jinak 403); právo crm.pipedrive chybí → stav
+ *   `bez-prava` (ne 403 — prodej platí, zápis počká). Logika a cesty API
+ *   v lib/pd_org_vitez.mjs. */
 import { uloziste, json, vyhradne } from '../lib/sdilene.mjs';
 import { jadro, jadroChyba } from '../lib/jadro.mjs';
 import { pdPristup, pdNastaveno, pdZavolej, PdChyba, pdStropCerstvych, PD_CACHE_ULOZISTE } from '../lib/pipedrive.mjs';
@@ -28,6 +36,8 @@ import { pdHodnota, pdIco } from '../lib/pd_mapa.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 import { pdWebhookHlavicka } from '../lib/pd_webhook.mjs';
 import { aresNacti, ARES_SIT } from '../lib/ares_server.mjs';
+import { pdOrgVitezAkce } from '../lib/pd_org_vitez.mjs';
+import { funkceCti } from '../lib/funkce.mjs';
 import {
   pdVazbaNorm, pdVazbaSmiMenit, pdIcoShoda, pdOrgHodnoty, pdOrgRozdily, pdOrgTelo, pdRejstrikZapis, pdProtokol, pdOrgText,
   PD_ORG_POLE,
@@ -40,19 +50,36 @@ export const PD_ORGANIZACE_CAS_MS = 2500;
 export const PD_DIC_VETA = 'DIČ se do Pipedrive nezapíše — organizace takové pole nemá.';
 
 export default async (req) => {
-  const { chyba, relace } = await pdPristup(req);
+  /* Právo crm.pipedrive: u 'vitez' vede na stav `bez-prava` (rozhodne akce),
+   * u 'nahled' / 'zapis' dál 403 jako dřív (druhé pdPristup níž). */
+  const { chyba, relace } = await pdPristup(req, { bezPrava: true });
   if (chyba) return chyba;
   if (req.method !== 'POST') return json({ ok: false, chyba: 'Použijte POST.' }, 405);
   let telo;
   try { telo = JSON.parse((await req.text()) || 'null'); } catch (e) { return json({ ok: false, chyba: 'Neplatný JSON.' }, 400); }
   if (!telo || typeof telo !== 'object' || Array.isArray(telo)) return json({ ok: false, chyba: 'Neplatný požadavek.' }, 400);
   const soubor = typeof telo.soubor === 'string' ? telo.soubor : '';
-  const akce = telo.akce === 'nahled' || telo.akce === 'zapis' ? telo.akce : '';
+  const akce = ['nahled', 'zapis', 'vitez'].includes(telo.akce) ? telo.akce : '';
   if (!SOUBOR_TVAR.test(soubor) || !akce) return json({ ok: false, chyba: 'Chybí zakázka nebo akce.' }, 400);
   let ULO;
   try { ({ ULO } = await jadro()); } catch (e) { return jadroChyba(e); }
   const G = globalThis;
   const s = await uloziste('zakazky');
+  if (akce === 'vitez') {   // VZ-E5b: organizace dealu = vítězný zákazník
+    const sProg = await uloziste('program');
+    const { viceZakazniku } = await funkceCti(sProg);
+    if (viceZakazniku !== true) return json({ ok: false, chyba: 'Zkušební funkce „Víc zákazníků na zakázce“ je vypnutá.' }, 409);
+    const zobr = relace.role === 'Administrátor' ? null : await sProg.cti('zobrazeni');
+    try {
+      const v = await pdOrgVitezAkce({ soubor, relace, matice: (zobr && zobr.matice) || null, s, ULO, vyhradne, G,
+        nastaveno: pdNastaveno(), poleMapa: () => pdPoleMapa(), uloziste });
+      return json(v.telo, v.status);
+    } catch (e) {
+      if (e instanceof PdChyba) return json({ ok: false, chyba: e.message }, (e.stav >= 500 || e.stav === 401) ? 502 : e.stav);
+      throw e;
+    }
+  }
+  { const p = await pdPristup(req); if (p.chyba) return p.chyba; }
   const ulozena = await s.cti('z/' + soubor);
   if (!ulozena || typeof ulozena !== 'object') return json({ ok: false, chyba: 'Zakázka nenalezena.' }, 404);
   if (!pdVazbaSmiMenit(ulozena, relace))

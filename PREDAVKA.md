@@ -1,3 +1,57 @@
+# Předávka — 16. 11. 2026: VZ-E5b #605 (organizace dealu = vítězný zákazník), větev `claude/vz-e5b`
+
+Nad `claude/integrace-vz` `26f3c26` (E0, E1, E5), sloučena dorevize E0 `b7ec485`. **v16.11.4** (koordinace přečísluje).
+Do `test-draft`, `test`, `main` ani integrace nic; Pipedrive jen simulátor, ARES jen předaný fetch. Mez **B226** (ověřena
+volná ve všech vzdálených větvích), roadmapa **#605 hotovo**. **Riziková etapa — před sloučením revize poradce Fable.**
+
+| úkol | stav | kde |
+|---|---|---|
+| akce `POST /api/pd/organizace { soubor, akce: 'vitez' }` — kroky 1–5 návrhu § 7.4 | ✅ | `netlify/lib/pd_org_vitez.mjs`, `netlify/functions/pd_organizace.mjs` |
+| hledání podle IČO (`/api/v2/organizations/search`, custom_fields, exact_match, term bez nul) s ověřením každého kandidáta | ✅ | `najdiPodleIco` |
+| založení (ARES 3 s, při výpadku hlavička; IČ číslem; DIČ jen když pole je; vlastník dealu), `PATCH` dealu jen `{ org_id }` | ✅ | |
+| stavy zapsano/shoda/bez-ico/vice/bez-prava/chyba/strop, `pdOrgVitez` píše jen server | ✅ | `pdOrgVitezNorm`, `pdOrgVitezDrz` (volá `zakazka_kontrola.mjs`) |
+| práva (prodano.kdo / autor / admin, jinak 403; bez crm.pipedrive → bez-prava), 409 neprodaná / jeden zákazník / VYP | ✅ | |
+| limity 2,5 s / 9 s, strop 10 / h deal, 20 / h uživatel, výhradní úsek dealu, druhé čtení | ✅ | |
+| idempotence: nové hledání + zapamatované id založené organizace (zpožděný index) | ✅ | |
+| protokol: přepojení + věta o kontaktní osobě jednou na zápis; odpověď `upozorneni: 'kontaktni-osoba'` | ✅ | |
+| simulátor: hledání, `POST /organizations`, `PATCH` dealu s `org_id`, těla zápisů (`pdSimStav().tela`), `hledaniNavic` / `hledaniSkryt` | ✅ | `netlify/lib/pipedrive_simulator.mjs` |
+| obrazovka: upozornění u Stav Pipedrive a v kartě Zákazníci zakázky, „Zkusit zápis znovu“ | ✅ | `src/ui/vice_zakazniku_ui.js` (`vzOrgVitezHtml`, `vzOrgTlacitko`, `vzOrgSmi`), `src/ui/common.js` (`pdStavRadek`) |
+| **`vzPoProdejiPd(zak)` připraveno — NIKDE se automaticky nevolá** | ⏳ E4 | **E4 (#603) ji má zavolat z háčku `vzPoProdeji()` po uložení prodeje**; pokud E4 háček už zavede, propojí koordinace |
+| testy | ✅ | `netlify/test_vz_organizace.mjs` 40/0, `overit_vz_organizace.mjs` 39/0, `src/test_escape.js` 42/0, K40c 105/0, práva 993/0, VZ server 59/0, VZ poznámka 46/0, simulátor 70/0 |
+| mutace „[VZ E5b]“ | ✅ **20/20** | `netlify/mutace.mjs` (jedna ekvivalentní vyřazena s komentářem) |
+| kolo `--bez-mutaci` (v16.11.4) | ✅ **VŠE ZELENÉ** | sady 399/0/59 přeskočeno (prohlížečové bez Playwrightu v kole, firemní podklady), hodiny +400 dní 366/0/1, statické 5/5 (27 min) |
+
+## Revize poradce (16. 11. 2026, „sloučit po opravě“) — opraveno
+
+- **P1** `prodano.zakaznik` ≠ `vzRidici.id` → 409 (`PD_VITEZ_JINY_VITEZ`), do Pipedrive nic.
+- **P2** stejný neúspěšný/shodný stav se znovu nezapisuje (razítko, rejstřík beze změny); strop před bez-prava/bez-ico.
+- **P3** ARES nenalezeno/neplatné → `chyba` „IČO v ARES není — ověřte IČO, nebo organizaci změňte ručně“; hlavička jen při výpadku.
+- **P4** B226 doplněna o pád mezi `POST` organizace a zápisem stavu.
+- **P5** `zapisStav` po druhém čtení: pořád prodaná a týž deal, jinak `nezapsano` (UI stav nepřebírá).
+- Testy 15 P1–P5: na 5236b4f 7 FAIL → `test_vz_organizace` 47/0; mutace [VZ E5b] **26/26**; `overit_vz_organizace` 39/0;
+  kolo `--bez-mutaci` **VŠE ZELENÉ** (399/0/59, hodiny 366/0/1, statické 5/5).
+
+## Změny proti promptu / návrhu (bezpečnější volba)
+
+- Vypínač `viceZakazniku` VYP → akce 409 (prompt to neříká; bez vypínače se do Pipedrive nepíše).
+- `pd_organizace.mjs` volá `pdPristup` s `bezPrava` a u `nahled`/`zapis` právo ověří druhým `pdPristup` — chování K40c beze
+  změny (403), jen GET bez práva teď dostane 405 místo 403.
+- Víc než 10 kandidátů z hledání → `chyba` (nehledá se dál, nic se nezapisuje).
+- Stav se do zakázky zapisuje i u neúspěchu (bez-prava, bez-ico, vice, strop, chyba) — zakázka dostane nové razítko;
+  obrazovka ho převezme (`vzPoProdejiPd`), jinak by další uložení skončilo kolizí.
+- Do protokolu se píše jen u `zapsano` (u neúspěchů ne, aby opakování protokol nezahltila).
+- Harness `overit_vz_organizace.mjs` leží v kořeni (glob `overit_*.mjs` v `spust_testy.sh`), ne v `netlify/`.
+- Zápis ceny do dealu nedělán (#597).
+
+## Otevřené body
+
+- **E4:** zavolat `vzPoProdejiPd(ZAK)` z háčku po uloženém prodeji (jen u `vzRidici`, prodané, online).
+- Ověření cest hledání proti ostrému účtu (jen čtení) — J. V. (tvar `data.items[].item.id` odvozen z dokumentace/obalu
+  itemSearch; schéma odpovědi v dokumentaci sbalené, server výsledku stejně nevěří a každého kandidáta načte).
+- Zbytková mez B226: souběh dvou instancí může založit organizaci dvakrát; organizaci založenou jinou cestou těsně předtím
+  zpožděný index nemusí najít.
+- `netlify/test_577_kopie_skript.mjs` T4 jednou selhal ve výchozím běhu mutací (samostatně 3× 53/0) — nestabilní, mimo E5b.
+
 # Předávka — 16. 11. 2026: VZ-E2 #601 (víc zákazníků — čísla s písmenem, tisk z pohledu zákazníka, test úniku), větev `claude/vz-e2`
 
 Nad `claude/vz-e0` `e29f2b1`; sloučeno s `claude/integrace-vz` `76ae631` (E0 po revizi) a `b7ec485` (E0 dorevize, E1, E5).
