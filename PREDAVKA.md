@@ -1,3 +1,46 @@
+# Předávka — 16. 11. 2026: VZ-E2 #601 (víc zákazníků — čísla s písmenem, tisk z pohledu zákazníka, test úniku), větev `claude/vz-e2`
+
+Nad `claude/vz-e0` `e29f2b1`. **v16.11.2** (koordinace přečísluje). Do `test-draft`, `test`, `main` ani integrace nic; weby,
+Disk, Pipedrive nic. **Před sloučením revize poradce (únik údajů).** Roadmapa **#601 hotovo**, meze **B223, B224**.
+
+| úkol | stav | kde |
+|---|---|---|
+| čísla s písmenem (`…9940-B`, `…9940.2-B`), předloha bez písmene | ✅ | `cisloSVariantou` (zakazka.js), `variantaCislo`, `zamekCisloZakladSedi` (zamek.js), `sodCisloNavrh`, název KL (kryci.js), `vzCisloSPismenem` |
+| duplicita čísla bez písmene, webhook podle čísla s písmenem | ✅ | `zakazkaDuplicita`; `pdWebhookCisloZaklad`, `pdWebhookPismeno`, `pdWebhookCisloSedi` (netlify/lib/pd_webhook.mjs + functions) |
+| jediný vstup dokumentů `vzTiskPohled` + `vzTiskVarianta` | ✅ | jádro `src/vice_zakazniku.js` (oddíl E2), UI `src/ui/vz_tisk_ui.js` (`vzTiskVstup`), 13 vstupů tisku v `ui/zakazka_ui.js`, `nabidka_proj_ui.js`, `sod_ui.js`, `kryci_ui.js`, `kryci_proj_ui.js`, specifikace |
+| pojistka generátorů | ✅ | `vzTiskHlidej` v `dokumentVygeneruj` |
+| zábrany tisku | ✅ | `vzTiskZabrana`: cizí varianta, název/IČO jiného zákazníka ve sdíleném textu a názvu varianty (porovnání: všech variant), PROJ jen řídící (R5), VYP jen řídící; brána `dokumentZabrana`, pravidlo kontrol `vzTisk` |
+| pruh v kartě CN, živý náhled CN z pohledu | ✅ | `vzTiskPruhHtml`, `nabidkaKarta` |
+| statická kontrola | ✅ | `nastroje/kontrola_vz_unik.sh` (+ `--pojistka`) v `testovaci_kolo.sh` (statické teď 6) |
+| oprava úniku z testu: zmrazený krycí list sdílené varianty | ✅ | `zakaznikPole` (kryci.js 5 polí, kryci_proj.js 6) |
+| testy | ✅ | `src/test_vz_unik.js`, `src/test_vz_cisla.js`, `src/test_vz_tisk_vstupy.js`, zlatá sada (e1)(e2), `netlify/test_vz_webhook.mjs`, prohlížeč `overit_vz_tisk.mjs` |
+| mutace „[VZ E2]“ | viz níže | `mutace_jadro.mjs` (JADRA + zakazka.js, dokumenty.js, ui vstupy tisku) |
+
+## Rozhodnutí (bezpečnější varianta, k revizi)
+
+- Tisknout pro zákazníka jde jen z jeho varianty (+ variant, které mu podle razítka odešly — E3); **řídící navíc z volných
+  variant** (ničí nabídka) — sjednoceno s revizí E0 N3. Cizí vlastní variantu nevytiskne nikdo.
+- Tiskový pohled (`vzTiskPohled`) je přísnější než `vzPohled`: jen varianty zákazníka, bez `protokol`, u zákazníka
+  s písmenem mělké kopie variant s odvozeným `v.zakaznik` (u řídícího jen když volný text jmenuje jiného zákazníka).
+- Pole krycího listu z hlavičky zákazníka (`zakaznikPole`) se v pohledu s písmenem čtou živě z pohledu — ruční přepis
+  a snímek zámku jsou ve sdílené variantě a nesou řídícího. Pohled původního řídícího (bez písmene) beze změny.
+- Duplicita čísla v rejstříku: `…9940-B` koliduje s `…9940` (i s VYP; jen upozornění).
+- Webhook: podle čísla s písmenem jen strana OCK a jen když zakázka písmeno nese (jinak jako dřív — založí `…-B`).
+- Detail výpočtu (`detailTisk`) a soubor zakázky / protokol / suchý běh Pipedrive nejsou dokumenty pro zákazníka — beze změny.
+- Tlačítko specifikace: u jednoho zákazníka původní `onclick` (stránka bajt po bajtu), u víc zákazníků `vzTiskSpecifikace`.
+- `zamek_ui.js` zmrazuje krycí list dál nad celou `ZAK` (= řídící) — zmrazení nad pohledem B by únik obrátilo k řídícímu.
+
+## Otevřené body
+
+- E0 N1 (projHlavicka po výměně řídícího): v JSON pohledu nového řídícího zůstává hlavička PROJ původního —
+  dokumenty ji netisknou; test úniku to hlásí jako INFO, po opravě E0 přepnout na FAIL.
+- `zamek.cislo` se při tisku pro B zapisuje bez písmene (`variantaCislo(ZAK, v)` v `zamek_ui.js`) — razítko „komu“ s číslem
+  je E3.
+- Zmrazený krycí list, kde první zámek vznikl, když byl řídícím jiný zákazník, a pak se řídící vrátil — pole zákazníka
+  u původního řídícího (bez písmene) čte snímek. Rozhodne E4 (výměna řídícího).
+- Krycí list tiskne interní poznámky (společné) — upozornění v UI je E6/E1.
+- Webhook nepřijme číslo varianty s písmenem (`…9940.2-B`), stejně jako dnes `…9940.2`.
+
 # Předávka — 16. 11. 2026: VZ-E0 #599 (víc zákazníků — vypínač, jádro, import, server), větev `claude/vz-e0`
 
 Nad `claude/integrace-vz` `77e36e0`. **v16.11.1**. Do `test-draft`, `test`, `main` ani integrace nic; weby, Disk,
