@@ -25,12 +25,13 @@
     pridat: { nazev: 'přidat a odstranit zákazníka', kroky: [['form', '2. Přidat zákazníka'], ['pridejForm:b', '3. Potvrdit přidání'], ['vlastni:b', '4. Vlastní varianta pro BETA'], ['odeber:b', '5. Odstranit BETA'], ['odeberAno', '6. Potvrdit odstranění']] },
     odeslana: { nazev: 'odstranit zákazníka s odeslanou nabídkou', kroky: [['odeber:b', '2. Odstranit BETA'], ['odeberAno', '3. Potvrdit odstranění']] },
     stejna: { nazev: 'stejná varianta pro víc zákazníků', kroky: [['pridej:b', '2. Přidat zákazníka BETA'], ['odesli:a', '3. Odeslat nabídku ALFA'], ['odesli:b', '4. Odeslat tutéž nabídku BETA']] },
-    prodej: { nazev: 'prodej druhému zákazníkovi', kroky: [['prodej:b', '2. Prodáno → BETA'], ['prodejAno', '3. Potvrdit prodej'], ['org', '4. Změnit organizaci dealu'], ['orgAno', '5. Potvrdit zápis']] },
+    prodej: { nazev: 'prodej druhému zákazníkovi', kroky: [['prodej:b', '2. Prodáno → BETA'], ['prodejAno', '3. Potvrdit prodej'], ['orgAno', '4. Zkusit zápis organizace znovu (jen po výpadku)']] },
   };
+  const PD_STAVY = { ok: 'Pipedrive odpoví', vypadek: 'výpadek Pipedrive' };
   const ROLE = { autor: 'autor zakázky (obchodník)', jiny: 'jiný obchodník', admin: 'administrátor' };
   const ZNACKY = { pridano: 'přidáno', zmeneno: 'změněno', smazano: 'smazáno', beze: 'beze změny' };
   const DEAL_ID = '4321';
-  const S = { scenar: 'pridat', role: 'autor', otevreno: true, hraje: null, blik: false, nahled: '' };
+  const S = { scenar: 'pridat', role: 'autor', pd: 'ok', otevreno: true, hraje: null, blik: false, nahled: '' };
   let P, OBS = null, PK = null, KRESLI = false;
   const puvodni = { variantaCislo: window.variantaCislo, cisloSVariantou: window.cisloSVariantou };
 
@@ -88,14 +89,15 @@
   /* ----- Pipedrive: co deal ponese ----- */
   function dalsiText() {
     const ost = P.zak.filter((z) => z.id !== P.ridici);
-    if (!ost.length) return '';
+    const znacka = ' — nabídka ' + String(ZAK.cislo);
+    if (!ost.length) return P.poznamka ? 'Další zákazníci na zakázce: žádní' + znacka : '';
     const prodano = !!prodanoZ();
-    return 'Další zákazníci na zakázce (zapsal Kalkulátor ' + dnes() + '):\n' + ost.map((z) => {
+    return 'Další zákazníci na zakázce:\n' + ost.map((z) => {
       const pl = z.platna;
       const nab = pl ? 'CN ' + pl.cislo + ' z ' + pl.datum + ', ' + kc(pl.cena) + ' bez DPH' : 'nabídka zatím neodeslána (' + cisloZ(z) + ')';
       const nova = pl && pl.vid !== z.varianta ? ' · připravuje se nová ' + cisloZ(z) : '';
       return '• ' + z.nazev + ' — ' + nab + nova + (prodano ? ' — neprodáno' : '');
-    }).join('\n');
+    }).join('\n') + '\n' + znacka.trim();
   }
   function pd() {
     const rz = ridiciZ(), rv = Va(rz.varianta);
@@ -127,7 +129,7 @@
   function novyZ(id, varianta) { return Object.assign({ id, pismeno: PISMENA[id], varianta, odeslano: {}, platna: null, prodano: '' }, FIRMY[id]); }
   function pridej(id, vlastniVar) {
     const rz = ridiciZ();
-    P.zak.push(novyZ(id, rz.varianta));
+    P.zak.push(novyZ(id, rz.varianta)); P.poznamka = true;
     zapis(ROLE[S.role], 'přidal zákazníka ' + FIRMY[id].kratce + ' (písmeno ' + PISMENA[id] + ') — nabídka ' + cisloZ(Zk(id)) + ', stejná varianta jako ' + rz.kratce);
     if (vlastniVar) vlastni(id); else otevri(id);
   }
@@ -176,13 +178,20 @@
     zapis(ROLE[S.role], 'PRODÁNO zákazníkovi ' + z.kratce + ' (nabídka ' + cisloZ(z) + '); řídící zákazník ' + stary.kratce + ' → ' + z.kratce
       + ', řídící varianta „' + v.nazev + '" (#563); do dealu ' + DEAL_ID + ' jdou data této varianty, ' + P.zak.filter((x) => x.id !== id).map((x) => x.kratce).join(', ') + ' zůstává jako textová zmínka');
     otevri(id);
+    orgZapis(false);
   }
-  function orgAno() {
-    const stara = P.deal.org;
-    P.potvrzeni = null;
-    P.deal.org = ridiciZ().nazev;
-    zapis(ROLE[S.role], 'změnil organizaci dealu ' + DEAL_ID + ' v Pipedrive: ' + stara + ' → ' + P.deal.org + ' (po potvrzení)');
+  /* Organizace dealu = vítězný zákazník (J. V. 16. 11. 2026). Server ji najde podle IČO, jinak založí. */
+  function orgZapis(znovu) {
+    const stara = P.deal.org, rz = ridiciZ();
+    if (S.pd === 'vypadek' && !znovu) {
+      P.orgStav = 'chyba';
+      zapis('server', 'organizaci dealu ' + DEAL_ID + ' se nepodařilo přepsat (Pipedrive neodpověděl včas) — prodej je uložený, zápis čeká');
+      return;
+    }
+    P.deal.org = rz.nazev; P.orgStav = 'zapsano';
+    zapis('server', 'organizace dealu ' + DEAL_ID + ' přepsána na vítězného zákazníka: ' + stara + ' → ' + rz.nazev + ' (nalezena podle IČO ' + rz.ico + '; kdyby v Pipedrive nebyla, založí se)' + (znovu ? ' — opakovaný zápis, spustil ' + ROLE[S.role] : ''));
   }
+  function orgAno() { orgZapis(true); }
   /* Odstranění dalšího zákazníka. Co odešlo, zůstává doložené: zamčená varianta se nemaže (pravidlo #34),
    * razítko tisku se snímkem adresáta zůstává v zámku. Nezamčenou vlastní variantu lze smazat s ním. */
   function odeberInfo(id) {
@@ -218,16 +227,15 @@
     if (co === 'uprav') return !!z && !zamcena && sdili(z).length === 1 && Z.zdvih !== 15;
     if (co === 'prodej') return !!z && !!odeslanoTed(z) && !prodano && !P.potvrzeni;
     if (co === 'prodejAno') return !!(P.potvrzeni && P.potvrzeni.typ === 'prodej');
-    if (co === 'org') return orgNesedi() && smiRidit() && !P.potvrzeni;
-    if (co === 'orgAno') return !!(P.potvrzeni && P.potvrzeni.typ === 'org');
+    if (co === 'orgAno') return P.orgStav === 'chyba' && orgNesedi() && smiRidit();
     if (co === 'ridici') return !!z && z.id !== P.ridici && !prodano && smiRidit();
-    if (co === 'odeber') return !!z && z.id !== P.ridici && !z.prodano && !P.potvrzeni && (smiRidit() || !Object.keys(z.odeslano).length);
+    if (co === 'odeber') return !!z && z.id !== P.ridici && !z.prodano && !P.potvrzeni && (S.role === 'admin' || !Object.keys(z.odeslano).length);
     return true;
   }
   const dalsiKrok = () => (SCENARE[S.scenar].kroky.find(([a], i) => i >= P.i && lze(a)) || [''])[0];
 
   function vychozi() {
-    P = { zak: [], ridici: 'a', vybrany: 'a', deal: { org: FIRMY.a.nazev }, protokol: [], potvrzeni: null, archiv: {}, formular: false, chyba: '', krok: 'vychozi', i: 0, pred: null };
+    P = { zak: [], ridici: 'a', vybrany: 'a', deal: { org: FIRMY.a.nazev }, protokol: [], potvrzeni: null, archiv: {}, poznamka: false, orgStav: '', formular: false, chyba: '', krok: 'vychozi', i: 0, pred: null };
     ZAK = novaZakazka();
     if (typeof syncVarianta === 'function') syncVarianta();
     Object.assign(Z, { sirka: 1.6, hloubka: 2.1, zdvih: 12, prejezd: 2.7, prohluben: 1.05 });
@@ -269,7 +277,7 @@
         + tl('odesli:' + z.id, '🖨 Tisk CN', 'vytisknout (odeslat) cenovou nabídku tomuto zákazníkovi — varianta se zamkne')
         + tl('vlastni:' + z.id, '⧉ Vlastní varianta', 'založit kopii varianty jen pro tohoto zákazníka')
         + tl('prodej:' + z.id, '✔ Prodáno', 'zakázku získal tento zákazník')
-        + tl('odeber:' + z.id, '🗑 Odstranit', z.id === P.ridici ? 'řídícího zákazníka nejde odstranit, dokud se řídícím nestane jiný' : (z.prodano ? 'zákazníka s prodanou nabídkou nejde odstranit' : 'odstranit zákazníka ze zakázky (s potvrzením)')) + '</td></tr>'
+        + tl('odeber:' + z.id, '🗑 Odstranit', z.id === P.ridici ? 'řídícího zákazníka nejde odstranit, dokud se řídícím nestane jiný' : (z.prodano ? 'zákazníka s prodanou nabídkou nejde odstranit' : (Object.keys(z.odeslano).length && S.role !== 'admin' ? 'zákazníka, kterému už odešla nabídka, smí odstranit jen administrátor' : 'odstranit zákazníka ze zakázky (s potvrzením)'))) + '</td></tr>'
         + (zn ? '<tr class="vzp-pp vzp-pp-' + zn + '"><td></td><td colspan="5">' + stitek(zn) + ' ' + (zn === 'pridano' ? '<b>' + esc(snimek()['z:' + z.id]) + '</b>'
           : '<s>' + esc(P.pred['z:' + z.id]) + '</s> → <b>' + esc(snimek()['z:' + z.id]) + '</b>') + '</td></tr>' : '');
     }).join('');
@@ -283,17 +291,13 @@
         + r('Řídící zákazník', rz.nazev, z.nazev) + r('Řídící varianta (prodaná = řídící)', rv.nazev, v.nazev)
         + r('Deal ' + DEAL_ID + ': hodnota', kc(cenaV(rv)), kc(cenaV(v))) + r('Deal ' + DEAL_ID + ': číslo nabídky', cisloZ(rz), cisloZ(z))
         + r('Deal ' + DEAL_ID + ': krycí list', 'varianta „' + rv.nazev + '"', 'varianta „' + v.nazev + '"')
-        + r('Deal ' + DEAL_ID + ': další zákazníci (text)', P.zak.filter((x) => x.id !== P.ridici).map((x) => x.kratce).join(', ') || '—', P.zak.filter((x) => x.id !== z.id).map((x) => x.kratce + ' — neprodáno').join(', ') || '—')
+        + r('Deal ' + DEAL_ID + ': organizace', P.deal.org, z.nazev)
+        + r('Deal ' + DEAL_ID + ': poznámka „Další zákazníci"', P.zak.filter((x) => x.id !== P.ridici).map((x) => x.kratce).join(', ') || '—', P.zak.filter((x) => x.id !== z.id).map((x) => x.kratce + ' — neprodáno').join(', ') || '—')
         + '<div class="vzp-pt"><button type="button" class="vzp-zelene' + (dalsiKrok() === 'prodejAno' ? ' vzp-dalsi' : '') + '" data-vzp="prodejAno">Prodáno — potvrdit</button><button type="button" class="mini" data-vzp="potvNe">Zrušit</button>'
-        + '<span>Nabídky ostatních zákazníků zůstávají zamčené a dohledatelné; organizaci dealu v Pipedrive aplikace sama nemění.</span></div></div>';
+        + '<span>Organizace dealu se přepíše na vítězného zákazníka: v Pipedrive se najde podle IČO, jinak se založí. Původní organizace se nemění. Nabídky ostatních zákazníků zůstávají zamčené a dohledatelné.</span></div></div>';
     }
-    if (P.potvrzeni && P.potvrzeni.typ === 'org')
-      potv = '<div class="vzp-potvrzeni"><b>Změnit organizaci dealu ' + DEAL_ID + ' v Pipedrive?</b>'
-        + '<div class="vzp-pr"><span>Organizace dealu</span><span><s>' + esc(P.deal.org) + '</s> → <b>' + esc(ridiciZ().nazev) + '</b> (IČO ' + esc(ridiciZ().ico) + ')</span></div>'
-        + '<div class="vzp-pt"><button type="button" class="vzp-zelene' + (dalsiKrok() === 'orgAno' ? ' vzp-dalsi' : '') + '" data-vzp="orgAno">Zapsat do Pipedrive</button><button type="button" class="mini" data-vzp="potvNe">Nezapisovat</button>'
-        + '<span>Deal se jen přepojí na organizaci s tímto IČO (když v Pipedrive není, založí se podle ARES). Původní organizace se nemění ani nemaže.</span></div></div>';
-    const upoz = orgNesedi() && !P.potvrzeni ? '<div class="vzp-upoz">Deal ' + DEAL_ID + ' je v Pipedrive veden na <b>' + esc(P.deal.org) + '</b>, řídící zákazník je teď <b>' + esc(ridiciZ().nazev) + '</b>. '
-      + (smiRidit() ? '<button type="button" class="mini' + (dalsiKrok() === 'org' && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="org">Změnit organizaci dealu v Pipedrive…</button>' : 'Organizaci dealu mění autor zakázky nebo administrátor.') + '</div>' : '';
+    const upoz = P.orgStav === 'chyba' && orgNesedi() ? '<div class="vzp-upoz"><b>Organizace dealu se nepřepsala</b> (Pipedrive neodpověděl). Deal ' + DEAL_ID + ' je dál veden na <b>' + esc(P.deal.org) + '</b>, vítězný zákazník je <b>' + esc(ridiciZ().nazev) + '</b>. Prodej je uložený. '
+      + (smiRidit() ? '<button type="button" class="mini' + (dalsiKrok() === 'orgAno' && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="orgAno">Zkusit zápis znovu</button>' : 'Zápis zopakuje autor zakázky nebo administrátor.') + '</div>' : '';
     const napoveda = P.krok === 'vychozi' && !S.hraje && !P.formular ? '<span class="vzp-sem">◀ ' + esc(napovedaText()) + '</span>' : '';
     return '<h2><span style="flex:1">Zákazníci zakázky <span class="pill">zkušební funkce</span>' + (noveVidet() ? ' <span class="vzp-zn vzp-zn-pridano">nově se objevilo</span>' : '') + '</span></h2><div class="body">'
       + '<div class="note" style="margin-bottom:8px">Jednu zakázku může poptat víc zákazníků. Každý má <b>svou nabídku</b> (číslo s písmenem zákazníka) — buď sdílí variantu s jiným zákazníkem, nebo má vlastní. '
@@ -324,7 +328,8 @@
     const nabidka = odeslano ? 'odeslána ' + esc(Object.values(z.odeslano).join(', ')) + ' → <b>doklad zůstává</b> (razítko tisku se jménem adresáta v zámku varianty, protokol)' : 'rozpracovaná, neodeslaná → <b>zanikne</b>';
     return '<div class="vzp-potvrzeni"><b>Odstranit zákazníka ' + esc(z.nazev) + ' ze zakázky?</b>'
       + r('Jeho nabídka ' + cisloZ(z), nabidka) + r('Varianta „' + v.nazev + '"', varianta)
-      + r('Deal ' + DEAL_ID + ': další zákazníci (text)', zbyde > 1 ? 'řádek ' + esc(z.kratce) + ' zmizí, ostatní zůstanou' : 'pole se <b>vyprázdní</b> (deal dál nese jen řídícího zákazníka)')
+      + r('Deal ' + DEAL_ID + ': poznámka „Další zákazníci"', zbyde > 1 ? 'řádek ' + esc(z.kratce) + ' zmizí, ostatní zůstanou' : 'upraví se na <b>„žádní"</b> (poznámka se nemaže, jako u šachet)')
+      + (odeslano ? r('Kdo smí', 'jen <b>administrátor</b> — zákazníkovi už odešla nabídka') : '')
       + r('Písmeno -' + z.pismeno, odeslano ? 'už se nepřidělí jinému zákazníkovi (je na odeslaném papíře)' : 'uvolní se — nic s ním neodešlo')
       + r('Vzhled aplikace', zbyde > 1 ? 'beze změny (zůstávají ' + zbyde + ' zákazníci)' : '<s>přepínač zákazníků, karta Zákazníci zakázky, štítky</s> → <b>standardní kalkulace</b>, jen tlačítko „+ Přidat zákazníka"')
       + '<div class="vzp-pt"><button type="button" class="vzp-cervene' + (dalsiKrok() === 'odeberAno' ? ' vzp-dalsi' : '') + '" data-vzp="odeberAno">Odstranit zákazníka</button><button type="button" class="mini" data-vzp="potvNe">Zrušit</button>'
@@ -392,7 +397,7 @@
   /* ----- lišta a panel ----- */
   function souhrn() {
     if (P.krok === 'vychozi') return 'Výchozí stav — nic se nezměnilo. Klikněte na zvýrazněný krok nebo „▶ Přehrát".';
-    const nazvy = { pohled: 'vzhled aplikace', varianty: 'varianty v zakázce', rz: 'řídící zákazník', rv: 'řídící varianta', 'pd.org': 'organizace dealu', 'pd.hodnota': 'hodnota dealu', 'pd.cn': 'číslo nabídky v dealu', 'pd.faze': 'fáze dealu', 'pd.dalsi': 'text „Další zákazníci" v dealu', rejstrik: 'řádek rejstříku' };
+    const nazvy = { pohled: 'vzhled aplikace', varianty: 'varianty v zakázce', rz: 'řídící zákazník', rv: 'řídící varianta', 'pd.org': 'organizace dealu', 'pd.hodnota': 'hodnota dealu', 'pd.cn': 'číslo nabídky v dealu', 'pd.faze': 'fáze dealu', 'pd.dalsi': 'poznámka „Další zákazníci" u dealu', rejstrik: 'řádek rejstříku' };
     P.zak.forEach((z) => { nazvy['z:' + z.id] = 'nabídka ' + z.kratce; });
     const sk = { pridano: [], zmeneno: [], smazano: [] };
     Object.keys(nazvy).forEach((k) => { const z = znacka(k); if (sk[z]) sk[z].push(nazvy[k]); });
@@ -408,6 +413,7 @@
     document.getElementById('vzpLista').innerHTML =
       '<div class="vzp-sk"><label class="vzp-pop" for="vzpScenar">Situace</label>' + vyber('vzpScenar', SCENARE, S.scenar) + '</div>'
       + '<div class="vzp-sk"><label class="vzp-pop" for="vzpRole">Dívá se</label>' + vyber('vzpRole', ROLE, S.role) + '</div>'
+      + (S.scenar === 'prodej' ? '<div class="vzp-sk"><label class="vzp-pop" for="vzpPd">Pipedrive</label>' + vyber('vzpPd', PD_STAVY, S.pd) + '</div>' : '')
       + '<div class="vzp-sk vzp-kroky"><span class="vzp-pop">Kroky</span>' + kr('reset', '1. Výchozí stav') + kroky.map(([a, t]) => kr(a, t)).join('') + '</div>'
       + (P.krok === 'vychozi' && !S.hraje && k ? '<span class="vzp-napoveda">◀ Klikněte na „' + esc(k[1]) + '"</span>' : '')
       + '<div class="vzp-sk"><button type="button" class="vzp-hraj" data-vzp="hraj">' + (S.hraje ? '■ Zastavit' : '▶ Přehrát') + '</button>'
@@ -447,13 +453,13 @@
       + Object.keys(P.pred).filter((k) => k.indexOf('z:') === 0 && !Zk(k.slice(2))).map((k) => radekPP('Nabídka ' + FIRMY[k.slice(2)].kratce, k)).join('')
       + '<h3>Pipedrive — co se zapíše do dealu ' + DEAL_ID + '</h3>'
       + '<p>Deal nese jen data řídící varianty řídícího zákazníka. Nic se neodesílá — náhled.</p>'
-      + radekPP('Organizace dealu', 'pd.org', orgNesedi() ? '⚠ neodpovídá řídícímu zákazníkovi — aplikace ji sama nemění' : '')
+      + radekPP('Organizace dealu', 'pd.org', orgNesedi() ? (P.orgStav === 'chyba' ? '⚠ zápis selhal — čeká na opakování' : '⚠ neodpovídá řídícímu zákazníkovi (řídící se změnil ručně, bez prodeje — organizace se přepisuje až při Prodáno)') : (P.orgStav === 'zapsano' ? 'přepsáno na vítězného zákazníka (podle IČO)' : ''))
       + radekPP('Hodnota dealu', 'pd.hodnota') + radekPP('Číslo nabídky (CN)', 'pd.cn') + radekPP('Fáze dealu', 'pd.faze')
       + '<div class="vzp-r"><span>Krycí list, odkaz na kalkulaci</span><span>z řídící varianty; odkaz beze změny</span></div>'
-      + '<div class="vzp-r vzp-r-blok"><span>Pole „Další zákazníci (Kalkulátor)"' + stitek(zd) + '</span>'
+      + '<div class="vzp-r vzp-r-blok"><span>Poznámka u dealu „Další zákazníci na zakázce"' + stitek(zd) + '</span>'
       + (zd && P.pred['pd.dalsi'] ? '<div class="vzp-odp vzp-odp-pred">' + esc(P.pred['pd.dalsi']) + '</div>' : '')
-      + '<div class="vzp-odp' + (zd ? ' vzp-odp-' + zd : '') + '">' + (d.dalsi ? esc(d.dalsi) : '— prázdné (zakázka má jednoho zákazníka) —') + '</div></div>'
-      + '<p>Zapisuje se při tisku nabídky, při „Prodáno" a tlačítkem „Zapsat do Pipedrive". Text aplikace vždy přepíše celý — ruční úpravy v tomto poli nevydrží.</p>'
+      + '<div class="vzp-odp' + (zd ? ' vzp-odp-' + zd : '') + '">' + (d.dalsi ? esc(d.dalsi) : '— žádná poznámka (zakázka má jednoho zákazníka) —') + '</div></div>'
+      + '<p>Jedna poznámka u dealu, kterou server při uložení zakázky přepisuje celou (stejný mechanismus jako poznámka se seznamem šachet). Pozná ji podle úvodu a značky čísla zakázky; nikdy ji nemaže. Vedle poznámky šachet je to samostatná poznámka.</p>'
       + '<h3>Náhled nabídky pro zákazníka</h3>' + nahledHtml()
       + '<h3>Přehled cenových nabídek (řádek rejstříku)</h3>' + radekPP('Řádek', 'rejstrik')
       + '<p>Hledání v Přehledu najde zakázku i podle názvu dalšího zákazníka.</p>'
@@ -467,9 +473,10 @@
       + '<li>Zákazník ukazuje na jednu variantu: sdílenou, nebo vlastní (kopii).</li>'
       + '<li>Tisk nabídky je vždy pro jednoho zákazníka; varianta se zamkne prvním tiskem, další tisk jinému zákazníkovi jen přidá razítko „komu".</li>'
       + '<li>Řídící varianta = varianta řídícího zákazníka. Prodáno jinému zákazníkovi z něj udělá řídícího (prodaná = řídící, #563).</li>'
-      + '<li>Deal nese data řídící varianty; ostatní zákazníci jsou jen v textovém poli (název, platná nabídka, datum, cena bez DPH).</li>'
+      + '<li>Deal nese data řídící varianty; ostatní zákazníci jsou jen v jedné poznámce u dealu (název, platná nabídka, datum, cena bez DPH).</li>'
+      + '<li>Při Prodáno jinému zákazníkovi se organizace dealu přepíše na vítěze: najde se podle IČO, jinak se založí. Selže-li zápis, prodej platí a zápis se zopakuje.</li>'
       + '<li>Řídícího zákazníka a organizaci dealu mění autor zakázky a administrátor.</li>'
-      + '<li>Odstranit jde každého dalšího zákazníka (s potvrzením), ne řídícího a ne toho, komu se prodalo. Co mu odešlo, zůstává doložené v zámku varianty; neodeslaná vlastní varianta se smaže s ním.</li>'
+      + '<li>Odstranit jde každého dalšího zákazníka (s potvrzením), ne řídícího a ne toho, komu se prodalo. Zákazníka, kterému už odešla nabídka, odstraní jen administrátor. Co mu odešlo, zůstává doložené v zámku varianty; neodeslaná vlastní varianta se smaže s ním.</li>'
       + '<li>Po odstranění posledního dalšího zákazníka je zakázka i aplikace stejná jako s jedním zákazníkem.</li></ol>';
   }
   function vyska() {
@@ -491,7 +498,7 @@
   }
 
   const POPISY = { pridej: 'zákazník přidán (stejná varianta)', odesli: 'nabídka vytištěna (odeslána)', vlastni: 'založena vlastní varianta zákazníka', uprav: 'vlastní varianta upravena',
-    prodej: 'prodej — čeká na potvrzení', prodejAno: 'prodáno, řídící zákazník změněn', org: 'změna organizace dealu — čeká na potvrzení', orgAno: 'organizace dealu změněna', ridici: 'řídící zákazník změněn ručně',
+    prodej: 'prodej — čeká na potvrzení', prodejAno: 'prodáno, řídící zákazník změněn', orgAno: 'organizace dealu přepsána (opakovaný zápis)', ridici: 'řídící zákazník změněn ručně',
     odeber: 'odstranění zákazníka — čeká na potvrzení', odeberAno: 'zákazník odstraněn', form: 'formulář nového zákazníka', varianta: 'zákazníkovi přiřazena jiná varianta' };
   function krok(a, arg) {
     const [co, id] = a.split(':');
@@ -504,9 +511,8 @@
     if (co === 'potvNe') { P.potvrzeni = null; kresli(); return; }
     if (!lze(a)) return;
     const idx = SCENARE[S.scenar].kroky.findIndex((x) => x[0] === a);
-    if (['prodej', 'org', 'form', 'odeber'].includes(co)) P.pred = snimek();   // krok jen otevírá potvrzení — nic se nemění
+    if (['prodej', 'form', 'odeber'].includes(co)) P.pred = snimek();   // krok jen otevírá potvrzení — nic se nemění
     if (co === 'prodej') { P.potvrzeni = { typ: 'prodej', id }; otevri(id); }
-    else if (co === 'org') P.potvrzeni = { typ: 'org' };
     else if (co === 'form') P.formular = true;
     else if (co === 'odeber') { P.potvrzeni = { typ: 'odeber', id }; P.formular = false; }
     else {
@@ -533,6 +539,7 @@
   function hraj() {
     if (S.hraje) { zastav(); kresli(); return; }
     if (S.role === 'jiny') S.role = 'autor';
+    if (S.scenar === 'odeslana') S.role = 'admin';
     const fronta = ['reset'].concat(SCENARE[S.scenar].kroky.map((x) => x[0]));
     S.hraje = { i: 0, t: null };
     const dalsi = () => {
@@ -556,9 +563,10 @@
   }
   function zmena(e) {
     const t = e.target; if (!t) return;
-    if (t.id === 'vzpScenar' || t.id === 'vzpRole') {
-      zastav(); S[t.id === 'vzpScenar' ? 'scenar' : 'role'] = t.value;
-      if (t.id === 'vzpScenar') { vychozi(); kresli(); window.scrollTo(0, 0); } else kresli();
+    if (t.id === 'vzpScenar' || t.id === 'vzpRole' || t.id === 'vzpPd') {
+      zastav(); S[{ vzpScenar: 'scenar', vzpRole: 'role', vzpPd: 'pd' }[t.id]] = t.value;
+      if (t.id === 'vzpScenar' && t.value === 'odeslana') S.role = 'admin';   // odstranit zákazníka s odeslanou nabídkou smí jen administrátor
+      if (t.id !== 'vzpRole') { vychozi(); kresli(); window.scrollTo(0, 0); } else kresli();
       return;
     }
     const zr = t.getAttribute && t.getAttribute('data-vzp-ridici');
