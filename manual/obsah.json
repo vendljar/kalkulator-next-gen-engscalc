@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
-    "verze": "Platí pro aplikaci v12.11.7 · sestaveno 12. 11. 2026",
+    "verze": "Platí pro aplikaci v16.11.1 · sestaveno 16. 11. 2026",
 
   "uvod": [
     {
@@ -957,7 +957,7 @@
             },
             {
               "pojem": "Smlouva o dílo",
-              "vyklad": "Cena díla je cena celé nabídky. Šablona **SoD realizace v5** vyjmenuje šachty: v čl. II pod předmětem díla řádek „2 varianty šachet, celkem 3 ks (Výtah A 1 ks, Výtah B 2 ks)“, v čl. V pod cenou řádek za každou variantu (název, kusy, cena před slevou). U zakázky s jednou šachtou je smlouva stejná jako dřív. Se starší šablonou (v4) smlouva vznikne jen s celkovou cenou — aplikace upozorní (kontrola i věta po tisku) a předmět doplníte ve Wordu."
+              "vyklad": "Cena díla je cena celé nabídky. Šablona **SoD realizace v5** vyjmenuje šachty: v čl. II pod předmětem díla řádek „2 varianty šachet, celkem 3 ks (Výtah A 1 ks, Výtah B 2 ks)“, v čl. V pod cenou řádek za každou variantu (název, kusy, cena před slevou) a nakonec vyrovnávací řádek **Sleva** (u nabídky v eurech nebo s obchodním zaokrouhlením „Sleva a zaokrouhlení“, bez slevy „Zaokrouhlení“) — součet rozpisu je tak přesně cena díla dle nabídky. Bez rozdílu se vyrovnávací řádek nepíše. U zakázky s jednou šachtou je smlouva stejná jako dřív. Se starší šablonou (v4) smlouva vznikne jen s celkovou cenou — aplikace upozorní (kontrola i věta po tisku) a předmět doplníte ve Wordu."
             },
             {
               "pojem": "Přehled cenových nabídek",

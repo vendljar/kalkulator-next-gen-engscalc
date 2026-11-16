@@ -8,6 +8,23 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v16.11.1 — SL #589: řádek slevy v rozpisu šachet ve smlouvě o dílo realizace, větev claude/sl-sod-sleva
+
+Nad `8462aea` (integrace = test v12.11.7). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje
+koordinace. Na webech, Disku ani v Pipedrive nic.
+
+- **Rozpis šachet ve SoD sedí na cenu díla dle nabídky:** `{{SACHTY_SOD_ROZPIS}}` (víc šachet, šablona v5) končí
+  vyrovnávacím řádkem = cena díla dle nabídky (`{{SOD_CENA_NABIDKY}}`, po slevě; u dotisku podle záznamu tisku) −
+  součet řádků šachet (ty jsou dál před slevou, rozpočet R7). Popisek **Sleva**; je-li rozdíl i bez slevy (obchodní
+  zaokrouhlení, v eurech řádky po šachtách nahoru) **Sleva a zaokrouhlení**, bez slevy jen **Zaokrouhlení**. Řádek
+  jen při nenulovém rozdílu; formát a měna jako ostatní řádky, záporná částka se znaménkem minus. V korunách bez
+  zaokrouhlení se řádek „Sleva“ rovná slevě z nabídky.
+- Slovník EN/DE/FR: „Zaokrouhlení“, „Sleva a zaokrouhlení“ (heslo „Sleva“ už bylo; slovník nerozlišuje velikost
+  písmen, proto popisky s velkým písmenem jako řádky šachet).
+- Šablona v5, výpočet ceny ani data nabídky se nemění (zlatá sada VS 319/319); jedna šachta beze změny.
+- Testy: `src/test_sod_v5.js` oddíl E (Kč se slevou, EUR se slevou i bez, Kč bez slevy bez řádku, zaokrouhlení,
+  objednané příplatky za rozpisem, EN/DE bez češtiny, jedna šachta); mutace [SL] 8/8.
+
 ## v12.11.7 — K40c #581: vazba z webhooku Pipedrive, firma z ARES na serveru, „Opravit firmu v Pipedrive“, větev claude/k40c-webhook
 
 Nad `1a08186` (integrace v12.11.3), sloučeno s integrací `4acda93` (v12.11.6: VSD, C2+C3, C5). Výpočet ceny beze změny. Rozhodnutí J. V.
