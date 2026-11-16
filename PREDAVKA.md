@@ -16,8 +16,8 @@ Disk, Pipedrive nic. **Před sloučením revize poradce (únik údajů).** Roadm
 | oprava úniku z testu: zmrazený krycí list sdílené varianty | ✅ | `zakaznikPole` (kryci.js 5 polí, kryci_proj.js 6) |
 | testy | ✅ | `src/test_vz_unik.js`, `src/test_vz_cisla.js`, `src/test_vz_tisk_vstupy.js`, zlatá sada (e1)(e2), `netlify/test_vz_webhook.mjs`, prohlížeč `overit_vz_tisk.mjs` |
 | napojení na E1 a E5 | ✅ | `vzTiskId` ← `vzOtevrenyId` (E1); karta Zákazníci zakázky: číslo s písmenem (`vzTiskCisloZakaznika`) a **Tisk CN** (`vzTiskCN` = otevřít zákazníka + Kompletní náhled a tisk); poznámka E5 `vzpCisloNabidky` → `vzCisloSPismenem` |
-| mutace „[VZ E2]“ | ✅ | jádro 43/46 v prvním běhu (3 nechycené → doplněny testy, ruční záměnou ověřeno zabití; závěrečný běh viz zpráva koordinaci), server 5/5 |
-| kolo `--bez-mutaci` (před sloučením E1/E5) | ✅ **VŠE ZELENÉ** | sady 397/0/59, hodiny +400 dní 365/0/1, statické 6/6 |
+| mutace „[VZ E2]“ | ✅ | jádro **46/46** (závěrečný běh po sloučení; výchozí stav 277 sad zelených), server **5/5** |
+| kolo `--bez-mutaci` po sloučení E1/E5 | ✅ **VŠE ZELENÉ** | sady 402/0/59 přeskočeno (24 min), hodiny +400 dní 369/0/1, statické 6/6; prohlížeč overit_vz_tisk 192/0, overit_vz_zadani 72/0/1 |
 
 ## Rozhodnutí (bezpečnější varianta, k revizi)
 
