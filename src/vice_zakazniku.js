@@ -243,7 +243,11 @@ function vzOdstran(zak, id, volby) {
   }
   zak.dalsiZakaznici.splice(i, 1);
   vzKlOdstranZakaznika(zak, sid);   // E3 (U1): jeho ruční hodnoty krycích listů
-  if (!vzDalsi(zak).length) { delete zak.dalsiZakaznici; delete zak.vzRidici; }
+  if (!vzDalsi(zak).length) {
+    const ridici = vzRidiciId(zak);
+    delete zak.dalsiZakaznici; delete zak.vzRidici;
+    vzKlUklid(zak, ridici);   // V3: zpět jeden zákazník — bez stopy v krycích listech
+  }
   return { ok: true, smazanaVarianta: smazana };
 }
 
@@ -703,9 +707,35 @@ function vzKlOdstranZakaznika(zak, id) {
     if (!v || !v.data || (typeof variantaUzamcena === 'function' && variantaUzamcena(v))) return;
     ['kryci', 'kryciProj'].forEach(list => {
       const kl = v.data[list];
-      if (!vzObj(kl) || !vzObj(kl.hodnotyZakaznika)) return;
+      if (!vzObj(kl)) return;
+      /* Hodnoty, jejichž vlastníkem byl on, taky pryč (údaje odstraněného zákazníka). */
+      if (vzObj(kl.vzVlastnik) && vzObj(kl.hodnoty)) Object.keys(kl.vzVlastnik).forEach(k => {
+        if (String(kl.vzVlastnik[k]) === String(id)) { delete kl.hodnoty[k]; delete kl.vzVlastnik[k]; }
+      });
+      if (vzObj(kl.vzVlastnik) && !Object.keys(kl.vzVlastnik).length) delete kl.vzVlastnik;
+      if (!vzObj(kl.hodnotyZakaznika)) return;
       delete kl.hodnotyZakaznika[String(id)];
       if (!Object.keys(kl.hodnotyZakaznika).length) delete kl.hodnotyZakaznika;
+    });
+  });
+}
+
+/* V3 (dorevize E2): po odstranění posledního dalšího zákazníka zmizí z
+ * NEZAMČENÝCH variant stopy víc zákazníků v krycích listech — hodnoty
+ * zbylého zákazníka (`ridici`) z `hodnotyZakaznika` se vrátí do `hodnoty`
+ * (mají přednost), `vzVlastnik`, `vzZmrazeno`, `hodnotyZakaznika` pryč.
+ * Zamčená varianta je doklad — beze změny. Na místě. */
+function vzKlUklid(zak, ridici) {
+  ((zak && zak.varianty) || []).forEach(v => {
+    if (!v || !vzObj(v.data) || (typeof variantaUzamcena === 'function' && variantaUzamcena(v))) return;
+    ['kryci', 'kryciProj'].forEach(list => {
+      const kl = v.data[list];
+      if (!vzObj(kl)) return;
+      const vlastni = vzObj(kl.hodnotyZakaznika) && vzObj(kl.hodnotyZakaznika[String(ridici)]) ? kl.hodnotyZakaznika[String(ridici)] : null;
+      if (vzObj(kl.hodnoty) && vzObj(kl.vzVlastnik))
+        Object.keys(kl.vzVlastnik).forEach(k => { if (String(kl.vzVlastnik[k]) !== String(ridici)) delete kl.hodnoty[k]; });
+      if (vlastni) { if (!vzObj(kl.hodnoty)) kl.hodnoty = {}; Object.keys(vlastni).forEach(k => { kl.hodnoty[k] = vlastni[k]; }); }
+      delete kl.hodnotyZakaznika; delete kl.vzVlastnik; delete kl.vzZmrazeno;
     });
   });
 }
@@ -804,7 +834,18 @@ function vzTiskZabrana(zak, id, varianta, typ, volby) {
   const tistene = typ === 'porovnani'
     ? vzVariantyZakaznika(zak, sid).map(id => (zak.varianty || []).find(x => x && String(x.id) === id)).filter(Boolean)
     : (v ? [v] : []);
-  const texty = vzSdileneTexty(zak).concat(tistene.map(x => ['Název varianty', x.nazev]));
+  /* V2 (dorevize E2): ruční volné texty krycího listu tištěné varianty jsou sdílené
+   * všem jejím zákazníkům (rozsah, co cena nezahrnuje, situační foto, jiné činnosti PROJ). */
+  const klTexty = x => {
+    const out = [];
+    [['kryci', ['rozsah', 'cenaNezahrnuje', 'situacniFoto']], ['kryciProj', ['rozsahJine', 'cenaNezahrnuje']]].forEach(([list, ids]) => {
+      const h = vzObj(x && x.data) && vzObj(x.data[list]) && vzObj(x.data[list].hodnoty) ? x.data[list].hodnoty : {};
+      ids.forEach(id => { if (typeof h[id] === 'string' && h[id]) out.push(['Krycí list (' + id + ')', h[id]]); });
+    });
+    return out;
+  };
+  const texty = vzSdileneTexty(zak).concat(tistene.map(x => ['Název varianty', x.nazev]))
+    .concat(v ? klTexty(v) : []);
   for (const [popisek, hodnota] of texty) {
     const c = vzTextCizi(hodnota, z, cizi);
     if (c) return popisek + ' obsahuje název nebo IČO jiného zákazníka zakázky („' + (c.hlavicka.objednatel || c.id)
@@ -1119,4 +1160,4 @@ if (typeof module !== 'undefined' && module.exports)
     VZ_RAZITKO_KLICE, VZ_ZMRAZENA_POLE, vzTiskKomu, vzTiskyVarianty, vzCisloVarianty, vzRazitkoSnimek, vzTiskyZakaznika,
     vzOdeslanoKomu, vzCenaZamku, vzPlatna, vzStavNabidky, vzRazitkoDotisku, vzCisloDokladu, vzOdstranDuvod,
     vzZakaznikPoleZmrazeno, vzServerZakaznici, vzZalozenDrz, vzServerRazitka, vzPlatnaPrepocti, vzVariantaBezCizichRazitek,
-    vzKlVlastni, vzKlZapis, vzKlZmrazeno, vzKlOznacPole, vzKlRucni, vzKlZapisRucni, vzKlOdstranZakaznika };
+    vzKlVlastni, vzKlZapis, vzKlZmrazeno, vzKlOznacPole, vzKlRucni, vzKlZapisRucni, vzKlOdstranZakaznika, vzKlUklid };

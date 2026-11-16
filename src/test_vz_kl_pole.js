@@ -198,6 +198,61 @@ beh('');
   vzKlZapisRucni(kl, z, '', 'kontaktZakaznikTel', '123');
   test('U1: jeden zákazník — zápis jako dřív, žádný klíč navíc', JSON.stringify(kl) === JSON.stringify({ hodnoty: { kontaktZakaznikTel: '123' } }), kl);
 }
+/* V1 (dorevize E2): OBRAZOVKA krycího listu (kryci_ui.js klSet / klVal) píše
+ * ruční pole zákazníka za OTEVŘENÉHO zákazníka — kanárek B se nesmí objevit u A. */
+{
+  const vm = require('vm');
+  const z = zakazka();
+  const v1 = z.varianty.find(v => String(v.id) === vzRidiciVariantaId(z));
+  v1.data.kryci = v1.data.kryci || { hodnoty: {} };
+  let otevreny = 'z2';
+  if (typeof global.kryciPoleZakaznika !== 'function') global.kryciPoleZakaznika = id => KRYCI_SEKCE.some(s => s.pole.some(p => p.id === id && p.zakaznikPole));
+  Object.assign(global, { ZAK: z, KL: v1.data.kryci, render: () => {}, aktivniVarianta: () => v1, vzTiskId: () => otevreny,
+    vzTiskJinyZakaznik: () => otevreny !== 'z1' && otevreny !== '', vzTiskZakTicho: () => vzTiskPohled(z, otevreny) });
+  vm.runInThisContext(fs.readFileSync(path.join(__dirname, 'ui/kryci_ui.js'), 'utf8'), { filename: 'kryci_ui.js' });
+  klSet('kontaktZakaznikTel', 'KANBOBRAZOVKAX');
+  otevreny = '';
+  klSet('kontaktZakaznikTel', 'KANAOBRAZOVKAX');
+  const tA = vystupy(z, 'z1', v1), tB = vystupy(z, 'z2', v1);
+  test('V1: obrazovka s otevřeným B → hodnota B jen v dokumentech B', tB.indexOf('KANBOBRAZOVKAX') >= 0 && tA.indexOf('KANBOBRAZOVKAX') < 0, { a: nalez(tA, 'B') });
+  test('V1: obrazovka s řídícím → hodnota A jen v dokumentech A', tA.indexOf('KANAOBRAZOVKAX') >= 0 && tB.indexOf('KANAOBRAZOVKAX') < 0);
+  otevreny = 'z2';
+  test('V1: klVal/klManual u otevřeného B ukazují jeho hodnotu', klVal('kontaktZakaznikTel', 'x') === 'KANBOBRAZOVKAX' && klManual('kontaktZakaznikTel'));
+  klReset('kontaktZakaznikTel');
+  test('V1: ↺ u B smaže jen hodnotu B', klVal('kontaktZakaznikTel', 'PREF') === 'PREF' && vystupy(z, 'z1', v1).indexOf('KANAOBRAZOVKAX') >= 0);
+  ['ZAK', 'KL', 'render', 'aktivniVarianta', 'vzTiskId', 'vzTiskJinyZakaznik', 'vzTiskZakTicho'].forEach(k => { delete global[k]; });
+}
+/* V2: volné texty krycího listu sdílené varianty hlídá zábrana cizího zákazníka. */
+{
+  const z = zakazka();
+  const v1 = z.varianty.find(v => String(v.id) === vzRidiciVariantaId(z));
+  v1.data.kryci = v1.data.kryci || { hodnoty: {} };
+  v1.data.kryci.hodnoty.rozsah = 'Dodávka pro Beta Zkus a.s. včetně montáže';
+  test('V2: rozsah KL s názvem B → tisk pro A zastaven', /Krycí list/.test(vzTiskZabrana(z, 'z1', v1, 'kryci_bo')));
+  v1.data.kryci.hodnoty.rozsah = 'Dodávka včetně montáže';
+  test('V2: neutrální rozsah → tisk projde', vzTiskZabrana(z, 'z1', v1, 'kryci_bo') === '');
+}
+/* V3: po odstranění posledního dalšího zákazníka žádná stopa v krycích listech (ani v klonu). */
+{
+  const z = novaZakazka();
+  Object.assign(z, { cislo: '2026 - OPR - CN - 9942', objednatel: 'Alfa Zkus s.r.o.' });
+  vzPridej(z, { objednatel: 'Beta Zkus a.s.' }, PEVNE);
+  const v = z.varianty[0];
+  const kl = v.data.kryci = { hodnoty: {} };
+  vzKlZapisRucni(kl, z, 'z1', 'kontaktZakaznikTel', '111');
+  vzKlZapisRucni(kl, z, 'z2', 'kontaktZakaznikTel', '222');
+  vzKlZapisRucni(kl, z, 'z2', 'kontaktZakaznikEmail', 'KANBEMAILX');
+  kl.vzZmrazeno = 'z1';
+  vzOdstran(z, 'z2', {});
+  test('V3: po odstranění posledního jen hodnoty řídícího, žádný klíč VZ', JSON.stringify(kl) === JSON.stringify({ hodnoty: { kontaktZakaznikTel: '111' } }), kl);
+  /* Klon dokladu z doby víc zákazníků u jednoho zákazníka. */
+  const zam = z.varianty[0];
+  zam.data.kryci.vzVlastnik = { kontaktZakaznikTel: 'z1' }; zam.data.kryci.vzZmrazeno = 'z1';
+  zam.data.kryci.hodnotyZakaznika = { z2: { kontaktZakaznikTel: '222' } };
+  const k = klonujVariantu(z, zam.id, { aktivovat: false });
+  test('V3: klon u jednoho zákazníka bez vzVlastnik / vzZmrazeno / hodnotyZakaznika',
+    !('vzVlastnik' in k.data.kryci) && !('vzZmrazeno' in k.data.kryci) && !('hodnotyZakaznika' in k.data.kryci) && k.data.kryci.hodnoty.kontaktZakaznikTel === '111', k.data.kryci);
+}
 /* POJISTKA: stav před revizí (vlastník se nekontroluje) — detektor musí únik najít. */
 {
   /* E3 (U1): čtení jde přes vzKlRucni — podvrhnout obě kontroly vlastníka. */

@@ -160,6 +160,11 @@ function klonujVariantu(zak, id, opts) {
     if (Array.isArray(kopie.data.ock.dalsi))
       kopie.data.ock.dalsi.forEach(s => { if (s && s.zadani) svetlikyStavbaNaBez(s.zadani); });
   }
+  /* VZ-E3 (V3): u zakázky s jedním zákazníkem klon nenese stopy víc
+   * zákazníků v krycích listech (vlastník pole, čí je snímek, hodnoty
+   * ostatních zákazníků) — zdroj může být doklad z doby víc zákazníků. */
+  if (typeof vzRezim === 'function' && !vzRezim(zak) && typeof vzKlUklid === 'function')
+    vzKlUklid({ varianty: [kopie] }, typeof vzRidiciId === 'function' ? vzRidiciId(zak) : 'z1');
   kopie.klonZ = zdroj.id;
   kopie.klonZCislo = variantaCislo(zak, zdroj);
   /* NOVÁ VARIANTA NESE DNEŠNÍ DATUM (nález D2, 15. 9. 2026). Klon vzniká
