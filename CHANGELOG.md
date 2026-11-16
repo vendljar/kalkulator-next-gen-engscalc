@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v16.11.2 — VZ-E2 #601: víc zákazníků — čísla s písmenem, tisk z pohledu zákazníka, zábrany tisku, test úniku, větev claude/vz-e2
+## v16.11.4 — VZ-E2 #601: víc zákazníků — čísla s písmenem, tisk z pohledu zákazníka, zábrany tisku, test úniku, větev claude/vz-e2
 
 Nad `claude/vz-e0` `e29f2b1` (E0). Vše za vypínačem `viceZakazniku`; zakázka s jedním zákazníkem tiskne bajt po bajtu
 jako dnes (zlatá sada (e1): `vzTiskPohled` vrací týž objekt). Zadání `podklady/PROMPT_VZ_E2.md`, návrh § 3, § 4, § 9.
@@ -27,6 +27,47 @@ jako dnes (zlatá sada (e1): `vzTiskPohled` vrací týž objekt). Zadání `podk
 - **Statická kontrola** `nastroje/kontrola_vz_unik.sh` (s pojistkou) v kole — statické kontroly teď 6.
 - Testy `src/test_vz_unik.js` (kanárky), `src/test_vz_cisla.js`, `src/test_vz_tisk_vstupy.js`, zlatá sada (e),
   `netlify/test_vz_webhook.mjs`, prohlížeč `overit_vz_tisk.mjs`; mutace „[VZ E2]“. Meze **B223**, **B224**.
+## v16.11.3 — VZ-E1 #600: víc zákazníků — obrazovka (tlačítko, formulář s ARES a databází, přepínač, karta, odstranění), větev claude/vz-e1
+
+Nad `claude/vz-e0` `e29f2b1` (v16.11.1). Výpočet ani dokumenty se nemění; vše za vypínačem `viceZakazniku` (výchozí VYP).
+S VYP a jedním zákazníkem je obrazovka znak po znaku jako v16.11.1; se ZAP a jedním zákazníkem navíc jen tlačítko.
+Zadání `podklady/PROMPT_VZ_E1.md`, návrh § 2a, § 6, § 8, prototyp v5.
+
+- **Tlačítko „Přidat zákazníka“** vedle popisku Zákazník (stejná výška řádku, pole se zúží, nejméně 110 px) — jen ZAP,
+  ne v režimu jen ke čtení, v náhledu ani u prodané zakázky.
+- **Formulář „Nový zákazník na zakázce“** přes celou šířku hlavičky: Zákazník (našeptávač), Sídlo, Kontaktní osoba,
+  IČO, DIČ, „Vybrat z databáze zákazníků“ a „🔎 Najít firmu v ARES“ (tentýž panel jako v hlavičce, sloupec „Ve formuláři
+  teď“, převzetí až po potvrzení), volba stejná / vlastní varianta, Přidat zhasnuté bez názvu, Zrušit nic nemění.
+- **ARES a databáze zákazníků zobecněné na cíl** (`aresCil` v `ares_ui.js`, `zakazniciCil` v `zakaznici_ui.js`):
+  hlavička OCK/PROJ, karta zákazníka, formulář a otevřený další zákazník — žádná kopie panelu; hlavička beze změny.
+- **Od 2. zákazníka** přepínač zákazníků nad polem Zákazník (★ řídící, písmeno, „+“) a karta **„Zákazníci zakázky“**
+  pod hlavičkou Kalkulace OCK a v Přehledu cenových nabídek (řídící, zákazník + IČO, číslo, varianta, stav, cena,
+  Náhled, Vlastní varianta, Odstranit; Tisk CN, Prodáno a změna řídícího zhasnuté pro E2/E4). Pole Zákazník, Kontaktní
+  osoba, IČO, ARES a databáze pracují s otevřeným zákazníkem (`vzCesta`), otevření zákazníka otevře jeho variantu.
+- **Odstranit** s potvrzením na stránce (sdílená varianta zůstává; vlastní neodeslaná smazat / ponechat; návrat do
+  standardního pohledu). Řídícího, prodaného a zákazníka s odeslanou nabídkou E1 odstranit nedovolí.
+- **VYP + zakázka s víc zákazníky:** karta a přepínač jen ke čtení s větou „funkce je vypnutá“, zápis odmítnut (R21).
+- Sloupec Zákazník v „Kalkulace v zakázce“ u 2+ zákazníků odvozený a jen ke čtení; Zpět / Znovu i neuložené změny
+  přes historii zakázky. Mez **B221**. Testy `src/test_vz_ui.js`, `overit_vz_zadani.mjs`, případ v `overit_xss.mjs`;
+  mutace „[VZ E1]“.
+## v16.11.2 — VZ-E5 #604: poznámka dealu „Další zákazníci na zakázce“ v Pipedrive, suchý běh, větev claude/vz-e5
+
+Nad `claude/vz-e0` `e29f2b1` (v16.11.1). Vše za vypínačem `viceZakazniku`; s VYP a u zakázky s jedním zákazníkem
+beze změny. Zadání `podklady/PROMPT_VZ_E5.md`, návrh § 7.1–7.2. Do Pipedrive jen simulátor.
+
+- **Zobecněná poznámka dealu** (`netlify/lib/pd_poznamka.mjs`): „druh poznámky“ (pole, úvod, text, rozpoznání,
+  klíč stropu). Poznámka šachet (#588) pod dnešními jmény a s dnešním chováním; nový druh **další zákazníci**
+  (pole `pdPoznamkaZakaznici` psané jen serverem, strop `strop:poznamka-zakaznici:deal:<id>`). Poznámka jednoho
+  druhu nikdy nepřepíše poznámku druhého.
+- **Text** (`src/vz_poznamka.js`, týž kód v prohlížeči i na serveru): za každého dalšího zákazníka název a poslední
+  odeslaná nabídka (číslo, den, cena bez DPH ze zmrazeného zámku), „nabídka zatím neodeslána (<číslo>)“, „připravuje
+  se nová <číslo>“, po prodeji „— neprodáno“; řádky `<br>`, escapováno, strop 2 000 znaků; po odstranění posledního
+  dalšího zákazníka „… žádní — nabídka <číslo>“. Bez kontaktů, IČO a slev.
+- **Uložení zakázky** zapisuje obě poznámky ve společném rozpočtu 6 s (šachty první), jedno třetí čtení; odpověď
+  nese stav `pdPoznamkaZakaznici` a varování.
+- **Suchý běh** ukazuje řádek „Poznámka dealu — další zákazníci“ se stejným textem (patch dealu beze změny).
+- Mez **B225**. Testy `netlify/test_vz_poznamka.mjs`, `netlify/test_vz_nanecisto.mjs`; mutace „[VZ E5]“; 9 zadání
+  mutací „[VSD]“ přepsáno na zobecněný kód (stejný záměr a sada).
 
 ## v16.11.1 — VZ-E0 #599: víc zákazníků na zakázce — vypínač, jádro, import, serverová kontrola tvaru, větev claude/vz-e0
 

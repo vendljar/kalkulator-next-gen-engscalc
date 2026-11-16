@@ -11,6 +11,11 @@
 
 /* Id otevřeného zákazníka ('' = řídící). */
 function vzTiskId() {
+  /* E1: vzOtevrenyId srovná jinou zakázku a neplatné id (→ řídící). */
+  if (typeof vzOtevrenyId === 'function' && typeof vzRidiciId === 'function' && typeof ZAK !== 'undefined') {
+    const id = vzOtevrenyId();
+    return id === vzRidiciId(ZAK) ? '' : String(id || '');
+  }
   return (typeof VZ_UI !== 'undefined' && VZ_UI && VZ_UI.otevreny) ? String(VZ_UI.otevreny) : '';
 }
 
@@ -88,4 +93,17 @@ function vzTiskSpecifikace(L) {
 function vzTiskSpecOnclick(jazykVyraz) {
   return (typeof vzRezim === 'function' && vzRezim(ZAK)) ? 'vzTiskSpecifikace(' + jazykVyraz + ')'
     : "tiskSNazvem(nazevExportu('specifikace', { cislo: ZAK.cislo, jazyk: " + jazykVyraz + " }))";
+}
+
+/* Tisk CN z karty Zákazníci zakázky (E2 bod 5): otevře zákazníka (a jeho
+ * variantu, vzOtevri z E1) a spustí dnešní „Kompletní náhled a tisk nabídky". */
+function vzTiskCN(id) {
+  if (typeof vzOtevri === 'function') vzOtevri(id);
+  if (typeof nabidkaOckDokument === 'function') return nabidkaOckDokument();
+}
+
+/* Číslo nabídky zákazníka pro kartu a poznámku dealu: číslo varianty + písmeno. */
+function vzTiskCisloZakaznika(zak, z, v) {
+  const c = (typeof variantaCislo === 'function' && v) ? variantaCislo(zak, v) : String((zak && zak.cislo) || '');
+  return (z && typeof vzCisloSPismenem === 'function') ? vzCisloSPismenem(c, z.pismeno) : c;
 }

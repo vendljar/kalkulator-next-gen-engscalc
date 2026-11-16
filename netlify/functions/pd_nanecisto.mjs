@@ -15,6 +15,9 @@
  * NEZAPISUJE — žádný PATCH, žádný POST; funkce jen čte (mapu polí, seznam
  * uživatelů a volitelně deal kvůli porovnání „v CRM je dnes …").
  *
+ * `zakaznici` (VZ-E5 #604) = text poznámky „Další zákazníci na zakázce“ jen
+ * pro řádek náhledu (pdNanecistoZakaznici); patch dealu se jím nemění.
+ *
  * `strany` skládá prohlížeč (src/pd_nanecisto.js) z krycích listů řídící
  * varianty: { hodnoty: { id → text }, rucne, atyp, kalendar, cena, mena }
  * — tentýž tvar, jaký čte pdDoPd. `zdroje` = popisky polí kalkulace pro
@@ -63,6 +66,16 @@ export function pdNanecistoStrana(z) {
   if (typeof z.cena === 'number' && isFinite(z.cena)) s.cena = z.cena;
   if (typeof z.mena === 'string' && /^[A-Za-z]{3}$/.test(z.mena)) s.mena = z.mena.toUpperCase();
   return s;
+}
+
+/* VZ-E5 (#604, bod 5): text poznámky dealu „Další zákazníci na zakázce“ pro
+ * řádek náhledu. Jen řetězec, ořez na TEXT_MAX, řídicí znaky kromě '\n'
+ * pryč (CR/LF → '\n'); cokoli jiného = ''. Do Pipedrive nic — poznámku
+ * zapisuje jen uložení zakázky ze serverových dat (lib/pd_poznamka.mjs). */
+export function pdNanecistoZakaznici(x) {
+  if (typeof x !== 'string') return '';
+  return x.slice(0, TEXT_MAX).replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u2028\u2029]+/g, ' ').trim();
 }
 
 export default async (req) => {
@@ -138,7 +151,10 @@ export default async (req) => {
     throw e;
   }
   if (!dealTxt) varovani.push('Zakázka nemá číslo obchodního případu Pipedrive — není s čím porovnat.');
-  const v = pdZamyslenyZapis(POLE_DEALU, strany, pole, { uzivatele, mena: 'CZK', deal },
+  const spolecne = { uzivatele, mena: 'CZK', deal };
+  const poznamkaZakaznici = pdNanecistoZakaznici(telo.zakaznici);
+  if (poznamkaZakaznici) spolecne.poznamkaZakaznici = poznamkaZakaznici;
+  const v = pdZamyslenyZapis(POLE_DEALU, strany, pole, spolecne,
     { faze, fazeSeznam, fazeKonfigurace: pdFazeKonfigurace(), dealNenacten: rezim !== 'dohoda' && dealTxt && !deal ? dealTxt : '' }, zdroje);
   return json({ ok: true, rezim, nic: 'Do Pipedrive se nic neodeslalo.', ...v, varovani,
     deal: deal ? { id: deal.id, nazev: deal.title || '', stav: deal.status || '', faze: deal.stage_id || null } : null });

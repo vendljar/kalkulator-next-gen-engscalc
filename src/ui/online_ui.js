@@ -1819,6 +1819,11 @@ async function onlineOtevri(soubor) {
       + (prep && (prep.prepocteno || prep.svetlikyStavba || prep.svetlikyMaterialBez) && typeof uloPrepocetVeta === 'function' ? ' ' + uloPrepocetVeta(prep) : ''));
     /* VS #570 (R21): zakázka s víc šachtami a vypnutá funkce — lišta; vypínač
      * se ze serveru čte jen u takové zakázky. */
+    /* VZ-E1 #600: totéž pro víc zákazníků (lišta R21, otevřený = řídící). */
+    if (typeof vzPoOtevreni === 'function') vzPoOtevreni(ZAK);
+    /* VZ-E1 (revize E0, N2): import zahodil vadná data dalších zákazníků. */
+    const vzVar = (typeof vzPoNacteniVarovani === 'function') ? vzPoNacteniVarovani(ZAK) : '';
+    if (vzVar) onlineZprava(vzVar, 'varovani');
     if (typeof vsZakazkaMaData === 'function' && vsZakazkaMaData(ZAK)) {
       const zak = ZAK;
       onlineNactiFunkce().then(() => {

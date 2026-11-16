@@ -1136,7 +1136,16 @@ function importZakazka(obj) {
      * (`vzZahozeno`, jako fotoZahozena; server podle něj odmítne 400).
      * Guard kvůli Node testům bez vice_zakazniku.js. */
     if (typeof vzOcisti === 'function') {
+      /* VZ-E1 (dorevize E0, D2): kdo ukazoval na neexistující variantu,
+       * toho vzOcisti přesměruje na řídící — názvy se poznamenají (nevýčtově,
+       * `vzPresmerovano`), aby to obrazovka po načtení mohla říct. */
+      const ids = new Set((Array.isArray(obj.varianty) ? obj.varianty : []).filter(v => v && typeof v === 'object').map(v => String(v.id)));
+      const presm = (Array.isArray(obj.dalsiZakaznici) ? obj.dalsiZakaznici : [])
+        .filter(d => d && typeof d === 'object' && !ids.has(String(d.varianta == null ? '' : d.varianta)))
+        .map(d => String((d.hlavicka && d.hlavicka.objednatel) || '').trim() || '(bez názvu)');
       const vady = vzOcisti(obj);
+      if (presm.length && !vady.length && Array.isArray(obj.dalsiZakaznici))
+        Object.defineProperty(obj, 'vzPresmerovano', { value: presm, enumerable: false, configurable: true, writable: true });
       if (vady.length) Object.defineProperty(obj, 'vzZahozeno', { value: vady, enumerable: false, configurable: true, writable: true });
     }
     zajistiProjHlavicku(obj);   // migrace: hlavička PROJ se osamostatnila – převezme dosavadní údaje z OCK

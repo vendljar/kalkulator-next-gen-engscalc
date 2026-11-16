@@ -487,6 +487,10 @@ function vzTvarText(p) {
 const VZ_VYPNUTO = 'Zakázka má víc zákazníků — funkce je v Nastavení vypnutá. Zákazníky (přidání, úpravy, odstranění, '
   + 'řídící zákazník) teď nejde měnit; zapnout je může administrátor (Nastavení → Zkušební funkce).';
 
+/* D4 (dorevize Fable): s VYP smazaná varianta, na kterou ukazuje další zákazník. */
+const VZ_VYPNUTO_VARIANTA = 'Variantu nejde smazat: ukazuje na ni další zákazník a funkce Víc zákazníků je vypnutá '
+  + '(zapnout ji může administrátor v Nastavení → Zkušební funkce).';
+
 /* ============================================================
  * E2 (#601): ČÍSLA S PÍSMENEM, TISK Z POHLEDU ZÁKAZNÍKA, ZÁBRANY TISKU
  * Návrh § 3, § 4, § 9 (R1, R2, R5). Jediný vstup dokumentů je
@@ -691,7 +695,7 @@ function vzTiskPruhText(zak, id, varianta) {
 }
 
 if (typeof module !== 'undefined' && module.exports)
-  module.exports = { VZ_DALSI_MAX, VZ_TEXT_MAX, VZ_RIDICI_ID, VZ_ID_TVAR, VZ_PISMENO_TVAR, VZ_PISMENA, VZ_HLAVICKA_POLE,
+  module.exports = { VZ_DALSI_MAX, VZ_VYPNUTO_VARIANTA, VZ_TEXT_MAX, VZ_RIDICI_ID, VZ_ID_TVAR, VZ_PISMENO_TVAR, VZ_PISMENA, VZ_HLAVICKA_POLE,
     VZ_ZASTUPCI_POLE, VZ_RIDICI_KLICE, VZ_DALSI_KLICE, VZ_PLATNA_KLICE, VZ_OTISK_FIRMA, VZ_POHLED_BEZ, VZ_VYPNUTO,
     vzDalsi, vzRezim, vzMaData, vzRidiciId, vzRidiciVariantaId, vzZastupciPrazdni, vzZakaznici, vzZakaznik,
     vzRazitkaZakazniku, vzPismenoDalsi, vzIdDalsi, vzPridej, vzVariantaJenJeho, vzOdstran, vzVymenRidiciho,

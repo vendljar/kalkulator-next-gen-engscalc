@@ -269,6 +269,21 @@ function hodnotaBezpecna(v) {
  * kdyby se okolní kód změnil, důvod musí platit dál, jinak řádek ze seznamu
  * patří pryč. Nový záznam sem přidávejte jen po skutečné kontrole zdroje. */
 const PROVERENO = {
+  /* VZ-E1 #600 (16. 11. 2026): formulář „Nový zákazník na zakázce" skládá
+   * řádky lambdou pole(klic, popis, navic) s literály kódu (klíč, popisek
+   * i atributy escapuje uvnitř přes esc/escJs) a řádek Zákazník je hotové
+   * HTML z téže funkce (hodnoty přes esc/escJs). */
+  /* VZ-E1 #600: tlačítko „Přenést do formuláře nového zákazníka" — hotové
+   * HTML z vzZakaznikKartaTlacitka (klíč karty přes escJs), bez formuláře ''. */
+  'zakaznici_ui.js': {
+    "typeof vzZakaznikKartaTlacitka === 'function' ? vzZakaznikKartaTlacitka(klic) : ''": 'hotové HTML z vzZakaznikKartaTlacitka() — klíč karty uvnitř přes escJs()',
+  },
+  'vice_zakazniku_ui.js': {
+    'zakaznik': 'hotové HTML řádku Zákazník z vzFormularBlok() — hodnota přes esc(), argumenty obsluhy jsou literál VZ_FORM_KDE',
+    "pole('kontakt', 'Kontaktní osoba')": 'hotové HTML z pole() — literály kódu, hodnota a klíč uvnitř přes esc()/escJs()',
+    "pole('ico', 'IČO zákazníka', VZ_ICO_ATR)": 'hotové HTML z pole() — literály kódu (VZ_ICO_ATR je konstanta atributů), hodnota uvnitř přes esc()',
+    "pole('dic', 'DIČ zákazníka')": 'hotové HTML z pole() — literály kódu, hodnota uvnitř přes esc()/escJs()',
+  },
   /* #447 C2 (20. 10. 2026): sel() v ctrlUiKartaSkupiny skládá <select>
    * z literálů kódu (typ, chování, oblast) a hodnoty i popisky escapuje
    * uvnitř (esc / escJs) — interpolace je hotové HTML. */
@@ -286,7 +301,8 @@ const PROVERENO = {
     'id': 'id karty / sekce / kotvy (card(), sekce(), detailKotvy) – literály z kódu, ne data',
     /* Z1 (22. 10. 2026): zamekZakAttr() vrací hotové atributy (disabled,
      * class, title přes esc()) — text důvodu je literál ze zamek.js. */
-    "typeof zamekZakAttr === 'function' ? zamekZakAttr('ZAK.objednatel') : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc()',
+    /* VZ-E1 #600: cesta podle otevřeného zákazníka (vzCesta) — zamekZakAttr vrací hotové atributy. */
+    "typeof zamekZakAttr === 'function' ? zamekZakAttr(vzC('ZAK.objednatel')) : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc(); cesta z vzCesta() se do HTML nevkládá',
     /* K40-X6 (11. 11. 2026): `path` a `cesta` jsou od té doby v RIZIKO —
      * tyto dvě funkce vracejí hotové atributy, cestu do nich nevkládají. */
     "typeof zamekZakAttr === 'function' ? zamekZakAttr(path) : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc(), cesta se do HTML nevkládá',

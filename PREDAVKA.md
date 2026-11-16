@@ -1,6 +1,6 @@
 # Předávka — 16. 11. 2026: VZ-E2 #601 (víc zákazníků — čísla s písmenem, tisk z pohledu zákazníka, test úniku), větev `claude/vz-e2`
 
-Nad `claude/vz-e0` `e29f2b1`. **v16.11.2** (koordinace přečísluje). Do `test-draft`, `test`, `main` ani integrace nic; weby,
+Nad `claude/vz-e0` `e29f2b1`. **v16.11.4** (koordinace přečísluje). Do `test-draft`, `test`, `main` ani integrace nic; weby,
 Disk, Pipedrive nic. **Před sloučením revize poradce (únik údajů).** Roadmapa **#601 hotovo**, meze **B223, B224**.
 
 | úkol | stav | kde |
@@ -40,6 +40,79 @@ Disk, Pipedrive nic. **Před sloučením revize poradce (únik údajů).** Roadm
   u původního řídícího (bez písmene) čte snímek. Rozhodne E4 (výměna řídícího).
 - Krycí list tiskne interní poznámky (společné) — upozornění v UI je E6/E1.
 - Webhook nepřijme číslo varianty s písmenem (`…9940.2-B`), stejně jako dnes `…9940.2`.
+# Předávka — 16. 11. 2026: VZ-E1 #600 (víc zákazníků — obrazovka), větev `claude/vz-e1`
+
+Nad `claude/vz-e0` `e29f2b1`, sloučeno s integrací `claude/integrace-vz` `76ae631` (E0 po revizi). **v16.11.2**
+(koordinace přečísluje). Do `test-draft`, `test`, `main` ani integrace nic; weby, Disk, Pipedrive nic. Mez **B221**.
+
+| úkol | stav | kde |
+|---|---|---|
+| tlačítko „Přidat zákazníka“ za popiskem Zákazník (ZAP, ne jen ke čtení / náhled / prodaná) | ✅ | `src/ui/vice_zakazniku_ui.js`, `src/ui/common.js` (zakaznikRow), CSS `app_template.html` |
+| formulář „Nový zákazník na zakázce“ (našeptávač, databáze, ARES, stejná / vlastní varianta) | ✅ | `vzFormularBlok`, `vzFormPridej` |
+| ARES na cíl (`aresCil`, hlavička beze změny), databáze na cíl (`zakazniciCil`) | ✅ | `src/ui/ares_ui.js`, `src/ui/zakaznici_ui.js` |
+| přepínač zákazníků, otevřený zákazník (`vzCesta`), karta Zákazníci zakázky (OCK pod hlavičkou, Přehled) | ✅ | `vzPrepinacRadek`, `vzKarta` |
+| Odstranit s potvrzením na stránce, návrat do standardního pohledu | ✅ | `vzOdstranit`, `vzOdstranitPotvrd` |
+| VYP + data: jen ke čtení s větou „funkce je vypnutá“ (R21) | ✅ | |
+| sloupec Zákazník v seznamu variant odvozený (2+) | ✅ | `src/ui/seznam_ui.js` |
+| revize E0 N2: zábrana smazání varianty se zákazníkem, varování `vzZahozeno` | ✅ | `src/ui/zakazka_ui.js` (`varSmaz`), načtení ze souboru / složky / online |
+| dorevize E0 D2: po načtení `vzSrovnej` + „Zákazník X přešel na řídící variantu — mění se mu cena.“ | ✅ | `vzPoNacteniVarovani`; `src/zakazka.js` nevýčtové `vzPresmerovano` |
+| testy | ✅ | `src/test_vz_ui.js` 107/0, `src/test_vz_n2.js` 20/0, `overit_vz_zadani.mjs` 76/0 (proti bázi e29f2b1 17/10), `overit_xss.mjs` 400/0 (případ VZ-E1), `overit_lista.mjs` 255/0 |
+| mutace „[VZ E1]“ | ✅ 20/20 | `mutace_jadro.mjs` (JADRA + `ui/vice_zakazniku_ui.js`, `ui/zakaznici_ui.js`) |
+| testovací kolo `--bez-mutaci` | ✅ **VŠE ZELENÉ** | sady 395/0/59 přeskočeno (prohlížečové bez Playwrightu v kole, firemní podklady), hodiny +400 dní 363/0/1, statické 5/5 |
+
+## Změny proti návrhu / promptu (bezpečnější volba)
+
+- Tlačítko stojí ZA popiskem (sourozenec `<label>`), ne v něm — klik na popisek ho nespustí a po odebrání je řádek znak po znaku jako báze. Šířka přes CSS `:has()`.
+- Tlačítko se u prodané / jen ke čtení / v náhledu nekreslí vůbec (ne zhasnuté).
+- „Odeslaná nabídka“ v E1 = razítko tisku s id zákazníka NEBO zamčená jeho vlastní varianta → Odstranit zhasnuté.
+- Vlastní varianta pro řídícího zákazníka zhasnutá (řídící variantu mění „nastavit jako řídící“).
+- Přepínač a tlačítko i v hlavičce PROJ (hlavička je společná); formulář se kreslí jen v té, kde se otevřel.
+- Nový zákazník se po přidání neotevře (hlavička dál ukazuje řídícího).
+- D2: drobný zásah do E0 souboru `src/zakazka.js` (nevýčtové `vzPresmerovano` při importu) — jinak by import přesměrování spolkl.
+
+## Otevřené body
+
+- „Kdo smí ukládat“ = každý přihlášený — matice práv roli jen ke čtení nemá (B221).
+- Údaje dalšího zákazníka se nezmrazují (E3/E4); práva odstranění hlídá jen prohlížeč (B221 → E3).
+- Mutační nástroj (`obnovVse`) na konci přepíše všechny soubory JADRA stavem ze začátku — během mutací nesahat do `src/`.
+- Protokol zakázky nese názvy přidaných / odstraněných zákazníků — test úniku E2 musí ověřit, že ho dokumenty netisknou.
+# Předávka — 16. 11. 2026: VZ-E5 #604 (poznámka dealu „Další zákazníci na zakázce“), větev `claude/vz-e5`
+
+Nad `claude/vz-e0` `e29f2b1` (v16.11.1), sloučena revize E0 z `claude/integrace-vz` `76ae631`. **v16.11.2**. Do `test-draft`, `test`, `main` ani integrace nic; Pipedrive jen
+simulátor. Mez **B225**, roadmapa **#604 hotovo**. Souběžně E1 (B221–B222) a E2 (B223–B224).
+
+| úkol | stav | kde |
+|---|---|---|
+| modul zobecněn na „druh poznámky“, šachty beze změny (#588 49/0) | ✅ | `netlify/lib/pd_poznamka.mjs` (`PD_POZNAMKA_DRUH_SACHTY`, `PD_POZNAMKA_DRUH_ZAKAZNICI`, `pdPoznamkaDruhUlozeni`, `pdPoznamkyUlozeni`) |
+| text poznámky zákazníků (jeden kód pro server i suchý běh) | ✅ | `src/vz_poznamka.js` (CORE za `vice_zakazniku.js`, `jadro_moduly.cjs`, `zlata_vs.js`) |
+| uložení zakázky: obě poznámky, společný rozpočet 6 s, jedno třetí čtení, odpověď `pdPoznamkaZakaznici` | ✅ | `netlify/functions/zakazky.mjs` |
+| suchý běh: řádek „Poznámka dealu — další zákazníci“ | ✅ | `src/pd_nanecisto.js` (`pdnZakaznici`), `src/ui/pd_nanecisto_ui.js`, `functions/pd_nanecisto.mjs`, `lib/pd_prevod.mjs` |
+| testy | ✅ | `netlify/test_vz_poznamka.mjs` 46/0, `netlify/test_vz_nanecisto.mjs` 32/0 |
+| mutace „[VZ E5]“ | ✅ | 25/25 (`netlify/mutace.mjs`); [VSD] 20/20 |
+| B225, CHANGELOG, roadmapa | ✅ | |
+| kolo `--bez-mutaci` (po sloučení revize E0 `76ae631`) | ✅ **VŠE ZELENÉ** | sady 394/0/59 přeskočeno (prohlížečové bez Playwrightu, firemní podklady), hodiny +400 dní 363/0/1, statické zelené (26 min) |
+
+## Změny proti promptu / návrhu (bezpečnější volba)
+
+- **9 zadání mutací [VSD]** (`hledej`/`nahrad`) přepsáno na zobecněný kód — stejný záměr, název a sada; doslovné
+  řetězce starého kódu po zobecnění neexistují. Testy #588 beze změny.
+- **Platná nabídka před E3:** `d.platna` (píše jen server), jinak poslední tisk se `zakaznik.id` v zámcích; cena jen ze
+  zmrazeného výsledku zámku (`zamekVysledek`, vedoucí strana), starý zámek bez výsledku = bez ceny. **Po sloučení E3
+  nahradit `vzpPlatna` za `vzPlatna`** (src/vz_poznamka.js).
+- **Číslo nabídky zákazníka** `vzpCisloNabidky` = `variantaCislo` + „-písmeno“ — po sloučení E2 převzít její funkci.
+- **Měna** vždy Kč (bez `platna.mena`) — EUR nabídka se ukáže korunami ze zmrazeného výsledku (zapsáno v B225).
+- Poznámka se nepřepíše poznámkou jiného druhu ani podle uloženého id (`jinyDruh`) — nad rámec promptu, kvůli
+  testu „šachty ↔ zákazníci“.
+- Prošlý společný rozpočet = `chyba` bez volání a **bez čerpání stropu**.
+- „Připravuje se nová“ se připojí za odeslanou nabídku středníkem („…bez DPH; připravuje se nová …“).
+- Suchý běh: logika ve funkci `pdnZakaznici`, řádek se proto ukáže i v náhledu „Prodáno“ (týž `pdnPodklad`).
+  Víceřádková hodnota v tabulce náhledu `white-space:pre-line`; `pdnUiOtisk` zahrnuje `zakaznici` jen když je.
+
+## Otevřené body
+
+- Po sloučení E3: `vzPlatna` místo `vzpPlatna`; po E2: číslo nabídky zákazníka z E2; E4: `prodano.zakaznik`
+  (bez něj prodej patří řídícímu — `vzpNeprodano`).
+- Mutace jen [VZ E5] a [VSD] (celé v E6).
 
 # Předávka — 16. 11. 2026: VZ-E0 #599 (víc zákazníků — vypínač, jádro, import, server), větev `claude/vz-e0`
 
@@ -106,7 +179,12 @@ vyžádání — E1 si ho musí načíst, např. při otevření zakázky s `vzM
   (`zamek.tisky[].zakaznik`, E3) v pohledu zůstávají — E2/E3 ověří testem úniku, že se netisknou.
 - **N5** `vzVymenRidiciho` odmítne předem řídícího bez názvu nebo s polem nad 500 znaků (srozumitelná chyba,
   zakázka beze změny).
-- **N9** server vynutí první `vzRidici` jako `{ id: 'z1', pismeno: '' }` (400).
+- **N9 + D1** (dorevize): když uložená verze data VZ nemá, musí mezi zákazníky (`vzRidici` + `dalsiZakaznici`)
+  být právě jeden `{ id: 'z1', pismeno: '' }` (nemusí být řídící — přidat a v témž uložení vyměnit řídícího
+  projde), jinak 400.
+- Po dorevizi (e64b2c7): server 59/0, mutace jádro 36/36, server 14/14; kolo `--bez-mutaci` **VŠE ZELENÉ** (392/0/59, hodiny 361/0/1, statické 5/5).
+- **D4** s VYP a smazanou variantou, na kterou ukazuje další zákazník, hláška `VZ_VYPNUTO_VARIANTA`
+  („Variantu nejde smazat: ukazuje na ni další zákazník a funkce Víc zákazníků je vypnutá…“).
 - Mutace: dřív hlášeno 28 + 10 a v souborech „29 + 11“ — rozdíl je řádek úvodního komentáře bloku `… [VZ E0] */`,
   který `grep "VZ E0"` započítá; mutací bylo 28 + 10. Teď jádro 36, server 11.
 - Po opravách (d3fc96a): mutace [VZ E0] jádro **36/36**, server **11/11**; kolo `--bez-mutaci` **VŠE ZELENÉ** — sady 392/0/59,

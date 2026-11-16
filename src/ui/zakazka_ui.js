@@ -41,8 +41,47 @@ function varRidici(id) {
   if (proc) { if (typeof hlaska === 'function') hlaska(proc); render(); return; }
   nastavRidici(ZAK, id); render();
 }
+/* VZ-E1 #600 (revize E0, N2): variantu, na kterou ukazuje některý zákazník
+ * zakázky, nejde smazat — zákazník by zůstal bez nabídky. Vrací hlášku, nebo ''.
+ * Platí i s vypnutou funkcí (data víc zákazníků se nemažou ani nepřepisují). */
+function vzSmazaniVariantyDuvod(zak, id) {
+  if (!zak || typeof vzRezim !== 'function' || !vzRezim(zak)) return '';
+  const kdo = vzZakaznici(zak).filter(z => z.varianta === String(id));
+  if (!kdo.length) return '';
+  const jm = kdo.map(z => (z.hlavicka.objednatel || '').trim() || '(bez názvu)').join(', ');
+  return 'Na variantu ukazuje zákazník ' + jm + ' — nejdřív mu přiřaďte jinou variantu nebo ho odstraňte.';
+}
+/* VZ-E1 #600 (revize E0, N2): import zahodil vadná data víc zákazníků
+ * (`vzZahozeno`, nevýčtové jako fotoZahozena) — říct to. '' = nic. */
+function vzZahozenoVarovani(vady) {
+  if (!Array.isArray(vady) || !vady.length) return '';
+  return 'Údaje dalších zákazníků v souboru nebyly platné (' + vady.length + ' '
+    + (vady.length === 1 ? 'vada' : vady.length < 5 ? 'vady' : 'vad') + ') a byly odebrány — zakázka má jen zákazníka z hlavičky. '
+    + 'Další zákazníky přidejte znovu.';
+}
+/* VZ-E1 (dorevize E0, D2): po načtení srovnat ukazatele zákazníků
+ * (vzSrovnej) a říct, kdo přešel na řídící variantu — import je přesměruje
+ * sám (vzPresmerovano), vzSrovnej chytí zbytek. Vrací text upozornění, nebo ''.
+ * Mění data (ukazatel) — volá se jen po načtení zakázky. */
+function vzPoNacteniVarovani(zak) {
+  if (!zak || typeof zak !== 'object') return '';
+  const jm = Array.isArray(zak.vzPresmerovano) ? zak.vzPresmerovano.slice() : [];
+  if (typeof vzSrovnej === 'function' && typeof vzRezim === 'function' && vzRezim(zak)) {
+    const pred = (zak.dalsiZakaznici || []).map(d => d && d.varianta);
+    const opravy = vzSrovnej(zak);
+    opravy.forEach(o => {
+      const m = /^dalsiZakaznici\[(\d+)\]\.varianta$/.exec(o);
+      const d = m && zak.dalsiZakaznici[+m[1]];
+      if (d && pred[+m[1]] !== d.varianta) jm.push(String((d.hlavicka && d.hlavicka.objednatel) || '').trim() || '(bez názvu)');
+    });
+  }
+  const t = jm.map(n => 'Zákazník ' + n + ' přešel na řídící variantu — mění se mu cena.');
+  return [vzZahozenoVarovani(zak.vzZahozeno)].concat(t).filter(Boolean).join(' ');
+}
 async function varSmaz(id) {
   if (ZAK.varianty.length <= 1) { await hlaska('Poslední variantu nelze smazat.'); return; }
+  const vzDuvod = vzSmazaniVariantyDuvod(ZAK, id);
+  if (vzDuvod) { await hlaska(vzDuvod); return; }
   const v = ZAK.varianty.find(x => x.id === id);
   // #34: odeslanou nabídku běžný uživatel nemaže – je to doklad o tom, co
   // zákazník dostal. Správce ano (má i odemknutí), ale s výslovným varováním.
@@ -139,6 +178,8 @@ function renderZakazka() {
      *     (obě verze)                   → krycí listy OCK / PROJ a karty nabídek
      *   – Online databáze, Zakázky ve složce → Nastavení → Databáze */
     (typeof prehledHledaniKarta === 'function' ? prehledHledaniKarta() : '') +
+    /* VZ-E1 #600: karta Zákazníci zakázky (jen u 2+ zákazníků). */
+    (typeof vzKarta === 'function' ? vzKarta('zakazka') : '') +
     card('Souhrn řídící varianty — ' + esc(rid.nazev),
       `<div class="grand">
         <div class="kpi"><div class="l">OCK bez DPH</div><div class="v">${fmt0(ridOck)}</div></div>

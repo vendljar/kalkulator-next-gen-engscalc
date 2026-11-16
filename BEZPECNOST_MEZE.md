@@ -1856,7 +1856,7 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   Funkci proto nezapínat mimo testovací web, dokud E3 a E4 nejsou sloučené.
   Po revizi Fable (16. 11. 2026): ukazatel zákazníka na smazanou variantu
   import přesměruje na řídící variantu (zákazník se nezahodí, N2); první
-  `vzRidici` server vynutí jako { z1, '' } (N9); pohled zákazníka nese jen
+  `vzRidici` musí mít mezi zákazníky právě jeden { z1, '' } (N9, D1); pohled zákazníka nese jen
   varianty, které zákazník smí vidět (N3). S VYP se tím odmítne (400) i
   smazání varianty, na kterou ukazuje další zákazník (změní se ukazatel) —
   zábranu v UI přinese E1.
@@ -1868,7 +1868,57 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   zapne); N8 — `priponaMax` se po odstranění zákazníka s vlastní variantou
   nevrací (číslo přípony, které jednou padlo, se nepoužije znovu — #17).
 
-### VZ-E2 #601 (v16.11.2, 16. 11. 2026) — tisk z pohledu zákazníka
+- **B225 — E5 (#604): uložení zakázky píše poznámku „Další zákazníci na zakázce“
+  do Pipedrive.** Se ZAPNUTÝM vypínačem `viceZakazniku`, s navázaným dealem
+  a s víc zákazníky založí nebo upraví uložení zakázky (`POST /api/zakazky`,
+  ve výhradním úseku, týmž mechanismem jako B217 — `lib/pd_poznamka.mjs`, druh
+  `zakaznici`) JEDNU poznámku u dealu. **Co nese:** názvy DALŠÍCH zákazníků
+  (řídící ne — deal vede on), číslo a den jejich poslední ODESLANÉ nabídky
+  a její cenu bez DPH ze zmrazeného výsledku zámku (vedoucí strana), u
+  rozpracované nové varianty „připravuje se nová <číslo>“, po prodeji
+  „— neprodáno“. Kontakty, osoby, adresy, IČO, DIČ ani slevy nenese. **Kdo ji
+  vidí:** každý, kdo v Pipedrive vidí deal — tedy i ceny nabídek ostatních
+  zákazníků (obchodní rozhodnutí J. V. 16. 11. 2026, návrh § 7.2). Id drží
+  pole `pdPoznamkaZakaznici` { deal, id, otisk, kdy } psané jen serverem;
+  rozpoznání úvodem „Další zákazníci na zakázce:“ a značkou „— nabídka
+  <číslo>“ (bez značek HTML, bílé znaky sjednocené); poznámka šachet se jí
+  nikdy nepřepíše a naopak (i když uložené id ukazuje na poznámku druhého
+  druhu). Právo `crm.pipedrive` (B80, bez práva `bez-prava`), strop
+  `PD_POZNAMKA_STROP` = 20 pokusů/h na deal s VLASTNÍM počítadlem
+  `strop:poznamka-zakaznici:deal:<id>`, jedno volání 2,5 s; obě poznámky
+  (šachty první, zákazníci druzí) mají SPOLEČNÝ rozpočet `PD_POZNAMKA_CELKEM_MS`
+  = 6 s a jedno třetí čtení zakázky (N1) — co se nestihne, je `chyba`
+  s varováním a zkusí se při dalším uložení. Text escapovaný, řádky `<br>`,
+  řídicí znaky pryč, seznam nejvýš 2 000 znaků („… a další N“) + značka.
+  Po odstranění posledního dalšího zákazníka se poznámka nemaže, upraví se na
+  „Další zákazníci na zakázce: žádní — nabídka <číslo>“; zakázka, která
+  poznámku nemá, žádnou nedostane.
+  *Co to nedělá:* zbytkové meze B217 platí i tady (dvojí založení při souběhu
+  instancí, prohledává se prvních 100 poznámek dealu, změna dealu nechá starou
+  poznámku u starého dealu, s vypnutým vypínačem se poznámka neupravuje ani
+  nemaže, poznámka se nikdy nemaže). „Odeslaná nabídka“ se do sloučení E3
+  (#602) bere z uložené `platna` (píše jen server) a jinak z razítek tisků
+  `zamek.tisky[].zakaznik` v uložené verzi (drží je server, `uloZamekRazitkaDrz`);
+  dokud E3 razítka „komu“ neplní, je každá nabídka dalšího zákazníka
+  „zatím neodeslána“ a cena se nezapisuje. Měna je vždy Kč (bez `platna.mena`
+  ze serveru) — cizojazyčná nabídka v EUR se v poznámce ukáže korunami ze
+  zmrazeného výsledku. Organizaci dealu (E5b) poznámka nemění.
+- **B221 — E1 (#600, 16. 11. 2026): obrazovka víc zákazníků hlídá práva jen
+  v prohlížeči.** Tlačítko „Přidat zákazníka“, formulář, přepínač a karta
+  „Zákazníci zakázky“ (`src/ui/vice_zakazniku_ui.js`) se ukážou jen se
+  zapnutým `viceZakazniku`; zápis odmítnou v režimu jen ke čtení, v náhledu
+  za jiného uživatele a u prodané zakázky. Řídícího zákazníka a zákazníka,
+  kterému se prodalo nebo kterému odešla nabídka (razítko tisku s jeho id
+  nebo zamčená jeho vlastní varianta), E1 odstranit nedovolí — **ale jen
+  v prohlížeči**: server dál hlídá jen tvar a vypínač (B220), práva přinesou
+  E3 (#602) a E4 (#603). „Kdo smí ukládat“ = každý přihlášený (matice práv
+  roli „jen čtení“ nemá). Údaje dalšího zákazníka se v E1 nezmrazují ani po
+  tisku či SoD (zmrazení je jen u řídícího = hlavičky, jako dnes). Odpověď
+  ARES ve formuláři nového zákazníka je nedůvěryhodný vstup: do stránky jde
+  jen přes `esc`/`escJs` (`overit_xss.mjs`), převezme se až po potvrzení
+  a do protokolu zakázky se píše jen název firmy (žádné kontakty, IČO ani
+  osoby).
+### VZ-E2 #601 (v16.11.4, 16. 11. 2026) — tisk z pohledu zákazníka
 
 - **B223 — E2: únik mezi zákazníky hlídá vstup tisku v prohlížeči, ne server.**
   Každý dokument (Word CN, CN PROJ, SoD, plná moc, krycí listy, náhledy,
