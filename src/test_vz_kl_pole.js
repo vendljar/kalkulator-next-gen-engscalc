@@ -153,16 +153,63 @@ beh('');
   const p = vzTiskPohled(z, '');
   test('U3: z pohledu řídícího projdou', !hodi(() => nabidkaData(p, v1, JEKLY, 'cz')) && !hodi(() => kryciData(p, v1, JEKLY, 'bo')) && !hodi(() => nabidkaProjData(p, v1, 'cz')));
 }
+/* VZ-E3 (#602, doplněk U1): ruční hodnoty polí zákazníka PO ZÁKAZNÍCÍCH. */
+{
+  const z = zakazka();
+  const v1 = z.varianty.find(v => String(v.id) === vzRidiciVariantaId(z));
+  const kl = v1.data.kryci = v1.data.kryci || { hodnoty: {} };
+  const tel = rucniOck.find(p => p.id === 'kontaktZakaznikTel');
+  vzKlZapisRucni(kl, z, 'z1', tel.id, 'KANATELX');
+  vzKlZapisRucni(kl, z, 'z2', tel.id, 'KANBTELX');
+  test('U1: A v hodnoty (vlastník z1), B v hodnotyZakaznika.z2', kl.hodnoty[tel.id] === 'KANATELX' && kl.vzVlastnik[tel.id] === 'z1'
+    && kl.hodnotyZakaznika.z2[tel.id] === 'KANBTELX', kl);
+  const tA = vystupy(z, 'z1', v1), tB = vystupy(z, 'z2', v1);
+  test('U1: A tiskne svůj telefon, ne B', tA.indexOf('KANATELX') >= 0 && tA.indexOf('KANBTELX') < 0);
+  test('U1: B tiskne svůj telefon, ne A (sdílená varianta)', tB.indexOf('KANBTELX') >= 0 && tB.indexOf('KANATELX') < 0);
+  vzKlZapisRucni(kl, z, 'z2', tel.id, 'KANBTEL2X');
+  test('U1: přepis B zůstane u B', kl.hodnotyZakaznika.z2[tel.id] === 'KANBTEL2X' && kl.hodnoty[tel.id] === 'KANATELX');
+  vzKlZapisRucni(kl, z, 'z2', tel.id, '');
+  test('U1: smazání B uklidí klíč hodnotyZakaznika', !('hodnotyZakaznika' in kl) && kl.hodnoty[tel.id] === 'KANATELX', kl);
+  /* B píše do pole, které A nemá → hodnoty s vlastníkem z2; A ho pak nevidí. */
+  const em = rucniOck.find(p => p.id === 'kontaktZakaznikEmail');
+  vzKlZapisRucni(kl, z, 'z2', em.id, 'KANBEMAILX');
+  test('U1: volné pole vezme B (vlastník z2), A ho nevidí', kl.vzVlastnik[em.id] === 'z2' && vystupy(z, 'z1', v1).indexOf('KANBEMAILX') < 0
+    && vystupy(z, 'z2', v1).indexOf('KANBEMAILX') >= 0);
+  vzKlZapisRucni(kl, z, 'z1', em.id, 'KANAEMAILX');
+  test('U1: A pak píše do téhož pole → hodnotyZakaznika.z1, B má dál svůj', kl.hodnotyZakaznika.z1[em.id] === 'KANAEMAILX'
+    && vystupy(z, 'z2', v1).indexOf('KANBEMAILX') >= 0 && vystupy(z, 'z1', v1).indexOf('KANAEMAILX') >= 0);
+  /* Zámek: volné pole zákazníka (telefon) se smí doplnit i po odeslání — porovnání ho přeskočí. */
+  v1.zamek = { zamceno: true, tisky: [] };
+  const pred = zamekDataPorovnani(v1.data, v1);
+  vzKlZapisRucni(kl, z, 'z2', tel.id, 'KANBTEL3X');
+  test('U1: po odeslání doplněný telefon B nemění porovnání zámku', zamekDataPorovnani(v1.data, v1) === pred);
+  delete v1.zamek;
+  /* Tvar a odstranění. */
+  test('U1: tvar hodnotyZakaznika projde', !vzTvarProblemy(z).some(x => /hodnotyZakaznika/.test(x.kde)));
+  kl.hodnotyZakaznika.zz = 'x';
+  test('U1: vadné hodnotyZakaznika → vada tvaru', vzTvarProblemy(z).some(x => /hodnotyZakaznika/.test(x.kde)));
+  delete kl.hodnotyZakaznika.zz;
+  vzOdstran(z, 'z2', {});
+  test('U1: odstranění B smaže jeho hodnoty z nezamčené varianty', !(kl.hodnotyZakaznika && kl.hodnotyZakaznika.z2));
+}
+{
+  const z = novaZakazka();
+  const kl = z.varianty[0].data.kryci = { hodnoty: {} };
+  vzKlZapisRucni(kl, z, '', 'kontaktZakaznikTel', '123');
+  test('U1: jeden zákazník — zápis jako dřív, žádný klíč navíc', JSON.stringify(kl) === JSON.stringify({ hodnoty: { kontaktZakaznikTel: '123' } }), kl);
+}
 /* POJISTKA: stav před revizí (vlastník se nekontroluje) — detektor musí únik najít. */
 {
-  const puv = global.vzKlVlastni;
+  /* E3 (U1): čtení jde přes vzKlRucni — podvrhnout obě kontroly vlastníka. */
+  const puv = global.vzKlVlastni, puvR = global.vzKlRucni;
   global.vzKlVlastni = () => true;
+  global.vzKlRucni = (kl, id, pole) => { const h = kl && kl.hodnoty ? kl.hodnoty[pole] : undefined; return h === '' ? undefined : h; };
   const ok0 = ok, fail0 = fail;
   const z = zakazka();
   const v1 = z.varianty.find(v => String(v.id) === vzRidiciVariantaId(z));
   rucniOck.forEach(p => zapis(z, v1, p, kan(p, 'A'), false));
   const tB = vystupy(z, 'z2', v1);
-  global.vzKlVlastni = puv;
+  global.vzKlVlastni = puv; global.vzKlRucni = puvR;
   ok = ok0; fail = fail0;
   test('pojistka: bez kontroly vlastníka se ruční údaje A u B objeví (detektor zabírá)', nalez(tB, 'A').length > 0, nalez(tB, 'A').length);
 }

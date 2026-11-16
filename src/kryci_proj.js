@@ -602,9 +602,8 @@ function kryciProjHodnota(pole, kl, c) {
   /* VZ-E2 #601 (únik R1, revize U1/U2): pole zákazníka v pohledu — viz kryciHodnota (kryci.js). */
   if (pole.zakaznikPole && c && c.zak && c.zak.vzPohledZakaznika && typeof vzKlVlastni === 'function') {
     if (!pole.bind && !pole.dphBind) {
-      const h = (kl && kl.hodnoty) || {};
-      const vl = kl && kl.vzVlastnik && typeof kl.vzVlastnik === 'object' ? kl.vzVlastnik[pole.id] : '';
-      if (h[pole.id] !== undefined && h[pole.id] !== '' && vzKlVlastni(c.zak, vl)) return h[pole.id];
+      const r = typeof vzKlRucni === 'function' ? vzKlRucni(kl, c.zak.vzPohledZakaznika.id, pole.id) : undefined;   // VZ-E3 (U1)
+      if (r !== undefined) return r;
       if (c.zmrazeno && c.zmrazeno[pole.id] !== undefined && vzKlVlastni(c.zak, kl && kl.vzZmrazeno)) return c.zmrazeno[pole.id];
     }
     if (pole.prefill) { try { const v = pole.prefill(c); return v == null ? '' : v; } catch (e) { return ''; } }

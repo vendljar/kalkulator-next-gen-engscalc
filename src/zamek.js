@@ -602,9 +602,25 @@ function zamekDataPorovnani(data, v) {
   if (!data || typeof data !== 'object' || !variantaUzamcena(v)) return zamekJsonKanon(data);
   const kopie = JSON.parse(JSON.stringify(data));
   ['kryci', 'kryciProj'].forEach(list => {
-    const h = kopie[list] && kopie[list].hodnoty;
-    if (!h || typeof h !== 'object') return;
-    Object.keys(h).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete h[id]; });
+    const kl = kopie[list];
+    const h = kl && kl.hodnoty;
+    if (h && typeof h === 'object') Object.keys(h).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete h[id]; });
+    /* VZ-E3 (#602, U1): ruční hodnoty dalších zákazníků a značka vlastníka
+     * pole se řídí týmž pravidlem — volné pole se smí doplnit i po odeslání.
+     * Klíče vznikají jen u víc zákazníků (jinak se nic nemění). */
+    const obj = x => !!x && typeof x === 'object' && !Array.isArray(x);
+    if (obj(kl) && obj(kl.hodnotyZakaznika)) {
+      Object.keys(kl.hodnotyZakaznika).forEach(z => {
+        const m = kl.hodnotyZakaznika[z];
+        if (obj(m)) Object.keys(m).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete m[id]; });
+        if (obj(m) && !Object.keys(m).length) delete kl.hodnotyZakaznika[z];
+      });
+      if (!Object.keys(kl.hodnotyZakaznika).length) delete kl.hodnotyZakaznika;
+    }
+    if (obj(kl) && obj(kl.vzVlastnik)) {
+      Object.keys(kl.vzVlastnik).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete kl.vzVlastnik[id]; });
+      if (!Object.keys(kl.vzVlastnik).length) delete kl.vzVlastnik;
+    }
   });
   if (kopie.kryciProj && typeof kopie.kryciProj === 'object' && zamekKryciPoleVolne(v, 'kryciProj', 'planPredvolba'))
     delete kopie.kryciProj.planPlateb;

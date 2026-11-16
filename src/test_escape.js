@@ -279,6 +279,7 @@ const PROVERENO = {
     "typeof vzZakaznikKartaTlacitka === 'function' ? vzZakaznikKartaTlacitka(klic) : ''": 'hotové HTML z vzZakaznikKartaTlacitka() — klíč karty uvnitř přes escJs()',
   },
   'vice_zakazniku_ui.js': {
+    "odeslano ? r('Kdo smí', 'jen <b>administrátor</b> — zákazníkovi už odešla nabídka') : ''": 'VZ-E3: literál kódu do r() (hotové HTML řádku potvrzení)',
     'zakaznik': 'hotové HTML řádku Zákazník z vzFormularBlok() — hodnota přes esc(), argumenty obsluhy jsou literál VZ_FORM_KDE',
     "pole('kontakt', 'Kontaktní osoba')": 'hotové HTML z pole() — literály kódu, hodnota a klíč uvnitř přes esc()/escJs()',
     "pole('ico', 'IČO zákazníka', VZ_ICO_ATR)": 'hotové HTML z pole() — literály kódu (VZ_ICO_ATR je konstanta atributů), hodnota uvnitř přes esc()',
@@ -297,6 +298,9 @@ const PROVERENO = {
     "pozn || ''": 'hotové HTML štítků z podmStitek() a literálů v podminky_ui.js — žádná data bez esc()',
   },
   'common.js': {
+    /* VZ-E3 #602: zmrazená pole dalšího zákazníka — vzPoleAttr vrací hotové atributy, důvod uvnitř přes esc(). */
+    "typeof vzPoleAttr === 'function' ? vzPoleAttr(vzC('ZAK.objednatel')) : ''": 'hotové atributy z vzPoleAttr() — title přes esc()',
+    "typeof vzPoleAttr === 'function' ? vzPoleAttr(path) : ''": 'hotové atributy z vzPoleAttr() — title přes esc()',
     'label': 'popisek pole ve formulářové šabloně txt(path, label) – volá se s literály',
     'id': 'id karty / sekce / kotvy (card(), sekce(), detailKotvy) – literály z kódu, ne data',
     /* Z1 (22. 10. 2026): zamekZakAttr() vrací hotové atributy (disabled,

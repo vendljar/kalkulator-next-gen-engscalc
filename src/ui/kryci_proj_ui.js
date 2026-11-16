@@ -5,29 +5,47 @@
  * (data.kryciProj.hodnoty) a mají přednost (↺ vrátí prefill).
  * Vlastní prefix klp* / kryciProj*, aby se názvy nemíchaly s OCK verzí. */
 
+/* VZ-E3 (#602, U1): ruční pole zákazníka KL PROJ po zákaznících — PROJ je jen
+ * řídícího (R5), píše a čte se tedy za řídícího; jeden zákazník = null (dnešek). */
+function klpVzKomu(id) {
+  if (typeof vzRezim !== 'function' || typeof ZAK === 'undefined' || !vzRezim(ZAK) || !kryciProjPoleZakaznika(id)) return null;
+  return vzRidiciId(ZAK);
+}
 function klpSet(id, v) {
   if (!KLP.hodnoty) KLP.hodnoty = {};
-  if (v === '' || v == null) delete KLP.hodnoty[id]; else KLP.hodnoty[id] = v;
-  /* VZ-E2 (revize U1): ruční pole zákazníka patří řídícímu zákazníkovi. */
-  if (typeof vzKlZapis === 'function' && kryciProjPoleZakaznika(id)) vzKlZapis(KLP, id, ZAK);
+  const komu = klpVzKomu(id);
+  if (komu) vzKlZapisRucni(KLP, ZAK, komu, id, v);   // VZ-E3 (U1)
+  else if (v === '' || v == null) delete KLP.hodnoty[id]; else KLP.hodnoty[id] = v;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }
-function klpReset(id) { if (KLP.hodnoty) delete KLP.hodnoty[id]; render(); }
+function klpReset(id) {
+  const komu = klpVzKomu(id);
+  if (komu) vzKlZapisRucni(KLP, ZAK, komu, id, '');   // VZ-E3 (U1)
+  else if (KLP.hodnoty) delete KLP.hodnoty[id];
+  render();
+}
 /* Rozbalené „jiné znění" u projekčního krycího listu — viz KL_JINA v kryci_ui.js. */
 const KLP_JINA = {};
 function klpVyber(id, v) {
   if (v === KL_JINE_ZNENI) {
     KLP_JINA[id] = true;
-    if (KLP.hodnoty) delete KLP.hodnoty[id];
+    if (klpVzKomu(id)) vzKlZapisRucni(KLP, ZAK, klpVzKomu(id), id, '');   // VZ-E3 (U1)
+    else if (KLP.hodnoty) delete KLP.hodnoty[id];
     render();
     return;
   }
   delete KLP_JINA[id];
   klpSet(id, v);
 }
-function klpManual(id) { const h = KLP.hodnoty || {}; return h[id] !== undefined && h[id] !== ''; }
+function klpManual(id) {
+  const komu = klpVzKomu(id);
+  if (komu) return vzKlRucni(KLP, komu, id) !== undefined;   // VZ-E3 (U1)
+  const h = KLP.hodnoty || {}; return h[id] !== undefined && h[id] !== '';
+}
 function klpVal(id, prefill) {
+  const komu = klpVzKomu(id);
+  if (komu) { const r = vzKlRucni(KLP, komu, id); return r !== undefined ? r : (prefill != null ? prefill : ''); }   // VZ-E3 (U1)
   const h = KLP.hodnoty || {};
   return klpManual(id) ? h[id] : (prefill != null ? prefill : '');
 }

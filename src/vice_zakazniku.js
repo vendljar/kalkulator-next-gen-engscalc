@@ -38,7 +38,8 @@
  * ============================================================ */
 
 const VZ_DALSI_MAX = 9;          // strop dalších zákazníků (§ 3, doporučení UI = tvrdý strop serveru)
-const VZ_TEXT_MAX = 500;         // délka textového pole zákazníka (hlavička zakázky strop nemá; zvoleno E0)
+const VZ_TEXT_MAX = 500;
+const VZ_KL_TEXT_MAX = 5000;    // ruční hodnota pole krycího listu zákazníka (E3, U1)         // délka textového pole zákazníka (hlavička zakázky strop nemá; zvoleno E0)
 const VZ_RIDICI_ID = 'z1';       // id řídícího zákazníka, dokud se nevymění
 const VZ_ID_TVAR = /^z[1-9][0-9]{0,2}$/;
 const VZ_PISMENO_TVAR = /^[B-Z]$/;
@@ -241,6 +242,7 @@ function vzOdstran(zak, id, volby) {
     smazana = varId;
   }
   zak.dalsiZakaznici.splice(i, 1);
+  vzKlOdstranZakaznika(zak, sid);   // E3 (U1): jeho ruční hodnoty krycích listů
   if (!vzDalsi(zak).length) { delete zak.dalsiZakaznici; delete zak.vzRidici; }
   return { ok: true, smazanaVarianta: smazana };
 }
@@ -419,6 +421,17 @@ function vzTvarProblemy(zak) {
     }
     if (d.platna !== undefined && d.platna !== null && !vzObj(d.platna)) out.push({ kde: c + '.platna', duvod: 'typ' });
   });
+  /* E3 (U1): ruční hodnoty krycích listů po zákaznících — { id: { pole: text } }. */
+  (Array.isArray(zak.varianty) ? zak.varianty : []).forEach((v, i) => ['kryci', 'kryciProj'].forEach(list => {
+    const hz = vzObj(v) && vzObj(v.data) && vzObj(v.data[list]) ? v.data[list].hodnotyZakaznika : undefined;
+    if (hz === undefined) return;
+    const c = 'varianty[' + i + '].data.' + list + '.hodnotyZakaznika';
+    if (!vzObj(hz)) { out.push({ kde: c, duvod: 'typ' }); return; }
+    Object.keys(hz).forEach(id => {
+      if (!VZ_ID_TVAR.test(id) || !vzObj(hz[id])) { out.push({ kde: c + '.' + id, duvod: 'typ' }); return; }
+      Object.keys(hz[id]).forEach(k => { if (typeof hz[id][k] !== 'string' || hz[id][k].length > VZ_KL_TEXT_MAX) out.push({ kde: c + '.' + id + '.' + k, duvod: 'typ' }); });
+    });
+  }));
   return out;
 }
 
@@ -637,6 +650,66 @@ function vzKlZmrazeno(kl, zak) {
   if (!kl) return;
   if (vzRezim(zak)) kl.vzZmrazeno = vzRidiciId(zak); else delete kl.vzZmrazeno;
 }
+/* RUČNÍ HODNOTY POLÍ ZÁKAZNÍKA PO ZÁKAZNÍCÍCH (VZ-E3 #602, doplněk
+ * koordinace U1). Každý zákazník má vlastní ruční hodnoty polí zákazníka
+ * (telefon, e-mail, podpisy, kopie faktur, zmocnitel…):
+ *   kl.hodnoty[pole] + kl.vzVlastnik[pole]   hodnota VLASTNÍKA (bez záznamu z1
+ *                                            — stávající data = původní / řídící);
+ *   kl.hodnotyZakaznika[id][pole]            hodnoty ostatních zákazníků.
+ * Klíč `hodnotyZakaznika` jen u víc zákazníků (jeden zákazník = dnešek). */
+function vzKlRucni(kl, id, pole) {
+  if (!kl) return undefined;
+  const sid = String(id || VZ_RIDICI_ID);
+  const m = vzObj(kl.hodnotyZakaznika) && vzObj(kl.hodnotyZakaznika[sid]) ? kl.hodnotyZakaznika[sid][pole] : undefined;
+  if (m !== undefined && m !== '') return m;
+  const h = vzObj(kl.hodnoty) ? kl.hodnoty[pole] : undefined;
+  const vl = vzObj(kl.vzVlastnik) && kl.vzVlastnik[pole] ? String(kl.vzVlastnik[pole]) : VZ_RIDICI_ID;
+  return (h !== undefined && h !== '' && vl === sid) ? h : undefined;
+}
+/* Zápis ruční hodnoty pole zákazníka `pole` za zákazníka `id` (v '' = smazat).
+ * Do `kl.hodnoty` jen když pole nemá hodnotu jiného zákazníka; jinak
+ * do `kl.hodnotyZakaznika[id]`. Na místě. */
+function vzKlZapisRucni(kl, zak, id, pole, v) {
+  if (!kl) return;
+  const sid = String(id || vzRidiciId(zak));
+  if (!vzObj(kl.hodnoty)) kl.hodnoty = {};
+  const hz = vzObj(kl.hodnotyZakaznika) ? kl.hodnotyZakaznika : null;
+  const vl = vzObj(kl.vzVlastnik) && kl.vzVlastnik[pole] ? String(kl.vzVlastnik[pole]) : VZ_RIDICI_ID;
+  const hMa = kl.hodnoty[pole] !== undefined && kl.hodnoty[pole] !== '';
+  const prazdne = v === '' || v == null;
+  const uklid = () => {
+    if (hz && vzObj(hz[sid]) && !Object.keys(hz[sid]).length) delete hz[sid];
+    if (hz && !Object.keys(hz).length) delete kl.hodnotyZakaznika;
+  };
+  if (hz && vzObj(hz[sid]) && hz[sid][pole] !== undefined) {
+    if (prazdne) delete hz[sid][pole]; else hz[sid][pole] = v;
+    uklid(); return;
+  }
+  if (!hMa || vl === sid) {
+    if (prazdne) { delete kl.hodnoty[pole]; if (vzObj(kl.vzVlastnik)) delete kl.vzVlastnik[pole]; }
+    else { kl.hodnoty[pole] = v; if (vzRezim(zak)) { if (!vzObj(kl.vzVlastnik)) kl.vzVlastnik = {}; kl.vzVlastnik[pole] = sid; } }
+    if (vzObj(kl.vzVlastnik) && !Object.keys(kl.vzVlastnik).length) delete kl.vzVlastnik;
+    return;
+  }
+  if (prazdne) return;
+  if (!vzObj(kl.hodnotyZakaznika)) kl.hodnotyZakaznika = {};
+  if (!vzObj(kl.hodnotyZakaznika[sid])) kl.hodnotyZakaznika[sid] = {};
+  kl.hodnotyZakaznika[sid][pole] = v;
+}
+/* Odstranění zákazníka: jeho ruční hodnoty krycích listů pryč (u NEZAMČENÝCH
+ * variant — v zámku jsou doklad). Na místě. */
+function vzKlOdstranZakaznika(zak, id) {
+  ((zak && zak.varianty) || []).forEach(v => {
+    if (!v || !v.data || (typeof variantaUzamcena === 'function' && variantaUzamcena(v))) return;
+    ['kryci', 'kryciProj'].forEach(list => {
+      const kl = v.data[list];
+      if (!vzObj(kl) || !vzObj(kl.hodnotyZakaznika)) return;
+      delete kl.hodnotyZakaznika[String(id)];
+      if (!Object.keys(kl.hodnotyZakaznika).length) delete kl.hodnotyZakaznika;
+    });
+  });
+}
+
 /* Pole zákazníka v krycím listu: sekce zákazníka a jeho zástupců, podpisy,
  * kopie faktur a zmocnitel (plná moc). Označí `zakaznikPole` na místě. */
 function vzKlOznacPole(sekce) {
@@ -1046,4 +1119,4 @@ if (typeof module !== 'undefined' && module.exports)
     VZ_RAZITKO_KLICE, VZ_ZMRAZENA_POLE, vzTiskKomu, vzTiskyVarianty, vzCisloVarianty, vzRazitkoSnimek, vzTiskyZakaznika,
     vzOdeslanoKomu, vzCenaZamku, vzPlatna, vzStavNabidky, vzRazitkoDotisku, vzCisloDokladu, vzOdstranDuvod,
     vzZakaznikPoleZmrazeno, vzServerZakaznici, vzZalozenDrz, vzServerRazitka, vzPlatnaPrepocti, vzVariantaBezCizichRazitek,
-    vzKlVlastni, vzKlZapis, vzKlZmrazeno, vzKlOznacPole };
+    vzKlVlastni, vzKlZapis, vzKlZmrazeno, vzKlOznacPole, vzKlRucni, vzKlZapisRucni, vzKlOdstranZakaznika };

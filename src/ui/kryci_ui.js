@@ -5,11 +5,23 @@
  * Tisk do PDF vlastním tlačítkem u náhledu krycího listu (od 4. 8. 2026;
  * z hlavičky aplikace společné tlačítko „Tisk / PDF" zmizelo). */
 
+/* VZ-E3 (#602, U1): za kterého zákazníka se na obrazovce píše a čte ruční
+ * hodnota pole zákazníka — otevřený zákazník u víc zákazníků; jinak null
+ * (jeden zákazník: dnešek beze změny). */
+function klVzKomu(id) {
+  if (typeof vzRezim !== 'function' || typeof ZAK === 'undefined' || !vzRezim(ZAK) || !kryciPoleZakaznika(id)) return null;
+  return (typeof vzTiskId === 'function' && vzTiskId()) || vzRidiciId(ZAK);
+}
+/* Zakázka pro předvyplnění krycího listu na obrazovce: u otevřeného DALŠÍHO
+ * zákazníka jeho pohled (pole zákazníka z jeho hlavičky a jeho ruční hodnoty). */
+function klVzCtxZak() {
+  return (typeof vzTiskJinyZakaznik === 'function' && vzTiskJinyZakaznik() && typeof vzTiskZakTicho === 'function') ? vzTiskZakTicho() : ZAK;
+}
 function klSet(id, v) {
   if (!KL.hodnoty) KL.hodnoty = {};
-  if (v === '' || v == null) delete KL.hodnoty[id]; else KL.hodnoty[id] = v;
-  /* VZ-E2 (revize U1): ruční pole zákazníka patří řídícímu zákazníkovi. */
-  if (typeof vzKlZapis === 'function' && kryciPoleZakaznika(id)) vzKlZapis(KL, id, ZAK);
+  const komu = klVzKomu(id);
+  if (komu) vzKlZapisRucni(KL, ZAK, komu, id, v);   // VZ-E3 (U1): po zákaznících
+  else if (v === '' || v == null) delete KL.hodnoty[id]; else KL.hodnoty[id] = v;
   /* Dopočet dílčí faktury č. 2 (19. 8. 2026): záloha + dílčí 2 + konečná
    * = 100 %. Změna zálohy nebo konečné faktury prostřední hodnotu dopočte;
    * dovětek („– po zahájení montáže") zůstává. Když procenta nejdou přečíst,
@@ -31,9 +43,20 @@ function klPlatby100Html() {
   try { t = kryciPlatbyOck100(kryciPlatebniKalendar(ZAK, aktivniVarianta(ZAK), JEKLY)); } catch (e) { t = ''; }
   return t ? `<div class="kl-row"><div></div><div class="warn kl-platby100" role="alert">⚠ ${esc(t)}</div><div></div></div>` : '';
 }
-function klReset(id) { if (KL.hodnoty) delete KL.hodnoty[id]; render(); }
-function klManual(id) { const h = KL.hodnoty || {}; return h[id] !== undefined && h[id] !== ''; }
+function klReset(id) {
+  const komu = klVzKomu(id);
+  if (komu) vzKlZapisRucni(KL, ZAK, komu, id, '');   // VZ-E3 (U1)
+  else if (KL.hodnoty) delete KL.hodnoty[id];
+  render();
+}
+function klManual(id) {
+  const komu = klVzKomu(id);
+  if (komu) return vzKlRucni(KL, komu, id) !== undefined;   // VZ-E3 (U1)
+  const h = KL.hodnoty || {}; return h[id] !== undefined && h[id] !== '';
+}
 function klVal(id, prefill) {
+  const komu = klVzKomu(id);
+  if (komu) { const r = vzKlRucni(KL, komu, id); return r !== undefined ? r : (prefill != null ? prefill : ''); }   // VZ-E3 (U1)
   const h = KL.hodnoty || {};
   return klManual(id) ? h[id] : (prefill != null ? prefill : '');
 }
@@ -71,7 +94,8 @@ function klVyber(id, v) {
      * platí prefill. Nastavit sem rovnou prázdný řetězec by znamenalo
      * tvářit se, že si vybral prázdno. */
     KL_JINA[id] = true;
-    if (KL.hodnoty) delete KL.hodnoty[id];
+    if (klVzKomu(id)) vzKlZapisRucni(KL, ZAK, klVzKomu(id), id, '');   // VZ-E3 (U1)
+    else if (KL.hodnoty) delete KL.hodnoty[id];
     render();
     return;
   }
@@ -205,7 +229,7 @@ function klRow(id, label, opts = {}) {
  * nabídce nejde o to, do které verze krycího listu pole patří. */
 function kryciPodminkyBlok() {
   let c = null;
-  try { c = kryciCtx(ZAK, aktivniVarianta(ZAK), JEKLY); } catch (e) { c = null; }
+  try { c = kryciCtx(klVzCtxZak(), aktivniVarianta(ZAK), JEKLY); } catch (e) { c = null; }   // VZ-E3 (U1)
   const sekceHtml = KRYCI_SEKCE.filter(s => KRYCI_NABIDKA_SEKCE.indexOf(s.sekce) >= 0).map(s => {
     const rows = s.pole.filter(p => !p.bind).map(p => {
       let pref = null;
@@ -234,7 +258,7 @@ function renderKryci() {
   /* Zámek strany (P6): krycí list OCK u zakázky s vyřazenou OCK nevzniká. */
   const vyr = (typeof stranaVyrazenaPanel === 'function') ? stranaVyrazenaPanel('ock', 'Krycí list zakázky OCK') : '';
   if (vyr) { el.innerHTML = vyr; return; }
-  const c = kryciCtx(ZAK, aktivniVarianta(ZAK), JEKLY);   // kontext prefillů (jeden zdroj pravdy: KRYCI_SEKCE)
+  const c = kryciCtx(klVzCtxZak(), aktivniVarianta(ZAK), JEKLY);   // VZ-E3 (U1): pohled otevřeného dalšího zákazníka; kontext prefillů (jeden zdroj pravdy: KRYCI_SEKCE)
   /* Prázdný ceník zhasíná výstupy – krycí list nese ceny stejně jako nabídka. */
   /* #377: i zábrany z kontroly před nabídkou (strana OCK) — krycí list nese
    * cenu i rozměry do backoffice a výroby. */

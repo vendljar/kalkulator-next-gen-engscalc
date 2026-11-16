@@ -748,10 +748,10 @@ function kryciHodnota(pole, kl, c) {
    * prázdné (smlouva pak ukáže „……“). Mimo pohled beze změny. */
   if (pole.zakaznikPole && c && c.zak && c.zak.vzPohledZakaznika && typeof vzKlVlastni === 'function') {
     if (!pole.bind && !pole.dphBind) {
-      const h = (kl && kl.hodnoty) || {};
-      const vl = kl && kl.vzVlastnik && typeof kl.vzVlastnik === 'object' ? kl.vzVlastnik[pole.id] : '';
-      if (h[pole.id] !== undefined && h[pole.id] !== '' && vzKlVlastni(c.zak, vl))
-        return typeof pole.normalizuj === 'function' ? pole.normalizuj(h[pole.id]) : h[pole.id];
+      /* VZ-E3 (U1): ruční hodnota TOHOTO zákazníka (vzKlRucni — vlastník
+       * `hodnoty`, jinak `hodnotyZakaznika[id]`). */
+      const r = typeof vzKlRucni === 'function' ? vzKlRucni(kl, c.zak.vzPohledZakaznika.id, pole.id) : undefined;
+      if (r !== undefined) return typeof pole.normalizuj === 'function' ? pole.normalizuj(r) : r;
       if (c.zmrazeno && !pole.nezmrazovat && c.zmrazeno[pole.id] !== undefined && vzKlVlastni(c.zak, kl && kl.vzZmrazeno))
         return c.zmrazeno[pole.id];
     }
@@ -1008,8 +1008,13 @@ function kryciKlProjVlastni(c, id) {
   return vzKlVlastni(c.zak, vl);
 }
 function kryciZKrycihoListuProj(c, id) {
-  if (!kryciKlProjVlastni(c, id)) return '';   // VZ-E2 (revize U1): ruční pole KL PROJ jen vlastníkovi
   const d = (c && c.varianta && c.varianta.data) || {};
+  /* VZ-E3 (U1): v pohledu zákazníka jeho vlastní ruční hodnota KL PROJ. */
+  if (c && c.zak && c.zak.vzPohledZakaznika && typeof vzKlRucni === 'function') {
+    const r = vzKlRucni(d.kryciProj, c.zak.vzPohledZakaznika.id, id);
+    return String(r == null ? '' : r).trim();
+  }
+  if (!kryciKlProjVlastni(c, id)) return '';   // VZ-E2 (revize U1): ruční pole KL PROJ jen vlastníkovi
   const h = (d.kryciProj && d.kryciProj.hodnoty) || {};
   return String(h[id] == null ? '' : h[id]).trim();
 }
