@@ -66,6 +66,7 @@ vyžádání — E1 si ho musí načíst, např. při otevření zakázky s `vzM
 - **N9 + D1** (dorevize): když uložená verze data VZ nemá, musí mezi zákazníky (`vzRidici` + `dalsiZakaznici`)
   být právě jeden `{ id: 'z1', pismeno: '' }` (nemusí být řídící — přidat a v témž uložení vyměnit řídícího
   projde), jinak 400.
+- Po dorevizi (e64b2c7): server 59/0, mutace jádro 36/36, server 14/14; kolo `--bez-mutaci` **VŠE ZELENÉ** (392/0/59, hodiny 361/0/1, statické 5/5).
 - **D4** s VYP a smazanou variantou, na kterou ukazuje další zákazník, hláška `VZ_VYPNUTO_VARIANTA`
   („Variantu nejde smazat: ukazuje na ni další zákazník a funkce Víc zákazníků je vypnutá…“).
 - Mutace: dřív hlášeno 28 + 10 a v souborech „29 + 11“ — rozdíl je řádek úvodního komentáře bloku `… [VZ E0] */`,
