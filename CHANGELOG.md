@@ -52,6 +52,9 @@ Výpočet, dokumenty ani obrazovka (kromě Nastavení → Zkušební funkce) se 
 - **Server** (`vzServerKontrola`): s VYP změna zákazníků proti uložené verzi 400, se ZAP vadný tvar 400, `platna`
   jen ze serveru, invariant srovná. Mez **B220** (co E0 ještě nehlídá: práva a razítka — E3, E4).
 - Testy `src/test_vz_model.js`, `netlify/test_vz_server.mjs`, zlatá sada `src/test_vz_zlata.js`; mutace „[VZ E0]“.
+- Revize Fable: výměna řídícího přepíše i firmu v hlavičce PROJ (N1); zákazník se smazanou variantou se při
+  importu nezahodí, ukáže na řídící variantu (N2); pohled zákazníka nese jen jeho varianty (N3); výměna odmítne
+  řídícího bez názvu nebo s příliš dlouhým údajem (N5); první řídící je na serveru vždy z1 bez písmena (N9).
 
 ## v12.11.7 — K40c #581: vazba z webhooku Pipedrive, firma z ARES na serveru, „Opravit firmu v Pipedrive“, větev claude/k40c-webhook
 
