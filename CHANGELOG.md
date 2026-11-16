@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v16.11.5 — VZ-E3 #602: víc zákazníků — zámek po zákaznících, razítko „komu“, platná nabídka, odstranění s odeslanou nabídkou jen administrátor, větev claude/vz-e3
+## v16.11.6 — VZ-E3 #602: víc zákazníků — zámek po zákaznících, razítko „komu“, platná nabídka, odstranění s odeslanou nabídkou jen administrátor, větev claude/vz-e3
 
 Nad `claude/vz-e2` `cbf5c57`. Vše za vypínačem `viceZakazniku`; zakázka s jedním zákazníkem beze změny (razítko
 „komu“ se nezapisuje, náhled tisku znak po znaku stejný). Zadání `podklady/PROMPT_VZ_E3.md`, návrh § 5, § 2a, § 1.1.
@@ -29,6 +29,27 @@ Nad `claude/vz-e2` `cbf5c57`. Vše za vypínačem `viceZakazniku`; zakázka s je
   zákazníka po odeslání jemu (kontakt a zástupci volné).
 - Testy `src/test_vz_zamek.js`, rozšířené `netlify/test_vz_server.mjs`, `src/test_vz_unik.js`, `src/test_vz_ui.js`,
   prohlížeč `overit_vz_zamek.mjs`; mutace „[VZ E3]“. Meze **B227**, **B228** (i N7 — obnova s VYP).
+## v16.11.5 — VZ-E5b #605: Pipedrive — organizace dealu = vítězný zákazník při Prodáno, větev claude/vz-e5b
+
+Nad `claude/integrace-vz` `26f3c26` (E0, E1, E5), sloučena dorevize E0 `b7ec485`. Vše za vypínačem `viceZakazniku`
+(výchozí VYP). Zadání `podklady/PROMPT_VZ_E5b.md`, návrh § 7.4, mez **B226**. Revize poradce před sloučením.
+
+- **Nová akce `POST /api/pd/organizace { soubor, akce: 'vitez' }`** (`netlify/lib/pd_org_vitez.mjs`): u prodané zakázky
+  s víc zákazníky server najde v Pipedrive organizaci podle IČO vítěze (hledání podle vlastního pole IČ, každý kandidát
+  znovu načten a ověřen kontrolní číslicí), jinak ji založí (název a adresa z ARES, při výpadku z hlavičky; DIČ jen když
+  pole je; vlastník = vlastník dealu) a přepojí deal (`PATCH` jen `{ org_id }`). Víc shod = nic a seznam názvů.
+- **Stavy** `zapsano` (nalezena / založena), `shoda`, `bez-ico`, `vice`, `bez-prava`, `chyba`, `strop` do pole
+  `pdOrgVitez`, které píše jen server. Kdo smí: kdo prodal, autor, administrátor (jinak 403); bez práva Pipedrive
+  `bez-prava`. Neprodaná zakázka, jeden zákazník a VYP: 409. Limity 2,5 s / volání, 9 s / akce, 10 pokusů / h na deal,
+  20 / h na uživatele; opakování po selhání `PATCH` nezaloží druhou organizaci.
+- **Kontaktní osoba dealu se nemění** (rozhodnutí J. V.): po zápisu upozornění „Doplňte v Pipedrive kontaktní osobu
+  vítězného zákazníka před posunem dealu na Vyhráno.“ u řádku Stav Pipedrive a v kartě Zákazníci zakázky, v protokolu
+  zakázky jednou na zápis.
+- **Obrazovka:** při jiném stavu „Organizace dealu se nepřepsala“ s důvodem a tlačítkem **„Zkusit zápis znovu“**.
+  Volání po uložení prodeje je připravené jako `vzPoProdejiPd(zak)` — zapojí ho háček E4 (#603).
+- **Simulátor Pipedrive:** hledání organizací, `POST /api/v2/organizations`, `PATCH` dealu s `org_id`.
+- Testy `netlify/test_vz_organizace.mjs`, `overit_vz_organizace.mjs`; 21 mutací „[VZ E5b]“.
+- Zápis ceny prodeje do dealu sem nepatří (#597).
 
 ## v16.11.4 — VZ-E2 #601: víc zákazníků — čísla s písmenem, tisk z pohledu zákazníka, zábrany tisku, test úniku, větev claude/vz-e2
 
