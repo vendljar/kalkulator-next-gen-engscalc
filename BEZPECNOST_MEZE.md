@@ -1854,6 +1854,19 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   a E4 (#603). Dokumenty ani obrazovka v E0 další zákazníky nečtou (tisk
   z pohledu zákazníka je E2 #601), takže do papíru se z nich nic nedostane.
   Funkci proto nezapínat mimo testovací web, dokud E3 a E4 nejsou sloučené.
+  Po revizi Fable (16. 11. 2026): ukazatel zákazníka na smazanou variantu
+  import přesměruje na řídící variantu (zákazník se nezahodí, N2); první
+  `vzRidici` server vynutí jako { z1, '' } (N9); pohled zákazníka nese jen
+  varianty, které zákazník smí vidět (N3). S VYP se tím odmítne (400) i
+  smazání varianty, na kterou ukazuje další zákazník (změní se ukazatel) —
+  zábranu v UI přinese E1.
+  *Otevřené pro E3 (#602):* N4 — `zalozen` { kdo, kdy } dosazuje prohlížeč,
+  server ho má brát z relace a z uložené verze; N6 — `platna` se má počítat
+  ze zámků (a rozhodnout, kde je „platná nabídka“ řídícího zákazníka, který
+  položku v `dalsiZakaznici` nemá); N7 — obnova zakázky s víc zákazníky
+  s VYP se odmítne (před obnovou takových zakázek administrátor vypínač
+  zapne); N8 — `priponaMax` se po odstranění zákazníka s vlastní variantou
+  nevrací (číslo přípony, které jednou padlo, se nepoužije znovu — #17).
 
 - **B225 — E5 (#604): uložení zakázky píše poznámku „Další zákazníci na zakázce“
   do Pipedrive.** Se ZAPNUTÝM vypínačem `viceZakazniku`, s navázaným dealem
