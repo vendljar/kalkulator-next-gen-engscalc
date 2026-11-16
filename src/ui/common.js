@@ -1659,6 +1659,9 @@ function zakazkaHlavicka(ock) {
       <div class="zak-bar-h">Zakázka a varianta${radaTed === 'zahr'
         ? ' <span class="rada-stitek">zahraniční ceník</span>' : ''}</div>
       <div class="body">${typeof pdVazbaUpozorneni === 'function' ? pdVazbaUpozorneni(ZAK) : ''}${inner}</div></div>`
+    /* VZ-E1 #600: karta Zákazníci zakázky hned pod hlavičkou (před lištou
+     * kalkulace, jako v prototypu) — jen u 2+ zákazníků, jinak ''. */
+    + (typeof vzKarta === 'function' ? vzKarta('ock') : '')
     + kalkLista(true);
 }
 
@@ -1835,8 +1838,7 @@ function renderKalkHlavicka() {
   const el = document.getElementById('kalk-hlavicka');
   /* Lišta „jen ke čtení" tu stála do 13. 10. 2026 — od #404 ji nahrazuje
    * jediná žlutá lišta nad záložkami (renderListaZakazky v zamek_ui.js). */
-  /* VZ-E1 #600: karta Zákazníci zakázky pod hlavičkou — jen u 2+ zákazníků. */
-  if (el) el.innerHTML = zakazkaHlavicka(true) + (typeof vzKarta === 'function' ? vzKarta('ock') : '') + zamekStranyLista('ock');
+  if (el) el.innerHTML = zakazkaHlavicka(true) + zamekStranyLista('ock');
   zamekStranyNasad('ock');
   zamekCteniNasad('ock');
 }

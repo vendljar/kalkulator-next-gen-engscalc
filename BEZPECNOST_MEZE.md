@@ -1854,3 +1854,19 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   a E4 (#603). Dokumenty ani obrazovka v E0 další zákazníky nečtou (tisk
   z pohledu zákazníka je E2 #601), takže do papíru se z nich nic nedostane.
   Funkci proto nezapínat mimo testovací web, dokud E3 a E4 nejsou sloučené.
+
+- **B221 — E1 (#600, 16. 11. 2026): obrazovka víc zákazníků hlídá práva jen
+  v prohlížeči.** Tlačítko „Přidat zákazníka“, formulář, přepínač a karta
+  „Zákazníci zakázky“ (`src/ui/vice_zakazniku_ui.js`) se ukážou jen se
+  zapnutým `viceZakazniku`; zápis odmítnou v režimu jen ke čtení, v náhledu
+  za jiného uživatele a u prodané zakázky. Řídícího zákazníka a zákazníka,
+  kterému se prodalo nebo kterému odešla nabídka (razítko tisku s jeho id
+  nebo zamčená jeho vlastní varianta), E1 odstranit nedovolí — **ale jen
+  v prohlížeči**: server dál hlídá jen tvar a vypínač (B220), práva přinesou
+  E3 (#602) a E4 (#603). „Kdo smí ukládat“ = každý přihlášený (matice práv
+  roli „jen čtení“ nemá). Údaje dalšího zákazníka se v E1 nezmrazují ani po
+  tisku či SoD (zmrazení je jen u řídícího = hlavičky, jako dnes). Odpověď
+  ARES ve formuláři nového zákazníka je nedůvěryhodný vstup: do stránky jde
+  jen přes `esc`/`escJs` (`overit_xss.mjs`), převezme se až po potvrzení
+  a do protokolu zakázky se píše jen název firmy (žádné kontakty, IČO ani
+  osoby).
