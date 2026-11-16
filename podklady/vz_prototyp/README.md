@@ -24,6 +24,11 @@ aplikace jako dnes, navíc jen tlačítko „+ Přidat zákazníka“ u pole Zá
 zákazníkem; každý další zákazník má „Odstranit“ s potvrzením; po odstranění posledního se aplikace vrátí do
 standardního pohledu (ověřeno: hlavička znak po znaku jako na začátku).
 
+**Verze 3 (rozhodnutí J. V. 16. 11. 2026):** ostatní zákazníci jsou v jedné přepisované poznámce u dealu (ne
+v poli); při Prodáno jinému zákazníkovi se organizace dealu přepíše na vítěze sama (v situaci „prodej“ jde
+přepínačem „Pipedrive“ zkusit výpadek a „Zkusit zápis znovu“); zákazníka, kterému odešla nabídka, odstraní jen
+administrátor. Ověření 33 kontrol; snímky `snimky/v3_*` (dotčené kroky), ostatní `v2_*` platí dál.
+
 Situace: (1) přidat a odstranit zákazníka, (2) odstranit zákazníka s odeslanou nabídkou, (3) stejná varianta pro
 víc zákazníků, (4) prodej druhému zákazníkovi.
 

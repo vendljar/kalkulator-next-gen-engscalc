@@ -1,6 +1,6 @@
-# Návrh v2: víc zákazníků na jedné zakázce (zkušební funkce „VZ“)
+# Návrh v3: víc zákazníků na jedné zakázce (zkušební funkce „VZ“)
 
-Poradce, v1 12. 11. 2026, **v2 16. 11. 2026**. Větev `claude/vz-navrh`, sloučeno s integrací `8462aea` (v12.11.7).
+Poradce, v1 12. 11. 2026, v2 16. 11. 2026, **v3 16. 11. 2026 (rozhodnutí J. V.)**. Větev `claude/vz-navrh`, sloučeno s integrací `8462aea` (v12.11.7).
 Kód aplikace se tímto návrhem nemění.
 
 **Co mění v2** (připomínky J. V. 16. 11. 2026):
@@ -8,7 +8,18 @@ Kód aplikace se tímto návrhem nemění.
    „+ Přidat zákazníka“ u pole Zákazník v hlavičce. Karta, přepínač ani štítky se neukážou (stejně jako u víc šachet).
 2. Zákazníka jde odstranit (§ 2a). Po odstranění posledního dalšího zákazníka je zakázka i aplikace zpět
    ve standardním pohledu.
-3. Čtyři otázky z v1 zůstaly bez odpovědi — návrh počítá s doporučenými volbami; otázky jsou znovu v § 11.
+3. Otázky z v1 a v2 jsou rozhodnuté — viz níže.
+
+**Rozhodnutí J. V. 16. 11. 2026 (v3):**
+
+| č. | otázka | rozhodnutí | kde v návrhu |
+|---|---|---|---|
+| 1 | číslo nabídky dalších zákazníků | písmeno zákazníka: `…940-B` | § 3 |
+| 2 | text o ostatních zákaznících v dealu | **poznámka u dealu**, ne pole; mechanismus poznámky šachet (VSD #588, mez B217) | § 7.2 |
+| 3 | organizace dealu po prodeji jinému zákazníkovi | „organizace by se v Pipedrive měla přepsat na vítězného zákazníka a vítězná varianta je řídící cenou v Pipedrive“ — **při Prodáno se přepíše sama** | § 7.4 |
+| 4 | odstranění zákazníka, kterému odešla nabídka | **jen administrátor**; bez odeslané nabídky kdo smí ukládat | § 2a |
+
+Prompty pro programování po etapách: `podklady/PROMPT_VZ_SPOLECNE.md` a `podklady/PROMPT_VZ_E0.md` … `E6.md` (§ 10).
 
 Klikací prototyp na skutečné aplikaci: https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V
 (zdroj `podklady/vz_prototyp/`, snímky `podklady/vz_prototyp/snimky/`).
@@ -32,9 +43,9 @@ ve kterém ostatní zákazníci vůbec nejsou.
 | číslo CN | číslo varianty jako dnes + písmeno zákazníka: `…9940`, `…9940-B`, `…9940.2-B` |
 | tisk | vždy pro jednoho zákazníka, z pohledu zákazníka (`vzPohled`) |
 | zámek | varianta se zamkne prvním tiskem; tisk dalšímu zákazníkovi jen přidá razítko „komu“ se snímkem adresáta |
-| Pipedrive | deal beze změny logiky (řídící); nové textové pole dealu „Další zákazníci (Kalkulátor)“, aplikace ho přepisuje celé |
+| Pipedrive | deal nese řídícího zákazníka a řídící variantu; ostatní zákazníci v jedné přepisované poznámce u dealu; při Prodáno jinému zákazníkovi se organizace dealu přepíše na vítěze |
 | standardní pohled | s jedním zákazníkem jen tlačítko „+ Přidat zákazníka“; karta a přepínač až od druhého zákazníka |
-| odstranění | každého dalšího zákazníka s potvrzením; odeslaná nabídka zůstává doložená v zámku varianty; řídícího a prodaného ne |
+| odstranění | každého dalšího zákazníka s potvrzením; s odeslanou nabídkou jen administrátor a doklad zůstává v zámku varianty; řídícího a prodaného ne |
 | vypínač | `viceZakazniku` v `/api/funkce`, výchozí VYP; s VYP a s jedním zákazníkem bajtově jako dnes |
 
 ## 1. Datový model
@@ -97,7 +108,8 @@ souborů nahradí pohled zákazníka s testem úniku. Proto seznam v zakázce.
 - **Prodej jinému zákazníkovi:** „Prodáno“ se dává u zákazníka (ne u varianty). Před uložením potvrzení se
   seznamem před → po (viz prototyp, situace 3). Po potvrzení v jednom uložení: prodaná varianta = řídící (#563),
   její zákazník = řídící, hlavička nese jeho údaje, do dealu jdou data jeho varianty. Ostatní zákazníci zůstávají
-  v zakázce se zamčenými nabídkami a v dealu mají poznámku „neprodáno“.
+  v zakázce se zamčenými nabídkami a v poznámce dealu mají „neprodáno“. Hned po uložení prodeje se organizace
+  dealu přepíše na vítězného zákazníka (§ 7.4).
 - Sdílená varianta prodaná jednomu ze zákazníků: prodej nese i `prodano.zakaznik = id` — bez toho by nebylo
   poznat, komu z adresátů se prodalo.
 - Odemčení prodeje (vedoucí, administrátor) řídícího zákazníka nevrací; vrátí se ručně.
@@ -138,15 +150,17 @@ Tlačítko **„Odstranit“** je u každého zákazníka v kartě. Vždy s potv
 - **Odeslaná nabídka** se nikdy neruší potichu: platí dnešní pravidlo, že doklad o tom, co odešlo, v zakázce
   zůstává. Číslo doložené varianty se bere z razítka zámku (`zamek.cislo` + písmeno z razítka), ne ze seznamu
   zákazníků — proto drží i po odstranění.
-- **Text v dealu:** při odstranění se pole „Další zákazníci (Kalkulátor)“ zapíše znovu bez tohoto zákazníka; po
-  odstranění posledního dalšího zákazníka aplikace svůj text smaže (prázdné pole). Selže-li zápis, stav „čeká na
-  zápis“ jako u ostatních zápisů (§ 7.2) — odstranění to nezastaví.
+- **Poznámka u dealu:** při uložení po odstranění se poznámka „Další zákazníci na zakázce“ přepíše bez tohoto
+  zákazníka; po odstranění posledního dalšího zákazníka se upraví na „Další zákazníci na zakázce: žádní“
+  (poznámka se nikdy nemaže, stejně jako poznámka šachet). Selže-li zápis, uložení to nezastaví a zápis se
+  zopakuje při dalším uložení (§ 7.2).
 - **Rejstřík:** klíč `zakaznici` zmizí, štítek v Přehledu také.
 - **Návrat do standardního pohledu:** po odstranění posledního dalšího zákazníka zmizí přepínač, karta i pruh
   a v hlavičce je zase jen tlačítko. V prototypu je hlavička po návratu znak po znaku stejná jako na začátku.
   Jediné, co může zůstat, je zamčená varianta odstraněného zákazníka (doklad) a záznam v protokolu.
-- **Práva:** odstranit zákazníka, kterému nic neodešlo, smí kdo smí zakázku ukládat. Zákazníka s odeslanou nabídkou
-  odstraní autor zakázky nebo administrátor (server z uložené verze a relace).
+- **Práva (rozhodnutí J. V.):** odstranit zákazníka, kterému nic neodešlo, smí kdo smí zakázku ukládat. Zákazníka,
+  kterému už odešla nabídka, odstraní **jen administrátor** (server: role z relace, „odešla nabídka“ = razítko tisku
+  s jeho id v zámku některé varianty ULOŽENÉ verze; ostatní 403).
 - **Server:** odstranění je výslovná akce v uložení; server ověří, že mizí jen zákazník, který není řídící ani
   prodaný, že razítka tisků zůstala beze změny a že zamčená varianta nezmizela bez práva `varianta.smazatUzamcenou`.
 
@@ -231,53 +245,129 @@ Tlačítko **„Odstranit“** je u každého zákazníka v kartě. Vždy s potv
 Zápis dealu (`pdZapisDealu`, `prodPdZapis`, suchý běh #536) se nemění: čte hlavičku a řídící variantu.
 Po změně řídícího zákazníka tedy sám nese jeho data (hodnota, číslo nabídky, krycí list).
 
-### 7.2 Ostatní zákazníci: jedno textové pole dealu
+### 7.2 Ostatní zákazníci: jedna přepisovaná poznámka u dealu (rozhodnutí J. V.)
 
-Doporučeno **vlastní pole dealu typu dlouhý text „Další zákazníci (Kalkulátor)“**, ne poznámka (note):
+Mechanismus je převzatý z poznámky se seznamem šachet (VSD #588, `netlify/lib/pd_poznamka.mjs`, mez B217):
 
-- pole jde přepsat jedním PATCH spolu s ostatními poli (stejný zápis, žádný token navíc); poznámky mají jen API v1,
-  každá aktualizace by znamenala držet id poznámky, a ruční smazání poznámky by aplikace nepoznala;
-- pole je vidět v detailu dealu a jde dát do filtru a sloupce;
-- pole se nezakládá aplikací (pravidlo K40c „pole se nikdy nezakládá“): založí ho správce v Pipedrive, aplikace ho
-  najde mapou polí (`pd_pole.mjs`). Chybí-li, suchý běh ukáže řádek „chybí pole“ a nic se nezapíše.
-- Stejné pole vyřeší i otevřený bod VS-E5 (poznámka se seznamem šachet) — doporučuji druhé textové pole
-  stejným mechanismem.
+- jedna poznámka u dealu (API v1 `/notes`), kterou server zakládá a přepisuje **při uložení zakázky**
+  (`POST /api/zakazky`, ve výhradním úseku), jen když se text změnil (otisk SHA-256);
+- id poznámky drží pole zakázky psané jen serverem — nové `pdPoznamkaZakaznici` { deal, id, otisk, kdy }
+  (hodnota z prohlížeče se zahodí, platí uložená verze téhož dealu);
+- před úpravou server poznámku přečte a přepíše ji jen, patří-li témuž dealu; bez id (nebo po 404) prohledá
+  poznámky dealu a převezme tu, která začíná úvodem a končí značkou této zakázky — podvržené id cizí poznámku nepřepíše;
+- právo `crm.pipedrive` (B80; administrátor vždy), bez práva stav `bez-prava` bez varování;
+- strop pokusů za hodinu na deal, tvrdý časový limit volání, selhání uložení nezastaví; poznámka se nikdy nemaže.
 
-Tvar (aplikace vždy přepíše celý text; ruční úpravy v poli nevydrží):
+**Spojit s poznámkou šachet, nebo vést zvlášť? Doporučuji zvlášť, se společným modulem.**
+
+| | zvlášť (doporučeno) | jedna společná poznámka |
+|---|---|---|
+| rozpoznání | vlastní úvod „Další zákazníci na zakázce: “ + táž značka „ — nabídka <číslo>“ | změna úvodu a tvaru existující poznámky šachet → stávající poznámky v dealech by se přestaly poznávat |
+| vypínače | `viceSachet` a `viceZakazniku` nezávislé; každá poznámka se řídí svým | čtyři kombinace vypínačů v jednom textu a jednom otisku |
+| životní cyklus | šachty: řídící varianta; zákazníci: seznam zákazníků — mění se jindy | změna jedné části přepisuje i druhou |
+| testy a mutace VSD | beze změny (jen refaktor na společné jádro) | přepsat zlaté texty a mutace #588 |
+| čtení v Pipedrive | dvě krátké poznámky s jasným nadpisem | jedna delší |
+| cena | druhé volání Pipedrive při uložení | jedno volání |
+
+Druhé volání se ošetří **společným časovým rozpočtem**: obě poznámky dohromady nejvýš `PD_POZNAMKA_CELKEM_MS` (6 s),
+šachty první, zákazníci druzí; nestihne-li se druhá, stav `chyba` a zkusí se při dalším uložení. Strop pokusů
+je pro každou poznámku vlastní (klíč `strop:poznamka-zakaznici:deal:<id>`). Modul se zobecní na „druh poznámky“
+(pole zakázky, úvod, stavba textu, věta pro prázdný stav, klíč stropu); funkce pro šachty zůstanou pod dnešními jmény.
+
+Tvar textu (prostý text, escapovaný; řádky oddělené `<br>`; rozpoznává se bez značek HTML jako dnes):
 
 ```
-Další zákazníci na zakázce (zapsal Kalkulátor 12. 11. 2026):
+Další zákazníci na zakázce:
 • BETA Development a.s. — CN 2026 - OPR - CN - 9940.2-B z 12. 11. 2026, 1 333 000 Kč bez DPH
 • GAMA invest s.r.o. — nabídka zatím neodeslána (2026 - OPR - CN - 9940-C)
+— nabídka 2026 - OPR - CN - 9940
 ```
 
-- „Platná nabídka“ = poslední **odeslaná** nabídka zákazníka (`platna`). Rozpracovaná nová varianta se uvede jen
-  jako „připravuje se nová …“. Cena se uvádí jen u odeslané nabídky, bez DPH, v měně nabídky.
-- Po prodeji: u ostatních „— neprodáno“. Jediný zákazník = pole prázdné (aplikace svůj text smaže).
-- Do pole nejdou kontakty, osoby ani sleva. Délkový strop (20 000 znaků jako u šachet), řídicí znaky pryč.
-- **Kdy se zapisuje:** se stejným zápisem jako dnes (Prodáno; ruční zápis), a nově po tisku nabídky dalšímu
-  zákazníkovi a po přidání / odebrání zákazníka — jen když je deal navázaný a právo Pipedrive z matice (B80)
-  to dovolí. Neúspěch zápisu tisk nezastaví: stav „čeká na zápis“ se ukáže u řádku Stav Pipedrive a zapíše do
-  protokolu (vzor `prodano.pipedrive`).
+- „Platná nabídka“ = poslední **odeslaná** nabídka zákazníka (`platna`, počítá server ze zámků). Rozpracovaná nová
+  varianta se uvede jen jako „připravuje se nová …“. Cena jen u odeslané nabídky, bez DPH, v měně nabídky, ze
+  zmrazeného výsledku zámku.
+- Po prodeji: u ostatních „— neprodáno“. Po odstranění posledního dalšího zákazníka: „Další zákazníci na zakázce:
+  žádní — nabídka <číslo>“ (jen když poznámka existuje; zakázka, která víc zákazníků nikdy neměla, poznámku nemá).
+- Do poznámky nejdou kontakty, osoby, IČO ani sleva. Strop délky (2 000 znaků + značka), řídicí znaky pryč;
+  přetečení se zkrátí s „… a další N“.
+- Suchý běh (#536) ukáže řádek „Poznámka dealu — další zákazníci“ se stejným textem.
+- **Nová mez** (číslo přidělí koordinace, navazuje na B217): poznámka u dealu nese názvy dalších zákazníků a ceny
+  jejich odeslaných nabídek — vidí ji každý, kdo vidí deal v Pipedrive; zbytkové meze B217 (dvojí založení při
+  souběhu instancí, prvních 100 poznámek, změna dealu nechá starou poznámku) platí i zde.
 
 ### 7.3 Webhook #553, K40c a ARES
 
 - Webhook a ARES na serveru (K40c) pracují jen s hlavičkou = s řídícím zákazníkem. `dalsiZakaznici`
   a `vzRidici` webhook nikdy nečte ani nemění; ARES se pro další zákazníky z webhooku nevolá.
 - Další zákazníci se ověřují v ARES ručně stejným tlačítkem jako dnes (`ares_ui.js` nad otevřeným zákazníkem).
-- **Organizace dealu po změně řídícího zákazníka:** deal v Pipedrive je dál veden na původní organizaci.
-  K40c by to ukázalo jako „rozdíl ARES × Pipedrive“ a nabídlo „Opravit firmu v Pipedrive“ — to by ale **přejmenovalo
-  cizí organizaci** na nového zákazníka. Proto:
-  - tlačítko „Opravit firmu v Pipedrive“ smí být nabídnuto jen při shodě IČO organizace dealu s IČO hlavičky
-    (doplnit do zadání K40c jako podmínku na serveru; liší-li se IČO, 409 s vysvětlením);
-  - při neshodě IČO aplikace ukáže upozornění „deal je veden na X, řídící zákazník je Y“ a nabídne
-    „Změnit organizaci dealu v Pipedrive…“ (autor, administrátor, po potvrzení; přepojí deal na organizaci
-    s daným IČO, původní organizaci nemění) — nebo jen upozornění a ruční změnu v Pipedrive, viz otázka 3;
-  - webhook při neshodě IČO firmu v hlavičce nepřepisuje (zajistí smazání otisků při výměně řídícího, § 2;
-    přidat výslovný test) a do odpovědi dá varování.
+- „Opravit firmu v Pipedrive“ (K40c, `pd_organizace.mjs`) už podmínku **shody IČO** organizace dealu a hlavičky má
+  (v integraci `8462aea`): dokud je deal veden na původní organizaci a řídící je jiný zákazník, vrací 409 a nic
+  nepřejmenuje. Po přepsání organizace na vítěze (§ 7.4) IČO sedí a tlačítko funguje jako u běžné zakázky.
+- Ruční změna řídícího zákazníka **bez prodeje** organizaci dealu nemění (deal patří tomu, kdo ho v Pipedrive vede);
+  aplikace jen ukáže, že deal je veden na jiného zákazníka. Organizace se přepisuje až při Prodáno.
+- Webhook při neshodě IČO firmu v hlavičce nepřepisuje (smazání otisků při výměně řídícího, § 2; výslovný test).
 - `pdVazbaWebhook`, odmítnuté dealy a zrušení vazby (K40c) se zákazníků netýkají — vazba je na zakázce.
-- Slučitelnost při slučování větví: VZ sahá do `pd_webhook.mjs` jen testem; do `pd_organizace.mjs` (nová funkce
-  K40c) přidává podmínku shody IČO. VZ se má programovat **po sloučení K40c**.
+
+### 7.4 Prodáno jinému zákazníkovi: organizace dealu = vítězný zákazník (rozhodnutí J. V.)
+
+Řídící varianta (cena v dealu) = prodaná varianta platí už dnes (#563). Nově se přepíše i organizace dealu.
+Pozor: samotný zápis dat prodeje do dealu (hodnota, krycí list, fáze) dnes aplikace **neprovádí** — `prodano.pipedrive`
+zůstává ve stavu „čeká na odeslání“ a existuje jen suchý běh (#510, #536). Přepsání organizace je proto samostatný
+zápis s vlastním stavem a na zápisu dat prodeje nezávisí.
+
+**Kdy.** Po úspěšném uložení prodeje prohlížeč sám zavolá `POST /api/pd/organizace { soubor, akce: 'vitez' }`
+(bez dalšího dialogu — přepsání organizace je vypsané v potvrzení prodeje). Jen u zakázky s víc zákazníky
+(`vzRidici` v uložené verzi) a jen když je prodaná. Zakázka s jedním zákazníkem se nemění.
+
+**Co server udělá** (klientovi nevěří nic kromě jména souboru; vše z uložené zakázky a z Pipedrive):
+
+1. Ověří: zakázka je prodaná, má navázaný deal, IČO hlavičky je platné (`icoPlatne`). Neplatné nebo prázdné IČO →
+   stav `bez-ico`, nic se nezapisuje („doplňte IČO vítězného zákazníka“ — po prodeji je hlavička zmrazená, IČO
+   doplní vedoucí nebo administrátor po odemčení, nebo se organizace změní ručně v Pipedrive).
+2. Načte deal a jeho organizaci. IČO organizace = IČO hlavičky → stav `shoda`, nic se nezapisuje.
+3. **Najde organizaci podle IČO:** hledání organizací v Pipedrive podle hodnoty vlastního pole IČ (pole z mapy
+   organizace, `pd_mapa.mjs`; v účtu je číselné — hledá se bez úvodních nul). Každého kandidáta server **znovu
+   načte a ověří** normalizovaným IČO (`pdIco`, kontrolní číslice) — výsledku hledání se nevěří.
+   - právě jedna aktivní organizace → použije se;
+   - žádná → **založí se**: název a adresa z ARES podle IČO hlavičky (`ares_server.mjs`, 3 s), při výpadku ARES
+     z hlavičky zakázky; IČ do vlastního pole; DIČ jen když účet takové pole má (pole se nikdy nezakládá);
+     vlastník = vlastník dealu;
+   - dvě a víc aktivních se stejným IČO → stav `vice`, nic se nezapisuje, aplikace vypíše jejich názvy a počet
+     („v Pipedrive je víc organizací s tímto IČO — sjednoťte je a zápis zopakujte“). Server nehádá.
+4. `PATCH /api/v2/deals/<id>` jen `{ org_id }`. Původní organizace se nemění ani nemaže. **Kontaktní osoba dealu
+   se nemění** — patří původní organizaci; odpověď to řekne a aplikace na to upozorní (otevřený bod 1 v § 11).
+5. Zapíše stav do pole psaného jen serverem `zak.pdOrgVitez = { deal, org, stav, kdy, kdo }`, záznam do protokolu
+   (název organizace, „nalezena“ / „založena“, žádné kontakty) a smaže cache detailu dealu.
+
+**Kdo smí.** Ten, kdo právě prodal (e-mail relace = `prodano.kdo` uložené verze), autor zakázky nebo administrátor —
+a k tomu právo `crm.pipedrive` z matice (B80). Bez práva: stav `bez-prava`, prodej platí, zápis čeká na někoho
+s právem. Role a autor se berou z relace a z uložené verze.
+
+**Když zápis selže** (výpadek, časový limit, limit Pipedrive, `vice`, `bez-ico`, `bez-prava`): prodej je uložený
+a platný, nic se nevrací. U řádku Stav Pipedrive a v kartě Zákazníci zakázky svítí „Organizace dealu se
+nepřepsala“ s důvodem a tlačítkem **„Zkusit zápis znovu“** (kdo smí viz výš). Opakování je bezpečné: před
+založením se vždy hledá znovu, takže dvojí stisk dvě organizace nezaloží; zbytková mez je souběh dvou instancí
+(jako u poznámky B217).
+
+**Odemčení prodeje** organizaci dealu nevrací. Pole `pdOrgVitez` zůstává jako stopa; nový prodej zápis zopakuje.
+
+**Meze a limity.** Jedno volání Pipedrive nejvýš 2,5 s, celá akce nejvýš 9 s včetně ARES; strop 10 pokusů za
+hodinu na deal a 20 na uživatele (počítadla `pd_cache`); výhradní úsek zakázky; druhé čtení zakázky před zápisem
+stavu (vzor SEC-S1). **Nová mez** (číslo přidělí koordinace): aplikace poprvé **zakládá organizaci** v Pipedrive
+a přepojuje deal — co to nedělá: neslučuje duplicity, nemění osobu dealu, nemaže ani neupravuje původní
+organizaci, nevrací změnu při odemčení prodeje.
+
+**Vztah ke K40c.** Před přepsáním chrání cizí organizaci podmínka shody IČO (409). Po přepsání je IČO organizace
+dealu = IČO hlavičky = vítěz, takže „Opravit firmu v Pipedrive“ i webhook s ARES pracují nad správnou organizací.
+Nově založená organizace má údaje z ARES, takže rozdíl ARES × Pipedrive je prázdný.
+
+**Testy jen proti simulátoru** (`pipedrive_simulator.mjs` rozšířit o hledání organizací, `POST /organizations`,
+`PATCH /deals` s `org_id`, scénáře `visi`, `limit`, `vypadek`): nalezena / založena / víc shod / bez IČO / shoda /
+bez práva / cizí uživatel 403 / neprodaná zakázka 409 / zakázka s jedním zákazníkem 409 / výpadek uprostřed
+(organizace založena, PATCH selhal → opakování nezaloží druhou) / časový limit / strop / podvržené `pdOrgVitez`
+z prohlížeče se zahodí / název firmy s HTML a řídicími znaky. Do skutečného Pipedrive testy nikdy nevolají.
+Přesné cesty a parametry hledání organizací ověří programátor v dokumentaci Pipedrive; ověření proti ostrému
+účtu (jen čtení) je věc J. V.
 
 ## 8. Práva, vypínač, zlatá sada
 
@@ -318,7 +408,9 @@ Další zákazníci na zakázce (zapsal Kalkulátor 12. 11. 2026):
 **R2 — poslání správného souboru špatnému zákazníkovi** (aplikace neposílá e-maily): písmeno v čísle a název
 zákazníka v názvu souboru; pruh „tisk platí pro zákazníka X“.
 
-**R3 — Pipedrive:** přejmenování cizí organizace přes K40c (§ 7.3); text v poli přepsaný ručně; pole neexistuje.
+**R3 — Pipedrive:** přejmenování cizí organizace přes K40c (kryje podmínka shody IČO, § 7.3); založení duplicitní
+organizace nebo přepojení dealu na špatnou organizaci (§ 7.4: ověření IČO každého kandidáta, víc shod = nic);
+poznámka přepsaná ručně v Pipedrive (aplikace ji při další změně přepíše); kontaktní osoba dealu zůstane původní.
 
 **R4 — data a server:** souběh dvou obchodníků nad jednou zakázkou (stávající razítko úpravy stačí); velikost
 zakázky (zákazník ≈ 2 kB, strop 4 MB neohrozí); migrace žádná (klíče jsou nepovinné); obnova ze zálohy přebírá
@@ -332,36 +424,38 @@ zákazníky až podle zkušeností.
 
 ## 10. Etapy pro Opus
 
-Pořadí je závazné; každá etapa samostatná větev nad integrací, vše za vypínačem, zlatá sada po každé etapě.
-Čísla roadmapy přidělí koordinace. Programovat po sloučení K40c.
+Prompty: `podklady/PROMPT_VZ_SPOLECNE.md` (společná pravidla, čte se s každou etapou) a `podklady/PROMPT_VZ_E0.md`
+až `PROMPT_VZ_E6.md`. Báze integrace `8462aea` (v12.11.7); každou další etapu spouští koordinace nad SHA integrace
+po sloučení předchozí. Čísla roadmapy a mezí přidělí koordinace. Vše za vypínačem, zlatá sada po každé etapě.
 
-| etapa | obsah | hlavní soubory | testy |
-|---|---|---|---|
-| E0 | vypínač `viceZakazniku`, jádro `vice_zakazniku.js` (model, písmena, `vzPohled`, invariant řídící), import a serverová kontrola tvaru, zlatá sada | `funkce.mjs`, `zakazka.js`, `zakazka_kontrola.mjs`, `uloziste.js` | `test_vz_zlata.js`, `test_vz_model.js`, mutace |
-| E1 | obrazovka: tlačítko „+ Přidat zákazníka“ a formulář v hlavičce; od druhého zákazníka přepínač a karta Zákazníci zakázky; odstranění neodeslaného zákazníka s návratem do standardního pohledu; ARES a databáze zákazníků nad otevřeným zákazníkem; VYP s daty jen ke čtení | `ui/vice_zakazniku_ui.js`, `ui/common.js`, `ui/ares_ui.js`, `ui/zakaznici_ui.js` | `overit_vz_zadani.mjs` (+ srovnání s bází znak po znaku) |
-| E2 | čísla s písmenem, tisk z pohledu zákazníka (CN, náhled, názvy souborů), kontroly před tiskem, **test úniku** | `zamek.js`, `zakazka.js`, `nabidka.js`, `nazvy_souboru.js`, `kontroly.js` | `test_vz_unik.js`, `test_vz_cisla.js` |
-| E3 | zámek: razítko „komu“, stav po zákaznících, vlastní varianta, dotisk, server drží razítka a `platna`; odstranění zákazníka s odeslanou nabídkou (doklad zůstává, písmeno z razítek) | `zamek.js`, `zakazka_kontrola.mjs` | `test_vz_zamek.js`, `netlify/test_vz_server.mjs` |
-| E4 | řídící zákazník, Prodáno u zákazníka, zmrazení hlavičky, krycí list a SoD pro prodaného zákazníka | `objednane.js`, `zamek.js`, `kryci.js`, `sod.js` | `test_vz_prodej.js`, `overit_vz_prodej.mjs` |
-| E5 | Pipedrive: textové pole, suchý běh, zápis, stav „čeká“, podmínka shody IČO u K40c, změna organizace dealu (podle otázky 3) | `pd_prevod.mjs`, `pd_nanecisto.js`, `pd_pole.mjs`, `pd_organizace.mjs`, simulátor | `netlify/test_vz_pd.mjs`, mutace serveru |
-| E6 | rejstřík a Přehled (štítek, hledání), controlling, překlady, příručky, celé kolo s mutacemi | `uloziste.js`, `ui/online_ui.js`, `controlling.js`, `preklad.js`, `manual/` | `test_vz_rejstrik.mjs`, celé kolo |
+| etapa | obsah | hlavní soubory | odhad | revize poradce |
+|---|---|---|---|---|
+| E0 | vypínač, jádro (model, písmena, pohled zákazníka, invarianty), import, serverová kontrola tvaru, zlatá sada | `funkce.mjs`, `vice_zakazniku.js`, `zakazka.js`, `zakazka_kontrola.mjs` | 1 sezení | **ano** (datový model) |
+| E1 | obrazovka: tlačítko a formulář v hlavičce, od 2. zákazníka přepínač a karta, odstranění neodeslaného zákazníka, návrat do standardního pohledu | `ui/vice_zakazniku_ui.js`, `ui/common.js`, `ui/ares_ui.js`, `ui/zakaznici_ui.js` | 1–2 sezení | ne |
+| E2 | čísla s písmenem, tisk z pohledu zákazníka, kontroly před tiskem, **test úniku** | `zamek.js`, `zakazka.js`, `nabidka.js`, `nazvy_souboru.js`, `kontroly.js`, `dokumenty.js` | 1–2 sezení | **ano** (únik údajů) |
+| E3 | zámek: razítko „komu“, stav po zákaznících, vlastní varianta, dotisk; odstranění zákazníka s odeslanou nabídkou (jen administrátor) | `zamek.js`, `zakazka_kontrola.mjs`, `uloziste.js` | 1 sezení | **ano** (zámek, server) |
+| E4 | řídící zákazník, Prodáno u zákazníka, zmrazení hlavičky, krycí list a SoD pro prodaného zákazníka | `objednane.js`, `zamek.js`, `kryci.js`, `sod.js` | 1 sezení | ne |
+| E5 | Pipedrive: poznámka „Další zákazníci“ (zobecnění `pd_poznamka.mjs`), suchý běh | `pd_poznamka.mjs`, `functions/zakazky.mjs`, `pd_nanecisto.js`, simulátor | 1 sezení | ne (vzor #588) |
+| E5b | Pipedrive: organizace dealu = vítěz při Prodáno (najít podle IČO / založit / přepojit) | `functions/pd_organizace.mjs`, `lib/pd_vazba.mjs`, simulátor, `ui/` | 1 sezení | **ano** (první zakládání v Pipedrive) |
+| E6 | rejstřík a Přehled, controlling, překlady, příručky, celé kolo s mutacemi po částech | `uloziste.js`, `ui/online_ui.js`, `controlling.js`, `preklad.js`, `manual/` | 1–2 sezení | ne |
 
-## 11. Otázky pro J. V. (v2)
+Pořadí: **E0 → E1 → E2 → E3 → E4 → E5b → E6**; **E5** může běžet souběžně s E1–E3 (sahá jen do serverových
+souborů poznámky), nejdřív po sloučení E0. E5b až po E4 (potřebuje prodej u zákazníka). „Sezení“ = jedno
+cloudové sezení včetně kola bez mutací (≈ 4–6 h); mutace po částech navíc v E6.
 
-Návrh i prototyp počítají s doporučenou volbou (vždy první). Otázky 1–3 jsou z v1 a zůstaly bez odpovědi.
+## 11. Otevřené body po rozhodnutí J. V.
 
-1. **Číslo nabídky dalších zákazníků.** (a) písmeno zákazníka za číslem varianty: `…9940-B`, `…9940.2-B`
-   **— doporučeno**; (b) stejné číslo pro všechny zákazníky; (c) jiný tvar přípony (např. `/B`).
-2. **Text v dealu u dalšího zákazníka.** (a) název firmy, číslo a datum platné nabídky a cena bez DPH, ve vlastním
-   textovém poli dealu „Další zákazníci (Kalkulátor)“, které založíte v Pipedrive **— doporučeno**; (b) totéž bez
-   ceny; (c) poznámka dealu místo pole.
-3. **Organizace dealu po prodeji jinému zákazníkovi.** (a) aplikace upozorní a nabídne tlačítko „Změnit organizaci
-   dealu v Pipedrive“ s potvrzením (autor, administrátor) **— doporučeno**; (b) jen upozornění, organizaci změníte
-   v Pipedrive ručně; (c) měnit automaticky při Prodáno.
-4. **Odstranění zákazníka, kterému už odešla nabídka** (nové ve v2). (a) odstranit jde, jeho odeslaná nabídka
-   zůstává v zakázce doložená zamčenou variantou a razítkem tisku **— doporučeno** (dnešní pravidlo: doklad
-   o odeslání se nemaže); (b) odstranit smí jen administrátor; (c) odstranit se vším, i s dokladem o odeslání.
+Všechny čtyři otázky jsou rozhodnuté (úvod). Zbývá jedna nová otázka a body, které řeším doporučením:
 
-Rozhodnuto doporučením, pokud J. V. neřekne jinak: krycí list je jeden na variantu a údaje zákazníka bere ze
-zvoleného zákazníka, odlišné smluvní podmínky = vlastní varianta (otázka 4 z v1); první verze jen pro OCK (R5);
-strop 9 dalších zákazníků; sleva patří variantě; neodeslaná vlastní varianta se při odstranění zákazníka maže
-s ním (volba v potvrzení); hromadný tisk všem zákazníkům až později.
+1. **Kontaktní osoba dealu po přepsání organizace** (nová, vyplývá z rozhodnutí 3). Osoba dealu patří původní
+   organizaci. (a) aplikace osobu nemění a upozorní, že ji máte v Pipedrive změnit **— doporučeno**;
+   (b) aplikace osobu z dealu odebere; (c) aplikace založí osobu z kontaktu vítězného zákazníka.
+
+Rozhodnuto doporučením, pokud J. V. neřekne jinak:
+- poznámka o zákaznících je samostatná, vedle poznámky šachet (§ 7.2);
+- poznámka se nemaže — po odstranění posledního zákazníka říká „žádní“ (stejně jako poznámka šachet);
+- ruční změna řídícího zákazníka bez prodeje organizaci dealu nemění (§ 7.3);
+- víc organizací se stejným IČO v Pipedrive = nezapisuje se nic a aplikace je vypíše (§ 7.4);
+- krycí list je jeden na variantu, údaje zákazníka ze zvoleného zákazníka; první verze jen OCK; strop 9 dalších
+  zákazníků; sleva patří variantě; neodeslaná vlastní varianta se při odstranění zákazníka maže s ním (volba
+  v potvrzení); hromadný tisk všem zákazníkům až později.

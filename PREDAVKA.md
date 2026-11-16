@@ -1,3 +1,20 @@
+# Předávka — 16. 11. 2026: návrh v3 „víc zákazníků“ + prompty etap (poradce), větev `claude/vz-navrh`
+
+Nad integrací `8462aea` (v12.11.7). Jen podklady — kód aplikace beze změny. Do `test-draft`, `test` ani `main` nic;
+weby, Disk, Pipedrive nic. Programování spouští koordinace až po souhlasu J. V.
+
+| úkol | stav | kde |
+|---|---|---|
+| návrh v3 (rozhodnutí J. V. 16. 11.) | ✅ | `podklady/NAVRH_VICE_ZAKAZNIKU.md` — tabulka rozhodnutí v úvodu, § 7.2 poznámka u dealu (zvlášť vedle poznámky šachet, společný modul a časový rozpočet), § 7.4 organizace dealu = vítěz při Prodáno, § 2a odstranění s odeslanou nabídkou jen administrátor, § 10 etapy, § 11 otevřené body |
+| prototyp v3 | ✅ | https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V (verze 3); ověření 33/0 při 1600 i 400 px; snímky `podklady/vz_prototyp/snimky/v3_*` a `v2_*` |
+| prompty pro Opus | ✅ | `podklady/PROMPT_VZ_SPOLECNE.md`, `PROMPT_VZ_E0.md` … `E6.md`, `PROMPT_VZ_E5b.md` |
+
+**Etapy:** E0 → E1 → E2 → E3 → E4 → E5b → E6; E5 souběžně s E1–E3 (po E0). Revize poradce: E0, E2, E3, E5b.
+**Čeká na J. V.:** souhlas se spuštěním; jedna nová otázka — kontaktní osoba dealu po přepsání organizace (§ 11,
+doporučeno: neměnit a upozornit).
+**Zjištění pro koordinaci:** zápis dat prodeje do dealu (hodnota, krycí list, fáze) aplikace dnes neprovádí
+(`prodano.pipedrive` zůstává „čeká“, jen suchý běh) — VZ ho nezavádí; organizace dealu je samostatný zápis.
+
 # Předávka — 16. 11. 2026: návrh v2 „víc zákazníků na jedné zakázce“ (poradce), větev `claude/vz-navrh`
 
 Sloučena integrace `8462aea` (v12.11.7). Jen podklady — kód aplikace beze změny. Do `test-draft`, `test` ani `main` nic;
