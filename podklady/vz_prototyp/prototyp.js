@@ -22,17 +22,20 @@
   };
   const PISMENA = { a: '', b: 'B', c: 'C' };
   const SCENARE = {
-    pridat: { nazev: 'přidat a odstranit zákazníka', kroky: [['form', '2. Přidat zákazníka'], ['pridejForm:b', '3. Potvrdit přidání'], ['vlastni:b', '4. Vlastní varianta pro BETA'], ['odeber:b', '5. Odstranit BETA'], ['odeberAno', '6. Potvrdit odstranění']] },
+    pridat: { nazev: 'přidat a odstranit zákazníka', kroky: [['form', '2. Přidat zákazníka'], ['ares', '3. Najít firmu v ARES'], ['aresAno', '4. Převzít údaje'], ['pridejForm:b', '5. Potvrdit přidání'], ['vlastni:b', '6. Vlastní varianta pro BETA'], ['odeber:b', '7. Odstranit BETA'], ['odeberAno', '8. Potvrdit odstranění']] },
     odeslana: { nazev: 'odstranit zákazníka s odeslanou nabídkou', kroky: [['odeber:b', '2. Odstranit BETA'], ['odeberAno', '3. Potvrdit odstranění']] },
     stejna: { nazev: 'stejná varianta pro víc zákazníků', kroky: [['pridej:b', '2. Přidat zákazníka BETA'], ['odesli:a', '3. Odeslat nabídku ALFA'], ['odesli:b', '4. Odeslat tutéž nabídku BETA']] },
     sachty: { nazev: 'víc zákazníků + víc šachet', kroky: [['vlastni:b', '2. Vlastní varianta pro BETA'], ['sachty:b', '3. BETA chce dvě varianty šachet (A 1 ks, B 2 ks)'], ['odesli:b', '4. Odeslat nabídku BETA']] },
     prodej: { nazev: 'prodej druhému zákazníkovi', kroky: [['prodej:b', '2. Prodáno → BETA'], ['prodejAno', '3. Potvrdit prodej'], ['orgAno', '4. Zkusit zápis organizace znovu (jen po výpadku)']] },
   };
+  const ARES_STAVY = { ok: 'ARES odpoví', nenalezeno: 'IČO v ARES není', sit: 'výpadek ARES' };
+  /* Napodobená odpověď rejstříku ARES (tvar jako skutečné API, zpracuje ji aresZpracuj z aplikace). */
+  const aresOdpoved = (ico) => { const k = Object.keys(FIRMY).find((x) => FIRMY[x].ico === ico); return k ? { ico, obchodniJmeno: FIRMY[k].nazev, dic: 'CZ' + ico, sidlo: { textovaAdresa: FIRMY[k].sidlo } } : null; };
   const PD_STAVY = { ok: 'Pipedrive odpoví', vypadek: 'výpadek Pipedrive' };
   const ROLE = { autor: 'autor zakázky (obchodník)', jiny: 'jiný obchodník', admin: 'administrátor' };
   const ZNACKY = { pridano: 'přidáno', zmeneno: 'změněno', smazano: 'smazáno', beze: 'beze změny' };
   const DEAL_ID = '4321';
-  const S = { scenar: 'pridat', role: 'autor', pd: 'ok', otevreno: true, hraje: null, blik: false, nahled: '' };
+  const S = { scenar: 'pridat', role: 'autor', pd: 'ok', ares: 'ok', otevreno: true, hraje: null, blik: false, nahled: '' };
   let P, OBS = null, PK = null, KRESLI = false;
   const puvodni = { variantaCislo: window.variantaCislo, cisloSVariantou: window.cisloSVariantou };
 
@@ -130,10 +133,10 @@
 
   /* ----- akce (odpovídají tlačítkům budoucí funkce) ----- */
   function novyZ(id, varianta) { return Object.assign({ id, pismeno: PISMENA[id], varianta, odeslano: {}, platna: null, prodano: '' }, FIRMY[id]); }
-  function pridej(id, vlastniVar) {
+  function pridej(id, vlastniVar, udaje) {
     const rz = ridiciZ();
-    P.zak.push(novyZ(id, rz.varianta)); P.poznamka = true;
-    zapis(ROLE[S.role], 'přidal zákazníka ' + FIRMY[id].kratce + ' (písmeno ' + PISMENA[id] + ') — nabídka ' + cisloZ(Zk(id)) + ', stejná varianta jako ' + rz.kratce);
+    P.zak.push(Object.assign(novyZ(id, rz.varianta), udaje || {})); P.poznamka = true;
+    zapis(ROLE[S.role], 'přidal zákazníka ' + Zk(id).kratce + (udaje && udaje.zdroj ? ' (' + udaje.zdroj + ')' : '') + ' (písmeno ' + PISMENA[id] + ') — nabídka ' + cisloZ(Zk(id)) + ', stejná varianta jako ' + rz.kratce);
     if (vlastniVar) vlastni(id); else otevri(id);
   }
   function vlastni(id) {
@@ -228,7 +231,9 @@
     const zamcena = !!(v && v.zamek && v.zamek.zamceno), prodano = !!prodanoZ();
     if (co === 'pridej') return !z && !prodano;
     if (co === 'form') return !P.formular && !prodano && Object.keys(FIRMY).some((k) => !Zk(k));
-    if (co === 'pridejForm') return !!P.formular && !z;
+    if (co === 'pridejForm') return !!P.formular && !z && !!P.f && String(P.f.h.objednatel).trim() !== '';
+    if (co === 'ares') return !!P.formular && !!P.f && !(P.f.ares && P.f.ares.subjekt) && String(P.f.h.objednatel).trim() === '';
+    if (co === 'aresAno') return !!P.formular && !!P.f && !!(P.f.ares && P.f.ares.subjekt);
     if (co === 'odeberAno') return !!(P.potvrzeni && P.potvrzeni.typ === 'odeber');
     if (co === 'odesli') return !!z && !odeslanoTed(z) && !prodano;
     if (co === 'vlastni') return !!z && !prodano && (sdili(z).length > 1 || zamcena);
@@ -317,15 +322,59 @@
       + '<div class="vzp-pod"><button type="button" class="vzp-modre' + (dalsiKrok().indexOf('pridej') === 0 && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="form"' + (volne.length && !prodanoZ() ? '' : ' disabled') + '>Přidat zákazníka</button>' + napoveda + '</div>'
       + form + upoz + potv + '</div>';
   }
+  /* ----- formulář „Nový zákazník na zakázce": ARES a databáze zákazníků jako v hlavičce ----- */
+  const formNovy = () => { const volne = Object.keys(FIRMY).filter((k) => !Zk(k)); return { id: volne[0], h: { objednatel: '', adresaObjednatele: '', ico: volne[0] ? FIRMY[volne[0]].ico : '', dic: '', kontakt: '' }, nova: 'stejna', ares: null, db: false, zdroj: '' }; };
+  function formAres() {
+    const f = P.f, ico = icoNormalizuj(f.h.ico);
+    f.db = false;
+    if (!icoVyplneno(ico)) { f.ares = { chyba: aresHlaska('prazdne') }; return; }
+    if (!icoPlatne(ico)) { f.ares = { chyba: aresHlaska('neplatne') }; return; }
+    if (S.ares === 'sit') { f.ares = { chyba: aresHlaska('sit') }; return; }
+    const sub = S.ares === 'ok' ? aresZpracuj(aresOdpoved(ico)) : null;
+    f.ares = sub ? { subjekt: sub } : { chyba: aresHlaska('nenalezeno', ico) };
+  }
+  function formAresAno() {
+    const f = P.f; if (!f.ares || !f.ares.subjekt) return;
+    const n = aresPrepis(f.h, f.ares.subjekt);
+    f.zdroj = 'ověřen v ARES, převzato ' + n + ' údajů'; f.ares = null;
+  }
+  function formDb(k) {
+    const f = P.f, z = FIRMY[k];
+    Object.assign(f.h, { objednatel: z.nazev, adresaObjednatele: z.sidlo, ico: z.ico, dic: 'CZ' + z.ico, kontakt: z.kontakt });
+    f.zdroj = 'z databáze zákazníků'; f.db = false; f.ares = null;
+  }
+  function formAresHtml() {
+    const f = P.f, a = f.ares;
+    if (!a) return '';
+    if (a.chyba) return '<div class="ares-panel chyba"><div class="ares-hlava">Firma se nenačetla</div><div class="ares-txt">' + esc(a.chyba) + '</div><div class="ares-btns"><button type="button" class="mini" data-vzp="aresNe">Zavřít</button></div></div>';
+    const sub = a.subjekt, rozd = aresRozdily(f.h, sub);
+    return '<div class="ares-panel"><div class="ares-hlava">' + esc(sub.nazev) + '</div><div class="ares-txt">' + esc(aresPopis(sub)) + (sub.dic ? ' · DIČ ' + esc(sub.dic) : '') + '</div>'
+      + (rozd.length ? '<table class="ares-tab"><tr><th>Údaj</th><th>Ve formuláři teď</th><th>Z rejstříku</th></tr>' + rozd.map((r) => '<tr><td>' + esc(r.label) + '</td><td class="stara">' + (r.ted ? esc(r.ted) : '<i>prázdné</i>') + '</td><td class="nova">' + esc(r.nove) + '</td></tr>').join('') + '</table>'
+        + '<div class="ares-btns"><button type="button" class="primary' + (dalsiKrok() === 'aresAno' && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="aresAno">Převzít údaje do formuláře (' + rozd.length + ')</button><button type="button" data-vzp="aresNe">Nechat, jak je</button></div>'
+        : '<div class="ares-txt">Formulář už tyhle údaje obsahuje – přepisovat není co.</div><div class="ares-btns"><button type="button" data-vzp="aresNe">Zavřít</button></div>')
+      + '<div class="ares-zdroj">Zdroj: veřejný rejstřík ARES (Ministerstvo financí ČR). V prototypu napodobená odpověď. Údaje se převezmou jen na tomhle potvrzení.</div></div>';
+  }
   function formHtml() {
-    const volne = Object.keys(FIRMY).filter((k) => !Zk(k));
-    return P.formular && volne.length ? '<div class="vzp-form"><b>Nový zákazník na zakázce</b>'
-      + '<div class="row"><label>Zákazník</label><input type="text" value="' + esc(FIRMY[volne[0]].nazev) + '" readonly></div>'
-      + '<div class="row"><label>IČO zákazníka</label><input type="text" value="' + esc(FIRMY[volne[0]].ico) + '" readonly></div>'
-      + '<div class="row"><label>Nabídka</label><span class="vzp-volba"><label><input type="radio" name="vzpNova" value="stejna" checked> stejná varianta jako ' + esc(ridiciZ().kratce) + ' („' + esc(Va(ridiciZ().varianta).nazev) + '")</label>'
-      + '<label><input type="radio" name="vzpNova" value="vlastni"> vlastní varianta (kopie)</label></span></div>'
-      + '<div class="note">V ostré verzi: našeptávač z databáze zákazníků a „Najít firmu v ARES" jako v hlavičce. Zákazník dostane písmeno <b>' + esc(PISMENA[volne[0]]) + '</b> — jeho nabídky ponesou číslo …-' + esc(PISMENA[volne[0]]) + '.</div>'
-      + '<button type="button" class="vzp-modre' + (dalsiKrok() === 'pridejForm:' + volne[0] && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="pridejForm:' + volne[0] + '">Přidat zákazníka</button> <button type="button" class="mini" data-vzp="formNe">Zrušit</button></div>' : '';
+    if (!P.formular || !P.f || !P.f.id) return '';
+    const f = P.f, h = f.h, pis = PISMENA[f.id];
+    const pole = (k, popis, navic) => '<div class="row"><label>' + popis + '</label><input type="text" autocomplete="off" data-vzp-f="' + k + '" value="' + esc(h[k]) + '"' + (navic || '') + '></div>';
+    const db = f.db ? '<div class="vzp-db"><b>Databáze zákazníků</b> (v prototypu smyšlené záznamy)' + Object.keys(FIRMY).filter((k) => !Zk(k)).map((k) => '<button type="button" class="vzp-db-r" data-vzp="db:' + k + '"><b>' + esc(FIRMY[k].nazev) + '</b><span>IČO ' + esc(FIRMY[k].ico) + ' · ' + esc(FIRMY[k].sidlo) + '</span></button>').join('') + '</div>' : '';
+    const hotovo = String(h.objednatel).trim() !== '';
+    return '<div class="vzp-form"><b>Nový zákazník na zakázce</b>'
+      + '<div class="vzp-form-pole"><div>'
+      + pole('objednatel', 'Zákazník', ' placeholder="název firmy — nebo ho doplňte z ARES / z databáze"')
+      + pole('adresaObjednatele', 'Sídlo zákazníka')
+      + pole('kontakt', 'Kontaktní osoba')
+      + '</div><div>'
+      + pole('ico', 'IČO zákazníka', ' placeholder="8 číslic" inputmode="numeric"')
+      + pole('dic', 'DIČ zákazníka')
+      + '<div class="row noprint"><div class="ares-tlacitka"><button type="button" class="mini" data-vzp="dbOtevri" title="vybrat zákazníka z databáze zákazníků (doplní všechna pole)">Vybrat z databáze zákazníků</button>'
+      + '<button type="button" class="mini' + (dalsiKrok() === 'ares' && !S.hraje ? ' vzp-dalsi' : '') + '" style="margin-left:auto" data-vzp="ares" title="zeptat se rejstříku ARES, jaká firma pod tímto IČO je">🔎 Najít firmu v ARES</button></div></div>'
+      + '</div></div>' + db + formAresHtml()
+      + '<div class="row vzp-form-nab"><label>Nabídka</label><span class="vzp-volba"><label><input type="radio" name="vzpNova" value="stejna"' + (f.nova === 'stejna' ? ' checked' : '') + '> stejná varianta jako ' + esc(ridiciZ().kratce) + ' („' + esc(Va(ridiciZ().varianta).nazev) + '")</label>'
+      + '<label><input type="radio" name="vzpNova" value="vlastni"' + (f.nova === 'vlastni' ? ' checked' : '') + '> vlastní varianta (kopie)</label></span></div>'
+      + '<div class="note">Zákazník dostane písmeno <b>' + esc(pis) + '</b> — jeho nabídky ponesou číslo …-' + esc(pis) + '.' + (f.zdroj ? ' Údaje: ' + esc(f.zdroj) + '.' : '') + '</div>'
+      + '<button type="button" class="vzp-modre' + (dalsiKrok() === 'pridejForm:' + f.id && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="pridejForm:' + f.id + '"' + (hotovo ? '' : ' disabled title="nejdřív vyplňte zákazníka — ručně, z ARES nebo z databáze"') + '>Přidat zákazníka</button> <button type="button" class="mini" data-vzp="formNe">Zrušit</button></div>';
   }
   function odeberHtml() {
     const { z, v, vlastniV, zamcena, odeslano } = odeberInfo(P.potvrzeni.id);
@@ -424,6 +473,7 @@
     document.getElementById('vzpLista').innerHTML =
       '<div class="vzp-sk"><label class="vzp-pop" for="vzpScenar">Situace</label>' + vyber('vzpScenar', SCENARE, S.scenar) + '</div>'
       + '<div class="vzp-sk"><label class="vzp-pop" for="vzpRole">Dívá se</label>' + vyber('vzpRole', ROLE, S.role) + '</div>'
+      + (S.scenar === 'pridat' || P.formular ? '<div class="vzp-sk"><label class="vzp-pop" for="vzpAres">ARES</label>' + vyber('vzpAres', ARES_STAVY, S.ares) + '</div>' : '')
       + (S.scenar === 'prodej' ? '<div class="vzp-sk"><label class="vzp-pop" for="vzpPd">Pipedrive</label>' + vyber('vzpPd', PD_STAVY, S.pd) + '</div>' : '')
       + '<div class="vzp-sk vzp-kroky"><span class="vzp-pop">Kroky</span>' + kr('reset', '1. Výchozí stav') + kroky.map(([a, t]) => kr(a, t)).join('') + '</div>'
       + (P.krok === 'vychozi' && !S.hraje && k ? '<span class="vzp-napoveda">◀ Klikněte na „' + esc(k[1]) + '"</span>' : '')
@@ -510,7 +560,7 @@
 
   const POPISY = { pridej: 'zákazník přidán (stejná varianta)', odesli: 'nabídka vytištěna (odeslána)', vlastni: 'založena vlastní varianta zákazníka', uprav: 'vlastní varianta upravena', sachty: 've vlastní variantě víc šachet',
     prodej: 'prodej — čeká na potvrzení', prodejAno: 'prodáno, řídící zákazník změněn', orgAno: 'organizace dealu přepsána (opakovaný zápis)', ridici: 'řídící zákazník změněn ručně',
-    odeber: 'odstranění zákazníka — čeká na potvrzení', odeberAno: 'zákazník odstraněn', form: 'formulář nového zákazníka', varianta: 'zákazníkovi přiřazena jiná varianta' };
+    odeber: 'odstranění zákazníka — čeká na potvrzení', odeberAno: 'zákazník odstraněn', form: 'formulář nového zákazníka', ares: 'dotaz do ARES (formulář nového zákazníka)', aresAno: 'údaje z ARES převzaty do formuláře', varianta: 'zákazníkovi přiřazena jiná varianta' };
   function krok(a, arg) {
     const [co, id] = a.split(':');
     zHlavicky();
@@ -518,18 +568,25 @@
     if (co === 'reset') { vychozi(); S.blik = false; kresli(); window.scrollTo(0, 0); return; }
     if (co === 'vyber') { otevri(id); kresli(); return; }
     if (co === 'nahled') { S.nahled = id; if (id !== P.vybrany) otevri(id); S.otevreno = true; kresli(); const n = document.querySelector('#vzpPanel .vzp-papir'); if (n && n.scrollIntoView) n.scrollIntoView({ block: 'center' }); return; }
-    if (co === 'formNe') { P.formular = false; kresli(); return; }
+    if (co === 'formNe') { P.formular = false; P.f = null; kresli(); return; }
+    if (co === 'aresNe') { P.f.ares = null; kresli(); return; }
+    if (co === 'dbOtevri') { P.f.db = !P.f.db; P.f.ares = null; kresli(); return; }
+    if (co === 'db') { formDb(id); kresli(); return; }
+    if (co === 'ares' && !(P.formular && P.f)) return;
+    if (co === 'ares' && String(P.f.h.objednatel).trim() !== '' ) { formAres(); kresli(); return; }   // ruční ověření už vyplněného formuláře (mimo kroky)
     if (co === 'potvNe') { P.potvrzeni = null; kresli(); return; }
     if (!lze(a)) return;
     const idx = SCENARE[S.scenar].kroky.findIndex((x) => x[0] === a);
-    if (['prodej', 'form', 'odeber'].includes(co)) P.pred = snimek();   // krok jen otevírá potvrzení — nic se nemění
+    if (['prodej', 'form', 'odeber', 'ares', 'aresAno'].includes(co)) P.pred = snimek();   // krok jen otevírá potvrzení — nic se nemění
     if (co === 'prodej') { P.potvrzeni = { typ: 'prodej', id }; otevri(id); }
-    else if (co === 'form') P.formular = true;
+    else if (co === 'form') { P.formular = true; P.f = formNovy(); }
+    else if (co === 'ares') formAres();
+    else if (co === 'aresAno') formAresAno();
     else if (co === 'odeber') { P.potvrzeni = { typ: 'odeber', id }; P.formular = false; }
     else {
       P.pred = snimek(); P.formular = false;
       if (co === 'pridej') pridej(id, false);
-      else if (co === 'pridejForm') pridej(id, arg === 'vlastni');
+      else if (co === 'pridejForm') { const h = P.f.h; pridej(id, P.f.nova === 'vlastni', { nazev: String(h.objednatel).trim(), sidlo: String(h.adresaObjednatele).trim(), ico: icoNormalizuj(h.ico), kontakt: String(h.kontakt).trim(), kratce: (String(h.objednatel).trim().split(/\s+/)[0] || FIRMY[id].kratce).toUpperCase().slice(0, 14), zdroj: P.f.zdroj }); P.f = null; }
       else if (co === 'vlastni') vlastni(id);
       else if (co === 'uprav') uprav(id);
       else if (co === 'sachty') sachty(id);
@@ -551,6 +608,7 @@
   function hraj() {
     if (S.hraje) { zastav(); kresli(); return; }
     if (S.role === 'jiny') S.role = 'autor';
+    S.ares = 'ok';
     if (S.scenar === 'odeslana') S.role = 'admin';
     const fronta = ['reset'].concat(SCENARE[S.scenar].kroky.map((x) => x[0]));
     S.hraje = { i: 0, t: null };
@@ -569,12 +627,15 @@
     if (a === 'hraj') { hraj(); return; }
     zastav();
     if (a === 'panel') { S.otevreno = !S.otevreno; kresli(); return; }
-    if (a.indexOf('pridejForm:') === 0) { const v = document.querySelector('input[name="vzpNova"]:checked'); krok(a, v ? v.value : 'stejna'); return; }
+
     if (a === 'odeberAno') { const v = document.querySelector('input[name="vzpOdeber"]:checked'); krok(a, v ? v.value : 'smazat'); return; }
     krok(a);
   }
   function zmena(e) {
     const t = e.target; if (!t) return;
+    if (t.id === 'vzpAres') { zastav(); S.ares = t.value; if (P.f) P.f.ares = null; kresli(); return; }
+    if (t.name === 'vzpNova' && P.f) { P.f.nova = t.value; return; }
+    if (t.getAttribute && t.getAttribute('data-vzp-f') && P.f) { P.f.h[t.getAttribute('data-vzp-f')] = t.value; kresli(); return; }
     if (t.id === 'vzpScenar' || t.id === 'vzpRole' || t.id === 'vzpPd') {
       zastav(); S[{ vzpScenar: 'scenar', vzpRole: 'role', vzpPd: 'pd' }[t.id]] = t.value;
       if (t.id === 'vzpScenar' && t.value === 'odeslana') S.role = 'admin';   // odstranit zákazníka s odeslanou nabídkou smí jen administrátor
@@ -600,6 +661,8 @@
     document.body.insertBefore(l, document.body.firstChild);
     document.body.addEventListener('click', klik);
     document.body.addEventListener('change', zmena);
+    /* psaní do formuláře: hodnota se drží ve stavu, aby ji překreslení aplikace nesmazalo */
+    document.body.addEventListener('input', (e) => { const t = e.target, k = t && t.getAttribute && t.getAttribute('data-vzp-f'); if (k && P.f) P.f.h[k] = t.value; });
     window.addEventListener('resize', vyska);
     let t = null;
     PK = document.getElementById('page-kalk');

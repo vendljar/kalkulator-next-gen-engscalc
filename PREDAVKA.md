@@ -13,6 +13,10 @@ weby, Disk, Pipedrive nic. Programování spouští koordinace až po souhlasu J
 bez „+“ na řádku vedle popisku Zákazník (zapsáno do návrhu § 2a a promptu E1); v prototypu zapnuté víc šachet
 a situace „víc zákazníků + víc šachet“.
 
+**Doplněk J. V. 16. 11. — ARES ve formuláři nového zákazníka (prototyp v5, ověření 46/0, snímky `v5_*`):** formulář
+má široká pole, „Vybrat z databáze zákazníků“ a funkční „Najít firmu v ARES“ s potvrzením rozdílů; zapsáno
+do návrhu § 2a a promptů E1 (zobecnění `ares_ui.js` na cíl, žádná kopie) a E0 (stejné klíče hlavičky).
+
 **Etapy:** E0 → E1 → E2 → E3 → E4 → E5b → E6; E5 souběžně s E1–E3 (po E0). Revize poradce: E0, E2, E3, E5b.
 **Čeká na J. V.:** souhlas se spuštěním; jedna nová otázka — kontaktní osoba dealu po přepsání organizace (§ 11,
 doporučeno: neměnit a upozornit).

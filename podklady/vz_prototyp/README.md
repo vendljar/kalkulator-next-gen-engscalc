@@ -33,6 +33,11 @@ administrátor. Ověření 33 kontrol; snímky `snimky/v3_*` (dotčené kroky), 
 (stejná výška řádku jako sousední); vypínač víc šachet je v prototypu zapnutý (skutečné ovládání šachet aplikace)
 a přibyla situace „víc zákazníků + víc šachet“. Ověření 38 kontrol; snímky `snimky/v4_*`.
 
+**Verze 5 (doplněk J. V. 16. 11. 2026):** formulář „Nový zákazník na zakázce“ má široká pole (Zákazník, Sídlo,
+Kontaktní osoba, IČO, DIČ), „Vybrat z databáze zákazníků“ a funkční „Najít firmu v ARES“ — panel a hlášky jsou
+z aplikace (`aresZpracuj`, `aresRozdily`, `aresPrepis`, `aresHlaska`), odpověď rejstříku je napodobená; přepínač
+„ARES: odpoví / IČO v ARES není / výpadek“ v liště. Ověření 46 kontrol; snímky `snimky/v5_*`.
+
 Situace: (1) přidat a odstranit zákazníka, (2) odstranit zákazníka s odeslanou nabídkou, (3) stejná varianta pro
 víc zákazníků, (4) víc zákazníků + víc šachet, (5) prodej druhému zákazníkovi.
 

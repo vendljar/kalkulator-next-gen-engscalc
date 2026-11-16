@@ -49,6 +49,14 @@ Přečti `src/vice_sachet.js` (vzor „první na původním místě, ostatní v 
 pohled neobsahuje žádný řetězec jiného zákazníka, tvar), `netlify/test_vz_server.mjs` (VYP odmítá změnu, ZAP
 vadný tvar, podvržené `vzRidici`), zlatá sada. Mutace „[VZ E0]“ nad `vice_zakazniku.js` a kontrolou serveru.
 
+## Poznámka k ARES
+
+Čistá logika ARES (`src/ares.js`: `aresRozdily`, `aresPrepis` nad libovolným objektem s klíči `objednatel`,
+`adresaObjednatele`, `ico`, `dic`) se pro formulář nového zákazníka a pro dalšího zákazníka použije beze změny —
+`dalsiZakaznici[i].hlavicka` má proto **stejné klíče jako hlavička zakázky**. Ověř testem (`test_vz_model.js`), že
+`aresRozdily` a `aresPrepis` nad `hlavicka` dalšího zákazníka dávají stejný výsledek jako nad hlavičkou zakázky.
+Zobecnění obrazovky ARES je v E1.
+
 ## Co nedělat
 
 Žádná obrazovka kromě vypínače v Nastavení, žádná změna čísel, dokumentů, zámku, rejstříku ani Pipedrive.

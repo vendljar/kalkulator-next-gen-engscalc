@@ -149,3 +149,23 @@ body.vzp-otevreno { margin-right: 440px; }
 .vzp-chips-row .vzp-zn { align-self: center; }
 #vzpKarta .vzp-cervene { font: 600 14px system-ui, sans-serif; cursor: pointer; border-radius: 6px; padding: 8px 14px; border: 1px solid #b3261e; background: #b3261e; color: #fff; }
 #vzpKarta .vzp-pr .vzp-volba label { display: flex; }
+
+/* ----- formulář nového zákazníka: plná šířka polí, ARES a databáze zákazníků ----- */
+.vzp-form .vzp-form-pole { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 4px 28px; margin-top: 6px; }
+.vzp-form .vzp-form-pole .row { max-width: none; }
+.vzp-form .vzp-form-pole .row > label { flex: 0 0 130px; }
+.vzp-form .vzp-form-pole .row > input[type=text] { flex: 1 1 auto; width: auto !important; min-width: 0; text-align: left; }
+.vzp-form .vzp-form-nab { max-width: none; margin-top: 8px; }
+.vzp-form .vzp-form-nab > label { flex: 0 0 130px; }
+.vzp-form .ares-panel { max-width: none; }
+.vzp-form .vzp-db { margin: 6px 0 8px; padding: 8px 10px; background: #fff; border: 1px solid #c3cde0; border-radius: 6px; display: flex; flex-direction: column; gap: 4px; }
+.vzp-form .vzp-db-r { font: inherit; text-align: left; cursor: pointer; background: #f6f8fc; border: 1px solid #d5dcea; border-radius: 6px; padding: 5px 9px; display: flex; flex-wrap: wrap; gap: 4px 12px; color: #1b2333; }
+.vzp-form .vzp-db-r:hover { border-color: #1d4ed8; }
+.vzp-form .vzp-db-r span { color: #5b6472; }
+.vzp-form button.vzp-dalsi, .vzp-form .ares-btns button.vzp-dalsi { outline: 2px solid #e0a800; outline-offset: 1px; animation: vzp-pulz 1.4s ease-in-out infinite; }
+@media (max-width: 760px) {
+  .vzp-form .vzp-form-pole { grid-template-columns: minmax(0, 1fr); }
+  .vzp-form .vzp-form-pole .row, .vzp-form .vzp-form-nab { flex-wrap: wrap; }
+  .vzp-form .vzp-form-pole .row > label, .vzp-form .vzp-form-nab > label { flex: 1 1 100%; }
+  .vzp-form .ares-tlacitka { flex-wrap: wrap; }
+}

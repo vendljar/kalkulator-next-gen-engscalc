@@ -134,9 +134,18 @@ souborů nahradí pohled zákazníka s testem úniku. Proto seznam v zakázce.
   Zákazník se o šířku tlačítka zúží (popisek s tlačítkem `flex: 0 0 auto`, pole `flex: 1`, nejméně 110 px).
   Ověřeno při 1600 px s panelem prototypu i bez něj; při 400 px smí zalomit. Nic jiného se nemění: žádná karta, přepínač, štítek, pruh u náhledu ani písmeno
   v čísle. Dokumenty, data i rejstřík jsou bajtově stejné jako dnes.
-- Tlačítko otevře v hlavičce formulář (vzor panelu ARES): zákazník přes našeptávač a databázi zákazníků, IČO,
-  „Najít firmu v ARES“, a volba nabídky — **stejná varianta jako řídící zákazník** (výchozí), nebo **vlastní varianta
-  (kopie)**. Zrušení formuláře nic nezmění.
+- Tlačítko otevře v hlavičce formulář „Nový zákazník na zakázce“ přes celou šířku karty: Zákazník, Sídlo, Kontaktní
+  osoba, IČO, DIČ (pole široká na celý název a IČO), a volba nabídky — **stejná varianta jako řídící zákazník**
+  (výchozí), nebo **vlastní varianta (kopie)**. Zrušení formuláře nic nezmění.
+- **ARES a databáze zákazníků ve formuláři (doplněk J. V. 16. 11. 2026):** vedle IČO jsou tatáž tlačítka jako
+  v hlavičce — „Vybrat z databáze zákazníků“ a „🔎 Najít firmu v ARES“ — a pole Zákazník má našeptávač. ARES ukáže
+  tentýž panel jako v hlavičce (firma, tabulka „Údaj / Ve formuláři teď / Z rejstříku“, zaniklý subjekt, hlášky
+  neplatné IČO / nenalezeno / výpadek) a údaje převezme **jen po potvrzení** („Převzít údaje do formuláře (N)“).
+  Stejná logika jako dnes: `aresUrl`, `aresZpracuj`, `aresRozdily`, `aresPrepis`, `aresHlaska` (`src/ares.js`) —
+  panel a dotaz z `src/ui/ares_ui.js` se zobecní na „cíl“ (hlavička OCK, hlavička PROJ, formulář nového zákazníka,
+  později otevřený další zákazník), aby nevznikla druhá kopie. Výběr z databáze doplní všechna pole (`zakaznikPredvypln`).
+  „Přidat zákazníka“ je zhasnuté, dokud není vyplněný název. Po přidání se do protokolu zapíše, odkud údaje jsou
+  (ARES / databáze / ručně) — jen název firmy, žádné kontakty.
 - Potvrzením vznikne druhý zákazník a teprve tehdy se objeví přepínač zákazníků v hlavičce (místo tlačítka; má
   vlastní „+“), karta „Zákazníci zakázky“ pod hlavičkou a pruh „náhled a tisk platí pro zákazníka X“.
 

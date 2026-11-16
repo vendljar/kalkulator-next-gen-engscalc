@@ -19,8 +19,18 @@ odstranění posledního je obrazovka i zakázka jako předtím.
 
 1. **Tlačítko** „Přidat zákazníka“ (bez „+“) na stejném řádku hned vedle popisku Zákazník; řádek má stejnou výšku jako Kontaktní osoba a IČO, pole Zákazník se zúží (návrh § 2a; ověř 1200–1920 px, při 400 px smí zalomit) (jen ZAP, jen kdo smí ukládat, ne u prodané zakázky,
    ne v režimu jen ke čtení). Nic jiného se s jedním zákazníkem nemění.
-2. **Formulář** v hlavičce (vzor panelu ARES): zákazník přes našeptávač a databázi zákazníků, IČO s kontrolní
-   číslicí, „Najít firmu v ARES“, volba „stejná varianta jako řídící“ / „vlastní varianta (kopie)“, Přidat / Zrušit.
+2. **Formulář „Nový zákazník na zakázce“** v hlavičce přes celou šířku karty (prototyp, snímky `v5_*`): Zákazník
+   (s našeptávačem), Sídlo, Kontaktní osoba, IČO, DIČ — pole široká na celý název; volba „stejná varianta jako
+   řídící“ / „vlastní varianta (kopie)“; Přidat (zhasnuté bez názvu) / Zrušit.
+   **ARES a databáze zákazníků fungují ve formuláři stejně jako v hlavičce** (doplněk J. V. 16. 11. 2026):
+   tlačítka „Vybrat z databáze zákazníků“ a „🔎 Najít firmu v ARES“ vedle IČO; panel ARES s tabulkou „Údaj / Ve
+   formuláři teď / Z rejstříku“ a převzetím až po potvrzení; hlášky `aresHlaska` (prázdné, neplatné IČO —
+   do rejstříku se neptá, nenalezeno, výpadek), zaniklý subjekt. **Nekopíruj `ares_ui.js`:** zobecni `ARES.kde`,
+   `aresHlavicka(kde)`, `aresHledej`, `aresPanel`, `aresPrepisPotvrd` na „cíl“ (hlavička OCK, PROJ, formulář nového
+   zákazníka, otevřený další zákazník) — cíl dává objekt údajů, popisek sloupce („V hlavičce teď“ / „Ve formuláři
+   teď“), zmrazení a kam se zapíše protokol. Hlavička se tím nesmí změnit ani o znak (harness proti bázi,
+   `overit_lista.mjs`). Totéž pro „Vybrat z databáze“ (`zakaznici_ui.js`). Odpověď ARES je nedůvěryhodný vstup —
+   vše přes `esc` / `escJs`, otrávený název do `overit_xss.mjs`. Testy ARES jen s podvrženým `fetch`.
 3. **2+ zákazníků:** řádek přepínače zákazníků nad polem Zákazník (★ řídící, písmeno, „+“); pole Zákazník, Kontaktní
    osoba, IČO, tlačítka ARES a databáze pracují s **otevřeným zákazníkem** (`VZ_UI.otevreny`; čtení a zápis přes
    jedno místo — vzor `vsSyncZ`). Otevření zákazníka otevře jeho variantu. Zmrazení hlavičky (`zamekZakAttr`) platí
