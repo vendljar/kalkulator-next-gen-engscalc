@@ -16,7 +16,7 @@ function nabidkaProjPopis(val) { ZAK.popisZameru = val; }
  * změnily nabízené činnosti. Zápis jde přes set(), takže ho hlídá zámek. */
 function nabidkaProjUvodNastav(val) {
   let d = null;
-  try { d = nabidkaProjData(ZAK, aktivniVarianta(ZAK)); } catch (e) { return; }
+  try { d = nabidkaProjData(vzTiskRidici(), aktivniVarianta(ZAK)); } catch (e) { return; }   // VZ-E2 U3: PROJ = řídící
   const t = String(val || '').replace(/\r/g, '').trim();
   if (!t || t === String(d.uvod.vychoziCz || '').trim()) { nabidkaProjUvodVychozi(); return; }
   set('PJ.uvodNabidkyRucne', t);
@@ -32,7 +32,7 @@ function nabidkaProjKarta() {
   const akt = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0];
   const rid = (typeof ridiciVarianta === 'function') ? ridiciVarianta(ZAK) : akt;
   let d = null, chyba = '';
-  try { d = nabidkaProjData(ZAK, akt); } catch (e) { chyba = e.message; }
+  try { d = nabidkaProjData(vzTiskRidici(), akt); } catch (e) { chyba = e.message; }   // VZ-E2 U3: PROJ = řídící (R5)
   if (!d) return `<div class="neg">Chyba výpočtu nabídky PROJ: ${esc(chyba)}</div>`;
 
   const p = d.placeholders;

@@ -78,6 +78,8 @@ for (const [soubor, fn, popis] of VSTUPY) {
   test('karta CN: živý náhled z pohledu a pruh', !!nk && /nabidkaData\(TZ, aktT/.test(nk) && /vzTiskPruhHtml\(\)/.test(nk));
   /* Pravidlo v katalogu kontrol záměrně NENÍ (počet pravidel nese vydaný manuál
    * — test_manual_vypocet; nové vydání je E6). Zábranu nese brána dokumentů. */
+  test('U5: nevyplněná místa SoD nad pohledem otevřeného zákazníka (PROJ nad řídícím)',
+    /o\.sod = sodData\(zS, vS, JEKLY,/.test(cti('ui/kontroly_ui.js')) && /o\.sodProj = sodProjData\(zP, v,/.test(cti('ui/kontroly_ui.js')));
   test('kontroly: katalog pravidel beze změny (žádné vzTisk)', !/kod: 'vzTisk'/.test(cti('kontroly.js')));
 }
 

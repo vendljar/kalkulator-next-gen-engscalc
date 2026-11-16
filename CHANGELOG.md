@@ -47,6 +47,9 @@ jako dnes (zlatá sada (e1): `vzTiskPohled` vrací týž objekt). Zadání `podk
   nebo IČO jiného zákazníka ve sdíleném tištěném textu či názvu varianty, PROJ jen pro řídícího (R5), vypnutá funkce
   jen řídící. **Pruh** „Náhled a tisk platí pro zákazníka X — nabídka …-B“ v kartě CN (jen 2+).
 - **Statická kontrola** `nastroje/kontrola_vz_unik.sh` (s pojistkou) v kole — statické kontroly teď 6.
+- **Revize poradce (U1–U6):** ruční pole zákazníka krycího listu sdílené varianty a snímek zámku jen vlastníkovi
+  (podle id zákazníka, ne písmene); pojistka i v `nabidkaData` / `kryciData` / `nabidkaProjData`; webhook
+  „…9940.2-B“; nevyplněná místa SoD nad pohledem; B224 heuristika. Test `src/test_vz_kl_pole.js`.
 - Testy `src/test_vz_unik.js` (kanárky), `src/test_vz_cisla.js`, `src/test_vz_tisk_vstupy.js`, zlatá sada (e),
   `netlify/test_vz_webhook.mjs`, prohlížeč `overit_vz_tisk.mjs`; mutace „[VZ E2]“. Meze **B223**, **B224**.
 ## v16.11.3 — VZ-E1 #600: víc zákazníků — obrazovka (tlačítko, formulář s ARES a databází, přepínač, karta, odstranění), větev claude/vz-e1

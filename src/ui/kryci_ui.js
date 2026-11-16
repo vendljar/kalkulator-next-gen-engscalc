@@ -8,6 +8,8 @@
 function klSet(id, v) {
   if (!KL.hodnoty) KL.hodnoty = {};
   if (v === '' || v == null) delete KL.hodnoty[id]; else KL.hodnoty[id] = v;
+  /* VZ-E2 (revize U1): ruční pole zákazníka patří řídícímu zákazníkovi. */
+  if (typeof vzKlZapis === 'function' && kryciPoleZakaznika(id)) vzKlZapis(KL, id, ZAK);
   /* Dopočet dílčí faktury č. 2 (19. 8. 2026): záloha + dílčí 2 + konečná
    * = 100 %. Změna zálohy nebo konečné faktury prostřední hodnotu dopočte;
    * dovětek („– po zahájení montáže") zůstává. Když procenta nejdou přečíst,

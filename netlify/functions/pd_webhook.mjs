@@ -50,7 +50,7 @@ import { pdPoleMapa } from './pd_pole.mjs';
 import {
   pdWebhookKlic, pdWebhookKlicZPozadavku, pdWebhookKlicSedi, pdWebhookDealId, pdWebhookZadani,
   pdWebhookHlavicka, pdWebhookPouzij, pdWebhookVolbaText, pdWebhookZamkyPoruseny, pdWebhookCisloKlic, pdWebhookOdkaz,
-  pdWebhookCisloZaklad, pdWebhookPismeno, pdWebhookCisloSedi,
+  pdWebhookCisloZaklad, pdWebhookPismeno, pdWebhookCisloSedi, pdWebhookCisloVarianta, pdWebhookVariantaPripona,
   pdWebhookOtisk, PD_WEBHOOK_POLE_ARES,
   PD_WEBHOOK_MAX, PD_WEBHOOK_TELO_MAX, PD_WEBHOOK_AUTOR, PD_WEBHOOK_AUTOR_JMENO, PD_WEBHOOK_ULOZISTE,
   PD_WEBHOOK_KLIC_PROMENNA,
@@ -169,6 +169,17 @@ async function zpracuj(req, dealId, ULO, G) {
       const jmenoZ = ULO.uloJmenoSouboru(vzorZ);
       const zz = await s.cti('z/' + jmenoZ);
       if (zz && pdWebhookPismeno(zz, rozklad.pismeno)) { z = zz; jmeno = jmenoZ; }
+    }
+    /* U4 (revize): CN varianty dalšího zákazníka („…9940.2-B") — ani základ
+     * „…9940.2" není → zakázka „…9940", ale JEN když nese písmeno I variantu
+     * s příponou 2. Číslo bez písmene („…9940.2") se takhle nehledá (jako dřív). */
+    const varianta = rozklad.pismeno ? pdWebhookCisloVarianta(rozklad.zaklad) : { pripona: 0 };
+    if (!z && zadani.strana === 'ock' && varianta.pripona > 0) {
+      const vzorV = G.novaZakazka();
+      vzorV.cislo = varianta.zaklad;
+      const jmenoV = ULO.uloJmenoSouboru(vzorV);
+      const zv = await s.cti('z/' + jmenoV);
+      if (zv && pdWebhookPismeno(zv, rozklad.pismeno) && pdWebhookVariantaPripona(zv, varianta.pripona)) { z = zv; jmeno = jmenoV; }
     }
     if (z) {
       const jiny = norm(z.pdDealId);

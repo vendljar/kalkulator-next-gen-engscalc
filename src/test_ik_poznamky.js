@@ -194,7 +194,7 @@ for (const [list, data, prvni] of [['OCK', K.kryciData, 'Základní údaje'], ['
   }
   const objZdroj = fs.readFileSync(__dirname + '/objednane.js', 'utf8');
   test('prodPdZapis bere z krycích listů jen sekce (kryciData), ne výstup tisku',
-    /kryciData\(zak, v, jekly, 'bo'\)/.test(objZdroj) && !/kryciVystupSekce/.test(objZdroj));
+    /kryciData\((zak|zakKl), v, jekly, 'bo'\)/.test(objZdroj) && !/kryciVystupSekce/.test(objZdroj));
 }
 
 /* ---------- 5) doplňování vždy: zámky pole neblokují ---------- */

@@ -1938,7 +1938,7 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   listu dostane (návrh § 9: jen upozornit). Protokol zakázky (E1 do něj píše
   názvy zákazníků) se do pohledu přenáší, žádný generátor ho netiskne
   (ověřuje test úniku).
-- **B224 — E2: zábrana cizího zákazníka v tištěném textu je textová shoda.**
+- **B224 — E2: zábrana cizího zákazníka v tištěném textu je jen HEURISTIKA (textová shoda).**
   `vzTiskZabrana` zastaví tisk, když název akce, adresa, popis záměru,
   název/popis úvodní fotky (OCK, PROJ), název varianty (u řídícího i sloupec
   Zákazník varianty) obsahuje název jiného zákazníka zakázky (bez diakritiky,
@@ -1951,7 +1951,16 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   podle razítka tisku neodešla), se pro něj netiskne — i pro řídícího;
   dokumenty PROJ jen pro řídícího (R5); s vypnutou funkcí jen pro řídícího.
   Webhook najde zakázku i podle čísla s písmenem jen u strany OCK a jen když
-  zakázka toto písmeno nese (jinak jako dřív).
+  zakázka toto písmeno nese (jinak jako dřív); „…9940.2-B“ jen když má i
+  variantu s příponou 2.
+  Revize (U6): shoda podle názvu je heuristika, ne záruka — za obsah sdílených
+  textů odpovídá obchodník; jistotou proti úniku je pohled zákazníka (B223).
+  Revize (U1/U2): ruční pole zákazníka krycího listu sdílené varianty
+  (sekce Zákazník a Zástupci, podpisy, kopie faktur, zmocnitel) a snímek
+  zámku se tisknou jen zákazníkovi, který je vlastní (id u pole / snímku,
+  zapisuje se jen u víc zákazníků; bez záznamu původní z1). Ostatním jsou
+  prázdná (smlouva ukáže „……“). Ruční hodnoty zapisuje UI za řídícího —
+  vlastní ruční hodnoty dalšího zákazníka přinese E3.
 ### VZ-E3 #602 (v16.11.5, 16. 11. 2026) — zámek po zákaznících
 
 - **B227 — E3: razítko „komu“, platná nabídka a odstranění zákazníka hlídá server.**

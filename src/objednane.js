@@ -682,7 +682,10 @@ function prodPdZapis(zak, v, jekly) {
       const cn = r && typeof cenaNabidkyOck === 'function' ? cenaNabidkyOck(r, d.sleva, d.zaokr) : null;
       if (cn) hodnota.push({ oblast: 'OCK', bezDphKc: Math.round(cn.cena * 100) / 100 });
     } catch (e) { /* bez výsledku se cena neuvádí — nic se neodhaduje */ }
-    try { if (typeof kryciData === 'function') kryci.push(Object.assign({ list: 'OCK' }, kryciData(zak, v, jekly, 'bo'))); } catch (e) {}
+    /* VZ-E2 (revize U3): krycí list do dealu = řídící zákazník (pohled řídícího;
+     * jeden zákazník = táž zakázka) — kryciData z celé zakázky s víc zákazníky hodí. */
+    const zakKl = (typeof vzTiskPohled === 'function' ? vzTiskPohled(zak, '') : null) || zak;
+    try { if (typeof kryciData === 'function') kryci.push(Object.assign({ list: 'OCK' }, kryciData(zakKl, v, jekly, 'bo'))); } catch (e) {}
   }
   if (vyr !== 'proj') {
     try {
@@ -690,7 +693,7 @@ function prodPdZapis(zak, v, jekly) {
       const cn = r && typeof cenaNabidkyProj === 'function' ? cenaNabidkyProj(r, d.slevaProj, d.zaokrProj) : null;
       if (cn && cn.cena > 0) hodnota.push({ oblast: 'PROJ', bezDphKc: Math.round(cn.cena * 100) / 100 });
     } catch (e) {}
-    try { if (typeof kryciProjData === 'function') kryci.push(Object.assign({ list: 'PROJ' }, kryciProjData(zak, v, jekly, 'bo'))); } catch (e) {}
+    try { if (typeof kryciProjData === 'function') kryci.push(Object.assign({ list: 'PROJ' }, kryciProjData((typeof vzTiskPohled === 'function' ? vzTiskPohled(zak, '') : null) || zak, v, jekly, 'bo'))); } catch (e) {}
   }
   const p = v.prodano || {};
   return { dealId: String(zak.pdDealId || ''), fazeDealu: 'Vyhrané k podpisu SoD',

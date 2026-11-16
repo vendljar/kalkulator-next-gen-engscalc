@@ -362,7 +362,7 @@ function vzPohled(zak, id) {
         p.aktivni = z.ridici ? ridiciVar : z.varianta;
     }
   }
-  p.vzPohledZakaznika = { id: z.id, pismeno: z.pismeno };
+  p.vzPohledZakaznika = { id: z.id, pismeno: z.pismeno, ridici: !!z.ridici };   // ridici: revize E2 U2
   return p;
 }
 
@@ -608,6 +608,43 @@ function vzTiskVarianta(pohled, varianta) {
   if (!varianta) return null;
   const id = String(vzObj(varianta) ? varianta.id : varianta);
   return pohled.varianty.find(v => String(v.id) === id) || null;
+}
+
+/* POLE ZÁKAZNÍKA V KRYCÍM LISTU SDÍLENÉ VARIANTY (revize E2 U1, U2).
+ * Ruční hodnoty (`kl.hodnoty`) a snímek zámku (`kl.zmrazeno`) jsou data
+ * VARIANTY — u sdílené varianty společné všem jejím zákazníkům. Pole zákazníka
+ * (`zakaznikPole`: sekce Zákazník a Zástupci, podpisy, kopie faktur, zmocnitel)
+ * se v pohledu zákazníka čtou z nich jen tehdy, když je „vlastní" tentýž
+ * zákazník: ruční hodnota podle `kl.vzVlastnik[pole]`, snímek podle
+ * `kl.vzZmrazeno` (id řídícího v okamžiku zámku); bez záznamu = původní
+ * zákazník z1. Rozhoduje id zákazníka, NE písmeno ani role. Mimo pohled
+ * (obrazovka, jeden zákazník) beze změny. Per-zákazník ruční hodnoty = E3. */
+function vzKlVlastni(zak, vlastnik) {
+  const p = zak && zak.vzPohledZakaznika;
+  if (!vzObj(p)) return true;
+  return String(vlastnik || VZ_RIDICI_ID) === String(p.id);
+}
+/* Zápis ruční hodnoty pole zákazníka (UI krycího listu nad celou zakázkou):
+ * u víc zákazníků si pole zapamatuje vlastníka = řídícího zákazníka. Jeden
+ * zákazník = žádný klíč navíc. */
+function vzKlZapis(kl, id, zak) {
+  if (!kl || !vzRezim(zak)) return;
+  if (!vzObj(kl.vzVlastnik)) kl.vzVlastnik = {};
+  kl.vzVlastnik[String(id)] = vzRidiciId(zak);
+}
+/* Snímek zámku krycího listu: čí je (jen u víc zákazníků; jinak klíč pryč). */
+function vzKlZmrazeno(kl, zak) {
+  if (!kl) return;
+  if (vzRezim(zak)) kl.vzZmrazeno = vzRidiciId(zak); else delete kl.vzZmrazeno;
+}
+/* Pole zákazníka v krycím listu: sekce zákazníka a jeho zástupců, podpisy,
+ * kopie faktur a zmocnitel (plná moc). Označí `zakaznikPole` na místě. */
+function vzKlOznacPole(sekce) {
+  const SEK = ['Zákazník (smluvní partner)', 'Zástupci a kontakty zákazníka'];
+  (sekce || []).forEach(s => (s.pole || []).forEach(p => {
+    if (SEK.indexOf(s.sekce) >= 0 || /^obj(Podpis|Kopie)/.test(p.id) || /^pmZmocnitel/.test(p.id)) p.zakaznikPole = true;
+  }));
+  return sekce;
 }
 
 /* Pojistka generátorů (R1): dokument se nesmí tvořit z celé zakázky
@@ -1008,4 +1045,5 @@ if (typeof module !== 'undefined' && module.exports)
     vzTextCizi, vzTypProj, vzSdileneTexty, vzTiskZabrana, vzTiskPruhText, vzTiskVarianta, vzTiskHlidej,
     VZ_RAZITKO_KLICE, VZ_ZMRAZENA_POLE, vzTiskKomu, vzTiskyVarianty, vzCisloVarianty, vzRazitkoSnimek, vzTiskyZakaznika,
     vzOdeslanoKomu, vzCenaZamku, vzPlatna, vzStavNabidky, vzRazitkoDotisku, vzCisloDokladu, vzOdstranDuvod,
-    vzZakaznikPoleZmrazeno, vzServerZakaznici, vzZalozenDrz, vzServerRazitka, vzPlatnaPrepocti, vzVariantaBezCizichRazitek };
+    vzZakaznikPoleZmrazeno, vzServerZakaznici, vzZalozenDrz, vzServerRazitka, vzPlatnaPrepocti, vzVariantaBezCizichRazitek,
+    vzKlVlastni, vzKlZapis, vzKlZmrazeno, vzKlOznacPole };

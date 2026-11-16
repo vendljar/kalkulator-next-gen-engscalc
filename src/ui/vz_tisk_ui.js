@@ -118,3 +118,9 @@ function vzTiskCisloZakaznika(zak, z, v) {
   const c = (typeof variantaCislo === 'function' && v) ? variantaCislo(zak, v) : String((zak && zak.cislo) || '');
   return (z && typeof vzCisloSPismenem === 'function') ? vzCisloSPismenem(c, z.pismeno) : c;
 }
+
+/* Pohled řídícího zákazníka pro obrazovky PROJ (R5: PROJ jen řídící); jeden
+ * zákazník = TÝŽ objekt ZAK. Generátory z celé zakázky s víc zákazníky hodí. */
+function vzTiskRidici() {
+  return (typeof vzTiskPohled === 'function' ? vzTiskPohled(ZAK, '') : null) || ZAK;
+}

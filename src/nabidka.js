@@ -12,6 +12,7 @@
  * jen dosazované hodnoty, aby výsledný dokument byl jazykově konzistentní.
  * Neznámý výraz zůstává česky (viz preklad.js) – nikdy se nic nevymýšlí. */
 function nabidkaData(zak, varianta, jekly, lang, sablona, moznosti) {
+  if (typeof vzTiskHlidej === 'function') vzTiskHlidej(zak);   // VZ-E2 (revize U3): jen z pohledu zákazníka
   /* ODESLANÁ NABÍDKA ZŮSTÁVÁ ZMRAZENÁ (Z1, J. V. 22. 10. 2026): dotisk CN
    * bere krycí list a sazbu DPH ze snímku zámku (zamekNabidkaPohled), takže
    * podmínky ani DPH změněné po odeslání ho nezmění. Smlouva o dílo staví
