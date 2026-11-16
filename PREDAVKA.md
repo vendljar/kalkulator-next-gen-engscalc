@@ -1,3 +1,19 @@
+# Předávka — 16. 11. 2026: návrh v2 „víc zákazníků na jedné zakázce“ (poradce), větev `claude/vz-navrh`
+
+Sloučena integrace `8462aea` (v12.11.7). Jen podklady — kód aplikace beze změny. Do `test-draft`, `test` ani `main` nic;
+weby, Disk, Pipedrive nic.
+
+| úkol | stav | kde |
+|---|---|---|
+| návrh v2 | ✅ | `podklady/NAVRH_VICE_ZAKAZNIKU.md` — nově úvod „Co mění v2“, § 2a (standardní pohled, přidání, odstranění), § 1.1 (žádný klíč navíc s jedním zákazníkem, písmeno z razítek), § 11 (4 otázky) |
+| prototyp v2 | ✅ | stejná adresa https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V (verze 2), zdroj `podklady/vz_prototyp/` |
+| ověření v headless Chromiu | ✅ 28/0 | `node podklady/vz_prototyp/snimky.mjs <výstup>` — 1600 × 1000 a 400 × 800; snímky `podklady/vz_prototyp/snimky/v2_*` |
+| kontrola údajů | ✅ čisté | `python3 nastroje/kontrola_udaju.py` |
+
+**Čeká na J. V.:** 4 otázky v § 11 (číslo s písmenem; text v dealu; organizace dealu po prodeji; odstranění zákazníka
+s odeslanou nabídkou). Návrh i prototyp počítají s doporučenými volbami.
+**Pro koordinaci:** platí body z 12. 11. (VZ po sloučení K40c; podmínka shody IČO u „Opravit firmu v Pipedrive“).
+
 # Předávka — 12. 11. 2026: návrh „víc zákazníků na jedné zakázce“ (poradce), větev `claude/vz-navrh`
 
 Nad `aa445a1` (v11.11.1). Jen podklady — kód aplikace beze změny, verze se nemění. Do `test-draft`, `test` ani `main` nic;

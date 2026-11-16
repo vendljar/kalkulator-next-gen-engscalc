@@ -10,15 +10,22 @@ https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V
   aplikace. Pipedrive je jen napodobený v paměti stránky, data jsou smyšlená, nic se nikam neposílá.
 - `sestav.mjs` — vloží panel za sestavenou aplikaci:
   `KNG_NEZVYSOVAT_VERZI=1 python3 build.py && node podklady/vz_prototyp/sestav.mjs dist/kalkulacka.html <výstup.html>`
-  (sestaveno nad `aa445a1`, v11.11.1; výstup má tvar pro artefakt — bez obalu dokumentu). Ceny jdou ze
+  (v1 nad `aa445a1`, v2 nad `8462aea`; výstup má tvar pro artefakt — bez obalu dokumentu). Ceny jdou ze
   zkušebního ceníku testů (`src/zkusebni_cenik.js`, kulatá smyšlená čísla) — aplikace sama ceník nenese.
-- `snimky.mjs` — ověření v headless Chromiu (25 kontrol, 1600 × 1000 a 400 × 800) a snímky:
+- `snimky.mjs` — ověření v headless Chromiu (v2: 28 kontrol, 1600 × 1000 a 400 × 800) a snímky:
   `node podklady/vz_prototyp/snimky.mjs <výstup.html>`.
-- `snimky/` — 1–8 desktop (výchozí stav, přidaný zákazník, tatáž varianta odeslaná oběma, náhled nabídky pro
-  zákazníka, vlastní varianta, potvrzení prodeje, prodáno se změnou řídícího zákazníka, změna organizace dealu),
-  9–11 mobil 400 px.
+- `snimky/v2_*` — v2: 1–10 desktop (standardní kalkulace jen s tlačítkem, formulář, co se objeví s druhým
+  zákazníkem, vlastní varianta, potvrzení odstranění, návrat do standardního pohledu, odstranění zákazníka
+  s odeslanou nabídkou a doklad po něm, tatáž varianta oběma, prodej druhému zákazníkovi), 11–13 mobil 400 px.
+  Snímky bez předpony `v2_` jsou z v1 (12. 11. 2026, karta viditelná i s jedním zákazníkem — překonáno).
 
-Situace: (1) stejná varianta pro víc zákazníků, (2) vlastní varianta zákazníka, (3) prodej druhému zákazníkovi.
+**Verze 2 (připomínky J. V. 16. 11. 2026), sestaveno nad integrací `8462aea` (v12.11.7):** s jedním zákazníkem je
+aplikace jako dnes, navíc jen tlačítko „+ Přidat zákazníka“ u pole Zákazník; přepínač a karta se objeví až s druhým
+zákazníkem; každý další zákazník má „Odstranit“ s potvrzením; po odstranění posledního se aplikace vrátí do
+standardního pohledu (ověřeno: hlavička znak po znaku jako na začátku).
+
+Situace: (1) přidat a odstranit zákazníka, (2) odstranit zákazníka s odeslanou nabídkou, (3) stejná varianta pro
+víc zákazníků, (4) prodej druhému zákazníkovi.
 
 Jak prototyp sahá do aplikace (v ostré verzi to bude jinak, viz návrh § 1 a § 4): zakázku, kopii varianty, zámek
 a prodej dělá vlastními funkcemi aplikace; hlavičku přepisuje údaji zvoleného zákazníka, aby skutečný živý náhled

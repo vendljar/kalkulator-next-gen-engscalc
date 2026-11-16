@@ -1,7 +1,8 @@
 /* ===== PROTOTYP „VÍC ZÁKAZNÍKŮ NA JEDNÉ ZAKÁZCE" (jen podklad k rozhodnutí J. V., NENÍ součást aplikace) =====
  * Vkládá se za sestavenou aplikaci (sestav.mjs). Nic neposílá — Pipedrive je jen napodobený
  * v paměti stránky, data i ceny jsou smyšlené (zkušební ceník z testů, kulatá čísla).
- * Návrh: podklady/NAVRH_VICE_ZAKAZNIKU.md.
+ * Návrh: podklady/NAVRH_VICE_ZAKAZNIKU.md (v2, 16. 11. 2026: s jedním zákazníkem je aplikace jako dnes,
+ * navíc jen tlačítko „+ Přidat zákazníka"; karta a přepínač až od druhého zákazníka; odstranění zákazníka).
  *
  * Do skutečné aplikace sahá jen takto:
  *   · zakládá zakázku a varianty jejími vlastními funkcemi (novaZakazka, klonujVariantu,
@@ -21,14 +22,15 @@
   };
   const PISMENA = { a: '', b: 'B', c: 'C' };
   const SCENARE = {
+    pridat: { nazev: 'přidat a odstranit zákazníka', kroky: [['form', '2. Přidat zákazníka'], ['pridejForm:b', '3. Potvrdit přidání'], ['vlastni:b', '4. Vlastní varianta pro BETA'], ['odeber:b', '5. Odstranit BETA'], ['odeberAno', '6. Potvrdit odstranění']] },
+    odeslana: { nazev: 'odstranit zákazníka s odeslanou nabídkou', kroky: [['odeber:b', '2. Odstranit BETA'], ['odeberAno', '3. Potvrdit odstranění']] },
     stejna: { nazev: 'stejná varianta pro víc zákazníků', kroky: [['pridej:b', '2. Přidat zákazníka BETA'], ['odesli:a', '3. Odeslat nabídku ALFA'], ['odesli:b', '4. Odeslat tutéž nabídku BETA']] },
-    vlastni: { nazev: 'vlastní varianta zákazníka', kroky: [['vlastni:b', '2. Vlastní varianta pro BETA'], ['uprav:b', '3. Upravit ji (zdvih 12 → 15 m)'], ['odesli:b', '4. Odeslat nabídku BETA']] },
     prodej: { nazev: 'prodej druhému zákazníkovi', kroky: [['prodej:b', '2. Prodáno → BETA'], ['prodejAno', '3. Potvrdit prodej'], ['org', '4. Změnit organizaci dealu'], ['orgAno', '5. Potvrdit zápis']] },
   };
   const ROLE = { autor: 'autor zakázky (obchodník)', jiny: 'jiný obchodník', admin: 'administrátor' };
   const ZNACKY = { pridano: 'přidáno', zmeneno: 'změněno', smazano: 'smazáno', beze: 'beze změny' };
   const DEAL_ID = '4321';
-  const S = { scenar: 'stejna', role: 'autor', otevreno: true, hraje: null, blik: false, nahled: '' };
+  const S = { scenar: 'pridat', role: 'autor', otevreno: true, hraje: null, blik: false, nahled: '' };
   let P, OBS = null, PK = null, KRESLI = false;
   const puvodni = { variantaCislo: window.variantaCislo, cisloSVariantou: window.cisloSVariantou };
 
@@ -51,7 +53,7 @@
    * První zákazník písmeno nemá — jeho čísla jsou stejná jako dnes. */
   const cisloZ = (z, v) => String(puvodni.variantaCislo(ZAK, v || Va(z.varianta)) || '') + (z.pismeno ? '-' + z.pismeno : '');
   function obalCisel() {
-    const pis = (zak, v) => { const z = P && vybranyZ(); return (zak === ZAK && z && z.pismeno && v && v.id === z.varianta) ? '-' + z.pismeno : ''; };
+    const pis = (zak, v) => { if (!P || zak !== ZAK || !v) return ''; if (P.archiv[v.id]) return '-' + P.archiv[v.id]; const z = vybranyZ(); return (z && z.pismeno && v.id === z.varianta) ? '-' + z.pismeno : ''; };
     window.variantaCislo = function (zak, v) { return puvodni.variantaCislo(zak, v) + pis(zak, v); };
     if (typeof puvodni.cisloSVariantou === 'function')
       window.cisloSVariantou = function (zak, v, zaklad) { const c = puvodni.cisloSVariantou(zak, v, zaklad); return c ? c + pis(zak, v) : c; };
@@ -107,10 +109,12 @@
     const rz = ridiciZ(), rv = Va(rz.varianta), d = pd();
     const s = { rz: rz.nazev, rv: (rv ? rv.nazev : '') + ' (' + String(puvodni.variantaCislo(ZAK, rv) || '') + ')',
       'pd.org': d.org, 'pd.hodnota': d.hodnota, 'pd.cn': d.cn, 'pd.faze': d.faze, 'pd.dalsi': d.dalsi, protokol: P.protokol.length,
-      rejstrik: rejstrikText() };
+      rejstrik: rejstrikText(), pohled: pohledText(), varianty: variantyText() };
     P.zak.forEach((z) => { s['z:' + z.id] = radekText(z); });
     return s;
   }
+  const pohledText = () => P.zak.length > 1 ? 'víc zákazníků (' + P.zak.length + '): přepínač v hlavičce + karta Zákazníci zakázky' : 'standardní kalkulace (jeden zákazník) — jen tlačítko „+ Přidat zákazníka"';
+  const variantyText = () => (ZAK.varianty || []).map((v) => v.nazev + ' ' + String(puvodni.variantaCislo(ZAK, v) || '').replace(/^.*- /, '…') + (P.archiv[v.id] ? '-' + P.archiv[v.id] : '') + (v.zamek && v.zamek.zamceno ? ' 🔒' : '')).join(' · ');
   function znacka(k) {
     const pred = P.pred[k], po = snimek()[k];
     if (pred === po) return '';
@@ -179,11 +183,26 @@
     P.deal.org = ridiciZ().nazev;
     zapis(ROLE[S.role], 'změnil organizaci dealu ' + DEAL_ID + ' v Pipedrive: ' + stara + ' → ' + P.deal.org + ' (po potvrzení)');
   }
-  function odeber(id) {
-    const z = Zk(id);
-    P.zak = P.zak.filter((x) => x.id !== id);
-    zapis(ROLE[S.role], 'odebral zákazníka ' + z.kratce + ' (žádná nabídka mu neodešla)');
+  /* Odstranění dalšího zákazníka. Co odešlo, zůstává doložené: zamčená varianta se nemaže (pravidlo #34),
+   * razítko tisku se snímkem adresáta zůstává v zámku. Nezamčenou vlastní variantu lze smazat s ním. */
+  function odeberInfo(id) {
+    const z = Zk(id), v = Va(z.varianta), vlastniV = sdili(z).length === 1, zamcena = !!(v && v.zamek && v.zamek.zamceno);
+    return { z, v, vlastniV, zamcena, odeslano: Object.keys(z.odeslano).length > 0 };
+  }
+  function odeberAno(volba) {
+    const { z, v, vlastniV, zamcena, odeslano } = odeberInfo(P.potvrzeni.id);
+    P.potvrzeni = null;
+    let co = 'varianta „' + v.nazev + '" zůstává (používá ji ' + sdili(z).filter((x) => x.id !== z.id).map((x) => x.kratce).join(', ') + ')';
+    if (vlastniV && zamcena) { P.archiv[v.id] = z.pismeno; co = 'odeslaná varianta „' + v.nazev + '" (' + cisloZ(z) + ') zůstává zamčená jako doklad'; }
+    else if (vlastniV && volba !== 'ponechat') {
+      ZAK.varianty = ZAK.varianty.filter((x) => x.id !== v.id);
+      co = 'jeho rozpracovaná varianta „' + v.nazev + '" smazána';
+    } else if (vlastniV) { v.zakaznik = ''; co = 'varianta „' + v.nazev + '" ponechána jako běžná varianta zakázky'; }
+    P.zak = P.zak.filter((x) => x.id !== z.id);
+    zapis(ROLE[S.role], 'odstranil zákazníka ' + z.kratce + (odeslano ? ' (odeslaná nabídka zůstává doložená v zámku varianty)' : '') + '; ' + co
+      + (P.zak.length === 1 ? '; zakázka má zase jednoho zákazníka — standardní pohled' : ''));
     otevri(P.ridici);
+    if (!ZAK.varianty.some((x) => x.ridici)) nastavRidici(ZAK, ridiciZ().varianta);
   }
 
   /* Smí se krok provést? (zhasíná tlačítka v liště i v kartě) */
@@ -191,6 +210,9 @@
     const [co, id] = a.split(':'), z = id ? Zk(id) : null, v = z ? Va(z.varianta) : null;
     const zamcena = !!(v && v.zamek && v.zamek.zamceno), prodano = !!prodanoZ();
     if (co === 'pridej') return !z && !prodano;
+    if (co === 'form') return !P.formular && !prodano && Object.keys(FIRMY).some((k) => !Zk(k));
+    if (co === 'pridejForm') return !!P.formular && !z;
+    if (co === 'odeberAno') return !!(P.potvrzeni && P.potvrzeni.typ === 'odeber');
     if (co === 'odesli') return !!z && !odeslanoTed(z) && !prodano;
     if (co === 'vlastni') return !!z && !prodano && (sdili(z).length > 1 || zamcena);
     if (co === 'uprav') return !!z && !zamcena && sdili(z).length === 1 && Z.zdvih !== 15;
@@ -199,13 +221,13 @@
     if (co === 'org') return orgNesedi() && smiRidit() && !P.potvrzeni;
     if (co === 'orgAno') return !!(P.potvrzeni && P.potvrzeni.typ === 'org');
     if (co === 'ridici') return !!z && z.id !== P.ridici && !prodano && smiRidit();
-    if (co === 'odeber') return !!z && z.id !== P.ridici && !Object.keys(z.odeslano).length;
+    if (co === 'odeber') return !!z && z.id !== P.ridici && !z.prodano && !P.potvrzeni && (smiRidit() || !Object.keys(z.odeslano).length);
     return true;
   }
   const dalsiKrok = () => (SCENARE[S.scenar].kroky.find(([a], i) => i >= P.i && lze(a)) || [''])[0];
 
   function vychozi() {
-    P = { zak: [], ridici: 'a', vybrany: 'a', deal: { org: FIRMY.a.nazev }, protokol: [], potvrzeni: null, formular: false, chyba: '', krok: 'vychozi', i: 0, pred: null };
+    P = { zak: [], ridici: 'a', vybrany: 'a', deal: { org: FIRMY.a.nazev }, protokol: [], potvrzeni: null, archiv: {}, formular: false, chyba: '', krok: 'vychozi', i: 0, pred: null };
     ZAK = novaZakazka();
     if (typeof syncVarianta === 'function') syncVarianta();
     Object.assign(Z, { sirka: 1.6, hloubka: 2.1, zdvih: 12, prejezd: 2.7, prohluben: 1.05 });
@@ -215,11 +237,10 @@
     P.zak.push(novyZ('a', ZAK.varianty[0].id));
     doHlavicky();
     const role = S.role; S.role = 'autor';
-    if (S.scenar !== 'stejna') { pridej('b', false); odesli('a'); }
-    if (S.scenar === 'vlastni') odesli('b');
-    if (S.scenar === 'prodej') { vlastni('b'); uprav('b'); odesli('b'); }
+    const plny = S.scenar === 'odeslana' || S.scenar === 'prodej';
+    if (plny) { pridej('b', false); odesli('a'); vlastni('b'); uprav('b'); odesli('b'); }
     S.role = role;
-    otevri(S.scenar === 'stejna' ? 'a' : 'b');
+    otevri(plny ? 'b' : 'a');
     S.nahled = P.vybrany;
     P.pred = snimek();
   }
@@ -248,20 +269,14 @@
         + tl('odesli:' + z.id, '🖨 Tisk CN', 'vytisknout (odeslat) cenovou nabídku tomuto zákazníkovi — varianta se zamkne')
         + tl('vlastni:' + z.id, '⧉ Vlastní varianta', 'založit kopii varianty jen pro tohoto zákazníka')
         + tl('prodej:' + z.id, '✔ Prodáno', 'zakázku získal tento zákazník')
-        + (z.id !== P.ridici ? tl('odeber:' + z.id, '✕', 'odebrat zákazníka (jen dokud mu nic neodešlo)') : '') + '</td></tr>'
+        + tl('odeber:' + z.id, '🗑 Odstranit', z.id === P.ridici ? 'řídícího zákazníka nejde odstranit, dokud se řídícím nestane jiný' : (z.prodano ? 'zákazníka s prodanou nabídkou nejde odstranit' : 'odstranit zákazníka ze zakázky (s potvrzením)')) + '</td></tr>'
         + (zn ? '<tr class="vzp-pp vzp-pp-' + zn + '"><td></td><td colspan="5">' + stitek(zn) + ' ' + (zn === 'pridano' ? '<b>' + esc(snimek()['z:' + z.id]) + '</b>'
           : '<s>' + esc(P.pred['z:' + z.id]) + '</s> → <b>' + esc(snimek()['z:' + z.id]) + '</b>') + '</td></tr>' : '');
     }).join('');
     const volne = Object.keys(FIRMY).filter((k) => !Zk(k));
-    const form = P.formular && volne.length ? '<div class="vzp-form"><b>Nový zákazník na zakázce</b>'
-      + '<div class="row"><label>Zákazník</label><input type="text" value="' + esc(FIRMY[volne[0]].nazev) + '" readonly></div>'
-      + '<div class="row"><label>IČO zákazníka</label><input type="text" value="' + esc(FIRMY[volne[0]].ico) + '" readonly></div>'
-      + '<div class="row"><label>Nabídka</label><span class="vzp-volba"><label><input type="radio" name="vzpNova" value="stejna" checked> stejná varianta jako ' + esc(ridiciZ().kratce) + ' („' + esc(Va(ridiciZ().varianta).nazev) + '")</label>'
-      + '<label><input type="radio" name="vzpNova" value="vlastni"> vlastní varianta (kopie)</label></span></div>'
-      + '<div class="note">V ostré verzi: našeptávač z databáze zákazníků a „Najít firmu v ARES" jako v hlavičce. Zákazník dostane písmeno <b>' + esc(PISMENA[volne[0]]) + '</b> — jeho nabídky ponesou číslo …-' + esc(PISMENA[volne[0]]) + '.</div>'
-      + '<button type="button" class="vzp-modre" data-vzp="pridejForm:' + volne[0] + '">Přidat zákazníka</button> <button type="button" class="mini" data-vzp="formNe">Zrušit</button></div>' : '';
     let potv = '';
-    if (P.potvrzeni && P.potvrzeni.typ === 'prodej') {
+    if (P.potvrzeni && P.potvrzeni.typ === 'odeber') potv = odeberHtml();
+    const form = formHtml();    if (P.potvrzeni && P.potvrzeni.typ === 'prodej') {
       const z = Zk(P.potvrzeni.id), v = Va(z.varianta), rz = ridiciZ(), rv = Va(rz.varianta);
       const r = (n, a, b) => '<div class="vzp-pr"><span>' + esc(n) + '</span><span>' + (a === b ? esc(b) + ' <i>beze změny</i>' : '<s>' + esc(a) + '</s> → <b>' + esc(b) + '</b>') + '</span></div>';
       potv = '<div class="vzp-potvrzeni"><b>Prodat zakázku zákazníkovi ' + esc(z.nazev) + '?</b>'
@@ -280,7 +295,7 @@
     const upoz = orgNesedi() && !P.potvrzeni ? '<div class="vzp-upoz">Deal ' + DEAL_ID + ' je v Pipedrive veden na <b>' + esc(P.deal.org) + '</b>, řídící zákazník je teď <b>' + esc(ridiciZ().nazev) + '</b>. '
       + (smiRidit() ? '<button type="button" class="mini' + (dalsiKrok() === 'org' && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="org">Změnit organizaci dealu v Pipedrive…</button>' : 'Organizaci dealu mění autor zakázky nebo administrátor.') + '</div>' : '';
     const napoveda = P.krok === 'vychozi' && !S.hraje && !P.formular ? '<span class="vzp-sem">◀ ' + esc(napovedaText()) + '</span>' : '';
-    return '<h2><span style="flex:1">Zákazníci zakázky <span class="pill">zkušební funkce</span></span></h2><div class="body">'
+    return '<h2><span style="flex:1">Zákazníci zakázky <span class="pill">zkušební funkce</span>' + (noveVidet() ? ' <span class="vzp-zn vzp-zn-pridano">nově se objevilo</span>' : '') + '</span></h2><div class="body">'
       + '<div class="note" style="margin-bottom:8px">Jednu zakázku může poptat víc zákazníků. Každý má <b>svou nabídku</b> (číslo s písmenem zákazníka) — buď sdílí variantu s jiným zákazníkem, nebo má vlastní. '
       + '<b>Řídící zákazník</b> určuje řídící variantu a jen jeho data nese deal v Pipedrive; ostatní jsou v dealu jako textová zmínka.</div>'
       + '<div class="vzp-tab"><table><thead><tr><th title="řídící zákazník">Řídící</th><th>Zákazník</th><th>Číslo nabídky</th><th>Varianta nabídky</th><th>Stav</th><th>Cena bez DPH</th></tr></thead><tbody>' + ro + '</tbody></table></div>'
@@ -288,35 +303,82 @@
       + '<div class="vzp-pod"><button type="button" class="vzp-modre' + (dalsiKrok().indexOf('pridej') === 0 && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="form"' + (volne.length && !prodanoZ() ? '' : ' disabled') + '>+ Přidat zákazníka</button>' + napoveda + '</div>'
       + form + upoz + potv + '</div>';
   }
+  function formHtml() {
+    const volne = Object.keys(FIRMY).filter((k) => !Zk(k));
+    return P.formular && volne.length ? '<div class="vzp-form"><b>Nový zákazník na zakázce</b>'
+      + '<div class="row"><label>Zákazník</label><input type="text" value="' + esc(FIRMY[volne[0]].nazev) + '" readonly></div>'
+      + '<div class="row"><label>IČO zákazníka</label><input type="text" value="' + esc(FIRMY[volne[0]].ico) + '" readonly></div>'
+      + '<div class="row"><label>Nabídka</label><span class="vzp-volba"><label><input type="radio" name="vzpNova" value="stejna" checked> stejná varianta jako ' + esc(ridiciZ().kratce) + ' („' + esc(Va(ridiciZ().varianta).nazev) + '")</label>'
+      + '<label><input type="radio" name="vzpNova" value="vlastni"> vlastní varianta (kopie)</label></span></div>'
+      + '<div class="note">V ostré verzi: našeptávač z databáze zákazníků a „Najít firmu v ARES" jako v hlavičce. Zákazník dostane písmeno <b>' + esc(PISMENA[volne[0]]) + '</b> — jeho nabídky ponesou číslo …-' + esc(PISMENA[volne[0]]) + '.</div>'
+      + '<button type="button" class="vzp-modre' + (dalsiKrok() === 'pridejForm:' + volne[0] && !S.hraje ? ' vzp-dalsi' : '') + '" data-vzp="pridejForm:' + volne[0] + '">Přidat zákazníka</button> <button type="button" class="mini" data-vzp="formNe">Zrušit</button></div>' : '';
+  }
+  function odeberHtml() {
+    const { z, v, vlastniV, zamcena, odeslano } = odeberInfo(P.potvrzeni.id);
+    const zbyde = P.zak.length - 1;
+    const r = (n, h) => '<div class="vzp-pr"><span>' + esc(n) + '</span><span>' + h + '</span></div>';
+    const varianta = !vlastniV ? 'zůstává beze změny — používá ji ' + esc(sdili(z).filter((x) => x.id !== z.id).map((x) => x.kratce).join(', '))
+      : (zamcena ? '<b>zůstává v zakázce zamčená</b> jako doklad o odeslání, číslo ' + esc(cisloZ(z)) + ' se nemění. Smazat ji smí jen správce, jako dnes.'
+        : '<span class="vzp-volba"><label><input type="radio" name="vzpOdeber" value="smazat" checked> smazat i jeho rozpracovanou variantu „' + esc(v.nazev) + '" (nikomu neodešla)</label>'
+          + '<label><input type="radio" name="vzpOdeber" value="ponechat"> ponechat ji v zakázce jako běžnou variantu</label></span>');
+    const nabidka = odeslano ? 'odeslána ' + esc(Object.values(z.odeslano).join(', ')) + ' → <b>doklad zůstává</b> (razítko tisku se jménem adresáta v zámku varianty, protokol)' : 'rozpracovaná, neodeslaná → <b>zanikne</b>';
+    return '<div class="vzp-potvrzeni"><b>Odstranit zákazníka ' + esc(z.nazev) + ' ze zakázky?</b>'
+      + r('Jeho nabídka ' + cisloZ(z), nabidka) + r('Varianta „' + v.nazev + '"', varianta)
+      + r('Deal ' + DEAL_ID + ': další zákazníci (text)', zbyde > 1 ? 'řádek ' + esc(z.kratce) + ' zmizí, ostatní zůstanou' : 'pole se <b>vyprázdní</b> (deal dál nese jen řídícího zákazníka)')
+      + r('Písmeno -' + z.pismeno, odeslano ? 'už se nepřidělí jinému zákazníkovi (je na odeslaném papíře)' : 'uvolní se — nic s ním neodešlo')
+      + r('Vzhled aplikace', zbyde > 1 ? 'beze změny (zůstávají ' + zbyde + ' zákazníci)' : '<s>přepínač zákazníků, karta Zákazníci zakázky, štítky</s> → <b>standardní kalkulace</b>, jen tlačítko „+ Přidat zákazníka"')
+      + '<div class="vzp-pt"><button type="button" class="vzp-cervene' + (dalsiKrok() === 'odeberAno' ? ' vzp-dalsi' : '') + '" data-vzp="odeberAno">Odstranit zákazníka</button><button type="button" class="mini" data-vzp="potvNe">Zrušit</button>'
+      + '<span>Údaje zákazníka (název, IČO, kontakt) se ze zakázky smažou. Jeho karta v databázi zákazníků zůstává.</span></div></div>';
+  }
   function napovedaText() {
     const a = dalsiKrok(), k = SCENARE[S.scenar].kroky.find((x) => x[0] === a);
     return k ? 'Začněte tady nebo nahoře tlačítkem „' + k[1] + '"' : '';
   }
+  const noveVidet = () => P.krok !== 'vychozi' && P.zak.length > 1 && /^standardní/.test(P.pred.pohled || '');
   function chipsHtml() {
     return '<label>Zákazníci (' + P.zak.length + ')</label><span class="vzp-chips">' + P.zak.map((z) =>
       '<button type="button" class="vzp-chip' + (z.id === P.vybrany ? ' on' : '') + '" data-vzp="vyber:' + z.id + '" title="' + esc(z.nazev) + ' — nabídka ' + esc(cisloZ(z)) + '">'
-      + (z.id === P.ridici ? '★ ' : '') + esc(z.kratce) + (z.pismeno ? ' · -' + esc(z.pismeno) : '') + '</button>').join('') + '</span>';
+      + (z.id === P.ridici ? '★ ' : '') + esc(z.kratce) + (z.pismeno ? ' · -' + esc(z.pismeno) : '') + '</button>').join('')
+      + '<button type="button" class="vzp-chip vzp-chip-plus" data-vzp="form" title="Přidat dalšího zákazníka"' + (lze('form') ? '' : ' disabled') + '>+</button>'
+      + (noveVidet() ? '<span class="vzp-zn vzp-zn-pridano">nově se objevilo</span>' : '') + '</span>';
   }
   /* Vložení do aplikace. Aplikace se překresluje sama, proto se vkládá po každém překreslení
    * (MutationObserver se při vlastních zásazích odpojuje, jinak by se točil dokola). */
   function vloz() {
     if (OBS) OBS.disconnect();
     try {
-      document.querySelectorAll('#vzpKarta, .vzp-chips-row, .vzp-nahled-pruh').forEach((e) => e.remove());
+      document.querySelectorAll('#vzpKarta, .vzp-chips-row, .vzp-nahled-pruh, .vzp-pridat, .vzp-blok, .vzp-pozn-proto').forEach((e) => e.remove());
       document.querySelectorAll('.vzp-pole').forEach((e) => e.classList.remove('vzp-pole', 'vzp-blik'));
       const hl = document.querySelector('#page-kalk .card.zak-bar');
       if (!hl) return;
-      const k = document.createElement('div'); k.className = 'card'; k.id = 'vzpKarta'; k.innerHTML = kartaHtml();
-      hl.parentNode.insertBefore(k, hl.nextSibling);
       const sl = hl.querySelectorAll('.zak-head-col')[1];
-      if (sl && P.zak.length > 1) {
-        const r = document.createElement('div'); r.className = 'row vzp-chips-row'; r.innerHTML = chipsHtml();
-        sl.insertBefore(r, sl.firstChild);
+      const vic = P.zak.length > 1;
+      if (vic) {
+        /* 2+ zákazníků: karta pod hlavičkou a přepínač zákazníků v hlavičce */
+        const k = document.createElement('div'); k.className = 'card' + (noveVidet() ? ' vzp-nove' + (S.blik ? ' vzp-blik' : '') : ''); k.id = 'vzpKarta'; k.innerHTML = kartaHtml();
+        hl.parentNode.insertBefore(k, hl.nextSibling);
+        if (sl) {
+          const r = document.createElement('div'); r.className = 'row vzp-chips-row' + (noveVidet() ? ' vzp-nove' : ''); r.innerHTML = chipsHtml();
+          sl.insertBefore(r, sl.firstChild);
+        }
+      } else if (sl) {
+        /* jeden zákazník: aplikace jako dnes, navíc JEN tlačítko u pole Zákazník */
+        const lab = sl.querySelector('.row label');
+        if (lab) {
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'mini noprint vzp-pridat' + (dalsiKrok() === 'form' && !S.hraje ? ' vzp-dalsi' : '');
+          b.setAttribute('data-vzp', 'form'); b.title = 'Přidat dalšího zákazníka, který poptal tutéž zakázku'; b.textContent = '+ Přidat zákazníka';
+          if (!lze('form')) b.disabled = true;
+          lab.appendChild(b);
+        }
+        const telo = hl.querySelector('.zak-head');
+        const blok = formHtml() || (P.krok === 'vychozi' && !S.hraje ? '<div class="vzp-pozn-proto">▲ Poznámka prototypu: jediný rozdíl proti dnešní aplikaci je tlačítko <b>„+ Přidat zákazníka"</b> u pole Zákazník. Klikněte na něj.</div>'
+          : (P.krok === 'odeberAno' ? '<div class="vzp-pozn-proto">Poznámka prototypu: zakázka má zase jednoho zákazníka — přepínač, karta i štítky zmizely, aplikace je ve standardním pohledu.</div>' : ''));
+        if (telo && blok) { const d = document.createElement('div'); d.className = 'vzp-blok'; d.innerHTML = blok; telo.parentNode.insertBefore(d, telo.nextSibling); }
       }
       /* pole hlavičky patří zvolenému zákazníkovi — po změně řídícího / výběru je zvýrazníme */
       if (P.krok !== 'vychozi' && znacka('rz')) hl.querySelectorAll('.zak-head-col:nth-child(2) input[type=text]').forEach((e) => { e.classList.add('vzp-pole'); if (S.blik) e.classList.add('vzp-blik'); });
       const cn = document.querySelector('#ock-nabidka .body table');
-      if (cn) {
+      if (cn && vic) {
         const z = vybranyZ(), p = document.createElement('div'); p.className = 'vzp-nahled-pruh';
         p.innerHTML = 'Náhled a tisk platí pro zákazníka <b>' + esc(z.nazev) + '</b> — nabídka <b>' + esc(cisloZ(z)) + '</b>'
           + (P.zak.length > 1 ? '. Jiného zákazníka zvolíte v hlavičce (' + P.zak.filter((x) => x.id !== z.id).map((x) => esc(x.kratce)).join(', ') + ' se do tohoto dokumentu nedostane).' : '.');
@@ -330,7 +392,7 @@
   /* ----- lišta a panel ----- */
   function souhrn() {
     if (P.krok === 'vychozi') return 'Výchozí stav — nic se nezměnilo. Klikněte na zvýrazněný krok nebo „▶ Přehrát".';
-    const nazvy = { rz: 'řídící zákazník', rv: 'řídící varianta', 'pd.org': 'organizace dealu', 'pd.hodnota': 'hodnota dealu', 'pd.cn': 'číslo nabídky v dealu', 'pd.faze': 'fáze dealu', 'pd.dalsi': 'text „Další zákazníci" v dealu', rejstrik: 'řádek rejstříku' };
+    const nazvy = { pohled: 'vzhled aplikace', varianty: 'varianty v zakázce', rz: 'řídící zákazník', rv: 'řídící varianta', 'pd.org': 'organizace dealu', 'pd.hodnota': 'hodnota dealu', 'pd.cn': 'číslo nabídky v dealu', 'pd.faze': 'fáze dealu', 'pd.dalsi': 'text „Další zákazníci" v dealu', rejstrik: 'řádek rejstříku' };
     P.zak.forEach((z) => { nazvy['z:' + z.id] = 'nabídka ' + z.kratce; });
     const sk = { pridano: [], zmeneno: [], smazano: [] };
     Object.keys(nazvy).forEach((k) => { const z = znacka(k); if (sk[z]) sk[z].push(nazvy[k]); });
@@ -380,7 +442,7 @@
     document.getElementById('vzpPanel').innerHTML =
       '<h3>Co se změnilo posledním krokem (před → po)</h3><div class="vzp-leg">' + ['pridano', 'zmeneno', 'smazano'].map((z) => '<span class="vzp-zn vzp-zn-' + z + '">' + ZNACKY[z] + '</span>').join('') + '</div>'
       + (P.krok === 'vychozi' ? '<p>Výchozí stav. Klikněte nahoře na zvýrazněný krok.</p>' : '')
-      + radekPP('Řídící zákazník', 'rz') + radekPP('Řídící varianta', 'rv')
+      + radekPP('Vzhled aplikace', 'pohled') + radekPP('Řídící zákazník', 'rz') + radekPP('Řídící varianta', 'rv') + radekPP('Varianty v zakázce', 'varianty')
       + P.zak.map((z) => radekPP('Nabídka ' + z.kratce, 'z:' + z.id)).join('')
       + Object.keys(P.pred).filter((k) => k.indexOf('z:') === 0 && !Zk(k.slice(2))).map((k) => radekPP('Nabídka ' + FIRMY[k.slice(2)].kratce, k)).join('')
       + '<h3>Pipedrive — co se zapíše do dealu ' + DEAL_ID + '</h3>'
@@ -399,13 +461,16 @@
       + (P.protokol.length ? '<ol>' + stare.map((z) => '<li>' + esc(z.kdy) + ' · <b>' + esc(z.kdo) + '</b>: ' + esc(z.co) + '</li>').join('')
         + nove.map((z) => '<li class="vzp-h-pridano">' + esc(z.kdy) + ' · <b>' + esc(z.kdo) + '</b>: ' + esc(z.co) + stitek('pridano') + '</li>').join('') + '</ol>' : '<p>— prázdný —</p>')
       + '<h3>Pravidla návrhu</h3><ol>'
-      + '<li>První zákazník je řídící a nemá písmeno — zakázka s jedním zákazníkem je přesně jako dnes.</li>'
+      + '<li>Dokud je zákazník jeden, je aplikace přesně jako dnes — navíc jen tlačítko „+ Přidat zákazníka" (jako u víc šachet).</li>'
+      + '<li>První zákazník je řídící a nemá písmeno.</li>'
       + '<li>Další zákazník dostane písmeno (B, C…), které se už nikdy nezmění ani nepřidělí znovu. Číslo jeho nabídky = číslo varianty + písmeno.</li>'
       + '<li>Zákazník ukazuje na jednu variantu: sdílenou, nebo vlastní (kopii).</li>'
       + '<li>Tisk nabídky je vždy pro jednoho zákazníka; varianta se zamkne prvním tiskem, další tisk jinému zákazníkovi jen přidá razítko „komu".</li>'
       + '<li>Řídící varianta = varianta řídícího zákazníka. Prodáno jinému zákazníkovi z něj udělá řídícího (prodaná = řídící, #563).</li>'
       + '<li>Deal nese data řídící varianty; ostatní zákazníci jsou jen v textovém poli (název, platná nabídka, datum, cena bez DPH).</li>'
-      + '<li>Řídícího zákazníka a organizaci dealu mění autor zakázky a administrátor.</li></ol>';
+      + '<li>Řídícího zákazníka a organizaci dealu mění autor zakázky a administrátor.</li>'
+      + '<li>Odstranit jde každého dalšího zákazníka (s potvrzením), ne řídícího a ne toho, komu se prodalo. Co mu odešlo, zůstává doložené v zámku varianty; neodeslaná vlastní varianta se smaže s ním.</li>'
+      + '<li>Po odstranění posledního dalšího zákazníka je zakázka i aplikace stejná jako s jedním zákazníkem.</li></ol>';
   }
   function vyska() {
     const l = document.getElementById('vzpLista');
@@ -421,13 +486,13 @@
   }
   function naZmenu() {
     try { if (typeof TAB !== 'undefined' && TAB !== 'kalk' && typeof prepniTab === 'function') prepniTab('kalk'); } catch (e) { /* bez přepnutí */ }
-    const cil = document.querySelector('#vzpKarta .vzp-potvrzeni') || document.querySelector('#vzpKarta .vzp-form') || document.querySelector('#vzpKarta .vzp-pp') || document.getElementById('vzpKarta');
+    const cil = document.querySelector('#vzpKarta .vzp-potvrzeni') || document.querySelector('.vzp-form') || document.querySelector('.vzp-pozn-proto') || document.querySelector('#vzpKarta .vzp-pp') || document.getElementById('vzpKarta');
     if (cil && cil.scrollIntoView) cil.scrollIntoView({ block: 'center' });
   }
 
   const POPISY = { pridej: 'zákazník přidán (stejná varianta)', odesli: 'nabídka vytištěna (odeslána)', vlastni: 'založena vlastní varianta zákazníka', uprav: 'vlastní varianta upravena',
     prodej: 'prodej — čeká na potvrzení', prodejAno: 'prodáno, řídící zákazník změněn', org: 'změna organizace dealu — čeká na potvrzení', orgAno: 'organizace dealu změněna', ridici: 'řídící zákazník změněn ručně',
-    odeber: 'zákazník odebrán', varianta: 'zákazníkovi přiřazena jiná varianta' };
+    odeber: 'odstranění zákazníka — čeká na potvrzení', odeberAno: 'zákazník odstraněn', form: 'formulář nového zákazníka', varianta: 'zákazníkovi přiřazena jiná varianta' };
   function krok(a, arg) {
     const [co, id] = a.split(':');
     zHlavicky();
@@ -435,13 +500,15 @@
     if (co === 'reset') { vychozi(); S.blik = false; kresli(); window.scrollTo(0, 0); return; }
     if (co === 'vyber') { otevri(id); kresli(); return; }
     if (co === 'nahled') { S.nahled = id; if (id !== P.vybrany) otevri(id); S.otevreno = true; kresli(); const n = document.querySelector('#vzpPanel .vzp-papir'); if (n && n.scrollIntoView) n.scrollIntoView({ block: 'center' }); return; }
-    if (co === 'form') { P.formular = true; kresli(); naZmenu(); return; }
     if (co === 'formNe') { P.formular = false; kresli(); return; }
     if (co === 'potvNe') { P.potvrzeni = null; kresli(); return; }
-    if (!lze(a === 'pridejForm:' + id ? 'pridej:' + id : a)) return;
-    const idx = SCENARE[S.scenar].kroky.findIndex((x) => x[0] === (co === 'pridejForm' ? 'pridej:' + id : a));
+    if (!lze(a)) return;
+    const idx = SCENARE[S.scenar].kroky.findIndex((x) => x[0] === a);
+    if (['prodej', 'org', 'form', 'odeber'].includes(co)) P.pred = snimek();   // krok jen otevírá potvrzení — nic se nemění
     if (co === 'prodej') { P.potvrzeni = { typ: 'prodej', id }; otevri(id); }
     else if (co === 'org') P.potvrzeni = { typ: 'org' };
+    else if (co === 'form') P.formular = true;
+    else if (co === 'odeber') { P.potvrzeni = { typ: 'odeber', id }; P.formular = false; }
     else {
       P.pred = snimek(); P.formular = false;
       if (co === 'pridej') pridej(id, false);
@@ -452,7 +519,7 @@
       else if (co === 'prodejAno') prodejAno();
       else if (co === 'orgAno') orgAno();
       else if (co === 'ridici') ridici(id);
-      else if (co === 'odeber') odeber(id);
+      else if (co === 'odeberAno') odeberAno(arg);
       else if (co === 'varianta') { const z = Zk(id); z.varianta = arg; if (id === P.ridici) nastavRidici(ZAK, arg); zapis(ROLE[S.role], 'přiřadil zákazníkovi ' + z.kratce + ' variantu „' + Va(arg).nazev + '" — nabídka ' + cisloZ(z)); otevri(id); }
     }
     P.krok = co; P.popis = POPISY[co === 'pridejForm' ? 'pridej' : co] || co;
@@ -484,6 +551,7 @@
     zastav();
     if (a === 'panel') { S.otevreno = !S.otevreno; kresli(); return; }
     if (a.indexOf('pridejForm:') === 0) { const v = document.querySelector('input[name="vzpNova"]:checked'); krok(a, v ? v.value : 'stejna'); return; }
+    if (a === 'odeberAno') { const v = document.querySelector('input[name="vzpOdeber"]:checked'); krok(a, v ? v.value : 'smazat'); return; }
     krok(a);
   }
   function zmena(e) {

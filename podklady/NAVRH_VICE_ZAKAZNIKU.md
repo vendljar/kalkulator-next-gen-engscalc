@@ -1,6 +1,15 @@
-# Návrh: víc zákazníků na jedné zakázce (zkušební funkce „VZ“)
+# Návrh v2: víc zákazníků na jedné zakázce (zkušební funkce „VZ“)
 
-Poradce, 12. 11. 2026. Báze `aa445a1` (v11.11.1). Větev `claude/vz-navrh`. Kód aplikace se tímto návrhem nemění.
+Poradce, v1 12. 11. 2026, **v2 16. 11. 2026**. Větev `claude/vz-navrh`, sloučeno s integrací `8462aea` (v12.11.7).
+Kód aplikace se tímto návrhem nemění.
+
+**Co mění v2** (připomínky J. V. 16. 11. 2026):
+1. Dokud má zakázka jednoho zákazníka, aplikace vypadá a chová se přesně jako dnes. Navíc je jen tlačítko
+   „+ Přidat zákazníka“ u pole Zákazník v hlavičce. Karta, přepínač ani štítky se neukážou (stejně jako u víc šachet).
+2. Zákazníka jde odstranit (§ 2a). Po odstranění posledního dalšího zákazníka je zakázka i aplikace zpět
+   ve standardním pohledu.
+3. Čtyři otázky z v1 zůstaly bez odpovědi — návrh počítá s doporučenými volbami; otázky jsou znovu v § 11.
+
 Klikací prototyp na skutečné aplikaci: https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V
 (zdroj `podklady/vz_prototyp/`, snímky `podklady/vz_prototyp/snimky/`).
 
@@ -24,6 +33,8 @@ ve kterém ostatní zákazníci vůbec nejsou.
 | tisk | vždy pro jednoho zákazníka, z pohledu zákazníka (`vzPohled`) |
 | zámek | varianta se zamkne prvním tiskem; tisk dalšímu zákazníkovi jen přidá razítko „komu“ se snímkem adresáta |
 | Pipedrive | deal beze změny logiky (řídící); nové textové pole dealu „Další zákazníci (Kalkulátor)“, aplikace ho přepisuje celé |
+| standardní pohled | s jedním zákazníkem jen tlačítko „+ Přidat zákazníka“; karta a přepínač až od druhého zákazníka |
+| odstranění | každého dalšího zákazníka s potvrzením; odeslaná nabídka zůstává doložená v zámku varianty; řídícího a prodaného ne |
 | vypínač | `viceZakazniku` v `/api/funkce`, výchozí VYP; s VYP a s jedním zákazníkem bajtově jako dnes |
 
 ## 1. Datový model
@@ -41,8 +52,14 @@ zak.dalsiZakaznici = [                                                          
     platna: { varianta, cislo, kdy, cena, mena } | null,   // poslední ODESLANÁ nabídka (pro Pipedrive a rejstřík)
     zalozen: { kdo, kdy } }
 ]
-zak.vzPismenoMax = 2                        // písmeno se nikdy nepřidělí znovu (vzor priponaMax)
 ```
+
+- **Žádný klíč navíc, dokud je zákazník jeden.** `vzRidici` a `dalsiZakaznici` vzniknou přidáním druhého zákazníka
+  a po odstranění posledního dalšího zákazníka se z dat smažou (vzor víc šachet: snížení na 1 = `dalsi: []`).
+  Uložená zakázka je pak tvarem stejná jako zakázka, která víc zákazníků nikdy neměla.
+- **Písmeno se nepočítá z uloženého čítače:** nové písmeno = první volné za nejvyšším písmenem, které nese některý
+  další zákazník **nebo některé razítko tisku v zámku** (`zamek.tisky[].zakaznik.pismeno`). Písmeno, se kterým něco
+  odešlo, se tak nikdy nepřidělí znovu, a písmeno, se kterým nic neodešlo, se po odstranění uvolní — bez stopy v datech.
 
 - Hlavička zakázky je vždy řídící zákazník. Vše, co dnes čte `zak.objednatel` (Pipedrive, rejstřík, controlling,
   webhook, K40c, krycí list, SoD), funguje bez úprav a míří na řídícího zákazníka.
@@ -90,6 +107,49 @@ souborů nahradí pohled zákazníka s testem úniku. Proto seznam v zakázce.
 - Výměna řídícího smaže otisky webhooku (`pdZadani.otisk`) pro pole firmy, aby další webhook nepovažoval ručně
   vyměněné údaje za „své“ a nepřepsal je (§ 7.3).
 
+## 2a. Standardní pohled, přidání a odstranění zákazníka (v2)
+
+### Jeden zákazník = dnešní aplikace
+
+- V hlavičce u pole Zákazník je tlačítko **„+ Přidat zákazníka“** (jen se zapnutou funkcí, jen kdo smí zakázku
+  ukládat, ne u prodané zakázky). Nic jiného se nemění: žádná karta, přepínač, štítek, pruh u náhledu ani písmeno
+  v čísle. Dokumenty, data i rejstřík jsou bajtově stejné jako dnes.
+- Tlačítko otevře v hlavičce formulář (vzor panelu ARES): zákazník přes našeptávač a databázi zákazníků, IČO,
+  „Najít firmu v ARES“, a volba nabídky — **stejná varianta jako řídící zákazník** (výchozí), nebo **vlastní varianta
+  (kopie)**. Zrušení formuláře nic nezmění.
+- Potvrzením vznikne druhý zákazník a teprve tehdy se objeví přepínač zákazníků v hlavičce (místo tlačítka; má
+  vlastní „+“), karta „Zákazníci zakázky“ pod hlavičkou a pruh „náhled a tisk platí pro zákazníka X“.
+
+### Odstranění zákazníka
+
+Tlačítko **„Odstranit“** je u každého zákazníka v kartě. Vždy s potvrzením, které vypíše, co se stane:
+
+| stav odstraňovaného zákazníka | co se stane |
+|---|---|
+| sdílí variantu, nic mu neodešlo | zákazník zmizí; varianta zůstává ostatním; písmeno se uvolní |
+| vlastní varianta, neodeslaná | zákazník zmizí; v potvrzení volba: **smazat i jeho variantu** (výchozí) / ponechat ji jako běžnou variantu zakázky |
+| odešla mu nabídka ze sdílené varianty | zákazník zmizí; razítko tisku se snímkem adresáta zůstává v zámku varianty (doklad); písmeno se už nepřidělí |
+| odešla mu nabídka z vlastní varianty | zákazník zmizí; **zamčená varianta zůstává v zakázce jako doklad** s číslem z papíru (`…9940.2-B`), smazat ji smí jen správce jako dnes (#34); písmeno se už nepřidělí |
+| řídící zákazník | odstranit nejde, dokud se řídícím nestane jiný (tlačítko zhasnuté s vysvětlením) |
+| zákazník, kterému se prodalo | odstranit nejde; nejdřív odemknout prodej (vedoucí, administrátor) |
+
+- **Údaje zákazníka** (název, sídlo, IČO, DIČ, kontakt, zástupci) se ze zakázky smažou. Karta v databázi zákazníků
+  zůstává. V protokolu zakázky zůstane záznam „odstranil zákazníka X“ (jen název, žádné kontakty).
+- **Odeslaná nabídka** se nikdy neruší potichu: platí dnešní pravidlo, že doklad o tom, co odešlo, v zakázce
+  zůstává. Číslo doložené varianty se bere z razítka zámku (`zamek.cislo` + písmeno z razítka), ne ze seznamu
+  zákazníků — proto drží i po odstranění.
+- **Text v dealu:** při odstranění se pole „Další zákazníci (Kalkulátor)“ zapíše znovu bez tohoto zákazníka; po
+  odstranění posledního dalšího zákazníka aplikace svůj text smaže (prázdné pole). Selže-li zápis, stav „čeká na
+  zápis“ jako u ostatních zápisů (§ 7.2) — odstranění to nezastaví.
+- **Rejstřík:** klíč `zakaznici` zmizí, štítek v Přehledu také.
+- **Návrat do standardního pohledu:** po odstranění posledního dalšího zákazníka zmizí přepínač, karta i pruh
+  a v hlavičce je zase jen tlačítko. V prototypu je hlavička po návratu znak po znaku stejná jako na začátku.
+  Jediné, co může zůstat, je zamčená varianta odstraněného zákazníka (doklad) a záznam v protokolu.
+- **Práva:** odstranit zákazníka, kterému nic neodešlo, smí kdo smí zakázku ukládat. Zákazníka s odeslanou nabídkou
+  odstraní autor zakázky nebo administrátor (server z uložené verze a relace).
+- **Server:** odstranění je výslovná akce v uložení; server ověří, že mizí jen zákazník, který není řídící ani
+  prodaný, že razítka tisků zůstala beze změny a že zamčená varianta nezmizela bez práva `varianta.smazatUzamcenou`.
+
 ## 3. Číslování nabídek
 
 **Doporučeno: jedno číslo zakázky, přípona varianty jako dnes, navíc písmeno zákazníka.**
@@ -103,8 +163,9 @@ souborů nahradí pohled zákazníka s testem úniku. Proto seznam v zakázce.
 - První zákazník písmeno nemá: jeho čísla jsou stejná jako dnes a číslo v dealu (pole „Číslo nabídky (CN)“,
   podle kterého webhook hledá kalkulaci) se nemění.
 - Písmeno patří zákazníkovi, ne roli. Po změně řídícího zákazníka se čísla odeslaných nabídek nemění
-  (pravidlo #320: číslo na papíře se nikdy neposune). Odebraný zákazník písmeno „spotřebuje“ (`vzPismenoMax`).
-- Strop 25 dalších zákazníků (B–Z); doporučený strop v UI 9, víc nedává obchodní smysl.
+  (pravidlo #320: číslo na papíře se nikdy neposune). Písmeno odstraněného zákazníka se znovu přidělí jen tehdy,
+  když s ním nic neodešlo (§ 1.1, § 2a).
+- Strop 25 písmen (B–Z); doporučený strop v UI 9 dalších zákazníků, víc nedává obchodní smysl.
 - Proč ne stejné číslo pro všechny: číslo SoD se odvozuje z čísla CN (`sodCisloNavrh`), název souboru taky;
   dva různé dokumenty pro dva zákazníky by nesly stejné číslo a v telefonu („máme nabídku 9940“) by nebylo
   poznat čí. Písmeno je i pojistka proti záměně souboru při odesílání.
@@ -157,8 +218,9 @@ souborů nahradí pohled zákazníka s testem úniku. Proto seznam v zakázce.
   dalšího zákazníka. Rejstřík čtou všichni přihlášení — názvy dalších zákazníků v něm nejsou tajnější než dnešní
   `objednatel`; ceny dalších zákazníků do rejstříku nejdou.
 - Karta „Kalkulace v zakázce“: sloupec Zákazník ukazuje, kteří zákazníci na variantu ukazují.
-- Nová karta „Zákazníci zakázky“ (Kalkulace OCK pod hlavičkou a Přehled): řídící, zákazník, číslo nabídky,
-  varianta, stav, cena, tlačítka Náhled / Tisk CN / Vlastní varianta / Prodáno. Přesný vzhled je v prototypu.
+- Nová karta „Zákazníci zakázky“ (Kalkulace OCK pod hlavičkou a Přehled) **jen u zakázky s víc zákazníky**:
+  řídící, zákazník, číslo nabídky, varianta, stav, cena, tlačítka Náhled / Tisk CN / Vlastní varianta / Prodáno /
+  Odstranit. Přesný vzhled je v prototypu.
 - Controlling: jedna zakázka = jeden řádek s řídícím zákazníkem; do popisu přibude počet zákazníků. Zámky
   dalších zákazníků se do období nepočítají dvakrát (sdílená varianta má jeden zámek).
 
@@ -200,8 +262,8 @@ Další zákazníci na zakázce (zapsal Kalkulátor 12. 11. 2026):
 
 ### 7.3 Webhook #553, K40c a ARES
 
-- Webhook a ARES na serveru (K40c) pracují jen s hlavičkou = s řídícím zákazníkem. `dalsiZakaznici`,
-  `vzRidici` a `vzPismenoMax` webhook nikdy nečte ani nemění; ARES se pro další zákazníky z webhooku nevolá.
+- Webhook a ARES na serveru (K40c) pracují jen s hlavičkou = s řídícím zákazníkem. `dalsiZakaznici`
+  a `vzRidici` webhook nikdy nečte ani nemění; ARES se pro další zákazníky z webhooku nevolá.
 - Další zákazníci se ověřují v ARES ručně stejným tlačítkem jako dnes (`ares_ui.js` nad otevřeným zákazníkem).
 - **Organizace dealu po změně řídícího zákazníka:** deal v Pipedrive je dál veden na původní organizaci.
   K40c by to ukázalo jako „rozdíl ARES × Pipedrive“ a nabídlo „Opravit firmu v Pipedrive“ — to by ale **přejmenovalo
@@ -225,7 +287,10 @@ Další zákazníci na zakázce (zapsal Kalkulátor 12. 11. 2026):
   znaku proti bázi jako `overit_vs_zadani.mjs` s `KNG_DIST_ZAKLAD`).
 - **VYP + zakázka, která už další zákazníky má** (vypnuto po použití): data se nemažou, karta je jen ke čtení,
   tisk pro další zákazníky je zastaven s hláškou, server odmítne změnu `dalsiZakaznici` (vzor VS R21).
-- **ZAP + jeden zákazník:** jediný rozdíl je tlačítko „+ Přidat zákazníka“; dokumenty a data stejná.
+- **ZAP + jeden zákazník:** jediný rozdíl je tlačítko „+ Přidat zákazníka“ u pole Zákazník; dokumenty a data
+  stejná. Harness porovná stránku s bází znak po znaku po odečtení tohoto jednoho tlačítka.
+- **ZAP, přidat a zase odstranit zákazníka:** uložená zakázka je shodná s tou před přidáním (až na protokol
+  a razítko úpravy) — samostatný test „bez stop“.
 - Práva: přidat zákazníka, upravit ho, vlastní varianta, tisk — kdo smí zakázku ukládat (jako dnes hlavičku).
   Změna řídícího zákazníka a změna organizace dealu — autor zakázky a administrátor (server z uložené verze a
   relace). Prodáno jako dnes; odemčení vedoucí a administrátor. Role „jen čtení“ vidí kartu bez tlačítek.
@@ -273,26 +338,30 @@ Pořadí je závazné; každá etapa samostatná větev nad integrací, vše za 
 | etapa | obsah | hlavní soubory | testy |
 |---|---|---|---|
 | E0 | vypínač `viceZakazniku`, jádro `vice_zakazniku.js` (model, písmena, `vzPohled`, invariant řídící), import a serverová kontrola tvaru, zlatá sada | `funkce.mjs`, `zakazka.js`, `zakazka_kontrola.mjs`, `uloziste.js` | `test_vz_zlata.js`, `test_vz_model.js`, mutace |
-| E1 | obrazovka: karta Zákazníci zakázky, přepínač v hlavičce, přidání / odebrání, ARES a databáze zákazníků nad otevřeným zákazníkem, VYP s daty jen ke čtení | `ui/vice_zakazniku_ui.js`, `ui/common.js`, `ui/ares_ui.js`, `ui/zakaznici_ui.js` | `overit_vz_zadani.mjs` (+ srovnání s bází znak po znaku) |
+| E1 | obrazovka: tlačítko „+ Přidat zákazníka“ a formulář v hlavičce; od druhého zákazníka přepínač a karta Zákazníci zakázky; odstranění neodeslaného zákazníka s návratem do standardního pohledu; ARES a databáze zákazníků nad otevřeným zákazníkem; VYP s daty jen ke čtení | `ui/vice_zakazniku_ui.js`, `ui/common.js`, `ui/ares_ui.js`, `ui/zakaznici_ui.js` | `overit_vz_zadani.mjs` (+ srovnání s bází znak po znaku) |
 | E2 | čísla s písmenem, tisk z pohledu zákazníka (CN, náhled, názvy souborů), kontroly před tiskem, **test úniku** | `zamek.js`, `zakazka.js`, `nabidka.js`, `nazvy_souboru.js`, `kontroly.js` | `test_vz_unik.js`, `test_vz_cisla.js` |
-| E3 | zámek: razítko „komu“, stav po zákaznících, vlastní varianta, dotisk, server drží razítka a `platna` | `zamek.js`, `zakazka_kontrola.mjs` | `test_vz_zamek.js`, `netlify/test_vz_server.mjs` |
+| E3 | zámek: razítko „komu“, stav po zákaznících, vlastní varianta, dotisk, server drží razítka a `platna`; odstranění zákazníka s odeslanou nabídkou (doklad zůstává, písmeno z razítek) | `zamek.js`, `zakazka_kontrola.mjs` | `test_vz_zamek.js`, `netlify/test_vz_server.mjs` |
 | E4 | řídící zákazník, Prodáno u zákazníka, zmrazení hlavičky, krycí list a SoD pro prodaného zákazníka | `objednane.js`, `zamek.js`, `kryci.js`, `sod.js` | `test_vz_prodej.js`, `overit_vz_prodej.mjs` |
 | E5 | Pipedrive: textové pole, suchý běh, zápis, stav „čeká“, podmínka shody IČO u K40c, změna organizace dealu (podle otázky 3) | `pd_prevod.mjs`, `pd_nanecisto.js`, `pd_pole.mjs`, `pd_organizace.mjs`, simulátor | `netlify/test_vz_pd.mjs`, mutace serveru |
 | E6 | rejstřík a Přehled (štítek, hledání), controlling, překlady, příručky, celé kolo s mutacemi | `uloziste.js`, `ui/online_ui.js`, `controlling.js`, `preklad.js`, `manual/` | `test_vz_rejstrik.mjs`, celé kolo |
 
-## 11. Otázky pro J. V.
+## 11. Otázky pro J. V. (v2)
+
+Návrh i prototyp počítají s doporučenou volbou (vždy první). Otázky 1–3 jsou z v1 a zůstaly bez odpovědi.
 
 1. **Číslo nabídky dalších zákazníků.** (a) písmeno zákazníka za číslem varianty: `…9940-B`, `…9940.2-B`
    **— doporučeno**; (b) stejné číslo pro všechny zákazníky; (c) jiný tvar přípony (např. `/B`).
-2. **Co má být v textu v dealu u dalšího zákazníka.** (a) název firmy, číslo a datum platné nabídky a cena bez DPH
-   **— doporučeno**; (b) bez ceny (jen název, číslo, datum). A kam: vlastní textové pole dealu „Další zákazníci
-   (Kalkulátor)“, které založíte v Pipedrive **— doporučeno**, nebo poznámka dealu.
+2. **Text v dealu u dalšího zákazníka.** (a) název firmy, číslo a datum platné nabídky a cena bez DPH, ve vlastním
+   textovém poli dealu „Další zákazníci (Kalkulátor)“, které založíte v Pipedrive **— doporučeno**; (b) totéž bez
+   ceny; (c) poznámka dealu místo pole.
 3. **Organizace dealu po prodeji jinému zákazníkovi.** (a) aplikace upozorní a nabídne tlačítko „Změnit organizaci
    dealu v Pipedrive“ s potvrzením (autor, administrátor) **— doporučeno**; (b) jen upozornění, organizaci změníte
    v Pipedrive ručně; (c) měnit automaticky při Prodáno.
-4. **Krycí list a SoD u sdílené varianty.** (a) krycí list je jeden na variantu, údaje zákazníka se berou ze
-   zvoleného zákazníka; pro odlišné smluvní podmínky se založí vlastní varianta **— doporučeno**; (b) krycí list
-   zvlášť pro každého zákazníka i u sdílené varianty (víc práce, větší data).
+4. **Odstranění zákazníka, kterému už odešla nabídka** (nové ve v2). (a) odstranit jde, jeho odeslaná nabídka
+   zůstává v zakázce doložená zamčenou variantou a razítkem tisku **— doporučeno** (dnešní pravidlo: doklad
+   o odeslání se nemaže); (b) odstranit smí jen administrátor; (c) odstranit se vším, i s dokladem o odeslání.
 
-Menší body, které rozhodnu podle doporučení, pokud J. V. neřekne jinak: první verze jen pro OCK (R5); strop
-9 dalších zákazníků; sleva patří variantě; hromadný tisk všem zákazníkům až později.
+Rozhodnuto doporučením, pokud J. V. neřekne jinak: krycí list je jeden na variantu a údaje zákazníka bere ze
+zvoleného zákazníka, odlišné smluvní podmínky = vlastní varianta (otázka 4 z v1); první verze jen pro OCK (R5);
+strop 9 dalších zákazníků; sleva patří variantě; neodeslaná vlastní varianta se při odstranění zákazníka maže
+s ním (volba v potvrzení); hromadný tisk všem zákazníkům až později.
