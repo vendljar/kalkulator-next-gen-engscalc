@@ -4256,7 +4256,7 @@ const MUTACE = [
     nahrad: "",
     proc: "IČO jiného zákazníka v popisu záměru by odešlo (R1)", sady: ["test_vz_tisk_vstupy.js"] },
   { nazev: "VZ-E2: varianty zákazníka bez razítek [VZ E2]", soubor: "vice_zakazniku.js",
-    hledej: "    if (t.some(x => x && vzObj(x.zakaznik) && String(x.zakaznik.id) === z.id)) out.add(String(v.id));",
+    hledej: "  varianty.forEach(v => { if (razitka(v).indexOf(z.id) >= 0) out.add(String(v.id)); });",
     nahrad: "",
     proc: "dotisk nabídky, která zákazníkovi už odešla, by byl zastaven", sady: ["test_vz_tisk_vstupy.js"] },
   { nazev: "VZ-E2: pojistka generátorů nehází [VZ E2]", soubor: "vice_zakazniku.js",
