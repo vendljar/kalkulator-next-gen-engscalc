@@ -408,8 +408,8 @@ const MUTACE = [
    * viceZakazniku, serverová kontrola tvaru (vzServerKontrola), import
    * a duplikace. Hlídají netlify/test_vz_server.mjs a src/test_vz_model.js. [VZ E0] */
   { nazev: 'VZ: s VYP projde změna zákazníků [VZ E0]', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "    if (G.vzPodpis(zak) !== G.vzPodpis(st)) return { status: 400, chyba: G.VZ_VYPNUTO };",
-    nahrad: "    ;",
+    hledej: "    if (G.vzPodpis(zak) !== G.vzPodpis(st)) {",
+    nahrad: "    if (false) {",
     proc: 'na ostrém webu s vypnutou funkcí by šlo založit zakázku s víc zákazníky', sady: ['test_vz_server.mjs'] },
   /* „se ZAP projde vadný tvar“ tu není: importZakazka vadný tvar zahodí dřív
    * (vzZahozeno, mutace níž) — kontrola tvaru v vzServerKontrola je druhá
