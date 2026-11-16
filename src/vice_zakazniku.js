@@ -552,10 +552,21 @@ function vzVariantyZakaznika(zak, id) {
  *     (porovnání a podklady nevidí cizí vlastní variantu). Objekty variant
  *     jsou sdílené — tisk zamyká skutečnou variantu.
  * Neznámé id → null (volající dokument nevytvoří). */
-function vzTiskPohled(zak, id) {
+function vzTiskPohled(zak, id, varianta) {
   if (!zak || typeof zak !== 'object' || !vzRezim(zak)) return zak;
   const p = vzPohled(zak, id);
   if (!p) return null;
+  /* E3 (#602, § 5): DOTISK varianty, která zákazníkovi už odešla — název
+   * a IČO adresáta ze snímku v jeho razítku, ne z dnešních údajů. */
+  if (varianta != null && varianta !== '') {
+    const varId = String(vzObj(varianta) ? varianta.id : varianta);
+    const skut = (Array.isArray(zak.varianty) ? zak.varianty : []).find(v => v && String(v.id) === varId);
+    const snap = skut ? vzRazitkoDotisku(skut, p.vzPohledZakaznika.id) : null;
+    if (snap) {
+      if (typeof snap.objednatel === 'string') p.objednatel = snap.objednatel;
+      if (typeof snap.ico === 'string') p.ico = snap.ico;
+    }
+  }
   const smi = new Set(vzVariantyZakaznika(zak, p.vzPohledZakaznika.id));
   /* DALŠÍ zákazník: mělké kopie variant s odvozenou „variantou zákazníka"
    * (v.zakaznik jde do názvu souboru; návrh § 1.1) = jeho název — volný
@@ -570,7 +581,10 @@ function vzTiskPohled(zak, id) {
   const nazev = vzText(p.objednatel);
   const ja = vzZakaznik(zak, p.vzPohledZakaznika.id);
   const ostatni = vzZakaznici(zak).filter(x => x.id !== ja.id);
+  /* D3 (dorevize E0): razítka OSTATNÍCH zákazníků (snímek adresáta) se
+   * z kopie zámku vyjmou — tisk je nesmí nést (vzVariantaBezCizichRazitek). */
   p.varianty = (Array.isArray(zak.varianty) ? zak.varianty : []).filter(v => v && smi.has(String(v.id)))
+    .map(v => vzVariantaBezCizichRazitek(v, ja.id))
     .map(v => ((puvodni && !vzTextCizi(v.zakaznik, ja, ostatni)) ? v : Object.assign({}, v, { zakaznik: nazev })));
   if (!p.varianty.some(v => v.id === p.aktivni) && p.varianty.length) p.aktivni = p.varianty[0].id;
   /* Protokol zakázky (E1 do něj píše názvy zákazníků) žádný dokument

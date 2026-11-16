@@ -100,7 +100,7 @@ async function sodWordGeneruj(typ, srv) {
          * nese stav posledního tisku, viz sodObjednaneSymboly). */
         const navic = (typ === 'sod' && typeof objSodSnimek === 'function')
           ? { sod: objSodSnimek(ZAK, varianta, JEKLY, L, objSodZaznam(varianta)) } : null;
-        const z = zamekPoTisku(typ, varianta.id, sablonaInfo, navic);   // plnou moc přeskočí sám
+        const z = zamekPoTisku(typ, varianta.id, sablonaInfo, vzTiskZamekNavic(vt) ? Object.assign({}, navic, vzTiskZamekNavic(vt)) : navic);   // VZ-E3   // plnou moc přeskočí sám
         if (z) zamcenoText = ' Varianta ' + (z.cislo || '') + ' je nyní uzamčená; pokračujte jejím klonem.';
       }
       const upoz = sodUpozorneniText(res);

@@ -695,7 +695,7 @@ async function nabidkaWordGeneruj(srv) {
       // stažený .docx je hotová nabídka pro zákazníka → varianta se uzamyká
       let zamcenoText = '';
       if (typeof zamekPoTisku === 'function') {
-        const z = zamekPoTisku('nabidka', varianta.id, sablonaInfo);
+        const z = zamekPoTisku('nabidka', varianta.id, sablonaInfo, vzTiskZamekNavic(vt));   // VZ-E3: razítko „komu"
         if (z) zamcenoText = ' Varianta ' + (z.cislo || '') + ' je nyní uzamčená jako odeslaná nabídka; '
           + 'pokračujte jejím klonem.';
       }
@@ -1065,7 +1065,7 @@ async function nabidkaOckDokument() {
       vyp: P('Úpravy vypnuté. Ruční změny zůstávají, jen se do dokumentu už nedá psát.'),
       vraceno: P('Vráceno původní znění z kalkulace.'),
       zamceno: P('Varianta byla uzamčena jako odeslaná nabídka. Další úpravy provádějte v jejím klonu.'),
-    }, { typ: 'nabidkaTisk', varId: varianta.id })}`);
+    }, Object.assign({ typ: 'nabidkaTisk', varId: varianta.id }, vzTiskZamekNavic(vt)))}`);
   w.document.write((sleduj ? neprelozenoSkript(L, neprelozenoKonec(), neprelozenoRucne([
     p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, vt.zak.popisZameru])) : '')
     + '</body></html>');

@@ -2458,6 +2458,9 @@ function tiskListaSkript(hlasky, zamek) {
   }, hlasky || {});
   const z = (zamek && zamek.typ && typeof dokumentZamyka === 'function' && dokumentZamyka(zamek.typ))
     ? { typ: zamek.typ, varId: zamek.varId || '' } : null;
+  /* VZ-E3 (#602): zákazník, pro kterého náhled vznikl (jen víc zákazníků) —
+   * u jednoho zákazníka se skript nemění ani o znak. */
+  if (z && typeof zamek.zakaznik === 'string' && zamek.zakaznik) z.zakaznik = zamek.zakaznik;
   /* JSON uvnitř skriptu (B84, hloubkový test 24. 9. 2026): uzavírací značka
    * skriptu v hlášce nebo id by skript ukončila a zbytek by se četl jako
    * HTML. (Samotná značka tu v komentáři stát nesmí — aplikace je jeden
@@ -2475,7 +2478,8 @@ function tiskListaSkript(hlasky, zamek) {
     // druhý záznam do historie výtisků by pak byl falešný.
     + 'var t=Date.now();if(t-TISK_ZAMEK_KDY<3000)return;TISK_ZAMEK_KDY=t;'
     + 'try{if(window.opener&&!window.opener.closed&&typeof window.opener.zamekPoTisku==="function"){'
-    + 'window.opener.zamekPoTisku(TISK_ZAMEK.typ,TISK_ZAMEK.varId);tiskStav(TISK_HLASKY.zamceno);}}catch(e){}}\n'
+    + 'window.opener.zamekPoTisku(TISK_ZAMEK.typ,TISK_ZAMEK.varId' + (z && z.zakaznik ? ',null,{zakaznik:TISK_ZAMEK.zakaznik}' : '')
+    + ');tiskStav(TISK_HLASKY.zamceno);}}catch(e){}}\n'
     + 'window.addEventListener("beforeprint",tiskZamkni);\n'
     + 'function tiskDph(zap){var d=document.getElementById("dok");if(!d)return;'
     + 'if(zap)d.classList.remove("bez-dph");else d.classList.add("bez-dph");}\n'

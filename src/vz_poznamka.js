@@ -17,12 +17,10 @@
  * (deal vede on). Strop délky seznamu VZP_MAX znaků (bez značky) s řádkem
  * „… a další N“, řídicí znaky pryč.
  *
- * „Platná nabídka“ (poslední ODESLANÁ nabídka zákazníka): dokud E3 nepočítá
- * `platna` na serveru, bere se `d.platna` (píše jen server, vzPlatnaDrz) a bez
- * ní poslední tisk v zámcích s razítkem `zakaznik.id` tohoto zákazníka
- * (zamek.tisky[].zakaznik, E3). Po sloučení E3 nahradit vzPlatna (PREDAVKA).
- * Cena jen ze ZMRAZENÉHO výsledku zámku (zamekVysledek), bez DPH, vedoucí
- * strana; starý zámek bez výsledku = bez ceny (nic se nepřepočítává).
+ * „Platná nabídka“ (poslední ODESLANÁ nabídka zákazníka) = vzPlatna z jádra
+ * (VZ-E3 #602): poslední tisk v zámcích s razítkem `zakaznik.id` tohoto
+ * zákazníka. Cena jen ze ZMRAZENÉHO výsledku zámku (vzCenaZamku), bez DPH,
+ * vedoucí strana; starý zámek bez výsledku = bez ceny.
  * ============================================================ */
 
 const VZP_UVOD = 'Další zákazníci na zakázce: ';
@@ -66,43 +64,8 @@ function vzpCisloNabidky(zak, v, pismeno) {
   return c ? c + (pismeno ? '-' + pismeno : '') : '';
 }
 
-/* Cena odeslané nabídky ze zmrazeného výsledku zámku (vedoucí strana, bez DPH). */
-function vzpCenaZamku(zak, v) {
-  const r = (typeof zamekVysledek === 'function') ? zamekVysledek(v) : null;
-  if (!r) return null;
-  const d = (v && v.data) || {};
-  try {
-    const proj = (typeof zakazkaVedouciStrana === 'function') && zakazkaVedouciStrana(zak) === 'proj';
-    const cn = proj
-      ? ((typeof cenaNabidkyProj === 'function' && r.proj)
-        ? cenaNabidkyProj(r.proj, d.slevaProj, (typeof zaokrProjZ === 'function') ? zaokrProjZ(d) : d.zaokr) : null)
-      : ((typeof cenaNabidkyOck === 'function' && r.ock) ? cenaNabidkyOck(r.ock, d.sleva || {}, d.zaokr) : null);
-    return cn && typeof cn.cena === 'number' && isFinite(cn.cena) ? cn.cena : null;
-  } catch (e) { return null; }
-}
-
-/* Poslední ODESLANÁ nabídka dalšího zákazníka { varianta, cislo, kdy, cena, mena } | null. */
-function vzpPlatna(zak, d) {
-  if (!d) return null;
-  const p = d.platna;
-  if (vzpObj(p) && typeof p.cislo === 'string' && p.cislo.trim() && typeof p.kdy === 'string' && vzpDen(p.kdy))
-    return { varianta: String(p.varianta || ''), cislo: p.cislo, kdy: p.kdy,
-      cena: typeof p.cena === 'number' && isFinite(p.cena) ? p.cena : null, mena: typeof p.mena === 'string' ? p.mena : 'CZK' };
-  let nej = null;
-  ((zak && Array.isArray(zak.varianty)) ? zak.varianty : []).forEach(v => {
-    const z = v && v.zamek;
-    if (!z || !z.zamceno || !Array.isArray(z.tisky)) return;
-    z.tisky.forEach(t => {
-      if (!t || !vzpObj(t.zakaznik) || String(t.zakaznik.id || '') !== String(d.id) || !vzpDen(t.kdy)) return;
-      if (!nej || t.kdy > nej.t.kdy) nej = { v, t };
-    });
-  });
-  if (!nej) return null;
-  const zk = nej.t.zakaznik;
-  const cislo = (typeof zk.cislo === 'string' && zk.cislo.trim()) ? zk.cislo
-    : vzpCisloNabidky(zak, nej.v, typeof zk.pismeno === 'string' ? zk.pismeno : d.pismeno);
-  return { varianta: String(nej.v.id || ''), cislo, kdy: nej.t.kdy, cena: vzpCenaZamku(zak, nej.v), mena: 'CZK' };
-}
+/* Platná nabídka a její cena: VZ-E3 (#602) — vzPlatna(zak, id) v jádře
+ * (src/vice_zakazniku.js; server ji ukládá do `platna` při každém uložení). */
 
 /* Je zakázka prodaná jinému zákazníkovi než `d`? (prodano.zakaznik plní E4;
  * prodej bez něj patří řídícímu.) */
@@ -118,7 +81,7 @@ function vzpRadek(zak, d) {
   const nazev = vzpCisty(d.hlavicka && d.hlavicka.objednatel) || ('zákazník ' + (d.pismeno || d.id));
   const v = ((zak && zak.varianty) || []).find(x => x && String(x.id) === String(d.varianta)) || null;
   const aktualni = vzpCisloNabidky(zak, v, d.pismeno);
-  const p = vzpPlatna(zak, d);
+  const p = vzPlatna(zak, d.id);   // VZ-E3 #602 (dřív vzpPlatna)
   let stav;
   if (p) {
     const cena = vzpCena(p.cena, p.mena);
@@ -174,5 +137,5 @@ function vzPoznamkaSeZnackou(zak, text) {
 }
 
 if (typeof module !== 'undefined' && module.exports)
-  module.exports = { VZP_UVOD, VZP_ZADNI, VZP_MAX, VZP_CISLO_MAX, vzpDen, vzpCena, vzpCisloNabidky, vzpCenaZamku, vzpPlatna,
+  module.exports = { VZP_UVOD, VZP_ZADNI, VZP_MAX, VZP_CISLO_MAX, vzpDen, vzpCena, vzpCisloNabidky,
     vzpNeprodano, vzpRadek, vzPoznamkaRadky, vzPoznamkaText, vzPoznamkaSeZnackou };

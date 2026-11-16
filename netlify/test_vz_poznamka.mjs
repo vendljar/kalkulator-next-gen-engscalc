@@ -393,9 +393,10 @@ let Z2, ID2;
     delete v3.zamek;
     zo.dalsiZakaznici[0].varianta = vB.id;
   } else test('9 připravuje se nová (klonujVariantu chybí)', false);
-  /* platna od serveru (E3) má přednost */
+  /* VZ-E3 (#602, N6): platna = vzPlatna ze zámků; uložená hodnota je jen
+   * kopie pro rejstřík — text poznámky se z ní neskládá (podvrh se neprojeví). */
   zo.dalsiZakaznici[0].platna = { varianta: vB.id, cislo: 'X-1-B', kdy: '2026-11-14T08:00:00.000Z', cena: 1333000, mena: 'CZK' };
-  test('9 uložená platna (server, E3) má přednost', PP.pdPoznamkaZakText(zo, false, G).indexOf('— CN X-1-B z 14. 11. 2026, 1 333 000 Kč bez DPH') >= 0);
+  test('9 E3: platna se počítá ze zámků (uložená hodnota se neuplatní)', PP.pdPoznamkaZakText(zo, false, G).indexOf('X-1-B') < 0);
   delete zo.dalsiZakaznici[0].platna;
   /* po prodeji ostatní „— neprodáno“ */
   const vR = zo.varianty[0];

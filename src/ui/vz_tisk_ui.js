@@ -40,7 +40,9 @@ function vzTiskVstup(typ, varianta, stav) {
     if (typeof hlaska === 'function') hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' });
     return null;
   }
-  const zak = typeof vzTiskPohled === 'function' ? vzTiskPohled(ZAK, vzTiskId()) : ZAK;
+  /* E3: dotisk zákazníkovi nese snímek adresáta z jeho razítka (varianta). */
+  const komu = vzTiskId();
+  const zak = typeof vzTiskPohled === 'function' ? vzTiskPohled(ZAK, komu, varianta || undefined) : ZAK;
   if (!zak) {
     if (typeof hlaska === 'function') hlaska('Zákazník pro tisk v zakázce není.', { nadpis: 'Dokument nelze vytvořit' });
     return null;
@@ -51,7 +53,16 @@ function vzTiskVstup(typ, varianta, stav) {
     if (typeof hlaska === 'function') hlaska('Varianta není nabídka otevřeného zákazníka.', { nadpis: 'Dokument nelze vytvořit' });
     return null;
   }
-  return { zak, varianta: v };
+  return { zak, varianta: v, komu };
+}
+
+/* VZ-E3 (#602): pro koho je tisk — do razítka „komu" (zamekPoTisku, okno
+ * náhledu). Jen u zakázky s víc zákazníky, jinak null (náhled i zámek
+ * bajt po bajtu jako dnes). Id se bere z okamžiku, kdy dokument vznikl. */
+function vzTiskZamekNavic(vt) {
+  if (typeof vzRezim !== 'function' || typeof ZAK === 'undefined' || !vzRezim(ZAK)) return null;
+  const id = vt && typeof vt.komu === 'string' ? vt.komu : vzTiskId();
+  return { zakaznik: id || vzRidiciId(ZAK) };
 }
 
 /* Pohled bez hlášek (obrazovkové náhledy dat); při chybě ZAK u jednoho
