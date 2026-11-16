@@ -106,7 +106,8 @@ const kanarky = (text, X) => {
 };
 /* Kde přesně cizí kanárek stojí (pro hlášení). */
 const kontext = (text, X) => {
-  const t = String(text || '');
+  /* bez značek (u Wordu je pak vidět popisek řádku), syrový text jako záloha */
+  const t = String(text || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ') + ' ### ' + String(text || '');
   for (const Y of Object.keys(KAN)) {
     if (Y === X) continue;
     const i = t.toLowerCase().indexOf(KAN[Y].pref.toLowerCase());
@@ -123,6 +124,13 @@ const sablonaB64 = Buffer.from(await (await DG.docxDokumentBlob('Nabídka', [
     ['Číslo nabídky', '{{CISLO_NABIDKY}}'], ['Název akce', '{{NAZEV_AKCE}}'], ['Adresa stavby', '{{ADRESA}}']] },
   { sekce: 'CENA', radky: [['VÝTAHOVÁ ŠACHTA', '{{CENA_BEZ_DPH}} bez DPH'], ['CELKEM za nabídku', '{{CENA_S_DPH}} včetně DPH']] },
 ])).arrayBuffer()).toString('base64');
+/* syntetická šablona smlouvy o dílo OCK (symboly objednatele a čísel) */
+const SOD_SYMBOLY = ['OBJEDNATEL', 'OBJEDNATEL_SIDLO', 'OBJEDNATEL_ICO', 'OBJEDNATEL_DIC', 'OBJEDNATEL_KONTAKT_OSOBA', 'OBJEDNATEL_TELEFON',
+  'OBJEDNATEL_EMAIL', 'OBJEDNATEL_EMAIL_FAKTURY', 'OBJEDNATEL_BANKA', 'OBJEDNATEL_UCET', 'OBJEDNATEL_ZAPIS', 'OBJEDNATEL_ZASTUPCE_SMLUVNI',
+  'OBJEDNATEL_ZASTUPCE_OBCHODNI', 'OBJEDNATEL_ZASTUPCE_OBCHODNI_KONTAKT', 'OBJEDNATEL_ZASTUPCE_TECHNICKY', 'OBJEDNATEL_ZASTUPCE_TECHNICKY_KONTAKT',
+  'OBJEDNATEL_PODPIS_FIRMA', 'OBJEDNATEL_PODPIS_JMENO', 'OBJEDNATEL_PODPIS_FUNKCE', 'CISLO_NABIDKY', 'SOD_CISLO_SMLOUVY', 'NAZEV_AKCE', 'ADRESA'];
+const sablonaSodB64 = Buffer.from(await (await DG.docxDokumentBlob('Smlouva o dílo', [
+  { sekce: 'SMLUVNÍ STRANY', radky: SOD_SYMBOLY.map(k => [k, '{{' + k + '}}']) }])).arrayBuffer()).toString('base64');
 const docxText = async b64 => {
   const pol = await DG.zipPrecti(new Uint8Array(Buffer.from(b64, 'base64')));
   return pol.filter(x => /\.(xml|rels)$/.test(x.nazev)).map(x => new TextDecoder().decode(x.data)).join('\n');
@@ -146,7 +154,7 @@ zkus('sestavení obsahuje vrstvu tisku VZ-E2 (vzTiskVstup, vzTiskPohled)',
 /* Zachytávání: dialogy, okna náhledu (window.open), stažené soubory (a.click
  * s blob URL) a jméno souboru tisku specifikace (tiskSNazvem). Okna se čtou
  * z openeru (about:blank má původ stránky). */
-await p.evaluate(([sab, bezPohledu]) => {
+await p.evaluate(([sab, bezPohledu, sabSod]) => {
   window.__dlg = [];
   window.potvrd = (t, o) => { window.__dlg.push({ druh: 'potvrd', nadpis: (o && o.nadpis) || '', text: String(t) }); return Promise.resolve(true); };
   window.hlaska = (t, o) => { window.__dlg.push({ druh: 'hlaska', nadpis: (o && o.nadpis) || '', text: String(t) }); return Promise.resolve(); };
@@ -175,7 +183,9 @@ await p.evaluate(([sab, bezPohledu]) => {
   /* Pojistka (KNG_VZ_BEZ_POHLEDU=1): cesta bez pohledu — tisk z celé zakázky. */
   window.__vzTiskVstupPuvodni = vzTiskVstup;
   if (bezPohledu) window.vzTiskVstup = (typ, varianta) => ({ zak: ZAK, varianta });
-}, [sablonaB64, BEZ_POHLEDU]);
+  const binS = atob(sabSod); const uS = new Uint8Array(binS.length); for (let i = 0; i < binS.length; i++) uS[i] = binS.charCodeAt(i);
+  window.__sablonaSod = uS.buffer;
+}, [sablonaB64, BEZ_POHLEDU, sablonaSodB64]);
 
 /* Zakázka: 'tri' (A řídící + B sdílená + C vlastní varianta) nebo 'jeden'. */
 const priprav = (druh, volby) => p.evaluate(([c, cp, druh, uA, uB, uC, zaklad, o]) => {
@@ -185,6 +195,10 @@ const priprav = (druh, volby) => p.evaluate(([c, cp, druh, uA, uB, uC, zaklad, o
   ONLINE_STAV.funkce = { viceZakazniku: o.vypnuto ? false : true };
   if (typeof VZ_UI !== 'undefined' && VZ_UI) VZ_UI.otevreny = ''; else window.VZ_UI = { otevreny: '' };
   ZAK = novaZakazka(); syncVarianta();
+  /* platné zadání OCK a zkušební ceník varianty (jinak kontrola před nabídkou dokument zastaví) */
+  Object.assign(Z, { typSachty: 'exteriérová', profily: JSON.parse(JSON.stringify(PROFILY_VYCHOZI['exteriérová'])), zaskleni: 'na terče',
+    sirka: 1.6, hloubka: 2.1, zdvih: 12, prejezd: 3.3, prohluben: 1.2, nastupiste: 4 });
+  OCK.fixes = true; Object.keys(C).forEach(k => delete C[k]); Object.assign(C, JSON.parse(JSON.stringify(c))); delete C.prazdny; delete C.ukazkove;
   ZAK.autor = 'obchodnik.vz@priklad.cz';
   ZAK.cislo = o.cislo || zaklad; ZAK.datum = '2026-11-16';
   ZAK.nazevAkce = o.nazevAkce || 'Bytovy dum Ukazkova';
@@ -226,8 +240,10 @@ const spust = async (kod, cekejStazeni) => {
   const r = await p.evaluate(async kod => {
     window.__dlg.length = 0; window.__okna.length = 0; window.__stazeni.length = 0; window.__tiskNazvy.length = 0;
     /* stavové řádky Wordu (nabídka, krycí list) — i když jejich záložka není otevřená */
-    ['nabidkaStav', 'kryciStav'].forEach(i => { let e = document.getElementById(i);
-      if (!e) { e = document.createElement('div'); e.id = i; e.hidden = true; document.body.appendChild(e); } e.textContent = ''; });
+    if (!document.querySelector('.nabidkaStav')) { const e = document.createElement('div'); e.className = 'nabidkaStav'; e.hidden = true; document.body.appendChild(e); }
+    if (!document.querySelector('.sodStav_sod')) { const e = document.createElement('div'); e.className = 'sodStav_sod'; e.hidden = true; document.body.appendChild(e); }
+    if (!document.getElementById('kryciStav')) { const e = document.createElement('div'); e.id = 'kryciStav'; e.hidden = true; document.body.appendChild(e); }
+    document.querySelectorAll('.nabidkaStav, #kryciStav, .sodStav_sod').forEach(e => { e.textContent = ''; });
     let chyba = '';
     try { await (0, eval)(kod); } catch (e) { chyba = String(e && e.message || e); }
     return { chyba };
@@ -246,7 +262,7 @@ const spust = async (kod, cekejStazeni) => {
     });
     const stazeni = await Promise.all(window.__stazeni);
     return { okna, stazeni, dlg: window.__dlg.slice(), tiskNazvy: window.__tiskNazvy.slice(),
-      stav: ['nabidkaStav', 'kryciStav'].map(i => (document.getElementById(i) || {}).textContent || '').join(' | ') };
+      stav: [...document.querySelectorAll('.nabidkaStav, #kryciStav, .sodStav_sod')].map(e => e.textContent).filter(Boolean).join(' | ') };
   });
   for (const s of v.stazeni) s.text = await docxText(s.b64);
   return Object.assign(r, v);
@@ -258,10 +274,10 @@ let IDS = {};
  * souborů s podtržítky — hledá se „9940[.2][-B]" v textu bez mezer.
  * Vrací všechny výskyty; očekává se jediný tvar (číslo s písmenem
  * zákazníka, u dokumentů varianty i s příponou varianty). */
-const CISLO_RE = /9940(\.\d+)?(-[B-Z](?![A-Za-z]))?/g;
-const cisla = t => String(t || '').replace(/<[^>]+>/g, ' ').replace(/[\s\u00a0]+/g, '').match(CISLO_RE) || [];
+const CISLO_RE = /9940(\.\d+)?(-[B-Z](?![A-Za-z0-9]))?/g;
+const cisla = t => String(t || '').replace(/<[^>]+>/g, ' ').replace(/[\s\u00a0]+/g, ' ').match(CISLO_RE) || [];
 const cisloCekane = (X, pripona) => '9940' + (pripona ? '.' + pripona : '') + (X === 'A' ? '' : '-' + X);
-const pismenoCizi = /9940(\.\d+)?-[B-Z](?![A-Za-z])/;
+const pismenoCizi = /9940(\.\d+)?-[B-Z](?![A-Za-z0-9])/;
 
 /* Výstupy pro jednoho zákazníka. varianta: dokument nese číslo varianty (…9940.2-C); porovnání, krycí
  * list a specifikace nesou číslo zakázky (s písmenem zákazníka). */
@@ -273,6 +289,7 @@ const VYSTUPY = [
   { nazev: 'Krycí list BO (tisk)', kod: "kryciTiskPohled('bo')", okno: true },
   { nazev: 'Krycí list Word (BO + Techdata)', kod: 'kryciWord()', stazeni: 2 },
   { nazev: 'Word nabídky', kod: "SABLONA_DOCX = { nazev: 'Sablona_NABIDKA_CN_test.docx', data: window.__sablona }; nabidkaWordGeneruj(null)", stazeni: 1, varianta: true },
+  { nazev: 'Smlouva o dílo OCK (Word)', kod: "SOD_DOCX.sod = { nazev: 'Sablona_SOD_test.docx', data: window.__sablonaSod }; sodWordGeneruj('sod', null)", stazeni: 1, varianta: true },
 ];
 
 const zakaznikBlok = async (X, ctx2) => {
@@ -297,7 +314,9 @@ const zakaznikBlok = async (X, ctx2) => {
       const tela = kusy.map(x => x.html.replace(/<title>[\s\S]*?<\/title>/, ''));
       const vTele = tela.map(cisla);
       if (d.varianta) zkus(`${X} · ${d.nazev}: číslo nabídky v dokumentu ${cek}`, vTele.every(c => c.includes(cek)), vTele);
-      zkus(`${X} · ${d.nazev}: žádné jiné tvary čísla v dokumentu (jen ${cek})`, vTele.every(c => c.every(x => x === cek)), vTele);
+      /* krycí list nese číslo zakázky i číslo varianty — obojí s písmenem */
+      const smi = new Set([cisloCekane(X, 0), cisloCekane(X, X === 'C' ? ctx2.priponaC : 0)]);
+      zkus(`${X} · ${d.nazev}: žádné jiné tvary čísla v dokumentu (jen ${[...smi].join(' / ')})`, vTele.every(c => c.every(x => smi.has(x))), vTele);
     }
     vysl[d.nazev] = vse;
   }
@@ -327,7 +346,10 @@ const zakaznikBlok = async (X, ctx2) => {
     cisla(spec.cislo).join() === cekS && cisla(spec.nazev).length > 0 && cisla(spec.nazev).every(c => c === cekS), { cislo: spec.cislo, nazev: spec.nazev, dlg: spec.dlg });
   vysl['Technická specifikace'] = spec.html;
   /* pruh v kartě Cenová nabídka (CN): číslo otevřené varianty */
-  const pruh = await p.evaluate(() => { renderNabidkaOck(); const e = document.querySelector('#kalk-nabidka .vz-tisk-pruh'); return e ? e.textContent : null; });
+  const karta = await p.evaluate(() => { renderNabidkaOck(); const e = document.getElementById('kalk-nabidka');
+    const pr = e.querySelector('.vz-tisk-pruh'); return { pruh: pr ? pr.textContent : null, html: e.innerHTML }; });
+  const pruh = karta.pruh;
+  zkus(`${X} · karta Cenová nabídka (CN, živý náhled hlavičky): žádný kanárek jiného zákazníka`, !kanarky(karta.html, X).cizi.length, kontext(karta.html, X));
   const jmeno = udaje(X).objednatel;
   const cekP = cisloCekane(X, X === 'C' ? ctx2.priponaC : 0);
   zkus(`${X} · pruh v kartě CN „Náhled a tisk platí pro zákazníka ${jmeno} — nabídka …${cekP}"`,
@@ -394,8 +416,9 @@ console.log('\nZábrany tisku');
   zkus('…pro C (vlastní název) tisk projde', r.okna.length === 1 && kanarky(r.okna[0].html, 'C').vlastni, { hlasky: hlasky(r), chyba: r.chyba });
 }
 {
-  /* PROJ (R5): pro B zastaveno, pro řídícího projde */
-  const c = await priprav('tri');
+  /* PROJ (R5): pro B zastaveno, pro řídícího projde (řada OVP — OCK je tam
+   * uzamčená a vynulovaná, nabídka PROJ ne) */
+  const c = await priprav('tri', { cislo: ZAKLAD_PROJ });
   let r = await spust('nabidkaProjNahled()');
   zkus('PROJ náhled pro řídícího A projde', r.okna.length === 1 && !kanarky(r.okna[0].html, 'A').cizi.length, { hlasky: hlasky(r), chyba: r.chyba });
   await otevri(c.ids.B);
@@ -472,7 +495,17 @@ if (!BEZ_POHLEDU) {
     zkus(`bez pohledu · ${d.nazev}: detektor únik zachytí (${proc.trim() || 'nic'})`, chybaApl || (vzniklo && (k.cizi.length > 0 || !k.vlastni)),
       { cizi: k.cizi, vlastni: k.vlastni, chyba: r.chyba, stav: r.stav, hlasky: hlasky(r) });
   }
-  await p.evaluate(() => { window.vzTiskVstup = window.__vzZal; });
+  /* Word: bez pohledu zastaví dokument pojistka generátoru (vzTiskHlidej).
+   * Aby bylo vidět, že by únik našel i detektor kanárků, vypne se i ona. */
+  await p.evaluate(() => { window.__vzHlidejZal = window.vzTiskHlidej; window.vzTiskHlidej = () => {}; });
+  for (const d of VYSTUPY.filter(x => x.stazeni)) {
+    const r = await spust(d.kod, d.stazeni);
+    const vse = r.stazeni.map(s => s.text + s.nazev).join('');
+    const k = kanarky(vse, 'B');
+    zkus(`bez pohledu i bez vzTiskHlidej · ${d.nazev}: Word vznikl a detektor najde cizího kanárka (${k.cizi.join(',') || '—'}${k.vlastni ? '' : ', vlastní chybí'})`,
+      r.stazeni.length === d.stazeni && (k.cizi.length > 0 || !k.vlastni), { cizi: k.cizi, vlastni: k.vlastni, stav: r.stav, chyba: r.chyba });
+  }
+  await p.evaluate(() => { window.vzTiskVstup = window.__vzZal; window.vzTiskHlidej = window.__vzHlidejZal; });
 } else info('běh bez pohledu (KNG_VZ_BEZ_POHLEDU=1) — oddíl 8 se přeskakuje, celý běh má být červený');
 
 await b.close();
