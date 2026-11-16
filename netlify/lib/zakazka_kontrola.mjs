@@ -355,7 +355,7 @@ export function vzServerKontrola(stara, zak, volby = {}) {
     const r = G.vzServerRazitka(st, zak);
     if (r) return r;
   }
-  if (!(volby.obnova && !volby.zeSouboru)) G.vzPlatnaDrz(stara, zak);
+  /* `platna` z prohlížeče se nedrží zde: od E3 (N6) ji vzPlatnaPrepocti na konci kontroly spočítá ze zámků. */
   /* E3 (N4): `zalozen` ze serveru (uložená verze / relace) — i s VYP. */
   if (typeof G.vzZalozenDrz === 'function') G.vzZalozenDrz(st, zak, volby.relace, { obnova: volby.obnova, zeSouboru: volby.zeSouboru });
   G.vzSrovnej(zak);

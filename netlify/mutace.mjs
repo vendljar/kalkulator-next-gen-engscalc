@@ -512,10 +512,7 @@ const MUTACE = [
     hledej: "      return { status: 400, chyba: smazana ? G.VZ_VYPNUTO_VARIANTA : G.VZ_VYPNUTO };",
     nahrad: "      return { status: 400, chyba: G.VZ_VYPNUTO };",
     proc: 'obchodník by nevěděl, proč nejde smazat variantu', sady: ['test_vz_server.mjs'] },
-  { nazev: 'VZ: platna z prohlížeče [VZ E0]', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "  if (!(volby.obnova && !volby.zeSouboru)) G.vzPlatnaDrz(stara, zak);",
-    nahrad: "  ;",
-    proc: 'prohlížeč by podstrčil platnou nabídku (cenu do poznámky dealu)', sady: ['test_vz_server.mjs'] },
+  /* „VZ: platna z prohlížeče [VZ E0]“ vyřazena v E3 (#602): volání vzPlatnaDrz odstraněno — platnu přepočítá vzPlatnaPrepocti (mutace „platna by nebyla spočítaná ze zámků (N6)“). */
   { nazev: 'VZ: server nesrovná invariant [VZ E0]', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "  G.vzSrovnej(zak);\n  return null;",
     nahrad: "  return null;",
