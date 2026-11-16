@@ -19,7 +19,7 @@ volná ve všech vzdálených větvích), roadmapa **#605 hotovo**. **Riziková 
 | **`vzPoProdejiPd(zak)` připraveno — NIKDE se automaticky nevolá** | ⏳ E4 | **E4 (#603) ji má zavolat z háčku `vzPoProdeji()` po uložení prodeje**; pokud E4 háček už zavede, propojí koordinace |
 | testy | ✅ | `netlify/test_vz_organizace.mjs` 40/0, `overit_vz_organizace.mjs` 39/0, `src/test_escape.js` 42/0, K40c 105/0, práva 993/0, VZ server 59/0, VZ poznámka 46/0, simulátor 70/0 |
 | mutace „[VZ E5b]“ | ✅ **20/20** | `netlify/mutace.mjs` (jedna ekvivalentní vyřazena s komentářem) |
-| kolo `--bez-mutaci` | viz níž | |
+| kolo `--bez-mutaci` (v16.11.4) | ✅ **VŠE ZELENÉ** | sady 399/0/59 přeskočeno (prohlížečové bez Playwrightu v kole, firemní podklady), hodiny +400 dní 366/0/1, statické 5/5 (27 min) |
 
 ## Změny proti promptu / návrhu (bezpečnější volba)
 
