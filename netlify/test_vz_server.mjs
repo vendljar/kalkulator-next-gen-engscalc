@@ -184,13 +184,20 @@ for (const [jm, fn] of [['ukazatel dalšího na neexistující variantu', z => {
     r.status === 200 && u && u.dalsiZakaznici && u.dalsiZakaznici.length === 1 && u.dalsiZakaznici[0].varianta === rid && u.vzRidici.varianta === rid,
     { status: r.status, chyba: r.chyba, d: u && u.dalsiZakaznici });
 }
-/* N9 (revize Fable): první vzRidici je vždy { z1, '' }. */
+/* N9 + D1 (revize Fable): mezi zákazníky první verze je právě jeden { z1, '' }. */
+{ const z = sVz('D1: přidat a vyměnit v jednom uložení', zz => { const r = G.vzVymenRidiciho(zz, 'z2'); if (!r.ok) throw new Error(r.chyba); });
+  const r = await uloz(z, cO);
+  const u = r.soubor ? ulozenoObj(r.soubor) : null;
+  test('ZAP D1: přidat zákazníka a v témž uložení ho udělat řídícím → 200',
+    r.status === 200 && u && u.vzRidici.id === 'z2' && u.dalsiZakaznici[0].id === 'z1' && u.dalsiZakaznici[0].pismeno === '',
+    { status: r.status, chyba: r.chyba, r: u && u.vzRidici }); }
 for (const [jm, fn] of [['první vzRidici s jiným id (z5)', z => { z.vzRidici.id = 'z5'; }],
-                        ['první vzRidici s písmenem (C)', z => { z.vzRidici.pismeno = 'C'; }]]) {
+                        ['první vzRidici s písmenem (C)', z => { z.vzRidici.pismeno = 'C'; }],
+                        ['podvržený stav po výměně bez z1', z => { G.vzVymenRidiciho(z, 'z2'); z.dalsiZakaznici[0].id = 'z7'; }]]) {
   const z = sVz('N9: ' + jm, fn);
   const pred = zakazekVUlozisti();
   const r = await uloz(z, cO);
-  test('ZAP N9: ' + jm + ' → 400, úložiště beze změny', r.status === 400 && /řídícího/.test(r.chyba || '') && zakazekVUlozisti() === pred,
+  test('ZAP N9: ' + jm + ' → 400, úložiště beze změny', r.status === 400 && /řídící zákazník z1/.test(r.chyba || '') && zakazekVUlozisti() === pred,
     { status: r.status, chyba: r.chyba });
 }
 for (const [jm, fn, re] of SPATNE) {
@@ -256,6 +263,10 @@ for (const [jm, fn, re] of SPATNE) {
   test('ZAP: odstranění posledního dalšího zákazníka (vzOdstran) → 200 a uložená zakázka je bez klíčů VZ',
     r0.status === 200 && o.ok && !maVz(a) && r.status === 200 && u && !maVz(u), { r0: r0.status, o, status: r.status, chyba: r.chyba }); }
 
+/* D4: zakázka s vlastní variantou dalšího zákazníka (uloží se se ZAP, smaže se s VYP v oddílu 5). */
+const rVlastni = await uloz(sVz('D4 vlastní varianta', z => { const r = G.vzPridej(z, UDAJE_C, { kdo: 'x', vlastni: true }); if (!r.ok) throw new Error(r.chyba); }), cO);
+test('ZAP D4: příprava — zakázka s vlastní variantou zákazníka C uložena (200)', rVlastni.status === 200, { status: rVlastni.status, chyba: rVlastni.chyba });
+
 /* ---------- 5) VYPNUTO u zakázky, která víc zákazníků UŽ MÁ ---------- */
 { const r = await vypinac({ viceZakazniku: false });
   test('vypínač: správce vypne viceZakazniku (200)', r.status === 200 && r.funkce.viceZakazniku === false, r); }
@@ -289,6 +300,15 @@ for (const [jm, fn, re] of SPATNE) {
     test('VYP: ' + jm + ' → 400 s VZ_VYPNUTO, úložiště beze změny',
       rr.status === 400 && (rr.chyba || '').includes(VZ_VYPNUTO) && ulozeno(ulozenaVZ) === pred, { status: rr.status, chyba: rr.chyba });
   }
+  /* D4 (dorevize Fable): smazání varianty, na kterou ukazuje další zákazník, s VYP — lidská hláška. */
+  { const gv = await nacti(rVlastni.soubor, cO);
+    const b = zk.importZakazka(kopie(gv));
+    const vid = b.dalsiZakaznici[1].varianta;
+    b.varianty = b.varianty.filter(v => v.id !== vid);
+    const predV = ulozeno(rVlastni.soubor);
+    const rr = await uloz(b, cO, gv.uloRazitko);
+    test('VYP D4: smazaná varianta, na kterou ukazuje další zákazník → 400 „Variantu nejde smazat…“, úložiště beze změny',
+      rr.status === 400 && (rr.chyba || '').includes(G.VZ_VYPNUTO_VARIANTA) && ulozeno(rVlastni.soubor) === predV, { status: rr.status, chyba: rr.chyba }); }
   const r4 = await uloz(sVz('nová po vypnutí'), cO);
   test('VYP: novou zakázku s víc zákazníky po vypnutí nejde založit (400)', r4.status === 400 && (r4.chyba || '').includes(VZ_VYPNUTO), { status: r4.status, chyba: r4.chyba }); }
 

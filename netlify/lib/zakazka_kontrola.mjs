@@ -308,13 +308,25 @@ export function vzServerKontrola(stara, zak, volby = {}) {
   let st = stara;
   if (st && typeof G.importZakazka === 'function') { try { st = G.importZakazka(JSON.parse(JSON.stringify(st))); } catch (e) { st = stara; } }
   if (!volby.zapnuto) {
-    if (G.vzPodpis(zak) !== G.vzPodpis(st)) return { status: 400, chyba: G.VZ_VYPNUTO };
+    if (G.vzPodpis(zak) !== G.vzPodpis(st)) {
+      /* D4 (dorevize Fable): nejčastější příčina s VYP je smazaná varianta,
+       * na kterou ukazuje další zákazník (import ukazatel přesměroval) — říct to lidsky. */
+      const ids = new Set((Array.isArray(zak.varianty) ? zak.varianty : []).filter(v => v && typeof v === 'object').map(v => String(v.id)));
+      const smazana = (st && Array.isArray(st.dalsiZakaznici) ? st.dalsiZakaznici : [])
+        .some(d => d && typeof d === 'object' && d.varianta && !ids.has(String(d.varianta)));
+      return { status: 400, chyba: smazana ? G.VZ_VYPNUTO_VARIANTA : G.VZ_VYPNUTO };
+    }
   } else {
-    /* N9 (revize Fable): PRVNÍ vzRidici (uložená verze ho nemá) je vždy
-     * { id: 'z1', pismeno: '' } — prohlížeč si řídícímu písmeno ani id nevybere. */
+    /* N9 + D1 (revize Fable): když uložená verze data víc zákazníků nemá,
+     * musí mezi zákazníky (vzRidici + dalsiZakaznici) být právě jeden
+     * { id: 'z1', pismeno: '' } — původní řídící. Nemusí už být řídící:
+     * přidat zákazníka a v témž uložení ho udělat řídícím je poctivý postup. */
     const r = zak.vzRidici;
-    if (r && typeof r === 'object' && !(st && st.vzRidici) && (r.id !== G.VZ_RIDICI_ID || r.pismeno !== ''))
-      return { status: 400, chyba: 'Zakázka nese neplatného řídícího zákazníka (první řídící je vždy bez písmena).' };
+    if (r && typeof r === 'object' && !(st && st.vzRidici)) {
+      const vsichni = [r].concat(Array.isArray(zak.dalsiZakaznici) ? zak.dalsiZakaznici : []).filter(x => x && typeof x === 'object');
+      if (vsichni.filter(x => x.id === G.VZ_RIDICI_ID && x.pismeno === '').length !== 1)
+        return { status: 400, chyba: 'Zakázka nese neplatné zákazníky (původní řídící zákazník z1 bez písmena chybí).' };
+    }
     /* Druhá pojistka: po importZakazka je tvar vždy čistý (vadný zahodí
      * vzOcisti → vzZahozeno výš); hlídá volajícího, který import obejde. */
     const p = G.vzTvarProblemy(zak);
