@@ -1,6 +1,7 @@
 # Předávka — 16. 11. 2026: VZ-E2 #601 (víc zákazníků — čísla s písmenem, tisk z pohledu zákazníka, test úniku), větev `claude/vz-e2`
 
-Nad `claude/vz-e0` `e29f2b1`. **v16.11.4** (koordinace přečísluje). Do `test-draft`, `test`, `main` ani integrace nic; weby,
+Nad `claude/vz-e0` `e29f2b1`; sloučeno s `claude/integrace-vz` `76ae631` (E0 po revizi) a `b7ec485` (E0 dorevize, E1, E5).
+**v16.11.4** (koordinace přečísluje). Do `test-draft`, `test`, `main` ani integrace nic; weby,
 Disk, Pipedrive nic. **Před sloučením revize poradce (únik údajů).** Roadmapa **#601 hotovo**, meze **B223, B224**.
 
 | úkol | stav | kde |
@@ -14,7 +15,9 @@ Disk, Pipedrive nic. **Před sloučením revize poradce (únik údajů).** Roadm
 | statická kontrola | ✅ | `nastroje/kontrola_vz_unik.sh` (+ `--pojistka`) v `testovaci_kolo.sh` (statické teď 6) |
 | oprava úniku z testu: zmrazený krycí list sdílené varianty | ✅ | `zakaznikPole` (kryci.js 5 polí, kryci_proj.js 6) |
 | testy | ✅ | `src/test_vz_unik.js`, `src/test_vz_cisla.js`, `src/test_vz_tisk_vstupy.js`, zlatá sada (e1)(e2), `netlify/test_vz_webhook.mjs`, prohlížeč `overit_vz_tisk.mjs` |
-| mutace „[VZ E2]“ | viz níže | `mutace_jadro.mjs` (JADRA + zakazka.js, dokumenty.js, ui vstupy tisku) |
+| napojení na E1 a E5 | ✅ | `vzTiskId` ← `vzOtevrenyId` (E1); karta Zákazníci zakázky: číslo s písmenem (`vzTiskCisloZakaznika`) a **Tisk CN** (`vzTiskCN` = otevřít zákazníka + Kompletní náhled a tisk); poznámka E5 `vzpCisloNabidky` → `vzCisloSPismenem` |
+| mutace „[VZ E2]“ | ✅ | jádro 43/46 v prvním běhu (3 nechycené → doplněny testy, ruční záměnou ověřeno zabití; závěrečný běh viz zpráva koordinaci), server 5/5 |
+| kolo `--bez-mutaci` (před sloučením E1/E5) | ✅ **VŠE ZELENÉ** | sady 397/0/59, hodiny +400 dní 365/0/1, statické 6/6 |
 
 ## Rozhodnutí (bezpečnější varianta, k revizi)
 
@@ -29,11 +32,17 @@ Disk, Pipedrive nic. **Před sloučením revize poradce (únik údajů).** Roadm
 - Detail výpočtu (`detailTisk`) a soubor zakázky / protokol / suchý běh Pipedrive nejsou dokumenty pro zákazníka — beze změny.
 - Tlačítko specifikace: u jednoho zákazníka původní `onclick` (stránka bajt po bajtu), u víc zákazníků `vzTiskSpecifikace`.
 - `zamek_ui.js` zmrazuje krycí list dál nad celou `ZAK` (= řídící) — zmrazení nad pohledem B by únik obrátilo k řídícímu.
+- Číslo SoD (`cisloSod`, příznak `pismenoZakaznika`) v pohledu s písmenem dostane písmeno i ze snímku zámku / ručního přepisu.
+- Pravidlo „vzTisk“ v katalogu kontrol (prompt bod 3) **odloženo do E6**: nové pravidlo mění počet pravidel a čísla
+  vydaného manuálu (test_manual_vypocet → nové vydání). Zábrana platí v bráně dokumentů a ve všech vstupech tisku.
+- Vypnutá funkce: s E1 je otevřený vždy řídící, takže se tiskne řídícímu (jako hlavička); zábrana pro dalšího zákazníka
+  zůstává v jádru pro případ, že by se id předalo jinak.
 
 ## Otevřené body
 
-- E0 N1 (projHlavicka po výměně řídícího): v JSON pohledu nového řídícího zůstává hlavička PROJ původního —
-  dokumenty ji netisknou; test úniku to hlásí jako INFO, po opravě E0 přepnout na FAIL.
+- E0 N1 opraveno v integraci (`vzProjFirma`) — test úniku to teď hlídá ostře. Razítka ostatních zákazníků ve sdílené
+  variantě (snímek adresáta, E3) zůstávají v pohledu; test úniku ověřuje, že je dokumenty A a B netisknou.
+- E5 (`src/vz_poznamka.js`) skládá číslo přes `vzCisloSPismenem` z E2 — tvar čísla je na jednom místě.
 - `zamek.cislo` se při tisku pro B zapisuje bez písmene (`variantaCislo(ZAK, v)` v `zamek_ui.js`) — razítko „komu“ s číslem
   je E3.
 - Zmrazený krycí list, kde první zámek vznikl, když byl řídícím jiný zákazník, a pak se řídící vrátil — pole zákazníka
