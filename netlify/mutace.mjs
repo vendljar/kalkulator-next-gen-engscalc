@@ -53,6 +53,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_vs_server.mjs',
      /* VZ #598 E0 (16. 11. 2026): víc zákazníků — vypínač, tvar, platna, invariant (server) a jádro (model). */
      'test_vz_server.mjs', '../src/test_vz_model.js',
+     /* VZ-E2 #601 (16. 11. 2026): webhook podle čísla s písmenem zákazníka. */
+     'test_vz_webhook.mjs',
      /* K40a #579 (11. 11. 2026): X5 záložní buňka CSV a X6 escJs v onclick ceníku — bez nich mutace [K40a] X5/X6 nemají sadu. */
      '../src/test_k40_csv_bunka.js', '../src/test_escape.js',
      /* Revize K40a D1 (12. 11. 2026): import zamčené varianty s víc šachtami (zakazka.js). */
@@ -404,6 +406,28 @@ const MUTACE = [
     proc: 'obchodník by neviděl, co by šlo do poznámky dealu (R6)', sady: ['test_vs_e5_pd.mjs'] },
   /* VSD (doplněk J. V. 11. 11. 2026): poznámka dealu se seznamem šachet,
    * zápis do Pipedrive (simulátor). Hlídá netlify/test_vsd_pd_poznamka.mjs. [VSD] */
+  /* VZ-E2 (#601, 16. 11. 2026): webhook podle čísla s písmenem zákazníka.
+   * Hlídá netlify/test_vz_webhook.mjs. [VZ E2] */
+  { nazev: "VZ: webhook nehledá podle základu čísla [VZ E2]", soubor: "functions/pd_webhook.mjs",
+    hledej: "    if (!z && zadani.strana === 'ock' && rozklad.pismeno) {",
+    nahrad: "    if (false) {",
+    proc: "deal s číslem …9940-B by založil novou kalkulaci místo zakázky se zákazníkem B", sady: ['test_vz_webhook.mjs'] },
+  { nazev: "VZ: webhook bere zakázku podle základu bez písmene [VZ E2]", soubor: "functions/pd_webhook.mjs",
+    hledej: "      if (zz && pdWebhookPismeno(zz, rozklad.pismeno)) { z = zz; jmeno = jmenoZ; }",
+    nahrad: "      if (zz) { z = zz; jmeno = jmenoZ; }",
+    proc: "deal „…9940-C“ by se navázal na zakázku, která zákazníka C nemá", sady: ['test_vz_webhook.mjs'] },
+  { nazev: "VZ: vlastník dealu nepřijme písmeno [VZ E2]", soubor: "lib/pd_webhook.mjs",
+    hledej: "  return !!r.pismeno && pdWebhookCisloKlic(r.zaklad) === k && pdWebhookPismeno(zak, r.pismeno);",
+    nahrad: "  return false;",
+    proc: "deal s číslem dalšího zákazníka by hodil 409 „patří jiné nabídce“", sady: ['test_vz_webhook.mjs'] },
+  { nazev: "VZ: vlastník dealu přijme cizí písmeno [VZ E2]", soubor: "lib/pd_webhook.mjs",
+    hledej: "  return !!r.pismeno && pdWebhookCisloKlic(r.zaklad) === k && pdWebhookPismeno(zak, r.pismeno);",
+    nahrad: "  return !!r.pismeno && pdWebhookCisloKlic(r.zaklad) === k;",
+    proc: "deal s písmenem, které zakázka nemá, by přepsal její údaje", sady: ['test_vz_webhook.mjs'] },
+  { nazev: "VZ: písmeno z razítek se nečte [VZ E2]", soubor: "lib/pd_webhook.mjs",
+    hledej: "  return (Array.isArray(zak.varianty) ? zak.varianty : []).some((v) => obj(v) && obj(v.zamek) && Array.isArray(v.zamek.tisky)",
+    nahrad: "  return false && (Array.isArray(zak.varianty) ? zak.varianty : []).some((v) => obj(v) && obj(v.zamek) && Array.isArray(v.zamek.tisky)",
+    proc: "deal zákazníka, kterému nabídka odešla a byl odebrán, by založil novou kalkulaci", sady: ['test_vz_webhook.mjs'] },
   /* VZ-E0 (#599, 16. 11. 2026): víc zákazníků na zakázce — vypínač
    * viceZakazniku, serverová kontrola tvaru (vzServerKontrola), import
    * a duplikace. Hlídají netlify/test_vz_server.mjs a src/test_vz_model.js. [VZ E0] */
@@ -4940,16 +4964,16 @@ const MUTACE = [
     proc: 'objekt nebo pole v hodnotě krycího listu projde (B152)' },
   /* S7 (15. 10. 2026): Krycí list zakázky OCK a pole „Číslo SoD". */
   { nazev: 'S7: číslo SoD OCK nejde do smlouvy realizace', soubor: '../src/kryci.js',
-    hledej: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',",
-    nahrad: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky',",
+    hledej: "{ id: 'cisloSod', pismenoZakaznika: true, label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',",
+    nahrad: "{ id: 'cisloSod', pismenoZakaznika: true, label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky',",
     proc: 'vyplněné číslo SoD by se do smlouvy o dílo realizace nedostalo, {{SOD_CISLO_SMLOUVY}} by zůstal prázdný' },
   { nazev: 'S7: číslo SoD PROJ nejde do smlouvy projekce', soubor: '../src/kryci_proj.js',
     hledej: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',",
     nahrad: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky',",
     proc: 'číslo SoD projekce by se do smlouvy nedostalo' },
   { nazev: 'S7: číslo SoD jen v Backoffice', soubor: '../src/kryci.js',
-    hledej: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'],",
-    nahrad: "{ id: 'cisloSod', label: 'Číslo SoD', verze: ['bo'],",
+    hledej: "{ id: 'cisloSod', pismenoZakaznika: true, label: 'Číslo SoD', verze: ['bo', 'techdata'],",
+    nahrad: "{ id: 'cisloSod', pismenoZakaznika: true, label: 'Číslo SoD', verze: ['bo'],",
     proc: 'verze Techdata krycího listu OCK by číslo SoD neukázala' },
   { nazev: 'S7: krycí list OCK se jmenuje postaru', soubor: '../src/kryci.js',
     hledej: "return { nadpis: 'Krycí list zakázky OCK — ' + verzeNazev",
