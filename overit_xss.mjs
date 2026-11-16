@@ -20,7 +20,12 @@
  *        (data.cenovaVyjimka), lištu zámku u AKTIVNÍ zamčené varianty
  *        a žlutou lištu #404 se zálohou z localStorage (doplněno 16. 10.).
  *
- * Spuštění: NODE_PATH=$(npm root -g) node overit_xss.mjs
+ * VZ-E1 #600 (16. 11. 2026): další zákazník na zakázce — název, IČO, kontakt
+ *        a sídlo v přepínači, kartě Zákazníci zakázky (OCK i Přehled),
+ *        v hlavičce s otevřeným zákazníkem, ve formuláři „Nový zákazník",
+ *        v potvrzení odstranění a ve sloupci Zákazník seznamu variant.
+ *
+ * Spuštění: NODE_PATH=$(npm root -g) node overit_xss.mjs  (KNG_DIST = jiný dist)
  */
 import { createRequire } from 'module';
 import path from 'path';
@@ -33,7 +38,7 @@ catch (e) {
   process.exit(2);
 }
 
-const KDE = pathToFileURL(path.resolve('dist/kalkulacka.html')).href;
+const KDE = pathToFileURL(path.resolve(process.env.KNG_DIST || 'dist/kalkulacka.html')).href;
 let ok = 0, fail = 0;
 const zkus = (popis, podminka, detail) => {
   if (podminka) { ok++; console.log('  ✓ ' + popis); }
@@ -584,6 +589,79 @@ console.log('\nK40c — upozornění na vazbu z webhooku a dialog opravy firmy')
   zkus('K40c: štítek „vazba nahlášena" vidí autor, cizí obchodník ne', /vazba nahlášena/.test(r.stitekAutor) && r.stitekCizi === '');
   zkus('K40c: nic se nespustilo', r.xss.length === 0 && r.img === 0, JSON.stringify([r.xss, r.img]));
   zkus('K40c: stránka nespadla', chybyStranky.length === 0, chybyStranky.join(' | '));
+  await p.close();
+}
+
+/* VZ-E1 #600: DALŠÍ ZÁKAZNÍK NA ZAKÁZCE. Název, IČO, kontakt, sídlo a DIČ
+ * dalšího zákazníka (i řídícího a název vlastní varianty) nesou payload
+ * s uvozovkami i apostrofy. Zákazník se přidá formulářem (vzFormPridej) i jádrem
+ * (vzPridej), zakázka projde importZakazka (cesta ze serveru), zákazník se
+ * otevře klikem v přepínači, vykreslí se karta v Kalkulaci OCK i v Přehledu,
+ * formulář s otráveným obsahem a potvrzení odstranění — zapnuto i vypnuto. */
+console.log('\nVZ-E1 — další zákazník na zakázce');
+for (const zap of [true, false]) {
+  const PAYL = (c) => `');window.__XSS.push('${c}');//"><img src=x onerror="window.__XSS.push('${c}')">`;
+  const p = await b.newPage({ viewport: { width: 1500, height: 1000 } });
+  const chybyStranky = [];
+  p.on('pageerror', e => chybyStranky.push(String(e && e.message || e).slice(0, 160)));
+  await p.goto(KDE); await p.waitForTimeout(400);
+  const r = await p.evaluate(async ([PAYS, zap]) => {
+    const PAYL = new Function('c', 'return ' + PAYS)();
+    const IMG = (c) => `<img src=x onerror=window.__XSS.push('${c}')>`;
+    const APO = (c) => `x' onmouseover='window.__XSS.push("${c}")' a='`;
+    window.__XSS = [];
+    window.hlaska = () => Promise.resolve();
+    window.fetch = async () => { throw new TypeError('Failed to fetch'); };   // síť se nevolá
+    window.viceZakaznikuZapnuto = () => true;
+    const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 0997';
+    if (typeof zkusebniCenik === 'function') z.varianty[0].data.cenik = zkusebniCenik();
+    z.objednatel = PAYL('vz.ridici.objednatel');
+    ZAK = importZakazka(JSON.parse(JSON.stringify(z)));
+    syncVarianta(); prepniTab('kalk'); render();
+    /* 1) formulářem, s otrávenými poli formuláře */
+    vzFormOtevri('ock');
+    Object.assign(VZ_UI.form.h, { objednatel: PAYL('vz.form.objednatel'), ico: IMG('vz.form.ico'), kontakt: APO('vz.form.kontakt'),
+      adresaObjednatele: PAYL('vz.form.sidlo'), dic: APO('vz.form.dic') });
+    VZ_UI.form.zdroj = PAYL('vz.form.zdroj');
+    render(); await new Promise(res => setTimeout(res, 80));
+    const formular = !!document.getElementById('vzFormular');
+    VZ_UI.form.nova = 'vlastni';
+    vzFormPridej();
+    /* 2) jádrem — další dva zákazníci */
+    vzPridej(ZAK, { objednatel: IMG('vz.b.objednatel'), ico: PAYL('vz.b.ico'), kontakt: PAYL('vz.b.kontakt'), adresaObjednatele: APO('vz.b.sidlo') }, {});
+    vzPridej(ZAK, { objednatel: APO('vz.c.objednatel'), ico: APO('vz.c.ico'), kontakt: IMG('vz.c.kontakt') }, { vlastni: true });
+    ZAK.varianty.forEach((v, i) => { if (i) v.nazev = PAYL('vz.varianta.' + i); });
+    /* cesta ze serveru */
+    ZAK = importZakazka(JSON.parse(JSON.stringify(ZAK)));
+    syncVarianta();
+    if (!zap) window.viceZakaznikuZapnuto = () => false;
+    prepniTab('kalk'); render(); await new Promise(res => setTimeout(res, 80));
+    const pocet = (ZAK.dalsiZakaznici || []).length;
+    const karta = !!document.getElementById('vzKarta_ock');
+    /* otevření v přepínači (klik na chip) */
+    const chipy = [...document.querySelectorAll('[id^="vzPrepinac_"] .vz-chip:not(.vz-chip-plus)')];
+    for (const c of chipy) { c.click(); await new Promise(res => setTimeout(res, 60)); }
+    const hlavickaDalsi = zap ? String((ZAK.dalsiZakaznici || []).some(d => d.id === VZ_UI.otevreny)) : 'vyp';
+    /* potvrzení odstranění, formulář znovu, Přehled */
+    if (zap) { vzOdstranit('z3'); await new Promise(res => setTimeout(res, 60)); }
+    const potvrzeni = !!document.getElementById('vzOdstranPotvrzeni');
+    if (zap) { vzOdstranitPotvrd(false); vzFormOtevri('ock'); VZ_UI.form.h.objednatel = PAYL('vz.form2'); render(); }
+    for (const t of ['kalk', 'zakazka', 'proj', 'spec', 'detail']) {
+      try { prepniTab(t); render(); } catch (e) {}
+      await new Promise(res => setTimeout(res, 80));
+    }
+    const prehled = !!document.getElementById('vzKarta_zakazka') && !!document.querySelector('#page-zakazka .vz-odvozeno');
+    await new Promise(res => setTimeout(res, 250));
+    return { formular, pocet, karta, chipy: chipy.length, hlavickaDalsi, potvrzeni, prehled,
+      xss: [...new Set(window.__XSS || [])], img: document.querySelectorAll('img[src="x"]').length,
+      atr: document.querySelectorAll('[onmouseover]').length };
+  }, [PAYL.toString(), zap]);
+  const kdo = zap ? 'ZAP' : 'VYP';
+  zkus(`VZ ${kdo}: formulář, 3 další zákazníci, karta v OCK i v Přehledu (jinak by kontrola nic neověřila)`,
+    r.formular && r.pocet === 3 && r.karta && r.prehled && r.chipy >= 4 && (zap ? r.hlavickaDalsi === 'true' && r.potvrzeni : true), JSON.stringify(r));
+  zkus(`VZ ${kdo}: nic se nespustilo`, r.xss.length === 0, r.xss.join(', '));
+  zkus(`VZ ${kdo}: v DOM není vložený <img> ani atribut onmouseover z payloadu`, r.img === 0 && r.atr === 0, JSON.stringify([r.img, r.atr]));
+  zkus(`VZ ${kdo}: stránka nespadla`, chybyStranky.length === 0, chybyStranky.join(' | '));
   await p.close();
 }
 

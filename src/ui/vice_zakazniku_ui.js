@@ -174,7 +174,7 @@ function vzZakaznikCil(kde) {
     return {
       zak: vzZakaznikProxy(d),
       formular: true,
-      set: (k, v) => { if (VZ_HLAVICKA_POLE.indexOf(k) >= 0) f.h[k] = vzText(v).slice(0, VZ_TEXT_MAX); render(); },
+      set: (k, v) => { if (VZ_HLAVICKA_POLE.indexOf(k) >= 0) f.h[k] = vzText(v).slice(0, VZ_TEXT_MAX); vzFormPrekresli(); },
       zmrazeno: () => '',
       poPrevzeti: (n) => {
         f.zastupci = d.zastupci;
@@ -441,6 +441,17 @@ function vzFormPsani(v) {
   f.h.objednatel = vzText(v).slice(0, VZ_TEXT_MAX);
   const b = document.getElementById('vzFormPridej');
   if (b) { const ok = f.h.objednatel.trim() !== ''; b.disabled = !ok; if (ok) b.removeAttribute('title'); }
+}
+/* Překreslit formulář, jen když se pole na stránce liší od dat. Opuštění
+ * pole Zákazník (onchange) přichází při mousedown na Zrušit / Přidat —
+ * zbytečný render() mezi mousedown a mouseup by klik spolkl (nález
+ * overit_vz_zadani.mjs). Výběr karty z našeptávače mění i jiná pole → render. */
+function vzFormPrekresli() {
+  const f = VZ_UI.form;
+  const dom = typeof document !== 'undefined' && document.getElementById ? document : null;
+  const lisi = !f || !dom || VZ_HLAVICKA_POLE.some(k => { const el = dom.getElementById('vzF_' + k); return !el || el.value !== f.h[k]; });
+  if (lisi) { render(); return; }
+  vzFormPsani(f.h.objednatel);
 }
 function vzFormNova(v) { if (VZ_UI.form) VZ_UI.form.nova = v === 'vlastni' ? 'vlastni' : 'stejna'; }
 function vzFormDatabaze() {
