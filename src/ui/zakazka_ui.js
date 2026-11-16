@@ -41,8 +41,28 @@ function varRidici(id) {
   if (proc) { if (typeof hlaska === 'function') hlaska(proc); render(); return; }
   nastavRidici(ZAK, id); render();
 }
+/* VZ-E1 #600 (revize E0, N2): variantu, na kterou ukazuje některý zákazník
+ * zakázky, nejde smazat — zákazník by zůstal bez nabídky. Vrací hlášku, nebo ''.
+ * Platí i s vypnutou funkcí (data víc zákazníků se nemažou ani nepřepisují). */
+function vzSmazaniVariantyDuvod(zak, id) {
+  if (!zak || typeof vzRezim !== 'function' || !vzRezim(zak)) return '';
+  const kdo = vzZakaznici(zak).filter(z => z.varianta === String(id));
+  if (!kdo.length) return '';
+  const jm = kdo.map(z => (z.hlavicka.objednatel || '').trim() || '(bez názvu)').join(', ');
+  return 'Na variantu ukazuje zákazník ' + jm + ' — nejdřív mu přiřaďte jinou variantu nebo ho odstraňte.';
+}
+/* VZ-E1 #600 (revize E0, N2): import zahodil vadná data víc zákazníků
+ * (`vzZahozeno`, nevýčtové jako fotoZahozena) — říct to. '' = nic. */
+function vzZahozenoVarovani(vady) {
+  if (!Array.isArray(vady) || !vady.length) return '';
+  return 'Údaje dalších zákazníků v souboru nebyly platné (' + vady.length + ' '
+    + (vady.length === 1 ? 'vada' : vady.length < 5 ? 'vady' : 'vad') + ') a byly odebrány — zakázka má jen zákazníka z hlavičky. '
+    + 'Další zákazníky přidejte znovu.';
+}
 async function varSmaz(id) {
   if (ZAK.varianty.length <= 1) { await hlaska('Poslední variantu nelze smazat.'); return; }
+  const vzDuvod = vzSmazaniVariantyDuvod(ZAK, id);
+  if (vzDuvod) { await hlaska(vzDuvod); return; }
   const v = ZAK.varianty.find(x => x.id === id);
   // #34: odeslanou nabídku běžný uživatel nemaže – je to doklad o tom, co
   // zákazník dostal. Správce ano (má i odemknutí), ale s výslovným varováním.

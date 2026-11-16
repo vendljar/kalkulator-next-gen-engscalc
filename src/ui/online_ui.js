@@ -1821,6 +1821,8 @@ async function onlineOtevri(soubor) {
      * se ze serveru čte jen u takové zakázky. */
     /* VZ-E1 #600: totéž pro víc zákazníků (lišta R21, otevřený = řídící). */
     if (typeof vzPoOtevreni === 'function') vzPoOtevreni(ZAK);
+    /* VZ-E1 (revize E0, N2): import zahodil vadná data dalších zákazníků. */
+    if (typeof vzZahozenoVarovani === 'function' && vzZahozenoVarovani(ZAK.vzZahozeno)) onlineZprava(vzZahozenoVarovani(ZAK.vzZahozeno), 'varovani');
     if (typeof vsZakazkaMaData === 'function' && vsZakazkaMaData(ZAK)) {
       const zak = ZAK;
       onlineNactiFunkce().then(() => {

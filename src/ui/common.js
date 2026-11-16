@@ -2820,7 +2820,9 @@ function nactiZakazku(ev) {
       /* SEC-M16: fotka s odkazem se při importu zahodila — říct to. */
       const fotoVar = (typeof uvodniFotoVarovani === 'function') ? uvodniFotoVarovani(ZAK.fotoZahozena) : '';
       const stavbaVeta = (stavba && typeof uloSvetlikyStavbaVeta === 'function') ? uloSvetlikyStavbaVeta({ svetlikyStavba: stavba }) : '';
-      if (fotoVar || stavbaVeta) hlaska([fotoVar, stavbaVeta].filter(Boolean).join(' '));
+      /* VZ-E1 (revize E0, N2): zahozená data dalších zákazníků — říct to. */
+      const vzVar = (typeof vzZahozenoVarovani === 'function') ? vzZahozenoVarovani(ZAK.vzZahozeno) : '';
+      if (fotoVar || stavbaVeta || vzVar) hlaska([fotoVar, stavbaVeta, vzVar].filter(Boolean).join(' '));
       // #18: hledání a filtr patří k oknu, ne k datům – jiná zakázka se musí
       // ukázat celá, ne přes zúžení nastavené nad tou předchozí.
       if (typeof seznamReset === 'function') seznamReset();
