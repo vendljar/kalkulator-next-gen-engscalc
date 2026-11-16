@@ -120,7 +120,7 @@ async function hlavni() {
   })), ['ctrl']);
   hlas('(e2) dva zákazníci: vzTiskPohled(z1) = dnešní otisky (dokumenty)', rE2);
   console.log('    (info) (e2) povolený rozdíl jen controllingu u ne-řídící varianty: ' + rE2.povolene.length + ' — ' + rE2.povolene.join('; '));
-  test('(e2) rozdíl controllingu jen výjimečně (≤ 10 scénářů)', rE2.povolene.length <= 10, rE2.povolene);
+  test('(e2) controlling beze změny (řídící tiskne i volné varianty — revize E0 N3)', rE2.povolene.length === 0, rE2.povolene);
   test('(e2) tiskový pohled řídícího ve všech scénářích', tisk >= ulozene.pocetFuzz && !selhaniE.length, { tisk, selhani: selhaniE.slice(0, 5) });
 
   /* (d) Bez stop. Globály (importZakazka, novaZakazka, vz…) nastavil zlata(). */

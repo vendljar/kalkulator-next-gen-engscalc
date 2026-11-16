@@ -167,16 +167,16 @@ const KRYCI_SEKCE = [
    * vlastního předělu — patří k identifikaci zákazníka a samostatný nadpis
    * jen roztrhal jednu myšlenku na dvě obrazovky. */
   { sekce: 'Zákazník (smluvní partner)', pole: [
-    { id: 'jmenoPrijmeni', label: 'Jméno a příjmení kontaktu', verze: ['bo'], prefill: c => c.zak.kontakt, src: 'z hlavičky zakázky' },
-    { id: 'zakaznik', label: 'Zákazník (smluvní partner)', verze: ['bo', 'techdata'], prefill: c => c.zak.objednatel, src: 'z hlavičky zakázky' },
+    { id: 'jmenoPrijmeni', label: 'Jméno a příjmení kontaktu', zakaznikPole: true, verze: ['bo'], prefill: c => c.zak.kontakt, src: 'z hlavičky zakázky' },
+    { id: 'zakaznik', label: 'Zákazník (smluvní partner)', zakaznikPole: true, verze: ['bo', 'techdata'], prefill: c => c.zak.objednatel, src: 'z hlavičky zakázky' },
     { id: 'kontaktZakaznikTel', label: 'Telefon na zákazníka', verze: ['bo'] },
     { id: 'kontaktZakaznikEmail', label: 'E-mail na zákazníka', verze: ['bo'] },
-    { id: 'ico', label: 'IČO', verze: ['bo'], prefill: c => c.zak.ico, src: 'z hlavičky zakázky' },
+    { id: 'ico', label: 'IČO', zakaznikPole: true, verze: ['bo'], prefill: c => c.zak.ico, src: 'z hlavičky zakázky' },
     { id: 'dic', label: 'DIČ', verze: ['bo'], bind: 'ZAK.dic', prefill: c => c.zak.dic, src: 'hlavička zakázky' },
     /* KL-1: sídlo zákazníka, NE adresa stavby. Developer sídlí jinde, než
      * staví; do smlouvy a na fakturu patří sídlo. Dokud není v hlavičce
      * vyplněné, zůstane pole prázdné – raději prázdné než špatné. */
-    { id: 'adresaZakaznik', label: 'Adresa (sídlo) zákazníka', verze: ['bo'], prefill: c => c.zak.adresaObjednatele, src: 'z hlavičky zakázky (sídlo)' },
+    { id: 'adresaZakaznik', label: 'Adresa (sídlo) zákazníka', zakaznikPole: true, verze: ['bo'], prefill: c => c.zak.adresaObjednatele, src: 'z hlavičky zakázky (sídlo)' },
     { id: 'zastBanka', label: 'Bankovní spojení zákazníka', verze: ['bo'], bind: 'ZAK.zastupci.banka', src: 'hlavička zakázky' },
     { id: 'zastUcet', label: 'Číslo účtu / směrový kód', verze: ['bo'], bind: 'ZAK.zastupci.ucet', src: 'hlavička zakázky' },
     { id: 'zastZapis', label: 'Zápis v rejstříku (zákazník)', verze: ['bo'], bind: 'ZAK.zastupci.zapis', src: 'hlavička zakázky' },
@@ -428,8 +428,9 @@ const KRYCI_SEKCE = [
      * platí jako u každého pole. */
     { id: 'sodDatumPodpisu', label: 'Datum podpisu smlouvy', verze: ['bo'], typ: 'date', sod: 'SOD_DATUM_PODPISU',
       prefill: () => kryciDnesIso(), src: 'datum tisku', nezmrazovat: true },
-    { id: 'objPodpisFirma', label: 'Zákazník — firma v podpisové doložce', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS_FIRMA',
-      prefill: c => kryciZKrycihoListuProj(c, 'objPodpisFirma') || (c.zak && c.zak.objednatel) || '',
+    { id: 'objPodpisFirma', zakaznikPole: true, label: 'Zákazník — firma v podpisové doložce', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS_FIRMA',
+      prefill: c => ((typeof vzPismenoPohledu === 'function' && vzPismenoPohledu(c.zak)) ? '' : kryciZKrycihoListuProj(c, 'objPodpisFirma'))   // VZ-E2: KL PROJ je sdílený (řídící)
+        || (c.zak && c.zak.objednatel) || '',
       src: 'krycí list PROJ / hlavička zakázky' },
     { id: 'objPodpis2Jmeno', label: 'Druhý podepisující za zákazníka — jméno', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS2_JMENO',
       prefill: c => kryciZKrycihoListuProj(c, 'objPodpis2Jmeno'), src: 'u SVJ podepisují zpravidla dva členové výboru' },
@@ -731,6 +732,13 @@ function kryciHodnota(pole, kl, c) {
   }
   /* `dphBind` je totéž provázání jako `bind`, jen mířené do sazby DPH
    * v hlavičce kalkulace — ruční přepis se proto nečte ani tady. */
+  /* VZ-E2 #601 (únik R1): pole z hlavičky zákazníka (`zakaznikPole`) v pohledu
+   * zákazníka s písmenem (další zákazník, i po výměně řídícího) čtou JEHO
+   * údaje — ruční přepis i snímek zámku jsou ve sdílené variantě a nesou
+   * řídícího. Jeden zákazník a pohled původního řídícího beze změny. */
+  if (pole.zakaznikPole && typeof vzPismenoPohledu === 'function' && c && vzPismenoPohledu(c.zak)) {
+    try { const v = pole.prefill(c); return v == null ? '' : v; } catch (e) { return ''; }
+  }
   if (!pole.bind && !pole.dphBind) {   // provázaná pole (bind) čtou přímo ze ZAK, ne z ručních přepisů
     const h = (kl && kl.hodnoty) || {};
     if (h[pole.id] !== undefined && h[pole.id] !== '')
