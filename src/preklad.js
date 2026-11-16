@@ -630,6 +630,10 @@ const PREKLAD = {
   "varianty šachet": ["shaft variants", "Schachtvarianten", "variantes de gaine"],
   "variant šachet": ["shaft variants", "Schachtvarianten", "variantes de gaine"],
   "celkem": ["in total", "insgesamt", "au total"],
+  /* SL #589 (16. 11. 2026): vyrovnávací řádek rozpisu šachet ve smlouvě o dílo (sod.js sodRozpisVyrovnani). */
+  /* „Sleva" kryje heslo Sleva níž (slovník nerozlišuje velikost písmen). */
+  "Zaokrouhlení": ["Rounding", "Rundung", "Arrondi"],
+  "Sleva a zaokrouhlení": ["Discount and rounding", "Rabatt und Rundung", "Remise et arrondi"],
   "přisazena k fasádě, v jednom nástupišti přes můstek": ["Attached to the facade, at one landing via an access bridge","An die Fassade angebaut, an einer Zugangsstelle über eine Brücke","Accolée à la façade, à un palier par une passerelle"],
   "přisazena k podestám, v jednom nástupišti přes můstek": ["Attached to the landings, at one landing via an access bridge","An die Podeste angebaut, an einer Zugangsstelle über eine Brücke","Accolée aux paliers, à un palier par une passerelle"],
   "plechové nadpraží nade dveřmi": ["Sheet-metal panel above the door","Blechpaneel über der Tür","Panneau en tôle au-dessus de la porte"],

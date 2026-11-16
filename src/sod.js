@@ -288,9 +288,54 @@ function sodSachtySymboly(d, zak, varianta, jekly, L, sablona) {
   const ks = ' ' + P('ks');
   const seznam = vo.sachty.map(x => x.nazev + ' ' + x.ks + ks).join(', ');
   d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + P(druh) + ', ' + P('celkem') + ' ' + vo.celkem + ks + ' (' + seznam + ')';
-  d.placeholders.SACHTY_SOD_ROZPIS = vo.sachty.map(x => x.nazev + (x.mustky ? ', ' + P('vč. můstků') : '')
-    + ' – ' + x.ks + ks + ' – ' + kc(na(x.cena))).join('\n');
+  const radky = vo.sachty.map(x => x.nazev + (x.mustky ? ', ' + P('vč. můstků') : '')
+    + ' – ' + x.ks + ks + ' – ' + kc(na(x.cena)));
+  const vyr = sodRozpisVyrovnani(d, vo.sachty.map(x => na(x.cena)), sodCenaPredSlevou(r, varianta, na));
+  if (vyr) radky.push(P(vyr.popis) + ' – ' + kc(vyr.castka));
+  d.placeholders.SACHTY_SOD_ROZPIS = radky.join('\n');
   return [];
+}
+
+/* VYROVNÁVACÍ ŘÁDEK ROZPISU ŠACHET (SL #589, rozhodnutí J. V. 16. 11. 2026:
+ * „ano, doplň řádek slevy"). Řádky šachet jsou ceny PŘED slevou (rozpočet R7,
+ * v eurech každý řádek nahoru), cena díla dle nabídky je PO slevě a po obchodním
+ * zaokrouhlení — součet řádků se jí proto u slevy (a v eurech i bez ní)
+ * nerovnal. Rozpis končí řádkem = cena díla dle nabídky ({{SOD_CENA_NABIDKY}},
+ * u dotisku podle záznamu tisku jeho částka) − součet řádků šachet; jen při
+ * nenulovém rozdílu. Popisek: „Sleva" (uplatněná sleva, řádky dávají přesně
+ * cenu před slevou), „Sleva a zaokrouhlení" (sleva + rozdíl i bez ní),
+ * „Zaokrouhlení" (bez slevy); velké písmeno jako řádky šachet a heslo
+ * slovníku „Sleva". Výpočet ceny se nemění — jen text rozpisu.
+ * Vrací { popis, castka } (česky; překlad dělá volající), nebo null. */
+function sodRozpisVyrovnani(d, castky, predSl) {
+  const c = d && d.ceny;
+  if (!c || !Array.isArray(castky) || !castky.length) return null;
+  const z = d.sodZaznam;
+  const zeZaznamu = !!(z && d.mena && z.mena === (d.mena.eur ? 'EUR' : 'CZK') && z.bezDph !== null
+    && isFinite(+z.bezDph) && isFinite(+z.nabidka));
+  const cil = zeZaznamu ? +z.nabidka : +c.bezDph;
+  if (!isFinite(cil)) return null;
+  const h = n => Math.round(n * 100) / 100;
+  const soucet = h(castky.reduce((a, x) => a + (+x || 0), 0));
+  const castka = h(cil - soucet);
+  if (Math.abs(castka) < 0.005) return null;
+  const sleva = !!(predSl && predSl.sleva);
+  const pred = predSl ? +predSl.cena : NaN;
+  const zaokr = isFinite(pred) ? Math.abs(h(pred - soucet)) >= 0.005 : false;
+  const popis = sleva ? (zaokr ? 'Sleva a zaokrouhlení' : 'Sleva') : 'Zaokrouhlení';
+  return { popis, castka };
+}
+/* Cena před slevou ve měně dokumentu a uplatněná sleva — touž cestou jako
+ * nabídka (cenaNabidkyOck: zaokrouhlený základ, v eurech převedený nahoru).
+ * Počítá se tady, ne v datech nabídky: data SoD zůstávají znak po znaku
+ * stejná (zlatá sada VS). null = nevíme (pak popisek jen podle slevy). */
+function sodCenaPredSlevou(r, varianta, na) {
+  const dv = varianta && varianta.data;
+  if (!r || !dv || typeof cenaNabidkyOck !== 'function') return null;
+  const zaokr = (typeof zaokrOckZ === 'function') ? zaokrOckZ(dv) : dv.zaokr;
+  const cn = cenaNabidkyOck(r, dv.sleva, zaokr);
+  if (!cn) return null;
+  return { cena: na(cn.zakladZaokr), sleva: cn.slevaPct > 0 };
 }
 
 /* OBJEDNANÉ PŘÍPLATKY VE SMLOUVĚ (#447 C6, rozhodnutí J. V. 21. 10. 2026,
@@ -675,5 +720,5 @@ if (typeof dokumentRegistruj === 'function') {
 
 if (typeof module !== 'undefined')
   module.exports = { SOD_OBJ_BEZ_ROZPISU, sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
-    sodJazykZabrana, sodPrelozHodnoty, sodSachtySymboly, SOD_SACHTY_SYMBOLY, SOD_SACHTY_BEZ_SABLONY, sodSablonaUmiSachty,
+    sodJazykZabrana, sodPrelozHodnoty, sodSachtySymboly, sodRozpisVyrovnani, sodCenaPredSlevou, SOD_SACHTY_SYMBOLY, SOD_SACHTY_BEZ_SABLONY, sodSablonaUmiSachty,
     SOD_TECKY, sodNevyplnene, SOD_NEVYPLNENE_POPIS, sodNevyplnenePopisy, sodNevyplneneText, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };
