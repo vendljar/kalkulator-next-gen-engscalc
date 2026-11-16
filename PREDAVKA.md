@@ -9,6 +9,10 @@ weby, Disk, Pipedrive nic. Programování spouští koordinace až po souhlasu J
 | prototyp v3 | ✅ | https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V (verze 3); ověření 33/0 při 1600 i 400 px; snímky `podklady/vz_prototyp/snimky/v3_*` a `v2_*` |
 | prompty pro Opus | ✅ | `podklady/PROMPT_VZ_SPOLECNE.md`, `PROMPT_VZ_E0.md` … `E6.md`, `PROMPT_VZ_E5b.md` |
 
+**Doplněk J. V. 16. 11. (prototyp v4, artefakt verze 4, ověření 38/0, snímky `v4_*`):** tlačítko „Přidat zákazníka“
+bez „+“ na řádku vedle popisku Zákazník (zapsáno do návrhu § 2a a promptu E1); v prototypu zapnuté víc šachet
+a situace „víc zákazníků + víc šachet“.
+
 **Etapy:** E0 → E1 → E2 → E3 → E4 → E5b → E6; E5 souběžně s E1–E3 (po E0). Revize poradce: E0, E2, E3, E5b.
 **Čeká na J. V.:** souhlas se spuštěním; jedna nová otázka — kontaktní osoba dealu po přepsání organizace (§ 11,
 doporučeno: neměnit a upozornit).

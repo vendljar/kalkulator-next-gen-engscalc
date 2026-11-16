@@ -20,7 +20,7 @@ https://claude.ai/artifact/8qc59CQ4prtV1a4cNQjY4V
   Snímky bez předpony `v2_` jsou z v1 (12. 11. 2026, karta viditelná i s jedním zákazníkem — překonáno).
 
 **Verze 2 (připomínky J. V. 16. 11. 2026), sestaveno nad integrací `8462aea` (v12.11.7):** s jedním zákazníkem je
-aplikace jako dnes, navíc jen tlačítko „+ Přidat zákazníka“ u pole Zákazník; přepínač a karta se objeví až s druhým
+aplikace jako dnes, navíc jen tlačítko „Přidat zákazníka“ u pole Zákazník; přepínač a karta se objeví až s druhým
 zákazníkem; každý další zákazník má „Odstranit“ s potvrzením; po odstranění posledního se aplikace vrátí do
 standardního pohledu (ověřeno: hlavička znak po znaku jako na začátku).
 
@@ -29,8 +29,12 @@ v poli); při Prodáno jinému zákazníkovi se organizace dealu přepíše na v
 přepínačem „Pipedrive“ zkusit výpadek a „Zkusit zápis znovu“); zákazníka, kterému odešla nabídka, odstraní jen
 administrátor. Ověření 33 kontrol; snímky `snimky/v3_*` (dotčené kroky), ostatní `v2_*` platí dál.
 
+**Verze 4 (doplněk J. V. 16. 11. 2026):** tlačítko „Přidat zákazníka“ bez „+“ na jednom řádku s popiskem Zákazník
+(stejná výška řádku jako sousední); vypínač víc šachet je v prototypu zapnutý (skutečné ovládání šachet aplikace)
+a přibyla situace „víc zákazníků + víc šachet“. Ověření 38 kontrol; snímky `snimky/v4_*`.
+
 Situace: (1) přidat a odstranit zákazníka, (2) odstranit zákazníka s odeslanou nabídkou, (3) stejná varianta pro
-víc zákazníků, (4) prodej druhému zákazníkovi.
+víc zákazníků, (4) víc zákazníků + víc šachet, (5) prodej druhému zákazníkovi.
 
 Jak prototyp sahá do aplikace (v ostré verzi to bude jinak, viz návrh § 1 a § 4): zakázku, kopii varianty, zámek
 a prodej dělá vlastními funkcemi aplikace; hlavičku přepisuje údaji zvoleného zákazníka, aby skutečný živý náhled

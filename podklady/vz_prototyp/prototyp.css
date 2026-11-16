@@ -134,7 +134,10 @@ body.vzp-otevreno { margin-right: 440px; }
 }
 
 /* ----- v2: jeden zákazník = jen tlačítko; karta a přepínač až od druhého zákazníka ----- */
-.vzp-pridat { margin-left: 10px; font-weight: 600; white-space: nowrap; }
+.vzp-pridat { font-weight: 600; white-space: nowrap; }
+/* tlačítko na jednom řádku s popiskem Zákazník; pole vedle se o šířku tlačítka zúží, výška řádku se nemění */
+.zak-head .row > label.vzp-lab { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.zak-head .row > label.vzp-lab + .nasept-wrap { flex: 1 1 110px !important; min-width: 0; }
 .vzp-blok { margin: 0 0 10px; }
 .vzp-blok .vzp-form { margin-top: 0; }
 .vzp-pozn-proto { background: #10203f; color: #eef3fb; border-left: 4px solid #86e8ad; border-radius: 6px; padding: 7px 12px; font: 13px/1.4 system-ui, "Segoe UI", sans-serif; scroll-margin-top: calc(var(--vzp-h) + 12px); }

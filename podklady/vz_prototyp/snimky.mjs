@@ -41,11 +41,21 @@ const standard = (p) => p.evaluate(() => ({ karta: !!document.getElementById('vz
 let p = await stranka(1600, 1000);
 const s0 = await standard(p), h0 = await hlavicka(p);
 test('výchozí stav = standardní kalkulace: žádná karta, přepínač ani pruh, jen jedno tlačítko navíc', !s0.karta && !s0.chips && !s0.pruh && s0.tlacitko === 1 && !s0.cislo, s0);
-test('výchozí stav: tlačítko „+ Přidat zákazníka" je u pole Zákazník a nápověda říká, kam kliknout', await p.evaluate(() => /^Zákazník\+ Přidat zákazníka$/.test(document.querySelector('.zak-bar .vzp-pridat').parentNode.textContent.trim()))
+test('výchozí stav: tlačítko „+ Přidat zákazníka" je u pole Zákazník a nápověda říká, kam kliknout', await p.evaluate(() => /^ZákazníkPřidat zákazníka$/.test(document.querySelector('.zak-bar .vzp-pridat').parentNode.textContent.trim()))
   && /Klikněte na „2\. Přidat zákazníka"/.test(await txt(p, '#vzpLista')) && /jediný rozdíl proti dnešní aplikaci/.test(await txt(p, '.vzp-pozn-proto')));
 test('výchozí stav: u dealu žádná poznámka', /žádná poznámka \(zakázka má jednoho zákazníka\)/.test(await txt(p, '#vzpPanel')));
 test('lišta je fixed a drží nahoře po posunu', await p.evaluate(() => { window.scrollTo(0, 900); const r = document.getElementById('vzpLista').getBoundingClientRect(); const o = r.top === 0 && getComputedStyle(document.getElementById('vzpLista')).position === 'fixed'; window.scrollTo(0, 0); return o; }));
-await snimek(p, 'v2_1_vychozi_standardni_kalkulace');
+const radky = () => p.evaluate(() => { const r = [...document.querySelectorAll('#page-kalk .card.zak-bar .zak-head-col:nth-child(2) .row')].slice(0, 3).map((e) => Math.round(e.getBoundingClientRect().height));
+  const b = document.querySelector('.zak-bar .vzp-pridat').getBoundingClientRect(), l = document.querySelector('.zak-bar .vzp-pridat').parentNode.firstChild, rg = document.createRange(); rg.selectNode(l); const t = rg.getBoundingClientRect();
+  return { r, vRadku: b.top < t.bottom && b.bottom > t.top && b.left >= t.right, vstup: Math.round(document.querySelector('.zak-bar .nasept-wrap input').getBoundingClientRect().width) }; });
+const r1 = await radky();
+test('tlačítko „Přidat zákazníka" (bez +) je na řádku vedle popisku Zákazník a řádek má stejnou výšku jako sousední (panel otevřený)', r1.vRadku && r1.r[0] === r1.r[1] && r1.r[1] === r1.r[2] && r1.vstup >= 100, r1);
+await snimek(p, 'v4_1_tlacitko_na_radku_panel_otevreny');
+await klik(p, 'panel');
+const r2 = await radky();
+test('totéž se zavřeným panelem prototypu (1600 px)', r2.vRadku && r2.r[0] === r2.r[1] && r2.r[1] === r2.r[2] && r2.vstup >= 150, r2);
+await snimek(p, 'v4_2_tlacitko_na_radku_bez_panelu');
+await klik(p, 'panel');
 
 await klik(p, 'form');
 test('krok 2: formulář nového zákazníka v hlavičce, karta se ještě neukázala', (await p.locator('.zak-bar .vzp-form').count()) === 1 && !(await standard(p)).karta);
@@ -88,6 +98,14 @@ test('S3: kontrola úniku — ALFA není v náhledu nabídky BETA', /✔ ALFA/.t
 await snimek(p, 'v3_4_poznamka_u_dealu');
 
 await p.selectOption('#vzpRole', 'autor'); await p.waitForTimeout(300);
+await situace(p, 'sachty');
+test('víc šachet je v prototypu zapnuté: skutečné pole „Počet variant šachet" aplikace je vidět', await p.evaluate(() => /Počet variant/.test(document.querySelector('#page-kalk').textContent) && viceSachetZapnuto() === true));
+await klik(p, 'vlastni:b'); await klik(p, 'sachty:b');
+test('víc zákazníků + víc šachet: BETA má ve vlastní variantě 2 varianty šachet / 3 ks, ALFA dál jednu šachtu a svou cenu', /šachty: 2 varianty/.test(await txt(p, '#vzpKarta tr[data-z="b"]')) && !/šachty:/.test(await txt(p, '#vzpKarta tr[data-z="a"]'))
+  && await p.evaluate(() => rezimViceSachet(ZAK.varianty[1].data.ock) && !rezimViceSachet(ZAK.varianty[0].data.ock) && !!document.querySelector('#vsKalkPrepinac, [onclick*="vsAkt"]')));
+await snimek(p, 'v4_3_vic_zakazniku_a_vic_sachet');
+await klik(p, 'odesli:b');
+test('víc šachet: nabídka BETA odeslána, živý náhled CN nese BETA a číslo …9940.2-B', /odeslána/.test(await txt(p, '#vzpKarta tr[data-z="b"]')) && await p.evaluate(() => { const t = document.querySelector('#ock-nabidka .body table').textContent; return /BETA/.test(t) && /9940\.2-B/.test(t) && !/ALFA/.test(t); }));
 await situace(p, 'prodej');
 await klik(p, 'prodej:b');
 test('S4 krok 2: potvrzení prodeje ukazuje i přepsání organizace dealu na vítěze', /Deal 4321: organizace/.test(await txt(p, '#vzpKarta .vzp-potvrzeni')) && /najde podle IČO, jinak se založí/.test(await txt(p, '#vzpKarta .vzp-potvrzeni')));

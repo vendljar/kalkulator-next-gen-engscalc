@@ -5,7 +5,7 @@ Společná pravidla: `PROMPT_VZ_SPOLECNE.md`. Návrh § 2a, § 6, § 8. Větev `
 
 ## Cíl
 
-Se zapnutou funkcí a jedním zákazníkem je v aplikaci navíc jen tlačítko „+ Přidat zákazníka“. Od druhého zákazníka
+Se zapnutou funkcí a jedním zákazníkem je v aplikaci navíc jen tlačítko „Přidat zákazníka“. Od druhého zákazníka
 se objeví přepínač v hlavičce a karta „Zákazníci zakázky“. Zákazníka, kterému nic neodešlo, jde odstranit; po
 odstranění posledního je obrazovka i zakázka jako předtím.
 
@@ -17,7 +17,7 @@ odstranění posledního je obrazovka i zakázka jako předtím.
 
 ## Co udělat
 
-1. **Tlačítko** „+ Přidat zákazníka“ v popisku pole Zákazník (jen ZAP, jen kdo smí ukládat, ne u prodané zakázky,
+1. **Tlačítko** „Přidat zákazníka“ (bez „+“) na stejném řádku hned vedle popisku Zákazník; řádek má stejnou výšku jako Kontaktní osoba a IČO, pole Zákazník se zúží (návrh § 2a; ověř 1200–1920 px, při 400 px smí zalomit) (jen ZAP, jen kdo smí ukládat, ne u prodané zakázky,
    ne v režimu jen ke čtení). Nic jiného se s jedním zákazníkem nemění.
 2. **Formulář** v hlavičce (vzor panelu ARES): zákazník přes našeptávač a databázi zákazníků, IČO s kontrolní
    číslicí, „Najít firmu v ARES“, volba „stejná varianta jako řídící“ / „vlastní varianta (kopie)“, Přidat / Zrušit.

@@ -5,7 +5,7 @@ Kód aplikace se tímto návrhem nemění.
 
 **Co mění v2** (připomínky J. V. 16. 11. 2026):
 1. Dokud má zakázka jednoho zákazníka, aplikace vypadá a chová se přesně jako dnes. Navíc je jen tlačítko
-   „+ Přidat zákazníka“ u pole Zákazník v hlavičce. Karta, přepínač ani štítky se neukážou (stejně jako u víc šachet).
+   „Přidat zákazníka“ u pole Zákazník v hlavičce. Karta, přepínač ani štítky se neukážou (stejně jako u víc šachet).
 2. Zákazníka jde odstranit (§ 2a). Po odstranění posledního dalšího zákazníka je zakázka i aplikace zpět
    ve standardním pohledu.
 3. Otázky z v1 a v2 jsou rozhodnuté — viz níže.
@@ -18,6 +18,11 @@ Kód aplikace se tímto návrhem nemění.
 | 2 | text o ostatních zákaznících v dealu | **poznámka u dealu**, ne pole; mechanismus poznámky šachet (VSD #588, mez B217) | § 7.2 |
 | 3 | organizace dealu po prodeji jinému zákazníkovi | „organizace by se v Pipedrive měla přepsat na vítězného zákazníka a vítězná varianta je řídící cenou v Pipedrive“ — **při Prodáno se přepíše sama** | § 7.4 |
 | 4 | odstranění zákazníka, kterému odešla nabídka | **jen administrátor**; bez odeslané nabídky kdo smí ukládat | § 2a |
+
+**Víc šachet × víc zákazníků (doplněk J. V. 16. 11. 2026):** prototyp má vypínač víc šachet zapnutý, takže jde
+klikat na skutečné ovládání šachet aplikace společně se zákazníky (situace „víc zákazníků + víc šachet“). Šachty
+patří variantě, ne zákazníkovi: vlastní varianta zákazníka může mít jiné šachty než varianta řídícího; sdílená
+varianta má pro všechny své zákazníky tytéž šachty (R6, etapa E6 má společný harness).
 
 Prompty pro programování po etapách: `podklady/PROMPT_VZ_SPOLECNE.md` a `podklady/PROMPT_VZ_E0.md` … `E6.md` (§ 10).
 
@@ -44,7 +49,7 @@ ve kterém ostatní zákazníci vůbec nejsou.
 | tisk | vždy pro jednoho zákazníka, z pohledu zákazníka (`vzPohled`) |
 | zámek | varianta se zamkne prvním tiskem; tisk dalšímu zákazníkovi jen přidá razítko „komu“ se snímkem adresáta |
 | Pipedrive | deal nese řídícího zákazníka a řídící variantu; ostatní zákazníci v jedné přepisované poznámce u dealu; při Prodáno jinému zákazníkovi se organizace dealu přepíše na vítěze |
-| standardní pohled | s jedním zákazníkem jen tlačítko „+ Přidat zákazníka“; karta a přepínač až od druhého zákazníka |
+| standardní pohled | s jedním zákazníkem jen tlačítko „Přidat zákazníka“; karta a přepínač až od druhého zákazníka |
 | odstranění | každého dalšího zákazníka s potvrzením; s odeslanou nabídkou jen administrátor a doklad zůstává v zámku varianty; řídícího a prodaného ne |
 | vypínač | `viceZakazniku` v `/api/funkce`, výchozí VYP; s VYP a s jedním zákazníkem bajtově jako dnes |
 
@@ -123,8 +128,11 @@ souborů nahradí pohled zákazníka s testem úniku. Proto seznam v zakázce.
 
 ### Jeden zákazník = dnešní aplikace
 
-- V hlavičce u pole Zákazník je tlačítko **„+ Přidat zákazníka“** (jen se zapnutou funkcí, jen kdo smí zakázku
-  ukládat, ne u prodané zakázky). Nic jiného se nemění: žádná karta, přepínač, štítek, pruh u náhledu ani písmeno
+- V hlavičce je tlačítko **„Přidat zákazníka“** (jen se zapnutou funkcí, jen kdo smí zakázku
+  ukládat, ne u prodané zakázky). **Umístění (doplněk J. V. 16. 11. 2026):** text bez „+“, na stejném řádku hned
+  vedle popisku „Zákazník“; řádek Zákazník má stejnou výšku jako sousední řádky (Kontaktní osoba, IČO) — pole
+  Zákazník se o šířku tlačítka zúží (popisek s tlačítkem `flex: 0 0 auto`, pole `flex: 1`, nejméně 110 px).
+  Ověřeno při 1600 px s panelem prototypu i bez něj; při 400 px smí zalomit. Nic jiného se nemění: žádná karta, přepínač, štítek, pruh u náhledu ani písmeno
   v čísle. Dokumenty, data i rejstřík jsou bajtově stejné jako dnes.
 - Tlačítko otevře v hlavičce formulář (vzor panelu ARES): zákazník přes našeptávač a databázi zákazníků, IČO,
   „Najít firmu v ARES“, a volba nabídky — **stejná varianta jako řídící zákazník** (výchozí), nebo **vlastní varianta
@@ -377,7 +385,7 @@ Přesné cesty a parametry hledání organizací ověří programátor v dokumen
   znaku proti bázi jako `overit_vs_zadani.mjs` s `KNG_DIST_ZAKLAD`).
 - **VYP + zakázka, která už další zákazníky má** (vypnuto po použití): data se nemažou, karta je jen ke čtení,
   tisk pro další zákazníky je zastaven s hláškou, server odmítne změnu `dalsiZakaznici` (vzor VS R21).
-- **ZAP + jeden zákazník:** jediný rozdíl je tlačítko „+ Přidat zákazníka“ u pole Zákazník; dokumenty a data
+- **ZAP + jeden zákazník:** jediný rozdíl je tlačítko „Přidat zákazníka“ u pole Zákazník; dokumenty a data
   stejná. Harness porovná stránku s bází znak po znaku po odečtení tohoto jednoho tlačítka.
 - **ZAP, přidat a zase odstranit zákazníka:** uložená zakázka je shodná s tou před přidáním (až na protokol
   a razítko úpravy) — samostatný test „bez stop“.

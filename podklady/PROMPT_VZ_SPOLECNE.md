@@ -20,7 +20,7 @@ a mezí (`BEZPECNOST_MEZE.md`) přidělí koordinace — před zápisem ověř, 
    `src/ui/vice_sachet_ui.js`, `onlineNactiFunkce`.
 2. **VYP = dnešek bajt po bajtu.** Zlaté sady beze změny otisků; harness porovná stránku s bází znak po znaku
    (vzor `overit_vs_zadani.mjs` s `KNG_DIST_ZAKLAD`). **ZAP s jedním zákazníkem** se liší jen tlačítkem
-   „+ Přidat zákazníka“ u pole Zákazník; data, dokumenty a rejstřík stejné.
+   „Přidat zákazníka“ u pole Zákazník; data, dokumenty a rejstřík stejné.
 3. **Žádný klíč navíc, dokud je zákazník jeden.** `vzRidici` a `dalsiZakaznici` vzniknou přidáním druhého zákazníka
    a zmizí odstraněním posledního dalšího. Pole psaná jen serverem (`pdPoznamkaZakaznici`, `pdOrgVitez`) do toho nepatří.
 4. **Hlavička zakázky = řídící zákazník.** Co dnes čte `zak.objednatel`, `zak.ico`… (Pipedrive, webhook, K40c,
