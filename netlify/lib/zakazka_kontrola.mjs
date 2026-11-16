@@ -309,6 +309,8 @@ export function vzServerKontrola(stara, zak, volby = {}) {
     if (st && typeof G.importZakazka === 'function') { try { st = G.importZakazka(JSON.parse(JSON.stringify(st))); } catch (e) { st = stara; } }
     if (G.vzPodpis(zak) !== G.vzPodpis(st)) return { status: 400, chyba: G.VZ_VYPNUTO };
   } else {
+    /* Druhá pojistka: po importZakazka je tvar vždy čistý (vadný zahodí
+     * vzOcisti → vzZahozeno výš); hlídá volajícího, který import obejde. */
     const p = G.vzTvarProblemy(zak);
     if (p.length) return { status: 400, chyba: 'Zakázka nese ' + G.vzTvarText(p) };
   }

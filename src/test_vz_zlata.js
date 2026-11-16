@@ -1,451 +1,130 @@
-/* ============================================================
- * VÍC ZÁKAZNÍKŮ NA JEDNÉ ZAKÁZCE (VZ, souhrn #598, etapa E0 = #599)
+/* ZLATÁ SADA VZ-E0 (víc zákazníků, #599, bod 5 PROMPT_VZ_E0.md, návrh § 8).
  *
- * Závazný návrh: podklady/NAVRH_VICE_ZAKAZNIKU.md (v3, rozhodnutí J. V.
- * 16. 11. 2026), § 1, § 2, § 2a, § 3, § 8. Tento modul je čistá logika —
- * žádné DOM, běží v prohlížeči i na serveru (netlify/lib/jadro_moduly.cjs).
- * Funkce za vypínačem `viceZakazniku` (výchozí VYP, rozhoduje server).
+ * „Jeden zákazník = beze změny, bajt po bajtu." Otisky dokumentů bere
+ * nastroje/zlata_vs.js (táž sada jako src/test_vs_zlata.js, 319 scénářů:
+ * výpočet, cena, symboly a náhled CN, Word, krycí list, specifikace, SoD,
+ * Pipedrive, controlling, zámek) a porovnává je s src/test_vs_zlata.json.
  *
- * DATA (vzor víc šachet: první na původním místě, ostatní v `dalsi…`):
- *   zak.objednatel, adresaObjednatele, ico, dic, kontakt, zastupci
- *                         ŘÍDÍCÍ zákazník (hlavička beze změny)
- *   zak.vzRidici          { id, pismeno, varianta } — JEN když je zákazníků víc
- *   zak.dalsiZakaznici[]  { id, pismeno, hlavicka: { objednatel, adresaObjednatele,
- *                           ico, dic, kontakt }, zastupci: { …jako zak.zastupci… },
- *                           varianta, zalozen: { kdo, kdy }, platna? }
+ *   (a) VYP: zlata() nad dnešním stromem = uložené otisky.
+ *   (b) ZAP, jeden zákazník: do scénáře jde vzPohled(zak) (pohled řídícího
+ *       zákazníka) → otisky = uložené.
+ *   (c) Víc zákazníků: zakázce se přidá druhý zákazník (sdílená varianta)
+ *       a do scénáře jde pohled prvního (řídícího) vzPohled(zak, 'z1')
+ *       → otisky = uložené (pohled řídícího = dokumenty téže zakázky
+ *       s jedním zákazníkem).
+ *   (d) „Bez stop": každá fixtura a novaZakazka() — JSON po importu →
+ *       vzPridej → vzOdstran = výchozí JSON. Se sdílenou variantou celý
+ *       JSON; s vlastní variantou a smazatVariantu vše kromě `priponaMax`
+ *       (padlé číslo přípony se znovu nepoužije — záměr, test_pripona*).
  *
- * ŽÁDNÝ KLÍČ NAVÍC, DOKUD JE ZÁKAZNÍK JEDEN: `vzRidici` a `dalsiZakaznici`
- * vzniknou přidáním druhého zákazníka (vzPridej) a zmizí odstraněním
- * posledního dalšího (vzOdstran). Import je u jednoho zákazníka smaže.
- * Zakázka, která víc zákazníků nikdy neměla, je tak tvarem stejná jako dnes.
- *
- * `platna` (poslední ODESLANÁ nabídka zákazníka) počítá server ze zámků (E3);
- * z prohlížeče se nebere (vzPlatnaDrz). `hlavicka` má STEJNÉ KLÍČE jako
- * hlavička zakázky — ares.js (aresRozdily, aresPrepis) nad ní pracuje beze
- * změny (test_vz_model.js).
- *
- * Písmeno zákazníka (číslo nabídky …9940-B, § 3) se nepočítá z čítače:
- * nové = první volné za nejvyšším, které nese některý zákazník NEBO razítko
- * tisku v zámku (`zamek.tisky[].zakaznik.pismeno`, plní E3). Písmeno, se
- * kterým něco odešlo, se tak nepřidělí znovu; písmeno bez odeslání se po
- * odstranění uvolní — bez stopy v datech. Totéž platí pro `id`.
- *
- * STABILNÍ API pro E1, E2, E5 (popsáno i v PREDAVKA.md):
- *   vzRezim, vzZakaznici, vzZakaznik, vzRidiciId, vzPridej, vzOdstran,
- *   vzPismenoDalsi, vzIdDalsi, vzVymenRidiciho, vzSrovnej, vzPohled,
- *   vzTvarProblemy, vzOcisti, vzPodpis, vzPlatnaDrz, vzMaData.
- * Pravidlo sestavení: jeden <script> — všechna jména s předponou `vz`/`VZ_`.
- * ============================================================ */
+ * Pojistka (16. 11. 2026): pokažený pohled v háku (objednatel v pohledu
+ * změněný) shodí (b) i (c); vzOdstran, který nechá `dalsiZakaznici: []`,
+ * shodí (d) — viz zpráva commitu. */
+'use strict';
+const path = require('path');
+const fs = require('fs');
+const { zlata } = require('../nastroje/zlata_vs.js');
 
-const VZ_DALSI_MAX = 9;          // strop dalších zákazníků (§ 3, doporučení UI = tvrdý strop serveru)
-const VZ_TEXT_MAX = 500;         // délka textového pole zákazníka (hlavička zakázky strop nemá; zvoleno E0)
-const VZ_RIDICI_ID = 'z1';       // id řídícího zákazníka, dokud se nevymění
-const VZ_ID_TVAR = /^z[1-9][0-9]{0,2}$/;
-const VZ_PISMENO_TVAR = /^[B-Z]$/;
-const VZ_PISMENA = 'BCDEFGHIJKLMNOPQRSTUVWXYZ';
-/* Pole hlavičky zákazníka = pole hlavičky zakázky, která patří firmě
- * (ne stavbě): přesně tato se mezi hlavičkou a položkou vyměňují. */
-const VZ_HLAVICKA_POLE = ['objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt'];
-/* Pole zástupců — týž seznam, jaký zakládá novaZakazka / importZakazka. */
-const VZ_ZASTUPCI_POLE = ['smluvniJmeno', 'smluvniPozice', 'smluvniTel', 'smluvniEmail',
-  'obchodniJmeno', 'obchodniTel', 'obchodniEmail',
-  'technickyJmeno', 'technickyTel', 'technickyEmail',
-  'fakturyEmail', 'fakturyTel', 'banka', 'ucet', 'zapis'];
-const VZ_RIDICI_KLICE = ['id', 'pismeno', 'varianta'];
-const VZ_DALSI_KLICE = ['id', 'pismeno', 'hlavicka', 'zastupci', 'varianta', 'zalozen', 'platna'];
-const VZ_PLATNA_KLICE = ['varianta', 'cislo', 'kdy', 'cena', 'mena'];
-/* Otisky webhooku (pdZadani.otisk), které výměna řídícího smaže (§ 2, § 7.3):
- * pole firmy. `kontakt` navíc proti návrhu — bezpečnější (osoba patří firmě). */
-const VZ_OTISK_FIRMA = ['objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt'];
-/* Pole psaná serverem s údaji řídícího zákazníka / dealu — v pohledu
- * DALŠÍHO zákazníka nemají co dělat (deal vede řídící). */
-const VZ_POHLED_BEZ = ['pdZadani', 'pdStav', 'pdVazbaWebhook', 'pdDealyOdmitnute',
-  'pdPoznamkaSachty', 'pdPoznamkaZakaznici', 'pdOrgVitez'];
+const ulozene = JSON.parse(fs.readFileSync(path.join(__dirname, 'test_vs_zlata.json'), 'utf8'));
+const kop = x => JSON.parse(JSON.stringify(x));
 
-const vzObj = x => !!x && typeof x === 'object' && !Array.isArray(x);
-const vzText = x => (typeof x === 'string' ? x : (x == null ? '' : String(x)));
-const vzKop = x => (x === undefined ? undefined : JSON.parse(JSON.stringify(x)));
+let ok = 0, fail = 0;
+const test = (n, c, info) => { if (c) { ok++; console.log('OK  ' + n); }
+  else { fail++; console.log('FAIL ' + n, info === undefined ? '' : JSON.stringify(info)); } };
 
-function vzDalsi(zak) {
-  return (zak && Array.isArray(zak.dalsiZakaznici)) ? zak.dalsiZakaznici.filter(vzObj) : [];
-}
-
-/* Režim víc zákazníků: aspoň jeden další zákazník (2+ zákazníků). */
-function vzRezim(zak) {
-  return vzDalsi(zak).length > 0;
-}
-
-/* Má zakázka data víc zákazníků podle SYROVÝCH hodnot (pro vypínač na
- * serveru): cokoli, co by z jednoho zákazníka dělalo víc (i prázdné pole). */
-function vzMaData(zak) {
-  return !!zak && typeof zak === 'object' && (zak.dalsiZakaznici !== undefined || zak.vzRidici !== undefined);
-}
-
-function vzRidiciId(zak) {
-  const r = zak && zak.vzRidici;
-  return (vzObj(r) && typeof r.id === 'string' && r.id) ? r.id : VZ_RIDICI_ID;
-}
-
-function vzRidiciVariantaId(zak) {
-  const v = (zak && Array.isArray(zak.varianty)) ? (zak.varianty.find(x => x && x.ridici) || zak.varianty[0]) : null;
-  return v ? String(v.id) : '';
-}
-
-function vzZastupciPrazdni() {
-  const o = {};
-  VZ_ZASTUPCI_POLE.forEach(k => { o[k] = ''; });
-  return o;
-}
-function vzZastupciZ(x) {
-  const o = vzZastupciPrazdni();
-  if (vzObj(x)) VZ_ZASTUPCI_POLE.forEach(k => { if (x[k] != null) o[k] = vzText(x[k]); });
-  return o;
-}
-function vzHlavickaZ(x) {
-  const o = {};
-  VZ_HLAVICKA_POLE.forEach(k => { o[k] = vzObj(x) && x[k] != null ? vzText(x[k]) : ''; });
-  return o;
-}
-
-/* Jednotný seznam zákazníků: řídící (z hlavičky) první, pak další.
- * [{ id, pismeno, ridici, hlavicka, zastupci, varianta, zalozen, platna }]
- * `hlavicka` a `zastupci` jsou KOPIE — zápis jde přes hlavičku / položku. */
-function vzZakaznici(zak) {
-  if (!zak || typeof zak !== 'object') return [];
-  const r = vzObj(zak.vzRidici) ? zak.vzRidici : {};
-  const ridici = {
-    id: vzRidiciId(zak),
-    pismeno: typeof r.pismeno === 'string' ? r.pismeno : '',
-    ridici: true,
-    hlavicka: vzHlavickaZ(zak),
-    zastupci: vzZastupciZ(zak.zastupci),
-    varianta: vzRidiciVariantaId(zak),
-    zalozen: null,
-    platna: null,
-  };
-  return [ridici].concat(vzDalsi(zak).map(d => ({
-    id: String(d.id || ''),
-    pismeno: typeof d.pismeno === 'string' ? d.pismeno : '',
-    ridici: false,
-    hlavicka: vzHlavickaZ(d.hlavicka),
-    zastupci: vzZastupciZ(d.zastupci),
-    varianta: String(d.varianta || ''),
-    zalozen: vzObj(d.zalozen) ? vzKop(d.zalozen) : null,
-    platna: vzObj(d.platna) ? vzKop(d.platna) : null,
-  })));
-}
-
-function vzZakaznik(zak, id) {
-  return vzZakaznici(zak).find(z => z.id === String(id)) || null;
-}
-
-/* Razítka tisků s adresátem (zamek.tisky[].zakaznik, plní E3) ze všech variant. */
-function vzRazitkaZakazniku(zak) {
-  const out = [];
-  ((zak && Array.isArray(zak.varianty)) ? zak.varianty : []).forEach(v => {
-    const t = v && v.zamek && Array.isArray(v.zamek.tisky) ? v.zamek.tisky : [];
-    t.forEach(x => { if (x && vzObj(x.zakaznik)) out.push(x.zakaznik); });
-  });
-  return out;
-}
-
-/* Další písmeno: první za nejvyšším ze zákazníků a razítek; strop Z → ''. */
-function vzPismenoDalsi(zak) {
-  let max = 0;   // index v VZ_PISMENA + 1 (0 = žádné)
-  const vezmi = p => { const i = VZ_PISMENA.indexOf(typeof p === 'string' && p.length === 1 ? p : '#'); if (i + 1 > max) max = i + 1; };
-  vzDalsi(zak).forEach(d => vezmi(d.pismeno));
-  if (vzObj(zak && zak.vzRidici)) vezmi(zak.vzRidici.pismeno);
-  vzRazitkaZakazniku(zak).forEach(z => vezmi(z.pismeno));
-  return max < VZ_PISMENA.length ? VZ_PISMENA[max] : '';
-}
-
-/* Další id: z<N> za nejvyšším ze zákazníků a razítek (id s odeslanou
- * nabídkou se tak nepřidělí jinému zákazníkovi). */
-function vzIdDalsi(zak) {
-  let max = 1;
-  const vezmi = id => { const m = /^z([1-9][0-9]{0,2})$/.exec(typeof id === 'string' ? id : ''); if (m && +m[1] > max) max = +m[1]; };
-  vezmi(vzRidiciId(zak));
-  vzDalsi(zak).forEach(d => vezmi(d.id));
-  vzRazitkaZakazniku(zak).forEach(z => vezmi(z.id));
-  return 'z' + (max + 1);
-}
-
-/* PŘIDÁNÍ ZÁKAZNÍKA (§ 2a). `udaje` = { objednatel, adresaObjednatele, ico,
- * dic, kontakt, zastupci? }; volby { vlastni, zdroj, kdo, kdy, nazevVarianty }.
- *   vlastni: false (výchozí) — sdílí variantu řídícího zákazníka;
- *            true — vlastní varianta = klonujVariantu(zdroj) + ukazatel.
- * První volání založí `vzRidici` (id z1, písmeno '', varianta = řídící).
- * Vrací { ok: true, zakaznik } nebo { ok: false, chyba } (zakázka beze změny). */
-function vzPridej(zak, udaje, volby) {
-  const o = volby || {};
-  if (!zak || !Array.isArray(zak.varianty) || !zak.varianty.length) return { ok: false, chyba: 'Zakázka nemá variantu.' };
-  const h = vzHlavickaZ(udaje);
-  if (!h.objednatel.trim()) return { ok: false, chyba: 'Vyplňte název zákazníka.' };
-  if (VZ_HLAVICKA_POLE.some(k => h[k].length > VZ_TEXT_MAX)) return { ok: false, chyba: 'Údaj zákazníka je příliš dlouhý (nejvýš ' + VZ_TEXT_MAX + ' znaků).' };
-  if (vzDalsi(zak).length >= VZ_DALSI_MAX) return { ok: false, chyba: 'Zakázka má nejvýš ' + (VZ_DALSI_MAX + 1) + ' zákazníků.' };
-  const pismeno = vzPismenoDalsi(zak);
-  if (!pismeno) return { ok: false, chyba: 'Písmena zákazníků došla (nejvýš Z).' };
-  const ridiciVar = vzRidiciVariantaId(zak);
-  let varianta = ridiciVar;
-  if (o.vlastni) {
-    if (typeof klonujVariantu !== 'function') return { ok: false, chyba: 'Vlastní variantu teď nejde založit.' };
-    const zdroj = o.zdroj ? String(o.zdroj) : ridiciVar;
-    if (!zak.varianty.some(v => v && String(v.id) === zdroj)) return { ok: false, chyba: 'Zdrojová varianta neexistuje.' };
-    const kopie = klonujVariantu(zak, zdroj, { aktivovat: false, nazev: o.nazevVarianty || undefined });
-    if (!kopie) return { ok: false, chyba: 'Vlastní variantu se nepodařilo založit.' };
-    varianta = String(kopie.id);
+/* Porovnání otisků se zlatým JSON (jako test_vs_zlata.js). */
+function porovnej(ted) {
+  const ocek = ulozene.scenare;
+  let shoda = 0;
+  const vypis = [];
+  const klice = Object.keys(ocek);
+  for (const k of klice) {
+    const a = ocek[k], b = ted[k];
+    if (!b) { vypis.push(k + ': scénář chybí'); continue; }
+    const rozdil = Object.keys(a).filter(x => a[x] !== b[x]);
+    if (Object.keys(b).some(x => !(x in a))) rozdil.push('(nový klíč ' + Object.keys(b).filter(x => !(x in a)).join(',') + ')');
+    if (rozdil.length) vypis.push(k + ': ' + rozdil.join(', ')); else shoda++;
   }
-  if (!vzObj(zak.vzRidici)) zak.vzRidici = { id: VZ_RIDICI_ID, pismeno: '', varianta: ridiciVar };
-  if (!Array.isArray(zak.dalsiZakaznici)) zak.dalsiZakaznici = [];
-  const zakaznik = {
-    id: vzIdDalsi(zak),
-    pismeno,
-    hlavicka: h,
-    zastupci: vzZastupciZ(udaje && udaje.zastupci),
-    varianta,
-    zalozen: { kdo: vzText(o.kdo), kdy: o.kdy ? vzText(o.kdy) : new Date().toISOString() },
-  };
-  zak.dalsiZakaznici.push(zakaznik);
-  return { ok: true, zakaznik };
+  const navic = Object.keys(ted).filter(k => !(k in ocek));
+  if (navic.length) vypis.push('scénáře navíc: ' + navic.slice(0, 5).join(', '));
+  if (klice.length < 300) vypis.push('málo scénářů (' + klice.length + ') — prázdná sada?');
+  return { shoda, celkem: klice.length, vypis };
+}
+function hlas(nazev, r) {
+  test(nazev + ': ' + r.shoda + '/' + r.celkem + ' scénářů shodných', !r.vypis.length, r.vypis.slice(0, 10));
 }
 
-/* Je varianta „vlastní" pro zákazníka `id` — ukazuje na ni jen on a není řídící? */
-function vzVariantaJenJeho(zak, id, varId) {
-  return vzZakaznici(zak).filter(z => z.varianta === varId).every(z => z.id === id)
-    && varId !== vzRidiciVariantaId(zak);
-}
+const DRUHY = { objednatel: 'Druhý zákazník s.r.o.', adresaObjednatele: 'Zkušební 2, 100 00 Praha', ico: '', dic: '', kontakt: '' };
+const PEVNE = { kdo: 'zlata@priklad.cz', kdy: '2026-11-10T10:00:00.000Z' };
 
-/* ODSTRANĚNÍ ZÁKAZNÍKA (§ 2a). Řídícího odmítne; prodaného (prodano.zakaznik)
- * taky. `smazatVariantu` smaže jen jeho vlastní NEZAMČENOU variantu (zamčená
- * zůstává jako doklad). Po posledním dalším smaže `vzRidici` i `dalsiZakaznici`.
- * Práva (odeslaná nabídka = jen administrátor) hlídá server (E3).
- * Vrací { ok: true, smazanaVarianta: id|'' } nebo { ok: false, chyba }. */
-function vzOdstran(zak, id, volby) {
-  const o = volby || {};
-  const sid = String(id);
-  if (!zak || !Array.isArray(zak.dalsiZakaznici)) return { ok: false, chyba: 'Zakázka nemá další zákazníky.' };
-  if (sid === vzRidiciId(zak)) return { ok: false, chyba: 'Řídícího zákazníka nejde odstranit — nejdřív udělejte řídícím jiného.' };
-  const i = zak.dalsiZakaznici.findIndex(d => vzObj(d) && String(d.id) === sid);
-  if (i < 0) return { ok: false, chyba: 'Zákazník v zakázce není.' };
-  const d = zak.dalsiZakaznici[i];
-  const prodana = (zak.varianty || []).some(v => v && vzObj(v.prodano) && String(v.prodano.zakaznik || '') === sid);
-  if (prodana) return { ok: false, chyba: 'Zákazníkovi se prodalo — nejdřív odemkněte prodej (vedoucí, administrátor).' };
-  let smazana = '';
-  const varId = String(d.varianta || '');
-  const v = (zak.varianty || []).find(x => x && String(x.id) === varId);
-  const zamcena = v && (typeof variantaUzamcena === 'function' ? variantaUzamcena(v) : !!(v.zamek && v.zamek.zamceno));
-  if (o.smazatVariantu && v && !zamcena && zak.varianty.length > 1 && vzVariantaJenJeho(zak, sid, varId)) {
-    zak.varianty = zak.varianty.filter(x => x !== v);
-    if (!zak.varianty.some(x => x && x.ridici)) zak.varianty[0].ridici = true;
-    if (zak.aktivni === v.id) zak.aktivni = vzRidiciVariantaId(zak);
-    smazana = varId;
-  }
-  zak.dalsiZakaznici.splice(i, 1);
-  if (!vzDalsi(zak).length) { delete zak.dalsiZakaznici; delete zak.vzRidici; }
-  return { ok: true, smazanaVarianta: smazana };
-}
+async function hlavni() {
+  const t0 = process.hrtime.bigint();   // Date má zlata() pevné
+  const volby = { pocetFuzz: ulozene.pocetFuzz };
 
-/* VÝMĚNA ŘÍDÍCÍHO (§ 2): hlavička ↔ položka, řídící varianta = varianta
- * nového řídícího (nastavRidici), písmena beze změny, otisky webhooku pro
- * pole firmy pryč. Práva (autor, administrátor) hlídá server (E4).
- * Vrací { ok: true } nebo { ok: false, chyba }. */
-function vzVymenRidiciho(zak, id) {
-  const sid = String(id);
-  if (!vzRezim(zak)) return { ok: false, chyba: 'Zakázka má jednoho zákazníka.' };
-  if (sid === vzRidiciId(zak)) return { ok: true };
-  const i = zak.dalsiZakaznici.findIndex(d => vzObj(d) && String(d.id) === sid);
-  if (i < 0) return { ok: false, chyba: 'Zákazník v zakázce není.' };
-  const d = zak.dalsiZakaznici[i];
-  const varId = String(d.varianta || '');
-  if (!zak.varianty.some(v => v && String(v.id) === varId)) return { ok: false, chyba: 'Varianta zákazníka neexistuje.' };
-  const r = vzObj(zak.vzRidici) ? zak.vzRidici : { id: VZ_RIDICI_ID, pismeno: '', varianta: vzRidiciVariantaId(zak) };
-  const stary = {
-    id: vzRidiciId(zak),
-    pismeno: typeof r.pismeno === 'string' ? r.pismeno : '',
-    hlavicka: vzHlavickaZ(zak),
-    zastupci: vzZastupciZ(zak.zastupci),
-    varianta: vzRidiciVariantaId(zak),
-  };
-  const nh = vzHlavickaZ(d.hlavicka);
-  VZ_HLAVICKA_POLE.forEach(k => { zak[k] = nh[k]; });
-  zak.zastupci = vzZastupciZ(d.zastupci);
-  zak.vzRidici = { id: String(d.id), pismeno: typeof d.pismeno === 'string' ? d.pismeno : '', varianta: varId };
-  zak.dalsiZakaznici[i] = stary;
-  if (typeof nastavRidici === 'function') nastavRidici(zak, varId);
-  else zak.varianty.forEach(v => { if (v) v.ridici = String(v.id) === varId; });
-  const p = zak.pdZadani;
-  if (vzObj(p) && vzObj(p.otisk)) VZ_OTISK_FIRMA.forEach(k => { delete p.otisk[k]; });
-  return { ok: true };
-}
+  /* (a) VYP */
+  hlas('(a) VYP = dnešní otisky', porovnej(await zlata(__dirname, volby)));
 
-/* INVARIANT (§ 2): řídící varianta zakázky = varianta řídícího zákazníka.
- * Pravdou je příznak `v.ridici` (čte ho Pipedrive, prodej #563, zámek);
- * `vzRidici.varianta` se srovná podle něj. Opraví i ukazatele dalších
- * zákazníků na neexistující variantu (→ řídící). Vrací seznam oprav
- * ([] = nic): ['vzRidici.varianta', 'dalsiZakaznici[i].varianta', …]. */
-function vzSrovnej(zak) {
-  const out = [];
-  if (!vzRezim(zak)) return out;
-  const ridiciVar = vzRidiciVariantaId(zak);
-  if (!vzObj(zak.vzRidici)) { zak.vzRidici = { id: VZ_RIDICI_ID, pismeno: '', varianta: ridiciVar }; out.push('vzRidici'); }
-  else if (String(zak.vzRidici.varianta || '') !== ridiciVar) { zak.vzRidici.varianta = ridiciVar; out.push('vzRidici.varianta'); }
-  const ids = new Set((zak.varianty || []).filter(Boolean).map(v => String(v.id)));
-  zak.dalsiZakaznici.forEach((d, i) => {
-    if (vzObj(d) && !ids.has(String(d.varianta || ''))) { d.varianta = ridiciVar; out.push('dalsiZakaznici[' + i + '].varianta'); }
-  });
-  return out;
-}
+  /* (b) ZAP, jeden zákazník — pohled řídícího. */
+  let pohledu = 0, bezPohledu = 0;
+  hlas('(b) ZAP, jeden zákazník: vzPohled = dnešní otisky', porovnej(await zlata(__dirname, Object.assign({}, volby, {
+    zakazka: zak => {
+      const p = vzPohled(zak);
+      if (p && p !== zak && p.vzPohledZakaznika && p.vzPohledZakaznika.id === 'z1') pohledu++; else bezPohledu++;
+      return p;
+    },
+  }))));
+  test('(b) hák dal pohled ve všech scénářích', pohledu >= ulozene.pocetFuzz && !bezPohledu, { pohledu, bezPohledu });
 
-/* POHLED ZÁKAZNÍKA (§ 4, R1): mělká kopie zakázky, ve které hlavička,
- * zástupci (a hlavička PROJ u dalšího zákazníka) nesou údaje zvoleného
- * zákazníka a ostatní zákazníci v ní VŮBEC NEJSOU (žádné `dalsiZakaznici`
- * ani `vzRidici`). Jediný údaj navíc: `vzPohledZakaznika = { id, pismeno }`.
- * Varianty jsou sdílené (tisk zamyká skutečnou variantu). Čísla s písmenem
- * řeší E2. Neznámé id → null. Zakázka s jedním zákazníkem a id řídícího
- * (nebo bez id) → kopie téže zakázky + vzPohledZakaznika. */
-function vzPohled(zak, id) {
-  if (!zak || typeof zak !== 'object') return null;
-  const sid = id == null || id === '' ? vzRidiciId(zak) : String(id);
-  const z = vzZakaznik(zak, sid);
-  if (!z) return null;
-  const p = Object.assign({}, zak);
-  delete p.dalsiZakaznici;
-  delete p.vzRidici;
-  if (!z.ridici) {
-    VZ_HLAVICKA_POLE.forEach(k => { p[k] = z.hlavicka[k]; });
-    p.zastupci = z.zastupci;
-    if (vzObj(zak.projHlavicka)) {
-      p.projHlavicka = Object.assign({}, zak.projHlavicka);
-      VZ_HLAVICKA_POLE.forEach(k => { if (k in p.projHlavicka || k !== 'dic') p.projHlavicka[k] = z.hlavicka[k]; });
+  /* (c) Víc zákazníků — pohled prvního (řídícího). Zakázka se nemění:
+   * druhý zákazník jde do mělké kopie (varianty sdílené, `v` táž). */
+  let pridano = 0;
+  const selhani = [];
+  hlas('(c) dva zákazníci: vzPohled(z1) = dnešní otisky', porovnej(await zlata(__dirname, Object.assign({}, volby, {
+    zakazka: zak => {
+      const k = Object.assign({}, zak);
+      const r = vzPridej(k, DRUHY, PEVNE);
+      if (!r.ok) { selhani.push((zak.cislo || '?') + ': ' + r.chyba); return vzPohled(zak); }
+      if (vzRezim(k) && vzZakaznici(k).length === 2 && !vzRezim(zak)) pridano++;
+      return vzPohled(k, 'z1');
+    },
+  }))));
+  test('(c) druhý zákazník přidán ve všech scénářích', pridano >= ulozene.pocetFuzz && !selhani.length, { pridano, selhani: selhani.slice(0, 5) });
+
+  /* (d) Bez stop. Globály (importZakazka, novaZakazka, vz…) nastavil zlata(). */
+  const fdir = path.join(__dirname, 'fixtury');
+  const vstupy = fs.readdirSync(fdir).filter(x => x.endsWith('.json')).sort()
+    .map(f => [f, importZakazka(JSON.parse(fs.readFileSync(path.join(fdir, f), 'utf8')))]);
+  vstupy.push(['novaZakazka()', importZakazka(kop(novaZakazka()))]);
+  for (const [jm, zak] of vstupy) {
+    const vychozi = JSON.stringify(zak);
+    /* sdílená varianta */
+    {
+      const z = JSON.parse(vychozi);
+      const p = vzPridej(z, DRUHY, PEVNE);
+      const pridan = p.ok && vzRezim(z) && JSON.stringify(z) !== vychozi;
+      const o = p.ok ? vzOdstran(z, p.zakaznik.id) : { ok: false };
+      test('(d) ' + jm + ': přidat (sdílená) → odstranit = výchozí JSON',
+        pridan && o.ok && JSON.stringify(z) === vychozi, { pridej: p.chyba, odstran: o.chyba, klice: Object.keys(z).filter(k => !(k in JSON.parse(vychozi))) });
     }
-    VZ_POHLED_BEZ.forEach(k => { delete p[k]; });
-  }
-  p.vzPohledZakaznika = { id: z.id, pismeno: z.pismeno };
-  return p;
-}
-
-/* VADY TVARU (server se ZAP odmítne 400, import klíče zahodí).
- * [{ kde, duvod }]; duvod: 'typ' | 'limit' | 'duplicita' | 'varianta' | 'delka' | 'klic'. */
-function vzTvarProblemy(zak) {
-  const out = [];
-  if (!zak || typeof zak !== 'object') return out;
-  const maR = zak.vzRidici !== undefined, maD = zak.dalsiZakaznici !== undefined;
-  if (!maR && !maD) return out;
-  if (!maR || !maD) { out.push({ kde: maR ? 'dalsiZakaznici' : 'vzRidici', duvod: 'typ' }); return out; }
-  const r = zak.vzRidici;
-  if (!vzObj(r)) { out.push({ kde: 'vzRidici', duvod: 'typ' }); return out; }
-  if (!Array.isArray(zak.dalsiZakaznici) || !zak.dalsiZakaznici.length) { out.push({ kde: 'dalsiZakaznici', duvod: 'typ' }); return out; }
-  if (zak.dalsiZakaznici.length > VZ_DALSI_MAX) { out.push({ kde: 'dalsiZakaznici', duvod: 'limit' }); return out; }
-  const variantyIds = new Set((Array.isArray(zak.varianty) ? zak.varianty : []).filter(vzObj).map(v => String(v.id)));
-  const ids = new Set(), pismena = new Set();
-  const idOk = (x, c) => {
-    if (typeof x !== 'string' || !VZ_ID_TVAR.test(x)) { out.push({ kde: c, duvod: 'typ' }); return; }
-    if (ids.has(x)) out.push({ kde: c, duvod: 'duplicita' }); else ids.add(x);
-  };
-  const pismenoOk = (x, c) => {
-    if (typeof x !== 'string' || (x !== '' && !VZ_PISMENO_TVAR.test(x))) { out.push({ kde: c, duvod: 'typ' }); return; }
-    if (pismena.has(x)) out.push({ kde: c, duvod: 'duplicita' }); else pismena.add(x);
-  };
-  const variantaOk = (x, c) => {
-    if (typeof x !== 'string' || !x) out.push({ kde: c, duvod: 'typ' });
-    else if (!variantyIds.has(x)) out.push({ kde: c, duvod: 'varianta' });
-  };
-  const textyOk = (o, pole, c) => {
-    if (!vzObj(o)) { out.push({ kde: c, duvod: 'typ' }); return; }
-    Object.keys(o).forEach(k => {
-      if (pole.indexOf(k) < 0) out.push({ kde: c + '.' + k, duvod: 'klic' });
-      else if (typeof o[k] !== 'string') out.push({ kde: c + '.' + k, duvod: 'typ' });
-      else if (o[k].length > VZ_TEXT_MAX) out.push({ kde: c + '.' + k, duvod: 'delka' });
-    });
-  };
-  Object.keys(r).filter(k => VZ_RIDICI_KLICE.indexOf(k) < 0).forEach(k => out.push({ kde: 'vzRidici.' + k, duvod: 'klic' }));
-  idOk(r.id, 'vzRidici.id');
-  pismenoOk(r.pismeno, 'vzRidici.pismeno');
-  variantaOk(r.varianta, 'vzRidici.varianta');
-  zak.dalsiZakaznici.forEach((d, i) => {
-    const c = 'dalsiZakaznici[' + i + ']';
-    if (!vzObj(d)) { out.push({ kde: c, duvod: 'typ' }); return; }
-    Object.keys(d).filter(k => VZ_DALSI_KLICE.indexOf(k) < 0).forEach(k => out.push({ kde: c + '.' + k, duvod: 'klic' }));
-    idOk(d.id, c + '.id');
-    pismenoOk(d.pismeno, c + '.pismeno');
-    variantaOk(d.varianta, c + '.varianta');
-    textyOk(d.hlavicka, VZ_HLAVICKA_POLE, c + '.hlavicka');
-    if (vzObj(d.hlavicka) && !vzText(d.hlavicka.objednatel).trim()) out.push({ kde: c + '.hlavicka.objednatel', duvod: 'typ' });
-    textyOk(d.zastupci, VZ_ZASTUPCI_POLE, c + '.zastupci');
-    if (d.zalozen !== undefined && d.zalozen !== null) {
-      if (!vzObj(d.zalozen)) out.push({ kde: c + '.zalozen', duvod: 'typ' });
-      else textyOk(d.zalozen, ['kdo', 'kdy'], c + '.zalozen');
+    /* vlastní varianta + smazatVariantu */
+    {
+      const z = JSON.parse(vychozi);
+      const pocet = z.varianty.length;
+      const p = vzPridej(z, DRUHY, Object.assign({ vlastni: true }, PEVNE));
+      const pridan = p.ok && z.varianty.length === pocet + 1 && p.zakaznik.varianta !== vzRidiciVariantaId(z);
+      const o = p.ok ? vzOdstran(z, p.zakaznik.id, { smazatVariantu: true }) : { ok: false };
+      const bez = x => { const y = JSON.parse(typeof x === 'string' ? x : JSON.stringify(x)); delete y.priponaMax; return JSON.stringify(y); };
+      test('(d) ' + jm + ': přidat (vlastní varianta) → odstranit se smazáním = výchozí JSON kromě priponaMax',
+        pridan && o.ok && o.smazanaVarianta === p.zakaznik.varianta && bez(z) === bez(vychozi),
+        { pridej: p.chyba, odstran: o.chyba, smazana: o.smazanaVarianta });
+      const pm0 = JSON.parse(vychozi).priponaMax;
+      console.log('    (info) ' + jm + ': priponaMax ' + pm0 + ' → ' + z.priponaMax);
     }
-    if (d.platna !== undefined && d.platna !== null && !vzObj(d.platna)) out.push({ kde: c + '.platna', duvod: 'typ' });
-  });
-  return out;
+  }
+
+  console.log('\nDoba běhu: ' + (Number(process.hrtime.bigint() - t0) / 1e9).toFixed(1) + ' s');
+  console.log('Zlatá sada VZ: ' + ok + ' OK, ' + fail + ' FAIL');
+  if (fail) process.exit(1);
 }
 
-/* OČISTA PŘI IMPORTU (§ E0 bod 3): neznámé klíče pryč (tiše — novější verze
- * smí přidat pole), u jednoho zákazníka (prázdný seznam) oba klíče pryč;
- * vadný tvar = oba klíče pryč a vrácený seznam vad (importZakazka ho dá
- * do nevýčtové vlastnosti `vzZahozeno`, jako fotoZahozena). Na místě. */
-function vzOcisti(zak) {
-  if (!zak || typeof zak !== 'object' || !vzMaData(zak)) return [];
-  const pryc = () => { delete zak.vzRidici; delete zak.dalsiZakaznici; };
-  if (Array.isArray(zak.dalsiZakaznici) && !zak.dalsiZakaznici.length && (zak.vzRidici === undefined || vzObj(zak.vzRidici))) { pryc(); return []; }
-  const bez = (o, klice) => { if (vzObj(o)) Object.keys(o).forEach(k => { if (klice.indexOf(k) < 0) delete o[k]; }); };
-  bez(zak.vzRidici, VZ_RIDICI_KLICE);
-  if (Array.isArray(zak.dalsiZakaznici)) zak.dalsiZakaznici.forEach(d => {
-    if (!vzObj(d)) return;
-    bez(d, VZ_DALSI_KLICE);
-    bez(d.hlavicka, VZ_HLAVICKA_POLE);
-    bez(d.zastupci, VZ_ZASTUPCI_POLE);
-    bez(d.zalozen, ['kdo', 'kdy']);
-    bez(d.platna, VZ_PLATNA_KLICE);
-    /* Chybějící pole hlavičky a zástupců doplnit prázdná (jako importZakazka
-     * u hlavičky zakázky) — tvar je pak úplný a ARES nad ním pracuje. */
-    if (vzObj(d.hlavicka)) VZ_HLAVICKA_POLE.forEach(k => { if (d.hlavicka[k] == null) d.hlavicka[k] = ''; });
-    if (d.zastupci === undefined) d.zastupci = vzZastupciPrazdni();
-    else if (vzObj(d.zastupci)) VZ_ZASTUPCI_POLE.forEach(k => { if (d.zastupci[k] == null) d.zastupci[k] = ''; });
-  });
-  const p = vzTvarProblemy(zak);
-  if (p.length) { pryc(); return p; }
-  return [];
-}
-
-/* Podpis části víc zákazníků pro porovnání s uloženou verzí ('' = žádná).
- * `platna` se neporovnává — píše ji jen server. */
-function vzPodpis(zak) {
-  if (!vzMaData(zak)) return '';
-  const d = Array.isArray(zak.dalsiZakaznici)
-    ? zak.dalsiZakaznici.map(x => { if (!vzObj(x)) return x; const y = Object.assign({}, x); delete y.platna; return y; })
-    : zak.dalsiZakaznici;
-  return JSON.stringify({ r: zak.vzRidici === undefined ? null : zak.vzRidici, d: d === undefined ? null : d });
-}
-
-/* `platna` píše jen server (E3 ji počítá ze zámků): hodnota z prohlížeče
- * se zahodí, platí ULOŽENÁ verze u zákazníka se stejným id. Na místě. */
-function vzPlatnaDrz(stara, zak) {
-  if (!zak || !Array.isArray(zak.dalsiZakaznici)) return;
-  const ulozene = new Map(vzDalsi(stara).map(d => [String(d.id), d.platna]));
-  zak.dalsiZakaznici.forEach(d => {
-    if (!vzObj(d)) return;
-    const p = ulozene.get(String(d.id));
-    if (vzObj(p)) d.platna = vzKop(p); else delete d.platna;
-  });
-}
-
-/* Lidský text k nálezům vzTvarProblemy (hláška serveru). */
-function vzTvarText(p) {
-  if (!Array.isArray(p) || !p.length) return '';
-  if (p.some(x => x.duvod === 'limit')) return 'víc zákazníků, než dovoluje limit (nejvýš ' + VZ_DALSI_MAX + ' dalších).';
-  return 'neplatný údaj víc zákazníků (' + p.slice(0, 3).map(x => x.kde).join(', ') + ').';
-}
-
-/* Vypnutá funkce a zakázka, která další zákazníky UŽ MÁ (§ 8): data se
- * nemažou, měnit je nejde. Text hlášky serveru (a lišty v E1). */
-const VZ_VYPNUTO = 'Zakázka má víc zákazníků — funkce je v Nastavení vypnutá. Zákazníky (přidání, úpravy, odstranění, '
-  + 'řídící zákazník) teď nejde měnit; zapnout je může administrátor (Nastavení → Zkušební funkce).';
-
-if (typeof module !== 'undefined' && module.exports)
-  module.exports = { VZ_DALSI_MAX, VZ_TEXT_MAX, VZ_RIDICI_ID, VZ_ID_TVAR, VZ_PISMENO_TVAR, VZ_PISMENA, VZ_HLAVICKA_POLE,
-    VZ_ZASTUPCI_POLE, VZ_RIDICI_KLICE, VZ_DALSI_KLICE, VZ_PLATNA_KLICE, VZ_OTISK_FIRMA, VZ_POHLED_BEZ, VZ_VYPNUTO,
-    vzDalsi, vzRezim, vzMaData, vzRidiciId, vzRidiciVariantaId, vzZastupciPrazdni, vzZakaznici, vzZakaznik,
-    vzRazitkaZakazniku, vzPismenoDalsi, vzIdDalsi, vzPridej, vzVariantaJenJeho, vzOdstran, vzVymenRidiciho,
-    vzSrovnej, vzPohled, vzTvarProblemy, vzOcisti, vzPodpis, vzPlatnaDrz, vzTvarText };
+hlavni().catch(e => { console.error(e); process.exit(1); });

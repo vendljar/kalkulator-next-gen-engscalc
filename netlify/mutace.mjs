@@ -411,10 +411,9 @@ const MUTACE = [
     hledej: "    if (G.vzPodpis(zak) !== G.vzPodpis(st)) return { status: 400, chyba: G.VZ_VYPNUTO };",
     nahrad: "    ;",
     proc: 'na ostrém webu s vypnutou funkcí by šlo založit zakázku s víc zákazníky', sady: ['test_vz_server.mjs'] },
-  { nazev: 'VZ: se ZAP projde vadný tvar [VZ E0]', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "    if (p.length) return { status: 400, chyba: 'Zakázka nese ' + G.vzTvarText(p) };",
-    nahrad: "    ;",
-    proc: 'server by uložil duplicitní písmena nebo zákazníka bez varianty', sady: ['test_vz_server.mjs'] },
+  /* „se ZAP projde vadný tvar“ tu není: importZakazka vadný tvar zahodí dřív
+   * (vzZahozeno, mutace níž) — kontrola tvaru v vzServerKontrola je druhá
+   * pojistka a její mutace je ekvivalentní (ověřeno 16. 11. 2026). */
   { nazev: 'VZ: zahozený tvar z importu projde [VZ E0]', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "  if (Array.isArray(zak.vzZahozeno) && zak.vzZahozeno.length)\n    return",
     nahrad: "  if (false)\n    return",

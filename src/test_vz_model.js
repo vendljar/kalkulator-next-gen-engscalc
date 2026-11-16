@@ -111,6 +111,7 @@ const najdiVar = (z, id) => z.varianty.find(v => v.id === id);
   vzPridej(z, udaje('B'));
   const pred = J(z);
   test('řídícího (z1) odstranit nejde', !vzOdstran(z, 'z1').ok && J(z) === pred);
+  test('řídící: hláška říká proč (ne „zákazník v zakázce není“)', /Řídícího zákazníka nejde odstranit/.test(String(vzOdstran(z, 'z1').chyba)));
   test('neznámé id odmítne', !vzOdstran(z, 'z99').ok && J(z) === pred);
   const v = z.varianty[0];
   v.zamek = { zamceno: true, tisky: [] };

@@ -331,7 +331,6 @@ function vzTvarProblemy(zak) {
   if (!zak || typeof zak !== 'object') return out;
   const maR = zak.vzRidici !== undefined, maD = zak.dalsiZakaznici !== undefined;
   if (!maR && !maD) return out;
-  if (!maR || !maD) { out.push({ kde: maR ? 'dalsiZakaznici' : 'vzRidici', duvod: 'typ' }); return out; }
   const r = zak.vzRidici;
   if (!vzObj(r)) { out.push({ kde: 'vzRidici', duvod: 'typ' }); return out; }
   if (!Array.isArray(zak.dalsiZakaznici) || !zak.dalsiZakaznici.length) { out.push({ kde: 'dalsiZakaznici', duvod: 'typ' }); return out; }
