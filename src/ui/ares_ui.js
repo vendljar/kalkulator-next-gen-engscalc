@@ -19,15 +19,32 @@ const ARES_CEKANI = 12000;   // rejstřík odpovídá do vteřiny; delší ticho
 
 /* Které hlavičce ta odpověď patří. 'ock' jsou pole přímo na zakázce,
  * 'proj' je oddělená hlavička projekce (ZAK.projHlavicka). */
-function aresHlavicka(kde) {
+function aresHlavicka(kde) { return aresCil(kde).hlavicka; }
+
+/* CÍL DOTAZU (VZ-E1 #600, 16. 11. 2026). ARES plní víc míst: hlavičku
+ * zakázky (OCK i PROJ), kartu zákazníka, formulář „Nový zákazník na zakázce"
+ * a otevřeného dalšího zákazníka. Kopie panelu by se rozešla — proto jeden
+ * panel a „cíl": objekt údajů (`hlavicka` se čtyřmi poli ARES_POLE), popisky
+ * panelu, zmrazení a co udělat po přepisu (`poPrepisu`). Cíle víc zákazníků
+ * dodává vzAresCil (vice_zakazniku_ui.js); bez nich je všechno jako dřív —
+ * hlavička se tím nesmí změnit ani o znak (overit_lista.mjs, overit_vz_zadani.mjs). */
+const ARES_CIL_HLAVICKA = {
+  ted: 'V hlavičce teď',
+  prepsat: 'Přepsat údaje v hlavičce',
+  uzObsahuje: 'Hlavička už tyhle údaje obsahuje – přepisovat není co.',
+  zdroj: 'Přepis se provede jen na tomhle potvrzení a zapíše se do protokolu zakázky.',
+};
+function aresCil(kde) {
+  const vz = typeof vzAresCil === 'function' ? vzAresCil(kde) : null;
+  if (vz) return Object.assign({}, ARES_CIL_HLAVICKA, vz);
   /* Od 19. 8. 2026 je hlavička jedna společná — ARES z obou kalkulací
    * píše do týchž polí ZAK.*; `kde` dál rozlišuje jen otevřený panel.
    * Od 21. 8. 2026 umí ARES plnit i KARTU ZÁKAZNÍKA (`kde === 'zakaznik'`):
    * ta má jiná jména polí, takže si `zakaznici_ui.js` podává průhledný
    * převodník — ARES o něm nemusí vědět nic navíc. */
   if (kde === 'zakaznik' && typeof zakaznikAresHlavicka === 'function')
-    return zakaznikAresHlavicka();
-  return ZAK;
+    return Object.assign({}, ARES_CIL_HLAVICKA, { hlavicka: zakaznikAresHlavicka() });
+  return Object.assign({}, ARES_CIL_HLAVICKA, { hlavicka: ZAK });
 }
 
 /* ZMRAZENÁ HLAVIČKA (K7-K3, audit 23. 10. 2026). Po tisku smlouvy o dílo
@@ -36,6 +53,8 @@ function aresHlavicka(kde) {
  * odmítl 409 a pole nešla vrátit. Vrací důvod, nebo ''. Karta zákazníka
  * (`kde === 'zakaznik'`) zakázku nemění, tam se nehlídá nic. */
 function aresZmrazeno(kde) {
+  const cil = aresCil(kde);
+  if (typeof cil.zmrazeno === 'string') return cil.zmrazeno;   // cíl víc zákazníků rozhoduje sám
   if (kde === 'zakaznik' || typeof zamekZakCestaZmrazena !== 'function' || typeof ZAK === 'undefined') return '';
   for (const p of ARES_POLE) {
     const d = zamekZakCestaZmrazena(ZAK, 'ZAK.' + p.klic);
@@ -94,8 +113,10 @@ function aresPrepisPotvrd(kde) {
     render();
     return;
   }
+  const cil = aresCil(kde);
   const pocet = aresPrepis(hl, ARES.subjekt);
-  if (pocet) aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  if (typeof cil.poPrepisu === 'function') cil.poPrepisu(pocet, ARES.subjekt);
+  else if (pocet) aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   ARES.kde = ''; ARES.subjekt = null; ARES.chyba = '';
   render();
 }
@@ -168,21 +189,22 @@ function aresPanel(kde) {
 
   const s = ARES.subjekt;
   if (!s) return '';
-  const rozd = aresRozdily(aresHlavicka(kde), s);
+  const cil = aresCil(kde);
+  const rozd = aresRozdily(cil.hlavicka, s);
   const zanik = s.zanikla
     ? `<div class="ares-txt varovne">Pozor: rejstřík vede tento subjekt jako <b>zaniklý</b>
        (${esc(s.datumZaniku)}). Nabídku mu asi posílat nechcete – zkontrolujte IČO.</div>` : '';
 
   const tabulka = rozd.length
-    ? `<table class="ares-tab"><tr><th>Údaj</th><th>V hlavičce teď</th><th>Z rejstříku</th></tr>
+    ? `<table class="ares-tab"><tr><th>Údaj</th><th>${esc(cil.ted)}</th><th>Z rejstříku</th></tr>
         ${rozd.map(r => `<tr><td>${esc(r.label)}</td>
           <td class="stara">${r.ted ? esc(r.ted) : '<i>prázdné</i>'}</td>
           <td class="nova">${esc(r.nove)}</td></tr>`).join('')}</table>
        <div class="ares-btns">
-         <button class="primary" onclick="aresPrepisPotvrd('${kde}')">Přepsat údaje v hlavičce (${rozd.length})</button>
+         <button class="primary" onclick="aresPrepisPotvrd('${kde}')">${esc(cil.prepsat)} (${rozd.length})</button>
          <button onclick="aresZavri()">Nechat, jak je</button>
        </div>`
-    : `<div class="ares-txt">Hlavička už tyhle údaje obsahuje – přepisovat není co.</div>
+    : `<div class="ares-txt">${esc(cil.uzObsahuje)}</div>
        <div class="ares-btns"><button onclick="aresZavri()">Zavřít</button></div>`;
 
   return `<div class="ares-panel">
@@ -191,6 +213,6 @@ function aresPanel(kde) {
     ${zanik}
     ${tabulka}
     <div class="ares-zdroj">Zdroj: veřejný rejstřík ARES (Ministerstvo financí ČR).
-      Přepis se provede jen na tomhle potvrzení a zapíše se do protokolu zakázky.</div>
+      ${esc(cil.zdroj)}</div>
   </div>`;
 }
