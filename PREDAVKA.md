@@ -1,6 +1,6 @@
 # Předávka — 16. 11. 2026: VZ-E5 #604 (poznámka dealu „Další zákazníci na zakázce“), větev `claude/vz-e5`
 
-Nad `claude/vz-e0` `e29f2b1` (v16.11.1). **v16.11.2**. Do `test-draft`, `test`, `main` ani integrace nic; Pipedrive jen
+Nad `claude/vz-e0` `e29f2b1` (v16.11.1), sloučena revize E0 z `claude/integrace-vz` `76ae631`. **v16.11.2**. Do `test-draft`, `test`, `main` ani integrace nic; Pipedrive jen
 simulátor. Mez **B225**, roadmapa **#604 hotovo**. Souběžně E1 (B221–B222) a E2 (B223–B224).
 
 | úkol | stav | kde |
@@ -12,7 +12,7 @@ simulátor. Mez **B225**, roadmapa **#604 hotovo**. Souběžně E1 (B221–B222)
 | testy | ✅ | `netlify/test_vz_poznamka.mjs` 46/0, `netlify/test_vz_nanecisto.mjs` 32/0 |
 | mutace „[VZ E5]“ | ✅ | 25/25 (`netlify/mutace.mjs`); [VSD] 20/20 |
 | B225, CHANGELOG, roadmapa | ✅ | |
-| kolo `--bez-mutaci` | viz níže | |
+| kolo `--bez-mutaci` (po sloučení revize E0 `76ae631`) | ✅ **VŠE ZELENÉ** | sady 394/0/59 přeskočeno (prohlížečové bez Playwrightu, firemní podklady), hodiny +400 dní 363/0/1, statické zelené (26 min) |
 
 ## Změny proti promptu / návrhu (bezpečnější volba)
 
