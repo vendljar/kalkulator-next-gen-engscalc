@@ -284,7 +284,8 @@ let sVyp;
   test('formulář: po napsání názvu se „Přidat zákazníka" rozsvítí', await p.evaluate(() => {
     const t = document.getElementById('vzFormPridej'); return !!t && !t.disabled; }));
   await klik(p, '#vzFormZrus');
-  test('Zrušit: formulář zmizí a ZAK je beze změny', await p.evaluate((pr) => !document.getElementById('vzFormular') && JSON.stringify(ZAK) === pr, pred),
+  test('Zrušit: formulář zmizí', await p.evaluate(() => !document.getElementById('vzFormular') && !VZ_UI.form));
+  test('Zrušit: ZAK je beze změny', await p.evaluate((pr) => JSON.stringify(ZAK) === pr, pred),
     await p.evaluate((pr) => { const a = JSON.parse(pr), o = [];
       const w = (x, y, k) => { if (JSON.stringify(x) === JSON.stringify(y)) return;
         if (x && y && typeof x === 'object' && typeof y === 'object') new Set([...Object.keys(x), ...Object.keys(y)]).forEach(kk => w(x[kk], y[kk], k + '.' + kk));
