@@ -66,6 +66,8 @@ vyžádání — E1 si ho musí načíst, např. při otevření zakázky s `vzM
 - **N9** server vynutí první `vzRidici` jako `{ id: 'z1', pismeno: '' }` (400).
 - Mutace: dřív hlášeno 28 + 10 a v souborech „29 + 11“ — rozdíl je řádek úvodního komentáře bloku `… [VZ E0] */`,
   který `grep "VZ E0"` započítá; mutací bylo 28 + 10. Teď jádro 36, server 11.
+- Po opravách (d3fc96a): mutace [VZ E0] jádro **36/36**, server **11/11**; kolo `--bez-mutaci` **VŠE ZELENÉ** — sady 392/0/59,
+  hodiny +400 dní 361/0/1, statické 5/5; model 145/0, server 55/0, zlatá sada VZ 13/0, VS 319/319.
 
 ## Změny proti návrhu / promptu (bezpečnější volba)
 
