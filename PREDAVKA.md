@@ -1,3 +1,47 @@
+# Předávka — 16. 11. 2026: VZ-E3 #602 (víc zákazníků — zámek po zákaznících), větev `claude/vz-e3`
+
+Nad `claude/vz-e2` `cbf5c57`; sloučena opravená E2 `18acb83` (U1/U2). **v16.11.5** (koordinace přečísluje). Do `test-draft`,
+`test`, `main` ani integrace nic; weby, Disk, Pipedrive nic. **RIZIKOVÁ — před sloučením revize poradce Fable.** Roadmapa
+**#602 hotovo**, meze **B227, B228** (ověřeno volné ve všech vzdálených větvích).
+
+| úkol | stav | kde |
+|---|---|---|
+| razítko „komu“ `zamek.tisky[].zakaznik` { id, pismeno, cislo, objednatel, ico } (jen víc zákazníků) | ✅ | `zamkniVariantu` (zamek.js), `zamekPoTisku` (zamek_ui.js), `vzTiskZamekNavic` (vz_tisk_ui.js), okno náhledu (`tiskListaSkript` — u jednoho zákazníka znak po znaku jako dřív) |
+| stav nabídky, platná nabídka | ✅ | `vzStavNabidky`, `vzPlatna` (cena `vzCenaZamku`); server `vzPlatnaPrepocti` (N6); E5 `vz_poznamka.js` → `vzPlatna` |
+| dotisk se snímkem adresáta, D3 cizí razítka z tiskového pohledu | ✅ | `vzTiskPohled(zak, id, varianta)`, `vzVariantaBezCizichRazitek`; adresáti z razítek i do kontroly cizího textu `v.zakaznik` |
+| odstranění s odeslanou nabídkou jen administrátor | ✅ | server `vzServerZakaznici` (403 z relace a uložené verze), jádro `vzOdstranDuvod`, UI (zhasnuté s vysvětlením, potvrzení podle v3_3) |
+| číslo dokladu z razítka | ✅ | `vzCisloDokladu` (lišta zámku, seznam variant) |
+| N9 písmena/id, N4 `zalozen`, podvržená razítka | ✅ | `vzServerZakaznici`, `vzZalozenDrz`, `vzServerRazitka` (netlify/lib/zakazka_kontrola.mjs `vzServerKontrola`) |
+| zmrazení názvu akce / adresy (první odeslaná komukoli) a údajů dalšího zákazníka | ✅ | `zamekZakVzOdeslano`, `zamekZakZmeny`; `vzZakaznikPoleZmrazeno`; UI `vzPoleAttr`, pojistka v `set()` |
+| doplněk koordinace U1: ruční hodnoty polí zákazníka KL po zákaznících | ✅ | `kl.hodnoty` + `vzVlastnik` = vlastník (bez záznamu z1), ostatní `kl.hodnotyZakaznika[id]`; `vzKlRucni`, `vzKlZapisRucni`, `vzKlOdstranZakaznika`; obrazovka KL za otevřeného zákazníka (`klVzKomu`, `klVzCtxZak`), KL PROJ za řídícího; porovnání zámku přeskočí volná pole i v `hodnotyZakaznika` / `vzVlastnik` |
+| testy | ✅ | `src/test_vz_zamek.js` 72/0, `netlify/test_vz_server.mjs` 88/0, `src/test_vz_unik.js` 163/0, `src/test_vz_ui.js` 133/0, `src/test_vz_kl_pole.js` 33/0, `overit_vz_zamek.mjs` 31/0, `overit_vz_tisk.mjs` 192/0, `overit_vz_zadani.mjs` 76/0, `overit_xss.mjs` 400/0 |
+| mutace „[VZ E3]“ | viz níže | jádro 15, server 14; staré mutace (zámek hlavičky, E1 odstranění, E2 KL, E5 platna) přesměrované na nový kód, „E5: uložená platna se nečte“ vyřazena (N6) |
+
+## Rozhodnutí (bezpečnější varianta, k revizi)
+
+- **`zamek.cislo` zůstává BEZ písmene** (pokyn koordinace „oprav“): zámek je společný všem zákazníkům sdílené varianty a server
+  B56 ho hlídá proti `variantaCislo` celé zakázky. Číslo dokladu zákazníka (…9940-B) nese razítko `zakaznik.cislo`; dotisk,
+  karta, lišta i `vzPlatna` ho berou odtud.
+- Tisk bez razítka patří **z1** (tiskl se hlavičce, dokud byl zákazník jeden).
+- `platna` řídícího se neukládá nikam (`vzRidici` = id, písmeno, varianta) — počítá ji `vzPlatna` za běhu (N6).
+- Zmrazené údaje dalšího zákazníka: název, sídlo, IČO, DIČ; kontakt a zástupci volné. Hlavičku řídícího hlídá zámek hlavičky jako dnes.
+- Server skládá snímek razítka ze **ukládané** zakázky (nový zákazník může vzniknout v témž uložení); nárok na variantu podle
+  razítek **uložené** verze. S VYP smí nový tisk jen řídící. Obnova (`/api/obnova`) razítka neskládá (doklad).
+- Id/písmeno zákazníka odstraněného BEZ odeslané nabídky se uvolní (návrh § 1.1); `zalozen` se u znovu použitého id vezme
+  z uložené verze jen, když tam zákazník ještě je.
+- N7 (obnova s VYP → 400; administrátor před obnovou zapne vypínač) zapsáno do B228; do příručky patří s E6 (příručka k vypínači).
+- U1: hodnota v `kl.hodnoty` patří vlastníkovi (`vzVlastnik`, bez záznamu z1 = migrace „stávající patří řídícímu“); zápis jiného
+  zákazníka do obsazeného pole jde do `hodnotyZakaznika[id]`. Snímek zámku (`zmrazeno`, `vzZmrazeno`) zůstává řídícího (E2) —
+  další zákazník tiskne prefill ze své (po odeslání zmrazené) hlavičky + své ruční hodnoty, které zámek porovnává po polích.
+  KL PROJ píše jen řídící (R5).
+
+## Otevřené body
+
+- Po výměně řídícího (E4) a odstranění z1 by tisky bez razítka (jeden zákazník) připadly z1 — rozhodne E4.
+- Server právo `varianta.smazatUzamcenou` nečte; zamčenou variantu odstraněného zákazníka chrání dál `uloKontrolaZamku` (409 „chybí“).
+- `overit_zobrazeni.mjs` a `overit_zaporne.mjs` padají na časovém limitu přihlášení i na čisté E2 `18acb83` — prostředí, ne E3.
+- Volný text `v.zakaznik` bez jména zákazníka kontrola cizího textu nepozná (B224).
+
 # Předávka — 16. 11. 2026: VZ-E2 #601 (víc zákazníků — čísla s písmenem, tisk z pohledu zákazníka, test úniku), větev `claude/vz-e2`
 
 Nad `claude/vz-e0` `e29f2b1`; sloučeno s `claude/integrace-vz` `76ae631` (E0 po revizi) a `b7ec485` (E0 dorevize, E1, E5).
