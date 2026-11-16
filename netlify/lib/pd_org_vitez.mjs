@@ -33,6 +33,11 @@
  * Stavy: zapsano (zdroj nalezena | zalozena), shoda, bez-ico, vice,
  * bez-prava, chyba, strop.
  *
+ * Revize poradce (16. 11. 2026): P1 prodej jinému zákazníkovi, než je
+ * řídící → 409; P2 strop před bez-prava/bez-ico a stejný neúspěšný stav se
+ * znovu nezapisuje (razítko zůstává); P3 ARES „nenalezeno“ → chyba, hlavička
+ * jen při výpadku; P5 zápis stavu jen do pořád prodané zakázky téhož dealu.
+ *
  * CO TO NEDĚLÁ (mez B226): neslučuje duplicity, nemění ani nečte osobu
  * dealu (žádné /persons, žádné person_id), původní organizaci nemění ani
  * nemaže, nezapisuje hodnotu ani pole dealu (#597), při odemčení prodeje
@@ -58,6 +63,8 @@ export const PD_VITEZ_STROP_UZIVATEL = 20;
 export const PD_VITEZ_KANDIDATI_MAX = 10;
 export const PD_VITEZ_NAZVY_MAX = 10;
 export const PD_VITEZ_KONTAKT_VETA = 'Doplňte v Pipedrive kontaktní osobu vítězného zákazníka před posunem dealu na Vyhráno.';
+export const PD_VITEZ_ARES_NENI = 'IČO v ARES není — ověřte IČO, nebo organizaci změňte ručně.';
+export const PD_VITEZ_JINY_VITEZ = 'Zakázka je prodaná jinému zákazníkovi, než je řídící — organizace dealu se nepřepisuje, dokud prodaný zákazník není řídící.';
 export const PD_VITEZ_DUVOD = {
   'bez-ico': 'Hlavička zakázky nemá platné IČO vítězného zákazníka — doplňte IČO (po odemčení prodeje vedoucí nebo administrátor), nebo změňte organizaci dealu ručně v Pipedrive.',
   vice: 'V Pipedrive je víc organizací s tímto IČO — sjednoťte je a zápis zopakujte.',
@@ -147,20 +154,37 @@ async function udajeNove(ulozena, ico, termin, aresFetch) {
   const zbyva = Math.min(PD_VITEZ_ARES_MS, termin - Date.now());
   const a = zbyva > 0 ? await aresNacti(ico, { fetch: aresFetch, timeoutMs: zbyva }) : { stav: 'vypadek' };
   if (a.stav === 'ok') return { nazev: a.subjekt.nazev, adresa: a.subjekt.adresa, dic: a.subjekt.dic, zdroj: 'ares' };
+  /* Revize P3: hlavička jen při VÝPADKU ARES — „nenalezeno“ / „neplatne“ =
+   * IČO je nejspíš špatně, organizace se nezakládá. */
+  if (a.stav !== 'vypadek') throw new PdChyba(PD_VITEZ_ARES_NENI, 409);
   const dic = txt(ulozena.dic, 20).replace(/\s+/g, '').toUpperCase();
   return { nazev: txt(ulozena.objednatel, 200), adresa: txt(ulozena.adresaObjednatele, 300),
     dic: ARES_DIC_TVAR.test(dic) ? dic : '', zdroj: 'hlavicka', ares: a.stav };
 }
 
 /* Zápis stavu do zakázky: výhradní úsek, druhé čtení, protokol, rejstřík. */
+/* Neúspěšný (nebo shodný) stav se stejným dealem, organizací, důvodem
+ * a seznamem jako uložený se nezapisuje znovu (revize P2). */
+function stejnyStav(ulozeny, novy) {
+  if (!ulozeny || !novy || novy.stav === 'zapsano') return false;
+  const k = (x) => JSON.stringify([x.deal, x.org, x.stav, x.duvod || '', x.vice || null, x.nazev || '']);
+  return k(ulozeny) === k(novy);
+}
+
 async function zapisStav(ctx, stav) {
   const { s, ULO, vyhradne, soubor, relace } = ctx;
+  const G = ctx.G || globalThis;
   const kdo = String(relace.jmeno || relace.email || '');
   const v = await vyhradne('zakazky/z/' + soubor, async () => {
     const zak = await s.cti('z/' + soubor);   // druhé čtení (SEC-S1)
     if (!zak || typeof zak !== 'object') return {};
+    /* Revize P5: mezitím odemčený prodej nebo jiný deal → stav se nezapisuje. */
+    if (!(typeof G.prodStav === 'function' && G.prodStav(zak)) || (G.ctrlPdDealIdNorm(zak.pdDealId) || '') !== stav.deal)
+      return { nezapsano: true };
     const hodnota = pdOrgVitezNorm(Object.assign({}, stav, { kdy: new Date().toISOString(), kdo }));
     if (!hodnota) return {};
+    const ulozeny = pdOrgVitezNorm(zak.pdOrgVitez);
+    if (stejnyStav(ulozeny, hodnota)) return { hodnota: ulozeny, razitko: String(zak.uloRazitko || ''), beze: true };
     zak.pdOrgVitez = hodnota;
     if (stav.stav === 'zapsano') {
       pdProtokol(zak, kdo, 'Přepojil deal ' + stav.deal + ' v Pipedrive na organizaci vítězného zákazníka „'
@@ -172,7 +196,7 @@ async function zapisStav(ctx, stav) {
     await s.zapis('z/' + soubor, zak);
     return { zak, razitko, hodnota };
   });
-  if (v.zak) await pdRejstrikZapis(s, ULO, vyhradne, v.zak, soubor, v.razitko, String(relace.email || ''));
+  if (v.zak && !v.beze) await pdRejstrikZapis(s, ULO, vyhradne, v.zak, soubor, v.razitko, String(relace.email || ''));
   return v;
 }
 
@@ -189,6 +213,14 @@ export async function pdOrgVitezAkce(ctx) {
     return { status: 409, telo: { ok: false, chyba: 'Zakázka není prodaná — organizace dealu se přepisuje až po prodeji.' } };
   if (!(ulozena.vzRidici && typeof ulozena.vzRidici === 'object' && Array.isArray(ulozena.dalsiZakaznici) && ulozena.dalsiZakaznici.length))
     return { status: 409, telo: { ok: false, chyba: 'Zakázka má jednoho zákazníka — organizace dealu se nemění.' } };
+  /* Revize P1: prodej patří jinému zákazníkovi než řídícímu (E4 ho ještě
+   * nepřepnul) — IČO hlavičky by nebylo IČO vítěze. */
+  {
+    const p = G.prodStav(ulozena);
+    const zakaznik = p && p.prodano && typeof p.prodano.zakaznik === 'string' ? p.prodano.zakaznik : '';
+    if (zakaznik && zakaznik !== String(ulozena.vzRidici.id || ''))
+      return { status: 409, telo: { ok: false, chyba: PD_VITEZ_JINY_VITEZ } };
+  }
   const deal = G.ctrlPdDealIdNorm(ulozena.pdDealId) || '';
   if (!deal) return { status: 409, telo: { ok: false, chyba: 'Zakázka není navázaná na deal v Pipedrive.' } };
   if (!ctx.nastaveno) return { status: 503, telo: { ok: false, chyba: 'Napojení na Pipedrive není nastavené.' } };
@@ -199,6 +231,7 @@ export async function pdOrgVitezAkce(ctx) {
     const v = await zapisStav(ctx, stav);
     const ok = stav.stav === 'zapsano' || stav.stav === 'shoda';
     const telo = { ok, stav: stav.stav, duvod: stav.duvod || '', pdOrgVitez: v.hodnota || pdOrgVitezNorm(stav), razitko: v.razitko || '' };
+    if (v.nezapsano) telo.nezapsano = true;   // P5: zakázka se mezitím změnila (prodej odemčen / jiný deal)
     if (stav.zdroj) telo.zdroj = stav.zdroj;
     if (stav.vice) telo.vice = (v.hodnota && v.hodnota.vice) || stav.vice;
     if (stav.org) telo.organizace = { id: stav.org, nazev: (v.hodnota && v.hodnota.nazev) || '' };
@@ -206,13 +239,14 @@ export async function pdOrgVitezAkce(ctx) {
     return { status: 200, telo };
   };
 
+  /* Strop PŘED bez-prava a bez-ico (revize P2): omezuje i zápisy stavu do zakázky. */
+  if (!(await pdStropCerstvych('deal:' + deal, 'org-vitez', PD_VITEZ_STROP_DEAL))
+    || !(await pdStropCerstvych(relace.email, 'org-vitez', PD_VITEZ_STROP_UZIVATEL)))
+    return hotovo({ deal, org: minuleOrg, stav: 'strop', duvod: PD_VITEZ_DUVOD.strop });
   if (!pdPoznamkaSmi(relace, matice, G))
     return hotovo({ deal, org: minuleOrg, stav: 'bez-prava', duvod: PD_VITEZ_DUVOD['bez-prava'] });
   const ico = aresIcoNorm(ulozena.ico);
   if (!ico || !aresIcoPlatne(ico)) return hotovo({ deal, org: minuleOrg, stav: 'bez-ico', duvod: PD_VITEZ_DUVOD['bez-ico'] });
-  if (!(await pdStropCerstvych('deal:' + deal, 'org-vitez', PD_VITEZ_STROP_DEAL))
-    || !(await pdStropCerstvych(relace.email, 'org-vitez', PD_VITEZ_STROP_UZIVATEL)))
-    return hotovo({ deal, org: minuleOrg, stav: 'strop', duvod: PD_VITEZ_DUVOD.strop });
 
   const termin = Date.now() + PD_VITEZ_CELKEM_MS;
   const zavolej = volani(termin);

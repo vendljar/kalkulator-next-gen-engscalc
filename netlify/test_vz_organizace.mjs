@@ -366,6 +366,62 @@ let S1, D1, ORG1;
     { w: w.status, o: po.objednatel });
 }
 
+/* 15) revize poradce P1–P5 (pojistka: na 5236b4f každý z bodů selže) */
+{
+  /* P1: prodej jinému zákazníkovi, než je řídící */
+  const ico = icoS('9200013');
+  orgSim(ico, 'Vítěz P1 s.r.o.');
+  const d = dealNovy(); const org0 = d.org_id; const s = prodana(d, ico);
+  const z = zakazka(s); z.varianty[0].prodano.zakaznik = z.dalsiZakaznici[0].id; zapis(s, z);
+  const od = poz().length;
+  let r = await vitez(s, cAutor);
+  test('15 P1: prodano.zakaznik ≠ řídící → 409 s důvodem, do Pipedrive nic, stav nezapsán', r.status === 409 && /jinému zákazníkovi/.test(r.chyba)
+    && poz().length === od && d.org_id === org0 && !zakazka(s).pdOrgVitez, r);
+  z.varianty[0].prodano.zakaznik = z.vzRidici.id; zapis(s, z);
+  r = await vitez(s, cAutor);
+  test('15 P1: prodano.zakaznik = řídící → zapsáno', r.stav === 'zapsano' && d.org_id !== org0, r);
+}
+{
+  /* P2: opakovaný neúspěšný stisk nemění razítko; strop omezuje i bez-ico */
+  const d = dealNovy(); const s = prodana(d, '');
+  const r1 = await vitez(s, cAutor);
+  const raz1 = zakazka(s).uloRazitko;
+  const rej1 = pamet.get('zakazky/_rejstrik');
+  const r2 = await vitez(s, cAutor);
+  test('15 P2: druhý stisk se stejným stavem bez-ico → zakázka ani rejstřík se nemění, odpověď nese uložené razítko', r1.stav === 'bez-ico' && r2.stav === 'bez-ico'
+    && zakazka(s).uloRazitko === raz1 && r2.razitko === raz1 && pamet.get('zakazky/_rejstrik') === rej1, { r1: r1.razitko, r2: r2.razitko, raz1 });
+  let posl;
+  for (let i = 0; i < 10; i++) posl = await vitez(s, cAutor);
+  test('15 P2: strop se počítá i u bez-ico (11. a další stisk → strop)', posl.stav === 'strop' && zakazka(s).pdOrgVitez.stav === 'strop', posl);
+}
+{
+  /* P3: ARES „nenalezeno“ → chyba, nic se nezakládá; hlavička jen při výpadku */
+  const ico = icoS('9200014');   // ARES ho nezná (404)
+  const d = dealNovy(); const org0 = d.org_id; const s = prodana(d, ico, { nazev: 'Hlavička P3 s.r.o.' });
+  const pocet = D().organizace.length;
+  const r = await vitez(s, cProdal);
+  test('15 P3: ARES nenalezeno → chyba s důvodem, organizace se nezaložila, deal beze změny', r.stav === 'chyba'
+    && r.duvod.includes('IČO v ARES není — ověřte IČO, nebo organizaci změňte ručně') && D().organizace.length === pocet && d.org_id === org0
+    && !SIM.pdSimStav().pozadavky.slice(-5).some(p => p.startsWith('POST')), r);
+}
+{
+  /* P5: mezitím odemčený prodej → stav se nezapíše */
+  const ico = icoS('9200016');
+  orgSim(ico, 'Vítěz P5 s.r.o.');
+  const d = dealNovy(); const s = prodana(d, ico);
+  SIM.pdSimNastav({ poPozadavku: (p) => { if (p === 'PATCH /api/v2/deals/' + d.id) { const z = zakazka(s); delete z.varianty[0].prodano; zapis(s, z); } } });
+  const raz = zakazka(s).uloRazitko;
+  const r = await vitez(s, cProdal);
+  SIM.pdSimNastav({ poPozadavku: null });
+  test('15 P5: prodej mezitím odemčen → stav ani protokol se do zakázky nezapíšou, odpověď nezapsano', r.nezapsano === true
+    && !zakazka(s).pdOrgVitez && zakazka(s).uloRazitko === raz && protokolKontakt(s) === 0, r);
+  const d2 = dealNovy(); const s2 = prodana(d2, ico);
+  SIM.pdSimNastav({ poPozadavku: (p) => { if (p === 'PATCH /api/v2/deals/' + d2.id) { const z = zakazka(s2); z.pdDealId = '1001'; zapis(s2, z); } } });
+  const r2 = await vitez(s2, cProdal);
+  SIM.pdSimNastav({ poPozadavku: null });
+  test('15 P5: zakázka mezitím na jiném dealu → stav se nezapíše', r2.nezapsano === true && !zakazka(s2).pdOrgVitez, r2);
+}
+
 test('do sítě nic (Pipedrive jen simulátor, ARES jen předaný fetch)', venku.length === 0, venku);
 console.log('\nVZ-E5b organizace: ' + ok + ' OK, ' + fail + ' FAIL');
 process.exit(fail ? 1 : 0);

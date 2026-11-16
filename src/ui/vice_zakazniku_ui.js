@@ -676,7 +676,8 @@ async function vzPoProdejiPd(zak) {
     const pred = JSON.stringify(zak);
     const autosaveCisty = os.posledni === pred;
     const histCista = typeof historieNeulozeno === 'function' && !historieNeulozeno();
-    if (vzObj(o.pdOrgVitez)) zak.pdOrgVitez = o.pdOrgVitez;
+    /* nezapsano (revize P5): server stav do zakázky nezapsal (prodej mezitím odemčen / jiný deal) — nepřebírat. */
+    if (vzObj(o.pdOrgVitez) && !o.nezapsano) zak.pdOrgVitez = o.pdOrgVitez;
     if (o.razitko) { zak.uloRazitko = String(o.razitko); os.razitko = String(o.razitko); }
     /* Zápis serveru není neuložená změna (vzor pdStavObnovUI). */
     if (autosaveCisty) os.posledni = JSON.stringify(zak);

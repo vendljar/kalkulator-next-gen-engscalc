@@ -1936,6 +1936,14 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   B217); zpožděný index hledání Pipedrive pokrývá jen zapamatované id
   organizace založené minulým pokusem téže zakázky — organizaci založenou
   jinou cestou těsně předtím hledání nemusí najít a vznikne duplicita.
+  Totéž platí, když funkce spadne (nebo vyprší) **mezi založením organizace
+  (`POST`) a zápisem stavu do zakázky**: id nové organizace se nezapamatuje,
+  a zpozdí-li se index hledání, další pokus založí druhou organizaci (revize
+  poradce P4). Prodej jinému zákazníkovi, než je řídící (`prodano.zakaznik`),
+  akce odmítne 409 (P1); stejný neúspěšný stav se do zakázky znovu nezapisuje
+  a strop se počítá před `bez-prava`/`bez-ico` (P2); ARES „nenalezeno“ =
+  `chyba`, hlavička jen při výpadku ARES (P3); stav se zapíše jen do zakázky,
+  která je po druhém čtení pořád prodaná a na témž dealu (P5).
   Název z ARES nebo hlavičky jde do Pipedrive jako text bez řídicích znaků
   (HTML neescapuje — Pipedrive název zobrazuje jako text; UI aplikace ho
   escapuje). Volání z obrazovky po prodeji (`vzPoProdejiPd`) zapojí háček
