@@ -4369,8 +4369,9 @@ const MUTACE = [
     nahrad: "  return true;",
     proc: "ruční údaje řídícího (telefon, kopie faktur, zmocnitel) by šly do KL a SoD jiného zákazníka sdílené varianty (U1)", sady: ["test_vz_kl_pole.js"] },
   { nazev: "VZ-E2: KL — vlastník = výchozí, ne podle id [VZ E2]", soubor: "vice_zakazniku.js",
-    hledej: "  return String(vlastnik || VZ_RIDICI_ID) === String(p.id);",
-    nahrad: "  return String(VZ_RIDICI_ID) === String(p.id);",
+    /* E3 (U1): ruční hodnoty čte vzKlRucni — vlastník pole odtud. */
+    hledej: "  const vl = vzObj(kl.vzVlastnik) && kl.vzVlastnik[pole] ? String(kl.vzVlastnik[pole]) : VZ_RIDICI_ID;\n  return",
+    nahrad: "  const vl = VZ_RIDICI_ID;\n  return",
     proc: "po výměně řídícího by přepis B patřil zpět A (U2)", sady: ["test_vz_kl_pole.js"] },
   { nazev: "VZ-E2: KL — zápis bez vlastníka [VZ E2]", soubor: "vice_zakazniku.js",
     hledej: "  kl.vzVlastnik[String(id)] = vzRidiciId(zak);",
@@ -4403,8 +4404,9 @@ const MUTACE = [
     nahrad: "      const r = (kl && kl.hodnoty && kl.hodnoty[pole.id] !== '') ? kl.hodnoty[pole.id] : undefined;",
     proc: "ruční pole zákazníka KL PROJ by po výměně řídícího unikla (U1)", sady: ["test_vz_kl_pole.js"] },
   { nazev: "VZ-E2: KL PROJ → OCK bez kontroly vlastníka [VZ E2]", soubor: "kryci.js",
-    hledej: "  if (!kryciKlProjVlastni(c, id)) return '';   // VZ-E2 (revize U1): ruční pole KL PROJ jen vlastníkovi\n",
-    nahrad: "",
+    /* E3 (U1): v pohledu čte kryciZKrycihoListuProj přes vzKlRucni. */
+    hledej: "    const r = vzKlRucni(d.kryciProj, c.zak.vzPohledZakaznika.id, id);",
+    nahrad: "    const r = d.kryciProj && d.kryciProj.hodnoty ? d.kryciProj.hodnoty[id] : '';",
     proc: "podpisy a kopie z KL PROJ řídícího by šly do SoD B (U1)", sady: ["test_vz_kl_pole.js"] },
   { nazev: "VZ-E2: snímek KL bez zápisu vlastníka [VZ E2]", soubor: "kryci.js",
     hledej: "  if (typeof vzKlZmrazeno === 'function') vzKlZmrazeno(d.kryci, zak);   // VZ-E2 U2: čí je snímek (jen víc zákazníků)\n",
