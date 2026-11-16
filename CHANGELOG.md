@@ -21,7 +21,7 @@ jako dnes (zlatá sada (e1): `vzTiskPohled` vrací týž objekt). Zadání `podk
   `src/ui/vz_tisk_ui.js` u Word CN, CN PROJ, SoD, plné moci, krycích listů (tisk i Word), náhledů nabídky
   a podkladů, porovnání variant a detailu položek, technické specifikace a živého náhledu karty CN; pojistka
   `vzTiskHlidej` v `dokumentVygeneruj`.
-- **Zábrany tisku** `vzTiskZabrana` (brána `dokumentZabrana`, pravidlo kontrol `vzTisk`): cizí varianta, název
+- **Zábrany tisku** `vzTiskZabrana` (brána `dokumentZabrana`; pravidlo v katalogu kontrol až s novým vydáním manuálu — E6): cizí varianta, název
   nebo IČO jiného zákazníka ve sdíleném tištěném textu či názvu varianty, PROJ jen pro řídícího (R5), vypnutá funkce
   jen řídící. **Pruh** „Náhled a tisk platí pro zákazníka X — nabídka …-B“ v kartě CN (jen 2+).
 - **Statická kontrola** `nastroje/kontrola_vz_unik.sh` (s pojistkou) v kole — statické kontroly teď 6.

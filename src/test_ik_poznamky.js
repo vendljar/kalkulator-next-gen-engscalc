@@ -142,7 +142,7 @@ for (const [list, data, prvni] of [['OCK', K.kryciData, 'Základní údaje'], ['
       === JSON.stringify(K.kryciVystupSekce(zakazka(TEXT), [{ sekce: 'Základní údaje', radky: [] }])));
   for (const f of ['ui/kryci_ui.js', 'ui/kryci_proj_ui.js']) {
     const t = fs.readFileSync(__dirname + '/' + f, 'utf8');
-    test(f + ': tisk PDF krycího listu staví z kryciVystupSekce', /kryciVystupSekce\(ZAK, d\.sekce\)/.test(t));
+    test(f + ': tisk PDF krycího listu staví z kryciVystupSekce', /kryciVystupSekce\((ZAK|vt\.zak), d\.sekce\)/.test(t));   // VZ-E2: z pohledu zákazníka
   }
 }
 

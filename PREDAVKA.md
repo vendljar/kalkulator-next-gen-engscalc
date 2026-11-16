@@ -9,7 +9,7 @@ Disk, Pipedrive nic. **Před sloučením revize poradce (únik údajů).** Roadm
 | duplicita čísla bez písmene, webhook podle čísla s písmenem | ✅ | `zakazkaDuplicita`; `pdWebhookCisloZaklad`, `pdWebhookPismeno`, `pdWebhookCisloSedi` (netlify/lib/pd_webhook.mjs + functions) |
 | jediný vstup dokumentů `vzTiskPohled` + `vzTiskVarianta` | ✅ | jádro `src/vice_zakazniku.js` (oddíl E2), UI `src/ui/vz_tisk_ui.js` (`vzTiskVstup`), 13 vstupů tisku v `ui/zakazka_ui.js`, `nabidka_proj_ui.js`, `sod_ui.js`, `kryci_ui.js`, `kryci_proj_ui.js`, specifikace |
 | pojistka generátorů | ✅ | `vzTiskHlidej` v `dokumentVygeneruj` |
-| zábrany tisku | ✅ | `vzTiskZabrana`: cizí varianta, název/IČO jiného zákazníka ve sdíleném textu a názvu varianty (porovnání: všech variant), PROJ jen řídící (R5), VYP jen řídící; brána `dokumentZabrana`, pravidlo kontrol `vzTisk` |
+| zábrany tisku | ✅ | `vzTiskZabrana`: cizí varianta, název/IČO jiného zákazníka ve sdíleném textu a názvu varianty (porovnání: všech variant), PROJ jen řídící (R5), VYP jen řídící; brána `dokumentZabrana` (pravidlo v katalogu kontrol odloženo — mění čísla vydaného manuálu, E6) |
 | pruh v kartě CN, živý náhled CN z pohledu | ✅ | `vzTiskPruhHtml`, `nabidkaKarta` |
 | statická kontrola | ✅ | `nastroje/kontrola_vz_unik.sh` (+ `--pojistka`) v `testovaci_kolo.sh` (statické teď 6) |
 | oprava úniku z testu: zmrazený krycí list sdílené varianty | ✅ | `zakaznikPole` (kryci.js 5 polí, kryci_proj.js 6) |

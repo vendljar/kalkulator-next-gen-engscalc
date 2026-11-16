@@ -76,7 +76,9 @@ for (const [soubor, fn, popis] of VSTUPY) {
     && /row\('OBJEDNATEL', vzTiskZakTicho\(\)\.objednatel\)/.test(ts));
   const nk = telo(cti('ui/zakazka_ui.js'), 'nabidkaKarta');
   test('karta CN: živý náhled z pohledu a pruh', !!nk && /nabidkaData\(TZ, aktT/.test(nk) && /vzTiskPruhHtml\(\)/.test(nk));
-  test('kontroly: pravidlo vzTisk ptá vzTiskZabrana', /kod: 'vzTisk'[\s\S]{0,1200}vzTiskZabrana\(ctx\.zak/.test(cti('kontroly.js')));
+  /* Pravidlo v katalogu kontrol záměrně NENÍ (počet pravidel nese vydaný manuál
+   * — test_manual_vypocet; nové vydání je E6). Zábranu nese brána dokumentů. */
+  test('kontroly: katalog pravidel beze změny (žádné vzTisk)', !/kod: 'vzTisk'/.test(cti('kontroly.js')));
 }
 
 /* ---------- 2) funkčně: ui/vz_tisk_ui.js ve VM ---------- */
