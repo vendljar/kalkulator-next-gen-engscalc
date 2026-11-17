@@ -2036,8 +2036,27 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   se uvolní a nový zákazník je smí dostat (návrh § 1.1) — u takto znovu
   použitého id převezme server `zalozen` z uložené verze jen tehdy, když
   zákazník v ní ještě je (jinak nový z relace). Záznam tisku bez razítka se
-  přičítá z1; kdyby po výměně řídícího (E4) a odstranění z1 zůstal jediný
-  zákazník a tiskl, jeho tisky bez razítka by se přičetly z1 (rozhodne E4).
+  přičítá z1.
+  **Doplněno VZ-E4 (#603, v16.11.7):** (Z2) doklad „odešla nabídka“ se bere
+  i ze zámků v HISTORII ODEMČENÍ (`v.odemceni[].zamek.tisky`, drží ji server,
+  B62): po odemčení varianty zákazníka dál odstraní jen administrátor a jeho
+  písmeno ani id se neuvolní (`vzRazitkaZakazniku`, `vzOdeslanoKdykoli`;
+  server N9 i odstranění). Smazat zamčenou variantu server nedovolí
+  (`uloKontrolaZamku`), takže doklad zmizet nemůže. (Doplněk 3) Po výměně
+  řídícího se zakázka NEVRÁTÍ k jednomu zákazníkovi, který není původní z1,
+  dokud je v ní cokoli odeslané (zámek, tisk, historie odemčení) — tisky bez
+  razítka (z1) by jinak připadly jemu a jeho čísla by ztratila písmeno; jádro
+  (`vzOdstranKolapsDuvod`) i server (`vzServerKolaps`, 409; zbylý zákazník se
+  pozná shodou názvu, IČO a sídla s uloženou položkou z1). Bez odeslaného
+  návrat projde a ruční hodnoty polí zákazníka v krycích listech bez značky
+  vlastníka (= z1) se novému jedinému zákazníkovi nepřipíší (výměna je
+  zafixuje `vzKlZafixuj`, úklid `vzKlUklid`). (Z3) **Nový tisk bez
+  `zakaznik.id` server připíše ŘÍDÍCÍMU zákazníkovi** (`vzServerRazitka`):
+  prohlížeč, který id nepošle (starší okno, chyba), vytiskne nabídku řídícímu
+  a server to od poctivého tisku řídícímu nerozezná — razítko pak nese
+  řídícího, i kdyby obchodník měl otevřeného jiného zákazníka. Dokument sám
+  vzniká z pohledu (`vzTiskVstup`), takže papír i razítko se shodují; nesedět
+  může jen otevřený zákazník na obrazovce.
   Obnova zakázky (`/api/obnova`) razítka nových tisků neskládá — zámky
   v záloze jsou doklad (z otisku i `zalozen` a `platna` ze zálohy).
 - **B228 — E3: zmrazení údajů po odeslání nabídky u víc zákazníků.**
@@ -2055,3 +2074,24 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   odmítne (400) — před obnovou takové zakázky administrátor vypínač
   `viceZakazniku` zapne (Nastavení → Zkušební funkce), obnoví a může ho
   zase vypnout.
+  **Doplněno VZ-E4 (#603, v16.11.7) — řídící zákazník a Prodáno u zákazníka:**
+  řídícího zákazníka (bez prodeje) mění jen **autor zakázky a administrátor**
+  (z relace a ULOŽENÉ verze; zakázka založená webhookem jen administrátor —
+  pravidlo K40c), ostatní 403 (`vzServerRidici`); u prodané zakázky nikdo
+  (409) — odemčení prodeje řídícího nevrací. Prodej u zákazníka nese
+  `prodano.zakaznik` (id); server ho přijme jen zákazníkovi, kterému ta
+  varianta ODEŠLA (razítka uložené verze + tisky připsané v témže uložení,
+  které orazítkoval server) — jinak 409, neexistující zákazník 400; prodej bez
+  zákazníka u víc zákazníků patří řídícímu. Vítěze, který není řídící, udělá
+  řídícím server sám (`vzProdejServer`, i za starší okno) a srovná invariant;
+  uložený prodej drží `prodano.zakaznik` z uložené verze, obnova z otisku ho
+  propustí (`prodOciste`). Výměna řídícího se v zámku hlavičky porovnává
+  „u zákazníka“ (`zamekZakZmeny` s uloženou verzí srovnanou na téhož
+  řídícího) — údaje se jen stěhují; údaje dalších zákazníků hlídá
+  `vzServerZakaznici`. Webhook (`pd_webhook.mjs`) u víc zákazníků při
+  NESHODĚ IČO organizace dealu a hlavičky pole firmy nepřepisuje ani prázdná
+  nedoplňuje a ARES nevolá (`pdWebhookVzFirmaCizi`). *Co to nedělá:* při
+  shodném (i prázdném) IČO dealu a nového řídícího webhook pole firmy
+  doplňuje jako dřív; SoD jde jen zákazníkovi, kterému nabídka varianty
+  odešla — hlídá to jen brána tisku v prohlížeči (`vzTiskZabrana`), server
+  razítko tisku SoD posuzuje stejně jako u nabídky (varianta zákazníka).

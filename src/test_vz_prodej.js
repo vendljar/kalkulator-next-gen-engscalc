@@ -313,6 +313,21 @@ const CTX = { kdo: 'obchodnik@priklad.cz', role: 'Obchodník' };
     && !('vzVlastnik' in y.varianty[0].data.kryci), y.varianty[0].data.kryci);
 }
 
+{
+  /* Zakázka vyměněná PŘED E4 (bez fixace vlastníka): hodnota pole zákazníka
+   * bez značky (= z1) nepřipadne B ani po návratu k jednomu zákazníkovi. */
+  const y = zakazka({ B: false });
+  vzPridej(y, UD.B, { kdo: 'test', kdy: TED });
+  const puv = y.varianty[0].data.kryci = { hodnoty: {} };
+  const k = kop(y);
+  const r0 = vzVymenRidiciho(k, 'z2');
+  k.varianty[0].data.kryci = { hodnoty: { kontaktZakaznikEmail: 'MAIL-A-BEZ-ZNACKY', rozsah: 'sdílený' } };   // stav bez fixace
+  const r = vzOdstran(k, 'z1', {});
+  test('I zakázka vyměněná bez fixace: po návratu k B hodnota z1 bez značky nepřipadne B (vzKlUklid)',
+    r0.ok && r.ok && !('kontaktZakaznikEmail' in k.varianty[0].data.kryci.hodnoty) && k.varianty[0].data.kryci.hodnoty.rozsah === 'sdílený', k.varianty[0].data.kryci);
+  void puv;
+}
+
 /* ---------- J) Z2: doklad z historie odemčení ---------- */
 {
   const z = zakazka({ Bvlastni: true, C: true });

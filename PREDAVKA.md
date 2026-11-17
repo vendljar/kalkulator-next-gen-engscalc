@@ -1,3 +1,57 @@
+# Předávka — 17. 11. 2026: VZ-E4 #603 (víc zákazníků — řídící zákazník, Prodáno u zákazníka), větev `claude/vz-e4`
+
+Nad `claude/integrace-vz` `7c80706` (v16.11.6: E0, E1, E2, E3, E5, E5b). **v16.11.7** (koordinace přečísluje). Do
+`test-draft`, `test`, `main` ani integrace nic; weby, Disk, Pipedrive nic (jen simulátor). **RIZIKOVÁ — před sloučením
+revize poradce Fable.** Roadmapa **#603 hotovo**; meze **B227, B228 doplněné** (nové číslo meze jsem nebral — B229 je
+v rezervě koordinace).
+
+| úkol | stav | kde |
+|---|---|---|
+| ruční výměna řídícího (přepínač v kartě, potvrzení), autor + administrátor, webhook jen admin, prodaná 409 | ✅ | `vzRidiciZmen`, `vzRidiciProcNe` (UI), `vzRidiciSmiMenit`, `vzRidiciZamceno`, server `vzServerRidici` (z `vzServerZakaznici`) |
+| Prodáno u zákazníka: potvrzení před → po, jedno uložení (prodNastav + `prodano.zakaznik` + výměna + #563 + invariant), neuložený prodej vrátí zakázku | ✅ | `vzProdej`, `vzProdejNelze`, `vzProdejPredPo`, UI `vzProdejOtevri`, `vzProdejPotvrzeniHtml`, `vzProdejPotvrd`; KL tlačítko → `vzProdejZKryciho` |
+| server: prodat jen zákazníkovi, kterému varianta odešla; vítěz → řídící sám; uložený `prodano.zakaznik` drží | ✅ | `vzProdejServer` z `prodServer`; `vzSrovnej` po prodeji |
+| doplněk 1: háček `vzPoProdeji()` → `vzPoProdejiPd(zak)` (E5b) | ✅ | `src/ui/vice_zakazniku_ui.js` |
+| doplněk 2: `prodOciste` propustí `prodano.zakaznik` | ✅ | `src/objednane.js` (+ test obnovy z otisku) |
+| doplněk 3: vlastnictví po výměně řídícího (tisky bez razítka, hodnoty KL bez značky) | ✅ | `vzKlZafixuj` (při výměně), `vzOdstranKolapsDuvod` + server `vzServerKolaps` (návrat k jednomu zákazníkovi ≠ z1 s odeslaným → ne), `vzKlUklid` |
+| doplněk 4 (Z1): tiskový pohled jen s KL hodnotami svého zákazníka | ✅ | `vzKlJenZakaznika`, `vzVariantaBezCizichKl` v `vzTiskPohled` |
+| doplněk 5 (Z2): doklad i z historie odemčení | ✅ zvolena 1. cesta | `vzTiskyHistorie` v `vzRazitkaZakazniku`, `vzOdeslanoKdykoli` (odstranění jen admin, server N9) |
+| doplněk 6 (Z3): tisk bez `zakaznik.id` → řídící | ✅ přiznáno | B227 |
+| doplněk 7 (D1): přidat + vyměnit řídícího v jednom uložení | ✅ | test serveru (uložená zakázka s jedním zákazníkem: autor 200, jiný 403) |
+| KL a SoD z pohledu prodaného; SoD jen odeslanému; upozornění sdílené varianty | ✅ | `vzTiskKomuDokumentu` (`vzTiskKomuUi`), `vzTiskZabrana` (sod), `vzKlSdilenaText` / `vzKlSdilenaPozn` |
+| zámek hlavičky: výměna řídícího porovnaná „u zákazníka“ | ✅ | `zamekZakZmeny` (src/zamek.js) |
+| webhook po výměně řídícího firmu nepřepíše (neshoda IČO) | ✅ | `pdWebhookVzFirmaCizi`, `bezFirmy` (netlify/lib + functions/pd_webhook.mjs) |
+| controlling: jeden řádek s vítězem | ✅ (beze změny kódu, test) | `src/test_vz_prodej.js` M |
+| testy | ✅ | `src/test_vz_prodej.js` 71/0, `netlify/test_vz_server.mjs` 104/0, `netlify/test_vz_webhook.mjs` 63/0, `src/test_vz_unik.js` 167/0, `src/test_vz_ui.js` 133/0, `src/test_vz_kl_pole.js` 41/0; prohlížeč `overit_vz_prodej.mjs` 19/0, `overit_vz_tisk.mjs` 192/0, `overit_vz_organizace.mjs` 40/0, `overit_vz_zadani.mjs` 76/0 (bajtové srovnání s dist z 7c80706), `overit_vz_zamek.mjs` 31/0, `overit_xss.mjs` 400/0, `overit_lista.mjs` 255/0 |
+| mutace „[VZ E4]“ | viz níže | |
+| kolo `--bez-mutaci` | viz níže | |
+
+## Rozhodnutí (bezpečnější varianta, k revizi)
+
+- **`prodano.zakaznik` je text (id zákazníka)**, ne `{ id, pismeno }` z promptu — tak ho už čtou E0 (`vzOdstran`),
+  E3 (`vzOdstranDuvod`), E5 (`vzpNeprodano`) i E5b (P1) a tak to říká návrh § 2. Písmeno je u zákazníka (nemění se).
+- Server prodej bez `zakaznik` u víc zákazníků přiřadí řídícímu (a ověří, že mu varianta odešla) — starší okno.
+- Výměna řídícího novým PRODEJEM nepotřebuje právo autora (práva prodeje hlídá `prodServer`: obchodník zakázky,
+  vedoucí, administrátor); ruční výměna ano.
+- Návrat k jednomu zákazníkovi, který není z1, se s čímkoli odeslaným NEPUSTÍ (ani administrátorovi) — jinak by tisky
+  bez razítka připadly jemu a čísla s písmenem by ztratila písmeno. Zákazník pak v zakázce zůstává (zhasnuté Odstranit
+  s vysvětlením). Server pozná zbylého zákazníka shodou názvu, IČO a sídla s uloženou položkou z1.
+- Z2: zvolena cesta „písmena a id i z historie odemčení“ (bez velkého zásahu: `odemceni[]` drží server).
+- Prodáno na krycím listu u víc zákazníků neprodává hned — otevře potvrzení v kartě Zákazníci zakázky
+  (zákazník podle otevřeného, jinak první, komu otevřená varianta odešla).
+- SoD jen odeslanému hlídá brána tisku v prohlížeči; server razítko SoD posuzuje jako u nabídky (B228).
+- Webhook u víc zákazníků při neshodě IČO firmu nemění — šlo nad rámec promptu (prompt chtěl jen test), ale bez toho
+  by webhook doplnil prázdná pole nového řídícího údaji organizace původního (detektor v testu).
+- Controlling: kód beze změny (jeden řádek s hlavičkou = vítěz); „počet zákazníků v popisu“ z návrhu § 6 nedělán (E6).
+- Mutace serveru „u zakázky z webhooku by řídícího měnil i obchodník“ vyřazena jako ekvivalentní (komentář v
+  `netlify/mutace.mjs`), v jádře ji chytá test.
+
+## Otevřené body
+
+- Počet zákazníků v popisu controllingu a v rejstříku — E6.
+- `overit_lista.mjs` a ostatní `overit_*.mjs` (ESM) potřebují `node_modules/playwright` (symlink na globální) — v kole
+  se prohlížečové sady bez Playwrightu přeskakují jako dřív; já je pouštěl ručně.
+- Upozornění sdílené varianty v KL je text; „odlišné podmínky = vlastní varianta“ nemá tlačítko (E6/UX).
+
 # Předávka — 16. 11. 2026: VZ-E3 #602 (víc zákazníků — zámek po zákaznících), větev `claude/vz-e3`
 
 Nad `claude/vz-e2` `cbf5c57`; sloučena opravená E2 `18acb83` (U1/U2) a integrace VZ `70153e4` (E5b). **v16.11.6** (koordinace přečísluje). Do `test-draft`,

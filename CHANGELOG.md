@@ -8,6 +8,36 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v16.11.7 — VZ-E4 #603: víc zákazníků — řídící zákazník, Prodáno u zákazníka, krycí list a SoD pro prodaného, větev claude/vz-e4
+
+Nad `claude/integrace-vz` `7c80706` (v16.11.6: E0, E1, E2, E3, E5, E5b). Vše za vypínačem `viceZakazniku`; s VYP
+a s jedním zákazníkem beze změny (zlatá sada VZ, stránka znak po znaku jako báze). Zadání `podklady/PROMPT_VZ_E4.md`
++ doplňky z revizí poradce; návrh § 2, § 4, § 7.3, § 7.4. Riziková etapa — před sloučením revize poradce.
+
+- **Ruční výměna řídícího** přepínačem v kartě Zákazníci zakázky (potvrzení: hlavička, řídící varianta, písmena se
+  nemění, organizace dealu bez prodeje ne). Smí autor zakázky a administrátor (zakázka z webhooku jen administrátor);
+  server z relace a uložené verze 403; u prodané zakázky zhasnuté a server 409. D1: přidat zákazníka a vyměnit
+  řídícího v jednom uložení projde (autor).
+- **Prodáno u zákazníka** (tlačítko v kartě; Prodáno na krycím listu se u víc zákazníků přesměruje na zákazníka
+  podle otevřeného): potvrzení na stránce před → po (řídící zákazník, řídící varianta, hodnota a číslo v dealu,
+  organizace dealu, poznámka, věta o kontaktní osobě). V jednom uložení `prodNastav`, `prodano.zakaznik` (id),
+  výměna řídícího, `prodRidiciSrovnej`, invariant; neuložený prodej vrátí zakázku přesně do stavu před. Server
+  prodá jen zákazníkovi, kterému varianta odešla (409), a vítěze udělá řídícím sám; uložený `prodano.zakaznik`
+  drží z uložené verze. Po uložení háček `vzPoProdeji()` → zápis organizace vítěze (E5b `vzPoProdejiPd`).
+- **Krycí list a SoD** prodané varianty vždy pro vítěze; SoD jen zákazníkovi, kterému nabídka varianty odešla;
+  u sdílené varianty upozornění, že smluvní pole krycího listu jsou společná (odlišné podmínky = vlastní varianta).
+- **Doplňky poradce:** prodOciste propustí `prodano.zakaznik` (obnova z otisku, E5b P1); výměna řídícího zafixuje
+  vlastníka ručních hodnot KL a zakázka se s něčím odeslaným nevrátí k jednomu zákazníkovi ≠ z1 (tisky bez razítka
+  nepřipadnou novému z1); Z1 tiskový pohled nese v krycích listech jen hodnoty svého zákazníka; Z2 doklad
+  „odešla nabídka“ i z historie odemčení (písmeno/id se neuvolní, odstranění jen administrátor); Z3 přiznáno v B227.
+- **Zámek hlavičky** porovnává výměnu řídícího „u zákazníka“ (údaje se jen stěhují); **webhook** u víc zákazníků
+  při neshodě IČO dealu a hlavičky firmu nepřepisuje ani nedoplňuje (návrh § 7.3).
+- Controlling beze změny: jeden řádek se zákazníkem v hlavičce (= vítěz), zámek sdílené varianty jednou (test).
+- Testy `src/test_vz_prodej.js` (nový), rozšířené `netlify/test_vz_server.mjs`, `netlify/test_vz_webhook.mjs`,
+  `src/test_vz_unik.js` (Z1, KL a SoD prodané varianty), `src/test_vz_ui.js`, prohlížeč `overit_vz_prodej.mjs`;
+  upravené `overit_vz_tisk.mjs`, `overit_vz_organizace.mjs`, `src/test_vz_kl_pole.js`. Mutace „[VZ E4]“. Meze
+  **B227**, **B228** doplněné (bez nového čísla).
+
 ## v16.11.6 — VZ-E3 #602: víc zákazníků — zámek po zákaznících, razítko „komu“, platná nabídka, odstranění s odeslanou nabídkou jen administrátor, větev claude/vz-e3
 
 Nad `claude/vz-e2` `cbf5c57`. Vše za vypínačem `viceZakazniku`; zakázka s jedním zákazníkem beze změny (razítko

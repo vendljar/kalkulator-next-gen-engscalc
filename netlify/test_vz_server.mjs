@@ -623,7 +623,7 @@ const dnes = G.objDnes();
   const pred = ulozeno(r0.soubor);
   const r = await opakuj({ g }, a => { delete a.vzRidici; delete a.dalsiZakaznici; }, cA);
   test('E4 doplněk 3: odstranění z1 po výměně řídícího (zbyde B, něco odešlo) i administrátorem → 409, úložiště beze změny',
-    r.status === 409 && ulozeno(r0.soubor) === pred, { status: r.status, chyba: r.chyba }); }
+    r.status === 409 && /vrátila k jednomu zákazníkovi/.test(r.chyba || '') && ulozeno(r0.soubor) === pred, { status: r.status, chyba: r.chyba }); }
 await vypinac({ viceZakazniku: false });
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

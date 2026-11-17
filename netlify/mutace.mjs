@@ -7062,10 +7062,9 @@ const MUTACE = [
     hledej: "  if (prodS && prodT && String(prodS.id) === String(prodT.id))",
     nahrad: "  if (false)",
     proc: "server by nechal přepnout řídícího u prodané zakázky", sady: ["test_vz_server.mjs"] },
-  { nazev: "VZ-E4: u zakázky z webhooku by řídícího měnil i obchodník [VZ E4]", soubor: "../src/vice_zakazniku.js",
-    hledej: "return !!autor && autor !== webhook && autor === ja;",
-    nahrad: "return !!autor && autor === ja;",
-    proc: "u zakázky z webhooku by řídícího měnil i obchodník", sady: ["test_vz_server.mjs"] },
+  /* Vyřazena jako ekvivalentní na serveru: „autor = pipedrive-webhook“ — relace nikdy nenese e-mail
+   * `pipedrive-webhook` (přihlášení jen e-mailem), takže 403 dá už porovnání autora s relací. Výjimku
+   * hlídá jádro (src/test_vz_prodej.js N, mutace jádra „u zakázky založené webhookem…“). [VZ E4] */
   { nazev: "VZ-E4: webhook by po výměně řídícího doplnil firmu původního zákazníka (lib) [VZ E4]", soubor: "lib/pd_webhook.mjs",
     hledej: "      if (volby.bezFirmy === true && PD_WEBHOOK_FIRMA.includes(k)) continue;   // VZ-E4: neshoda IČO u víc zákazníků\n",
     nahrad: "",
