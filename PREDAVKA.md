@@ -1,3 +1,28 @@
+# Předávka — 17. 11. 2026: VZ-E6 #606 (víc zákazníků — závěr: rejstřík, Přehled, controlling, příručky, kolo), větev `claude/vz-e6`
+
+Nad `claude/integrace-vz` `68e5eb8` (v17.11.1: E0–E5b). **v17.11.2** (den posledního commitu; koordinace přečísluje).
+Do `test-draft`, `test`, `main` ani integrace nic; weby, Disk, Pipedrive nic (jen simulátor). Roadmapa **#606**, souhrn
+**#598**; mez **B228 doplněna** (nové číslo meze jsem nebral).
+
+**STAV: ROZDĚLANÉ — kolo a mutace běží (viz níž). Tento oddíl se přepíše po dokončení.**
+
+| úkol | stav | kde |
+|---|---|---|
+| rejstřík `zakaznici: [{ nazev, cislo, stav }]` jen u víc zákazníků, strop 10 × 300 znaků, bez cen | ✅ | `src/uloziste.js` `uloRejstrikZakaznici`, `uloRejstrikZakazniciTvar`, `uloRejstrikZakazniciText`; `uloRejstrikNormalizuj`, `uloHledej` |
+| Přehled: štítek „N zákazníci“ (jen ZAP), hledání podle dalšího zákazníka; seznam variant podle zákazníka | ✅ | `src/ui/online_ui.js` `onlineRadekZakazky`, `src/seznam.js` `seznamRadek` |
+| controlling: počet zákazníků v Popisu (+ sloupec hromadného exportu), nic dvakrát | ✅ | `src/controlling.js` `ctrlZakazniciText`, `hlavicka.zakaznici` |
+| R6 harness víc šachet × víc zákazníků | ✅ | `netlify/test_vz_vs.mjs` 15/0 |
+| překlady | ✅ beze změny | VZ nepřidal do dokumentů text (jen písmeno a údaje z dat); EN/DE/FR hlídá test_vz_unik |
+| doplněk 1: KL prodané sdílené varianty = vítěz | ✅ | `src/ui/kryci_ui.js` `klVzCtxZak` (adresát jako tisk: `vzTiskKomuUi`) |
+| doplněk 2: počet zákazníků v controllingu a rejstříku | ✅ | výše |
+| doplněk 3: SoD jen odeslanému i na serveru | ✅ | `vzServerRazitka` (400); B228 doplněna (typ záznamu píše prohlížeč) |
+| doplněk 4: N7 do příručky (odstranění s odeslanou, zmrazení, razítko „komu“, obnova s VYP) | ✅ | `manual/admin/obsah.json` A4 |
+| doplněk 5: vypínač výchozí VYP, jen administrátor, i po nasazení do test/main | ✅ | A4 (rámeček), kap. 26 obchodníka |
+| příručka obchodníka kap. 26 + snímky `k26vz-pridat`, `k26vz-karta`, `k26vz-pruh` (zakázka 9106) | ✅ | `manual/obsah.json`, `manual/snimky_auto.mjs` (84 snímků, chybí jen známý `kontroly-pred-nabidkou`); kap. 27–34 přečíslovány i s odkazy |
+| provoz.json, `cisla_vydani.json` | ✅ / beze změny | počet pravidel kontrol se nezměnil (test_manual_vypocet 13/0) |
+| test úniku: rejstřík a controlling | ✅ | `src/test_vz_unik.js` 174/0 |
+| mutace „[VZ E6]“ | zadané | jádro 2, server 21 |
+
 # Předávka — 17. 11. 2026: VZ-E4 #603 (víc zákazníků — řídící zákazník, Prodáno u zákazníka), větev `claude/vz-e4`
 
 Nad `claude/integrace-vz` `7c80706` (v16.11.6: E0, E1, E2, E3, E5, E5b). **v17.11.1** (prompt chtěl v16.11.7, ale kontrola verze vyžaduje den posledního commitu; koordinace přečísluje). Do
