@@ -258,13 +258,22 @@ beh('');
   /* E3 (U1): čtení jde přes vzKlRucni — podvrhnout obě kontroly vlastníka. */
   const puv = global.vzKlVlastni, puvR = global.vzKlRucni;
   global.vzKlVlastni = () => true;
+  /* VZ-E4 Z1: tiskový pohled čistí cizí ruční hodnoty i sám — stav před E4
+   * = kopie varianty s daty skutečné varianty (všechny ruční hodnoty). */
+  const puvTP = global.vzTiskPohled;
+  global.vzTiskPohled = (zz, id, vv) => {
+    const p = puvTP(zz, id, vv);
+    if (p && Array.isArray(p.varianty)) p.varianty = p.varianty.map(x => {
+      const r = zz.varianty.find(y => y.id === x.id); return r ? Object.assign({}, x, { data: r.data }) : x; });
+    return p;
+  };
   global.vzKlRucni = (kl, id, pole) => { const h = kl && kl.hodnoty ? kl.hodnoty[pole] : undefined; return h === '' ? undefined : h; };
   const ok0 = ok, fail0 = fail;
   const z = zakazka();
   const v1 = z.varianty.find(v => String(v.id) === vzRidiciVariantaId(z));
   rucniOck.forEach(p => zapis(z, v1, p, kan(p, 'A'), false));
   const tB = vystupy(z, 'z2', v1);
-  global.vzKlVlastni = puv; global.vzKlRucni = puvR;
+  global.vzKlVlastni = puv; global.vzKlRucni = puvR; global.vzTiskPohled = puvTP;
   ok = ok0; fail = fail0;
   test('pojistka: bez kontroly vlastníka se ruční údaje A u B objeví (detektor zabírá)', nalez(tB, 'A').length > 0, nalez(tB, 'A').length);
 }

@@ -331,6 +331,14 @@ function problemy(res, pism, varPism, L, povolene) {
   return { unik, prazdne, videno };
 }
 
+/* Zábrana tisku kvůli SDÍLENÝM TEXTŮM (E2). VZ-E4: SoD jen zákazníkovi, kterému
+ * nabídka varianty odešla — ta zábrana sem nepatří (varianty tady nikomu
+ * neodešly); hlídá ji src/test_vz_prodej.js. */
+function zabranaTextu(z, id, v, t) {
+  const x = vzTiskZabrana(z, id, v, t);
+  return /^Smlouvu o dílo jde vytvořit jen/.test(x) ? '' : x;
+}
+
 async function hlavni() {
   const zak = zakazka(false);
   const zakP = zakazka(true);
@@ -341,7 +349,7 @@ async function hlavni() {
     vzZakaznici(zak).length === 3 && variantaZak(zak, 'z2') === zak.varianty[0] && variantaZak(zak, 'z3') !== zak.varianty[0]
     && vzZakaznik(zak, 'z2').pismeno === 'B' && vzZakaznik(zak, 'z3').pismeno === 'C');
   test('sdílené texty nikoho nejmenují: vzTiskZabrana prázdná u všech zákazníků (OCK typy, jejich varianta)',
-    Object.keys(ID).every(p => ZAK_TYPY_OCK.every(t => vzTiskZabrana(zak, ID[p], variantaZak(zak, ID[p]), t) === '')),
+    Object.keys(ID).every(p => ZAK_TYPY_OCK.every(t => zabranaTextu(zak, ID[p], variantaZak(zak, ID[p]), t) === '')),
     Object.keys(ID).map(p => vzTiskZabrana(zak, ID[p], variantaZak(zak, ID[p]), 'nabidka')));
   test('IČO kanárků platná a jedinečná', new Set(Object.values(ZAKAZNICI).map(z => z.ico)).size === 3
     && Object.values(ZAKAZNICI).every(z => typeof icoPlatne !== 'function' || icoPlatne(z.ico)));
@@ -593,7 +601,7 @@ async function hlavni() {
         if (srovnatVolne) z.varianty.forEach(v => { if (vlastnikVarianty(z, v.id) === 'D') v.zakaznik = z.objednatel; });
         for (const [p, id] of [['A', 'z1'], ['B', 'z2'], ['C', 'z3']]) {
           const typy = proj ? (id === 'z2' ? ZAK_TYPY_PROJ : []) : ZAK_TYPY_OCK;
-          for (const t of typy) { const zb = vzTiskZabrana(z, id, variantaZak(z, id), t); if (zb) nalezy.push(p + ' ' + t + ' zábrana: ' + zb.slice(0, 160)); }
+          for (const t of typy) { const zb = zabranaTextu(z, id, variantaZak(z, id), t); if (zb) nalezy.push(p + ' ' + t + ' zábrana: ' + zb.slice(0, 160)); }
           for (const L of (proj ? JAZYKY : ['cz', 'en'])) {
             const pz = vzTiskPohled(z, id);
             const vv = vzTiskVarianta(pz, variantaZak(z, id));
@@ -626,6 +634,55 @@ async function hlavni() {
       !volne.length, volne.slice(0, 6));
     test('výměna řídícího (B): jinak žádný únik ani chyba v dokumentech všech zákazníků (OCK cz/en, PROJ cz/en/de/fr)',
       !sOboji.length, sOboji.slice(0, 12));
+  }
+
+  /* --- VZ-E4 Z1 (revize poradce): kopie varianty v tiskovém pohledu nese
+   * v krycích listech jen ruční hodnoty SVÉHO zákazníka (hodnoty podle
+   * vlastníka, hodnotyZakaznika jen jeho klíč, snímek zámku jen vlastníka) --- */
+  {
+    const z = zakazka(false);
+    const v1 = variantaZak(z, 'z1');
+    const kl = v1.data.kryci;
+    vzKlZapisRucni(kl, z, 'z1', 'kontaktZakaznikTel', tokZ('A', 7));
+    vzKlZapisRucni(kl, z, 'z2', 'kontaktZakaznikTel', tokZ('B', 7));
+    vzKlZapisRucni(kl, z, 'z3', 'kontaktZakaznikEmail', tokZ('C', 8));
+    kl.zmrazeno = { zakaznik: tokZ('A', 1) };
+    v1.data.kryciProj = { hodnoty: {} };
+    vzKlZapisRucni(v1.data.kryciProj, z, 'z3', 'kontaktZakaznikTel', tokZ('C', 7));
+    const jB = JSON.stringify(Object.assign({}, vzTiskPohled(z, 'z2'), { protokol: undefined }));
+    const kB = kanarky(jB, 'cz').filter(k => k.druh === 'z');
+    test('Z1 (E4): JSON tiskového pohledu B nenese ruční hodnoty krycích listů A ani C',
+      !kB.some(k => k.kdo !== 'B') && kB.some(k => k.kdo === 'B' && k.pole === 7), kB.map(popisNalezu));
+    const jA = JSON.stringify(Object.assign({}, vzTiskPohled(z, 'z1'), { protokol: undefined }));
+    const kA = kanarky(jA, 'cz').filter(k => k.druh === 'z' && (k.pole === 7 || k.pole === 8));
+    test('Z1 (E4): JSON tiskového pohledu A nese jen své ruční hodnoty (ne B, ne C)',
+      kA.every(k => k.kdo === 'A') && kA.length > 0, kA.map(popisNalezu));
+  }
+
+  /* --- VZ-E4: krycí list a SoD PRODANÉ sdílené varianty (A i B ji dostali,
+   * prodáno B) se tisknou pro vítěze B, i když je v hlavičce otevřený A --- */
+  {
+    const z = zakazka(false);
+    const v1 = variantaZak(z, 'z1');
+    for (const id of ['z1', 'z2']) {
+      const pz = vzTiskPohled(z, id);
+      zamkniVariantu(v1, { typ: 'nabidka', kdo: PEVNE.kdo, kdy: new Date().toISOString(), cislo: variantaCislo(pz, v1),
+        vysledek: variantaUzamcena(v1) ? undefined : zamekVysledekSpocti(v1, J, 'unik'), snimek: variantaUzamcena(v1) ? undefined : zamekSnimekSpocti(v1),
+        zakaznik: vzRazitkoSnimek(z, id, v1) });
+    }
+    const r = vzProdej(z, 'z2', objDnes(), { kdo: PEVNE.kdo, role: 'Obchodník' });
+    test('E4: prodej sdílené V1 zákazníkovi B (výměna řídícího)', r.ok && vzRidiciId(z) === 'z2', r);
+    const nalezy = [];
+    for (const t of ['sod', 'kryci_bo', 'kryci_techdata']) {
+      const komu = vzTiskKomuDokumentu(z, 'z3', v1, t);   // otevřený C — dokument prodané varianty jde vítězi
+      const pz = vzTiskPohled(z, komu, v1);
+      const res = await vystupy(pz, vzTiskVarianta(pz, v1), 'cz', [t]);
+      const pr = problemy(res, 'B', 'A', 'cz', 'AD');   // B je po prodeji řídící: smí i volnou V3 (porovnání)
+      res.chyby.forEach(c => nalezy.push(t + ' chyba: ' + c));
+      pr.unik.forEach(u => nalezy.push(t + ' ' + u.nazev + ': ' + u.cizi.join(', ')));
+      pr.prazdne.forEach(n => nalezy.push(t + ' bez vítěze: ' + n));
+    }
+    test('E4: krycí list a SoD prodané varianty jen s údaji vítěze B (ne A, ne C)', !nalezy.length, nalezy.slice(0, 8));
   }
 
   /* --- POJISTKA P1: identita (celá zakázka) místo pohledu --- */

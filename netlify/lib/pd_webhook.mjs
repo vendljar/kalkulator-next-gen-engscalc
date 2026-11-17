@@ -138,6 +138,19 @@ export function pdWebhookVolbaText(hodnota, popis) {
   return o ? String(o.label || '') : '';
 }
 
+/* VZ-E4 (#603, návrh § 7.3): u zakázky s víc zákazníky nese hlavička řídícího
+ * zákazníka — po jeho výměně (bez prodeje) zůstává deal na organizaci původního.
+ * Při NESHODĚ IČO organizace dealu a hlavičky (jen číslice) webhook pole firmy
+ * (zákazník, sídlo, IČO, DIČ, kontakt) nepřepisuje ani prázdná nedoplňuje
+ * a ARES se nevolá. Jeden zákazník / strana PROJ → false (dnešek). */
+export const PD_WEBHOOK_FIRMA = ['objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt'];
+export function pdWebhookVzFirmaCizi(zak, icoDealu, strana) {
+  const G = globalThis;
+  if (!zak || strana === 'proj' || typeof G.vzRezim !== 'function' || !G.vzRezim(zak)) return false;
+  const c = x => String(x == null ? '' : x).replace(/\D+/g, '');
+  return c(icoDealu) !== c(zak.ico);
+}
+
 /* Kam na zakázce patří hlavička strany. */
 export function pdWebhookHlavicka(zak, strana) {
   if (strana === 'proj') {
@@ -178,6 +191,7 @@ export function pdWebhookPouzij(zak, zadani, dealId, kdy, volby = {}) {
   if (!zamceno) {
     const h = pdWebhookHlavicka(zak, zadani.strana);
     for (const k of PD_WEBHOOK_POLE) {
+      if (volby.bezFirmy === true && PD_WEBHOOK_FIRMA.includes(k)) continue;   // VZ-E4: neshoda IČO u víc zákazníků
       const nova = zadani.pole[k] || '';
       const aktualni = typeof h[k] === 'string' ? h[k] : '';
       if (aktualni.trim() === nova) { if (nova) novyOtisk[k] = pdWebhookOtisk(nova); continue; }

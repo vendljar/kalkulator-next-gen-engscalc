@@ -426,6 +426,9 @@ async function prodejUiProdej(strana) {
   const datum = el && el.value ? el.value : objDnes();
   const proc = prodNelzeProdat(ZAK, v);
   if (proc) { hlaska(proc); return; }
+  /* VZ-E4 (#603): u víc zákazníků se prodává zákazníkovi (karta Zákazníci
+   * zakázky, potvrzení před → po) — zákazník podle otevřeného. */
+  if (typeof vzProdejZKryciho === 'function' && vzProdejZKryciho(v)) return;
   if (!await potvrd('Označit variantu ' + variantaCislo(ZAK, v) + ' jako PRODANOU k ' + prodUiDatumText(datum) + '?\n\n'
     + '– krycí list i hlavička zakázky se definitivně zamknou (odemknout smí jen vedoucí nebo administrátor),\n'
     + '– controlling vezme zakázku jako prodanou k tomuto datu,\n'

@@ -49,7 +49,7 @@ import { zakazkaPrijmi } from '../lib/zakazka_kontrola.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 import {
   pdWebhookKlic, pdWebhookKlicZPozadavku, pdWebhookKlicSedi, pdWebhookDealId, pdWebhookZadani,
-  pdWebhookHlavicka, pdWebhookPouzij, pdWebhookVolbaText, pdWebhookZamkyPoruseny, pdWebhookCisloKlic, pdWebhookOdkaz,
+  pdWebhookHlavicka, pdWebhookPouzij, pdWebhookVzFirmaCizi, pdWebhookVolbaText, pdWebhookZamkyPoruseny, pdWebhookCisloKlic, pdWebhookOdkaz,
   pdWebhookCisloZaklad, pdWebhookPismeno, pdWebhookCisloSedi, pdWebhookCisloVarianta, pdWebhookVariantaPripona,
   pdWebhookOtisk, PD_WEBHOOK_POLE_ARES,
   PD_WEBHOOK_MAX, PD_WEBHOOK_TELO_MAX, PD_WEBHOOK_AUTOR, PD_WEBHOOK_AUTOR_JMENO, PD_WEBHOOK_ULOZISTE,
@@ -213,9 +213,12 @@ async function zpracuj(req, dealId, ULO, G) {
   const icoSurove = String(nase.ico || '').trim();
   const icoOtisk = icoSurove ? pdWebhookOtisk(aresIcoNorm(icoSurove) || icoSurove) : '';
   const zmrazena = hlavickaZmrazena(stara, zadani.strana);
+  /* VZ-E4 (#603): víc zákazníků a IČO dealu ≠ IČO hlavičky (řídící vyměněn bez
+   * prodeje) — firmu v hlavičce webhook nemění a ARES se nevolá. */
+  const vzFirmaCizi = pdWebhookVzFirmaCizi(stara, icoSurove, zadani.strana);
   let ares = vazbaPlati ? vazbaPlati.ares : '';
   let aresVolano = false, subjekt = null;
-  if (!zmrazena && icoSurove && (!vazbaPlati || vazbaPlati.icoOtisk !== icoOtisk)) {
+  if (!zmrazena && !vzFirmaCizi && icoSurove && (!vazbaPlati || vazbaPlati.icoOtisk !== icoOtisk)) {
     const r = await aresNacti(icoSurove, { fetch: ARES_SIT.fetch });
     aresVolano = true; ares = r.stav; subjekt = r.subjekt || null;
   }
@@ -243,7 +246,7 @@ async function zpracuj(req, dealId, ULO, G) {
       zak = JSON.parse(JSON.stringify(stara));
       akce = 'aktualizovano';
     }
-    const zmena = pdWebhookPouzij(zak, zadani, dealId, kdy, { hlavickaZmrazena: zmrazena });
+    const zmena = pdWebhookPouzij(zak, zadani, dealId, kdy, { hlavickaZmrazena: zmrazena, bezFirmy: vzFirmaCizi });
     const bezVazby = norm(zak.pdDealId) !== dealId;
     if (bezVazby) zak.pdDealId = dealId;
     /* VAZBA Z WEBHOOKU (K40c): navázání EXISTUJÍCÍ kalkulace čeká na „V pořádku“

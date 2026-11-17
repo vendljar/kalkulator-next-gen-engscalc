@@ -31,8 +31,11 @@
  * pole jen ke čtení, set / ARES / databáze odmítnuty) a číslo dokladu
  * z razítka (vzCisloDokladu) v seznamu variant a liště zámku.
  *
- * Co tu NENÍ (další etapy): změna řídícího a Prodáno (E4), Pipedrive (E5),
- * rejstřík (E6).
+ * E4 (#603): přepínač Řídící v kartě (autor zakázky a administrátor; u prodané
+ * zakázky zhasnutý — vzRidiciZamceno), Prodáno u zákazníka s potvrzením na
+ * stránce před → po (vzProdej v jednom uložení; po uložení háček
+ * vzPoProdeji → zápis organizace vítěze E5b).
+ * Co tu NENÍ (další etapy): rejstřík (E6).
  * Jména: jeden <script> — vše s předponou vz / VZ_.
  * ============================================================ */
 
@@ -40,6 +43,7 @@ const VZ_UI = {
   otevreny: '',      // id otevřeného zákazníka ('' = řídící)
   form: null,        // { kde, h: {5 polí}, zastupci, nova: 'stejna'|'vlastni', zdroj }
   odstranit: null,   // { id, smazat: true|false } — potvrzení na stránce
+  prodej: null,      // E4: { id, varianta } — potvrzení prodeje u zákazníka na stránce
   zak: null,         // zakázka, ke které stav patří
   org: null,         // E5b: { zak, bezi, chyba, kod } — běžící / odmítnutý zápis organizace vítěze
 };
@@ -88,7 +92,7 @@ function vzOtevrenyId() {
   const z = vzZakUI();
   if (!z) return '';
   const rid = vzRidiciId(z);
-  if (VZ_UI.zak !== z) { VZ_UI.zak = z; VZ_UI.otevreny = ''; VZ_UI.odstranit = null; }   // jiná zakázka (načtení, Zpět)
+  if (VZ_UI.zak !== z) { VZ_UI.zak = z; VZ_UI.otevreny = ''; VZ_UI.odstranit = null; VZ_UI.prodej = null; }   // jiná zakázka (načtení, Zpět)
   if (!vzRezimUI() || !vzZap()) return rid;
   const id = VZ_UI.otevreny;
   if (id && id !== rid && vzDalsi(z).some(d => String(d.id) === id)) return id;
@@ -399,15 +403,17 @@ function vzKarta(kde) {
     const volby = (ZAK.varianty || []).map(x => `<option value="${esc(x.id)}"${String(x.id) === z.varianta ? ' selected' : ''}>${esc(x.nazev)}</option>`).join('');
     const proVar = !smi ? vzProcNe() : (z.ridici ? 'řídící variantu mění „nastavit jako řídící" (u prodané zakázky ne)' : '');
     const odstrDuvod = vzOdstranitDuvod(z);
+    const proProdej = smi ? vzProdejNelze(ZAK, z.id) : '';
+    const proRidici = z.ridici ? 'řídící zákazník' : vzRidiciProcNe();
     const tl = [
       `<button type="button" class="mini" onclick="vzNahled('${escJs(z.id)}')"${dis(zap, typeof VZ_VYPNUTO === 'string' ? VZ_VYPNUTO : '')} title="otevřít zákazníka a kartu Cenová nabídka">Náhled</button>`,
       `<button type="button" class="mini" onclick="vzTiskCN('${escJs(z.id)}')"${dis(zap, typeof VZ_VYPNUTO === 'string' ? VZ_VYPNUTO : '')} title="otevřít zákazníka a vytisknout jeho cenovou nabídku (VZ-E2)">Tisk CN</button>`,
       `<button type="button" class="mini" onclick="vzVlastniVarianta('${escJs(z.id)}')"${dis(smi && !z.ridici, !smi ? vzProcNe() : VZ_VLASTNI_RIDICI)}>Vlastní varianta</button>`,
-      `<button type="button" class="mini" disabled title="Prodáno u zákazníka zavede další etapa (E4).">Prodáno</button>`,
+      `<button type="button" class="mini" data-vz-prodano="${esc(z.id)}" onclick="vzProdejOtevri('${escJs(z.id)}')"${dis(smi && !proProdej, proProdej || vzProcNe())}>Prodáno</button>`,
       `<button type="button" class="mini" onclick="vzOdstranit('${escJs(z.id)}')"${dis(smi && !odstrDuvod, odstrDuvod || vzProcNe())}>Odstranit</button>`,
     ].join(' ');
     return `<tr class="${z.id === ot ? 'aktivni' : ''}" data-vz="${esc(z.id)}">
-      <td data-l="Řídící"><input type="radio" name="vzRidici_${kde}"${z.ridici ? ' checked' : ''} disabled title="Změnu řídícího zákazníka zavede další etapa (E4)."></td>
+      <td data-l="Řídící"><input type="radio" name="vzRidici_${kde}" data-vz-ridici="${esc(z.id)}"${z.ridici ? ' checked' : ''}${proRidici ? ` disabled title="${esc(proRidici)}"` : ` title="udělat řídícím zákazníkem (hlavička zakázky a deal v Pipedrive)" onchange="vzRidiciZmen('${escJs(z.id)}')"`}></td>
       <td data-l="Zákazník"><button type="button" class="vz-jmeno" onclick="vzOtevri('${escJs(z.id)}')"${zap ? '' : ' disabled'} title="otevřít zákazníka v hlavičce">${esc(vzNazevZ(z))}</button>
         <div class="note">${z.hlavicka.ico ? 'IČO ' + esc(z.hlavicka.ico) : 'bez IČO'}${z.ridici ? ' · <b>řídící zákazník</b>' : ' · písmeno ' + esc(z.pismeno)}${z.id === ot ? ' · otevřený v hlavičce' : ''}</div></td>
       <td data-l="Číslo nabídky" class="vz-cislo">${v ? esc(vzTiskCisloZakaznika(ZAK, z, v)) : '—'}</td>
@@ -422,7 +428,7 @@ function vzKarta(kde) {
       variantu s jiným zákazníkem, nebo má vlastní. <b>Řídící zákazník</b> je v hlavičce zakázky a jen jeho data nese deal v Pipedrive.</div>
     <div class="vz-tab"><table><thead><tr><th>Řídící</th><th>Zákazník</th><th>Číslo nabídky</th><th>Varianta nabídky</th><th>Stav</th><th>Cena bez DPH</th></tr></thead>
       <tbody>${radky}</tbody></table></div>
-    ${kde === 'ock' ? vzPotvrzeniHtml(l) : ''}${vzOrgVitezHtml(ZAK)}
+    ${kde === 'ock' ? vzPotvrzeniHtml(l) + vzProdejPotvrzeniHtml(l) : ''}${vzOrgVitezHtml(ZAK)}
     ${zap ? `<div class="vz-pod"><button type="button" class="vz-modre" onclick="vzFormOtevri('ock')"${dis(smi && l.length <= VZ_DALSI_MAX, smi ? 'Zakázka má nejvýš ' + (VZ_DALSI_MAX + 1) + ' zákazníků.' : vzProcNe())}>Přidat zákazníka</button></div>` : ''}`;
   return `<div class="card vz-karta" id="vzKarta_${kde}"><h2><span style="flex:1">Zákazníci zakázky <span class="pill">zkušební funkce</span></span></h2><div class="body">${inner}</div></div>`;
 }
@@ -611,10 +617,169 @@ function vzOdstranitPotvrd(ano) {
   render();
 }
 
+/* ---------- E4 (#603): řídící zákazník a Prodáno u zákazníka ---------- */
+
+/* Smí přihlášený měnit řídícího? Nápověda pro přepínač — rozhoduje server
+ * (vzServerRidici: autor zakázky, administrátor; zakázka z webhooku jen
+ * administrátor). Bez přihlášení (práce se souborem) ano. */
+function vzRidiciSmiUI() {
+  const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV && ONLINE_STAV.ja) || null;
+  if (!ja) return true;
+  return vzRidiciSmiMenit(ZAK, { role: ja.role, email: ja.email });
+}
+/* Proč přepínač Řídící nejde ('' = jde). */
+function vzRidiciProcNe() {
+  const proc = vzRidiciZamceno(ZAK);
+  if (proc) return proc;
+  if (!vzSmiMenit()) return vzProcNe();
+  if (!vzRidiciSmiUI()) return 'Řídícího zákazníka mění jen autor zakázky (u zakázek, které sám založil) nebo administrátor.';
+  return '';
+}
+
+async function vzRidiciZmen(id) {
+  if (vzStop('změna řídícího zákazníka')) return;
+  const proc = vzRidiciProcNe();
+  const z = vzZakaznik(ZAK, id);
+  if (proc || !z || z.ridici) { if (proc && typeof hlaska === 'function') hlaska(proc); render(); return; }
+  const r0 = vzZakaznik(ZAK, vzRidiciId(ZAK));
+  const ok = typeof potvrd === 'function' ? await potvrd('Udělat řídícím zákazníkem „' + vzNazevZ(z) + '"?\n\n'
+    + '– hlavička zakázky ponese jeho údaje (dosud „' + vzNazevZ(r0) + '"),\n'
+    + '– řídící variantou bude jeho varianta „' + ((vzVarianta(z.varianta) || {}).nazev || '') + '",\n'
+    + '– písmena a čísla odeslaných nabídek se nemění,\n'
+    + '– organizace dealu v Pipedrive se bez prodeje NEMĚNÍ (přepíše se až při Prodáno).', { nadpis: 'Řídící zákazník' }) : true;
+  if (!ok) { render(); return; }
+  if (vzStop('změna řídícího zákazníka')) return;
+  const r = vzVymenRidiciho(ZAK, z.id);
+  if (!r.ok) { if (typeof hlaska === 'function') hlaska(r.chyba); render(); return; }
+  VZ_UI.otevreny = '';
+  ZAK.aktivni = vzRidiciVariantaId(ZAK);
+  syncVarianta();
+  aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  if (typeof protokolZapis === 'function')
+    protokolZapis(ZAK, { co: 'Změna řídícího zákazníka', kde: 'zákazníci zakázky', kdo: vzKdo(), pred: vzNazevZ(r0), po: vzNazevZ(z) });
+  render();
+}
+
+/* Otevře potvrzení prodeje u zákazníka (karta pod hlavičkou OCK). `varId`
+ * nepovinně (Prodáno z krycího listu: otevřená varianta). */
+function vzProdejOtevri(id, varId) {
+  if (vzStop('zápis prodeje')) return;
+  const z = vzZakaznik(ZAK, id);
+  if (!z) return;
+  const proc = vzProdejNelze(ZAK, z.id, varId);
+  if (proc) { if (typeof hlaska === 'function') hlaska(proc); return; }
+  VZ_UI.prodej = { id: z.id, varianta: varId ? String(varId) : z.varianta };
+  VZ_UI.odstranit = null; VZ_UI.form = null;
+  if (typeof prepniTab === 'function' && typeof TAB !== 'undefined' && TAB !== 'kalk') prepniTab('kalk');
+  render();
+  setTimeout(() => {
+    const el = document.getElementById('vzProdejPotvrzeni');
+    if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center' });
+  }, 0);
+}
+
+function vzProdejPotvrzeniHtml(l) {
+  const p = VZ_UI.prodej;
+  if (!p) return '';
+  const z = l.find(x => x.id === p.id);
+  const v = vzVarianta(p.varianta);
+  if (!z || !v) return '';
+  const r = (n, h) => `<div class="vz-pr"><span>${esc(n)}</span><span>${h}</span></div>`;
+  const fmt = x => (x.cena && x.pred !== '' ? fmt0(+x.pred) : esc(x.pred || '—'));
+  const fmtPo = x => (x.cena && x.po !== '' ? fmt0(+x.po) : esc(x.po || '—'));
+  const radky = vzProdejPredPo(ZAK, z.id, v.id).map(x => r(x.co, `${fmt(x)} → <b>${fmtPo(x)}</b>`)).join('');
+  const dnes = objDnes();
+  const mez = prodDatumMez(v);
+  const minD = (typeof prodUiSmiOdemknout === 'function' && prodUiSmiOdemknout() && mez.tvrda) ? mez.tvrda : mez.od;
+  return `<div class="vz-potvrzeni" id="vzProdejPotvrzeni"><b>Prodáno zákazníkovi ${esc(vzNazevZ(z))} — nabídka ${esc(vzCisloSPismenem(vzCisloVarianty(ZAK, v), z.pismeno))}?</b>
+    ${radky}
+    ${r('Ostatní zákazníci', 'zůstávají v zakázce se zamčenými nabídkami (odstranit je jde dál, prodaného ne)')}
+    ${r('Pipedrive', 'organizace dealu se přepíše na vítězného zákazníka; kontaktní osobu doplní obchodník v Pipedrive')}
+    ${r('Zámek', 'krycí list i hlavička zakázky se definitivně zamknou; odemknout smí vedoucí nebo administrátor (řídícího zákazníka odemčení nevrací)')}
+    <div class="vz-pt"><label>Datum prodeje <input type="date" id="vzProdejDatum" value="${esc(dnes)}" max="${esc(dnes)}"${minD ? ' min="' + esc(minD) + '"' : ''}></label>
+      <button type="button" class="vz-modre" id="vzProdejAno" onclick="vzProdejPotvrd(true)">Prodáno</button>
+      <button type="button" class="mini" id="vzProdejNe" onclick="vzProdejPotvrd(false)">Zrušit</button></div></div>`;
+}
+
+async function vzProdejPotvrd(ano) {
+  const p = VZ_UI.prodej;
+  const el = typeof document !== 'undefined' ? document.getElementById('vzProdejDatum') : null;
+  const datum = el && el.value ? el.value : objDnes();
+  VZ_UI.prodej = null;
+  if (!ano || !p) { render(); return; }
+  if (vzStop('zápis prodeje')) return;
+  const v = vzVarianta(p.varianta);
+  const proc = vzProdejNelze(ZAK, p.id, p.varianta);
+  if (proc || !v) { if (typeof hlaska === 'function') hlaska(proc || 'Varianta neexistuje.'); render(); return; }
+  const role = typeof prodUiRole === 'function' ? prodUiRole() : '';
+  /* Výjimka z dolní meze data (K40-S1) — jako prodejUiProdej. */
+  let duvod = '';
+  const od = prodDatumOd(v);
+  if (od && datum < od && typeof prodUiSmiOdemknout === 'function' && prodUiSmiOdemknout()
+      && !prodDatumProblem(datum, v, undefined, { role, duvod: 'xxx' })) {
+    const t = await dotaz('Datum prodeje je víc než ' + PROD_PRIJATO_TOLERANCE_DNI + ' dní před přijetím odeslané nabídky '
+      + 'serverem. Napište důvod výjimky (zapíše se do historie prodeje):', '');
+    if (t === null || t === undefined) { render(); return; }
+    duvod = prodVyjimkaText(String(t));
+    if (duvod.length < PROD_DUVOD_MIN) { hlaska('Bez důvodu nejde datum prodeje před mezí zapsat.'); render(); return; }
+  }
+  const ja = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.ja) ? ONLINE_STAV.ja.email : '';
+  const zaloha = JSON.parse(JSON.stringify(ZAK));
+  const nazev = vzNazevZ(vzZakaznik(ZAK, p.id));
+  const r = vzProdej(ZAK, p.id, datum, { kdo: ja, role, duvod }, p.varianta);
+  if (!r.ok) { if (typeof hlaska === 'function') hlaska(r.chyba); render(); return; }
+  VZ_UI.otevreny = '';
+  ZAK.aktivni = r.varianta;
+  if (typeof syncVarianta === 'function') syncVarianta();
+  if (typeof onlineZmenaUzivatele === 'function') onlineZmenaUzivatele({});
+  const u = typeof prodUiUloz === 'function' ? await prodUiUloz() : { ok: true };
+  if (!u.ok) {
+    vzObnov(ZAK, zaloha);
+    if (typeof syncVarianta === 'function') syncVarianta();
+    if (typeof hlaska === 'function') hlaska(prodNeulozenoText('prodej', u.duvod));
+    render();
+    return;
+  }
+  if (typeof PROD_UI !== 'undefined') {
+    PROD_UI.info = 'Prodáno zákazníkovi ' + nazev + (r.vymena ? ' — je teď řídícím zákazníkem.' : '.');
+    PROD_UI.infoZak = ZAK;
+  }
+  if (typeof progZprava === 'function') progZprava('Prodáno zákazníkovi ' + nazev + '.');
+  render();
+  await vzPoProdeji(ZAK);
+}
+
+/* HÁČEK PO ULOŽENÍ PRODEJE (návrh § 7.4): u zakázky s víc zákazníky zápis
+ * organizace dealu = vítěz (E5b vzPoProdejiPd — převezme pdOrgVitez a nové
+ * razítko). Jeden zákazník / neprodaná / offline: nic. */
+async function vzPoProdeji(zak) {
+  if (!zak || !vzOrgTyka(zak)) return null;
+  return vzPoProdejiPd(zak);
+}
+
+/* Prodáno z krycího listu u zakázky s víc zákazníky (sod_ui.js prodejUiProdej):
+ * zákazník podle otevřeného — když mu otevřená varianta odešla; jinak první
+ * zákazník, kterému odešla. Vrací true, když se o prodej postarala karta. */
+function vzProdejZKryciho(v) {
+  if (!vzRezimUI() || !vzZap() || !v) return false;
+  const ot = vzOtevrenyId();
+  const kandidati = [ot].concat(vzZakaznici(ZAK).map(z => z.id).filter(id => id !== ot));
+  const id = kandidati.find(x => vzVariantaOdeslanaKomu(v, x)) || ot;
+  vzProdejOtevri(id, v.id);
+  return true;
+}
+
+/* Krycí list sdílené varianty: upozornění (jen víc zákazníků; jinak ''). */
+function vzKlSdilenaPozn() {
+  if (!vzRezimUI()) return '';
+  const t = vzKlSdilenaText(ZAK, (aktivniVarianta(ZAK) || {}).id);
+  return t ? `<div class="note vz-kl-sdilena" style="margin:4px 0 8px;padding:6px 8px;border:1px solid #e0c46c;background:#fff7d6;border-radius:6px">${esc(t)}</div>` : '';
+}
+
 /* Otevření zakázky s daty víc zákazníků (online_ui.js): vypínač se ze
  * serveru čte jen u takové zakázky; s VYP lišta (R21). */
 function vzPoOtevreni(zak) {
-  VZ_UI.otevreny = ''; VZ_UI.form = null; VZ_UI.odstranit = null;
+  VZ_UI.otevreny = ''; VZ_UI.form = null; VZ_UI.odstranit = null; VZ_UI.prodej = null;
   if (!zak || typeof vzMaData !== 'function' || !vzMaData(zak) || typeof onlineNactiFunkce !== 'function') return;
   onlineNactiFunkce().then(() => {
     if (ZAK !== zak) return;
@@ -701,9 +866,8 @@ function vzOrgVitezHtml(zak) {
   return blok('stav', '<b>Organizace dealu se nepřepsala</b> — ' + veta(duvod) + '. Prodej je uložený.', vzOrgTlacitko(zak));
 }
 
-/* Zápis organizace vítěze na serveru. MÁ JI ZAVOLAT HÁČEK vzPoProdeji() Z ETAPY
- * E4 PO ÚSPĚŠNÉM ULOŽENÍ PRODEJE (ten zatím neexistuje — tady se nikde
- * automaticky nevolá); ručně tlačítko „Zkusit zápis znovu". Jen u zakázky
+/* Zápis organizace vítěze na serveru. Volá ji háček vzPoProdeji() (E4) po
+ * úspěšném uložení prodeje; ručně tlačítko „Zkusit zápis znovu". Jen u zakázky
  * otevřené z online databáze (ONLINE_STAV.soubor), s vzRidici a prodané.
  * Převezme pdOrgVitez a nové razítko (server zakázku zapsal — bez převzetí
  * by další uložení skončilo kolizí) a překreslí. Chyby nehází ven: prodej je

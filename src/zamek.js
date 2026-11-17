@@ -581,7 +581,17 @@ function zamekZakZmeny(stara, nova) {
     return (x === undefined || x === null || x === '') ? '' : JSON.stringify(x);
   };
   const cesty = (st.sod ? c.poSod : []).concat(st.cn ? c.poCn.filter(x => c.poSod.indexOf(x) < 0 || !st.sod) : []);
-  return cesty.filter(cesta => hodnota(stara, cesta) !== hodnota(nova, cesta));
+  /* VZ-E4 (#603): výměna řídícího zákazníka hlavičku nemění „u zákazníka" —
+   * údaje se jen přestěhují. Porovnává se proto s uloženou verzí, ve které
+   * je řídícím týž zákazník jako v ukládané (údaje dalších zákazníků hlídá
+   * vzServerZakaznici). Jeden zákazník / beze změny řídícího: beze změny. */
+  let srovnana = stara;
+  if (typeof vzRidiciId === 'function' && typeof vzVymenRidiciho === 'function' && typeof vzZakaznik === 'function'
+      && vzRidiciId(stara) !== vzRidiciId(nova) && vzZakaznik(stara, vzRidiciId(nova))) {
+    const k = JSON.parse(JSON.stringify(stara));
+    if (vzVymenRidiciho(k, vzRidiciId(nova)).ok) srovnana = k;
+  }
+  return cesty.filter(cesta => hodnota(srovnana, cesta) !== hodnota(nova, cesta));
 }
 
 /* Data zamčené varianty k porovnání „změnilo se něco odeslaného?" — bez

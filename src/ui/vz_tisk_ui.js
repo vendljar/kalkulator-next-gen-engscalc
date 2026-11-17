@@ -28,7 +28,13 @@ function vzTiskVypnuto() {
  * dokumentů (dokumentZabrana) i tisky mimo registr. */
 function vzTiskZabranaUi(typ, varianta) {
   if (typeof vzTiskZabrana !== 'function' || typeof ZAK === 'undefined') return '';
-  return vzTiskZabrana(ZAK, vzTiskId(), varianta || null, typ, { vypnuto: vzTiskVypnuto() });
+  return vzTiskZabrana(ZAK, vzTiskKomuUi(typ, varianta), varianta || null, typ, { vypnuto: vzTiskVypnuto() });
+}
+/* VZ-E4 (#603, § 4): krycí list a SoD PRODANÉ varianty vždy pro zákazníka,
+ * kterému se prodalo; jinak otevřený zákazník. */
+function vzTiskKomuUi(typ, varianta) {
+  const id = vzTiskId();
+  return (typeof vzTiskKomuDokumentu === 'function' && typeof ZAK !== 'undefined') ? vzTiskKomuDokumentu(ZAK, id, varianta || null, typ) : id;
 }
 
 /* Vstup tisku: { zak, varianta } z pohledu otevřeného zákazníka, nebo null
@@ -41,7 +47,7 @@ function vzTiskVstup(typ, varianta, stav) {
     return null;
   }
   /* E3: dotisk zákazníkovi nese snímek adresáta z jeho razítka (varianta). */
-  const komu = vzTiskId();
+  const komu = vzTiskKomuUi(typ, varianta);
   const zak = typeof vzTiskPohled === 'function' ? vzTiskPohled(ZAK, komu, varianta || undefined) : ZAK;
   if (!zak) {
     if (typeof hlaska === 'function') hlaska('Zákazník pro tisk v zakázce není.', { nadpis: 'Dokument nelze vytvořit' });

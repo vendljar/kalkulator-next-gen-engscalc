@@ -25,6 +25,12 @@
  *     odstraněného zákazníka 409; N9 písmeno 400, nové id / písmeno z razítka
  *     400; N4 zalozen ze serveru; zmrazené údaje B 409 (kontakt projde);
  *     název akce u víc zákazníků po tisku neřídící varianty 409.
+ *  8) E4 (#603, ZAP): D1 přidat + vyměnit řídícího u uložené zakázky (autor 200,
+ *     jiný 403); kdo smí měnit řídícího (autor, administrátor; webhook jen
+ *     administrátor); prodej zákazníkovi bez odeslané nabídky / podvržené
+ *     prodano.zakaznik / neexistující 409/400; server vymění řídícího sám;
+ *     po prodeji výměna 409 a prodano.zakaznik z uložené verze; vzProdej
+ *     vlastní varianty; návrat k jednomu zákazníkovi ≠ z1 s odeslanou 409.
  * Paměťové úložiště, smyšlený ceník (src/zkusebni_cenik.js), smyšlené účty
  * a firmy. Spuštění: node netlify/test_vz_server.mjs */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
@@ -526,6 +532,98 @@ for (const [jm, fn] of [['název', a => { a.dalsiZakaznici[0].hlavicka.objednate
   const r = await opakuj({ g }, a => { a.varianty = a.varianty.filter(v => v.id !== v2.id); });
   test('E3 smazání zamčené varianty odstraněného zákazníka obchodníkem (bez varianta.smazatUzamcenou) → 409, úložiště beze změny',
     r.status === 409 && /chybí/.test(r.chyba || '') && ulozeno(r0.soubor) === pred, { status: r.status, chyba: r.chyba }); }
+/* ---------- 8) E4 (#603): řídící zákazník a Prodáno u zákazníka ---------- */
+const dnes = G.objDnes();
+/* D1 (doplněk 7): uložená zakázka s JEDNÍM zákazníkem → v jednom uložení přidat
+ * zákazníka a udělat ho řídícím. Autor 200, jiný obchodník 403. */
+{ const z = nova('E4 D1 uložená');
+  const r0 = await uloz(z, cO);
+  const g = await nacti(r0.soubor, cO);
+  const pred = ulozeno(r0.soubor);
+  const pridejVymen = a => { const p = G.vzPridej(a, UDAJE_B, { kdo: 'x' }); if (!p.ok) throw new Error(p.chyba); const v = G.vzVymenRidiciho(a, 'z2'); if (!v.ok) throw new Error(v.chyba); };
+  const rCizi = await opakuj({ g }, pridejVymen, cO2);
+  test('E4 D1: uložená zakázka s jedním zákazníkem — přidat + vyměnit řídícího jiným obchodníkem → 403, úložiště beze změny',
+    rCizi.status === 403 && /řídícího zákazníka mění jen autor/.test(rCizi.chyba || '') && ulozeno(r0.soubor) === pred, { status: rCizi.status, chyba: rCizi.chyba });
+  const r = await opakuj({ g }, pridejVymen, cO);
+  const u = ulozenoObj(r0.soubor);
+  test('E4 D1: totéž autorem → 200, řídící z2, z1 bez písmene mezi dalšími (N9 není přísnější než výměna)',
+    r.status === 200 && u.vzRidici.id === 'z2' && u.objednatel === UDAJE_B.objednatel && u.dalsiZakaznici[0].id === 'z1' && u.dalsiZakaznici[0].pismeno === '',
+    { status: r.status, chyba: r.chyba }); }
+/* Kdo smí měnit řídícího (bez prodeje): autor a administrátor, jiný obchodník 403;
+ * zakázka založená webhookem jen administrátor. */
+{ const r0 = await uloz(sVz('E4 práva výměny'), cO);
+  let g = await nacti(r0.soubor, cO);
+  const pred = ulozeno(r0.soubor);
+  const vymen = id => a => { const v = G.vzVymenRidiciho(a, id); if (!v.ok) throw new Error(v.chyba); };
+  const r1 = await opakuj({ g }, vymen('z2'), cO2);
+  test('E4 výměna řídícího jiným obchodníkem → 403, úložiště beze změny', r1.status === 403 && ulozeno(r0.soubor) === pred, { status: r1.status, chyba: r1.chyba });
+  const r2 = await opakuj({ g }, vymen('z2'), cO);
+  const u2 = ulozenoObj(r0.soubor);
+  test('E4 výměna řídícího autorem → 200 (hlavička B, vzRidici z2, řídící varianta B, otisky firmy pryč)',
+    r2.status === 200 && u2.vzRidici.id === 'z2' && u2.objednatel === UDAJE_B.objednatel && u2.vzRidici.varianta === u2.varianty.find(v => v.ridici).id,
+    { status: r2.status, chyba: r2.chyba });
+  g = await nacti(r0.soubor, cO);
+  const r3 = await opakuj({ g }, vymen('z1'), cA);
+  test('E4 výměna řídícího zpět administrátorem → 200', r3.status === 200 && ulozenoObj(r0.soubor).vzRidici.id === 'z1', { status: r3.status, chyba: r3.chyba });
+  /* zakázka založená webhookem */
+  const w = ulozenoObj(r0.soubor); w.autor = 'pipedrive-webhook'; pamet.set('zakazky/z/' + r0.soubor, JSON.stringify(w));
+  g = await nacti(r0.soubor, cO);
+  const predW = ulozeno(r0.soubor);
+  const r4 = await opakuj({ g }, vymen('z2'), cO);
+  test('E4 zakázka založená webhookem: výměna obchodníkem → 403 (jen administrátor)', r4.status === 403 && ulozeno(r0.soubor) === predW, { status: r4.status, chyba: r4.chyba });
+  const r5 = await opakuj({ g }, vymen('z2'), cA);
+  test('E4 zakázka založená webhookem: administrátor → 200', r5.status === 200, { status: r5.status, chyba: r5.chyba }); }
+/* Prodej u zákazníka: jen zákazníkovi, kterému varianta odešla; podvržené
+ * prodano.zakaznik; server vymění řídícího sám; po prodeji výměna 409. */
+{ const o = await sOdeslanouB('E4 prodej', cO);   // V1 vytištěná pro B (z2); C (z3) má vlastní V2
+  const pred = ulozeno(o.soubor);
+  const prodej = komu => a => { a.varianty[0].prodano = { datum: dnes, kdo: 'x', kdy: 'x', zakaznik: komu, pipedrive: { stav: 'ceka', kdy: 'x' } }; };
+  const rC = await opakuj(o, prodej('z3'));
+  test('E4 prodej V1 zákazníkovi C (varianta mu neodešla, podvržené prodano.zakaznik) → 409, úložiště beze změny',
+    rC.status === 409 && /odešla/.test(rC.chyba || '') && ulozeno(o.soubor) === pred, { status: rC.status, chyba: rC.chyba });
+  const rX = await opakuj(o, prodej('z9'));
+  test('E4 prodej neexistujícímu zákazníkovi → 400', rX.status === 400 && ulozeno(o.soubor) === pred, { status: rX.status, chyba: rX.chyba });
+  const rA = await opakuj(o, prodej('z1'));
+  test('E4 prodej V1 řídícímu A (V1 mu jako zákazníkovi neodešla — tisk jen pro B) → 409',
+    rA.status === 409 && ulozeno(o.soubor) === pred, { status: rA.status, chyba: rA.chyba });
+  const rB = await opakuj(o, prodej('z2'), cO2);   // prodej zapisuje obchodník zakázky (autor) — cO2 není autor
+  test('E4 prodej B jiným obchodníkem (není autor ani vedoucí) → 403', rB.status === 403 && ulozeno(o.soubor) === pred, { status: rB.status, chyba: rB.chyba });
+  const rOk = await opakuj(o, prodej('z2'));        // starší klient: bez výměny řídícího
+  const u = ulozenoObj(o.soubor);
+  test('E4 prodej V1 zákazníkovi B (odešla mu) bez výměny v prohlížeči → 200, server vymění řídícího sám',
+    rOk.status === 200 && u.varianty[0].prodano.zakaznik === 'z2' && u.vzRidici.id === 'z2' && u.objednatel === UDAJE_B.objednatel
+    && u.varianty[0].ridici === true && u.vzRidici.varianta === u.varianty[0].id && u.varianty[0].prodano.kdo === 'obch.vz@priklad.cz',
+    { status: rOk.status, chyba: rOk.chyba, r: u.vzRidici, p: u.varianty[0].prodano });
+  const g2 = await nacti(o.soubor, cO);
+  const pred2 = ulozeno(o.soubor);
+  const r2 = await opakuj({ g: g2 }, a => { G.vzVymenRidiciho(a, 'z1'); }, cA);
+  test('E4 po prodeji: výměna řídícího i administrátorem → 409, úložiště beze změny', r2.status === 409 && ulozeno(o.soubor) === pred2, { status: r2.status, chyba: r2.chyba });
+  const r3 = await opakuj({ g: g2 }, a => { a.varianty[0].prodano.zakaznik = 'z1'; });
+  test('E4 po prodeji: přepis prodano.zakaznik v uloženém prodeji server vrátí (z2)',
+    r3.status === 200 && ulozenoObj(o.soubor).varianty[0].prodano.zakaznik === 'z2', { status: r3.status, chyba: r3.chyba }); }
+/* Prodej vlastní varianty B v prohlížeči (vzProdej s výměnou) — týž výsledek. */
+{ const z = sVz('E4 prodej vlastní B', zz => { const r = G.vzPridej(zz, UDAJE_C, { kdo: 'x', vlastni: true }); if (!r.ok) throw new Error(r.chyba); });
+  const vC = z.varianty.find(v => v.id === z.dalsiZakaznici[1].varianta);
+  zamkni(z, vC, { id: 'z3' });
+  const r0 = await uloz(z, cO);
+  const g = await nacti(r0.soubor, cO);
+  const r = await opakuj({ g }, a => { const x = G.vzProdej(a, 'z3', dnes, { kdo: 'x', role: 'Obchodník' }); if (!x.ok) throw new Error(x.chyba); });
+  const u = ulozenoObj(r0.soubor);
+  test('E4 vzProdej C (vlastní varianta) → 200: řídící C, prodaná V2 řídící, A i B mezi dalšími, invariant',
+    r.status === 200 && u.vzRidici.id === 'z3' && u.objednatel === UDAJE_C.objednatel && u.varianty.find(v => v.id === vC.id).ridici
+    && u.varianty.find(v => v.id === vC.id).prodano.zakaznik === 'z3' && u.dalsiZakaznici.map(d => d.id).sort().join() === 'z1,z2'
+    && G.vzSrovnej(zk.importZakazka(kopie(u))).length === 0, { status: r.status, chyba: r.chyba }); }
+/* Doplněk 3: návrat k jednomu zákazníkovi, který není z1, s odeslanou nabídkou → 409. */
+{ const z = sVz('E4 kolaps');
+  zamkni(z, z.varianty[0], { id: 'z1' });
+  const r0 = await uloz(z, cO);
+  let g = await nacti(r0.soubor, cO);
+  await opakuj({ g }, a => { G.vzVymenRidiciho(a, 'z2'); });
+  g = await nacti(r0.soubor, cO);
+  const pred = ulozeno(r0.soubor);
+  const r = await opakuj({ g }, a => { delete a.vzRidici; delete a.dalsiZakaznici; }, cA);
+  test('E4 doplněk 3: odstranění z1 po výměně řídícího (zbyde B, něco odešlo) i administrátorem → 409, úložiště beze změny',
+    r.status === 409 && ulozeno(r0.soubor) === pred, { status: r.status, chyba: r.chyba }); }
 await vypinac({ viceZakazniku: false });
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

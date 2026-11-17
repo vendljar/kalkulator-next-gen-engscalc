@@ -319,13 +319,15 @@ const KARTA = { nazev: 'Karta s.r.o.', sidlo: 'Kartová 1', ico: '00000043', dic
   test('karta: 2 zákazníci → karta s nadpisem', /id="vzKarta_ock"/.test(k) && /Zákazníci zakázky/.test(k));
   test('karta: Odstranit řídícího zhasnuté', /onclick="vzOdstranit\('z1'\)" disabled title="Řídícího zákazníka nejde odstranit/.test(k), k.match(/vzOdstranit[^>]*>/g));
   test('karta: Odstranit dalšího aktivní', /onclick="vzOdstranit\('z2'\)">Odstranit/.test(k), k.match(/vzOdstranit[^>]*>/g));
-  /* VZ-E2 #601: Tisk CN zapojený (vzTiskCN), Prodáno dál zhasnuté (E4); číslo nabídky s písmenem. */
-  test('karta: Tisk CN aktivní u obou (E2), Prodáno zhasnuté (2×)', /onclick="vzTiskCN\('z1'\)" title=/.test(k) && /onclick="vzTiskCN\('z2'\)" title=/.test(k)
-    && (k.match(/disabled title="Prodáno u zákazníka/g) || []).length === 2, k.match(/vzTiskCN[^>]*>/g));
+  /* VZ-E2 #601: Tisk CN zapojený (vzTiskCN); VZ-E4: Prodáno zapojené (vzProdejOtevri), u nezamčené
+   * varianty zhasnuté s důvodem z jádra (vzProdejNelze); číslo nabídky s písmenem. */
+  test('karta: Tisk CN aktivní u obou (E2), Prodáno zapojené a u neodeslané zhasnuté (E4, 2×)', /onclick="vzTiskCN\('z1'\)" title=/.test(k) && /onclick="vzTiskCN\('z2'\)" title=/.test(k)
+    && (k.match(/onclick="vzProdejOtevri\('z[12]'\)" disabled title="(Prodat jde jen odeslanou|Zákazníkovi „[^"]*tato nabídka neodešla)/g) || []).length === 2, k.match(/vzProdejOtevri[^>]*>/g));
   test('karta: číslo nabídky dalšího zákazníka s písmenem (E2)', (k.match(/class="vz-cislo">([^<]*)</g) || []).some(x => /-B</.test(x))
     && (k.match(/class="vz-cislo">([^<]*)</g) || []).filter(x => /-[B-Z]</.test(x)).length === 1, k.match(/class="vz-cislo">[^<]*</g));
-  test('karta: radio řídícího checked a disabled, všechna radia disabled', /name="vzRidici_ock" checked disabled/.test(k)
-    && (k.match(/type="radio"[^>]*>/g) || []).every(r => /disabled/.test(r)));
+  /* VZ-E4: radio řídícího checked a zhasnuté; radio dalšího aktivní (vzRidiciZmen) — offline / autor smí. */
+  test('karta: radio řídícího checked a disabled, radio dalšího aktivní (E4)', /name="vzRidici_ock" data-vz-ridici="z1" checked disabled/.test(k)
+    && /data-vz-ridici="z2" title="[^"]*" onchange="vzRidiciZmen\('z2'\)"/.test(k), k.match(/type="radio"[^>]*>/g));
   test('karta: Vlastní varianta řídícího zhasnutá', /vzVlastniVarianta\('z1'\)" disabled/.test(k) && /vzVlastniVarianta\('z2'\)">/.test(k));
   test('karta: výběr varianty řídícího zhasnutý, dalšího ne', /vzVariantaSet\('z1', this.value\)" disabled/.test(k) && /vzVariantaSet\('z2', this.value\)">/.test(k));
   test('karta: escapování názvu (žádný surový tag ani uvozovka)', k.indexOf('<b>x</b>') < 0 && k.indexOf('"\'') < 0 && k.indexOf('&lt;b&gt;x&lt;/b&gt;&quot;&#39;') >= 0);

@@ -29,6 +29,10 @@
  * POJISTKA U4 (16. 11. 2026): před opravou (lib bez pdWebhookCisloVarianta /
  * pdWebhookVariantaPripona, webhook bez hledání podle čísla varianty) selhalo
  * 9 testů bodu 7 (deal „….2-B" založil „….2-B.json"); po opravě 58/58.
+ *   8. (VZ-E4 #603) po výměně řídícího zákazníka (bez prodeje, deal dál na
+ *      organizaci původního) webhook firmu v hlavičce nepřepíše ani prázdná
+ *      pole nového řídícího nedoplní údaji organizace dealu (neshoda IČO,
+ *      pdWebhookVzFirmaCizi); pojistka v sadě (bez bezFirmy se doplní).
  * Spuštění: node netlify/test_vz_webhook.mjs
  * ============================================================ */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
@@ -309,6 +313,41 @@ r = await volej(D10.id);
 test('deal „….2" bez písmene → nová kalkulace „….2" jako dřív, zakázka „…" nedotčená',
   r.status === 200 && r.akce === 'zalozeno' && r.soubor !== S10 && zakazkyKlice().length === p10 + 1
   && pamet.get('zakazky/z/' + S10) === pred10 && zakazka(r.soubor).cislo === cn(D10) + '.2', [r.status, r.akce, r.soubor]);
+
+/* ---------- 8. VZ-E4 (#603): PO VÝMĚNĚ ŘÍDÍCÍHO WEBHOOK FIRMU NEPŘEPÍŠE ---------- */
+console.log('\n===== 8. VZ-E4: výměna řídícího a webhook (návrh § 7.3) =====\n');
+{
+  const z = G.novaZakazka(); z.objednatel = 'A s.r.o.'; z.ico = '27074358';
+  test('pdWebhookVzFirmaCizi: jeden zákazník → false (dnešek)', !W.pdWebhookVzFirmaCizi(z, '12345678', 'ock'));
+  G.vzPridej(z, { objednatel: 'B s.r.o.', ico: '11112222' });
+  test('pdWebhookVzFirmaCizi: víc zákazníků, IČO dealu = hlavička → false; jiné → true; PROJ → false',
+    !W.pdWebhookVzFirmaCizi(z, '270 74 358', 'ock') && W.pdWebhookVzFirmaCizi(z, '12345678', 'ock') && !W.pdWebhookVzFirmaCizi(z, '12345678', 'proj'));
+  const zz = JSON.parse(J(z)); G.vzVymenRidiciho(zz, 'z2');
+  const zad = { strana: 'ock', pole: { objednatel: 'A s.r.o.', ico: '27074358', kontakt: 'Osoba A', dic: 'CZ27074358', adresaObjednatele: 'Sídlo A', nazevAkce: 'Akce', adresa: '' } };
+  const kopie = JSON.parse(J(zz));
+  const r1 = W.pdWebhookPouzij(kopie, zad, 7, 'x', { bezFirmy: true });
+  test('pdWebhookPouzij bezFirmy: firma (i prázdný kontakt, DIČ, sídlo) beze změny, název akce se převezme',
+    kopie.objednatel === 'B s.r.o.' && kopie.kontakt === '' && kopie.dic === '' && kopie.adresaObjednatele === '' && kopie.nazevAkce === 'Akce'
+    && r1.zmeneno.indexOf('kontakt') < 0, [kopie.objednatel, kopie.kontakt, r1.zmeneno]);
+  const kopie2 = JSON.parse(J(zz));
+  W.pdWebhookPouzij(kopie2, zad, 7, 'x', {});
+  test('pojistka: bez bezFirmy by webhook prázdný kontakt a DIČ nového řídícího B doplnil údaji A (detektor zabírá)',
+    kopie2.kontakt === 'Osoba A' && kopie2.dic === 'CZ27074358');
+}
+{
+  const D11 = dealS();
+  const S11 = ulozZakazku(cn(D11), ['B'], (z) => {
+    z.dalsiZakaznici[0].hlavicka.ico = '11112222';
+    const r = G.vzVymenRidiciho(z, 'z2'); if (!r.ok) throw new Error(r.chyba);
+    z.pdDealId = String(D11.id);
+  });
+  const pred = zakazka(S11);
+  r = await volej(D11.id);
+  const po = zakazka(S11);
+  test('webhook po výměně řídícího (deal dál na organizaci A, IČO nesedí): hlavička B beze změny (název, IČO, prázdný kontakt, DIČ, sídlo)',
+    r.status === 200 && r.soubor === S11 && ['objednatel', 'ico', 'kontakt', 'dic', 'adresaObjednatele'].every(k => po[k] === pred[k])
+    && vz(po) === vz(pred), [r.status, r.soubor, ['objednatel', 'ico', 'kontakt', 'dic'].map(k => [pred[k], po[k]])]);
+}
 
 /* ---------- 6. BEZ SÍTĚ ---------- */
 test('do sítě za celý běh nic', venku.length === 0, venku);
