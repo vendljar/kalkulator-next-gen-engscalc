@@ -1159,6 +1159,13 @@ function vzServerRazitka(stara, zak) {
       if (!smi(z, String(v.id)))
         return { status: 400, chyba: 'Neuloženo: varianta „' + vzText(v.nazev || v.id) + '" není nabídka zákazníka „'
           + (z.hlavicka.objednatel || z.id) + '" — pro něj se netiskne.' };
+      /* VZ-E6 (#606, doplněk 3 k E4): smlouva o dílo jen zákazníkovi, kterému
+       * nabídka TÉTO varianty odešla — dřívější tisk s jeho id v témže zámku
+       * (uložené razítko nebo nové razítko téhož uložení, už ověřené výš). */
+      if (vzText(t.typ).replace(/_(en|de|fr)$/, '') === 'sod'
+        && !v.zamek.tisky.slice(0, i).some(x => vzObj(x) && vzTiskKomu(x) === z.id))
+        return { status: 400, chyba: 'Neuloženo: smlouvu o dílo k variantě „' + vzText(v.nazev || v.id) + '" jde vytvořit jen pro zákazníka, '
+          + 'kterému nabídka této varianty odešla — zákazníkovi „' + (z.hlavicka.objednatel || z.id) + '" ji nejdřív vytiskněte (Tisk CN).' };
       t.zakaznik = vzRazitkoSnimek(zak, z.id, v);
     }
   }

@@ -710,8 +710,18 @@ function ctrlExportVarianty(zak, v, opts) {
    * do listu Popis: počet variant a šachet celkem se seznamem. */
   const vsVo = (vOck && typeof vsVystup === 'function') ? vsVystup(vOck) : null;
   if (vsVo) hlavicka.sachty = vsPredmetText(vsVo);
+  /* VZ-E6 (#606, návrh § 6): víc zákazníků — zakázka je dál JEDEN řádek
+   * s řídícím zákazníkem (po prodeji = vítěz); do Popisu jen počet zákazníků.
+   * Sdílená varianta má jeden zámek, nic se nepočítá dvakrát. */
+  if (typeof vzRezim === 'function' && typeof vzZakaznici === 'function' && vzRezim(zak))
+    hlavicka.zakaznici = ctrlZakazniciText(vzZakaznici(zak).length);
   return { ok: true, hlavicka, strany, radky, kapitoly: ctrlKapitoly(radky, { data: o.data, jenZaklad: true }),
     kdy: o.kdy || new Date().toISOString(), kdo: String(o.kdo || ''), build: String(o.build || '') };
+}
+
+/* „3 zákazníci", „5 zákazníků" (VZ-E6 #606). */
+function ctrlZakazniciText(n) {
+  return n + (n <= 4 ? ' zákazníci' : ' zákazníků');
 }
 
 /* ---------- C3: hromadný export za období (21. 10. 2026) ----------
@@ -1269,6 +1279,9 @@ function ctrlExportListy(exp, data, opts) {
   /* VS-E5 (#595, R5/R19): víc šachet — řádky a kapitoly jsou součtem šachet × ks. */
   if (!hr && prvni.hlavicka && prvni.hlavicka.sachty)
     popis.push(['Šachty v nabídce (OCK)', prvni.hlavicka.sachty + ' — řádky a kapitoly jsou součtem šachet × ks']);
+  /* VZ-E6 (#606): víc zákazníků — řádek za zakázku nese řídícího (po prodeji vítěze). */
+  if (!hr && prvni.hlavicka && prvni.hlavicka.zakaznici)
+    popis.push(['Zákazníci zakázky', prvni.hlavicka.zakaznici + ' — export je za zakázku jednou, Zákazník = řídící zákazník (po prodeji vítěz)']);
   if (hr) popis.push(['Zakázek s datem prodeje (Prodáno, u starších objednané příplatky)', prodane.length]);
   popis.push(['List ' + CTRL_LIST_PRIPLATKY, 'příplatky nabídnuté jako volba (mimo cenu nabídky), stejné sloupce jako Řádky']);
   popis.push([]);
@@ -1282,11 +1295,14 @@ function ctrlExportListy(exp, data, opts) {
     /* VS-E5: sloupec Šachty (OCK) jen tehdy, má-li víc šachet aspoň jedna zakázka exportu. */
     const vsSl = exps.some(e => e.hlavicka.sachty);
     if (vsSl) popis[popis.length - 1].push('Šachty v nabídce (OCK)');
+    /* VZ-E6: sloupec Zákazníci jen tehdy, má-li víc zákazníků aspoň jedna zakázka exportu. */
+    const vzSl = exps.some(e => e.hlavicka.zakaznici);
+    if (vzSl) popis[popis.length - 1].push('Zákazníci zakázky');
     exps.forEach(e => popis.push([e.strany.map(s => s.cislo).join(' + '), e.hlavicka.nazevAkce, e.hlavicka.zakaznik,
       e.hlavicka.zamceno, e.hlavicka.rada, e.strany.map(s => s.oblast.toUpperCase()).join(' + '),
       e.hlavicka.zmrazeno ? 'zmrazený' : 'přepočtený', e.hlavicka.datumProdeje || '',
       e.hlavicka.cenaDilaSod != null ? ctrlZaokr(e.hlavicka.cenaDilaSod) : '', e.hlavicka.objZmenenoPoSod || '']
-      .concat(vsSl ? [e.hlavicka.sachty || ''] : [])));
+      .concat(vsSl ? [e.hlavicka.sachty || ''] : []).concat(vzSl ? [e.hlavicka.zakaznici || ''] : [])));
     const presk = Array.isArray(hr.preskoceno) ? hr.preskoceno : [];
     if (presk.length) {
       popis.push([]);
@@ -1390,7 +1406,7 @@ function ctrlImportZListu(sheets, data) {
 if (typeof module !== 'undefined' && module.exports)
   module.exports = { CTRL_NENI_NAKLAD, CTRL_NEZARAZENO, CTRL_TYPY, CTRL_CHOVANI, CTRL_OBLASTI,
     CTRL_SKUPINY_VYCHOZI, CTRL_MAPA_VYCHOZI, CTRL_MEZE, CTRL_NAZEV_ATYP_PRIRAZKA,
-    ctrlVychozi, ctrlKliceCeniku, ctrlPlatne, ctrlKlicRadku, ctrlSkupinaKlice, ctrlRozvrhOck, ctrlRozvrhProj,
+    ctrlVychozi, ctrlZakazniciText, ctrlKliceCeniku, ctrlPlatne, ctrlKlicRadku, ctrlSkupinaKlice, ctrlRozvrhOck, ctrlRozvrhProj,
     ctrlKapitoly, ctrlNezarazene, ctrlKliceKatalogu, ctrlBajty, ctrlDataKontrola, ctrlBezeZmeny,
     ctrlDbNovaVerze, ctrlDbOciste,
     ctrlOdchylky, CTRL_PSEUDO_POPIS, ctrlPopisKlice, ctrlKatalogNazvy, CTRL_EXPORT_VERZE, CTRL_EXPORT_ZMENA, ctrlExportVarianty, ctrlProdej, ctrlPodilyNa100,

@@ -222,6 +222,42 @@ beh('');
   test('V1: ↺ u B smaže jen hodnotu B', klVal('kontaktZakaznikTel', 'PREF') === 'PREF' && vystupy(z, 'z1', v1).indexOf('KANAOBRAZOVKAX') >= 0);
   ['ZAK', 'KL', 'render', 'aktivniVarianta', 'vzTiskId', 'vzTiskJinyZakaznik', 'vzTiskZakTicho'].forEach(k => { delete global[k]; });
 }
+/* VZ-E6 #606 (otevřený bod E4): OBRAZOVKA krycího listu PRODANÉ sdílené
+ * varianty předvyplňuje údaje VÍTĚZE (= adresát tisku, vzTiskKomuDokumentu),
+ * i když je otevřený jiný zákazník. Pojistka: na 68e5eb8 (klVzCtxZak podle
+ * otevřeného zákazníka) ukazuje obrazovka s otevřeným A údaje A → FAIL. */
+{
+  const z = zakazka();
+  const v1 = z.varianty.find(v => String(v.id) === vzRidiciVariantaId(z));
+  v1.data.kryci = v1.data.kryci || { hodnoty: {} };
+  const info = id => ({ typ: 'nabidka', kdo: PEVNE.kdo, kdy: PEVNE.kdy, cislo: variantaCislo(z, v1), zakaznik: vzRazitkoSnimek(z, id, v1) });
+  zamkniVariantu(v1, info('z1'));
+  zamkniVariantu(v1, info('z2'));
+  v1.prodano = { datum: '2026-11-17', kdo: PEVNE.kdo, kdy: PEVNE.kdy, zakaznik: 'z2' };
+  const r = vzVymenRidiciho(z, 'z2');
+  let otevreny = 'z1';
+  if (typeof global.kryciPoleZakaznika !== 'function') global.kryciPoleZakaznika = id => KRYCI_SEKCE.some(s => s.pole.some(p => p.id === id && p.zakaznikPole));
+  Object.assign(global, { ZAK: z, KL: v1.data.kryci, render: () => {}, aktivniVarianta: () => v1, vzTiskId: () => otevreny,
+    vzTiskJinyZakaznik: () => otevreny !== vzRidiciId(z) && otevreny !== '', vzTiskZakTicho: () => vzTiskPohled(z, otevreny),
+    /* = src/ui/vz_tisk_ui.js vzTiskKomuUi */
+    vzTiskKomuUi: (typ, varianta) => vzTiskKomuDokumentu(z, vzTiskId(), varianta || null, typ) });
+  /* kryci_ui.js je už načtený blokem V1 (funkce čtou ZAK, KL… z globálu). */
+  test('E6 KL prodané: příprava (prodáno B, B řídící, varianta zamčená)', r.ok && vzRidiciId(z) === 'z2' && variantaProdana(v1), r);
+  const ctxA = klVzCtxZak();
+  test('E6 KL prodané: obrazovka s otevřeným A předvyplní vítěze B, ne A',
+    ctxA.objednatel === 'Beta Zkus a.s.' && ctxA.ico === '25596641', { objednatel: ctxA.objednatel, ico: ctxA.ico });
+  const c = kryciCtx(ctxA, v1, JEKLY);
+  const pf = id => { let p = null; KRYCI_SEKCE.forEach(s => s.pole.forEach(x => { if (x.id === id) p = x; })); return p.prefill(c); };
+  test('E6 KL prodané: předvyplnění Zákazník a IČO = B (shodně s tiskem)',
+    pf('zakaznik') === 'Beta Zkus a.s.' && pf('ico') === '25596641', { zakaznik: pf('zakaznik'), ico: pf('ico') });
+  otevreny = 'z2';
+  test('E6 KL prodané: s otevřeným vítězem B totéž', klVzCtxZak().objednatel === 'Beta Zkus a.s.');
+  /* Neprodaná sdílená varianta: dál otevřený zákazník (beze změny E3 V1). */
+  delete v1.prodano;
+  otevreny = 'z1';
+  test('E6 KL neprodaná: otevřený A (po výměně další) dál vidí své údaje', klVzCtxZak().objednatel === 'Alfa Zkus s.r.o.', klVzCtxZak().objednatel);
+  ['ZAK', 'KL', 'render', 'aktivniVarianta', 'vzTiskId', 'vzTiskJinyZakaznik', 'vzTiskZakTicho', 'vzTiskKomuUi'].forEach(k => { delete global[k]; });
+}
 /* V2: volné texty krycího listu sdílené varianty hlídá zábrana cizího zákazníka. */
 {
   const z = zakazka();

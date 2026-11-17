@@ -4172,6 +4172,11 @@ function onlineRadekZakazky(z, vyber) {
   const vsText = (typeof uloRejstrikSachtyText === 'function' && typeof viceSachetZapnuto === 'function' && viceSachetZapnuto())
     ? uloRejstrikSachtyText(z) : '';
   const sachty = vsText ? ` <span class="pill vs-stitek" title="víc šachet v řídící variantě">${esc(vsText)}</span>` : '';
+  /* Víc zákazníků (VZ-E6 #606) — štítek „3 zákazníci" u zákazníka, jen se
+   * zapnutou funkcí; v titulku názvy ostatních zákazníků (rejstřík ceny nenese). */
+  const vzText = (typeof uloRejstrikZakazniciText === 'function' && typeof viceZakaznikuZapnuto === 'function' && viceZakaznikuZapnuto())
+    ? uloRejstrikZakazniciText(z) : '';
+  const zakaznici = vzText ? ` <span class="pill vz-stitek" title="${esc('Zákazníci zakázky: ' + z.zakaznici.map(x => x.nazev).join(', '))}">${esc(vzText)}</span>` : '';
   const chk = vyber
     ? `<td><input type="checkbox" ${onlineVybrano(z.soubor) ? 'checked' : ''}
         onchange="onlineVyberPrepni('${escJs(z.soubor)}', this.checked)"
@@ -4181,7 +4186,7 @@ function onlineRadekZakazky(z, vyber) {
     <td style="text-align:left">${esc(z.cislo || '(bez čísla)')}</td>
     <td style="text-align:left;white-space:normal">${esc(z.nazevAkce || '—')}${z.adresa
       ? `<div class="rejstrik-adresa" style="font-size:11px;color:#6b7686">${esc(z.adresa)}</div>` : ''}</td>
-    <td style="text-align:left;white-space:normal">${esc(z.objednatel || '—')}</td>
+    <td style="text-align:left;white-space:normal">${esc(z.objednatel || '—')}${zakaznici}</td>
     <td><span class="pill mut">${esc(druh)}</span>${rada}${sachty}${typeof pdVazbaRejstrikStitek === 'function' ? pdVazbaRejstrikStitek(z) : ''}</td>
     <td>${esc(z.datum || '')}</td>
     <td>${z.variant}</td>

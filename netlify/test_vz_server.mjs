@@ -416,6 +416,31 @@ let zakB = null;
   test('E3 dotisk V1 řídícímu → 200, razítko A bez písmene, B zůstalo',
     r.status === 200 && t.length === 2 && t[0].zakaznik.id === 'z2' && t[1].zakaznik.id === 'z1' && t[1].zakaznik.pismeno === ''
     && t[1].zakaznik.objednatel === ulozenoObj(zakB.soubor).objednatel, { status: r.status, chyba: r.chyba, t: t.map(x => x.zakaznik) }); }
+/* VZ-E6 (#606, doplněk 3 k E4): SoD jen zákazníkovi, kterému nabídka té
+ * varianty odešla — hlídá i SERVER (dřív jen brána tisku v prohlížeči).
+ * Pojistka: na 68e5eb8 server SoD pro A (bez nabídky) uloží → FAIL. */
+const zamkniSod = (z, v, komu) => G.zamkniVariantu(v, { typ: 'sod', kdy: new Date().toISOString(), kdo: 'Test VZ E6',
+  cislo: G.variantaCislo(z, v), zakaznik: komu });
+{ const o = await sOdeslanouB('E6 SoD', cO);
+  const pred = ulozeno(o.soubor);
+  const a = zk.importZakazka(kopie(o.g)); zamkniSod(a, a.varianty[0], { id: 'z1' });
+  const r = await uloz(a, cO, o.g.uloRazitko);
+  test('E6 SoD sdílené V1 pro A, kterému nabídka neodešla → 400, úložiště beze změny',
+    r.status === 400 && /smlouvu o dílo/.test(r.chyba || '') && ulozeno(o.soubor) === pred, { status: r.status, chyba: r.chyba });
+  const a2 = zk.importZakazka(kopie(o.g)); zamkniSod(a2, a2.varianty[0], { id: 'z1', typ: 'x' }); a2.varianty[0].zamek.tisky[1].typ = 'sod_en';
+  const r2 = await uloz(a2, cO, o.g.uloRazitko);
+  test('E6 SoD (anglická) pro A bez nabídky → 400', r2.status === 400 && /smlouvu o dílo/.test(r2.chyba || ''), { status: r2.status, chyba: r2.chyba });
+  const a3 = zk.importZakazka(kopie(o.g)); zamkniSod(a3, a3.varianty[0], { id: 'z2' });
+  const r3 = await uloz(a3, cO, o.g.uloRazitko);
+  const t3 = tisky(ulozenoObj(o.soubor), a3.varianty[0].id);
+  test('E6 SoD V1 pro B, kterému nabídka odešla → 200, razítko B',
+    r3.status === 200 && t3.length === 2 && t3[1].typ === 'sod' && t3[1].zakaznik.id === 'z2', { status: r3.status, chyba: r3.chyba });
+  const g4 = await nacti(o.soubor, cO);
+  const a4 = zk.importZakazka(kopie(g4)); zamkni(a4, a4.varianty[0], { id: 'z1' }); zamkniSod(a4, a4.varianty[0], { id: 'z1' });
+  const r4 = await uloz(a4, cO, g4.uloRazitko);
+  const t4 = tisky(ulozenoObj(o.soubor), a4.varianty[0].id);
+  test('E6 nabídka a hned SoD pro A v jednom uložení → 200 (nabídka odešla dřív než smlouva)',
+    r4.status === 200 && t4.length === 4 && t4[3].typ === 'sod' && t4[3].zakaznik.id === 'z1', { status: r4.status, chyba: r4.chyba }); }
 { const z = nova('E3 jeden zákazník');
   zamkni(z, z.varianty[0], { id: 'z1', objednatel: 'PODVRH' });
   const r = await uloz(z, cO);

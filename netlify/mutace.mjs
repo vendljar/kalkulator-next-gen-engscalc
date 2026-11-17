@@ -73,6 +73,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_vz_nanecisto.mjs',
      /* VZ-E5b (#605, 16. 11. 2026): organizace dealu = vítězný zákazník (simulátor, rychlá sada). */
      'test_vz_organizace.mjs',
+     /* VZ-E6 (#606, 17. 11. 2026): zákazníci v rejstříku, štítek a hledání v Přehledu, controlling (rychlá sada). */
+     'test_vz_rejstrik.mjs',
      /* #560 MU (5. 11. 2026): sekce MŮSTKY — server (validace Z.mustky, zveřejnění ceníku, zámek) a model. */
      'test_560_mustky.mjs', '../src/test_560_mustky_sekce.js',
      /* #IK / #560 (4. 11. 2026): interní poznámky k zakázce na krycím listu — rychlé sady. */

@@ -14,8 +14,16 @@ function klVzKomu(id) {
 }
 /* Zakázka pro předvyplnění krycího listu na obrazovce: u otevřeného DALŠÍHO
  * zákazníka jeho pohled (pole zákazníka z jeho hlavičky a jeho ruční hodnoty). */
+/* VZ-E6 #606 (otevřený bod E4): obrazovka bere ADRESÁTA stejně jako tisk
+ * krycího listu (vzTiskVstup → vzTiskKomuUi): u PRODANÉ varianty vítěze, ne
+ * otevřeného jiného zákazníka; jinak otevřeného zákazníka. Řídící = ZAK. */
 function klVzCtxZak() {
-  return (typeof vzTiskJinyZakaznik === 'function' && vzTiskJinyZakaznik() && typeof vzTiskZakTicho === 'function') ? vzTiskZakTicho() : ZAK;
+  if (typeof vzRezim !== 'function' || !vzRezim(ZAK) || typeof vzTiskPohled !== 'function' || typeof vzTiskKomuUi !== 'function')
+    return (typeof vzTiskJinyZakaznik === 'function' && vzTiskJinyZakaznik() && typeof vzTiskZakTicho === 'function') ? vzTiskZakTicho() : ZAK;
+  const v = aktivniVarianta(ZAK);
+  const komu = vzTiskKomuUi('kryci', v);
+  if (!komu || komu === vzRidiciId(ZAK)) return ZAK;
+  return vzTiskPohled(ZAK, komu, v) || vzTiskPohled(ZAK, '') || ZAK;
 }
 function klSet(id, v) {
   if (!KL.hodnoty) KL.hodnoty = {};
