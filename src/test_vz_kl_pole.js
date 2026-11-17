@@ -73,8 +73,11 @@ function zapis(zak, v, p, hodnota, proj) {
   k.hodnoty[p.id] = hodnota;
   vzKlZapis(k, p.id, zak);
 }
-function vystupy(zak, id, v) {
-  const p = vzTiskPohled(zak, id), vv = vzTiskVarianta(p, v);
+/* `vnitrni` (VZ-E6): skutečná varianta místo kopie z tiskového pohledu — bez
+ * vnější vrstvy E4 Z1 (vzVariantaBezCizichKl), aby test hlídal i vnitřní
+ * kontrolu vlastníka v kryci.js / kryci_proj.js (mutace E2 U1/U2 jinak přežívaly). */
+function vystupy(zak, id, v, vnitrni) {
+  const p = vzTiskPohled(zak, id), vv = vnitrni ? v : vzTiskVarianta(p, v);
   const t = [];
   for (const ver of ['bo', 'techdata']) { try { t.push(JSON.stringify(kryciData(p, vv, JEKLY, ver))); } catch (e) { t.push('CHYBA ' + e.message); } }
   try { t.push(JSON.stringify(kryciSodSymboly(p, vv, JEKLY, {}))); } catch (e) { t.push('CHYBA ' + e.message); }
@@ -110,6 +113,9 @@ function beh(nazev) {
   v1.zamek = { zamceno: true, tisky: [] };
   const tB2 = vystupy(z, 'z2', v1);
   test(nazev + 'zamčená V1: B má svého objednatele, ne snímek A', tB2.indexOf('Beta Zkus a.s.') >= 0 && tB2.indexOf('Alfa Zkus') < 0, (tB2.match(/Alfa Zkus[^"]*/g) || []).slice(0, 3));
+  const tB2v = vystupy(z, 'z2', v1, true);
+  test(nazev + 'zamčená V1, vnitřní vrstva (skutečná varianta): B bez snímku a ručních údajů A', tB2v.indexOf('Beta Zkus a.s.') >= 0
+    && tB2v.indexOf('Alfa Zkus') < 0 && !nalez(tB2v, 'A').length, { alfa: (tB2v.match(/Alfa Zkus[^"]*/g) || []).slice(0, 3), a: nalez(tB2v, 'A').slice(0, 5) });
   /* 3) Výměna řídícího na B, B ručně přepíše „Zákazník" a telefon, výměna zpět. */
   test(nazev + 'výměna na B', vzVymenRidiciho(z, 'z2').ok);
   const pZak = rucniOck.find(p => p.id === 'zakaznik'), pTel = rucniOck.find(p => p.id === 'kontaktZakaznikTel');
@@ -125,6 +131,8 @@ function beh(nazev) {
   test(nazev + 'výměna zpět na A', vzVymenRidiciho(z, 'z1').ok);
   const tA3 = vystupy(z, 'z1', v1), tB3 = vystupy(z, 'z2', v1);
   test(nazev + 'po výměně tam a zpět: v dokumentech A nic z přepisu B', !nalez(tA3, 'B').length, nalez(tA3, 'B'));
+  const tA3v = vystupy(z, 'z1', v1, true);
+  test(nazev + 'po výměně tam a zpět, vnitřní vrstva: v dokumentech A (i KL PROJ) nic z přepisu B', !nalez(tA3v, 'B').length, nalez(tA3v, 'B'));
   test(nazev + '… a u B se jeho přepis projeví', nalez(tB3, 'B').indexOf('KANBZAKAZNIKX') >= 0 && nalez(tB3, 'B').indexOf('KANBKONTAKTZAKAZNIKTELX') >= 0, nalez(tB3, 'B'));
   test(nazev + '… B dál bez ručních údajů A', !nalez(tB3, 'A').length, nalez(tB3, 'A'));
   return { tA, tB, tC };

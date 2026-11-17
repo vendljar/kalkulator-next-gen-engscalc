@@ -422,8 +422,8 @@
           "typ": "ram",
           "nadpis": "Výchozí stav je VYPNUTO — i na testu a na ostrém",
           "odstavce": [
-            "Vypínač **Víc zákazníků na zakázce** je po nasazení každé verze **vypnutý** — na testovacím i na ostrém webu, i po budoucím nasazení do větví test a main (pokyn J. V.). Zapnout ho smí **jen administrátor** v Nastavení → **Zkušební funkce**; obchodník ani vedoucí vypínač nezmění (server je odmítne).",
-            "Na ostrém webu ho nezapínejte, dokud o tom J. V. nerozhodne. Na testovacím webu ho zapněte jen na dobu zkoušení."
+            "Vypínač **Víc zákazníků na zakázce** je po nasazení každé verze **vypnutý** — na testovacím i na ostrém webu — i po každém dalším nasazení. Zapnout ho smí **jen administrátor** v Nastavení → **Zkušební funkce**; obchodník ani vedoucí vypínač nezmění (server je odmítne).",
+            "Na ostrém webu ho nezapínejte, dokud se o zapnutí nerozhodne. Na testovacím webu ho zapněte jen na dobu zkoušení."
           ]
         },
         {
