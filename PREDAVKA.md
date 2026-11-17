@@ -1,6 +1,6 @@
 # Předávka — 17. 11. 2026: VZ-E4 #603 (víc zákazníků — řídící zákazník, Prodáno u zákazníka), větev `claude/vz-e4`
 
-Nad `claude/integrace-vz` `7c80706` (v16.11.6: E0, E1, E2, E3, E5, E5b). **v16.11.7** (koordinace přečísluje). Do
+Nad `claude/integrace-vz` `7c80706` (v16.11.6: E0, E1, E2, E3, E5, E5b). **v17.11.1** (prompt chtěl v16.11.7, ale kontrola verze vyžaduje den posledního commitu; koordinace přečísluje). Do
 `test-draft`, `test`, `main` ani integrace nic; weby, Disk, Pipedrive nic (jen simulátor). **RIZIKOVÁ — před sloučením
 revize poradce Fable.** Roadmapa **#603 hotovo**; meze **B227, B228 doplněné** (nové číslo meze jsem nebral — B229 je
 v rezervě koordinace).
@@ -22,8 +22,8 @@ v rezervě koordinace).
 | webhook po výměně řídícího firmu nepřepíše (neshoda IČO) | ✅ | `pdWebhookVzFirmaCizi`, `bezFirmy` (netlify/lib + functions/pd_webhook.mjs) |
 | controlling: jeden řádek s vítězem | ✅ (beze změny kódu, test) | `src/test_vz_prodej.js` M |
 | testy | ✅ | `src/test_vz_prodej.js` 71/0, `netlify/test_vz_server.mjs` 104/0, `netlify/test_vz_webhook.mjs` 63/0, `src/test_vz_unik.js` 167/0, `src/test_vz_ui.js` 133/0, `src/test_vz_kl_pole.js` 41/0; prohlížeč `overit_vz_prodej.mjs` 19/0, `overit_vz_tisk.mjs` 192/0, `overit_vz_organizace.mjs` 40/0, `overit_vz_zadani.mjs` 76/0 (bajtové srovnání s dist z 7c80706), `overit_vz_zamek.mjs` 31/0, `overit_xss.mjs` 400/0, `overit_lista.mjs` 255/0 |
-| mutace „[VZ E4]“ | viz níže | |
-| kolo `--bez-mutaci` | viz níže | |
+| mutace „[VZ E4]“ | ✅ **jádro 27/27, server 8/8** | 3 starší mutace přesměrované na změněné řádky (E1 odstranění, #563 server, E3 odstranění); 1 serverová vyřazena jako ekvivalentní (komentář) |
+| kolo `--bez-mutaci` | ✅ **VŠE ZELENÉ** | sady 409/0/59 přeskočeno, hodiny +400 dní 373/0/1, statické 6/6 (první běh padl jen na konvenci verze: v16.11.7 → **v17.11.1**, kroky build + statické zopakovány zeleně) |
 
 ## Rozhodnutí (bezpečnější varianta, k revizi)
 
@@ -47,6 +47,7 @@ v rezervě koordinace).
 
 ## Otevřené body
 
+- Obrazovka krycího listu PRODANÉ sdílené varianty při otevřeném jiném zákazníkovi předvyplňuje jeho údaje (tisk jde správně vítězi; KL je po prodeji zamčený, zápis nehrozí) — sjednotit `klVzCtxZak` s `vzTiskKomuUi` (E6).
 - Počet zákazníků v popisu controllingu a v rejstříku — E6.
 - `overit_lista.mjs` a ostatní `overit_*.mjs` (ESM) potřebují `node_modules/playwright` (symlink na globální) — v kole
   se prohlížečové sady bez Playwrightu přeskakují jako dřív; já je pouštěl ručně.

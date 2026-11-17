@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v16.11.7 — VZ-E4 #603: víc zákazníků — řídící zákazník, Prodáno u zákazníka, krycí list a SoD pro prodaného, větev claude/vz-e4
+## v17.11.1 — VZ-E4 #603: víc zákazníků — řídící zákazník, Prodáno u zákazníka, krycí list a SoD pro prodaného, větev claude/vz-e4
 
 Nad `claude/integrace-vz` `7c80706` (v16.11.6: E0, E1, E2, E3, E5, E5b). Vše za vypínačem `viceZakazniku`; s VYP
 a s jedním zákazníkem beze změny (zlatá sada VZ, stránka znak po znaku jako báze). Zadání `podklady/PROMPT_VZ_E4.md`

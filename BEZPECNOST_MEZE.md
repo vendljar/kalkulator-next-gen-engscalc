@@ -2037,7 +2037,7 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   použitého id převezme server `zalozen` z uložené verze jen tehdy, když
   zákazník v ní ještě je (jinak nový z relace). Záznam tisku bez razítka se
   přičítá z1.
-  **Doplněno VZ-E4 (#603, v16.11.7):** (Z2) doklad „odešla nabídka“ se bere
+  **Doplněno VZ-E4 (#603, v17.11.1):** (Z2) doklad „odešla nabídka“ se bere
   i ze zámků v HISTORII ODEMČENÍ (`v.odemceni[].zamek.tisky`, drží ji server,
   B62): po odemčení varianty zákazníka dál odstraní jen administrátor a jeho
   písmeno ani id se neuvolní (`vzRazitkaZakazniku`, `vzOdeslanoKdykoli`;
@@ -2074,7 +2074,7 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   odmítne (400) — před obnovou takové zakázky administrátor vypínač
   `viceZakazniku` zapne (Nastavení → Zkušební funkce), obnoví a může ho
   zase vypnout.
-  **Doplněno VZ-E4 (#603, v16.11.7) — řídící zákazník a Prodáno u zákazníka:**
+  **Doplněno VZ-E4 (#603, v17.11.1) — řídící zákazník a Prodáno u zákazníka:**
   řídícího zákazníka (bez prodeje) mění jen **autor zakázky a administrátor**
   (z relace a ULOŽENÉ verze; zakázka založená webhookem jen administrátor —
   pravidlo K40c), ostatní 403 (`vzServerRidici`); u prodané zakázky nikdo
