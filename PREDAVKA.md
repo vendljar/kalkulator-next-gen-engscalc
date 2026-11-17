@@ -4,7 +4,15 @@ Nad `claude/integrace-vz` `68e5eb8` (v17.11.1: E0–E5b). **v17.11.2** (den posl
 Do `test-draft`, `test`, `main` ani integrace nic; weby, Disk, Pipedrive nic (jen simulátor). Roadmapa **#606**, souhrn
 **#598**; mez **B228 doplněna** (nové číslo meze jsem nebral).
 
-**STAV: ROZDĚLANÉ — kolo a mutace běží (viz níž). Tento oddíl se přepíše po dokončení.**
+**STAV: kód hotový (`5e21cb8`, dokumentace a roadmapa později). Mutace serveru po částech běží (viz níž).**
+
+| běh | výsledek |
+|---|---|
+| kolo `--bez-mutaci` | ✅ **VŠE ZELENÉ** — sady 411/0/59 přeskočeno (prohlížečové bez Playwrightu, firemní podklady), hodiny +400 dní 375/0/1, statické 6/6 (první běh padl jen na `test_manual_fakta` — „pokyn J. V.“ v příručce, opraveno) |
+| prohlížeč ručně (Playwright) | ✅ `overit_vz_zadani` 76/0 (VYP = dist 68e5eb8 znak po znaku, `KNG_DIST_ZAKLAD`), `overit_vz_tisk` 192/0, `overit_vz_zamek` 31/0, `overit_vz_prodej` 19/0, `overit_vz_organizace` 40/0, `overit_xss` 400/0, `overit_vs_zadani` 47/0/1, `overit_lista` konzole čistá |
+| mutace [VZ*] | jádro 158/161 → 3 přeživší E2 (vlastník KL) přežívaly už na 68e5eb8 (zakrývala je vnější vrstva E4 Z1) — nový test vnitřní vrstvy v `test_vz_kl_pole.js` je chytá; server 122/123 → „server nesrovná invariant [VZ E0]“ ekvivalentní (od E4 `prodServer` volá `vzSrovnej` při každém uložení), vyřazena s komentářem |
+| **mutace jádra po částech (N = 4)** | ✅ **1035/1035** (1/4 259, 2/4 259, 3/4 259, 4/4 258; každá v samostatném worktree, ~65 min souběžně) |
+| mutace serveru po částech (N = 16) | ⏳ běží (4 worktree souběžně, části k, k+4, k+8, k+12) |
 
 | úkol | stav | kde |
 |---|---|---|
