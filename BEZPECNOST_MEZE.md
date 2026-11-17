@@ -2056,7 +2056,13 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   a server to od poctivého tisku řídícímu nerozezná — razítko pak nese
   řídícího, i kdyby obchodník měl otevřeného jiného zákazníka. Dokument sám
   vzniká z pohledu (`vzTiskVstup`), takže papír i razítko se shodují; nesedět
-  může jen otevřený zákazník na obrazovce.
+  může jen otevřený zákazník na obrazovce. (R2, revize poradce E4) **Právo na výměnu řídícího
+  (autor, administrátor) jde PŘED prvním odesláním obejít:** kdo smí zakázku
+  ukládat, může prohodit údaje hlavičky a položky v `dalsiZakaznici` bez
+  změny id (`vzRidici.id` zůstane) — server to nepozná jako výměnu řídícího.
+  Po odeslání nabídky to zastaví zmrazení údajů (hlavička řídícího po SoD /
+  údaje dalšího zákazníka po odeslání jemu, 409); písmena a čísla odeslaných
+  nabídek se nemění.
   Obnova zakázky (`/api/obnova`) razítka nových tisků neskládá — zámky
   v záloze jsou doklad (z otisku i `zalozen` a `platna` ze zálohy).
 - **B228 — E3: zmrazení údajů po odeslání nabídky u víc zákazníků.**
@@ -2090,8 +2096,9 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   řídícího) — údaje se jen stěhují; údaje dalších zákazníků hlídá
   `vzServerZakaznici`. Webhook (`pd_webhook.mjs`) u víc zákazníků při
   NESHODĚ IČO organizace dealu a hlavičky pole firmy nepřepisuje ani prázdná
-  nedoplňuje a ARES nevolá (`pdWebhookVzFirmaCizi`). *Co to nedělá:* při
-  shodném (i prázdném) IČO dealu a nového řídícího webhook pole firmy
-  doplňuje jako dřív; SoD jde jen zákazníkovi, kterému nabídka varianty
+  nedoplňuje a ARES nevolá (`pdWebhookVzFirmaCizi`). Shodou je jen NEPRÁZDNÉ
+  a stejné IČO na obou stranách (revize R1: prázdné IČO dealu nebo hlavičky
+  = neshoda, firma se nemění). *Co to nedělá:* při shodném IČO dealu a nového
+  řídícího webhook pole firmy doplňuje jako dřív; SoD jde jen zákazníkovi, kterému nabídka varianty
   odešla — hlídá to jen brána tisku v prohlížeči (`vzTiskZabrana`), server
   razítko tisku SoD posuzuje stejně jako u nabídky (varianta zákazníka).

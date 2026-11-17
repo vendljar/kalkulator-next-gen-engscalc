@@ -140,7 +140,8 @@ export function pdWebhookVolbaText(hodnota, popis) {
 
 /* VZ-E4 (#603, návrh § 7.3): u zakázky s víc zákazníky nese hlavička řídícího
  * zákazníka — po jeho výměně (bez prodeje) zůstává deal na organizaci původního.
- * Při NESHODĚ IČO organizace dealu a hlavičky (jen číslice) webhook pole firmy
+ * Při NESHODĚ IČO organizace dealu a hlavičky (jen číslice; prázdné IČO na
+ * kterékoli straně = neshoda, revize R1) webhook pole firmy
  * (zákazník, sídlo, IČO, DIČ, kontakt) nepřepisuje ani prázdná nedoplňuje
  * a ARES se nevolá. Jeden zákazník / strana PROJ → false (dnešek). */
 export const PD_WEBHOOK_FIRMA = ['objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt'];
@@ -148,7 +149,10 @@ export function pdWebhookVzFirmaCizi(zak, icoDealu, strana) {
   const G = globalThis;
   if (!zak || strana === 'proj' || typeof G.vzRezim !== 'function' || !G.vzRezim(zak)) return false;
   const c = x => String(x == null ? '' : x).replace(/\D+/g, '');
-  return c(icoDealu) !== c(zak.ico);
+  /* Revize poradce R1: shoda jen při NEPRÁZDNÉM a stejném IČO na obou stranách
+   * (prázdné = nelze ověřit, že deal vede tentýž subjekt → firmu neměnit). */
+  const d = c(icoDealu);
+  return !(d && d === c(zak.ico));
 }
 
 /* Kam na zakázce patří hlavička strany. */

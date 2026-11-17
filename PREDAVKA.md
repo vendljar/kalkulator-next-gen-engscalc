@@ -45,6 +45,16 @@ v rezervě koordinace).
 - Mutace serveru „u zakázky z webhooku by řídícího měnil i obchodník“ vyřazena jako ekvivalentní (komentář v
   `netlify/mutace.mjs`), v jádře ji chytá test.
 
+## Revize poradce (17. 11. 2026, „sloučit po opravě“)
+
+- **R1** opraveno: `pdWebhookVzFirmaCizi` uzná shodu jen při neprázdném a stejném IČO dealu i hlavičky; prázdné =
+  neshoda → webhook firmu nemění. Testy (jednotkový + webhook s prázdným IČO obou stran) na 186c51b 2 FAIL, po opravě
+  `test_vz_webhook` 65/0.
+- **R2** dopsáno do B227: před prvním odesláním jde právo na výměnu řídícího obejít prohozením údajů hlavičky
+  a `dalsiZakaznici` bez změny id; po odeslání to zastaví zmrazení (409).
+- **R3** (upozornění, beze změny): tisk bez razítka patří z1, takže „prodat zákazníkovi, kterému odešla“ u takových
+  tisků (z doby jednoho zákazníka) pustí jen z1 — ostatní zákazníci potřebují vlastní tisk s razítkem.
+
 ## Otevřené body
 
 - Obrazovka krycího listu PRODANÉ sdílené varianty při otevřeném jiném zákazníkovi předvyplňuje jeho údaje (tisk jde správně vítězi; KL je po prodeji zamčený, zápis nehrozí) — sjednotit `klVzCtxZak` s `vzTiskKomuUi` (E6).

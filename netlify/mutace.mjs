@@ -7062,6 +7062,10 @@ const MUTACE = [
     hledej: "  if (prodS && prodT && String(prodS.id) === String(prodT.id))",
     nahrad: "  if (false)",
     proc: "server by nechal přepnout řídícího u prodané zakázky", sady: ["test_vz_server.mjs"] },
+  { nazev: "VZ-E4: prázdné IČO dealu i hlavičky by se bralo jako shoda (R1) [VZ E4]", soubor: "lib/pd_webhook.mjs",
+    hledej: "  return !(d && d === c(zak.ico));",
+    nahrad: "  return d !== c(zak.ico);",
+    proc: "prázdné IČO dealu i hlavičky by se bralo jako shoda (R1)", sady: ["test_vz_webhook.mjs"] },
   /* Vyřazena jako ekvivalentní na serveru: „autor = pipedrive-webhook“ — relace nikdy nenese e-mail
    * `pipedrive-webhook` (přihlášení jen e-mailem), takže 403 dá už porovnání autora s relací. Výjimku
    * hlídá jádro (src/test_vz_prodej.js N, mutace jádra „u zakázky založené webhookem…“). [VZ E4] */
@@ -7074,7 +7078,7 @@ const MUTACE = [
     nahrad: "bezFirmy: false });",
     proc: "webhook by po výměně řídícího doplnil firmu původního zákazníka (funkce)", sady: ["test_vz_webhook.mjs"] },
   { nazev: "VZ-E4: neshoda IČO u víc zákazníků by se nepoznala [VZ E4]", soubor: "lib/pd_webhook.mjs",
-    hledej: "  return c(icoDealu) !== c(zak.ico);",
+    hledej: "  return !(d && d === c(zak.ico));",
     nahrad: "  return false;",
     proc: "neshoda IČO u víc zákazníků by se nepoznala", sady: ["test_vz_webhook.mjs"] },
   { nazev: "VZ-E3: platna by nebyla spočítaná ze zámků (N6) [VZ E3]", soubor: "lib/zakazka_kontrola.mjs",
