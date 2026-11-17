@@ -157,6 +157,16 @@ let dva = null;
     [T(2), T(4), T(5), T(10)]);
   test('text: bez klíče prázdný', ULO.uloRejstrikZakazniciText({}) === '' && ULO.uloRejstrikZakazniciText(null) === ''); }
 
+/* prodáno: vítěz (po výměně řídící) má stav „prodano", ostatní odeslaná */
+{ const z = nova('prodáno'); G.vzPridej(z, UDAJE_B, PEVNE);
+  const v = z.varianty[0];
+  zamkni(z, v, G.vzRazitkoSnimek(z, 'z1', v)); zamkni(z, v, G.vzRazitkoSnimek(z, 'z2', v));
+  v.prodano = { datum: '2026-11-17', kdo: 'x', kdy: PEVNE.kdy, zakaznik: 'z2' };
+  G.vzVymenRidiciho(z, 'z2');
+  const x = ULO.uloRejstrikZakaznici(z).zakaznici;
+  test('prodáno B: B (řídící, první) prodano, A odeslaná', x && x[0].nazev === UDAJE_B.objednatel && x[0].stav === 'prodano'
+    && x[1].stav === 'odeslana' && x[0].cislo.endsWith('-B'), x); }
+
 /* strop: zakázka s 1 + 9 zákazníky → 10 položek */
 { const z = nova('deset');
   for (let i = 0; i < 9; i++) { const p = G.vzPridej(z, { objednatel: 'TEST – ODBĚRATEL ' + i }, PEVNE); if (!p.ok) throw new Error(p.chyba); }

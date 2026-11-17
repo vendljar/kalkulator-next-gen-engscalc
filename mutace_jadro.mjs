@@ -4749,6 +4749,15 @@ const MUTACE = [
     hledej: " onchange=\"vzRidiciZmen('${escJs(z.id)}')\"`}",
     nahrad: "`}",
     proc: "přepínač řídícího by nic nedělal", sady: ["test_vz_ui.js"] },
+  /* VZ-E6 (#606): obrazovka krycího listu prodané sdílené varianty = vítěz. [VZ E6] */
+  { nazev: "VZ-E6: obrazovka KL prodané sdílené varianty podle otevřeného zákazníka [VZ E6]", soubor: "ui/kryci_ui.js",
+    hledej: "  const komu = vzTiskKomuUi('kryci', v);",
+    nahrad: "  const komu = vzTiskId();",
+    proc: "krycí list prodané varianty by předvyplnil otevřeného zákazníka, ne vítěze (tisk jde vítězi)", sady: ["test_vz_kl_pole.js"] },
+  { nazev: "VZ-E6: obrazovka KL vždy řídící [VZ E6]", soubor: "ui/kryci_ui.js",
+    hledej: "  if (!komu || komu === vzRidiciId(ZAK)) return ZAK;\n  return vzTiskPohled(ZAK, komu, v) || vzTiskPohled(ZAK, '') || ZAK;",
+    nahrad: "  return ZAK;",
+    proc: "otevřený další zákazník by v krycím listu viděl údaje řídícího", sady: ["test_vz_kl_pole.js"] },
 ];
 
 /* ============================================================

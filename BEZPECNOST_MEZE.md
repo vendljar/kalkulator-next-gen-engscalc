@@ -2099,6 +2099,19 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   nedoplňuje a ARES nevolá (`pdWebhookVzFirmaCizi`). Shodou je jen NEPRÁZDNÉ
   a stejné IČO na obou stranách (revize R1: prázdné IČO dealu nebo hlavičky
   = neshoda, firma se nemění). *Co to nedělá:* při shodném IČO dealu a nového
-  řídícího webhook pole firmy doplňuje jako dřív; SoD jde jen zákazníkovi, kterému nabídka varianty
-  odešla — hlídá to jen brána tisku v prohlížeči (`vzTiskZabrana`), server
-  razítko tisku SoD posuzuje stejně jako u nabídky (varianta zákazníka).
+  řídícího webhook pole firmy doplňuje jako dřív.
+  **Doplněno VZ-E6 (#606, v17.11.2) — SoD jen odeslanému i na serveru:**
+  nový záznam tisku typu `sod` (i `sod_en`/`_de`/`_fr`) server přijme jen
+  zákazníkovi, kterému nabídka TÉ varianty odešla — v zámku musí být dřívější
+  tisk s jeho id (uložené razítko, nebo nové razítko téhož uložení, které
+  server už ověřil); jinak 400 (`vzServerRazitka`). Dřív to hlídala jen brána
+  tisku v prohlížeči (`vzTiskZabrana`). *Co to nedělá:* druh dokumentu
+  (`tisky[].typ`) zapisuje prohlížeč — klient, který záznam smlouvy podvrhne
+  jako tisk nabídky, projde (server neví, co se skutečně vytisklo; dokument
+  vzniká v prohlížeči). Proti omylu a obejití brány tisku to stačí, proti
+  záměrnému podvržení typu záznamu ne. Obnova (`/api/obnova`) razítka
+  neposuzuje (doklad).
+  **VZ-E6 — rejstřík:** klíč `zakaznici` (jen víc zákazníků) nese jen název,
+  číslo nabídky s písmenem a stav; normalizace zahodí jiné klíče (ceny, IČO)
+  a drží strop 10 položek × 300 znaků. Názvy dalších zákazníků tak vidí každý
+  přihlášený jako dnes `objednatel` (návrh § 6).

@@ -143,6 +143,10 @@ const ZAKAZKY = {
   sachty: { cislo: '2026 - OPR - CN - 9105', objednatel: 'Modelová development a.s.',
     nazevAkce: 'dva výtahy v jedné nabídce', kontakt: 'Marie Příkladná',
     adresa: 'Příkladná 3, Plzeň' },
+  /* Víc zákazníků na zakázce (kap. 26, zkušební funkce): dva zákazníci. */
+  zakaznici: { cislo: '2026 - OPR - CN - 9106', objednatel: 'Ukázková správa budov s.r.o.',
+    nazevAkce: 'výtah pro dva poptávající', kontakt: 'Jan Ukázka',
+    adresa: 'Vzorová 12, Praha 4' },
 };
 const ZAKAZNICI = [
   { nazev: 'Ukázková správa budov s.r.o.', sidlo: 'Vzorová 12, 140 00 Praha 4', kontaktOsoba: 'Jan Ukázka' },
@@ -894,7 +898,7 @@ await vezmi('k25-kalkulace', '#proj-kalkulace', { uprav:
 await vezmi('k25-nabidka-volby', SEKCE('#proj-nabidka > .body', 'Nabízet autorský dozor', 'Úvodní fotka nabídky'));
 await vezmi('k25-nabidka-tisk', SEKCE('#proj-nabidka > .body', 'Než nabídku odešlete|Kompletní náhled a tisk nabídky', 'centrální šablon'));
 
-/* Kapitola 27 používá snímek poznamky-prilohy z ukázkové zakázky. */
+/* Kapitola 28 používá snímek poznamky-prilohy z ukázkové zakázky. */
 
 
 /* ---- kap. 25: víc šachet v nabídce (zakázka 9105) ----
@@ -935,13 +939,45 @@ await vezmi('k25vs-kryci', SEKCE('#page-kryci .kl-doc', 'Šachty v nabídce', 'D
 await zalozka('kalk');
 await vsVypinac(false);
 
-/* ---- kap. 30 (administrátor) a kap. 22 (dialog po změně ceníku) ----
+/* ---- kap. 26: víc zákazníků na jedné zakázce (zakázka 9106) ----
+ *
+ * Vypínač viceZakazniku jen pro tyhle snímky (jako kap. 25), druhý zákazník
+ * je z vymyšlené databáze (Vzorové bytové družstvo). */
+krok('kap. 26: víc zákazníků na jedné zakázce (zakázka 9106)');
+const vzVypinac = async (zapnout) => {
+  const prih = await FUNKCE['/api/prihlaseni'](new Request('http://x/api/prihlaseni', { method: 'POST',
+    headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'spravce@priklad.cz', heslo: 'Zkusebni.Heslo.123' }) }));
+  const c = (prih.headers.get('set-cookie') || '').split(';')[0];
+  const r = await FUNKCE['/api/funkce'](new Request('http://x/api/funkce', { method: 'POST',
+    headers: { cookie: c, 'content-type': 'application/json' }, body: JSON.stringify({ viceZakazniku: zapnout }) }));
+  if (r.status !== 200) throw new Error('vypínač víc zákazníků: ' + r.status + ' ' + await r.text());
+  await page.evaluate(() => onlineNactiFunkce());
+  await page.evaluate(() => render());
+  await cekej(300);
+};
+await vzVypinac(true);
+await novaZakazka(ZAKAZKY.zakaznici, ZADANI_ZAKLAD);
+await cekej(600);
+await page.evaluate(() => { vzFormOtevri('ock'); vzFormPole('objednatel', 'Vzorové bytové družstvo');
+  vzFormPole('adresaObjednatele', 'Modelová 7, 602 00 Brno'); vzFormPole('kontakt', 'Eva Modelová'); vzFormPrekresli(); });
+await cekej(300);
+await vezmi('k26vz-pridat', '#vzFormular');
+await page.evaluate(() => { vzFormPridej(); render(); });
+await cekej(600);
+await vezmi('k26vz-karta', '#vzKarta_ock');
+await page.evaluate(() => { vzOtevri(vzZakaznici(ZAK)[1].id); render(); });
+await cekej(400);
+await vezmi('k26vz-pruh', '#page-kalk .vz-tisk-pruh');
+await page.evaluate(() => { vzOtevri(vzRidiciId(ZAK)); render(); });
+await vzVypinac(false);
+
+/* ---- kap. 31 (administrátor) a kap. 22 (dialog po změně ceníku) ----
  *
  * Obojí potřebuje jiné přihlášení: Nastavení → Databáze vidí jen
  * administrátor a dialog „Ceník se od posledního uložení změnil" se objeví
  * obchodníkovi, když mezitím vyšel nový ceník. Každé přihlášení stránku
  * načte znovu, proto se hotové snímky nejdřív odloží. */
-krok('kap. 30: Nastavení → Databáze (administrátor)');
+krok('kap. 31: Nastavení → Databáze (administrátor)');
 await odloz();
 await page.evaluate(() => onlineOdhlas());
 await page.waitForFunction(() => { try { return ONLINE_STAV.ja === null; } catch (e) { return false; } });

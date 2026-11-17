@@ -8,6 +8,44 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v17.11.2 — VZ-E6 #606: víc zákazníků — rejstřík a Přehled, controlling, příručky, závěr VZ (#598), větev claude/vz-e6
+
+Nad `claude/integrace-vz` `68e5eb8` (v17.11.1: E0–E5b). Vše za vypínačem `viceZakazniku` (výchozí VYP, zapíná jen
+administrátor v Nastavení → Zkušební funkce — i po nasazení do testu a main); s VYP a s jedním zákazníkem beze změny.
+Zadání `podklady/PROMPT_VZ_E6.md`, návrh § 6, § 8, § 9 (R5, R6).
+
+- **Rejstřík zakázek:** nepovinný klíč `zakaznici: [{ nazev, cislo, stav }]` jen u zakázek s víc zákazníky (řídící
+  první, číslo nabídky s písmenem, stav rozpracovaná / odeslaná / prodáno), strop 10 položek a 300 znaků, **bez cen,
+  IČO, sídel a kontaktů**; `objednatel` zůstává řídící zákazník. Zakázka s jedním zákazníkem = rejstřík beze změny.
+- **Přehled cenových nabídek:** štítek „N zákazníci“ u zákazníka (jen se zapnutou funkcí, názvy v bublině); hledání
+  najde zakázku i podle názvu nebo čísla nabídky dalšího zákazníka. **Seznam kalkulací:** varianta se najde i podle
+  názvu zákazníka, který na ni ukazuje.
+- **Controlling:** zakázka dál jeden řádek s řídícím zákazníkem (po prodeji vítěz); list Popis uvádí počet zákazníků,
+  hromadný export sloupec „Zákazníci zakázky“ (jen když ho má některá zakázka). Nic se nepočítá dvakrát (test).
+- **Opraveno (otevřený bod E4):** obrazovka krycího listu PRODANÉ sdílené varianty při otevřeném jiném zákazníkovi
+  předvyplňovala jeho údaje — teď údaje vítěze, shodně s tiskem (`klVzCtxZak` → `vzTiskKomuUi`).
+- **Server hlídá „SoD jen zákazníkovi, kterému odešla nabídka“** (dřív jen brána tisku v prohlížeči): záznam tisku
+  `sod` (i jazykové) bez dřívějšího tisku téhož zákazníka v zámku varianty → 400. Mez B228 doplněna (typ záznamu
+  píše prohlížeč — podvržený typ server nepozná).
+- **Víc šachet × víc zákazníků (R6):** společný harness `netlify/test_vz_vs.mjs` — CN se šachtami pro druhého
+  i vlastního zákazníka, tisk a zámek se šachtami, obě poznámky u dealu, oba štítky v rejstříku.
+- **Překlady:** VZ do dokumentů nepřidal žádný nový text (jen písmeno v čísle a údaje zákazníka z dat) — slovník beze
+  změny; dokumenty EN/DE/FR všech zákazníků hlídá `test_vz_unik.js`.
+- **Dokumentace:** příručka obchodníka kapitola **26. Víc zákazníků na jedné zakázce** (3 snímky `k26vz-*`, zakázka
+  9106; kapitoly 27–34 přečíslovány i s odkazy), příručka správce A4 „Zkušební funkce: Víc zákazníků na zakázce“
+  (vypínač výchozí VYP, kdo smí co, zmrazení po odeslání, razítko „komu“, poznámka a organizace v Pipedrive, obnova
+  s VYP), provozní dokumentace (rejstřík, `/api/funkce`, `/api/pd/organizace`); řádky verze příruček v17.11.2.
+- **Testy:** `netlify/test_vz_rejstrik.mjs` (nová), `netlify/test_vz_vs.mjs` (nová), `src/test_vz_unik.js` + rejstřík
+  a controlling, `src/test_vz_kl_pole.js` + obrazovka KL prodané varianty, `netlify/test_vz_server.mjs` + SoD na
+  serveru; mutace „[VZ E6]“ (jádro 2, server 21).
+
+**Souhrn VZ (#598, E0–E6):** jedna zakázka s víc zákazníky (řídící v hlavičce, další v `dalsiZakaznici`), nabídky
+s písmenem (…9940-B), sdílená nebo vlastní varianta, každý dokument z pohledu zákazníka (`vzPohled`, test úniku
+s kanárky), zámek a razítko „komu“ po zákaznících, zmrazení údajů po odeslání, řídící zákazník a Prodáno
+u zákazníka (vítěz = řídící), poznámka „Další zákazníci na zakázce“ a organizace vítěze v Pipedrive, rejstřík,
+Přehled a controlling. Na J. V.: ruční zkouška scénářů prototypu na testovacím webu se zapnutým vypínačem
+(i poznámka a organizace proti simulátoru), nic do ostrého Pipedrive bez jeho pokynu, rozhodnutí o zapnutí na ostrém.
+
 ## v17.11.1 — VZ-E4 #603: víc zákazníků — řídící zákazník, Prodáno u zákazníka, krycí list a SoD pro prodaného, větev claude/vz-e4
 
 Nad `claude/integrace-vz` `7c80706` (v16.11.6: E0, E1, E2, E3, E5, E5b). Vše za vypínačem `viceZakazniku`; s VYP

@@ -37,6 +37,8 @@
  *      hodí (vzTiskHlidej) a s vypnutým hlídačem dostane B údaje A;
  *   P2 pokažený pohled (mělká kopie bez dalsiZakaznici, hlavička
  *      řídícího nepřepsaná) → detektor najde kanárek A v dokumentu B.
+ * VZ-E6 (#606): rejstřík zakázek (smí jen názvy zákazníků) a controlling
+ *   (jen řídící) po odeslání nabídek všem třem zákazníkům.
  * Spuštění: node src/test_vz_unik.js
  * ============================================================ */
 'use strict';
@@ -697,6 +699,36 @@ async function hlavni() {
     try { pr = problemy(await vystupy(zak, vB, 'cz', ZAK_TYPY_OCK), 'B', 'A', 'cz'); } finally { global.vzTiskHlidej = puv; }
     test('pojistka P1b: s vypnutým hlídačem dostane B údaje A — detektor úniku zabírá',
       pr.unik.length >= ZAK_TYPY_OCK.length && pr.unik.some(u => u.cizi.some(x => /zákazník A \/ objednatel/.test(x))), pr.unik.map(u => u.nazev));
+  }
+  /* --- VZ-E6 (#606): REJSTŘÍK a CONTROLLING ---
+   * Rejstřík čtou všichni přihlášení: smí nést NÁZVY zákazníků (kanárek pole 1
+   * objednatel), nic dalšího — ani sídlo, IČO, DIČ, kontakt, zástupce, ani
+   * ceny variant (ani po odeslání, kdy `platna` cenu nese). Controlling je
+   * za zakázku jednou s řídícím: údaje B a C ani ceny jejich variant v něm
+   * nejsou. Zakázka s odeslanými nabídkami A (V1), B (V1) a C (V2). */
+  {
+    const zo = JSON.parse(JSON.stringify(zak));
+    const tiskE6 = (id, v) => zamkniVariantu(v, { typ: 'nabidkaTisk', kdo: PEVNE.kdo, kdy: PEVNE.kdy, cislo: variantaCislo(zo, v),
+      vysledek: variantaUzamcena(v) ? undefined : zamekVysledekSpocti(v, J, 'vz-e6'), snimek: variantaUzamcena(v) ? undefined : zamekSnimekSpocti(v),
+      zakaznik: vzRazitkoSnimek(zo, id, v) });
+    tiskE6('z1', variantaZak(zo, 'z1')); tiskE6('z2', variantaZak(zo, 'z2')); tiskE6('z3', variantaZak(zo, 'z3'));
+    vzPlatnaPrepocti(zo);
+    const rj = JSON.stringify(uloRejstrikNormalizuj([uloRejstrikZaznam(zo)]));
+    const nal = kanarky(rj, 'cz');
+    test('E6 rejstřík: nese názvy všech tří zákazníků (kanárek objednatele A, B, C)',
+      ['A', 'B', 'C'].every(p => nal.some(k => k.druh === 'z' && k.kdo === p && k.pole === 1)), nal);
+    test('E6 rejstřík: žádný jiný údaj zákazníka (sídlo, IČO, DIČ, kontakt, zástupci, v.zakaznik) ani cena či kanárek varianty',
+      !nal.some(k => !(k.druh === 'z' && k.pole === 1)), nal.filter(k => !(k.druh === 'z' && k.pole === 1)).map(popisNalezu));
+    test('E6 rejstřík: platna B a C v zakázce cenu nese (kanárek ceny by se v rejstříku našel)',
+      typeof zo.dalsiZakaznici[1].platna.cena === 'number' && cislice(String(Math.round(zo.dalsiZakaznici[1].platna.cena))).length >= 5);
+    test('E6 rejstřík: stavy odeslaná a čísla s písmenem', /"stav":"odeslana"[\s\S]*-B"[\s\S]*-C"/.test(rj), rj.slice(0, 600));
+    const e = ctrlExportVarianty(zo, variantaZak(zo, 'z1'), { jekly: J, kdo: 'x', kdy: PEVNE.kdy, build: 'test' });
+    const ct = JSON.stringify(e) + JSON.stringify(ctrlExportListy(e, ctrlVychozi()));
+    const nc = kanarky(ct, 'cz');
+    test('E6 controlling: export jde sestavit a nese řídícího A', e.ok && nc.some(k => k.druh === 'z' && k.kdo === 'A' && k.pole === 1), e.chyba);
+    test('E6 controlling: žádný údaj B ani C, žádná cena ani kanárek variant V2/V3',
+      cizi(nc, 'A', 'A').length === 0, cizi(nc, 'A', 'A').map(popisNalezu));
+    test('E6 controlling: Popis nese počet zákazníků „3 zákazníci"', /Zákazníci zakázky","3 zákazníci/.test(ct));
   }
   /* --- POJISTKA P2: pokažený pohled (hlavička nepřepsaná) --- */
   {
