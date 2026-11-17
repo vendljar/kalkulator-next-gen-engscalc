@@ -202,6 +202,25 @@ const CTX = { kdo: 'obchodnik@priklad.cz', role: 'Obchodník' };
   test('E server: výměna řídícího u prodané zakázky → 409 i pro administrátora', e3 && e3.status === 409, e3);
 }
 
+/* ---------- E2) prodej STARŠÍ varianty, která zákazníkovi odešla (ukazuje už jinam) ---------- */
+{
+  const z = zakazka();
+  const v1 = z.varianty[0];
+  tiskni(z, v1, 'z1'); tiskni(z, v1, 'z2');                 // V1 odešla A i B
+  const kl = klonujVariantu(z, v1.id, { aktivovat: false });   // B dostane vlastní (rozpracovanou) variantu
+  z.dalsiZakaznici[0].varianta = kl.id;
+  const stara = kop(z);
+  const zz = kop(z);
+  zz.varianty[0].prodano = { datum: DNES, zakaznik: 'z2' };
+  const e = prodServer(stara, zz, { email: 'vedouci@priklad.cz', role: 'Vedoucí' }, { ted: Date.now() });
+  test('E2 server: prodej V1 zákazníkovi B, který už ukazuje na vlastní V2 — řídící B, řídící varianta V1, vzRidici.varianta = V1 (invariant)',
+    e === null && vzRidiciId(zz) === 'z2' && zz.varianty[0].ridici === true && zz.vzRidici.varianta === zz.varianty[0].id && vzSrovnej(zz).length === 0,
+    [e, zz.vzRidici, zz.varianty.map(v => v.ridici)]);
+  test('E2 server: výměna řídícího novým prodejem vedoucím (není autor) — vzServerRidici ji pustí (práva prodeje hlídá prodServer)',
+    vzServerRidici(stara, zz, { email: 'vedouci@priklad.cz', role: 'Vedoucí' }, {}) === null
+    && (vzServerRidici(stara, (() => { const y = kop(stara); vzVymenRidiciho(y, 'z2'); return y; })(), { email: 'vedouci@priklad.cz', role: 'Vedoucí' }, {}) || {}).status === 403);
+}
+
 /* ---------- F) doplněk 2: prodOciste propustí zakaznik ---------- */
 {
   const p = prodOciste({ datum: '2026-11-16', kdo: 'a', kdy: 'b', zakaznik: 'z2', pipedrive: { stav: 'ceka', kdy: 'b' } });

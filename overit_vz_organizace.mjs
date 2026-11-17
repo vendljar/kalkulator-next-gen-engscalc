@@ -248,9 +248,19 @@ await zakazka({});
 await p.evaluate(() => { ONLINE_STAV.soubor = ''; window.__dotazy = []; return vzPoProdejiPd(ZAK); });
 test('zakázka bez online souboru: vzPoProdejiPd nic nevolá', await p.evaluate(() => window.__dotazy.length === 0));
 await p.evaluate(() => { __online('prodal@priklad.cz', 'Obchodník'); });
-test('vzPoProdejiPd se nikde automaticky nevolá (háček E4 ještě není)', await p.evaluate(() => {
+/* VZ-E4 (#603): háček vzPoProdeji() po uloženém prodeji volá vzPoProdejiPd — jediné automatické místo. */
+test('vzPoProdejiPd volá jen háček vzPoProdeji (E4) a tlačítko „Zkusit zápis znovu"', await p.evaluate(() => {
   const src = [...document.scripts].map(s => s.textContent).join('\n');
-  return (src.match(/vzPoProdejiPd\(/g) || []).length === 2;   // definice + onclick tlačítka
+  return (src.match(/vzPoProdejiPd\(/g) || []).length === 3   // definice + onclick tlačítka + háček
+    && /function vzPoProdeji\(zak\)[\s\S]{0,200}return vzPoProdejiPd\(zak\)/.test(src);
+}));
+test('háček vzPoProdeji: prodaná zakázka s víc zákazníky → zápis organizace; jeden zákazník → nic', await p.evaluate(async () => {
+  window.__dotazy = [];
+  await vzPoProdeji(ZAK);
+  const n1 = window.__dotazy.length;
+  window.__dotazy = [];
+  await vzPoProdeji(null);
+  return n1 === 1 && window.__dotazy.length === 0;
 }));
 
 /* ---------- 6: VYP a jeden zákazník ---------- */

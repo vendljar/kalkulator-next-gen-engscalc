@@ -466,7 +466,10 @@ console.log('\nJeden zákazník — beze změny');
     s1[n] = (await spust(kod)).okna.map(o => o.titulek + '\n' + o.html).join('');
   }
   /* táž zakázka, cesta bez pohledu (stav před E2) */
-  await p.evaluate(() => { window.__vzZal = window.vzTiskVstup; window.vzTiskVstup = (typ, varianta) => ({ zak: ZAK, varianta }); });
+  /* VZ-E4: SoD jen zákazníkovi, kterému nabídka odešla (zábrana) — v pojistce
+   * (cesta bez pohledu, nic se nezamyká) se zábrany vynechají taky. */
+  await p.evaluate(() => { window.__vzZal = window.vzTiskVstup; window.vzTiskVstup = (typ, varianta) => ({ zak: ZAK, varianta });
+    window.__vzZabZal = window.vzTiskZabranaUi; window.vzTiskZabranaUi = () => ''; });
   for (const n of Object.keys(s1)) {
     const kod = { 'náhled a tisk nabídky': 'nabidkaOckDokument()', 'náhled podkladů': 'nabidkaNahled()', 'krycí list': "kryciTiskPohled('bo')", 'porovnání': 'porovnaniTisk()' }[n];
     s2[n] = (await spust(kod)).okna.map(o => o.titulek + '\n' + o.html).join('');
@@ -496,7 +499,10 @@ console.log('\nJeden zákazník — beze změny');
 console.log('\nPojistka — tisk bez pohledu musí detektor zachytit');
 if (!BEZ_POHLEDU) {
   const c = await priprav('tri'); await otevri(c.ids.B);
-  await p.evaluate(() => { window.__vzZal = window.vzTiskVstup; window.vzTiskVstup = (typ, varianta) => ({ zak: ZAK, varianta }); });
+  /* VZ-E4: SoD jen zákazníkovi, kterému nabídka odešla (zábrana) — v pojistce
+   * (cesta bez pohledu, nic se nezamyká) se zábrany vynechají taky. */
+  await p.evaluate(() => { window.__vzZal = window.vzTiskVstup; window.vzTiskVstup = (typ, varianta) => ({ zak: ZAK, varianta });
+    window.__vzZabZal = window.vzTiskZabranaUi; window.vzTiskZabranaUi = () => ''; });
   for (const d of VYSTUPY) {
     const r = await spust(d.kod, d.stazeni);
     const vse = r.okna.map(o => o.html + o.titulek).join('') + r.stazeni.map(s => s.text + s.nazev).join('');
@@ -518,7 +524,7 @@ if (!BEZ_POHLEDU) {
     zkus(`bez pohledu i bez vzTiskHlidej · ${d.nazev}: Word vznikl a detektor najde cizího kanárka (${k.cizi.join(',') || '—'}${k.vlastni ? '' : ', vlastní chybí'})`,
       r.stazeni.length === d.stazeni && (k.cizi.length > 0 || !k.vlastni), { cizi: k.cizi, vlastni: k.vlastni, stav: r.stav, chyba: r.chyba });
   }
-  await p.evaluate(() => { window.vzTiskVstup = window.__vzZal; window.vzTiskHlidej = window.__vzHlidejZal; });
+  await p.evaluate(() => { window.vzTiskVstup = window.__vzZal; window.vzTiskHlidej = window.__vzHlidejZal; window.vzTiskZabranaUi = window.__vzZabZal; });
 } else info('běh bez pohledu (KNG_VZ_BEZ_POHLEDU=1) — oddíl 8 se přeskakuje, celý běh má být červený');
 
 await b.close();
