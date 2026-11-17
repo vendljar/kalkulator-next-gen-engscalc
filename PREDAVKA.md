@@ -49,7 +49,7 @@ v rezervě koordinace).
 
 - **R1** opraveno: `pdWebhookVzFirmaCizi` uzná shodu jen při neprázdném a stejném IČO dealu i hlavičky; prázdné =
   neshoda → webhook firmu nemění. Testy (jednotkový + webhook s prázdným IČO obou stran) na 186c51b 2 FAIL, po opravě
-  `test_vz_webhook` 65/0.
+  `test_vz_webhook` 65/0; mutace [VZ E4] server 9/9; kolo `--bez-mutaci` po opravě **VŠE ZELENÉ** (409/0/59, hodiny 373/0/1, statické 6/6).
 - **R2** dopsáno do B227: před prvním odesláním jde právo na výměnu řídícího obejít prohozením údajů hlavičky
   a `dalsiZakaznici` bez změny id; po odeslání to zastaví zmrazení (409).
 - **R3** (upozornění, beze změny): tisk bez razítka patří z1, takže „prodat zákazníkovi, kterému odešla“ u takových
