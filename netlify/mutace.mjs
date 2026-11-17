@@ -519,10 +519,11 @@ const MUTACE = [
     nahrad: "      return { status: 400, chyba: G.VZ_VYPNUTO };",
     proc: 'obchodník by nevěděl, proč nejde smazat variantu', sady: ['test_vz_server.mjs'] },
   /* „VZ: platna z prohlížeče [VZ E0]“ vyřazena v E3 (#602): volání vzPlatnaDrz odstraněno — platnu přepočítá vzPlatnaPrepocti (mutace „platna by nebyla spočítaná ze zámků (N6)“). */
-  { nazev: 'VZ: server nesrovná invariant [VZ E0]', soubor: 'lib/zakazka_kontrola.mjs',
-    hledej: "  G.vzSrovnej(zak);\n  return null;",
-    nahrad: "  return null;",
-    proc: 'řídící zákazník by ukazoval na jinou variantu, než nese deal', sady: ['test_vz_server.mjs'] },
+  /* VZ-E6 (17. 11. 2026): mutace „VZ: server nesrovná invariant [VZ E0]“ (odebrat G.vzSrovnej
+   * na konci vzServerKontrola) VYŘAZENA jako ekvivalentní — od E4 (#603) volá prodServer
+   * (src/objednane.js, běží při KAŽDÉM uložení po vzServerKontrola) vzSrovnej bezpodmínečně,
+   * takže invariant srovná druhé volání. Přežívala už na 68e5eb8; chování hlídá dál
+   * test_vz_server.mjs („server invariant srovná“). */
   { nazev: 'VZ: kontrola nedostane vypínač [VZ E0]', soubor: 'lib/zakazka_kontrola.mjs',
     hledej: "    const p = vzServerKontrola(stara, zak, { zapnuto: ctx.viceZakazniku === true, obnova, zeSouboru, relace });",
     nahrad: "    const p = vzServerKontrola(stara, zak, { zapnuto: true, obnova, zeSouboru, relace });",
