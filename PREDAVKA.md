@@ -1,3 +1,62 @@
+# Předávka — 18. 11. 2026: RYCHLÁ CESTA K40-N1 do main (první použití), větev `claude/rychla-k40n1`, v18.11.3
+
+Nad `origin/main` `6c4bc80` (v11.11.1). Rozhodnutí J. V. 18. 11. 2026, návrh `podklady/NAVRH_REZIE_2026-11-18.md`
+(větev `claude/navrh-rezie`, S1 + „Rychlá cesta“). Do `main`, `test` ani integrace NIC — sloučení jen na pokyn J. V.
+Weby, Disk, Pipedrive nic. Verze 18.11.3 (integrace má 18.11.2) — koordinace ji může přečíslovat.
+
+## Commity
+
+| commit | obsah |
+|---|---|
+| `8e25477` | cherry-pick `b4e2023` (K40a N1, #579) bez konfliktu; zpráva doplněna o pojistku rychlé cesty |
+| `b4a9622` | nutné minimum navíc: revize K40a D1 z `214369c` (jen D1) + mutace D1 z `350b307` |
+| `25ebb3a2` | verze 18.11.3, CHANGELOG „rychlá cesta K40-N1“ |
+
+**Proč D1 navíc (nejmenší nutné minimum):** `b4e2023` rozšířil migraci skla na šachty 2+ (`ock.dalsi`). Bez D1
+by `importZakazka` u ZAMČENÉ varianty s víc šachtami přemapoval osiřelé vyřazení skla boků šachty 2+ → změna
+ceny odeslané nabídky a ověření zámku „nesouhlasí“ (v testu nalezeno revizí K40a 12. 11.). Vzato jen
+`skloMigraceNazvu(d, { jenPrvni })`, volání v `zakazka.js`, test 7b; hláška můstků (D6) z téhož commitu
+vynechána (v main není a s cenou skla nesouvisí). Mutace: jádro `[K40a] D1` + překotvení `[K40a] N1`
+na nový text; server `[K40a] D1` + `../src/test_k40_celni_sklo.js` v SADY. D2/D7 z `350b307` nevzaty.
+
+## Pojistka
+
+- `src/test_k40_celni_sklo.js`: nad `6c4bc80` 47 OK / 28 FAIL, po opravě 75 OK / 0 FAIL
+  (samotný N1 test bez 7b: 41/27 → 68/0).
+- D1 (7b): nad `8e25477` (N1 bez D1) 72 OK / 3 FAIL → 75/0.
+
+## Mutace
+
+- Cílené: jádro `[K40a]` 6/6 chycené, `K37-N1` 3/3; server `[K40a]` 1/1. `--kontrola` jádro 826, server 1388 úseků OK.
+- Celé jádro po částech (4 části): viz výsledek níž / zpráva koordinaci. Celé mutace serveru (16 částí, ~5 h)
+  se do sezení nevejdou → pustit workflow Testy ručně nad `claude/rychla-k40n1` (návrh S1).
+
+## Cílené kolo main-před × main-po
+
+Dva stromy (`6c4bc80` a tato větev), stejný zkušební ceník main (`src/zkusebni_cenik.js`, generátor zlaté sady
+VS, pevné semínko), stejná sada: 3 fixtury + 12 scénářů + 1 000 fuzz zadání. Skutečný ceník ani ceny do repa ne;
+nástroje kola leží v scratchpadu sezení (zlatá sada `nastroje/zlata_vs.js` beze změny + skript přepínání
+přes skutečné `set()` z `ui/common.js`, stejně jako `test_k40_celni_sklo.js`).
+
+| porovnání | počet | shodných | rozdílů | případy rozdílu |
+|---|---|---|---|---|
+| zlatá sada VS — všechny dokumenty bez přepínání (`zlata_vs.js`) | 1 019 | 1 019 | 0 | — |
+| přepnutí typu / zasklení / obojího (× bez vyřazení, čelní, boky, čelní+boky; + výchozí a import) | 20 140 | 17 030 | 3 110 | všechny s vyřazeným nebo přepsaným čelním sklem a přepnutím, které mění jeho název (vč. fixtury 2026-08-08 s ručním množstvím čelního skla: 4 stavy) — z toho 808 mění cenu |
+| víc šachet — import (2 šachty, 1 000 zadání × bez / sirotek boků / sirotek čelního × zamčená / otevřená) | 6 000 | 5 000 | 1 000 | **sirotek skla BOKŮ u šachty 2, OTEVŘENÁ varianta** |
+
+**STOP bod pro J. V.:** poslední řádek je mimo úzký rozsah „přepnutí + čelní sklo“. Je to záměrné rozšíření
+K40a (migrace boků jako u šachty 1 od K37, i při otevření zakázky), dotkne se jen dat víc šachet (za vypínačem
+`/api/funkce`, výchozí VYP), zamčené nabídky se nemění (D1). Volby: a) přijmout tak, jak je v testu od v12.11.1;
+b) z rychlé cesty vyřadit rozšíření na šachty 2+ (pak se main a test liší v kódu — proti pravidlu „jedna cesta“).
+
+## Další krok
+
+1. J. V. rozhodne STOP bod (a/b) a sloučení do main.
+2. Ruční workflow Testy nad větví (celé mutace serveru).
+3. Po sloučení do main týž den zpět do integrace (pravidlo návrhu S1); tag/release až po sloučení.
+
+---
+
 # Předávka — VS-E6 #570 (#596): závěr víc šachet — překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi po částech, větev `claude/vs-e6`
 
 Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Do `test-draft`, `test` ani `main` nic;
