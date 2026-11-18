@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.11.7 — VZ-F1 #652: opravy nálezů ruční zkoušky víc zákazníků na testu (N3, N1, N2, N4, zástupci v KL, controlling), větev claude/vz-f1
+
+Nad integrací `ec5bbac` (v18.11.5). Protokol `podklady/kola/STAV_TEST_VZ_2026-11-18.md`. Číslo verze v18.11.6 už nesou
+souběžné dávky SL a C7 — konečné číslo určí koordinace. Víc zákazníků dál za vypínačem `viceZakazniku` (výchozí VYP).
+
+- **VZ-N3 #646 (vysoká, únik do smlouvy):** pole „Zástupci a kontakty zákazníka" a DIČ v krycím listu OCK i PROJ šla
+  u otevřeného dalšího zákazníka do hlavičky řídícího — SoD A pak nesla zástupce C. Nově `vzKlCesta` (adresát listu jako
+  tisk: u prodané varianty vítěz, jinak otevřený zákazník) a `vzCesta` odkloní i `ZAK.zastupci.<pole>` do
+  `dalsiZakaznici[i].zastupci`; čtení, zápis, zámek i zmrazení (DIČ) podle adresáta. Výměna řídícího: zástupci putují se
+  svým zákazníkem. VYP a jeden zákazník beze změny.
+- **Krycí list tiskne zástupce #650 (rozhodnutí J. V.):** vytištěný KL BO (i Techdata a KL PROJ BO) měl prázdnou sekci
+  Zástupci a prázdnou banku, účet a zápis v rejstříku — provázaná pole neměla předvyplnění. Tiskne se zákazník, pro kterého
+  se tiskne. **Mění text vytištěného krycího listu i u jednoho zákazníka** (očekávaný rozdíl porovnání sestavení).
+- **VZ-N1 #647:** „Přidat zákazníka" se stejným IČO odmítne hláškou „Zákazník s tímto IČO už v zakázce je (…)"; server
+  (`vzServerZakaznici` přes `vzServerKontrola`) odmítne nového zákazníka s duplicitním IČO 400. Bez IČO se nehlídá,
+  uložená data s duplicitou a obnova se neblokují.
+- **VZ-N2 #648:** výběr „Otevřená varianta" v hlavičce nabízí jen varianty otevřeného zákazníka (cizí vlastní skryté).
+- **VZ-N4 #649:** krycí list vlastní varianty dalšího zákazníka se jmenuje jako jeho CN (`…9801.2-C`).
+- **Controlling #651 (rozhodnutí J. V.):** řádek prodeje dalšímu zákazníkovi nese číslo s písmenem (`…9801-B`).
+- **Plná moc (rozhodnutí J. V.):** beze změny, jen pro řídícího; věta v příručce (kap. 26).
+- **Testy:** `src/test_vz_f1.js` 49/0 (pojistka: na ec5bbac 32 FAIL), `netlify/test_vz_server.mjs` +2 (110/0),
+  `src/test_escape.js` (seznam ověřených interpolací). Mutace [VZ F1]: jádro 17/17, server viz PREDAVKA; přepsané na nový
+  kód E1 (vzCesta ×2), E2 (název KL) a K40a D7 (bind v onchange ×2).
+
 ## v18.11.5 — S6 + S8 #613: jedna evidence v roadmap.json, PREHLED.md a NOVINKY.md, větev claude/s6s8-evidence
 
 Nad integrací `9bd6dc8` (v18.11.4 = test). Kód aplikace beze změny. Podle návrhu režie vývoje (`podklady/NAVRH_REZIE_2026-11-18.md`,

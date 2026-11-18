@@ -1389,7 +1389,8 @@ function pdStavRadek(zak) {
 function zakazkaHlavicka(ock) {
   const akt = aktivniVarianta(ZAK), rid = ridiciVarianta(ZAK);
   zajistiProjHlavicku(ZAK);   // starší zakázka hlavičku PROJ ještě nemá – doplní se
-  const opts = ZAK.varianty.map(v =>
+  /* VZ-F1 (VZ-N2): u víc zákazníků jen varianty otevřeného zákazníka. */
+  const opts = ((typeof vzVariantyHlavicka === 'function' && vzVariantyHlavicka()) || ZAK.varianty).map(v =>
     `<option value="${esc(v.id)}" ${v.id === akt.id ? 'selected' : ''}>${esc(v.nazev)}${v.ridici ? ' · řídící' : ''}</option>`).join('');
   const txt = (path, label, pill) => `<div class="row"><label>${label}${pill || ''}</label>
     <input type="text" value="${esc(get(path))}" onchange="set('${escJs(path)}', this.value)"${

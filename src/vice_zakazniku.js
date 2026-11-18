@@ -185,6 +185,21 @@ function vzIdDalsi(zak) {
   return 'z' + (max + 1);
 }
 
+/* VZ-F1 (VZ-N1, #646): IČO pro porovnání — jen číslice ('' = bez IČO). */
+function vzIcoKlic(ico) {
+  return vzText(ico).replace(/\D+/g, '');
+}
+/* Zákazník zakázky se stejným IČO (jiný než `kromeId`), nebo null.
+ * Zákazníci bez IČO se nehlídají. */
+function vzIcoDuplicita(zak, ico, kromeId) {
+  const k = vzIcoKlic(ico);
+  if (!k) return null;
+  return vzZakaznici(zak).find(z => z.id !== String(kromeId == null ? '' : kromeId) && vzIcoKlic(z.hlavicka.ico) === k) || null;
+}
+function vzIcoDuplicitaText(z) {
+  return 'Zákazník s tímto IČO už v zakázce je (' + (vzText(z && z.hlavicka && z.hlavicka.objednatel).trim() || (z && z.id) || '?') + ').';
+}
+
 /* PŘIDÁNÍ ZÁKAZNÍKA (§ 2a). `udaje` = { objednatel, adresaObjednatele, ico,
  * dic, kontakt, zastupci? }; volby { vlastni, zdroj, kdo, kdy, nazevVarianty }.
  *   vlastni: false (výchozí) — sdílí variantu řídícího zákazníka;
@@ -198,6 +213,8 @@ function vzPridej(zak, udaje, volby) {
   if (!h.objednatel.trim()) return { ok: false, chyba: 'Vyplňte název zákazníka.' };
   if (VZ_HLAVICKA_POLE.some(k => h[k].length > VZ_TEXT_MAX)) return { ok: false, chyba: 'Údaj zákazníka je příliš dlouhý (nejvýš ' + VZ_TEXT_MAX + ' znaků).' };
   if (vzDalsi(zak).length >= VZ_DALSI_MAX) return { ok: false, chyba: 'Zakázka má nejvýš ' + (VZ_DALSI_MAX + 1) + ' zákazníků.' };
+  const dupl = vzIcoDuplicita(zak, h.ico);   // VZ-F1 (VZ-N1): týž subjekt podruhé ne
+  if (dupl) return { ok: false, chyba: vzIcoDuplicitaText(dupl) };
   const pismeno = vzPismenoDalsi(zak);
   if (!pismeno) return { ok: false, chyba: 'Písmena zákazníků došla (nejvýš Z).' };
   const ridiciVar = vzRidiciVariantaId(zak);
@@ -1096,6 +1113,17 @@ function vzServerZakaznici(stara, zak, relace, volby) {
     if (n.pismeno && ulozPismena.has(n.pismeno))
       return { status: 400, chyba: 'Neuloženo: písmeno ' + n.pismeno + ' už nese odeslaná nabídka jiného zákazníka.' };
   }
+  /* VZ-F1 (VZ-N1): NOVÝ zákazník nesmí nést IČO, které už v zakázce je
+   * (zákazníci bez IČO se nehlídají; dřívější data s duplicitou ukládání
+   * neblokují — hlídá se jen přidání). */
+  /* Hláška jmenuje dřívějšího zákazníka (pořadí: řídící, další); předponu
+   * „Neuloženo:" přidá volající (zakazka_kontrola.mjs). */
+  if (!o.obnova) for (const n of ted) {
+    if (predIds.has(n.id)) continue;
+    const k = vzIcoKlic(n.hlavicka.ico);
+    const dupl = k ? ted.slice(0, ted.indexOf(n)).find(z => vzIcoKlic(z.hlavicka.ico) === k) : null;
+    if (dupl) return { status: 400, chyba: vzIcoDuplicitaText(dupl) };
+  }
   /* § 5: údaje dalšího zákazníka po odeslání jemu (uložená verze). */
   for (const p of pred) {
     const n = tedIds.get(p.id);
@@ -1527,7 +1555,7 @@ if (typeof module !== 'undefined' && module.exports)
   module.exports = { VZ_DALSI_MAX, VZ_VYPNUTO_VARIANTA, VZ_TEXT_MAX, VZ_RIDICI_ID, VZ_ID_TVAR, VZ_PISMENO_TVAR, VZ_PISMENA, VZ_HLAVICKA_POLE,
     VZ_ZASTUPCI_POLE, VZ_RIDICI_KLICE, VZ_DALSI_KLICE, VZ_PLATNA_KLICE, VZ_OTISK_FIRMA, VZ_POHLED_BEZ, VZ_VYPNUTO,
     vzDalsi, vzRezim, vzMaData, vzRidiciId, vzRidiciVariantaId, vzZastupciPrazdni, vzZakaznici, vzZakaznik,
-    vzRazitkaZakazniku, vzPismenoDalsi, vzIdDalsi, vzPridej, vzVariantaJenJeho, vzOdstran, vzVymenRidiciho,
+    vzRazitkaZakazniku, vzPismenoDalsi, vzIdDalsi, vzIcoKlic, vzIcoDuplicita, vzIcoDuplicitaText, vzPridej, vzVariantaJenJeho, vzOdstran, vzVymenRidiciho,
     vzSrovnej, vzProjFirma, vzUkazateleOprav, vzPohled, vzTvarProblemy, vzOcisti, vzPodpis, vzPlatnaDrz, vzTvarText,
     vzPismenoPohledu, vzCisloSPismenem, vzCisloRozloz, vzVariantyZakaznika, vzTiskPohled, vzNorm, vzNazevJadro,
     vzTextCizi, vzTypProj, vzSdileneTexty, vzTiskZabrana, vzTiskPruhText, vzTiskVarianta, vzTiskHlidej,

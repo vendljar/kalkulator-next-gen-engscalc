@@ -1567,12 +1567,12 @@ const MUTACE = [
     nahrad: "  if (false) return stoji(",
     proc: 'skript by při neplatném dni kopie mazal staré kopie bez pojistky úbytku (revize K40a D2)', sady: ['test_577_apps_script.mjs'] },
   { nazev: '[K40a] D7: bind v onchange krycího listu PROJ bez escJs', soubor: '../src/ui/kryci_proj_ui.js',
-    hledej: "onchange=\"set('${escJs(p.bind)}', this.value)\"",
-    nahrad: "onchange=\"set('${p.bind}', this.value)\"",
+    hledej: "onchange=\"set('${escJs(b)}', this.value)\"",
+    nahrad: "onchange=\"set('${b}', this.value)\"",
     proc: 'cesta pole by v onchange krycího listu byla průchod pro skript (revize K40a D7)', sady: ['../src/test_escape.js'] },
   { nazev: '[K40a] D7: bind v onchange krycího listu OCK bez escJs', soubor: '../src/ui/kryci_ui.js',
-    hledej: "onchange=\"set('${escJs(p.bind)}', this.value)\"",
-    nahrad: "onchange=\"set('${p.bind}', this.value)\"",
+    hledej: "onchange=\"set('${escJs(b)}', this.value)\"",
+    nahrad: "onchange=\"set('${b}', this.value)\"",
     proc: 'cesta pole by v onchange krycího listu byla průchod pro skript (revize K40a D7)', sady: ['../src/test_escape.js'] },
   { nazev: '[K40a] X4: skript neohlásí budoucí kopie', soubor: '../nastroje/apps_script/kopie_disk.gs',
     hledej: "  var podezrela = vyber.budouci;",
@@ -7320,6 +7320,25 @@ const MUTACE = [
     hledej: "    return { nazev: uloRejstrikText(z.hlavicka.objednatel),",
     nahrad: "    return { nazev: uloRejstrikText(z.hlavicka.objednatel + ' ' + z.hlavicka.adresaObjednatele),",
     proc: "rejstřík (čtou všichni) by nesl sídlo zákazníků", sady: ["../src/test_vz_unik.js"] },
+  /* VZ-F1 (18. 11. 2026, VZ-N1): server odmítne nového zákazníka se IČO, které
+   * už v zakázce je (vzServerZakaznici přes vzServerKontrola). Hlídá
+   * netlify/test_vz_server.mjs (uložení přes /api/zakazky). [VZ F1] */
+  { nazev: "VZ-F1: server uloží zákazníka se stejným IČO [VZ F1]", soubor: "../src/vice_zakazniku.js",
+    hledej: "    if (dupl) return { status: 400, chyba: vzIcoDuplicitaText(dupl) };",
+    nahrad: "    if (false) return { status: 400, chyba: vzIcoDuplicitaText(dupl) };",
+    proc: "podvrhem mimo obrazovku by šel týž subjekt do zakázky dvakrát (VZ-N1)", sady: ["test_vz_server.mjs"] },
+  { nazev: "VZ-F1: server porovná IČO bez normalizace [VZ F1]", soubor: "../src/vice_zakazniku.js",
+    hledej: "  return vzText(ico).replace(/\\D+/g, '');",
+    nahrad: "  return vzText(ico);",
+    proc: "IČO s mezerami by serverovou kontrolu obešlo (VZ-N1)", sady: ["test_vz_server.mjs"] },
+  { nazev: "VZ-F1: server hlídá i zákazníky bez IČO [VZ F1]", soubor: "../src/vice_zakazniku.js",
+    hledej: "    const dupl = k ? ted.slice(0, ted.indexOf(n)).find(z => vzIcoKlic(z.hlavicka.ico) === k) : null;",
+    nahrad: "    const dupl = ted.slice(0, ted.indexOf(n)).find(z => vzIcoKlic(z.hlavicka.ico) === k);",
+    proc: "dva zákazníci bez IČO by nešli uložit", sady: ["test_vz_server.mjs"] },
+  { nazev: "VZ-F1: hláška jmenuje pozdějšího zákazníka [VZ F1]", soubor: "../src/vice_zakazniku.js",
+    hledej: "ted.slice(0, ted.indexOf(n)).find(",
+    nahrad: "ted.filter(z => z !== n).find(",
+    proc: "hláška by jmenovala právě přidávaného, ne toho, kdo v zakázce už je", sady: ["test_vz_server.mjs"] },
 ];
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
  * (nález T5 revize v22.9.9, 22. 9. 2026)

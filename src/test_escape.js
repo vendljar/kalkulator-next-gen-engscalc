@@ -360,7 +360,6 @@ const PROVERENO = {
   },
   'kryci_ui.js': {
     'label': 'popisek pole z konstanty KRYCI_SEKCE',
-    "typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc(), cesta se do HTML nevkládá (revize K40a D7: bind v RIZIKO)',
     "typeof zamekDphAttr === 'function' ? zamekDphAttr(bind) : ''": 'hotové atributy zmrazené sazby DPH ze zamekDphAttr() — cesta se do HTML nevkládá (revize K40a D7: bind v RIZIKO)',
     'p.label': 'popisek pole z konstanty KRYCI_SEKCE',
     's.sekce': 'název sekce z konstanty KRYCI_SEKCE',
@@ -370,7 +369,6 @@ const PROVERENO = {
   },
   'kryci_proj_ui.js': {
     'label': 'popisek pole z konstanty KRYCI_SEKCE (zrcadlo kryci_ui.js)',
-    "typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc(), cesta se do HTML nevkládá (revize K40a D7: bind v RIZIKO)',
     'p.label': 'popisek pole z konstanty KRYCI_SEKCE',
     's.sekce': 'název sekce z konstanty KRYCI_SEKCE',
     "tiskListaHtml({ pozn: 'Verze ' + d.verzeNazev + ' — uložte jako samostatný soubor (' + d.nazevSouboru + '.pdf).' })":

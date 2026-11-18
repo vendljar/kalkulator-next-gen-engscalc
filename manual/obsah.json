@@ -1055,7 +1055,7 @@
           "polozky": [
             "Každý tisk nese **razítko adresáta** — aplikace ví, komu která nabídka odešla. Číslo s písmenem a stav v kartě se podle toho mění samy.",
             "**Prodáno** jde jen zákazníkovi, kterému nabídka té varianty **odešla**. Před uložením aplikace ukáže, co se změní (řídící zákazník, řídící varianta, organizace dealu).",
-            "**Smlouvu o dílo** vytvoříte jen pro zákazníka, kterému nabídka té varianty odešla — hlídá to tisk i server. U prodané sdílené varianty jde krycí list i smlouva vždy vítězi, i když máte otevřeného jiného zákazníka.",
+            "**Smlouvu o dílo** vytvoříte jen pro zákazníka, kterému nabídka té varianty odešla — hlídá to tisk i server. U prodané sdílené varianty jde krycí list i smlouva vždy vítězi, i když máte otevřeného jiného zákazníka. **Plná moc** se u víc zákazníků tiskne jen pro řídícího zákazníka.",
             "Zákazníka, kterému už odešla nabídka, **odstraní jen administrátor**; zákazník bez odeslané nabídky se odstraní tlačítkem *Odstranit* po potvrzení. Po odstranění posledního dalšího zákazníka je zakázka stejná jako dřív."
           ]
         },
