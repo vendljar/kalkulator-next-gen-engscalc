@@ -30,7 +30,9 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   „Chybí / Nepovinné". Revize poradce 18. 11. „sloučit po opravě" — L1–L6 opraveno: ve smlouvách (SoD realizace,
   SoD projekce, plná moc) je žluté **právě** „……" (i pevný text šablon ztratí podbarvení); v EUR řádky šachet jako
   nabídka — **u EUR smluv s víc šachtami se řádky šachet mohou lišit o jednotky eur oproti main i test**. Podrobnosti
-  `podklady/predavky/2026-11.md` (oddíl SL). Kolo a SHA hlásí sezení koordinaci; slučuje koordinace.
+  `podklady/predavky/2026-11.md` (oddíl SL). Kolo `--bez-mutaci` s KNG_PODKLADY (SoD v4/v5/v6, SoD projekce v4,
+  plná moc): sady 464/1/6, hodiny 376/0/1, statické 8/8; jediné selhání `overit_sod.mjs` (5 bodů) padá stejně na
+  integraci 9bd6dc8 (stará očekávání před tečkami C3, s podklady se pustilo poprvé). Mutace [SL] 20/20. Slučuje koordinace.
 - **Rychlá cesta K40-N1** (`claude/rychla-k40n1`, založena nad main ještě podle dopoledního znění): podle změny zadání
   J. V. 18. 11. jde rychlá cesta do `test` (větev nad integrací, kolo `--bez-mutaci` + cílené mutace, koordinace sloučí
   a pošle do test); rozdíly cen main × test ověřuje J. V. sám; do main jen na jeho pokyn se sloučením testu.
