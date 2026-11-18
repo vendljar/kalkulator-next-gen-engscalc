@@ -35,6 +35,9 @@ e-mailu a ClickUp), kokpit zůstává pro J. V., tag a release jen pro stav v ma
   vad podle main 1 FAIL, bez filtru částek 14 FAIL, novinky bez filtru částek 3 FAIL, release bez NOVINKY 1 FAIL, migrace
   přeformátuje 3 FAIL. `src/test_roadmapa.js` 24/0 (nad roadmap.json před migrací 4 FAIL). `src/test_release_odkaz.js` 27/0.
 
+**Kolo `--bez-mutaci` nad 4ef8f4b3:** hodiny +400 dní 377/0/1, statické 9/9; sady 1. běh 464/1/7 (občasné selhání
+`test_vz_unik.js`, mimo dávku → #644), opakovaný krok sady **465/0/7 VŠE ZELENÉ**. Kód aplikace beze změny, mutace nejsou nutné.
+
 ## v18.11.4 — S7: startovní podklady (CLAUDE.md, PREDAVKA, log rozhodnutí), větev claude/s7-podklady
 
 Nad integrací `5e21f89` (v18.11.2), sloučeno s integrací `dcb1678` (v18.11.3, S3 #611). Kód aplikace beze změny. Podle návrhu režie vývoje

@@ -25,6 +25,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   `kolo`, `vetev`, `verze`, `dopadCena`, `alias`; migrace jen dotčených položek), otevřené nálezy a otázky převedeny jako
   #614–#643, `roadmapa.py --zive` = 54 nehotových; `nastroje/prehled_stavu.py` → `PREHLED.md`/`.json` (krok `staticke`,
   9 kontrol); `nastroje/novinky.py` → `NOVINKY.md`, napojeno na `release_odkaz.py`. HOTOVO, slučuje koordinace.
+  Kolo `--bez-mutaci`: hodiny 377/0/1, statické 9/9, sady 1. běh 464/1/7 (`test_vz_unik.js` výměna řídícího (B) —
+  občasné, samostatně 18× zelené, → #644), opakovaný krok sady 465/0/7 zelený.
   Po sloučení: koordinace pustí `python3 nastroje/prehled_stavu.py` a commitne PREHLED (jinak `staticke` jen upozorní).
   Alias C8 nedohledán (řídicí prompt po kole 48 není v repu) — doplní koordinace. Konflikt s SL (#609/#610) v `roadmap.json`
   jen na konci pole položek (nové položky na samostatných řádcích).
