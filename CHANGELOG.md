@@ -28,6 +28,9 @@ Nad integrací `5e21f89` (v18.11.2), sloučeno s integrací `dcb1678` (v18.11.3,
 - **`release_odkaz.py --chybejici`** hlásí jen verze, které prošly do main (verze.txt v historii origin/main);
   verze jen v testu nebo integraci nehlásí. Test `src/test_release_odkaz.js` 27/0 (před úpravou nástroje 3 FAIL).
 
+**Celé kolo nad fd1c0b1 VŠE ZELENÉ (bez mutací, 39 min):** sady 464/0/7 přeskočeno, hodiny +400 dní 376/0/1,
+statické 8/8 (kód aplikace beze změny, mutace nejsou nutné).
+
 ## v18.11.3 — S3 #611: porovnání dvou sestavení nad pevnou sadou kalkulací, větev claude/s3-porovnani
 
 Nad `claude/integrace-16-10` `5e21f89` (v18.11.2). Návrh režie 18. 11. 2026, oddíl S3, rozhodnutí J. V.: stupně kol

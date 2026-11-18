@@ -23,8 +23,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 - **S7 startovní podklady #612** (`claude/s7-podklady`, v18.11.4): nový `CLAUDE.md` podle schváleného návrhu, `PREDAVKA.md` rozdělena
   (archiv `podklady/predavky/2026-09.md`, `2026-10.md`, `2026-11.md`), `ROZHODNUTI_LOG.md`, `SVERENA_ROZHODNUTI.md`,
   `podklady/kola/`, kontrola `nastroje/kontrola_podkladu.sh` v kroku `staticke`, `release_odkaz.py --chybejici` jen
-  verze z main, pravidlo porovnání sestavení S3 v Testy (stupeň 1), návrh osnovy skillu `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md`. Výsledek kola: viz commit a zpráva
-  koordinaci. Slučuje koordinace.
+  verze z main, pravidlo porovnání sestavení S3 v Testy (stupeň 1), návrh osnovy skillu `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md`. **Kolo `--bez-mutaci` nad fd1c0b1 VŠE ZELENÉ**
+  (sady 464/0/7 přeskočeno, hodiny +400 dní 376/0/1, statické 8/8; 39 min). HOTOVO, slučuje koordinace.
 - **Rychlá cesta K40-N1** (`claude/rychla-k40n1`, založena nad main ještě podle dopoledního znění): podle změny zadání
   J. V. 18. 11. jde rychlá cesta do `test` (větev nad integrací, kolo `--bez-mutaci` + cílené mutace, koordinace sloučí
   a pošle do test); rozdíly cen main × test ověřuje J. V. sám; do main jen na jeho pokyn se sloučením testu.
