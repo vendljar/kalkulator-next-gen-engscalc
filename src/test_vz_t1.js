@@ -207,6 +207,9 @@ const invariant = z => z.vzRidici.varianta === vzRidiciVariantaId(z) && vzZakazn
   test('D N3 řídící C = IČO organizace dealu → sedí', vzOrgNesedi(z) === null && vzOrgDealuId(z) === 'z3');
   z.pdOrgDealu.ico = '';
   test('D N3 organizace dealu bez IČ → nesedí (prázdné = nesedí)', !!vzOrgNesedi(z) && vzOrgDealuId(z) === '');
+  const icoC = z.ico; z.ico = '';
+  test('D N3 organizace dealu bez IČ a řídící bez IČO → nesedí (prázdné ≠ shoda)', !!vzOrgNesedi(z));
+  z.ico = icoC;
   z.pdOrgDealu = { deal: '9999', org: 77, ico: '33334444', nazev: 'Jiný deal', kdy: '' };
   test('D N3 uložená organizace jiného dealu se nepočítá → odhad z1 (řídící C ≠ A → nesedí, deal dál vede A)',
     vzOrgDealuZnama(z) === null && /deal dál vede Zkušební Alfa s\.r\.o\.\)$/.test(vzOrgNesediText(z, true)), vzOrgNesediText(z, true));
