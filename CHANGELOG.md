@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.11.3 — rychlá cesta K40-N1: vyřazené čelní sklo po přepnutí typu šachty nebo zasklení (#579), větev claude/rychla-k40n1
+
+Nad `main` `6c4bc80` (v11.11.1). První použití rychlé cesty (rozhodnutí J. V. 18. 11. 2026, návrh
+`podklady/NAVRH_REZIE_2026-11-18.md`, S1). Číslo verze může koordinace přečíslovat (integrace má v18.11.2).
+Do `main` jen na pokyn J. V.
+
+- **Opraveno K40-N1** (kolo 40; kolo 48: 7 z 308 kalkulací s vyšší nabídkou): po přepnutí typu šachty nebo
+  zasklení se vyřazené (nebo ručně přepsané) čelní sklo „MATERIÁL VSG 4.4.x“ znovu počítalo. `set('Z.typSachty'
+  | 'Z.zaskleni')` si zapamatuje název čelního skla před změnou a `skloMigraceNazvu(d, { predCelni, zadani })`
+  přenese vyřazení, množství, cenu i vlastní název na nový název. Import a otevření zakázky staré záznamy nechávají
+  (cena uložené nabídky se nemění). Migrace skla boků běží nad každou šachtou (šachty 2+ vracely K37-N1).
+  Cherry-pick `b4e2023` z testu (K40a N1), bez konfliktu.
+- **Nutné minimum navíc — revize K40a D1** (z `214369c`, jen část D1): import ZAMČENÉ varianty migruje sklo jen
+  šachty 1 (`jenPrvni`), jinak by rozšíření na šachty 2+ změnilo cenu odeslané nabídky s víc šachtami a zámek
+  by hlásil „nesouhlasí“. Hláška můstků D6 z téhož commitu vynechána.
+- **Test** `src/test_k40_celni_sklo.js` 75/0; nad `6c4bc80` 47 OK / 28 FAIL (pojistka). Mutace jádra [K40a]
+  6/6 chycené, K37-N1 3/3, serveru [K40a] D1 1/1.
+- **Cílené kolo main-před × main-po** (zkušební ceník main, pevná sada: fixtury + 1 000 fuzz zadání zlaté sady VS):
+  dokumenty bez přepínání 1 019/1 019 shodných; přepnutí typu/zasklení 20 140 stavů, 17 030 shodných, 3 110 rozdílů
+  — všechny v případech s vyřazeným nebo přepsaným čelním sklem. Víc šachet (za vypínačem, výchozí VYP): import
+  nezamčené varianty s osiřelým sklem boků u šachty 2+ se liší (1 000 z 6 000) — **mimo úzký rozsah, k rozhodnutí
+  J. V.** (podrobně PREDAVKA).
+
 ## v11.11.1 — VS-E6 #570: víc šachet v nabídce — závěr: překlady SoD, štítek šachet v rejstříku, dokumentace, celé kolo s mutacemi (#596; #570 hotovo), větev claude/vs-e6
 
 Nad `b751e57` (integrace v10.11.6 = E0–E5 za vypínačem `/api/funkce`, výchozí VYP). Verzi přečísluje koordinace.
