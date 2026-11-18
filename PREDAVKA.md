@@ -30,7 +30,7 @@ smlouvy, cena, podbarvení).
 
 **Testy (18. 11.):** test_sod_v5 72/0 s KNG_PODKLADY (v4+v5+v6 CZ/EN/DE/FR), 56/0 bez; test_sod_tecky 26/0;
 test_vs_kontroly 51/0; zlatá sada VS 319/319; mutace [SL] 16/16. Kolo `--bez-mutaci` 16. 11. (jen #589) VŠE ZELENÉ;
-kolo po #609/#610 — viz níž. Celé mutace po částech pouští koordinace.
+kolo `--bez-mutaci` 18. 11. po #609/#610 s KNG_PODKLADY (jen šablony SoD realizace v4/v5/v6) **VŠE ZELENÉ**: sady 441/0/7 (přeskočeno 6 sad s jinými firemními podklady + test.js), hodiny +400 dní 358/0/1, statické 5/5. Celé mutace po částech pouští koordinace.
 
 **Pro J. V.:** šablony v6 nahrát na test až s kódem této větve (se starším kódem by žlutě svítily i vyplněné údaje).
 
