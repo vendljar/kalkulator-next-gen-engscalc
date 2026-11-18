@@ -47,13 +47,40 @@ body, které hlásila větev SL na 9bd6dc8 a ec5bbac:
 Návrh (k rozhodnutí koordinace, je to oprava testu): očekávání 1–3 vázat na verzi šablony, nebo je pouštět jen nad v1 z `vyrob_sablony.js`.
 Body 4–5 přepsat na „místo symbolu jsou tečky ……“. Dřív se sada kvůli chybějícím podkladům nepouštěla, proto zastaralost nebyla vidět.
 
+## Doplněk 18. 11. odpoledne: plná moc a SoD realizace v6 (K49-I3, #615)
+
+Jen čtení z testu a generování bez uložení. Šablonu vybírá `sablonaProTisk` jako v UI, vstup jde přes `vzTiskVstup`
+(u VZ za řídícího zákazníka) a dokument vyrábí `dokumentVygeneruj`. Bez zámku a bez uložení, zapisující požadavky
+byly blokované a žádný neodešel. Zakázky: 9603-K19T-C103 (1 šachta, CZK), 8726-K36-D30b (1 šachta, zahraniční řada),
+9801 (TEST VZ, 1 šachta), 9802 (TEST VZ, 2 šachty).
+
+| kontrola | výsledek |
+|---|---|
+| plná moc zveřejněná (`plnaMoc` v2, `Sablona_PLNA_MOC.docx`), vybírá ji `sablonaProTisk` | ✅ (K49-I3 vyřešeno) |
+| plná moc ze 4 zakázek: žádné `{{`/`}}` | ✅ |
+| plná moc: `PM_ZMOCNITEL`, `…_NAROZEN`, `…_BYTEM` → tečky „……“ (3 žluté běhy, jen tečky) | ✅ |
+| plná moc: firma (název, zápis, IČ, sídlo), adresa objektu (2×) a `PM_JEDNAJICI` (2×) vyplněné | ✅ |
+| SoD v6: `sablonaProTisk` vybírá `sod` v5 = `…_v6`, `sod_en/de/fr` v3 = `…_v6_EN/DE/FR`, `mutaceChybi` ne | ✅ |
+| SoD v6 (3 zakázky × CZ/EN/DE/FR): žádné `{{` | ✅ |
+| žlutě podbarvené JEN tečky: počet žlutých běhů = počet „……“ (29, u VZ 26), žádný jiný žlutý běh | ✅ |
+| EN/DE/FR bez češtiny: česky jen jména, název zákazníka, ulice/město a (IČ)/(DIČ), 8–10 odstavců ze 146–151 | ✅ |
+| L3 eura (1 šachta): celková cena ze SoD EN/DE = dílo + příplatky celkem, příplatky = součet objednaných položek, cena díla a položky příplatků se shodují s nabídkou EN | ✅ |
+| L3 víc šachet / řádek slevy v EUR | ⛔ **neověřeno**. Na testu je jediná TEST zakázka s víc šachtami (9802, VZ). Jádro (`dokumentVygeneruj`) tiskne SoD jen zákazníkovi, kterému nabídka varianty odešla, a ta zatím neodešla. Ověření potřebuje tisk CN (zápis zámku do TEST VZ zakázky), na to jsem čekal pokyn. Zakázka se slevou v EUR mezi vybranými nebyla. |
+| `overit_sod.mjs` se skutečnou plnou mocí a SoD v6 | 5/51 selhalo, tytéž body. Body 4–5 padají, protože symboly `SODP_*`/`PM_*` nahradily tečky, jak má být (viz výš). Potvrzuje zastaralost harnessu. |
+
+Vedlejší postřeh (K49-I6, nízká): v anglické nabídce zakázky s víc šachtami (9802) stojí výchozí název šachty česky
+(„SHAFT VARIANT: Šachta 1“, „Šachta 2“). Výchozí jméno tvoří `vsNazev` / `vice_sachet_ui.js` („Šachta N“) a do jazyka tisku se
+nepřekládá. Ostatní česká slova v EN nabídkách jsou názvy akcí a jména zadaná uživatelem.
+
 ## Nálezy
 
 | ID | co | závažnost |
 |---|---|---|
 | K49-I1 | Přihlášení `KNG_MAIN_*` na ostrý web selhalo („Nesprávný e-mail nebo heslo.“) | vyřešeno (J. V. opravil 18. 11.) |
 | K49-I2 | `overit_sod.mjs` 5/51: zastaralá očekávání (v1 šablona, před C3) — vada testu, ne aplikace | nízká |
-| K49-I3 | Na testu není zveřejněná šablona plné moci; harness bez ní sadu přeskočí | informace |
+| K49-I3 | Na testu nebyla zveřejněná šablona plné moci | vyřešeno (J. V. zveřejnil 18. 11., plnaMoc v2) |
+| K49-I6 | Výchozí název šachty „Šachta N“ zůstává v EN nabídce česky | nízká, k rozhodnutí |
+| K49-I7 | L3 u víc šachet a sleva v EUR neověřeny — jediná TEST zakázka s víc šachtami je VZ bez odeslané nabídky | čeká na pokyn (tisk CN = zápis do TEST VZ) |
 | K49-I5 | Termíny realizace firmy: test má proti main 6. řádek navíc (CZ/EN/DE). Buď ho J. V. doplní do main při sloučení, nebo ho na testu smaže | k rozhodnutí J. V. |
 | K49-I4 | Pevná sada `porovnani_sada.js` nemá případ přepnutí typu šachty nebo zasklení (K40-N1 nevidí) | návrh doplnit |
 
