@@ -90,6 +90,52 @@ if (polozky) {
   });
   test('závislosti míří na existující položky', visici.length === 0, visici);
 
+  /* ---------- jedna evidence (S6, 18. 11. 2026) ----------
+   * Totéž, co hlídá `roadmapa.py --kontrola` (kontrola_s6): typ ze seznamu,
+   * nehotová položka má typ a `cekaNa` „<kdo>: <co>“, nález má kolo, hotová
+   * položka s typem má verzi, aliasy nejsou čísla a nemají je dvě položky,
+   * nové značky jsou jen čísla. */
+  const TYPY = ['ukol', 'nalez', 'otazka', 'rozhodnuti', 'davka'];
+  const RE_CEKANA = /^(J\. V\.|kolega|koordinace|dávka|integrátor|externí): \S/;
+  const STARA_ID = ['xx', '151a', '151b'];
+  const verzeP = p => p.verze || ((String(p.hotovoV || '').match(/v\d{1,2}\.\d{1,2}\.\d{1,2}/) || [''])[0]);
+  const s6 = { typ: [], bezTypu: [], cekani: [], kolo: [], verze: [], format: [], alias: [], id: [] };
+  const aliasy = new Map();
+  polozky.forEach(p => {
+    if (!p) return;
+    const id = String(p.id);
+    if (!/^\d+$/.test(id) && STARA_ID.indexOf(id) < 0) s6.id.push(id);
+    if (p.typ !== undefined && TYPY.indexOf(p.typ) < 0) s6.typ.push(id + ':' + p.typ);
+    if (p.stav !== 'hotovo') {
+      if (p.typ === undefined) s6.bezTypu.push(id);
+      if (!RE_CEKANA.test(String(p.cekaNa || ''))) s6.cekani.push(id);
+    }
+    if (p.typ === 'nalez' && !/^\d{1,3}$/.test(String(p.kolo || ''))) s6.kolo.push(id);
+    if (p.stav === 'hotovo' && p.typ !== undefined && !verzeP(p)) s6.verze.push(id);
+    if (p.verze !== undefined && !/^v\d{1,2}\.\d{1,2}\.\d{1,2}$/.test(p.verze)) s6.format.push(id + ' verze');
+    if (p.vetev !== undefined && !/^[A-Za-z0-9._\/-]+$/.test(p.vetev)) s6.format.push(id + ' vetev');
+    if (p.dopadCena !== undefined && ['ano', 'ne'].indexOf(p.dopadCena) < 0) s6.format.push(id + ' dopadCena');
+    if (p.alias !== undefined) {
+      if (!Array.isArray(p.alias)) { s6.alias.push(id + ' není seznam'); return; }
+      p.alias.forEach(a => {
+        const k = String(a).trim().toLowerCase();
+        if (!k || /^#?\d+$/.test(k)) s6.alias.push(id + ' „' + a + '“');
+        else if (aliasy.has(k) && aliasy.get(k) !== id) s6.alias.push(a + ' u #' + aliasy.get(k) + ' i #' + id);
+        else aliasy.set(k, id);
+      });
+    }
+  });
+  test('S6: typ je ukol / nalez / otazka / rozhodnuti / davka', s6.typ.length === 0, s6.typ);
+  test('S6: každá nehotová položka má typ', s6.bezTypu.length === 0, s6.bezTypu);
+  test('S6: nehotová položka má cekaNa „<kdo>: <co>“', s6.cekani.length === 0, s6.cekani);
+  test('S6: nález má číslo kola', s6.kolo.length === 0, s6.kolo);
+  test('S6: hotová položka s typem má verzi', s6.verze.length === 0, s6.verze);
+  test('S6: verze, větev a dopadCena ve správném tvaru', s6.format.length === 0, s6.format);
+  test('S6: aliasy nejsou čísla a nemají je dvě položky', s6.alias.length === 0, s6.alias);
+  test('S6: nové značky jsou jen čísla', s6.id.length === 0, s6.id);
+  test('S6: staré značky jsou dohledatelné (K40-N1, K48-N1, B1, C7, B0.1 mají položku)',
+    ['k40-n1', 'k48-n1', 'b1', 'c7', 'b0.1'].every(k => aliasy.has(k)), [...aliasy.keys()].slice(0, 20));
+
   /* ---------- text se vejde do <script> ----------
    * Stránka vzniká vložením JSONu do `const RM = { … }` uvnitř <script>,
    * takže sekvence `</` v textu by značku ukončila dřív, než má.

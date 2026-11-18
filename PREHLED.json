@@ -1,0 +1,433 @@
+{
+ "main": {
+  "ref": "origin/main",
+  "sha": "6c4bc80e",
+  "verze": "v11.11.1",
+  "datum": "11. 11. 2026"
+ },
+ "test": {
+  "ref": "origin/test",
+  "sha": "9bd6dc8b",
+  "verze": "v18.11.4",
+  "datum": "18. 11. 2026"
+ },
+ "test_navic_commitu": 213,
+ "v_testu_ne_v_main": [
+  {
+   "id": "614",
+   "typ": "nalez",
+   "nazev": "Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1)",
+   "alias": [
+    "K40-N1"
+   ],
+   "verze": "v12.11.1"
+  },
+  {
+   "id": "612",
+   "typ": "ukol",
+   "nazev": "S7: startovní podklady — CLAUDE.md podle schváleného návrhu, PREDAVKA jen živý stav, archiv předávek, log rozhodnutí J. V.",
+   "verze": "v18.11.4"
+  },
+  {
+   "id": "611",
+   "typ": "ukol",
+   "nazev": "S3: porovnání dvou sestavení nad pevnou sadou kalkulací (nastroje/porovnej_sestaveni.sh, krok kola „porovnani“)",
+   "verze": "v18.11.3"
+  },
+  {
+   "id": "608",
+   "typ": "ukol",
+   "nazev": "C9: prohlížečové harnessy pod zátěží čekají na stav stránky; limity z KNG_HARNESS_TIMEOUT_MS",
+   "alias": [
+    "C9"
+   ],
+   "verze": "v18.11.1"
+  },
+  {
+   "id": "606",
+   "typ": "ukol",
+   "nazev": "VZ-E6: rejstřík a Přehled (štítek, hledání podle dalšího zákazníka), controlling, překlady, příručky, celé kolo s mutacemi po částech",
+   "verze": "v17.11.2"
+  },
+  {
+   "id": "604",
+   "typ": "ukol",
+   "nazev": "VZ-E5: Pipedrive: přepisovaná poznámka „Další zákazníci na zakázce“ u dealu (zobecnění pd_poznamka.mjs, společný časový rozpočet se šachtam…",
+   "verze": "v16.11.2"
+  },
+  {
+   "id": "602",
+   "typ": "ukol",
+   "nazev": "VZ-E3: zámek po zákaznících: razítko „komu“ se snímkem adresáta, stav nabídky zákazníka, vlastní varianta, dotisk; odstranění zákazníka s o…",
+   "verze": "v16.11.6"
+  },
+  {
+   "id": "601",
+   "typ": "ukol",
+   "nazev": "VZ-E2: čísla nabídek s písmenem zákazníka (…9940-B), tisk z pohledu zákazníka, kontroly před tiskem, test úniku údajů s kanárky (revize por…",
+   "verze": "v16.11.4"
+  },
+  {
+   "id": "600",
+   "typ": "ukol",
+   "nazev": "VZ-E1: obrazovka: tlačítko „Přidat zákazníka“ a formulář v hlavičce (ARES a databáze zákazníků — zobecnění ares_ui.js na cíl), od 2. zákazn…",
+   "verze": "v16.11.2"
+  },
+  {
+   "id": "599",
+   "typ": "ukol",
+   "nazev": "VZ-E0: vypínač viceZakazniku, jádro vice_zakazniku.js (model, písmena, pohled zákazníka, invarianty), import, serverová kontrola tvaru, zla…",
+   "verze": "v16.11.1"
+  },
+  {
+   "id": "588",
+   "typ": "ukol",
+   "nazev": "VSD: seznam šachet nabídky do poznámky dealu Pipedrive (jedna poznámka na deal a zakázku)",
+   "verze": "v12.11.5"
+  },
+  {
+   "id": "587",
+   "typ": "ukol",
+   "nazev": "K43-T1: overit_lista_cekani.mjs čeká na stav aplikace, ne pevný čas",
+   "alias": [
+    "K43-T1"
+   ],
+   "verze": "v12.11.5"
+  },
+  {
+   "id": "586",
+   "typ": "ukol",
+   "nazev": "VSD: upozornění vsTvar — víc šachet mimo meze uložení (K47-I3)",
+   "verze": "v12.11.5"
+  },
+  {
+   "id": "585",
+   "typ": "ukol",
+   "nazev": "C5: nástroj obnovy testovací sady zakázek TEST do testovací databáze (test_sada_obnov.mjs)",
+   "alias": [
+    "C5"
+   ],
+   "verze": "v12.11.4"
+  },
+  {
+   "id": "584",
+   "typ": "ukol",
+   "nazev": "C3: tečky „……“ místo nevyplněných symbolů smlouvy, kontrola před tiskem SoD (upozornění)",
+   "alias": [
+    "C3"
+   ],
+   "verze": "v12.11.6"
+  },
+  {
+   "id": "583",
+   "typ": "ukol",
+   "nazev": "C2: SoD realizace v5 se šachtami (předmět díla a rozpis ceny), upozornění u staré šablony",
+   "alias": [
+    "C2"
+   ],
+   "verze": "v12.11.6"
+  },
+  {
+   "id": "582",
+   "typ": "ukol",
+   "nazev": "C1: šablona CN v17 CZ/EN/DE/FR ke zveřejnění a jednotné nadpisy USAZENÍ OCK (DE, EN)",
+   "alias": [
+    "C1"
+   ],
+   "verze": "v12.11.3"
+  },
+  {
+   "id": "581",
+   "typ": "ukol",
+   "nazev": "K40c: vazba kalkulace na deal z webhooku (upozornění, pojistka „Zrušit vazbu“), firma z ARES na serveru, „Opravit firmu v Pipedrive“",
+   "alias": [
+    "K40c"
+   ],
+   "verze": "v12.11.7"
+  },
+  {
+   "id": "580",
+   "typ": "ukol",
+   "nazev": "K40b: dolní mez data prodeje z razítka přijetí zámku serverem (K40-S1, K40-N3) a levná diagnostika rozdílu zámku (K40-S2)",
+   "alias": [
+    "K40b",
+    "K40-S1",
+    "K40-N3",
+    "K40-S2"
+   ],
+   "verze": "v12.11.2"
+  },
+  {
+   "id": "579",
+   "typ": "ukol",
+   "nazev": "K40a: opravy kola 40 bez ceny — čelní sklo a sklo u šachet 2+, ořez konce textu, ceník můstků, kopie na Disku, hygiena testů",
+   "alias": [
+    "K40a"
+   ],
+   "verze": "v12.11.1"
+  }
+ ],
+ "vady_ceny": [
+  {
+   "id": "614",
+   "typ": "nalez",
+   "nazev": "Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1)",
+   "alias": [
+    "K40-N1"
+   ],
+   "verze": "v12.11.1",
+   "kolo": "40",
+   "stav": "opraveno v testu (v12.11.1), v main ne",
+   "cekaNa": "J. V.: ověřit rozdíly cen main × test a dát pokyn ke sloučení do main (rychlá cesta)"
+  }
+ ],
+ "ceka_na_jv": [
+  {
+   "id": "19",
+   "typ": "ukol",
+   "nazev": "Notifikace a schvalování slev přes mobil",
+   "cekaNa": "zadání a priorita (notifikace přes mobil zatím nezařazeny do dávky)"
+  },
+  {
+   "id": "28",
+   "typ": "ukol",
+   "nazev": "Napojit kalkulačku přes MCP na Claude",
+   "cekaNa": "zadání a priorita (MCP napojení zatím nezařazeno do dávky)"
+  },
+  {
+   "id": "113",
+   "typ": "ukol",
+   "nazev": "CRM-14 — Výběr zakázky z Pipedrive v hlavičce kalkulace",
+   "cekaNa": "API token a doména v proměnných Netlify (odsunuto 10. 8. 2026)"
+  },
+  {
+   "id": "115",
+   "typ": "ukol",
+   "nazev": "CRM-16 — Potvrzený zápis do obchodního případu",
+   "cekaNa": "rozhodnutí z kontrolní tabulky — kolize dvou kalkulací nad jedním polem v CRM (odsunuto 10. 8. 2026)"
+  },
+  {
+   "id": "116",
+   "typ": "ukol",
+   "nazev": "CRM-17 — Odeslání vygenerované nabídky do případu",
+   "cekaNa": "návaznost na #113 — token a doména v Netlify (odsunuto 10. 8. 2026)"
+  },
+  {
+   "id": "117",
+   "typ": "ukol",
+   "nazev": "CRM-18 — Souběžný zápis a synchronizace změn z CRM",
+   "cekaNa": "rozhodnutí o nedopsaných polích v CRM (odsunuto 10. 8. 2026)"
+  },
+  {
+   "id": "172",
+   "typ": "ukol",
+   "nazev": "Dokončení auditu mimo cloud: zámek závislostí, etag, brzda v Netlify",
+   "cekaNa": "lokální `npm install --package-lock-only` a pár kliknutí v administraci Netlify"
+  },
+  {
+   "id": "222",
+   "typ": "otazka",
+   "nazev": "Nálezy čekající na rozhodnutí J. V.: V8, N1, N5, V9, V10, V11, V13, V17, V24",
+   "cekaNa": "rozhodnutí J. V. — sloupec „Rozhodnutí J. V.“ na listu Nálezy (sešit VYHODNOCENI_TESTU_KALKULACE); testem se do té doby jen potvrzuje, že se chování nezměnilo"
+  },
+  {
+   "id": "598",
+   "typ": "ukol",
+   "nazev": "VZ: Víc zákazníků na jedné zakázce (souhrn etap E0–E6, zkušební funkce viceZakazniku)",
+   "cekaNa": "ruční zkouška víc zákazníků na testu (vypínač viceZakazniku zapíná administrátor)"
+  },
+  {
+   "id": "614",
+   "typ": "nalez",
+   "nazev": "Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1)",
+   "alias": [
+    "K40-N1"
+   ],
+   "verze": "v12.11.1",
+   "cekaNa": "ověřit rozdíly cen main × test a dát pokyn ke sloučení do main (rychlá cesta)"
+  },
+  {
+   "id": "615",
+   "typ": "nalez",
+   "nazev": "Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (blokuje dávku C7 a sloučení do main)",
+   "alias": [
+    "K48-N1",
+    "B1",
+    "C7"
+   ],
+   "cekaNa": "pokyn ke spuštění pojistky jazyka SoD (doporučeno udělat)"
+  },
+  {
+   "id": "616",
+   "typ": "rozhodnuti",
+   "nazev": "Kdy sloučit test → main",
+   "alias": [
+    "B2",
+    "C10"
+   ],
+   "cekaNa": "termín (doporučeno spojit s rychlou cestou #614, zbytek po kole 49)"
+  },
+  {
+   "id": "617",
+   "typ": "rozhodnuti",
+   "nazev": "Víc šachet na ostrém webu (main) — po ruční zkoušce na testu se zapnutým vypínačem",
+   "alias": [
+    "B3",
+    "B0.1"
+   ],
+   "cekaNa": "ruční zkouška víc šachet na testu; rozhodnutí odloženo do 25. 11. 2026"
+  },
+  {
+   "id": "618",
+   "typ": "ukol",
+   "nazev": "Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs",
+   "alias": [
+    "B4",
+    "C8",
+    "B0.9",
+    "K39-I1",
+    "K38-I1"
+   ],
+   "cekaNa": "stav TEST sady prověří kolo 49 (J. V. 18. 11.: něco obnovoval); nástroj dorovnat dávkou C8"
+  },
+  {
+   "id": "619",
+   "typ": "ukol",
+   "nazev": "SoD projekce v4 zveřejnit i v main (main tiskne starší znění smlouvy)",
+   "alias": [
+    "B5",
+    "B0.6"
+   ],
+   "cekaNa": "datový úkol v main"
+  },
+  {
+   "id": "621",
+   "typ": "otazka",
+   "nazev": "SoD v5: umístění řádků šachet, řádek slevy v rozpisu, žluté tečky v realizaci, šum kontroly nevyplněných polí",
+   "cekaNa": "rozhodnout (u řádku slevy doporučeno a)"
+  },
+  {
+   "id": "623",
+   "typ": "ukol",
+   "nazev": "Token Pipedrive na test a první zkušební zápis (poznámka šachet, organizace) nad dealem TEST",
+   "alias": [
+    "K40c-N6"
+   ],
+   "cekaNa": "dodat token, nebo odložit s datem (blokuje #510 a #16)"
+  },
+  {
+   "id": "624",
+   "typ": "otazka",
+   "nazev": "Zakázka bez autora dostane autora z relace prvního ukládajícího (B73)",
+   "alias": [
+    "K40c-N5"
+   ],
+   "cekaNa": "zvážit nedoplňovat autora u existující zakázky (na později)"
+  },
+  {
+   "id": "625",
+   "typ": "ukol",
+   "nazev": "Sazby skladebných můstků v ceníku testu, pak samostatné kolo na můstky",
+   "alias": [
+    "K44-I1",
+    "B7",
+    "B0.8"
+   ],
+   "cekaNa": "sazby doplní v testu (odložit s datem; sekce Můstky je prázdná, cena se nekazí)"
+  },
+  {
+   "id": "627",
+   "typ": "otazka",
+   "nazev": "DP #573 termín DPZ a dotazy obchodu D1–D8, T1",
+   "alias": [
+    "DP-D1–D8",
+    "DP-T1"
+   ],
+   "cekaNa": "rozhodnout (obsah v artefaktu dotazů)"
+  },
+  {
+   "id": "628",
+   "typ": "davka",
+   "nazev": "Zefektivnění programu",
+   "cekaNa": "start po sloučení test → main"
+  },
+  {
+   "id": "629",
+   "typ": "rozhodnuti",
+   "nazev": "Jmenovat kolegu s rolí administrátora (jen test)",
+   "cekaNa": "jmenuje"
+  },
+  {
+   "id": "630",
+   "typ": "ukol",
+   "nazev": "Nahrát skill testovaci-procedura-kng podle osnovy; zkrátit skill kalkulator-next-gen do 25 kB",
+   "cekaNa": "nahrát skilly (mimo repo)"
+  },
+  {
+   "id": "631",
+   "typ": "otazka",
+   "nazev": "Revize diffu S7 (CLAUDE.md, rozdělení PREDAVKA)",
+   "cekaNa": "revize (doporučeno schválit)"
+  },
+  {
+   "id": "633",
+   "typ": "otazka",
+   "nazev": "Nástupiště A ↔ C u zrcadlové šachty — opravit?",
+   "alias": [
+    "N46"
+   ],
+   "cekaNa": "pokyn (bez něj se neopravuje, fuzz hlásí jen INFO)"
+  },
+  {
+   "id": "636",
+   "typ": "otazka",
+   "nazev": "Zbytková mez B226: souběh dvou instancí může založit organizaci v Pipedrive dvakrát",
+   "alias": [
+    "B226"
+   ],
+   "cekaNa": "přijmout jako zbytkovou mez, nebo zadat zámek (doporučeno přijmout)"
+  },
+  {
+   "id": "637",
+   "typ": "ukol",
+   "nazev": "Ověřit hledání organizace (itemSearch) proti ostrému účtu Pipedrive — jen čtení",
+   "cekaNa": "ověření (automat na ostrý účet nesmí)"
+  },
+  {
+   "id": "639",
+   "typ": "otazka",
+   "nazev": "Ruční cena: příloha PDF nabídky dodavatele a ruční cena v ceníku PROJ",
+   "cekaNa": "rozhodnout, zda je potřeba"
+  },
+  {
+   "id": "640",
+   "typ": "otazka",
+   "nazev": "Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený",
+   "alias": [
+    "B221"
+   ],
+   "cekaNa": "zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora)"
+  },
+  {
+   "id": "642",
+   "typ": "ukol",
+   "nazev": "Zeštíhlení roadmap.json: hotové položky starší 60 dní do archivu (živý soubor kolem 60 položek)",
+   "cekaNa": "souhlas (návrh režie S6 d; soubor má 1,2 MB)"
+  },
+  {
+   "id": "643",
+   "typ": "ukol",
+   "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
+   "cekaNa": "nahrát upravený skill (mimo repo)"
+  }
+ ],
+ "ceka_na_jv_odlozene": 11,
+ "nehotove_podle_kdo": {
+  "J. V.": 42,
+  "kolega": 5,
+  "koordinace": 3,
+  "dávka": 3,
+  "integrátor": 2
+ },
+ "nehotovych": 55
+}

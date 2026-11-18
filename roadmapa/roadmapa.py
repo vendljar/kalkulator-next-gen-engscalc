@@ -23,13 +23,40 @@ POZOR NA `</` V TEXTECH. Data jdou do `<script>`, takže sekvence `</`
 by značku ukončila dřív, než má. Escapuje se na `<\\/`, což je v JSON
 řetězci totéž — prohlížeč dostane stejný text.
 
+JEDNA EVIDENCE (S6, 18. 11. 2026, rozhodnutí J. V.)
+
+Úkoly, nálezy kol, otázky, rozhodnutí i dávky se vedou JEN tady, každá
+položka pod číslem (#613 a dál). Nepovinná pole nového schématu:
+
+  typ        ukol | nalez | otazka | rozhodnuti | davka   (chybí = ukol)
+  cekaNa     „<kdo>: <co>“, kdo = J. V. | kolega | koordinace | dávka |
+             integrátor | externí; povinné u každé nehotové položky
+  kolo       číslo testovacího kola (povinné u typu nalez)
+  vetev      git větev, ve které se položka dělá
+  verze      vDEN.MĚSÍC.pořadí, ve které je hotová (u starých hotovoV)
+  dopadCena  ano | ne — mění položka cenu nabídky
+  alias      [staré značky] — K48-N1, B1, C7, B0.1 …; jen k dohledání,
+             nové značky jsou už jen čísla
+  novinka    jedna věta pro kolegy do NOVINKY.md (nepovinné)
+  jinak      co mají kolegové dělat jinak (nepovinné, do NOVINKY.md)
+
+Migrace starých položek (`--migrace`) doplní typ a sjednotí cekaNa u
+nehotových položek a zapíše aliasy; mění jen dotčené položky (každou na
+jeden řádek), zbytek souboru zůstává znak po znaku, aby se souběžné větve
+při slučování nehádaly o celý soubor.
+
 Použití:
     python3 roadmapa/roadmapa.py --kontrola   # jen pravidla, nic nezapíše
     python3 roadmapa/roadmapa.py              # → ROADMAPA.html + ROADMAPA.md
+    python3 roadmapa/roadmapa.py --zive       # nehotové položky s „čeká na“
+    python3 roadmapa/roadmapa.py --hledej K48-N1   # položka podle čísla nebo aliasu
+    python3 roadmapa/roadmapa.py --migrace [--nanecisto]
+    --soubor <roadmap.json>                   # jiný zdroj (testy)
 """
 
 import json
 import os
+import re
 import sys
 from datetime import date
 
@@ -43,9 +70,74 @@ ZNACKA = '<?ROADMAP_JSON?>'
 STAVY = ('hotovo', 'ceka', 'blokovano')
 STAV_NAZEV = {'hotovo': 'hotovo', 'ceka': 'čeká', 'blokovano': 'blokováno'}
 
+# --- S6: jedna evidence -------------------------------------------------
+TYPY = ('ukol', 'nalez', 'otazka', 'rozhodnuti', 'davka')
+TYP_NAZEV = {'ukol': 'úkol', 'nalez': 'nález', 'otazka': 'otázka',
+             'rozhodnuti': 'rozhodnutí', 'davka': 'dávka'}
+KDO = ('J. V.', 'kolega', 'koordinace', 'dávka', 'integrátor', 'externí')
+RE_CEKANA = re.compile(r'^(' + '|'.join(re.escape(k) for k in KDO) + r'): \S')
+RE_VERZE = re.compile(r'^v\d{1,2}\.\d{1,2}\.\d{1,2}$')
+RE_VETEV = re.compile(r'^[A-Za-z0-9._/-]+$')
+RE_VERZE_V_TEXTU = re.compile(r'v\d{1,2}\.\d{1,2}\.\d{1,2}')
+STARA_ID = {'xx', '151a', '151b'}        # jediné nečíselné značky (před S6)
 
-def nacti():
-    with open(ZDROJ, encoding='utf-8') as f:
+# Jednorázová migrace S6 (18. 11. 2026). Idempotentní: co už je zapsané,
+# se nepřepisuje. Staré značky → aliasy u existujících položek.
+MIGRACE_TYP = {'222': 'otazka'}
+MIGRACE_CEKANA = {
+    '19': 'J. V.: zadání a priorita (notifikace přes mobil zatím nezařazeny do dávky)',
+    '28': 'J. V.: zadání a priorita (MCP napojení zatím nezařazeno do dávky)',
+    '598': 'J. V.: ruční zkouška víc zákazníků na testu (vypínač viceZakazniku zapíná administrátor)',
+    '31': 'kolega: přeposlání seznamů připomínek obchodníků a obchodního technika',
+    '113': 'J. V.: API token a doména v proměnných Netlify (odsunuto 10. 8. 2026)',
+    '115': 'J. V.: rozhodnutí z kontrolní tabulky — kolize dvou kalkulací nad jedním polem v CRM (odsunuto 10. 8. 2026)',
+    '116': 'J. V.: návaznost na #113 — token a doména v Netlify (odsunuto 10. 8. 2026)',
+    '117': 'J. V.: rozhodnutí o nedopsaných polích v CRM (odsunuto 10. 8. 2026)',
+    '172': 'J. V.: lokální `npm install --package-lock-only` a pár kliknutí v administraci Netlify',
+    '500': 'kolega: podklady controllingu (šablona se pošle v listopadu, vyplní po návratu v prosinci)',
+    '578': 'J. V.: zadání a vzor smlouvy GD',
+    '597': 'J. V.: rozsah zápisu do dealu (pole, fáze) před zahájením; mimo etapy VZ',
+}
+MIGRACE_ALIAS = {
+    '608': ['C9'],
+    '579': ['K40a'],
+    '580': ['K40b', 'K40-S1', 'K40-N3', 'K40-S2'],
+    '581': ['K40c'],
+    '587': ['K43-T1'],
+    '585': ['C5'],
+    '582': ['C1'],
+    '583': ['C2'],
+    '584': ['C3'],
+}
+
+
+def typ(p):
+    """Typ položky; staré položky bez pole jsou úkoly."""
+    return (p or {}).get('typ') or 'ukol'
+
+
+def verze(p):
+    """Verze, ve které je položka hotová: `verze`, jinak první vX.Y.Z z `hotovoV`."""
+    v = str((p or {}).get('verze') or '').strip()
+    if v:
+        return v
+    m = RE_VERZE_V_TEXTU.search(str((p or {}).get('hotovoV') or ''))
+    return m.group(0) if m else ''
+
+
+def kdo_ceka(p):
+    """Na koho položka čeká (první část `cekaNa` před dvojtečkou), jinak ''."""
+    m = RE_CEKANA.match(str((p or {}).get('cekaNa') or ''))
+    return m.group(1) if m else ''
+
+
+def aliasy(p):
+    a = (p or {}).get('alias') or []
+    return a if isinstance(a, list) else [a]
+
+
+def nacti(soubor=None):
+    with open(soubor or ZDROJ, encoding='utf-8') as f:
         return json.load(f)
 
 
@@ -96,7 +188,162 @@ def kontrola(db):
             v = str((p or {}).get('vlna', ''))
             if v and v not in vlny:
                 n.append('#%s je ve vlně „%s", kterou meta nezná' % (p.get('id'), v))
+    return n + kontrola_s6(polozky)
+
+
+def kontrola_s6(polozky):
+    """Pravidla jedné evidence (S6, 18. 11. 2026) — viz README, oddíl Jedna evidence."""
+    n = []
+    znacky = {}
+    for p in polozky:
+        p = p or {}
+        pid = str(p.get('id', ''))
+        if pid and not pid.isdigit() and pid not in STARA_ID:
+            n.append('#%s: nové značky jsou jen čísla (stará řada patří do „alias")' % pid)
+        t = p.get('typ')
+        if t is not None and t not in TYPY:
+            n.append('#%s má neznámý typ „%s" (%s)' % (pid, t, ' | '.join(TYPY)))
+        stav = p.get('stav')
+        cek = str(p.get('cekaNa') or '').strip()
+        if stav in ('ceka', 'blokovano'):
+            if 'typ' not in p:
+                n.append('#%s je nehotová a nemá typ (python3 roadmapa/roadmapa.py --migrace)' % pid)
+            if not cek:
+                n.append('#%s je nehotová a neříká, na co čeká (cekaNa „<kdo>: <co>")' % pid)
+            elif not RE_CEKANA.match(cek):
+                n.append('#%s: cekaNa nezačíná „<kdo>: " (kdo = %s)' % (pid, ' | '.join(KDO)))
+        if stav == 'hotovo' and 'typ' in p and not verze(p):
+            n.append('#%s je hotová, ale nemá verzi (pole „verze")' % pid)
+        if t == 'nalez' and not str(p.get('kolo', '')).strip():
+            n.append('#%s je nález bez čísla kola (pole „kolo")' % pid)
+        if 'kolo' in p and not re.fullmatch(r'\d{1,3}', str(p.get('kolo'))):
+            n.append('#%s: kolo „%s" není číslo' % (pid, p.get('kolo')))
+        if 'verze' in p and not RE_VERZE.match(str(p.get('verze'))):
+            n.append('#%s: verze „%s" není ve tvaru vDEN.MĚSÍC.pořadí' % (pid, p.get('verze')))
+        if 'vetev' in p and not RE_VETEV.match(str(p.get('vetev'))):
+            n.append('#%s: větev „%s" není platné jméno větve' % (pid, p.get('vetev')))
+        if 'dopadCena' in p and p.get('dopadCena') not in ('ano', 'ne'):
+            n.append('#%s: dopadCena je jen „ano" nebo „ne"' % pid)
+        if 'alias' in p:
+            a = p.get('alias')
+            if not isinstance(a, list) or not all(isinstance(x, str) and x.strip() for x in a):
+                n.append('#%s: alias je seznam neprázdných textů' % pid)
+                continue
+            for x in a:
+                k = x.strip().lower()
+                if k.lstrip('#').isdigit():
+                    n.append('#%s: alias „%s" je číslo — čísla jsou id, ne aliasy' % (pid, x))
+                elif k in znacky and znacky[k] != pid:
+                    n.append('alias „%s" mají #%s i #%s' % (x, znacky[k], pid))
+                else:
+                    znacky[k] = pid
     return n
+
+
+# --- zápis beze změny formátu nedotčených položek --------------------------
+
+def rozsahy_polozek(text):
+    """[(začátek, konec, položka)] pro každou položku pole „polozky" v textu."""
+    i = text.index('[', text.index('"polozky"')) + 1
+    dek = json.JSONDecoder()
+    mezera = re.compile(r'[\s,]*')
+    vysl = []
+    while True:
+        i = mezera.match(text, i).end()
+        if text[i] == ']':
+            return vysl
+        obj, konec = dek.raw_decode(text, i)
+        vysl.append((i, konec, obj))
+        i = konec
+
+
+def zapis_zmeny(text, zmenene, nove=()):
+    """Vrátí nový text: položky ze `zmenene` (id → položka) přepíše na jeden
+    řádek, `nove` připojí na konec pole; vše ostatní zůstane znak po znaku."""
+    rozsahy = rozsahy_polozek(text)
+    for zac, kon, obj in reversed(rozsahy):
+        pid = str(obj.get('id'))
+        if pid in zmenene:
+            text = text[:zac] + json.dumps(zmenene[pid], ensure_ascii=False) + text[kon:]
+    if nove:
+        kon = rozsahy_polozek(text)[-1][1]
+        pridej = ''.join(',\n  ' + json.dumps(p, ensure_ascii=False) for p in nove)
+        text = text[:kon] + pridej + text[kon:]
+    return text
+
+
+def migrace(db):
+    """Vrátí {id: upravená položka} — co S6 migrace změní (idempotentní)."""
+    zmenene = {}
+    for p in db.get('polozky', []):
+        pid = str(p.get('id'))
+        q = dict(p)
+        if q.get('stav') in ('ceka', 'blokovano'):
+            if 'typ' not in q:
+                q['typ'] = MIGRACE_TYP.get(pid, 'ukol')
+            cek = str(q.get('cekaNa') or '').strip()
+            if pid in MIGRACE_CEKANA and not RE_CEKANA.match(cek):
+                q['cekaNa'] = MIGRACE_CEKANA[pid]
+            elif cek and not RE_CEKANA.match(cek):
+                q['cekaNa'] = sjednot_cekana(cek)
+        if pid in MIGRACE_ALIAS:
+            a = list(aliasy(q))
+            for x in MIGRACE_ALIAS[pid]:
+                if x not in a:
+                    a.append(x)
+            q['alias'] = a
+        if q != p:
+            zmenene[pid] = q
+    return zmenene
+
+
+def sjednot_cekana(text):
+    """Starý volný text „na čí podklad se čeká" → „<kdo>: <text>"."""
+    t = text.strip()
+    if re.search(r'J\.\s?V\.', t):
+        kdo = 'J. V.'
+    elif re.search(r'integrátor', t, re.I):
+        kdo = 'integrátor'
+    elif re.search(r'koleg|správce|obchodní', t, re.I):
+        kdo = 'kolega'
+    else:
+        kdo = 'externí'
+    return '%s: %s' % (kdo, t)
+
+
+# --- výpisy -----------------------------------------------------------------
+
+def zive(db):
+    """Nehotové položky seřazené podle toho, na koho čekají."""
+    poradi = {k: i for i, k in enumerate(KDO)}
+    otev = [p for p in db.get('polozky', []) if p.get('stav') != 'hotovo']
+    return sorted(otev, key=lambda p: (poradi.get(kdo_ceka(p), len(KDO)),
+                                       int(p['id']) if str(p.get('id')).isdigit() else 0))
+
+
+def radek_zive(p):
+    znak = [TYP_NAZEV.get(typ(p), typ(p))]
+    if aliasy(p):
+        znak.append(', '.join(aliasy(p)))
+    if p.get('kolo'):
+        znak.append('kolo %s' % p['kolo'])
+    if p.get('dopadCena') == 'ano':
+        znak.append('CENA')
+    if verze(p):
+        znak.append(verze(p))
+    nazev = str(p.get('nazev', '')).replace('\n', ' ')
+    if len(nazev) > 90:
+        nazev = nazev[:89] + '…'
+    cek = str(p.get('cekaNa') or '—').replace('\n', ' ')
+    if len(cek) > 140:
+        cek = cek[:139] + '…'
+    return '#%s [%s] %s\n      čeká na: %s' % (p.get('id'), '; '.join(znak), nazev, cek)
+
+
+def hledej(db, znacka):
+    k = znacka.strip().lstrip('#').lower()
+    return [p for p in db.get('polozky', [])
+            if str(p.get('id')).lower() == k or k in (a.lower() for a in aliasy(p))]
 
 
 def vloz_data(db):
@@ -158,7 +405,41 @@ def md(db):
 
 
 def main():
-    db = nacti()
+    argv = sys.argv[1:]
+    soubor = None
+    if '--soubor' in argv:
+        i = argv.index('--soubor'); soubor = argv[i + 1]; del argv[i:i + 2]
+    db = nacti(soubor)
+
+    if '--migrace' in argv:
+        zmenene = migrace(db)
+        print('Migrace S6: %d položek k úpravě%s.' % (len(zmenene), ' (nanečisto)' if '--nanecisto' in argv else ''))
+        for pid, q in zmenene.items():
+            print(' - #%s: %s' % (pid, ', '.join(sorted(k for k in q if q.get(k) != next(
+                (p for p in db['polozky'] if str(p.get('id')) == pid), {}).get(k)))))
+        if zmenene and '--nanecisto' not in argv:
+            cesta = soubor or ZDROJ
+            with open(cesta, encoding='utf-8') as f:
+                text = f.read()
+            novy = zapis_zmeny(text, zmenene)
+            ocekavane = dict(db)
+            ocekavane['polozky'] = [zmenene.get(str(p.get('id')), p) for p in db['polozky']]
+            if json.loads(novy) != ocekavane:
+                print('CHYBA: zápis nesedí s daty — nic nezapsáno.')
+                return 1
+            with open(cesta, 'w', encoding='utf-8') as f:
+                f.write(novy)
+        return 0
+
+    if '--hledej' in argv:
+        znacka = argv[argv.index('--hledej') + 1]
+        nalez = hledej(db, znacka)
+        for p in nalez:
+            print(radek_zive(p) + '\n      stav: %s' % STAV_NAZEV.get(p.get('stav'), p.get('stav')))
+        if not nalez:
+            print('Nic: „%s" není číslo ani alias žádné položky.' % znacka)
+        return 0 if nalez else 1
+
     nalezy = kontrola(db)
     if nalezy:
         print('KONTROLA NEPROŠLA (%d nálezů):' % len(nalezy))
@@ -166,8 +447,26 @@ def main():
             print(' - ' + x)
         return 1
 
-    if '--kontrola' in sys.argv:
+    if '--kontrola' in argv:
         print('Kontrola v pořádku: %d položek, žádný nález.' % len(db.get('polozky', [])))
+        return 0
+
+    if '--zive' in argv:
+        otev = zive(db)
+        if '--json' in argv:
+            print(json.dumps([{k: p.get(k) for k in ('id', 'typ', 'stav', 'nazev', 'cekaNa', 'alias',
+                                                     'kolo', 'vetev', 'verze', 'dopadCena') if k in p}
+                              for p in otev], ensure_ascii=False, indent=1))
+            return 0
+        print('Živý výpis evidence (roadmapa/roadmap.json): nehotové položky podle toho, na koho čekají.')
+        posledni = None
+        for p in otev:
+            kdo = kdo_ceka(p) or '(neuvedeno)'
+            if kdo != posledni:
+                print('\n== čeká na: %s ==' % kdo)
+                posledni = kdo
+            print(radek_zive(p))
+        print('\nNehotových položek: %d.' % len(otev))
         return 0
 
     with open(VYSTUP_HTML, 'w', encoding='utf-8') as f:

@@ -16,6 +16,7 @@ Použití:
                                                               do main a nemají tag
   --changelog <soubor>   jiný CHANGELOG (testy)
   --jen-text             vypíše jen popis (bez odkazu)
+  --od <verze>           popis začne novinkami `novinky.py <od> <verze>` (S8)
 
 Hlídání dvojího vydání (J. V. 15. 10. 2026 — „tag už zase existuje"): před
 odkazem na NOVÝ release se nástroj podívá na tagy v origin (`git ls-remote
@@ -29,6 +30,11 @@ které byly jen v testu nebo integraci, zůstávají v CHANGELOG bez tagu.
 Proto `--chybejici` hlásí jen verze, které prošly do main — tj. verze.txt
 některého commitu v historii origin/main. Pro testy jde seznam podstrčit
 proměnnou KNG_VERZE_MAIN="1.2.3,1.2.4".
+
+Popis začíná textem pro kolegy z NOVINKY.md (S8, 18. 11. 2026), aby release
+a novinky říkaly totéž: `--od <verze>` ho vyrobí nástrojem
+`nastroje/novinky.py <od> <verze>`; bez `--od` se vezme NOVINKY.md vedle
+CHANGELOG, pokud její nadpis nese tutéž verzi. Jinak popis jako dřív.
 
 Ceny a osobní údaje do popisu nepatří: řádek s částkou v Kč/EUR se vynechá
 (CHANGELOG je navíc hlídaný nastroje/kontrola_udaju.py).
@@ -108,11 +114,14 @@ def body_oddilu(radky):
     return body, kolo
 
 
-def popis(text, verze):
+def popis(text, verze, novinky=None):
     casti = oddily(text, verze)
     if not casti:
         raise SystemExit(f'CHANGELOG nemá oddíl ## v{verze}')
     radky = []
+    if novinky:
+        radky += ['### Pro uživatele'] + [r for r in novinky.splitlines() if r.strip()
+                                          and not CASTKA.search(r)] + ['']
     for titulek, telo in casti:
         body, kolo = body_oddilu(telo)
         radky.append('### ' + CASTKA.sub('…', bez_vetve(titulek)))
@@ -133,8 +142,27 @@ def popis(text, verze):
     return vysl, CASTKA.sub('…', bez_vetve(casti[0][0]))
 
 
-def odkaz_novy(verze, sha, text):
-    telo, nadpis = popis(text, verze)
+def novinky_pro(verze, changelog, od=None):
+    """Odrážky NOVINEK pro popis releasu: z `novinky.py <od> <verze>`, jinak
+    z NOVINKY.md vedle CHANGELOG (jen když nadpis nese tutéž verzi), jinak None.
+    Evidence se bere z roadmapa/roadmap.json vedle CHANGELOG (chybí = prázdná)."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import novinky as nv
+    koren = os.path.dirname(os.path.abspath(changelog))
+    if od:
+        import json
+        rm_soubor = os.path.join(koren, 'roadmapa', 'roadmap.json')
+        db = {'polozky': []}
+        if os.path.exists(rm_soubor):
+            with open(rm_soubor, encoding='utf-8') as f:
+                db = json.load(f)
+        with open(changelog, encoding='utf-8') as f:
+            return nv.odrazky(nv.text(f.read(), db, od, verze))
+    return nv.ze_souboru(os.path.join(koren, 'NOVINKY.md'), verze)
+
+
+def odkaz_novy(verze, sha, text, novinky=None):
+    telo, nadpis = popis(text, verze, novinky)
     q = urllib.parse.urlencode({
         'tag': 'v' + verze, 'target': sha,
         'title': f'v{verze} — {nadpis}', 'body': telo,
@@ -198,6 +226,9 @@ def main(argv):
     changelog = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'CHANGELOG.md')
     if '--changelog' in args:
         i = args.index('--changelog'); changelog = args[i + 1]; del args[i:i + 2]
+    od = None
+    if '--od' in args:
+        i = args.index('--od'); od = args[i + 1].lstrip('v'); del args[i:i + 2]
     jen_text = '--jen-text' in args
     upravit = '--upravit' in args
     chybejici = '--chybejici' in args
@@ -224,12 +255,16 @@ def main(argv):
         print('verze musí být ve tvaru D.M.N (např. 12.10.4)'); return 2
     with open(changelog, encoding='utf-8') as f:
         text = f.read()
+    try:
+        nov = novinky_pro(verze, changelog, od)
+    except ValueError as e:
+        print('NOVINKY nejde vyrobit: %s' % e); return 2
     if jen_text:
-        print(popis(text, verze)[0], end=''); return 0
+        print(popis(text, verze, nov)[0], end=''); return 0
     if upravit:
         print(odkaz_uprava(verze))
         print('\nText k vložení do popisu:\n')
-        print(popis(text, verze)[0], end=''); return 0
+        print(popis(text, verze, nov)[0], end=''); return 0
     if len(args) < 2 or not re.fullmatch(r'[0-9a-f]{40}', args[1]):
         print('chybí plný SHA cíle (40 znaků hex)'); return 2
     tagy = tagy_origin()
@@ -240,7 +275,7 @@ def main(argv):
         print(f'Vydaný release: {REPO}/releases/tag/v{verze}')
         print(f'Úprava popisu:  {odkaz_uprava(verze)}')
         return 3
-    print(odkaz_novy(verze, args[1], text)[0])
+    print(odkaz_novy(verze, args[1], text, nov)[0])
     return 0
 
 
