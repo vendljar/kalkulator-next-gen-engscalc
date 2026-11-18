@@ -473,14 +473,31 @@ function sodNevyplnenePopisy(klice) {
   const p = (klice || []).map(k => SOD_NEVYPLNENE_POPIS[k] || k);
   return p.filter((x, i) => p.indexOf(x) === i);
 }
-/* Věta pro stav po tisku a pro kontrolu: „Ve smlouvě zůstalo N míst
- * k doplnění: …". Prázdný seznam → ''. */
+/* NEPOVINNÁ MÍSTA SMLOUVY (SL, rozhodnutí J. V. 16. 11. 2026): kontrola před
+ * tiskem SoD dělí nevyplněná místa na „Chybí" a „Nepovinné". Nepovinné jsou
+ * JEN druhý podepisující za zákazníka a faktury v kopii (1) a (2) — a jen
+ * u šablon, které ty symboly mají (seznam sodNevyplnene obsahuje jen symboly
+ * šablony). Všechno ostatní, i DIČ, banka, číslo účtu a zástupce ve věcech
+ * obchodních s kontaktem, je ve smlouvě povinné → „Chybí". Tečky ve Wordu
+ * dostanou obě skupiny stejně; kontrola zůstává jen upozornění. */
+const SOD_NEVYPLNENE_NEPOVINNE = ['OBJEDNATEL_PODPIS2_JMENO', 'OBJEDNATEL_PODPIS2_FUNKCE',
+  'OBJEDNATEL_KONTAKT_KOPIE1', 'OBJEDNATEL_KONTAKT_KOPIE2'];
+function sodNevyplneneRozdel(klice) {
+  const k = klice || [];
+  return { chybi: k.filter(x => SOD_NEVYPLNENE_NEPOVINNE.indexOf(x) < 0),
+           nepovinne: k.filter(x => SOD_NEVYPLNENE_NEPOVINNE.indexOf(x) >= 0) };
+}
+/* Věta pro stav po tisku a pro kontrolu: „Ve smlouvě zůstala 2 místa
+ * k doplnění (tečky „……"). Chybí: …. Nepovinné: …." — vyjmenuje každé místo
+ * s tečkami. Prázdný seznam → ''. */
 function sodNevyplneneText(klice) {
   const n = (klice || []).length;
   if (!n) return '';
   const mist = n === 1 ? 'místo' : (n >= 2 && n <= 4 ? 'místa' : 'míst');
-  return 'Ve smlouvě ' + (n >= 2 && n <= 4 ? 'zůstala ' : (n === 1 ? 'zůstalo ' : 'zůstalo ')) + n + ' ' + mist
-    + ' k doplnění (tečky „……"): ' + sodNevyplnenePopisy(klice).join(', ') + '.';
+  const r = sodNevyplneneRozdel(klice);
+  return 'Ve smlouvě ' + (n >= 2 && n <= 4 ? 'zůstala ' : 'zůstalo ') + n + ' ' + mist + ' k doplnění (tečky „……").'
+    + (r.chybi.length ? ' Chybí: ' + sodNevyplnenePopisy(r.chybi).join(', ') + '.' : '')
+    + (r.nepovinne.length ? ' Nepovinné: ' + sodNevyplnenePopisy(r.nepovinne).join(', ') + '.' : '');
 }
 
 /* POKUTA ZA PRODLENÍ ZHOTOVITELE (rozhodnutí J. V. 1. 10. 2026 k návrhu SoD,
@@ -721,4 +738,4 @@ if (typeof dokumentRegistruj === 'function') {
 if (typeof module !== 'undefined')
   module.exports = { SOD_OBJ_BEZ_ROZPISU, sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
     sodJazykZabrana, sodPrelozHodnoty, sodSachtySymboly, sodRozpisVyrovnani, sodCenaPredSlevou, SOD_SACHTY_SYMBOLY, SOD_SACHTY_BEZ_SABLONY, sodSablonaUmiSachty,
-    SOD_TECKY, sodNevyplnene, SOD_NEVYPLNENE_POPIS, sodNevyplnenePopisy, sodNevyplneneText, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };
+    SOD_TECKY, sodNevyplnene, SOD_NEVYPLNENE_POPIS, sodNevyplnenePopisy, sodNevyplneneText, SOD_NEVYPLNENE_NEPOVINNE, sodNevyplneneRozdel, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };

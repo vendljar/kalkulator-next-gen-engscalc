@@ -138,8 +138,21 @@ FIRMA_POLE.forEach(p => { firma[p.id] = /Kc$|skladne/i.test(p.id) ? '500' : (/em
     { symboly: new Set(['A', 'B', 'C', 'D', 'X_ZAC', 'X_KON', 'E']) }, ['E']), ['B', 'C', 'D'])
     && stejne(sodNevyplnene({}, { symboly: ['D', 'D'] }), ['D']));
   test('S věta: „Ve smlouvě zůstala 2 místa k doplnění … IČO zákazníka, termín montáže do."', sodNevyplneneText(['OBJEDNATEL_ICO', 'SOD_TERMIN_MONTAZ_DO'])
-    === 'Ve smlouvě zůstala 2 místa k doplnění (tečky „……"): IČO zákazníka, termín montáže do.' && sodNevyplneneText([]) === ''
+    === 'Ve smlouvě zůstala 2 místa k doplnění (tečky „……"). Chybí: IČO zákazníka, termín montáže do.' && sodNevyplneneText([]) === ''
     && /zůstalo 1 místo/.test(sodNevyplneneText(['X'])) && /zůstalo 5 míst/.test(sodNevyplneneText(['A', 'B', 'C', 'D', 'E'])), sodNevyplneneText(['OBJEDNATEL_ICO', 'SOD_TERMIN_MONTAZ_DO']));
+  /* SL (rozhodnutí J. V. 16. 11. 2026): Chybí / Nepovinné */
+  const POVINNE_JV = ['OBJEDNATEL_DIC', 'OBJEDNATEL_BANKA', 'OBJEDNATEL_UCET', 'OBJEDNATEL_ZASTUPCE_OBCHODNI', 'OBJEDNATEL_ZASTUPCE_OBCHODNI_KONTAKT'];
+  const NEPOV_JV = ['OBJEDNATEL_PODPIS2_JMENO', 'OBJEDNATEL_PODPIS2_FUNKCE', 'OBJEDNATEL_KONTAKT_KOPIE1', 'OBJEDNATEL_KONTAKT_KOPIE2'];
+  test('S2 nepovinné jsou právě druhý podepisující a faktury v kopii 1 a 2 (jedna konstanta)',
+    typeof SOD_NEVYPLNENE_NEPOVINNE !== 'undefined' && stejne(SOD_NEVYPLNENE_NEPOVINNE, NEPOV_JV), typeof SOD_NEVYPLNENE_NEPOVINNE !== 'undefined' ? SOD_NEVYPLNENE_NEPOVINNE : null);
+  const rz = typeof sodNevyplneneRozdel === 'function' ? sodNevyplneneRozdel(POVINNE_JV.concat(NEPOV_JV, ['OBJEDNATEL_ICO'])) : null;
+  test('S2 DIČ, banka, účet, zástupce ve věcech obchodních a kontakt → „Chybí"', !!rz
+    && stejne(rz.chybi, POVINNE_JV.concat(['OBJEDNATEL_ICO'])) && stejne(rz.nepovinne, NEPOV_JV), rz);
+  const vt = sodNevyplneneText(['OBJEDNATEL_DIC', 'OBJEDNATEL_KONTAKT_KOPIE1', 'OBJEDNATEL_PODPIS2_JMENO']);
+  test('S2 věta: Chybí, pak Nepovinné; každé místo vyjmenované', vt === 'Ve smlouvě zůstala 3 místa k doplnění (tečky „……"). Chybí: DIČ zákazníka. '
+    + 'Nepovinné: faktury v kopii na (1), druhý podepisující za zákazníka.', vt);
+  test('S2 jen nepovinné: věta bez „Chybí"', sodNevyplneneText(['OBJEDNATEL_KONTAKT_KOPIE2'])
+    === 'Ve smlouvě zůstalo 1 místo k doplnění (tečky „……"). Nepovinné: faktury v kopii na (2).', sodNevyplneneText(['OBJEDNATEL_KONTAKT_KOPIE2']));
   test('S symbol bez popisu se vypíše jménem, stejné popisy se nesčítají', JSON.stringify(sodNevyplnenePopisy(['NEZNAMY_X', 'PODM_POKUTA_DODAVKA_PROC', 'PODM_POKUTA_TERMIN_PROC']))
     === JSON.stringify(['NEZNAMY_X', 'pokuta za prodlení zhotovitele (vlastní znění bez procenta)']));
 
