@@ -49,6 +49,8 @@ pokus_db*.mjs
 # Stavové zápisy z jednotlivých dávek. Jsou to pracovní poznámky pro nás,
 # ne zdrojáky – a cituje se v nich, co uživatel poslal, včetně čísel zakázek.
 STAV_*.md
+# Výjimka (J. V. 18. 11. 2026): STAV testovacích kol patří do repa (podklady/kola/, CLAUDE.md → Testy).
+!podklady/kola/STAV_*.md
 PLAN_*.md
 
 # Běžný nepořádek
