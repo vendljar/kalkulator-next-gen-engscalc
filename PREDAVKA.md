@@ -21,11 +21,11 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
-- **UE #653** (`claude/ue-uzivatele`, v18.11.8, nad integrací 41bbe99): Nastavení → Uživatelé → **Upravit…**
+- **UE #664** (`claude/ue-uzivatele`, v18.11.9, nad integrací 41bbe99): Nastavení → Uživatelé → **Upravit…**
   (titul, jméno, funkce, telefon; e-mail jen ke čtení s vysvětlením). Server beze změny pravidel, razítko `zmenil`
   + seznam polí. Testy `netlify/test_ue_uzivatele.mjs`, `src/test_ue_zpracovatel.js`, matice práv, overit_online/xss,
-  mutace [UE]. **Otázka #654 pro J. V.:** dotisk odeslané nabídky bere „Vypracoval“ z přihlášeného účtu — doporučeno
-  zmrazit při zámku. Čísla #653/#654 můžou kolidovat se SP (VZ-F1 má do #652). **Kolo `--bez-mutaci --proti origin/test`
+  mutace [UE]. **Otázka #665 pro J. V.:** dotisk odeslané nabídky bere „Vypracoval“ z přihlášeného účtu — doporučeno
+  zmrazit při zámku. Čísla #664/#665 můžou kolidovat se SP (VZ-F1 má do #652). **Kolo `--bez-mutaci --proti origin/test`
   VŠE ZELENÉ** (sady 467/0/7, hodiny 379/0/1, statické 9/9, porovnání 353/353 SHODA). Mutace [UE] server 6/6, jádro 2/2, B148 2/2. HOTOVO, slučuje koordinace.
 - **S6 + S8 #613** (`claude/s6s8-evidence`, v18.11.5, nad 9bd6dc8): evidence v `roadmap.json` (pole `typ`, `cekaNa` „<kdo>: <co>“,
   `kolo`, `vetev`, `verze`, `dopadCena`, `alias`; migrace jen dotčených položek), otevřené nálezy a otázky převedeny jako

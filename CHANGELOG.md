@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v18.11.8 — UE #653 úprava existujícího účtu (titul, jméno, funkce, telefon), větev claude/ue-uzivatele
+## v18.11.9 — UE #664 úprava existujícího účtu (titul, jméno, funkce, telefon), větev claude/ue-uzivatele
 
 Nad integrací `41bbe99` (v18.11.6). Zadání J. V. 18. 11. 2026. Verzi přečísluje koordinace (souběžně VZ-F1, C7, SP).
 Na webech, Disku ani v Pipedrive nic.
@@ -23,7 +23,7 @@ Na webech, Disku ani v Pipedrive nic.
   upraví jen sám (B28), snížení role a vypnutí hlavního účtu dál 400. Účty protokol změn nemají — razítko
   `zmenil` nově nese i seznam změněných polí (bez hodnot).
 - **Dopad na dokumenty:** nové nabídky nesou nové údaje v bloku „Vypracoval“. Krycí list odeslané (zamčené) varianty
-  drží jméno ze snímku zámku a data zakázky se úpravou účtu nemění. **Otázka #654 pro J. V.:** dotisk odeslané
+  drží jméno ze snímku zámku a data zakázky se úpravou účtu nemění. **Otázka #665 pro J. V.:** dotisk odeslané
   nabídky (Word i online tisk) bere blok „Vypracoval“ z přihlášeného účtu (platí od #146) — doporučeno zmrazit ho
   při zámku jako krycí list.
 - Testy: `netlify/test_ue_uzivatele.mjs` (34), `src/test_ue_zpracovatel.js` (13), řádek matice v `test_prava.mjs`,
