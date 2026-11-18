@@ -151,6 +151,12 @@ function ukazkoveTiskLista() {
  * je to prázdný formulář s razítkem – a ten se zákazníkovi poslat nesmí.
  * Vrací důvod (text), nebo prázdný řetězec, když je cesta volná. */
 function dokumentZabrana(typ, varianta) {
+  /* VÍC ZÁKAZNÍKŮ (VZ-E2 #601): varianta jiného zákazníka, cizí název v
+   * tištěném textu, PROJ pro dalšího zákazníka, vypnutá funkce. */
+  if (typ && typeof vzTiskZabranaUi === 'function') {
+    const duvod = vzTiskZabranaUi(typ, varianta || null);
+    if (duvod) return duvod;
+  }
   /* ZÁMEK STRANY (P6 / K19-N114, 13. 10. 2026): dokument strany, která je
    * u zakázky uzamčená a vynulovaná (podle čísla nabídky nebo jenProj /
    * jenOck), nevznikne — ani dotisk do odeslané varianty (D6d). Stojí

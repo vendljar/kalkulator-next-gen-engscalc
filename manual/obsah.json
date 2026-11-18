@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
-    "verze": "Platí pro aplikaci v18.11.3 · sestaveno 18. 11. 2026",
+    "verze": "Platí pro aplikaci v18.11.5 · sestaveno 18. 11. 2026",
 
   "uvod": [
     {
@@ -84,7 +84,7 @@
           "typ": "kroky", "nadpis": "Postup, když lišta svítí",
           "polozky": [
             {"text": "Lišta svítí pod hlavičkou aplikace a vypadá takhle. Počítat můžete dál, jen dokument z ní nevznikne.", "snimek": "k4-cervena-lista"},
-            {"text": "Zavolejte administrátorovi, ať zveřejní platný ceník a firemní údaje (kapitola 33)."},
+            {"text": "Zavolejte administrátorovi, ať zveřejní platný ceník a firemní údaje (kapitola 34)."},
             {"text": "Po zveřejnění obnovte stránku (`F5`), nebo se přihlaste znovu — lišta zhasne sama.", "snimek": "k1-prihlaseni-vyplneno", "klik": {"obsahuje": "Přihlásit"}}
           ]
         },
@@ -234,7 +234,7 @@
         },
         { "typ": "podnadpis", "text": "Otevřená zakázka: rozpracovaná, nebo odeslaná" },
         { "typ": "text", "text": "Když otevřete uloženou zakázku, je **jen ke čtení**: pole nejdou přepisovat. Prohlédnout si starší nabídku tak nemůže nic pokazit — a samotné otevření se ani neukládá, do databáze se zapisuje teprve tehdy, když opravdu něco změníte. Nad zakázkou je vždy jediná lišta; jaká, záleží na tom, jestli už nabídka odešla zákazníkovi." },
-        { "typ": "text", "text": "**Rozpracovaná zakázka** (ještě nevytištěná): nahoře svítí žlutá lišta **„Rozpracovaná kalkulace“** s číslem, názvem a časem poslední práce. Tlačítkem **Pokračovat v rozpracované kalkulaci** zakázku odemknete k úpravám — a leží-li v prohlížeči novější rozpracovaná práce téže zakázky (kapitola 30), rovnou se vrátí. Tlačítkem **Založit novou kalkulaci** začnete novou. Zámek platí na jedno otevření; příště bude zakázka zase jen ke čtení. Svoji zakázku odemkne každý obchodník, cizí vedoucí nebo administrátor; u cizí zakázky lišta nabídne jen Založit novou kalkulaci a napíše, kdo ji založil, ať víte, koho požádat. Nová zakázka je odemčená rovnou." },
+        { "typ": "text", "text": "**Rozpracovaná zakázka** (ještě nevytištěná): nahoře svítí žlutá lišta **„Rozpracovaná kalkulace“** s číslem, názvem a časem poslední práce. Tlačítkem **Pokračovat v rozpracované kalkulaci** zakázku odemknete k úpravám — a leží-li v prohlížeči novější rozpracovaná práce téže zakázky (kapitola 31), rovnou se vrátí. Tlačítkem **Založit novou kalkulaci** začnete novou. Zámek platí na jedno otevření; příště bude zakázka zase jen ke čtení. Svoji zakázku odemkne každý obchodník, cizí vedoucí nebo administrátor; u cizí zakázky lišta nabídne jen Založit novou kalkulaci a napíše, kdo ji založil, ať víte, koho požádat. Nová zakázka je odemčená rovnou." },
         {"typ": "text", "text": "**Odeslaná nabídka** (vytištěná, tedy odeslaná zákazníkovi) má místo žluté lišty jednořádkovou informaci **„Odeslaná nabídka … (vytištěno …) — needituje se“**:"},
         {"typ": "odrazky", "polozky": ["**Klonovat a pokračovat** založí novou variantu jako kopii, rovnou odemčenou; **Založit novou zakázku** začne znovu.", "**Odemknout k úpravám** (modrý pruh) smí jen administrátor; odemčení se zapíše do zakázky i s důvodem.", "**Krycí list doplňujete dál.** Zmrazená (šedá, 🔒) jsou jen pole, která se po odeslání nemění: obchodník, název akce, adresa stavby, hodnota zakázky bez DPH, údaje zhotovitele, typ smlouvy a produktu, platnost nabídky (u projekce i hlavní projektant, památková ochrana a autorská práva). Číslo nabídky mění jen administrátor.", "**Platební podmínky, sazbu DPH, termín dodání a plán plateb upravíte i po odeslání** — změna platí pro krycí list, smlouvu o dílo a export; dotisk odeslané nabídky zůstává, jak odešla (původní ceny, DPH a podmínky).", "Název akce a adresa stavby se nemění ani v hlavičce kalkulace, je-li odeslaná řídící varianta.", "Po tisku smlouvy o dílo je krycí list zamčený celý (i údaje zákazníka v hlavičce) — kromě kontaktní osoby zákazníka a údajů zmocnitele plné moci v krycím listu PROJ.", "Tisk nabídky zakázku rovnou uloží online."]},
         { "typ": "text", "text": "**Tisk nabídky zakázku rovnou uloží** do online databáze — i když aplikace zrovna ukládá jinou změnu: tisk počká, až běžící uložení doběhne. **Dokud se vytištěná nabídka do databáze neuloží, jsou její platební podmínky a sazba DPH zmrazené** — šedá pole s 🔒 a bublinou „čeká na uložení“. Obvykle to trvá vteřinu a pak je upravíte jako dosud. Když uložení po tisku nevyjde (třeba při výpadku sítě), aplikace to řekne oknem: **nezavírejte ho a uložte zakázku znovu**, až bude server dostupný. **Po tisku smlouvy o dílo je tlačítko Najít firmu v ARES v hlavičce neaktivní** — údaje zákazníka jsou ve smlouvě vytištěné a nemění se; důvod ukáže bublina nad tlačítkem. Na kartě zákazníka (kapitola 7) funguje ARES dál." },
@@ -304,7 +304,7 @@
             { "obsahuje": "NELZE POSOUDIT", "text": "Štítek kontroly standardu (kapitola 14). Oranžová znamená, že aplikaci chybí údaj, bez kterého se rozhodnout nedá." }
           ]
         },
-        { "typ": "text", "text": "Hned pod cenovým pásem je karta **Interní poznámky k zakázce** (kapitola 28), aby byla po ruce a nemuseli jste k ní projíždět celou kalkulaci." },
+        { "typ": "text", "text": "Hned pod cenovým pásem je karta **Interní poznámky k zakázce** (kapitola 29), aby byla po ruce a nemuseli jste k ní projíždět celou kalkulaci." },
         { "typ": "podnadpis", "text": "Režim výpočtu: počítá se Modelem 2" },
         { "typ": "text", "text": "Kalkulace OCK umí počítat dvěma způsoby. **Model 1 – 1:1 jako Excel** se chová přesně jako původní excelová tabulka, včetně jejích zdokumentovaných chyb (například u lakování). **Model 2 – opravený** ty chyby nemá. **Každá nová zakázka začíná Modelem 2.** Model 1 je zmrazený — dál se nerozvíjí a přepnout na něj smí jen administrátor." },
         {
@@ -976,8 +976,119 @@
       ]
     },
     {
+      "id": "kap-vice-zakazniku",
+      "nadpis": "26. Víc zákazníků na jedné zakázce",
+      "bloky": [
+        {
+          "typ": "text",
+          "text": "Stejnou stavbu často poptá víc firem — developer, generální dodavatel, výtahová firma. Místo tří kopií zakázky můžete mít **jednu zakázku s víc zákazníky**: stavba, zadání a výpočet jsou společné, každý zákazník dostane **svou nabídku** se svým písmenem v čísle (…9940-B, …9940-C). Zákazník buď **sdílí variantu** s jiným zákazníkem (stejná cena i podmínky), nebo má **vlastní variantu** (klon, kterou upravíte jen pro něj)."
+        },
+        {
+          "typ": "ram",
+          "nadpis": "Zkušební funkce",
+          "odstavce": [
+            "Víc zákazníků zapíná pro celý program **administrátor** (Nastavení → Zkušební funkce); výchozí stav je vypnuto. Dokud je vypnutá, nic z téhle kapitoly nevidíte. Se zapnutou funkcí se zakázka s jedním zákazníkem liší jen tlačítkem **Přidat zákazníka** u pole Zákazník. Zakázka, která další zákazníky už má, se po vypnutí dál otevře a vytiskne pro řídícího zákazníka; zákazníky ale nejde měnit a pro další zákazníky se netiskne."
+          ]
+        },
+        {
+          "typ": "kroky",
+          "nadpis": "Postup: druhý zákazník na zakázce",
+          "polozky": [
+            {
+              "text": "V hlavičce zakázky (Kalkulace OCK) klikněte u pole Zákazník na **Přidat zákazníka**. Vyplňte údaje ručně, z **ARES** podle IČO nebo z **databáze zákazníků** a vyberte, jestli nový zákazník **sdílí variantu** řídícího zákazníka, nebo dostane **vlastní variantu**. Potvrďte *Přidat zákazníka*.",
+              "snimek": "k26vz-pridat",
+              "klik": {
+                "obsahuje": "Přidat zákazníka"
+              }
+            },
+            {
+              "text": "Pod hlavičkou se objeví karta **Zákazníci zakázky**: řídící zákazník, ostatní s písmenem, číslo nabídky, varianta, stav (rozpracovaná / odeslaná / prodáno) a cena. Tlačítky **Náhled** a **Tisk CN** otevřete nabídku daného zákazníka, **Vlastní varianta** mu vytvoří klon, **Prodáno** zapíše prodej právě jemu.",
+              "snimek": "k26vz-karta",
+              "klik": {
+                "obsahuje": "Zákazníci zakázky"
+              }
+            },
+            {
+              "text": "Kliknutím na jméno zákazníka (v kartě nebo v přepínači nad hlavičkou) ho **otevřete** — hlavička pak ukazuje jeho údaje a karta Cenová nabídka nese pruh **„Náhled a tisk platí pro zákazníka …“**. Vše, co teď vytisknete, dostane on: jeho název, sídlo, IČO, číslo s písmenem a jen jeho varianty.",
+              "snimek": "k26vz-pruh",
+              "klik": {
+                "obsahuje": "Náhled a tisk platí pro zákazníka"
+              }
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Řídící zákazník"
+        },
+        {
+          "typ": "text",
+          "text": "**Řídící zákazník** je ten v hlavičce zakázky. Jeho data nese deal v Pipedrive, přehled nabídek, controlling a dokumenty projekce (PROJ se u víc zákazníků tiskne jen pro řídícího). Ručně ho vymění jen **autor zakázky nebo administrátor** (přepínač *Řídící* v kartě); **prodejem** jinému zákazníkovi se vítěz stane řídícím sám."
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Co je společné a co patří zákazníkovi"
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Společné",
+              "vyklad": "Název akce, adresa stavby, popis záměru, úvodní fotka, přílohy a interní poznámky. Sdílený text ani název varianty **nesmí jmenovat jiného zákazníka** — tisk se v takovém případě zastaví s vysvětlením."
+            },
+            {
+              "pojem": "Sdílená varianta",
+              "vyklad": "Výpočet, ceny i smluvní podmínky krycího listu (platby, termíny) jsou stejné pro všechny její zákazníky. Údaje zákazníka v krycím listu (kontakt, podpisy, kopie faktur) má každý zákazník své. Potřebujete pro jednoho zákazníka jiné podmínky? Vytvořte mu **vlastní variantu**."
+            },
+            {
+              "pojem": "Zákazník",
+              "vyklad": "Název, sídlo, IČO, DIČ, kontakt a zástupci. Po první odeslané nabídce jeho **název, sídlo, IČO a DIČ zamrznou** (kontakt a zástupci zůstávají volné)."
+            }
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Odeslání, prodej a smlouva"
+        },
+        {
+          "typ": "odrazky",
+          "polozky": [
+            "Každý tisk nese **razítko adresáta** — aplikace ví, komu která nabídka odešla. Číslo s písmenem a stav v kartě se podle toho mění samy.",
+            "**Prodáno** jde jen zákazníkovi, kterému nabídka té varianty **odešla**. Před uložením aplikace ukáže, co se změní (řídící zákazník, řídící varianta, organizace dealu).",
+            "**Smlouvu o dílo** vytvoříte jen pro zákazníka, kterému nabídka té varianty odešla — hlídá to tisk i server. U prodané sdílené varianty jde krycí list i smlouva vždy vítězi, i když máte otevřeného jiného zákazníka.",
+            "Zákazníka, kterému už odešla nabídka, **odstraní jen administrátor**; zákazník bez odeslané nabídky se odstraní tlačítkem *Odstranit* po potvrzení. Po odstranění posledního dalšího zákazníka je zakázka stejná jako dřív."
+          ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Kde dalšího zákazníka najdete"
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Přehled cenových nabídek",
+              "vyklad": "U zákazníka štítek **„3 zákazníci“** (v bublině jejich názvy). Hledání najde zakázku i podle názvu nebo čísla nabídky dalšího zákazníka. Ve sloupci Zákazník zůstává řídící zákazník."
+            },
+            {
+              "pojem": "Seznam kalkulací",
+              "vyklad": "Sloupec Zákazník ukazuje, kteří zákazníci na variantu ukazují; hledání najde variantu i podle jejich názvu."
+            },
+            {
+              "pojem": "Pipedrive",
+              "vyklad": "Deal vede řídící zákazník. Ostatní zákazníky zapíše uložení do **jedné poznámky u dealu** „Další zákazníci na zakázce“ (název, číslo nabídky, odeslaná nabídka s cenou, stav). Po prodeji jinému zákazníkovi aplikace přepojí **organizaci dealu** na vítěze; kontaktní osobu dealu přepojte ručně v Pipedrive."
+            },
+            {
+              "pojem": "Controlling",
+              "vyklad": "Zakázka je v exportu jednou — s řídícím zákazníkem (po prodeji s vítězem); popis uvádí počet zákazníků. Sdílená varianta má jeden zámek, nic se nepočítá dvakrát."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "kap-proj",
-      "nadpis": "26. Kalkulace PROJ",
+      "nadpis": "27. Kalkulace PROJ",
       "bloky": [
         { "typ": "text", "text": "Projekční práce mají vlastní záložku a vlastní sekce (*Zaměření, Studie, Projednání studie, DPZ, IČ, DPS, EZC, Kolaudace, Geodetické zaměření*). **Hlavičku mají ale společnou s OCK** — číslo nabídky, název akce, adresa stavby, zákazník, jeho sídlo, IČO, DIČ i kontaktní osoba se zadávají jednou a platí pro obě části." },
         {
@@ -1033,7 +1144,7 @@
     },
     {
       "id": "kap-odkud-cislo",
-      "nadpis": "27. U každého čísla je vidět, odkud je",
+      "nadpis": "28. U každého čísla je vidět, odkud je",
       "bloky": [
         { "typ": "text", "text": "Nejčastější otázka nad hotovou kalkulací zní „proč je tam zrovna tohle číslo“. Odpovídá na ni sama aplikace, a to na dvou místech." },
         { "typ": "podnadpis", "text": "Detail výpočtu vysvětluje každý řádek" },
@@ -1077,7 +1188,7 @@
     },
     {
       "id": "kap-poznamky",
-      "nadpis": "28. Interní poznámky k zakázce",
+      "nadpis": "29. Interní poznámky k zakázce",
       "bloky": [
         { "typ": "text", "text": "Karta **Interní poznámky k zakázce (netisknou se do nabídky; tisknou se jen na krycím listu)** stojí **nahoře**: v Kalkulaci OCK hned pod cenovým pásem, v Kalkulaci PROJ pod souhrnem. Patří sem to, co se jinak ztratí v e-mailu a co má vědět firma: proč se dala sleva, co jsme slíbili, kdo rozhoduje, na co si dát pozor na stavbě, na čem se čeká." },
         { "typ": "text", "text": "**Totéž pole je na krycím listu.** Na záložce **Krycí list zakázky OCK** i **PROJ** je to sekce **hned pod Základními údaji** (nad Dodavatelem) se stejným nadpisem. Pole má aspoň pět řádků a s delším textem se samo zvětší. Není to kopie: co napíšete v Kalkulaci, je hned na krycím listu, a co doplníte na krycím listu, uvidíte v Kalkulaci. Platí pro celou zakázku — pro OCK, PROJ i všechny varianty." },
@@ -1096,7 +1207,7 @@
     },
     {
       "id": "kap-nevidite",
-      "nadpis": "29. Co v aplikaci nevidíte a proč",
+      "nadpis": "30. Co v aplikaci nevidíte a proč",
       "bloky": [
         { "typ": "text", "text": "Jako obchodník neuvidíte několik záložek, které existují: **Ceník nákladů OCK**, **Ceník nákladů PROJ**, **Detail výpočtu** (OCK), **Technická specifikace OCK Data**, **Schvalování slev** a **Nastavení**. Nejsou skryté před vámi osobně — jsou skryté před rolí. Ceníky obsahují nákladové sazby, tedy to nejcitlivější, co firma má." },
         { "typ": "text", "text": "Pro představu, co tam administrátor vidí: v obou cenících jsou **probarvené buňky**. **Světle červeně** svítí položka s nulou nebo nevyplněná — tedy cena, která by se v kalkulaci počítala za nic. **Světle oranžově** svítí částka v korunách **nad 40 000 Kč**, aby se nepřehlédl překlep o řád. Prázdná **Cena Zahraničí** nesvítí: znamená „jako v ČR“, a to je platný stav (červeně tam svítí jen zapsaná nula). Barva je jen vodítko na obrazovce — do ceny ani do nabídky nic nepíše." },
@@ -1128,7 +1239,7 @@
             { "pojem": "Smlouvy / Šablony", "vyklad": "Přepínač **OCK | PROJ**. U OCK výchozí platební podmínky, **smluvní standardy** (platnost nabídky, způsob fakturace, standardní termín dodání a prodloužení za ATYP, skladné) a **kapitoly nabídky III.–VI. a doložky** v každém jazyce; u PROJ platební podmínky, texty nabídky PROJ a **výchozí plán plateb**. Dál logo firmy a **šablony dokumentů** (nabídky OCK a PROJ, smlouvy o dílo, plná moc) s jazykovými verzemi EN, DE, FR. Co je tu, je jen *předvyplnění* — v zakázce to v krycím listu přepíšete. Zveřejněním platí pro všechny." },
             { "pojem": "Ceník nákladů OCK a PROJ", "vyklad": "Samostatné záložky (ne v Nastavení): nákladové sazby, řada **Zahraničí** a **kurz EUR**. Nový ceník platí až **zveřejněním**; rozpracované nabídky se pak přepočítají (s dialogem, kapitola 22), odeslané ne." },
             { "pojem": "Slevy, Standard OCK, Zobrazení", "vyklad": "Stropy slev podle rolí (kapitola 19), limity standardu a ATYP (kapitola 14) a matice zobrazení — co která role vidí a co se v nové zakázce zaškrtne samo." },
-            { "pojem": "Databáze, Controlling, Mapa polí CRM, Analytika", "vyklad": "Zálohy a přenos ceníku (kapitola 31), export pro controlling a mapa polí Pipedrive (výš) a statistiky používání — jen administrátor." },
+            { "pojem": "Databáze, Controlling, Mapa polí CRM, Analytika", "vyklad": "Zálohy a přenos ceníku (kapitola 32), export pro controlling a mapa polí Pipedrive (výš) a statistiky používání — jen administrátor." },
             { "pojem": "Uživatelé, Slovník, Konfigurace", "vyklad": "Účty a role, překladový slovník dokumentů a záloha celého nastavení do souboru." }
           ]
         }
@@ -1136,7 +1247,7 @@
     },
     {
       "id": "kap-neztratite",
-      "nadpis": "30. Rozpracovanou kalkulaci neztratíte",
+      "nadpis": "31. Rozpracovanou kalkulaci neztratíte",
       "bloky": [
         { "typ": "text", "text": "Aplikace si průběžně odkládá zálohu rozpracované kalkulace **přímo ve vašem prohlížeči** — nezávisle na tom, jestli je zakázka uložená online. Když prohlížeč spadne, zavřete omylem panel nebo vám vyprší přihlášení, po dalším otevření se nahoře objeví žlutá lišta **„Rozpracovaná kalkulace“**. Kliknutím na **Pokračovat v rozpracované kalkulaci** se práce vrátí přesně tam, kde jste skončil; **Založit novou kalkulaci** začne novou a malý odkaz **Zahodit zálohu** zálohu smaže. Záloha **odeslané** (vytištěné) nabídky se nenabízí — do ní se stejně psát nedá — a aplikace ji tiše uklidí. Zakázka otevřená jen ke čtení zálohu v prohlížeči nepřepíše." },
         {
@@ -1161,7 +1272,7 @@
     },
     {
       "id": "kap-zalohy",
-      "nadpis": "31. Zálohy a výpadky",
+      "nadpis": "32. Zálohy a výpadky",
       "bloky": [
         { "typ": "text", "text": "O zálohy se starat nemusíte a ani je nemáte čím spustit — jsou celé v rukou administrátora. Databáze se zálohuje sama každou noc a administrátor si může kdykoli pořídit ruční zálohu (uloží se vedle noční, ne přes ni) nebo stáhnout otisk celého obsahu. Umí ji i **nalít zpátky**, přičemž se nejdřív zobrazí náhled s tím, kolik záznamů přibude, kolik se přepíše a co se přeskočí a proč." },
         {
@@ -1193,7 +1304,7 @@
     },
     {
       "id": "kap-slovnicek",
-      "nadpis": "32. Slovníček hlášek",
+      "nadpis": "33. Slovníček hlášek",
       "bloky": [
         {
           "typ": "seznam",
@@ -1228,7 +1339,7 @@
     },
     {
       "id": "kap-dotaz",
-      "nadpis": "33. Kam s dotazem",
+      "nadpis": "34. Kam s dotazem",
       "bloky": [
         { "typ": "text", "text": "Vše, co začíná slovy „administrátor musí…“, řeší **Jaroslav Vendl** — účty, hesla, zveřejnění ceníku i firemních údajů, zálohy, export dat." },
         { "typ": "text", "text": "Když narazíte na něco, co vypadá jako chyba aplikace, přiložte k hlášení **číslo verze** z hlavičky aplikace a **číslo nabídky**, u které se to stalo. Z toho se dá dohledat i to, z jaké verze ceníku se počítalo." },

@@ -23,7 +23,9 @@
  *
  * Pojistka: nad 141b92f (v2.11.2) selže „žádný dialog klonu", „prodej
  * uložen" i „skutečný důvod" (viz commit). Smyšlené účty a údaje.
- * Spuštění: NODE_PATH=$(npm root -g) node overit_prodano_zamek.mjs */
+ * Spuštění: NODE_PATH=$(npm root -g) node overit_prodano_zamek.mjs
+ * Limity: násobky KNG_HARNESS_TIMEOUT_MS (výchozí 15000 ms); klik v kartě
+ * Prodej čeká na doběhnutí akce, ne pevnou pauzou (C9 #608). */
 process.env.TAJEMSTVI_RELACE = 'zkusebni-tajemstvi-jen-pro-harness';
 process.env.ADMIN_INIT_HESLO = 'Zkusebni.Heslo.123';
 process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'spravce@priklad.cz';
@@ -94,10 +96,20 @@ const server = createServer((req, res) => { res.writeHead(200, { 'Content-Type':
 await new Promise(r => server.listen(0, '127.0.0.1', r));
 const ADRESA = 'http://127.0.0.1:' + server.address().port;
 
-const prohlizec = await chromium.launch({ args: ['--no-sandbox'] });
+const { casLimit, sledujAkce, cekejNaKlid } = require('./nastroje/harness_cekani.js');
+const prohlizec = await chromium.launch({ args: ['--no-sandbox'], timeout: casLimit(12) });   // spuštění prohlížeče (dřív výchozích 180 s)
 const page = await (await prohlizec.newContext()).newPage();
+page.setDefaultTimeout(casLimit(2));       // akce nad prvky (dřív výchozích 30 s Playwrightu)
+page.setDefaultNavigationTimeout(casLimit(4)); // načtení 4 MB stránky je pod zátěží nejpomalejší krok
 const { hlidejHarness } = require('./nastroje/harness_hlidac.js');
-hlidejHarness({ page, uklid: async () => { await prohlizec.close(); server.close(); } });
+hlidejHarness({ page, krokMs: casLimit(8), celkemMs: casLimit(80), uklid: async () => { await prohlizec.close(); server.close(); } });
+/* Aplikace načtená, první dotaz na server doběhl; akce karty Prodej a uložení
+ * se sledují (cekejNaKlid) — po každém načtení stránky znovu. */
+const nacteno = async () => {
+  await page.waitForFunction(() => typeof window.render === 'function' && typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.sondaHotova,
+    null, { timeout: casLimit(4) });
+  await sledujAkce(page, ['prodejUiProdej', 'prodejUiOdemkni', 'zamekUpozorni', 'zakUlozUI', 'onlineUloz']);
+};
 const chyby = [];
 page.on('console', m => { if (m.type() === 'error' && !/status of (401|403|400|409)/.test(m.text())) chyby.push('console: ' + m.text()); });
 page.on('pageerror', e => chyby.push('pageerror: ' + e.message));
@@ -116,8 +128,7 @@ await page.route('**/api/**', async route => {
 });
 
 await page.goto(ADRESA);
-await page.waitForFunction(() => typeof window.render === 'function');
-await page.waitForTimeout(400);
+await nacteno();
 
 /* Dialogy: harness si zapamatuje každý text i nadpis. Potvrzení „Prodáno"
  * odklepne Ano; dialog „Uzamčená varianta" (klon) odmítne „Nechat beze
@@ -145,8 +156,7 @@ const otevri = (soubor) => page.evaluate(async (s) => { await onlineOtevri(s); p
 const klikni = async (text) => {
   const tl = page.locator('#prodejKarta_ock button', { hasText: text }).first();
   await tl.click();
-  await page.waitForFunction(() => !ONLINE_STAV.ukladaBeh && !ZAKULO_STAV.uklada, null, { timeout: 15000 });
-  await page.waitForTimeout(300);
+  await cekejNaKlid(page, 2);   // akce karty doběhla i s uložením
 };
 const naServeru = async (soubor) => {
   const rA = await post(prihlaseni, 'http://x/api/prihlaseni', { email: process.env.ADMIN_EMAIL, heslo: 'Zkusebni.Heslo.123' });
@@ -372,8 +382,7 @@ test('PR #563: varRidici(v1) po prodeji odmítne s hláškou, řídící zůstan
   && d.some(x => /vždy řídící/.test(x.text) && /odemčení prodeje/.test(x.text)), [pokus, d]);
 /* Po F5: znovu přihlásit a otevřít — stav drží (bere se z databáze). */
 await page.reload();
-await page.waitForFunction(() => typeof window.render === 'function');
-await page.waitForTimeout(400);
+await nacteno();
 await page.evaluate(() => {
   window.__dlg = [];
   window.potvrd = (t, o) => { window.__dlg.push({ druh: 'potvrd', nadpis: (o && o.nadpis) || '', text: String(t) }); return Promise.resolve(false); };

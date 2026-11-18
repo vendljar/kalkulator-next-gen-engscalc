@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v18.11.3 · sestaveno 18. 11. 2026",
+  "verze": "Platí pro aplikaci v18.11.5 · sestaveno 18. 11. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -409,6 +409,55 @@
               "text": "Obchodníci uvidí pole **Počet variant šachet v nabídce** po příštím přihlášení (nebo obnovení stránky)."
             }
           ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Zkušební funkce: Víc zákazníků na zakázce"
+        },
+        {
+          "typ": "text",
+          "text": "**Víc zákazníků na zakázce** dovolí obchodníkům nabídnout jednu zakázku (stavbu) několika zákazníkům najednou — každý dostane nabídku se svým písmenem v čísle (…9940-B), sdílenou nebo vlastní variantu a po prodeji se vítěz stane řídícím zákazníkem (příručka obchodníka, kapitola 26). Funkce je za vypínačem stejně jako víc šachet."
+        },
+        {
+          "typ": "ram",
+          "nadpis": "Výchozí stav je VYPNUTO — i na testu a na ostrém",
+          "odstavce": [
+            "Vypínač **Víc zákazníků na zakázce** je po nasazení každé verze **vypnutý** — na testovacím i na ostrém webu — i po každém dalším nasazení. Zapnout ho smí **jen administrátor** v Nastavení → **Zkušební funkce**; obchodník ani vedoucí vypínač nezmění (server je odmítne).",
+            "Na ostrém webu ho nezapínejte, dokud se o zapnutí nerozhodne. Na testovacím webu ho zapněte jen na dobu zkoušení."
+          ]
+        },
+        {
+          "typ": "text",
+          "text": "**Vypnutím se nic neztratí:** zakázky, které už další zákazníky mají, se dál otevřou, spočítají a vytisknou pro řídícího zákazníka; karta Zákazníci zakázky je jen ke čtení, tisk pro další zákazníky je zastavený s hláškou a server odmítne každou změnu zákazníků (přidání, úpravu, odstranění, výměnu řídícího). Stav vypínače se nezálohuje."
+        },
+        {
+          "typ": "text",
+          "text": "**Obnova ze zálohy:** zakázku s víc zákazníky server obnoví jen se **zapnutou** funkcí — s vypnutou ji při obnově přeskočí s důvodem v přehledu obnovy (data v záloze zůstávají). Před obnovou takových zakázek funkci zapněte, po obnově ji můžete zase vypnout."
+        },
+        {
+          "typ": "seznam",
+          "polozky": [
+            {
+              "pojem": "Kdo smí co",
+              "vyklad": "Přidat a upravit zákazníka, přiřadit mu variantu, vytvořit vlastní variantu a tisknout pro něj smí každý, kdo smí zakázku ukládat (jako hlavičku). **Ručně vyměnit řídícího zákazníka** smí jen autor zakázky a administrátor. **Odstranit zákazníka, kterému už odešla nabídka, smí jen administrátor** (obchodník vidí tlačítko zhasnuté s vysvětlením); zákazníka bez odeslané nabídky odstraní každý, kdo zakázku ukládá. Prodáno jako dnes (obchodník zakázky, vedoucí, administrátor); odemčení vedoucí a administrátor. Role jen pro čtení vidí kartu bez tlačítek."
+            },
+            {
+              "pojem": "Zmrazení po odeslání",
+              "vyklad": "Jakmile zákazníkovi odejde první nabídka, jeho **název, sídlo, IČO a DIČ** zamrznou (kontakt a zástupci zůstávají volné). S první odeslanou nabídkou komukoli zamrzne i **název akce a adresa stavby**. Zmrazení hlídá server — změnu odmítne, i kdyby přišla mimo obrazovku."
+            },
+            {
+              "pojem": "Razítko „komu“",
+              "vyklad": "Každý tisk nabídky a smlouvy u zakázky s víc zákazníky nese v zámku varianty **razítko adresáta** — id a písmeno zákazníka, číslo nabídky s písmenem, název a IČO v okamžiku tisku. Skládá ho server z uložených údajů (prohlížeči nevěří) a uložené razítko už nikdo nepřepíše. Podle razítek server pozná, komu nabídka odešla: jen takovému zákazníkovi jde variantu prodat a vytvořit **smlouvu o dílo** (kontroluje to i server, ne jen tisk v prohlížeči)."
+            },
+            {
+              "pojem": "Poznámka v Pipedrive",
+              "vyklad": "Deal v Pipedrive vede **řídící** zákazník (organizace a číslo jako dnes). Ostatní zákazníky zapíše server do **jedné poznámky u dealu** „Další zákazníci na zakázce“ (název, číslo nabídky s písmenem, odeslaná nabídka s datem a cenou bez DPH, stav) a při každé změně ji přepíše — ruční úpravu poznámky v Pipedrive příští uložení přepíše. Kontakty ani IČO do poznámky nejdou."
+            },
+            {
+              "pojem": "Organizace dealu po prodeji",
+              "vyklad": "Když se prodá jinému než původnímu řídícímu zákazníkovi, vítěz se stane řídícím a server přepojí **organizaci dealu** na vítěze: najde ji v Pipedrive podle IČO (každého kandidáta ověří), a když neexistuje, založí ji z ARES. Víc shod podle IČO, chybějící IČO nebo chybějící právo na Pipedrive = nic se nezapíše a karta Zákazníci zakázky ukáže důvod s tlačítkem *Zkusit zápis znovu*. **Kontaktní osoba dealu zůstává původní** — tu přepojí obchodník ručně v Pipedrive."
+            }
+          ]
         }
       ]
     },
@@ -597,7 +646,7 @@
             },
             {
               "pojem": "Controlling",
-              "vyklad": "Kapitoly nákladů pro porovnání předkalkulace se skutečností v Reporting CZ: id skupiny, název, položka v ManVysl, účty Helios nyní a budoucí, typ nákladu, chování, oblast. Úprava se ukládá **jako nová verze**; tlačítko **Export předkalkulace** vyrobí soubor pro controlling (filtry období, OCK / PROJ, řada ČR / ZAHR, stav dealu — výchozí *Všechny stavy*; popis v kapitole 29). Prodej bere export z tlačítka **Prodáno** v krycím listu (odemknout ho smí vedoucí a administrátor s důvodem). Soubor nese **verzi struktury** (list Popis) — zvyšuje se při každé změně exportu a Popis říká, co se změnilo. **Protokol exportů** (kdo a kdy vyvážel) je v otisku i ve stažené záloze; obnova ho nepřepisuje."
+              "vyklad": "Kapitoly nákladů pro porovnání předkalkulace se skutečností v Reporting CZ: id skupiny, název, položka v ManVysl, účty Helios nyní a budoucí, typ nákladu, chování, oblast. Úprava se ukládá **jako nová verze**; tlačítko **Export předkalkulace** vyrobí soubor pro controlling (filtry období, OCK / PROJ, řada ČR / ZAHR, stav dealu — výchozí *Všechny stavy*; popis v kapitole 30). Prodej bere export z tlačítka **Prodáno** v krycím listu (odemknout ho smí vedoucí a administrátor s důvodem). Soubor nese **verzi struktury** (list Popis) — zvyšuje se při každé změně exportu a Popis říká, co se změnilo. **Protokol exportů** (kdo a kdy vyvážel) je v otisku i ve stažené záloze; obnova ho nepřepisuje."
             },
             {
               "pojem": "Mapa polí CRM",
@@ -770,7 +819,7 @@
       "bloky": [
         {
           "typ": "text",
-          "text": "Data aplikace žijí v **Netlify Blobs** projektu (ostrý a testovací web každý svoje). Zálohování je automatické a vícevrstvé; správce ho hlídá a v nouzi obnovuje. Podrobný nouzový postup s kontrolami je v repozitáři v souboru `podklady/POSTUP_OBNOVY_ZALOHY.md` — tahle kapitola ho shrnuje a ukazuje obrazovky. Pohled obchodníka je v kapitole 31."
+          "text": "Data aplikace žijí v **Netlify Blobs** projektu (ostrý a testovací web každý svoje). Zálohování je automatické a vícevrstvé; správce ho hlídá a v nouzi obnovuje. Podrobný nouzový postup s kontrolami je v repozitáři v souboru `podklady/POSTUP_OBNOVY_ZALOHY.md` — tahle kapitola ho shrnuje a ukazuje obrazovky. Pohled obchodníka je v kapitole 32."
         },
         {
           "typ": "seznam",
@@ -1479,7 +1528,7 @@
             },
             {
               "pojem": "Kontakt — obchodníci",
-              "vyklad": "Dotazy obchodníků jdou na administrátora (kapitola 33)."
+              "vyklad": "Dotazy obchodníků jdou na administrátora (kapitola 34)."
             }
           ]
         },

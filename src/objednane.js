@@ -537,8 +537,15 @@ function prodJedinaZmena(ted, ulozeno) {
   const bp = p && Array.isArray(b.varianty) ? b.varianty.find(x => x && x.id === p.v.id) : null;
   if (bp && bp.zamek && bp.zamek.zamceno) {
     if (bp.prodano == null) bp.prodano = p.prodano;
+    /* VZ-E4 (#603): prodej u zákazníka vymění řídícího zákazníka — uložená
+     * verze se srovná stejně (vzVymenRidiciho), jinak by zámek čtení prodej
+     * jinému zákazníkovi zastavil. */
+    const vitez = p.prodano && typeof p.prodano.zakaznik === 'string' ? p.prodano.zakaznik : '';
+    if (vitez && typeof vzVymenRidiciho === 'function' && typeof vzRidiciId === 'function'
+        && vzRidiciId(a) === vitez && vzRidiciId(b) !== vitez) vzVymenRidiciho(b, vitez);
     prodRidiciSrovnej(b);
     prodRidiciSrovnej(a);   // okno staršího klientu řídící nepřepnulo — přepne ji server
+    if (typeof vzSrovnej === 'function') { vzSrovnej(b); vzSrovnej(a); }
   }
   return prodBezProdeje(a) === prodBezProdeje(b);
 }
@@ -571,7 +578,11 @@ function prodOciste(p) {
   if (!p || typeof p !== 'object' || Array.isArray(p) || !objDatumPlatne(p.datum)) return null;
   const pd = p.pipedrive && typeof p.pipedrive === 'object' && PROD_PD_STAVY.includes(p.pipedrive.stav)
     ? { stav: p.pipedrive.stav, kdy: t(p.pipedrive.kdy) } : { stav: 'ceka', kdy: t(p.kdy) };
-  return { datum: p.datum, kdo: t(p.kdo), kdy: t(p.kdy), pipedrive: pd };
+  const o = { datum: p.datum, kdo: t(p.kdo), kdy: t(p.kdy), pipedrive: pd };
+  /* VZ-E4 (#603, doplněk 2): komu se prodalo (id zákazníka) — bez něj by se
+   * po obnově z otisku prodej přepojil na řídícího (E5b pojistka P1). */
+  if (typeof p.zakaznik === 'string' && /^z[1-9][0-9]{0,2}$/.test(p.zakaznik)) o.zakaznik = p.zakaznik;
+  return o;
 }
 function prodHistorieOciste(seznam) {
   const t = (x, n) => (typeof x === 'string' ? x.slice(0, n || 200) : '');
@@ -654,13 +665,20 @@ function prodServer(stara, zak, relace, ctx) {
     const zleD = prodDatumProblem(d, zamekMez, c.ted, { role, duvod: vyjimka });
     if (zleD) return { status: 400, chyba: zleD.replace(/\.$/, '') };
     const od = prodDatumOd(zamekMez, c.ted);
+    const zadanyZakaznik = v.prodano.zakaznik;
     v.prodano = { datum: d, kdo: email, kdy: ted, pipedrive: { stav: 'ceka', kdy: ted } };
+    /* VZ-E4 (#603): prodej u zákazníka — komu (odešla mu ta varianta?), výměna řídícího na vítěze. */
+    if (typeof vzProdejServer === 'function') {
+      const e = vzProdejServer(stara, zak, v, zadanyZakaznik);
+      if (e) return e;
+    }
     pridej({ akce: 'prodano', varianta: v.id, cislo: cislo(zak, v), datum: d, duvod: (od && d < od) ? vyjimka : '' });
   }
   const h = historie.slice(-PROD_HISTORIE_MAX);
   if (h.length) zak.prodejHistorie = h; else delete zak.prodejHistorie;
   /* PR #563: prodaná varianta je vždy řídící — server srovná (neodmítá), viz prodRidiciSrovnej. */
   prodRidiciSrovnej(zak);
+  if (typeof vzSrovnej === 'function') vzSrovnej(zak);   // VZ-E4: invariant řídícího zákazníka po prodeji
   return null;
 }
 
@@ -682,7 +700,10 @@ function prodPdZapis(zak, v, jekly) {
       const cn = r && typeof cenaNabidkyOck === 'function' ? cenaNabidkyOck(r, d.sleva, d.zaokr) : null;
       if (cn) hodnota.push({ oblast: 'OCK', bezDphKc: Math.round(cn.cena * 100) / 100 });
     } catch (e) { /* bez výsledku se cena neuvádí — nic se neodhaduje */ }
-    try { if (typeof kryciData === 'function') kryci.push(Object.assign({ list: 'OCK' }, kryciData(zak, v, jekly, 'bo'))); } catch (e) {}
+    /* VZ-E2 (revize U3): krycí list do dealu = řídící zákazník (pohled řídícího;
+     * jeden zákazník = táž zakázka) — kryciData z celé zakázky s víc zákazníky hodí. */
+    const zakKl = (typeof vzTiskPohled === 'function' ? vzTiskPohled(zak, '') : null) || zak;
+    try { if (typeof kryciData === 'function') kryci.push(Object.assign({ list: 'OCK' }, kryciData(zakKl, v, jekly, 'bo'))); } catch (e) {}
   }
   if (vyr !== 'proj') {
     try {
@@ -690,7 +711,7 @@ function prodPdZapis(zak, v, jekly) {
       const cn = r && typeof cenaNabidkyProj === 'function' ? cenaNabidkyProj(r, d.slevaProj, d.zaokrProj) : null;
       if (cn && cn.cena > 0) hodnota.push({ oblast: 'PROJ', bezDphKc: Math.round(cn.cena * 100) / 100 });
     } catch (e) {}
-    try { if (typeof kryciProjData === 'function') kryci.push(Object.assign({ list: 'PROJ' }, kryciProjData(zak, v, jekly, 'bo'))); } catch (e) {}
+    try { if (typeof kryciProjData === 'function') kryci.push(Object.assign({ list: 'PROJ' }, kryciProjData((typeof vzTiskPohled === 'function' ? vzTiskPohled(zak, '') : null) || zak, v, jekly, 'bo'))); } catch (e) {}
   }
   const p = v.prodano || {};
   return { dealId: String(zak.pdDealId || ''), fazeDealu: 'Vyhrané k podpisu SoD',

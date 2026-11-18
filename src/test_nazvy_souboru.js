@@ -193,7 +193,11 @@ test('platný ceník se jmenuje přes nazevExportu', /const jmeno = nazevExportu
 test('controlling jmenuje přes nazevExportu (jednotlivě i hromadně)',
   /nazevExportu\('predkalkulace', /.test(UI('controlling_ui.js')) && /nazevExportu\('predkalkulace-hromadna', /.test(UI('controlling_ui.js')));
 test('hláška controllingu nepřidává příponu podruhé (jméno už ji nese)', !/jmeno \+ '\.' \+ format/.test(UI('controlling_ui.js')));
-test('tisk specifikace navrhne jméno PDF (titulek okna)', (UI('techspec_ui.js').match(/tiskSNazvem\(nazevExportu\('specifikace'/g) || []).length === 2);
+/* VZ-E2 #601: obsluhu obou tlačítek skládá vzTiskSpecOnclick (ui/vz_tisk_ui.js) —
+ * u jednoho zákazníka původní tiskSNazvem(nazevExportu('specifikace', …)), u víc
+ * zákazníků vzTiskSpecifikace, který jméno skládá týmž způsobem. */
+test('tisk specifikace navrhne jméno PDF (titulek okna)', (UI('techspec_ui.js').match(/vzTiskSpecOnclick\(/g) || []).length === 2
+  && (UI('vz_tisk_ui.js').match(/tiskSNazvem\(nazevExportu\('specifikace'/g) || []).length === 2);
 
 /* Náhled zápisu do Pipedrive (P3 #536) jde přes konvenci, ne vlastním skládáním. */
 test('CSV náhledu Pipedrive: PIPEDRIVE_<číslo>-NANECISTO_<verze>.csv',

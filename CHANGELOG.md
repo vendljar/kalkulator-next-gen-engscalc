@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v18.11.3 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
+## v18.11.5 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
 
-Nad `8462aea` (integrace = test v12.11.7). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje
+Nad `8462aea` (integrace = test v12.11.7), sloučeno s integrací `dcb1678` (v18.11.3, + S3 #611). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje
 koordinace. Na webech, Disku ani v Pipedrive nic.
 
 - **Rozpis šachet ve SoD sedí na cenu díla dle nabídky:** `{{SACHTY_SOD_ROZPIS}}` (víc šachet, šablona v5) končí
@@ -44,6 +44,276 @@ koordinace. Na webech, Disku ani v Pipedrive nic.
   upozornění. Změněné očekávání `src/test_sod_tecky.js` S (dvojtečka → „Chybí:").
 - Testy: `test_sod_v5.js` E, F (+ D se skutečnými v6), `test_sod_tecky.js` S2, L1, L2, K (skutečné SoD projekce v4 CZ/EN,
   plná moc, SoD realizace v6), `test_vs_kontroly.js` H; mutace [SL] 20/20.
+## v18.11.3 — S3 #611: porovnání dvou sestavení nad pevnou sadou kalkulací, větev claude/s3-porovnani
+
+Nad `claude/integrace-16-10` `5e21f89` (v18.11.2). Návrh režie 18. 11. 2026, oddíl S3, rozhodnutí J. V.: stupně kol
+(1 automat po dávce, 2 cílená sada, 3 plné kolo cenových nabídek jen před main a po nasazení); kolo main-před × main-po
+u rychlé cesty dělá koordinace nástrojem; noční porovnání v Actions zatím ne. Aplikace beze změny.
+
+- **Nový nástroj `nastroje/porovnej_sestaveni.sh <ref A> <ref B>`:** obě reference do dočasných worktree
+  (`build.py` bez zvýšení verze; `.` = pracovní kopie), nad každou pevná sada `nastroje/porovnani_sada.js` —
+  fixtury, zlatá pojistka #560 + skladebné můstky, K29-N1/#451, K36-N2/#550, smyšlené zakázky testovacího webu
+  a fuzz se semínkem 20261110 (Model 1 i 2, 353 kalkulací, kolem 11 s). Porovnává otisky: cena celkem, řádky,
+  výsledek jádra, symboly CN (změněné × jen nové), text dokumentu (Word, náhled, krycí list, specifikace, SoD),
+  ostatní. Tabulka po skupinách, vzory rozdílů a případy; **bez cen a textů**. Kód 0 / 1 / 2.
+- **Ceník** zkušební ze stromu nástroje, nebo `--cenik <soubor mimo repo>`. **`--ocekavane <soubor>`**: seznam
+  očekávaných rozdílů (vzor případu + pole); jiný rozdíl = kód 1, nepoužité pravidlo = upozornění.
+- **Kolo:** nový volitelný krok `porovnani` (`--proti <ref>`, výchozí `origin/test`; `--jen porovnani`;
+  `--ocekavane`), porovnává `<ref>` s pracovní kopií, výsledek v souhrnu kola. Statické kontroly 7 z 7
+  (nově `nastroje/test_porovnej_sestaveni.sh`).
+- `nastroje/zlata_vs.js` exportuje pomocné funkce (otisky zlaté sady beze změny).
+- Návod `podklady/POROVNANI_SESTAVENI.md`; vzor očekávaných rozdílů main × test
+  `podklady/porovnani/ocekavane_main_test_2026-11-18.txt`.
+- **Testy:** `nastroje/test_porovnej_sestaveni.sh` 16/0 — stejné reference 0 rozdílů; dočasný commit se změněnou
+  cenou (v dočasném klonu, do repa nic) → rozdíl v ceně celkem, kód 1; očekávaný rozdíl projde, seznam krytý jen
+  jiným polem nebo jinými případy ne; chybné použití kód 2. Pojistka: s porovnáním, které rozdíly nehlásí, 6 FAIL.
+- **Upřesnění J. V. 18. 11.:** nástroj je stupeň 1 po dávce (integrace proti testu nebo předchozímu stavu), ne brána
+  do main — rozdíly cen main × test ověřuje J. V. sám; výchozí `--proti` zůstává `origin/test`.
+- **Ukázka main (6c4bc80, v11.11.1) × test (8462aea, v12.11.7):** 353 kalkulací, 7 shodných, 346 rozdílných —
+  jediný vzor `nahled-en` (online náhled anglické nabídky; C1 #582 nadpisy USAZENÍ OCK v EN), cena, řádky, symboly,
+  Word ani SoD beze změny. test × integrace v18.11.2: 353/353 shodných.
+
+## v18.11.2 — Sloučení víc zákazníků (VZ #598, etapy E0–E6) do integrace
+
+Integrační větev claude/integrace-vz (cf53aeb) sloučena s integrací v18.11.1 (C9 #608, roadmapa #597).
+Funkce je za vypínačem viceZakazniku v Nastavení → Zkušební funkce, výchozí VYP, zapíná jen administrátor
+(pokyn J. V.). Všechny etapy prošly revizí poradce; celé kolo s mutacemi po částech bylo zelené na cf53aeb.
+Podrobnosti v oddílech v16.11.1–v17.11.2 níže.
+
+## v17.11.2 — VZ-E6 #606: víc zákazníků — rejstřík a Přehled, controlling, příručky, závěr VZ (#598), větev claude/vz-e6
+
+Nad `claude/integrace-vz` `68e5eb8` (v17.11.1: E0–E5b). Vše za vypínačem `viceZakazniku` (výchozí VYP, zapíná jen
+administrátor v Nastavení → Zkušební funkce — i po nasazení do testu a main); s VYP a s jedním zákazníkem beze změny.
+Zadání `podklady/PROMPT_VZ_E6.md`, návrh § 6, § 8, § 9 (R5, R6).
+
+- **Rejstřík zakázek:** nepovinný klíč `zakaznici: [{ nazev, cislo, stav }]` jen u zakázek s víc zákazníky (řídící
+  první, číslo nabídky s písmenem, stav rozpracovaná / odeslaná / prodáno), strop 10 položek a 300 znaků, **bez cen,
+  IČO, sídel a kontaktů**; `objednatel` zůstává řídící zákazník. Zakázka s jedním zákazníkem = rejstřík beze změny.
+- **Přehled cenových nabídek:** štítek „N zákazníci“ u zákazníka (jen se zapnutou funkcí, názvy v bublině); hledání
+  najde zakázku i podle názvu nebo čísla nabídky dalšího zákazníka. **Seznam kalkulací:** varianta se najde i podle
+  názvu zákazníka, který na ni ukazuje.
+- **Controlling:** zakázka dál jeden řádek s řídícím zákazníkem (po prodeji vítěz); list Popis uvádí počet zákazníků,
+  hromadný export sloupec „Zákazníci zakázky“ (jen když ho má některá zakázka). Nic se nepočítá dvakrát (test).
+- **Opraveno (otevřený bod E4):** obrazovka krycího listu PRODANÉ sdílené varianty při otevřeném jiném zákazníkovi
+  předvyplňovala jeho údaje — teď údaje vítěze, shodně s tiskem (`klVzCtxZak` → `vzTiskKomuUi`).
+- **Server hlídá „SoD jen zákazníkovi, kterému odešla nabídka“** (dřív jen brána tisku v prohlížeči): záznam tisku
+  `sod` (i jazykové) bez dřívějšího tisku téhož zákazníka v zámku varianty → 400. Mez B228 doplněna (typ záznamu
+  píše prohlížeč — podvržený typ server nepozná).
+- **Víc šachet × víc zákazníků (R6):** společný harness `netlify/test_vz_vs.mjs` — CN se šachtami pro druhého
+  i vlastního zákazníka, tisk a zámek se šachtami, obě poznámky u dealu, oba štítky v rejstříku.
+- **Překlady:** VZ do dokumentů nepřidal žádný nový text (jen písmeno v čísle a údaje zákazníka z dat) — slovník beze
+  změny; dokumenty EN/DE/FR všech zákazníků hlídá `test_vz_unik.js`.
+- **Dokumentace:** příručka obchodníka kapitola **26. Víc zákazníků na jedné zakázce** (3 snímky `k26vz-*`, zakázka
+  9106; kapitoly 27–34 přečíslovány i s odkazy), příručka správce A4 „Zkušební funkce: Víc zákazníků na zakázce“
+  (vypínač výchozí VYP, kdo smí co, zmrazení po odeslání, razítko „komu“, poznámka a organizace v Pipedrive, obnova
+  s VYP), provozní dokumentace (rejstřík, `/api/funkce`, `/api/pd/organizace`); řádky verze příruček v17.11.2.
+- **Testy:** `netlify/test_vz_rejstrik.mjs` (nová), `netlify/test_vz_vs.mjs` (nová), `src/test_vz_unik.js` + rejstřík
+  a controlling, `src/test_vz_kl_pole.js` + obrazovka KL prodané varianty, `netlify/test_vz_server.mjs` + SoD na
+  serveru; mutace „[VZ E6]“ (jádro 2, server 21).
+- **Kolo:** `--bez-mutaci` VŠE ZELENÉ (411/0/59, +400 dní 375/0/1, statické 6/6); celé mutace po částech
+  jádro 1035/1035 (N = 4), server 1613/1613 (N = 16) — **VŠE ZELENÉ**, 0 přeživších.
+
+**Souhrn VZ (#598, E0–E6):** jedna zakázka s víc zákazníky (řídící v hlavičce, další v `dalsiZakaznici`), nabídky
+s písmenem (…9940-B), sdílená nebo vlastní varianta, každý dokument z pohledu zákazníka (`vzPohled`, test úniku
+s kanárky), zámek a razítko „komu“ po zákaznících, zmrazení údajů po odeslání, řídící zákazník a Prodáno
+u zákazníka (vítěz = řídící), poznámka „Další zákazníci na zakázce“ a organizace vítěze v Pipedrive, rejstřík,
+Přehled a controlling. Na J. V.: ruční zkouška scénářů prototypu na testovacím webu se zapnutým vypínačem
+(i poznámka a organizace proti simulátoru), nic do ostrého Pipedrive bez jeho pokynu, rozhodnutí o zapnutí na ostrém.
+
+## v17.11.1 — VZ-E4 #603: víc zákazníků — řídící zákazník, Prodáno u zákazníka, krycí list a SoD pro prodaného, větev claude/vz-e4
+
+Nad `claude/integrace-vz` `7c80706` (v16.11.6: E0, E1, E2, E3, E5, E5b). Vše za vypínačem `viceZakazniku`; s VYP
+a s jedním zákazníkem beze změny (zlatá sada VZ, stránka znak po znaku jako báze). Zadání `podklady/PROMPT_VZ_E4.md`
++ doplňky z revizí poradce; návrh § 2, § 4, § 7.3, § 7.4. Riziková etapa — před sloučením revize poradce.
+
+- **Ruční výměna řídícího** přepínačem v kartě Zákazníci zakázky (potvrzení: hlavička, řídící varianta, písmena se
+  nemění, organizace dealu bez prodeje ne). Smí autor zakázky a administrátor (zakázka z webhooku jen administrátor);
+  server z relace a uložené verze 403; u prodané zakázky zhasnuté a server 409. D1: přidat zákazníka a vyměnit
+  řídícího v jednom uložení projde (autor).
+- **Prodáno u zákazníka** (tlačítko v kartě; Prodáno na krycím listu se u víc zákazníků přesměruje na zákazníka
+  podle otevřeného): potvrzení na stránce před → po (řídící zákazník, řídící varianta, hodnota a číslo v dealu,
+  organizace dealu, poznámka, věta o kontaktní osobě). V jednom uložení `prodNastav`, `prodano.zakaznik` (id),
+  výměna řídícího, `prodRidiciSrovnej`, invariant; neuložený prodej vrátí zakázku přesně do stavu před. Server
+  prodá jen zákazníkovi, kterému varianta odešla (409), a vítěze udělá řídícím sám; uložený `prodano.zakaznik`
+  drží z uložené verze. Po uložení háček `vzPoProdeji()` → zápis organizace vítěze (E5b `vzPoProdejiPd`).
+- **Krycí list a SoD** prodané varianty vždy pro vítěze; SoD jen zákazníkovi, kterému nabídka varianty odešla;
+  u sdílené varianty upozornění, že smluvní pole krycího listu jsou společná (odlišné podmínky = vlastní varianta).
+- **Doplňky poradce:** prodOciste propustí `prodano.zakaznik` (obnova z otisku, E5b P1); výměna řídícího zafixuje
+  vlastníka ručních hodnot KL a zakázka se s něčím odeslaným nevrátí k jednomu zákazníkovi ≠ z1 (tisky bez razítka
+  nepřipadnou novému z1); Z1 tiskový pohled nese v krycích listech jen hodnoty svého zákazníka; Z2 doklad
+  „odešla nabídka“ i z historie odemčení (písmeno/id se neuvolní, odstranění jen administrátor); Z3 přiznáno v B227.
+- **Zámek hlavičky** porovnává výměnu řídícího „u zákazníka“ (údaje se jen stěhují); **webhook** u víc zákazníků
+  při neshodě IČO dealu a hlavičky firmu nepřepisuje ani nedoplňuje (návrh § 7.3).
+- Controlling beze změny: jeden řádek se zákazníkem v hlavičce (= vítěz), zámek sdílené varianty jednou (test).
+- Testy `src/test_vz_prodej.js` (nový), rozšířené `netlify/test_vz_server.mjs`, `netlify/test_vz_webhook.mjs`,
+  `src/test_vz_unik.js` (Z1, KL a SoD prodané varianty), `src/test_vz_ui.js`, prohlížeč `overit_vz_prodej.mjs`;
+  upravené `overit_vz_tisk.mjs`, `overit_vz_organizace.mjs`, `src/test_vz_kl_pole.js`. Mutace „[VZ E4]“. Meze
+  **B227**, **B228** doplněné (bez nového čísla).
+
+## v16.11.6 — VZ-E3 #602: víc zákazníků — zámek po zákaznících, razítko „komu“, platná nabídka, odstranění s odeslanou nabídkou jen administrátor, větev claude/vz-e3
+
+Nad `claude/vz-e2` `cbf5c57`. Vše za vypínačem `viceZakazniku`; zakázka s jedním zákazníkem beze změny (razítko
+„komu“ se nezapisuje, náhled tisku znak po znaku stejný). Zadání `podklady/PROMPT_VZ_E3.md`, návrh § 5, § 2a, § 1.1.
+
+- **Razítko „komu“** `zamek.tisky[].zakaznik` { id, pismeno, cislo, objednatel, ico } u každého tisku (Word CN, CN PROJ,
+  SoD, náhledy — zákazník z okamžiku, kdy dokument vznikl); `zamek.cislo` zůstává bez písmene (společné všem
+  zákazníkům varianty), číslo dokladu s písmenem nese razítko. Server snímek skládá sám, z prohlížeče bere jen id.
+- **Stav a platná nabídka** `vzStavNabidky`, `vzPlatna` (počítá se ze zámků; server ji zapisuje dalším zákazníkům
+  do `platna` při každém uložení — N6); E5 poznámka dealu teď bere `vzPlatna`.
+- **Dotisk** pro zákazníka nese název a IČO ze snímku jeho razítka; razítka ostatních zákazníků se z tiskového
+  pohledu vyjmou (D3).
+- **Odstranění zákazníka s odeslanou nabídkou jen administrátor** (server z relace a uložené verze 403, obrazovka
+  zhasnuté tlačítko s vysvětlením, potvrzení podle prototypu v3_3); razítka a zamčená varianta zůstávají, číslo
+  dokladu z razítka (`vzCisloDokladu`); písmeno a id se už nepřidělí.
+- **Server (N4, N9, B221):** písmeno a id stávajících zákazníků nejde přepsat, nový zákazník nedostane písmeno
+  ani id z razítek, `zalozen` píše server; podvržené razítko se nepřijme.
+- **Zmrazení:** název akce a adresa stavby po první odeslané nabídce komukoli; název, sídlo, IČO a DIČ dalšího
+  zákazníka po odeslání jemu (kontakt a zástupci volné).
+- Testy `src/test_vz_zamek.js`, rozšířené `netlify/test_vz_server.mjs`, `src/test_vz_unik.js`, `src/test_vz_ui.js`,
+  prohlížeč `overit_vz_zamek.mjs`; mutace „[VZ E3]“. Meze **B227**, **B228** (i N7 — obnova s VYP).
+## v16.11.5 — VZ-E5b #605: Pipedrive — organizace dealu = vítězný zákazník při Prodáno, větev claude/vz-e5b
+
+Nad `claude/integrace-vz` `26f3c26` (E0, E1, E5), sloučena dorevize E0 `b7ec485`. Vše za vypínačem `viceZakazniku`
+(výchozí VYP). Zadání `podklady/PROMPT_VZ_E5b.md`, návrh § 7.4, mez **B226**. Revize poradce před sloučením.
+
+- **Nová akce `POST /api/pd/organizace { soubor, akce: 'vitez' }`** (`netlify/lib/pd_org_vitez.mjs`): u prodané zakázky
+  s víc zákazníky server najde v Pipedrive organizaci podle IČO vítěze (hledání podle vlastního pole IČ, každý kandidát
+  znovu načten a ověřen kontrolní číslicí), jinak ji založí (název a adresa z ARES, při výpadku z hlavičky; DIČ jen když
+  pole je; vlastník = vlastník dealu) a přepojí deal (`PATCH` jen `{ org_id }`). Víc shod = nic a seznam názvů.
+- **Stavy** `zapsano` (nalezena / založena), `shoda`, `bez-ico`, `vice`, `bez-prava`, `chyba`, `strop` do pole
+  `pdOrgVitez`, které píše jen server. Kdo smí: kdo prodal, autor, administrátor (jinak 403); bez práva Pipedrive
+  `bez-prava`. Neprodaná zakázka, jeden zákazník a VYP: 409. Limity 2,5 s / volání, 9 s / akce, 10 pokusů / h na deal,
+  20 / h na uživatele; opakování po selhání `PATCH` nezaloží druhou organizaci.
+- **Kontaktní osoba dealu se nemění** (rozhodnutí J. V.): po zápisu upozornění „Doplňte v Pipedrive kontaktní osobu
+  vítězného zákazníka před posunem dealu na Vyhráno.“ u řádku Stav Pipedrive a v kartě Zákazníci zakázky, v protokolu
+  zakázky jednou na zápis.
+- **Obrazovka:** při jiném stavu „Organizace dealu se nepřepsala“ s důvodem a tlačítkem **„Zkusit zápis znovu“**.
+  Volání po uložení prodeje je připravené jako `vzPoProdejiPd(zak)` — zapojí ho háček E4 (#603).
+- **Simulátor Pipedrive:** hledání organizací, `POST /api/v2/organizations`, `PATCH` dealu s `org_id`.
+- Testy `netlify/test_vz_organizace.mjs`, `overit_vz_organizace.mjs`; 21 mutací „[VZ E5b]“.
+- Zápis ceny prodeje do dealu sem nepatří (#597).
+
+## v16.11.4 — VZ-E2 #601: víc zákazníků — čísla s písmenem, tisk z pohledu zákazníka, zábrany tisku, test úniku, větev claude/vz-e2
+
+Nad `claude/vz-e0` `e29f2b1` (E0). Vše za vypínačem `viceZakazniku`; zakázka s jedním zákazníkem tiskne bajt po bajtu
+jako dnes (zlatá sada (e1): `vzTiskPohled` vrací týž objekt). Zadání `podklady/PROMPT_VZ_E2.md`, návrh § 3, § 4, § 9.
+
+- **Čísla s písmenem** (`…9940`, `…9940-B`, `…9940.2-B`): `cisloSVariantou` a `variantaCislo` podle pohledu zákazníka,
+  `zamekCisloZakladSedi` přijme `-P`, `sodCisloNavrh` písmeno zachová, název krycího listu s písmenem, nedopsaná předloha
+  písmeno nedostane; `zakazkaDuplicita` porovnává bez písmene. **Webhook** najde podle čísla dealu s písmenem tutéž
+  zakázku (jen když ji zákazník s tím písmenem má; jinak jako dřív).
+- **Jediný vstup dokumentů `vzTiskPohled`** (jen varianty zákazníka; další zákazník má odvozené `v.zakaznik`) přes
+  `src/ui/vz_tisk_ui.js` u Word CN, CN PROJ, SoD, plné moci, krycích listů (tisk i Word), náhledů nabídky
+  a podkladů, porovnání variant a detailu položek, technické specifikace a živého náhledu karty CN; pojistka
+  `vzTiskHlidej` v `dokumentVygeneruj`.
+- **Zábrany tisku** `vzTiskZabrana` (brána `dokumentZabrana`; pravidlo v katalogu kontrol až s novým vydáním manuálu — E6): cizí varianta, název
+  nebo IČO jiného zákazníka ve sdíleném tištěném textu či názvu varianty, PROJ jen pro řídícího (R5), vypnutá funkce
+  jen řídící. **Pruh** „Náhled a tisk platí pro zákazníka X — nabídka …-B“ v kartě CN (jen 2+).
+- **Statická kontrola** `nastroje/kontrola_vz_unik.sh` (s pojistkou) v kole — statické kontroly teď 6.
+- **Revize poradce (U1–U6):** ruční pole zákazníka krycího listu sdílené varianty a snímek zámku jen vlastníkovi
+  (podle id zákazníka, ne písmene); pojistka i v `nabidkaData` / `kryciData` / `nabidkaProjData`; webhook
+  „…9940.2-B“; nevyplněná místa SoD nad pohledem; B224 heuristika. Test `src/test_vz_kl_pole.js`.
+- Testy `src/test_vz_unik.js` (kanárky), `src/test_vz_cisla.js`, `src/test_vz_tisk_vstupy.js`, zlatá sada (e),
+  `netlify/test_vz_webhook.mjs`, prohlížeč `overit_vz_tisk.mjs`; mutace „[VZ E2]“. Meze **B223**, **B224**.
+## v16.11.3 — VZ-E1 #600: víc zákazníků — obrazovka (tlačítko, formulář s ARES a databází, přepínač, karta, odstranění), větev claude/vz-e1
+
+Nad `claude/vz-e0` `e29f2b1` (v16.11.1). Výpočet ani dokumenty se nemění; vše za vypínačem `viceZakazniku` (výchozí VYP).
+S VYP a jedním zákazníkem je obrazovka znak po znaku jako v16.11.1; se ZAP a jedním zákazníkem navíc jen tlačítko.
+Zadání `podklady/PROMPT_VZ_E1.md`, návrh § 2a, § 6, § 8, prototyp v5.
+
+- **Tlačítko „Přidat zákazníka“** vedle popisku Zákazník (stejná výška řádku, pole se zúží, nejméně 110 px) — jen ZAP,
+  ne v režimu jen ke čtení, v náhledu ani u prodané zakázky.
+- **Formulář „Nový zákazník na zakázce“** přes celou šířku hlavičky: Zákazník (našeptávač), Sídlo, Kontaktní osoba,
+  IČO, DIČ, „Vybrat z databáze zákazníků“ a „🔎 Najít firmu v ARES“ (tentýž panel jako v hlavičce, sloupec „Ve formuláři
+  teď“, převzetí až po potvrzení), volba stejná / vlastní varianta, Přidat zhasnuté bez názvu, Zrušit nic nemění.
+- **ARES a databáze zákazníků zobecněné na cíl** (`aresCil` v `ares_ui.js`, `zakazniciCil` v `zakaznici_ui.js`):
+  hlavička OCK/PROJ, karta zákazníka, formulář a otevřený další zákazník — žádná kopie panelu; hlavička beze změny.
+- **Od 2. zákazníka** přepínač zákazníků nad polem Zákazník (★ řídící, písmeno, „+“) a karta **„Zákazníci zakázky“**
+  pod hlavičkou Kalkulace OCK a v Přehledu cenových nabídek (řídící, zákazník + IČO, číslo, varianta, stav, cena,
+  Náhled, Vlastní varianta, Odstranit; Tisk CN, Prodáno a změna řídícího zhasnuté pro E2/E4). Pole Zákazník, Kontaktní
+  osoba, IČO, ARES a databáze pracují s otevřeným zákazníkem (`vzCesta`), otevření zákazníka otevře jeho variantu.
+- **Odstranit** s potvrzením na stránce (sdílená varianta zůstává; vlastní neodeslaná smazat / ponechat; návrat do
+  standardního pohledu). Řídícího, prodaného a zákazníka s odeslanou nabídkou E1 odstranit nedovolí.
+- **VYP + zakázka s víc zákazníky:** karta a přepínač jen ke čtení s větou „funkce je vypnutá“, zápis odmítnut (R21).
+- Sloupec Zákazník v „Kalkulace v zakázce“ u 2+ zákazníků odvozený a jen ke čtení; Zpět / Znovu i neuložené změny
+  přes historii zakázky. Mez **B221**. Testy `src/test_vz_ui.js`, `overit_vz_zadani.mjs`, případ v `overit_xss.mjs`;
+  mutace „[VZ E1]“.
+## v16.11.2 — VZ-E5 #604: poznámka dealu „Další zákazníci na zakázce“ v Pipedrive, suchý běh, větev claude/vz-e5
+
+Nad `claude/vz-e0` `e29f2b1` (v16.11.1). Vše za vypínačem `viceZakazniku`; s VYP a u zakázky s jedním zákazníkem
+beze změny. Zadání `podklady/PROMPT_VZ_E5.md`, návrh § 7.1–7.2. Do Pipedrive jen simulátor.
+
+- **Zobecněná poznámka dealu** (`netlify/lib/pd_poznamka.mjs`): „druh poznámky“ (pole, úvod, text, rozpoznání,
+  klíč stropu). Poznámka šachet (#588) pod dnešními jmény a s dnešním chováním; nový druh **další zákazníci**
+  (pole `pdPoznamkaZakaznici` psané jen serverem, strop `strop:poznamka-zakaznici:deal:<id>`). Poznámka jednoho
+  druhu nikdy nepřepíše poznámku druhého.
+- **Text** (`src/vz_poznamka.js`, týž kód v prohlížeči i na serveru): za každého dalšího zákazníka název a poslední
+  odeslaná nabídka (číslo, den, cena bez DPH ze zmrazeného zámku), „nabídka zatím neodeslána (<číslo>)“, „připravuje
+  se nová <číslo>“, po prodeji „— neprodáno“; řádky `<br>`, escapováno, strop 2 000 znaků; po odstranění posledního
+  dalšího zákazníka „… žádní — nabídka <číslo>“. Bez kontaktů, IČO a slev.
+- **Uložení zakázky** zapisuje obě poznámky ve společném rozpočtu 6 s (šachty první), jedno třetí čtení; odpověď
+  nese stav `pdPoznamkaZakaznici` a varování.
+- **Suchý běh** ukazuje řádek „Poznámka dealu — další zákazníci“ se stejným textem (patch dealu beze změny).
+- Mez **B225**. Testy `netlify/test_vz_poznamka.mjs`, `netlify/test_vz_nanecisto.mjs`; mutace „[VZ E5]“; 9 zadání
+  mutací „[VSD]“ přepsáno na zobecněný kód (stejný záměr a sada).
+
+## v16.11.1 — VZ-E0 #599: víc zákazníků na zakázce — vypínač, jádro, import, serverová kontrola tvaru, větev claude/vz-e0
+
+Nad `claude/integrace-vz` `77e36e0` (v12.11.7 + návrh VZ v3). Souhrn VZ je roadmapa #598 (etapy E0 #599 … E6 #606).
+Výpočet, dokumenty ani obrazovka (kromě Nastavení → Zkušební funkce) se nemění; vše za vypínačem `viceZakazniku`
+(výchozí VYP, zapíná jen administrátor). Návrh `podklady/NAVRH_VICE_ZAKAZNIKU.md` v3, zadání `PROMPT_VZ_E0.md`.
+
+- **Vypínač `viceZakazniku`** v `/api/funkce` (`FUNKCE_ZNAME`; POST přijme kterýkoli známý vypínač, neuvedený
+  zůstává), druhý vypínač v Nastavení → Zkušební funkce, v prohlížeči `viceZakaznikuZapnuto()`.
+- **Jádro `src/vice_zakazniku.js`** (CORE za `zamek.js`, i na serveru): `vzRidici` + `dalsiZakaznici[]` vzniknou
+  přidáním druhého zákazníka a zmizí s posledním dalším; `vzPridej` (sdílená nebo vlastní varianta =
+  `klonujVariantu`), `vzOdstran` (řídícího a prodaného odmítne, vlastní nezamčenou variantu smaže na přání),
+  `vzPismenoDalsi` / `vzIdDalsi` (první volné za nejvyšším i z razítek `zamek.tisky[].zakaznik`, strop Z),
+  `vzVymenRidiciho` (hlavička ↔ položka, `nastavRidici`, otisky webhooku polí firmy pryč), `vzSrovnej`
+  (invariant řídící varianty), `vzPohled` (kopie bez ostatních zákazníků + `vzPohledZakaznika`),
+  `vzTvarProblemy`, `vzOcisti`, `vzPlatnaDrz`.
+- **Import** očistí tvar (neznámé klíče pryč, jeden zákazník = žádné klíče, vadný tvar = klíče pryč a nevýčtové
+  `vzZahozeno`); **duplikace** zakázky další zákazníky nepřenáší.
+- **Server** (`vzServerKontrola`): s VYP změna zákazníků proti uložené verzi 400, se ZAP vadný tvar 400, `platna`
+  jen ze serveru, invariant srovná. Mez **B220** (co E0 ještě nehlídá: práva a razítka — E3, E4).
+- Testy `src/test_vz_model.js`, `netlify/test_vz_server.mjs`, zlatá sada `src/test_vz_zlata.js`; mutace „[VZ E0]“.
+- Revize Fable: výměna řídícího přepíše i firmu v hlavičce PROJ (N1); zákazník se smazanou variantou se při
+  importu nezahodí, ukáže na řídící variantu (N2); pohled zákazníka nese jen jeho varianty (N3); výměna odmítne
+  řídícího bez názvu nebo s příliš dlouhým údajem (N5); první řídící je na serveru vždy z1 bez písmena (N9).
+## v18.11.1 — C9 #608: prohlížečové harnessy pod zátěží čekají na stav stránky, limity z `KNG_HARNESS_TIMEOUT_MS`, větev claude/c9-harnessy
+
+Nad `8462aea` (test v12.11.7). Kód aplikace beze změny — jen harnessy a nástroj. Verzi přečísluje koordinace.
+
+- **Problém (kolo 48):** `overit_klon_tisk.mjs` (`cekej` ř. 165 → `klikniProdano`) a `overit_kryci_cislo_sod.mjs`
+  (TimeoutError) vypršely při souběhu s jinými prohlížečovými běhy; samostatně prošly 53/0 a 28/0. Pevné pauzy
+  (`waitForTimeout`), pevný limit uložení 15 s a výchozí limity Playwrightu (navigace 30 s) pod zátěží nestačí.
+- **`nastroje/harness_cekani.js`:** jedna konstanta `KNG_HARNESS_TIMEOUT_MS` (celé kladné číslo v ms, výchozí 15000;
+  neplatná hodnota = chyba, nikdy tiché výchozí). Limity jsou násobky: akce nad prvky 2× (dřívějších 30 s), uložení
+  2×, navigace a start aplikace 4×, spuštění prohlížeče 12× (dřívějších 180 s), krok hlídače 8× a celý běh 80×
+  (dřívějších 120 s a 20 min). `sledujAkce` obalí asynchronní akce aplikace počítadlem, `cekejNaKlid` čeká, až žádná
+  neběží a neběží uložení (`ONLINE_STAV.ukladaBeh`, `ZAKULO_STAV.uklada`).
+- **`overit_klon_tisk.mjs`:** start čeká na `ONLINE_STAV.sondaHotova`; po změně typu šachty, Prodáno, tisku klonu
+  a přepnutí záložky čeká na klid stránky (nabídka klonu `zamekUpozorni`, `prodejUiProdej`, `zakUlozUI`,
+  `onlineUloz`, `onlineNactiRejstrik`) místo pauz 100–400 ms.
+- **`overit_kryci_cislo_sod.mjs`:** start čeká na načtenou aplikaci (místo 700 ms), zápis čísla SoD na hodnotu
+  v modelu nebo otevřený dialog, ↺ na smazanou ruční hodnotu, zavření dialogu na jeho zmizení. `modalText()` dřív
+  `locator.innerText()` na neexistujícím dialogu čekal plných 30 s (2× za běh, i u prošlé kontroly) — běh 67 s → 4 s.
+- **`overit_prodano_zamek.mjs`** (jediný další harness se stejnou vadou — `klikni`: pauza 300 ms + pevných 15 s na
+  uložení + 300 ms): totéž čekání na klid, start po načtení i po F5. Ostatní `overit_*.mjs` beze změny.
+- **Testy:** `src/test_harness_cekani.js` 32/0 (konstanta, násobky, neplatné hodnoty, počítadlo akcí, klid stránky,
+  harnessy C9 bez `waitForTimeout` a pevných limitů); nad `8462aea` chybí modul (0/1) a s modulem 8 FAIL.
+  Samostatně: klon 53/0, krycí list 28/0, prodáno 51/0. **Souběh** (6 harnessů najednou na 4 jádrech: tři upravené
+  + `overit_online`, `overit_lista`, `overit_schvalovani`): upravené harnessy zelené ve 3 kolech ze 3; v posledním
+  kole s `ADMIN_EMAIL` vše 53/0, 28/0, 51/0, 276/0, 255/0, 68/0 (dvě úvodní kola se nepočítají: během nich se
+  přepsal `verze.txt` a aplikace zakryla stránku překryvem „jiná verze“; `overit_online` bez `ADMIN_EMAIL` padá i samostatně).
+  **Pojistky** (umělá zátěž preloadem: zpoždění odpovědi `POST /api/zakazky` o 16 s; zpomalení CPU stránky přes CDP):
+  klon — původní `FAIL … page.waitForFunction: Timeout 15000ms exceeded at cekej (ř. 165) at tiskniKlon`, nový 53/0;
+  prodáno — původní tentýž timeout v `klikni` (ř. 148) po 6 kontrolách, nový 51/0; krycí list při 60× zpomalení —
+  původní `page.goto: Timeout 30000ms exceeded` (TimeoutError), nový 28/0. Při 100× nestačí ani 60 s navigace —
+  pomůže `KNG_HARNESS_TIMEOUT_MS` (původní kód limit zvýšit neuměl): s `KNG_HARNESS_TIMEOUT_MS=60000` nový 28/0.
+- **Kolo `--bez-mutaci` (ADMIN_EMAIL nastavený):** VŠE ZELENÉ — sady 442 prošlo, 0 selhalo, 7 přeskočeno (firemní
+  podklady, test.js), hodiny +400 dní 359/0, statické kontroly 5/5; 34 min 54 s. Playwright se v kontejneru načetl
+  (symlink `node_modules/playwright` na globální instalaci, v `.gitignore`).
 
 ## v12.11.7 — K40c #581: vazba z webhooku Pipedrive, firma z ARES na serveru, „Opravit firmu v Pipedrive“, větev claude/k40c-webhook
 

@@ -236,9 +236,9 @@ function seznamRadekHtml(r) {
   return `<tr class="${r.aktivni ? 'aktivni' : ''}">
     <td><input type="radio" name="varAkt" ${r.aktivni ? 'checked' : ''} onchange="varAktivuj('${escJs(r.id)}')" title="otevřít variantu"></td>
     <td><input type="text" value="${esc(r.nazev)}"${ro} onchange="varSet('${escJs(r.id)}', 'nazev', this.value)">${typeof vsStitekVarianty === 'function' ? vsStitekVarianty(v) : ''}</td>
-    <td class="note" style="white-space:nowrap">${esc(r.cislo)}${puvodZn}</td>
+    <td class="note" style="white-space:nowrap">${esc((typeof vzCisloDokladu === 'function' && vzCisloDokladu(ZAK, v)) || r.cislo)}${puvodZn}</td>
     <td>${stav}</td>
-    <td><input type="text" value="${esc(r.zakaznik)}" placeholder="varianta zákazníka"${ro} onchange="varSet('${escJs(r.id)}', 'zakaznik', this.value)"></td>
+    ${(typeof vzSeznamZakaznik === 'function' && vzSeznamZakaznik(v)) || `<td><input type="text" value="${esc(r.zakaznik)}" placeholder="varianta zákazníka"${ro} onchange="varSet('${escJs(r.id)}', 'zakaznik', this.value)"></td>`}
     <td><input type="text" value="${esc(r.pozn)}" placeholder="poznámka"${ro} onchange="varSet('${escJs(r.id)}', 'pozn', this.value)"></td>
     <td>${r.ock == null ? '—' : fmt0(r.ock)}</td>
     <td>${r.proj == null ? '—' : fmt0(r.proj)}</td>

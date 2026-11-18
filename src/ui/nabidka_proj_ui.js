@@ -16,7 +16,7 @@ function nabidkaProjPopis(val) { ZAK.popisZameru = val; }
  * změnily nabízené činnosti. Zápis jde přes set(), takže ho hlídá zámek. */
 function nabidkaProjUvodNastav(val) {
   let d = null;
-  try { d = nabidkaProjData(ZAK, aktivniVarianta(ZAK)); } catch (e) { return; }
+  try { d = nabidkaProjData(vzTiskRidici(), aktivniVarianta(ZAK)); } catch (e) { return; }   // VZ-E2 U3: PROJ = řídící
   const t = String(val || '').replace(/\r/g, '').trim();
   if (!t || t === String(d.uvod.vychoziCz || '').trim()) { nabidkaProjUvodVychozi(); return; }
   set('PJ.uvodNabidkyRucne', t);
@@ -32,7 +32,7 @@ function nabidkaProjKarta() {
   const akt = (typeof aktivniVarianta === 'function') ? aktivniVarianta(ZAK) : (ZAK.varianty || [])[0];
   const rid = (typeof ridiciVarianta === 'function') ? ridiciVarianta(ZAK) : akt;
   let d = null, chyba = '';
-  try { d = nabidkaProjData(ZAK, akt); } catch (e) { chyba = e.message; }
+  try { d = nabidkaProjData(vzTiskRidici(), akt); } catch (e) { chyba = e.message; }   // VZ-E2 U3: PROJ = řídící (R5)
   if (!d) return `<div class="neg">Chyba výpočtu nabídky PROJ: ${esc(chyba)}</div>`;
 
   const p = d.placeholders;
@@ -198,7 +198,9 @@ async function nabidkaProjWordGeneruj(srv) {
   /* Zábrany (#377, plán plateb) — hláška dřív než chyba z registru. */
   if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidkaProj', varianta, nabidkaProjStavText)) return;
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidkaProj', varianta))) { nabidkaProjStavText('Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
-  dokumentVygeneruj('nabidkaProj', sablona.slice(0), ZAK, varianta, JEKLY, L)
+  const vt = vzTiskVstup('nabidkaProj', varianta, nabidkaProjStavText);   // VZ-E2 #601 (PROJ jen řídící, R5)
+  if (!vt) return;
+  dokumentVygeneruj('nabidkaProj', sablona.slice(0), vt.zak, vt.varianta, JEKLY, L)
     .then(res => {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(res.blob);
@@ -207,7 +209,7 @@ async function nabidkaProjWordGeneruj(srv) {
       // stažený .docx je hotová nabídka pro zákazníka → varianta se uzamyká
       let zamcenoText = '';
       if (typeof zamekPoTisku === 'function') {
-        const z = zamekPoTisku('nabidkaProj', varianta.id, sablonaInfo);
+        const z = zamekPoTisku('nabidkaProj', varianta.id, sablonaInfo, vzTiskZamekNavic(vt));   // VZ-E3
         if (z) zamcenoText = ' Varianta ' + (z.cislo || '') + ' je nyní uzamčená jako odeslaná nabídka; '
           + 'pokračujte jejím klonem.';
       }
@@ -247,7 +249,9 @@ async function nabidkaProjNahled() {
   /* #518: sběr textů bez překladu až po všech otázkách (await). */
   const sleduj = typeof neprelozenoZacni === 'function' && neprelozenoZacni(L);
   let d;
-  try { d = nabidkaProjData(ZAK, akt, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
+  const vt = vzTiskVstup('nabidkaProjTisk', akt);   // VZ-E2 #601 (PROJ jen řídící, R5)
+  if (!vt) { if (sleduj) neprelozenoKonec(); return; }
+  try { d = nabidkaProjData(vt.zak, vt.varianta, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
   const p = d.placeholders;
 
   const html = d.bloky.map(b => {
@@ -363,7 +367,7 @@ async function nabidkaProjNahled() {
       vyp: P('Úpravy vypnuté. Ruční změny zůstávají, jen se do dokumentu už nedá psát.'),
       vraceno: P('Vráceno původní znění z kalkulace.'),
       zamceno: P('Varianta byla uzamčena jako odeslaná nabídka. Další úpravy provádějte v jejím klonu.'),
-    }, { typ: 'nabidkaProjTisk', varId: akt && akt.id })}`);
+    }, Object.assign({ typ: 'nabidkaProjTisk', varId: akt && akt.id }, vzTiskZamekNavic(vt)))}`);
   w.document.write((sleduj ? neprelozenoSkript(L, neprelozenoKonec(), neprelozenoRucne([
     p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, p.POPIS_ZAMERU])) : '')
     + '</body></html>');

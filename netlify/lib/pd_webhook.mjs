@@ -138,6 +138,23 @@ export function pdWebhookVolbaText(hodnota, popis) {
   return o ? String(o.label || '') : '';
 }
 
+/* VZ-E4 (#603, návrh § 7.3): u zakázky s víc zákazníky nese hlavička řídícího
+ * zákazníka — po jeho výměně (bez prodeje) zůstává deal na organizaci původního.
+ * Při NESHODĚ IČO organizace dealu a hlavičky (jen číslice; prázdné IČO na
+ * kterékoli straně = neshoda, revize R1) webhook pole firmy
+ * (zákazník, sídlo, IČO, DIČ, kontakt) nepřepisuje ani prázdná nedoplňuje
+ * a ARES se nevolá. Jeden zákazník / strana PROJ → false (dnešek). */
+export const PD_WEBHOOK_FIRMA = ['objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontakt'];
+export function pdWebhookVzFirmaCizi(zak, icoDealu, strana) {
+  const G = globalThis;
+  if (!zak || strana === 'proj' || typeof G.vzRezim !== 'function' || !G.vzRezim(zak)) return false;
+  const c = x => String(x == null ? '' : x).replace(/\D+/g, '');
+  /* Revize poradce R1: shoda jen při NEPRÁZDNÉM a stejném IČO na obou stranách
+   * (prázdné = nelze ověřit, že deal vede tentýž subjekt → firmu neměnit). */
+  const d = c(icoDealu);
+  return !(d && d === c(zak.ico));
+}
+
 /* Kam na zakázce patří hlavička strany. */
 export function pdWebhookHlavicka(zak, strana) {
   if (strana === 'proj') {
@@ -178,6 +195,7 @@ export function pdWebhookPouzij(zak, zadani, dealId, kdy, volby = {}) {
   if (!zamceno) {
     const h = pdWebhookHlavicka(zak, zadani.strana);
     for (const k of PD_WEBHOOK_POLE) {
+      if (volby.bezFirmy === true && PD_WEBHOOK_FIRMA.includes(k)) continue;   // VZ-E4: neshoda IČO u víc zákazníků
       const nova = zadani.pole[k] || '';
       const aktualni = typeof h[k] === 'string' ? h[k] : '';
       if (aktualni.trim() === nova) { if (nova) novyOtisk[k] = pdWebhookOtisk(nova); continue; }
@@ -230,6 +248,59 @@ export function pdWebhookCisloKlic(cislo) {
   const f = globalThis.uloKlicSouboru;
   const t = String(cislo == null ? '' : cislo).trim();
   return t ? (typeof f === 'function' ? f(t) : t.toLowerCase()) : '';
+}
+
+/* VZ-E2 (#601): číslo nabídky dalšího zákazníka nese písmeno („…9940-B",
+ * návrh § 3). Rozklad stejným pravidlem jako vzCisloRozloz (src/vice_zakazniku.js):
+ * písmeno B–Z jen za číslicí. Vrací { zaklad, pismeno } (bez písmene pismeno ''). */
+export function pdWebhookCisloZaklad(cislo) {
+  const c = String(cislo == null ? '' : cislo).trim();
+  const m = /^(.*\d)-([B-Z])$/.exec(c);
+  return m ? { zaklad: m[1], pismeno: m[2] } : { zaklad: c, pismeno: '' };
+}
+
+/* Nese uložená zakázka zákazníka s tímto písmenem? Jen ČTE: řídící
+ * (vzRidici.pismeno), další zákazníci (dalsiZakaznici[].pismeno) a razítka
+ * tisků (varianty[].zamek.tisky[].zakaznik.pismeno — písmeno zákazníka, kterému
+ * nabídka odešla, i když ho mezitím odebrali). Zakázka s jedním zákazníkem → false. */
+export function pdWebhookPismeno(zak, pismeno) {
+  if (!zak || typeof zak !== 'object' || typeof pismeno !== 'string' || !/^[B-Z]$/.test(pismeno)) return false;
+  const obj = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+  if (obj(zak.vzRidici) && zak.vzRidici.pismeno === pismeno) return true;
+  if (Array.isArray(zak.dalsiZakaznici) && zak.dalsiZakaznici.some((z) => obj(z) && z.pismeno === pismeno)) return true;
+  return (Array.isArray(zak.varianty) ? zak.varianty : []).some((v) => obj(v) && obj(v.zamek) && Array.isArray(v.zamek.tisky)
+    && v.zamek.tisky.some((t) => obj(t) && obj(t.zakaznik) && t.zakaznik.pismeno === pismeno));
+}
+
+/* VZ-E2 (#601, U4 revize): číslo varianty „…9940.2" → { zaklad: „…9940",
+ * pripona: 2 } (přípona varianty v.pripona, zamek.js variantaCislo). Jen
+ * kladné celé číslo bez úvodní nuly za číslicí; jinak pripona 0 a základ
+ * beze změny. Webhook ji odřízne JEN u čísla s písmenem zákazníka. */
+export function pdWebhookCisloVarianta(cislo) {
+  const c = String(cislo == null ? '' : cislo).trim();
+  const m = /^(.*\d)\.([1-9]\d{0,5})$/.exec(c);
+  return m ? { zaklad: m[1], pripona: Number(m[2]) } : { zaklad: c, pripona: 0 };
+}
+
+/* Má uložená zakázka variantu s příponou `pripona` (v.pripona === N)? Jen ČTE. */
+export function pdWebhookVariantaPripona(zak, pripona) {
+  if (!zak || typeof zak !== 'object' || !Number.isInteger(pripona) || pripona < 1) return false;
+  return (Array.isArray(zak.varianty) ? zak.varianty : [])
+    .some((v) => !!v && typeof v === 'object' && v.pripona === pripona);
+}
+
+/* Vlastník dealu (#115 B) s písmenem zákazníka: CN dealu patří kalkulaci
+ * s číslem `cisloKalkulace`, když se shodují klíče (jako dřív), nebo když CN
+ * je „<číslo kalkulace>-P" a zakázka zákazníka s písmenem P opravdu nese,
+ * nebo „<číslo kalkulace>.N-P" a zakázka nese P I variantu s příponou N (U4). */
+export function pdWebhookCisloSedi(cisloKalkulace, cnDealu, zak) {
+  const k = pdWebhookCisloKlic(cisloKalkulace);
+  if (!k || k === pdWebhookCisloKlic(cnDealu)) return true;
+  const r = pdWebhookCisloZaklad(cnDealu);
+  if (!r.pismeno || !pdWebhookPismeno(zak, r.pismeno)) return false;
+  if (pdWebhookCisloKlic(r.zaklad) === k) return true;
+  const v = pdWebhookCisloVarianta(r.zaklad);
+  return v.pripona > 0 && pdWebhookCisloKlic(v.zaklad) === k && pdWebhookVariantaPripona(zak, v.pripona);
 }
 
 /* Odkaz do aplikace: <web>/?zakazka=<soubor> (src/ui/online_ui.js ho po

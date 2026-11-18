@@ -933,6 +933,67 @@
      výpustkou — dvouřádková varianta vypadala jako porucha (21. 8. 2026). */
   .ares-tlacitka { display:flex; gap:6px; flex-wrap:nowrap; flex:1; min-width:0; }
   .ares-tlacitka .mini { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* VÍC ZÁKAZNÍKŮ (VZ-E1 #600, prototyp podklady/vz_prototyp v5). Tlačítko
+     „Přidat zákazníka" stojí za popiskem Zákazník: popisek se zúží na obsah,
+     pole o šířku tlačítka (nejméně 110 px), výška řádku se nemění. */
+  .zak-head .row > label:has(+ .vz-pridat) { flex:0 0 auto; }
+  .zak-head .row > .vz-pridat { flex:0 0 auto; font-weight:600; white-space:nowrap; }
+  .zak-head .row > .vz-pridat + .nasept-wrap { flex:1 1 110px !important; min-width:110px; }
+  .vz-prepinac-radek > label { flex:0 0 auto !important; }
+  .vz-chips { display:flex; flex-wrap:wrap; gap:4px; flex:1; min-width:0; }
+  .vz-chip { font:600 12.5px "Segoe UI", sans-serif; cursor:pointer; border-radius:999px; border:1px solid #c3cde0; background:#fff; color:#1b2333; padding:4px 10px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .vz-chip.on { background:#1b2333; border-color:#1b2333; color:#fff; }
+  .vz-chip:disabled { opacity:.55; cursor:default; }
+  .vz-chip-plus { border-style:dashed; padding:4px 9px; }
+  .vz-blok { margin:10px 0; }
+  .vz-form, .vz-potvrzeni { margin-top:10px; border:2px solid #b98900; border-radius:8px; padding:10px 12px; background:#fffaf0; }
+  .vz-blok .vz-form { margin-top:0; }
+  .vz-form .vz-form-pole { display:grid; grid-template-columns:minmax(0, 3fr) minmax(0, 2fr); gap:4px 28px; margin-top:6px; }
+  .vz-form .vz-form-pole .row > label { flex:0 0 130px; }
+  .vz-form .vz-form-pole .row > input[type=text], .vz-form .vz-form-pole .row .nasept-wrap input { flex:1 1 auto; width:auto !important; min-width:0; text-align:left; }
+  .vz-form .vz-form-pole .row .nasept-wrap input { width:100% !important; }
+  .vz-form .vz-form-nab { margin-top:8px; }
+  .vz-form .vz-form-nab > label { flex:0 0 130px; }
+  .vz-form .ares-panel { max-width:none; }
+  .vz-form-tl { display:flex; gap:8px; align-items:center; margin-top:8px; flex-wrap:wrap; }
+  .vz-volba { display:flex; flex-direction:column; gap:4px; flex:1; }
+  .vz-volba label { font-weight:400; display:flex; gap:6px; align-items:baseline; width:auto; flex:none !important; }
+  .vz-modre { font:600 14px "Segoe UI", sans-serif; cursor:pointer; border-radius:6px; padding:8px 14px; border:1px solid #1d4ed8; background:#1d4ed8; color:#fff; }
+  .vz-modre:disabled { opacity:.45; cursor:default; }
+  .vz-cervene { font:600 14px "Segoe UI", sans-serif; cursor:pointer; border-radius:6px; padding:8px 14px; border:1px solid #b3261e; background:#b3261e; color:#fff; }
+  .vz-karta .vz-tab { overflow-x:auto; }
+  .vz-karta table { width:100%; }
+  .vz-karta th, .vz-karta td { text-align:left; vertical-align:top; }
+  .vz-karta tr[data-vz] > td { border-bottom:0; }
+  .vz-karta tr.aktivni > td { background:#eef4ff; }
+  .vz-karta td[data-l="Řídící"] { text-align:center; }
+  .vz-karta td select { max-width:190px; width:100%; }
+  .vz-karta .vz-jmeno { font:inherit; font-weight:600; background:none; border:0; padding:0; color:#1d4ed8; cursor:pointer; text-align:left; overflow-wrap:anywhere; }
+  .vz-karta .vz-jmeno:disabled { color:inherit; cursor:default; }
+  .vz-karta .vz-cislo, .vz-karta .vz-cena { white-space:nowrap; }
+  .vz-karta td.vz-akce { white-space:normal; padding-top:0; }
+  .vz-karta .vz-akce button { margin:0 4px 4px 0; }
+  .vz-karta .vz-pod { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:10px; }
+  .vz-pr { display:grid; grid-template-columns:minmax(150px, 30%) 1fr; gap:10px; padding:4px 0; border-top:1px solid #f0e2b8; margin-top:4px; }
+  .vz-pr > span { min-width:0; overflow-wrap:anywhere; }
+  .vz-pt { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin-top:8px; font-size:12.5px; }
+  input.vz-odvozeno { background:#f4f6fa; color:#334155; }
+  @media (max-width: 760px) {
+    .vz-form .vz-form-pole { grid-template-columns:minmax(0, 1fr); }
+    .vz-form .vz-form-pole .row, .vz-form .vz-form-nab { flex-wrap:wrap; }
+    .vz-form .vz-form-pole .row > label, .vz-form .vz-form-nab > label { flex:1 1 100%; }
+    .vz-form .ares-tlacitka { flex-wrap:wrap; }
+    .vz-pr { grid-template-columns:minmax(0, 1fr); }
+    .vz-karta thead { display:none; }
+    .vz-karta table, .vz-karta tbody, .vz-karta tr, .vz-karta td { display:block; width:auto; }
+    .vz-karta tr[data-vz] { border-top:2px solid #c3cde0; padding-top:4px; }
+    .vz-karta td { padding:3px 8px; white-space:normal !important; }
+    .vz-karta td[data-l]::before { content:attr(data-l) ": "; color:#5b6472; font-size:12px; margin-right:4px; }
+    .vz-karta td[data-l="Řídící"] { text-align:left; }
+    .vz-karta td:empty { display:none; }
+    .vz-karta td select { max-width:100%; width:auto; }
+    .zak-head .row:has(> .vz-pridat) { flex-wrap:wrap; }
+  }
   .ares-panel { margin:6px 0 10px; background:#f0f7ff; border:1px solid #bfdbfe;
     color:#13315c; border-radius:8px; padding:9px 12px; font-size:12.5px; line-height:1.5; }
   .ares-panel.chyba { background:#fff7ed; border-color:#fed7aa; color:#7c2d12; }

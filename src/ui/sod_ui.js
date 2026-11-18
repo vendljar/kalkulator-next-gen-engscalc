@@ -86,7 +86,9 @@ async function sodWordGeneruj(typ, srv) {
   /* Zábrany (#377, plán plateb) — hláška dřív než chyba z registru. */
   if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas(typ, varianta, t => sodStavText(typ, t))) return;
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol(typ, varianta))) { sodStavText(typ, 'Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
-  dokumentVygeneruj(typ, sablona.slice(0), ZAK, varianta, JEKLY, L)
+  const vt = vzTiskVstup(typ, varianta, t => sodStavText(typ, t));   // VZ-E2 #601: pohled zákazníka
+  if (!vt) return;
+  dokumentVygeneruj(typ, sablona.slice(0), vt.zak, vt.varianta, JEKLY, L)
     .then(res => {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(res.blob);
@@ -98,7 +100,7 @@ async function sodWordGeneruj(typ, srv) {
          * nese stav posledního tisku, viz sodObjednaneSymboly). */
         const navic = (typ === 'sod' && typeof objSodSnimek === 'function')
           ? { sod: objSodSnimek(ZAK, varianta, JEKLY, L, objSodZaznam(varianta)) } : null;
-        const z = zamekPoTisku(typ, varianta.id, sablonaInfo, navic);   // plnou moc přeskočí sám
+        const z = zamekPoTisku(typ, varianta.id, sablonaInfo, vzTiskZamekNavic(vt) ? Object.assign({}, navic, vzTiskZamekNavic(vt)) : navic);   // VZ-E3   // plnou moc přeskočí sám
         if (z) zamcenoText = ' Varianta ' + (z.cislo || '') + ' je nyní uzamčená; pokračujte jejím klonem.';
       }
       const upoz = sodUpozorneniText(res);
@@ -424,6 +426,9 @@ async function prodejUiProdej(strana) {
   const datum = el && el.value ? el.value : objDnes();
   const proc = prodNelzeProdat(ZAK, v);
   if (proc) { hlaska(proc); return; }
+  /* VZ-E4 (#603): u víc zákazníků se prodává zákazníkovi (karta Zákazníci
+   * zakázky, potvrzení před → po) — zákazník podle otevřeného. */
+  if (typeof vzProdejZKryciho === 'function' && vzProdejZKryciho(v)) return;
   if (!await potvrd('Označit variantu ' + variantaCislo(ZAK, v) + ' jako PRODANOU k ' + prodUiDatumText(datum) + '?\n\n'
     + '– krycí list i hlavička zakázky se definitivně zamknou (odemknout smí jen vedoucí nebo administrátor),\n'
     + '– controlling vezme zakázku jako prodanou k tomuto datu,\n'
