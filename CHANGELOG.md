@@ -8,7 +8,6 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-<<<<<<< HEAD
 ## v18.11.8 — VZ-F1 #659: opravy nálezů ruční zkoušky víc zákazníků na testu (N3, N1, N2, N4, zástupci v KL, controlling), větev claude/vz-f1
 
 Nad integrací `ec5bbac`, sloučeno s integrací `41bbe99` (v18.11.6, SL). Protokol `podklady/kola/STAV_TEST_VZ_2026-11-18.md`.
@@ -33,7 +32,6 @@ Konečné číslo verze určí koordinace. Víc zákazníků dál za vypínačem
   `src/test_escape.js` (seznam ověřených interpolací). Mutace [VZ F1]: jádro 17/17, server viz PREDAVKA; přepsané na nový
   kód E1 (vzCesta ×2), E2 (název KL) a K40a D7 (bind v onchange ×2).
 
-=======
 ## v18.11.7 — C7 #615 (K48-N1): jazyková verze šablony jen přeloženým souborem, kontrola češtiny; NS #645, větev claude/c7-sablony
 
 Nad integrací `9bd6dc8` (v18.11.4), sloučeno s integrací `ec5bbac` (v18.11.5, S6+S8) a `41bbe99` (v18.11.6, SL). Rozhodnutí a pokyn J. V. 18. 11. 2026.
@@ -97,7 +95,6 @@ koordinace. Na webech, Disku ani v Pipedrive nic.
   svých běhů; vnořené běhy (textové pole) se nezpracují; žluté tečky dostanou i šablony v4/v5 bez podbarvení.
 - Testy: `test_sod_v5.js` E, F (+ D se skutečnými v6), `test_sod_tecky.js` S2, L1, L2, K (skutečné SoD projekce v4 CZ/EN,
   plná moc, SoD realizace v6), `test_vs_kontroly.js` H; mutace [SL] 20/20.
->>>>>>> origin/claude/integrace-16-10
 ## v18.11.5 — S6 + S8 #613: jedna evidence v roadmap.json, PREHLED.md a NOVINKY.md, větev claude/s6s8-evidence
 
 Nad integrací `9bd6dc8` (v18.11.4 = test). Kód aplikace beze změny. Podle návrhu režie vývoje (`podklady/NAVRH_REZIE_2026-11-18.md`,
