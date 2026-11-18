@@ -14,7 +14,7 @@ důvody jsou v `podklady/ROZHODNUTI_LOG.md`; tady jsou jen platná pravidla.
   do ní slučuje po revizi a zeleném kole dávky. Nové sezení bez jiného pokynu
   začíná z ní (`CLAUDE.md` + `PREDAVKA.md`).
 - Do `test` posílá koordinace integraci po celém zeleném kole.
-- Do `main` jen na pokyn J. V. a vždy po kole main-před × main-po.
+- Do `main` jen na pokyn J. V., se sloučením testu.
 - `main` musí být předkem integrace. Kontrola: `git rev-list --count
   <integrace>..origin/main` je 0 (krok `staticke` jinak upozorní).
 - Nejvýš 4 souběžná sezení (limit účtu 5 h).
@@ -24,26 +24,23 @@ důvody jsou v `podklady/ROZHODNUTI_LOG.md`; tady jsou jen platná pravidla.
 
 ## Rychlá cesta pro vady ceny a dokumentu
 
-Platí pro vadu, která v `main` mění cenu nabídky nebo text vytištěného
-dokumentu. Nic jiného touto cestou nejde.
+Platí pro malou opravu vady, která mění cenu nabídky nebo text vytištěného
+dokumentu. Jde rovnou do `test`, ne do `main`, a nečeká na velkou dávku.
 
-1. Větev `claude/rychla-<ID nálezu>` nad `origin/main`. Obsah: jen oprava,
-   její test s pojistkou a cílené mutace. Žádná jiná změna.
-2. Kolo `bash nastroje/testovaci_kolo.sh --bez-mutaci` nad větví.
-3. Celé mutace po částech: workflow Testy ručně nad větví.
-4. Cílené kolo main-před × main-po nad ceníkem main (dělá koordinace nástrojem).
-   Rozdíl smí být jen v případech vady. Jiný rozdíl = stop a hlášení J. V.
-5. J. V. dostane: ID vady, počet dotčených kalkulací, tabulku rozdílů,
-   výsledek kola. Do `main` se slučuje jen na jeho pokyn.
-6. Týž den se `main` sloučí do integrace. Číslo verze přidělí koordinace.
-7. Po nasazení kolo nad `main` (ověření) a zápis do evidence.
+1. Větev `claude/rychla-<ID nálezu>` nad aktuální integrací (= test). Obsah:
+   jen oprava a její test s pojistkou. Žádná jiná změna.
+2. Kolo `bash nastroje/testovaci_kolo.sh --bez-mutaci` a cílené mutace.
+3. Koordinace sloučí do integrace a pošle do `test` (výjimka z čekání na dávku).
+4. J. V. dostane ID vady a popis, které kalkulace se mají změnit.
+5. Rozdíly cen mezi `main` a `test` ověřuje J. V. sám.
+6. Do `main` dál jen na jeho pokyn, se sloučením testu.
 
 ## Kdo rozhoduje
 
 - J. V.: cena, ceník, sazby; text nabídky, smlouvy a plné moci; sloučení do
   main a nasazení; zápis do produkčních dat; bezpečnostní meze; zveřejnění
   šablon, právní texty; vše, co není níže svěřeno.
-- Jmenovaný kolega s rolí administrátora: datové úkoly jen na `test`
+- J. V. nebo kolega, kterého J. V. jmenuje (jen test): datové úkoly na `test`
   (šablony, TEST sada, Apps Script); na `main` nic. Hotovo ověří koordinace.
 - Koordinace: pořadí dávek, sloučení do integrace a test, číslo verze.
 - Svěřená rozhodnutí (sezení dávky i koordinace): jen technické varianty
@@ -111,7 +108,9 @@ Cloudové sezení může spadnout a s ním zmizí vše, co není na GitHubu. Pro
 
 - Stupně kol: (1) po každé dávce `testovaci_kolo.sh` a porovnání sestavení
   nad pevnou sadou; (2) cílená sada na změněnou oblast; (3) plné kolo
-  cenových nabídek jen před main (main-před × main-po) a po nasazení.
+  cenových nabídek jen před main a po nasazení.
+- Automat (sezení nebo Actions) smí z testovacího webu testengscalc jen
+  ČÍST. Zápis do testovacího webu ani přístup k ostrému webu ne.
 - STAV kola se zapisuje do `podklady/kola/STAV_KOLOnn.md`. Kopie jinde nejsou
   zdroj.
 - Jediný seznam kroků je `nastroje/testovaci_kolo.sh` (sestavení bez zvýšení

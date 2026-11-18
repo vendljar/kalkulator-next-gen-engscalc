@@ -25,8 +25,9 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   `podklady/kola/`, kontrola `nastroje/kontrola_podkladu.sh` v kroku `staticke`, `release_odkaz.py --chybejici` jen
   verze z main, návrh osnovy skillu `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md`. Výsledek kola: viz commit a zpráva
   koordinaci. Slučuje koordinace.
-- **Rychlá cesta K40-N1** (`claude/rychla-k40n1`): kolo, mutace po částech, kolo main-před × main-po nástrojem
-  koordinace → tabulka rozdílů J. V. → do main jen na jeho pokyn.
+- **Rychlá cesta K40-N1** (`claude/rychla-k40n1`, založena nad main ještě podle dopoledního znění): podle změny zadání
+  J. V. 18. 11. jde rychlá cesta do `test` (větev nad integrací, kolo `--bez-mutaci` + cílené mutace, koordinace sloučí
+  a pošle do test); rozdíly cen main × test ověřuje J. V. sám; do main jen na jeho pokyn se sloučením testu.
 
 ## Čeká na J. V.
 
@@ -38,7 +39,7 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
 | Nahrát skill `testovaci-procedura-kng` | podle `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md` | skill není v repu |
 | Ruční zkouška víc zákazníků na testu (po sloučení integrace do test) | udělat | vypínač `viceZakazniku` zapíná jen administrátor |
 | Ruční zkouška víc šachet na testu se ZAP; rozhodnutí o main | odloženo do 25. 11. | B0.1 „zatím ne“ |
-| K40-N1 do main | po tabulce rozdílů | rychlá cesta |
+| K40-N1 v testu: ověřit rozdíly cen main × test | J. V. sám (ID vady a popis dotčených kalkulací dodá koordinace) | rychlá cesta do test |
 | Kdy sloučit test → main | spojit s rychlou cestou | zbytek po kole 49 |
 | B1 pojistka jazyka SoD (K48-N1) | udělat | blokuje C7 a sloučení do main |
 | B4 obnova TEST sady (nástroj `test_sada_obnov.mjs`, podle `podklady/NAVOD_TEST_SADA_OBNOVA.md`) | udělat (kolega na testu) | kola běží nad kopií z 2. 11.; K39-I1 |
@@ -53,7 +54,7 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
 | DP #573 termín DPZ, dotazy obchodu D1–D8, T1 | rozhodnout | obsah v artefaktu dotazů |
 | GD #578 smlouva | odložit s datem | čeká na vzor smlouvy |
 | Zefektivnění programu | start po sloučení do main | `podklady/PROMPT_KOORDINACE_ZEFEKTIVNENI_PROGRAMU.md` |
-| Jméno kolegy s rolí administrátora | určit | datové úkoly jen na testu |
+| Jmenovat kolegu s rolí administrátora | J. V. jmenuje | jen test |
 | Netlify testengscalc: kontrola Deploys, když po pushi nenasadí | — | zaznamenáno 4. 11. |
 
 ## Trvalé pokyny mimo CLAUDE.md
@@ -73,7 +74,7 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
 1. Koordinace zreviduje `claude/s7-podklady` a sloučí do integrace (konflikt v `PREDAVKA.md`: předávky dávek
    sloučených mezitím jdou do `podklady/predavky/2026-11.md`, živý stav sem).
 2. J. V. nahraje skill `testovaci-procedura-kng`; skill `kalkulator-next-gen` zkrátit do 25 kB (návrh S7, mimo repo).
-3. Rychlá cesta K40-N1 → tabulka rozdílů → pokyn J. V. → `main`, týž den `main` do integrace.
+3. Rychlá cesta K40-N1 do `test` (nad integrací) → J. V. ověří rozdíly cen → do `main` jen na jeho pokyn se sloučením testu.
 
 ## S7: co bylo přesunuto kam
 
@@ -91,4 +92,4 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
 | CLAUDE.md: důvod předávky (pád 25. 9., 1,58 M tokenů) | `ROZHODNUTI_LOG.md` (25. 9.) |
 | CLAUDE.md: body 1–4 Předávacího souboru (číst na `test-draft`, přepisovat celou PREDAVKA, limit 60/75 %, WIP) | CLAUDE.md, Předávací soubor body 1–7 (čte se na integraci; předávka dávky do 3 kB a archiv; limit 60/75 % a WIP beze změny) |
 | ponecháno beze změny obsahu | kontrola údajů a hook `pre-push`, zákaz `--no-verify`, mutace po částech, restart kontejneru, N46, mazání větví tlačítkem v Actions, `release_odkaz.py`, pojistka testů, lightweight tagy, 403 z cloudu |
-| nové v CLAUDE.md (schváleno 18. 11.) | Rychlá cesta, Kdo rozhoduje (s úpravami J. V.), stupně kol, STAV kol v `podklady/kola/`, `NOVINKY.md` po sloučení do main, limit 4 sezení, poradce, `main` předkem integrace |
+| nové v CLAUDE.md (schváleno 18. 11.) | Rychlá cesta (podle změny zadání J. V. 18. 11.: do test, ne do main), Kdo rozhoduje (s úpravami J. V.; kolegu jmenuje J. V., jen test), stupně kol, automat z testengscalc jen čte, STAV kol v `podklady/kola/`, `NOVINKY.md` po sloučení do main, limit 4 sezení, poradce, `main` předkem integrace |

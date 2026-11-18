@@ -14,9 +14,9 @@ Nad integrací `5e21f89` (v18.11.2). Kód aplikace beze změny. Podle návrhu re
 (`podklady/NAVRH_REZIE_2026-11-18.md`, oddíl S7) a rozhodnutí J. V. 18. 11. 2026.
 
 - **CLAUDE.md přepsán podle schváleného textu:** Větve (integrace `claude/integrace-…`, do test koordinace po zeleném kole,
-  do main jen na pokyn J. V., main předkem integrace, nejvýš 4 sezení, poradce), Rychlá cesta pro vady ceny a dokumentu,
-  Kdo rozhoduje (svěřeny jen testy, harnessy a nástroje kola; otázky průběžně s doporučenou variantou; kolega
-  s rolí administrátora jen na test), Předávací soubor, Tagy (jen stav pro main, NOVINKY.md), Testy (stupně kol, STAV
+  do main jen na pokyn J. V., main předkem integrace, nejvýš 4 sezení, poradce), Rychlá cesta pro vady ceny a dokumentu (rovnou do test, změna zadání J. V. 18. 11.),
+  Kdo rozhoduje (svěřeny jen testy, harnessy a nástroje kola; otázky průběžně s doporučenou variantou; kolega,
+  kterého jmenuje J. V., jen na test; automat z testengscalc jen čte), Předávací soubor, Tagy (jen stav pro main, NOVINKY.md), Testy (stupně kol, STAV
   kol v `podklady/kola/`). Vypuštěny `test-draft` jako integrační větev, výjimka `k16-nalezy` a datované závorky.
 - **PREDAVKA.md rozdělena:** živý stav 8,5 kB; 557 kB předávek beze ztráty do `podklady/predavky/2026-09.md`,
   `2026-10.md`, `2026-11.md` (ověřeno řádek po řádku). Na konci PREDAVKA seznam „co bylo přesunuto kam“.

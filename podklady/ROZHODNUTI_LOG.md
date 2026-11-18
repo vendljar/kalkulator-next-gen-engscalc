@@ -10,9 +10,12 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 18. 11. 2026 | Změna zadání (přes koordinaci): malá oprava vady ceny nebo dokumentu jde rychlou cestou rovnou do test (větev `claude/rychla-<ID>` nad integrací, kolo `--bez-mutaci` + cílené mutace, koordinace sloučí a pošle do test bez čekání na dávku); J. V. dostane ID vady a popis dotčených kalkulací; rozdíly cen main × test ověřuje J. V. sám; do main dál jen na jeho pokyn se sloučením testu. Nahrazuje variantu rychlé cesty do main s kolem main-před × main-po | rychlá cesta, test, main |
+| 18. 11. 2026 | Kolega s rolí administrátora zatím jmenovaný není, jmenuje ho J. V.; smí jen na test | role |
+| 18. 11. 2026 | Automat (sezení nebo Actions) smí z testovacího webu testengscalc jen číst; zápis ani ostrý web ne | testy |
 | 18. 11. 2026 | Schváleny změny CLAUDE.md z návrhu režie (S7) s úpravami: svěřena jen rozhodnutí o testech, harnessech a nástrojích kola; otázky průběžně v dialogu s doporučenou variantou (ne dvě okna týdně); kolega s rolí administrátora jen na test; tag a release jen pro stav, který jde do main | CLAUDE.md, režie vývoje |
-| 18. 11. 2026 | Rychlá cesta pro vady ceny a dokumentu v main zavedena; první K40-N1 (větev `claude/rychla-k40n1` nad main) | větve, main |
-| 18. 11. 2026 | Kolo main-před × main-po u rychlé cesty dělá koordinace nástrojem; J. V. dostane tabulku rozdílů; testovací sezení se nevolá | testy, main |
+| 18. 11. 2026 | (dopoledne, později změněno — viz výš) Rychlá cesta pro vady ceny a dokumentu v main zavedena; první K40-N1 (větev `claude/rychla-k40n1` nad main) | větve, main |
+| 18. 11. 2026 | (později změněno — viz výš) Kolo main-před × main-po u rychlé cesty dělá koordinace nástrojem; J. V. dostane tabulku rozdílů; testovací sezení se nevolá | testy, main |
 | 18. 11. 2026 | Stupně kol: automat po dávce + cílená sada; plné kolo jen před main a po nasazení; noční porovnání v Actions zatím ne | testy |
 | 18. 11. 2026 | Otázky pro J. V. průběžně v dialogu, každá s doporučenou variantou; balíček jen u souvisejících otázek | rozhodování |
 | 18. 11. 2026 | Jmenovaný kolega s rolí administrátora: datové úkoly jen na testu (jméno neurčeno); main jen J. V.; hotovo ověří koordinace | role |
