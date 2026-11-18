@@ -885,7 +885,7 @@ function kryciData(zak, varianta, jekly, verze) {
   const hodiny = kryciHodinySekce(zak, varianta, jekly, verze, 'ock');   // konec listu BO, jen OCK (15. 10. 2026)
   if (hodiny) sekce.push(hodiny);
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
-  /* VZ-F1 (VZ-N4, #649): u dalšího zákazníka číslo jako v jeho CN — s příponou
+  /* VZ-F1 (VZ-N4, #656): u dalšího zákazníka číslo jako v jeho CN — s příponou
    * varianty (…9801.2-C, cisloSVariantou). Řídící a jeden zákazník beze změny. */
   const pism = typeof vzPismenoPohledu === 'function' ? vzPismenoPohledu(zak) : '';
   const cisloKl = pism && typeof cisloSVariantou === 'function' ? String(cisloSVariantou(zak, varianta) || '').replace(/\s+/g, '')

@@ -115,7 +115,7 @@ function vzOtevrenyDalsi() {
 }
 /* Cesta pole hlavičky: u řídícího beze změny, u otevřeného dalšího
  * zákazníka do jeho položky. Pole firmy (VZ_HLAVICKA_POLE) a od VZ-F1
- * (VZ-N3, #646) i zástupci (`ZAK.zastupci.<pole>`, VZ_ZASTUPCI_POLE) —
+ * (VZ-N3, #653) i zástupci (`ZAK.zastupci.<pole>`, VZ_ZASTUPCI_POLE) —
  * dřív šel zápis zástupců u otevřeného B/C do hlavičky řídícího a SoD A
  * pak nesla zástupce C. */
 function vzCesta(cesta) {
@@ -149,7 +149,7 @@ function vzKlCesta(cesta) {
   return vzCestaPro(cesta, i);
 }
 
-/* VZ-F1 (VZ-N2, #648): varianty pro výběr „Otevřená varianta" v hlavičce —
+/* VZ-F1 (VZ-N2, #655): varianty pro výběr „Otevřená varianta" v hlavičce —
  * jen varianty otevřeného zákazníka (vzVariantyZakaznika: řídící sdílené
  * a své, další zákazník svou a ty, které mu odešly); cizí vlastní varianty
  * se skryjí. Otevřená varianta zůstává vždy (výběr nesmí lhát). Vypnuto

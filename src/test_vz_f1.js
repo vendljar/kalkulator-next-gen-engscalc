@@ -2,20 +2,20 @@
  * VZ-F1 — opravy nálezů ruční zkoušky víc zákazníků na testu (18. 11. 2026,
  * protokol podklady/kola/STAV_TEST_VZ_2026-11-18.md).
  *
- *  N3 (#646) zástupci v krycím listu u otevřeného dalšího zákazníka: zápis
+ *  N3 (#653) zástupci v krycím listu u otevřeného dalšího zákazníka: zápis
  *     pole „Zástupci a kontakty zákazníka" (bind ZAK.zastupci.*) i DIČ jde do
  *     jeho položky dalsiZakaznici[i] (vzKlCesta / vzCesta), ne do hlavičky
  *     řídícího. Kanárek: zástupce C zapsaný přes krycí list u otevřeného C
  *     se neobjeví v SoD, krycím listu ani plné moci A; v krycím listu C ano.
  *     Výměna řídícího: zástupci putují se svým zákazníkem.
- *  bod 2 (#650) vytištěný krycí list BO nese zástupce zákazníka, pro kterého
+ *  bod 2 (#657) vytištěný krycí list BO nese zástupce zákazníka, pro kterého
  *     se tiskne (i u jednoho zákazníka; Techdata technického zástupce).
- *  N1 (#647) přidání zákazníka se stejným IČO odmítnuto (klient i server);
+ *  N1 (#654) přidání zákazníka se stejným IČO odmítnuto (klient i server);
  *     bez IČO se nehlídá.
- *  N2 (#648) výběr „Otevřená varianta" v hlavičce jen s variantami
+ *  N2 (#655) výběr „Otevřená varianta" v hlavičce jen s variantami
  *     otevřeného zákazníka (vzVariantyHlavicka).
- *  N4 (#649) název souboru krycího listu vlastní varianty …9801.2-C (jako CN).
- *  bod 6 (#651) controlling po prodeji dalšímu zákazníkovi: číslo s písmenem.
+ *  N4 (#656) název souboru krycího listu vlastní varianty …9801.2-C (jako CN).
+ *  bod 6 (#658) controlling po prodeji dalšímu zákazníkovi: číslo s písmenem.
  *
  * POJISTKA: na ec5bbac (před VZ-F1) selže — vzCesta('ZAK.zastupci.…') vrací
  * cestu řídícího (kanárek C v SoD A), krycí list BO má prázdné zástupce,
