@@ -8,6 +8,41 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.11.1 — C9 #608: prohlížečové harnessy pod zátěží čekají na stav stránky, limity z `KNG_HARNESS_TIMEOUT_MS`, větev claude/c9-harnessy
+
+Nad `8462aea` (test v12.11.7). Kód aplikace beze změny — jen harnessy a nástroj. Verzi přečísluje koordinace.
+
+- **Problém (kolo 48):** `overit_klon_tisk.mjs` (`cekej` ř. 165 → `klikniProdano`) a `overit_kryci_cislo_sod.mjs`
+  (TimeoutError) vypršely při souběhu s jinými prohlížečovými běhy; samostatně prošly 53/0 a 28/0. Pevné pauzy
+  (`waitForTimeout`), pevný limit uložení 15 s a výchozí limity Playwrightu (navigace 30 s) pod zátěží nestačí.
+- **`nastroje/harness_cekani.js`:** jedna konstanta `KNG_HARNESS_TIMEOUT_MS` (celé kladné číslo v ms, výchozí 15000;
+  neplatná hodnota = chyba, nikdy tiché výchozí). Limity jsou násobky: akce nad prvky 2× (dřívějších 30 s), uložení
+  2×, navigace a start aplikace 4×, spuštění prohlížeče 12× (dřívějších 180 s), krok hlídače 8× a celý běh 80×
+  (dřívějších 120 s a 20 min). `sledujAkce` obalí asynchronní akce aplikace počítadlem, `cekejNaKlid` čeká, až žádná
+  neběží a neběží uložení (`ONLINE_STAV.ukladaBeh`, `ZAKULO_STAV.uklada`).
+- **`overit_klon_tisk.mjs`:** start čeká na `ONLINE_STAV.sondaHotova`; po změně typu šachty, Prodáno, tisku klonu
+  a přepnutí záložky čeká na klid stránky (nabídka klonu `zamekUpozorni`, `prodejUiProdej`, `zakUlozUI`,
+  `onlineUloz`, `onlineNactiRejstrik`) místo pauz 100–400 ms.
+- **`overit_kryci_cislo_sod.mjs`:** start čeká na načtenou aplikaci (místo 700 ms), zápis čísla SoD na hodnotu
+  v modelu nebo otevřený dialog, ↺ na smazanou ruční hodnotu, zavření dialogu na jeho zmizení. `modalText()` dřív
+  `locator.innerText()` na neexistujícím dialogu čekal plných 30 s (2× za běh, i u prošlé kontroly) — běh 67 s → 4 s.
+- **`overit_prodano_zamek.mjs`** (jediný další harness se stejnou vadou — `klikni`: pauza 300 ms + pevných 15 s na
+  uložení + 300 ms): totéž čekání na klid, start po načtení i po F5. Ostatní `overit_*.mjs` beze změny.
+- **Testy:** `src/test_harness_cekani.js` 32/0 (konstanta, násobky, neplatné hodnoty, počítadlo akcí, klid stránky,
+  harnessy C9 bez `waitForTimeout` a pevných limitů); nad `8462aea` chybí modul (0/1) a s modulem 8 FAIL.
+  Samostatně: klon 53/0, krycí list 28/0, prodáno 51/0. **Souběh** (6 harnessů najednou na 4 jádrech: tři upravené
+  + `overit_online`, `overit_lista`, `overit_schvalovani`): upravené harnessy zelené ve 3 kolech ze 3; v posledním
+  kole s `ADMIN_EMAIL` vše 53/0, 28/0, 51/0, 276/0, 255/0, 68/0 (dvě úvodní kola se nepočítají: během nich se
+  přepsal `verze.txt` a aplikace zakryla stránku překryvem „jiná verze“; `overit_online` bez `ADMIN_EMAIL` padá i samostatně).
+  **Pojistky** (umělá zátěž preloadem: zpoždění odpovědi `POST /api/zakazky` o 16 s; zpomalení CPU stránky přes CDP):
+  klon — původní `FAIL … page.waitForFunction: Timeout 15000ms exceeded at cekej (ř. 165) at tiskniKlon`, nový 53/0;
+  prodáno — původní tentýž timeout v `klikni` (ř. 148) po 6 kontrolách, nový 51/0; krycí list při 60× zpomalení —
+  původní `page.goto: Timeout 30000ms exceeded` (TimeoutError), nový 28/0. Při 100× nestačí ani 60 s navigace —
+  pomůže `KNG_HARNESS_TIMEOUT_MS` (původní kód limit zvýšit neuměl): s `KNG_HARNESS_TIMEOUT_MS=60000` nový 28/0.
+- **Kolo `--bez-mutaci` (ADMIN_EMAIL nastavený):** VŠE ZELENÉ — sady 442 prošlo, 0 selhalo, 7 přeskočeno (firemní
+  podklady, test.js), hodiny +400 dní 359/0, statické kontroly 5/5; 34 min 54 s. Playwright se v kontejneru načetl
+  (symlink `node_modules/playwright` na globální instalaci, v `.gitignore`).
+
 ## v12.11.7 — K40c #581: vazba z webhooku Pipedrive, firma z ARES na serveru, „Opravit firmu v Pipedrive“, větev claude/k40c-webhook
 
 Nad `1a08186` (integrace v12.11.3), sloučeno s integrací `4acda93` (v12.11.6: VSD, C2+C3, C5). Výpočet ceny beze změny. Rozhodnutí J. V.

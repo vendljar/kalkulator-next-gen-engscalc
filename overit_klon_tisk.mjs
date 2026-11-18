@@ -34,7 +34,9 @@
  * Pojistka: nad 6e4bf49 (v3.11.1) selže 1) i 2) i 3) a 4) (viz commit);
  * 5) nad 198ed4c (v3.11.3) selže hláškou „první rozdíl v datech: cenik".
  * Smyšlené účty a údaje, zkušební ceník.
- * Spuštění: NODE_PATH=$(npm root -g) node overit_klon_tisk.mjs */
+ * Spuštění: NODE_PATH=$(npm root -g) node overit_klon_tisk.mjs
+ * Limity: násobky KNG_HARNESS_TIMEOUT_MS (výchozí 15000 ms), čeká se na stav
+ * stránky, ne pevnou pauzou (C9 #608 — kolo 48 tu vypršelo při souběhu). */
 process.env.TAJEMSTVI_RELACE = 'zkusebni-tajemstvi-jen-pro-harness';
 process.env.ADMIN_INIT_HESLO = 'Zkusebni.Heslo.123';
 process.env.ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'spravce@priklad.cz';
@@ -105,10 +107,13 @@ const server = createServer((req, res) => { res.writeHead(200, { 'Content-Type':
 await new Promise(r => server.listen(0, '127.0.0.1', r));
 const ADRESA = 'http://127.0.0.1:' + server.address().port;
 
-const prohlizec = await chromium.launch({ args: ['--no-sandbox'] });
+const { casLimit, sledujAkce, cekejNaKlid } = require('./nastroje/harness_cekani.js');
+const prohlizec = await chromium.launch({ args: ['--no-sandbox'], timeout: casLimit(12) });   // spuštění prohlížeče (dřív výchozích 180 s)
 const page = await (await prohlizec.newContext()).newPage();
+page.setDefaultTimeout(casLimit(2));       // akce nad prvky (dřív výchozích 30 s Playwrightu)
+page.setDefaultNavigationTimeout(casLimit(4)); // načtení 4 MB stránky je pod zátěží nejpomalejší krok
 const { hlidejHarness } = require('./nastroje/harness_hlidac.js');
-hlidejHarness({ page, uklid: async () => { await prohlizec.close(); server.close(); } });
+hlidejHarness({ page, krokMs: casLimit(8), celkemMs: casLimit(80), uklid: async () => { await prohlizec.close(); server.close(); } });
 const chyby = [];
 page.on('console', m => { if (m.type() === 'error' && !/status of (401|403|400|409)|net::ERR_FAILED/.test(m.text())) chyby.push('console: ' + m.text()); }); // net::ERR_FAILED = simulovaný výpadek sítě (1c)
 page.on('pageerror', e => chyby.push('pageerror: ' + e.message));
@@ -128,8 +133,12 @@ await page.route('**/api/**', async route => {
 });
 
 await page.goto(ADRESA);
-await page.waitForFunction(() => typeof window.render === 'function');
-await page.waitForTimeout(400);
+/* Aplikace načtená a první dotaz na server (zdraví, kdo jsem) doběhl. */
+await page.waitForFunction(() => typeof window.render === 'function' && typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.sondaHotova,
+  null, { timeout: casLimit(12) });   // spuštění prohlížeče (dřív výchozích 180 s)
+/* Asynchronní akce, na jejichž dokončení harness čeká (cekej): nabídka klonu
+ * po změně zamčené varianty, Prodáno, uložení, načtení rejstříku. */
+await sledujAkce(page, ['zamekUpozorni', 'prodejUiProdej', 'zakUlozUI', 'onlineUloz', 'onlineNactiRejstrik']);
 
 /* Dialogy: harness si zapamatuje každý text i nadpis. „Uzamčená varianta"
  * odpoví podle window.__klonAno (Založit klon / Nechat beze změny), „Ze
@@ -162,7 +171,9 @@ const naServeru = async (soubor) => {
 const rozdil = (a, b, p = '') => { if (JSON.stringify(a) === JSON.stringify(b)) return null;
   if (a && b && typeof a === 'object' && typeof b === 'object') { for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) { const r = rozdil(a[k], b[k], p + '.' + k); if (r) return r; } }
   return p || '(kořen)'; };
-const cekej = async () => { await page.waitForFunction(() => !ONLINE_STAV.ukladaBeh && !ZAKULO_STAV.uklada, null, { timeout: 15000 }); await page.waitForTimeout(300); };
+/* Klid stránky: doběhla každá sledovaná akce i uložení (limit 2× základ — uložení
+ * prochází serverovými funkcemi, pod zátěží trvá nejdéle). */
+const cekej = () => cekejNaKlid(page, 2);
 const dataV = (i) => page.evaluate((i) => JSON.parse(JSON.stringify(ZAK.varianty[i].data)), i);
 const neulozena = (d) => d.filter(x => /není uložená|neuložila|změnila by se data/.test(x.text + ' ' + (x.nadpis || '')));
 const TABY = ['kalk', 'detail', 'spec', 'specdata', 'kryci', 'proj', 'detailproj', 'kryciproj', 'cenik', 'cenikproj', 'zakazka'];
@@ -172,9 +183,8 @@ const typSelect = 'select[onchange^="typSachtyPrepni"]';
 const tiskniKlon = async () => {
   await page.evaluate(() => prepniTab('zakazka'));
   await page.evaluate(async () => { await nabidkaOckDokument(); });
-  await page.waitForTimeout(300);
+  await cekej();
   await page.evaluate(() => zamekPoTisku('nabidkaTisk', aktivniVarianta(ZAK).id));
-  await page.waitForTimeout(300);
   await cekej();
 };
 page.on('popup', p => { p.on('pageerror', e => chyby.push('popup: ' + e.message)); });
@@ -209,7 +219,7 @@ test('(výchozí profily obou typů se liší — jinak by test nic neověřil)'
   profilyInt !== JSON.stringify(v1Pred.ock.zadani.profily));
 await page.evaluate(() => { window.__klonAno = true; });
 await page.selectOption(typSelect, 'interiérová');   // odeslaná varianta → dialog → Založit klon
-await page.waitForTimeout(400);
+await cekej();
 let d = await dlg();
 test('změna typu na odeslané variantě nabídne klon („Uzamčená varianta")', d.some(x => x.nadpis === 'Uzamčená varianta'), d);
 let st = await page.evaluate(() => ({ n: ZAK.varianty.length, akt: ZAK.varianty.findIndex(v => v.id === ZAK.aktivni) }));
@@ -221,7 +231,7 @@ test('#555: klon vznikl z nezměněných dat odeslané varianty', JSON.stringify
   rozdil(v1Pred.ock.zadani, klonPred.ock.zadani));
 /* V klonu typ šachty změnit znovu (hodnotu zablokovanou zámkem uživatel zadá znovu). */
 await page.selectOption(typSelect, 'interiérová');
-await page.waitForTimeout(300);
+await cekej();
 const klon = await dataV(1);
 test('v klonu se typ změní a dosadí se výchozí profily interiérové šachty',
   klon.ock.zadani.typSachty === 'interiérová' && JSON.stringify(klon.ock.zadani.profily) === profilyInt, klon.ock.zadani.typSachty);
@@ -252,8 +262,7 @@ const PRODANA_POZADI = 'rgb(11, 46, 107)';   // #0B2E6B — tmavě modrá firemn
 const klikniProdano = async () => {
   await page.evaluate(() => { prepniTab('kryci'); render(); });
   await page.locator('#prodejKarta_ock button', { hasText: 'Prodáno' }).first().click();
-  await page.waitForTimeout(300);
-  await cekej();
+  await cekej();   // prodejUiProdej doběhl i s uložením
 };
 await dlg();
 await klikniProdano();
@@ -286,9 +295,8 @@ await otevri(soubor4);
 const u1Pred = await dataV(0);
 await page.evaluate(() => { window.__klonAno = true; });
 await page.selectOption(typSelect, 'interiérová');   // klon jako J. V.
-await page.waitForTimeout(400);
+await cekej();
 await page.selectOption(typSelect, 'interiérová');   // typ v klonu
-await page.waitForTimeout(300);
 await cekej(); await dlg();
 global.__vypadek = true;
 await tiskniKlon();
@@ -313,7 +321,7 @@ await otevri(soubor2);
 const w1 = await dataV(0);
 await page.evaluate(() => { window.__klonAno = false; });
 await page.selectOption(typSelect, 'interiérová');
-await page.waitForTimeout(400);
+await cekej();
 d = await dlg();
 const w2 = await dataV(0);
 test('„Nechat beze změny": dialog se ukázal, klon nevznikl', d.some(x => x.nadpis === 'Uzamčená varianta')
@@ -466,7 +474,7 @@ await page.evaluate(() => {
 const zapisy = [];
 for (const t of TABY) {
   await page.evaluate((t) => prepniTab(t), t);
-  await page.waitForTimeout(100);
+  await cekej();   // záložka Přehled si dočítá rejstřík
   const n = await page.evaluate(() => document.querySelectorAll('input, select, textarea').length);
   for (let i = 0; i < n; i++) {
     const r = await page.evaluate(([i, t]) => {

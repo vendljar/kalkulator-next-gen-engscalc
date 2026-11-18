@@ -1,3 +1,31 @@
+# Předávka — C9 #608: harnessy pod zátěží, větev `claude/c9-harnessy`
+
+Nad `8462aea` (test v12.11.7). **v16.11.6** (přečísluje koordinace; VZ větve mají 16.11.1–16.11.5). Do `test`,
+`test-draft`, `main` ani integrace nic. Kód aplikace beze změny.
+
+| bod | stav | kde |
+|---|---|---|
+| jedna konstanta `KNG_HARNESS_TIMEOUT_MS` (výchozí 15000), limity = násobky | ✅ | `nastroje/harness_cekani.js` |
+| čekání na stav (klid stránky: sledované akce + uložení) místo `waitForTimeout` | ✅ | `overit_klon_tisk.mjs`, `overit_kryci_cislo_sod.mjs` |
+| ostatní `overit_*.mjs` se stejnou vadou | ✅ jen `overit_prodano_zamek.mjs` (`klikni`) | |
+| test pomocníka + statická hlídka harnessů C9 | ✅ 32/0 (nad 8462aea 8 FAIL) | `src/test_harness_cekani.js` |
+| CHANGELOG, roadmapa #608 | ✅ | |
+
+**Výsledky:** samostatně klon 53/0, krycí list 28/0 (67 s → 4 s, dřív 2× 30 s čekání na neexistující dialog),
+prodáno 51/0. Souběh 6 harnessů (+ online 276/0, lišta 255/0, schvalování 68/0) zelený. Pojistky umělou zátěží
+(preload ve scratchpadu, ne v repu: zpoždění `POST /api/zakazky` 16 s; CPU stránky přes CDP 60×): původní klon
+i prodáno padají `Timeout 15000ms` v `cekej`/`klikni`, původní krycí list `page.goto: Timeout 30000ms`; nové projdou.
+Podrobnosti v CHANGELOG v16.11.6.
+
+**Kolo `--bez-mutaci`** (`ADMIN_EMAIL=spravce@priklad.cz`): VŠE ZELENÉ — sady 442/0 (7 přeskočeno: firemní podklady,
+test.js), hodiny +400 dní 359/0, statické 5/5. Playwright se načetl (symlink `node_modules/playwright` → globální).
+Mutace nepuštěny (kód aplikace beze změny).
+
+**Poznámky:** `overit_online.mjs` bez `ADMIN_EMAIL` padá i samostatně (ř. 199, čeká na přihlášení správce) — kolo
+proměnnou nastavuje. Jiné harnessy mají dál pevné pauzy po startu (`waitForTimeout(400)`), ty se podle zadání
+nerozšiřovaly; pomocník je připravený, kdyby se v dalším kole objevily.
+
+---
 # Předávka — K40c #581: vazba z webhooku Pipedrive, ARES na serveru, „Opravit firmu v Pipedrive“, větev `claude/k40c-webhook`
 
 Nad `1a08186` (integrace v12.11.3), sloučeno s integrací `4acda93` (v12.11.6: + VSD, C2+C3, C5). **v12.11.7**. Do

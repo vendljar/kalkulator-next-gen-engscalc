@@ -9,30 +9,40 @@
  * src/test_kryci_cislo_sod.js.
  *
  * Spouští se nad sestaveným buildem:
- *   NODE_PATH=$(npm root -g) node overit_kryci_cislo_sod.mjs */
+ *   NODE_PATH=$(npm root -g) node overit_kryci_cislo_sod.mjs
+ * Limity: násobky KNG_HARNESS_TIMEOUT_MS (výchozí 15000 ms); čeká se na stav
+ * stránky (zapsaná hodnota, otevřený / zavřený dialog), ne pevnou pauzou
+ * (C9 #608 — kolo 48 tu při souběhu skončilo TimeoutError). */
 import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 const KOREN = fileURLToPath(new URL('.', import.meta.url));
+const { casLimit } = createRequire(import.meta.url)(KOREN + 'nastroje/harness_cekani.js');
 const KDE = new URL('dist/kalkulacka.html', import.meta.url).href;
 const chyby = [];
 const konzole = [];
 
-const b = await chromium.launch();
+const b = await chromium.launch({ timeout: casLimit(12) });   // spuštění prohlížeče (dřív výchozích 180 s)
 const p = await b.newPage({ viewport: { width: 1500, height: 950 } });
+p.setDefaultTimeout(casLimit(2));       // akce nad prvky (dřív výchozích 30 s Playwrightu)
+p.setDefaultNavigationTimeout(casLimit(4)); // načtení 4 MB stránky je pod zátěží nejpomalejší krok
 p.on('console', m => { if (m.type() === 'error') konzole.push('error: ' + m.text()); });
 p.on('pageerror', e => konzole.push('pageerror: ' + e.message));
 await p.goto(KDE);
-await p.waitForTimeout(700);
+/* Aplikace načtená: skript doběhl a stránka je vykreslená. */
+await p.waitForFunction(() => typeof render === 'function' && typeof DEFAULT_CENIK !== 'undefined'
+  && document.readyState === 'complete', null, { timeout: casLimit(12) });   // spuštění prohlížeče (dřív výchozích 180 s)
 
 const ok = (co, podm, info) => { console.log((podm ? '  ✓ ' : '  ✗ ') + co + (podm || info === undefined ? '' : '  ' + JSON.stringify(info))); chyby.push(podm); };
 const modal = () => p.locator('#dlg').isVisible().catch(() => false);
-const modalText = () => p.locator('#dlg .dlg-text').innerText().catch(() => '');
+/* Text dialogu bez čekání: dřív `locator.innerText()` na neexistujícím dialogu
+ * čekal plný výchozí limit Playwrightu (30 s) — i u kontroly, která prošla. */
+const modalText = () => p.evaluate(() => { const el = document.querySelector('#dlg .dlg-text'); return el ? el.innerText : ''; });
 const zavri = async () => { if (await modal()) {
   const ne = p.locator('#dlg [data-dlg="ne"]');
   await ((await ne.count()) ? ne.click() : p.locator('#dlg button').first().click());
-  await p.waitForTimeout(200); } };
+  await p.locator('#dlg').waitFor({ state: 'detached' }); } };
 
-const { createRequire } = await import('module');
 const ZC = createRequire(import.meta.url)(KOREN + 'src/zkusebni_cenik.js');
 const STRANKA = { kryci: '#page-kryci', kryciproj: '#page-kryciproj' };
 const priprav = (typy, tab) => p.evaluate(([c, cp, typy, tab]) => {
@@ -58,7 +68,11 @@ const napis = async (sel, text) => {
   const pole = radek.locator('input, textarea').first();
   await pole.fill(text);
   await pole.dispatchEvent('change');
-  await p.waitForTimeout(300);
+  /* Zápis doběhl: hodnota je v modelu, nebo zámek otevřel dialog. */
+  await p.waitForFunction(([text, tab]) => {
+    const h = (aktivniVarianta(ZAK).data[tab === 'kryciproj' ? 'kryciProj' : 'kryci'].hodnoty || {}).cisloSod;
+    return h === text || !!document.getElementById('dlg');
+  }, [text, sel === STRANKA.kryciproj ? 'kryciproj' : 'kryci']);
 };
 const ulozeno = () => p.evaluate(() => {
   const d = aktivniVarianta(ZAK).data;
@@ -103,7 +117,8 @@ for (const [tab, jm, h1] of [['kryci', 'OCK', 'Krycí list zakázky OCK'], ['kry
   const r1 = await radekSod();
   ok('ruční přepis je označený „ručně" a nabízí ↺', /ručně/.test(r1.zdroj) && r1.reset, r1);
   await p.locator(sel + ' .kl-row').filter({ has: p.locator('.lbl', { hasText: /^Číslo SoD/ }) }).first().locator('.src button').click();
-  await p.waitForTimeout(300);
+  /* ↺ doběhl: ruční hodnota z modelu zmizela. */
+  await p.waitForFunction((tab) => (aktivniVarianta(ZAK).data[tab === 'kryciproj' ? 'kryciProj' : 'kryci'].hodnoty || {}).cisloSod === undefined, tab);
   const r2 = await radekSod(), u2 = await ulozeno();
   ok('↺ vrátí návrh a ruční hodnotu smaže', r2.hodnota === navrhSod && (jm === 'OCK' ? u2.ock : u2.proj) === undefined, [r2, u2]);
 }
@@ -134,7 +149,9 @@ ok('tisk SoD opíše číslo SoD (OCK i PROJ) a datum podpisu do zakázky',
 console.log('— po smlouvě o dílo —');
 await priprav(['nabidkaTisk', 'sod'], 'kryci');
 await p.evaluate(() => klSet('cisloSod', 'PO-SOD'));
-await p.waitForTimeout(400);
+/* Zámek po SoD odpoví dialogem — čeká se, až se otevře (když se neotevře,
+ * selže kontrola níž, ne čekání). */
+await p.locator('#dlg').waitFor({ state: 'visible' }).catch(() => {});
 ok('po tisku SoD se číslo SoD nezapíše', (await ulozeno()).ock === undefined, await ulozeno());
 ok('…a ukáže dialog', await modal(), await modalText());
 await zavri();
