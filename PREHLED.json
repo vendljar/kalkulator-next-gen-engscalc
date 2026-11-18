@@ -7,11 +7,11 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "9bd6dc8b",
-  "verze": "v18.11.4",
+  "sha": "ec5bbaca",
+  "verze": "v18.11.5",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 213,
+ "test_navic_commitu": 217,
  "v_testu_ne_v_main": [
   {
    "id": "614",
@@ -21,6 +21,12 @@
     "K40-N1"
    ],
    "verze": "v12.11.1"
+  },
+  {
+   "id": "613",
+   "typ": "ukol",
+   "nazev": "S6 + S8: jedna evidence v roadmap.json (typ, čeká na, kolo, větev, verze, dopad na cenu, aliasy), živý výpis, PREHLED.md a NOVINKY.md",
+   "verze": "v18.11.5"
   },
   {
    "id": "612",

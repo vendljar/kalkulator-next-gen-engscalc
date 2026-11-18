@@ -57,6 +57,8 @@ příplatky:“ a seznam → „příplatky celkem: …“.
   **do hodnoty symbolu** (aplikace, slovník EN/DE/FR) — s jednou šachtou zmizí s odstavcem; šablona se nemění.
 - Řádky rozpisu jsou ceny **před slevou** (rozpočet R7, VS-E5). U nabídky se slevou se součet řádků nerovná
   celkové ceně díla (ta je po slevě) — pak by se hodil řádek „sleva …“ (v symbolu, ne v šabloně).
+  **Vyřešeno (J. V. 16. 11. 2026, SL #589):** rozpis končí vyrovnávacím řádkem „Sleva“ / „Sleva a zaokrouhlení“ /
+  „Zaokrouhlení“ v hodnotě symbolu; šablona v5 se nemění.
 
 ## 3. Výroba
 

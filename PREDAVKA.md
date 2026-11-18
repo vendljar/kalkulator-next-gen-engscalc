@@ -36,6 +36,16 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   `podklady/kola/`, kontrola `nastroje/kontrola_podkladu.sh` v kroku `staticke`, `release_odkaz.py --chybejici` jen
   verze z main, pravidlo porovnání sestavení S3 v Testy (stupeň 1), návrh osnovy skillu `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md`. **Kolo `--bez-mutaci` nad fd1c0b1 VŠE ZELENÉ**
   (sady 464/0/7 přeskočeno, hodiny +400 dní 376/0/1, statické 8/8; 39 min). HOTOVO, slučuje koordinace.
+- **SL #589 #609 #610** (`claude/sl-sod-sleva`, v18.11.6, sloučeno s integrací ec5bbac): řádek slevy v rozpisu šachet
+  SoD, šablona SoD realizace v6 se žlutými místy (druhé vydání .docx poslané J. V. 18. 11.; na test až s tímto kódem),
+  kontrola nevyplněných míst „Chybí / Nepovinné". Revize a dorevize poradce (L1–L6, M1–M3) opraveny: ve smlouvách
+  (SoD realizace, SoD projekce, plná moc) je žlutý **jen** „……" — běhy se dělí i s tabulátory; v EUR řádky šachet
+  jako nabídka — **u EUR smluv s víc šachtami se řádky šachet mohou lišit o jednotky eur oproti main i test**.
+  **Přiznané meze (M4):** sejme se každé podbarvení, nejen žluté; symbol rozdělený mezi běhy obarví celé své běhy
+  i s pevným textem; vnořené běhy v textovém poli se spolehlivě nezpracují; žluté tečky dostanou i šablony v4/v5
+  bez podbarvení. Kolo `--bez-mutaci` s KNG_PODKLADY nad 20b154a: sady 465/1/6, hodiny 377/0/1, statické 9/9;
+  jediné selhání `overit_sod.mjs` (5 bodů, stará očekávání před tečkami C3) padá stejně na integraci 9bd6dc8
+  i ec5bbac (ověřeno ve worktree). Mutace [SL] 23/23. Podrobnosti `podklady/predavky/2026-11.md`. Slučuje koordinace.
 - **Rychlá cesta K40-N1** (`claude/rychla-k40n1`, založena nad main ještě podle dopoledního znění): podle změny zadání
   J. V. 18. 11. jde rychlá cesta do `test` (větev nad integrací, kolo `--bez-mutaci` + cílené mutace, koordinace sloučí
   a pošle do test); rozdíly cen main × test ověřuje J. V. sám; do main jen na jeho pokyn se sloučením testu.
