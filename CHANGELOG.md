@@ -38,6 +38,8 @@ Zadání `podklady/PROMPT_VZ_E6.md`, návrh § 6, § 8, § 9 (R5, R6).
 - **Testy:** `netlify/test_vz_rejstrik.mjs` (nová), `netlify/test_vz_vs.mjs` (nová), `src/test_vz_unik.js` + rejstřík
   a controlling, `src/test_vz_kl_pole.js` + obrazovka KL prodané varianty, `netlify/test_vz_server.mjs` + SoD na
   serveru; mutace „[VZ E6]“ (jádro 2, server 21).
+- **Kolo:** `--bez-mutaci` VŠE ZELENÉ (411/0/59, +400 dní 375/0/1, statické 6/6); celé mutace po částech
+  jádro 1035/1035 (N = 4), server 1613/1613 (N = 16) — **VŠE ZELENÉ**, 0 přeživších.
 
 **Souhrn VZ (#598, E0–E6):** jedna zakázka s víc zákazníky (řídící v hlavičce, další v `dalsiZakaznici`), nabídky
 s písmenem (…9940-B), sdílená nebo vlastní varianta, každý dokument z pohledu zákazníka (`vzPohled`, test úniku

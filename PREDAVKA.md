@@ -4,7 +4,7 @@ Nad `claude/integrace-vz` `68e5eb8` (v17.11.1: E0–E5b). **v17.11.2** (den posl
 Do `test-draft`, `test`, `main` ani integrace nic; weby, Disk, Pipedrive nic (jen simulátor). Roadmapa **#606**, souhrn
 **#598**; mez **B228 doplněna** (nové číslo meze jsem nebral).
 
-**STAV: kód hotový (`5e21cb8`, dokumentace a roadmapa později). Mutace serveru po částech běží (viz níž).**
+**STAV: HOTOVO — kolo VŠE ZELENÉ (bez mutací + mutace jádra 1035/1035 + server 1613/1613). Kód `5e21cb8`, dokumentace a roadmapa později. Čeká na sloučení koordinací a ruční zkoušku J. V.**
 
 | běh | výsledek |
 |---|---|
@@ -12,7 +12,7 @@ Do `test-draft`, `test`, `main` ani integrace nic; weby, Disk, Pipedrive nic (je
 | prohlížeč ručně (Playwright) | ✅ `overit_vz_zadani` 76/0 (VYP = dist 68e5eb8 znak po znaku, `KNG_DIST_ZAKLAD`), `overit_vz_tisk` 192/0, `overit_vz_zamek` 31/0, `overit_vz_prodej` 19/0, `overit_vz_organizace` 40/0, `overit_xss` 400/0, `overit_vs_zadani` 47/0/1, `overit_lista` konzole čistá |
 | mutace [VZ*] | jádro 158/161 → 3 přeživší E2 (vlastník KL) přežívaly už na 68e5eb8 (zakrývala je vnější vrstva E4 Z1) — nový test vnitřní vrstvy v `test_vz_kl_pole.js` je chytá; server 122/123 → „server nesrovná invariant [VZ E0]“ ekvivalentní (od E4 `prodServer` volá `vzSrovnej` při každém uložení), vyřazena s komentářem |
 | **mutace jádra po částech (N = 4)** | ✅ **1035/1035** (1/4 259, 2/4 259, 3/4 259, 4/4 258; každá v samostatném worktree, ~65 min souběžně) |
-| mutace serveru po částech (N = 16) | ⏳ dobíhá — ke 17. 11. 22:30 UTC hotové části 1–3, 5–7, 9, 11, 14, 15 (každá 101/101, po limitu 7100 s navázáno `KNG_MUTACE_OD`), zbývají dokončit 4, 8, 10, 12, 13, 16; **nechycených 0**. Pozn.: 3× (části 4, 13 a doběh 10) spadla kontrola „bez mutace“ na `test_funkce.mjs (sada nedoběhla do souhrnu)` — samostatně 40× souběžně 340/0, příčinu se nepodařilo zjistit, část se pouští znovu |
+| **mutace serveru po částech (N = 16)** | ✅ **1613/1613, 0 přeživších** — každá část 101 (14–16 po 100), v 4 worktree souběžně; části, které narazily na limit 7100 s, navázány `KNG_MUTACE_OD`. ⚠️ Kontrola „bez mutace“ občas spadla (`test_funkce.mjs (sada nedoběhla do souhrnu)` 4×, `test_577_kopie_skript.mjs` 2×) — samostatně 40× souběžně 340/0, příčinu se nepodařilo zjistit (zátěž 4 souběžných běhů?), část se pustila znovu. Týž výpadek vedl k tomu, že 78 mutací bylo „chyceno“ jen nedoběhnutím `test_funkce.mjs`: všech 78 jsem pustil jednotlivě (`--cast n/1613`) a každou chytila jiná sada (výsledek je v logu sezení) ⇒ žádná falešně chycená |
 
 | úkol | stav | kde |
 |---|---|---|
