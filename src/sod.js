@@ -257,7 +257,7 @@ function sodData(zak, varianta, jekly, lang, sablona) {
  * projde, předmět a rozpis doplní obchodník ve Wordu. */
 const SOD_SACHTY_SYMBOLY = ['SACHTY_SOD_PREDMET', 'SACHTY_SOD_ROZPIS'];
 const SOD_SACHTY_BEZ_SABLONY = 'Šablona smlouvy neumí vyjmenovat šachty — předmět díla a rozpis šachet doplňte ve Wordu, '
-  + 'nebo ať administrátor nahraje šablonu SoD realizace v5.';
+  + 'nebo ať administrátor nahraje šablonu SoD realizace v5 nebo novější.';
 function sodSablonaMa(sablona, k) {
   const sym = sablona && sablona.symboly;
   return !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);
@@ -288,9 +288,70 @@ function sodSachtySymboly(d, zak, varianta, jekly, L, sablona) {
   const ks = ' ' + P('ks');
   const seznam = vo.sachty.map(x => x.nazev + ' ' + x.ks + ks).join(', ');
   d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + P(druh) + ', ' + P('celkem') + ' ' + vo.celkem + ks + ' (' + seznam + ')';
-  d.placeholders.SACHTY_SOD_ROZPIS = vo.sachty.map(x => x.nazev + (x.mustky ? ', ' + P('vč. můstků') : '')
-    + ' – ' + x.ks + ks + ' – ' + kc(na(x.cena))).join('\n');
+  /* Ceny šachet ve měně dokumentu. L3 (rozhodnutí J. V. 18. 11. 2026: „šachty
+   * počítat jako nabídka"): v eurech rozpočet ceny před slevou do šachet
+   * (rozpocetSachet, R7) už v eurech — jako tabulka šachet nabídky
+   * (nabidkaVsData); součet řádků = cena před slevou na euro. Dřív se každá
+   * šachta převáděla nahoru zvlášť a skoro každá smlouva dostala „Rounding –
+   * € 1". V korunách beze změny (cenaRozpis). */
+  const predSl = sodCenaPredSlevou(r, varianta, na);
+  let castky = vo.sachty.map(x => na(x.cena));
+  if (d.mena && d.mena.eur && predSl && isFinite(+predSl.cena) && r && Array.isArray(r.sachty) && r.sachty.length === vo.sachty.length) {
+    const vahy = r.sachty.map(s => +(s && s.cenaPredZaokr) || 0);
+    const rs = (typeof rozpocetSachet === 'function') ? rozpocetSachet : require('./vice_sachet.js').rozpocetSachet;
+    if (vahy.some(v => v > 0)) castky = rs(+predSl.cena, vahy);
+  }
+  const radky = vo.sachty.map((x, i) => x.nazev + (x.mustky ? ', ' + P('vč. můstků') : '')
+    + ' – ' + x.ks + ks + ' – ' + kc(castky[i]));
+  const vyr = sodRozpisVyrovnani(d, castky, predSl);
+  /* L4: znaménko zvlášť jako řádek slevy nabídky („− 292 700,00 Kč", U+2212) */
+  if (vyr) radky.push(P(vyr.popis) + ' – ' + (vyr.castka < 0 ? '\u2212 ' + kc(Math.abs(vyr.castka)) : kc(vyr.castka)));
+  d.placeholders.SACHTY_SOD_ROZPIS = radky.join('\n');
   return [];
+}
+
+/* VYROVNÁVACÍ ŘÁDEK ROZPISU ŠACHET (SL #589, rozhodnutí J. V. 16. 11. 2026:
+ * „ano, doplň řádek slevy"). Řádky šachet jsou ceny PŘED slevou (rozpočet R7,
+ * v eurech každý řádek nahoru), cena díla dle nabídky je PO slevě a po obchodním
+ * zaokrouhlení — součet řádků se jí proto u slevy (a v eurech i bez ní)
+ * nerovnal. Rozpis končí řádkem = cena díla dle nabídky ({{SOD_CENA_NABIDKY}},
+ * u dotisku podle záznamu tisku jeho částka) − součet řádků šachet; jen při
+ * nenulovém rozdílu. Popisek: „Sleva" (uplatněná sleva, řádky dávají přesně
+ * cenu před slevou), „Sleva a zaokrouhlení" (sleva + rozdíl i bez ní),
+ * „Zaokrouhlení" (bez slevy); velké písmeno jako řádky šachet a heslo
+ * slovníku „Sleva". Výpočet ceny se nemění — jen text rozpisu.
+ * Vrací { popis, castka } (česky; překlad dělá volající), nebo null. */
+function sodRozpisVyrovnani(d, castky, predSl) {
+  const c = d && d.ceny;
+  if (!c || !Array.isArray(castky) || !castky.length) return null;
+  /* L5: záznam tisku jen tam, kde z něj vzala cenu díla i sodObjednaneSymboly
+   * — tj. jsou objednané příplatky (rozpis SOD_PRIPLATKY_OBJEDNANE neprázdný). */
+  const z = d.sodZaznam;
+  const zeZaznamu = !!(z && d.mena && String((d.placeholders || {}).SOD_PRIPLATKY_OBJEDNANE || '').trim()
+    && z.mena === (d.mena.eur ? 'EUR' : 'CZK') && z.bezDph !== null && isFinite(+z.bezDph) && isFinite(+z.nabidka));
+  const cil = zeZaznamu ? +z.nabidka : +c.bezDph;
+  if (!isFinite(cil)) return null;
+  const h = n => Math.round(n * 100) / 100;
+  const soucet = h(castky.reduce((a, x) => a + (+x || 0), 0));
+  const castka = h(cil - soucet);
+  if (Math.abs(castka) < 0.005) return null;
+  const sleva = !!(predSl && predSl.sleva);
+  const pred = predSl ? +predSl.cena : NaN;
+  const zaokr = isFinite(pred) ? Math.abs(h(pred - soucet)) >= 0.005 : false;
+  const popis = sleva ? (zaokr ? 'Sleva a zaokrouhlení' : 'Sleva') : 'Zaokrouhlení';
+  return { popis, castka };
+}
+/* Cena před slevou ve měně dokumentu a uplatněná sleva — touž cestou jako
+ * nabídka (cenaNabidkyOck: zaokrouhlený základ, v eurech převedený nahoru).
+ * Počítá se tady, ne v datech nabídky: data SoD zůstávají znak po znaku
+ * stejná (zlatá sada VS). null = nevíme (pak popisek jen podle slevy). */
+function sodCenaPredSlevou(r, varianta, na) {
+  const dv = varianta && varianta.data;
+  if (!r || !dv || typeof cenaNabidkyOck !== 'function') return null;
+  const zaokr = (typeof zaokrOckZ === 'function') ? zaokrOckZ(dv) : dv.zaokr;
+  const cn = cenaNabidkyOck(r, dv.sleva, zaokr);
+  if (!cn) return null;
+  return { cena: na(cn.zakladZaokr), sleva: cn.slevaPct > 0 };
 }
 
 /* OBJEDNANÉ PŘÍPLATKY VE SMLOUVĚ (#447 C6, rozhodnutí J. V. 21. 10. 2026,
@@ -428,14 +489,31 @@ function sodNevyplnenePopisy(klice) {
   const p = (klice || []).map(k => SOD_NEVYPLNENE_POPIS[k] || k);
   return p.filter((x, i) => p.indexOf(x) === i);
 }
-/* Věta pro stav po tisku a pro kontrolu: „Ve smlouvě zůstalo N míst
- * k doplnění: …". Prázdný seznam → ''. */
+/* NEPOVINNÁ MÍSTA SMLOUVY (SL, rozhodnutí J. V. 16. 11. 2026): kontrola před
+ * tiskem SoD dělí nevyplněná místa na „Chybí" a „Nepovinné". Nepovinné jsou
+ * JEN druhý podepisující za zákazníka a faktury v kopii (1) a (2) — a jen
+ * u šablon, které ty symboly mají (seznam sodNevyplnene obsahuje jen symboly
+ * šablony). Všechno ostatní, i DIČ, banka, číslo účtu a zástupce ve věcech
+ * obchodních s kontaktem, je ve smlouvě povinné → „Chybí". Tečky ve Wordu
+ * dostanou obě skupiny stejně; kontrola zůstává jen upozornění. */
+const SOD_NEVYPLNENE_NEPOVINNE = ['OBJEDNATEL_PODPIS2_JMENO', 'OBJEDNATEL_PODPIS2_FUNKCE',
+  'OBJEDNATEL_KONTAKT_KOPIE1', 'OBJEDNATEL_KONTAKT_KOPIE2'];
+function sodNevyplneneRozdel(klice) {
+  const k = klice || [];
+  return { chybi: k.filter(x => SOD_NEVYPLNENE_NEPOVINNE.indexOf(x) < 0),
+           nepovinne: k.filter(x => SOD_NEVYPLNENE_NEPOVINNE.indexOf(x) >= 0) };
+}
+/* Věta pro stav po tisku a pro kontrolu: „Ve smlouvě zůstala 2 místa
+ * k doplnění (tečky „……"). Chybí: …. Nepovinné: …." — vyjmenuje každé místo
+ * s tečkami. Prázdný seznam → ''. */
 function sodNevyplneneText(klice) {
   const n = (klice || []).length;
   if (!n) return '';
   const mist = n === 1 ? 'místo' : (n >= 2 && n <= 4 ? 'místa' : 'míst');
-  return 'Ve smlouvě ' + (n >= 2 && n <= 4 ? 'zůstala ' : (n === 1 ? 'zůstalo ' : 'zůstalo ')) + n + ' ' + mist
-    + ' k doplnění (tečky „……"): ' + sodNevyplnenePopisy(klice).join(', ') + '.';
+  const r = sodNevyplneneRozdel(klice);
+  return 'Ve smlouvě ' + (n >= 2 && n <= 4 ? 'zůstala ' : 'zůstalo ') + n + ' ' + mist + ' k doplnění (tečky „……").'
+    + (r.chybi.length ? ' Chybí: ' + sodNevyplnenePopisy(r.chybi).join(', ') + '.' : '')
+    + (r.nepovinne.length ? ' Nepovinné: ' + sodNevyplnenePopisy(r.nepovinne).join(', ') + '.' : '');
 }
 
 /* POKUTA ZA PRODLENÍ ZHOTOVITELE (rozhodnutí J. V. 1. 10. 2026 k návrhu SoD,
@@ -675,5 +753,5 @@ if (typeof dokumentRegistruj === 'function') {
 
 if (typeof module !== 'undefined')
   module.exports = { SOD_OBJ_BEZ_ROZPISU, sodData, sodProjData, sodProjRozsahText, SODP_CINNOSTI, plnaMocData, sodObjednatelDoplna, sodVedouciMontaziDoplna, sodPokutaZhotovitele,
-    sodJazykZabrana, sodPrelozHodnoty, sodSachtySymboly, SOD_SACHTY_SYMBOLY, SOD_SACHTY_BEZ_SABLONY, sodSablonaUmiSachty,
-    SOD_TECKY, sodNevyplnene, SOD_NEVYPLNENE_POPIS, sodNevyplnenePopisy, sodNevyplneneText, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };
+    sodJazykZabrana, sodPrelozHodnoty, sodSachtySymboly, sodRozpisVyrovnani, sodCenaPredSlevou, SOD_SACHTY_SYMBOLY, SOD_SACHTY_BEZ_SABLONY, sodSablonaUmiSachty,
+    SOD_TECKY, sodNevyplnene, SOD_NEVYPLNENE_POPIS, sodNevyplnenePopisy, sodNevyplneneText, SOD_NEVYPLNENE_NEPOVINNE, sodNevyplneneRozdel, sodDphSymboly, sodDphZabrana, sodSkladne, SOD_OBJ_SYMBOLY, sodObjednaneSymboly, SOD_DPH_VETY, SOD_DPH_PROHLASENI_SNIZENA, SOD_DPH_PROHLASENI_OZNAMENI };

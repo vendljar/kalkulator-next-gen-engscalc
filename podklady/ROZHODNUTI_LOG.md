@@ -55,6 +55,10 @@ Rozhodnutí o funkcích aplikace mají vlastní evidenci v `roadmap.json` a v n�
 
 | datum | rozhodnutí | čeho se týká | archiv |
 |---|---|---|---|
+| 18. 11. 2026 | Šachty ve SoD počítat jako nabídka (v EUR rozpočet ceny před slevou do šachet v eurech; řádek slevy = sleva nabídky) | SoD rozpis šachet, #589 | 2026-11.md (SL) |
+| 16. 11. 2026 | Nepovinná místa SoD jen druhý podepisující a faktury v kopii 1 a 2; DIČ, banka, účet, zástupce ve věcech obchodních s kontaktem povinné; kontrola „Chybí / Nepovinné", jen upozornění | kontrola SoD, #610 | 2026-11.md (SL) |
+| 16. 11. 2026 | Žluté podbarvení nevyplněných míst i v SoD realizace (šablona v6); ve smlouvě žluté jen tečky | SoD šablony, #609 | 2026-11.md (SL) |
+| 16. 11. 2026 | „Ano, doplň řádek slevy" — rozpis šachet ve SoD končí vyrovnávacím řádkem na cenu díla dle nabídky | SoD rozpis šachet, #589 | 2026-11.md (SL) |
 | 16. 11. 2026 | Podklady/NAVRH_VICE_ZAKAZNIKU.md — tabulka rozhodnutí v úvodu, § 7.2 poznámka u dealu (zvlášť vedle poznámky šachet, společný modul a časový rozpočet), § 7.4 organizace dealu = vítěz při Prodáno, § 2a odstranění s odeslanou nabídkou jen administrátor, § 10 etapy, § 11 … | návrh v3 „víc zákazníků“ + prompty etap (poradce) | `predavky/2026-11.md` |
 | 16. 11. 2026 | (prototyp v4, artefakt verze 4, ověření 38/0, snímky v4_*): tlačítko „Přidat zákazníka“ bez „+“ na řádku vedle popisku Zákazník (zapsáno do návrhu § 2a a promptu E1); v prototypu zapnuté víc šachet a situace „víc zákazníků + víc šachet“. | návrh v3 „víc zákazníků“ + prompty etap (poradce) | `predavky/2026-11.md` |
 | 16. 11. 2026 | ARES ve formuláři nového zákazníka (prototyp v5, ověření 46/0, snímky v5_*): formulář má široká pole, „Vybrat z databáze zákazníků“ a funkční „Najít firmu v ARES“ s potvrzením rozdílů; … | návrh v3 „víc zákazníků“ + prompty etap (poradce) | `predavky/2026-11.md` |

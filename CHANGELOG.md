@@ -8,10 +8,11 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+<<<<<<< HEAD
 ## v18.11.7 — VZ-F1 #652: opravy nálezů ruční zkoušky víc zákazníků na testu (N3, N1, N2, N4, zástupci v KL, controlling), větev claude/vz-f1
 
-Nad integrací `ec5bbac` (v18.11.5). Protokol `podklady/kola/STAV_TEST_VZ_2026-11-18.md`. Číslo verze v18.11.6 už nesou
-souběžné dávky SL a C7 — konečné číslo určí koordinace. Víc zákazníků dál za vypínačem `viceZakazniku` (výchozí VYP).
+Nad integrací `ec5bbac`, sloučeno s integrací `41bbe99` (v18.11.6, SL). Protokol `podklady/kola/STAV_TEST_VZ_2026-11-18.md`.
+Konečné číslo verze určí koordinace. Víc zákazníků dál za vypínačem `viceZakazniku` (výchozí VYP).
 
 - **VZ-N3 #646 (vysoká, únik do smlouvy):** pole „Zástupci a kontakty zákazníka" a DIČ v krycím listu OCK i PROJ šla
   u otevřeného dalšího zákazníka do hlavičky řídícího — SoD A pak nesla zástupce C. Nově `vzKlCesta` (adresát listu jako
@@ -32,6 +33,50 @@ souběžné dávky SL a C7 — konečné číslo určí koordinace. Víc zákazn
   `src/test_escape.js` (seznam ověřených interpolací). Mutace [VZ F1]: jádro 17/17, server viz PREDAVKA; přepsané na nový
   kód E1 (vzCesta ×2), E2 (název KL) a K40a D7 (bind v onchange ×2).
 
+=======
+## v18.11.6 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
+
+Nad `8462aea` (integrace = test v12.11.7), sloučeno s integrací `ec5bbac` (v18.11.5: + S3 #611, S7 #612, S6+S8 #613). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje
+koordinace. Na webech, Disku ani v Pipedrive nic.
+
+- **Rozpis šachet ve SoD sedí na cenu díla dle nabídky:** `{{SACHTY_SOD_ROZPIS}}` (víc šachet, šablona v5) končí
+  vyrovnávacím řádkem = cena díla dle nabídky (`{{SOD_CENA_NABIDKY}}`, po slevě; u dotisku podle záznamu tisku) −
+  součet řádků šachet (ty jsou dál před slevou, rozpočet R7). Popisek **Sleva**; je-li rozdíl i bez slevy (obchodní
+  zaokrouhlení, v eurech řádky po šachtách nahoru) **Sleva a zaokrouhlení**, bez slevy jen **Zaokrouhlení**. Řádek
+  jen při nenulovém rozdílu; měna jako ostatní řádky, záporná částka „− 292 700,00 Kč" (znaménko zvlášť jako řádek
+  slevy nabídky, L4). Řádek „Sleva“ se rovná slevě z nabídky (SLEVA_KC). Dotisk bere cíl ze záznamu tisku jen
+  s objednanými příplatky, jako cena díla (L5).
+- **Šachty ve SoD v eurech jako nabídka (L3, rozhodnutí J. V. 18. 11. 2026):** řádky šachet = rozpočet ceny před
+  slevou do šachet už v eurech (`rozpocetSachet`), jako tabulka šachet nabídky; dřív se každá šachta převáděla
+  nahoru zvlášť a skoro každá EUR smlouva dostala „Rounding – € 1". **U EUR smluv s víc šachtami se tak řádky
+  šachet mohou lišit o jednotky eur od dnešních (main i test).** V korunách beze změny.
+- Slovník EN/DE/FR: „Zaokrouhlení“, „Sleva a zaokrouhlení“ (heslo „Sleva“ už bylo; slovník nerozlišuje velikost
+  písmen, proto popisky s velkým písmenem jako řádky šachet).
+- Šablona v5, výpočet ceny ani data nabídky se nemění (zlatá sada VS 319/319); jedna šachta beze změny.
+- Testy: `src/test_sod_v5.js` oddíl E (Kč se slevou, EUR se slevou i bez, Kč bez slevy bez řádku, zaokrouhlení,
+  objednané příplatky za rozpisem, EN/DE bez češtiny, jedna šachta).
+- **SoD realizace v6 se žlutými místy (#609, J. V. 16. 11.):** `node nastroje/vyrob_sablony.js --sod-real-v6`
+  z v5 (nebo v4) CZ/EN/DE/FR — každý symbol žlutě podbarvený jako u SoD projekce v4 a plné moci; běh se symbolem
+  a pevným textem se rozdělí (žlutý jen symbol). Symboly, text i písmo = v5 (tvrdé kontroly). Podklad
+  `podklady/SABLONA_SOD_REALIZACE_V6_18_11.md`; .docx dostal J. V. v sezení, do repa nepatří.
+- **Ve smlouvě je žluté právě nevyplněné místo:** generátor dosud podbarvení nesnímal (u SoD projekce a plné moci
+  svítily žlutě i vyplněné údaje). Teď u dokumentů s tečkami (SoD realizace, SoD projekce, plná moc) po dosazení
+  hodnot dostane každé „……" vlastní žlutý běh (i když šablona symbol nepodbarvila) a ze všeho ostatního se
+  podbarvení sejme — z vyplněných údajů, rozpisů i z pevného textu, který SoD projekce v4 a plná moc podbarvují
+  („Objednatel:", „zmocnitel"); i u plně vyplněné smlouvy (revize poradce L1, L2). Nabídky beze změny.
+- **Kontrola nevyplněných míst SoD: Chybí / Nepovinné (#610, J. V. 16. 11.):** nepovinné jen druhý podepisující
+  a faktury v kopii 1 a 2 (konstanta `SOD_NEVYPLNENE_NEPOVINNE`), DIČ, banka, účet a zástupce ve věcech obchodních
+  s kontaktem povinné. Věta „… k doplnění (tečky „……"). Chybí: …. Nepovinné: …." vyjmenuje každé místo; jen
+  upozornění. Změněné očekávání `src/test_sod_tecky.js` S (dvojtečka → „Chybí:").
+- **Dorevize poradce (M1–M3):** běh se dělí i s tabulátory, zalomením a víc texty (`docxBehRozdel`, společné pro
+  generátor i nástroj v6) — v EN/DE/FR už nesvítí žlutě popisky a tabulátory u teček; šablony v6 CZ/EN/DE/FR vyrobeny
+  znovu (druhé vydání, poslané J. V.). Podbarvení na místo podle schématu `w:rPr` i před `w14:*`. Test hlídá, že
+  žlutý běh nese jen „……".
+- Přiznané meze podbarvení: sejme se každé podbarvení (ne jen žluté); symbol rozdělený mezi běhy obarví i pevný text
+  svých běhů; vnořené běhy (textové pole) se nezpracují; žluté tečky dostanou i šablony v4/v5 bez podbarvení.
+- Testy: `test_sod_v5.js` E, F (+ D se skutečnými v6), `test_sod_tecky.js` S2, L1, L2, K (skutečné SoD projekce v4 CZ/EN,
+  plná moc, SoD realizace v6), `test_vs_kontroly.js` H; mutace [SL] 20/20.
+>>>>>>> origin/claude/integrace-16-10
 ## v18.11.5 — S6 + S8 #613: jedna evidence v roadmap.json, PREHLED.md a NOVINKY.md, větev claude/s6s8-evidence
 
 Nad integrací `9bd6dc8` (v18.11.4 = test). Kód aplikace beze změny. Podle návrhu režie vývoje (`podklady/NAVRH_REZIE_2026-11-18.md`,
