@@ -43,8 +43,9 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   jako nabídka — **u EUR smluv s víc šachtami se řádky šachet mohou lišit o jednotky eur oproti main i test**.
   **Přiznané meze (M4):** sejme se každé podbarvení, nejen žluté; symbol rozdělený mezi běhy obarví celé své běhy
   i s pevným textem; vnořené běhy v textovém poli se spolehlivě nezpracují; žluté tečky dostanou i šablony v4/v5
-  bez podbarvení. `overit_sod.mjs` (5 bodů, stará očekávání před tečkami C3) padá stejně na integraci 9bd6dc8 —
-  ověřeno ve worktree 18. 11. Podrobnosti `podklady/predavky/2026-11.md` (oddíl SL). Slučuje koordinace.
+  bez podbarvení. Kolo `--bez-mutaci` s KNG_PODKLADY nad 20b154a: sady 465/1/6, hodiny 377/0/1, statické 9/9;
+  jediné selhání `overit_sod.mjs` (5 bodů, stará očekávání před tečkami C3) padá stejně na integraci 9bd6dc8
+  i ec5bbac (ověřeno ve worktree). Mutace [SL] 23/23. Podrobnosti `podklady/predavky/2026-11.md`. Slučuje koordinace.
 - **Rychlá cesta K40-N1** (`claude/rychla-k40n1`, založena nad main ještě podle dopoledního znění): podle změny zadání
   J. V. 18. 11. jde rychlá cesta do `test` (větev nad integrací, kolo `--bez-mutaci` + cílené mutace, koordinace sloučí
   a pošle do test); rozdíly cen main × test ověřuje J. V. sám; do main jen na jeho pokyn se sloučením testu.
