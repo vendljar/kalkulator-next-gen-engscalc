@@ -26,12 +26,20 @@
 #   staticke       verze = den posledního commitu, žádné CRLF, osobní údaje
 #                  a tajemství mimo povolený seznam (nastroje/kontrola_udaju.py),
 #                  výběr sloučených větví ke smazání (nastroje/test_sloucene_vetve.sh),
-#                  hook pre-push s kontrolou údajů (nastroje/test_pre_push.sh, SEC-M1)
+#                  hook pre-push s kontrolou údajů (nastroje/test_pre_push.sh, SEC-M1),
+#                  test nástroje porovnání sestavení (nastroje/test_porovnej_sestaveni.sh, S3)
+#   porovnani      VOLITELNÝ (jen s --proti nebo --jen porovnani; S3, 18. 11. 2026):
+#                  nastroje/porovnej_sestaveni.sh <ref> . — pevná sada kalkulací
+#                  nad sestavením <ref> (výchozí origin/test) a nad pracovní kopií;
+#                  neočekávaný rozdíl = krok selže. Očekávané rozdíly:
+#                  --ocekavane <soubor> (nebo KNG_POROVNANI_OCEKAVANE).
 #
 # Použití:
 #   bash nastroje/testovaci_kolo.sh                    celé kolo (mutace trvají dohromady kolem 40 minut)
 #   bash nastroje/testovaci_kolo.sh --bez-mutaci       bez mutací (dávka, která nesáhla do jádra ani serveru)
 #   bash nastroje/testovaci_kolo.sh --jen mutace-server,staticke   jen vybrané kroky
+#   bash nastroje/testovaci_kolo.sh --bez-mutaci --proti origin/test   kolo + porovnání s test
+#   bash nastroje/testovaci_kolo.sh --jen porovnani --proti origin/main --ocekavane <soubor>
 #   KNG_MUTACE_CAST=2/4 bash nastroje/testovaci_kolo.sh --jen mutace-server
 #                                                      jen část mutací (každá 4. od 2.)
 #   KNG_MUTACE_OD=529 bash nastroje/testovaci_kolo.sh --jen mutace-server
@@ -62,16 +70,22 @@ fi
 if [ "${GITHUB_ACTIONS:-}" != "true" ]; then bash nastroje/instaluj_hooky.sh >/dev/null 2>&1 || true; fi
 
 KROKY="build,sady,hodiny,mutace-jadro,mutace-server,staticke"
+PROTI="origin/test"; PRIDAT_POROVNANI=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --bez-mutaci) KROKY="build,sady,hodiny,staticke" ;;
     --jen) shift; KROKY="${1:-}" ;;
     --jen=*) KROKY="${1#--jen=}" ;;
-    -h|--help) sed -n '2,44p' "$0"; exit 0 ;;
+    --proti) shift; PROTI="${1:-}"; [ -n "$PROTI" ] || { echo "--proti chce referenci gitu"; exit 2; }; PRIDAT_POROVNANI=1 ;;
+    --proti=*) PROTI="${1#--proti=}"; PRIDAT_POROVNANI=1 ;;
+    --ocekavane) shift; KNG_POROVNANI_OCEKAVANE="${1:-}" ;;
+    --ocekavane=*) KNG_POROVNANI_OCEKAVANE="${1#--ocekavane=}" ;;
+    -h|--help) sed -n '2,53p' "$0"; exit 0 ;;
     *) echo "neznámá volba: $1 (viz --help)"; exit 2 ;;
   esac
   shift
 done
+[ "$PRIDAT_POROVNANI" -eq 1 ] && KROKY="$KROKY,porovnani"
 chce() { case ",$KROKY," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
 
 LOGY="${KNG_KOLO_LOGY:-$(mktemp -d)}"
@@ -170,10 +184,22 @@ staticke() {
   bash nastroje/test_sloucene_vetve.sh || chyb=$((chyb + 1))
   echo "— hook pre-push s kontrolou údajů (nastroje/test_pre_push.sh, SEC-M1 #542)"
   bash nastroje/test_pre_push.sh || chyb=$((chyb + 1))
+  echo "— nástroj porovnání sestavení (nastroje/test_porovnej_sestaveni.sh, S3)"
+  bash nastroje/test_porovnej_sestaveni.sh || chyb=$((chyb + 1))
   echo "— únik mezi zákazníky: generátory dokumentů bez dalsiZakaznici (nastroje/kontrola_vz_unik.sh, VZ-E2 #601)"
   { bash nastroje/kontrola_vz_unik.sh && bash nastroje/kontrola_vz_unik.sh --pojistka; } || chyb=$((chyb + 1))
-  echo "STATICKE_KONTROLY: $((6 - chyb)) z 6 prošly"
+  echo "STATICKE_KONTROLY: $((7 - chyb)) z 7 prošly"
   return "$chyb"
+}
+# S3 (18. 11. 2026): pevná sada kalkulací nad <ref> × pracovní kopie (.).
+porovnani() {
+  local a=("$PROTI" .)
+  [ -n "${KNG_POROVNANI_OCEKAVANE:-}" ] && a+=(--ocekavane "$KNG_POROVNANI_OCEKAVANE")
+  bash nastroje/porovnej_sestaveni.sh "${a[@]}"
+}
+poznamka_porovnani() {
+  local r; r="$(grep -o '^POROVNANI: .*' "$1" | tail -1 | sed 's/^POROVNANI: //')"
+  printf '%s' "${r:+proti $PROTI: $r}"; [ -n "$r" ] || printf 'proti %s: bez souhrnu' "$PROTI"
 }
 poznamka_staticke() { grep -o 'STATICKE_KONTROLY: [0-9]* z [0-9]* prošly' "$1" | tail -1 | sed 's/^STATICKE_KONTROLY: //'; }
 
@@ -185,7 +211,8 @@ chce hodiny        && krok hodiny        "sady s hodinami +400 dní"            
 chce mutace-jadro  && krok mutace_jadro  "mutace jádra (mutace_jadro.mjs)"     mutace_jadro
 chce mutace-server && krok mutace_server "mutace serveru (netlify/mutace.mjs)" mutace_server
 chce staticke      && krok staticke      "statické kontroly"                   staticke
-for k in build sady hodiny mutace-jadro mutace-server staticke; do
+chce porovnani     && krok porovnani     "porovnání sestavení (S3)"            porovnani
+for k in build sady hodiny mutace-jadro mutace-server staticke porovnani; do
   chce "$k" || souhrn+=("  – $(printf '%-34s' "$k") vynecháno (kroky: $KROKY)")
 done
 

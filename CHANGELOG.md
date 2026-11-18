@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.11.3 — S3 #611: porovnání dvou sestavení nad pevnou sadou kalkulací, větev claude/s3-porovnani
+
+Nad `claude/integrace-16-10` `5e21f89` (v18.11.2). Návrh režie 18. 11. 2026, oddíl S3, rozhodnutí J. V.: stupně kol
+(1 automat po dávce, 2 cílená sada, 3 plné kolo cenových nabídek jen před main a po nasazení); kolo main-před × main-po
+u rychlé cesty dělá koordinace nástrojem; noční porovnání v Actions zatím ne. Aplikace beze změny.
+
+- **Nový nástroj `nastroje/porovnej_sestaveni.sh <ref A> <ref B>`:** obě reference do dočasných worktree
+  (`build.py` bez zvýšení verze; `.` = pracovní kopie), nad každou pevná sada `nastroje/porovnani_sada.js` —
+  fixtury, zlatá pojistka #560 + skladebné můstky, K29-N1/#451, K36-N2/#550, smyšlené zakázky testovacího webu
+  a fuzz se semínkem 20261110 (Model 1 i 2, 353 kalkulací, kolem 11 s). Porovnává otisky: cena celkem, řádky,
+  výsledek jádra, symboly CN (změněné × jen nové), text dokumentu (Word, náhled, krycí list, specifikace, SoD),
+  ostatní. Tabulka po skupinách, vzory rozdílů a případy; **bez cen a textů**. Kód 0 / 1 / 2.
+- **Ceník** zkušební ze stromu nástroje, nebo `--cenik <soubor mimo repo>`. **`--ocekavane <soubor>`**: seznam
+  očekávaných rozdílů (vzor případu + pole); jiný rozdíl = kód 1, nepoužité pravidlo = upozornění.
+- **Kolo:** nový volitelný krok `porovnani` (`--proti <ref>`, výchozí `origin/test`; `--jen porovnani`;
+  `--ocekavane`), porovnává `<ref>` s pracovní kopií, výsledek v souhrnu kola. Statické kontroly 7 z 7
+  (nově `nastroje/test_porovnej_sestaveni.sh`).
+- `nastroje/zlata_vs.js` exportuje pomocné funkce (otisky zlaté sady beze změny).
+- Návod `podklady/POROVNANI_SESTAVENI.md`; vzor očekávaných rozdílů main × test
+  `podklady/porovnani/ocekavane_main_test_2026-11-18.txt`.
+- **Testy:** `nastroje/test_porovnej_sestaveni.sh` 16/0 — stejné reference 0 rozdílů; dočasný commit se změněnou
+  cenou (v dočasném klonu, do repa nic) → rozdíl v ceně celkem, kód 1; očekávaný rozdíl projde, seznam krytý jen
+  jiným polem nebo jinými případy ne; chybné použití kód 2. Pojistka: s porovnáním, které rozdíly nehlásí, 6 FAIL.
+- **Ukázka main (6c4bc80, v11.11.1) × test (8462aea, v12.11.7):** 353 kalkulací, 7 shodných, 346 rozdílných —
+  jediný vzor `nahled-en` (online náhled anglické nabídky; C1 #582 nadpisy USAZENÍ OCK v EN), cena, řádky, symboly,
+  Word ani SoD beze změny. test × integrace v18.11.2: 353/353 shodných.
+
 ## v18.11.2 — Sloučení víc zákazníků (VZ #598, etapy E0–E6) do integrace
 
 Integrační větev claude/integrace-vz (cf53aeb) sloučena s integrací v18.11.1 (C9 #608, roadmapa #597).
