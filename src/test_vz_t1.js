@@ -190,6 +190,9 @@ const invariant = z => z.vzRidici.varianta === vzRidiciVariantaId(z) && vzZakazn
   tiskni(z, v2, 'z3');
   const r = vzProdej(z, 'z3', DNES, { kdo: 'obchodnik@priklad.cz', role: 'Obchodník' });
   test('D prodaná C: organizace dealu = kupující, nic se nehlásí', r.ok && vzOrgDealuId(z) === 'z3' && vzOrgNesedi(z) === null, r);
+  /* i kdyby prodej vedl jiného zákazníka než řídícího (starší / ruční data), po prodeji se nesoulad nehlásí — organizaci řeší E5b */
+  z.varianty.find(v => v.prodano).prodano.zakaznik = 'z2';
+  test('D prodaná, prodej jinému než řídícímu: dál nic', vzOrgDealuId(z) === 'z2' && vzOrgNesedi(z) === null && vzOrgNesediText(z, true) === '');
 }
 { /* stopa po odemčeném prodeji: organizace podle názvu z pdOrgVitez */
   const z = zakazka();

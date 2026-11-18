@@ -15,11 +15,21 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/navrh-rezie` | e6c1020 | — | návrh režie vývoje (S1–S8) + rozhodnutí J. V. 18. 11.; kopie návrhu v `podklady/NAVRH_REZIE_2026-11-18.md` |
 | `claude/s7-podklady` | (tato dávka) | v18.11.4 | S7 startovní podklady #612, sloučeno s integrací dcb1678 |
 | `claude/s6s8-evidence` | (tato dávka) | v18.11.5 | S6 + S8 #613: jedna evidence, PREHLED.md, NOVINKY; nad integrací 9bd6dc8 |
+| `claude/vz-t1` | (tato dávka) | v18.11.7 | VZ T1 #645 řídící varianta a zákazník v hlavičce; nad integrací 2856345 |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
 (18. 11.: žádná).
 
 ## Běžící dávky
+
+- **VZ T1 #645** (`claude/vz-t1`, v18.11.7, nad integrací 2856345): řídící varianta a řídící zákazník v hlavičce podle
+  schválené makety (jen 2+ zákazníků a ZAP; jinak hlavička znak po znaku jako dřív — `overit_vz_t1.mjs` s
+  `KNG_DIST_ZAKLAD`). Karta ★/☆ (přepínač `vzRidiciZmen` zmizel), náhled poznámky dealu, žlutý blok a řádek poznámky
+  „Řídící zákazník v kalkulaci“, server 409 invariant + práva i pro změnu jen řídící varianty. **Riziková etapa —
+  před sloučením revize poradce.** VZ-F1 (N1–N4) se před koncem sloučí, až ho koordinace pošle. Předpoklady k potvrzení
+  J. V. (doporučení = jak je): organizace dealu = původní zákazník z1 (po prodeji kupující), týž zákazník bez IČO = sedí;
+  vlastnictví varianty = ukazatel nebo razítko odeslané nabídky; varianta bez zákazníka → řídící zůstává a přejde na ni;
+  bez potvrzovacího dialogu při výměně (maketa ho nemá).
 
 - **S6 + S8 #613** (`claude/s6s8-evidence`, v18.11.5, nad 9bd6dc8): evidence v `roadmap.json` (pole `typ`, `cekaNa` „<kdo>: <co>“,
   `kolo`, `vetev`, `verze`, `dopadCena`, `alias`; migrace jen dotčených položek), otevřené nálezy a otázky převedeny jako
