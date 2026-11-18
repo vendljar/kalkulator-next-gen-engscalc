@@ -1840,6 +1840,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
   delete nova.dalsiZakaznici;
   delete nova.pdPoznamkaZakaznici;
   delete nova.pdOrgVitez;
+  delete nova.pdOrgDealu;   // VZ T1 (N3): skutečná organizace dealu patří dealu
 
   /* Zápisy o jednání patří k původní akci, ne sem. */
   nova.poznamky = [];

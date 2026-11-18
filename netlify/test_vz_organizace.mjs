@@ -139,6 +139,9 @@ let S1, D1, ORG1;
   const ul = zakazka(S1);
   test('1 nalezena: stav zapsano, zdroj nalezena, deal přepojen', r.status === 200 && r.ok === true && r.stav === 'zapsano' && r.zdroj === 'nalezena'
     && D1.org_id === ORG1.id && ul.pdOrgVitez.org === ORG1.id && ul.pdOrgVitez.stav === 'zapsano' && ul.pdOrgVitez.deal === String(D1.id), { r, org: D1.org_id });
+  /* VZ T1 (N3): deal teď vede organizace vítěze — skutečná organizace dealu uložená s IČO vítěze. */
+  test('1 T1 N3: pdOrgDealu = organizace vítěze (id, IČO)', ul.pdOrgDealu && ul.pdOrgDealu.deal === String(D1.id) && ul.pdOrgDealu.org === ORG1.id
+    && ul.pdOrgDealu.ico === String(ico).padStart(8, '0'), ul.pdOrgDealu);
   const patch = poz().slice(od).filter(p => p.startsWith('PATCH'));
   test('1 PATCH jen dealu (jeden), tělo jen org_id; nic do /organizations POST ani PATCH původní', patch.length === 1 && patch[0] === 'PATCH /api/v2/deals/' + D1.id
     && !poz().slice(od).some(p => p.startsWith('POST')) && JSON.stringify(puvodni) === JSON.stringify(puvodniKopie), poz().slice(od));

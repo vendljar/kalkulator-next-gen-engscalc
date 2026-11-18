@@ -32,7 +32,23 @@ hlavička znak po znaku jako dřív (i tlačítko „nastavit jako řídící“
 - **Server:** změna řídícího zákazníka **i jen řídící varianty** (zakázka s víc zákazníky) jen autor nebo administrátor,
   u zakázky z webhooku jen administrátor, po prodeji 409; invariant „řídící zákazník má řídící variantu a podle uložené
   verze jí patří (u vlastní varianty je to její zákazník)“ jinak **409** (dřív server ukazatel potichu srovnal — E0).
-- Testy: `src/test_vz_t1.js` (70), `netlify/test_vz_t1_server.mjs` (15), `src/test_vz_ui.js` oddíl T1,
+- **Revize poradce (SLOUČIT PO OPRAVĚ) a rozhodnutí J. V. 18. 11.:**
+  - N1: server posuzuje vlastnictví řídící varianty podle UKLÁDANÉ verze (ukazatele) a razítek z uložené — kroky
+    v jednom uložení (B na variantu C a řídícím, C na novou / sdílenou variantu a řídícím) projdou; kdo smí, hlídá
+    `vzServerRidici`.
+  - N2: starší okno aplikace (mění jen `v.ridici`) se stejným řídícím zákazníkem se srovná jako dřív; jiný řídící
+    s nesedícím ukazatelem → 409 „Obnovte stránku (nová verze aplikace)…“.
+  - N3 (J. V.: ukládat skutečnou organizaci): uložení zakázky s víc zákazníky přečte deal a jeho organizaci
+    (i simulátor; nejvýš jednou za hodinu, strop 20/h na deal, jen s právem crm.pipedrive) a uloží
+    `pdOrgDealu` { deal, org, ico, nazev } — píše jen server, prohlížeč ji převezme z odpovědi; zapíše ji i přepojení
+    organizace na vítěze (E5b). Žlutý blok a řádek poznámky se řídí skutečnou organizací (IČO; prázdné = nesedí),
+    dokud není známá, odhadem z1; bez z1 se řádek nepíše.
+  - N4: s VYP karta zákazníků se zhasnutým přepínačem jako dřív (hlavička i karta znak po znaku jako integrace d8e4fc1).
+  - N5: karta náhledu poznámky `noprint`.
+  - J. V. (b): přechod řídícího na variantu jen podle razítka se zapíše do protokolu zakázky; (d) krátké potvrzení
+    „Řídícím zákazníkem bude C — … — hlavička zakázky se změní.“ jen při změně řídícího zákazníka (i automaticky
+    u vlastní varianty), změna samotné varianty bez dialogu; (a), (c), (e) beze změny.
+- Testy: `src/test_vz_t1.js` (78), `netlify/test_vz_t1_server.mjs` (17), `test_vz_organizace.mjs` N3, `test_vz_poznamka.mjs` oddíl 11, `src/test_vz_ui.js` oddíl T1,
   `netlify/test_vz_poznamka.mjs` oddíl 10, harness `overit_vz_t1.mjs` (stavy makety, znak po znaku proti 2856345
   s `KNG_DIST_ZAKLAD`); upraveny `test_vz_server.mjs` (podvržený ukazatel → 409), `test_pd_stav.js`, `overit_vz_prodej.mjs`.
   Mutace [VZ T1] jádra a serveru. Pojistka: na 2856345 nové sady padají (funkce T1 chybí, server srovnával).

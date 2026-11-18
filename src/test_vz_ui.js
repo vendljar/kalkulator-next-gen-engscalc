@@ -533,6 +533,9 @@ const KARTA = { nazev: 'Karta s.r.o.', sidlo: 'Kartová 1', ico: '00000043', dic
 {
   const { ctx, P } = dva();
   P.zap = false;
+  const kv = run(ctx, "vzKarta('ock')");
+  test('T1 N4 VYP + 2: karta s původním zhasnutým přepínačem (žádná ★ s odkazem na hlavičku)', /<input type="radio" name="vzRidici_ock" data-vz-ridici="z1" checked disabled title="řídící zákazník">/.test(kv)
+    && /<input type="radio" name="vzRidici_ock" data-vz-ridici="z2" disabled title="[^"]*vypnutá/.test(kv) && kv.indexOf('vz-t1-hvezda') < 0 && kv.indexOf('Řídícího určuje hlavička') < 0, kv.match(/data-vz-ridici[^>]*>/g));
   test('T1 VYP + 2 zákazníci: vzT1Hlavicka null, karta poznámky "", vzT1VarRidici nic', run(ctx, 'vzT1Hlavicka()') === null
     && run(ctx, "vzPoznamkaKarta('ock')") === '' && run(ctx, "vzT1VarRidici('v2')") === false);
 }
@@ -569,7 +572,12 @@ const KARTA = { nazev: 'Karta s.r.o.', sidlo: 'Kartová 1', ico: '00000043', dic
     && !/00000019|00000027/.test(k) && k.indexOf('<i>x</i>') < 0, k);
   test('T1 karta poznámky: bez dealu věta o dealu', /Zakázka zatím nemá deal v Pipedrive/.test(k));
   ctx.ZAK.pdDealId = '123';
-  test('T1 karta poznámky: s dealem „Organizace dealu: Řídící s.r.o. — mění se až prodejem"', /Organizace dealu: <b>Řídící s\.r\.o\.<\/b> — mění se až prodejem/.test(run(ctx, "vzPoznamkaKarta('ock')")));
+  test('T1 karta poznámky: s dealem odhad „Organizace dealu: Řídící s.r.o. (odhad — ověří se při uložení)", noprint (N5)',
+    /class="card vz-pozn-karta noprint"/.test(k) && /Organizace dealu: <b>Řídící s\.r\.o\.<\/b> \(odhad — ověří se při uložení\) — mění se až prodejem/.test(run(ctx, "vzPoznamkaKarta('ock')")));
+  ctx.ZAK.pdOrgDealu = { deal: '123', org: 9, ico: '00000027', nazev: 'Druhý v Pipedrive a.s.', kdy: '2026-11-18T10:00:00.000Z' };
+  test('T1 N3 skutečná organizace = IČO B (řídící) → žádný blok, náhled „Organizace dealu: Druhý v Pipedrive a.s."', run(ctx, 'vzT1Hlavicka()').blok === ''
+    && /Organizace dealu: <b>Druhý v Pipedrive a\.s\.<\/b> — mění se až prodejem/.test(run(ctx, "vzPoznamkaKarta('ock')")) && !/Řídící zákazník v kalkulaci/.test(run(ctx, "vzPoznamkaKarta('ock')")));
+  delete ctx.ZAK.pdOrgDealu;
   /* sdílená V1 → čeká na zákazníka, data beze změny */
   const pred = J(Object.assign({}, ctx.ZAK, { aktivni: '' }));
   run(ctx, "vzT1VarZmen('v1')");

@@ -312,11 +312,64 @@ export async function pdPoznamkaUlozeni(zak, stara, { viceSachet, relace, matice
 /* Uložení zakázky (functions/zakazky.mjs, ve výhradním úseku zakázky, VZ-E5):
  * obě poznámky v jednom společném časovém rozpočtu PD_POZNAMKA_CELKEM_MS,
  * šachty první, zákazníci druzí. Vrací { sachty, zakaznici, volano }. */
-export async function pdPoznamkyUlozeni(zak, stara, { viceSachet, viceZakazniku, relace, matice } = {}, G = globalThis) {
+export async function pdPoznamkyUlozeni(zak, stara, { viceSachet, viceZakazniku, relace, matice, poleMapa } = {}, G = globalThis) {
   const termin = Date.now() + PD_POZNAMKA_CELKEM_MS;
   const sachty = await pdPoznamkaDruhUlozeni(PD_POZNAMKA_DRUH_SACHTY, zak, stara,
     { zapnuto: viceSachet, relace, matice, termin }, G);
+  /* VZ T1 (N3): skutečná organizace dealu dřív, než se složí text poznámky zákazníků. */
+  await pdOrgDealuObnov(zak, { zapnuto: viceZakazniku, relace, matice, termin, poleMapa }, G);
   const zakaznici = await pdPoznamkaDruhUlozeni(PD_POZNAMKA_DRUH_ZAKAZNICI, zak, stara,
     { zapnuto: viceZakazniku, relace, matice, termin }, G);
   return { sachty, zakaznici, volano: !!(sachty.volano || zakaznici.volano) };
+}
+
+/* SKUTEČNÁ ORGANIZACE DEALU (VZ T1, revize N3, rozhodnutí J. V. 18. 11. 2026).
+ * Při uložení zakázky s víc zákazníky (vypínač viceZakazniku, deal, napojení
+ * nebo simulátor, právo crm.pipedrive) server přečte deal a jeho organizaci
+ * a zapíše do `zak.pdOrgDealu` { deal, org, ico, nazev, kdy } — řádek
+ * „Řídící zákazník v kalkulaci“ se pak řídí skutečnou organizací, ne odhadem.
+ * Jen čtení (GET deal, GET organizace), nejvýš jednou za PD_ORG_DEALU_STARI_MS
+ * na zakázku a deal, strop PD_ORG_DEALU_STROP čtení za hodinu na deal, ve
+ * společném časovém rozpočtu poznámek. Selhání nic nezastaví (zůstává uložená
+ * hodnota, nebo odhad). Uloženou hodnotu z uložené verze drží
+ * pdOrgDealuDrz (zakazka_kontrola.mjs) — tady se jen obnovuje. Vrací stav. */
+export const PD_ORG_DEALU_STARI_MS = 3600 * 1000;
+export const PD_ORG_DEALU_STROP = 20;
+export async function pdOrgDealuObnov(zak, { zapnuto, relace, matice, termin, poleMapa, ted } = {}, G = globalThis) {
+  const dealId = (zak && G.ctrlPdDealIdNorm(zak.pdDealId)) || '';
+  if (zapnuto !== true || !dealId || !pdNastaveno() || typeof G.vzRezim !== 'function' || !G.vzRezim(zak)
+    || typeof G.vzOrgDealuNorm !== 'function' || typeof poleMapa !== 'function') return 'bez';
+  if (typeof G.vzProdanaVarianta === 'function' && G.vzProdanaVarianta(zak)) return 'bez';   // po prodeji organizaci řeší E5b
+  const nyni = typeof ted === 'number' ? ted : Date.now();
+  const znama = G.vzOrgDealuNorm(zak.pdOrgDealu);
+  if (znama && znama.deal === dealId && znama.kdy && nyni - Date.parse(znama.kdy) < PD_ORG_DEALU_STARI_MS) return 'cerstva';
+  if (!pdPoznamkaSmi(relace, matice, G)) return 'bez-prava';
+  const konec = typeof termin === 'number' ? termin : nyni + PD_POZNAMKA_CELKEM_MS;
+  if (konec - Date.now() <= 0) return 'chyba';
+  if (!(await pdStropCerstvych('deal:' + dealId, 'org-dealu', PD_ORG_DEALU_STROP))) return 'strop';
+  const zavolej = volani(konec);
+  try {
+    const mapa = await Promise.race([poleMapa(), new Promise((_, ne) => {
+      const t = setTimeout(() => ne(new PdChyba('Pipedrive neodpověděl včas.', 504)), Math.max(1, konec - Date.now()));
+      if (t && t.unref) t.unref();
+    })]);
+    const hashIco = mapa && mapa.mapaOrganizace && mapa.mapaOrganizace.ico;
+    const d = await zavolej('/api/v2/deals/' + Number(dealId));
+    if (!d) return 'chyba';
+    const orgId = Number(d.org_id) || 0;
+    let ico = '', nazev = '';
+    if (orgId) {
+      const o = await zavolej('/api/v2/organizations/' + orgId);
+      nazev = o && typeof o.name === 'string' ? o.name : '';
+      const surove = hashIco && o ? ((o.custom_fields || {})[hashIco]) : '';
+      const c = String(surove == null ? '' : surove).replace(/\D/g, '');
+      ico = c && c.length <= 8 ? c.padStart(8, '0') : '';
+    }
+    const v = G.vzOrgDealuNorm({ deal: dealId, org: orgId, ico, nazev, kdy: new Date().toISOString() });
+    if (v) zak.pdOrgDealu = v;
+    return 'precteno';
+  } catch (e) {
+    if (!(e instanceof PdChyba)) throw e;
+    return 'chyba';
+  }
 }

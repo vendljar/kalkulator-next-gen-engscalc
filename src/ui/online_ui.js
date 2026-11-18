@@ -1506,6 +1506,8 @@ function onlineUloz(opts) {
     /* Razítko i do zakázky samé, ať kopie v okně odpovídá tomu, co leží na
      * serveru — a ať se počítá do „naposledy zapsaného" o řádek níž. */
     if (o.razitko) ZAK.uloRazitko = o.razitko;
+    /* VZ T1 (N3): skutečnou organizaci dealu píše jen server — převzít, ať hlavička a náhled poznámky sedí na zápis. */
+    if (Object.prototype.hasOwnProperty.call(o, 'pdOrgDealu')) { if (o.pdOrgDealu) ZAK.pdOrgDealu = o.pdOrgDealu; else delete ZAK.pdOrgDealu; }
     ONLINE_STAV.kolize = null;
     onlinePoslednizapamatuj(o.soubor);   // po refreshi se sem vrátíme
     ONLINE_STAV.posledni = zmenaBehem ? onlineOdeslanoSRazitkem(odeslanoText, o.razitko, o.zamkyPrijato) : JSON.stringify(ZAK);

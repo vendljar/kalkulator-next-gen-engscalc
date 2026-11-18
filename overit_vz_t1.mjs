@@ -7,16 +7,17 @@
  *     základu KNG_DIST_ZAKLAD = dist sestavený z 2856345, před T1; bez něj
  *     SKIP): VYP + 1 zákazník, ZAP + 1 zákazník s otevřenou neřídící variantou
  *     (tlačítko „nastavit jako řídící"), VYP + 2 zákazníci, ZAP po přidání
- *     a odstranění zákazníka (zpět jeden); u VYP + 2 zákazníků hlavička
- *     (.zak-bar) znak po znaku a karta Zákazníci zakázky kromě sloupce
- *     Řídící (★ / ☆ místo přepínače — T1 bod 3). Bez základu aspoň: tlačítko
+ *     a odstranění zákazníka (zpět jeden), VYP + 2 zákazníci (hlavička i karta
+ *     se zhasnutým přepínačem — revize N4). Bez základu aspoň: tlačítko
  *     „nastavit jako řídící" je, výběry T1 a karta náhledu poznámky ne.
  *  2. Stavy makety (ZAP, A řídící na sdílené V1 s B, C vlastní V2 a nabídka
  *     z V1 i C): výchozí (popisy variant, výběr zákazníka, ★ u A, bez bloku),
  *     vlastní V2 → C řídící zamčený „🔒 automaticky" + žlutý blok + řádek
  *     v náhledu poznámky; sdílená V1 → „— vyberte —", Uložit zakázku zastaví
  *     hláška i dialog (texty z makety), výběr C → C na V1 s číslem …-C;
- *     karta: ★/☆, žádné radio, výběr varianty řídícího zamčený.
+ *     karta: ★/☆, žádné radio, výběr varianty řídícího zamčený; potvrzení jen
+ *     při změně řídícího zákazníka (J. V. d, Zrušit nic nemění), protokol při
+ *     přechodu podle razítka (J. V. b), náhled poznámky noprint (N5).
  *  3. Rozložení 400 / 1200 / 1920 px bez vodorovného posuvu; snímky stavů
  *     (KNG_SNIMKY=adresář, jinak se neukládají).
  *  4. Žádná chyba stránky (pageerror).
@@ -59,7 +60,11 @@ async function otevri(url, { width = 1440, zap = false } = {}) {
     Object.assign(DEFAULT_CENIK_PROJ, cp); delete DEFAULT_CENIK_PROJ.prazdny;
     window.__hl = [];
     window.hlaska = (t, o) => { window.__hl.push({ t: String(t), nadpis: (o && o.nadpis) || '', ano: (o && o.ano) || '' }); return Promise.resolve(); };
-    window.potvrd = () => Promise.resolve(true);
+    window.__potvrd = []; window.__potvrdOdpoved = true;
+    window.potvrd = (t, o) => { window.__potvrd.push({ t: String(t), nadpis: (o && o.nadpis) || '' }); return Promise.resolve(window.__potvrdOdpoved); };
+    window.__protokol = [];
+    const pz = window.protokolZapis;
+    window.protokolZapis = function (z, o) { window.__protokol.push(o); return typeof pz === 'function' ? pz.apply(this, arguments) : undefined; };
     window.confirm = () => true;
     window.fetch = async () => { throw new TypeError('Failed to fetch'); };
     if (zap) window.viceZakaznikuZapnuto = () => true;
@@ -111,7 +116,7 @@ const NOVA_JS = `window.__nova = () => { varNova(); const v = ZAK.varianty[ZAK.v
 const SCENARE = {
   'VYP + 1 zákazník, otevřená neřídící varianta': { zap: false, js: () => { __nova(); } },
   'ZAP + 1 zákazník, otevřená neřídící varianta': { zap: true, js: () => { __nova(); } },
-  'VYP + 2 zákazníci (data), otevřená neřídící varianta': { zap: false, karta: true, js: () => {
+  'VYP + 2 zákazníci (data), otevřená neřídící varianta': { zap: false, js: () => {
     __nova(); vzPridej(ZAK, { objednatel: 'Stavby ukázka a. s.' }, { kdo: 't', kdy: '2026-11-18T10:00:00.000Z' }); render(); } },
   'ZAP: přidán a odstraněn zákazník (zpět jeden)': { zap: true, js: () => {
     __nova(); vzPridej(ZAK, { objednatel: 'Stavby ukázka a. s.' }, { kdo: 't', kdy: '2026-11-18T10:00:00.000Z' }); render();
@@ -192,9 +197,19 @@ await cast('2 stavy makety', async () => {
   test('výchozí: vysvětlení „sdílená — patří … (C z ní dostal nabídku …9801-C)"', /^Varianta 1 je sdílená — patří zákazníkům Energie ukázka a\. s\., Stavby ukázka a\. s\. a TEST VZ Zákazník C s\.r\.o\. \(C z ní dostal nabídku TEST - 2026 - OPR - CN - 9801-C\)\. Nabízejí se jen zákazníci, kterým varianta patří\.$/.test(s.vysv || ''), s.vysv);
   test('výchozí: žádný žlutý blok, karta ★ u A, ☆ u B a C, žádné radio', s.blok === null && s.hvezdy.sort().join() === 'z1★,z2☆,z3☆' && !s.radio, s);
   test('výchozí: náhled poznámky — B a C, bez řádku T1, organizace dealu Energie', /^Další zákazníci na zakázce:\n• Stavby ukázka/.test(s.pozn || '')
-    && !/Řídící zákazník v kalkulaci/.test(s.pozn) && /Organizace dealu: Energie ukázka a\. s\. — mění se až prodejem/.test(s.poznNote || ''), s);
+    && !/Řídící zákazník v kalkulaci/.test(s.pozn) && /Organizace dealu: Energie ukázka a\. s\. \(odhad — ověří se při uložení\) — mění se až prodejem/.test(s.poznNote || ''), s);
   await snimek(p, '1_vychozi');
 
+  /* rozhodnutí J. V. (d): potvrzení jen při změně řídícího zákazníka — Zrušit nic nezmění */
+  await p.evaluate(() => { __potvrd.length = 0; __potvrdOdpoved = false; });
+  await p.selectOption('#vzT1Rv', vC);
+  await p.waitForTimeout(150);
+  s = await stav();
+  const pz = await p.evaluate(() => __potvrd.slice());
+  test('d) vlastní V2: potvrzení „Řídícím zákazníkem bude C — … — hlavička zakázky se změní." a Zrušit nic nezmění', pz.length === 1
+    && pz[0].t === 'Řídícím zákazníkem bude C — TEST VZ Zákazník C s.r.o. — hlavička zakázky se změní.' && pz[0].nadpis === 'Řídící zákazník'
+    && s.ridici === 'z1' && s.rvId === 'v1' && s.rv.hodnota === 'v1', { pz, s: [s.ridici, s.rvId, s.rv.hodnota] });
+  await p.evaluate(() => { __potvrd.length = 0; __potvrdOdpoved = true; });
   await p.selectOption('#vzT1Rv', vC);
   await p.waitForTimeout(150);
   s = await stav();
@@ -205,6 +220,7 @@ await cast('2 stavy makety', async () => {
   test('vlastní V2: žlutý blok pod Stavem Pipedrive', s.blok === 'Řídící zákazník v kalkulaci: C — TEST VZ Zákazník C s.r.o. (organizace dealu se změní až prodejem; deal dál vede Energie ukázka a. s.)', s.blok);
   test('vlastní V2: blok stojí hned pod řádkem Stav Pipedrive', await p.evaluate(() => { const b = document.querySelector('[data-vz-t1-org]');
     return !!b && !!b.previousElementSibling && b.previousElementSibling.classList.contains('pd-stav-radek'); }));
+  test('N5 karta náhledu poznámky má noprint', await p.evaluate(() => document.getElementById('vzPoznKarta_ock').classList.contains('noprint')));
   test('vlastní V2: náhled poznámky — A a B mezi dalšími, řádek T1, značka', /• Energie ukázka a\. s\./.test(s.pozn) && /• Stavby ukázka/.test(s.pozn)
     && !/• TEST VZ Zákazník C/.test(s.pozn) && /\nŘídící zákazník v kalkulaci: C — TEST VZ Zákazník C s\.r\.o\. \(organizace dealu se změní až prodejem\)\n— nabídka TEST - 2026 - OPR - CN - 9801$/.test(s.pozn), s.pozn);
   test('vlastní V2: karta ★ u C, výběr varianty C zamčený s vysvětlením', s.hvezdy.sort().join() === 'z1☆,z2☆,z3★' && await p.evaluate(() => {
@@ -230,9 +246,13 @@ await cast('2 stavy makety', async () => {
     && /vz-t1-chybi/.test(ul.trida) && /vz-t1-vysv-chyba/.test(ul.vysv), ul);
   await snimek(p, '4_chyba');
 
+  await p.evaluate(() => { __potvrd.length = 0; __protokol.length = 0; });
   await p.selectOption('#vzT1Rz', 'z3');
   await p.waitForTimeout(150);
   s = await stav();
+  const pr = await p.evaluate(() => ({ potvrd: __potvrd.length, protokol: __protokol.map(x => x.co) }));
+  test('d) výběr C u sdílené V1, C už řídící → bez potvrzení; b) protokol „přešel na variantu … podle odeslané nabídky …-C"', pr.potvrd === 0
+    && pr.protokol.some(t => t === 'Řídící zákazník C — TEST VZ Zákazník C s.r.o. přešel na variantu „Varianta 1“ podle odeslané nabídky TEST - 2026 - OPR - CN - 9801-C'), pr);
   test('výběr C u sdílené V1 → C řídícím na V1, číslo nabídky C …9801-C', s.ridici === 'z3' && s.rvId === 'v1' && s.uk === 'v1'
     && s.cisla.z3 === 'TEST - 2026 - OPR - CN - 9801-C' && s.rz.hodnota === 'z3' && !/vz-t1-chybi/.test(s.rz.trida), s);
   test('po výběru: hláška o neuložení zmizela', await p.evaluate(() => ![...document.querySelectorAll('#kalk-hlavicka .zak-ulozeni')].some(e => /neuložila/.test(e.textContent))));

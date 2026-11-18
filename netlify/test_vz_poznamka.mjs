@@ -107,6 +107,16 @@ function sVz(dealId, volby = {}) {
   return z;
 }
 const cisloB = z => z.cislo + '-B';
+/* VZ T1 (N3): IČO organizace dealu ze simulátoru (pole „IČ“ organizace) — hlavička zakázky se jím
+ * „napojí“ na organizaci dealu, jinak poznámka nese řádek „Řídící zákazník v kalkulaci“. */
+const icoOrgDealu = (dealId) => {
+  const st = SIM.pdSimStav().data;
+  const d = st.dealy.find(x => x.id === dealId);
+  const org = d && st.organizace.find(o => o.id === Number((d.org_id && d.org_id.value) || d.org_id));
+  const pole = (st.pole.organization || st.pole.organizace || []).find(f => f.field_name === 'IČ');
+  const v = org && pole ? (org.custom_fields || {})[pole.field_code] : '';
+  return v ? String(v).padStart(8, '0') : '';
+};
 
 await vypinac({ viceZakazniku: true, viceSachet: false });
 
@@ -145,6 +155,7 @@ let Z2, ID2;
 {
   const deal = dealy[2];
   Z2 = sVz(deal);
+  Z2.ico = icoOrgDealu(deal);   // T1 N3: řídící = organizace dealu
   const t = await uloz(Z2);
   const ul = ulozeno(t.soubor);
   const p = notes().filter(x => x.deal_id === deal);
@@ -431,6 +442,7 @@ let Z2, ID2;
 {
   const deal = dealy[20];
   const z = sVz(deal);
+  z.ico = icoOrgDealu(deal);   // T1 N3: původní řídící = organizace dealu
   const pC = G.vzPridej(z, UDAJE_C, { kdo: 'Test', kdy: '2026-11-16T10:00:00.000Z', vlastni: true });
   const t = await uloz(z);
   test('10 příprava: poznámka založena bez řádku T1', t.status === 200 && t.pdPoznamkaZakaznici === 'zalozeno'
@@ -449,8 +461,30 @@ let Z2, ID2;
   const r3 = G.vzT1Nastav(z, z.varianty[0].id, 'z1');
   const t3 = await uloz(z);
   const p3 = notes().filter(x => x.deal_id === deal);
+  test('10 N3: server uložil skutečnou organizaci dealu (id, IČO, název) a vrátil ji prohlížeči', t2.pdOrgDealu && t2.pdOrgDealu.deal === String(deal)
+    && t2.pdOrgDealu.org > 0 && t2.pdOrgDealu.ico === z.ico && /\S/.test(t2.pdOrgDealu.nazev) && JSON.stringify(ulozeno(t2.soubor).pdOrgDealu) === JSON.stringify(t2.pdOrgDealu), t2.pdOrgDealu);
   test('10 T1: řídící zpět původní → řádek zmizel, C mezi dalšími', r3.ok && t3.pdPoznamkaZakaznici === 'upraveno' && p3.length === 1
     && !/Řídící zákazník v kalkulaci/.test(p3[0].content) && /• TEST – TŘETÍ/.test(p3[0].content), p3[0] && p3[0].content);
+}
+
+/* 11) N3: řádek se řídí SKUTEČNOU organizací dealu — deal vede organizace, jejíž IČO nemá řídící
+ *     (ani původní zákazník) → řádek i u původního řídícího; po shodě IČO zmizí. */
+{
+  const deal = dealy[21];
+  const z = sVz(deal);
+  z.ico = '25596641';   // jiné IČO než organizace dealu
+  const t = await uloz(z);
+  const p = notes().filter(x => x.deal_id === deal);
+  test('11 N3: deal vede jiná organizace než řídící → řádek „Řídící zákazník v kalkulaci“ i bez výměny', t.status === 200 && p.length === 1
+    && /Řídící zákazník v kalkulaci: TEST – TESTOVACÍ ODBĚRATEL s\.r\.o\. \(organizace dealu se změní až prodejem\)<br>— nabídka /.test(p[0].content), p[0] && p[0].content);
+  z.ico = icoOrgDealu(deal);
+  const t2 = await uloz(z);
+  const p2 = notes().filter(x => x.deal_id === deal);
+  test('11 N3: IČO řídícího = IČO organizace dealu → řádek zmizel (organizace se během hodiny nečte znovu)', t2.status === 200 && p2.length === 1
+    && !/Řídící zákazník v kalkulaci/.test(p2[0].content), p2[0] && p2[0].content);
+  const req = SIM.pdSimStav().pozadavky.filter(x => /\/api\/v2\/(deals|organizations)\//.test(x)).length;
+  await uloz(z);
+  test('11 N3: další uložení do hodiny deal ani organizaci znovu nečte', SIM.pdSimStav().pozadavky.filter(x => /\/api\/v2\/(deals|organizations)\//.test(x)).length === req);
 }
 
 console.log(ok + ' OK, ' + fail + ' FAIL');

@@ -3,15 +3,17 @@
  *  1) autor: vlastní varianta C → řídící C (200), invariant v uložené verzi;
  *     sdílená varianta a B (200); jiný obchodník: změna řídícího i JEN řídící
  *     varianty 403, administrátor 200; zakázka z webhooku jen administrátor;
- *  2) invariant 409: řídící přesunutý na vlastní variantu jiného zákazníka,
- *     ukazatel řídícího ≠ řídící varianta, sdílená bez řídícího, nová varianta
- *     bez zákazníka s výměnou — úložiště beze změny;
+ *  2) invariant (revize N1, N2): B na variantě C, C na nové / sdílené variantě
+ *     v jednom uložení 200; starší klient (jen v.ridici, týž řídící) 200 se
+ *     srovnáním; jiný řídící s nesedícím ukazatelem 409 „Obnovte stránku…";
+ *     podvržené pdOrgDealu (N3) se neuloží;
  *  3) E4 beze změny: ruční hodnota KL pole zákazníka dostane při výměně přes
  *     T1 vlastníka z1 (vzKlZafixuj), písmena se nemění;
  *  4) jeden zákazník: změna řídící varianty jiným obchodníkem jako dřív (200);
  *     VYP + víc zákazníků: hlavička jako dřív, výměna řídícího odmítnuta (VZ_VYPNUTO).
  * Pojistka: na 2856345 (před T1) padá 1 (403 u změny jen řídící varianty
- * chybí), 2 (server srovnával, neodmítal) — viz zpráva commitu.
+ * chybí), 2 (server srovnával, neodmítal); na 8c5f2cb (před revizí) padají
+ * N1 (409 u kroků v jednom uložení), N2 (409 u staršího klienta), N3.
  * Spuštění: node netlify/test_vz_t1_server.mjs */
 process.env.TAJEMSTVI_RELACE = 'testovaci-tajemstvi-jen-pro-lokalni-beh';
 process.env.ADMIN_INIT_HESLO = 'Docasne.Heslo.123';
@@ -140,24 +142,39 @@ await vypinac({ viceZakazniku: true });
   test('1 webhook: administrátor 200', t2.status === 200 && ulozenoObj(soubor).vzRidici.id === 'z3', t2);
 }
 
-/* ---------- 2) invariant 409 ---------- */
+/* ---------- 2) invariant: revize N1 (kroky v jednom uložení projdou), N2 (starší klient), 409 ---------- */
 {
   const { z, soubor, vC } = await tri('invariant');
   const pred = ulozenoText(soubor);
-  const pokus = async (popis, uprav, re) => {
-    const zz = kopie(z); uprav(zz);
-    const t = await uloz(zz, cO);
-    test('2 ' + popis + ' → 409, úložiště beze změny', t.status === 409 && re.test(t.chyba || '') && ulozenoText(soubor) === pred, { status: t.status, chyba: t.chyba });
-  };
-  await pokus('A přesunutý na vlastní variantu C', zz => { zk.nastavRidici(zz, vC); zz.vzRidici.varianta = vC; }, /vlastní varianta zákazníka C — TEST – GAMA/);
-  await pokus('ukazatel řídícího ≠ řídící varianta', zz => { zk.nastavRidici(zz, vC); }, /řídící zákazník musí mít řídící variantu/);
-  await pokus('C řídícím sdílené V1, kterou nedostal', zz => { G.vzVymenRidiciho(zz, 'z3'); zk.nastavRidici(zz, zz.varianty[0].id); zz.vzRidici.varianta = zz.varianty[0].id; },
-    /jen zákazník, kterému patří/);
-  await pokus('nová varianta bez zákazníka a výměna na B', zz => { const v = G.klonujVariantu(zz, zz.varianty[0].id, { aktivovat: false });
-    G.vzVymenRidiciho(zz, 'z2'); zk.nastavRidici(zz, v.id); zz.vzRidici.varianta = v.id; }, /nepatří žádnému zákazníkovi/);
-  const zv = kopie(z); const v = G.klonujVariantu(zv, zv.varianty[0].id, { aktivovat: false }); G.vzT1Nastav(zv, v.id);
-  const tv = await uloz(zv, cO);
-  test('2 nová varianta bez zákazníka v témže uložení, řídící A na ni přejde → 200', tv.status === 200 && ulozenoObj(soubor).vzRidici.varianta === v.id, tv);
+  const zz = kopie(z); G.vzVymenRidiciho(zz, 'z3'); zk.nastavRidici(zz, zz.varianty[0].id);   // jiný řídící, ukazatel nesedí
+  const t = await uloz(zz, cO);
+  test('2 jiný řídící a ukazatel ≠ řídící varianta → 409 „Obnovte stránku (nová verze aplikace)…", beze změny', t.status === 409
+    && /Obnovte stránku \(nová verze aplikace\)/.test(t.chyba || '') && ulozenoText(soubor) === pred, { status: t.status, chyba: t.chyba });
+  const zo = kopie(z); zk.nastavRidici(zo, vC);   // starší klient: jen příznak ridici
+  const to = await uloz(zo, cO);
+  const uo = ulozenoObj(soubor);
+  test('2 N2 starší klient (jen v.ridici, řídící týž) → 200, ukazatel srovnán jako dřív', to.status === 200 && uo.vzRidici.id === 'z1'
+    && uo.vzRidici.varianta === vC && uo.varianty.find(v => v.ridici).id === vC, { status: to.status, chyba: to.chyba, r: uo.vzRidici });
+}
+for (const [popis, krok] of [
+  ['B přesunut na variantu C a zvolen řídícím', (zz, vC) => { zz.dalsiZakaznici.find(d => d.id === 'z2').varianta = vC; return G.vzT1Nastav(zz, vC, 'z2'); }],
+  ['C přesunut na novou variantu a ta zvolena řídící', (zz) => { const v = G.klonujVariantu(zz, zz.varianty[0].id, { aktivovat: false });
+    zz.dalsiZakaznici.find(d => d.id === 'z3').varianta = v.id; return G.vzT1Nastav(zz, v.id); }],
+  ['C přesunut na sdílenou V1 a zvolen řídícím', (zz) => { zz.dalsiZakaznici.find(d => d.id === 'z3').varianta = zz.varianty[0].id;
+    return G.vzT1Nastav(zz, zz.varianty[0].id, 'z3'); }],
+]) {
+  const { z, soubor, vC } = await tri('N1 ' + popis);
+  const r = krok(z, vC);
+  const t = await uloz(z, cO);
+  const u = ulozenoObj(soubor);
+  test('2 N1 ' + popis + ' (jedno uložení) → 200, invariant', r.ok && t.status === 200 && u.vzRidici.varianta === u.varianty.find(v => v.ridici).id
+    && (u.vzRidici.id === 'z2' || u.vzRidici.id === 'z3'), { r, status: t.status, chyba: t.chyba });
+}
+{ /* N3: skutečnou organizaci dealu píše jen server — podvrh z prohlížeče se zahodí */
+  const { z, soubor } = await tri('podvrh org');
+  z.pdOrgDealu = { deal: '1', org: 5, ico: '25596641', nazev: 'Podvrh', kdy: '2026-11-18T10:00:00.000Z' };
+  const t = await uloz(z, cO);
+  test('2 N3 podvržené pdOrgDealu z prohlížeče se neuloží', t.status === 200 && !('pdOrgDealu' in ulozenoObj(soubor)) && !('pdOrgDealu' in t), t);
 }
 
 /* ---------- 3) E4: fixace KL a písmena ---------- */

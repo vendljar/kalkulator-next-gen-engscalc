@@ -10,13 +10,15 @@
  *     ni (číslo …-C), bez zákazníka → řídící se nemění; chyby nemění data;
  *  C) E4 beze změny: fixace vlastnictví ručních hodnot KL (vzKlZafixuj),
  *     písmena, tisky; prodaná zakázka vzT1Nastav nechá na volajícím (práva);
- *  D) organizace dealu: z1 bez prodeje, týž zákazník = sedí, IČO, prázdné
- *     IČO = nesedí, prodaná = nic; text bloku a řádku poznámky (bez IČO);
+ *  D) organizace dealu: skutečná (pdOrgDealu, revize N3) má přednost — IČO,
+ *     prázdné = nesedí, jiný deal / vadný tvar se nepočítá; odhad z1 (týž
+ *     zákazník = sedí, bez z1 nic), prodaná = nic; text bloku a řádku poznámky (bez IČO);
  *  E) poznámka dealu: řádek T1 za seznamem, řídící není mezi „dalšími",
  *     jeden zákazník beze změny;
- *  F) server: vzServerInvariant (409: ukazatel, vlastní varianta jiného,
- *     sdílená bez něj, bez zákazníka s výměnou; projde: beze změny, nový
- *     zákazník, nový prodej, obnova) a vzServerRidici (změna jen řídící
+ *  F) server: vzServerInvariant (revize N1: vlastnictví podle ukládané verze —
+ *     B na variantě C, C na nové / sdílené variantě v jednom uložení projdou;
+ *     N2: starší klient se stejným řídícím se srovná, jinak 409 „Obnovte
+ *     stránku…"; obnova, nový zákazník, přechod z jednoho) a vzServerRidici (změna jen řídící
  *     varianty: autor / administrátor / jiný 403 / webhook / prodaná 409 /
  *     srovnání na prodanou #563 projde).
  * Smyšlená data. Pojistka: na 2856345 (před T1) sada padá — funkce
@@ -194,14 +196,30 @@ const invariant = z => z.vzRidici.varianta === vzRidiciVariantaId(z) && vzZakazn
   z.varianty.find(v => v.prodano).prodano.zakaznik = 'z2';
   test('D prodaná, prodej jinému než řídícímu: dál nic', vzOrgDealuId(z) === 'z2' && vzOrgNesedi(z) === null && vzOrgNesediText(z, true) === '');
 }
-{ /* stopa po odemčeném prodeji: organizace podle názvu z pdOrgVitez */
+{ /* N3: skutečná organizace dealu (pdOrgDealu píše server) má přednost před odhadem z1 */
+  const z = zakazka();
+  z.pdDealId = '4242';
+  z.pdOrgDealu = { deal: '4242', org: 77, ico: '33334444', nazev: 'Gama v Pipedrive s.r.o.', kdy: '2026-11-18T10:00:00.000Z' };
+  const n = vzOrgNesedi(z);
+  test('D N3 deal vede organizace s IČO C, řídící A → nesedí, „deal dál vede" název z Pipedrive', n && n.org && n.org.id === 'z3'
+    && vzOrgNesediText(z, true) === 'Řídící zákazník v kalkulaci: Zkušební Alfa s.r.o. (organizace dealu se změní až prodejem; deal dál vede Gama v Pipedrive s.r.o.)', vzOrgNesediText(z, true));
+  vzT1Nastav(z, varZ(z, 'z3').id);
+  test('D N3 řídící C = IČO organizace dealu → sedí', vzOrgNesedi(z) === null && vzOrgDealuId(z) === 'z3');
+  z.pdOrgDealu.ico = '';
+  test('D N3 organizace dealu bez IČ → nesedí (prázdné = nesedí)', !!vzOrgNesedi(z) && vzOrgDealuId(z) === '');
+  z.pdOrgDealu = { deal: '9999', org: 77, ico: '33334444', nazev: 'Jiný deal', kdy: '' };
+  test('D N3 uložená organizace jiného dealu se nepočítá → odhad z1 (řídící C ≠ A → nesedí, deal dál vede A)',
+    vzOrgDealuZnama(z) === null && /deal dál vede Zkušební Alfa s\.r\.o\.\)$/.test(vzOrgNesediText(z, true)), vzOrgNesediText(z, true));
+  z.pdOrgDealu = { deal: '4242', org: 'x', ico: '1' };
+  test('D N3 vadný tvar pdOrgDealu → nic (odhad)', vzOrgDealuNorm(z.pdOrgDealu) === null && vzOrgDealuZnama(z) === null);
+  test('D N3 norm: ořez názvu, IČO jen 8 číslic', JSON.stringify(vzOrgDealuNorm({ deal: '1', org: 0, ico: '123', nazev: 'A\u0001B', kdy: 'x' }))
+    === JSON.stringify({ deal: '1', org: 0, ico: '', nazev: 'A B', kdy: '' }));
+}
+{ /* odhad bez z1: řádek se nepíše naslepo */
   const z = zakazka();
   vzT1Nastav(z, varZ(z, 'z3').id);
-  z.pdOrgVitez = { deal: '1', org: 5, stav: 'zapsano', nazev: 'ZKUŠEBNÍ GAMA, s. r. o.' };
-  test('D pdOrgVitez zapsano s názvem C → organizace C, sedí', vzOrgDealuId(z) === 'z3' && vzOrgNesedi(z) === null);
-  z.pdOrgVitez.nazev = 'Někdo úplně jiný';
-  test('D pdOrgVitez s neznámým názvem → organizace neznámá, nesedí bez „deal dál vede"', vzOrgDealuId(z) === ''
-    && /až prodejem\)$/.test(vzOrgNesediText(z, true)));
+  const p = vzOdstran(z, 'z1');
+  test('D bez z1 a bez známé organizace: nic se nehlásí', p.ok && vzOrgDealuId(z) === '' && vzOrgNesedi(z) === null && vzPoznamkaText(z).indexOf('Řídící zákazník v kalkulaci') < 0, p);
 }
 { const z = zakazka({ B: false, C: false });
   test('D jeden zákazník → nic', vzOrgNesedi(z) === null && vzOrgDealuId(z) === 'z1'); }
@@ -233,30 +251,32 @@ test('D vzIcoNorm', vzIcoNorm(' 1234 ') === '00001234' && vzIcoNorm('') === '' &
   /* legitimní výměna na vlastní variantu C */
   { const z = kop(stara); vzT1Nastav(z, v2id);
     test('F vlastní varianta C, řídící C → projde', vzServerInvariant(stara, z) === null); }
-  /* A přesunutý na vlastní variantu C (podvrh) */
+  /* N1: kroky v jednom uložení podle ukládané verze projdou */
   { const z = kop(stara); nastavRidici(z, v2id); z.vzRidici.varianta = v2id;
-    const e = vzServerInvariant(stara, z);
-    test('F A na vlastní variantě C → 409 „vlastní varianta zákazníka C"', e && e.status === 409 && /vlastní varianta zákazníka C — Zkušební Gama/.test(e.chyba), e); }
-  /* ukazatel řídícího nesouhlasí */
+    test('F N1 A přesunutý na variantu C (sdílí ji s C) → projde', vzServerInvariant(stara, z) === null); }
+  { const z = kop(stara); z.dalsiZakaznici.find(d => d.id === 'z2').varianta = v2id; const r = vzT1Nastav(z, v2id, 'z2');
+    test('F N1 B přesunut na variantu C a zvolen řídícím → projde', r.ok && vzServerInvariant(stara, z) === null, r); }
+  { const z = kop(stara); const v = klonujVariantu(z, v1id, { aktivovat: false }); z.dalsiZakaznici.find(d => d.id === 'z3').varianta = v.id;
+    const r = vzT1Nastav(z, v.id);
+    test('F N1 C přesunut na novou variantu a ta zvolena řídící → projde', r.ok && vzRidiciId(z) === 'z3' && vzServerInvariant(stara, z) === null, r); }
+  { const z = kop(stara); z.dalsiZakaznici.find(d => d.id === 'z3').varianta = v1id; const r = vzT1Nastav(z, v1id, 'z3');
+    test('F N1 C přesunut na sdílenou V1 a zvolen řídícím → projde', r.ok && vzServerInvariant(stara, z) === null, r); }
+  /* N2: starší klient mění jen v.ridici — řídící zákazník se nemění → srovná se jako dřív */
   { const z = kop(stara); nastavRidici(z, v2id);
+    test('F N2 jen příznak ridici, řídící zákazník týž → projde (srovná vzSrovnej)', vzServerInvariant(stara, z) === null
+      && (vzSrovnej(z), z.vzRidici.varianta === v2id)); }
+  { const z = kop(stara); vzVymenRidiciho(z, 'z3'); nastavRidici(z, v1id);
     const e = vzServerInvariant(stara, z);
-    test('F ukazatel řídícího ≠ řídící varianta → 409', e && e.status === 409 && /musí mít řídící variantu/.test(e.chyba), e); }
-  /* C řídícím sdílené V1 bez razítka (V1 patří A, B) */
-  { const z = kop(stara); vzVymenRidiciho(z, 'z3'); nastavRidici(z, v1id); z.vzRidici.varianta = v1id;
-    const e = vzServerInvariant(stara, z);
-    test('F C řídícím sdílené V1, kterou nedostal → 409 se seznamem', e && e.status === 409 && /jen zákazník, kterému patří \(Zkušební Alfa s\.r\.o\., B — Zkušební Beta/.test(e.chyba), e); }
+    test('F N2 jiný řídící zákazník a ukazatel nesedí → 409 „Obnovte stránku (nová verze aplikace)…"', e && e.status === 409 && /^Obnovte stránku \(nová verze aplikace\)/.test(e.chyba), e); }
   /* B řídícím sdílené V1 → projde */
   { const z = kop(stara); vzT1Nastav(z, v1id, 'z2');
     test('F B řídícím sdílené V1 → projde', vzServerInvariant(stara, z) === null); }
-  /* nová varianta bez zákazníka: přechod řídícího projde, s výměnou ne */
+  /* nová varianta bez zákazníka: přechod řídícího projde */
   { const z = kop(stara); const v = klonujVariantu(z, v1id, { aktivovat: false }); vzT1Nastav(z, v.id);
     test('F nová varianta, řídící A na ni přejde → projde', vzServerInvariant(stara, z) === null); }
-  { const z = kop(stara); const v = klonujVariantu(z, v1id, { aktivovat: false }); vzVymenRidiciho(z, 'z2'); nastavRidici(z, v.id); z.vzRidici.varianta = v.id;
-    const e = vzServerInvariant(stara, z);
-    test('F nová varianta bez zákazníka a výměna na B → 409', e && e.status === 409 && /nepatří žádnému zákazníkovi/.test(e.chyba), e); }
   /* beze změny, obnova, nový zákazník */
   test('F beze změny → projde', vzServerInvariant(stara, kop(stara)) === null);
-  { const z = kop(stara); nastavRidici(z, v2id); z.vzRidici.varianta = v2id;
+  { const z = kop(stara); vzVymenRidiciho(z, 'z3'); nastavRidici(z, v1id);
     test('F obnova se nehlídá', vzServerInvariant(stara, z, { obnova: true }) === null); }
   { const z = kop(stara); const p = vzPridej(z, { objednatel: 'Zkušební Delta s.r.o.' }, { kdo: 't', kdy: TED, vlastni: true });
     vzVymenRidiciho(z, p.zakaznik.id);

@@ -453,7 +453,9 @@ function vzKarta(kde) {
       `<button type="button" class="mini" onclick="vzOdstranit('${escJs(z.id)}')"${dis(smi && !odstrDuvod, odstrDuvod || vzProcNe())}>Odstranit</button>`,
     ].join(' ');
     return `<tr class="${z.id === ot ? 'aktivni' : ''}" data-vz="${esc(z.id)}">
-      <td data-l="Řídící"><span class="vz-t1-hvezda${z.ridici ? '' : ' mut'}" data-vz-ridici="${esc(z.id)}" title="${z.ridici ? 'řídící zákazník' : esc(VZ_T1_KARTA_HVEZDA)}">${z.ridici ? '★' : '☆'}</span></td>
+      <td data-l="Řídící">${zap ? `<span class="vz-t1-hvezda${z.ridici ? '' : ' mut'}" data-vz-ridici="${esc(z.id)}" title="${z.ridici ? 'řídící zákazník' : esc(VZ_T1_KARTA_HVEZDA)}">${z.ridici ? '★' : '☆'}</span>`
+        /* T1 revize N4: s VYP hlavička výběr řídícího nemá — sloupec jako dřív (zhasnutý přepínač s důvodem). */
+        : `<input type="radio" name="vzRidici_${kde}" data-vz-ridici="${esc(z.id)}"${z.ridici ? ' checked' : ''} disabled title="${esc(z.ridici ? 'řídící zákazník' : vzRidiciProcNe())}">`}</td>
       <td data-l="Zákazník"><button type="button" class="vz-jmeno" onclick="vzOtevri('${escJs(z.id)}')"${zap ? '' : ' disabled'} title="otevřít zákazníka v hlavičce">${esc(vzNazevZ(z))}</button>
         <div class="note">${z.hlavicka.ico ? 'IČO ' + esc(z.hlavicka.ico) : 'bez IČO'}${z.ridici ? ' · <b>řídící zákazník</b>' : ' · písmeno ' + esc(z.pismeno)}${z.id === ot ? ' · otevřený v hlavičce' : ''}</div></td>
       <td data-l="Číslo nabídky" class="vz-cislo">${v ? esc(vzTiskCisloZakaznika(ZAK, z, v)) : '—'}</td>
@@ -1006,8 +1008,27 @@ function vzT1Hlavicka() {
   return { blok, radky: rvRow + rzRow };
 }
 
-function vzT1Hotovo(r, co, pred, po) {
+/* Rozhodnutí J. V. (d): krátké potvrzení JEN když se mění řídící zákazník
+ * (i automaticky u vlastní varianty); změna samotné varianty bez dialogu.
+ * `provest` se zavolá hned (bez dialogu) nebo po „Změnit". */
+function vzT1Potvrd(zakId, provest) {
+  if (!zakId || zakId === vzRidiciId(ZAK) || typeof potvrd !== 'function') return provest();   // bez dialogu hned
+  return Promise.resolve(potvrd('Řídícím zákazníkem bude ' + vzT1Stitek(vzZakaznik(ZAK, zakId)) + ' — hlavička zakázky se změní.',
+    { nadpis: 'Řídící zákazník', ano: 'Změnit', ne: 'Zrušit' })).then(x => (x ? provest() : render()), () => render());
+}
+/* Rozhodnutí J. V. (b): řídící zákazník přešel na variantu JEN podle razítka
+ * odeslané nabídky (neukazoval na ni) → záznam do protokolu zakázky. */
+function vzT1PodleRazitka(zakId, vid) {
+  const z = vzZakaznik(ZAK, zakId);
+  if (!z || z.varianta === vid) return '';
+  const v = vzVarianta(vid);
+  const r = v ? vzRazitkoDotisku(v, z.id) : null;
+  return r ? 'Řídící zákazník ' + vzT1Stitek(z) + ' přešel na variantu „' + v.nazev + '“ podle odeslané nabídky ' + (r.cislo || '') : '';
+}
+function vzT1Hotovo(r, co, pred, po, razitko) {
   if (!r.zmena) { render(); return; }
+  if (razitko && typeof protokolZapis === 'function')
+    protokolZapis(ZAK, { co: razitko.trim(), kde: 'hlavička zakázky', kdo: vzKdo() });
   VZ_UI.otevreny = '';
   ZAK.aktivni = vzRidiciVariantaId(ZAK);
   syncVarianta();
@@ -1038,10 +1059,15 @@ function vzT1VarZmen(varId) {
     return;
   }
   VZ_UI.t1 = null;
-  const pred = vzT1Popis();
-  const r = vzT1Nastav(ZAK, vid);
-  if (!r.ok) { if (typeof hlaska === 'function') hlaska(r.chyba); render(); return; }
-  vzT1Hotovo(r, r.vymena ? 'Změna řídícího zákazníka (vlastní varianta)' : 'Změna řídící varianty', pred, vzT1Popis());
+  const kdo = vzT1Kandidati(ZAK, vid)[0];
+  return vzT1Potvrd(kdo, () => {
+    if (vzStop('změna řídící varianty')) return;
+    const pred = vzT1Popis();
+    const raz = vzT1PodleRazitka(kdo, vid);
+    const r = vzT1Nastav(ZAK, vid);
+    if (!r.ok) { if (typeof hlaska === 'function') hlaska(r.chyba); render(); return; }
+    vzT1Hotovo(r, r.vymena ? 'Změna řídícího zákazníka (vlastní varianta)' : 'Změna řídící varianty', pred, vzT1Popis(), raz);
+  });
 }
 
 /* Výběr „Řídící zákazník" u sdílené varianty (rozpracované nebo dnešní řídící). */
@@ -1053,11 +1079,15 @@ function vzT1ZakZmen(zakId) {
   if (!zakId) { render(); return; }
   const ceka = vzT1Ceka();
   const vid = ceka ? ceka.varianta : vzRidiciVariantaId(ZAK);
-  const pred = vzT1Popis();
-  const r = vzT1Nastav(ZAK, vid, zakId);
-  if (!r.ok) { if (typeof hlaska === 'function') hlaska(r.chyba); render(); return; }
-  VZ_UI.t1 = null;
-  vzT1Hotovo(r, r.vymena ? 'Změna řídícího zákazníka' : 'Změna řídící varianty', pred, vzT1Popis());
+  return vzT1Potvrd(String(zakId), () => {
+    if (vzStop('změna řídícího zákazníka')) return;
+    const pred = vzT1Popis();
+    const raz = vzT1PodleRazitka(String(zakId), vid);
+    const r = vzT1Nastav(ZAK, vid, zakId);
+    if (!r.ok) { if (typeof hlaska === 'function') hlaska(r.chyba); render(); return; }
+    VZ_UI.t1 = null;
+    vzT1Hotovo(r, r.vymena ? 'Změna řídícího zákazníka' : 'Změna řídící varianty', pred, vzT1Popis(), raz);
+  });
 }
 
 /* Zastavení uložení, dokud u sdílené řídící varianty chybí řídící zákazník.
@@ -1105,13 +1135,18 @@ function vzPoznamkaKarta(kde) {
   const html = esc(text).split('\n').map(r => /^Řídící zákazník v kalkulaci: |^\(řídící zákazník není vybrán/.test(r)
     ? `<span class="vz-t1-pozn-novy">${r}</span>` : r).join('\n');
   const deal = typeof ctrlPdDealIdNorm === 'function' ? ctrlPdDealIdNorm(ZAK.pdDealId) : String(ZAK.pdDealId || '');
+  const znama = vzOrgDealuZnama(ZAK);
   const oid = vzOrgDealuId(ZAK);
   const org = oid ? vzZakaznik(ZAK, oid) : null;
   const prodana = !!vzProdanaVarianta(ZAK);
+  /* Revize N3: skutečná organizace dealu (server ji čte při uložení), jinak odhad. */
+  const orgNazev = znama ? (znama.org ? (znama.nazev || (org ? vzNazevZ(org) : 'bez názvu')) : 'deal nemá organizaci') : (org ? vzNazevZ(org) : '');
   const orgVeta = !deal ? 'Zakázka zatím nemá deal v Pipedrive — poznámka se zapíše, až ho mít bude.'
     : prodana ? 'Organizace dealu se po prodeji přepisuje na vítězného zákazníka.'
-      : 'Organizace dealu: <b>' + esc(org ? vzNazevZ(org) : 'neznámá') + '</b> — mění se až prodejem.';
-  return `<div class="card vz-pozn-karta" id="vzPoznKarta_${kde}"><h2><span style="flex:1">Poznámka dealu v Pipedrive — náhled</span></h2><div class="body">
+      : orgNazev ? 'Organizace dealu: <b>' + esc(orgNazev) + '</b>' + (znama ? '' : ' (odhad — ověří se při uložení)') + ' — mění se až prodejem.'
+        : 'Organizace dealu se ověří při uložení.';
+  /* Revize N5: noprint — názvy a ceny ostatních zákazníků nesmí do tisku záložky. */
+  return `<div class="card vz-pozn-karta noprint" id="vzPoznKarta_${kde}"><h2><span style="flex:1">Poznámka dealu v Pipedrive — náhled</span></h2><div class="body">
     <div class="note" style="margin-bottom:8px">Text, který uložení zakázky zapíše do přepisované poznámky u dealu (bez kontaktů, osob a IČO). ${orgVeta}</div>
     <pre class="vz-t1-pozn">${html}</pre></div></div>`;
 }
