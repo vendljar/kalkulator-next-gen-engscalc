@@ -22,7 +22,11 @@
 - Upřesnění 18. 11.: integrátor 11. 11. odpověděl jen na vracení pole (Pipedrive vrátí na „Ne“) — pole ale má jen
   volbu „Ano“, v konceptu prosba o doplnění „Ne“; místo dvou otázek krátké potvrzení, že na zkušební deal nic jiného
   nereaguje. **Test provádí J. V. sám** po zprávě integrátora, že automatizace je hotová — pevný termín v konceptu
-  není (rozhodnutí J. V.). Další krok: J. V. odešle odpověď integrátorovi, klíč předá zvlášť → integrátor založí DIČ
+  není (rozhodnutí J. V.).
+- **18. 11. odpoledne: J. V. odeslal e-mail integrátorovi.** Čeká se na jeho zprávu, že automatizace (jen deal ze
+  zkoušky), volba „Ne“, automatické plnění CN z názvu a pole DIČ jsou hotové. Pak test provede J. V. sám; sezení
+  sleduje odpovědi webhooku a deal jen čtením (přepnout „Vygenerovat nabídku“ → odkaz v dealu → kalkulace na
+  testu; podruhé → pořád jedna kalkulace). Po testu: Obnovit z CRM (DIČ spárované), rozhodnutí o ostrém webu. Další krok: J. V. odešle odpověď integrátorovi, klíč předá zvlášť → integrátor založí DIČ
   a automatizaci → zkouška webhooku (2× spuštění, pořád jedna kalkulace).
 
 ---
