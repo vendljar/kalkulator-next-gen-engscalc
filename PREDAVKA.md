@@ -47,34 +47,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   OCK | PROJ (filtr beze změny). Mutace [C7] jádro 7/7, server 5/5. **Kolo `--bez-mutaci --proti origin/test` nad 6ed6f8d VŠE ZELENÉ** (sady 465/0/7, hodiny 377/0/1, statické 9/9, porovnání 353/353 SHODA).
   Pozor při slučování s SL: v `src/sod.js` změněna jen `sodJazykZabrana`. Firemní .docx nebyly v kontejneru (KNG_PODKLADY
   chybí) — test s podklady v `netlify/test_sablony.mjs` se přeskočí; hledá i `Sablona_SOD_REALIZACE_v5_DE_z_cestiny.docx`.
-- **S6 + S8 #613** (`claude/s6s8-evidence`, v18.11.5, nad 9bd6dc8): evidence v `roadmap.json` (pole `typ`, `cekaNa` „<kdo>: <co>“,
-  `kolo`, `vetev`, `verze`, `dopadCena`, `alias`; migrace jen dotčených položek), otevřené nálezy a otázky převedeny jako
-  #614–#643, `roadmapa.py --zive` = 54 nehotových; `nastroje/prehled_stavu.py` → `PREHLED.md`/`.json` (krok `staticke`,
-  9 kontrol); `nastroje/novinky.py` → `NOVINKY.md`, napojeno na `release_odkaz.py`. HOTOVO, slučuje koordinace.
-  Kolo `--bez-mutaci`: hodiny 377/0/1, statické 9/9, sady 1. běh 464/1/7 (`test_vz_unik.js` výměna řídícího (B) —
-  občasné, samostatně 18× zelené, → #644), opakovaný krok sady 465/0/7 zelený.
-  Po sloučení: koordinace pustí `python3 nastroje/prehled_stavu.py` a commitne PREHLED (jinak `staticke` jen upozorní).
-  Alias C8 nedohledán (řídicí prompt po kole 48 není v repu) — doplní koordinace. Konflikt s SL (#609/#610) v `roadmap.json`
-  jen na konci pole položek (nové položky na samostatných řádcích).
-
-- **S7 startovní podklady #612** (`claude/s7-podklady`, v18.11.4): nový `CLAUDE.md` podle schváleného návrhu, `PREDAVKA.md` rozdělena
-  (archiv `podklady/predavky/2026-09.md`, `2026-10.md`, `2026-11.md`), `ROZHODNUTI_LOG.md`, `SVERENA_ROZHODNUTI.md`,
-  `podklady/kola/`, kontrola `nastroje/kontrola_podkladu.sh` v kroku `staticke`, `release_odkaz.py --chybejici` jen
-  verze z main, pravidlo porovnání sestavení S3 v Testy (stupeň 1), návrh osnovy skillu `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md`. **Kolo `--bez-mutaci` nad fd1c0b1 VŠE ZELENÉ**
-  (sady 464/0/7 přeskočeno, hodiny +400 dní 376/0/1, statické 8/8; 39 min). HOTOVO, slučuje koordinace.
-- **SL #589 #609 #610** (`claude/sl-sod-sleva`, v18.11.6, sloučeno s integrací ec5bbac): řádek slevy v rozpisu šachet
-  SoD, šablona SoD realizace v6 se žlutými místy (druhé vydání .docx poslané J. V. 18. 11.; na test až s tímto kódem),
-  kontrola nevyplněných míst „Chybí / Nepovinné". Revize a dorevize poradce (L1–L6, M1–M3) opraveny: ve smlouvách
-  (SoD realizace, SoD projekce, plná moc) je žlutý **jen** „……" — běhy se dělí i s tabulátory; v EUR řádky šachet
-  jako nabídka — **u EUR smluv s víc šachtami se řádky šachet mohou lišit o jednotky eur oproti main i test**.
-  **Přiznané meze (M4):** sejme se každé podbarvení, nejen žluté; symbol rozdělený mezi běhy obarví celé své běhy
-  i s pevným textem; vnořené běhy v textovém poli se spolehlivě nezpracují; žluté tečky dostanou i šablony v4/v5
-  bez podbarvení. Kolo `--bez-mutaci` s KNG_PODKLADY nad 20b154a: sady 465/1/6, hodiny 377/0/1, statické 9/9;
-  jediné selhání `overit_sod.mjs` (5 bodů, stará očekávání před tečkami C3) padá stejně na integraci 9bd6dc8
-  i ec5bbac (ověřeno ve worktree). Mutace [SL] 23/23. Podrobnosti `podklady/predavky/2026-11.md`. Slučuje koordinace.
-- **Rychlá cesta K40-N1** (`claude/rychla-k40n1`, založena nad main ještě podle dopoledního znění): podle změny zadání
-  J. V. 18. 11. jde rychlá cesta do `test` (větev nad integrací, kolo `--bez-mutaci` + cílené mutace, koordinace sloučí
-  a pošle do test); rozdíly cen main × test ověřuje J. V. sám; do main jen na jeho pokyn se sloučením testu.
+- Starší sloučené dávky 18. 11. (S6+S8, S7, SL, rychlá cesta K40-N1) → `podklady/predavky/2026-11.md`.
 
 ## Čeká na J. V.
 
