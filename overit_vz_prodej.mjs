@@ -6,15 +6,16 @@
  * Jádro hlídá src/test_vz_prodej.js, server netlify/test_vz_server.mjs; tenhle
  * harness hlídá SESTAVENOU aplikaci (dist/kalkulacka.html) a skutečná tlačítka:
  *
- *   1) přepínač Řídící v kartě Zákazníci zakázky: autor ho má aktivní, po
- *      potvrzení se vymění hlavička (B), písmena zůstávají; jiný obchodník
- *      ho má zhasnutý s důvodem;
+ *   1) řídící zákazník (od T1 v hlavičce: „Řídící zákazník" u sdílené
+ *      varianty, karta jen ★ / ☆): autor ho má aktivní, výběrem se vymění
+ *      hlavička (B), písmena zůstávají, žlutý blok „organizace dealu se
+ *      změní až prodejem"; jiný obchodník ho má zhasnutý s důvodem;
  *   2) Prodáno u zákazníka: zhasnuté, dokud mu nabídka neodešla; po tisku
  *      Wordu pro B aktivní; potvrzení na stránce před → po (řídící zákazník,
  *      řídící varianta, číslo v dealu, organizace dealu, věta o kontaktní
  *      osobě); neuložený prodej vrátí zakázku přesně do stavu před;
- *   3) uložený prodej: prodano.zakaznik = B, B řídící, hlavička B, přepínač
- *      řídícího i Prodáno zhasnuté, háček vzPoProdeji zavolal zápis
+ *   3) uložený prodej: prodano.zakaznik = B, B řídící, hlavička B, výběr
+ *      řídícího v hlavičce i Prodáno zhasnuté, háček vzPoProdeji zavolal zápis
  *      organizace vítěze (E5b) právě jednou;
  *   4) krycí list sdílené varianty: upozornění, že smluvní pole jsou společná;
  *      Prodáno z krycího listu u víc zákazníků otevře potvrzení v kartě;
@@ -71,8 +72,8 @@ await p.goto(KDE);
 await p.waitForFunction(() => typeof NAST !== 'undefined' && typeof render === 'function', null, { timeout: 15000 });
 await p.waitForTimeout(400);
 
-zkus('sestavení obsahuje jádro a obrazovku E4 (vzProdej, vzRidiciZmen, vzPoProdeji)',
-  await p.evaluate(() => typeof vzProdej === 'function' && typeof vzRidiciZmen === 'function' && typeof vzPoProdeji === 'function'));
+zkus('sestavení obsahuje jádro a obrazovku E4 a T1 (vzProdej, vzT1ZakZmen, vzPoProdeji)',
+  await p.evaluate(() => typeof vzProdej === 'function' && typeof vzT1ZakZmen === 'function' && typeof vzPoProdeji === 'function'));
 
 await p.evaluate(sab => {
   window.__dlg = [];
@@ -128,9 +129,10 @@ const radek = id => p.evaluate(id => {
   render();
   const tr = document.querySelector(`#vzKarta_ock tr[data-vz="${id}"]`);
   if (!tr) return null;
-  const radio = tr.querySelector('input[type="radio"]');
+  const radio = tr.querySelector('[data-vz-ridici]');   // T1: ★ / ☆
+  const rz = document.getElementById('vzT1Rz');
   const prod = tr.nextElementSibling ? [...tr.nextElementSibling.querySelectorAll('button')].find(x => x.textContent.trim() === 'Prodáno') : null;
-  return { radio: radio ? { checked: radio.checked, disabled: radio.disabled, title: radio.title } : null,
+  return { radio: radio ? { checked: radio.textContent === '★', disabled: !rz || rz.disabled, title: rz ? rz.title : '' } : null,
     prodano: prod ? { disabled: prod.disabled, title: prod.title } : null };
 }, id);
 
@@ -140,22 +142,23 @@ const c = await priprav('dva');
 zkus('zakázka se dvěma zákazníky', !c.chyba && c.B === 'z2', c);
 {
   const rB = await radek('z2');
-  zkus('autor: radio u B aktivní, u A zaškrtnuté a zhasnuté', rB && rB.radio && !rB.radio.disabled && !rB.radio.checked, rB);
-  await p.check('#vzKarta_ock input[data-vz-ridici="z2"]');
+  zkus('autor: výběr řídícího v hlavičce aktivní, u B ☆, karta bez přepínače', rB && rB.radio && !rB.radio.disabled && !rB.radio.checked
+    && !(await p.evaluate(() => !!document.querySelector('#vzKarta_ock input[type="radio"]'))), rB);
+  await p.selectOption('#vzT1Rz', 'z2');
   await p.waitForTimeout(100);
   const po = await p.evaluate(() => ({ r: ZAK.vzRidici.id, obj: ZAK.objednatel, pis: ZAK.vzRidici.pismeno, dalsi: ZAK.dalsiZakaznici.map(d => d.id + ':' + d.pismeno),
-    dlg: window.__dlg.filter(d => d.druh === 'potvrd').map(d => d.text) }));
-  zkus('po potvrzení: řídící B, hlavička B, písmena beze změny (B si nese B, A bez písmene)',
+    blok: (document.querySelector('[data-vz-t1-org]') || {}).textContent || '' }));
+  zkus('po výběru: řídící B, hlavička B, písmena beze změny (B si nese B, A bez písmene)',
     po.r === 'z2' && po.obj === UB.objednatel && po.pis === 'B' && po.dalsi.join() === 'z1:', po);
-  zkus('potvrzení řekne, že organizace dealu se bez prodeje nemění', po.dlg.some(t => /bez prodeje NEMĚNÍ/.test(t)), po.dlg);
-  await p.check('#vzKarta_ock input[data-vz-ridici="z1"]');
+  zkus('hlavička řekne, že organizace dealu se bez prodeje nemění (T1 žlutý blok)', /organizace dealu se změní až prodejem/.test(po.blok), po.blok);
+  await p.selectOption('#vzT1Rz', 'z1');
   await p.waitForTimeout(100);
   zkus('výměna zpět na A', await p.evaluate(() => ZAK.vzRidici.id === 'z1' && ZAK.objednatel.startsWith('Alfaprodej')));
 }
 await priprav('dva', 'jiny.obchodnik@priklad.cz');
 {
   const rB = await radek('z2');
-  zkus('jiný obchodník (není autor): radio u B zhasnuté s důvodem', rB && rB.radio && rB.radio.disabled && /autor zakázky/.test(rB.radio.title), rB);
+  zkus('jiný obchodník (není autor): výběr řídícího zhasnutý s důvodem', rB && rB.radio && rB.radio.disabled && /autor zakázky/.test(rB.radio.title), rB);
 }
 
 /* ============ 2) Prodáno u zákazníka ============ */
@@ -198,7 +201,7 @@ await priprav('dva');
   zkus('háček vzPoProdeji: zápis organizace vítěze (E5b) zavolán právě jednou po uložení', po.org === 1 && po.ulozeni >= 1, po);
   const rP = await radek('z1');
   const rB = await radek('z2');
-  zkus('po prodeji: přepínač řídícího zhasnutý (prodaná), Prodáno zhasnuté', rP.radio.disabled && /prodaná/.test(rP.radio.title)
+  zkus('po prodeji: výběr řídícího zhasnutý (prodaná), Prodáno zhasnuté', rP.radio.disabled && /prodaná/.test(rP.radio.title)
     && rB.prodano.disabled && rP.prodano.disabled, { rP, rB });
 }
 
