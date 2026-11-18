@@ -1502,6 +1502,11 @@ function zakazkaHlavicka(ock) {
   const ridiciBtn = akt.ridici ? '' : ridiciZamceno
     ? `<div class="row"><label></label><span class="note noprint" data-pr-ridici="1" title="${esc(ridiciZamceno)}">řídící je prodaná varianta „${esc(rid.nazev)}"</span></div>`
     : `<div class="row"><label></label><button class="mini noprint" onclick="varRidici('${escJs(akt.id)}')">nastavit jako řídící (platná je „${esc(rid.nazev)}")</button></div>`;
+  /* T1 (rozhodnutí J. V. 18. 11. 2026): u 2+ zákazníků se ZAPNUTOU funkcí
+   * nahrazuje tlačítko výběr „Řídící varianta" a „Řídící zákazník" a pod
+   * Stavem Pipedrive přibude blok, když organizace dealu nesedí na řídícího
+   * (vice_zakazniku_ui.js). Jinak null — hlavička znak po znaku jako dřív. */
+  const t1 = typeof vzT1Hlavicka === 'function' ? vzT1Hlavicka() : null;
   /* Model 1 je od 24. 9. 2026 zmrazený (#332): ne-administrátor ho v nabídce
    * nemá. U zakázky, která v něm už je, vidí „Model 1 (zmrazený)" a může ji
    * převést na Model 2; administrátor přepíná jako dřív. */
@@ -1633,7 +1638,7 @@ function zakazkaHlavicka(ock) {
         <div class="zak-head-col">
           ${typeof vzPrepinacRadek === 'function' ? vzPrepinacRadek('proj') : ''}${zakaznikRow('proj')}${txt(vzC('ZAK.kontakt'), 'Kontaktní osoba')}${icoRow(vzC('ZAK.ico'), 'proj')}${dphRowProj}
         </div>
-        <div class="zak-head-col">${pdStavRow}${variantaRow}${ridiciBtn}${prirazkaRowProj}</div>
+        <div class="zak-head-col">${pdStavRow}${t1 ? t1.blok : ''}${variantaRow}${t1 ? t1.radky : ridiciBtn}${prirazkaRowProj}</div>
       </div>${typeof vzFormularBlok === 'function' ? vzFormularBlok('proj') : ''}${puvodRadek}
       <div class="zak-cena noprint">
         ${zakTrojice()}
@@ -1657,7 +1662,7 @@ function zakazkaHlavicka(ock) {
         ${typeof vzPrepinacRadek === 'function' ? vzPrepinacRadek('ock') : ''}${zakaznikRow('ock')}${txt(vzC('ZAK.kontakt'), 'Kontaktní osoba')}${icoRow(vzC('ZAK.ico'), 'ock')}${dphRow}
       </div>
       <div class="zak-head-col">
-        ${pdStavRow}${variantaRow}${ridiciBtn}${rezimRow}${prirazkaRow}${radaRow}${kurzRow}
+        ${pdStavRow}${t1 ? t1.blok : ''}${variantaRow}${t1 ? t1.radky : ridiciBtn}${rezimRow}${prirazkaRow}${radaRow}${kurzRow}
       </div>
     </div>${typeof vzFormularBlok === 'function' ? vzFormularBlok('ock') : ''}${puvodRadek}
     <div class="zak-cena noprint">
@@ -1674,6 +1679,7 @@ function zakazkaHlavicka(ock) {
     /* VZ-E1 #600: karta Zákazníci zakázky hned pod hlavičkou (před lištou
      * kalkulace, jako v prototypu) — jen u 2+ zákazníků, jinak ''. */
     + (typeof vzKarta === 'function' ? vzKarta('ock') : '')
+    + (typeof vzPoznamkaKarta === 'function' ? vzPoznamkaKarta('ock') : '')   // T1: náhled poznámky dealu (jen ZAP + 2+)
     + kalkLista(true);
 }
 

@@ -1421,6 +1421,9 @@ function onlineUloz(opts) {
     }
     return Promise.resolve(false);
   }
+  /* T1 (víc zákazníků): zvolená sdílená řídící varianta bez řídícího
+   * zákazníka — neukládá se nic (ani autosave); ručně hláška i dialog. */
+  if (typeof vzT1UlozStop === 'function' && vzT1UlozStop(!opts.tiche || !!opts.fronta)) return Promise.resolve(false);
   /* JEDEN ZÁPIS NAJEDNOU (nález V27, 8. 9. 2026). Ruční uložení, tlačítko
    * „Uložit online" v kartě a autosave se uměly sejít: druhý požadavek vyšel
    * se starým razítkem, server ho správně odmítl 409 a klient se ptal

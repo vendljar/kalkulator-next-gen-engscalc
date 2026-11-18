@@ -35,6 +35,8 @@ function varNova() {
 }
 function varAktivuj(id) { ZAK.aktivni = id; syncVarianta(); render(); }
 function varRidici(id) {
+  /* T1: u 2+ zákazníků se zapnutou funkcí jako výběr „Řídící varianta" v hlavičce. */
+  if (typeof vzT1VarRidici === 'function' && vzT1VarRidici(id)) return;
   /* PR #563: prodaná varianta je vždy řídící — jinam až po odemčení prodeje
    * (server by přepnutí při uložení stejně vrátil, prodServer). */
   const proc = (typeof prodRidiciZamceno === 'function') ? prodRidiciZamceno(ZAK, id) : '';

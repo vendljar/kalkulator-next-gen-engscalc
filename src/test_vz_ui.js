@@ -325,9 +325,10 @@ const KARTA = { nazev: 'Karta s.r.o.', sidlo: 'Kartová 1', ico: '00000043', dic
     && (k.match(/onclick="vzProdejOtevri\('z[12]'\)" disabled title="(Prodat jde jen odeslanou|Zákazníkovi „[^"]*tato nabídka neodešla)/g) || []).length === 2, k.match(/vzProdejOtevri[^>]*>/g));
   test('karta: číslo nabídky dalšího zákazníka s písmenem (E2)', (k.match(/class="vz-cislo">([^<]*)</g) || []).some(x => /-B</.test(x))
     && (k.match(/class="vz-cislo">([^<]*)</g) || []).filter(x => /-[B-Z]</.test(x)).length === 1, k.match(/class="vz-cislo">[^<]*</g));
-  /* VZ-E4: radio řídícího checked a zhasnuté; radio dalšího aktivní (vzRidiciZmen) — offline / autor smí. */
-  test('karta: radio řídícího checked a disabled, radio dalšího aktivní (E4)', /name="vzRidici_ock" data-vz-ridici="z1" checked disabled/.test(k)
-    && /data-vz-ridici="z2" title="[^"]*" onchange="vzRidiciZmen\('z2'\)"/.test(k), k.match(/type="radio"[^>]*>/g));
+  /* T1: sloupec Řídící jen ukazuje ★ / ☆ (řídícího určuje hlavička), žádný přepínač. */
+  test('karta: Řídící jen ★ / ☆, žádné radio ani vzRidiciZmen (T1)', /data-vz-ridici="z1" title="řídící zákazník">★</.test(k)
+    && /class="vz-t1-hvezda mut" data-vz-ridici="z2" title="řídícího určuje hlavička[^"]*">☆</.test(k)
+    && !/type="radio"/.test(k) && k.indexOf('vzRidiciZmen') < 0, k.match(/data-vz-ridici[^>]*>./g));
   test('karta: Vlastní varianta řídícího zhasnutá', /vzVlastniVarianta\('z1'\)" disabled/.test(k) && /vzVlastniVarianta\('z2'\)">/.test(k));
   test('karta: výběr varianty řídícího zhasnutý, dalšího ne', /vzVariantaSet\('z1', this.value\)" disabled/.test(k) && /vzVariantaSet\('z2', this.value\)">/.test(k));
   test('karta: escapování názvu (žádný surový tag ani uvozovka)', k.indexOf('<b>x</b>') < 0 && k.indexOf('"\'') < 0 && k.indexOf('&lt;b&gt;x&lt;/b&gt;&quot;&#39;') >= 0);

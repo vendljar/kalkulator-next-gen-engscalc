@@ -12,6 +12,10 @@
  *   • GAMA invest s.r.o. — nabídka zatím neodeslána (2026 - OPR - CN - 9940-C)
  *   — nabídka 2026 - OPR - CN - 9940
  *
+ * T1: nesedí-li organizace dealu na řídícího zákazníka, přibude za seznamem
+ * řádek „Řídící zákazník v kalkulaci: C — Název (organizace dealu se změní
+ * až prodejem)“ (jádro vzOrgNesediText).
+ *
  * Jen názvy dalších zákazníků, čísla, dny a ceny ODESLANÝCH nabídek — žádné
  * kontakty, osoby, IČO ani slevy (mez B225). Řídící zákazník v seznamu není
  * (deal vede on). Strop délky seznamu VZP_MAX znaků (bez značky) s řádkem
@@ -26,6 +30,7 @@
 const VZP_UVOD = 'Další zákazníci na zakázce: ';
 const VZP_ZADNI = 'Další zákazníci na zakázce: žádní';
 const VZP_MAX = 2000;
+const VZP_T1_MAX = 700;   // řádek T1: název řídícího ≤ 500 znaků + věta
 const VZP_RIDICI = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g;
 const VZP_KDY = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
@@ -116,7 +121,12 @@ function vzPoznamkaText(zak, volby) {
   const o = volby || {};
   if (typeof vzRezim === 'function' && vzRezim(zak)) {
     const r = vzPoznamkaRadky(zak);
-    if (r.length) return [VZP_UVOD.trim()].concat(r).join('\n');
+    /* T1 (rozhodnutí J. V. 18. 11. 2026): organizace dealu nesedí na řídícího
+     * zákazníka (jádro vzOrgNesediText — bez IČO, jen písmeno a název) →
+     * řádek „Řídící zákazník v kalkulaci: …" za seznamem. Řídící dál není
+     * mezi dalšími. */
+    const t1 = typeof vzOrgNesediText === 'function' ? vzpCisty(vzOrgNesediText(zak, false)).slice(0, VZP_T1_MAX) : '';
+    if (r.length) return [VZP_UVOD.trim()].concat(r, t1 ? [t1] : []).join('\n');
   }
   return o.zadni ? VZP_ZADNI : '';
 }
@@ -137,5 +147,5 @@ function vzPoznamkaSeZnackou(zak, text) {
 }
 
 if (typeof module !== 'undefined' && module.exports)
-  module.exports = { VZP_UVOD, VZP_ZADNI, VZP_MAX, VZP_CISLO_MAX, vzpDen, vzpCena, vzpCisloNabidky,
+  module.exports = { VZP_UVOD, VZP_ZADNI, VZP_MAX, VZP_T1_MAX, VZP_CISLO_MAX, vzpDen, vzpCena, vzpCisloNabidky,
     vzpNeprodano, vzpRadek, vzPoznamkaRadky, vzPoznamkaText, vzPoznamkaSeZnackou };
