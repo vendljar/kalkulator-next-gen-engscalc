@@ -73,6 +73,18 @@ Vedlejší postřeh (K49-I6, nízká): v anglické nabídce zakázky s víc šac
 („SHAFT VARIANT: Šachta 1“, „Šachta 2“). Výchozí jméno tvoří `vsNazev` / `vice_sachet_ui.js` („Šachta N“) a do jazyka tisku se
 nepřekládá. Ostatní česká slova v EN nabídkách jsou názvy akcí a jména zadaná uživatelem.
 
+## Doplněk: správa šablon v18.11.7 (C7 + NS, #645) — jen čtení
+
+Test web v18.11.7 (`origin/test` a755d89), administrátor, Nastavení → Smlouvy / Šablony, přepínač OCK i PROJ. Skript
+blokoval každý zápis a žádný neodešel. Snímky obrazovky zůstaly mimo repo.
+
+| kontrola | výsledek |
+|---|---|
+| správa šablon („ŠABLONY DOKUMENTŮ — jen OCK/PROJ“) stojí hned pod přepínačem OCK · PROJ, nad platebními podmínkami | ✅ OCK i PROJ; přepínač filtruje tabulku (OCK: nabídka OCK, SoD realizace; PROJ: nabídka PROJ, SoD projekce, plná moc) |
+| tlačítko „Vyrobit / Přegenerovat z češtiny“ (`sablPregeneruj`) | ✅ zmizelo (není v textu ani v HTML, ani v detailu dokumentu). V detailu jsou jen „Nahrát přeložený soubor“, „Stáhnout“ a „Nepřeložené fráze (CSV)“ |
+| zbytek textu | ⚠ K49-I8: úvodní věta správy šablon dál říká „Česká šablona je zdroj, ze kterého se vyrábějí jazykové verze“. Po C7 se jazykové verze nevyrábějí, nahrává se přeložený soubor. |
+| SoD projekce EN/DE/FR | ℹ na testu nezveřejněné. Tabulka je ukazuje jako „chybí — tiskne se česky“, přitom zábrana `sodJazykZabrana` cizojazyčnou smlouvu bez jazykové šablony nevyrobí. Stojí za ověření, zda popisek „tiskne se česky“ u smluv odpovídá chování (K49-I9). |
+
 ## Nálezy
 
 | ID | co | závažnost |
@@ -81,6 +93,8 @@ nepřekládá. Ostatní česká slova v EN nabídkách jsou názvy akcí a jmén
 | K49-I2 | `overit_sod.mjs` 5/51: zastaralá očekávání (v1 šablona, před C3) — vada testu, ne aplikace | nízká |
 | K49-I3 | Na testu nebyla zveřejněná šablona plné moci | vyřešeno (J. V. zveřejnil 18. 11., plnaMoc v2) |
 | K49-I6 | Výchozí název šachty „Šachta N“ zůstává v EN nabídce česky | nízká, k rozhodnutí |
+| K49-I8 | Úvodní věta správy šablon „…ze kterého se vyrábějí jazykové verze“ je po C7 zastaralá | nízká (text UI) |
+| K49-I9 | SoD projekce EN/DE/FR chybí; popisek „tiskne se česky“ vs. zábrana jazyka smlouvy — ověřit | informace |
 | K49-I7 | L3 u víc šachet a sleva v EUR neověřeny — jediná TEST zakázka s víc šachtami je VZ bez odeslané nabídky | koordinace navrhla založit „TEST K49 – víc šachet EUR“ a vytisknout CN. To je zápis do testu, který CLAUDE.md automatu zakazuje, proto čeká na souhlas J. V. |
 | K49-I5 | Termíny realizace firmy: test má proti main 6. řádek navíc (CZ/EN/DE). Buď ho J. V. doplní do main při sloučení, nebo ho na testu smaže | k rozhodnutí J. V. |
 | K49-I4 | Pevná sada `porovnani_sada.js` nemá případ přepnutí typu šachty nebo zasklení (K40-N1 nevidí) | návrh doplnit |
