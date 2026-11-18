@@ -15,11 +15,23 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/navrh-rezie` | e6c1020 | — | návrh režie vývoje (S1–S8) + rozhodnutí J. V. 18. 11.; kopie návrhu v `podklady/NAVRH_REZIE_2026-11-18.md` |
 | `claude/s7-podklady` | (tato dávka) | v18.11.4 | S7 startovní podklady #612, sloučeno s integrací dcb1678 |
 | `claude/s6s8-evidence` | (tato dávka) | v18.11.5 | S6 + S8 #613: jedna evidence, PREHLED.md, NOVINKY; nad integrací 9bd6dc8 |
+| `claude/vz-f1` | (tato dávka) | v18.11.7 | VZ-F1 #652 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
 (18. 11.: žádná).
 
 ## Běžící dávky
+
+- **VZ-F1 #652** (`claude/vz-f1`, v18.11.7 — číslo přečísluje koordinace): opravy z `podklady/kola/STAV_TEST_VZ_2026-11-18.md`.
+  N3 #646 (vysoká): zástupci a DIČ v krycím listu OCK/PROJ jdou do položky adresáta (`vzKlCesta`, `vzCesta` i pro
+  `ZAK.zastupci.*`); #650 KL BO/Tech/PROJ tiskne zástupce i banku/účet/rejstřík (i 1 zákazník — mění text KL);
+  N1 #647 stejné IČO odmítnuto (klient + server 400); N2 #648 hlavička jen varianty otevřeného zákazníka; N4 #649 KL
+  `…9801.2-C`; #651 controlling `…9801-B` po prodeji; plná moc jen řídící (věta v příručce). Testy `src/test_vz_f1.js`
+  49/0 (pojistka na ec5bbac 32 FAIL), `test_vz_server.mjs` 110/0, `overit_vz_tisk` 198/0 (očekávání KL C upraveno).
+  Mutace [VZ F1] jádro 17/17, server 4/4; přepsané mutace E1 ×2, E2, K40a D7 ×2. Porovnání sestavení proti test SHODA
+  353/353. Kolo `--bez-mutaci`: statické 9/9; sady a hodiny viz zpráva koordinaci (1. běh: `overit_vz_tisk` = očekávaný
+  N4, `test_577_kopie_skript` T4 občasné, samostatně 5× zelené). **Před sloučením revize poradce (N3 = únik do SoD).**
+  Neřešeno: zástupci dalšího zákazníka se po jeho SoD nezmrazují (zmrazení hlídá jen hlavičku řídícího) — k rozhodnutí.
 
 - **S6 + S8 #613** (`claude/s6s8-evidence`, v18.11.5, nad 9bd6dc8): evidence v `roadmap.json` (pole `typ`, `cekaNa` „<kdo>: <co>“,
   `kolo`, `vetev`, `verze`, `dopadCena`, `alias`; migrace jen dotčených položek), otevřené nálezy a otázky převedeny jako
