@@ -1,3 +1,40 @@
+# Předávka — SL: #589 řádek slevy v rozpisu šachet, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev `claude/sl-sod-sleva`
+
+Nad `8462aea` (integrace = test v12.11.7). Rozhodnutí J. V. 16. 11. 2026 (řádek slevy; rozšíření koordinací 16. 11.:
+v6 a Chybí / Nepovinné). **v16.11.1** (přečísluje koordinace). Do `test-draft`, `test`, `main` ani integrace nic;
+weby, Pipedrive nic; Disk jen čtení (šablony SoD realizace v4). **Před sloučením revize poradce Fable** (text
+smlouvy, cena, podbarvení).
+
+| bod | stav | kde |
+|---|---|---|
+| #589 `{{SACHTY_SOD_ROZPIS}}` končí vyrovnávacím řádkem = cena díla dle nabídky − součet šachet (Sleva / Sleva a zaokrouhlení / Zaokrouhlení) | ✅ | `src/sod.js` sodRozpisVyrovnani, sodCenaPredSlevou; `src/preklad.js` |
+| #609 nástroj `--sod-real-v6`, šablony v6 CZ/EN/DE/FR (poslané J. V. SendUserFile 18. 11.) | ✅ | `nastroje/vyrob_sablony.js` sodRealV6, `podklady/SABLONA_SOD_REALIZACE_V6_18_11.md` |
+| #609 generátor sejme podbarvení u vyplněných (dokumenty s tečkami), žluté jen „……" | ✅ | `src/docxgen.js` docxSejmiPodbarveni |
+| #610 kontrola Chybí / Nepovinné (`SOD_NEVYPLNENE_NEPOVINNE`) | ✅ jen upozornění | `src/sod.js` |
+| testy, mutace [SL] 16/16 | ✅ | `src/test_sod_v5.js` E, F, D; `src/test_sod_tecky.js` S2; `src/test_vs_kontroly.js` H |
+| CHANGELOG, roadmapa #589 #609 #610, příručky (uživatel kap. SoD, admin šablona v6) | ✅ | |
+
+**Výchozí volby (zadání nechalo otevřené):**
+- #589: popisky s **velkým písmenem** („Sleva“) — slovník nerozlišuje velikost písmen, heslo „Sleva“ → „Discount“ už
+  je; cíl = cena dle nabídky (`d.ceny.bezDph`, u dotisku `zaznam.nabidka`); cena před slevou se počítá v sod.js
+  (`cenaNabidkyOck`), data SoD zůstala znak po znaku stejná (zlatá sada VS 319/319); záporná částka formátem měny.
+- #609: **„stejný mechanismus jako SoD projekce v4" neexistoval** — generátor podbarvení nesnímal nikde, u SoD
+  projekce v4 a plné moci svítily žlutě i vyplněné údaje. Nový mechanismus platí pro všechny dokumenty s tečkami
+  (SoD realizace, SoD projekce, plná moc), nabídky beze změny. Běh se symbolem a pevným textem nástroj **rozdělí**
+  (žlutý jen symbol) — jinak by sejmutí u vyplněného symbolu vzalo podbarvení i tečkám ve stejném běhu. Kontrola
+  „mimo podbarvení = v5" proto porovnává značky, text a písmo každého úseku (ne bajty).
+- #610: věta „… k doplnění (tečky „……"). Chybí: …. Nepovinné: …." — skupina bez položek se nevypíše; kontrola se
+  ozve i jen s nepovinnými (každé místo s tečkami vyjmenuje).
+
+**Změněná očekávání starých testů:** `src/test_sod_tecky.js` S — „(tečky „……"): IČO …" → „(tečky „……"). Chybí: IČO …".
+
+**Testy (18. 11.):** test_sod_v5 72/0 s KNG_PODKLADY (v4+v5+v6 CZ/EN/DE/FR), 56/0 bez; test_sod_tecky 26/0;
+test_vs_kontroly 51/0; zlatá sada VS 319/319; mutace [SL] 16/16. Kolo `--bez-mutaci` 16. 11. (jen #589) VŠE ZELENÉ;
+kolo po #609/#610 — viz níž. Celé mutace po částech pouští koordinace.
+
+**Pro J. V.:** šablony v6 nahrát na test až s kódem této větve (se starším kódem by žlutě svítily i vyplněné údaje).
+
+---
 # Předávka — K40c #581: vazba z webhooku Pipedrive, ARES na serveru, „Opravit firmu v Pipedrive“, větev `claude/k40c-webhook`
 
 Nad `1a08186` (integrace v12.11.3), sloučeno s integrací `4acda93` (v12.11.6: + VSD, C2+C3, C5). **v12.11.7**. Do
