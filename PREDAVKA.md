@@ -13,7 +13,7 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/integrace-16-10` (integrace) | 5e21f89 | v18.11.2 | + C9 #608 (v18.11.1), víc zákazníků VZ #598 E0–E6 (v18.11.2, vypínač výchozí VYP); `main` je předkem |
 | `claude/rychla-k40n1` | b4a9622 | — | rychlá cesta K40-N1 nad main 6c4bc80 (cherry-pick b4e2023) |
 | `claude/navrh-rezie` | e6c1020 | — | návrh režie vývoje (S1–S8) + rozhodnutí J. V. 18. 11.; kopie návrhu v `podklady/NAVRH_REZIE_2026-11-18.md` |
-| `claude/s7-podklady` | (tato dávka) | — | S7 startovní podklady nad integrací 5e21f89 |
+| `claude/s7-podklady` | (tato dávka) | v18.11.3 | S7 startovní podklady nad integrací 5e21f89 |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
 (18. 11.: žádná).

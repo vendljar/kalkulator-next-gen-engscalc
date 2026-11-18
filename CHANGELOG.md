@@ -8,6 +8,26 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.11.3 — S7: startovní podklady (CLAUDE.md, PREDAVKA, log rozhodnutí), větev claude/s7-podklady
+
+Nad integrací `5e21f89` (v18.11.2). Kód aplikace beze změny. Podle návrhu režie vývoje
+(`podklady/NAVRH_REZIE_2026-11-18.md`, oddíl S7) a rozhodnutí J. V. 18. 11. 2026.
+
+- **CLAUDE.md přepsán podle schváleného textu:** Větve (integrace `claude/integrace-…`, do test koordinace po zeleném kole,
+  do main jen na pokyn J. V., main předkem integrace, nejvýš 4 sezení, poradce), Rychlá cesta pro vady ceny a dokumentu,
+  Kdo rozhoduje (svěřeny jen testy, harnessy a nástroje kola; otázky průběžně s doporučenou variantou; kolega
+  s rolí administrátora jen na test), Předávací soubor, Tagy (jen stav pro main, NOVINKY.md), Testy (stupně kol, STAV
+  kol v `podklady/kola/`). Vypuštěny `test-draft` jako integrační větev, výjimka `k16-nalezy` a datované závorky.
+- **PREDAVKA.md rozdělena:** živý stav 8,5 kB; 557 kB předávek beze ztráty do `podklady/predavky/2026-09.md`,
+  `2026-10.md`, `2026-11.md` (ověřeno řádek po řádku). Na konci PREDAVKA seznam „co bylo přesunuto kam“.
+- **Nové podklady:** `podklady/ROZHODNUTI_LOG.md` (datovaná rozhodnutí J. V. z CLAUDE.md a předávek, včetně 18. 11.),
+  `podklady/SVERENA_ROZHODNUTI.md` (prázdná šablona), `podklady/kola/README.md`,
+  `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md` (osnova skillu z návrhu), kopie návrhu režie.
+- **Krok `staticke` (7 kontrol):** `nastroje/kontrola_podkladu.sh` — PREDAVKA.md nad 15 kB = chyba, `origin/main`
+  není předkem HEAD = upozornění; `--pojistka` doloží obojí na podvržených datech.
+- **`release_odkaz.py --chybejici`** hlásí jen verze, které prošly do main (verze.txt v historii origin/main);
+  verze jen v testu nebo integraci nehlásí. Test `src/test_release_odkaz.js` 27/0 (před úpravou nástroje 3 FAIL).
+
 ## v18.11.2 — Sloučení víc zákazníků (VZ #598, etapy E0–E6) do integrace
 
 Integrační větev claude/integrace-vz (cf53aeb) sloučena s integrací v18.11.1 (C9 #608, roadmapa #597).
