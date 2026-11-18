@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v18.11.9 — VZ T1 (číslo roadmapy přidělí koordinace): řídící varianta a řídící zákazník v hlavičce, větev claude/vz-t1
+## v18.11.9 — VZ T1 #664: řídící varianta a řídící zákazník v hlavičce, větev claude/vz-t1
 
 Nad integrací `2856345` (v18.11.6), sloučeno s integrací `d8e4fc1` (v18.11.8: C7+NS, VZ-F1). Rozhodnutí J. V. 18. 11. 2026, schválená maketa `podklady/T1_MAKETA_KALKULATOR.html`
 (kolo VZ na testu, `podklady/kola/STAV_TEST_VZ_2026-11-18.md` oddíl T1). Verzi přečísluje koordinace. Na webech, Disku
