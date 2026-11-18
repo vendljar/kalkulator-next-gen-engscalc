@@ -24,7 +24,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 - **SP #646** (`claude/sp-statika`, v18.11.8, nad 910315b + integrace 41bbe99): statika opláštění Ano/Ne v zadání šachty
   (`Z.statikaOpl`, chybí = Ano u šachty s opláštěním), vlastní sazba `C.statikaOplKc` (migrace = `statikaKc`), cena
   z nabídky u obou statik zvlášť, nula z nabídky platí u každé položky. Mění cenovou logiku → **revize poradce**.
-  Porovnání sestavení SHODA 353/353; mutace jádro [SP] 11/11 + P5 3/3, server [SP] 8/8 + #561 19/19. Audit
+  Kolo `--bez-mutaci` VŠE ZELENÉ (466/0/7, hodiny 378/0/1, statické 9/9); porovnání sestavení SHODA 353/353; mutace jádro [SP] 11/11 + P5 3/3, server [SP] 8/8 + #561 19/19. Audit
   `podklady/AUDIT_CENY_POLOZEK_646.md`, otázka J. V. #647:
 
   | | cesta / položka | sdílí / chybí | stav |

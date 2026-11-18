@@ -27,7 +27,9 @@ revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `or
 - **Testy:** nový `src/test_646_statika_opl.js` 47/0 (pojistka: proti 910315b padá hned na chybějící funkci jádra);
   upraveny `test_statika_oplasteni.js` (cesta řádku), `test_561_rucni_cena.js` a `netlify/test_561_rucni_cena.mjs`
   (nula se nově uloží, záporná dál ne); zkušební ceník nese `statikaOplKc`; manuál výpočtu migruje sazbu (čísla vydání beze změny).
-- **Mutace [SP]:** jádro 11 nových + 2 přepsané P5, server 8 nových + 1 přepsaná #561.
+- **Mutace [SP]:** jádro [SP] 11/11 + P5 3/3 chycených, server [SP] 8/8 + #561 19/19 chycených.
+
+**Kolo `--bez-mutaci` nad 2a7f210 (po sloučení 41bbe99): VŠE ZELENÉ** — sady 466/0/7, hodiny +400 dní 378/0/1, statické 9/9 (36 min); porovnání sestavení proti `origin/test` **SHODA 353/353**.
 
 ## v18.11.7 — C7 #615 (K48-N1): jazyková verze šablony jen přeloženým souborem, kontrola češtiny; NS #645, větev claude/c7-sablony
 

@@ -8,22 +8,18 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v18.11.7** (`c559baae`, 18. 11. 2026) |
+| testovací web (`test`) | **v18.11.5** (`ec5bbaca`, 18. 11. 2026) |
 
-Test je proti main napřed o 247 commitů.
+Test je proti main napřed o 200 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
-| #645 (dřív NS) | úkol | NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami | v18.11.7 |
-| #615 (dřív K48-N1, B1, C7) | nález | Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (C7: výroba jazykové verze z češtiny zrušena, kontrola podílu češtiny) | v18.11.7 |
 | #614 (dřív K40-N1) | nález | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | v12.11.1 |
 | #613 | úkol | S6 + S8: jedna evidence v roadmap.json (typ, čeká na, kolo, větev, verze, dopad na cenu, aliasy), živý výpis, PREHLED.md a NOVINKY.md | v18.11.5 |
 | #612 | úkol | S7: startovní podklady — CLAUDE.md podle schváleného návrhu, PREDAVKA jen živý stav, archiv předávek, log rozhodnutí J. V. | v18.11.4 |
 | #611 | úkol | S3: porovnání dvou sestavení nad pevnou sadou kalkulací (nastroje/porovnej_sestaveni.sh, krok kola „porovnani“) | v18.11.3 |
-| #610 | úkol | SL: kontrola nevyplněných míst SoD dělí „Chybí“ a „Nepovinné“ | v18.11.6 |
-| #609 | úkol | SL: SoD realizace v6 se žlutým podbarvením symbolů; ve smlouvě žluté zůstanou jen tečky | v18.11.6 |
 | #608 (dřív C9) | úkol | C9: prohlížečové harnessy pod zátěží čekají na stav stránky; limity z KNG_HARNESS_TIMEOUT_MS | v18.11.1 |
 | #606 | úkol | VZ-E6: rejstřík a Přehled (štítek, hledání podle dalšího zákazníka), controlling, překlady, příručky, celé kolo s mutacemi po částech | v17.11.2 |
 | #604 | úkol | VZ-E5: Pipedrive: přepisovaná poznámka „Další zákazníci na zakázce“ u dealu (zobecnění pd_poznamka.mjs, společný časový rozpočet se šachtam… | v16.11.2 |
@@ -31,7 +27,6 @@ Test je proti main napřed o 247 commitů.
 | #601 | úkol | VZ-E2: čísla nabídek s písmenem zákazníka (…9940-B), tisk z pohledu zákazníka, kontroly před tiskem, test úniku údajů s kanárky (revize por… | v16.11.4 |
 | #600 | úkol | VZ-E1: obrazovka: tlačítko „Přidat zákazníka“ a formulář v hlavičce (ARES a databáze zákazníků — zobecnění ares_ui.js na cíl), od 2. zákazn… | v16.11.2 |
 | #599 | úkol | VZ-E0: vypínač viceZakazniku, jádro vice_zakazniku.js (model, písmena, pohled zákazníka, invarianty), import, serverová kontrola tvaru, zla… | v16.11.1 |
-| #589 | úkol | SL: řádek slevy v rozpisu šachet ve smlouvě o dílo realizace | v18.11.6 |
 | #588 | úkol | VSD: seznam šachet nabídky do poznámky dealu Pipedrive (jedna poznámka na deal a zakázku) | v12.11.5 |
 | #587 (dřív K43-T1) | úkol | K43-T1: overit_lista_cekani.mjs čeká na stav aplikace, ne pevný čas | v12.11.5 |
 | #586 | úkol | VSD: upozornění vsTvar — víc šachet mimo meze uložení (K47-I3) | v12.11.5 |
@@ -83,9 +78,10 @@ Test je proti main napřed o 247 commitů.
 | #640 (dřív B221) | otázka | Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený | zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora) |
 | #642 | úkol | Zeštíhlení roadmap.json: hotové položky starší 60 dní do archivu (živý soubor kolem 60 položek) | souhlas (návrh režie S6 d; soubor má 1,2 MB) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
+| #647 | otázka | Audit #646: další položky se sdílenou cenou nebo bez ceny z nabídky — rozhodnout | rozhodnutí k bodům A2–A4 a B1–B2 auditu |
 
 K tomu 11 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 54: J. V. 41, kolega 5, koordinace 3, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 56: J. V. 42, kolega 5, koordinace 4, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

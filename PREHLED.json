@@ -7,32 +7,12 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "c559baae",
-  "verze": "v18.11.7",
+  "sha": "ec5bbaca",
+  "verze": "v18.11.5",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 247,
+ "test_navic_commitu": 200,
  "v_testu_ne_v_main": [
-  {
-   "id": "645",
-   "typ": "ukol",
-   "nazev": "NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami",
-   "alias": [
-    "NS"
-   ],
-   "verze": "v18.11.7"
-  },
-  {
-   "id": "615",
-   "typ": "nalez",
-   "nazev": "Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (C7: výroba jazykové verze z češtiny zrušena, kontrola podílu češtiny)",
-   "alias": [
-    "K48-N1",
-    "B1",
-    "C7"
-   ],
-   "verze": "v18.11.7"
-  },
   {
    "id": "614",
    "typ": "nalez",
@@ -59,18 +39,6 @@
    "typ": "ukol",
    "nazev": "S3: porovnání dvou sestavení nad pevnou sadou kalkulací (nastroje/porovnej_sestaveni.sh, krok kola „porovnani“)",
    "verze": "v18.11.3"
-  },
-  {
-   "id": "610",
-   "typ": "ukol",
-   "nazev": "SL: kontrola nevyplněných míst SoD dělí „Chybí“ a „Nepovinné“",
-   "verze": "v18.11.6"
-  },
-  {
-   "id": "609",
-   "typ": "ukol",
-   "nazev": "SL: SoD realizace v6 se žlutým podbarvením symbolů; ve smlouvě žluté zůstanou jen tečky",
-   "verze": "v18.11.6"
   },
   {
    "id": "608",
@@ -116,12 +84,6 @@
    "typ": "ukol",
    "nazev": "VZ-E0: vypínač viceZakazniku, jádro vice_zakazniku.js (model, písmena, pohled zákazníka, invarianty), import, serverová kontrola tvaru, zla…",
    "verze": "v16.11.1"
-  },
-  {
-   "id": "589",
-   "typ": "ukol",
-   "nazev": "SL: řádek slevy v rozpisu šachet ve smlouvě o dílo realizace",
-   "verze": "v18.11.6"
   },
   {
    "id": "588",
@@ -452,15 +414,21 @@
    "typ": "ukol",
    "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
    "cekaNa": "nahrát upravený skill (mimo repo)"
+  },
+  {
+   "id": "647",
+   "typ": "otazka",
+   "nazev": "Audit #646: další položky se sdílenou cenou nebo bez ceny z nabídky — rozhodnout",
+   "cekaNa": "rozhodnutí k bodům A2–A4 a B1–B2 auditu"
   }
  ],
  "ceka_na_jv_odlozene": 11,
  "nehotove_podle_kdo": {
-  "J. V.": 41,
+  "J. V.": 42,
   "kolega": 5,
-  "koordinace": 3,
+  "koordinace": 4,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 54
+ "nehotovych": 56
 }
