@@ -231,6 +231,44 @@ viceSachet('šachta 2 mezi příčníky → terče', ['interiérová', 'mezi př
   test('posudek: migrace boků nad šachtou 2 (> 0 změn)', n > 0 && z2.nepocitat[0] === eng.skloVolba(z2, v.data.cenik).boky.nazev, [n, z2.nepocitat]);
 }
 
+/* 7b) Revize K40a D1: ZAMČENÁ varianta s víc šachtami a sirotkem boků
+ * u šachty 2 — import nesmí přemapovat (cena odeslané nabídky, ověření
+ * zámku = shoda). Nezamčená táž zakázka migruje (jako šachta 1 od K37).
+ * POJISTKA: na ed98942 (K40a před revizí) import přemapuje a zámek nesouhlasí. */
+function sirotekSachta2() {
+  const { zak, v, Z } = zakazka('interiérová', 'na terče');
+  const z2 = kopie(Z);
+  v.data.ock.dalsi = [{ id: 's2', nazev: 'Výtah B', ks: 1, zadani: z2 }];
+  const sirotek = eng.skloVolba(z2, v.data.cenik).boky.nazev;
+  z2.typSachty = 'exteriérová';
+  z2.profily = kopie(eng.PROFILY_VYCHOZI['exteriérová']);
+  z2.nepocitat = [sirotek];
+  test('D1: sirotek boků šachty 2 je opravdu sirotek', sirotek !== eng.skloVolba(z2, v.data.cenik).boky.nazev);
+  return { zak, v, sirotek };
+}
+{
+  const { zak, v, sirotek } = sirotekSachta2();
+  zm.zamkniVariantu(v, { typ: 'nabidka', cislo: zm.variantaCislo(zak, v),
+    vysledek: kopie(zm.zamekVysledekSpocti(v, JEKLY, 'k40')) });
+  const vi = zk.aktivniVarianta(zk.importZakazka(kopie(zak)));
+  test('D1: zamčená, šachta 2 se sirotkem boků — import nezmění nepocitat',
+    JSON.stringify(vi.data.ock.dalsi[0].zadani.nepocitat) === JSON.stringify([sirotek]), vi.data.ock.dalsi[0].zadani.nepocitat);
+  const ov = zm.zamekOvereni(vi, JEKLY, 'k40');
+  test('D1: zamčená, šachta 2 se sirotkem boků — ověření zámku = shoda', ov && ov.stav === 'shoda', ov && ov.stav);
+}
+{
+  const { zak, sirotek } = sirotekSachta2();
+  const vi = zk.aktivniVarianta(zk.importZakazka(kopie(zak)));
+  const z2 = vi.data.ock.dalsi[0].zadani;
+  test('D1: nezamčená — import šachtu 2 migruje (jako šachtu 1 od K37)',
+    !z2.nepocitat.includes(sirotek) && z2.nepocitat.includes(eng.skloVolba(z2, vi.data.cenik).boky.nazev), z2.nepocitat);
+}
+test('D1: skloMigraceNazvu s jenPrvni na šachtu 2 nesáhne', (() => {
+  const { v, sirotek } = sirotekSachta2();
+  eng.skloMigraceNazvu(v.data, { jenPrvni: true });
+  return v.data.ock.dalsi[0].zadani.nepocitat[0] === sirotek;
+})());
+
 /* 8) Jedna šachta: výstup migrace bez opts beze změny (starý tvar názvů). */
 {
   const { v, Z } = zakazka('exteriérová', 'na terče');

@@ -471,10 +471,14 @@ function skloMigraceNazvu(data, opts) {
    * migrace četla jen šachtu 1 (`ock.zadani`), takže u šachty 2+ se po přepnutí
    * typu nebo zasklení vyřazené sklo boků znovu počítalo (vada K37-N1). Jedna
    * šachta: seznam je jen `ock.zadani` — výstup beze změny. */
-  const zadani = [ock.zadani].concat(Array.isArray(ock.dalsi)
+  const o = opts || {};
+  /* `jenPrvni` (revize K40a D1, 12. 11. 2026): importZakazka u ZAMČENÉ
+   * varianty migruje jen šachtu 1 (jako před K40a). Šachty 2+ by jinak dostaly
+   * přemapované osiřelé vyřazení skla — cena odeslané nabídky by se změnila
+   * a ověření zámku by vrátilo „nesouhlasí". Mez B205a. */
+  const zadani = [ock.zadani].concat((!o.jenPrvni && Array.isArray(ock.dalsi))
     ? ock.dalsi.map(s => (s && typeof s === 'object') ? s.zadani : null) : [])
     .filter(z => z && typeof z === 'object');
-  const o = opts || {};
   let zmen = 0;
   zadani.forEach(z => { zmen += skloMigraceZadani(z, c, o.zadani === z ? o.predCelni : null); });
   /* Přechod čelního skla patří k zadání OTEVŘENÉ šachty (`opts.zadani`, v UI

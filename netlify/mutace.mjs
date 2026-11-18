@@ -49,6 +49,8 @@ const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
   : [/* VS #570 E1 (10. 11. 2026): víc šachet v nabídce — vypínač, tvar, limity, 409, zámek (rychlá sada). */
      'test_vs_server.mjs',
+     /* Revize K40a D1 (12. 11. 2026; rychlá cesta K40-N1): import zamčené varianty s víc šachtami (zakazka.js). */
+     '../src/test_k40_celni_sklo.js',
      /* VS #570 E6 (#596, 10. 11. 2026): štítek šachet v rejstříku zakázek (rychlá sada). */
      'test_vs_rejstrik.mjs',
      /* VS #570 E5 (#595, 10. 11. 2026): Pipedrive náhled — seznam šachet do poznámky (rychlá sada). */
@@ -216,6 +218,12 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* Revize K40a D1 (12. 11. 2026; rychlá cesta K40-N1): import zamčené varianty
+   * migruje sklo jen šachty 1. Hlídá src/test_k40_celni_sklo.js (7b). [K40a] */
+  { nazev: '[K40a] D1: import migruje šachty 2+ i u zamčené varianty', soubor: '../src/zakazka.js',
+    hledej: "jenPrvni: (typeof variantaUzamcena === 'function') ? !!variantaUzamcena(v) : !!(v && v.zamek && v.zamek.zamceno) });",
+    nahrad: "jenPrvni: false });",
+    proc: 'cena odeslané nabídky s víc šachtami by se importem změnila a ověření zámku by nesouhlasilo (revize K40a D1)', sady: ['../src/test_k40_celni_sklo.js'] },
   /* VS #570 E1 (10. 11. 2026): víc šachet v jedné nabídce — server: vypínač
    * správce, tvar a limity ock.dalsi, Model 2, 409 při ztrátě dalsi, zadání
    * šachet 2+ stejnými kontrolami. Hlídá netlify/test_vs_server.mjs. [#570] */
