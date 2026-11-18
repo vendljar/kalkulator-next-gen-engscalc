@@ -294,11 +294,15 @@ const CESKA = /[ěščřžýáíéůúťďňó]/i;
     const bez = await dg.docxVyplnSablonu(ab6, { CENA_BEZ_DPH: '1 Kč' }, [], {}, {});
     const xBez = dec.decode((await dg.zipPrecti(new Uint8Array(await bez.arrayBuffer()))).find(p => p.nazev === 'word/document.xml').data);
     test('F bez volby nevyplnene (nabídky) zůstane podbarvení i u vyplněné hodnoty (beze změny)', /<w:highlight w:val="yellow"\/><\/w:rPr><w:t xml:space="preserve">1 Kč/.test(xBez));
-    test('F docxSejmiPodbarveni: symbol rozdělený mezi běhy → sejmuto ze všech jeho běhů, prázdná hodnota v sadě teček zůstane žlutá',
-      typeof dg.docxSejmiPodbarveni === 'function' && (() => {
-        const x = '<w:r><w:rPr>' + HL + '</w:rPr><w:t>{{A</w:t></w:r><w:r><w:rPr>' + HL + '</w:rPr><w:t>B}}</w:t></w:r><w:r><w:rPr>' + HL + '</w:rPr><w:t>{{C}}</w:t></w:r>';
-        const y = dg.docxSejmiPodbarveni(x, { AB: 'x', C: '' }, new Set(['C']));
-        return y === '<w:r><w:rPr></w:rPr><w:t>{{A</w:t></w:r><w:r><w:rPr></w:rPr><w:t>B}}</w:t></w:r><w:r><w:rPr>' + HL + '</w:rPr><w:t>{{C}}</w:t></w:r>';
+    test('F docxPodbarveniTecek: žlutý jen nevyplněný symbol — rozdělený mezi běhy (všechny jeho běhy), ve společném běhu (vlastní běh); ostatní bez podbarvení',
+      typeof dg.docxPodbarveniTecek === 'function' && (() => {
+        const H = '<w:rPr>' + HL + '</w:rPr>', B = '<w:rPr><w:b/></w:rPr>';
+        const x = '<w:r>' + H + '<w:t>{{A</w:t></w:r><w:r><w:t>B}}</w:t></w:r><w:r>' + B + '<w:t>Jméno: {{C}}, IČ {{D}}</w:t></w:r><w:r>' + H + '<w:t>pevný</w:t></w:r>';
+        const y = dg.docxPodbarveniTecek(x, new Set(['AB', 'D']));
+        return y === '<w:r>' + H + '<w:t>{{A</w:t></w:r><w:r>' + H + '<w:t>B}}</w:t></w:r>'
+          + '<w:r>' + B + '<w:t xml:space="preserve">Jméno: </w:t></w:r><w:r>' + B + '<w:t xml:space="preserve">{{C}}</w:t></w:r><w:r>' + B + '<w:t xml:space="preserve">, IČ </w:t></w:r>'
+          + '<w:r><w:rPr><w:b/>' + HL + '</w:rPr><w:t xml:space="preserve">{{D}}</w:t></w:r><w:r><w:t>pevný</w:t></w:r>'
+          && dg.docxPodbarveniTecek(x, null) === '<w:r><w:t>{{A</w:t></w:r><w:r><w:t>B}}</w:t></w:r><w:r>' + B + '<w:t>Jméno: {{C}}, IČ {{D}}</w:t></w:r><w:r><w:t>pevný</w:t></w:r>';
       })());
   }
 
