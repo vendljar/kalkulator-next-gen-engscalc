@@ -17,8 +17,13 @@ koordinace. Na webech, Disku ani v Pipedrive nic.
   vyrovnávacím řádkem = cena díla dle nabídky (`{{SOD_CENA_NABIDKY}}`, po slevě; u dotisku podle záznamu tisku) −
   součet řádků šachet (ty jsou dál před slevou, rozpočet R7). Popisek **Sleva**; je-li rozdíl i bez slevy (obchodní
   zaokrouhlení, v eurech řádky po šachtách nahoru) **Sleva a zaokrouhlení**, bez slevy jen **Zaokrouhlení**. Řádek
-  jen při nenulovém rozdílu; formát a měna jako ostatní řádky, záporná částka se znaménkem minus. V korunách bez
-  zaokrouhlení se řádek „Sleva“ rovná slevě z nabídky.
+  jen při nenulovém rozdílu; měna jako ostatní řádky, záporná částka „− 292 700,00 Kč" (znaménko zvlášť jako řádek
+  slevy nabídky, L4). Řádek „Sleva“ se rovná slevě z nabídky (SLEVA_KC). Dotisk bere cíl ze záznamu tisku jen
+  s objednanými příplatky, jako cena díla (L5).
+- **Šachty ve SoD v eurech jako nabídka (L3, rozhodnutí J. V. 18. 11. 2026):** řádky šachet = rozpočet ceny před
+  slevou do šachet už v eurech (`rozpocetSachet`), jako tabulka šachet nabídky; dřív se každá šachta převáděla
+  nahoru zvlášť a skoro každá EUR smlouva dostala „Rounding – € 1". **U EUR smluv s víc šachtami se tak řádky
+  šachet mohou lišit o jednotky eur od dnešních (main i test).** V korunách beze změny.
 - Slovník EN/DE/FR: „Zaokrouhlení“, „Sleva a zaokrouhlení“ (heslo „Sleva“ už bylo; slovník nerozlišuje velikost
   písmen, proto popisky s velkým písmenem jako řádky šachet).
 - Šablona v5, výpočet ceny ani data nabídky se nemění (zlatá sada VS 319/319); jedna šachta beze změny.
@@ -28,14 +33,17 @@ koordinace. Na webech, Disku ani v Pipedrive nic.
   z v5 (nebo v4) CZ/EN/DE/FR — každý symbol žlutě podbarvený jako u SoD projekce v4 a plné moci; běh se symbolem
   a pevným textem se rozdělí (žlutý jen symbol). Symboly, text i písmo = v5 (tvrdé kontroly). Podklad
   `podklady/SABLONA_SOD_REALIZACE_V6_18_11.md`; .docx dostal J. V. v sezení, do repa nepatří.
-- **Ve smlouvě žluté jen tečky:** generátor dosud podbarvení nesnímal (u SoD projekce a plné moci svítily žlutě
-  i vyplněné údaje). Teď u dokumentů s tečkami (SoD realizace, SoD projekce, plná moc) sejme podbarvení z běhů
-  vyplněného symbolu, i rozděleného a i u rozpisů; žluté zůstanou jen „……". Nabídky beze změny.
+- **Ve smlouvě je žluté právě nevyplněné místo:** generátor dosud podbarvení nesnímal (u SoD projekce a plné moci
+  svítily žlutě i vyplněné údaje). Teď u dokumentů s tečkami (SoD realizace, SoD projekce, plná moc) po dosazení
+  hodnot dostane každé „……" vlastní žlutý běh (i když šablona symbol nepodbarvila) a ze všeho ostatního se
+  podbarvení sejme — z vyplněných údajů, rozpisů i z pevného textu, který SoD projekce v4 a plná moc podbarvují
+  („Objednatel:", „zmocnitel"); i u plně vyplněné smlouvy (revize poradce L1, L2). Nabídky beze změny.
 - **Kontrola nevyplněných míst SoD: Chybí / Nepovinné (#610, J. V. 16. 11.):** nepovinné jen druhý podepisující
   a faktury v kopii 1 a 2 (konstanta `SOD_NEVYPLNENE_NEPOVINNE`), DIČ, banka, účet a zástupce ve věcech obchodních
   s kontaktem povinné. Věta „… k doplnění (tečky „……"). Chybí: …. Nepovinné: …." vyjmenuje každé místo; jen
   upozornění. Změněné očekávání `src/test_sod_tecky.js` S (dvojtečka → „Chybí:").
-- Testy: `test_sod_v5.js` F (+ D se skutečnými v6), `test_sod_tecky.js` S2, `test_vs_kontroly.js` H; mutace [SL] 16/16.
+- Testy: `test_sod_v5.js` E, F (+ D se skutečnými v6), `test_sod_tecky.js` S2, L1, L2, K (skutečné SoD projekce v4 CZ/EN,
+  plná moc, SoD realizace v6), `test_vs_kontroly.js` H; mutace [SL] 20/20.
 
 ## v12.11.7 — K40c #581: vazba z webhooku Pipedrive, firma z ARES na serveru, „Opravit firmu v Pipedrive“, větev claude/k40c-webhook
 

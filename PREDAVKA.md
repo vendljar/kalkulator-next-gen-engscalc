@@ -14,15 +14,28 @@ smlouvy, cena, podbarvení).
 | testy, mutace [SL] 16/16 | ✅ | `src/test_sod_v5.js` E, F, D; `src/test_sod_tecky.js` S2; `src/test_vs_kontroly.js` H |
 | CHANGELOG, roadmapa #589 #609 #610, příručky (uživatel kap. SoD, admin šablona v6) | ✅ | |
 
+**Revize poradce 18. 11. (SLOUČIT PO OPRAVĚ) — opraveno:**
+- **L1** plně vyplněná smlouva zůstávala žlutá → podbarvení se řeší vždy, když je `nevyplnene` pole (i prázdné).
+- **L2** běh s vyplněným i nevyplněným symbolem → mechanismus přepsán na `docxPodbarveniTecek` (po dosazení hodnot): každé
+  „……“ vlastní žlutý běh, nic jiného žluté není — **i pevný text, který SoD projekce v4 a plná moc podbarvují**
+  („Objednatel:“, „Zastoupené:“, „zmocnitel“; ty šablony navíc nepodbarvují všechny symboly — tečky teď žluté jsou vždy).
+  Ověřeno nad skutečnými SoD projekce v4 CZ/EN a plnou mocí z Disku (KNG_PODKLADY). Při tom nalezena a opravena chyba
+  vlastního kódu (chybějící `</w:r>` u běhu bez teček — test teď hlídá XML). Šablony v6 se nepřegenerovávaly.
+- **L3** (J. V. 18. 11. „šachty počítat jako nabídka“): v EUR řádky šachet = `rozpocetSachet` v eurech jako tabulka nabídky;
+  EUR bez slevy bez řádku, se slevou „Discount – − € …“ = SLEVA_KC. **U EUR smluv s víc šachtami se řádky šachet
+  mohou lišit o jednotky eur oproti dnešku (main i test).** CZK beze změny.
+- **L4** „Sleva – − 292 700,00 Kč“ (U+2212, znaménko zvlášť jako nabídka). **L5** cíl ze záznamu tisku jen s objednanými.
+- **L6** pojistky: L1/L2 proti docxgen z d0f9af9 8 selhání, L3–L5 proti sod.js z 867d688 9 selhání.
+
 **Výchozí volby (zadání nechalo otevřené):**
 - #589: popisky s **velkým písmenem** („Sleva“) — slovník nerozlišuje velikost písmen, heslo „Sleva“ → „Discount“ už
-  je; cíl = cena dle nabídky (`d.ceny.bezDph`, u dotisku `zaznam.nabidka`); cena před slevou se počítá v sod.js
+  je; cíl = cena dle nabídky (`d.ceny.bezDph`, u dotisku s objednanými `zaznam.nabidka`); cena před slevou se počítá v sod.js
   (`cenaNabidkyOck`), data SoD zůstala znak po znaku stejná (zlatá sada VS 319/319); záporná částka formátem měny.
 - #609: **„stejný mechanismus jako SoD projekce v4" neexistoval** — generátor podbarvení nesnímal nikde, u SoD
-  projekce v4 a plné moci svítily žlutě i vyplněné údaje. Nový mechanismus platí pro všechny dokumenty s tečkami
-  (SoD realizace, SoD projekce, plná moc), nabídky beze změny. Běh se symbolem a pevným textem nástroj **rozdělí**
-  (žlutý jen symbol) — jinak by sejmutí u vyplněného symbolu vzalo podbarvení i tečkám ve stejném běhu. Kontrola
-  „mimo podbarvení = v5" proto porovnává značky, text a písmo každého úseku (ne bajty).
+  projekce v4 a plné moci svítily žlutě i vyplněné údaje. Nový mechanismus (po revizi `docxPodbarveniTecek`) platí
+  pro všechny dokumenty s tečkami (SoD realizace, SoD projekce, plná moc), nabídky beze změny. Nástroj v6 běh se
+  symbolem a pevným textem **rozdělí** (žlutý jen symbol); kontrola „mimo podbarvení = v5" proto porovnává značky,
+  text a písmo každého úseku (ne bajty).
 - #610: věta „… k doplnění (tečky „……"). Chybí: …. Nepovinné: …." — skupina bez položek se nevypíše; kontrola se
   ozve i jen s nepovinnými (každé místo s tečkami vyjmenuje).
 

@@ -288,10 +288,24 @@ function sodSachtySymboly(d, zak, varianta, jekly, L, sablona) {
   const ks = ' ' + P('ks');
   const seznam = vo.sachty.map(x => x.nazev + ' ' + x.ks + ks).join(', ');
   d.placeholders.SACHTY_SOD_PREDMET = k + ' ' + P(druh) + ', ' + P('celkem') + ' ' + vo.celkem + ks + ' (' + seznam + ')';
-  const radky = vo.sachty.map(x => x.nazev + (x.mustky ? ', ' + P('vč. můstků') : '')
-    + ' – ' + x.ks + ks + ' – ' + kc(na(x.cena)));
-  const vyr = sodRozpisVyrovnani(d, vo.sachty.map(x => na(x.cena)), sodCenaPredSlevou(r, varianta, na));
-  if (vyr) radky.push(P(vyr.popis) + ' – ' + kc(vyr.castka));
+  /* Ceny šachet ve měně dokumentu. L3 (rozhodnutí J. V. 18. 11. 2026: „šachty
+   * počítat jako nabídka"): v eurech rozpočet ceny před slevou do šachet
+   * (rozpocetSachet, R7) už v eurech — jako tabulka šachet nabídky
+   * (nabidkaVsData); součet řádků = cena před slevou na euro. Dřív se každá
+   * šachta převáděla nahoru zvlášť a skoro každá smlouva dostala „Rounding –
+   * € 1". V korunách beze změny (cenaRozpis). */
+  const predSl = sodCenaPredSlevou(r, varianta, na);
+  let castky = vo.sachty.map(x => na(x.cena));
+  if (d.mena && d.mena.eur && predSl && isFinite(+predSl.cena) && r && Array.isArray(r.sachty) && r.sachty.length === vo.sachty.length) {
+    const vahy = r.sachty.map(s => +(s && s.cenaPredZaokr) || 0);
+    const rs = (typeof rozpocetSachet === 'function') ? rozpocetSachet : require('./vice_sachet.js').rozpocetSachet;
+    if (vahy.some(v => v > 0)) castky = rs(+predSl.cena, vahy);
+  }
+  const radky = vo.sachty.map((x, i) => x.nazev + (x.mustky ? ', ' + P('vč. můstků') : '')
+    + ' – ' + x.ks + ks + ' – ' + kc(castky[i]));
+  const vyr = sodRozpisVyrovnani(d, castky, predSl);
+  /* L4: znaménko zvlášť jako řádek slevy nabídky („− 292 700,00 Kč", U+2212) */
+  if (vyr) radky.push(P(vyr.popis) + ' – ' + (vyr.castka < 0 ? '\u2212 ' + kc(Math.abs(vyr.castka)) : kc(vyr.castka)));
   d.placeholders.SACHTY_SOD_ROZPIS = radky.join('\n');
   return [];
 }
@@ -310,9 +324,11 @@ function sodSachtySymboly(d, zak, varianta, jekly, L, sablona) {
 function sodRozpisVyrovnani(d, castky, predSl) {
   const c = d && d.ceny;
   if (!c || !Array.isArray(castky) || !castky.length) return null;
+  /* L5: záznam tisku jen tam, kde z něj vzala cenu díla i sodObjednaneSymboly
+   * — tj. jsou objednané příplatky (rozpis SOD_PRIPLATKY_OBJEDNANE neprázdný). */
   const z = d.sodZaznam;
-  const zeZaznamu = !!(z && d.mena && z.mena === (d.mena.eur ? 'EUR' : 'CZK') && z.bezDph !== null
-    && isFinite(+z.bezDph) && isFinite(+z.nabidka));
+  const zeZaznamu = !!(z && d.mena && String((d.placeholders || {}).SOD_PRIPLATKY_OBJEDNANE || '').trim()
+    && z.mena === (d.mena.eur ? 'EUR' : 'CZK') && z.bezDph !== null && isFinite(+z.bezDph) && isFinite(+z.nabidka));
   const cil = zeZaznamu ? +z.nabidka : +c.bezDph;
   if (!isFinite(cil)) return null;
   const h = n => Math.round(n * 100) / 100;

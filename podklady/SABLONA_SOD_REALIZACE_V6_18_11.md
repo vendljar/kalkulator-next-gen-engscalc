@@ -28,10 +28,13 @@ Vznikly nástrojem z v4 na Disku (Kalkulator NextGen / Sablony, staženo bajtov�
   **rozdělí** — žlutý je jen symbol, okolní text ne (CZ 47 běhů, EN/DE/FR 21). Písmo každého úseku zůstává.
 - Text, symboly ani nic jiného se nemění.
 
-**Ve vytištěné smlouvě (aplikace od v18.11):** u vyplněného údaje generátor podbarvení sejme (`docxSejmiPodbarveni`,
-jen dokumenty s tečkami: SoD realizace, SoD projekce, plná moc — nabídky beze změny). Žluté zůstanou **jen tečky
-„……“** nevyplněných míst. Do v18.11 generátor podbarvení nesnímal nikde: u SoD projekce v4 a plné moci svítily
-žlutě i vyplněné údaje — tahle dávka to mění i tam.
+**Ve vytištěné smlouvě (aplikace od v18.11, po revizi poradce L1/L2):** v dokumentech s tečkami (SoD realizace,
+SoD projekce, plná moc) je žluté **právě nevyplněné místo „……“** — generátor (`docxPodbarveniTecek`) po dosazení
+hodnot dá každé tečce vlastní žlutý běh a ze všeho ostatního podbarvení sejme (vyplněné údaje, rozpisy, pevný text;
+i u plně vyplněné smlouvy). Platí to i pro šablony SoD projekce v4 a plnou moc, které podbarvují celé běhy, část
+symbolů a pevný text („Objednatel:“, „zmocnitel“) — ověřeno nad skutečnými soubory z Disku. Nabídky beze změny.
+Podbarvení v šabloně v6 tak slouží hlavně administrátorovi a obchodníkovi při čtení šablony; šablony v6 se kvůli
+revizi nepřegenerovávaly.
 
 **Jedna šachta:** odstavce šachet zmizí jako ve v5; smlouva z v6 = smlouva z v5 znak po znaku kromě podbarvení
 teček (test D nad skutečnými šablonami CZ/EN/DE/FR).

@@ -198,28 +198,32 @@ const CESKA = /[ěščřžýáíéůúťďňó]/i;
 
   /* E) SL #589: vyrovnávací řádek rozpisu (sleva / zaokrouhlení) — součet rozpisu = cena díla dle nabídky */
   const rozpis = w => String(w.res.data.placeholders.SACHTY_SOD_ROZPIS || '').split('\n');
-  const castka = t => { const s = String(t).split(' – ').pop(); return +s.replace(/[^\d,-]/g, '').replace(',', '.'); };
+  const castka = t => { const s = String(t).split(' – ').pop().replace(/\u2212\s*/, '-'); return +s.replace(/[^\d,-]/g, '').replace(',', '.'); };
   const soucet = rr => Math.round(rr.reduce((a, t) => a + castka(t), 0) * 100) / 100;
   const cenaNab = w => castka(w.res.data.placeholders.CENA_BEZ_DPH);
   const sl = zakazka(true);
   sl.v.data.sleva = { procenta: 7, stav: 'schváleno automaticky', role: 'Obchodník' };
   const s5 = await word(ab5, sl.zak, sl.v);
   const rS = rozpis(s5);
-  test('E Kč se slevou: poslední řádek „Sleva – -…" se záporem, součet rozpisu = cena díla dle nabídky',
-    rS.length === 3 && /^Sleva – -\d/.test(rS[2]) && /Kč$/.test(rS[2]) && soucet(rS) === cenaNab(s5), [rS, cenaNab(s5)]);
+  test('E Kč se slevou: poslední řádek „Sleva – − 292 700,00 Kč" (znaménko zvlášť, U+2212, L4) = SLEVA_KC, součet rozpisu = cena díla dle nabídky',
+    rS.length === 3 && rS[2] === 'Sleva – \u2212 ' + s5.res.data.placeholders.SLEVA_KC && /Kč$/.test(rS[2]) && soucet(rS) === cenaNab(s5), [rS, cenaNab(s5)]);
   test('E Kč se slevou: řádek je i ve Wordu hned za šachtami', s5.text.indexOf(rS[2]) === s5.text.indexOf(rS[1]) + 1, rS);
   const se = await word(ab5, sl.zak, sl.v, 'en');
   const rE = rozpis(se);
-  test('E EUR se slevou (řádky po šachtách nahoru): součet rozpisu = cena díla dle nabídky na euro',
-    rE.length === 3 && /^€ /.test(rE[2].split(' – ').pop()) && /-\d/.test(rE[2]) && soucet(rE) === cenaNab(se), [rE, se.res.data.placeholders.CENA_BEZ_DPH]);
-  test('E EN: popisek přeložený, bez českých slov', /^Discount( and rounding)? – /.test(rE[2]) && !CESKA.test(rE[2]), rE[2]);
+  test('E EUR se slevou (šachty jako nabídka, L3): řádek „Discount – − €…" = SLEVA_KC, součet rozpisu = cena díla dle nabídky na euro',
+    rE.length === 3 && rE[2] === 'Discount – \u2212 ' + se.res.data.placeholders.SLEVA_KC && soucet(rE) === cenaNab(se), [rE, se.res.data.placeholders.CENA_BEZ_DPH, se.res.data.placeholders.SLEVA_KC]);
+  test('E EUR: řádky šachet = tabulka šachet nabídky (rozpocetSachet v eurech)', (() => {
+    const nd = nabidkaData(sl.zak, sl.v, J, 'en', undefined, { zive: true });
+    return rE.slice(0, 2).every((t, i) => t.split(' – ').pop() === nd.sachty[i].cena);
+  })(), rE);
+  test('E EN: popisek přeložený, bez českých slov', /^Discount – /.test(rE[2]) && !CESKA.test(rE[2]), rE[2]);
   const sd = await word(ab5, sl.zak, sl.v, 'de');
-  test('E DE: popisek přeložený, bez českých slov', /^Rabatt( und Rundung)? – /.test(rozpis(sd)[2]) && !CESKA.test(rozpis(sd)[2]), rozpis(sd)[2]);
-  /* EUR bez slevy: řádky nahoru po šachtách → rozdíl jen zaokrouhlení */
+  test('E DE: popisek přeložený, bez českých slov', /^Rabatt – /.test(rozpis(sd)[2]) && !CESKA.test(rozpis(sd)[2]), rozpis(sd)[2]);
+  /* EUR bez slevy: šachty jako nabídka (L3) → žádný řádek */
   const be = await word(ab5, m.zak, m.v, 'en');
   const rBE = rozpis(be);
-  test('E EUR bez slevy: součet rozpisu = cena díla; případný rozdíl jen „Rounding"', soucet(rBE) === cenaNab(be)
-    && (rBE.length === 2 || (rBE.length === 3 && /^Rounding – /.test(rBE[2]))), [rBE, be.res.data.placeholders.CENA_BEZ_DPH]);
+  test('E EUR bez slevy: žádný vyrovnávací řádek, součet rozpisu = cena díla (L3)', soucet(rBE) === cenaNab(be) && rBE.length === 2,
+    [rBE, be.res.data.placeholders.CENA_BEZ_DPH]);
   /* Kč bez slevy (zkušební ceník, zaokrouhlení vypnuté): bez řádku */
   const rBK = rozpis(m5);
   test('E Kč bez slevy: žádný vyrovnávací řádek (rozdíl 0)', rBK.length === 2 && soucet(rBK) === cenaNab(m5), [rBK, cenaNab(m5)]);
@@ -233,7 +237,7 @@ const CESKA = /[ěščřžýáíéůúťďňó]/i;
   zk.v.data.sleva = { procenta: 7, stav: 'schváleno automaticky', role: 'Obchodník' };
   const zs5 = await word(ab5, zk.zak, zk.v);
   test('E Kč se slevou i zaokrouhlením: „Sleva a zaokrouhlení", součet = cena díla',
-    soucet(rozpis(zs5)) === cenaNab(zs5) && /^Sleva a zaokrouhlení – -/.test(rozpis(zs5)[2]), rozpis(zs5));
+    soucet(rozpis(zs5)) === cenaNab(zs5) && /^Sleva a zaokrouhlení – \u2212 \d/.test(rozpis(zs5)[2]), rozpis(zs5));
   /* objednané příplatky: rozpis (s vyrovnávacím řádkem) = cena dle nabídky, příplatky dál za rozpisem */
   const slz = zamkni(sl.zak, sl.v);
   const nabS = objNabidnute(slz.vv, J);
@@ -242,13 +246,22 @@ const CESKA = /[ěščřžýáíéůúťďňó]/i;
   const iNs = ps.text.findIndex(t => /^z toho cena díla dle nabídky/.test(t));
   const rPs = rozpis(ps);
   test('E se slevou a objednaným příplatkem: z toho nabídka → šachty → sleva → objednané příplatky; součet = SOD_CENA_NABIDKY',
-    !chS && iNs > 0 && /^Sleva – -/.test(ps.text[iNs + 3]) && /^objednané příplatky/.test(ps.text[iNs + 4])
+    !chS && iNs > 0 && /^Sleva – \u2212 /.test(ps.text[iNs + 3]) && /^objednané příplatky/.test(ps.text[iNs + 4])
     && soucet(rPs) === castka(ps.res.data.placeholders.SOD_CENA_NABIDKY), [chS, ps.text.slice(iNs, iNs + 6)]);
   test('E jedna šachta se slevou: symbol se nevypisuje (odstavce zmizí)', await (async () => {
     const j2 = zakazka(false); j2.v.data.sleva = sl.v.data.sleva;
     const w = await word(ab5, j2.zak, j2.v);
     return !('SACHTY_SOD_ROZPIS' in w.res.data.placeholders) && w.xml.indexOf('Sleva –') < 0;
   })());
+
+  /* L5: záznam tisku jen tam, kde z něj vzala cenu díla i sodObjednaneSymboly (objednané příplatky) */
+  {
+    const d0 = { ceny: { bezDph: 100 }, mena: { eur: false }, sodZaznam: { mena: 'CZK', bezDph: 90, nabidka: 90 }, placeholders: { SOD_PRIPLATKY_OBJEDNANE: '' } };
+    const bezObj = sodRozpisVyrovnani(d0, [100], { cena: 100, sleva: false });
+    const sObj = sodRozpisVyrovnani(Object.assign({}, d0, { placeholders: { SOD_PRIPLATKY_OBJEDNANE: 'X – 1 Kč' } }), [100], { cena: 100, sleva: true });
+    test('E L5 dotisk bez objednaných: cíl = cena díla (ne záznam) → bez řádku; s objednanými cíl ze záznamu',
+      bezObj === null && sObj && sObj.castka === -10, [bezObj, sObj]);
+  }
 
   /* F) SL v6: žluté podbarvení symbolů; generátor ho u vyplněné hodnoty sejme, žluté zůstanou jen tečky */
   const HL = '<w:highlight w:val="yellow"/>';
