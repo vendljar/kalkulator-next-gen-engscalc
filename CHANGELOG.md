@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v16.11.1 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
+## v18.11.3 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
 
 Nad `8462aea` (integrace = test v12.11.7). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje
 koordinace. Na webech, Disku ani v Pipedrive nic.

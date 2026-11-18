@@ -1289,7 +1289,7 @@ function docxBezPrazdnych(ph, sada) {
 }
 /* PODBARVENÍ VYPLNĚNÝCH MÍST (SL, rozhodnutí J. V. 16. 11. 2026). Šablony
  * smluv (SoD realizace v6, SoD projekce v4, plná moc) mají symboly žlutě
- * podbarvené (`<w:highlight>` v běhu). Do v16.11 náhrada symbolu běh i s jeho
+ * podbarvené (`<w:highlight>` v běhu). Do v18.11 náhrada symbolu běh i s jeho
  * vlastnostmi zachovala — žlutě svítila i VYPLNĚNÁ hodnota. Teď se u dokumentů
  * s tečkami (volba `nevyplnene`) podbarvení sejme z běhů, které nesou vyplněný
  * symbol (i rozdělený mezi běhy); nevyplněné místo („……") zůstane žluté.

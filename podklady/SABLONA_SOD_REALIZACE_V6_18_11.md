@@ -1,7 +1,7 @@
 # Šablona Smlouvy o dílo – realizace v6 — CZ + EN + DE + FR (18. 11. 2026)
 
 Dávka SL (rozhodnutí J. V. 16. 11. 2026: žluté podbarvení nevyplněných míst i v SoD realizace), větev
-`claude/sl-sod-sleva` nad integrací `8462aea` (test v12.11.7). Verze kódu v16.11.1 (číslo potvrdí koordinace).
+`claude/sl-sod-sleva` nad integrací `8462aea` (test v12.11.7). Verze kódu v18.11.3 (číslo potvrdí koordinace).
 
 > **v6 = v5 + žluté podbarvení symbolů.** Na **test** až s kódem této dávky (generátor, který podbarvení
 > u vyplněných údajů sejme — se starším kódem by ve smlouvě svítily žlutě i vyplněné údaje). Na **main** až s kódem
@@ -28,9 +28,9 @@ Vznikly nástrojem z v4 na Disku (Kalkulator NextGen / Sablony, staženo bajtov�
   **rozdělí** — žlutý je jen symbol, okolní text ne (CZ 47 běhů, EN/DE/FR 21). Písmo každého úseku zůstává.
 - Text, symboly ani nic jiného se nemění.
 
-**Ve vytištěné smlouvě (aplikace od v16.11):** u vyplněného údaje generátor podbarvení sejme (`docxSejmiPodbarveni`,
+**Ve vytištěné smlouvě (aplikace od v18.11):** u vyplněného údaje generátor podbarvení sejme (`docxSejmiPodbarveni`,
 jen dokumenty s tečkami: SoD realizace, SoD projekce, plná moc — nabídky beze změny). Žluté zůstanou **jen tečky
-„……“** nevyplněných míst. Do v16.11 generátor podbarvení nesnímal nikde: u SoD projekce v4 a plné moci svítily
+„……“** nevyplněných míst. Do v18.11 generátor podbarvení nesnímal nikde: u SoD projekce v4 a plné moci svítily
 žlutě i vyplněné údaje — tahle dávka to mění i tam.
 
 **Jedna šachta:** odstavce šachet zmizí jako ve v5; smlouva z v6 = smlouva z v5 znak po znaku kromě podbarvení

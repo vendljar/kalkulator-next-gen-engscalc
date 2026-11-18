@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v16.11.1 · sestaveno 16. 11. 2026",
+  "verze": "Platí pro aplikaci v18.11.3 · sestaveno 18. 11. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -515,7 +515,7 @@
         },
         {
           "typ": "text",
-          "text": "**Sablona_SOD_REALIZACE_v6** = v5, jen symboly mají žluté podbarvení jako SoD projekce v4 a plná moc (rozhodnutí J. V. 16. 11. 2026). Kde je symbol uprostřed věty, je žlutý jen symbol, okolní text ne. Ve vytištěné smlouvě zůstanou žluté **jen tečky „……“** nevyplněných míst — u vyplněných údajů aplikace podbarvení sejme (od v16.11; totéž teď platí i pro SoD projekce a plnou moc, kde dřív svítily žlutě i vyplněné údaje). Symboly i text jsou stejné jako ve v5, takže kontrola při nahrání má ukázat **přibylo 0, ubylo 0**. Vyrábí ji `node nastroje/vyrob_sablony.js --sod-real-v6` (podklad podklady/SABLONA_SOD_REALIZACE_V6_18_11.md); nahrávají se všechny čtyři jazyky najednou jako u v5, nejdřív na test."
+          "text": "**Sablona_SOD_REALIZACE_v6** = v5, jen symboly mají žluté podbarvení jako SoD projekce v4 a plná moc. Kde je symbol uprostřed věty, je žlutý jen symbol, okolní text ne. Ve vytištěné smlouvě zůstanou žluté **jen tečky „……“** nevyplněných míst — u vyplněných údajů aplikace podbarvení sejme (totéž platí pro SoD projekce a plnou moc). Symboly i text jsou stejné jako ve v5, takže kontrola při nahrání má ukázat **přibylo 0, ubylo 0**. Vyrábí ji `node nastroje/vyrob_sablony.js --sod-real-v6` (podklad podklady/SABLONA_SOD_REALIZACE_V6_18_11.md); nahrávají se všechny čtyři jazyky najednou jako u v5, nejdřív na test."
         },
         {
           "typ": "podnadpis",

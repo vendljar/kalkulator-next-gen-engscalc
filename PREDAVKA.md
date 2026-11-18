@@ -1,7 +1,7 @@
 # Předávka — SL: #589 řádek slevy v rozpisu šachet, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev `claude/sl-sod-sleva`
 
 Nad `8462aea` (integrace = test v12.11.7). Rozhodnutí J. V. 16. 11. 2026 (řádek slevy; rozšíření koordinací 16. 11.:
-v6 a Chybí / Nepovinné). **v16.11.1** (přečísluje koordinace). Do `test-draft`, `test`, `main` ani integrace nic;
+v6 a Chybí / Nepovinné). **v18.11.3** (přečísluje koordinace; 18.11.2 má jiná větev). Do `test-draft`, `test`, `main` ani integrace nic;
 weby, Pipedrive nic; Disk jen čtení (šablony SoD realizace v4). **Před sloučením revize poradce Fable** (text
 smlouvy, cena, podbarvení).
 
