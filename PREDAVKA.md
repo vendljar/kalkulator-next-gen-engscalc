@@ -30,6 +30,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   J. V. (doporučení = jak je): organizace dealu = původní zákazník z1 (po prodeji kupující), týž zákazník bez IČO = sedí;
   vlastnictví varianty = ukazatel nebo razítko odeslané nabídky; varianta bez zákazníka → řídící zůstává a přejde na ni;
   bez potvrzovacího dialogu při výměně (maketa ho nemá).
+  Kolo `--bez-mutaci`: hodiny 379/0/1, statické 9/9, sady 467/1/7 (jen `test_roadmapa.js` — #645 „hotovo“ s `cekaNa`,
+  opraveno) → opakovaný krok sady + statické VŠE ZELENÉ. Mutace [VZ T1]: jádro 17/17, server 7/7.
 
 - **S6 + S8 #613** (`claude/s6s8-evidence`, v18.11.5, nad 9bd6dc8): evidence v `roadmap.json` (pole `typ`, `cekaNa` „<kdo>: <co>“,
   `kolo`, `vetev`, `verze`, `dopadCena`, `alias`; migrace jen dotčených položek), otevřené nálezy a otázky převedeny jako
