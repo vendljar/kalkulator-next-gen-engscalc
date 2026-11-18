@@ -196,7 +196,11 @@ function rucniCenaPoSet(data, cesta, hodnota, opts) {
   const r = rucniCenaZaznam(data, cesta);
   const h = +hodnota;
   if (r) {
-    if (!(isFinite(h) && h >= 0)) { delete data.rucniCeny[cesta]; return true; }
+    /* Revize #646 N1: buňka ceny posílá `+this.value`, takže vymazané pole
+     * sem doteče jako 0. Nula v buňce proto záznam MAŽE jako před #646 —
+     * nulová cena z nabídky vzniká jen výslovně v poli „Nákupní cena"
+     * (rucniCenaNastav, prázdné pole tam nulou není). */
+    if (!(isFinite(h) && h > 0)) { delete data.rucniCeny[cesta]; return true; }
     if (r.hodnota === h) return false;
     r.hodnota = h; r.potvrdil = null;
     return true;

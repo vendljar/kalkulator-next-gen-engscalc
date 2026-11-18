@@ -2898,6 +2898,18 @@ function statikaOplZahrnuta(z, oplPlocha) {
   if (v === false) return false;
   return (+oplPlocha || 0) > 0;
 }
+/* Volby výběru v zadání (revize #646 N4): výchozí stav jde vždy vrátit.
+ * Hodnota '' = výchozí (klíč se smaže / null), '1' = Ano, '0' = Ne. */
+function statikaOplVolby(z, oplPlocha) {
+  const v = z ? z.statikaOpl : undefined;
+  const auto = v !== true && v !== false;
+  const vych = (+oplPlocha || 0) > 0 ? 'Ano' : 'Ne';
+  return [
+    { hodnota: '', text: 'výchozí (' + vych + ')', vybrano: auto },
+    { hodnota: '1', text: 'Ano', vybrano: v === true },
+    { hodnota: '0', text: 'Ne', vybrano: v === false },
+  ];
+}
 /* Sazba statiky opláštění: vlastní klíč, když ho ceník nese jako číslo;
  * jinak (starší ceník) sazba statiky OCK — dosavadní cena. */
 function statikaOplSazba(c) {
@@ -2941,4 +2953,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, mustekSloupVychoziM, MUSTEK_SLOUP_ODPOCET_M, cenikMigraceMustku, mustkyCenikKontrola, MUSTEK_REF_SIRKA_MIN_MM, MUSTEK_REF_SIRKA_MAX_MM, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikMigraceStatikyOpl, statikaOplZahrnuta, statikaOplSazba, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, mustekSloupVychoziM, MUSTEK_SLOUP_ODPOCET_M, cenikMigraceMustku, mustkyCenikKontrola, MUSTEK_REF_SIRKA_MIN_MM, MUSTEK_REF_SIRKA_MAX_MM, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikMigraceStatikyOpl, statikaOplZahrnuta, statikaOplSazba, statikaOplVolby, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

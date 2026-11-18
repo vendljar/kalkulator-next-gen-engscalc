@@ -951,7 +951,17 @@ function importZakazka(obj) {
        * (C.leseniFix). Bez převzetí staré hodnoty by fixní část spadla na
        * nulu a cena zakázky by se po otevření tiše propadla. Guard kvůli
        * Node testům, které zakazka.js načítají bez engine.js. */
+      /* Revize #646 N2: cena z nabídky u C.statikaKc kryla do #646 obě statiky.
+       * Migrace sazbu zkopíruje do statikaOplKc — u nezamčené varianty i záznam
+       * (doklad, potvrzení), jinak by nová hodnota bez záznamu vypadala jako
+       * změna ceníku (B112 403, cenová výjimka). Zamčená varianta je doklad. */
+      const statikaOplChybi = !!(d.cenik && typeof d.cenik === 'object'
+        && !Object.prototype.hasOwnProperty.call(d.cenik, 'statikaOplKc'));
       if (typeof cenikMigraceLeseni === 'function') cenikMigraceLeseni(d.cenik);
+      if (statikaOplChybi && !(v.zamek && v.zamek.zamceno) && d.rucniCeny && typeof d.rucniCeny === 'object'
+        && d.rucniCeny['C.statikaKc'] && typeof d.rucniCeny['C.statikaKc'] === 'object' && !d.rucniCeny['C.statikaOplKc']
+        && d.cenik.statikaOplKc === d.rucniCeny['C.statikaKc'].hodnota)
+        d.rucniCeny['C.statikaOplKc'] = JSON.parse(JSON.stringify(d.rucniCeny['C.statikaKc']));
       /* Migrace 14. 9. 2026 (nález V38): doplnit klíče ceníku, které v době
        * uložení zakázky ještě neexistovaly. Bez toho se zveřejněním ceníku
        * z takové zakázky položka z platného ceníku ZTRATÍ — mezi verzemi 24

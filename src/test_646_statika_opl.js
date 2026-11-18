@@ -20,6 +20,10 @@
  *      počítá jako dosud).
  * Čísla jsou smyšlená (zkušební ceník + částky v testu).
  *
+ * Revize poradce (18. 11.): N1 vymazaná buňka maže záznam, N2 migrace kopíruje
+ * záznam ceny z nabídky na statiku opláštění, N4 volba „výchozí". Pojistka:
+ * proti 3c42353 (před opravou) N1 2 FAIL, N2 2 FAIL, N4 chybí funkce.
+ *
  * Pojistka proti prázdnému testu: proti integraci 910315b (před #646) sada
  * padá (chybí cenikMigraceStatikyOpl / statikaOplZahrnuta, řádek má cestu
  * C.statikaKc, nula z nabídky se odmítne).
@@ -149,11 +153,59 @@ console.log('===== 4. cena z nabídky u každé statiky zvlášť, i nulová ===
   test('↺ vrátit na ceník vrátí sazbu', rucniCenaVrat(d, 'C.statikaOplKc', 1000) && d.cenik.statikaOplKc === 1000);
 }
 
+console.log('===== 4b. revize poradce N1, N2, N4 =====');
+{
+  /* N1: buňka ceny posílá +'' = 0 → záznam se smaže (jako před #646). */
+  const mk = () => { const z = novaZakazka(); z.varianty[0].data.cenik = cenik({ statikaOplKc: 1000 });
+    z.varianty[0].data.ock.zadani = zadani(); return importZakazka(z).varianty[0].data; };
+  const d = mk(); rucniCenaNastav(d, 'C.statikaKc', 800);
+  test('N1: vymazaná buňka ceny (0) záznam ceny z nabídky smaže', rucniCenaPoSet(d, 'C.statikaKc', 0) === true
+    && !rucniCenaZaznam(d, 'C.statikaKc'));
+  const d2 = mk(); rucniCenaNastav(d2, 'C.statikaKc', 800);
+  test('N1: prázdná hodnota záznam smaže', rucniCenaPoSet(d2, 'C.statikaKc', '') === true && !rucniCenaZaznam(d2, 'C.statikaKc'));
+  const d3 = mk(); rucniCenaNastav(d3, 'C.statikaKc', 800);
+  test('N1: jiné kladné číslo záznam srovná a shodí potvrzení', rucniCenaPoSet(d3, 'C.statikaKc', 900) === true
+    && rucniCenaZaznam(d3, 'C.statikaKc').hodnota === 900);
+  /* N2: stará varianta s cenou z nabídky u statiky (dřív kryla obě). */
+  const stara = (zamcena) => {
+    const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 0647'; z.nazevAkce = 'TEST N2';
+    const d = z.varianty[0].data; d.ock.zadani = zadani();
+    d.cenik = cenik({ statikaKc: 800 }); delete d.cenik.statikaOplKc;
+    d.rucniCeny = { 'C.statikaKc': { hodnota: 800, dodavatel: 'Statik Příklad', cislo: 'N-1', datum: '2026-11-01', platnostDo: '',
+      zaklad: 1000, potvrdil: { jmeno: 'Obch Test', email: 'obch@priklad.cz', kdy: '2026-11-02T08:00:00.000Z' } } };
+    if (zamcena) z.varianty[0].zamek = { zamceno: true, typ: 'nabidka', kdy: '2026-11-02T09:00:00.000Z' };
+    return importZakazka(z).varianty[0].data;
+  };
+  const n2 = stara(false);
+  const rec = n2.rucniCeny && n2.rucniCeny['C.statikaOplKc'];
+  test('N2: import zkopíruje záznam ceny z nabídky i na statiku opláštění (s potvrzením)', !!rec && rec.hodnota === 800
+    && n2.cenik.statikaOplKc === 800 && rec.potvrdil && rec.potvrdil.jmeno === 'Obch Test' && rec.dodavatel === 'Statik Příklad', rec);
+  test('N2: záznam kryje sazbu (B112 ji pustí)', rucniCenaPlati(n2, 'C.statikaOplKc'));
+  test('N2: kopie je samostatná (změna jedné neovlivní druhou)', (rucniCenaNastav(n2, 'C.statikaOplKc', 500), n2.rucniCeny['C.statikaKc'].hodnota === 800));
+  const n2z = stara(true);
+  test('N2: zamčená varianta záznam nedostane (doklad), sazba ano', !(n2z.rucniCeny && n2z.rucniCeny['C.statikaOplKc']) && n2z.cenik.statikaOplKc === 800);
+  const n2b = (() => { const z = novaZakazka(); const d = z.varianty[0].data; d.cenik = cenik({ statikaOplKc: 1000, statikaKc: 800 });
+    d.rucniCeny = { 'C.statikaKc': { hodnota: 800, potvrdil: null } }; return importZakazka(z).varianty[0].data; })();
+  test('N2: varianta, která klíč už má, záznam nedostane', !n2b.rucniCeny['C.statikaOplKc'] && n2b.cenik.statikaOplKc === 1000);
+  /* N4: volba „výchozí" */
+  const vol = (v, pl) => statikaOplVolby(v === undefined ? {} : { statikaOpl: v }, pl).filter(o => o.vybrano).map(o => o.hodnota + ':' + o.text);
+  test('N4: bez volby je vybraná „výchozí (Ano)" u šachty s opláštěním', JSON.stringify(vol(undefined, 10)) === '[":výchozí (Ano)"]', vol(undefined, 10));
+  test('N4: bez opláštění „výchozí (Ne)"', JSON.stringify(vol(null, 0)) === '[":výchozí (Ne)"]');
+  test('N4: výslovné Ano / Ne', JSON.stringify(vol(true, 0)) === '["1:Ano"]' && JSON.stringify(vol(false, 10)) === '["0:Ne"]');
+  test('N4: volby jsou tři (výchozí jde vždy vrátit)', statikaOplVolby({ statikaOpl: true }, 10).length === 3);
+  const c = cenik();
+  test('N4: null (výchozí) počítá jako bez volby', JSON.stringify(vypocet(zadani({ statikaOpl: null }), c, JEKLY, true))
+    === JSON.stringify(vypocet(zadani(), c, JEKLY, true)));
+  const src = require('fs').readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
+  test('N4: výběr v UI zapisuje null pro „výchozí"', /set\('Z\.statikaOpl', this\.value === '' \? null : this\.value === '1'\)/.test(src)
+    && /statikaOplVolby\(Z, plocha\)/.test(src));
+}
+
 console.log('===== 5. server: tvar zaškrtnutí =====');
 {
   const s1 = f => { const z = novaZakazka(); f(z.varianty[0].data.ock.zadani); return U.uloTypyProblemy(z); };
-  test('true / false / chybí projde', !s1(z => { z.statikaOpl = true; }).length && !s1(z => { z.statikaOpl = false; }).length
-    && !s1(() => {}).length);
+  test('true / false / null / chybí projde', !s1(z => { z.statikaOpl = true; }).length && !s1(z => { z.statikaOpl = false; }).length
+    && !s1(z => { z.statikaOpl = null; }).length && !s1(() => {}).length);
   test('jiná hodnota = chyba tvaru', s1(z => { z.statikaOpl = 'ano'; }).some(p => /statikaOpl/.test(p.kde) && p.duvod === 'typ'));
 }
 

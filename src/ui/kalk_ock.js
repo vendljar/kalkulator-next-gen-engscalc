@@ -347,14 +347,13 @@ function statikaOplRadek(r) {
   const c = (typeof C !== 'undefined' && C) ? C : {};
   if (!((+c.statikaOplHod || 0) > 0)) return '';
   const plocha = r && r.oplasteni ? r.oplasteni.plochaCelkem : 0;
-  const ano = statikaOplZahrnuta(Z, plocha);
-  const auto = Z.statikaOpl !== true && Z.statikaOpl !== false;
   const tit = 'Řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ v Režii. Výchozí: Ano u šachty s opláštěním. '
     + 'Statiku opláštění nevyžadují všichni dodavatelé výtahů — pak zvolte Ne.';
-  return `<div class="row"><label title="${esc(tit)}">Statické posouzení opláštění${auto ? ' <span class="note">(výchozí)</span>' : ''}</label>
-    <select class="statika-opl" title="${esc(tit)}" onchange="set('Z.statikaOpl', this.value === '1')">
-      <option value="1" ${ano ? 'selected' : ''}>Ano</option>
-      <option value="0" ${!ano ? 'selected' : ''}>Ne</option></select><span class="u"></span></div>`;
+  /* Revize #646 N4: „výchozí" vrátí volbu řízenou opláštěním (null). */
+  return `<div class="row"><label title="${esc(tit)}">Statické posouzení opláštění</label>
+    <select class="statika-opl" title="${esc(tit)}" onchange="set('Z.statikaOpl', this.value === '' ? null : this.value === '1')">
+      ${statikaOplVolby(Z, plocha).map(o => `<option value="${o.hodnota}" ${o.vybrano ? 'selected' : ''}>${esc(o.text)}</option>`).join('')}
+    </select><span class="u"></span></div>`;
 }
 
 /* ---- ceník → zadání pro jednu variantu (1. 9. 2026) ----

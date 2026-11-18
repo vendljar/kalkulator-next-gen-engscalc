@@ -86,7 +86,7 @@ const SADY = process.env.KNG_MUTACE_SADY
      /* #561 RC (4. 11. 2026): ruční cena položky s potvrzením — model a server, rychlé sady. */
      '../src/test_561_rucni_cena.js', 'test_561_rucni_cena.mjs',
      /* [SP] #646 (18. 11. 2026): statika opláštění — nulová cena z nabídky, tvar zaškrtnutí, přepočet (rychlá sada). */
-     '../src/test_646_statika_opl.js',
+     '../src/test_646_statika_opl.js', 'test_646_statika_opl.mjs',
      /* #560 SV (4. 11. 2026): zrušená volba světlíku „zajistí stavba" — rychlé sady. */
      '../src/test_svetliky_stavba.js', 'test_560_svetliky_stavba.mjs',
      /* #553 PW (3. 11. 2026): webhook „Vygenerovat nabídku" z Pipedrive — rychlá sada (< 1 s). */
@@ -856,6 +856,19 @@ const MUTACE = [
     hledej: "  if (h !== undefined || !CENIK_ZALOZNI[cesta]) return h;",
     nahrad: "  return h;",
     proc: 'přepočet rozdělané zakázky proti staršímu ceníku by hlásil změnu statiky opláštění', sady: ['../src/test_646_statika_opl.js'] },
+  /* [SP] revize poradce #646 (18. 11. 2026): N1 vymazaná buňka, N2 migrace záznamu. */
+  { nazev: '[SP] N1: vymazaná buňka ceny nechá nulový záznam', soubor: '../src/rucni_ceny.js',
+    hledej: "    if (!(isFinite(h) && h > 0)) { delete data.rucniCeny[cesta]; return true; }",
+    nahrad: "    if (!(isFinite(h) && h >= 0)) { delete data.rucniCeny[cesta]; return true; }",
+    proc: 'smazané pole ceny by nechalo nepotvrzenou „nulu z nabídky", kterou stačí potvrdit', sady: ['../src/test_646_statika_opl.js'] },
+  { nazev: '[SP] N2: migrace nezkopíruje záznam ceny z nabídky', soubor: '../src/zakazka.js',
+    hledej: "        d.rucniCeny['C.statikaOplKc'] = JSON.parse(JSON.stringify(d.rucniCeny['C.statikaKc']));",
+    nahrad: "        ;",
+    proc: 'stará varianta s cenou z nabídky u statiky by po #646 neprošla uložením ani zámkem (403)', sady: ['test_646_statika_opl.mjs', '../src/test_646_statika_opl.js'] },
+  { nazev: '[SP] N2: záznam se kopíruje i do zamčené varianty', soubor: '../src/zakazka.js',
+    hledej: "      if (statikaOplChybi && !(v.zamek && v.zamek.zamceno) && d.rucniCeny",
+    nahrad: "      if (statikaOplChybi && d.rucniCeny",
+    proc: 'import by měnil doklad odeslané nabídky', sady: ['../src/test_646_statika_opl.js'] },
   { nazev: '#561: B112 ruční cenu se záznamem nepustí', soubor: '../src/uloziste.js',
     hledej: "        return rcPlati(d, 'C.' + kde.slice(c.pred.length));",
     nahrad: "        return false;",
