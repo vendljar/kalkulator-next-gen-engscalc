@@ -31,6 +31,8 @@ Na webech, Disku ani v Pipedrive nic.
   Pojistka: bez změny serveru `test_ue_uzivatele` 2 FAIL (razítko bez seznamu polí); jádrová pojistka bez snímku
   ukáže nové jméno. Mutace [UE]: server 6, jádro 2 (`zpracovatel.js` přidán mezi jádra mutací); mutace B148
   přesměrována na nové razítko.
+- Kolo `--bez-mutaci --proti origin/test`: VŠE ZELENÉ — sady 467/0/7, hodiny 379/0/1, statické 9/9, porovnání sestavení
+  353/353 SHODA. Mutace [UE] server 6/6, jádro 2/2; B148 2/2.
 
 ## v18.11.6 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
 
