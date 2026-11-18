@@ -690,3 +690,18 @@ dokumentu. Nic jiného touto cestou nejde.
 6. Nález = položka evidence (typ nález, kolo, vážnost, dopad na cenu ano/ne).
 7. Bezpečnostní audit: beze změny, jen čtení.
 ```
+
+---
+
+## Rozhodnutí J. V. 18. 11. 2026 (odpovědi v dialogu)
+
+| Otázka | Rozhodnutí | Dopad na návrh |
+|---|---|---|
+| S1 rychlá cesta | **zavést teď, K40-N1 první** | Spuštěna větev `claude/rychla-k40n1` nad main 6c4bc80 (cherry-pick b4e2023). |
+| S1 kolo main-před × main-po | **koordinace nástrojem**, J. V. dostane tabulku rozdílů | Testovací sezení se u rychlé cesty nevolá. |
+| S3 stupně kol | **automat po dávce + cílená sada, plné kolo jen před main a po nasazení** | Noční porovnání v Actions zatím ne. |
+| S4 okna | **průběžně** (ne dvě okna) | Otázky chodí průběžně v dialogu, každá s doporučenou variantou; balíček jen u souvisejících otázek. |
+| S4 kolega | **ano, jen na testu** | Main dál jen J. V.; hotovo ověří koordinace (zdraví, verze šablon, otisk). Jméno kolegy zatím neurčeno. |
+| S5 svěření | **jen testy a harnessy** | Sezení a koordinace samy rozhodují jen technické varianty testů, harnessů a nástrojů kola. Vše ostatní dál J. V. (nebo drobnosti bez dopadu na cenu, zákazníka a bezpečnost podle pokynu z 11. 11.). |
+| S6/S8 evidence | **jedna evidence v roadmap.json, přehled jako soubor v repu, kokpit pro J. V.** | Bez e-mailu a ClickUp. |
+| S8 tagy | **tag a release jen pro stav, který jde do main** | Verze integrace a testu zůstávají v CHANGELOG bez tagu. |

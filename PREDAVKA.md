@@ -1,3 +1,17 @@
+# Rozhodnutí J. V. 18. 11. 2026 — režie vývoje (návrh podklady/NAVRH_REZIE_2026-11-18.md)
+
+- **Rychlá cesta** pro vady ceny a dokumentu v main: zavedena; první K40-N1 (větev `claude/rychla-k40n1` nad main).
+  Kolo main-před × main-po dělá koordinace nástrojem, J. V. dostane tabulku rozdílů; sloučení do main jen na jeho pokyn.
+- **Kola:** automat po dávce + cílená sada; plné kolo jen před main a po nasazení.
+- **Otázky:** průběžně v dialogu s doporučenou variantou.
+- **Kolega s rolí administrátora:** datové úkoly jen na testu (jméno neurčeno); main jen J. V.
+- **Svěřená rozhodnutí:** jen testy a harnessy.
+- **Evidence:** jedna v roadmap.json, přehled jako soubor v repu, kokpit pro J. V.
+- **Tagy:** jen pro stav, který jde do main.
+- Změny CLAUDE.md a skillu: předloženy ke schválení (návrh, oddíl „Navržené změny“), zatím neaplikovány.
+
+---
+
 # Předávka — K40c #581: vazba z webhooku Pipedrive, ARES na serveru, „Opravit firmu v Pipedrive“, větev `claude/k40c-webhook`
 
 Nad `1a08186` (integrace v12.11.3), sloučeno s integrací `4acda93` (v12.11.6: + VSD, C2+C3, C5). **v12.11.7**. Do
