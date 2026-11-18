@@ -85,6 +85,19 @@ blokoval každý zápis a žádný neodešel. Snímky obrazovky zůstaly mimo re
 | zbytek textu | ⚠ K49-I8: úvodní věta správy šablon dál říká „Česká šablona je zdroj, ze kterého se vyrábějí jazykové verze“. Po C7 se jazykové verze nevyrábějí, nahrává se přeložený soubor. |
 | SoD projekce EN/DE/FR | ℹ na testu nezveřejněné. Tabulka je ukazuje jako „chybí — tiskne se česky“, přitom zábrana `sodJazykZabrana` cizojazyčnou smlouvu bez jazykové šablony nevyrobí. Stojí za ověření, zda popisek „tiskne se česky“ u smluv odpovídá chování (K49-I9). |
 
+## Doplněk: K49-I5 termíny realizace (rozhodnutí J. V. 18. 11.)
+
+J. V.: 6. řádek o 5leté záruce zůstává, FR doplnil na testu. Ověřeno jen čtením:
+- test: `kapTerminy`, `kapTerminyEn`, `kapTerminyDe` i `kapTerminyFr` mají 6 řádků (FR 6.: „Garantie de 5 ans sur l’ensemble de la structure de la gaine et du bardage.“);
+- kapitola V. nabídky OCK ve FR (zakázka 9603-K19T-C103, `nabidkaData` → `NAB_KAP_TERMINY`, bez uložení a bez zámku) ukazuje **5 řádků + „Garantie: 60 mois“**.
+  Totéž CZ („Záruka: 60 měsíců“) a EN. **6. řádek se netiskne a je to záměr kódu:** `nabidkaJeVetaOZaruce` (`src/nabidka.js`)
+  vyřadí z kapitoly V. každou větu o záruce (cz /záruk/, fr /garantie/…) a místo ní dá řádek „Záruka: N měsíců“
+  z krycího listu (`PODM_ZARUKA_MESICU`). Online náhled (`FIRMA_NAB_TERMINY`, ř. 926–931) dělá totéž; to plyne z kódu, živý náhled
+  v okně jsem neotevíral.
+- Závěr: řádek v Nastavení → Firma je **bez vlivu na dokument**, záruka v nabídce jde z krycího listu (u zkoušené zakázky 60 měsíců = 5 let,
+  obsahově souhlasí). K49-I5 na testu vyřešeno (řádky srovnány); na main se zadá při nasazení. Pokud J. V. chce v nabídce právě
+  znění „5 let záruka na celé dílo“, je to změna kódu (výjimka z filtru), ne dat.
+
 ## Nálezy
 
 | ID | co | závažnost |
@@ -96,7 +109,7 @@ blokoval každý zápis a žádný neodešel. Snímky obrazovky zůstaly mimo re
 | K49-I8 | Úvodní věta správy šablon „…ze kterého se vyrábějí jazykové verze“ je po C7 zastaralá | nízká (text UI) |
 | K49-I9 | SoD projekce EN/DE/FR chybí; popisek „tiskne se česky“ vs. zábrana jazyka smlouvy — ověřit | informace |
 | K49-I7 | L3 u víc šachet a sleva v EUR neověřeny — jediná TEST zakázka s víc šachtami je VZ bez odeslané nabídky | koordinace navrhla založit „TEST K49 – víc šachet EUR“ a vytisknout CN. To je zápis do testu, který CLAUDE.md automatu zakazuje, proto čeká na souhlas J. V. |
-| K49-I5 | Termíny realizace firmy: test má proti main 6. řádek navíc (CZ/EN/DE). Buď ho J. V. doplní do main při sloučení, nebo ho na testu smaže | k rozhodnutí J. V. |
+| K49-I5 | Termíny realizace firmy: test má proti main 6. řádek (záruka 5 let) | vyřešeno na testu (J. V.: zůstává, FR doplněno); na main se zadá při nasazení. Řádek se v nabídce netiskne (filtr vět o záruce). |
 | K49-I4 | Pevná sada `porovnani_sada.js` nemá případ přepnutí typu šachty nebo zasklení (K40-N1 nevidí) | návrh doplnit |
 
 ## Zbývá (po opravě přístupu na main)
