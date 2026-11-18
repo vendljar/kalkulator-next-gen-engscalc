@@ -658,7 +658,7 @@ function ctrlExportVarianty(zak, v, opts) {
      * = cena před CEIL − náklad; engine.js). */
     const s = vOck.souhrn;
     const predCeil = (+s.zakladNaklad || 0) + (+s.zakladMarze || 0);
-    strany.push({ oblast: 'ock', cislo: cislo(zak.cislo), naklad: +s.zakladNaklad || 0, cena,
+    strany.push({ oblast: 'ock', cislo: ctrlCisloZakaznika(zak, cislo(zak.cislo)), naklad: +s.zakladNaklad || 0, cena,
       zaokrZakladu: isFinite(predCeil) && s.zakladMarze != null ? Math.round(((+s.zakladCena || 0) - predCeil) * 100) / 100 : 0 });
   }
   if (vProj && vProj.souhrn) {
@@ -717,6 +717,17 @@ function ctrlExportVarianty(zak, v, opts) {
     hlavicka.zakaznici = ctrlZakazniciText(vzZakaznici(zak).length);
   return { ok: true, hlavicka, strany, radky, kapitoly: ctrlKapitoly(radky, { data: o.data, jenZaklad: true }),
     kdy: o.kdy || new Date().toISOString(), kdo: String(o.kdo || ''), build: String(o.build || '') };
+}
+
+/* VZ-F1 (bod 6, rozhodnutí J. V. 18. 11. 2026): řádek zakázky s víc zákazníky
+ * nese číslo ŘÍDÍCÍHO zákazníka tak, jak ho má jeho nabídka a deal — po
+ * prodeji dalšímu zákazníkovi (vzProdej → výměna řídícího) s jeho písmenem
+ * (…9801-B, …9801.2-C). Původní řídící (bez písmene) a jeden zákazník beze
+ * změny. Jen strana OCK — dokumenty PROJ se dalšímu zákazníkovi netisknou (R5). */
+function ctrlCisloZakaznika(zak, cislo) {
+  if (typeof vzRezim !== 'function' || !vzRezim(zak) || typeof vzZakaznik !== 'function' || typeof vzCisloSPismenem !== 'function') return cislo;
+  const r = vzZakaznik(zak, vzRidiciId(zak));
+  return r && r.pismeno ? vzCisloSPismenem(cislo, r.pismeno) : cislo;
 }
 
 /* „3 zákazníci", „5 zákazníků" (VZ-E6 #606). */
@@ -1404,7 +1415,7 @@ function ctrlImportZListu(sheets, data) {
 }
 
 if (typeof module !== 'undefined' && module.exports)
-  module.exports = { CTRL_NENI_NAKLAD, CTRL_NEZARAZENO, CTRL_TYPY, CTRL_CHOVANI, CTRL_OBLASTI,
+  module.exports = { ctrlCisloZakaznika, CTRL_NENI_NAKLAD, CTRL_NEZARAZENO, CTRL_TYPY, CTRL_CHOVANI, CTRL_OBLASTI,
     CTRL_SKUPINY_VYCHOZI, CTRL_MAPA_VYCHOZI, CTRL_MEZE, CTRL_NAZEV_ATYP_PRIRAZKA,
     ctrlVychozi, ctrlZakazniciText, ctrlKliceCeniku, ctrlPlatne, ctrlKlicRadku, ctrlSkupinaKlice, ctrlRozvrhOck, ctrlRozvrhProj,
     ctrlKapitoly, ctrlNezarazene, ctrlKliceKatalogu, ctrlBajty, ctrlDataKontrola, ctrlBezeZmeny,

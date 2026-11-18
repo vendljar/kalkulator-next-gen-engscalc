@@ -10,6 +10,7 @@ Založeno v dávce S7 (18. 11. 2026) z `CLAUDE.md` a z `PREDAVKA.md` (dnes archi
 
 | datum | rozhodnutí | čeho se týká |
 |---|---|---|
+| 18. 11. 2026 | Po ruční zkoušce víc zákazníků (přes koordinaci, dávka VZ-F1 #659): vytištěný krycí list tiskne zástupce zákazníka, pro kterého se tiskne (i u jednoho zákazníka); plná moc se u víc zákazníků tiskne jen pro řídícího (beze změny, věta do příručky); řádek prodeje dalšímu zákazníkovi v controllingu nese číslo s písmenem jako nabídka a deal; T1 (řídící varianta a zákazník) navrhuje J. V. zvlášť | víc zákazníků, krycí list, controlling |
 | 18. 11. 2026 | Změna zadání (přes koordinaci): malá oprava vady ceny nebo dokumentu jde rychlou cestou rovnou do test (větev `claude/rychla-<ID>` nad integrací, kolo `--bez-mutaci` + cílené mutace, koordinace sloučí a pošle do test bez čekání na dávku); J. V. dostane ID vady a popis dotčených kalkulací; rozdíly cen main × test ověřuje J. V. sám; do main dál jen na jeho pokyn se sloučením testu. Nahrazuje variantu rychlé cesty do main s kolem main-před × main-po | rychlá cesta, test, main |
 | 18. 11. 2026 | Kolega s rolí administrátora zatím jmenovaný není, jmenuje ho J. V.; smí jen na test | role |
 | 18. 11. 2026 | Automat (sezení nebo Actions) smí z testovacího webu testengscalc jen číst; zápis ani ostrý web ne | testy |

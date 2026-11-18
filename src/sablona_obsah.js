@@ -348,6 +348,20 @@ async function sablonaObsahVady(vstup) {
   try { polozky = await cti(u8); } catch (e) { return ['soubor nejde rozbalit jako .docx (' + e.message + ')']; }
   return sablonaObsahVadyZipu(polozky);
 }
+/* Odstavce textu šablony (base64 / ArrayBuffer / Uint8Array) pro kontrolu
+ * češtiny v jazykové verzi (C7, K48-N1). Tentýž výčet odstavců jako průvodce
+ * v prohlížeči (docxTextSablony z docxgen.js); nečitelný soubor → []. */
+async function sablonaOdstavce(vstup) {
+  let fn = (typeof docxTextSablony === 'function') ? docxTextSablony : null;
+  if (!fn && typeof require === 'function') { try { fn = require('./docxgen.js').docxTextSablony; } catch (e) { /* nic */ } }
+  if (!fn) return [];
+  let u8;
+  if (typeof vstup === 'string') u8 = sablonaB64NaBajty(vstup);
+  else if (vstup instanceof Uint8Array) u8 = vstup;
+  else if (vstup && typeof vstup.byteLength === 'number') u8 = new Uint8Array(vstup);
+  else return [];
+  try { return await fn(u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength)); } catch (e) { return []; }
+}
 function sablonaObsahVadyText(vady) {
   return 'Šablona obsahuje prvky, které Word načítá nebo spouští mimo dokument: ' + (vady || []).join('; ')
     + '. Takovou šablonu nejde zveřejnit ani z ní generovat — uložte ji ve Wordu znovu jako obyčejný .docx '
@@ -355,4 +369,4 @@ function sablonaObsahVadyText(vady) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { SABLONA_VZTAHY_ZAKAZANE, sablonaObsahVadyZipu, sablonaObsahVady, sablonaObsahVadyText, sablonaB64NaBajty, sablonaXmlUnesc };
+  module.exports = { SABLONA_VZTAHY_ZAKAZANE, sablonaObsahVadyZipu, sablonaObsahVady, sablonaObsahVadyText, sablonaOdstavce, sablonaB64NaBajty, sablonaXmlUnesc };

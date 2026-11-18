@@ -7,12 +7,123 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "41bbe99e",
-  "verze": "v18.11.6",
+  "sha": "d8e4fc11",
+  "verze": "v18.11.8",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 213,
+ "test_navic_commitu": 260,
  "v_testu_ne_v_main": [
+  {
+   "id": "659",
+   "typ": "davka",
+   "nazev": "Dávka VZ-F1: opravy nálezů ruční zkoušky víc zákazníků na testu (18. 11. 2026)",
+   "alias": [
+    "VZ-F1"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "658",
+   "typ": "ukol",
+   "nazev": "Controlling: řádek prodeje dalšímu zákazníkovi nese číslo s písmenem (…9801-B) jako nabídka a deal",
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "657",
+   "typ": "ukol",
+   "nazev": "Krycí list BO (i PROJ a Techdata) tiskl prázdnou sekci Zástupci a kontakty zákazníka i banku, účet a zápis v rejstříku",
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "656",
+   "typ": "ukol",
+   "nazev": "VZ-N4: název souboru krycího listu vlastní varianty bez přípony varianty (…9801-C místo …9801.2-C)",
+   "alias": [
+    "VZ-N4"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "655",
+   "typ": "ukol",
+   "nazev": "VZ-N2: výběr „Otevřená varianta“ v hlavičce nabízel při otevřeném A i vlastní variantu C",
+   "alias": [
+    "VZ-N2"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "654",
+   "typ": "ukol",
+   "nazev": "VZ-N1: „Přidat zákazníka“ se stejným IČO, jaké už v zakázce je, prošlo bez upozornění",
+   "alias": [
+    "VZ-N1"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "653",
+   "typ": "ukol",
+   "nazev": "VZ-N3: zástupci a kontakty v krycím listu u otevřeného dalšího zákazníka se zapisovali do hlavičky řídícího (SoD A nesla zástupce C)",
+   "alias": [
+    "VZ-N3"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "651",
+   "typ": "ukol",
+   "nazev": "Ověřit SoD u víc šachet a slevy v EUR (L3) na testu",
+   "alias": [
+    "K49-I7"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "645",
+   "typ": "ukol",
+   "nazev": "NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami",
+   "alias": [
+    "NS"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "632",
+   "typ": "ukol",
+   "nazev": "Ceník a termíny firmy v testu srovnané podle main — ověřit v kole 49",
+   "alias": [
+    "B0.7",
+    "B6",
+    "K37-N6",
+    "K38-I2"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "618",
+   "typ": "ukol",
+   "nazev": "Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs",
+   "alias": [
+    "B4",
+    "C8",
+    "B0.9",
+    "K39-I1",
+    "K38-I1"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "615",
+   "typ": "nalez",
+   "nazev": "Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (C7: výroba jazykové verze z češtiny zrušena, kontrola podílu češtiny)",
+   "alias": [
+    "K48-N1",
+    "B1",
+    "C7"
+   ],
+   "verze": "v18.11.7"
+  },
   {
    "id": "614",
    "typ": "nalez",
@@ -39,18 +150,6 @@
    "typ": "ukol",
    "nazev": "S3: porovnání dvou sestavení nad pevnou sadou kalkulací (nastroje/porovnej_sestaveni.sh, krok kola „porovnani“)",
    "verze": "v18.11.3"
-  },
-  {
-   "id": "610",
-   "typ": "ukol",
-   "nazev": "SL: kontrola nevyplněných míst SoD dělí „Chybí“ a „Nepovinné“",
-   "verze": "v18.11.6"
-  },
-  {
-   "id": "609",
-   "typ": "ukol",
-   "nazev": "SL: SoD realizace v6 se žlutým podbarvením symbolů; ve smlouvě žluté zůstanou jen tečky",
-   "verze": "v18.11.6"
   },
   {
    "id": "608",
@@ -96,12 +195,6 @@
    "typ": "ukol",
    "nazev": "VZ-E0: vypínač viceZakazniku, jádro vice_zakazniku.js (model, písmena, pohled zákazníka, invarianty), import, serverová kontrola tvaru, zla…",
    "verze": "v16.11.1"
-  },
-  {
-   "id": "589",
-   "typ": "ukol",
-   "nazev": "SL: řádek slevy v rozpisu šachet ve smlouvě o dílo realizace",
-   "verze": "v18.11.6"
   },
   {
    "id": "588",
@@ -202,7 +295,7 @@
    "verze": "v12.11.1",
    "kolo": "40",
    "stav": "opraveno v testu (v12.11.1), v main ne",
-   "cekaNa": "J. V.: ověřit rozdíly cen main × test a dát pokyn ke sloučení do main (rychlá cesta)"
+   "cekaNa": "J. V.: pokyn ke sloučení do main (kolo 49 18. 11.: test_k40_celni_sklo nad test 75/0, nad main 47/28; ceny main × test jinak shodné)"
   }
  ],
  "ceka_na_jv": [
@@ -268,18 +361,7 @@
     "K40-N1"
    ],
    "verze": "v12.11.1",
-   "cekaNa": "ověřit rozdíly cen main × test a dát pokyn ke sloučení do main (rychlá cesta)"
-  },
-  {
-   "id": "615",
-   "typ": "nalez",
-   "nazev": "Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (blokuje dávku C7 a sloučení do main)",
-   "alias": [
-    "K48-N1",
-    "B1",
-    "C7"
-   ],
-   "cekaNa": "pokyn ke spuštění pojistky jazyka SoD (doporučeno udělat)"
+   "cekaNa": "pokyn ke sloučení do main (kolo 49 18. 11.: test_k40_celni_sklo nad test 75/0, nad main 47/28; ceny main × test jinak shodné)"
   },
   {
    "id": "616",
@@ -300,19 +382,6 @@
     "B0.1"
    ],
    "cekaNa": "ruční zkouška víc šachet na testu; rozhodnutí odloženo do 25. 11. 2026"
-  },
-  {
-   "id": "618",
-   "typ": "ukol",
-   "nazev": "Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs",
-   "alias": [
-    "B4",
-    "C8",
-    "B0.9",
-    "K39-I1",
-    "K38-I1"
-   ],
-   "cekaNa": "stav TEST sady prověří kolo 49 (J. V. 18. 11.: něco obnovoval); nástroj dorovnat dávkou C8"
   },
   {
    "id": "619",
@@ -445,19 +514,22 @@
    "cekaNa": "nahrát upravený skill (mimo repo)"
   },
   {
-   "id": "654",
-   "typ": "otazka",
-   "nazev": "Dotisk odeslané nabídky bere blok „Vypracoval“ z dnešního přihlášeného účtu, ne z doby odeslání",
-   "cekaNa": "zda blok „Vypracoval“ zmrazit při zámku (mění text dotištěného dokumentu)"
+   "id": "652",
+   "typ": "ukol",
+   "nazev": "Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích",
+   "alias": [
+    "K49-I5"
+   ],
+   "cekaNa": "zadá při nasazení do main"
   }
  ],
  "ceka_na_jv_odlozene": 11,
  "nehotove_podle_kdo": {
-  "J. V.": 43,
+  "J. V.": 41,
   "kolega": 5,
-  "koordinace": 3,
+  "koordinace": 12,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 56
+ "nehotovych": 63
 }
