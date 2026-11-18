@@ -23,7 +23,8 @@
 #                  po roce a zastavil celé kolo); bez prohlížečových sad
 #   mutace-jadro   mutace_jadro.mjs (výpočetní jádro)
 #   mutace-server  netlify/mutace.mjs (serverové funkce)
-#   staticke       verze = den posledního commitu, žádné CRLF, osobní údaje
+#   staticke       verze = den posledního commitu, žádné CRLF, osobní údaje,
+#                  PREDAVKA.md do 15 kB (chyba), main předkem HEAD (upozornění)
 #                  a tajemství mimo povolený seznam (nastroje/kontrola_udaju.py),
 #                  výběr sloučených větví ke smazání (nastroje/test_sloucene_vetve.sh),
 #                  hook pre-push s kontrolou údajů (nastroje/test_pre_push.sh, SEC-M1)
@@ -172,7 +173,9 @@ staticke() {
   bash nastroje/test_pre_push.sh || chyb=$((chyb + 1))
   echo "— únik mezi zákazníky: generátory dokumentů bez dalsiZakaznici (nastroje/kontrola_vz_unik.sh, VZ-E2 #601)"
   { bash nastroje/kontrola_vz_unik.sh && bash nastroje/kontrola_vz_unik.sh --pojistka; } || chyb=$((chyb + 1))
-  echo "STATICKE_KONTROLY: $((6 - chyb)) z 6 prošly"
+  echo "— startovní podklady: PREDAVKA.md do 15 kB, main předkem HEAD (nastroje/kontrola_podkladu.sh, S7)"
+  { bash nastroje/kontrola_podkladu.sh && bash nastroje/kontrola_podkladu.sh --pojistka; } || chyb=$((chyb + 1))
+  echo "STATICKE_KONTROLY: $((7 - chyb)) z 7 prošly"
   return "$chyb"
 }
 poznamka_staticke() { grep -o 'STATICKE_KONTROLY: [0-9]* z [0-9]* prošly' "$1" | tail -1 | sed 's/^STATICKE_KONTROLY: //'; }

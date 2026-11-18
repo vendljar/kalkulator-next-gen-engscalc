@@ -12,7 +12,8 @@ Použití:
   python3 nastroje/release_odkaz.py 12.10.4 <plný SHA>        odkaz na nový release
   python3 nastroje/release_odkaz.py 12.10.4 --upravit         odkaz na úpravu vydaného
                                                               releasu + text k vložení
-  python3 nastroje/release_odkaz.py --chybejici               verze z CHANGELOG bez tagu
+  python3 nastroje/release_odkaz.py --chybejici               verze z CHANGELOG, které prošly
+                                                              do main a nemají tag
   --changelog <soubor>   jiný CHANGELOG (testy)
   --jen-text             vypíše jen popis (bez odkazu)
 
@@ -22,6 +23,12 @@ odkazem na NOVÝ release se nástroj podívá na tagy v origin (`git ls-remote
 a vypíše odkaz na vydaný release a na jeho úpravu. Tagy jde pro testy
 podstrčit proměnnou KNG_TAGY="v1.2.3,v1.2.4"; když git origin nedosáhne,
 nástroj jen varuje a odkaz vyrobí.
+
+Tag a release jen pro stav, který jde do main (J. V. 18. 11. 2026): verze,
+které byly jen v testu nebo integraci, zůstávají v CHANGELOG bez tagu.
+Proto `--chybejici` hlásí jen verze, které prošly do main — tj. verze.txt
+některého commitu v historii origin/main. Pro testy jde seznam podstrčit
+proměnnou KNG_VERZE_MAIN="1.2.3,1.2.4".
 
 Ceny a osobní údaje do popisu nepatří: řádek s částkou v Kč/EUR se vynechá
 (CHANGELOG je navíc hlídaný nastroje/kontrola_udaju.py).
@@ -155,6 +162,28 @@ def tagy_origin():
     return {l.split('refs/tags/')[1].removesuffix('^{}') for l in r.stdout.splitlines() if 'refs/tags/' in l}
 
 
+def verze_main():
+    """Verze, které prošly do main (verze.txt v historii origin/main); None, když se nedá zjistit."""
+    podstrc = os.environ.get('KNG_VERZE_MAIN')
+    if podstrc is not None:
+        return {x.strip().lstrip('v') for x in podstrc.split(',') if x.strip()}
+    import subprocess
+    koren = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+    try:
+        r = subprocess.run(['git', 'log', '--format=%H', 'origin/main', '--', 'verze.txt'],
+                           capture_output=True, text=True, timeout=60, cwd=koren)
+        if r.returncode != 0:
+            return None
+        vstup = ''.join(c + ':verze.txt\n' for c in r.stdout.split())
+        b = subprocess.run(['git', 'cat-file', '--batch'], input=vstup, capture_output=True,
+                           text=True, timeout=60, cwd=koren)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if b.returncode != 0:
+        return None
+    return set(re.findall(r'^(\d{1,2}\.\d{1,2}\.\d{1,2})\s*$', b.stdout, re.M))
+
+
 def verze_changelogu(text):
     """Verze z nadpisů `## vD.M.N` v pořadí CHANGELOG (bez opakování)."""
     vysl = []
@@ -179,8 +208,14 @@ def main(argv):
         tagy = tagy_origin()
         if tagy is None:
             print('tagy z origin nejde zjistit'); return 2
-        chybi = [v for v in verze_changelogu(text)[:15] if 'v' + v not in tagy]
-        print('Bez tagu (nejnovějších 15 verzí z CHANGELOG): ' + (', '.join('v' + v for v in chybi) or 'žádná'))
+        v_main = verze_main()
+        if v_main is None:
+            print('verze v origin/main nejde zjistit (git fetch origin main)'); return 2
+        kandidati = [v for v in verze_changelogu(text) if v in v_main][:15]
+        chybi = [v for v in kandidati if 'v' + v not in tagy]
+        print('Bez tagu (nejnovějších 15 verzí z CHANGELOG, které prošly do main): '
+              + (', '.join('v' + v for v in chybi) or 'žádná'))
+        print('Verze jen v testu nebo integraci se netagují (J. V. 18. 11. 2026).')
         return 0
     if not args:
         print(__doc__); return 2
