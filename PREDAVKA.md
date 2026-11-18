@@ -25,7 +25,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   z češtiny zrušena u všech šablon (jen nahraný přeložený soubor); `sablonaJazykPodil` + mez 20 %: smlouvy (SoD, SoD proj.,
   plná moc) nad mezí server nezveřejní/nevrátí a klient nevytiskne, CN jen upozornění. Ověřeno na textech z Disku
   (SoD v5 DE 2,8 %, CN v17 DE 0,7 %, SoD proj. v4 DE 3,1 %; DE z české SoD v5 85 % → neprojde). NS: šablony pod přepínačem
-  OCK | PROJ (filtr beze změny). Mutace [C7] jádro 7/7, server 5/5. Kolo `--bez-mutaci`: viz zpráva koordinaci.
+  OCK | PROJ (filtr beze změny). Mutace [C7] jádro 7/7, server 5/5. **Kolo `--bez-mutaci --proti origin/test` nad 6ed6f8d VŠE ZELENÉ** (sady 465/0/7, hodiny 377/0/1, statické 9/9, porovnání 353/353 SHODA).
   Pozor při slučování s SL: v `src/sod.js` změněna jen `sodJazykZabrana`. Firemní .docx nebyly v kontejneru (KNG_PODKLADY
   chybí) — test s podklady v `netlify/test_sablony.mjs` se přeskočí; hledá i `Sablona_SOD_REALIZACE_v5_DE_z_cestiny.docx`.
 - **S6 + S8 #613** (`claude/s6s8-evidence`, v18.11.5, nad 9bd6dc8): evidence v `roadmap.json` (pole `typ`, `cekaNa` „<kdo>: <co>“,

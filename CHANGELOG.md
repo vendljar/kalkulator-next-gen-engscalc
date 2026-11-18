@@ -26,6 +26,9 @@ Nad integrací `9bd6dc8` (v18.11.4), sloučeno s integrací `ec5bbac` (v18.11.5,
 - **Testy s pojistkou:** `netlify/test_sablony.mjs` před 30/7, po 37/0; `src/test_sablony_online.js` před 97/10, po 107/0;
   `src/test_sod_en.js` před 2 FAIL, po 51/0; `overit_k39_sablony_filtr.mjs` před 9/3, po 12/0. Mutace [C7]: jádro 7/7, server 5/5.
 
+**Kolo `--bez-mutaci --proti origin/test` nad 6ed6f8d VŠE ZELENÉ (38 min):** sady 465/0/7 přeskočeno, hodiny +400 dní 377/0/1,
+statické 9/9, porovnání sestavení 353 kalkulací, 353 shodných (SHODA). `overit_zobrazeni.mjs` upraven na nové pořadí (NS).
+
 ## v18.11.6 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
 
 Nad `8462aea` (integrace = test v12.11.7), sloučeno s integrací `ec5bbac` (v18.11.5: + S3 #611, S7 #612, S6+S8 #613). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje
