@@ -873,7 +873,10 @@ async function firmaKapitolaVychozi(id) {
   nastRefresh();
 }
 
-function nastSmluvniStandardy() {
+/* `sablonyBlok` (NS, pokyn J. V. 18. 11. 2026): správa šablon stojí hned pod
+ * přepínačem OCK | PROJ, nad platebními podmínkami — přepínač ji filtruje
+ * (PODM_SABLONY_CAST), tak má být u něj. */
+function nastSmluvniStandardy(sablonyBlok) {
   const f = NAST.firma || (NAST.firma = firmaDefault());
   /* #367 fáze 2 (19. 10. 2026): platnost nabídky je ve společném bloku nad
    * přepínačem OCK | PROJ, způsob fakturace PROJ na kartě PROJ, ostatní
@@ -903,7 +906,7 @@ function nastSmluvniStandardy() {
   };
   const hlava = typeof nastPodminkyHlava === 'function' ? nastPodminkyHlava() : '';
   const podminky = typeof nastPodminkyOck !== 'function' ? '' : (cast === 'proj' ? nastPodminkyProj() : nastPodminkyOck());
-  return `${hlava}${podminky}<div class="sec-title">Smluvní standardy${cast === 'proj' ? ' PROJ' : ' OCK'}</div>
+  return `${hlava}${sablonyBlok || ''}${podminky}<div class="sec-title">Smluvní standardy${cast === 'proj' ? ' PROJ' : ' OCK'}</div>
     <div class="note" style="margin-top:0">Věty, které platí pro celou firmu a propisují se do
       <b>každé</b> nabídky, smlouvy i krycího listu. Mění se jednou za čas a pro všechny naráz —
       proto tady, a ne v každé zakázce zvlášť. <b>Nejsou to duplicitní pole ke krycímu listu:</b>
@@ -1010,15 +1013,14 @@ function nastSablony() {
   /* Přihlášený online: nová správa šablon (#349, sablony_sprava_ui.js).
    * Stará obrazovka níž zůstává pro práci bez serveru. */
   if (sablonyOnlineAktivni() && typeof sablonySpravaHtml === 'function')
-    return `${nastSmluvniStandardy()}
+    return nastSmluvniStandardy(`
     <div class="sec-title">Šablony dokumentů ${nastSablonyFiltr()}</div>
     <div class="note">Platí to, co je zveřejněné na serveru — z toho tisknou všichni přihlášení. Česká šablona je zdroj,
       ze kterého se vyrábějí jazykové verze; každá jazyková verze ví, ze které české verze vznikla.
       ${jeAdmin() ? 'Klikněte na dokument v tabulce: dole se ukáže jeho detail, jazykové verze a historie.' : ''}</div>
     ${sablonySpravaHtml()}
-    ${rezimBlok()}`;
-  return `${nastSmluvniStandardy()}
-
+    ${rezimBlok()}`);
+  return nastSmluvniStandardy(`
     <div class="sec-title">Šablony dokumentů ${nastSablonyFiltr()}</div>
     <div class="note">Šablony <b>.docx</b> se od 13. 8. 2026 řídí <b>centrálně</b> (#139): administrátor je zveřejní
     na serveru a všichni přihlášení z nich automaticky tisknou — nikdo nemůže omylem použít starou verzi. Nahrání
@@ -1036,7 +1038,7 @@ function nastSablony() {
       'Sablona_PLNA_MOC.docx – zmocnitel, nemovitost a firemní údaje přes symboly {{…}}')}
     <div class="note" style="margin-top:10px">Mutace je <b>přeložený soubor</b> šablony (od překladatele); z české šablony
       se nevyrábí. Seznam nepřeložených frází (CSV) je podklad pro překladatele. <b>Hodnoty</b> dosazované do <code>{{…}}</code> se překládají zvlášť podle
-      jazyka zvoleného v technické specifikaci. Nahrávání mutací a export seznamů = <b>jen administrátor</b>.</div>`;
+      jazyka zvoleného v technické specifikaci. Nahrávání mutací a export seznamů = <b>jen administrátor</b>.</div>`);
 }
 
 /* ================= KONFIGURACE (N3 / SET-2) – jen administrátor =================
