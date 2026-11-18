@@ -16,6 +16,7 @@ Test je proti main napřed o 250 commitů.
 
 | # | typ | co | verze |
 |---|---|---|---|
+| #651 (dřív K49-I7) | úkol | Ověřit SoD u víc šachet a slevy v EUR (L3) na testu | v18.11.7 |
 | #645 (dřív NS) | úkol | NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami | v18.11.7 |
 | #632 (dřív B0.7, B6, K37-N6, K38-I2) | úkol | Ceník a termíny firmy v testu srovnané podle main — ověřit v kole 49 | v18.11.7 |
 | #618 (dřív B4, C8, B0.9, K39-I1, K38-I1) | úkol | Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs | v18.11.7 |
@@ -84,11 +85,10 @@ Test je proti main napřed o 250 commitů.
 | #640 (dřív B221) | otázka | Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený | zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora) |
 | #642 | úkol | Zeštíhlení roadmap.json: hotové položky starší 60 dní do archivu (živý soubor kolem 60 položek) | souhlas (návrh režie S6 d; soubor má 1,2 MB) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
-| #651 (dřív K49-I7) | úkol | Ověřit SoD u víc šachet a slevy v EUR (L3) na testu | souhlas se zápisem na test pro testovací sezení (podle CLAUDE.md smí automat test jen číst) |
 | #652 (dřív K49-I5) | úkol | Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích | zadá při nasazení do main |
 
 K tomu 11 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 66: J. V. 42, kolega 5, koordinace 14, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 62: J. V. 41, kolega 5, koordinace 11, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

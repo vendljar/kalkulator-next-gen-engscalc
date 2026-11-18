@@ -14,6 +14,15 @@
  "test_navic_commitu": 250,
  "v_testu_ne_v_main": [
   {
+   "id": "651",
+   "typ": "ukol",
+   "nazev": "Ověřit SoD u víc šachet a slevy v EUR (L3) na testu",
+   "alias": [
+    "K49-I7"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
    "id": "645",
    "typ": "ukol",
    "nazev": "NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami",
@@ -466,15 +475,6 @@
    "cekaNa": "nahrát upravený skill (mimo repo)"
   },
   {
-   "id": "651",
-   "typ": "ukol",
-   "nazev": "Ověřit SoD u víc šachet a slevy v EUR (L3) na testu",
-   "alias": [
-    "K49-I7"
-   ],
-   "cekaNa": "souhlas se zápisem na test pro testovací sezení (podle CLAUDE.md smí automat test jen číst)"
-  },
-  {
    "id": "652",
    "typ": "ukol",
    "nazev": "Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích",
@@ -486,11 +486,11 @@
  ],
  "ceka_na_jv_odlozene": 11,
  "nehotove_podle_kdo": {
-  "J. V.": 42,
+  "J. V.": 41,
   "kolega": 5,
-  "koordinace": 14,
+  "koordinace": 11,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 66
+ "nehotovych": 62
 }
