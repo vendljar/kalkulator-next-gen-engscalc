@@ -88,6 +88,9 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* nabidka.js (#560, 5. 11. 2026): sekce MŮSTKY a samostatný řádek ceny
    * můstků v cenové nabídce OCK (CZ i EUR) a klon řádků do šablon v15. */
   'nabidka.js',
+  /* zpracovatel.js (#UE, 18. 11. 2026): blok „Vypracoval" každé nabídky —
+   * titul, jméno, funkce a telefon z účtu, který správce nově upraví. */
+  'zpracovatel.js',
   /* app_template.html (MU2 #560, 6. 11. 2026): styly karty Můstky — obal
    * přes celou mřížku těla karty a posun tabulky jen v kartě. Hlídá
    * src/test_560_mu2_karta.js (prohlížeč: overit_560_mustky.mjs bod 7). */
@@ -551,6 +554,15 @@ const MUTACE = [
     proc: 'obchodník by v kontrole viděl {{OBJEDNATEL_ICO}} místo „IČO objednatele"', sady: ['test_sod_tecky.js', 'test_vs_kontroly.js'] },
   /* ---- SL #589 (16. 11. 2026): vyrovnávací řádek rozpisu šachet ve SoD
    * (sleva / zaokrouhlení). Hlídá src/test_sod_v5.js oddíl E. ---- */
+  /* #UE (18. 11. 2026): po úpravě účtu se odeslaná nabídka nemění, nová nese nové údaje. */
+  { nazev: 'UE: jméno obchodníka se při zámku nezmrazí [UE]', soubor: 'kryci.js',
+    hledej: "    { id: 'obchodnik', label: 'Jméno obchodníka', verze: ['bo', 'techdata'], prefill:",
+    nahrad: "    { id: 'obchodnik', nezmrazovat: true, label: 'Jméno obchodníka', verze: ['bo', 'techdata'], prefill:",
+    proc: 'odeslaná nabídka by po úpravě účtu ukázala v krycím listu nové jméno', sady: ['test_ue_zpracovatel.js'] },
+  { nazev: 'UE: zpracovatel bez funkce z účtu [UE]', soubor: 'zpracovatel.js',
+    hledej: '    ZPRAC_FUNKCE: (z && z.funkce) || \'\',',
+    nahrad: '    ZPRAC_FUNKCE: \'\',',
+    proc: 'nová funkce z úpravy účtu by se do nabídky nepropsala', sady: ['test_ue_zpracovatel.js'] },
   { nazev: 'SL: rozpis bez vyrovnávacího řádku [SL]', soubor: 'sod.js',
     hledej: "  if (vyr) radky.push(P(vyr.popis) + ' – ' + (vyr.castka < 0 ? '\\u2212 ' + kc(Math.abs(vyr.castka)) : kc(vyr.castka)));",
     nahrad: '',

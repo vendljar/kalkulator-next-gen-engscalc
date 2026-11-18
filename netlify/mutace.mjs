@@ -47,7 +47,9 @@ if (!process.env.ADMIN_EMAIL) process.env.ADMIN_EMAIL = 'spravce@priklad.cz';
  * je soubor zmutovaný. Běžný běh ji nenastavuje. */
 const SADY = process.env.KNG_MUTACE_SADY
   ? process.env.KNG_MUTACE_SADY.split(',').map(s => s.trim()).filter(Boolean)
-  : [/* C5 (#585, 11. 11. 2026): nástroj obnovy testovací sady zakázek (rychlá sada). */
+  : [/* #UE (18. 11. 2026): úprava existujícího účtu správcem — práva, meze, hlavní účet (rychlá sada). */
+     'test_ue_uzivatele.mjs',
+     /* C5 (#585, 11. 11. 2026): nástroj obnovy testovací sady zakázek (rychlá sada). */
      'test_c5_test_sada.mjs',
      /* VS #570 E1 (10. 11. 2026): víc šachet v nabídce — vypínač, tvar, limity, 409, zámek (rychlá sada). */
      'test_vs_server.mjs',
@@ -1818,6 +1820,31 @@ const MUTACE = [
     hledej: "  if (typeof slevaRozhodnutiZahod === 'function') slevaRozhodnutiZahod(kopie.data);",
     nahrad: '  ;',
     proc: 'obchodník by zakázku s klonem neuložil, vedoucí by se stal schvalovatelem cizí slevy' },
+  /* #UE (18. 11. 2026): úprava existujícího účtu správcem (Upravit…). */
+  { nazev: 'UE: cizí účet upraví i obchodník [UE]', soubor: 'functions/uzivatele.mjs',
+    hledej: "      if (cil !== relace.email && relace.role !== 'Administrátor')",
+    nahrad: '      if (false)',
+    proc: 'obchodník by přepsal jméno a telefon kolegy pod jeho nabídkami', sady: ['test_ue_uzivatele.mjs', 'test_prava.mjs'] },
+  { nazev: 'UE: hlavní účet upraví i jiný správce [UE]', soubor: 'functions/uzivatele.mjs',
+    hledej: "      if (cil === ADMIN_EMAIL && relace.email !== ADMIN_EMAIL)\n        return json({ ok: false, chyba: 'Profil a podpis",
+    nahrad: "      if (false)\n        return json({ ok: false, chyba: 'Profil a podpis",
+    proc: 'vedlejší správce by přepsal jméno hlavního účtu (B28)', sady: ['test_ue_uzivatele.mjs'] },
+  { nazev: 'UE: jméno bez meze a s < > [UE]', soubor: 'functions/uzivatele.mjs',
+    hledej: "        if ('jmeno' in t) ucet.jmeno = jmenoText(t.jmeno);   // B95\n        if ('titul' in t) ucet.titul = text(t.titul, 40);\n        if ('funkce'",
+    nahrad: "        if ('jmeno' in t) ucet.jmeno = String(t.jmeno);\n        if ('titul' in t) ucet.titul = text(t.titul, 40);\n        if ('funkce'",
+    proc: 'úprava by byla volnější cestou než založení (meze, B95 razítko)', sady: ['test_ue_uzivatele.mjs'] },
+  { nazev: 'UE: telefon bez meze délky [UE]', soubor: 'functions/uzivatele.mjs',
+    hledej: "        if ('telefon' in t) ucet.telefon = text(t.telefon, 40);\n        /* Kdo kontakt",
+    nahrad: "        if ('telefon' in t) ucet.telefon = text(t.telefon, 4000);\n        /* Kdo kontakt",
+    proc: 'román v telefonu by rozbil blok Vypracoval', sady: ['test_ue_uzivatele.mjs'] },
+  { nazev: 'UE: úprava přepíše celý účet z těla (role, e-mail) [UE]', soubor: 'functions/uzivatele.mjs',
+    hledej: "        for (const k of ['jmeno', 'titul', 'funkce', 'telefon', 'zmenil']) if (k in ucet) cerstvy[k] = ucet[k];",
+    nahrad: "        for (const k of ['jmeno', 'titul', 'funkce', 'telefon', 'zmenil']) if (k in ucet) cerstvy[k] = ucet[k];\n        Object.assign(cerstvy, t);",
+    proc: 'pole role nebo aktivni v těle by povýšilo nebo vypnulo účet', sady: ['test_ue_uzivatele.mjs'] },
+  { nazev: 'UE: razítko bez seznamu změněných polí [UE]', soubor: 'functions/uzivatele.mjs',
+    hledej: '        ucet.zmenil = { kdo: relace.email, kdy: new Date().toISOString(), pole };',
+    nahrad: '        ucet.zmenil = { kdo: relace.email, kdy: new Date().toISOString() };',
+    proc: 'nešlo by dohledat, co správce u účtu změnil', sady: ['test_ue_uzivatele.mjs'] },
   { nazev: 'B74: zapnutí účtu bere i nebooleovskou hodnotu', soubor: 'functions/uzivatele.mjs',
     hledej: "      if (typeof t.aktivni !== 'boolean')",
     nahrad: '      if (false)',
@@ -4033,7 +4060,7 @@ const MUTACE = [
     nahrad: "        return s.cti(k);",
     proc: 'správce by se o nepoužitelné platné šabloně dozvěděl až po ostré obnově (B147)' },
   { nazev: 'B148: úprava cizího kontaktu bez razítka', soubor: 'functions/uzivatele.mjs',
-    hledej: "        ucet.zmenil = { kdo: relace.email, kdy: new Date().toISOString() };",
+    hledej: "        ucet.zmenil = { kdo: relace.email, kdy: new Date().toISOString(), pole };",   /* #UE: razítko nese i seznam polí */
     nahrad: "        ;",
     proc: 'nešlo by dohledat, kdo telefon pod nabídkami přepsal (B148)' },
   { nazev: 'B148: razítko úpravy kontaktu z těla požadavku', soubor: 'functions/uzivatele.mjs',

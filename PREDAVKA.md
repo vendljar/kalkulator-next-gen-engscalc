@@ -21,6 +21,11 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
+- **UE #653** (`claude/ue-uzivatele`, v18.11.8, nad integrací 41bbe99): Nastavení → Uživatelé → **Upravit…**
+  (titul, jméno, funkce, telefon; e-mail jen ke čtení s vysvětlením). Server beze změny pravidel, razítko `zmenil`
+  + seznam polí. Testy `netlify/test_ue_uzivatele.mjs`, `src/test_ue_zpracovatel.js`, matice práv, overit_online/xss,
+  mutace [UE]. **Otázka #654 pro J. V.:** dotisk odeslané nabídky bere „Vypracoval“ z přihlášeného účtu — doporučeno
+  zmrazit při zámku. Čísla #653/#654 můžou kolidovat se SP (VZ-F1 má do #652). Výsledek kola v oddílu commitu/zprávě.
 - **S6 + S8 #613** (`claude/s6s8-evidence`, v18.11.5, nad 9bd6dc8): evidence v `roadmap.json` (pole `typ`, `cekaNa` „<kdo>: <co>“,
   `kolo`, `vetev`, `verze`, `dopadCena`, `alias`; migrace jen dotčených položek), otevřené nálezy a otázky převedeny jako
   #614–#643, `roadmapa.py --zive` = 54 nehotových; `nastroje/prehled_stavu.py` → `PREHLED.md`/`.json` (krok `staticke`,

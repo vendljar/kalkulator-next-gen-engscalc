@@ -8,6 +8,30 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.11.8 — UE #653 úprava existujícího účtu (titul, jméno, funkce, telefon), větev claude/ue-uzivatele
+
+Nad integrací `41bbe99` (v18.11.6). Zadání J. V. 18. 11. 2026. Verzi přečísluje koordinace (souběžně VZ-F1, C7, SP).
+Na webech, Disku ani v Pipedrive nic.
+
+- **Nastavení → Uživatelé → Upravit…** (dřív „Kontakt…“): správce opraví u existujícího účtu titul před jménem,
+  jméno a příjmení, funkci a telefon. Tabulka účtů se po uložení překreslí hned z odpovědi serveru.
+- **E-mail se neupravuje** — v úpravě je jen ke čtení s vysvětlením „E-mail je přihlašovací jméno; pro změnu
+  založte nový účet a převeďte zakázky.“ (klíč účtu; odkazují na něj autor zakázky, `prodano.kdo` a razítka
+  zámků „jméno <e-mail>“).
+- **Server** (akce `profil` s cizím e-mailem, beze změny pravidel): jen Administrátor (Obchodník, Vedoucí 403),
+  validace a meze délek tytéž jako při založení (jméno 120 bez < >, titul 40, funkce 80, telefon 40), hlavní účet
+  upraví jen sám (B28), snížení role a vypnutí hlavního účtu dál 400. Účty protokol změn nemají — razítko
+  `zmenil` nově nese i seznam změněných polí (bez hodnot).
+- **Dopad na dokumenty:** nové nabídky nesou nové údaje v bloku „Vypracoval“. Krycí list odeslané (zamčené) varianty
+  drží jméno ze snímku zámku a data zakázky se úpravou účtu nemění. **Otázka #654 pro J. V.:** dotisk odeslané
+  nabídky (Word i online tisk) bere blok „Vypracoval“ z přihlášeného účtu (platí od #146) — doporučeno zmrazit ho
+  při zámku jako krycí list.
+- Testy: `netlify/test_ue_uzivatele.mjs` (34), `src/test_ue_zpracovatel.js` (13), řádek matice v `test_prava.mjs`,
+  `overit_online.mjs` (Upravit…, e-mail jen ke čtení, meze), `overit_xss.mjs` (pole jména a e-mailu v dialogu).
+  Pojistka: bez změny serveru `test_ue_uzivatele` 2 FAIL (razítko bez seznamu polí); jádrová pojistka bez snímku
+  ukáže nové jméno. Mutace [UE]: server 6, jádro 2 (`zpracovatel.js` přidán mezi jádra mutací); mutace B148
+  přesměrována na nové razítko.
+
 ## v18.11.6 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
 
 Nad `8462aea` (integrace = test v12.11.7), sloučeno s integrací `ec5bbac` (v18.11.5: + S3 #611, S7 #612, S6+S8 #613). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje

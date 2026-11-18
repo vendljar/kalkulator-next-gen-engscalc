@@ -287,7 +287,7 @@ const KOD_STRANKY = `
     'B166: lišta zámku u aktivní zamčené varianty': () => {
       const el = document.getElementById('zamekLista');
       return !!el && /varianty\.1\.nazev/.test(el.innerHTML) && /varianty\.1\.zamek\.popis/.test(el.innerHTML); },
-    'B150: dialog Kontakt… (úprava kontaktu cizího účtu)': () => ['onlineUzKTitul', 'onlineUzKFunkce', 'onlineUzKTelefon']
+    'B150 + UE: dialog Upravit… (dřív Kontakt…, úprava cizího účtu)': () => ['onlineUzKTitul', 'onlineUzKJmeno', 'onlineUzKFunkce', 'onlineUzKTelefon', 'onlineUzKEmail']
       .every(id => { const el = document.getElementById(id); return !!el && /__XSS\.push/.test(el.value); }),
   };
   const DALSI = {
@@ -295,7 +295,7 @@ const KOD_STRANKY = `
     'profil, seznam účtů': () => { otrav(ONLINE_STAV.ja, 'ja', c => !/email/.test(c));
       ONLINE_STAV.uzivatele = [ucet('u1'), ucet('u2')]; ONLINE_STAV.uzivateleNacteno = true; otrav(ONLINE_STAV.uzivatele, 'uzivatele', null, true);
       NAST.uzivatele = [ucet('u3')]; otrav(NAST.uzivatele, 'NAST.uzivatele', null, true); },
-    'B150: dialog Kontakt… (úprava kontaktu cizího účtu)': () => {
+    'B150 + UE: dialog Upravit… (dřív Kontakt…, úprava cizího účtu)': () => {
       /* Správa účtů se kreslí jen online (stránka ze souboru = nouzový
        * režim). Online se tu jen předstírá; dotazy na server zůstanou
        * viset, aby nic nepřepsalo připravená data. */
