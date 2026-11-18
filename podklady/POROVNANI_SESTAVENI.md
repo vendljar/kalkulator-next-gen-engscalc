@@ -4,7 +4,8 @@ Návrh režie 18. 11. 2026, oddíl S3, a rozhodnutí J. V. téhož dne:
 
 - **stupně kol:** (1) po každé dávce automat — `testovaci_kolo.sh` + porovnání sestavení,
   (2) cílená sada na změněnou oblast, (3) plné kolo cenových nabídek **jen před main a po nasazení**;
-- **kolo main-před × main-po u rychlé cesty dělá koordinace nástrojem**, J. V. dostane tabulku rozdílů;
+- kolo main-před × main-po u rychlé cesty dělá koordinace nástrojem, J. V. dostane tabulku rozdílů
+  (upřesněno týž den: rozdíly cen main × test si J. V. ověřuje sám — viz níž);
 - noční porovnání v Actions zatím **ne**.
 
 ## Co nástroj dělá
@@ -34,18 +35,23 @@ Ceník: zkušební ceník testů (`src/zkusebni_cenik.js`), nebo `--cenik <soubo
 Kód: **0** shoda nebo jen očekávané rozdíly, **1** neočekávaný rozdíl, **2** chybné použití /
 nejde postavit nebo spočítat.
 
-## Rychlá cesta (main-před × main-po) — koordinace
+## Upřesnění J. V. (18. 11. 2026, přes koordinaci)
+
+- **Nástroj je stupeň 1 po dávce** — integrace proti testu nebo proti předchozímu stavu. **Není to brána do main:**
+  rozdíly cen mezi main a testem si J. V. ověřuje sám. Výchozí `--proti` zůstává `origin/test`.
+- Automat smí z testovacího webu (testengscalc) jen **číst**; zápis ani ostrý web ne. Zatím se to nevyužívá
+  (návrh využití je v `PREDAVKA.md`).
+
+## Main × test (jen pro informaci, ne brána)
 
 ```bash
 git fetch origin main test
 bash nastroje/porovnej_sestaveni.sh origin/main origin/test --max 60
 ```
 
-1. Tabulku (skupiny, „Vzory rozdílů", případy) pošli J. V.
-2. Ke každému vzoru rozdílu najdi dávku, která ho způsobila (`git log origin/main..origin/test -- <soubor>`),
-   a zapiš ho do seznamu očekávaných rozdílů (vzor: `podklady/porovnani/ocekavane_main_test_2026-11-18.txt`).
-3. Pusť znovu s `--ocekavane <soubor>`; kód 0 = mezi main a test jsou jen vysvětlené rozdíly.
-   Vzor, který nemá vysvětlení, je nález — do main se nejde.
+Tabulka („Vzory rozdílů") ukáže, ve kterých polích se main a test liší; ke každému vzoru se dá najít dávka
+(`git log origin/main..origin/test -- <soubor>`) a zapsat do seznamu očekávaných rozdílů (vzor:
+`podklady/porovnani/ocekavane_main_test_2026-11-18.txt`). Ověření cen před main dělá J. V.
 
 ## Po dávce (stupeň 1) — vývojové sezení
 

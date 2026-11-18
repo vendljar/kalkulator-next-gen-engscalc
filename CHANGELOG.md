@@ -31,6 +31,8 @@ u rychlé cesty dělá koordinace nástrojem; noční porovnání v Actions zat�
 - **Testy:** `nastroje/test_porovnej_sestaveni.sh` 16/0 — stejné reference 0 rozdílů; dočasný commit se změněnou
   cenou (v dočasném klonu, do repa nic) → rozdíl v ceně celkem, kód 1; očekávaný rozdíl projde, seznam krytý jen
   jiným polem nebo jinými případy ne; chybné použití kód 2. Pojistka: s porovnáním, které rozdíly nehlásí, 6 FAIL.
+- **Upřesnění J. V. 18. 11.:** nástroj je stupeň 1 po dávce (integrace proti testu nebo předchozímu stavu), ne brána
+  do main — rozdíly cen main × test ověřuje J. V. sám; výchozí `--proti` zůstává `origin/test`.
 - **Ukázka main (6c4bc80, v11.11.1) × test (8462aea, v12.11.7):** 353 kalkulací, 7 shodných, 346 rozdílných —
   jediný vzor `nahled-en` (online náhled anglické nabídky; C1 #582 nadpisy USAZENÍ OCK v EN), cena, řádky, symboly,
   Word ani SoD beze změny. test × integrace v18.11.2: 353/353 shodných.
