@@ -15,17 +15,21 @@ Vznikly nástrojem z v4 na Disku (Kalkulator NextGen / Sablony, staženo bajtov�
 
 | Soubor | Jazyk | Symbolů | Bajtů | sha256 | Vznikl z v5 (sha256) |
 |---|---|---|---|---|---|
-| `Sablona_SOD_REALIZACE_v6.docx` | CZ | 61 | 407 682 | f7fc164a…98a8 | 752674d4…f59f6 |
-| `Sablona_SOD_REALIZACE_v6_EN.docx` | EN | 61 | 351 861 | 57c6c788…055d | f9b5f2f7…17ee58 |
-| `Sablona_SOD_REALIZACE_v6_DE.docx` | DE | 61 | 354 547 | b6084799…8978 | d9603b62…c0e37c |
-| `Sablona_SOD_REALIZACE_v6_FR.docx` | FR | 61 | 354 967 | c8d2c11f…fa77 | 633c9b27…0df86b |
+| `Sablona_SOD_REALIZACE_v6.docx` | CZ | 61 | 408 012 | 4713e8ea…6f6b | 752674d4…f59f6 |
+| `Sablona_SOD_REALIZACE_v6_EN.docx` | EN | 61 | 362 210 | 24611c76…39b2 | f9b5f2f7…17ee58 |
+| `Sablona_SOD_REALIZACE_v6_DE.docx` | DE | 61 | 364 896 | 5d57cbba…7b4e | d9603b62…c0e37c |
+| `Sablona_SOD_REALIZACE_v6_FR.docx` | FR | 61 | 365 316 | 8d90bb7c…f5 | 633c9b27…0df86b |
 
 ## 2. Co se mění
 
 - Každý výskyt symbolu `{{…}}` má **žluté podbarvení** (`<w:highlight w:val="yellow"/>` ve vlastnostech běhu,
   na místě podle schématu OOXML) — stejně jako SoD projekce v4 a plná moc. 64 výskytů 61 symbolů.
-- Běh, ve kterém je symbol spolu s pevným textem (např. „IČ: {{OBJEDNATEL_ICO}}“) nebo s dalším symbolem, se
-  **rozdělí** — žlutý je jen symbol, okolní text ne (CZ 47 běhů, EN/DE/FR 21). Písmo každého úseku zůstává.
+- Běh, ve kterém je symbol spolu s pevným textem (např. „IČ: {{OBJEDNATEL_ICO}}“), tabulátory, zalomením nebo
+  s dalším symbolem, se **rozdělí** — žlutý je jen symbol (každý ze 64 výskytů má vlastní žlutý běh), popisek ani
+  tabulátory ne (CZ 48 běhů, EN/DE/FR 49). Písmo každého úseku zůstává.
+- **Druhé vydání 18. 11. (dorevize poradce M1):** první vydání v EN/DE/FR nerozdělilo běhy s tabulátory
+  („Company ID (IČ): {{OBJEDNATEL_ICO}}“ + tabulátory) a podbarvilo je celé; v CZ jeden takový běh. Šablony vyrobeny
+  znovu a poslány J. V.; **platí jen druhé vydání** (sha256 v tabulce).
 - Text, symboly ani nic jiného se nemění.
 
 **Ve vytištěné smlouvě (aplikace od v18.11, po revizi poradce L1/L2):** v dokumentech s tečkami (SoD realizace,

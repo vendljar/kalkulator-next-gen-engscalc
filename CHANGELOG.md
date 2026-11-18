@@ -42,6 +42,12 @@ koordinace. Na webech, Disku ani v Pipedrive nic.
   a faktury v kopii 1 a 2 (konstanta `SOD_NEVYPLNENE_NEPOVINNE`), DIČ, banka, účet a zástupce ve věcech obchodních
   s kontaktem povinné. Věta „… k doplnění (tečky „……"). Chybí: …. Nepovinné: …." vyjmenuje každé místo; jen
   upozornění. Změněné očekávání `src/test_sod_tecky.js` S (dvojtečka → „Chybí:").
+- **Dorevize poradce (M1–M3):** běh se dělí i s tabulátory, zalomením a víc texty (`docxBehRozdel`, společné pro
+  generátor i nástroj v6) — v EN/DE/FR už nesvítí žlutě popisky a tabulátory u teček; šablony v6 CZ/EN/DE/FR vyrobeny
+  znovu (druhé vydání, poslané J. V.). Podbarvení na místo podle schématu `w:rPr` i před `w14:*`. Test hlídá, že
+  žlutý běh nese jen „……".
+- Přiznané meze podbarvení: sejme se každé podbarvení (ne jen žluté); symbol rozdělený mezi běhy obarví i pevný text
+  svých běhů; vnořené běhy (textové pole) se nezpracují; žluté tečky dostanou i šablony v4/v5 bez podbarvení.
 - Testy: `test_sod_v5.js` E, F (+ D se skutečnými v6), `test_sod_tecky.js` S2, L1, L2, K (skutečné SoD projekce v4 CZ/EN,
   plná moc, SoD realizace v6), `test_vs_kontroly.js` H; mutace [SL] 20/20.
 ## v18.11.4 — S7: startovní podklady (CLAUDE.md, PREDAVKA, log rozhodnutí), větev claude/s7-podklady
