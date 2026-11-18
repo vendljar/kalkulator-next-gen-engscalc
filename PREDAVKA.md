@@ -8,8 +8,14 @@
   se pak hledá podle CN, ne podle názvu.
 - Koncept odpovědi integrátorovi v souhrnu (oddíl „Odpověď integrátora 11. 11. a další kroky“): termín zkoušky
   posunut na [úterý 24. 11.], deal založí J. V., webhook aktivní nejpozději den předem, heslo zvlášť.
-- J. V. dostal postup krok za krokem (klíč, token, doména, simulátor, nasazení). Další krok: po nasazení ověřit
-  `POST` bez klíče → 401 a Obnovit z CRM (obě nová pole spárovaná); pak J. V. odešle odpověď integrátorovi.
+- **Napojení testovacího webu hotové (18. 11.):** J. V. vložil do Netlify `testengscalc` `PIPEDRIVE_TOKEN`,
+  `PIPEDRIVE_DOMENA`, `PIPEDRIVE_WEBHOOK_KLIC` a nasadil (v18.11.6). `POST /api/pd/webhook` bez klíče i se špatným
+  klíčem → 401. Obnovit z CRM: bez simulátoru, 72 polí, spárováno 71, jiný typ 0, chybí jen **DIČ (organizace)**;
+  obě pole webhooku spárovaná.
+- Koncept odpovědi integrátorovi doplněn: požadavek na pole organizace „DIČ“ (Text); omezení automatizace na
+  zkušební deal podmínkou na **ID dealu** (název dealu Pipedrive automaticky upravuje).
+- Další krok: J. V. založí zkušební deal s CN a pošle ID → doplnit ID do konceptu → J. V. odešle odpověď
+  integrátorovi, klíč předá zvlášť → zkouška webhooku (2× spuštění, pořád jedna kalkulace).
 
 ---
 
