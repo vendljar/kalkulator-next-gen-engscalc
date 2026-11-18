@@ -1532,7 +1532,7 @@ function vzKlSdilenaText(zak, varId) {
 }
 
 /* ============================================================
- * T1 (#644*): ŘÍDÍCÍ VARIANTA A ŘÍDÍCÍ ZÁKAZNÍK V HLAVIČCE
+ * T1 (#645): ŘÍDÍCÍ VARIANTA A ŘÍDÍCÍ ZÁKAZNÍK V HLAVIČCE
  * Rozhodnutí J. V. 18. 11. 2026, maketa podklady/T1_MAKETA_KALKULATOR.html.
  * Jen u 2+ zákazníků se ZAPNUTÝM vypínačem (obrazovka i server); jeden
  * zákazník nebo VYP = dnešek beze změny.

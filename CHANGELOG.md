@@ -8,6 +8,35 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.11.7 — VZ T1 #645: řídící varianta a řídící zákazník v hlavičce, větev claude/vz-t1
+
+Nad integrací `2856345` (v18.11.6). Rozhodnutí J. V. 18. 11. 2026, schválená maketa `podklady/T1_MAKETA_KALKULATOR.html`
+(kolo VZ na testu, `podklady/kola/STAV_TEST_VZ_2026-11-18.md` oddíl T1). Verzi přečísluje koordinace. Na webech, Disku
+ani v Pipedrive nic. **Jen 2+ zákazníků se zapnutým vypínačem `viceZakazniku`** — s jedním zákazníkem nebo s VYP je
+hlavička znak po znaku jako dřív (i tlačítko „nastavit jako řídící“; ověřeno proti 2856345).
+
+- **Hlavička, 3. sloupec:** místo „nastavit jako řídící“ výběr **Řídící varianta** s popisem „(sdílená)“, „(vlastní C — …)“
+  nebo „(bez zákazníka)“ a pod ním **Řídící zákazník**: u vlastní varianty zamčený „🔒 automaticky“ s vysvětlením,
+  u sdílené povinný výběr jen ze zákazníků, kterým varianta patří (ukazuje na ni nebo z ní dostal nabídku). Zvolená
+  sdílená varianta bez zákazníka se do dat nezapíše; Uložit zakázku zastaví hláška pod lištou i dialog „Zakázku nejde
+  uložit“ (texty z makety), autosave čeká tiše. Varianta bez zákazníka: řídící zůstává a přejde na ni.
+- **Řídící zákazník má vždy řídící variantu** (jádro `vzT1Nastav` přes `vzVymenRidiciho`): zvolený C přejde na sdílenou
+  variantu (číslo …-C podle písmen), písmena, otisky webhooku a fixace vlastnictví ručních hodnot KL (E4) beze změny.
+- **Karta Zákazníci zakázky:** sloupec Řídící jen ★ / ☆, přepínač `vzRidiciZmen` zmizel; výběr varianty u řídícího
+  zamčený („řídící variantu určuje hlavička“). Seznam variant (sloupec Řídící) jde u 2+ zákazníků přes hlavičku.
+- **Pipedrive:** když organizace dealu nesedí na řídícího (porovnání IČO, prázdné = nesedí; organizace dealu = původní
+  zákazník, po prodeji kupující), žlutý blok pod Stavem Pipedrive „Řídící zákazník v kalkulaci: C — … (organizace dealu
+  se změní až prodejem; deal dál vede …)“ a týž řádek (bez organizace a bez IČO) v poznámce „Další zákazníci na zakázce“.
+  Řídící dál není mezi dalšími; organizace dealu se mění jen prodejem (E5b). Prodaná zakázka beze změny.
+- **Nová karta „Poznámka dealu v Pipedrive — náhled“** pod kartou zákazníků (jen 2+ a ZAP): text, který uložení zapíše.
+- **Server:** změna řídícího zákazníka **i jen řídící varianty** (zakázka s víc zákazníky) jen autor nebo administrátor,
+  u zakázky z webhooku jen administrátor, po prodeji 409; invariant „řídící zákazník má řídící variantu a podle uložené
+  verze jí patří (u vlastní varianty je to její zákazník)“ jinak **409** (dřív server ukazatel potichu srovnal — E0).
+- Testy: `src/test_vz_t1.js` (70), `netlify/test_vz_t1_server.mjs` (15), `src/test_vz_ui.js` oddíl T1,
+  `netlify/test_vz_poznamka.mjs` oddíl 10, harness `overit_vz_t1.mjs` (stavy makety, znak po znaku proti 2856345
+  s `KNG_DIST_ZAKLAD`); upraveny `test_vz_server.mjs` (podvržený ukazatel → 409), `test_pd_stav.js`, `overit_vz_prodej.mjs`.
+  Mutace [VZ T1] jádra a serveru. Pojistka: na 2856345 nové sady padají (funkce T1 chybí, server srovnával).
+
 ## v18.11.6 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
 
 Nad `8462aea` (integrace = test v12.11.7), sloučeno s integrací `ec5bbac` (v18.11.5: + S3 #611, S7 #612, S6+S8 #613). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje
