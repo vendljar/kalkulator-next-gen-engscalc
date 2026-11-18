@@ -185,7 +185,7 @@ function vzIdDalsi(zak) {
   return 'z' + (max + 1);
 }
 
-/* VZ-F1 (VZ-N1, #646): IČO pro porovnání — jen číslice ('' = bez IČO). */
+/* VZ-F1 (VZ-N1, #647): IČO pro porovnání — jen číslice ('' = bez IČO). */
 function vzIcoKlic(ico) {
   return vzText(ico).replace(/\D+/g, '');
 }
