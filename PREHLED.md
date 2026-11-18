@@ -10,7 +10,7 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
 | testovací web (`test`) | **v18.11.4** (`9bd6dc8b`, 18. 11. 2026) |
 
-Test je proti main napřed o 208 commitů.
+Test je proti main napřed o 213 commitů.
 
 ## V testu, ještě ne v main
 
@@ -60,6 +60,7 @@ Test je proti main napřed o 208 commitů.
 | #615 (dřív K48-N1, B1, C7) | nález | Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (blokuje dávku C7 a sloučení do main) | pokyn ke spuštění pojistky jazyka SoD (doporučeno udělat) |
 | #616 (dřív B2, C10) | rozhodnutí | Kdy sloučit test → main | termín (doporučeno spojit s rychlou cestou #614, zbytek po kole 49) |
 | #617 (dřív B3, B0.1) | rozhodnutí | Víc šachet na ostrém webu (main) — po ruční zkoušce na testu se zapnutým vypínačem | ruční zkouška víc šachet na testu; rozhodnutí odloženo do 25. 11. 2026 |
+| #618 (dřív B4, C8, B0.9, K39-I1, K38-I1) | úkol | Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs | stav TEST sady prověří kolo 49 (J. V. 18. 11.: něco obnovoval); nástroj dorovnat dávkou C8 |
 | #619 (dřív B5, B0.6) | úkol | SoD projekce v4 zveřejnit i v main (main tiskne starší znění smlouvy) | datový úkol v main |
 | #621 | otázka | SoD v5: umístění řádků šachet, řádek slevy v rozpisu, žluté tečky v realizaci, šum kontroly nevyplněných polí | rozhodnout (u řádku slevy doporučeno a) |
 | #623 (dřív K40c-N6) | úkol | Token Pipedrive na test a první zkušební zápis (poznámka šachet, organizace) nad dealem TEST | dodat token, nebo odložit s datem (blokuje #510 a #16) |
@@ -82,4 +83,4 @@ K tomu 11 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --ziv
 
 ## Nehotové položky evidence
 
-Celkem 55: J. V. 41, kolega 6, koordinace 3, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 55: J. V. 42, kolega 5, koordinace 3, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

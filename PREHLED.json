@@ -11,7 +11,7 @@
   "verze": "v18.11.4",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 208,
+ "test_navic_commitu": 213,
  "v_testu_ne_v_main": [
   {
    "id": "614",
@@ -278,6 +278,19 @@
    "cekaNa": "ruční zkouška víc šachet na testu; rozhodnutí odloženo do 25. 11. 2026"
   },
   {
+   "id": "618",
+   "typ": "ukol",
+   "nazev": "Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs",
+   "alias": [
+    "B4",
+    "C8",
+    "B0.9",
+    "K39-I1",
+    "K38-I1"
+   ],
+   "cekaNa": "stav TEST sady prověří kolo 49 (J. V. 18. 11.: něco obnovoval); nástroj dorovnat dávkou C8"
+  },
+  {
    "id": "619",
    "typ": "ukol",
    "nazev": "SoD projekce v4 zveřejnit i v main (main tiskne starší znění smlouvy)",
@@ -410,8 +423,8 @@
  ],
  "ceka_na_jv_odlozene": 11,
  "nehotove_podle_kdo": {
-  "J. V.": 41,
-  "kolega": 6,
+  "J. V.": 42,
+  "kolega": 5,
   "koordinace": 3,
   "dávka": 3,
   "integrátor": 2
