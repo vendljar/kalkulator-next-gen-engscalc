@@ -325,7 +325,9 @@ function projde(p) {
   if (vlnaSchovana(p.vlna)) return false;
   if (F.pripr && !pripravena(p)) return false;
   if (F.text) {
-    const t = (p.id + ' ' + p.nazev + ' ' + (p.pozn || '') + ' ' + (p.detail || '') + ' ' + (p.cekaNa || '')).toLowerCase();
+    /* S6 (18. 11. 2026): staré značky (K48-N1, B1, C7 …) jsou aliasy — ať jdou dohledat. */
+    const t = (p.id + ' ' + p.nazev + ' ' + (p.pozn || '') + ' ' + (p.detail || '') + ' ' + (p.cekaNa || '')
+      + ' ' + (p.alias || []).join(' ')).toLowerCase();
     if (t.indexOf(F.text) === -1) return false;
   }
   return true;
@@ -553,6 +555,8 @@ function naCelou() {
  * skutečně skrývá"). */
 const NEVYPLNENO = '<i style="color:var(--mut)">zatím nevyplněno — doplní se při zadání dávky</i>';
 
+/* Typy položek jedné evidence (S6, 18. 11. 2026) — stejné jako TYP_NAZEV v roadmapa.py. */
+const TYP_NAZEV = { ukol: 'úkol', nalez: 'nález', otazka: 'otázka', rozhodnuti: 'rozhodnutí', davka: 'dávka' };
 function detailHTML(p, otevri) {
   const k = barvaKlic(p);
   const seznam = (pole, popisek, prazdne) => {
@@ -589,6 +593,12 @@ function detailHTML(p, otevri) {
       ${p.dulezitost ? `<span>důležitost: ${esc(NAZEV_DUL[p.dulezitost])}</span>` : ''}
       ${p.slozitost ? `<span>náročnost: ${esc(p.slozitost)}</span>` : ''}
       ${p.hotovoV ? `<span>uzavřeno v ${esc(p.hotovoV)}</span>` : ''}
+      ${p.typ ? `<span class="s6-typ">typ: ${esc(TYP_NAZEV[p.typ] || p.typ)}</span>` : ''}
+      ${p.alias && p.alias.length ? `<span class="s6-alias">dřív: ${esc(p.alias.join(', '))}</span>` : ''}
+      ${p.kolo ? `<span>kolo ${esc(p.kolo)}</span>` : ''}
+      ${p.vetev ? `<span>větev ${esc(p.vetev)}</span>` : ''}
+      ${p.verze && p.verze !== p.hotovoV ? `<span>verze ${esc(p.verze)}</span>` : ''}
+      ${p.dopadCena === 'ano' ? '<span class="s6-cena">mění cenu</span>' : ''}
     </div>
     <div class="radek" style="color:var(--mut)">${stavVeta}</div>
     ${p.otazka ? `<div class="radek"><div class="otaznik"><b style="color:var(--sel)">Otevřená otázka</b>${esc(p.otazka)}</div></div>` : ''}
