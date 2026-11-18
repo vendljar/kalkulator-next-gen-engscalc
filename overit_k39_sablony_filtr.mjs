@@ -44,6 +44,32 @@ zkus('filtr „jen PROJ": řádek OCK chybí', r.proj && !r.proj.ock, JSON.strin
 zkus('„všechny šablony" (část PROJ): OCK i PROJ', r.vseProj && r.vseProj.ock && r.vseProj.proj, JSON.stringify(r.vseProj));
 zkus('„všechny šablony" (část OCK): OCK i PROJ', r.vseOck && r.vseOck.ock && r.vseOck.proj, JSON.stringify(r.vseOck));
 zkus('stav filtru se po kontrole vrátil', r.vraceno);
+/* NS (pokyn J. V. 18. 11. 2026): správa šablon stojí hned pod přepínačem
+ * OCK | PROJ a nad platebními podmínkami — v obou kartách, offline i online
+ * obrazovce. Před úpravou byla šablony až pod logem firmy (pořadí 1-3-2). */
+const poradi = await s.evaluate(() => {
+  const pred = { vse: NAST.sablonyVse, panel: NAST.panelPodminky, online: window.sablonyOnlineAktivni };
+  const mista = (h, cast) => ({
+    prepinac: h.indexOf('podm-prepinac'),
+    sablony: h.indexOf('<div class="sec-title">Šablony dokumentů'),
+    platebni: h.indexOf('<div class="sec-title">Platební podmínky ' + cast + '</div>'),
+    standardy: h.indexOf('<div class="sec-title">Smluvní standardy'),
+  });
+  const out = {};
+  podmSablonyVse(false);
+  podmPrepni('ock'); out.ock = mista(nastSablony(), 'OCK');
+  podmPrepni('proj'); out.proj = mista(nastSablony(), 'PROJ');
+  /* online obrazovka (správa šablon ze serveru) — bez serveru stačí zástupce */
+  window.sablonyOnlineAktivni = () => true;
+  try { podmPrepni('ock'); out.onlineOck = mista(nastSablony(), 'OCK'); out.onlineSprava = /sabl-banner|sabl-tab/.test(nastSablony()); }
+  finally { window.sablonyOnlineAktivni = pred.online; }
+  podmSablonyVse(!!pred.vse); NAST.panelPodminky = pred.panel;
+  return out;
+});
+const vPoradi = m => m && m.prepinac >= 0 && m.prepinac < m.sablony && m.sablony < m.platebni && m.platebni < m.standardy;
+zkus('NS: OCK — přepínač → šablony → Platební podmínky OCK → Smluvní standardy', vPoradi(poradi.ock), JSON.stringify(poradi.ock));
+zkus('NS: PROJ — přepínač → šablony → Platební podmínky PROJ → Smluvní standardy', vPoradi(poradi.proj), JSON.stringify(poradi.proj));
+zkus('NS: online správa šablon — totéž pořadí', vPoradi(poradi.onlineOck) && poradi.onlineSprava, JSON.stringify(poradi));
 zkus('žádná chyba stránky', chyby.length === 0, chyby.join(' | '));
 
 await b.close();

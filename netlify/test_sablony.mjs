@@ -130,5 +130,48 @@ test('po vrácení platí otisk v1 → EN k němu projde', enK3.ok && enK3.verze
   test('B116: vrácení čisté verze dál projde', vrOk.ok === true, vrOk);
 }
 
+/* C7 (K48-N1, J. V. 18. 11. 2026): jazyková verze smlouvy, která je
+ * z velké části česky (vyrobená z české verze), se nezveřejní ani vrácením;
+ * nabídka projde s upozorněním. Před opravou: „DE z češtiny" u sod_de 200. */
+{
+  const F = require('../src/fixtury/sablony_cestina.js');
+  const docxOdst = async (odst) => Buffer.from(await DG.docxDokumentBlob(odst[0],
+    odst.slice(1).map(t => ({ sekce: '§', text: t }))).arrayBuffer()).toString('base64');
+  const deOk = await docxOdst(F.DE_PRELOZENA), deCz = await docxOdst(F.DE_Z_CESTINY), deHr = await docxOdst(F.DE_HRANICE);
+  const r1 = await api({ akce: 'zverejnit', typ: 'sod_de', nazev: 'Sablona_SOD_REALIZACE_v5_DE.docx', data: deOk }, cA);
+  test('C7: přeložená DE smlouva (realizace) projde', r1.ok === true && !r1.varovani, r1);
+  const r2 = await api({ akce: 'zverejnit', typ: 'sod_de', nazev: 'sod_de_z_cestiny.docx', data: deCz }, cA);
+  test('C7: DE smlouva z české verze → 400 se srozumitelnou hláškou', r2.st === 400
+    && /z velké části česky/.test(r2.chyba || '') && /Nahrát přeložený soubor/.test(r2.chyba || '') && r2.podilCestiny > 0.7, r2);
+  const r3 = await api({ akce: 'zverejnit', typ: 'sodProj_de', nazev: 'proj_de_hranice.docx', data: deHr }, cA);
+  test('C7: SoD projekce s 33 % češtiny (nad mezí 20 %) → 400', r3.st === 400 && /33 %/.test(r3.chyba || ''), r3);
+  const r4 = await api({ akce: 'zverejnit', typ: 'plnaMoc_de', nazev: 'pm_de.docx', data: deCz }, cA);
+  test('C7: plná moc z české verze → 400', r4.st === 400, r4);
+  const r5 = await api({ akce: 'zverejnit', typ: 'nabidka_de', nazev: 'cn_de_z_cestiny.docx', data: deCz }, cA);
+  test('C7: nabídka (CN) z české verze projde jen s upozorněním', r5.ok === true && /z velké části česky/.test(r5.varovani || ''), r5);
+  const r6 = await api({ akce: 'zverejnit', typ: 'nabidka_en', nazev: 'cn_en_ok.docx', data: deOk }, cA);
+  test('C7: nabídka bez češtiny nemá upozornění', r6.ok === true && !r6.varovani, r6);
+  /* vrácení: v1 v úložišti podstrčená česká (stav před C7), v2 přeložená */
+  pamet.set('sablony/data/sod_de/1', JSON.stringify({ nazev: 'sod_de_z_cestiny.docx', data: deCz }));
+  const deOk2 = await docxOdst(F.DE_PRELOZENA.concat(['Anlage 1']));
+  const r7 = await api({ akce: 'zverejnit', typ: 'sod_de', nazev: 'sod_de_v2.docx', data: deOk2 }, cA);
+  test('C7: příprava — SoD DE v2 zveřejněna', r7.ok && r7.verze === 2, r7);
+  const r8 = await api({ akce: 'vratit', typ: 'sod_de', verze: 1 }, cA);
+  test('C7: vrátit českou „DE" smlouvu nejde (400)', r8.st === 400 && /z velké části česky/.test(r8.chyba || ''), r8);
+  test('C7: platná SoD DE zůstala v2', (await rejstrik(cA)).typy.sod_de.platna.verze === 2);
+  /* Firemní šablony (jen s KNG_PODKLADY, mimo repozitář). */
+  const fs = await import('node:fs'), path = await import('node:path');
+  const slozka = String(process.env.KNG_PODKLADY || '').trim();
+  const soubory = [['Sablona_SOD_REALIZACE_v5_DE.docx', 'sod_de', true], ['Sablona_NABIDKA_CN_v17_DE.docx', 'nabidka_de', true],
+    ['Sablona_SOD_REALIZACE_v5_DE_z_cestiny.docx', 'sod_de', false]];
+  for (const [jmeno, typ, projde] of soubory) {
+    const cesta = slozka && path.join(slozka, jmeno);
+    if (!cesta || !fs.existsSync(cesta)) { console.log('–    ' + jmeno + ' (KNG_PODKLADY) není po ruce — přeskočeno'); continue; }
+    const r = await api({ akce: 'zverejnit', typ, nazev: jmeno, data: fs.readFileSync(cesta).toString('base64') }, cA);
+    test('C7 podklady: ' + jmeno + (projde ? ' projde' : ' neprojde'),
+      projde ? (r.ok === true || /už je zveřejněná/.test(r.chyba || '')) : (r.st === 400 && /česky/.test(r.chyba || '')), r);
+  }
+}
+
 console.log(`\n${ok} prošlo, ${fail} selhalo`);
 process.exit(fail ? 1 : 0);
