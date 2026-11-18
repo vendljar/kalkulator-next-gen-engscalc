@@ -12,6 +12,9 @@
  *   4) tvar zaškrtnutí: jiná hodnota než true / false / null → 400.
  * Čísla jsou smyšlená (zkušební ceník).
  *
+ *   5) N3 (J. V. 18. 11.): nula z nabídky bez zdroje → zámek 403 (schválení),
+ *      se zdrojem → potvrzení stačí (200); stará zamčená varianta
+ *      s potvrzeným záznamem bez zdroje se nemění a ověření zůstává „shoda".
  * Pojistka: proti 3c42353 (před revizí N2) padá krok 3 (403 „Ceník varianty
  * smí měnit jen administrátor … statikaOplKc").
  */
@@ -153,6 +156,43 @@ await blok(async () => {
     const ov = u && u.varianty[0].zamek && u.varianty[0].zamek.overeni;
     test('ověření výsledku „shoda"', ov && ov.stav === 'shoda', ov);
   }
+});
+
+console.log('===== 5. N3 (J. V. 18. 11.): potvrzení ceny z nabídky jen se zdrojem =====');
+await blok(async () => {
+  const sNulou = (nazev, zdroj) => { const z = nova(nazev); const d = d0(z);
+    d.cenik.statikaOplKc = 0;
+    d.rucniCeny = { 'C.statikaOplKc': Object.assign({ hodnota: 0, dodavatel: '', cislo: '', datum: '', platnostDo: '',
+      zaklad: null, potvrdil: { jmeno: 'x' } }, zdroj || {}) };
+    return z; };
+  /* a) bez zdroje: uložit jde, potvrzení server nedá, zámek chce schválení */
+  const r1 = await uloz(sNulou('nula bez zdroje'), cO);
+  test('nula bez zdroje: rozpracované uložení projde (200)', r1.status === 200, r1);
+  const g1 = await nacti(r1.soubor, cO);
+  test('nula bez zdroje: server potvrzení neorazítkuje', g1.varianty[0].data.rucniCeny['C.statikaOplKc'].potvrdil === null,
+    g1.varianty[0].data.rucniCeny);
+  const rz1 = await uloz(zamkni(g1), cO);
+  test('nula bez zdroje: zámek odmítnut — cenová výjimka ke schválení (403)', rz1.status === 403 && /schválen|výjimk/i.test(rz1.chyba || ''), rz1);
+  /* b) se zdrojem: potvrzení obchodníkem stačí */
+  const r2 = await uloz(sNulou('nula se zdrojem', { cislo: 'N-2026-653' }), cO);
+  test('nula se zdrojem: uložení (200) a razítko serveru', r2.status === 200, r2);
+  const g2 = await nacti(r2.soubor, cO);
+  const rec2 = g2.varianty[0].data.rucniCeny['C.statikaOplKc'];
+  test('nula se zdrojem: potvrzeno serverem', rec2.potvrdil && rec2.potvrdil.email === OBCH, rec2);
+  const rz2 = await uloz(zamkni(g2), cO);
+  test('nula se zdrojem: zámek (200)', rz2.status === 200, rz2);
+  /* c) stará data: zamčená varianta s potvrzeným záznamem BEZ zdroje se nemění */
+  const klic = [...pamet.keys()].find(k => k.endsWith(r2.soubor));
+  const ul = JSON.parse(pamet.get(klic));
+  ul.varianty[0].data.rucniCeny['C.statikaOplKc'].cislo = '';                // jako před N3
+  pamet.set(klic, JSON.stringify(ul));
+  const g3 = await nacti(r2.soubor, cO);
+  const r3 = await uloz(g3, cO);
+  test('stará zamčená varianta bez zdroje: další uložení projde (200)', r3.status === 200, r3);
+  const g4 = await nacti(r2.soubor, cO);
+  const rec4 = g4.varianty[0].data.rucniCeny['C.statikaOplKc'];
+  test('… záznam zamčené varianty beze změny (razítko zůstalo)', rec4.potvrdil && rec4.potvrdil.email === OBCH && rec4.cislo === '', rec4);
+  test('… ověření zámku dál „shoda"', g4.varianty[0].zamek.overeni && g4.varianty[0].zamek.overeni.stav === 'shoda', g4.varianty[0].zamek.overeni);
 });
 
 console.log('===== 4. tvar zaškrtnutí =====');

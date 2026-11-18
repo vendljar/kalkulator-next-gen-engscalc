@@ -1284,6 +1284,21 @@ const KONTROLY = [
     },
   },
   {
+    /* RUČNÍ CENA BEZ ZDROJE (N3, J. V. 18. 11. 2026): bez dodavatele i čísla
+     * nabídky ji obchodník nepotvrdí — cena jde ke schválení nadřízeného
+     * (cenová výjimka, ta je zábranou). Tady jen říct, co doplnit. */
+    kod: 'rucniCenaBezZdroje', kde: 'Kalkulace OCK', nazev: 'Ruční cena položky bez zdroje',
+    zjisti(ctx) {
+      const x = ctx.rucni;
+      if (!x || !Array.isArray(x.bezZdroje) || !x.bezZdroje.length) return null;
+      const n = x.bezZdroje;
+      return { text: 'Ruční cena z nabídky nemá zdroj u: ' + n.slice(0, 5).map(p => p.popis).join(', ')
+        + (n.length > 5 ? ' a další ' + (n.length - 5) : '')
+        + '. Doplňte dodavatele nebo číslo nabídky a cenu potvrďte (Kalkulace OCK, „✎ cena z nabídky“) — '
+        + 'bez zdroje ji musí schválit nadřízený (záložka Schvalování), nebo ji vraťte na ceník (↺).' };
+    },
+  },
+  {
     /* PLATNOST NABÍDKY DODAVATELE PROŠLA (#561) — upozornění, ne zábrana. */
     kod: 'rucniCenaProsla', kde: 'Kalkulace OCK', nazev: 'Nabídka dodavatele prošla',
     zjisti(ctx) {

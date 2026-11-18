@@ -23,6 +23,8 @@
  * Revize poradce (18. 11.): N1 vymazaná buňka maže záznam, N2 migrace kopíruje
  * záznam ceny z nabídky na statiku opláštění, N4 volba „výchozí". Pojistka:
  * proti 3c42353 (před opravou) N1 2 FAIL, N2 2 FAIL, N4 chybí funkce.
+ * N3 (J. V. 18. 11.): cenu z nabídky potvrdí obchodník jen se zdrojem
+ * (dodavatel nebo číslo nabídky), bez zdroje jde ke schválení.
  *
  * Pojistka proti prázdnému testu: proti integraci 910315b (před #653) sada
  * padá (chybí cenikMigraceStatikyOpl / statikaOplZahrnuta, řádek má cestu
@@ -34,6 +36,7 @@ nacti('./engine.js'); nacti('./engine_proj.js'); nacti('./techspec.js'); nacti('
 nacti('./poznamky.js'); nacti('./zakazka.js'); nacti('./zobrazeni.js'); nacti('./sleva.js');
 nacti('./schvalovani.js'); nacti('./kontroly.js'); nacti('./vyjimky.js'); nacti('./program.js');
 nacti('./uloziste.js'); nacti('./rucni_ceny.js');
+const VJ = require('./vyjimky.js'); global.vyjimkyObsah = VJ.vyjimkyObsah;
 const U = require('./uloziste.js');
 const ZC = require('./zkusebni_cenik.js');
 const JEKLY = require('./jekly.json');
@@ -139,7 +142,47 @@ console.log('===== 4. cena z nabídky u každé statiky zvlášť, i nulová ===
     && d.cenik.statikaOplKc === 0 && rucniCenaPlati(d, 'C.statikaOplKc'));
   const r = vypocet(d.ock.zadani, d.cenik, JEKLY, d.ock.fixes);
   test('… řádek statiky opláštění 0 Kč, statika OCK beze změny', radek(r, OPL).naklad === 0 && radek(r, OCK).cena === 1000);
-  test('… potvrdit nulovou cenu jde', rucniCenaPotvrd(d, 'C.statikaOplKc', 'Obch Test', '2026-11-18T10:00:00Z'));
+  /* N3 (J. V. 18. 11. 2026): potvrzení jen se zdrojem. */
+  test('N3: nulovou cenu BEZ zdroje potvrdit nejde (stav „bez zdroje")', !rucniCenaPotvrd(d, 'C.statikaOplKc', 'Obch Test', '2026-11-18T10:00:00Z')
+    && rucniCenaStav(d.rucniCeny['C.statikaOplKc']) === RC_BEZ_ZDROJE);
+  const dn = { cenik: cenik({ statikaOplKc: 1000 }), proj: { cenik: kopie(d.proj.cenik) }, verze: 1 };
+  const smes = (x) => vyjimkyObsah(x, dn, '', JEKLY).smes.map(y => y.cesta);
+  test('N3: nula bez zdroje → cenová výjimka (schválení nadřízeného)', smes(d).includes('C.statikaOplKc'), smes(d));
+  test('N3: … přehled ji vede jako „bez zdroje", ne „k potvrzení" (tisk drží výjimka)',
+    rucniCenyPrehled(d).bezZdroje.some(x => x.cesta === 'C.statikaOplKc') && !rucniCenyPrehled(d).nepotvrzene.some(x => x.cesta === 'C.statikaOplKc'));
+  test('N3: číslo nabídky jako zdroj stačí', rucniCenaZdrojNastav(d, 'C.statikaOplKc', 'cislo', 'N-2026-77')
+    && rucniCenaStav(d.rucniCeny['C.statikaOplKc']) === RC_NEPOTVRZENO);
+  test('N3: nula se zdrojem → potvrzení stačí, výjimka ne', rucniCenaPotvrd(d, 'C.statikaOplKc', 'Obch Test', '2026-11-18T10:00:00Z')
+    && rucniCenaStav(d.rucniCeny['C.statikaOplKc']) === RC_POTVRZENO && !smes(d).includes('C.statikaOplKc'), smes(d));
+  const dz = kopie(d); dz.rucniCeny['C.statikaOplKc'].cislo = '';
+  test('N3: starší potvrzený záznam bez zdroje se nepočítá jako potvrzený', rucniCenaStav(dz.rucniCeny['C.statikaOplKc']) === RC_BEZ_ZDROJE
+    && smes(dz).includes('C.statikaOplKc'));
+  const kt = require('./kontroly.js'); const sl = require('./sleva.js'); const mz = require('./marze.js');
+  const kctx = { zadani: dz.ock.zadani, cenik: dz.cenik, cenikProj: ZC.zkusebniCenikProj(), projZadani: kopie(DEFAULT_ZADANI_PROJ),
+    sleva: sl.slevaDefault(), nast: { slevy: { minMarze: mz.MARZE_MIN_VYCHOZI, maxGlobalni: 0.30, stropy: { 'Obchodník': 0.05 } } },
+    zak: { cislo: '2026 - OPR - CN - 014', nazevAkce: 'Zkouška', objednatel: 'Zkouška s.r.o.' }, zaokr: null,
+    rucni: rucniCenyPrehled(dz) };
+  kctx.vysledek = vypocet(dz.ock.zadani, dz.cenik, JEKLY, true); kctx.projVysledek = vypocetProj(kctx.projZadani, kctx.cenikProj);
+  const nal = kt.kontrolyProved(kctx).nalezy.find(x => x.kod === 'rucniCenaBezZdroje');
+  const txt = nal ? nal.text : '';
+  test('N3: kontrola říká, co doplnit (dodavatel nebo číslo nabídky)', /dodavatele nebo číslo nabídky/.test(txt || ''), txt);
+  /* Příplatek „cena dle nabídky" (S13): záznam bez zdroje příznak nekryje. */
+  const STENA = 'C.priplatky.prosklenaStenaKc';
+  const dS = kopie(d); const dnS = kopie(dn); dnS.cenik.priplatky.prosklenaStenaKc = 50000; dnS.cenik.dleNabidky = { [STENA]: true };
+  dS.cenik.priplatky.prosklenaStenaKc = 0;
+  dS.rucniCeny[STENA] = { hodnota: 0, dodavatel: '', cislo: '', datum: '', platnostDo: '', zaklad: 50000, potvrdil: null };
+  const smesS = (x) => vyjimkyObsah(x, dnS, '', JEKLY).smes.map(y => y.cesta);
+  test('N3: příplatek dle nabídky — nula bez zdroje jde ke schválení', smesS(dS).includes(STENA), smesS(dS));
+  dS.rucniCeny[STENA].dodavatel = 'Sklo Příklad s.r.o.';
+  test('N3: příplatek dle nabídky — se zdrojem ne', !smesS(dS).includes(STENA), smesS(dS));
+  delete dS.rucniCeny[STENA];
+  test('N3: příplatek dle nabídky — starší vlastní cena bez záznamu dál ne (S13)', !smesS(dS).includes(STENA), smesS(dS));
+  const nz = { varianty: [{ id: 'a', data: kopie(dz) }] };
+  const sv = rucniCenyServer(null, nz, { email: 'o@priklad.cz', jmeno: 'O', role: 'Obchodník' }, {});
+  test('N3: server záznam bez zdroje neorazítkuje (potvrzení zahodí)', sv.ok && nz.varianty[0].data.rucniCeny['C.statikaOplKc'].potvrdil === null, nz.varianty[0].data.rucniCeny);
+  const nz2 = { varianty: [{ id: 'a', data: kopie(dz), zamek: { zamceno: true } }] };
+  rucniCenyServer(null, nz2, { email: 'o@priklad.cz', jmeno: 'O', role: 'Obchodník' }, { zamcenaDriv: () => true });
+  test('N3: zamčená varianta (doklad) se nemění', JSON.stringify(nz2.varianty[0].data.rucniCeny) === JSON.stringify(dz.rucniCeny));
   test('jiná cena z nabídky u statiky OCK nemění statiku opláštění', rucniCenaNastav(d, 'C.statikaKc', 1800)
     && radek(vypocet(d.ock.zadani, d.cenik, JEKLY, d.ock.fixes), OPL).cena === 0
     && radek(vypocet(d.ock.zadani, d.cenik, JEKLY, d.ock.fixes), OCK).cena === 1800);

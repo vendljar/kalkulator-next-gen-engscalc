@@ -56,6 +56,18 @@ const RC_CESTA = /^C\.[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)?$/;
 const RC_NEPOTVRZENO = 'nepotvrzeno';
 const RC_POTVRZENO = 'potvrzeno';
 const RC_BEZ_DOKLADU = 'bezDokladu';     // starší vlastní cena příplatku S13
+/* ZDROJ JE PODMÍNKA POTVRZENÍ (N3, rozhodnutí J. V. 18. 11. 2026): ruční cenu
+ * z nabídky (i nulovou) potvrdí obchodník JEN s vyplněným dodavatelem nebo
+ * číslem nabídky. Záznam bez zdroje se jako potvrzený nepočítá (ani starší
+ * s razítkem) a jeho cena jde ke schválení nadřízeného jako cena pod ceníkem
+ * (cenová výjimka, vyjimky.js). Zamčená varianta je doklad — data se nemění,
+ * ověření zámku zůstává shodné (výsledek výpočtu na zdroji nezávisí). */
+const RC_BEZ_ZDROJE = 'bezZdroje';
+function rucniCenaMaZdroj(r) {
+  return !!r && typeof r === 'object'
+    && (String(r.dodavatel == null ? '' : r.dodavatel).trim() !== '' || String(r.cislo == null ? '' : r.cislo).trim() !== '');
+}
+const RC_ZDROJ_HLASKA = 'doplňte dodavatele nebo číslo nabídky';
 
 function rcDef() {
   if (typeof CENIK_DEF !== 'undefined') return CENIK_DEF;
@@ -131,6 +143,7 @@ function rucniCenaProsla(r, dnes) {
 }
 function rucniCenaStav(r) {
   if (!r) return '';
+  if (!rucniCenaMaZdroj(r)) return RC_BEZ_ZDROJE;
   return (r.potvrdil && typeof r.potvrdil === 'object') ? RC_POTVRZENO : RC_NEPOTVRZENO;
 }
 
@@ -171,7 +184,7 @@ function rucniCenaZdrojNastav(data, cesta, pole, hodnota) {
  * ho server nahradí svým z relace (rucniCenyServer). */
 function rucniCenaPotvrd(data, cesta, kdo, kdy) {
   const r = rucniCenaZaznam(data, cesta);
-  if (!r || !rucniCenaPlati(data, cesta)) return false;
+  if (!r || !rucniCenaPlati(data, cesta) || !rucniCenaMaZdroj(r)) return false;   // N3: bez zdroje ne
   r.potvrdil = { jmeno: String(kdo || ''), email: '', kdy: String(kdy || new Date().toISOString()), lokalne: true };
   return true;
 }
@@ -218,13 +231,18 @@ function rucniCenaPoSet(data, cesta, hodnota, opts) {
  * ceníková sazba platného ceníku pro řadu varianty (neznámá = undefined). */
 function rucniCenyPrehled(data, opts) {
   opts = opts || {};
-  const out = { nepotvrzene: [], potvrzene: [], prosle: [], cenikZmena: [], bezDokladu: [] };
+  /* `bezZdroje` (N3): záznamy bez dodavatele i čísla nabídky — nejsou
+   * potvrzené ani „k potvrzení"; jejich cenu hlídá cenová výjimka. */
+  const out = { nepotvrzene: [], potvrzene: [], prosle: [], cenikZmena: [], bezDokladu: [], bezZdroje: [] };
   const m = rucniCenyMapa(data);
   Object.keys(m).sort().forEach(cesta => {
     const r = m[cesta];
     if (!r || typeof r !== 'object' || !rucniCenaSmi(cesta)) return;
     const pol = { cesta, popis: rucniCenaPopis(cesta) };
-    if (rucniCenaStav(r) === RC_POTVRZENO) out.potvrzene.push(pol); else out.nepotvrzene.push(pol);
+    const st = rucniCenaStav(r);
+    if (st === RC_POTVRZENO) out.potvrzene.push(pol);
+    else if (st === RC_BEZ_ZDROJE) out.bezZdroje.push(pol);
+    else out.nepotvrzene.push(pol);
     if (rucniCenaProsla(r, opts.dnes)) out.prosle.push(pol);
     if (typeof opts.dnesniF === 'function' && rucniCenaStav(r) === RC_POTVRZENO) {
       const d = opts.dnesniF(cesta);
@@ -328,7 +346,8 @@ function rucniCenyServer(stara, nova, relace, ctx) {
         if (sr && rucniCenaObsah(sr) === obsah && sr.potvrdil && typeof sr.potvrdil === 'object' && !sr.potvrdil.lokalne) { ulozeny = sr; break; }
       }
       const vlastni = sv && sv.data ? rucniCenaZaznam(sv.data, k) : null;
-      if (!r.potvrdil) {
+      /* N3: bez zdroje se nepotvrzuje (razítko se nedá ani se nepřevezme). */
+      if (!r.potvrdil || !rucniCenaMaZdroj(r)) {
         r.potvrdil = null;
         r.zaklad = vlastni && typeof vlastni.zaklad === 'number' ? vlastni.zaklad : r.zaklad;
       } else if (ulozeny) {
@@ -361,7 +380,7 @@ function rucniCenyZamekProblem(zak, v) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { RC_ZDROJ, RC_TEXT_MAX, RC_MAX, RC_NEPOTVRZENO, RC_POTVRZENO, RC_BEZ_DOKLADU,
+  module.exports = { RC_ZDROJ, RC_TEXT_MAX, RC_MAX, RC_NEPOTVRZENO, RC_POTVRZENO, RC_BEZ_DOKLADU, RC_BEZ_ZDROJE, RC_ZDROJ_HLASKA, rucniCenaMaZdroj,
     rucniCenaSmi, rucniCenaPopis, rucniCenaJednotka, rucniCenyMapa, rucniCenaZaznam, rucniCenaPlati, rucniCenaObsah,
     rucniCenaDnes, rucniCenaProsla, rucniCenaStav, rucniCenaNastav, rucniCenaZdrojNastav, rucniCenaPotvrd,
     rucniCenaVrat, rucniCenaPoSet, rucniCenyPrehled, rucniCenaOdchylka, rucniCenaZdrojText,

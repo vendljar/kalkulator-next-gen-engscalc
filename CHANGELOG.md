@@ -32,8 +32,16 @@ revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `or
   z nabídky `C.statikaKc` (s potvrzením) na `C.statikaOplKc` — jinak 403 při uložení i zámku; N4 výběr má volbu
   „výchozí (Ano/Ne)“ (`null`). Nový `netlify/test_653_statika_opl.mjs` 19/0: zámek se statikou, odškrtnutí ve 2. šachtě
   (podvržený výsledek není „shoda“), stará varianta s cenou z nabídky (bez N2 3 FAIL, 403), tvar zaškrtnutí.
-  `src/test_653_statika_opl.js` 61/0 (proti 3c42353: N1 2 FAIL, N2 2 FAIL, N4 chybí funkce). N3 (nula bez dodavatele
-  a strop slevy) předkládá koordinace J. V. Čísla roadmapy přečíslována na #653/#654 (kolize); verzi přidělí koordinace.
+  `src/test_653_statika_opl.js` (proti 3c42353: N1 2 FAIL, N2 2 FAIL, N4 chybí funkce). Čísla roadmapy přečíslována
+  na #653/#654 (kolize); verzi přidělí koordinace.
+- **N3 (rozhodnutí J. V. 18. 11.):** cenu z nabídky (i nulovou) potvrdí obchodník JEN s vyplněným dodavatelem nebo číslem
+  nabídky. Bez zdroje stav „bez zdroje“ (`RC_BEZ_ZDROJE`): tlačítko Potvrdit zakázané s hláškou, co doplnit, server
+  razítko nedá ani nepřevezme a cena jde ke schválení nadřízeného jako cena pod ceníkem (cenová výjimka; i u příplatku
+  „dle nabídky“, starší vlastní cena bez záznamu S13 beze změny). Nová kontrola `rucniCenaBezZdroje` (upozornění, co
+  doplnit). Zamčená varianta se starším potvrzeným záznamem bez zdroje se nemění, ověření zámku „shoda“. Testy:
+  `src/test_653_statika_opl.js` 72/0 (proti stavu před N3 padá), `netlify/test_653_statika_opl.mjs` 28/0 (bez N3 2 FAIL:
+  razítko i zámek nuly bez zdroje prošly); upraveny `test_561_rucni_cena.js` (záznam bez zdroje = „bez zdroje“),
+  `test_kontroly.js` (53 pravidel).
 - **Mutace [SP]:** jádro [SP] 11/11 + P5 3/3 chycených, server [SP] 8/8 + #561 19/19 chycených.
 
 **Kolo `--bez-mutaci` nad 2a7f210 (po sloučení 41bbe99): VŠE ZELENÉ** — sady 466/0/7, hodiny +400 dní 378/0/1, statické 9/9 (36 min); porovnání sestavení proti `origin/test` **SHODA 353/353**.

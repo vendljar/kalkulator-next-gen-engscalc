@@ -73,7 +73,7 @@ console.log('===== 2. přepis nákupní ceny a přirážka (B-Q1) =====');
   const r = rucniCenaZaznam(d, PROF);
   test('cena leží v ceníku varianty (jádro počítá jedním kódem)', d.cenik.profilasKgKc === 95);
   test('záznam: hodnota, zdroj prázdný, nepotvrzeno, základ = sazba před přepisem', r && r.hodnota === 95 && r.potvrdil === null
-    && r.zaklad === 80 && r.dodavatel === '' && rucniCenaStav(r) === RC_NEPOTVRZENO, r);
+    && r.zaklad === 80 && r.dodavatel === '' && rucniCenaStav(r) === RC_BEZ_ZDROJE, r);   // N3: bez zdroje
   const po = radekProf(d);
   test('jádro: jednotková cena řádku = nákupní cena z nabídky', po.cena === 95, po);
   test('jádro: náklad = množství × nákupní cena', Math.abs(po.naklad - po.mnozstvi * 95) < 1e-6, po);
@@ -216,7 +216,7 @@ console.log('===== 10. příplatky „cena dle nabídky" (S13, B-Q6) =====');
   test('starší vlastní cena příplatku dle nabídky = „potvrzeno bez dokladu"', ph.bezDokladu.some(x => x.cesta === STENA) && !ph.nepotvrzene.length, ph);
   test('… tisk neblokuje', rucniCenyZamekProblem(z, z.varianty[0]) === '');
   test('nová změna příplatku dle nabídky u role bez práva ceníku založí záznam k potvrzení', rucniCenaPoSet(d, STENA, 13000,
-    { dleNabidky: true, smiCenik: false, puvodni: 12000 }) && rucniCenaStav(d.rucniCeny[STENA]) === RC_NEPOTVRZENO);
+    { dleNabidky: true, smiCenik: false, puvodni: 12000 }) && rucniCenaStav(d.rucniCeny[STENA]) === RC_BEZ_ZDROJE);   // N3: k potvrzení až se zdrojem
   test('… správce s právem ceníku záznam nezakládá', !rucniCenaPoSet(kopie(d), 'C.priplatky.ventilatorKc', 1, { dleNabidky: true, smiCenik: true }));
   test('běžný příplatek bez příznaku jinou cestou záznam nedostane', !rucniCenaPoSet(d, 'C.priplatky.ventilatorKc', 1, { dleNabidky: false, smiCenik: false }));
 }
@@ -230,7 +230,7 @@ console.log('===== 11. server: tvar a razítko (čisté funkce) =====');
   test('očista: dlouhý text → chyba', !rucniCenyOciste({ [PROF]: { hodnota: 1, dodavatel: 'x'.repeat(121) } }).ok);
   test('očista: pole místo mapy → chyba', !rucniCenyOciste([]).ok);
   const z = zakazka(); const d = z.varianty[0].data;
-  rucniCenaNastav(d, PROF, 95); d.rucniCeny[PROF].zaklad = 1;
+  rucniCenaNastav(d, PROF, 95); d.rucniCeny[PROF].zaklad = 1; d.rucniCeny[PROF].dodavatel = 'Ocelárna Příklad s.r.o.';   // N3
   d.rucniCeny[PROF].potvrdil = { jmeno: 'Podvržený', email: 'cizi@priklad.cz', kdy: '2020-01-01T00:00:00Z' };
   const r = rucniCenyServer(null, z, { email: 'obch@priklad.cz', jmeno: 'Obch Test', role: 'Obchodník' }, { program: { platny: PLATNY } });
   const rec = d.rucniCeny[PROF];

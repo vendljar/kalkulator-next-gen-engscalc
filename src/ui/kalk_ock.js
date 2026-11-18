@@ -1867,6 +1867,9 @@ function rcStitek(r) {
         + (p.lokalne ? ' (razítko doplní server po uložení)' : '')
         + (rec.dodavatel ? ' · ' + rec.dodavatel : '') + (rec.cislo ? ' · nabídka ' + rec.cislo : '');
       h += ` <span class="pill ok noprint rc-potvrzeno" title="${esc(tit)}">✓ potvrzeno</span>`;
+    } else if (rucniCenaStav(rec) === RC_BEZ_ZDROJE) {
+      /* N3 (J. V. 18. 11. 2026): bez zdroje nejde potvrdit — schválení nadřízeného. */
+      h += ` <span class="pill warn noprint rc-bez-zdroje" title="ruční cena bez zdroje — ${esc(RC_ZDROJ_HLASKA)} a cenu potvrďte; bez zdroje ji musí schválit nadřízený">ručně – chybí zdroj</span>`;
     } else {
       h += ` <span class="pill warn noprint rc-nepotvrzeno" title="ruční cena z nabídky dodavatele — bez potvrzení nejde tisknout">ručně – nepotvrzeno</span>`;
     }
@@ -1911,7 +1914,10 @@ function rcRadekPod(r, NC) {
         value="${rec ? +(+rec.hodnota).toFixed(2) : ''}" placeholder="z nabídky" onchange="rcHodnota('${cj}', this.value)"> ${esc(jed)}</label>
       ${pole('dodavatel', 'text', 'Dodavatel', '170px')}${pole('cislo', 'text', 'Č. nabídky', '110px')}
       ${pole('datum', 'date', 'Datum nabídky', '140px')}${pole('platnostDo', 'date', 'Platnost do', '140px')}
-      <button class="mini rc-potvrdit" ${rec && !potvrzeno ? '' : 'disabled'} onclick="rcPotvrd('${cj}')">Potvrdit cenu</button>
+      <button class="mini rc-potvrdit" ${rec && !potvrzeno && rucniCenaMaZdroj(rec) ? '' : 'disabled'}
+        title="${rec && !rucniCenaMaZdroj(rec) ? 'Nejdřív ' + esc(RC_ZDROJ_HLASKA) + ' — bez zdroje cenu schvaluje nadřízený' : 'potvrdit nákupní cenu z nabídky'}"
+        onclick="rcPotvrd('${cj}')">Potvrdit cenu</button>
+      ${rec && !rucniCenaMaZdroj(rec) ? `<span class="note rc-zdroj-hlaska" style="color:var(--warn,#b45309)">Pro potvrzení ${esc(RC_ZDROJ_HLASKA)}. Bez zdroje cenu schvaluje nadřízený (Schvalování).</span>` : ''}
       ${rec ? `<button class="mini rc-vratit" title="smaže ruční cenu a vrátí ceníkovou sazbu" onclick="rcVrat('${cj}')">↺ vrátit na ceník</button>` : ''}
       ${!rec ? `<button class="mini rc-zavrit" onclick="rcZavri('${cj}')">zavřít</button>` : ''}
       <span class="note rc-info">${info}</span>
@@ -1953,7 +1959,11 @@ function rcPotvrd(cesta) {
   const kdo = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV && ONLINE_STAV.ja && (ONLINE_STAV.ja.jmeno || ONLINE_STAV.ja.email))
     || (typeof NAST !== 'undefined' && NAST.uzivatel) || '';
   if (rucniCenaPotvrd(v.data, cesta, kdo, new Date().toISOString())) { RC_UI.otevrene.delete(String(cesta)); rcZmena(v, cesta); }
-  else render();
+  else {
+    if (!rucniCenaMaZdroj(rucniCenaZaznam(v.data, cesta)) && typeof hlaska === 'function')
+      hlaska('Cenu z nabídky nejde potvrdit bez zdroje: ' + RC_ZDROJ_HLASKA + '. Bez zdroje ji musí schválit nadřízený (záložka Schvalování).');
+    render();
+  }
 }
 function rcVrat(cesta) {
   if (rcStop()) return;
