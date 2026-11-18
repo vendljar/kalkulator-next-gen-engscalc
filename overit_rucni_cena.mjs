@@ -19,6 +19,9 @@
  * Pojistka proti prázdnému testu: proti 6109e39 (v4.11.3) padá oddíl 1
  * (tlačítko ani řádek neexistují) a s ním všechny další.
  *
+ * N3 (J. V. 18. 11. 2026): bez zdroje štítek „chybí zdroj", Potvrdit zakázané
+ * s hláškou; proti stavu před N3 padá oddíl 2 (štítek „nepotvrzeno" hned).
+ *
  * Spuštění: node overit_rucni_cena.mjs */
 import { chromium } from 'playwright';
 import { createRequire } from 'node:module';
@@ -62,6 +65,7 @@ const radek = () => p.evaluate(() => {
   if (!tr) return null;
   const pod = document.querySelector('#page-kalk tr.rc-radek[data-cesta="C.profilasKgKc"]');
   return { otevri: !!tr.querySelector('.rc-otevri'), nep: !!tr.querySelector('.rc-nepotvrzeno'), potv: !!tr.querySelector('.rc-potvrzeno'),
+    bezZdroje: !!tr.querySelector('.rc-bez-zdroje'), potvrditZakazano: !!(pod && pod.querySelector('.rc-potvrdit') && pod.querySelector('.rc-potvrdit').disabled),
     prosla: !!tr.querySelector('.rc-prosla'), pod: pod ? pod.textContent.replace(/\s+/g, ' ') : null,
     hodnota: pod ? pod.querySelector('.rc-hodnota').value : null, bunky: tr.querySelectorAll('td').length };
 });
@@ -92,14 +96,20 @@ await zmen('.rc-hodnota', '95');
 await p.waitForTimeout(150);
 r = await radek();
 let s = await stav();
-zkus('zadaná cena → štítek „ručně – nepotvrzeno"', r && r.nep && !r.potv, r);
+/* N3 (J. V. 18. 11. 2026): bez zdroje nejde potvrdit — štítek „chybí zdroj",
+ * tlačítko zakázané, hláška co doplnit; cenu pak hlídá cenová výjimka. */
+zkus('zadaná cena bez zdroje → štítek „ručně – chybí zdroj", Potvrdit zakázané, hláška co doplnit', r && r.bezZdroje && !r.nep && !r.potv
+  && r.potvrditZakazano && /dodavatele nebo číslo nabídky/.test(r.pod || ''), r);
+await zmen('.rc-cislo', 'N-2026-0815');
+await p.waitForTimeout(150);
+r = await radek(); s = await stav();
+zkus('se zdrojem (č. nabídky) → štítek „ručně – nepotvrzeno", Potvrdit povolené', r && r.nep && !r.bezZdroje && !r.potvrditZakazano, r);
 zkus('… tisk nabídky zastaven zábranou „Potvrďte ruční cenu u: …"', s.brani && /Potvrďte ruční cenu u: PROFILY/i.test(s.text), s);
 const ceny = await p.evaluate(() => { const v = vypocetAkt(); const x = v.sekce.hrubaOck.find(r => r.cenaPath === 'C.profilasKgKc');
   return { cena: x.cena, naklad: x.naklad, mn: x.mnozstvi, s: x.sMarzi, c: aktivniVarianta(ZAK).data.cenik.profilasKgKc }; });
 zkus('výpočet: nákupní cena 95, cena vč. přirážky = náklad × 1,25', ceny.cena === 95 && ceny.c === 95
   && Math.abs(ceny.naklad - ceny.mn * 95) < 1e-6 && Math.abs(ceny.s - ceny.naklad * 1.25) < 1e-6, ceny);
 await zmen('.rc-dodavatel', 'Ocelárna Příklad s.r.o.');
-await zmen('.rc-cislo', 'N-2026-0815');
 await zmen('.rc-platnostDo', '2099-12-31');
 await p.evaluate(() => document.querySelector('#page-kalk tr.rc-radek .rc-potvrdit').click());
 await p.waitForTimeout(150);
@@ -158,7 +168,9 @@ zkus('↺ vrátí sazbu platného ceníku (80) a smaže záznam', zpet.c === 80 
 console.log('— 7) zamčená varianta');
 await p.evaluate(() => {
   const v = aktivniVarianta(ZAK);
-  rucniCenaNastav(v.data, 'C.profilasKgKc', 95); rucniCenaPotvrd(v.data, 'C.profilasKgKc', 'T');
+  rucniCenaNastav(v.data, 'C.profilasKgKc', 95);
+  rucniCenaZdrojNastav(v.data, 'C.profilasKgKc', 'cislo', 'N-7');   // N3: potvrzení jen se zdrojem
+  rucniCenaPotvrd(v.data, 'C.profilasKgKc', 'T');
   zamkniVariantu(v, { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'T', cislo: variantaCislo(ZAK, v),
     vysledek: zamekVysledekSpocti(v, JEKLY, 'harness') });
   render();

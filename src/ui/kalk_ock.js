@@ -352,7 +352,7 @@ function statikaOplRadek(r) {
   /* Revize #653 N4: „výchozí" vrátí volbu řízenou opláštěním (null). */
   return `<div class="row"><label title="${esc(tit)}">Statické posouzení opláštění</label>
     <select class="statika-opl" title="${esc(tit)}" onchange="set('Z.statikaOpl', this.value === '' ? null : this.value === '1')">
-      ${statikaOplVolby(Z, plocha).map(o => `<option value="${o.hodnota}" ${o.vybrano ? 'selected' : ''}>${esc(o.text)}</option>`).join('')}
+      ${statikaOplVolby(Z, plocha).map(o => `<option value="${esc(o.hodnota)}" ${o.vybrano ? 'selected' : ''}>${esc(o.text)}</option>`).join('')}
     </select><span class="u"></span></div>`;
 }
 

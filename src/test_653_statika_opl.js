@@ -163,9 +163,9 @@ console.log('===== 4. cena z nabídky u každé statiky zvlášť, i nulová ===
     zak: { cislo: '2026 - OPR - CN - 014', nazevAkce: 'Zkouška', objednatel: 'Zkouška s.r.o.' }, zaokr: null,
     rucni: rucniCenyPrehled(dz) };
   kctx.vysledek = vypocet(dz.ock.zadani, dz.cenik, JEKLY, true); kctx.projVysledek = vypocetProj(kctx.projZadani, kctx.cenikProj);
-  const nal = kt.kontrolyProved(kctx).nalezy.find(x => x.kod === 'rucniCenaBezZdroje');
+  const nal = kt.kontrolyProved(kctx).nalezy.find(x => x.kod === 'rucniCenaNepotvrzena');
   const txt = nal ? nal.text : '';
-  test('N3: kontrola říká, co doplnit (dodavatel nebo číslo nabídky)', /dodavatele nebo číslo nabídky/.test(txt || ''), txt);
+  test('N3: kontrola říká, co doplnit (dodavatel nebo číslo nabídky); upozornění, ne zábrana (tu drží výjimka)', /dodavatele nebo číslo nabídky/.test(txt || '') && nal.uroven !== kt.KONTROLY_UROVEN_ZABRANA, nal);
   /* Příplatek „cena dle nabídky" (S13): záznam bez zdroje příznak nekryje. */
   const STENA = 'C.priplatky.prosklenaStenaKc';
   const dS = kopie(d); const dnS = kopie(dn); dnS.cenik.priplatky.prosklenaStenaKc = 50000; dnS.cenik.dleNabidky = { [STENA]: true };

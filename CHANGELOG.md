@@ -37,11 +37,11 @@ revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `or
 - **N3 (rozhodnutí J. V. 18. 11.):** cenu z nabídky (i nulovou) potvrdí obchodník JEN s vyplněným dodavatelem nebo číslem
   nabídky. Bez zdroje stav „bez zdroje“ (`RC_BEZ_ZDROJE`): tlačítko Potvrdit zakázané s hláškou, co doplnit, server
   razítko nedá ani nepřevezme a cena jde ke schválení nadřízeného jako cena pod ceníkem (cenová výjimka; i u příplatku
-  „dle nabídky“, starší vlastní cena bez záznamu S13 beze změny). Nová kontrola `rucniCenaBezZdroje` (upozornění, co
-  doplnit). Zamčená varianta se starším potvrzeným záznamem bez zdroje se nemění, ověření zámku „shoda“. Testy:
+  „dle nabídky“, starší vlastní cena bez záznamu S13 beze změny). Kontrola `rucniCenaNepotvrzena` u záznamu bez zdroje
+  upozorní, co doplnit (bez nového pravidla — počet pravidel je ve vydaném manuálu). Zamčená varianta se starším potvrzeným záznamem bez zdroje se nemění, ověření zámku „shoda“. Testy:
   `src/test_653_statika_opl.js` 72/0 (proti stavu před N3 padá), `netlify/test_653_statika_opl.mjs` 28/0 (bez N3 2 FAIL:
   razítko i zámek nuly bez zdroje prošly); upraveny `test_561_rucni_cena.js` (záznam bez zdroje = „bez zdroje“),
-  `test_kontroly.js` (53 pravidel).
+  N4 výběr escapuje hodnotu volby (test_escape).
 - **Mutace [SP]:** jádro [SP] 11/11 + P5 3/3 chycených, server [SP] 8/8 + #561 19/19 chycených.
 
 **Kolo `--bez-mutaci` nad 2a7f210 (po sloučení 41bbe99): VŠE ZELENÉ** — sady 466/0/7, hodiny +400 dní 378/0/1, statické 9/9 (36 min); porovnání sestavení proti `origin/test` **SHODA 353/353**.
