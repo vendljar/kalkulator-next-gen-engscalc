@@ -14,8 +14,10 @@
   obě pole webhooku spárovaná.
 - Koncept odpovědi integrátorovi doplněn: požadavek na pole organizace „DIČ“ (Text); omezení automatizace na
   zkušební deal podmínkou na **ID dealu** (název dealu Pipedrive automaticky upravuje).
-- Další krok: J. V. založí zkušební deal s CN a pošle ID → doplnit ID do konceptu → J. V. odešle odpověď
-  integrátorovi, klíč předá zvlášť → zkouška webhooku (2× spuštění, pořád jedna kalkulace).
+- J. V. založil zkušební deal (testovací organizace, Typ zakázky Realizace; ID a název jen v souhrnu, ne v repu).
+  Pole „Číslo nabídky (CN)“ je prázdné, název ale začíná `CN-…`, takže webhook projde (ne 422). Koncept doplněn
+  o ID dealu. Další krok: J. V. odešle odpověď integrátorovi, klíč předá zvlášť → integrátor založí DIČ
+  a automatizaci → zkouška webhooku (2× spuštění, pořád jedna kalkulace).
 
 ---
 
