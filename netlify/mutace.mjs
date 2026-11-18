@@ -53,6 +53,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      'test_vs_server.mjs',
      /* VZ #598 E0 (16. 11. 2026): víc zákazníků — vypínač, tvar, platna, invariant (server) a jádro (model). */
      'test_vz_server.mjs', '../src/test_vz_model.js',
+     /* VZ T1 #645 (18. 11. 2026): řídící varianta a řídící zákazník — invariant 409 a práva (server) a jádro. */
+     'test_vz_t1_server.mjs', '../src/test_vz_t1.js',
      /* VZ-E3 #602 (16. 11. 2026): zámek po zákaznících — razítko „komu", platná nabídka, dotisk (jádro). */
      '../src/test_vz_zamek.js',
      /* VZ-E2 #601 (16. 11. 2026): webhook podle čísla s písmenem zákazníka. */

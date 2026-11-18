@@ -187,6 +187,18 @@ await vypinac({ viceZakazniku: true });
   test('4 jeden zákazník: změna řídící varianty jiným obchodníkem → 200 jako dřív, bez klíčů VZ', t0.status === 200 && t.status === 200
     && !('vzRidici' in ulozenoObj(t0.soubor)) && ulozenoObj(t0.soubor).varianty.find(x => x.ridici).id === v.id, t);
 }
+{ /* přechod z jednoho zákazníka: přidání B a jiná řídící varianta v témže uložení — uložená verze jednoho zákazníka, práva jako dřív */
+  const z = nova('prechod');
+  const t0 = await uloz(z, cO);
+  const z1 = nactiZ(t0.soubor, t0.razitko);
+  const v = G.klonujVariantu(z1, z1.varianty[0].id, { aktivovat: false });
+  zk.nastavRidici(z1, v.id);
+  G.vzPridej(z1, UB, { kdo: 'Jiný T1', kdy: '2026-11-18T10:00:00.000Z' });
+  const t = await uloz(z1, cJ);
+  const u = ulozenoObj(t0.soubor);
+  test('4 přechod 1 → 2 zákazníci s jinou řídící variantou (jiný obchodník) → 200 jako dřív, invariant', t.status === 200
+    && u.vzRidici && u.vzRidici.varianta === v.id && u.varianty.find(x => x.ridici).id === v.id, { status: t.status, chyba: t.chyba });
+}
 {
   const { z, soubor, vC } = await tri('vyp');
   await vypinac({ viceZakazniku: false });
