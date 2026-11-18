@@ -29,8 +29,9 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   `…9801.2-C`; #651 controlling `…9801-B` po prodeji; plná moc jen řídící (věta v příručce). Testy `src/test_vz_f1.js`
   49/0 (pojistka na ec5bbac 32 FAIL), `test_vz_server.mjs` 110/0, `overit_vz_tisk` 198/0 (očekávání KL C upraveno).
   Mutace [VZ F1] jádro 17/17, server 4/4; přepsané mutace E1 ×2, E2, K40a D7 ×2. Porovnání sestavení proti test SHODA
-  353/353. Kolo `--bez-mutaci`: statické 9/9; sady a hodiny viz zpráva koordinaci (1. běh: `overit_vz_tisk` = očekávaný
-  N4, `test_577_kopie_skript` T4 občasné, samostatně 5× zelené). **Před sloučením revize poradce (N3 = únik do SoD).**
+  353/353. Kolo `--bez-mutaci`: statické 9/9; 1. běh sady 465/1/7 (`overit_vz_tisk` =
+  očekávaný N4, harness upraven) a hodiny 377/1/1 (`test_577_kopie_skript` T4 občasné, samostatně 5× zelené);
+  opakované kroky sady 466/0/7 a hodiny +400 dní 378/0/1 zelené. **Před sloučením revize poradce (N3 = únik do SoD).**
   Neřešeno: zástupci dalšího zákazníka se po jeho SoD nezmrazují (zmrazení hlídá jen hlavičku řídícího) — k rozhodnutí.
 
 - **S6 + S8 #613** (`claude/s6s8-evidence`, v18.11.5, nad 9bd6dc8): evidence v `roadmap.json` (pole `typ`, `cekaNa` „<kdo>: <co>“,

@@ -8,9 +8,9 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v18.11.6** (`804147c9`, 18. 11. 2026) |
+| testovací web (`test`) | **v18.11.6** (`41bbe99e`, 18. 11. 2026) |
 
-Test je proti main napřed o 235 commitů.
+Test je proti main napřed o 222 commitů.
 
 ## V testu, ještě ne v main
 
@@ -87,4 +87,4 @@ K tomu 11 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --ziv
 
 ## Nehotové položky evidence
 
-Celkem 55: J. V. 42, kolega 5, koordinace 3, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 62: J. V. 42, kolega 5, koordinace 10, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

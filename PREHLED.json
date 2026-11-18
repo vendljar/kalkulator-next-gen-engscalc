@@ -7,11 +7,11 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "804147c9",
+  "sha": "41bbe99e",
   "verze": "v18.11.6",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 235,
+ "test_navic_commitu": 222,
  "v_testu_ne_v_main": [
   {
    "id": "614",
@@ -449,9 +449,9 @@
  "nehotove_podle_kdo": {
   "J. V.": 42,
   "kolega": 5,
-  "koordinace": 3,
+  "koordinace": 10,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 55
+ "nehotovych": 62
 }
