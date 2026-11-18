@@ -7,12 +7,32 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "41bbe99e",
-  "verze": "v18.11.6",
+  "sha": "c559baae",
+  "verze": "v18.11.7",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 231,
+ "test_navic_commitu": 247,
  "v_testu_ne_v_main": [
+  {
+   "id": "645",
+   "typ": "ukol",
+   "nazev": "NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami",
+   "alias": [
+    "NS"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "615",
+   "typ": "nalez",
+   "nazev": "Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (C7: výroba jazykové verze z češtiny zrušena, kontrola podílu češtiny)",
+   "alias": [
+    "K48-N1",
+    "B1",
+    "C7"
+   ],
+   "verze": "v18.11.7"
+  },
   {
    "id": "614",
    "typ": "nalez",

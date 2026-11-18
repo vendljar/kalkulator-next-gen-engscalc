@@ -8,14 +8,16 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v18.11.6** (`41bbe99e`, 18. 11. 2026) |
+| testovací web (`test`) | **v18.11.7** (`c559baae`, 18. 11. 2026) |
 
-Test je proti main napřed o 231 commitů.
+Test je proti main napřed o 247 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
+| #645 (dřív NS) | úkol | NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami | v18.11.7 |
+| #615 (dřív K48-N1, B1, C7) | nález | Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (C7: výroba jazykové verze z češtiny zrušena, kontrola podílu češtiny) | v18.11.7 |
 | #614 (dřív K40-N1) | nález | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | v12.11.1 |
 | #613 | úkol | S6 + S8: jedna evidence v roadmap.json (typ, čeká na, kolo, větev, verze, dopad na cenu, aliasy), živý výpis, PREHLED.md a NOVINKY.md | v18.11.5 |
 | #612 | úkol | S7: startovní podklady — CLAUDE.md podle schváleného návrhu, PREDAVKA jen živý stav, archiv předávek, log rozhodnutí J. V. | v18.11.4 |
