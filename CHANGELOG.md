@@ -38,7 +38,10 @@ Nad `8462aea` (test v12.11.7). Kód aplikace beze změny — jen harnessy a nás
   klon — původní `FAIL … page.waitForFunction: Timeout 15000ms exceeded at cekej (ř. 165) at tiskniKlon`, nový 53/0;
   prodáno — původní tentýž timeout v `klikni` (ř. 148) po 6 kontrolách, nový 51/0; krycí list při 60× zpomalení —
   původní `page.goto: Timeout 30000ms exceeded` (TimeoutError), nový 28/0. Při 100× nestačí ani 60 s navigace —
-  pomůže `KNG_HARNESS_TIMEOUT_MS` (původní kód limit zvýšit neuměl).
+  pomůže `KNG_HARNESS_TIMEOUT_MS` (původní kód limit zvýšit neuměl): s `KNG_HARNESS_TIMEOUT_MS=60000` nový 28/0.
+- **Kolo `--bez-mutaci` (ADMIN_EMAIL nastavený):** VŠE ZELENÉ — sady 442 prošlo, 0 selhalo, 7 přeskočeno (firemní
+  podklady, test.js), hodiny +400 dní 359/0, statické kontroly 5/5; 34 min 54 s. Playwright se v kontejneru načetl
+  (symlink `node_modules/playwright` na globální instalaci, v `.gitignore`).
 
 ## v12.11.7 — K40c #581: vazba z webhooku Pipedrive, firma z ARES na serveru, „Opravit firmu v Pipedrive“, větev claude/k40c-webhook
 

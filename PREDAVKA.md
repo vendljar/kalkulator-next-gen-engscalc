@@ -17,6 +17,10 @@ prodáno 51/0. Souběh 6 harnessů (+ online 276/0, lišta 255/0, schvalování 
 i prodáno padají `Timeout 15000ms` v `cekej`/`klikni`, původní krycí list `page.goto: Timeout 30000ms`; nové projdou.
 Podrobnosti v CHANGELOG v16.11.6.
 
+**Kolo `--bez-mutaci`** (`ADMIN_EMAIL=spravce@priklad.cz`): VŠE ZELENÉ — sady 442/0 (7 přeskočeno: firemní podklady,
+test.js), hodiny +400 dní 359/0, statické 5/5. Playwright se načetl (symlink `node_modules/playwright` → globální).
+Mutace nepuštěny (kód aplikace beze změny).
+
 **Poznámky:** `overit_online.mjs` bez `ADMIN_EMAIL` padá i samostatně (ř. 199, čeká na přihlášení správce) — kolo
 proměnnou nastavuje. Jiné harnessy mají dál pevné pauzy po startu (`waitForTimeout(400)`), ty se podle zadání
 nerozšiřovaly; pomocník je připravený, kdyby se v dalším kole objevily.
