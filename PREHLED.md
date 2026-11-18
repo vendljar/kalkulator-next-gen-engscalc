@@ -8,9 +8,9 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v18.11.7** (`a755d892`, 18. 11. 2026) |
+| testovací web (`test`) | **v18.11.7** (`fcdec38f`, 18. 11. 2026) |
 
-Test je proti main napřed o 248 commitů.
+Test je proti main napřed o 249 commitů.
 
 ## V testu, ještě ne v main
 

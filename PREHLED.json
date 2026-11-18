@@ -7,11 +7,11 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "a755d892",
+  "sha": "fcdec38f",
   "verze": "v18.11.7",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 248,
+ "test_navic_commitu": 249,
  "v_testu_ne_v_main": [
   {
    "id": "645",
