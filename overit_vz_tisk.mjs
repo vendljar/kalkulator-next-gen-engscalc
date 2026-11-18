@@ -279,15 +279,15 @@ const cisla = t => String(t || '').replace(/<[^>]+>/g, ' ').replace(/[\s\u00a0]+
 const cisloCekane = (X, pripona) => '9940' + (pripona ? '.' + pripona : '') + (X === 'A' ? '' : '-' + X);
 const pismenoCizi = /9940(\.\d+)?-[B-Z](?![A-Za-z0-9])/;
 
-/* Výstupy pro jednoho zákazníka. varianta: dokument nese číslo varianty (…9940.2-C); porovnání, krycí
- * list a specifikace nesou číslo zakázky (s písmenem zákazníka). */
+/* Výstupy pro jednoho zákazníka. varianta: dokument nese číslo varianty (…9940.2-C; krycí list od VZ-F1); porovnání
+ * a specifikace nesou číslo zakázky (s písmenem zákazníka). */
 const VYSTUPY = [
   { nazev: 'Kompletní náhled a tisk nabídky', kod: 'nabidkaOckDokument()', okno: true, varianta: true },
   { nazev: 'Kompletní náhled podkladů', kod: 'nabidkaNahled()', okno: true, varianta: true },
   { nazev: 'Porovnání variant (tisk)', kod: 'porovnaniTisk()', okno: true },
   { nazev: 'Detail položek (tisk)', kod: 'porovnaniPolozkyTisk()', okno: true },
-  { nazev: 'Krycí list BO (tisk)', kod: "kryciTiskPohled('bo')", okno: true },
-  { nazev: 'Krycí list Word (BO + Techdata)', kod: 'kryciWord()', stazeni: 2 },
+  { nazev: 'Krycí list BO (tisk)', kod: "kryciTiskPohled('bo')", okno: true, varianta: true },   // VZ-F1 (VZ-N4): krycí list jako CN …9940.2-C
+  { nazev: 'Krycí list Word (BO + Techdata)', kod: 'kryciWord()', stazeni: 2, varianta: true },   // VZ-F1 (VZ-N4): krycí list jako CN …9940.2-C
   { nazev: 'Word nabídky', kod: "SABLONA_DOCX = { nazev: 'Sablona_NABIDKA_CN_test.docx', data: window.__sablona }; nabidkaWordGeneruj(null)", stazeni: 1, varianta: true },
   { nazev: 'Smlouva o dílo OCK (Word)', kod: "SOD_DOCX.sod = { nazev: 'Sablona_SOD_test.docx', data: window.__sablonaSod }; sodWordGeneruj('sod', null)", stazeni: 1, varianta: true },
 ];

@@ -225,6 +225,64 @@ function sablonaJazykOdhad(odstavce) {
   return { jazyk, podil, pocty, zarazeno };
 }
 
+/* KONTROLA ČEŠTINY V JAZYKOVÉ VERZI (C7, K48-N1 — rozhodnutí J. V.
+ * 18. 11. 2026). Tlačítko „vyrobit z české verze" je pryč: cizí jazyk se
+ * nahrává jen jako vlastní soubor. Pojistka navíc hlídá, aby jako jazyková
+ * verze nevyšel soubor, který je ve skutečnosti z velké části česky
+ * (strojová „DE" smlouva z české verze měla 110 ze 143 řádků česky).
+ *
+ * sablonaJazykPodil(text, L) vrátí podíl odstavců, které jsou ZJEVNĚ česky:
+ * odstavec má českou diakritiku ěščřžůú nebo česká slova ze slovníku
+ * a českých znaků je víc než znaků cílového jazyka L. Adresa „Praha,
+ * Českomoravská" uvnitř německé věty tak větu českou neudělá. Do
+ * jmenovatele jdou jen odstavce se slovem (symboly {{…}} a čísla se
+ * nepočítají). `text` = pole odstavců, nebo text s odstavci po řádcích. */
+const SABLONA_CESTINA_ZNAKY = /[ěščřžůú]/gi;
+const SABLONA_CESTINA_SLOVA = new Set(['se', 'na', 'je', 've', 'ze', 'že', 'nebo', 'pro', 'jsou', 'není', 'bude',
+  'také', 'podle', 'dle', 'pouze', 'pokud', 'tato', 'této', 'tohoto', 'které', 'který', 'která', 'mezi', 'při',
+  'před', 'až', 'ani', 'jeho', 'její', 'smlouva', 'smlouvy', 'smlouvě', 'objednatel', 'objednatele', 'zhotovitel',
+  'zhotovitele', 'díla', 'dílo', 'cena', 'ceny', 'včetně', 'dodávka', 'montáž', 'nabídka', 'nabídky', 'strany']);
+/* Mez podílu češtiny: smlouvu nad ní nejde zveřejnit ani vytisknout,
+ * u nabídky a ostatních dokumentů jen upozornění. */
+const SABLONA_CESTINA_MEZ = 0.2;
+const SABLONA_CESTINA_SMLOUVY = ['sod', 'sodProj', 'plnaMoc'];
+function sablonaJazykPodil(text, L) {
+  const odstavce = Array.isArray(text) ? text : String(text == null ? '' : text).split(/\r?\n/);
+  const cil = String(L || '').toLowerCase();
+  const cilZnaky = cil !== 'cz' ? SABLONA_JAZYK_ZNAKY[cil] : null;
+  const cilSlova = cil !== 'cz' ? new Set(SABLONA_JAZYK_SLOVA[cil] || []) : new Set();
+  let celkem = 0, cesky = 0;
+  odstavce.forEach(t => {
+    const txt = String(t || '').replace(/\{\{[^}]*\}\}/g, ' ').toLowerCase();
+    const slova = txt.split(/[^a-zà-ÿěščřžýáíéůúťďňœß]+/i).filter(w => /[a-zà-ÿěščřžýáíéůúťďňœß]/i.test(w));
+    if (!slova.length) return;
+    celkem++;
+    const cz = 2 * ((txt.match(SABLONA_CESTINA_ZNAKY) || []).length) + slova.filter(w => SABLONA_CESTINA_SLOVA.has(w)).length;
+    const jiny = (cilZnaky ? 2 * ((txt.match(cilZnaky) || []).length) : 0) + slova.filter(w => cilSlova.has(w)).length;
+    if (cz >= 2 && cz > jiny) cesky++;
+  });
+  return celkem ? cesky / celkem : 0;
+}
+/* Verdikt pro jazykovou verzi `typ_xx` (nebo typ + jazyk zvlášť):
+ * { podil, mez, smlouva, zabrana, varovani } — zabrana jen u smluv. */
+function sablonaCestinaKontrola(typ, odstavce, L) {
+  const m = /^([a-zA-Z]+)_([a-z]{2})$/.exec(String(typ || ''));
+  const zaklad = m ? m[1] : String(typ || '');
+  const jazyk = String(L || (m ? m[2] : 'cz')).toLowerCase();
+  const out = { podil: 0, mez: SABLONA_CESTINA_MEZ, smlouva: SABLONA_CESTINA_SMLOUVY.includes(zaklad), zabrana: '', varovani: '' };
+  if (jazyk === 'cz') return out;
+  out.podil = sablonaJazykPodil(odstavce, jazyk);
+  if (!(out.podil > out.mez)) return out;
+  const proc = Math.round(out.podil * 100);
+  const veta = 'Jazyková verze ' + jazyk.toUpperCase() + ' je z velké části česky (' + proc + ' % odstavců, povoleno nejvýš '
+    + Math.round(out.mez * 100) + ' %) — nejspíš vznikla z české šablony, ne překladem.';
+  if (out.smlouva)
+    out.zabrana = veta + ' Smlouvu ani plnou moc z ní nejde zveřejnit ani vytisknout: nahrajte přeložený soubor '
+      + '(Nastavení → Smlouvy / Šablony → dokument → ' + jazyk.toUpperCase() + ' → „Nahrát přeložený soubor").';
+  else out.varovani = veta + ' Dokument z ní vyjde zčásti česky; nahrajte přeložený soubor.';
+  return out;
+}
+
 /* Symboly {{…}} z odstavců šablony — seřazené, bez opakování. */
 function sablonaSymboly(odstavce) {
   const mn = new Set();
@@ -256,4 +314,5 @@ if (typeof module !== 'undefined')
                      SABLONY_ONLINE_TYPY, SABLONY_ONLINE_JAZYKY, SABLONA_MAX_B64,
                      sablonaTypPlatny, sablonaJeDocxB64, sablonaOtisk,
                      sablonyNovyRejstrik, sablonaKlicSouboru, sablonyZverejni,
-                     sablonaPlatna, sablonyRezimNastav, sablonaAbNaB64, sablonaCestinaShodna };
+                     sablonaPlatna, sablonyRezimNastav, sablonaAbNaB64, sablonaCestinaShodna,
+                     sablonaJazykPodil, sablonaCestinaKontrola, SABLONA_CESTINA_MEZ, SABLONA_CESTINA_SMLOUVY };

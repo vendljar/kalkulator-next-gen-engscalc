@@ -360,7 +360,6 @@ const PROVERENO = {
   },
   'kryci_ui.js': {
     'label': 'popisek pole z konstanty KRYCI_SEKCE',
-    "typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc(), cesta se do HTML nevkládá (revize K40a D7: bind v RIZIKO)',
     "typeof zamekDphAttr === 'function' ? zamekDphAttr(bind) : ''": 'hotové atributy zmrazené sazby DPH ze zamekDphAttr() — cesta se do HTML nevkládá (revize K40a D7: bind v RIZIKO)',
     'p.label': 'popisek pole z konstanty KRYCI_SEKCE',
     's.sekce': 'název sekce z konstanty KRYCI_SEKCE',
@@ -370,7 +369,6 @@ const PROVERENO = {
   },
   'kryci_proj_ui.js': {
     'label': 'popisek pole z konstanty KRYCI_SEKCE (zrcadlo kryci_ui.js)',
-    "typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''": 'hotové atributy zmrazeného pole ze zamekZakAttr() — title přes esc(), cesta se do HTML nevkládá (revize K40a D7: bind v RIZIKO)',
     'p.label': 'popisek pole z konstanty KRYCI_SEKCE',
     's.sekce': 'název sekce z konstanty KRYCI_SEKCE',
     "tiskListaHtml({ pozn: 'Verze ' + d.verzeNazev + ' — uložte jako samostatný soubor (' + d.nazevSouboru + '.pdf).' })":
@@ -380,7 +378,7 @@ const PROVERENO = {
   'nastaveni_ui.js': {
     "d.jenVApp.slice(0, 40).map(x => esc(x.klic)).join(' · ')": 'každý klíč prochází esc() uvnitř map()',
     'label': 'popisek řádku šablony psaný vývojářem',
-    "m ? 'hotovo: ' + esc(m.nazev) + ' – kliknutím přegeneruji' : 'vyrobit ' + l.toUpperCase() + ' mutaci z české šablony'":
+    "m ? 'nahráno: ' + esc(m.nazev) + ' – kliknutím nahrajete jiný soubor' : 'nahrát přeložený soubor ' + l.toUpperCase()":
       'jméno souboru mutace prochází esc(), zbytek jsou literály',
     'popis': 'popisný text bloku nastavení psaný vývojářem',
     'pozn': 'poznámka k řádku šablony psaná vývojářem',
@@ -600,7 +598,6 @@ const PROVERENO_CLENY = {
   },
   'sablony_sprava_ui.js': {
     'b.cls': 'CSS třída z literálů v sablStav() (ok / warn / …)',
-    'm.stat.procenta': 'procento přeložených odstavců — číslo',
   },
   'schvalovani_ui.js': { 'SCHV_CIZI.prohledano': 'počet prohledaných zakázek ze serveru — číslo' },
   'techspec_ui.js': {
