@@ -1,3 +1,18 @@
+# Předávka — 18. 11. 2026 (nové sezení): napojení testovacího webu, větev `claude/eager-carson-1xznt2` (jen dokumentace)
+
+- Nové sezení navázalo na „Pipedrive API integrace“. Ověřeno 18. 11. (jen čtení): `testengscalc` v18.11.5,
+  `POST /api/pd/webhook` bez klíče 503 (klíč chybí).
+- J. V. odpověděl: v Netlify zatím **nic** (token ani klíč), odpověď integrátorovi **neodešla** (upravit koncept),
+  zkušební deal „TEST – integrace kalkulačky“ **neexistuje** — založí ho J. V. sám s vyplněným „Číslo nabídky (CN)“.
+  Pozor: automatizace v Pipedrive přejmenovává názvy dealů („Název cenové nabídky byl automaticky upraven“), deal
+  se pak hledá podle CN, ne podle názvu.
+- Koncept odpovědi integrátorovi v souhrnu (oddíl „Odpověď integrátora 11. 11. a další kroky“): termín zkoušky
+  posunut na [úterý 24. 11.], deal založí J. V., webhook aktivní nejpozději den předem, heslo zvlášť.
+- J. V. dostal postup krok za krokem (klíč, token, doména, simulátor, nasazení). Další krok: po nasazení ověřit
+  `POST` bez klíče → 401 a Obnovit z CRM (obě nová pole spárovaná); pak J. V. odešle odpověď integrátorovi.
+
+---
+
 # Předávka — 18. 11. 2026: předání novému sezení, větev `claude/eager-carson-1xznt2` (jen dokumentace)
 
 - Sezení „Pipedrive API integrace“ (od 22. 9.) končí kvůli limitu kontextu; pokračuje nové sezení z této větve.
