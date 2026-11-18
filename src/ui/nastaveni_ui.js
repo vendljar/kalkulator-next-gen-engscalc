@@ -697,35 +697,31 @@ function sablonaSmaz(typ) {
 }
 
 /* ---------- jazykové mutace šablony (N1) – jen administrátor ----------
- * Z nahrané české šablony vyrobí EN/DE/FR variantu: pevný text se přeloží
- * slovníkem (preklad.js), symboly {{...}} zůstanou. Výsledek se uloží do
- * SABLONY[typ_jazyk] (použije se při generování v daném jazyce) a zároveň
- * se stáhne jako soubor, aby šel doladit ve Wordu a nahrát zpět. */
+ * Do C7 (K48-N1, rozhodnutí J. V. 18. 11. 2026) tlačítko EN/DE/FR vyrobilo
+ * mutaci překladem české šablony slovníkem — u smlouvy zůstala většina textu
+ * česky. Teď se mutace jen NAHRAJE jako přeložený soubor (stejně jako
+ * v online správě šablon) a projde kontrolou češtiny: smlouva nad mezí se
+ * nepřijme, u nabídky a ostatních jen upozornění. */
 function sablonaPrelozStav(typ, lang, text) {
   const el = document.getElementById('sablStav-' + typ);
   if (el) el.textContent = text;
 }
-function sablonaPrelozit(typ, lang) {
-  if (!jeAdmin()) return hlaska('Jazykové mutace šablon smí vytvářet jen administrátor.');
-  const s = SABLONY[typ];
-  if (!s) return hlaska('Nejdřív nahrajte českou šablonu .docx.');
-  const stat = {};
-  sablonaPrelozStav(typ, lang, 'Překládám do ' + lang.toUpperCase() + '…');
-  docxPrelozSablonu(s.data.slice(0), lang, stat)
-    .then(blob => blob.arrayBuffer().then(buf => {
-      const nazev = s.nazev.replace(/\.docx$/i, '') + '_' + lang.toUpperCase() + '.docx';
-      SABLONY[typ + '_' + lang] = { nazev, data: buf };
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = nazev;
-      a.click();
-      const chybi = stat.chybi.length;
-      sablonaPrelozStav(typ, lang, `Hotovo: ${lang.toUpperCase()} – přeloženo ${stat.prelozeno} `
-        + `z ${stat.celkem - stat.neutralni} odstavců (${stat.procenta} %)`
-        + (chybi ? `, ${chybi} zůstalo česky – doplňte je ve Wordu nebo do slovníku.` : '.'));
+function sablonaNahrajMutaci(typ, lang) {
+  if (!jeAdmin()) return hlaska('Jazykové mutace šablon smí nahrávat jen administrátor.');
+  if (!SABLONY[typ]) return hlaska('Nejdřív nahrajte českou šablonu .docx.');
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.docx';
+  inp.onchange = () => {
+    const f = inp.files[0]; if (!f) return;
+    f.arrayBuffer().then(async buf => {
+      const k = (typeof sablonaCestinaKontrola === 'function' && typeof docxTextSablony === 'function')
+        ? sablonaCestinaKontrola(typ + '_' + lang, await docxTextSablony(buf.slice(0))) : null;
+      if (k && k.zabrana) { sablonaPrelozStav(typ, lang, 'Nepřijato: ' + k.zabrana); return hlaska(k.zabrana); }
+      SABLONY[typ + '_' + lang] = { nazev: f.name, data: buf };
       nastRefresh();
-    }))
-    .catch(err => sablonaPrelozStav(typ, lang, 'Chyba: ' + err.message));
+      sablonaPrelozStav(typ, lang, lang.toUpperCase() + ': nahráno ' + f.name + (k && k.varovani ? ' — upozornění: ' + k.varovani : '.'));
+    }).catch(err => sablonaPrelozStav(typ, lang, 'Chyba: ' + err.message));
+  };
+  inp.click();
 }
 /* seznam nepřeložených frází z poslední mutace → CSV pro překladatele */
 function sablonaChybejiciCsv(typ, lang) {
@@ -956,7 +952,7 @@ function nastSablony() {
       const zastarala = t !== typ && typeof sablonaMutaceZastarala === 'function'
         && sablonaMutaceZastarala(onlineSablonaMeta(typ), m);
       return `verze ${m.verze}${j} (${esc(m.nazev)}, zveřejnil ${esc(m.zverejnil)} ${esc((m.kdy || '').slice(0, 10))})`
-        + (zastarala ? ' <b class="sablona-zastarala" style="color:#b45309">⚠ zastaralá — starší než česká šablona, přegenerujte a zveřejněte</b>' : '');
+        + (zastarala ? ' <b class="sablona-zastarala" style="color:#b45309">⚠ zastaralá — starší než česká šablona, nahrajte nový překlad a zveřejněte</b>' : '');
     }).filter(Boolean);
     return `<div class="note" style="margin-top:6px">☁ Na serveru: ${kusy.length
       ? kusy.join(' · ') : '<b>žádná šablona zatím zveřejněná</b>'}</div>`;
@@ -967,9 +963,9 @@ function nastSablony() {
     const s = SABLONY[typ];
     const mutace = ['en', 'de', 'fr'].map(l => {
       const m = SABLONY[typ + '_' + l];
-      return `<button class="mini ${m ? 'aktivni' : ''}" onclick="sablonaPrelozit('${escJs(typ)}','${l}')"
-        title="${m ? 'hotovo: ' + esc(m.nazev) + ' – kliknutím přegeneruji' : 'vyrobit ' + l.toUpperCase() + ' mutaci z české šablony'}"
-        >${m ? '✓ ' : ''}${l.toUpperCase()}</button>`;
+      return `<button class="mini ${m ? 'aktivni' : ''}" onclick="sablonaNahrajMutaci('${escJs(typ)}','${l}')"
+        title="${m ? 'nahráno: ' + esc(m.nazev) + ' – kliknutím nahrajete jiný soubor' : 'nahrát přeložený soubor ' + l.toUpperCase()}"
+        >${m ? '✓ ' : ''}Nahrát ${l.toUpperCase()}</button>`;
     }).join('');
     return `<div style="margin:8px 0;padding:10px;border:1px solid var(--line);border-radius:8px">
       <b>${label}</b> ${pozn ? `<span class="note">— ${pozn}</span>` : ''}<br>
@@ -980,7 +976,7 @@ function nastSablony() {
           ? `<button class="primary" onclick="sablonaZverejniOnline('${escJs(typ)}')">☁ Zveřejnit online jako platnou</button>` : ''}</div>
       ${onlineInfo(typ)}
       ${s && jeAdmin() ? `<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:8px">
-        <span class="note">Jazyková mutace šablony (N1):</span>
+        <span class="note">Jazyková mutace šablony (N1) — jen přeložený soubor, z češtiny se nevyrábí:</span>
         <div class="btns" style="margin-top:4px">${mutace}
           <button class="mini" onclick="sablonaChybejiciCsv('${escJs(typ)}','en')">⤓ chybí EN</button>
           <button class="mini" onclick="sablonaChybejiciCsv('${escJs(typ)}','de')">⤓ chybí DE</button>
@@ -1038,9 +1034,9 @@ function nastSablony() {
       'Sablona_SOD_PROJEKCE.docx – strany, cena, sankce a platby po fázích přes symboly {{…}}')}
     ${radek('plnaMoc', 'Šablona plné moci',
       'Sablona_PLNA_MOC.docx – zmocnitel, nemovitost a firemní údaje přes symboly {{…}}')}
-    <div class="note" style="margin-top:10px">Mutace vzniká překladem <b>pevného textu</b> šablony; nepřeložené fráze
-      zůstanou česky a jsou v CSV k doplnění. <b>Hodnoty</b> dosazované do <code>{{…}}</code> se překládají zvlášť podle
-      jazyka zvoleného v technické specifikaci. Vytváření mutací a export seznamů = <b>jen administrátor</b>.</div>`;
+    <div class="note" style="margin-top:10px">Mutace je <b>přeložený soubor</b> šablony (od překladatele); z české šablony
+      se nevyrábí. Seznam nepřeložených frází (CSV) je podklad pro překladatele. <b>Hodnoty</b> dosazované do <code>{{…}}</code> se překládají zvlášť podle
+      jazyka zvoleného v technické specifikaci. Nahrávání mutací a export seznamů = <b>jen administrátor</b>.</div>`;
 }
 
 /* ================= KONFIGURACE (N3 / SET-2) – jen administrátor =================

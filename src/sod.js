@@ -183,7 +183,19 @@ function sodSkladne(placeholders, firma, mena, L) {
  * v eurech — dokument, který nejde podepsat. Vrací větu pro obchodníka,
  * nebo '' (smí se tisknout). */
 const SOD_JAZYK_NAZEV = { en: 'anglická', de: 'německá', fr: 'francouzská' };
-function sodJazykZabrana(typ, L, maMutaci) {
+/* C7 (K48-N1, J. V. 18. 11. 2026): mutace nestačí, když je z velké části
+ * česky (vyrobená z české verze) — `podilCestiny` (sablonaJazykPodil) nad
+ * mezí SABLONA_CESTINA_MEZ tisk smlouvy i plné moci zastaví. */
+function sodJazykZabrana(typ, L, maMutaci, podilCestiny) {
+  if ((typ === 'sod' || typ === 'sodProj' || typ === 'plnaMoc') && L && L !== 'cz' && maMutaci && podilCestiny > 0) {
+    let mez = typeof SABLONA_CESTINA_MEZ === 'number' ? SABLONA_CESTINA_MEZ : null;
+    if (mez == null) { try { mez = require('./sablony_online.js').SABLONA_CESTINA_MEZ; } catch (e) { mez = 0.2; } }
+    if (podilCestiny > mez)
+      return 'Smlouva v jazyce ' + String(L).toUpperCase() + ' nevznikne: jazyková šablona je z velké části česky ('
+        + Math.round(podilCestiny * 100) + ' % odstavců, povoleno nejvýš ' + Math.round(mez * 100) + ' %) — nejspíš vznikla '
+        + 'z české šablony, ne překladem. Administrátor nahraje přeložený soubor v Nastavení → Smlouvy / Šablony → '
+        + String(L).toUpperCase() + ' → „Nahrát přeložený soubor"; do té doby zvolte u tlačítka Jazyk tisku „česky".';
+  }
   if ((typ !== 'sod' && typ !== 'sodProj') || !L || L === 'cz' || maMutaci) return '';
   const popis = typ === 'sod' ? 'Šablona smlouvy o dílo — REALIZACE (OCK)' : 'Šablona smlouvy o dílo — PROJEKČNÍ PRÁCE';
   return 'Smlouva o dílo v jazyce ' + String(L).toUpperCase() + ' nevznikne: ' + (SOD_JAZYK_NAZEV[L] || L.toUpperCase())

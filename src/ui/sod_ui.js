@@ -38,13 +38,16 @@ function sodJazyk(typ) {
 
 function sodWord(typ) {
   const L = sodJazyk(typ);
-  sablonaProTisk(typ, L).then(srv => {
-    const zabrana = (typeof sodJazykZabrana === 'function' && srv) ? sodJazykZabrana(typ, L, !srv.mutaceChybi) : '';
+  sablonaProTisk(typ, L).then(async srv => {
+    const zabrana = (typeof sodJazykZabrana === 'function' && srv)
+      ? sodJazykZabrana(typ, L, !srv.mutaceChybi, srv.cestina ? srv.cestina.podil : 0) : '';   // C7: i podíl češtiny
     if (zabrana) { sodStavText(typ, 'Chyba: ' + zabrana); return; }
     if (srv) { sodWordGeneruj(typ, srv); return; }
     /* místní cesta (měkký režim / bez serveru): jazyková šablona z Nastavení */
     if (L !== 'cz' && typeof sodJazykZabrana === 'function') {
-      const z = sodJazykZabrana(typ, L, typeof SABLONY !== 'undefined' && !!SABLONY[typ + '_' + L]);
+      const m = typeof SABLONY !== 'undefined' ? SABLONY[typ + '_' + L] : null;
+      const c = m && typeof sablonaCestinaTisku === 'function' ? await sablonaCestinaTisku(typ, L, m.data) : null;
+      const z = sodJazykZabrana(typ, L, !!m, c ? c.podil : 0);
       if (z) { sodStavText(typ, 'Chyba: ' + z); return; }
     }
     // místní cesta – přednost má šablona nahraná v Nastavení → Šablony (SET-6)
