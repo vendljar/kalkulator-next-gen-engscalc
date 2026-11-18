@@ -109,6 +109,14 @@ Cloudové sezení může spadnout a s ním zmizí vše, co není na GitHubu. Pro
 - Stupně kol: (1) po každé dávce `testovaci_kolo.sh` a porovnání sestavení
   nad pevnou sadou; (2) cílená sada na změněnou oblast; (3) plné kolo
   cenových nabídek jen před main a po nasazení.
+- Porovnání sestavení po dávce (stupeň 1): každá dávka, která sahá do `src/`,
+  pustí kolo s `--proti origin/test` (nebo `--jen porovnani --proti
+  <předchozí stav>`). Dávka, která výsledek měnit nemá, musí dát „SHODA“;
+  vědomou změnu (cena, dokument) zapíše do seznamu očekávaných rozdílů
+  (`--ocekavane`, vzor `podklady/porovnani/`) a přiloží ho ke zprávě
+  koordinaci. Neočekávaný rozdíl = nález, nic se neslučuje. Nástroj není
+  brána do main (ceny main × test ověřuje J. V.). Návod
+  `podklady/POROVNANI_SESTAVENI.md`.
 - Automat (sezení nebo Actions) smí z testovacího webu testengscalc jen
   ČÍST. Zápis do testovacího webu ani přístup k ostrému webu ne.
 - STAV kola se zapisuje do `podklady/kola/STAV_KOLOnn.md`. Kopie jinde nejsou

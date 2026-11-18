@@ -320,4 +320,6 @@ if (require.main === module) {
       .replace(/\},"/g, '},\n"') + '\n');
   }).catch(e => { console.error(e); process.exit(1); });
 }
-module.exports = { zlata, VS_NOVE_SYMBOLY };
+/* Pomocné funkce sdílí i porovnání sestavení (nastroje/porovnani_sada.js,
+ * S3) — otisky zlaté sady se tím nemění. */
+module.exports = { zlata, VS_NOVE_SYMBOLY, CORE, DATUM, generator, docxText, zamcena, pevneHodiny, pevneDatum, otisk, kop, zkus, zkusA };

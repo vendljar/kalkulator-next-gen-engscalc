@@ -8,25 +8,54 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v18.11.3 — S7: startovní podklady (CLAUDE.md, PREDAVKA, log rozhodnutí), větev claude/s7-podklady
+## v18.11.4 — S7: startovní podklady (CLAUDE.md, PREDAVKA, log rozhodnutí), větev claude/s7-podklady
 
-Nad integrací `5e21f89` (v18.11.2). Kód aplikace beze změny. Podle návrhu režie vývoje
+Nad integrací `5e21f89` (v18.11.2), sloučeno s integrací `dcb1678` (v18.11.3, S3 #611). Kód aplikace beze změny. Podle návrhu režie vývoje
 (`podklady/NAVRH_REZIE_2026-11-18.md`, oddíl S7) a rozhodnutí J. V. 18. 11. 2026.
 
 - **CLAUDE.md přepsán podle schváleného textu:** Větve (integrace `claude/integrace-…`, do test koordinace po zeleném kole,
   do main jen na pokyn J. V., main předkem integrace, nejvýš 4 sezení, poradce), Rychlá cesta pro vady ceny a dokumentu (rovnou do test, změna zadání J. V. 18. 11.),
   Kdo rozhoduje (svěřeny jen testy, harnessy a nástroje kola; otázky průběžně s doporučenou variantou; kolega,
-  kterého jmenuje J. V., jen na test; automat z testengscalc jen čte), Předávací soubor, Tagy (jen stav pro main, NOVINKY.md), Testy (stupně kol, STAV
-  kol v `podklady/kola/`). Vypuštěny `test-draft` jako integrační větev, výjimka `k16-nalezy` a datované závorky.
+  kterého jmenuje J. V., jen na test; automat z testengscalc jen čte), Předávací soubor, Tagy (jen stav pro main, NOVINKY.md), Testy (stupně kol, porovnání sestavení S3
+  po dávce jako stupeň 1, STAV kol v `podklady/kola/`). Roadmapa #612. Vypuštěny `test-draft` jako integrační větev, výjimka `k16-nalezy` a datované závorky.
 - **PREDAVKA.md rozdělena:** živý stav 8,5 kB; 557 kB předávek beze ztráty do `podklady/predavky/2026-09.md`,
   `2026-10.md`, `2026-11.md` (ověřeno řádek po řádku). Na konci PREDAVKA seznam „co bylo přesunuto kam“.
 - **Nové podklady:** `podklady/ROZHODNUTI_LOG.md` (datovaná rozhodnutí J. V. z CLAUDE.md a předávek, včetně 18. 11.),
   `podklady/SVERENA_ROZHODNUTI.md` (prázdná šablona), `podklady/kola/README.md`,
   `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md` (osnova skillu z návrhu), kopie návrhu režie.
-- **Krok `staticke` (7 kontrol):** `nastroje/kontrola_podkladu.sh` — PREDAVKA.md nad 15 kB = chyba, `origin/main`
+- **Krok `staticke` (8 kontrol s S3):** `nastroje/kontrola_podkladu.sh` — PREDAVKA.md nad 15 kB = chyba, `origin/main`
   není předkem HEAD = upozornění; `--pojistka` doloží obojí na podvržených datech.
 - **`release_odkaz.py --chybejici`** hlásí jen verze, které prošly do main (verze.txt v historii origin/main);
   verze jen v testu nebo integraci nehlásí. Test `src/test_release_odkaz.js` 27/0 (před úpravou nástroje 3 FAIL).
+
+## v18.11.3 — S3 #611: porovnání dvou sestavení nad pevnou sadou kalkulací, větev claude/s3-porovnani
+
+Nad `claude/integrace-16-10` `5e21f89` (v18.11.2). Návrh režie 18. 11. 2026, oddíl S3, rozhodnutí J. V.: stupně kol
+(1 automat po dávce, 2 cílená sada, 3 plné kolo cenových nabídek jen před main a po nasazení); kolo main-před × main-po
+u rychlé cesty dělá koordinace nástrojem; noční porovnání v Actions zatím ne. Aplikace beze změny.
+
+- **Nový nástroj `nastroje/porovnej_sestaveni.sh <ref A> <ref B>`:** obě reference do dočasných worktree
+  (`build.py` bez zvýšení verze; `.` = pracovní kopie), nad každou pevná sada `nastroje/porovnani_sada.js` —
+  fixtury, zlatá pojistka #560 + skladebné můstky, K29-N1/#451, K36-N2/#550, smyšlené zakázky testovacího webu
+  a fuzz se semínkem 20261110 (Model 1 i 2, 353 kalkulací, kolem 11 s). Porovnává otisky: cena celkem, řádky,
+  výsledek jádra, symboly CN (změněné × jen nové), text dokumentu (Word, náhled, krycí list, specifikace, SoD),
+  ostatní. Tabulka po skupinách, vzory rozdílů a případy; **bez cen a textů**. Kód 0 / 1 / 2.
+- **Ceník** zkušební ze stromu nástroje, nebo `--cenik <soubor mimo repo>`. **`--ocekavane <soubor>`**: seznam
+  očekávaných rozdílů (vzor případu + pole); jiný rozdíl = kód 1, nepoužité pravidlo = upozornění.
+- **Kolo:** nový volitelný krok `porovnani` (`--proti <ref>`, výchozí `origin/test`; `--jen porovnani`;
+  `--ocekavane`), porovnává `<ref>` s pracovní kopií, výsledek v souhrnu kola. Statické kontroly 7 z 7
+  (nově `nastroje/test_porovnej_sestaveni.sh`).
+- `nastroje/zlata_vs.js` exportuje pomocné funkce (otisky zlaté sady beze změny).
+- Návod `podklady/POROVNANI_SESTAVENI.md`; vzor očekávaných rozdílů main × test
+  `podklady/porovnani/ocekavane_main_test_2026-11-18.txt`.
+- **Testy:** `nastroje/test_porovnej_sestaveni.sh` 16/0 — stejné reference 0 rozdílů; dočasný commit se změněnou
+  cenou (v dočasném klonu, do repa nic) → rozdíl v ceně celkem, kód 1; očekávaný rozdíl projde, seznam krytý jen
+  jiným polem nebo jinými případy ne; chybné použití kód 2. Pojistka: s porovnáním, které rozdíly nehlásí, 6 FAIL.
+- **Upřesnění J. V. 18. 11.:** nástroj je stupeň 1 po dávce (integrace proti testu nebo předchozímu stavu), ne brána
+  do main — rozdíly cen main × test ověřuje J. V. sám; výchozí `--proti` zůstává `origin/test`.
+- **Ukázka main (6c4bc80, v11.11.1) × test (8462aea, v12.11.7):** 353 kalkulací, 7 shodných, 346 rozdílných —
+  jediný vzor `nahled-en` (online náhled anglické nabídky; C1 #582 nadpisy USAZENÍ OCK v EN), cena, řádky, symboly,
+  Word ani SoD beze změny. test × integrace v18.11.2: 353/353 shodných.
 
 ## v18.11.2 — Sloučení víc zákazníků (VZ #598, etapy E0–E6) do integrace
 

@@ -1,0 +1,6 @@
+# Očekávané rozdíly main (6c4bc80, v11.11.1) × test (8462aea, v12.11.7) — S3, 18. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# C1 #582 (v12.11.3): nadpisy USAZENÍ OCK v EN jednotně (src/preklad.js) — mění se
+# jen online náhled anglické nabídky; cena, řádky, symboly, Word ani SoD se nemění.
+*  nahled-en

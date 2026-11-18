@@ -9,21 +9,21 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | větev | commit | verze | poznámka |
 |---|---|---|---|
 | `main` | 6c4bc80 | v11.11.1 | ostrý web; víc šachet vypnuto |
-| `test` | 8462aea | v12.11.7 | K40c #581 |
-| `claude/integrace-16-10` (integrace) | 5e21f89 | v18.11.2 | + C9 #608 (v18.11.1), víc zákazníků VZ #598 E0–E6 (v18.11.2, vypínač výchozí VYP); `main` je předkem |
+| `test` | dcb1678 | v18.11.3 | = integrace |
+| `claude/integrace-16-10` (integrace) | dcb1678 | v18.11.3 | C9 #608 (v18.11.1), víc zákazníků VZ #598 E0–E6 (v18.11.2, vypínač výchozí VYP), S3 #611 porovnání sestavení (v18.11.3); `main` je předkem |
 | `claude/rychla-k40n1` | b4a9622 | — | rychlá cesta K40-N1 nad main 6c4bc80 (cherry-pick b4e2023) |
 | `claude/navrh-rezie` | e6c1020 | — | návrh režie vývoje (S1–S8) + rozhodnutí J. V. 18. 11.; kopie návrhu v `podklady/NAVRH_REZIE_2026-11-18.md` |
-| `claude/s7-podklady` | (tato dávka) | v18.11.3 | S7 startovní podklady nad integrací 5e21f89 |
+| `claude/s7-podklady` | (tato dávka) | v18.11.4 | S7 startovní podklady #612, sloučeno s integrací dcb1678 |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
 (18. 11.: žádná).
 
 ## Běžící dávky
 
-- **S7 startovní podklady** (`claude/s7-podklady`): nový `CLAUDE.md` podle schváleného návrhu, `PREDAVKA.md` rozdělena
+- **S7 startovní podklady #612** (`claude/s7-podklady`, v18.11.4): nový `CLAUDE.md` podle schváleného návrhu, `PREDAVKA.md` rozdělena
   (archiv `podklady/predavky/2026-09.md`, `2026-10.md`, `2026-11.md`), `ROZHODNUTI_LOG.md`, `SVERENA_ROZHODNUTI.md`,
   `podklady/kola/`, kontrola `nastroje/kontrola_podkladu.sh` v kroku `staticke`, `release_odkaz.py --chybejici` jen
-  verze z main, návrh osnovy skillu `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md`. Výsledek kola: viz commit a zpráva
+  verze z main, pravidlo porovnání sestavení S3 v Testy (stupeň 1), návrh osnovy skillu `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md`. Výsledek kola: viz commit a zpráva
   koordinaci. Slučuje koordinace.
 - **Rychlá cesta K40-N1** (`claude/rychla-k40n1`, založena nad main ještě podle dopoledního znění): podle změny zadání
   J. V. 18. 11. jde rychlá cesta do `test` (větev nad integrací, kolo `--bez-mutaci` + cílené mutace, koordinace sloučí
@@ -67,7 +67,7 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
 - **Víc šachet a víc zákazníků** jsou za vypínači správce (výchozí VYP); klíč `funkce` je výjimkou zálohy (po obnově
   vypnuto). Stabilní API jádra VZ: `src/vice_zakazniku.js` a předávka VZ-E0 v `podklady/predavky/2026-11.md`.
 - **Číslování:** roadmapa a meze B — další volná čísla podle `roadmapa/roadmap.json` a `BEZPECNOST_MEZE.md`
-  (koordinace drží rezervu, např. B229).
+  (koordinace drží rezervu, např. B229). Roadmapa obsazená do #612 (#609/#610 `claude/sl-sod-sleva`).
 
 ## Další krok
 
@@ -81,6 +81,7 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
 | co (dřív) | kam (teď) |
 |---|---|
 | `PREDAVKA.md` 557 kB, 202 oddílů (předávky dávek 1. 10.–17. 11. 2026 a stav koordinace 12. 11.) | beze změny textu do `podklady/predavky/2026-11.md` (60 oddílů), `2026-10.md` (143), `2026-09.md` (oddíl „Předchozí stav (30. 9. 2026)“ odtržený od předávky 1. 10.); ověřeno řádek po řádku |
+| předávka S3 #611 (přišla se sloučením integrace dcb1678) | nahoru do archivu `2026-11.md`; navržené pravidlo porovnání → CLAUDE.md, Testy |
 | stav koordinace 12. 11. (integrace v12.11.3–v12.11.7, pokyny 10. a 11. 11., B0 po kole 47) | archiv `2026-11.md`; platné pokyny → `CLAUDE.md` (Větve, Kdo rozhoduje) a `ROZHODNUTI_LOG.md`; otevřené body → tabulka „Čeká na J. V.“ výš |
 | „Pravidla komunikace s integrátorem Pipedrive“ | archiv `2026-11.md` + zkráceně „Trvalé pokyny“ výš + `ROZHODNUTI_LOG.md` |
 | datovaná rozhodnutí J. V. v předávkách | `podklady/ROZHODNUTI_LOG.md` (výtah, plné znění v archivu) |
