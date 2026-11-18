@@ -8,15 +8,16 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v18.11.4** (`9bd6dc8b`, 18. 11. 2026) |
+| testovací web (`test`) | **v18.11.5** (`ec5bbaca`, 18. 11. 2026) |
 
-Test je proti main napřed o 213 commitů.
+Test je proti main napřed o 212 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
 | #614 (dřív K40-N1) | nález | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | v12.11.1 |
+| #613 | úkol | S6 + S8: jedna evidence v roadmap.json (typ, čeká na, kolo, větev, verze, dopad na cenu, aliasy), živý výpis, PREHLED.md a NOVINKY.md | v18.11.5 |
 | #612 | úkol | S7: startovní podklady — CLAUDE.md podle schváleného návrhu, PREDAVKA jen živý stav, archiv předávek, log rozhodnutí J. V. | v18.11.4 |
 | #611 | úkol | S3: porovnání dvou sestavení nad pevnou sadou kalkulací (nastroje/porovnej_sestaveni.sh, krok kola „porovnani“) | v18.11.3 |
 | #608 (dřív C9) | úkol | C9: prohlížečové harnessy pod zátěží čekají na stav stránky; limity z KNG_HARNESS_TIMEOUT_MS | v18.11.1 |
@@ -57,7 +58,6 @@ Test je proti main napřed o 213 commitů.
 | #222 | otázka | Nálezy čekající na rozhodnutí J. V.: V8, N1, N5, V9, V10, V11, V13, V17, V24 | rozhodnutí J. V. — sloupec „Rozhodnutí J. V.“ na listu Nálezy (sešit VYHODNOCENI_TESTU_KALKULACE); testem se do té doby jen potvrzuje, že se chování nezměnilo |
 | #598 | úkol | VZ: Víc zákazníků na jedné zakázce (souhrn etap E0–E6, zkušební funkce viceZakazniku) | ruční zkouška víc zákazníků na testu (vypínač viceZakazniku zapíná administrátor) |
 | #614 (dřív K40-N1) | nález | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | ověřit rozdíly cen main × test a dát pokyn ke sloučení do main (rychlá cesta) |
-| #615 (dřív K48-N1, B1, C7) | nález | Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (blokuje dávku C7 a sloučení do main) | pokyn ke spuštění pojistky jazyka SoD (doporučeno udělat) |
 | #616 (dřív B2, C10) | rozhodnutí | Kdy sloučit test → main | termín (doporučeno spojit s rychlou cestou #614, zbytek po kole 49) |
 | #617 (dřív B3, B0.1) | rozhodnutí | Víc šachet na ostrém webu (main) — po ruční zkoušce na testu se zapnutým vypínačem | ruční zkouška víc šachet na testu; rozhodnutí odloženo do 25. 11. 2026 |
 | #618 (dřív B4, C8, B0.9, K39-I1, K38-I1) | úkol | Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs | stav TEST sady prověří kolo 49 (J. V. 18. 11.: něco obnovoval); nástroj dorovnat dávkou C8 |
@@ -83,4 +83,4 @@ K tomu 11 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --ziv
 
 ## Nehotové položky evidence
 
-Celkem 55: J. V. 42, kolega 5, koordinace 3, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 54: J. V. 41, kolega 5, koordinace 3, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

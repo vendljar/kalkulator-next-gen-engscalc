@@ -7,11 +7,11 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "9bd6dc8b",
-  "verze": "v18.11.4",
+  "sha": "ec5bbaca",
+  "verze": "v18.11.5",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 213,
+ "test_navic_commitu": 212,
  "v_testu_ne_v_main": [
   {
    "id": "614",
@@ -21,6 +21,12 @@
     "K40-N1"
    ],
    "verze": "v12.11.1"
+  },
+  {
+   "id": "613",
+   "typ": "ukol",
+   "nazev": "S6 + S8: jedna evidence v roadmap.json (typ, čeká na, kolo, větev, verze, dopad na cenu, aliasy), živý výpis, PREHLED.md a NOVINKY.md",
+   "verze": "v18.11.5"
   },
   {
    "id": "612",
@@ -247,17 +253,6 @@
    "cekaNa": "ověřit rozdíly cen main × test a dát pokyn ke sloučení do main (rychlá cesta)"
   },
   {
-   "id": "615",
-   "typ": "nalez",
-   "nazev": "Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (blokuje dávku C7 a sloučení do main)",
-   "alias": [
-    "K48-N1",
-    "B1",
-    "C7"
-   ],
-   "cekaNa": "pokyn ke spuštění pojistky jazyka SoD (doporučeno udělat)"
-  },
-  {
    "id": "616",
    "typ": "rozhodnuti",
    "nazev": "Kdy sloučit test → main",
@@ -423,11 +418,11 @@
  ],
  "ceka_na_jv_odlozene": 11,
  "nehotove_podle_kdo": {
-  "J. V.": 42,
+  "J. V.": 41,
   "kolega": 5,
   "koordinace": 3,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 55
+ "nehotovych": 54
 }
