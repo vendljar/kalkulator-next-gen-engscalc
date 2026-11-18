@@ -331,11 +331,30 @@ function renderInputs() {
       inp('Z.zamecnikAtypKc', { l: 'Zámečník atyp (prázdné = žádný)', step: 1000, u: 'Kč', klic: 'Z.zamecnikAtypKc ← C.atypZamecnikKc (sazba: C.zamecnikAtypKc)' }) +
       inp('Z.engineeringKs', { type: 'anone', l: 'Engineering' }) +
       inp('Z.vystupZamereni', { type: 'anone', l: 'Výstup ze zaměření pro zákazníka' }) +
+      statikaOplRadek(rAkt) +
       /* REZERVY v procentech (17. 8. večer): 30 = +30 %. Základ se počítá
        * z celého základu kalkulace, příplatky z příplatků — jako dosud,
        * mění se jen zadávání (v datech zůstává desetinný podíl). */
       inp('Z.rezervaZakladPct', { type: 'pct', min: 0, l: 'REZERVA základ', klic: 'Z.rezervaZakladPct ← C.atypRezervaZakladPct' }) +
       inp('Z.rezervaPriplatkyPct', { type: 'pct', min: 0, l: 'REZERVA příplatky', klic: 'Z.rezervaPriplatkyPct ← C.atypRezervaPriplatkyPct' }), 'ock-prace');
+}
+
+/* STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ — Ano / Ne (#645, J. V. 18. 11. 2026).
+ * Výchozí stav (klíč v zadání chybí) = Ano u šachty s opláštěním, jinak Ne;
+ * volba se uloží do zadání šachty jako true / false. Řádek se ukáže jen
+ * s ceníkem, který hodiny statiky opláštění má (jinak by volba nic neměnila). */
+function statikaOplRadek(r) {
+  const c = (typeof C !== 'undefined' && C) ? C : {};
+  if (!((+c.statikaOplHod || 0) > 0)) return '';
+  const plocha = r && r.oplasteni ? r.oplasteni.plochaCelkem : 0;
+  const ano = statikaOplZahrnuta(Z, plocha);
+  const auto = Z.statikaOpl !== true && Z.statikaOpl !== false;
+  const tit = 'Řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ v Režii. Výchozí: Ano u šachty s opláštěním. '
+    + 'Statiku opláštění nevyžadují všichni dodavatelé výtahů — pak zvolte Ne.';
+  return `<div class="row"><label title="${esc(tit)}">Statické posouzení opláštění${auto ? ' <span class="note">(výchozí)</span>' : ''}</label>
+    <select class="statika-opl" title="${esc(tit)}" onchange="set('Z.statikaOpl', this.value === '1')">
+      <option value="1" ${ano ? 'selected' : ''}>Ano</option>
+      <option value="0" ${!ano ? 'selected' : ''}>Ne</option></select><span class="u"></span></div>`;
 }
 
 /* ---- ceník → zadání pro jednu variantu (1. 9. 2026) ----
@@ -1917,8 +1936,8 @@ function rcHodnota(cesta, hodnota) {
   if (rcStop()) return;
   const v = rcVarianta(); if (!v || !v.data) return;
   if (!rucniCenaNastav(v.data, cesta, hodnota)) {
-    if (!(+hodnota > 0) && typeof hlaska === 'function')
-      hlaska('Nákupní cena z nabídky musí být kladné číslo. Ruční cenu zrušíte tlačítkem ↺ vrátit na ceník.');
+    if (!(String(hodnota).trim() !== '' && +hodnota >= 0) && typeof hlaska === 'function')
+      hlaska('Nákupní cena z nabídky musí být číslo 0 nebo větší. Ruční cenu zrušíte tlačítkem ↺ vrátit na ceník.');
     render(); return;
   }
   RC_UI.otevrene.add(String(cesta));

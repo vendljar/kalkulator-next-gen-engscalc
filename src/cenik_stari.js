@@ -190,10 +190,21 @@ function cenikNastavHodnotu(data, cesta, val) {
 /* Rozdíly mezi dvěma ceníky, seřazené podle velikosti změny.
  * `zmena` je podíl (0.2 = o pětinu dráž), u textů a u nuly na začátku null –
  * procento z nuly nedává smysl a číslo „+∞ %" v tabulce jen mate. */
+/* KLÍČ S ZÁLOŽNÍ HODNOTOU (#645): ceník, který klíč ještě nemá (starší
+ * zveřejněná verze), ho čte jako hodnotu záložního klíče — tak, jak ho
+ * doplní migrace (cenikMigraceStatikyOpl v engine.js) a spočítá jádro.
+ * Bez toho by přepočet rozdělané zakázky proti ceníku bez klíče hlásil
+ * „změnu" sazby statiky opláštění. */
+const CENIK_ZALOZNI = { 'C.statikaOplKc': 'C.statikaKc' };
+function cenikHodnotaSeZalozni(data, cesta) {
+  const h = cenikHodnota(data, cesta);
+  if (h !== undefined || !CENIK_ZALOZNI[cesta]) return h;
+  return cenikHodnota(data, CENIK_ZALOZNI[cesta]);
+}
 function cenikRozdily(stara, nova) {
   const out = [];
   cenikSledovane().forEach(p => {
-    const a = cenikHodnota(stara, p.cesta), b = cenikHodnota(nova, p.cesta);
+    const a = cenikHodnotaSeZalozni(stara, p.cesta), b = cenikHodnotaSeZalozni(nova, p.cesta);
     if (a === undefined && b === undefined) return;
     /* CHYBĚJÍCÍ KLÍČ = NULA (P3 / K13-N55, 24. 9. 2026). Import zakázky
      * (klient i server) doplní klíč, který v uloženém ceníku chybí, nulou

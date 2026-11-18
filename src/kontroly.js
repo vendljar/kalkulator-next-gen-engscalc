@@ -634,8 +634,8 @@ const KONTROLY = [
       if (!ock || !opl || !ock.prepsano) return null;
       return { text: 'Statické posouzení má ručně přepsané hodiny (' + ock.mnozstvi + ' h) a ceník k nim '
         + 'přidává řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ (' + opl.mnozstvi + ' h). Pokud přepis už statiku '
-        + 'opláštění zahrnuje (převod z Excelu), vraťte hodiny statiky na ceníkové, nebo řádek '
-        + 'statiky opláštění vyřaďte — jinak se zaplatí dvakrát.' };
+        + 'opláštění zahrnuje (převod z Excelu), vraťte hodiny statiky na ceníkové, nebo statiku '
+        + 'opláštění odškrtněte (Zadání šachty → Práce a režie) — jinak se zaplatí dvakrát.' };
     },
   },
   {

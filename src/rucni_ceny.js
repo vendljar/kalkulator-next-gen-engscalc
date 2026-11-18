@@ -24,7 +24,7 @@
  *    tisk se neblokuje.
  *
  * DATA (v.data.rucniCeny, klíč = cesta ceníku „C.…")
- *   { hodnota: číslo > 0 (= hodnota v ceníku varianty),
+ *   { hodnota: číslo ≥ 0 (= hodnota v ceníku varianty; nula od #645),
  *     dodavatel, cislo, datum, platnostDo,   // zdroj (text, datum RRRR-MM-DD)
  *     zaklad: ceníková sazba v okamžiku potvrzení (razí server z platného ceníku),
  *     potvrdil: { jmeno, email, kdy } | null  // razí server z relace }
@@ -112,7 +112,7 @@ function rucniCenaPlati(data, cesta) {
   const r = rucniCenaZaznam(data, cesta);
   if (!r || !rucniCenaSmi(cesta)) return false;
   const h = rcGet(data && data.cenik, cesta);
-  return typeof r.hodnota === 'number' && isFinite(r.hodnota) && r.hodnota > 0 && h === r.hodnota;
+  return typeof r.hodnota === 'number' && isFinite(r.hodnota) && r.hodnota >= 0 && h === r.hodnota;
 }
 /* Obsah potvrzení: hodnota a zdroj. Změna čehokoli = nové potvrzení. */
 function rucniCenaObsah(r) {
@@ -139,8 +139,11 @@ function rucniCenaStav(r) {
  * server ji při potvrzení přepíše platným ceníkem. */
 function rucniCenaNastav(data, cesta, hodnota) {
   if (!data || typeof data !== 'object' || !rucniCenaSmi(cesta)) return false;
+  /* NULA PLATÍ (#645, J. V. 18. 11. 2026: „obchodník musí jít zadat jinou
+   * cenu u každé položky, i nulovou"). Prázdné pole nulou není. */
+  if (hodnota === null || hodnota === undefined || String(hodnota).trim() === '') return false;
   const h = +hodnota;
-  if (!(isFinite(h) && h > 0 && h <= RC_HODNOTA_MAX)) return false;
+  if (!(isFinite(h) && h >= 0 && h <= RC_HODNOTA_MAX)) return false;
   if (!data.cenik || typeof data.cenik !== 'object') data.cenik = {};
   if (!data.rucniCeny || typeof data.rucniCeny !== 'object' || Array.isArray(data.rucniCeny)) data.rucniCeny = {};
   const r = rucniCenaZaznam(data, cesta);
@@ -193,7 +196,7 @@ function rucniCenaPoSet(data, cesta, hodnota, opts) {
   const r = rucniCenaZaznam(data, cesta);
   const h = +hodnota;
   if (r) {
-    if (!(isFinite(h) && h > 0)) { delete data.rucniCeny[cesta]; return true; }
+    if (!(isFinite(h) && h >= 0)) { delete data.rucniCeny[cesta]; return true; }
     if (r.hodnota === h) return false;
     r.hodnota = h; r.potvrdil = null;
     return true;
@@ -269,8 +272,8 @@ function rucniCenyOciste(m) {
     const r = m[k];
     if (!r || typeof r !== 'object' || Array.isArray(r)) return { ok: false, chyba: 'ruční cena položky ' + k + ' nemá platný tvar' };
     const h = r.hodnota;
-    if (typeof h !== 'number' || !isFinite(h) || h <= 0 || h > RC_HODNOTA_MAX)
-      return { ok: false, chyba: 'ruční cena položky ' + k + ' musí být kladné číslo' };
+    if (typeof h !== 'number' || !isFinite(h) || h < 0 || h > RC_HODNOTA_MAX)
+      return { ok: false, chyba: 'ruční cena položky ' + k + ' musí být nezáporné číslo' };
     const n = { hodnota: h };
     for (const z of RC_ZDROJ) {
       const t = r[z] == null ? '' : r[z];

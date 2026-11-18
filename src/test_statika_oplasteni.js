@@ -69,8 +69,9 @@ for (const fixes of [true, false]) {
     const r6 = eng.vypocet(z, c6, JEKLY, fixes);
     const o = radek(r6, OPL);
     test(pop + ': 6 h v ceníku — řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ vznikne', !!o);
-    test(pop + ': … 6 h × sazba statiky, cesta sazby C.statikaKc',
-      !!o && o.mnozstvi === 6 && o.cena === c6.statikaKc && o.naklad === 6 * c6.statikaKc && o.cenaPath === 'C.statikaKc', o);
+    /* #645: vlastní cesta C.statikaOplKc; ceník bez klíče = sazba statiky OCK. */
+    test(pop + ': … 6 h × sazba statiky (ceník bez vlastní sazby), cesta sazby C.statikaOplKc',
+      !!o && o.mnozstvi === 6 && o.cena === c6.statikaKc && o.naklad === 6 * c6.statikaKc && o.cenaPath === 'C.statikaOplKc', o);
     const i = r6.sekce.rezie.findIndex(x => x.origNazev === OCK);
     test(pop + ': … stojí hned za statikou OCK', r6.sekce.rezie[i + 1] && r6.sekce.rezie[i + 1].origNazev === OPL);
     test(pop + ': … statika OCK beze změny', radek(r6, OCK).mnozstvi === c6.statikaHod);

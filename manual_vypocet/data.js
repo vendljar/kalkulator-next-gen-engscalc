@@ -87,6 +87,10 @@ function spocitej() {
   const { E, ZC, S, J } = nactiJadro();
   const kop = x => JSON.parse(JSON.stringify(x));
   const CENIK = Object.assign(kop(E.DEFAULT_CENIK), ZC.zkusebniCenik(), DOPLNENI_CENIKU);
+  /* #645: sazbu statiky opláštění zkušební ceník nemá — jako starší ceník ji
+   * předvyplní sazba statiky OCK (cenikMigraceStatikyOpl). Nula ze vzoru by
+   * změnila čísla vydaného manuálu. */
+  if (!('statikaOplKc' in ZC.zkusebniCenik()) && !('statikaOplKc' in DOPLNENI_CENIKU)) CENIK.statikaOplKc = CENIK.statikaKc;
   const CENIK_BEZ_MUSTKU = Object.assign(kop(CENIK), { mustekRefSirkaMm: 0 });   // starý tvar (paušál za kus)
 
   const H = {};          // klíč → formátovaný text

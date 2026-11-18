@@ -145,8 +145,9 @@ const CENIK_DEF = [
     ['C.zaskleniListyProjHod', 'Projekce navíc – zasklení mezi příčníky', 'hod', 'přičte se k projekci, jen u zasklení mezi příčníky (lišty)'],
     ['C.statikaHod', 'Statické posouzení – hodin', 'hod', ''],
     /* P5 (K19-N109, 2. 10. 2026): druhý řádek statiky jen u šachty s opláštěním; 0 = řádek nevzniká. */
-    ['C.statikaOplHod', 'Statické posouzení opláštění – hodin', 'hod', 'druhý řádek statiky, jen u šachty s opláštěním; sazba jako statika OCK; 0 = bez řádku'],
+    ['C.statikaOplHod', 'Statické posouzení opláštění – hodin', 'hod', 'druhý řádek statiky, výchozí jen u šachty s opláštěním (v zadání jde zaškrtnout a odškrtnout); 0 = bez řádku'],
     ['C.statikaKc', 'Statické posouzení – sazba', 'Kč/hod', ''],
+    ['C.statikaOplKc', 'Statické posouzení opláštění – sazba', 'Kč/hod', 'vlastní sazba (#645); starší ceník ji předvyplní sazbou statiky'],
     ['C.rezieKancelareKc', 'Režie kanceláře', 'Kč', ''],
     ['C.stavbyvedouciHod', 'Stavbyvedoucí – hodin', 'hod', ''],
     ['C.stavbyvedouciKc', 'Stavbyvedoucí – sazba', 'Kč/hod', ''],
