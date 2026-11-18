@@ -18,7 +18,11 @@
   Pole „Číslo nabídky (CN)“ je prázdné, název ale začíná `CN-…`, takže webhook projde (ne 422). **Rozhodnutí J. V.
   18. 11.: CN obchodník ručně nevyplňuje — pole má automaticky plnit automatizace integrátora z vygenerovaného
   názvu.** Nový úplný koncept odpovědi integrátorovi (18. 11.) je v souhrnu **nahoře** (pravidlo J. V.: nejnovější
-  informace vždy na začátek dokumentu), starý koncept z 11. 11. označen jako překonaný. Další krok: J. V. odešle odpověď integrátorovi, klíč předá zvlášť → integrátor založí DIČ
+  informace vždy na začátek dokumentu), starý koncept z 11. 11. označen jako překonaný.
+- Upřesnění 18. 11.: integrátor 11. 11. odpověděl jen na vracení pole (Pipedrive vrátí na „Ne“) — pole ale má jen
+  volbu „Ano“, v konceptu prosba o doplnění „Ne“; místo dvou otázek krátké potvrzení, že na zkušební deal nic jiného
+  nereaguje. **Test provádí J. V. sám** po zprávě integrátora, že automatizace je hotová — pevný termín v konceptu
+  není (rozhodnutí J. V.). Další krok: J. V. odešle odpověď integrátorovi, klíč předá zvlášť → integrátor založí DIČ
   a automatizaci → zkouška webhooku (2× spuštění, pořád jedna kalkulace).
 
 ---
