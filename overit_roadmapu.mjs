@@ -137,6 +137,27 @@ await page.click('#reset');
 await page.waitForTimeout(200);
 test('reset vrátí skrývání hotových vln', (await sloupce()).indexOf('A') < 0);
 
+/* S6 (18. 11. 2026): staré značky jsou aliasy — hledání je najde a detail
+ * ukáže typ, alias, kolo a dopad na cenu. Položka se vybírá podle dat. */
+const s6 = await page.evaluate(() => {
+  const p = RM.polozky.find(x => x.typ === 'nalez' && x.alias && x.alias.length && x.dopadCena === 'ano');
+  return p ? { id: p.id, alias: p.alias[0] } : null;
+});
+test('S6: v datech je nález s aliasem a dopadem na cenu', !!s6, s6);
+if (s6) {
+  await page.fill('#hledej', s6.alias);
+  await page.waitForTimeout(250);
+  test('S6: hledání podle staré značky (alias) najde položku',
+    await page.evaluate(id => vybrane().some(p => p.id === id) && vybrane().length < RM.polozky.length / 10, s6.id),
+    await page.evaluate(() => document.getElementById('pocet').textContent));
+  await page.click('#reset');
+  await page.waitForTimeout(200);
+  const det = await page.evaluate(id => { ukazModal(id); return document.body.innerText; }, s6.id);
+  test('S6: detail ukáže typ, starou značku, kolo a „mění cenu“',
+    /typ: nález/.test(det) && det.indexOf('dřív: ' + s6.alias) >= 0 && /kolo \d+/.test(det) && /mění cenu/.test(det),
+    det.slice(0, 200));
+}
+
 test('žádná chyba JavaScriptu', chyby.length === 0, chyby.slice(0, 2).join(' | '));
 
 await prohlizec.close();
