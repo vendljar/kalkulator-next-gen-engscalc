@@ -1,3 +1,20 @@
+# Předávka — 18. 11. 2026: předání novému sezení, větev `claude/eager-carson-1xznt2` (jen dokumentace)
+
+- Sezení „Pipedrive API integrace“ (od 22. 9.) končí kvůli limitu kontextu; pokračuje nové sezení z této větve.
+- Stav 18. 11. (ověřeno jen čtením): `test` ec5bbaca, testovací web `testengscalc` běží v18.11.5; `POST
+  /api/pd/webhook` bez klíče pořád 503 = `PIPEDRIVE_WEBHOOK_KLIC` v Netlify chybí. Zda je na testu
+  `PIPEDRIVE_TOKEN`, z veřejných adres nejde poznat (`/api/zdravi` to záměrně neříká) — ověří se v aplikaci
+  Nastavení → Mapa polí CRM → Obnovit z CRM.
+- V poště J. V. od 11. 11. není nová zpráva integrátora ani odeslaná odpověď na jeho e-mail z 11. 11. Koncept
+  odpovědi je v souhrnu https://claude.ai/artifact/XSFa1QVnFCWXoLpzx7yD8u (oddíl „Odpověď integrátora 11. 11.
+  a další kroky“); termín zkoušky v konceptu (17. 11.) už prošel — upravit.
+- J. V. 18. 11. požádal o postup, jak napojit API (token, klíč webhooku, automatizace) — vysvětleno v chatu podle
+  `podklady/PIPEDRIVE_TOKEN_POSTUP.md` a `podklady/PIPEDRIVE_WEBHOOK_553.md` část 5.
+- Další krok nového sezení: shrnout J. V. stav, provést ho napojením na testovacím webu, ověřit (Obnovit z CRM,
+  `POST` bez klíče → 401), pomoci s odpovědí integrátorovi a se zkouškou na dealu „TEST – integrace kalkulačky“.
+
+---
+
 # Předávka — 11. 11. 2026: integrátor chce adresu webhooku, větev `claude/eager-carson-1xznt2` (jen dokumentace)
 
 - Integrátor 11. 11. (odpověď na e-mail z 4. 11.): prosí o URL webhooku, navrhuje POST s `deal_id` a Basic Auth
