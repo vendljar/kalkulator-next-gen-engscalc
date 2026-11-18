@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v18.11.9 — VZ T1 #664: řídící varianta a řídící zákazník v hlavičce, větev claude/vz-t1
+## v18.11.10 — VZ T1 #667: řídící varianta a řídící zákazník v hlavičce, větev claude/vz-t1
 
-Nad integrací `2856345` (v18.11.6), sloučeno s integrací `d8e4fc1` (v18.11.8: C7+NS, VZ-F1). Rozhodnutí J. V. 18. 11. 2026, schválená maketa `podklady/T1_MAKETA_KALKULATOR.html`
+Nad integrací `2856345` (v18.11.6), sloučeno s integrací `d8e4fc1` (v18.11.8: C7+NS, VZ-F1) a `82cbd72` (UE v18.11.9). Rozhodnutí J. V. 18. 11. 2026, schválená maketa `podklady/T1_MAKETA_KALKULATOR.html`
 (kolo VZ na testu, `podklady/kola/STAV_TEST_VZ_2026-11-18.md` oddíl T1). Verzi přečísluje koordinace. Na webech, Disku
 ani v Pipedrive nic. **Jen 2+ zákazníků se zapnutým vypínačem `viceZakazniku`** — s jedním zákazníkem nebo s VYP je
 hlavička znak po znaku jako dřív (i tlačítko „nastavit jako řídící“; ověřeno proti 2856345).
@@ -52,6 +52,31 @@ hlavička znak po znaku jako dřív (i tlačítko „nastavit jako řídící“
   `netlify/test_vz_poznamka.mjs` oddíl 10, harness `overit_vz_t1.mjs` (stavy makety, znak po znaku proti 2856345
   s `KNG_DIST_ZAKLAD`); upraveny `test_vz_server.mjs` (podvržený ukazatel → 409), `test_pd_stav.js`, `overit_vz_prodej.mjs`.
   Mutace [VZ T1] jádra a serveru. Pojistka: na 2856345 nové sady padají (funkce T1 chybí, server srovnával).
+## v18.11.9 — UE #664 úprava existujícího účtu (titul, jméno, funkce, telefon), větev claude/ue-uzivatele
+
+Nad integrací `41bbe99` (v18.11.6). Zadání J. V. 18. 11. 2026. Verzi přečísluje koordinace (souběžně VZ-F1, C7, SP).
+Na webech, Disku ani v Pipedrive nic.
+
+- **Nastavení → Uživatelé → Upravit…** (dřív „Kontakt…“): správce opraví u existujícího účtu titul před jménem,
+  jméno a příjmení, funkci a telefon. Tabulka účtů se po uložení překreslí hned z odpovědi serveru.
+- **E-mail se neupravuje** — v úpravě je jen ke čtení s vysvětlením „E-mail je přihlašovací jméno; pro změnu
+  založte nový účet a převeďte zakázky.“ (klíč účtu; odkazují na něj autor zakázky, `prodano.kdo` a razítka
+  zámků „jméno <e-mail>“).
+- **Server** (akce `profil` s cizím e-mailem, beze změny pravidel): jen Administrátor (Obchodník, Vedoucí 403),
+  validace a meze délek tytéž jako při založení (jméno 120 bez < >, titul 40, funkce 80, telefon 40), hlavní účet
+  upraví jen sám (B28), snížení role a vypnutí hlavního účtu dál 400. Účty protokol změn nemají — razítko
+  `zmenil` nově nese i seznam změněných polí (bez hodnot).
+- **Dopad na dokumenty:** nové nabídky nesou nové údaje v bloku „Vypracoval“. Krycí list odeslané (zamčené) varianty
+  drží jméno ze snímku zámku a data zakázky se úpravou účtu nemění. **Otázka #665 pro J. V.:** dotisk odeslané
+  nabídky (Word i online tisk) bere blok „Vypracoval“ z přihlášeného účtu (platí od #146) — doporučeno zmrazit ho
+  při zámku jako krycí list.
+- Testy: `netlify/test_ue_uzivatele.mjs` (34), `src/test_ue_zpracovatel.js` (13), řádek matice v `test_prava.mjs`,
+  `overit_online.mjs` (Upravit…, e-mail jen ke čtení, meze), `overit_xss.mjs` (pole jména a e-mailu v dialogu).
+  Pojistka: bez změny serveru `test_ue_uzivatele` 2 FAIL (razítko bez seznamu polí); jádrová pojistka bez snímku
+  ukáže nové jméno. Mutace [UE]: server 6, jádro 2 (`zpracovatel.js` přidán mezi jádra mutací); mutace B148
+  přesměrována na nové razítko.
+- Kolo `--bez-mutaci --proti origin/test`: VŠE ZELENÉ — sady 467/0/7, hodiny 379/0/1, statické 9/9, porovnání sestavení
+  353/353 SHODA. Mutace [UE] server 6/6, jádro 2/2; B148 2/2.
 ## v18.11.8 — VZ-F1 #659: opravy nálezů ruční zkoušky víc zákazníků na testu (N3, N1, N2, N4, zástupci v KL, controlling), větev claude/vz-f1
 
 Nad integrací `ec5bbac`, sloučeno s integrací `41bbe99` (v18.11.6, SL). Protokol `podklady/kola/STAV_TEST_VZ_2026-11-18.md`.

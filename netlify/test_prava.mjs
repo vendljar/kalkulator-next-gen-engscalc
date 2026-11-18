@@ -334,6 +334,16 @@ const MATICE = [
     proc: 'jméno a kontakt pod nabídkou patří tomu, kdo ji dělal — musí si je změnit sám',
     prava: PRIHLASENY_OK },
 
+  /* Úprava existujícího účtu správcem (#UE, J. V. 18. 11. 2026, tlačítko
+   * Upravit…): titul, jméno, funkce a telefon CIZÍHO účtu — jen správce.
+   * Obchodník ani vedoucí by jinak přepsali jméno kolegy pod jeho nabídkami. */
+  { fn: uzivatele, nazev: 'úprava cizího účtu — titul, jméno, funkce, telefon (POST akce=profil s e-mailem)', metoda: 'POST',
+    url: 'http://x/api/uzivatele',
+    telo: () => ({ akce: 'profil', email: 'terc@example.com', titul: 'Ing.', jmeno: 'Terč Upravený',
+                   funkce: 'Obchodní technik', telefon: '+420 000 000 001' }),
+    proc: 'jméno a kontakt kolegy pod jeho nabídkami opraví jen správce',
+    prava: JEN_ADMIN },
+
   { fn: uzivatele, nazev: 'můj podpis s razítkem (POST akce=podpis)', metoda: 'POST',
     url: 'http://x/api/uzivatele',
     telo: () => ({ akce: 'podpis', obrazek: '' }),
