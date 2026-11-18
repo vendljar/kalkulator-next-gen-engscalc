@@ -8,6 +8,7 @@
 - **Svěřená rozhodnutí:** jen testy a harnessy.
 - **Evidence:** jedna v roadmap.json, přehled jako soubor v repu, kokpit pro J. V.
 - **Tagy:** jen pro stav, který jde do main.
+- **Upřesnění 18. 11.:** rychlá cesta jde do TESTU, ne do main (rozdíly main × test ověřuje J. V. sám; R-K40N1 zastavena). Kolegu jmenuje J. V. později. Automat smí číst z testovacího webu.
 - Změny CLAUDE.md a skillu: předloženy ke schválení (návrh, oddíl „Navržené změny“), zatím neaplikovány.
 
 ---

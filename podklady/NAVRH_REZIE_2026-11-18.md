@@ -705,3 +705,9 @@ dokumentu. Nic jiného touto cestou nejde.
 | S5 svěření | **jen testy a harnessy** | Sezení a koordinace samy rozhodují jen technické varianty testů, harnessů a nástrojů kola. Vše ostatní dál J. V. (nebo drobnosti bez dopadu na cenu, zákazníka a bezpečnost podle pokynu z 11. 11.). |
 | S6/S8 evidence | **jedna evidence v roadmap.json, přehled jako soubor v repu, kokpit pro J. V.** | Bez e-mailu a ClickUp. |
 | S8 tagy | **tag a release jen pro stav, který jde do main** | Verze integrace a testu zůstávají v CHANGELOG bez tagu. |
+
+### Upřesnění J. V. 18. 11. 2026 (po přehledu)
+
+- **Rychlá cesta jde do TESTU, ne do main.** Malá oprava vady ceny nebo dokumentu se sloučí do integrace a rovnou pošle do test, aniž by čekala na velkou dávku. Rozdíly cen mezi main a testem si J. V. ověřuje sám. Do main se dál slučuje jen na jeho pokyn. Dávka R-K40N1 (oprava přímo do main) je zastavena, oprava K40-N1 už v testu je.
+- **Kolega s rolí administrátora:** jmenuje ho J. V. v následujících týdnech. Do té doby bod zůstává u J. V. a koordinace se na něj neptá.
+- **Automat smí číst z testovacího webu** (testengscalc). Zápis ani ostrý web ne.
