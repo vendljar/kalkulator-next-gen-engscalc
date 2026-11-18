@@ -2433,8 +2433,8 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
     /* VLASTNÍ SAZBA A ZAŠKRTNUTÍ (#645, J. V. 18. 11. 2026): statika
      * opláštění má vlastní ceníkový klíč `C.statikaOplKc` (paušální pravidlo
      * „každá položka vlastní cenu"), takže ruční cena z nabídky ani změna
-     * sazby u jedné statiky nehne druhou. Ceník bez klíče (starší zveřejněný,
-     * zkušební) počítá sazbou statiky OCK — tak jako dosud; migraci klíče
+     * sazby u jedné statiky nehne druhou. Ceník bez klíče (starší zveřejněná
+     * verze) počítá sazbou statiky OCK — tak jako dosud; migraci klíče
      * dělá cenikMigraceStatikyOpl. Zaškrtnutí je v zadání šachty
      * (`Z.statikaOpl`, viz statikaOplZahrnuta) — každá šachta zvlášť. */
     (+c.statikaOplHod || 0) > 0 && statikaOplZahrnuta(z, oplPlochaCelkem)

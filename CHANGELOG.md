@@ -8,6 +8,27 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.11.6 — SP #645: statika opláštění zaškrtávací s vlastní cenou, cena z nabídky i nulová, větev claude/sp-statika
+
+Nad integrací `910315b`. Zadání J. V. 18. 11. 2026 (podnět obchodního technika). Mění cenovou logiku — před sloučením
+revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `origin/test` **SHODA 353/353**).
+
+- **Zaškrtnutí:** Zadání šachty → Práce a režie → „Statické posouzení opláštění“ Ano / Ne (`Z.statikaOpl`, u každé šachty
+  zvlášť). Chybí = výchozí stav: Ano u šachty s opláštěním (jako dosud). Ne vyřadí řádek z ceny; Ano ho přidá i bez opláštění.
+  Server pustí jen true / false. Kontrola „statikaDvakrat“ radí odškrtnutí.
+- **Vlastní cena:** STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ má ceníkový klíč `C.statikaOplKc` (řádek v Ceníku nákladů, Režie).
+  Migrace `cenikMigraceStatikyOpl` (z `cenikMigraceLeseni`, tedy v ceníku po načtení verze, při importu zakázky
+  i v kandidátech serverové kontroly B112) ho předvyplní sazbou `statikaKc`; jádro bez klíče počítá sazbou statiky.
+  Přepočet proti ceníku bez klíče nehlásí změnu (`cenik_stari.js`). Krycí list (hodiny) a technická specifikace
+  (pole statiky) počítají obě cesty jako dosud — dokumenty beze změny; controlling řadí sazbu do projekce.
+- **Cena z nabídky:** obě statiky ji mají každá zvlášť. Nulová cena z nabídky platí u každé položky (prohlížeč i server),
+  záporná ani prázdné pole ne.
+- **Audit:** `podklady/AUDIT_CENY_POLOZEK_645.md` — sdílené cesty a položky bez ceny z nabídky; k rozhodnutí J. V. #646.
+- **Testy:** nový `src/test_645_statika_opl.js` 47/0 (pojistka: proti 910315b padá hned na chybějící funkci jádra);
+  upraveny `test_statika_oplasteni.js` (cesta řádku), `test_561_rucni_cena.js` a `netlify/test_561_rucni_cena.mjs`
+  (nula se nově uloží, záporná dál ne); zkušební ceník nese `statikaOplKc`; manuál výpočtu migruje sazbu (čísla vydání beze změny).
+- **Mutace [SP]:** jádro 11 nových + 2 přepsané P5, server 8 nových + 1 přepsaná #561.
+
 ## v18.11.5 — S6 + S8 #613: jedna evidence v roadmap.json, PREHLED.md a NOVINKY.md, větev claude/s6s8-evidence
 
 Nad integrací `9bd6dc8` (v18.11.4 = test). Kód aplikace beze změny. Podle návrhu režie vývoje (`podklady/NAVRH_REZIE_2026-11-18.md`,

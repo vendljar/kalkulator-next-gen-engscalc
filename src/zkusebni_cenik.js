@@ -48,6 +48,8 @@ const ZKUSEBNI_CENIK = {
   leseniVnejsiKc: 500, hakyKc: 530, zabradliKc: 5000, soklBmKc: 5000,
   sken3dKc: 5000, vystupZamereniKc: 10000, engineeringKc: 10000,
   projekceHodKc: 1000, statikaKc: 1000, statikaHod: 10, rezieKancelareKc: 50000,
+  /* #645: vlastní sazba statiky opláštění (stejná jako statika — dnešní cena). */
+  statikaOplKc: 1000,
   zaskleniListyProjHod: 4,
   stavbyvedouciHod: 40, stavbyvedouciKc: 1000,
   atypPrirazka: 0.20,
