@@ -8,9 +8,9 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v18.11.6** (`804147c9`, 18. 11. 2026) |
+| testovací web (`test`) | **v18.11.6** (`41bbe99e`, 18. 11. 2026) |
 
-Test je proti main napřed o 235 commitů.
+Test je proti main napřed o 213 commitů.
 
 ## V testu, ještě ne v main
 
@@ -82,9 +82,10 @@ Test je proti main napřed o 235 commitů.
 | #640 (dřív B221) | otázka | Role jen ke čtení: „kdo smí ukládat“ je dnes každý přihlášený | zavést roli jen ke čtení? (doporučeno až s kolegou s rolí administrátora) |
 | #642 | úkol | Zeštíhlení roadmap.json: hotové položky starší 60 dní do archivu (živý soubor kolem 60 položek) | souhlas (návrh režie S6 d; soubor má 1,2 MB) |
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
+| #654 | otázka | Dotisk odeslané nabídky bere blok „Vypracoval“ z dnešního přihlášeného účtu, ne z doby odeslání | zda blok „Vypracoval“ zmrazit při zámku (mění text dotištěného dokumentu) |
 
 K tomu 11 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
 ## Nehotové položky evidence
 
-Celkem 55: J. V. 42, kolega 5, koordinace 3, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.
+Celkem 56: J. V. 43, kolega 5, koordinace 3, dávka 3, integrátor 2. Výpis: `python3 roadmapa/roadmapa.py --zive`.

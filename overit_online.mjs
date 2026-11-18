@@ -1405,6 +1405,17 @@ await page.waitForFunction(() => { try { return ONLINE_STAV.uzivatele.some(u => 
 }
 test('UE: tabulka účtů ukazuje nové jméno', (await nastav()).includes('Pavel Opravený'));
 test('hláška potvrdí uložení údajů', (await nastav()).includes('Údaje účtu obchodnik@priklad.cz jsou uložené'));
+/* Zpět původní jméno, titul a funkce — pozdější kroky (roh po přihlášení
+ * obchodníka) čekají „Zkušební Obchodník". Zároveň ověří vyprázdnění titulu. */
+await page.evaluate(() => onlineUzKontaktPanel('obchodnik@priklad.cz'));
+await page.fill('#onlineUzKTitul', '');
+await page.fill('#onlineUzKJmeno', 'Zkušební Obchodník');
+await page.fill('#onlineUzKFunkce', 'Obchodní technik');
+await page.click('#nastaveni-panel >> text=Uložit údaje');
+await page.waitForFunction(() => { try { return ONLINE_STAV.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.jmeno === 'Zkušební Obchodník'); } catch (e) { return false; } });
+test('UE: vrácení jména a vyprázdnění titulu se uloží',
+  JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').jmeno === 'Zkušební Obchodník'
+    && JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').titul === '');
 /* B77 (13. 10. 2026, rozhodnutí J. V.): založení správce a reset cizího
  * hesla klikem — aplikace si vyžádá heslo přihlášeného správce. Zrušení
  * nic nepošle, špatné heslo nahlásí a neodhlásí, správné akci provede. */

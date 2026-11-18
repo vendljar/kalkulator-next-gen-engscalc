@@ -7,11 +7,11 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "804147c9",
+  "sha": "41bbe99e",
   "verze": "v18.11.6",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 235,
+ "test_navic_commitu": 213,
  "v_testu_ne_v_main": [
   {
    "id": "614",
@@ -443,15 +443,21 @@
    "typ": "ukol",
    "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
    "cekaNa": "nahrát upravený skill (mimo repo)"
+  },
+  {
+   "id": "654",
+   "typ": "otazka",
+   "nazev": "Dotisk odeslané nabídky bere blok „Vypracoval“ z dnešního přihlášeného účtu, ne z doby odeslání",
+   "cekaNa": "zda blok „Vypracoval“ zmrazit při zámku (mění text dotištěného dokumentu)"
   }
  ],
  "ceka_na_jv_odlozene": 11,
  "nehotove_podle_kdo": {
-  "J. V.": 42,
+  "J. V.": 43,
   "kolega": 5,
   "koordinace": 3,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 55
+ "nehotovych": 56
 }
