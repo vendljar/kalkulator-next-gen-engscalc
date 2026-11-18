@@ -1,4 +1,4 @@
-/* STATIKA OPLÁŠTĚNÍ NA SERVERU (#646, J. V. 18. 11. 2026; revize poradce 18. 11.).
+/* STATIKA OPLÁŠTĚNÍ NA SERVERU (#653, J. V. 18. 11. 2026; revize poradce 18. 11.).
  *
  * Hlídá se přes skutečné funkce /api/zakazky a /api/program (úložiště v paměti):
  *   1) zámek jedné šachty se statikou opláštění: obchodník uloží a zamkne
@@ -58,7 +58,7 @@ const blok = async (f) => { try { await f(); } catch (e) { fail++; console.log('
 const cA = await prihlas(ADMIN_EMAIL, 'Docasne.Heslo.123');
 const V1 = ZC.zkusebniCenik(); V1.statikaOplHod = 6; V1.statikaKc = 1000; V1.statikaOplKc = 1000;   // smyšlené
 { const r = await post(program, 'http://x/api/program', { cenik: V1, cenikProj: ZC.zkusebniCenikProj(),
-    slevy: { minMarze: 0, maxGlobalni: 1, stropy: { 'Obchodník': 0.05, 'Vedoucí': 0.15, 'Administrátor': 1 } }, poznamka: '#646' }, cA);
+    slevy: { minMarze: 0, maxGlobalni: 1, stropy: { 'Obchodník': 0.05, 'Vedoucí': 0.15, 'Administrátor': 1 } }, poznamka: '#653' }, cA);
   test('příprava: ceník zveřejněn', r.status === 200, await r.json()); }
 const OBCH = 'obch.statika@priklad.cz';
 { const x = await (await post(uzivatele, 'http://x/api/uzivatele', { akce: 'zaloz', email: OBCH, jmeno: 'Obch Statika', role: 'Obchodník', heslo: 'Heslo12345x' }, cA)).json();
@@ -136,7 +136,7 @@ console.log('===== 3. revize N2: stará varianta s cenou z nabídky u statiky ==
 await blok(async () => {
   const z = nova('stará cena z nabídky');
   const d = d0(z);
-  delete d.cenik.statikaOplKc;                       // uloženo před #646
+  delete d.cenik.statikaOplKc;                       // uloženo před #653
   d.cenik.statikaKc = 800;                           // cena z nabídky (kryla obě statiky)
   d.rucniCeny = { 'C.statikaKc': { hodnota: 800, dodavatel: 'Statik Příklad s.r.o.', cislo: 'N-646', datum: '2026-11-02',
     platnostDo: '', zaklad: null, potvrdil: { jmeno: 'x' } } };

@@ -2544,9 +2544,9 @@ const MUTACE = [
     hledej: "  return (+oplPlocha || 0) > 0;\n}",
     nahrad: "  return true;\n}",
     proc: 'šachta, jejíž plášť dodá stavba, by platila statiku opláštění' },
-  /* [SP] #646 (18. 11. 2026, J. V.): statika opláštění — zaškrtnutí šachty,
+  /* [SP] #653 (18. 11. 2026, J. V.): statika opláštění — zaškrtnutí šachty,
    * vlastní sazba C.statikaOplKc, migrace klíče, krycí list a specifikace beze
-   * změny. Hlídají src/test_646_statika_opl.js a test_statika_oplasteni.js. */
+   * změny. Hlídají src/test_653_statika_opl.js a test_statika_oplasteni.js. */
   { nazev: '[SP] odškrtnutá statika opláštění se pořád počítá', soubor: 'engine.js',
     hledej: "  if (v === false) return false;",
     nahrad: "",

@@ -21,21 +21,21 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
-- **SP #646** (`claude/sp-statika`, v18.11.8, nad 910315b + integrace 41bbe99): statika opláštění Ano/Ne v zadání šachty
+- **SP #653** (`claude/sp-statika`, v18.11.8, nad 910315b + integrace 41bbe99): statika opláštění Ano/Ne v zadání šachty
   (`Z.statikaOpl`, chybí = Ano u šachty s opláštěním), vlastní sazba `C.statikaOplKc` (migrace = `statikaKc`), cena
   z nabídky u obou statik zvlášť, nula z nabídky platí u každé položky. Mění cenovou logiku → **revize poradce**.
   Kolo `--bez-mutaci` VŠE ZELENÉ (466/0/7, hodiny 378/0/1, statické 9/9); porovnání sestavení SHODA 353/353; mutace jádro [SP] 11/11 + P5 3/3, server [SP] 8/8 + #561 19/19. Audit
-  `podklady/AUDIT_CENY_POLOZEK_646.md`, otázka J. V. #647:
+  `podklady/AUDIT_CENY_POLOZEK_653.md`, otázka J. V. #654:
 
   | | cesta / položka | sdílí / chybí | stav |
   |---|---|---|---|
-  | A1 | `C.statikaKc` | statika OCK + opláštění | opraveno #646 |
+  | A1 | `C.statikaKc` | statika OCK + opláštění | opraveno #653 |
   | A2 | `C.priplatky.madlaBmKc` | madla boky + zadní stěna | J. V. (dop. ponechat) |
   | A3 | `C.leseniFix` | fix lešení vnitřní + vnější, bez ceny z nabídky | J. V. (dop. ponechat) |
   | A4 | `C.profilasKgKc` | profily + sloupy můstků | J. V. (dop. ponechat) |
   | A5–A7 | powertech, `oplechPracKc`, sklo | týž materiál / sazba | ponechat |
   | B1–B2 | spojovací materiál, lakování | souhrn skupiny, bez ceny z nabídky | J. V. (lak: dop. cena z nabídky) |
-  | B6 | nulová cena z nabídky | dřív odmítnuta | opraveno #646 |
+  | B6 | nulová cena z nabídky | dřív odmítnuta | opraveno #653 |
 
 - **C7 #615 + NS #645** (`claude/c7-sablony`, v18.11.7, nad 9bd6dc8 + sloučená integrace 41bbe99): výroba jazykové verze
   z češtiny zrušena u všech šablon (jen nahraný přeložený soubor); `sablonaJazykPodil` + mez 20 %: smlouvy (SoD, SoD proj.,

@@ -951,7 +951,7 @@ function importZakazka(obj) {
        * (C.leseniFix). Bez převzetí staré hodnoty by fixní část spadla na
        * nulu a cena zakázky by se po otevření tiše propadla. Guard kvůli
        * Node testům, které zakazka.js načítají bez engine.js. */
-      /* Revize #646 N2: cena z nabídky u C.statikaKc kryla do #646 obě statiky.
+      /* Revize #653 N2: cena z nabídky u C.statikaKc kryla do #653 obě statiky.
        * Migrace sazbu zkopíruje do statikaOplKc — u nezamčené varianty i záznam
        * (doklad, potvrzení), jinak by nová hodnota bez záznamu vypadala jako
        * změna ceníku (B112 403, cenová výjimka). Zamčená varianta je doklad. */

@@ -339,7 +339,7 @@ function renderInputs() {
       inp('Z.rezervaPriplatkyPct', { type: 'pct', min: 0, l: 'REZERVA příplatky', klic: 'Z.rezervaPriplatkyPct ← C.atypRezervaPriplatkyPct' }), 'ock-prace');
 }
 
-/* STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ — Ano / Ne (#646, J. V. 18. 11. 2026).
+/* STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ — Ano / Ne (#653, J. V. 18. 11. 2026).
  * Výchozí stav (klíč v zadání chybí) = Ano u šachty s opláštěním, jinak Ne;
  * volba se uloží do zadání šachty jako true / false. Řádek se ukáže jen
  * s ceníkem, který hodiny statiky opláštění má (jinak by volba nic neměnila). */
@@ -349,7 +349,7 @@ function statikaOplRadek(r) {
   const plocha = r && r.oplasteni ? r.oplasteni.plochaCelkem : 0;
   const tit = 'Řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ v Režii. Výchozí: Ano u šachty s opláštěním. '
     + 'Statiku opláštění nevyžadují všichni dodavatelé výtahů — pak zvolte Ne.';
-  /* Revize #646 N4: „výchozí" vrátí volbu řízenou opláštěním (null). */
+  /* Revize #653 N4: „výchozí" vrátí volbu řízenou opláštěním (null). */
   return `<div class="row"><label title="${esc(tit)}">Statické posouzení opláštění</label>
     <select class="statika-opl" title="${esc(tit)}" onchange="set('Z.statikaOpl', this.value === '' ? null : this.value === '1')">
       ${statikaOplVolby(Z, plocha).map(o => `<option value="${o.hodnota}" ${o.vybrano ? 'selected' : ''}>${esc(o.text)}</option>`).join('')}

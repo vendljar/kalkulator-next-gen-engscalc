@@ -1,4 +1,4 @@
-/* STATIKA OPLÁŠTĚNÍ — ZAŠKRTÁVACÍ POLOŽKA S VLASTNÍ CENOU (#646,
+/* STATIKA OPLÁŠTĚNÍ — ZAŠKRTÁVACÍ POLOŽKA S VLASTNÍ CENOU (#653,
  * zadání J. V. 18. 11. 2026; podnět obchodního technika: statické
  * posouzení opláštění nevyžadují všichni dodavatelé výtahů).
  *
@@ -24,7 +24,7 @@
  * záznam ceny z nabídky na statiku opláštění, N4 volba „výchozí". Pojistka:
  * proti 3c42353 (před opravou) N1 2 FAIL, N2 2 FAIL, N4 chybí funkce.
  *
- * Pojistka proti prázdnému testu: proti integraci 910315b (před #646) sada
+ * Pojistka proti prázdnému testu: proti integraci 910315b (před #653) sada
  * padá (chybí cenikMigraceStatikyOpl / statikaOplZahrnuta, řádek má cestu
  * C.statikaKc, nula z nabídky se odmítne).
  */
@@ -155,7 +155,7 @@ console.log('===== 4. cena z nabídky u každé statiky zvlášť, i nulová ===
 
 console.log('===== 4b. revize poradce N1, N2, N4 =====');
 {
-  /* N1: buňka ceny posílá +'' = 0 → záznam se smaže (jako před #646). */
+  /* N1: buňka ceny posílá +'' = 0 → záznam se smaže (jako před #653). */
   const mk = () => { const z = novaZakazka(); z.varianty[0].data.cenik = cenik({ statikaOplKc: 1000 });
     z.varianty[0].data.ock.zadani = zadani(); return importZakazka(z).varianty[0].data; };
   const d = mk(); rucniCenaNastav(d, 'C.statikaKc', 800);

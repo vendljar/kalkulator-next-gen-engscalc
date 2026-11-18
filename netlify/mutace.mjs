@@ -85,8 +85,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_autorstvi.js',
      /* #561 RC (4. 11. 2026): ruční cena položky s potvrzením — model a server, rychlé sady. */
      '../src/test_561_rucni_cena.js', 'test_561_rucni_cena.mjs',
-     /* [SP] #646 (18. 11. 2026): statika opláštění — nulová cena z nabídky, tvar zaškrtnutí, přepočet (rychlá sada). */
-     '../src/test_646_statika_opl.js', 'test_646_statika_opl.mjs',
+     /* [SP] #653 (18. 11. 2026): statika opláštění — nulová cena z nabídky, tvar zaškrtnutí, přepočet (rychlá sada). */
+     '../src/test_653_statika_opl.js', 'test_653_statika_opl.mjs',
      /* #560 SV (4. 11. 2026): zrušená volba světlíku „zajistí stavba" — rychlé sady. */
      '../src/test_svetliky_stavba.js', 'test_560_svetliky_stavba.mjs',
      /* #553 PW (3. 11. 2026): webhook „Vygenerovat nabídku" z Pipedrive — rychlá sada (< 1 s). */
@@ -821,54 +821,54 @@ const MUTACE = [
    * z nabídky dodavatele s potvrzením obchodníkem — B112 jen na krytou cestu,
    * razítko z relace, zábrana zámku, směs ceníků, přepočet, controlling.
    * Hlídají src/test_561_rucni_cena.js a netlify/test_561_rucni_cena.mjs. */
-  /* [SP] #646 (18. 11. 2026, J. V.): cena z nabídky i nulová, tvar
+  /* [SP] #653 (18. 11. 2026, J. V.): cena z nabídky i nulová, tvar
    * zaškrtnutí statiky opláštění, přepočet proti ceníku bez klíče.
-   * Hlídá src/test_646_statika_opl.js. */
+   * Hlídá src/test_653_statika_opl.js. */
   { nazev: '[SP] nulová cena z nabídky nejde', soubor: '../src/rucni_ceny.js',
     hledej: "  if (!(isFinite(h) && h >= 0 && h <= RC_HODNOTA_MAX)) return false;",
     nahrad: "  if (!(isFinite(h) && h > 0 && h <= RC_HODNOTA_MAX)) return false;",
-    proc: 'obchodník by nezadal nulovou cenu položky (zadání J. V.)', sady: ['../src/test_646_statika_opl.js'] },
+    proc: 'obchodník by nezadal nulovou cenu položky (zadání J. V.)', sady: ['../src/test_653_statika_opl.js'] },
   { nazev: '[SP] prázdné pole ceny z nabídky = nula', soubor: '../src/rucni_ceny.js',
     hledej: "  if (hodnota === null || hodnota === undefined || String(hodnota).trim() === '') return false;",
     nahrad: "",
-    proc: 'smazané pole by tiše nastavilo cenu položky na 0 Kč', sady: ['../src/test_646_statika_opl.js'] },
+    proc: 'smazané pole by tiše nastavilo cenu položky na 0 Kč', sady: ['../src/test_653_statika_opl.js'] },
   { nazev: '[SP] záporná cena z nabídky projde', soubor: '../src/rucni_ceny.js',
     hledej: "  if (!(isFinite(h) && h >= 0 && h <= RC_HODNOTA_MAX)) return false;",
     nahrad: "  if (!(isFinite(h) && h <= RC_HODNOTA_MAX)) return false;",
-    proc: 'záporná nákupní cena by snížila nabídku bez slevy', sady: ['../src/test_646_statika_opl.js'] },
+    proc: 'záporná nákupní cena by snížila nabídku bez slevy', sady: ['../src/test_653_statika_opl.js'] },
   { nazev: '[SP] server odmítne nulovou cenu z nabídky', soubor: '../src/rucni_ceny.js',
     hledej: "    if (typeof h !== 'number' || !isFinite(h) || h < 0 || h > RC_HODNOTA_MAX)",
     nahrad: "    if (typeof h !== 'number' || !isFinite(h) || h <= 0 || h > RC_HODNOTA_MAX)",
-    proc: 'nulová cena z nabídky by šla zadat, ale ne uložit (400)', sady: ['../src/test_646_statika_opl.js'] },
+    proc: 'nulová cena z nabídky by šla zadat, ale ne uložit (400)', sady: ['../src/test_653_statika_opl.js'] },
   { nazev: '[SP] server pustí zápornou cenu z nabídky', soubor: '../src/rucni_ceny.js',
     hledej: "    if (typeof h !== 'number' || !isFinite(h) || h < 0 || h > RC_HODNOTA_MAX)",
     nahrad: "    if (typeof h !== 'number' || !isFinite(h) || h > RC_HODNOTA_MAX)",
-    proc: 'záporná nákupní cena se záznamem by prošla B112 a snížila cenu bez slevy', sady: ['../src/test_646_statika_opl.js'] },
+    proc: 'záporná nákupní cena se záznamem by prošla B112 a snížila cenu bez slevy', sady: ['../src/test_653_statika_opl.js'] },
   { nazev: '[SP] nulový záznam ceny z nabídky nic nekryje', soubor: '../src/rucni_ceny.js',
     hledej: "  return typeof r.hodnota === 'number' && isFinite(r.hodnota) && r.hodnota >= 0 && h === r.hodnota;",
     nahrad: "  return typeof r.hodnota === 'number' && isFinite(r.hodnota) && r.hodnota > 0 && h === r.hodnota;",
-    proc: 'nulovou cenu z nabídky by server odmítl jako změnu ceníku (403) a nešla by potvrdit', sady: ['../src/test_646_statika_opl.js'] },
+    proc: 'nulovou cenu z nabídky by server odmítl jako změnu ceníku (403) a nešla by potvrdit', sady: ['../src/test_653_statika_opl.js'] },
   { nazev: '[SP] server nehlídá tvar zaškrtnutí statiky opláštění', soubor: '../src/uloziste.js',
     hledej: "bokyDveri: ULO_VYPLN_DVERI, statikaOpl: [true, false] };",
     nahrad: "bokyDveri: ULO_VYPLN_DVERI };",
-    proc: 'zadání by neslo libovolnou hodnotu zaškrtnutí (tvar dat)', sady: ['../src/test_646_statika_opl.js'] },
+    proc: 'zadání by neslo libovolnou hodnotu zaškrtnutí (tvar dat)', sady: ['../src/test_653_statika_opl.js'] },
   { nazev: '[SP] přepočet bez záložní sazby statiky opláštění', soubor: '../src/cenik_stari.js',
     hledej: "  if (h !== undefined || !CENIK_ZALOZNI[cesta]) return h;",
     nahrad: "  return h;",
-    proc: 'přepočet rozdělané zakázky proti staršímu ceníku by hlásil změnu statiky opláštění', sady: ['../src/test_646_statika_opl.js'] },
-  /* [SP] revize poradce #646 (18. 11. 2026): N1 vymazaná buňka, N2 migrace záznamu. */
+    proc: 'přepočet rozdělané zakázky proti staršímu ceníku by hlásil změnu statiky opláštění', sady: ['../src/test_653_statika_opl.js'] },
+  /* [SP] revize poradce #653 (18. 11. 2026): N1 vymazaná buňka, N2 migrace záznamu. */
   { nazev: '[SP] N1: vymazaná buňka ceny nechá nulový záznam', soubor: '../src/rucni_ceny.js',
     hledej: "    if (!(isFinite(h) && h > 0)) { delete data.rucniCeny[cesta]; return true; }",
     nahrad: "    if (!(isFinite(h) && h >= 0)) { delete data.rucniCeny[cesta]; return true; }",
-    proc: 'smazané pole ceny by nechalo nepotvrzenou „nulu z nabídky", kterou stačí potvrdit', sady: ['../src/test_646_statika_opl.js'] },
+    proc: 'smazané pole ceny by nechalo nepotvrzenou „nulu z nabídky", kterou stačí potvrdit', sady: ['../src/test_653_statika_opl.js'] },
   { nazev: '[SP] N2: migrace nezkopíruje záznam ceny z nabídky', soubor: '../src/zakazka.js',
     hledej: "        d.rucniCeny['C.statikaOplKc'] = JSON.parse(JSON.stringify(d.rucniCeny['C.statikaKc']));",
     nahrad: "        ;",
-    proc: 'stará varianta s cenou z nabídky u statiky by po #646 neprošla uložením ani zámkem (403)', sady: ['test_646_statika_opl.mjs', '../src/test_646_statika_opl.js'] },
+    proc: 'stará varianta s cenou z nabídky u statiky by po #653 neprošla uložením ani zámkem (403)', sady: ['test_653_statika_opl.mjs', '../src/test_653_statika_opl.js'] },
   { nazev: '[SP] N2: záznam se kopíruje i do zamčené varianty', soubor: '../src/zakazka.js',
     hledej: "      if (statikaOplChybi && !(v.zamek && v.zamek.zamceno) && d.rucniCeny",
     nahrad: "      if (statikaOplChybi && d.rucniCeny",
-    proc: 'import by měnil doklad odeslané nabídky', sady: ['../src/test_646_statika_opl.js'] },
+    proc: 'import by měnil doklad odeslané nabídky', sady: ['../src/test_653_statika_opl.js'] },
   { nazev: '#561: B112 ruční cenu se záznamem nepustí', soubor: '../src/uloziste.js',
     hledej: "        return rcPlati(d, 'C.' + kde.slice(c.pred.length));",
     nahrad: "        return false;",

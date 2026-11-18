@@ -190,7 +190,7 @@ function cenikNastavHodnotu(data, cesta, val) {
 /* Rozdíly mezi dvěma ceníky, seřazené podle velikosti změny.
  * `zmena` je podíl (0.2 = o pětinu dráž), u textů a u nuly na začátku null –
  * procento z nuly nedává smysl a číslo „+∞ %" v tabulce jen mate. */
-/* KLÍČ S ZÁLOŽNÍ HODNOTOU (#646): ceník, který klíč ještě nemá (starší
+/* KLÍČ S ZÁLOŽNÍ HODNOTOU (#653): ceník, který klíč ještě nemá (starší
  * zveřejněná verze), ho čte jako hodnotu záložního klíče — tak, jak ho
  * doplní migrace (cenikMigraceStatikyOpl v engine.js) a spočítá jádro.
  * Bez toho by přepočet rozdělané zakázky proti ceníku bez klíče hlásil
