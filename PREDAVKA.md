@@ -1,3 +1,45 @@
+# Předávka — 18. 11. 2026: S3 #611 (porovnání dvou sestavení nad pevnou sadou kalkulací), větev `claude/s3-porovnani`
+
+Nad `claude/integrace-16-10` `5e21f89` (v18.11.2). **v18.11.3.** Do `test-draft`, `test`, `main` ani integrace nic; weby, Disk,
+Pipedrive nic. CLAUDE.md beze změny (souběžně ho přepisuje S7) — pravidlo níž je jen NÁVRH textu. Roadmapa **#611**
+(volné ověřeno: #609/#610 drží `claude/sl-sod-sleva`; S7 ať #611 nebere). Aplikace beze změny.
+
+**STAV: HOTOVO — kolo `--bez-mutaci --proti origin/test` VŠE ZELENÉ.** Čeká na sloučení koordinací.
+
+| běh | výsledek |
+|---|---|
+| kolo `--bez-mutaci --proti origin/test` | ✅ **VŠE ZELENÉ** — sady 464/0/7 přeskočeno (firemní podklady, test.js), hodiny +400 dní 376/0/1, statické **7/7** (nově test nástroje), porovnání proti origin/test 353/353 shodných |
+| `nastroje/test_porovnej_sestaveni.sh` | ✅ 16/0; pojistka: s `rozdilyPripadu` → vždy `[]` 6 FAIL |
+| main (6c4bc80) × test (8462aea) | 353 kalkulací, 7 shodných, 346 rozdílných — jediný vzor `nahled-en` (C1 #582, nadpisy USAZENÍ OCK v EN); s `podklady/porovnani/ocekavane_main_test_2026-11-18.txt` kód 0 |
+
+| úkol | stav | kde |
+|---|---|---|
+| nástroj: dvě reference → dočasné worktree, build, pevná sada, tabulka, kód 0/1/2 | ✅ | `nastroje/porovnej_sestaveni.sh`, `nastroje/porovnani_sada.js` |
+| sada: fixtury, #560 + můstky, K29-N1/#451, K36-N2/#550, ukázkové zakázky, fuzz semínko 20261110 | ✅ | 353 kalkulací, ~11 s |
+| ceník zkušební / `--cenik` (mimo repo), výstup bez cen | ✅ | |
+| `--ocekavane` (vzor případu + pole/skupina) | ✅ | formát v hlavičce `porovnani_sada.js` |
+| krok kola `porovnani` (`--proti`, výchozí origin/test, `--jen porovnani`, `--ocekavane`) | ✅ | `nastroje/testovaci_kolo.sh` |
+| návod | ✅ | `podklady/POROVNANI_SESTAVENI.md` |
+
+**Upřesnění J. V. (přes koordinaci 18. 11.):** nástroj je stupeň 1 po dávce (integrace proti testu nebo předchozímu stavu),
+ne brána do main — rozdíly cen main × test ověřuje J. V. sám. Výchozí `--proti` = origin/test.
+
+**Návrh textu do CLAUDE.md (oddíl Testy) — vloží koordinace / S7:**
+
+> - **Porovnání sestavení po dávce (S3, #611, 18. 11. 2026):** každá dávka, která sahá do `src/`, pustí kolo
+>   s `--proti origin/test` (nebo `--jen porovnani --proti <předchozí stav>`). Dávka, která výsledek měnit nemá, musí
+>   dát „SHODA"; vědomou změnu (cena, dokument) zapíše do seznamu očekávaných rozdílů (`--ocekavane`,
+>   vzor `podklady/porovnani/`) a přiloží ho ke zprávě koordinaci. Neočekávaný rozdíl = nález, nic se neslučuje.
+>   Nástroj není brána do main (ceny main × test ověřuje J. V.). Návod `podklady/POROVNANI_SESTAVENI.md`.
+
+**Návrh: k čemu by se hodilo ČTENÍ z testovacího webu (testengscalc; jen čtení, zatím nevyužito):**
+1. **Aktuální zveřejněný ceník testu jako `--cenik`** — porovnání by běželo i nad živým (testovacím) ceníkem, ne jen
+   nad zkušebním; soubor by se stáhl do dočasné složky mimo repo a po běhu smazal.
+2. **TEST zakázky (čísla „TEST-…", K28/K29/K36) jako další skupina sady** — čtením přes `/api/zakazky` (stejné meze
+   jako `test_sada_jadro.mjs`: povolený web, jen čísla TEST), bez ukládání do repa.
+3. **Zveřejněné šablony Wordu testu** — otisk textu dokumentu nad skutečnou šablonou místo zkušební.
+4. **Kontrola nasazení:** verze z `/api/zdravi` testu = očekávaná reference (že porovnávám to, co na testu běží).
+
 # Předávka — 17. 11. 2026: VZ-E6 #606 (víc zákazníků — závěr: rejstřík, Přehled, controlling, příručky, kolo), větev `claude/vz-e6`
 
 Nad `claude/integrace-vz` `68e5eb8` (v17.11.1: E0–E5b). **v17.11.2** (den posledního commitu; koordinace přečísluje).
