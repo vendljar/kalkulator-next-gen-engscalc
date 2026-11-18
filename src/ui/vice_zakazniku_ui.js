@@ -962,7 +962,7 @@ function vzT1Hlavicka() {
     <select id="vzT1Rz"${chyba ? ' class="vz-t1-chybi"' : ''} onchange="vzT1ZakZmen(this.value)"${dis}>${volby}</select></div>
     <div class="vz-t1-vysv noprint${chyba ? ' vz-t1-vysv-chyba' : ''}">${esc(veta)}</div>`;
   }
-  const org = vzOrgNesediText(ZAK, true);
+  const org = ceka ? '' : vzOrgNesediText(ZAK, true);   // rozpracovaný výběr: řídící zatím není (jako maketa)
   const blok = org ? `<div class="vz-org-upoz vz-t1-org noprint" role="status" data-vz-t1-org="1" style="${VZ_T1_UPOZ_STYL}">
     <span style="flex:1 1 220px">${esc(org).replace(/^(Řídící zákazník v kalkulaci: .*?) \(/, '<b>$1</b> (')}</span></div>` : '';
   return { blok, radky: rvRow + rzRow };

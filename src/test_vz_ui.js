@@ -524,6 +524,104 @@ const KARTA = { nazev: 'Karta s.r.o.', sidlo: 'Kartová 1', ico: '00000043', dic
   test('otevřený další: změna varianty otevře novou', (run(ctx, "vzVariantaSet('z2', 'v1')"), ctx.ZAK.aktivni === 'v1' && ctx.ZAK.dalsiZakaznici[0].varianta === 'v1'));
 }
 
+/* ---------- T1: Řídící varianta a Řídící zákazník v hlavičce ---------- */
+{
+  const { ctx } = prostredi();
+  test('T1 ZAP + 1 zákazník: vzT1Hlavicka null (dnešní hlavička), karta poznámky ""', run(ctx, 'vzT1Hlavicka()') === null
+    && run(ctx, "vzPoznamkaKarta('ock')") === '' && run(ctx, "vzT1VarRidici('v2')") === false && ctx.ZAK.varianty[0].ridici === true);
+}
+{
+  const { ctx, P } = dva();
+  P.zap = false;
+  test('T1 VYP + 2 zákazníci: vzT1Hlavicka null, karta poznámky "", vzT1VarRidici nic', run(ctx, 'vzT1Hlavicka()') === null
+    && run(ctx, "vzPoznamkaKarta('ock')") === '' && run(ctx, "vzT1VarRidici('v2')") === false);
+}
+{
+  const { ctx, st } = dva();
+  run(ctx, "vzVlastniVarianta('z2')");   // B → vlastní V3
+  run(ctx, "vzPridej(ZAK, { objednatel: 'Třetí <i>x</i> s.r.o.', ico: '' }, { kdo: 't', kdy: 'x' })");   // C sdílí V1 s A
+  run(ctx, "vzOtevri('z1')");
+  let h = run(ctx, 'vzT1Hlavicka()');
+  test('T1 výchozí: Řídící varianta s popisy (sdílená / bez zákazníka / vlastní B — …)', /id="vzT1Rv" onchange="vzT1VarZmen\(this.value\)">/.test(h.radky)
+    && /value="v1" selected>Varianta 1 \(sdílená\)/.test(h.radky) && /value="v2">Varianta 2 \(bez zákazníka\)/.test(h.radky)
+    && /value="v3">Kopie Varianta 1 \(vlastní B — Druhý a\.s\.\)/.test(h.radky), h.radky);
+  test('T1 výchozí: Řídící zákazník povinný výběr jen A a C, A vybraný; vysvětlení', /Řídící zákazník<span class="pill warn"[^>]*>povinné/.test(h.radky)
+    && /<option value="z1" selected>Řídící s\.r\.o\.<\/option><option value="z3">C — Třetí &lt;i&gt;x&lt;\/i&gt; s\.r\.o\.<\/option><\/select>/.test(h.radky)
+    && !/value="z2"/.test(h.radky) && /Varianta 1 je sdílená — patří zákazníkům Řídící s\.r\.o\. a Třetí &lt;i&gt;x&lt;\/i&gt; s\.r\.o\.\. Nabízejí se jen/.test(h.radky)
+    && h.radky.indexOf('<i>x</i>') < 0, h.radky);
+  test('T1 výchozí: řídící = organizace dealu → žádný žlutý blok', h.blok === '');
+  /* vlastní varianta B → hned výměna */
+  run(ctx, "vzT1VarZmen('v3')");
+  test('T1 vlastní V3 → řídícím B, řídící varianta V3, otevřený řídící', ctx.ZAK.vzRidici.id === 'z2' && ctx.ZAK.vzRidici.varianta === 'v3'
+    && ctx.ZAK.varianty.find(v => v.ridici).id === 'v3' && ctx.ZAK.aktivni === 'v3' && run(ctx, 'vzOtevrenyId()') === 'z2' && ctx.ZAK.objednatel === 'Druhý a.s.');
+  test('T1 protokol: změna řídícího zákazníka (vlastní varianta) s názvy', st.protokol.some(x => /Změna řídícího zákazníka \(vlastní varianta\)/.test(x.co)
+    && /Řídící s\.r\.o\./.test(x.pred) && /Druhý a\.s\./.test(x.po)), st.protokol.slice(-1));
+  h = run(ctx, 'vzT1Hlavicka()');
+  test('T1 vlastní: Řídící zákazník zamčený „🔒 automaticky" s vysvětlením', /🔒 automaticky/.test(h.radky)
+    && /<select id="vzT1Rz" class="vz-t1-zamek" disabled title="🔒 Kopie Varianta 1 je vlastní varianta zákazníka B — Druhý a\.s\., proto je řídícím zákazníkem automaticky on/.test(h.radky)
+    && /<option selected>B — Druhý a\.s\.<\/option>/.test(h.radky) && /Jiného řídícího zákazníka vyberete se sdílenou variantou\./.test(h.radky), h.radky);
+  test('T1 žlutý blok: řídící B, deal dál vede Řídící s.r.o. (IČO nesedí)', /data-vz-t1-org="1"/.test(h.blok)
+    && /<b>Řídící zákazník v kalkulaci: B — Druhý a\.s\.<\/b> \(organizace dealu se změní až prodejem; deal dál vede Řídící s\.r\.o\.\)/.test(h.blok), h.blok);
+  let k = run(ctx, "vzPoznamkaKarta('ock')");
+  test('T1 karta poznámky: A a C mezi dalšími, řádek T1 zvýrazněný, značka; bez IČO', /id="vzPoznKarta_ock"/.test(k) && /• Řídící s\.r\.o\./.test(k)
+    && /• Třetí &lt;i&gt;x&lt;\/i&gt; s\.r\.o\./.test(k) && !/• Druhý/.test(k)
+    && /<span class="vz-t1-pozn-novy">Řídící zákazník v kalkulaci: B — Druhý a\.s\. \(organizace dealu se změní až prodejem\)<\/span>\n— nabídka 2026 - OPR - CN - 1/.test(k)
+    && !/00000019|00000027/.test(k) && k.indexOf('<i>x</i>') < 0, k);
+  test('T1 karta poznámky: bez dealu věta o dealu', /Zakázka zatím nemá deal v Pipedrive/.test(k));
+  ctx.ZAK.pdDealId = '123';
+  test('T1 karta poznámky: s dealem „Organizace dealu: Řídící s.r.o. — mění se až prodejem"', /Organizace dealu: <b>Řídící s\.r\.o\.<\/b> — mění se až prodejem/.test(run(ctx, "vzPoznamkaKarta('ock')")));
+  /* sdílená V1 → čeká na zákazníka, data beze změny */
+  const pred = J(Object.assign({}, ctx.ZAK, { aktivni: '' }));
+  run(ctx, "vzT1VarZmen('v1')");
+  test('T1 sdílená V1: čeká na výběr, data beze změny (kromě otevřené varianty)', J(Object.assign({}, ctx.ZAK, { aktivni: '' })) === pred
+    && run(ctx, 'VZ_UI.t1 && VZ_UI.t1.varianta') === 'v1' && ctx.ZAK.aktivni === 'v1');
+  h = run(ctx, 'vzT1Hlavicka()');
+  test('T1 čeká: V1 vybraná, „— vyberte —", pill povinné (bad), věta bez výběru nejde uložit', /value="v1" selected>Varianta 1 \(sdílená\)/.test(h.radky)
+    && /<option value="" selected>— vyberte —<\/option><option value="z1">Řídící s\.r\.o\.<\/option><option value="z3">/.test(h.radky)
+    && /pill bad[^>]*>povinné/.test(h.radky) && /bez výběru zakázku nejde uložit/.test(h.radky) && !/vz-t1-chybi/.test(h.radky), h.radky);
+  k = run(ctx, "vzPoznamkaKarta('ock')");
+  test('T1 čeká: náhled poznámky „řídící zákazník není vybrán"', /\(řídící zákazník není vybrán — poznámka se zapíše až s uložením\)/.test(k) && !/Řídící zákazník v kalkulaci/.test(k), k);
+  const hl0 = st.hl.length;
+  test('T1 čeká: autosave tiše zastaven (bez hlášky)', run(ctx, 'vzT1UlozStop(false)') === true && st.hl.length === hl0);
+  test('T1 čeká: ruční uložení zastaveno dialogem (text z makety)', run(ctx, 'vzT1UlozStop(true)') === true && st.hl.length === hl0 + 1
+    && st.hl[hl0] === 'Řídící varianta „Varianta 1“ je sdílená. Vyberte v hlavičce Řídící zákazník — jednoho ze zákazníků, kterým varianta patří (Řídící s.r.o., C — Třetí <i>x</i> s.r.o.).', st.hl[hl0]);
+  test('T1 po zastavení: výběr červeně, vysvětlení jako chyba', /<select id="vzT1Rz" class="vz-t1-chybi"/.test(run(ctx, 'vzT1Hlavicka().radky'))
+    && /vz-t1-vysv-chyba/.test(run(ctx, 'vzT1Hlavicka().radky')));
+  run(ctx, "vzT1ZakZmen('')");
+  test('T1 prázdný výběr zákazníka: dál čeká', run(ctx, 'VZ_UI.t1 !== null') && ctx.ZAK.vzRidici.id === 'z2');
+  run(ctx, "vzT1ZakZmen('z3')");
+  test('T1 výběr C u sdílené V1 → řídící C na V1, B zůstal na V3, už nečeká', ctx.ZAK.vzRidici.id === 'z3' && ctx.ZAK.vzRidici.varianta === 'v1'
+    && ctx.ZAK.varianty.find(v => v.ridici).id === 'v1' && ctx.ZAK.dalsiZakaznici.find(d => d.id === 'z2').varianta === 'v3'
+    && run(ctx, 'VZ_UI.t1') === null && run(ctx, 'vzT1UlozStop(true)') === false);
+  const kk = run(ctx, "vzKarta('ock')");
+  test('T1 karta: ★ u C, výběr varianty C zamčený s vysvětlením', /data-vz-ridici="z3" title="řídící zákazník">★/.test(kk)
+    && /vzVariantaSet\('z3', this.value\)" disabled title="řídící variantu určuje hlavička — Řídící varianta"/.test(kk)
+    && /Řídícího určuje hlavička: <b>Řídící varianta<\/b>/.test(kk), kk.match(/vzVariantaSet\('z3'[^>]*>/));
+  /* zrušení čekání: návrat na dnešní řídící variantu */
+  run(ctx, "vzT1VarZmen('v3')");   // vlastní B → B
+  run(ctx, "vzT1VarZmen('v1')");   // čeká
+  run(ctx, "vzT1VarZmen('v3')");   // zpět na dnešní řídící
+  test('T1 návrat na dnešní řídící variantu zruší čekání', run(ctx, 'VZ_UI.t1') === null && ctx.ZAK.vzRidici.id === 'z2');
+  /* jiná zakázka (načtení) čekání zahodí */
+  run(ctx, "vzT1VarZmen('v1')");
+  ctx.ZAK = JSON.parse(J(ctx.ZAK));
+  test('T1 jiná zakázka: čekání zmizí', run(ctx, 'vzT1Ceka()') === null && run(ctx, 'vzT1UlozStop(true)') === false);
+}
+{ /* práva: prodaná zakázka, jen ke čtení */
+  const { ctx, st, P } = dva();
+  ctx.ZAK.varianty[0].prodano = { kdy: 'x', zakaznik: 'z1' };
+  const h = run(ctx, 'vzT1Hlavicka()');
+  test('T1 prodaná: oba výběry zhasnuté s důvodem', /id="vzT1Rv" onchange="vzT1VarZmen\(this.value\)" disabled title="[^"]*prodan/.test(h.radky), h.radky);
+  const pred = J(ctx.ZAK);
+  run(ctx, "vzT1VarZmen('v2')");
+  test('T1 prodaná: vzT1VarZmen nic nezmění, řekne proč', J(ctx.ZAK) === pred && st.hl.length >= 1);
+  delete ctx.ZAK.varianty[0].prodano;
+  P.cteni = true;
+  const pred2 = J(ctx.ZAK);
+  run(ctx, "vzT1VarZmen('v2')"); run(ctx, "vzT1ZakZmen('z2')");
+  test('T1 jen ke čtení: nic se nezmění', J(ctx.ZAK) === pred2 && /disabled title="Zakázka je otevřená jen ke čtení/.test(run(ctx, 'vzT1Hlavicka().radky')));
+}
+
 /* ---------- kolize jmen (jeden <script>) ---------- */
 {
   const jmena = t => new Set([...t.matchAll(/^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)].map(m => m[1] || m[2]));

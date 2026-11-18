@@ -1564,7 +1564,9 @@ function vzVariantaKomu(zak, varId) {
   const v = ((zak && Array.isArray(zak.varianty)) ? zak.varianty : []).find(x => vzObj(x) && String(x.id) === vid) || null;
   if (!v) return [];
   const razitka = new Set(vzTiskyVarianty(v).map(vzTiskKomu));
-  return vzZakaznici(zak).filter(z => z.varianta === vid || razitka.has(z.id)).map(z => z.id);
+  /* Pořadí podle id (pořadí přidání: z1, z2, …) — po výměně řídícího se nemění. */
+  const cislo = id => +(/^z(\d+)$/.exec(id) || [0, 0])[1];
+  return vzZakaznici(zak).filter(z => z.varianta === vid || razitka.has(z.id)).map(z => z.id).sort((a, b) => cislo(a) - cislo(b));
 }
 
 /* { druh: 'vlastni'|'sdilena'|'zadna', komu: [ids] } */

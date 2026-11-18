@@ -44,6 +44,11 @@
  * úvod „Další zákazníci na zakázce: “, klíč stropu
  * strop:poznamka-zakaznici:deal:<id>, vypínač viceZakazniku, mez B225).
  * Text staví src/vz_poznamka.js (týž kód jako suchý běh v prohlížeči).
+ * T1 (rozhodnutí J. V. 18. 11. 2026): nesedí-li organizace dealu na
+ * řídícího zákazníka (podle IČO, prázdné = nesedí; jádro vzOrgNesediText),
+ * nese text za seznamem řádek „Řídící zákazník v kalkulaci: C — Název
+ * (organizace dealu se změní až prodejem)“ — bez IČO (mez B225). Organizaci
+ * dealu dál mění jen prodej (E5b).
  * Obě poznámky se zapisují v JEDNOM uložení se SPOLEČNÝM časovým rozpočtem
  * PD_POZNAMKA_CELKEM_MS — šachty první, zákazníci druzí; nestihne-li se
  * druhá, stav „chyba“ s varováním a zkusí se při dalším uložení

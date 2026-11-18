@@ -18,6 +18,8 @@
  *  9) Text: HTML v názvu escapované, řídicí znaky pryč, bez kontaktů a IČO,
  *     odeslaná nabídka (číslo, den, cena bez DPH ze zmrazeného zámku),
  *     „připravuje se nová“, „— neprodáno“, strop 2 000 znaků „… a další N“.
+ * 10) T1: řídící ≠ organizace dealu → řádek „Řídící zákazník v kalkulaci“
+ *     (zápis = náhled), řídící mezi dalšími není; návrat řádek odebere.
  * Jen simulátor Pipedrive (PIPEDRIVE_SIMULATOR=1), síť je zakázaná.
  * Pojistka: na e29f2b1 (bez druhu „zákazníci“) sada padá — poznámka
  * zákazníků nevznikne (1, 2, …) a pdPoznamkyUlozeni neexistuje.
@@ -421,6 +423,34 @@ let Z2, ID2;
   test('9 vzpDen a vzpCena', G.vzpDen('2026-11-11T23:30:00.000Z') === '12. 11. 2026' && G.vzpDen('x') === ''
     && G.vzpCena(1333000, 'CZK') === '1 333 000 Kč' && G.vzpCena(1234.5, 'CZK') === '1 234,50 Kč' && G.vzpCena(null) === '' && G.vzpCena(10, 'EUR') === '10 EUR');
   test('9 jeden zákazník: vzPoznamkaText prázdný, se „zadni“ věta žádní', G.vzPoznamkaText(nova(null)) === '' && G.vzPoznamkaText(nova(null), { zadni: true }) === G.VZP_ZADNI);
+}
+
+/* 10) T1 (rozhodnutí J. V. 18. 11. 2026): řídící ≠ organizace dealu → řádek
+ *     „Řídící zákazník v kalkulaci: …" v poznámce (týž text jako náhled),
+ *     řídící není mezi dalšími; návrat řídícího na původního řádek odebere. */
+{
+  const deal = dealy[20];
+  const z = sVz(deal);
+  const pC = G.vzPridej(z, UDAJE_C, { kdo: 'Test', kdy: '2026-11-16T10:00:00.000Z', vlastni: true });
+  const t = await uloz(z);
+  test('10 příprava: poznámka založena bez řádku T1', t.status === 200 && t.pdPoznamkaZakaznici === 'zalozeno'
+    && notes().filter(x => x.deal_id === deal).every(x => !/Řídící zákazník v kalkulaci/.test(x.content)), t);
+  const r = G.vzT1Nastav(z, pC.zakaznik.varianta);
+  const t2 = await uloz(z);
+  const p2 = notes().filter(x => x.deal_id === deal);
+  const radky = p2[0] ? p2[0].content.split('<br>') : [];
+  test('10 T1: vlastní varianta C → řídící C, poznámka UPRAVENA, pořád jedna', r.ok && t2.status === 200 && t2.pdPoznamkaZakaznici === 'upraveno' && p2.length === 1, { r, t2: t2.chyba || t2.pdPoznamkaZakaznici });
+  test('10 T1: původní zákazník a B mezi dalšími, C ne; řádek T1 před značkou (escapovaný)',
+    radky.some(x => /^• TEST – TESTOVACÍ ODBĚRATEL s\.r\.o\./.test(x)) && radky.some(x => /^• TEST – DRUHÝ/.test(x)) && !radky.some(x => /^• TEST – TŘETÍ/.test(x))
+    && radky[radky.length - 2] === 'Řídící zákazník v kalkulaci: C — TEST – TŘETÍ ODBĚRATEL s.r.o. (organizace dealu se změní až prodejem)'
+    && radky[radky.length - 1] === '— nabídka ' + z.cislo, radky);
+  test('10 T1: poznámka bez IČO a kontaktů (B225)', !/12345679|Zkušební kontakt/.test(p2[0] && p2[0].content));
+  test('10 T1: zápis = text náhledu (vzPoznamkaSeZnackou + vzPoznamkaText)', p2[0] && p2[0].content === PP.pdPoznamkaObsah(G.vzPoznamkaSeZnackou(z, G.vzPoznamkaText(z))));
+  const r3 = G.vzT1Nastav(z, z.varianty[0].id, 'z1');
+  const t3 = await uloz(z);
+  const p3 = notes().filter(x => x.deal_id === deal);
+  test('10 T1: řídící zpět původní → řádek zmizel, C mezi dalšími', r3.ok && t3.pdPoznamkaZakaznici === 'upraveno' && p3.length === 1
+    && !/Řídící zákazník v kalkulaci/.test(p3[0].content) && /• TEST – TŘETÍ/.test(p3[0].content), p3[0] && p3[0].content);
 }
 
 console.log(ok + ' OK, ' + fail + ' FAIL');
