@@ -2430,7 +2430,7 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * s opláštěním (plocha PRÁCE OPLÁŠTĚNÍ > 0) a jen při hodinách > 0 —
      * s ceníkem bez položky (nebo s nulou) se seznam položek nemění, Model 1
      * zůstává 1:1. `+… || 0`: starší zveřejněný ceník klíč nemá. */
-    /* VLASTNÍ SAZBA A ZAŠKRTNUTÍ (#645, J. V. 18. 11. 2026): statika
+    /* VLASTNÍ SAZBA A ZAŠKRTNUTÍ (#646, J. V. 18. 11. 2026): statika
      * opláštění má vlastní ceníkový klíč `C.statikaOplKc` (paušální pravidlo
      * „každá položka vlastní cenu"), takže ruční cena z nabídky ani změna
      * sazby u jedné statiky nehne druhou. Ceník bez klíče (starší zveřejněná
@@ -2883,12 +2883,12 @@ function cenikDoplnKlice(cenik, vzor) {
   return doplneno;
 }
 
-/* STATIKA OPLÁŠTĚNÍ — ZAŠKRTNUTÍ A SAZBA (#645, J. V. 18. 11. 2026).
+/* STATIKA OPLÁŠTĚNÍ — ZAŠKRTNUTÍ A SAZBA (#646, J. V. 18. 11. 2026).
  *
  * Statické posouzení opláštění nevyžadují všichni dodavatelé výtahů, proto
  * je to zaškrtávací položka šachty: `Z.statikaOpl` true = zaškrtnuto,
  * false = odškrtnuto, chybí (null) = výchozí stav, tj. zaškrtnuto právě
- * tehdy, když šachta má opláštění (plocha > 0) — jako před #645, takže
+ * tehdy, když šachta má opláštění (plocha > 0) — jako před #646, takže
  * žádná uložená zakázka se nezlevní ani nezdraží. Klíč není ve vzoru zadání
  * (DEFAULT_ZADANI), import ho tedy nedoplní. Jiná hodnota než true/false
  * = výchozí stav (tvar hlídá server, ULO_VYCTY_MIMO_VZOR). */

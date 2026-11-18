@@ -80,7 +80,7 @@ function sablBunkaJazyk(rej, typ, lang) {
   if (st.stav === 'bezZdroje') return { cls: 'warn', label: '⚠ bez češtiny', sub: 'česká šablona chybí', stav: st };
   if (st.stav === 'zastarala')
     return { cls: 'warn sablona-zastarala', label: '⚠ ' + (st.zVerze ? 'z v' + st.zVerze : 'zastaralá'),
-             sub: 'starší čeština – přegenerovat', soubor: st.meta && st.meta.nazev, stav: st };
+             sub: 'starší čeština – nahrát nový překlad', soubor: st.meta && st.meta.nazev, stav: st };
   return { cls: 'ok', label: '✓ ' + (st.podleCasu ? 'v' + st.meta.verze : 'z v' + (cz ? cz.verze : '?')),
            sub: st.podleCasu ? 'zveřejněno ' + sablDatum(st.meta.kdy) : 'k platné češtině',
            soubor: st.meta && st.meta.nazev, stav: st };
@@ -105,7 +105,7 @@ function sablonySpravaHtml() {
   }));
   const banner = zastarale.length ? `<div class="sabl-banner"><b>${zastarale.length} ${zastarale.length === 1
       ? 'jazyková verze vznikla' : 'jazykové verze vznikly'} ze starší české šablony.</b> V přísném režimu se z nich
-      netiskne, dokud je administrátor nepřegeneruje (tlačítko „Přegenerovat" u dokumentu níže).</div>` : '';
+      netiskne, dokud administrátor nenahraje nový překlad (tlačítko „Nahrát přeložený soubor" u dokumentu níže).</div>` : '';
   /* filtr přepínačem OCK | PROJ v Nastavení → Smlouvy / Šablony (#367) */
   const radky = SABL_DOKUMENTY.filter(d => typeof podmSablonaViditelna !== 'function' || podmSablonaViditelna(d.typ)).map(d => {
     const bunky = [sablBunkaCz(rej, d.typ)].concat(SABL_JAZYKY.map(([l]) => d.jazyky
@@ -135,8 +135,7 @@ function sablDetailHtml(rej, admin) {
   const jazyky = d.jazyky ? SABL_JAZYKY.map(([l, n]) => {
     const b = sablBunkaJazyk(rej, d.typ, l);
     const akce = !admin ? '' : `
-      <button class="mini" ${cz ? '' : 'disabled'} onclick="sablPregeneruj('${escJs(d.typ)}','${l}')">${b.stav.stav === 'chybi' ? 'Vyrobit z češtiny' : 'Přegenerovat z češtiny'}</button>
-      <button class="mini" ${cz ? '' : 'disabled'} onclick="sablNahrajJazyk('${escJs(d.typ)}','${l}')">Nahrát doladěný soubor</button>
+      <button class="mini" ${cz ? '' : 'disabled'} onclick="sablNahrajJazyk('${escJs(d.typ)}','${l}')">Nahrát přeložený soubor</button>
       ${b.stav.meta ? `<button class="mini" onclick="sablStahni('${escJs(d.typ + '_' + l)}')">Stáhnout</button>` : ''}
       <button class="mini" ${cz ? '' : 'disabled'} onclick="sablChybejici('${escJs(d.typ)}','${l}')">Nepřeložené fráze (CSV)</button>`;
     return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--line)">
@@ -193,31 +192,15 @@ async function sablChybejici(typ, lang) {
   } catch (e) { hlaska('Seznam nepřeložených frází se nepodařilo vytvořit: ' + e.message); }
 }
 
-/* Jazyková verze z PLATNÉ české šablony — vyrobí, ukáže pokrytí, zveřejní. */
-async function sablPregeneruj(typ, lang) {
-  if (!jeAdmin()) return;
-  const cz = sablonaPlatna(sablRej(), typ);
-  if (!cz) return hlaska('Nejdřív zveřejněte českou šablonu.');
-  sablPrace('Vyrábím ' + lang.toUpperCase() + ' verzi z české verze ' + cz.verze + '…');
-  try {
-    const zdroj = await onlineSablonaStahni(typ);
-    const stat = {};
-    const blob = await docxPrelozSablonu(zdroj.data.slice(0), lang, stat);
-    const data = await blob.arrayBuffer();
-    const nazev = zdroj.nazev.replace(/\.docx$/i, '') + '_' + lang.toUpperCase() + '.docx';
-    sablPrace('');
-    if (!await potvrd(lang.toUpperCase() + ' verze je připravená: přeloženo ' + stat.procenta + ' % odstavců'
-      + (stat.chybi.length ? ', ' + stat.chybi.length + ' zůstalo česky (seznam: „Nepřeložené fráze")' : '')
-      + ((stat.symbolove || []).length ? '; česky zůstane i ' + stat.symbolove.length + ' odstavců se symbolem {{…}}' : '') + '.\n\n'
-      + 'Zveřejnit ji k české verzi ' + cz.verze + '?')) return;
-    sablPrace('Zveřejňuji…');
-    const o = await onlineSablonaZverejni(typ + '_' + lang, nazev, data, 'vyrobeno z české verze ' + cz.verze, cz.otisk);
-    sablPrace('Hotovo: ' + lang.toUpperCase() + ' verze ' + o.verze + ' k české verzi ' + cz.verze + '.');
-  } catch (e) { sablPrace(''); hlaska('Jazykovou verzi se nepodařilo vyrobit: ' + e.message); }
-}
+/* VÝROBA JAZYKOVÉ VERZE Z ČEŠTINY JE ZRUŠENÁ (C7, K48-N1 — rozhodnutí
+ * J. V. 18. 11. 2026, u všech typů šablon). Strojový překlad slovníkem
+ * nechával většinu smlouvy česky (SoD DE: 110 ze 143 řádků) a vypadal jako
+ * hotová jazyková verze. Cizí jazyk se nahrává jen jako vlastní soubor
+ * (sablNahrajJazyk, průvodce „Nahrát přeložený soubor"); seznam
+ * nepřeložených frází (CSV) zůstává jako podklad pro překladatele. */
 
 /* Kontrola souboru, který má být v jazyce `lang` (cz / en / de / fr). */
-async function sablKontrolaSouboru(data, lang, symbolyVzor) {
+async function sablKontrolaSouboru(data, lang, symbolyVzor, typ) {
   const odstavce = await docxTextSablony(data);
   const jaz = sablonaJazykOdhad(odstavce);
   const symboly = sablonaSymboly(odstavce);
@@ -242,6 +225,13 @@ async function sablKontrolaSouboru(data, lang, symbolyVzor) {
     out.jinyJazyk = jaz.jazyk;
   else if (jaz.zarazeno && podilCil < SABL_JAZYK_PRAH)
     out.varovani.push('Jen ' + Math.round(podilCil * 100) + ' % odstavců je ' + SABL_JAZYK_NAZEV[lang] + '.');
+  /* Čeština v jazykové verzi (C7): smlouva nad mezí neprojde, nabídka
+   * a ostatní jen s upozorněním — táž funkce jako na serveru. */
+  if (lang !== 'cz' && typ && typeof sablonaCestinaKontrola === 'function') {
+    out.cestina = sablonaCestinaKontrola(typ + '_' + lang, odstavce);
+    if (out.cestina.zabrana) out.chyby.push(out.cestina.zabrana);
+    else if (out.cestina.varovani) out.varovani.push(out.cestina.varovani);
+  }
   if (out.rozdil && out.rozdil.ubylo.length)
     out.varovani.push('Proti platné české verzi chybí symboly: ' + out.rozdil.ubylo.join(', ') + ' — tyto údaje se do dokumentu nedosadí.');
   return out;
@@ -256,7 +246,7 @@ async function sablNahrajJazyk(typ, lang, predvybrany) {
   sablPrace('Kontroluji ' + soubor.nazev + '…');
   try {
     const vzor = sablonaSymboly(await docxTextSablony((await onlineSablonaStahni(typ)).data));
-    const k = await sablKontrolaSouboru(soubor.data, lang, vzor);
+    const k = await sablKontrolaSouboru(soubor.data, lang, vzor, typ);
     sablPrace('');
     if (k.chyby.length) return hlaska('Soubor nejde použít:\n– ' + k.chyby.join('\n– '));
     if (k.jinyJazyk)
@@ -266,8 +256,9 @@ async function sablNahrajJazyk(typ, lang, predvybrany) {
       + (k.varovani.length ? '\n\nUpozornění:\n– ' + k.varovani.join('\n– ') : ''))) return;
     sablPrace('Zveřejňuji…');
     const o = await onlineSablonaZverejni(typ + '_' + lang, soubor.nazev, soubor.data,
-      'doladěný soubor k české verzi ' + cz.verze, cz.otisk);
-    sablPrace('Hotovo: ' + lang.toUpperCase() + ' verze ' + o.verze + ' k české verzi ' + cz.verze + '.');
+      'přeložený soubor k české verzi ' + cz.verze, cz.otisk);
+    sablPrace('Hotovo: ' + lang.toUpperCase() + ' verze ' + o.verze + ' k české verzi ' + cz.verze + '.'
+      + (o.varovani ? ' Upozornění: ' + o.varovani : ''));
   } catch (e) { sablPrace(''); hlaska('Zveřejnění se nepovedlo: ' + e.message); }
 }
 
@@ -345,27 +336,20 @@ function sablPruvodceHtml() {
   const karty = d.jazyky ? SABL_JAZYKY.map(([l, n]) => {
     const m = p.mutace[l];
     const chybaVl = p.vlastniChyba && p.vlastniChyba[l];
-    const obsah = !m ? '<div class="note">Vyrábím…</div>'
-      : m.vlastni
-      ? `<div>Vlastní soubor: <b>${esc(m.nazev)}</b></div>
-         ${(m.varovani || []).map(t => `<div class="note" style="color:var(--warn)">⚠ ${esc(t)}</div>`).join('')}`
-      : m.chyba
-      ? `<div class="sabl-chyba">${esc(m.chyba)}</div>`
-      : `<div>Přeloženo <b>${m.stat.procenta} %</b> odstavců${m.stat.chybi.length ? `, <b>${m.stat.chybi.length}</b> zůstalo česky` : ''}.</div>
-         ${(m.stat.symbolove || []).length ? `<div class="note" style="color:var(--warn)">Česky zůstane i ${m.stat.symbolove.length} odstavců se symbolem {{…}} (např. cena nebo platby) — jsou v seznamu „Nepřeložené fráze".</div>` : ''}
-         ${m.stat.procenta < 90 ? '<div class="note" style="color:var(--warn)">Slovník tento dokument zatím nepokrývá — verze by vyšla z velké části česky.</div>' : ''}`;
-    /* NAHRÁT VLASTNÍ VERZI (25. 9. 2026, zadání J. V.: „při nahrávání šablon
-     * přidej možnost nahrát vlastní verzi jazykové mutace"). Soubor doladěný
-     * ve Wordu (nebo přeložený překladatelem) nahradí strojový překlad ještě
-     * před zveřejněním; projde stejnou kontrolou jako nahrání k jazyku. */
-    const tlVlastni = m ? `<button class="mini" onclick="sablPruvodceVlastni('${l}')">${m.vlastni ? 'Nahrát jiný soubor' : 'Nahrát vlastní verzi'}</button>` : '';
-    const tlZpet = (m && m.vlastni && m.stroj) ? `<button class="mini" onclick="sablPruvodceVlastniZpet('${l}')">Vrátit překlad aplikace</button>` : '';
+    /* C7 (K48-N1, 18. 11. 2026): aplikace jazykovou verzi z češtiny
+     * nevyrábí — jazyk se zveřejní jen s nahraným přeloženým souborem,
+     * který projde kontrolou (jazyk, symboly, podíl češtiny). */
+    const obsah = !m
+      ? '<div class="note">Bez přeloženého souboru — tato jazyková verze se nezveřejní (zůstane, jak je).</div>'
+      : `<div>Vlastní soubor: <b>${esc(m.nazev)}</b></div>
+         ${(m.varovani || []).map(t => `<div class="note" style="color:var(--warn)">⚠ ${esc(t)}</div>`).join('')}`;
+    const tlVlastni = `<button class="mini" onclick="sablPruvodceVlastni('${l}')">${m ? 'Nahrát jiný soubor' : 'Nahrát přeložený soubor'}</button>`;
     return `<div class="sabl-panel" style="margin:0;flex:1;min-width:220px">
       <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="sablVyb-${l}" ${p.vybrane[l] ? 'checked' : ''}
-        ${m && !m.chyba ? '' : 'disabled'} onchange="sablPruvodceVyber('${l}', this.checked)"> <b>${esc(n)}</b></label>${obsah}
+        ${m ? '' : 'disabled'} onchange="sablPruvodceVyber('${l}', this.checked)"> <b>${esc(n)}</b></label>${obsah}
       ${chybaVl ? `<div class="sabl-chyba">${esc(chybaVl)}</div>` : ''}
-      ${m ? `<div class="btns" style="margin-top:6px">${m.chyba ? '' : `<button class="mini" onclick="sablPruvodceStahniMutaci('${l}')">${m.vlastni ? 'Stáhnout' : 'Stáhnout a doladit ve Wordu'}</button>`}
-        ${tlVlastni}${tlZpet}</div>` : ''}
+      <div class="btns" style="margin-top:6px">${m ? `<button class="mini" onclick="sablPruvodceStahniMutaci('${l}')">Stáhnout</button>` : ''}
+        ${tlVlastni}</div>
     </div>`;
   }).join('') : '';
   const vybrane = SABL_JAZYKY.filter(([l]) => p.vybrane[l]).map(([l]) => l.toUpperCase());
@@ -378,9 +362,9 @@ function sablPruvodceHtml() {
     ${d.jazyky ? `<div class="note">${shoda
       ? `Čeština je shodná s platnou verzí ${esc(shoda.verze)} a znovu se nezveřejní. Zaškrtnuté jazykové verze se zveřejní
       k ní; ostatní zůstanou, jak jsou.`
-      : `Jazykové verze aplikace vyrobila z nové češtiny. Zaškrtnuté se zveřejní spolu s ní;
-      ostatní zůstanou, jak jsou (a označí se jako zastaralé).`} Místo překladu aplikace můžete u jazyka
-      <b>nahrát vlastní verzi</b> (doladěnou ve Wordu nebo od překladatele); doladěný soubor lze nahrát i později přímo k jazyku.</div>
+      : `Zaškrtnuté jazykové verze se zveřejní spolu s novou češtinou; ostatní zůstanou, jak jsou (a označí se
+      jako zastaralé).`} Jazykovou verzi aplikace z češtiny <b>nevyrábí</b> — u jazyka <b>nahrajte přeložený soubor</b>
+      (od překladatele nebo doladěný ve Wordu); jde to i později přímo k jazyku.</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0">${karty}</div>` : ''}
     <div class="row" style="margin-top:8px"><label for="sablPozn">Poznámka ke změně</label>
       <input type="text" id="sablPozn" value="${esc(p.poznamka)}" onchange="SABL_UI.pruvodce.poznamka=this.value"></div>
@@ -404,7 +388,7 @@ async function sablPruvodceJakoJazyk() {
 /* Vlastní soubor místo strojového překladu (25. 9. 2026). Kontrola je táž
  * jako u nahrání k jazyku: soubor musí být šablona se symboly, v tom
  * jazyce, a proti NOVÉ české verzi (ne proti té platné) se hlídá, jestli mu
- * nechybí symboly. Strojový překlad se schová, aby šel vrátit. */
+ * nechybí symboly. Od C7 (18. 11. 2026) je to jediný zdroj jazykové verze. */
 async function sablPruvodceVlastni(l, predvybrany) {
   const p = SABL_UI.pruvodce; if (!p || !jeAdmin()) return;
   const soubor = predvybrany || await sablVyberSoubor(); if (!soubor || SABL_UI.pruvodce !== p) return;
@@ -413,27 +397,18 @@ async function sablPruvodceVlastni(l, predvybrany) {
   sablPrace('Kontroluji ' + soubor.nazev + '…');
   try {
     const vzor = (p.kontrola && p.kontrola.symboly) || null;
-    const k = await sablKontrolaSouboru(soubor.data, l, vzor);
+    const k = await sablKontrolaSouboru(soubor.data, l, vzor, p.typ);
     if (k.chyby.length) p.vlastniChyba[l] = 'Soubor nejde použít: ' + k.chyby.join(' ');
     else if (k.jinyJazyk)
       p.vlastniChyba[l] = 'Soubor „' + soubor.nazev + '" je ' + SABL_JAZYK_NAZEV[k.jinyJazyk] + ' ('
         + Math.round(k.jaz.podil * 100) + ' % odstavců), ne ' + SABL_JAZYK_NAZEV[l] + '.';
     else {
-      const puvodni = p.mutace[l];
       p.mutace[l] = { data: soubor.data, nazev: soubor.nazev, vlastni: true,
-                      varovani: p.shodaCz ? k.varovani : k.varovani.map(t => t.replace('platné české verzi', 'nové české verzi')),
-                      stroj: (puvodni && puvodni.vlastni) ? puvodni.stroj : puvodni };
+                      varovani: p.shodaCz ? k.varovani : k.varovani.map(t => t.replace('platné české verzi', 'nové české verzi')) };
       p.vybrane[l] = true;
     }
   } catch (e) { p.vlastniChyba[l] = 'Soubor se nepodařilo přečíst: ' + e.message; }
   sablPrace('');
-}
-function sablPruvodceVlastniZpet(l) {
-  const p = SABL_UI.pruvodce, m = p && p.mutace[l];
-  if (!m || !m.vlastni || !m.stroj) return;
-  p.mutace[l] = m.stroj;
-  if (p.vlastniChyba) delete p.vlastniChyba[l];
-  nastRefresh();
 }
 function sablPruvodceVyber(l, ano) { if (SABL_UI.pruvodce) SABL_UI.pruvodce.vybrane[l] = !!ano; nastRefresh(); }
 function sablPruvodceStahniMutaci(l) {
@@ -446,29 +421,12 @@ async function sablPruvodceDal() {
   const d = sablDok(p.typ);
   nastRefresh();
   if (!d.jazyky) return;
-  const rej = sablRej();
-  for (const [l] of SABL_JAZYKY) {
-    try {
-      const stat = {};
-      const blob = await docxPrelozSablonu(p.soubor.data.slice(0), l, stat);
-      p.mutace[l] = { data: await blob.arrayBuffer(), stat,
-                      nazev: p.soubor.nazev.replace(/\.docx$/i, '') + '_' + l.toUpperCase() + '.docx' };
-      /* Výchozí výběr: jazyky, které už na serveru jsou — aby po nové
-       * češtině nezůstaly pozadu. Nový jazyk si administrátor zaškrtne sám. */
-      p.vybrane[l] = p.shodaCz
-        /* #474: k platné češtině se předvybere jen zastaralá jazyková verze —
-         * aktuální by byla týž soubor, server by ji odmítl */
-        ? sablonaMutaceStav(rej, p.typ, l).stav === 'zastarala'
-        : !!sablonaPlatna(rej, p.typ + '_' + l);
-    } catch (e) { p.mutace[l] = { chyba: e.message }; }
-    if (SABL_UI.pruvodce !== p) return;
-    nastRefresh();
-  }
+  /* C7: žádný strojový překlad — karty jazyků čekají na nahraný soubor. */
 }
 async function sablPruvodceZverejni() {
   const p = SABL_UI.pruvodce; if (!p || !jeAdmin()) return;
   const el = document.getElementById('sablPozn'); if (el) p.poznamka = el.value;
-  const jazyky = SABL_JAZYKY.map(([l]) => l).filter(l => p.vybrane[l] && p.mutace[l] && p.mutace[l].data);
+  const jazyky = SABL_JAZYKY.map(([l]) => l).filter(l => p.vybrane[l] && p.mutace[l] && p.mutace[l].vlastni && p.mutace[l].data);
   /* #474 (O12, 21. 10. 2026): čeština shodná s platnou se znovu NEzveřejňuje
    * (server by ji odmítl 400 a výjimka by ukončila průvodce dřív, než by se
    * zveřejnily jazyky). Shoda se ověřuje znovu proti aktuálnímu rejstříku. */
@@ -486,9 +444,9 @@ async function sablPruvodceZverejni() {
       try {
         const m = p.mutace[l];
         const oj = await onlineSablonaZverejni(p.typ + '_' + l, m.nazev, m.data,
-          (m.vlastni ? 'vlastní soubor k české verzi ' : 'vyrobeno z české verze ') + o.verze
+          'vlastní soubor k české verzi ' + o.verze
           + (p.poznamka ? ' – ' + p.poznamka : ''), o.otisk);
-        vysledky.push(l.toUpperCase() + ' v' + oj.verze);
+        vysledky.push(l.toUpperCase() + ' v' + oj.verze + (oj.varovani ? ' (⚠ ' + oj.varovani + ')' : ''));
       } catch (e) { vysledky.push(l.toUpperCase() + ': ' + e.message); }
     }
     SABL_UI.pruvodce = null;
@@ -512,9 +470,9 @@ async function sablPruvodceZverejniJazyky(p, cz, jazyky) {
     try {
       const m = p.mutace[l];
       const oj = await onlineSablonaZverejni(p.typ + '_' + l, m.nazev, m.data,
-        (m.vlastni ? 'vlastní soubor k české verzi ' : 'vyrobeno z české verze ') + cz.verze
+        'vlastní soubor k české verzi ' + cz.verze
         + (p.poznamka ? ' – ' + p.poznamka : ''), cz.otisk);
-      vysledky.push(l.toUpperCase() + ' v' + oj.verze);
+      vysledky.push(l.toUpperCase() + ' v' + oj.verze + (oj.varovani ? ' (⚠ ' + oj.varovani + ')' : ''));
       povedlo++;
     } catch (e) { vysledky.push(l.toUpperCase() + ': ' + e.message); }
   }

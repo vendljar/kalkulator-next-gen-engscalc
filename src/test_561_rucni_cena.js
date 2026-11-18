@@ -78,8 +78,8 @@ console.log('===== 2. přepis nákupní ceny a přirážka (B-Q1) =====');
   test('jádro: jednotková cena řádku = nákupní cena z nabídky', po.cena === 95, po);
   test('jádro: náklad = množství × nákupní cena', Math.abs(po.naklad - po.mnozstvi * 95) < 1e-6, po);
   test('jádro: přirážka se přičte jako jinde (cena vč. přirážky = náklad × 1,25)', Math.abs(po.sMarzi - po.naklad * 1.25) < 1e-6, po);
-  /* #645 (J. V. 18. 11. 2026): nula je platná cena z nabídky — test nuly je
-   * v src/test_645_statika_opl.js; tady jen záporná a prázdná. */
+  /* #646 (J. V. 18. 11. 2026): nula je platná cena z nabídky — test nuly je
+   * v src/test_646_statika_opl.js; tady jen záporná a prázdná. */
   test('záporná ani prázdná cena nejde', !rucniCenaNastav(d, PROF, -5) && !rucniCenaNastav(d, PROF, '')
     && !rucniCenaNastav(d, PROF, null) && d.cenik.profilasKgKc === 95);
   test('položka, která ruční cenu mít nesmí, se nezmění', !rucniCenaNastav(d, 'C.statikaHod', 3) && !d.rucniCeny['C.statikaHod']);

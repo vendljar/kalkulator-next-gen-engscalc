@@ -1,4 +1,4 @@
-/* STATIKA OPLÁŠTĚNÍ — ZAŠKRTÁVACÍ POLOŽKA S VLASTNÍ CENOU (#645,
+/* STATIKA OPLÁŠTĚNÍ — ZAŠKRTÁVACÍ POLOŽKA S VLASTNÍ CENOU (#646,
  * zadání J. V. 18. 11. 2026; podnět obchodního technika: statické
  * posouzení opláštění nevyžadují všichni dodavatelé výtahů).
  *
@@ -20,7 +20,7 @@
  *      počítá jako dosud).
  * Čísla jsou smyšlená (zkušební ceník + částky v testu).
  *
- * Pojistka proti prázdnému testu: proti integraci 910315b (před #645) sada
+ * Pojistka proti prázdnému testu: proti integraci 910315b (před #646) sada
  * padá (chybí cenikMigraceStatikyOpl / statikaOplZahrnuta, řádek má cestu
  * C.statikaKc, nula z nabídky se odmítne).
  */

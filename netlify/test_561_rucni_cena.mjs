@@ -119,10 +119,10 @@ let soubor = '', ulozena = null;
 { const z = rucni(nova('text'), 95); d0(z).rucniCeny[PROF].dodavatel = { x: 1 };
   const r = await uloz(z, cO);
   test('neplatný tvar zdroje → 400', r.status === 400, r); }
-/* #645 (J. V. 18. 11. 2026): nulová cena z nabídky je platná — uloží se. */
+/* #646 (J. V. 18. 11. 2026): nulová cena z nabídky je platná — uloží se. */
 { const z = rucni(nova('nula'), 0);
   const r = await uloz(z, cO);
-  test('nulová ruční cena → uloženo (#645)', r.status === 200 && r.ok === true, r); }
+  test('nulová ruční cena → uloženo (#646)', r.status === 200 && r.ok === true, r); }
 { const z = rucni(nova('zaporna'), -5);
   const r = await uloz(z, cO);
   test('záporná ruční cena → odmítnuto', r.status === 403 || r.status === 400, r); }

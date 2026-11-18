@@ -85,8 +85,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_autorstvi.js',
      /* #561 RC (4. 11. 2026): ruční cena položky s potvrzením — model a server, rychlé sady. */
      '../src/test_561_rucni_cena.js', 'test_561_rucni_cena.mjs',
-     /* [SP] #645 (18. 11. 2026): statika opláštění — nulová cena z nabídky, tvar zaškrtnutí, přepočet (rychlá sada). */
-     '../src/test_645_statika_opl.js',
+     /* [SP] #646 (18. 11. 2026): statika opláštění — nulová cena z nabídky, tvar zaškrtnutí, přepočet (rychlá sada). */
+     '../src/test_646_statika_opl.js',
      /* #560 SV (4. 11. 2026): zrušená volba světlíku „zajistí stavba" — rychlé sady. */
      '../src/test_svetliky_stavba.js', 'test_560_svetliky_stavba.mjs',
      /* #553 PW (3. 11. 2026): webhook „Vygenerovat nabídku" z Pipedrive — rychlá sada (< 1 s). */
@@ -821,41 +821,41 @@ const MUTACE = [
    * z nabídky dodavatele s potvrzením obchodníkem — B112 jen na krytou cestu,
    * razítko z relace, zábrana zámku, směs ceníků, přepočet, controlling.
    * Hlídají src/test_561_rucni_cena.js a netlify/test_561_rucni_cena.mjs. */
-  /* [SP] #645 (18. 11. 2026, J. V.): cena z nabídky i nulová, tvar
+  /* [SP] #646 (18. 11. 2026, J. V.): cena z nabídky i nulová, tvar
    * zaškrtnutí statiky opláštění, přepočet proti ceníku bez klíče.
-   * Hlídá src/test_645_statika_opl.js. */
+   * Hlídá src/test_646_statika_opl.js. */
   { nazev: '[SP] nulová cena z nabídky nejde', soubor: '../src/rucni_ceny.js',
     hledej: "  if (!(isFinite(h) && h >= 0 && h <= RC_HODNOTA_MAX)) return false;",
     nahrad: "  if (!(isFinite(h) && h > 0 && h <= RC_HODNOTA_MAX)) return false;",
-    proc: 'obchodník by nezadal nulovou cenu položky (zadání J. V.)', sady: ['../src/test_645_statika_opl.js'] },
+    proc: 'obchodník by nezadal nulovou cenu položky (zadání J. V.)', sady: ['../src/test_646_statika_opl.js'] },
   { nazev: '[SP] prázdné pole ceny z nabídky = nula', soubor: '../src/rucni_ceny.js',
     hledej: "  if (hodnota === null || hodnota === undefined || String(hodnota).trim() === '') return false;",
     nahrad: "",
-    proc: 'smazané pole by tiše nastavilo cenu položky na 0 Kč', sady: ['../src/test_645_statika_opl.js'] },
+    proc: 'smazané pole by tiše nastavilo cenu položky na 0 Kč', sady: ['../src/test_646_statika_opl.js'] },
   { nazev: '[SP] záporná cena z nabídky projde', soubor: '../src/rucni_ceny.js',
     hledej: "  if (!(isFinite(h) && h >= 0 && h <= RC_HODNOTA_MAX)) return false;",
     nahrad: "  if (!(isFinite(h) && h <= RC_HODNOTA_MAX)) return false;",
-    proc: 'záporná nákupní cena by snížila nabídku bez slevy', sady: ['../src/test_645_statika_opl.js'] },
+    proc: 'záporná nákupní cena by snížila nabídku bez slevy', sady: ['../src/test_646_statika_opl.js'] },
   { nazev: '[SP] server odmítne nulovou cenu z nabídky', soubor: '../src/rucni_ceny.js',
     hledej: "    if (typeof h !== 'number' || !isFinite(h) || h < 0 || h > RC_HODNOTA_MAX)",
     nahrad: "    if (typeof h !== 'number' || !isFinite(h) || h <= 0 || h > RC_HODNOTA_MAX)",
-    proc: 'nulová cena z nabídky by šla zadat, ale ne uložit (400)', sady: ['../src/test_645_statika_opl.js'] },
+    proc: 'nulová cena z nabídky by šla zadat, ale ne uložit (400)', sady: ['../src/test_646_statika_opl.js'] },
   { nazev: '[SP] server pustí zápornou cenu z nabídky', soubor: '../src/rucni_ceny.js',
     hledej: "    if (typeof h !== 'number' || !isFinite(h) || h < 0 || h > RC_HODNOTA_MAX)",
     nahrad: "    if (typeof h !== 'number' || !isFinite(h) || h > RC_HODNOTA_MAX)",
-    proc: 'záporná nákupní cena se záznamem by prošla B112 a snížila cenu bez slevy', sady: ['../src/test_645_statika_opl.js'] },
+    proc: 'záporná nákupní cena se záznamem by prošla B112 a snížila cenu bez slevy', sady: ['../src/test_646_statika_opl.js'] },
   { nazev: '[SP] nulový záznam ceny z nabídky nic nekryje', soubor: '../src/rucni_ceny.js',
     hledej: "  return typeof r.hodnota === 'number' && isFinite(r.hodnota) && r.hodnota >= 0 && h === r.hodnota;",
     nahrad: "  return typeof r.hodnota === 'number' && isFinite(r.hodnota) && r.hodnota > 0 && h === r.hodnota;",
-    proc: 'nulovou cenu z nabídky by server odmítl jako změnu ceníku (403) a nešla by potvrdit', sady: ['../src/test_645_statika_opl.js'] },
+    proc: 'nulovou cenu z nabídky by server odmítl jako změnu ceníku (403) a nešla by potvrdit', sady: ['../src/test_646_statika_opl.js'] },
   { nazev: '[SP] server nehlídá tvar zaškrtnutí statiky opláštění', soubor: '../src/uloziste.js',
     hledej: "bokyDveri: ULO_VYPLN_DVERI, statikaOpl: [true, false] };",
     nahrad: "bokyDveri: ULO_VYPLN_DVERI };",
-    proc: 'zadání by neslo libovolnou hodnotu zaškrtnutí (tvar dat)', sady: ['../src/test_645_statika_opl.js'] },
+    proc: 'zadání by neslo libovolnou hodnotu zaškrtnutí (tvar dat)', sady: ['../src/test_646_statika_opl.js'] },
   { nazev: '[SP] přepočet bez záložní sazby statiky opláštění', soubor: '../src/cenik_stari.js',
     hledej: "  if (h !== undefined || !CENIK_ZALOZNI[cesta]) return h;",
     nahrad: "  return h;",
-    proc: 'přepočet rozdělané zakázky proti staršímu ceníku by hlásil změnu statiky opláštění', sady: ['../src/test_645_statika_opl.js'] },
+    proc: 'přepočet rozdělané zakázky proti staršímu ceníku by hlásil změnu statiky opláštění', sady: ['../src/test_646_statika_opl.js'] },
   { nazev: '#561: B112 ruční cenu se záznamem nepustí', soubor: '../src/uloziste.js',
     hledej: "        return rcPlati(d, 'C.' + kde.slice(c.pred.length));",
     nahrad: "        return false;",
@@ -7357,6 +7357,27 @@ const MUTACE = [
     hledej: "    return { nazev: uloRejstrikText(z.hlavicka.objednatel),",
     nahrad: "    return { nazev: uloRejstrikText(z.hlavicka.objednatel + ' ' + z.hlavicka.adresaObjednatele),",
     proc: "rejstřík (čtou všichni) by nesl sídlo zákazníků", sady: ["../src/test_vz_unik.js"] },
+  /* C7 (K48-N1, 18. 11. 2026): jazyková verze smlouvy z velké části česky. [C7] */
+  { nazev: "C7: server zveřejní smlouvu z češtiny [C7]", soubor: "functions/sablony.mjs",
+    hledej: "    if (cestina && cestina.zabrana) return json(",
+    nahrad: "    if (false) return json(",
+    proc: "DE/EN/FR smlouva vyrobená z české verze by se zveřejnila", sady: ["test_sablony.mjs"] },
+  { nazev: "C7: server vrátí smlouvu z češtiny [C7]", soubor: "functions/sablony.mjs",
+    hledej: "      if (c.zabrana) return json(",
+    nahrad: "      if (false) return json(",
+    proc: "vrácením staré verze by šla zveřejnit smlouva z velké části česky", sady: ["test_sablony.mjs"] },
+  { nazev: "C7: server bez upozornění u nabídky [C7]", soubor: "functions/sablony.mjs",
+    hledej: "      cestina && cestina.varovani ? { varovani: cestina.varovani, podilCestiny: cestina.podil } : {}));",
+    nahrad: "      {}));",
+    proc: "administrátor by se o české nabídce v cizím jazyce nedozvěděl", sady: ["test_sablony.mjs"] },
+  { nazev: "C7: mez podílu češtiny vypnutá (server) [C7]", soubor: "../src/sablony_online.js",
+    hledej: "  if (!(out.podil > out.mez)) return out;",
+    nahrad: "  return out;",
+    proc: "server by pustil smlouvu z velké části česky", sady: ["test_sablony.mjs"] },
+  { nazev: "C7: smlouvy = jen SoD realizace [C7]", soubor: "../src/sablony_online.js",
+    hledej: "const SABLONA_CESTINA_SMLOUVY = ['sod', 'sodProj', 'plnaMoc'];",
+    nahrad: "const SABLONA_CESTINA_SMLOUVY = ['sod'];",
+    proc: "SoD projekce a plná moc z češtiny by prošly jen s upozorněním", sady: ["test_sablony.mjs"] },
 ];
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
  * (nález T5 revize v22.9.9, 22. 9. 2026)

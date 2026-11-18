@@ -321,6 +321,10 @@ else {
     window.__CZ = { nazev: 'Sablona_NABIDKA_CN_v11.docx', data: u8.buffer };
     const blob = await docxPrelozSablonu(u8.buffer.slice(0), 'de', {});
     window.__DE = { nazev: 'Sablona_NABIDKA_CN_v11_DE.docx', data: await blob.arrayBuffer() };
+    /* C7: aplikace jazykové verze nevyrábí — harness si „přeložený soubor"
+     * EN vyrobí sám (u nabídky slovník pokrývá přes 80 %). */
+    const blobEn = await docxPrelozSablonu(u8.buffer.slice(0), 'en', {});
+    window.__EN = { nazev: 'Sablona_NABIDKA_CN_v11_EN.docx', data: await blobEn.arrayBuffer() };
     window.nastRefresh = () => {};                 // obrazovka se čte přes nastSablony()
   }, cnB64);
 
@@ -344,8 +348,10 @@ else {
     const k = SABL_UI.pruvodce.kontrola;
     await sablPruvodceDal();
     const p = SABL_UI.pruvodce;
-    p.vybrane.en = true; p.vybrane.de = true;
-    const pokryti = { en: p.mutace.en.stat.procenta, de: p.mutace.de.stat.procenta };
+    const nevyrobil = !p.mutace.en && !p.mutace.de && !p.mutace.fr && !/sablPregeneruj|Vyrobit z češtiny/.test(nastSablony());
+    await sablPruvodceVlastni('en', window.__EN);
+    await sablPruvodceVlastni('de', window.__DE);
+    const pokryti = { nevyrobil, en: !!(p.mutace.en && p.mutace.en.vlastni), de: !!(p.mutace.de && p.mutace.de.vlastni) };
     await sablPruvodceZverejni();
     const rej = ONLINE_STAV.sablonyRejstrik;
     return { kontrolaOk: !k.chyby.length && !k.jinyJazyk, jazyk: k.jaz.jazyk, pokryti,
@@ -354,7 +360,8 @@ else {
              pruvodceZavren: !SABL_UI.pruvodce };
   });
   test('česká šablona projde kontrolou', b.kontrolaOk && b.jazyk === 'cz', b);
-  test('jazykové verze se vyrobily samy (EN i DE přes 80 %)', b.pokryti.en > 80 && b.pokryti.de > 80, b.pokryti);
+  test('C7: průvodce jazykové verze z češtiny nevyrábí, EN a DE jsou nahrané soubory',
+    b.pokryti.nevyrobil && b.pokryti.en && b.pokryti.de, b.pokryti);
   test('čeština, EN i DE jsou zveřejněné najednou', b.cz && b.cz.verze === 1 && b.en && b.pruvodceZavren, b);
   test('EN nese otisk české verze, ze které vznikla', b.en && b.en.zdrojOtisk === b.cz.otisk, b.en);
   test('EN i DE jsou aktuální', b.stavEn === 'aktualni' && b.stavDe === 'aktualni', b);
@@ -370,7 +377,7 @@ else {
     const rej1 = ONLINE_STAV.sablonyRejstrik;
     const po = { stavEn: sablonaMutaceStav(rej1, 'nabidka', 'en').stav, stitek: /sablona-zastarala/.test(nastSablony()),
                  tisk: await sablonaProTisk('nabidka', 'en').then(() => 'prošlo', e => e.message) };
-    await sablPregeneruj('nabidka', 'en');
+    await sablNahrajJazyk('nabidka', 'en', window.__EN);      // C7: nový překlad jen nahraným souborem
     const rej2 = ONLINE_STAV.sablonyRejstrik;
     return Object.assign(po, { stavEnPo: sablonaMutaceStav(rej2, 'nabidka', 'en').stav,
       enVerze: sablonaPlatna(rej2, 'nabidka_en').verze, zVerze: sablonaMutaceStav(rej2, 'nabidka', 'en').zVerze,
@@ -378,7 +385,7 @@ else {
   });
   test('po nové češtině jsou EN a DE zastaralé podle obsahu', c.stavEn === 'zastarala' && c.stitek, c);
   test('v přísném režimu se ze zastaralé EN netiskne', !/^prošlo/.test(c.tisk), c.tisk);
-  test('přegenerování EN projde, i když je soubor stejný jako minule', c.stavEnPo === 'aktualni' && c.enVerze === 2 && c.zVerze === 2, c);
+  test('nahrání EN projde, i když je soubor stejný jako minule', c.stavEnPo === 'aktualni' && c.enVerze === 2 && c.zVerze === 2, c);
   test('a z EN se zase tiskne', c.tiskPo === 'prošlo:nabidka_en', c.tiskPo);
 
   /* d) doladěný soubor přímo k jazyku: německý soubor „Uložit jako DE" */
@@ -408,7 +415,7 @@ else {
     const html0 = nastSablony();
     await sablPruvodceVlastni('en', window.__DE);                 // německý soubor jako angličtina
     const chybaEn = (p.vlastniChyba || {}).en || '';
-    const enZustal = !p.mutace.en.vlastni;
+    const enZustal = !p.mutace.en;
     await sablPruvodceVlastni('de', window.__DE);
     const de = p.mutace.de;
     const html1 = nastSablony();
@@ -416,16 +423,16 @@ else {
     await sablPruvodceZverejni();
     const rej = ONLINE_STAV.sablonyRejstrik;
     const deMeta = sablonaPlatna(rej, 'nabidka_de');
-    return { tlacitko: /Nahrát vlastní verzi/.test(html0), chybaEn, enZustal,
-             deVlastni: !!de.vlastni, deStroj: !!de.stroj, vybranoDe: true,
-             html1: /Vlastní soubor: <b>Sablona_NABIDKA_CN_v11_DE.docx<\/b>/.test(html1) && /Vrátit překlad aplikace/.test(html1),
+    return { tlacitko: /Nahrát přeložený soubor/.test(html0), chybaEn, enZustal,
+             deVlastni: !!de.vlastni, vybranoDe: true,
+             html1: /Vlastní soubor: <b>Sablona_NABIDKA_CN_v11_DE.docx<\/b>/.test(html1) && !/Vrátit překlad aplikace/.test(html1),
              deStav: sablonaMutaceStav(rej, 'nabidka', 'de').stav, deVerze: deMeta && deMeta.verze,
              popis: JSON.stringify(deMeta) };
   });
-  test('průvodce nabízí u jazyka „Nahrát vlastní verzi"', d3.tlacitko, d3);
-  test('vlastní soubor ve špatném jazyce se odmítne a překlad aplikace zůstane',
+  test('průvodce nabízí u jazyka „Nahrát přeložený soubor"', d3.tlacitko, d3);
+  test('vlastní soubor ve špatném jazyce se odmítne a EN zůstane bez souboru',
     /je německy/.test(d3.chybaEn) && d3.enZustal, d3);
-  test('vlastní DE soubor nahradí překlad aplikace (a ten jde vrátit)', d3.deVlastni && d3.deStroj && d3.html1, d3);
+  test('vlastní DE soubor je v průvodci (bez „Vrátit překlad aplikace")', d3.deVlastni && d3.html1, d3);
   test('zveřejní se spolu s češtinou a je aktuální', d3.deStav === 'aktualni' && d3.deVerze === 3, d3);
   test('v záznamu stojí, že je to vlastní soubor', /vlastní soubor k české verzi/.test(d3.popis), d3.popis);
 
@@ -448,7 +455,7 @@ else {
   /* v3 je od 25. 9. 2026 čeština z kroku d3 (vlastní jazyková verze), takže
    * vrácení je v4. */
   test('vrácení zveřejní v1 znovu jako v4 a nic nesmaže', f.verze === 4 && f.vracenoZ === 1 && f.otiskShoda && f.historie === 4, f);
-  test('EN vyrobená z v2 je po vrácení zastaralá', f.stavEn === 'zastarala', f);
+  test('EN nahraná k v2 je po vrácení zastaralá', f.stavEn === 'zastarala', f);
 }
 
 test('konzole zůstala čistá', chyby.length === 0, chyby.slice(0, 3));

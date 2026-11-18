@@ -339,7 +339,7 @@ function renderInputs() {
       inp('Z.rezervaPriplatkyPct', { type: 'pct', min: 0, l: 'REZERVA příplatky', klic: 'Z.rezervaPriplatkyPct ← C.atypRezervaPriplatkyPct' }), 'ock-prace');
 }
 
-/* STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ — Ano / Ne (#645, J. V. 18. 11. 2026).
+/* STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ — Ano / Ne (#646, J. V. 18. 11. 2026).
  * Výchozí stav (klíč v zadání chybí) = Ano u šachty s opláštěním, jinak Ne;
  * volba se uloží do zadání šachty jako true / false. Řádek se ukáže jen
  * s ceníkem, který hodiny statiky opláštění má (jinak by volba nic neměnila). */

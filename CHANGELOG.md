@@ -8,9 +8,9 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v18.11.6 — SP #645: statika opláštění zaškrtávací s vlastní cenou, cena z nabídky i nulová, větev claude/sp-statika
+## v18.11.8 — SP #646: statika opláštění zaškrtávací s vlastní cenou, cena z nabídky i nulová, větev claude/sp-statika
 
-Nad integrací `910315b`. Zadání J. V. 18. 11. 2026 (podnět obchodního technika). Mění cenovou logiku — před sloučením
+Nad integrací `910315b`, sloučeno s integrací `41bbe99` (v18.11.7). Zadání J. V. 18. 11. 2026 (podnět obchodního technika). Mění cenovou logiku — před sloučením
 revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `origin/test` **SHODA 353/353**).
 
 - **Zaškrtnutí:** Zadání šachty → Práce a režie → „Statické posouzení opláštění“ Ano / Ne (`Z.statikaOpl`, u každé šachty
@@ -23,12 +23,75 @@ revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `or
   (pole statiky) počítají obě cesty jako dosud — dokumenty beze změny; controlling řadí sazbu do projekce.
 - **Cena z nabídky:** obě statiky ji mají každá zvlášť. Nulová cena z nabídky platí u každé položky (prohlížeč i server),
   záporná ani prázdné pole ne.
-- **Audit:** `podklady/AUDIT_CENY_POLOZEK_645.md` — sdílené cesty a položky bez ceny z nabídky; k rozhodnutí J. V. #646.
-- **Testy:** nový `src/test_645_statika_opl.js` 47/0 (pojistka: proti 910315b padá hned na chybějící funkci jádra);
+- **Audit:** `podklady/AUDIT_CENY_POLOZEK_646.md` — sdílené cesty a položky bez ceny z nabídky; k rozhodnutí J. V. #647.
+- **Testy:** nový `src/test_646_statika_opl.js` 47/0 (pojistka: proti 910315b padá hned na chybějící funkci jádra);
   upraveny `test_statika_oplasteni.js` (cesta řádku), `test_561_rucni_cena.js` a `netlify/test_561_rucni_cena.mjs`
   (nula se nově uloží, záporná dál ne); zkušební ceník nese `statikaOplKc`; manuál výpočtu migruje sazbu (čísla vydání beze změny).
 - **Mutace [SP]:** jádro 11 nových + 2 přepsané P5, server 8 nových + 1 přepsaná #561.
 
+## v18.11.7 — C7 #615 (K48-N1): jazyková verze šablony jen přeloženým souborem, kontrola češtiny; NS #645, větev claude/c7-sablony
+
+Nad integrací `9bd6dc8` (v18.11.4), sloučeno s integrací `ec5bbac` (v18.11.5, S6+S8) a `41bbe99` (v18.11.6, SL). Rozhodnutí a pokyn J. V. 18. 11. 2026.
+
+- **Výroba jazykové verze z češtiny zrušena u všech typů šablon** (CN OCK, CN PROJ, SoD realizace, SoD projekce, plná moc):
+  v detailu dokumentu není „Vyrobit / Přegenerovat z češtiny“, průvodce novou češtinou jazyky nepřekládá (u jazyka jen
+  „Nahrát přeložený soubor“), stará obrazovka bez serveru mutaci jen nahraje. Seznam nepřeložených frází (CSV) zůstává.
+- **Kontrola češtiny:** `sablonaJazykPodil(text, L)` (podíl odstavců zjevně česky — diakritika ěščřžůú a slovník častých
+  slov, víc než znaků cílového jazyka), mez 20 %. Smlouvy (SoD realizace, SoD projekce, plná moc) nad mezí server
+  nezveřejní ani nevrátí starší verzí (400 se srozumitelnou hláškou), klient je nenahraje ani nevytiskne
+  (`sodJazykZabrana` dostal podíl češtiny). CN a ostatní dokumenty: jen upozornění při zveřejnění i tisku.
+- **Ověřeno na textech šablon z Disku** (mimo repo): SoD v5 DE 2,8 %, CN v17 DE 0,7 %, SoD projekce v4 DE 3,1 % — projdou;
+  DE vyrobená slovníkem z české SoD v5 85 % — neprojde.
+- **NS #645:** Nastavení → Smlouvy / Šablony — správa šablon hned pod přepínačem OCK | PROJ, nad platebními podmínkami.
+  Přepínač šablony filtruje už od #367 (OCK = CN OCK + SoD realizace, PROJ = CN PROJ + SoD projekce + plná moc), filtr beze změny.
+- **Testy s pojistkou:** `netlify/test_sablony.mjs` před 30/7, po 37/0; `src/test_sablony_online.js` před 97/10, po 107/0;
+  `src/test_sod_en.js` před 2 FAIL, po 51/0; `overit_k39_sablony_filtr.mjs` před 9/3, po 12/0. Mutace [C7]: jádro 7/7, server 5/5.
+
+**Kolo `--bez-mutaci --proti origin/test` nad 6ed6f8d VŠE ZELENÉ (38 min):** sady 465/0/7 přeskočeno, hodiny +400 dní 377/0/1,
+statické 9/9, porovnání sestavení 353 kalkulací, 353 shodných (SHODA). `overit_zobrazeni.mjs` upraven na nové pořadí (NS).
+
+## v18.11.6 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
+
+Nad `8462aea` (integrace = test v12.11.7), sloučeno s integrací `ec5bbac` (v18.11.5: + S3 #611, S7 #612, S6+S8 #613). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje
+koordinace. Na webech, Disku ani v Pipedrive nic.
+
+- **Rozpis šachet ve SoD sedí na cenu díla dle nabídky:** `{{SACHTY_SOD_ROZPIS}}` (víc šachet, šablona v5) končí
+  vyrovnávacím řádkem = cena díla dle nabídky (`{{SOD_CENA_NABIDKY}}`, po slevě; u dotisku podle záznamu tisku) −
+  součet řádků šachet (ty jsou dál před slevou, rozpočet R7). Popisek **Sleva**; je-li rozdíl i bez slevy (obchodní
+  zaokrouhlení, v eurech řádky po šachtách nahoru) **Sleva a zaokrouhlení**, bez slevy jen **Zaokrouhlení**. Řádek
+  jen při nenulovém rozdílu; měna jako ostatní řádky, záporná částka „− 292 700,00 Kč" (znaménko zvlášť jako řádek
+  slevy nabídky, L4). Řádek „Sleva“ se rovná slevě z nabídky (SLEVA_KC). Dotisk bere cíl ze záznamu tisku jen
+  s objednanými příplatky, jako cena díla (L5).
+- **Šachty ve SoD v eurech jako nabídka (L3, rozhodnutí J. V. 18. 11. 2026):** řádky šachet = rozpočet ceny před
+  slevou do šachet už v eurech (`rozpocetSachet`), jako tabulka šachet nabídky; dřív se každá šachta převáděla
+  nahoru zvlášť a skoro každá EUR smlouva dostala „Rounding – € 1". **U EUR smluv s víc šachtami se tak řádky
+  šachet mohou lišit o jednotky eur od dnešních (main i test).** V korunách beze změny.
+- Slovník EN/DE/FR: „Zaokrouhlení“, „Sleva a zaokrouhlení“ (heslo „Sleva“ už bylo; slovník nerozlišuje velikost
+  písmen, proto popisky s velkým písmenem jako řádky šachet).
+- Šablona v5, výpočet ceny ani data nabídky se nemění (zlatá sada VS 319/319); jedna šachta beze změny.
+- Testy: `src/test_sod_v5.js` oddíl E (Kč se slevou, EUR se slevou i bez, Kč bez slevy bez řádku, zaokrouhlení,
+  objednané příplatky za rozpisem, EN/DE bez češtiny, jedna šachta).
+- **SoD realizace v6 se žlutými místy (#609, J. V. 16. 11.):** `node nastroje/vyrob_sablony.js --sod-real-v6`
+  z v5 (nebo v4) CZ/EN/DE/FR — každý symbol žlutě podbarvený jako u SoD projekce v4 a plné moci; běh se symbolem
+  a pevným textem se rozdělí (žlutý jen symbol). Symboly, text i písmo = v5 (tvrdé kontroly). Podklad
+  `podklady/SABLONA_SOD_REALIZACE_V6_18_11.md`; .docx dostal J. V. v sezení, do repa nepatří.
+- **Ve smlouvě je žluté právě nevyplněné místo:** generátor dosud podbarvení nesnímal (u SoD projekce a plné moci
+  svítily žlutě i vyplněné údaje). Teď u dokumentů s tečkami (SoD realizace, SoD projekce, plná moc) po dosazení
+  hodnot dostane každé „……" vlastní žlutý běh (i když šablona symbol nepodbarvila) a ze všeho ostatního se
+  podbarvení sejme — z vyplněných údajů, rozpisů i z pevného textu, který SoD projekce v4 a plná moc podbarvují
+  („Objednatel:", „zmocnitel"); i u plně vyplněné smlouvy (revize poradce L1, L2). Nabídky beze změny.
+- **Kontrola nevyplněných míst SoD: Chybí / Nepovinné (#610, J. V. 16. 11.):** nepovinné jen druhý podepisující
+  a faktury v kopii 1 a 2 (konstanta `SOD_NEVYPLNENE_NEPOVINNE`), DIČ, banka, účet a zástupce ve věcech obchodních
+  s kontaktem povinné. Věta „… k doplnění (tečky „……"). Chybí: …. Nepovinné: …." vyjmenuje každé místo; jen
+  upozornění. Změněné očekávání `src/test_sod_tecky.js` S (dvojtečka → „Chybí:").
+- **Dorevize poradce (M1–M3):** běh se dělí i s tabulátory, zalomením a víc texty (`docxBehRozdel`, společné pro
+  generátor i nástroj v6) — v EN/DE/FR už nesvítí žlutě popisky a tabulátory u teček; šablony v6 CZ/EN/DE/FR vyrobeny
+  znovu (druhé vydání, poslané J. V.). Podbarvení na místo podle schématu `w:rPr` i před `w14:*`. Test hlídá, že
+  žlutý běh nese jen „……".
+- Přiznané meze podbarvení: sejme se každé podbarvení (ne jen žluté); symbol rozdělený mezi běhy obarví i pevný text
+  svých běhů; vnořené běhy (textové pole) se nezpracují; žluté tečky dostanou i šablony v4/v5 bez podbarvení.
+- Testy: `test_sod_v5.js` E, F (+ D se skutečnými v6), `test_sod_tecky.js` S2, L1, L2, K (skutečné SoD projekce v4 CZ/EN,
+  plná moc, SoD realizace v6), `test_vs_kontroly.js` H; mutace [SL] 20/20.
 ## v18.11.5 — S6 + S8 #613: jedna evidence v roadmap.json, PREHLED.md a NOVINKY.md, větev claude/s6s8-evidence
 
 Nad integrací `9bd6dc8` (v18.11.4 = test). Kód aplikace beze změny. Podle návrhu režie vývoje (`podklady/NAVRH_REZIE_2026-11-18.md`,

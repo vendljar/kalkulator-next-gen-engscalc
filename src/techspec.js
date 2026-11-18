@@ -932,10 +932,10 @@ function tsLeseniNeniRadek(r, Z, key) {
 
 function tsStatikaVCene(r) {
   const radky = (r && r.sekce && r.sekce.rezie) || [];
-  /* #645: statika opláštění má od 18. 11. 2026 vlastní cestu C.statikaOplKc;
+  /* #646: statika opláštění má od 18. 11. 2026 vlastní cestu C.statikaOplKc;
    * do té doby sdílela C.statikaKc a pole „ano" počítalo i s ní. Chování se
    * nemění (dokument beze změny) — zda má pole statiku opláštění vůbec
-   * zohledňovat, je otázka pro J. V. (audit #645). */
+   * zohledňovat, je otázka pro J. V. (audit #646). */
   return radky.some(x => (x.cenaPath === 'C.statikaKc' || x.cenaPath === 'C.statikaOplKc' || x.origNazev === 'STATICKÉ POSOUZENÍ')
     && Number(x.mnozstvi) > 0);
 }

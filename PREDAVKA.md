@@ -21,6 +21,13 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
+- **C7 #615 + NS #645** (`claude/c7-sablony`, v18.11.7, nad 9bd6dc8 + sloučená integrace 41bbe99): výroba jazykové verze
+  z češtiny zrušena u všech šablon (jen nahraný přeložený soubor); `sablonaJazykPodil` + mez 20 %: smlouvy (SoD, SoD proj.,
+  plná moc) nad mezí server nezveřejní/nevrátí a klient nevytiskne, CN jen upozornění. Ověřeno na textech z Disku
+  (SoD v5 DE 2,8 %, CN v17 DE 0,7 %, SoD proj. v4 DE 3,1 %; DE z české SoD v5 85 % → neprojde). NS: šablony pod přepínačem
+  OCK | PROJ (filtr beze změny). Mutace [C7] jádro 7/7, server 5/5. **Kolo `--bez-mutaci --proti origin/test` nad 6ed6f8d VŠE ZELENÉ** (sady 465/0/7, hodiny 377/0/1, statické 9/9, porovnání 353/353 SHODA).
+  Pozor při slučování s SL: v `src/sod.js` změněna jen `sodJazykZabrana`. Firemní .docx nebyly v kontejneru (KNG_PODKLADY
+  chybí) — test s podklady v `netlify/test_sablony.mjs` se přeskočí; hledá i `Sablona_SOD_REALIZACE_v5_DE_z_cestiny.docx`.
 - **S6 + S8 #613** (`claude/s6s8-evidence`, v18.11.5, nad 9bd6dc8): evidence v `roadmap.json` (pole `typ`, `cekaNa` „<kdo>: <co>“,
   `kolo`, `vetev`, `verze`, `dopadCena`, `alias`; migrace jen dotčených položek), otevřené nálezy a otázky převedeny jako
   #614–#643, `roadmapa.py --zive` = 54 nehotových; `nastroje/prehled_stavu.py` → `PREHLED.md`/`.json` (krok `staticke`,
@@ -36,6 +43,16 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   `podklady/kola/`, kontrola `nastroje/kontrola_podkladu.sh` v kroku `staticke`, `release_odkaz.py --chybejici` jen
   verze z main, pravidlo porovnání sestavení S3 v Testy (stupeň 1), návrh osnovy skillu `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md`. **Kolo `--bez-mutaci` nad fd1c0b1 VŠE ZELENÉ**
   (sady 464/0/7 přeskočeno, hodiny +400 dní 376/0/1, statické 8/8; 39 min). HOTOVO, slučuje koordinace.
+- **SL #589 #609 #610** (`claude/sl-sod-sleva`, v18.11.6, sloučeno s integrací ec5bbac): řádek slevy v rozpisu šachet
+  SoD, šablona SoD realizace v6 se žlutými místy (druhé vydání .docx poslané J. V. 18. 11.; na test až s tímto kódem),
+  kontrola nevyplněných míst „Chybí / Nepovinné". Revize a dorevize poradce (L1–L6, M1–M3) opraveny: ve smlouvách
+  (SoD realizace, SoD projekce, plná moc) je žlutý **jen** „……" — běhy se dělí i s tabulátory; v EUR řádky šachet
+  jako nabídka — **u EUR smluv s víc šachtami se řádky šachet mohou lišit o jednotky eur oproti main i test**.
+  **Přiznané meze (M4):** sejme se každé podbarvení, nejen žluté; symbol rozdělený mezi běhy obarví celé své běhy
+  i s pevným textem; vnořené běhy v textovém poli se spolehlivě nezpracují; žluté tečky dostanou i šablony v4/v5
+  bez podbarvení. Kolo `--bez-mutaci` s KNG_PODKLADY nad 20b154a: sady 465/1/6, hodiny 377/0/1, statické 9/9;
+  jediné selhání `overit_sod.mjs` (5 bodů, stará očekávání před tečkami C3) padá stejně na integraci 9bd6dc8
+  i ec5bbac (ověřeno ve worktree). Mutace [SL] 23/23. Podrobnosti `podklady/predavky/2026-11.md`. Slučuje koordinace.
 - **Rychlá cesta K40-N1** (`claude/rychla-k40n1`, založena nad main ještě podle dopoledního znění): podle změny zadání
   J. V. 18. 11. jde rychlá cesta do `test` (větev nad integrací, kolo `--bez-mutaci` + cílené mutace, koordinace sloučí
   a pošle do test); rozdíly cen main × test ověřuje J. V. sám; do main jen na jeho pokyn se sloučením testu.
@@ -53,7 +70,7 @@ Otázky průběžně v dialogu, každá s doporučenou variantou (J. V. 18. 11.)
 | Ruční zkouška víc šachet na testu se ZAP; rozhodnutí o main | odloženo do 25. 11. | B0.1 „zatím ne“ |
 | K40-N1 v testu: ověřit rozdíly cen main × test | J. V. sám (ID vady a popis dotčených kalkulací dodá koordinace) | rychlá cesta do test |
 | Kdy sloučit test → main | spojit s rychlou cestou | zbytek po kole 49 |
-| B1 pojistka jazyka SoD (K48-N1) | udělat | blokuje C7 a sloučení do main |
+| B1 pojistka jazyka SoD (K48-N1) | hotovo v C7 #615 (v18.11.7), čeká na sloučení | ruční zkouška na testu: nahrát SoD v5 DE, tisk DE |
 | B4 obnova TEST sady (nástroj `test_sada_obnov.mjs`, podle `podklady/NAVOD_TEST_SADA_OBNOVA.md`) | udělat (kolega na testu) | kola běží nad kopií z 2. 11.; K39-I1 |
 | B5 SoD projekce v4 v main | udělat (datový úkol J. V.) | main tiskne starší znění smlouvy |
 | SoD v5 DE/EN do testu, CN v17 zveřejnit (test i main naráz) | udělat (kolega na testu; main J. V.) | bez toho smlouva DE/EN vyjde česky |

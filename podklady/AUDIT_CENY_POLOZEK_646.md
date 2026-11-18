@@ -1,4 +1,4 @@
-# Audit: každá položka vlastní cena (#645, 18. 11. 2026)
+# Audit: každá položka vlastní cena (#646, 18. 11. 2026)
 
 Zadání J. V. 18. 11. 2026 (paušální pravidlo): každá položka kalkulace OCK musí mít vlastní cenu nezávislou na ostatních
 a obchodník u ní musí jít zadat jinou cenu (i nulovou). Audit prošel jádro `src/engine.js` (všechny řádky
@@ -13,8 +13,8 @@ cenu — ruční cena u jedné změní i druhou a tlačítko se ukáže jen u pr
 
 | # | cesta | položky | stav | návrh |
 |---|---|---|---|---|
-| A1 | `C.statikaKc` | STATICKÉ POSOUZENÍ + STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ | **opraveno v #645** | vlastní `C.statikaOplKc`, migrace = `statikaKc`, cena beze změny |
-| A2 | `C.priplatky.madlaBmKc` | MADLA NA BOČNÍCH STĚNÁCH + MADLA NA ZADNÍ STĚNĚ | k rozhodnutí J. V. | (a) ponechat — tentýž výrobek a dodavatel (**doporučeno**); (b) vlastní klíč `madlaZadniBmKc` stejným vzorem jako statika. Příplatek: sahá i do objednaných příplatků SoD (souběh SL) — proto v #645 ne |
+| A1 | `C.statikaKc` | STATICKÉ POSOUZENÍ + STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ | **opraveno v #646** | vlastní `C.statikaOplKc`, migrace = `statikaKc`, cena beze změny |
+| A2 | `C.priplatky.madlaBmKc` | MADLA NA BOČNÍCH STĚNÁCH + MADLA NA ZADNÍ STĚNĚ | k rozhodnutí J. V. | (a) ponechat — tentýž výrobek a dodavatel (**doporučeno**); (b) vlastní klíč `madlaZadniBmKc` stejným vzorem jako statika. Příplatek: sahá i do objednaných příplatků SoD (souběh SL) — proto v #646 ne |
 | A3 | `C.leseniFix` (pole `fix`) | fixní část LEŠENÍ vnitřní i vnější (volitelné i příplatek) | k rozhodnutí J. V. | fix nemá vlastní tlačítko „cena z nabídky“ (řádek nese cestu metrové sazby). (a) ponechat (**doporučeno**, jedna mobilizace lešenáře); (b) tlačítko i pro fix; (c) vlastní fix pro vnější lešení |
 | A4 | `C.profilasKgKc` | PROFILY - HLAVNÍ NOSNÉ PRVKY + sloupy můstků (skladebný model) | k rozhodnutí J. V. | (a) ponechat — tatáž ocel (**doporučeno**); (b) vlastní sazba sloupů můstků |
 | A5 | `C.powertechExt` / `C.powertechInt` | 4 řádky PLECHY (hlavní, zasklení, oplech. dveří a podest, ostatní) | ponechat | tentýž plech v Kč/kg — cena z nabídky má platit pro všechny |
@@ -31,7 +31,7 @@ cenu — ruční cena u jedné změní i druhou a tlačítko se ukáže jen u pr
 | B3 | PŘIRÁŽKA ZA ATYP | procento z režie (`C.atypPrirazka`), ne cena | není problém |
 | B4 | PRÁCE ZÁMEČNÍKA - OSTATNÍ (ATYP) | cena se zadává přímo v zadání (`Z.zamecnikAtypKc`) | není problém |
 | B5 | hodinové a množstevní klíče (`C.statikaHod`, `C.statikaOplHod`, `C.stavbyvedouciHod` …) | nejsou ceny; mění se množství (ruční přepis) | není problém |
-| B6 | nulová cena u kterékoli položky | do #645 „cena z nabídky“ i server nulu odmítaly | **opraveno v #645** (nula platí, záporná ne, prázdné pole nulou není) |
+| B6 | nulová cena u kterékoli položky | do #646 „cena z nabídky“ i server nulu odmítaly | **opraveno v #646** (nula platí, záporná ne, prázdné pole nulou není) |
 | B7 | kalkulace PROJ (`engine_proj.js`) | mimo zadání auditu (sazby a položky se tam zadávají po činnostech) | případně samostatný audit |
 
 Ověření, že nic jiného cestu nesdílí: výčet `grep -o "cenaPath: '[^']*'" src/engine.js | sort | uniq -c` (14 cest

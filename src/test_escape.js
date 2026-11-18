@@ -380,7 +380,7 @@ const PROVERENO = {
   'nastaveni_ui.js': {
     "d.jenVApp.slice(0, 40).map(x => esc(x.klic)).join(' · ')": 'každý klíč prochází esc() uvnitř map()',
     'label': 'popisek řádku šablony psaný vývojářem',
-    "m ? 'hotovo: ' + esc(m.nazev) + ' – kliknutím přegeneruji' : 'vyrobit ' + l.toUpperCase() + ' mutaci z české šablony'":
+    "m ? 'nahráno: ' + esc(m.nazev) + ' – kliknutím nahrajete jiný soubor' : 'nahrát přeložený soubor ' + l.toUpperCase()":
       'jméno souboru mutace prochází esc(), zbytek jsou literály',
     'popis': 'popisný text bloku nastavení psaný vývojářem',
     'pozn': 'poznámka k řádku šablony psaná vývojářem',
@@ -600,7 +600,6 @@ const PROVERENO_CLENY = {
   },
   'sablony_sprava_ui.js': {
     'b.cls': 'CSS třída z literálů v sablStav() (ok / warn / …)',
-    'm.stat.procenta': 'procento přeložených odstavců — číslo',
   },
   'schvalovani_ui.js': { 'SCHV_CIZI.prohledano': 'počet prohledaných zakázek ze serveru — číslo' },
   'techspec_ui.js': {

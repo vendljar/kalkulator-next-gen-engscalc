@@ -38,13 +38,16 @@ function sodJazyk(typ) {
 
 function sodWord(typ) {
   const L = sodJazyk(typ);
-  sablonaProTisk(typ, L).then(srv => {
-    const zabrana = (typeof sodJazykZabrana === 'function' && srv) ? sodJazykZabrana(typ, L, !srv.mutaceChybi) : '';
+  sablonaProTisk(typ, L).then(async srv => {
+    const zabrana = (typeof sodJazykZabrana === 'function' && srv)
+      ? sodJazykZabrana(typ, L, !srv.mutaceChybi, srv.cestina ? srv.cestina.podil : 0) : '';   // C7: i podíl češtiny
     if (zabrana) { sodStavText(typ, 'Chyba: ' + zabrana); return; }
     if (srv) { sodWordGeneruj(typ, srv); return; }
     /* místní cesta (měkký režim / bez serveru): jazyková šablona z Nastavení */
     if (L !== 'cz' && typeof sodJazykZabrana === 'function') {
-      const z = sodJazykZabrana(typ, L, typeof SABLONY !== 'undefined' && !!SABLONY[typ + '_' + L]);
+      const m = typeof SABLONY !== 'undefined' ? SABLONY[typ + '_' + L] : null;
+      const c = m && typeof sablonaCestinaTisku === 'function' ? await sablonaCestinaTisku(typ, L, m.data) : null;
+      const z = sodJazykZabrana(typ, L, !!m, c ? c.podil : 0);
       if (z) { sodStavText(typ, 'Chyba: ' + z); return; }
     }
     // místní cesta – přednost má šablona nahraná v Nastavení → Šablony (SET-6)
@@ -246,7 +249,7 @@ function sodKarta() {
       DPH se počítá z celku. <b>Zástupci a kontakty zákazníka</b> i bankovní údaje se od 20. 8. 2026 berou z krycího
       listu výše. Co v zakázce chybí (např. <b>termíny, číslo smlouvy, IČO zákazníka</b>), dostane v dokumentu
       tečky <b>„……"</b> – místa označená …… doplňte ve Wordu; kontrola před tiskem i věta po tisku je vyjmenují.
-      U <b>víc šachet</b> vyjmenuje smlouva šachty v předmětu díla i v rozpisu ceny (šablona SoD realizace v5).
+      U <b>víc šachet</b> vyjmenuje smlouva šachty v předmětu díla i v rozpisu ceny (šablona SoD realizace v5 a novější).
       Vytištěná smlouva variantu <b>uzamkne</b> stejně jako odeslaná nabídka.</div>
     ${objKarta()}
     <div class="btns" style="margin-top:6px">
