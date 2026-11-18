@@ -7320,6 +7320,27 @@ const MUTACE = [
     hledej: "    return { nazev: uloRejstrikText(z.hlavicka.objednatel),",
     nahrad: "    return { nazev: uloRejstrikText(z.hlavicka.objednatel + ' ' + z.hlavicka.adresaObjednatele),",
     proc: "rejstřík (čtou všichni) by nesl sídlo zákazníků", sady: ["../src/test_vz_unik.js"] },
+  /* C7 (K48-N1, 18. 11. 2026): jazyková verze smlouvy z velké části česky. [C7] */
+  { nazev: "C7: server zveřejní smlouvu z češtiny [C7]", soubor: "functions/sablony.mjs",
+    hledej: "    if (cestina && cestina.zabrana) return json(",
+    nahrad: "    if (false) return json(",
+    proc: "DE/EN/FR smlouva vyrobená z české verze by se zveřejnila", sady: ["test_sablony.mjs"] },
+  { nazev: "C7: server vrátí smlouvu z češtiny [C7]", soubor: "functions/sablony.mjs",
+    hledej: "      if (c.zabrana) return json(",
+    nahrad: "      if (false) return json(",
+    proc: "vrácením staré verze by šla zveřejnit smlouva z velké části česky", sady: ["test_sablony.mjs"] },
+  { nazev: "C7: server bez upozornění u nabídky [C7]", soubor: "functions/sablony.mjs",
+    hledej: "      cestina && cestina.varovani ? { varovani: cestina.varovani, podilCestiny: cestina.podil } : {}));",
+    nahrad: "      {}));",
+    proc: "administrátor by se o české nabídce v cizím jazyce nedozvěděl", sady: ["test_sablony.mjs"] },
+  { nazev: "C7: mez podílu češtiny vypnutá (server) [C7]", soubor: "../src/sablony_online.js",
+    hledej: "  if (!(out.podil > out.mez)) return out;",
+    nahrad: "  return out;",
+    proc: "server by pustil smlouvu z velké části česky", sady: ["test_sablony.mjs"] },
+  { nazev: "C7: smlouvy = jen SoD realizace [C7]", soubor: "../src/sablony_online.js",
+    hledej: "const SABLONA_CESTINA_SMLOUVY = ['sod', 'sodProj', 'plnaMoc'];",
+    nahrad: "const SABLONA_CESTINA_SMLOUVY = ['sod'];",
+    proc: "SoD projekce a plná moc z češtiny by prošly jen s upozorněním", sady: ["test_sablony.mjs"] },
 ];
 /* ---------- přerušený běh vrátí zmutovaný soubor ----------
  * (nález T5 revize v22.9.9, 22. 9. 2026)
