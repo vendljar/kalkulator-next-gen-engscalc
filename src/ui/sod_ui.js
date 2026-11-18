@@ -249,7 +249,7 @@ function sodKarta() {
       DPH se počítá z celku. <b>Zástupci a kontakty zákazníka</b> i bankovní údaje se od 20. 8. 2026 berou z krycího
       listu výše. Co v zakázce chybí (např. <b>termíny, číslo smlouvy, IČO zákazníka</b>), dostane v dokumentu
       tečky <b>„……"</b> – místa označená …… doplňte ve Wordu; kontrola před tiskem i věta po tisku je vyjmenují.
-      U <b>víc šachet</b> vyjmenuje smlouva šachty v předmětu díla i v rozpisu ceny (šablona SoD realizace v5).
+      U <b>víc šachet</b> vyjmenuje smlouva šachty v předmětu díla i v rozpisu ceny (šablona SoD realizace v5 a novější).
       Vytištěná smlouva variantu <b>uzamkne</b> stejně jako odeslaná nabídka.</div>
     ${objKarta()}
     <div class="btns" style="margin-top:6px">

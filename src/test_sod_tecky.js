@@ -61,6 +61,16 @@ async function word(typ, sablonaAb, zak, v, L) {
   return { res, xml, text: texty(xml) };
 }
 const pocet = (s, x) => s.split(x).length - 1;
+/* SL L1/L2: podbarvení — běhy se <w:highlight> a běhy s tečkami */
+const HL = '<w:highlight w:val="yellow"/>';
+const behy = x => x.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g) || [];
+const zlute = x => behy(x).filter(b => /<w:highlight\b/.test(b));
+const xmlVadneBehy = x => (x.match(/<w:r[\s>]/g) || []).length !== (x.match(/<\/w:r>/g) || []).length;
+/* M2 (dorevize poradce 18. 11.): žlutý běh smí nést JEN „……" (nebo prázdný kus rozděleného symbolu) — žádný popisek ani tabulátor */
+const textBehu = b => b.replace(/<w:tab\/>/g, '\t').replace(/<w:br\/>/g, '\n').replace(/<[^>]+>/g, '');
+const zluteBezTecek = x => zlute(x).filter(b => textBehu(b) !== T && textBehu(b) !== '').map(textBehu);
+/* běh, který jsou jen tečky „……" (vygenerované místo; pevné tečkované řádky šablony jsou delší) */
+const teckyBezZlute = x => behy(x).filter(b => b.replace(/<[^>]+>/g, '') === T && !/<w:highlight\b/.test(b)).map(b => b.replace(/<[^>]+>/g, ''));
 const stejne = (a, b) => JSON.stringify((a || []).slice().sort()) === JSON.stringify((b || []).slice().sort());
 
 /* ---------- zakázky ---------- */
@@ -80,7 +90,7 @@ function prazdnaProj() {
   zak.cislo = '2026 - OVP - CN - 0584';
   Object.assign(zak.projHlavicka, { cislo: '2026 OVP CN 0584', objednatel: 'SVJ Zkušební', nazevAkce: 'Zkušební projekce' });
   const v = zak.varianty[0];
-  v.data.proj.cenik = ZC.zkusebniCenikProj();
+  v.data.proj.cenik = Object.assign(ZC.zkusebniCenikProj(), { kurzEurKc: 25 });   // kurz pro jazykové SoD PROJ (K, KNG_PODKLADY)
   return { zak, v };
 }
 /* Vyplněná: všechna pole krycího listu OCK/PROJ se symbolem smlouvy, firma, zástupci, hlavička. */
@@ -127,7 +137,9 @@ FIRMA_POLE.forEach(p => { firma[p.id] = /Kc$|skladne/i.test(p.id) ? '500' : (/em
     const tx = texty(s);
     test('G tečky v textu, i u prázdné hodnoty ze seznamu', tx[0] === 'Objednatel ' + T + ' a ' + T, tx);
     test('G blok s jediným prázdným symbolem zmizí celý (odstranPrazdneBloky dřív než tečky)', tx.indexOf('Text ' + T) < 0 && !tx.some(t => /BLOK_X/.test(t)), tx);
-    test('G symbol rozdělený mezi běhy → tečky, XML bez vad', tx.indexOf(T) >= 0 && /<w:t>……<\/w:t><\/w:r><w:r><w:t><\/w:t>/.test(s), tx);
+    test('G symbol rozdělený mezi běhy → tečky, XML bez vad', tx.indexOf(T) >= 0
+      && /<w:rPr><w:highlight w:val="yellow"\/><\/w:rPr><w:t>……<\/w:t><\/w:r><w:r><w:rPr><w:highlight w:val="yellow"\/><\/w:rPr><w:t><\/w:t>/.test(s)
+      && !xmlVadneBehy(s), tx);
     /* (obrázek s alternativním textem {{…}} bez dat odstraní docxVlozObrazky už dřív — beze změny) */
     test('G symbol mimo text (atribut, např. alternativní text) se nemění', s.indexOf('w:name="{{PODPIS_OBR}}"') > 0);
     test('G nevyplneneVDokumentu = symboly, které tečky opravdu dostaly', stejne(zapis, ['OBJEDNATEL_ICO', 'OBJEDNATEL_DIC', 'ROZDELENY']), zapis);
@@ -138,8 +150,21 @@ FIRMA_POLE.forEach(p => { firma[p.id] = /Kc$|skladne/i.test(p.id) ? '500' : (/em
     { symboly: new Set(['A', 'B', 'C', 'D', 'X_ZAC', 'X_KON', 'E']) }, ['E']), ['B', 'C', 'D'])
     && stejne(sodNevyplnene({}, { symboly: ['D', 'D'] }), ['D']));
   test('S věta: „Ve smlouvě zůstala 2 místa k doplnění … IČO zákazníka, termín montáže do."', sodNevyplneneText(['OBJEDNATEL_ICO', 'SOD_TERMIN_MONTAZ_DO'])
-    === 'Ve smlouvě zůstala 2 místa k doplnění (tečky „……"): IČO zákazníka, termín montáže do.' && sodNevyplneneText([]) === ''
+    === 'Ve smlouvě zůstala 2 místa k doplnění (tečky „……"). Chybí: IČO zákazníka, termín montáže do.' && sodNevyplneneText([]) === ''
     && /zůstalo 1 místo/.test(sodNevyplneneText(['X'])) && /zůstalo 5 míst/.test(sodNevyplneneText(['A', 'B', 'C', 'D', 'E'])), sodNevyplneneText(['OBJEDNATEL_ICO', 'SOD_TERMIN_MONTAZ_DO']));
+  /* SL (rozhodnutí J. V. 16. 11. 2026): Chybí / Nepovinné */
+  const POVINNE_JV = ['OBJEDNATEL_DIC', 'OBJEDNATEL_BANKA', 'OBJEDNATEL_UCET', 'OBJEDNATEL_ZASTUPCE_OBCHODNI', 'OBJEDNATEL_ZASTUPCE_OBCHODNI_KONTAKT'];
+  const NEPOV_JV = ['OBJEDNATEL_PODPIS2_JMENO', 'OBJEDNATEL_PODPIS2_FUNKCE', 'OBJEDNATEL_KONTAKT_KOPIE1', 'OBJEDNATEL_KONTAKT_KOPIE2'];
+  test('S2 nepovinné jsou právě druhý podepisující a faktury v kopii 1 a 2 (jedna konstanta)',
+    typeof SOD_NEVYPLNENE_NEPOVINNE !== 'undefined' && stejne(SOD_NEVYPLNENE_NEPOVINNE, NEPOV_JV), typeof SOD_NEVYPLNENE_NEPOVINNE !== 'undefined' ? SOD_NEVYPLNENE_NEPOVINNE : null);
+  const rz = typeof sodNevyplneneRozdel === 'function' ? sodNevyplneneRozdel(POVINNE_JV.concat(NEPOV_JV, ['OBJEDNATEL_ICO'])) : null;
+  test('S2 DIČ, banka, účet, zástupce ve věcech obchodních a kontakt → „Chybí"', !!rz
+    && stejne(rz.chybi, POVINNE_JV.concat(['OBJEDNATEL_ICO'])) && stejne(rz.nepovinne, NEPOV_JV), rz);
+  const vt = sodNevyplneneText(['OBJEDNATEL_DIC', 'OBJEDNATEL_KONTAKT_KOPIE1', 'OBJEDNATEL_PODPIS2_JMENO']);
+  test('S2 věta: Chybí, pak Nepovinné; každé místo vyjmenované', vt === 'Ve smlouvě zůstala 3 místa k doplnění (tečky „……"). Chybí: DIČ zákazníka. '
+    + 'Nepovinné: faktury v kopii na (1), druhý podepisující za zákazníka.', vt);
+  test('S2 jen nepovinné: věta bez „Chybí"', sodNevyplneneText(['OBJEDNATEL_KONTAKT_KOPIE2'])
+    === 'Ve smlouvě zůstalo 1 místo k doplnění (tečky „……"). Nepovinné: faktury v kopii na (2).', sodNevyplneneText(['OBJEDNATEL_KONTAKT_KOPIE2']));
   test('S symbol bez popisu se vypíše jménem, stejné popisy se nesčítají', JSON.stringify(sodNevyplnenePopisy(['NEZNAMY_X', 'PODM_POKUTA_DODAVKA_PROC', 'PODM_POKUTA_TERMIN_PROC']))
     === JSON.stringify(['NEZNAMY_X', 'pokuta za prodlení zhotovitele (vlastní znění bez procenta)']));
 
@@ -179,6 +204,22 @@ FIRMA_POLE.forEach(p => { firma[p.id] = /Kc$|skladne/i.test(p.id) ? '500' : (/em
   const wy = await word('sod', sodAb, vy.zak, vy.v);
   test('R vyplněná zakázka: žádné „……", žádné {{', wy.xml.indexOf(T) < 0 && wy.xml.indexOf('{{') < 0 && wy.res.data.nevyplnene.length === 0,
     [wy.res.data.nevyplnene, wy.text]);
+  /* SL L1/L2: šablona se žlutými CELÝMI běhy (jako SoD projekce v4 a plná moc) */
+  const PH = t => '<w:p><w:r><w:rPr>' + HL + '</w:rPr><w:t xml:space="preserve">' + t + '</w:t></w:r></w:p>';
+  const SODH = SOD.replace(/<w:p><w:r><w:t xml:space="preserve">([^<]*)<\/w:t><\/w:r><\/w:p>/g, (m, t) => PH(t));
+  const sodHAb = await docx(SODH);
+  const wyH = await word('sod', sodHAb, vy.zak, vy.v);
+  test('L1 nic nechybí (nevyplnene = []): ve smlouvě žádné podbarvení', wyH.res.data.nevyplnene.length === 0 && wyH.xml.indexOf('<w:highlight') < 0,
+    zlute(wyH.xml).map(b => b.replace(/<[^>]+>/g, '')));
+  const wpH = await word('sod', sodHAb, pz.zak, pz.v);
+  const radekObj = wpH.xml.slice(wpH.xml.lastIndexOf('<w:p>', wpH.xml.indexOf('Objednatel: ')), wpH.xml.indexOf('</w:p>', wpH.xml.indexOf('Objednatel: ')));
+  test('L2 běh „Objednatel: {{OBJEDNATEL}}, IČ {{OBJEDNATEL_ICO}}, DIČ {{…}}" (vyplněný + nevyplněné): rozdělen, žluté právě tečky',
+    !zluteBezTecek(radekObj).length && !teckyBezZlute(radekObj).length && zlute(radekObj).length === 2
+    && texty(doc(radekObj + '</w:p>'))[0] === 'Objednatel: Zkušební zákazník s.r.o., IČ ' + T + ', DIČ ' + T, [zluteBezTecek(radekObj), teckyBezZlute(radekObj), texty(doc(radekObj + '</w:p>'))]);
+  test('L2 celá smlouva: žluté jsou právě běhy s tečkami', !zluteBezTecek(wpH.xml).length && !teckyBezZlute(wpH.xml).length && zlute(wpH.xml).length > 0,
+    [zluteBezTecek(wpH.xml), teckyBezZlute(wpH.xml)]);
+  test('L2 text smlouvy se rozdělením běhů nezměnil (= smlouva ze šablony bez podbarvení)',
+    JSON.stringify(wpH.text) === JSON.stringify((await word('sod', sodAb, pz.zak, pz.v)).text));
   /* zámek: záznam tisku se generováním nemění a teček nenese */
   {
     const z = kop(pz.zak), vv = z.varianty[0];
@@ -217,19 +258,27 @@ FIRMA_POLE.forEach(p => { firma[p.id] = /Kc$|skladne/i.test(p.id) ? '500' : (/em
   let sk = 0;
   const popisChybi = [];
   for (const [typ, jm] of [['sod', 'Sablona_SOD_REALIZACE_v4.docx'], ['sod', 'Sablona_SOD_REALIZACE_v5.docx'], ['sod', 'Sablona_SOD_REALIZACE_v4_EN.docx'],
-    ['sodProj', 'Sablona_SOD_PROJEKCE_v4.docx'], ['plnaMoc', 'Sablona_PLNA_MOC.docx']]) {
+    ['sod', 'Sablona_SOD_REALIZACE_v6.docx'], ['sod', 'Sablona_SOD_REALIZACE_v6_EN.docx'], ['sod', 'Sablona_SOD_REALIZACE_v6_DE.docx'],
+    ['sod', 'Sablona_SOD_REALIZACE_v6_FR.docx'],
+    ['sodProj', 'Sablona_SOD_PROJEKCE_v4.docx'], ['sodProj', 'Sablona_SOD_PROJEKCE_v4_EN.docx'], ['sodProj', 'Sablona_SOD_PROJEKCE_v4_DE.docx'],
+    ['sodProj', 'Sablona_SOD_PROJEKCE_v4_FR.docx'], ['plnaMoc', 'Sablona_PLNA_MOC.docx']]) {
     const f = najdi(jm);
     if (!f) continue;
     sk++;
     const sym = Array.from(await dokumentSymbolySablony(ab(f)));
     if (typ !== 'plnaMoc') sym.filter(k => !/_(?:ZAC|KON)$/.test(k) && !SOD_NEVYPLNENE_POPIS[k]).forEach(k => popisChybi.push(jm + ':' + k));
     const p = typ === 'sod' ? prazdna() : prazdnaProj();
-    const L = /_EN/.test(jm) ? 'en' : 'cz';
+    const L = (jm.match(/_(EN|DE|FR)\.docx$/) || [, 'cz'])[1].toLowerCase();
     const g = await word(typ, ab(f), p.zak, p.v, L);
     test('K ' + jm + ' (prázdná zakázka): žádné „{{" ani „}}", tečky = sodNevyplnene', g.xml.indexOf('{{') < 0 && g.xml.indexOf('}}') < 0
       && stejne(g.res.data.nevyplnene, g.res.data.nevyplneneVDokumentu) && g.res.data.nevyplnene.length > 0,
       [g.res.data.nevyplnene, g.res.data.nevyplneneVDokumentu, (g.xml.match(/\{\{[^}]*\}\}/g) || []).slice(0, 5)]);
     if (typ === 'sodProj') test('K ' + jm + ': nenabízené činnosti (bloky CIN_*) zmizely, ne tečky', !g.res.data.nevyplnene.some(k => /^CIN_/.test(k)));
+    /* SL L1/L2: šablony se žlutými symboly — žluté jsou právě běhy s tečkami */
+    const zlutaSablona = /_v6|PROJEKCE_v4|PLNA_MOC/.test(jm);
+    if (zlutaSablona) test('K ' + jm + ' (prázdná zakázka): žluté jsou právě běhy s tečkami, XML bez vad', !zluteBezTecek(g.xml).length && !teckyBezZlute(g.xml).length
+      && !(await dg.docxXmlVady(await g.res.blob.arrayBuffer())).length,
+      [zluteBezTecek(g.xml).slice(0, 8), teckyBezZlute(g.xml).slice(0, 8)]);
     if (typ !== 'plnaMoc') {
       global.NAST = { firma };
       global.ONLINE_STAV = { ja: { email: 'obchodnik@priklad.cz', jmeno: 'Smyšlený Obchodník', funkce: 'obchodník', telefon: '+420 000 000 000' } };
@@ -240,6 +289,8 @@ FIRMA_POLE.forEach(p => { firma[p.id] = /Kc$|skladne/i.test(p.id) ? '500' : (/em
       const vSablone = pocet((await dg.zipPrecti(new Uint8Array(ab(f)))).filter(q => /^word\/(document|header\d*|footer\d*)\.xml$/.test(q.nazev))
         .map(q => dec.decode(q.data)).join(''), T);
       test('K ' + jm + ' (vyplněná zakázka): žádné nové „……" ani {{', pocet(gv.xml, T) === vSablone && gv.xml.indexOf('{{') < 0, [gv.res.data.nevyplnene, gv.text.filter(t => /……|\{\{/.test(t))]);
+      if (zlutaSablona) test('K ' + jm + ' (vyplněná zakázka): žádné podbarvení mimo tečky', !zluteBezTecek(gv.xml).length,
+        [gv.res.data.nevyplnene, zluteBezTecek(gv.xml).slice(0, 8)]);
     }
   }
   if (sk) test('K mapa popisů: každý symbol šablon SoD má lidský popis', !popisChybi.length, popisChybi);

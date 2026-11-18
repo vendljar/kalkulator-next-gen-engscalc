@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka obchodníka",
-    "verze": "Platí pro aplikaci v18.11.4 · sestaveno 18. 11. 2026",
+    "verze": "Platí pro aplikaci v18.11.6 · sestaveno 18. 11. 2026",
 
   "uvod": [
     {
@@ -821,7 +821,7 @@
       "nadpis": "24. Krycí listy, smlouva a plná moc",
       "bloky": [
         { "typ": "text", "text": "Smlouva o dílo nese cenu z nabídky a k tomu zástupce a kontakty zákazníka, bankovní spojení a zápis v rejstříku. Ty se vyplňují v krycím listu v sekci **Zástupci a kontakty zákazníka** — a stačí jednou: krycí list OCK a PROJ sdílejí tatáž pole. Osoba ve věcech smluvních je zároveň ta, která smlouvu podepisuje, proto má i kolonku pozice." },
-        { "typ": "text", "text": "Co nevyplníte, dostane ve Wordu **tečky „……“** a doplníte to ručně (od v12.11). Je to schválně: prázdné pole by místo beze stopy smazalo a chybějící údaj by si nikdo nevšiml. **Kontrola před tiskem** smlouvy o dílo chybějící údaje vyjmenuje jmény polí („IČO zákazníka, termín montáže od …“) — jen upozorní, tisk nezastaví — a po tisku je pod tlačítkem věta „Ve smlouvě zůstalo N míst k doplnění: …“. Kdo údaje doplní v krycím listu před tiskem, tečky ve smlouvě mít nebude. Tečky dostane i plná moc (údaje zmocnitele), tam bez výpisu." },
+        { "typ": "text", "text": "Co nevyplníte, dostane ve Wordu **tečky „……“** a doplníte to ručně (od v12.11); tečky jsou ve smlouvách i v plné moci **žlutě podbarvené** a nic jiného žluté není (ani vyplněné údaje, ani text, který šablona podbarvuje). Je to schválně: prázdné pole by místo beze stopy smazalo a chybějící údaj by si nikdo nevšiml. **Kontrola před tiskem** smlouvy o dílo chybějící údaje vyjmenuje jmény polí ve dvou skupinách: **Chybí** („IČO zákazníka, termín montáže od …“ — povinné údaje smlouvy včetně DIČ, banky, čísla účtu a zástupce ve věcech obchodních s kontaktem) a **Nepovinné** (jen druhý podepisující za zákazníka a faktury v kopii 1 a 2, pokud je šablona má). Jen upozorní, tisk nezastaví — a po tisku je pod tlačítkem věta „Ve smlouvě zůstalo N míst k doplnění (tečky „……“). Chybí: … Nepovinné: …“. Kdo údaje doplní v krycím listu před tiskem, tečky ve smlouvě mít nebude. Tečky dostane i plná moc (údaje zmocnitele), tam bez výpisu." },
         {
           "typ": "kroky", "nadpis": "Postup: krycí list a smlouva o dílo OCK",
           "polozky": [
@@ -957,7 +957,7 @@
             },
             {
               "pojem": "Smlouva o dílo",
-              "vyklad": "Cena díla je cena celé nabídky. Šablona **SoD realizace v5** vyjmenuje šachty: v čl. II pod předmětem díla řádek „2 varianty šachet, celkem 3 ks (Výtah A 1 ks, Výtah B 2 ks)“, v čl. V pod cenou řádek za každou variantu (název, kusy, cena před slevou). U zakázky s jednou šachtou je smlouva stejná jako dřív. Se starší šablonou (v4) smlouva vznikne jen s celkovou cenou — aplikace upozorní (kontrola i věta po tisku) a předmět doplníte ve Wordu."
+              "vyklad": "Cena díla je cena celé nabídky. Šablona **SoD realizace v5** vyjmenuje šachty: v čl. II pod předmětem díla řádek „2 varianty šachet, celkem 3 ks (Výtah A 1 ks, Výtah B 2 ks)“, v čl. V pod cenou řádek za každou variantu (název, kusy, cena před slevou) a nakonec vyrovnávací řádek **Sleva** se stejnou částkou jako řádek slevy v nabídce (s obchodním zaokrouhlením „Sleva a zaokrouhlení“, bez slevy „Zaokrouhlení“) — součet rozpisu je tak přesně cena díla dle nabídky. V eurech jsou řádky šachet stejné jako v tabulce šachet nabídky. Bez rozdílu se vyrovnávací řádek nepíše. U zakázky s jednou šachtou je smlouva stejná jako dřív. Se starší šablonou (v4) smlouva vznikne jen s celkovou cenou — aplikace upozorní (kontrola i věta po tisku) a předmět doplníte ve Wordu."
             },
             {
               "pojem": "Přehled cenových nabídek",

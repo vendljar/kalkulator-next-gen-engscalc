@@ -1,6 +1,6 @@
 {
   "titul": "Kalkulátor Next Gen — příručka administrátora",
-  "verze": "Platí pro aplikaci v18.11.4 · sestaveno 18. 11. 2026",
+  "verze": "Platí pro aplikaci v18.11.6 · sestaveno 18. 11. 2026",
   "castB": "Kapitoly 1–32 jsou **příručka obchodníka beze změny** — tak, jak ji dostávají obchodníci. Správce ji potřebuje znát, aby věděl, co obchodník vidí a dělá; odkazy na čísla kapitol v ní platí. Kde mluví o „administrátorovi“, jste to vy.",
   "uvod": [
     {
@@ -557,6 +557,14 @@
               "text": "Pak nahrajte **všechny tři jazyky najednou** — **_EN**, **_DE**, **_FR** z dávky (ne *Vyrobit z češtiny*: jazykové v5 vznikly z revidovaných v4) — a **Zveřejnit**. Zkouška na testovacím webu: smlouva zakázky s jednou šachtou jako dřív, zakázka se dvěma šachtami má řádek šachet v čl. II a řádek za šachtu v čl. V."
             }
           ]
+        },
+        {
+          "typ": "podnadpis",
+          "text": "Šablona smlouvy o dílo — realizace v6 (žlutá nevyplněná místa)"
+        },
+        {
+          "typ": "text",
+          "text": "**Sablona_SOD_REALIZACE_v6** = v5, jen symboly mají žluté podbarvení jako SoD projekce v4 a plná moc. Kde je symbol uprostřed věty, je žlutý jen symbol, okolní text ne. Ve vytištěné smlouvě jsou žluté **právě tečky „……“** nevyplněných míst — aplikace u nich podbarvení doplní a u všeho ostatního sejme, i u pevného textu, který šablona podbarvuje (totéž platí pro SoD projekce a plnou moc). Symboly i text jsou stejné jako ve v5, takže kontrola při nahrání má ukázat **přibylo 0, ubylo 0**. Vyrábí ji `node nastroje/vyrob_sablony.js --sod-real-v6` (podklad podklady/SABLONA_SOD_REALIZACE_V6_18_11.md); nahrávají se všechny čtyři jazyky najednou jako u v5, nejdřív na test."
         },
         {
           "typ": "podnadpis",
