@@ -8,6 +8,33 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v18.11.5 — S6 + S8 #613: jedna evidence v roadmap.json, PREHLED.md a NOVINKY.md, větev claude/s6s8-evidence
+
+Nad integrací `9bd6dc8` (v18.11.4 = test). Kód aplikace beze změny. Podle návrhu režie vývoje (`podklady/NAVRH_REZIE_2026-11-18.md`,
+oddíly S6 a S8) a rozhodnutí J. V. 18. 11. 2026: jedna evidence v `roadmap.json`, přehled pro kolegy jako soubor v repu (bez
+e-mailu a ClickUp), kokpit zůstává pro J. V., tag a release jen pro stav v main, po sloučení do main `NOVINKY.md`.
+
+- **Evidence (S6):** nepovinná pole `typ` (ukol | nalez | otazka | rozhodnuti | davka), `cekaNa` sjednocené na „<kdo>: <co>“
+  (J. V. | kolega | koordinace | dávka | integrátor | externí), `kolo`, `vetev`, `verze`, `dopadCena`, `alias` (staré řady
+  K48-N1, B1–B7, C7–C10, B0.x), `novinka` a `jinak` (pro NOVINKY). `roadmapa.py --kontrola` hlídá nové schéma (nehotová má typ
+  a „čeká na“, nález má kolo, hotová s typem verzi, alias není číslo ani u dvou položek, nové značky jen čísla); totéž
+  `src/test_roadmapa.js`. `--migrace` (24 nehotových dostalo typ a sjednocené „čeká na“, 9 hotových aliasy) přepisuje jen
+  dotčené položky, zbytek souboru znak po znaku. `--zive` (nehotové podle toho, na koho čekají), `--hledej <značka>`.
+- **Převod:** otevřené nálezy a otázky z kol a z PREDAVKA 18. 11. jako #614–#643 (K40-N1 #614, K48-N1/B1/C7 #615,
+  B2/C10 #616, B0.1 #617 …); uzavřené nepřevedeny. Živý výpis: 54 nehotových položek. Roadmapa #613.
+- **Stránka roadmapy:** hledání i podle aliasu, detail ukáže typ, starou značku, kolo, větev, verzi a „mění cenu“
+  (`overit_roadmapu.mjs` 20/0, nově 3 kontroly).
+- **Přehled (S8):** `nastroje/prehled_stavu.py` → `PREHLED.md` + `PREHLED.json`: verze main a test (z gitu), položky evidence
+  s verzí jen v historii testu, otevřené vady s dopadem na cenu (i opravené jen v testu), co čeká na J. V. Bez cen (částka →
+  „…“, jinak se nic nezapíše) a bez času vygenerování. Krok `staticke` 9 kontrol: `roadmapa.py --kontrola`
+  + `prehled_stavu.py --kontrola` (nejde vyrobit = chyba, neodpovídá stavu = upozornění).
+- **NOVINKY:** `nastroje/novinky.py <od> <do> [--zapsat]` → 5–10 řádků česky (Nové / Opraveno / Jinak) z evidence a CHANGELOG,
+  bez cen. `release_odkaz.py` začne popis releasu týmiž odrážkami (`--od <verze>`, nebo NOVINKY.md se stejnou verzí).
+- **CLAUDE.md:** 3 řádky — kde je evidence, PREHLED a NOVINKY.
+- **Testy:** `src/test_evidence.js` 54/0 (umělá data, dočasný git). Pojistka: kontrola S6 vypnutá 15 FAIL, přehled bez filtru
+  vad podle main 1 FAIL, bez filtru částek 14 FAIL, novinky bez filtru částek 3 FAIL, release bez NOVINKY 1 FAIL, migrace
+  přeformátuje 3 FAIL. `src/test_roadmapa.js` 24/0 (nad roadmap.json před migrací 4 FAIL). `src/test_release_odkaz.js` 27/0.
+
 ## v18.11.4 — S7: startovní podklady (CLAUDE.md, PREDAVKA, log rozhodnutí), větev claude/s7-podklady
 
 Nad integrací `5e21f89` (v18.11.2), sloučeno s integrací `dcb1678` (v18.11.3, S3 #611). Kód aplikace beze změny. Podle návrhu režie vývoje

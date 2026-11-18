@@ -3,6 +3,9 @@
 Komunikace česky. Know-how projektu je ve skillech `kalkulator-next-gen`,
 `roadmapa-kng` a `testovaci-procedura-kng`. Datovaná rozhodnutí J. V. a jejich
 důvody jsou v `podklady/ROZHODNUTI_LOG.md`; tady jsou jen platná pravidla.
+Evidence (úkoly, nálezy, otázky, rozhodnutí, dávky) je jen `roadmapa/roadmap.json`: nové značky jen čísla #, staré řady v poli `alias`, nehotové `python3 roadmapa/roadmapa.py --zive`.
+`PREHLED.md` (verze main × test, co je jen v testu, vady ceny, čeká na J. V.) vyrobí koordinace po každém sloučení: `python3 nastroje/prehled_stavu.py`.
+`NOVINKY.md` po sloučení do main: `python3 nastroje/novinky.py <od> <do> --zapsat`; z téhož textu skládá popis releasu `release_odkaz.py` (`--od`).
 
 ## Větve
 
