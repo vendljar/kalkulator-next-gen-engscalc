@@ -7,12 +7,21 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "804147c9",
-  "verze": "v18.11.6",
+  "sha": "755062dd",
+  "verze": "v18.11.7",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 235,
+ "test_navic_commitu": 224,
  "v_testu_ne_v_main": [
+  {
+   "id": "645",
+   "typ": "ukol",
+   "nazev": "VZ T1: řídící varianta a řídící zákazník v hlavičce (2+ zákazníků), karta ★/☆, náhled poznámky dealu",
+   "alias": [
+    "T1"
+   ],
+   "verze": "v18.11.7"
+  },
   {
    "id": "614",
    "typ": "nalez",
@@ -449,9 +458,9 @@
  "nehotove_podle_kdo": {
   "J. V.": 42,
   "kolega": 5,
-  "koordinace": 3,
+  "koordinace": 4,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 55
+ "nehotovych": 56
 }
