@@ -201,8 +201,8 @@ function renderTechspecPreklad() {
       ${tsKontrolaBar()}
       <h1>${tsPrelozText('Technická specifikace výtahové šachty')}</h1>
       <div class="sub">${tsPrelozText('(tato technická specifikace bude použita jako příloha Smlouvy o dílo nebo závazné objednávky)')}</div>
-      ${row('ČÍSLO NABÍDKY', ZAK.cislo)}
-      ${row('OBJEDNATEL', ZAK.objednatel)}
+      ${row('ČÍSLO NABÍDKY', vzTiskCislo(vzTiskZakTicho()))}
+      ${row('OBJEDNATEL', vzTiskZakTicho().objednatel)}
       ${row('DATUM', ZAK.datum)}
       ${(() => { const na = tsNazevAkce(TS, ZAK);
         /* převzatý název akce je vlastní jméno zakázky — slovníkem se nepřekládá */
@@ -211,7 +211,7 @@ function renderTechspecPreklad() {
       ${sekce}
       ${extra ? `<h3>${tsPrelozText('DALŠÍ UJEDNÁNÍ')}</h3>` + extra : ''}
       <div class="btns noprint" style="margin-top:14px">
-        <button onclick="prepniTab('spec'); tiskSNazvem(nazevExportu('specifikace', { cislo: ZAK.cislo, jazyk: jazyk() }))">${esc(T('Tisk specifikace / PDF'))}</button>
+        <button onclick="prepniTab('spec'); ${vzTiskSpecOnclick('jazyk()')}">${esc(T('Tisk specifikace / PDF'))}</button>
       </div>
       <div class="note noprint">Náhled v cizím jazyce je jen ke čtení – obsah se edituje v české verzi
       (přepněte na CZ). Tečkovaně zvýrazněné fráze zatím nemají překlad ve slovníku a zůstávají česky.</div>
@@ -346,8 +346,12 @@ function renderTechspec() {
       ${typeof standardRozpis === 'function' ? standardRozpis() : ''}
       ${tsSachtyLista(vsK)}
       <div class="sub">(tato technická specifikace bude použita jako příloha Smlouvy o dílo nebo závazné objednávky)</div>
-      <div class="spec-row"><div class="lbl">ČÍSLO NABÍDKY</div><div><input type="text" value="${esc(ZAK.cislo)}" onchange="set('ZAK.cislo', this.value)"></div><div></div></div>
-      <div class="spec-row"><div class="lbl">OBJEDNATEL</div><div><input type="text" value="${esc(ZAK.objednatel)}" onchange="set('ZAK.objednatel', this.value)"></div><div></div></div>
+      ${vzTiskJinyZakaznik()
+        /* VZ-E2 #601: specifikace dalšího zákazníka — číslo s písmenem a jeho název, jen ke čtení. */
+        ? `<div class="spec-row"><div class="lbl">ČÍSLO NABÍDKY</div><div><input type="text" value="${esc(vzTiskCislo(vzTiskZakTicho()))}" disabled></div><div></div></div>
+      <div class="spec-row"><div class="lbl">OBJEDNATEL</div><div><input type="text" value="${esc(vzTiskZakTicho().objednatel)}" disabled></div><div></div></div>`
+        : `<div class="spec-row"><div class="lbl">ČÍSLO NABÍDKY</div><div><input type="text" value="${esc(ZAK.cislo)}" onchange="set('ZAK.cislo', this.value)"></div><div></div></div>
+      <div class="spec-row"><div class="lbl">OBJEDNATEL</div><div><input type="text" value="${esc(ZAK.objednatel)}" onchange="set('ZAK.objednatel', this.value)"></div><div></div></div>`}
       <div class="spec-row"><div class="lbl">DATUM</div><div><input type="date" style="text-align:left" value="${esc(ZAK.datum)}" onchange="set('ZAK.datum', this.value)"></div><div></div></div>
       ${tsNazevAkceRadek()}
       <div class="spec-row"><div class="lbl">ADRESA STAVBY</div><div><input type="text" value="${esc(ZAK.adresa)}" onchange="set('ZAK.adresa', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr('ZAK.adresa') : ''}></div><div></div></div>
@@ -355,7 +359,7 @@ function renderTechspec() {
       ${extra ? '<h3>DALŠÍ UJEDNÁNÍ</h3>' + extra : ''}
       <div class="btns noprint" style="margin-top:14px">
         <button onclick="tsExtraAdd()">+ přidat vlastní řádek</button>
-        <button onclick="prepniTab('spec'); tiskSNazvem(nazevExportu('specifikace', { cislo: ZAK.cislo, jazyk: 'cz' }))">Tisk specifikace / PDF</button>
+        <button onclick="prepniTab('spec'); ${vzTiskSpecOnclick("'cz'")}">Tisk specifikace / PDF</button>
       </div>
       <div class="note noprint">Pole se štítkem „z kalkulace“ se přepočítávají podle zadání OCK.
       Jakmile pole přepíšete, platí ruční hodnota (štítek „ručně“); tlačítkem ↺ vrátíte automatiku.

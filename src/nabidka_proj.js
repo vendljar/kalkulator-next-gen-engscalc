@@ -649,6 +649,7 @@ function nabidkaProjPlatby(zak, varianta, lang, spoctene) {
 const NABIDKA_PROJ_SPOJKA = { cz: 'a', en: 'and', de: 'und', fr: 'et' };
 
 function nabidkaProjData(zak, varianta, lang, moznosti) {
+  if (typeof vzTiskHlidej === 'function') vzTiskHlidej(zak);   // VZ-E2 (revize U3): jen z pohledu zákazníka
   /* Dotisk odeslané CN PROJ ze snímku zámku (Z1) — viz nabidkaData. */
   if (!(moznosti && moznosti.zive) && typeof zamekNabidkaPohled === 'function') varianta = zamekNabidkaPohled(varianta);
   const L = lang || 'cz';

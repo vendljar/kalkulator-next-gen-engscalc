@@ -49,7 +49,8 @@ import { zakazkaPrijmi } from '../lib/zakazka_kontrola.mjs';
 import { pdPoleMapa } from './pd_pole.mjs';
 import {
   pdWebhookKlic, pdWebhookKlicZPozadavku, pdWebhookKlicSedi, pdWebhookDealId, pdWebhookZadani,
-  pdWebhookHlavicka, pdWebhookPouzij, pdWebhookVolbaText, pdWebhookZamkyPoruseny, pdWebhookCisloKlic, pdWebhookOdkaz,
+  pdWebhookHlavicka, pdWebhookPouzij, pdWebhookVzFirmaCizi, pdWebhookVolbaText, pdWebhookZamkyPoruseny, pdWebhookCisloKlic, pdWebhookOdkaz,
+  pdWebhookCisloZaklad, pdWebhookPismeno, pdWebhookCisloSedi, pdWebhookCisloVarianta, pdWebhookVariantaPripona,
   pdWebhookOtisk, PD_WEBHOOK_POLE_ARES,
   PD_WEBHOOK_MAX, PD_WEBHOOK_TELO_MAX, PD_WEBHOOK_AUTOR, PD_WEBHOOK_AUTOR_JMENO, PD_WEBHOOK_ULOZISTE,
   PD_WEBHOOK_KLIC_PROMENNA,
@@ -157,7 +158,29 @@ async function zpracuj(req, dealId, ULO, G) {
     const vzor = G.novaZakazka();
     pdWebhookHlavicka(vzor, zadani.strana).cislo = zadani.cislo;
     jmeno = ULO.uloJmenoSouboru(vzor);
-    const z = await s.cti('z/' + jmeno);
+    let z = await s.cti('z/' + jmeno);
+    /* VZ-E2 (#601): CN dalšího zákazníka („…9940-B") — kalkulace pod přesným
+     * číslem není → zakázka podle základu („…9940"), ale JEN když toho
+     * zákazníka (písmeno) opravdu nese. Jinak jako dřív (nová kalkulace). */
+    const rozklad = pdWebhookCisloZaklad(zadani.cislo);
+    if (!z && zadani.strana === 'ock' && rozklad.pismeno) {
+      const vzorZ = G.novaZakazka();
+      vzorZ.cislo = rozklad.zaklad;
+      const jmenoZ = ULO.uloJmenoSouboru(vzorZ);
+      const zz = await s.cti('z/' + jmenoZ);
+      if (zz && pdWebhookPismeno(zz, rozklad.pismeno)) { z = zz; jmeno = jmenoZ; }
+    }
+    /* U4 (revize): CN varianty dalšího zákazníka („…9940.2-B") — ani základ
+     * „…9940.2" není → zakázka „…9940", ale JEN když nese písmeno I variantu
+     * s příponou 2. Číslo bez písmene („…9940.2") se takhle nehledá (jako dřív). */
+    const varianta = rozklad.pismeno ? pdWebhookCisloVarianta(rozklad.zaklad) : { pripona: 0 };
+    if (!z && zadani.strana === 'ock' && varianta.pripona > 0) {
+      const vzorV = G.novaZakazka();
+      vzorV.cislo = varianta.zaklad;
+      const jmenoV = ULO.uloJmenoSouboru(vzorV);
+      const zv = await s.cti('z/' + jmenoV);
+      if (zv && pdWebhookPismeno(zv, rozklad.pismeno) && pdWebhookVariantaPripona(zv, varianta.pripona)) { z = zv; jmeno = jmenoV; }
+    }
     if (z) {
       const jiny = norm(z.pdDealId);
       if (jiny && jiny !== dealId)
@@ -175,7 +198,7 @@ async function zpracuj(req, dealId, ULO, G) {
   /* Vlastník dealu (#115 B): CN v dealu musí sedět s číslem navázané kalkulace. */
   if (stara && cnDealu) {
     const h = pdWebhookHlavicka(JSON.parse(JSON.stringify(stara)), zadani.strana);
-    if (pdWebhookCisloKlic(h.cislo) && pdWebhookCisloKlic(h.cislo) !== pdWebhookCisloKlic(cnDealu))
+    if (!pdWebhookCisloSedi(h.cislo, cnDealu, stara))   // VZ-E2: „…9940-B" sedí na „…9940" se zákazníkem B
       return json({ ok: false, chyba: 'Deal patří jiné nabídce: v Pipedrive je číslo nabídky ' + cnDealu
         + ', navázaná kalkulace má ' + String(h.cislo || '') + '. Nic se nezměnilo.' }, 409);
   }
@@ -190,9 +213,12 @@ async function zpracuj(req, dealId, ULO, G) {
   const icoSurove = String(nase.ico || '').trim();
   const icoOtisk = icoSurove ? pdWebhookOtisk(aresIcoNorm(icoSurove) || icoSurove) : '';
   const zmrazena = hlavickaZmrazena(stara, zadani.strana);
+  /* VZ-E4 (#603): víc zákazníků a IČO dealu ≠ IČO hlavičky (řídící vyměněn bez
+   * prodeje) — firmu v hlavičce webhook nemění a ARES se nevolá. */
+  const vzFirmaCizi = pdWebhookVzFirmaCizi(stara, icoSurove, zadani.strana);
   let ares = vazbaPlati ? vazbaPlati.ares : '';
   let aresVolano = false, subjekt = null;
-  if (!zmrazena && icoSurove && (!vazbaPlati || vazbaPlati.icoOtisk !== icoOtisk)) {
+  if (!zmrazena && !vzFirmaCizi && icoSurove && (!vazbaPlati || vazbaPlati.icoOtisk !== icoOtisk)) {
     const r = await aresNacti(icoSurove, { fetch: ARES_SIT.fetch });
     aresVolano = true; ares = r.stav; subjekt = r.subjekt || null;
   }
@@ -220,7 +246,7 @@ async function zpracuj(req, dealId, ULO, G) {
       zak = JSON.parse(JSON.stringify(stara));
       akce = 'aktualizovano';
     }
-    const zmena = pdWebhookPouzij(zak, zadani, dealId, kdy, { hlavickaZmrazena: zmrazena });
+    const zmena = pdWebhookPouzij(zak, zadani, dealId, kdy, { hlavickaZmrazena: zmrazena, bezFirmy: vzFirmaCizi });
     const bezVazby = norm(zak.pdDealId) !== dealId;
     if (bezVazby) zak.pdDealId = dealId;
     /* VAZBA Z WEBHOOKU (K40c): navázání EXISTUJÍCÍ kalkulace čeká na „V pořádku“

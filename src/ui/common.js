@@ -719,6 +719,16 @@ function set(path, v) {
       return;
     }
   }
+  /* VZ-E3 (#602): údaje dalšího zákazníka po odeslání nabídky jemu
+   * (vzCestaZmrazena — jen cesty ZAK.dalsiZakaznici.*; jeden zákazník beze změny). */
+  if (path.startsWith('ZAK.dalsiZakaznici.') && typeof vzCestaZmrazena === 'function') {
+    const duvod = vzCestaZmrazena(path);
+    if (duvod) {
+      if (typeof hlaska === 'function') hlaska(duvod);
+      render();
+      return;
+    }
+  }
   /* ČÍSLO ODESLANÉ NABÍDKY MĚNÍ JEN ADMINISTRÁTOR (nález A3, rozhodnutí
    * J. V. 15. 9. 2026: „Pouze administrátor").
    *
@@ -1369,9 +1379,11 @@ function pdStavRadek(zak) {
     + (kdy ? ' (načteno ' + kdy + ')' : '');
   /* K40c #581: „Opravit firmu v Pipedrive“ i u řádku stavu (autor a administrátor). */
   const oprava = (maDeal && typeof pdVazbaOpravaTlacitko === 'function') ? pdVazbaOpravaTlacitko(zak, pdVazbaZivaUI(zak)) : '';
+  /* VZ-E5b: organizace dealu = vítězný zákazník (jen VZ ZAP + víc zákazníků, jinak ''). */
+  const vzOrg = typeof vzOrgVitezHtml === 'function' ? vzOrgVitezHtml(zak) : '';
   return `<div class="row pd-stav-radek"><label>Stav Pipedrive<span class="pill ${trida}" style="margin-left:12px">${esc(stitek)}</span></label>
     <select class="pd-stav${maDeal ? '' : ' bez-dealu'}" disabled title="${esc(titul)}"><option selected>${esc(pole)}</option></select></div>${
-    oprava ? `<div class="row"><label></label>${oprava}</div>` : ''}`;
+    vzOrg}${oprava ? `<div class="row"><label></label>${oprava}</div>` : ''}`;
 }
 
 function zakazkaHlavicka(ock) {
@@ -1393,9 +1405,13 @@ function zakazkaHlavicka(ock) {
    * na to je tlačítko „Vybrat z databáze zákazníků". Kartotéka se při
    * prvním kliknutí do pole doptá serveru, jinak by našeptávač nabízel jen
    * jména z dřívějších zakázek a dotahovat by neměl z čeho. */
-  const zakaznikRow = (kde) => `<div class="row"><label>Zákazník</label>
+  /* VZ-E1 #600: tlačítko „Přidat zákazníka" stojí ZA popiskem (po jeho
+   * odebrání je řádek znak po znaku jako dřív); hodnota a zmrazení podle
+   * otevřeného zákazníka (vzCesta — u řídícího beze změny). */
+  const vzC = p => (typeof vzCesta === 'function' ? vzCesta(p) : p);
+  const zakaznikRow = (kde) => `<div class="row"><label>Zákazník</label>${typeof vzPridatTlacitko === 'function' ? vzPridatTlacitko(kde) : ''}
     <span class="nasept-wrap" style="flex:1"><input type="text" style="width:100%" autocomplete="off"
-      value="${esc(get('ZAK.objednatel'))}"${typeof zamekZakAttr === 'function' ? zamekZakAttr('ZAK.objednatel') : ''}
+      value="${esc(get(vzC('ZAK.objednatel')))}"${typeof zamekZakAttr === 'function' ? zamekZakAttr(vzC('ZAK.objednatel')) : ''}${typeof vzPoleAttr === 'function' ? vzPoleAttr(vzC('ZAK.objednatel')) : ''}
       title="Při psaní se nabízejí zákazníci z databáze a z dřívějších zakázek. Výběrem se doplní prázdná pole hlavičky (kontaktní osoba, IČO, adresa); už vyplněné údaje zůstanou a celou hlavičku přepíše tlačítko „Vybrat z databáze zákazníků“."
       onchange="if(typeof naseptavacZakVyber==='function')naseptavacZakVyber(this.value,'${kde}'); else set('ZAK.objednatel', this.value)"
       oninput="naseptavacZakKresli('${kde}', this.value)"
@@ -1469,7 +1485,7 @@ function zakazkaHlavicka(ock) {
            title="uložit údaje z téhle hlavičky jako novou kartu zákazníka${esc(zakDuvod)}">Uložit jako zákazníka</button>`;
     const aresBtns = (typeof aresRadek === 'function') ? aresRadek(kde, false, zakDbBtns) : zakDbBtns;
     return `<div class="row"><label>IČO zákazníka${pill}</label>
-      <input type="text" value="${esc(h)}" placeholder="8 číslic"${typeof zamekZakAttr === 'function' ? zamekZakAttr(path) : ''}
+      <input type="text" value="${esc(h)}" placeholder="8 číslic"${typeof zamekZakAttr === 'function' ? zamekZakAttr(path) : ''}${typeof vzPoleAttr === 'function' ? vzPoleAttr(path) : ''}
         title="IČO zákazníka; přebírá ho krycí list. Prázdné pole se nikde nehlásí."
         onchange="set('${escJs(path)}', this.value)"></div>${aresBtns}`;
   };
@@ -1615,10 +1631,10 @@ function zakazkaHlavicka(ock) {
           ${txt('ZAK.cislo', 'Číslo nabídky (CN)', dupCislo)}${txt('ZAK.nazevAkce', 'Název akce', dupNazev)}${txt('ZAK.adresa', 'Adresa stavby')}${datumRow}
         </div>
         <div class="zak-head-col">
-          ${zakaznikRow('proj')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico', 'proj')}${dphRowProj}
+          ${typeof vzPrepinacRadek === 'function' ? vzPrepinacRadek('proj') : ''}${zakaznikRow('proj')}${txt(vzC('ZAK.kontakt'), 'Kontaktní osoba')}${icoRow(vzC('ZAK.ico'), 'proj')}${dphRowProj}
         </div>
         <div class="zak-head-col">${pdStavRow}${variantaRow}${ridiciBtn}${prirazkaRowProj}</div>
-      </div>${puvodRadek}
+      </div>${typeof vzFormularBlok === 'function' ? vzFormularBlok('proj') : ''}${puvodRadek}
       <div class="zak-cena noprint">
         ${zakTrojice()}
         <span class="zak-cena-del"></span>
@@ -1638,12 +1654,12 @@ function zakazkaHlavicka(ock) {
         ${txt('ZAK.cislo', 'Číslo nabídky (CN)', dupCislo)}${txt('ZAK.nazevAkce', 'Název akce', dupNazev)}${txt('ZAK.adresa', 'Adresa stavby')}${datumRow}
       </div>
       <div class="zak-head-col">
-        ${zakaznikRow('ock')}${txt('ZAK.kontakt', 'Kontaktní osoba')}${icoRow('ZAK.ico')}${dphRow}
+        ${typeof vzPrepinacRadek === 'function' ? vzPrepinacRadek('ock') : ''}${zakaznikRow('ock')}${txt(vzC('ZAK.kontakt'), 'Kontaktní osoba')}${icoRow(vzC('ZAK.ico'), 'ock')}${dphRow}
       </div>
       <div class="zak-head-col">
         ${pdStavRow}${variantaRow}${ridiciBtn}${rezimRow}${prirazkaRow}${radaRow}${kurzRow}
       </div>
-    </div>${puvodRadek}
+    </div>${typeof vzFormularBlok === 'function' ? vzFormularBlok('ock') : ''}${puvodRadek}
     <div class="zak-cena noprint">
       ${zakTrojice()}
       <span class="zak-cena-del"></span>
@@ -1655,6 +1671,9 @@ function zakazkaHlavicka(ock) {
       <div class="zak-bar-h">Zakázka a varianta${radaTed === 'zahr'
         ? ' <span class="rada-stitek">zahraniční ceník</span>' : ''}</div>
       <div class="body">${typeof pdVazbaUpozorneni === 'function' ? pdVazbaUpozorneni(ZAK) : ''}${inner}</div></div>`
+    /* VZ-E1 #600: karta Zákazníci zakázky hned pod hlavičkou (před lištou
+     * kalkulace, jako v prototypu) — jen u 2+ zákazníků, jinak ''. */
+    + (typeof vzKarta === 'function' ? vzKarta('ock') : '')
     + kalkLista(true);
 }
 
@@ -2451,6 +2470,9 @@ function tiskListaSkript(hlasky, zamek) {
   }, hlasky || {});
   const z = (zamek && zamek.typ && typeof dokumentZamyka === 'function' && dokumentZamyka(zamek.typ))
     ? { typ: zamek.typ, varId: zamek.varId || '' } : null;
+  /* VZ-E3 (#602): zákazník, pro kterého náhled vznikl (jen víc zákazníků) —
+   * u jednoho zákazníka se skript nemění ani o znak. */
+  if (z && typeof zamek.zakaznik === 'string' && zamek.zakaznik) z.zakaznik = zamek.zakaznik;
   /* JSON uvnitř skriptu (B84, hloubkový test 24. 9. 2026): uzavírací značka
    * skriptu v hlášce nebo id by skript ukončila a zbytek by se četl jako
    * HTML. (Samotná značka tu v komentáři stát nesmí — aplikace je jeden
@@ -2468,7 +2490,8 @@ function tiskListaSkript(hlasky, zamek) {
     // druhý záznam do historie výtisků by pak byl falešný.
     + 'var t=Date.now();if(t-TISK_ZAMEK_KDY<3000)return;TISK_ZAMEK_KDY=t;'
     + 'try{if(window.opener&&!window.opener.closed&&typeof window.opener.zamekPoTisku==="function"){'
-    + 'window.opener.zamekPoTisku(TISK_ZAMEK.typ,TISK_ZAMEK.varId);tiskStav(TISK_HLASKY.zamceno);}}catch(e){}}\n'
+    + 'window.opener.zamekPoTisku(TISK_ZAMEK.typ,TISK_ZAMEK.varId' + (z && z.zakaznik ? ',null,{zakaznik:TISK_ZAMEK.zakaznik}' : '')
+    + ');tiskStav(TISK_HLASKY.zamceno);}}catch(e){}}\n'
     + 'window.addEventListener("beforeprint",tiskZamkni);\n'
     + 'function tiskDph(zap){var d=document.getElementById("dok");if(!d)return;'
     + 'if(zap)d.classList.remove("bez-dph");else d.classList.add("bez-dph");}\n'
@@ -2813,7 +2836,9 @@ function nactiZakazku(ev) {
       /* SEC-M16: fotka s odkazem se při importu zahodila — říct to. */
       const fotoVar = (typeof uvodniFotoVarovani === 'function') ? uvodniFotoVarovani(ZAK.fotoZahozena) : '';
       const stavbaVeta = (stavba && typeof uloSvetlikyStavbaVeta === 'function') ? uloSvetlikyStavbaVeta({ svetlikyStavba: stavba }) : '';
-      if (fotoVar || stavbaVeta) hlaska([fotoVar, stavbaVeta].filter(Boolean).join(' '));
+      /* VZ-E1 (revize E0, N2): zahozená data dalších zákazníků — říct to. */
+      const vzVar = (typeof vzPoNacteniVarovani === 'function') ? vzPoNacteniVarovani(ZAK) : '';
+      if (fotoVar || stavbaVeta || vzVar) hlaska([fotoVar, stavbaVeta, vzVar].filter(Boolean).join(' '));
       // #18: hledání a filtr patří k oknu, ne k datům – jiná zakázka se musí
       // ukázat celá, ne přes zúžení nastavené nad tou předchozí.
       if (typeof seznamReset === 'function') seznamReset();

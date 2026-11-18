@@ -452,6 +452,16 @@ export function pdNanecisto(definice, strany, pole, spolecne = {}, zdroje = {}) 
     zdroj: 'OCK: Kalkulace OCK › šachty varianty (název, ks)', hodnotaKalkulace: vsZ, hodnota: vsZ, hodnotaText: vsZ,
     stav: 'zapise', duvod: 'poznámka u dealu (jedna na deal a zakázku) — zapíše ji uložení zakázky se zapnutým víc šachet; zápis dealu ji neposílá',
     kolize: [], vCrm: '' });
+  /* VÍC ZÁKAZNÍKŮ (VZ-E5 #604, bod 5): seznam dalších zákazníků do POZNÁMKY
+   * dealu — TÝŽ text, jaký zapíše uložení zakázky se zapnutým víc zákazníků
+   * (lib/pd_poznamka.mjs pdPoznamkaZakText; prohlížeč ho skládá týmž kódem
+   * src/vz_poznamka.js a posílá jako `spolecne.poznamkaZakaznici`). Není to
+   * pole dealu: pdZapisDealu ho nečte, patch se nemění. Prázdný = žádný řádek. */
+  const vzZ = typeof spolecne.poznamkaZakaznici === 'string' ? spolecne.poznamkaZakaznici.trim() : '';
+  if (vzZ) radky.push({ klic: 'poznamkaZakaznici', nazev: 'Poznámka dealu — další zákazníci', typ: 'poznámka', strana: '',
+    zdroj: 'Zakázka › další zákazníci (název, odeslaná nabídka)', hodnotaKalkulace: vzZ, hodnota: vzZ, hodnotaText: vzZ,
+    stav: 'zapise', duvod: 'poznámka u dealu (jedna na deal a zakázku) — zapíše ji uložení zakázky se zapnutým víc zákazníků; zápis dealu ji neposílá',
+    kolize: [], vCrm: '' });
   const souhrn = { celkem: radky.length, kolize: radky.filter((r) => r.kolize.length).length };
   for (const st of PD_NANECISTO_STAVY) souhrn[st] = radky.filter((r) => r.stav === st).length;
   return { radky, souhrn };

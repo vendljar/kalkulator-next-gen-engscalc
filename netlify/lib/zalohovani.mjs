@@ -787,7 +787,7 @@ export const RETENCE_VAROVANI_DALSI_MAX = 20;
 /* ============================================================
  * VÝCHOZÍ VOLBY KOORDINACE K OTÁZKÁM AUDITU K9 (O-K9 #527, 26. 10. 2026)
  *
- * Jediné místo — J. V. je může změnit (pak jen tady a v příručce kap. 30):
+ * Jediné místo — J. V. je může změnit (pak jen tady a v příručce kap. 31):
  *   - potvrditUbytek: kdo smí potvrdit úbytek dat (odemyká mazání starých
  *     záloh). 'hlavni' = jen hlavní správce (ADMIN_EMAIL) se svým heslem;
  *     'spravce' = kterýkoli Administrátor se svým heslem (stav do O-K9).

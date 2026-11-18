@@ -132,7 +132,7 @@ const KRYCI_SEKCE = [
      * v KRYCI_NABIDKA_SEKCE, takže se dá doplnit i po odeslání nabídky;
      * tisk SoD ho zamkne a návrh opíše do dat (kryciZmrazSod). Ve smlouvě
      * plní {{SOD_CISLO_SMLOUVY}}, prázdné pole nechá symbol vidět. */
-    { id: 'cisloSod', label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',
+    { id: 'cisloSod', pismenoZakaznika: true, label: 'Číslo SoD', verze: ['bo', 'techdata'], src: 'návrh z čísla nabídky', sod: 'SOD_CISLO_SMLOUVY',
       prefill: c => (typeof sodCisloNavrh === 'function'
         ? sodCisloNavrh(typeof cisloSVariantou === 'function' ? cisloSVariantou(c.zak, c.varianta) : c.zak.cislo) : '') },
     { id: 'adresaStavby', label: 'Adresa stavby', verze: ['bo', 'techdata'], bind: 'ZAK.adresa', prefill: c => c.zak.adresa, src: 'hlavička kalkulace' },
@@ -167,16 +167,16 @@ const KRYCI_SEKCE = [
    * vlastního předělu — patří k identifikaci zákazníka a samostatný nadpis
    * jen roztrhal jednu myšlenku na dvě obrazovky. */
   { sekce: 'Zákazník (smluvní partner)', pole: [
-    { id: 'jmenoPrijmeni', label: 'Jméno a příjmení kontaktu', verze: ['bo'], prefill: c => c.zak.kontakt, src: 'z hlavičky zakázky' },
-    { id: 'zakaznik', label: 'Zákazník (smluvní partner)', verze: ['bo', 'techdata'], prefill: c => c.zak.objednatel, src: 'z hlavičky zakázky' },
+    { id: 'jmenoPrijmeni', label: 'Jméno a příjmení kontaktu', zakaznikPole: true, verze: ['bo'], prefill: c => c.zak.kontakt, src: 'z hlavičky zakázky' },
+    { id: 'zakaznik', label: 'Zákazník (smluvní partner)', zakaznikPole: true, verze: ['bo', 'techdata'], prefill: c => c.zak.objednatel, src: 'z hlavičky zakázky' },
     { id: 'kontaktZakaznikTel', label: 'Telefon na zákazníka', verze: ['bo'] },
     { id: 'kontaktZakaznikEmail', label: 'E-mail na zákazníka', verze: ['bo'] },
-    { id: 'ico', label: 'IČO', verze: ['bo'], prefill: c => c.zak.ico, src: 'z hlavičky zakázky' },
+    { id: 'ico', label: 'IČO', zakaznikPole: true, verze: ['bo'], prefill: c => c.zak.ico, src: 'z hlavičky zakázky' },
     { id: 'dic', label: 'DIČ', verze: ['bo'], bind: 'ZAK.dic', prefill: c => c.zak.dic, src: 'hlavička zakázky' },
     /* KL-1: sídlo zákazníka, NE adresa stavby. Developer sídlí jinde, než
      * staví; do smlouvy a na fakturu patří sídlo. Dokud není v hlavičce
      * vyplněné, zůstane pole prázdné – raději prázdné než špatné. */
-    { id: 'adresaZakaznik', label: 'Adresa (sídlo) zákazníka', verze: ['bo'], prefill: c => c.zak.adresaObjednatele, src: 'z hlavičky zakázky (sídlo)' },
+    { id: 'adresaZakaznik', label: 'Adresa (sídlo) zákazníka', zakaznikPole: true, verze: ['bo'], prefill: c => c.zak.adresaObjednatele, src: 'z hlavičky zakázky (sídlo)' },
     { id: 'zastBanka', label: 'Bankovní spojení zákazníka', verze: ['bo'], bind: 'ZAK.zastupci.banka', src: 'hlavička zakázky' },
     { id: 'zastUcet', label: 'Číslo účtu / směrový kód', verze: ['bo'], bind: 'ZAK.zastupci.ucet', src: 'hlavička zakázky' },
     { id: 'zastZapis', label: 'Zápis v rejstříku (zákazník)', verze: ['bo'], bind: 'ZAK.zastupci.zapis', src: 'hlavička zakázky' },
@@ -428,8 +428,9 @@ const KRYCI_SEKCE = [
      * platí jako u každého pole. */
     { id: 'sodDatumPodpisu', label: 'Datum podpisu smlouvy', verze: ['bo'], typ: 'date', sod: 'SOD_DATUM_PODPISU',
       prefill: () => kryciDnesIso(), src: 'datum tisku', nezmrazovat: true },
-    { id: 'objPodpisFirma', label: 'Zákazník — firma v podpisové doložce', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS_FIRMA',
-      prefill: c => kryciZKrycihoListuProj(c, 'objPodpisFirma') || (c.zak && c.zak.objednatel) || '',
+    { id: 'objPodpisFirma', zakaznikPole: true, label: 'Zákazník — firma v podpisové doložce', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS_FIRMA',
+      prefill: c => kryciZKrycihoListuProj(c, 'objPodpisFirma')   // VZ-E2: KL PROJ je sdílený — jen vlastníkovi (kryciKlProjVlastni)
+        || (c.zak && c.zak.objednatel) || '',
       src: 'krycí list PROJ / hlavička zakázky' },
     { id: 'objPodpis2Jmeno', label: 'Druhý podepisující za zákazníka — jméno', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS2_JMENO',
       prefill: c => kryciZKrycihoListuProj(c, 'objPodpis2Jmeno'), src: 'u SVJ podepisují zpravidla dva členové výboru' },
@@ -452,6 +453,10 @@ const KRYCI_SEKCE = [
     { id: 'podpisInformovanTech', label: 'Informováno Technické odd.', verze: ['bo', 'techdata'], ph: 'kdo z technického oddělení byl informován…' },
   ] },
 ];
+/* VZ-E2 (revize U1): pole zákazníka v pohledu jen jejich vlastníkovi (vzKlOznacPole). */
+if (typeof vzKlOznacPole === 'function') vzKlOznacPole(KRYCI_SEKCE);
+else if (typeof require === 'function') { try { require('./vice_zakazniku.js').vzKlOznacPole(KRYCI_SEKCE); } catch (e) {} }
+
 
 /* KL-5: převod starého jednořádkového „Zádržné" na nové rozdělené řádky.
  * Volá se při importu zakázky (zakazka.js). Hodnota bývala volný text typu
@@ -722,6 +727,12 @@ function kryciTerminDodani(c) {
 
 /* hodnota pole: ruční přepis (data.kryci.hodnoty) > prefill > '' */
 function kryciHodnota(pole, kl, c) {
+  /* VZ-E2 #601: číslo SoD v pohledu zákazníka s písmenem nese jeho písmeno —
+   * ruční přepis i snímek zámku sdílené varianty mají číslo řídícího. */
+  if (pole.pismenoZakaznika && c && typeof vzPismenoPohledu === 'function' && vzPismenoPohledu(c.zak)) {
+    const v = String(kryciHodnota(Object.assign({}, pole, { pismenoZakaznika: false }), kl, c) || '');
+    return (v.trim() && !vzCisloRozloz(v).pismeno) ? vzCisloSPismenem(v, vzPismenoPohledu(c.zak)) : v;
+  }
   /* Odvozený řádek (`odvozene`, 30. 9. 2026 — Zaměření strojovna): hodnotu
    * určuje kalkulace, ruční přepis se nečte (v datech zůstává). Zamčená
    * varianta jde starou cestou (drží, co se odeslalo), a když se hodnota
@@ -731,6 +742,22 @@ function kryciHodnota(pole, kl, c) {
   }
   /* `dphBind` je totéž provázání jako `bind`, jen mířené do sazby DPH
    * v hlavičce kalkulace — ruční přepis se proto nečte ani tady. */
+  /* VZ-E2 #601 (únik R1, revize U1/U2): pole zákazníka (`zakaznikPole`) v pohledu
+   * zákazníka — ruční přepis a snímek zámku sdílené varianty jen jejich
+   * vlastníkovi (vzKlVlastni, podle id); jinak předvyplnění z pohledu, nebo
+   * prázdné (smlouva pak ukáže „……“). Mimo pohled beze změny. */
+  if (pole.zakaznikPole && c && c.zak && c.zak.vzPohledZakaznika && typeof vzKlVlastni === 'function') {
+    if (!pole.bind && !pole.dphBind) {
+      /* VZ-E3 (U1): ruční hodnota TOHOTO zákazníka (vzKlRucni — vlastník
+       * `hodnoty`, jinak `hodnotyZakaznika[id]`). */
+      const r = typeof vzKlRucni === 'function' ? vzKlRucni(kl, c.zak.vzPohledZakaznika.id, pole.id) : undefined;
+      if (r !== undefined) return typeof pole.normalizuj === 'function' ? pole.normalizuj(r) : r;
+      if (c.zmrazeno && !pole.nezmrazovat && c.zmrazeno[pole.id] !== undefined && vzKlVlastni(c.zak, kl && kl.vzZmrazeno))
+        return c.zmrazeno[pole.id];
+    }
+    if (pole.prefill) { try { const v = pole.prefill(c); return v == null ? '' : v; } catch (e) { return ''; } }
+    return '';
+  }
   if (!pole.bind && !pole.dphBind) {   // provázaná pole (bind) čtou přímo ze ZAK, ne z ručních přepisů
     const h = (kl && kl.hodnoty) || {};
     if (h[pole.id] !== undefined && h[pole.id] !== '')
@@ -837,6 +864,7 @@ function kryciHodinySekce(zak, varianta, jekly, verze, strana) {
 }
 
 function kryciData(zak, varianta, jekly, verze) {
+  if (typeof vzTiskHlidej === 'function') vzTiskHlidej(zak);   // VZ-E2 (revize U3): jen z pohledu zákazníka
   const c = kryciCtx(zak, varianta, jekly);
   const kl = varianta.data.kryci || { hodnoty: {} };
   const sekce = KRYCI_SEKCE.map(s => {
@@ -848,7 +876,7 @@ function kryciData(zak, varianta, jekly, verze) {
   const hodiny = kryciHodinySekce(zak, varianta, jekly, verze, 'ock');   // konec listu BO, jen OCK (15. 10. 2026)
   if (hodiny) sekce.push(hodiny);
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
-  const nazevSouboru = (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('kryci-list', { cislo: zak.cislo, oblast: 'ock', list: verzeNazev });   // #533
+  const nazevSouboru = (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('kryci-list', { cislo: typeof vzPismenoPohledu === 'function' ? vzCisloSPismenem(zak.cislo, vzPismenoPohledu(zak)) : zak.cislo, oblast: 'ock', list: verzeNazev });   // VZ-E2: …-B   // #533
   return { nadpis: 'Krycí list zakázky OCK — ' + verzeNazev, sekce, nazevSouboru, verze, verzeNazev };
 }
 
@@ -968,8 +996,25 @@ function kryciSymbolyZeSekci(sekce, nazvy, hodnota, P) {
 
 /* Ruční hodnota z krycího listu PROJ téže varianty (P9.4 — podpisy a kopie
  * se do krycího listu OCK předvyplní, ať se nepíšou dvakrát). */
+/* VZ-E2 (U1): je `id` pole zákazníka krycího listu OCK? (zápis vlastníka v UI) */
+function kryciPoleZakaznika(id) {
+  return KRYCI_SEKCE.some(s => s.pole.some(p => p.id === id && p.zakaznikPole));
+}
+/* VZ-E2 (U1): ruční hodnota KL PROJ pole zákazníka patří zákazníkovi pohledu? */
+function kryciKlProjVlastni(c, id) {
+  if (typeof vzKlVlastni !== 'function' || !c || !c.zak) return true;
+  const d = (c.varianta && c.varianta.data) || {};
+  const vl = d.kryciProj && d.kryciProj.vzVlastnik && typeof d.kryciProj.vzVlastnik === 'object' ? d.kryciProj.vzVlastnik[id] : '';
+  return vzKlVlastni(c.zak, vl);
+}
 function kryciZKrycihoListuProj(c, id) {
   const d = (c && c.varianta && c.varianta.data) || {};
+  /* VZ-E3 (U1): v pohledu zákazníka jeho vlastní ruční hodnota KL PROJ. */
+  if (c && c.zak && c.zak.vzPohledZakaznika && typeof vzKlRucni === 'function') {
+    const r = vzKlRucni(d.kryciProj, c.zak.vzPohledZakaznika.id, id);
+    return String(r == null ? '' : r).trim();
+  }
+  if (!kryciKlProjVlastni(c, id)) return '';   // VZ-E2 (revize U1): ruční pole KL PROJ jen vlastníkovi
   const h = (d.kryciProj && d.kryciProj.hodnoty) || {};
   return String(h[id] == null ? '' : h[id]).trim();
 }
@@ -1040,6 +1085,7 @@ function kryciZmrazPodminky(zak, varianta, jekly) {
     if (v != null && v !== '') out[p.id] = String(v);
   }));
   d.kryci.zmrazeno = out;
+  if (typeof vzKlZmrazeno === 'function') vzKlZmrazeno(d.kryci, zak);   // VZ-E2 U2: čí je snímek (jen víc zákazníků)
   /* K3-N2: s předvyplněnými poli zamrznou i věty platebního kalendáře
    * nabídky a díly vět SoD z Firmy (kryciPodmEfVarianty). */
   d.kryci.zmrazenoPodminky = kryciPodm().podminkySnimek(c.firma, ['vety']);

@@ -123,13 +123,34 @@ function pdnPodklad(zak, jekly, volby) {
   const deal = (typeof ctrlPdDealIdNorm === 'function') ? ctrlPdDealIdNorm(zak.pdDealId) : pdnText(zak.pdDealId);
   const out = { ok: true, strany, zdroje, dealId: deal || null, upozorneni, varianta: { id: v.id, nazev: v.nazev || '' }, vedouci };
   if (volby && volby.faze) out.faze = volby.faze;
+  const zakaznici = pdnZakaznici(zak, deal || '', volby);
+  if (zakaznici) out.zakaznici = zakaznici;
   return out;
+}
+
+/* VZ-E5 (#604, bod 5): text poznámky dealu „Další zákazníci na zakázce“ pro
+ * řádek náhledu — TÝŽ text, jaký zapíše uložení zakázky (server
+ * pdPoznamkaZakText = vzPoznamkaText + vzPoznamkaSeZnackou). Jen se
+ * zapnutým vypínačem víc zákazníků (viceZakaznikuZapnuto; v Node
+ * `volby.viceZakazniku === true`). „žádní“ jen u zakázky, která poznámku
+ * k TOMUTO dealu už má (pole pdPoznamkaZakaznici píše jen server). Jinak ''
+ * — podklad i tělo pak zůstanou beze změny (žádný klíč navíc). Náhled nic
+ * nezapisuje. */
+function pdnZakaznici(zak, deal, volby) {
+  const zap = (volby && volby.viceZakazniku === true)
+    || (typeof viceZakaznikuZapnuto === 'function' && viceZakaznikuZapnuto() === true);
+  if (!zap || typeof vzPoznamkaText !== 'function' || typeof vzPoznamkaSeZnackou !== 'function') return '';
+  const drz = zak && zak.pdPoznamkaZakaznici;
+  const zadni = !!(drz && typeof drz === 'object' && deal && String(drz.deal) === String(deal));
+  try { return vzPoznamkaSeZnackou(zak, vzPoznamkaText(zak, { zadni })) || ''; }
+  catch (e) { return ''; }
 }
 
 /* Tělo POST /api/pd/nanecisto z podkladu (UI karty i C4 „Prodáno"). */
 function pdnTelo(p) {
   const t = { strany: p.strany, zdroje: p.zdroje, dealId: p.dealId };
   if (p.faze) t.faze = p.faze;
+  if (typeof p.zakaznici === 'string' && p.zakaznici) t.zakaznici = p.zakaznici;
   return t;
 }
 
@@ -169,4 +190,4 @@ function pdnCsv(vysledek, meta) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { PDN_STAVY, pdnPopisky, pdnPodklad, pdnTelo, pdnStranaOck, pdnStranaProj, pdnNazevSouboru, pdnCsv };
+  module.exports = { PDN_STAVY, pdnPopisky, pdnPodklad, pdnZakaznici, pdnTelo, pdnStranaOck, pdnStranaProj, pdnNazevSouboru, pdnCsv };

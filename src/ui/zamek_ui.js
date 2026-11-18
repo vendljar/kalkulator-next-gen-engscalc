@@ -502,8 +502,18 @@ function zamekPoTisku(typ, varId, sablona, navic) {
    * spočítá z dat znovu (klientskému nevěří). */
   const snimek = (prvni && typeof zamekSnimekSpocti === 'function') ? zamekSnimekSpocti(v) : null;
   if (snimek) ZAMEK_SNIMEK_NEULOZENY.add(v.id);
-  zamkniVariantu(v, { typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek,
-                      sablona: sablona || null, slovnik: zamekSlovnikTed(), sod: (navic && navic.sod) || null });
+  /* VZ-E3 (#602): razítko „komu" (jen víc zákazníků) — zákazník z okamžiku,
+   * kdy dokument vznikl (navic.zakaznik), jinak otevřený. `zamek.cislo`
+   * zůstává číslo varianty bez písmene (společné všem zákazníkům varianty,
+   * B56); číslo s písmenem nese razítko. */
+  let komu = null;
+  if (typeof vzRezim === 'function' && vzRezim(ZAK) && typeof vzRazitkoSnimek === 'function') {
+    const kid = (navic && typeof navic.zakaznik === 'string' && navic.zakaznik) ? navic.zakaznik
+      : (typeof vzTiskId === 'function' ? vzTiskId() : '');
+    komu = vzRazitkoSnimek(ZAK, kid || vzRidiciId(ZAK), v);
+  }
+  zamkniVariantu(v, Object.assign({ typ, kdo: zamekKdo(), cislo: variantaCislo(ZAK, v), otisk, vysledek, snimek,
+                      sablona: sablona || null, slovnik: zamekSlovnikTed(), sod: (navic && navic.sod) || null }, komu ? { zakaznik: komu } : {}));
   render();
   zamekPoTiskuUloz();
   return v.zamek;
@@ -549,7 +559,7 @@ function zamekLista() {
   const modra = st.lista === 'odeslana' && st.modra;
   return `<div class="zamek-lista">
     <span class="ikona">🔒</span>
-    <span><b>Odeslaná nabídka ${esc(v.nazev)} (${esc(variantaCislo(ZAK, v))})</b>
+    <span><b>Odeslaná nabídka ${esc(v.nazev)} (${esc((typeof vzCisloDokladu === 'function' && vzCisloDokladu(ZAK, v)) || variantaCislo(ZAK, v))})</b>
       (vytištěno ${esc(kdy)} jako ${esc(z.popis || 'cenová nabídka')}${pocet > 1 ? `, výtisků: ${pocet}` : ''}) — needituje se.${overeni
         ? `<span class="zamek-overeni">⚠ ${esc(overeni)}</span>` : ''}${dnesText
         ? `<span class="zamek-overeni zamek-dnes">⚠ ${esc(dnesText)}</span>` : ''}</span>

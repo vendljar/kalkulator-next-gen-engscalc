@@ -5,27 +5,47 @@
  * (data.kryciProj.hodnoty) a mají přednost (↺ vrátí prefill).
  * Vlastní prefix klp* / kryciProj*, aby se názvy nemíchaly s OCK verzí. */
 
+/* VZ-E3 (#602, U1): ruční pole zákazníka KL PROJ po zákaznících — PROJ je jen
+ * řídícího (R5), píše a čte se tedy za řídícího; jeden zákazník = null (dnešek). */
+function klpVzKomu(id) {
+  if (typeof vzRezim !== 'function' || typeof ZAK === 'undefined' || !vzRezim(ZAK) || !kryciProjPoleZakaznika(id)) return null;
+  return vzRidiciId(ZAK);
+}
 function klpSet(id, v) {
   if (!KLP.hodnoty) KLP.hodnoty = {};
-  if (v === '' || v == null) delete KLP.hodnoty[id]; else KLP.hodnoty[id] = v;
+  const komu = klpVzKomu(id);
+  if (komu) vzKlZapisRucni(KLP, ZAK, komu, id, v);   // VZ-E3 (U1)
+  else if (v === '' || v == null) delete KLP.hodnoty[id]; else KLP.hodnoty[id] = v;
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
   render();
 }
-function klpReset(id) { if (KLP.hodnoty) delete KLP.hodnoty[id]; render(); }
+function klpReset(id) {
+  const komu = klpVzKomu(id);
+  if (komu) vzKlZapisRucni(KLP, ZAK, komu, id, '');   // VZ-E3 (U1)
+  else if (KLP.hodnoty) delete KLP.hodnoty[id];
+  render();
+}
 /* Rozbalené „jiné znění" u projekčního krycího listu — viz KL_JINA v kryci_ui.js. */
 const KLP_JINA = {};
 function klpVyber(id, v) {
   if (v === KL_JINE_ZNENI) {
     KLP_JINA[id] = true;
-    if (KLP.hodnoty) delete KLP.hodnoty[id];
+    if (klpVzKomu(id)) vzKlZapisRucni(KLP, ZAK, klpVzKomu(id), id, '');   // VZ-E3 (U1)
+    else if (KLP.hodnoty) delete KLP.hodnoty[id];
     render();
     return;
   }
   delete KLP_JINA[id];
   klpSet(id, v);
 }
-function klpManual(id) { const h = KLP.hodnoty || {}; return h[id] !== undefined && h[id] !== ''; }
+function klpManual(id) {
+  const komu = klpVzKomu(id);
+  if (komu) return vzKlRucni(KLP, komu, id) !== undefined;   // VZ-E3 (U1)
+  const h = KLP.hodnoty || {}; return h[id] !== undefined && h[id] !== '';
+}
 function klpVal(id, prefill) {
+  const komu = klpVzKomu(id);
+  if (komu) { const r = vzKlRucni(KLP, komu, id); return r !== undefined ? r : (prefill != null ? prefill : ''); }   // VZ-E3 (U1)
   const h = KLP.hodnoty || {};
   return klpManual(id) ? h[id] : (prefill != null ? prefill : '');
 }
@@ -163,7 +183,7 @@ function renderKryciProj() {
     a z Nastavení → Firma; ruční přepis má přednost (↺ vrátí automatiku). Činnost, která v kalkulaci nemá cenu,
     se vypíše jako <b>„není součástí nabídky“</b> – nikdy nulou ani odhadem. Štítky <b>BO</b> / <b>Tech</b> / <b>BO+Tech</b>
     ukazují, do které verze výstupu pole patří.</div>
-    ${typeof zamekKryciPoznamka === 'function' ? zamekKryciPoznamka((typeof KRYCI_PROJ_NABIDKA_SEKCE !== 'undefined' ? KRYCI_PROJ_NABIDKA_SEKCE.concat(['plán plateb']) : [])) : ''}
+    ${typeof zamekKryciPoznamka === 'function' ? zamekKryciPoznamka((typeof KRYCI_PROJ_NABIDKA_SEKCE !== 'undefined' ? KRYCI_PROJ_NABIDKA_SEKCE.concat(['plán plateb']) : [])) : ''}${typeof vzKlSdilenaPozn === 'function' ? vzKlSdilenaPozn() : ''}
     ${typeof ukazkoveZabranaPanel === 'function' ? ukazkoveZabranaPanel() : ''}
     ${sekceHtml}
     ${typeof kryciHodinyBlok === 'function' ? kryciHodinyBlok('proj') : ''}
@@ -197,10 +217,12 @@ function kryciProjTiskPohled(verze) {
     const duvod = dokumentZabrana('kryciproj_' + verze, aktivniVarianta(ZAK));   // #377
     if (duvod) { hlaska(duvod, { nadpis: 'Dokument nelze vytvořit' }); return; }
   }
-  const v = aktivniVarianta(ZAK);
+  const vt = vzTiskVstup('kryciproj_' + verze, aktivniVarianta(ZAK));   // VZ-E2 #601: pohled zákazníka
+  if (!vt) return;
+  const v = vt.varianta;
   const e2 = esc;   // #6: sjednoceno se sdíleným escapováním (ošetří i uvozovky a apostrof)
-  const d = kryciProjData(ZAK, v, JEKLY, verze);
-  const sekHtml = kryciVystupSekce(ZAK, d.sekce).map(s =>
+  const d = kryciProjData(vt.zak, v, JEKLY, verze);
+  const sekHtml = kryciVystupSekce(vt.zak, d.sekce).map(s =>
     `<h2>${e2(s.sekce)}</h2>${kryciTiskTabulka(s)}`).join('');
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
@@ -232,7 +254,9 @@ function kryciProjWord() {
   verze.forEach(([typ, label], i) => {
     // malý odstup mezi stažením obou souborů, ať je prohlížeč nezablokuje
     setTimeout(() => {
-      dokumentVygeneruj(typ, null, ZAK, v, JEKLY)
+      const vt = vzTiskVstup(typ, v, t => { if (stav) stav.textContent = t; });   // VZ-E2 #601
+      if (!vt) return;
+      dokumentVygeneruj(typ, null, vt.zak, vt.varianta, JEKLY)
         .then(res => {
           const a = document.createElement('a');
           a.href = URL.createObjectURL(res.blob);

@@ -41,8 +41,47 @@ function varRidici(id) {
   if (proc) { if (typeof hlaska === 'function') hlaska(proc); render(); return; }
   nastavRidici(ZAK, id); render();
 }
+/* VZ-E1 #600 (revize E0, N2): variantu, na kterou ukazuje některý zákazník
+ * zakázky, nejde smazat — zákazník by zůstal bez nabídky. Vrací hlášku, nebo ''.
+ * Platí i s vypnutou funkcí (data víc zákazníků se nemažou ani nepřepisují). */
+function vzSmazaniVariantyDuvod(zak, id) {
+  if (!zak || typeof vzRezim !== 'function' || !vzRezim(zak)) return '';
+  const kdo = vzZakaznici(zak).filter(z => z.varianta === String(id));
+  if (!kdo.length) return '';
+  const jm = kdo.map(z => (z.hlavicka.objednatel || '').trim() || '(bez názvu)').join(', ');
+  return 'Na variantu ukazuje zákazník ' + jm + ' — nejdřív mu přiřaďte jinou variantu nebo ho odstraňte.';
+}
+/* VZ-E1 #600 (revize E0, N2): import zahodil vadná data víc zákazníků
+ * (`vzZahozeno`, nevýčtové jako fotoZahozena) — říct to. '' = nic. */
+function vzZahozenoVarovani(vady) {
+  if (!Array.isArray(vady) || !vady.length) return '';
+  return 'Údaje dalších zákazníků v souboru nebyly platné (' + vady.length + ' '
+    + (vady.length === 1 ? 'vada' : vady.length < 5 ? 'vady' : 'vad') + ') a byly odebrány — zakázka má jen zákazníka z hlavičky. '
+    + 'Další zákazníky přidejte znovu.';
+}
+/* VZ-E1 (dorevize E0, D2): po načtení srovnat ukazatele zákazníků
+ * (vzSrovnej) a říct, kdo přešel na řídící variantu — import je přesměruje
+ * sám (vzPresmerovano), vzSrovnej chytí zbytek. Vrací text upozornění, nebo ''.
+ * Mění data (ukazatel) — volá se jen po načtení zakázky. */
+function vzPoNacteniVarovani(zak) {
+  if (!zak || typeof zak !== 'object') return '';
+  const jm = Array.isArray(zak.vzPresmerovano) ? zak.vzPresmerovano.slice() : [];
+  if (typeof vzSrovnej === 'function' && typeof vzRezim === 'function' && vzRezim(zak)) {
+    const pred = (zak.dalsiZakaznici || []).map(d => d && d.varianta);
+    const opravy = vzSrovnej(zak);
+    opravy.forEach(o => {
+      const m = /^dalsiZakaznici\[(\d+)\]\.varianta$/.exec(o);
+      const d = m && zak.dalsiZakaznici[+m[1]];
+      if (d && pred[+m[1]] !== d.varianta) jm.push(String((d.hlavicka && d.hlavicka.objednatel) || '').trim() || '(bez názvu)');
+    });
+  }
+  const t = jm.map(n => 'Zákazník ' + n + ' přešel na řídící variantu — mění se mu cena.');
+  return [vzZahozenoVarovani(zak.vzZahozeno)].concat(t).filter(Boolean).join(' ');
+}
 async function varSmaz(id) {
   if (ZAK.varianty.length <= 1) { await hlaska('Poslední variantu nelze smazat.'); return; }
+  const vzDuvod = vzSmazaniVariantyDuvod(ZAK, id);
+  if (vzDuvod) { await hlaska(vzDuvod); return; }
   const v = ZAK.varianty.find(x => x.id === id);
   // #34: odeslanou nabídku běžný uživatel nemaže – je to doklad o tom, co
   // zákazník dostal. Správce ano (má i odemknutí), ale s výslovným varováním.
@@ -139,6 +178,8 @@ function renderZakazka() {
      *     (obě verze)                   → krycí listy OCK / PROJ a karty nabídek
      *   – Online databáze, Zakázky ve složce → Nastavení → Databáze */
     (typeof prehledHledaniKarta === 'function' ? prehledHledaniKarta() : '') +
+    /* VZ-E1 #600: karta Zákazníci zakázky (jen u 2+ zákazníků). */
+    (typeof vzKarta === 'function' ? vzKarta('zakazka') : '') +
     card('Souhrn řídící varianty — ' + esc(rid.nazev),
       `<div class="grand">
         <div class="kpi"><div class="l">OCK bez DPH</div><div class="v">${fmt0(ridOck)}</div></div>
@@ -185,9 +226,10 @@ function renderZakazka() {
  * Sloupec rozdílu se počítá proti ŘÍDÍCÍ variantě.
  * ============================================================ */
 
-function porovnaniData() {
-  const vypocty = ZAK.varianty.map(v => ({ id: v.id, ...spocitejVariantu(v) }));
-  return porovnaniVariant(ZAK, vypocty);
+function porovnaniData(zak) {
+  const z = zak || ZAK;   // VZ-E2 #601: tisk dává pohled zákazníka
+  const vypocty = z.varianty.map(v => ({ id: v.id, ...spocitejVariantu(v) }));
+  return porovnaniVariant(z, vypocty);
 }
 
 /* metriky, které smí vidět uživatel podle role (náklad a marže jen admin) */
@@ -275,9 +317,10 @@ function porovnaniKarta() {
  * odebrané nebo změněné. Nic se nepřepočítává ani neukládá.
  * ============================================================ */
 
-function porovnaniPolozkyData() {
-  const vypocty = ZAK.varianty.map(v => ({ id: v.id, ...spocitejVariantu(v) }));
-  return porovnaniPolozek(ZAK, vypocty);
+function porovnaniPolozkyData(zak) {
+  const z = zak || ZAK;   // VZ-E2 #601: tisk dává pohled zákazníka
+  const vypocty = z.varianty.map(v => ({ id: v.id, ...spocitejVariantu(v) }));
+  return porovnaniPolozek(z, vypocty);
 }
 
 /* atributy, které smí vidět uživatel podle role (náklad jen admin) */
@@ -379,7 +422,10 @@ function porovnaniPolozkyKarta() {
 
 /* Tiskový pohled detailu položek – popisky v jazyce dokumentů */
 function porovnaniPolozkyTisk() {
-  const p = porovnaniPolozkyData();
+  const vt = vzTiskVstup('porovnani');   // VZ-E2 #601: detail položek jen z variant otevřeného zákazníka
+  if (!vt) return;
+  const TZ = vt.zak;
+  const p = porovnaniPolozkyData(TZ);
   const atr = porovnaniAtributy();
   const L = jazyk();
   const f0 = v => v == null ? '—' : fmt0(v);
@@ -416,7 +462,7 @@ function porovnaniPolozkyTisk() {
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="${esc(L)}"><head><meta charset="utf-8">
-    <title>${esc(nazevExportu('detail-polozek', { cislo: ZAK.cislo }))}</title>
+    <title>${esc(nazevExportu('detail-polozek', { cislo: vzTiskCislo(TZ) }))}</title>
     <style>body{font:12px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:1100px;margin:24px auto;padding:0 16px}
     h1{font-size:19px;margin-bottom:2px} h2{font-size:15px;margin:18px 0 2px}
     .sub{color:#6b7686;margin-bottom:8px}
@@ -429,8 +475,8 @@ function porovnaniPolozkyTisk() {
     .bar button{font:13px "Segoe UI";padding:6px 14px;border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:6px;cursor:pointer}
     @page{size:A4 landscape;margin:0} @media print{.noprint{display:none} body{margin:0;max-width:none;padding:12mm}}</style></head><body>
     <div class="bar noprint"><button onclick="window.print()">🖨 ${esc(T('Tisk / Uložit jako PDF'))}</button></div>
-    <h1>${esc(T('Detail položek'))}${ZAK.cislo ? ' – ' + esc(ZAK.cislo) : ''}</h1>
-    <div class="sub">${esc(ZAK.nazevAkce || '')}${ZAK.objednatel ? ' · ' + esc(ZAK.objednatel) : ''} ·
+    <h1>${esc(T('Detail položek'))}${TZ.cislo ? ' – ' + esc(vzTiskCislo(TZ)) : ''}</h1>
+    <div class="sub">${esc(TZ.nazevAkce || '')}${TZ.objednatel ? ' · ' + esc(TZ.objednatel) : ''} ·
       ${esc(T('řídící varianta'))}: ${esc(p.ridiciNazev)}</div>
     ${bloky || `<p class="sub">${esc(T('Varianta je položkově shodná s řídící variantou.'))}</p>`}
     <p class="sub">${esc(T('Rozdíl je počítán proti řídící variantě.'))} ${esc(T('Ceny jsou v Kč.'))}
@@ -441,7 +487,10 @@ function porovnaniPolozkyTisk() {
 
 /* Tiskový pohled – popisky v jazyce dokumentů (Nastavení → jazyk) */
 function porovnaniTisk() {
-  const p = porovnaniData();
+  const vt = vzTiskVstup('porovnani');   // VZ-E2 #601: jen varianty otevřeného zákazníka
+  if (!vt) return;
+  const TZ = vt.zak;
+  const p = porovnaniData(TZ);
   const met = porovnaniMetriky(p);
   const vs = p.varianty;
   const L = jazyk();
@@ -464,7 +513,7 @@ function porovnaniTisk() {
   const w = oknoNahledu();   // null = prohlížeč okno zablokoval, hláška už svítí (K6)
   if (!w) return;
   w.document.write(`<!DOCTYPE html><html lang="${esc(L)}"><head><meta charset="utf-8">
-    <title>${esc(nazevExportu('porovnani', { cislo: ZAK.cislo }))}</title>
+    <title>${esc(nazevExportu('porovnani', { cislo: vzTiskCislo(TZ) }))}</title>
     <style>body{font:13px/1.5 "Segoe UI",sans-serif;color:#1a2332;max-width:1000px;margin:24px auto;padding:0 16px}
     h1{font-size:19px;margin-bottom:2px} .sub{color:#6b7686;margin-bottom:14px}
     table{width:100%;border-collapse:collapse;margin-top:10px}
@@ -477,8 +526,8 @@ function porovnaniTisk() {
     .bar button{font:13px "Segoe UI";padding:6px 14px;border:1px solid #1d4ed8;background:#1d4ed8;color:#fff;border-radius:6px;cursor:pointer}
     @page{size:A4 landscape;margin:0} @media print{.noprint{display:none} body{margin:0;max-width:none;padding:12mm}}</style></head><body>
     <div class="bar noprint"><button onclick="window.print()">🖨 ${esc(T('Tisk / Uložit jako PDF'))}</button></div>
-    <h1>${esc(T('Porovnání variant'))}${ZAK.cislo ? ' – ' + esc(ZAK.cislo) : ''}</h1>
-    <div class="sub">${esc(ZAK.nazevAkce || '')}${ZAK.objednatel ? ' · ' + esc(ZAK.objednatel) : ''}</div>
+    <h1>${esc(T('Porovnání variant'))}${TZ.cislo ? ' – ' + esc(vzTiskCislo(TZ)) : ''}</h1>
+    <div class="sub">${esc(TZ.nazevAkce || '')}${TZ.objednatel ? ' · ' + esc(TZ.objednatel) : ''}</div>
     <table><tr><th></th>${hlavicka}</tr>${telo}</table>
     <p class="sub">${esc(T('Rozdíl je počítán proti řídící variantě.'))} ${esc(T('Ceny jsou v Kč.'))}</p>
     </body></html>`);
@@ -491,7 +540,10 @@ function nabidkaKarta() {
   /* Prázdný ceník zhasíná tlačítka, která vyrábějí dokument pro zákazníka. */
   const zab = (typeof ukazkoveZabranaAttr === 'function') ? ukazkoveZabranaAttr() : '';
   let ph = null, chyba = '', priplNahled = 0;
-  try { const nd = nabidkaData(ZAK, akt, JEKLY); ph = nd.placeholders; priplNahled = nd.priplatky.length; }
+  /* VZ-E2 #601: živý náhled z pohledu otevřeného zákazníka (jeden zákazník = ZAK). */
+  const TZ = typeof vzTiskZakTicho === 'function' ? vzTiskZakTicho() : ZAK;
+  const aktT = (typeof vzTiskVarianta === 'function' ? vzTiskVarianta(TZ, akt) : akt) || akt;
+  try { const nd = nabidkaData(TZ, aktT, JEKLY); ph = nd.placeholders; priplNahled = nd.priplatky.length; }
   catch (e) { chyba = e.message; }
   const pole = (nazev, hodnota, povinne) => {
     const prazdne = !hodnota || hodnota === '…';
@@ -510,7 +562,7 @@ function nabidkaKarta() {
       ${pole('Celkem s DPH', ph.CENA_S_DPH, false)}
       ${pole('Příplatky do nabídky', priplNahled + ' položek (výběr sloupcem „Nabídka" v kalkulaci OCK)', false)}
     </table>` : `<div class="neg">Chyba výpočtu: ${esc(chyba)}</div>`;
-  return `<div class="note">Nabídka se generuje z <b>otevřené varianty</b> („${esc(akt.nazev)}")${akt.id !== rid.id
+  return `${typeof vzTiskPruhHtml === 'function' ? vzTiskPruhHtml() : ''}<div class="note">Nabídka se generuje z <b>otevřené varianty</b> („${esc(akt.nazev)}")${akt.id !== rid.id
       ? ` – pozor, řídící je „${esc(rid.nazev)}"; při generování dostanete na výběr` : ''} do šablony
     <b>Sablona_NABIDKA_CN.docx</b> (složka _CN). Vyplní se hlavička níže, kompletní technická specifikace
     (přesně jak je v záložce Technická specifikace OCK) a ceny z Kalkulace OCK. Popis záměru, platební
@@ -632,7 +684,9 @@ async function nabidkaWordGeneruj(srv) {
   if (typeof dokumentZabranaHlas === 'function' && dokumentZabranaHlas('nabidka', varianta, nabidkaStavText)) return;
   if (typeof tiskZamekCteniPovol === 'function' && !(await tiskZamekCteniPovol('nabidka', varianta))) { nabidkaStavText('Dokument nevznikl — nabídka je otevřená jen ke čtení.'); return; }   // P2 (K13-N54)
   // jednotný registr dokumentů (dokumenty.js) – stejná cesta jako krycí list apod.
-  dokumentVygeneruj('nabidka', sablona.slice(0), ZAK, varianta, JEKLY, L)
+  const vt = vzTiskVstup('nabidka', varianta, nabidkaStavText);   // VZ-E2 #601: pohled zákazníka
+  if (!vt) return;
+  dokumentVygeneruj('nabidka', sablona.slice(0), vt.zak, vt.varianta, JEKLY, L)
     .then(res => {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(res.blob);
@@ -641,7 +695,7 @@ async function nabidkaWordGeneruj(srv) {
       // stažený .docx je hotová nabídka pro zákazníka → varianta se uzamyká
       let zamcenoText = '';
       if (typeof zamekPoTisku === 'function') {
-        const z = zamekPoTisku('nabidka', varianta.id, sablonaInfo);
+        const z = zamekPoTisku('nabidka', varianta.id, sablonaInfo, vzTiskZamekNavic(vt));   // VZ-E3: razítko „komu"
         if (z) zamcenoText = ' Varianta ' + (z.cislo || '') + ' je nyní uzamčená jako odeslaná nabídka; '
           + 'pokračujte jejím klonem.';
       }
@@ -680,11 +734,13 @@ async function nabidkaNahled() {
   const L = (typeof jazyk === 'function') ? jazyk() : 'cz';
   const P = t => (L !== 'cz' && typeof tr === 'function') ? tr(t, L) : t;
   const varianta = await nabidkaVarianta();
+  const vt = vzTiskVstup('nabidka', varianta);   // VZ-E2 #601: pohled zákazníka (podklady)
+  if (!vt) return;
   /* #518: od téhle chvíle se sbírají texty, které zůstaly česky —
    * až po všech otázkách (await), ať se nepřimíchá nic z aplikace. */
   const sleduj = typeof neprelozenoZacni === 'function' && neprelozenoZacni(L);
   let data;
-  try { data = nabidkaData(ZAK, varianta, JEKLY, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
+  try { data = nabidkaData(vt.zak, vt.varianta, JEKLY, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
   const p = data.placeholders;
   const radek = (l, v) => `<tr><td style="font-weight:600">${esc(l)}</td><td>${esc(v)}</td></tr>`;
   /* platební kalendář OCK: splátky a měsíční fakturace podle týchž pravidel jako Word (D1/D2) */
@@ -728,7 +784,7 @@ async function nabidkaNahled() {
   /* Seznam se uzavírá až po sestavení celého HTML — popisky P() výše
    * patří do dokumentu stejně jako hodnoty. */
   w.document.write((sleduj ? neprelozenoSkript(L, neprelozenoKonec(), neprelozenoRucne([
-    p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, ZAK.popisZameru])) : '')
+    p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, vt.zak.popisZameru])) : '')
     + '</body></html>');
   w.document.close();
 }
@@ -893,7 +949,9 @@ async function nabidkaOckDokument() {
   /* #518: sběr textů bez překladu až po všech otázkách (await). */
   const sleduj = typeof neprelozenoZacni === 'function' && neprelozenoZacni(L);
   let data;
-  try { data = nabidkaData(ZAK, varianta, JEKLY, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
+  const vt = vzTiskVstup('nabidkaTisk', varianta);   // VZ-E2 #601: pohled zákazníka
+  if (!vt) { if (sleduj) neprelozenoKonec(); return; }
+  try { data = nabidkaData(vt.zak, vt.varianta, JEKLY, L); } catch (e) { if (sleduj) neprelozenoKonec(); throw e; }
   const p = data.placeholders;
 
   /* sekce z nabidka.js: [0] hlavička (tiskne se jako tabulka nahoře),
@@ -1007,9 +1065,9 @@ async function nabidkaOckDokument() {
       vyp: P('Úpravy vypnuté. Ruční změny zůstávají, jen se do dokumentu už nedá psát.'),
       vraceno: P('Vráceno původní znění z kalkulace.'),
       zamceno: P('Varianta byla uzamčena jako odeslaná nabídka. Další úpravy provádějte v jejím klonu.'),
-    }, { typ: 'nabidkaTisk', varId: varianta.id })}`);
+    }, Object.assign({ typ: 'nabidkaTisk', varId: varianta.id }, vzTiskZamekNavic(vt)))}`);
   w.document.write((sleduj ? neprelozenoSkript(L, neprelozenoKonec(), neprelozenoRucne([
-    p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, ZAK.popisZameru])) : '')
+    p.OBJEDNATEL, p.OBJEDNATEL_KONTAKT, p.NAZEV_AKCE, p.ADRESA, vt.zak.popisZameru])) : '')
     + '</body></html>');
   w.document.close();
 }

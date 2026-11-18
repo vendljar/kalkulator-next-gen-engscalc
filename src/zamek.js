@@ -110,7 +110,9 @@ function dalsiPriponaVarianty(zak) {
 function variantaCislo(zak, v) {
   const zaklad = String((zak && zak.cislo) || '');
   const p = variantaPriponaVZakazce(zak, v);
-  return p ? zaklad.replace(/\s+$/, '') + '.' + p : zaklad;
+  const c = p ? zaklad.replace(/\s+$/, '') + '.' + p : zaklad;
+  /* VZ-E2 (#601): v pohledu dalšího zákazníka číslo s písmenem (…9940.2-B). */
+  return (typeof vzPismenoPohledu === 'function' && vzPismenoPohledu(zak)) ? vzCisloSPismenem(c, vzPismenoPohledu(zak)) : c;
 }
 
 /* Patří uložené číslo z odeslané nabídky k tomuto číslu zakázky? Pro zámky
@@ -122,7 +124,9 @@ function zamekCisloZakladSedi(cisloZamku, zak) {
   const bylo = String(cisloZamku || '');
   const zaklad = String((zak && zak.cislo) || '').replace(/\s+$/, '');
   if (bylo === zaklad || bylo === String((zak && zak.cislo) || '')) return true;
-  return bylo.startsWith(zaklad + '.') && /^\d+$/.test(bylo.slice(zaklad.length + 1));
+  /* VZ-E2 (#601): přípona zákazníka „-P" (…9940-B, …9940.2-B) základ nemění. */
+  if (zaklad && bylo.startsWith(zaklad + '-') && /^[B-Z]$/.test(bylo.slice(zaklad.length + 1))) return true;
+  return bylo.startsWith(zaklad + '.') && /^\d+(-[B-Z])?$/.test(bylo.slice(zaklad.length + 1));
 }
 
 /* Klon = nová varianta uvnitř téže zakázky. Přebírá kompletní data
@@ -156,6 +160,11 @@ function klonujVariantu(zak, id, opts) {
     if (Array.isArray(kopie.data.ock.dalsi))
       kopie.data.ock.dalsi.forEach(s => { if (s && s.zadani) svetlikyStavbaNaBez(s.zadani); });
   }
+  /* VZ-E3 (V3): u zakázky s jedním zákazníkem klon nenese stopy víc
+   * zákazníků v krycích listech (vlastník pole, čí je snímek, hodnoty
+   * ostatních zákazníků) — zdroj může být doklad z doby víc zákazníků. */
+  if (typeof vzRezim === 'function' && !vzRezim(zak) && typeof vzKlUklid === 'function')
+    vzKlUklid({ varianty: [kopie] }, typeof vzRidiciId === 'function' ? vzRidiciId(zak) : 'z1');
   kopie.klonZ = zdroj.id;
   kopie.klonZCislo = variantaCislo(zak, zdroj);
   /* NOVÁ VARIANTA NESE DNEŠNÍ DATUM (nález D2, 15. 9. 2026). Klon vzniká
@@ -520,9 +529,14 @@ function zamekZakHlavickaOznac(zak, stara) {
   if (sr && variantaUzamcena(sr)) oznac(vs.find(v => v && v.id === sr.id));
   return n;
 }
+/* VZ-E3 (#602, návrh § 5): u zakázky s víc zákazníky zmrazí název akce
+ * a adresu stavby PRVNÍ odeslaná nabídka komukoli (zamčená kterákoli varianta). */
+function zamekZakVzOdeslano(zak) {
+  return typeof vzRezim === 'function' && vzRezim(zak) && ((zak && zak.varianty) || []).some(v => variantaUzamcena(v));
+}
 function zamekZakStav(zak) {
   const zam = ((zak && zak.varianty) || []).filter(v => variantaUzamcena(v));
-  return { cn: variantaUzamcena(zamekZakRidici(zak)) || zam.some(v => v.zamek.hlavicka === true),
+  return { cn: variantaUzamcena(zamekZakRidici(zak)) || zam.some(v => v.zamek.hlavicka === true) || zamekZakVzOdeslano(zak),
            sod: zam.some(v => !zamekKryciOtevreny(v) || variantaProdana(v)) };
 }
 
@@ -535,6 +549,8 @@ function zamekZakCestaZmrazena(zak, cesta) {
     return 'Zakázka je prodaná — údaje zákazníka v hlavičce se už nemění (odemknout smí vedoucí nebo administrátor).';
   if (st.sod && c.poSod.indexOf(cesta) >= 0)
     return 'Ze zakázky odešla smlouva o dílo — údaje zákazníka v hlavičce se už nemění. Pokračujte novou zakázkou.';
+  if (st.cn && c.poCn.indexOf(cesta) >= 0 && zamekZakVzOdeslano(zak) && !variantaUzamcena(zamekZakRidici(zak)))
+    return 'Zakázka s víc zákazníky už má odeslanou cenovou nabídku — název akce a adresa stavby jsou v ní vytištěné, a proto se už nemění.';
   if (st.cn && c.poCn.indexOf(cesta) >= 0)
     return 'Řídící varianta zakázky je (nebo byla) odeslaná cenová nabídka — název akce a adresa stavby jsou v ní vytištěné, a proto se už nemění.';
   return '';
@@ -554,7 +570,9 @@ function zamekZakZmeny(stara, nova) {
   });
   const sr = zamekZakRidici(stara);
   const nr = zamekZakRidici(nova);
-  const st = { cn: zamcene.some(v => v === sr || (!!nr && v.id === nr.id) || v.zamek.hlavicka === true),
+  /* VZ-E3: u víc zákazníků (uložená nebo ukládaná verze) kterákoli odeslaná varianta. */
+  const vz = typeof vzRezim === 'function' && (vzRezim(stara) || vzRezim(nova)) && zamcene.length > 0;
+  const st = { cn: vz || zamcene.some(v => v === sr || (!!nr && v.id === nr.id) || v.zamek.hlavicka === true),
                sod: zamcene.some(v => !zamekKryciOtevreny(v) || variantaProdana(v)) };   // #540
   if (!st.cn && !st.sod) return [];
   const c = zamekZakCesty();
@@ -563,7 +581,17 @@ function zamekZakZmeny(stara, nova) {
     return (x === undefined || x === null || x === '') ? '' : JSON.stringify(x);
   };
   const cesty = (st.sod ? c.poSod : []).concat(st.cn ? c.poCn.filter(x => c.poSod.indexOf(x) < 0 || !st.sod) : []);
-  return cesty.filter(cesta => hodnota(stara, cesta) !== hodnota(nova, cesta));
+  /* VZ-E4 (#603): výměna řídícího zákazníka hlavičku nemění „u zákazníka" —
+   * údaje se jen přestěhují. Porovnává se proto s uloženou verzí, ve které
+   * je řídícím týž zákazník jako v ukládané (údaje dalších zákazníků hlídá
+   * vzServerZakaznici). Jeden zákazník / beze změny řídícího: beze změny. */
+  let srovnana = stara;
+  if (typeof vzRidiciId === 'function' && typeof vzVymenRidiciho === 'function' && typeof vzZakaznik === 'function'
+      && vzRidiciId(stara) !== vzRidiciId(nova) && vzZakaznik(stara, vzRidiciId(nova))) {
+    const k = JSON.parse(JSON.stringify(stara));
+    if (vzVymenRidiciho(k, vzRidiciId(nova)).ok) srovnana = k;
+  }
+  return cesty.filter(cesta => hodnota(srovnana, cesta) !== hodnota(nova, cesta));
 }
 
 /* Data zamčené varianty k porovnání „změnilo se něco odeslaného?" — bez
@@ -589,9 +617,25 @@ function zamekDataPorovnani(data, v) {
   if (!data || typeof data !== 'object' || !variantaUzamcena(v)) return zamekJsonKanon(data);
   const kopie = JSON.parse(JSON.stringify(data));
   ['kryci', 'kryciProj'].forEach(list => {
-    const h = kopie[list] && kopie[list].hodnoty;
-    if (!h || typeof h !== 'object') return;
-    Object.keys(h).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete h[id]; });
+    const kl = kopie[list];
+    const h = kl && kl.hodnoty;
+    if (h && typeof h === 'object') Object.keys(h).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete h[id]; });
+    /* VZ-E3 (#602, U1): ruční hodnoty dalších zákazníků a značka vlastníka
+     * pole se řídí týmž pravidlem — volné pole se smí doplnit i po odeslání.
+     * Klíče vznikají jen u víc zákazníků (jinak se nic nemění). */
+    const obj = x => !!x && typeof x === 'object' && !Array.isArray(x);
+    if (obj(kl) && obj(kl.hodnotyZakaznika)) {
+      Object.keys(kl.hodnotyZakaznika).forEach(z => {
+        const m = kl.hodnotyZakaznika[z];
+        if (obj(m)) Object.keys(m).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete m[id]; });
+        if (obj(m) && !Object.keys(m).length) delete kl.hodnotyZakaznika[z];
+      });
+      if (!Object.keys(kl.hodnotyZakaznika).length) delete kl.hodnotyZakaznika;
+    }
+    if (obj(kl) && obj(kl.vzVlastnik)) {
+      Object.keys(kl.vzVlastnik).forEach(id => { if (zamekKryciPoleVolne(v, list, id)) delete kl.vzVlastnik[id]; });
+      if (!Object.keys(kl.vzVlastnik).length) delete kl.vzVlastnik;
+    }
   });
   if (kopie.kryciProj && typeof kopie.kryciProj === 'object' && zamekKryciPoleVolne(v, 'kryciProj', 'planPredvolba'))
     delete kopie.kryciProj.planPlateb;
@@ -703,6 +747,10 @@ function zamkniVariantu(v, info) {
   /* Tisk SoD (K6-K4): otisk objednaných a cena díla, jak smlouva odešla
    * (objSodSnimek; server ho u nového tisku spočítá znovu). */
   if (info.sod && typeof info.sod === 'object') zaznam.sod = info.sod;
+  /* VZ-E3 (#602): razítko „komu" — snímek adresáta { id, pismeno, cislo,
+   * objednatel, ico } jen u zakázky s víc zákazníky (vzRazitkoSnimek);
+   * s jedním zákazníkem klíč chybí. Server si snímek složí sám. */
+  if (info.zakaznik && typeof info.zakaznik === 'object') zaznam.zakaznik = info.zakaznik;
   if (variantaUzamcena(v)) {
     if (!Array.isArray(v.zamek.tisky)) v.zamek.tisky = [];
     v.zamek.tisky.push(zaznam);
@@ -1235,7 +1283,7 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

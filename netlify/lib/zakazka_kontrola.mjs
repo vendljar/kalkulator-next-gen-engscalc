@@ -74,6 +74,7 @@ export function zakazkaVelikostHlaska(zak, bajtu) {
     + ', zmrazené údaje ' + zamcenych + ' odeslaných variant ' + kB(zmrazene) + ', ostatní ' + kB(ostatni) + '. ' + rada;
 }
 import { pdVazbaDrz } from './pd_vazba.mjs';
+import { pdOrgVitezDrz } from './pd_org_vitez.mjs';
 import { razitkoKdo } from './sdilene.mjs';
 
 export const CISLO_MAX = 60;
@@ -285,6 +286,83 @@ export function vsKontrolaSachet(stara, zak, relace, ctx, obnova) {
   return null;
 }
 
+/* VÍC ZÁKAZNÍKŮ NA ZAKÁZCE NA SERVERU (VZ #598, E0 = #599, 16. 11. 2026).
+ *   – vadný tvar zahozený už importem (`vzZahozeno`, importZakazka) → 400
+ *     (ZAP i VYP: prohlížeč neposlal, co tvrdí, že poslal);
+ *   – VYPNUTO (vzor VS R21, J. V.): `vzRidici` / `dalsiZakaznici` se nesmí
+ *     změnit proti uložené verzi (podpis bez `platna`) → 400. Uložení beze
+ *     změny těchto klíčů projde — zakázka, která víc zákazníků UŽ MÁ, se dál
+ *     ukládá, data se nemažou;
+ *   – ZAPNUTO: vadný tvar (vzTvarProblemy: id, písmena, ukazatele na
+ *     varianty, strop 9 dalších, délky, neznámé klíče) → 400;
+ *   – `platna` píše jen server (vzPlatnaDrz: z uložené verze; obnova
+ *     z otisku ji bere ze zálohy);
+ *   – invariant „řídící varianta = varianta řídícího zákazníka“ se po
+ *     kontrolách srovná (vzSrovnej), neodmítá se (vzor prodRidiciSrovnej).
+ * Uložená verze jde přes tutéž migraci (N43). Vrací { status, chyba } nebo null. */
+export function vzServerKontrola(stara, zak, volby = {}) {
+  const G = globalThis;
+  if (typeof G.vzTvarProblemy !== 'function' || !zak || typeof zak !== 'object') return null;
+  if (Array.isArray(zak.vzZahozeno) && zak.vzZahozeno.length)
+    return { status: 400, chyba: 'Zakázka nese ' + G.vzTvarText(zak.vzZahozeno) };
+  let st = stara;
+  if (st && typeof G.importZakazka === 'function') { try { st = G.importZakazka(JSON.parse(JSON.stringify(st))); } catch (e) { st = stara; } }
+  if (!volby.zapnuto) {
+    if (G.vzPodpis(zak) !== G.vzPodpis(st)) {
+      /* D4 (dorevize Fable): nejčastější příčina s VYP je smazaná varianta,
+       * na kterou ukazuje další zákazník (import ukazatel přesměroval) — říct to lidsky. */
+      const ids = new Set((Array.isArray(zak.varianty) ? zak.varianty : []).filter(v => v && typeof v === 'object').map(v => String(v.id)));
+      const smazana = (st && Array.isArray(st.dalsiZakaznici) ? st.dalsiZakaznici : [])
+        .some(d => d && typeof d === 'object' && d.varianta && !ids.has(String(d.varianta)));
+      return { status: 400, chyba: smazana ? G.VZ_VYPNUTO_VARIANTA : G.VZ_VYPNUTO };
+    }
+  } else {
+    /* N9 + D1 (revize Fable): když uložená verze data víc zákazníků nemá,
+     * musí mezi zákazníky (vzRidici + dalsiZakaznici) být právě jeden
+     * { id: 'z1', pismeno: '' } — původní řídící. Nemusí už být řídící:
+     * přidat zákazníka a v témž uložení ho udělat řídícím je poctivý postup. */
+    const r = zak.vzRidici;
+    if (r && typeof r === 'object' && !(st && st.vzRidici)) {
+      const vsichni = [r].concat(Array.isArray(zak.dalsiZakaznici) ? zak.dalsiZakaznici : []).filter(x => x && typeof x === 'object');
+      if (vsichni.filter(x => x.id === G.VZ_RIDICI_ID && x.pismeno === '').length !== 1)
+        return { status: 400, chyba: 'Zakázka nese neplatné zákazníky (původní řídící zákazník z1 bez písmena chybí).' };
+    }
+    /* Druhá pojistka: po importZakazka je tvar vždy čistý (vadný zahodí
+     * vzOcisti → vzZahozeno výš); hlídá volajícího, který import obejde. */
+    const p = G.vzTvarProblemy(zak);
+    if (p.length) return { status: 400, chyba: 'Zakázka nese ' + G.vzTvarText(p) };
+    /* E3 (#602): písmena a id stávajících zákazníků (N9), odstranění zákazníka
+     * s odeslanou nabídkou jen administrátor (B221, rozhodnutí J. V.), zmrazené
+     * údaje po odeslání, `zalozen` ze serveru (N4). Role z RELACE. */
+    if (typeof G.vzServerZakaznici === 'function') {
+      const z = G.vzServerZakaznici(st, zak, volby.relace, { obnova: volby.obnova, zeSouboru: volby.zeSouboru });
+      if (z) return z;
+    }
+  }
+  /* E3: razítko „komu" u NOVĚ připsaných tisků skládá server sám (z prohlížeče
+   * jen id); obnova bere zámky ze zálohy jako doklad. S VYP smí nový tisk
+   * jen řídící zákazník. */
+  if (!volby.obnova && typeof G.vzServerRazitka === 'function') {
+    if (!volby.zapnuto && G.vzRezim(zak)) {
+      const sv = new Map(((st && st.varianty) || []).filter(v => v && typeof v === 'object').map(v => [String(v.id), v]));
+      for (const v of (zak.varianty || [])) {
+        const t = (v && v.zamek && v.zamek.zamceno && Array.isArray(v.zamek.tisky)) ? v.zamek.tisky : [];
+        const s0 = sv.get(String(v && v.id));
+        const od = (s0 && s0.zamek && s0.zamek.zamceno && Array.isArray(s0.zamek.tisky)) ? s0.zamek.tisky.length : 0;
+        if (t.slice(od).some(x => x && x.zakaznik && typeof x.zakaznik === 'object' && x.zakaznik.id && x.zakaznik.id !== G.vzRidiciId(zak)))
+          return { status: 400, chyba: G.VZ_VYPNUTO };
+      }
+    }
+    const r = G.vzServerRazitka(st, zak);
+    if (r) return r;
+  }
+  /* `platna` z prohlížeče se nedrží zde: od E3 (N6) ji vzPlatnaPrepocti na konci kontroly spočítá ze zámků. */
+  /* E3 (N4): `zalozen` ze serveru (uložená verze / relace) — i s VYP. */
+  if (typeof G.vzZalozenDrz === 'function') G.vzZalozenDrz(st, zak, volby.relace, { obnova: volby.obnova, zeSouboru: volby.zeSouboru });
+  G.vzSrovnej(zak);
+  return null;
+}
+
 export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   const { ULO, SCHV, JEKLY } = ctx;
   const obnova = ctx.rezim === 'obnova';
@@ -309,6 +387,12 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
    * šachet 2+ pak projdou TÝMIŽ kontrolami jako šachta 1 (vsKontrolaSachet). */
   const vs = ULO.uloVsProblemy ? ULO.uloVsProblemy(zak, stara, { zapnuto: ctx.viceSachet === true, importuj: globalThis.importZakazka }) : null;
   if (vs) return odmitni(vs.status, veta(vs.chyba));
+  /* VÍC ZÁKAZNÍKŮ (VZ #598, E0): vypínač správce (ctx.viceZakazniku, výchozí
+   * vypnuto), tvar, `platna` jen ze serveru, invariant řídícího. */
+  {
+    const p = vzServerKontrola(stara, zak, { zapnuto: ctx.viceZakazniku === true, obnova, zeSouboru, relace });
+    if (p) return odmitni(p.status, veta(p.chyba));
+  }
   {
     const p = vsKontrolaSachet(stara, zak, relace, ctx, obnova);
     if (p) return odmitni(p.status, veta(p.chyba));
@@ -331,6 +415,9 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
    * z uložené verze (obnova ze souboru je nepřebírá, z otisku ano), mění je
    * jen výslovná akce (functions/pd_vazba.mjs, pd_organizace.mjs, webhook). */
   pdVazbaDrz(stara, zak, { obnova, zeSouboru });
+  /* Organizace dealu = vítěz (VZ-E5b #605): `pdOrgVitez` píše jen akce
+   * POST /api/pd/organizace { akce: 'vitez' } — při uložení z uložené verze. */
+  pdOrgVitezDrz(stara, zak, { obnova, zeSouboru });
   /* Stav dealu Pipedrive (P1, 22. 10. 2026): jen tvar { status, nacteno }
    * z whitelistu — objekt jiného tvaru nebo cizí typ → 400, ne 500.
    * Obsah při uložení dosazuje server (lib/pd_stav.mjs), obnova ho bere ze zálohy. */
@@ -727,6 +814,11 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
     if (ov) v.zamek.overeni = ov; else delete v.zamek.overeni;
     if (ov && ov.stav !== 'shoda') sporne.push({ cislo: v.zamek.cislo || cisloMaBy, ov });
   }
+
+  /* VZ-E3 (#602, revize E0 N6): `platna` dalších zákazníků = poslední odeslaná
+   * nabídka ze zámků — až po držení razítek (uloZamekRazitkaDrz), klientovi
+   * se nevěří. Obnova z otisku ji bere ze zálohy. */
+  if (!(obnova && !zeSouboru) && typeof globalThis.vzPlatnaPrepocti === 'function') globalThis.vzPlatnaPrepocti(zak);
 
   if (!obnova) {
     /* Jméno obchodníka do rejstříku: z RELACE, ne od klienta (21. 8. 2026);

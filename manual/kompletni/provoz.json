@@ -1,6 +1,6 @@
 {
  "titul": "Kalkulátor Next Gen — kompletní dokumentace systému",
- "verze": "Platí pro aplikaci v18.11.1 · sestaveno 18. 11. 2026",
+ "verze": "Platí pro aplikaci v18.11.2 · sestaveno 18. 11. 2026",
  "podtitul": "Obsluha · výpočty · provoz systému. Jeden dokument pro správce, nástupce i IT firmu, která má systém převzít.",
  "uvod": [
   {
@@ -590,7 +590,7 @@
       ],
       [
        "zakazky",
-       "zakázky a jejich varianty (`z/…`), rejstřík zakázek pro hledání (u zakázky s víc šachtami i počet variant šachet a kusů řídící varianty), zámky odeslaných nabídek, poznámky a přílohy",
+       "zakázky a jejich varianty (`z/…`), rejstřík zakázek pro hledání (u zakázky s víc šachtami i počet variant šachet a kusů řídící varianty, u zakázky s víc zákazníky jejich názvy, čísla nabídek s písmenem a stav — bez cen a kontaktů), zámky odeslaných nabídek, poznámky a přílohy",
        "kontakty zákazníka, jméno obchodníka",
        "dokud je administrátor nesmaže"
       ],
@@ -1521,7 +1521,7 @@
        "/api/funkce",
        "GET, POST",
        "GET přihlášený; POST jen administrátor",
-       "vypínače zkušebních funkcí (víc šachet v nabídce; výchozí vypnuto)"
+       "vypínače zkušebních funkcí (víc šachet v nabídce, víc zákazníků na zakázce; výchozí vypnuto, zapíná jen administrátor)"
       ],
       [
        "/api/sablony",
@@ -1653,7 +1653,7 @@
        "/api/pd/organizace",
        "POST",
        "autor zakázky a administrátor s právem čtení z Pipedrive",
-       "Opravit firmu v Pipedrive podle ARES: náhled a zápis jen potvrzených lišících se polí (název, adresa, DIČ), jen při shodě IČO organizace a hlavičky"
+       "Opravit firmu v Pipedrive podle ARES: náhled a zápis jen potvrzených lišících se polí (název, adresa, DIČ), jen při shodě IČO organizace a hlavičky; u zakázky s víc zákazníky (zkušební funkce) akce `vitez` po prodeji přepojí organizaci dealu na vítězného zákazníka (hledání podle IČO s ověřením kandidáta, jinak založení z ARES) — prodávající, autor nebo administrátor"
       ]
      ]
     },

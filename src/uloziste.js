@@ -402,6 +402,9 @@ function uloRejstrikZaznam(zak, opts) {
      * v Přehledu cenových nabídek. Jen u zakázky s víc šachtami — u jedné
      * šachty klíč chybí a rejstřík je beze změny (zlatá sada). */
     ...uloRejstrikSachty(zak),
+    /* Víc zákazníků (VZ-E6 #606): názvy, čísla nabídek a stavy zákazníků —
+     * jen u zakázky s víc zákazníky, BEZ cen a kontaktů. */
+    ...uloRejstrikZakaznici(zak),
     /* Vazba z webhooku nahlášená jako chybná (K40c #581): autor a administrátor
      * ji vidí v Přehledu cenových nabídek. Klíč jen u nahlášené živé vazby. */
     ...((zak && zak.pdVazbaWebhook && typeof zak.pdVazbaWebhook === 'object' && zak.pdVazbaWebhook.nahlaseno
@@ -451,6 +454,48 @@ function uloRejstrikSachtyText(z) {
   return s.variant + ' ' + slovo + ' / ' + s.celkem + ' ks';
 }
 
+/* Víc zákazníků v rejstříku (VZ-E6 #606, návrh § 6): { zakaznici:
+ * [{ nazev, cislo, stav }] } — řídící první, pak další v pořadí karty — nebo {}
+ * (jeden zákazník, sady bez vice_zakazniku.js). `objednatel` záznamu zůstává
+ * řídící zákazník. Rejstřík čtou všichni přihlášení: nese jen NÁZEV, číslo
+ * nabídky s písmenem a stav (rozpracovaná / odeslaná / prodáno) — žádné ceny,
+ * IČO, sídla ani kontakty (test_vz_unik.js). Data víc zákazníků vzniknou jen se
+ * zapnutým vypínačem (server je s vypnutým odmítne), s vypnutým je rejstřík
+ * beze změny; štítek v Přehledu se kreslí jen se zapnutým. */
+const ULO_REJSTRIK_VZ_MAX = 10;           // = 1 řídící + VZ_DALSI_MAX (9 dalších)
+const ULO_REJSTRIK_VZ_STAVY = ['rozpracovana', 'odeslana', 'prodano'];
+function uloRejstrikZakaznici(zak) {
+  if (typeof vzRezim !== 'function' || typeof vzZakaznici !== 'function' || !vzRezim(zak)) return {};
+  const prodano = (typeof vzProdanoKomu === 'function') ? vzProdanoKomu(zak) : '';
+  const varianty = Array.isArray(zak.varianty) ? zak.varianty : [];
+  const out = vzZakaznici(zak).slice(0, ULO_REJSTRIK_VZ_MAX).map(z => {
+    const v = varianty.find(x => x && String(x.id) === z.varianta) || null;
+    const platna = (typeof vzPlatna === 'function') ? vzPlatna(zak, z.id) : null;
+    const zaklad = v && typeof variantaCislo === 'function' ? variantaCislo(zak, v) : String(zak.cislo || '');
+    const cislo = (platna && platna.cislo) ? platna.cislo
+      : ((typeof vzCisloSPismenem === 'function') ? vzCisloSPismenem(zaklad, z.pismeno) : zaklad);
+    const stav = (prodano && prodano === z.id) ? 'prodano' : (platna ? 'odeslana' : 'rozpracovana');
+    return { nazev: uloRejstrikText(z.hlavicka.objednatel),
+      cislo: uloCisloVyplneno(cislo) ? uloRejstrikText(String(cislo).trim()) : '', stav };
+  });
+  return out.length > 1 ? { zakaznici: out } : {};
+}
+/* Tvar klíče `zakaznici` v rejstříku: 2–10 položek { nazev, cislo, stav },
+ * texty se stropem délky, stav ze seznamu; jiné klíče (ceny, IČO…) se
+ * zahodí. Cokoli jiného → undefined (klíč zmizí). */
+function uloRejstrikZakazniciTvar(x) {
+  if (!Array.isArray(x) || x.length < 2 || x.length > ULO_REJSTRIK_VZ_MAX) return undefined;
+  if (!x.every(z => z && typeof z === 'object' && !Array.isArray(z) && typeof z.nazev === 'string')) return undefined;
+  return x.map(z => ({ nazev: uloRejstrikText(z.nazev), cislo: uloRejstrikText(z.cislo),
+    stav: ULO_REJSTRIK_VZ_STAVY.includes(z.stav) ? z.stav : 'rozpracovana' }));
+}
+/* Text štítku: „2 zákazníci", „4 zákazníci", „5 zákazníků". */
+function uloRejstrikZakazniciText(z) {
+  const s = uloRejstrikZakazniciTvar(z && z.zakaznici);
+  if (!s) return '';
+  return s.length + (s.length <= 4 ? ' zákazníci' : ' zákazníků');
+}
+
 /* Tvar `ctrlDny` v rejstříku (#504): { zamky: [{ den, rada }], prodej: { den, rada } | null }
  * nebo { cist: true } = „z rejstříku nerozhodnu, zakázku přečti". Cokoli
  * jiného (starší záznam, poškozený tvar) → undefined, tedy hrubý předvýběr. */
@@ -492,6 +537,8 @@ function uloRejstrikNormalizuj(x) {
       rada: z.rada === 'zahr' ? 'zahr' : '',      // #181: řada ceníku, prázdno = tuzemsko
       /* VS-E6 #596: počty šachet řídící varianty jen v platném tvaru. */
       ...(uloRejstrikSachtyTvar(z.sachty) ? { sachty: uloRejstrikSachtyTvar(z.sachty) } : {}),
+      /* VZ-E6 #606: zákazníci zakázky jen v platném tvaru (bez cen). */
+      ...(uloRejstrikZakazniciTvar(z.zakaznici) ? { zakaznici: uloRejstrikZakazniciTvar(z.zakaznici) } : {}),
       ...(z.pdNahlaseno === true ? { pdNahlaseno: true } : {}),   // K40c #581
       variant: cislo(z.variant),
       odeslane: cislo(z.odeslane),
@@ -571,8 +618,10 @@ function uloHledej(rejstrik, dotaz) {
     /* Hledá se i ve jménu obchodníka (21. 8. 2026) — v seznamu je jeho
      * sloupec, takže se podle něj lidé přirozeně ptají. */
     /* …a v adrese stavby (P15 / K16-N85, 25. 9. 2026). */
+    /* …a v názvech a číslech dalších zákazníků (VZ-E6 #606). */
+    const vz = Array.isArray(z.zakaznici) ? z.zakaznici.map(x => x.nazev + ' ' + x.cislo) : [];
     const text = uloNorm([z.cislo, z.nazevAkce, z.adresa, z.objednatel, z.datum, z.soubor,
-      z.autorJmeno, z.autor].join(' '));
+      z.autorJmeno, z.autor].concat(vz).join(' '));
     return slova.every(s => text.includes(s));
   });
 }
@@ -2439,6 +2488,7 @@ if (typeof module !== 'undefined')
                      uloZalohaSmiPrepsat,
                      uloRazitkoNove, uloRazitko, uloKolize,
                      uloRejstrikZaznam, uloRejstrikNormalizuj, uloRejstrikSloucit, uloRejstrikSachty, uloRejstrikSachtyTvar, uloRejstrikSachtyText,
+                     uloRejstrikZakaznici, uloRejstrikZakazniciTvar, uloRejstrikZakazniciText,
                      uloDruhZakazky, uloObchodnik,
                      uloRejstrikOdeber, uloRejstrikSerad, uloHledej, uloRejstrikBezAdresy, ULO_ADRESY_DAVKA,
                      uloRejstrikCtrlDny, uloRejstrikBezDnu, ULO_REJSTRIK_DNY_MAX,

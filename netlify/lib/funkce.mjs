@@ -5,9 +5,11 @@
  * zůstává vypnutý. Stav leží na serveru v úložišti programu (klíč `funkce`,
  * zálohy ho berou s programem) — prohlížeči se nevěří, rozhoduje server.
  *
- * Tvar: { viceSachet: true|false, kdo, kdy }. Chybí = vše VYPNUTO. */
+ * Tvar: { viceSachet: true|false, viceZakazniku: true|false, kdo, kdy }.
+ * Chybí = vše VYPNUTO. `viceZakazniku` = víc zákazníků na zakázce (VZ #598,
+ * E0 16. 11. 2026; J. V.: zapíná jen administrátor, i na testu a ostrém). */
 export const FUNKCE_KLIC = 'funkce';
-export const FUNKCE_ZNAME = ['viceSachet'];
+export const FUNKCE_ZNAME = ['viceSachet', 'viceZakazniku'];
 
 export function funkceOciste(x) {
   const o = {};

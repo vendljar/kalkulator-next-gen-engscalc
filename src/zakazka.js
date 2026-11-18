@@ -782,7 +782,9 @@ function cisloSVariantou(zak, varianta, zaklad) {
     const i = varianta ? ((zak && zak.varianty) || []).findIndex(v => v && v.id === varianta.id) : -1;
     p = i > 0 ? i + 1 : 0;
   }
-  return p ? cislo + '.' + p : cislo;
+  const c = p ? cislo + '.' + p : cislo;
+  /* VZ-E2 (#601): v pohledu dalšího zákazníka (vzPohled) písmeno: …9940.2-B. */
+  return (typeof vzPismenoPohledu === 'function' && vzPismenoPohledu(zak)) ? vzCisloSPismenem(c, vzPismenoPohledu(zak)) : c;
 }
 
 /* ---------- kontrola duplicit čísla a názvu (19. 8. 2026) ----------
@@ -793,7 +795,12 @@ function cisloSVariantou(zak, varianta, zaklad) {
  * jméno souboru první kolidující zakázky, nebo prázdno. Tvrdou pojistkou
  * zůstává server: cizí zakázku pod stejným číslem odmítne přepsat (razítko). */
 function zakazkaDuplicita(zak, rejstrik, vlastniSoubor) {
-  const normC = x => String(x == null ? '' : x).replace(/\s+/g, '').toLowerCase();
+  /* VZ-E2 (#601): písmeno zákazníka („…9940-B") číslo zakázky nemění — nabídka
+   * dalšího zákazníka koliduje se zakázkou téhož základu. */
+  const normC = x => {
+    const t = String(x == null ? '' : x).replace(/\s+/g, '').toLowerCase();
+    return typeof vzCisloRozloz === 'function' ? vzCisloRozloz(t.toUpperCase()).zaklad.toLowerCase() : t;
+  };
   const normN = x => String(x == null ? '' : x).normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').toLowerCase().trim();
   const out = { cislo: '', nazevAkce: '' };
@@ -1124,6 +1131,23 @@ function importZakazka(obj) {
     // zápis by spadl na undefined.push. Guard kvůli Node testům, které
     // zakazka.js načítají bez poznamky.js.
     if (typeof poznamkyZajisti === 'function') poznamkyZajisti(obj);
+    /* VZ #598 (E0): další zákazníci — neznámé klíče pryč, jeden zákazník =
+     * žádné klíče, vadný tvar = klíče pryč + nevýčtový seznam vad
+     * (`vzZahozeno`, jako fotoZahozena; server podle něj odmítne 400).
+     * Guard kvůli Node testům bez vice_zakazniku.js. */
+    if (typeof vzOcisti === 'function') {
+      /* VZ-E1 (dorevize E0, D2): kdo ukazoval na neexistující variantu,
+       * toho vzOcisti přesměruje na řídící — názvy se poznamenají (nevýčtově,
+       * `vzPresmerovano`), aby to obrazovka po načtení mohla říct. */
+      const ids = new Set((Array.isArray(obj.varianty) ? obj.varianty : []).filter(v => v && typeof v === 'object').map(v => String(v.id)));
+      const presm = (Array.isArray(obj.dalsiZakaznici) ? obj.dalsiZakaznici : [])
+        .filter(d => d && typeof d === 'object' && !ids.has(String(d.varianta == null ? '' : d.varianta)))
+        .map(d => String((d.hlavicka && d.hlavicka.objednatel) || '').trim() || '(bez názvu)');
+      const vady = vzOcisti(obj);
+      if (presm.length && !vady.length && Array.isArray(obj.dalsiZakaznici))
+        Object.defineProperty(obj, 'vzPresmerovano', { value: presm, enumerable: false, configurable: true, writable: true });
+      if (vady.length) Object.defineProperty(obj, 'vzZahozeno', { value: vady, enumerable: false, configurable: true, writable: true });
+    }
     zajistiProjHlavicku(obj);   // migrace: hlavička PROJ se osamostatnila – převezme dosavadní údaje z OCK
     // #34: přípony čísel variant a prázdný zámek. Guard kvůli Node testům,
     // které zakazka.js načítají bez zamek.js.
@@ -1732,6 +1756,9 @@ function zakazkaCisloDalsi(cislo) {
 function sodCisloNavrh(cislo) {
   const s = String(cislo == null ? '' : cislo).trim();
   if (!hlavickaVyplneno(s)) return '';
+  /* VZ-E2 (#601): písmeno zákazníka („…0640-B") se zachová za číslem. */
+  const pismeno = /^(.*\d)-([B-Z])$/.exec(s);
+  if (pismeno) { const n = sodCisloNavrh(pismeno[1]); return n ? n + '-' + pismeno[2] : ''; }
   const cn = /(^|[^A-Za-z\u00C0-\u017F])CN(?![A-Za-z\u00C0-\u017F])/i;
   if (cn.test(s)) return s.replace(cn, '$1SOD');
   const m = /^(.*?)(\d+)(\.\d+)?$/.exec(s);
@@ -1806,6 +1833,13 @@ function zakazkaDuplikuj(zak, noveCislo) {
   /* Prodej patří původní zakázce (#540): kopie není prodaná a stopu nedědí. */
   delete nova.prodejHistorie;
   delete nova.prodejOdemknout;
+  /* Víc zákazníků (VZ #598, E0): kopie je pro JINÉHO zákazníka — další
+   * zákazníci původní zakázky se nepřenášejí (únik údajů, R1). Pole psaná
+   * serverem k nim (poznámka dealu, organizace vítěze) taky ne. */
+  delete nova.vzRidici;
+  delete nova.dalsiZakaznici;
+  delete nova.pdPoznamkaZakaznici;
+  delete nova.pdOrgVitez;
 
   /* Zápisy o jednání patří k původní akci, ne sem. */
   nova.poznamky = [];

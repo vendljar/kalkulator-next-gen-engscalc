@@ -128,6 +128,12 @@ function seznamRadek(zak, v, i, ceny) {
   /* VS #570 (E3): varianta s víc šachtami se najde i podle názvu šachty. */
   const vsN = (typeof vsNazvySachetText === 'function' && v.data) ? vsNazvySachetText(v.data.ock) : '';
   if (vsN) r.hledatelne += ' ' + seznamNorm(vsN);
+  /* VZ-E6 #606: u víc zákazníků se varianta najde i podle názvu zákazníka,
+   * který na ni ukazuje (sloupec Zákazník ho ukazuje odvozeně). */
+  if (typeof vzRezim === 'function' && typeof vzZakaznici === 'function' && vzRezim(zak)) {
+    const vzN = vzZakaznici(zak).filter(z => z.varianta === String(v.id)).map(z => z.hlavicka.objednatel).join(' ');
+    if (vzN) r.hledatelne += ' ' + seznamNorm(vzN);
+  }
   return r;
 }
 

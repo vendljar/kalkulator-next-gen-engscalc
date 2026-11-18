@@ -1826,3 +1826,292 @@ veřejného API, žádnou zkratku do úložiště nemá. Čísla B203–B209 dr�
   instance hledají současně, žádná ji ještě nenajde) — zbytková mez; zakázka
   pak drží id té, která se uložila, druhá zůstane v dealu. Pipedrive vrací
   poznámky dealu po stránkách — prohledává se prvních 100 nejnovějších.
+
+## VZ #598 — víc zákazníků na jedné zakázce (E0 = #599, v16.11.1, 16. 11. 2026)
+
+Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
+
+- **B220 — E0: data víc zákazníků hlídá server jen tvarem a vypínačem.**
+  Zakázka smí nést `vzRidici` { id, pismeno, varianta } a `dalsiZakaznici[]`
+  { id, pismeno, hlavicka (objednatel, adresaObjednatele, ico, dic, kontakt),
+  zastupci, varianta, zalozen, platna } (`src/vice_zakazniku.js`). Server
+  (`vzServerKontrola` v `lib/zakazka_kontrola.mjs`) s **vypnutým** vypínačem
+  `viceZakazniku` (výchozí, `/api/funkce`, přepíná jen administrátor) odmítne
+  každou změnu těchto klíčů proti uložené verzi (400) — zakázka s víc
+  zákazníky na ostrém nevznikne, ani když se prohlížeč obejde; uložení beze
+  změny projde a data se nemažou. Se **zapnutým** odmítne vadný tvar (400):
+  id `z1`–`z999` a písmena B–Z jedinečná, ukazatel jen na existující
+  variantu, nejvýš `VZ_DALSI_MAX` = 9 dalších, textová pole nejvýš
+  `VZ_TEXT_MAX` = 500 znaků, neznámé klíče (import je tiše zahodí, vadný tvar
+  zahodí celý a server pak odmítne). `platna` píše jen server (z uložené
+  verze; obnova z otisku ze zálohy). Invariant „řídící varianta = varianta
+  řídícího zákazníka“ server srovná podle příznaku `ridici` (neodmítá).
+  *Co to v E0 nedělá:* se ZAPNUTÝM vypínačem smí kdokoli, kdo smí zakázku
+  ukládat, zákazníky přidat, upravit, odstranit i vyměnit řídícího — práva
+  (výměna řídícího jen autor a administrátor, odstranění zákazníka
+  s odeslanou nabídkou jen administrátor), držení písmen a razítek tisků
+  („komu“) a zákaz smazat zákazníka se zamčeným tiskem přinesou E3 (#602)
+  a E4 (#603). Dokumenty ani obrazovka v E0 další zákazníky nečtou (tisk
+  z pohledu zákazníka je E2 #601), takže do papíru se z nich nic nedostane.
+  Funkci proto nezapínat mimo testovací web, dokud E3 a E4 nejsou sloučené.
+  Po revizi Fable (16. 11. 2026): ukazatel zákazníka na smazanou variantu
+  import přesměruje na řídící variantu (zákazník se nezahodí, N2); první
+  `vzRidici` musí mít mezi zákazníky právě jeden { z1, '' } (N9, D1); pohled zákazníka nese jen
+  varianty, které zákazník smí vidět (N3). S VYP se tím odmítne (400) i
+  smazání varianty, na kterou ukazuje další zákazník (změní se ukazatel) —
+  zábranu v UI přinese E1.
+  *Otevřené pro E3 (#602):* N4 — `zalozen` { kdo, kdy } dosazuje prohlížeč,
+  server ho má brát z relace a z uložené verze; N6 — `platna` se má počítat
+  ze zámků (a rozhodnout, kde je „platná nabídka“ řídícího zákazníka, který
+  položku v `dalsiZakaznici` nemá); N7 — obnova zakázky s víc zákazníky
+  s VYP se odmítne (před obnovou takových zakázek administrátor vypínač
+  zapne); N8 — `priponaMax` se po odstranění zákazníka s vlastní variantou
+  nevrací (číslo přípony, které jednou padlo, se nepoužije znovu — #17).
+
+- **B225 — E5 (#604): uložení zakázky píše poznámku „Další zákazníci na zakázce“
+  do Pipedrive.** Se ZAPNUTÝM vypínačem `viceZakazniku`, s navázaným dealem
+  a s víc zákazníky založí nebo upraví uložení zakázky (`POST /api/zakazky`,
+  ve výhradním úseku, týmž mechanismem jako B217 — `lib/pd_poznamka.mjs`, druh
+  `zakaznici`) JEDNU poznámku u dealu. **Co nese:** názvy DALŠÍCH zákazníků
+  (řídící ne — deal vede on), číslo a den jejich poslední ODESLANÉ nabídky
+  a její cenu bez DPH ze zmrazeného výsledku zámku (vedoucí strana), u
+  rozpracované nové varianty „připravuje se nová <číslo>“, po prodeji
+  „— neprodáno“. Kontakty, osoby, adresy, IČO, DIČ ani slevy nenese. **Kdo ji
+  vidí:** každý, kdo v Pipedrive vidí deal — tedy i ceny nabídek ostatních
+  zákazníků (obchodní rozhodnutí J. V. 16. 11. 2026, návrh § 7.2). Id drží
+  pole `pdPoznamkaZakaznici` { deal, id, otisk, kdy } psané jen serverem;
+  rozpoznání úvodem „Další zákazníci na zakázce:“ a značkou „— nabídka
+  <číslo>“ (bez značek HTML, bílé znaky sjednocené); poznámka šachet se jí
+  nikdy nepřepíše a naopak (i když uložené id ukazuje na poznámku druhého
+  druhu). Právo `crm.pipedrive` (B80, bez práva `bez-prava`), strop
+  `PD_POZNAMKA_STROP` = 20 pokusů/h na deal s VLASTNÍM počítadlem
+  `strop:poznamka-zakaznici:deal:<id>`, jedno volání 2,5 s; obě poznámky
+  (šachty první, zákazníci druzí) mají SPOLEČNÝ rozpočet `PD_POZNAMKA_CELKEM_MS`
+  = 6 s a jedno třetí čtení zakázky (N1) — co se nestihne, je `chyba`
+  s varováním a zkusí se při dalším uložení. Text escapovaný, řádky `<br>`,
+  řídicí znaky pryč, seznam nejvýš 2 000 znaků („… a další N“) + značka.
+  Po odstranění posledního dalšího zákazníka se poznámka nemaže, upraví se na
+  „Další zákazníci na zakázce: žádní — nabídka <číslo>“; zakázka, která
+  poznámku nemá, žádnou nedostane.
+  *Co to nedělá:* zbytkové meze B217 platí i tady (dvojí založení při souběhu
+  instancí, prohledává se prvních 100 poznámek dealu, změna dealu nechá starou
+  poznámku u starého dealu, s vypnutým vypínačem se poznámka neupravuje ani
+  nemaže, poznámka se nikdy nemaže). „Odeslaná nabídka“ se do sloučení E3
+  (#602) bere z uložené `platna` (píše jen server) a jinak z razítek tisků
+  `zamek.tisky[].zakaznik` v uložené verzi (drží je server, `uloZamekRazitkaDrz`);
+  dokud E3 razítka „komu“ neplní, je každá nabídka dalšího zákazníka
+  „zatím neodeslána“ a cena se nezapisuje. Měna je vždy Kč (bez `platna.mena`
+  ze serveru) — cizojazyčná nabídka v EUR se v poznámce ukáže korunami ze
+  zmrazeného výsledku. Organizaci dealu (E5b) poznámka nemění.
+- **B226 — E5b (#605, 16. 11. 2026): aplikace poprvé ZAKLÁDÁ organizaci
+  v Pipedrive a přepojuje deal na vítězného zákazníka.** Akce
+  `POST /api/pd/organizace { soubor, akce: 'vitez' }` (`netlify/lib/pd_org_vitez.mjs`)
+  běží jen se zapnutým `viceZakazniku`, u PRODANÉ zakázky s víc zákazníky
+  (`vzRidici` v uložené verzi) a navázaným dealem; klientovi se nevěří nic
+  kromě jména souboru. Smí ten, kdo prodal (`prodano.kdo` uložené verze =
+  e-mail relace), autor zakázky nebo administrátor (jinak 403), a k tomu
+  právo `crm.pipedrive` (B80) — bez něj stav `bez-prava` a do Pipedrive nic.
+  Organizace se hledá podle IČO hlavičky (`/api/v2/organizations/search`,
+  vlastní pole IČ, přesná shoda) a **každý kandidát se znovu načte a ověří**
+  normalizovaným IČO s kontrolní číslicí — výsledku hledání se nevěří; víc
+  ověřených shod = stav `vice` a nic se nezapisuje (server nehádá), víc než
+  10 kandidátů = `chyba`. Žádná shoda → založení: název a adresa z ARES
+  (3 s), při výpadku z hlavičky; IČ do pole z mapy, DIČ jen když účet pole
+  má (pole se nikdy nezakládá); vlastník = vlastník dealu. Deal dostane
+  `PATCH /api/v2/deals/<id>` jen `{ org_id }`. Meze: jedno volání 2,5 s,
+  celá akce 9 s včetně ARES, strop 10 pokusů za hodinu na deal a 20 na
+  uživatele (i neúspěšných), výhradní úsek dealu v instanci, druhé čtení
+  zakázky před zápisem stavu. Stav `zak.pdOrgVitez` { deal, org, stav,
+  zdroj, kdy, kdo, nazev, duvod, vice } píše jen server (z prohlížeče se
+  zahodí, obnova ze souboru ho nepřebírá). Při `zapsano` jde do protokolu
+  zakázky název organizace a věta „Doplňte v Pipedrive kontaktní osobu
+  vítězného zákazníka před posunem dealu na Vyhráno.“ — jednou na zápis
+  (opakované volání vrátí `shoda` a nic nepíše).
+  *Co to nedělá:* neslučuje duplicitní organizace; osobu dealu nemění, nečte
+  ani nekontroluje (žádné `/persons`, žádné `person_id`); původní organizaci
+  nemění ani nemaže; hodnotu, pole ani fázi dealu nezapisuje (#597); při
+  odemčení prodeje nic nevrací (`pdOrgVitez` zůstává jako stopa); ze
+  webhooku se nespouští. **Zbytkové riziko:** souběh dvou instancí funkce
+  může organizaci založit dvakrát (výhradní úsek drží jen v instanci, jako
+  B217); zpožděný index hledání Pipedrive pokrývá jen zapamatované id
+  organizace založené minulým pokusem téže zakázky — organizaci založenou
+  jinou cestou těsně předtím hledání nemusí najít a vznikne duplicita.
+  Totéž platí, když funkce spadne (nebo vyprší) **mezi založením organizace
+  (`POST`) a zápisem stavu do zakázky**: id nové organizace se nezapamatuje,
+  a zpozdí-li se index hledání, další pokus založí druhou organizaci (revize
+  poradce P4). Prodej jinému zákazníkovi, než je řídící (`prodano.zakaznik`),
+  akce odmítne 409 (P1); stejný neúspěšný stav se do zakázky znovu nezapisuje
+  a strop se počítá před `bez-prava`/`bez-ico` (P2); ARES „nenalezeno“ =
+  `chyba`, hlavička jen při výpadku ARES (P3); stav se zapíše jen do zakázky,
+  která je po druhém čtení pořád prodaná a na témž dealu (P5).
+  Název z ARES nebo hlavičky jde do Pipedrive jako text bez řídicích znaků
+  (HTML neescapuje — Pipedrive název zobrazuje jako text; UI aplikace ho
+  escapuje). Volání z obrazovky po prodeji (`vzPoProdejiPd`) zapojí háček
+  E4 (#603); do té doby se akce volá jen tlačítkem „Zkusit zápis znovu“.
+- **B221 — E1 (#600, 16. 11. 2026): obrazovka víc zákazníků hlídá práva jen
+  v prohlížeči.** Tlačítko „Přidat zákazníka“, formulář, přepínač a karta
+  „Zákazníci zakázky“ (`src/ui/vice_zakazniku_ui.js`) se ukážou jen se
+  zapnutým `viceZakazniku`; zápis odmítnou v režimu jen ke čtení, v náhledu
+  za jiného uživatele a u prodané zakázky. Řídícího zákazníka a zákazníka,
+  kterému se prodalo nebo kterému odešla nabídka (razítko tisku s jeho id
+  nebo zamčená jeho vlastní varianta), E1 odstranit nedovolí — **ale jen
+  v prohlížeči**: server dál hlídá jen tvar a vypínač (B220), práva přinesou
+  E3 (#602) a E4 (#603). „Kdo smí ukládat“ = každý přihlášený (matice práv
+  roli „jen čtení“ nemá). Údaje dalšího zákazníka se v E1 nezmrazují ani po
+  tisku či SoD (zmrazení je jen u řídícího = hlavičky, jako dnes). Odpověď
+  ARES ve formuláři nového zákazníka je nedůvěryhodný vstup: do stránky jde
+  jen přes `esc`/`escJs` (`overit_xss.mjs`), převezme se až po potvrzení
+  a do protokolu zakázky se píše jen název firmy (žádné kontakty, IČO ani
+  osoby).
+### VZ-E2 #601 (v16.11.4, 16. 11. 2026) — tisk z pohledu zákazníka
+
+- **B223 — E2: únik mezi zákazníky hlídá vstup tisku v prohlížeči, ne server.**
+  Každý dokument (Word CN, CN PROJ, SoD, plná moc, krycí listy, náhledy,
+  porovnání, specifikace) vzniká z `vzTiskPohled(ZAK, otevřený zákazník)` —
+  mělké kopie bez `dalsiZakaznici` / `vzRidici`, s hlavičkou a zástupci
+  zvoleného zákazníka, jen s jeho variantami (u dalšího zákazníka s odvozeným
+  `v.zakaznik`), číslo s písmenem (`…9940-B`). Pojistky: `dokumentVygeneruj`
+  z celé zakázky s víc zákazníky hodí chybu (`vzTiskHlidej`), statická
+  kontrola `nastroje/kontrola_vz_unik.sh` (generátory `dalsiZakaznici`
+  nezmiňují), test s kanárky `src/test_vz_unik.js`, strukturní test vstupů
+  `src/test_vz_tisk_vstupy.js`. *Co to nedělá:* dokumenty vznikají
+  v prohlížeči — kdo prohlížeč obejde (konzole), vytiskne cokoli; server
+  dokumenty netvoří. Soubor zakázky (Uložit do souboru), protokol (stažení
+  .txt) a náhled Pipedrive nejsou dokumenty pro zákazníka a nesou celou
+  zakázku. **Krycí list tiskne interní poznámky** (společné všem zákazníkům)
+  — je to interní dokument; jméno jiného zákazníka v poznámce se do krycího
+  listu dostane (návrh § 9: jen upozornit). Protokol zakázky (E1 do něj píše
+  názvy zákazníků) se do pohledu přenáší, žádný generátor ho netiskne
+  (ověřuje test úniku).
+- **B224 — E2: zábrana cizího zákazníka v tištěném textu je jen HEURISTIKA (textová shoda).**
+  `vzTiskZabrana` zastaví tisk, když název akce, adresa, popis záměru,
+  název/popis úvodní fotky (OCK, PROJ), název varianty (u řídícího i sloupec
+  Zákazník varianty) obsahuje název jiného zákazníka zakázky (bez diakritiky,
+  velikosti písmen a interpunkce; i bez právní formy, nejméně 3 znaky) nebo
+  jeho IČO (6+ číslic jako samostatné číslo). Vlastní název tištěného
+  zákazníka se z textu nejdřív vyjme. *Co to nedělá:* zkratku, přezdívku,
+  překlep, jméno kontaktní osoby ani adresu jiného zákazníka nepozná;
+  obecné slovo shodné s krátkým názvem firmy může tisk zastavit zbytečně
+  (oprava = přepsat text). Varianta, na kterou zákazník neukazuje (a která mu
+  podle razítka tisku neodešla), se pro něj netiskne — i pro řídícího;
+  dokumenty PROJ jen pro řídícího (R5); s vypnutou funkcí jen pro řídícího.
+  Webhook najde zakázku i podle čísla s písmenem jen u strany OCK a jen když
+  zakázka toto písmeno nese (jinak jako dřív); „…9940.2-B“ jen když má i
+  variantu s příponou 2.
+  Revize (U6): shoda podle názvu je heuristika, ne záruka — za obsah sdílených
+  textů odpovídá obchodník; jistotou proti úniku je pohled zákazníka (B223).
+  Revize (U1/U2): ruční pole zákazníka krycího listu sdílené varianty
+  (sekce Zákazník a Zástupci, podpisy, kopie faktur, zmocnitel) a snímek
+  zámku se tisknou jen zákazníkovi, který je vlastní (id u pole / snímku,
+  zapisuje se jen u víc zákazníků; bez záznamu původní z1). Ostatním jsou
+  prázdná (smlouva ukáže „……“). Ruční hodnoty zapisuje UI za řídícího —
+  vlastní ruční hodnoty dalšího zákazníka přinese E3.
+### VZ-E3 #602 (v16.11.6, 16. 11. 2026) — zámek po zákaznících
+
+- **B227 — E3: razítko „komu“, platná nabídka a odstranění zákazníka hlídá server.**
+  Každý záznam tisku `zamek.tisky[]` u zakázky s víc zákazníky nese
+  `zakaznik` { id, pismeno, cislo, objednatel, ico } — snímek adresáta.
+  Server (`vzServerRazitka`, `lib/zakazka_kontrola.mjs`) u NOVĚ připsaných
+  záznamů (za uloženým začátkem, u nového zámku všechny) bere z prohlížeče
+  jen id a snímek složí sám z ukládané zakázky; zákazník, který v zakázce
+  není, nebo varianta, která mu nepatří (jeho varianta, varianta, kterou mu
+  podle ULOŽENÝCH razítek už odešla, u řídícího i volná varianta), → 400.
+  S vypnutou funkcí smí nový tisk jen řídící zákazník; s jedním zákazníkem
+  klíč zmizí. Uložená razítka drží `uloZamekRazitkaDrz` (B62) — přepsat ani
+  ubrat je nejde. `zamek.cislo` zůstává číslo varianty BEZ písmene (zámek je
+  společný všem zákazníkům sdílené varianty, B56 beze změny); číslo dokladu
+  zákazníka nese razítko. **Odstranění zákazníka, kterému odešla nabídka**
+  (razítko s jeho id v zámku kterékoli varianty ULOŽENÉ verze; záznam bez
+  razítka patří původnímu zákazníkovi z1), smí jen **role Administrátor
+  z relace**, ostatní 403; řídícího a prodaného nikdo (jádro). Razítka
+  zůstávají, zamčená varianta zůstává (zmizení zamčené varianty hlídá dál
+  `uloKontrolaZamku` / `varianta.smazatUzamcenou`). Písmeno a id stávajícího
+  zákazníka (i řídícího) se nemění (400, N9); nový zákazník nesmí dostat id
+  ani písmeno z uložených razítek (400). `zalozen` { kdo, kdy } píše server
+  (u existujícího id z uložené verze, u nového relace a čas serveru, N4).
+  `platna` dalších zákazníků server při každém uložení přepočítá ze zámků
+  (`vzPlatna`, N6); řídícímu se nikam neukládá (`vzRidici` nese jen id,
+  písmeno a variantu) — jeho platnou nabídku počítá `vzPlatna` za běhu.
+  *Co to nedělá:* id a písmeno zákazníka odstraněného BEZ odeslané nabídky
+  se uvolní a nový zákazník je smí dostat (návrh § 1.1) — u takto znovu
+  použitého id převezme server `zalozen` z uložené verze jen tehdy, když
+  zákazník v ní ještě je (jinak nový z relace). Záznam tisku bez razítka se
+  přičítá z1.
+  **Doplněno VZ-E4 (#603, v17.11.1):** (Z2) doklad „odešla nabídka“ se bere
+  i ze zámků v HISTORII ODEMČENÍ (`v.odemceni[].zamek.tisky`, drží ji server,
+  B62): po odemčení varianty zákazníka dál odstraní jen administrátor a jeho
+  písmeno ani id se neuvolní (`vzRazitkaZakazniku`, `vzOdeslanoKdykoli`;
+  server N9 i odstranění). Smazat zamčenou variantu server nedovolí
+  (`uloKontrolaZamku`), takže doklad zmizet nemůže. (Doplněk 3) Po výměně
+  řídícího se zakázka NEVRÁTÍ k jednomu zákazníkovi, který není původní z1,
+  dokud je v ní cokoli odeslané (zámek, tisk, historie odemčení) — tisky bez
+  razítka (z1) by jinak připadly jemu a jeho čísla by ztratila písmeno; jádro
+  (`vzOdstranKolapsDuvod`) i server (`vzServerKolaps`, 409; zbylý zákazník se
+  pozná shodou názvu, IČO a sídla s uloženou položkou z1). Bez odeslaného
+  návrat projde a ruční hodnoty polí zákazníka v krycích listech bez značky
+  vlastníka (= z1) se novému jedinému zákazníkovi nepřipíší (výměna je
+  zafixuje `vzKlZafixuj`, úklid `vzKlUklid`). (Z3) **Nový tisk bez
+  `zakaznik.id` server připíše ŘÍDÍCÍMU zákazníkovi** (`vzServerRazitka`):
+  prohlížeč, který id nepošle (starší okno, chyba), vytiskne nabídku řídícímu
+  a server to od poctivého tisku řídícímu nerozezná — razítko pak nese
+  řídícího, i kdyby obchodník měl otevřeného jiného zákazníka. Dokument sám
+  vzniká z pohledu (`vzTiskVstup`), takže papír i razítko se shodují; nesedět
+  může jen otevřený zákazník na obrazovce. (R2, revize poradce E4) **Právo na výměnu řídícího
+  (autor, administrátor) jde PŘED prvním odesláním obejít:** kdo smí zakázku
+  ukládat, může prohodit údaje hlavičky a položky v `dalsiZakaznici` bez
+  změny id (`vzRidici.id` zůstane) — server to nepozná jako výměnu řídícího.
+  Po odeslání nabídky to zastaví zmrazení údajů (hlavička řídícího po SoD /
+  údaje dalšího zákazníka po odeslání jemu, 409); písmena a čísla odeslaných
+  nabídek se nemění.
+  Obnova zakázky (`/api/obnova`) razítka nových tisků neskládá — zámky
+  v záloze jsou doklad (z otisku i `zalozen` a `platna` ze zálohy).
+- **B228 — E3: zmrazení údajů po odeslání nabídky u víc zákazníků.**
+  U zakázky s víc zákazníky zmrazí název akce a adresu stavby PRVNÍ odeslaná
+  nabídka komukoli (kterákoli zamčená varianta; `zamekZakZmeny` → 409,
+  v prohlížeči `zamekZakCestaZmrazena`). Dalšímu zákazníkovi se po odeslání
+  nabídky JEMU (uložená verze) nemění název, sídlo, IČO a DIČ (409);
+  kontaktní osoba a zástupci se měnit smí — snímek adresáta je v razítku
+  a dotisk tiskne název a IČO z něj (`vzTiskPohled(zak, id, varianta)`).
+  Razítka ostatních zákazníků se z tiskového pohledu vyjmou (D3). *Co to
+  nedělá:* hlavičku ŘÍDÍCÍHO zákazníka hlídá dál jen zámek hlavičky jako
+  dnes (po SoD) — jeho název se po odeslání CN měnit smí (dotisk ho vezme
+  z razítka). Obnova (`/api/obnova`) zmrazení údajů neposuzuje.
+  **N7 (revize E0):** obnova zakázky s víc zákazníky se s VYPNUTOU funkcí
+  odmítne (400) — před obnovou takové zakázky administrátor vypínač
+  `viceZakazniku` zapne (Nastavení → Zkušební funkce), obnoví a může ho
+  zase vypnout.
+  **Doplněno VZ-E4 (#603, v17.11.1) — řídící zákazník a Prodáno u zákazníka:**
+  řídícího zákazníka (bez prodeje) mění jen **autor zakázky a administrátor**
+  (z relace a ULOŽENÉ verze; zakázka založená webhookem jen administrátor —
+  pravidlo K40c), ostatní 403 (`vzServerRidici`); u prodané zakázky nikdo
+  (409) — odemčení prodeje řídícího nevrací. Prodej u zákazníka nese
+  `prodano.zakaznik` (id); server ho přijme jen zákazníkovi, kterému ta
+  varianta ODEŠLA (razítka uložené verze + tisky připsané v témže uložení,
+  které orazítkoval server) — jinak 409, neexistující zákazník 400; prodej bez
+  zákazníka u víc zákazníků patří řídícímu. Vítěze, který není řídící, udělá
+  řídícím server sám (`vzProdejServer`, i za starší okno) a srovná invariant;
+  uložený prodej drží `prodano.zakaznik` z uložené verze, obnova z otisku ho
+  propustí (`prodOciste`). Výměna řídícího se v zámku hlavičky porovnává
+  „u zákazníka“ (`zamekZakZmeny` s uloženou verzí srovnanou na téhož
+  řídícího) — údaje se jen stěhují; údaje dalších zákazníků hlídá
+  `vzServerZakaznici`. Webhook (`pd_webhook.mjs`) u víc zákazníků při
+  NESHODĚ IČO organizace dealu a hlavičky pole firmy nepřepisuje ani prázdná
+  nedoplňuje a ARES nevolá (`pdWebhookVzFirmaCizi`). Shodou je jen NEPRÁZDNÉ
+  a stejné IČO na obou stranách (revize R1: prázdné IČO dealu nebo hlavičky
+  = neshoda, firma se nemění). *Co to nedělá:* při shodném IČO dealu a nového
+  řídícího webhook pole firmy doplňuje jako dřív.
+  **Doplněno VZ-E6 (#606, v17.11.2) — SoD jen odeslanému i na serveru:**
+  nový záznam tisku typu `sod` (i `sod_en`/`_de`/`_fr`) server přijme jen
+  zákazníkovi, kterému nabídka TÉ varianty odešla — v zámku musí být dřívější
+  tisk s jeho id (uložené razítko, nebo nové razítko téhož uložení, které
+  server už ověřil); jinak 400 (`vzServerRazitka`). Dřív to hlídala jen brána
+  tisku v prohlížeči (`vzTiskZabrana`). *Co to nedělá:* druh dokumentu
+  (`tisky[].typ`) zapisuje prohlížeč — klient, který záznam smlouvy podvrhne
+  jako tisk nabídky, projde (server neví, co se skutečně vytisklo; dokument
+  vzniká v prohlížeči). Proti omylu a obejití brány tisku to stačí, proti
+  záměrnému podvržení typu záznamu ne. Obnova (`/api/obnova`) razítka
+  neposuzuje (doklad).
+  **VZ-E6 — rejstřík:** klíč `zakaznici` (jen víc zákazníků) nese jen název,
+  číslo nabídky s písmenem a stav; normalizace zahodí jiné klíče (ceny, IČO)
+  a drží strop 10 položek × 300 znaků. Názvy dalších zákazníků tak vidí každý
+  přihlášený jako dnes `objednatel` (návrh § 6).

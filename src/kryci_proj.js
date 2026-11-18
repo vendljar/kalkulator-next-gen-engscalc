@@ -145,14 +145,14 @@ const KRYCI_PROJ_SEKCE = [
    * předělu. Pole se `bind` čtou a zapisují TÁŽ data jako OCK — oba krycí
    * listy jsou tím provázané. */
   { sekce: 'Zákazník (smluvní partner)', pole: [
-    { id: 'jmenoPrijmeni', label: 'Jméno a příjmení kontaktu', verze: ['bo'], prefill: c => c.hl.kontakt, src: 'z hlavičky Kalkulace PROJ' },
-    { id: 'zakaznik', label: 'Zákazník (smluvní partner)', verze: ['bo', 'techdata'], prefill: c => c.hl.objednatel, src: 'z hlavičky Kalkulace PROJ' },
+    { id: 'jmenoPrijmeni', zakaznikPole: true, label: 'Jméno a příjmení kontaktu', verze: ['bo'], prefill: c => c.hl.kontakt, src: 'z hlavičky Kalkulace PROJ' },
+    { id: 'zakaznik', zakaznikPole: true, label: 'Zákazník (smluvní partner)', verze: ['bo', 'techdata'], prefill: c => c.hl.objednatel, src: 'z hlavičky Kalkulace PROJ' },
     { id: 'kontaktZakaznikTel', label: 'Telefon na zákazníka', verze: ['bo'] },
     { id: 'kontaktZakaznikEmail', label: 'E-mail na zákazníka', verze: ['bo'] },
-    { id: 'ico', label: 'IČO', verze: ['bo'], prefill: c => c.hl.ico, src: 'z hlavičky Kalkulace PROJ' },
+    { id: 'ico', zakaznikPole: true, label: 'IČO', verze: ['bo'], prefill: c => c.hl.ico, src: 'z hlavičky Kalkulace PROJ' },
     { id: 'dic', label: 'DIČ', verze: ['bo'], bind: 'ZAK.dic', prefill: c => c.zak.dic, src: 'hlavička zakázky' },
     /* KL-1: sídlo zákazníka, ne adresa stavby – ty se běžně liší. */
-    { id: 'adresaZakaznik', label: 'Adresa (sídlo) zákazníka', verze: ['bo'], prefill: c => c.hl.adresaObjednatele, src: 'z hlavičky Kalkulace PROJ (sídlo)' },
+    { id: 'adresaZakaznik', zakaznikPole: true, label: 'Adresa (sídlo) zákazníka', verze: ['bo'], prefill: c => c.hl.adresaObjednatele, src: 'z hlavičky Kalkulace PROJ (sídlo)' },
     { id: 'zastBanka', label: 'Bankovní spojení zákazníka', verze: ['bo'], bind: 'ZAK.zastupci.banka', src: 'hlavička zakázky' },
     { id: 'zastUcet', label: 'Číslo účtu / směrový kód', verze: ['bo'], bind: 'ZAK.zastupci.ucet', src: 'hlavička zakázky' },
     { id: 'zastZapis', label: 'Zápis v rejstříku (zákazník)', verze: ['bo'], bind: 'ZAK.zastupci.zapis', src: 'hlavička zakázky' },
@@ -345,7 +345,7 @@ const KRYCI_PROJ_SEKCE = [
     { id: 'sodpPokutaDenni', label: 'Pokuta za prodlení zákazníka se součinností (za den)', verze: ['bo'], sod: 'SODP_POKUTA_DENNI' },
   ] },
   { sekce: 'Smlouva o dílo — podpisy a kopie (SoD projekce)', pole: [
-    { id: 'objPodpisFirma', label: 'Zákazník — firma v podpisové doložce', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS_FIRMA',
+    { zakaznikPole: true, id: 'objPodpisFirma', label: 'Zákazník — firma v podpisové doložce', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS_FIRMA',
       prefill: c => c.hl.objednatel, src: 'z hlavičky Kalkulace PROJ' },
     { id: 'objPodpis2Jmeno', label: 'Druhý podepisující za zákazníka — jméno', verze: ['bo'], sod: 'OBJEDNATEL_PODPIS2_JMENO',
       src: 'u SVJ podepisují zpravidla dva členové výboru' },
@@ -355,7 +355,7 @@ const KRYCI_PROJ_SEKCE = [
     { id: 'objKopie2', label: 'Faktury v kopii na (2)', verze: ['bo'], sod: 'OBJEDNATEL_KONTAKT_KOPIE2' },
   ] },
   { sekce: 'Plná moc (zmocnitel)', pole: [
-    { id: 'pmZmocnitel', label: 'Zmocnitel — jméno a příjmení', verze: ['bo'], sod: 'PM_ZMOCNITEL',
+    { zakaznikPole: true, id: 'pmZmocnitel', label: 'Zmocnitel — jméno a příjmení', verze: ['bo'], sod: 'PM_ZMOCNITEL',
       prefill: c => (c.zak.zastupci || {}).smluvniJmeno || '', src: 've věcech smluvních (hlavička zakázky)' },
     { id: 'pmZmocnitelNarozen', label: '— datum narození', verze: ['bo'], sod: 'PM_ZMOCNITEL_NAROZEN',
       src: 'plná moc pro stavební úřad ho vyžaduje' },
@@ -372,6 +372,10 @@ const KRYCI_PROJ_SEKCE = [
     { id: 'podpisInformovanTech', label: 'Informováno Technické odd.', verze: ['bo', 'techdata'], ph: 'kdo z technického oddělení byl informován…' },
   ] },
 ];
+/* VZ-E2 (revize U1): pole zákazníka v pohledu jen jejich vlastníkovi (vzKlOznacPole). */
+if (typeof vzKlOznacPole === 'function') vzKlOznacPole(KRYCI_PROJ_SEKCE);
+else if (typeof require === 'function') { try { require('./vice_zakazniku.js').vzKlOznacPole(KRYCI_PROJ_SEKCE); } catch (e) {} }
+
 
 /* kontext pro prefill: zakázka + hodnoty odvozené z KALKULACE PROJ.
  * Nic se tu nepočítá znovu – vše jde přes vypocetProj, aby se krycí
@@ -504,6 +508,7 @@ function kryciProjZmrazPodminky(zak, varianta) {
     if (v != null && v !== '') out[p.id] = String(v);
   }));
   d.kryciProj.zmrazeno = out;
+  if (typeof vzKlZmrazeno === 'function') vzKlZmrazeno(d.kryciProj, zak);   // VZ-E2 U2: čí je snímek
   /* K3-N2 (J. V. 20. 10. 2026): texty nabídky PROJ z Firmy (cena nezahrnuje,
    * požadováno, termíny, doložky i `dolozkyTisk`) zamrznou s nabídkou —
    * dotisk je čte ze snímku (nabidkaProjPodmEf(varianta)). */
@@ -585,11 +590,25 @@ function kryciProjMesicu(n) {
   if (!isFinite(k)) return String(n == null ? '' : n);
   return k + ' ' + (k === 1 ? 'měsíc' : (k >= 2 && k <= 4 ? 'měsíce' : 'měsíců'));
 }
+/* VZ-E2 (U1): je `id` pole zákazníka krycího listu PROJ? (zápis vlastníka v UI) */
+function kryciProjPoleZakaznika(id) {
+  return KRYCI_PROJ_SEKCE.some(s => s.pole.some(p => p.id === id && p.zakaznikPole));
+}
 function kryciProjHodnota(pole, kl, c) {
   /* Řádky plánu plateb se jen počítají — ruční přepis nemají (edituje se plán). */
   if (typeof pole.vypocet === 'function') { try { const v = pole.vypocet(c); return v == null ? '' : v; } catch (e) { return ''; } }
   /* `dphBind` je totéž provázání jako `bind`, jen mířené do sazby DPH
    * v hlavičce Kalkulace PROJ — ruční přepis se proto nečte ani tady. */
+  /* VZ-E2 #601 (únik R1, revize U1/U2): pole zákazníka v pohledu — viz kryciHodnota (kryci.js). */
+  if (pole.zakaznikPole && c && c.zak && c.zak.vzPohledZakaznika && typeof vzKlVlastni === 'function') {
+    if (!pole.bind && !pole.dphBind) {
+      const r = typeof vzKlRucni === 'function' ? vzKlRucni(kl, c.zak.vzPohledZakaznika.id, pole.id) : undefined;   // VZ-E3 (U1)
+      if (r !== undefined) return r;
+      if (c.zmrazeno && c.zmrazeno[pole.id] !== undefined && vzKlVlastni(c.zak, kl && kl.vzZmrazeno)) return c.zmrazeno[pole.id];
+    }
+    if (pole.prefill) { try { const v = pole.prefill(c); return v == null ? '' : v; } catch (e) { return ''; } }
+    return '';
+  }
   if (!pole.bind && !pole.dphBind) {   // provázaná pole (bind) čtou přímo ze ZAK, ne z ručních přepisů
     const h = (kl && kl.hodnoty) || {};
     if (h[pole.id] !== undefined && h[pole.id] !== '') return h[pole.id];
