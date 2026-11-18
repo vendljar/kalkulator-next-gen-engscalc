@@ -116,14 +116,52 @@ function vzOtevrenyDalsi() {
   return d;
 }
 /* Cesta pole hlavičky: u řídícího beze změny, u otevřeného dalšího
- * zákazníka do jeho položky. Jen pole firmy (VZ_HLAVICKA_POLE). */
+ * zákazníka do jeho položky. Pole firmy (VZ_HLAVICKA_POLE) a od VZ-F1
+ * (VZ-N3, #653) i zástupci (`ZAK.zastupci.<pole>`, VZ_ZASTUPCI_POLE) —
+ * dřív šel zápis zástupců u otevřeného B/C do hlavičky řídícího a SoD A
+ * pak nesla zástupce C. */
 function vzCesta(cesta) {
-  const m = /^ZAK\.([A-Za-z]+)$/.exec(String(cesta));
-  if (!m || VZ_HLAVICKA_POLE.indexOf(m[1]) < 0) return cesta;
-  const i = vzOtevrenyIndex();
-  if (i < 0) return cesta;
-  vzOtevrenyDalsi();   // zajistí tvar položky
-  return 'ZAK.dalsiZakaznici.' + i + '.hlavicka.' + m[1];
+  return vzCestaPro(cesta, vzOtevrenyIndex());
+}
+/* Totéž pro zákazníka s indexem `i` v ZAK.dalsiZakaznici (-1 = řídící). */
+function vzCestaPro(cesta, i) {
+  const s = String(cesta);
+  const m = /^ZAK\.([A-Za-z]+)$/.exec(s);
+  const mz = m ? null : /^ZAK\.zastupci\.([A-Za-z]+)$/.exec(s);
+  if (m ? VZ_HLAVICKA_POLE.indexOf(m[1]) < 0 : !(mz && VZ_ZASTUPCI_POLE.indexOf(mz[1]) >= 0)) return cesta;
+  if (!(i >= 0)) return cesta;
+  const d = ZAK.dalsiZakaznici[i];
+  if (!vzObj(d)) return cesta;
+  if (!vzObj(d.hlavicka)) d.hlavicka = vzHlavickaZ(d.hlavicka);   // zajistí tvar položky
+  if (!vzObj(d.zastupci)) d.zastupci = vzZastupciZ(d.zastupci);
+  return m ? 'ZAK.dalsiZakaznici.' + i + '.hlavicka.' + m[1] : 'ZAK.dalsiZakaznici.' + i + '.zastupci.' + mz[1];
+}
+/* VZ-F1 (VZ-N3): cesta provázaného pole krycího listu (`bind`) pro ADRESÁTA
+ * listu — stejného zákazníka, z jehož pohledu se list kreslí a tiskne
+ * (vzTiskKomuUi: u prodané varianty vítěz, jinak otevřený zákazník). Pole
+ * zákazníka (DIČ, zástupci) jdou do jeho položky; ostatní (název akce,
+ * číslo, adresa stavby, hlavička PROJ) a jeden zákazník beze změny. */
+function vzKlCesta(cesta) {
+  const z = vzZakUI();
+  if (!z || !vzRezimUI()) return cesta;
+  const v = typeof aktivniVarianta === 'function' ? aktivniVarianta(z) : null;
+  const komu = typeof vzTiskKomuUi === 'function' ? vzTiskKomuUi('kryci', v) : vzOtevrenyId();
+  if (!komu || komu === vzRidiciId(z)) return cesta;
+  const i = Array.isArray(z.dalsiZakaznici) ? z.dalsiZakaznici.findIndex(d => vzObj(d) && String(d.id) === String(komu)) : -1;
+  return vzCestaPro(cesta, i);
+}
+
+/* VZ-F1 (VZ-N2, #655): varianty pro výběr „Otevřená varianta" v hlavičce —
+ * jen varianty otevřeného zákazníka (vzVariantyZakaznika: řídící sdílené
+ * a své, další zákazník svou a ty, které mu odešly); cizí vlastní varianty
+ * se skryjí. Otevřená varianta zůstává vždy (výběr nesmí lhát). Vypnuto
+ * nebo jeden zákazník → null = všechny varianty jako dřív. */
+function vzVariantyHlavicka() {
+  const z = vzZakUI();
+  if (!z || !vzZap() || !vzRezimUI()) return null;
+  const ids = new Set(vzVariantyZakaznika(z, vzOtevrenyId()));
+  if (typeof aktivniVarianta === 'function') { const a = aktivniVarianta(z); if (a) ids.add(String(a.id)); }
+  return (z.varianty || []).filter(v => v && ids.has(String(v.id)));
 }
 
 /* ZMRAZENÍ ÚDAJŮ DALŠÍHO ZÁKAZNÍKA (E3, návrh § 5): cesta z vzCesta

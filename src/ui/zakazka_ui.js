@@ -708,6 +708,7 @@ async function nabidkaWordGeneruj(srv) {
         + (mutaceChybi ? ' Pozor: pevný text šablony zůstal český – jazykovou mutaci šablony '
           + 'vyrobíte v Nastavení → Šablony.' : '')
         + (srv && srv.mutaceZastarala ? ' POZOR: ' + srv.mutaceZastarala : '')
+        + (srv && srv.cestina && srv.cestina.varovani ? ' POZOR: ' + srv.cestina.varovani : '')   // C7: jen upozornění
         + zamcenoText);
     })
     .catch(err => {

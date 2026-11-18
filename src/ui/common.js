@@ -514,6 +514,13 @@ function sablonaMutaceZastarala(meta, metaJ) {
 function sablonyOnlineAktivni() {
   return typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV.bezi && !!ONLINE_STAV.ja;
 }
+/* Čeština v jazykové verzi šablony před tiskem (C7, K48-N1): výsledek
+ * sablonaCestinaKontrola (podil, zabrana u smluv, varovani u ostatních),
+ * nebo null (česky / nejde přečíst). Volá sablonaProTisk i místní cesta. */
+async function sablonaCestinaTisku(typ, L, data) {
+  if (!L || L === 'cz' || !data || typeof sablonaCestinaKontrola !== 'function' || typeof docxTextSablony !== 'function') return null;
+  try { return sablonaCestinaKontrola(typ + '_' + L, await docxTextSablony(data.slice(0))); } catch (e) { return null; }
+}
 function sablonaProTisk(typ, lang) {
   if (!sablonyOnlineAktivni()) return Promise.resolve(null);
   const L = lang || 'cz';
@@ -527,20 +534,22 @@ function sablonaProTisk(typ, lang) {
     const jazyk = { en: 'Anglická', de: 'Německá', fr: 'Francouzská' }[L] || L.toUpperCase();
     const zprava = jazyk + ' mutace šablony „' + popis + '" (verze ' + metaJ.verze + ') je starší než platná '
       + 'česká šablona (verze ' + meta.verze + ') — dokument by vyšel ze starého znění, zčásti česky. '
-      + 'Administrátor ji přegeneruje: Nastavení → Šablony → ' + L.toUpperCase() + ' → Zveřejnit online.';
+      + 'Administrátor k ní nahraje nový překlad: Nastavení → Šablony → ' + L.toUpperCase() + ' → Nahrát přeložený soubor.';
     /* Přísný režim zastaví (tiskla by se neaktuální smluvní nabídka);
      * měkký tiskne dál, ale hlášku dostane volající v `mutaceZastarala`. */
     if (rezim === 'prisny') return Promise.reject(new Error(zprava));
     return onlineSablonaStahni(typJazyk)
-      .then(v => ({ data: v.data, nazev: v.nazev, zdroj: 'server', verze: v.verze, otisk: v.otisk,
-                    typ: typJazyk, mutaceChybi: false, mutaceZastarala: zprava }))
+      .then(async v => ({ data: v.data, nazev: v.nazev, zdroj: 'server', verze: v.verze, otisk: v.otisk,
+                    typ: typJazyk, mutaceChybi: false, mutaceZastarala: zprava,
+                    cestina: await sablonaCestinaTisku(typ, L, v.data) }))
       .catch(() => null);
   }
   if (metaJ || meta) {
     const vybrany = metaJ ? typJazyk : typ;
     return onlineSablonaStahni(vybrany)
-      .then(v => ({ data: v.data, nazev: v.nazev, zdroj: 'server', verze: v.verze,
-                    otisk: v.otisk, typ: vybrany, mutaceChybi: !!(typJazyk && !metaJ) }))
+      .then(async v => ({ data: v.data, nazev: v.nazev, zdroj: 'server', verze: v.verze,
+                    otisk: v.otisk, typ: vybrany, mutaceChybi: !!(typJazyk && !metaJ),
+                    cestina: metaJ ? await sablonaCestinaTisku(typ, L, v.data) : null }))
       .catch(err => {
         if (rezim === 'prisny')
           throw new Error('Šablonu „' + popis + '" se nepodařilo stáhnout ze serveru ('
@@ -1389,7 +1398,8 @@ function pdStavRadek(zak) {
 function zakazkaHlavicka(ock) {
   const akt = aktivniVarianta(ZAK), rid = ridiciVarianta(ZAK);
   zajistiProjHlavicku(ZAK);   // starší zakázka hlavičku PROJ ještě nemá – doplní se
-  const opts = ZAK.varianty.map(v =>
+  /* VZ-F1 (VZ-N2): u víc zákazníků jen varianty otevřeného zákazníka. */
+  const opts = ((typeof vzVariantyHlavicka === 'function' && vzVariantyHlavicka()) || ZAK.varianty).map(v =>
     `<option value="${esc(v.id)}" ${v.id === akt.id ? 'selected' : ''}>${esc(v.nazev)}${v.ridici ? ' · řídící' : ''}</option>`).join('');
   const txt = (path, label, pill) => `<div class="row"><label>${label}${pill || ''}</label>
     <input type="text" value="${esc(get(path))}" onchange="set('${escJs(path)}', this.value)"${

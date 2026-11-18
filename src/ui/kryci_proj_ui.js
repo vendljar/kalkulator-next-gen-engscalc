@@ -158,11 +158,15 @@ function renderKryciProj() {
         /* Vyplněnost se posuzuje stejně jako v dokumentu (hlavickaVyplneno),
          * aby na obrazovce nesvítilo něco jiného, než co se vytiskne – třeba
          * nedopsaná předloha čísla nabídky. */
-        const zapsano = get(p.bind);
+        /* VZ-F1 (VZ-N3): pole zákazníka (DIČ, zástupci) adresáta listu — viz kryci_ui.js. */
+        const b = typeof vzKlCesta === 'function' ? vzKlCesta(p.bind) : p.bind;
+        const zapsano = get(b);
         const jeVyplneno = (typeof hlavickaVyplneno === 'function') ? hlavickaVyplneno(zapsano) : (zapsano != null && zapsano !== '');
-        const val = jeVyplneno ? zapsano : (p.prefill ? (p.prefill(c) || '') : '');
+        /* Předvyplnění z kontextu řídícího jen u neodkloněné cesty — prázdné pole
+         * dalšího zákazníka nesmí ukázat údaj řídícího (VZ-F1). */
+        const val = jeVyplneno ? zapsano : (p.prefill && b === p.bind ? (p.prefill(c) || '') : '');
         return `<div class="kl-row"><div class="lbl">${p.label} ${znacka(p.verze)}</div>
-          <div><input type="text" value="${esc(val)}" onchange="set('${escJs(p.bind)}', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''}></div>
+          <div><input type="text" value="${esc(val)}" onchange="set('${escJs(b)}', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr(b) : ''}${typeof vzPoleAttr === 'function' ? vzPoleAttr(b) : ''}></div>
           <div class="src"><span class="note" style="font-size:10px">${esc(zdroj || 'hlavička kalkulace')} ↔</span></div></div>`;
       }
       const pref = p.prefill ? p.prefill(c) : null;

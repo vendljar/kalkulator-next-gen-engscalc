@@ -222,6 +222,20 @@ for (const [jm, fn, re] of SPATNE) {
     r.status === 400 && /víc zákazníků/.test(r.chyba || '') && (!re || re.test(r.chyba || '')) && zakazekVUlozisti() === pred,
     { status: r.status, chyba: r.chyba });
 }
+/* VZ-F1 (VZ-N1): nový zákazník se IČO, které už v zakázce je (podvrh mimo
+ * obrazovku, vzPridej by ho odmítl) → 400 přes vzServerKontrola, úložiště
+ * beze změny; dva noví bez IČO projdou (zákazníci bez IČO se nehlídají). */
+{ const z = sVz('F1 stejné IČO', zz => { zz.ico = '27182818';
+    zz.dalsiZakaznici.push(Object.assign(kopie(zz.dalsiZakaznici[0]), { id: 'z3', pismeno: 'C',
+      hlavicka: Object.assign({}, zz.dalsiZakaznici[0].hlavicka, { objednatel: 'TEST – TŘETÍ ODBĚRATEL s.r.o.', ico: '271 828 18' }) })); });
+  const pred = zakazekVUlozisti();
+  const r = await uloz(z, cO);
+  test('ZAP F1 (VZ-N1): nový zákazník se IČO řídícího → 400 „Zákazník s tímto IČO už v zakázce je (…)", úložiště beze změny',
+    r.status === 400 && /Zákazník s tímto IČO už v zakázce je \(TEST – TESTOVACÍ ODBĚRATEL s\.r\.o\.\)/.test(r.chyba || '') && zakazekVUlozisti() === pred,
+    { status: r.status, chyba: r.chyba }); }
+{ const z = sVz('F1 bez IČO', zz => { G.vzPridej(zz, UDAJE_C, { kdo: 'x' }); });
+  const r = await uloz(z, cO);
+  test('ZAP F1 (VZ-N1): dva další zákazníci bez IČO → 200', r.status === 200 && r.ok, { status: r.status, chyba: r.chyba }); }
 { const z = sVz('neznámé klíče', zz => { zz.vzRidici.navic = 1; zz.dalsiZakaznici[0].cena = 5;
     zz.dalsiZakaznici[0].hlavicka.tajne = 'x'; zz.dalsiZakaznici[0].zastupci.cizi = 'y'; });
   const r = await uloz(z, cO);

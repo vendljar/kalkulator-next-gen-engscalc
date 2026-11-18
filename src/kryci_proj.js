@@ -372,6 +372,15 @@ const KRYCI_PROJ_SEKCE = [
     { id: 'podpisInformovanTech', label: 'Informováno Technické odd.', verze: ['bo', 'techdata'], ph: 'kdo z technického oddělení byl informován…' },
   ] },
 ];
+/* VZ-F1 (bod 2, rozhodnutí J. V. 18. 11. 2026): provázaná pole zástupců
+ * (`bind: 'ZAK.zastupci.*'`) neměla předvyplnění, a tisk (kryciHodnota — bind
+ * nečte ruční přepis) je proto vynechával: vytištěný krycí list měl prázdnou
+ * sekci Zástupci i u jednoho zákazníka. Předvyplnění bere zástupce ze
+ * zakázky kontextu — v tisku pohled zákazníka, pro kterého se tiskne. */
+KRYCI_PROJ_SEKCE.forEach(s => s.pole.forEach(p => {
+  const m = /^ZAK\.zastupci\.([A-Za-z]+)$/.exec(p.bind || '');
+  if (m && !p.prefill) p.prefill = c => String((((c && c.zak) || {}).zastupci || {})[m[1]] || '');
+}));
 /* VZ-E2 (revize U1): pole zákazníka v pohledu jen jejich vlastníkovi (vzKlOznacPole). */
 if (typeof vzKlOznacPole === 'function') vzKlOznacPole(KRYCI_PROJ_SEKCE);
 else if (typeof require === 'function') { try { require('./vice_zakazniku.js').vzKlOznacPole(KRYCI_PROJ_SEKCE); } catch (e) {} }

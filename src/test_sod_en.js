@@ -263,6 +263,15 @@ const sablona = (...symboly) => ({ symboly: new Set(symboly) });
     /nevznikne/.test(t) && /Nastavení → Šablony/.test(t) && /EN/.test(t) && /česky/.test(t), t);
   test('EN se šablonou / česky / plná moc: bez zábrany',
     z('sod', 'en', true) === '' && z('sodProj', 'cz', false) === '' && z('plnaMoc', 'en', false) === '' && z('sodProj', 'de', false) !== '', '');
+  /* C7 (K48-N1, 18. 11. 2026): existence mutace nestačí — mutace z velké
+   * části česky (podíl nad mezí 20 %) tisk smlouvy zastaví. Před opravou
+   * z('sod', 'de', true, 0.77) === '' (tisklo se). */
+  const zc = z('sod', 'de', true, 0.77);
+  test('C7: SoD DE z české verze (77 % česky) nevznikne a hláška řekne proč',
+    /nevznikne/.test(zc) && /z velké části česky \(77 %/.test(zc) && /Nahrát přeložený soubor/.test(zc), zc);
+  test('C7: hranice — 21 % zastaví SoD projekce i plnou moc, 20 % a česky ne',
+    z('sodProj', 'en', true, 0.21) !== '' && z('plnaMoc', 'fr', true, 0.21) !== '' && z('sod', 'de', true, 0.2) === ''
+    && z('sod', 'cz', true, 0.9) === '' && z('nabidka', 'de', true, 0.9) === '', '');
 }
 
 /* 4) Word ze smyšlené anglické šablony (žádný firemní text) */
