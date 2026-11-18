@@ -18,6 +18,9 @@
  *   D) se skutečnými šablonami (KNG_PODKLADY, Sablona_SOD_REALIZACE_v4* a v5*
  *      v podklady/sablony_vystup nebo KNG_PODKLADY): jedna šachta — Word z v5 =
  *      Word z v4 (text všech odstavců) v CZ/EN/DE/FR; víc šachet — šachty ve Wordu.
+ *   E) SL #589: vyrovnávací řádek rozpisu šachet (sleva / zaokrouhlení),
+ *   F) SL v6: žluté podbarvení symbolů (nástroj --sod-real-v6) a generátor, který
+ *      ho u vyplněné hodnoty sejme (žluté zůstanou jen tečky „……").
  * Pojistka: nad bází aa445a1 sada padá (sodRealV5 neexistuje; generátor maže
  * odstavce SACHTY_SOD_* smyčkou CN) — počty ve zprávě commitu.
  * Spuštění: node src/test_sod_v5.js */
@@ -247,6 +250,58 @@ const CESKA = /[ěščřžýáíéůúťďňó]/i;
     return !('SACHTY_SOD_ROZPIS' in w.res.data.placeholders) && w.xml.indexOf('Sleva –') < 0;
   })());
 
+  /* F) SL v6: žluté podbarvení symbolů; generátor ho u vyplněné hodnoty sejme, žluté zůstanou jen tečky */
+  const HL = '<w:highlight w:val="yellow"/>';
+  const maV6 = !!(VS && typeof VS.sodRealV6 === 'function');
+  test('F nastroje/vyrob_sablony.js exportuje sodRealV6 (+ kontroly)', maV6 && typeof VS.sodRealV6BezPodbarveni === 'function'
+    && typeof VS.sodRealV6Nepodbarvene === 'function');
+  if (maV6) {
+    const zz6 = [];
+    const V6 = VS.sodRealV6(V5, zz6);
+    test('F v6: každý výskyt symbolu v podbarveném běhu', VS.sodRealV6Nepodbarvene(V6).length === 0 && VS.sodRealV6Nepodbarvene(V5).length > 0,
+      VS.sodRealV6Nepodbarvene(V6));
+    test('F v6 bez podbarvení = v5 bajt po bajtu; text odstavců a symboly = v5', VS.sodRealV6BezPodbarveni(V6) === VS.sodRealV6BezPodbarveni(V5)
+      && JSON.stringify(texty(V6)) === JSON.stringify(texty(V5)) && sym(V6).join() === sym(V5).join());
+    test('F kontrola „mimo podbarvení = v5" pozná změnu textu, písma i značky (není prázdná)',
+      VS.sodRealV6BezPodbarveni(V6.replace('Další smyšlený', 'Další smyšleny')) !== VS.sodRealV6BezPodbarveni(V5)
+      && VS.sodRealV6BezPodbarveni(V6.replace('<w:sz w:val="22"/>', '<w:sz w:val="24"/>')) !== VS.sodRealV6BezPodbarveni(V5)
+      && VS.sodRealV6BezPodbarveni(V6.replace('<w:jc w:val="both"/>', '<w:jc w:val="left"/>')) !== VS.sodRealV6BezPodbarveni(V5));
+    test('F běh „Objednatel: {{OBJEDNATEL}}, IČ {{OBJEDNATEL_ICO}}" rozdělen: žluté jen symboly, pevný text bez podbarvení',
+      V6.indexOf('<w:t xml:space="preserve">Objednatel: </w:t></w:r><w:r><w:rPr><w:rFonts w:ascii="Cambria" w:hAnsi="Cambria"/><w:sz w:val="22"/>' + HL
+        + '</w:rPr><w:t xml:space="preserve">{{OBJEDNATEL}}</w:t></w:r>') > 0, zz6);
+    test('F v6 podbarvení v w:rPr na místě podle schématu (za w:sz, před w:u/w:shd)', V6.indexOf('<w:sz w:val="22"/>' + HL + '</w:rPr>') > 0
+      && /<w:sz w:val="22"\/><w:highlight w:val="yellow"\/><w:u w:val="single"\/>/.test(VS.sodRealV6(V5.replace('<w:r><w:rPr><w:rFonts w:ascii="Cambria" w:hAnsi="Cambria"/><w:sz w:val="22"/></w:rPr><w:t xml:space="preserve">{{CENA_BEZ_DPH}}',
+        '<w:r><w:rPr><w:rFonts w:ascii="Cambria" w:hAnsi="Cambria"/><w:sz w:val="22"/><w:u w:val="single"/></w:rPr><w:t xml:space="preserve">{{CENA_BEZ_DPH}}'))), zz6);
+    test('F v6: běh bez w:rPr dostane w:rPr, už podbarvený běh se nezmění, text bez symbolu se nepodbarví',
+      VS.sodRealV6(doc('<w:p><w:r><w:t>{{SACHTY_SOD_PREDMET}}</w:t></w:r><w:r><w:rPr><w:highlight w:val="cyan"/></w:rPr><w:t>{{X}}</w:t></w:r><w:r><w:t>prostý</w:t></w:r></w:p>'))
+        .indexOf('<w:r><w:rPr>' + HL + '</w:rPr><w:t>{{SACHTY_SOD_PREDMET}}</w:t></w:r><w:r><w:rPr><w:highlight w:val="cyan"/></w:rPr><w:t>{{X}}</w:t></w:r><w:r><w:t>prostý</w:t></w:r>') > 0);
+    test('F v6 z šablony bez symbolů v5 → chyba (v6 vzniká z v5)', /z v5/.test(chyba(() => VS.sodRealV6(V4))));
+    const ab6 = await docx(V6);
+    /* víc šachet, prázdná zakázka: vyplněné symboly bez podbarvení, tečky žluté */
+    const g6 = await word(ab6, m.zak, m.v);
+    const behy = g6.xml.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g) || [];
+    const zlute = behy.filter(b => b.indexOf(HL) >= 0);
+    test('F Word z v6: žluté jsou jen běhy s tečkami „……" (vyplněné hodnoty bez podbarvení)', zlute.length > 0
+      && zlute.every(b => b.indexOf('……') >= 0) && behy.filter(b => b.indexOf('……') >= 0).every(b => b.indexOf(HL) >= 0),
+      zlute.map(b => dg.odstavecText('<w:p>' + b + '</w:p>')));
+    test('F Word z v6: cena a rozpis šachet vyplněné a nepodbarvené', behy.some(b => b.indexOf(g6.res.data.placeholders.CENA_BEZ_DPH) >= 0 && b.indexOf(HL) < 0)
+      && behy.some(b => /Výtah B – 2 ks/.test(b) && b.indexOf(HL) < 0));
+    /* jedna šachta: Word z v6 = Word z v5 znak po znaku kromě podbarvení teček */
+    const j5 = await word(ab5, j.zak, j.v), j6 = await word(ab6, j.zak, j.v);
+    test('F jedna šachta: Word z v6 bez podbarvení = Word z v5 (document.xml)', VS.sodRealV6BezPodbarveni(j6.xml) === VS.sodRealV6BezPodbarveni(j5.xml)
+      && JSON.stringify(j6.text) === JSON.stringify(j5.text));
+    /* generátor bez volby `nevyplnene` (nabídky) podbarvení nemění */
+    const bez = await dg.docxVyplnSablonu(ab6, { CENA_BEZ_DPH: '1 Kč' }, [], {}, {});
+    const xBez = dec.decode((await dg.zipPrecti(new Uint8Array(await bez.arrayBuffer()))).find(p => p.nazev === 'word/document.xml').data);
+    test('F bez volby nevyplnene (nabídky) zůstane podbarvení i u vyplněné hodnoty (beze změny)', /<w:highlight w:val="yellow"\/><\/w:rPr><w:t xml:space="preserve">1 Kč/.test(xBez));
+    test('F docxSejmiPodbarveni: symbol rozdělený mezi běhy → sejmuto ze všech jeho běhů, prázdná hodnota v sadě teček zůstane žlutá',
+      typeof dg.docxSejmiPodbarveni === 'function' && (() => {
+        const x = '<w:r><w:rPr>' + HL + '</w:rPr><w:t>{{A</w:t></w:r><w:r><w:rPr>' + HL + '</w:rPr><w:t>B}}</w:t></w:r><w:r><w:rPr>' + HL + '</w:rPr><w:t>{{C}}</w:t></w:r>';
+        const y = dg.docxSejmiPodbarveni(x, { AB: 'x', C: '' }, new Set(['C']));
+        return y === '<w:r><w:rPr></w:rPr><w:t>{{A</w:t></w:r><w:r><w:rPr></w:rPr><w:t>B}}</w:t></w:r><w:r><w:rPr>' + HL + '</w:rPr><w:t>{{C}}</w:t></w:r>';
+      })());
+  }
+
   /* D) skutečné šablony */
   const PODKL = String(process.env.KNG_PODKLADY || '').trim();
   const VYST = path.join(__dirname, '..', 'podklady', 'sablony_vystup');
@@ -260,6 +315,18 @@ const CESKA = /[ěščřžýáíéůúťďňó]/i;
     const ab = f => new Uint8Array(fs.readFileSync(f)).buffer;
     const a = await word(ab(f4), j.zak, j.v, L), b = await word(ab(f5), j.zak, j.v, L);
     test('D ' + (L) + ' jedna šachta: Word z v5 = Word z v4 (všechny odstavce)', JSON.stringify(a.text) === JSON.stringify(b.text));
+    const f6 = najdi('Sablona_SOD_REALIZACE_v6' + suf + '.docx');
+    if (f6 && maV6) {
+      const a6 = await word(ab(f6), j.zak, j.v, L);
+      test('D ' + L + ' jedna šachta: Word z v6 bez podbarvení = Word z v5', VS.sodRealV6BezPodbarveni(a6.xml) === VS.sodRealV6BezPodbarveni(b.xml)
+        && JSON.stringify(a6.text) === JSON.stringify(b.text));
+      const c6 = await word(ab(f6), m.zak, m.v, L);
+      const bh = c6.xml.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g) || [];
+      const zl = bh.filter(x => x.indexOf(HL) >= 0);
+      test('D ' + L + ' víc šachet z v6: žluté jen tečky, vyplněné bez podbarvení, žádný {{', c6.xml.indexOf('{{') < 0 && zl.length > 0
+        && zl.every(x => x.indexOf('\u2026\u2026') >= 0) && bh.filter(x => x.indexOf('\u2026\u2026') >= 0).every(x => x.indexOf(HL) >= 0),
+        zl.length);
+    }
     const c = await word(ab(f5), m.zak, m.v, L);
     test('D ' + L + ' víc šachet: předmět a rozpis ve Wordu, žádný {{', c.text.indexOf(c.res.data.placeholders.SACHTY_SOD_PREDMET) >= 0
       && String(c.res.data.placeholders.SACHTY_SOD_ROZPIS).split('\n').every(t => c.text.indexOf(t) >= 0) && c.xml.indexOf('{{') < 0);

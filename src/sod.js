@@ -257,7 +257,7 @@ function sodData(zak, varianta, jekly, lang, sablona) {
  * projde, předmět a rozpis doplní obchodník ve Wordu. */
 const SOD_SACHTY_SYMBOLY = ['SACHTY_SOD_PREDMET', 'SACHTY_SOD_ROZPIS'];
 const SOD_SACHTY_BEZ_SABLONY = 'Šablona smlouvy neumí vyjmenovat šachty — předmět díla a rozpis šachet doplňte ve Wordu, '
-  + 'nebo ať administrátor nahraje šablonu SoD realizace v5.';
+  + 'nebo ať administrátor nahraje šablonu SoD realizace v5 nebo novější.';
 function sodSablonaMa(sablona, k) {
   const sym = sablona && sablona.symboly;
   return !!sym && (typeof sym.has === 'function' ? sym.has(k) : Array.from(sym).indexOf(k) >= 0);

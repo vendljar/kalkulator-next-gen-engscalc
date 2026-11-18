@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v16.11.1 — SL #589: řádek slevy v rozpisu šachet ve smlouvě o dílo realizace, větev claude/sl-sod-sleva
+## v16.11.1 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
 
 Nad `8462aea` (integrace = test v12.11.7). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje
 koordinace. Na webech, Disku ani v Pipedrive nic.
@@ -23,7 +23,19 @@ koordinace. Na webech, Disku ani v Pipedrive nic.
   písmen, proto popisky s velkým písmenem jako řádky šachet).
 - Šablona v5, výpočet ceny ani data nabídky se nemění (zlatá sada VS 319/319); jedna šachta beze změny.
 - Testy: `src/test_sod_v5.js` oddíl E (Kč se slevou, EUR se slevou i bez, Kč bez slevy bez řádku, zaokrouhlení,
-  objednané příplatky za rozpisem, EN/DE bez češtiny, jedna šachta); mutace [SL] 8/8.
+  objednané příplatky za rozpisem, EN/DE bez češtiny, jedna šachta).
+- **SoD realizace v6 se žlutými místy (#609, J. V. 16. 11.):** `node nastroje/vyrob_sablony.js --sod-real-v6`
+  z v5 (nebo v4) CZ/EN/DE/FR — každý symbol žlutě podbarvený jako u SoD projekce v4 a plné moci; běh se symbolem
+  a pevným textem se rozdělí (žlutý jen symbol). Symboly, text i písmo = v5 (tvrdé kontroly). Podklad
+  `podklady/SABLONA_SOD_REALIZACE_V6_18_11.md`; .docx dostal J. V. v sezení, do repa nepatří.
+- **Ve smlouvě žluté jen tečky:** generátor dosud podbarvení nesnímal (u SoD projekce a plné moci svítily žlutě
+  i vyplněné údaje). Teď u dokumentů s tečkami (SoD realizace, SoD projekce, plná moc) sejme podbarvení z běhů
+  vyplněného symbolu, i rozděleného a i u rozpisů; žluté zůstanou jen „……". Nabídky beze změny.
+- **Kontrola nevyplněných míst SoD: Chybí / Nepovinné (#610, J. V. 16. 11.):** nepovinné jen druhý podepisující
+  a faktury v kopii 1 a 2 (konstanta `SOD_NEVYPLNENE_NEPOVINNE`), DIČ, banka, účet a zástupce ve věcech obchodních
+  s kontaktem povinné. Věta „… k doplnění (tečky „……"). Chybí: …. Nepovinné: …." vyjmenuje každé místo; jen
+  upozornění. Změněné očekávání `src/test_sod_tecky.js` S (dvojtečka → „Chybí:").
+- Testy: `test_sod_v5.js` F (+ D se skutečnými v6), `test_sod_tecky.js` S2, `test_vs_kontroly.js` H; mutace [SL] 16/16.
 
 ## v12.11.7 — K40c #581: vazba z webhooku Pipedrive, firma z ARES na serveru, „Opravit firmu v Pipedrive“, větev claude/k40c-webhook
 

@@ -218,6 +218,11 @@
  *         samostatné odstavce jen se symbolem {{SACHTY_SOD_PREDMET}} (čl. II)
  *         a {{SACHTY_SOD_ROZPIS}} (čl. V); u jedné šachty zmizí (= v4).
  *
+ * SoD realizace v6 — žluté podbarvení symbolů (SL, rozhodnutí J. V. 16. 11. 2026):
+ *   node nastroje/vyrob_sablony.js --sod-real-v6 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_SOD_REALIZACE_v5.docx + _EN/_DE/_FR (nebo v4 — v5 se udělá v paměti)
+ * Výstup: Sablona_SOD_REALIZACE_v6.docx + _EN/_DE/_FR (viz sodRealV6).
+ *
  * SoD PROJ v4 — rozsah díla podle nabídky (#380 Q7, rozhodnutí J. V. 17. 10. 2026):
  *   node nastroje/vyrob_sablony.js --sod-proj-v4 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_SOD_PROJEKCE_v3.docx
@@ -257,6 +262,7 @@ const REZIM_SOD_V4 = REZIM === '--sod-proj-v4';
 const REZIM_V8 = REZIM === '--proj-v8';   // D2: cestovné u akce mimo Prahu
 const REZIM_SOD_REAL4 = REZIM === '--sod-real-v4';   // C6 #447: objednané příplatky
 const REZIM_SOD_REAL5 = REZIM === '--sod-real-v5';   // C2 #583: víc šachet ve smlouvě
+const REZIM_SOD_REAL6 = REZIM === '--sod-real-v6';   // SL: žluté podbarvení symbolů
 const ARGY = REZIM ? process.argv.slice(3) : process.argv.slice(2);
 const PODKLADY = ARGY[0] || process.env.KNG_PODKLADY;
 const VYSTUP = ARGY[1] || PODKLADY;
@@ -1546,6 +1552,160 @@ async function hlavniSodRealV5() {
   process.exit(prob ? 1 : 0);
 }
 
+/* ---------- SoD realizace v6: žluté podbarvení symbolů (SL, 16. 11. 2026) ----------
+ *   node nastroje/vyrob_sablony.js --sod-real-v6 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_SOD_REALIZACE_v5.docx + _EN/_DE/_FR; když v5 ve složce není,
+ *         vezme v4 a v5 udělá v paměti (sodRealV5) — výstup je týž.
+ * Výstup: Sablona_SOD_REALIZACE_v6.docx + _EN/_DE/_FR
+ * Rozhodnutí J. V. 16. 11. 2026: nevyplněná místa SoD realizace mají být vidět
+ * jako u SoD projekce v4 a plné moci — symboly žlutě podbarvené (`<w:highlight
+ * w:val="yellow"/>` v každém běhu, který nese symbol, i rozdělený mezi běhy).
+ * Generátor (docxgen docxSejmiPodbarveni) u vyplněné hodnoty podbarvení sejme,
+ * žluté zůstanou jen tečky „……". Běh se symbolem a pevným textem se rozdělí,
+ * žlutý je jen symbol. Nic jiného se nemění: symboly = v5, text = v5,
+ * document.xml mimo podbarvení = v5 (sodRealV6BezPodbarveni — značky, text
+ * a písmo každého úseku; tvrdé kontroly). */
+const SOD_V6_PODBARVENI = '<w:highlight w:val="yellow"/>';
+/* prvky w:rPr, které ve schématu stojí ZA w:highlight */
+const SOD_V6_ZA = /<w:(?:u|effect|bdr|shd|fitText|vertAlign|rtl|cs|em|lang|eastAsianLayout|specVanish|oMath|rPrChange)\b/;
+function sodRealV6Beh(beh) {
+  const ot = beh.match(/^<w:r(?:\s[^>]*)?>/)[0];
+  const zb = beh.slice(ot.length);
+  if (/^\s*<w:rPr\/>/.test(zb)) return ot + zb.replace(/<w:rPr\/>/, '<w:rPr>' + SOD_V6_PODBARVENI + '</w:rPr>');
+  const m = zb.match(/^\s*<w:rPr>([\s\S]*?)<\/w:rPr>/);
+  if (!m) return ot + '<w:rPr>' + SOD_V6_PODBARVENI + '</w:rPr>' + zb;
+  if (/<w:highlight\b/.test(m[1])) return beh;
+  const vn = m[1], z = vn.search(SOD_V6_ZA);
+  const novy = z >= 0 ? vn.slice(0, z) + SOD_V6_PODBARVENI + vn.slice(z) : vn + SOD_V6_PODBARVENI;
+  return ot + zb.replace(m[0], m[0].replace(vn, () => novy));
+}
+/* Běh, jehož jediným obsahem je text se symbolem i dalším textem (nebo víc
+ * symboly), se rozdělí: pevný text zůstane v běhu s původními vlastnostmi,
+ * každý symbol dostane vlastní podbarvený běh — žlutě nesvítí okolní text
+ * a generátor může sejmout podbarvení u vyplněného symbolu, aniž by ho vzal
+ * tečkám vedle. Symbol rozdělený mezi běhy: podbarví se celé jeho běhy. */
+const SOD_V6_SYM_RE = /\{\{[A-Z0-9_]+\}\}/g;
+function sodRealV6Rozdel(beh) {
+  const ot = beh.match(/^<w:r(?:\s[^>]*)?>/)[0];
+  const zb = beh.slice(ot.length, -'</w:r>'.length);
+  const rm = zb.match(/^\s*(?:<w:rPr\/>|<w:rPr>[\s\S]*?<\/w:rPr>)/);
+  const rPr = rm ? rm[0] : '';
+  const tm = zb.slice(rPr.length).match(/^\s*<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>\s*$/);
+  if (!tm) return null;
+  const text = tm[1];
+  if (!SOD_V6_SYM_RE.test(text)) return null;
+  SOD_V6_SYM_RE.lastIndex = 0;
+  if (/^\{\{[A-Z0-9_]+\}\}$/.test(text)) return null;
+  const casti = text.split(/(\{\{[A-Z0-9_]+\}\})/).filter(x => x !== '');
+  return casti.map(c => {
+    const b = ot + rPr + '<w:t xml:space="preserve">' + c + '</w:t></w:r>';
+    return /^\{\{[A-Z0-9_]+\}\}$/.test(c) ? sodRealV6Beh(b) : b;
+  }).join('');
+}
+function sodRealV6(xml, zaznam) {
+  const t = tělo(xml);
+  const body = t.body;
+  if (dg.klicePlaceholderu(body).indexOf('SACHTY_SOD_PREDMET') < 0) chyba('SoD realizace v6 vzniká z v5 (symbol {{SACHTY_SOD_PREDMET}}) — šablona ho nemá');
+  const useky = [];
+  body.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, _v, pos) => { useky.push([pos, pos + cely.length]); return cely; });
+  if (!useky.length) chyba('SoD realizace: v šabloně nejsou symboly {{…}}');
+  let behu = 0, rozdel = 0;
+  const nove = body.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g, (beh, pos) => {
+    const kon = pos + beh.length;
+    if (!useky.some(u => u[0] < kon && u[1] > pos)) return beh;
+    const r = sodRealV6Rozdel(beh);
+    if (r) { rozdel++; behu++; return r; }
+    const b = sodRealV6Beh(beh);
+    if (b !== beh) behu++;
+    return b;
+  });
+  if (Array.isArray(zaznam)) zaznam.push('podbarveno ' + behu + ' běhů se symboly (' + useky.length + ' výskytů symbolů), rozděleno ' + rozdel
+    + ' běhů s pevným textem nebo víc symboly');
+  return t.pred + nove + t.po;
+}
+/* Tvrdá kontrola „mimo podbarvení = v5": document.xml jako sled značek mimo
+ * běhy a úseků textu s vlastnostmi písma (bez podbarvení; sousední úseky se
+ * stejnými vlastnostmi sloučené, atributy w:t pryč) — rozdělení běhu ani
+ * podbarvení ho nezmění, jakákoli jiná změna textu, písma nebo XML ano. */
+function sodRealV6BezPodbarveni(xml) {
+  const ven = [];
+  let posl = 0;
+  const pridej = tok => {
+    const p = ven[ven.length - 1];
+    if (tok.t != null && p && p.t != null && p.r === tok.r) p.t += tok.t; else ven.push(tok);
+  };
+  xml.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g, (beh, pos) => {
+    if (pos > posl) pridej({ x: xml.slice(posl, pos) });
+    posl = pos + beh.length;
+    const ot = beh.match(/^<w:r(?:\s[^>]*)?>/)[0];
+    const zb = beh.slice(ot.length, -'</w:r>'.length);
+    const rm = zb.match(/^\s*(?:<w:rPr\/>|<w:rPr>[\s\S]*?<\/w:rPr>)/);
+    const rPr = (rm ? rm[0] : '').split(SOD_V6_PODBARVENI).join('').replace(/^\s*<w:rPr><\/w:rPr>$|^\s*<w:rPr\/>$/, '');
+    const zbytek = zb.slice(rm ? rm[0].length : 0);
+    const tm = zbytek.match(/^\s*<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>\s*$/);
+    pridej(tm ? { r: ot + rPr, t: tm[1] } : { r: ot + rPr, x: zbytek });
+    return beh;
+  });
+  pridej({ x: xml.slice(posl) });
+  return JSON.stringify(ven);
+}
+/* Každý výskyt symbolu leží v podbarveném běhu (kontrola výstupu). */
+function sodRealV6Nepodbarvene(xml) {
+  const t = tělo(xml).body, chybi = [];
+  const behy = [];
+  t.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g, (beh, pos) => { behy.push([pos, pos + beh.length, /<w:highlight\b/.test(beh)]); return beh; });
+  t.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, v, pos) => {
+    const b = behy.filter(x => x[0] < pos + cely.length && x[1] > pos);
+    if (!b.length || b.some(x => !x[2])) chybi.push(v.replace(/<[^>]+>/g, ''));
+    return cely;
+  });
+  return chybi;
+}
+async function hlavniSodRealV6() {
+  if (!PODKLADY) { console.error('Použití: node nastroje/vyrob_sablony.js --sod-real-v6 <složka podkladů> [výstupní složka]'); process.exit(2); }
+  if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
+  let prob = 0, symCz = null;
+  for (const L of ['cz'].concat(JAZYKY)) {
+    const pr = L === 'cz' ? '' : '_' + L.toUpperCase();
+    const v5 = path.join(PODKLADY, 'Sablona_SOD_REALIZACE_v5' + pr + '.docx');
+    const v4 = path.join(PODKLADY, 'Sablona_SOD_REALIZACE_v4' + pr + '.docx');
+    let bajtyV5;
+    if (fs.existsSync(v5)) bajtyV5 = new Uint8Array(fs.readFileSync(v5));
+    else if (fs.existsSync(v4)) bajtyV5 = await vyrob(v4, x => sodRealV5(x, []));
+    else chyba('Chybí vstupní šablona ' + v5 + ' ani ' + v4 + ' (Disk, Kalkulator NextGen / Sablony)');
+    const zaznam = [];
+    let xmlV5 = '', xmlV6 = '';
+    const bajty = await vyrobZBajtu(bajtyV5, x => { xmlV5 = x; xmlV6 = sodRealV6(x, zaznam); return xmlV6; }, v5);
+    const jmeno = 'Sablona_SOD_REALIZACE_v6' + pr + '.docx';
+    fs.writeFileSync(path.join(VYSTUP, jmeno), bajty);
+    const vady = await dg.docxXmlVady(bajty.slice().buffer);
+    const symV5 = await symbolyASablona(bajtyV5);
+    const sym = await symbolyASablona(bajty);
+    const r = so.sablonaSymbolyRozdil(symV5, sym);
+    const rCz = symCz ? so.sablonaSymbolyRozdil(symCz, sym) : { pribylo: [], ubylo: [] };
+    if (!symCz) symCz = sym;
+    const tV5 = await dg.docxTextSablony(bajtyV5.slice().buffer);
+    const t = await dg.docxTextSablony(bajty.slice().buffer);
+    const textShoda = JSON.stringify(t) === JSON.stringify(tV5);
+    const shoda = sodRealV6BezPodbarveni(xmlV6) === sodRealV6BezPodbarveni(xmlV5);
+    const nepodb = sodRealV6Nepodbarvene(xmlV6);
+    const jaz = so.sablonaJazykOdhad(t);
+    const p = vady.length + r.ubylo.length + r.pribylo.length + rCz.pribylo.length + rCz.ubylo.length
+      + (textShoda ? 0 : 1) + (shoda ? 0 : 1) + nepodb.length + (jaz.jazyk === L ? 0 : 1);
+    prob += p;
+    console.log((p ? '✗ ' : '✓ ') + jmeno + ' — symbolů ' + sym.length + ' (v5 ' + symV5.length + '), jazyk ' + jaz.jazyk + ' (' + Math.round(jaz.podil * 100) + ' %)'
+      + zaznam.map(x => '\n    ' + x).join('')
+      + '\n    proti v5 přibylo: ' + (r.pribylo.join(', ') || 'nic') + '; ubylo: ' + (r.ubylo.join(', ') || 'nic')
+      + (symCz !== sym ? '\n    proti CZ v6 +' + rCz.pribylo.length + ' −' + rCz.ubylo.length : '')
+      + '\n    text odstavců = v5: ' + (textShoda ? 'ano' : 'NE')
+      + '\n    mimo podbarvení = v5: ' + (shoda ? 'ano (document.xml: značky, text a písmo každého úseku)' : 'NE')
+      + '\n    symboly bez podbarvení: ' + (nepodb.join(', ') || 'žádné')
+      + (vady.length ? '\n    vady XML: ' + vady.join('; ') : '\n    XML: bez vad'));
+  }
+  console.log('\nVýstup: ' + VYSTUP);
+  process.exit(prob ? 1 : 0);
+}
+
 /* ---------- SoD PROJ: číslo smlouvy z krycího listu (S9, 15. 10. 2026) ----------
  * Zadání J. V.: „Aktualizuj šablony, aby se nám do nich číslo SoD propisovalo
  * z krycího listu zakázky." SoD realizace má pod nadpisem samostatný řádek
@@ -1736,8 +1896,9 @@ async function hlavni() {
   if (REZIM_V8) return hlavniV8();
   if (REZIM_SOD_REAL4) return hlavniSodRealV4();
   if (REZIM_SOD_REAL5) return hlavniSodRealV5();
+  if (REZIM_SOD_REAL6) return hlavniSodRealV6();
   if (!PODKLADY) {
-    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-real-v4 | --sod-real-v5 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15 | --cn-v16 | --cn-v17 | --cn-usazeni] <složka podkladů> [výstupní složka]');
+    console.error('Použití: node nastroje/vyrob_sablony.js [--proj-v4 | --proj-v5 | --proj-v6 | --proj-v7 | --sod-proj | --sod-real | --sod-real-v3 | --sod-real-v4 | --sod-real-v5 | --sod-real-v6 | --sod-proj-cislo | --sod-proj-v4 | --cn-v14 | --cn-v15 | --cn-v16 | --cn-v17 | --cn-usazeni] <složka podkladů> [výstupní složka]');
     process.exit(2);
   }
   const cnVstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v12.docx');
@@ -1940,3 +2101,6 @@ module.exports = { cnV13, cnV14, cnV15, cnV16, cnV17, cnPrejmenujSymbol, projV3,
 module.exports.cnUsazeni = cnUsazeni; module.exports.cnUsazeniSoubor = cnUsazeniSoubor; module.exports.cnV17Jazyk = cnV17Jazyk; module.exports.cnV17TextRozdil = cnV17TextRozdil; module.exports.CN_USAZENI_STARE = CN_USAZENI_STARE;
 module.exports.sodRealV5 = sodRealV5;   // C2 #583 (vlastní řádek kvůli souběžné C1)
 module.exports.sodRealV5BezNovych = sodRealV5BezNovych;
+module.exports.sodRealV6 = sodRealV6;   // SL (16. 11. 2026)
+module.exports.sodRealV6BezPodbarveni = sodRealV6BezPodbarveni;
+module.exports.sodRealV6Nepodbarvene = sodRealV6Nepodbarvene;

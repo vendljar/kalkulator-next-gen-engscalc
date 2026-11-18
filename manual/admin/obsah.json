@@ -511,6 +511,14 @@
         },
         {
           "typ": "podnadpis",
+          "text": "Šablona smlouvy o dílo — realizace v6 (žlutá nevyplněná místa)"
+        },
+        {
+          "typ": "text",
+          "text": "**Sablona_SOD_REALIZACE_v6** = v5, jen symboly mají žluté podbarvení jako SoD projekce v4 a plná moc (rozhodnutí J. V. 16. 11. 2026). Kde je symbol uprostřed věty, je žlutý jen symbol, okolní text ne. Ve vytištěné smlouvě zůstanou žluté **jen tečky „……“** nevyplněných míst — u vyplněných údajů aplikace podbarvení sejme (od v16.11; totéž teď platí i pro SoD projekce a plnou moc, kde dřív svítily žlutě i vyplněné údaje). Symboly i text jsou stejné jako ve v5, takže kontrola při nahrání má ukázat **přibylo 0, ubylo 0**. Vyrábí ji `node nastroje/vyrob_sablony.js --sod-real-v6` (podklad podklady/SABLONA_SOD_REALIZACE_V6_18_11.md); nahrávají se všechny čtyři jazyky najednou jako u v5, nejdřív na test."
+        },
+        {
+          "typ": "podnadpis",
           "text": "Standard OCK"
         },
         {

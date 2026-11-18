@@ -1287,6 +1287,30 @@ function docxBezPrazdnych(ph, sada) {
   sada.forEach(k => { if (o[k] != null && String(o[k]).trim() === '') delete o[k]; });
   return o;
 }
+/* PODBARVENÍ VYPLNĚNÝCH MÍST (SL, rozhodnutí J. V. 16. 11. 2026). Šablony
+ * smluv (SoD realizace v6, SoD projekce v4, plná moc) mají symboly žlutě
+ * podbarvené (`<w:highlight>` v běhu). Do v16.11 náhrada symbolu běh i s jeho
+ * vlastnostmi zachovala — žlutě svítila i VYPLNĚNÁ hodnota. Teď se u dokumentů
+ * s tečkami (volba `nevyplnene`) podbarvení sejme z běhů, které nesou vyplněný
+ * symbol (i rozdělený mezi běhy); nevyplněné místo („……") zůstane žluté.
+ * Volá se PŘED rozvinutím řádků a rozpisů (ty hodnotu vepíší s vlastnostmi
+ * běhu) a před nahradPlaceholdery — rozhoduje, zda symbol dostane hodnotu. */
+const DOCX_BEH_RE = /<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g;
+function docxSejmiPodbarveni(xml, ph, sada) {
+  const useky = [];
+  xml.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, vnitrek, pos) => {
+    const k = vnitrek.replace(/<[^>]+>/g, '');
+    if (ph[k] != null && !(sada && sada.has(k) && String(ph[k]).trim() === '') && docxUvnitrTextu(xml, pos))
+      useky.push([pos, pos + cely.length]);
+    return cely;
+  });
+  if (!useky.length) return xml;
+  return xml.replace(DOCX_BEH_RE, (beh, pos) => {
+    const kon = pos + beh.length;
+    if (!useky.some(u => u[0] < kon && u[1] > pos) || beh.indexOf('<w:highlight') < 0) return beh;
+    return beh.replace(/(<w:rPr>[\s\S]*?<\/w:rPr>)/, rpr => rpr.replace(/<w:highlight\b[^>]*\/>/g, ''));
+  });
+}
 function docxTecky(xml, sada, zapis) {
   return xml.replace(/\{(?:<[^>]+>)*\{((?:<[^>]+>|[A-Z0-9_])+)\}(?:<[^>]+>)*\}/g, (cely, vnitrek, pos) => {
     const klic = vnitrek.replace(/<[^>]+>/g, '');
@@ -1320,6 +1344,8 @@ async function docxVyplnSablonu(arrayBuffer, placeholders, priplatky, obrazky, v
       if (p.nazev === 'word/document.xml' && volby && volby.dpzBezZamereni) po = docxDpzBezZamereni(po);   // #573: DPZ bez zaměření
       po = odstranOdstavceSeSymboly(po, volby && volby.odstavcePryc);   // věty, které do dokumentu nepatří (K18-N101)
       po = odstranPrazdneBloky(po, placeholders, volby && volby.blokyPryc);   // prázdné kapitoly (P8A) a nenabízené činnosti SoD PROJ (#380)
+      /* SL: žluté zůstanou jen tečky — před rozvinutím řádků a rozpisů, které hodnotu vepíší s vlastnostmi běhu */
+      if (docxTeckySada(volby)) po = docxSejmiPodbarveni(po, placeholders, docxTeckySada(volby));
       po = rozvinRadkyZaRadek(po, placeholders);        // věty o dílčích dokladech OCK: řádek tabulky za větu (etapa A)
       po = rozvinOdstavceZaRadek(po, placeholders);     // seznam plateb: odstavec za platbu (etapa B)
       po = docxRozpisOdstavce(po, placeholders);       // rozpis ceny díla SoD: bez číslování, vlevo, odstavec na řádek (SF #556)
@@ -1707,7 +1733,7 @@ async function docxXmlVady(arrayBuffer) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxSejmiPodbarveni, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, docxSmyckaSachet, DOCX_CENA_CASTI, DOCX_TECKY, docxTecky, docxTeckySada, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,
