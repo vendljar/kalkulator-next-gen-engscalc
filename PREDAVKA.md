@@ -21,11 +21,12 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
-- **SP #653** (`claude/sp-statika`, v18.11.8, nad 910315b + integrace 41bbe99): statika opláštění Ano/Ne v zadání šachty
+- **SP #653** (`claude/sp-statika`, verzi přidělí koordinace): statika opláštění Ano/Ne v zadání šachty
   (`Z.statikaOpl`, chybí = Ano u šachty s opláštěním), vlastní sazba `C.statikaOplKc` (migrace = `statikaKc`), cena
   z nabídky u obou statik zvlášť, nula z nabídky platí u každé položky. Mění cenovou logiku → **revize poradce**.
   Revize poradce N1/N2/N4 a N3 J. V. (cena z nabídky potvrdí obchodník jen se zdrojem, jinak schválení) zapracovány.
-  Kolo `--bez-mutaci` VŠE ZELENÉ (466/0/7, hodiny 378/0/1, statické 9/9); porovnání sestavení SHODA 353/353; mutace jádro [SP] 11/11 + P5 3/3, server [SP] 8/8 + #561 19/19. Audit
+  Po revizi kolo `--bez-mutaci --proti integrace` nad f9a5551 VŠE ZELENÉ (467/0/7, hodiny 379/0/1, statické 9/9,
+  porovnání SHODA 353/353); mutace jádro [SP] 13/13, server [SP] 17/17 + #561 19/19. Nad 910315b + 755062d. Audit
   `podklady/AUDIT_CENY_POLOZEK_653.md`, otázka J. V. #654:
 
   | | cesta / položka | sdílí / chybí | stav |

@@ -44,7 +44,9 @@ revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `or
   N4 výběr escapuje hodnotu volby (test_escape).
 - **Mutace [SP]:** jádro [SP] 11/11 + P5 3/3 chycených, server [SP] 8/8 + #561 19/19 chycených.
 
-**Kolo `--bez-mutaci` nad 2a7f210 (po sloučení 41bbe99): VŠE ZELENÉ** — sady 466/0/7, hodiny +400 dní 378/0/1, statické 9/9 (36 min); porovnání sestavení proti `origin/test` **SHODA 353/353**.
+**Po revizi (N1–N4) kolo `--bez-mutaci --proti origin/claude/integrace-16-10` nad f9a5551: VŠE ZELENÉ** — sady 467/0/7, hodiny +400 dní 379/0/1, statické 9/9, porovnání SHODA 353/353; mutace jádro [SP] 13/13, server [SP] 17/17 + #561 19/19.
+
+Původně: **Kolo `--bez-mutaci` nad 2a7f210 (po sloučení 41bbe99): VŠE ZELENÉ** — sady 466/0/7, hodiny +400 dní 378/0/1, statické 9/9 (36 min); porovnání sestavení proti `origin/test` **SHODA 353/353**.
 
 ## v18.11.7 — C7 #615 (K48-N1): jazyková verze šablony jen přeloženým souborem, kontrola češtiny; NS #645, větev claude/c7-sablony
 
