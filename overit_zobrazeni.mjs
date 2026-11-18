@@ -880,7 +880,9 @@ test('krycí list PROJ má odpovědnou osobu za projekci (vyplňuje obchodník)'
   }));
 
 /* ---------- Nastavení: Smlouvy / Šablony a filtr analytiky ---------- */
-test('záložka Nastavení se jmenuje „Smlouvy / Šablony" a začíná standardy a logem',
+/* NS #645 (pokyn J. V. 18. 11. 2026): šablony stojí hned pod přepínačem OCK | PROJ,
+ * tedy PŘED standardy a logem (dřív až za logem). */
+test('záložka Nastavení se jmenuje „Smlouvy / Šablony", šablony jsou před standardy a logem',
   await page.evaluate(() => {
     otevriNastaveni(); nastPanel('sablony');
     const panel = document.getElementById('nastaveni-panel').innerHTML;
@@ -890,7 +892,7 @@ test('záložka Nastavení se jmenuje „Smlouvy / Šablony" a začíná standar
     const iLogo = panel.indexOf('Logo firmy');
     const iSab = panel.indexOf('Šablony dokumentů');
     return zalozky.includes('Smlouvy / Šablony')
-      && iStd >= 0 && iLogo > iStd && iSab > iLogo;
+      && iSab >= 0 && iStd > iSab && iLogo > iStd;
   }));
 test('v Nastavení → Firma už standardy ani logo nejsou',
   await page.evaluate(() => {

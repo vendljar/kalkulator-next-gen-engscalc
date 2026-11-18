@@ -83,6 +83,11 @@ export default async (req) => {
     const vadyObsahu = await g.sablonaObsahVady(data);
     if (vadyObsahu.length)
       return json({ ok: false, chyba: g.sablonaObsahVadyText(vadyObsahu) }, 400);
+    /* Čeština v jazykové verzi (C7, K48-N1, J. V. 18. 11. 2026): smlouva
+     * s podílem českých odstavců nad mez se nezveřejní; nabídka a ostatní
+     * projdou s upozorněním v odpovědi (`varovani`). */
+    const cestina = /_[a-z]{2}$/.test(t.typ) ? g.sablonaCestinaKontrola(t.typ, await g.sablonaOdstavce(data)) : null;
+    if (cestina && cestina.zabrana) return json({ ok: false, chyba: cestina.zabrana, podilCestiny: cestina.podil }, 400);
     const otisk = g.sablonaOtisk(data);
     const platna = g.sablonaPlatna(rej, t.typ);
     /* Jazyková verze nese otisk české šablony, ze které vznikla (#348).
@@ -115,7 +120,8 @@ export default async (req) => {
      * rejstřík ukazovat na soubor, který neexistuje. */
     await s.zapis(g.sablonaKlicSouboru(t.typ, verze), { nazev: String(t.nazev), data });
     await s.zapis('rejstrik', novy);
-    return json({ ok: true, typ: t.typ, verze, otisk });
+    return json(Object.assign({ ok: true, typ: t.typ, verze, otisk },
+      cestina && cestina.varovani ? { varovani: cestina.varovani, podilCestiny: cestina.podil } : {}));
   }
 
   /* VRÁTIT STARŠÍ VERZI (#349, 24. 9. 2026). Stará verze se nepřepisuje ani
@@ -139,6 +145,11 @@ export default async (req) => {
     const vadyVracene = await g.sablonaObsahVady(String(soubor.data));
     if (vadyVracene.length)
       return json({ ok: false, chyba: 'Verzi ' + meta.verze + ' nejde vrátit. ' + g.sablonaObsahVadyText(vadyVracene) }, 400);
+    /* C7: ani vrácením nejde zveřejnit smlouvu, která je z velké části česky. */
+    if (/_[a-z]{2}$/.test(t.typ)) {
+      const c = g.sablonaCestinaKontrola(t.typ, await g.sablonaOdstavce(String(soubor.data)));
+      if (c.zabrana) return json({ ok: false, chyba: 'Verzi ' + meta.verze + ' nejde vrátit. ' + c.zabrana }, 400);
+    }
     const novy = g.sablonyZverejni(rej, {
       typ: t.typ, nazev: meta.nazev, otisk: meta.otisk, zdrojOtisk: meta.zdrojOtisk,
       velikost: meta.velikost, kdo: relace.email, kdy: new Date().toISOString(),

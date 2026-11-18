@@ -7,12 +7,57 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "41bbe99e",
-  "verze": "v18.11.6",
+  "sha": "755062dd",
+  "verze": "v18.11.7",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 222,
+ "test_navic_commitu": 250,
  "v_testu_ne_v_main": [
+  {
+   "id": "645",
+   "typ": "ukol",
+   "nazev": "NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami",
+   "alias": [
+    "NS"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "632",
+   "typ": "ukol",
+   "nazev": "Ceník a termíny firmy v testu srovnané podle main — ověřit v kole 49",
+   "alias": [
+    "B0.7",
+    "B6",
+    "K37-N6",
+    "K38-I2"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "618",
+   "typ": "ukol",
+   "nazev": "Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs",
+   "alias": [
+    "B4",
+    "C8",
+    "B0.9",
+    "K39-I1",
+    "K38-I1"
+   ],
+   "verze": "v18.11.7"
+  },
+  {
+   "id": "615",
+   "typ": "nalez",
+   "nazev": "Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (C7: výroba jazykové verze z češtiny zrušena, kontrola podílu češtiny)",
+   "alias": [
+    "K48-N1",
+    "B1",
+    "C7"
+   ],
+   "verze": "v18.11.7"
+  },
   {
    "id": "614",
    "typ": "nalez",
@@ -202,7 +247,7 @@
    "verze": "v12.11.1",
    "kolo": "40",
    "stav": "opraveno v testu (v12.11.1), v main ne",
-   "cekaNa": "J. V.: ověřit rozdíly cen main × test a dát pokyn ke sloučení do main (rychlá cesta)"
+   "cekaNa": "J. V.: pokyn ke sloučení do main (kolo 49 18. 11.: test_k40_celni_sklo nad test 75/0, nad main 47/28; ceny main × test jinak shodné)"
   }
  ],
  "ceka_na_jv": [
@@ -268,18 +313,7 @@
     "K40-N1"
    ],
    "verze": "v12.11.1",
-   "cekaNa": "ověřit rozdíly cen main × test a dát pokyn ke sloučení do main (rychlá cesta)"
-  },
-  {
-   "id": "615",
-   "typ": "nalez",
-   "nazev": "Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (blokuje dávku C7 a sloučení do main)",
-   "alias": [
-    "K48-N1",
-    "B1",
-    "C7"
-   ],
-   "cekaNa": "pokyn ke spuštění pojistky jazyka SoD (doporučeno udělat)"
+   "cekaNa": "pokyn ke sloučení do main (kolo 49 18. 11.: test_k40_celni_sklo nad test 75/0, nad main 47/28; ceny main × test jinak shodné)"
   },
   {
    "id": "616",
@@ -300,19 +334,6 @@
     "B0.1"
    ],
    "cekaNa": "ruční zkouška víc šachet na testu; rozhodnutí odloženo do 25. 11. 2026"
-  },
-  {
-   "id": "618",
-   "typ": "ukol",
-   "nazev": "Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs",
-   "alias": [
-    "B4",
-    "C8",
-    "B0.9",
-    "K39-I1",
-    "K38-I1"
-   ],
-   "cekaNa": "stav TEST sady prověří kolo 49 (J. V. 18. 11.: něco obnovoval); nástroj dorovnat dávkou C8"
   },
   {
    "id": "619",
@@ -443,15 +464,33 @@
    "typ": "ukol",
    "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
    "cekaNa": "nahrát upravený skill (mimo repo)"
+  },
+  {
+   "id": "651",
+   "typ": "ukol",
+   "nazev": "Ověřit SoD u víc šachet a slevy v EUR (L3) na testu",
+   "alias": [
+    "K49-I7"
+   ],
+   "cekaNa": "souhlas se zápisem na test pro testovací sezení (podle CLAUDE.md smí automat test jen číst)"
+  },
+  {
+   "id": "652",
+   "typ": "ukol",
+   "nazev": "Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích",
+   "alias": [
+    "K49-I5"
+   ],
+   "cekaNa": "zadá při nasazení do main"
   }
  ],
  "ceka_na_jv_odlozene": 11,
  "nehotove_podle_kdo": {
   "J. V.": 42,
   "kolega": 5,
-  "koordinace": 10,
+  "koordinace": 14,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 62
+ "nehotovych": 66
 }

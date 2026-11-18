@@ -168,6 +168,25 @@ test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka
   test('krátké německé řádky (přehlásky) nejsou čeština', sablonaJazykOdhad(deKratke).jazyk === 'de', sablonaJazykOdhad(deKratke));
   test('odstavce jen se symboly a čísly se nezařadí', sablonaJazykOdhad(['{{CENA}}', '12 345', 'IČ 123']).zarazeno === 0);
   test('prázdný vstup nespadne', sablonaJazykOdhad(null).jazyk === null);
+  /* C7 (K48-N1): podíl odstavců, které jsou zjevně česky */
+  const F = require('./fixtury/sablony_cestina.js');
+  test('C7 podíl: přeložená DE smlouva (adresa s diakritikou) pod mezí', sablonaJazykPodil(F.DE_PRELOZENA, 'de') < SABLONA_CESTINA_MEZ,
+    sablonaJazykPodil(F.DE_PRELOZENA, 'de'));
+  test('C7 podíl: DE z české verze přes 70 %', sablonaJazykPodil(F.DE_Z_CESTINY, 'de') > 0.7, sablonaJazykPodil(F.DE_Z_CESTINY, 'de'));
+  test('C7 podíl: hranice 5 z 15 odstavců = 1/3', Math.abs(sablonaJazykPodil(F.DE_HRANICE, 'de') - 1 / 3) < 1e-9);
+  test('C7 podíl: text po řádcích = pole odstavců', sablonaJazykPodil(F.DE_HRANICE.join('\n'), 'de') === sablonaJazykPodil(F.DE_HRANICE, 'de'));
+  test('C7 podíl: symboly a čísla se nepočítají, prázdno = 0',
+    sablonaJazykPodil(['{{CENA}}', '12 345'], 'de') === 0 && sablonaJazykPodil(null, 'en') === 0);
+  test('C7 podíl: adresa uvnitř německé věty větu českou neudělá',
+    sablonaJazykPodil(['Der Auftraggeber hat seinen Sitz in Praha, Českomoravská 1, und ist für die Baustelle zuständig.'], 'de') === 0);
+  test('C7 mez je 20 %', SABLONA_CESTINA_MEZ === 0.2);
+  const kS = sablonaCestinaKontrola('sod_de', F.DE_HRANICE), kN = sablonaCestinaKontrola('nabidka_de', F.DE_HRANICE);
+  test('C7 kontrola: smlouva nad mezí → zábrana se srozumitelnou větou', /z velké části česky \(33 %/.test(kS.zabrana) && !kS.varovani, kS);
+  test('C7 kontrola: SoD projekce i plná moc jsou smlouvy', !!sablonaCestinaKontrola('sodProj_en', F.DE_Z_CESTINY).zabrana
+    && !!sablonaCestinaKontrola('plnaMoc', F.DE_Z_CESTINY, 'fr').zabrana);
+  test('C7 kontrola: nabídka nad mezí → jen upozornění', !kN.zabrana && /z velké části česky/.test(kN.varovani), kN);
+  test('C7 kontrola: přeložená smlouva projde', !sablonaCestinaKontrola('sod_de', F.DE_PRELOZENA).zabrana);
+  test('C7 kontrola: česká šablona se nekontroluje', sablonaCestinaKontrola('sod', F.DE_Z_CESTINY).podil === 0);
   test('symboly: unikátní a seřazené', sablonaSymboly(['{{B}} a {{A}}', '{{B}}', 'bez']).join() === 'A,B');
   const r = sablonaSymbolyRozdil(['A', 'B', 'C'], ['B', 'C', 'D']);
   test('rozdíl symbolů', r.pribylo.join() === 'D' && r.ubylo.join() === 'A', r);
@@ -222,6 +241,7 @@ test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka
       hlaska: t => { S.dialogy.push(String(t)); return Promise.resolve(); },
       docxTextSablony: async data => (TEXTY[new Uint8Array(data)[4]] || []).slice(),
       docxPrelozSablonu: async (data, lang, stat) => {
+        S.preklady = (S.preklady || 0) + 1;            // C7: průvodce ani detail ji volat nesmí
         Object.assign(stat, { procenta: 95, chybi: [], symbolove: [] });
         const k = { en: 2, de: 3, fr: 4 }[lang];
         return { arrayBuffer: async () => new Uint8Array([80, 75, 3, 4, k, 99]).buffer };
@@ -317,8 +337,10 @@ test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka
     /* d) nová čeština (jiný soubor) dál zveřejní češtinu i jazyky postaru */
     const S4 = prostredi();
     S4.ctx.__CZ2 = soubor(1, 'Sablona_SOD_REALIZACE_v4.docx', 7);
+    S4.ctx.__EN = EN;
     await S4.run(`sablPruvodceStart('sod', __CZ2)`);
     await S4.run('sablPruvodceDal()');
+    await S4.run(`sablPruvodceVlastni('en', __EN)`);    // C7: jazyk jen nahraným souborem
     S4.run('SABL_UI.pruvodce.vybrane = { en: true }');
     const html4 = S4.run('sablPruvodceHtml()');
     await S4.run('sablPruvodceZverejni()');
@@ -327,17 +349,69 @@ test('sablonaPlatna snese chybějící rejstřík', sablonaPlatna(null, 'nabidka
       /Zveřejnit najednou: čeština \+ EN/.test(html4) && S4.volani.map(v => v.typ).join() === 'sod,sod_en'
       && sablonaPlatna(rej4, 'sod').verze === 3 && sablonaMutaceStav(rej4, 'sod', 'en').stav === 'aktualni', S4.volani);
 
-    /* e) druhá cesta: „Nahrát doladěný soubor" u jazyka ve stavu „chybí" */
+    /* e) druhá cesta: „Nahrát přeložený soubor" u jazyka ve stavu „chybí" */
     const S5 = prostredi();
     const det = S5.run(`SABL_UI.vybrany = 'sod'; sablDetailHtml(sablRej(), true)`);
     const radekFr = (det.split('<b>Francouzština</b>')[1] || '').split('</div>')[0] + (det.split('<b>Francouzština</b>')[1] || '').split('</span></div>')[0];
-    test('#474 detail: u jazyka „chybí" je tlačítko „Nahrát doladěný soubor" (povolené)',
-      /<button class="mini"  onclick="sablNahrajJazyk\('sod','fr'\)">Nahrát doladěný soubor<\/button>/.test(radekFr), radekFr.slice(0, 600));
+    test('#474 detail: u jazyka „chybí" je tlačítko „Nahrát přeložený soubor" (povolené)',
+      /<button class="mini"  onclick="sablNahrajJazyk\('sod','fr'\)">Nahrát přeložený soubor<\/button>/.test(radekFr), radekFr.slice(0, 600));
     S5.ctx.__FR = FR;
     await S5.run(`sablNahrajJazyk('sod', 'fr', __FR)`);
     test('#474 detail: doladěný FR soubor se zveřejní k platné češtině v2',
       S5.volani.length === 1 && S5.volani[0].typ === 'sod_fr' && S5.volani[0].zdrojOtisk === S5.czOtisk
       && sablonaMutaceStav(S5.ctx.ONLINE_STAV.sablonyRejstrik, 'sod', 'fr').stav === 'aktualni', S5.volani);
+
+    /* f) C7 (K48-N1, J. V. 18. 11. 2026): výroba jazykové verze z češtiny
+     * je pryč u všech typů a nahraný soubor projde kontrolou češtiny.
+     * Před opravou: v detailu „Vyrobit z češtiny", průvodce překládal sám
+     * (docxPrelozSablonu 3×), DE s 33 % češtiny se u smlouvy zveřejnila. */
+    {
+      const F = require('./fixtury/sablony_cestina.js');
+      TEXTY[5] = F.DE_HRANICE; TEXTY[6] = F.DE_Z_CESTINY; TEXTY[7] = F.DE_PRELOZENA;
+      const S6 = prostredi();
+      const detaily = ['nabidka', 'nabidkaProj', 'sod', 'sodProj', 'plnaMoc']
+        .map(t => S6.run(`SABL_UI.vybrany = '${t}'; sablDetailHtml(sablRej(), true)`)).join('\n');
+      test('C7: detail žádného typu šablony nemá „Vyrobit / Přegenerovat z češtiny"',
+        !/sablPregeneruj|z češtiny<\/button>/.test(detaily), (detaily.match(/<button[^>]*>[^<]*češtin[^<]*/g) || []).join(' | '));
+      test('C7: funkce výroby z češtiny v UI není', S6.run('typeof sablPregeneruj') === 'undefined');
+      S6.ctx.__CZ2 = soubor(1, 'Sablona_SOD_REALIZACE_v6.docx', 8);
+      await S6.run(`sablPruvodceStart('sod', __CZ2)`);
+      await S6.run('sablPruvodceDal()');
+      const html6 = S6.run('sablPruvodceHtml()');
+      test('C7: průvodce jazykové verze nepřekládá (žádný docxPrelozSablonu, žádná mutace)',
+        !S6.preklady && ['en', 'de', 'fr'].every(l => !S6.run(`SABL_UI.pruvodce.mutace['${l}']`)), { preklady: S6.preklady });
+      test('C7: karta jazyka nabízí jen „Nahrát přeložený soubor"',
+        (html6.match(/Nahrát přeložený soubor/g) || []).length === 3 && !/Vrátit překlad aplikace|Stáhnout a doladit/.test(html6));
+      await S6.run('sablPruvodceZverejni()');
+      test('C7: bez nahraného souboru se zveřejní jen čeština', S6.volani.map(v => v.typ).join() === 'sod', S6.volani);
+
+      /* kontrola češtiny při nahrání k jazyku: smlouva odmítnuta, nabídka s upozorněním */
+      const S7 = prostredi();
+      S7.ctx.__HR = soubor(5, 'Sablona_SOD_REALIZACE_v5_DE_hranice.docx');
+      S7.ctx.__ZC = soubor(6, 'Sablona_SOD_REALIZACE_v5_DE_z_cestiny.docx');
+      S7.ctx.__OK = soubor(7, 'Sablona_SOD_REALIZACE_v5_DE.docx');
+      await S7.run(`sablNahrajJazyk('sod', 'de', __HR)`);
+      test('C7: SoD DE s 33 % češtiny se nezveřejní a hláška řekne proč',
+        !S7.volani.length && S7.dialogy.some(t => /z velké části česky \(33 %/.test(t) && /Nahrát přeložený soubor/.test(t)), S7.dialogy);
+      await S7.run(`sablNahrajJazyk('sod', 'de', __ZC)`);
+      test('C7: SoD DE vyrobená z české verze se nezveřejní', !S7.volani.length, S7.volani);
+      await S7.run(`sablNahrajJazyk('sod', 'de', __OK)`);
+      test('C7: přeložená SoD DE se zveřejní', S7.volani.map(v => v.typ).join() === 'sod_de', S7.volani);
+      S7.run(`ONLINE_STAV.sablonyRejstrik = sablonyZverejni(ONLINE_STAV.sablonyRejstrik, { typ: 'nabidka', nazev: 'cn.docx',
+        otisk: sablonaOtisk(sablonaAbNaB64(__ZC.data)), kdo: 's', kdy: '2026-11-01' })`);
+      S7.dialogy.length = 0;
+      await S7.run(`sablNahrajJazyk('nabidka', 'de', __HR)`);
+      test('C7: nabídka (CN) s 33 % češtiny projde jen s upozorněním',
+        S7.volani.map(v => v.typ).join() === 'sod_de,nabidka_de' && S7.dialogy.some(t => /Upozornění:[\s\S]*z velké části česky/.test(t)), S7.dialogy);
+      /* stejná pojistka ve vlastním souboru průvodce */
+      const S8 = prostredi();
+      S8.ctx.__CZ3 = soubor(1, 'Sablona_SOD_REALIZACE_v7.docx', 9); S8.ctx.__HR = S7.ctx.__HR;
+      await S8.run(`sablPruvodceStart('sod', __CZ3)`);
+      await S8.run('sablPruvodceDal()');
+      await S8.run(`sablPruvodceVlastni('de', __HR)`);
+      test('C7: průvodce odmítne vlastní SoD DE s češtinou nad mezí',
+        !S8.run(`SABL_UI.pruvodce.mutace.de`) && /z velké části česky/.test(S8.run(`SABL_UI.pruvodce.vlastniChyba.de`) || ''));
+    }
 
     console.log('\nPASS=' + passes + ' FAIL=' + fails);
     process.exit(fails ? 1 : 0);
