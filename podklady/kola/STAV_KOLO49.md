@@ -98,6 +98,31 @@ J. V.: 6. řádek o 5leté záruce zůstává, FR doplnil na testu. Ověřeno je
   obsahově souhlasí). K49-I5 na testu vyřešeno (řádky srovnány); na main se zadá při nasazení. Pokud J. V. chce v nabídce právě
   znění „5 let záruka na celé dílo“, je to změna kódu (výjimka z filtru), ne dat.
 
+## Doplněk: K49-I7 (#651) — L3 víc šachet v EUR se slevou (zápis na test schválil J. V. v chatu 18. 11.)
+
+**Nová TEST zakázka:** `TEST - 2026 - OPR - CN - 9949 - K49` (soubor `TEST-2026-OPR-CN-9949-K49.json`, akce „TEST K49 – víc šachet EUR“,
+smyšlený zákazník „TEST K49 Zákazník s.r.o.“, adresa Zkušební 49). Zadání šachty je převzaté z TEST 8726-K36-D30b (zahraniční řada).
+Varianty:
+- **.1**: 1 šachta bez slevy. Vznikla omylem: první skript narazil na režim jen ke čtení, šachtu a slevu nezapsal a CN EN se zámkem se vytiskla. Necháno jako doklad.
+- **.2**: klon, **2 šachty, sleva 3 % (schváleno automaticky)**, CN EN vytištěná se zámkem (`…K49.2`).
+
+Zápisy: jen `POST /api/zakazky` na testu (uložení a zámky). Pipedrive (`/api/pd_*`) i vše mimo test byly blokované a nic neodešlo.
+**TEST sada má teď 316 zakázek „TEST -“.**
+
+SoD v6 z varianty .2 (`sablonaProTisk` → `sod` v5 / `sod_en`, `sod_de` v3, vstup `vzTiskVstup`), porovnáno s tištěnou CN EN (.2) a s CN CZ:
+
+| kontrola | EN (EUR) | DE (EUR) | CZ (Kč) |
+|---|---|---|---|
+| řádky šachet „Šachta N, vč. můstků – ks – částka“ = řádky šachet nabídky | ✅ 2/2 | ✅ 2/2 | ✅ 2/2 |
+| řádek slevy („Discount / Rabatt / Sleva – − …“) = sleva nabídky | ✅ | ✅ | ✅ |
+| cena díla = součet šachet − sleva | ✅ | ✅ | ✅ |
+| cena díla = TOTAL PRICE (bez DPH) nabídky | ✅ | ✅ | — |
+
+Měna jde podle jazyka tisku: české dokumenty jsou v Kč (nabídka CZ i SoD CZ), cizojazyčné v EUR. **L3 splněno.**
+
+Postřeh k K49-I6: v tištěné CN EN se u první šachty vypíše přeložené „Shaft 1“, u druhé „Šachta 2“. SoD EN/DE mají „Šachta 1/2“
+v obou řádcích. Výchozí název šachty se tedy překládá nejednotně. Nález doplněn ke K49-I6.
+
 ## Nálezy
 
 | ID | co | závažnost |
@@ -105,10 +130,10 @@ J. V.: 6. řádek o 5leté záruce zůstává, FR doplnil na testu. Ověřeno je
 | K49-I1 | Přihlášení `KNG_MAIN_*` na ostrý web selhalo („Nesprávný e-mail nebo heslo.“) | vyřešeno (J. V. opravil 18. 11.) |
 | K49-I2 | `overit_sod.mjs` 5/51: zastaralá očekávání (v1 šablona, před C3) — vada testu, ne aplikace | nízká |
 | K49-I3 | Na testu nebyla zveřejněná šablona plné moci | vyřešeno (J. V. zveřejnil 18. 11., plnaMoc v2) |
-| K49-I6 | Výchozí název šachty „Šachta N“ zůstává v EN nabídce česky | nízká, k rozhodnutí |
+| K49-I6 | Výchozí název šachty „Šachta N“ se v EN tisku překládá nejednotně (CN EN: „Shaft 1“, ale „Šachta 2“; SoD EN/DE: „Šachta 1/2“) | nízká |
 | K49-I8 | Úvodní věta správy šablon „…ze kterého se vyrábějí jazykové verze“ je po C7 zastaralá | nízká (text UI) |
 | K49-I9 | SoD projekce EN/DE/FR chybí; popisek „tiskne se česky“ vs. zábrana jazyka smlouvy — ověřit | informace |
-| K49-I7 | L3 u víc šachet a sleva v EUR neověřeny — jediná TEST zakázka s víc šachtami je VZ bez odeslané nabídky | koordinace navrhla založit „TEST K49 – víc šachet EUR“ a vytisknout CN. To je zápis do testu, který CLAUDE.md automatu zakazuje, proto čeká na souhlas J. V. |
+| K49-I7 | L3 u víc šachet a sleva v EUR | ✅ vyřešeno: zakázka TEST - 2026 - OPR - CN - 9949 - K49 (.2), šachty, sleva i celkem v SoD CZ/EN/DE sedí s nabídkou |
 | K49-I5 | Termíny realizace firmy: test má proti main 6. řádek (záruka 5 let) | vyřešeno na testu (J. V.: zůstává, FR doplněno); na main se zadá při nasazení. Řádek se v nabídce netiskne (filtr vět o záruce). |
 | K49-I4 | Pevná sada `porovnani_sada.js` nemá případ přepnutí typu šachty nebo zasklení (K40-N1 nevidí) | návrh doplnit |
 
