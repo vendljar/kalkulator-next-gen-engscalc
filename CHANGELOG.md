@@ -10,7 +10,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ## v18.11.5 — SL #589 řádek slevy v rozpisu šachet ve SoD, #609 SoD realizace v6 se žlutými místy, #610 kontrola Chybí / Nepovinné, větev claude/sl-sod-sleva
 
-Nad `8462aea` (integrace = test v12.11.7), sloučeno s integrací `dcb1678` (v18.11.3, + S3 #611). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje
+Nad `8462aea` (integrace = test v12.11.7), sloučeno s integrací `9bd6dc8` (v18.11.4: + S3 #611, S7 #612). Rozhodnutí J. V. 16. 11. 2026 („ano, doplň řádek slevy“). Verzi přečísluje
 koordinace. Na webech, Disku ani v Pipedrive nic.
 
 - **Rozpis šachet ve SoD sedí na cenu díla dle nabídky:** `{{SACHTY_SOD_ROZPIS}}` (víc šachet, šablona v5) končí
@@ -44,6 +44,29 @@ koordinace. Na webech, Disku ani v Pipedrive nic.
   upozornění. Změněné očekávání `src/test_sod_tecky.js` S (dvojtečka → „Chybí:").
 - Testy: `test_sod_v5.js` E, F (+ D se skutečnými v6), `test_sod_tecky.js` S2, L1, L2, K (skutečné SoD projekce v4 CZ/EN,
   plná moc, SoD realizace v6), `test_vs_kontroly.js` H; mutace [SL] 20/20.
+## v18.11.4 — S7: startovní podklady (CLAUDE.md, PREDAVKA, log rozhodnutí), větev claude/s7-podklady
+
+Nad integrací `5e21f89` (v18.11.2), sloučeno s integrací `dcb1678` (v18.11.3, S3 #611). Kód aplikace beze změny. Podle návrhu režie vývoje
+(`podklady/NAVRH_REZIE_2026-11-18.md`, oddíl S7) a rozhodnutí J. V. 18. 11. 2026.
+
+- **CLAUDE.md přepsán podle schváleného textu:** Větve (integrace `claude/integrace-…`, do test koordinace po zeleném kole,
+  do main jen na pokyn J. V., main předkem integrace, nejvýš 4 sezení, poradce), Rychlá cesta pro vady ceny a dokumentu (rovnou do test, změna zadání J. V. 18. 11.),
+  Kdo rozhoduje (svěřeny jen testy, harnessy a nástroje kola; otázky průběžně s doporučenou variantou; kolega,
+  kterého jmenuje J. V., jen na test; automat z testengscalc jen čte), Předávací soubor, Tagy (jen stav pro main, NOVINKY.md), Testy (stupně kol, porovnání sestavení S3
+  po dávce jako stupeň 1, STAV kol v `podklady/kola/`). Roadmapa #612. Vypuštěny `test-draft` jako integrační větev, výjimka `k16-nalezy` a datované závorky.
+- **PREDAVKA.md rozdělena:** živý stav 8,5 kB; 557 kB předávek beze ztráty do `podklady/predavky/2026-09.md`,
+  `2026-10.md`, `2026-11.md` (ověřeno řádek po řádku). Na konci PREDAVKA seznam „co bylo přesunuto kam“.
+- **Nové podklady:** `podklady/ROZHODNUTI_LOG.md` (datovaná rozhodnutí J. V. z CLAUDE.md a předávek, včetně 18. 11.),
+  `podklady/SVERENA_ROZHODNUTI.md` (prázdná šablona), `podklady/kola/README.md`,
+  `podklady/NAVRH_SKILL_TESTOVACI_PROCEDURA.md` (osnova skillu z návrhu), kopie návrhu režie.
+- **Krok `staticke` (8 kontrol s S3):** `nastroje/kontrola_podkladu.sh` — PREDAVKA.md nad 15 kB = chyba, `origin/main`
+  není předkem HEAD = upozornění; `--pojistka` doloží obojí na podvržených datech.
+- **`release_odkaz.py --chybejici`** hlásí jen verze, které prošly do main (verze.txt v historii origin/main);
+  verze jen v testu nebo integraci nehlásí. Test `src/test_release_odkaz.js` 27/0 (před úpravou nástroje 3 FAIL).
+
+**Celé kolo nad fd1c0b1 VŠE ZELENÉ (bez mutací, 39 min):** sady 464/0/7 přeskočeno, hodiny +400 dní 376/0/1,
+statické 8/8 (kód aplikace beze změny, mutace nejsou nutné).
+
 ## v18.11.3 — S3 #611: porovnání dvou sestavení nad pevnou sadou kalkulací, větev claude/s3-porovnani
 
 Nad `claude/integrace-16-10` `5e21f89` (v18.11.2). Návrh režie 18. 11. 2026, oddíl S3, rozhodnutí J. V.: stupně kol

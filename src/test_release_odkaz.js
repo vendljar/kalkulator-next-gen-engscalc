@@ -4,7 +4,9 @@
  * Ověřuje na umělém CHANGELOG: odkaz má tag, cíl, titulek a URL-kódovaný
  * `body`; popis sebere VŠECHNY oddíly verze (paralelní větve), ne cizí
  * verzi; nese čísla nálezů a výsledek kola; řádek s částkou vynechá;
- * neplatná verze / SHA se odmítne; --upravit vrátí odkaz na úpravu. */
+ * neplatná verze / SHA se odmítne; --upravit vrátí odkaz na úpravu;
+ * --chybejici hlásí jen verze, které prošly do main (J. V. 18. 11. 2026:
+ * tag a release jen pro stav, který jde do main). */
 const { execFileSync, spawnSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -32,7 +34,7 @@ fs.writeFileSync(CL, [
   '- **B099 — cizí verze.** Nesmí se objevit.', '',
 ].join('\n'));
 
-const py = (args, tagy) => spawnSync('python3', ['-I', NASTROJ, '--changelog', CL, ...args], { encoding: 'utf-8', env: Object.assign({}, process.env, { KNG_TAGY: tagy === undefined ? 'v14.10.0' : tagy }) });
+const py = (args, tagy, vMain) => spawnSync('python3', ['-I', NASTROJ, '--changelog', CL, ...args], { encoding: 'utf-8', env: Object.assign({}, process.env, { KNG_TAGY: tagy === undefined ? 'v14.10.0' : tagy, KNG_VERZE_MAIN: vMain === undefined ? '14.10.1,14.10.2' : vMain }) });
 const SHA = 'a'.repeat(40);
 
 const r = py(['14.10.2', SHA]);
@@ -70,6 +72,12 @@ test('existující tag: odkaz na nový release nevznikne (kód 3)', dvoji.status
 test('existující tag: odkaz na vydaný release a jeho úpravu', dvoji.stdout.includes('/releases/tag/v14.10.2') && dvoji.stdout.includes('/releases/edit/v14.10.2'), dvoji.stdout);
 const chyb = py(['--chybejici'], 'v14.10.1');
 test('--chybejici: vypíše verzi bez tagu, ne otagovanou', chyb.status === 0 && chyb.stdout.includes('v14.10.2') && !chyb.stdout.includes('v14.10.1'), chyb.stdout);
+// S7 (J. V. 18. 11. 2026): verze jen v testu nebo integraci (tu v14.10.2) se nehlásí, i když tag nemá.
+const jenMain = py(['--chybejici'], '', '14.10.1');
+test('--chybejici: hlásí verzi, která prošla do main', jenMain.status === 0 && /: v14\.10\.1\b/.test(jenMain.stdout), jenMain.stdout);
+test('--chybejici: verzi jen v testu nebo integraci nehlásí', !jenMain.stdout.includes('v14.10.2'), jenMain.stdout);
+const nicVMain = py(['--chybejici'], '', '');
+test('--chybejici: nic v main → žádná', nicVMain.status === 0 && /: žádná/.test(nicVMain.stdout), nicVMain.stdout);
 
 // Skutečný CHANGELOG: poslední verze se dá vyrobit a popis se vejde.
 const realny = spawnSync('python3', ['-I', NASTROJ, fs.readFileSync(path.join(__dirname, '..', 'verze.txt'), 'utf-8').trim(), '--jen-text'], { encoding: 'utf-8' });

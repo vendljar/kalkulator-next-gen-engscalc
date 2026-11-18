@@ -27,7 +27,8 @@
 #                  a tajemství mimo povolený seznam (nastroje/kontrola_udaju.py),
 #                  výběr sloučených větví ke smazání (nastroje/test_sloucene_vetve.sh),
 #                  hook pre-push s kontrolou údajů (nastroje/test_pre_push.sh, SEC-M1),
-#                  test nástroje porovnání sestavení (nastroje/test_porovnej_sestaveni.sh, S3)
+#                  test nástroje porovnání sestavení (nastroje/test_porovnej_sestaveni.sh, S3),
+#                  PREDAVKA.md do 15 kB (chyba), main předkem HEAD (upozornění; S7)
 #   porovnani      VOLITELNÝ (jen s --proti nebo --jen porovnani; S3, 18. 11. 2026):
 #                  nastroje/porovnej_sestaveni.sh <ref> . — pevná sada kalkulací
 #                  nad sestavením <ref> (výchozí origin/test) a nad pracovní kopií;
@@ -188,7 +189,9 @@ staticke() {
   bash nastroje/test_porovnej_sestaveni.sh || chyb=$((chyb + 1))
   echo "— únik mezi zákazníky: generátory dokumentů bez dalsiZakaznici (nastroje/kontrola_vz_unik.sh, VZ-E2 #601)"
   { bash nastroje/kontrola_vz_unik.sh && bash nastroje/kontrola_vz_unik.sh --pojistka; } || chyb=$((chyb + 1))
-  echo "STATICKE_KONTROLY: $((7 - chyb)) z 7 prošly"
+  echo "— startovní podklady: PREDAVKA.md do 15 kB, main předkem HEAD (nastroje/kontrola_podkladu.sh, S7)"
+  { bash nastroje/kontrola_podkladu.sh && bash nastroje/kontrola_podkladu.sh --pojistka; } || chyb=$((chyb + 1))
+  echo "STATICKE_KONTROLY: $((8 - chyb)) z 8 prošly"
   return "$chyb"
 }
 # S3 (18. 11. 2026): pevná sada kalkulací nad <ref> × pracovní kopie (.).
