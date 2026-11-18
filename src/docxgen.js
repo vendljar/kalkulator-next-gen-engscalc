@@ -1306,11 +1306,43 @@ function docxBezPrazdnych(ph, sada) {
  * `nevyplnene`) beze změny. */
 const DOCX_BEH_RE = /<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g;
 const DOCX_ZLUTA = '<w:highlight w:val="yellow"/>';
-const DOCX_RPR_ZA_HIGHLIGHT = /<w:(?:u|effect|bdr|shd|fitText|vertAlign|rtl|cs|em|lang|eastAsianLayout|specVanish|oMath|rPrChange)\b/;
+/* Prvky w:rPr, které ve schématu stojí ZA w:highlight — i rozšíření jiných
+ * jmenných prostorů (w14:*, w15:*…), ta jsou vždy na konci (M3). */
+const DOCX_RPR_ZA_HIGHLIGHT = /<w:(?:u|effect|bdr|shd|fitText|vertAlign|rtl|cs|em|lang|eastAsianLayout|specVanish|oMath|rPrChange)\b|<(?!w:)[A-Za-z][A-Za-z0-9]*:/;
 function docxRPrZluta(rPr, zluta) {
   let v = (rPr || '').replace(/<w:rPr\/>/, '').replace(/^\s*<w:rPr>([\s\S]*?)<\/w:rPr>\s*$/, '$1').replace(/<w:highlight\b[^>]*\/>/g, '');
   if (zluta) { const z = v.search(DOCX_RPR_ZA_HIGHLIGHT); v = z >= 0 ? v.slice(0, z) + DOCX_ZLUTA + v.slice(z) : v + DOCX_ZLUTA; }
   return v ? '<w:rPr>' + v + '</w:rPr>' : '';
+}
+/* ROZDĚLENÍ BĚHU PO SYMBOLECH (M1, dorevize poradce 18. 11.). Běh, jehož
+ * obsah tvoří jen texty <w:t> a prázdné prvky (tabulátor, zalomení…), se
+ * rozloží na běhy: každý celý symbol {{X}} vlastní běh (vlastnosti
+ * `rPrSym(X)`), pevný text a každý prázdný prvek běh s vlastnostmi `rPrText`;
+ * pořadí obsahu zůstane. Symbol rozdělený mezi <w:t> nebo běhy, nebo jiný
+ * obsah (obrázek, pole, vnořené prvky) → null (nedělí se). Používá ho
+ * generátor (žluté tečky) i nástroj šablony SoD realizace v6. */
+const DOCX_BEH_PRAZDNE = /^<w:(?:tab|br|cr|noBreakHyphen|softHyphen|lastRenderedPageBreak)(?:\s[^>]*)?\/>$/;
+function docxBehRozdel(beh, rPrText, rPrSym) {
+  const ot = beh.match(/^<w:r(?:\s[^>]*)?>/)[0];
+  const zb = beh.slice(ot.length, -'</w:r>'.length);
+  const rm = zb.match(/^\s*(?:<w:rPr\/>|<w:rPr>[\s\S]*?<\/w:rPr>)/);
+  let zbytek = zb.slice(rm ? rm[0].length : 0);
+  const casti = [];
+  const re = /^\s*(<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:t\/>|<w:[A-Za-z]+(?:\s[^>]*)?\/>)/;
+  while (zbytek.trim()) {
+    const m = zbytek.match(re);
+    if (!m) return null;
+    zbytek = zbytek.slice(m[0].length);
+    if (m[2] !== undefined) {
+      const t = m[2];
+      const kusy = t.split(/(\{\{[A-Z0-9_]+\}\})/);
+      if (kusy.some((k, i) => i % 2 === 0 && /\{\{|\}\}/.test(k))) return null;   // kus symbolu
+      kusy.forEach((k, i) => { if (k !== '') casti.push(i % 2 ? { sym: k.slice(2, -2), xml: '<w:t xml:space="preserve">' + k + '</w:t>' } : { xml: '<w:t xml:space="preserve">' + k + '</w:t>' }); });
+    } else if (/^<w:t\/>$/.test(m[1])) continue;
+    else if (DOCX_BEH_PRAZDNE.test(m[1])) casti.push({ xml: m[1] });
+    else return null;
+  }
+  return casti.map(c => ot + (c.sym ? rPrSym(c.sym) : rPrText) + c.xml + '</w:r>').join('');
 }
 function docxPodbarveniTecek(xml, sada) {
   const nevypl = [];
@@ -1326,12 +1358,9 @@ function docxPodbarveniTecek(xml, sada) {
     const rm = zb.match(/^\s*(?:<w:rPr\/>|<w:rPr>[\s\S]*?<\/w:rPr>)/);
     const rPr = rm ? rm[0] : '', zbytek = zb.slice(rPr.length);
     if (!tu.length) return /<w:highlight\b/.test(rPr) ? ot + docxRPrZluta(rPr, false) + zbytek + '</w:r>' : beh;
-    const tm = zbytek.match(/^\s*<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>\s*$/);
-    if (!tm || tu.some(u => u[0] < pos || u[1] > kon)) return ot + docxRPrZluta(rPr, true) + zbytek + '</w:r>';   // symbol přes víc běhů / jiný obsah: běh žlutý celý
-    return tm[1].split(/(\{\{[A-Z0-9_]+\}\})/).filter(x => x !== '').map(c => {
-      const k = (c.match(/^\{\{([A-Z0-9_]+)\}\}$/) || [])[1];
-      return ot + docxRPrZluta(rPr, !!(k && sada.has(k))) + '<w:t xml:space="preserve">' + c + '</w:t></w:r>';
-    }).join('');
+    const roz = tu.some(u => u[0] < pos || u[1] > kon) ? null
+      : docxBehRozdel(beh, docxRPrZluta(rPr, false), k => docxRPrZluta(rPr, sada.has(k)));
+    return roz || (ot + docxRPrZluta(rPr, true) + zbytek + '</w:r>');   // symbol přes víc běhů / jiný obsah: běh žlutý celý
   });
 }
 function docxTecky(xml, sada, zapis) {
@@ -1756,7 +1785,7 @@ async function docxXmlVady(arrayBuffer) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { docxPodbarveniTecek, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
+  module.exports = { docxPodbarveniTecek, docxBehRozdel, docxRPrZluta, docxStudieBezZamereni, docxDpzBezZamereni, DOCX_DPZ_STAVAJICI, docxZnackyBloku, docxVyvazene, docxVBunce, docxRadkyNavic, docxObsahZkontroluj, rozvinOdstavceZaRadek, DOCX_ODSTAVCE_ZA_RADEK, rozvinRadkyZaRadek, DOCX_RADKY_ZA_RADEK, docxTextSablony, docxXmlVady, xmlStrukturaVada, docxVyplnSablonu, nahradPlaceholdery, expandujPriplatky, zipPrecti, zipZapis, crc32,
     odstranPrazdneTsRadky, docxSmyckaSachet, DOCX_CENA_CASTI, DOCX_TECKY, docxTecky, docxTeckySada, jePrazdnaHodnota, klicePlaceholderu, odstranPrazdneBloky, odstranOdstavceSeSymboly, docxZnackyBloku,
     docxVlozObrazky, rozmeryObrazku, dataUrlNaBajty,
     docxDokumentBlob, docxTeloZeSekci, docxSestavBlob, docxPar, docxEsc,

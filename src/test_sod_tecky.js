@@ -66,7 +66,9 @@ const HL = '<w:highlight w:val="yellow"/>';
 const behy = x => x.match(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g) || [];
 const zlute = x => behy(x).filter(b => /<w:highlight\b/.test(b));
 const xmlVadneBehy = x => (x.match(/<w:r[\s>]/g) || []).length !== (x.match(/<\/w:r>/g) || []).length;
-const zluteBezTecek = x => zlute(x).filter(b => b.indexOf(T) < 0).map(b => b.replace(/<[^>]+>/g, ''));
+/* M2 (dorevize poradce 18. 11.): žlutý běh smí nést JEN „……" (nebo prázdný kus rozděleného symbolu) — žádný popisek ani tabulátor */
+const textBehu = b => b.replace(/<w:tab\/>/g, '\t').replace(/<w:br\/>/g, '\n').replace(/<[^>]+>/g, '');
+const zluteBezTecek = x => zlute(x).filter(b => textBehu(b) !== T && textBehu(b) !== '').map(textBehu);
 /* běh, který jsou jen tečky „……" (vygenerované místo; pevné tečkované řádky šablony jsou delší) */
 const teckyBezZlute = x => behy(x).filter(b => b.replace(/<[^>]+>/g, '') === T && !/<w:highlight\b/.test(b)).map(b => b.replace(/<[^>]+>/g, ''));
 const stejne = (a, b) => JSON.stringify((a || []).slice().sort()) === JSON.stringify((b || []).slice().sort());
@@ -256,15 +258,17 @@ FIRMA_POLE.forEach(p => { firma[p.id] = /Kc$|skladne/i.test(p.id) ? '500' : (/em
   let sk = 0;
   const popisChybi = [];
   for (const [typ, jm] of [['sod', 'Sablona_SOD_REALIZACE_v4.docx'], ['sod', 'Sablona_SOD_REALIZACE_v5.docx'], ['sod', 'Sablona_SOD_REALIZACE_v4_EN.docx'],
-    ['sod', 'Sablona_SOD_REALIZACE_v6.docx'], ['sod', 'Sablona_SOD_REALIZACE_v6_EN.docx'],
-    ['sodProj', 'Sablona_SOD_PROJEKCE_v4.docx'], ['sodProj', 'Sablona_SOD_PROJEKCE_v4_EN.docx'], ['plnaMoc', 'Sablona_PLNA_MOC.docx']]) {
+    ['sod', 'Sablona_SOD_REALIZACE_v6.docx'], ['sod', 'Sablona_SOD_REALIZACE_v6_EN.docx'], ['sod', 'Sablona_SOD_REALIZACE_v6_DE.docx'],
+    ['sod', 'Sablona_SOD_REALIZACE_v6_FR.docx'],
+    ['sodProj', 'Sablona_SOD_PROJEKCE_v4.docx'], ['sodProj', 'Sablona_SOD_PROJEKCE_v4_EN.docx'], ['sodProj', 'Sablona_SOD_PROJEKCE_v4_DE.docx'],
+    ['sodProj', 'Sablona_SOD_PROJEKCE_v4_FR.docx'], ['plnaMoc', 'Sablona_PLNA_MOC.docx']]) {
     const f = najdi(jm);
     if (!f) continue;
     sk++;
     const sym = Array.from(await dokumentSymbolySablony(ab(f)));
     if (typ !== 'plnaMoc') sym.filter(k => !/_(?:ZAC|KON)$/.test(k) && !SOD_NEVYPLNENE_POPIS[k]).forEach(k => popisChybi.push(jm + ':' + k));
     const p = typ === 'sod' ? prazdna() : prazdnaProj();
-    const L = /_EN/.test(jm) ? 'en' : 'cz';
+    const L = (jm.match(/_(EN|DE|FR)\.docx$/) || [, 'cz'])[1].toLowerCase();
     const g = await word(typ, ab(f), p.zak, p.v, L);
     test('K ' + jm + ' (prázdná zakázka): žádné „{{" ani „}}", tečky = sodNevyplnene', g.xml.indexOf('{{') < 0 && g.xml.indexOf('}}') < 0
       && stejne(g.res.data.nevyplnene, g.res.data.nevyplneneVDokumentu) && g.res.data.nevyplnene.length > 0,

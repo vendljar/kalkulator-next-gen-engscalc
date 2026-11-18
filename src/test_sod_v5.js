@@ -288,6 +288,32 @@ const CESKA = /[ěščřžýáíéůúťďňó]/i;
     test('F v6: běh bez w:rPr dostane w:rPr, už podbarvený běh se nezmění, text bez symbolu se nepodbarví',
       VS.sodRealV6(doc('<w:p><w:r><w:t>{{SACHTY_SOD_PREDMET}}</w:t></w:r><w:r><w:rPr><w:highlight w:val="cyan"/></w:rPr><w:t>{{X}}</w:t></w:r><w:r><w:t>prostý</w:t></w:r></w:p>'))
         .indexOf('<w:r><w:rPr>' + HL + '</w:rPr><w:t>{{SACHTY_SOD_PREDMET}}</w:t></w:r><w:r><w:rPr><w:highlight w:val="cyan"/></w:rPr><w:t>{{X}}</w:t></w:r><w:r><w:t>prostý</w:t></w:r>') > 0);
+    /* M1: běh s popiskem, symbolem a tabulátory (EN/DE/FR v5) se rozdělí — žlutý jen symbol; M3: podbarvení před w14:* */
+    {
+      const rTab = '<w:r><w:rPr><w:sz w:val="22"/><w14:ligatures w14:val="standard"/></w:rPr><w:t>Company ID (IČ): {{OBJEDNATEL_ICO}}</w:t><w:tab/><w:tab/></w:r>';
+      const vTab = VS.sodRealV6(doc('<w:p><w:r><w:t>{{SACHTY_SOD_PREDMET}}</w:t></w:r></w:p><w:p>' + rTab + '</w:p>'));
+      const ocek = '<w:r><w:rPr><w:sz w:val="22"/><w14:ligatures w14:val="standard"/></w:rPr><w:t xml:space="preserve">Company ID (IČ): </w:t></w:r>'
+        + '<w:r><w:rPr><w:sz w:val="22"/>' + HL + '<w14:ligatures w14:val="standard"/></w:rPr><w:t xml:space="preserve">{{OBJEDNATEL_ICO}}</w:t></w:r>'
+        + '<w:r><w:rPr><w:sz w:val="22"/><w14:ligatures w14:val="standard"/></w:rPr><w:tab/></w:r><w:r><w:rPr><w:sz w:val="22"/><w14:ligatures w14:val="standard"/></w:rPr><w:tab/></w:r>';
+      test('F M1 v6: běh „popisek {{X}}<w:tab/><w:tab/>" rozdělen, žlutý jen symbol; M3 podbarvení před w14:*', vTab.indexOf(ocek) > 0, vTab);
+      test('F M1 v6: mimo podbarvení = vstup (tabulátory a popisek zůstaly)', VS.sodRealV6BezPodbarveni(vTab)
+        === VS.sodRealV6BezPodbarveni(doc('<w:p><w:r><w:t>{{SACHTY_SOD_PREDMET}}</w:t></w:r></w:p><w:p>' + rTab + '</w:p>')));
+      test('F M3 docxRPrZluta: highlight za w:sz, před w:u a před rozšířením w14:*',
+        dg.docxRPrZluta('<w:rPr><w:b/><w:sz w:val="20"/><w14:ligatures w14:val="all"/></w:rPr>', true) === '<w:rPr><w:b/><w:sz w:val="20"/>' + HL + '<w14:ligatures w14:val="all"/></w:rPr>'
+        && dg.docxRPrZluta('<w:rPr><w:sz w:val="20"/><w:u w:val="single"/></w:rPr>', true) === '<w:rPr><w:sz w:val="20"/>' + HL + '<w:u w:val="single"/></w:rPr>'
+        && dg.docxRPrZluta('<w:rPr><w:highlight w:val="cyan"/><w:sz w:val="20"/></w:rPr>', false) === '<w:rPr><w:sz w:val="20"/></w:rPr>');
+      const gTab = dg.docxPodbarveniTecek('<w:r><w:rPr>' + HL + '</w:rPr><w:t>Bank: {{A}}, IBAN {{B}}</w:t><w:tab/><w:br/></w:r>', new Set(['B']));
+      test('F M1 generátor: běh s víc symboly, tabulátorem a zalomením rozdělen, žlutý jen nevyplněný symbol',
+        gTab === '<w:r><w:t xml:space="preserve">Bank: </w:t></w:r><w:r><w:t xml:space="preserve">{{A}}</w:t></w:r><w:r><w:t xml:space="preserve">, IBAN </w:t></w:r>'
+          + '<w:r><w:rPr>' + HL + '</w:rPr><w:t xml:space="preserve">{{B}}</w:t></w:r><w:r><w:tab/></w:r><w:r><w:br/></w:r>', gTab);
+      const tri = dg.docxPodbarveniTecek('<w:r><w:t>{{</w:t></w:r><w:r><w:t>AB</w:t></w:r><w:r><w:t>}}</w:t></w:r>', new Set(['AB']));
+      test('F symbol rozdělený do tří běhů ({{ / AB / }}): všechny jeho běhy žluté (i prostřední bez závorek)',
+        tri === ['{{', 'AB', '}}'].map(t => '<w:r><w:rPr>' + HL + '</w:rPr><w:t>' + t + '</w:t></w:r>').join(''), tri);
+      test('F docxBehRozdel: kus symbolu v textu běhu → null (nedělí se, nástroj v6 i generátor)',
+        dg.docxBehRozdel('<w:r><w:t>IČ {{OBJ</w:t></w:r>', '', () => HL) === null && dg.docxBehRozdel('<w:r><w:t>ICO}} a {{B}}</w:t></w:r>', '', () => HL) === null);
+      test('F M1 generátor: jiný obsah běhu (obrázek) → běh se nedělí, žlutý celý', dg.docxPodbarveniTecek('<w:r><w:t>{{B}}</w:t><w:drawing>x</w:drawing></w:r>', new Set(['B']))
+        === '<w:r><w:rPr>' + HL + '</w:rPr><w:t>{{B}}</w:t><w:drawing>x</w:drawing></w:r>');
+    }
     test('F v6 z šablony bez symbolů v5 → chyba (v6 vzniká z v5)', /z v5/.test(chyba(() => VS.sodRealV6(V4))));
     const ab6 = await docx(V6);
     /* víc šachet, prázdná zakázka: vyplněné symboly bez podbarvení, tečky žluté */

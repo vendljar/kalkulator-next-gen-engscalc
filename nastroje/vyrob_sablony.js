@@ -1566,41 +1566,30 @@ async function hlavniSodRealV5() {
  * document.xml mimo podbarvení = v5 (sodRealV6BezPodbarveni — značky, text
  * a písmo každého úseku; tvrdé kontroly). */
 const SOD_V6_PODBARVENI = '<w:highlight w:val="yellow"/>';
-/* prvky w:rPr, které ve schématu stojí ZA w:highlight */
-const SOD_V6_ZA = /<w:(?:u|effect|bdr|shd|fitText|vertAlign|rtl|cs|em|lang|eastAsianLayout|specVanish|oMath|rPrChange)\b/;
+/* Podbarvení na místo podle schématu w:rPr (i před w14:* atd.) — touž funkcí
+ * jako generátor (docxgen docxRPrZluta, M3). Běh, který podbarvení už má,
+ * se nemění. */
 function sodRealV6Beh(beh) {
   const ot = beh.match(/^<w:r(?:\s[^>]*)?>/)[0];
-  const zb = beh.slice(ot.length);
-  if (/^\s*<w:rPr\/>/.test(zb)) return ot + zb.replace(/<w:rPr\/>/, '<w:rPr>' + SOD_V6_PODBARVENI + '</w:rPr>');
-  const m = zb.match(/^\s*<w:rPr>([\s\S]*?)<\/w:rPr>/);
-  if (!m) return ot + '<w:rPr>' + SOD_V6_PODBARVENI + '</w:rPr>' + zb;
-  if (/<w:highlight\b/.test(m[1])) return beh;
-  const vn = m[1], z = vn.search(SOD_V6_ZA);
-  const novy = z >= 0 ? vn.slice(0, z) + SOD_V6_PODBARVENI + vn.slice(z) : vn + SOD_V6_PODBARVENI;
-  return ot + zb.replace(m[0], m[0].replace(vn, () => novy));
+  const zb = beh.slice(ot.length, -'</w:r>'.length);
+  const rm = zb.match(/^\s*(?:<w:rPr\/>|<w:rPr>[\s\S]*?<\/w:rPr>)/);
+  if (rm && /<w:highlight\b/.test(rm[0])) return beh;
+  return ot + dg.docxRPrZluta(rm ? rm[0] : '', true) + zb.slice(rm ? rm[0].length : 0) + '</w:r>';
 }
-/* Běh, jehož jediným obsahem je text se symbolem i dalším textem (nebo víc
- * symboly), se rozdělí: pevný text zůstane v běhu s původními vlastnostmi,
- * každý symbol dostane vlastní podbarvený běh — žlutě nesvítí okolní text
- * a generátor může sejmout podbarvení u vyplněného symbolu, aniž by ho vzal
- * tečkám vedle. Symbol rozdělený mezi běhy: podbarví se celé jeho běhy. */
-const SOD_V6_SYM_RE = /\{\{[A-Z0-9_]+\}\}/g;
+/* Běh, ve kterém je symbol spolu s pevným textem, tabulátory, zalomením
+ * nebo dalším symbolem, se rozdělí (docxgen docxBehRozdel, M1): pevný text
+ * a prázdné prvky zůstanou s původními vlastnostmi, každý symbol dostane
+ * vlastní podbarvený běh — žlutě nesvítí popisek ani tabulátory a generátor
+ * může dát žlutou jen tečkám. Běh, který nese jen jeden symbol, se nedělí.
+ * Symbol rozdělený mezi běhy nebo jiný obsah běhu: null (podbarví se celý). */
 function sodRealV6Rozdel(beh) {
   const ot = beh.match(/^<w:r(?:\s[^>]*)?>/)[0];
   const zb = beh.slice(ot.length, -'</w:r>'.length);
   const rm = zb.match(/^\s*(?:<w:rPr\/>|<w:rPr>[\s\S]*?<\/w:rPr>)/);
-  const rPr = rm ? rm[0] : '';
-  const tm = zb.slice(rPr.length).match(/^\s*<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>\s*$/);
-  if (!tm) return null;
-  const text = tm[1];
-  if (!SOD_V6_SYM_RE.test(text)) return null;
-  SOD_V6_SYM_RE.lastIndex = 0;
-  if (/^\{\{[A-Z0-9_]+\}\}$/.test(text)) return null;
-  const casti = text.split(/(\{\{[A-Z0-9_]+\}\})/).filter(x => x !== '');
-  return casti.map(c => {
-    const b = ot + rPr + '<w:t xml:space="preserve">' + c + '</w:t></w:r>';
-    return /^\{\{[A-Z0-9_]+\}\}$/.test(c) ? sodRealV6Beh(b) : b;
-  }).join('');
+  const rPr = rm ? rm[0].trim() : '';
+  if (/^\s*<w:t(?:\s[^>]*)?>\{\{[A-Z0-9_]+\}\}<\/w:t>\s*$/.test(zb.slice(rm ? rm[0].length : 0))) return null;
+  if (/<w:highlight\b/.test(rPr)) return null;
+  return dg.docxBehRozdel(beh, rPr, () => dg.docxRPrZluta(rPr, true));
 }
 function sodRealV6(xml, zaznam) {
   const t = tělo(xml);
@@ -1640,10 +1629,20 @@ function sodRealV6BezPodbarveni(xml) {
     const ot = beh.match(/^<w:r(?:\s[^>]*)?>/)[0];
     const zb = beh.slice(ot.length, -'</w:r>'.length);
     const rm = zb.match(/^\s*(?:<w:rPr\/>|<w:rPr>[\s\S]*?<\/w:rPr>)/);
-    const rPr = (rm ? rm[0] : '').split(SOD_V6_PODBARVENI).join('').replace(/^\s*<w:rPr><\/w:rPr>$|^\s*<w:rPr\/>$/, '');
-    const zbytek = zb.slice(rm ? rm[0].length : 0);
-    const tm = zbytek.match(/^\s*<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>\s*$/);
-    pridej(tm ? { r: ot + rPr, t: tm[1] } : { r: ot + rPr, x: zbytek });
+    const rPr = (rm ? rm[0] : '').trim().split(SOD_V6_PODBARVENI).join('').replace(/^<w:rPr><\/w:rPr>$|^<w:rPr\/>$/, '');
+    const r = ot + rPr;
+    let zbytek = zb.slice(rm ? rm[0].length : 0);
+    /* obsah běhu po prvcích: texty <w:t> (atributy pryč) a ostatní prvky; jiný obsah celý */
+    const re = /^\s*(<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>|<w:t\/>|<w:[A-Za-z]+(?:\s[^>]*)?\/>)/;
+    const toky = [];
+    while (zbytek.trim()) {
+      const m = zbytek.match(re);
+      if (!m) { toky.length = 0; toky.push({ r, x: zb.slice(rm ? rm[0].length : 0) }); break; }
+      zbytek = zbytek.slice(m[0].length);
+      if (m[2] !== undefined) { if (m[2] !== '') toky.push({ r, t: m[2] }); }
+      else if (m[1] !== '<w:t/>') toky.push({ r, x: m[1] });
+    }
+    toky.forEach(pridej);
     return beh;
   });
   pridej({ x: xml.slice(posl) });
