@@ -179,6 +179,33 @@ function cisloPoleZobraz(v) {
   return m[1] + cela + (m[3] ? ',' + m[3] : '');
 }
 
+/* „NAPOSLEDY AKTIVNÍ" (#ON, J. V. 19. 11. 2026) — sloupec v Nastavení →
+ * Uživatelé. Relativně a krátce: „právě teď", „před 3 min", „dnes 9:12",
+ * „včera", jinak datum „5. 11. 2026". Přesný čas jde do `title`
+ * (formatCasPresny). Čas je místní (prohlížeč). Prázdný nebo nečitelný
+ * údaj = „—"; čas mírně v budoucnu (rozjeté hodiny) = „právě teď". */
+function formatNaposledy(iso, tedMs) {
+  const t = Date.parse(iso || '');
+  if (!Number.isFinite(t)) return '—';
+  const ted = Number.isFinite(+tedMs) ? +tedMs : Date.now();
+  const rozdil = ted - t;
+  if (rozdil < 60 * 1000) return 'právě teď';
+  if (rozdil < 60 * 60 * 1000) return 'před ' + Math.floor(rozdil / 60000) + ' min';
+  const d = new Date(t), n = new Date(ted);
+  const den = (x) => x.getFullYear() * 10000 + (x.getMonth() + 1) * 100 + x.getDate();
+  if (den(d) === den(n)) return 'dnes ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+  const vcera = new Date(n.getFullYear(), n.getMonth(), n.getDate() - 1);
+  if (den(d) === den(vcera)) return 'včera';
+  return d.getDate() + '. ' + (d.getMonth() + 1) + '. ' + d.getFullYear();
+}
+function formatCasPresny(iso) {
+  const t = Date.parse(iso || '');
+  if (!Number.isFinite(t)) return '';
+  const d = new Date(t), dv = (x) => String(x).padStart(2, '0');
+  return d.getDate() + '. ' + (d.getMonth() + 1) + '. ' + d.getFullYear() + ' '
+    + d.getHours() + ':' + dv(d.getMinutes()) + ':' + dv(d.getSeconds());
+}
+
 if (typeof module !== 'undefined')
-  module.exports = { cisloPoleText, cisloPoleZobraz, formatKc2, formatKc0, formatCislo, formatPctTypo, formatKcTypo,
+  module.exports = { formatNaposledy, formatCasPresny, cisloPoleText, cisloPoleZobraz, formatKc2, formatKc0, formatCislo, formatPctTypo, formatKcTypo,
                      prepisPlati, menaKc, menaDokumentu, csvBunka, orezKonce };

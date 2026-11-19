@@ -80,7 +80,7 @@ import zalohaDiskFn from './functions/zaloha_disk.mjs';
 import pdStavFn from './functions/pd_stav.mjs';
 import { config as configNocni } from './functions/zaloha_nocni.mjs';
 import { ADMIN_EMAIL, ROLE, POKUSY_MAX, POKUSY_IP_MAX, zpozdeniMs, pokusyReset,
-         uloziste, PODPIS_ULOZISTE } from './lib/sdilene.mjs';
+         uloziste, PODPIS_ULOZISTE, aktivitaDobehni } from './lib/sdilene.mjs';
 
 import { createHmac } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -864,6 +864,26 @@ test('B57: obchodník v /api/ja příznak nedostane', jaObch.spravceNastaven ===
 {
   const jaAdm = await (await get(ja, 'http://x/api/ja', cAdmin)).json();
   test('#278: administrátor v /api/ja příznak dostane (tady nastaveno)', jaAdm.spravceNastaven === true, JSON.stringify(jaAdm));
+}
+/* #ON (J. V. 19. 11. 2026): čas poslední aktivity a „online" vidí jen
+ * Administrátor ve výpisu účtů. Obchodník a Vedoucí ho nedostanou nikudy:
+ * výpis účtů 403, /api/ja bez údaje. Pojistka: správce ho ve výpisu má. */
+{
+  await aktivitaDobehni();
+  const POLE_ON = ['posledniAktivita', 'odhlaseni', 'online'];
+  const sAdm = await (await get(uzivatele, 'http://x/api/uzivatele', cAdmin)).json();
+  const rAdm = (sAdm.uzivatele || []).find(u => u.email === ADMIN_EMAIL);
+  test('#ON: Administrátor ve výpisu účtů vidí poslední aktivitu a online',
+    !!rAdm && POLE_ON.every(p => p in rAdm) && rAdm.online === true && !!rAdm.posledniAktivita, JSON.stringify(rAdm));
+  for (const role of ['Obchodník', 'Vedoucí']) {
+    const r = await get(uzivatele, 'http://x/api/uzivatele', cookieRole(role));
+    const t = await r.text();
+    test('#ON: ' + role + ' výpis účtů s aktivitou nedostane (403, bez údaje)',
+      r.status === 403 && !POLE_ON.some(p => t.includes('"' + p + '"')), r.status + ' ' + t.slice(0, 200));
+    const tJa = await (await get(ja, 'http://x/api/ja', cookieRole(role))).text();
+    test('#ON: ' + role + ' v /api/ja údaj o aktivitě nedostane',
+      !POLE_ON.some(p => tJa.includes('"' + p + '"')) && !tJa.includes(rAdm ? rAdm.posledniAktivita : 'x'), tJa.slice(0, 200));
+  }
 }
 test('/api/zdravi nenese data z databáze',
   !zdraviText.includes('Matice práv') && !zdraviText.includes(FIRMA.ico), zdraviText);
