@@ -24,7 +24,7 @@
  *    tisk se neblokuje.
  *
  * DATA (v.data.rucniCeny, klíč = cesta ceníku „C.…")
- *   { hodnota: číslo ≥ 0 (= hodnota v ceníku varianty; nula od #653),
+ *   { hodnota: číslo ≥ 0 (= hodnota v ceníku varianty; nula od #667),
  *     dodavatel, cislo, datum, platnostDo,   // zdroj (text, datum RRRR-MM-DD)
  *     zaklad: ceníková sazba v okamžiku potvrzení (razí server z platného ceníku),
  *     potvrdil: { jmeno, email, kdy } | null  // razí server z relace }
@@ -156,7 +156,7 @@ function rucniCenaStav(r) {
  * server ji při potvrzení přepíše platným ceníkem. */
 function rucniCenaNastav(data, cesta, hodnota) {
   if (!data || typeof data !== 'object' || !rucniCenaSmi(cesta)) return false;
-  /* NULA PLATÍ (#653, J. V. 18. 11. 2026: „obchodník musí jít zadat jinou
+  /* NULA PLATÍ (#667, J. V. 18. 11. 2026: „obchodník musí jít zadat jinou
    * cenu u každé položky, i nulovou"). Prázdné pole nulou není. */
   if (hodnota === null || hodnota === undefined || String(hodnota).trim() === '') return false;
   const h = +hodnota;
@@ -213,8 +213,8 @@ function rucniCenaPoSet(data, cesta, hodnota, opts) {
   const r = rucniCenaZaznam(data, cesta);
   const h = +hodnota;
   if (r) {
-    /* Revize #653 N1: buňka ceny posílá `+this.value`, takže vymazané pole
-     * sem doteče jako 0. Nula v buňce proto záznam MAŽE jako před #653 —
+    /* Revize #667 N1: buňka ceny posílá `+this.value`, takže vymazané pole
+     * sem doteče jako 0. Nula v buňce proto záznam MAŽE jako před #667 —
      * nulová cena z nabídky vzniká jen výslovně v poli „Nákupní cena"
      * (rucniCenaNastav, prázdné pole tam nulou není). */
     if (!(isFinite(h) && h > 0)) { delete data.rucniCeny[cesta]; return true; }

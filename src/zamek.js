@@ -152,7 +152,7 @@ function klonujVariantu(zak, id, opts) {
   /* Schválení slevy se do klonu nepřenáší (N44, 24. 9. 2026) — viz
    * slevaRozhodnutiZahod v zakazka.js. */
   if (typeof slevaRozhodnutiZahod === 'function') slevaRozhodnutiZahod(kopie.data);
-  /* Dorevize R1 (#653): klon staré odeslané nabídky s cenou z nabídky
+  /* Dorevize R1 (#667): klon staré odeslané nabídky s cenou z nabídky
    * u statiky dostane záznam i pro statiku opláštění (zdroj je doklad). */
   if (typeof zakStatikaOplRucniDopln === 'function') zakStatikaOplRucniDopln(kopie.data);
   /* Klon je rozpracovaná varianta: zrušená volba světlíku „zajistí stavba"

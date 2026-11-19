@@ -917,8 +917,8 @@ function zakImportVzorCeniku(v) {
   };
 }
 
-/* CENA Z NABÍDKY U STATIKY KRYJE I STATIKU OPLÁŠTĚNÍ (revize #653 N2,
- * dorevize R1, 18.–19. 11. 2026). Do #653 sdílely obě statiky sazbu
+/* CENA Z NABÍDKY U STATIKY KRYJE I STATIKU OPLÁŠTĚNÍ (revize #667 N2,
+ * dorevize R1, 18.–19. 11. 2026). Do #667 sdílely obě statiky sazbu
  * C.statikaKc, takže cena z nabídky u ní platila pro obě. Migrace sazbu
  * zkopíruje do statikaOplKc, záznam (doklad, potvrzení) se musí zkopírovat
  * také — jinak by hodnota bez záznamu vypadala jako změna ceníku (B112 403,
@@ -969,7 +969,7 @@ function importZakazka(obj) {
        * (C.leseniFix). Bez převzetí staré hodnoty by fixní část spadla na
        * nulu a cena zakázky by se po otevření tiše propadla. Guard kvůli
        * Node testům, které zakazka.js načítají bez engine.js. */
-      /* Revize #653 N2: cena z nabídky u C.statikaKc kryla do #653 obě statiky.
+      /* Revize #667 N2: cena z nabídky u C.statikaKc kryla do #667 obě statiky.
        * Migrace sazbu zkopíruje do statikaOplKc — u nezamčené varianty i záznam
        * (doklad, potvrzení), jinak by nová hodnota bez záznamu vypadala jako
        * změna ceníku (B112 403, cenová výjimka). Zamčená varianta je doklad. */

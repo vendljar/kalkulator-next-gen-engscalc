@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v19.11.1 — SP #653: statika opláštění zaškrtávací s vlastní cenou, cena z nabídky i nulová, větev claude/sp-statika
+## v19.11.1 — SP #667: statika opláštění zaškrtávací s vlastní cenou, cena z nabídky i nulová, větev claude/sp-statika
 
 Nad integrací `910315b`, sloučeno s integrací `41bbe99` (v18.11.7). Zadání J. V. 18. 11. 2026 (podnět obchodního technika). Mění cenovou logiku — před sloučením
 revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `origin/test` **SHODA 353/353**).
@@ -23,23 +23,23 @@ revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `or
   (pole statiky) počítají obě cesty jako dosud — dokumenty beze změny; controlling řadí sazbu do projekce.
 - **Cena z nabídky:** obě statiky ji mají každá zvlášť. Nulová cena z nabídky platí u každé položky (prohlížeč i server),
   záporná ani prázdné pole ne.
-- **Audit:** `podklady/AUDIT_CENY_POLOZEK_653.md` — sdílené cesty a položky bez ceny z nabídky; k rozhodnutí J. V. #654.
-- **Testy:** nový `src/test_653_statika_opl.js` 47/0 (pojistka: proti 910315b padá hned na chybějící funkci jádra);
+- **Audit:** `podklady/AUDIT_CENY_POLOZEK_667.md` — sdílené cesty a položky bez ceny z nabídky; k rozhodnutí J. V. #668.
+- **Testy:** nový `src/test_667_statika_opl.js` 47/0 (pojistka: proti 910315b padá hned na chybějící funkci jádra);
   upraveny `test_statika_oplasteni.js` (cesta řádku), `test_561_rucni_cena.js` a `netlify/test_561_rucni_cena.mjs`
   (nula se nově uloží, záporná dál ne); zkušební ceník nese `statikaOplKc`; manuál výpočtu migruje sazbu (čísla vydání beze změny).
 - **Revize poradce (18. 11.):** N1 vymazaná buňka ceny (posílá 0) záznam ceny z nabídky maže jako dřív — nula z nabídky
   jen výslovně v poli „Nákupní cena“; N2 import u nezamčené varianty bez klíče `statikaOplKc` zkopíruje i záznam ceny
   z nabídky `C.statikaKc` (s potvrzením) na `C.statikaOplKc` — jinak 403 při uložení i zámku; N4 výběr má volbu
-  „výchozí (Ano/Ne)“ (`null`). Nový `netlify/test_653_statika_opl.mjs` 19/0: zámek se statikou, odškrtnutí ve 2. šachtě
+  „výchozí (Ano/Ne)“ (`null`). Nový `netlify/test_667_statika_opl.mjs` 19/0: zámek se statikou, odškrtnutí ve 2. šachtě
   (podvržený výsledek není „shoda“), stará varianta s cenou z nabídky (bez N2 3 FAIL, 403), tvar zaškrtnutí.
-  `src/test_653_statika_opl.js` (proti 3c42353: N1 2 FAIL, N2 2 FAIL, N4 chybí funkce). Čísla roadmapy přečíslována
-  na #653/#654 (kolize); verzi přidělí koordinace.
+  `src/test_667_statika_opl.js` (proti 3c42353: N1 2 FAIL, N2 2 FAIL, N4 chybí funkce). Čísla roadmapy přečíslována
+  na #667/#668 (kolize); verzi přidělí koordinace.
 - **N3 (rozhodnutí J. V. 18. 11.):** cenu z nabídky (i nulovou) potvrdí obchodník JEN s vyplněným dodavatelem nebo číslem
   nabídky. Bez zdroje stav „bez zdroje“ (`RC_BEZ_ZDROJE`): tlačítko Potvrdit zakázané s hláškou, co doplnit, server
   razítko nedá ani nepřevezme a cena jde ke schválení nadřízeného jako cena pod ceníkem (cenová výjimka; i u příplatku
   „dle nabídky“, starší vlastní cena bez záznamu S13 beze změny). Kontrola `rucniCenaNepotvrzena` u záznamu bez zdroje
   upozorní, co doplnit (bez nového pravidla — počet pravidel je ve vydaném manuálu). Zamčená varianta se starším potvrzeným záznamem bez zdroje se nemění, ověření zámku „shoda“. Testy:
-  `src/test_653_statika_opl.js` 72/0 (proti stavu před N3 padá), `netlify/test_653_statika_opl.mjs` 28/0 (bez N3 2 FAIL:
+  `src/test_667_statika_opl.js` 72/0 (proti stavu před N3 padá), `netlify/test_667_statika_opl.mjs` 28/0 (bez N3 2 FAIL:
   razítko i zámek nuly bez zdroje prošly); upraveny `test_561_rucni_cena.js` (záznam bez zdroje = „bez zdroje“),
   N4 výběr escapuje hodnotu volby (test_escape).
 - **Dorevize poradce (19. 11.):** R1 klon staré odeslané nabídky (cena z nabídky u `C.statikaKc`, zamčený zdroj bez
@@ -50,7 +50,7 @@ revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `or
   neviditelných znaků („.“ ani U+200B zdrojem nejsou). R3 (správce zamkne cenu bez zdroje) předkládá koordinace J. V.
   **R5 (přijato):** dřív schválená cenová výjimka přestane platit, když k položce přibude záznam ruční ceny bez zdroje
   (obsah výjimky se změní) — obchodník musí doplnit zdroj, nebo požádat o schválení znovu.
-  Testy: `src/test_653_statika_opl.js` 82/0 (proti ab6b29c R1 2, R2 1, R4 2 FAIL), `netlify/test_653_statika_opl.mjs`
+  Testy: `src/test_667_statika_opl.js` 82/0 (proti ab6b29c R1 2, R2 1, R4 2 FAIL), `netlify/test_667_statika_opl.mjs`
   35/0 (proti ab6b29c 3 FAIL: klon bez záznamu, zámek klonu 403, věta o směsi).
 - **Mutace [SP]:** jádro [SP] 11/11 + P5 3/3 chycených, server [SP] 8/8 + #561 19/19 chycených.
 

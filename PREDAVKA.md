@@ -21,24 +21,24 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
-- **SP #653** (`claude/sp-statika`, verzi přidělí koordinace): statika opláštění Ano/Ne v zadání šachty
+- **SP #667** (`claude/sp-statika`, verzi přidělí koordinace): statika opláštění Ano/Ne v zadání šachty
   (`Z.statikaOpl`, chybí = Ano u šachty s opláštěním), vlastní sazba `C.statikaOplKc` (migrace = `statikaKc`), cena
   z nabídky u obou statik zvlášť, nula z nabídky platí u každé položky. Mění cenovou logiku → **revize poradce**.
   Revize poradce N1/N2/N4 a N3 J. V. (cena z nabídky potvrdí obchodník jen se zdrojem, jinak schválení) zapracovány.
   Dorevize R1/R2/R4 (19. 11.): kolo `--bez-mutaci --proti integrace` nad 34f282f sady 467/0/7, hodiny 379/0/1,
   porovnání SHODA 353/353; po posunu verze na v19.11.1 build + statické 9/9 zelené; mutace jádro [SP] 13/13,
   server [SP] 23/23 + #561 19/19. Nad 910315b + 755062d. Audit
-  `podklady/AUDIT_CENY_POLOZEK_653.md`, otázka J. V. #654:
+  `podklady/AUDIT_CENY_POLOZEK_667.md`, otázka J. V. #668:
 
   | | cesta / položka | sdílí / chybí | stav |
   |---|---|---|---|
-  | A1 | `C.statikaKc` | statika OCK + opláštění | opraveno #653 |
+  | A1 | `C.statikaKc` | statika OCK + opláštění | opraveno #667 |
   | A2 | `C.priplatky.madlaBmKc` | madla boky + zadní stěna | J. V. (dop. ponechat) |
   | A3 | `C.leseniFix` | fix lešení vnitřní + vnější, bez ceny z nabídky | J. V. (dop. ponechat) |
   | A4 | `C.profilasKgKc` | profily + sloupy můstků | J. V. (dop. ponechat) |
   | A5–A7 | powertech, `oplechPracKc`, sklo | týž materiál / sazba | ponechat |
   | B1–B2 | spojovací materiál, lakování | souhrn skupiny, bez ceny z nabídky | J. V. (lak: dop. cena z nabídky) |
-  | B6 | nulová cena z nabídky | dřív odmítnuta | opraveno #653 |
+  | B6 | nulová cena z nabídky | dřív odmítnuta | opraveno #667 |
 
 - **C7 #615 + NS #645** (`claude/c7-sablony`, v18.11.7, nad 9bd6dc8 + sloučená integrace 41bbe99): výroba jazykové verze
   z češtiny zrušena u všech šablon (jen nahraný přeložený soubor); `sablonaJazykPodil` + mez 20 %: smlouvy (SoD, SoD proj.,
