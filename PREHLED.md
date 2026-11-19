@@ -8,18 +8,18 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v19.11.4** (`8245512b`, 19. 11. 2026) |
+| testovací web (`test`) | **v19.11.5** (`042fcbc2`, 19. 11. 2026) |
 
-Test je proti main napřed o 315 commitů.
+Test je proti main napřed o 319 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
 | #672 (dřív VZF1-I1) | nález | VZF1-I1: soubor plné moci u OPR zakázek bez čísla zakázky (PLNA-MOC_2026-OPR-CN-PROJ-CZ) | v19.11.4 |
+| #671 (dřív K50-N1-R) | úkol | Ceník: buňka Zahraničí u statiky opláštění a dialog zveřejnění po K50-N1 | v19.11.5 |
+| #670 (dřív K50-N1) | nález | K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1) | v19.11.3 |
 | #669 (dřív T1) | úkol | VZ T1: řídící varianta a řídící zákazník v hlavičce (2+ zákazníků), karta ★/☆, náhled poznámky dealu | v19.11.2 |
-| #668 | rozhodnutí | Audit #667: další položky se sdílenou cenou nebo bez ceny z nabídky — rozhodnout | v19.11.1 |
-| #667 | úkol | STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jako zaškrtávací položka šachty s vlastní cenou C.statikaOplKc; cena z nabídky i nulová | v19.11.1 |
 | #664 | úkol | UE: úprava existujícího účtu v Nastavení → Uživatelé (titul, jméno, funkce, telefon; e-mail jen ke čtení) | v18.11.9 |
 | #663 | úkol | Zmrazit zástupce a DIČ dalšího zákazníka po odeslání jeho SoD (po zákaznících, klient i server) | v19.11.4 |
 | #662 (dřív VZ-F1-R4) | úkol | Test v prohlížeči: otevřený zákazník C, zápis zástupce v krycím listu, tisk SoD A bez údajů C | v19.11.4 |
@@ -32,7 +32,6 @@ Test je proti main napřed o 315 commitů.
 | #655 (dřív VZ-N2) | úkol | VZ-N2: výběr „Otevřená varianta“ v hlavičce nabízel při otevřeném A i vlastní variantu C | v18.11.8 |
 | #654 (dřív VZ-N1) | úkol | VZ-N1: „Přidat zákazníka“ se stejným IČO, jaké už v zakázce je, prošlo bez upozornění | v18.11.8 |
 | #653 (dřív VZ-N3) | úkol | VZ-N3: zástupci a kontakty v krycím listu u otevřeného dalšího zákazníka se zapisovali do hlavičky řídícího (SoD A nesla zástupce C) | v18.11.8 |
-| #652 (dřív K49-I5) | rozhodnutí | Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích | v19.11.1 |
 | #651 (dřív K49-I7) | úkol | Ověřit SoD u víc šachet a slevy v EUR (L3) na testu | v18.11.7 |
 | #645 (dřív NS) | úkol | NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami | v18.11.7 |
 | #632 (dřív B0.7, B6, K37-N6, K38-I2) | úkol | Ceník a termíny firmy v testu srovnané podle main — ověřit v kole 49 | v18.11.7 |
@@ -68,7 +67,7 @@ Test je proti main napřed o 315 commitů.
 | # | co | kolo | stav | čeká na |
 |---|---|---|---|---|
 | #614 (dřív K40-N1) | Vada ceny v main: po přepnutí typu šachty se čelní sklo přejmenuje a zůstane vyřazené (opraveno v testu v12.11.1) | 40 | opraveno v testu (v12.11.1), v main ne | J. V.: pokyn ke sloučení do main (kolo 49 18. 11.: test_k40_celni_sklo nad test 75/0, nad main 47/28; ceny main × test jinak shodné) |
-| #670 (dřív K50-N1) | K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1) | 50 | oprava ve verzi v19.11.3, v testu ještě ne | — |
+| #670 (dřív K50-N1) | K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1) | 50 | opraveno v testu (v19.11.3), v main ne | — |
 
 ## Čeká na J. V.
 
