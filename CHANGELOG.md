@@ -8,10 +8,10 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v19.11.7 — NP: Kompletní náhled podkladů OCK ve vzhledu Wordu CN v17, větev claude/np-nahled
+## v19.11.9 — NP: Kompletní náhled podkladů OCK ve vzhledu Wordu CN v17, větev claude/np-nahled
 
 Nad integrací `6092af3` (v19.11.6). Zadání J. V. 19. 11. 2026. **Cenu ani Word nemění** — nový je jen náhled
-(okno „Kompletní náhled podkladů"). Verzi a čísla roadmapy (pracovní #676, #677) přidělí koordinace.
+(okno „Kompletní náhled podkladů"). Verzi a čísla roadmapy (pracovní #681, #682) přidělí koordinace.
 
 - **Náhled = Word:** „Kompletní náhled podkladů" (`nabidkaNahled`) už není tabulka hodnot, ale dokument v pořadí
   a členění šablony CN v17: hlavička (objednatel s kontaktem, datum, název akce, číslo, adresa) → Popis záměru
@@ -43,7 +43,7 @@ Nad integrací `6092af3` (v19.11.6). Zadání J. V. 19. 11. 2026. **Cenu ani Wor
   `src/ui/nahled_word_ui.js` (okno, CSS, stránkování); z `src/ui/zakazka_ui.js` jen odebraný starý `nabidkaNahled`
   (karta a tlačítka beze změny — souběh s dávkou PG). „Kompletní náhled a tisk nabídky" (`nabidkaOckDokument`)
   beze změny, PROJ beze změny.
-- **Nález (neopraveno, mimo zadání) #677:** Word v EN/DE/FR nechává prázdný pruh sekce technické části
+- **Nález (neopraveno, mimo zadání) #682:** Word v EN/DE/FR nechává prázdný pruh sekce technické části
   (např. „BRIDGES BETWEEN THE BUILDING AND THE STEEL STRUCTURE" bez řádků u šachty bez skladebných můstků):
   `odstranPrazdneTsRadky` pozná pruh jen podle českého názvu. Náhled pruh vynechá. Návrh: rychlá cesta (dokument).
 - **Testy:** `src/test_np_nahled_word.js` (pojistka shody: text náhledu = text Wordu ze syntetické šablony CN v17
