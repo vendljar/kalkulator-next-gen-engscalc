@@ -582,6 +582,8 @@ function nastFirma() {
 
     ${sekce}
 
+    ${typeof lhutyProjKarta === 'function' ? lhutyProjKarta() : ''}
+
     <div class="note" style="margin-top:10px">Smluvní standardy a logo firmy najdete na záložce
       <b>Smlouvy / Šablony</b> — patří k dokumentům, ne k identifikaci firmy.</div>
 

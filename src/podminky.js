@@ -276,6 +276,12 @@ function podmRadkyPlatne(klic, jaz, v) {
     && (jaz !== 'cz' || PODMINKY_PROJ_SEKCE.indexOf(r[2]) >= 0 || PODMINKY_PROJ_SEKCE_PODMINENE.indexOf(r[2]) >= 0) && r.length === (jaz === 'cz' ? 3 : 2));
 }
 
+/* lhuty_proj.js — v prohlížeči globální, v Node vedle (vzor firmaPlanModul). */
+function podmLhutyModul() {
+  if (typeof lhutyProjEf === 'function') return { lhutyProjEf, lhutyProjText };
+  try { return (typeof require === 'function') ? require('./lhuty_proj.js') : null; } catch (e) { return null; }
+}
+
 /* ---------- sloučení Firmy s továrnou ---------- */
 
 /* Platné podmínky: co je ve Firmě a projde pravidlem, jinak továrna.
@@ -557,8 +563,12 @@ function podminkyTextProj(ef, klic, jaz, P) {
   const z = (ef && ef.nabidkaProj && ef.nabidkaProj[klic]) || PODMINKY_VYCHOZI.nabidkaProj[klic];
   const T = typeof P === 'function' ? P : (x => x);
   if (klic === 'terminy') {
-    if (L !== 'cz' && z[L]) return z.cz.map((r, i) => [z[L][i][0], z[L][i][1], r[2]]);
-    return z.cz.map(r => [T(r[0]), T(r[1]), r[2]]);
+    /* D8: známé výchozí znění termínu dostane čísla z tabulky lhůt
+     * (ef.lhutyProj); vlastní znění zůstane pevné (lhutyProjText). */
+    const lm = ef && ef.lhutyProj ? podmLhutyModul() : null;
+    const t = x => lm ? lm.lhutyProjText(x, ef.lhutyProj, L).text : x;
+    if (L !== 'cz' && z[L]) return z.cz.map((r, i) => [z[L][i][0], t(z[L][i][1]), r[2]]);
+    return z.cz.map(r => [T(r[0]), t(T(r[1])), r[2]]);
   }
   if (L !== 'cz' && z[L]) return z[L].slice();
   return z.cz.map(T);
@@ -594,6 +604,9 @@ function podminkySnimek(firma, casti) {
   (Array.isArray(casti) ? casti : PODMINKY_ZMRAZ_CASTI).forEach(k => {
     if (PODMINKY_ZMRAZ_CASTI.indexOf(k) >= 0) out[k] = podmKopie(ef[k]);
   });
+  /* D8: s texty nabídky PROJ zamrzne i tabulka lhůt (čísla v termínech). */
+  const lm = podmLhutyModul();
+  if (out.nabidkaProj && lm) out.lhutyProj = lm.lhutyProjEf(firma && typeof firma === 'object' ? firma.lhutyProj : undefined);
   return out;
 }
 /* Efektivní podmínky zamčené varianty: aktuální Firma, přes ni opsané
@@ -607,6 +620,11 @@ function podminkyEfZmrazene(firma, snimek) {
   PODMINKY_ZMRAZ_CASTI.forEach(k => {
     if (snimek[k] && typeof snimek[k] === 'object' && !Array.isArray(snimek[k])) ef[k] = z[k];
   });
+  /* D8: snímek textů PROJ bez lhůt (odeslaný před D8) tiskne čísla, se
+   * kterými odešel — výchozí tabulku, ne dnešní Firmu. */
+  const lm = podmLhutyModul();
+  if (lm && snimek.nabidkaProj && typeof snimek.nabidkaProj === 'object' && !Array.isArray(snimek.nabidkaProj))
+    ef.lhutyProj = lm.lhutyProjEf(snimek.lhutyProj);
   return ef;
 }
 

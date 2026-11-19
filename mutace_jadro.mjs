@@ -186,7 +186,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   'ui/ukazkove_ui.js', 'ui/techspec_ui.js', 'ui/kontroly_ui.js',
   /* vz_poznamka.js (VZ T1, 18. 11. 2026): řádek „Řídící zákazník v kalkulaci"
    * v poznámce dealu. Hlídá src/test_vz_t1.js (server netlify/test_vz_poznamka.mjs). */
-  'vz_poznamka.js'];
+  'vz_poznamka.js',
+  /* D8 (19. 11. 2026): lhůty PROJ — termíny krycího listu a čísla v textu
+   * termínů nabídky PROJ. */
+  'lhuty_proj.js'];
 /* Filtr = první argument, který není přepínač ani hodnota `--cast` / `--od`
  * (stejně jako netlify/mutace.mjs; výběr části běhu P2, 23. 10. 2026 —
  * nastroje/mutace_cast.mjs). */
@@ -290,6 +293,86 @@ function najdiSady() {
  *   proc   … co by se v praxi pokazilo, kdyby tuhle chybu někdo udělal doopravdy
  * ============================================================ */
 const MUTACE = [
+  /* D8 (19. 11. 2026): lhůty PROJ — hlídá src/test_d8_lhuty.js. [D8] */
+  { nazev: "D8: u rozpětí dolní mez [D8]", soubor: "lhuty_proj.js",
+    hledej: "  const L = id => (ef.radky[id] || lhDef(id).vychozi).do;",
+    nahrad: "  const L = id => { const r = ef.radky[id] || lhDef(id).vychozi; return r.od || r.do; };",
+    proc: "termíny by vycházely dřív, než slibuje nabídka (J. V.: u rozpětí horní mez)", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: měsíc úřadu = 4 týdny [D8]", soubor: "lhuty_proj.js",
+    hledej: "const LHUTY_PROJ_TYDNU_MESIC = 4.3;",
+    nahrad: "const LHUTY_PROJ_TYDNU_MESIC = 4;",
+    proc: "povolení záměru by se počítalo kratší než podle textu nabídky (měsíc = 4,3 týdne)", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: řetěz nejde od ručního data [D8]", soubor: "lhuty_proj.js",
+    hledej: "  const ucinne = pole => lhDatumPlatne(rucne[pole]) ? rucne[pole] : (out[pole] && out[pole].datum) || '';",
+    nahrad: "  const ucinne = pole => (out[pole] && out[pole].datum) || '';",
+    proc: "po ručním posunu studie by DPZ a další termíny dál běžely od vypočteného data", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: nenabízená studie se počítá do řetězu [D8]", soubor: "lhuty_proj.js",
+    hledej: "  if (nabizi('studie')) {",
+    nahrad: "  if (true) {",
+    proc: "zakázka bez studie by dostala o 12 týdnů pozdější termíny", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: dopočet i bez prodeje [D8]", soubor: "lhuty_proj.js",
+    hledej: "  if (!lhDatumPlatne(c.podpis)) return nic(",
+    nahrad: "  if (false) return nic(",
+    proc: "termíny by se počítaly z neplatného data dřív, než obchodník vyznačí podpis", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: prodáno bez snímku lhůt se počítá [D8]", soubor: "lhuty_proj.js",
+    hledej: "  if (!c.lhuty) return nic(",
+    nahrad: "  if (false) return nic(",
+    proc: "zakázky prodané před D8 by dostaly termíny podle dnešní tabulky", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: text dostane výchozí čísla místo tabulky [D8]", soubor: "lhuty_proj.js",
+    hledej: "  return z ? { text: lhutyProjDosad(z[jaz], lhuty, jaz), znamy: true } : { text, znamy: false };",
+    nahrad: "  return z ? { text: lhutyProjDosad(z[jaz], vych, jaz), znamy: true } : { text, znamy: false };",
+    proc: "nabídka by slibovala jiné lhůty, než z jakých se počítají termíny", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: francouzské rozpětí pomlčkou [D8]", soubor: "lhuty_proj.js",
+    hledej: "(L === 'fr' ? ' à ' : '–')",
+    nahrad: "'–'",
+    proc: "francouzský text by se změnil (dnes „4 à 6“)", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: kontrola pevného textu mlčí [D8]", soubor: "lhuty_proj.js",
+    hledej: "    && !lhutyProjText(r[1], null, jaz).znamy)",
+    nahrad: "    && false)",
+    proc: "vlastní znění termínu by tiše tisklo jiná čísla, než počítá krycí list", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: vada od > do projde [D8]", soubor: "lhuty_proj.js",
+    hledej: "      if (!(ho > 0) || !(ho <= hd)) vady.push(",
+    nahrad: "      if (!(ho > 0)) vady.push(",
+    proc: "zveřejnila by se tabulka s obráceným rozpětím", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: podminkyTextProj nedosazuje lhůty [D8]", soubor: "podminky.js",
+    hledej: "    const t = x => lm ? lm.lhutyProjText(x, ef.lhutyProj, L).text : x;",
+    nahrad: "    const t = x => x;",
+    proc: "změna tabulky by se do textu nabídky nepromítla", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: snímek podmínek bez lhůt [D8]", soubor: "podminky.js",
+    hledej: "  if (out.nabidkaProj && lm) out.lhutyProj =",
+    nahrad: "  if (false) out.lhutyProj =",
+    proc: "odeslaná nabídka by po změně tabulky tiskla jiné termíny", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: starý snímek bere dnešní lhůty [D8]", soubor: "podminky.js",
+    hledej: "    ef.lhutyProj = lm.lhutyProjEf(snimek.lhutyProj);",
+    nahrad: "    ef.lhutyProj = lm.lhutyProjEf((firma || {}).lhutyProj);",
+    proc: "nabídka odeslaná před D8 by po změně tabulky tiskla jiné termíny", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: zamčená bez snímku bere dnešní lhůty [D8]", soubor: "nabidka_proj.js",
+    hledej: "(varianta && varianta.zamek && varianta.zamek.zamceno) ? LM.lhutyProjVychozi() : ",
+    nahrad: "",
+    proc: "dotisk staré odeslané nabídky by se po změně tabulky změnil", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: krycí list počítá i nenabízené činnosti [D8]", soubor: "kryci_proj.js",
+    hledej: "    nabizi: key => !!(c.sekce && c.sekce[key] && +c.sekce[key].celkem > 0),",
+    nahrad: "    nabizi: key => true,",
+    proc: "krycí list by sliboval termíny činností, které zákazník nekoupil", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: krycí list bere lhůty z Firmy, ne ze snímku [D8]", soubor: "kryci_proj.js",
+    hledej: "    lhuty: kl.lhutyProj && typeof kl.lhutyProj === 'object' ? kl.lhutyProj : null,",
+    nahrad: "    lhuty: (c.firma && c.firma.lhutyProj) || null,",
+    proc: "změna tabulky by přepsala termíny prodaných zakázek", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: termíny prodané varianty zamčené [D8]", soubor: "zamek.js",
+    hledej: "  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id) && !zamekProdanoTerminVolny(v, list, id)) return 'zmrazeno';",
+    nahrad: "  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id)) return 'zmrazeno';",
+    proc: "dopočtený termín by po prodeji nešlo ručně přepsat", sady: ['test_d8_lhuty.js'] },
+  /* „Termíny volné i po tisku SoD" (bez zamekKryciOtevreny v zamekProdanoTerminVolny)
+   * je EKVIVALENTNÍ mutace — po tisku SoD pole zamkne i běžné pravidlo „po SoD"
+   * v zamekKryciPoleStav (vzor K37-N2), proto tu není. */
+  { nazev: "D8: snímek lhůt prodané varianty jde přepsat [D8]", soubor: "zamek.js",
+    hledej: "  if (kopie.kryciProj && typeof kopie.kryciProj === 'object' && !variantaProdana(v))\n    delete kopie.kryciProj.lhutyProj;",
+    nahrad: "  if (kopie.kryciProj && typeof kopie.kryciProj === 'object')\n    delete kopie.kryciProj.lhutyProj;",
+    proc: "prodané zakázce by šly přepsat lhůty a s nimi termíny", sady: ['test_d8_lhuty.js'] },
+  { nazev: "D8: Prodáno nezamrazí lhůty [D8]", soubor: "objednane.js",
+    hledej: "  if (typeof lhutyProjZmraz === 'function')\n    lhutyProjZmraz(",
+    nahrad: "  if (false)\n    lhutyProjZmraz(",
+    proc: "po prodeji by se termíny nedopočítaly vůbec", sady: ['test_d8_lhuty.js'] },
   /* C1 #582 (11. 11. 2026): nadpisy „USAZENÍ OCK" v jazykové CN (--cn-usazeni)
    * a v17 přímo z jazykové v16. Hlídají src/test_cn_usazeni.js,
    * src/test_vs_docx_v17.js (F) a src/test_preklad.js. [C1] */
@@ -1174,7 +1257,7 @@ const MUTACE = [
     nahrad: "const CTRL_EXPORT_VERZE = 4;",
     proc: 'controlling by nepoznal, že se export změnil (pravidlo otázky 12)' },
   { nazev: '#540: volné pole krycího listu po Prodáno editovatelné', soubor: 'zamek.js',
-    hledej: "  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id)) return 'zmrazeno';",
+    hledej: "  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id) && !zamekProdanoTerminVolny(v, list, id)) return 'zmrazeno';",
     nahrad: "",
     proc: 'po prodeji by šlo měnit krycí list, ze kterého se připravuje zápis do Pipedrive' },
   /* VZ-F2 (#663): prodaná varianta se počítá v zamekSodHlavicky (klient i server). */
@@ -3543,8 +3626,8 @@ const MUTACE = [
     nahrad: "",
     proc: "dotisk nabídky PROJ by nesl nové texty a doložky" },
   { nazev: "O7: K3-N2 nabídka PROJ nečte snímek", soubor: "nabidka_proj.js",
-    hledej: "  return snimek ? P.podminkyEfZmrazene(f, snimek) : P.podminkyEf(f);",
-    nahrad: "  return P.podminkyEf(f);",
+    hledej: "  if (snimek) return P.podminkyEfZmrazene(f, snimek);\n  const ef = P.podminkyEf(f);",
+    nahrad: "  const ef = P.podminkyEf(f);",
     proc: "zapnuté doložky by se objevily v odeslané nabídce" },
   { nazev: "O7: K3-N2 nabídka PROJ bez varianty", soubor: "nabidka_proj.js",
     hledej: "  const podmEf = nabidkaProjPodmEf(varianta);",

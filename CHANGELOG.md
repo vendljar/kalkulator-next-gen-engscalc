@@ -8,6 +8,27 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.11.6 — D8 #675: termíny krycího listu PROJ ze lhůt v týdnech, větev claude/d8-lhuty
+
+Nad integrací `042fcbc` (v19.11.5). Rozhodnutí J. V. 19. 11. 2026 (dotaz obchodu D8). Cenu nemění; text nabídky
+s výchozí tabulkou beze změny (porovnání sestavení SHODA). Verzi a číslo roadmapy přečísluje koordinace.
+
+- **Lhůty PROJ v Nastavení → Firma** (jen administrátor): tabulka zaměření 4 t, výstupy 4–6 t, studie 10–12 t,
+  hrubopis DPZ 10–12 t, stanoviska 4 t, povolení záměru 2 měs. + právní moc 1 měs. (měsíc = 4,3 týdne), DPS 6 t,
+  s datem platnosti. Zveřejňuje se s firemními údaji (server kontroluje tvar, záloha a obnova jdou s firmou);
+  `src/lhuty_proj.js`, `src/ui/lhuty_proj_ui.js`.
+- **Text nabídky PROJ z tabulky** (online i Word `{{PROJ_TERMINY_TERMIN}}` / `{{PROJ_TERMINY}}`, CZ/EN/DE/FR):
+  výchozí znění termínů dostane čísla z tabulky, znění se nemění. Vlastní znění (Smlouvy / Šablony) nebo vlastní
+  překlad zůstane pevné a karta lhůt na něj upozorní. Šablona v8 pevné týdny nemá — nová šablona není potřeba.
+- **Krycí list PROJ:** po Prodáno se termíny (zahájení = datum podpisu, výstupy ze zaměření, studie, DPZ, povolení,
+  DPS) dopočítají řetězem jen přes nabízené činnosti, u rozpětí horní mez. U data je vidět zdroj („podpis + 10 týdnů
+  (zaměření 4 + výstupy 6)“), ruční datum zůstane a řetěz jde od něj, ↺ vrátí dopočet. Do prodeje se nedopočítává.
+- **Zámek:** Prodáno zamrazí lhůty do varianty (`data.kryciProj.lhutyProj`); odeslaná nabídka drží lhůty ve snímku
+  podmínek (starší bez snímku výchozí čísla). Termíny prodané varianty jsou editovatelné do tisku SoD (klient
+  i server), snímek lhůt prodané varianty server nepustí změnit.
+- **Testy:** `src/test_d8_lhuty.js` (113 OK; proti 042fcbc padá), `netlify/test_d8_lhuty.mjs` (15 OK; proti 042fcbc
+  padá). Mutace [D8] jádro 20, server 6.
+
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 
 Nad integrací `a018828` (v19.11.3). Cenu nemění (jen zahraniční statika zadaná textem). Verzi přečísluje koordinace.

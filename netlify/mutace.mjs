@@ -91,6 +91,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_561_rucni_cena.js', 'test_561_rucni_cena.mjs',
      /* [K50N1] (19. 11. 2026): statika opláštění v zahraniční řadě — server B112, zámek (rychlá sada). */
      '../src/test_k50n1_statika_zahr.js', 'test_k50n1_statika_zahr.mjs',
+     /* D8 (19. 11. 2026): lhůty PROJ — firma, Prodáno se snímkem lhůt, termíny prodané varianty. */
+     '../src/test_d8_lhuty.js', 'test_d8_lhuty.mjs',
      /* [SP] #667 (18. 11. 2026): statika opláštění — nulová cena z nabídky, tvar zaškrtnutí, přepočet (rychlá sada). */
      '../src/test_667_statika_opl.js', 'test_667_statika_opl.mjs',
      /* #560 SV (4. 11. 2026): zrušená volba světlíku „zajistí stavba" — rychlé sady. */
@@ -254,6 +256,31 @@ const filtr = filtrZArgv(process.argv.slice(2));
  * čím se nahradí, a proč nás zajímá — co by se v praxi stalo, kdyby tuhle
  * chybu někdo udělal doopravdy. */
 const MUTACE = [
+  /* D8 (19. 11. 2026): lhůty PROJ na serveru — hlídá netlify/test_d8_lhuty.mjs. [D8] */
+  { nazev: "D8: firma s vadnými lhůtami se zveřejní [D8]", soubor: "../src/firma.js",
+    hledej: "  if (vadyLhut.length)\n",
+    nahrad: "  if (false)\n",
+    proc: "zveřejnila by se tabulka lhůt, ze které nejde počítat (výjimka u všech uživatelů)", sady: ['test_d8_lhuty.mjs', '../src/test_d8_lhuty.js'] },
+  { nazev: "D8: zveřejnění zahodí lhůty [D8]", soubor: "../src/firma.js",
+    hledej: "    if (ciste) out.lhutyProj = ciste;",
+    nahrad: "    if (false) out.lhutyProj = ciste;",
+    proc: "změna lhůt by se nikomu neprojevila — zveřejnění by tvrdilo úspěch", sady: ['test_d8_lhuty.mjs', '../src/test_d8_lhuty.js'] },
+  { nazev: "D8: lhůty s cizím klíčem projdou [D8]", soubor: "../src/lhuty_proj.js",
+    hledej: "  Object.keys(x).forEach(k => { if (['v', 'platnostOd', 'radky'].indexOf(k) < 0) vady.push(",
+    nahrad: "  Object.keys(x).forEach(k => { if (false) vady.push(",
+    proc: "do záznamu firmy by šel uložit libovolný obsah", sady: ['test_d8_lhuty.mjs', '../src/test_d8_lhuty.js'] },
+  { nazev: "D8: server nepustí ruční termín prodané varianty [D8]", soubor: "../src/zamek.js",
+    hledej: "  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id) && !zamekProdanoTerminVolny(v, list, id)) return 'zmrazeno';",
+    nahrad: "  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id)) return 'zmrazeno';",
+    proc: "obchodník by dopočtený termín po prodeji nemohl opravit (uložení by spadlo)", sady: ['test_d8_lhuty.mjs', '../src/test_d8_lhuty.js'] },
+  { nazev: "D8: server pustí změnu snímku lhůt prodané varianty [D8]", soubor: "../src/zamek.js",
+    hledej: "  if (kopie.kryciProj && typeof kopie.kryciProj === 'object' && !variantaProdana(v))\n    delete kopie.kryciProj.lhutyProj;",
+    nahrad: "  if (kopie.kryciProj && typeof kopie.kryciProj === 'object')\n    delete kopie.kryciProj.lhutyProj;",
+    proc: "prodané zakázce by šly přepsat lhůty a s nimi termíny", sady: ['test_d8_lhuty.mjs', '../src/test_d8_lhuty.js'] },
+  { nazev: "D8: server nepustí snímek lhůt při prodeji [D8]", soubor: "../src/zamek.js",
+    hledej: "  if (kopie.kryciProj && typeof kopie.kryciProj === 'object' && !variantaProdana(v))\n    delete kopie.kryciProj.lhutyProj;",
+    nahrad: "",
+    proc: "Prodáno by se neuložilo (odeslaná varianta by „změnila data“)", sady: ['test_d8_lhuty.mjs', '../src/test_d8_lhuty.js'] },
   /* C5 (#585, 11. 11. 2026): nástroj obnovy testovací sady zakázek — každá kontrola P1–P5
    * nastroje/test_sada_jadro.mjs. Hlídá netlify/test_c5_test_sada.mjs. [C5] */
   { nazev: 'C5: B1: obal nechá readline otevřený přes heslo [C5]', soubor: '../nastroje/test_sada_obnov.mjs',
@@ -6934,8 +6961,8 @@ const MUTACE = [
     nahrad: "      if (!(typeof v.zamek.prijato === 'string'",
     proc: 'upravený soubor zálohy by posunul mez prodeje (otázka 3a)', sady: ['test_k40b_prodej_mez.mjs', '../src/test_k40b_zamek_prodej.js'] },
   { nazev: '#547 K37-N2: po Prodáno ani pole SoD', soubor: '../src/zamek.js',
-    hledej: "  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id)) return 'zmrazeno';",
-    nahrad: "  if (variantaProdana(v)) return 'zmrazeno';",
+    hledej: "  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id) && !zamekProdanoTerminVolny(v, list, id)) return 'zmrazeno';",
+    nahrad: "  if (variantaProdana(v) && !zamekProdanoTerminVolny(v, list, id)) return 'zmrazeno';",
     proc: 'první tisk SoD po Prodáno by se neuložil (409, nález K37-N2)' },
   /* „Pole SoD volná i po tisku SoD" (bez zamekKryciOtevreny v zamekProdanoSodVolne)
    * je EKVIVALENTNÍ mutace — po tisku SoD pole zamkne i běžné pravidlo „po SoD"
