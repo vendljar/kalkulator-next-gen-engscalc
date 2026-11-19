@@ -146,9 +146,11 @@ const okno = async fn => {
   return t;
 };
 const nahled = await okno(() => nabidkaNahled());
-zkus('4 náhled podkladů: sekce po šachtách', /ZÁKLADNÍ PARAMETRY ŠACHTY – VÝTAH A/i.test(nahled) && /ZÁKLADNÍ PARAMETRY ŠACHTY – VÝTAH B \(2 KS\)/i.test(nahled), nahled.slice(0, 400));
-zkus('4 náhled podkladů: řádky šachet a součet', /Výtah A, vč\. můstků – 1 ks \(bez DPH\)/.test(nahled) && /Výtah B – 2 ks \(bez DPH\)/.test(nahled)
-  && /šachet celkem: 3 ks/.test(nahled) && !/Výtahová šachta \(bez DPH\)/.test(nahled), nahled.slice(nahled.indexOf('OBCHODNÍ') - 10, nahled.indexOf('OBCHODNÍ') + 400));
+/* NP (19. 11. 2026): náhled podkladů ve vzhledu Wordu CN v17 — nadpis šachty jako smyčka v17 */
+zkus('4 náhled podkladů: sekce po šachtách', /VARIANTA ŠACHTY: Výtah A\s/.test(nahled) && /VARIANTA ŠACHTY: Výtah B – 2 ks/.test(nahled)
+  && (nahled.match(/ZÁKLADNÍ PARAMETRY ŠACHTY/g) || []).length === 2, nahled.slice(0, 400));
+zkus('4 náhled podkladů: řádky šachet a součet', /Výtah A, vč\. můstků\s+počet kusů: 1/.test(nahled) && /Výtah B\s+počet kusů: 2/.test(nahled)
+  && /šachet celkem: 3 ks/.test(nahled) && !/VÝTAHOVÁ ŠACHTA\s+rozsah/.test(nahled), nahled.slice(nahled.indexOf('OBCHODNÍ') - 10, nahled.indexOf('OBCHODNÍ') + 400));
 const dok = await okno(() => nabidkaOckDokument());
 zkus('4 tiskový dokument CN: řádky šachet, počet kusů a cena celkem', /Výtah A, vč\. můstků\s+počet kusů: 1/.test(dok) && /Výtah B\s+počet kusů: 2/.test(dok)
   && /Cena celkem \(bez DPH\)\s+šachet celkem: 3 ks/.test(dok), dok.slice(dok.indexOf('OBCHODNÍ'), dok.indexOf('OBCHODNÍ') + 500));
