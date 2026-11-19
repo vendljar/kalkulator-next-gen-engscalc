@@ -18,11 +18,18 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/vz-t1` | (tato dávka) | v19.11.2 | VZ T1 #669: řídící varianta a zákazník v hlavičce; s d8e4fc1 a 82cbd72; revize poradce; viz CHANGELOG |
 | `claude/vz-f2` | (tato dávka) | v19.11.4 | VZ-F2 #660–#663 + VZF1-I1 nad a3fad44; číslo verze přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
+| `claude/pg-tisk` | (tato dávka) | v19.11.6 | PG #675–#678 nad integrací 042fcbc; čísla a verzi přečísluje koordinace |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
 (18. 11.: žádná).
 
 ## Běžící dávky
+
+- **PG** (`claude/pg-tisk`, v19.11.6, nad 042fcbc): #675 tlačítka tisku CN OCK (náhled podkladů → Word modře → náhled
+  a tisk), #676 vlastní řádek TS v SOUČÁSTÍ DODÁVKY NENÍ (`extra[i].sekce='neni'`), #677 DALŠÍ UJEDNÁNÍ v nabídce PROJ
+  (`PJ.dalsiUjednani`, Word přes šablonu PROJ v9 `--proj-v9`, kontrola `dalsiUjednaniWordProj`), #678 pole PAGE —
+  test `test_pg_pole_page.js` 46/0, chyba generátoru nedoložena → **čeká na zprávu koordinace** (diagnostika šablon).
+  Šablonu PROJ v9 vyrobí a nahraje J. V. (`podklady/SABLONA_PROJ_V9_19_11.md`).
 
 - **R-K50N1 #671** (`claude/r-k50n1`, v19.11.5, nad a018828): editor ceníku (prázdná zahr. statika opláštění =
   zahraniční statické posouzení), upozornění v dialogu zveřejnění, zahr. statika textem → číslo. Test oddíl 6, mutace [K50N1] 5/5 + 3/3. Kolo VŠE ZELENÉ (475/0/7, 386/0/1, 9/9, porovnání 359/359 SHODA). HOTOVO.

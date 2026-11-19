@@ -8,6 +8,29 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.11.6 — PG #675–#678: tisk nabídky OCK, vlastní řádky NENÍ a DALŠÍ UJEDNÁNÍ PROJ, pole PAGE, větev claude/pg-tisk
+
+Nad integrací `042fcbc` (v19.11.5). Cenu nemění. Čísla roadmapy a verzi přečísluje koordinace.
+
+- **#675 tlačítka tisku nabídky OCK:** pořadí zleva *Kompletní náhled podkladů* → *Vytvořit nabídku (Word)* (modré,
+  `primary`) → *Kompletní náhled a tisk nabídky* (bez barvy); zábrany `zab` / `zabTisk` u svých tlačítek; nová poznámka
+  pod tlačítky a manuál. PROJ beze změny.
+- **#676 vlastní řádek v SOUČÁSTÍ DODÁVKY NENÍ (OCK):** u vlastního řádku specifikace volba sekce (DALŠÍ UJEDNÁNÍ /
+  SOUČÁSTÍ DODÁVKY NENÍ, `techspec.extra[i].sekce = 'neni'`). Řádek NENÍ stojí na konci sekce na obrazovce, v online
+  náhledu, ve Wordu CN v16/v17 (i víc šachet: klon za `{{TS_NENI_PRISTUP}}` před pruh DALŠÍ UJEDNÁNÍ) a v EN/DE/FR.
+  Starší zakázky bez pole beze změny (vše v DALŠÍ UJEDNÁNÍ).
+- **#677 DALŠÍ UJEDNÁNÍ v nabídce PROJ:** „+ přidat vlastní řádek" (text bez ceny) v kartě Cenová nabídka (PROJ),
+  `proj.zadani.dalsiUjednani`, zápis přes `set()` (zámek). Sekce za termíny v online náhledu; Word symboly
+  `PROJ_DALSI_UJEDNANI_NAZEV | _TEXT` (řádek za řádek) v bloku `BLOK_DALSI_UJEDNANI`. Nová šablona **PROJ v9**
+  (`nastroje/vyrob_sablony.js --proj-v9`, postup `podklady/SABLONA_PROJ_V9_19_11.md`) — nahraje J. V. Se starší
+  šablonou Word funguje bez řádků a kontrola **dalsiUjednaniWordProj** upozorní (pravidel kontrol 53).
+- **#678 číslování stránek CN:** test `src/test_pg_pole_page.js` se syntetickou šablonou (PAGE/NUMPAGES složené,
+  kód ve dvou bězích, `fldSimple`, pole vedle symbolu, v tabulce zápatí a v záhlaví) — vyplnění, překlad EN/DE/FR
+  i překlad + vyplnění nechají pole celá. Chyba generátoru nedoložena, oprava se nedělá; čeká na diagnostiku šablon.
+- **Testy:** `test_pg_neni_radky.js` 21/0 (před 15 FAIL), `test_pg_proj_dalsi.js` 33/0 (před 3 FAIL na exportech),
+  `test_pg_tlacitka.js` 15/0 (před 7 FAIL), `test_pg_pole_page.js` 46/0 (podvržené rozbití pole 15 resp. 12 FAIL).
+  Mutace jádra [PG].
+
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 
 Nad integrací `a018828` (v19.11.3). Cenu nemění (jen zahraniční statika zadaná textem). Verzi přečísluje koordinace.
