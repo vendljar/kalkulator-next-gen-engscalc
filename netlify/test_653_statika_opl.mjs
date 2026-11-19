@@ -15,6 +15,10 @@
  *   5) N3 (J. V. 18. 11.): nula z nabídky bez zdroje → zámek 403 (schválení),
  *      se zdrojem → potvrzení stačí (200); stará zamčená varianta
  *      s potvrzeným záznamem bez zdroje se nemění a ověření zůstává „shoda".
+ *   6) dorevize R1: klon staré odeslané nabídky (cena z nabídky u statiky,
+ *      záznam statiky opláštění chybí) se uloží i zamkne (200); R2: 403
+ *      u ceny bez zdroje říká, co doplnit.
+ * Pojistka R1/R2: proti ab6b29c padá oddíl 6.
  * Pojistka: proti 3c42353 (před revizí N2) padá krok 3 (403 „Ceník varianty
  * smí měnit jen administrátor … statikaOplKc").
  */
@@ -193,6 +197,50 @@ await blok(async () => {
   const rec4 = g4.varianty[0].data.rucniCeny['C.statikaOplKc'];
   test('… záznam zamčené varianty beze změny (razítko zůstalo)', rec4.potvrdil && rec4.potvrdil.email === OBCH && rec4.cislo === '', rec4);
   test('… ověření zámku dál „shoda"', g4.varianty[0].zamek.overeni && g4.varianty[0].zamek.overeni.stav === 'shoda', g4.varianty[0].zamek.overeni);
+});
+
+console.log('===== 6. dorevize R1 a R2 =====');
+await blok(async () => {
+  /* R1: stará ODESLANÁ varianta s potvrzenou cenou z nabídky u statiky
+   * (zdroj vyplněn), uložená před #653 — klon v prohlížeči a jeho zámek. */
+  const z = nova('R1 klon');
+  const d = d0(z); d.cenik.statikaKc = 800; d.cenik.statikaOplKc = 800;
+  d.rucniCeny = { 'C.statikaKc': { hodnota: 800, dodavatel: 'Statik Příklad s.r.o.', cislo: 'N-661', datum: '', platnostDo: '',
+      zaklad: null, potvrdil: { jmeno: 'x' } },
+    'C.statikaOplKc': { hodnota: 800, dodavatel: 'Statik Příklad s.r.o.', cislo: 'N-661', datum: '', platnostDo: '',
+      zaklad: null, potvrdil: { jmeno: 'x' } } };
+  const r1 = await uloz(z, cO);
+  test('R1 příprava: uložení (200)', r1.status === 200, r1);
+  const rz = await uloz(zamkni(await nacti(r1.soubor, cO)), cO);
+  test('R1 příprava: zámek (200)', rz.status === 200, rz);
+  /* Data jako před #653: zamčená varianta bez klíče statikaOplKc a bez jeho záznamu. */
+  const klic = [...pamet.keys()].find(k => k.endsWith(r1.soubor));
+  const ul = JSON.parse(pamet.get(klic));
+  delete ul.varianty[0].data.cenik.statikaOplKc; delete ul.varianty[0].data.rucniCeny['C.statikaOplKc'];
+  pamet.set(klic, JSON.stringify(ul));
+  /* Prohlížeč: otevřít (import = migrace), naklonovat, uložit, zamknout klon. */
+  const g = zk.importZakazka(await nacti(r1.soubor, cO));
+  test('R1: zamčená varianta po importu: sazba ano, záznam statiky opláštění ne (doklad)',
+    g.varianty[0].data.cenik.statikaOplKc === 800 && !g.varianty[0].data.rucniCeny['C.statikaOplKc']);
+  const klon = zam.klonujVariantu(g, g.varianty[0].id);
+  const r2 = await uloz(g, cO);
+  test('R1: uložení zakázky s klonem (200)', r2.status === 200, r2);
+  const g2 = await nacti(r1.soubor, cO);
+  const vk = g2.varianty.find(v => v.id === klon.id);
+  const rk = vk && vk.data.rucniCeny && vk.data.rucniCeny['C.statikaOplKc'];
+  test('R1: klon nese záznam statiky opláštění s razítkem serveru', !!rk && rk.hodnota === 800 && rk.potvrdil && !!rk.potvrdil.email, rk);
+  zam.zamkniVariantu(vk, { typ: 'nabidka', kdy: new Date().toISOString(), kdo: 'Test statika',
+    cislo: zam.variantaCislo(g2, vk), vysledek: zam.zamekVysledekSpocti(vk, JEKLY, 'v-646') });
+  const r3 = await uloz(g2, cO);
+  test('R1: zámek klonu (200)', r3.status === 200, r3);
+  /* R2: 403 u ceny bez zdroje říká, co doplnit. */
+  const zb = nova('R2 bez zdroje'); const db = d0(zb);
+  db.cenik.statikaOplKc = 1200;
+  db.rucniCeny = { 'C.statikaOplKc': { hodnota: 1200, dodavatel: '', cislo: '', datum: '', platnostDo: '', zaklad: null, potvrdil: null } };
+  const rb = await uloz(zb, cO);
+  const rbz = await uloz(zamkni(await nacti(rb.soubor, cO)), cO);
+  test('R2: zámek ceny bez zdroje 403 se srozumitelnou větou (doplňte dodavatele nebo číslo nabídky, bez „směsi")',
+    rbz.status === 403 && /doplňte dodavatele nebo číslo nabídky/.test(rbz.chyba || '') && !/směs/.test(rbz.chyba || ''), rbz);
 });
 
 console.log('===== 4. tvar zaškrtnutí =====');

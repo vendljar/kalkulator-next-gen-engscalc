@@ -25,6 +25,9 @@
  * proti 3c42353 (před opravou) N1 2 FAIL, N2 2 FAIL, N4 chybí funkce.
  * N3 (J. V. 18. 11.): cenu z nabídky potvrdí obchodník jen se zdrojem
  * (dodavatel nebo číslo nabídky), bez zdroje jde ke schválení.
+ * Dorevize (19. 11.): R1 klon staré odeslané nabídky dostane záznam statiky
+ * opláštění, R2 hláška výjimky u ceny bez zdroje, R4 zdroj s písmenem/číslicí.
+ * Pojistka: proti ab6b29c padá 4c (R1 2 FAIL, R2 1 FAIL, R4 2 FAIL).
  *
  * Pojistka proti prázdnému testu: proti integraci 910315b (před #653) sada
  * padá (chybí cenikMigraceStatikyOpl / statikaOplZahrnuta, řádek má cestu
@@ -242,6 +245,45 @@ console.log('===== 4b. revize poradce N1, N2, N4 =====');
   const src = require('fs').readFileSync(__dirname + '/ui/kalk_ock.js', 'utf8');
   test('N4: výběr v UI zapisuje null pro „výchozí"', /set\('Z\.statikaOpl', this\.value === '' \? null : this\.value === '1'\)/.test(src)
     && /statikaOplVolby\(Z, plocha\)/.test(src));
+}
+
+console.log('===== 4c. dorevize R1, R2, R4 =====');
+{
+  const ZAM = require('./zamek.js');
+  /* R1: klon staré ODESLANÉ varianty (zamčená, záznam jen u C.statikaKc). */
+  const z = novaZakazka(); z.cislo = '2026 - OPR - CN - 0661'; z.nazevAkce = 'TEST R1';
+  const d = z.varianty[0].data; d.ock.zadani = zadani();
+  d.cenik = cenik({ statikaKc: 800 }); delete d.cenik.statikaOplKc;
+  d.rucniCeny = { 'C.statikaKc': { hodnota: 800, dodavatel: 'Statik Příklad', cislo: 'N-1', datum: '', platnostDo: '',
+    zaklad: 1000, potvrdil: { jmeno: 'Obch Test', email: 'obch@priklad.cz', kdy: '2026-11-02T08:00:00.000Z' } } };
+  z.varianty[0].zamek = { zamceno: true, typ: 'nabidka', kdy: '2026-11-02T09:00:00.000Z' };
+  const zi = importZakazka(z);
+  const zdroj = zi.varianty[0];
+  test('R1: zamčený zdroj po importu záznam pro statiku opláštění nemá (doklad), sazba ano',
+    !zdroj.data.rucniCeny['C.statikaOplKc'] && zdroj.data.cenik.statikaOplKc === 800);
+  const klon = ZAM.klonujVariantu(zi, zdroj.id);
+  const rk = klon && klon.data.rucniCeny && klon.data.rucniCeny['C.statikaOplKc'];
+  test('R1: klon dostane záznam i pro statiku opláštění (kryje sazbu)', !!rk && rk.hodnota === 800 && rucniCenaPlati(klon.data, 'C.statikaOplKc'), rk);
+  test('R1: zdroj klonováním nezměněn', !zdroj.data.rucniCeny['C.statikaOplKc']);
+  const zi2 = importZakazka(kopie(Object.assign(kopie(zi), { varianty: [Object.assign(kopie(zdroj), { id: 'v2', zamek: null })] })));
+  test('R1: nezamčená varianta, která klíč už nese, záznam dostane i importem', !!zi2.varianty[0].data.rucniCeny['C.statikaOplKc']);
+  const dj = kopie(zdroj.data); dj.cenik.statikaOplKc = 1000; const zj = { schema: 2, varianty: [{ id: 'x', data: dj }] };
+  test('R1: jiná sazba statiky opláštění (vlastní cena) záznam nedostane', !importZakazka(zj).varianty[0].data.rucniCeny['C.statikaOplKc']);
+  /* R2: hláška výjimky u ceny bez zdroje */
+  const dn = { cenik: cenik({ statikaOplKc: 1000 }), proj: { cenik: kopie(d.proj.cenik) }, verze: 1 };
+  const db = kopie(zdroj.data); delete db.rucniCeny; db.cenik.statikaKc = 1000; rucniCenaNastav(db, 'C.statikaOplKc', 1200);
+  const ob = vyjimkyObsah(db, dn, '', JEKLY);
+  const VJ = require('./vyjimky.js');
+  const t = VJ.vyjimkyText(ob);
+  test('R2: výjimka u ceny bez zdroje říká, co doplnit, a nemluví o směsi ceníků',
+    /doplňte dodavatele nebo číslo nabídky/.test(t) && /bez zdroje/.test(t) && !/směs/.test(t), t);
+  test('R2: obsah výjimky (schválení) se hláškou nemění', ob.obsah && !/bezZdroje/.test(ob.obsah), ob.obsah);
+  /* R4: zdroj musí nést písmeno nebo číslici */
+  test('R4: „." ani neviditelný znak zdrojem nejsou', !rucniCenaMaZdroj({ cislo: '.' }) && !rucniCenaMaZdroj({ dodavatel: '\u200B' })
+    && !rucniCenaMaZdroj({ dodavatel: ' - ', cislo: '\uFEFF\u2060' }));
+  test('R4: písmeno (i s diakritikou) nebo číslice zdrojem jsou', rucniCenaMaZdroj({ dodavatel: 'Č' }) && rucniCenaMaZdroj({ cislo: '7' }));
+  const dr = kopie(db); rucniCenaZdrojNastav(dr, 'C.statikaOplKc', 'cislo', '\u200B.');
+  test('R4: s „zdrojem" z neviditelných znaků potvrdit nejde', !rucniCenaPotvrd(dr, 'C.statikaOplKc', 'T'));
 }
 
 console.log('===== 5. server: tvar zaškrtnutí =====');

@@ -63,9 +63,13 @@ const RC_BEZ_DOKLADU = 'bezDokladu';     // starší vlastní cena příplatku S
  * (cenová výjimka, vyjimky.js). Zamčená varianta je doklad — data se nemění,
  * ověření zámku zůstává shodné (výsledek výpočtu na zdroji nezávisí). */
 const RC_BEZ_ZDROJE = 'bezZdroje';
+/* Dorevize R4: zdroj musí nést aspoň jedno písmeno nebo číslici —
+ * „." ani neviditelný znak (U+200B …) zdrojem nejsou. */
+function rcZdrojText(t) {
+  return /[\p{L}\p{N}]/u.test(String(t == null ? '' : t).replace(/[\u00AD\u180E\u200B-\u200F\u2060-\u2064\uFEFF]/g, ''));
+}
 function rucniCenaMaZdroj(r) {
-  return !!r && typeof r === 'object'
-    && (String(r.dodavatel == null ? '' : r.dodavatel).trim() !== '' || String(r.cislo == null ? '' : r.cislo).trim() !== '');
+  return !!r && typeof r === 'object' && (rcZdrojText(r.dodavatel) || rcZdrojText(r.cislo));
 }
 const RC_ZDROJ_HLASKA = 'doplňte dodavatele nebo číslo nabídky';
 

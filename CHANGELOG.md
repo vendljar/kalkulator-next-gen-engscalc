@@ -42,6 +42,16 @@ revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `or
   `src/test_653_statika_opl.js` 72/0 (proti stavu před N3 padá), `netlify/test_653_statika_opl.mjs` 28/0 (bez N3 2 FAIL:
   razítko i zámek nuly bez zdroje prošly); upraveny `test_561_rucni_cena.js` (záznam bez zdroje = „bez zdroje“),
   N4 výběr escapuje hodnotu volby (test_escape).
+- **Dorevize poradce (19. 11.):** R1 klon staré odeslané nabídky (cena z nabídky u `C.statikaKc`, zamčený zdroj bez
+  záznamu statiky opláštění) dostane záznam i pro `C.statikaOplKc` — `zakStatikaOplRucniDopln` (zakazka.js) volá klon
+  (`klonujVariantu`) i import u každé nezamčené varianty, kde obě sazby nesou hodnotu záznamu; dřív zámek klonu 403.
+  R2 odmítnutí výjimky u ceny bez zdroje říká „ruční cena z nabídky bez zdroje … doplňte dodavatele nebo číslo nabídky“
+  místo „směsi ceníků“ (jen text, obsah výjimky beze změny). R4 zdroj musí nést písmeno nebo číslici po odstranění
+  neviditelných znaků („.“ ani U+200B zdrojem nejsou). R3 (správce zamkne cenu bez zdroje) předkládá koordinace J. V.
+  **R5 (přijato):** dřív schválená cenová výjimka přestane platit, když k položce přibude záznam ruční ceny bez zdroje
+  (obsah výjimky se změní) — obchodník musí doplnit zdroj, nebo požádat o schválení znovu.
+  Testy: `src/test_653_statika_opl.js` 82/0 (proti ab6b29c R1 2, R2 1, R4 2 FAIL), `netlify/test_653_statika_opl.mjs`
+  35/0 (proti ab6b29c 3 FAIL: klon bez záznamu, zámek klonu 403, věta o směsi).
 - **Mutace [SP]:** jádro [SP] 11/11 + P5 3/3 chycených, server [SP] 8/8 + #561 19/19 chycených.
 
 **Po revizi (N1–N4) kolo `--bez-mutaci --proti origin/claude/integrace-16-10` nad f9a5551: VŠE ZELENÉ** — sady 467/0/7, hodiny +400 dní 379/0/1, statické 9/9, porovnání SHODA 353/353; mutace jádro [SP] 13/13, server [SP] 17/17 + #561 19/19.

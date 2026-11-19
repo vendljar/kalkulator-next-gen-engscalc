@@ -917,6 +917,24 @@ function zakImportVzorCeniku(v) {
   };
 }
 
+/* CENA Z NABÍDKY U STATIKY KRYJE I STATIKU OPLÁŠTĚNÍ (revize #653 N2,
+ * dorevize R1, 18.–19. 11. 2026). Do #653 sdílely obě statiky sazbu
+ * C.statikaKc, takže cena z nabídky u ní platila pro obě. Migrace sazbu
+ * zkopíruje do statikaOplKc, záznam (doklad, potvrzení) se musí zkopírovat
+ * také — jinak by hodnota bez záznamu vypadala jako změna ceníku (B112 403,
+ * cenová výjimka). Platí pro NEZAMČENOU variantu (volá ji import i klon,
+ * zamčená je doklad), jen když statikaOplKc i statikaKc nesou právě hodnotu
+ * záznamu a statika opláštění vlastní záznam nemá. Vrací true při změně. */
+function zakStatikaOplRucniDopln(d) {
+  const rc = d && d.rucniCeny;
+  if (!rc || typeof rc !== 'object' || Array.isArray(rc) || !d.cenik || typeof d.cenik !== 'object') return false;
+  const a = rc['C.statikaKc'];
+  if (!a || typeof a !== 'object' || rc['C.statikaOplKc']) return false;
+  if (typeof a.hodnota !== 'number' || d.cenik.statikaOplKc !== a.hodnota || d.cenik.statikaKc !== a.hodnota) return false;
+  rc['C.statikaOplKc'] = JSON.parse(JSON.stringify(a));
+  return true;
+}
+
 /* Import: umí schema 2 (zakázka) i původní formát v1 {zadani, cenik, fixes} */
 function importZakazka(obj) {
   if (obj && obj.schema >= 2 && Array.isArray(obj.varianty) && obj.varianty.length) {
@@ -955,13 +973,10 @@ function importZakazka(obj) {
        * Migrace sazbu zkopíruje do statikaOplKc — u nezamčené varianty i záznam
        * (doklad, potvrzení), jinak by nová hodnota bez záznamu vypadala jako
        * změna ceníku (B112 403, cenová výjimka). Zamčená varianta je doklad. */
-      const statikaOplChybi = !!(d.cenik && typeof d.cenik === 'object'
-        && !Object.prototype.hasOwnProperty.call(d.cenik, 'statikaOplKc'));
       if (typeof cenikMigraceLeseni === 'function') cenikMigraceLeseni(d.cenik);
-      if (statikaOplChybi && !(v.zamek && v.zamek.zamceno) && d.rucniCeny && typeof d.rucniCeny === 'object'
-        && d.rucniCeny['C.statikaKc'] && typeof d.rucniCeny['C.statikaKc'] === 'object' && !d.rucniCeny['C.statikaOplKc']
-        && d.cenik.statikaOplKc === d.rucniCeny['C.statikaKc'].hodnota)
-        d.rucniCeny['C.statikaOplKc'] = JSON.parse(JSON.stringify(d.rucniCeny['C.statikaKc']));
+      /* Dorevize R1: i u varianty, která klíč už nese (klon staré odeslané
+       * nabídky, zakázka migrovaná v prohlížeči) — viz zakStatikaOplRucniDopln. */
+      if (!(v.zamek && v.zamek.zamceno)) zakStatikaOplRucniDopln(d);
       /* Migrace 14. 9. 2026 (nález V38): doplnit klíče ceníku, které v době
        * uložení zakázky ještě neexistovaly. Bez toho se zveřejněním ceníku
        * z takové zakázky položka z platného ceníku ZTRATÍ — mezi verzemi 24
@@ -1964,7 +1979,7 @@ function zakazkaDuplikuj(zak, noveCislo) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zadaniCislaZTextu, svetlikyStavbaPrevod, svetlikyMaterialBezPocet, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
+  module.exports = { zakStatikaOplRucniDopln, zadaniCislaZTextu, svetlikyStavbaPrevod, svetlikyMaterialBezPocet, zakImportVzorCeniku, zakazkaBezCeniku, zakazkaCenikDopln, zakazkaCenikRozdil, zakazkaCenikPouzij, slevaRozhodnutiZahod, zakazkaDuplikuj, zakazkaCisloDalsi, sodCisloNavrh, ZADANI_Z_CENIKU, ZADANI_RUCNI_KLICE, ATYP_POLE, ATYP_NULA, atypHodnoty, variantaDatum, dnesIso, ZADANI_NOVA, vychoziZakladVolitelne, zadaniRucniMapa, zadaniRucniJe,
                      zadaniRucniZnac, zadaniRucniZrus, zadaniZCeniku, uvodniFotoObrazky, uvodniFotoSymboly, uvodniFotoPole, obrazekDataUrlPlatny, uvodniFotoPlatna, uvodniFotoOcisti, uvodniFotoVarovani, OBRAZEK_TYPY_FOTO, ZAKAZKA_SCHEMA, novaZakazka, novaVarianta, novaVariantaData,
                      nastavRidici, ridiciVarianta, aktivniVarianta, importZakazka, StorageAdapter,
                      zakazkaUnikatniId,
