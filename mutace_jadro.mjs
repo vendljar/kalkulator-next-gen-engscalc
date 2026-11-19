@@ -102,6 +102,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
   /* vyjimky.js (B183, 20. 10. 2026): obsah cenové výjimky — plocha pásu
    * a světlíku na 0,1 m², dřív schválené výjimky starým tvarem. */
   'vyjimky.js',
+  /* objednavka_proj.js (D3 #675, 19. 11. 2026): Objednávka / Smlouva PROJ —
+   * řádky, sleva a celkem jdou zákazníkovi k podpisu, číslo OBJ z CN.
+   * Hlídá src/test_objednavka_proj.js. */
+  'objednavka_proj.js',
   /* ui/sablony_sprava_ui.js (#474, O12, 21. 10. 2026): průvodce šablon
    * rozhoduje, jestli se zveřejní čeština, nebo jen jazykové verze k platné
    * češtině — a s jakým zdrojovým otiskem. Hlídá ho src/test_sablony_online.js. */
@@ -5240,6 +5244,34 @@ const MUTACE = [
     hledej: "    if (out.cestina.zabrana) out.chyby.push(out.cestina.zabrana);",
     nahrad: "    if (false) out.chyby.push(out.cestina.zabrana);",
     proc: "administrátor by zveřejnil smlouvu z velké části česky (server by ji pak odmítl až po kliknutí)", sady: ["test_sablony_online.js"] },
+  /* D3 #675 (19. 11. 2026): Objednávka / Smlouva PROJ. Hlídá src/test_objednavka_proj.js. [D3] */
+  { nazev: "D3: číslo OBJ bez náhrady CN [D3]", soubor: "objednavka_proj.js",
+    hledej: "  casti[i] = 'OBJ';", nahrad: "",
+    proc: "objednávka by nesla číslo nabídky místo čísla objednávky", sady: ["test_objednavka_proj.js"] },
+  { nazev: "D3: číslo bez CN se vymyslí [D3]", soubor: "objednavka_proj.js",
+    hledej: "  if (i < 0) return '';", nahrad: "  if (i < 0) return c + '-OBJ';",
+    proc: "z čísla bez části CN by vzniklo smyšlené číslo objednávky", sady: ["test_objednavka_proj.js"] },
+  { nazev: "D3: řádky za cenu po slevě [D3]", soubor: "objednavka_proj.js",
+    hledej: "    const cena = +ceny.cenyPred[k];", nahrad: "    const cena = +ceny.cenyPo[k];",
+    proc: "sleva by se odečetla dvakrát (v řádcích i vlastním řádkem)", sady: ["test_objednavka_proj.js"] },
+  { nazev: "D3: bez řádku slevy [D3]", soubor: "objednavka_proj.js",
+    hledej: "  const sleva = s.slevaKc ? (", nahrad: "  const sleva = false ? (",
+    proc: "součet řádků by nedal Celkem Kč", sady: ["test_objednavka_proj.js"] },
+  { nazev: "D3: DPH z ceníku OCK místo projekční části [D3]", soubor: "objednavka_proj.js",
+    hledej: "  const sazba = s.dphPct / 100;", nahrad: "  const sazba = 0.21;",
+    proc: "řádky by nesly jinou sazbu DPH než nabídka PROJ", sady: ["test_objednavka_proj.js"] },
+  { nazev: "D3: odeslaná varianta živě, ne z otisku [D3]", soubor: "objednavka_proj.js",
+    hledej: "  const ceny = nabidkaProjCeny(vPohled, 'cz');", nahrad: "  const ceny = nabidkaProjCeny(Object.assign({}, vPohled, { zamek: null }), 'cz');",
+    proc: "dotisk objednávky po změně ceníku by nesl jiné ceny než odeslaná CN", sady: ["test_objednavka_proj.js"] },
+  { nazev: "D3: projednání se nepozná v bloku studie [D3]", soubor: "objednavka_proj.js",
+    hledej: "/projednání/i.test(r[0]) ? 'projednani' : s[0]", nahrad: "s[0]",
+    proc: "rozsah projednání by se tiskl u studie", sady: ["test_objednavka_proj.js"] },
+  { nazev: "D3: objednávka není dokument PROJ pro víc zákazníků [D3]", soubor: "vice_zakazniku.js",
+    hledej: "t === 'sodProj' || t === 'objednavkaProj' ||", nahrad: "t === 'sodProj' ||",
+    proc: "objednávka by šla dalšímu zákazníkovi s cenami řídícího", sady: ["test_objednavka_proj.js"] },
+  { nazev: "D3: objednávka bez strany PROJ [D3]", soubor: "kontroly.js",
+    hledej: "'sodProj', 'objednavkaProj', 'kryciproj'", nahrad: "'sodProj', 'kryciproj'",
+    proc: "objednávka by vznikla i u zakázky s vyřazenou PROJ", sady: ["test_objednavka_proj.js"] },
 ];
 
 /* ============================================================
