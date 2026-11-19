@@ -280,8 +280,11 @@ function renderKryci() {
   const sekceHtml = KRYCI_SEKCE.map(s => {
     const rows = s.pole.map(p => {
       if (p.bind) {   // obousměrné provázání s hlavičkou kalkulace (ZAK) – žádný ruční přepis
+        /* VZ-F1 (VZ-N3): pole zákazníka (DIČ, zástupci) čte a zapisuje adresáta
+         * listu — u dalšího zákazníka jeho položku, ne hlavičku řídícího. */
+        const b = typeof vzKlCesta === 'function' ? vzKlCesta(p.bind) : p.bind;
         return `<div class="kl-row"><div class="lbl">${p.label} ${znacka(p.verze)}</div>
-          <div><input type="text" value="${esc(get(p.bind))}" onchange="set('${escJs(p.bind)}', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr(p.bind) : ''}></div>
+          <div><input type="text" value="${esc(get(b))}" onchange="set('${escJs(b)}', this.value)"${typeof zamekZakAttr === 'function' ? zamekZakAttr(b) : ''}${typeof vzPoleAttr === 'function' ? vzPoleAttr(b) : ''}></div>
           <div class="src"><span class="note" style="font-size:10px">${esc(p.src || 'hlavička kalkulace')} ↔</span></div></div>`;
       }
       const pref = p.prefill ? p.prefill(c) : null;

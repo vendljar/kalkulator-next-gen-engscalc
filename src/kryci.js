@@ -453,6 +453,15 @@ const KRYCI_SEKCE = [
     { id: 'podpisInformovanTech', label: 'Informováno Technické odd.', verze: ['bo', 'techdata'], ph: 'kdo z technického oddělení byl informován…' },
   ] },
 ];
+/* VZ-F1 (bod 2, rozhodnutí J. V. 18. 11. 2026): provázaná pole zástupců
+ * (`bind: 'ZAK.zastupci.*'`) neměla předvyplnění, a tisk (kryciHodnota — bind
+ * nečte ruční přepis) je proto vynechával: vytištěný krycí list měl prázdnou
+ * sekci Zástupci i u jednoho zákazníka. Předvyplnění bere zástupce ze
+ * zakázky kontextu — v tisku pohled zákazníka, pro kterého se tiskne. */
+KRYCI_SEKCE.forEach(s => s.pole.forEach(p => {
+  const m = /^ZAK\.zastupci\.([A-Za-z]+)$/.exec(p.bind || '');
+  if (m && !p.prefill) p.prefill = c => String((((c && c.zak) || {}).zastupci || {})[m[1]] || '');
+}));
 /* VZ-E2 (revize U1): pole zákazníka v pohledu jen jejich vlastníkovi (vzKlOznacPole). */
 if (typeof vzKlOznacPole === 'function') vzKlOznacPole(KRYCI_SEKCE);
 else if (typeof require === 'function') { try { require('./vice_zakazniku.js').vzKlOznacPole(KRYCI_SEKCE); } catch (e) {} }
@@ -876,7 +885,12 @@ function kryciData(zak, varianta, jekly, verze) {
   const hodiny = kryciHodinySekce(zak, varianta, jekly, verze, 'ock');   // konec listu BO, jen OCK (15. 10. 2026)
   if (hodiny) sekce.push(hodiny);
   const verzeNazev = verze === 'techdata' ? 'Techdata' : 'Backoffice';
-  const nazevSouboru = (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('kryci-list', { cislo: typeof vzPismenoPohledu === 'function' ? vzCisloSPismenem(zak.cislo, vzPismenoPohledu(zak)) : zak.cislo, oblast: 'ock', list: verzeNazev });   // VZ-E2: …-B   // #533
+  /* VZ-F1 (VZ-N4, #656): u dalšího zákazníka číslo jako v jeho CN — s příponou
+   * varianty (…9801.2-C, cisloSVariantou). Řídící a jeden zákazník beze změny. */
+  const pism = typeof vzPismenoPohledu === 'function' ? vzPismenoPohledu(zak) : '';
+  const cisloKl = pism && typeof cisloSVariantou === 'function' ? String(cisloSVariantou(zak, varianta) || '').replace(/\s+/g, '')
+    : (typeof vzPismenoPohledu === 'function' ? vzCisloSPismenem(zak.cislo, pism) : zak.cislo);
+  const nazevSouboru = (typeof nazevExportu === 'function' ? nazevExportu : require('./nazvy_souboru.js').nazevExportu)('kryci-list', { cislo: cisloKl, oblast: 'ock', list: verzeNazev });   // VZ-E2: …-B   // #533
   return { nadpis: 'Krycí list zakázky OCK — ' + verzeNazev, sekce, nazevSouboru, verze, verzeNazev };
 }
 

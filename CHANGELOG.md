@@ -59,6 +59,54 @@ revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `or
 **Po revizi (N1–N4) kolo `--bez-mutaci --proti origin/claude/integrace-16-10` nad f9a5551: VŠE ZELENÉ** — sady 467/0/7, hodiny +400 dní 379/0/1, statické 9/9, porovnání SHODA 353/353; mutace jádro [SP] 13/13, server [SP] 17/17 + #561 19/19.
 
 Původně: **Kolo `--bez-mutaci` nad 2a7f210 (po sloučení 41bbe99): VŠE ZELENÉ** — sady 466/0/7, hodiny +400 dní 378/0/1, statické 9/9 (36 min); porovnání sestavení proti `origin/test` **SHODA 353/353**.
+## v18.11.9 — UE #664 úprava existujícího účtu (titul, jméno, funkce, telefon), větev claude/ue-uzivatele
+
+Nad integrací `41bbe99` (v18.11.6). Zadání J. V. 18. 11. 2026. Verzi přečísluje koordinace (souběžně VZ-F1, C7, SP).
+Na webech, Disku ani v Pipedrive nic.
+
+- **Nastavení → Uživatelé → Upravit…** (dřív „Kontakt…“): správce opraví u existujícího účtu titul před jménem,
+  jméno a příjmení, funkci a telefon. Tabulka účtů se po uložení překreslí hned z odpovědi serveru.
+- **E-mail se neupravuje** — v úpravě je jen ke čtení s vysvětlením „E-mail je přihlašovací jméno; pro změnu
+  založte nový účet a převeďte zakázky.“ (klíč účtu; odkazují na něj autor zakázky, `prodano.kdo` a razítka
+  zámků „jméno <e-mail>“).
+- **Server** (akce `profil` s cizím e-mailem, beze změny pravidel): jen Administrátor (Obchodník, Vedoucí 403),
+  validace a meze délek tytéž jako při založení (jméno 120 bez < >, titul 40, funkce 80, telefon 40), hlavní účet
+  upraví jen sám (B28), snížení role a vypnutí hlavního účtu dál 400. Účty protokol změn nemají — razítko
+  `zmenil` nově nese i seznam změněných polí (bez hodnot).
+- **Dopad na dokumenty:** nové nabídky nesou nové údaje v bloku „Vypracoval“. Krycí list odeslané (zamčené) varianty
+  drží jméno ze snímku zámku a data zakázky se úpravou účtu nemění. **Otázka #665 pro J. V.:** dotisk odeslané
+  nabídky (Word i online tisk) bere blok „Vypracoval“ z přihlášeného účtu (platí od #146) — doporučeno zmrazit ho
+  při zámku jako krycí list.
+- Testy: `netlify/test_ue_uzivatele.mjs` (34), `src/test_ue_zpracovatel.js` (13), řádek matice v `test_prava.mjs`,
+  `overit_online.mjs` (Upravit…, e-mail jen ke čtení, meze), `overit_xss.mjs` (pole jména a e-mailu v dialogu).
+  Pojistka: bez změny serveru `test_ue_uzivatele` 2 FAIL (razítko bez seznamu polí); jádrová pojistka bez snímku
+  ukáže nové jméno. Mutace [UE]: server 6, jádro 2 (`zpracovatel.js` přidán mezi jádra mutací); mutace B148
+  přesměrována na nové razítko.
+- Kolo `--bez-mutaci --proti origin/test`: VŠE ZELENÉ — sady 467/0/7, hodiny 379/0/1, statické 9/9, porovnání sestavení
+  353/353 SHODA. Mutace [UE] server 6/6, jádro 2/2; B148 2/2.
+## v18.11.8 — VZ-F1 #659: opravy nálezů ruční zkoušky víc zákazníků na testu (N3, N1, N2, N4, zástupci v KL, controlling), větev claude/vz-f1
+
+Nad integrací `ec5bbac`, sloučeno s integrací `41bbe99` (v18.11.6, SL). Protokol `podklady/kola/STAV_TEST_VZ_2026-11-18.md`.
+Konečné číslo verze určí koordinace. Víc zákazníků dál za vypínačem `viceZakazniku` (výchozí VYP).
+
+- **VZ-N3 #653 (vysoká, únik do smlouvy):** pole „Zástupci a kontakty zákazníka" a DIČ v krycím listu OCK i PROJ šla
+  u otevřeného dalšího zákazníka do hlavičky řídícího — SoD A pak nesla zástupce C. Nově `vzKlCesta` (adresát listu jako
+  tisk: u prodané varianty vítěz, jinak otevřený zákazník) a `vzCesta` odkloní i `ZAK.zastupci.<pole>` do
+  `dalsiZakaznici[i].zastupci`; čtení, zápis, zámek i zmrazení (DIČ) podle adresáta. Výměna řídícího: zástupci putují se
+  svým zákazníkem. VYP a jeden zákazník beze změny.
+- **Krycí list tiskne zástupce #657 (rozhodnutí J. V.):** vytištěný KL BO (i Techdata a KL PROJ BO) měl prázdnou sekci
+  Zástupci a prázdnou banku, účet a zápis v rejstříku — provázaná pole neměla předvyplnění. Tiskne se zákazník, pro kterého
+  se tiskne. **Mění text vytištěného krycího listu i u jednoho zákazníka** (očekávaný rozdíl porovnání sestavení).
+- **VZ-N1 #654:** „Přidat zákazníka" se stejným IČO odmítne hláškou „Zákazník s tímto IČO už v zakázce je (…)"; server
+  (`vzServerZakaznici` přes `vzServerKontrola`) odmítne nového zákazníka s duplicitním IČO 400. Bez IČO se nehlídá,
+  uložená data s duplicitou a obnova se neblokují.
+- **VZ-N2 #655:** výběr „Otevřená varianta" v hlavičce nabízí jen varianty otevřeného zákazníka (cizí vlastní skryté).
+- **VZ-N4 #656:** krycí list vlastní varianty dalšího zákazníka se jmenuje jako jeho CN (`…9801.2-C`).
+- **Controlling #658 (rozhodnutí J. V.):** řádek prodeje dalšímu zákazníkovi nese číslo s písmenem (`…9801-B`).
+- **Plná moc (rozhodnutí J. V.):** beze změny, jen pro řídícího; věta v příručce (kap. 26).
+- **Testy:** `src/test_vz_f1.js` 49/0 (pojistka: na ec5bbac 32 FAIL), `netlify/test_vz_server.mjs` +2 (110/0),
+  `src/test_escape.js` (seznam ověřených interpolací). Mutace [VZ F1]: jádro 17/17, server viz PREDAVKA; přepsané na nový
+  kód E1 (vzCesta ×2), E2 (název KL) a K40a D7 (bind v onchange ×2).
 
 ## v18.11.7 — C7 #615 (K48-N1): jazyková verze šablony jen přeloženým souborem, kontrola češtiny; NS #645, větev claude/c7-sablony
 

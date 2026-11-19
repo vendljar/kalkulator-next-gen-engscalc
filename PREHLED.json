@@ -7,56 +7,74 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "fcdec38f",
-  "verze": "v18.11.7",
+  "sha": "82cbd72d",
+  "verze": "v18.11.9",
   "datum": "18. 11. 2026"
  },
- "test_navic_commitu": 249,
+ "test_navic_commitu": 266,
  "v_testu_ne_v_main": [
   {
-   "id": "645",
+   "id": "664",
    "typ": "ukol",
-   "nazev": "NS: v Nastavení → Smlouvy / Šablony stojí správa šablon hned pod přepínačem OCK / PROJ, nad platebními podmínkami",
-   "alias": [
-    "NS"
-   ],
-   "verze": "v18.11.7"
+   "nazev": "UE: úprava existujícího účtu v Nastavení → Uživatelé (titul, jméno, funkce, telefon; e-mail jen ke čtení)",
+   "verze": "v18.11.9"
   },
   {
-   "id": "632",
-   "typ": "ukol",
-   "nazev": "Ceník a termíny firmy v testu srovnané podle main — ověřit v kole 49",
+   "id": "659",
+   "typ": "davka",
+   "nazev": "Dávka VZ-F1: opravy nálezů ruční zkoušky víc zákazníků na testu (18. 11. 2026)",
    "alias": [
-    "B0.7",
-    "B6",
-    "K37-N6",
-    "K38-I2"
+    "VZ-F1"
    ],
-   "verze": "v18.11.7"
+   "verze": "v18.11.8"
   },
   {
-   "id": "618",
+   "id": "658",
    "typ": "ukol",
-   "nazev": "Obnovit TEST sadu v databázi testu nástrojem test_sada_obnov.mjs",
-   "alias": [
-    "B4",
-    "C8",
-    "B0.9",
-    "K39-I1",
-    "K38-I1"
-   ],
-   "verze": "v18.11.7"
+   "nazev": "Controlling: řádek prodeje dalšímu zákazníkovi nese číslo s písmenem (…9801-B) jako nabídka a deal",
+   "verze": "v18.11.8"
   },
   {
-   "id": "615",
-   "typ": "nalez",
-   "nazev": "Smlouva o dílo v5 DE/EN vychází převážně česky — pojistka jazyka SoD (C7: výroba jazykové verze z češtiny zrušena, kontrola podílu češtiny)",
+   "id": "657",
+   "typ": "ukol",
+   "nazev": "Krycí list BO (i PROJ a Techdata) tiskl prázdnou sekci Zástupci a kontakty zákazníka i banku, účet a zápis v rejstříku",
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "656",
+   "typ": "ukol",
+   "nazev": "VZ-N4: název souboru krycího listu vlastní varianty bez přípony varianty (…9801-C místo …9801.2-C)",
    "alias": [
-    "K48-N1",
-    "B1",
-    "C7"
+    "VZ-N4"
    ],
-   "verze": "v18.11.7"
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "655",
+   "typ": "ukol",
+   "nazev": "VZ-N2: výběr „Otevřená varianta“ v hlavičce nabízel při otevřeném A i vlastní variantu C",
+   "alias": [
+    "VZ-N2"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "654",
+   "typ": "ukol",
+   "nazev": "VZ-N1: „Přidat zákazníka“ se stejným IČO, jaké už v zakázce je, prošlo bez upozornění",
+   "alias": [
+    "VZ-N1"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "653",
+   "typ": "ukol",
+   "nazev": "VZ-N3: zástupci a kontakty v krycím listu u otevřeného dalšího zákazníka se zapisovali do hlavičky řídícího (SoD A nesla zástupce C)",
+   "alias": [
+    "VZ-N3"
+   ],
+   "verze": "v18.11.8"
   },
   {
    "id": "614",
@@ -466,15 +484,6 @@
    "cekaNa": "nahrát upravený skill (mimo repo)"
   },
   {
-   "id": "651",
-   "typ": "ukol",
-   "nazev": "Ověřit SoD u víc šachet a slevy v EUR (L3) na testu",
-   "alias": [
-    "K49-I7"
-   ],
-   "cekaNa": "souhlas se zápisem na test pro testovací sezení (podle CLAUDE.md smí automat test jen číst)"
-  },
-  {
    "id": "652",
    "typ": "ukol",
    "nazev": "Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích",
@@ -486,11 +495,11 @@
  ],
  "ceka_na_jv_odlozene": 11,
  "nehotove_podle_kdo": {
-  "J. V.": 42,
+  "J. V.": 41,
   "kolega": 5,
-  "koordinace": 7,
+  "koordinace": 13,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 59
+ "nehotovych": 64
 }

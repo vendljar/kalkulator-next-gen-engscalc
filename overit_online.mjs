@@ -1375,17 +1375,47 @@ test('opakované založení téhož účtu řekne důvod (účet už existuje)',
   return (await nastav()).includes('Účet už existuje');
 })());
 /* Kontakt účtu opraví správce (12. 10. 2026, pokyn J. V.): telefon v bloku
- * „Vypracoval" se bere z účtu a dřív ho mohl změnit jen sám uživatel. */
-test('u účtu obchodníka je tlačítko Kontakt…', await page.evaluate(() =>
-  [...document.querySelectorAll('#nastaveni-panel button')].filter(b => b.textContent === 'Kontakt…').length >= 2));
+ * „Vypracoval" se bere z účtu a dřív ho mohl změnit jen sám uživatel.
+ * Od #UE (J. V. 18. 11. 2026) tlačítko „Upravit…" a s ním i jméno; e-mail
+ * jen ke čtení s vysvětlením. */
+test('UE: u účtu obchodníka je tlačítko Upravit… (ne staré Kontakt…)', await page.evaluate(() => {
+  const b = [...document.querySelectorAll('#nastaveni-panel button')].map(x => x.textContent);
+  return b.filter(t => t === 'Upravit…').length >= 2 && !b.includes('Kontakt…'); }));
 await page.evaluate(() => onlineUzKontaktPanel('obchodnik@priklad.cz'));
+test('UE: e-mail v úpravě je jen ke čtení a s vysvětlením', await page.evaluate(() => {
+  const e = document.getElementById('onlineUzKEmail');
+  return !!e && e.readOnly && e.disabled && e.value === 'obchodnik@priklad.cz'
+    && /E-mail je přihlašovací jméno; pro změnu založte nový účet a převeďte zakázky\./
+      .test(document.getElementById('nastaveni-panel').textContent.replace(/\s+/g, ' ')); }));
+test('UE: meze délek polí jako na serveru (jméno 120, titul 40, funkce 80, telefon 40)', await page.evaluate(() =>
+  [['onlineUzKJmeno', 120], ['onlineUzKTitul', 40], ['onlineUzKFunkce', 80], ['onlineUzKTelefon', 40]]
+    .every(([id, n]) => document.getElementById(id).maxLength === n)));
+await page.fill('#onlineUzKTitul', 'Bc.');
+await page.fill('#onlineUzKJmeno', 'Pavel Opravený');
+await page.fill('#onlineUzKFunkce', 'Vedoucí obchodu');
 await page.fill('#onlineUzKTelefon', '+420 700 000 395');
-await page.click('#nastaveni-panel >> text=Uložit kontakt');
+await page.click('#nastaveni-panel >> text=Uložit údaje');
 await page.waitForFunction(() => { try { return ONLINE_STAV.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.telefon === '+420 700 000 395'); } catch (e) { return false; } });
-test('správce opraví telefon obchodníka a uloží se na server',
-  JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').telefon === '+420 700 000 395',
-  pamet.get('uzivatele/obchodnik@priklad.cz'));
-test('hláška potvrdí uložení kontaktu', (await nastav()).includes('Kontakt účtu obchodnik@priklad.cz je uložený'));
+{
+  const ulozeny = JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}');
+  test('správce opraví telefon obchodníka a uloží se na server', ulozeny.telefon === '+420 700 000 395', ulozeny);
+  test('UE: správce opraví titul, jméno a funkci obchodníka; e-mail zůstal',
+    ulozeny.titul === 'Bc.' && ulozeny.jmeno === 'Pavel Opravený' && ulozeny.funkce === 'Vedoucí obchodu'
+      && ulozeny.email === 'obchodnik@priklad.cz', ulozeny);
+}
+test('UE: tabulka účtů ukazuje nové jméno', (await nastav()).includes('Pavel Opravený'));
+test('hláška potvrdí uložení údajů', (await nastav()).includes('Údaje účtu obchodnik@priklad.cz jsou uložené'));
+/* Zpět původní jméno, titul a funkce — pozdější kroky (roh po přihlášení
+ * obchodníka) čekají „Zkušební Obchodník". Zároveň ověří vyprázdnění titulu. */
+await page.evaluate(() => onlineUzKontaktPanel('obchodnik@priklad.cz'));
+await page.fill('#onlineUzKTitul', '');
+await page.fill('#onlineUzKJmeno', 'Zkušební Obchodník');
+await page.fill('#onlineUzKFunkce', 'Obchodní technik');
+await page.click('#nastaveni-panel >> text=Uložit údaje');
+await page.waitForFunction(() => { try { return ONLINE_STAV.uzivatele.some(u => u.email === 'obchodnik@priklad.cz' && u.jmeno === 'Zkušební Obchodník'); } catch (e) { return false; } });
+test('UE: vrácení jména a vyprázdnění titulu se uloží',
+  JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').jmeno === 'Zkušební Obchodník'
+    && JSON.parse(pamet.get('uzivatele/obchodnik@priklad.cz') || '{}').titul === '');
 /* B77 (13. 10. 2026, rozhodnutí J. V.): založení správce a reset cizího
  * hesla klikem — aplikace si vyžádá heslo přihlášeného správce. Zrušení
  * nic nepošle, špatné heslo nahlásí a neodhlásí, správné akci provede. */
