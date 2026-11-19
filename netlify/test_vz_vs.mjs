@@ -131,7 +131,7 @@ test('3 platna B: číslo …-B, cena ze zámku', u && u.dalsiZakaznici[0].platn
   test('4 deal: přesně dvě poznámky — šachty a zákazníci', p.length === 2 && s.length === 1 && zz.length === 1, p.map(x => x.content.slice(0, 60)));
   test('4 poznámka šachet: šachty řídící varianty (Výtah B), ne vlastní šachty C', s[0] && /Výtah B/.test(s[0].content) && !/C-vlastní/.test(s[0].content), s[0] && s[0].content);
   test('4 poznámka zákazníků: B s odeslanou nabídkou …-B, C bez odeslané, A ne', zz[0] && zz[0].content.indexOf(B) >= 0
-    && zz[0].content.indexOf(z.cislo + '-B') >= 0 && zz[0].content.indexOf(C) >= 0 && zz[0].content.indexOf(A) < 0, zz[0] && zz[0].content);
+    && zz[0].content.indexOf(z.cislo + '-B') >= 0 && zz[0].content.indexOf(C) >= 0 && zz[0].content.indexOf('• ' + A) < 0, zz[0] && zz[0].content);   // A (řídící) není mezi dalšími; řádek T1 ho jmenovat smí
   test('4 odpověď uložení: obě poznámky v pořádku (šachty i zákazníci)', ['zalozeno', 'upraveno', 'beze-zmeny', undefined].includes(t1.pdPoznamka)
     && ['zalozeno', 'upraveno', 'beze-zmeny', undefined].includes(t1.pdPoznamkaZakaznici) && t0.pdPoznamka === 'zalozeno' && t0.pdPoznamkaZakaznici === 'zalozeno',
     [t0.pdPoznamka, t0.pdPoznamkaZakaznici, t1.pdPoznamka, t1.pdPoznamkaZakaznici]); }

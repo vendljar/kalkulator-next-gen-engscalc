@@ -177,15 +177,24 @@ export default async (req) => {
          * do účtu slil přijatý objekt, stačilo by k povýšení poslat vlastní
          * profil s polem `role` — a e-mail (klíč záznamu) by šlo přepsat
          * na cizí. Proto se přebírá jen to, co sem opravdu patří. */
+        /* Validace i meze délek jsou TYTÉŽ jako při založení účtu (akce
+         * 'zaloz' níž) — úprava existujícího účtu správcem (#UE, J. V.
+         * 18. 11. 2026, tlačítko Upravit…) nesmí být volnější cestou. */
+        const pred = { jmeno: ucet.jmeno || '', titul: ucet.titul || '', funkce: ucet.funkce || '',
+                       telefon: ucet.telefon || '' };
         if ('jmeno' in t) ucet.jmeno = jmenoText(t.jmeno);   // B95
         if ('titul' in t) ucet.titul = text(t.titul, 40);
         if ('funkce' in t) ucet.funkce = text(t.funkce, 80);
         if ('telefon' in t) ucet.telefon = text(t.telefon, 40);
         /* Kdo kontakt naposled změnil (B148, audit 12. 10. 2026) — správce
-         * mění i cizí kontakty (tlačítko Kontakt…), a bez razítka se pak
+         * mění i cizí kontakty (tlačítko Upravit…, dřív Kontakt…), a bez razítka se pak
          * nedalo dohledat, kdo telefon pod nabídkami přepsal. Jako u podpisu:
          * kdo z relace, ne z těla požadavku. */
-        ucet.zmenil = { kdo: relace.email, kdy: new Date().toISOString() };
+        /* Účty vlastní protokol změn nemají; razítko proto nese i seznam
+         * změněných polí (#UE) — bez hodnot, aby se osobní údaje nevozily
+         * podruhé. */
+        const pole = Object.keys(pred).filter(k => (ucet[k] || '') !== pred[k]);
+        ucet.zmenil = { kdo: relace.email, kdy: new Date().toISOString(), pole };
         /* Jen pole profilu na čerstvý záznam (SEC-S2 / B156, #514): celý účet
          * přečtený výš by vrátil souběžný zásah správce nebo změnu hesla. */
         const cerstvy = await u2.cti(cil);

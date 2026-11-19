@@ -94,9 +94,12 @@ if (radek) {
 /* Pořadí v hlavičce: úplně nahoře pravého sloupce, OCK i PROJ. */
 const tretiSloupce = src.match(/<div class="zak-head-col">\$\{[^]*?<\/div>/g) || [];
 const projSloupec = (src.match(/<div class="zak-head-col">\$\{variantaRow[^\n]*|<div class="zak-head-col">\$\{pdStavRow\}[^\n]*/) || [''])[0];
-const ockSloupec = (src.match(/<div class="zak-head-col">\n\s*\$\{pdStavRow\}\$\{variantaRow\}[^\n]*/) || [''])[0];
-test('PROJ: pravý sloupec začíná řádkem Stav Pipedrive', /^<div class="zak-head-col">\$\{pdStavRow\}\$\{variantaRow\}/.test(projSloupec), projSloupec);
-test('OCK: pravý sloupec začíná řádkem Stav Pipedrive (ostatní o řádek níž)', /\$\{pdStavRow\}\$\{variantaRow\}\$\{ridiciBtn\}\$\{rezimRow\}\$\{prirazkaRow\}\$\{radaRow\}/.test(ockSloupec), ockSloupec);
+/* VZ T1 (18. 11. 2026): za Stavem Pipedrive smí stát blok T1 (jen 2+ zákazníků se ZAP, jinak ''),
+ * místo ridiciBtn výběry T1 — pořadí řádků zůstává. */
+const T1_BLOK = String.raw`\$\{t1 \? t1\.blok : ''\}`, T1_RADKY = String.raw`\$\{t1 \? t1\.radky : ridiciBtn\}`;
+const ockSloupec = (src.match(new RegExp(String.raw`<div class="zak-head-col">\n\s*\$\{pdStavRow\}` + T1_BLOK + String.raw`\$\{variantaRow\}[^\n]*`)) || [''])[0];
+test('PROJ: pravý sloupec začíná řádkem Stav Pipedrive', new RegExp(String.raw`^<div class="zak-head-col">\$\{pdStavRow\}` + T1_BLOK + String.raw`\$\{variantaRow\}` + T1_RADKY).test(projSloupec), projSloupec);
+test('OCK: pravý sloupec začíná řádkem Stav Pipedrive (ostatní o řádek níž)', new RegExp(String.raw`\$\{pdStavRow\}` + T1_BLOK + String.raw`\$\{variantaRow\}` + T1_RADKY + String.raw`\$\{rezimRow\}\$\{prirazkaRow\}\$\{radaRow\}`).test(ockSloupec), ockSloupec);
 test('řádek se skládá ze ZAK (sdílená hlavička) pro OCK i PROJ', /const pdStavRow = pdStavRadek\(ZAK\);/.test(src) && (src.match(/\$\{pdStavRow\}/g) || []).length === 2);
 test('styly štítků stavů jsou v šabloně', ['pd-open', 'pd-won', 'pd-lost', 'pd-deleted'].every(t =>
   new RegExp('\\.pill\\.' + t + ' \\{').test(fs.readFileSync(__dirname + '/app_template.html', 'utf8'))));

@@ -8,6 +8,131 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.11.2 — VZ T1 #669: řídící varianta a řídící zákazník v hlavičce, větev claude/vz-t1
+
+Nad integrací `2856345` (v18.11.6), sloučeno s integrací `d8e4fc1` (v18.11.8: C7+NS, VZ-F1) a `82cbd72` (UE v18.11.9). Rozhodnutí J. V. 18. 11. 2026, schválená maketa `podklady/T1_MAKETA_KALKULATOR.html`
+(kolo VZ na testu, `podklady/kola/STAV_TEST_VZ_2026-11-18.md` oddíl T1). Verzi přečísluje koordinace. Na webech, Disku
+ani v Pipedrive nic. **Jen 2+ zákazníků se zapnutým vypínačem `viceZakazniku`** — s jedním zákazníkem nebo s VYP je
+hlavička znak po znaku jako dřív (i tlačítko „nastavit jako řídící“; ověřeno proti 2856345).
+
+- **Hlavička, 3. sloupec:** místo „nastavit jako řídící“ výběr **Řídící varianta** s popisem „(sdílená)“, „(vlastní C — …)“
+  nebo „(bez zákazníka)“ a pod ním **Řídící zákazník**: u vlastní varianty zamčený „🔒 automaticky“ s vysvětlením,
+  u sdílené povinný výběr jen ze zákazníků, kterým varianta patří (ukazuje na ni nebo z ní dostal nabídku). Zvolená
+  sdílená varianta bez zákazníka se do dat nezapíše; Uložit zakázku zastaví hláška pod lištou i dialog „Zakázku nejde
+  uložit“ (texty z makety), autosave čeká tiše. Varianta bez zákazníka: řídící zůstává a přejde na ni.
+- **Řídící zákazník má vždy řídící variantu** (jádro `vzT1Nastav` přes `vzVymenRidiciho`): zvolený C přejde na sdílenou
+  variantu (číslo …-C podle písmen), písmena, otisky webhooku a fixace vlastnictví ručních hodnot KL (E4) beze změny.
+- **Karta Zákazníci zakázky:** sloupec Řídící jen ★ / ☆, přepínač `vzRidiciZmen` zmizel; výběr varianty u řídícího
+  zamčený („řídící variantu určuje hlavička“). Seznam variant (sloupec Řídící) jde u 2+ zákazníků přes hlavičku.
+- **Pipedrive:** když organizace dealu nesedí na řídícího (porovnání IČO, prázdné = nesedí; organizace dealu = původní
+  zákazník, po prodeji kupující), žlutý blok pod Stavem Pipedrive „Řídící zákazník v kalkulaci: C — … (organizace dealu
+  se změní až prodejem; deal dál vede …)“ a týž řádek (bez organizace a bez IČO) v poznámce „Další zákazníci na zakázce“.
+  Řídící dál není mezi dalšími; organizace dealu se mění jen prodejem (E5b). Prodaná zakázka beze změny.
+- **Nová karta „Poznámka dealu v Pipedrive — náhled“** pod kartou zákazníků (jen 2+ a ZAP): text, který uložení zapíše.
+- **Server:** změna řídícího zákazníka **i jen řídící varianty** (zakázka s víc zákazníky) jen autor nebo administrátor,
+  u zakázky z webhooku jen administrátor, po prodeji 409; invariant „řídící zákazník má řídící variantu a podle uložené
+  verze jí patří (u vlastní varianty je to její zákazník)“ jinak **409** (dřív server ukazatel potichu srovnal — E0).
+- **Revize poradce (SLOUČIT PO OPRAVĚ) a rozhodnutí J. V. 18. 11.:**
+  - N1: server posuzuje vlastnictví řídící varianty podle UKLÁDANÉ verze (ukazatele) a razítek z uložené — kroky
+    v jednom uložení (B na variantu C a řídícím, C na novou / sdílenou variantu a řídícím) projdou; kdo smí, hlídá
+    `vzServerRidici`.
+  - N2: starší okno aplikace (mění jen `v.ridici`) se stejným řídícím zákazníkem se srovná jako dřív; jiný řídící
+    s nesedícím ukazatelem → 409 „Obnovte stránku (nová verze aplikace)…“.
+  - N3 (J. V.: ukládat skutečnou organizaci): uložení zakázky s víc zákazníky přečte deal a jeho organizaci
+    (i simulátor; nejvýš jednou za hodinu, strop 20/h na deal, jen s právem crm.pipedrive) a uloží
+    `pdOrgDealu` { deal, org, ico, nazev } — píše jen server, prohlížeč ji převezme z odpovědi; zapíše ji i přepojení
+    organizace na vítěze (E5b). Žlutý blok a řádek poznámky se řídí skutečnou organizací (IČO; prázdné = nesedí),
+    dokud není známá, odhadem z1; bez z1 se řádek nepíše.
+  - N4: s VYP karta zákazníků se zhasnutým přepínačem jako dřív (hlavička i karta znak po znaku jako integrace d8e4fc1).
+  - N5: karta náhledu poznámky `noprint`.
+  - J. V. (b): přechod řídícího na variantu jen podle razítka se zapíše do protokolu zakázky; (d) krátké potvrzení
+    „Řídícím zákazníkem bude C — … — hlavička zakázky se změní.“ jen při změně řídícího zákazníka (i automaticky
+    u vlastní varianty), změna samotné varianty bez dialogu; (a), (c), (e) beze změny.
+- **Dorevize poradce (19. 11.):** N6 — bez IČ na některé straně (organizace v Pipedrive IČ nemá, účet pole IČ nemá,
+  řídící bez IČO) se neshoda IČ nehlásí: rozhodne shoda názvu organizace s řídícím, jinak odhad z1; deal bez
+  organizace nic (žádný nepravdivý řádek v poznámce ani blok). N7 — čtení organizace hlásí `volano` (třetí čtení
+  zakázky). N8 — žádná chyba čtení uložení nezastaví. N9 — čtení má vlastní limit 2,5 s mimo rozpočet poznámek.
+  N10 — komentář `vzServerInvariant` podle skutečného chování.
+- Testy: `src/test_vz_t1.js` (83), `netlify/test_vz_t1_server.mjs` (17), `test_vz_organizace.mjs` N3, `test_vz_poznamka.mjs` oddíly 11–13, `src/test_vz_ui.js` oddíl T1,
+  `netlify/test_vz_poznamka.mjs` oddíl 10, harness `overit_vz_t1.mjs` (stavy makety, znak po znaku proti 2856345
+  s `KNG_DIST_ZAKLAD`); upraveny `test_vz_server.mjs` (podvržený ukazatel → 409), `test_pd_stav.js`, `overit_vz_prodej.mjs`.
+  Mutace [VZ T1] jádra a serveru. Pojistka: na 2856345 nové sady padají (funkce T1 chybí, server srovnával).
+## v19.11.1 — SP #667: statika opláštění zaškrtávací s vlastní cenou, cena z nabídky i nulová, větev claude/sp-statika
+
+Nad integrací `910315b`, sloučeno s integrací `41bbe99` (v18.11.7). Zadání J. V. 18. 11. 2026 (podnět obchodního technika). Mění cenovou logiku — před sloučením
+revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `origin/test` **SHODA 353/353**).
+
+- **Zaškrtnutí:** Zadání šachty → Práce a režie → „Statické posouzení opláštění“ Ano / Ne (`Z.statikaOpl`, u každé šachty
+  zvlášť). Chybí = výchozí stav: Ano u šachty s opláštěním (jako dosud). Ne vyřadí řádek z ceny; Ano ho přidá i bez opláštění.
+  Server pustí jen true / false. Kontrola „statikaDvakrat“ radí odškrtnutí.
+- **Vlastní cena:** STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ má ceníkový klíč `C.statikaOplKc` (řádek v Ceníku nákladů, Režie).
+  Migrace `cenikMigraceStatikyOpl` (z `cenikMigraceLeseni`, tedy v ceníku po načtení verze, při importu zakázky
+  i v kandidátech serverové kontroly B112) ho předvyplní sazbou `statikaKc`; jádro bez klíče počítá sazbou statiky.
+  Přepočet proti ceníku bez klíče nehlásí změnu (`cenik_stari.js`). Krycí list (hodiny) a technická specifikace
+  (pole statiky) počítají obě cesty jako dosud — dokumenty beze změny; controlling řadí sazbu do projekce.
+- **Cena z nabídky:** obě statiky ji mají každá zvlášť. Nulová cena z nabídky platí u každé položky (prohlížeč i server),
+  záporná ani prázdné pole ne.
+- **Audit:** `podklady/AUDIT_CENY_POLOZEK_667.md` — sdílené cesty a položky bez ceny z nabídky; k rozhodnutí J. V. #668.
+- **Testy:** nový `src/test_667_statika_opl.js` 47/0 (pojistka: proti 910315b padá hned na chybějící funkci jádra);
+  upraveny `test_statika_oplasteni.js` (cesta řádku), `test_561_rucni_cena.js` a `netlify/test_561_rucni_cena.mjs`
+  (nula se nově uloží, záporná dál ne); zkušební ceník nese `statikaOplKc`; manuál výpočtu migruje sazbu (čísla vydání beze změny).
+- **Revize poradce (18. 11.):** N1 vymazaná buňka ceny (posílá 0) záznam ceny z nabídky maže jako dřív — nula z nabídky
+  jen výslovně v poli „Nákupní cena“; N2 import u nezamčené varianty bez klíče `statikaOplKc` zkopíruje i záznam ceny
+  z nabídky `C.statikaKc` (s potvrzením) na `C.statikaOplKc` — jinak 403 při uložení i zámku; N4 výběr má volbu
+  „výchozí (Ano/Ne)“ (`null`). Nový `netlify/test_667_statika_opl.mjs` 19/0: zámek se statikou, odškrtnutí ve 2. šachtě
+  (podvržený výsledek není „shoda“), stará varianta s cenou z nabídky (bez N2 3 FAIL, 403), tvar zaškrtnutí.
+  `src/test_667_statika_opl.js` (proti 3c42353: N1 2 FAIL, N2 2 FAIL, N4 chybí funkce). Čísla roadmapy přečíslována
+  na #667/#668 (kolize); verzi přidělí koordinace.
+- **N3 (rozhodnutí J. V. 18. 11.):** cenu z nabídky (i nulovou) potvrdí obchodník JEN s vyplněným dodavatelem nebo číslem
+  nabídky. Bez zdroje stav „bez zdroje“ (`RC_BEZ_ZDROJE`): tlačítko Potvrdit zakázané s hláškou, co doplnit, server
+  razítko nedá ani nepřevezme a cena jde ke schválení nadřízeného jako cena pod ceníkem (cenová výjimka; i u příplatku
+  „dle nabídky“, starší vlastní cena bez záznamu S13 beze změny). Kontrola `rucniCenaNepotvrzena` u záznamu bez zdroje
+  upozorní, co doplnit (bez nového pravidla — počet pravidel je ve vydaném manuálu). Zamčená varianta se starším potvrzeným záznamem bez zdroje se nemění, ověření zámku „shoda“. Testy:
+  `src/test_667_statika_opl.js` 72/0 (proti stavu před N3 padá), `netlify/test_667_statika_opl.mjs` 28/0 (bez N3 2 FAIL:
+  razítko i zámek nuly bez zdroje prošly); upraveny `test_561_rucni_cena.js` (záznam bez zdroje = „bez zdroje“),
+  N4 výběr escapuje hodnotu volby (test_escape).
+- **Dorevize poradce (19. 11.):** R1 klon staré odeslané nabídky (cena z nabídky u `C.statikaKc`, zamčený zdroj bez
+  záznamu statiky opláštění) dostane záznam i pro `C.statikaOplKc` — `zakStatikaOplRucniDopln` (zakazka.js) volá klon
+  (`klonujVariantu`) i import u každé nezamčené varianty, kde obě sazby nesou hodnotu záznamu; dřív zámek klonu 403.
+  R2 odmítnutí výjimky u ceny bez zdroje říká „ruční cena z nabídky bez zdroje … doplňte dodavatele nebo číslo nabídky“
+  místo „směsi ceníků“ (jen text, obsah výjimky beze změny). R4 zdroj musí nést písmeno nebo číslici po odstranění
+  neviditelných znaků („.“ ani U+200B zdrojem nejsou). R3 (správce zamkne cenu bez zdroje) předkládá koordinace J. V.
+  **R5 (přijato):** dřív schválená cenová výjimka přestane platit, když k položce přibude záznam ruční ceny bez zdroje
+  (obsah výjimky se změní) — obchodník musí doplnit zdroj, nebo požádat o schválení znovu.
+  Testy: `src/test_667_statika_opl.js` 82/0 (proti ab6b29c R1 2, R2 1, R4 2 FAIL), `netlify/test_667_statika_opl.mjs`
+  35/0 (proti ab6b29c 3 FAIL: klon bez záznamu, zámek klonu 403, věta o směsi).
+- **Mutace [SP]:** jádro [SP] 11/11 + P5 3/3 chycených, server [SP] 8/8 + #561 19/19 chycených.
+
+**Po dorevizi (R1, R2, R4) kolo `--bez-mutaci --proti origin/claude/integrace-16-10` nad 34f282f:** sady 467/0/7, hodiny +400 dní 379/0/1, porovnání SHODA 353/353; kontrola verze chtěla den commitu → v19.11.1, pak build + statické 9/9 zelené. Mutace jádro [SP] 13/13, server [SP] 23/23 + #561 19/19.
+
+**Po revizi (N1–N4) kolo `--bez-mutaci --proti origin/claude/integrace-16-10` nad f9a5551: VŠE ZELENÉ** — sady 467/0/7, hodiny +400 dní 379/0/1, statické 9/9, porovnání SHODA 353/353; mutace jádro [SP] 13/13, server [SP] 17/17 + #561 19/19.
+
+Původně: **Kolo `--bez-mutaci` nad 2a7f210 (po sloučení 41bbe99): VŠE ZELENÉ** — sady 466/0/7, hodiny +400 dní 378/0/1, statické 9/9 (36 min); porovnání sestavení proti `origin/test` **SHODA 353/353**.
+## v18.11.9 — UE #664 úprava existujícího účtu (titul, jméno, funkce, telefon), větev claude/ue-uzivatele
+
+Nad integrací `41bbe99` (v18.11.6). Zadání J. V. 18. 11. 2026. Verzi přečísluje koordinace (souběžně VZ-F1, C7, SP).
+Na webech, Disku ani v Pipedrive nic.
+
+- **Nastavení → Uživatelé → Upravit…** (dřív „Kontakt…“): správce opraví u existujícího účtu titul před jménem,
+  jméno a příjmení, funkci a telefon. Tabulka účtů se po uložení překreslí hned z odpovědi serveru.
+- **E-mail se neupravuje** — v úpravě je jen ke čtení s vysvětlením „E-mail je přihlašovací jméno; pro změnu
+  založte nový účet a převeďte zakázky.“ (klíč účtu; odkazují na něj autor zakázky, `prodano.kdo` a razítka
+  zámků „jméno <e-mail>“).
+- **Server** (akce `profil` s cizím e-mailem, beze změny pravidel): jen Administrátor (Obchodník, Vedoucí 403),
+  validace a meze délek tytéž jako při založení (jméno 120 bez < >, titul 40, funkce 80, telefon 40), hlavní účet
+  upraví jen sám (B28), snížení role a vypnutí hlavního účtu dál 400. Účty protokol změn nemají — razítko
+  `zmenil` nově nese i seznam změněných polí (bez hodnot).
+- **Dopad na dokumenty:** nové nabídky nesou nové údaje v bloku „Vypracoval“. Krycí list odeslané (zamčené) varianty
+  drží jméno ze snímku zámku a data zakázky se úpravou účtu nemění. **Otázka #665 pro J. V.:** dotisk odeslané
+  nabídky (Word i online tisk) bere blok „Vypracoval“ z přihlášeného účtu (platí od #146) — doporučeno zmrazit ho
+  při zámku jako krycí list.
+- Testy: `netlify/test_ue_uzivatele.mjs` (34), `src/test_ue_zpracovatel.js` (13), řádek matice v `test_prava.mjs`,
+  `overit_online.mjs` (Upravit…, e-mail jen ke čtení, meze), `overit_xss.mjs` (pole jména a e-mailu v dialogu).
+  Pojistka: bez změny serveru `test_ue_uzivatele` 2 FAIL (razítko bez seznamu polí); jádrová pojistka bez snímku
+  ukáže nové jméno. Mutace [UE]: server 6, jádro 2 (`zpracovatel.js` přidán mezi jádra mutací); mutace B148
+  přesměrována na nové razítko.
+- Kolo `--bez-mutaci --proti origin/test`: VŠE ZELENÉ — sady 467/0/7, hodiny 379/0/1, statické 9/9, porovnání sestavení
+  353/353 SHODA. Mutace [UE] server 6/6, jádro 2/2; B148 2/2.
 ## v18.11.8 — VZ-F1 #659: opravy nálezů ruční zkoušky víc zákazníků na testu (N3, N1, N2, N4, zástupci v KL, controlling), větev claude/vz-f1
 
 Nad integrací `ec5bbac`, sloučeno s integrací `41bbe99` (v18.11.6, SL). Protokol `podklady/kola/STAV_TEST_VZ_2026-11-18.md`.

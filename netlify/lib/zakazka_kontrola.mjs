@@ -74,7 +74,7 @@ export function zakazkaVelikostHlaska(zak, bajtu) {
     + ', zmrazené údaje ' + zamcenych + ' odeslaných variant ' + kB(zmrazene) + ', ostatní ' + kB(ostatni) + '. ' + rada;
 }
 import { pdVazbaDrz } from './pd_vazba.mjs';
-import { pdOrgVitezDrz } from './pd_org_vitez.mjs';
+import { pdOrgVitezDrz, pdOrgDealuDrz } from './pd_org_vitez.mjs';
 import { razitkoKdo } from './sdilene.mjs';
 
 export const CISLO_MAX = 60;
@@ -418,6 +418,8 @@ export function zakazkaServerKontrola(stara, zak, relace, ctx) {
   /* Organizace dealu = vítěz (VZ-E5b #605): `pdOrgVitez` píše jen akce
    * POST /api/pd/organizace { akce: 'vitez' } — při uložení z uložené verze. */
   pdOrgVitezDrz(stara, zak, { obnova, zeSouboru });
+  /* VZ T1 (N3): skutečná organizace dealu `pdOrgDealu` — jen server, z uložené verze. */
+  pdOrgDealuDrz(stara, zak, { obnova, zeSouboru });
   /* Stav dealu Pipedrive (P1, 22. 10. 2026): jen tvar { status, nacteno }
    * z whitelistu — objekt jiného tvaru nebo cizí typ → 400, ne 500.
    * Obsah při uložení dosazuje server (lib/pd_stav.mjs), obnova ho bere ze zálohy. */

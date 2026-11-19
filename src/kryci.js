@@ -811,7 +811,7 @@ const KRYCI_HODINY_OCK = [
   { popis: 'montáž na stavbě', cesty: ['C.montazHodKc'], montaz: true },
   { popis: 'dílna — oplechování (práce)', cesty: ['C.oplechPracKc'] },
   { popis: 'projekce / konstrukce', cesty: ['C.projekceHodKc'] },
-  { popis: 'statické posouzení', cesty: ['C.statikaKc'] },
+  { popis: 'statické posouzení', cesty: ['C.statikaKc', 'C.statikaOplKc'] },
   { popis: 'stavbyvedoucí', cesty: ['C.stavbyvedouciKc'] },
 ];
 const KRYCI_HODINY_PROJ = { zamereni: 'zaměření', studie: 'studie', projednani: 'projednání studie', dpz: 'DPZ', ic: 'IČ',

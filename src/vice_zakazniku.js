@@ -61,7 +61,7 @@ const VZ_OTISK_FIRMA = ['objednatel', 'adresaObjednatele', 'ico', 'dic', 'kontak
 /* Pole psaná serverem s údaji řídícího zákazníka / dealu — v pohledu
  * DALŠÍHO zákazníka nemají co dělat (deal vede řídící). */
 const VZ_POHLED_BEZ = ['pdZadani', 'pdStav', 'pdVazbaWebhook', 'pdDealyOdmitnute',
-  'pdPoznamkaSachty', 'pdPoznamkaZakaznici', 'pdOrgVitez'];
+  'pdPoznamkaSachty', 'pdPoznamkaZakaznici', 'pdOrgVitez', 'pdOrgDealu'];
 
 const vzObj = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const vzText = x => (typeof x === 'string' ? x : (x == null ? '' : String(x)));
@@ -1083,6 +1083,8 @@ function vzServerZakaznici(stara, zak, relace, volby) {
   if (kolaps) return kolaps;
   const ridici = vzServerRidici(stara, zak, rel, o);
   if (ridici) return ridici;
+  const inv = vzServerInvariant(stara, zak, o);   // T1: řídící zákazník má řídící variantu
+  if (inv) return inv;
   const pred = stara ? vzZakaznici(stara) : [];
   const ted = vzZakaznici(zak);
   const tedIds = new Map(ted.map(z => [z.id, z]));
@@ -1496,16 +1498,22 @@ function vzServerRidici(stara, zak, relace, volby) {
   const o = volby || {};
   if (!stara || o.obnova) return null;
   const pred = vzRidiciId(stara), ted = vzRidiciId(zak);
-  if (pred === ted || !vzRezim(zak)) return null;
   const sv = id => ((stara.varianty) || []).find(x => x && String(x.id) === String(id));
   const prodS = vzProdanaVarianta(stara);
   const prodT = vzProdanaVarianta(zak);
+  /* T1: u zakázky s víc zákazníky (i v uložené verzi) podléhá týmž právům
+   * i změna samotné řídící varianty. Přepnutí na prodanou variantu je
+   * srovnání #563 (prodRidiciSrovnej), ne změna. */
+  const zmenaVar = vzRezim(stara) && vzRezim(zak) && vzRidiciVariantaId(stara) !== vzRidiciVariantaId(zak)
+    && !(prodT && vzRidiciVariantaId(zak) === String(prodT.id));
+  if ((pred === ted && !zmenaVar) || !vzRezim(zak)) return null;
   if (prodS && prodT && String(prodS.id) === String(prodT.id))
     return { status: 409, chyba: 'Neuloženo: ' + vzRidiciZamceno(stara).replace(/\.$/, '') + '.' };
   const novyProdej = !!prodT && String(prodT.prodano.zakaznik || '') === ted && !(sv(prodT.id) && vzObj(sv(prodT.id).prodano));
   if (novyProdej) return null;
   if (!vzRidiciSmiMenit(stara, relace))
-    return { status: 403, chyba: 'Neuloženo: řídícího zákazníka mění jen autor zakázky (u zakázek, které sám založil) nebo administrátor.' };
+    return { status: 403, chyba: 'Neuloženo: ' + (pred === ted ? 'řídící variantu zakázky s víc zákazníky' : 'řídícího zákazníka')
+      + ' mění jen autor zakázky (u zakázek, které sám založil) nebo administrátor.' };
   return null;
 }
 
@@ -1551,6 +1559,224 @@ function vzKlSdilenaText(zak, varId) {
     + 'Odlišné podmínky pro jednoho zákazníka = vlastní varianta.';
 }
 
+/* ============================================================
+ * T1 (#669): ŘÍDÍCÍ VARIANTA A ŘÍDÍCÍ ZÁKAZNÍK V HLAVIČCE
+ * Rozhodnutí J. V. 18. 11. 2026, maketa podklady/T1_MAKETA_KALKULATOR.html.
+ * Jen u 2+ zákazníků se ZAPNUTÝM vypínačem (obrazovka i server); jeden
+ * zákazník nebo VYP = dnešek beze změny.
+ *
+ *  - KOMU VARIANTA PATŘÍ (vzVariantaKomu): zákazníci, kteří na ni ukazují
+ *    (`varianta`), a zákazníci, kterým z ní odešla nabídka (razítko tisku
+ *    v zámku). Jeden = „vlastní X", víc = „sdílená", nikdo = „bez zákazníka".
+ *  - ŘÍDÍCÍ ZÁKAZNÍK MÁ VŽDY ŘÍDÍCÍ VARIANTU (vzT1Nastav): vlastní varianta →
+ *    řídícím je její zákazník; sdílená → jen zákazník, kterému patří;
+ *    bez zákazníka → řídící se nemění a přejde na ni. Výměna řídícího jde
+ *    přes vzVymenRidiciho (písmena, fixace vlastnictví KL — E4 beze změny).
+ *  - SERVER (vzServerInvariant, ZAP): řídící zákazník ukazuje na řídící
+ *    variantu a podle ULOŽENÉ verze jí patří (u vlastní varianty je to její
+ *    zákazník) — jinak 409. Práva výměny (i jen řídící varianty) jako dnes:
+ *    vzServerRidici.
+ *  - ORGANIZACE DEALU (vzOrgDealuZnama, vzOrgNesedi): skutečná organizace
+ *    dealu (`pdOrgDealu`, píše server — ID a IČO) — nesedí-li IČO na
+ *    řídícího (prázdné = nesedí), hlavička ukáže žlutý blok a poznámka dealu
+ *    řádek „Řídící zákazník v kalkulaci: …". Dokud server organizaci nezná,
+ *    platí odhad: původní zákazník z1 (týž zákazník = sedí); bez z1 nic.
+ *    Prodaná zakázka: nic (organizaci řeší E5b).
+ * ============================================================ */
+
+const VZ_T1_DRUHY = ['vlastni', 'sdilena', 'zadna'];
+
+/* Komu varianta `varId` patří: ids zákazníků v pořadí vzZakaznici. */
+function vzVariantaKomu(zak, varId) {
+  const vid = String(varId == null ? '' : varId);
+  const v = ((zak && Array.isArray(zak.varianty)) ? zak.varianty : []).find(x => vzObj(x) && String(x.id) === vid) || null;
+  if (!v) return [];
+  const razitka = new Set(vzTiskyVarianty(v).map(vzTiskKomu));
+  /* Pořadí podle id (pořadí přidání: z1, z2, …) — po výměně řídícího se nemění. */
+  const cislo = id => +(/^z(\d+)$/.exec(id) || [0, 0])[1];
+  return vzZakaznici(zak).filter(z => z.varianta === vid || razitka.has(z.id)).map(z => z.id).sort((a, b) => cislo(a) - cislo(b));
+}
+
+/* { druh: 'vlastni'|'sdilena'|'zadna', komu: [ids] } */
+function vzVariantaDruh(zak, varId) {
+  const komu = vzVariantaKomu(zak, varId);
+  return { druh: komu.length === 1 ? 'vlastni' : komu.length > 1 ? 'sdilena' : 'zadna', komu };
+}
+
+/* Štítek zákazníka v hlavičce: „C — Název" (řídící bez písmene jen název). */
+function vzT1Stitek(z) {
+  const n = (z && z.hlavicka && vzText(z.hlavicka.objednatel).trim()) || '(bez názvu)';
+  return z && z.pismeno ? z.pismeno + ' — ' + n : n;
+}
+
+/* Popis varianty ve výběru „Řídící varianta": „(sdílená)", „(vlastní C — Název)",
+ * „(bez zákazníka)". */
+function vzT1PopisVarianty(zak, varId) {
+  const d = vzVariantaDruh(zak, varId);
+  if (d.druh === 'sdilena') return '(sdílená)';
+  if (d.druh === 'zadna') return '(bez zákazníka)';
+  return '(vlastní ' + vzT1Stitek(vzZakaznik(zak, d.komu[0])) + ')';
+}
+
+/* Kandidáti na řídícího zákazníka pro variantu `varId`: vlastní → její
+ * zákazník, sdílená → zákazníci, kterým patří, bez zákazníka → dnešní řídící. */
+function vzT1Kandidati(zak, varId) {
+  const d = vzVariantaDruh(zak, varId);
+  return d.druh === 'zadna' ? [vzRidiciId(zak)] : d.komu;
+}
+
+/* NASTAVENÍ ŘÍDÍCÍ VARIANTY A ŘÍDÍCÍHO ZÁKAZNÍKA (T1). `zakId` u sdílené
+ * varianty povinný (jen zákazník, kterému patří); u vlastní a bez
+ * zákazníka se doplní sám (jiný = chyba). Výměna řídícího přes
+ * vzVymenRidiciho (E4), pak řídící zákazník přejde na `varId`. Práva
+ * (autor, administrátor, prodaná) hlídá volající a server.
+ * Vrací { ok: true, vymena, zmena } nebo { ok: false, chyba } (zakázka beze změny). */
+function vzT1Nastav(zak, varId, zakId) {
+  if (!vzRezim(zak)) return { ok: false, chyba: 'Zakázka má jednoho zákazníka.' };
+  const vid = String(varId == null ? '' : varId);
+  if (!zak.varianty.some(v => vzObj(v) && String(v.id) === vid)) return { ok: false, chyba: 'Varianta neexistuje.' };
+  const d = vzVariantaDruh(zak, vid);
+  const kand = vzT1Kandidati(zak, vid);
+  const zid = zakId == null || zakId === '' ? (d.druh === 'sdilena' ? '' : kand[0]) : String(zakId);
+  if (!zid) return { ok: false, chyba: 'Řídící varianta je sdílená — vyberte řídícího zákazníka.' };
+  if (kand.indexOf(zid) < 0) {
+    if (d.druh === 'vlastni') return { ok: false, chyba: 'Varianta je vlastní varianta jiného zákazníka — řídícím je automaticky on.' };
+    if (d.druh === 'zadna') return { ok: false, chyba: 'Varianta zatím nepatří žádnému zákazníkovi — řídícím zůstává dnešní řídící zákazník.' };
+    return { ok: false, chyba: 'Řídícím zákazníkem sdílené varianty může být jen zákazník, kterému varianta patří.' };
+  }
+  const predR = vzRidiciId(zak), predV = vzRidiciVariantaId(zak);
+  if (zid === predR && vid === predV) return { ok: true, vymena: false, zmena: false };
+  const zaloha = vzKop(zak);
+  const vymena = zid !== predR;
+  if (vymena) {
+    const r = vzVymenRidiciho(zak, zid);
+    if (!r.ok) { vzObnov(zak, zaloha); return { ok: false, chyba: r.chyba }; }
+  }
+  if (vzRidiciVariantaId(zak) !== vid) {
+    if (typeof nastavRidici === 'function') nastavRidici(zak, vid);
+    else zak.varianty.forEach(v => { if (v) v.ridici = String(v.id) === vid; });
+  }
+  zak.vzRidici.varianta = vid;
+  return { ok: true, vymena, zmena: true };
+}
+
+/* Normalizované IČO (jen číslice, doplněné nulami na 8) nebo ''. */
+function vzIcoNorm(ico) {
+  const s = vzText(ico).replace(/\s+/g, '');
+  return /^\d{1,8}$/.test(s) ? s.padStart(8, '0') : '';
+}
+
+/* SKUTEČNÁ ORGANIZACE DEALU (revize N3, rozhodnutí J. V. 18. 11. 2026):
+ * `zak.pdOrgDealu = { deal, org, ico, nazev, kdy }` píše JEN server — při
+ * uložení zakázky s víc zákazníky (čte deal a jeho organizaci, i proti
+ * simulátoru; netlify/lib/pd_poznamka.mjs pdOrgDealuObnov) a po přepojení
+ * organizace na vítěze (pd_org_vitez.mjs). `org` 0 = deal organizaci nemá,
+ * `ico` normalizované (8 číslic) nebo '' = organizace IČ nemá. Hodnota
+ * z prohlížeče se zahodí (pdOrgDealuDrz). Platí jen pro deal, na který je
+ * zakázka navázaná teď. */
+const VZ_ORG_DEALU_POLE = 'pdOrgDealu';
+const VZ_ORG_ID = /^[1-9][0-9]{0,11}$/;
+const VZ_ORG_KDY = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
+function vzOrgDealuNorm(x) {
+  if (!vzObj(x)) return null;
+  const deal = vzText(x.deal);
+  const org = Number.isInteger(x.org) && x.org >= 0 && x.org < 1e12 ? x.org : -1;
+  if (!VZ_ORG_ID.test(deal) || org < 0) return null;
+  const ico = typeof x.ico === 'string' && /^\d{8}$/.test(x.ico) ? x.ico : '';
+  const nazev = vzText(x.nazev).replace(/[\u0000-\u001f\u007f-\u009f]+/g, ' ').trim().slice(0, 200);
+  return { deal, org, ico, nazev, kdy: VZ_ORG_KDY.test(vzText(x.kdy)) ? vzText(x.kdy) : '' };
+}
+/* Uložená skutečná organizace dealu, na který je zakázka navázaná teď, nebo null. */
+function vzOrgDealuZnama(zak) {
+  const o = vzOrgDealuNorm(zak && zak[VZ_ORG_DEALU_POLE]);
+  if (!o) return null;
+  const deal = typeof ctrlPdDealIdNorm === 'function' ? ctrlPdDealIdNorm(zak.pdDealId) : vzText(zak.pdDealId).trim();
+  return deal && String(deal) === o.deal ? o : null;
+}
+
+/* Zákazník, na kterého je veden deal, nebo '': prodaná zakázka → kupující;
+ * známá skutečná organizace → zákazník se stejným IČO (řídící přednostně),
+ * bez IČ na straně organizace → zákazník se stejným názvem (jádro názvu);
+ * jinak ODHAD původní zákazník z1 (deal se váže, dokud je zákazník jeden).
+ * Deal bez organizace → ''. */
+function vzOrgDealuId(zak) {
+  if (!vzRezim(zak)) return vzRidiciId(zak);
+  if (vzProdanaVarianta(zak)) return vzProdanoKomu(zak);
+  const o = vzOrgDealuZnama(zak);
+  const l = vzZakaznici(zak);   // řídící první
+  if (o) {
+    if (!o.org) return '';
+    if (o.ico) { const s = l.find(z => vzIcoNorm(z.hlavicka.ico) === o.ico); if (s) return s.id; }
+    const j = vzNazevJadro(o.nazev);
+    const n = j ? l.find(z => vzNazevJadro(z.hlavicka.objednatel) === j) : null;
+    if (n) return n.id;
+    if (o.ico) return '';   // organizace s IČ, které žádný zákazník nemá
+  }
+  return vzZakaznik(zak, VZ_RIDICI_ID) ? VZ_RIDICI_ID : '';
+}
+
+/* T1: organizace dealu nesedí na řídícího zákazníka? → { ridici, org, nazev }
+ * (`org` = zákazník organizace dealu nebo null, `nazev` = název organizace
+ * pro hlavičku), jinak null. Jen víc zákazníků a neprodaná zakázka.
+ *  - známá skutečná organizace s IČ a řídící s IČO: rozhoduje IČO;
+ *  - bez IČ na některé straně (organizace v Pipedrive IČ nemá, účet pole IČ
+ *    nemá, řídící je bez IČO — revize N6): neshoda IČ se nehlásí; rozhodne
+ *    shoda názvu organizace s řídícím, jinak odhad z1;
+ *  - odhad z1: týž zákazník = sedí, jinak IČO (prázdné = nesedí); bez z1 se
+ *    nic nehlásí (řádek se nepíše naslepo, rozhodnutí J. V. a);
+ *  - deal bez organizace: nic. */
+function vzOrgNesedi(zak) {
+  if (!vzRezim(zak) || vzProdanaVarianta(zak)) return null;
+  const r = vzZakaznik(zak, vzRidiciId(zak));
+  if (!r) return null;
+  const a = vzIcoNorm(r.hlavicka.ico);
+  const znama = vzOrgDealuZnama(zak);
+  if (znama && !znama.org) return null;
+  const oid = vzOrgDealuId(zak);
+  const org = oid ? vzZakaznik(zak, oid) : null;
+  const nazevOrg = () => (znama && znama.nazev) || (org ? vzText(org.hlavicka.objednatel).trim() : '');
+  if (znama && znama.ico && a) return a === znama.ico ? null : { ridici: r, org, nazev: nazevOrg() };
+  if (!org || org.id === r.id) return null;
+  const b = vzIcoNorm(org.hlavicka.ico);
+  if (a && b && a === b) return null;
+  return { ridici: r, org, nazev: nazevOrg() };
+}
+
+/* Řádek poznámky dealu / text bloku v hlavičce (prostý text) nebo ''. */
+function vzOrgNesediText(zak, sOrganizaci) {
+  const n = vzOrgNesedi(zak);
+  if (!n) return '';
+  const org = sOrganizaci && n.nazev ? '; deal dál vede ' + n.nazev : '';
+  return 'Řídící zákazník v kalkulaci: ' + vzT1Stitek(n.ridici) + ' (organizace dealu se změní až prodejem' + org + ')';
+}
+
+/* SERVER — invariant T1 (ZAP, po vzServerRidici). `stara` = uložená verze.
+ * Co server SKUTEČNĚ hlídá: jen to, že řídící zákazník ukazuje na řídící
+ * variantu (`vzRidici.varianta` = varianta s příznakem `ridici`), a to jen
+ * když se řídící zákazník, řídící varianta nebo ukazatel proti uložené verzi
+ * změnily (starší data se neodmítají) a nejde o obnovu.
+ *  - Nesedí-li ukazatel a řídící zákazník je týž jako v uložené verzi
+ *    (starší klient v mezipaměti mění jen `v.ridici`, revize N2), projde
+ *    a ukazatel srovná vzSrovnej na konci kontroly — jako dřív.
+ *  - Nesedí-li a řídící zákazník je jiný → 409 VZ_T1_OBNOVTE.
+ * Zvláštní kontrola „komu varianta patří" se nedělá (revize N1): podle
+ * ukládané verze patří řídící variantě každý řídící, který na ni ukazuje,
+ * a každý takový stav umí i obrazovka (vzVariantaSet + vzT1Nastav). Kdo smí
+ * řídícího a řídící variantu měnit, hlídá vzServerRidici. { status, chyba } | null. */
+const VZ_T1_OBNOVTE = 'Obnovte stránku (nová verze aplikace) — řídící zákazník musí mít řídící variantu; pak vyberte v hlavičce Řídící variantu a Řídícího zákazníka.';
+function vzServerInvariant(stara, zak, volby) {
+  const o = volby || {};
+  if (o.obnova || !vzRezim(zak) || !vzObj(zak.vzRidici)) return null;
+  const R = vzRidiciId(zak), rv = vzRidiciVariantaId(zak);
+  const sR = stara && vzRezim(stara) ? vzRidiciId(stara) : null;
+  const sV = stara && vzRezim(stara) ? vzRidiciVariantaId(stara) : null;
+  const sU = stara && vzObj(stara.vzRidici) ? vzText(stara.vzRidici.varianta) : null;
+  if (sR === R && sV === rv && sU === vzText(zak.vzRidici.varianta)) return null;
+  if (vzText(zak.vzRidici.varianta) === rv) return null;
+  if (sR === R) return null;   // N2: řídící zákazník se nemění → srovná vzSrovnej (starší klient)
+  return { status: 409, chyba: VZ_T1_OBNOVTE };
+}
+
 if (typeof module !== 'undefined' && module.exports)
   module.exports = { VZ_DALSI_MAX, VZ_VYPNUTO_VARIANTA, VZ_TEXT_MAX, VZ_RIDICI_ID, VZ_ID_TVAR, VZ_PISMENO_TVAR, VZ_PISMENA, VZ_HLAVICKA_POLE,
     VZ_ZASTUPCI_POLE, VZ_RIDICI_KLICE, VZ_DALSI_KLICE, VZ_PLATNA_KLICE, VZ_OTISK_FIRMA, VZ_POHLED_BEZ, VZ_VYPNUTO,
@@ -1565,4 +1791,6 @@ if (typeof module !== 'undefined' && module.exports)
     vzKlVlastni, vzKlZapis, vzKlZmrazeno, vzKlOznacPole, vzKlRucni, vzKlZapisRucni, vzKlOdstranZakaznika, vzKlUklid,
     vzTiskyHistorie, vzOdeslanoKdykoli, vzNecoOdeslano, vzOdstranKolapsDuvod, vzKlPoleZakaznika, vzKlZafixuj, vzKlJenZakaznika,
     vzVariantaBezCizichKl, vzRidiciSmiMenit, vzProdanaVarianta, vzProdanoKomu, vzRidiciZamceno, vzVariantaOdeslanaKomu, vzProdejNelze,
-    vzProdej, vzObnov, vzProdejPredPo, vzProdejServer, vzServerRidici, vzServerKolaps, vzTypSmluvni, vzTiskKomuDokumentu, vzKlSdilenaText };
+    vzProdej, vzObnov, vzProdejPredPo, vzProdejServer, vzServerRidici, vzServerKolaps, vzTypSmluvni, vzTiskKomuDokumentu, vzKlSdilenaText,
+    VZ_T1_DRUHY, vzVariantaKomu, vzVariantaDruh, vzT1Stitek, vzT1PopisVarianty, vzT1Kandidati, vzT1Nastav, vzIcoNorm,
+    vzOrgDealuId, vzOrgNesedi, vzOrgNesediText, vzServerInvariant, VZ_T1_OBNOVTE, VZ_ORG_DEALU_POLE, vzOrgDealuNorm, vzOrgDealuZnama };

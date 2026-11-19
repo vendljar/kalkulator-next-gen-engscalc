@@ -31,6 +31,8 @@ h2{font-family:var(--display);font-size:14px;letter-spacing:.08em;text-transform
 .alert{border-radius:5px;padding:8px 10px;display:grid;gap:4px;border:1px solid var(--warn);background:var(--warnbg)}
 .alert.empty{border-color:var(--ok);background:var(--okbg)}
 .alert .h{font-weight:600;color:var(--warn)} .alert.empty .h{color:var(--ok)}
+ol.cek,ul.cek{list-style:none;padding-left:0;margin-left:0} .cek li{display:flex;gap:8px;align-items:flex-start;margin:4px 0} .cek li>span{min-width:0;overflow-wrap:anywhere}
+.ik{flex:none;width:16px;height:16px;margin-top:2px;color:#8a94a0} .ik.run{color:#2f6fd6} .ik.done{color:#2d8a4e}
 .alert ol{margin:0;padding-left:18px;display:grid;gap:3px}
 .tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:6px 8px;display:grid;gap:1px;min-width:0;border-top:3px solid var(--idle)}
@@ -333,7 +335,11 @@ a{color:var(--steel);overflow-wrap:anywhere}
   (function(){var C=D.celkem,el=document.getElementById('celkem');if(!el||!C)return;
     el.innerHTML='<div class="ck">do konce úkolu</div><div class="cv">'+esc(C.eta)+'</div><div class="cd">'+lnk(C.detail||'')+'</div>';})();
   var c=document.getElementById('cekani');
-  if(D.cekaNaJV.length){c.innerHTML='<div class="h">Čeká na vás</div><ol>'+D.cekaNaJV.map(function(x){return '<li>'+lnk(x)+'</li>'}).join('')+'</ol>'}
+  var ikS={todo:'<svg class="ik" viewBox="0 0 16 16" role="img" aria-label="K vyřízení"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.4 2"/></svg>',run:'<svg class="ik run" viewBox="0 0 16 16" role="img" aria-label="Rozpracováno"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 3.6a4.4 4.4 0 0 1 0 8.8z" fill="currentColor"/></svg>',done:'<svg class="ik done" viewBox="0 0 16 16" role="img" aria-label="Hotovo"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'};
+  var cekP=function(x){return typeof x==='string'?{t:x,s:'todo'}:{t:x.t||'',s:x.s||'todo'}};
+  var cek=D.cekaNaJV.map(cekP).filter(function(x){return x.s!=='done'});
+  var poradi={run:0,todo:1};cek.sort(function(a,b){return (poradi[a.s]||1)-(poradi[b.s]||1)});
+  if(cek.length){c.innerHTML='<div class="h">Čeká na vás</div><ol class="cek">'+cek.map(function(x){return '<li>'+(ikS[x.s]||ikS.todo)+'<span>'+lnk(x.t)+'</span></li>'}).join('')+'</ol>'}
   else{c.className='alert empty';c.innerHTML='<div class="h">Nic na vás nečeká — koordinace běží sama.</div>'}
   document.getElementById('tiles').innerHTML=D.dlazdice.map(function(t){
     return '<div class="tile '+trida(t.s)+'"><div class="k">'+esc(t.k)+'</div><div class="v">'+esc(t.v)+'</div><div class="d">'+esc(t.d)+'</div></div>'}).join('');

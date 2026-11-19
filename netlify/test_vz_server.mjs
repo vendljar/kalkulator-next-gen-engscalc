@@ -9,7 +9,7 @@
  *     tvar (duplicitní písmeno / id, ukazatel na neexistující variantu, 10
  *     dalších, vzRidici bez dalsiZakaznici a naopak, prázdný název, dlouhý
  *     text) → 400 a úložiště beze změny; neznámé klíče import tiše zahodí
- *     (200 bez nich); podvržené vzRidici.varianta srovná server (vzSrovnej);
+ *     (200 bez nich); podvržené vzRidici.varianta → 409 (T1, dřív srovnání);
  *     `platna` z prohlížeče se zahodí; od E3 ji server počítá ze zámků (N6).
  *  4) ZAPNUTO: odstranění posledního dalšího (vzOdstran) 200, klíče pryč.
  *  5) VYPNUTO u zakázky, která víc zákazníků UŽ MÁ (vzor VS R21): uložení
@@ -253,9 +253,11 @@ for (const [jm, fn, re] of SPATNE) {
   z.vzRidici.varianta = klon.id;    // existuje, ale řídící není
   const r = await uloz(z, cO);
   const u = r.soubor ? ulozenoObj(r.soubor) : null;
-  test('ZAP: podvržené vzRidici.varianta na jinou existující variantu → 200 (neodmítá se)', r.status === 200 && klon.id !== ridiciId, { status: r.status, chyba: r.chyba });
-  test('ZAP: server invariant srovná — uložená vzRidici.varianta = id varianty s ridici:true',
-    u && u.vzRidici && u.vzRidici.varianta === ridiciId && u.varianty.find(v => v.ridici).id === ridiciId, u && { r: u.vzRidici, ridiciId, klon: klon.id }); }
+  /* T1 (rozhodnutí J. V. 18. 11. 2026): invariant „řídící zákazník má řídící
+   * variantu" server už nesrovnává potichu (E0), ale odmítne 409 — úložiště beze změny. */
+  test('ZAP: podvržené vzRidici.varianta na jinou existující variantu → 409 (T1)', r.status === 409 && klon.id !== ridiciId
+    && /řídící zákazník musí mít řídící variantu/.test(r.chyba || ''), { status: r.status, chyba: r.chyba });
+  test('ZAP: po 409 nic uloženo (T1)', !u, u && { r: u.vzRidici }); }
 { const z = sVz('platna z prohlížeče u nové', zz => { zz.dalsiZakaznici[0].platna = { varianta: zz.varianty[0].id, cislo: 'PODVRH', kdy: '2026-11-16', cena: 1, mena: 'CZK' }; });
   const r = await uloz(z, cO);
   const u = r.soubor ? ulozenoObj(r.soubor) : null;

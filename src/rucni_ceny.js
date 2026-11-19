@@ -24,7 +24,7 @@
  *    tisk se neblokuje.
  *
  * DATA (v.data.rucniCeny, klíč = cesta ceníku „C.…")
- *   { hodnota: číslo > 0 (= hodnota v ceníku varianty),
+ *   { hodnota: číslo ≥ 0 (= hodnota v ceníku varianty; nula od #667),
  *     dodavatel, cislo, datum, platnostDo,   // zdroj (text, datum RRRR-MM-DD)
  *     zaklad: ceníková sazba v okamžiku potvrzení (razí server z platného ceníku),
  *     potvrdil: { jmeno, email, kdy } | null  // razí server z relace }
@@ -56,6 +56,22 @@ const RC_CESTA = /^C\.[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)?$/;
 const RC_NEPOTVRZENO = 'nepotvrzeno';
 const RC_POTVRZENO = 'potvrzeno';
 const RC_BEZ_DOKLADU = 'bezDokladu';     // starší vlastní cena příplatku S13
+/* ZDROJ JE PODMÍNKA POTVRZENÍ (N3, rozhodnutí J. V. 18. 11. 2026): ruční cenu
+ * z nabídky (i nulovou) potvrdí obchodník JEN s vyplněným dodavatelem nebo
+ * číslem nabídky. Záznam bez zdroje se jako potvrzený nepočítá (ani starší
+ * s razítkem) a jeho cena jde ke schválení nadřízeného jako cena pod ceníkem
+ * (cenová výjimka, vyjimky.js). Zamčená varianta je doklad — data se nemění,
+ * ověření zámku zůstává shodné (výsledek výpočtu na zdroji nezávisí). */
+const RC_BEZ_ZDROJE = 'bezZdroje';
+/* Dorevize R4: zdroj musí nést aspoň jedno písmeno nebo číslici —
+ * „." ani neviditelný znak (U+200B …) zdrojem nejsou. */
+function rcZdrojText(t) {
+  return /[\p{L}\p{N}]/u.test(String(t == null ? '' : t).replace(/[\u00AD\u180E\u200B-\u200F\u2060-\u2064\uFEFF]/g, ''));
+}
+function rucniCenaMaZdroj(r) {
+  return !!r && typeof r === 'object' && (rcZdrojText(r.dodavatel) || rcZdrojText(r.cislo));
+}
+const RC_ZDROJ_HLASKA = 'doplňte dodavatele nebo číslo nabídky';
 
 function rcDef() {
   if (typeof CENIK_DEF !== 'undefined') return CENIK_DEF;
@@ -112,7 +128,7 @@ function rucniCenaPlati(data, cesta) {
   const r = rucniCenaZaznam(data, cesta);
   if (!r || !rucniCenaSmi(cesta)) return false;
   const h = rcGet(data && data.cenik, cesta);
-  return typeof r.hodnota === 'number' && isFinite(r.hodnota) && r.hodnota > 0 && h === r.hodnota;
+  return typeof r.hodnota === 'number' && isFinite(r.hodnota) && r.hodnota >= 0 && h === r.hodnota;
 }
 /* Obsah potvrzení: hodnota a zdroj. Změna čehokoli = nové potvrzení. */
 function rucniCenaObsah(r) {
@@ -131,6 +147,7 @@ function rucniCenaProsla(r, dnes) {
 }
 function rucniCenaStav(r) {
   if (!r) return '';
+  if (!rucniCenaMaZdroj(r)) return RC_BEZ_ZDROJE;
   return (r.potvrdil && typeof r.potvrdil === 'object') ? RC_POTVRZENO : RC_NEPOTVRZENO;
 }
 
@@ -139,8 +156,11 @@ function rucniCenaStav(r) {
  * server ji při potvrzení přepíše platným ceníkem. */
 function rucniCenaNastav(data, cesta, hodnota) {
   if (!data || typeof data !== 'object' || !rucniCenaSmi(cesta)) return false;
+  /* NULA PLATÍ (#667, J. V. 18. 11. 2026: „obchodník musí jít zadat jinou
+   * cenu u každé položky, i nulovou"). Prázdné pole nulou není. */
+  if (hodnota === null || hodnota === undefined || String(hodnota).trim() === '') return false;
   const h = +hodnota;
-  if (!(isFinite(h) && h > 0 && h <= RC_HODNOTA_MAX)) return false;
+  if (!(isFinite(h) && h >= 0 && h <= RC_HODNOTA_MAX)) return false;
   if (!data.cenik || typeof data.cenik !== 'object') data.cenik = {};
   if (!data.rucniCeny || typeof data.rucniCeny !== 'object' || Array.isArray(data.rucniCeny)) data.rucniCeny = {};
   const r = rucniCenaZaznam(data, cesta);
@@ -168,7 +188,7 @@ function rucniCenaZdrojNastav(data, cesta, pole, hodnota) {
  * ho server nahradí svým z relace (rucniCenyServer). */
 function rucniCenaPotvrd(data, cesta, kdo, kdy) {
   const r = rucniCenaZaznam(data, cesta);
-  if (!r || !rucniCenaPlati(data, cesta)) return false;
+  if (!r || !rucniCenaPlati(data, cesta) || !rucniCenaMaZdroj(r)) return false;   // N3: bez zdroje ne
   r.potvrdil = { jmeno: String(kdo || ''), email: '', kdy: String(kdy || new Date().toISOString()), lokalne: true };
   return true;
 }
@@ -193,6 +213,10 @@ function rucniCenaPoSet(data, cesta, hodnota, opts) {
   const r = rucniCenaZaznam(data, cesta);
   const h = +hodnota;
   if (r) {
+    /* Revize #667 N1: buňka ceny posílá `+this.value`, takže vymazané pole
+     * sem doteče jako 0. Nula v buňce proto záznam MAŽE jako před #667 —
+     * nulová cena z nabídky vzniká jen výslovně v poli „Nákupní cena"
+     * (rucniCenaNastav, prázdné pole tam nulou není). */
     if (!(isFinite(h) && h > 0)) { delete data.rucniCeny[cesta]; return true; }
     if (r.hodnota === h) return false;
     r.hodnota = h; r.potvrdil = null;
@@ -211,13 +235,18 @@ function rucniCenaPoSet(data, cesta, hodnota, opts) {
  * ceníková sazba platného ceníku pro řadu varianty (neznámá = undefined). */
 function rucniCenyPrehled(data, opts) {
   opts = opts || {};
-  const out = { nepotvrzene: [], potvrzene: [], prosle: [], cenikZmena: [], bezDokladu: [] };
+  /* `bezZdroje` (N3): záznamy bez dodavatele i čísla nabídky — nejsou
+   * potvrzené ani „k potvrzení"; jejich cenu hlídá cenová výjimka. */
+  const out = { nepotvrzene: [], potvrzene: [], prosle: [], cenikZmena: [], bezDokladu: [], bezZdroje: [] };
   const m = rucniCenyMapa(data);
   Object.keys(m).sort().forEach(cesta => {
     const r = m[cesta];
     if (!r || typeof r !== 'object' || !rucniCenaSmi(cesta)) return;
     const pol = { cesta, popis: rucniCenaPopis(cesta) };
-    if (rucniCenaStav(r) === RC_POTVRZENO) out.potvrzene.push(pol); else out.nepotvrzene.push(pol);
+    const st = rucniCenaStav(r);
+    if (st === RC_POTVRZENO) out.potvrzene.push(pol);
+    else if (st === RC_BEZ_ZDROJE) out.bezZdroje.push(pol);
+    else out.nepotvrzene.push(pol);
     if (rucniCenaProsla(r, opts.dnes)) out.prosle.push(pol);
     if (typeof opts.dnesniF === 'function' && rucniCenaStav(r) === RC_POTVRZENO) {
       const d = opts.dnesniF(cesta);
@@ -269,8 +298,8 @@ function rucniCenyOciste(m) {
     const r = m[k];
     if (!r || typeof r !== 'object' || Array.isArray(r)) return { ok: false, chyba: 'ruční cena položky ' + k + ' nemá platný tvar' };
     const h = r.hodnota;
-    if (typeof h !== 'number' || !isFinite(h) || h <= 0 || h > RC_HODNOTA_MAX)
-      return { ok: false, chyba: 'ruční cena položky ' + k + ' musí být kladné číslo' };
+    if (typeof h !== 'number' || !isFinite(h) || h < 0 || h > RC_HODNOTA_MAX)
+      return { ok: false, chyba: 'ruční cena položky ' + k + ' musí být nezáporné číslo' };
     const n = { hodnota: h };
     for (const z of RC_ZDROJ) {
       const t = r[z] == null ? '' : r[z];
@@ -321,7 +350,8 @@ function rucniCenyServer(stara, nova, relace, ctx) {
         if (sr && rucniCenaObsah(sr) === obsah && sr.potvrdil && typeof sr.potvrdil === 'object' && !sr.potvrdil.lokalne) { ulozeny = sr; break; }
       }
       const vlastni = sv && sv.data ? rucniCenaZaznam(sv.data, k) : null;
-      if (!r.potvrdil) {
+      /* N3: bez zdroje se nepotvrzuje (razítko se nedá ani se nepřevezme). */
+      if (!r.potvrdil || !rucniCenaMaZdroj(r)) {
         r.potvrdil = null;
         r.zaklad = vlastni && typeof vlastni.zaklad === 'number' ? vlastni.zaklad : r.zaklad;
       } else if (ulozeny) {
@@ -354,7 +384,7 @@ function rucniCenyZamekProblem(zak, v) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { RC_ZDROJ, RC_TEXT_MAX, RC_MAX, RC_NEPOTVRZENO, RC_POTVRZENO, RC_BEZ_DOKLADU,
+  module.exports = { RC_ZDROJ, RC_TEXT_MAX, RC_MAX, RC_NEPOTVRZENO, RC_POTVRZENO, RC_BEZ_DOKLADU, RC_BEZ_ZDROJE, RC_ZDROJ_HLASKA, rucniCenaMaZdroj,
     rucniCenaSmi, rucniCenaPopis, rucniCenaJednotka, rucniCenyMapa, rucniCenaZaznam, rucniCenaPlati, rucniCenaObsah,
     rucniCenaDnes, rucniCenaProsla, rucniCenaStav, rucniCenaNastav, rucniCenaZdrojNastav, rucniCenaPotvrd,
     rucniCenaVrat, rucniCenaPoSet, rucniCenyPrehled, rucniCenaOdchylka, rucniCenaZdrojText,

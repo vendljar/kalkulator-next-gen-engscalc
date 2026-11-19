@@ -13,6 +13,7 @@ import { zakazkaPrijmi, zakazkaServerKontrola, ZAKAZKA_MAX_B, zakazkaVelikostHla
 import { pdStavPripoj, pdStavUlozeni } from '../lib/pd_stav.mjs';
 import { funkceCti } from '../lib/funkce.mjs';
 import { pdPoznamkyUlozeni } from '../lib/pd_poznamka.mjs';
+import { pdPoleMapa } from './pd_pole.mjs';
 
 /* Jméno k e-mailu z účtů (P7 / K16-N87) — jen pro hlášku o kolizi verzí
  * u zakázek uložených dřív, než se jméno začalo zapisovat. Jedno čtení,
@@ -192,7 +193,8 @@ export default async (req) => {
    * VZ-E5 (#604): v témž kroku i poznámka „Další zákazníci na zakázce“
    * (vypínač viceZakazniku, pole pdPoznamkaZakaznici) — společný časový
    * rozpočet, šachty první; třetí čtení níž jedno pro obě. */
-  const pdPoznamky = await pdPoznamkyUlozeni(zak, stara, { viceSachet, viceZakazniku, relace, matice: (zobr && zobr.matice) || null });
+  const pdPoznamky = await pdPoznamkyUlozeni(zak, stara, { viceSachet, viceZakazniku, relace, matice: (zobr && zobr.matice) || null,
+    poleMapa: () => pdPoleMapa() });   // VZ T1 (N3): IČ organizace dealu
   const pdPoznamka = pdPoznamky.sachty, pdPoznamkaZak = pdPoznamky.zakaznici;
   /* N1 (revize Fable 12. 11. 2026): volání Pipedrive trvá až sekundy —
    * okno mezi druhým čtením a zápisem by se roztáhlo. Po návratu z
@@ -323,6 +325,10 @@ export default async (req) => {
   });
   const pdP = pdPoznamka && pdPoznamka.stav !== 'bez' ? { pdPoznamka: pdPoznamka.stav } : {};   // VSD: jen kde se o zápis šlo
   if (pdPoznamkaZak && pdPoznamkaZak.stav !== 'bez') pdP.pdPoznamkaZakaznici = pdPoznamkaZak.stav;   // VZ-E5
+  /* VZ T1 (N3): skutečná organizace dealu, kterou server drží / právě přečetl — prohlížeč si ji převezme
+   * (hlavička a náhled poznámky pak počítají s tímtéž jako zápis). Jen když ji zakázka má; stará hodnota
+   * jiného dealu v prohlížeči nevadí (vzOrgDealuZnama ji podle dealu nepočítá). */
+  if (zak.pdOrgDealu) pdP.pdOrgDealu = zak.pdOrgDealu;
   return json(varovani ? { ok: true, soubor: jmeno, razitko, varovani, slevy, zamkyPrijato, ...pdP }
     : { ok: true, soubor: jmeno, razitko, slevy, zamkyPrijato, ...pdP });
 };

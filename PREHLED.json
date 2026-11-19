@@ -7,12 +7,90 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "755062dd",
-  "verze": "v18.11.7",
-  "datum": "18. 11. 2026"
+  "sha": "6ae5c5ac",
+  "verze": "v19.11.1",
+  "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 250,
+ "test_navic_commitu": 285,
  "v_testu_ne_v_main": [
+  {
+   "id": "668",
+   "typ": "rozhodnuti",
+   "nazev": "Audit #667: další položky se sdílenou cenou nebo bez ceny z nabídky — rozhodnout",
+   "verze": "v19.11.1"
+  },
+  {
+   "id": "667",
+   "typ": "ukol",
+   "nazev": "STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jako zaškrtávací položka šachty s vlastní cenou C.statikaOplKc; cena z nabídky i nulová",
+   "verze": "v19.11.1"
+  },
+  {
+   "id": "659",
+   "typ": "davka",
+   "nazev": "Dávka VZ-F1: opravy nálezů ruční zkoušky víc zákazníků na testu (18. 11. 2026)",
+   "alias": [
+    "VZ-F1"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "658",
+   "typ": "ukol",
+   "nazev": "Controlling: řádek prodeje dalšímu zákazníkovi nese číslo s písmenem (…9801-B) jako nabídka a deal",
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "657",
+   "typ": "ukol",
+   "nazev": "Krycí list BO (i PROJ a Techdata) tiskl prázdnou sekci Zástupci a kontakty zákazníka i banku, účet a zápis v rejstříku",
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "656",
+   "typ": "ukol",
+   "nazev": "VZ-N4: název souboru krycího listu vlastní varianty bez přípony varianty (…9801-C místo …9801.2-C)",
+   "alias": [
+    "VZ-N4"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "655",
+   "typ": "ukol",
+   "nazev": "VZ-N2: výběr „Otevřená varianta“ v hlavičce nabízel při otevřeném A i vlastní variantu C",
+   "alias": [
+    "VZ-N2"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "654",
+   "typ": "ukol",
+   "nazev": "VZ-N1: „Přidat zákazníka“ se stejným IČO, jaké už v zakázce je, prošlo bez upozornění",
+   "alias": [
+    "VZ-N1"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "653",
+   "typ": "ukol",
+   "nazev": "VZ-N3: zástupci a kontakty v krycím listu u otevřeného dalšího zákazníka se zapisovali do hlavičky řídícího (SoD A nesla zástupce C)",
+   "alias": [
+    "VZ-N3"
+   ],
+   "verze": "v18.11.8"
+  },
+  {
+   "id": "652",
+   "typ": "rozhodnuti",
+   "nazev": "Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích",
+   "alias": [
+    "K49-I5"
+   ],
+   "verze": "v19.11.1"
+  },
   {
    "id": "651",
    "typ": "ukol",
@@ -400,12 +478,6 @@
    "cekaNa": "rozhodnout (obsah v artefaktu dotazů)"
   },
   {
-   "id": "628",
-   "typ": "davka",
-   "nazev": "Zefektivnění programu",
-   "cekaNa": "start po sloučení test → main"
-  },
-  {
    "id": "629",
    "typ": "rozhodnuti",
    "nazev": "Jmenovat kolegu s rolí administrátora (jen test)",
@@ -473,24 +545,15 @@
    "typ": "ukol",
    "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
    "cekaNa": "nahrát upravený skill (mimo repo)"
-  },
-  {
-   "id": "652",
-   "typ": "ukol",
-   "nazev": "Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích",
-   "alias": [
-    "K49-I5"
-   ],
-   "cekaNa": "zadá při nasazení do main"
   }
  ],
- "ceka_na_jv_odlozene": 11,
+ "ceka_na_jv_odlozene": 12,
  "nehotove_podle_kdo": {
-  "J. V.": 41,
+  "J. V.": 40,
   "kolega": 5,
-  "koordinace": 11,
+  "koordinace": 13,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 62
+ "nehotovych": 63
 }

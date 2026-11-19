@@ -18,6 +18,8 @@
  *  9) Text: HTML v názvu escapované, řídicí znaky pryč, bez kontaktů a IČO,
  *     odeslaná nabídka (číslo, den, cena bez DPH ze zmrazeného zámku),
  *     „připravuje se nová“, „— neprodáno“, strop 2 000 znaků „… a další N“.
+ * 10) T1: řídící ≠ organizace dealu → řádek „Řídící zákazník v kalkulaci“
+ *     (zápis = náhled), řídící mezi dalšími není; návrat řádek odebere.
  * Jen simulátor Pipedrive (PIPEDRIVE_SIMULATOR=1), síť je zakázaná.
  * Pojistka: na e29f2b1 (bez druhu „zákazníci“) sada padá — poznámka
  * zákazníků nevznikne (1, 2, …) a pdPoznamkyUlozeni neexistuje.
@@ -105,6 +107,16 @@ function sVz(dealId, volby = {}) {
   return z;
 }
 const cisloB = z => z.cislo + '-B';
+/* VZ T1 (N3): IČO organizace dealu ze simulátoru (pole „IČ“ organizace) — hlavička zakázky se jím
+ * „napojí“ na organizaci dealu, jinak poznámka nese řádek „Řídící zákazník v kalkulaci“. */
+const icoOrgDealu = (dealId) => {
+  const st = SIM.pdSimStav().data;
+  const d = st.dealy.find(x => x.id === dealId);
+  const org = d && st.organizace.find(o => o.id === Number((d.org_id && d.org_id.value) || d.org_id));
+  const pole = (st.pole.organization || st.pole.organizace || []).find(f => f.field_name === 'IČ');
+  const v = org && pole ? (org.custom_fields || {})[pole.field_code] : '';
+  return v ? String(v).padStart(8, '0') : '';
+};
 
 await vypinac({ viceZakazniku: true, viceSachet: false });
 
@@ -143,6 +155,7 @@ let Z2, ID2;
 {
   const deal = dealy[2];
   Z2 = sVz(deal);
+  Z2.ico = icoOrgDealu(deal);   // T1 N3: řídící = organizace dealu
   const t = await uloz(Z2);
   const ul = ulozeno(t.soubor);
   const p = notes().filter(x => x.deal_id === deal);
@@ -290,7 +303,9 @@ let Z2, ID2;
   SIM.pdSimNastav({ scenar: '' });
   test('7 visi: obě poznámky chyba, varování o obou, uloženo', t3.status === 200 && t3.pdPoznamka === 'chyba' && t3.pdPoznamkaZakaznici === 'chyba'
     && /Seznam šachet/.test(t3.varovani || '') && /Seznam dalších zákazníků/.test(t3.varovani || '') && /neodpověděl/.test(t3.varovani || ''), { t3 });
-  test('7 společný rozpočet: obě poznámky dohromady nejvýš PD_POZNAMKA_CELKEM_MS (+ rezerva)', trvalo < PP.PD_POZNAMKA_CELKEM_MS + 1500
+  /* VZ T1 (revize N9): čtení organizace dealu má vlastní limit PD_ORG_DEALU_MS mimo rozpočet poznámek. */
+  test('7 společný rozpočet: obě poznámky dohromady nejvýš PD_POZNAMKA_CELKEM_MS (+ čtení organizace PD_ORG_DEALU_MS, + rezerva)',
+    trvalo < PP.PD_POZNAMKA_CELKEM_MS + PP.PD_ORG_DEALU_MS + 1500
     && trvalo >= 2 * PP.PD_POZNAMKA_VOLANI_MS - 200, trvalo);
   const t4 = await uloz(z2);
   test('7 po obnovení Pipedrive se obě zapíší', t4.pdPoznamka === 'zalozeno' && t4.pdPoznamkaZakaznici === 'zalozeno', t4);
@@ -421,6 +436,89 @@ let Z2, ID2;
   test('9 vzpDen a vzpCena', G.vzpDen('2026-11-11T23:30:00.000Z') === '12. 11. 2026' && G.vzpDen('x') === ''
     && G.vzpCena(1333000, 'CZK') === '1 333 000 Kč' && G.vzpCena(1234.5, 'CZK') === '1 234,50 Kč' && G.vzpCena(null) === '' && G.vzpCena(10, 'EUR') === '10 EUR');
   test('9 jeden zákazník: vzPoznamkaText prázdný, se „zadni“ věta žádní', G.vzPoznamkaText(nova(null)) === '' && G.vzPoznamkaText(nova(null), { zadni: true }) === G.VZP_ZADNI);
+}
+
+/* 10) T1 (rozhodnutí J. V. 18. 11. 2026): řídící ≠ organizace dealu → řádek
+ *     „Řídící zákazník v kalkulaci: …" v poznámce (týž text jako náhled),
+ *     řídící není mezi dalšími; návrat řídícího na původního řádek odebere. */
+{
+  const deal = dealy[20];
+  const z = sVz(deal);
+  z.ico = icoOrgDealu(deal);   // T1 N3: původní řídící = organizace dealu
+  const pC = G.vzPridej(z, UDAJE_C, { kdo: 'Test', kdy: '2026-11-16T10:00:00.000Z', vlastni: true });
+  const t = await uloz(z);
+  test('10 příprava: poznámka založena bez řádku T1', t.status === 200 && t.pdPoznamkaZakaznici === 'zalozeno'
+    && notes().filter(x => x.deal_id === deal).every(x => !/Řídící zákazník v kalkulaci/.test(x.content)), t);
+  const r = G.vzT1Nastav(z, pC.zakaznik.varianta);
+  const t2 = await uloz(z);
+  const p2 = notes().filter(x => x.deal_id === deal);
+  const radky = p2[0] ? p2[0].content.split('<br>') : [];
+  test('10 T1: vlastní varianta C → řídící C, poznámka UPRAVENA, pořád jedna', r.ok && t2.status === 200 && t2.pdPoznamkaZakaznici === 'upraveno' && p2.length === 1, { r, t2: t2.chyba || t2.pdPoznamkaZakaznici });
+  test('10 T1: původní zákazník a B mezi dalšími, C ne; řádek T1 před značkou (escapovaný)',
+    radky.some(x => /^• TEST – TESTOVACÍ ODBĚRATEL s\.r\.o\./.test(x)) && radky.some(x => /^• TEST – DRUHÝ/.test(x)) && !radky.some(x => /^• TEST – TŘETÍ/.test(x))
+    && radky[radky.length - 2] === 'Řídící zákazník v kalkulaci: C — TEST – TŘETÍ ODBĚRATEL s.r.o. (organizace dealu se změní až prodejem)'
+    && radky[radky.length - 1] === '— nabídka ' + z.cislo, radky);
+  test('10 T1: poznámka bez IČO a kontaktů (B225)', !/12345679|Zkušební kontakt/.test(p2[0] && p2[0].content));
+  test('10 T1: zápis = text náhledu (vzPoznamkaSeZnackou + vzPoznamkaText)', p2[0] && p2[0].content === PP.pdPoznamkaObsah(G.vzPoznamkaSeZnackou(z, G.vzPoznamkaText(z))));
+  const r3 = G.vzT1Nastav(z, z.varianty[0].id, 'z1');
+  const t3 = await uloz(z);
+  const p3 = notes().filter(x => x.deal_id === deal);
+  test('10 N3: server uložil skutečnou organizaci dealu (id, IČO, název) a vrátil ji prohlížeči', t2.pdOrgDealu && t2.pdOrgDealu.deal === String(deal)
+    && t2.pdOrgDealu.org > 0 && t2.pdOrgDealu.ico === z.ico && /\S/.test(t2.pdOrgDealu.nazev) && JSON.stringify(ulozeno(t2.soubor).pdOrgDealu) === JSON.stringify(t2.pdOrgDealu), t2.pdOrgDealu);
+  test('10 T1: řídící zpět původní → řádek zmizel, C mezi dalšími', r3.ok && t3.pdPoznamkaZakaznici === 'upraveno' && p3.length === 1
+    && !/Řídící zákazník v kalkulaci/.test(p3[0].content) && /• TEST – TŘETÍ/.test(p3[0].content), p3[0] && p3[0].content);
+}
+
+/* 11) N3: řádek se řídí SKUTEČNOU organizací dealu — deal vede organizace, jejíž IČO nemá řídící
+ *     (ani původní zákazník) → řádek i u původního řídícího; po shodě IČO zmizí. */
+{
+  const deal = dealy[21];
+  const z = sVz(deal);
+  z.ico = '25596641';   // jiné IČO než organizace dealu
+  const t = await uloz(z);
+  const p = notes().filter(x => x.deal_id === deal);
+  test('11 N3: deal vede jiná organizace než řídící → řádek „Řídící zákazník v kalkulaci“ i bez výměny', t.status === 200 && p.length === 1
+    && /Řídící zákazník v kalkulaci: TEST – TESTOVACÍ ODBĚRATEL s\.r\.o\. \(organizace dealu se změní až prodejem\)<br>— nabídka /.test(p[0].content), p[0] && p[0].content);
+  z.ico = icoOrgDealu(deal);
+  const t2 = await uloz(z);
+  const p2 = notes().filter(x => x.deal_id === deal);
+  test('11 N3: IČO řídícího = IČO organizace dealu → řádek zmizel (organizace se během hodiny nečte znovu)', t2.status === 200 && p2.length === 1
+    && !/Řídící zákazník v kalkulaci/.test(p2[0].content), p2[0] && p2[0].content);
+  const req = SIM.pdSimStav().pozadavky.filter(x => /\/api\/v2\/(deals|organizations)\//.test(x)).length;
+  await uloz(z);
+  test('11 N3: další uložení do hodiny deal ani organizaci znovu nečte', SIM.pdSimStav().pozadavky.filter(x => /\/api\/v2\/(deals|organizations)\//.test(x)).length === req);
+}
+
+/* 12) Revize N7–N9: pdOrgDealuObnov hlásí volano (třetí čtení), žádná chyba nevyletí, vlastní limit. */
+{
+  const deal = dealy[22];
+  const z = sVz(deal);
+  const relA = { role: 'Administrátor', email: ADMIN_EMAIL };
+  const r = await PP.pdOrgDealuObnov(z, { zapnuto: true, relace: relA, poleMapa: async () => ({ mapaOrganizace: {} }) }, G);
+  test('12 N7: přečteno → volano true; bez pole IČ v mapě uloží organizaci bez IČ', r.stav === 'precteno' && r.volano === true
+    && z.pdOrgDealu && z.pdOrgDealu.org > 0 && z.pdOrgDealu.ico === '', { r, o: z.pdOrgDealu });
+  const r2 = await PP.pdOrgDealuObnov(z, { zapnuto: true, relace: relA, poleMapa: async () => ({}) }, G);
+  test('12 N7: čerstvá hodnota → bez volání', r2.stav === 'cerstva' && r2.volano === false, r2);
+  const z3 = sVz(deal);
+  const r3 = await PP.pdOrgDealuObnov(z3, { zapnuto: true, relace: relA, poleMapa: async () => { throw new TypeError('úložiště mapy polí spadlo'); } }, G);
+  test('12 N8: chyba jiná než PdChyba (mapa polí) nevyletí → chyba, pdOrgDealu nezapsáno', r3.stav === 'chyba' && !z3.pdOrgDealu, r3);
+  const z4 = sVz(deal);
+  const t0 = Date.now();
+  const drz = setInterval(() => {}, 100);   // časovač limitu je unref() — test drží proces naživu sám
+  const r4 = await PP.pdOrgDealuObnov(z4, { zapnuto: true, relace: relA, poleMapa: () => new Promise(() => {}) }, G);
+  clearInterval(drz);
+  const trvalo4 = Date.now() - t0;
+  test('12 N9: visící mapa polí → konec po vlastním limitu PD_ORG_DEALU_MS', r4.stav === 'chyba' && trvalo4 < PP.PD_ORG_DEALU_MS + 800 && trvalo4 >= PP.PD_ORG_DEALU_MS - 200, { r4, trvalo4 });
+}
+
+/* 13) Revize N6: řídící bez IČO (organizace dealu IČ má) a řídící se nezměnil → žádný nepravdivý řádek. */
+{
+  const deal = dealy[23];
+  const z = sVz(deal);   // hlavička bez IČO
+  const t = await uloz(z);
+  const p = notes().filter(x => x.deal_id === deal);
+  test('13 N6: řídící bez IČO, původní zákazník → poznámka bez řádku „Řídící zákazník v kalkulaci“', t.status === 200 && p.length === 1
+    && t.pdOrgDealu && t.pdOrgDealu.ico && !/Řídící zákazník v kalkulaci/.test(p[0].content), { pd: t.pdOrgDealu, c: p[0] && p[0].content });
 }
 
 console.log(ok + ' OK, ' + fail + ' FAIL');

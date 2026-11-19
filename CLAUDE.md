@@ -120,8 +120,12 @@ Cloudové sezení může spadnout a s ním zmizí vše, co není na GitHubu. Pro
   koordinaci. Neočekávaný rozdíl = nález, nic se neslučuje. Nástroj není
   brána do main (ceny main × test ověřuje J. V.). Návod
   `podklady/POROVNANI_SESTAVENI.md`.
-- Automat (sezení nebo Actions) smí z testovacího webu testengscalc jen
-  ČÍST. Zápis do testovacího webu ani přístup k ostrému webu ne.
+- Testovací web testengscalc: **testovací sezení** (prostředí
+  `kalkulator-testovani`) smí zapisovat v plném rozsahu (J. V. 19. 11. 2026);
+  souhlas dává J. V. přímo v tom sezení, souhlas přes koordinaci nestačí.
+  Ostatní automaty (dávky, Actions) test jen ČTOU. Ostrý web engscalc jen
+  ČÍST. Pipedrive jen simulátor / suchý běh nebo deal TEST. Postup zkoušek
+  je ve skillu `.claude/skills/testovaci-procedura-kng/`.
 - STAV kola se zapisuje do `podklady/kola/STAV_KOLOnn.md`. Kopie jinde nejsou
   zdroj.
 - Jediný seznam kroků je `nastroje/testovaci_kolo.sh` (sestavení bez zvýšení

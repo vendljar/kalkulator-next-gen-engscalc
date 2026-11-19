@@ -634,8 +634,8 @@ const KONTROLY = [
       if (!ock || !opl || !ock.prepsano) return null;
       return { text: 'Statické posouzení má ručně přepsané hodiny (' + ock.mnozstvi + ' h) a ceník k nim '
         + 'přidává řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ (' + opl.mnozstvi + ' h). Pokud přepis už statiku '
-        + 'opláštění zahrnuje (převod z Excelu), vraťte hodiny statiky na ceníkové, nebo řádek '
-        + 'statiky opláštění vyřaďte — jinak se zaplatí dvakrát.' };
+        + 'opláštění zahrnuje (převod z Excelu), vraťte hodiny statiky na ceníkové, nebo statiku '
+        + 'opláštění odškrtněte (Zadání šachty → Práce a režie) — jinak se zaplatí dvakrát.' };
     },
   },
   {
@@ -1275,12 +1275,21 @@ const KONTROLY = [
     zabranaMozna: true, strany: ['ock'],
     zjisti(ctx) {
       const x = ctx.rucni;
-      if (!x || !Array.isArray(x.nepotvrzene) || !x.nepotvrzene.length) return null;
-      const n = x.nepotvrzene;
+      if (!x) return null;
+      const vycet = (n) => n.slice(0, 5).map(p => p.popis).join(', ') + (n.length > 5 ? ' a další ' + (n.length - 5) : '');
+      /* N3 (J. V. 18. 11. 2026): ruční cena BEZ ZDROJE (dodavatel ani číslo
+       * nabídky) potvrdit nejde a její cena jde ke schválení nadřízeného
+       * (zábranou je cenová výjimka). Tady se obchodníkovi řekne, co doplnit.
+       * Bez nového pravidla — počet pravidel je ve vydaném manuálu. */
+      const bz = Array.isArray(x.bezZdroje) ? x.bezZdroje : [];
+      const bzText = bz.length ? 'Ruční cena z nabídky nemá zdroj u: ' + vycet(bz) + '. Doplňte dodavatele nebo číslo nabídky '
+        + 'a cenu potvrďte — bez zdroje ji musí schválit nadřízený (záložka Schvalování), nebo ji vraťte na ceník (↺).' : '';
+      const n = Array.isArray(x.nepotvrzene) ? x.nepotvrzene : [];
+      if (!n.length) return bz.length ? { text: bzText } : null;
       return { uroven: KONTROLY_UROVEN_ZABRANA,
-        text: 'Potvrďte ruční cenu u: ' + n.slice(0, 5).map(p => p.popis).join(', ')
-          + (n.length > 5 ? ' a další ' + (n.length - 5) : '')
-          + ' (Kalkulace OCK, tlačítko „Potvrdit cenu“, nebo ↺ vrátit na ceník). Rozpracovanou zakázku lze dál ukládat.' };
+        text: 'Potvrďte ruční cenu u: ' + vycet(n)
+          + ' (Kalkulace OCK, tlačítko „Potvrdit cenu“, nebo ↺ vrátit na ceník). Rozpracovanou zakázku lze dál ukládat.'
+          + (bzText ? ' ' + bzText : '') };
     },
   },
   {

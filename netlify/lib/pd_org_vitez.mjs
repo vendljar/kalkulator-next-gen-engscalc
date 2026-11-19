@@ -102,6 +102,18 @@ export function pdOrgVitezDrz(stara, zak, volby = {}) {
   if (v) zak.pdOrgVitez = v; else delete zak.pdOrgVitez;
 }
 
+/* SKUTEČNÁ ORGANIZACE DEALU (VZ T1, revize N3): `pdOrgDealu` { deal, org,
+ * ico, nazev, kdy } píše jen server (pd_poznamka.mjs pdOrgDealuObnov při
+ * uložení, níže po přepojení na vítěze) — z uložené verze, hodnota
+ * z prohlížeče se zahodí; obnova ze souboru ji nepřebírá, z otisku ano. */
+export function pdOrgDealuDrz(stara, zak, volby = {}, G = globalThis) {
+  if (!zak || typeof zak !== 'object' || typeof G.vzOrgDealuNorm !== 'function') return;
+  const zOtisku = volby.obnova === true && volby.zeSouboru !== true;
+  const zdroj = zOtisku ? zak : stara;
+  const v = G.vzOrgDealuNorm(zdroj && zdroj.pdOrgDealu);
+  if (v) zak.pdOrgDealu = v; else delete zak.pdOrgDealu;
+}
+
 /* Kdo smí (§ 7.4): kdo prodal (prodano.kdo uložené verze = e-mail relace),
  * autor zakázky nebo administrátor. Právo crm.pipedrive se řeší zvlášť. */
 export function pdOrgVitezKdoSmi(ulozena, relace, G = globalThis) {
@@ -186,6 +198,11 @@ async function zapisStav(ctx, stav) {
     const ulozeny = pdOrgVitezNorm(zak.pdOrgVitez);
     if (stejnyStav(ulozeny, hodnota)) return { hodnota: ulozeny, razitko: String(zak.uloRazitko || ''), beze: true };
     zak.pdOrgVitez = hodnota;
+    /* VZ T1 (N3): deal teď vede organizace vítěze — skutečná organizace dealu. */
+    if ((stav.stav === 'zapsano' || stav.stav === 'shoda') && stav.org && typeof G.vzOrgDealuNorm === 'function') {
+      const o = G.vzOrgDealuNorm({ deal: stav.deal, org: stav.org, ico: aresIcoNorm(stav.ico || ''), nazev: stav.nazev || '', kdy: hodnota.kdy });
+      if (o) zak.pdOrgDealu = o;
+    }
     if (stav.stav === 'zapsano') {
       pdProtokol(zak, kdo, 'Přepojil deal ' + stav.deal + ' v Pipedrive na organizaci vítězného zákazníka „'
         + (hodnota.nazev || ('#' + hodnota.org)) + '“ (' + (hodnota.zdroj === 'zalozena' ? 'založena' : 'nalezena') + ').');
@@ -266,7 +283,7 @@ export async function pdOrgVitezAkce(ctx) {
         try { o = await zavolej('/api/v2/organizations/' + puvodni); }
         catch (e) { if (!(e instanceof PdChyba) || e.stav !== 404) throw e; }
         if (o && orgIco(o, mapaOrg.ico) === ico)
-          return hotovo({ deal, org: puvodni, stav: 'shoda', nazev: txt(o.name, 200) });
+          return hotovo({ deal, org: puvodni, stav: 'shoda', nazev: txt(o.name, 200), ico });
       }
       const nalez = await najdiPodleIco(zavolej, ico, mapaOrg.ico, minuleOrg && minuleOrg !== puvodni ? minuleOrg : 0);
       if (nalez.length > 1) {
@@ -292,7 +309,7 @@ export async function pdOrgVitezAkce(ctx) {
       const orgId = Number(cil.id);
       await zavolej('/api/v2/deals/' + Number(deal), { metoda: 'PATCH', telo: { org_id: orgId } });
       try { await (await (ctx.uloziste)(PD_CACHE_ULOZISTE)).smaz('deal:' + deal); } catch (e) { /* cache jen zestárne */ }
-      return hotovo({ deal, org: orgId, stav: 'zapsano', zdroj, nazev: txt(cil.name, 200) });
+      return hotovo({ deal, org: orgId, stav: 'zapsano', zdroj, nazev: txt(cil.name, 200), ico });
     } catch (e) {
       if (!(e instanceof PdChyba)) throw e;
       /* Založená organizace, ale PATCH dealu selhal: id si pamatujeme —

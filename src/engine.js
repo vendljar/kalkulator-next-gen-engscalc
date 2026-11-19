@@ -110,7 +110,7 @@ const DEFAULT_CENIK = {  // HODNOTY VYNULOVÁNY pro GitHub (pripravit_github.py)
   prechodoveKgKc: 0, leseniVnitrniKc: 0, leseniFix: 0,
   leseniVnejsiKc: 0, hakyKc: 0, zabradliKc: 0, soklBmKc: 0,
   sken3dKc: 0, vystupZamereniKc: 0, engineeringKc: 0,
-  projekceHodKc: 0, statikaKc: 0, statikaHod: 0, statikaOplHod: 0, rezieKancelareKc: 0,
+  projekceHodKc: 0, statikaKc: 0, statikaHod: 0, statikaOplHod: 0, statikaOplKc: 0, rezieKancelareKc: 0,
   /* Projekce navíc při zasklení mezi příčníky (9. 9. 2026). V repozitáři je
    * jako každá jiná ceníková hodnota NULA — skutečný ceník sem dosadí své
    * číslo. Prázdná hodnota znamená „výchozí 4 hodiny" (viz vypocet), takže
@@ -2430,8 +2430,15 @@ function vypocet(zadani, cenik, jekly, fixes = true) {
      * s opláštěním (plocha PRÁCE OPLÁŠTĚNÍ > 0) a jen při hodinách > 0 —
      * s ceníkem bez položky (nebo s nulou) se seznam položek nemění, Model 1
      * zůstává 1:1. `+… || 0`: starší zveřejněný ceník klíč nemá. */
-    (+c.statikaOplHod || 0) > 0 && oplPlochaCelkem > 0
-      ? mkItem('STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ', +c.statikaOplHod || 0, c.statikaKc, { cenaPath: 'C.statikaKc' })
+    /* VLASTNÍ SAZBA A ZAŠKRTNUTÍ (#667, J. V. 18. 11. 2026): statika
+     * opláštění má vlastní ceníkový klíč `C.statikaOplKc` (paušální pravidlo
+     * „každá položka vlastní cenu"), takže ruční cena z nabídky ani změna
+     * sazby u jedné statiky nehne druhou. Ceník bez klíče (starší zveřejněná
+     * verze) počítá sazbou statiky OCK — tak jako dosud; migraci klíče
+     * dělá cenikMigraceStatikyOpl. Zaškrtnutí je v zadání šachty
+     * (`Z.statikaOpl`, viz statikaOplZahrnuta) — každá šachta zvlášť. */
+    (+c.statikaOplHod || 0) > 0 && statikaOplZahrnuta(z, oplPlochaCelkem)
+      ? mkItem('STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ', +c.statikaOplHod || 0, statikaOplSazba(c), { cenaPath: 'C.statikaOplKc' })
       : null,
     mkItem('REŽIE KANCELÁŘE', 1, c.rezieKancelareKc, { cenaPath: 'C.rezieKancelareKc' }),
     mkItem('PRÁCE STAVBYVEDOUCÍHO', c.stavbyvedouciHod, c.stavbyvedouciKc, { cenaPath: 'C.stavbyvedouciKc' }),
@@ -2876,8 +2883,54 @@ function cenikDoplnKlice(cenik, vzor) {
   return doplneno;
 }
 
+/* STATIKA OPLÁŠTĚNÍ — ZAŠKRTNUTÍ A SAZBA (#667, J. V. 18. 11. 2026).
+ *
+ * Statické posouzení opláštění nevyžadují všichni dodavatelé výtahů, proto
+ * je to zaškrtávací položka šachty: `Z.statikaOpl` true = zaškrtnuto,
+ * false = odškrtnuto, chybí (null) = výchozí stav, tj. zaškrtnuto právě
+ * tehdy, když šachta má opláštění (plocha > 0) — jako před #667, takže
+ * žádná uložená zakázka se nezlevní ani nezdraží. Klíč není ve vzoru zadání
+ * (DEFAULT_ZADANI), import ho tedy nedoplní. Jiná hodnota než true/false
+ * = výchozí stav (tvar hlídá server, ULO_VYCTY_MIMO_VZOR). */
+function statikaOplZahrnuta(z, oplPlocha) {
+  const v = z ? z.statikaOpl : undefined;
+  if (v === true) return true;
+  if (v === false) return false;
+  return (+oplPlocha || 0) > 0;
+}
+/* Volby výběru v zadání (revize #667 N4): výchozí stav jde vždy vrátit.
+ * Hodnota '' = výchozí (klíč se smaže / null), '1' = Ano, '0' = Ne. */
+function statikaOplVolby(z, oplPlocha) {
+  const v = z ? z.statikaOpl : undefined;
+  const auto = v !== true && v !== false;
+  const vych = (+oplPlocha || 0) > 0 ? 'Ano' : 'Ne';
+  return [
+    { hodnota: '', text: 'výchozí (' + vych + ')', vybrano: auto },
+    { hodnota: '1', text: 'Ano', vybrano: v === true },
+    { hodnota: '0', text: 'Ne', vybrano: v === false },
+  ];
+}
+/* Sazba statiky opláštění: vlastní klíč, když ho ceník nese jako číslo;
+ * jinak (starší ceník) sazba statiky OCK — dosavadní cena. */
+function statikaOplSazba(c) {
+  if (c && Object.prototype.hasOwnProperty.call(c, 'statikaOplKc') && c.statikaOplKc !== null
+    && c.statikaOplKc !== '' && isFinite(+c.statikaOplKc)) return +c.statikaOplKc;
+  return c ? c.statikaKc : 0;
+}
+/* MIGRACE CENÍKU: nový klíč `statikaOplKc` se předvyplní sazbou statiky OCK
+ * (`statikaKc`) — v ceníku sestavení po načtení zveřejněné verze, v ceníku
+ * uložené varianty při importu i v kandidátech serverové kontroly B112.
+ * Volá ji cenikMigraceLeseni, takže běží všude tam, kde se ceník migruje,
+ * a vždy PŘED doplněním chybějících klíčů nulou (cenikDoplnKlice). */
+function cenikMigraceStatikyOpl(cenik) {
+  if (!cenik || typeof cenik !== 'object') return;
+  if (!Object.prototype.hasOwnProperty.call(cenik, 'statikaOplKc') && cenik.statikaKc !== undefined)
+    cenik.statikaOplKc = cenik.statikaKc;
+}
+
 function cenikMigraceLeseni(cenik) {
   if (!cenik || typeof cenik !== 'object') return;
+  cenikMigraceStatikyOpl(cenik);
   if (cenik.leseniFix == null) {
     const stary = [cenik.leseniVnitrniFix, cenik.leseniVnejsiFix].find(x => x != null);
     if (stary != null) cenik.leseniFix = +stary || 0;
@@ -2900,4 +2953,4 @@ function cenikMigraceLeseni(cenik) {
   }
 }
 
-if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, mustekSloupVychoziM, MUSTEK_SLOUP_ODPOCET_M, cenikMigraceMustku, mustkyCenikKontrola, MUSTEK_REF_SIRKA_MIN_MM, MUSTEK_REF_SIRKA_MAX_MM, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };
+if (typeof module !== 'undefined') module.exports = { vypocet, profilyNezname, mustkyPocet, mustkySkupiny, mustekSkupinaOciste, mustekSkupinaNova, mustkyNaSkupiny, mustkyCenikSkladebny, mustkyProvedeniMimoVychozi, MUSTEK_PODLAHY, MUSTEK_ZABRADLI, MUSTEK_KOTVENI, MUSTKY_SKLADBA_KLICE, MUSTEK_RADEK, MUSTKY_SKUPIN_MAX, MUSTEK_TEXT_MAX, mustkyCenikNovy, mustkyRozpad, mustekDelkaMm, mustekSloupVychoziM, MUSTEK_SLOUP_ODPOCET_M, cenikMigraceMustku, mustkyCenikKontrola, MUSTEK_REF_SIRKA_MIN_MM, MUSTEK_REF_SIRKA_MAX_MM, MUSTKY_CENIK_KLICE, MUSTEK_DELKA_VYCHOZI_MM, nadDvermiVypln, bokyVypln, NAD_DVERMI_VOLBY, NAD_DVERMI_NABIDKA, svetlikyStavbaNaBez, BOKY_VYPLN_VOLBY, BOKY_DVERI_VOLBY, bokyPocet, bokyPocetAuto, bokyPocetRucni, bokyPocetRucne, bokySirkaRucniMm, svetlikyBokyMigrace, DEFAULT_ZADANI, DEFAULT_CENIK, OPLASTENI_TYPY, oplasteniTypy, oplasteniVychoziTyp, OPLASTENI_STENY, oplasteniStenyVychozi, oplasteniPasyMeze, oplasteniProhlubenVse, oplasteniProhlubenNastav, oplasteniProhlubenSleduj, PROFILY_VYCHOZI, CEIL, cenikMigraceLeseni, cenikMigraceStatikyOpl, statikaOplZahrnuta, statikaOplSazba, statikaOplVolby, cenikDoplnKlice, CENIK_NEDOPLNOVAT, skloVolba, skloMigraceNazvu, SKLO_VSG441, SKLO_VSG442, nastupisteCelkem, patraProVypocet, LESENI_ODSTUP_M };

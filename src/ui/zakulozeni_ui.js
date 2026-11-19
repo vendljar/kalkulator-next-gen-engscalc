@@ -255,6 +255,8 @@ function zakUlozUI() {
    * prodeje) — povolená akce nad odeslanou nabídkou, žádný dialog klonu. */
   const jenProdej = typeof onlineJenProdej === 'function' && zakKanal() === 'online' && onlineJenProdej();
   if (!jenProdej && typeof zamekCteniStop === 'function' && zamekCteniStop()) return Promise.resolve(false);
+  /* T1: sdílená řídící varianta bez řídícího zákazníka — hláška i dialog. */
+  if (typeof vzT1UlozStop === 'function' && vzT1UlozStop(true)) return Promise.resolve(false);
   const s = zakUlozeniStav();
   if (s.stav === 'vyplnit') {
     zakUlozeniZprava('Vyplňte v hlavičce: ' + s.chybi.join(', ')

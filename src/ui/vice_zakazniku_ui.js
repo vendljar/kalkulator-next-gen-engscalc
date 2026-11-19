@@ -31,8 +31,9 @@
  * pole jen ke čtení, set / ARES / databáze odmítnuty) a číslo dokladu
  * z razítka (vzCisloDokladu) v seznamu variant a liště zámku.
  *
- * E4 (#603): přepínač Řídící v kartě (autor zakázky a administrátor; u prodané
- * zakázky zhasnutý — vzRidiciZamceno), Prodáno u zákazníka s potvrzením na
+ * E4 (#603): řídícího zákazníka mění autor zakázky a administrátor (u prodané
+ * zakázky zamčeno — vzRidiciZamceno); od T1 jen v hlavičce (níže), karta
+ * ukazuje ★/☆. Prodáno u zákazníka s potvrzením na
  * stránce před → po (vzProdej v jednom uložení; po uložení háček
  * vzPoProdeji → zápis organizace vítěze E5b).
  * Co tu NENÍ (další etapy): rejstřík (E6).
@@ -46,6 +47,7 @@ const VZ_UI = {
   prodej: null,      // E4: { id, varianta } — potvrzení prodeje u zákazníka na stránce
   zak: null,         // zakázka, ke které stav patří
   org: null,         // E5b: { zak, bezi, chyba, kod } — běžící / odmítnutý zápis organizace vítěze
+  t1: null,          // T1: { zak, varianta, chyba } — zvolená sdílená řídící varianta, řídící zákazník zatím nevybrán
 };
 const VZ_FORM_KDE = 'vzNovy';   // „kde" formuláře pro ARES a našeptávač
 const VZ_VLASTNI_RIDICI = 'Řídící zákazník: novou variantu založte „+ Nová varianta" a nastavte ji jako řídící.';
@@ -439,10 +441,10 @@ function vzKarta(kde) {
     const v = vzVarianta(z.varianta);
     const cena = vzCenaVarianty(v);
     const volby = (ZAK.varianty || []).map(x => `<option value="${esc(x.id)}"${String(x.id) === z.varianta ? ' selected' : ''}>${esc(x.nazev)}</option>`).join('');
-    const proVar = !smi ? vzProcNe() : (z.ridici ? 'řídící variantu mění „nastavit jako řídící" (u prodané zakázky ne)' : '');
+    /* T1: řídící variantu určuje hlavička (Řídící varianta) — výběr u řídícího zamčený. */
+    const proVar = !smi ? vzProcNe() : (z.ridici ? VZ_T1_KARTA_VAR : '');
     const odstrDuvod = vzOdstranitDuvod(z);
     const proProdej = smi ? vzProdejNelze(ZAK, z.id) : '';
-    const proRidici = z.ridici ? 'řídící zákazník' : vzRidiciProcNe();
     const tl = [
       `<button type="button" class="mini" onclick="vzNahled('${escJs(z.id)}')"${dis(zap, typeof VZ_VYPNUTO === 'string' ? VZ_VYPNUTO : '')} title="otevřít zákazníka a kartu Cenová nabídka">Náhled</button>`,
       `<button type="button" class="mini" onclick="vzTiskCN('${escJs(z.id)}')"${dis(zap, typeof VZ_VYPNUTO === 'string' ? VZ_VYPNUTO : '')} title="otevřít zákazníka a vytisknout jeho cenovou nabídku (VZ-E2)">Tisk CN</button>`,
@@ -451,7 +453,9 @@ function vzKarta(kde) {
       `<button type="button" class="mini" onclick="vzOdstranit('${escJs(z.id)}')"${dis(smi && !odstrDuvod, odstrDuvod || vzProcNe())}>Odstranit</button>`,
     ].join(' ');
     return `<tr class="${z.id === ot ? 'aktivni' : ''}" data-vz="${esc(z.id)}">
-      <td data-l="Řídící"><input type="radio" name="vzRidici_${kde}" data-vz-ridici="${esc(z.id)}"${z.ridici ? ' checked' : ''}${proRidici ? ` disabled title="${esc(proRidici)}"` : ` title="udělat řídícím zákazníkem (hlavička zakázky a deal v Pipedrive)" onchange="vzRidiciZmen('${escJs(z.id)}')"`}></td>
+      <td data-l="Řídící">${zap ? `<span class="vz-t1-hvezda${z.ridici ? '' : ' mut'}" data-vz-ridici="${esc(z.id)}" title="${z.ridici ? 'řídící zákazník' : esc(VZ_T1_KARTA_HVEZDA)}">${z.ridici ? '★' : '☆'}</span>`
+        /* T1 revize N4: s VYP hlavička výběr řídícího nemá — sloupec jako dřív (zhasnutý přepínač s důvodem). */
+        : `<input type="radio" name="vzRidici_${kde}" data-vz-ridici="${esc(z.id)}"${z.ridici ? ' checked' : ''} disabled title="${esc(z.ridici ? 'řídící zákazník' : vzRidiciProcNe())}">`}</td>
       <td data-l="Zákazník"><button type="button" class="vz-jmeno" onclick="vzOtevri('${escJs(z.id)}')"${zap ? '' : ' disabled'} title="otevřít zákazníka v hlavičce">${esc(vzNazevZ(z))}</button>
         <div class="note">${z.hlavicka.ico ? 'IČO ' + esc(z.hlavicka.ico) : 'bez IČO'}${z.ridici ? ' · <b>řídící zákazník</b>' : ' · písmeno ' + esc(z.pismeno)}${z.id === ot ? ' · otevřený v hlavičce' : ''}</div></td>
       <td data-l="Číslo nabídky" class="vz-cislo">${v ? esc(vzTiskCisloZakaznika(ZAK, z, v)) : '—'}</td>
@@ -463,7 +467,8 @@ function vzKarta(kde) {
   }).join('');
   const vyp = zap ? '' : `<div class="seznam-varovani" id="vzVypnuto_${kde}" style="margin:0 0 8px">funkce je vypnutá — ${esc(typeof VZ_VYPNUTO === 'string' ? VZ_VYPNUTO : '')}</div>`;
   const inner = `${vyp}<div class="note" style="margin-bottom:8px">Jednu zakázku může poptat víc zákazníků. Každý má <b>svou nabídku</b> — buď sdílí
-      variantu s jiným zákazníkem, nebo má vlastní. <b>Řídící zákazník</b> je v hlavičce zakázky a jen jeho data nese deal v Pipedrive.</div>
+      variantu s jiným zákazníkem, nebo má vlastní. <b>Řídící zákazník</b> je v hlavičce zakázky a jen jeho data nese deal v Pipedrive.${
+      zap ? ' Řídícího určuje hlavička: <b>Řídící varianta</b> a <b>Řídící zákazník</b>; hvězdička ★ ukazuje, kdo jím je.' : ''}</div>
     <div class="vz-tab"><table><thead><tr><th>Řídící</th><th>Zákazník</th><th>Číslo nabídky</th><th>Varianta nabídky</th><th>Stav</th><th>Cena bez DPH</th></tr></thead>
       <tbody>${radky}</tbody></table></div>
     ${kde === 'ock' ? vzPotvrzeniHtml(l) + vzProdejPotvrzeniHtml(l) : ''}${vzOrgVitezHtml(ZAK)}
@@ -672,30 +677,6 @@ function vzRidiciProcNe() {
   if (!vzSmiMenit()) return vzProcNe();
   if (!vzRidiciSmiUI()) return 'Řídícího zákazníka mění jen autor zakázky (u zakázek, které sám založil) nebo administrátor.';
   return '';
-}
-
-async function vzRidiciZmen(id) {
-  if (vzStop('změna řídícího zákazníka')) return;
-  const proc = vzRidiciProcNe();
-  const z = vzZakaznik(ZAK, id);
-  if (proc || !z || z.ridici) { if (proc && typeof hlaska === 'function') hlaska(proc); render(); return; }
-  const r0 = vzZakaznik(ZAK, vzRidiciId(ZAK));
-  const ok = typeof potvrd === 'function' ? await potvrd('Udělat řídícím zákazníkem „' + vzNazevZ(z) + '"?\n\n'
-    + '– hlavička zakázky ponese jeho údaje (dosud „' + vzNazevZ(r0) + '"),\n'
-    + '– řídící variantou bude jeho varianta „' + ((vzVarianta(z.varianta) || {}).nazev || '') + '",\n'
-    + '– písmena a čísla odeslaných nabídek se nemění,\n'
-    + '– organizace dealu v Pipedrive se bez prodeje NEMĚNÍ (přepíše se až při Prodáno).', { nadpis: 'Řídící zákazník' }) : true;
-  if (!ok) { render(); return; }
-  if (vzStop('změna řídícího zákazníka')) return;
-  const r = vzVymenRidiciho(ZAK, z.id);
-  if (!r.ok) { if (typeof hlaska === 'function') hlaska(r.chyba); render(); return; }
-  VZ_UI.otevreny = '';
-  ZAK.aktivni = vzRidiciVariantaId(ZAK);
-  syncVarianta();
-  aktivniVarianta(ZAK).upraveno = new Date().toISOString();
-  if (typeof protokolZapis === 'function')
-    protokolZapis(ZAK, { co: 'Změna řídícího zákazníka', kde: 'zákazníci zakázky', kdo: vzKdo(), pred: vzNazevZ(r0), po: vzNazevZ(z) });
-  render();
 }
 
 /* Otevře potvrzení prodeje u zákazníka (karta pod hlavičkou OCK). `varId`
@@ -941,4 +922,231 @@ async function vzPoProdejiPd(zak) {
   }
   try { render(); } catch (e) { /* nic */ }
   return o;
+}
+
+/* ---------- T1: Řídící varianta a Řídící zákazník v hlavičce ----------
+ * Rozhodnutí J. V. 18. 11. 2026, maketa podklady/T1_MAKETA_KALKULATOR.html.
+ * Jen ZAP + 2+ zákazníků (vzT1Hlavicka vrací null → common.js kreslí dnešní
+ * hlavičku znak po znaku, i s tlačítkem „nastavit jako řídící").
+ *  - „Řídící varianta" nahrazuje tlačítko „nastavit jako řídící"; u každé
+ *    varianty „(sdílená)" / „(vlastní X)" / „(bez zákazníka)" (jádro vzT1PopisVarianty);
+ *  - „Řídící zákazník": u vlastní varianty zamčený (🔒 automaticky) s vysvětlením,
+ *    u sdílené povinný výběr jen ze zákazníků, kterým varianta patří. Zvolená
+ *    sdílená varianta bez zákazníka (VZ_UI.t1) se do dat nezapíše a uložení
+ *    zastaví hláška i dialog (vzT1UlozStop — ruční uložení i autosave);
+ *  - žlutý blok pod „Stav Pipedrive", když organizace dealu nesedí na řídícího
+ *    (jádro vzOrgNesediText), a karta „Poznámka dealu v Pipedrive — náhled".
+ * Práva jako výměna řídícího (E4): vzRidiciProcNe. Data mění jádro vzT1Nastav. */
+const VZ_T1_KARTA_VAR = 'řídící variantu určuje hlavička — Řídící varianta';
+const VZ_T1_KARTA_HVEZDA = 'řídícího určuje hlavička (Řídící varianta / Řídící zákazník)';
+const VZ_T1_UPOZ_STYL = 'background:#fff7d6;border:1px solid #e0c46c;border-radius:6px;padding:8px 10px;margin:6px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center';
+
+/* T1 se kreslí: zapnutá funkce a 2+ zákazníků. */
+function vzT1Aktivni() { return vzZap() && vzRezimUI(); }
+
+/* Platná rozpracovaná volba sdílené řídící varianty, nebo null (srovná stav). */
+function vzT1Ceka() {
+  const t = VZ_UI.t1;
+  if (!t) return null;
+  if (!vzT1Aktivni() || t.zak !== ZAK || !vzVarianta(t.varianta) || t.varianta === vzRidiciVariantaId(ZAK)
+      || vzVariantaDruh(ZAK, t.varianta).druh !== 'sdilena') { VZ_UI.t1 = null; return null; }
+  return t;
+}
+
+function vzT1Seznam(l) { return l.length < 2 ? l.join('') : l.slice(0, -1).join(', ') + ' a ' + l[l.length - 1]; }
+
+/* Kdo patří variantě jen razítkem (nabídka z ní odešla, ukazuje jinam): věta do závorky. */
+function vzT1RazitkaVeta(varId) {
+  const v = vzVarianta(varId);
+  if (!v) return '';
+  return vzVariantaKomu(ZAK, varId).map(id => vzZakaznik(ZAK, id)).filter(z => z && z.varianta !== String(varId)).map(z => {
+    const r = vzRazitkoDotisku(v, z.id);
+    return (z.pismeno || vzNazevZ(z)) + ' z ní dostal nabídku ' + ((r && r.cislo) || vzCisloSPismenem(vzCisloVarianty(ZAK, v), z.pismeno));
+  }).join('; ');
+}
+
+/* Řádky hlavičky (3. sloupec) — { blok, radky } nebo null (dnešní hlavička). */
+function vzT1Hlavicka() {
+  if (!vzT1Aktivni()) return null;
+  const ceka = vzT1Ceka();
+  const rv = vzRidiciVariantaId(ZAK);
+  const vyb = ceka ? ceka.varianta : rv;
+  const proc = vzRidiciProcNe();
+  const dis = proc ? ` disabled title="${esc(proc)}"` : '';
+  const opts = (ZAK.varianty || []).map(v => `<option value="${esc(v.id)}"${String(v.id) === vyb ? ' selected' : ''}>${esc(v.nazev)} ${esc(vzT1PopisVarianty(ZAK, v.id))}</option>`).join('');
+  const rvRow = `<div class="row vz-t1-rv"><label>Řídící varianta</label>
+    <select id="vzT1Rv" onchange="vzT1VarZmen(this.value)"${dis}>${opts}</select></div>`;
+  const v = vzVarianta(vyb);
+  const vNazev = v ? v.nazev : '';
+  const d = vzVariantaDruh(ZAK, vyb);
+  let rzRow;
+  if (!ceka && d.druh !== 'sdilena') {
+    const z = vzZakaznik(ZAK, vzRidiciId(ZAK));
+    const st = vzT1Stitek(z);
+    const veta = d.druh === 'vlastni'
+      ? vNazev + ' je vlastní varianta zákazníka ' + st + ', proto je řídícím zákazníkem automaticky on. Jiného řídícího zákazníka vyberete se sdílenou variantou.'
+      : vNazev + ' zatím nepatří žádnému jinému zákazníkovi — řídícím zůstává ' + st + '.';
+    rzRow = `<div class="row vz-t1-rz"><label>Řídící zákazník<span class="pill mut" style="margin-left:12px">🔒 automaticky</span></label>
+    <select id="vzT1Rz" class="vz-t1-zamek" disabled title="${esc('🔒 ' + veta)}"><option selected>${esc(st)}</option></select></div>
+    <div class="vz-t1-vysv noprint">${esc(veta)}</div>`;
+  } else {
+    const R = vzRidiciId(ZAK);
+    const chyba = !!(ceka && ceka.chyba);
+    const volby = (ceka ? `<option value="" selected>— vyberte —</option>` : '')
+      + d.komu.map(id => `<option value="${esc(id)}"${!ceka && id === R ? ' selected' : ''}>${esc(vzT1Stitek(vzZakaznik(ZAK, id)))}</option>`).join('');
+    const raz = vzT1RazitkaVeta(vyb);
+    const veta = vNazev + ' je sdílená — patří zákazníkům ' + vzT1Seznam(d.komu.map(id => vzNazevZ(vzZakaznik(ZAK, id))))
+      + (raz ? ' (' + raz + ')' : '') + '. '
+      + (ceka ? 'Vyberte, kdo z nich je řídící; bez výběru zakázku nejde uložit.' : 'Nabízejí se jen zákazníci, kterým varianta patří.');
+    rzRow = `<div class="row vz-t1-rz"><label>Řídící zákazník<span class="pill ${ceka ? 'bad' : 'warn'}" style="margin-left:12px">povinné</span></label>
+    <select id="vzT1Rz"${chyba ? ' class="vz-t1-chybi"' : ''} onchange="vzT1ZakZmen(this.value)"${dis}>${volby}</select></div>
+    <div class="vz-t1-vysv noprint${chyba ? ' vz-t1-vysv-chyba' : ''}">${esc(veta)}</div>`;
+  }
+  const org = ceka ? '' : vzOrgNesediText(ZAK, true);   // rozpracovaný výběr: řídící zatím není (jako maketa)
+  const blok = org ? `<div class="vz-t1-org noprint" role="status" data-vz-t1-org="1" style="${VZ_T1_UPOZ_STYL}">
+    <span style="flex:1 1 220px">${esc(org).replace(/^(Řídící zákazník v kalkulaci: .*?) \(/, '<b>$1</b> (')}</span></div>` : '';
+  return { blok, radky: rvRow + rzRow };
+}
+
+/* Rozhodnutí J. V. (d): krátké potvrzení JEN když se mění řídící zákazník
+ * (i automaticky u vlastní varianty); změna samotné varianty bez dialogu.
+ * `provest` se zavolá hned (bez dialogu) nebo po „Změnit". */
+function vzT1Potvrd(zakId, provest) {
+  if (!zakId || zakId === vzRidiciId(ZAK) || typeof potvrd !== 'function') return provest();   // bez dialogu hned
+  return Promise.resolve(potvrd('Řídícím zákazníkem bude ' + vzT1Stitek(vzZakaznik(ZAK, zakId)) + ' — hlavička zakázky se změní.',
+    { nadpis: 'Řídící zákazník', ano: 'Změnit', ne: 'Zrušit' })).then(x => (x ? provest() : render()), () => render());
+}
+/* Rozhodnutí J. V. (b): řídící zákazník přešel na variantu JEN podle razítka
+ * odeslané nabídky (neukazoval na ni) → záznam do protokolu zakázky. */
+function vzT1PodleRazitka(zakId, vid) {
+  const z = vzZakaznik(ZAK, zakId);
+  if (!z || z.varianta === vid) return '';
+  const v = vzVarianta(vid);
+  const r = v ? vzRazitkoDotisku(v, z.id) : null;
+  return r ? 'Řídící zákazník ' + vzT1Stitek(z) + ' přešel na variantu „' + v.nazev + '“ podle odeslané nabídky ' + (r.cislo || '') : '';
+}
+function vzT1Hotovo(r, co, pred, po, razitko) {
+  if (!r.zmena) { render(); return; }
+  if (razitko && typeof protokolZapis === 'function')
+    protokolZapis(ZAK, { co: razitko.trim(), kde: 'hlavička zakázky', kdo: vzKdo() });
+  VZ_UI.otevreny = '';
+  ZAK.aktivni = vzRidiciVariantaId(ZAK);
+  syncVarianta();
+  aktivniVarianta(ZAK).upraveno = new Date().toISOString();
+  if (typeof zakUlozeniZprava === 'function') zakUlozeniZprava('');
+  if (typeof protokolZapis === 'function')
+    protokolZapis(ZAK, { co, kde: 'hlavička zakázky', kdo: vzKdo(), pred, po });
+  render();
+}
+function vzT1Popis() {
+  const v = vzVarianta(vzRidiciVariantaId(ZAK));
+  return vzNazevZ(vzZakaznik(ZAK, vzRidiciId(ZAK))) + ' / ' + (v ? v.nazev : '');
+}
+
+/* Výběr „Řídící varianta": vlastní / bez zákazníka → hned; sdílená → čeká na zákazníka. */
+function vzT1VarZmen(varId) {
+  vzOtevrenyId();   // srovná VZ_UI.zak dřív, než se zapíše výběr
+  if (vzStop('změna řídící varianty')) return;
+  const proc = vzRidiciProcNe();
+  if (proc || !vzVarianta(varId)) { if (proc && typeof hlaska === 'function') hlaska(proc); render(); return; }
+  const vid = String(varId);
+  if (vid === vzRidiciVariantaId(ZAK)) { VZ_UI.t1 = null; render(); return; }
+  if (vzVariantaDruh(ZAK, vid).druh === 'sdilena') {
+    VZ_UI.t1 = { zak: ZAK, varianta: vid, chyba: false };
+    ZAK.aktivni = vid;
+    syncVarianta();
+    render();
+    return;
+  }
+  VZ_UI.t1 = null;
+  const kdo = vzT1Kandidati(ZAK, vid)[0];
+  return vzT1Potvrd(kdo, () => {
+    if (vzStop('změna řídící varianty')) return;
+    const pred = vzT1Popis();
+    const raz = vzT1PodleRazitka(kdo, vid);
+    const r = vzT1Nastav(ZAK, vid);
+    if (!r.ok) { if (typeof hlaska === 'function') hlaska(r.chyba); render(); return; }
+    vzT1Hotovo(r, r.vymena ? 'Změna řídícího zákazníka (vlastní varianta)' : 'Změna řídící varianty', pred, vzT1Popis(), raz);
+  });
+}
+
+/* Výběr „Řídící zákazník" u sdílené varianty (rozpracované nebo dnešní řídící). */
+function vzT1ZakZmen(zakId) {
+  vzOtevrenyId();
+  if (vzStop('změna řídícího zákazníka')) return;
+  const proc = vzRidiciProcNe();
+  if (proc) { if (typeof hlaska === 'function') hlaska(proc); render(); return; }
+  if (!zakId) { render(); return; }
+  const ceka = vzT1Ceka();
+  const vid = ceka ? ceka.varianta : vzRidiciVariantaId(ZAK);
+  return vzT1Potvrd(String(zakId), () => {
+    if (vzStop('změna řídícího zákazníka')) return;
+    const pred = vzT1Popis();
+    const raz = vzT1PodleRazitka(String(zakId), vid);
+    const r = vzT1Nastav(ZAK, vid, zakId);
+    if (!r.ok) { if (typeof hlaska === 'function') hlaska(r.chyba); render(); return; }
+    VZ_UI.t1 = null;
+    vzT1Hotovo(r, r.vymena ? 'Změna řídícího zákazníka' : 'Změna řídící varianty', pred, vzT1Popis(), raz);
+  });
+}
+
+/* Zastavení uložení, dokud u sdílené řídící varianty chybí řídící zákazník.
+ * `rucne`: hláška pod lištou i dialog (texty z makety); autosave tiše.
+ * Vrací true = neukládat. */
+function vzT1UlozStop(rucne) {
+  const t = vzT1Ceka();
+  if (!t) return false;
+  if (!rucne) return true;   // autosave tiše (hlavička sama říká, že bez výběru se neukládá)
+  const v = vzVarianta(t.varianta);
+  const komu = vzVariantaKomu(ZAK, t.varianta).map(id => vzZakaznik(ZAK, id));
+  t.chyba = true;
+  if (typeof zakUlozeniZprava === 'function')
+    zakUlozeniZprava('Zakázka se neuložila. Řídící varianta „' + v.nazev + '“ je sdílená — vyberte v hlavičce Řídící zákazník ('
+      + vzT1Seznam(komu.map(vzNazevZ)) + ').', 'chyba');
+  if (typeof hlaska === 'function') {
+    const d = hlaska('Řídící varianta „' + v.nazev + '“ je sdílená. Vyberte v hlavičce Řídící zákazník — jednoho ze zákazníků, kterým varianta patří ('
+      + komu.map(vzT1Stitek).join(', ') + ').', { nadpis: 'Zakázku nejde uložit', ano: 'Rozumím' });
+    if (d && typeof d.then === 'function')
+      d.then(() => { const el = typeof document !== 'undefined' ? document.getElementById('vzT1Rz') : null; if (el && el.focus) el.focus(); });
+  }
+  render();
+  return true;
+}
+
+/* Seznam variant (Přehled cenových nabídek, sloupec Řídící): u 2+ zákazníků
+ * se ZAP jde přepnutí přes hlavičku (T1). Vrací true, když se o to postaralo T1. */
+function vzT1VarRidici(id) {
+  if (!vzT1Aktivni()) return false;
+  vzT1VarZmen(id);
+  return true;
+}
+
+/* Karta „Poznámka dealu v Pipedrive — náhled" (jen ZAP + 2+ zákazníků; jinak ''). */
+function vzPoznamkaKarta(kde) {
+  if (!vzT1Aktivni() || typeof vzPoznamkaText !== 'function') return '';
+  const ceka = vzT1Ceka();
+  let t = vzPoznamkaText(ZAK);
+  if (ceka) {
+    const radky = t.split('\n').filter(x => !/^Řídící zákazník v kalkulaci: /.test(x));
+    radky.push('(řídící zákazník není vybrán — poznámka se zapíše až s uložením)');
+    t = radky.join('\n');
+  }
+  const text = (typeof vzPoznamkaSeZnackou === 'function' ? vzPoznamkaSeZnackou(ZAK, t) : '') || t;
+  const html = esc(text).split('\n').map(r => /^Řídící zákazník v kalkulaci: |^\(řídící zákazník není vybrán/.test(r)
+    ? `<span class="vz-t1-pozn-novy">${r}</span>` : r).join('\n');
+  const deal = typeof ctrlPdDealIdNorm === 'function' ? ctrlPdDealIdNorm(ZAK.pdDealId) : String(ZAK.pdDealId || '');
+  const znama = vzOrgDealuZnama(ZAK);
+  const oid = vzOrgDealuId(ZAK);
+  const org = oid ? vzZakaznik(ZAK, oid) : null;
+  const prodana = !!vzProdanaVarianta(ZAK);
+  /* Revize N3: skutečná organizace dealu (server ji čte při uložení), jinak odhad. */
+  const orgNazev = znama ? (znama.org ? (znama.nazev || (org ? vzNazevZ(org) : 'bez názvu')) : 'deal nemá organizaci') : (org ? vzNazevZ(org) : '');
+  const orgVeta = !deal ? 'Zakázka zatím nemá deal v Pipedrive — poznámka se zapíše, až ho mít bude.'
+    : prodana ? 'Organizace dealu se po prodeji přepisuje na vítězného zákazníka.'
+      : orgNazev ? 'Organizace dealu: <b>' + esc(orgNazev) + '</b>' + (znama ? '' : ' (odhad — ověří se při uložení)') + ' — mění se až prodejem.'
+        : 'Organizace dealu se ověří při uložení.';
+  /* Revize N5: noprint — názvy a ceny ostatních zákazníků nesmí do tisku záložky. */
+  return `<div class="card vz-pozn-karta noprint" id="vzPoznKarta_${kde}"><h2><span style="flex:1">Poznámka dealu v Pipedrive — náhled</span></h2><div class="body">
+    <div class="note" style="margin-bottom:8px">Text, který uložení zakázky zapíše do přepisované poznámky u dealu (bez kontaktů, osob a IČO). ${orgVeta}</div>
+    <pre class="vz-t1-pozn">${html}</pre></div></div>`;
 }

@@ -171,18 +171,26 @@ function vyjimkyObsah(data, dnesni, vyrazena, jekly) {
        * ceník označil příznakem, zadává obchodník sám podle nabídky — ruční
        * cena není odchylka od ceníku. Příznak jen z platného ceníku
        * (`dnesni`), nikdy z ceníku varianty: ten si zakázka umí podstrčit. */
-      if (typeof cenikDleNabidkyJe === 'function' && String(r.cesta).indexOf('C.') === 0
+      /* N3 (J. V. 18. 11. 2026): záznam ruční ceny BEZ zdroje (dodavatel ani
+       * číslo nabídky) příznak nekryje — i u příplatku dle nabídky jde cena
+       * ke schválení. Starší vlastní cena bez záznamu (S13 „bez dokladu") dál ne. */
+      const rcRec = typeof rucniCenaZaznam === 'function' ? rucniCenaZaznam(d, r.cesta) : null;
+      const rcBezZdroje = !!rcRec && typeof rucniCenaMaZdroj === 'function' && !rucniCenaMaZdroj(rcRec);
+      if (!rcBezZdroje && typeof cenikDleNabidkyJe === 'function' && String(r.cesta).indexOf('C.') === 0
           && cenikDleNabidkyJe(dnesni.cenik, r.cesta)) return;
       /* RUČNÍ CENA POLOŽKY S DOKLADEM (#561, J. V. 4. 11. 2026): položka,
        * k jejíž hodnotě varianta nese záznam ruční ceny (nabídka dodavatele),
        * není směs ceníků. Bez potvrzení ji zastaví vlastní zábrana
        * rucniCenaNepotvrzena (a server u nového zámku), schválení netřeba. */
-      if (typeof rucniCenaPlati === 'function' && rucniCenaPlati(d, r.cesta)) return;
+      /* N3 (J. V. 18. 11. 2026): jen záznam se ZDROJEM (dodavatel nebo číslo
+       * nabídky). Ruční cena bez zdroje jde ke schválení jako cena pod ceníkem. */
+      if (typeof rucniCenaPlati === 'function' && rucniCenaPlati(d, r.cesta) && !rcBezZdroje) return;
       const sekce = r.sekce === 'PROJ' ? 'PROJ' : 'OCK';
       if ((sekce === 'PROJ' ? 'proj' : 'ock') === vyrazena) return;
       /* `pod` = číslo varianty pod platným ceníkem — jen pro znění hlášky. */
       const pod = naPlatne && typeof r.stara === 'number' && typeof r.nova === 'number' && r.stara < r.nova;
-      smes.push({ cesta: r.cesta, sekce, popis: String(r.popis || r.cesta), hodnota: r.stara, pod,
+      /* `bezZdroje` (dorevize R2): jen pro znění hlášky, obsah se nemění. */
+      smes.push({ cesta: r.cesta, sekce, popis: String(r.popis || r.cesta), hodnota: r.stara, pod, bezZdroje: rcBezZdroje,
         cenikova: r.nova, jed: r.jed });
     });
   }
@@ -209,7 +217,7 @@ function vyjimkyObsah(data, dnesni, vyrazena, jekly) {
   };
   const obsah = (smes.length || pasy.length) ? zapis(vyjimkyM2Schvaleni, false) : '';
   const obsahStary = pasy.length ? zapis(vyjimkyM2Stary, true) : '';
-  return { smes: smes.map(x => ({ cesta: x.cesta, sekce: x.sekce, popis: x.popis, pod: x.pod,
+  return { smes: smes.map(x => ({ cesta: x.cesta, sekce: x.sekce, popis: x.popis, pod: x.pod, bezZdroje: !!x.bezZdroje,
       pouzita: x.hodnota, cenikova: x.cenikova, jed: x.jed })), pasy, svetliky,
     polozek: smes.length, pasu: pasy.length, obsah, obsahStary, prazdny: !smes.length && !pasy.length };
 }
@@ -474,14 +482,22 @@ function vyjimkyText(obsah) {
    * Skutečná směs (starší verze, přepočet jen vybraných položek, vyšší
    * nebo textové hodnoty) si nechává znění směsi. Obsah výjimky (a tím
    * platnost schválení) se nemění. */
-  const pod = (o.smes || []).filter(x => x.pod);
-  const smes = (o.smes || []).filter(x => !x.pod);
+  /* RUČNÍ CENA BEZ ZDROJE (dorevize R2, N3 J. V. 18. 11. 2026): jmenovitě
+   * a s tím, co doplnit — není to směs ceníků ani nutně cena pod ceníkem. */
+  const bz = (o.smes || []).filter(x => x.bezZdroje);
+  const pod = (o.smes || []).filter(x => x.pod && !x.bezZdroje);
+  const smes = (o.smes || []).filter(x => !x.pod && !x.bezZdroje);
+  if (bz.length) {
+    const jm = bz.slice(0, 3).map(x => String(x.popis || x.cesta));
+    casti.push('ruční cena z nabídky bez zdroje (' + jm.join(', ') + (bz.length > 3 ? ' a ' + (bz.length - 3) + ' další' : '')
+      + ') — doplňte dodavatele nebo číslo nabídky a cenu potvrďte, jinak ji musí schválit nadřízený');
+  }
   if (pod.length) {
     const jm = pod.slice(0, 3).map(x => String(x.popis || x.cesta) + ': cena pod ceníkem');
     if (pod.length > 3) jm.push('a ' + (pod.length - 3) + ' další ' + (pod.length - 3 === 1 ? 'položka' : 'položky') + ' pod ceníkem');
     casti.push(jm.join('; '));
   }
-  const n = (o.smes ? smes.length : (o.polozek || 0));
+  const n = (o.smes ? smes.length : Math.max(0, (o.polozek || 0)));
   if (n) {
     const ock = smes.filter(x => x.sekce === 'OCK').length, proj = o.smes ? n - ock : 0;
     casti.push('ceník varianty je směs platného ceníku a starších cen (' + n

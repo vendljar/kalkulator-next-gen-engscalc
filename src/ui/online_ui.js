@@ -1421,6 +1421,9 @@ function onlineUloz(opts) {
     }
     return Promise.resolve(false);
   }
+  /* T1 (víc zákazníků): zvolená sdílená řídící varianta bez řídícího
+   * zákazníka — neukládá se nic (ani autosave); ručně hláška i dialog. */
+  if (typeof vzT1UlozStop === 'function' && vzT1UlozStop(!opts.tiche || !!opts.fronta)) return Promise.resolve(false);
   /* JEDEN ZÁPIS NAJEDNOU (nález V27, 8. 9. 2026). Ruční uložení, tlačítko
    * „Uložit online" v kartě a autosave se uměly sejít: druhý požadavek vyšel
    * se starým razítkem, server ho správně odmítl 409 a klient se ptal
@@ -1503,6 +1506,8 @@ function onlineUloz(opts) {
     /* Razítko i do zakázky samé, ať kopie v okně odpovídá tomu, co leží na
      * serveru — a ať se počítá do „naposledy zapsaného" o řádek níž. */
     if (o.razitko) ZAK.uloRazitko = o.razitko;
+    /* VZ T1 (N3): skutečnou organizaci dealu píše jen server — převzít, ať hlavička a náhled poznámky sedí na zápis. */
+    if (Object.prototype.hasOwnProperty.call(o, 'pdOrgDealu')) { if (o.pdOrgDealu) ZAK.pdOrgDealu = o.pdOrgDealu; else delete ZAK.pdOrgDealu; }
     ONLINE_STAV.kolize = null;
     onlinePoslednizapamatuj(o.soubor);   // po refreshi se sem vrátíme
     ONLINE_STAV.posledni = zmenaBehem ? onlineOdeslanoSRazitkem(odeslanoText, o.razitko, o.zamkyPrijato) : JSON.stringify(ZAK);
@@ -2762,14 +2767,20 @@ function onlineUzKontaktPanel(email) {
 }
 function onlineUzKontaktUloz(email) {
   const hod = id => { const el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; };
-  const profil = { titul: hod('onlineUzKTitul'), funkce: hod('onlineUzKFunkce'), telefon: hod('onlineUzKTelefon') };
+  const profil = { titul: hod('onlineUzKTitul'), jmeno: hod('onlineUzKJmeno'), funkce: hod('onlineUzKFunkce'),
+                   telefon: hod('onlineUzKTelefon') };
   ONLINE_STAV.kontaktPro = '';
   return onlineUzAkce(Object.assign({ akce: 'profil', email }, profil),
-    'Kontakt účtu ' + email + ' je uložený. Do dalších nabídek půjde nový údaj.',
+    'Údaje účtu ' + email + ' jsou uložené. Do dalších nabídek půjdou nové údaje.',
     { poUspechu: (o) => {
       /* Vlastní účet: blok „Vypracoval" musí platit hned, ne až po obnovení stránky. */
       if (ONLINE_STAV.ja && ONLINE_STAV.ja.email === email && o)
-        Object.assign(ONLINE_STAV.ja, { titul: o.titul || '', funkce: o.funkce || '', telefon: o.telefon || '' });
+        Object.assign(ONLINE_STAV.ja, { jmeno: o.jmeno || '', titul: o.titul || '', funkce: o.funkce || '',
+          telefon: o.telefon || '' });
+      /* Tabulka účtů hned z odpovědi serveru (jako u založení). */
+      const radek = (ONLINE_STAV.uzivatele || []).find(x => x.email === email);
+      if (radek && o) Object.assign(radek, { jmeno: o.jmeno || '', titul: o.titul || '', funkce: o.funkce || '',
+        telefon: o.telefon || '' });
     } });
 }
 
@@ -4491,15 +4502,28 @@ function onlineRadekUzivatele(u) {
           onkeydown="if(event.key==='Enter')onlineUzHesloUloz('${escJs(u.email)}')">
         <button class="mini" onclick="onlineUzHesloUloz('${escJs(u.email)}')">Uložit heslo</button>
         <button class="mini" onclick="onlineUzHesloPanel('')">Zrušit</button></td></tr>` : '';
+  /* ÚPRAVA ÚČTU (#UE, J. V. 18. 11. 2026): dřív „Kontakt…" jen s titulem,
+   * funkcí a telefonem — jméno existujícího účtu opravit nešlo. Teď jsou tu
+   * všechny údaje bloku „Vypracoval". E-mail je jen ke čtení: je to
+   * přihlašovací jméno a klíč účtu a odkazují na něj zakázky (autor),
+   * prodeje (prodano.kdo) i razítka zámků („jméno <e-mail>"). Meze délek
+   * drží maxlength stejně jako server (jmeno 120, titul 40, funkce 80,
+   * telefon 40). */
   const kontaktRadek = ONLINE_STAV.kontaktPro === u.email
     ? `<tr><td colspan="7" style="text-align:left;padding:6px 10px">
-        Kontakt do bloku „Vypracoval" pro ${esc(u.email)}:
-        <input type="text" id="onlineUzKTitul" style="width:70px" maxlength="40" placeholder="titul" value="${esc(u.titul || '')}">
+        Úprava účtu <b>${esc(u.email)}</b> — údaje do bloku „Vypracoval":
+        <input type="text" id="onlineUzKTitul" style="width:70px" maxlength="40" placeholder="titul" title="Titul před jménem"
+          value="${esc(u.titul || '')}">
+        <input type="text" id="onlineUzKJmeno" style="width:170px" maxlength="120" placeholder="jméno a příjmení"
+          title="Jméno a příjmení" value="${esc(u.jmeno || '')}">
         <input type="text" id="onlineUzKFunkce" style="width:180px" maxlength="80" placeholder="funkce" value="${esc(u.funkce || '')}">
         <input type="text" id="onlineUzKTelefon" style="width:150px" maxlength="40" placeholder="+420 602 000 000"
           value="${esc(u.telefon || '')}" onkeydown="if(event.key==='Enter')onlineUzKontaktUloz('${escJs(u.email)}')">
-        <button class="mini" onclick="onlineUzKontaktUloz('${escJs(u.email)}')">Uložit kontakt</button>
-        <button class="mini" onclick="onlineUzKontaktPanel('')">Zrušit</button></td></tr>` : '';
+        <button class="mini" onclick="onlineUzKontaktUloz('${escJs(u.email)}')">Uložit údaje</button>
+        <button class="mini" onclick="onlineUzKontaktPanel('')">Zrušit</button>
+        <div class="note" style="margin:4px 0 0">E-mail <input type="text" id="onlineUzKEmail" value="${esc(u.email)}" readonly
+          disabled style="width:220px"> se neupravuje. E-mail je přihlašovací jméno; pro změnu založte nový účet
+          a převeďte zakázky. Nové údaje dostanou jen nově vytištěné nabídky — odeslané (zamčené) se nemění.</div></td></tr>` : '';
   const ja = ONLINE_STAV.ja && ONLINE_STAV.ja.email === u.email;
   /* Titul, funkce a telefon jsou v tabulce vidět proto, že přesně tyhle údaje
    * odcházejí zákazníkovi v bloku „Vypracoval" pod cenovou nabídkou (#145).
@@ -4519,7 +4543,7 @@ function onlineRadekUzivatele(u) {
         ? '<button class="mini" onclick="otevriZmenaHesla()">Změnit heslo…</button>'
         : `<button class="mini" onclick="onlineUzHesloPanel('${escJs(u.email)}')">Nové heslo…</button>`}
       ${/* Profil hlavního účtu mění jen on sám (B28) — jiným správcům tlačítko nepatří. */ ''}
-      ${(hlavni && !ja) ? '' : `<button class="mini" onclick="onlineUzKontaktPanel('${escJs(u.email)}')">Kontakt…</button>`}
+      ${(hlavni && !ja) ? '' : `<button class="mini" title="Upravit titul, jméno, funkci a telefon" onclick="onlineUzKontaktPanel('${escJs(u.email)}')">Upravit…</button>`}
       ${hlavni ? '' : (u.archiv
         ? `<button class="mini" onclick="onlineUzArchiv('${escJs(u.email)}', false)">Vrátit z archivu</button>`
         : `<button class="mini" onclick="onlineUzArchiv('${escJs(u.email)}', true)">Archivovat…</button>`)}

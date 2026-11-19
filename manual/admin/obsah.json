@@ -252,8 +252,8 @@
               "vyklad": "Rozbalovací seznam **Role** v řádku účtu. Povýšení na Administrátora chce vaše heslo; snížení role jiného správce také."
             },
             {
-              "pojem": "Kontakt…",
-              "vyklad": "Úprava titulu, funkce a telefonu kolegy pro blok „Vypracoval“. Profil hlavního správce mění jen on sám."
+              "pojem": "Upravit…",
+              "vyklad": "Úprava titulu, jména a příjmení, funkce a telefonu kolegy pro blok „Vypracoval“. Nové údaje dostanou jen nově vytištěné nabídky, odeslané (zamčené) se nemění. E-mail se neupravuje — je to přihlašovací jméno; pro změnu založte nový účet a převeďte zakázky. Profil hlavního správce mění jen on sám."
             },
             {
               "pojem": "Hlášky nahoře",

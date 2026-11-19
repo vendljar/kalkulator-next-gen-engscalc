@@ -115,7 +115,7 @@ const CTRL_MAPA_VYCHOZI = (() => {
     'C.zabradliKc', 'C.soklBmKc', 'C.stavbyvedouciKc', 'C.tmeleniKc']);
   dej('rezie-prispevek', ['C.rezieKancelareKc']);
   /* J4: přirážka za ATYP je práce projektanta navíc → projekce. */
-  dej('sl-projekce', ['C.sken3dKc', 'C.vystupZamereniKc', 'C.engineeringKc', 'C.projekceHodKc', 'C.statikaKc',
+  dej('sl-projekce', ['C.sken3dKc', 'C.vystupZamereniKc', 'C.engineeringKc', 'C.projekceHodKc', 'C.statikaKc', 'C.statikaOplKc',
     'C.prekladyKc', 'R.atypPrirazka']);
   dej('sl-leseni', ['C.leseniVnitrniKc', 'C.leseniFix', 'C.leseniVnejsiKc', 'C.priplatky.leseniHlavaKc']);
   /* J10: můstek → zámečníci. Od #354 (26. 10. 2026) je C.mustekKc jen

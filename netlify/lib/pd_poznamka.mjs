@@ -44,6 +44,11 @@
  * úvod „Další zákazníci na zakázce: “, klíč stropu
  * strop:poznamka-zakaznici:deal:<id>, vypínač viceZakazniku, mez B225).
  * Text staví src/vz_poznamka.js (týž kód jako suchý běh v prohlížeči).
+ * T1 (rozhodnutí J. V. 18. 11. 2026): nesedí-li organizace dealu na
+ * řídícího zákazníka (podle IČO, prázdné = nesedí; jádro vzOrgNesediText),
+ * nese text za seznamem řádek „Řídící zákazník v kalkulaci: C — Název
+ * (organizace dealu se změní až prodejem)“ — bez IČO (mez B225). Organizaci
+ * dealu dál mění jen prodej (E5b).
  * Obě poznámky se zapisují v JEDNOM uložení se SPOLEČNÝM časovým rozpočtem
  * PD_POZNAMKA_CELKEM_MS — šachty první, zákazníci druzí; nestihne-li se
  * druhá, stav „chyba“ s varováním a zkusí se při dalším uložení
@@ -307,11 +312,75 @@ export async function pdPoznamkaUlozeni(zak, stara, { viceSachet, relace, matice
 /* Uložení zakázky (functions/zakazky.mjs, ve výhradním úseku zakázky, VZ-E5):
  * obě poznámky v jednom společném časovém rozpočtu PD_POZNAMKA_CELKEM_MS,
  * šachty první, zákazníci druzí. Vrací { sachty, zakaznici, volano }. */
-export async function pdPoznamkyUlozeni(zak, stara, { viceSachet, viceZakazniku, relace, matice } = {}, G = globalThis) {
+export async function pdPoznamkyUlozeni(zak, stara, { viceSachet, viceZakazniku, relace, matice, poleMapa } = {}, G = globalThis) {
   const termin = Date.now() + PD_POZNAMKA_CELKEM_MS;
   const sachty = await pdPoznamkaDruhUlozeni(PD_POZNAMKA_DRUH_SACHTY, zak, stara,
     { zapnuto: viceSachet, relace, matice, termin }, G);
+  /* VZ T1 (N3): skutečná organizace dealu dřív, než se složí text poznámky zákazníků.
+   * Revize N9: čtení má vlastní menší limit (PD_ORG_DEALU_MS) a poznámce
+   * zákazníků z rozpočtu neukrajuje — o dobu čtení se její termín posune. */
+  const zbyvalo = termin - Date.now();
+  const org = await pdOrgDealuObnov(zak, { zapnuto: viceZakazniku, relace, matice, termin: Date.now() + Math.min(PD_ORG_DEALU_MS, Math.max(0, zbyvalo)), poleMapa }, G);
   const zakaznici = await pdPoznamkaDruhUlozeni(PD_POZNAMKA_DRUH_ZAKAZNICI, zak, stara,
-    { zapnuto: viceZakazniku, relace, matice, termin }, G);
-  return { sachty, zakaznici, volano: !!(sachty.volano || zakaznici.volano) };
+    { zapnuto: viceZakazniku, relace, matice, termin: Date.now() + zbyvalo }, G);
+  /* Revize N7: i samotné čtení organizace (zápis pdOrgDealu) vyžaduje třetí čtení zakázky. */
+  return { sachty, zakaznici, org: org.stav, volano: !!(sachty.volano || zakaznici.volano || org.volano) };
+}
+
+/* SKUTEČNÁ ORGANIZACE DEALU (VZ T1, revize N3, rozhodnutí J. V. 18. 11. 2026).
+ * Při uložení zakázky s víc zákazníky (vypínač viceZakazniku, deal, napojení
+ * nebo simulátor, právo crm.pipedrive) server přečte deal a jeho organizaci
+ * a zapíše do `zak.pdOrgDealu` { deal, org, ico, nazev, kdy } — řádek
+ * „Řídící zákazník v kalkulaci“ se pak řídí skutečnou organizací, ne odhadem.
+ * Jen čtení (GET deal, GET organizace), nejvýš jednou za PD_ORG_DEALU_STARI_MS
+ * na zakázku a deal, strop PD_ORG_DEALU_STROP čtení za hodinu na deal, vlastní
+ * limit PD_ORG_DEALU_MS (revize N9). Žádná chyba nic nezastaví (revize N8;
+ * zůstává uložená hodnota, nebo odhad). Uloženou hodnotu z uložené verze drží
+ * pdOrgDealuDrz (zakazka_kontrola.mjs) — tady se jen obnovuje. Vrací
+ * { stav, volano } — `volano` = mluvilo se s Pipedrive (revize N7: třetí čtení). */
+export const PD_ORG_DEALU_MS = 2500;   // revize N9: vlastní limit čtení organizace (mimo rozpočet poznámek)
+export const PD_ORG_DEALU_STARI_MS = 3600 * 1000;
+export const PD_ORG_DEALU_STROP = 20;
+export async function pdOrgDealuObnov(zak, { zapnuto, relace, matice, termin, poleMapa, ted } = {}, G = globalThis) {
+  const bez = (stav) => ({ stav, volano: false });
+  const dealId = (zak && typeof G.ctrlPdDealIdNorm === 'function' && G.ctrlPdDealIdNorm(zak.pdDealId)) || '';
+  if (zapnuto !== true || !dealId || !pdNastaveno() || typeof G.vzRezim !== 'function' || !G.vzRezim(zak)
+    || typeof G.vzOrgDealuNorm !== 'function' || typeof poleMapa !== 'function') return bez('bez');
+  if (typeof G.vzProdanaVarianta === 'function' && G.vzProdanaVarianta(zak)) return bez('bez');   // po prodeji organizaci řeší E5b
+  const nyni = typeof ted === 'number' ? ted : Date.now();
+  const znama = G.vzOrgDealuNorm(zak.pdOrgDealu);
+  if (znama && znama.deal === dealId && znama.kdy && nyni - Date.parse(znama.kdy) < PD_ORG_DEALU_STARI_MS) return bez('cerstva');
+  if (!pdPoznamkaSmi(relace, matice, G)) return bez('bez-prava');
+  const konec = typeof termin === 'number' ? termin : nyni + PD_ORG_DEALU_MS;
+  if (konec - Date.now() <= 0) return bez('chyba');
+  /* Revize N8: čtení je informativní — žádná chyba (ani úložiště mapy polí) uložení nezastaví. */
+  try {
+    if (!(await pdStropCerstvych('deal:' + dealId, 'org-dealu', PD_ORG_DEALU_STROP))) return bez('strop');
+  } catch (e) { return bez('chyba'); }
+  const zavolej = volani(konec);
+  let volano = false;
+  try {
+    const mapa = await Promise.race([poleMapa(), new Promise((_, ne) => {
+      const t = setTimeout(() => ne(new PdChyba('Pipedrive neodpověděl včas.', 504)), Math.max(1, konec - Date.now()));
+      if (t && t.unref) t.unref();
+    })]);
+    const hashIco = mapa && mapa.mapaOrganizace && mapa.mapaOrganizace.ico;
+    volano = true;
+    const d = await zavolej('/api/v2/deals/' + Number(dealId));
+    if (!d) return { stav: 'chyba', volano };
+    const orgId = Number(d.org_id) || 0;
+    let ico = '', nazev = '';
+    if (orgId) {
+      const o = await zavolej('/api/v2/organizations/' + orgId);
+      nazev = o && typeof o.name === 'string' ? o.name : '';
+      const surove = hashIco && o ? ((o.custom_fields || {})[hashIco]) : '';
+      const c = String(surove == null ? '' : surove).replace(/\D/g, '');
+      ico = c && c.length <= 8 ? c.padStart(8, '0') : '';
+    }
+    const v = G.vzOrgDealuNorm({ deal: dealId, org: orgId, ico, nazev, kdy: new Date().toISOString() });
+    if (v) zak.pdOrgDealu = v;
+    return { stav: 'precteno', volano };
+  } catch (e) {
+    return { stav: 'chyba', volano };
+  }
 }

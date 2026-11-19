@@ -331,11 +331,29 @@ function renderInputs() {
       inp('Z.zamecnikAtypKc', { l: 'Zámečník atyp (prázdné = žádný)', step: 1000, u: 'Kč', klic: 'Z.zamecnikAtypKc ← C.atypZamecnikKc (sazba: C.zamecnikAtypKc)' }) +
       inp('Z.engineeringKs', { type: 'anone', l: 'Engineering' }) +
       inp('Z.vystupZamereni', { type: 'anone', l: 'Výstup ze zaměření pro zákazníka' }) +
+      statikaOplRadek(rAkt) +
       /* REZERVY v procentech (17. 8. večer): 30 = +30 %. Základ se počítá
        * z celého základu kalkulace, příplatky z příplatků — jako dosud,
        * mění se jen zadávání (v datech zůstává desetinný podíl). */
       inp('Z.rezervaZakladPct', { type: 'pct', min: 0, l: 'REZERVA základ', klic: 'Z.rezervaZakladPct ← C.atypRezervaZakladPct' }) +
       inp('Z.rezervaPriplatkyPct', { type: 'pct', min: 0, l: 'REZERVA příplatky', klic: 'Z.rezervaPriplatkyPct ← C.atypRezervaPriplatkyPct' }), 'ock-prace');
+}
+
+/* STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ — Ano / Ne (#667, J. V. 18. 11. 2026).
+ * Výchozí stav (klíč v zadání chybí) = Ano u šachty s opláštěním, jinak Ne;
+ * volba se uloží do zadání šachty jako true / false. Řádek se ukáže jen
+ * s ceníkem, který hodiny statiky opláštění má (jinak by volba nic neměnila). */
+function statikaOplRadek(r) {
+  const c = (typeof C !== 'undefined' && C) ? C : {};
+  if (!((+c.statikaOplHod || 0) > 0)) return '';
+  const plocha = r && r.oplasteni ? r.oplasteni.plochaCelkem : 0;
+  const tit = 'Řádek STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ v Režii. Výchozí: Ano u šachty s opláštěním. '
+    + 'Statiku opláštění nevyžadují všichni dodavatelé výtahů — pak zvolte Ne.';
+  /* Revize #667 N4: „výchozí" vrátí volbu řízenou opláštěním (null). */
+  return `<div class="row"><label title="${esc(tit)}">Statické posouzení opláštění</label>
+    <select class="statika-opl" title="${esc(tit)}" onchange="set('Z.statikaOpl', this.value === '' ? null : this.value === '1')">
+      ${statikaOplVolby(Z, plocha).map(o => `<option value="${esc(o.hodnota)}" ${o.vybrano ? 'selected' : ''}>${esc(o.text)}</option>`).join('')}
+    </select><span class="u"></span></div>`;
 }
 
 /* ---- ceník → zadání pro jednu variantu (1. 9. 2026) ----
@@ -1849,6 +1867,9 @@ function rcStitek(r) {
         + (p.lokalne ? ' (razítko doplní server po uložení)' : '')
         + (rec.dodavatel ? ' · ' + rec.dodavatel : '') + (rec.cislo ? ' · nabídka ' + rec.cislo : '');
       h += ` <span class="pill ok noprint rc-potvrzeno" title="${esc(tit)}">✓ potvrzeno</span>`;
+    } else if (rucniCenaStav(rec) === RC_BEZ_ZDROJE) {
+      /* N3 (J. V. 18. 11. 2026): bez zdroje nejde potvrdit — schválení nadřízeného. */
+      h += ` <span class="pill warn noprint rc-bez-zdroje" title="ruční cena bez zdroje — ${esc(RC_ZDROJ_HLASKA)} a cenu potvrďte; bez zdroje ji musí schválit nadřízený">ručně – chybí zdroj</span>`;
     } else {
       h += ` <span class="pill warn noprint rc-nepotvrzeno" title="ruční cena z nabídky dodavatele — bez potvrzení nejde tisknout">ručně – nepotvrzeno</span>`;
     }
@@ -1893,7 +1914,10 @@ function rcRadekPod(r, NC) {
         value="${rec ? +(+rec.hodnota).toFixed(2) : ''}" placeholder="z nabídky" onchange="rcHodnota('${cj}', this.value)"> ${esc(jed)}</label>
       ${pole('dodavatel', 'text', 'Dodavatel', '170px')}${pole('cislo', 'text', 'Č. nabídky', '110px')}
       ${pole('datum', 'date', 'Datum nabídky', '140px')}${pole('platnostDo', 'date', 'Platnost do', '140px')}
-      <button class="mini rc-potvrdit" ${rec && !potvrzeno ? '' : 'disabled'} onclick="rcPotvrd('${cj}')">Potvrdit cenu</button>
+      <button class="mini rc-potvrdit" ${rec && !potvrzeno && rucniCenaMaZdroj(rec) ? '' : 'disabled'}
+        title="${rec && !rucniCenaMaZdroj(rec) ? 'Nejdřív ' + esc(RC_ZDROJ_HLASKA) + ' — bez zdroje cenu schvaluje nadřízený' : 'potvrdit nákupní cenu z nabídky'}"
+        onclick="rcPotvrd('${cj}')">Potvrdit cenu</button>
+      ${rec && !rucniCenaMaZdroj(rec) ? `<span class="note rc-zdroj-hlaska" style="color:var(--warn,#b45309)">Pro potvrzení ${esc(RC_ZDROJ_HLASKA)}. Bez zdroje cenu schvaluje nadřízený (Schvalování).</span>` : ''}
       ${rec ? `<button class="mini rc-vratit" title="smaže ruční cenu a vrátí ceníkovou sazbu" onclick="rcVrat('${cj}')">↺ vrátit na ceník</button>` : ''}
       ${!rec ? `<button class="mini rc-zavrit" onclick="rcZavri('${cj}')">zavřít</button>` : ''}
       <span class="note rc-info">${info}</span>
@@ -1917,8 +1941,8 @@ function rcHodnota(cesta, hodnota) {
   if (rcStop()) return;
   const v = rcVarianta(); if (!v || !v.data) return;
   if (!rucniCenaNastav(v.data, cesta, hodnota)) {
-    if (!(+hodnota > 0) && typeof hlaska === 'function')
-      hlaska('Nákupní cena z nabídky musí být kladné číslo. Ruční cenu zrušíte tlačítkem ↺ vrátit na ceník.');
+    if (!(String(hodnota).trim() !== '' && +hodnota >= 0) && typeof hlaska === 'function')
+      hlaska('Nákupní cena z nabídky musí být číslo 0 nebo větší. Ruční cenu zrušíte tlačítkem ↺ vrátit na ceník.');
     render(); return;
   }
   RC_UI.otevrene.add(String(cesta));
@@ -1935,7 +1959,11 @@ function rcPotvrd(cesta) {
   const kdo = (typeof ONLINE_STAV !== 'undefined' && ONLINE_STAV && ONLINE_STAV.ja && (ONLINE_STAV.ja.jmeno || ONLINE_STAV.ja.email))
     || (typeof NAST !== 'undefined' && NAST.uzivatel) || '';
   if (rucniCenaPotvrd(v.data, cesta, kdo, new Date().toISOString())) { RC_UI.otevrene.delete(String(cesta)); rcZmena(v, cesta); }
-  else render();
+  else {
+    if (!rucniCenaMaZdroj(rucniCenaZaznam(v.data, cesta)) && typeof hlaska === 'function')
+      hlaska('Cenu z nabídky nejde potvrdit bez zdroje: ' + RC_ZDROJ_HLASKA + '. Bez zdroje ji musí schválit nadřízený (záložka Schvalování).');
+    render();
+  }
 }
 function rcVrat(cesta) {
   if (rcStop()) return;

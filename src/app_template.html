@@ -978,6 +978,15 @@
   .vz-pr > span { min-width:0; overflow-wrap:anywhere; }
   .vz-pt { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin-top:8px; font-size:12.5px; }
   input.vz-odvozeno { background:#f4f6fa; color:#334155; }
+  /* T1: řídící varianta a řídící zákazník v hlavičce (maketa T1, 18. 11. 2026) */
+  .zak-head .row select.vz-t1-chybi { border-color:#dc2626; background:#fff5f5; box-shadow:0 0 0 2px #fecaca; }
+  .zak-head .row select:disabled.vz-t1-zamek { color:#1b2333; opacity:1; background:#f4f6f9; cursor:not-allowed; }
+  .vz-t1-vysv { font-size:12px; color:#5b6472; line-height:1.45; margin:-1px 0 6px; }
+  .vz-t1-vysv.vz-t1-vysv-chyba { color:#b91c1c; font-weight:600; }
+  .vz-karta td[data-l="Řídící"] .vz-t1-hvezda { font-size:18px; line-height:1; color:#1b2333; }
+  .vz-karta td[data-l="Řídící"] .vz-t1-hvezda.mut { color:#c3cde0; }
+  .vz-t1-pozn { white-space:pre-wrap; font:13px/1.55 "Segoe UI", system-ui, sans-serif; background:#fbfcfe; border:1px solid #dfe5ee; border-radius:8px; padding:10px 12px; margin:0; overflow-wrap:anywhere; }
+  .vz-t1-pozn .vz-t1-pozn-novy { background:#fff7d6; border-radius:4px; padding:0 3px; }
   @media (max-width: 760px) {
     .vz-form .vz-form-pole { grid-template-columns:minmax(0, 1fr); }
     .vz-form .vz-form-pole .row, .vz-form .vz-form-nab { flex-wrap:wrap; }
