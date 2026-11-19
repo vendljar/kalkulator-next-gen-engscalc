@@ -8,6 +8,18 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.11.4 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
+
+Nad integrací `a018828` (v19.11.3). Cenu nemění (jen zahraniční statika zadaná textem). Verzi přečísluje koordinace.
+
+- **Editor ceníku:** prázdná buňka Zahraničí u `C.statikaOplKc` píše „jako statika zahr." / „prázdné = platí zahraniční
+  statické posouzení" (dřív „platí tuzemská cena", což od K50-N1 neplatí); `cenikZahrPrazdnePopis`.
+- **Dialog zveřejnění ceníku:** upozornění jako u můstků, že nevyplněná zahraniční statika opláštění bere zahraniční
+  statické posouzení (`cenikZahrStatikaOplUpozorneni`).
+- **Info N4:** zahraniční `C.statikaKc` zadaná textem („5000") se pro statiku opláštění převede na číslo tak, jak ji čte
+  jádro (`+text`); text, který číslo nedá, nechá tuzemskou sazbu jako dosud.
+- **Testy:** `src/test_k50n1_statika_zahr.js` oddíl 6 (29 OK; proti a018828 5 FAIL). Mutace [K50N1] jádro 5/5, server 3/3.
+
 ## v19.11.3 — rychlá oprava K50-N1: statika opláštění v zahraniční řadě, větev claude/r-k50n1
 
 Nad integrací `a3fad44` (v19.11.2). Vada kola 50 na testu (vysoká, cena). Verzi přečísluje koordinace.

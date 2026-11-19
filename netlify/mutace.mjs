@@ -1611,6 +1611,11 @@ const MUTACE = [
     nahrad: "  const s = undefined;",
     proc: 'zahraniční zakázka by po opravě dál nesla tuzemskou statiku opláštění',
     sady: ['test_k50n1_statika_zahr.mjs', '../src/test_k50n1_statika_zahr.js'] },
+  { nazev: '[K50N1] #671: editor ceníku u statiky opláštění dál píše „platí tuzemská cena"', soubor: '../src/ui/cenik_ui.js',
+    hledej: "  if (path === 'C.statikaOplKc') return { placeholder: 'jako statika zahr.',",
+    nahrad: "  if (path === 'C.statikaOplKc') return { placeholder: 'jako ČR', title: 'prázdné = platí tuzemská cena' };\n  if (false) return { placeholder: 'jako statika zahr.',",
+    proc: 'správce by v editoru četl, že prázdná zahraniční statika opláštění bere tuzemskou cenu, a to neplatí',
+    sady: ['../src/test_k50n1_statika_zahr.js'] },
   /* ---------- #550 (K36-N2, 2. 11. 2026): zahraniční montáž můstků. Hlídá ../src/test_550_zahr_mustky.js. ---------- */
   { nazev: '#550: nevyplněná zahraniční montáž můstků zůstane tuzemská', soubor: '../src/cenik_rady.js',
     hledej: "  if (mm !== null) z.ceny[CENIK_ZAHR_MUSTEK_MONTAZ] = mm;",

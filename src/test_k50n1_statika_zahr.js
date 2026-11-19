@@ -19,6 +19,8 @@
  *
  * Pojistka: proti a3fad44 (před opravou) padají oddíly 1–4 (sazba zůstala
  * tuzemská); po opravě projdou.
+ * Oddíl 6 (#671, nad a018828): popis prázdné buňky Zahraničí, upozornění při
+ * zveřejnění, zahraniční statika textem. Pojistka: proti a018828 padá 5 testů.
  * Spuštění: node src/test_k50n1_statika_zahr.js */
 const nacti = f => { const m = require(f); Object.keys(m).forEach(k => { global[k] = m[k]; }); return m; };
 nacti('./format.js'); nacti('./cenik.js'); nacti('./cenik_stari.js');
@@ -109,6 +111,40 @@ test('příprava: migrace dosadila tuzemskou statiku opláštění', CR().statik
   test('… a přepočet ji hlásí jako zamčenou', vys && vys.zamcene === 1, vys);
   test('rozpracovaná zahraniční varianta: přepočet vrátí zahraniční statiku opláštění',
     zak.varianty[1].data.cenik.statikaOplKc === ZAHR_STATIKA, zak.varianty[1].data.cenik.statikaOplKc);
+}
+
+/* 6) #671: popis prázdné buňky v editoru ceníku, upozornění při zveřejnění,
+ *    zahraniční statika zadaná textem (info N4 revize). */
+{
+  const fs = require('fs'), vm = require('vm');
+  const cui = fs.readFileSync(__dirname + '/ui/cenik_ui.js', 'utf8');
+  const m = cui.match(/function cenikZahrPrazdnePopis\(path\) \{[\s\S]*?\n\}/);
+  test('editor ceníku má popis prázdné zahraniční buňky (cenikZahrPrazdnePopis)', !!m);
+  if (m) {
+    const ctx = {}; vm.runInNewContext(m[0] + '; this.f = cenikZahrPrazdnePopis;', ctx);
+    const p = ctx.f('C.statikaOplKc');
+    test('prázdná zahraniční statika opláštění = „zahraniční statické posouzení", ne „tuzemská cena"',
+      /zahraniční statické posouzení/.test(p.title) && !/platí tuzemská cena/.test(p.title) && /statika zahr/.test(p.placeholder), p);
+    test('montáž můstků beze změny (#550)', /zahraniční sazba montáže na stavbě/.test(ctx.f('C.mustekMontazHodKc').title));
+    test('ostatní položky: prázdné = tuzemská cena', ctx.f('C.montazHodKc').title === 'prázdné = platí tuzemská cena'
+      && ctx.f('C.montazHodKc').placeholder === 'jako ČR');
+  }
+  test('buňka Zahraničí bere popis z cenikZahrPrazdnePopis', /placeholder="\$\{esc\(cenikZahrPrazdnePopis\(path\)\.placeholder\)\}"/.test(cui)
+    && /title="\$\{esc\(cenikZahrPrazdnePopis\(path\)\.title\)\}"/.test(cui));
+
+  const U = R.cenikZahrStatikaOplUpozorneni || (() => '');   // před opravou funkce není — test nesmí spadnout
+  const u = U(zahr());
+  test('upozornění: nevyplněná statika opláštění → zahraniční statické posouzení, 5 000 Kč/hod, Nastavení → Ceník',
+    /statické posouzení opláštění/.test(u) && /5\u00a0000 Kč\/hod/.test(u) && /Nastavení → Ceník/.test(u), u);
+  test('upozornění mlčí u vlastní zahraniční statiky opláštění', U(zahr({ 'C.statikaOplKc': ZAHR_OPL })) === '');
+  test('upozornění mlčí bez zahraniční statiky', U({ ceny: { 'C.montazHodKc': 777 }, jenZahr: {} }) === '');
+  const pui = fs.readFileSync(__dirname + '/ui/program_ui.js', 'utf8');
+  test('dialog zveřejnění upozornění vypisuje', /cenikZahrStatikaOplUpozorneni\(ctx\.zahranicni\)/.test(pui));
+
+  const sT = R.cenikSlozRadu(CR(), { ceny: { 'C.statikaKc': '5000' }, jenZahr: {} }, 'zahr');
+  test('zahraniční statika zadaná textem „5000" → statika opláštění 5000 (číslo)', sT.statikaOplKc === ZAHR_STATIKA, sT.statikaOplKc);
+  const sN = R.cenikSlozRadu(CR(), { ceny: { 'C.statikaKc': 'dle nabídky' }, jenZahr: {} }, 'zahr');
+  test('text, který číslo nedá → zůstává tuzemská statika opláštění', sN.statikaOplKc === CR_STATIKA, sN.statikaOplKc);
 }
 
 console.log(`\n${ok} OK, ${fail} FAIL`);

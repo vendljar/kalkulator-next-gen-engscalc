@@ -394,6 +394,9 @@ function progZverejniRozpis(db, ctx) {
     /* #550 (K36-N2): nevyplněná zahraniční montáž můstků = zahraniční montáž na stavbě. */
     + ((typeof cenikZahrMustkyUpozorneni === 'function' && ctx && cenikZahrMustkyUpozorneni(ctx.zahranicni))
       ? '\n' + cenikZahrMustkyUpozorneni(ctx.zahranicni) : '')
+    /* #671 (K50-N1): nevyplněná zahraniční statika opláštění = zahraniční statické posouzení. */
+    + ((typeof cenikZahrStatikaOplUpozorneni === 'function' && ctx && cenikZahrStatikaOplUpozorneni(ctx.zahranicni))
+      ? '\n' + cenikZahrStatikaOplUpozorneni(ctx.zahranicni) : '')
     + ((!cr.length && !zahr.length && !dn) ? '\n\nCeník beze změny — mění se katalog nebo slevy.' : '');
 }
 

@@ -122,11 +122,27 @@ function cenikZahrMustekVychozi(z) {
  * řada skládá (cenikSlozRadu, cenikDnesniProRadu, přepnutí řady). */
 const CENIK_ZAHR_STATIKA_OPL = 'C.statikaOplKc';
 const CENIK_ZAHR_STATIKA = 'C.statikaKc';
+/* Zahraniční statika zadaná TEXTEM (#671, info N4 revize): editor ceníku
+ * ukládá čísla, ale databáze programu může nést i text („5000"). Jádro takovou
+ * sazbu statiky OCK čte jako `+text`; statika opláštění ji převezme stejně —
+ * jinak by u textu zůstala tuzemská sazba. Text, který číslo nedá („5 000",
+ * „dle nabídky"), výchozí nedává (null = platí tuzemská jako dosud). */
 function cenikZahrStatikaOplVychozi(z) {
   const c = (z && z.ceny) || {};
   if (Object.prototype.hasOwnProperty.call(c, CENIK_ZAHR_STATIKA_OPL)) return null;
   const s = c[CENIK_ZAHR_STATIKA];
-  return (typeof s === 'number' && isFinite(s)) ? s : null;
+  const n = (typeof s === 'string' && s.trim() !== '') ? +s : s;
+  return (typeof n === 'number' && isFinite(n)) ? n : null;
+}
+/* Věta do dialogu zveřejnění (#671): zahraniční statika opláštění
+ * nevyplněná → platí zahraniční statické posouzení. Prázdný řetězec, když
+ * není co říct (vlastní sazba, nebo zahraniční statika chybí). */
+function cenikZahrStatikaOplUpozorneni(zahr) {
+  const so = cenikZahrStatikaOplVychozi(cenikZahrOciste(zahr));
+  if (so === null) return '';
+  return 'Zahraniční řada: statické posouzení opláštění (Kč/hod) není vyplněné — v zahraniční zakázce se použije '
+    + 'zahraniční sazba statického posouzení (' + String(Math.round(so)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0')
+    + ' Kč/hod). Vlastní sazbu doplňte v Nastavení → Ceník, sloupec Zahraničí.';
 }
 function cenikZahrSVychozimi(zahr) {
   const z = cenikZahrOciste(zahr);
@@ -523,7 +539,7 @@ if (typeof module !== 'undefined')
   module.exports = { CENIK_RADY, CENIK_ZAHR, cenikRadaPlatna, cenikRadaNazev, cenikRadaPopis,
                      cenikZahrPrazdny, cenikZahrOciste, cenikZahrPrazdna,
                      cenikSlozRadu, cenikRadaRozdily, cenikRadaPrepni, cenikRadaVarianty,
-                     CENIK_ZAHR_DPH_CESTY, cenikZahrDphVychozi, cenikZahrSVychozimi, cenikZahrStatikaOplVychozi,
+                     CENIK_ZAHR_DPH_CESTY, cenikZahrDphVychozi, cenikZahrSVychozimi, cenikZahrStatikaOplVychozi, cenikZahrStatikaOplUpozorneni,
                      CENIK_ZAHR_MUSTEK_MONTAZ, cenikZahrMustekVychozi, cenikZahrMustkyUpozorneni, mustkyCenikKontrolaZahr,
                      cenikJenZahrCesty, cenikJenZahrVynuluj,
                      cenikRadaTuzemskaData, cenikDnesniProRadu,

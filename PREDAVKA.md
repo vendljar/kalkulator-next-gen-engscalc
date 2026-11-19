@@ -23,11 +23,8 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
-- **R-K50N1** (`claude/r-k50n1`, rychlá cesta, v19.11.3 — přečísluje koordinace, nad integrací a3fad44): K50-N1 —
-  zahraniční řada bez vlastní `C.statikaOplKc` bere zahraniční `C.statikaKc` (`cenikZahrSVychozimi`). Testy
-  `src/test_k50n1_statika_zahr.js`, `netlify/test_k50n1_statika_zahr.mjs`, mutace [K50N1], sada porovnání `k50:*`,
-  očekávané `podklady/porovnani/ocekavane_r-k50n1_2026-11-19.txt`. J. V.: přepočítat zahraniční K28-Z0x (návrat na v18.11.2). Kolo `--bez-mutaci --proti
-  integrace` VŠE ZELENÉ: sady 475/0/7, hodiny 386/0/1, statické 9/9, porovnání 357 SHODA + 2 očekávané. Mutace [K50N1] 2/2 + 2/2. HOTOVO.
+- **R-K50N1 #671** (`claude/r-k50n1`, v19.11.4, nad a018828): editor ceníku (prázdná zahr. statika opláštění =
+  zahraniční statické posouzení), upozornění v dialogu zveřejnění, zahr. statika textem → číslo. Test oddíl 6, mutace [K50N1].
 - **SP #667** (`claude/sp-statika`, verzi přidělí koordinace): statika opláštění Ano/Ne v zadání šachty
   (`Z.statikaOpl`, chybí = Ano u šachty s opláštěním), vlastní sazba `C.statikaOplKc` (migrace = `statikaKc`), cena
   z nabídky u obou statik zvlášť, nula z nabídky platí u každé položky. Mění cenovou logiku → **revize poradce**.

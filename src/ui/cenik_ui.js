@@ -24,6 +24,17 @@ function cenikZahrHodnota(path) {
   const v = z && z.ceny ? z.ceny[path] : undefined;
   return v === undefined ? '' : v;
 }
+/* Co znamená PRÁZDNÁ buňka sloupce Zahraničí (podle skutečného chování
+ * skládání řady, cenikZahrSVychozimi): u montáže můstků zahraniční montáž
+ * na stavbě (#550), u statiky opláštění zahraniční statické posouzení
+ * (K50-N1, #671), jinak tuzemská cena. */
+function cenikZahrPrazdnePopis(path) {
+  if (path === 'C.mustekMontazHodKc') return { placeholder: 'jako montáž zahr.',
+    title: 'prázdné = platí zahraniční sazba montáže na stavbě (bez ní tuzemská sazba montáže můstků) — #550' };
+  if (path === 'C.statikaOplKc') return { placeholder: 'jako statika zahr.',
+    title: 'prázdné = platí zahraniční statické posouzení (bez něj tuzemská sazba statiky opláštění) — K50-N1' };
+  return { placeholder: 'jako ČR', title: 'prázdné = platí tuzemská cena' };
+}
 function cenikZahrSet(path, hodnota) {
   if (!jeAdmin() || typeof CENIK_ZAHR === 'undefined') return;
   const t = String(hodnota == null ? '' : hodnota).trim();
@@ -200,9 +211,7 @@ function cenikRows(def, zahrSloupec) {
         const jen = jenZahrPolozka;
         zahr = typ ? '<td colspan="2" class="note">—</td>' : `<td class="zahr-bunka">
           <input ${CISLO_POLE} step="any" class="zahr-cena${zv === '' ? '' : ' ma'}" value="${esc(zv)}"
-            placeholder="${path === 'C.mustekMontazHodKc' ? 'jako montáž zahr.' : 'jako ČR'}" title="${path === 'C.mustekMontazHodKc'
-              ? 'prázdné = platí zahraniční sazba montáže na stavbě (bez ní tuzemská sazba montáže můstků) — #550'
-              : 'prázdné = platí tuzemská cena'}"${cenikBarvaAttr(u, { prazdnaOk: true })}
+            placeholder="${esc(cenikZahrPrazdnePopis(path).placeholder)}" title="${esc(cenikZahrPrazdnePopis(path).title)}"${cenikBarvaAttr(u, { prazdnaOk: true })}
             onchange="cenikZahrSet('${escJs(path)}', this.value)">
           ${zv === '' ? '' : `<button class="mini noprint" title="převzít tuzemskou cenu"
             onclick="cenikZahrSet('${escJs(path)}', '')">↺</button>`}</td>
