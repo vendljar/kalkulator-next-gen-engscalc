@@ -149,7 +149,8 @@ const [okno] = await Promise.all([ctx.waitForEvent('page', { timeout: 15000 }).c
 let nahled = '';
 if (okno) { await okno.waitForLoadState().catch(() => {}); nahled = await okno.evaluate(() => document.body.innerText).catch(() => ''); await okno.close(); }
 zkus('5 náhled CN: sekce MŮSTKY s podlahou (beton zajistí stavba)', /MŮSTKY MEZI BUDOVOU A OCK/.test(nahled) && /betonáž zajistí stavba/.test(nahled), nahled.slice(0, 300));
-zkus('5 náhled CN: samostatný řádek ceny můstků a cena celkem', /Můstky mezi budovou a OCK \(bez DPH\)/.test(nahled) && /Cena celkem \(bez DPH\)/.test(nahled));
+/* NP (19. 11. 2026): náhled podkladů je ve vzhledu Wordu CN v17 — řádky ceny jako ve Wordu */
+zkus('5 náhled CN: samostatný řádek ceny můstků a cena celkem', /MŮSTKY MEZI BUDOVOU A OCK\s+rozsah dodávky dle Technické části nabídky - MŮSTKY/.test(nahled) && /CENA CELKEM\s+výtahová šachta a můstky/.test(nahled));
 const word = await p.evaluate(async ([s15, s16]) => {
   const buf = s => { const bin = atob(s); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; };
   const text = async (sab) => {

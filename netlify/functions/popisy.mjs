@@ -73,18 +73,29 @@ export default async (req) => {
           const pop = v && v.data && v.data.cenik && v.data.cenik.popisy;
           if (!pop || typeof pop !== 'object') continue;
           const cist = globalThis.popisyOciste(pop);
+          /* NÁVRH OBCHODNÍKA (D6, 19. 11. 2026): tlačítko „navrhnout do
+           * číselníku" zapíše text do `varianta.popisyNavrhy`. Platí, jen
+           * dokud se shoduje s textem varianty — změněný text už návrhem není.
+           * Čte se týmž očištěním jako texty (B103: klíče z dat obchodníka). */
+          const navrhy = globalThis.popisyOciste(v && v.popisyNavrhy);
           for (const klic of Object.keys(cist)) {
             if (spolecne[klic] === cist[klic]) continue;
             const kdy = String((v && v.upraveno) || z.upraveno || '');
+            const navrh = navrhy[klic] === cist[klic];
             const zaznam = { text: cist[klic], cislo: String(z.cislo || k.slice(2)), kdy };
             const sez = nalez[klic] || (nalez[klic] = []);
             const stejny = sez.find(x => x.text === zaznam.text);
-            if (stejny) { if (kdy > stejny.kdy) Object.assign(stejny, zaznam); stejny.pocet++; }
-            else sez.push(Object.assign(zaznam, { pocet: 1 }));
+            if (stejny) {
+              if (kdy > stejny.kdy) Object.assign(stejny, zaznam);
+              stejny.pocet++;
+              if (navrh) stejny.navrh = true;
+            } else sez.push(Object.assign(zaznam, { pocet: 1 }, navrh ? { navrh: true } : {}));
           }
         }
       }
-      Object.values(nalez).forEach(sez => sez.sort((a, b) => String(b.kdy).localeCompare(String(a.kdy))));
+      /* Návrhy napřed, pak od nejnovějšího. */
+      Object.values(nalez).forEach(sez => sez.sort((a, b) => (b.navrh ? 1 : 0) - (a.navrh ? 1 : 0)
+        || String(b.kdy).localeCompare(String(a.kdy))));
       return json({ ok: true, nalez });
     }
     const { chyba } = await vyzadujRoli(req);          // stačí být přihlášen

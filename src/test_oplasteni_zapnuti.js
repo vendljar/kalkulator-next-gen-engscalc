@@ -252,7 +252,8 @@ const zad = (e) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), e |
   test('režim po stěnách jmenuje všechny čtyři stěny',
     ['A', 'B', 'C', 'D'].every(k => cz.indexOf('stěna ' + k) >= 0), cz);
   test('dvojice pásů nese dělicí výšku', /2,2 m/.test(cz), cz);
-  test('stěna, kterou dodá stavba, je v textu vidět', /dodá stavba/.test(cz), cz);
+  /* D2 (19. 11. 2026): popisek „bez — dodá stavba" → „bez opláštění". */
+  test('stěna bez opláštění je v textu vidět', /bez opláštění/.test(cz), cz);
   test('záporná dolní mez se označí jako prohlubeň', /prohlubně/.test(cz), cz);
 
   /* N41b (revize v22.9.9, oprava 23. 9. 2026): specifikace vypisuje jen pásy,
@@ -299,7 +300,7 @@ const zad = (e) => Object.assign(JSON.parse(JSON.stringify(DEFAULT_ZADANI)), e |
   ['en', 'de', 'fr'].forEach(j => {
     const t = tsOplasteniRozsah(z, j);
     test('věta v ' + j.toUpperCase() + ' neobsahuje české kusy',
-      !/stěna |opláštění po stěnách|do výšky|dodá stavba/.test(t), t);
+      !/stěna |opláštění po stěnách|do výšky|dodá stavba|bez opláštění/.test(t), t);
     test('standardní věta se přeloží taky (' + j.toUpperCase() + ')',
       tsOplasteniRozsah(zad({}), j) !== 'kompletní opláštění šachty',
       tsOplasteniRozsah(zad({}), j));

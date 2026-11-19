@@ -84,6 +84,21 @@
  *           ST), BLOK_STUDIE_CENA (nadpis a tabulka cen SP) a BLOK_STUDIE_POZN
  *           (poznámka o studii) — zmizí, když je aplikace dá do blokyPryc.
  *
+ * PROJ v8 (cestovné u akce mimo Prahu, D2 20. 10. 2026): --proj-v8, viz projV8.
+ *
+ * PROJ v9 (DALŠÍ UJEDNÁNÍ, PG #3 19. 11. 2026):
+ *   node nastroje/vyrob_sablony.js --proj-v9 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_PROJ_v8.docx (+ _EN/_DE/_FR)
+ * Výstup: Sablona_NABIDKA_PROJ_v9.docx + _EN/_DE/_FR
+ * PROJ v9 = v8 + za termíny blok DALŠÍ UJEDNÁNÍ (tabulka ve stavbě termínů,
+ *           {{PROJ_DALSI_UJEDNANI_NAZEV}} | {{PROJ_DALSI_UJEDNANI_TEXT}}), viz projV9.
+ *
+ * CN v18 (číslo stránky, PG #4 19. 11. 2026):
+ *   node nastroje/vyrob_sablony.js --cn-v18 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_CN_v17.docx (+ _EN/_DE/_FR)
+ * Výstup: Sablona_NABIDKA_CN_v18.docx (+ _EN/_DE/_FR) — pevná „1" v textovém
+ *           poli záhlaví → pole PAGE, viz cnV18. Nic jiného se nemění.
+ *
  * CN v14 (etapa A platebních podmínek OCK, 30. 9. 2026) — samostatný režim:
  *   node nastroje/vyrob_sablony.js --cn-v14 <složka podkladů> [výstupní složka]
  * Vstup:  Sablona_NABIDKA_CN_v13.docx
@@ -260,6 +275,8 @@ const REZIM_V6 = REZIM === '--proj-v6';
 const REZIM_V7 = REZIM === '--proj-v7';
 const REZIM_SOD_V4 = REZIM === '--sod-proj-v4';
 const REZIM_V8 = REZIM === '--proj-v8';   // D2: cestovné u akce mimo Prahu
+const REZIM_V9 = REZIM === '--proj-v9';   // PG #3: DALŠÍ UJEDNÁNÍ
+const REZIM_CN18 = REZIM === '--cn-v18';   // PG #4: číslo stránky jako pole PAGE
 const REZIM_SOD_REAL4 = REZIM === '--sod-real-v4';   // C6 #447: objednané příplatky
 const REZIM_SOD_REAL5 = REZIM === '--sod-real-v5';   // C2 #583: víc šachet ve smlouvě
 const REZIM_SOD_REAL6 = REZIM === '--sod-real-v6';   // SL: žluté podbarvení symbolů
@@ -716,6 +733,188 @@ async function hlavniV8() {
       + (v.vady.length ? '\n    vady XML: ' + v.vady.join('; ') : ''));
   });
   console.log('\nVýstup: ' + VYSTUP + ' (vstup ' + path.basename(vstup) + ')');
+  process.exit(prob ? 1 : 0);
+}
+
+/* ---------- PROJ v9: DALŠÍ UJEDNÁNÍ (PG #3, J. V. 19. 11. 2026) ----------
+ *   node nastroje/vyrob_sablony.js --proj-v9 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_PROJ_v8.docx (+ _EN/_DE/_FR, jsou-li ve složce)
+ * Výstup: Sablona_NABIDKA_PROJ_v9.docx + _EN/_DE/_FR
+ * PROJ v9 = v8 + za blokem TERMÍNŮ ({{BLOK_TERMINY_KON}}, tj. před doložkami)
+ *           blok {{BLOK_DALSI_UJEDNANI_ZAC}} [mezera] [tabulka] {{…_KON}}.
+ *           Tabulka má stavbu tabulky TERMÍNŮ: nadpisový řádek „DALŠÍ
+ *           UJEDNÁNÍ:" (v jazyce souboru) a dvousloupcový řádek
+ *           {{PROJ_DALSI_UJEDNANI_NAZEV}} | {{PROJ_DALSI_UJEDNANI_TEXT}} — aplikace
+ *           ho zopakuje za každý vlastní řádek obchodníka (rozvinRadkyZaRadek).
+ *           Bez vlastních řádků blok zmizí i s nadpisem (odstranPrazdneBloky),
+ *           dokument je pak stejný jako z v8.
+ * Jazykové v9 vznikají PŘÍMO z jazykové v8 téhož jazyka, je-li ve složce
+ * (projV9(xml, L) — nadpis ze slovníku aplikace, zbytek textu v8_L beze
+ * změny); jinak strojovým překladem české v9 (jako v8). Tabulka TERMÍNŮ se
+ * hledá podle značek {{BLOK_TERMINY_ZAC/_KON}} (nezávisle na jazyce); jiná
+ * stavba = chyba, nic se nehádá. */
+const PROJ_V9_NADPIS = 'DALŠÍ UJEDNÁNÍ';
+function projV9(xml, L) {
+  const t = tělo(xml);
+  let body = t.body;
+  const sym = dg.klicePlaceholderu(body);
+  if (sym.some(k => /^PROJ_DALSI_UJEDNANI_/.test(k))) chyba('PROJ: šablona už DALŠÍ UJEDNÁNÍ ({{PROJ_DALSI_UJEDNANI_…}}) má — není co doplnit');
+  if (!sym.some(k => /^PROJ_CESTOVNE_/.test(k))) chyba('PROJ: vstup není PROJ v8 (chybí symboly cestovného {{PROJ_CESTOVNE_…}}) — nejdřív vyrobte v8');
+  const top = prvkyTela(body);
+  const iZn = jm => top.map((el, i) => i).filter(i => top[i].tag === 'p' && textPrvku(body.slice(top[i].zac, top[i].kon)) === '{{' + jm + '}}');
+  const zac = iZn('BLOK_TERMINY_ZAC'), kon = iZn('BLOK_TERMINY_KON');
+  if (zac.length !== 1 || kon.length !== 1 || zac[0] > kon[0]) chyba('PROJ: čekám právě jeden blok {{BLOK_TERMINY_ZAC}}…{{BLOK_TERMINY_KON}} v těle — nic nehádám');
+  const tabulky = top.slice(zac[0] + 1, kon[0]).filter(el => el.tag === 'tbl');
+  if (tabulky.length !== 1) chyba('PROJ: v bloku termínů čekám právě jednu tabulku, je jich ' + tabulky.length + ' — nic nehádám');
+  const tab = body.slice(tabulky[0].zac, tabulky[0].kon);
+  const radky = radkyTabulky(tab);
+  const iSym = radky.map((r, i) => i).filter(i => dg.klicePlaceholderu(radky[i]).indexOf('PROJ_TERMINY_CINNOST') >= 0);
+  if (radky.length !== 2 || iSym.length !== 1 || iSym[0] !== 1 || dg.klicePlaceholderu(radky[0]).length)
+    chyba('PROJ: tabulka termínů nemá stavbu v6 (nadpis + řádek {{PROJ_TERMINY_CINNOST}} | {{PROJ_TERMINY_TERMIN}}) — nic nehádám');
+  if (dg.klicePlaceholderu(radky[1]).join() !== 'PROJ_TERMINY_CINNOST,PROJ_TERMINY_TERMIN')
+    chyba('PROJ: řádek termínů nese jiné symboly než {{PROJ_TERMINY_CINNOST}} | {{PROJ_TERMINY_TERMIN}} — nic nehádám');
+  /* cizí jazyk bez dvojtečky — jako nadpisy, které přeložila aplikace (TERMÍNY: → SCHEDULE) */
+  const nadpisText = (!L || L === 'cz') ? PROJ_V9_NADPIS + ':' : tr(PROJ_V9_NADPIS, L);
+  let prvni = true;
+  const nadpis = bezW14(radky[0]).replace(/(<w:t(?:\s[^>]*)?>)[^<]*(<\/w:t>)/g, (x, a, b) => {
+    if (prvni) { prvni = false; return '<w:t xml:space="preserve">' + nadpisText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + b; }
+    return a + b;
+  });
+  if (textPrvku(nadpis) !== nadpisText) chyba('PROJ: nadpis DALŠÍ UJEDNÁNÍ se nepodařilo složit');
+  const radek = bezW14(radky[1]).split('{{PROJ_TERMINY_CINNOST}}').join('{{PROJ_DALSI_UJEDNANI_NAZEV}}')
+    .split('{{PROJ_TERMINY_TERMIN}}').join('{{PROJ_DALSI_UJEDNANI_TEXT}}');
+  if (dg.klicePlaceholderu(radek).join() !== 'PROJ_DALSI_UJEDNANI_NAZEV,PROJ_DALSI_UJEDNANI_TEXT')
+    chyba('PROJ: symboly termínů jsou v řádku rozdělené mezi běhy — nic nehádám');
+  const nova = bezW14(tab.slice(0, tab.indexOf(radky[0]))) + nadpis + radek + tab.slice(tab.lastIndexOf(radky[1]) + radky[1].length);
+  const mezera = '<w:p><w:pPr><w:pStyle w:val="Bezmezer"/></w:pPr></w:p>';
+  const vlozit = znacka('BLOK_DALSI_UJEDNANI_ZAC') + mezera + nova + znacka('BLOK_DALSI_UJEDNANI_KON');
+  const po = top[kon[0]].kon;
+  body = body.slice(0, po) + vlozit + body.slice(po);
+  return t.pred + body + t.po;
+}
+async function hlavniV9() {
+  if (!PODKLADY) { console.error('Použití: node nastroje/vyrob_sablony.js --proj-v9 <složka podkladů> [výstupní složka]'); process.exit(2); }
+  const v8 = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v8.docx');
+  if (!fs.existsSync(v8)) chyba('Chybí vstupní šablona ' + v8);
+  if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
+  const cz = await vyrob(v8, x => projV9(x, 'cz'));
+  const vse = await ulozSMutacemi(cz, 'Sablona_NABIDKA_PROJ_v9');
+  /* jazykové v9 přímo z jazykové v8 (přepíše strojový překlad z ulozSMutacemi) */
+  const symCz = await symbolyASablona(cz);
+  for (const L of JAZYKY) {
+    const v8L = path.join(PODKLADY, 'Sablona_NABIDKA_PROJ_v8_' + L.toUpperCase() + '.docx');
+    const i = vse.findIndex(v => v.soubor === 'Sablona_NABIDKA_PROJ_v9_' + L.toUpperCase() + '.docx');
+    if (!fs.existsSync(v8L)) { console.log('! ' + path.basename(v8L) + ' ve složce není — ' + L.toUpperCase() + ' v9 je strojový překlad české v9.'); continue; }
+    const b = await vyrob(v8L, x => projV9(x, L));
+    fs.writeFileSync(path.join(VYSTUP, 'Sablona_NABIDKA_PROJ_v9_' + L.toUpperCase() + '.docx'), b);
+    const sym = await symbolyASablona(b);
+    const rozdil = so.sablonaSymbolyRozdil(symCz, sym);
+    vse[i] = { soubor: 'Sablona_NABIDKA_PROJ_v9_' + L.toUpperCase() + '.docx', zdroj: path.basename(v8L),
+      vady: await dg.docxXmlVady(b.slice().buffer), symbolu: sym.length, ubylo: rozdil.ubylo, pribylo: rozdil.pribylo };
+  }
+  let prob = 0;
+  vse.forEach(v => {
+    const vada = v.vady.length + ((v.ubylo || []).length) + ((v.pribylo || []).length);
+    prob += vada;
+    console.log((vada ? '✗ ' : '✓ ') + v.soubor + ' — symbolů ' + v.symbolu + (v.zdroj ? ' (z ' + v.zdroj + ')' : (v.prelozeno ? ', přeloženo ' + v.prelozeno : ''))
+      + (v.vady.length ? '\n    vady XML: ' + v.vady.join('; ') : '')
+      + ((v.ubylo || []).length || (v.pribylo || []).length ? '\n    proti CZ: +' + (v.pribylo || []).join(',') + ' −' + (v.ubylo || []).join(',') : ''));
+  });
+  console.log('\nVýstup: ' + VYSTUP + ' (vstup ' + path.basename(v8) + ')');
+  process.exit(prob ? 1 : 0);
+}
+
+/* ---------- CN v18: číslo stránky v záhlaví jako pole PAGE (PG #4) ----------
+ *   node nastroje/vyrob_sablony.js --cn-v18 <složka podkladů> [výstupní složka]
+ * Vstup:  Sablona_NABIDKA_CN_v17.docx (+ _EN/_DE/_FR, jsou-li ve složce)
+ * Výstup: Sablona_NABIDKA_CN_v18.docx (+ _EN/_DE/_FR)
+ * Diagnostika testovacího sezení (19. 11. 2026): v CN OCK v9–v17 je číslo
+ * stránky v záhlaví (header*.xml, textové pole w:txbxContent) pevný text „1",
+ * ne pole PAGE — každá vytištěná stránka měla „1". CN v18 = v17, v níž se
+ * běh s textem „1" v textovém poli záhlaví nahradí polem PAGE:
+ *   fldChar begin · instrText " PAGE \* MERGEFORMAT " · separate · „1" · end
+ * — každý ze sledu běhů nese vlastnosti (w:rPr) původního běhu, takže písmo
+ * a velikost zůstanou. Tělo dokumentu ani nic jiného se nemění. Textové pole
+ * bývá v záhlaví dvakrát (mc:AlternateContent: wps + VML záloha) — nahradí
+ * se v obou. Nic se nehádá: záhlaví, které pole PAGE už má, běh „1" mimo
+ * textové pole, víc běhů „1" v jednom textovém poli nebo žádný = chyba. */
+const CN_V18_POLE = ' PAGE \\* MERGEFORMAT ';
+function cnV18Beh(rPr, obsah) { return '<w:r>' + rPr + obsah + '</w:r>'; }
+function cnV18(xml) {
+  if (/<w:instrText\b[^>]*>\s*PAGE\b|<w:fldSimple\b[^>]*w:instr="\s*PAGE\b/.test(xml)) chyba('CN: záhlaví už pole PAGE má — není co doplnit');
+  const reBeh = /<w:r(?:\s[^>]*)?>((?:(?!<\/w:r>)[\s\S])*?)<\/w:r>/g;
+  const jedna = vnitrek => {
+    const rPr = (vnitrek.match(/^\s*<w:rPr>[\s\S]*?<\/w:rPr>/) || [''])[0];
+    const zbytek = vnitrek.slice(rPr.length).trim();
+    return /^<w:t(?:\s[^>]*)?>\s*1\s*<\/w:t>$/.test(zbytek) ? rPr.trim() : null;
+  };
+  /* běh „1" mimo textové pole = něco jiného než diagnostikovaná vada */
+  const mimo = xml.replace(/<w:txbxContent\b[\s\S]*?<\/w:txbxContent>/g, '');
+  let m, n = 0;
+  while ((m = reBeh.exec(mimo))) if (jedna(m[1]) != null) n++;
+  if (n) chyba('CN: běh s textem „1" stojí v záhlaví mimo textové pole (' + n + '×) — nic nehádám');
+  let pocet = 0;
+  const out = xml.replace(/<w:txbxContent\b[\s\S]*?<\/w:txbxContent>/g, tb => {
+    let vTomto = 0;
+    const novy = tb.replace(reBeh, (beh, vnitrek) => {
+      const rPr = jedna(vnitrek);
+      if (rPr == null) return beh;
+      vTomto++;
+      return cnV18Beh(rPr, '<w:fldChar w:fldCharType="begin"/>')
+        + cnV18Beh(rPr, '<w:instrText xml:space="preserve">' + CN_V18_POLE + '</w:instrText>')
+        + cnV18Beh(rPr, '<w:fldChar w:fldCharType="separate"/>')
+        + cnV18Beh(rPr, '<w:t>1</w:t>')
+        + cnV18Beh(rPr, '<w:fldChar w:fldCharType="end"/>');
+    });
+    if (vTomto > 1) chyba('CN: v jednom textovém poli záhlaví je ' + vTomto + '× běh „1" — nic nehádám');
+    pocet += vTomto;
+    return novy;
+  });
+  return { xml: out, pocet };
+}
+/* Celý soubor: header*.xml s textovým polem a během „1" (1–2 výskyty na díl —
+ * wps + VML záloha), aspoň jeden díl; jinak chyba. document.xml beze změny. */
+async function cnV18Soubor(bajty, popis) {
+  const polozky = await dg.zipPrecti(bajty);
+  let celkem = 0;
+  for (const p of polozky) {
+    if (!/^word\/header\d*\.xml$/.test(p.nazev)) continue;
+    const xml = dec.decode(p.data);
+    if (!/<w:txbxContent\b/.test(xml)) continue;
+    let r;
+    try { r = cnV18(xml); } catch (e) { chyba(popis + ' ' + p.nazev + ': ' + e.message); }
+    if (r.pocet > 2) chyba(popis + ' ' + p.nazev + ': ' + r.pocet + '× běh „1" v textových polích — čekám 1 (nebo 2 se zálohou VML)');
+    if (r.pocet) { p.data = enc.encode(r.xml); celkem += r.pocet; }
+  }
+  if (!celkem) chyba(popis + ': v záhlaví není textové pole s pevným číslem stránky „1" — nic nehádám');
+  return { bajty: new Uint8Array(await dg.zipZapis(polozky).arrayBuffer()), pocet: celkem };
+}
+async function hlavniV18() {
+  if (!PODKLADY) { console.error('Použití: node nastroje/vyrob_sablony.js --cn-v18 <složka podkladů> [výstupní složka]'); process.exit(2); }
+  if (!fs.existsSync(VYSTUP)) fs.mkdirSync(VYSTUP, { recursive: true });
+  let prob = 0, hotovo = 0;
+  for (const L of ['cz'].concat(JAZYKY)) {
+    const pr = L === 'cz' ? '' : '_' + L.toUpperCase();
+    const vstup = path.join(PODKLADY, 'Sablona_NABIDKA_CN_v17' + pr + '.docx');
+    if (!fs.existsSync(vstup)) { console.log('– ' + path.basename(vstup) + ' ve složce není — přeskočeno'); continue; }
+    const b17 = new Uint8Array(fs.readFileSync(vstup));
+    const r = await cnV18Soubor(b17, path.basename(vstup));
+    const soubor = path.join(VYSTUP, 'Sablona_NABIDKA_CN_v18' + pr + '.docx');
+    fs.writeFileSync(soubor, r.bajty);
+    const vady = await dg.docxXmlVady(r.bajty.slice().buffer);
+    const rozdil = so.sablonaSymbolyRozdil(await symbolyASablona(b17), await symbolyASablona(r.bajty));
+    const doc = async b => dec.decode((await dg.zipPrecti(b)).find(p => p.nazev === 'word/document.xml').data);
+    const telo = (await doc(b17)) === (await doc(r.bajty));
+    const cs = dg.docxCisloStrankyXml((await dg.zipPrecti(r.bajty)).filter(p => /^word\/(header|footer)\d*\.xml$/.test(p.nazev))
+      .map(p => ({ nazev: p.nazev, xml: dec.decode(p.data) })));
+    const vada = vady.length + rozdil.ubylo.length + rozdil.pribylo.length + (telo ? 0 : 1) + (cs.pole ? 0 : 1);
+    prob += vada; hotovo++;
+    console.log((vada ? '✗ ' : '✓ ') + path.basename(soubor) + ' — pole PAGE: ' + r.pocet + '× (textové pole záhlaví)'
+      + (vady.length ? '\n    vady XML: ' + vady.join('; ') : '') + (telo ? '' : '\n    document.xml se změnil!')
+      + (rozdil.ubylo.length || rozdil.pribylo.length ? '\n    symboly proti v17: +' + rozdil.pribylo.join(',') + ' −' + rozdil.ubylo.join(',') : ''));
+  }
+  if (!hotovo) chyba('Ve složce ' + PODKLADY + ' není žádná Sablona_NABIDKA_CN_v17*.docx');
+  console.log('\nVýstup: ' + VYSTUP);
   process.exit(prob ? 1 : 0);
 }
 
@@ -1893,6 +2092,8 @@ async function ulozSMutacemi(bajty, zaklad, zJazyka) {
 
 async function hlavni() {
   if (REZIM_V8) return hlavniV8();
+  if (REZIM_V9) return hlavniV9();
+  if (REZIM_CN18) return hlavniV18();
   if (REZIM_SOD_REAL4) return hlavniSodRealV4();
   if (REZIM_SOD_REAL5) return hlavniSodRealV5();
   if (REZIM_SOD_REAL6) return hlavniSodRealV6();
@@ -2096,7 +2297,7 @@ async function hlavni() {
 
 /* Úpravy document.xml jdou testovat bez souborů (src/test_sablona_proj_v4.js). */
 if (require.main === module) hlavni().catch(e => { console.error('CHYBA: ' + e.message); process.exit(1); });
-module.exports = { cnV13, cnV14, cnV15, cnV16, cnV17, cnPrejmenujSymbol, projV3, projV4, projV5, projV6, projV7, projV8, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, pPrSInd, sodProjCislo, sodProjV4, prepisUsekOdstavce, prelozSablonu };
+module.exports = { cnV13, cnV14, cnV15, cnV16, cnV17, cnPrejmenujSymbol, projV3, projV4, projV5, projV6, projV7, projV8, projV9, cnV18, cnV18Soubor, PROJ_V8_CESTOVNE, textBehu, sodProjV2, sodRealV2, sodRealV3, sodRealV4, SOD_REAL_V4_PREKLAD, pPrSInd, sodProjCislo, sodProjV4, prepisUsekOdstavce, prelozSablonu };
 module.exports.cnUsazeni = cnUsazeni; module.exports.cnUsazeniSoubor = cnUsazeniSoubor; module.exports.cnV17Jazyk = cnV17Jazyk; module.exports.cnV17TextRozdil = cnV17TextRozdil; module.exports.CN_USAZENI_STARE = CN_USAZENI_STARE;
 module.exports.sodRealV5 = sodRealV5;   // C2 #583 (vlastní řádek kvůli souběžné C1)
 module.exports.sodRealV5BezNovych = sodRealV5BezNovych;

@@ -70,7 +70,18 @@ async function tsSelect(id, sel) {
 }
 function tsExtraAdd() { TS.extra.push({ label: 'NOVÁ POLOŽKA', hodnota: '' }); render(); }
 function tsExtraDel(i) { TS.extra.splice(i, 1); render(); }
-function tsExtraSet(i, k, val) { TS.extra[i][k] = val; render(); }
+function tsExtraSet(i, k, val) {
+  /* PG #2: sekce vlastního řádku. Výchozí (bez klíče) = DALŠÍ UJEDNÁNÍ —
+   * starší zakázky pole nemají a zůstávají beze změny; 'neni' = řádek patří
+   * na konec sekce SOUČÁSTÍ DODÁVKY NENÍ. Výchozí volba klíč smaže. */
+  if (k === 'sekce') { if (val === 'neni') TS.extra[i].sekce = 'neni'; else delete TS.extra[i].sekce; }
+  else TS.extra[i][k] = val;
+  render();
+}
+/* PG #2: řádky jedné sekce s původním indexem (kvůli tsExtraSet/tsExtraDel). */
+function tsExtraSekce(neni) {
+  return TS.extra.map((e, i) => ({ e, i })).filter(x => (typeof tsExtraNeni === 'function' ? tsExtraNeni(x.e) : x.e.sekce === 'neni') === !!neni);
+}
 
 /* ---------- jazykové mutace (N1) ----------
  * Editace probíhá vždy v češtině; přepnutím jazyka se zobrazí přeložený
@@ -181,6 +192,8 @@ function renderTechspecPreklad() {
   const row = (lbl, val, hotovo) => `<div class="spec-row ro"><div class="lbl">${tsPrelozText(lbl)}</div>
     <div>${hotovo ? esc(val) : tsPrelozText(val)}</div><div></div></div>`;
 
+  const extra = tsExtraSekce(false).map(x => row(x.e.label, x.e.hodnota)).join('');
+  const extraNeni = tsExtraSekce(true).map(x => row(x.e.label, x.e.hodnota)).join('');
   const sekce = TECHSPEC_DEF.filter(sk => !sk.jen || sk.jen(r, Z)).map(sk =>
     `<h3>${tsPrelozText(sk.sekce)}</h3>` +
     sk.pole.map(p => {
@@ -190,10 +203,10 @@ function renderTechspecPreklad() {
       if (h.odvozeno && h.text === '') return '';
       return row(p.label, h.text, h.prelozeno);
     }).join('') +
+    (sk.sekce === 'SOUČÁSTÍ DODÁVKY NENÍ' ? extraNeni : '') +   // PG #2: vlastní řádky na konci sekce
     (sk.pozn ? `<div class="note">${tsPrelozText(sk.pozn)}</div>` : '')
   ).join('');
 
-  const extra = TS.extra.map(e => row(e.label, e.hodnota)).join('');
 
   document.getElementById('page-spec').innerHTML = `
     <div class="spec-doc">
@@ -315,20 +328,31 @@ function renderTechspec() {
   /* VS-E4: sekce šachty s výsledkem vybrané šachty (a `jen` podle něj —
    * šachta bez skladebných můstků sekci MŮSTKY nemá), nadpis s názvem šachty. */
   const vsNazevAkt = vsK ? vsNazev(vsK.sachty[vsK.i], vsK.i) : '';
+  /* Vlastní řádek (+ přidat vlastní řádek). PG #2 (J. V. 19. 11. 2026):
+   * obchodník u řádku volí sekci — DALŠÍ UJEDNÁNÍ (výchozí, i u starších
+   * zakázek) nebo SOUČÁSTÍ DODÁVKY NENÍ (řádek pak stojí na konci té sekce
+   * ve specifikaci, v náhledu i ve Wordu nabídky). */
+  const extraRadek = ({ e, i }) =>
+    `<div class="spec-row"><div class="lbl"><input type="text" style="font-weight:600" value="${esc(e.label)}"
+        onchange="tsExtraSet(${i}, 'label', this.value)"></div>
+     <div><input type="text" value="${esc(e.hodnota)}" onchange="tsExtraSet(${i}, 'hodnota', this.value)"></div>
+     <div><select class="mini noprint tsExtraSekce" title="Sekce, do které vlastní řádek patří"
+        onchange="tsExtraSet(${i}, 'sekce', this.value)">
+        <option value="dalsi"${e.sekce === 'neni' ? '' : ' selected'}>DALŠÍ UJEDNÁNÍ</option>
+        <option value="neni"${e.sekce === 'neni' ? ' selected' : ''}>SOUČÁSTÍ DODÁVKY NENÍ</option>
+      </select> <button class="mini noprint" onclick="tsExtraDel(${i})">✕</button></div></div>`;
+  const extra = tsExtraSekce(false).map(extraRadek).join('');
+  const extraNeni = tsExtraSekce(true).map(extraRadek).join('');
   const sekce = TECHSPEC_DEF.filter(s => {
     const sach = vsK && tsSekceSachty(s.sekce);
     return !s.jen || s.jen(sach ? sR : r, sach ? sZ : Z);
   }).map(s => {
     const sach = !!(vsK && tsSekceSachty(s.sekce));
     return `<h3>${esc(s.sekce)}${sach ? ' – ' + esc(vsNazevAkt) : ''}</h3>` + s.pole.map(p => specRow(p, sach)).join('') +
+      (s.sekce === 'SOUČÁSTÍ DODÁVKY NENÍ' ? extraNeni : '') +   // PG #2: vlastní řádky na konci sekce
       (s.pozn ? `<div class="note">${esc(s.pozn)}</div>` : '');
   }).join('');
 
-  const extra = TS.extra.map((e, i) =>
-    `<div class="spec-row"><div class="lbl"><input type="text" style="font-weight:600" value="${esc(e.label)}"
-        onchange="tsExtraSet(${i}, 'label', this.value)"></div>
-     <div><input type="text" value="${esc(e.hodnota)}" onchange="tsExtraSet(${i}, 'hodnota', this.value)"></div>
-     <div><button class="mini noprint" onclick="tsExtraDel(${i})">✕</button></div></div>`).join('');
 
   document.getElementById('page-spec').innerHTML = `
     <div class="spec-doc">

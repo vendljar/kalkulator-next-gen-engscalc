@@ -642,7 +642,22 @@ function firmaLzeZverejnit(f) {
   if (vadyPlanu.length)
     return { ok: false, duvod: 'Plán plateb projekce (Nastavení → Smlouvy / Šablony) nemá platný tvar: '
       + vadyPlanu.slice(0, 5).join('; ') + (vadyPlanu.length > 5 ? ' …' : '') + '.' };
+  /* LHŮTY PROJ (D8, J. V. 19. 11. 2026) — tvar hlídá lhuty_proj.js (táž
+   * funkce na serveru). Chybějící tabulka nevadí — platí výchozí lhůty. */
+  const vadyLhut = firmaLhutyVady(f.lhutyProj);
+  if (vadyLhut.length)
+    return { ok: false, duvod: 'Lhůty PROJ (Nastavení → Firma) nemají platný tvar: '
+      + vadyLhut.slice(0, 5).join('; ') + (vadyLhut.length > 5 ? ' …' : '') + '.' };
   return { ok: true, duvod: '' };
+}
+/* lhuty_proj.js — v prohlížeči globální, v Node vedle (vzor firmaPlanModul). */
+function firmaLhutyModul() {
+  if (typeof lhutyProjVady === 'function') return { lhutyProjVady, lhutyProjCisty };
+  return (typeof require === 'function') ? require('./lhuty_proj.js') : null;
+}
+function firmaLhutyVady(x) {
+  const m = firmaLhutyModul();
+  return m ? m.lhutyProjVady(x) : [];
 }
 /* plan_plateb.js je v prohlížeči globální (CORE), v Node se načte vedle —
  * vzor kontroly.js (uloZaporneVZadani). */
@@ -697,6 +712,12 @@ function firmaKZverejneni(f) {
     const m = firmaPlanModul();
     if (m) out.planPlatebProj = m.planPlatebFirmaCisty(f.planPlatebProj);
   }
+  /* Lhůty PROJ (D8) jen platné a jen čistá kopie (známé klíče). */
+  if (f && f.lhutyProj && !firmaLhutyVady(f.lhutyProj).length) {
+    const m = firmaLhutyModul();
+    const ciste = m ? m.lhutyProjCisty(f.lhutyProj) : null;
+    if (ciste) out.lhutyProj = ciste;
+  }
   return out;
 }
 
@@ -744,6 +765,8 @@ function firmaShodaSOnline(mistni, online) {
     rozdily.push('Plán plateb projekce');
   if (JSON.stringify(a.podminky || null) !== JSON.stringify(b.podminky || null))
     rozdily.push('Platební podmínky');
+  if (JSON.stringify(a.lhutyProj || null) !== JSON.stringify(b.lhutyProj || null))
+    rozdily.push('Lhůty PROJ');
   return { maOnline: true, shodne: rozdily.length === 0, rozdily };
 }
 

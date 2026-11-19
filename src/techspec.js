@@ -839,8 +839,13 @@ const DEFAULT_TECHSPEC = {
   nazevAkce: '',
   nazevAkceRucne: false,
   hodnoty: {},     // { idPole: 'ruční hodnota' } – jen přepsaná pole; ostatní auto/výchozí
-  extra: [],       // [{label, hodnota}] – vlastní doplněné řádky (sekce SOUČÁSTÍ DODÁVKY NENÍ apod.)
+  extra: [],       // [{label, hodnota, sekce?}] – vlastní doplněné řádky; sekce 'neni' = SOUČÁSTÍ DODÁVKY NENÍ, jinak DALŠÍ UJEDNÁNÍ (PG #2)
 };
+
+/* PG #2 (J. V. 19. 11. 2026): patří vlastní řádek do sekce SOUČÁSTÍ DODÁVKY
+ * NENÍ? Jen při `sekce: 'neni'`; řádek bez pole (všechny starší zakázky)
+ * zůstává v DALŠÍ UJEDNÁNÍ jako dřív. */
+function tsExtraNeni(e) { return !!e && e.sekce === 'neni'; }
 
 /* Výsledná hodnota pole: ruční přepis > prefill z kalkulace > výchozí text */
 /* `jazyk` (nepovinný) se předává PREFILLU, ne výstupu. Skoro všechna pole
@@ -1145,7 +1150,7 @@ function tsSachtaTechspec(d, i) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { tsMaSklo, TS_OPL_SKLA, tsLeseniNeniRadek, tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah, tsOplasteniMaterial, tsOplPoStenach,
+  module.exports = { tsExtraNeni, tsMaSklo, TS_OPL_SKLA, tsLeseniNeniRadek, tsRadekVCene, tsPriplatekNabizen, TS_LZE_DOPLNIT, TECHSPEC_DEF, TS_C, DEFAULT_TECHSPEC, tsHodnota, tsOplasteniRozsah, tsOplasteniMaterial, tsOplPoStenach,
     tsVyplnDveri, tsVyplnDveriCasti, tsSvetlikyDveri,
     tsOdvozeno, tsLeseniVnejsiVCene, tsStatikaVCene, tsSken3dVCene, tsSoklRadek,
     TS_C_KEY_OF, tsCiselnikKlic, tsCiselnikPouziti, tsPole, TS_C_ORIG, TS_DEF_ORIG,

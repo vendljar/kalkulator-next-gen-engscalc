@@ -99,6 +99,40 @@ const KRYCI_PROJ_STUPNE = KRYCI_PROJ_CINNOSTI.map(([key, label]) => ({
 const KRYCI_PROJ_PLAN_CINNOSTI = [['zamereni', 'ZA'], ['studie', 'SP'], ['projednani', 'projednání'], ['dpz', 'DPZ'],
   ['ic', 'IČ'], ['dps', 'DPS'], ['ezc', 'EZC'], ['kolaudace', 'kolaudace'], ['geodet', 'geodet']];
 
+/* TERMÍNY ZE LHŮT PROJ (D8, rozhodnutí J. V. 19. 11. 2026). Základ je datum
+ * podpisu z tlačítka Prodáno (`v.prodano.datum`), lhůty jsou snímek tabulky
+ * z Firmy zapsaný do varianty při prodeji (`data.kryciProj.lhutyProj`,
+ * lhutyProjZmraz) — pozdější změna tabulky prodanou zakázku nemění. Do
+ * prodeje se nic nedopočítává. Řetěz jen přes nabízené činnosti (cena
+ * sekce v kalkulaci), ruční datum pole má přednost a řetěz jde od něj. */
+function kryciProjLhutyModul() {
+  if (typeof lhutyProjDopocet === 'function') return { lhutyProjDopocet };
+  try { return (typeof require === 'function') ? require('./lhuty_proj.js') : null; } catch (e) { return null; }
+}
+function kryciProjTerminy(c) {
+  if (!c) return null;
+  if (c.terminyLhuty !== undefined) return c.terminyLhuty;
+  const m = kryciProjLhutyModul();
+  const v = c.varianta;
+  const d = (v && v.data) || {};
+  const kl = d.kryciProj || {};
+  const prodana = !!(v && v.prodano && typeof v.prodano === 'object' && !Array.isArray(v.prodano) && v.zamek && v.zamek.zamceno);
+  const h = (kl.hodnoty && typeof kl.hodnoty === 'object') ? kl.hodnoty : {};
+  c.terminyLhuty = m ? m.lhutyProjDopocet({
+    podpis: prodana ? v.prodano.datum : '',
+    lhuty: kl.lhutyProj && typeof kl.lhutyProj === 'object' ? kl.lhutyProj : null,
+    nabizi: key => !!(c.sekce && c.sekce[key] && +c.sekce[key].celkem > 0),
+    rucne: h,
+  }) : null;
+  return c.terminyLhuty;
+}
+function kryciProjTerminPole(id) {
+  return {
+    prefill: c => { const t = kryciProjTerminy(c); return (t && t[id] && t[id].datum) || ''; },
+    src: c => { const t = kryciProjTerminy(c); return (t && t[id] && t[id].zdroj) || 'lhůty PROJ'; },
+  };
+}
+
 const KRYCI_PROJ_SEKCE = [
   { sekce: 'Základní údaje', pole: [
     /* KL-4: obchodník = kdo nabídku vypracoval (Nastavení → Firma). Aplikace
@@ -281,12 +315,14 @@ const KRYCI_PROJ_SEKCE = [
       prefill: c => kryciProjPodmEf(c && c.firma).proj.pojisteni, src: 'Nastavení → Firma' },
   ]) },
   { sekce: 'Termíny', pole: [
-    { id: 'terminZahajeni', label: 'Zahájení prací (podpis smlouvy)', verze: ['bo', 'techdata'], typ: 'date' },
-    { id: 'terminZamereni', label: 'Předání výstupů ze zaměření', verze: ['bo', 'techdata'], typ: 'date' },
-    { id: 'terminStudie', label: 'Odevzdání studie proveditelnosti', verze: ['bo', 'techdata'], typ: 'date' },
-    { id: 'terminDpz', label: 'Odevzdání DPZ', verze: ['bo', 'techdata'], typ: 'date' },
-    { id: 'terminPovoleni', label: 'Předpoklad povolení záměru', verze: ['bo', 'techdata'], typ: 'date' },
-    { id: 'terminDps', label: 'Odevzdání DPS', verze: ['bo', 'techdata'], typ: 'date' },
+    /* D8 (J. V. 19. 11. 2026): termíny se po prodeji dopočítají ze lhůt PROJ
+     * (lhuty_proj.js, kryciProjTermin); ruční datum má přednost, ↺ vrátí dopočet. */
+    { id: 'terminZahajeni', label: 'Zahájení prací (podpis smlouvy)', verze: ['bo', 'techdata'], typ: 'date', ...kryciProjTerminPole('terminZahajeni') },
+    { id: 'terminZamereni', label: 'Předání výstupů ze zaměření', verze: ['bo', 'techdata'], typ: 'date', ...kryciProjTerminPole('terminZamereni') },
+    { id: 'terminStudie', label: 'Odevzdání studie proveditelnosti', verze: ['bo', 'techdata'], typ: 'date', ...kryciProjTerminPole('terminStudie') },
+    { id: 'terminDpz', label: 'Odevzdání DPZ', verze: ['bo', 'techdata'], typ: 'date', ...kryciProjTerminPole('terminDpz') },
+    { id: 'terminPovoleni', label: 'Předpoklad povolení záměru', verze: ['bo', 'techdata'], typ: 'date', ...kryciProjTerminPole('terminPovoleni') },
+    { id: 'terminDps', label: 'Odevzdání DPS', verze: ['bo', 'techdata'], typ: 'date', ...kryciProjTerminPole('terminDps') },
     { id: 'terminJine', label: 'Jiné termíny', verze: ['bo', 'techdata'], typ: 'textarea' },
   ] },
   { sekce: 'Stupně dokumentace (technická verze)', pole: KRYCI_PROJ_STUPNE },
@@ -460,7 +496,7 @@ function kryciProjCtx(zak, varianta) {
   try { planEf = (typeof nabidkaProjPlatby === 'function') ? nabidkaProjPlatby(zak, varianta, 'cz') : null; } catch (e) { planEf = null; }
   const planStary = !planEf || !!planEf.stary;
   const nabiziAD = (typeof nabidkaProjNabiziAD === 'function') ? nabidkaProjNabiziAD(varianta) : true;
-  return { zak, hl, hlSrc, sekce, hodnota, ocenene, neocenene, dph, firma, sazby, zmrazeno, planEf, planStary, nabiziAD };
+  return { zak, varianta, hl, hlSrc, sekce, hodnota, ocenene, neocenene, dph, firma, sazby, zmrazeno, planEf, planStary, nabiziAD };
 }
 
 /* Které pole krycího listu se u téhle varianty ukazuje a tiskne: pole
@@ -700,7 +736,7 @@ function kryciProjPodminkoveSymboly(zak, varianta, P) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { KRYCI_PROJ_SEKCE, KRYCI_POKUTY_SAZBY, KRYCI_PROJ_NABIDKA_SEKCE, KRYCI_PROJ_CINNOSTI, kryciProjCtx,
+  module.exports = { KRYCI_PROJ_SEKCE, kryciProjTerminy, KRYCI_POKUTY_SAZBY, KRYCI_PROJ_NABIDKA_SEKCE, KRYCI_PROJ_CINNOSTI, kryciProjCtx,
     kryciProjHodnota, kryciProjData, kryciProjVystupSekce, kryciProjMigraceSazbaDph, kryciProjPodminkoveSymboly,
     kryciProjSekceKc, kryciProjSodSymboly, kryciProjMesicu, kryciProjZmrazPodminky, KRYCI_PROJ_SOD_OPIS, kryciProjZmrazSod,
     KRYCI_PROJ_PLAN_CINNOSTI, kryciProjPoleViditelne, kryciProjPlatbyText, kryciProjZmrazPlan, kryciProjPoleHodnota };

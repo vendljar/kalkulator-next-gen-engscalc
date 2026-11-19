@@ -66,7 +66,10 @@ SADA.forEach(s => {
 });
 
 /* 2) Pevné texty online nabídky: P('…') v nabidkaNahled a nabidkaOckDokument. */
-const src = fs.readFileSync(__dirname + '/ui/zakazka_ui.js', 'utf8');
+/* NP (19. 11. 2026): nabidkaNahled bydlí v ui/nahled_word_ui.js, pevné texty
+ * dokumentu v NW_TEXT (src/nahled_word.js) — hlídá je oddíl 2b níž. */
+const src = fs.readFileSync(__dirname + '/ui/zakazka_ui.js', 'utf8') + '\n'
+  + fs.readFileSync(__dirname + '/ui/nahled_word_ui.js', 'utf8');
 ['nabidkaNahled', 'nabidkaOckDokument'].forEach(fn => {
   const i = src.indexOf('async function ' + fn + '(');
   const j = src.indexOf('\nasync function ', i + 10) > 0 ? Math.min(...['\nasync function ', '\nfunction ']
@@ -81,6 +84,21 @@ const src = fs.readFileSync(__dirname + '/ui/zakazka_ui.js', 'utf8');
   const re = /\bP\('((?:[^'\\]|\\.)*)'\)/g;
   let m; while ((m = re.exec(telo))) over(m[1].replace(/\\'/g, "'"), fn);
 });
+
+/* 2b) Pevné texty náhledu ve vzhledu Wordu (NW_TEXT) — překlad jako šablona
+ * (nwPreloz): text, který zůstane beze změny, musí být neutrální nebo
+ * stejný v cílovém jazyce (Datum, Email, Tel.). */
+{
+  const NW = require('./nahled_word.js');
+  const STEJNE = { en: ['Email: {{ZPRAC_EMAIL}}'], de: ['Datum:', 'Tel.: {{FIRMA_TELEFON}}'], fr: [] };
+  Object.values(NW.NW_TEXT).forEach(v => [].concat(v).forEach(t => ['en', 'de', 'fr'].forEach(L => {
+    if (!/\p{L}/u.test(t.replace(/\{\{[^{}]*\}\}/g, '')) || STEJNE[L].includes(t)) return;
+    if (NW.nwPreloz(t, L) === t) {
+      const x = chybi.get(t) || { jazyky: new Set(), kde: 'NW_TEXT (nahled_word.js)' };
+      x.jazyky.add(L); chybi.set(t, x);
+    }
+  })));
+}
 
 const seznam = [...chybi.entries()].map(([t, x]) => t + '  [' + [...x.jazyky].join(',') + ']  ← ' + x.kde);
 test('všechny texty nabídky OCK mají překlad EN/DE/FR (nebo jsou neutrální)', chybi.size === 0, seznam);

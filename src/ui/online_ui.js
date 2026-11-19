@@ -4168,6 +4168,19 @@ function prehledRadekOtevri(ev, soubor) {
   onlineOtevri(soubor);
 }
 
+/* SLOUPEC AKCE: ADRESA NAHOŘE (D7, rozhodnutí J. V. 19. 11. 2026).
+ * Obchodníci zakázku poznávají podle místa stavby, ne podle popisu akce:
+ * tučně adresa, pod ní šedě název akce. Bez adresy zůstane jen název akce
+ * (tučně, ať řádky vypadají stejně). Hledání ani řazení se nemění — čtou
+ * tatáž pole rejstříku. Jedna funkce pro seznam online i seznam ve složce. */
+function rejstrikAkceBunka(z) {
+  const adresa = String((z && z.adresa) || '').trim();
+  const akce = String((z && z.nazevAkce) || '').trim();
+  if (!adresa) return `<b class="rejstrik-hlavni">${esc(akce || '—')}</b>`;
+  return `<b class="rejstrik-hlavni rejstrik-adresa">${esc(adresa)}</b>${akce
+    ? `<div class="rejstrik-akce" style="font-size:11px;color:#6b7686">${esc(akce)}</div>` : ''}`;
+}
+
 function onlineRadekZakazky(z, vyber) {
   const otevrena = z.soubor === ONLINE_STAV.soubor;
   const odeslane = z.odeslane ? `<span title="odeslané (vytištěné) nabídky">🔒 ${z.odeslane}</span>` : '';
@@ -4195,8 +4208,7 @@ function onlineRadekZakazky(z, vyber) {
   return `<tr class="${otevrena ? 'aktivni' : ''} radek-klik" onclick="prehledRadekOtevri(event, '${escJs(z.soubor)}')"
     title="kliknutím otevřete zakázku — souhrn a varianty se ukážou v sekcích níž">${chk}
     <td style="text-align:left">${esc(z.cislo || '(bez čísla)')}</td>
-    <td style="text-align:left;white-space:normal">${esc(z.nazevAkce || '—')}${z.adresa
-      ? `<div class="rejstrik-adresa" style="font-size:11px;color:#6b7686">${esc(z.adresa)}</div>` : ''}</td>
+    <td style="text-align:left;white-space:normal">${rejstrikAkceBunka(z)}</td>
     <td style="text-align:left;white-space:normal">${esc(z.objednatel || '—')}${zakaznici}</td>
     <td><span class="pill mut">${esc(druh)}</span>${rada}${sachty}${typeof pdVazbaRejstrikStitek === 'function' ? pdVazbaRejstrikStitek(z) : ''}</td>
     <td>${esc(z.datum || '')}</td>
@@ -4486,6 +4498,22 @@ function renderOnlineZakTelo() {
   if (poc) poc.textContent = radky.length + ' z ' + ONLINE_STAV.rejstrik.length;
 }
 
+/* KDO JE ONLINE (#ON, J. V. 19. 11. 2026). Údaje posílá server jen
+ * správci ve výpisu účtů: `online` (aktivita v posledních 5 minutách bez
+ * pozdějšího odhlášení — počítá server), `posledniAktivita` a `odhlaseni`.
+ * Zelená tečka = online; text relativně, přesný čas v `title`. Starší
+ * server bez údajů → „—" a žádná tečka. */
+function onlineUzAktivitaBunka(u) {
+  const kdy = String(u.posledniAktivita || '');
+  const presne = formatCasPresny(kdy);
+  const odhl = formatCasPresny(String(u.odhlaseni || ''));
+  const title = (presne ? 'Naposledy aktivní ' + presne : 'Zatím bez zaznamenané aktivity')
+    + (odhl ? ' · odhlášen(a) ' + odhl : '');
+  const tecka = u.online === true
+    ? '<span class="uz-online" style="color:#1a7f37;font-size:1.1em" aria-label="online">●</span> ' : '';
+  return `<td class="uz-aktivita" style="text-align:left;white-space:nowrap" title="${esc(title)}">${tecka}${esc(formatNaposledy(kdy, Date.now()))}${u.online === true ? ' <span class="note" style="margin:0;display:inline">online</span>' : ''}</td>`;
+}
+
 function onlineRadekUzivatele(u) {
   /* Kdo je hlavní účet, rozhoduje server (#95, 9. 8. 2026) — posílá to
    * v seznamu jako `hlavni`. Prohlížeč adresu neluští; kdyby ji znal,
@@ -4495,7 +4523,7 @@ function onlineRadekUzivatele(u) {
     ${['Obchodník', 'Vedoucí', 'Administrátor'].map(r => `<option ${r === u.role ? 'selected' : ''}>${r}</option>`).join('')}
   </select>`;
   const resetRadek = ONLINE_STAV.hesloPro === u.email
-    ? `<tr><td colspan="7" style="text-align:left;padding:6px 10px">
+    ? `<tr><td colspan="8" style="text-align:left;padding:6px 10px">
         Nové heslo pro ${esc(u.email)} (min. 8 znaků):
         <input type="password" id="onlineUzNoveHeslo" style="width:180px" minlength="8"
           placeholder="alespoň 8 znaků" title="Heslo musí mít alespoň 8 znaků."
@@ -4510,7 +4538,7 @@ function onlineRadekUzivatele(u) {
    * drží maxlength stejně jako server (jmeno 120, titul 40, funkce 80,
    * telefon 40). */
   const kontaktRadek = ONLINE_STAV.kontaktPro === u.email
-    ? `<tr><td colspan="7" style="text-align:left;padding:6px 10px">
+    ? `<tr><td colspan="8" style="text-align:left;padding:6px 10px">
         Úprava účtu <b>${esc(u.email)}</b> — údaje do bloku „Vypracoval":
         <input type="text" id="onlineUzKTitul" style="width:70px" maxlength="40" placeholder="titul" title="Titul před jménem"
           value="${esc(u.titul || '')}">
@@ -4536,6 +4564,7 @@ function onlineRadekUzivatele(u) {
     <td style="text-align:left">${esc(u.jmeno || '—')}${u.funkce
       ? `<div class="note" style="margin:0">${esc(u.funkce)}</div>` : ''}</td>
     <td style="text-align:left">${esc(u.telefon || '—')}</td>
+    ${onlineUzAktivitaBunka(u)}
     <td>${roleSel}</td>
     <td><input type="checkbox" ${u.aktivni ? 'checked' : ''} ${hlavni ? 'disabled' : ''}
         onchange="onlineUzAktivni('${escJs(u.email)}', this.checked)"></td>
@@ -4581,6 +4610,7 @@ function onlineUzivateleHtml() {
     <div class="tab-scroll"><table class="vartbl archtbl">
       <tr><th style="text-align:left">E-mail</th><th style="text-align:left">Titul</th>
           <th style="text-align:left">Jméno / funkce</th><th style="text-align:left">Telefon</th>
+          <th style="text-align:left" title="Zelená tečka = online (aktivita v posledních 5 minutách)">Naposledy aktivní</th>
           <th>Role</th><th>Aktivní</th><th></th></tr>
       ${ONLINE_STAV.uzivatele.map(onlineRadekUzivatele).join('')}</table></div>
     <div class="note" style="margin-top:12px"><b>Založit nový účet</b> – heslo je počáteční

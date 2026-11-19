@@ -1,4 +1,4 @@
-import { json, cizihoPuvodu, vyzadujRoli, uloziste, hesloVerzeUctu } from '../lib/sdilene.mjs';
+import { json, cizihoPuvodu, vyzadujRoli, uloziste, hesloVerzeUctu, aktivitaOdhlaseni } from '../lib/sdilene.mjs';
 /* Odhlášení jen na POST (audit 22. 8. 2026, B17): odkaz z cizí stránky
  * (GET přes navigaci posílá cookie i se SameSite=Lax) by jinak uživatele
  * odhlásil. Nic víc to neumí, ale je to obtěžování zadarmo. */
@@ -23,6 +23,7 @@ export default async (req) => {
   try {
     const { relace } = await vyzadujRoli(req);
     if (relace) {
+      aktivitaOdhlaseni(relace.email);   // #ON: po odhlášení už není online (best-effort)
       /* Revize 13. 10.: účet se čte znovu těsně před zápisem a mění se jen
        * verze hesla — dřív se zapisovala kopie přečtená v ověření relace
        * a souběžná změna správce (vypnutí, reset hesla, role) se mohla

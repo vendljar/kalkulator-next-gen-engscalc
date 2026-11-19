@@ -38,7 +38,7 @@ function telo(txt, jmeno) {
 /* ---------- 1) strukturně ---------- */
 const VSTUPY = [
   ['ui/zakazka_ui.js', 'nabidkaWordGeneruj', 'Word CN OCK'],
-  ['ui/zakazka_ui.js', 'nabidkaNahled', 'Kompletní náhled podkladů'],
+  ['ui/nahled_word_ui.js', 'nabidkaNahled', 'Kompletní náhled podkladů (vzhled Wordu, NP)'],
   ['ui/zakazka_ui.js', 'nabidkaOckDokument', 'Kompletní náhled a tisk nabídky'],
   ['ui/zakazka_ui.js', 'porovnaniTisk', 'Porovnání variant (tisk)'],
   ['ui/zakazka_ui.js', 'porovnaniPolozkyTisk', 'Detail položek (tisk)'],
