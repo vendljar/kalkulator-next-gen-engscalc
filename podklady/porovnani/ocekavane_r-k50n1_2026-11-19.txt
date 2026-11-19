@@ -1,0 +1,8 @@
+# Očekávané rozdíly R-K50N1 (rychlá oprava K50-N1) × integrace a3fad44 (v19.11.2) — 19. 11. 2026
+# Formát: <vzor případu> <pole,pole|*>  # důvod   (popis v nastroje/porovnani_sada.js)
+#
+# K50-N1: zahraniční řada bez vlastní statiky opláštění bere zahraniční C.statikaKc
+# (návrat na ceny z v18.11.2). Mění se jen zahraniční kalkulace se statikou opláštění
+# a bez vlastní zahraniční C.statikaOplKc: cena, řádky, symboly, dokumenty, PD, controlling, zámek.
+# Vlastní zahraniční statika opláštění a tuzemsko beze změny (k50:*-vlastni, k50:cr-* = SHODA).
+k50:zahr-statika-opl-bez-vlastni:*  *   # K50-N1: statika opláštění zahraniční sazbou

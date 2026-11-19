@@ -89,6 +89,8 @@ const SADY = process.env.KNG_MUTACE_SADY
      '../src/test_autorstvi.js',
      /* #561 RC (4. 11. 2026): ruční cena položky s potvrzením — model a server, rychlé sady. */
      '../src/test_561_rucni_cena.js', 'test_561_rucni_cena.mjs',
+     /* [K50N1] (19. 11. 2026): statika opláštění v zahraniční řadě — server B112, zámek (rychlá sada). */
+     '../src/test_k50n1_statika_zahr.js', 'test_k50n1_statika_zahr.mjs',
      /* [SP] #667 (18. 11. 2026): statika opláštění — nulová cena z nabídky, tvar zaškrtnutí, přepočet (rychlá sada). */
      '../src/test_667_statika_opl.js', 'test_667_statika_opl.mjs',
      /* #560 SV (4. 11. 2026): zrušená volba světlíku „zajistí stavba" — rychlé sady. */
@@ -1597,6 +1599,18 @@ const MUTACE = [
     hledej: "firmaPaticka(f, P) : '') || h('nazev');   // #551",
     nahrad: "firmaPaticka(f) : '') || h('nazev');   // #551",
     proc: 'náhled cizojazyčné nabídky by ukazoval české „IČ:"' },
+  /* ---------- [K50N1] (19. 11. 2026, kolo 50): statika opláštění v zahraniční řadě.
+   * Hlídají test_k50n1_statika_zahr.mjs (B112, zámek) a ../src/test_k50n1_statika_zahr.js. ---------- */
+  { nazev: '[K50N1] server: zahraniční řada nechá tuzemskou statiku opláštění', soubor: '../src/cenik_rady.js',
+    hledej: "  if (so !== null) z.ceny[CENIK_ZAHR_STATIKA_OPL] = so;",
+    nahrad: "",
+    proc: 'server by v kandidátech ceníku (B112) i zámku bral u zahraniční zakázky tuzemskou statiku opláštění',
+    sady: ['test_k50n1_statika_zahr.mjs', '../src/test_k50n1_statika_zahr.js'] },
+  { nazev: '[K50N1] server: výchozí statika opláštění bere tuzemskou statiku', soubor: '../src/cenik_rady.js',
+    hledej: "  const s = c[CENIK_ZAHR_STATIKA];",
+    nahrad: "  const s = undefined;",
+    proc: 'zahraniční zakázka by po opravě dál nesla tuzemskou statiku opláštění',
+    sady: ['test_k50n1_statika_zahr.mjs', '../src/test_k50n1_statika_zahr.js'] },
   /* ---------- #550 (K36-N2, 2. 11. 2026): zahraniční montáž můstků. Hlídá ../src/test_550_zahr_mustky.js. ---------- */
   { nazev: '#550: nevyplněná zahraniční montáž můstků zůstane tuzemská', soubor: '../src/cenik_rady.js',
     hledej: "  if (mm !== null) z.ceny[CENIK_ZAHR_MUSTEK_MONTAZ] = mm;",

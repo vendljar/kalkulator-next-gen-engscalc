@@ -8,6 +8,22 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
+## v19.11.3 — rychlá oprava K50-N1: statika opláštění v zahraniční řadě, větev claude/r-k50n1
+
+Nad integrací `a3fad44` (v19.11.2). Vada kola 50 na testu (vysoká, cena). Verzi přečísluje koordinace.
+
+- **Oprava:** od SP #667 (v19.11.1) brala zahraniční zakázka u řádku STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ **českou** sazbu
+  (migrace `statikaOplKc` = tuzemská `statikaKc`, zahraniční řada klíč nemá) — klesla i přirážka ATYP. Nevyplněná
+  zahraniční statika opláštění teď = zahraniční `C.statikaKc` (`cenikZahrSVychozimi`, totéž místo jako výchozí DPH
+  a montáž můstků): složení řady, dnešní ceník pro přepočet a výjimky, přepnutí řady, server B112. Vlastní zahraniční
+  `C.statikaOplKc` má přednost; bez zahraniční statiky platí tuzemská; tuzemská řada beze změny. Výchozí se neukládá.
+- **Co se změní:** zahraniční kalkulace se statikou opláštění se po přepočtu vrátí na ceny z v18.11.2 (K28-Z0x).
+  Zamčené a odeslané varianty beze změny, ověření zámku „shoda".
+- **Testy:** `src/test_k50n1_statika_zahr.js` (18 OK; proti a3fad44 7 FAIL), `netlify/test_k50n1_statika_zahr.mjs`
+  (17 OK; proti a3fad44 5 FAIL). Mutace [K50N1] jádro 2/2, server 2/2 chycené (jádro nově hlídá `cenik_rady.js`).
+  Pevná sada porovnání sestavení má skupinu `k50:*` (zahraniční kalkulace se statikou opláštění); očekávané rozdíly
+  `podklady/porovnani/ocekavane_r-k50n1_2026-11-19.txt`.
+
 ## v19.11.2 — VZ T1 #669: řídící varianta a řídící zákazník v hlavičce, větev claude/vz-t1
 
 Nad integrací `2856345` (v18.11.6), sloučeno s integrací `d8e4fc1` (v18.11.8: C7+NS, VZ-F1) a `82cbd72` (UE v18.11.9). Rozhodnutí J. V. 18. 11. 2026, schválená maketa `podklady/T1_MAKETA_KALKULATOR.html`
