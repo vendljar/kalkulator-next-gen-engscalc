@@ -52,6 +52,7 @@ Příklady pro zakázku `2026 - OPR - CN - 555` (PROJ `2026 - OVP - CN - 77`), a
 | Smlouva o dílo (OCK) | SoD realizace | `SOD_<číslo>[_zákazník][_EN].docx` | `SOD_2026-OPR-CN-555-OCK[-zakaznik]-CZ.docx` |
 | Smlouva o dílo (PROJ) | SoD projekce | `SOD_PROJ_<číslo>[_zákazník][_EN].docx` | `SOD_2026-OVP-CN-77-PROJ[-zakaznik]-CZ.docx` |
 | Plná moc (PROJ) | plná moc, vždy česky | `PLNA_MOC_2026-OVP-CN-77.docx` | `PLNA-MOC_2026-OVP-CN-77-PROJ-CZ.docx` |
+| Objednávka / Smlouva (PROJ, D3) | z nabídky PROJ, jen česky | — | `OBJEDNAVKA_2026-OVP-OBJ-77-PROJ.docx` |
 | Krycí list OCK → Word / tisk PDF | verze Backoffice / Techdata | `KRYCI_LIST_Backoffice_2026-OPR-CN-555.docx` | `KRYCI-LIST_2026-OPR-CN-555-OCK-BACKOFFICE_27.10.2.docx` (`…-TECHDATA_…`, PDF `.pdf`) |
 | Krycí list PROJ → Word / tisk PDF | verze Backoffice / Techdata | `KRYCI_LIST_PROJ_Techdata_2026-OVP-CN-77.docx` | `KRYCI-LIST_2026-OVP-CN-77-PROJ-TECHDATA_27.10.2.docx` |
 | Technická specifikace → Tisk specifikace / PDF | specifikace OCK v jazyce náhledu | titulek aplikace (`Kalkulátor OCK + PROJ.pdf`) | `SPECIFIKACE_2026-OPR-CN-555-OCK-CZ.pdf` |

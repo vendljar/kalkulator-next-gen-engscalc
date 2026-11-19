@@ -62,21 +62,22 @@ function objednavkaProjHtml(o) {
   const kc = o.texty.kc;
   const strana = (nadpis, s) => `<div class="strana"><div class="stitek">${esc(nadpis)}</div>
     <b>${esc(s.nazev || '……')}</b><br>${esc(s.adresa || '……')}<br>IČ: ${esc(s.ico || '……')}${s.dic ? ' &nbsp; DIČ: ' + esc(s.dic) : ''}
-    ${s.telefon || s.email ? '<br>' + [s.telefon ? 'Tel.: ' + esc(s.telefon) : '', s.email ? 'E-mail: ' + esc(s.email) : ''].filter(Boolean).join(' &nbsp; ') : ''}
+    ${s.telefon ? `<br>Tel.: ${esc(s.telefon)}` : ''}${s.email ? `${s.telefon ? ' &nbsp; ' : '<br>'}E-mail: ${esc(s.email)}` : ''}
     ${s.zastupce ? '<br>Zastoupen: ' + esc(s.zastupce) : ''}</div>`;
-  const radky = o.radky.map(x => `<tr class="radek" data-sekce="${esc(x.sekce)}"><td>${x.c}</td><td>${esc(x.oznaceni)}</td>
-    <td><b>${esc(x.nazev)}</b>${x.popis.length ? '<div class="rozsah">' + x.popis.map(esc).join('<br>') + '</div>' : ''}</td>
-    <td class="c">${x.mnozstvi}</td><td class="c">${esc(x.mj)}</td><td class="c">${esc(kc(x.cenaJedn))}</td>
-    <td class="c">${esc(kc(x.celkemBezDph))}</td><td class="c">${x.dphPct} %</td><td class="c">${esc(kc(x.celkemSDph))}</td></tr>`).join('');
+  const radky = o.radky.map(x => `<tr class="radek" data-sekce="${esc(x.sekce)}"><td>${esc(x.c)}</td><td>${esc(x.oznaceni)}</td>
+    <td><b>${esc(x.nazev)}</b>${x.popis.length ? `<div class="rozsah">${x.popis.map((t, i) => `${i ? '<br>' : ''}${esc(t)}`).join('')}</div>` : ''}</td>
+    <td class="c">${esc(x.mnozstvi)}</td><td class="c">${esc(x.mj)}</td><td class="c">${esc(kc(x.cenaJedn))}</td>
+    <td class="c">${esc(kc(x.celkemBezDph))}</td><td class="c">${esc(x.dphPct)} %</td><td class="c">${esc(kc(x.celkemSDph))}</td></tr>`).join('');
   const sleva = o.sleva ? `<tr class="sleva"><td colspan="6">Sleva ${esc(o.sleva.pct)} %</td><td class="c">${esc(kc(o.sleva.bezDph))}</td>
-    <td class="c">${o.souhrn.dphPct} %</td><td class="c">${esc(kc(o.sleva.sDph))}</td></tr>` : '';
+    <td class="c">${esc(o.souhrn.dphPct)} %</td><td class="c">${esc(kc(o.sleva.sDph))}</td></tr>` : '';
+  const blokObj = strana('Objednatel', o.objednatel);   // hotové HTML, uvnitř esc()
   const soucet = (t, v, cls) => `<tr class="${cls}"><td colspan="8" class="c">${esc(t)}</td><td class="c">${esc(v)}</td></tr>`;
   return `<table class="hlava"><tr><td style="width:50%">${dokLogoHtml()}${strana('Dodavatel', o.dodavatel)}</td>
       <td class="vpravo"><h1>${esc(o.nazev)}</h1>
         <div>Číslo dokladu: <b id="objCislo">${esc(o.cislo)}</b></div>
         ${o.cisloZakazky ? `<div>Číslo zakázky: <b>${esc(o.cisloZakazky)}</b></div>` : ''}
         <div>Datum případu: <b>${esc(o.datumVystaveni)}</b></div>
-        ${strana('Objednatel', o.objednatel)}</td></tr></table>
+        ${blokObj}</td></tr></table>
     ${o.akce.nazev || o.akce.adresa ? `<div class="akce">Akce: ${esc([o.akce.nazev, o.akce.adresa].filter(x => x && x !== '…').join(', '))}</div>` : ''}
     <table class="polozky"><thead><tr><th>Č.</th><th>Označení</th><th>Popis dodávky</th><th>Množ.</th><th>MJ</th>
       <th>Jedn. cena bez DPH</th><th>Celkem bez DPH</th><th>DPH %</th><th>Celkem s DPH</th></tr></thead>
