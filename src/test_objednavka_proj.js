@@ -125,7 +125,10 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
   test('DPH projekční části: vlastní sazba ceníku PROJ', (() => {
     const z2 = zakazka(); z2.v.data.proj.cenik.dph = 0.12;
     const o2 = obj(z2.zak, z2.v);
-    return o2.souhrn.dphPct === 12 && o2.radky.every(x => x.dphPct === 12) && o2.souhrn.dphKc === Math.round(260500 * 0.12 * 100) / 100;
+    /* DPH i s DPH po řádcích ze sazby PROJ, součet řádků = celkem (žádné upozornění na rozdíl) */
+    return o2.souhrn.dphPct === 12 && o2.radky.every(x => x.dphPct === 12 && Math.abs(x.dph - x.cenaJedn * 0.12) < 1e-6
+      && Math.abs(x.celkemSDph - x.cenaJedn * 1.12) < 1e-6) && Math.abs(o2.sleva.sDph + 28700 * 1.12) < 1e-6
+      && o2.souhrn.dphKc === Math.round(260500 * 0.12 * 100) / 100 && !o2.upozorneni.length;
   })());
   test('dodavatel z Nastavení → Firma', o.dodavatel.nazev === firmaAktualni().nazev && o.dodavatel.ico === firmaHodnota(firmaAktualni(), 'ico') && !!o.dodavatel.adresa);
   test('objednatel z hlavičky (název, sídlo, IČ, DIČ, zástupce)', o.objednatel.nazev === 'TEST zákazník s.r.o.' && o.objednatel.adresa === 'Vzorová 2, 100 00 Praha'
@@ -222,6 +225,7 @@ const ZLATA = { zamereni: 18000, studie: 33600, dpz: 100800, ic: 24000, dps: 768
     vysledek: { proj: EP.vypocetProj(v.data.proj.zadani, v.data.proj.cenik) } });
   v.data.proj.cenik.hodinaKc = (+v.data.proj.cenik.hodinaKc || 1000) * 3;   // pozdější změna ceníku varianty
   Object.keys(v.data.proj.cenik).forEach(k => { if (typeof v.data.proj.cenik[k] === 'number' && /Kc$/.test(k)) v.data.proj.cenik[k] *= 2; });
+  vyrad(v, ['dpz']);   // pozdější změna zadání odeslané varianty (živý výpočet by DPZ vynuloval)
   const po = obj(zak, v);
   const n = NP.nabidkaProjData(zak, v, 'cz');
   test('odeslaná varianta: ceny z otisku = jako před změnou a = dotisk nabídky', po.souhrn.sDph === pred.souhrn.sDph && po.souhrn.sDph === n.souhrn.sDph

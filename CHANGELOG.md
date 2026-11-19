@@ -35,7 +35,7 @@ Nad integrací `042fcbc` (v19.11.5). Nový dokument, cenu ani text nabídky a So
   plateb s vadou i nesedícím součtem (`PLAN_DOKUMENTY`, jako SoD PROJ).
 - **Testy:** `src/test_objednavka_proj.js` (76 OK; před D3 0/1 — modul chybí; ceny po slevě místo před 5 FAIL; bez
   `vzTypProj` 2 FAIL; bez zábrany 3 FAIL; číslo zakázky z Čísla SoD 3 FAIL; bez pole KL 2 FAIL),
-  `overit_objednavka_proj.mjs` (17 kontrol v prohlížeči). Mutace jádra [D3] (11).
+  `overit_objednavka_proj.mjs` (17 kontrol v prohlížeči). Mutace jádra [D3] 12/12.
 
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 
