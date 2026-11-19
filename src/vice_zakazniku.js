@@ -1151,9 +1151,8 @@ function vzServerZakaznici(stara, zak, relace, volby) {
   for (const p of pred) {
     const n = tedIds.get(p.id);
     if (!n || o.obnova || (p.ridici && n.ridici) || !vzSodOdeslanaKomu(stara, p.id)) continue;
-    const zm = VZ_ZASTUPCI_POLE.filter(k => vzText(p.zastupci[k]) !== vzText(n.zastupci[k]));
-    if (zm.length)
-      return { status: 409, chyba: 'Neuloženo: ' + vzSodZmrazenoText(p) + ' (' + zm.join(', ') + ').' };
+    const zz = VZ_ZASTUPCI_POLE.filter(k => vzText(p.zastupci[k]) !== vzText(n.zastupci[k]));
+    if (zz.length) return { status: 409, chyba: 'Neuloženo: ' + vzSodZmrazenoText(p) + ' (' + zz.join(', ') + ').' };
   }
   return null;
 }

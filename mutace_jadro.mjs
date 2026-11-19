@@ -1173,9 +1173,10 @@ const MUTACE = [
     hledej: "  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id)) return 'zmrazeno';",
     nahrad: "",
     proc: 'po prodeji by šlo měnit krycí list, ze kterého se připravuje zápis do Pipedrive' },
+  /* VZ-F2 (#663): prodaná varianta se počítá v zamekSodHlavicky (klient i server). */
   { nazev: '#540: hlavička prodané zakázky se mění', soubor: 'zamek.js',
-    hledej: "sod: zamcene.some(v => !zamekKryciOtevreny(v) || variantaProdana(v)) };   // #540",
-    nahrad: "sod: zamcene.some(v => !zamekKryciOtevreny(v)) };",
+    hledej: "  if (variantaProdana(v)) return true;\n  if (zamekKryciOtevreny(v)) return false;",
+    nahrad: "  if (zamekKryciOtevreny(v)) return false;",
     proc: 'po prodeji by šly přepsat IČO a sídlo zákazníka (server by změnu pustil)' },
   { nazev: '#545: náhled Pipedrive bez fáze Vyhrané k podpisu SoD', soubor: 'objednane.js',
     hledej: "fazeDealu: 'Vyhrané k podpisu SoD',",
