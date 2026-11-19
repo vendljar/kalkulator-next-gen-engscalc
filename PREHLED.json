@@ -7,38 +7,29 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "0925de8b",
-  "verze": "v19.11.9",
+  "sha": "329b3ecf",
+  "verze": "v19.11.11",
   "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 343,
+ "test_navic_commitu": 362,
  "v_testu_ne_v_main": [
   {
-   "id": "681",
-   "typ": "ukol",
-   "nazev": "Kompletní náhled podkladů OCK ve vzhledu Wordu CN v17 (stránky A4, pořadí, sleva, příplatky za cenou, pruh s Wordem)",
+   "id": "689",
+   "typ": "rozhodnuti",
+   "nazev": "D3 objednávka PROJ: rozhodnutí J. V. k rozvržení (2 strany, Číslo zakázky, jen z odeslané CN)",
    "alias": [
-    "NP"
+    "D3-Q"
    ],
-   "verze": "v19.11.9"
+   "verze": "v19.11.11"
   },
   {
-   "id": "678",
-   "typ": "otazka",
-   "nazev": "D8 doladění: co počítat do povolení záměru a termíny po tisku SoD",
-   "alias": [
-    "D8-Q"
-   ],
-   "verze": "v19.11.9"
-  },
-  {
-   "id": "677",
+   "id": "688",
    "typ": "ukol",
-   "nazev": "D8: termíny krycího listu PROJ ze lhůt v týdnech (tabulka lhůt v Nastavení → Firma)",
+   "nazev": "D3: dokument „Objednávka / Smlouva“ PROJ z nabídky PROJ (tisk/PDF + Word bez šablony)",
    "alias": [
-    "D8"
+    "D3"
    ],
-   "verze": "v19.11.7"
+   "verze": "v19.11.11"
   },
   {
    "id": "675",
@@ -669,22 +660,22 @@
   {
    "id": "690",
    "typ": "nalez",
-   "nazev": "NP-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá",
+   "nazev": "NPT-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá",
    "alias": [
-    "NP-N1"
+    "NPT-N1"
    ],
    "cekaNa": "doplnit {{TS_SVETLIKY_DVERI}} do šablony CN (v18), nebo řádek v náhledu vynechat"
   },
   {
    "id": "691",
    "typ": "nalez",
-   "nazev": "NP-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář)",
+   "nazev": "NPT-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář)",
    "alias": [
-    "NP-N2",
-    "NP-N3",
-    "NP-N4"
+    "NPT-N2",
+    "NPT-N3",
+    "NPT-N4"
    ],
-   "cekaNa": "NP-N4 — přeložit IČ/Tel. i v cizojazyčné šabloně, nebo nechat česky"
+   "cekaNa": "NPT-N4 — přeložit IČ/Tel. i v cizojazyčné šabloně, nebo nechat česky"
   }
  ],
  "ceka_na_jv_odlozene": 12,

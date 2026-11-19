@@ -8,17 +8,16 @@ Bez cen a osobních údajů. Spouští koordinace po každém sloučení.
 | prostředí | verze |
 |---|---|
 | ostrý web (`main`) | **v11.11.1** (`6c4bc80e`, 11. 11. 2026) |
-| testovací web (`test`) | **v19.11.9** (`0925de8b`, 19. 11. 2026) |
+| testovací web (`test`) | **v19.11.11** (`329b3ecf`, 19. 11. 2026) |
 
-Test je proti main napřed o 343 commitů.
+Test je proti main napřed o 362 commitů.
 
 ## V testu, ještě ne v main
 
 | # | typ | co | verze |
 |---|---|---|---|
-| #681 (dřív NP) | úkol | Kompletní náhled podkladů OCK ve vzhledu Wordu CN v17 (stránky A4, pořadí, sleva, příplatky za cenou, pruh s Wordem) | v19.11.9 |
-| #678 (dřív D8-Q) | otázka | D8 doladění: co počítat do povolení záměru a termíny po tisku SoD | v19.11.9 |
-| #677 (dřív D8) | úkol | D8: termíny krycího listu PROJ ze lhůt v týdnech (tabulka lhůt v Nastavení → Firma) | v19.11.7 |
+| #689 (dřív D3-Q) | rozhodnutí | D3 objednávka PROJ: rozhodnutí J. V. k rozvržení (2 strany, Číslo zakázky, jen z odeslané CN) | v19.11.11 |
+| #688 (dřív D3) | úkol | D3: dokument „Objednávka / Smlouva“ PROJ z nabídky PROJ (tisk/PDF + Word bez šablony) | v19.11.11 |
 | #675 (dřív DO) | úkol | Dotazy obchodu D1, D2, D4–D7: opláštění po celé výšce, „bez opláštění“, přechodové plechy (MATERIÁL), materiál+montáž, ukládání dodatkového… | v19.11.6 |
 | #672 (dřív VZF1-I1) | nález | VZF1-I1: soubor plné moci u OPR zakázek bez čísla zakázky (PLNA-MOC_2026-OPR-CN-PROJ-CZ) | v19.11.4 |
 | #671 (dřív K50-N1-R) | úkol | Ceník: buňka Zahraničí u statiky opláštění a dialog zveřejnění po K50-N1 | v19.11.5 |
@@ -107,8 +106,8 @@ Test je proti main napřed o 343 commitů.
 | #643 | úkol | Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6) | nahrát upravený skill (mimo repo) |
 | #680 (dřív DO-N1) | nález | DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí | rozhodnout, zda vypsat návrhy i k položkám mimo řádky číselníku |
 | #682 (dřív NP-N1) | úkol | Word CN v EN/DE/FR nechává prázdný pruh sekce technické části (MŮSTKY bez řádků) | rozhodnout opravu (rychlá cesta, text dokumentu) |
-| #690 (dřív NP-N1) | nález | NP-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá | doplnit {{TS_SVETLIKY_DVERI}} do šablony CN (v18), nebo řádek v náhledu vynechat |
-| #691 (dřív NP-N2, NP-N3, NP-N4) | nález | NP-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář) | NP-N4 — přeložit IČ/Tel. i v cizojazyčné šabloně, nebo nechat česky |
+| #690 (dřív NPT-N1) | nález | NPT-N1: řádek SVĚTLÍKY U ŠACHETNÍCH DVEŘÍ je v náhledu podkladů, ale Word CN v17 ho nemá | doplnit {{TS_SVETLIKY_DVERI}} do šablony CN (v18), nebo řádek v náhledu vynechat |
+| #691 (dřív NPT-N2, NPT-N3, NPT-N4) | nález | NPT-N2–N4: drobné odchylky náhledu od Wordu (verzálky jednotek, dvojtečka EN/DE, IČ/Tel. v bloku Kancelář) | NPT-N4 — přeložit IČ/Tel. i v cizojazyčné šabloně, nebo nechat česky |
 
 K tomu 12 odložených položek (vlna F) — `python3 roadmapa/roadmapa.py --zive`.
 
