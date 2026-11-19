@@ -7,23 +7,35 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "6ae5c5ac",
-  "verze": "v19.11.1",
+  "sha": "a018828b",
+  "verze": "v19.11.3",
   "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 285,
+ "test_navic_commitu": 307,
  "v_testu_ne_v_main": [
   {
-   "id": "668",
-   "typ": "rozhodnuti",
-   "nazev": "Audit #667: další položky se sdílenou cenou nebo bez ceny z nabídky — rozhodnout",
-   "verze": "v19.11.1"
+   "id": "670",
+   "typ": "nalez",
+   "nazev": "K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1)",
+   "alias": [
+    "K50-N1"
+   ],
+   "verze": "v19.11.3"
   },
   {
-   "id": "667",
+   "id": "669",
    "typ": "ukol",
-   "nazev": "STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ jako zaškrtávací položka šachty s vlastní cenou C.statikaOplKc; cena z nabídky i nulová",
-   "verze": "v19.11.1"
+   "nazev": "VZ T1: řídící varianta a řídící zákazník v hlavičce (2+ zákazníků), karta ★/☆, náhled poznámky dealu",
+   "alias": [
+    "T1"
+   ],
+   "verze": "v19.11.2"
+  },
+  {
+   "id": "664",
+   "typ": "ukol",
+   "nazev": "UE: úprava existujícího účtu v Nastavení → Uživatelé (titul, jméno, funkce, telefon; e-mail jen ke čtení)",
+   "verze": "v18.11.9"
   },
   {
    "id": "659",
@@ -81,15 +93,6 @@
     "VZ-N3"
    ],
    "verze": "v18.11.8"
-  },
-  {
-   "id": "652",
-   "typ": "rozhodnuti",
-   "nazev": "Při nasazení do main zadat do Nastavení → Firma 6. řádek termínů realizace (5 let záruka) ve 4 jazycích",
-   "alias": [
-    "K49-I5"
-   ],
-   "verze": "v19.11.1"
   },
   {
    "id": "651",
@@ -335,6 +338,18 @@
    "kolo": "40",
    "stav": "opraveno v testu (v12.11.1), v main ne",
    "cekaNa": "J. V.: pokyn ke sloučení do main (kolo 49 18. 11.: test_k40_celni_sklo nad test 75/0, nad main 47/28; ceny main × test jinak shodné)"
+  },
+  {
+   "id": "670",
+   "typ": "nalez",
+   "nazev": "K50-N1: statika opláštění u zahraniční řady ceníku počítána českou sazbou (od v19.11.1)",
+   "alias": [
+    "K50-N1"
+   ],
+   "verze": "v19.11.3",
+   "kolo": "50",
+   "stav": "opraveno v testu (v19.11.3), v main ne",
+   "cekaNa": "—"
   }
  ],
  "ceka_na_jv": [
@@ -551,9 +566,9 @@
  "nehotove_podle_kdo": {
   "J. V.": 40,
   "kolega": 5,
-  "koordinace": 13,
+  "koordinace": 12,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 63
+ "nehotovych": 62
 }

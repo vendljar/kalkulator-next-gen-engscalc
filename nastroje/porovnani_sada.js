@@ -12,6 +12,7 @@
  *          scenar:*    zlatá pojistka #560 + skladebné můstky (jako zlata_vs.js)
  *          k29:*, k36:*  scénáře nálezů K29-N1 (zastřešení vyřazené, měď,
  *                      #451) a K36-N2 (zahraniční montáž můstků, #550)
+ *          k50:*       K50-N1 (statika opláštění v zahraniční řadě)
  *          ukazka:*    smyšlené zakázky testovacího webu (src/testdata.js)
  *          fuzz:*      generátor fuzz invariantů, pevné semínko 20261110
  *        Model 1 i Model 2. Ceník: zkušební ceník testů (src/zkusebni_cenik.js
@@ -223,6 +224,31 @@ async function otisky(src, volby) {
     }
   }
 
+  /* 3b) K50-N1 (kolo 50): statika opláštění v zahraniční řadě — S3 tuhle
+   *     vadu neodhalil, sada neměla zahraniční kalkulaci se statikou
+   *     opláštění. Ceník + hodiny statiky opláštění, šachta se zaškrtnutím;
+   *     zahraniční statika bez / s vlastní statikou opláštění a tuzemsko.
+   *     Čísla smyšlená (test_k50n1_statika_zahr.js). */
+  const K50_ZAHR = { ceny: { 'C.statikaKc': 5000, 'C.montazHodKc': 777 }, jenZahr: {} };
+  const K50 = [
+    ['k50:zahr-statika-opl-bez-vlastni', K50_ZAHR, 'zahr'],
+    ['k50:zahr-statika-opl-vlastni', { ceny: Object.assign({}, K50_ZAHR.ceny, { 'C.statikaOplKc': 4200 }), jenZahr: {} }, 'zahr'],
+    ['k50:cr-statika-opl', K50_ZAHR, 'cr'],
+  ];
+  for (const [jm, zahr, rada] of K50) {
+    for (const f of [true, false]) {
+      const zak = nova('2026-OPR-CN-9591', 'Porovnání sestavení ' + jm);
+      const v = zak.varianty[0];
+      Object.assign(v.data.ock.zadani, ZAD, { typSachty: 'exteriérová',
+        profily: kop((global.PROFILY_VYCHOZI || {})['exteriérová'] || v.data.ock.zadani.profily), statikaOpl: true });
+      v.data.ock.fixes = f;
+      const slozeny = zkus(() => cenikSlozRadu(Object.assign(cenikZ(false), { statikaOplHod: 6 }), zahr, rada));
+      v.data.cenik = (slozeny && !slozeny.chyba) ? Object.assign(slozeny, { kurzEurKc: 25 }) : Object.assign(cenikZ(false), { statikaOplHod: 6 });
+      if (rada === 'zahr') v.data.cenikRada = 'zahr';
+      out[jm + ':' + (f ? 'm2' : 'm1')] = await scenar(zak, v, J);
+    }
+  }
+
   /* 4) smyšlené zakázky testovacího webu (src/testdata.js TOHOTO stromu) */
   const TD = require(path.join(KOREN, 'src', 'testdata.js'));
   for (const p of TD.TESTDATA_ZAKAZKY) {
@@ -288,7 +314,7 @@ function rozdilyPripadu(a, b) {
 
 function skupinaPripadu(jm) {
   const p = jm.split(':')[0];
-  return { fixtura: 'fixtury', scenar: 'scénáře #560 + můstky', k29: 'K29-N1 / #451', k36: 'K36-N2 / #550', ukazka: 'ukázkové zakázky', fuzz: 'fuzz (semínko)' }[p] || p;
+  return { fixtura: 'fixtury', scenar: 'scénáře #560 + můstky', k29: 'K29-N1 / #451', k36: 'K36-N2 / #550', k50: 'K50-N1', ukazka: 'ukázkové zakázky', fuzz: 'fuzz (semínko)' }[p] || p;
 }
 
 function porovnej(A, B, volby) {

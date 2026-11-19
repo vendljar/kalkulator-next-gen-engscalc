@@ -24,6 +24,11 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
+- **R-K50N1** (`claude/r-k50n1`, rychlá cesta, v19.11.3 — přečísluje koordinace, nad integrací a3fad44): K50-N1 —
+  zahraniční řada bez vlastní `C.statikaOplKc` bere zahraniční `C.statikaKc` (`cenikZahrSVychozimi`). Testy
+  `src/test_k50n1_statika_zahr.js`, `netlify/test_k50n1_statika_zahr.mjs`, mutace [K50N1], sada porovnání `k50:*`,
+  očekávané `podklady/porovnani/ocekavane_r-k50n1_2026-11-19.txt`. J. V.: přepočítat zahraniční K28-Z0x (návrat na v18.11.2). Kolo `--bez-mutaci --proti
+  integrace` VŠE ZELENÉ: sady 475/0/7, hodiny 386/0/1, statické 9/9, porovnání 357 SHODA + 2 očekávané. Mutace [K50N1] 2/2 + 2/2. HOTOVO.
 - **SP #667** (`claude/sp-statika`, verzi přidělí koordinace): statika opláštění Ano/Ne v zadání šachty
   (`Z.statikaOpl`, chybí = Ano u šachty s opláštěním), vlastní sazba `C.statikaOplKc` (migrace = `statikaKc`), cena
   z nabídky u obou statik zvlášť, nula z nabídky platí u každé položky. Mění cenovou logiku → **revize poradce**.
@@ -42,36 +47,11 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   | A5–A7 | powertech, `oplechPracKc`, sklo | týž materiál / sazba | ponechat |
   | B1–B2 | spojovací materiál, lakování | souhrn skupiny, bez ceny z nabídky | J. V. (lak: dop. cena z nabídky) |
   | B6 | nulová cena z nabídky | dřív odmítnuta | opraveno #667 |
-- **UE #664** (`claude/ue-uzivatele`, v18.11.9, nad integrací 41bbe99): Nastavení → Uživatelé → **Upravit…**
-  (titul, jméno, funkce, telefon; e-mail jen ke čtení s vysvětlením). Server beze změny pravidel, razítko `zmenil`
-  + seznam polí. Testy `netlify/test_ue_uzivatele.mjs`, `src/test_ue_zpracovatel.js`, matice práv, overit_online/xss,
-  mutace [UE]. **Otázka #665 pro J. V.:** dotisk odeslané nabídky bere „Vypracoval“ z přihlášeného účtu — doporučeno
-  zmrazit při zámku. Čísla #664/#665 můžou kolidovat se SP (VZ-F1 má do #652). **Kolo `--bez-mutaci --proti origin/test`
-  VŠE ZELENÉ** (sady 467/0/7, hodiny 379/0/1, statické 9/9, porovnání 353/353 SHODA). Mutace [UE] server 6/6, jádro 2/2, B148 2/2. HOTOVO, slučuje koordinace.
-- **VZ-F1 #659** (`claude/vz-f1`, v18.11.8 — číslo přečísluje koordinace): opravy z `podklady/kola/STAV_TEST_VZ_2026-11-18.md`.
-  N3 #653 (vysoká): zástupci a DIČ v krycím listu OCK/PROJ jdou do položky adresáta (`vzKlCesta`, `vzCesta` i pro
-  `ZAK.zastupci.*`); #657 KL BO/Tech/PROJ tiskne zástupce i banku/účet/rejstřík (i 1 zákazník — mění text KL);
-  N1 #654 stejné IČO odmítnuto (klient + server 400); N2 #655 hlavička jen varianty otevřeného zákazníka; N4 #656 KL
-  `…9801.2-C`; #658 controlling `…9801-B` po prodeji; plná moc jen řídící (věta v příručce). Testy `src/test_vz_f1.js`
-  49/0 (pojistka na ec5bbac 32 FAIL), `test_vz_server.mjs` 110/0, `overit_vz_tisk` 198/0 (očekávání KL C upraveno).
-  Mutace [VZ F1] jádro 17/17, server 4/4; přepsané mutace E1 ×2, E2, K40a D7 ×2. Porovnání sestavení proti test SHODA
-  353/353. Kolo `--bez-mutaci`: statické 9/9; 1. běh sady 465/1/7 (`overit_vz_tisk` =
-  očekávaný N4, harness upraven) a hodiny 377/1/1 (`test_577_kopie_skript` T4 občasné, samostatně 5× zelené);
-  opakované kroky sady 466/0/7 a hodiny +400 dní 378/0/1 zelené. **Před sloučením revize poradce (N3 = únik do SoD).**
-  Neřešeno: zástupci dalšího zákazníka se po jeho SoD nezmrazují (zmrazení hlídá jen hlavičku řídícího) — k rozhodnutí.
 
 - **VZ-F2** (`claude/vz-f2`, v19.11.4): #660 IČO nového/změněného zákazníka proti všem (klient hned při úpravě),
   #663 zástupci+DIČ dalšího zákazníka zmrazení po JEHO SoD, hlavičku zmrazí jen SoD řídícímu, #661 KL PROJ v pohledu
   otevřeného zákazníka, #662 `overit_vz_f2.mjs`, VZF1-I1 název plné moci. Kolo VŠE ZELENÉ (475/0/7, 385/0/1, 9/9, SHODA 353/353),
   mutace [VZ F2] jádro 19/19, server 5/5. Detail v CHANGELOG. HOTOVO, slučuje koordinace.
-- **C7 #615 + NS #645** (`claude/c7-sablony`, v18.11.7, nad 9bd6dc8 + sloučená integrace 41bbe99): výroba jazykové verze
-  z češtiny zrušena u všech šablon (jen nahraný přeložený soubor); `sablonaJazykPodil` + mez 20 %: smlouvy (SoD, SoD proj.,
-  plná moc) nad mezí server nezveřejní/nevrátí a klient nevytiskne, CN jen upozornění. Ověřeno na textech z Disku
-  (SoD v5 DE 2,8 %, CN v17 DE 0,7 %, SoD proj. v4 DE 3,1 %; DE z české SoD v5 85 % → neprojde). NS: šablony pod přepínačem
-  OCK | PROJ (filtr beze změny). Mutace [C7] jádro 7/7, server 5/5. **Kolo `--bez-mutaci --proti origin/test` nad 6ed6f8d VŠE ZELENÉ** (sady 465/0/7, hodiny 377/0/1, statické 9/9, porovnání 353/353 SHODA).
-  Pozor při slučování s SL: v `src/sod.js` změněna jen `sodJazykZabrana`. Firemní .docx nebyly v kontejneru (KNG_PODKLADY
-  chybí) — test s podklady v `netlify/test_sablony.mjs` se přeskočí; hledá i `Sablona_SOD_REALIZACE_v5_DE_z_cestiny.docx`.
-- Starší sloučené dávky 18. 11. (S6+S8, S7, SL, rychlá cesta K40-N1) → `podklady/predavky/2026-11.md`.
 
 ## Čeká na J. V.
 

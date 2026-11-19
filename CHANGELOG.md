@@ -43,6 +43,21 @@ ani v Pipedrive nic. U jednoho zákazníka a s vypnutou funkcí beze změny (por
   `overit_vz_zadani.mjs`: řídící dostal jiné smyšlené IČO (dřív stejné jako další zákazník = duplicita).
 - **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: **VŠE ZELENÉ** — sady 475/0/7, hodiny +400 dní
   385/0/1, statické 9/9, porovnání sestavení 353/353 **SHODA** (seznam očekávaných rozdílů není potřeba).
+## v19.11.3 — rychlá oprava K50-N1: statika opláštění v zahraniční řadě, větev claude/r-k50n1
+
+Nad integrací `a3fad44` (v19.11.2). Vada kola 50 na testu (vysoká, cena). Verzi přečísluje koordinace.
+
+- **Oprava:** od SP #667 (v19.11.1) brala zahraniční zakázka u řádku STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ **českou** sazbu
+  (migrace `statikaOplKc` = tuzemská `statikaKc`, zahraniční řada klíč nemá) — klesla i přirážka ATYP. Nevyplněná
+  zahraniční statika opláštění teď = zahraniční `C.statikaKc` (`cenikZahrSVychozimi`, totéž místo jako výchozí DPH
+  a montáž můstků): složení řady, dnešní ceník pro přepočet a výjimky, přepnutí řady, server B112. Vlastní zahraniční
+  `C.statikaOplKc` má přednost; bez zahraniční statiky platí tuzemská; tuzemská řada beze změny. Výchozí se neukládá.
+- **Co se změní:** zahraniční kalkulace se statikou opláštění se po přepočtu vrátí na ceny z v18.11.2 (K28-Z0x).
+  Zamčené a odeslané varianty beze změny, ověření zámku „shoda".
+- **Testy:** `src/test_k50n1_statika_zahr.js` (18 OK; proti a3fad44 7 FAIL), `netlify/test_k50n1_statika_zahr.mjs`
+  (17 OK; proti a3fad44 5 FAIL). Mutace [K50N1] jádro 2/2, server 2/2 chycené (jádro nově hlídá `cenik_rady.js`).
+  Pevná sada porovnání sestavení má skupinu `k50:*` (zahraniční kalkulace se statikou opláštění); očekávané rozdíly
+  `podklady/porovnani/ocekavane_r-k50n1_2026-11-19.txt`.
 
 ## v19.11.2 — VZ T1 #669: řídící varianta a řídící zákazník v hlavičce, větev claude/vz-t1
 

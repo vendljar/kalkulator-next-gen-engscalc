@@ -95,6 +95,10 @@ const JADRA = ['engine.js', 'engine_proj.js', 'zaokrouhleni.js', 'marze.js', 'sa
    * přes celou mřížku těla karty a posun tabulky jen v kartě. Hlídá
    * src/test_560_mu2_karta.js (prohlížeč: overit_560_mustky.mjs bod 7). */
   'app_template.html',
+  /* cenik_rady.js (K50-N1, 19. 11. 2026): skládání zahraniční řady ceníku —
+   * výchozí hodnoty zahraniční řady (statika opláštění = zahraniční statika)
+   * mění cenu každé zahraniční nabídky. Hlídá src/test_k50n1_statika_zahr.js. */
+  'cenik_rady.js',
   /* vyjimky.js (B183, 20. 10. 2026): obsah cenové výjimky — plocha pásu
    * a světlíku na 0,1 m², dřív schválené výjimky starým tvarem. */
   'vyjimky.js',
@@ -2563,6 +2567,19 @@ const MUTACE = [
   /* [SP] #667 (18. 11. 2026, J. V.): statika opláštění — zaškrtnutí šachty,
    * vlastní sazba C.statikaOplKc, migrace klíče, krycí list a specifikace beze
    * změny. Hlídají src/test_667_statika_opl.js a test_statika_oplasteni.js. */
+  /* [K50N1] (19. 11. 2026, kolo 50): zahraniční řada bez vlastní statiky
+   * opláštění bere zahraniční statiku, ne tuzemskou. Hlídá
+   * src/test_k50n1_statika_zahr.js (pole `sady` = pustit ji první). */
+  { nazev: '[K50N1] zahraniční řada nechá tuzemskou statiku opláštění', soubor: 'cenik_rady.js',
+    hledej: "  if (so !== null) z.ceny[CENIK_ZAHR_STATIKA_OPL] = so;",
+    nahrad: "",
+    proc: 'zahraniční nabídka by statiku opláštění počítala tuzemskou sazbou (nález K50-N1)',
+    sady: ['test_k50n1_statika_zahr.js'] },
+  { nazev: '[K50N1] výchozí přebije vlastní zahraniční statiku opláštění', soubor: 'cenik_rady.js',
+    hledej: "  if (Object.prototype.hasOwnProperty.call(c, CENIK_ZAHR_STATIKA_OPL)) return null;",
+    nahrad: "",
+    proc: 'sazba statiky opláštění, kterou správce do zahraniční řady zapsal, by se ignorovala',
+    sady: ['test_k50n1_statika_zahr.js'] },
   { nazev: '[SP] odškrtnutá statika opláštění se pořád počítá', soubor: 'engine.js',
     hledej: "  if (v === false) return false;",
     nahrad: "",
