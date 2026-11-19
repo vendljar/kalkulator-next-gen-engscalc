@@ -69,7 +69,16 @@ function nastPanelAktivni() {
   const p = NAST.panel || 'obecne';
   return nastPanelyViditelne().find(x => x.id === p) || NAST_PANELY[0];
 }
-function nastPanel(p) { NAST.panel = p; renderNastaveni(); }
+/* #ON (19. 11. 2026): přepnutí na Uživatele načte seznam účtů znovu na
+ * pozadí — ať tečka „online“ a „Naposledy aktivní“ nejsou z doby přihlášení.
+ * Do příchodu odpovědi zůstane vidět dosavadní seznam (žádné „Načítám…"). */
+function nastPanel(p) {
+  const obnovUcty = p === 'uzivatele' && NAST.panel !== 'uzivatele' && typeof ONLINE_STAV !== 'undefined'
+    && ONLINE_STAV.uzivateleNacteno && ONLINE_STAV.bezi && typeof jeAdminOnline === 'function' && jeAdminOnline();
+  NAST.panel = p; renderNastaveni();
+  if (obnovUcty) onlineUzivateleNacti().then(() => {
+    if (nastOtevreno() && NAST.panel === 'uzivatele') renderNastaveni(); });
+}
 
 /* Přepínač rolí je z doby před přihlašováním – byl to náhled pro toho,
  * kdo si soubor otevřel na svém disku. Od chvíle, kdy role chodí ze
@@ -581,6 +590,8 @@ function nastFirma() {
       Dokumenty se vygenerují i tak – na těchto místech zůstane prázdno.</div>`}
 
     ${sekce}
+
+    ${typeof lhutyProjKarta === 'function' ? lhutyProjKarta() : ''}
 
     <div class="note" style="margin-top:10px">Smluvní standardy a logo firmy najdete na záložce
       <b>Smlouvy / Šablony</b> — patří k dokumentům, ne k identifikaci firmy.</div>

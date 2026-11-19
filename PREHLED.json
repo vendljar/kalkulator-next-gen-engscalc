@@ -7,12 +7,30 @@
  },
  "test": {
   "ref": "origin/test",
-  "sha": "042fcbc2",
-  "verze": "v19.11.5",
+  "sha": "3dbd88ee",
+  "verze": "v19.11.7",
   "datum": "19. 11. 2026"
  },
- "test_navic_commitu": 319,
+ "test_navic_commitu": 328,
  "v_testu_ne_v_main": [
+  {
+   "id": "677",
+   "typ": "ukol",
+   "nazev": "D8: termíny krycího listu PROJ ze lhůt v týdnech (tabulka lhůt v Nastavení → Firma)",
+   "alias": [
+    "D8"
+   ],
+   "verze": "v19.11.7"
+  },
+  {
+   "id": "675",
+   "typ": "ukol",
+   "nazev": "Dotazy obchodu D1, D2, D4–D7: opláštění po celé výšce, „bez opláštění“, přechodové plechy (MATERIÁL), materiál+montáž, ukládání dodatkového…",
+   "alias": [
+    "DO"
+   ],
+   "verze": "v19.11.6"
+  },
   {
    "id": "672",
    "typ": "nalez",
@@ -611,15 +629,42 @@
    "typ": "ukol",
    "nazev": "Skill roadmapa-kng: typy položek, aliasy a pravidlo jedné řady čísel (S6)",
    "cekaNa": "nahrát upravený skill (mimo repo)"
+  },
+  {
+   "id": "678",
+   "typ": "otazka",
+   "nazev": "D8 doladění: co počítat do povolení záměru a termíny po tisku SoD",
+   "alias": [
+    "D8-Q"
+   ],
+   "cekaNa": "rozhodnout (doporučené varianty v detailu)"
+  },
+  {
+   "id": "680",
+   "typ": "nalez",
+   "nazev": "DO-N1: návrh obchodníka do číselníku u příplatku přechodových plechů (MATERIÁL) správce v Ceník → číselník nevidí",
+   "alias": [
+    "DO-N1"
+   ],
+   "cekaNa": "rozhodnout, zda vypsat návrhy i k položkám mimo řádky číselníku"
+  },
+  {
+   "id": "682",
+   "typ": "ukol",
+   "nazev": "Word CN v EN/DE/FR nechává prázdný pruh sekce technické části (MŮSTKY bez řádků)",
+   "alias": [
+    "NP-N1"
+   ],
+   "cekaNa": "rozhodnout opravu (rychlá cesta, text dokumentu)"
   }
  ],
  "ceka_na_jv_odlozene": 12,
  "nehotove_podle_kdo": {
-  "J. V.": 40,
+  "J. V.": 43,
   "kolega": 5,
   "koordinace": 11,
   "dávka": 3,
   "integrátor": 2
  },
- "nehotovych": 61
+ "nehotovych": 64
 }

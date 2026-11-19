@@ -59,6 +59,51 @@ Nad integrací `6092af3` (v19.11.6). Zadání J. V. 19. 11. 2026. **Cenu ani Wor
   statické 9/9, porovnání sestavení SHODA 359/359. Harnessy `overit_560_mustky.mjs` a `overit_vs_dokumenty.mjs`
   upravené na tvar Wordu (záměrná změna náhledu).
 
+## v19.11.8 — #ON kdo je online (Nastavení → Uživatelé), větev claude/on-online
+
+Nad integrací `042fcbc` (v19.11.5). Zadání J. V. 19. 11. 2026. Cenu ani dokumenty nemění (porovnání SHODA).
+Verzi přečísluje koordinace, číslo roadmapy a meze B přidělí koordinace.
+
+- **Server:** přihlášený uživatel při běžném volání API (`vyzadujRoli`) a při přihlášení zapíše **čas** poslední
+  aktivity — nic víc (žádná IP ani prohlížeč). Nejvýš 1 zápis za minutu na účet (rozestup v paměti instance),
+  best-effort: na zápis se nečeká a chyba úložiště se spolkne. Odhlášení zapíše čas odhlášení. Oddělené úložiště
+  `aktivita` (klíče `a/<e-mail>`, `o/<e-mail>`), do účtu se nezapisuje (souběh se zásahem správce). Smazání účtu
+  aktivitu smaže. Ven jen ve výpisu `GET /api/uzivatele` pro Administrátora: `posledniAktivita`, `odhlaseni`,
+  `online` (aktivita v posledních 5 min bez pozdějšího odhlášení). Žádné nové API. Záloha: `aktivita` je výjimka
+  (provozní údaj, po obnově se zapíše prvním voláním) — k vědomí J. V.
+- **UI:** tabulka uživatelů má sloupec **Naposledy aktivní** — zelená tečka + „online“, relativně („právě teď“,
+  „před 3 min“, „dnes 9:12“, „včera“, datum), přesný čas a čas odhlášení v `title` (`formatNaposledy`,
+  `formatCasPresny` v `src/format.js`). Seznam se načte znovu při každém přepnutí na záložku Uživatelé (dřív jen jednou za přihlášení); živě se nepřepočítává.
+- **Testy:** `netlify/test_on_aktivita.mjs` (38 OK; proti 042fcbc padá), `netlify/test_prava.mjs` blok #ON
+  (Obchodník a Vedoucí 403 bez údaje, /api/ja bez údaje), `src/test_on_naposledy.js` (14 OK, i v TZ New York/Tokio;
+  proti 042fcbc padá), harness `overit_on_online.mjs` (18 OK; proti starému UI 8 FAIL). `test_zalohy.mjs` N4:
+  výjimka `aktivita`. Mutace [ON] server 11/11.
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: sady 480/0/7, statické 9/9, porovnání **SHODA**
+  359/359; hodiny +400 dní napoprvé 388/1/1 (občasné selhání `test_vz_unik.js`, PROJ en/de/fr „cena varianty D“ —
+  #ON se ho netýká, samostatně 6× zelené), opakovaný krok `--jen hodiny` 389/0/1. Manuál P5 doplněn o úložiště
+  `aktivita`. Přepnutí na Uživatele obnoví seznam na pozadí (bez „Načítám…“, `overit_xss` B150+UE 400/0).
+## v19.11.7 — D8 #677: termíny krycího listu PROJ ze lhůt v týdnech, větev claude/d8-lhuty
+
+Nad integrací `042fcbc` (v19.11.5). Rozhodnutí J. V. 19. 11. 2026 (dotaz obchodu D8). Cenu nemění; text nabídky
+s výchozí tabulkou beze změny (porovnání sestavení SHODA). Verzi a číslo roadmapy přečísluje koordinace.
+
+- **Lhůty PROJ v Nastavení → Firma** (jen administrátor): tabulka zaměření 4 t, výstupy 4–6 t, studie 10–12 t,
+  hrubopis DPZ 10–12 t, stanoviska 4 t, povolení záměru 2 měs. + právní moc 1 měs. (měsíc = 4,3 týdne), DPS 6 t,
+  s datem platnosti. Zveřejňuje se s firemními údaji (server kontroluje tvar, záloha a obnova jdou s firmou);
+  `src/lhuty_proj.js`, `src/ui/lhuty_proj_ui.js`.
+- **Text nabídky PROJ z tabulky** (online i Word `{{PROJ_TERMINY_TERMIN}}` / `{{PROJ_TERMINY}}`, CZ/EN/DE/FR):
+  výchozí znění termínů dostane čísla z tabulky, znění se nemění. Vlastní znění (Smlouvy / Šablony) nebo vlastní
+  překlad zůstane pevné a karta lhůt na něj upozorní. Šablona v8 pevné týdny nemá — nová šablona není potřeba.
+- **Krycí list PROJ:** po Prodáno se termíny (zahájení = datum podpisu, výstupy ze zaměření, studie, DPZ, povolení,
+  DPS) dopočítají řetězem jen přes nabízené činnosti, u rozpětí horní mez. U data je vidět zdroj („podpis + 10 týdnů
+  (zaměření 4 + výstupy 6)“), ruční datum zůstane a řetěz jde od něj, ↺ vrátí dopočet. Do prodeje se nedopočítává.
+- **Zámek:** Prodáno zamrazí lhůty do varianty (`data.kryciProj.lhutyProj`); odeslaná nabídka drží lhůty ve snímku
+  podmínek (starší bez snímku výchozí čísla). Termíny prodané varianty jsou editovatelné do tisku SoD (klient
+  i server), snímek lhůt prodané varianty server nepustí změnit.
+- **Testy:** `src/test_d8_lhuty.js` (114 OK; proti 042fcbc padá), `netlify/test_d8_lhuty.mjs` (15 OK; proti 042fcbc
+  padá). Mutace [D8] jádro 19/19 (jedna ekvivalentní vynechána), server 6/6; upravené #540, O7, #547 K37-N2 chycené.
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: VŠE ZELENÉ — sady 427/0/59, hodiny 389/0/1, statické 9/9,
+  porovnání 359/359 SHODA.
 ## v19.11.6 — DO: dotazy obchodníků z 16. 11. (D1, D2, D4–D7), větev claude/do-dotazy
 
 Nad integrací `042fcbc` (v19.11.5). Rozhodnutí J. V. 19. 11. 2026. **Cenu nemění** (výsledek jádra bajt po bajtu

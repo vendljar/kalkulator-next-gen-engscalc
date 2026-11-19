@@ -427,6 +427,15 @@ const ZAMEK_PRODANO_SOD_POLE = { kryci: ['cisloSod', 'sodDatumPodpisu'], kryciPr
 function zamekProdanoSodVolne(v, list, id) {
   return (ZAMEK_PRODANO_SOD_POLE[list] || []).indexOf(String(id)) >= 0 && zamekKryciOtevreny(v);
 }
+/* TERMÍNY PRODANÉ VARIANTY (D8, J. V. 19. 11. 2026): termíny krycího listu
+ * PROJ se dopočítávají až od data podpisu z Prodáno (lhuty_proj.js) a ruční
+ * datum má přednost — po prodeji proto zůstávají volné, dokud z varianty
+ * neodešla smlouva o dílo (pak je krycí list zamčený celý jako dřív).
+ * Server hlídá totéž (zamekDataPorovnani). */
+const ZAMEK_PRODANO_TERMINY = { kryciProj: ['terminZahajeni', 'terminZamereni', 'terminStudie', 'terminDpz', 'terminPovoleni', 'terminDps'] };
+function zamekProdanoTerminVolny(v, list, id) {
+  return (ZAMEK_PRODANO_TERMINY[list] || []).indexOf(String(id)) >= 0 && zamekKryciOtevreny(v);
+}
 
 /* Stav pole krycího listu: 'editovatelne' | 'zmrazeno' | 'jen_admin'. */
 function zamekKryciPoleStav(v, list, id) {
@@ -440,7 +449,7 @@ function zamekKryciPoleStav(v, list, id) {
    * Platí i pro pole jen pro správce (K8-K1, #516) — jeho změnu by
    * zamekSnimkyVrat před odesláním stejně vrátila. */
   /* #540: po Prodáno nic — kromě polí SoD do prvního tisku smlouvy (K37-N2). */
-  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id)) return 'zmrazeno';
+  if (variantaProdana(v) && !zamekProdanoSodVolne(v, list, id) && !zamekProdanoTerminVolny(v, list, id)) return 'zmrazeno';
   if (typeof zamekSnimekCekaNaServer === 'function' && zamekSnimekCekaNaServer(v)) return 'zmrazeno';
   if (tab && tab.jenAdmin.indexOf(id) >= 0) return 'jen_admin';
   if (!zamekKryciOtevreny(v))
@@ -661,6 +670,10 @@ function zamekDataPorovnani(data, v) {
   });
   if (kopie.kryciProj && typeof kopie.kryciProj === 'object' && zamekKryciPoleVolne(v, 'kryciProj', 'planPredvolba'))
     delete kopie.kryciProj.planPlateb;
+  /* D8: snímek lhůt PROJ se zapíše při Prodáno — do prodeje (v ULOŽENÉ
+   * verzi) se proto neporovnává; prodané variantě se už nezmění. */
+  if (kopie.kryciProj && typeof kopie.kryciProj === 'object' && !variantaProdana(v))
+    delete kopie.kryciProj.lhutyProj;
   /* S editovatelnou sazbou DPH i její značka „nastaveno ručně" (cenikRucni,
    * #177) — `set` ji při změně DPH poznamená a bez téhle výjimky by povolená
    * změna DPH odeslané nabídky shodila uložení (#555, nalezeno hlídačem
@@ -1305,7 +1318,7 @@ function listaZakazkyRozhodni(zak, zaloha, ja, prava, ctx) {
 }
 
 if (typeof module !== 'undefined')
-  module.exports = { zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
+  module.exports = { zamekZakVzOdeslano, variantaProdana, ZAMEK_PRODANO_SOD_POLE, zamekProdanoSodVolne, ZAMEK_PRODANO_TERMINY, zamekProdanoTerminVolny, listaZakazkyRozhodni, listaZalohaStejna, listaZalohaNovejsi, zakazkaMaOdeslanou, zamekVysledek, vypocetZ, vypocetProjZ, zamekPrepoctenoDnes, kurzEurZ, ZAMEK_DOKUMENTY, dokumentZamyka, dokumentPopis,
                      zamekVysledekSpocti, ZAMEK_OVERENI_CASTI, ZAMEK_OVERENI_JADRO, ZAMEK_OVERENI_JADRO_PRISNE, zamekVysledekRozdily, zamekOvereni, zamekOvereniText,
                      zamekCteniSmiOdemknout, zamekCteniDuvod, priponaPrvniNalez, priponaPrvniOprav,
                      variantaPripona, dalsiPriponaVarianty, variantaCislo,

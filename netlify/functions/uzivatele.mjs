@@ -34,6 +34,7 @@
  * a z nabídek by odcházel starý kontakt. Cizí profil ale nikdo přepsat
  * nesmí: s cizím podpisem by šla poslat nabídka jménem kolegy. */
 import { uloziste, otiskHesla, hesloSedi, vyzadujRoli, json, ROLE, ADMIN_EMAIL,
+         aktivitaCti, AKTIVITA_ULOZISTE,
          PODPIS_ULOZISTE, podpisZkontroluj, hesloVerzeUctu, relaceCookie,
          emailPlatny, hesloPlatne, HESLO_PRAVIDLO, SMAZANI_ULOZISTE,
          bezHlavnihoUctu, POKUSY_MAX, zpozdeniMs, pockej, pokusyZacatek, pokusyUspech,
@@ -498,6 +499,9 @@ export default async (req) => {
        * v aplikaci není, nemá na serveru co dělat — a kdyby se e-mail
        * jednou použil znovu, podepisoval by se jím někdo cizí. */
       try { await (await uloziste(PODPIS_ULOZISTE)).zapis(email, null); } catch (e) { /* podpis tam být nemusel */ }
+      /* #ON: čas poslední aktivity a odhlášení smazaného účtu nemá co ležet dál. */
+      try { const sa = await uloziste(AKTIVITA_ULOZISTE); await sa.zapis('a/' + email, null); await sa.zapis('o/' + email, null); }
+      catch (e) { /* best-effort */ }
 
       const kdy = new Date().toISOString();
       await (await uloziste(SMAZANI_ULOZISTE)).zapis(email,
@@ -535,10 +539,14 @@ export default async (req) => {
      * smazaného účtu leží prázdno — viz akce 'smaz'); `x.smazano` je tu
      * navíc pro případ, že by někdo někdy zapsal náhrobek s obsahem. Lepší
      * dvě podmínky navíc než smazaný kolega zpátky v tabulce. */
+    /* #ON (J. V. 19. 11. 2026): čas poslední aktivity, odhlášení a `online`
+     * (aktivita v posledních 5 min bez pozdějšího odhlášení). Jen tady —
+     * ve výpisu pro Administrátora; jiná cesta ven ten údaj nenese. */
     if (x && !x.smazano) out.push({ email: x.email, jmeno: x.jmeno, titul: x.titul || '',
       funkce: x.funkce || '', telefon: x.telefon || '',
       role: x.role, aktivni: x.aktivni !== false, hlavni: x.email === ADMIN_EMAIL,
-      archiv: !!x.archiv, archivKdy: String(x.archivKdy || '') });
+      archiv: !!x.archiv, archivKdy: String(x.archivKdy || ''),
+      ...(await aktivitaCti(x.email)) });
   }
   return json({ ok: true, uzivatele: out });
 };

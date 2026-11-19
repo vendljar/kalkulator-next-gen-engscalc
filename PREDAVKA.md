@@ -18,6 +18,8 @@ Svěřená rozhodnutí: `podklady/SVERENA_ROZHODNUTI.md`. Pravidla: `CLAUDE.md`.
 | `claude/vz-t1` | (tato dávka) | v19.11.2 | VZ T1 #669: řídící varianta a zákazník v hlavičce; s d8e4fc1 a 82cbd72; revize poradce; viz CHANGELOG |
 | `claude/vz-f2` | (tato dávka) | v19.11.4 | VZ-F2 #660–#663 + VZF1-I1 nad a3fad44; číslo verze přečísluje koordinace |
 | `claude/np-nahled` | (tato dávka) | v19.11.9 | NP: Kompletní náhled podkladů OCK ve vzhledu Wordu CN v17 (#681 prac.); nad 6092af3 |
+| `claude/on-online` | (tato dávka) | v19.11.8 | #ON kdo je online (Nastavení → Uživatelé) nad 042fcbc; verzi přečísluje koordinace |
+| `claude/d8-lhuty` | (tato dávka) | v19.11.7 | D8 #677 (pracovní) lhůty PROJ → termíny krycího listu; nad integrací 042fcbc; verzi přečísluje koordinace |
 | `claude/vz-f1` | (tato dávka) | v18.11.8 | VZ-F1 #659 opravy nálezů ruční zkoušky VZ; nad ec5bbac, sloučeno s integrací 41bbe99 |
 
 Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tagu: `python3 nastroje/release_odkaz.py --chybejici`
@@ -65,6 +67,13 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
   `overit_np_nahled.mjs`, snímky `podklady/kola/np_nahled_2026-11-19/`. Nález #682 (prac.): cizojazyčný Word nechá
   prázdný pruh sekce — čeká na J. V. Kolo `--bez-mutaci --proti integrace` VŠE ZELENÉ (483/0/7, hodiny 391/0/1,
   statické 9/9, porovnání SHODA 359/359), mutace [NP] 16/16 + VZ-E2 1/1. Testovací sezení: porovnat s Wordem z pravé CN v17.
+- **ON** (`claude/on-online`, v19.11.8, nad 042fcbc): čas poslední aktivity (jen čas, 1×/min, best-effort, úložiště
+  `aktivita` mimo zálohu), výpis jen správci, sloupec „Naposledy aktivní“ se zelenou tečkou. Testy test_on_aktivita,
+  test_prava #ON, test_on_naposledy, overit_on_online; mutace [ON] 11/11. Kolo 480/0/7, 9/9, SHODA 359/359, hodiny 389/0/1 (na 2. pokus; občasné selhání test_vz_unik). Mez B — návrh v BEZPECNOST_MEZE.md. HOTOVO.
+- **D8 #677** (`claude/d8-lhuty`, v19.11.7, nad 042fcbc): tabulka lhůt PROJ v Nastavení → Firma (zveřejní se s firmou),
+  čísla v textu termínů nabídky PROJ z tabulky (online i Word, 4 jazyky; s výchozí tabulkou beze změny), po Prodáno
+  dopočet termínů krycího listu PROJ (řetěz, horní mez, 4,3 t/měsíc, ruční přednost, ↺, zdroj u data), lhůty zamrzne
+  prodej. Šablona v8 pevné týdny nemá → nová šablona netřeba. Otázky J. V. #678 (pracovní). Kolo VŠE ZELENÉ (427/0/59, 389/0/1, 9/9, SHODA 359/359), mutace [D8] 19/19 + 6/6. HOTOVO.
 
 ## Čeká na J. V.
 
