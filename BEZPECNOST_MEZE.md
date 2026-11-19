@@ -2116,9 +2116,9 @@ Meze B220–B229 přidělila koordinace etapám VZ; E0 bere B220.
   a drží strop 10 položek × 300 znaků. Názvy dalších zákazníků tak vidí každý
   přihlášený jako dnes `objednatel` (návrh § 6).
 
-## #ON — kdo je online (v19.11.6, 19. 11. 2026) — NÁVRH, číslo B přidělí koordinace
+## #679 ON — kdo je online (v19.11.8, 19. 11. 2026) — B230
 
-- **B??? — čas poslední aktivity uživatele.** Server u přihlášeného uživatele ukládá jen ČAS poslední
+- **B230 — čas poslední aktivity uživatele.** Server u přihlášeného uživatele ukládá jen ČAS poslední
   aktivity (`vyzadujRoli` a přihlášení) a čas odhlášení — žádnou IP adresu, prohlížeč ani cestu
   požadavku. Oddělené úložiště `aktivita` (`a/<e-mail>`, `o/<e-mail>`), mimo zálohu (provozní údaj);
   smazání účtu ho smaže. Ven jde jen ve výpisu `GET /api/uzivatele`, který smí jen Administrátor

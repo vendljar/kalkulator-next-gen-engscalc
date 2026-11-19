@@ -8,7 +8,7 @@ tenhle soupis slouží k rychlé orientaci, ne jako náhrada za ně.
 
 ---
 
-## v19.11.6 — #ON kdo je online (Nastavení → Uživatelé), větev claude/on-online
+## v19.11.8 — #ON kdo je online (Nastavení → Uživatelé), větev claude/on-online
 
 Nad integrací `042fcbc` (v19.11.5). Zadání J. V. 19. 11. 2026. Cenu ani dokumenty nemění (porovnání SHODA).
 Verzi přečísluje koordinace, číslo roadmapy a meze B přidělí koordinace.
