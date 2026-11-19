@@ -2526,7 +2526,7 @@ console.log('\n===== DODATKOVÉ TEXTY SE NEZTRÁCEJÍ (25. 9. 2026) =====\n');
   /* D6 (19. 11. 2026): obchodník text „navrhne do číselníku" (varianta
    * nese `popisyNavrhy`); zakázka se jím uloží beze změny pravidel a sběr
    * návrh označí a řadí napřed. Změněný text už návrhem není. */
-  const zn = zakazkaCislo('2026 - OPR - CN - 0991');
+  const zn = zakazkaCislo('2026 - OPR - CN - 0661');
   zn.varianty[0].data.cenik.popisy = { 'Ztracený text': 'Návrh obchodníka.', 'Jiný text': 'Jen v zakázce.' };
   zn.varianty[0].popisyNavrhy = { 'Ztracený text': 'Návrh obchodníka.', 'Jiný text': 'Starší znění.' };
   const uzn = await post(zakazky, 'http://x/api/zakazky', { zakazka: zn }, cObch);
@@ -2535,6 +2535,20 @@ console.log('\n===== DODATKOVÉ TEXTY SE NEZTRÁCEJÍ (25. 9. 2026) =====\n');
   const zt = nz['Ztracený text'] || [];
   test('D6: sběr označí návrh obchodníka a řadí ho napřed',
     zt.length === 2 && zt[0].text === 'Návrh obchodníka.' && zt[0].navrh === true && !zt[1].navrh, zt);
+  /* Návrh starší než jiný text téže položky jde pořád napřed (mutace
+   * „návrhy nejdou napřed" — bez toho by řazení dalo nejnovější). */
+  const zs = zakazkaCislo('2026 - OPR - CN - 0662');
+  zs.varianty[0].data.cenik.popisy = { 'Starý návrh': 'Navrženo dávno.' };
+  zs.varianty[0].popisyNavrhy = { 'Starý návrh': 'Navrženo dávno.' };
+  zs.varianty[0].upraveno = '2026-01-01T00:00:00.000Z';
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: zs }, cObch);
+  const zs2 = zakazkaCislo('2026 - OPR - CN - 0663');
+  zs2.varianty[0].data.cenik.popisy = { 'Starý návrh': 'Novější text bez návrhu.' };
+  zs2.varianty[0].upraveno = '2099-01-01T00:00:00.000Z';
+  await post(zakazky, 'http://x/api/zakazky', { zakazka: zs2 }, cObch);
+  const ns = ((await (await get(popisy, 'http://x/api/popisy?sber=1', cAdmin)).json()).nalez || {})['Starý návrh'] || [];
+  test('D6: starší návrh jde napřed před novějším textem bez návrhu',
+    ns.length === 2 && ns[0].navrh === true && ns[0].text === 'Navrženo dávno.' && ns[1].kdy > ns[0].kdy, ns);
   test('D6: text, který se od návrhu změnil, návrhem není',
     Array.isArray(nz['Jiný text']) && nz['Jiný text'][0].navrh === undefined, nz['Jiný text']);
 }
