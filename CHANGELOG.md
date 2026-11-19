@@ -57,6 +57,57 @@ hlavička znak po znaku jako dřív (i tlačítko „nastavit jako řídící“
   `netlify/test_vz_poznamka.mjs` oddíl 10, harness `overit_vz_t1.mjs` (stavy makety, znak po znaku proti 2856345
   s `KNG_DIST_ZAKLAD`); upraveny `test_vz_server.mjs` (podvržený ukazatel → 409), `test_pd_stav.js`, `overit_vz_prodej.mjs`.
   Mutace [VZ T1] jádra a serveru. Pojistka: na 2856345 nové sady padají (funkce T1 chybí, server srovnával).
+## v19.11.1 — SP #667: statika opláštění zaškrtávací s vlastní cenou, cena z nabídky i nulová, větev claude/sp-statika
+
+Nad integrací `910315b`, sloučeno s integrací `41bbe99` (v18.11.7). Zadání J. V. 18. 11. 2026 (podnět obchodního technika). Mění cenovou logiku — před sloučením
+revize poradce. Výchozí stav = dnešní ceny (porovnání sestavení proti `origin/test` **SHODA 353/353**).
+
+- **Zaškrtnutí:** Zadání šachty → Práce a režie → „Statické posouzení opláštění“ Ano / Ne (`Z.statikaOpl`, u každé šachty
+  zvlášť). Chybí = výchozí stav: Ano u šachty s opláštěním (jako dosud). Ne vyřadí řádek z ceny; Ano ho přidá i bez opláštění.
+  Server pustí jen true / false. Kontrola „statikaDvakrat“ radí odškrtnutí.
+- **Vlastní cena:** STATICKÉ POSOUZENÍ OPLÁŠTĚNÍ má ceníkový klíč `C.statikaOplKc` (řádek v Ceníku nákladů, Režie).
+  Migrace `cenikMigraceStatikyOpl` (z `cenikMigraceLeseni`, tedy v ceníku po načtení verze, při importu zakázky
+  i v kandidátech serverové kontroly B112) ho předvyplní sazbou `statikaKc`; jádro bez klíče počítá sazbou statiky.
+  Přepočet proti ceníku bez klíče nehlásí změnu (`cenik_stari.js`). Krycí list (hodiny) a technická specifikace
+  (pole statiky) počítají obě cesty jako dosud — dokumenty beze změny; controlling řadí sazbu do projekce.
+- **Cena z nabídky:** obě statiky ji mají každá zvlášť. Nulová cena z nabídky platí u každé položky (prohlížeč i server),
+  záporná ani prázdné pole ne.
+- **Audit:** `podklady/AUDIT_CENY_POLOZEK_667.md` — sdílené cesty a položky bez ceny z nabídky; k rozhodnutí J. V. #668.
+- **Testy:** nový `src/test_667_statika_opl.js` 47/0 (pojistka: proti 910315b padá hned na chybějící funkci jádra);
+  upraveny `test_statika_oplasteni.js` (cesta řádku), `test_561_rucni_cena.js` a `netlify/test_561_rucni_cena.mjs`
+  (nula se nově uloží, záporná dál ne); zkušební ceník nese `statikaOplKc`; manuál výpočtu migruje sazbu (čísla vydání beze změny).
+- **Revize poradce (18. 11.):** N1 vymazaná buňka ceny (posílá 0) záznam ceny z nabídky maže jako dřív — nula z nabídky
+  jen výslovně v poli „Nákupní cena“; N2 import u nezamčené varianty bez klíče `statikaOplKc` zkopíruje i záznam ceny
+  z nabídky `C.statikaKc` (s potvrzením) na `C.statikaOplKc` — jinak 403 při uložení i zámku; N4 výběr má volbu
+  „výchozí (Ano/Ne)“ (`null`). Nový `netlify/test_667_statika_opl.mjs` 19/0: zámek se statikou, odškrtnutí ve 2. šachtě
+  (podvržený výsledek není „shoda“), stará varianta s cenou z nabídky (bez N2 3 FAIL, 403), tvar zaškrtnutí.
+  `src/test_667_statika_opl.js` (proti 3c42353: N1 2 FAIL, N2 2 FAIL, N4 chybí funkce). Čísla roadmapy přečíslována
+  na #667/#668 (kolize); verzi přidělí koordinace.
+- **N3 (rozhodnutí J. V. 18. 11.):** cenu z nabídky (i nulovou) potvrdí obchodník JEN s vyplněným dodavatelem nebo číslem
+  nabídky. Bez zdroje stav „bez zdroje“ (`RC_BEZ_ZDROJE`): tlačítko Potvrdit zakázané s hláškou, co doplnit, server
+  razítko nedá ani nepřevezme a cena jde ke schválení nadřízeného jako cena pod ceníkem (cenová výjimka; i u příplatku
+  „dle nabídky“, starší vlastní cena bez záznamu S13 beze změny). Kontrola `rucniCenaNepotvrzena` u záznamu bez zdroje
+  upozorní, co doplnit (bez nového pravidla — počet pravidel je ve vydaném manuálu). Zamčená varianta se starším potvrzeným záznamem bez zdroje se nemění, ověření zámku „shoda“. Testy:
+  `src/test_667_statika_opl.js` 72/0 (proti stavu před N3 padá), `netlify/test_667_statika_opl.mjs` 28/0 (bez N3 2 FAIL:
+  razítko i zámek nuly bez zdroje prošly); upraveny `test_561_rucni_cena.js` (záznam bez zdroje = „bez zdroje“),
+  N4 výběr escapuje hodnotu volby (test_escape).
+- **Dorevize poradce (19. 11.):** R1 klon staré odeslané nabídky (cena z nabídky u `C.statikaKc`, zamčený zdroj bez
+  záznamu statiky opláštění) dostane záznam i pro `C.statikaOplKc` — `zakStatikaOplRucniDopln` (zakazka.js) volá klon
+  (`klonujVariantu`) i import u každé nezamčené varianty, kde obě sazby nesou hodnotu záznamu; dřív zámek klonu 403.
+  R2 odmítnutí výjimky u ceny bez zdroje říká „ruční cena z nabídky bez zdroje … doplňte dodavatele nebo číslo nabídky“
+  místo „směsi ceníků“ (jen text, obsah výjimky beze změny). R4 zdroj musí nést písmeno nebo číslici po odstranění
+  neviditelných znaků („.“ ani U+200B zdrojem nejsou). R3 (správce zamkne cenu bez zdroje) předkládá koordinace J. V.
+  **R5 (přijato):** dřív schválená cenová výjimka přestane platit, když k položce přibude záznam ruční ceny bez zdroje
+  (obsah výjimky se změní) — obchodník musí doplnit zdroj, nebo požádat o schválení znovu.
+  Testy: `src/test_667_statika_opl.js` 82/0 (proti ab6b29c R1 2, R2 1, R4 2 FAIL), `netlify/test_667_statika_opl.mjs`
+  35/0 (proti ab6b29c 3 FAIL: klon bez záznamu, zámek klonu 403, věta o směsi).
+- **Mutace [SP]:** jádro [SP] 11/11 + P5 3/3 chycených, server [SP] 8/8 + #561 19/19 chycených.
+
+**Po dorevizi (R1, R2, R4) kolo `--bez-mutaci --proti origin/claude/integrace-16-10` nad 34f282f:** sady 467/0/7, hodiny +400 dní 379/0/1, porovnání SHODA 353/353; kontrola verze chtěla den commitu → v19.11.1, pak build + statické 9/9 zelené. Mutace jádro [SP] 13/13, server [SP] 23/23 + #561 19/19.
+
+**Po revizi (N1–N4) kolo `--bez-mutaci --proti origin/claude/integrace-16-10` nad f9a5551: VŠE ZELENÉ** — sady 467/0/7, hodiny +400 dní 379/0/1, statické 9/9, porovnání SHODA 353/353; mutace jádro [SP] 13/13, server [SP] 17/17 + #561 19/19.
+
+Původně: **Kolo `--bez-mutaci` nad 2a7f210 (po sloučení 41bbe99): VŠE ZELENÉ** — sady 466/0/7, hodiny +400 dní 378/0/1, statické 9/9 (36 min); porovnání sestavení proti `origin/test` **SHODA 353/353**.
 ## v18.11.9 — UE #664 úprava existujícího účtu (titul, jméno, funkce, telefon), větev claude/ue-uzivatele
 
 Nad integrací `41bbe99` (v18.11.6). Zadání J. V. 18. 11. 2026. Verzi přečísluje koordinace (souběžně VZ-F1, C7, SP).
