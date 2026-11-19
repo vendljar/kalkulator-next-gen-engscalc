@@ -585,9 +585,59 @@ function popisSet(cesta, v) {
     popisJazykySrovnej(C, cesta, spol, spolJ);
   }
   aktivniVarianta(ZAK).upraveno = new Date().toISOString();
-  if (admin && typeof onlinePopisUloz === 'function')
-    onlinePopisUloz(cesta, v);
+  if (admin && typeof onlinePopisUloz === 'function') {
+    /* Viditelné potvrzení (D6, J. V. 19. 11. 2026): text se ukládá do
+     * číselníku po opuštění pole a dosud o tom nic neříkalo. Ukáže se, až
+     * server zápis potvrdí; chybu hlásí onlinePopisUloz sám. */
+    const sl = onlinePopisUloz(cesta, v);
+    if (sl && typeof sl.then === 'function') sl.then(ok => { if (ok) popisUlozenoUkaz(cesta); });
+  }
   render();
+}
+
+/* Krátké „uloženo pro všechny nové zakázky" u pole (D6). Stav se drží
+ * i přes překreslení (`popisRadekHtml` ho čte), po čtyřech vteřinách se
+ * text z pole tiše odebere — bez překreslení, aby nevypadl kurzor. */
+let POPIS_ULOZENO = { klic: null, doKdy: 0 };
+const POPIS_ULOZENO_TEXT = 'uloženo pro všechny nové zakázky';
+function popisUlozenoUkaz(klic) {
+  POPIS_ULOZENO = { klic: String(klic), doKdy: Date.now() + 4000 };
+  const nastav = (txt) => {
+    if (typeof document === 'undefined') return;
+    document.querySelectorAll('[data-popis-stav]').forEach(el => {
+      if (el.getAttribute('data-popis-stav') === String(klic)) el.textContent = txt;
+    });
+  };
+  nastav(POPIS_ULOZENO_TEXT);
+  setTimeout(() => {
+    if (POPIS_ULOZENO.klic === String(klic) && Date.now() >= POPIS_ULOZENO.doKdy) {
+      POPIS_ULOZENO = { klic: null, doKdy: 0 };
+      nastav('');
+    }
+  }, 4100);
+}
+
+/* NÁVRH TEXTU DO ČÍSELNÍKU (D6, minimální varianta). Obchodník svým textem
+ * mění jen tuhle zakázku; „navrhnout do číselníku" text označí v zakázce
+ * jako návrh (`varianta.popisyNavrhy`). Administrátor ho uvidí v Ceník →
+ * číselník dodatkových textů po „Najít texty v uložených zakázkách" se
+ * štítkem „návrh" a převezme ho tlačítkem „převzít". Nic se tím nemění na
+ * ceně ani na ukládání textu; zámek varianty stojí před funkcí. */
+function popisNavrhni(klic) {
+  if (typeof zamekStop === 'function' && zamekStop()) return;
+  const v = aktivniVarianta(ZAK);
+  if (!v) return;
+  const t = String((typeof cenikPopis === 'function') ? cenikPopis(C, klic) : '').trim();
+  if (!t) return;
+  if (!v.popisyNavrhy || typeof v.popisyNavrhy !== 'object' || Array.isArray(v.popisyNavrhy)) v.popisyNavrhy = {};
+  v.popisyNavrhy[String(klic)] = t;
+  v.upraveno = new Date().toISOString();
+  render();
+}
+function popisNavrzeno(klic, t) {
+  const v = (typeof ZAK !== 'undefined' && ZAK) ? aktivniVarianta(ZAK) : null;
+  const n = v && v.popisyNavrhy && typeof v.popisyNavrhy === 'object' ? v.popisyNavrhy[String(klic)] : null;
+  return typeof n === 'string' && n === t;
 }
 /* Řádek s dodatkovým textem pod položkou. Jeden pro příplatky i pro
  * volitelné — dvě kopie by se rozešly v popisku i v tom, kdo pole vidí.
@@ -609,11 +659,30 @@ function popisRadekHtml(r, cols) {
       + 'pro celou aplikaci — předvyplní se i v nabídkách ostatních.'
     : 'Tiskne se v nabídce pod názvem položky místo množství. Změna platí jen pro tuhle '
       + 'zakázku; výchozí text pro celou aplikaci zadává administrátor.';
+  /* D6 (19. 11. 2026): komu text patří, je vidět u pole, ne jen v bublině.
+   * Administrátor po uložení dostane „uloženo pro všechny nové zakázky",
+   * obchodník trvalou poznámku „jen pro tuto zakázku" a — liší-li se jeho
+   * text od číselníku a je přihlášený — tlačítko „navrhnout do číselníku". */
+  let pata;
+  if (admin) {
+    const ted = POPIS_ULOZENO.klic === String(klic) && Date.now() < POPIS_ULOZENO.doKdy;
+    pata = `<span class="note popis-stav" data-popis-stav="${esc(klic)}" style="margin:0;color:#15803d">${
+      ted ? esc(POPIS_ULOZENO_TEXT) : ''}</span>`;
+  } else {
+    const spol = (typeof cenikPopisySpolecne === 'function') ? (cenikPopisySpolecne()[klic] || '') : '';
+    const online = typeof ONLINE_STAV !== 'undefined' && !!ONLINE_STAV.ja;
+    const navrh = !t || t === spol || !online ? ''
+      : (popisNavrzeno(klic, t)
+        ? ' · <span class="popis-navrzeno">navrženo do číselníku — administrátor ho uvidí po uložení zakázky</span>'
+        : ` <button class="mini noprint popis-navrhnout" onclick="popisNavrhni('${keyAttr(klic)}')"
+            title="Text zůstane v téhle zakázce a administrátor ho uvidí v Ceník → číselník dodatkových textů jako návrh pro všechny nové zakázky.">navrhnout do číselníku</button>`);
+    pata = `<span class="note popis-jen-zakazka" style="margin:0">jen pro tuto zakázku${navrh}</span>`;
+  }
   return `<tr class="noprint"><td colspan="${cols}" style="padding-top:0">
     <input type="text" style="width:100%" value="${esc(t)}" maxlength="${POPISY_MAX_TEXT}"
       placeholder="dodatkový text do cenové nabídky (nepovinné)"
       title="${esc(naped)}"
-      onchange="popisSet('${keyAttr(klic)}', this.value)">${popisJazykyStitek(klic, t)}</td></tr>`;
+      onchange="popisSet('${keyAttr(klic)}', this.value)">${pata}${popisJazykyStitek(klic, t)}</td></tr>`;
 }
 /* Které překlady text v téhle zakázce má (#379, K18-N96) — aby obchodník
  * věděl, že do cizí nabídky nepůjde česká věta. Vyplňují se v číselníku
@@ -723,12 +792,18 @@ function oplStena(k) {
   return st;
 }
 
-/* „Po celé výšce" = dolní mez 0 a jediný pás až nahoru. Není to zvláštní
- * příznak v datech: kdyby byl, musel by se držet v souladu s pásy a dřív
- * nebo později by se rozešel. Odvozuje se z nich. */
+/* „Po celé výšce" = jediný pás až nahoru. Není to zvláštní příznak
+ * v datech: kdyby byl, musel by se držet v souladu s pásy a dřív nebo
+ * později by se rozešel. Odvozuje se z nich.
+ *
+ * ZAČÁTEK OPLÁŠTĚNÍ NEROZHODUJE (D1, rozhodnutí J. V. 19. 11. 2026). Do té
+ * doby platilo „dolní mez 0 a jediný pás" — „Opláštit i prohlubeň" posunul
+ * začátek na −hloubku prohlubně a políčko zmizelo, ruční zaškrtnutí zase
+ * vrátilo začátek na 0 a opláštění prohlubně tím zrušilo. Stěna z jednoho
+ * materiálu je „po celé výšce" i tehdy, když sahá do prohlubně. */
 function oplCelaVyska(k) {
   const st = oplStena(k);
-  return (+st.odM || 0) === 0 && st.pasy.length === 1 && st.pasy[0].doM == null;
+  return st.pasy.length === 1 && st.pasy[0].doM == null;
 }
 
 function oplZmeneno() {
@@ -773,7 +848,7 @@ function svetlikVyplnTitulek(kde, r) {
     && r.zaskleni.vypln.material[kde] && r.zaskleni.vypln.material[kde].A;
   if (!m) return zaklad;
   const co = (m.druh === 'sklo' || m.druh === 'deska') ? oplTypNazev(m.typ, m.nazev)
-    : (m.druh === 'bez' && m.typ === 'bez' ? 'nic — stěny B, C, D jsou „bez — dodá stavba", světlík se počítá jako „bez" (#560)'
+    : (m.druh === 'bez' && m.typ === 'bez' ? 'nic — stěny B, C, D jsou „bez opláštění", světlík se počítá jako „bez" (#560)'
       : ({ plech: 'plech', stavba: 'zajistí stavba (výplň 0 Kč)', bez: 'nic' })[m.druh] || '');
   return zaklad + (co ? '. Teď: ' + co : '');
 }
@@ -1083,12 +1158,29 @@ function oplPasKopie(p) {
   return novy;
 }
 
+/* PÁS „BEZ OPLÁŠTĚNÍ" DOSTANE DĚLICÍ VÝŠKU 0 (D2, rozhodnutí J. V.
+ * 19. 11. 2026). Typický pás bez opláštění je spodek stěny v prohlubni:
+ * končí na úrovni nástupu. Obchodník tu nulu dřív musel dopisovat sám
+ * a do té doby svítilo žluté „pás nemá dělicí výšku". Předvyplňuje se jen
+ * PRÁVĚ ZVOLENÉMU pásu (změna typu, přidání, rozdělení stěny) a jen
+ * prázdná výška — přepsanou hodnotu ani uložené zakázky to nemění.
+ * Poslední pás sahá vždy až nahoru, výšku nemá.
+ *
+ * Cena se tím nemění: prázdnou dělicí výšku nižšího pásu jádro bere jako 0
+ * (`oplasteniPasyMeze`: `+null || 0`), takže pás vychází stejně. */
+function oplBezPredvypln(st, i) {
+  const p = st && st.pasy && st.pasy[i];
+  if (!p || p.typ !== 'bez' || i >= st.pasy.length - 1 || p.doM != null) return;
+  p.doM = 0;
+}
+
 function oplCelaVyskaSet(k, ano) {
   const st = oplStena(k);
   if (ano) {
     /* Zpátky na jeden pás: ponechá se typ PRVNÍHO pásu, protože ten pokrývá
-     * spodek stěny, na který se obchodník dívá nejdřív. */
-    st.odM = 0;
+     * spodek stěny, na který se obchodník dívá nejdřív. Začátek opláštění
+     * (`odM`) se NEMĚNÍ (D1, J. V. 19. 11. 2026): do té doby se tu vracel
+     * na 0, a tím se tiše rušilo opláštění prohlubně. */
     st.pasy = [{ typ: st.pasy[0].typ, nazev: st.pasy[0].nazev, naklad: st.pasy[0].naklad, doM: null }];
   } else if (st.pasy.length === 1) {
     /* ODŠKRTNUTÍ MUSÍ STĚNU OPRAVDU ROZDĚLIT. „Po celé výšce" je ODVOZENÝ
@@ -1109,6 +1201,7 @@ function oplCelaVyskaSet(k, ano) {
      * Dvě kliknutí tak stěnu tiše zlevnila na nulu: v kalkulaci zůstal řádek
      * „JINÉ" za 0 Kč. */
     st.pasy.splice(0, 0, oplPasKopie(st.pasy[0]));
+    oplBezPredvypln(st, 0);
   }
   oplZmeneno();
 }
@@ -1135,6 +1228,7 @@ function oplPasSet(k, i, pole, val) {
     /* Přepnutím na jiný typ ztrácí ruční název a sazba smysl — nechat je
      * viset by znamenalo, že se po návratu na „jiné" objeví cizí čísla. */
     if (p.typ !== 'jine') { delete p.nazev; delete p.naklad; }
+    oplBezPredvypln(st, i);
   } else if (pole === 'nazev') {
     p.nazev = String(val || '');
   }
@@ -1149,6 +1243,7 @@ function oplPasPridej(k) {
   const posledni = st.pasy[st.pasy.length - 1];
   /* Celá kopie včetně názvu a sazby u typu „jiné" — viz `oplPasKopie`. */
   st.pasy.splice(st.pasy.length - 1, 0, oplPasKopie(posledni));
+  oplBezPredvypln(st, st.pasy.length - 2);
   oplZmeneno();
 }
 
@@ -1238,8 +1333,6 @@ function oplStenaVarovani(k, opl) {
           : 'Zkontrolujte rozměry šachty — výpočet u téhle stěny žádnou plochu nedává.');
   }
 
-  if (oplCelaVyska(k)) return nulova;
-
   /* Horní hrana opláštění. Bere se z jádra (`r.oplasteni.vyska`), ne ze
    * zadání — jádro na ni dělicí výšky ořezává, takže se tím pozná pás,
    * který se do ceny vůbec nedostane. */
@@ -1256,6 +1349,11 @@ function oplStenaVarovani(k, opl) {
   if (odM < dno - 1e-9)
     return 'Opláštění začíná v ' + cis(odM) + ' m, tedy pod dnem prohlubně ('
       + cis(dno) + ' m). Plocha pod dnem se počítá, přestože tam žádná stěna není.';
+
+  /* Stěna po celé výšce nemá dělicí výšky. Odbočka stojí až ZA kontrolou
+   * dolní meze (D1, 19. 11. 2026): stěna z jednoho materiálu může začínat
+   * i jinde než na nule, a začátek mimo šachtu se musí ohlásit i u ní. */
+  if (oplCelaVyska(k)) return nulova;
 
   let dolni = odM;
   for (let i = 0; i < st.pasy.length - 1; i++) {
@@ -1464,7 +1562,14 @@ function oplStenaHtml(s, opl) {
    * vedle sebe čtou stejně. */
   const obal = (obsah) => `<div class="opl-stena-in">
       <div class="opl-pole">${obsah}</div>${oplNakresStena(k, opl)}</div>`;
-  if (cela) return obal(hlava + varovaniHtml);
+  /* „Opláštění začíná" i u stěny po celé výšce (D1, 19. 11. 2026): začátek
+   * už s „po celé výšce" nesouvisí (prohlubeň), takže musí jít vidět
+   * a změnit i bez rozdělení stěny na pásy. */
+  const zacatek = `<div class="row"><label style="font-weight:400">Opláštění začíná</label>
+        <span class="par opl-sloupce opl-bez1"><input class="opl-s2" ${CISLO_POLE} step="0.01" style="width:90px"
+          title="výška, od které se opláštění počítá; záporná hodnota sahá do prohlubně"
+          value="${esc(st.odM)}" onchange="oplOdSet('${escJs(k)}', this.value)"><span class="opl-s3 opl-jednotka">m</span></span><span class="u"></span></div>`;
+  if (cela) return obal(hlava + zacatek + varovaniHtml);
 
   /* Pásy se vypisují ODSHORA DOLŮ, protože tak se na stěnu člověk dívá;
    * ukládají se zdola nahoru (viz jádro). Proto to obrácené pořadí. */
@@ -1494,10 +1599,7 @@ function oplStenaHtml(s, opl) {
     + pasy
     + `<div class="row"><label></label><span class="par opl-sloupce opl-bez1">
         <button class="mini opl-s23 opl-vpravo" onclick="oplPasPridej('${escJs(k)}')">+ přidat pás</button></span><span class="u"></span></div>`
-    + `<div class="row"><label style="font-weight:400">Opláštění začíná</label>
-        <span class="par opl-sloupce opl-bez1"><input class="opl-s2" ${CISLO_POLE} step="0.01" style="width:90px"
-          title="výška, od které se opláštění počítá; záporná hodnota sahá do prohlubně"
-          value="${esc(st.odM)}" onchange="oplOdSet('${escJs(k)}', this.value)"><span class="opl-s3 opl-jednotka">m</span></span><span class="u"></span></div>`
+    + zacatek
     + varovaniHtml);
 }
 
@@ -1528,7 +1630,7 @@ function oplasteniKarta() {
     + `<div class="note">Stěny se počítají po pásech a do kalkulace se sčítají <b>podle typu</b>,
       ne podle stěny — nabídka se tím nerozdrobí na osm skoro stejných řádků.
       Pás začíná tam, kde skončil předchozí, takže překryv ani mezera nemůžou vzniknout.
-      Úsek, který se oplášťovat nemá, zadejte jako pás typu <b>„bez — dodá stavba"</b>;
+      Úsek, který se oplášťovat nemá, zadejte jako pás typu <b>„bez opláštění"</b>;
       zůstane tak vidět, že se na to myslelo.</div>`
     /* OPRAVENO 21. 9. 2026 (revize téhož dne). Stálo tu „Terče a lišty se
      * počítají jen z pásů se sklem" — a nebyla to pravda: `terceKs`
@@ -2275,10 +2377,21 @@ function priplatkyVeVolitelnych(r) {
     ${jedna ? 'vrátí' : 'vrátí'} sem jako příplatek.</div>`;
 }
 
+/* MATERIÁL A MONTÁŽ PŘECHODOVÝCH PLECHŮ JEDNÍM STISKEM (D5, rozhodnutí
+ * J. V. 19. 11. 2026). Zaškrtnutí i odškrtnutí MATERIÁLU v příplatcích
+ * nese s sebou montáž — plechy se bez montáže nabízejí výjimečně. Montáž
+ * jde potom samostatně odškrtnout (provede ji stavební dodavatel)
+ * i samostatně zaškrtnout bez materiálu; klik na montáž materiálem nehne.
+ * Je to chování obrazovky, ne výpočtu: uložené `priplatkyVynechat` se
+ * nepřepisuje, dokud na materiál nikdo neklikne, a zámek varianty stojí
+ * před funkcí (zamek_ui.js), takže odeslaná nabídka se nezmění. */
 function priplatekNabidka(key, zahrnout) {
   if (!Z.priplatkyVynechat) Z.priplatkyVynechat = [];
-  Z.priplatkyVynechat = Z.priplatkyVynechat.filter(k => k !== key);
-  if (!zahrnout) Z.priplatkyVynechat.push(key);
+  /* Páry „materiál → montáž" (jen tenhle jeden; jiné páry příplatků nejsou). */
+  const pary = { prechMat: ['prechMont'] };
+  const klice = [key].concat(pary[key] || []);
+  Z.priplatkyVynechat = Z.priplatkyVynechat.filter(k => klice.indexOf(k) < 0);
+  if (!zahrnout) Z.priplatkyVynechat.push(...klice);
   if (key === 'leseniHlava') Z.leseniHlavaRucne = true;   // #546, viz volitelneToggle
   render();
 }

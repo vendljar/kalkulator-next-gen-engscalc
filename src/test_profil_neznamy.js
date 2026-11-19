@@ -119,7 +119,12 @@ test('B126: hláška u chybějícího profilu říká „rozměr chybí"', eng.p
  * se ceny nemění, pole do otisku nevstupuje a otisky zůstávají. Totéž
  * popisné pole `mustky` (#354, 26. 10. 2026: rozměr a tvar ceny můstků).
  * Razítko `oplasteni.skloJenSPlochou` (#572, 5. 11. 2026) není číslo, jen
- * příznak znění specifikace — do otisku nevstupuje, otisky zůstávají. */
+ * příznak znění specifikace — do otisku nevstupuje, otisky zůstávají.
+ * D4 (19. 11. 2026): materiál přechodových plechů se ve Volitelných
+ * ZOBRAZUJE jako „… (MATERIÁL)" a montáž stojí v `volitelneKatalog` hned
+ * pod ním — popisek a pořadí zobrazení, ne čísla. Očista je vrací do
+ * dřívější podoby (název podle klíče `origNazev`, pořadí podle sčítání
+ * `sekce.volitelne`), otisky zůstávají. */
 const OTISK_BEZ = ['bokyKs', 'bokyKsAuto', 'bokyKsRucne', 'dvere', 'dvereDva', 'dvereJeden', 'dvereBez',
   'mezera', 'nadM2', 'bokyM2', 'material', 'boky', 'sirkaPredpocitana', 'sirkaRucne', 'sirka'];
 const otiskOcisti = r => {
@@ -127,6 +132,15 @@ const otiskOcisti = r => {
   OTISK_BEZ.forEach(k => { delete x.zaskleni.vypln[k]; });
   delete x.oplasteni.zakladPasu; delete x.oplasteni.svetliky; delete x.oplasteni.skloJenSPlochou;
   delete x.strecha; delete x.mustky;
+  const doD4 = a => (a || []).forEach(y => { if (y && y.key === 'prechodove' && !y.nazevPrepsan) y.nazev = y.origNazev; });
+  doD4(x.volitelneKatalog); doD4(x.sekce && x.sekce.volitelne);
+  const PORADI_PRED_D4 = ['prechodove', 'leseniVnitrni', 'leseniVnejsi', 'prechMont'];
+  if (Array.isArray(x.volitelneKatalog)) {
+    const iPred = k => { const i = PORADI_PRED_D4.indexOf(k); return i < 0 ? 99 : i; };
+    const kat = x.volitelneKatalog.map((y, i) => ({ y, i }));
+    kat.sort((a, b) => (iPred(a.y.key) < 99 && iPred(b.y.key) < 99) ? iPred(a.y.key) - iPred(b.y.key) : a.i - b.i);
+    x.volitelneKatalog = kat.map(o => o.y);
+  }
   return x;
 };
 const OTISKY = {

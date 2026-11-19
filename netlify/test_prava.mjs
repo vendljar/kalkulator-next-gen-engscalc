@@ -2522,6 +2522,21 @@ console.log('\n===== DODATKOVÉ TEXTY SE NEZTRÁCEJÍ (25. 9. 2026) =====\n');
   test('a nehlásí text, který číselník má stejný', !nalez['Text A'], nalez['Text A']);
   const sbO = await get(popisy, 'http://x/api/popisy?sber=1', cObch);
   test('hledání v zakázkách jen pro administrátora (403)', sbO.status === 403, sbO.status);
+
+  /* D6 (19. 11. 2026): obchodník text „navrhne do číselníku" (varianta
+   * nese `popisyNavrhy`); zakázka se jím uloží beze změny pravidel a sběr
+   * návrh označí a řadí napřed. Změněný text už návrhem není. */
+  const zn = zakazkaCislo('2026 - OPR - CN - 0991');
+  zn.varianty[0].data.cenik.popisy = { 'Ztracený text': 'Návrh obchodníka.', 'Jiný text': 'Jen v zakázce.' };
+  zn.varianty[0].popisyNavrhy = { 'Ztracený text': 'Návrh obchodníka.', 'Jiný text': 'Starší znění.' };
+  const uzn = await post(zakazky, 'http://x/api/zakazky', { zakazka: zn }, cObch);
+  test('D6: obchodník uloží zakázku s návrhem textu', uzn.status === 200, uzn.status);
+  const nz = (await (await get(popisy, 'http://x/api/popisy?sber=1', cAdmin)).json()).nalez || {};
+  const zt = nz['Ztracený text'] || [];
+  test('D6: sběr označí návrh obchodníka a řadí ho napřed',
+    zt.length === 2 && zt[0].text === 'Návrh obchodníka.' && zt[0].navrh === true && !zt[1].navrh, zt);
+  test('D6: text, který se od návrhu změnil, návrhem není',
+    Array.isArray(nz['Jiný text']) && nz['Jiný text'][0].navrh === undefined, nz['Jiný text']);
 }
 
 console.log('\n===== AUDIT B13: RAZÍTKA PŘI ZALOŽENÍ =====\n');

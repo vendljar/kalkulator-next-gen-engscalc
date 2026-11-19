@@ -36,6 +36,9 @@ const ZAMEK_CHRANENE = [
    * zapsal text do zakázky i na server pod cizím pohledem. Obal přidá obě
    * kontroly, které funkce sama nemá: náhled a zámek čtení. */
   'popisSet',
+  /* Návrh dodatkového textu do číselníku (D6, 19. 11. 2026): zapisuje do
+   * varianty mimo `set()`. */
+  'popisNavrhni',
   /* Opláštění po stěnách (#268, 3. krok, 21. 9. 2026). Zapisují do zadání
    * mimo `set()`, protože zakládají strukturu stěn a pásů — `set()` umí jen
    * dosadit hodnotu na existující cestu. Zámek je proto musí hlídat zvlášť,

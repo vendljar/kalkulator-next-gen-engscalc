@@ -24,6 +24,12 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 ## Běžící dávky
 
+- **DO** (`claude/do-dotazy`, v19.11.6, nad 042fcbc): dotazy obchodníků 16. 11. — D1 po celé výšce = jediný pás,
+  D2 „bez opláštění" (klíč `bez`) + „do (m)" = 0, D4 montáž pod materiálem + „(MATERIÁL)" (klíč přepisů beze změny),
+  D5 materiál nese montáž (příplatky), D6 „uloženo pro všechny…" / „jen pro tuto zakázku" + návrh do číselníku
+  (`varianta.popisyNavrhy`, štítek návrh ve sběru), D7 adresa nahoře v seznamu. Cenu nemění; dokumenty jen
+  přejmenování. Stav kola a mutací: viz zpráva koordinaci / commit „DO: kolo". Otevřené: nové vydání manuálu výpočtu
+  (popisek „bez opláštění"), odeslané nabídky drží starý text (zmrazené).
 - **R-K50N1 #671** (`claude/r-k50n1`, v19.11.5, nad a018828): editor ceníku (prázdná zahr. statika opláštění =
   zahraniční statické posouzení), upozornění v dialogu zveřejnění, zahr. statika textem → číslo. Test oddíl 6, mutace [K50N1] 5/5 + 3/3. Kolo VŠE ZELENÉ (475/0/7, 386/0/1, 9/9, porovnání 359/359 SHODA). HOTOVO.
 - **SP #667** (`claude/sp-statika`, verzi přidělí koordinace): statika opláštění Ano/Ne v zadání šachty
