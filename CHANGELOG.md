@@ -27,6 +27,10 @@ Verzi přečísluje koordinace, číslo roadmapy a meze B přidělí koordinace.
   (Obchodník a Vedoucí 403 bez údaje, /api/ja bez údaje), `src/test_on_naposledy.js` (14 OK, i v TZ New York/Tokio;
   proti 042fcbc padá), harness `overit_on_online.mjs` (18 OK; proti starému UI 8 FAIL). `test_zalohy.mjs` N4:
   výjimka `aktivita`. Mutace [ON] server 11/11.
+- **Kolo** `--bez-mutaci --proti origin/claude/integrace-16-10`: sady 480/0/7, statické 9/9, porovnání **SHODA**
+  359/359; hodiny +400 dní napoprvé 388/1/1 (občasné selhání `test_vz_unik.js`, PROJ en/de/fr „cena varianty D“ —
+  #ON se ho netýká, samostatně 6× zelené), opakovaný krok `--jen hodiny` 389/0/1. Manuál P5 doplněn o úložiště
+  `aktivita`. Přepnutí na Uživatele obnoví seznam na pozadí (bez „Načítám…“, `overit_xss` B150+UE 400/0).
 
 ## v19.11.5 — #671 navazující drobnosti K50-N1 (editor a zveřejnění ceníku), větev claude/r-k50n1
 

@@ -53,7 +53,7 @@ Tagy: jen pro stav, který jde do `main` (J. V. 18. 11.). Verze pro main bez tag
 
 - **ON** (`claude/on-online`, v19.11.6, nad 042fcbc): čas poslední aktivity (jen čas, 1×/min, best-effort, úložiště
   `aktivita` mimo zálohu), výpis jen správci, sloupec „Naposledy aktivní“ se zelenou tečkou. Testy test_on_aktivita,
-  test_prava #ON, test_on_naposledy, overit_on_online; mutace [ON] 11/11. Mez B — návrh v BEZPECNOST_MEZE.md. HOTOVO.
+  test_prava #ON, test_on_naposledy, overit_on_online; mutace [ON] 11/11. Kolo 480/0/7, 9/9, SHODA 359/359, hodiny 389/0/1 (na 2. pokus; občasné selhání test_vz_unik). Mez B — návrh v BEZPECNOST_MEZE.md. HOTOVO.
 
 ## Čeká na J. V.
 
